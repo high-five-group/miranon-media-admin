@@ -99,45 +99,22 @@ import { Button, Input, MessageBox } from '@/components/primitives';
  * därför oberoende av fotots ljushet — se A11Y-GOLVET-kommentaren ovan för
  * den uppmätta kontrastkvoten.
  */
+/**
+ * Ordmärket är POSITIONSNEUTRALT — föräldern bestämmer var det sitter.
+ * Tidigare bar det `absolute top-4 left-4` för att flyta ovanpå bild-halvan;
+ * när bilden togs bort (Marcus, konvergens-omgång 5) följde positioneringen
+ * med bort. Ett absolut-positionerat barn i ett flöde utan `relative`-förälder
+ * ankras mot närmaste positionerade förfader — tyst fel som syns först vid
+ * scroll.
+ */
 function Ordmarke() {
   return (
-    <div className="absolute top-4 left-4 flex items-center gap-3 lg:top-6 lg:left-6">
+    <div className="flex items-center gap-3">
       <img src="/favicon/favicon.svg" alt="" className="size-12 shrink-0 rounded-lg" />
       <div className="leading-tight">
         <p className="font-semibold text-lg text-text">Miranon Media</p>
         <p className="text-caption text-text uppercase tracking-wide">Admin</p>
       </div>
-    </div>
-  );
-}
-
-/**
- * Bild-halva: exakt övre hälften av kontext-spaltens höjd på desktop
- * (förälderns `grid-rows-2` delar den faktiska spalthöjden — ingen gissad
- * pixelhöjd). Vid smal vy (< lg) styr i stället ett fast bildförhållande
- * (`aspect-video`) höjden, så halva-höjden-regeln inte gör bilden absurd
- * hög eller platt när kolumnerna staplas (verifierat 390×844).
- */
-function FotoHalva({ heltSpalten = false }: { heltSpalten?: boolean }) {
-  return (
-    <div
-      className={
-        heltSpalten
-          ? // Login: ingen text under bilden. Spalten blir hög och SMAL, och
-            // fotot är liggande 3:2 — låter man det fylla ytan beskär
-            // object-cover bort större delen av bredden (Roger försvinner).
-            // Bilden behåller därför sitt format och centreras vertikalt, med
-            // kontext-spaltens varma toning som fond runt om.
-            'relative flex w-full items-center overflow-hidden bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) lg:h-full'
-          : 'relative aspect-video w-full overflow-hidden lg:aspect-auto lg:h-full'
-      }
-    >
-      <img
-        src="/roger-och-lotta.webp"
-        alt=""
-        className={heltSpalten ? 'w-full' : 'absolute inset-0 size-full object-cover'}
-      />
-      <Ordmarke />
     </div>
   );
 }
@@ -153,20 +130,6 @@ function KontextRad({ icon: Icon, children }: { icon: LucideIcon; children: Reac
 }
 
 /**
- * Text-halva: nedre hälften av kontext-spalten (rubrik, brödtext,
- * punktlista, fotnot) — exakt lika hög som `FotoHalva` på desktop via
- * förälderns `grid-rows-2`.
- */
-function InnehallHalva({ children, fotnot }: { children: ReactNode; fotnot: ReactNode }) {
-  return (
-    <div className="flex flex-col justify-between gap-10 bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) p-8 lg:h-full lg:p-12">
-      <div className="flex flex-col gap-6">{children}</div>
-      <div className="text-caption text-text-muted">{fotnot}</div>
-    </div>
-  );
-}
-
-/**
  * Varm kontext-spalt (vänster/topp). Bär ALDRIG den enda vägen till
  * information den innehåller är kompletterande — och innehåller inga
  * interaktiva element (tabbordningen ska gå rakt in i formuläret). Delas i
@@ -174,16 +137,17 @@ function InnehallHalva({ children, fotnot }: { children: ReactNode; fotnot: Reac
  * spalthöjd — inte en gissad pixelhöjd); staplas normalt på smal vy.
  */
 function KontextSpalt({ children, fotnot }: { children?: ReactNode; fotnot?: ReactNode }) {
-  // Login har INGEN text under bilden (Marcus, konvergens-omgång 3) — då tar
-  // bilden hela spalten. Accept behåller tvådelningen. Samma komponent bär
-  // båda lägena så skärmarna inte glider isär i form.
-  const harInnehall = Boolean(children);
+  // Konvergens-omgång 5 (Marcus): BILDEN ÄR BORTA — "för att testa hur det
+  // blir och för att rensa bort lite saker". Spalten bär därför bara innehåll,
+  // och ordmärket flyttar in hit eftersom det tidigare flöt ovanpå bilden.
+  // FotoHalva/InnehallHalva-tvådelningen utgår med bilden; kvar är en spalt.
   return (
-    <div
-      className={harInnehall ? 'flex flex-col lg:grid lg:grid-rows-2' : 'flex flex-col lg:h-full'}
-    >
-      <FotoHalva heltSpalten={!harInnehall} />
-      {harInnehall ? <InnehallHalva fotnot={fotnot}>{children}</InnehallHalva> : null}
+    <div className="flex flex-col justify-between gap-10 bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) p-8 lg:p-12">
+      <div className="flex flex-col gap-10">
+        <Ordmarke />
+        <div className="flex flex-col gap-6">{children}</div>
+      </div>
+      <div className="text-caption text-text-muted">{fotnot}</div>
     </div>
   );
 }
@@ -194,6 +158,17 @@ function FormSpalt({ children }: { children: ReactNode }) {
     <div className="flex items-center justify-center bg-bg p-8 lg:p-12">
       <div className="w-full max-w-sm">{children}</div>
     </div>
+  );
+}
+
+/**
+ * EN-spalts skal (login, Marcus konvergens-omgång 5): bara formuläret,
+ * centrerat i både ledd. Ingen kontext-spalt, ingen bild — login-vyn möter
+ * någon som redan vet vad appen är och ska in, inte någon som ska övertygas.
+ */
+function EnSpalt({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-bg p-8 lg:p-12">{children}</div>
   );
 }
 
@@ -234,14 +209,13 @@ export function LoginVariantB() {
   };
 
   return (
-    <TvaSpalter>
-      <KontextSpalt />
-
-      <FormSpalt>
+    <EnSpalt>
+      <div className="flex w-full max-w-sm flex-col gap-8">
+        <Ordmarke />
         <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
           <div className="flex flex-col gap-1">
             <h1 className="font-semibold text-3xl text-text">Välkommen tillbaka</h1>
-            <p className="text-body text-text-secondary">Logga in för att komma vidare.</p>
+            <p className="text-body text-text-secondary">Logga in och kolla läget.</p>
           </div>
 
           <Input
@@ -305,8 +279,8 @@ export function LoginVariantB() {
             )}
           </Button>
         </form>
-      </FormSpalt>
-    </TvaSpalter>
+      </div>
+    </EnSpalt>
   );
 }
 
@@ -362,14 +336,15 @@ export function AcceptVariantB() {
           </span>
         }
       >
-        <div className="flex flex-col gap-2">
+        {/* H1 → BRÖDTEXT, inte H1 → H2 (Marcus: "kaka på kaka"). Meningen är
+            information, inte en rubrik — den behöver ingen rubrikvikt för att
+            läsas först. Som ledande brödtext får hälsningen andas, och ögat
+            får EN tyngdpunkt i spalten i stället för två som konkurrerar. */}
+        <div className="flex flex-col gap-3">
           <h1 className="font-semibold text-3xl text-text">Välkommen, {MOTTAGARENS_FORNAMN}</h1>
-          <h2 className="font-semibold text-2xl text-text">
-            {INBJUDEN_AV} har bjudit in dig till Miranon Media Admin
-          </h2>
-          <p className="text-body text-text-secondary">
-            Du får rollen <strong className="text-text">{TILLDELAD_ROLL.toLowerCase()}</strong> -
-            sätt ett lösenord här bredvid, så är du igång direkt.
+          <p className="text-lg text-text-secondary">
+            {INBJUDEN_AV} har bjudit in dig till Miranon Media Admin. Du får rollen{' '}
+            <strong className="font-semibold text-text">{TILLDELAD_ROLL.toLowerCase()}</strong>.
           </p>
         </div>
         <ol className="flex flex-col gap-4">
@@ -383,10 +358,7 @@ export function AcceptVariantB() {
 
       <FormSpalt>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
-          <div className="flex flex-col gap-1">
-            <h2 className="font-semibold text-2xl text-text">Sätt ditt lösenord</h2>
-            <p className="text-body text-text-secondary">Så är du igång direkt.</p>
-          </div>
+          <h2 className="font-semibold text-2xl text-text">Sätt ditt lösenord</h2>
 
           <div className="flex flex-col gap-1">
             <label htmlFor={emailFaltId} className="text-(color:--mm-input-label-text) text-small">
