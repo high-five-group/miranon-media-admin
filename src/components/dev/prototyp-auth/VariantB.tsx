@@ -77,15 +77,11 @@
 import {
   CircleCheck,
   Clock,
-  ImagePlus,
   KeyRound,
-  LifeBuoy,
   Loader2,
   Lock,
   type LucideIcon,
   ShieldCheck,
-  SlidersHorizontal,
-  UsersRound,
 } from 'lucide-react';
 import { type FormEvent, type ReactNode, useId, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
@@ -97,43 +93,6 @@ import { Button, Input, MessageBox } from '@/components/primitives';
    ──────────────────────────────────────────────────────────────── */
 
 /**
- * Full-bredd platshållare för Roger och Lottas foto — fyller HELA
- * bild-halvan (i stället för omgång 1:s runda badge). Fotot finns inte i
- * repot (`public/` innehåller endast `miranon-logo.svg`, PWA-ikonerna,
- * favicon och `screenshots/` — verifierat, TASK-127.2); var det ska komma
- * ifrån är obesvarat när denna kod skrivs. Samma "väntar på foto"-språk som
- * omgång 1 (streckad ram + `UsersRound`-ikon + `ImagePlus`-badge), nu i den
- * ytfyllande formen.
- *
- * BYTE TILL RIKTIGT FOTO: ta bort raden `<FotoPlatshallare />` i
- * `FotoHalva` nedan och ersätt den med EN rad, t.ex.
- * `<img src="/roger-och-lotta.webp" alt="" className="absolute inset-0
- * size-full object-cover" />` (byt filändelsen om Marcus levererar ett
- * annat bildformat än `.webp` — resten av raden är oberoende av
- * filändelsen). `alt=""` eftersom bilden fortsatt är dekorativ: ordmärket
- * bär namnet, och formuläret behöver ingen bildinformation.
- *
- * Dekorativ tills fotot finns: `aria-hidden` håller platshållaren osynlig
- * för assisterande teknik i stället för att annonseras som ett meningsfullt
- * foto.
- */
-function FotoPlatshallare() {
-  return (
-    <div
-      aria-hidden="true"
-      className="absolute inset-0 flex items-center justify-center border-(--mm-border-strong) border-2 border-dashed bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint)"
-    >
-      <div className="relative flex size-20 shrink-0 items-center justify-center rounded-full border-(--mm-border-strong) border-2 border-dashed bg-(--mm-accent-tint)">
-        <UsersRound className="text-(color:--mm-accent) size-9" />
-        <span className="text-(color:--mm-text-inverse) absolute -right-1 -bottom-1 flex size-6 items-center justify-center rounded-full bg-(--mm-accent) ring-(--mm-primary-tint) ring-2">
-          <ImagePlus className="size-3.5" />
-        </span>
-      </div>
-    </div>
-  );
-}
-
-/**
  * Ordmärke: logotyp (`/miranon-logo.svg`, finns redan i `public/` — ersätter
  * omgång 1:s runda profilplatshållare per Marcus instruktion) + textnamn,
  * på en OPAK mörk yta som flyter ovanpå foto-halvan. Kontrasten mot ytan är
@@ -142,11 +101,11 @@ function FotoPlatshallare() {
  */
 function Ordmarke() {
   return (
-    <div className="absolute top-4 left-4 flex items-center gap-3 rounded-xl bg-(--mm-surface-inverse) px-4 py-3 shadow-lg lg:top-6 lg:left-6">
-      <img src="/miranon-logo.svg" alt="" className="size-8 shrink-0" />
+    <div className="absolute top-4 left-4 flex items-center gap-3 lg:top-6 lg:left-6">
+      <img src="/favicon/favicon.svg" alt="" className="size-12 shrink-0 rounded-lg" />
       <div className="leading-tight">
-        <p className="font-semibold text-lg text-text-inverse">Miranon Media</p>
-        <p className="text-caption text-text-inverse uppercase tracking-wide">Admin</p>
+        <p className="font-semibold text-lg text-text">Miranon Media</p>
+        <p className="text-caption text-text uppercase tracking-wide">Admin</p>
       </div>
     </div>
   );
@@ -159,10 +118,25 @@ function Ordmarke() {
  * (`aspect-video`) höjden, så halva-höjden-regeln inte gör bilden absurd
  * hög eller platt när kolumnerna staplas (verifierat 390×844).
  */
-function FotoHalva() {
+function FotoHalva({ heltSpalten = false }: { heltSpalten?: boolean }) {
   return (
-    <div className="relative aspect-video w-full overflow-hidden lg:aspect-auto lg:h-full">
-      <FotoPlatshallare />
+    <div
+      className={
+        heltSpalten
+          ? // Login: ingen text under bilden. Spalten blir hög och SMAL, och
+            // fotot är liggande 3:2 — låter man det fylla ytan beskär
+            // object-cover bort större delen av bredden (Roger försvinner).
+            // Bilden behåller därför sitt format och centreras vertikalt, med
+            // kontext-spaltens varma toning som fond runt om.
+            'relative flex w-full items-center overflow-hidden bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) lg:h-full'
+          : 'relative aspect-video w-full overflow-hidden lg:aspect-auto lg:h-full'
+      }
+    >
+      <img
+        src="/roger-och-lotta.webp"
+        alt=""
+        className={heltSpalten ? 'w-full' : 'absolute inset-0 size-full object-cover'}
+      />
       <Ordmarke />
     </div>
   );
@@ -199,11 +173,17 @@ function InnehallHalva({ children, fotnot }: { children: ReactNode; fotnot: Reac
  * två exakt lika höga halvor på desktop (`lg:grid-rows-2`, samma faktiska
  * spalthöjd — inte en gissad pixelhöjd); staplas normalt på smal vy.
  */
-function KontextSpalt({ children, fotnot }: { children: ReactNode; fotnot: ReactNode }) {
+function KontextSpalt({ children, fotnot }: { children?: ReactNode; fotnot?: ReactNode }) {
+  // Login har INGEN text under bilden (Marcus, konvergens-omgång 3) — då tar
+  // bilden hela spalten. Accept behåller tvådelningen. Samma komponent bär
+  // båda lägena så skärmarna inte glider isär i form.
+  const harInnehall = Boolean(children);
   return (
-    <div className="flex flex-col lg:grid lg:grid-rows-2">
-      <FotoHalva />
-      <InnehallHalva fotnot={fotnot}>{children}</InnehallHalva>
+    <div
+      className={harInnehall ? 'flex flex-col lg:grid lg:grid-rows-2' : 'flex flex-col lg:h-full'}
+    >
+      <FotoHalva heltSpalten={!harInnehall} />
+      {harInnehall ? <InnehallHalva fotnot={fotnot}>{children}</InnehallHalva> : null}
     </div>
   );
 }
@@ -255,23 +235,7 @@ export function LoginVariantB() {
 
   return (
     <TvaSpalter>
-      <KontextSpalt fotnot="Något krångligt? Hör av dig till Marcus, så löser vi det tillsammans.">
-        <div className="flex flex-col gap-2">
-          <h2 className="font-semibold text-2xl text-text">
-            Ditt verktyg för event, anmälningar och deltagare
-          </h2>
-          <p className="text-body text-text-secondary">
-            Skräddarsytt efter hur du vill jobba - inte tvärtom.
-          </p>
-        </div>
-        <ul className="flex flex-col gap-4">
-          <KontextRad icon={SlidersHorizontal}>
-            Utveckla verktyget hur du vill i din egen takt
-          </KontextRad>
-          <KontextRad icon={LifeBuoy}>24/7 support</KontextRad>
-          <KontextRad icon={ShieldCheck}>Alltid säker inloggning</KontextRad>
-        </ul>
-      </KontextSpalt>
+      <KontextSpalt />
 
       <FormSpalt>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
@@ -288,7 +252,7 @@ export function LoginVariantB() {
             onChange={setEpost}
             isRequired
             isDisabled={status === 'kontrollerar'}
-            placeholder="t.ex. lotta@miranonmedia.se"
+            placeholder="t.ex. lotta@miranon.se"
           />
 
           <div className="flex flex-col gap-1.5">
@@ -353,7 +317,7 @@ export function LoginVariantB() {
 /** Attrapp-data för accept-sidan — se filens topp-kommentar för proveniens. */
 const INBJUDEN_AV = 'Marcus Johansson';
 const MOTTAGARENS_FORNAMN = 'Lotta';
-const MOTTAGARENS_EPOST = 'lotta@miranonmedia.se';
+const MOTTAGARENS_EPOST = 'lotta@miranon.se';
 const TILLDELAD_ROLL = 'Administratör';
 
 /**
@@ -399,6 +363,7 @@ export function AcceptVariantB() {
         }
       >
         <div className="flex flex-col gap-2">
+          <h1 className="font-semibold text-3xl text-text">Välkommen, {MOTTAGARENS_FORNAMN}</h1>
           <h2 className="font-semibold text-2xl text-text">
             {INBJUDEN_AV} har bjudit in dig till Miranon Media Admin
           </h2>
@@ -419,8 +384,8 @@ export function AcceptVariantB() {
       <FormSpalt>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
           <div className="flex flex-col gap-1">
-            <h1 className="font-semibold text-3xl text-text">Välkommen, {MOTTAGARENS_FORNAMN}</h1>
-            <p className="text-body text-text-secondary">Ditt konto väntar - sätt ett lösenord.</p>
+            <h2 className="font-semibold text-2xl text-text">Sätt ditt lösenord</h2>
+            <p className="text-body text-text-secondary">Så är du igång direkt.</p>
           </div>
 
           <div className="flex flex-col gap-1">
