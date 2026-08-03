@@ -79,22 +79,30 @@ import { Button, Input, MessageBox } from '@/components/primitives';
    ──────────────────────────────────────────────────────────────── */
 
 /**
- * Ordmärket är POSITIONSNEUTRALT — föräldern bestämmer var det sitter.
- * Tidigare bar det `absolute top-4 left-4` för att flyta ovanpå bild-halvan;
- * när bilden togs bort (Marcus, konvergens-omgång 5) följde positioneringen
- * med bort. Ett absolut-positionerat barn i ett flöde utan `relative`-förälder
- * ankras mot närmaste positionerade förfader — tyst fel som syns först vid
- * scroll.
+ * Ordmärket är Marcus riktiga logotyp (konvergens-omgång 9) — EN bild, ingen
+ * satt text bredvid. Den tidigare formen (favicon-ikon + "Miranon Media" +
+ * "ADMIN" i två textrader) är riven: logotypen bär redan ordmärket, så
+ * texten var samma information en gång till.
+ *
+ * `alt=""` eftersom logotypen är dekorativ HÄR — sidans identitet bärs av
+ * `<h1>` och av innehållet. Vore den enda avsändar-signalen skulle den
+ * behövt en riktig alt-text.
+ *
+ * Höjden styr, bredden följer bildförhållandet (626×118,88 ≈ 5,3:1).
+ * POSITIONSNEUTRALT — föräldern bestämmer var det sitter.
  */
 function Ordmarke() {
   return (
-    <div className="flex items-center gap-3">
-      <img src="/favicon/favicon.svg" alt="" className="size-12 shrink-0 rounded-lg" />
-      <div className="leading-tight">
-        <p className="font-semibold text-lg text-text">Miranon Media</p>
-        <p className="text-caption text-text uppercase tracking-wide">Admin</p>
-      </div>
-    </div>
+    // `self-start` är INTE kosmetik: föräldern är en flex-kolumn, vars
+    // default `align-items: stretch` sträckte bilden till spaltens fulla
+    // bredd (mätt 576 px mot naturliga ~211) och förvrängde ordmärket.
+    <img
+      src="/miranon-media-ordmarke.svg"
+      alt=""
+      className="h-10 w-auto self-start"
+      width={626}
+      height={119}
+    />
   );
 }
 
@@ -106,11 +114,20 @@ function Ordmarke() {
  *
  * `varm` styr fonden: login står på appens vita bakgrund, inbjudan på den
  * varma toningen över HELA ytan med formuläret i ett eget vitt kort.
+ *
+ * FULL-BLEED (`w-[100vw]` + negativ margin): appen reserverar en symmetrisk
+ * scrollbar-ränna på ≥640 px — `scrollbar-gutter: stable both-edges
+ * !important` i `src/styles/base.css`. Den regeln är ett Marcus-veto-grundat
+ * beslut med CI-bevis åt båda hållen (layout-hopp vid vy-växling är
+ * förbjudet) och RÖRS INTE. Men rännan gav den varma fonden 11 px vita
+ * fält per sida (mätt: 1578 av 1600), och auth-vyerna ligger utanför
+ * AppShell där ingen vy-växling finns att skydda. Full-bleed löser det
+ * lokalt: mätt 1578 → 1600, vänsterkant 11 → 0, ingen horisontell scroll.
  */
 function EnSpalt({ children, varm = false }: { children: ReactNode; varm?: boolean }) {
   return (
     <div
-      className={`flex min-h-dvh items-center justify-center p-6 sm:p-8 lg:p-12 ${
+      className={`ml-[calc(50%-50vw)] flex min-h-dvh w-[100vw] items-center justify-center p-6 sm:p-8 lg:p-12 ${
         varm ? 'bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint)' : 'bg-bg'
       }`}
     >
