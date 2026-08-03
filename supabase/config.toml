@@ -62,6 +62,13 @@ verify_jwt = true
 [functions.create-event-note]
 verify_jwt = true
 
+# invite-user (TASK-127.5, ADR-092/ADR-093): utlöser en Användarinbjudan.
+# Samma resonemang som create-admin-user — gateway-första-försvar aktivt,
+# men anon-key (valid JWT) passerar gatewayn, så requireUser +
+# ADMIN_EMAILS-allowlisten i koden är det som faktiskt grindar anropet.
+[functions.invite-user]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #
