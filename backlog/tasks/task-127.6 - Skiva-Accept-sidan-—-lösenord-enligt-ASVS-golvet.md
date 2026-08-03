@@ -4,7 +4,7 @@ title: 'Skiva: Accept-sidan — lösenord enligt ASVS-golvet'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-03 11:38'
+updated_date: '2026-08-03 13:13'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,6 +30,22 @@ Täcker användarberättelser: 2, 3, 4, 7.
 - [ ] #4 Acceptance- och a11y-sviterna gröna på sidans alla tillstånd
 - [ ] #5 Prototyp-facit följt
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BYGGKRAV UR PROTOTYP-PASSET (TASK-127.2 divergensfas, 2026-08-03) — variant-oberoende, gäller oavsett vilken variant Marcus väljer.
+
+SKARP BUGG FÅNGAD OCH DIAGNOSTISERAD i prototypen: efter ett misslyckat inloggningsförsök kunde nästa försök med RÄTT lösenord aldrig slutföras — submit-handlern eldade aldrig, tyst och reproducerbart.
+
+ROTORSAK: React Arias default validationBehavior="native" speglar isInvalid/errorMessage via input.setCustomValidity(...). Webbläsaren rensar den strängen ENDAST vid en lyckad native submit — inte för att värdet ändras. Nästa submit blockeras därför av webbläsarens EGEN constraint-validering INNAN onSubmit hinner köra; input.validity.customError är fortfarande true trots ett giltigt nytt värde.
+
+ÅTGÄRD I PROTOTYPEN: validationBehavior="aria" på lösenordsfältet. Bevisat i båda riktningar — felet reproducerat två gånger, fixen applicerad, därefter verifierat skarpt (fel → felmeddelande → nytt lösenord → lyckad övergång) på BÅDA skärmarna, som delar samma lösenordsfält-komponent.
+
+VARFÖR DETTA STÅR HÄR: prototypkod befordras aldrig (throwaway-kontraktets klausul iv) — den skarpa implementationen skrivs nyskriven i denna skiva. Utan denna not återintroduceras buggen med hög sannolikhet, eftersom den bara syns vid ANDRA försöket och inte fångas av ett test som prövar ett enda felaktigt försök.
+
+TESTKRAV SOM FÖLJER: sviten ska pröva sekvensen fel → rätt, inte bara fel. Ett test som slutar vid det första felmeddelandet hade varit grönt genom hela buggen.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
