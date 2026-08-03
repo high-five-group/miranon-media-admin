@@ -3,21 +3,23 @@
  * "KONTEXTRIK OCH VARM".
  *
  * Besvarar EN nedskriven fråga (kortets brief): hur ska login-vyn och
- * accept-sidan se ut? Denna hållning testar en skärm som förklarar sig
- * själv innan mottagaren ombeds göra något — vem har bjudit in dig, vad
- * är det här, vad händer härnäst. Strukturellt: en varm kontext-spalt
- * (vänster på desktop, överst på mobil) + en neutral formulär-spalt,
- * tydligt skild från en minimal "en sak i taget"-hållning (ingen
- * berättande text, ett fält synligt åt gången).
+ * inbjudnings-sidan se ut?
  *
- * KONVERGENS-OMGÅNG 2 (Marcus facit): kontext-spalten delas i sin tur i två
- * EXAKT lika höga halvor på desktop (`grid-rows-2` — den faktiska
- * spalthöjden, ingen gissad pixelhöjd) — en bild-halva (Roger och Lottas
- * foto, platshållare tills fotot finns) med logotyp + ordmärke flytande
- * OVANPÅ bilden, och en text-halva därunder med rubrik, brödtext och
- * punktlistan. Vid smal vy (< lg) ersätts halva-höjden-regeln av ett fast
- * bildförhållande så bilden inte blir absurd hög eller platt när
- * kolumnerna staplas.
+ * NUVARANDE FORM (konvergens-omgång 8) — divergensens tvåspalts-hållning
+ * är RIVEN, i steg och på Marcus beslut. Kvar är EN spalt för båda
+ * skärmarna:
+ * - LOGIN: bara formuläret, centrerat på appens vita bakgrund.
+ * - INBJUDAN: varm toning över hela ytan, ordmärke + hälsning + roll,
+ *   formuläret i ett eget vitt kort (`rounded-2xl`, appens kort-standard),
+ *   fotnot om länkens giltighet sist.
+ *
+ * Vad som revs på vägen och varför: fotot (omgång 5, "testa hur det blir
+ * och rensa bort saker") · punktlistan och bekräftelse-lösenordsfältet
+ * (omgång 7, research-grundat — se
+ * `docs/research/aktiveringssida-branschmonster-2026-08-03.md`) ·
+ * tvåspalts-skalet inklusive den delade rubriklinjen (omgång 8, obsolet i
+ * en spalt). Löpande prosa gick från 95 ord till 47; branschsnittet i
+ * research-passet är ~17.
  *
  * THROWAWAY-KONTRAKT: koden befordras ALDRIG till skarp implementation.
  * Vinnaren (Marcus väljer EN variant per skärm) byggs om nyskriven i
@@ -51,26 +53,18 @@
  * - Tangentbordsnavigering: alla interaktiva element är riktiga
  *   `<button>`/`<input>`/`<label>`-par (via React Aria-primitiven eller
  *   native HTML), ingen `<div onClick>`.
- * - Fokusordning: kontext-spalten bär ENDAST dekorativ/kompletterande text
- *   (aldrig den enda vägen till information) och innehåller inga
+ * - Fokusordning: texten ovanför formuläret bär ENDAST kompletterande
+ *   information (aldrig den enda vägen till något) och innehåller inga
  *   interaktiva element — tabbordningen går rakt in i formuläret.
  * - `prefers-reduced-motion`: den enda animationen (`motion-safe:animate-
  *   mm-avsloj`, samma reveal-idiom som resten av systemet, tailwind.css)
  *   är media-gated; en spinnande loader-ikon body är `motion-safe:animate-
  *   spin` — statisk vid reduced motion, texten ("Loggar in …") bär
  *   statusen ändå.
- * - `prefers-contrast: more`: panel-avdelaren mellan kontext- och
- *   formulär-spalten är osynlig i vila och tänds via `contrast-more:`
- *   (samma border-transparent-idiom som DashboardCard/NastaEventCard).
- * - Logotyp + namn flyter på en OPAK yta (`--mm-surface-inverse`, samma
- *   par som VariantC:s Märkespanel) ovanpå bild-halvan — kontrasten mot
- *   vit text (`--mm-text-inverse`) beror därför ALDRIG på fotots ljushet,
- *   till skillnad från en transparent gradient-scrim. Uppmätt:
- *   `#ffffff` mot `#242424` (`--p-neutral-0` mot `--p-neutral-900`) ⇒
- *   kontrastkvot ≈15,52:1 (mätt i webbläsaren mot renderade
- *   `rgb(36,36,36)`/`rgb(255,255,255)`) — WCAG AA-golvet för normal text är
- *   4,5:1,
- *   AAA-golvet 7:1. Se PR-beskrivningen för uträkningen.
+ * - Kontrast: all text står nu på en OPAK fond — appens vita bakgrund
+ *   (login) eller den varma toningen respektive det vita kortet
+ *   (inbjudan). Kontrasten beror därför aldrig på en bilds ljushet, vilket
+ *   var den risk foto-halvans scrim-fråga bar innan bilden revs.
  * - Endast design-tokens (`--mm-*` via Tailwind-temat eller arbiträr
  *   `(--mm-*)`-syntax) — inga hårdkodade färger.
  */
@@ -84,13 +78,6 @@ import { Button, Input, MessageBox } from '@/components/primitives';
    dem, per kontraktet ovan).
    ──────────────────────────────────────────────────────────────── */
 
-/**
- * Ordmärke: logotyp (`/miranon-logo.svg`, finns redan i `public/` — ersätter
- * omgång 1:s runda profilplatshållare per Marcus instruktion) + textnamn,
- * på en OPAK mörk yta som flyter ovanpå foto-halvan. Kontrasten mot ytan är
- * därför oberoende av fotots ljushet — se A11Y-GOLVET-kommentaren ovan för
- * den uppmätta kontrastkvoten.
- */
 /**
  * Ordmärket är POSITIONSNEUTRALT — föräldern bestämmer var det sitter.
  * Tidigare bar det `absolute top-4 left-4` för att flyta ovanpå bild-halvan;
@@ -112,74 +99,21 @@ function Ordmarke() {
 }
 
 /**
- * Varm kontext-spalt (vänster/topp). Bär ALDRIG den enda vägen till
- * information den innehåller är kompletterande — och innehåller inga
- * interaktiva element (tabbordningen ska gå rakt in i formuläret). Delas i
- * två exakt lika höga halvor på desktop (`lg:grid-rows-2`, samma faktiska
- * spalthöjd — inte en gissad pixelhöjd); staplas normalt på smal vy.
+ * EN-spalts skal — BÅDA skärmarnas enda layout sedan konvergens-omgång 8.
+ * Tvåspalts-formen (`TvaSpalter`/`KontextSpalt`/`FormSpalt`) är riven på
+ * Marcus beslut: login möter någon som redan vet vad appen är, och
+ * inbjudan fick plats i en spalt när punktlistan försvann.
+ *
+ * `varm` styr fonden: login står på appens vita bakgrund, inbjudan på den
+ * varma toningen över HELA ytan med formuläret i ett eget vitt kort.
  */
-function KontextSpalt({ children, fotnot }: { children?: ReactNode; fotnot?: ReactNode }) {
-  // Konvergens-omgång 5 (Marcus): BILDEN ÄR BORTA — "för att testa hur det
-  // blir och för att rensa bort lite saker". Spalten bär därför bara innehåll,
-  // och ordmärket flyttar in hit eftersom det tidigare flöt ovanpå bilden.
-  // FotoHalva/InnehallHalva-tvådelningen utgår med bilden; kvar är en spalt.
+function EnSpalt({ children, varm = false }: { children: ReactNode; varm?: boolean }) {
   return (
     <div
-      className={`relative flex flex-col justify-between gap-10 bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) p-8 lg:justify-start lg:p-12 ${RUBRIKLINJE}`}
+      className={`flex min-h-dvh items-center justify-center p-6 sm:p-8 lg:p-12 ${
+        varm ? 'bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint)' : 'bg-bg'
+      }`}
     >
-      {/* DESKTOP: ordmärke och fotnot lyfts UR flödet (absolut i spaltens
-          hörn) och innehållet startar på RUBRIKLINJE — samma konstant som
-          formulärspalten. Mätt, inte gissat: en tidigare omgång centrerade
-          båda spalterna vertikalt, vilket gav 77 px missmatchning eftersom
-          centrering placerar blockets MITT och blocken är olika höga. En
-          delad startlinje håller oavsett hur texten ändras.
-          MOBIL: spalterna staplas och en delad linje finns inte att linjera
-          mot — där gäller vanligt flöde uppifrån och ner. */}
-      <div className="lg:absolute lg:top-12 lg:left-12">
-        <Ordmarke />
-      </div>
-      <div className="flex flex-col gap-6">{children}</div>
-      <div className="text-caption text-text-muted lg:absolute lg:right-12 lg:bottom-12 lg:left-12">
-        {fotnot}
-      </div>
-    </div>
-  );
-}
-
-/**
- * DELAD RUBRIKLINJE (konvergens-omgång 6, Marcus): båda spalternas
- * textinnehåll startar på samma vertikala linje på desktop, så H1
- * ("Välkommen, Lotta") och H2 ("Sätt ditt lösenord") möts. Värdet rymmer
- * ordmärket som ligger absolut vid `top-12` och är 48 px högt (48 + 48 +
- * 48 luft = 144 px = `pt-36`). Konstanten bor på ETT ställe — ändras den
- * följer båda spalterna med, och linjeringen kan inte glida isär.
- */
-const RUBRIKLINJE = 'lg:pt-36';
-
-/** Neutral formulär-spalt (höger/under) — bär sidans `<h1>` och all handling. */
-function FormSpalt({ children }: { children: ReactNode }) {
-  return (
-    <div className={`flex justify-center bg-bg p-8 lg:items-start lg:p-12 ${RUBRIKLINJE}`}>
-      <div className="w-full max-w-sm">{children}</div>
-    </div>
-  );
-}
-
-/**
- * EN-spalts skal (login, Marcus konvergens-omgång 5): bara formuläret,
- * centrerat i både ledd. Ingen kontext-spalt, ingen bild — login-vyn möter
- * någon som redan vet vad appen är och ska in, inte någon som ska övertygas.
- */
-function EnSpalt({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex min-h-dvh items-center justify-center bg-bg p-8 lg:p-12">{children}</div>
-  );
-}
-
-/** Två-spalts skal: delare osynlig i vila, tänds under `prefers-contrast: more`. */
-function TvaSpalter({ children }: { children: ReactNode }) {
-  return (
-    <div className="grid min-h-dvh divide-y divide-transparent contrast-more:divide-border-strong lg:grid-cols-2 lg:divide-x lg:divide-y-0">
       {children}
     </div>
   );
@@ -335,19 +269,14 @@ export function AcceptVariantB() {
   };
 
   return (
-    <TvaSpalter>
-      <KontextSpalt
-        fotnot={
-          <span className="flex items-center gap-2">
-            <Clock aria-hidden="true" className="size-4 shrink-0" />
-            Länken gäller i 24 timmar. Har den gått ut? Be {INBJUDEN_AV.split(' ')[0]} skicka en ny.
-          </span>
-        }
-      >
+    <EnSpalt varm>
+      <div className="flex w-full max-w-xl flex-col gap-8">
+        <Ordmarke />
+
         {/* H1 → BRÖDTEXT, inte H1 → H2 (Marcus: "kaka på kaka"). Meningen är
             information, inte en rubrik — den behöver ingen rubrikvikt för att
             läsas först. Som ledande brödtext får hälsningen andas, och ögat
-            får EN tyngdpunkt i spalten i stället för två som konkurrerar. */}
+            får EN tyngdpunkt i stället för två som konkurrerar. */}
         <div className="flex flex-col gap-3">
           <h1 className="font-semibold text-3xl text-text">Välkommen, {MOTTAGARENS_FORNAMN}</h1>
           <p className="text-lg text-text-secondary">
@@ -355,15 +284,16 @@ export function AcceptVariantB() {
             <strong className="font-semibold text-text">{TILLDELAD_ROLL.toLowerCase()}</strong>.
           </p>
         </div>
-        {/* PUNKTLISTAN BORTTAGEN (konvergens-omgång 7, research-grundad):
-            ingen av sex live-mätta sidor har en "vad händer nu"-lista, och
-            våra tre punkter vägde 25 av sidans 95 ord — den enskilt tyngsta
-            posten. Punkt 1 upprepade dessutom formulärets egen rubrik.
-            Källa: docs/research/aktiveringssida-branschmonster-2026-08-03.md */}
-      </KontextSpalt>
 
-      <FormSpalt>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+        {/* Formuläret i eget vitt kort mot den varma fonden (Marcus,
+            konvergens-omgång 8). `rounded-2xl` är appens kort-standard —
+            samma radie som DashboardCard och 38 andra ytor, inte ett värde
+            uppfunnet för prototypen. */}
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8"
+          noValidate
+        >
           <h2 className="font-semibold text-2xl text-text">Sätt ditt lösenord</h2>
 
           <div className="flex flex-col gap-1">
@@ -438,7 +368,12 @@ export function AcceptVariantB() {
             )}
           </Button>
         </form>
-      </FormSpalt>
-    </TvaSpalter>
+
+        <p className="flex items-center gap-2 text-caption text-text-muted">
+          <Clock aria-hidden="true" className="size-4 shrink-0" />
+          Länken gäller i 24 timmar. Har den gått ut? Be {INBJUDEN_AV.split(' ')[0]} skicka en ny.
+        </p>
+      </div>
+    </EnSpalt>
   );
 }
