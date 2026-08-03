@@ -6,8 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 16:33'
-labels: []
+updated_date: '2026-08-03 09:43'
+labels:
+  - ready-for-human
 dependencies: []
+priority: medium
 ordinal: 216000
 ---
 
@@ -36,3 +39,9 @@ KVARSTÅENDE RISK: TASK-126.4 AC#3 bär formuleringen oförändrad och kommer m�
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+KLASSAD ready-for-human / medium (orkestreraren, 2026-08-03, på Marcus delegation). SKÄL: åtgärden är en AC-ändring på TASK-126.4 plus en rättelse av PRD task-126:s Testbeslut. AC- och PRD-text är spec, och spec-ändringar ägs av Marcus — samma gräns som gjorde att orkestreraren INTE skrev om 126.4:s AC i natt utan registrerade fyndet i stället. Blockerar inte i dag: 126.4 är ändå oplockbar tills 126.1 flippas Done.
+<!-- SECTION:NOTES:END -->

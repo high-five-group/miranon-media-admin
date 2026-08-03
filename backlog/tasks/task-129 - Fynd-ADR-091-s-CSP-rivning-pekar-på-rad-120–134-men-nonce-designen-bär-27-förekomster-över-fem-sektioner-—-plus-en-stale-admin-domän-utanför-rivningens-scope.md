@@ -7,8 +7,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 16:26'
-labels: []
+updated_date: '2026-08-03 09:43'
+labels:
+  - ready-for-human
 dependencies: []
+priority: medium
 ordinal: 215000
 ---
 
@@ -37,3 +40,9 @@ RÖRLIGT RADINTERVALL: TASK-127.1:s landning ändrade SECURITY-SPEC med 26+/51- 
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+KLASSAD ready-for-human / medium (orkestreraren, 2026-08-03, på Marcus delegation). SKÄL: kortet bär två åtgärdsvägar som utesluter varandra och valet är ett ADR-beslut — antingen amenderas ADR-091 punkt 4 så intervallet blir rubrikbaserat och täcker hela ytan, eller så bär Grind 0/Fas 7:s CSP-skiva ett explicit AC om samma sak. Att välja åt Marcus vore att besluta hur en ADR:s räckvidd ska läsas. NOT: kortets symptom 2 (rad 461, admin.miranon.se mot ADR-091:s admin.miranon.dev) är mekaniskt trivialt och skulle kunna brytas ut som eget ready-for-agent-kort om Marcus vill ha den delen gjord utan att avgöra den större frågan.
+<!-- SECTION:NOTES:END -->
