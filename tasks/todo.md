@@ -29,6 +29,32 @@ plus **två tillägg**: marketplace-entryns föråldrade `plugins[0].description
 resumen — släpp lappen som ABSOLUT SISTA handling efter all git-aktivitet,
 eftersom varje git-skrivning återtar den, och verifiera alltid mot filens
 frånvaro, aldrig mot exitkoden.
+**DEL 9 — HELA CARRY-BLOCKET AVBETAT.** Sex PR:er landade (`#738` flipp ·
+`#739` **L456–L460** · `#740` **ADR-095** · `#741` **task-139** · `#742`
+research · `#632`/`#633`/`#634` dependabot-trion), plus hub `76d47b7` och
+uppströmsrapporten **postad** till `anthropics/claude-code#72714` (öppen sedan
+2026-07-01 med noll kommentarer — vår 22-worktrees-per-dag-mätning är första
+oberoende bekräftelsen). **ADR-095:** Marcus öppnade för Supabase-migrering av
+hela dokumentationssubstratet; nio granskade system sade nej, starkast
+**Backstage självt** som kallar sin egen databas en *ingest-cache*. Sju beslut,
+paraply-form; öppet eskalerat är den semantiska frågan vad som RÄKNAS som barn.
+**DEPENDABOT:** `#635` fick `recreate` i stället för armering — den pinnar
+6.0.0 medan 6.0.1 rättar exakt den kastväg (`PerformanceObserver` utan optional
+chaining, ny i v6) som gör bumpen riskabel; karensen på sju dagar släppte
+igenom fel version med 6 h marginal. **MARKETPLACE-DOMEN REVS AV SIN EGEN
+UPPFÖLJNING:** hub-agentens villkorade mandat tog **stopp-vägen** — Discover
+läser `entry.description` UTAN fallback (noll träffar på `entry.description??`
+i bundlen), så borttag hade tystat beskrivningen före install-beslutet. Värre
+följdfynd: **`7d4bf51` var inte neutralt** — samma vyer renderar `entry.version`,
+så Del 7:s borttag rev versionsraden ur Discover. Åtgärd: fjärde vägen —
+version återställd (validatorns cross-check vaktar den igen), description
+ersatt med kort stabil bläddringstext som inte kan drifta. **EGNA FEL:**
+ADR-räkningen missad (`#740` rött, ADR-039-grinden bor i Lint-jobbet, ej
+check:docs) · ett "för/efter-experiment" på `core.hooksPath` som inte var ett
+(värdet redan läkt — vilken worktree som helst läker den DELADE configen).
+**NÄSTA: `T123`** (backlog.md-bumpens två efterslängar) · S96-resume (Grind 0
+DNS + `T95`) · S93-resume (appen). Numrering: **096/L461/T124/task-140/f47**;
+`vol-06` måste roteras FÖRE nästa hub-lyft.
 — **HOOK-SKULDEN BETALD, OCH `ask` RIVET SOM BESLUTSVÄRDE.** Resumen mötte en
 ägarlapp från en **död session** (noll processer, ingen transcript-fil, tom
 scratchpad — stale efter ~3 sekunder mot tröskelns 12 timmar) och betalade
