@@ -1,10 +1,10 @@
 ---
 id: TASK-127.5
 title: 'Skiva: Invite-EF:en — användarinbjudan med låst roll och e-post'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-03 12:18'
+updated_date: '2026-08-04 10:42'
 labels:
   - ready-for-agent
 dependencies:
@@ -53,10 +53,18 @@ Allowlist + config.toml uppdaterade enligt syskonmönstret (create-admin-user). 
 Grindar körda: typecheck 0 fel · biome 0 fel (befintliga varningar i andra filer orörda) · build grön · npm run test:api 450/450 gröna (7 nya invite-user-tester + full regressionssvit).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+invite-user EF byggd på create-admin-user:s exakta form (handleCors→metod-vakt 405→requireUser 401→ADMIN_EMAILS-gate 403). Roll och e-post låsta i app_metadata (ej user_metadata — verifierat mot Supabase-docs att user_metadata är själv-redigerbart och hade brutit AC#2). Omskick för utgången inbjudan verifierat källkods-nivå mot GoTrue (obekräftad rad → sendInvite utan dubblett; bekräftad rad → 422 email_exists). Live-verifierat end-to-end i staging mot en h5gruppen.se-adress (engångs-diagnos, service-role-nyckel ej committad, test-user raderad efteråt) — bevisar INTE leverans till Roger/Lottas riktiga domäner, DoD #7 på förälderkortet TASK-127 kvarstår oförändrat. Grindar: typecheck 0 fel, biome 0 fel, build grön, npm run test:api 450/450 gröna (7 nya invite-user-tester + full regressionssvit).
+
+Stängningsverifikat (hygien-uppdrag 2026-08-04): PR #649 (gren feat/task-127-5-invite-user-ef) MERGED, merge-SHA 0ca3f13bd40fbb44a7ffc4bf016b9043db7846aa, mergad till main 2026-08-03T13:05:45Z. gh pr checks 649: samtliga jobb pass/skip, ingen fail (Acceptance hermetisk, Pure+Build, Lint+Audit+TypeCheck, CodeQL, Docs link check, Analyze actions/js-ts, CI Passed or Skipped; Staging/A11y skipping, path-villkorat).
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
