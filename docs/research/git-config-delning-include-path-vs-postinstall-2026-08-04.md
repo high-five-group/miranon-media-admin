@@ -28,12 +28,17 @@ skriptet som anropar `git config` direkt — inte en versionshanterad
 config-fil — och det mönstret är källkods-verifierat i Huskys egen
 implementation, inte bara sekundär dokumentation.
 
-**Oväntat fynd som väger tungt i domen:** vid mätning under detta pass
-(2026-08-04, ca 20:56 CEST) stod `core.hooksPath` **ÅTER absolut**
-(`/Users/marcus/Repon/miranon-media-admin/.githooks`) — cirka tio minuter
-efter att fix-commit `ed99fe0d` (20:46:51) påstod att värdet var "rättat...
-verifierat i huvudkatalogen och i en verklig worktree". Se § Oväntat fynd.
-Det är inte en invändning mot rekommendationen — det är extra stöd för den:
+**Oväntat fynd som väger tungt i domen:** `core.hooksPath` mättes **absolut**
+(`/Users/marcus/Repon/miranon-media-admin/.githooks`) i den delade
+`.git/config` både före OCH efter att `T121`-fixen (PR #718,
+`fix/t121-hookspath-relativ`) landade i `origin/main` (mergad
+2026-08-04T19:02:09Z / 21:02:09 CEST enligt `gh pr list`) — mätt 20:56 CEST
+(före) och igen 21:09 CEST (sju minuter efter). Se § Oväntat fynd för den
+strukturella förklaringen: en commit kan aldrig i sin diff ändra ett levande
+`.git/config`-värde, eftersom filen aldrig är spårad (§ Delfråga 1) — vad
+commit-meddelandet beskrev som en runtime-rättelse är därför ett separat,
+oberoende steg vars beständighet den här mätningen inte kan bekräfta. Det är
+inte en invändning mot rekommendationen — det är extra stöd för den:
 vilken distributionsmekanism vi än väljer (postinstall ELLER `include.path`)
 skyddar den **inte** mot att något skriver över värdet igen efteråt, eftersom
 `include.path` bara ger ett förval som ett direkt lokalt `git config`-anrop
@@ -285,29 +290,64 @@ commit).
   dryga hundratalet `[branch "..."]`-stanzor med `vscode-merge-base` —
   VS Code Git-tilläggets egna, per-branch, per-maskin bokföring. Ingen av
   dessa är kandidater för delning.
-- `.githooks/pre-commit` innehåller sedan commit `ed99fe0d` (2026-08-04,
-  denna worktrees historik) en vakt (§ "Vakt: core.hooksPath måste vara
-  RELATIV") som skriver en VARNING (inte fällning) till stderr om
-  `core.hooksPath` någonsin läses som en absolut path.
+- `.githooks/pre-commit` innehåller sedan commit `ed99fe0d` (mergad till
+  `origin/main` 2026-08-04T19:02:09Z som PR #718,
+  `fix/t121-hookspath-relativ` — bekräftat via `gh pr list`) en vakt (§
+  "Vakt: core.hooksPath måste vara RELATIV") som skriver en VARNING (inte
+  fällning) till stderr om `core.hooksPath` någonsin läses som en absolut
+  path. **Denna worktree** (grenen `worktree-agent-a3d401f6f0399a5ec`, skapad
+  från `392b7f57`) ligger däremot bakom PR #718 — `ed99fe0d` är inte en
+  ancestor av dess `HEAD` (`git merge-base --is-ancestor` bekräftar), så det
+  lokalt utcheckade `.githooks/pre-commit` i denna worktree saknar
+  vakten. Det är en helt vanlig, väntad egenskap hos oberoende worktrees
+  (var och en måste själv hämta hem senare commits) — inget mystiskt.
 
 ### Oväntat fynd (utanför frågan, men mätt och load-bearing för domen)
 
-Vid mätning i denna worktree 2026-08-04 ca 20:56 CEST — **efter** att
-fix-commit `ed99fe0d` (20:46:51 samma dag) landat i historiken:
+`core.hooksPath` mättes **absolut** i den EN delade `.git/config` (samma fil
+alla worktrees läser, § Delfråga 3) vid två separata tillfällen:
 
 ```console
-$ git config --get core.hooksPath
+$ git config --get core.hooksPath   # 2026-08-04 20:56 CEST — FÖRE PR #718s merge (21:02:09 CEST)
+/Users/marcus/Repon/miranon-media-admin/.githooks
+
+$ git config --get core.hooksPath   # 2026-08-04 21:09 CEST — 7 min EFTER PR #718s merge
 /Users/marcus/Repon/miranon-media-admin/.githooks
 ```
 
-Alltså **absolut**, trots att fix-commitens meddelande explicit påstår
-*"Värdet rättat till .githooks, verifierat i huvudkatalogen och i en verklig
-worktree."* `.git/config`s mtime (`stat`) var 20:51:25 — fem minuter innan
-mätningen och strax efter fix-committen — så filen har skrivits om av något
-sedan fixen, men vad exakt som skrev den (VS Code Git-extensionens frekventa
-`vscode-merge-base`-skrivningar, ett annat verktyg, eller en manuell
-`git config`-körning) är **inte identifierat i detta pass**. Detta ändrar
-inte rekommendationen — det förstärker den: se § Dom, punkt 3.
+Den strukturella förklaringen, verifierad snarare än gissad: `git show
+ed99fe0d --stat` visar att fix-commiten bara ändrar två filer —
+`.githooks/pre-commit` och `tasks/threads/README.md`. **Den kan
+strukturellt inte ha ändrat `.git/config` själv**, av exakt det skäl § 1
+etablerar: filen är aldrig spårad, så ingen commit — hur väl den än
+beskriver en rättelse i sitt meddelande — kan bära den rättelsen i sin diff.
+Commit-meddelandets *"Värdet rättat till .githooks, verifierat i
+huvudkatalogen och i en verklig worktree"* beskriver alltså med nödvändighet
+en SEPARAT, oberoende runtime-åtgärd (ett `git config`-anrop utfört vid
+sidan av committen) — och den här mätningen kan inte bekräfta att den
+åtgärden nådde, eller höll sig kvar i, just DEN HÄR repo-instansens delade
+`.git/config`. Jag har inte identifierat vad som satte/återställde värdet
+till absolut, bara att det konsekvent MÄTS absolut. Detta är en ren
+illustration av delfråga 1 + 2 i praktiken: distribution av ett förval
+(oavsett mekanism) är inte samma sak som en garanti om vad den levande,
+ospårade filen faktiskt innehåller vid ett givet ögonblick.
+
+Som sanity-check kördes origin/mains FAKTISKA, aktuella `.githooks/pre-commit`
+(hämtad färsk via `git show origin/main:.githooks/pre-commit`) manuellt mot
+detta levande, absoluta värde — vakten triggade korrekt:
+
+```console
+$ bash /tmp/pre-commit-main.sh
+VARNING (T121): core.hooksPath är ABSOLUT (/Users/marcus/Repon/miranon-media-admin/.githooks).
+  Varje worktree kör då huvudkatalogens hook, inte sin egen.
+  Rätta med:  git config core.hooksPath .githooks
+EXIT=0
+```
+
+Vakt-LOGIKEN fungerar alltså precis som avsett. Gapet är inte i mekanismen
+utan i att den levande config-filen — oavsett vilken distributionsväg som
+används för att sätta den — förblivit (eller åter blivit) absolut. Detta
+ändrar inte rekommendationen — det förstärker den: se § Dom, punkt 1 och 3.
 
 Detta pass ändrar inget (uppdraget är rent research), men fyndet bör
 registreras som en ny, öppen instans av `T121`-klassen snarare än tyst
@@ -319,15 +359,20 @@ förkastas, i linje med `CLAUDE.md` § "Triage av det oväntade".
 `core.hooksPath` eller annan repo-config.** Tre skäl, i fallande vikt:
 
 1. **Det löser inte det problem vi faktiskt hade.** `T121`s rotorsak var
-   *drift efter korrekt uppsättning* (§ Vår situation, § Oväntat fynd) — inte
-   att det saknades ett sätt att distribuera ett förval. Per
-   `git-config(1)`s egen precedensregel (§ Delfråga 2, "last value found
-   taking precedence over values read earlier") är en inkluderad fil per
-   design **överskrivningsbar** av ett direkt lokalt `git config`-anrop —
-   exakt den händelse som orsakade `T121` och som (oväntat, men mätt) hände
-   igen inom tio minuter efter fixen. `include.path` skyddar mot "ingen fick
-   rätt värde vid klon"; vårt problem var "rätt värde skrevs över senare".
-   Bara en körtids-vakt (den vi redan har) fångar det senare.
+   *drift efter korrekt uppsättning* (§ Vår situation) — inte att det
+   saknades ett sätt att distribuera ett förval. Per `git-config(1)`s egen
+   precedensregel (§ Delfråga 2, "last value found taking precedence over
+   values read earlier") är en inkluderad fil per design
+   **överskrivningsbar** av ett direkt lokalt `git config`-anrop — exakt den
+   klass av händelse som orsakade `T121`, och som (§ Oväntat fynd, mätt två
+   gånger) fortfarande gäller: den levande, delade `.git/config` mäts absolut
+   både före och efter att fix-PR:en landade i `origin/main`, eftersom en
+   commits diff strukturellt aldrig kan bära en ändring av en fil som aldrig
+   är spårad. `include.path` skyddar mot "ingen fick rätt värde vid klon";
+   vårt problem var "rätt värde stod sig inte över tid". Bara en körtids-vakt
+   (den vi redan har, och som bevisligen triggar korrekt mot det nuvarande
+   läget, § Oväntat fynd) fångar det senare — ingen distributionsmekanism kan
+   det, per definition.
 2. **Branschmönstret pekar entydigt åt paket-livscykel-skript, inte delad
    config-fil.** Husky (källkods-verifierad), Next.js och Babel (båda
    verifierade via `package.json`) gör precis vad vi gör: `postinstall`/
@@ -357,13 +402,15 @@ annan nyckel (`include.path` i stället för `core.hooksPath` direkt) — ett
 extra indirektionslager utan extra skydd.
 
 **Vad som FAKTISKT löser felläget vi hade** är redan levererat: den
-mekaniserade vakten i `.githooks/pre-commit` (`ed99fe0d`) som varnar vid
-absolut path, i linje med repots egen `T119`-doktrin ("regler i prosa bryts,
-mekaniserade regler efterlevs"). Given att fyndet ovan visar att värdet drev
-igen inom tio minuter är den öppna följdfrågan **inte** "ska vi byta
-distributionsmekanism" utan **"vad skriver om värdet, och ska vakten
-självläka (auto-korrigera) i stället för att bara varna"** — men det är en
-ny, separat fråga (se rekommendation).
+mekaniserade vakten i `.githooks/pre-commit` (`ed99fe0d`, PR #718) som varnar
+vid absolut path, i linje med repots egen `T119`-doktrin ("regler i prosa
+bryts, mekaniserade regler efterlevs"). Given att fyndet ovan visar att den
+levande config-filen fortfarande mäts absolut efter att fixen landat i
+`origin/main` är den öppna följdfrågan **inte** "ska vi byta
+distributionsmekanism" utan **"varför fick den operationella rättelsen som
+commit-meddelandet beskriver aldrig (eller inte varaktigt) effekt på den
+delade `.git/config`, och ska vakten självläka (auto-korrigera) i stället för
+att bara varna"** — men det är en ny, separat fråga (se rekommendation).
 
 ## Vad jag inte kunde belägga
 
@@ -382,22 +429,27 @@ ny, separat fråga (se rekommendation).
   generella RCE-klassen (fsmonitor, submodule-hooks) är väl belagd, men
   ingen post namngav `include.path`/`includeIf` specifikt som exploaterad
   vektor i sig.
-- **Vad som skrev om `core.hooksPath` till absolut igen** (§ Oväntat fynd) —
-  VS Code Git-extensionen är en rimlig hypotes givet de hundratals
-  `vscode-merge-base`-raderna i samma fil, men jag mätte bara att filen
-  omskrivits (mtime), inte VILKEN process som gjorde det eller om just
-  `hooksPath`-raden var målet för den specifika skrivningen. Detta är en
-  hypotes, inte en slutsats.
+- **Om den runtime-rättelse commit-meddelandet till `ed99fe0d` beskriver
+  ("Värdet rättat till .githooks, verifierat i huvudkatalogen och i en
+  verklig worktree") någonsin faktiskt applicerades på DEN HÄR repo-
+  instansens delade `.git/config`, och i så fall vad som senare skrev över
+  den** (§ Oväntat fynd) — jag mätte bara att värdet konsekvent läser
+  absolut, både före och efter PR #718s merge-tidpunkt. VS Code
+  Git-extensionen (synlig i samma fil via hundratals `vscode-merge-base`-
+  rader) är en rimlig hypotes för VEM som skriver om filen frekvent i denna
+  miljö, men jag har inte isolerat en enskild skrivning till just
+  `hooksPath`-raden. Detta är en hypotes, inte en slutsats.
 
 ## Rekommendation (Code, inte beslut)
 
 1. **Gör ingenting med `include.path` / delad config-fil.** Behåll
    `postinstall` + relativ `core.hooksPath`. Grunden håller inte för
    maskineriet — se § Dom.
-2. **Öppna en ny, avgränsad utredning av VARFÖR värdet drev igen** (§
-   Oväntat fynd) — troligast kandidat att pröva först: om VS Code Git-
-   extensionen (eller någon annan bakgrundsprocess i denna miljö) skriver om
-   `.git/config` på ett sätt som normaliserar/expanderar relativa
+2. **Öppna en ny, avgränsad utredning av varför den delade `.git/config`
+   fortfarande mäts absolut efter att `T121`-fixen landat i `origin/main`**
+   (§ Oväntat fynd) — troligast kandidat att pröva först: om VS Code
+   Git-extensionen (eller någon annan bakgrundsprocess i denna miljö) skriver
+   om `.git/config` på ett sätt som normaliserar/expanderar relativa
    `core.hooksPath`-värden till absoluta vid något internt tillfälle. Detta
    är en ny tråd, inte en del av detta pass.
 3. **Överväg (separat beslut, inte del av detta pass) om `T121`-vakten ska
