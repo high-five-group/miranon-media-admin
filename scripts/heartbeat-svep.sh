@@ -144,6 +144,20 @@
 #   flaggas som kandidat. Vad fältet gör är att ta bort en TREDJE, felaktigt
 #   inkluderad grupp (redan köad) ur kandidat-mängden helt.
 #
+#   Fynd 2026-08-04 (samma S97-natt som TASK-135): en FJÄRDE grupp behöver
+#   samma behandling av motsatt skäl — PR:ar som ÄR genuina
+#   armerings-kandidater men vars författare medvetet lämnats oarmerad
+#   (dependabot-kvartetten #632–#635, väntar på Marcus inbjudan, S97
+#   sessionsdok § "Ej i scope"). De larmade VARJE svep, level-triggered per
+#   L443, tills mekanismen fanns. `HEARTBEAT_EXEMPT_AUTHORS`
+#   (.heartbeat-svep-policy.conf, matchat mot GraphQL-fältet
+#   `author.login`) undantar dem från bit 4 UTAN att göra dem osynliga — en
+#   RUTIN-rad (say(), dämpad av --quiet) ersätter larm-raden. RÖTT/DIRTY
+#   för samma PR:ar är OFÖRÄNDRADE: undantaget rör bara "ingen aktiv
+#   auto-merge-begäran"-tolkningen, aldrig ett verkligt trädfel. Fullt
+#   formval-resonemang (författare vs. etikett, falsifierat mot
+#   .github/dependabot.yml) i policy-filens egen kommentar.
+#
 # EXIT-KODER (fail-closed, bitmask i --once/slutläge)
 #   0   inga LARM — main ev. oförändrad, inga PR:ar RÖDA/DIRTY/kandidater
 #   1   RÖTT      — minst en öppen PR har FAILURE/ERROR i sin check-rollup
@@ -151,7 +165,10 @@
 #   4   KANDIDAT  — minst en öppen, icke-draft PR är CLEAN/UNSTABLE utan
 #                   aktiv auto-merge-begäran OCH inte redan köad
 #                   (isInMergeQueue=false) — möjlig konsumerad armering
-#                   eller aldrig-armerad (TASK-128)
+#                   eller aldrig-armerad (TASK-128). PR:ar vars författare
+#                   står i HEARTBEAT_EXEMPT_AUTHORS räknas INTE in i denna
+#                   bit (fynd 2026-08-04) — de syns i stället som en
+#                   dämpningsbar rutin-rad, se § ARMERINGS-KANDIDAT ovan.
 #       (bitmask-summerade, 1..7 vid flera samtidiga larm)
 #  64   användningsfel — config/flagga saknas eller ogiltig (sysexits
 #       EX_USAGE, samma konvention som staging-semaphore.sh)
@@ -202,6 +219,11 @@ INTERVAL=""
 TIMEOUT=""
 ONCE=0
 QUIET=0
+# Fail-open default: tom array. Deklareras FÖRE source så en policy-fil
+# utan HEARTBEAT_EXEMPT_AUTHORS (äldre spoke-kopia, eller filen saknas helt)
+# lämnar mekanismen av — ingen PR tystas — i stället för att skriptet
+# kraschar på en odefinierad variabel (§ ARMERINGS-KANDIDAT nedan).
+HEARTBEAT_EXEMPT_AUTHORS=()
 
 if [[ -f "${HEARTBEAT_SVEP_POLICY}" ]]; then
     # shellcheck source=/dev/null
@@ -218,6 +240,22 @@ say() { [[ "${QUIET}" -eq 1 ]] || printf '%s\n' "$1"; }
 # Larm-rader (alarm() nedan) skrivs ALLTID, oavsett --quiet — de är hela
 # poängen med svepet (L443: ett tillstånd som håller i ska synas varje gång).
 alarm() { printf '%s\n' "$1"; }
+
+# is_exempt_author <login> — sant om <login> finns i HEARTBEAT_EXEMPT_AUTHORS
+# (.heartbeat-svep-policy.conf § "PR-författare vars öppna PR:ar ALDRIG
+# larmar som ARMERINGS-KANDIDAT"). "${arr[@]:-}" (inte bara "${arr[@]}")
+# är AVSIKTLIGT: bash 3.2 (macOS-default) kastar "unbound variable" på en
+# TOM array under `set -u` utan `:-`-fallbacken, även när arrayen redan är
+# deklarerad — samma idiom som GRIND_UNDANTAG-loopen i
+# deny-grind-genom-pipe.sh.
+is_exempt_author() {
+    local candidate="$1" a
+    for a in "${HEARTBEAT_EXEMPT_AUTHORS[@]:-}"; do
+        [[ -n "${a}" ]] || continue
+        [[ "${candidate}" == "${a}" ]] && return 0
+    done
+    return 1
+}
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -304,6 +342,7 @@ sweep_once() {
                 mergeStateStatus
                 autoMergeRequest { enabledAt }
                 isInMergeQueue
+                author { login }
                 commits(last: 1) {
                   nodes { commit { statusCheckRollup { state } } }
                 }
@@ -316,7 +355,8 @@ sweep_once() {
                 .number, .isDraft, .mergeStateStatus,
                 (.autoMergeRequest != null),
                 (.commits.nodes[0].commit.statusCheckRollup.state // "NONE"),
-                .isInMergeQueue
+                .isInMergeQueue,
+                (.author.login // "")
               ] | @tsv' 2>/dev/null)"
     rc=$?
     set -e
@@ -325,8 +365,8 @@ sweep_once() {
         return 77
     fi
 
-    local granskade=0 antal_rott=0 antal_dirty=0 antal_kandidat=0
-    while IFS=$'\t' read -r nr draft mss automerge rollup inqueue; do
+    local granskade=0 antal_rott=0 antal_dirty=0 antal_kandidat=0 antal_undantagna=0
+    while IFS=$'\t' read -r nr draft mss automerge rollup inqueue author; do
         [[ -n "${nr}" ]] || continue
         granskade=$(( granskade + 1 ))
 
@@ -361,15 +401,35 @@ sweep_once() {
         # felaktigt inkluderad grupp: en korrekt armerad PR som redan köats
         # (autoMergeRequest nollas vid köning, se CLAUDE.md § Landning
         # tabellrad 2) — den ska INTE larma alls.
+        #
+        # En FJÄRDE grupp (fynd 2026-08-04, dependabot-kvartetten #632–#635):
+        # PR:ar vars FÖRFATTARE är medvetet undantagen
+        # (HEARTBEAT_EXEMPT_AUTHORS, .heartbeat-svep-policy.conf) larmar
+        # INTE som kandidat — men rapporteras ändå som en RUTIN-rad (say(),
+        # dämpad av --quiet precis som "N granskade"-sammanfattningen), inte
+        # tystade helt. Se policy-filens kommentar för formvalet
+        # (författare, inte etikett) och varför tystnad vore fel (T108-
+        # klassen: ett tillstånd utan bevakare).
         if [[ "${automerge}" == "false" && "${draft}" == "false" \
               && ( "${mss}" == "CLEAN" || "${mss}" == "UNSTABLE" ) \
               && "${inqueue}" == "false" ]]; then
-            alarm "heartbeat-svep: ARMERINGS-KANDIDAT — PR #${nr} är ${mss} utan aktiv auto-merge-begäran. Kan vara ALDRIG ARMERAD eller UTSPARKAD med konsumerad armering (CLAUDE.md § Landning). Disambiguera: gh pr merge ${nr} --auto --merge"
-            antal_kandidat=$(( antal_kandidat + 1 ))
+            # shellcheck disable=SC2310
+            # AVSIKTLIGT: is_exempt_author() innehåller inga kommandon som
+            # kan misslyckas oväntat (ren bash — for-loop + strängjämförelse
+            # + return), så set -e-avstängningen SC2310 varnar för är
+            # ofarlig här. Samma disciplin som de två SC2310-disablen redan
+            # i detta skript (§ Körläge nedan).
+            if is_exempt_author "${author}"; then
+                say "heartbeat-svep: PARKERAD (undantagen) — PR #${nr} är ${mss} utan aktiv auto-merge-begäran, författare '${author}' i HEARTBEAT_EXEMPT_AUTHORS. Larmar inte som armerings-kandidat."
+                antal_undantagna=$(( antal_undantagna + 1 ))
+            else
+                alarm "heartbeat-svep: ARMERINGS-KANDIDAT — PR #${nr} är ${mss} utan aktiv auto-merge-begäran. Kan vara ALDRIG ARMERAD eller UTSPARKAD med konsumerad armering (CLAUDE.md § Landning). Disambiguera: gh pr merge ${nr} --auto --merge"
+                antal_kandidat=$(( antal_kandidat + 1 ))
+            fi
         fi
     done <<<"${rows}"
 
-    say "heartbeat-svep: ${granskade} öppna PR:ar granskade mot ${BRANCH} — ${antal_rott} röda, ${antal_dirty} dirty, ${antal_kandidat} armerings-kandidater."
+    say "heartbeat-svep: ${granskade} öppna PR:ar granskade mot ${BRANCH} — ${antal_rott} röda, ${antal_dirty} dirty, ${antal_kandidat} armerings-kandidater, ${antal_undantagna} undantagna (parkerade)."
 
     [[ "${antal_rott}"     -gt 0 ]] && verdict=$(( verdict | 1 ))
     [[ "${antal_dirty}"    -gt 0 ]] && verdict=$(( verdict | 2 ))
