@@ -15,6 +15,30 @@
 
 ## Aktuellt fokus
 
+**Session 96 ⏸️ PAUSAD (2026-08-03 kväll, tredje pausen — `lifecycle:
+paused`)** — **PROTOTYP-PASSET: SJUTTON VARV OCH TRE RESEARCH-PASS.**
+Marcus dom vid start: *"byggdes så dåligt och slarvigt så det liknar inget.
+Väldigt besviken."* Passet rev i tur och ordning varianterna A/C ·
+prototyp-headern (vy-axeln in i railen som generisk tredje axel) ·
+1200 px-ramen · fotot · punktlistan och bekräfta-lösenord-fältet
+(research-grundat) · tvåspalts-skalet · logotypen i tre former.
+**Textmängden 95 → 47 ord** (branschsnitt ~17). **RESEARCH:** aktiverings-
+sidors branschmönster (`#676`) gav den mätbara kärnan i "KAOS" och det
+strukturella svaret på H1/H2 · scrollbar-gutter-fonden (`#677`) landade i
+ett belagt **NEJ** — Chromium målar aldrig `background-image` i gutter-ytan
+(spec-gap `w3c/csswg-drafts#8099`), löst med kamouflage-lager i exakt
+sRGB-mitten · fokusring vid musklick (`#679`) svarade **JA och bredare än
+auth**. **`T117` + `T118` mintade.** Fyndet i `T117`: **React Aria äger
+appens fokusbeteende**, inte `base.css`. **⚠️ `T118`: MERGE-KÖN ÄR
+BLOCKERAD** — tre nya high-advisories fäller `audit-ci` på orört `main`
+(publicerade 17:01→17:18 under passet). Sex PR:er står armerade och köar;
+strategivalet är Marcus per ADR-028. **Numrering: S96 behålls/ADR-095/L444
+(+2 fragment)/T119/task-133/f47.** **NÄSTA: Marcus väljer säkerhetsstrategi
+(`T118`) → kön töms av sig själv → Marcus låser facit → prototypkoden landar
+i två PR:er (`base.css` för sig) → byggkrav till `TASK-127.3`/`127.6`.**
+Full narrativ: sessionsdok S96 Del 9 + PAUSLÄGE. *(Föregående kadensrad
+nedan.)*
+
 **Session 96 ▶️ ÅTERUPPTAGEN (2026-08-03 kväll, andra resumen —
 `lifecycle: active`)** — **PROCESSFELET BAKOM KONVERGENS-TEMPOT UTRETT OCH
 ÅTGÄRDAT FÖRE något prototyparbete.** Marcus fråga öppnade passet: var det
