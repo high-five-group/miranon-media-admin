@@ -156,11 +156,7 @@ html[data-auth-fond="true"] {
 
      Rännstenen är ORÖRD. Inget hopp införs. */
   background-color: color-mix(in srgb, var(--mm-primary-tint), var(--mm-accent-tint));
-  background-image: linear-gradient(
-    to bottom right,
-    var(--mm-primary-tint),
-    var(--mm-accent-tint)
-  );
+  background-image: linear-gradient(to bottom right, var(--mm-primary-tint), var(--mm-accent-tint));
 }
 
 html[data-auth-fond="true"] body {
