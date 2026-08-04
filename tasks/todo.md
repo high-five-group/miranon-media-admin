@@ -15,6 +15,23 @@
 
 ## Aktuellt fokus
 
+**Session 96 ⏸️ PAUSAD (2026-08-04, fjärde pausen — `lifecycle: paused`)**
+— **HELA T118-SVANSEN EXEKVERAD OCH LANDAD; S97 RESERVERAD FÖR
+MEKANISERINGS-PROGRAMMET.** Dagens facit: T118-fixen `#684` → kön tömd
+(19 PR:er landade totalt under passet) → resume-flippen + Del 10 (`#689`)
+→ prototyp-facit landat (`#690` base.css-fonden + `#691` VariantB/bilagor)
+→ delegationsvågen: `TASK-129` (`#687`+`#692`) · `TASK-133` ADR-028-am
+(`#693`) · `TASK-135` svep-kallstarten (`#694`) · `T119` mintad (`#695`)
+· `TASK-134` fokusringen (`#696`) · `TASK-137` mail-låset (`#697`, 26/26
+fail-closed) → slutbunten fyra kort Done + Del 10-am + `TASK-138`
+(`#698`). Fem larmärenden stängda med instansierat verifikat.
+**Installationer klara** (Resend-plugin/hostad MCP · gddy CLI+skill ·
+Vercel MCP) — auth är Marcus-moment i S97:s start. **NÄSTA: S97
+(mekaniserings-programmet, T119: skarpbevis + hookdesigner) → därefter
+S96-resume (Grind 0 DNS + T95) och S93 parallellt.** Numrering:
+S97/ADR-095/L444(+2)/T120/task-139/f47. Full narrativ: sessionsdok S96
+Del 10 + Del 10-am + PAUSLÄGE. *(Föregående kadensrad nedan.)*
+
 **Session 96 ▶️ ÅTERUPPTAGEN (2026-08-04, tredje resumen — `lifecycle:
 active`)** — **T118 LÖST FORSKNINGSGRUNDAT, KÖN TÖMD, BESLUTSBORDET
 EXEKVERAS.** Research `#682` VERIFIERADE riktad overrides-bump och
