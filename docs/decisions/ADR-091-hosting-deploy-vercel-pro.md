@@ -127,3 +127,46 @@ normalfallet, inte en inkonsekvens. DMARC-, SPF- och DKIM-arbetet i Grind
 subdomänen — men den är uttryckligen inte i scope nu, och ingen förberedelse
 byggs för den (över-engineering-vakten). Raden finns för att nästa läsare som
 stöter på `miranon.se` ska slippa dra slutsatsen att domänvalet är fel.
+
+### 2026-08-04 (S96) — Punkt 4 blir rubrikbaserat, inte radintervall-baserat
+
+`TASK-129` (fynd, 2026-08-02) visade att punkt 4:s radintervall
+(`SECURITY-SPEC.md` rad 120–134) redan pekade fel innan rivningen hann
+exekveras: `TASK-127.1`s landning (commit `6fbb6290`, PR #620, kl. 18:21
+samma dag men EFTER denna ADR mintades kl. 16:41) ändrade filen med 26
+tillägg/51 borttagningar, och den falsifierade nonce-designen som ska rivas
+sträcker sig långt utanför de 15 raderna — över hela §1 "Content Security
+Policy (CSP Level 3)" (rad 16, med
+underrubrikerna "Nonce-baserad strikt CSP" och "Vite-plugin för CSP-nonce",
+den senare med komplett plugin-kod), §2:s "CSP-direktiv för Trusted Types"
+och §9 Bilaga: Säkerhetschecklistans "CSP och headers" — den sistnämnda är
+just det instrument Grind 0/Fas 7 ska använda för att verifiera att rivningen
+är klar.
+
+Marcus beslut 2026-08-04 (S96-sessionen, chattkvittens; bokförd i
+sessionsdok Del 10): **Åtgärdsväg A** — amendera denna ADR så punkt 4:s
+rivnings-scope identifieras via rubrik i stället för radintervall. Skälet
+är generellt, inte specifikt för denna ADR: radnummer i en ADR åldras varje
+gång den rivna filen ändras av annat, senare arbete — vilket precis hände
+här samma dag ADR:n skrevs.
+
+**Punkt 4 läses därför om:** rivningen omfattar SAMTLIGA nonce-bärande
+sektioner i `SECURITY-SPEC.md`, identifierade via rubrik snarare än
+radnummer:
+
+- `## 1. Content Security Policy (CSP Level 3)` i sin helhet, inklusive
+  underrubrikerna `### Nonce-baserad strikt CSP` och `### Vite-plugin för
+  CSP-nonce` (komplett med plugin-kod)
+- `#### CSP-direktiv för Trusted Types` (under `## 2. Trusted Types`)
+- `### CSP och headers` under `## 9. Bilaga: Säkerhetschecklista`,
+  inklusive kryssraden "CSP Level 3 implementerad med nonce per request"
+
+Denna amendering ändrar ENDAST HUR scopet identifieras — inte NÄR
+rivningen sker. Rättelsen exekveras alltjämt vid Grind 0-exekveringen eller
+Fas 7:s CSP-skiva, precis som ursprungspunkt 4 sa. `SECURITY-SPEC.md` självt
+rörs inte av `TASK-129` eller denna amendering.
+
+Fyndets symptom 2 (samma kort: `SECURITY-SPEC.md` rad 461 bar
+`admin.miranon.se` mot denna ADR:s punkt 2-beslut `admin.miranon.dev`) låg
+utanför punkt 4:s rivnings-scope helt — CSP-mönstret är inte domänvalet —
+och är därför utbrutet som eget, fristående kort: `TASK-136`.

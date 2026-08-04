@@ -7,10 +7,12 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 16:26'
-updated_date: '2026-08-03 09:43'
+updated_date: '2026-08-04 10:49'
 labels:
   - ready-for-human
 dependencies: []
+modified_files:
+  - docs/decisions/ADR-091-hosting-deploy-vercel-pro.md
 priority: medium
 ordinal: 215000
 ---
@@ -35,14 +37,20 @@ RÖRLIGT RADINTERVALL: TASK-127.1:s landning ändrade SECURITY-SPEC med 26+/51- 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 KLASSAD ready-for-human / medium (orkestreraren, 2026-08-03, på Marcus delegation). SKÄL: kortet bär två åtgärdsvägar som utesluter varandra och valet är ett ADR-beslut — antingen amenderas ADR-091 punkt 4 så intervallet blir rubrikbaserat och täcker hela ytan, eller så bär Grind 0/Fas 7:s CSP-skiva ett explicit AC om samma sak. Att välja åt Marcus vore att besluta hur en ADR:s räckvidd ska läsas. NOT: kortets symptom 2 (rad 461, admin.miranon.se mot ADR-091:s admin.miranon.dev) är mekaniskt trivialt och skulle kunna brytas ut som eget ready-for-agent-kort om Marcus vill ha den delen gjord utan att avgöra den större frågan.
+
+LÖST via ÅTGÄRDSVÄG A, beslutad av Marcus 2026-08-04 i S96-sessionen (chattkvittens; bokförd i sessionsdok Del 10 av orkestreraren). ADR-091 amenderad (Updates-block "2026-08-04 (S96) — Punkt 4 blir rubrikbaserat, inte radintervall-baserat"): punkt 4:s rivnings-scope läser nu SAMTLIGA nonce-bärande rubriker i SECURITY-SPEC.md i stället för radintervallet 120–134 (som redan pekade fel, mätt: TASK-127.1:s commit 6fbb6290 ändrade filen 26+/51- EFTER att ADR-091 mintades samma dag). SECURITY-SPEC.md självt är INTE rört av detta kort — rivningen exekveras alltjämt vid Grind 0/Fas 7 per ursprungspunkt 4. Symptom 2 (rad 461, admin.miranon.se) utbrutet som eget ready-for-agent/low-kort: TASK-136.
+
+PREMISS-PASS (ADR-086): kortets radnummer och rubrik-citat (rad 16/31/58/223/822, rad 461) verifierade EXAKT mot dagens HEAD — samtliga träffar. DIVERGENS funnen och rapporterad, ej byggd vidare på: kortets 'nonce'-räkning ('27 förekomster... över fem rubriker') mätte 40 case-insensitive / 36 case-sensitive-lowercase / 30 rader vid omräkning 2026-08-04 (grep -o -i 'nonce' resp. grep -c -i) — sannolikt filändringar mellan fyndet och denna åtgärd. Räkningen är INTE bindande för amenderingen (som är rubrik- inte räknebaserad per uppdraget), så divergensen påverkar inte lösningen. Samma mönster på AVGRÄNSNING-stycket: '19 filer totalt' för frasen 'Publicerad på miranon.se' mätte 14 filer 2026-08-04 (bokfört på TASK-136 i stället, eftersom den frasen hör till det utbrutna kortets avgränsning, inte detta korts amendering).
 <!-- SECTION:NOTES:END -->
