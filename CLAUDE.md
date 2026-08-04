@@ -164,19 +164,64 @@ sessionsstart och uppdateras inte retroaktivt. **Fråga "bestäms detta vid
 sessionsstart?" innan du planerar ett bevis som förutsätter motsatsen.**
 Underlag: `tasks/lessons.d/hook-registrerad-mitt-i-sessionen-laddas-inte.md`.
 
-### Agenter kan INTE arbeta cross-repo — och varje worktree kostar
+### Worktree-isoleringens gräns går vid EGET REPOS huvudkatalog — inte vid cross-repo
 
-En worktree-isolerad agent kan **bara** göra git-operationer i sin egen
-worktree. Harnesset avvisar varje form som pekar utanför den — `cd ~/annat-repo
-&& git status`, `git -C ~/annat-repo status`, `EnterWorktree` mot ett syskonrepo.
-Mätt 2026-08-04 (S97) när en bygg-agent dispatchades mot hub-repot
-`~/Repon/marcus-system`: tre oberoende former, alla avvisade.
+**Gränsen är EN sak och bara en:** en worktree-isolerad agent kan inte rikta
+**git-kommandon via Bash** mot **sitt eget repos huvudkatalog** (den delade
+checkouten som äger `.git`-common-dir för alla dess worktrees). Allt annat är
+fritt — inklusive andra repon på disken.
 
-**Konsekvensen är operativ, inte teoretisk:** hub-ändringar — plugin-skills,
-`SYSTEMET.md`, hubbens lessons-volymer — **görs av orkestreraren själv**.
-Delegera dem aldrig till en bygg- eller research-agent; uppdraget kan inte
-utföras, och agenten bränner ett helt pass på att upptäcka det. Agenten i S97
-stoppade korrekt i stället för att kringgå spärren, men passet var förlorat.
+Harnessets avvisningstext, verbatim (mätt 2026-08-04, S97; känn igen den, den
+är engelsk och generisk till skillnad från våra egna svenska hook-skäl):
+
+```text
+This agent is isolated in the worktree <path>, but this command redirects git
+to the shared checkout via -C. Refusing to run it — a worktree-isolated agent's
+git operations must target its own worktree.
+```
+
+Nyckelordet är **`shared checkout`**, inte "annat repo". Förstaparten säger
+samma sak — `code.claude.com/docs/en/sub-agents.md`: *"a command that redirects
+git into **the main checkout** fails with an error, whether it uses `git -C`,
+`--git-dir`, a `GIT_DIR` or `GIT_WORK_TREE` variable, or a `cd` into the main
+checkout first. **A command too complex to check also fails**"*.
+
+**Den fullständiga matrisen, mätt cell för cell (S97, 2026-08-04):**
+
+| Mål | Isolerad agent | Oisolerad agent |
+|---|---|---|
+| Egen worktree, allt | OK | — |
+| **Eget repos huvudkatalog — git via Bash** (`status`, `log`, `-C`, `cd &&`) | **AVVISAS** — även ren LÄSNING | OK |
+| Eget repos huvudkatalog — **Read-verktyget** | **OK** — spärren gäller Bash-git, inte filläsning | OK |
+| Annat repo (hubben) — läsning | OK | OK |
+| Annat repo — skrivning, `git add`, `git commit` | **OK** | OK |
+
+Två celler är kontraintuitiva och värda att minnas: **läsning** mot eget repos
+huvudkatalog avvisas (spärren skiljer inte på läs/skriv), medan
+**Read-verktyget** mot samma katalog går igenom (spärren sitter på Bash-git,
+inte på filsystemet).
+
+**Konsekvensen är operativ:** hub-ändringar — plugin-skills, `SYSTEMET.md`,
+hubbens lessons-volymer — **kan delegeras**, till en agent som kör
+**oisolerat**. Kör den i egen worktree fungerar hub-arbetet fortfarande, men
+den kan inte röra spokens huvudkatalog under tiden.
+
+**OPRÖVAT, anta ingenting:** `EnterWorktree` mot ett syskonrepo. Den är en
+annan mekanism än `git -C` och kan mycket väl avvisas — den ingick i S97:s
+ursprungliga påstående men har aldrig mätts isolerat.
+
+**Varför raden stod fel i tre veckor, och vad det lär:** den sade tidigare att
+"agenter kan INTE arbeta cross-repo" och att hub-arbete aldrig får delegeras.
+Påståendet vilade på **en** mätning — en worktree-isolerad bygg-agent mot
+hub-repot — vars avvisning tolkades som en cross-repo-spärr utan att texten
+lästes. Den troliga verkliga orsaken står i förstapartscitatet ovan: `cd
+~/annat-repo && git status` matchar både `cd`-mönstret och "too complex to
+check", och fälls därför **utan att målet spelar roll**. Slutsatsen
+generaliserades sedan från en agenttyp till alla, och från ett kommandomönster
+till hela cross-repo-klassen. Rättat 2026-08-04 efter en fyra-cellsmätning där
+en isolerad agent både läste hubben och **committade i ett främmande repo**
+(commit `c3a9eb5` i ett kastbart testrepo). En avvisning berättar VAD som
+stoppades — den berättar inte VARFÖR förrän man läser den.
 
 **Varje worktree-skapelse har dessutom en mätt bieffekt.** Claude Code skriver om
 huvudrepots `core.hooksPath` till en ABSOLUT path i den DELADE `.git/config` vid
