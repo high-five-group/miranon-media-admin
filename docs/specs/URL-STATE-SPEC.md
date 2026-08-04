@@ -170,7 +170,7 @@ Ingen URL-state. Statiska lankar -- inget att filtrera eller dela.
 
 ## Dev-parametrar — prototyp-substratet (ADR-074)
 
-Endast i dev-lage (`import.meta.env.DEV`) bar routes tva extra
+Endast i dev-lage (`import.meta.env.DEV`) bar routes tre extra
 query-params for UI-prototyp-passen (prototype-skillen; vaxlaren
 `src/components/dev/PrototypeSwitcher.tsx`):
 
@@ -178,6 +178,7 @@ query-params for UI-prototyp-passen (prototype-skillen; vaxlaren
 |-------|--------|-----------|
 | `variant` | stabil nyckel `a`/`b`/`c` | Vald prototyp-variant; franvarande = skarpa vyn |
 | `data` | `verklig` | Vaxlar demo→verklig data (demo ar konvergens-default) |
+| `<vyParam>` | semantisk vy-nyckel (`login`, `accept`) | VALFRI tredje axel: vilken SKARM i familjen som visas. Parameternamnet agas av call-siten (default `vy`; auth-familjen kor `skarm`) |
 
 Nyckel-livscykeln: divergens-varianter far stabila nycklar `a`/`b`/`c`;
 vinnaren BEHALLER sin nyckel genom konvergensen (ingen omdopning);
@@ -186,7 +187,14 @@ vardet utan oversattning. Aliaser i vaxlaren ar enbart legacy-inmappning
 for historiska URL:er — aldrig for nya pass. Steg adresseras inte i
 URL:en; frysta steg lever som snapshot-par i sessionsbilagorna. I
 produktion ar parametrarna inerta (vaxlaren monteras ej; skarpa vyn
-renderas). Fullt beslut: [ADR-074](../decisions/ADR-074-prototyp-substratets-adress-struktur-och-vaxlar-standard.md).
+renderas).
+
+Vy-axeln (ADR-074 Amendering 6, S96): URL:en bar SEMANTISKA nycklar aven
+om knappen visar ordningstalet 1..N — talet ar UI-form, inte adress.
+Axeln renderas endast nar familjen har mer an en vy; en ensam vy ger
+ingen knapp. Saknas eller ar okand parametern faller axeln tillbaka pa
+FORSTA vyn, samma default som routen renderar, sa knapp och yta aldrig
+pekar at olika hall. Fullt beslut: [ADR-074](../decisions/ADR-074-prototyp-substratets-adress-struktur-och-vaxlar-standard.md).
 
 ---
 

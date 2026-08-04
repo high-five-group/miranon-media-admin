@@ -86,6 +86,47 @@
 > · "Data: demo"/"Data: verklig") — URL-korrelationen och
 > stegLabel-kedjorna utgår ur UI:t (bor i kod/trail; hemmabyggd
 > copy-känsla var fyndet).
+>
+> **Amendering 6 (Session 96, 2026-08-03 — Marcus-direktiv i
+> `TASK-127.2`:s konvergens-pass; UTVIDGAR beslut 1:s nyckelrymd, river
+> ingenting):** växlaren får en TREDJE, VALFRI axel — **VY**, för
+> prototyp-familjer som bär flera SKÄRMAR i samma variant (auth-familjen:
+> login och inbjudan).
+>
+> 1. **URL-kontraktet utvidgas till tre parametrar:** `?variant=` ·
+>    `?data=` · `?<vyParam>=<vy-nyckel>` (default-namn `vy`;
+>    auth-familjen kör `skarm`). Vy-nycklarna är SEMANTISKA i URL:en
+>    (`?skarm=login`), aldrig ordningstal — läsbar URL. Axeln är
+>    valfri: utan `vyer`-prop renderas ingenting och railen är
+>    oförändrad, så alla befintliga call-sites (`PersonDetailPrototyp`,
+>    `CheckinPrototyp`) är opåverkade.
+> 2. **Knapparna är NUMRERADE (1..N), inte ikoner** — Marcus-förslaget,
+>    prövat mot ikon-alternativet och valt. Skälet är
+>    generaliserbarhet: en ikon kräver att VARJE framtida prototyp
+>    hittar semantik för sina skärmar, och en familj vars vyer är steg
+>    i ett flöde har ingen naturlig ikon alls. Ordningstal bär varje
+>    tänkbar familj. Semantiken bor i `aria-label` ur `label`
+>    (skärmläsaren hör "Logga in", inte "1") — samma delning som
+>    Amendering 3 gjorde för variant-knapparna.
+> 3. **Siffer-kollisionen mot steg-badgen löses av GRUPP + FORM, inte
+>    av att byta bort siffrorna.** Vy-knappen är en rundad rektangel
+>    mot variant-knappens cirkel, i egen grupp bakom en avdelare —
+>    verktygsradens standardgrepp. Grupp-avdelaren ensam räcker inte
+>    när båda axlarna visar siffror; formen bär skillnaden.
+>    Gruppordningen är [variant + data] · [vy] · [nytt fönster] —
+>    data-knappen är variant-beroende och hör därför till den gruppen.
+> 4. **Följdrivning, öppen:** routen `dev/auth-prototyp.tsx` bar
+>    tidigare vy-axeln som EGEN header med flikar, uttryckligen
+>    motiverad i kodkommentar som *"den här routens EGNA UI … inte en
+>    ny nyckelrymd i växlar-kontraktet"*. Den motiveringen är HÄRMED
+>    UPPHÄVD: en prototyp-yta får inte bära en egen liten app ovanpå
+>    det som ska bedömas — headern konkurrerade visuellt med själva
+>    designen (Marcus: *"Vi kan absolut inte bygga prototyper med en
+>    prototyp-header som vi har på denna. Oacceptabelt på alla sätt."*).
+>    Kontrollytan bor i railen, alltid.
+>
+> Beslut 2:s tokens-krav, a11y-golv och rörelse-förbud (Amendering 5)
+> gäller oförändrat för den nya axeln.
 
 T80 föddes S75 Del 8 (Marcus review-våg 1): `?variant`-konventionen var
 odokumenterad i specs (URL-STATE-SPEC saknade den; ADR-044 täcker endast
