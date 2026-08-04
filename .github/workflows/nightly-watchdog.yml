@@ -114,8 +114,56 @@ jobs:
               rubrik="Nattnätet vägrade starta"
               orsak="Senaste körningen har \`conclusion: startup_failure\` — noll jobb instansierades, så larm-jobbet i \`nightly.yml\` kunde per konstruktion inte fyra. Körning: ${last_url}"
             elif [ -n "${conclusion}" ] && [ "${conclusion}" != "success" ]; then
-              rubrik="Nattnätet rött utan larm"
-              orsak="Senaste körningen har \`conclusion: ${conclusion}\` men inget öppet \`ci-natt\`-ärende finns — larm-jobbet kan självt ha uteblivit. Körning: ${last_url}"
+              # KÖRNINGENS conclusion RÄCKER INTE SOM SIGNAL — mätt 2026-08-04.
+              #
+              # ADR-082 ställde MEDVETET nightly-links utanför alarm-jobbets
+              # needs: en extern värds dåliga dag ska inte devalvera det
+              # tilldelade ci-natt-ärendet, och länkrötan har en egen mildare
+              # kanal (links-arende). Följden är att en natt där ENDAST
+              # länkkontrollen är röd får `conclusion: failure` på körningen
+              # medan larm-jobbet KORREKT skippas.
+              #
+              # Den tidigare formen läste bara conclusion och larmade då
+              # "Nattnätet rött utan larm". Det inträffade skarpt: körning
+              # 30513174298 (2026-07-30) hade ett enda rött jobb —
+              # "Länkkontroll (utan cache)" — och "Larm vid röd natt: skipped",
+              # vilket var rätt beteende. Vakten larmade ändå, och ärende #469
+              # blev därmed OÅTGÄRDBART: det fanns ingen grundorsak att fixa.
+              # Det låg öppet i 123 timmar och devalverade precis den kanal
+              # ADR-082 skyddade.
+              #
+              # Vaktens EGET huvud slår fast husregeln — "ett falsklarm är
+              # värre än ingen vakt" — och den tillämpades på tidsfönstret men
+              # aldrig här. Nu frågar vakten vilka JOBB som var röda och
+              # bortser från dem som per konstruktion inte bär alarm-jobbet.
+              #
+              # FAIL-CLOSED: kan jobblistan inte hämtas eller tolkas larmar
+              # vakten ändå, med det öppet skrivet i orsaken. "Vet inte" får
+              # aldrig bli tyst — samma hållning som ci-wait.sh och L322.
+              alarm_barande_rott=""
+              jobs_json=""
+              if jobs_json=$(gh run view "${last_id}" --repo "${REPO}" --json jobs 2>/dev/null); then
+                if alarm_barande_rott=$(jq -r '
+                      [ .jobs[]
+                        | select(.conclusion == "failure" or .conclusion == "cancelled")
+                        | select(.name | test("Länkkontroll|Länkröta") | not)
+                        | .name ]
+                      | join(", ")
+                    ' <<<"${jobs_json}" 2>/dev/null); then
+                  :
+                else
+                  alarm_barande_rott="OKÄND (jq kunde inte tolka jobblistan)"
+                fi
+              else
+                alarm_barande_rott="OKÄND (jobblistan kunde inte hämtas)"
+              fi
+
+              if [ -n "${alarm_barande_rott}" ]; then
+                rubrik="Nattnätet rött utan larm"
+                orsak="Senaste körningen har \`conclusion: ${conclusion}\` men inget öppet \`ci-natt\`-ärende finns — larm-jobbet kan självt ha uteblivit. Alarm-bärande röda jobb: ${alarm_barande_rott}. Körning: ${last_url}"
+              else
+                echo "Körningen är röd (${conclusion}), men enbart i jobb som per ADR-082 står utanför alarm-jobbets needs (länkkontroll/länkröta). Larm-jobbet skippades korrekt — vakten är tyst. Körning: ${last_url}"
+              fi
             fi
           fi
 
