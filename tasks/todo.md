@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 97 ⏸️ PAUSAD (2026-08-04, tredje pausen — `lifecycle: paused`)**
+**Session 97 ▶️ ÅTERUPPTAGEN (2026-08-04, efter tredje pausen — `lifecycle: active`)**
 — **HOOK-SKULDEN BETALD, OCH `ask` RIVET SOM BESLUTSVÄRDE.** Resumen mötte en
 ägarlapp från en **död session** (noll processer, ingen transcript-fil, tom
 scratchpad — stale efter ~3 sekunder mot tröskelns 12 timmar) och betalade
@@ -70,10 +70,20 @@ gjord:** 22 worktree-skapelser på en dag, 9 undvikbara — `research-pass`-defa
 var fel (fixad i `#729`), `bygg-agent`-defaulten var RÄTT (12/12 motiverade) ·
 heartbeat-monitorn i drift och tyst för parkerade dependabot-PR:er ·
 worktree-städning 6 borttagna, grenar 194→**182**. **FJORTON PR:er landade.**
-**NÄSTA (resume, förhoppningsvis sista): betala bevis-skulderna
-(`SessionEnd`-hooken + plugin-distributionen — båda obevisbara i sessionen som
-byggde dem) → manifest-paret (`plugin.json` 1.28.0 mot `marketplace.json` 1.12.0;
-utred vad fältet styr FÖRE synk) → `T06`-hub-lyftet → kodfils-partitionering.**
+**DEL 7 (resume): BÅDA BEVIS-SKULDERNA BETALDA + MANIFEST-PARET ROTORSAKS-FIXAT.**
+Plugin-distributionen bevisad av LÄS-fasen själv (install-record **1.28.1**,
+skillsen laddade ur den katalogen — starkare än skuldens 1.28.0).
+`SessionEnd`-hooken bevisad skarpt via headless `claude -p`: lappen TAGEN
+(`cc35e94b…`, pid 70156) → efter processens slut BORTA. **Ordningen avgjorde** —
+hade tillstånds-återställningen körts först hade denna session ägt lappen och
+beviset sett grönt ut oprövat. Manifest-paret: **två** `1.12.0`, inte en —
+`metadata.version` är marketplace-manifestets egen axel (ORÖRD, handoffens
+hypotes höll), `plugins[0].version` **borttagen** (hub `7d4bf51`) eftersom
+`plugin.json` alltid vinner *"without warning"* (förstapartskällan + validatorn
+*"silently ignored"*). Validatorns eget råd "update to match" valdes bort öppet:
+symptomfix som återskapar driften vid nästa bump. **NÄSTA: `T06`-hub-lyftet
+(`L103`–`L125`) + numrering av de åtta fragmenten → kodfils-partitionering
+(`T119` (d) item 3).**
 **VÄNTAR PÅ MARCUS:** relationsmodellens ordning + ADR-mintning (`T122`) ·
 dependabot-kvartetten · `package-lock.json.pre-t118` · uppströmsrapport till
 `anthropics/claude-code#72714`. Numrering:
