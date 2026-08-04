@@ -55,6 +55,17 @@
             "statusMessage": "KATALOGÄGARSKAP — git-skriv i främmande huvudkatalog (ADR-090 beslut 2)"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-grind-genom-pipe.sh\"",
+            "timeout": 10,
+            "statusMessage": "L440 — grindens exitkod genom en pipe"
+          }
+        ]
       }
     ],
     "Stop": [
