@@ -15,6 +15,40 @@
 
 ## Aktuellt fokus
 
+**Session 97 ▶️ AKTIV (2026-08-04, återupptagen — `lifecycle: active`)**
+— **HOOK-SKULDEN BETALD, OCH `ask` RIVET SOM BESLUTSVÄRDE.** Resumen mötte en
+ägarlapp från en **död session** (noll processer, ingen transcript-fil, tom
+scratchpad — stale efter ~3 sekunder mot tröskelns 12 timmar) och betalade
+skulden **prompt-fritt** via stdin-injektion: 18/18 + 23/23, båda sidor. Marcus
+fick ändå **fyra prompts på en timme**, en av dem falsk positiv på ett `grep`
+som bara läste hookens källkod — och rev `ask`: *"Jag kan ju inte sitta och
+'vaka' över massa frågor som kommer i varje terminalfönster."* **Regeln som
+faller ut:** `ask` endast när Marcus är RÄTT BESLUTSFATTARE (irreversibelt,
+utanför repot); kan maskinen avgöra saken — `deny`, med skälet till agenten.
+Driftbilden avgjorde: tre parallella sessioner × subagenter gör `ask` till en
+flaskhals som växer med precis det mekanismen skulle möjliggöra. **Tre PR:er:**
+`#712` (`T120` registrerad) · `#714` (research-passet, som dömde TVÄRTOM och
+bevaras oförändrat — dess premiss var falsifierad redan när det kördes) ·
+`#713` (`ask` → `deny` + kommando-positions-krav + `pipefail`-undantag; 18 →
+**23/23**, shellcheck 0 × 3). **ROTORSAK FUNNEN:** ägarlappen registrerar
+identitet men aldrig livstid, och ingen kodväg någonstans tar bort den —
+skrivvägen finns i tre varianter, frisläppningsvägen i noll. Lucka, inte
+bortval (belagt: `T119`, `f5f8fdfb`, ADR-090 § Update nämner livscykeln med
+noll ord). ADR-090 citerar Vim som förebild men kopierade fildelen och hoppade
+över lösningen. **EGET FEL, fångat av Marcus:** ett godkänt `ask` är omöjligt
+att skilja från "hooken fällde aldrig" — jag rapporterade en fällning som
+släpp (`T110` klass A). **RÄTTELSE:** mailspärren kör `exit 2`, inte `ask` —
+målet är **noll** prompts, inte "en kvar". Hook-ytan mätt: nio registreringar,
+sex logiker; två kunde nå Marcus, efter `#713` en, efter pid-liveness noll.
+**NÄSTA: pid-liveness + SessionEnd + `deny` för ägarlappen (agent kör) ·
+`T119` (d) item 4 staging-preflight → pre-commit (agent kör) → (c) → item 3
+→ item 6-skörd → item 7 hub-lyft → `barn:`-fältet.** Numrering:
+S97/ADR-095/L444(+3 fragment)/**T121**/task-139/**f47** (fälle-numret AVGJORT —
+definition skild från referens). Full narrativ: sessionsdok S97 Del 1–5.
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 97 ⏸️ PAUSAD (2026-08-04, andra pausen — `lifecycle: paused`)**
 — **MEKANISERINGS-PROGRAMMET: FYRA MEKANISMER I DRIFT, FYRA LÖSA ÄNDAR
 STÄNGDA.** Sessionen tog `T119` (a), (b) och (d) item 5 och landade **sex
