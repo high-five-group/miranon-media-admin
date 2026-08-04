@@ -3,10 +3,10 @@ id: TASK-134
 title: >-
   Fokusring vid musklick på varje textfält — Input-primitiven får plain :focus,
   [data-rac]-släckaren smalnas till dropdown-syftet
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-04 10:37'
-updated_date: '2026-08-04 11:44'
+updated_date: '2026-08-04 12:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,7 +32,7 @@ VERIFIKAT: a11y-tester gröna (WCAG 2.4.7-ribban); /dev/primitives + /login gran
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -96,3 +96,9 @@ för samma mekanism — redan stale FÖRE detta pass (pekar nu på
 auth-fond-blocket, inte fokusregeln), orsakad av PR #690, inte av detta
 kort. Ej fixat (orelaterad fil, DoD #4).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #696 (merge-SHA 93d4992d), landad på main. CI grön per jobb (CI Passed or Skipped, CodeQL, Docs link check, Lint+Audit+TypeCheck, CodeQL-analyze x2, Test suite: Acceptance/Pure+Build/Webblasarbeteende pass, A11y/Staging/sentinel-purge korrekt skippade). Släckar-regeln i base.css smalnad från alla [data-rac]-ytor till role=listbox (React Arias eget fasta attribut); Input-primitiven fick plain :focus-klass. Verifierad i RIKTIG browser (chrome-devtools MCP, headed Chrome 150.0.0.0): ring vid musklick på /dev/primitives Input, dropdown-släckaren intakt, /login oförändrat. Bidirektionellt bevis kört (original kod fäller, fix passerar). Mätfälla bekräftad empiriskt: headless Chromium rapporterar fel outlineColor — tester asserterar därför bara outlineStyle. Öppen uppföljning registrerad i kortets notes: TextArea fick ingen explicit fokusring-klass (bara sidoeffekt av narrowing) — flaggad, ej scope-utökad på eget bevåg.
+<!-- SECTION:FINAL_SUMMARY:END -->

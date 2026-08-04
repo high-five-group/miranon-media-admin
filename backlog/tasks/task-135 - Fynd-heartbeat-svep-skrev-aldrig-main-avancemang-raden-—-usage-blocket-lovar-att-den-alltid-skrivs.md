@@ -3,10 +3,10 @@ id: TASK-135
 title: >-
   Fynd: heartbeat-svep skrev aldrig main-avancemang-raden — usage-blocket lovar
   att den alltid skrivs
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-04 10:37'
-updated_date: '2026-08-04 11:18'
+updated_date: '2026-08-04 12:20'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,9 +26,9 @@ ARBETE: (1) laga så att avancemang-raden skrivs även under --quiet (gammal→n
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -63,3 +63,9 @@ AVVIKELSE FRÅN UPPDRAGET, rapporterad öppet: uppdragets ARBETE-punkt (1) ("lag
 
 DoD #1: kortet bär "No acceptance criteria defined" (verifierat via task-135 --plain vid uppstart) — inga AC finns att bocka av. Lämnat OBOCKAT explicit (vacuously-sant är inte samma sak som prövat) snarare än att tyst bocka av något som aldrig fanns; orkestreraren avgör om det ska tolkas som uppfyllt.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #694 (merge-SHA 3aff4615), landad på main. CI grön per jobb (CI Passed or Skipped, CodeQL, Docs link check, Lint+Audit+TypeCheck, CodeQL-analyze x2, Test suite: Acceptance/Pure+Build/Webblasarbeteende pass, A11y/Staging/sentinel-purge korrekt skippade). Uppdragets kärnhypotes ('avancemang-raden respekterar --quiet felaktigt, eller skrivs aldrig') FALSIFIERADES empiriskt via två oberoende repro-riggar — raden skrevs redan korrekt i varje konstruerat scenario. Faktisk rotorsak, funnen via fortsatt prövning: en kallstart (tomt HEARTBEAT_STATE_DIR/inget känt föregående SHA) gick via en tystad say()-gren och var omöjlig att skilja från en genuin tyst sopning i en --quiet rå-logg — ett äkta observabilitetshål, löst med en ny ALLTID-PÅ-kallstartsrad + dokrättelse i § ANVÄNDNING. Tvåsidigt bevis: 26-fallssviten (30 assertions) gav 27 passerade/3 fällningar (T23, T24, T24b) mot orört skript, 30 passerade/0 fällningar mot fixat. shellcheck (CI:s exakta flaggor) 0 findings. Incidentens exakta ursprungliga mekanism kvarstår som HYPOTES (den levande orkestrerar-processen låg utanför denna agents worktree). DoD #1: implementerande agenten lämnade den explicit obockad (kortet saknar AC, vacuously-sant undveks medvetet). Slutbunts-agenten (denna stängning) bockade den ändå — scripts/check-backlog-closure.sh Invariant 2 kräver DoD helt bockad för status Done, utan karens, och samma vacuous-truth-konvention används redan på syskonkorten TASK-133/134 (0 AC, DoD #1 bockad). Beslutet är dokumenterat öppet i slutrapporten till orkestreraren, inte tyst.
+<!-- SECTION:FINAL_SUMMARY:END -->
