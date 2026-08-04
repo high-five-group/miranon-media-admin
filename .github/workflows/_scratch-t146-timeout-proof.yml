@@ -1,0 +1,43 @@
+---
+# SCRATCH — TILLFÄLLIG, TAS BORT INNAN PR ÖPPNAS.
+#
+# Enda syftet: leverera ett skarpt, körningsbelagt bevis för hypotesen bakom
+# den riktiga fixen i nightly.yml (nightly-links-jobbet) — INNAN fixen
+# skrivs, inte efteråt. Två kontrollerade armar i samma push:
+#
+#   job-niva  : timeout-minutes SATT PÅ JOBBET, steget har inget eget.
+#               Väntat utfall (docs: "GitHub automatically cancels it"):
+#               jobb-conclusion = cancelled.
+#   steg-niva : timeout-minutes SATT PÅ STEGET, jobbet har en vidare
+#               backstop. Väntat utfall (actions/runner, StepsRunner.cs
+#               RunStepAsync: steg-tokenet löser ut utan att jobb-tokenet
+#               gör det → TaskResult.Failed): jobb-conclusion = failure.
+#
+# Ingen hemlighet, inga issues, inga externa anrop — bara `sleep` mot en
+# timeout-budget som medvetet är kortare än sömnen.
+name: Scratch T146 timeout proof (temporary)
+
+on:
+  push:
+    branches:
+      - fix/t146-nightly-larm-timeout-cancelled
+
+permissions: {}
+
+jobs:
+  job-niva:
+    name: "Kontroll — timeout på JOBBET (väntat: cancelled)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Sov längre än jobbets budget
+        run: sleep 90
+
+  steg-niva:
+    name: "Experiment — timeout på STEGET (väntat: failure)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Sov längre än stegets budget
+        timeout-minutes: 1
+        run: sleep 90
