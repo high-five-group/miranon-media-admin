@@ -164,6 +164,33 @@ sessionsstart och uppdateras inte retroaktivt. **Fråga "bestäms detta vid
 sessionsstart?" innan du planerar ett bevis som förutsätter motsatsen.**
 Underlag: `tasks/lessons.d/hook-registrerad-mitt-i-sessionen-laddas-inte.md`.
 
+### Agenter kan INTE arbeta cross-repo — och varje worktree kostar
+
+En worktree-isolerad agent kan **bara** göra git-operationer i sin egen
+worktree. Harnesset avvisar varje form som pekar utanför den — `cd ~/annat-repo
+&& git status`, `git -C ~/annat-repo status`, `EnterWorktree` mot ett syskonrepo.
+Mätt 2026-08-04 (S97) när en bygg-agent dispatchades mot hub-repot
+`~/Repon/marcus-system`: tre oberoende former, alla avvisade.
+
+**Konsekvensen är operativ, inte teoretisk:** hub-ändringar — plugin-skills,
+`SYSTEMET.md`, hubbens lessons-volymer — **görs av orkestreraren själv**.
+Delegera dem aldrig till en bygg- eller research-agent; uppdraget kan inte
+utföras, och agenten bränner ett helt pass på att upptäcka det. Agenten i S97
+stoppade korrekt i stället för att kringgå spärren, men passet var förlorat.
+
+**Varje worktree-skapelse har dessutom en mätt bieffekt.** Claude Code skriver om
+huvudrepots `core.hooksPath` till en ABSOLUT path i den DELADE `.git/config` vid
+varje ny worktree — belagt i `anthropics/claude-code` `#27474`, `#66993`,
+`#72714` (öppen) och verifierat i vår egen binär (S97). Följden: alla worktrees
+kör huvudkatalogens hook-kopia i stället för sin egen, tills `.githooks/pre-commit`
+självläker värdet vid nästa commit (`T121`).
+
+Det går inte att laga hos oss. **Men exponeringen är vår:** en session som
+spawnar tolv worktree-isolerade agenter triggar buggen tolv gånger. Isolering är
+rätt när en agent skriver kod som kan kollidera vid merge — den är onödig för ett
+research-pass som läser och skriver en enda fil under `docs/research/`. **Isolera
+efter behov, inte som default.**
+
 ### Landning sker via MERGE QUEUE — maskinen äger ordningen sedan 2026-07-29
 
 All landning går via branch + PR (direktpush till `main` avvisas av ruleset,
