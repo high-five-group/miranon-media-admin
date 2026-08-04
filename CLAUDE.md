@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-03
+updated: 2026-08-04
 review_by: 2026-11-15
 status: stable
 ---
@@ -138,13 +138,46 @@ utanför läs-ordningen hittas inte när det behövs.
 och bevisar ingenting. Och klass B är övervägande **lokal** — för en flake som
 bara CI ser kan en lokal serie vara fel instrument helt och hållet.
 
+### En ny hook kan ALDRIG skarpbevisas i sessionen som byggde den
+
+Hookar registrerade i `.claude/settings.json` **mitt i en session tas inte i
+bruk i den sessionen**. Förstapartskällan
+([hooks-guide](https://code.claude.com/docs/en/hooks-guide)) säger det i sitt
+felsökningsavsnitt: *"the file watcher may have missed the change: restart
+your session to force a reload."* Det finns ingen reload-väg —
+`/reload-hooks` existerar inte och `/hooks`-menyn är read-only.
+
+**Planera in det, upptäck det inte vid beviset:**
+
+1. Bevisa **logiken** i byggsessionen — tvåsidig testsvit + manuell körning av
+   skriptet mot verkligt tillstånd. Båda går utmärkt.
+2. Bokför **skarpbeviset som öppen skuld i handoffen**, aldrig som gjort.
+3. Betala skulden som en av **nästa sessions första handlingar**.
+
+Skilj alltid "hooken är fel" från "hooken är inte laddad" med en
+**differentialmätning**: kör skriptet manuellt med identisk hook-JSON (ska
+fälla), och provocera samtidigt en BEFINTLIG hook via harnesset (ska fälla).
+Faller den befintliga men inte den nya är det registreringen, inte logiken.
+
+Samma strukturella klass som MCP-verktygsytan (S97 Del 2): båda bestäms vid
+sessionsstart och uppdateras inte retroaktivt. **Fråga "bestäms detta vid
+sessionsstart?" innan du planerar ett bevis som förutsätter motsatsen.**
+Underlag: `tasks/lessons.d/hook-registrerad-mitt-i-sessionen-laddas-inte.md`.
+
 ### Landning sker via MERGE QUEUE — maskinen äger ordningen sedan 2026-07-29
 
 All landning går via branch + PR (direktpush till `main` avvisas av ruleset,
 [ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)). Armera med
-`gh pr merge --auto --merge`; **kön sköter sekvenseringen**. Den bygger varje
+`gh pr merge --auto`; **kön sköter sekvenseringen**. Den bygger varje
 post mot `main` plus posterna före den, så `BEHIND` uppstår inte längre av att
 två PR:er landar nära varandra.
+
+**Strategiflaggan är BORTA ur formen sedan 2026-08-04 (S97).** Raden sade
+tidigare `gh pr merge --auto --merge`. Den formen avvisas nu: `gh` svarar
+`! The merge strategy for main is set by the merge queue` och exit 1 — kön
+äger strategin, och att också ange den är ett fel, inte en redundans. Mätt
+skarpt vid armeringen av `#705`; `--auto` ensamt gav EXIT=0 och korrekt
+`autoMergeRequest.mergeMethod: MERGE`.
 
 **Den gamla regeln — *"armera aldrig två samtidigt"* — är UPPHÄVD.** Den var
 korrekt så länge sekvenseringen var en mänsklig hand. Den handen är nu
@@ -186,9 +219,9 @@ required checks have passed, the pull request will be added to the merge queue."
 | Checks körs — nypushad PR, normalfallet | **satt** | fältet ÄR signalen |
 | PR:en redan `CLEAN` | `null` | köades direkt; inget `autoMergeRequest` skapas någonsin |
 | Efter merge | `null` | nollas oavsett — säger ingenting om armeringen |
-| PR:en sparkas ur kön (`failed_checks`-utsparkning) | `null` | **KONSUMERAD armering** — PR:en ser identisk ut med en aldrig armerad; kräver ett NYTT `gh pr merge --auto --merge` |
+| PR:en sparkas ur kön (`failed_checks`-utsparkning) | `null` | **KONSUMERAD armering** — PR:en ser identisk ut med en aldrig armerad; kräver ett NYTT `gh pr merge --auto` |
 
-Disambiguera med ett andra `gh pr merge --auto --merge`: svaret
+Disambiguera med ett andra `gh pr merge --auto`: svaret
 `already queued to merge` betyder köad.
 
 **Automatiserad klassning ska fråga `isInMergeQueue` i SAMMA GraphQL-query,
@@ -202,7 +235,7 @@ falsklarma sju gånger på en enda natt (PR #614, #617×3, #621, #623, #624,
 2026-08-02). `isInMergeQueue` skiljer dem åt utan att röra den ursprungliga
 ambiguiteten i raden ovan: `isInMergeQueue: true` ⇒ tyst, `false` ⇒ larma
 (kan fortfarande vara ANTINGEN aldrig-armerad ELLER utsparkad — den
-skillnaden kräver fortfarande det andra `gh pr merge --auto --merge`).
+skillnaden kräver fortfarande det andra `gh pr merge --auto`).
 Fixad i `TASK-128`.
 
 **Det fjärde läget är dyrast, inte bara ett fjärde alternativ.** En
