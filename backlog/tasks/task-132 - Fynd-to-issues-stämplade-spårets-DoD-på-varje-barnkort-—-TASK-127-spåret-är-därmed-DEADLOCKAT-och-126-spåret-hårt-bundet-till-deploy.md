@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-03 10:02'
-updated_date: '2026-08-03 11:40'
+updated_date: '2026-08-04 10:35'
 labels:
   - ready-for-human
 dependencies: []
@@ -46,9 +46,11 @@ BELÄGG: samtliga deps och DoD-rader lästa ur backlog/tasks/task-126*.md och ta
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+
 
 ## Implementation Notes
 
