@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-04
+updated: 2026-08-05
 review_by: 2026-11-15
 status: stable
 ---
@@ -9010,3 +9010,173 @@ kostnadskalkyl (960 turer/natt) som bara existerar för att fel väg prövades.
 behöver periodiskt återkommande arbete — frågan "har det körande systemet
 redan en start/slut-rytm att haka i?" kommer före "vilken extern
 schemaläggare behöver vi bygga?", oavsett domän.
+
+### L456 — en regel kan vara bredare än sitt eget belägg
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, Session 97 Del 8, orkestreraren (utlöst av Marcus
+fråga: *"Det är ju bara bygg-agent och research-pass som inte kan jobba
+cross-repo eller?"*).
+
+**Vad som hände:** `CLAUDE.md`s worktree-isoleringsregel bar två påståenden
+som inte var samma sak. Mätningen gällde konkret *"en **worktree-isolerad**
+agent"* — en bygg-agent i egen worktree vars `git -C`/`cd`-kommando mot det
+EGNA repots huvudkatalog avvisades. Slutsatsen som drogs av det sade i
+stället *"delegera aldrig till en bygg- eller research-agent"* —
+agenttyp, inte isoleringsstatus. Slutsatsen hade tyst bytt axel: från en
+mätt cell (isolerad agent × eget repos huvudkatalog) till hela agenttypen,
+och därmed även till cross-repo-fallet som aldrig mätts. Regeln stod så i
+tre veckor. En efterföljande fyra-cellsmätning (isolerad/oisolerad ×
+eget-repo/annat-repo) visade motsatsen på båda spärrade axlarna: en
+oisolerad agent (`research-pass`, sedan `#729`) arbetar fritt cross-repo,
+och även en ISOLERAD agent får läsa och skriva i andra repon — den
+blockeras bara mot sitt eget repos delade huvudkatalog. Beviset var en
+commit: den worktree-isolerade mät-agenten skrev och committade skarpt i
+ett kastbart testrepo (`c3a9eb5`).
+
+**Lärdomen:** när en slutsats formuleras utifrån en mätning, läs tillbaka
+exakt vilken CELL mätningen täckte — vilken agenttyp, vilket mål, vilken
+operation — innan slutsatsen skrivs bredare än den cellen. En regel som
+generaliserar från "en isolerad agent mot sitt eget repo" till "alla
+agenter, alla repon" är inte en försiktig tolkning av beviset; den är en ny,
+obelagd regel som råkar dela text med den gamla.
+
+**Varför `[UNIVERSAL]`:** gäller varje regel som härleds ur en enskild
+mätning — kod, policy, process eller arkitekturbeslut. Frågan "vilken cell
+täckte mätningen faktiskt, och vilken lämnades omätt?" är generisk och
+oberoende av domän.
+
+### L457 — en avvisning berättar VAD som stoppades, inte VARFÖR — förrän man läser den
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, Session 97 Del 8, orkestreraren.
+
+**Vad som hände:** grunden för L456:s felaktiga regel var en verklig,
+korrekt avvisning vars ORDALYDELSE aldrig citerades innan slutsatsen drogs.
+Harnessets avvisningstext (verbatim): *"This agent is isolated in the
+worktree \<path\>, but this command redirects git to the shared checkout via
+-C. Refusing to run it."* Nyckelordet är `shared checkout` — inte "annat
+repo". Förstapartsdokumentationen (`code.claude.com/docs/en/sub-agents.md`)
+säger samma sak rakt ut: *"a command that redirects git into **the main
+checkout** fails … **A command too complex to check also fails**."* Den
+sista satsen är den troliga verkliga förklaringen till avvisningen som
+startade hela missförståndet: `cd ~/annat-repo && git status` matchar BÅDE
+`cd`-mönstret och komplexitetsregeln, och fälls därför oavsett vad målet
+faktiskt är. Avvisningen var äkta hela tiden — tolkningen av den, gjord utan
+att texten lästes, var fel. Kostnaden var tre veckor med en regel som sa att
+cross-repo-arbete inte gick, om något verktyget aldrig påstod.
+
+**Lärdomen:** när ett verktyg eller harness avvisar en operation, citera
+avvisningstexten VERBATIM innan en regel byggs på den. En avvisning
+beskriver exakt VAD som stoppades (mönstret som matchade) — den beskriver
+VARFÖR bara om förklaringen faktiskt läses, och en snabb egen omtolkning
+("det här går tydligen inte cross-repo") kan vara en helt annan, bredare
+slutsats än den avvisningen faktiskt stödjer.
+
+**Varför `[UNIVERSAL]`:** gäller varje felmeddelande, avvisning eller
+exitkod i vilket system som helst — API:er, linters, CI-grindar,
+harness-spärrar. Citera texten, tolka inte den föreställda innebörden.
+
+### L458 — två olika indata som ger byte-identiskt svar betyder att mätningen är trasig, inte att svaret är robust
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, Session 97 Del 8, orkestreraren.
+
+**Vad som hände:** ett differentialtest skulle skilja "hooken fäller
+korrekt" från "hooken är inte laddad" genom att köra två OLIKA kommandon mot
+samma hook-JSON och jämföra svaren. Testet gav samma resultat för båda
+kommandona — vid ett hastigt påseende läsbart som "hooken är konsekvent,
+svaret är stabilt". Den faktiska förklaringen var en trasig testrigg:
+`cwd`-fältet i test-JSON:en pekade på en worktree som inte fanns, så hooken
+föll tillbaka på PROCESSENS faktiska cwd i stället för den avsedda — och
+producerade därför samma svar oavsett vilket av de två kommandona som
+skickades in. Omgjort med en verklig worktree gav hooken det förväntade,
+DIFFERENTIERADE resultatet: den släpper hub-operationer men fäller mot
+huvudkatalogen.
+
+**Lärdomen:** när ett test medvetet varierar EN indata för att observera en
+skillnad i utfall, är ett identiskt utfall för båda varianterna inte ett
+neutralt eller robust resultat — det är ett tecken på att variationen aldrig
+nådde fram till mekanismen som testas. Byte-identiska svar på olika indata
+ska trigga misstanke mot RIGGEN (stale fallback, fel variabel, cachat värde)
+före någon slutsats dras om systemet som testas.
+
+**Varför `[UNIVERSAL]`:** gäller alla A/B- eller differentialtester — om två
+avsiktligt olika körningar producerar identisk output är den första
+hypotesen "testet mäter fel sak", inte "systemet är okänsligt för
+skillnaden".
+
+### L459 — en skuld kan vara en konsekvens av en felläsning, inte av glömska
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, Session 97 Del 8, orkestreraren.
+
+**Vad som hände:** `T06` bokförde `L103`–`L125` som obetald hub-skuld
+(lessons som skulle lyftas till hub-repot men aldrig blev det), samtidigt
+som `lessons-hub-sync`-skillen påstod att `L103`–`L119` *"saknas"*. Båda
+kunde inte stämma samtidigt. Mätningen visade att posterna FANNS — 17 av dem
+i en äldre PUNKTLISTFORM (`- [UNIVERSAL] **L103 — Titel**`) som skillens
+dokumenterade grep-mönster (`^### L`) missade strukturellt, eftersom de
+posterna aldrig var `###`-rubriker. Räkningen stängde saken: 426
+rubrikposter + 17 listposter = 443, högsta `L443` — serien var kontinuerlig,
+det fanns aldrig något hål. Skillen rättades med en femte igenkänd form (hub
+`a72670c`), och hela lyftet betalades i samma svep (hub `8683c69`,
+`K17.1`–`K20.6`, 20 poster verbatim, 363 insertions).
+
+**Lärdomen:** en post som ser obetald eller bortglömd ut kan i själva verket
+vara osynlig för det VERKTYG som skulle hittat den — inte för att någon
+struntade i den. Innan en skuld antas bero på glömska, pröva om mekanismen
+som skulle upptäckt den faktiskt TÄCKER formen posten står i. Här var svaret
+att grep-mönstret bara kände igen en av fem markörformer; skulden var en
+direkt konsekvens av den begränsningen, inte av att någon lät bli att lyfta
+posterna.
+
+**Varför `[UNIVERSAL]`:** gäller varje "X är inte gjort"-slutsats som vilar
+på ett verktygs sökning eller räkning — en genuint obetald skuld och ett
+verktyg med en täckningslucka ser identiska ut tills täckningen faktiskt
+prövas.
+
+### L460 — ägarlappen släpps sist av allt, efter all git-aktivitet: en operation kan lyckas och ändå inte lämna det tillstånd man trodde
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, Session 97 (fjärde pausens efterhandsanalys),
+Marcus.
+
+**Vad som hände:** Marcus, verbatim: *"Lappen låg kvar efter mitt första
+släpp — inte för att mekanismen fallerade, utan för att mitt egna
+verifieringssteg (`git switch` + `git merge --ff-only`) är git-skrivningar,
+och hooken tar lappen vid varje sådan. Steg 6 i paus-skillen släpper
+resurserna, men varje git-operation därefter återtar dem."* Mekanismen bakom
+är dokumenterad i `scripts/katalogagarskap-markor.sh` § "ÄGARSKAP TAS VID
+SKRIVNING, INTE VID ANKOMST" (`T120`, Marcus-GO 2026-08-04): ägarskapet tas
+VID SKRIVNING — varje git-skrivoperation i huvudkatalogen — inte vid
+ankomst, en medveten design för att ett rent läsande referensfönster aldrig
+ska ockupera lappen permanent. Samma design som gör det läsande fönstret
+ofarligt gör steg-ORDNINGEN farlig: `session-paus`-skillens Steg 6
+(`katalogagarskap-markor.sh --slapp`) släpper lappen korrekt, men om
+verifieringen av det egna arbetet (en `git switch`/`git merge --ff-only` för
+att bekräfta att pausen faktiskt landade rent) körs EFTER steg 6, tar samma
+hook tillbaka lappen omedelbart. Sessionen ser ut att ha släppt korrekt —
+skriptet svarade, exitkod 0 — men äger i praktiken katalogen igen.
+
+**Lärdomen:** regeln har två led. (a) **NYTT 2026-08-05:** släpp ägarlappen
+som den ABSOLUT SISTA handlingen i en paus- eller avslutssekvens — efter ALL
+git-aktivitet, inte före en sista verifiering som själv skriver. (b)
+**Lärt redan i tredje pausen (2026-08-04):** verifiera alltid mot FILENS
+FRÅNVARO (`$(git rev-parse --git-common-dir)/katalogagarskap-agare.json`
+saknas), aldrig mot skriptets exitkod — den här posten bekräftar att samma
+regel gäller även när frisläppningen i sig lyckades och något EFTERÅT
+återtog lappen tyst. Den överordnade familjen: en operation kan returnera
+framgång och ändå inte lämna det tillstånd man trodde, om något EFTER
+operationen tyst ogör den.
+
+**Varför `[UNIVERSAL]`:** gäller varje resurs som återtas automatiskt av en
+efterföljande operation av samma KLASS som den som släppte den (lås, lease,
+session-token, filhandtag, katalogägarskap) — ordningen "släpp sist" är den
+enda som håller när frisläppnings-mekanismen och återtagnings-mekanismen
+delar samma trigger.
