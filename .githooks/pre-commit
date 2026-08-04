@@ -33,17 +33,32 @@ set -euo pipefail
 # SJÄLVLÄKER, varnar inte bara — och skälet är mätt, inte försiktighet.
 # Vakten skrevs först som en ren varning, byggd på antagandet att någon skrivit
 # över värdet EN gång. Det antagandet föll samma dag: värdet rättades manuellt,
-# verifierades relativt, och stod ABSOLUT igen inom timmen. Källan är OKÄND —
-# en genomsökning av repot (inklusive hub-repot och alla worktrees) hittar
-# ingen kod som sätter en absolut path; `package.json`:s postinstall och
-# `scripts/test-pre-commit-hook.sh` sätter båda relativt, och mätning bekräftar
-# att `git config core.hooksPath .githooks` skriver relativt ÄVEN när det körs
-# från en worktree. Något utanför repots egen kod skriver alltså värdet.
+# verifierades relativt, och stod ABSOLUT igen inom timmen.
 #
-# Därför läker vakten i stället för att rapportera: en självläkning är immun
-# mot en okänd källa, medan en varning kräver att någon läser den och agerar
-# innan nästa drift. Rotorsaksfrågan — VEM som skriver — är öppen och bokförd
-# i `T121`; detta löser symptomet mekaniskt och döljer inte att orsaken saknas.
+# KÄLLAN ÄR KÄND (2026-08-04, samma dag): Claude Codes egen worktree-skapande
+# kod — INTE detta repo, INTE VS Code, INTE Husky/npm. Tre oberoende publika
+# buggrapporter (`anthropics/claude-code#27474`/`#66993`/`#72714`) beskriver
+# hur en NY worktree-skapelse (`/worktree`, `--worktree`,
+# `isolation: "worktree"`) läser huvudrepots `core.hooksPath`, gör den
+# absolut, och skriver tillbaka den med fel `cwd`/utan `--worktree`-flagga —
+# vilket per gits default (delad config mellan worktrees) landar i DENNA
+# delade `.git/config`. Bekräftat mot vår egen körande `claude`-binär
+# (`strings` mot `@anthropic-ai/claude-code/bin/claude.exe`), inte bara mot
+# rapporterna. Full beläggkedja:
+# docs/research/t121-skribenten-claude-code-worktree-hookspath-2026-08-04.md
+#
+# Roten går INTE att patcha härifrån — `claude` är en sluten, kompilerad
+# binär, och den här miljön bär hög, kontinuerlig worktree-skapande-frekvens
+# (24 samtidigt levande linked worktrees mätt 2026-08-04, varje NY skapelse
+# = en ny triggning). Självläkning är därför inte en
+# tillfällig mitigering i väntan på en riktig fix — den ÄR den enda möjliga
+# fixen på vår sida: en självläkning är immun mot en extern skribent vi inte
+# äger, medan en varning kräver att någon läser den och agerar innan nästa
+# drift.
+#
+# KÄNT KVARSTÅENDE FÖNSTER: exakt en commit per worktree-skapelse kan köra
+# huvudkatalogens hook-kopia (inte den egna) innan självläkningen hinner
+# ikapp vid just den committen — se research-passet § 7.
 #
 # Sidoeffekten är avsiktlig och har precedens i denna fils egen kropp, som
 # redan re-stagar filer den bumpat. FÄLLER inte: fel hooksPath är ett miljöfel,
@@ -53,7 +68,7 @@ if [[ -n "${HOOKS_PATH}" && "${HOOKS_PATH}" = /* ]]; then
     printf 'pre-commit (T121): core.hooksPath stod ABSOLUT (%s) — rättar till .githooks.\n' "${HOOKS_PATH}" >&2
     if git config core.hooksPath .githooks 2>/dev/null; then
         printf '  Rättad. Varje worktree kör nu sin egen hook igen.\n' >&2
-        printf '  Källan till driften är OKÄND och spåras i T121 — rapportera om du vet vad som skrev.\n' >&2
+        printf '  Källa: Claude Codes worktree-skapande kod (anthropics/claude-code#72714 m.fl.) — se T121.\n' >&2
     else
         printf '  KUNDE INTE RÄTTA. Kör manuellt:  git config core.hooksPath .githooks\n' >&2
     fi
