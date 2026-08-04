@@ -267,8 +267,12 @@ done
 # är klar — så framåtreferenser (en rad som nämner en SENARE tråd) valideras
 # lika korrekt som bakåtreferenser.
 for ((PENDING_IDX = 0; PENDING_IDX < ${#PENDING_TARGET[@]}; PENDING_IDX++)); do
-    if ! tid_exists "${PENDING_TARGET[$PENDING_IDX]}"; then
-        echo "❌ ${THREAD_INDEX}:${PENDING_LINE[$PENDING_IDX]} — ${PENDING_ROW_TID[$PENDING_IDX]} besläktad-omnämner ${PENDING_TARGET[$PENDING_IDX]} som INTE finns i registret"
+    # shellcheck disable=SC2310  # returkoden ÄR svaret (finns/finns inte) —
+    # vi vill fortsätta loopen och samla ALLA brutna referenser, inte
+    # avbryta vid första träff. Samma disciplin som check-permissions-claims.sh
+    # rad 115 (key_exists) och heartbeat-svep.sh rad 416/459/475.
+    if ! tid_exists "${PENDING_TARGET[${PENDING_IDX}]}"; then
+        echo "❌ ${THREAD_INDEX}:${PENDING_LINE[${PENDING_IDX}]} — ${PENDING_ROW_TID[${PENDING_IDX}]} besläktad-omnämner ${PENDING_TARGET[${PENDING_IDX}]} som INTE finns i registret"
         echo "   Fix: rätta ID:t, eller ta bort omnämnandet om tråden aldrig fanns."
         EXIT_CODE=1
     fi
