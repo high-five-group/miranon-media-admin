@@ -2,8 +2,11 @@
 # scripts/test-heartbeat-svep.sh
 #
 # Empirisk testsvit för scripts/heartbeat-svep.sh (TASK-119 + TASK-128 +
-# TASK-135). 26 testfall — tyngdpunkt på AC#1:s krav: tvåsidigt bevis per
-# väg (planterat fall fälls, rent fall släpps), för VAR OCH EN av de tre
+# TASK-135 + fynd 2026-08-04 om HEARTBEAT_EXEMPT_AUTHORS). Räkningen längst
+# ned i filen ("X passerade") är den AUKTORITATIVA totalen — mätt, aldrig
+# handräknad hit (TASK-106-disciplinen: en kopierad räkning kan bli fel utan
+# att någon märker det). Tyngdpunkt på AC#1:s krav: tvåsidigt bevis per väg
+# (planterat fall fälls, rent fall släpps), för VAR OCH EN av de tre
 # namngivna vägarna plus den fjärde (armerings-kandidat) ur samma tabell:
 #
 #   T1  RÖTT planterat (check-rollup FAILURE)              → bit 1 satt
@@ -36,6 +39,16 @@
 #       — fäller på det orörda skriptet (kallstart gick via say()), passerar
 #       efter fixen (alarm())                                       → ALLTID-PÅ
 #   T24 --help visar den utökade ALLTID-PÅ/KALLSTART-texten (TASK-135) → syns
+#   T25 undantagen PR (author=dependabot) → PARKERAD-rutinrad, INGET
+#       kandidat-larm, ALDRIG "ARMERINGS-KANDIDAT" i utdatan    → bit 4 EJ satt
+#   T25b samma undantagna PR under --quiet → PARKERAD-raden dämpas (helt
+#        tyst stdout, samma --quiet-immunitet-KLASS som T22, inte ALLTID-PÅ)
+#   T26 icke-undantagen författare (t.ex. en människas PR) → larmar
+#       FORTFARANDE som kandidat — undantaget överexkluderar inte  → bit 4 satt
+#   T27 HEARTBEAT_EXEMPT_AUTHORS SAKNAS helt i policyn (odefinierad
+#       variabel) → fail-open, dependabot-PR:en larmar ändå        → bit 4 satt
+#   T27b HEARTBEAT_EXEMPT_AUTHORS definierad men TOM (()) → samma
+#        fail-open, samma larm                                     → bit 4 satt
 #
 # Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
 # ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
@@ -70,9 +83,12 @@
 # Användning: bash scripts/test-heartbeat-svep.sh
 # Exit 0 om alla testfall passerar, 1 annars.
 #
-# Källa: CLAUDE.md § Landning · tasks/lessons.md L443 · TASK-119 · TASK-135
+# Källa: CLAUDE.md § Landning · tasks/lessons.md L443 · TASK-119 · TASK-135 ·
+#        .heartbeat-svep-policy.conf § "PR-författare vars öppna PR:ar
+#        ALDRIG larmar som ARMERINGS-KANDIDAT"
 # Etablerad: TASK-119, 2026-08-02 · utökad TASK-128 (2026-08-03) · TASK-135
-# (2026-08-04, T23/T24 — kallstart-rad + --help-täckning)
+# (2026-08-04, T23/T24 — kallstart-rad + --help-täckning) · fynd 2026-08-04
+# (T25–T27b — HEARTBEAT_EXEMPT_AUTHORS, dependabot-kvartetten #632–#635)
 
 set -uo pipefail
 
@@ -191,7 +207,12 @@ run_case() {
 }
 
 setup
-printf 'test-heartbeat-svep: kör 26 testfall mot %s\n\n' "${SKRIPT_SRC}"
+# INGET hårdkodat antal här (TASK-106-disciplinen: en kopierad räkning kan
+# bli fel mot skriptets egen slutrad utan att någon märker det — det hände
+# just den raden en gång: "nio" mot "tio"). Den enda AUKTORITATIVA totalen
+# är "X passerade" på slutraden, räknad av PASSED/FAILED-motorn nedan i
+# samma körning som producerar den — inte handräknad hit.
+printf 'test-heartbeat-svep: kör mot %s\n\n' "${SKRIPT_SRC}"
 
 # ============================================================
 # T1/T2 — RÖTT: tvåsidigt bevis (planterat fälls, rent släpps).
@@ -448,6 +469,81 @@ if grep -qF "KALLSTART" "${TEST_DIR}/out.txt" && grep -qF "Startform som bakgrun
 else
     printf '  ✗ T24b  --help saknar KALLSTART-stycket eller blockets svans\n'; FAILED=$((FAILED+1))
 fi
+
+# ============================================================
+# T25/T25b/T26/T27/T27b — HEARTBEAT_EXEMPT_AUTHORS (fynd 2026-08-04,
+# dependabot-kvartetten #632–#635). setup() kopierar den RIKTIGA
+# .heartbeat-svep-policy.conf (samma relation som produktionen, § LAYOUTEN
+# ovan) — den bär redan HEARTBEAT_EXEMPT_AUTHORS=("dependabot"), så T25/T26
+# prövar mekanismen mot den FAKTISKA konfigurationen, inte en testdouble.
+echo ""
+reset_scen
+set_rows '632\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\tdependabot\n'
+EXPECT_OUT="PARKERAD (undantagen) — PR #632"
+NOT_EXPECT_OUT="ARMERINGS-KANDIDAT"
+run_case "T25 undantagen PR (author=dependabot) → PARKERAD-rutinrad, INGET kandidat-larm" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T25b isolerar --quiet-dämpningen från kallstartens ALLTID-PÅ-rad (samma
+# tvåsopnings-teknik som T22: en preliminär, kastad sopning sätter
+# SHA-baslinjen FÖRE mättillfället).
+reset_scen
+( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
+    HEARTBEAT_STATE_DIR="${STATE_DIR}" bash ./scripts/heartbeat-svep.sh --once --quiet ) >/dev/null 2>&1
+set_rows '632\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\tdependabot\n'
+run_case "T25b samma undantagna PR under --quiet, stabilt SHA → helt tyst stdout" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --quiet
+if [[ -s "${TEST_DIR}/out.txt" ]]; then
+    printf '  ✗ T25c  förväntade tom utdata (PARKERAD dämpad av --quiet), fick:\n'
+    sed 's/^/      /' "${TEST_DIR}/out.txt" | head -5
+    FAILED=$(( FAILED + 1 ))
+else
+    printf '  ✓ T25c  stdout helt tomt — PARKERAD-raden är en rutin-rad, inte ett larm\n'
+    PASSED=$(( PASSED + 1 ))
+fi
+
+reset_scen
+set_rows '640\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\toctocat\n'
+EXPECT_OUT="ARMERINGS-KANDIDAT — PR #640"
+NOT_EXPECT_OUT="PARKERAD"
+run_case "T26 icke-undantagen författare (octocat, en människas PR) → larmar FORTFARANDE" 4 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T27/T27b: två ODEFINIERAD-varianter av "tom/saknad" (kortets krav-text
+# nämner uttryckligen båda) mot en HANDSKRIVEN policy-fil utan (T27) eller
+# med tom (T27b) HEARTBEAT_EXEMPT_AUTHORS — bevisar att skriptets EGEN
+# fail-open-default (HEARTBEAT_EXEMPT_AUTHORS=() FÖRE source, se
+# scripts/heartbeat-svep.sh) håller oavsett vilken av de två formerna
+# policy-filen råkar sakna.
+echo ""
+printf '%s\n' \
+    'HEARTBEAT_REPO="owner/repo"' \
+    'HEARTBEAT_BRANCH="main"' \
+    'HEARTBEAT_INTERVAL=90' \
+    'HEARTBEAT_TIMEOUT=0' \
+    > "${TEST_DIR}/.no-exempt-policy.conf"
+reset_scen
+set_rows '632\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\tdependabot\n'
+EXPECT_OUT="ARMERINGS-KANDIDAT — PR #632"
+NOT_EXPECT_OUT="PARKERAD"
+run_case "T27 HEARTBEAT_EXEMPT_AUTHORS SAKNAS helt i policyn → fail-open, larmar ändå" 4 - \
+    env HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.no-exempt-policy.conf" \
+    bash ./scripts/heartbeat-svep.sh --once
+
+printf '%s\n' \
+    'HEARTBEAT_REPO="owner/repo"' \
+    'HEARTBEAT_BRANCH="main"' \
+    'HEARTBEAT_INTERVAL=90' \
+    'HEARTBEAT_TIMEOUT=0' \
+    'HEARTBEAT_EXEMPT_AUTHORS=()' \
+    > "${TEST_DIR}/.empty-exempt-policy.conf"
+reset_scen
+set_rows '632\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\tdependabot\n'
+EXPECT_OUT="ARMERINGS-KANDIDAT — PR #632"
+NOT_EXPECT_OUT="PARKERAD"
+run_case "T27b HEARTBEAT_EXEMPT_AUTHORS definierad TOM (()) → fail-open, larmar ändå" 4 - \
+    env HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.empty-exempt-policy.conf" \
+    bash ./scripts/heartbeat-svep.sh --once
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1
