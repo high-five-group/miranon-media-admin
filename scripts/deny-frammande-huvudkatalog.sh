@@ -185,14 +185,20 @@ ar_git_skrivning() {
     # den returnerar `read` icke-noll på sista raden och while-loopen hoppar
     # över den. Med ett endradskommando (normalfallet) betyder det att INGET
     # prövas och hooken släpper allt. Fångat av testsviten 2026-08-04.
-    # shellcheck disable=SC2020
+    local segmenterade
+    # `tr`:s returvärde är ointressant här och maskeras medvetet i en
+    # kommandosubstitution (SC2312) — därför fångas det i en variabel först,
+    # så loopen nedan matar från en här-sträng i stället.
+    #
     # SC2020 varnar för duplicerade tecken i tr:s ersättningsset. Här är det
     # avsikten: tre separator-TECKEN ska var för sig bli en radbrytning. Det
     # är teckenvis ersättning, inte ordvis — precis vad tr gör.
+    # shellcheck disable=SC2020
+    segmenterade="$(printf '%s\n' "${cmd}" | tr ';|&' '\n\n\n')" || return 1
     while IFS= read -r segment; do
         [[ -n "${segment//[[:space:]]/}" ]] || continue
         _prova_segment "${segment}" && return 0
-    done < <(printf '%s\n' "${cmd}" | tr ';|&' '\n\n\n')
+    done <<< "${segmenterade}"
     return 1
 }
 

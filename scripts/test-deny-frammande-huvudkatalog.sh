@@ -41,6 +41,10 @@ git -C "${HUVUD}" commit -q -m "init"
 git -C "${HUVUD}" worktree add -q -b gren-b "${WT}"
 
 COMMON_DIR="$(git -C "${HUVUD}" rev-parse --path-format=absolute --git-common-dir)"
+# Deklareras före `source` så shellcheck ser dem som tilldelade (SC2154) —
+# policyfilen är den som fyller dem, men verktyget kan inte följa dit.
+KATALOG_MARKOR_FILNAMN=""
+KATALOG_STALE_TIMMAR=""
 # shellcheck source=/dev/null
 source "${POLICY}"
 MARKOR="${COMMON_DIR}/${KATALOG_MARKOR_FILNAMN}"
@@ -49,9 +53,13 @@ AGARE_SID="session-agaren-1111"
 FRAMLING_SID="session-framlingen-2222"
 
 satt_markor() {
-    local sid="$1" epoch="${2:-$(date +%s)}"
+    local sid="$1" epoch="${2:-}" iso
+    if [[ -z "${epoch}" ]]; then
+        epoch="$(date +%s)" || return 1
+    fi
+    iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)" || return 1
     jq -n --arg sid "${sid}" --arg huvud "${HUVUD}" \
-        --arg iso "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson epoch "${epoch}" \
+        --arg iso "${iso}" --argjson epoch "${epoch}" \
         '{session_id: $sid, huvudkatalog: $huvud, satt_vid: $iso, satt_vid_epoch: $epoch}' \
         > "${MARKOR}"
 }
@@ -154,7 +162,8 @@ else
     FEL=$((FEL + 1))
 fi
 
-satt_markor "${AGARE_SID}" "$(( $(date +%s) - KATALOG_STALE_TIMMAR * 3600 - 60 ))"
+NU="$(date +%s)"
+satt_markor "${AGARE_SID}" "$(( NU - KATALOG_STALE_TIMMAR * 3600 - 60 ))"
 ANTAL=$((ANTAL + 1))
 UT_GAMMAL="$(kor "${HUVUD}" "${FRAMLING_SID}" "git merge --ff-only origin/main")"
 if printf '%s' "${UT_GAMMAL}" | jq -e '.hookSpecificOutput.permissionDecisionReason | contains("stale-tröskeln")' >/dev/null 2>&1; then
@@ -186,7 +195,8 @@ ANTAL=$((ANTAL + 1))
 jq -nc --arg cwd "${HUVUD}" --arg sid "${AGARE_SID}" \
     '{session_id: $sid, cwd: $cwd, hook_event_name: "SessionStart"}' \
     | KATALOG_POLICY="${POLICY}" bash "${MARKOR_HOOK}" >/dev/null 2>&1
-if [[ "$(jq -r '.session_id' "${MARKOR}" 2>/dev/null)" = "${AGARE_SID}" ]]; then
+SATT_SID="$(jq -r '.session_id' "${MARKOR}" 2>/dev/null || echo '')"
+if [[ "${SATT_SID}" = "${AGARE_SID}" ]]; then
     printf '  ✅ %-58s [%s]\n' "session i huvudkatalogen tar ledigt ägarskap" "SATT"
 else
     printf '  ❌ %-58s\n' "session i huvudkatalogen tar ledigt ägarskap"
