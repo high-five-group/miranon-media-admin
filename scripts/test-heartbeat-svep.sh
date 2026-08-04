@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # scripts/test-heartbeat-svep.sh
 #
-# Empirisk testsvit för scripts/heartbeat-svep.sh (TASK-119 + TASK-128). 24
-# testfall — tyngdpunkt på AC#1:s krav: tvåsidigt bevis per väg (planterat
-# fall fälls, rent fall släpps), för VAR OCH EN av de tre namngivna vägarna
-# plus den fjärde (armerings-kandidat) ur samma tabell:
+# Empirisk testsvit för scripts/heartbeat-svep.sh (TASK-119 + TASK-128 +
+# TASK-135). 26 testfall — tyngdpunkt på AC#1:s krav: tvåsidigt bevis per
+# väg (planterat fall fälls, rent fall släpps), för VAR OCH EN av de tre
+# namngivna vägarna plus den fjärde (armerings-kandidat) ur samma tabell:
 #
 #   T1  RÖTT planterat (check-rollup FAILURE)              → bit 1 satt
 #   T2  RÖTT rent (samma PR, rollup SUCCESS)                → bit 1 EJ satt
@@ -31,7 +31,11 @@
 #   T19 loop-läge, --timeout-bundet, flera iterationer            → sista verdikt
 #   T20 tom PR-lista → 0 granskade, ALLT LUGNT                    → 0
 #   T21 --quiet dämpar rutin-rader men ALDRIG larm-rader (L443)    → RÖTT syns
-#   T22 --quiet vid rent läge → helt tyst stdout                   → tomt
+#   T22 --quiet vid STABILT, KÄNT läge → helt tyst stdout           → tomt
+#   T23 KALLSTART: "main-SHA-baslinje satt" syns ÄVEN under --quiet (TASK-135)
+#       — fäller på det orörda skriptet (kallstart gick via say()), passerar
+#       efter fixen (alarm())                                       → ALLTID-PÅ
+#   T24 --help visar den utökade ALLTID-PÅ/KALLSTART-texten (TASK-135) → syns
 #
 # Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
 # ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
@@ -66,8 +70,9 @@
 # Användning: bash scripts/test-heartbeat-svep.sh
 # Exit 0 om alla testfall passerar, 1 annars.
 #
-# Källa: CLAUDE.md § Landning · tasks/lessons.md L443 · TASK-119
-# Etablerad: TASK-119, 2026-08-02
+# Källa: CLAUDE.md § Landning · tasks/lessons.md L443 · TASK-119 · TASK-135
+# Etablerad: TASK-119, 2026-08-02 · utökad TASK-128 (2026-08-03) · TASK-135
+# (2026-08-04, T23/T24 — kallstart-rad + --help-täckning)
 
 set -uo pipefail
 
@@ -186,7 +191,7 @@ run_case() {
 }
 
 setup
-printf 'test-heartbeat-svep: kör 24 testfall mot %s\n\n' "${SKRIPT_SRC}"
+printf 'test-heartbeat-svep: kör 26 testfall mot %s\n\n' "${SKRIPT_SRC}"
 
 # ============================================================
 # T1/T2 — RÖTT: tvåsidigt bevis (planterat fälls, rent släpps).
@@ -385,16 +390,63 @@ NOT_EXPECT_OUT="öppna PR:ar granskade"
 run_case "T21 --quiet dämpar rutin men ALDRIG larm (RÖTT syns ändå)" 1 - \
     bash ./scripts/heartbeat-svep.sh --once --quiet
 
+# T22 mäter den STABILA tystnaden — känt tidigare SHA, oförändrat, inga
+# PR-larm — INTE kallstart (TASK-135, se T23 nedan). En färsk tillstånds-
+# katalog har inget att jämföra mot och skriver därför sin EGEN ALLTID-PÅ-
+# rad ("main-SHA-baslinje satt"); en preliminär sopning (utdata kastad,
+# samma tvåsopnings-mönster som T11/T12) etablerar baslinjen FÖRE
+# mättillfället, så detta fall isolerar den riktiga steady-state-tystnaden.
 reset_scen
-run_case "T22 --quiet vid rent läge → helt tyst stdout" 0 - \
+( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
+    HEARTBEAT_STATE_DIR="${STATE_DIR}" bash ./scripts/heartbeat-svep.sh --once --quiet ) >/dev/null 2>&1
+run_case "T22 --quiet vid stabilt, känt läge → helt tyst stdout" 0 - \
     bash ./scripts/heartbeat-svep.sh --once --quiet
 if [[ -s "${TEST_DIR}/out.txt" ]]; then
     printf '  ✗ T22b  förväntade tom utdata, fick:\n'
     sed 's/^/      /' "${TEST_DIR}/out.txt" | head -5
     FAILED=$(( FAILED + 1 ))
 else
-    printf '  ✓ T22b  stdout helt tomt vid rent, tyst läge\n'
+    printf '  ✓ T22b  stdout helt tomt vid stabilt, känt, tyst läge\n'
     PASSED=$(( PASSED + 1 ))
+fi
+
+# ============================================================
+# T23 — KALLSTART (TASK-135, 2026-08-04): explicit "main-SHA-baslinje
+# satt"-rad krävs ÄVEN under --quiet. En avancemang-rad KRÄVER ett känt
+# tidigare SHA; saknas det (färsk/tömd tillstånds-katalog) finns inget att
+# jämföra mot. Utan denna rad är en genuin kallstart och en tystad,
+# uteblivet-larm-sopning OMÖJLIGA att skilja åt i en --quiet rå-logg —
+# EXAKT den förväxling som startade TASK-135: svepet observerades aldrig
+# visa en avancemang-rad efter PR #684 landade (10:19:45Z); förklaringen
+# var kallstart/förlorad tillståndskontinuitet, inte trasig
+# --quiet-hantering (den var, mätt via T11/T12/T21/T22 ovan, redan korrekt
+# — de vägde bara aldrig kallstarts-fallet specifikt, samma lucka i
+# TÄCKNING som orsakade att förväxlingen kunde uppstå obemärkt).
+# TVÅSIDIGT BEVIS (kortets AC #2): detta fall FÄLLER på det orörda
+# skriptet (kallstarten gick tidigare via say(), tystad av --quiet — noll
+# rader, identiskt med den gamla T22-formen ovan) och PASSERAR efter
+# fixen (kallstarten går nu via alarm()).
+echo ""
+reset_scen
+EXPECT_OUT="main-SHA-baslinje satt"
+run_case "T23 KALLSTART — baslinje-rad syns ÄVEN under --quiet (TASK-135)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --quiet
+
+# ============================================================
+# T24 — --help ljuger inte tyst (samma disciplin som ci-wait.sh, se
+# skriptets egen kommentar vid `-h|--help`-grenen). Radintervallet
+# `sed -n '61,104p'` MÅSTE följa § ANVÄNDNING-blockets faktiska gränser;
+# TASK-135 utökade blocket (61,81 → 61,104) för ALLTID-PÅ-klassen +
+# kallstart-stycket. Detta fall bevisar att --help FAKTISKT visar det nya
+# innehållet OCH blockets svans, inte bara att sed-anropet kör utan fel.
+echo ""
+EXPECT_OUT="ALLTID-PÅ"
+run_case "T24 --help visar den nya ALLTID-PÅ/KALLSTART-texten (TASK-135)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --help
+if grep -qF "KALLSTART" "${TEST_DIR}/out.txt" && grep -qF "Startform som bakgrunds-monitor" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T24b  --help täcker hela det uppdaterade ANVÄNDNING-blocket\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T24b  --help saknar KALLSTART-stycket eller blockets svans\n'; FAILED=$((FAILED+1))
 fi
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
