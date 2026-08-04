@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 97 ▶️ AKTIV (2026-08-04, återupptagen — `lifecycle: active`)**
+**Session 97 ⏸️ PAUSAD (2026-08-04, tredje pausen — `lifecycle: paused`)**
 — **HOOK-SKULDEN BETALD, OCH `ask` RIVET SOM BESLUTSVÄRDE.** Resumen mötte en
 ägarlapp från en **död session** (noll processer, ingen transcript-fil, tom
 scratchpad — stale efter ~3 sekunder mot tröskelns 12 timmar) och betalade
@@ -59,13 +59,26 @@ turer/natt); svaret stod i skriptets filhuvud rad 100, två agenter missade det.
 **EGNA FEL:** `T121` stängd för tidigt (värdet drev tillbaka inom timmen —
 vakten självläker nu, rotorsak ÖPPEN, research ute) · godkänt `ask` läst som
 "fällde inte". **SKARP DRIFT gav lucka på 90 s:** monitorn falsklarmade på
-medvetet parkerade dependabot-PR:er; fix ute. **NÄSTA: hub-ändringen
-(`--slapp` + heartbeat i fyra skills) + plugin-bump → `T06`-hub-lyftet →
-kodfils-partitionering (nästa resume).** **VÄNTAR PÅ MARCUS:** relationsmodellen
-(`T122`, ram utvidgad till riktig relationsdatabas, ev. Supabase) ·
-`package-lock.json.pre-t118` · dependabot-kvartetten. Numrering:
-S97/ADR-095/L444(+**7** fragment)/**T122**/task-139/f47. Full narrativ:
-sessionsdok S97 Del 1–6.
+medvetet parkerade dependabot-PR:er; fix ute. **SLUTPASSET:** hub-ändringen landad (`9c0e2a3`, plugin **1.28.0** installerad —
+fyra session-skills bär nu `--slapp` + heartbeat-start/stopp) · `T121` STÄNGD
+med belagd rotorsak: **Claude Codes egen worktree-kod** skriver om
+`core.hooksPath` till absolut vid varje worktree-skapelse (tre publika issues +
+verifierat i vår egen binär; vakten självläker, går ej att laga hos oss) ·
+`T122` registrerad med research: **filer förblir sanningskälla, INGEN Supabase**
+— Backstage kallar själv sin databas ingest-cache · **isolerings-mätningen
+gjord:** 22 worktree-skapelser på en dag, 9 undvikbara — `research-pass`-defaulten
+var fel (fixad i `#729`), `bygg-agent`-defaulten var RÄTT (12/12 motiverade) ·
+heartbeat-monitorn i drift och tyst för parkerade dependabot-PR:er ·
+worktree-städning 6 borttagna, grenar 194→**182**. **FJORTON PR:er landade.**
+**NÄSTA (resume, förhoppningsvis sista): betala bevis-skulderna
+(`SessionEnd`-hooken + plugin-distributionen — båda obevisbara i sessionen som
+byggde dem) → manifest-paret (`plugin.json` 1.28.0 mot `marketplace.json` 1.12.0;
+utred vad fältet styr FÖRE synk) → `T06`-hub-lyftet → kodfils-partitionering.**
+**VÄNTAR PÅ MARCUS:** relationsmodellens ordning + ADR-mintning (`T122`) ·
+dependabot-kvartetten · `package-lock.json.pre-t118` · uppströmsrapport till
+`anthropics/claude-code#72714`. Numrering:
+S97/ADR-095/L444(+**8** fragment)/**T123**/task-139/f47. Full narrativ:
+sessionsdok S97 Del 1–6 + PAUSLÄGE.
 *(Föregående kadensrad nedan.)*
 
 <!-- Föregående kadensrad, bevarad: -->
