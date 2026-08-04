@@ -99,10 +99,46 @@ jobs:
   # (links-arende nedan). Skälet: nattärendet är tilldelat och ska betyda "något
   # är akut fel"; en extern värds dåliga dag hör inte dit. Att bara ta ut jobbet
   # utan kanal vore fail-open — L321/L322-klassen — därav den egna kanalen.
+  # ═══ TIMEOUT-BUDGETEN ÄR MEDVETET PÅ STEG-NIVÅ, INTE JOBB-NIVÅ ═══
+  # (mätt 2026-08-05, run 30877269209): en jobb-nivå-timeout gav jobbet
+  # conclusion "cancelled" mitt i lychees retry-backoff (steget "Run lychee
+  # link check" löpte 04:18:11→04:23:20, ~5 min 9 s). `cancelled` missar
+  # BÅDA kanalerna: `links-arende` nedan kräver `result == 'failure'` och
+  # skippades tyst (ärende #464 fick ingen kommentar den natten), och det
+  # bredare nattlarmet (`alarm` längre ned) fyrade förvisso — det räknar
+  # redan `cancelled` — men dess body (#681) nämnde varken "länk", "lychee"
+  # eller "cancelled".
+  #
+  # Källa till klassningen (förstaparts, båda styckena verifierade
+  # 2026-08-05):
+  #   - `jobs.<job_id>.timeout-minutes`: "the maximum number of minutes to
+  #     let a job run before GitHub automatically CANCELS it"
+  #     (github/docs, workflow-syntax.md).
+  #   - `jobs.<job_id>.steps[*].timeout-minutes`: "the maximum number of
+  #     minutes to run the step before killing the process" — inget "cancel"
+  #     i steg-varianten. Bekräftat i runner-källkoden
+  #     (actions/runner, Runner.Worker/StepsRunner.cs, RunStepAsync): när
+  #     STEGETS EGNA cancellation-token löser ut utan att JOBBETS gör det
+  #     sätts `step.ExecutionContext.Result = TaskResult.Failed` — bara när
+  #     jobbets egna token (jobb-timeout ELLER en manuell avbrytning) är
+  #     inblandat blir resultatet `TaskResult.Canceled`. Reproducerat live på
+  #     detta repots runners (T146-scratch-testet, samma push som denna
+  #     commit initialt bar, borttaget innan PR): en jobb-nivå-timeout gav
+  #     `cancelled`, en steg-nivå-timeout på samma sömn gav `failure` — och
+  #     avslutade dessutom EFTER stegets kortare budget, inte jobbets längre.
+  #
+  # Flytten ändrar alltså UTGÅNGENS KLASS (cancelled → failure) för det
+  # vanliga fallet (extern retry-backoff drar ut på tiden), utan att bredda
+  # något larmvillkor — båda kanalerna lyssnar redan på `failure`. En GENUIN
+  # manuell avbrytning av hela körningen förblir `cancelled` (jobbets egna
+  # cancellation-token löser då ut), och `links-arende` förblir tyst om den
+  # — korrekt, det var aldrig en länk som gick sönder. Jobb-nivåns
+  # `timeout-minutes` nedan är kvar som BACKSTOP mot en genuint hängande
+  # runner/checkout, inte den aktiva budgeten.
   nightly-links:
     name: Länkkontroll (utan cache)
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     permissions:
       contents: read
     steps:
@@ -113,6 +149,11 @@ jobs:
 
       - name: Run lychee link check (no cache)
         # SHA-pin per ADR-029 §6 — samma pin som ci.yml docs-jobbet.
+        # timeout-minutes HÄR (steg-nivå) är den aktiva budgeten — se
+        # kommentarblocket ovan jobbet för varför. 5 min = samma budget
+        # jobbet bar tidigare; checkout ovan tar sekunder, så flytten
+        # kostar ingen väggklocka i det normala (gröna) fallet.
+        timeout-minutes: 5
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8  # v2.9.0
         with:
           # --accept-timeouts (ADR-082 beslut 2): lychee för timeouts i en EGEN
@@ -614,9 +655,64 @@ jobs:
           # utfall körde klart innan jobbet föll (klassningen sker före exit).
           BACKLOG_RESULT: ${{ needs.backlog-closure.result }}
           BACKLOG_UTFALL: ${{ needs.backlog-closure.outputs.utfall }}
+          # Resten av needs-jobbens rå-resultat (T146, 2026-08-05) — se
+          # jobb_sektion-blocket nedan för varför de behövs utöver
+          # BACKLOG_RESULT ovan.
+          SUITE_RESULT: ${{ needs.suite.result }}
+          AUDIT_RESULT: ${{ needs.nightly-audit.result }}
+          METRICS_RESULT: ${{ needs.nightly-metrics.result }}
+          KONTRAKTSVAKT_RESULT: ${{ needs.kontraktsvakt.result }}
+          PAUSADE_RESULT: ${{ needs.pausade-sessioner.result }}
+          OBESVARADE_RESULT: ${{ needs.obesvarade-larm.result }}
         run: |
           set -euo pipefail
           run_url="${SERVER}/${REPO}/actions/runs/${RUN_ID}"
+
+          # ═══ JOBB-STATUS (T146, 2026-08-05) — REDOVISA ALLA ICKE-GRÖNA ═══
+          # Rent additivt: bredare INNEHÅLL i ett ärende som ändå skapas, inte
+          # en breddning av NÄR det skapas (villkoret på rad 628 är orört).
+          #
+          # Innan detta block namngavs bara backlog-closure explicit
+          # (backlog_sektion nedan) — övriga sex needs-jobb syntes bara
+          # indirekt genom att ärendet fanns, aldrig med NAMN eller RESULTAT i
+          # texten. Den 2026-08-04 föll natten med `Länkkontroll (utan
+          # cache)` CANCELLED (se nightly-links-jobbets kommentarblock för
+          # rotorsaken); den jobbet ligger MEDVETET utanför denna needs-lista
+          # (ADR-082) så det syns aldrig här — men SAMMA natt visade också att
+          # ingen av de sju jobb som FAKTISKT ingår i needs namngavs i
+          # ärendet (#681), bara backlog-closure fick en särskild sektion.
+          # En cancelled eller skipped post i just DESSA sju jobb hade varit
+          # lika osynlig. Listan nedan täcker alla sju, inte bara det som
+          # råkade utlösa fyndet.
+          jobbnamn=(
+            "Nattlig fullsvit"
+            "Bredare sårbarhetsgranskning"
+            "CI-mätning (siffror, ej känsla)"
+            "Kontraktsvakt (fixtur mot skarp staging)"
+            "Backlog-stängning (natt-grind)"
+            "Sannings-avstämning — pausade sessioner (natt-grind)"
+            "Sannings-avstämning — obesvarade larm (natt-grind)"
+          )
+          jobbresultat=(
+            "${SUITE_RESULT}"
+            "${AUDIT_RESULT}"
+            "${METRICS_RESULT}"
+            "${KONTRAKTSVAKT_RESULT}"
+            "${BACKLOG_RESULT}"
+            "${PAUSADE_RESULT}"
+            "${OBESVARADE_RESULT}"
+          )
+          jobb_rader=""
+          for i in "${!jobbnamn[@]}"; do
+            r="${jobbresultat[$i]}"
+            if [ "${r}" != "success" ]; then
+              jobb_rader="${jobb_rader}"$'\n'"- **${jobbnamn[$i]}:** \`${r}\`"
+            fi
+          done
+          jobb_sektion=""
+          if [ -n "${jobb_rader}" ]; then
+            jobb_sektion=$'\n\n**Jobb-status (icke-gröna):**'"${jobb_rader}"
+          fi
 
           # Backlog-grindens två felkoder kräver MOTSATTA åtgärder och får
           # aldrig kollapsas i ärendetexten (se backlog-closure-jobbets huvud).
@@ -684,7 +780,7 @@ jobs:
 
           - **Körning:** ${run_url}
           - **Commit-spann sedan senaste gröna körning av nattsviten:** ${span}
-          - **HEAD:** \`${CURRENT_SHA}\`
+          - **HEAD:** \`${CURRENT_SHA}\`${jobb_sektion}
 
           Stängningsregel (CONTRIBUTING § Nattnätet): detta ärende stängs ENDAST med (a) en åtgärd som fixar grundorsaken eller (b) en öppet skriven motivering — aldrig tyst.${backlog_sektion}${note}"
 
