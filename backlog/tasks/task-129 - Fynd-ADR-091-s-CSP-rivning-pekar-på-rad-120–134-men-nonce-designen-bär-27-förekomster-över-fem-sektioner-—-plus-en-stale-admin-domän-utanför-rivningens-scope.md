@@ -4,10 +4,10 @@ title: >-
   Fynd: ADR-091:s CSP-rivning pekar på rad 120–134 men nonce-designen bär 27
   förekomster över fem sektioner — plus en stale admin-domän utanför rivningens
   scope
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-02 16:26'
-updated_date: '2026-08-04 10:49'
+updated_date: '2026-08-04 11:01'
 labels:
   - ready-for-human
 dependencies: []
@@ -39,11 +39,9 @@ RÖRLIGT RADINTERVALL: TASK-127.1:s landning ändrade SECURITY-SPEC med 26+/51- 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
-
-
 
 ## Implementation Notes
 
@@ -54,3 +52,9 @@ LÖST via ÅTGÄRDSVÄG A, beslutad av Marcus 2026-08-04 i S96-sessionen (chattk
 
 PREMISS-PASS (ADR-086): kortets radnummer och rubrik-citat (rad 16/31/58/223/822, rad 461) verifierade EXAKT mot dagens HEAD — samtliga träffar. DIVERGENS funnen och rapporterad, ej byggd vidare på: kortets 'nonce'-räkning ('27 förekomster... över fem rubriker') mätte 40 case-insensitive / 36 case-sensitive-lowercase / 30 rader vid omräkning 2026-08-04 (grep -o -i 'nonce' resp. grep -c -i) — sannolikt filändringar mellan fyndet och denna åtgärd. Räkningen är INTE bindande för amenderingen (som är rubrik- inte räknebaserad per uppdraget), så divergensen påverkar inte lösningen. Samma mönster på AVGRÄNSNING-stycket: '19 filer totalt' för frasen 'Publicerad på miranon.se' mätte 14 filer 2026-08-04 (bokfört på TASK-136 i stället, eftersom den frasen hör till det utbrutna kortets avgränsning, inte detta korts amendering).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Väg A utförd (Marcus-beslut 2026-08-04, S96 Del 10) av bygg-agent: ADR-091 fick Updates-block 2026-08-04 som gör punkt 4:s rivnings-scope RUBRIKBASERAT över samtliga nonce-bärande SECURITY-SPEC-sektioner + §9-checklistan (radintervallet 120–134 pekade redan fel). Symptom 2 (admin.miranon.se rad 461) utbrutet som TASK-136 (ready-for-agent/low). Leverans: PR #687, merge 7ee83f76, checks 7 pass + 1 skipping (läst via gh pr checks — DoD #3 bockad mot faktiskt utfall). Premiss-divergenser (nonce-räkningen 27→40, filräkningen 19→14) bokförda i Implementation Notes, ej ärvda. SECURITY-SPEC självt orört per deferralen — rättelsen exekveras vid Grind 0/Fas 7.
+<!-- SECTION:FINAL_SUMMARY:END -->
