@@ -40,11 +40,32 @@ att skilja från "hooken fällde aldrig" — jag rapporterade en fällning som
 släpp (`T110` klass A). **RÄTTELSE:** mailspärren kör `exit 2`, inte `ask` —
 målet är **noll** prompts, inte "en kvar". Hook-ytan mätt: nio registreringar,
 sex logiker; två kunde nå Marcus, efter `#713` en, efter pid-liveness noll.
-**NÄSTA: pid-liveness + SessionEnd + `deny` för ägarlappen (agent kör) ·
-`T119` (d) item 4 staging-preflight → pre-commit (agent kör) → (c) → item 3
-→ item 6-skörd → item 7 hub-lyft → `barn:`-fältet.** Numrering:
-S97/ADR-095/L444(+3 fragment)/**T121**/task-139/**f47** (fälle-numret AVGJORT —
-definition skild från referens). Full narrativ: sessionsdok S97 Del 1–5.
+**DEL 6 — ÅTTA PR:er, TRE MARCUS-FÅNGSTER, TVÅ EGNA FEL.** Landat: `#716`
+(staging-preflight i pre-commit, mätt 1,2–1,7 s, villkorad) · `#717`+`#718`
+(`T121` hooksPath) · `#719` (fyra lesson-fragment — den femte var redan `L235`,
+CARRY-blockets "verifierat" var osant) · `#720` (**ägarlappens fyra verb**:
+tas vid första git-skrivning · behålls medan processen lever · övertas endast
+vid bevisad död ägare, med varning vid smutsigt träd · släpps vid `SessionEnd`
+eller `--slapp`; 55/55 + 25/25, mutationstestat) · `#721`+`#722` (två agenter
+som byggde INGENTING — stopp-grind, korrekt) · `#723` (självläkande
+hooksPath-vakt + git-config-research). **MARCUS FÅNGSTER:** (1) `ask` rivet —
+driftbilden, inte irritationen: N sessioner × M agenter köar på en människa ·
+(2) referensfönstret — pausade fönster hålls öppna med avsikt · (3)
+**toalettscenariot** — tidsbaserat övertagande hade skrivit i en levande
+sessions arbetsträd; tid är inte en proxy för "ingen arbetar här", rivet och
+bokfört i ADR-090 · (4) **heartbeat-triggern LÖST** — sessionens livscykel ÄR
+triggern (`Monitor` + `--quiet`, noll LLM-anrop mot cron-vägens ~960
+turer/natt); svaret stod i skriptets filhuvud rad 100, två agenter missade det.
+**EGNA FEL:** `T121` stängd för tidigt (värdet drev tillbaka inom timmen —
+vakten självläker nu, rotorsak ÖPPEN, research ute) · godkänt `ask` läst som
+"fällde inte". **SKARP DRIFT gav lucka på 90 s:** monitorn falsklarmade på
+medvetet parkerade dependabot-PR:er; fix ute. **NÄSTA: hub-ändringen
+(`--slapp` + heartbeat i fyra skills) + plugin-bump → `T06`-hub-lyftet →
+kodfils-partitionering (nästa resume).** **VÄNTAR PÅ MARCUS:** relationsmodellen
+(`T122`, ram utvidgad till riktig relationsdatabas, ev. Supabase) ·
+`package-lock.json.pre-t118` · dependabot-kvartetten. Numrering:
+S97/ADR-095/L444(+**7** fragment)/**T122**/task-139/f47. Full narrativ:
+sessionsdok S97 Del 1–6.
 *(Föregående kadensrad nedan.)*
 
 <!-- Föregående kadensrad, bevarad: -->
