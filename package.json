@@ -98,9 +98,11 @@
   },
   "overrides": {
     "@tanstack/history": "1.161.6",
-    "brace-expansion": "5.0.8",
+    "brace-expansion": "5.0.9",
+    "fast-uri": "3.1.5",
     "js-yaml": "5.2.2",
     "linkify-it": "6.0.0",
+    "postcss": "8.5.25",
     "sharp": "0.35.3"
   },
   "description": "React-admin för Miranon Media — eventhantering, anmälningar och rapportering ovanpå Airtable + Supabase. Privat projekt.",
