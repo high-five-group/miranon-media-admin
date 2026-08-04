@@ -15,6 +15,54 @@
 
 ## Aktuellt fokus
 
+**Session 96 ▶️ ÅTERUPPTAGEN (2026-08-03 kväll, andra resumen —
+`lifecycle: active`)** — **PROCESSFELET BAKOM KONVERGENS-TEMPOT UTRETT OCH
+ÅTGÄRDAT FÖRE något prototyparbete.** Marcus fråga öppnade passet: var det
+orkestrerar-fel eller processfel att iterationerna tog 10–30 min per varv?
+**Båda, i orsaksordning.** (1) Konvergens-varv delegerades till bygg-agenter
+trots skillens *"Iterera med Marcus i webbläsaren"* — en interaktiv loop är
+inget självständigt uppdrag. (2) **Processhålet, det djupare:** skillen
+beskrev VAD men inget om KADENS, och hålet fylldes med default-maskineriet;
+även efter formbytet kördes ändringen genom PR + kö (`#670`) utan skäl.
+**Rotorsakskedjan:** agentens isolerade worktree är enda vägen för ändringen
+att nå Marcus dev-server — delegeringsvalet SKAPADE kö-kostnaden. **Mätt:**
+`#664` 15 min i kön · `#666` 20 min · noll varv behövde landa.
+**`T116` registrerad + åtgärdad:** kadensen kodifierad i plugin **1.27.0**
+(hub `450c628`, hub-PR `#16`) som `SKILL.md` § Standard-formen **punkt 5** —
+varvet körs av aktören som sitter med Marcus i dev-serverns worktree · lokal
+commit per varv · push + PR EN gång när han är nöjd · skarven mot divergens
+hålls skarp. Plugin uppdaterat i samma landning. **Dev-servern uppe på 5174**
+ur `proto/s96-konvergens-varv2` (grundad på `main`, alltså MED `#670`) —
+Marcus har sett prototyp B. **Tre egna fel bokförda:** huvudkatalogen rörd
+tre gånger trots S93:s ägarskap · `mergeStateStatus` läst som fakta på en
+redan mergad PR · **resumens steg 6 hoppades över** (sessionen stod `paused`
+medan tre PR:er landade) — `check-lifecycle.sh` var grön hela tiden eftersom
+den prövar konsistens, inte sanning; **fångad av Marcus, inte av grinden**.
+**Numrering: S96 behålls/ADR-095/L444 (+2 fragment)/T117/task-133/f47.**
+**NÄSTA: fotnots-texten *"Frågor? Marcus står till ditt förfogande 24/7"*
+saknar hemvist — Marcus besked · sedan konvergensvarvet klart ENLIGT NYA
+KADENSEN · `TASK-126.2` plockbart parallellt utan Grind 0.** Full narrativ:
+sessionsdok S96 Del 8. *(Föregående kadensrad nedan.)*
+
+**Session 93 ⏸️ PAUSAD (2026-08-03 — konvergens-prototypen handövad,
+Marcus itererar)** — APPEN ÅTERUPPTAGEN: hållplats-spåret från research till
+färdig konvergens-prototyp på EN dag + Roger & Lottas nya produktkrav
+(bilagor/utskick) grillat till samsyn 8/8. Levererat: prototyp-kedjan
+PR #603→#613→#639→#660→#667 (divergens a/b/c → kvalitetsfix → natt-rött-fixar →
+byggkrav + betalningsSplit-PRODUKTIONSBUGGFIX → konvergens: ett block,
+steg-räknare, EN lista, integrerad arbetsyta, B/C rivna) · grillningen Del 3
+(8/8: utskick/avprickning-snittet · raduppsättningen · registret ·
+ENHETLIGA server-utskick · åtgärds-sidans v1 · delad bilage-hemvist ·
+dokumentklasserna A/B/C · 3 PRD-kort) · research #661 (KRITISKT: Resend
+batch tar EJ bilagor, tyst ⇒ grenad sändväg) · ORDLISTA +4 termer ·
+seed-eventet reco44UBx6GXcxwu5 (livstid 2026-08-16) · dev-server 5173
+omstartad. Kvitterat: variant A vald · kvittoserien egen räknare ·
+tre-veckor (−21). **NÄSTA (resume): Marcus iterations-feedback →
+iterationsvågor → facit → /to-prd × 3 · åtgärds-sidans divergens-pass ·
+Roger-avstämning kvitto-gränsen.** Numrering: ALLT re-deriveras mot disk
+(S95/S96 mintar parallellt). Full handoff: sessionsdok S93 § PAUSLÄGE.
+*(Föregående fokus-text nedan.)*
+
 **Session 96 ⏸️ PAUSAD IGEN (2026-08-03 kväll, `lifecycle: paused` — andra
 pausen samma dag; återupptas via `session-resume` med BEHÅLLET nummer)** —
 **RESUMEN LANDADE T95-VÅGEN OCH INLEDDE PROTOTYP-KONVERGENSEN.** Fjorton PR:er:
