@@ -15,34 +15,33 @@
 
 ## Aktuellt fokus
 
-**Session 97 🔄 AKTIV (2026-08-04, återupptagen efter första pausen —
-`lifecycle: active`)** — **MEKANISERINGS-PROGRAMMET: SCOPE-PUNKT 1 KLAR,
-HOOKDESIGN (a) KVITTERAD.** Sessionen föddes (`#700`, `cb32b541` →
-`3fda84e3`), tog scope-punkt 1 (MCP-auth Vercel + Resend + `gddy`;
-mail-låsets Bash-väg tvåsidigt skarpbevisad — sänd-endpoint NEKAD med
-exit 2, läs-endpoints SLÄPPTA), pausades för omstart i nytt fönster
-(Marcus väg B) och landade fyra paus-PR:er (`#701`–`#704`).
-**Vid resumen: MCP-vägens skarpbevis GENOMFÖRT och Del 2:s hypotes
-BEKRÄFTAD** — verktygsytan bestäms vid sessionsstart och uppdateras inte
-efter auth; färsk kontext exponerar **87** Resend-verktyg mot pausens två.
-Prefixet `mcp__plugin_resend_resend__` bekräftat; **tre av fyra
-sänd-namn verbatim-belagda ur serverns egna verktygsbeskrivningar**
-(`send-email`/`send-broadcast`/`send-event`), alla fyra frånvarande ur
-ytan, deny-listans 8 poster verifierade. **Ingen namn-glidning.**
-Kvarstår som hypotes: `send-batch-emails` (Marcus: kontrolleras senare)
-och deny-kausaliteten (rekommenderat NEJ — priset är att öppna det enda
-fail-closed-lagret). **`T119`-hookdesign (a) lagd fram mot pre-K-forensik
-och kvitterad** inkl. fyra val: `permissionDecision: ask` framför hård
-`exit 2` (troget ADR-090:s detektera-och-fråga) · fail-open på hookens
-egen infrastruktur (medveten avvikelse från mail-låsets kontrakt) ·
-spoke först, hub-lyft när formen burit · `Edit`/`Write` utanför (a).
-Audit grön även vid resumen (`0 vulnerabilities`), kön tom, inga nummer
-förbrukade. **NÄSTA: bygg (a) — policyfil → skript → tvåsidig testsvit →
-registrering → skarpt tvåsidigt bevis i laddad session → ADR-090-Update
-→ därefter hookdesign (b)–(d) → sedan S96- och S93-resume parallellt.**
-Numrering oförändrad: S97/ADR-095/L444(+2)/T120/task-139 (f-numret ej
-avgjort, re-deriveras vid minting). Full narrativ: sessionsdok S97
-Del 1–3. *(Föregående kadensrad nedan.)*
+**Session 97 ⏸️ PAUSAD (2026-08-04, andra pausen — `lifecycle: paused`)**
+— **MEKANISERINGS-PROGRAMMET: FYRA MEKANISMER I DRIFT, FYRA LÖSA ÄNDAR
+STÄNGDA.** Sessionen tog `T119` (a), (b) och (d) item 5 och landade **sex
+PR:er**: `#705` (resume-flipp + MCP-skarpbeviset — Del 2:s hypotes bekräftad,
+87 Resend-verktyg mot pausens två, tre av fyra sänd-namn verbatim-belagda,
+ingen namn-glidning) · `#706`+`bcc25ea8` (**katalogägarskaps-hooken** —
+ADR-090 beslut 2 som mekanism, ägarlapp i `--git-common-dir`, ADR-090 fick
+Update) · `#707` (**sannings-avstämningarna** — pausade dok + obesvarade larm
+som natt-lager i `alarm`:s needs) · `#709` (hook-laddningens gräns +
+armeringsformen rättad ×4) · `#708` (**nattvaktens falsklarm** — grundorsaken
+till `#469`) · `#710` (**L440 som mekanism**, i kön). CI:s shellcheck-scope
+11 → **14** conf-filer. **Fyra tvåsidiga testsviter: 23/23 · 14/14 · 11/11 ·
+18/18.** **Sex buggar självfångade före landning** (bl.a. `printf` utan
+newline som fick hooken att släppa allt · `\b` finns inte i POSIX ERE ·
+shallow-kravet fel formulerat · `set -u` mot tom array). **`#469` STÄNGD**
+med regel (a) — falsklarm i fyra av sex röda nätter, grundorsaken fixad.
+**Avvikelse 4 UTREDD MED NEGATIVT SVAR:** trådfärskheten kan inte mekaniseras
+korrekt förrän barn-relationen själv är det — `T20`/`TASK-108` lämnade frågan
+oavgjord, nu vet vi varför (T95 har noll taggar men är mest aktiv; tre
+inkompatibla barn-former). **ÖPPEN SKULD:** två hookar är bevisade i logik men
+inte via harnesset — hookar registrerade mitt i en session laddas aldrig där
+(belagt mot förstaparten + issue #22679), betalas som resumens första
+handling. **NÄSTA: resume S97 → betala hook-skulden → `T119` (d) item 4
+(staging-preflight → pre-commit, billigast kvar) → (c) → item 3 → item 6-skörd
+→ item 7 hub-lyft → `barn:`-fältet.** Numrering oförändrad:
+S97/ADR-095/L444(+3 fragment)/T120/task-139. Full narrativ: sessionsdok S97
+Del 1–4 + PAUSLÄGE. *(Föregående kadensrad nedan.)*
 
 **Session 96 ⏸️ PAUSAD (2026-08-04, fjärde pausen — `lifecycle: paused`)**
 — **HELA T118-SVANSEN EXEKVERAD OCH LANDAD; S97 RESERVERAD FÖR
