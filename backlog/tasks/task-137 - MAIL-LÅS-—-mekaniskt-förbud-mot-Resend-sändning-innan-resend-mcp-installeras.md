@@ -1,10 +1,10 @@
 ---
 id: TASK-137
 title: MAIL-LÅS — mekaniskt förbud mot Resend-sändning innan resend-mcp installeras
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-04 11:29'
-updated_date: '2026-08-04 11:46'
+updated_date: '2026-08-04 12:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -57,11 +57,9 @@ tasks/sessions/2026-08-02-session-96.md Del 10 — Marcus-GO-citatet.
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
-
-
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
@@ -71,3 +69,9 @@ tasks/sessions/2026-08-02-session-96.md Del 10 — Marcus-GO-citatet.
 - [x] #4 Kortets Description bokför hela låsarkitekturen (lager 0-2) inkl. källmärkning mot resend-mcp-källkoden och Anthropics hooks/permissions-dokumentation, samt den öppna resten (post-installations-reverifiering, automations-frågan)
 - [x] #5 Premiss-pass (ADR-086) redovisat i slutrapporten: verktygsnamnen källmärkta mot faktisk källkod (inte antagna), nästa kortnummer verifierat mot disk, settings.json:s faktiska struktur läst före ändring
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #697 (merge-SHA 135a659f), landad på main. CI grön per jobb (CI Passed or Skipped, CodeQL, Docs link check, Lint+Audit+TypeCheck, CodeQL-analyze x2, Test suite: Acceptance/Pure+Build/Webblasarbeteende pass, A11y/Staging/sentinel-purge korrekt skippade). Tre-lagers mail-lås byggt: permissions.deny (lager 1, fail-closed förstahandsspärr) + PreToolUse-hook scripts/deny-resend-send.sh (lager 2, dubbel botten, exit 2 på varje nekande väg inkl. interna fel) config-driven via .mail-lock-policy.conf. scripts/test-deny-resend-send.sh bevisar tvåsidigt (26/26 tester, fail-closed-riktning + legitima verktyg släpps). AC 1-5 avbockade. ÖPPEN REST kvar, ägd av orkestrerare+Marcus: plugin-prefixformen mcp__plugin_resend_resend__ är en HYPOTES byggd på figma-precedens — kräver post-installations-reverifiering mot en riktig laddad session när resend-mcp faktiskt installeras (nycklarna hålls utanför disk/.env, hostat/OAuth). Automations-frågan (ska create/update-automation räknas sänd-klassade) är registrerad som öppen ADR-053-triage-fråga, ej avgjord i denna leverans.
+<!-- SECTION:FINAL_SUMMARY:END -->
