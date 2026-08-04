@@ -331,3 +331,67 @@ billigt för en människa vid tangentbordet.
   `~/.claude/plugins/cache/marcus-hub/marcus-system/1.28.2/.claude-plugin/
   plugin.json` — verifierar att install-recordet inte lagrar description
   och att den cachade plugin.json-filen är källan `details`-kommandot läser.
+
+---
+
+## RÄTTELSE 2026-08-05 — rekommendation (b) är FALSIFIERAD av en senare mätning
+
+Detta pass rekommenderade **(b) ta bort fältet**, med den öppna luckan
+uttryckligen flaggad: `/plugin`-menyns Discover-flik kunde inte testas
+headless, och det var okänt om den läser `entry.description` utan fallback.
+
+**Luckan är nu stängd, och svaret river rekommendationen.**
+
+Ett uppföljande pass körde samma teknik som fann validatorns
+version-cross-check — `strings -n 4` mot `bin/claude.exe` (Claude Code
+2.1.221) — men spårade hela kedjan från tab-dispatch till render-site i
+stället för en enskild strängträff:
+
+- Discover-fliken renderar `entry.description` på **tre** ställen:
+  Discover-listan, detaljvyn omedelbart **före install**, och
+  bläddra-en-specifik-marketplace. Samtliga `&&`-gardade.
+- **Ingen fallback existerar.** Ett svep efter `entry.description??` i hela
+  bundlen ger **noll** träffar; de enda `.description??`-träffarna tillhör
+  OpenTelemetrys vendrade kopior.
+- `entry` är den **råa** marketplace-posten. Kedjan fram till den är
+  `readFile` → `JSON.parse` → `safeParse`. Ingen `plugin.json` öppnas i den
+  vägen. Korroborerande: `AA(e)` väljer manifest-fält endast om
+  `"manifest" in e`, och Discover-poster saknar den nyckeln.
+
+**Snittet är därmed rent och går tvärs igenom detta passets egen mätning:**
+installerat → `manifest.*` (vilket `claude plugin details` visade, korrekt),
+Discover → `entry.*`. Passet mätte den ena ytan och generaliserade till båda.
+
+Ett borttag hade alltså **tystat beskrivningen helt** i Discover-listan och i
+detaljvyn precis före install-beslutet — inte fallit tillbaka på
+`plugin.json`.
+
+### Följdfynd: `7d4bf51`-precedenten var inte beteendemässigt neutral
+
+Samma vyer renderar `entry.version` (`"Version: "` i detaljvyn, `" · v"` i
+bläddringslistan). S97 Del 7:s borttag av `plugins[0].version` tog därmed bort
+versionsraden ur båda. Antagandet "redan ignorerat, ingen ny risk" höll för
+`claude plugin details` men mättes aldrig mot TUI:n. Precedenten bär därför
+mindre vikt än den såg ut att göra — vilket också gör detta passets analogi
+till den svagare än den framstod här.
+
+### Vad som faktiskt gjordes (hub `76d47b7`, Marcus-beslut 2026-08-05)
+
+Varken (a), (b) eller (c) — en **fjärde väg** som detta pass inte övervägde:
+
+1. **`version` återställd** till `1.28.2`. Till skillnad från `description`
+   HAR `version` en namngiven cross-check i validatorn som fäller vid
+   divergens. Fältet togs bort i stället för att låta vakten göra sitt jobb;
+   nu vaktar den igen. Validatorns exit 0 bevisar att den är nöjd.
+2. **`description` ersatt med en kort, stabil bläddringstext** som beskriver
+   pluginets SYFTE och pekar till README + `plugin.json` för förteckningen.
+   Synk (a) hade driftat igen vid nästa feature-commit — det är samma
+   symptomfix detta pass avvisade för `version`. Texten är skriven för att
+   bära budskapet inom Discover-listans 60-teckenklipp, och kan inte drifta
+   ifrån `plugin.json` eftersom den inte försöker spegla den.
+
+**Lärdomen, i samma familj som `L456`:** detta pass mätte en yta
+(`claude plugin details`) och drog en slutsats om fältet i allmänhet. Den
+öppna luckan var korrekt flaggad — men rekommendationen formulerades ändå som
+om den vore stängd. En flaggad lucka ska hålla tillbaka rekommendationen, inte
+bara stå bredvid den.
