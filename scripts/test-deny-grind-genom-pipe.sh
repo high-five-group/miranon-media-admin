@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/test-deny-grind-genom-pipe.sh — tvåsidigt bevis för L440-hooken.
 #
-# TVÅSIDIGT: pipade grindar ska FRÅGA, allt annat ska SLÄPPAS. Sida 2 är den
+# TVÅSIDIGT: pipade grindar ska NEKAS, allt annat ska SLÄPPAS. Sida 2 är den
 # viktigare halvan här: hooken kör mot VARJE Bash-kommando, så ett falsklarm
 # kostar friktion i varje pass. Husregeln (nightly-watchdog.yml:s eget huvud)
 # är att ett falsklarm är värre än ingen vakt.
@@ -24,8 +24,8 @@ kor() {
     local cmd="$1" ut
     ut="$(jq -nc --arg c "${cmd}" '{tool_name:"Bash",tool_input:{command:$c}}' \
         | GRIND_POLICY="${POLICY}" bash "${HOOK}" 2>/dev/null)"
-    if printf '%s' "${ut}" | jq -e '.hookSpecificOutput.permissionDecision == "ask"' >/dev/null 2>&1; then
-        printf 'FRAGA'
+    if printf '%s' "${ut}" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1; then
+        printf 'NEKA'
     else
         printf 'SLAPP'
     fi
@@ -46,23 +46,23 @@ forvanta() {
 
 echo "═══ L440-hooken — tvåsidigt bevis ═══"
 echo
-echo "SIDA 1 — de SJU faktiska instanserna ska FRÅGA"
+echo "SIDA 1 — de SJU faktiska instanserna ska NEKAS"
 
-forvanta FRAGA "S91 instans 1: markdownlint-cli2 | tail -1" \
+forvanta NEKA "S91 instans 1: markdownlint-cli2 | tail -1" \
     'npx markdownlint-cli2 "**/*.md" | tail -1'
-forvanta FRAGA "S94 (L441): check:docs | tail" \
+forvanta NEKA "S94 (L441): check:docs | tail" \
     'npm run check:docs | tail -5'
-forvanta FRAGA "S93 #662: pipe:ad grind svalde exitkoden" \
+forvanta NEKA "S93 #662: pipe:ad grind svalde exitkoden" \
     'npx markdownlint-cli2 tasks/todo.md | grep MD012'
-forvanta FRAGA "testsvit genom pipe" \
+forvanta NEKA "testsvit genom pipe" \
     'bash scripts/test-deny-resend-send.sh | tail -1'
-forvanta FRAGA "check-skript genom pipe" \
+forvanta NEKA "check-skript genom pipe" \
     'bash scripts/check-lifecycle.sh | head -3'
-forvanta FRAGA "shellcheck genom pipe" \
+forvanta NEKA "shellcheck genom pipe" \
     'shellcheck scripts/*.sh | head -20'
-forvanta FRAGA "vale genom pipe" \
+forvanta NEKA "vale genom pipe" \
     'vale CLAUDE.md | tail -2'
-forvanta FRAGA "grind på egen rad i ett flerradigt block" \
+forvanta NEKA "grind på egen rad i ett flerradigt block" \
     'cd /repo
 npx actionlint .github/workflows/ci.yml | tail -3
 echo klart'
@@ -93,6 +93,31 @@ forvanta SLAPP "ls genom pipe" \
     'ls scripts/ | grep check'
 forvanta SLAPP "while-loop med grind i villkoret" \
     'while bash scripts/check-lifecycle.sh; do sleep 1; done'
+
+# ─── KOMMANDO-POSITION (S97 2026-08-04) ────────────────────────────────────
+# Fallen nedan NÄMNER en grind men KÖR den aldrig — de läser dess källkod.
+# Det första är en MÄTT falsk positiv: hooken fällde orkestrerarens `grep` mot
+# hookens egen kod, och Marcus fick prompten. Under `ask` var det friktion;
+# under `deny` hade det blivit en vägg mot en helt ofarlig läsning. Därför är
+# dessa fall villkoret för att `deny` alls är försvarbart — faller något av
+# dem, ska hooken tillbaka till `ask` innan den släpps lös.
+forvanta SLAPP "MÄTT FALSK POSITIV: grep läser grindens källkod" \
+    'grep -n "pipe-tecken" scripts/check-thread-index.sh | head -5'
+forvanta SLAPP "cat av ett grind-skript" \
+    'cat scripts/check-lifecycle.sh | wc -l'
+# shellcheck disable=SC2016
+# Samma skäl som PIPESTATUS-fallet ovan: strängen är ett TESTFALL som skickas
+# till hooken, inte kod som ska expandera här.
+forvanta SLAPP "wc med grind som filargument" \
+    'wc -l scripts/check-backlog-closure.sh | awk "{print \$1}"'
+forvanta SLAPP "rg som söker i grind-skript" \
+    'rg "exit 1" scripts/check-lifecycle.sh | head -3'
+
+# ─── pipefail BEVARAR EXITKODEN ────────────────────────────────────────────
+# POSIX-världens standardsvar på exakt den fälla L440 beskriver. Att neka den
+# formen vore att neka den korrekta lösningen.
+forvanta SLAPP "set -o pipefail — pipen returnerar första icke-nollan" \
+    'set -o pipefail; bash scripts/check-lifecycle.sh | tail -1'
 
 echo
 if [[ "${FEL}" -eq 0 ]]; then

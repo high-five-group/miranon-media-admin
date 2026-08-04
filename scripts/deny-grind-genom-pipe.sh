@@ -31,14 +31,34 @@
 #     skriven i nightly-watchdog.yml:s eget huvud — är att ett falsklarm är
 #     värre än ingen vakt.
 #
-# ═══ ASK, INTE DENY ═══
+# ═══ DENY, INTE ASK — RIVET 2026-08-04 (S97), MARCUS-GO ═══
 #
-#   Utfallet är `permissionDecision: "ask"`, inte exit 2. Det finns ett
-#   legitimt fall: när utdatan är det enda intressanta och exitkoden genuint
-#   saknar betydelse. Skillnaden mot ett fel är att valet blir MEDVETET —
-#   och i alla sju bokförda instanser var det just medvetenheten som saknades,
-#   aldrig kunskapen. En hård blockering hade dessutom brutit legitima
-#   felsöknings-kommandon mitt i en incident.
+#   Hooken returnerade tidigare `ask`, motiverat med att det finns ett legitimt
+#   fall (utdatan är allt som betyder något) och att valet därför skulle bli
+#   MEDVETET. Motiveringen föll på mätning samma dag den skrevs.
+#
+#   FELET VAR MOTTAGAREN, INTE BESLUTET. `ask` skickar frågan till Marcus, men
+#   frågan är "spelar exitkoden roll i just detta kommando?" — och det kan bara
+#   den veta som skrev kommandot. Marcus 2026-08-04, verbatim: "Dels är jobbigt
+#   att få de där frågorna och dels så förstår jag ju knappt det som står där."
+#   Han fick fyra prompts på en timme, varav en på ett rent `grep`-kommando.
+#
+#   DRIFTBILDEN GÖR DET STRUKTURELLT, INTE BARA JOBBIGT: mekanismen finns för
+#   att parallella sessioner med subagenter ska fungera. I den driften blir
+#   `ask` N sessioner × M agenter som alla köar på en människa — en flaskhals
+#   som växer med precis det den skulle möjliggöra.
+#
+#   REGELN SOM FALLER UT, generell för hela hook-ytan: `ask` endast när Marcus
+#   är RÄTT BESLUTSFATTARE — irreversibelt, utanför repot, kräver hans mandat
+#   (så `deny-resend-send.sh`, som skickar mail, förblir `ask`). Kan maskinen
+#   avgöra saken: `deny`, med ett skäl skrivet till AGENTEN som kan åtgärda det.
+#   Branschformen är densamma — pre-commit `exit 1`, admission controllers
+#   avslår med `message`; ingen av dem frågar en människa.
+#
+#   PRISET FÖR `deny` ÄR ATT FALSKA POSITIVA BLIR HÅRDA STOPP. Därför landade
+#   kommando-positions-kravet nedan i SAMMA ändring — utan det hade den mätta
+#   falska positiven (`grep … scripts/check-x.sh | head`) blivit en vägg i
+#   stället för en fråga. Deny och smalare mönster är en enhet, inte två steg.
 #
 # ═══ FAIL-OPEN, MEDVETET ═══
 #
@@ -62,11 +82,11 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GRIND_POLICY="${GRIND_POLICY:-${SCRIPT_DIR}/../.grind-exitkod-policy.conf}"
 
-fraga() {
+neka() {
     jq -nc --arg skal "$1" '{
         hookSpecificOutput: {
             hookEventName: "PreToolUse",
-            permissionDecision: "ask",
+            permissionDecision: "deny",
             permissionDecisionReason: $skal
         }
     }' 2>/dev/null || exit 0
@@ -115,22 +135,48 @@ while IFS= read -r rad; do
     RAD_UTAN_OR="${rad//||/}"
     [[ "${RAD_UTAN_OR}" == *"|"* ]] || continue
 
+    # Grinden måste stå FÖRE piperör-tecknet för att dess exitkod ska gå
+    # förlorad. Står den efter är den pipens sista led och äger exitkoden
+    # själv. Och bara det SISTA kommandot före pipen kan drabbas — står en
+    # grind tidigare i en `&&`-kedja är dess exitkod redan konsumerad där.
+    FORE_PIPE="${RAD_UTAN_OR%%|*}"
+    SEGMENT="${FORE_PIPE##*&&}"
+    SEGMENT="${SEGMENT##*;}"
+
+    # Skala av ledande blanksteg, `./` och interpreter-ord tills det som står
+    # kvar är ordet som FAKTISKT EXEKVERAS.
+    while :; do
+        FORE_SKAL="${SEGMENT}"
+        SEGMENT="${SEGMENT#"${SEGMENT%%[![:space:]]*}"}"
+        SEGMENT="${SEGMENT#./}"
+        for interpreter in "bash " "sh " "npx " "node " "time " "env "; do
+            SEGMENT="${SEGMENT#"${interpreter}"}"
+        done
+        [[ "${SEGMENT}" = "${FORE_SKAL}" ]] && break
+    done
+
     for monster in "${GRIND_MONSTER[@]}"; do
         [[ -n "${monster}" ]] || continue
-        if [[ "${rad}" =~ ${monster} ]]; then
-            # Grinden måste stå FÖRE piperör-tecknet för att dess exitkod ska
-            # gå förlorad. Står den efter är den pipens sista led och äger
-            # exitkoden själv.
-            FORE_PIPE="${RAD_UTAN_OR%%|*}"
-            if [[ "${FORE_PIPE}" =~ ${monster} ]]; then
-                TRAFF_GRIND="${BASH_REMATCH[0]}"
-                TRAFF_RAD="${rad}"
-                break 2
-            fi
+        [[ "${SEGMENT}" =~ ${monster} ]] || continue
+
+        # KOMMANDO-POSITION, inte argument-position. Matchningen måste INLEDA
+        # segmentet. `grep -n "x" scripts/check-y.sh | head` nämner en grind
+        # men kör den aldrig — den läser dess källkod. Utan detta krav fälldes
+        # den formen (mätt falskt positivt 2026-08-04, orkestreraren), och som
+        # `deny` hade den blivit ett hårt stopp på en ofarlig läsning.
+        # Jämförelsen görs på matchad text i stället för med en ^-förankrad
+        # regex, eftersom flera mönster i policyfilen bär ett eget ledande
+        # `(^|[[:space:]/])`-alternativ som inte komponerar med ett yttre `^`.
+        TRAFFEN="${BASH_REMATCH[0]}"
+        TRIMMAD="${TRAFFEN#"${TRAFFEN%%[![:space:]]*}"}"
+        if [[ "${SEGMENT}" = "${TRIMMAD}"* ]]; then
+            TRAFF_GRIND="${TRIMMAD}"
+            TRAFF_RAD="${rad}"
+            break 2
         fi
     done
 done <<< "${COMMAND}"
 
 [[ -n "${TRAFF_GRIND}" ]] || exit 0
 
-fraga "L440 — GRINDENS EXITKOD GÅR FÖRLORAD I PIPEN. Kommandot kör '${TRAFF_GRIND}' och pipar vidare: \"${TRAFF_RAD}\". En pipe returnerar SISTA ledets exitkod, så en röd grind blir grön för skalet — och nästa steg (commit, push, armering) kör som om allt vore bra. Detta är den mest frekventa felklassen i repot: minst sju dokumenterade instanser över fyra sessioner, varav två ledde till armerade PR:er på röda grindar. Rätt former: kör grinden naket och läs exitkoden direkt · 'grind > fil; KOD=\$?' · 'if grind; then ...; else stanna; fi' · eller läs PIPESTATUS explicit. Är utdatan det enda du bryr dig om och exitkoden genuint ointressant — godkänn, men gör det medvetet."
+neka "L440 — GRINDENS EXITKOD GÅR FÖRLORAD I PIPEN. Kommandot kör '${TRAFF_GRIND}' och pipar vidare: \"${TRAFF_RAD}\". En pipe returnerar SISTA ledets exitkod, så en röd grind blir grön för skalet — och nästa steg (commit, push, armering) kör som om allt vore bra. Detta är den mest frekventa felklassen i repot: minst sju dokumenterade instanser över fyra sessioner, varav två ledde till armerade PR:er på röda grindar. SKRIV OM KOMMANDOT — någon av dessa former fungerar och släpps igenom: (1) kör grinden naket och läs exitkoden direkt · (2) 'grind > fil; KOD=\$?' och läs sedan filen · (3) 'if grind; then ...; else stanna; fi' · (4) inled med 'set -o pipefail' — då returnerar pipen första icke-nollan och exitkoden överlever · (5) läs PIPESTATUS explicit. Behöver du GENUINT bara utdatan och exitkoden saknar all betydelse: använd form (2) och ignorera KOD. Detta är ett maskinellt beslut riktat till dig som skrev kommandot — eskalera det inte till Marcus, du har all information som krävs för att välja rätt form."
