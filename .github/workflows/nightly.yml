@@ -408,6 +408,151 @@ jobs:
           fi
           exit "${KOD}"
 
+  # Sannings-avstämningen (T119 arbetslista (b), S97): fångar sessionsdok vars
+  # FÄLT påstår paus medan git-HISTORIKEN visar att arbete landat. Hela
+  # varför-blocket bor i grindens eget huvud
+  # (scripts/check-pausade-sessioner.sh) — kortversionen: detta är
+  # tre-lagers-doktrinens lager 2. `check-lifecycle.sh` är lager 1 och prövar
+  # att `lifecycle: paused` och `## PAUSLÄGE`-rubriken är ett giltigt PAR: två
+  # strängar i samma filversion, ingen git-operation, ingen tidsdimension. Den
+  # KAN därför inte se att sessionen faktiskt arbetar. S96 Del 8: sessionen
+  # stod paused medan fem [S96]-taggade PR:er landade i den, och grinden var
+  # grön hela tiden — felet fångades av Marcus, inte av någon mekanism.
+  #
+  # fetch-depth: 0 ÄR FÖRUTSÄTTNINGEN, inte en vana. Grinden gör
+  # `git log <paus-commit>..HEAD` och kräver att paus-commiten är NÅBAR; utan
+  # historik svarar intervallet tomt och grinden hade rapporterat grönt ur en
+  # mätning den inte kunde göra. Den vägrar därför (exit 2) när nåbarheten
+  # inte håller, i stället för att svara grönt — samma fail-closed-hållning som
+  # ci-wait.sh, och motsatsen till den vakt som vid S97:s paus-landning
+  # rapporterade "ALLA KLARA" beräknat ur en tom lista.
+  #
+  # fetch-depth-invarianten (scripts/check-fetch-depth-invariant.sh) räknar
+  # ENBART ci.yml:s tre bärare (changed/lint/docs, EXPECTED_CI_CARRIERS=3) plus
+  # .frontmatter-policy.conf och check-frontmatter.sh. nightly.yml ligger
+  # utanför den mängden, precis som ci.yml:s egna historik-oberoende jobb
+  # medvetet gör — detta jobb bryter alltså inte invarianten. Verifierat genom
+  # att köra grinden efter ändringen, inte antaget.
+  #
+  # HÖR I NATTEN, ALDRIG I PR-GRINDEN — samma skäl som backlog-closure ovan:
+  # det är en inaktuellt-tillstånd-kontroll. En paus-landning följs normalt av
+  # en kort svans (kadensrad, Vale-rättelser), och att fälla den i PR-grinden
+  # hade fällt varje korrekt paus-landning. Felet är inte att svansen finns —
+  # felet är att ARBETE fortsätter medan dokumentet påstår paus. Skiljelinjen
+  # är VAD commiten rör, inte hur sent den kom: en ren tidskarens föll på
+  # mätningen (S92:s legitima svans kom +16 h; S96:s verkliga arbete kom
+  # 10-14 h), så 24 h hade tystat bruset OCH missat felet.
+  #
+  # EXIT-KODERNA BÄR TVÅ OLIKA BUDSKAP, precis som i backlog-closure: exit 1 =
+  # DRIFT (ett dok påstår paus medan arbete landat — åtgärda DOKUMENTET via
+  # session-resume steg 6), exit 2 = ANROPSFEL (grinden kunde inte mäta —
+  # åtgärda GRINDEN, dokumenten är oprövade). Kollapsade man dem hade ett
+  # trasigt anrop skickat läsaren att jaga en motsägelse ingen prövat.
+  pausade-sessioner:
+    name: Sannings-avstämning — pausade sessioner (natt-grind)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      utfall: ${{ steps.grind.outputs.utfall }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Full historik — se blocket ovan. Grinden vägrar mäta utan den.
+          fetch-depth: 0
+
+      - name: Sannings-avstämningen (exit 1 = drift, exit 2 = anropsfel)
+        id: grind
+        # Exitkoden fångas SEPARAT (KOD=$?-disciplinen) och klassas INNAN
+        # steget faller: en output som skrivs efter `exit` skrivs aldrig.
+        # `okand-…`-grenen är fail-closed åt rätt håll — en exitkod grinden
+        # inte dokumenterar rapporteras som sig själv, aldrig som drift.
+        run: |
+          set -uo pipefail
+          KOD=0
+          bash scripts/check-pausade-sessioner.sh || KOD=$?
+          case "${KOD}" in
+            0) utfall="gron" ;;
+            1) utfall="drift" ;;
+            2) utfall="anropsfel" ;;
+            *) utfall="okand-exitkod-${KOD}" ;;
+          esac
+          echo "utfall=${utfall}" >> "${GITHUB_OUTPUT}"
+          if [ "${KOD}" -eq 1 ]; then
+            echo "::error::PAUS-DRIFT (exit 1): ett sessionsdok påstår paus medan taggat arbete landat efter pausen. Åtgärd: kör session-resume steg 6 (lifecycle-flipp + paus-rubrik till historik-form), eller stäng sessionen."
+          elif [ "${KOD}" -ne 0 ]; then
+            echo "::error::ANROPSFEL i grinden (exit ${KOD}): dokumenten är OPRÖVADE. Åtgärd: laga grinden/miljön, inte dokumenten."
+          fi
+          exit "${KOD}"
+
+  # Larm-ärende-avstämningen (T119 arbetslista (b), post-merge-vägen, S97):
+  # fångar larm som SKAPATS men aldrig besvarats. Hela varför-blocket bor i
+  # grindens huvud (scripts/check-obesvarade-larm.sh) — kortversionen:
+  # post-merge.yml skapar vid rött ett tilldelat ärende med revert-förslag och
+  # är MEDVETET aldrig en required check. Det är rätt design. Hålet är att
+  # ingenting pollar de ärendena: heartbeat-svepet bevakar PR-landningsläge,
+  # inte skapade ärenden på redan mergade träd.
+  #
+  # BELÄGGET (mätt mot GitHub 2026-08-04 över samtliga sex ci-post-merge-
+  # ärenden som någonsin skapats): #616/#619 öppnades för en äkta regression,
+  # fixen landade ~18 h senare, och ärendena stod öppna ytterligare ~23,5 h
+  # EFTER fixen — stängda först tillsammans med det orelaterade #656, tre
+  # ärenden inom 18 sekunder. Retrospektiv batch-sanering, inte en reaktion.
+  #
+  # VARFÖR NATTEN OCH INTE HEARTBEAT-SVEPET: svepet är en process en agent
+  # startar inuti sin session. Forskningsdoket förkastar den formen för just
+  # denna felklass — "detektorn dör i samma ögonblick den behövs" — eftersom
+  # felet vi fångar är att aktören slutade. Lager 2 måste vara oberoende av
+  # den övervakade aktören. En femte väg i svepet kompletterar detta senare,
+  # men ersätter det inte.
+  #
+  # issues: read KRÄVS — ospecificerade permissions sätts till none, och
+  # `gh issue list` får då 403. Samma fälla som TASK-51 (S89) rättade för
+  # larm-jobbets actions-grant.
+  #
+  # FAIL-CLOSED PÅ TOM MÄNGD: ett gh-anrop som failar ger tom utdata, och en
+  # naiv räkning hade läst tomheten som "inga ärenden" = grönt. Grinden
+  # skiljer "svarade tomt" (giltigt) från "svarade inte" (exit 2) på anropets
+  # EGEN exitkod, aldrig på utdatans längd.
+  obesvarade-larm:
+    name: Sannings-avstämning — obesvarade larm (natt-grind)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+    outputs:
+      utfall: ${{ steps.grind.outputs.utfall }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Larm-ärende-avstämningen (exit 1 = drift, exit 2 = anropsfel)
+        id: grind
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          KOD=0
+          bash scripts/check-obesvarade-larm.sh || KOD=$?
+          case "${KOD}" in
+            0) utfall="gron" ;;
+            1) utfall="drift" ;;
+            2) utfall="anropsfel" ;;
+            *) utfall="okand-exitkod-${KOD}" ;;
+          esac
+          echo "utfall=${utfall}" >> "${GITHUB_OUTPUT}"
+          if [ "${KOD}" -eq 1 ]; then
+            echo "::error::OBESVARAT LARM (exit 1): ett larm-ärende har stått öppet bortom sin tröskel. Åtgärd: åtgärda eller stäng ärendet med motivering — se loggen för vilket."
+          elif [ "${KOD}" -ne 0 ]; then
+            echo "::error::ANROPSFEL i grinden (exit ${KOD}): ärendena är OPRÖVADE. Åtgärda grinden/miljön, inte ärendena."
+          fi
+          exit "${KOD}"
+
   # Larmkedjan: fyrar vid RÖD natt (eller simulate_failure-dispatch). Skapar
   # ett tilldelat, etiketterat ärende med körningslänk + commit-spann sedan
   # senaste GRÖNA natt. Grön natt ⇒ jobbet skippas ⇒ inget ärende, inga spår
@@ -429,10 +574,16 @@ jobs:
   # koderna kräver motsatta åtgärder (stäng korten respektive laga grinden),
   # och ett ärende som inte säger vilken devalverar sig självt.
   #
+  # pausade-sessioner ingår av EXAKT samma skäl, och tillhör samma klass: en
+  # grind vars fynd bara syns i en nattlogg ingen läser är inte en mekanism,
+  # den är en loggrad. Felet den fångar (S96 Del 8) upptäcktes en gång av
+  # Marcus i en chattfråga — hela poängen med att bygga den är att det inte
+  # ska behöva vara vägen.
+  #
   # issues:write finns numera på TVÅ jobb (detta + links-arende), inte bara här.
   alarm:
     name: Larm vid röd natt
-    needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt, backlog-closure]
+    needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt, backlog-closure, pausade-sessioner, obesvarade-larm]
     if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || inputs.simulate_failure) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
