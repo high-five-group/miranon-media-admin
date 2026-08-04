@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-04 22:54'
+updated_date: '2026-08-04 23:29'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,14 +32,16 @@ VARNING (mätt kostnad): grinden tar ~165 s att köra eftersom `backlog/config.y
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Grinden validerar att varje besläktad-omnämnt tråd-ID existerar i registret
-- [ ] #2 Grinden kräver INTE spegelpost i målets rad — symmetrisk relation, en deklaration per par
-- [ ] #3 Befintligt backtick-ID-idiom i check-thread-index.sh återanvänt, inget nytt mönster infört
-- [ ] #4 Ingen befintlig trådrad ändrad strukturellt; pipe-antals-invarianten orörd
-- [ ] #5 Tvåsidigt bevis: grinden SLÄPPER ett giltigt besläktad-ID och FÄLLER ett ID som inte finns
-- [ ] #6 shellcheck 0 på ändringen
-- [ ] #7 check-thread-index.sh grön mot nuvarande register efter ändringen
+- [x] #1 Grinden validerar att varje besläktad-omnämnt tråd-ID existerar i registret
+- [x] #2 Grinden kräver INTE spegelpost i målets rad — symmetrisk relation, en deklaration per par
+- [x] #3 Befintligt backtick-ID-idiom i check-thread-index.sh återanvänt, inget nytt mönster infört
+- [x] #4 Ingen befintlig trådrad ändrad strukturellt; pipe-antals-invarianten orörd
+- [x] #5 Tvåsidigt bevis: grinden SLÄPPER ett giltigt besläktad-ID och FÄLLER ett ID som inte finns
+- [x] #6 shellcheck 0 på ändringen
+- [x] #7 check-thread-index.sh grön mot nuvarande register efter ändringen
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

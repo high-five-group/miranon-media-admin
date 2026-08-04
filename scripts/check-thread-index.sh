@@ -16,7 +16,7 @@
 #   sessionsdok + trådkort" och skriptets header säger "validerar även
 #   tråd-kort" — båda sanna, båda smalare än de låter.
 #
-# GRINDEN VALIDERAR (fyra invarianter, ingen överlappar check-lifecycle.sh):
+# GRINDEN VALIDERAR (fem invarianter, ingen överlappar check-lifecycle.sh):
 #   1. RADFORM — varje trådrad har rätt antal kolumner och ett enum-giltigt
 #      tillstånd i tillstånds-kolumnen. Gäller ALLA rader, med eller utan fil.
 #   2. NUMRERING — stigande, inga dubbletter, inga luckor. Registret har
@@ -24,6 +24,15 @@
 #   3. INDEX → FIL — en rad som länkar en trådfil pekar på en fil som finns.
 #   4. FIL → INDEX — varje trådfil har en rad i indexet. Detta är den klass
 #      check-lifecycle.sh ser för 13 filer och missar för 8.
+#   5. BESLÄKTAD → REFERENTIELL INTEGRITET (ADR-095 beslut 2–3) — varje
+#      backtick-citerat tråd-ID som nämns efter nyckelordet `besläktad`
+#      (config: THREAD_RELATED_KEYWORD) i VILKEN innehålls-kolumn som helst
+#      måste finnas i registret. Relationen är SYMMETRISK: valideras EN gång
+#      per omnämnande, ingen spegelpost krävs i målets egen rad — det är
+#      skillnaden mot den framtida ASYMMETRISKA `barn`-relationen (TASK-141),
+#      som härleds i EN riktning och aldrig speglas manuellt. Ordets egen
+#      TERMreferens (backtick-omsluten, t.ex. denna kommentars "`besläktad`")
+#      och negationen ("obesläktad") exkluderas explicit — se Inv 5-blocket.
 #
 # MEDVETET UTANFÖR SCOPE (ej glömda kontroller):
 #   (a) TILLSTÅNDSDRIFT fil↔index — ägs av check-lifecycle.sh rad 108–129.
@@ -40,10 +49,12 @@
 # sig grinden på cwd=repo-root (ingen cd) — CI kör från repo-roten; testsviten
 # cd:ar in i sin sandbox före anrop.
 #
-# Exit 0 om indexet passerar alla fyra invarianter. Exit 1 vid drift.
+# Exit 0 om indexet passerar alla fem invarianter. Exit 1 vid drift.
 #
 # Källa: docs/decisions/ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md
 # Etablerad: TASK-108 (2026-07-31)
+# Inv 5 källa: docs/decisions/ADR-095-relationsmodellen-dokumentationssubstratet.md
+# Inv 5 etablerad: TASK-140 (2026-08-05)
 
 set -euo pipefail
 
@@ -64,6 +75,7 @@ THREAD_CARD_GLOB=""
 THREAD_ID_PREFIX=""
 THREAD_COLUMN_COUNT=0
 THREAD_STATE_COLUMN=0
+THREAD_RELATED_KEYWORD=""
 declare -a THREAD_VALID_STATES=()
 
 # shellcheck source=/dev/null
@@ -76,6 +88,7 @@ die_conf() { echo "❌ ${POLICY_FILE}: $1"; exit 1; }
 [[ "${THREAD_COLUMN_COUNT}" -gt 0 ]] || die_conf "THREAD_COLUMN_COUNT måste vara > 0"
 [[ "${THREAD_STATE_COLUMN}" -gt 0 ]] || die_conf "THREAD_STATE_COLUMN måste vara > 0"
 [[ "${#THREAD_VALID_STATES[@]}" -gt 0 ]] || die_conf "THREAD_VALID_STATES är tom"
+[[ -n "${THREAD_RELATED_KEYWORD}" ]] || die_conf "THREAD_RELATED_KEYWORD är tom"
 
 EXIT_CODE=0
 BT='`'  # backtick-token för förankrad (ej bar-substräng) matchning
@@ -96,6 +109,38 @@ STATE_FIELD=$((THREAD_STATE_COLUMN + 1))
 # samtidig skrivning (SC2094).
 INDEX_DIR="$(dirname "${THREAD_INDEX}")"
 
+# ── Förberedelse för Inv 5 (besläktad) ───────────────────────────────────────
+# Bracket-klassen för båda skiftlägena ("besläktad"/"Besläktad") härleds ur
+# THREAD_RELATED_KEYWORD så skriptets LOGIK förblir språkoberoende — bara
+# ORDET är config (Lesson #6 UNIVERSAL). RELATED_TERM_PATTERN exkluderar
+# ordets egen backtick-omslutna TERMreferens (prosa OM begreppet, ingen
+# deklaration — se T122-raden i registret för ett levande exempel).
+# RELATED_NEGATION_PATTERN exkluderar negationen ("obesläktad").
+RELATED_REST="${THREAD_RELATED_KEYWORD:1}"
+RELATED_FIRST="${THREAD_RELATED_KEYWORD:0:1}"
+RELATED_FIRST_UPPER="$(printf '%s' "${RELATED_FIRST}" | tr '[:lower:]' '[:upper:]')"
+RELATED_PATTERN="[${RELATED_FIRST}${RELATED_FIRST_UPPER}]${RELATED_REST}"
+RELATED_NEGATION_PATTERN="[Oo]${RELATED_PATTERN}"
+RELATED_TERM_PATTERN="${BT}${RELATED_PATTERN}${BT}"
+LAST_CONTENT_FIELD=$((THREAD_COLUMN_COUNT + 1))
+
+declare -a ALL_TIDS=()
+declare -a PENDING_LINE=()
+declare -a PENDING_ROW_TID=()
+declare -a PENDING_TARGET=()
+
+# Referentiell-integritets-koll mot ALL_TIDS. Definieras här (behöver bara
+# finnas vid ANROP, inte vid definition) och används av Inv 5 nedan, efter
+# att huvudloopen fyllt ALL_TIDS komplett — en rad kan besläktad-nämna en
+# SENARE tråd, så valideringen måste vänta tills hela registret är läst.
+tid_exists() {
+    local needle="$1" known
+    for known in "${ALL_TIDS[@]}"; do
+        [[ "${known}" == "${needle}" ]] && return 0
+    done
+    return 1
+}
+
 # ── Inv 1 + 2: radform, enum, numrering ──────────────────────────────────────
 PREV_NUM=0
 PREV_ID=""
@@ -114,6 +159,7 @@ while IFS= read -r line; do
     # Ledande nollor bort så T01 jämförs som 1 (10#-prefix = tvinga bas 10).
     NUM=$((10#${BASH_REMATCH[1]}))
     SEEN_ANY=1
+    ALL_TIDS+=("${TID}")
 
     # (1a) kolumnantal — en extra pipe i titeln förskjuter tillstånds-kolumnen
     PIPES="${line//[^|]/}"
@@ -171,6 +217,27 @@ while IFS= read -r line; do
             EXIT_CODE=1
         fi
     fi
+
+    # (5-samling) besläktad → samla mål-ID:n för validering EFTER loopen.
+    # Deklarationen kan bo i VILKEN innehållskolumn som helst (Titel eller
+    # Ingång, båda formerna finns i registret — se T119/T122 kontra
+    # T71/T76/T90 m.fl.), så alla innehållskolumner skannas.
+    for ((FIELD_NUM = 2; FIELD_NUM <= LAST_CONTENT_FIELD; FIELD_NUM++)); do
+        CELL=$(printf '%s' "${line}" | cut -d'|' -f"${FIELD_NUM}")
+        FILTERED="${CELL}"
+        FILTERED="${FILTERED//${RELATED_NEGATION_PATTERN}/}"
+        FILTERED="${FILTERED//${RELATED_TERM_PATTERN}/}"
+        [[ "${FILTERED}" == *${RELATED_PATTERN}* ]] || continue
+        # Girig substitution → allt EFTER den SISTA kvarvarande (=enda äkta,
+        # termreferenser redan borttagna) nyckelords-träffen i cellen.
+        REST="${FILTERED/*${RELATED_PATTERN}/}"
+        while IFS= read -r tid_token; do
+            [[ -z "${tid_token}" ]] && continue
+            PENDING_LINE+=("${LINE_NO}")
+            PENDING_ROW_TID+=("${TID}")
+            PENDING_TARGET+=("${tid_token//${BT}/}")
+        done < <(grep -oE "${BT}${THREAD_ID_PREFIX}[0-9]+${BT}" <<< "${REST}" || true)
+    done
 done < "${THREAD_INDEX}"
 
 if [[ "${SEEN_ANY}" -eq 0 ]]; then
@@ -193,5 +260,23 @@ for file in ${THREAD_CARD_GLOB}; do
     fi
 done
 
-[[ "${EXIT_CODE}" -eq 0 ]] && echo "✅ tråd-index OK (radform + enum + numrering + index↔fil)"
+# ── Inv 5: besläktad → referentiell integritet (ADR-095 beslut 2–3) ─────────
+# SYMMETRISK relation — valideras EN gång per omnämnande. Ingen spegelpost
+# krävs i målets egen rad (det är skillnaden mot den framtida ASYMMETRISKA
+# `barn`-relationen, TASK-141). ALL_TIDS är komplett här — huvudloopen ovan
+# är klar — så framåtreferenser (en rad som nämner en SENARE tråd) valideras
+# lika korrekt som bakåtreferenser.
+for ((PENDING_IDX = 0; PENDING_IDX < ${#PENDING_TARGET[@]}; PENDING_IDX++)); do
+    # shellcheck disable=SC2310  # returkoden ÄR svaret (finns/finns inte) —
+    # vi vill fortsätta loopen och samla ALLA brutna referenser, inte
+    # avbryta vid första träff. Samma disciplin som check-permissions-claims.sh
+    # rad 115 (key_exists) och heartbeat-svep.sh rad 416/459/475.
+    if ! tid_exists "${PENDING_TARGET[${PENDING_IDX}]}"; then
+        echo "❌ ${THREAD_INDEX}:${PENDING_LINE[${PENDING_IDX}]} — ${PENDING_ROW_TID[${PENDING_IDX}]} besläktad-omnämner ${PENDING_TARGET[${PENDING_IDX}]} som INTE finns i registret"
+        echo "   Fix: rätta ID:t, eller ta bort omnämnandet om tråden aldrig fanns."
+        EXIT_CODE=1
+    fi
+done
+
+[[ "${EXIT_CODE}" -eq 0 ]] && echo "✅ tråd-index OK (radform + enum + numrering + index↔fil + besläktad↔registret)"
 exit "${EXIT_CODE}"
