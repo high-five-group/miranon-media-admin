@@ -3,9 +3,10 @@ id: TASK-139
 title: >-
   Mekanisera work-batch:s claims-täckning + merge-tree-grind — T119 (d): prosa i
   skillen blir körbar kod
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-04 22:20'
+updated_date: '2026-08-04 23:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -209,16 +210,18 @@ explicit AC").
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 scripts/check-claims-tackning.sh finns: läser en claims-manifest (JSON, sökväg via argument) + .claims-tackning-policy.conf (delade-ytor-registrets åtta poster ur ADR-073 Amendering 3 punkt 2, migrerade till glob-mönster+namn, header citerar källan); exit 0 när VARJE registerpost har en explicit disposition (enda-ägare / fasat-delad / uttryckligen-ej-berörd) i manifestet; manifest-formatets fält dokumenteras i skriptets header-kommentar
-- [ ] #2 check-claims-tackning.sh fäller (exit ≠0, dokumenterad kod) när minst en registerpost SAKNAS helt i manifestet (S75-gap-klassen: onämnd post) OCH när två pipelines båda hävdar enda-ägarskap över samma registerpost utan fasat-markering
-- [ ] #3 scripts/test-check-claims-tackning.sh bevisar TVÅSIDIGT: en fullständigt täckt manifest-fixtur ⇒ exit 0; minst tre planterade brist-fixturer (onämnd post, dubbel-ägd post utan fasat, trasig JSON) ⇒ vardera sitt förväntade icke-noll-facit — körd och rapporterad med faktiskt utfall
-- [ ] #4 scripts/check-merge-tree.sh <gren> [<bas-gren>] finns: git fetch mot bas (default origin/main, färskhets-kravet) + git merge-tree --write-tree, exitkoden propagerad rakt av UTAN mellanledd pipe (0=konfliktfri, 1=konflikt, annat=fel); skriver ALDRIG till arbetsträd eller index
-- [ ] #5 Vid exit 1 skriver check-merge-tree.sh ut de konfliktande sökvägarna och klassificerar VARDERA mot .merge-tree-mandat-policy.conf (mandat-berättigade path-mönster ur ADR-073 Amendering 3 punkt 3): enbart mandat-berättigade filer ⇒ 'mandat-berättigad' (skriptet löser INGET automatiskt, bara klassificerar); minst en annan fil ⇒ 'HALT'
-- [ ] #6 scripts/test-check-merge-tree.sh bevisar TVÅSIDIGT i en isolerad scratch-git-repo: (a) konfliktfri divergens ⇒ exit 0, (b) äkta textkonflikt i icke-mandat-fil ⇒ exit 1 + HALT, (c) konflikt ENBART i mandat-berättigad fil ⇒ exit 1 + mandat-berättigad-klassning; samt bevisar att scratch-repots working tree/HEAD är oförändrat efter körning
-- [ ] #7 Båda .sh-skripten är config-driven (Lesson #6): ingen repo-specifik path/glob hårdkodad i själva skriptlogiken utanför respektive .conf-fil — samma separation som .staging-semaphore-policy.conf + scripts/staging-semaphore.sh
-- [ ] #8 Båda .sh-skripten är shellcheck-strict-rena (CI:s pinnade shellcheck 0.11.0, samma grind som övriga scripts/*.sh)
-- [ ] #9 CI-inwiring av VARKEN skripten eller deras testsviter görs av detta kort — bokfört explicit som öppen fråga (samma mönster som TASK-137), inte tyst utelämnad; ADR-073 rörs inte (texten citeras, flyttas inte)
+- [x] #1 scripts/check-claims-tackning.sh finns: läser en claims-manifest (JSON, sökväg via argument) + .claims-tackning-policy.conf (delade-ytor-registrets åtta poster ur ADR-073 Amendering 3 punkt 2, migrerade till glob-mönster+namn, header citerar källan); exit 0 när VARJE registerpost har en explicit disposition (enda-ägare / fasat-delad / uttryckligen-ej-berörd) i manifestet; manifest-formatets fält dokumenteras i skriptets header-kommentar
+- [x] #2 check-claims-tackning.sh fäller (exit ≠0, dokumenterad kod) när minst en registerpost SAKNAS helt i manifestet (S75-gap-klassen: onämnd post) OCH när två pipelines båda hävdar enda-ägarskap över samma registerpost utan fasat-markering
+- [x] #3 scripts/test-check-claims-tackning.sh bevisar TVÅSIDIGT: en fullständigt täckt manifest-fixtur ⇒ exit 0; minst tre planterade brist-fixturer (onämnd post, dubbel-ägd post utan fasat, trasig JSON) ⇒ vardera sitt förväntade icke-noll-facit — körd och rapporterad med faktiskt utfall
+- [x] #4 scripts/check-merge-tree.sh <gren> [<bas-gren>] finns: git fetch mot bas (default origin/main, färskhets-kravet) + git merge-tree --write-tree, exitkoden propagerad rakt av UTAN mellanledd pipe (0=konfliktfri, 1=konflikt, annat=fel); skriver ALDRIG till arbetsträd eller index
+- [x] #5 Vid exit 1 skriver check-merge-tree.sh ut de konfliktande sökvägarna och klassificerar VARDERA mot .merge-tree-mandat-policy.conf (mandat-berättigade path-mönster ur ADR-073 Amendering 3 punkt 3): enbart mandat-berättigade filer ⇒ 'mandat-berättigad' (skriptet löser INGET automatiskt, bara klassificerar); minst en annan fil ⇒ 'HALT'
+- [x] #6 scripts/test-check-merge-tree.sh bevisar TVÅSIDIGT i en isolerad scratch-git-repo: (a) konfliktfri divergens ⇒ exit 0, (b) äkta textkonflikt i icke-mandat-fil ⇒ exit 1 + HALT, (c) konflikt ENBART i mandat-berättigad fil ⇒ exit 1 + mandat-berättigad-klassning; samt bevisar att scratch-repots working tree/HEAD är oförändrat efter körning
+- [x] #7 Båda .sh-skripten är config-driven (Lesson #6): ingen repo-specifik path/glob hårdkodad i själva skriptlogiken utanför respektive .conf-fil — samma separation som .staging-semaphore-policy.conf + scripts/staging-semaphore.sh
+- [x] #8 Båda .sh-skripten är shellcheck-strict-rena (CI:s pinnade shellcheck 0.11.0, samma grind som övriga scripts/*.sh)
+- [x] #9 CI-inwiring av VARKEN skripten eller deras testsviter görs av detta kort — bokfört explicit som öppen fråga (samma mönster som TASK-137), inte tyst utelämnad; ADR-073 rörs inte (texten citeras, flyttas inte)
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
