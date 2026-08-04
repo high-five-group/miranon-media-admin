@@ -172,6 +172,19 @@ eller ett nytt `scripts/`-skript som rör staging fäller vakten tills det
 klassats. Tvåsidigt bevis per yta:
 `scripts/test-check-staging-preflight-wiring.mjs`.
 
+**Samma anrop kör numera ÄVEN i `.githooks/pre-commit`** (T119 (d) item 4,
+S97). CI-jobbet var den enda bäraren tidigare — vakten fällde alltså alltid
+EFTER push och kö-inträde, när kostnaden att rätta är som störst (bevisat två
+gånger: `TASK-131`, PR #651, CI-run `30814438519`, och `TASK-126.4`, merge
+`9747a52f` — båda äkta, deterministiska fynd om ett oklassat
+Playwright-projekt). Pre-commit-anropet är VILLKORAT — det kör bara när en
+staged ändring rör den yta vakten faktiskt sveper (`playwright.config.ts`,
+`.staging-preflight-wiring-policy.json`, `scripts/`, `tests/`; config i
+`.staging-preflight-hook-policy.conf`) — och skiljer exit 1 (äkta fynd,
+STOPPAR commiten) från exit 64 (vakten kunde inte svara — policy-/miljöfel
+eller en olöst G0-transient, se nedan — VARNAR men stoppar inte). CI-anropet
+är kvar oförändrat: pre-commit kan kringgås med `--no-verify`, CI kan inte.
+
 Skälet att just detta grindas, trots att felet aldrig inträffat: **frånvaron
 syns inte.** Tappas en anropsrad märks det först vid en kollision — och ser då
 ut som ett slumpmässigt staging-fel, inte som en saknad mekanism. Vakten prövar
