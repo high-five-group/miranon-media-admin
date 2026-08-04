@@ -1,10 +1,10 @@
 ---
 id: TASK-127.4
 title: 'Skiva: Auth-mallarna brandas (repo-sidan)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-03 12:17'
+updated_date: '2026-08-04 10:42'
 labels:
   - ready-for-agent
 dependencies:
@@ -44,12 +44,14 @@ Repo-sidan: [auth.email.smtp] (host/port/user/avsändare — ej lösenord, refer
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Repo-sidan komplett: auth-mallarna (invite+recovery) versionerade i supabase/config.toml + supabase/templates/*.html med svensk brandad Miranon-copy och SMTP-avsändarform från send.miranon.dev. SMTP-lösenordet, DNS-posterna och push-exekveringen kvarstår som Marcus/Code-panelmoment (T46-kartan, nu med exakt checklista). Premiss-avvikelse: uppdragets ADR-091-hänvisning för DMARC-beslutet var fel — ADR-091 är hosting/Vercel; DMARC-beslutet (p=reject, S95 beslut 4) bor i sessionsdok S95 Del 2 + T44/T46, inte i en ADR. Byggd på korrekt källa, avvikelsen bokförd.
+
+Stängningsverifikat (hygien-uppdrag 2026-08-04): PR #647 (gren task-127.4-auth-mail-branding) MERGED, merge-SHA 0385575470f71c98a8a33bc80f1d77d1a2dd0bf7, mergad till main 2026-08-03T12:40:34Z. gh pr checks 647: samtliga jobb pass/skip, ingen fail (Acceptance hermetisk, Pure+Build, Lint+Audit+TypeCheck, CodeQL, Docs link check, Analyze actions/js-ts, CI Passed or Skipped; Staging/A11y skipping, path-villkorat).
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
