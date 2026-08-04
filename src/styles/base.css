@@ -181,12 +181,29 @@ body {
   outline: none;
 }
 
-/* Deterministisk fokusring för skriv-ytor som autofokuseras i overlays
-   (S86, Marcus-beslut 2026-07-25: eventväljarens sökruta): ringen visas
-   vid ALLT DOM-fokus, oavsett modalitet — mus-öppningens autofokus gav
-   annars fokus utan ring och första tangenttrycket tände den ("ingen
-   logik"-upplevelsen). Samma form som personsökrutans (globalen ovan);
-   står EFTER släckaren i samma olagrade fil så den vinner ordningsvägen. */
+/* Deterministisk fokusring för skriv-ytor som ALLTID ska visa ring vid
+   DOM-fokus, oavsett modalitet (mus, tangentbord eller programmatiskt
+   fokus). Ursprung S86 (Marcus-beslut 2026-07-25: eventväljarens
+   autofokuserade sökruta i en overlay fick annars fokus utan ring vid
+   mus-öppning, med tangenttrycket som tände den efteråt — "ingen
+   logik"-upplevelsen).
+
+   BREDDAD (TASK-134, 2026-08-04, forskningsgrund
+   docs/research/focus-ring-auth-musklick-2026-08-03.md): Input-primitiven
+   (src/components/primitives/Input.tsx) bär nu samma klass på sitt
+   underliggande fält. Textfält är enligt webbläsarnas EGEN spec-heuristik
+   (CSS Selectors L4 §9.4) en uttalad UNDANTAGSKLASS som alltid ska visa
+   ring vid musklick — mätt 9/9 hos granskade branschledare, och plain
+   `:focus` (inte `:focus-visible`) är exakt samma val govuk-frontend,
+   USWDS och IBM Carbon gör i sin kompilerade CSS för textfält. Determinismen
+   ligger alltså i CSS:en här, inte i en förhoppning om att webbläsarens
+   `:focus-visible`-heuristik och React Arias egen modalitets-spårning
+   (data-focus-visible) råkar sammanfalla för just detta element.
+
+   Kräver INTE längre en separat `[data-rac]`-variant av denna regel (den
+   fanns tidigare, se borttagningsnoten vid släckaren nedan) — sedan
+   släckaren smalnades till `role="listbox"` konkurrerar ingen annan regel
+   längre om outline-egenskapen för element som bär den här klassen. */
 .mm-fokusring-vid-fokus:focus {
   outline: var(--mm-focus-ring-width) solid var(--mm-focus-ring);
   outline-offset: var(--mm-focus-ring-offset);
@@ -210,25 +227,48 @@ body {
   outline-offset: var(--mm-focus-ring-offset-inset);
 }
 
-/* React Aria-ägda element (data-rac): vid popover-öppning AUTOFOKUSERAS
+/* React Aria-ägda LISTBOX-innehåll (data-rac + role="listbox" — Select/
+   EventValjares dropdown-popover): vid popover-öppning AUTOFOKUSERAS
    listboxen, och browserns :focus-visible-heuristik klassar skript-fokus
    som tangentbord → ring runt hela dropdownen vid MUS-öppning
    (S73 K85, Marcus-fångst). React Aria vet den faktiska modaliteten och
    sätter data-focus-visible ENDAST vid tangentbord — native-synlig men
    RAC-osynlig = mus → ingen ring. Tangentbordsringen (globalen ovan)
-   är orörd. Olagrad som grannarna (cascade-arkitekturen, L246). */
-[data-rac]:focus-visible:not([data-focus-visible]) {
-  outline: none;
-}
+   är orörd. Olagrad som grannarna (cascade-arkitekturen, L246).
 
-/* mm-fokusring-vid-fokus måste vinna ÄVEN över data-rac-släckaren ovan
-   (annars: ring bara i vissa modalitetslägen = "ingen logik"-flimret,
-   S86 Marcus-fångst). Attributet i selektorn matchar släckarens
-   specificitet + klassen övertrumfar; står sist i fokus-sektionen. */
-.mm-fokusring-vid-fokus[data-rac]:focus {
-  outline: var(--mm-focus-ring-width) solid var(--mm-focus-ring);
-  outline-offset: var(--mm-focus-ring-offset);
-  border-radius: 2px;
+   SMALNAD TILL role="listbox" (TASK-134, 2026-08-04, forskningsgrund
+   docs/research/focus-ring-auth-musklick-2026-08-03.md). Selektorn
+   matchade tidigare VARJE `[data-rac]`-element i hela appen — data-rac
+   sätts av react-aria-components generiska useRenderProps-hook
+   (node_modules/react-aria-components/dist/private/utils.mjs) på i
+   praktiken ALLA RAC-ägda element, inte bara dropdown-innehåll. Effekten:
+   varje React-Aria-ägt TEXTFÄLT (Input-/TextArea-primitiven, sökfält)
+   ärvde samma mus-klicks-släckning som dropdownen — trots att
+   webbläsarens EGEN spec-heuristik (CSS Selectors L4 §9.4) säger att
+   textfält SKA visa ring vid musklick, oavsett hur fokus anlände (9/9
+   granskade branschledare gör detta; 3/3 källkods-granskade designsystem
+   kodifierar det). `role="listbox"` är React Arias EGET, fast kodade
+   attribut (react-aria/dist/private/listbox/useListBox.mjs: `role:
+   'listbox'`, aldrig konfigurerbart, och ListBoxItem/tomt-state renderar
+   `role="option"`) — matchar exakt den yta S73 K85 byggdes för, utan att
+   kräva en ny markörklass på varje Popover-anropsplats (Select.tsx,
+   EventValjare.tsx, DatumFalt.tsx). Andra RAC-ägda kontroller (knappar,
+   DateSegment, CalendarCell) berörs redan korrekt av webbläsarens EGEN
+   :focus-visible-heuristik utan någon släckare (forskningspassets
+   kontrollfall: ostylad `<button>` matchar INTE `:focus-visible` efter
+   musklick — bara skriv-ytor gör).
+
+   BORTTAGET i samma pass: den tidigare kompensationsregeln
+   `.mm-fokusring-vid-fokus[data-rac]:focus` (fanns här för att klassen
+   annars förlorade mot denna släckare för data-rac-element). Sedan
+   släckaren smalnades till role="listbox" matchar den aldrig längre
+   `.mm-fokusring-vid-fokus`-element (varken sökrutorna i EventValjare.tsx/
+   PersonsListPrototyp.tsx eller Input-primitivens fält) — den generella
+   `.mm-fokusring-vid-fokus:focus`-regeln ovan vinner nu utan konkurrens,
+   så den redundanta varianten vore dött, missvisande kod. */
+[role="listbox"][data-rac]:focus-visible:not([data-focus-visible]),
+[role="listbox"] [data-rac]:focus-visible:not([data-focus-visible]) {
+  outline: none;
 }
 
 /* Rubriker: aktivera Inter Display-variant via opsz-axel.
