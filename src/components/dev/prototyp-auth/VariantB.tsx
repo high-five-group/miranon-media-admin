@@ -3,21 +3,28 @@
  * "KONTEXTRIK OCH VARM".
  *
  * Besvarar EN nedskriven fråga (kortets brief): hur ska login-vyn och
- * accept-sidan se ut? Denna hållning testar en skärm som förklarar sig
- * själv innan mottagaren ombeds göra något — vem har bjudit in dig, vad
- * är det här, vad händer härnäst. Strukturellt: en varm kontext-spalt
- * (vänster på desktop, överst på mobil) + en neutral formulär-spalt,
- * tydligt skild från en minimal "en sak i taget"-hållning (ingen
- * berättande text, ett fält synligt åt gången).
+ * inbjudnings-sidan se ut?
  *
- * KONVERGENS-OMGÅNG 2 (Marcus facit): kontext-spalten delas i sin tur i två
- * EXAKT lika höga halvor på desktop (`grid-rows-2` — den faktiska
- * spalthöjden, ingen gissad pixelhöjd) — en bild-halva (Roger och Lottas
- * foto, platshållare tills fotot finns) med logotyp + ordmärke flytande
- * OVANPÅ bilden, och en text-halva därunder med rubrik, brödtext och
- * punktlistan. Vid smal vy (< lg) ersätts halva-höjden-regeln av ett fast
- * bildförhållande så bilden inte blir absurd hög eller platt när
- * kolumnerna staplas.
+ * NUVARANDE FORM (konvergens-omgång 8) — divergensens tvåspalts-hållning
+ * är RIVEN, i steg och på Marcus beslut. Kvar är EN spalt för båda
+ * skärmarna:
+ * BÅDA skärmarna har samma form (omgång 10): varm toning över hela ytan,
+ * hälsning, formuläret i ett eget vitt kort (`rounded-2xl`, appens
+ * kort-standard). Inbjudan bär dessutom roll-raden och fotnoten om
+ * länkens giltighet.
+ *
+ * LOGOTYPEN ÄR BORTTAGEN på båda (omgång 14, Marcus: "det är inte viktigt
+ * just nu"). Tre former prövades och förkastades: favicon + textrader,
+ * fri logotyp mot fonden, logotyp i pill. Filen
+ * `public/miranon-media-ordmarke.svg` ligger kvar oanvänd.
+ *
+ * Vad som revs på vägen och varför: fotot (omgång 5, "testa hur det blir
+ * och rensa bort saker") · punktlistan och bekräftelse-lösenordsfältet
+ * (omgång 7, research-grundat — se
+ * `docs/research/aktiveringssida-branschmonster-2026-08-03.md`) ·
+ * tvåspalts-skalet inklusive den delade rubriklinjen (omgång 8, obsolet i
+ * en spalt). Löpande prosa gick från 95 ord till 47; branschsnittet i
+ * research-passet är ~17.
  *
  * THROWAWAY-KONTRAKT: koden befordras ALDRIG till skarp implementation.
  * Vinnaren (Marcus väljer EN variant per skärm) byggs om nyskriven i
@@ -51,156 +58,99 @@
  * - Tangentbordsnavigering: alla interaktiva element är riktiga
  *   `<button>`/`<input>`/`<label>`-par (via React Aria-primitiven eller
  *   native HTML), ingen `<div onClick>`.
- * - Fokusordning: kontext-spalten bär ENDAST dekorativ/kompletterande text
- *   (aldrig den enda vägen till information) och innehåller inga
+ * - Fokusordning: texten ovanför formuläret bär ENDAST kompletterande
+ *   information (aldrig den enda vägen till något) och innehåller inga
  *   interaktiva element — tabbordningen går rakt in i formuläret.
  * - `prefers-reduced-motion`: den enda animationen (`motion-safe:animate-
  *   mm-avsloj`, samma reveal-idiom som resten av systemet, tailwind.css)
  *   är media-gated; en spinnande loader-ikon body är `motion-safe:animate-
  *   spin` — statisk vid reduced motion, texten ("Loggar in …") bär
  *   statusen ändå.
- * - `prefers-contrast: more`: panel-avdelaren mellan kontext- och
- *   formulär-spalten är osynlig i vila och tänds via `contrast-more:`
- *   (samma border-transparent-idiom som DashboardCard/NastaEventCard).
- * - Logotyp + namn flyter på en OPAK yta (`--mm-surface-inverse`, samma
- *   par som VariantC:s Märkespanel) ovanpå bild-halvan — kontrasten mot
- *   vit text (`--mm-text-inverse`) beror därför ALDRIG på fotots ljushet,
- *   till skillnad från en transparent gradient-scrim. Uppmätt:
- *   `#ffffff` mot `#242424` (`--p-neutral-0` mot `--p-neutral-900`) ⇒
- *   kontrastkvot ≈15,52:1 (mätt i webbläsaren mot renderade
- *   `rgb(36,36,36)`/`rgb(255,255,255)`) — WCAG AA-golvet för normal text är
- *   4,5:1,
- *   AAA-golvet 7:1. Se PR-beskrivningen för uträkningen.
+ * - Kontrast: all text står nu på en OPAK fond — appens vita bakgrund
+ *   (login) eller den varma toningen respektive det vita kortet
+ *   (inbjudan). Kontrasten beror därför aldrig på en bilds ljushet, vilket
+ *   var den risk foto-halvans scrim-fråga bar innan bilden revs.
  * - Endast design-tokens (`--mm-*` via Tailwind-temat eller arbiträr
  *   `(--mm-*)`-syntax) — inga hårdkodade färger.
  */
-import {
-  CircleCheck,
-  Clock,
-  KeyRound,
-  Loader2,
-  Lock,
-  type LucideIcon,
-  ShieldCheck,
-} from 'lucide-react';
-import { type FormEvent, type ReactNode, useId, useState } from 'react';
+import { Clock, Loader2, Lock } from 'lucide-react';
+import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
 
 /* ────────────────────────────────────────────────────────────────
-   DELAT: kontext-spalten + formulär-spalten. Delas mellan Login och
-   Accept i DENNA FIL ENDAST (ingen export — skarven känner inte till
-   dem, per kontraktet ovan).
+   DELAT: skalet + auth-fokusringen. Delas mellan Login och Accept i
+   DENNA FIL ENDAST (ingen export — skarven känner inte till dem, per
+   kontraktet ovan).
    ──────────────────────────────────────────────────────────────── */
 
 /**
- * Ordmärke: logotyp (`/miranon-logo.svg`, finns redan i `public/` — ersätter
- * omgång 1:s runda profilplatshållare per Marcus instruktion) + textnamn,
- * på en OPAK mörk yta som flyter ovanpå foto-halvan. Kontrasten mot ytan är
- * därför oberoende av fotots ljushet — se A11Y-GOLVET-kommentaren ovan för
- * den uppmätta kontrastkvoten.
+ * FOKUSRING ÄVEN VID MUSKLICK, inuti autentiseringsformulär (Marcus,
+ * konvergens-omgång 16 — PRÖVAS, ej beslutat).
+ *
+ * Appens globala regel visar ring bara vid `:focus-visible`, alltså i
+ * praktiken bara vid tangentbord (`src/styles/base.css` rad ~150–173).
+ * Det är rätt för knappar och länkar, där en ring vid klick är brus. För
+ * skrivytor är frågan öppnare: ett tomt lösenordsfält ger ingen annan
+ * signal om var markören sitter, och login/inbjudan är de enda ytorna
+ * där någon möter appen utan inlärning.
+ *
+ * ENHETEN ÄR FORMULÄRET, INTE FÄLTET. `autocomplete` duger inte som
+ * markör — `email` används även i `AddRegistrationModal` och
+ * `ManuellAnmalanForm` för deltagares adress (mätt), så en fält-baserad
+ * regel hade läckt ut i vanliga formulär. Ett formulär vet däremot vad
+ * det är. Samma grepp som `.focus-ring-inset :focus-visible` redan
+ * använder i base.css: klass på containern, descendant-selektor på
+ * barnen.
+ *
+ * REGELN BOR I `base.css`, inte som Tailwind-variant här. Jag försökte
+ * hålla den utanför produktionskod och MÄTTE att det inte går: base.css är
+ * OLAGRAD och slår därför alla Tailwind-lager oavsett specificitet. Filens
+ * egen kommentar om sökrute-undantaget sade redan detta — "står EFTER
+ * släckaren i samma olagrade fil så den vinner ordningsvägen".
+ *
+ * Research-pass löper parallellt på om undantaget alls är rätt. Säger det
+ * emot rivs detta — kastbar kod är till för precis det.
  */
-function Ordmarke() {
-  return (
-    <div className="absolute top-4 left-4 flex items-center gap-3 lg:top-6 lg:left-6">
-      <img src="/favicon/favicon.svg" alt="" className="size-12 shrink-0 rounded-lg" />
-      <div className="leading-tight">
-        <p className="font-semibold text-lg text-text">Miranon Media</p>
-        <p className="text-caption text-text uppercase tracking-wide">Admin</p>
-      </div>
-    </div>
-  );
-}
+const AUTH_FOKUSRING = 'mm-auth-formular';
 
 /**
- * Bild-halva: exakt övre hälften av kontext-spaltens höjd på desktop
- * (förälderns `grid-rows-2` delar den faktiska spalthöjden — ingen gissad
- * pixelhöjd). Vid smal vy (< lg) styr i stället ett fast bildförhållande
- * (`aspect-video`) höjden, så halva-höjden-regeln inte gör bilden absurd
- * hög eller platt när kolumnerna staplas (verifierat 390×844).
+ * EN-spalts skal — BÅDA skärmarnas enda layout sedan konvergens-omgång 8.
+ * Tvåspalts-formen (`TvaSpalter`/`KontextSpalt`/`FormSpalt`) är riven på
+ * Marcus beslut: login möter någon som redan vet vad appen är, och
+ * inbjudan fick plats i en spalt när punktlistan försvann.
+ *
+ * `varm` styr fonden: login står på appens vita bakgrund, inbjudan på den
+ * varma toningen över HELA ytan med formuläret i ett eget vitt kort.
+ *
+ * FULL BREDD: den varma fonden sätts på `<html>` via markören
+ * `data-auth-fond`, INTE på div:en här. Skälet är appens scrollbar-ränna
+ * (`scrollbar-gutter: stable both-edges`, `src/styles/base.css`): den gör
+ * `<body>` 11 px smalare per sida, så en bakgrund inuti body kan aldrig nå
+ * ut i rännstenen. `<html>`s bakgrund propagerar däremot till hela canvas.
+ *
+ * Rännstenen är OFÖRÄNDRAD — inget hopp är möjligt vid någon övergång.
+ * Två tidigare försök är rivna och bokförda i base.css-kommentaren:
+ * `w-[100vw]`-hacket (kringgick rännstenen) och `scrollbar-gutter: auto`
+ * för auth-vyerna (tog bort den och införde ett hopp).
+ *
+ * Markören städas vid unmount så appen aldrig ärver auth-fonden.
  */
-function FotoHalva({ heltSpalten = false }: { heltSpalten?: boolean }) {
+function EnSpalt({ children, varm = false }: { children: ReactNode; varm?: boolean }) {
+  useEffect(() => {
+    if (!varm) return;
+    const rot = document.documentElement;
+    rot.dataset.authFond = 'true';
+    return () => {
+      delete rot.dataset.authFond;
+    };
+  }, [varm]);
+
   return (
     <div
-      className={
-        heltSpalten
-          ? // Login: ingen text under bilden. Spalten blir hög och SMAL, och
-            // fotot är liggande 3:2 — låter man det fylla ytan beskär
-            // object-cover bort större delen av bredden (Roger försvinner).
-            // Bilden behåller därför sitt format och centreras vertikalt, med
-            // kontext-spaltens varma toning som fond runt om.
-            'relative flex w-full items-center overflow-hidden bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) lg:h-full'
-          : 'relative aspect-video w-full overflow-hidden lg:aspect-auto lg:h-full'
-      }
+      className={`flex min-h-dvh w-full items-center justify-center p-6 sm:p-8 lg:p-12 ${
+        varm ? '' : 'bg-bg'
+      }`}
     >
-      <img
-        src="/roger-och-lotta.webp"
-        alt=""
-        className={heltSpalten ? 'w-full' : 'absolute inset-0 size-full object-cover'}
-      />
-      <Ordmarke />
-    </div>
-  );
-}
-
-/** En rad i kontext-spaltens punktlista: ikon + varm, konkret mening. */
-function KontextRad({ icon: Icon, children }: { icon: LucideIcon; children: ReactNode }) {
-  return (
-    <li className="flex items-start gap-3">
-      <Icon aria-hidden="true" className="text-(color:--mm-accent) mt-0.5 size-5 shrink-0" />
-      <span className="text-body text-text-secondary">{children}</span>
-    </li>
-  );
-}
-
-/**
- * Text-halva: nedre hälften av kontext-spalten (rubrik, brödtext,
- * punktlista, fotnot) — exakt lika hög som `FotoHalva` på desktop via
- * förälderns `grid-rows-2`.
- */
-function InnehallHalva({ children, fotnot }: { children: ReactNode; fotnot: ReactNode }) {
-  return (
-    <div className="flex flex-col justify-between gap-10 bg-linear-to-br from-(--mm-primary-tint) to-(--mm-accent-tint) p-8 lg:h-full lg:p-12">
-      <div className="flex flex-col gap-6">{children}</div>
-      <div className="text-caption text-text-muted">{fotnot}</div>
-    </div>
-  );
-}
-
-/**
- * Varm kontext-spalt (vänster/topp). Bär ALDRIG den enda vägen till
- * information den innehåller är kompletterande — och innehåller inga
- * interaktiva element (tabbordningen ska gå rakt in i formuläret). Delas i
- * två exakt lika höga halvor på desktop (`lg:grid-rows-2`, samma faktiska
- * spalthöjd — inte en gissad pixelhöjd); staplas normalt på smal vy.
- */
-function KontextSpalt({ children, fotnot }: { children?: ReactNode; fotnot?: ReactNode }) {
-  // Login har INGEN text under bilden (Marcus, konvergens-omgång 3) — då tar
-  // bilden hela spalten. Accept behåller tvådelningen. Samma komponent bär
-  // båda lägena så skärmarna inte glider isär i form.
-  const harInnehall = Boolean(children);
-  return (
-    <div
-      className={harInnehall ? 'flex flex-col lg:grid lg:grid-rows-2' : 'flex flex-col lg:h-full'}
-    >
-      <FotoHalva heltSpalten={!harInnehall} />
-      {harInnehall ? <InnehallHalva fotnot={fotnot}>{children}</InnehallHalva> : null}
-    </div>
-  );
-}
-
-/** Neutral formulär-spalt (höger/under) — bär sidans `<h1>` och all handling. */
-function FormSpalt({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex items-center justify-center bg-bg p-8 lg:p-12">
-      <div className="w-full max-w-sm">{children}</div>
-    </div>
-  );
-}
-
-/** Två-spalts skal: delare osynlig i vila, tänds under `prefers-contrast: more`. */
-function TvaSpalter({ children }: { children: ReactNode }) {
-  return (
-    <div className="grid min-h-dvh divide-y divide-transparent contrast-more:divide-border-strong lg:grid-cols-2 lg:divide-x lg:divide-y-0">
       {children}
     </div>
   );
@@ -234,14 +184,25 @@ export function LoginVariantB() {
   };
 
   return (
-    <TvaSpalter>
-      <KontextSpalt />
-
-      <FormSpalt>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
-          <div className="flex flex-col gap-1">
+    // Samma varma fond, samma `max-w-xl` och samma kort-stil som inbjudan
+    // (omgång 10). MEN hälsningen bor INUTI kortet sedan omgång 15
+    // (Marcus): login har inget att säga utanför kortet — inbjudan bär
+    // roll-raden och fotnoten där, login har bara sin hälsning, och en
+    // ensam textrad ovanför ett kort läser som en förlorad rubrik.
+    //
+    // Bieffekt värd att notera: skärmarna får därmed olika vertikal
+    // tyngdpunkt. Det är avsiktligt — de är två sidor, inte två lägen av
+    // samma sida.
+    <EnSpalt varm>
+      <div className="flex w-full max-w-xl flex-col gap-8">
+        <form
+          onSubmit={handleSubmit}
+          className={`flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8 ${AUTH_FOKUSRING}`}
+          noValidate
+        >
+          <div className="flex flex-col gap-2">
             <h1 className="font-semibold text-3xl text-text">Välkommen tillbaka</h1>
-            <p className="text-body text-text-secondary">Logga in för att komma vidare.</p>
+            <p className="text-body text-text-secondary">Logga in och kolla läget.</p>
           </div>
 
           <Input
@@ -305,8 +266,8 @@ export function LoginVariantB() {
             )}
           </Button>
         </form>
-      </FormSpalt>
-    </TvaSpalter>
+      </div>
+    </EnSpalt>
   );
 }
 
@@ -334,15 +295,19 @@ export function AcceptVariantB() {
   const emailFaltId = useId();
   const emailBeskrivningId = useId();
   const [losenord, setLosenord] = useState('');
-  const [bekrafta, setBekrafta] = useState('');
+  const [visaLosenord, setVisaLosenord] = useState(false);
   const [status, setStatus] = useState<'vila' | 'sparar' | 'fel'>('vila');
 
+  // ETT lösenordsfält, inte två (konvergens-omgång 7, research-grundad).
+  // NN/g avråder uttryckligen från bekräftelsefält, och GitLabs skarpa
+  // produktionskod för invite-accept använder ett enda fält — mottagaren
+  // verifierar sin inmatning genom att SE den, inte genom att skriva om den.
+  // Valideringen enkelspåras därmed till en enda regel.
   const langdOk = losenord.length >= 8;
-  const matchar = bekrafta.length === 0 || bekrafta === losenord;
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!langdOk || losenord !== bekrafta) {
+    if (!langdOk) {
       setStatus('fel');
       return;
     }
@@ -353,40 +318,30 @@ export function AcceptVariantB() {
   };
 
   return (
-    <TvaSpalter>
-      <KontextSpalt
-        fotnot={
-          <span className="flex items-center gap-2">
-            <Clock aria-hidden="true" className="size-4 shrink-0" />
-            Länken gäller i 24 timmar. Har den gått ut? Be {INBJUDEN_AV.split(' ')[0]} skicka en ny.
-          </span>
-        }
-      >
-        <div className="flex flex-col gap-2">
+    <EnSpalt varm>
+      <div className="flex w-full max-w-xl flex-col gap-8">
+        {/* H1 → BRÖDTEXT, inte H1 → H2 (Marcus: "kaka på kaka"). Meningen är
+            information, inte en rubrik — den behöver ingen rubrikvikt för att
+            läsas först. Som ledande brödtext får hälsningen andas, och ögat
+            får EN tyngdpunkt i stället för två som konkurrerar. */}
+        <div className="flex flex-col gap-3">
           <h1 className="font-semibold text-3xl text-text">Välkommen, {MOTTAGARENS_FORNAMN}</h1>
-          <h2 className="font-semibold text-2xl text-text">
-            {INBJUDEN_AV} har bjudit in dig till Miranon Media Admin
-          </h2>
-          <p className="text-body text-text-secondary">
-            Du får rollen <strong className="text-text">{TILLDELAD_ROLL.toLowerCase()}</strong> -
-            sätt ett lösenord här bredvid, så är du igång direkt.
+          <p className="text-lg text-text-secondary">
+            {INBJUDEN_AV} har bjudit in dig till Miranon Media Admin. Du får rollen{' '}
+            <strong className="font-semibold text-text">{TILLDELAD_ROLL.toLowerCase()}</strong>.
           </p>
         </div>
-        <ol className="flex flex-col gap-4">
-          <KontextRad icon={KeyRound}>Sätt ett lösenord här bredvid</KontextRad>
-          <KontextRad icon={CircleCheck}>Logga in och upptäck ditt nya verktyg</KontextRad>
-          <KontextRad icon={ShieldCheck}>
-            Senare kan du frivilligt lägga till ett ännu enklare sätt att logga in
-          </KontextRad>
-        </ol>
-      </KontextSpalt>
 
-      <FormSpalt>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
-          <div className="flex flex-col gap-1">
-            <h2 className="font-semibold text-2xl text-text">Sätt ditt lösenord</h2>
-            <p className="text-body text-text-secondary">Så är du igång direkt.</p>
-          </div>
+        {/* Formuläret i eget vitt kort mot den varma fonden (Marcus,
+            konvergens-omgång 8). `rounded-2xl` är appens kort-standard —
+            samma radie som DashboardCard och 38 andra ytor, inte ett värde
+            uppfunnet för prototypen. */}
+        <form
+          onSubmit={handleSubmit}
+          className={`flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8 ${AUTH_FOKUSRING}`}
+          noValidate
+        >
+          <h2 className="font-semibold text-2xl text-text">Sätt ditt lösenord</h2>
 
           <div className="flex flex-col gap-1">
             <label htmlFor={emailFaltId} className="text-(color:--mm-input-label-text) text-small">
@@ -414,28 +369,30 @@ export function AcceptVariantB() {
             </p>
           </div>
 
-          <Input
-            label="Lösenord"
-            type="password"
-            autoComplete="new-password"
-            value={losenord}
-            onChange={setLosenord}
-            isRequired
-            isDisabled={status === 'sparar'}
-            description="Minst 8 tecken. Vi rekommenderar 15 eller fler för extra trygghet."
-          />
-
-          <Input
-            label="Bekräfta lösenord"
-            type="password"
-            autoComplete="new-password"
-            value={bekrafta}
-            onChange={setBekrafta}
-            isRequired
-            isDisabled={status === 'sparar'}
-            isInvalid={!matchar}
-            errorMessage="Lösenorden stämmer inte överens."
-          />
+          <div className="flex flex-col gap-1.5">
+            <Input
+              label="Lösenord"
+              type={visaLosenord ? 'text' : 'password'}
+              autoComplete="new-password"
+              value={losenord}
+              onChange={setLosenord}
+              isRequired
+              isDisabled={status === 'sparar'}
+              description="Minst 8 tecken. Vi rekommenderar 15 eller fler för extra trygghet."
+            />
+            {/* Ersätter bekräftelsefältet: mottagaren kontrollerar sin
+                inmatning genom att se den. `aria-pressed` bär tillståndet;
+                knappen ligger UNDER fältet i stället för inuti, så den aldrig
+                överlappar text eller krymper träffytan. */}
+            <button
+              type="button"
+              aria-pressed={visaLosenord}
+              onClick={() => setVisaLosenord((v) => !v)}
+              className="text-(color:--mm-accent) self-end rounded text-small underline-offset-2 hover:underline focus-visible:outline-(--mm-focus-ring) focus-visible:outline-2 focus-visible:outline-offset-2"
+            >
+              {visaLosenord ? 'Dölj lösenord' : 'Visa lösenord'}
+            </button>
+          </div>
 
           {status === 'fel' && (
             <MessageBox
@@ -443,7 +400,7 @@ export function AcceptVariantB() {
               title="Något stämmer inte"
               className="motion-safe:animate-mm-avsloj"
             >
-              Kontrollera att lösenordet är minst 8 tecken och att båda fälten är lika.
+              Lösenordet behöver vara minst 8 tecken.
             </MessageBox>
           )}
 
@@ -458,7 +415,12 @@ export function AcceptVariantB() {
             )}
           </Button>
         </form>
-      </FormSpalt>
-    </TvaSpalter>
+
+        <p className="flex items-center gap-2 text-caption text-text-muted">
+          <Clock aria-hidden="true" className="size-4 shrink-0" />
+          Länken gäller i 24 timmar. Har den gått ut? Be {INBJUDEN_AV.split(' ')[0]} skicka en ny.
+        </p>
+      </div>
+    </EnSpalt>
   );
 }

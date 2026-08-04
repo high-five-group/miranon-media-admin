@@ -92,12 +92,14 @@ function AuthPrototypPage() {
 
   return (
     <>
-      {/* Ramen är ENDA skillnaden mot skarpt läge: 1200 px centrerat, inget
-          annat. Ingen padding och ingen centrerings-flex — skärmarna äger sin
-          egen höjd (`min-h-dvh`) och ska fylla ramen kant i kant. */}
-      <div className="mx-auto w-full max-w-[1200px]">
-        {arPrototyp ? <Skarm /> : <IngenSkarpVy skarm={skarm} />}
-      </div>
+      {/* INGEN ram. 1200 px-ramen (omgång 2) fanns för att login och inbjudan
+          skulle få SAMMA bredd när de var tvåspalts och blev shrink-to-fit i
+          en centrerad flex. Sedan omgång 8 är båda enspalt med egen
+          `max-w-xl`-centrering, så likheten är löst i skärmarna själva — och
+          ramen gjorde bara skada: den klippte inbjudans varma fond till
+          1200 px och lämnade vita fält på bredare skärmar (mätt 1600 px:
+          toning 1200, 200 px vitt per sida). Skärmarna äger hela ytan. */}
+      {arPrototyp ? <Skarm /> : <IngenSkarpVy skarm={skarm} />}
 
       <PrototypeSwitcher variants={VARIANTER} vyer={VYER} vyParam="skarm" />
     </>
