@@ -239,10 +239,71 @@ varför, inte implementations-prosan.
   kod byggs för den nu, men den är inte glömd — nästa gång frågan är aktuell
   läses denna ADR:s beslut 4 innan en ny utredning startas om.
 
+## Updates
+
+### 2026-08-04 (S97) — beslut 2 mekaniserat, `ask` framför `deny`
+
+Beslut 2 (ägarskaps-regeln) stod i ren prosa i tre månader och **bröts tre
+gånger i ett enda pass**: S96 Del 8 bokför två `git merge --ff-only` och en
+gren skapad i huvudkatalogen medan S93 ägde den. Ingen skada — rena träd,
+rena fast-forwards — men fel form, och `check-lifecycle.sh` var grön hela
+tiden eftersom den prövar konsistens mellan fält och rubrik, inte om
+sessionen faktiskt arbetar. Instansen är en av de starkaste i `T119`:s
+empiriska grund (regler med mekanism efterlevs; regler i prosa bryts).
+
+Mekanismen, byggd i S97 som `T119` arbetslista (a), Marcus-GO 2026-08-04:
+
+- `scripts/katalogagarskap-markor.sh` (`SessionStart`) skriver en **ägarlapp**
+  i `--git-common-dir` — den katalog git per definition delar mellan
+  huvudträdet och alla worktrees. En session som kör i en worktree gör inget
+  anspråk; en session som möter en främmande färsk lapp **stjäl den aldrig**
+  utan rapporterar ägarskapet som fakta, vilket gör beslut 1:s detektion
+  synlig även mitt i en session.
+- `scripts/deny-frammande-huvudkatalog.sh` (`PreToolUse`, `Bash`) prövar tre
+  delfrågor i tur och ordning: är kommandot en git-skrivning · riktas det mot
+  huvudkatalogen · äger denna session den.
+- Värdena är config-drivna i `.katalogagarskap-policy.conf` per Lesson #6.
+
+**Formvalet `permissionDecision: "ask"` framför `exit 2`** följer beslut 3:
+detektera **och fråga**, vim/Codespaces-familjen — inte tmux-formens hårda
+blockering. Ägarskaps-regeln har legitima undantag (S97 kör själv i
+huvudkatalogen med kvittens), och en människa ska avgöra dem. Visar sig
+`ask` opålitligt i drift är bytet till `exit 2` en enradsändring, och den
+ska då bokföras som en ny Update här — inte ändras tyst.
+
+**Medveten avvikelse från mail-låsets kontrakt:** hooken failar **öppet**
+(internt fel ⇒ släpp), medan `scripts/deny-resend-send.sh` failar slutet.
+Skillnaden är skadans natur: ett skickat mail är irreversibelt, medan fel
+form på en git-operation är återställbar — S96:s tre överträdelser gav noll
+dataförlust. En trasig hook som nekar allt vore en värre skada än det
+problem hooken finns för att lösa.
+
+**Bevisläge, ärligt redovisat:**
+
+- Logiken är bevisad — tvåsidig testsvit 23/23 mot ett äkta temporärt repo
+  med en äkta worktree (`scripts/test-deny-frammande-huvudkatalog.sh`), plus
+  manuell körning mot detta repo med en planterad främmande ägarlapp, som gav
+  korrekt `ask` med korrekt skäl.
+- **Aktiveringen i harnesset är INTE bevisad i byggsessionen.** Tre
+  mätpunkter: den nya hooken fäller manuellt · den fäller inte via harnesset
+  (två provokationer) · den *befintliga* mail-lås-hooken fäller samtidigt via
+  harnesset. Hook-systemet kör alltså, men en hook registrerad mitt i en
+  session togs inte i bruk i den sessionen — trots att förstapartsdokumentationen
+  säger att ändringar *"normally [are] picked up automatically by the file
+  watcher"*. Orsaken är **inte** fastställd och påstås därför inte. Samma
+  mönster som MCP-verktygsytan i S97 Del 2. Det skarpa tvåsidiga beviset i
+  laddad session är därmed en **öppen skuld** som betalas vid nästa
+  sessionsstart, på samma sätt som mail-låsets MCP-väg.
+
+Denna Update rör **enbart beslut 2**. Beslut 1:s detektionssteg och beslut 4:s
+öppna framtida väg (ovillkorad worktree per session) är oförändrade, och
+§ Verkställandes hub-halva är fortfarande ogjord.
+
 ## Relaterat
 
 `T67` (parallella aktiva sessioner — tråden denna ADR stänger designsteget
-för) · `ADR-089` (syskon-ADR:n från samma grillning, modell-/effort-policy) ·
+för) · `T119` (mekaniserings-programmet, som Updaten ovan hör till) ·
+`ADR-089` (syskon-ADR:n från samma grillning, modell-/effort-policy) ·
 `ADR-076` (merge-kön, trunk-based-arkitekturen denna ADR bygger vidare på) ·
 [`sessions-parallellitet-frontier-praxis-2026-08-02.md`](../research/sessions-parallellitet-frontier-praxis-2026-08-02.md)
 (fullt underlag) · `tasks/sessions/2026-08-02-session-94.md` Del 3 punkt 6.

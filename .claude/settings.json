@@ -44,6 +44,17 @@
             "statusMessage": "MAIL-LÅSET — Resend-sänd-MCP-verktyg, dubbel botten (TASK-137, Rogers krav)"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-frammande-huvudkatalog.sh\"",
+            "timeout": 10,
+            "statusMessage": "KATALOGÄGARSKAP — git-skriv i främmande huvudkatalog (ADR-090 beslut 2)"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -66,6 +77,18 @@
             "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/stop-vakt.sh\"",
             "timeout": 10,
             "statusMessage": "Stop-vakten (T108/ADR-087)"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/katalogagarskap-markor.sh\"",
+            "timeout": 10,
+            "statusMessage": "Katalogägarskaps-lappen (ADR-090 beslut 2)"
           }
         ]
       }
