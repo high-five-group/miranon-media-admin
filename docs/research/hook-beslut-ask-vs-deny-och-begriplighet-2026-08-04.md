@@ -259,7 +259,7 @@ Det är inte en åsikt; det är en av de mest replikerade effekterna i fältet.
   människan faktiskt läser den.
 - **BYU/Vance et al., publicerad i *MIS Quarterly* 2018** (sammanfattad av
   [Schneier on Security](https://www.schneier.com/blog/archives/2018/06/the_habituation.html),
-  primärkälla [neurosecurity.byu.edu](https://neurosecurity.byu.edu/media/Vance_et_al._2017_MISQ.pdf)):
+  primärkälla [neurosecurity.byu.edu](https://web.archive.org/web/20221122163422/https://neurosecurity.byu.edu/media/Vance_et_al._2017_MISQ.pdf)):
   fMRI- och ögonrörelse-mätningar visar att hjärnans respons på en
   säkerhetsvarning avtar redan efter 2–3 exponeringar för SAMMA varningsdesign
   — och att effekten replikerades i fält, inte bara i labb, mätt via
@@ -481,7 +481,7 @@ inflytande i stället för ett förvirrande val.
   fältdata) — sammanfattad av
   [Schneier on Security](https://www.schneier.com/blog/archives/2018/06/the_habituation.html),
   primärkälla
-  [neurosecurity.byu.edu](https://neurosecurity.byu.edu/media/Vance_et_al._2017_MISQ.pdf).
+  [neurosecurity.byu.edu](https://web.archive.org/web/20221122163422/https://neurosecurity.byu.edu/media/Vance_et_al._2017_MISQ.pdf).
 - ["Introducing quieter permission UI for notifications"](https://blog.chromium.org/2020/01/introducing-quieter-permission-ui-for.html),
   Chromium Blog, 2020-01-07.
 - ["Shhh...be Quiet!" — reducing unwanted notification permission

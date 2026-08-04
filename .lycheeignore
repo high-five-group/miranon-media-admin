@@ -276,3 +276,77 @@
 # fastställt, och felet har inte reproducerats. Kandidat för borttagning nu när
 # add-only-policyn är upphävd åt båda håll; prövas vid nästa nattröda körning.
 ^https://danger\.systems/.*$
+
+# testing.googleblog.com — Googles rate-limiter mot GHA:s delade IP-ranges
+# (#464, diagnos av marcus803 2026-08-01 i dispatch-körningen 30699670389:
+# "exakt samma länkar var GRÖNA i schemakörningen 04:25Z samma dag").
+# Samtliga träffar fastnar i en 302-kedja till google.com/sorry (Googles
+# captcha-vägg) och svarar 429 — inte länkröta.
+#
+# NY KONSEKVENS 2026-08-04 (nattkörning 30877269209): lycheens inbyggda
+# omtag med växande backoff över de ~7 träffade sidorna åt HELA jobbets
+# 5-minuters budget (--timeout-minutes 5), och körningen AVBRÖTS
+# ("The operation was canceled") innan lychee hann skriva någon
+# sammanfattning alls. Det är strikt värre än en röd grind — en som aldrig
+# blir klar, och som samtidigt maskerar alla ANDRA fel som skulle ha
+# rapporterats efter avbrottspunkten. Detta är skälet till att posten läggs
+# nu i stället för att vänta ut ännu en instans.
+#
+# Klassbevis, mätt lokalt 2026-08-05: samtliga träffade sidor svarar 200
+# (både med och utan Chrome-UA) → GHA-IP-klassen, samma familj som
+# tanstack.com/opentelemetry.io/gitlab.com/digg.se ovan, inte
+# UA/fingerprint-klassen. Domän-brett eftersom blocket träffar minst 7
+# skilda sidvägar under domänen (samma IP-nivå-mekanism som
+# tanstack.com-posten). Påverkar
+# docs/research/arbetsflode-processgranskning-2026-07-23.md,
+# docs/research/hermetisk-vs-skarp-e2e-branschpraxis-2026-07-26.md,
+# docs/research/oanvand-mock-branschpraxis-2026-07-28.md,
+# docs/research/testklass-namn-och-support-kataloger-2026-08-02.md.
+^https://testing\.googleblog\.com/.*$
+
+# www.leanessays.com — samma google.com/sorry-mönster och samma
+# diagnos-underlag (#464, 2026-08-01/2026-08-05) som testing.googleblog.com
+# ovan. Klassbevis: lokal curl 200 (2026-08-05), GHA-IP-klassen. Påverkar
+# docs/research/reversibilitet-som-delegeringsaxel-2026-07-29.md.
+^https://www\.leanessays\.com/.*$
+
+# nx.dev — Cloudflare/CDN blockerar GitHub Actions IP-ranges intermittent,
+# samma klass och samma diagnosmetod som tanstack.com/opentelemetry.io ovan
+# ("Connection failed" + "Request timed out" i CI, ingen riktig statuskod).
+# Två dokumenterade instanser: engångaren 30/7 (nämnd i #464 av marcus803,
+# 2026-08-01: "friska igen 1/8") och nattkörningen 30877269209
+# (2026-08-04) — samma två sidvägar båda gångerna. Klassbevis: lokal curl
+# 200 på båda (2026-08-05). Påverkar
+# docs/research/verktygsval-fyra-egenbyggen-2026-07-27.md.
+^https://nx\.dev/.*$
+
+# medium.com — bot-skydd, 403 BÅDE i CI (nattkörningen 30877269209,
+# 2026-08-04) och lokalt med Chrome-UA (2026-08-05) → UA/fingerprint-
+# klassen, samma familj som help.shopify.com/dl.acm.org/
+# journals.sagepub.com ovan, inte GHA-IP-klassen. Källan är LÄST och
+# citerad i docs/research/utskicks-bilage-arkitektur-2026-08-03.md; det är
+# grindens hämtning som blockeras, inte källans existens.
+^https://medium\.com/.*$
+
+# pdfmake.org — bot-skydd, 403 BÅDE i CI (nattkörningen 30877269209,
+# 2026-08-04) och lokalt (2026-08-05, samma svar med och utan Chrome-UA)
+# → UA/fingerprint-klassen. Citerad med http://-schema i källan (inte
+# https://) — mönstret matchar båda scheman. Påverkar
+# docs/research/utskicks-bilage-arkitektur-2026-08-03.md.
+^https?://pdfmake\.org/.*$
+
+# slack.com/get-started — bot-skydd, 403 lokalt BÅDE med och utan
+# Chrome-UA (2026-08-05) → UA/fingerprint-klassen. Ännu inte sedd i en
+# nattlig CI-körning (filen landade 2026-08-03; natten 2026-08-04 hann
+# aldrig klart på grund av testing.googleblog.com-timeouten ovan) men
+# reproducerar stabilt lokalt med CI:s exakta args och UA. Path-scopad,
+# inte domän-bred: resten av slack.com är overifierat. Påverkar
+# docs/research/aktiveringssida-branschmonster-2026-08-03.md.
+^https://slack\.com/get-started$
+
+# cacm.acm.org — ACM bakom bot-skydd, samma organisation som dl.acm.org
+# ovan men egen subdomän. 403 lokalt BÅDE med och utan Chrome-UA
+# (2026-08-05) → UA/fingerprint-klassen. Samma "ej sedd i CI ännu"-skäl
+# som slack.com-posten ovan (filen landade 2026-08-04). Påverkar
+# docs/research/kodfils-partitionering-parallella-agenter-2026-08-04.md.
+^https://cacm\.acm\.org/.*$
