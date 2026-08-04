@@ -16,6 +16,9 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="${SCRIPT_DIR}/deny-grind-genom-pipe.sh"
 POLICY="${SCRIPT_DIR}/../.grind-exitkod-policy.conf"
+HOOK_LOGG_TMP="$(mktemp -d)"
+HOOK_LOGG="${HOOK_LOGG_TMP}/hook-fallningar.jsonl"
+trap 'rm -rf "${HOOK_LOGG_TMP}"' EXIT
 
 ANTAL=0
 FEL=0
@@ -23,7 +26,7 @@ FEL=0
 kor() {
     local cmd="$1" ut
     ut="$(jq -nc --arg c "${cmd}" '{tool_name:"Bash",tool_input:{command:$c}}' \
-        | GRIND_POLICY="${POLICY}" bash "${HOOK}" 2>/dev/null)"
+        | GRIND_POLICY="${POLICY}" HOOK_LOGG="${HOOK_LOGG}" bash "${HOOK}" 2>/dev/null)"
     if printf '%s' "${ut}" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1; then
         printf 'NEKA'
     else
@@ -118,6 +121,32 @@ forvanta SLAPP "rg som söker i grind-skript" \
 # formen vore att neka den korrekta lösningen.
 forvanta SLAPP "set -o pipefail — pipen returnerar första icke-nollan" \
     'set -o pipefail; bash scripts/check-lifecycle.sh | tail -1'
+
+# ─── FÄLLNINGS-LOGG (T120, observerbarhet) ─────────────────────────────────
+echo
+echo "SIDA 3 — fällnings-logg"
+rm -f "${HOOK_LOGG}"
+kor 'npx markdownlint-cli2 "**/*.md" | tail -1' >/dev/null
+ANTAL=$((ANTAL + 1))
+if [[ -f "${HOOK_LOGG}" ]] && tail -1 "${HOOK_LOGG}" | jq -e \
+    '.hook == "deny-grind-genom-pipe" and (.skal_nyckel | length > 0) and (.ts | length > 0) and (.kommando | length > 0)' \
+    >/dev/null 2>&1; then
+    printf '  ✅ %-54s [%s]\n' "en NEKANDE lägger till en fällnings-rad med rätt fält" "LOGGAD"
+else
+    printf '  ❌ %-54s\n' "en NEKANDE lägger till en fällnings-rad med rätt fält"
+    FEL=$((FEL + 1))
+fi
+
+RADER_FORE="$(wc -l < "${HOOK_LOGG}" 2>/dev/null || echo 0)"
+kor 'bash scripts/check-lifecycle.sh' >/dev/null
+RADER_EFTER="$(wc -l < "${HOOK_LOGG}" 2>/dev/null || echo 0)"
+ANTAL=$((ANTAL + 1))
+if [[ "${RADER_FORE}" -eq "${RADER_EFTER}" ]]; then
+    printf '  ✅ %-54s\n' "ett SLÄPP loggar INTE en ny rad"
+else
+    printf '  ❌ %-54s\n' "ett SLÄPP loggar INTE en ny rad"
+    FEL=$((FEL + 1))
+fi
 
 echo
 if [[ "${FEL}" -eq 0 ]]; then
