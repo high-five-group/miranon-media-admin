@@ -22,6 +22,28 @@
             "statusMessage": "Agent-spawn-mätning (effektiv isolering)"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-resend-send.sh\"",
+            "timeout": 10,
+            "statusMessage": "MAIL-LÅSET — Resend-sänd-endpoints (TASK-137, Rogers krav)"
+          }
+        ]
+      },
+      {
+        "matcher": "^mcp__resend__send-(email|batch-emails|broadcast|event)$|^mcp__plugin_resend_resend__send-(email|batch-emails|broadcast|event)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-resend-send.sh\"",
+            "timeout": 10,
+            "statusMessage": "MAIL-LÅSET — Resend-sänd-MCP-verktyg, dubbel botten (TASK-137, Rogers krav)"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -64,6 +86,16 @@
     "marcus-system@marcus-hub": true
   },
   "permissions": {
+    "deny": [
+      "mcp__resend__send-email",
+      "mcp__resend__send-batch-emails",
+      "mcp__resend__send-broadcast",
+      "mcp__resend__send-event",
+      "mcp__plugin_resend_resend__send-email",
+      "mcp__plugin_resend_resend__send-batch-emails",
+      "mcp__plugin_resend_resend__send-broadcast",
+      "mcp__plugin_resend_resend__send-event"
+    ],
     "allow": [
       "Bash(git pull)",
       "Bash(git pull:*)",
