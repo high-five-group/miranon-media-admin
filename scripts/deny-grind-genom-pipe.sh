@@ -71,16 +71,21 @@
 #
 # INPUT: PreToolUse hook-JSON på stdin (`tool_name`, `tool_input.command`).
 #
+# Fällnings-logg (T120): varje nekande appenderar en rad till
+#   .claude/hook-fallningar.jsonl — delad med deny-frammande-huvudkatalog.sh,
+#   skild på fältet `hook`. Se § FÄLLNINGS-LOGG nedan.
+#
 # Testsvit: scripts/test-deny-grind-genom-pipe.sh (tvåsidigt bevis).
 #
-# Källa: L440 + L441 · T119 arbetslista (d) item 5 ·
+# Källa: L440 + L441 · T119 arbetslista (d) item 5 · T120 (fällnings-logg) ·
 #        .grind-exitkod-policy.conf · code.claude.com/docs/en/hooks.md
-# Etablerad: S97, 2026-08-04
+# Etablerad: S97, 2026-08-04. Fällnings-logg: S97 (T120).
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GRIND_POLICY="${GRIND_POLICY:-${SCRIPT_DIR}/../.grind-exitkod-policy.conf}"
+HOOK_LOGG="${HOOK_LOGG:-${SCRIPT_DIR}/../.claude/hook-fallningar.jsonl}"
 
 neka() {
     jq -nc --arg skal "$1" '{
@@ -91,6 +96,28 @@ neka() {
         }
     }' 2>/dev/null || exit 0
     exit 0
+}
+
+# ═══ FÄLLNINGS-LOGG (T120, observerbarhet) ═══
+#
+# En rad JSONL per NEKANDE till en delad, .gitignore:ad logg — samma fil som
+# deny-frammande-huvudkatalog.sh skriver till, åtskild på fältet `hook`.
+# Skälet: vi vet i dag inte hur ofta spärrarna fyrar, och det talet avgör om
+# de sinkar arbetet mer än de skyddar mot fel. Kontraktet lånas av
+# scripts/agent-spawn-log.sh: får ALDRIG påverka hookens exit eller stdout.
+logga_fallning() {
+    local skalnyckel="$1" kommando_kort
+    command -v jq >/dev/null 2>&1 || return 0
+    mkdir -p "$(dirname "${HOOK_LOGG}")" 2>/dev/null || return 0
+    kommando_kort="${COMMAND:0:120}"
+    jq -nc \
+        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)" \
+        --arg hook "deny-grind-genom-pipe" \
+        --arg kmd "${kommando_kort}" \
+        --arg skal "${skalnyckel}" \
+        '{ts: $ts, hook: $hook, kommando: $kmd, skal_nyckel: $skal}' \
+        >> "${HOOK_LOGG}" 2>/dev/null || true
+    return 0
 }
 
 command -v jq >/dev/null 2>&1 || exit 0
@@ -179,4 +206,5 @@ done <<< "${COMMAND}"
 
 [[ -n "${TRAFF_GRIND}" ]] || exit 0
 
+logga_fallning "PIPE_SVALJER_EXITKOD"
 neka "L440 — GRINDENS EXITKOD GÅR FÖRLORAD I PIPEN. Kommandot kör '${TRAFF_GRIND}' och pipar vidare: \"${TRAFF_RAD}\". En pipe returnerar SISTA ledets exitkod, så en röd grind blir grön för skalet — och nästa steg (commit, push, armering) kör som om allt vore bra. Detta är den mest frekventa felklassen i repot: minst sju dokumenterade instanser över fyra sessioner, varav två ledde till armerade PR:er på röda grindar. SKRIV OM KOMMANDOT — någon av dessa former fungerar och släpps igenom: (1) kör grinden naket och läs exitkoden direkt · (2) 'grind > fil; KOD=\$?' och läs sedan filen · (3) 'if grind; then ...; else stanna; fi' · (4) inled med 'set -o pipefail' — då returnerar pipen första icke-nollan och exitkoden överlever · (5) läs PIPESTATUS explicit. Behöver du GENUINT bara utdatan och exitkoden saknar all betydelse: använd form (2) och ignorera KOD. Detta är ett maskinellt beslut riktat till dig som skrev kommandot — eskalera det inte till Marcus, du har all information som krävs för att välja rätt form."

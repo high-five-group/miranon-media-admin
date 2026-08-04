@@ -99,7 +99,19 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/katalogagarskap-markor.sh\"",
             "timeout": 10,
-            "statusMessage": "Katalogägarskaps-lappen (ADR-090 beslut 2)"
+            "statusMessage": "Katalogägarskaps-lappen (ADR-090 beslut 2, rapporterar — skriver aldrig)"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/katalogagarskap-slapp.sh\"",
+            "timeout": 10,
+            "statusMessage": "Katalogägarskaps-lappen — släpp vid sessionsslut (T120)"
           }
         ]
       }

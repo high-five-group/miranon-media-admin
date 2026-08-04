@@ -299,10 +299,151 @@ Denna Update rör **enbart beslut 2**. Beslut 1:s detektionssteg och beslut 4:s
 öppna framtida väg (ovillkorad worktree per session) är oförändrade, och
 § Verkställandes hub-halva är fortfarande ogjord.
 
+### 2026-08-04 (S97, T120) — livstid, ägarskap vid skrivning, `deny`, smutsig-träd-varning
+
+Ovanstående Update mekaniserade beslut 2 med IDENTITET men ingen LIVSTID.
+Samma dag, innan mekanismen nådde skarp drift, avtäckte T120 att just den
+luckan var rotorsaken till ett skarpt fall: en lapp blockerade nästa session
+TRE MINUTER efter att den skrevs, från en session som redan var död (noll
+processer, ingen transcript-fil, tom scratchpad). `KATALOG_STALE_TIMMAR`
+ändrade bara TEXTEN i skälet — aldrig beslutet. Denna Update bokför fyra
+lager, byggda och REVIDERADE i sekvens SAMMA DAG (ordningen är läsvärd — den
+visar hur varje lager avtäckte nästa lucka):
+
+**Lager 1 — PID-liveness.** Lappen bär sedan T120 `agare_pid` +
+`agare_pid_starttid`, härlett genom processens förfaderkedja (ingen PID
+exponeras i hook-input, bekräftat mot code.claude.com/docs/en/hooks).
+`deny-frammande-huvudkatalog.sh` kör `kill -0` + jämför starttiden
+(PID-återanvändningsgard, samma teknik som systemd `PIDFile`) innan den
+nekar. En bevisligen död ägare släpps utan att fråga — precis Vims
+precedent (`.swp`-filens PID-baserade dödsdetektion, redan sanktionerad i
+§ Precedent).
+
+**Lager 2 — ägarskap TAS vid SKRIVNING, inte vid ANKOMST (RIVNING av den
+första formen).** Den ursprungliga T120-formen lät `katalogagarskap-
+markor.sh` (SessionStart) fortsätta SÄTTA lappen, bara med PID-fälten
+tillagda. Den formen reviderades INNAN den landade: Marcus håller MEDVETET
+gamla sessionsfönster öppna som referens (mätt levande exempel samma dag:
+PID 56246, öppet sedan 2026-08-02, över två dygn) — ett sådant fönster LÄSER
+men ARBETAR inte. Med lappen satt vid ankomst hade VARJE sparat
+referensfönster ockuperat huvudkatalogen PERMANENT. Lösningen: `katalog-
+agarskap-markor.sh` skriver ALDRIG längre — den behåller bara sin
+RAPPORTERANDE roll (en främmande lapp syns fortfarande i sessionsstartens
+kontext). `deny-frammande-huvudkatalog.sh` tar lappen atomärt (`set -C`/
+noclobber för en ny lapp; temp+`mv` för ett övertagande) i SAMMA anrop som
+den ändå prövar en git-skrivning — bara sessioner som faktiskt kör I
+huvudkatalogen får ta eller ta över; en worktree-session som pekar dit via
+`-C` gör inget hemvist-anspråk.
+
+**FÖRKASTAT — tidsbaserat övertagande av en LEVANDE men TYST ägare.** Ett
+tredje tillägg samma dag prövade `KATALOG_TYSTNAD_MINUTER`: en levande ägare
+som inte skrivit på ett tag skulle ge vika för en session som ville skriva.
+Marcus fällde förslaget innan det landade, med ett konkret scenario
+(verbatim): *"det kan ju bara vara så att jag behöver gå och bajsa, och när
+jag kommer tillbaka så har vi ingen katalog att stå på då?"* Rotorsaken i
+det förkastade tänkandet: TID användes som proxy för "ingen arbetar här",
+men ett arbetsträd med OCOMMITTADE ändringar är upptaget oavsett ägarens
+tystnad — en session som "tog över" en tyst-men-levande ägare hade kunnat
+skriva (checkout/commit/merge) rätt ovanpå det ocommittade arbetet medan
+ägaren bara var borta från tangentbordet. Bokfört öppet, inte tyst rivet,
+per husets regel om falsifierat innehåll. En levande ägare nekar därför
+ALLTID, oavsett tystnadslängd — det enda giltiga övertagande-villkoret
+förblir BEVISAD DÖD process.
+
+**Lager 3 — varning vid smutsigt arbetsträd (andra Marcus-fångsten).**
+Byggd som svar på ett fel i det egna resonemanget som fällde tidsövertagandet:
+"en död process kan inte ha ocommittat arbete som går förlorat — den är
+borta" var självt fel. Processen är borta; ARBETET på disk är det INTE.
+Marcus föreslog då att lappen ALDRIG skulle övertas — förkastat i sin tur,
+eftersom det ger permanent låsning vid en enda felkryssning (samma
+spöklapp-incident, fast som en hård vägg i stället för en klickbar prompt).
+Rätt form: övertagande vid död process sker fortfarande automatiskt, men om
+huvudkatalogens arbetsträd samtidigt bär SPÅRADE ändringar (modifierade
+eller staged — otrackade filer räknas medvetet inte, se
+`package-lock.json.pre-t118`) eller en PÅGÅENDE git-operation (`MERGE_HEAD`,
+`CHERRY_PICK_HEAD`, `rebase-merge`/`rebase-apply`), levererar hooken en
+VARNING till den övertagande AGENTEN — aldrig en prompt till Marcus — via
+`hookSpecificOutput.additionalContext` på ett `permissionDecision: "allow"`-
+svar. Verifierat mot förstapartsdokumentationen, inte gissat:
+`permissionDecisionReason` är dokumenterat "shown to Claude when denying, or
+to the user when asking" (ingetdera gäller `allow`) och `systemMessage` är
+uttryckligen "shown to the user" — `additionalContext` är fältet som når
+Claude UTAN att nå Marcus, samma fält `katalogagarskap-markor.sh` redan
+använder för sin SessionStart-rapportering.
+
+**Lager 4 — explicit släpp.** `SessionEnd` (harnessets hook-event, `scripts/
+katalogagarskap-slapp.sh`) släpper lappen när dess `session_id` matchar
+exakt. Ett nytt CLI-läge, `katalogagarskap-markor.sh --slapp`, exponerar
+samma släpp som ett anropbart kommando avsett för disciplin-skillsen
+`session-paus`/`session-end` (marcus-system-pluginet) att köra som ETT EGET
+STEG vid stängning — snabbare än att vänta ut död-process-detektionen.
+Skill-sidans faktiska anrop är UTANFÖR denna spoke-landning (cross-repo).
+
+**Sammanfattat, de FYRA verben:** lappen **TAS** vid första git-skrivningen
+(aldrig vid SessionStart) · **BEHÅLLS** så länge processen lever, oavsett
+tystnad · **ÖVERTAS** endast vid BEVISAD död process (aldrig tidsbaserat) ·
+**SLÄPPS** explicit vid `SessionEnd` eller `--slapp`.
+
+**Namnkrocken, dokumenterad i koden:** `session-end` (pluginets
+disciplin-skill, skriver `lifecycle: closed` i ett sessionsdok) och
+`SessionEnd` (harnessets hook-event) lät nästan identiska och gav en
+FELAKTIG slutsats (Marcus, 2026-08-04): att en pausad session äger
+huvudkatalogen tills disciplin-skillen körs på den. Fel — lappen är knuten
+till PROCESSEN, inte till `lifecycle`-fältet. Förklaringen står nu i
+`scripts/katalogagarskap-markor.sh` och `scripts/deny-frammande-
+huvudkatalog.sh`:s filhuvuden, inte bara här, eftersom nästa läsare möter
+skriptet, inte denna ADR.
+
+**`ask` → `deny` (korrigerar föregående Updates formval).** Föregående
+Update i detta avsnitt valde `permissionDecision: "ask"` med motiveringen
+att legitima undantag finns. Samma dags forskningspass
+(`docs/research/hook-beslut-ask-vs-deny-och-begriplighet-2026-08-04.md`,
+skrivet FÖRE T120) landade oberoende på samma slutsats: "Behåll `ask`" för
+just detta skript. T120 river bägge — INTE för att de hade fel GIVET
+förutsättningarna då, utan för att PID-liveness ändrar förutsättningen:
+`ask` fanns för att skriptet inte kunde skilja en äkta konflikt från en
+falsk. Nu kan det. En bevisligen levande ägare nekar hårt (`deny`); en
+bevisligen död släpps tyst (med varning vid smutsigt träd). Kvarstående
+kostnad, öppet noterad: det legitima undantaget (Marcus medvetet låter en
+session arbeta trots en annan levande ägare) har ingen in-hook-PROMPT
+längre — bara `rm <lappen>` manuellt. Den tidigare "KÄND RISK"-noteringen om
+`#37210` var, enligt samma forskningspass, en felanvänd exit-kod hos
+rapportören, inte en plattformsbugg — repots mönster (`jq -nc {...}; exit
+0`, aldrig blandat med `exit 2`) undvek den redan strukturellt.
+
+**Fällnings-logg (observerbarhet).** Både `deny-frammande-huvudkatalog.sh`
+och `deny-grind-genom-pipe.sh` (syskon-hooken från föregående Update i S97)
+appenderar nu en JSONL-rad per NEKANDE till `.claude/hook-fallningar.jsonl`
+(lokal, `.gitignore`:ad) — tidsstämpel, vilken hook, kommando (förkortat),
+skäl-nyckel. Skälet: fällningsfrekvensen var okänd, och den avgör om
+spärrarna sinkar arbetet mer än de skyddar mot fel.
+
+**Bevisläge, ärligt redovisat.** Logiken är bevisad tvåsidigt: `scripts/
+test-deny-frammande-huvudkatalog.sh` (55/55, tre skript — markör-, prövnings-
+och släpp-hooken) och `scripts/test-deny-grind-genom-pipe.sh` (25/25, med
+fällnings-loggens nya rader). Bägge nya mekanismer (fällnings-loggen,
+smutsig-träd-varningen) har körts genom en NEGATIV kontrollprövning — den
+avsedda koden togs bort/bröts temporärt och testerna föll rött exakt på de
+förväntade raderna, återställdes sedan — inte bara ett grönt facit. CI-
+portabilitet är medvetet byggd in: PID-derivationens tester styr
+`KATALOG_CLI_PROCESSNAMN` via en temporär policy-override i stället för att
+lita på att en "Claude"-process råkar finnas i testmiljöns egen
+processkedja (den gör det lokalt i detta projekts VS Code-terminal, men
+inte i GitHub Actions). **Aktiveringen i harnesset är, liksom föregående
+Updates PID-lösa form, INTE bevisad i DENNA byggsession** — samma
+strukturella klass som `CLAUDE.md` § "En ny hook kan ALDRIG skarpbevisas
+i sessionen som byggde den": hookar registrerade/ändrade mitt i en session
+laddas inte om förrän nästa sessionsstart. Öppen skuld, betalas vid nästa
+sessions första handlingar.
+
+Denna Update rör beslut 2:s MEKANISM (liveness, ägarskap-tagande,
+`deny`-form, varning). Beslut 1, 4 och 6 är fortfarande oförändrade.
+
 ## Relaterat
 
 `T67` (parallella aktiva sessioner — tråden denna ADR stänger designsteget
 för) · `T119` (mekaniserings-programmet, som Updaten ovan hör till) ·
+`T120` (ägarlappens livstid — rotorsaken 2026-08-04-Updaten bokför) ·
 `ADR-089` (syskon-ADR:n från samma grillning, modell-/effort-policy) ·
 `ADR-076` (merge-kön, trunk-based-arkitekturen denna ADR bygger vidare på) ·
 [`sessions-parallellitet-frontier-praxis-2026-08-02.md`](../research/sessions-parallellitet-frontier-praxis-2026-08-02.md)

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # scripts/test-deny-frammande-huvudkatalog.sh — tvåsidigt bevis för
-# katalogägarskaps-hooken (T119 arbetslista (a), S97).
+# katalogägarskaps-mekanismen (T119 arbetslista (a) + T120, S97).
 #
 # TVÅSIDIGT betyder att BÅDA riktningarna prövas: planterade överträdelser
-# ska FRÅGA, och legitima kommandon ska SLÄPPAS. Ett test som bara visar att
+# ska NEKAS, och legitima kommandon ska SLÄPPAS. Ett test som bara visar att
 # spärren fäller bevisar inte att den är användbar — det bevisar bara att den
 # är en svepande blockering. Samma form som scripts/test-deny-resend-send.sh.
 #
@@ -11,6 +11,30 @@
 # hela mekanismen vilar på hur git delar .git/ mellan huvudträd och worktrees
 # (se .katalogagarskap-policy.conf § VARFÖR LAPPEN BOR I --git-common-dir).
 # En mockad katalogstruktur hade prövat mocken, inte mekanismen.
+#
+# TÄCKER TRE SKRIPT (T120 delade upp mekanismen i tre delar):
+#   - scripts/katalogagarskap-markor.sh   (SessionStart-rapport + --slapp)
+#   - scripts/deny-frammande-huvudkatalog.sh (PreToolUse: prövning + tagande)
+#   - scripts/katalogagarskap-slapp.sh    (SessionEnd-släpp)
+#
+# CI-PORTABILITET, MEDVETET: SIDA 5:s pid-derivations-tester (finn_cli_pid)
+#   använder en TEMPORÄR policy-override (`policy_med_cli_monster`) i stället
+#   för default-policyns `KATALOG_CLI_PROCESSNAMN=("claude")`. Skälet: denna
+#   testriggens EGEN processkedja råkar innehålla en process vid namn
+#   "Claude" när den körs i detta projekts VS Code-integrerade terminal
+#   (mätt 2026-08-04), men INTE i CI (GitHub Actions har ingen sådan
+#   process). Ett test som antog default-mönstrets träff hade alltså gett
+#   OLIKA resultat lokalt kontra i CI — en tyst flake. Override:en gör
+#   testet deterministiskt i BÅDA miljöerna genom att styra mönstret
+#   explicit ("bash" — garanterat en förfader till varje skal; ett
+#   omöjligt-mönster för negativa fallet) i stället för att förlita sig på
+#   den omgivande maskinens processträd.
+#
+# INGEN TYSTNADS-MEKANIK HÄR, MEDVETET: ett tidsbaserat övertagande av en
+#   LEVANDE men tyst ägare byggdes och FÖRKASTADES samma dag (Marcus:
+#   "det kan ju bara vara så att jag behöver gå och bajsa..."). Se
+#   deny-frammande-huvudkatalog.sh § ÄGARSKAP-TAGANDE, "FÖRKASTAT", och
+#   ADR-090 § Update. En levande ägare nekar ALLTID (SIDA 4), oavsett tystnad.
 #
 # Körs: bash scripts/test-deny-frammande-huvudkatalog.sh
 # Exit 0 = alla fall gröna. Exit 1 = minst ett fall rött.
@@ -20,16 +44,24 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="${SCRIPT_DIR}/deny-frammande-huvudkatalog.sh"
 MARKOR_HOOK="${SCRIPT_DIR}/katalogagarskap-markor.sh"
+SLAPP_HOOK="${SCRIPT_DIR}/katalogagarskap-slapp.sh"
 POLICY="${SCRIPT_DIR}/../.katalogagarskap-policy.conf"
 
 ANTAL=0
 FEL=0
 
 TMPROT="$(mktemp -d)"
-trap 'rm -rf "${TMPROT}"' EXIT
+# Kanoniserad DIREKT: macOS symlinkar /var -> /private/var, och `git
+# rev-parse` löser upp symlinken internt. Utan detta skulle hookens EGET
+# beräknade `huvudkatalog`-fält (/private/var/...) aldrig strängmatcha mot
+# testriggens råa ${HUVUD} (/var/...) — fångat live 2026-08-04 (T120).
+TMPROT="$(cd "${TMPROT}" && pwd -P)"
+LEVANDE_PID=""
+trap 'kill "${LEVANDE_PID}" 2>/dev/null; rm -rf "${TMPROT}"' EXIT
 
 HUVUD="${TMPROT}/huvudrepo"
 WT="${TMPROT}/worktree-b"
+HOOK_LOGG="${TMPROT}/hook-fallningar.jsonl"
 
 mkdir -p "${HUVUD}"
 git -C "${HUVUD}" init -q -b main
@@ -51,6 +83,28 @@ MARKOR="${COMMON_DIR}/${KATALOG_MARKOR_FILNAMN}"
 
 AGARE_SID="session-agaren-1111"
 FRAMLING_SID="session-framlingen-2222"
+TREDJE_SID="session-tredje-3333"
+
+# ── PID-fixturer: äkta processer. ──────────────────────────────────────────
+lstart_for() {
+    local pid="$1" v
+    v="$(ps -o lstart= -p "${pid}" 2>/dev/null)"
+    v="${v#"${v%%[![:space:]]*}"}"
+    v="${v%"${v##*[![:space:]]}"}"
+    printf '%s' "${v}"
+}
+
+sleep 600 &
+LEVANDE_PID=$!
+LEVANDE_START="$(lstart_for "${LEVANDE_PID}")"
+
+sleep 1 &
+DOD_PID=$!
+wait "${DOD_PID}" 2>/dev/null
+# DOD_PID är nu garanterat inte körande (väntad in). Kortlivat fönster för
+# PID-återanvändning av OS:et innan hooken prövar den — samma accepterade
+# risk som produktionsmekanismen själv bär, se skriptets § LIVENESS-PRÖVNING.
+DOD_START="spelar-ingen-roll-processen-kor-inte"
 
 satt_markor() {
     local sid="$1" epoch="${2:-}" iso
@@ -64,25 +118,70 @@ satt_markor() {
         > "${MARKOR}"
 }
 
-# kor <cwd> <session_id> <kommando> → skriver hookens stdout
-kor() {
-    local cwd="$1" sid="$2" cmd="$3"
-    jq -nc --arg cwd "${cwd}" --arg sid "${sid}" --arg cmd "${cmd}" \
-        '{tool_name: "Bash", session_id: $sid, cwd: $cwd, tool_input: {command: $cmd}}' \
-        | KATALOG_POLICY="${POLICY}" bash "${HOOK}" 2>/dev/null
+# satt_markor_pid <sid> <pid> <pidstart>
+satt_markor_pid() {
+    local sid="$1" pid="$2" pidstart="$3" nu iso
+    nu="$(date +%s)"
+    iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    jq -n --arg sid "${sid}" --arg huvud "${HUVUD}" \
+        --arg iso "${iso}" --argjson epoch "${nu}" \
+        --argjson pid "${pid}" --arg pidstart "${pidstart}" \
+        '{session_id: $sid, huvudkatalog: $huvud, satt_vid: $iso, satt_vid_epoch: $epoch,
+          agare_pid: $pid, agare_pid_starttid: $pidstart}' \
+        > "${MARKOR}"
 }
 
-# forvanta <FRAGA|SLAPP> <beskrivning> <cwd> <sid> <kommando>
+# policy_med_cli_monster <monster> <utfil> — se § CI-PORTABILITET.
+policy_med_cli_monster() {
+    local monster="$1" ut="$2"
+    cat "${POLICY}" > "${ut}"
+    printf '\nKATALOG_CLI_PROCESSNAMN=("%s")\n' "${monster}" >> "${ut}"
+}
+
+# stad_arbetstrad — nollställer HUVUD:s arbetsträd + operationsmarkörer.
+stad_arbetstrad() {
+    git -C "${HUVUD}" reset --hard -q 2>/dev/null
+    git -C "${HUVUD}" clean -fdq 2>/dev/null
+    rm -f "${COMMON_DIR}/MERGE_HEAD" "${COMMON_DIR}/CHERRY_PICK_HEAD" 2>/dev/null
+    rm -rf "${COMMON_DIR}/rebase-merge" "${COMMON_DIR}/rebase-apply" 2>/dev/null
+}
+
+falt() {
+    # falt <jq-uttryck> — läser ett fält ur MARKOR, tom sträng om saknas/trasig.
+    jq -r "$1 // empty" "${MARKOR}" 2>/dev/null
+}
+
+# kor <cwd> <session_id> <kommando> [policy] → hookens stdout
+kor() {
+    local cwd="$1" sid="$2" cmd="$3" pol="${4:-${POLICY}}"
+    jq -nc --arg cwd "${cwd}" --arg sid "${sid}" --arg cmd "${cmd}" \
+        '{tool_name: "Bash", session_id: $sid, cwd: $cwd, tool_input: {command: $cmd}}' \
+        | KATALOG_POLICY="${pol}" HOOK_LOGG="${HOOK_LOGG}" bash "${HOOK}" 2>/dev/null
+}
+
+# beslut <hook-stdout> → "NEKA" eller "SLAPP"
+beslut() {
+    if printf '%s' "$1" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1; then
+        printf 'NEKA'
+    else
+        printf 'SLAPP'
+    fi
+}
+
+# har_varning <hook-stdout> — sant om ett allow-svar bär en additionalContext.
+har_varning() {
+    printf '%s' "$1" | jq -e \
+        '.hookSpecificOutput.permissionDecision == "allow" and ((.hookSpecificOutput.additionalContext // "") | length > 0)' \
+        >/dev/null 2>&1
+}
+
+# forvanta <NEKA|SLAPP> <beskrivning> <cwd> <sid> <kommando> [policy]
 forvanta() {
-    local vantat="$1" desc="$2" cwd="$3" sid="$4" cmd="$5"
+    local vantat="$1" desc="$2" cwd="$3" sid="$4" cmd="$5" pol="${6:-${POLICY}}"
     ANTAL=$((ANTAL + 1))
     local ut faktiskt
-    ut="$(kor "${cwd}" "${sid}" "${cmd}")"
-    if printf '%s' "${ut}" | jq -e '.hookSpecificOutput.permissionDecision == "ask"' >/dev/null 2>&1; then
-        faktiskt="FRAGA"
-    else
-        faktiskt="SLAPP"
-    fi
+    ut="$(kor "${cwd}" "${sid}" "${cmd}" "${pol}")"
+    faktiskt="$(beslut "${ut}")"
     if [[ "${faktiskt}" = "${vantat}" ]]; then
         printf '  ✅ %-58s [%s]\n' "${desc}" "${faktiskt}"
     else
@@ -91,35 +190,49 @@ forvanta() {
     fi
 }
 
-echo "═══ Katalogägarskaps-hooken — tvåsidigt bevis ═══"
+# pastar <beskrivning> <villkor 0|1>
+pastar() {
+    local desc="$1" ok="$2"
+    ANTAL=$((ANTAL + 1))
+    if [[ "${ok}" -eq 0 ]]; then
+        printf '  ✅ %-58s\n' "${desc}"
+    else
+        printf '  ❌ %-58s\n' "${desc}"
+        FEL=$((FEL + 1))
+    fi
+}
+
+echo "═══ Katalogägarskaps-mekanismen (T119 + T120) — tvåsidigt bevis ═══"
 echo
 echo "Rigg: huvudrepo ${HUVUD}"
 echo "      worktree  ${WT}"
 echo "      lapp      ${MARKOR}"
+echo "      pid-fixtur levande=${LEVANDE_PID} död=${DOD_PID}"
 echo
 
-# ── SIDA 1: överträdelser ska FRÅGA ───────────────────────────────────────
-echo "SIDA 1 — planterade överträdelser (ägarlapp: ${AGARE_SID})"
+# ═══ SIDA 1 — S96:s FAKTISKA regressionsfall (lapp i ÄLDRE form, utan pid)
+#     ska NEKAS ═══
+echo "SIDA 1 — planterade överträdelser (äldre lappform, ägarlapp: ${AGARE_SID})"
 satt_markor "${AGARE_SID}"
 
-forvanta FRAGA "S96:s faktiska fel 1: ff-merge i huvudkatalogen" \
+forvanta NEKA "S96:s faktiska fel 1: ff-merge i huvudkatalogen" \
     "${HUVUD}" "${FRAMLING_SID}" "git merge --ff-only origin/main"
-forvanta FRAGA "S96:s faktiska fel 2: gren skapad i huvudkatalogen" \
+forvanta NEKA "S96:s faktiska fel 2: gren skapad i huvudkatalogen" \
     "${HUVUD}" "${FRAMLING_SID}" "git switch -c docs/t116-konvergens-kadens"
-forvanta FRAGA "commit i huvudkatalogen" \
+forvanta NEKA "commit i huvudkatalogen" \
     "${HUVUD}" "${FRAMLING_SID}" "git commit -m 'test'"
-forvanta FRAGA "git -C <huvudkatalog> från en worktree" \
+forvanta NEKA "git -C <huvudkatalog> från en worktree" \
     "${WT}" "${FRAMLING_SID}" "git -C ${HUVUD} merge --ff-only origin/main"
-forvanta FRAGA "cd <huvudkatalog> && git från en worktree" \
+forvanta NEKA "cd <huvudkatalog> && git från en worktree" \
     "${WT}" "${FRAMLING_SID}" "cd ${HUVUD} && git reset --hard origin/main"
-forvanta FRAGA "skrivning gömd som andra led i en kedja" \
+forvanta NEKA "skrivning gömd som andra led i en kedja" \
     "${HUVUD}" "${FRAMLING_SID}" "git status && git rebase origin/main"
-forvanta FRAGA "git -c före underkommandot maskerar inte skrivningen" \
+forvanta NEKA "git -c före underkommandot maskerar inte skrivningen" \
     "${HUVUD}" "${FRAMLING_SID}" "git -c core.editor=true commit --amend"
-forvanta FRAGA "worktree add är en skrivning" \
+forvanta NEKA "worktree add är en skrivning" \
     "${HUVUD}" "${FRAMLING_SID}" "git worktree add ../nytt"
 
-# ── SIDA 2: legitima kommandon ska SLÄPPAS ────────────────────────────────
+# ── SIDA 2 — legitima kommandon ska SLÄPPAS ────────────────────────────────
 echo
 echo "SIDA 2 — legitima kommandon"
 
@@ -140,13 +253,9 @@ forvanta SLAPP "icke-git-kommando i huvudkatalogen" \
 forvanta SLAPP "ordet 'git' i ett annat sammanhang" \
     "${HUVUD}" "${FRAMLING_SID}" "echo 'legitimate merge of two datasets'"
 
-# ── SIDA 3: fail-open och gränsfall ───────────────────────────────────────
+# ── SIDA 3 — fail-open och gränsfall ───────────────────────────────────────
 echo
 echo "SIDA 3 — fail-open och gränsfall"
-
-rm -f "${MARKOR}"
-forvanta SLAPP "ingen lapp = ingen deklarerad ägare = ingen konflikt" \
-    "${HUVUD}" "${FRAMLING_SID}" "git merge --ff-only origin/main"
 
 echo "{ trasig json" > "${MARKOR}"
 forvanta SLAPP "oläsbar lapp failar ÖPPET (medvetet, se skripthuvudet)" \
@@ -156,7 +265,7 @@ satt_markor "${AGARE_SID}"
 ANTAL=$((ANTAL + 1))
 UT_STALE="$(kor "${HUVUD}" "${FRAMLING_SID}" "git merge --ff-only origin/main")"
 if printf '%s' "${UT_STALE}" | jq -e '.hookSpecificOutput.permissionDecisionReason | contains("stale") | not' >/dev/null 2>&1; then
-    printf '  ✅ %-58s [%s]\n' "färsk lapp nämner INTE stale" "FRAGA"
+    printf '  ✅ %-58s [%s]\n' "färsk lapp nämner INTE stale" "NEKA"
 else
     printf '  ❌ %-58s\n' "färsk lapp nämner INTE stale"
     FEL=$((FEL + 1))
@@ -167,53 +276,278 @@ satt_markor "${AGARE_SID}" "$(( NU - KATALOG_STALE_TIMMAR * 3600 - 60 ))"
 ANTAL=$((ANTAL + 1))
 UT_GAMMAL="$(kor "${HUVUD}" "${FRAMLING_SID}" "git merge --ff-only origin/main")"
 if printf '%s' "${UT_GAMMAL}" | jq -e '.hookSpecificOutput.permissionDecisionReason | contains("stale-tröskeln")' >/dev/null 2>&1; then
-    printf '  ✅ %-58s [%s]\n' "gammal lapp fäller MEN flaggar stale + rensning" "FRAGA"
+    printf '  ✅ %-58s [%s]\n' "gammal lapp (ingen pid) fäller MEN flaggar stale" "NEKA"
 else
-    printf '  ❌ %-58s\n' "gammal lapp fäller MEN flaggar stale + rensning"
+    printf '  ❌ %-58s\n' "gammal lapp (ingen pid) fäller MEN flaggar stale"
     FEL=$((FEL + 1))
 fi
 
-# ── SIDA 4: markör-hooken sätter och stjäl inte ───────────────────────────
+# ═══ SIDA 4 — PID-LIVENESS (T120, § LIVENESS-PRÖVNING) ═══
 echo
-echo "SIDA 4 — markör-hooken (SessionStart)"
+echo "SIDA 4 — PID-liveness"
+
+satt_markor_pid "${AGARE_SID}" "${LEVANDE_PID}" "${LEVANDE_START}"
+forvanta NEKA "levande pid ⇒ nekar ALLTID (ingen tystnads-väg finns)" \
+    "${HUVUD}" "${FRAMLING_SID}" "git merge --ff-only origin/main"
+
+satt_markor_pid "${AGARE_SID}" "${DOD_PID}" "${DOD_START}"
+forvanta SLAPP "död pid ⇒ släpper (huvudkat.-session tar över)" \
+    "${HUVUD}" "${FRAMLING_SID}" "git merge --ff-only origin/main"
+# SC2312-säkert i HELA denna sida: varje kommandosubstitution extraheras
+# till en egen variabel FÖRE `[[ ]]`-testet, aldrig nästlad inuti det —
+# annars flaggar den strikta lintern (--enable=all) att substitutionens
+# EGEN exitkod maskeras, även när den bara används för sitt stdout i en
+# strängjämförelse.
+VAL="$(falt '.session_id')"
+if [[ "${VAL}" = "${FRAMLING_SID}" ]]; then OK=0; else OK=1; fi
+pastar "död pid: lappen finns kvar men bytt ägare (ÖVERTAGEN, inte bara raderad)" "${OK}"
+
+satt_markor_pid "${AGARE_SID}" "${LEVANDE_PID}" "ett-helt-annat-tidsstampel-som-inte-matchar"
+forvanta SLAPP "pid återanvänd (samma pid, ANNAN starttid) ⇒ släpper" \
+    "${HUVUD}" "${FRAMLING_SID}" "git merge --ff-only origin/main"
+VAL="$(falt '.session_id')"
+if [[ "${VAL}" = "${FRAMLING_SID}" ]]; then OK=0; else OK=1; fi
+pastar "återanvänd pid: lappen tagen över av den nya sessionen" "${OK}"
+
+echo "  (gammal lappform utan pid ⇒ redan bevisat i SIDA 1+3 — samma väg)"
+
+# ═══ SIDA 5 — ÄGARSKAP-TAGANDE: TAS vid SKRIVNING, inte vid ankomst ═══
+echo
+echo "SIDA 5 — ägarskap-tagande (T120, andra designtillägget)"
+
+rm -f "${MARKOR}"
+forvanta SLAPP "läsande git-kommando utan lapp ⇒ ingen lapp skapas" \
+    "${HUVUD}" "${FRAMLING_SID}" "git status --short"
+if [[ ! -f "${MARKOR}" ]]; then OK=0; else OK=1; fi
+pastar "... verifierat: ingen lapp skapades" "${OK}"
+
+rm -f "${MARKOR}"
+forvanta SLAPP "skrivande git-kommando UTAN lapp, huvudkat.-session ⇒ lappen TAS" \
+    "${HUVUD}" "${TREDJE_SID}" "git commit -m 'första skrivningen'"
+VAL="$(falt '.session_id')"
+VAL2="$(falt '.huvudkatalog')"
+if [[ "${VAL}" = "${TREDJE_SID}" && "${VAL2}" = "${HUVUD}" ]]; then OK=0; else OK=1; fi
+pastar "... verifierat: lappen finns nu, rätt session_id + huvudkatalog" "${OK}"
+
+rm -f "${MARKOR}"
+forvanta SLAPP "skrivande kommando UTAN lapp, kommandot bara PEKAR (worktree) ⇒ inget tas" \
+    "${WT}" "${FRAMLING_SID}" "git -C ${HUVUD} commit -m 'pekar dit'"
+if [[ ! -f "${MARKOR}" ]]; then OK=0; else OK=1; fi
+pastar "... verifierat: fortfarande ingen lapp (pekande session tar inte hemvist)" "${OK}"
+
+satt_markor_pid "${AGARE_SID}" "${LEVANDE_PID}" "${LEVANDE_START}"
+forvanta SLAPP "skrivande kommando med EGEN lapp ⇒ släpps, ORÖRD (ingen tystnads-klocka)" \
+    "${HUVUD}" "${AGARE_SID}" "git commit -m 'ännu en skrivning'"
+VAL="$(falt '.session_id')"
+if [[ "${VAL}" = "${AGARE_SID}" ]]; then OK=0; else OK=1; fi
+pastar "... verifierat: lappen är fortfarande min (session_id oförändrad)" "${OK}"
+
+satt_markor_pid "${AGARE_SID}" "${DOD_PID}" "${DOD_START}"
+forvanta SLAPP "huvudkat.-session + FRÄMMANDE DÖD lapp ⇒ TAS ÖVER" \
+    "${HUVUD}" "${TREDJE_SID}" "git commit -m 'tar över'"
+VAL="$(falt '.session_id')"
+if [[ "${VAL}" = "${TREDJE_SID}" ]]; then OK=0; else OK=1; fi
+pastar "... verifierat: ny ägare registrerad (${TREDJE_SID})" "${OK}"
+
+satt_markor_pid "${AGARE_SID}" "${DOD_PID}" "${DOD_START}"
+forvanta SLAPP "PEKANDE worktree-session + FRÄMMANDE DÖD lapp ⇒ rivs, INGEN ny ägare" \
+    "${WT}" "${FRAMLING_SID}" "git -C ${HUVUD} commit -m 'pekar mot en död lapp'"
+if [[ ! -f "${MARKOR}" ]]; then OK=0; else OK=1; fi
+pastar "... verifierat: lappen är helt borta (ingen tog över den)" "${OK}"
+
+# CI-portabel prövning av finn_cli_pid, se § CI-PORTABILITET överst.
+rm -f "${MARKOR}"
+policy_med_cli_monster "bash" "${TMPROT}/policy-traff.conf"
+forvanta SLAPP "PID-derivering: CLI-mönstret TRÄFFAR (garanterat, 'bash')" \
+    "${HUVUD}" "${TREDJE_SID}" "git commit -m 'pid-derivering trff'" \
+    "${TMPROT}/policy-traff.conf"
+VAL="$(falt '.agare_pid')"
+if [[ "${VAL}" != "" ]]; then OK=0; else OK=1; fi
+pastar "... verifierat: agare_pid ÄR satt (icke-null) när mönstret träffar" "${OK}"
+
+rm -f "${MARKOR}"
+policy_med_cli_monster "xyz-finns-garanterat-inte-nagonstans-zzz" "${TMPROT}/policy-ejtraff.conf"
+forvanta SLAPP "PID-derivering: CLI-mönstret TRÄFFAR EJ (garanterat omöjligt)" \
+    "${HUVUD}" "${TREDJE_SID}" "git commit -m 'pid-derivering ej trff'" \
+    "${TMPROT}/policy-ejtraff.conf"
+VAL="$(falt '.agare_pid')"
+if [[ "${VAL}" = "" ]]; then OK=0; else OK=1; fi
+pastar "... verifierat: agare_pid är null (fail-open) när inget mönster träffar" "${OK}"
+
+# ═══ SIDA 6 — VARNING VID SMUTSIGT ARBETSTRÄD (Marcus-fångst, sista
+#     tillägget: en död process kan lämna ocommittat arbete kvar på disk) ═══
+echo
+echo "SIDA 6 — varning vid smutsigt arbetsträd (dödfall-övertagande)"
+
+stad_arbetstrad
+
+satt_markor_pid "${AGARE_SID}" "${DOD_PID}" "${DOD_START}"
+UT="$(kor "${HUVUD}" "${TREDJE_SID}" "git commit -m 'ren overtagning'")"
+BSL="$(beslut "${UT}")"
+if [[ "${BSL}" = "SLAPP" ]] && ! har_varning "${UT}"; then OK=0; else OK=1; fi
+pastar "död ägare + RENT träd ⇒ övertas TYST (ingen varning)" "${OK}"
+stad_arbetstrad
+
+echo "ändring" >> "${HUVUD}/fil.txt"
+satt_markor_pid "${AGARE_SID}" "${DOD_PID}" "${DOD_START}"
+UT="$(kor "${HUVUD}" "${TREDJE_SID}" "git commit -m 'overtagning modifierad fil'")"
+BSL="$(beslut "${UT}")"
+if [[ "${BSL}" = "SLAPP" ]] && har_varning "${UT}"; then OK=0; else OK=1; fi
+pastar "död ägare + MODIFIERAD spårad fil ⇒ övertas MED varning" "${OK}"
+stad_arbetstrad
+
+echo "ändring" >> "${HUVUD}/fil.txt"
+git -C "${HUVUD}" add fil.txt
+satt_markor_pid "${AGARE_SID}" "${DOD_PID}" "${DOD_START}"
+UT="$(kor "${HUVUD}" "${TREDJE_SID}" "git commit -m 'overtagning staged'")"
+BSL="$(beslut "${UT}")"
+if [[ "${BSL}" = "SLAPP" ]] && har_varning "${UT}"; then OK=0; else OK=1; fi
+pastar "död ägare + STAGED ändring ⇒ övertas MED varning" "${OK}"
+stad_arbetstrad
+
+touch "${COMMON_DIR}/MERGE_HEAD"
+satt_markor_pid "${AGARE_SID}" "${DOD_PID}" "${DOD_START}"
+UT="$(kor "${HUVUD}" "${TREDJE_SID}" "git commit -m 'overtagning pagaende merge'")"
+BSL="$(beslut "${UT}")"
+if [[ "${BSL}" = "SLAPP" ]] && har_varning "${UT}"; then OK=0; else OK=1; fi
+pastar "död ägare + PÅGÅENDE merge (MERGE_HEAD) ⇒ övertas MED varning" "${OK}"
+stad_arbetstrad
+
+echo "otrackat innehåll" > "${HUVUD}/otrackad-fil.txt"
+satt_markor_pid "${AGARE_SID}" "${DOD_PID}" "${DOD_START}"
+UT="$(kor "${HUVUD}" "${TREDJE_SID}" "git commit -m 'overtagning otrackad'")"
+BSL="$(beslut "${UT}")"
+if [[ "${BSL}" = "SLAPP" ]] && ! har_varning "${UT}"; then OK=0; else OK=1; fi
+pastar "död ägare + ENDAST otrackad fil ⇒ övertas TYST (otrackade räknas inte)" "${OK}"
+stad_arbetstrad
+
+# ═══ SIDA 7 — --slapp-läge (katalogagarskap-markor.sh, T120 tredje
+#     designtillägget) ═══
+echo
+echo "SIDA 7 — --slapp-läge"
+
+# kor_markor_slapp <cwd> <sid> → stdout+stderr på stdout.
+# VARFÖR EXITKODEN INTE SÄTTS SOM SIDOEFFEKT HÄR: `VAR="$(fn ...)"` kör `fn`
+# i en SUBSHELL — en global tilldelning DÄRINNE (t.ex. `SLAPP_EXIT=$?`) syns
+# aldrig i föräldraskalet. Fångat live (T120): felet var bokstavligen
+# "SLAPP_EXIT: unbound variable" under `set -u`. Rätt form: läs `$?` direkt
+# i ANROPARENS skal, precis efter kommandosubstitutionen — bash sätter `$?`
+# till substitutionens exitkod där, inget separat globalt tillstånd behövs.
+kor_markor_slapp() {
+    local cwd="$1" sid="$2"
+    jq -nc --arg cwd "${cwd}" --arg sid "${sid}" \
+        '{session_id: $sid, cwd: $cwd, hook_event_name: "SessionStart"}' \
+        | KATALOG_POLICY="${POLICY}" bash "${MARKOR_HOOK}" --slapp 2>&1
+}
 
 satt_markor "${AGARE_SID}"
 ANTAL=$((ANTAL + 1))
-jq -nc --arg cwd "${HUVUD}" --arg sid "${FRAMLING_SID}" \
-    '{session_id: $sid, cwd: $cwd, hook_event_name: "SessionStart"}' \
-    | KATALOG_POLICY="${POLICY}" bash "${MARKOR_HOOK}" >/dev/null 2>&1
-EFTER="$(jq -r '.session_id' "${MARKOR}" 2>/dev/null)"
-if [[ "${EFTER}" = "${AGARE_SID}" ]]; then
-    printf '  ✅ %-58s [%s]\n' "främling STJÄL INTE ett färskt ägarskap" "ORÖRD"
+SLAPP_UT="$(kor_markor_slapp "${HUVUD}" "${AGARE_SID}")"
+SLAPP_EXIT=$?
+if [[ "${SLAPP_EXIT}" -eq 0 && ! -f "${MARKOR}" ]]; then
+    printf '  ✅ %-58s [%s]\n' "--slapp med EGEN lapp ⇒ lappen borta, exit 0" "SLAPP"
 else
-    printf '  ❌ %-58s [lappen blev %s]\n' "främling STJÄL INTE ett färskt ägarskap" "${EFTER}"
+    if [[ -f "${MARKOR}" ]]; then KVAR="ja"; else KVAR="nej"; fi
+    printf '  ❌ %-58s [exit=%s, kvarvarande=%s]\n' "--slapp med EGEN lapp ⇒ lappen borta, exit 0" "${SLAPP_EXIT}" "${KVAR}"
+    FEL=$((FEL + 1))
+fi
+
+satt_markor "${AGARE_SID}"
+ANTAL=$((ANTAL + 1))
+SLAPP_UT="$(kor_markor_slapp "${HUVUD}" "${FRAMLING_SID}")"
+SLAPP_EXIT=$?
+AGARE_EFTER_SLAPP="$(falt '.session_id')"
+NAMNS_FEL=0
+printf '%s' "${SLAPP_UT}" | grep -qi "ANNAN session" || NAMNS_FEL=1
+if [[ "${SLAPP_EXIT}" -ne 0 && -f "${MARKOR}" && "${AGARE_EFTER_SLAPP}" = "${AGARE_SID}" && "${NAMNS_FEL}" -eq 0 ]]; then
+    printf '  ✅ %-58s [%s]\n' "--slapp med FRÄMMANDE lapp ⇒ ORÖRD, tydligt fel, exit≠0" "ORÖRD"
+else
+    printf '  ❌ %-58s [exit=%s]\n' "--slapp med FRÄMMANDE lapp ⇒ ORÖRD, tydligt fel, exit≠0" "${SLAPP_EXIT}"
     FEL=$((FEL + 1))
 fi
 
 rm -f "${MARKOR}"
 ANTAL=$((ANTAL + 1))
-jq -nc --arg cwd "${HUVUD}" --arg sid "${AGARE_SID}" \
-    '{session_id: $sid, cwd: $cwd, hook_event_name: "SessionStart"}' \
-    | KATALOG_POLICY="${POLICY}" bash "${MARKOR_HOOK}" >/dev/null 2>&1
-SATT_SID="$(jq -r '.session_id' "${MARKOR}" 2>/dev/null || echo '')"
-if [[ "${SATT_SID}" = "${AGARE_SID}" ]]; then
-    printf '  ✅ %-58s [%s]\n' "session i huvudkatalogen tar ledigt ägarskap" "SATT"
+kor_markor_slapp "${HUVUD}" "${AGARE_SID}" >/dev/null 2>&1
+SLAPP_EXIT=$?
+if [[ "${SLAPP_EXIT}" -eq 0 && ! -f "${MARKOR}" ]]; then
+    printf '  ✅ %-58s [%s]\n' "--slapp utan NÅGON lapp ⇒ no-op, exit 0" "NO-OP"
 else
-    printf '  ❌ %-58s\n' "session i huvudkatalogen tar ledigt ägarskap"
+    printf '  ❌ %-58s\n' "--slapp utan NÅGON lapp ⇒ no-op, exit 0"
     FEL=$((FEL + 1))
 fi
 
+# ═══ SIDA 8 — SessionEnd-släpp (scripts/katalogagarskap-slapp.sh) ═══
+echo
+echo "SIDA 8 — SessionEnd-släpp"
+
+kor_sessionend() {
+    local cwd="$1" sid="$2"
+    jq -nc --arg cwd "${cwd}" --arg sid "${sid}" \
+        '{session_id: $sid, cwd: $cwd, reason: "clear"}' \
+        | KATALOG_POLICY="${POLICY}" bash "${SLAPP_HOOK}" >/dev/null 2>&1
+}
+
+satt_markor "${AGARE_SID}"
+kor_sessionend "${HUVUD}" "${AGARE_SID}"
+if [[ ! -f "${MARKOR}" ]]; then OK=0; else OK=1; fi
+pastar "SessionEnd, matchande session_id ⇒ lappen borta" "${OK}"
+
+satt_markor "${AGARE_SID}"
+kor_sessionend "${HUVUD}" "${FRAMLING_SID}"
+VAL="$(falt '.session_id')"
+if [[ -f "${MARKOR}" && "${VAL}" = "${AGARE_SID}" ]]; then OK=0; else OK=1; fi
+pastar "SessionEnd, ANNAN session_id ⇒ lappen ORÖRD" "${OK}"
+
+# ═══ SIDA 9 — markör-hooken (SessionStart): RAPPORTERAR, SKRIVER ALDRIG ═══
+echo
+echo "SIDA 9 — markör-hooken (SessionStart) skriver ALDRIG (T120, kärnan i ändringen)"
+
+kor_markor() {
+    local cwd="$1" sid="$2"
+    jq -nc --arg cwd "${cwd}" --arg sid "${sid}" \
+        '{session_id: $sid, cwd: $cwd, hook_event_name: "SessionStart"}' \
+        | KATALOG_POLICY="${POLICY}" bash "${MARKOR_HOOK}" >/dev/null 2>&1
+}
+
 rm -f "${MARKOR}"
+kor_markor "${HUVUD}" "${FRAMLING_SID}"
+if [[ ! -f "${MARKOR}" ]]; then OK=0; else OK=1; fi
+pastar "SessionStart i huvudkatalogen, INGEN lapp fanns ⇒ INGEN lapp skapas" "${OK}"
+
+rm -f "${MARKOR}"
+kor_markor "${WT}" "${FRAMLING_SID}"
+if [[ ! -f "${MARKOR}" ]]; then OK=0; else OK=1; fi
+pastar "SessionStart i en worktree ⇒ fortsatt ingen lapp (redan garanterat ovan)" "${OK}"
+
+satt_markor "${AGARE_SID}"
+kor_markor "${HUVUD}" "${FRAMLING_SID}"
+VAL="$(falt '.session_id')"
+if [[ "${VAL}" = "${AGARE_SID}" ]]; then OK=0; else OK=1; fi
+pastar "SessionStart möter FRÄMMANDE lapp ⇒ lämnas ORÖRD (stjäl aldrig)" "${OK}"
+
+# ═══ SIDA 10 — fällnings-logg (T120, observerbarhet) ═══
+echo
+echo "SIDA 10 — fällnings-logg"
+
+rm -f "${HOOK_LOGG}"
+satt_markor_pid "${AGARE_SID}" "${LEVANDE_PID}" "${LEVANDE_START}"
+kor "${HUVUD}" "${FRAMLING_SID}" "git commit -m 'ska loggas'" >/dev/null
 ANTAL=$((ANTAL + 1))
-jq -nc --arg cwd "${WT}" --arg sid "${FRAMLING_SID}" \
-    '{session_id: $sid, cwd: $cwd, hook_event_name: "SessionStart"}' \
-    | KATALOG_POLICY="${POLICY}" bash "${MARKOR_HOOK}" >/dev/null 2>&1
-if [[ ! -f "${MARKOR}" ]]; then
-    printf '  ✅ %-58s [%s]\n' "session i en worktree gör INGET anspråk" "INGEN LAPP"
+if [[ -f "${HOOK_LOGG}" ]] && tail -1 "${HOOK_LOGG}" | jq -e \
+    '.hook == "deny-frammande-huvudkatalog" and (.skal_nyckel | length > 0) and (.ts | length > 0) and (.kommando | length > 0)' \
+    >/dev/null 2>&1; then
+    printf '  ✅ %-58s [%s]\n' "en NEKANDE lägger till en fällnings-rad med rätt fält" "LOGGAD"
 else
-    printf '  ❌ %-58s\n' "session i en worktree gör INGET anspråk"
+    printf '  ❌ %-58s\n' "en NEKANDE lägger till en fällnings-rad med rätt fält"
     FEL=$((FEL + 1))
 fi
+
+RADER_FORE="$(wc -l < "${HOOK_LOGG}" 2>/dev/null || echo 0)"
+kor "${HUVUD}" "${AGARE_SID}" "git status --short" >/dev/null
+RADER_EFTER="$(wc -l < "${HOOK_LOGG}" 2>/dev/null || echo 0)"
+if [[ "${RADER_FORE}" -eq "${RADER_EFTER}" ]]; then OK=0; else OK=1; fi
+pastar "ett SLÄPP loggar INTE en ny rad" "${OK}"
 
 echo
 if [[ "${FEL}" -eq 0 ]]; then
