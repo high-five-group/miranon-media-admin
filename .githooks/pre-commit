@@ -100,4 +100,87 @@ if [[ "${#BUMPED_FILES[@]}" -gt 0 ]]; then
     done
 fi
 
+# === Staging-preflightens wiring (T119 (d) item 4) ===
+#
+# scripts/check-staging-preflight-wiring.mjs (TASK-91) fällde TASK-131
+# (PR #651, CI-run 30814438519) och TASK-126.4 (merge 9747a52f) — två
+# äkta, deterministiska fynd (ett oklassat Playwright-projekt vardera).
+# Vakten kör i dag bara i CI (ci.yml:965), EFTER push och kö-inträde —
+# kostnaden att rätta är som störst just där. Samma anrop körs här också,
+# FÖRE commit, så felet fångas billigast.
+#
+# ANROPET ÄR OFÖRÄNDRAT — ingen egen retry-logik i denna hook. Bounded
+# retry kring G0-transienten (TASK-115) bor i skriptet självt och gäller
+# identiskt oavsett anropare. Transienten är dessutom CI-parallellism-
+# specifik: TASK-115s egen forensik körde hela sviten lokalt mot det exakta
+# felande trädet och fick exit 0 varje gång — inte en risk att bygga extra
+# maskineri emot här.
+#
+# VILLKORAD, INTE OVILLKORLIG — Marcus krav är att mekaniseringen ökar
+# produktiviteten, inte sinkar den. Vakten kör bara när en staged ändring
+# rör den yta den faktiskt sveper (config i
+# .staging-preflight-hook-policy.conf) — mätt ≈1,2–1,7 s lokalt (macOS,
+# 2026-08-04) när den KÖR, men de allra flesta commits (src/, docs/ osv.)
+# rör aldrig den ytan och betalar noll.
+#
+# EXIT-KODEN AVGÖR — vakten är fail-closed med tre koder (0/1/64):
+#   0  wiring intakt                         → tyst, fortsätt.
+#   1  wiring TRASIG (deterministiskt fynd)  → STOPPA commiten.
+#   64 vakten kunde inte svara (policy-/miljöfel, ELLER en transient som
+#      inte löstes av skriptets egna tre försök) → VARNA, stoppa INTE.
+#      Detta är den medvetna spärren mot en falsk lokal röd: 64 betyder
+#      "kunde inte avgöra", inte "trasig wiring" — och CI kör samma vakt
+#      som sista linje om något ändå slank igenom.
+STAGING_WIRING_CONFIG=".staging-preflight-hook-policy.conf"
+if [[ -f "${STAGING_WIRING_CONFIG}" ]]; then
+    STAGING_WIRING_TRIGGER_PATHS=()
+    # shellcheck source=/dev/null
+    source "${STAGING_WIRING_CONFIG}"
+
+    if [[ "${#STAGING_WIRING_TRIGGER_PATHS[@]}" -gt 0 ]]; then
+        STAGING_WIRING_NUL=$(mktemp)
+        trap 'rm -f "${STAGED_NUL}" "${STAGING_WIRING_NUL}"' EXIT
+
+        # Inget --diff-filter: vakten TASK-91 grindar är uttryckligen en
+        # DELETIONS-vakt, så en borttagen setup-fil måste synas här precis
+        # som en tillagd eller ändrad.
+        git diff --cached --name-only -z > "${STAGING_WIRING_NUL}"
+
+        STAGING_WIRING_TRAFFAD=0
+        while IFS= read -r -d '' staged; do
+            for prefix in "${STAGING_WIRING_TRIGGER_PATHS[@]}"; do
+                if [[ "${prefix}" == */ ]]; then
+                    [[ "${staged}" == "${prefix}"* ]] || continue
+                else
+                    [[ "${staged}" = "${prefix}" ]] || continue
+                fi
+                STAGING_WIRING_TRAFFAD=1
+                break 2
+            done
+        done < "${STAGING_WIRING_NUL}"
+
+        if [[ "${STAGING_WIRING_TRAFFAD}" -eq 1 ]]; then
+            echo "pre-commit: staged ändring rör staging-preflightens wiring-yta — kör scripts/check-staging-preflight-wiring.mjs..."
+
+            if node scripts/check-staging-preflight-wiring.mjs; then
+                STAGING_WIRING_EXIT=0
+            else
+                STAGING_WIRING_EXIT=$?
+            fi
+
+            if [[ "${STAGING_WIRING_EXIT}" -eq 1 ]]; then
+                echo ""
+                echo "pre-commit: STOPPAD — staging-preflightens wiring är bruten (exit 1, se ovan)."
+                echo "  Samma vakt som fällde TASK-131 (#651) och TASK-126.4 — ett äkta fynd,"
+                echo "  inte en flaka. Rätta wiringen eller klassa den nya ytan i"
+                echo "  .staging-preflight-wiring-policy.json. Bypass (endast om du VET att"
+                echo "  detta är fel): git commit --no-verify."
+                exit 1
+            elif [[ "${STAGING_WIRING_EXIT}" -ne 0 ]]; then
+                echo "pre-commit: vakten kunde inte svara (exit ${STAGING_WIRING_EXIT}) — troligen en miljöfråga (npm ci ej kört) eller en olöst G0-transient. Commiten fortsätter ändå; CI kör samma vakt som sista linje."
+            fi
+        fi
+    fi
+fi
+
 exit 0

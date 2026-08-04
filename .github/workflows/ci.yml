@@ -962,6 +962,12 @@ jobs:
         # `--list`-anropen körs parallellt. CI-tiden är INTE mätt av mig och kan
         # avvika åt båda håll — runnern har färre kärnor, vilket träffar just
         # parallelliteten.
+        #
+        # SAMMA ANROP KÖR ÄVEN I .githooks/pre-commit (T119 (d) item 4, S97,
+        # villkorat på `.staging-preflight-hook-policy.conf`s trigger-ytor) —
+        # DENNA rad tas INTE bort trots det. Pre-commit kan kringgås med
+        # `--no-verify`; detta CI-steg är sista linjen och behåller sin egen
+        # fail-closed-dom oavsett vad som hände lokalt.
         run: node scripts/check-staging-preflight-wiring.mjs
 
       - name: Test wiring-vaktens fyrning (TASK-91, tvåsidigt bevis)
@@ -1046,7 +1052,7 @@ jobs:
         # --enable=all aktiverar optional checks (SC2250, SC2312,
         # SC2310, SC2311 m.fl. som är default-disabled).
         # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
-        # 14 sourced-config-filer (.checklist-policy.conf +
+        # 15 sourced-config-filer (.checklist-policy.conf +
         # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 +
         # .ci-wait-policy.conf, tillagd S91/TASK-72 +
         # .staging-semaphore-policy.conf, tillagd S91/TASK-77 +
@@ -1058,15 +1064,18 @@ jobs:
         # .mail-lock-policy.conf, tillagd i TASK-137-wiringen (MAIL-LÅSET) +
         # .katalogagarskap-policy.conf, tillagd i T119(a)-wiringen (S97) +
         # .sanningsavstamning-policy.conf, tillagd i T119(b)-wiringen (S97) +
-        # .grind-exitkod-policy.conf, tillagd i T119(d)-wiringen (S97) —
+        # .grind-exitkod-policy.conf, tillagd i T119(d) item 5-wiringen
+        # (S97, L440-hooken) +
+        # .staging-preflight-hook-policy.conf, tillagd i T119(d) item 4-
+        # wiringen (S97, pre-commit-anropet av TASK-91-vakten) —
         # en sourced conf utanför scopet är samma lucka som de övriga redan
         # stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
         # rättad i samma andetag som den sjunde lades till, räknad om till
         # åtta i TASK-85, till nio i TASK-108-wiringen, till tio i
         # TASK-119-wiringen, till elva i TASK-137-wiringen och till tolv i
-        # T119(a)-wiringen, till tretton i T119(b)-wiringen och till fjorton i
-        # T119(d)-wiringen.
+        # T119(a)-wiringen, till tretton i T119(b)-wiringen, till fjorton i
+        # T119(d) item 5-wiringen och till femton i T119(d) item 4-wiringen.
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1087,7 +1096,8 @@ jobs:
             .mail-lock-policy.conf \
             .katalogagarskap-policy.conf \
             .sanningsavstamning-policy.conf \
-            .grind-exitkod-policy.conf
+            .grind-exitkod-policy.conf \
+            .staging-preflight-hook-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
