@@ -69,9 +69,32 @@
 #   --interval   sömn mellan svep i loop-läge — annars HEARTBEAT_INTERVAL.
 #   --timeout    total löptid för loop-läget i sekunder, 0 = obegränsat —
 #                annars HEARTBEAT_TIMEOUT. Ignoreras av --once.
-#   --quiet      dämpar rutin-raderna ("main oförändrad", "N PR granskade").
-#                LARM-raderna (RÖTT/DIRTY/ARMERINGS-KANDIDAT/main-avancerade)
-#                skrivs ALLTID — de är hela poängen med svepet.
+#   --quiet      dämpar RUTIN-raderna ("main oförändrad", "N PR granskade").
+#                Två klasser skrivs ALLTID, oavsett --quiet:
+#                  LARM       RÖTT/DIRTY/ARMERINGS-KANDIDAT — bär en
+#                             exit-bit (§ EXIT-KODER), kräver åtgärd.
+#                  ALLTID-PÅ  main-avancerade/main-baslinje-satt — INGEN
+#                             exit-bit (alltid goda nyheter, eller ett
+#                             neutralt faktum), men samma --quiet-immunitet
+#                             som LARM. TASK-135 (2026-08-04) skilde ut
+#                             klassen ordagrant — en tidigare formulering
+#                             kallade båda "LARM-raderna" rakt av, vilket
+#                             motsade § TREVÄGS-SNAPSHOT nedan
+#                             ("ALLTID-PÅ, inte en LARM-klass").
+#
+#                KALLSTART (TASK-135): en avancemang-rad KRÄVER ett KÄNT
+#                tidigare SHA att jämföra mot. Saknas det (skriptets allra
+#                första sopning, eller en tömd/ny tillstånds-katalog) finns
+#                inget att jämföra mot — INTE en --quiet-bugg, utan den
+#                fundamentala gränsen för en tvåprovs-jämförelse. Skriptet
+#                skriver då en egen "main-SHA-baslinje satt"-rad (ALLTID-PÅ)
+#                i stället för tystnad: annars är en genuin kallstart och en
+#                tystad, uteblivet-larm-sopning omöjliga att skilja åt i en
+#                --quiet rå-logg — exakt den förväxling som startade
+#                TASK-135 (svepet observerades aldrig visa en
+#                avancemang-rad efter en landning; förklaringen var
+#                kallstart/förlorad tillståndskontinuitet, inte trasig
+#                --quiet-hantering — den var, mätt, redan korrekt).
 #
 #   Startform som bakgrunds-monitor (den form § Landning pekar på):
 #     kör skriptet UTAN --once i en Code-sessions bakgrunds-bash och montera
@@ -81,9 +104,11 @@
 #
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
-#      sedan förra svepet har en landning skett (informationsrad, inget
-#      LARM — det är GODA nyheter, men orkestreraren ska agera: starta
-#      nästa post).
+#      sedan förra svepet har en landning skett (ALLTID-PÅ, inte en
+#      LARM-klass — det är GODA nyheter, men orkestreraren ska agera:
+#      starta nästa post). Saknas ett känt tidigare SHA att jämföra mot
+#      (kallstart, § ANVÄNDNING) skrivs i stället en "main-SHA-baslinje
+#      satt"-rad, likaledes ALLTID-PÅ (TASK-135, 2026-08-04).
 #   2. RÖDA check-rollups — `commits(last:1).commit.statusCheckRollup.state`
 #      (GitHubs EGEN aggregat-klassning per PR — täcker required/icke-
 #      required-semantik utan att skriptet gissar) för VARJE öppen PR mot
@@ -149,6 +174,20 @@
 #        `autoMergeRequest: null`) · tasks/lessons.md L443 · L328 ·
 #        docs/research/orkestrerar-vackning-polling-vs-event-driven-2026-08-02.md
 # Etablerad: TASK-119, 2026-08-02
+#
+# TASK-135 (2026-08-04): PR #684 landade (10:19:45Z) medan svepet redan
+# kördes (--quiet, loop-läge) — minst tre sopningar EFTER landningen
+# loggade RÖTT/ARMERINGS-KANDIDAT men aldrig en avancemang-rad, vilket såg
+# ut som en trasig --quiet-hantering. Grundlig empirisk prövning (kontinu-
+# erligt loop-läge OCH separata --once-anrop, båda med delat tillstånd och
+# --quiet) visade att avancemang-raden REDAN var korrekt ALLTID-PÅ i varje
+# konstruerad situation — koden höll inte den bugg uppdraget antog. Den
+# faktiska luckan: en KALLSTART (inget känt tidigare SHA — skriptets första
+# sopning, eller en ny/tömd tillstånds-katalog) gick tidigare via den
+# TYSTADE say()-grenen, vilket gör en genuin kallstart omöjlig att skilja
+# från en tystad "inget hände"-sopning i en --quiet rå-logg. Fixen: en
+# explicit "main-SHA-baslinje satt"-rad (ALLTID-PÅ) för just det fallet.
+# Se scripts/test-heartbeat-svep.sh T23 för tvåsidigt bevis.
 set -euo pipefail
 
 GH="${GH_BIN:-gh}"
@@ -190,7 +229,10 @@ while [[ $# -gt 0 ]]; do
         --quiet)    QUIET=1; shift ;;
         # Radintervallet är § ANVÄNDNING. Ändras huvudet ovan måste det
         # följa med — annars ljuger --help tyst (samma disciplin som ci-wait.sh).
-        -h|--help)  sed -n '61,81p' "$0"; exit 0 ;;
+        # Utökat 61,81 → 61,104 i TASK-135 (ALLTID-PÅ-klass + kallstart-
+        # stycket); scripts/test-heartbeat-svep.sh T24 fäller om raden
+        # avviker från blockets faktiska start/slut.
+        -h|--help)  sed -n '61,104p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -232,6 +274,14 @@ sweep_once() {
     [[ -f "${STATE_FILE}" ]] && prev="$(cat "${STATE_FILE}" 2>/dev/null || true)"
     if [[ -n "${prev}" && "${prev}" != "${main_sha}" ]]; then
         alarm "heartbeat-svep: main AVANCERADE ${prev:0:8} → ${main_sha:0:8} — en landning skedde, starta nästa post."
+    elif [[ -z "${prev}" ]]; then
+        # KALLSTART (TASK-135): inget tidigare känt SHA att jämföra mot —
+        # varken den här sopningen eller en TYST "main oförändrad" kan vara
+        # rätt beskrivning (vi vet inte om main just avancerat eller inte).
+        # ALLTID-PÅ av samma skäl som avancemang-raden ovan (§ ANVÄNDNING):
+        # utan denna rad är kallstart och en genuint tystad, uteblivet-larm-
+        # sopning omöjliga att skilja åt i en --quiet rå-logg.
+        alarm "heartbeat-svep: main-SHA-baslinje satt (${main_sha:0:8}) — inget tidigare känt SHA att jämföra mot. Nästa sopning kan rapportera avancemang."
     else
         say "heartbeat-svep: main oförändrad (${main_sha:0:8})."
     fi
