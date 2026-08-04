@@ -225,3 +225,84 @@ den håller säkerhets-committen enkelspårig. Avvikelsen gäller denna icke-mal
 - Commit: denna commit (vite-bump + denna post).
 
 <!-- vale Vale.Terms = YES -->
+
+### 2026-08-04 — Incidentklass-amendering: kompromiss kontra ordinär patchad advisory (`TASK-133`)
+
+**Bakgrund (källa: tråd `T118`, `docs/research/t118-npm-advisory-remediering-praxis-2026-08-04.md`, PR #682):**
+
+2026-08-03 blockerade tre nya high/moderate-advisories (`brace-expansion`
+GHSA-rgw5-rvv9-x895, `fast-uri` GHSA-7p8r-x3mc-p8w7, `postcss`
+GHSA-fxqj-rqcc-2cmp) merge-kön. Innan strategival beställde Marcus ett
+research-pass för att pröva — inte bara bekräfta — den föreslagna vägen.
+Passet verifierade overrides-vägen men falsifierade halva den underliggande
+premissen: `ADR-028` §2 föreskriver full lock-fil-regenerering utan
+undantag, men repots egen commit-historik har redan löst sex tidigare
+transitiva advisory-incidenter med en riktad overrides/lockfile-bump —
+aldrig med `rm -rf node_modules package-lock.json`. Endast en av de sex
+(Vite, 2026-06-15-posten ovan) fick sin avvikelse skriven in i denna ADR;
+de fem andra var tyst identisk praxis.
+
+**Amenderingen (Marcus-GO 2026-08-04, sessionsdok `tasks/sessions/2026-08-02-session-96.md` Del 10):**
+
+Beslut §2 föreskriver "regenerera lock-fil helt, INTE partiell fix" utan
+att skilja på incidentklass. Det var rätt regel för §2:s egen
+födelsekontext — men fel klass-regel för en ordinär, patchad advisory. Två
+incidentklasser definieras härmed för §2:
+
+<!-- vale Vale.Terms = NO -->
+1. **Malware/kompromiss** (bekräftad skadlig kod i en publicerad
+   paketversion — `ADR-028`:s egen födelsekontext, `@tanstack/history`)
+   → **Beslut §2 kvarstår oförändrat:** full lock-fil-regenerering
+   (`rm -rf node_modules package-lock.json && npm install`) är obligatorisk
+   för att rensa komprometterade träd-rester.
+2. **Ordinär patchad advisory** (GHSA/CVE med `first_patched_version`
+   publicerad i GitHub Security Advisory-databasen, ingen
+   kompromiss-misstanke) → **riktad pin/overrides-bump + riktad
+   `npm install` (INTE `rm -rf`) är standardformen.** Detta är inte ett
+   undantag från §2 — §2:s purge-rationale omfattade aldrig denna klass.
+<!-- vale Vale.Terms = YES -->
+
+**Empiri — sju incidenter sedan `ADR-028` skrevs, verifierat `git show <sha> --stat` 2026-08-04:**
+
+| Commit | Datum | Paket | Bokföring före denna post |
+|---|---|---|---|
+| `9b97dadb` | 2026-06-27 | linkify-it → 5.0.1 (override) | Tyst |
+| (range-bump, ingen egen SHA) | 2026-06-15 | Vite → `^8.0.16` | Öppet kvitterad (Updates-post ovan) |
+| `93eb9697` | 2026-07-21 | fast-uri → 3.1.4 (lockfile) + linkify-it → 6.0.0 | Tyst |
+| `8f4aeb3d` | 2026-07-22 | sharp → 0.35.3 (override) | Tyst |
+| `92ef2e43` | 2026-07-24 | js-yaml → 5.2.2 (override) | Tyst |
+| `3a50e8ec` | 2026-07-25 | brace-expansion → 5.0.8 (override) | Tyst |
+| `c227593f` (PR #684) | 2026-08-04 | brace-expansion → 5.0.9 · fast-uri → 3.1.5 (ny post) · postcss → 8.5.25 (ny post) | Öppet kvitterad FÖRE denna amendering (`T118`) |
+
+Samtliga sex SHA:n ovan verifierade på nytt (`git show <sha> --stat`,
+2026-08-04, denna landning) — datum, paket och diff-omfång matchar tabellen
+exakt.
+
+**Research-fynd (mätt, `docs/research/t118-npm-advisory-remediering-praxis-2026-08-04.md`, 2026-08-04):**
+
+1. `npm audit fix` (utan `--force`) rör **aldrig** ett befintligt
+   `overrides`-fält som redan pinnar en sårbar version. Mätt skarpt mot
+   detta repo (`npm audit fix --dry-run`, sidoeffektfritt): verktyget
+   föreslog korrekt bump av `postcss` och `fast-uri`, men var strukturellt
+   oförmöget att fixa `brace-expansion` — paketet var redan hårdpinnat via
+   `overrides` sedan `3a50e8ec`. Ingen varning, ingen avvikande exit-kod —
+   bara "up to date". Alternativ B (`npm audit fix` utan force) hade alltså
+   löst 2 av 3 advisories och lämnat den tredje tyst olöst.
+2. `npm ci` **hård-felar** om `package.json`s `overrides`-fält ändras utan
+   att lockfilen regenereras (`"npm error Invalid: lock file's
+   fast-uri@3.1.4 does not satisfy fast-uri@3.1.5"`, exit ≠ 0). CI kör
+   `npm ci` i minst åtta separata steg (`ci-suite.yml` × 5, `nightly.yml` ×
+   flera). CI är därmed redan en fail-safe mot en overrides-redigering som
+   glömmer synka lockfilen — en positiv, mätt korrigering av en
+   tredjepartskälla i research-passet som påstod att `npm ci` "ignores
+   overrides".
+
+**Beslut §1, §3, §4 orörda av denna amendering.**
+
+**Spårbarhet:**
+
+- Tråd: `T118`
+- Research: PR #682 (`docs/research/t118-npm-advisory-remediering-praxis-2026-08-04.md`)
+- Fix: PR #684 (merge-commit `c227593f`)
+- Amendering: `TASK-133`
+- Sessionsdok: `tasks/sessions/2026-08-02-session-96.md` Del 10
