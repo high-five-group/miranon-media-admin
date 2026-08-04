@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 97 ▶️ ÅTERUPPTAGEN (2026-08-04, efter tredje pausen — `lifecycle: active`)**
+**Session 97 ⏸️ PAUSAD (2026-08-04, fjärde pausen — `lifecycle: paused`)**
 — **HOOK-SKULDEN BETALD, OCH `ask` RIVET SOM BESLUTSVÄRDE.** Resumen mötte en
 ägarlapp från en **död session** (noll processer, ingen transcript-fil, tom
 scratchpad — stale efter ~3 sekunder mot tröskelns 12 timmar) och betalade
@@ -70,6 +70,29 @@ gjord:** 22 worktree-skapelser på en dag, 9 undvikbara — `research-pass`-defa
 var fel (fixad i `#729`), `bygg-agent`-defaulten var RÄTT (12/12 motiverade) ·
 heartbeat-monitorn i drift och tyst för parkerade dependabot-PR:er ·
 worktree-städning 6 borttagna, grenar 194→**182**. **FJORTON PR:er landade.**
+**DEL 8: EN REGEL SOM STOD FEL I TRE VECKOR — OCH SKULDEN DEN ORSAKADE.**
+Marcus fråga (*"det är ju bara bygg-agent och research-pass som inte kan jobba
+cross-repo eller?"*) rev `CLAUDE.md`s cross-repo-regel. **Mätningen** gällde en
+*worktree-isolerad* agent; **slutsatsen** sade *agenttyp*. Fyra celler mätta:
+spärren gäller **eget repos huvudkatalog via Bash-git** (även ren LÄSNING),
+medan Read-verktyget mot samma katalog **går igenom** och främmande repon är
+helt fria — isolerad agent **committade** i ett främmande repo (`c3a9eb5`,
+oavsiktligt bevis). Harnessets ord är `shared checkout`, inte "annat repo";
+förstaparten: *"A command too complex to check also fails"* — trolig verklig
+orsak till S97:s avvisning. **`T06` BETALD** (`8683c69`, `K17.1`–`K20.6`, 20
+poster verbatim): skulden och felläsningen var SAMMA SAK — hub-skillen påstod
+att `L103`–`L119` "saknas", men de finns i en **femte** markörform
+(punktlista); skillens mönster fångade **0 av 14**. 426+17=443, högsta `L443`
+— serien kontinuerlig, inget hål. **Fragment TÖMDA** → `L444`–`L455`.
+**Research `T119`(d):** bygg ingen ny mekanismklass — `ADR-073` ÄR
+branschmönstret (Cursor rev sina agent-lås); disk-verifierat gap: inget skript
+kör claims-checken eller `merge-tree`-grinden. **Alla tre agenter fångade fel i
+mina egna uppdrag** (ADR-086 fungerar). **VÄNTAR PÅ MARCUS — allt är BESLUT,
+ej arbete:** `T122`-ADR · mekaniserings-kort `T119`(d) · dependabot `#632`–`#635`
+· `package-lock.json.pre-t118` · uppströmsrapport `#72714`. **NÄSTA HUB-LYFT
+MÅSTE ROTERA** (`vol-05` 3 060 rader > 3 000). Numrering: S97/ADR-095/**L456**
+(0 fragment)/T123/task-139/f47.
+
 **DEL 7 (resume): BÅDA BEVIS-SKULDERNA BETALDA + MANIFEST-PARET ROTORSAKS-FIXAT.**
 Plugin-distributionen bevisad av LÄS-fasen själv (install-record **1.28.1**,
 skillsen laddade ur den katalogen — starkare än skuldens 1.28.0).
