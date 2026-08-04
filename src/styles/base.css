@@ -97,6 +97,72 @@ html {
   }
 }
 
+/* FULL-BREDDS-FOND UTAN ATT RÖRA RÄNNSTENEN (Marcus-direktiv S96,
+   2026-08-03: "INGET får hoppa i denna app under några omständigheter").
+
+   Problemet: rännstenen ovan reserverar 11 px per sida av `<html>`, så
+   `<body>` blir 1578 av 1600. En bakgrund på ett element INUTI body kan
+   därför aldrig nå ut i rännstenen — den syntes som två vita spalter tvärs
+   fonden på login och inbjudan (Marcus-fångst två gånger).
+
+   TVÅ FÖRKASTADE VÄGAR, båda mätta:
+   1. `w-[100vw]` + negativ margin i komponenten — gav rätt mått i headless
+      men kringgick rännstenen i stället för att fylla den.
+   2. `scrollbar-gutter: auto` för auth-vyerna — tog bort rännstenen och
+      INFÖRDE därmed ett hopp vid övergången auth → app. Rivet på
+      Marcus-direktivet ovan; hopp-förbudet är absolut och har inga
+      undantagsklasser.
+
+   LÖSNINGEN utnyttjar CSS:ens bakgrunds-propagering: `<html>`s bakgrund
+   målar HELA canvas, inklusive rännstenens yta. Fonden sätts därför på
+   rot-elementet i stället för på en div inuti body. Rännstenen är
+   OFÖRÄNDRAD i båda lägena — samma `stable both-edges` på auth-vyn som i
+   appen — så ingenting kan hoppa vid övergången.
+
+   BÅDA reglerna behövs. `body` bär en egen ogenomskinlig `background:
+   var(--mm-bg)` längre ner i filen, och body-boxen är exakt den 1578 px
+   breda yta som rännstenen lämnar — så body målade toningen vit igen och
+   lämnade den synlig ENDAST i rännstenen. Att sätta fonden på `<html>`
+   räcker alltså inte; body måste släppa igenom. (Mätt fel en gång: en
+   kontroll av `getComputedStyle(html).backgroundImage` sa "toning" och var
+   sann, men mätte fel sak — det som avgör är den målade pixeln.)
+
+   Markören sätts av vyn vid mount och städas vid unmount. */
+html[data-auth-fond="true"] {
+  /* KAMOUFLAGE-LAGER (S96, research-grundat). Chromium målar ALDRIG
+     `background-image` i den yta `scrollbar-gutter: stable` reserverar —
+     belagt spec-gap, w3c/csswg-drafts#8099, oberoende bekräftat i
+     twbs/bootstrap#40659. Gradienten kan alltså inte nå kanterna, och
+     ingen CSS- eller JS-teknik löser det: research-passet mätte tretton
+     kandidater, inklusive två vars element bevisligen täckte hela
+     viewporten (`getBoundingClientRect` = {x:0, width:1600}) och ändå fick
+     tomma kanter. Det är ett måla-lager-klipp, inte ett layout-problem.
+     Fullt underlag: docs/research/full-bredds-fond-scrollbar-gutter-2026-08-03.md
+
+     `background-color` däremot MÅLAS korrekt i gutter-ytan — men bara i
+     canvas-bakgrundslagret, alltså här på rot-elementet (samma test på ett
+     fristående `position:fixed`-element misslyckas). Färgen ligger under
+     gradienten (CSS Backgrounds §3.8) och syns därför ENDAST där
+     gradienten inte målas: exakt i rännstenen.
+
+     `in srgb`, inte `in oklab`: en `linear-gradient` utan angiven
+     färgrymd interpolerar i sRGB, så sRGB-mitten är gradientens faktiska
+     mittpunkt. Skillnaden mot oklab-mitten är mätt i detta pass.
+
+     Kompromissen som kvarstår: EN platt ton för BÅDA kanterna. Gradienten
+     går diagonalt, så vänster kant lutar mot primary-tint och höger mot
+     accent-tint — en background-color kan bara vara en färg. Avvikelsen är
+     mätt och liten (stoppen skiljer 14 punkter i en enda kanal).
+
+     Rännstenen är ORÖRD. Inget hopp införs. */
+  background-color: color-mix(in srgb, var(--mm-primary-tint), var(--mm-accent-tint));
+  background-image: linear-gradient(to bottom right, var(--mm-primary-tint), var(--mm-accent-tint));
+}
+
+html[data-auth-fond="true"] body {
+  background: transparent;
+}
+
 body {
   font-family: var(--p-font-sans);
   font-size: var(--p-text-base);
