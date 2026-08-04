@@ -28,19 +28,35 @@ set -euo pipefail
 #      ögonblick, mitt i deras pass.
 #
 # `package.json`:s postinstall sätter värdet RELATIVT och har gjort så sedan
-# 2026-05-14 — ändå stod det absolut vid mätningen 2026-08-04. Någon skrev
-# över det för hand, och eftersom postinstall bara kör vid `npm install` var
-# driften osynlig i månader. Det är skälet till att en engångsrättelse inte
-# räcker och att denna vakt finns.
+# 2026-05-14 — ändå stod det absolut vid mätningen 2026-08-04.
 #
-# VARNAR, fäller inte: fel hooksPath är ett miljöfel, inte ett kodfel, och att
-# blockera en commit på det vore att straffa fel sak. Att denna hook alls kör
-# bevisar att NÅGON hook nås — varningen når därför alltid sin läsare.
+# SJÄLVLÄKER, varnar inte bara — och skälet är mätt, inte försiktighet.
+# Vakten skrevs först som en ren varning, byggd på antagandet att någon skrivit
+# över värdet EN gång. Det antagandet föll samma dag: värdet rättades manuellt,
+# verifierades relativt, och stod ABSOLUT igen inom timmen. Källan är OKÄND —
+# en genomsökning av repot (inklusive hub-repot och alla worktrees) hittar
+# ingen kod som sätter en absolut path; `package.json`:s postinstall och
+# `scripts/test-pre-commit-hook.sh` sätter båda relativt, och mätning bekräftar
+# att `git config core.hooksPath .githooks` skriver relativt ÄVEN när det körs
+# från en worktree. Något utanför repots egen kod skriver alltså värdet.
+#
+# Därför läker vakten i stället för att rapportera: en självläkning är immun
+# mot en okänd källa, medan en varning kräver att någon läser den och agerar
+# innan nästa drift. Rotorsaksfrågan — VEM som skriver — är öppen och bokförd
+# i `T121`; detta löser symptomet mekaniskt och döljer inte att orsaken saknas.
+#
+# Sidoeffekten är avsiktlig och har precedens i denna fils egen kropp, som
+# redan re-stagar filer den bumpat. FÄLLER inte: fel hooksPath är ett miljöfel,
+# inte ett kodfel, och att blockera en commit på det vore att straffa fel sak.
 HOOKS_PATH="$(git config --get core.hooksPath 2>/dev/null || true)"
 if [[ -n "${HOOKS_PATH}" && "${HOOKS_PATH}" = /* ]]; then
-    printf 'VARNING (T121): core.hooksPath är ABSOLUT (%s).\n' "${HOOKS_PATH}" >&2
-    printf '  Varje worktree kör då huvudkatalogens hook, inte sin egen.\n' >&2
-    printf '  Rätta med:  git config core.hooksPath .githooks\n' >&2
+    printf 'pre-commit (T121): core.hooksPath stod ABSOLUT (%s) — rättar till .githooks.\n' "${HOOKS_PATH}" >&2
+    if git config core.hooksPath .githooks 2>/dev/null; then
+        printf '  Rättad. Varje worktree kör nu sin egen hook igen.\n' >&2
+        printf '  Källan till driften är OKÄND och spåras i T121 — rapportera om du vet vad som skrev.\n' >&2
+    else
+        printf '  KUNDE INTE RÄTTA. Kör manuellt:  git config core.hooksPath .githooks\n' >&2
+    fi
 fi
 
 # === Ladda projekt-config ===
