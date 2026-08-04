@@ -18,6 +18,31 @@
 
 set -euo pipefail
 
+# === Vakt: core.hooksPath måste vara RELATIV (T121, 2026-08-04) ===
+#
+# En ABSOLUT hooksPath pekar ALLA worktrees mot huvudkatalogens hook-kopia.
+# Två följder, båda mätta samma dag tråden registrerades:
+#   1. En agent som ändrar DENNA fil i sin worktree testar aldrig sin egen
+#      version — `git commit` där kör huvudkatalogens kopia.
+#   2. Varje landad hook-ändring byter hook i alla levande worktrees i samma
+#      ögonblick, mitt i deras pass.
+#
+# `package.json`:s postinstall sätter värdet RELATIVT och har gjort så sedan
+# 2026-05-14 — ändå stod det absolut vid mätningen 2026-08-04. Någon skrev
+# över det för hand, och eftersom postinstall bara kör vid `npm install` var
+# driften osynlig i månader. Det är skälet till att en engångsrättelse inte
+# räcker och att denna vakt finns.
+#
+# VARNAR, fäller inte: fel hooksPath är ett miljöfel, inte ett kodfel, och att
+# blockera en commit på det vore att straffa fel sak. Att denna hook alls kör
+# bevisar att NÅGON hook nås — varningen når därför alltid sin läsare.
+HOOKS_PATH="$(git config --get core.hooksPath 2>/dev/null || true)"
+if [[ -n "${HOOKS_PATH}" && "${HOOKS_PATH}" = /* ]]; then
+    printf 'VARNING (T121): core.hooksPath är ABSOLUT (%s).\n' "${HOOKS_PATH}" >&2
+    printf '  Varje worktree kör då huvudkatalogens hook, inte sin egen.\n' >&2
+    printf '  Rätta med:  git config core.hooksPath .githooks\n' >&2
+fi
+
 # === Ladda projekt-config ===
 CONFIG_FILE=".frontmatter-policy.conf"
 if [[ ! -f "${CONFIG_FILE}" ]]; then
