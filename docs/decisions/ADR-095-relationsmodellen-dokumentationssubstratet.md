@@ -180,6 +180,14 @@ Ordningen är beslutad, tidpunkten inte: (3) `besläktad`-grinden, sedan (4)
 `barn`-manifestet med sin femte invariant. Båda är egna arbets-kort och
 plockas i Marcus takt.
 
+**Korten (tillagda 2026-08-05, samma session):** `TASK-140` bär beslut 3,
+`TASK-141` bär beslut 4 — med `TASK-141` beroende av `TASK-140`, eftersom båda
+utökar `scripts/check-thread-index.sh` och parallellt arbete kolliderar.
+Sekvensen ovan är alltså kodad som ett beroende i registret, inte bara skriven
+här. Raden tillagd efter att ADR:n mintats med en hänvisning till kort som då
+inte fanns — Marcus fångade luckan med frågan om vad som var utfört kontra
+förberett.
+
 ## Relaterat
 
 - Tråd [`T122`](../../tasks/threads/README.md) — beslutets hemvist; [`T119`](../../tasks/threads/README.md)
