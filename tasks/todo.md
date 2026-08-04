@@ -15,7 +15,20 @@
 
 ## Aktuellt fokus
 
-**Session 97 ⏸️ PAUSAD (2026-08-04, fjärde pausen — `lifecycle: paused`)**
+**Session 97 ▶️ ÅTERUPPTAGEN (2026-08-05, fjärde resumen — efter fjärde pausen,
+`lifecycle: active`)** — **MARCUS-MANDAT PÅ HELA CARRY-BLOCKET.** LÄS-fasen:
+numreringen re-verifierad mot disk (**095/L456/T123/task-139/f47** — alla fem
+oförändrade, noll mellansessioner har förbrukat nummer) · `main` **`2c929e03`**
+grön per jobb (CI · Post-merge · CodeQL) · ägarlappen FRI (filen frånvarande) ·
+fyra pausade dok (S92/S93/S96/S97), inget `active` · `#632`–`#635` alla `CLEAN`
+och oarmerade. Marcus gav **mandat att utföra samtliga fem beslutsposter på
+rekommendation** ("vi har mycket som är belagt med research vilket är ett krav")
+plus **två tillägg**: marketplace-entryns föråldrade `plugins[0].description`
+(samma dubbel-källa-form som Del 7:s manifest-par, utan belagd
+"silently ignored"-egenskap) och **ägarlapps-släppets ordningsregel** ur förra
+resumen — släpp lappen som ABSOLUT SISTA handling efter all git-aktivitet,
+eftersom varje git-skrivning återtar den, och verifiera alltid mot filens
+frånvaro, aldrig mot exitkoden.
 — **HOOK-SKULDEN BETALD, OCH `ask` RIVET SOM BESLUTSVÄRDE.** Resumen mötte en
 ägarlapp från en **död session** (noll processer, ingen transcript-fil, tom
 scratchpad — stale efter ~3 sekunder mot tröskelns 12 timmar) och betalade
