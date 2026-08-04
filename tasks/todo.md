@@ -15,28 +15,34 @@
 
 ## Aktuellt fokus
 
-**Session 97 ⏸️ PAUSAD (2026-08-04, första pausen — `lifecycle: paused`)**
-— **MEKANISERINGS-PROGRAMMET STARTAT; MAIL-LÅSETS BASH-VÄG SKARPBEVISAD,
-MCP-VÄGEN BLOCKERAD AV EN KONTEXT-GRÄNS.** Sessionen föddes (`#700`,
-`cb32b541` → `3fda84e3`) och tog scope-punkt 1: Marcus utförde MCP-auth
-för Vercel + Resend och `gddy`-inloggningen; `claude mcp list` bekräftar
-båda `✔ Connected` (gddy går via lagrad PAT, inte Keychain-OAuth — väntat).
-**Mail-låset (`TASK-137`) tvåsidigt skarpbevisat i laddad session:**
-`api.resend.com/emails` NEKAT med exit 2 ur hooken, läs-endpoints SLÄPPTA
-— provokationsformen vald så att värsta utfall vid trasigt lås är en
-`echo`, aldrig ett verkligt sändförsök. **AVVIKELSE:** sessionens
-verktygsyta exponerade aldrig Resends riktiga verktyg trots grön auth
-(tre mätningar; `ToolSearch` på `send-email` → `No matching deferred
-tools found`), så MCP-vägens skarpbevis och namn-reverifieringen står
-kvar. Prefixet `mcp__plugin_resend_resend__` är bekräftat; verktygs-
-NAMNEN är fortfarande hypotes ur källkoden. Marcus valde omstart (väg B)
-för att ladda verktygsytan färsk. Audit grön vid start (`0
-vulnerabilities`), kön tom, worktree-städning 0 kandidater, inga nummer
-förbrukade. **NÄSTA: resume av S97 i nytt fönster → MCP-vägens skarpbevis
-FÖRST → därefter `T119`-hookdesignerna (a)–(d) till Marcus-granskning →
-sedan S96- och S93-resume parallellt.** Numrering oförändrad:
-S97/ADR-095/L444(+2)/T120/task-139/f47. Full narrativ: sessionsdok S97
-Del 1–2 + PAUSLÄGE. *(Föregående kadensrad nedan.)*
+**Session 97 🔄 AKTIV (2026-08-04, återupptagen efter första pausen —
+`lifecycle: active`)** — **MEKANISERINGS-PROGRAMMET: SCOPE-PUNKT 1 KLAR,
+HOOKDESIGN (a) KVITTERAD.** Sessionen föddes (`#700`, `cb32b541` →
+`3fda84e3`), tog scope-punkt 1 (MCP-auth Vercel + Resend + `gddy`;
+mail-låsets Bash-väg tvåsidigt skarpbevisad — sänd-endpoint NEKAD med
+exit 2, läs-endpoints SLÄPPTA), pausades för omstart i nytt fönster
+(Marcus väg B) och landade fyra paus-PR:er (`#701`–`#704`).
+**Vid resumen: MCP-vägens skarpbevis GENOMFÖRT och Del 2:s hypotes
+BEKRÄFTAD** — verktygsytan bestäms vid sessionsstart och uppdateras inte
+efter auth; färsk kontext exponerar **87** Resend-verktyg mot pausens två.
+Prefixet `mcp__plugin_resend_resend__` bekräftat; **tre av fyra
+sänd-namn verbatim-belagda ur serverns egna verktygsbeskrivningar**
+(`send-email`/`send-broadcast`/`send-event`), alla fyra frånvarande ur
+ytan, deny-listans 8 poster verifierade. **Ingen namn-glidning.**
+Kvarstår som hypotes: `send-batch-emails` (Marcus: kontrolleras senare)
+och deny-kausaliteten (rekommenderat NEJ — priset är att öppna det enda
+fail-closed-lagret). **`T119`-hookdesign (a) lagd fram mot pre-K-forensik
+och kvitterad** inkl. fyra val: `permissionDecision: ask` framför hård
+`exit 2` (troget ADR-090:s detektera-och-fråga) · fail-open på hookens
+egen infrastruktur (medveten avvikelse från mail-låsets kontrakt) ·
+spoke först, hub-lyft när formen burit · `Edit`/`Write` utanför (a).
+Audit grön även vid resumen (`0 vulnerabilities`), kön tom, inga nummer
+förbrukade. **NÄSTA: bygg (a) — policyfil → skript → tvåsidig testsvit →
+registrering → skarpt tvåsidigt bevis i laddad session → ADR-090-Update
+→ därefter hookdesign (b)–(d) → sedan S96- och S93-resume parallellt.**
+Numrering oförändrad: S97/ADR-095/L444(+2)/T120/task-139 (f-numret ej
+avgjort, re-deriveras vid minting). Full narrativ: sessionsdok S97
+Del 1–3. *(Föregående kadensrad nedan.)*
 
 **Session 96 ⏸️ PAUSAD (2026-08-04, fjärde pausen — `lifecycle: paused`)**
 — **HELA T118-SVANSEN EXEKVERAD OCH LANDAD; S97 RESERVERAD FÖR
