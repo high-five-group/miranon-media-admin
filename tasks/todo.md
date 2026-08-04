@@ -15,6 +15,30 @@
 
 ## Aktuellt fokus
 
+**Session 96 ▶️ ÅTERUPPTAGEN (2026-08-04, tredje resumen — `lifecycle:
+active`)** — **T118 LÖST FORSKNINGSGRUNDAT, KÖN TÖMD, BESLUTSBORDET
+EXEKVERAS.** Research `#682` VERIFIERADE riktad overrides-bump och
+FALSIFIERADE både full lockfile-regenerering för klassen (ADR-028 beslut 2
+är malware-regeln; sex riktade incidenter i git-historiken) och `npm audit
+fix` (rör aldrig befintliga overrides — hade lämnat brace-expansion tyst
+olöst) → **fix `#684`** (main `c227593f`, alla grindar + test:api 450/450,
+ADR-028-avvikelsen öppet bokförd) → åtta PR:er omarmerade, `#680`:s
+Vale-fälla enordsrättad, `#677` stängd/utbruten (`#688`). **Marcus-GO över
+hela beslutsbordet:** FACIT LÅST (bilagor `72d169cc`) · `T117` → `TASK-134`
+· `TASK-129` väg A utförd (`#687`, + `TASK-136` utbruten) · installations-GO
+(mekaniskt mail-lås FÖRE Resend — Rogers krav) · mekaniserings-GO
+(tre-lagers-doktrinen, `#683` + intern inventering; tråd → `T119`).
+Larmhygien: `#616`/`#619`/`#636`/`#656` stängda med instansierat verifikat
+(T110-A-fällan undveks — de "gröna" hade aldrig instansierat staging-jobbet)
+· `TASK-132`-bocken rättad (`#685`) · kortstängningar `126.4`/`127.4`/
+`127.5` Done (`#686`) · `TASK-133`/`134`/`135` mintade (svep-defekten:
+avancemang-raden skrevs aldrig — Marcus fångade `#684`:s landning, inte
+vakten). **NÄSTA: delegationsvåg 133/134/135 · TASK-129-stängning efter
+`#687`-grönt · prototyplandning (deltat re-deriveras efter `#678`) ·
+`T119`-tråden · installationsfasen · `#681` efter grön natt.** Numrering:
+T119/task-137/ADR-095/L444(+2 fragment)/f47. Full narrativ: sessionsdok S96
+Del 10. *(Föregående kadensrad nedan.)*
+
 **Session 96 ⏸️ PAUSAD (2026-08-03 kväll, tredje pausen — `lifecycle:
 paused`)** — **PROTOTYP-PASSET: SJUTTON VARV OCH TRE RESEARCH-PASS.**
 Marcus dom vid start: *"byggdes så dåligt och slarvigt så det liknar inget.
