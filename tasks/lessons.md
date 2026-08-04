@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-02
+updated: 2026-08-04
 review_by: 2026-11-15
 status: stable
 ---
@@ -8484,3 +8484,529 @@ vakt i stället för att köra den stående formen (T112-svepet). Marcus-order
 vid kvittensen: regeln SKA mekaniseras — `TASK-119` prioriterad high, först
 i S96-batchen. Tills skriptet finns: varje handrullad vakt bär trevägs-
 villkoren själv.
+
+### L444 — en grön grind mäter körbarhet, inte granskningsbarhet: orkestreraren granskar renderat resultat själv före handover
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-02–2026-08-03, Session 93, orkestreraren, hållplats-prototypens
+kedja (`T99`-klassen).
+
+**Vad som hände:** två skarpa instanser i samma session, båda fångade av
+orkestrerarens EGEN granskning av renderat/beräknat resultat — ingen av dem av
+någon automatisk grind (typecheck, lint, build, API-tester var gröna i båda
+fallen).
+
+1. **PR #603** (divergens-passet a/b/c på eventsidan, `?variant=`).
+   Orkestreraren handövade till Marcus utan att själv ha sett det renderade
+   resultatet. Marcus underkände utfallet ("slarvigt byggd") — berättigat på
+   processgrund. Efterföljande egen okulär granskning bekräftade defekterna:
+   proto-datat nådde bara två block (sidan motsade sig själv), Anteckningar
+   var skrivbar trots att den inte skulle vara det, dubbel-etikettering,
+   variant B saknade rail-form, eventinfo var inte avskild.
+2. **PR #660** (byggkravs-vågen). `Betalningar`-blockets `slutMottagna`
+   räknade strikt MOTTAGEN medan `slutSaknasAntal` räknade via `slutKlar` —
+   två olika definitioner i samma block sedan `task-18.8` (2026-07-22).
+   Orkestrerar-granskningen fällde en 3-vs-2-motsägelse i fixtur-läget — en
+   semantisk motsägelse ingen grind kan uttrycka som ett predikat. Rättad i
+   `betalningsSplit()`.
+
+Åtgärden efter instans 1 blev en ny stående regel (PR #613): orkestreraren
+granskar samtliga varianter i RENDERAD form före armering — inte bara efter
+att koden kompilerar och testerna är gröna.
+
+**Lärdomen:** en grön uppsättning grindar bevisar att koden KÖR — inte att
+den producerar rätt renderat resultat eller rätt beräknat tal. Körbarhet och
+granskningsbarhet är olika egenskaper, och ingen mängd automatiska grindar
+ersätter att en människa (eller orkestreraren, som Marcus mänskliga motpart)
+faktiskt TITTAR på det renderade/beräknade resultatet före handover. Släkt
+med tråden `T87`s syskon `T99` (natt-bygge-skillens kärnfråga): "har du
+granskat subagenternas output själv, eller litat på deras sammanfattning?" —
+S93 gav den frågan två skarpa svar på en och samma session.
+
+**Vad som INTE är gjort:** regeln ("granska renderat före handover") är
+antecknad som stående praxis efter PR #613, men den är inte mekaniserad —
+den vilar på omdöme i stunden, samma svaghetsklass ADR-043 kodade bort för
+lifecycle. Ingen grind i repot verifierar i dag att en handover föregåtts av
+en renderad granskning.
+
+**Varför `[UNIVERSAL]`:** gäller varje agent-orkestrerar-arbetsflöde, oavsett
+repo eller domän — CI-grindar mäter alltid en smal, mekaniskt uttryckbar
+delmängd av "korrekt", aldrig hela ytan en människa skulle bedöma.
+
+### L445 — visual-riggen fällde en bugg CI:s övriga jobb släppte igenom (T87-omprövningsargument)
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-02–2026-08-03, Session 93, hållplats-prototypens kedja.
+
+**Vad som hände:** nattens röda körning (run `30784851472`) hade två
+rotorsaker, båda fixade i PR #639. Den ena — en K6-regression ur #613s
+Beläggning-omstrukturering (null-rader läckte) — fångades av testsviten
+(rött-först: 1 failed → 12/12). Den andra felet fångades INTE av typecheck,
+lint, build eller de vanliga testerna: en rail-gatings-bugg där ett
+UI-element läckte mellan varianter i stället för att vara gatat bakom
+`?variant`-parametern. Enbart visual-regressionsriggen (skärmdumps-diffning)
+fällde den — 2 fällda jämförelser — och efter fixen gick riggen till 94/94.
+Samma PR rättade även ett dataväxlar-kontrakt (se syskonfragmentet om att
+läsa dev-verktygs kontrakt före spec).
+
+**Varför det spelar roll utöver den enskilda fixen:** tråden `T87` (visual-
+grindens CI-aktivering som BLOCKERANDE grind) står `paused` sedan S81 —
+Marcus-beslut A: under en tidig UI-fas med många AVSIKTLIGA
+utseendeändringar hade en aktiv blockerande visuell grind stoppat
+auto-merge på varje medveten designändring, så grinden kördes rådgivande i
+stället. Detta S93-fyndet river inte det beslutet — det var korrekt då —
+men är en EMPIRISK datapunkt för omprövning när triggervillkoret (`UI-takten
+lugnar`) inträffar: visual-riggen fångar en felklass (element som läcker
+över tillstånd/varianter) som ingen av de andra jobben i CI-svansen
+(typecheck/lint/build/API-tester) ens KAN fånga, eftersom de aldrig renderar
+DOM:en.
+
+**Lärdomen:** instrumentval avgör vilken felklass som är synlig.
+Typkontroll, lint och enhetstester verifierar KOD; endast ett verktyg som
+faktiskt renderar och jämför pixlar kan fånga att något SER fel ut eller
+LÄCKER visuellt mellan tillstånd. En CI-svit utan visuell regressionstest
+har ett blint fält som inget av de andra jobben täcker in — oavsett hur
+många de är.
+
+**Vad som INTE är belagt:** att slutsatsen bör vara "aktivera `T87` nu" —
+det beslutet ligger hos Marcus och tråden `T87` själv (aktiveringsjobbet
+ligger redan färdigbyggt i kortet; endast triggern saknas). Detta fragment
+bokför enbart EMPIRIN som talar för omprövning när triggervillkoret
+inträffar, inte ett beslut om aktivering.
+
+**Varför `[UNIVERSAL]`:** gäller all mjukvaruutveckling med visuell yta —
+samma princip som varför visuell regressionstestning (Chromatic, Percy,
+Playwright-skärmdumpar) existerar som EGEN testklass i branschen, skild
+från enhetstester: den mäter något enhetstester strukturellt inte kan mäta.
+
+### L446 — läs ett stående dev-verktygs kontrakt före du skriver en spec mot det, anta det aldrig
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-02–2026-08-03, Session 93, PR #639.
+
+**Vad som hände:** `PrototypeSwitcher`-devtoolet bär ett stående kontrakt
+sedan S90/[ADR-074](../docs/decisions/ADR-074-prototyp-substratets-adress-struktur-och-vaxlar-standard.md):
+i variant-läge (`?variant=`) är FIXTUR-data default, och `?data=verklig` är
+den explicita opt-in-vägen till riktig data — inte tvärtom. En spec skriven
+under sessionen hade INVERTERAT det antagandet utan att kontrollera det
+dokumenterade kontraktet. Felet krävde en egen rättning i PR #639
+("data-kontraktet rättvänt").
+
+**Lärdomen:** innan en spec eller ett byggkrav skrivs som förlitar sig på
+hur ett stående internt dev-verktyg beter sig, LÄS det dokumenterade
+kontraktet (ADR, källkodskommentar eller motsvarande) — anta det aldrig
+utifrån minnet eller vad som "verkar rimligt". Kostnaden av att anta fel var
+inte trivial: en felaktig spec-premiss satte sig i byggkravsvågen och
+krävde en egen fix-commit att upptäcka och rätta, i stället för att kosta
+noll genom att läsas i förväg.
+
+**Instans vs princip:** den specifika kontraktskällan (`PrototypeSwitcher`
+/`ADR-074`) är repo-lokal, men principen den illustrerar — verifiera ett
+verktygs dokumenterade kontrakt innan en spec bygger på ett antagande om
+dess beteende — är allmängiltig och gäller varje kodbas med stående interna
+dev-verktyg (feature-flaggor, test-switchar, miljöväxlare, prototyp-rigger).
+Flaggas därför `[UNIVERSAL]` på principnivå, trots att den enskilda instansen
+är lokal.
+
+**Släktskap:** samma klass som `CLAUDE.md`s "Airtable-schema före write" och
+"Research före implementation"-reglerna i det här repot — kontraktet ska
+LÄSAS före designbeslutet fattas, aldrig antas. Den här instansen visar att
+regeln gäller lika mycket internt byggda devtools som externa API:er/basar.
+
+### L447 — ett okänt CLI-flagga som --help faller igenom till skarp körning i stället för att visa hjälp
+
+**Fångad:** 2026-08-02, Session 93, seed-eventet `ZZ-GRANSKNING-FIXTUR`.
+
+**Vad som hände:** ett `--help`-försök mot `npm run seed:review` kördes
+SKARPT i stället för att visa användning. Grundorsaken är verifierad i
+källkoden: `scripts/seed-review-fixture.mjs`s `parseArgs()` (rad 566–664) är
+en `switch`-sats över kända flaggor (`--ort`, `--bekraftade`,
+`--obekraftade`, `--dagar`, `--livstid`, `--legacy`, `--clean`, `--dry-run`,
+`--sweep`, `--ingen-svep`, `--bekrafta`) med `default: break` (rad 638–639)
+— ett okänt argument som `--help` matchar ingen `case`, ger inget fel och
+ingen hjälptext, utan faller tyst igenom till samtliga default-värden
+(`config.defaults`). Eftersom default-summan av `bekraftade`+`obekraftade`
+inte är 0, passerar körningen även guard-kontrollen på rad 655–657
+(`--bekraftade + --obekraftade är 0 — inget att skapa`), och skriptet
+skapar ett RIKTIGT event i staging: `ZZ-GRANSKNING-FIXTUR`
+(`reco44UBx6GXcxwu5`, Event-3905), 16 anmälningar, betalningsspridning,
+livstid till 2026-08-16.
+
+**Vad som INTE gick fel:** samtliga skyddsräcken (bas-guard mot prod,
+purge-policy-korsläsningen) höll — ingen data hamnade fel plats och ingen
+permanent skada skedde. Kostnaden var att ett försök att LÄSA om skriptet i
+stället skapade skarp data av misstag.
+
+**Lärdomen:** ett CLI-skript vars argumentparser tyst ignorerar okända
+flaggor (i stället för att fela på dem, eller explicit hantera `--help`/
+`-h`) gör att ett försök att LÄRA SIG verktyget kan trigga en skarp körning
+med default-parametrar. Ett skript som skapar data — särskilt mot en delad
+miljö som staging — bör antingen (a) explicit hantera `--help`/`-h` med en
+usage-text, eller (b) fela på ett okänt argument i stället för att falla
+igenom till default. `default: break` är ett tyst ja-till-körning i
+praktiken, aldrig en avsiktlig no-op.
+
+**Varför INTE `[UNIVERSAL]`:** den observerade instansen är en egenskap hos
+DETTA repos seed-skript (`n=1`, ett enda skript, en enda observerad
+instans) — inte ett mönster som visats upprepas över flera verktyg eller
+repon, till skillnad från syskonfragmenten i denna skörd som antingen har
+flera instanser inom samma session eller en princip som uppenbart
+generaliserar oberoende av kodbas. Registreras som skript-hygien-kandidat,
+lokal till detta repo tills fler instanser (i detta eller andra skript)
+visar motsatsen.
+
+**Källa:** `tasks/sessions/2026-08-02-session-93.md` Del 2 § "Bokfört i
+övrigt" (rad ~126–129) + PAUSLÄGE-blockets CARRY-lista, kandidat (5).
+
+### L448 — bokföring på ett kort vars ändringar ligger olandade
+
+**Fångad:** 2026-08-02, Session 96 (AFK-natten), orkestreraren.
+
+**Vad som hände:** `TASK-126.2` stoppade i CI och PR #628 lämnades öppen med
+agentens AC/DoD-bockningar ocommittade mot `main`. Orkestreraren skrev då en
+parkerings-not på samma kortfil **på main**. Efter 27 landningar var PR #628
+`DIRTY`, och den enda konfliktande filen var kortet — grenen bar bockningarna,
+`main` bar noten.
+
+**Lärdomen:** bokföring som skrivs till ett kort vars ändringar ligger
+olandade i en öppen PR skapar garanterat en konflikt i exakt den filen. Båda
+sidor kan vara rena tillägg och ändå kräva handpåläggning.
+
+**Formen i stället:** lägg noten på ytor som INTE finns på grenen — ett eget
+fyndkort, sessionsdokets Del, eller trådregistret. Kortets egen fil rörs först
+när dess PR är landad eller stängd.
+
+**Sekundärt:** varje ytterligare redigering av den konfliktande filen
+fördjupar konflikten. Upptäcks det i efterhand är rätt drag att sluta röra
+filen, inte att "rätta" i den.
+
+**Kandidat för `[UNIVERSAL]`** — gäller varje repo med issue-substrat där kort
+och kod landar i samma commit.
+
+### L449 — en spår-grind får bara referera skivans eget arbete
+
+**Fångad:** 2026-08-03, Session 96 (resumen), orkestreraren, ur `TASK-132`.
+
+**Vad som hände:** `/to-issues` stämplar PRD:ns spår-nivå-grindar på varje
+barnkorts DoD. I T95-spåren slöt det en cirkel: `TASK-127.1`:s DoD krävde
+*"rundturs-e2e grön mot staging"* — vilket är `TASK-127.9`:s hela leverabel —
+och `127.9` berodde transitivt på `127.1` Done. Spåret kunde inte röra sig.
+Kortet skrev rotorsaken som *"skillen stämplade"*.
+
+**Den rotorsaken var för bred.** Mätt över hela `backlog/`: `task-1`, `4`, `8`,
+`9`, `17`, `18`, `19`, `36`, `54` och `59` bär **alla** identiska extra-DoD-poster
+på samtliga barn. Tio familjer, noll deadlocks. Stämplingen är designat beteende
+— den är det som bär granskningsvågorna.
+
+**Lärdomen:** det som avgör är grindens **grammatik**, inte att den ärvs.
+Tidigare spår-grindar är predikat över skivans EGET arbete och uppfylls av
+skivan själv — verbatim: *"Design-review … per skiva med UI-yta"* · *"varje
+BERÖRD facit-punkt"* · *"varje FLYTTAD fil har tvåsidigt bevis"* ·
+*"körnings-ID:n citerade PÅ KORTET"*. En skiva utan UI-yta uppfyller
+design-review-grinden vakuöst. De skapar granskningsvågor men aldrig ett
+beroende utåt.
+
+T95:s grindar refererar i stället (a) en **systerskivas leverabel** eller (b) en
+**händelse utanför repot** (*"efter Grind 0"* = Vercel-konto, *"före
+DMARC-posten satt"* = DNS). Klass (a) kan sluta en cirkel; klass (b) kan per
+konstruktion aldrig uppfyllas av kod alls.
+
+**Regeln:** en skiv-DoD bär endast predikat över skivans eget arbete. Grindar
+som namnger en systerskivas leverabel, eller en händelse utanför repot, hör på
+PRD-kortet — de gatar spårets Done, inte varje skivas.
+
+**Varför det small först nu:** T95 är det första deploy-bundna spåret, och det
+första där e2e-grönt både är spår-grind OCH egen skiva. De tio tidigare
+familjerna var rena kod-/testspår inom repot — de klarade sig av tur i sin
+form, inte för att kontrollen fanns.
+
+**Metod-noten, värd lika mycket som regeln:** rotorsaken hittades genom att
+mäta hela populationen i stället för att resonera ur det trasiga fallet. Ett
+`n=1`-fall bär aldrig sin egen rotorsak — den syns först mot de fall som INTE
+gick sönder. Samma klass som `T110` A (mätning med ett instrument som ser en
+form men inte alla), fast med rätt utfall.
+
+**Kandidat för `[UNIVERSAL]`** — gäller varje repo där en spec bryts ned till
+skivor med ärvd Definition of Done. Åtgärdsriktningen mot `/to-issues` bor i
+tråd `T115`.
+
+### L450 — en hook som registreras mitt i en session kan inte skarpbevisas i den
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, Session 97, orkestreraren, under `T119` (a).
+
+**Vad som hände:** katalogägarskaps-hooken byggdes, testsviten gick 23/23, och
+skriptet gav korrekt `permissionDecision: "ask"` när det kördes manuellt mot
+detta repo med en planterad ägarlapp. Sedan registrerades den i
+`.claude/settings.json` och skulle skarpbevisas — och **fällde ingenting**. Två
+provokationer gick rakt igenom.
+
+**Vad som skilde hypotes från slutsats:** en differentialmätning, inte en
+gissning. Tre mätpunkter i samma pass:
+
+| Mätning | Utfall |
+|---|---|
+| ny hook, körd manuellt med identisk hook-JSON | fäller korrekt |
+| ny hook, via harnesset (två provokationer) | fäller inte |
+| befintlig hook (`deny-resend-send.sh`), via harnesset, samtidigt | **fäller** |
+
+Den tredje raden är den som gör mätningen till ett svar: hooksystemet KÖR. Det
+är registreringen som inte tagits i bruk, inte mekanismen som är trasig.
+
+**Rotorsaken, belagd mot förstapartskällan:** `code.claude.com/docs/en/hooks-guide.md`
+har ett dedikerat felsökningsavsnitt (§ `/hooks` shows no hooks configured):
+*"File edits are normally picked up automatically. If they haven't appeared
+after a few seconds, the file watcher may have missed the change: **restart
+your session to force a reload**."* Samma dokument lovar på annan plats att ändringar
+*"are normally picked up automatically by the file watcher"* — det är den
+meningen som leder fel om man läser den ensam.
+
+Community-rapporterna är starkare än dokumentationens "may": issue
+[#22679](https://github.com/anthropics/claude-code/issues/22679) heter *"Hook
+settings are cached and changes don't take effect until session restart"* och
+beskriver exakt samma reproduktionsmönster (ny/ändrad registrering ignoreras
+medan befintliga hooks fortsätter fyra). Både den och
+[#55867](https://github.com/anthropics/claude-code/issues/55867) — en feature-
+request om just mid-session reload — är stängda som dubbletter, och
+originalärendet gick inte att spåra.
+
+**Två hypoteser som mätningen AVFÄRDADE, och som annars hade kostat tid:**
+
+- *Ett tyst godkännandesteg blockerar nya hooks.* Nej — den enda trust-grinden i
+  dokumentationen gäller subagent-frontmatter-hooks, inte `settings.json`.
+- *Det finns ett reload-kommando.* Nej — `/reload-hooks` existerar inte, och
+  `/hooks`-menyn är uttryckligen read-only (*"The menu is read-only: to add,
+  modify, or remove hooks, edit the settings JSON directly"*). Att `#55867`
+  fortfarande efterfrågar funktionen är i sig beviset att den inte finns.
+
+**Lärdomen:** en hook är inte bevisad förrän den har fällt via harnesset, och
+det kan **per konstruktion inte ske i sessionen som byggde den**. Planera in det
+från början i stället för att upptäcka det vid beviset:
+
+1. Bygg hooken och bevisa LOGIKEN tvåsidigt med en testsvit + manuell körning
+   mot verkligt tillstånd. Det är fullt möjligt i byggsessionen.
+2. Bokför skarpbeviset som en **öppen skuld i handoffen**, inte som gjort.
+3. Betala skulden **först i nästa session**, som en av dess första handlingar.
+
+Detta är samma strukturella klass som MCP-verktygsytan i samma session (S97
+Del 2): ytan bestäms vid sessionsstart och uppdateras inte retroaktivt efter
+auth. Två olika delsystem, samma form — konfiguration som läses en gång vid
+start. Att känna igen klassen är värt mer än de två instanserna var för sig:
+**fråga alltid "bestäms detta vid sessionsstart?" innan du planerar ett bevis
+som förutsätter motsatsen.**
+
+**Vad som INTE är belagt, och därför inte påstås:** om skillnaden mellan att
+LÄGGA TILL en ny matcher och att ÄNDRA en befintlig spelar roll. Ingen källa —
+varken dokumentationen eller de granskade ärendena — gör den distinktionen.
+
+### L451 — ett symptom som återkommer efter en verifierad rättelse har en AKTIV skribent, inte en historisk orsak
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, `T121`, orkestreraren + bygg-agent (research-pass).
+
+**Vad som hände:** `core.hooksPath` uppmättes absolut i en delad `.git/config`,
+rättades manuellt till relativt, verifierades relativt — och stod absolut
+igen inom timmen. Tråden stängdes ändå en gång med rotorsaken
+"konfigurations-drift, en engångshändelse" (en handpåläggning som skedde
+"någon gång" i månader innan mätningen). Den stängningen var för tidig:
+värdet flippade igen samma dag, upprepade gånger, med minuter mellan varje
+flip — ett mönster helt oförenligt med "en person skrev över det en gång för
+länge sedan".
+
+**Vad som skilde hypotes från slutsats:** ett andra, oberoende mätpass som
+INTE tog den första stängningens rotorsak för given. Det körde en
+bakgrundsövervakning (poll var 2:a sekund) i stället för att bara läsa värdet
+en gång, och fångade två SPONTANA flip på sex minuter utan att agenten körde
+något git-kommando alls i det ögonblicket. Frekvensen — flip var 1–4:e minut
+— är den signal som avslöjar klassen: en engångs-drift producerar EN
+avvikelse som sedan står stilla; en AKTIV skribent producerar en STRÖM.
+
+**Rotorsaken, belagd mot källkod:** skribenten var Claude Codes egen
+worktree-skapande kod (`anthropics/claude-code#27474`/`#66993`/`#72714`) —
+ett verktyg UTANFÖR repot, som kör vid varje ny worktree-skapelse och som den
+egna sessionen (via `EnterWorktree`/`isolation: "worktree"`) triggar
+kontinuerligt. Full beläggkedja:
+`docs/research/t121-skribenten-claude-code-worktree-hookspath-2026-08-04.md`.
+
+**Två hypoteser som mätningen AVFÄRDADE, och som annars hade kostat tid:**
+
+- *Källan är i vårt eget repo, hub-repot eller en worktree.* Uttömmande
+  kodsökning över alla tre gav noll träffar — vilket är precis vad man
+  förväntar sig när skribenten är VERKTYGET man kör i, inte kod som
+  checkas ut. Sökningen var korrekt utförd; den sökte bara på fel plats.
+- *`npm ci`/`npx` i ett riktigt repo (till skillnad från ett minimalt
+  temp-repo) beter sig annorlunda.* En rimlig, specifik hypotes från
+  orkestreraren — testad direkt (`npm run postinstall` + `npx
+  markdownlint-cli2` i en verklig worktree av det verkliga repot) och
+  falsifierad rent: värdet förblev relativt i båda fallen.
+
+**Lärdomen, i två delar:**
+
+1. **Ett symptom som återkommer efter en VERIFIERAD rättelse (inte en
+   ouppmärksammad, utan en som faktiskt kontrollerades och höll i
+   ögonblicket) har per definition en AKTIV skribent — något som kör om och
+   om igen — inte en historisk orsak som "hände en gång". Klassificera om
+   direkt när återkomsten är bekräftad; fortsätt inte bygga vidare på
+   engångs-hypotesen bara för att den var den första som föll ut.** Testet
+   för att skilja dem åt är frekvens, inte förekomst: en enda mätning ser
+   bara "avvikande igen"; en KORT SERIE mätningar (poll, inte engångsläsning)
+   avslöjar om det är en pöl eller en ström.
+2. **Kodsökning i det egna repot (inklusive angränsande repon och alla kända
+   worktrees) är fel instrument när skribenten kan vara verktyget man kör
+   arbetet i.** Noll träffar i en uttömmande sökning är inte bevis på att
+   ingen kod gör det — det är bevis på att koden inte bor där sökningen
+   tittade. När den egna toolingen (CI-runnern, editorn, agent-harnesset)
+   själv rör den påverkade resursen, hör den till kandidatlistan från
+   början, inte som sista utväg efter att allt internt är uteslutet.
+
+**Vad som INTE är belagt, och därför inte påstås:** exakt vilket enskilt
+`EnterWorktree`-anrop som orsakade var och en av de tre observerade flip-
+händelserna i just detta pass — mätmetoden (2-sekunders poll) är strukturellt
+för grov för att träffa ett millisekund-kort `git config`-anrop med en `ps`-
+ögonblicksbild. Källkods-beläggningen (§ research-passet) gör den luckan
+ofarlig för slutsatsen, men den ska inte förväxlas med en fångst på bar
+gärning av en specifik process.
+
+### L452 — kodsökning i det egna repot är fel instrument när skribenten är verktyget man kör i
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, Session 97, `T121`, orkestreraren + bygg-agent
+(research-pass). Bokförd som egen post: L451 § "Lärdomen, i två delar" bär
+denna regel som sin PUNKT 2, buntad med en annan (frekvens som signal för
+aktiv skribent). Sessionsdokets egen paushistorik (tredje pausen,
+`tasks/sessions/2026-08-04-session-97.md` rad ~1138–1139) listar den ändå
+som en EGEN, fristående lesson-kandidat — den säkras därför här som sin
+egen post i stället för att bara vila inuti L451.
+
+**Vad som hände:** jakten på `core.hooksPath`-skribenten (L451) prövade
+hypotesen att källan satt i vårt eget repo, hub-repot eller en känd worktree.
+En uttömmande kodsökning över alla tre gav **noll träffar** — vilket först
+lästes som "ingen av våra kodvägar gör detta". Den rätta läsningen var en
+annan: skribenten var Claude Codes egen worktree-skapande kod
+(`anthropics/claude-code#27474`/`#66993`/`#72714`), ett verktyg UTANFÖR alla
+tre sökta repon. Sökningen var korrekt utförd — den sökte bara på fel plats.
+
+**Lärdomen:** kodsökning i det egna repot (inklusive angränsande repon och
+alla kända worktrees) är fel instrument när skribenten kan vara VERKTYGET man
+kör arbetet i, inte kod som checkas ut och kan grep:as. Noll träffar i en
+uttömmande sökning är inte bevis på att ingen kod gör det — det är bevis på
+att koden inte bor där sökningen tittade. När den egna toolingen (CI-runnern,
+editorn, agent-harnesset) själv rör den påverkade resursen, hör den till
+kandidatlistan FRÅN BÖRJAN, inte som sista utväg efter att allt internt är
+uteslutet.
+
+**Varför `[UNIVERSAL]`:** gäller varje diagnos där en resurs delas mellan
+checkad-in kod och den tooling som kör den (byggverktyg, editorer, CI-agenter,
+IDE-plugins) — inte bara git-worktrees. Källkods-beläggningen bor i
+`docs/research/t121-skribenten-claude-code-worktree-hookspath-2026-08-04.md`.
+
+### L453 — isolering efter behov, inte som default
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, Session 97, `T121`-kedjan + `#729`, orkestreraren.
+
+**Vad som hände:** varje worktree-skapelse triggar `T121`-buggen (skriver om
+`core.hooksPath` till en absolut sökväg i den DELADE `.git/config`, L451).
+Kostnaden är därför inte teoretisk utan proportionell mot hur många worktrees
+en session skapar. En oisolerad mätagent prövade dagens spawn-beslut mot
+spawn-loggen, worktree-reflogarna och vad varje agent faktiskt levererade
+(PR #729, `fix(agents): research-pass körs oisolerat — mätt, inte antaget`):
+**22 worktree-skapelser under dagen, varav 9 var undvikbara.** Uppdelningen
+var inte en enda orsak: **fem** kom av att `research-pass`-agenttypens EGEN
+default var fel (varje pass skriver exakt en ny, unikt namngiven fil under
+`docs/research/` — noll kollisionsrisk, och tre av de fem grenarna användes
+aldrig eftersom orkestreraren landade filen från huvudkatalogen ändå), och
+**fyra** kom av att fel AGENTTYP valdes för uppdraget — rena
+dokumentationsuppdrag skickades till `bygg-agent`, vars egen isolerings-default
+mättes som korrekt (**12 av 12** agenter som faktiskt skrev kod, hook,
+CI-config, ADR eller backlog-kort var rätt isolerade). `research-pass`-defaulten
+fixades i `#729`; `bygg-agent` rördes inte.
+
+**Lärdomen:** isolering (worktrees, sandboxar, containrar) ska motiveras av
+faktisk kollisionsrisk vid merge, inte tillämpas som blankt förval för en hel
+agenttyp. Ett research-pass som läser och skriver en enda, unikt namngiven fil
+kan per konstruktion inte kollidera — isolering där är ren kostnad utan
+motsvarande skydd. Redan bokfört som princip i `CLAUDE.md` § "Agenter kan INTE
+arbeta cross-repo — och varje worktree kostar" (*"Isolera efter behov, inte
+som default"*); denna post säkrar den bakomliggande MÄTNINGEN (22/9/5/4-talen)
+som numrerad lesson, i stället för att bara vila i en governing-fils prosa.
+
+**Varför `[UNIVERSAL]`:** gäller varje agent-/CI-arkitektur som väljer mellan
+delad och isolerad exekveringsmiljö — kostnaden för isolering (extra
+resurser, sido-effekter som `T121`, uppstartstid) ska vägas mot en verklig,
+inte antagen, kollisionsrisk.
+
+### L454 — tid är ingen giltig proxy för "ingen arbetar här"
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, Session 97 Del 6, orkestreraren (Marcus fångst 3 av 3,
+katalogägarskaps-hooken).
+
+**Vad som hände:** ett tidsbaserat övertagande (`KATALOG_TYSTNAD_MINUTER`:
+30 min tystnad från en levande ägarsession ⇒ lappen kan tas över av en annan
+session) lades fram och var på väg att landa. Marcus fällde det med ett
+konkret scenario, citerat verbatim i ADR-090 § Lager 2: *"det kan ju bara
+vara så att jag behöver gå och bajsa, och när jag kommer tillbaka så har vi
+ingen katalog att stå på då eller?"* Konsekvensen var värre än förlorat
+ägarskap: en session som "tog över" en tyst-men-levande ägare hade kunnat
+skriva (`checkout`/`commit`/`merge`) rätt OVANPÅ ägarens ocommittade arbete,
+medan ägaren bara var borta från tangentbordet.
+
+**Rotorsaken i det förkastade tänkandet:** TID användes som proxy för "ingen
+arbetar här", men ett arbetsträd med ocommittade ändringar är upptaget
+oavsett ägarens tystnadslängd. Ett efterföljande eget resonemang — "en död
+process kan inte ha ocommittat arbete som går förlorat, den är borta" — var
+självt fel av samma skäl: processen är borta, men ARBETET på disk är det inte.
+
+**Lärdomen:** i ett delat, låsbart arbetsträd (huvudkatalog, delad resurs,
+gemensam lockfil) är det enda giltiga övertagande-villkoret BEVISAD DÖD
+ägarprocess (t.ex. `kill -0` + starttidsgard) — aldrig en tystnadströskel.
+Tystnad hos ägaren säger ingenting om huruvida arbetet på disk är säkert att
+skriva över; en människa som lämnar skrivbordet är inte en människa som
+slutat arbeta. Förkastandet är bokfört öppet i ADR-090 § Lager 2, inte tyst
+rivet, så ingen återuppfinner tidsövertagandet i god tro.
+
+**Varför `[UNIVERSAL]`:** samma princip som varför distribuerade
+låsmanagers/lease-mekanismer använder liveness-kontroller (heartbeat, PID,
+lease-förnyelse) i stället för rena inaktivitets-timers för att avgöra om en
+ägare är död — gäller varje system där en delad, skrivbar resurs har exakt en
+ägare i taget.
+
+### L455 — en trigger söktes utanför systemet när den fanns i systemets egen rytm
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-04, Session 97 Del 6, orkestreraren (Marcus fångst 4 av 3,
+heartbeat-svepets trigger, `T119` (c)).
+
+**Vad som hände:** frågan "vad ska starta heartbeat-svepet?" klassades av
+två agenter som ett arkitekturval och togs vidare mot en extern
+schemaläggare (cron, `/loop`) — en väg som räknades fram till ~960
+modell-turer per natt. Marcus löste den i stället med en fråga:
+*"vafan kan inte session-start eller session-resume starta heartbeat?
+Allting börjar ju session-start eller session-resume och allt slutar med
+session-paus eller session-end, alltid."* Svaret stod redan i
+`scripts/heartbeat-svep.sh`s eget filhuvud (rad ~99–100, § "Startform som
+bakgrunds-monitor"): montera skriptet som `Monitor`-verktygets bakgrunds-bash
+i en redan körande Code-session. Kostnad under väntan: noll LLM-anrop.
+
+**Lärdomen:** innan en trigger eller ett schemaläggningsbehov designas som
+NYTT maskineri utanför det körande systemet, fråga om systemet redan har en
+egen rytm som kan bära den — en start- och sluthändelse som redan sker vid
+varje cykel (här: sessionens `start`/`resume` ↔ `paus`/`end`). Att leta efter
+en extern schemaläggare när svaret redan bor i systemets egen livscykel är
+dyrare i två led: uppfunnet maskineri att bygga och underhålla, och en
+kostnadskalkyl (960 turer/natt) som bara existerar för att fel väg prövades.
+
+**Varför `[UNIVERSAL]`:** gäller varje orkestrerings-/agentarkitektur som
+behöver periodiskt återkommande arbete — frågan "har det körande systemet
+redan en start/slut-rytm att haka i?" kommer före "vilken extern
+schemaläggare behöver vi bygga?", oavsett domän.

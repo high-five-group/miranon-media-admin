@@ -162,7 +162,8 @@ Faller den befintliga men inte den nya är det registreringen, inte logiken.
 Samma strukturella klass som MCP-verktygsytan (S97 Del 2): båda bestäms vid
 sessionsstart och uppdateras inte retroaktivt. **Fråga "bestäms detta vid
 sessionsstart?" innan du planerar ett bevis som förutsätter motsatsen.**
-Underlag: `tasks/lessons.d/hook-registrerad-mitt-i-sessionen-laddas-inte.md`.
+Underlag: `tasks/lessons.md` L450 (konsoliderad ur det tidigare fragmentet
+`tasks/lessons.d/hook-registrerad-mitt-i-sessionen-laddas-inte.md`).
 
 ### Worktree-isoleringens gräns går vid EGET REPOS huvudkatalog — inte vid cross-repo
 
