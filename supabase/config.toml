@@ -104,9 +104,35 @@ verify_jwt = true
 # ─────────────────────────────────────────────────────────────────────────
 
 [auth]
-# Enda fältet detta kort sätter i [auth]-roten: redirect-målet för
-# Användarinbjudans accept-sida, fixerad av ADR-092 (`/valkommen`).
+# VARNING — `supabase config push` ÄR DEKLARATIV. Varje fält som INTE står i
+# denna fil skrivs till CLI-scaffoldens defaultvärde på fjärrprojektet, oavsett
+# vad som är satt i dashboarden. Det är inte en teoretisk risk: den första
+# skarpa pushen mot staging (2026-08-05, S96) ändrade 22 av 242 fält, varav
+# SJU var oavsiktliga regressioner — MFA/TOTP stängdes av, e-postbekräftelsen
+# stängdes av, OTP-längden kortades 8→6 och mail-frekvensspärren gick 60s→1s.
+# Fälten nedan är därför INTE "extra konfiguration" — de är LÅS mot regression.
+# Lägg aldrig till ett värde i dashboarden utan att också låsa det här.
+# Mätunderlag: T46 § Grind 0 punkt 6:s säkerhetsnot (som denna mätning belade).
+
+# Redirect-målet för Användarinbjudans accept-sida, fixerad av ADR-092
+# (`/valkommen`).
 additional_redirect_urls = ["https://admin.miranon.dev/valkommen"]
+
+# Default-adressen Supabase Auth sätter i ALLA mail som saknar explicit
+# redirect. CLI-defaulten är `http://127.0.0.1:3000` och både staging och prod
+# stod på `http://localhost:3000` — en utvecklingsadress som aldrig ändrades
+# sedan projekten skapades. En inbjudningslänk med det värdet pekar på
+# MOTTAGARENS egen dator och är därmed död för varje användare. Domänen är
+# fixerad av ADR-091 (`admin.miranon.dev`).
+site_url = "https://admin.miranon.dev"
+
+[auth.mfa.totp]
+# LÅS. Båda stod `true` på staging före första pushen; CLI-defaulten är
+# `false` för båda, så en push utan dessa rader STÄNGER AV TOTP-baserad
+# tvåfaktor. Auth-faktor-strategin ägs av ADR-093 — en tyst avstängning här
+# river ett fattat beslut utan att någon ser det.
+enroll_enabled = true
+verify_enabled = true
 
 [auth.email]
 # 24 timmar — plattformens verifierade TAK (inte ett önskat värde). Detta
@@ -117,6 +143,22 @@ additional_redirect_urls = ["https://admin.miranon.dev/valkommen"]
 # semantik som dashboardens defaultvärde). Se ADR-092 § Kontext + S95 Del 2
 # beslut 7.
 otp_expiry = 86400
+
+# LÅS (samtliga tre) — stod så här på staging före första pushen, och
+# CLI-defaulten är svagare på var och en. Utan dessa rader nollställs de.
+#
+# enable_confirmations: CLI-default `false` ⇒ e-postbekräftelse stängs AV och
+#   användare kan logga in utan att ha bevisat att adressen är deras. Mätt:
+#   `mailer_autoconfirm` gick False → True vid första pushen.
+# max_frequency: CLI-default `"1s"` mot fjärrprojektets 60s — spärren mot
+#   upprepade utskick till samma adress. 1s är i praktiken ingen spärr alls,
+#   och gör invite-/reset-flödet till ett bekvämt spam-verktyg.
+# otp_length: CLI-default `6` mot fjärrprojektets 8. Kortare engångskod =
+#   mindre sökrymd att gissa i. Roger granskar auth-ytan som fd.
+#   cybersäkerhetsexpert; en tyst nedgradering hör inte hemma här.
+enable_confirmations = true
+max_frequency = "1m0s"
+otp_length = 8
 
 # Custom SMTP mot Resend, sändande subdomän send.miranon.dev (S95 Del 2
 # beslut 3+4; T46-kartans Grind 0-paket punkt 6). Endast lösenordet är
