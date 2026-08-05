@@ -78,15 +78,53 @@ npx @biomejs/biome check .  # 0 lint-fel
 npm run build               # bygg grön
 ```
 
-De fyra ovan är NÖDVÄNDIGA men inte TILLRÄCKLIGA — CI kör betydligt fler
-grindar (shellcheck-strict, actionlint, yamllint, audit-ci, 13
-dokumentations-grindar, ~20 gatekeeper-testsviter, Acceptance-klassen,
-Webblasarbeteende-klassen). Verifiera mot den FULLA uppsättningen före push:
+De fyra ovan är DoD-disciplinen (`ADR-036`, `CONTRIBUTING.md`) och är vad som
+körs före push. CI kör betydligt fler grindar (shellcheck-strict, actionlint,
+yamllint, audit-ci, 13 dokumentations-grindar, ~20 gatekeeper-testsviter,
+Acceptance-klassen, Webblasarbeteende-klassen) — **och det är CI:s jobb, inte
+ditt.** Merge queue hindrar en röd PR från att landa, så kostnaden av att
+missa något lokalt är en extra CI-cykel, inte ett trasigt `main`.
+
+### `verify:ci-parity` är ett DIAGNOSVERKTYG — plocka fram det, kör det inte som rutin
 
 ```bash
-npm run verify:ci-parity         # scripts/verify-ci-parity.mjs — motsvarar CI
-npm run verify:ci-parity:fast    # samma minus Acceptance+Webblasarbeteende — INTE CI-parity, iteration bara
+npm run verify:ci-parity         # scripts/verify-ci-parity.mjs — kör CI:s uppsättning lokalt
+npm run verify:ci-parity:fast    # samma minus Acceptance+Webblasarbeteende — iteration bara
 ```
+
+**Kör det INTE före varje push.** Mätt 2026-08-05 (S98,
+[`verify-ci-parity-regel-vantetid-2026-08-05.md`](docs/research/verify-ci-parity-regel-vantetid-2026-08-05.md)):
+full körning kostar **910,7 s** på en kod-diff, medan CI svarar på **401,0 s**
+parallellt. Felfrekvensen i mätfönstret var **3 av 99 ≈ 3 %**, vilket ger en
+förväntad besparing på ~12 s per PR (~30 s även med tio minuters fix-tid
+inräknad). **Kostnaden är alltså ungefär 30× besparingen.** En rutin som körde
+den på varje landning mättes till 96–110 min per session mot 45–57 min för vad
+som faktiskt gjordes — **2,3–2,9× dyrare**.
+
+Värre: `Acceptance` + `Webblasarbeteende` står för ~91 % av kostnaden och fällde
+**noll** fel i mätfönstret. Samtliga röda låg i de billiga jobben.
+
+**Plocka fram det i tre lägen:**
+
+1. Du har ändrat `ci.yml`/`ci-suite.yml` själv och vill veta att uppsättningen
+   fungerar innan du pushar
+2. CI blev röd och du vill reproducera lokalt i stället för att pusha om
+3. Ändringen är stor eller riskabel nog att en extra CI-cykel kostar mer än
+   vanligt
+
+**Varför raden ser ut så här nu:** den sade tidigare *"Verifiera mot den FULLA
+uppsättningen före push"* — skriven 2026-08-05 tillsammans med verktyget, och
+**tio veckor efter** `ADR-036` slog fast att lokal verifiering är DoD-disciplin
+(två snabba kommandon), inte en full CI-replik. Raden gick alltså utöver det
+styrande beslutet, och lästes bokstavligt samma dag: en agent körde 153
+acceptance-tester på en ändring som bestod av en enda markdown-fil. Rivningen
+återställer `ADR-036` — den ändrar den inte. Se
+[`ADR-036`](docs/decisions/ADR-036-kvalitetsgrind-ci-enda-mekaniska-enforcement.md)
+§ Updates 2026-08-05 (andra amenderingen).
+
+**Underlagets styrka, öppet:** felfrekvensen vilar på n=99 med 3 röda. Det är
+ett stickprov, inte statistik. Riktningen är entydig och eskalering uppåt är
+alltid tillåten — men talet ska omprövas när `npm run metrics:ci` bär mer data.
 
 **Härlett ur `ci.yml`/`ci-suite.yml`, inte en fjärde handhållen kopia.**
 Skriptet YAML-parsar de två workflow-filerna och kör lint-/docs-jobbens samt

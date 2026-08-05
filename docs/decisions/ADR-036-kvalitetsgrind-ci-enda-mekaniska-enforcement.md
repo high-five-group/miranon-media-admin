@@ -97,3 +97,55 @@ inte — det var aldrig frågan.
 Biome: ett verktyg man plockar fram när ändringens klass motiverar det, inte en
 mekanism som körs åt en. Det är samma svar denna ADR gav 2026-05-27, med bättre
 belägg.
+
+### 2026-08-05 (S98, andra amenderingen) — `verify:ci-parity` klassas som DIAGNOSVERKTYG; en rad som gick utöver denna ADR är riven
+
+**Beslutet står oförändrat.** Denna post river ingenting i ADR:n — den river en
+rad i `CLAUDE.md` som gick *utöver* den, och klassar ett verktyg som inte fanns
+när beslutet fattades.
+
+**Vad som hänt.** `CLAUDE.md` fick 2026-08-05 (`2964ca34`, i samma landning som
+verktyget) raden *"Verifiera mot den FULLA uppsättningen före push"*. Den är
+**tio veckor nyare** än denna ADR, som sedan 2026-05-27 säger att lokal
+kvalitetssäkring är DoD-disciplin — `npm run typecheck` + `biome check`, två
+snabba kommandon. Raden föreskrev alltså något ADR:n aldrig gjorde.
+
+Den lästes bokstavligt samma dag den skrevs: en agent körde 153 acceptance-tester
+och 11 Playwright-tester på en ändring som bestod av **en enda markdown-fil**.
+
+**Mätningen som avgjorde**
+([`verify-ci-parity-regel-vantetid-2026-08-05.md`](../research/verify-ci-parity-regel-vantetid-2026-08-05.md)):
+
+| | |
+|---|---|
+| Full lokal körning, kod-diff | **910,7 s** |
+| CI, parallellt | **401,0 s** |
+| Felfrekvens i mätfönstret | **3 av 99 ≈ 3 %** |
+| Förväntad besparing per PR | **~12 s** (~30 s med tio minuters fix-tid) |
+
+**Kostnaden är ~30× besparingen.** En rutin som körde verktyget på varje
+landning mättes till 96–110 min per session mot 45–57 min för vad som faktiskt
+gjordes — **2,3–2,9× dyrare**. Och `Acceptance` + `Webblasarbeteende` står för
+~91 % av kostnaden men fällde **noll** fel i fönstret; samtliga röda låg i de
+billiga jobben (lint, audit, typecheck, länkkontroll).
+
+Räkningen förutsätter **merge queue**, som inte fanns 2026-05-27: en röd PR kan
+inte landa, så kostnaden av att missa något lokalt är en extra CI-cykel — inte
+ett trasigt `main`.
+
+**Vad som ändras:** `CLAUDE.md`-raden riven och ersatt med en
+diagnosverktygs-klassning + tre namngivna lägen (CI-konfig ändrad · reproducera
+en röd CI lokalt · ändring vars extra CI-cykel kostar ovanligt mycket).
+
+**Vad som INTE ändras:** CI:s grinduppsättning · merge queue · nattnätet ·
+post-merge · rulesetet · Definition of Done (`typecheck`, `biome`, `test:api`,
+`build`) · `verify:ci-parity` som verktyg, med diff-klassning och testsviter
+intakta. Ingen mekanism tas bort. **Rivningen återställer denna ADR:s hållning
+— den ändrar den inte.**
+
+**Underlagets styrka, öppet deklarerad:** felfrekvensen vilar på n=99 med 3
+röda. Ett stickprov, inte statistik. Riktningen är entydig och eskalering uppåt
+är alltid tillåten, men talet ska omprövas när `npm run metrics:ci` bär mer
+data. Detta är samma försiktighet den första amenderingen efterlyste — och
+noteras här eftersom dagen dessförinnan visade vad en regel skriven på för
+tunt underlag kostar.
