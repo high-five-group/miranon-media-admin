@@ -3,10 +3,10 @@ id: TASK-128
 title: >-
   Fynd: heartbeat-svepets armerings-kandidat fyrar på KÖADE PR:er —
   isInMergeQueue skiljer dem men efterfrågas aldrig
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-02 16:16'
-updated_date: '2026-08-05 15:31'
+updated_date: '2026-08-05 15:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -73,3 +73,19 @@ OVÄNTAT FYND (registrerat, EJ åtgärdat — utanför detta korts scope): scrip
 
 Status lämnas OFÖRÄNDRAD (To Do) och Done sätts INTE av denna agent — det är orkestrerarens steg efter egen CI-verifiering av DENNA (bokförings-)commit, per bygg-agentens ALLTID-PÅ-regel.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGD 2026-08-05 (S96 femte resumen, orkestreraren) mot verifierat tillstånd — inte mot nytt arbete.
+
+Fixen var redan landad när kortet plockades: commit 2d6bad0e via PR #645, mergad 2026-08-03T12:22:22Z. scripts/heartbeat-svep.sh hämtar isInMergeQueue i sin GraphQL-query, exponerar det som TSV-kolumn och kräver inqueue == 'false' i kandidat-villkoret. Köade PR:er larmar därmed inte längre.
+
+Kortet stod To Do i två dagar efter att arbetet var gjort — en bokförings-rest, upptäckt först när en agent sattes på det.
+
+BEVIS UTÖVER LÄSNING (bygg-agenten, oberoende av den ursprungliga leveransen): scratch-borttagning av inqueue-villkoret fick regressionstestet T9b att falla (exit 4, väntade 0); återställning gav 36/36 grönt. Skyddet är alltså mekaniskt verifierat, inte bara kodgranskat.
+
+SIDOFYND SOM LEVERERADES SEPARAT: skriptets egen ALARM-text föreslog gh pr merge <nr> --auto --merge — en form upphävd sedan 2026-08-04. Fyndet visade sig ha sju aktiva bärare, inklusive .claude/agents/bygg-agent.md. Rivet i PR #799.
+
+Samtliga fyra DoD bockade; kortet bar inga AC.
+<!-- SECTION:FINAL_SUMMARY:END -->

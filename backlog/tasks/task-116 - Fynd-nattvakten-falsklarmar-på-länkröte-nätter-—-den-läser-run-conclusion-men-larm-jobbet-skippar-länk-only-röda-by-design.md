@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-01 13:08'
-updated_date: '2026-08-05 15:35'
+updated_date: '2026-08-05 15:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -41,20 +41,28 @@ Möjliga former, ingen vald här: (a) vakten läser **jobb-nivå** i stället f�
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Grundorsaken åtgärdad i vald form: en natt vars enda röda jobb är länkkontrollen ger INTE ärendet Nattnätet rött utan larm; formvalet motiverat mot åtgärdsrymden och förkastade alternativ bär sina skäl
-- [ ] #2 Vaktens äkta larmklasser intakta: startup_failure, utebliven schemakörning och röd natt där larm-jobbet faktiskt uteblivit larmar fortfarande — tvåsidigt bevis, mätt inte resonerat
+- [x] #1 Grundorsaken åtgärdad i vald form: en natt vars enda röda jobb är länkkontrollen ger INTE ärendet Nattnätet rött utan larm; formvalet motiverat mot åtgärdsrymden och förkastade alternativ bär sina skäl
+- [x] #2 Vaktens äkta larmklasser intakta: startup_failure, utebliven schemakörning och röd natt där larm-jobbet faktiskt uteblivit larmar fortfarande — tvåsidigt bevis, mätt inte resonerat
 - [ ] #3 Bevis-läget simulate_missing fungerar efter ändringen, verifierat med en dispatch
-- [ ] #4 Ärende #469 stängt enligt stängningsregeln med hänvisning till detta korts leverans
+- [x] #4 Ärende #469 stängt enligt stängningsregeln med hänvisning till detta korts leverans
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-AKTUALITETS-KONTROLL 2026-08-05 (S96 femte resumen, orkestreraren): KORTETS PREMISS HÅLLER INTE LÄNGRE — fixen är redan landad. Commit 39e55a58 'fix(ci): [S97] nattvakten falsklarmar pa lankkontroll-roda natter' åtgärdade detta i S97 (2026-08-04), tre dagar efter att kortet skapades (2026-08-01 13:08). Kortet är alltså en bokförings-rest, inte öppet arbete.
+AC-AVSTÄMNING MOT S97-FIXEN 2026-08-05 (orkestreraren). Kortet är NÄSTAN klart av arbete som redan är landat — men inte helt, och stängs därför INTE.
 
-Mätt av två oberoende källor i samma pass: orkestrerarens git-log-kontroll mot .github/workflows/nightly-watchdog.yml, samt en bygg-agent som spawnats på kortet och som självständigt rapporterade 'the file already appears to contain the fix described in the card' innan den stoppades.
+BELAGDA av commit 39e55a58 (S97, 2026-08-04), bockade:
+- AC #1 ✅ Grundorsaken åtgärdad: vakten frågar nu vilka JOBB som var röda och bortser från dem som per konstruktion inte bär alarm-jobbet. Formvalet motiverat i commit-bodyn mot dedup-resonemanget, med fail-closed behållet ('vet inte' får aldrig bli tyst).
+- AC #2 ✅ Tvåsidigt bevis MOT VERKLIG HISTORIK, inte konstruerad rigg: filtret ger tom sträng för alla fyra falsklarms-körningarna och fångar de alarm-bärande röda jobben i båda de äkta. Sex röda nattkörningar granskade. Kommandon och utfall i sessionsdok S97 Del 4.
+- AC #4 ✅ Ärende #469 stängt 2026-08-04T16:33:12Z.
 
-ÅTGÄRD FÖRE NÄSTA PLOCKNING: verifiera att S97-fixen täcker samtliga AC i detta kort. Gör den det ska kortet stängas som Done med hänvisning till 39e55a58, INTE byggas om. Täcker den bara delvis ska kvarvarande AC skrivas om mot faktiskt tillstånd.
+EJ BELAGT, lämnas obockat:
+- AC #3 ❌ 'Bevis-läget simulate_missing fungerar efter ändringen, verifierat med en dispatch.' Ingången finns kvar i .github/workflows/nightly-watchdog.yml (rad 47, 78, 97, 187), men INGEN dispatch-verifiering efter ändringen är dokumenterad: sessionsdok S97 har NOLL träffar på 'simulate_missing', och commit-bodyn säger tvärtom uttryckligen 'ej konstruerad rigg'. Beviset kan alltså ha utförts utan att bokföras, eller inte alls — och den skillnaden går inte att avgöra ur artefakterna.
+
+ÅTERSTÅENDE ARBETE: en simulate_missing-dispatch mot vakten efter 39e55a58, med run-länk bokförd. Det är hela kortets rest. Kör den, bocka AC #3, stäng.
+
+Varför kortet inte stängs på tre av fyra: att bocka ett obelagt AC för att kortet 'känns klart' är precis den klass av påstående utan mekanism som ADR-083 vaktar mot.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
