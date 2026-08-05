@@ -26,7 +26,7 @@
   },
   "knownJobs": {
     "ci": {
-      "changed": "producerar bara klassnings-metadata (should_skip_tests/docs_changed/dedup_hit/ui_low_risk/acceptance_urval) — inget steg i jobbet validerar arbetsträdet självt. Konsumeras av suite-jobbets villkor, som denna policy medvetet ALLTID kör (superset, se `derivedJobs.ci`).",
+      "changed": "producerar klassnings-metadata (should_skip_tests/docs_changed/dedup_hit/ui_low_risk/acceptance_urval) — inget steg i jobbet validerar arbetsträdet självt. TASK-142 (2026-08-05, rättar tidigare rad här som sa 'denna policy medvetet ALLTID kör' — det var sant t.o.m. 2026-08-05 men aldrig gratis: mätt 641,0 s och 824,8 s i två fulla körningar på en ren docs-diff, för noll extra säkerhet): `should_skip_tests` KONSUMERAS numera av `diffClassification` för att härma den EXAKTA delmängd ci.yml:s `suite`-jobb självt skippar (se diffClassification-blocket nedan). `ui_low_risk`/`acceptance_local`/`docs_changed`/`dedup_hit` konsumeras INTE — verifierat i ci.yml 2026-08-05: de förra två saknar konsument på PR-ytan sedan A7:5/TASK-70.3 (endast `run_staging`, villkorslöst false), och att lägga till dem här vore att gissa en delmängd ingen gating faktiskt stödjer.",
       "lint": "DERIVERAS — se derivedJobs.ci.",
       "suite": "delegerar via `uses:` till ci-suite.yml. Har inga egna steg — de verkliga grindarna härleds direkt ur ci-suite.yml (se derivedJobs.ciSuite). Jobbets `with:`-block vaktas separat, se `suiteInputInvariants`.",
       "docs": "DERIVERAS — se derivedJobs.ci. Jobbets `if: docs_changed`-villkor ignoreras medvetet: att köra docs-grindarna på en icke-docs-PR är en säker superset, aldrig en lucka.",
@@ -44,6 +44,14 @@
   "derivedJobs": {
     "ci": ["lint", "docs"],
     "ciSuite": ["test-fast", "acceptance", "webblasarbeteende"]
+  },
+  "diffClassification": {
+    "_rationale": "TASK-142 (2026-08-05). Läser D0-globen (jobbet `changed`, steget `changed-files`, `with.files`) UR ci.yml vid varje körning — aldrig en handkopierad glob-lista, se filhuvudets § DIFF-KLASSNINGEN. En diff är DOCS_ONLY endast om VARENDA ändrad fil (committat mot baseRef ∪ arbetsträd ∪ otrackat) matchar D0-globen — allowlist, aldrig blocklist, samma invariant som D0/D1 i ci.yml självt. DOCS_ONLY skippar `derivedJobs.ciSuite` (test-fast/acceptance/webblasarbeteende) — EXAKT den delmängd ci.yml:s `suite`-jobb självt skippar när `should_skip_tests` är sant. Detta är fortsatt en superset i den riktning som skyddar: klassningen kan bara köra MER än CI (fail-closed → FULLT läge vid minsta osäkerhet), aldrig MINDRE. `gatedJobIfMustContain` vaktar STRUKTURELLT att kopplingen mellan `should_skip_tests` och `suite`-jobbets `if:`-villkor fortfarande finns (verifieraDiffKlassningskoppling, körs i preflighten). Drifar den fäller preflighten EXIT_PARITY_BROKEN, samma mönster som suiteInputInvariants — det är den ENDA situationen där diff-klassningsfel ger exit 2. Kan D0-globen inte hittas/tolkas, eller kan diffen inte beräknas (git-kommando misslyckas, ingen `origin/main` lokalt) faller klassningen i stället till FULLT läge — aldrig exit 2 för DEN sortens osäkerhet, aldrig en gissad delmängd.",
+    "job": "changed",
+    "stepId": "changed-files",
+    "baseRef": "origin/main",
+    "gatedJob": "suite",
+    "gatedJobIfMustContain": "needs.changed.outputs.should_skip_tests"
   },
   "suiteInputInvariants": [
     {

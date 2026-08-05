@@ -111,6 +111,21 @@ täckning. Default är alltid det fullständiga läget, med avsikt — ett
 snabbläge som råkar bli standard återskapar exakt det problem verktyget
 finns för att lösa.
 
+**"Fullständigt" är sedan TASK-142 (2026-08-05) villkorat av DIFFEN, inte
+längre alltid varenda jobb.** Skriptet läser samma D0-glob ur ci.yml:s
+`changed`-jobb som CI självt gör (`should_skip_tests`) och skippar
+test-fast/acceptance/webblasarbeteende när VARJE ändrad fil (mot
+`origin/main`, otrackade filer inräknade) matchar den — exakt den delmängd CI
+redan hade skippat. Mätt lokalt (denna maskin, ej CI-runner, ej isolerat från
+samtida last): en ren docs-diff gick från 1091,0 s till att skippa de tre
+tyngsta jobben helt; se PR:en för exakta tal. Minsta osäkerhet i klassningen
+(D0-globen kan inte tolkas, diffen kan inte beräknas) faller till samma
+fullständiga läge som innan — aldrig en gissad delmängd. `--full` tvingar
+fullständigt läge oavsett diff. Detta är en ANNAN axel än `--fast`: `--fast`
+är en medveten nedskalning (kostnad mot säkerhet); diff-klassningen är
+härledd direkt ur CI:s egen gating och kan bara köra MER än CI, aldrig
+mindre.
+
 **Varför raden står här och inte bara i skriptets egen header:** samma
 mönster som `seed:review` och `metrics:flake` nedan — fyra mätta instanser i
 EN session (2026-08-05, S97) visade att var och en som verifierar för hand

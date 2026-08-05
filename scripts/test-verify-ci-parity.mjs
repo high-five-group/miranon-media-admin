@@ -41,9 +41,12 @@ import { fileURLToPath } from 'node:url';
 import {
   extraheraGrupp,
   hittaOhanteradeUttryck,
+  klassificeraDiff,
   klassificeraSteg,
   losStegEnv,
   losUttryck,
+  parseraD0Glob,
+  verifieraDiffKlassningskoppling,
   verifieraJobbmangd,
   verifieraSuiteInputInvarianter,
 } from './verify-ci-parity.mjs';
@@ -214,6 +217,136 @@ console.log('\n▶ extraheraGrupp');
   report('T21b exakt 1 fel vid utebliven träff', 1, fel2.length);
 }
 
+console.log('\n▶ parseraD0Glob (TASK-142) — D0-globen härledd ur parsad ci.yml, aldrig duplicerad');
+{
+  const spec = { job: 'changed', stepId: 'changed-files' };
+
+  const parsedOk = {
+    jobs: {
+      changed: {
+        steps: [
+          { id: 'ovrigt-steg' },
+          { id: 'changed-files', with: { files: '**/*.md\ndocs/**\n\n!package.json\n' } },
+        ],
+      },
+    },
+  };
+  report(
+    'T22 giltigt with.files → monster extraherat (blankrader filtrerade), inget fel',
+    { monster: ['**/*.md', 'docs/**', '!package.json'], fel: null },
+    parseraD0Glob(parsedOk, spec),
+  );
+
+  report('T23 saknat jobb → monster null', null, parseraD0Glob({ jobs: {} }, spec).monster);
+  report(
+    'T23b saknat jobb → felmeddelandet nämner jobbnamnet',
+    true,
+    parseraD0Glob({ jobs: {} }, spec).fel.includes('"changed"'),
+  );
+
+  const parsedUtanSteg = { jobs: { changed: { steps: [{ id: 'ovrigt' }] } } };
+  report(
+    'T24 jobbet saknar steget med rätt id → monster null',
+    null,
+    parseraD0Glob(parsedUtanSteg, spec).monster,
+  );
+
+  const parsedTommaFiles = {
+    jobs: { changed: { steps: [{ id: 'changed-files', with: { files: '   \n  \n' } }] } },
+  };
+  report(
+    'T25 with.files finns men är tomt efter trim → monster null (fail-closed)',
+    null,
+    parseraD0Glob(parsedTommaFiles, spec).monster,
+  );
+
+  const parsedIckeStrang = {
+    jobs: { changed: { steps: [{ id: 'changed-files', with: { files: 123 } }] } },
+  };
+  report(
+    'T26 with.files är inte en sträng (strukturen har ändrats) → monster null',
+    null,
+    parseraD0Glob(parsedIckeStrang, spec).monster,
+  );
+}
+
+console.log('\n▶ klassificeraDiff (TASK-142) — allowlist, aldrig blocklist');
+{
+  const monster = ['**/*.md', 'docs/**', 'tasks/**', '!package.json'];
+  report(
+    'T27 alla ändrade filer matchar D0 → true (DOCS_ONLY)',
+    true,
+    klassificeraDiff(['docs/foo.md', 'tasks/bar.md'], monster),
+  );
+  report(
+    'T28 en fil matchar inte D0 → false (KOD) — allowlist-golvet',
+    false,
+    klassificeraDiff(['docs/foo.md', 'src/app.ts'], monster),
+  );
+  report(
+    'T29 en fil träffar en negerad post → false, trots att den även matchar en positiv',
+    false,
+    klassificeraDiff(['docs/foo.md', 'package.json'], monster),
+  );
+  report(
+    'T30 noll ändrade filer → false (mirrorar tj-actions only_changed: kräver minst 1 match, aldrig vakuöst sant)',
+    false,
+    klassificeraDiff([], monster),
+  );
+  report(
+    'T31 dot:false — .claude/x.md matchar INTE **/*.md (samma regel som ci.yml:s egen D0-lista)',
+    false,
+    klassificeraDiff(['.claude/x.md'], ['**/*.md']),
+  );
+  report(
+    'T31b men matchar en post som själv börjar med samma dot-prefix',
+    true,
+    klassificeraDiff(['.claude/x.md'], ['.claude/**']),
+  );
+}
+
+console.log(
+  '\n▶ verifieraDiffKlassningskoppling (TASK-142) — strukturell koppling, exit-2-mönstret',
+);
+{
+  const spec = {
+    gatedJob: 'suite',
+    gatedJobIfMustContain: 'needs.changed.outputs.should_skip_tests',
+  };
+
+  const parsedOk = {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal GH Actions-uttryck, inte ett mall-literal-misstag.
+    jobs: { suite: { if: "${{ needs.changed.outputs.should_skip_tests != 'true' }}" } },
+  };
+  report(
+    'T32 if-villkoret innehåller substrängen → 0 fel',
+    0,
+    verifieraDiffKlassningskoppling(parsedOk, spec).length,
+  );
+
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: literal GH Actions-uttryck, inte ett mall-literal-misstag.
+  const parsedDrift = { jobs: { suite: { if: "${{ github.event_name == 'push' }}" } } };
+  report(
+    'T33 if-villkoret har drifat från should_skip_tests → 1 fel',
+    1,
+    verifieraDiffKlassningskoppling(parsedDrift, spec).length,
+  );
+
+  const parsedSaknatIf = { jobs: { suite: {} } };
+  report(
+    'T34 jobbet saknar if: helt → 1 fel (fail-closed)',
+    1,
+    verifieraDiffKlassningskoppling(parsedSaknatIf, spec).length,
+  );
+
+  const parsedSaknatJobb = { jobs: {} };
+  report(
+    'T35 jobbet finns inte alls → 1 fel',
+    1,
+    verifieraDiffKlassningskoppling(parsedSaknatJobb, spec).length,
+  );
+}
+
 /* ── 2. Levande regression mot det riktiga repot ────────────────────── */
 
 console.log('\n▶ Integration — --list mot det RIKTIGA repots ci.yml/ci-suite.yml');
@@ -223,16 +356,14 @@ console.log('\n▶ Integration — --list mot det RIKTIGA repots ci.yml/ci-suite
     encoding: 'utf8',
   });
   report(
-    'T22 --list mot verkliga workflow-filerna → exit 0 (policyn matchar verkligheten just nu)',
+    'T36 --list mot verkliga workflow-filerna → exit 0 (policyn matchar verkligheten just nu)',
     0,
     res.status,
   );
   report(
-    'T23 preflight-OK-raden skrevs ut',
+    'T37 preflight-OK-raden skrevs ut',
     true,
-    res.stdout.includes(
-      'Paritets-preflight: jobbmängden + suite-input-invarianterna matchar policyn',
-    ),
+    res.stdout.includes('Paritets-preflight: jobbmängden + suite-input-invarianterna'),
   );
 }
 
@@ -359,6 +490,219 @@ console.log('\n▶ Tvåsidigt bevis — CLI:t stoppar (EXIT_PARITY_BROKEN) på t
     );
   } finally {
     rmSync(r3dir, { recursive: true, force: true });
+  }
+}
+
+/* ── 4. Diff-klassning (TASK-142) — tvåsidigt bevis i en ÄKTA git-sandlåda ──
+ *
+ * Per ADR-071 rött-först: båda riktningarna måste bevisas, inte bara att
+ * skriptet är grönt i dag. `--list` kör INGET grind-arbete (main() returnerar
+ * innan gate-loopen) — det gör dessa scenarier körbara på sekunder i stället
+ * för att vänta på en äkta Acceptance-svit, samtidigt som de bevisar EXAKT
+ * den mekanism (planbygget + hoppaJobbLabels) som avgör vad som skulle körts.
+ *
+ * Sandlådan är byggSandlada() (samma fyra-filers-kopia som R1–R3) + ett äkta
+ * git-repo ovanpå: en bas-commit, `refs/remotes/origin/main` pekad dit (utan
+ * nätverk — update-ref, inte fetch), och en `.gitignore` som utesluter
+ * node_modules (symlänkad, inte kopierad — annars listar `git ls-files
+ * --others` tusentals filer under den och varje scenario blir KOD).
+ */
+
+function byggGitSandlada() {
+  const dir = byggSandlada();
+  writeFileSync(join(dir, '.gitignore'), 'node_modules/\n');
+  const kor = (args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+  kor(['init', '-q']);
+  kor(['config', 'user.email', 'test@example.com']);
+  kor(['config', 'user.name', 'Test']);
+  kor(['add', '-A']);
+  kor(['commit', '-q', '-m', 'bas']);
+  const bas = kor(['rev-parse', 'HEAD']).stdout.trim();
+  assert.ok(bas.length === 40, 'bas-commiten måste ge en fullständig SHA');
+  kor(['update-ref', 'refs/remotes/origin/main', bas]);
+  return dir;
+}
+
+function skrivFil(dir, relPath, innehall) {
+  const abs = join(dir, relPath);
+  mkdirSync(dirname(abs), { recursive: true });
+  writeFileSync(abs, innehall);
+}
+
+function gitCommitaAllt(dir, meddelande) {
+  spawnSync('git', ['add', '-A'], { cwd: dir });
+  const res = spawnSync('git', ['commit', '-q', '-m', meddelande], { cwd: dir });
+  assert.equal(res.status, 0, `commit "${meddelande}" måste lyckas i sandlådan`);
+}
+
+function korListaISandlada(dir, extraArgs = []) {
+  return spawnSync('node', ['scripts/verify-ci-parity.mjs', '--list', ...extraArgs], {
+    cwd: dir,
+    encoding: 'utf8',
+  });
+}
+
+console.log('\n▶ Diff-klassning — tvåsidigt bevis i äkta git-sandlåda (--list)');
+{
+  // D1 — REN DOCS-DIFF, OTRACKAD FIL. Bevisar både DOCS_ONLY-vägen och
+  // beviskravet "otrackade filer måste räknas med": filen görs ALDRIG
+  // `git add`-ad eller committad.
+  const d1 = byggGitSandlada();
+  try {
+    skrivFil(d1, 'tasks/foo.md', '# docs\n');
+    // `git ls-files --others` (vad klassningen faktiskt använder) listar hela
+    // filsökvägen; `git status --porcelain` hade kollapsat till "?? tasks/"
+    // för en helt otrackad katalog — fel verktyg att bevisa MED, inte ett fel
+    // i klassningen. Se debug-körningen som föregick denna rättning.
+    const otrackat = spawnSync('git', ['ls-files', '--others', '--exclude-standard'], {
+      cwd: d1,
+      encoding: 'utf8',
+    });
+    assert.ok(otrackat.stdout.includes('tasks/foo.md'), 'filen måste vara OTRACKAD i sandlådan');
+    const res = korListaISandlada(d1);
+    report('D1 docs-only (helt otrackad fil) → exit 0', 0, res.status);
+    report(
+      'D1b klassas DOCS_ONLY',
+      true,
+      res.stdout.includes('═══ Diff-klassning: ✅ DOCS_ONLY ═══'),
+    );
+    report(
+      'D1c minst ett ciSuite-steg taggas [docs-only-diff (hoppas)]',
+      true,
+      res.stdout.includes('[docs-only-diff (hoppas)]'),
+    );
+    report(
+      'D1d ci.yml :: lint HOPPAS INTE (lint är alltid-på i CI, diff-klassningen rör den aldrig)',
+      false,
+      /ci\.yml :: lint {2}— HOPPAS/.test(res.stdout),
+    );
+  } finally {
+    rmSync(d1, { recursive: true, force: true });
+  }
+
+  // D2 — KOD-DIFF (committad).
+  const d2 = byggGitSandlada();
+  try {
+    skrivFil(d2, 'src/app.ts', 'export const x = 1;\n');
+    gitCommitaAllt(d2, 'kod');
+    const res = korListaISandlada(d2);
+    report('D2 kod-diff → exit 0', 0, res.status);
+    report('D2b klassas KOD', true, res.stdout.includes('═══ Diff-klassning: ▶ KOD ═══'));
+    report(
+      'D2c inget steg hoppas p.g.a. docs-only-diff',
+      false,
+      res.stdout.includes('docs-only-diff'),
+    );
+  } finally {
+    rmSync(d2, { recursive: true, force: true });
+  }
+
+  // D3 — BLANDAD DIFF (docs + kod, samma commit). Allowlist-golvet: en enda
+  // icke-D0-fil ska falla HELA diffen till KOD, exakt som D0/D1 i ci.yml.
+  const d3 = byggGitSandlada();
+  try {
+    skrivFil(d3, 'tasks/foo.md', '# docs\n');
+    skrivFil(d3, 'src/app.ts', 'export const x = 1;\n');
+    gitCommitaAllt(d3, 'blandat');
+    const res = korListaISandlada(d3);
+    report('D3 blandad diff → exit 0', 0, res.status);
+    report(
+      'D3b klassas KOD, INTE DOCS_ONLY (allowlist, aldrig blocklist)',
+      true,
+      res.stdout.includes('═══ Diff-klassning: ▶ KOD ═══'),
+    );
+    report('D3c inget steg hoppas', false, res.stdout.includes('docs-only-diff'));
+  } finally {
+    rmSync(d3, { recursive: true, force: true });
+  }
+
+  // D4 — --full TVINGAR fullständigt läge trots en genuin docs-only-diff.
+  const d4 = byggGitSandlada();
+  try {
+    skrivFil(d4, 'tasks/foo.md', '# docs\n');
+    gitCommitaAllt(d4, 'docs');
+    const res = korListaISandlada(d4, ['--full']);
+    report('D4 --full på docs-only-diff → exit 0', 0, res.status);
+    report(
+      'D4b klassas FULL (tvingad via --full), diff-analysen körs inte',
+      true,
+      res.stdout.includes('FULL (tvingad via --full)'),
+    );
+    report(
+      'D4c inget steg hoppas trots docs-only-diffen',
+      false,
+      res.stdout.includes('docs-only-diff'),
+    );
+  } finally {
+    rmSync(d4, { recursive: true, force: true });
+  }
+
+  // D5 — OLÄSBAR D0-STRUKTUR (steg-id:t ändrat). Måste falla till FULLT läge
+  // — INTE exit 2, det är verifieraDiffKlassningskoppling (D6) som äger det.
+  const d5 = byggGitSandlada();
+  try {
+    const ciPath = join(d5, '.github', 'workflows', 'ci.yml');
+    const original = readFileSync(ciPath, 'utf-8');
+    assert.ok(
+      original.includes('id: changed-files\n'),
+      'fixturen förväntas ha steg-id:t att mutera',
+    );
+    const muterad = original.replace('id: changed-files\n', 'id: changed-files-annat-namn\n');
+    assert.notEqual(muterad, original, 'mutationen måste faktiskt ha ändrat filen');
+    writeFileSync(ciPath, muterad);
+    gitCommitaAllt(d5, 'mutera D0-steg-id');
+    skrivFil(d5, 'tasks/foo.md', '# docs\n'); // hade klassats DOCS_ONLY om D0-globen hittats
+    const res = korListaISandlada(d5);
+    report('D5 oläsbar D0-struktur → exit 0 (fail-closed, INTE exit 2)', 0, res.status);
+    report('D5b klassas FULL (fallback)', true, res.stdout.includes('FULL (fallback)'));
+    report(
+      'D5c ingen gissad delmängd — inget steg hoppas trots att diffen ÄR docs-only',
+      false,
+      res.stdout.includes('docs-only-diff'),
+    );
+  } finally {
+    rmSync(d5, { recursive: true, force: true });
+  }
+
+  // D6 — STRUKTURELL KOPPLING TRASIG: suite-jobbets if: nämner inte längre
+  // should_skip_tests. Detta ÄR paritets-preflighten (samma mönster som
+  // R1–R3) → EXIT_PARITY_BROKEN, INGET gate-arbete körs.
+  const d6 = byggGitSandlada();
+  try {
+    const ciPath = join(d6, '.github', 'workflows', 'ci.yml');
+    const original = readFileSync(ciPath, 'utf-8');
+    const nuvarande = `if: \${{ needs.changed.outputs.should_skip_tests != 'true' && needs.changed.outputs.dedup_hit != 'true' }}`;
+    assert.ok(original.includes(nuvarande), 'fixturen förväntas ha den exakta if-raden i ci.yml');
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal GH Actions-uttryck, inte ett mall-literal-misstag.
+    const muterad = original.replace(nuvarande, "if: ${{ github.event_name == 'pull_request' }}");
+    assert.notEqual(muterad, original, 'mutationen måste faktiskt ha ändrat filen');
+    writeFileSync(ciPath, muterad);
+    gitCommitaAllt(d6, 'mutera suite-jobbets if-villkor');
+    const res = korListaISandlada(d6);
+    report('D6 suite-jobbets if: har drifat från should_skip_tests → exit 2', 2, res.status);
+    report(
+      'D6b felmeddelandet nämner should_skip_tests',
+      true,
+      res.stderr.includes('should_skip_tests'),
+    );
+    report(
+      'D6c felmeddelandet nämner suite-jobbet (så felet går att lokalisera)',
+      true,
+      res.stderr.includes('"suite"'),
+    );
+  } finally {
+    rmSync(d6, { recursive: true, force: true });
+  }
+
+  // D7 — INGA ÄNDRINGAR ALLS mot origin/main. Säkert default: FULLT läge,
+  // aldrig ett vakuöst DOCS_ONLY.
+  const d7 = byggGitSandlada();
+  try {
+    const res = korListaISandlada(d7);
+    report('D7 noll ändrade filer → exit 0', 0, res.status);
+    report('D7b klassas FULL (inga ändringar)', true, res.stdout.includes('FULL (inga ändringar)'));
+  } finally {
+    rmSync(d7, { recursive: true, force: true });
   }
 }
 
