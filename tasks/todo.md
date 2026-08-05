@@ -15,6 +15,29 @@
 
 ## Aktuellt fokus
 
+**Session 98 ⏸️ PAUSAD (2026-08-05, `lifecycle: paused`)** — **NATTGRINDEN
+FÄLLDE SIN EGEN SKAPELSE-COMMIT, OCH PARITETSGRINDEN OMKLASSADES.** 18 PR:er
+(`#756`–`#773`) + fyra hub-commits + plugin **1.28.4**. **Scopets tre poster
+betalda:** grind-fixen (`#757` — `git log --grep` prövar hela meddelandet, så
+grindens egen commit citerade `[S96]` i sin body och fällde S96 utan drift) ·
+kadensraden `L461`→`L469` (`#758`) · nattärende `#755` stängt med åtgärd.
+**Därutöver:** `T123` betald med provenance omverifierad mot `1.48.0` (`#760`)
+· `vol-06` roterad + `K97.1`–`K97.13` lyfta · UNIVERSAL-formens sjätte variant
+fixad · `TASK-142` diff-klassning (`#762`) · **`L469`** mintad.
+**PARITETSGRINDEN OMKLASSAD TILL DIAGNOSVERKTYG** (`#772`): 910,7 s lokal
+kostnad mot ~12 s förväntad besparing vid 3 % felfrekvens — ~30× fel; den
+regel Code själv föreslog mättes 2,3–2,9× dyrare än vad som faktiskt gjordes.
+Rutinraden riven, `ADR-036` amenderad två gånger. **Marcus-fångster: tre** —
+paritetens kostnad på docs, att pre-push redan var avgjort i `ADR-036`
+2026-05-27, och att sex markörformer är symptomet. **AGENT-PARKERING: tre
+agenter fastnade** (`L340`-klassen, känd i tio dagar); `bygg-agent.md` +
+`research-pass.md` rättade, men **fixen är instruktion, inte mekanism, och
+mätningen är konfunderad**. **HANDOFF + fyra beslutsposter: sessionsdok S98
+§ PAUSLÄGE.** Numrering att re-verifiera: 99/096/L470/T124/task-143/f47.
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 97 ✅ AVSLUTAD (2026-08-05, `lifecycle: closed` efter Marcus
 coverage-kvittens)** — **SEX MEKANISMER BYGGDA I KOD, TVÅ ROTORSAKER FIXADE.**
 Sessionen spände över **fyra pauser**; fjärde resumen var den tyngsta (44
