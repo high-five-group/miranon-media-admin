@@ -86,7 +86,9 @@
 #   imperativ text i additionalContext (kan trigga injektionsförsvaret) —
 #   därför påståenden, aldrig uppmaningar. Samma hållning som
 #   session-facts.sh. Ingen lapp att rapportera ⇒ helt tyst, ingen
-#   additionalContext alls. --slapp-läge — inget hook-JSON-kontrakt (det är
+#   additionalContext alls. BÅDA rapportvägarna (stale och normal) bär
+#   samma handlingsregel ur EN delad sträng — se § EN REGEL, EN STRÄNG
+#   längst ned för incidenten som gjorde det till ett krav. --slapp-läge — inget hook-JSON-kontrakt (det är
 #   en manuellt/skill-anropad CLI, inte en hook-output): människoläsbar text
 #   på stderr, exit 0 vid släpp eller inget-att-göra, exit 1 om lappen är
 #   främmande.
@@ -194,8 +196,41 @@ AGARE_ISO="$(jq -r '.satt_vid // "okänt"' "${MARKOR}" 2>/dev/null)"
 ALDER_TIMMAR=$(( (NU_EPOCH - AGARE_EPOCH) / 3600 ))
 STALE_GRANS="${KATALOG_STALE_TIMMAR:-1}"
 
+# ═══ EN REGEL, EN STRÄNG (S93, 2026-08-05) ═══
+#
+#   Handlingsregeln nedan delas av BÅDA rapportvägarna och får aldrig
+#   dupliceras isär igen. Skälet är en mätt incident, inte en princip:
+#
+#   Skriptet bar två fakta-anrop — stale-grenen och normalgrenen. Bara
+#   normalgrenen bar regeln "den senare tar en worktree"; stale-grenen
+#   nämnde `rm` som enda handling. En resume-session 2026-08-05 mötte en
+#   LEVANDE ägarlapp som råkade vara >1 h gammal, fick alltså stale-grenen,
+#   och läste den som en öppen fråga: "är ägaren död — ska jag rm:a?" Den
+#   STOPPADE och eskalerade till Marcus i stället för att ta en worktree och
+#   fortsätta — precis tvärtemot vad mekanismen är byggd för.
+#
+#   Regeln fanns hela tiden — i deny-texten i
+#   scripts/deny-frammande-huvudkatalog.sh (§ ÄGARSKAP-TAGANDE, "ARBETA I DIN
+#   EGEN WORKTREE I STÄLLET … eskalera det INTE till Marcus"). Men den
+#   levereras bara vid ett FAKTISKT nekat skrivförsök. En session som läser
+#   SessionStart-rapporten och drar sin slutsats i FÖRVÄG når aldrig den
+#   ytan. Följden är kontraintuitiv och värd att minnas: ju FÖRSIKTIGARE
+#   sessionen är — ju mindre den provocerar fram en deny — desto säkrare
+#   missar den instruktionen. Försiktighet kringgick den enda regelbäraren.
+#
+#   Därför bär ankomst-ytan (denna rapport) nu samma regel som
+#   skrivnings-ytan (deny-texten), och delar den mellan sina grenar så att
+#   en framtida ändring av den ena inte kan tappa den andra.
+#
+#   PÅSTÅENDEN, ALDRIG IMPERATIV: additionalContext får inte bära uppmaningar
+#   (se OUTPUT i skripthuvudet — förstaparten varnar för injektionsförsvaret).
+#   Deny-texten får vara imperativ eftersom den är `permissionDecisionReason`,
+#   ett annat fält med ett annat kontrakt. Formuleringen nedan är därför
+#   deklarativ hela vägen, med samma sakinnehåll.
+HANDLINGSREGEL="Regeln vid en levande ägare är ADR-090 beslut 2: den först startade sessionen behåller huvudträdet, den senare arbetar i en egen worktree. Worktree är alltså den normala vägen framåt här — ett agent-beslut med all information redan tillgänglig, inte en eskalering till Marcus och inte ett skäl att pausa arbetet. Samma regel levereras av scripts/deny-frammande-huvudkatalog.sh vid ett faktiskt nekat skrivförsök; den står också här, så att en session som läser denna rapport slipper provocera fram en deny för att få veta den. Ett medvetet åsidosättande av en LEVANDE ägare (rm ${MARKOR}) är Marcus manuella val, inte agentens fråga."
+
 if (( AGARE_EPOCH > 0 && ALDER_TIMMAR >= STALE_GRANS )); then
-    fakta "Huvudkatalogen ${HUVUDKATALOG} bär en katalogägarskaps-lapp från en annan session (satt ${AGARE_ISO}, ${ALDER_TIMMAR} timmar sedan, över stale-tröskeln ${STALE_GRANS} h). Lappen är kvar och orörd — den prövas mot processens liveness (inte bara ålder) först vid nästa git-skrivning i huvudkatalogen. Rensningskommandot, om du vet att den är död: rm ${MARKOR}"
+    fakta "Huvudkatalogen ${HUVUDKATALOG} bär en katalogägarskaps-lapp från en annan session (satt ${AGARE_ISO}, ${ALDER_TIMMAR} timmar sedan, över stale-tröskeln ${STALE_GRANS} h). Åldern ensam avgör INGENTING: lappen är kvar och orörd, och prövas mot processens liveness (inte bara ålder) först vid nästa git-skrivning i huvudkatalogen. En gammal lapp kan mycket väl ha en levande ägare. ${HANDLINGSREGEL}"
 fi
 
-fakta "Huvudkatalogen ${HUVUDKATALOG} bär en katalogägarskaps-lapp satt av en annan session (${AGARE_ISO}). Denna session har INTE tagit ägarskapet — det sker (om alls) automatiskt vid dess första git-skrivning i huvudkatalogen, och bara om den andra sessionens process visar sig död. ADR-090 beslut 2: den först startade sessionen behåller huvudträdet, den senare tar en worktree."
+fakta "Huvudkatalogen ${HUVUDKATALOG} bär en katalogägarskaps-lapp satt av en annan session (${AGARE_ISO}). Denna session har INTE tagit ägarskapet — det sker (om alls) automatiskt vid dess första git-skrivning i huvudkatalogen, och bara om den andra sessionens process visar sig död. ${HANDLINGSREGEL}"
