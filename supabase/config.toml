@@ -87,9 +87,12 @@ verify_jwt = true
 #   2. DNS-poster (MX/SPF/DKIM för send.miranon.dev, DMARC på miranon.dev)
 #      — lever i GoDaddy, utanför Supabase/repo-domänen helt. Exakt form:
 #      T46-kartans Grind 0-checklista.
-#   3. Återställnings-sidans redirect-URL — TASK-127.7 (glömt lösenord) är
-#      obyggd och har inte valt sin route ännu. Läggs till i
-#      additional_redirect_urls när den skivan landar.
+#   3. ✅ LÖST (TASK-127.7): återställnings-sidans route är `/nytt-losenord`
+#      (begär-sidan är `/glomt-losenord`, kräver ingen egen redirect-URL —
+#      Supabase navigerar dit aldrig, bara TILL den efter mail-länken).
+#      Tillagd i additional_redirect_urls nedan. `supabase config push`
+#      krävs fortfarande innan värdet är skarpt på staging/prod — se
+#      slutrapporten för denna skiva.
 #
 # ✅ AVGJORD 2026-08-05 (S96) — frågan nedan stod öppen tills en skarp push
 # kördes. Den är nu körd, och hypotesen BEKRÄFTADES: `supabase config push` ÄR
@@ -122,9 +125,17 @@ verify_jwt = true
 # Lägg aldrig till ett värde i dashboarden utan att också låsa det här.
 # Mätunderlag: T46 § Grind 0 punkt 6:s säkerhetsnot (som denna mätning belade).
 
-# Redirect-målet för Användarinbjudans accept-sida, fixerad av ADR-092
-# (`/valkommen`).
-additional_redirect_urls = ["https://admin.miranon.dev/valkommen"]
+# Redirect-målet för Användarinbjudans accept-sida (`/valkommen`, ADR-092)
+# samt glömt-lösenord-flödets landningssida (`/nytt-losenord`, TASK-127.7) —
+# dit `resetPasswordForEmail`s `redirectTo` pekar klientsidan
+# (src/routes/glomt-losenord.tsx). Utan denna post faller Supabase tyst
+# tillbaka på bar `site_url` (ingen path), och länken i mailet hade landat
+# fel — GoTrue ger inget fel, den ignorerar bara redirectTo (verifierat mot
+# Supabase-dokumentationen, se den routens filhuvud).
+additional_redirect_urls = [
+  "https://admin.miranon.dev/valkommen",
+  "https://admin.miranon.dev/nytt-losenord",
+]
 
 # Default-adressen Supabase Auth sätter i ALLA mail som saknar explicit
 # redirect. CLI-defaulten är `http://127.0.0.1:3000` och både staging och prod
