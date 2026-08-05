@@ -3,10 +3,10 @@ id: TASK-139
 title: >-
   Mekanisera work-batch:s claims-täckning + merge-tree-grind — T119 (d): prosa i
   skillen blir körbar kod
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-04 22:20'
-updated_date: '2026-08-04 23:14'
+updated_date: '2026-08-05 01:19'
 labels:
   - ready-for-agent
 dependencies: []
@@ -221,12 +221,16 @@ explicit AC").
 - [x] #9 CI-inwiring av VARKEN skripten eller deras testsviter görs av detta kort — bokfört explicit som öppen fråga (samma mönster som TASK-137), inte tyst utelämnad; ADR-073 rörs inte (texten citeras, flyttas inte)
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat i PR #745 (main 9b2a08b1). Två mekanismer i kod: scripts/check-claims-tackning.sh + scripts/check-merge-tree.sh, båda config-drivna (.claims-tackning-policy.conf, .merge-tree-mandat-policy.conf) med universell skriptlogik per hub-konstitutionens Lesson #6. Tvåsidigt bevis per grind, inkl. mutationstest som falsifierade testsviterna själva (9/9 -> 8/9 resp. 7/9 när skydden togs bort, återställda och omverifierade). shellcheck --severity=style --enable=all EXIT=0. ci.yml:s befintliga shellcheck-strict-lista utökad 15->17 med de två nya conf-filerna (flaggat öppet som gränsdragning; ingen ny CI-check införd).
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

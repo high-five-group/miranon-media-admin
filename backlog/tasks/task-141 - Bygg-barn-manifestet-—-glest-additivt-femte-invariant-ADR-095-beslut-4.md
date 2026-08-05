@@ -1,10 +1,10 @@
 ---
 id: TASK-141
 title: 'Bygg barn-manifestet — glest, additivt, femte invariant (ADR-095 beslut 4)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-04 22:54'
-updated_date: '2026-08-05 00:30'
+updated_date: '2026-08-05 01:19'
 labels:
   - ready-for-agent
 dependencies:
@@ -42,12 +42,16 @@ Den SEMANTISKA frågan "vad räknas som barn" är ÖPPEN och Marcus, inte byggar
 - [x] #7 shellcheck 0; check-thread-index.sh grön mot nuvarande register
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat i PR #750 (main 378ae781). barn-manifestet enligt ADR-095 beslut 4, Option C: tasks/threads/barn.md additivt och glest med NOLL datarader — mekanismen byggd, migreringen medvetet EJ gjord (den semantiska frågan vad som räknas som barn är Marcus beslut, öppet avgränsad i ADR-095). ASYMMETRISK relation: deklareras i EN riktning, invarianten skriver ingen fil alls så spegling är strukturellt omöjlig. Testsviten 17 -> 24 fall. Två fel i ADR-095 fångade och rapporterade i stället för att byggas mot: stale ordinaltal ('femte invariant' blev Inv 6 när TASK-140 landade först) och den tvetydiga frasen 'båda riktningar' som kunde ha lett till precis den spegling beslut 2 förbjuder — båda rättade i PR #751.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
