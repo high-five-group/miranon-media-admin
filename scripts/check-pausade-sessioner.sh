@@ -170,7 +170,34 @@ for fil in "${DOK[@]}"; do
     # --no-merges: paus-PR:ens EGEN merge-commit kommer per konstruktion efter
     # den dok-commit den innehåller, och skulle annars fälla varje korrekt
     # paus-landning. Mätt på S93 och S96, 2026-08-04.
-    EFTER="$(git log "${PAUS_SHA}..HEAD" --no-merges --grep="\[S${N}\]" --format='%H %ct' 2>/dev/null)"
+    #
+    # ═══ TAGGEN LÄSES UR SUBJECT-RADEN, INTE UR HELA MEDDELANDET ═══
+    #
+    # `git log --grep` prövar HELA commit-meddelandet, body inkluderad. Den
+    # formen fällde grinden på sin EGEN skapelse-commit vid dess första
+    # skarpa natt (run 30974653786, 2026-08-05): e1e7407d är taggad [S97] i
+    # subject, men bodyn beskriver felbilden grinden byggdes för och citerar
+    # "fem [S96]-taggade PR:er". Nattens enda fällning var alltså en
+    # självreferens — S96 hade ingen paus-drift.
+    #
+    # Felklassen är generell, inte en egendomlighet hos den commiten: varje
+    # commit som RESONERAR om en pausad session (en ADR, ett lesson-tillägg,
+    # en post-mortem) bär sessionens tagg i sin body utan att vara arbete i
+    # den sessionen. Prosa om ett fel får aldrig räknas som felet.
+    #
+    # `%s` är subject-raden och kommer sist i formatet, så `grep -F` kan bara
+    # matcha där — SHA och epoch-sekund innehåller inga hakparenteser. `cut`
+    # skalar av subjectet igen så `read -r sha ct` nedan behåller exakt två
+    # fält och karens-aritmetiken (NU_EPOCH - ct) räknar på ett rent heltal.
+    # Mätt i kastbart repo före ändringen: gamla formen 2 träffar (en falsk),
+    # nya formen 1 (den äkta), ct heltal i båda.
+    #
+    # `grep` returnerar 1 vid noll träffar. Det är NORMALFALLET (ingen drift)
+    # och får inte förväxlas med fel: skriptet kör `set -uo pipefail` men inte
+    # `set -e`, så tilldelningen fortsätter, och tomhets-prövningen på nästa
+    # rad är den som avgör.
+    EFTER="$(git log "${PAUS_SHA}..HEAD" --no-merges --format='%H %ct %s' 2>/dev/null \
+        | grep -F -- "[S${N}]" | cut -d' ' -f1,2)"
     [[ -n "${EFTER}" ]] || continue
 
     while read -r sha ct; do

@@ -169,6 +169,39 @@ git -C "${R}" add -A
 git -C "${R}" commit -q -m "feat(dev): [S97] en ANNAN sessions arbete"
 forvanta GRON "en annan sessions taggade arbete rör inte S96:s paus" "${R}"
 
+# REGRESSIONSFALLET för den falska positiv grinden fällde på under sin FÖRSTA
+# skarpa natt (run 30974653786, 2026-08-05). Fallet ovan prövar taggen i
+# subject; detta prövar taggen i BODYN — luckan som fanns emellan dem.
+#
+# Riggen återskapar e1e7407d bokstavligt: en [S97]-commit vars body citerar
+# "[S96]-taggade PR:er" när den beskriver felbilden. Med `--grep` (hela
+# meddelandet) fäller detta fall; med subject-matchning gör det inte det.
+# Grinden fällde alltså på sin egen skapelse-commit.
+#
+# Generaliseringen är poängen: varje commit som RESONERAR om en pausad
+# session — ADR, lesson, post-mortem — bär taggen i sin body utan att vara
+# arbete i den sessionen. Prosa om ett fel är inte felet.
+R="$(bygg_rigg tagg-endast-i-body)"
+skriv_pausat_dok "${R}" 96
+printf 'kod\n' >> "${R}/src/app.ts"
+git -C "${R}" add -A
+git -C "${R}" commit -q \
+    -m "feat(ci): [S97] sannings-avstamningar som natt-lager — T119 (b)" \
+    -m "S96 Del 8: sessionen stod paused medan fem [S96]-taggade PR:er landade i den."
+forvanta GRON "[S96] ENBART i bodyn av en [S97]-commit fäller inte" "${R}"
+
+# Motsidan av samma gräns: taggen i subject SKA fortfarande fälla även när
+# bodyn nämner en helt annan session. Utan detta fall kan matchningen
+# regressera till "leta aldrig efter taggen alls" och ändå se grön ut.
+R="$(bygg_rigg tagg-i-subject-annan-i-body)"
+skriv_pausat_dok "${R}" 96
+printf 'kod\n' >> "${R}/src/app.ts"
+git -C "${R}" add -A
+git -C "${R}" commit -q \
+    -m "feat(dev): [S96] akta arbete under pausen" \
+    -m "Bygger vidare på det [S94] lamnade efter sig."
+forvanta DRIFT "tagg i SUBJECT fäller, oavsett vad bodyn nämner" "${R}"
+
 R="$(bygg_rigg aktiv-session)"
 R2="${R}"
 mkdir -p "${R2}/tasks/sessions"
