@@ -104,10 +104,26 @@ test.describe('/nytt-losenord — formuläret (AC #3)', () => {
   test('lösenord under 8 tecken → vänligt felmeddelande, INGET nätverksanrop görs', async ({
     page,
   }) => {
+    // Matchningen går på PARSAD hostname + pathname, aldrig på substräng i den
+    // råa URL:en. `url.includes('pwnedpasswords.com')` fälls av CodeQL
+    // (js/incomplete-url-substring-sanitization, high) eftersom värden kan stå
+    // var som helst i en URL — `https://elak.example/?x=pwnedpasswords.com`
+    // matchar. Här är det visserligen en OBSERVATION och inte en grind, så
+    // sårbarhetsklassen gäller inte i sak; formen rättas ändå, eftersom ett
+    // exakt värdnamnstest är strikt mer precist och en undertryckt varning
+    // hade lärt nästa läsare fel mönster.
     const natverksanrop: string[] = [];
     page.on('request', (request) => {
       const url = request.url();
-      if (url.includes('pwnedpasswords.com') || url.includes('/auth/v1/user')) {
+      let parsad: URL;
+      try {
+        parsad = new URL(url);
+      } catch {
+        return; // ogiltig URL kan per definition inte vara något av målen
+      }
+      const arHibp = parsad.hostname === 'api.pwnedpasswords.com';
+      const arAuthUser = parsad.pathname === '/auth/v1/user';
+      if (arHibp || arAuthUser) {
         natverksanrop.push(url);
       }
     });
