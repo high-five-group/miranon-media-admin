@@ -1,10 +1,10 @@
 ---
 id: TASK-144
 title: Synka Supabase mail-mallar och ämnesrader staging → prod
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-05 15:27'
-updated_date: '2026-08-05 16:23'
+updated_date: '2026-08-05 16:46'
 labels:
   - ready-for-agent
 dependencies:
@@ -75,6 +75,22 @@ AC#3 — LÅSBART, redan låst: [auth.email.template.invite]/[recovery] fanns re
 
 Lokala grindar: typecheck/biome/build gröna (ingen appkod ändrad). test:api MEDVETET hoppat — api-staging-projektet slår mot samma levande staging-Supabase som TASK-127.9:s parallella e2e-körning använder just nu; en kollision där ger falska signaler i båda riktningarna utan att verifiera något jag ändrat (noll kodändringar). CI:s api-staging-jobb kör bakom den globala staging-tests-mutexen och är rätt plats för det.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGD 2026-08-05 (S96 femte resumen) efter CI-verifiering av PR #805 (merge-commit a2aa4762), grön per jobb.
+
+LEVERERAT: prods mailer_subjects_invite/recovery och motsvarande templates_content matchar nu stagings svenska innehåll byte-för-byte. En inbjudan eller lösenordsåterställning från prod kommer inte längre på Supabase-standardengelska. Skrivningarna var riktade PATCH:ar — staging 1 fält av 242, prod 4 av 242 — med fullständig före/efter-diff i båda fallen.
+
+KORTETS EGEN PREMISS RÄTTAD AV BYGGET: kortet (jag skrev det) angav '~20 fält skiljer'. Faktisk mätning: 28. Viktigare är den kvalitativa rättelsen — av 13 malltyper är endast invite och recovery genuint svenska på staging. De övriga 11 är engelska på BÅDA miljöerna; skillnaden är bara vilken default-ögonblicksbild som frusit vid projektskapandet. De synkades därför INTE, eftersom det hade bytt en engelsk formulering mot en annan och låst fast dem utan värde för mottagaren.
+
+EXTRA FYND, ÅTGÄRDAT I SAMMA SVEP: stagings LIVE invite-mall låg kvar i före-TASK-143-läget, utan display_name/inviter_name. TASK-127.9:s rundtur hade alltså kunnat gå grön mot en mall som saknade precis det TASK-143 just byggt.
+
+AC #3: mallarna ÄR redan låsta via [auth.email.template.invite]/[recovery] i config.toml. Bevisat med en config push mot staging med 'n' på prompten ('Remote Auth config is up to date') plus en 242-fälts omkontroll som visade noll ändringar av anropet.
+
+VERIFIERINGENS GRÄNS, öppet bokförd: CI kan inte se miljötillstånd. 'Test suite / Staging (API + E2E)' stod SKIPPED på #805, och test:api kördes varken lokalt (medvetet avstått — samma levande staging som TASK-127.9:s parallella e2e, och mutexen finns bara i ci-suite.yml) eller i CI. Diffen bar ingen appkod, så testet hade inget att bevisa. Miljöändringen verifierades i stället av orkestreraren direkt mot Management API efter landningen: prods invite/recovery svenska, och stagings uri_allow_list, SMTP-fält och mailer_otp_exp bekräftat OFÖRÄNDRADE — det senare kritiskt eftersom TASK-127.9 beror på dem.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
