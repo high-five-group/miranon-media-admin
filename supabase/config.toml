@@ -126,6 +126,14 @@ additional_redirect_urls = ["https://admin.miranon.dev/valkommen"]
 # fixerad av ADR-091 (`admin.miranon.dev`).
 site_url = "https://admin.miranon.dev"
 
+# LÅS. Självregistrering STÄNGD — konton skapas enbart via Användarinbjudan
+# (ADR-092), som beskriver ett naivt signup-flöde som "en öppen
+# account-takeover-väg". Stod `true` i BÅDA miljöerna som en kvarglömd
+# CLI-/plattformsdefault, aldrig som ett val; stängd i prod 2026-08-05 på
+# Marcus beslut (S96). CLI-defaulten är `true`, så utan denna rad öppnar nästa
+# `config push` registreringen igen — tyst.
+enable_signup = false
+
 [auth.mfa.totp]
 # LÅS. Båda stod `true` på staging före första pushen; CLI-defaulten är
 # `false` för båda, så en push utan dessa rader STÄNGER AV TOTP-baserad
