@@ -392,10 +392,19 @@ fanns, och ingen konsumerade den raden när förutsättningen ändrades.
 
 **Strategiflaggan är BORTA ur formen sedan 2026-08-04 (S97).** Raden sade
 tidigare `gh pr merge --auto --merge`. Den formen avvisas nu: `gh` svarar
-`! The merge strategy for main is set by the merge queue` och exit 1 — kön
-äger strategin, och att också ange den är ett fel, inte en redundans. Mätt
-skarpt vid armeringen av `#705`; `--auto` ensamt gav EXIT=0 och korrekt
+`! The merge strategy for main is set by the merge queue` — kön äger
+strategin, och att också ange den är ett fel, inte en redundans. Mätt skarpt
+vid armeringen av `#705`; `--auto` ensamt gav EXIT=0 och korrekt
 `autoMergeRequest.mergeMethod: MERGE`.
+
+**Exitkoden beror på PR:ens läge — meddelandet gör det inte.** Raden sade
+till 2026-08-05 att formen ger `exit 1` rakt av. Mätt om samma dag mot en
+REDAN ARMERAD PR (`#796`): samma avvisningstext, men **exit 0**, och den
+befintliga armeringen lämnades orörd (`enabledAt` oförändrad). S97:s
+`exit 1` mättes vid armering av en oarmerad PR. Båda mätningarna står, och
+skillnaden är operativt viktig: **läs texten, inte bara exitkoden** — ett
+skript som bara kollar `$?` ser formen som lyckad i det ena fallet och
+misslyckad i det andra, fast den är fel i båda.
 
 **Den gamla regeln — *"armera aldrig två samtidigt"* — är UPPHÄVD.** Den var
 korrekt så länge sekvenseringen var en mänsklig hand. Den handen är nu

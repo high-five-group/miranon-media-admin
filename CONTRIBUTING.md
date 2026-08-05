@@ -259,7 +259,7 @@ ALLT når `main` via PR — direktpush avvisas av GitHub. PR:n kan mergas
 först när required-checken **"CI Passed or Skipped"** är grön på senaste
 SHA med up-to-date branch; force-push och deletion av `main` är
 blockerade. Bokförings-PR:er (docs/backlog/sessionsdok) landar via
-auto-merge (`gh pr merge --auto --merge`).
+auto-merge (`gh pr merge --auto`).
 
 PR till `main` triggar CI (`.github/workflows/ci.yml`). Utöver den
 mekaniska grinden gäller:
@@ -287,7 +287,7 @@ lokalt arbete.
 
 ### Landnings-ordningen — mekaniserad som merge queue sedan 2026-07-29
 
-**Behöver du bara veta vad du ska göra: armera med `gh pr merge --auto --merge`
+**Behöver du bara veta vad du ska göra: armera med `gh pr merge --auto`
 och låt kön välja ordningen.** Resten av sektionen förklarar vilket problem kön
 löser och vad som återstår för en människa; ingenting nedanför är en ordning du
 själv ska välja.
@@ -320,8 +320,10 @@ mätte tre sådana varv i S81 innan den parallella strömmen sinade.
 **MEKANISERAD 2026-07-29 (`TASK-70.1`, A7:3) — den manuella sekvenseringen
 nedan är UPPHÄVD.** `main-skydd` bär numera en `merge_queue`-regel. Kön bygger
 varje post mot `main` plus posterna före den, alltså exakt den sekvensering
-formerna A och B utförde för hand. **Armera med `gh pr merge --auto --merge`
-och sluta tänka på ordningen.**
+formerna A och B utförde för hand. **Armera med `gh pr merge --auto`
+och sluta tänka på ordningen — strategiflaggan ska INTE anges, kön äger
+strategin och `gh` avvisar formen med `! The merge strategy for main is set
+by the merge queue`.**
 
 Kö-parametrarna, med skälen:
 
@@ -393,7 +395,7 @@ lärdom i prosa skyddar bara den som råkar läsa den vid rätt tillfälle, och 
 var beviset för att den behövde en mekanism i stället för en läsare. Kön är den
 mekanismen. Kvar i prosa står bara aktörs-krocken ovan, och den står vid sidan
 av armerings-kommandot den gäller, i den sektion som redan äger
-`gh pr merge --auto --merge`.
+`gh pr merge --auto`.
 
 ### Revert-vägen — hur något som redan landat backas ut
 
@@ -415,10 +417,10 @@ redan är känd OCH fixen är mindre än reverten.
 |---|---|
 | **Marcus** | Beslutar ATT backa. Beslutet behöver inte vänta på att orsaken är utredd. |
 | **Bygg-agent** | Förbereder gren, revert-commit och PR — och **armerar aldrig mergen**, samma kontrakt som i § Landnings-ordningen: orkestreraren granskar diffen innan den köas. |
-| **Orkestreraren** | Granskar diffen och armerar mergen (`gh pr merge --auto --merge`, så PR:n landar av sig själv när CI blir grön), följer CI till grönt per jobb. Ordningen väljs inte här — den ägs av kön. |
+| **Orkestreraren** | Granskar diffen och armerar mergen (`gh pr merge --auto`, så PR:n landar av sig själv när CI blir grön), följer CI till grönt per jobb. Ordningen väljs inte här — den ägs av kön. |
 
 **Brådskan ändrar inte heller ordningen.** Revert-PR:n armeras som vilken
-landning som helst: `gh pr merge --auto --merge`, inga andra PR:er hålls
+landning som helst: `gh pr merge --auto`, inga andra PR:er hålls
 tillbaka, ingen gren uppdateras i efterhand. Det är samma mening som
 § Landnings-ordningen redan bär, och den gäller även när det brinner.
 
