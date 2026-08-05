@@ -15,6 +15,33 @@
 
 ## Aktuellt fokus
 
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-05, `lifecycle: active`)** — **APPSPÅRET
+ÅTER I GÅNG** efter två dygns paus. Resumen kördes i **egen worktree**
+(`s93-resume-2`) — huvudkatalogen bar S96:s ägarlapp med **bevisligen levande
+process**, alltså ADR-090 beslut 2 rakt av. **HELA NUMRERINGEN HADE DRIVIT
+UNDER PAUSEN** och samtliga fem axlar re-deriverades mot disk: ADR `090`→`095`
+· lesson `L443`→`L469` · tråd `T114?`→`T123` · kort `127`→`144` · `f47`
+bekräftad (handoffen bar den som hypotes). **Prototyp-läget verifierat, inte
+antaget:** konvergens-passet ligger kvar på `main` (`#667` merged 2026-08-03,
+`DeltagareHallplatsPrototyp.tsx` + `hallplats-steg-prototyp.ts`), dev-servern
+åter uppe på `5173` ur worktreen (symlinkad `node_modules`, HTTP 200 på både
+routen och båda modulerna), och granskningsfixturen `reco44UBx6GXcxwu5`
+**lever** i
+staging — 16 anmälda / 9 anmälningsavgifter / 3 slutbetalningar, utgår
+2026-08-16. **FYND doket inte bokförde:** ett tidigare S93-resume-försök samma
+dag fastnade på ägarlappen och eskalerade i stället för att ta worktree —
+rotorsaken landad som `#807` (handlingsregeln bodde bara på deny-vägen; nu
+inlinad i resume-skillen). **NÄSTA: Marcus iterationsvåg(or) på
+konvergens-prototypen → facit låses → `/to-prd` ×3 (eventsidans konsolidering ·
+bilage-fundamentet · åtgärds-sidan) → `/to-issues` → åtgärds-sidans
+divergens-pass → Roger-avstämningen (kvitto-gränsen) före kort 3:s
+kvitto-design.** **HANDOFF: sessionsdok S93 § Paushistorik.** Numrering
+re-verifierad 2026-08-05 mot `1d7c56e8`: 096/L470/T124/**task-145**/f47
+(S96:s rad sa `task-144` — `TASK-144` mintad och stängd sedan dess).
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 96 ▶️ ÅTERUPPTAGEN (2026-08-05, femte resumen, `lifecycle: active`)** —
 **APPEN FICK EN ADRESS: `https://admin.miranon.dev` ÄR LIVE.** T95:s hårda
 Grind 0 — *"det finns ingen frontend-deploy alls"* — är därmed falsifierad.
