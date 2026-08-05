@@ -71,11 +71,24 @@ import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 // `GET /admin/users?filter=<substräng>` (LIKE-matchning mot email/
 // full_name, verifierat mot GoTrue-källkoden internal/api/admin.go +
 // internal/models/user.go via context7). `findUserIdByEmailExact` nedan
-// anropar det lagret direkt (`fetch`, inte SDK:t) i stället för att anta ett
-// `perPage`-tak som tyst skulle sluta fungera vid tillräckligt många
-// staging-users. Filter-matchningen är en SUBSTRÄNG, så resultatet
-// EXAKT-filtreras klientsidan innan ett ID returneras — e-post är unikt i
-// auth.users, så efter exakt-filtrering finns högst en träff.
+// anropar det lagret direkt (`fetch`, inte SDK:t). Filter-matchningen är en
+// SUBSTRÄNG, så resultatet EXAKT-filtreras klientsidan innan ett ID
+// returneras — e-post är unikt i auth.users, så efter exakt-filtrering finns
+// högst en träff.
+//
+// SIDTAKET ÄR INTE BORTA — DET ÄR FAIL-LOUD (rättat 2026-08-05, S96:s
+// granskning av detta korts egen leverans). Anropet sätter `per_page=50`, och
+// den första formuleringen här påstod att det direkta REST-anropet undvek
+// "ett `perPage`-tak som tyst skulle sluta fungera". Det var fel: taket fanns
+// kvar i koden, och en trunkerad sida utan exakt träff hade gett ett tyst
+// `null` → `{deleted: false}` → en teardown som RAPPORTERAR framgång medan
+// användaren ligger kvar i staging. Sannolikheten är låg (filtret matchar hela
+// adressen inklusive UUID som substräng), men "låg sannolikhet" är inte samma
+// sak som "kan inte hända", och en kommentar får aldrig påstå en täckning
+// koden inte har. Funktionen KASTAR därför nu när sidan är full utan exakt
+// träff — samma fail-loud-hållning som `exact.length > 1` redan hade. Grenen
+// är strukturellt onåbar i praktiken och därför OTESTAD skarpt; det sägs här
+// i stället för att döljas.
 //
 // EN ADRESS SOM INTE FINNS (delete_user): EF:en svarar `{deleted: false}`
 // (200), INTE 404. Valt medvetet — `delete_user` är tänkt som en
@@ -86,15 +99,23 @@ import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 // "riv om den finns"-väg) att särskilja "redan borta" från "genuint fel" —
 // `{deleted: false}` gör den skillnaden explicit i svarskroppen i stället.
 //
-// ADR-026-NOT: `isAdminEmail` nedan är en TREDJE lokal dubblett (efter
-// create-admin-user och invite-user) av samma ~10-radersfunktion. Det korsar
-// ADR-026:s ≥3-användnings-tröskel för _shared-extraktion (se
-// invite-user/index.ts:s fil-header för samma resonemang vid 2 konsumenter).
-// Denna skiva duplicerar MEDVETET ändå — uppdraget bad uttryckligen om
-// "exakt invite-user-formen", och en _shared-extraktion hade rört
-// create-admin-user/index.ts och invite-user/index.ts, båda ORELATERADE
-// filer för detta kort. Flaggat i slutrapporten som ett öppet
-// uppföljnings-beslut, inte tyst nedprioriterat.
+// DUBBLETT-NOT (`isAdminEmail`): funktionen nedan är en TREDJE lokal kopia
+// (efter create-admin-user och invite-user) av samma ~10-radersfunktion.
+// Duplicerad MEDVETET — en `_shared`-extraktion hade rört
+// create-admin-user/index.ts och invite-user/index.ts, båda orelaterade filer
+// för detta kort.
+//
+// DENNA NOT SADE FÖRST att dupliceringen "korsar ADR-026:s ≥3-användnings-
+// tröskel för _shared-extraktion". Den tröskeln finns inte. ADR-026 sätter
+// ≥5 (rad 54) och gäller `parseList<T>`-helpers i `src/data/adapters/_shared/`
+// för runtime-validering vid datagräns (rad 83) — en annan yta än
+// `supabase/functions/_shared/`. Påståendet ärvdes ur invite-user/index.ts
+// rad 11/72/146, som i sin tur delar det med create-event-note och
+// create-registration; ingen ADR i repot sätter ≥3 för EF-lagret. Fyndet är
+// registrerat som `T124` (tasks/threads/README.md) — där ligger också frågan
+// om EF-lagrets tröskel ska mintas som eget beslut eller skrivas om till
+// "lokal konvention, ingen ADR". De fyra ärvande filerna rörs inte förrän
+// den formen är beslutad; denna fil rättas här eftersom den är S96:s egen.
 
 const VALID_ACTIONS = ['generate_link', 'delete_user'] as const;
 type Action = (typeof VALID_ACTIONS)[number];
@@ -134,21 +155,32 @@ function badRequest(message: string, corsHeaders: Record<string, string>): Respo
   });
 }
 
+// Sidstorlek för user-uppslaget. Namngiven konstant, inte ett inbakat tal i
+// URL:en — den läses tillbaka i trunkerings-vakten nedan, och två frikopplade
+// förekomster av samma tal är exakt hur en sådan vakt tyst slutar stämma.
+const LOOKUP_PER_PAGE = 50;
+
 /**
  * Slår upp user-ID för en EXAKT e-postadress via GoTrues `filter`-query-param
  * (se fil-header § KÄND KANT 2). `filter` är en substräng-matchning
  * (LIKE '%value%') mot email/full_name — resultatet filtreras därför alltid
  * till en exakt (case-insensitiv) e-post-match innan ett ID returneras.
- * `null` om ingen exakt träff. Kastar om fler än en exakt träff hittas
- * (strukturellt omöjligt — e-post är unikt i auth.users — men fail-loud
- * hellre än att tyst returnera fel användare).
+ * `null` om ingen exakt träff.
+ *
+ * Kastar i TVÅ lägen, båda fail-loud framför ett tyst felaktigt svar:
+ *   1. Fler än en exakt träff (strukturellt omöjligt — e-post är unikt i
+ *      auth.users — men hellre högljutt än fel användare).
+ *   2. Sidan är FULL utan exakt träff. Då kan svaret vara trunkerat, och
+ *      `null` ("finns inte") vore ett påstående underlaget inte bär — se
+ *      fil-header § SIDTAKET. En full sida MED exakt träff är däremot
+ *      entydig: e-post är unikt, så trunkeringen kan inte dölja en andra.
  */
 async function findUserIdByEmailExact(
   supabaseUrl: string,
   serviceRoleKey: string,
   email: string,
 ): Promise<string | null> {
-  const url = `${supabaseUrl}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=50`;
+  const url = `${supabaseUrl}/auth/v1/admin/users?filter=${encodeURIComponent(email)}&per_page=${LOOKUP_PER_PAGE}`;
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${serviceRoleKey}`,
@@ -163,7 +195,18 @@ async function findUserIdByEmailExact(
   }
 
   const body = (await res.json()) as { users?: Array<{ id: string; email?: string }> };
-  const exact = (body.users ?? []).filter((u) => u.email?.toLowerCase() === email);
+  const users = body.users ?? [];
+  const exact = users.filter((u) => u.email?.toLowerCase() === email);
+
+  if (exact.length === 0 && users.length >= LOOKUP_PER_PAGE) {
+    // Trunkerings-vakt (läge 2 ovan): substräng-filtret fyllde hela sidan
+    // utan att någon rad matchade exakt. Den exakta träffen KAN ligga på
+    // nästa sida. Att returnera null här hade gett `{deleted: false}` — en
+    // teardown som rapporterar framgång medan raden ligger kvar i staging.
+    throw new Error(
+      `test-invite-completion: user-lookup för email=${email} fyllde hela sidan (${LOOKUP_PER_PAGE} träffar) utan exakt match — resultatet kan vara trunkerat, vägrar svara "finns inte" på ett osäkert underlag`,
+    );
+  }
 
   if (exact.length > 1) {
     throw new Error(
