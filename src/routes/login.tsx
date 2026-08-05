@@ -1,9 +1,17 @@
 import * as Sentry from '@sentry/react';
 import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router';
-import { Loader2 } from 'lucide-react';
+import { Fingerprint, Loader2 } from 'lucide-react';
 import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { z } from 'zod';
 import { Button, Input, MessageBox } from '@/components/primitives';
+import { supabase } from '@/data/config/supabase-client';
+import {
+  harSettErbjudandeTidigare,
+  loggaInMedPasskey,
+  markeraErbjudandeSett,
+  probaPasskeyTillganglighet,
+  webblasarenStodjerPasskey,
+} from '@/lib/auth/passkey';
 import { useAuth } from '../auth/useAuth';
 
 // Zod v4-syntax: schema direkt i validateSearch (ingen zodValidator-adapter krävs).
@@ -88,6 +96,33 @@ export const Route = createFileRoute('/login')({
  * programmatiskt till felmeddelandet vid ett misslyckat försök ("Fokus
  * flyttas till första felet vid submit-fel") — samma
  * ref+tabIndex={-1}-mönster som `ManuellAnmalanForm`s bekräftelseläge.
+ *
+ * PASSKEY (TASK-127.8, ADR-093 beslut 2), TVÅ TILLÄGG UTÖVER FACITET:
+ *
+ * 1. "Logga in med passkey" — en sekundär knapp under lösenords-flödet,
+ *    synlig ENDAST när `webblasarenStodjerPasskey()` (klient-check, inget
+ *    nätverksanrop) är sann. Anropar `loggaInMedPasskey()` direkt — inget
+ *    probe krävs FÖRE försöket eftersom webbläsarens native WebAuthn-prompt
+ *    själv är den riktiga "finns det något att logga in med"-kontrollen.
+ *    Ett generiskt, eget felmeddelande (INTE samma text som
+ *    lösenords-felet, som specifikt nämner "e-postadress och lösenord") —
+ *    avslöjar aldrig VARFÖR (webbläsarstöd saknas, servern har
+ *    `passkey_disabled`, eller ingen matchande passkey), bara att
+ *    lösenordet fungerar. Ett AVBRUTET försök (användaren stängde
+ *    plattformens prompt) visar INGET fel — normalt utfall, se
+ *    `src/lib/auth/passkey.ts` § `PasskeyAtgardUtfall`.
+ * 2. EFTER lyckad lösenords-inloggning: om kontot inte redan sett
+ *    passkey-erbjudandet (`harSettErbjudandeTidigare`, en kontobunden
+ *    `user_metadata`-flagga — inte lokal, följer kontot mellan enheter) OCH
+ *    passkey faktiskt är tillgängligt just nu (`probaPasskeyTillganglighet`
+ *    — webbläsarstöd OCH ett friskt serversvar, VERIFIERAT AVSTÄNGT på
+ *    staging i skrivande stund, se samma modul), omdirigeras till
+ *    `/passkey` (egen erbjudande-yta) I STÄLLET FÖR direkt till
+ *    `search.redirect`. Har kontot redan en registrerad passkey markeras
+ *    flaggan tyst och inloggningen fortsätter direkt utan omväg. Är
+ *    passkey OTILLGÄNGLIGT sätts flaggan ALDRIG (samma degraderings-
+ *    princip som `/passkey`-routens egen guard) — kontot kan alltså
+ *    erbjudas igen den dag funktionen faktiskt aktiveras.
  */
 function LoginRoute() {
   const auth = useAuth();
@@ -101,6 +136,15 @@ function LoginRoute() {
   const [visaGlomtNotis, setVisaGlomtNotis] = useState(false);
   const felRef = useRef<HTMLDivElement>(null);
   const glomtNotisId = useId();
+
+  // Lazy initializer — ren klient-check (ingen `window`/`navigator`-läsning
+  // under SSR eftersom appen är rent CSR, men mönstret kostar inget och
+  // undviker en extra render/effect för något som aldrig ändras under
+  // sidans livstid).
+  const [passkeyKnappSynlig] = useState(() => webblasarenStodjerPasskey());
+  const [passkeyLaddar, setPasskeyLaddar] = useState(false);
+  const [passkeyMisslyckades, setPasskeyMisslyckades] = useState(false);
+  const passkeyFelRef = useRef<HTMLDivElement>(null);
 
   // Varm fond kant i kant (S96-facit) — satt på <html>, städas vid unmount så
   // appen aldrig ärver auth-fonden. Se src/styles/base.css rad ~100–164.
@@ -118,6 +162,32 @@ function LoginRoute() {
     if (misslyckades) felRef.current?.focus();
   }, [misslyckades]);
 
+  useEffect(() => {
+    if (passkeyMisslyckades) passkeyFelRef.current?.focus();
+  }, [passkeyMisslyckades]);
+
+  /** Efter lyckad lösenords-inloggning: avgör om kontot ska via
+   * passkey-erbjudandet (`/passkey`) INNAN det landar på `search.redirect`.
+   * Se komponentens topp-kommentar § PASSKEY punkt 2 för hela resonemanget. */
+  const routaEfterLyckadInloggning = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!harSettErbjudandeTidigare(session)) {
+      const probe = await probaPasskeyTillganglighet();
+      if (probe.webblasarstod && probe.servertillgangligt && !probe.harRedanPasskey) {
+        navigate({ to: '/passkey', search: { redirect: search.redirect } });
+        return;
+      }
+      if (probe.harRedanPasskey) {
+        await markeraErbjudandeSett();
+      }
+      // Otillgängligt (webbläsarstöd saknas ELLER servern nekar): sätt
+      // INGEN flagga — se passkey.ts § ERBJUDANDE_SETT_NYCKEL.
+    }
+    navigate({ to: search.redirect });
+  };
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -125,8 +195,8 @@ function LoginRoute() {
 
     try {
       await auth.login(email, password);
-      // router.invalidate() i InnerApp triggar beforeLoad-re-eval. Navigate till redirect-target.
-      navigate({ to: search.redirect });
+      // router.invalidate() i InnerApp triggar beforeLoad-re-eval.
+      await routaEfterLyckadInloggning();
     } catch (err) {
       // Supabase auth-errors är medvetet otydliga om "fel email" vs "fel lösenord"
       // (motverkar email-enumeration, ADR-093 §6.3.8). Generiskt felmeddelande (AC#2).
@@ -135,6 +205,23 @@ function LoginRoute() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePasskeyLogin = async () => {
+    setPasskeyLaddar(true);
+    setPasskeyMisslyckades(false);
+    const utfall = await loggaInMedPasskey();
+    if (utfall.ok) {
+      // En inloggning MED passkey innebär per definition att kontot redan
+      // har en — ingen omväg via erbjudandet, direkt till målet.
+      navigate({ to: search.redirect });
+      return;
+    }
+    setPasskeyLaddar(false);
+    // Avbrutet av användaren — normalt utfall, inget fel att visa (se
+    // src/lib/auth/passkey.ts § PasskeyAtgardUtfall).
+    if (utfall.anvandarenAvbrot) return;
+    setPasskeyMisslyckades(true);
   };
 
   return (
@@ -231,6 +318,54 @@ function LoginRoute() {
               'Logga in'
             )}
           </Button>
+
+          {passkeyKnappSynlig && (
+            <>
+              {/* Rent dekorativ avdelare — "eller" är visuell kontext för de
+                  två knapparna omkring, inte ett eget landmärke. Hela
+                  blocket döljs för skärmläsare (aria-hidden), knapparna
+                  runt om förblir ordinarie fokusstopp i tab-ordningen. */}
+              <div className="flex items-center gap-3" aria-hidden="true">
+                <div className="h-px flex-1 bg-border-light" />
+                <span className="text-caption text-text-muted">eller</span>
+                <div className="h-px flex-1 bg-border-light" />
+              </div>
+
+              {passkeyMisslyckades && (
+                <div ref={passkeyFelRef} tabIndex={-1} className="outline-none">
+                  <MessageBox
+                    intent="error"
+                    title="Kunde inte logga in med passkey"
+                    className="motion-safe:animate-mm-avsloj"
+                  >
+                    Använd lösenordet i stället, eller försök igen.
+                  </MessageBox>
+                </div>
+              )}
+
+              <Button
+                type="button"
+                intent="secondary"
+                size="lg"
+                isDisabled={isSubmitting || passkeyLaddar}
+                onPress={() => {
+                  void handlePasskeyLogin();
+                }}
+              >
+                {passkeyLaddar ? (
+                  <>
+                    <Loader2 aria-hidden="true" className="size-4 motion-safe:animate-spin" />
+                    Loggar in …
+                  </>
+                ) : (
+                  <>
+                    <Fingerprint aria-hidden="true" className="size-4" />
+                    Logga in med passkey
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </form>
       </div>
     </main>
