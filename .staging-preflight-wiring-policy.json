@@ -105,6 +105,10 @@
       {
         "sökväg": "scripts/test-check-staging-preflight-wiring.mjs",
         "skäl": "Vaktens egen testsvit. Skriver markör-bärande fixturfiler till en sandlåda i /tmp för att pröva upptäckten; öppnar ingen förbindelse."
+      },
+      {
+        "sökväg": "scripts/verify-ci-parity.mjs",
+        "skäl": "Nämner STAGING_AIRTABLE_TOKEN en gång i ett dokumentationsstycke — förklarar VARFÖR ci-suite.yml:s purge/test-staging-jobb medvetet UTESLUTS ur derivedJobs (de kräver staging-secrets som saknas lokalt). Skriptet härleder och kör aldrig purge/test-staging-jobbens run:-block; mekaniken som bevisar uteslutningen är verifieraSuiteInputInvarianter (körs vid varje anrop), inte denna kommentar. Ingen kodväg i filen läser process.env för denna nyckel eller gör ett Airtable-anrop."
       }
     ]
   }
