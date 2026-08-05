@@ -130,7 +130,9 @@ DoD kräver noll orelaterade filer i diffen.
 Öppna PR med `gh pr create`. **Armeringen ägs av uppdraget.** Säger uppdraget
 inget om armering: armera INTE auto-merge — orkestreraren granskar din diff
 och armerar i sitt svep. Lägger uppdraget armeringen hos dig:
-`gh pr merge --auto --merge`, därefter slutrapport direkt.
+`gh pr merge --auto` — **ingen strategiflagga**, kön äger strategin och `gh`
+avvisar formen med `! The merge strategy for main is set by the merge queue`.
+Därefter slutrapport direkt.
 
 Skälet för diff-granskningen är inte längre `BEHIND`. Kön bygger varje post mot
 `main` plus posterna före den, så mekaniska konflikter mellan parallella

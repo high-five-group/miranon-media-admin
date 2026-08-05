@@ -123,7 +123,7 @@
 #   ELLER en `failed_checks`-utsparkning som konsumerat sin armering — de
 #   två fallen är, per CLAUDE.md:s egen tabell, INTE urskiljbara ur statiskt
 #   API-svar. Skriptet FLAGGAR kandidaten (fälls) i stället för att gissa;
-#   disambigueringen (ett andra `gh pr merge --auto --merge`) är
+#   disambigueringen (ett andra `gh pr merge --auto`) är
 #   orkestrerarens steg, inte skriptets — att låta ett bakgrundsskript
 #   autonomt köa om en PR utan mänsklig granskning vore en ny, oprövad
 #   risk-yta ingen del av kortet efterfrågar.
@@ -423,7 +423,7 @@ sweep_once() {
                 say "heartbeat-svep: PARKERAD (undantagen) — PR #${nr} är ${mss} utan aktiv auto-merge-begäran, författare '${author}' i HEARTBEAT_EXEMPT_AUTHORS. Larmar inte som armerings-kandidat."
                 antal_undantagna=$(( antal_undantagna + 1 ))
             else
-                alarm "heartbeat-svep: ARMERINGS-KANDIDAT — PR #${nr} är ${mss} utan aktiv auto-merge-begäran. Kan vara ALDRIG ARMERAD eller UTSPARKAD med konsumerad armering (CLAUDE.md § Landning). Disambiguera: gh pr merge ${nr} --auto --merge"
+                alarm "heartbeat-svep: ARMERINGS-KANDIDAT — PR #${nr} är ${mss} utan aktiv auto-merge-begäran. Kan vara ALDRIG ARMERAD eller UTSPARKAD med konsumerad armering (CLAUDE.md § Landning). Disambiguera: gh pr merge ${nr} --auto"
                 antal_kandidat=$(( antal_kandidat + 1 ))
             fi
         fi
