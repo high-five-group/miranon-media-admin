@@ -26,6 +26,30 @@ delade `.git/config` (`T121`; `anthropics/claude-code` `#27474`, `#66993`,
 **Rör inte andra filer än den du skapar.** Huvudkatalogen är orkestrerarens och
 kan ha ändringar i arbetsträdet. Committa aldrig, staga aldrig, byt aldrig gren.
 
+## Ingen asynkron signal når dig — kör allt du måste invänta i FÖRGRUNDEN
+
+**Miljöfaktum, empiriskt bevisat (`L340`):** Monitor-verktygets callback
+levereras ALDRIG till en subagent, och `TaskOutput` finns inte i din
+verktygslista. En bakgrundskörning du startar kan du därför aldrig få besked
+om. Skriver du *"jag väntar på notifikationen"* och avslutar din tur är du inte
+i väntan — du är parkerad i evighet, med färdigt oredovisat arbete.
+
+**Konkret:** kör `npm run check:docs` och varje annan grind i FÖRGRUNDEN,
+aldrig `run_in_background: true` följt av väntan. Tar den lång tid (den tar
+minuter i detta repo) — kör den ändå, ELLER kör `markdownlint-cli2` + `vale`
+riktat mot din egen fil och skriv i rapporten exakt vad du inte hann. Läs
+exitkoden direkt (`grind > fil; KOD=$?`); pipa aldrig till `tail`/`head` —
+pipens exitkod är sista ledets, och en röd grind blir grön för skalet (`L440`).
+
+**En ärlig rapport med en omätt punkt slår alltid en tur som aldrig
+återvänder.** Ditt arbete finns bara i din tur; returnerar du inte, finns det
+inte.
+
+Detta gäller dig lika mycket som en bygg-agent. 2026-08-05 fastnade tre
+agenter i denna fälla på en och samma session — **en av dem ett
+research-pass** — och tillsammans brände de ~700k tokens på väntan som
+strukturellt inte kunde brytas.
+
 ## Inventera vad vi redan vet — FÖRE första sökningen
 
 Detta är passets första handling, inte en artighet. Repot bär ofta redan svaret,
