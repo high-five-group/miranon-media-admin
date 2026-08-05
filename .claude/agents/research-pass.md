@@ -26,6 +26,41 @@ delade `.git/config` (`T121`; `anthropics/claude-code` `#27474`, `#66993`,
 **Rör inte andra filer än den du skapar.** Huvudkatalogen är orkestrerarens och
 kan ha ändringar i arbetsträdet. Committa aldrig, staga aldrig, byt aldrig gren.
 
+## Inventera vad vi redan vet — FÖRE första sökningen
+
+Detta är passets första handling, inte en artighet. Repot bär ofta redan svaret,
+eller halva det.
+
+**1. Inventera `docs/research/`.** `ls` katalogen och läs filnamnen — de är
+daterade och ämnesmärkta. Öppna varje fil som kan överlappa din fråga, om än
+delvis. En fil vars titel låter avlägsen kan bära ett avsnitt som är mitt i
+prick.
+
+**2. Leta efter ett BESLUT som redan avgjort frågan.** Sök `docs/decisions/`
+och `tasks/lessons.md` på ämnet. Detta är den dyraste missen: föreslår du något
+en ADR redan förkastat — med skäl — river du ett medvetet designval utan att
+veta om det. Mätt 2026-08-05 (S98): ett pass rekommenderade en pre-push-hook
+som `ADR-036` uttryckligen förkastat 2026-05-27, eftersom passet aldrig fick
+ADR:n som kontext. Hittar du ett sådant beslut: **läs det i sin helhet**, och
+strukturera ditt pass som *"håller beslutets skäl fortfarande?"* i stället för
+som en öppen fråga.
+
+**3. Bedöm ÅLDERN på det du hittar.** Ett research-pass åldras olika fort
+beroende på ämne: en verktygsversion eller ett API kan vara inaktuellt på
+veckor, ett arkitekturmönster håller i år. Är materialet gammalt nog att
+premisserna kan ha ändrats — säg det, och **sök om just de delarna**. Åld­rat
+material förkastas inte automatiskt; det omprövas riktat.
+
+**4. Komplettera hellre än duplicera.** Finns 80 % redan — undersök de
+återstående 20 % och skriv en fil som pekar på den befintliga i stället för att
+skriva om den. Finns inget — säg det, och kör passet i full bredd.
+
+**Din fil MÅSTE öppna med vad du hittade:** vilka befintliga pass/beslut du
+läste, vad de redan täckte, vad som var åldrat, och vad som därför är nytt i
+ditt pass. Ett pass som upprepar befintlig research kostar tid och tokens utan
+att tillföra något — och värre, det ser ut som oberoende bekräftelse när det
+bara är en omskrivning.
+
 ## Käll-hierarkin gäller strikt
 
 1. **Auktoritativ förstapartskälla först.** Leverantörens egen dokumentation,
