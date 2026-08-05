@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-04
+updated: 2026-08-05
 review_by: 2026-11-15
 status: stable
 ---
@@ -244,6 +244,29 @@ All landning går via branch + PR (direktpush till `main` avvisas av ruleset,
 `gh pr merge --auto`; **kön sköter sekvenseringen**. Den bygger varje
 post mot `main` plus posterna före den, så `BEHIND` uppstår inte längre av att
 två PR:er landar nära varandra.
+
+**Den raden gällde bara poster som HANN IN i kön — tills 2026-08-05.** Rulesetet
+bar samtidigt `strict_required_status_checks_policy: true`, och strict kräver
+uppdaterad gren som **villkor för att posten ens får köas**. En PR som blev
+`BEHIND` *innan* den hann köas släpptes därför aldrig in, och kön fick aldrig
+chansen att sekvensera den — den stod still med `auto=true` på obestämd tid.
+Mätt skarpt: `#747` och `#748` rörde sig inte förrän `gh pr update-branch`
+kördes för hand på båda.
+
+**Rotorsaken är åtgärdad, inte symptomet:** `strict` är AVSTÄNGD sedan
+2026-08-05, eftersom merge queue gör den redundant. Förstapartskällan säger det
+rakt ut — kön *"provides the same benefits as Require branches to be up to date
+before merging, but does not require a pull request author to update their pull
+request branch"*. Fullt underlag, inklusive vad som INTE ändrades och vad som
+måste sättas tillbaka om `merge_queue`-regeln någonsin rivs:
+[ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md) § Amendering
+2026-08-05.
+
+**Varför historiken står kvar här:** raden sade i sex dagar att kön löser
+`BEHIND`, och den var sann i sin egen mening — den beskrev bara inte att en post
+kan hindras från att nå kön. `ADR-076` hade till och med bokfört
+branch-uppdateringen som en accepterad kostnad (2026-07-23), sex dagar innan kön
+fanns, och ingen konsumerade den raden när förutsättningen ändrades.
 
 **Strategiflaggan är BORTA ur formen sedan 2026-08-04 (S97).** Raden sade
 tidigare `gh pr merge --auto --merge`. Den formen avvisas nu: `gh` svarar
