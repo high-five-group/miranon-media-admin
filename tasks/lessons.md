@@ -9180,3 +9180,320 @@ efterföljande operation av samma KLASS som den som släppte den (lås, lease,
 session-token, filhandtag, katalogägarskap) — ordningen "släpp sist" är den
 enda som håller när frisläppnings-mekanismen och återtagnings-mekanismen
 delar samma trigger.
+
+### L461 — Ett flaggat glapp håller kvar sin vikt tills det faktiskt stängs — vare sig man kliver förbi det själv eller ärver det via en precedent
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, Session 97 Del 9, orkestreraren (marketplace-research-passet
+`#742`, plus hub-agentens uppföljning).
+
+**Vad som hände:** samma glapp bar vikt på två olika sätt i samma ärende. (1)
+`#742` flaggade korrekt att `/plugin`-menyns Discover-flik var otestad
+headless — verbatim: *"Kvarstående obelagd risk, öppet flaggad… borttaget
+verkställs inte förrän luckan är stängd"* — men skrev ändå sin egen
+`## Rekommendation`-rubrik som en ren dom, "Ta bort fältet", utan hedge; caveaten
+stod som ett eftertankestycke under domen, inte som ett villkor PÅ den. (2)
+Rekommendationen åberopade dessutom en precedent — hub-commit `7d4bf51` (Del
+7:s borttag av `version`-fältet) — som stöd för samma åtgärd på
+`description`-fältet. Precedenten var själv aldrig mätt mot TUI:n: en
+uppföljande mätning visade att Discover läser `entry.description` **utan
+fallback** (tre renderställen, noll träffar på `entry.description??`), vilket
+rev domen — och avslöjade i samma svep att `7d4bf51` redan HADE gjort skada:
+samma vyer renderar `entry.version`, så versionsraden hade tyst försvunnit ur
+Discovers detaljvy och bläddringslista sedan Del 7, upptäckt först nu (hub
+`76d47b7` återställde `version` och skrev om `description`).
+
+**Lärdomen:** ett flaggat men olöst glapp fortsätter stödja slutsatsen tills
+det faktiskt stängs — oavsett om glappet är ens EGET uttalade förbehåll (som
+en domrubrik kan skriva förbi) eller ETT ÄRVT förbehåll från en precedent man
+citerar som stöd. Att NÄMNA glappet räcker inte; domen eller åtgärden måste
+faktiskt VÄNTA på att glappet stängs, annars är förbehållet dekoration. Och en
+åberopad precedent bär inte bara sin slutsats vidare — den bär sina egna
+omätta ytor med sig, som här visade sig vara en tyst regression, inte en
+neutral bekräftelse.
+
+**Varför `[UNIVERSAL]`:** gäller varje rekommendation eller citerad precedent
+i vilken domän som helst — en explicit flaggad lucka måste vara ett VILLKOR på
+handlingen, inte en fotnot bredvid den, och att luta sig mot ett tidigare
+beslut kräver att kontrollera vad DET beslutet faktiskt mätte, inte bara vad
+det landade på.
+
+### L462 — Ett villkorat agent-mandat är billigare än en återställning
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, Session 97 Del 9, orkestreraren.
+
+**Vad som hände:** i samma ärende som `L461` fick hub-agenten som skulle
+verkställa borttaget av `description`-fältet ett VILLKORAT mandat i stället
+för en ovillkorad order: ta bort fältet BARA om mätningen visar att Discover
+läser `plugin.json` eller har en fallback för `entry.description`. Agenten
+mätte, fann motsatsen, och **tog stopp-vägen** i stället för att verkställa.
+Ett borttag som hade tystat Discovers beskrivning precis före ett
+install-beslut blev därför aldrig av — mandatet gjorde att den redan skrivna,
+felaktiga domen aldrig hann nå produktion.
+
+**Lärdomen:** när en rekommendation bär ett känt, olöst förbehåll är det
+billigare att delegera med en explicit STOPPA-villkor byggd in i ordern än att
+lita på att mottagaren själv ifrågasätter en redan formulerad dom. Ett
+agent-mandat som säger "gör X, MEN bara om mätning Y håller — annars stanna
+och rapportera" flyttar verifieringen till körningsögonblicket, där färska
+data finns, i stället för att förlita sig på att beslutsfattaren mindes
+förbehållet när ordern skrevs.
+
+**Varför `[UNIVERSAL]`:** gäller varje delegering av en åtgärd som vilar på
+ett känt förbehåll — mandatet ska koda in villkoret mekaniskt, inte lita på
+att exekutören självmant återupptäcker det.
+
+### L463 — Ett ordinaltal i en styrande text är stale i samma stund en annan post landar före
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, Session 97, bygg-agenten (`TASK-141`), rättad av
+Marcus i `49acc092`.
+
+**Vad som hände:** `ADR-095` beslut 4 sade att `barn`-manifestet skulle
+utökas med en "**femte invariant**". `TASK-140` (`besläktad`) landade FÖRST
+och tog slot 5 i `check-thread-index.sh`, så `TASK-141`s `barn`-invariant blev
+faktiskt Inv 6 — ADR:ns ordinaltal var stale innan `TASK-141` ens började
+byggas. Bygg-agenten läste rätt: den byggde mot den FAKTISKA koden (vad som
+redan låg på plats 5) i stället för mot ADR:ns hårdkodade siffra, och
+flaggade avvikelsen i stället för att tvinga in fel nummer i
+implementationen. Rättelsen (`49acc092`) STRÖK ordinaltalet — "en ny
+invariant" i stället för "den femte invarianten" — snarare än att bara räkna
+om det till sex.
+
+**Lärdomen:** ett ordinaltal (femte, tredje, nästa) som beskriver en post
+RELATIVT andra poster i ett delat, växande register är en förutsägelse om
+framtida landningsordning, inte ett faktum — och den förutsägelsen håller bara
+tills en annan post landar före. En styrande text (ADR, spec, plan) ska
+referera posten genom NAMN eller SYFTE ("barn-manifestets invariant"), aldrig
+genom sin förväntade position i en sekvens andra parallella arbeten också
+skriver till.
+
+**Varför `[UNIVERSAL]`:** gäller varje dokument som beskriver en framtida post
+i ett delat, ordnat register (kö-position, versionsnummer-i-en-lista, "nästa"
+av något) när fler än en aktör kan landa poster i registret — ordinaltalet är
+en gissning om ordning, inte en identitet.
+
+### L464 — En fras kan läsas som att motsäga en regel som står två stycken högre upp i samma dokument
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, Session 97, bygg-agenten (`TASK-141`), rättad av
+Marcus i `49acc092`.
+
+**Vad som hände:** samma `ADR-095`-stycke som `L463` bar ett andra, farligare
+fel. Beslut 4 sade att den nya invarianten skulle validera "**båda
+riktningar**". Läst isolerat är det en rimlig fras. Läst mot BESLUT 2, TVÅ
+STYCKEN HÖGRE UPP i samma dokument, som uttryckligen FÖRBJUDER manuell
+dubbelbokförd spegling av en relation i två riktningar, blir frasen tvetydig
+på ett farligt sätt: den kan tolkas som ett bidirektionellt indexfil-par (som
+inv. 3/4 redan är) — precis den konstruktion beslut 2 förbjuder.
+Bygg-agenten läste frasen korrekt (som "båda ID-NAMNRYMDERNA" — tråd-ID och
+kort-ID valideras var för sig, inte en spegling i två riktningar) och skrev ut
+sitt eget skäl explicit i stället för att bygga tyst mot en av de två
+tolkningarna. Rättelsen strök frasen helt snarare än att omformulera den, med
+motiveringen att invarianten ändå bara validerar existens i den ENDA riktning
+manifestet deklarerar — hela poängen med en asymmetrisk relation.
+
+**Lärdomen:** en formulering kan vara korrekt i isolation och ändå läsas som
+en motsägelse mot en regel som redan står i samma dokument, om den delar ord
+med ett mönster dokumentet på annat ställe uttryckligen förbjuder. En ny
+mening måste därför prövas mot dokumentets EGNA tidigare regler, inte bara mot
+vad författaren själv menade — och när en byggande agent löser tvetydigheten
+genom att skriva ut sin tolkning och sitt skäl (i stället för att bygga tyst
+mot en gissning), blir den bästa detektorn för problemet inte författarens
+självgranskning utan mottagarens synliga resonemang.
+
+**Varför `[UNIVERSAL]`:** gäller all styrande text med flera beslutspunkter i
+samma dokument — en fras några stycken bort från en uttryckligt statuerad
+regel ärver risken att läsas mot den regeln, och korsläsning mot HELA
+dokumentet (inte bara meningen som skrivs) är den kontroll som fångar det
+innan en läsare gör det åt en.
+
+### L465 — Kunskapscutoff känns som kunskap inifrån — verktygsfakta slås upp, gissas aldrig
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, Session 97, orkestreraren (självfångst innan
+flaggning).
+
+**Vad som hände:** orkestreraren var nära att flagga `js-yaml@5.2.2`
+(tillagd som explicit devDependency i `2964ca34`/`#752`) som ett misstänkt
+paket, eftersom minnesbilden sade att `js-yaml` ligger på 4.x. En uppslagning
+mot npm-registret (`npm view js-yaml version` / `npm view js-yaml versions`)
+visade motsatsen: `latest` är **5.2.3**, `5.2.2` är en giltig, publicerad
+version, och `package.json`s `overrides`-block tvingade REDAN exakt `5.2.2`
+för hela beroendeträdet innan den explicita devDependency-raden ens lades
+till (verifierat: rad 91 och rad 106 i `package.json` båda `"js-yaml":
+"5.2.2"`) — versionen var alltså inte ett nytt, oöverlagt val utan en
+matchning mot ett existerande, medvetet låst värde.
+
+**Lärdomen:** en föråldrad inre bild av "var ett bibliotek ligger" känns
+inifrån identisk med aktuell kunskap — det finns ingen introspektiv signal som
+skiljer en stale träningsdata-punkt från en färsk fakta. Regeln
+"verktygsfakta slås upp, gissas aldrig" gäller därför även, och kanske
+särskilt, när magkänslan är STARK och specifik (ett exakt versionsnummer, inte
+en vag aning) — självsäkerheten i en hypotes är inte ett mått på dess
+färskhet. Ett registeruppslag kostar en tool-call; en felaktig "det här
+paketet ser misstänkt ut"-flagga mot ett redan korrekt bygge kostar en hel
+omgranskningsrunda.
+
+**Varför `[UNIVERSAL]`:** gäller varje påstående om aktuellt tillstånd
+(versionsnummer, API-ytor, prisnivåer, vad ett verktyg stödjer) som en modell
+"vet" ur träning — träningsdata har ett stopp-datum, och ingenting i hur en
+gissning KÄNNS avslöjar om den är förbi det datumet.
+
+### L466 — Att köra en delmängd av CI:s grindar lokalt är inte verifiering, det är en gissning om vilken delmängd som räknas
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, Session 97 — fyra instanser i EN session, samtliga
+bekräftade mot commit-historiken.
+
+**Vad som hände:** fyra separata gånger körde en lokal, för-hand ihopplockad
+delmängd av CI:s grindar grönt medan den FULLA uppsättningen (den CI faktiskt
+kör) hade fällt.
+
+1. `#740` gick rött: `check-adr-count.sh` kördes aldrig lokalt eftersom
+   ADR-039-grinden bor i CI:s Lint-jobb, inte i `npm run check:docs` — 94
+   räknade mot 95 filer.
+2. `#743` gick rött på `Vale.Terms`: `markdownlint` kördes mot de ändrade
+   filerna men `npm run lint:prose` inte (`7c1b3802`) — samma KLASS av miss
+   som (1), en annan grind.
+3. `#747` gick rött i shellcheck-strict: ett kort `shellcheck <fil>`-anrop
+   lokalt missade `--severity=style --enable=all`, som aktiverar
+   default-disabled-regler (SC2250/SC2310) CI:s exakta invokering kräver
+   (`513c244e`).
+4. Samma fix (`513c244e`) räknade sina egna verkliga fynd (SC2250×4 +
+   SC2310×2 = 6 enligt commit-meddelandet) — men ett naivt `grep -c
+   "<regelkod>"` mot rå shellcheck-output räknar FEL: verktyget skriver en
+   "For more information"-fotnot med en wiki-länk PER unikt utlöst
+   regelkod, en gång per körning, och länkraden innehåller regelkoden som
+   text. **Reproducerat oberoende** vid denna lesson-skörd
+   (`shellcheck --severity=style --enable=all` mot en scratch-fil med två
+   `SC2250`-fynd): `grep -c "SC2250"` gav **3**, inte 2 — ett påslag på exakt
+   +1 per unik kod. Applicerat på (3): 6 verkliga fynd över två unika koder +
+   2 fotnotsrader = **8 räknade, 6 faktiska**.
+
+Rotorsaken i alla fyra: ingen lokal kommandouppsättning motsvarade CI:s, så
+var och en som verifierade för hand plockade ihop sin egen ofullständiga
+variant — fel jobb, fel flagga, fel scope, fel räkningsmetod. Åtgärdat med
+`npm run verify:ci-parity` (`2964ca34`/`#752`), som HÄRLEDER kommandona ur
+`ci.yml`/`ci-suite.yml`s `run:`-block VERBATIM i stället för att duplicera dem
+i en femte handhållen lista.
+
+**Lärdomen:** "jag körde grinden" är inte samma påstående som "jag körde
+grinden CI faktiskt kör" — skillnaden kan vara ett saknat jobb, en saknad
+flagga, ett saknat steg, ELLER ett fel i hur ett korrekt kommandos utdata
+TOLKAS efteråt (räkningsfelet i instans 4 är den mest lömska varianten:
+kommandot var rätt, verktyget kördes rätt, och felet satt ändå i efterledet).
+Ett verktyg som härleder sin uppsättning ur samma källa CI läser (i stället
+för att hålla en fjärde, parallell, manuellt underhållen lista) är den enda
+formen som strukturellt inte kan glömma en ny grind.
+
+**Varför `[UNIVERSAL]`:** gäller varje kodbas där lokal pre-push-verifiering
+och CI:s faktiska grinduppsättning är två separata artefakter som kan
+divergera — och gäller specifikt räkningsfel-varianten (4) för varje
+användning av `grep -c` mot output från ett verktyg som skriver ut sina egna
+referens-/hjälplänkar, oavsett vilket verktyg.
+
+### L467 — Två mekanismer som ger samma garanti kan tillsammans skapa ett dödläge ingen av dem skapar ensam
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, Session 97 (fjärde resumen) — `ADR-076` amendering.
+
+**Vad som hände:** rulesetet `main-skydd` bar samtidigt
+`strict_required_status_checks_policy: true` OCH en `merge_queue`-regel. Var
+för sig gav båda samma garanti — en PR byggs mot en uppdaterad `main`.
+Förstapartskällan säger rakt ut att kön ger *"the same benefits … but does
+not require a pull request author to update their pull request branch"*. Men
+`strict` krävde en uppdaterad gren som VILLKOR FÖR ATT EN POST ENS FICK
+KÖAS — så en PR som blev `BEHIND` INNAN den hann köas släpptes aldrig in, och
+kön fick aldrig chansen att göra sitt jobb. `#747` och `#748` stod stilla med
+`auto=true` tills `gh pr update-branch` kördes för hand på båda. **`ADR-076`
+hade redan bokfört branch-uppdateringen som en ACCEPTERAD kostnad — sex dagar
+INNAN kön aktiverades** — och ingen konsumerade den raden när förutsättningen
+ändrades: en kostnad som var rimlig att acceptera under den gamla mekanismen
+blev en tyst deadlock under den nya, och dokumentationen som beskrev den
+gamla verkligheten fortsatte att låta som en fullständig förklaring. Åtgärdat
+genom att stänga av `strict` (`gh api -X PUT`, en rads diff, övriga fyra
+regler verifierat oförändrade) och skarpbevisat när `#752` landade direkt
+efter `#751` utan handpåläggning.
+
+**Lärdomen:** när två mekanismer oberoende ger "samma" garanti är det inte
+redundans att förlita sig på utan en outforskad ordningsfråga. Fråga: KRÄVER
+endera mekanismen ett tillstånd som den ANDRA mekanismen är tänkt att
+LEVERERA? Här krävde `strict` ("uppdaterad gren") som FÖRUTSÄTTNING det som
+`merge_queue` skulle producera som RESULTAT — ett cirkulärt beroende som bara
+syns om man spårar VILLKOR, inte bara UTFALL. Och en
+accepterad-kostnad-rad i ett beslutsdokument har ett implicit bäst-före-datum:
+den håller bara så länge de förutsättningar den skrevs under också håller, och
+ingen läser en ADR igen bara för att en NY mekanism aktiveras intill den
+gamla.
+
+**Varför `[UNIVERSAL]`:** gäller varje system med två eller fler
+grindar/mekanismer som ger överlappande garantier (redundans-som-avsikt) —
+kontrollera alltid om den ENA mekanismens INGÅNGSVILLKOR är den ANDRA
+mekanismens UTFALL, inte bara om de "gör samma sak" på pappret. Gäller också
+generellt: en rad i ett beslutsdokument som bokför en kostnad som "accepterad"
+ärver implicit den förutsättning som gjorde kostnaden acceptabel, och måste
+omprövas när förutsättningen ändras, inte bara stå kvar som historik.
+
+### L468 — Ett lokalt kommando som kör CI:s steg verbatim avslöjar miljö-divergens, inte bara substansfel
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, vid bygget av `scripts/verify-ci-parity.mjs`
+(`2964ca34`/`#752`) — ett lokalt kommando som härleder och kör
+`ci.yml`/`ci-suite.yml`s grind-steg verbatim ur workflow-YAML:en i stället för
+att duplicera dem i en handhållen lista (så att en ny CI-grind aldrig kan
+glömmas i den lokala speglingen). Konsoliderad ur fragmentet
+`tasks/lessons.d/verbatim-ci-korning-avslojar-miljodivergens-inte-bara-substansfel.md`
+(fragment-vägen, `ADR-081`); fragmentet är borttaget.
+
+**Vad som hände:** vid det första fulla körningsförsöket föll tre steg som
+INTE hade något med förändringens sakinnehåll att göra:
+
+1. **`pip install --quiet yamllint`** — CI:s runner har en bar `pip` på PATH;
+   en macOS/Homebrew-maskin har ofta bara `pip3`/`python3 -m pip`, även när
+   `yamllint` redan är installerat via en annan väg. Verbatim-körning av HELA
+   steget föll på bootstrap-raden, inte på YAML-innehållet.
+2. **En befintlig deletion-vakt (marker-string-scanner för en annan grind)**
+   fällde det NYA skriptets egen fil — den nämnde en secret-variabels NAMN i
+   ett förklarande dokumentationsstycke ("varför vi utesluter X"), och vakten
+   skiljer per konstruktion inte på kod som läser variabeln och prosa som bara
+   nämner den.
+3. **Biome-lint** fällde det nya skriptets egna, precis skrivna filer —
+   formatering ohanterad, och en sträng som innehöll bokstavligt `${{ … }}`
+   (GH Actions-syntax) lästes av `noTemplateCurlyInString` som ett misstänkt
+   glömt mall-literal.
+
+Ingen av de tre hade något att göra med förändringens SAKINNEHÅLL (CI-
+parity-mekaniken själv). Alla tre var äkta — inte falska larm att undertrycka
+— men av en annan KLASS än den grinden primärt existerar för att fånga.
+
+**Lärdomen:** ett verktyg som kör CI:s steg verbatim (i stället för att bygga
+en förenklad egen variant) ärver INTE bara CI:s substansgrindar — det ärver
+också varenda outtalat antagande CI:s recept gör om sin körmiljö (en
+namngivning som `pip` i stället för `pip3`, en förutsättning att verktyget
+inte redan finns, en förutsättning att den körande koden är gammal och redan
+klassad av angränsande vakter). Bygg därför IN från början med förväntan att
+de FÖRSTA felen ett sånt verktyg visar inte är substansfel i det man ville
+verifiera, utan miljö-skarvar mellan "var CI antar att den körs" och "var
+detta faktiskt körs". Diagnostisera var och en INDIVIDUELLT (kör grinden
+direkt, isolerat från resten av kommandot) innan den klassas som antingen
+"verktygets bugg" eller "verkligt fel i det som grindas" — de tre exemplen
+ovan krävde tre helt olika fixar (special-hantering av en kombinerad
+install+kör-rad, en explicit undantags-post i en annan grinds config, och
+vanlig lokal lint-fix) och ingen av dem var en bugg i själva parity-
+mekaniken.
+
+**Varför `[UNIVERSAL]`:** gäller varje verktyg i vilken kodbas som helst som
+väljer "härled och kör CI:s recept verbatim" framför "bygg en egen förenklad
+variant" — designen som generellt är RÄTT (den stänger drift-risken en
+handhållen lista alltid har) betalar detta pris regelbundet, och priset ska
+förväntas, inte tolkas som att designvalet var fel.
