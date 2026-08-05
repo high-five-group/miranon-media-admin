@@ -1,0 +1,126 @@
+{
+  "_readme": [
+    "Config för scripts/verify-ci-parity.mjs — samma hub-spoke-portabilitet som",
+    ".purge-staging-policy.json och .staging-preflight-wiring-policy.json.",
+    "Skriptets LOGIK är generisk (YAML-parsning + steg-klassning + verbatim-",
+    "körning); VÄRDENA här är projekt-specifika.",
+    "",
+    "VARFÖR DEN HÄR FILEN INTE ÄR EN GRIND-LISTA. Målet är INTE att räkna upp",
+    "varenda grind CI kör (det vore en trettonde-instans av samma duplicerings-",
+    "problem uppdraget bad oss undvika). Varje jobb i `derivedJobs` läses från",
+    "workflow-filen VID VARJE KÖRNING och EXEKVERAS VERBATIM steg för steg — en",
+    "ny rad i ett känt jobbs `run:`-block plockas upp automatiskt, ingen",
+    "manifest-post krävs. Vad den HÄR filen deklarerar är bara de undantagen",
+    "som INTE ska köras om (redan täckta av `npm run check:docs`, ren",
+    "CI-infrastruktur som Checkout/Setup Node, eller binärer som behöver en",
+    "version-koll i stället för en ny nedladdning). Kvarvarande driftrisk är",
+    "alltså en NY JOBB (som denna fil inte känner till) eller GH-uttryck",
+    "(`${{ ... }}`) i ett härlett steg som ingen substitution täcker — båda",
+    "fäller skriptet fail-closed, se `knownJobs` / `exprSubstitutions`.",
+    "",
+    "Se scripts/verify-ci-parity.mjs:s laddaPolicy()/klassificeraSteg()/huvudflödet i main() för hur fälten nedan faktiskt konsumeras."
+  ],
+  "workflows": {
+    "ci": ".github/workflows/ci.yml",
+    "ciSuite": ".github/workflows/ci-suite.yml"
+  },
+  "knownJobs": {
+    "ci": {
+      "changed": "producerar bara klassnings-metadata (should_skip_tests/docs_changed/dedup_hit/ui_low_risk/acceptance_urval) — inget steg i jobbet validerar arbetsträdet självt. Konsumeras av suite-jobbets villkor, som denna policy medvetet ALLTID kör (superset, se `derivedJobs.ci`).",
+      "lint": "DERIVERAS — se derivedJobs.ci.",
+      "suite": "delegerar via `uses:` till ci-suite.yml. Har inga egna steg — de verkliga grindarna härleds direkt ur ci-suite.yml (se derivedJobs.ciSuite). Jobbets `with:`-block vaktas separat, se `suiteInputInvariants`.",
+      "docs": "DERIVERAS — se derivedJobs.ci. Jobbets `if: docs_changed`-villkor ignoreras medvetet: att köra docs-grindarna på en icke-docs-PR är en säker superset, aldrig en lucka.",
+      "ci-passed": "ren aggregator — läser `needs`-resultat, innehåller ingen egen grind."
+    },
+    "ciSuite": {
+      "purge": "gated av inputs.run_staging, som ci.yml:s suite-jobb skickar VILLKORSLÖST false (mekaniskt verifierat, se suiteInputInvariants) — instansieras aldrig på PR-ytan.",
+      "test-fast": "DERIVERAS — se derivedJobs.ciSuite.",
+      "acceptance": "DERIVERAS — se derivedJobs.ciSuite.",
+      "webblasarbeteende": "DERIVERAS — se derivedJobs.ciSuite.",
+      "a11y": "gated av inputs.run_a11y, som ci.yml:s suite-jobb skickar VILLKORSLÖST false (mekaniskt verifierat, se suiteInputInvariants) — instansieras aldrig på PR-ytan.",
+      "test-staging": "gated av inputs.run_staging, samma skäl som purge — kräver dessutom staging-secrets som inte finns lokalt."
+    }
+  },
+  "derivedJobs": {
+    "ci": ["lint", "docs"],
+    "ciSuite": ["test-fast", "acceptance", "webblasarbeteende"]
+  },
+  "suiteInputInvariants": [
+    {
+      "job": "suite",
+      "input": "run_staging",
+      "mustBeLiteral": false,
+      "why": "Om detta någonsin blir sant/villkorat måste purge + test-staging tas in i derivedJobs.ciSuite — de kräver staging-secrets som denna lokala grind inte har. Ett tyst genomsläpp här vore precis den under-täckning uppdraget finns för att stänga."
+    },
+    {
+      "job": "suite",
+      "input": "run_a11y",
+      "mustBeLiteral": false,
+      "why": "Samma skäl som run_staging — a11y-jobbet måste tas in i derivedJobs.ciSuite om detta slutar vara ett villkorslöst false."
+    }
+  ],
+  "stepClassification": {
+    "infra": [
+      "Checkout",
+      "Setup Node",
+      "Install dependencies",
+      "Cache Playwright browsers",
+      "Ladda upp Playwright-artefakter vid rött",
+      "Ladda upp Playwright-artefakter vid rött e2e"
+    ],
+    "infraRationale": "Steg som förbereder CI-runnerns MILJÖ (checkout, node-version, npm ci, cache-restore) eller som bara kör vid fel (artefakt-uppladdning, if: failure()). Inget av dem validerar arbetsträdet — att köra dem lokalt vore antingen meningslöst (repot är redan uppcheckat) eller farligt (npm ci mot ett symlänkat node_modules delat med huvudrepot).",
+    "coveredByCheckDocs": [
+      "Run lychee link check (INTERN yta — offline)",
+      "Check markdown hygiene (markdownlint-cli2)",
+      "Check prose with Vale",
+      "Validate Vale L_X.2 regression-test-suite",
+      "Check public docs for unchecked items",
+      "Validate frontmatter on governing docs",
+      "Validate lifecycle field on session docs (ADR-052 gate)",
+      "Validate thread index integrity (TASK-108 gate)",
+      "Check ADR count consistency (ADR-039 gate)",
+      "Check lesson numbering (ADR-081 gate)",
+      "Check permissions claims (ADR-083 gate)",
+      "Check fetch-depth invariant (ADR-039 gate)",
+      "Check list parity (TASK-85 gate)"
+    ],
+    "coveredByCheckDocsRationale": "De TRETTON grindar scripts/check-docs.sh redan kör (dess egen 'DE TRETTON'-uppräkning). Att härleda-och-köra dem HÄR ISTÄLLET vore en tredje kopia av samma anrop — check:docs körs som ett eget steg i verify-ci-parity.mjs INNAN dessa jobb läses, se scripts/verify-ci-parity.mjs."
+  },
+  "specialSteps": {
+    "Install shellcheck (pinned v0.11.0)": {
+      "handling": "versionAssert",
+      "tool": "shellcheck",
+      "pinRegex": "SC_VERSION=\"v?([0-9.]+)\"",
+      "versionArgs": ["--version"],
+      "versionOutputRegex": "version:\\s*([0-9.]+)",
+      "remedyHint": "shellcheck saknas eller matchar inte CI:s pinnade version. macOS: `brew install shellcheck` eller `brew upgrade shellcheck`. CI:s exakta recept står i steget ovan (curl+sha256sum+tar) om du hellre vill spegla det manuellt."
+    },
+    "Install Vale": {
+      "handling": "versionAssert",
+      "tool": "vale",
+      "pinRegex": "VALE_VERSION=\"([0-9.]+)\"",
+      "versionArgs": ["--version"],
+      "versionOutputRegex": "vale version\\s*([0-9.]+)",
+      "remedyHint": "vale saknas eller matchar inte CI:s pinnade version. macOS: `brew install vale` eller `brew upgrade vale`."
+    },
+    "Check workflow files (actionlint)": {
+      "handling": "actionlintHybrid",
+      "pinRegex": "AL_VERSION=\"([0-9.]+)\"",
+      "versionArgs": ["--version"],
+      "versionOutputRegex": "^([0-9.]+)$",
+      "ignoreFlagRegex": "-ignore\\s+'([^']*)'",
+      "remedyHint": "actionlint saknas eller matchar inte CI:s pinnade version — faller tillbaka på att köra CI:s egen nedladdning+sha256-verifiering ur workflow-blocket (kräver nätverk, ingen sudo)."
+    },
+    "Check YAML syntax (yamllint)": {
+      "handling": "toolPresenceLastLine",
+      "tool": "yamllint",
+      "presenceArgs": ["--version"],
+      "remedyHint": "yamllint saknas på PATH. macOS: `brew install yamllint` eller `pip3 install yamllint` (bar `pip` finns ofta inte på Homebrew-Python — CI:s `pip install`-rad förutsätter en Ubuntu-runners namngivning som inte alltid finns lokalt)."
+    }
+  },
+  "specialStepsRationale": "Check YAML syntax (yamllint)-steget konflaterar bootstrap (pip install) och grind (yamllint .github/) i EN run:-rad. `pip` (utan siffra) saknas ofta på macOS/Homebrew där yamllint redan är installerat via en annan väg — verbatim-körning av HELA blocket hade fällt på steg 1 av skäl som inte har med YAML-innehållet att göra. toolPresenceLastLine verifierar att verktyget redan finns, och kör sedan ENDAST stegets sista icke-tomma rad (härledd ur ci.yml:s egen text, aldrig en fjärde hårdkodad kopia av \"yamllint .github/\").",
+  "exprSubstitutions": {
+    "${{ inputs.acceptance_selection }}": ""
+  },
+  "exprSubstitutionsRationale": "Enda GH-Actions-uttrycket i något härlett stegs env-block (Acceptance-jobbets två självtest-steg). Tom sträng ⇒ FULL acceptance-klass körs lokalt, samma default som post-merge.yml och nightly.yml — en säker superset av vad ci.yml:s PR-urval (TASK-75) hade kört. Varje ANNAT `${{ ... }}`-uttryck som dyker upp i ett härlett steg (nytt secret, ny input) fäller skriptet fail-closed i stället för att köras blint — se scripts/verify-ci-parity.mjs:s hittaOhanteradeUttryck()/losStegEnv()."
+}

@@ -78,6 +78,46 @@ npx @biomejs/biome check .  # 0 lint-fel
 npm run build               # bygg grön
 ```
 
+De fyra ovan är NÖDVÄNDIGA men inte TILLRÄCKLIGA — CI kör betydligt fler
+grindar (shellcheck-strict, actionlint, yamllint, audit-ci, 13
+dokumentations-grindar, ~20 gatekeeper-testsviter, Acceptance-klassen,
+Webblasarbeteende-klassen). Verifiera mot den FULLA uppsättningen före push:
+
+```bash
+npm run verify:ci-parity         # scripts/verify-ci-parity.mjs — motsvarar CI
+npm run verify:ci-parity:fast    # samma minus Acceptance+Webblasarbeteende — INTE CI-parity, iteration bara
+```
+
+**Härlett ur `ci.yml`/`ci-suite.yml`, inte en fjärde handhållen kopia.**
+Skriptet YAML-parsar de två workflow-filerna och kör lint-/docs-jobbens samt
+`test-fast`/`acceptance`/`webblasarbeteende`-jobbens `run:`-block VERBATIM,
+steg för steg — en ny rad i ett känt jobb plockas upp automatiskt nästa
+körning, ingen manifest-post att glömma. `npm run check:docs` (de tretton
+dokumentations-grindarna) återanvänds som första steg i stället för att
+dupliceras. Det enda som är deklarerat i `.ci-parity-policy.json` är
+UNDANTAGEN — infrastruktur-steg, steg redan täckta av check:docs, och tre
+pinnade binärer (shellcheck/actionlint/vale) som version-kollas mot pin:en
+extraherad ur ci.yml:s egen text. En **paritets-grind** körs INNAN något
+annat: fäller fail-closed (exit 2) om ci.yml/ci-suite.yml får en HELT NY
+jobb policyn inte känner till, eller om `suite`-jobbets
+`run_staging`/`run_a11y`-inputs slutar vara literalt `false` (då måste
+purge/a11y/test-staging — uteslutna på just det antagandet — tas in).
+
+**Kostnaden är verklig och `--fast` är INTE en ersättning.** Full körning tar
+god stund (Acceptance-klassen ensam är CI:s tyngsta jobb — se
+§ Acceptance-klassen); `--fast` finns för snabb lokal iteration och skriver
+ut en banderoll som inte går att missa, men räknas aldrig som fullständig
+täckning. Default är alltid det fullständiga läget, med avsikt — ett
+snabbläge som råkar bli standard återskapar exakt det problem verktyget
+finns för att lösa.
+
+**Varför raden står här och inte bara i skriptets egen header:** samma
+mönster som `seed:review` och `metrics:flake` nedan — fyra mätta instanser i
+EN session (2026-08-05, S97) visade att var och en som verifierar för hand
+plockar ihop sin egen ofullständiga delmängd (fel jobb, fel flagga, fel
+scope) och missar olika delar, och ett verktyg utanför sessionsstartens
+läs-ordning hittas inte när det behövs.
+
 ### Granskningsdata i staging — bygg den ALDRIG för hand
 
 Ska Marcus granska en yta som kräver data staging inte har (ett kommande event
