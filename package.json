@@ -39,7 +39,7 @@
     "metrics:agents": "node scripts/agent-spawn-metrics.mjs",
     "metrics:flake": "node scripts/flake-matserie.mjs",
     "revision:uppdrag": "node scripts/uppdragsrevision.mjs",
-    "postinstall": "git config core.hooksPath .githooks",
+    "postinstall": "git config core.hooksPath .githooks 2>/dev/null || true",
     "atlas": "node scripts/build-farg-atlas.mjs && biome format --write docs/design/ && biome check docs/design/ && node scripts/verifiera-farg-atlas.mjs"
   },
   "dependencies": {
