@@ -160,10 +160,25 @@ test.describe('/login — routing efter lyckad lösenords-inloggning (AC #1)', (
         }),
       ),
     );
-    await loggaInMedLosenord(page);
 
-    // Navigeringen sker EFTER `await markeraErbjudandeSett()` i koden — en
-    // omockad PUT hade fällt testet innan navigate() någonsin körs.
+    // BEVISET FÅR ALDRIG VILA PÅ ATT URL-ASSERTIONEN RÅKAR PASSERA (rättad
+    // fällning, överskuggnings-vakten): koden navigerar till `SAKERT_MAL`
+    // via TRE OLIKA vägar (passkey otillgängligt, redan sett, redan
+    // registrerad), så en ren URL-koll bevisar inte VILKEN väg som kördes.
+    // `waitForRequest` registreras FÖRE triggande handling (ingen race) och
+    // gör själva PUT-anropet till assertionen — testet fäller om
+    // `markeraErbjudandeSett()` aldrig körs, oavsett vad URL:en råkar visa.
+    const putRequestPromise = page.waitForRequest(
+      (req) => req.method() === 'PUT' && req.url().includes('/auth/v1/user'),
+      { timeout: 10000 },
+    );
+    await loggaInMedLosenord(page);
+    const putRequest = await putRequestPromise;
+    expect(putRequest.postDataJSON()).toMatchObject({
+      data: { passkey_erbjudande_sett: true },
+    });
+
+    // Navigeringen sker EFTER `await markeraErbjudandeSett()` i koden.
     await expect(page).toHaveURL(new RegExp(`${SAKERT_MAL.replace('/', '\\/')}$`));
   });
 
