@@ -66,11 +66,13 @@
 #        CONTRIBUTING.md, paret `lychee-scope` läser DENNA fil. Mätt samma dag:
 #        en struken sentinel-backtick i CONTRIBUTING.md ⇒ exit 1.
 #    13. scripts/check-thread-index.sh — trådregistrets index (radform, enum i
-#        rätt kolumn, numrering, index↔fil, besläktad↔registret). Wirad i
-#        lint-jobbet i TASK-108-wiringen; rubriken ovan blev sann i SAMMA
-#        commit som denna rad skrevs — ADR-083 förbjuder ordningen "lista
-#        först, mekanism sen". Femte invarianten (besläktad, ADR-095 beslut
-#        2–3) tillagd i TASK-140.
+#        rätt kolumn, numrering, index↔fil, besläktad↔registret,
+#        barn-manifest↔registret). Wirad i lint-jobbet i TASK-108-wiringen;
+#        rubriken ovan blev sann i SAMMA commit som denna rad skrevs —
+#        ADR-083 förbjuder ordningen "lista först, mekanism sen". Femte
+#        invarianten (besläktad, ADR-095 beslut 2–3) tillagd i TASK-140.
+#        Sjätte invarianten (barn-manifest, ADR-095 beslut 4) tillagd i
+#        TASK-141.
 #
 # POST 10 VAR ETT FALSKT PÅSTÅENDE FRÅN ADR-083:s LANDNING TILL TASK-98
 # (2026-07-30 → 2026-07-31). Grinden var inkopplad här och dess self-test kördes

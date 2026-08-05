@@ -16,7 +16,7 @@
 #   sessionsdok + trådkort" och skriptets header säger "validerar även
 #   tråd-kort" — båda sanna, båda smalare än de låter.
 #
-# GRINDEN VALIDERAR (fem invarianter, ingen överlappar check-lifecycle.sh):
+# GRINDEN VALIDERAR (sex invarianter, ingen överlappar check-lifecycle.sh):
 #   1. RADFORM — varje trådrad har rätt antal kolumner och ett enum-giltigt
 #      tillstånd i tillstånds-kolumnen. Gäller ALLA rader, med eller utan fil.
 #   2. NUMRERING — stigande, inga dubbletter, inga luckor. Registret har
@@ -33,6 +33,19 @@
 #      som härleds i EN riktning och aldrig speglas manuellt. Ordets egen
 #      TERMreferens (backtick-omsluten, t.ex. denna kommentars "`besläktad`")
 #      och negationen ("obesläktad") exkluderas explicit — se Inv 5-blocket.
+#   6. BARN-MANIFEST → REFERENTIELL INTEGRITET (ADR-095 beslut 4) — varje
+#      förälder-rad i THREAD_CHILDREN_MANIFEST (config: tasks/threads/barn.md)
+#      måste peka på ett tråd-ID som finns i registret, och varje ID i dess
+#      Barn-cell måste vara antingen ett existerande tråd-ID ELLER ett
+#      existerande backlog-kort (fil under THREAD_CHILDREN_CARD_DIR).
+#      Relationen är ASYMMETRISK: deklareras i EN riktning (tråden pekar på
+#      sina egna barn), och grinden kräver INGEN spegelpost i barnets egen
+#      rad eller kort — det är skillnaden mot Inv 5 (besläktad, symmetrisk).
+#      "Båda riktningar" i ADR-095/kortets ordalag betyder BÅDA ID-NAMNRYMDERNA
+#      (tråd-ID:n och kort-ID:n valideras var för sig) — INTE ett bidirektionellt
+#      par likt Inv 3/4 (index↔fil), eftersom ett sådant par vore precis den
+#      manuella spegling beslut 2 uttryckligen förbjuder. Manifestfilen får
+#      saknas helt (opt-in, tomt startläge räknas som grönt).
 #
 # MEDVETET UTANFÖR SCOPE (ej glömda kontroller):
 #   (a) TILLSTÅNDSDRIFT fil↔index — ägs av check-lifecycle.sh rad 108–129.
@@ -49,12 +62,14 @@
 # sig grinden på cwd=repo-root (ingen cd) — CI kör från repo-roten; testsviten
 # cd:ar in i sin sandbox före anrop.
 #
-# Exit 0 om indexet passerar alla fem invarianter. Exit 1 vid drift.
+# Exit 0 om indexet passerar alla sex invarianter. Exit 1 vid drift.
 #
 # Källa: docs/decisions/ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md
 # Etablerad: TASK-108 (2026-07-31)
 # Inv 5 källa: docs/decisions/ADR-095-relationsmodellen-dokumentationssubstratet.md
 # Inv 5 etablerad: TASK-140 (2026-08-05)
+# Inv 6 källa: docs/decisions/ADR-095-relationsmodellen-dokumentationssubstratet.md
+# Inv 6 etablerad: TASK-141 (2026-08-05)
 
 set -euo pipefail
 
@@ -76,6 +91,9 @@ THREAD_ID_PREFIX=""
 THREAD_COLUMN_COUNT=0
 THREAD_STATE_COLUMN=0
 THREAD_RELATED_KEYWORD=""
+THREAD_CHILDREN_MANIFEST=""
+THREAD_CHILDREN_CARD_PREFIX=""
+THREAD_CHILDREN_CARD_DIR=""
 declare -a THREAD_VALID_STATES=()
 
 # shellcheck source=/dev/null
@@ -89,6 +107,9 @@ die_conf() { echo "❌ ${POLICY_FILE}: $1"; exit 1; }
 [[ "${THREAD_STATE_COLUMN}" -gt 0 ]] || die_conf "THREAD_STATE_COLUMN måste vara > 0"
 [[ "${#THREAD_VALID_STATES[@]}" -gt 0 ]] || die_conf "THREAD_VALID_STATES är tom"
 [[ -n "${THREAD_RELATED_KEYWORD}" ]] || die_conf "THREAD_RELATED_KEYWORD är tom"
+[[ -n "${THREAD_CHILDREN_MANIFEST}" ]] || die_conf "THREAD_CHILDREN_MANIFEST är tom"
+[[ -n "${THREAD_CHILDREN_CARD_PREFIX}" ]] || die_conf "THREAD_CHILDREN_CARD_PREFIX är tom"
+[[ -n "${THREAD_CHILDREN_CARD_DIR}" ]] || die_conf "THREAD_CHILDREN_CARD_DIR är tom"
 
 EXIT_CODE=0
 BT='`'  # backtick-token för förankrad (ej bar-substräng) matchning
@@ -139,6 +160,22 @@ tid_exists() {
         [[ "${known}" == "${needle}" ]] && return 0
     done
     return 1
+}
+
+# Referentiell-integritets-koll för Inv 6 (barn-manifest) — kort-halvan.
+# Filnamnet på disk är GEMENER ("task-49 - <slug>.md"); manifestet skriver
+# ID:t VERSALT ("TASK-49", README:s egen konvention). Gemenifierar bara
+# PREFIXET (Bash 3.2-golvet, macOS: ingen ${var,,}, se
+# scripts/deny-frammande-huvudkatalog.sh rad 341). Samma icke-nullglob-idiom
+# som Inv 4:s fil→index-loop nedan: ett uteblivet träff lämnar mönstret
+# obytt, och [[ -e ]] på den bokstavliga strängen är då per definition falskt.
+card_exists() {
+    local kort_id="$1" glob_id match found=0
+    glob_id="$(printf '%s' "${kort_id}" | tr '[:upper:]' '[:lower:]')"
+    for match in "${THREAD_CHILDREN_CARD_DIR}/${glob_id} - "*.md; do
+        [[ -e "${match}" ]] && found=1
+    done
+    [[ "${found}" -eq 1 ]]
 }
 
 # ── Inv 1 + 2: radform, enum, numrering ──────────────────────────────────────
@@ -278,5 +315,74 @@ for ((PENDING_IDX = 0; PENDING_IDX < ${#PENDING_TARGET[@]}; PENDING_IDX++)); do
     fi
 done
 
-[[ "${EXIT_CODE}" -eq 0 ]] && echo "✅ tråd-index OK (radform + enum + numrering + index↔fil + besläktad↔registret)"
+# ── Inv 6: barn-manifest → referentiell integritet (ADR-095 beslut 4) ───────
+# ASYMMETRISK relation: tråden deklarerar sina egna barn (backlog-kort
+# och/eller barn-trådar) i EN riktning. Grinden kräver INGEN spegelpost i
+# barnets egen rad eller kort — det är skillnaden mot Inv 5 (besläktad,
+# symmetrisk) och mot Inv 3/4 (index↔fil, en äkta bidirektionell struktur).
+# "Båda riktningar" här betyder BÅDA ID-NAMNRYMDERNA (tråd-ID:n OCH
+# kort-ID:n valideras var för sig) — se skriptets huvud för resonemanget.
+#
+# Manifestet är OPT-IN: saknas THREAD_CHILDREN_MANIFEST helt är det INTE ett
+# fel — det speglar att ingen tråd än fått en post (ADR-095 beslut 4,
+# "additivt och glest"). ALL_TIDS är komplett här (huvudloopen är klar).
+if [[ -f "${THREAD_CHILDREN_MANIFEST}" ]]; then
+    MANIFEST_LINE_NO=0
+    while IFS= read -r manifest_line; do
+        MANIFEST_LINE_NO=$((MANIFEST_LINE_NO + 1))
+
+        # En manifest-rad känns igen på backtickat tråd-ID i kolumn 1 —
+        # samma idiom som huvudloopens radigenkänning. Rubrik/separator/prosa
+        # matchar inte och hoppas tyst över.
+        if [[ ! "${manifest_line}" =~ ^\|[[:space:]]*${BT}${THREAD_ID_PREFIX}([0-9]+)${BT}[[:space:]]*\| ]]; then
+            continue
+        fi
+        PARENT_TID="${THREAD_ID_PREFIX}${BASH_REMATCH[1]}"
+
+        # Kolumnstruktur: Tråd | Barn → 2 innehållskolumner, 3 pipe-tecken.
+        MANIFEST_PIPES="${manifest_line//[^|]/}"
+        if [[ "${#MANIFEST_PIPES}" -ne 3 ]]; then
+            echo "❌ ${THREAD_CHILDREN_MANIFEST}:${MANIFEST_LINE_NO} — raden har ${#MANIFEST_PIPES} pipe-tecken (förväntat 3, dvs två kolumner: Tråd | Barn)"
+            echo "   Fix: escapa pipe-tecken i cellerna som \\| — annars läser varje maskinell läsare fel kolumn."
+            EXIT_CODE=1
+            continue
+        fi
+
+        # shellcheck disable=SC2310  # returkoden ÄR svaret; fortsätt loopen
+        # och samla alla brutna referenser i stället för att avbryta vid
+        # första träff — samma disciplin som Inv 5 ovan.
+        if ! tid_exists "${PARENT_TID}"; then
+            echo "❌ ${THREAD_CHILDREN_MANIFEST}:${MANIFEST_LINE_NO} — ${PARENT_TID} (förälder) finns INTE i tråd-registret"
+            echo "   Fix: rätta ID:t, eller ta bort raden om tråden aldrig fanns."
+            EXIT_CODE=1
+        fi
+
+        BARN_CELL=$(printf '%s' "${manifest_line}" | cut -d'|' -f3)
+        while IFS= read -r barn_token; do
+            [[ -z "${barn_token}" ]] && continue
+            BARN_ID="${barn_token//${BT}/}"
+            if [[ "${BARN_ID}" =~ ^${THREAD_ID_PREFIX}[0-9]+$ ]]; then
+                # shellcheck disable=SC2310
+                if ! tid_exists "${BARN_ID}"; then
+                    echo "❌ ${THREAD_CHILDREN_MANIFEST}:${MANIFEST_LINE_NO} — ${PARENT_TID} barn-pekar på tråden ${BARN_ID} som INTE finns i registret"
+                    echo "   Fix: rätta ID:t, eller ta bort omnämnandet om tråden aldrig fanns."
+                    EXIT_CODE=1
+                fi
+            elif [[ "${BARN_ID}" =~ ^${THREAD_CHILDREN_CARD_PREFIX}[0-9]+(\.[0-9]+)*$ ]]; then
+                # shellcheck disable=SC2310
+                if ! card_exists "${BARN_ID}"; then
+                    echo "❌ ${THREAD_CHILDREN_MANIFEST}:${MANIFEST_LINE_NO} — ${PARENT_TID} barn-pekar på kortet ${BARN_ID} som INTE finns i ${THREAD_CHILDREN_CARD_DIR}"
+                    echo "   Fix: rätta ID:t, eller ta bort omnämnandet om kortet aldrig fanns."
+                    EXIT_CODE=1
+                fi
+            else
+                echo "❌ ${THREAD_CHILDREN_MANIFEST}:${MANIFEST_LINE_NO} — ${PARENT_TID} barn-cellen har ett ID på okänd form: ${BT}${BARN_ID}${BT}"
+                echo "   Fix: barn-ID:n ska vara ${THREAD_ID_PREFIX}<siffror> (tråd) eller ${THREAD_CHILDREN_CARD_PREFIX}<siffror> (kort)."
+                EXIT_CODE=1
+            fi
+        done < <(grep -oE "${BT}[^${BT}]+${BT}" <<< "${BARN_CELL}" || true)
+    done < "${THREAD_CHILDREN_MANIFEST}"
+fi
+
+[[ "${EXIT_CODE}" -eq 0 ]] && echo "✅ tråd-index OK (radform + enum + numrering + index↔fil + besläktad↔registret + barn-manifest↔registret)"
 exit "${EXIT_CODE}"

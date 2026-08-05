@@ -4,7 +4,7 @@ title: 'Bygg barn-manifestet — glest, additivt, femte invariant (ADR-095 beslu
 status: To Do
 assignee: []
 created_date: '2026-08-04 22:54'
-updated_date: '2026-08-04 22:55'
+updated_date: '2026-08-05 00:30'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,14 +33,16 @@ Den SEMANTISKA frågan "vad räknas som barn" är ÖPPEN och Marcus, inte byggar
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Manifest-formen additiv och gles — bara trådar med faktiska barn får post
-- [ ] #2 Ingen befintlig trådrad ändrad; pipe-antals-invarianten orörd
-- [ ] #3 check-thread-index.sh utökad med en femte invariant (manifest → giltiga tråd-/kort-ID:n, båda riktningar) i samma stil som befintliga inv. 3/4
-- [ ] #4 barn deklareras i EN riktning; ingen kod kräver eller skriver en spegelpost
-- [ ] #5 Tvåsidigt bevis: invarianten SLÄPPER ett giltigt manifest och FÄLLER ett som pekar på icke-existerande ID
-- [ ] #6 Ingen migrering av befintliga barn-former — semantiken är Marcus beslut, öppet avgränsad i ADR-095
-- [ ] #7 shellcheck 0; check-thread-index.sh grön mot nuvarande register
+- [x] #1 Manifest-formen additiv och gles — bara trådar med faktiska barn får post
+- [x] #2 Ingen befintlig trådrad ändrad; pipe-antals-invarianten orörd
+- [x] #3 check-thread-index.sh utökad med en femte invariant (manifest → giltiga tråd-/kort-ID:n, båda riktningar) i samma stil som befintliga inv. 3/4
+- [x] #4 barn deklareras i EN riktning; ingen kod kräver eller skriver en spegelpost
+- [x] #5 Tvåsidigt bevis: invarianten SLÄPPER ett giltigt manifest och FÄLLER ett som pekar på icke-existerande ID
+- [x] #6 Ingen migrering av befintliga barn-former — semantiken är Marcus beslut, öppet avgränsad i ADR-095
+- [x] #7 shellcheck 0; check-thread-index.sh grön mot nuvarande register
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
