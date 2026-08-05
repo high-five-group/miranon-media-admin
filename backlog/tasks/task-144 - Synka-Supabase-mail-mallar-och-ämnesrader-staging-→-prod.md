@@ -4,6 +4,7 @@ title: Synka Supabase mail-mallar och ämnesrader staging → prod
 status: To Do
 assignee: []
 created_date: '2026-08-05 15:27'
+updated_date: '2026-08-05 15:49'
 labels:
   - ready-for-agent
 dependencies:
@@ -39,6 +40,26 @@ KÄND KANT att bedöma i kortet: mail-mallarna kan möjligen låsas i supabase/c
 - [ ] #2 Varje skrivning är en riktad PATCH med maskinell före/efter-diff av samtliga 242 fält — inga oavsiktliga ändringar
 - [ ] #3 Det är utrett och bokfört om mallarna kan låsas i supabase/config.toml; kan de det är de låsta, kan de inte det står skälet i filen
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AVGRÄNSNINGEN RÄTTAD 2026-08-05 (orkestreraren, efter fångst av TASK-143:s bygg-agent).
+
+Beskrivningens stycke 'AVGRÄNSNING MOT TASK-143' är FELAKTIGT som det står och ersätts av detta. Felet var mitt: jag skrev att invite-mallen 'följer med TASK-143', men instruerade samtidigt TASK-143:s agent att INTE röra prod-mallarna. Ingen ägde därmed invite-mallens väg till miljöerna.
+
+MÄTT EFTER ATT TASK-143 LEVERERADE (PR #800):
+- supabase/templates/invite.html ÄR uppdaterad i repot (bär nu namn + inbjudare)
+- prods mailer_subjects_invite är fortfarande 'You have been invited' — agenten pushade medvetet ingenting, vilket var rätt beslut av den
+
+RÄTT AVGRÄNSNING, som den ska läsas:
+- TASK-143 äger mallens INNEHÅLL (filen i git). Levererad.
+- TASK-144 (detta kort) äger mallarnas DEPLOYMENT till staging och prod — INKLUSIVE invite-mallen, inte bara recovery och övriga mailer_*-fält.
+
+Dependencyn på TASK-143 står kvar och är fortfarande rätt: innehållet måste finnas i git före det deployas. Men skälet är inte längre 'annars skrivs invite-mallen över två gånger' — det är 'annars deployas en mall som inte bär namnet än'.
+
+KÄLLÄGE, bokfört öppet: agenten sökte igenom samtliga tasks/sessions/*.md efter belägg för citatet 'Marcus beslut 2026-08-05 (väg 2)' och hittade inget — korrekt, eftersom beslutet fattades i chatten EFTER att sessionsdokets Del 12 skrevs. Beslutet är nu bokfört i Del 13. Att agenten behandlade det obelagda citatet som HYPOTES och inte byggde vidare på det är ADR-086 i praktiken.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
