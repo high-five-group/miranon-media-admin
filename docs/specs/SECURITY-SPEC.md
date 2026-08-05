@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-02
+updated: 2026-08-05
 review_by: 2026-11-15
 status: stable
 ---
@@ -39,7 +39,7 @@ Content-Security-Policy:
   style-src 'nonce-{RANDOM}' 'self';
   img-src 'self' data: https://*.supabase.co;
   font-src 'self';
-  connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+  connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.pwnedpasswords.com;
   object-src 'none';
   base-uri 'none';
   form-action 'self';
@@ -50,7 +50,15 @@ Content-Security-Policy:
 **Förklaring:**
 
 - `script-src 'nonce-{RANDOM}' 'strict-dynamic'` — bara skript med korrekt nonce körs. `strict-dynamic` tillåter dynamiskt laddade skript från godkända skript (t.ex. chunks från Vite).
-- `connect-src` tillåter Supabase-anrop (REST + Realtime WebSocket).
+- `connect-src` tillåter Supabase-anrop (REST + Realtime WebSocket) samt
+  `api.pwnedpasswords.com` (TASK-127.6, `src/lib/auth/pwnedPasswordCheck.ts`)
+  — accept-sidans klientsida k-anonymitets-kontroll mot HaveIBeenPwneds
+  Pwned Passwords-API (ASVS 5.0 V6 6.2.4/6.2.12). Lösenordet lämnar aldrig
+  klienten; endast de första 5 hex-tecknen av en SHA-1-hash skickas. CSP är
+  vid TASK-127.6:s landning INTE kopplad in någonstans i den faktiska appen
+  (ingen `_headers`-fil, ingen middleware, ingen `<meta>`-tagg finns i
+  repot) — tillägget ändrar alltså inget levande skydd, det dokumenterar
+  rätt mål till den dag CSP kopplas in.
 - `object-src 'none'` — blockerar Flash/Java-plugins (klassisk XSS-vektor).
 - `base-uri 'none'` — förhindrar `<base>`-tag-kapning.
 - `frame-ancestors 'none'` — ersätter X-Frame-Options, förhindrar clickjacking.
@@ -86,7 +94,7 @@ export function cspNonce(): Plugin {
         `script-src 'nonce-${nonce}' 'strict-dynamic'`,
         `style-src 'nonce-${nonce}' 'self'`,
         `img-src 'self' data: https://*.supabase.co`,
-        `connect-src 'self' https://*.supabase.co wss://*.supabase.co`,
+        `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.pwnedpasswords.com`,
         `object-src 'none'`,
         `base-uri 'none'`,
         `frame-ancestors 'none'`,
@@ -123,7 +131,7 @@ export default defineConfig({
 
 ```text
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'nonce-{RANDOM}' 'strict-dynamic'; style-src 'nonce-{RANDOM}' 'self'; img-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'nonce-{RANDOM}' 'strict-dynamic'; style-src 'nonce-{RANDOM}' 'self'; img-src 'self' data: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.pwnedpasswords.com; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 ```
 
 **Obs:** Vercel stöder inte dynamisk nonce i `_headers` direkt. För nonce per
@@ -141,7 +149,7 @@ export default function middleware(request: Request) {
     `script-src 'nonce-${nonce}' 'strict-dynamic'`,
     `style-src 'nonce-${nonce}' 'self'`,
     `img-src 'self' data: https://*.supabase.co`,
-    `connect-src 'self' https://*.supabase.co wss://*.supabase.co`,
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.pwnedpasswords.com`,
     `object-src 'none'`,
     `base-uri 'none'`,
     `form-action 'self'`,

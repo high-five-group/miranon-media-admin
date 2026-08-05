@@ -4,7 +4,7 @@ title: 'Skiva: Accept-sidan — lösenord enligt ASVS-golvet'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-03 15:54'
+updated_date: '2026-08-05 11:55'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,44 +24,45 @@ Täcker användarberättelser: 2, 3, 4, 7.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 E-postfältet är förifyllt och låst — kan inte ändras via UI eller manipulerad request
-- [ ] #2 Lösenordsgolvet upprätthålls: minst 8 tecken med 15 rekommenderat, kontroll mot läckta lösenord, pedagogisk svensk vägledning
-- [ ] #3 Utgången eller förbrukad länk ger vänligt felläge med väg framåt — aldrig rå felkod
-- [ ] #4 Acceptance- och a11y-sviterna gröna på sidans alla tillstånd
-- [ ] #5 Prototyp-facit följt
+- [x] #1 E-postfältet är förifyllt och låst — kan inte ändras via UI eller manipulerad request
+- [x] #2 Lösenordsgolvet upprätthålls: minst 8 tecken med 15 rekommenderat, kontroll mot läckta lösenord, pedagogisk svensk vägledning
+- [x] #3 Utgången eller förbrukad länk ger vänligt felläge med väg framåt — aldrig rå felkod
+- [x] #4 Acceptance- och a11y-sviterna gröna på sidans alla tillstånd
+- [x] #5 Prototyp-facit följt
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-BYGGKRAV UR PROTOTYP-PASSET (TASK-127.2 divergensfas, 2026-08-03) — variant-oberoende, gäller oavsett vilken variant Marcus väljer.
+SKARP NYSKRIVNING av accept-sidan (`/valkommen`, ADR-092 beslut 2), fristående route utanför `_authenticated`. Prototypkoden (`src/components/dev/prototyp-auth/VariantB.tsx`) rörs aldrig — kastas per throwaway-kontraktet.
 
-SKARP BUGG FÅNGAD OCH DIAGNOSTISERAD i prototypen: efter ett misslyckat inloggningsförsök kunde nästa försök med RÄTT lösenord aldrig slutföras — submit-handlern eldade aldrig, tyst och reproducerbart.
+SESSIONS-MEKANIK: Supabases invite-mail länkar med access/refresh-token i URL:ens HASH-fragment. Verifierat mot Supabase-dokumentationen (context7): appens klient sätter ingen `flowType` → defaultar till `implicit`, och `detectSessionInUrl: true` (default) konsumerar fragmentet automatiskt INNAN React mountar. Ingen manuell `verifyOtp` behövs — `getSession()` väntar internt in den processen. En ogiltig/förbrukad/obefintlig länk ger samma observerbara utfall (`getSession()` → null) som en direkt besökt URL utan token — enumeration-neutralt (AC #3, ASVS 6.3.8) FÖLJER av mekaniken, ingen särskild gren krävdes.
 
-ROTORSAK: React Arias default validationBehavior="native" speglar isInvalid/errorMessage via input.setCustomValidity(...). Webbläsaren rensar den strängen ENDAST vid en lyckad native submit — inte för att värdet ändras. Nästa submit blockeras därför av webbläsarens EGEN constraint-validering INNAN onSubmit hinner köra; input.validity.customError är fortfarande true trots ett giltigt nytt värde.
+LÖSENORDSGOLVET (AC #2) — EGENBYGGD BREACH-KONTROLL, INTE SUPABASES NATIVA: Supabase Auth har en inbyggd HIBP-integration, men den är entitlement-gated till Pro Plan (verifierat mot Supabase Studios källkod via context7: `entitlementKey: 'auth.password_hibp'`) och styrs via en dashboard-toggle jag varken kan läsa eller sätta via `supabase config push` (ingen `config pull` finns). Om togglen faktiskt är på för detta projekt är alltså overifierat — ett obelagt påstående (ADR-086). I stället byggdes `src/lib/auth/pwnedPasswordCheck.ts`: klientsidans k-anonymitets-kontroll mot HaveIBeenPwneds Pwned Passwords-API (samma mekanism Supabase själv bygger sin funktion på; industristandard, används av 1Password/GitHub/Microsoft). Lösenordet lämnar aldrig klienten (endast 5 hex-tecken av en SHA-1-hash). Fail-open vid nätverksfel (blockerar inte kontoskapandet om HIBP är nere) — loggat till Sentry som warning. CSP-tillägg: `docs/specs/SECURITY-SPEC.md`s `connect-src` utökad med `https://api.pwnedpasswords.com` på alla tre ställen CSP dokumenteras — CSP är INTE kopplad in någonstans i den faktiska appen ännu (ingen `_headers`, ingen middleware, ingen `<meta>`-tagg finns i repot), så ändringen bryter inget levande skydd.
 
-ÅTGÄRD I PROTOTYPEN: validationBehavior="aria" på lösenordsfältet. Bevisat i båda riktningar — felet reproducerat två gånger, fixen applicerad, därefter verifierat skarpt (fel → felmeddelande → nytt lösenord → lyckad övergång) på BÅDA skärmarna, som delar samma lösenordsfält-komponent.
+DIVERGENS MOT FACIT, ÖPPET FLAGGAD (AC #5 ändå avbockad — strukturell/visuell fidelity hålls, copy-avvikelsen är data-driven, inte ett hörn skuret): facit-bilderna visar "Välkommen, Lotta" och "Marcus Johansson har bjudit in dig". Den skarpa sidan visar generiskt "Du har bjudits in" utan namn eller inbjudare. Skälet: `invite-user`-EF:ens (TASK-127.5, redan mergad) kontrakt är `{email, role}` — inget namnfält för mottagaren, ingen inbjudar-identitet propageras till den nya sessionen eller dess metadata. Att hårdkoda "Marcus Johansson" hade varit ett fel state-of-the-world-antagande (bryter den dag en andra admin bjuder in någon). Att härleda ett förnamn ur e-postens lokal-del är UTTRYCKLIGEN FÖRBJUDET redan i `AuthProvider.tsx` (`sessionToUser`-kommentaren: "Konsumenter får ALDRIG falla tillbaka på e-postadressen, Gunilla-principen, TASK-1 beslut 5"). Övrig struktur följer facit troget: en spalt, varm toning (`[data-auth-fond]`, permanent base.css-infrastruktur sedan S96), formuläret i vitt `rounded-2xl`-kort, e-post readonly med hänglås-ikon, ETT lösenordsfält med visa/dölj (inget bekräftelsefält — facitets research-grundade val), TTL-fotnot "Länken gäller i 24 timmar...". Öppen fråga till Marcus/orkestreraren: bör en uppföljande skiva utöka invite-user-EF:ens kontrakt med namn/inbjudare för att stänga denna copy-gap?
 
-VARFÖR DETTA STÅR HÄR: prototypkod befordras aldrig (throwaway-kontraktets klausul iv) — den skarpa implementationen skrivs nyskriven i denna skiva. Utan denna not återintroduceras buggen med hög sannolikhet, eftersom den bara syns vid ANDRA försöket och inte fångas av ett test som prövar ett enda felaktigt försök.
+POST-SKAPANDE-FLÖDE: `updateUser({password})` lämnar en giltig session (invite-sessionen blir en riktig session). Koden signar explicit ut (`scope: 'local'`) och visar en "Kontot är skapat"-yta med länk till `/login` — ETT medvetet inloggningssteg, inte tyst navigering in i appen. Grund: S96/TASK-127.2:s konvergens-signal ("Logga in direkt efteråt — klart" byttes till "Logga in och upptäck ditt nya verktyg", en uttalad Marcus-formulering för precis detta ögonblick) plus TASK-127.9:s egen framing ("inbjudan → mail-länk → accept → inloggning" som skilda steg).
 
-TESTKRAV SOM FÖLJER: sviten ska pröva sekvensen fel → rätt, inte bara fel. Ett test som slutar vid det första felmeddelandet hade varit grönt genom hela buggen.
+KÄND, ÖPPET FLAGGAD TESTLUCKA: grenen som mappar `updateUser`-fel `session_not_found`/`session_expired` till samma vänliga felläge som en direkt ogiltig länk är BYGGD men INTE oberoende testad — jag kunde inte verifiera GoTrues exakta felsvars-wire-format (`error_code`/`msg`-fält) med tillräcklig säkerhet från dokumentationen för att skriva ett tillförlitligt test utan att gissa. Testet för "updateUser misslyckas" täcker i stället den GENERISKA felgrenen (5xx utan specifik kod), som jag kunde verifiera med säkerhet.
 
-BYGGKRAV UR KONVERGENSFASEN (Marcus, 2026-08-03), verbatim: "Och i den skarpa versionen så ska man INTE behöva scrolla, ALLT ska synas på skärmen."
+TESTKLASSNING (ADR-094): Ursprunglig acceptance-fil (13 tester) kördes genom `scripts/hermetik-sjalvtest.mjs` (ADR-080 beslut 3, VILLKOR för klassens existens) — 9 av 13 överlevde ett tömt normalläge (`getSession()` läser localStorage utan nätverksanrop, så ingen fixturdata konsumerades). Flyttade de 9 till `tests/webblasarbeteende/valkommen.test.ts` (ADR-094 Beslut 2-kriteriet: "har testet ett databeteende att bevisa formen av? Nej på båda → webblasarbeteende") — samma mönster som `install-prompt.test.ts`s egen historia. De 4 kvarvarande (HIBP-träff, fel→rätt-sekvensen, lyckad path, updateUser 5xx) hänger genuint på mockat nätverk och självtestet BEVISAR det nu (4/4 fällda av vakten). "a11y-sviterna gröna" (AC #4) tolkat som axe-scan-täckning på sidans samtliga tillstånd (Hem-vy-precedentet: axe inbäddad i den fil som äger sidans state), inte bokstavligen `tests/a11y/` — den katalogen är enligt playwright.config.ts:s egen dokumentation avgränsad till `/dev/primitives`+`/dev/patterns`, inte produktroutes.
 
-GÄLLER DEN SKARPA IMPLEMENTATIONEN, inte bara prototypen. Hela innehållet ska rymmas inom viewporten utan vertikal scroll.
+ROLL-VISNING: `app_metadata.role` (v1-allowlisten tillåter bara 'admin' → visas "administratör"); en okänd framtida roll visas rått i stället för att tystas bort.
 
-VAD SOM GÖR KRAVET SVÅRT, och som måste mätas i stället för antas:
-- Accept-sidan bär mest innehåll (rubrik, kontextstycke, tre punkter, fyra formulärfält, knapp) och spränger höjden först.
-- På mobil staplas spalterna; bild + text + formulär i en kolumn ryms sannolikt inte utan att något ger vika.
-- Med mjukt tangentbord uppe krymper synlig yta ofta till omkring halva viewporten. Ett falt som "syns" i tom viewport gor det inte nar anvandaren skriver. Detta ar det verkliga testfallet, inte den tomma sidan.
+React Arias validationBehavior="native"-buggen (kortets byggkrav ur TASK-127.2): `validationBehavior="aria"` satt på lösenordsfältet. Regressionstest skriver fel→rätt i SAMMA test (acceptance-filen), inte bara ett enda felaktigt försök.
 
-GRÄNSEN: kravet far ALDRIG uppfyllas genom att bryta ett annat golv - typsnitt under lasbarhetsgransen, borttagna fokusmarkeringar eller komprimerade traffytor under 44px. Ryms det inte: eskalera till Marcus med matt underlag om vad som sprangs, inte en tyst kompromiss.
+GRÄNSEN (inget vertikalt scroll): verifierat på desktop (1280×800) och mobil (390×844) — renderad `scrollHeight`-mätning, ingen scroll. En tredje, ÖPPET FLAGGAD approximation (390×420, ~halva mobilhöjden) bevisar att lösenordsfältet och knappen förblir nåbara — men detta är EN approximation av "mjukt tangentbord uppe", inte en verifiering: Playwright kan inte trigga en riktig VisualViewport-resize. `min-h-dvh` (facit-mönstret) är byggd för scenariot, men mekanismen är inte vad testet mäter.
+
+GRINDAR KÖRDA (lokalt, denna worktree): typecheck 0 fel · biome (nya filer + fullt repo) 0 fel (endast pre-existerande, orörda warnings) · build grön (ny `valkommen`-chunk bekräftad i output) · npm run test:api 450/450 gröna · npm run check:docs 13/13 gröna (endast SECURITY-SPEC.md rörd av docs-klassen) · acceptance (valkommen.acceptance.test.ts) 4/4 gröna + hermetik-självtest 4/4 fällda av vakten (bevisar hermetiskt beroende) · webblasarbeteende (valkommen.test.ts) 9/9 gröna.
+
+PREMISS-PASSETS FYND (ADR-086): TASK-127.2 visade "To Do" i denna worktree (forkad ur origin/main) men "Done" i orkestrerarens huvudkatalog (uncommitted lokalt, 2026-08-05). Detta är EN landning jag inte sett än, inte ett fel i uppdraget — bekräftat facit-innehåll (bilagorna) läst direkt från disk oavsett kortets committade status.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
