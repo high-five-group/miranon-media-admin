@@ -15,6 +15,33 @@
 
 ## Aktuellt fokus
 
+**Session 96 ▶️ ÅTERUPPTAGEN (2026-08-05, fjärde resumen — efter fjärde
+pausen, `lifecycle: active`)** — **MARCUS PEKADE UT S96 MEDAN TRE ANDRA DOK
+STOD PAUSADE.** LÄS-fasen: `main` **`53ad8a4b`** grön per jobb (CI ·
+Post-merge · Push on main) · rent träd · ägarlappen FRI (filen frånvarande) ·
+kön tom på arbets-PR:er (endast dependabot `#635` öppen, oarmerad).
+**Vägvals-grinden gav fyra pausade dok** — S92, S93, S96, S98 — läst ur
+frontmatter, inte via `grep -l` (som falsktäffar på prosa-omnämnanden);
+Marcus kvitterade S96 trots att **S98 pausades samma dag med okonsumerad
+HANDOFF**. **Numreringen re-verifierad mot disk och genomgående FÖRBRUKAD
+sedan pausen** — handoffen skrevs "efter S97", men både S97 och S98 har
+körts: ADR 095→**096** · lesson L444→**L470** · tråd T120→**T124** · kort
+task-139→**task-143** · fälla **f47** (oförändrad) · main `4bbd1f98`→
+`53ad8a4b`. **Fem divergenser flaggade**, varav en operativ: **Vercel-MCP:n
+är fortfarande oautentiserad** (verktygsytan exponerar endast
+`authenticate`/`complete_authentication`), medan Resend ÄR autentiserad —
+S96:s carry förutsätter autentiserade verktyg för Grind 0:s DNS-moment, så
+hälften av förkravet står kvar. MCP-ytan bestäms vid sessionsstart och
+uppdateras inte retroaktivt. **Carry lever:** `TASK-132` (HIGH,
+deadlock-fyndet på `TASK-127`-spåret) · `TASK-134` (MEDIUM) · `TASK-136` +
+`TASK-138` (LOW, plockbara) · `TASK-127.3`/`127.6` · `T46`/`T44` paused,
+`T95` active. **NÄSTA: Marcus återkommer med input på Grind 0 efter
+tillstånds-återställningen.** Numrering att re-verifiera:
+99/096/L470/T124/task-143/f47.
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 98 ⏸️ PAUSAD (2026-08-05, `lifecycle: paused`)** — **NATTGRINDEN
 FÄLLDE SIN EGEN SKAPELSE-COMMIT, OCH PARITETSGRINDEN OMKLASSADES.** 18 PR:er
 (`#756`–`#773`) + fyra hub-commits + plugin **1.28.4**. **Scopets tre poster
