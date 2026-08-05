@@ -46,13 +46,43 @@ och rundturen `TASK-127.9` grindas av paketet.
    *"Failed to connect high-five-group/miranon-media-admin to project"*.
    Kräver att Vercels GitHub-app ges åtkomst till organisationen
    (Marcus-moment). Utan den sker ingen auto-deploy vid push.
-2. **DNS `admin.miranon.dev`** (CNAME → Vercel) — kan nu utföras av Code via
-   `gddy` (PAT-autentiserad, prod), inte enbart av Marcus i webbgränssnittet.
-   Väntar på att en PRODUKTIONSdeploy är Marcus-kvitterad, eftersom CNAME:t
-   ska peka på den och inte på en preview.
-3. **CORS-utökning:** `CORS_ALLOWED_ORIGINS` får nya origin i staging + prod —
-   Code-at-prod under Marcus-auktorisation (annars deployad men datalös app).
-   Origin är nu känt för preview; produktionens tillkommer med punkt 2.
+2. ✅ **UTFÖRD 2026-08-05.** `admin.miranon.dev` är live —
+   **A-post `76.76.21.21`**, inte CNAME. Vercels inspect erbjöd två vägar,
+   och alternativ b (byt nameservers till Vercel) hade flyttat hela zonen
+   och rivit MX, SPF, DKIM och DMARC som satts upp samma förmiddag. A-posten
+   valdes; alla tio mail-poster verifierat orörda efteråt.
+
+   Omverifierad 2026-08-05 i femte resumen: `HTTP 200`, A-posten svarar.
+3. ✅ **UTFÖRD 2026-08-05 (S96 femte resumen), BÅDA MILJÖERNA.**
+   `admin.miranon.dev` tillagd additivt i `CORS_ALLOWED_ORIGINS`. Appen är
+   därmed inte längre datalös.
+
+   **Secreten gick inte att LÄSA, bara att bevisa.** `secrets set` skriver
+   över hela värdet, men värdet är write-only — CLI:t visar en digest, och
+   Management API:ts `/secrets` returnerar SAMMA digest. Bokföringen dög inte
+   heller: den enda dokumenterade posten (2026-05-04) hashade till
+   PRODUKTIONENS digest, eftersom staging inte fanns förrän 2026-06-13.
+
+   Värdet rekonstruerades i stället: digesten är rå SHA256, så varje
+   kandidat kunde prövas lokalt utan skrivning, och en `OPTIONS`-preflight
+   per origin (200 = allowlistad, 403 = inte, ingen auth krävs) hittade
+   kandidaterna. Stagings verkliga lista bar **två odokumenterade
+   Vite-portar** (`5174`, `5175`) som en skrivning efter dokumentationen
+   hade raderat tyst.
+
+   Digesten verifierades mot lokalt beräknad SHA256 av det avsedda värdet
+   FÖRE funktionstest, i båda miljöerna.
+
+   **Beviset nådde hela vägen:** ett `GET` utan token svarar
+   `access-control-allow-origin: *` — det är Supabases gateway, som avvisar
+   innan vår kod körs, och bevisar ingenting. Med anon-nyckeln passerar
+   anropet gatewayen och `corsHeadersFor()` svarar
+   `access-control-allow-origin: https://admin.miranon.dev`. Deny-by-default
+   håller (`evil.example.com` → 403).
+
+   **`admin.miranon.se` lämnades kvar i prod** trots att `TASK-136` bekräftat
+   att domänen är stale — att riva en origin ur en produktions-allowlist är
+   en säkerhetsändring, inte en del av denna punkt.
 4. **Sändande subdomän `send.miranon.dev`** verifieras i Resend + SPF/DKIM —
    Marcus i Resend + GoDaddy (T44 M3-vägen; `RESEND_FROM` byts i samma moment).
 
@@ -134,7 +164,12 @@ och rundturen `TASK-127.9` grindas av paketet.
    macOS-Keychain och läst direkt in i processen —
    `AUTH_SMTP_PASS=$(security find-generic-password -s RESEND_SMTP_PASS -w)
    supabase config push` — så värdet aldrig passerar en agents kontext.
-   **PROD ÅTERSTÅR.**
+
+   ✅ **PROD UTFÖRD 2026-08-05 (S96 femte resumen).** Prod saknade SMTP
+   HELT — samtliga sex fält stod `None`, alltså gick alla auth-mail via
+   Supabases inbyggda relä. Satt via **riktad PATCH**, inte `config push`:
+   sju fält ändrade av 242 (sex SMTP + `mailer_otp_exp`), maskinellt diffade
+   mot förebild — noll oavsiktliga.
 
    **✅ SÄKERHETSNOTEN ÄR NU BELAGD — den var mer berättigad än den trodde.**
    Noten sa att nollställnings-risken var *"INTE bekräftat mot en skarp push
@@ -175,7 +210,19 @@ och rundturen `TASK-127.9` grindas av paketet.
 7. ✅ **UTFÖRD MOT STAGING 2026-08-05** (samma push som punkt 6).
    `mailer_otp_exp` verifierad `86400` och `uri_allow_list`
    `https://admin.miranon.dev/valkommen` i Management API-svaret efter push.
-   **PROD ÅTERSTÅR** — samma ordning och säkerhetsnot som punkt 6.
+   ✅ **PROD UTFÖRD 2026-08-05 (S96 femte resumen).** `mailer_otp_exp`
+   3600→86400 (i SMTP-patchen ovan) och `uri_allow_list` satt separat.
+
+   **Prod var värre än planen antog:** `uri_allow_list` var **HELT TOM** —
+   inte bara `/nytt-losenord` saknades utan även `/valkommen`. Varje
+   inbjudningslänk mot `admin.miranon.dev`, som pekar på PROD, hade alltså
+   fått sin `redirectTo` tyst ignorerad av GoTrue.
+
+   **`config push` avstyrdes av sin egen diff.** CLI:t varnade att
+   `AUTH_SMTP_PASS` är unset, och stagings SMTP var redan konfigurerad — en
+   push hade kunnat riva den. Diffen lästes med `n` på prompten och visade
+   EXAKT EN rad (`additional_redirect_urls`), som togs som riktad PATCH i
+   stället: 1 fält av 242. Det är punkt 6:s egen lärdom tillämpad.
 
    **Utöver planen:** `site_url` sattes i samma veva, i BÅDA miljöerna. Den
    var `http://localhost:3000` — utvecklingsstandarden som aldrig ändrades
