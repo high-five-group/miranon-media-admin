@@ -94,3 +94,19 @@ tests/visual/__screenshots__/**/*-win32.png
 # Hermetik-rapportens mätdata (S91 steg 1) — utanför test-results/ eftersom
 # Playwright rensar sin outputDir vid varje körningsstart.
 .hermetik/
+# Vercel CLI:s projektkoppling (`vercel link`) — bär projekt-/org-ID och en
+# nedladdad VERCEL_OIDC_TOKEN. Aldrig i git.
+.vercel
+
+# OBS: `vercel link` lade här ursprungligen till ett brett `.env*`. Den raden är
+# BORTTAGEN med avsikt. Den stod EFTER undantagen ovan, och i git vinner den
+# SISTA matchande regeln — därmed åter-ignorerade den samtliga sex filer som
+# raderna `!.env.example`, `!.env.test.example`, `!.env.seed.example`,
+# `!.env.development`, `!.env.staging` och `!.env.production` uttryckligen
+# undantar. Mätt i ett isolerat testrepo: utan raden matchar `!`-undantagen,
+# med raden matchar `.env*` och vinner.
+#
+# Ingen befintlig fil tappades — git ignorerar aldrig REDAN SPÅRADE filer, så
+# felet hade legat latent tills någon återskapade en av dem eller lade till en
+# ny undantagen fil. Raden var dessutom redundant: `.env` + `.env.*` ovan
+# täcker samma yta, med de undantag som faktiskt behövs.

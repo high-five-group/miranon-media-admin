@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
-import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router';
+import { createFileRoute, Link, redirect, useNavigate, useSearch } from '@tanstack/react-router';
 import { Fingerprint, Loader2 } from 'lucide-react';
-import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import { Button, Input, MessageBox } from '@/components/primitives';
 import { supabase } from '@/data/config/supabase-client';
@@ -83,13 +83,13 @@ export const Route = createFileRoute('/login')({
  * stället för att återintroducera buggen (den bet skarpt i prototypen,
  * reproducerad två gånger, se TASK-127.2/127.6 Implementation Notes).
  *
- * "GLÖMT LÖSENORD?" TOGGLAR en lokal notis i stället för att navigera —
- * TASK-127.7 bygger den riktiga mottagningssidan; en länk dit i dag hade
- * gått till en icke-existerande route. AVVIKELSE mot prototypens exakta
- * text (AC#4, öppet bokförd): parentesen
- * "(Byggs i TASK-127.7 - prototypen visar bara texten.)" var en
- * bygg-intern kommentar riktad till Marcus under konvergensen, inte avsedd
- * UI-copy — utelämnad här, resten av meningen bevarad verbatim.
+ * "GLÖMT LÖSENORD?" LÄNKAR till `/glomt-losenord` (TASK-127.7) — bar fram
+ * till dess en toggle som visade en attrapp-notis, eftersom mottagningssidan
+ * ännu inte existerade (se historiken i git-loggen för den ursprungliga
+ * kommentaren, TASK-127.3). Nu när sidan finns är en riktig navigering rätt
+ * — samma "en knapp som NAVIGERAR ska vara en riktig länk"-resonemang som
+ * `valkommen.tsx`s `PrimarLankKnapp` dokumenterar (cmd/ctrl-klick i ny flik,
+ * kopiera länk, `role="link"` för skärmläsare).
  *
  * A11Y utöver facitets visuella form (ACCESSIBILITY-CHECKLIST §2):
  * `aria-busy` på formuläret under inloggningsförsök, och fokus flyttas
@@ -133,9 +133,7 @@ function LoginRoute() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [misslyckades, setMisslyckades] = useState(false);
-  const [visaGlomtNotis, setVisaGlomtNotis] = useState(false);
   const felRef = useRef<HTMLDivElement>(null);
-  const glomtNotisId = useId();
 
   // Lazy initializer — ren klient-check (ingen `window`/`navigator`-läsning
   // under SSR eftersom appen är rent CSR, men mönstret kostar inget och
@@ -275,25 +273,12 @@ function LoginRoute() {
               isDisabled={isSubmitting}
               validationBehavior="aria"
             />
-            <button
-              type="button"
-              aria-expanded={visaGlomtNotis}
-              aria-controls={glomtNotisId}
-              onClick={() => setVisaGlomtNotis((v) => !v)}
+            <Link
+              to="/glomt-losenord"
               className="text-(color:--mm-accent) self-end rounded text-small underline-offset-2 hover:underline focus-visible:outline-(--mm-focus-ring) focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               Glömt lösenord?
-            </button>
-            {visaGlomtNotis && (
-              <p
-                id={glomtNotisId}
-                role="status"
-                className="text-caption text-text-secondary motion-safe:animate-mm-avsloj"
-              >
-                Klicka "skicka" nästa gång, så mejlar vi dig en länk för att sätta ett nytt
-                lösenord.
-              </p>
-            )}
+            </Link>
           </div>
 
           {misslyckades && (
