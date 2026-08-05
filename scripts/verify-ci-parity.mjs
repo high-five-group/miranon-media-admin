@@ -56,24 +56,68 @@
 // `webblasarbeteende` är relevanta — och verifierar antagandet mekaniskt vid
 // varje körning (§ b ovan) i stället för att bara lita på det.
 //
-// ═══ DEFAULT ÄR DET FULLSTÄNDIGA LÄGET ═══
+// ═══ DEFAULT ÄR DET FULLSTÄNDIGA LÄGET — FÖR DEN DIFF SOM FAKTISKT FINNS ═══
 // Kostnaden är verklig (Acceptance-klassen ensam är ~7 min i CI). Ett
 // snabbläge som RÅKAR bli default återskapar precis det problem detta
 // skript finns för att lösa — `--fast` finns för iterativt lokalt arbete,
 // men skriver ut en banderoll som inte går att missa, både före och efter
 // körning, och räknas ALDRIG som fullständig täckning.
 //
+// "Fullständigt" är från TASK-142 (2026-08-05) VILLKORAT av vad CI självt
+// skulle väcka för diffen, inte längre alltid varenda jobb. Mätt skarpt: en
+// commit som lade till EN markdown-fil drog en 641,0 s körning — 153
+// acceptance-tester + 11 Playwright-tester CI aldrig hade kört, eftersom
+// ci.yml:s `changed`-jobb (`should_skip_tests`, D0-klassningen) redan hade
+// skippat hela `suite`-anropet. Skriptet läste ingen av de outputsen.
+//
+// ═══ DIFF-KLASSNINGEN — HÄRLEDD, INTE DUPLICERAD ═══
+// D0-globen (`changed`-jobbets `changed-files`-steg, `with.files`) läses ur
+// den REDAN parsade ci.yml-YAML:en vid varje körning — exakt samma härlednings-
+// disciplin som resten av filen. `.ci-parity-policy.json`:s `diffClassification`
+// deklarerar bara VAR globen bor (jobb + steg-id), aldrig dess VÄRDEN.
+//
+// Diffen mäts mot `origin/main` (samma bas som CI:s PR-yta) med `git diff
+// origin/main...HEAD` (tre-punkts, dvs. mot merge-base) UNIONERAT med
+// arbetsträdets ändringar (`git diff HEAD`) och otrackade filer (`git
+// ls-files --others --exclude-standard`) — en ny fil som bara ligger på disk
+// men aldrig committats ska klassas precis som en committad.
+//
+// Matchningen sker med `micromatch` (samma bibliotek repots EGNA kommentarer
+// i ci.yml redan använder som facit för hur tj-actions/changed-files tolkar
+// dessa mönster, verifierat 2026-07-28 mot exakt denna version). En diff är
+// DOCS_ONLY endast om VARJE ändrad fil matchar D0-globen — allowlist, aldrig
+// blocklist, samma invariant som D0/D1 i ci.yml självt. DOCS_ONLY skippar
+// `derivedJobs.ciSuite` (test-fast/acceptance/webblasarbeteende) — CI:s egna
+// `suite`-jobb gör exakt detta på `should_skip_tests`, vaktat strukturellt av
+// `verifieraDiffKlassningskoppling` i preflighten (§ PARITETS-GRINDEN).
+//
+// FAIL-CLOSED VID MINSTA OSÄKERHET, ALDRIG EN GISSAD DELMÄNGD: kan D0-globen
+// inte hittas/tolkas, eller kan diffen inte beräknas (ingen `origin/main`
+// lokalt, git-kommando misslyckas), faller klassningen till FULLT läge —
+// samma beteende som innan TASK-142, inte ett fel, inte exit 2. Exit 2 är
+// reserverat för den ANDRA sortens trasighet: att KOPPLINGEN mellan
+// `should_skip_tests` och `suite`-jobbets `if:`-villkor har drifat (se
+// § PARITETS-GRINDEN c nedan) — då litar skriptet inte längre på att en
+// DOCS_ONLY-klassning betyder vad den påstår.
+//
+// `--full` tvingar fullständigt läge OAVSETT diff (ingen git-analys körs
+// alls) — för de lägen där hela sviten ska mätas oberoende av arbetsträdet.
+// Oberoende axel av `--fast`, som rörs inte av denna ändring.
+//
 // Användning:
-//   node scripts/verify-ci-parity.mjs           — fullständigt (motsvarar CI)
+//   node scripts/verify-ci-parity.mjs           — diff-klassat fullständigt läge (motsvarar CI)
+//   node scripts/verify-ci-parity.mjs --full     — tvingat fullständigt läge, ingen diff-klassning
 //   node scripts/verify-ci-parity.mjs --fast     — hoppar Acceptance + Webblasarbeteende
-//   node scripts/verify-ci-parity.mjs --list     — visa planen, kör inget
+//   node scripts/verify-ci-parity.mjs --list     — visa planen (inkl. diff-klassningen), kör inget
 //   npm run verify:ci-parity[:fast]              — samma, via package.json
 //
-// Exit 0  — allt grönt (fullständigt läge = motsvarar CI:s väckta jobb).
+// Exit 0  — allt grönt (motsvarar den grinduppsättning CI faktiskt skulle väcka).
 // Exit 1  — minst en grind rödmålad.
 // Exit 2  — PARITETEN SJÄLV är trasig (ny jobb / ändrad suite-input /
-//           ohanterat GH-uttryck) — skriptet vägrar uttala sig om täckning
-//           det inte längre kan garantera. Kör inget gate-arbete i detta läge.
+//           ohanterat GH-uttryck / diff-klassningens koppling till
+//           `should_skip_tests` har drifat) — skriptet vägrar uttala sig om
+//           täckning det inte längre kan garantera. Kör inget gate-arbete i
+//           detta läge.
 // Exit 64 — policy-/miljöfel (`.ci-parity-policy.json` saknas/trasig, eller
 //           workflow-filerna kan inte läsas).
 
@@ -83,6 +127,7 @@ import os from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { load as loadYaml } from 'js-yaml';
+import mm from 'micromatch';
 
 const EXIT_OK = 0;
 const EXIT_GATE_FAILED = 1;
@@ -103,13 +148,14 @@ const FAST_MODE_SKIP = new Set([
 /* ── CLI-argument ─────────────────────────────────────────────────────── */
 
 function parseArgs(argv) {
-  const args = { fast: false, list: false, help: false };
+  const args = { fast: false, full: false, list: false, help: false };
   for (const a of argv) {
     if (a === '--fast' || a === '-f') args.fast = true;
+    else if (a === '--full') args.full = true;
     else if (a === '--list') args.list = true;
     else if (a === '--help' || a === '-h') args.help = true;
     else {
-      console.error(`Okänd flagga: ${a} (--fast | --list | --help)`);
+      console.error(`Okänd flagga: ${a} (--fast | --full | --list | --help)`);
       process.exit(EXIT_POLICYFEL);
     }
   }
@@ -191,6 +237,223 @@ export function verifieraSuiteInputInvarianter(parsedCi, invarianter) {
     }
   }
   return fel;
+}
+
+/* ── Diff-klassningens KOPPLING (fail-closed, samma exit-2-mönster som ovan) ──
+ *
+ * Detta är INTE glob-tolkningen (den kan fela mot FULLT läge, se
+ * avgorDiffKlassning) — det här är STRUKTUREN klassningen vilar på: att
+ * ci.yml:s `suite`-jobb fortfarande skippas av `should_skip_tests`. Drifar
+ * den kopplingen (någon ändrar `if:`-villkoret utan att röra denna policy)
+ * kan en DOCS_ONLY-klassning bli en TYST LUCKA — precis den risk resten av
+ * preflighten finns för att stänga. Därför EXIT_PARITY_BROKEN här, inte ett
+ * fallback-till-fullt-läge som glob-tolkningen.
+ */
+export function verifieraDiffKlassningskoppling(parsedCi, spec) {
+  const jobb = parsedCi.jobs?.[spec.gatedJob];
+  const villkor = typeof jobb?.if === 'string' ? jobb.if : '';
+  if (!villkor.includes(spec.gatedJobIfMustContain)) {
+    return [
+      `ci.yml: jobb "${spec.gatedJob}" if-villkoret innehåller inte längre ` +
+        `"${spec.gatedJobIfMustContain}" (nu: ${JSON.stringify(jobb?.if ?? null)}). ` +
+        'Diff-klassningens antagande — att should_skip_tests fortfarande styr om ' +
+        'derivedJobs.ciSuite körs i CI — kan inte längre litas på. Uppdatera ' +
+        '.ci-parity-policy.json:s diffClassification innan denna grind kan lita på sin egen täckning.',
+    ];
+  }
+  return [];
+}
+
+/* ── Diff-klassning (docs-only vs kod) — D0-globen HÄRLEDS, aldrig duplicerad ──
+ *
+ * parseraD0Glob läser `changed`-jobbets `changed-files`-steg (`with.files`)
+ * ur den REDAN parsade ci.yml-YAML:en — samma härlednings-disciplin som
+ * resten av filen. Policyn deklarerar bara VAR globen bor, aldrig dess
+ * VÄRDEN (se .ci-parity-policy.json:s diffClassification._rationale).
+ */
+export function parseraD0Glob(parsedCi, spec) {
+  const jobb = parsedCi.jobs?.[spec.job];
+  if (!jobb) {
+    return { monster: null, fel: `ci.yml saknar jobbet "${spec.job}" — kan inte härleda D0-glob.` };
+  }
+  const steg = (jobb.steps ?? []).find((s) => s?.id === spec.stepId);
+  if (!steg) {
+    return {
+      monster: null,
+      fel: `ci.yml:s jobb "${spec.job}" saknar ett steg med id "${spec.stepId}" — kan inte härleda D0-glob.`,
+    };
+  }
+  const filesText = steg.with?.files;
+  if (typeof filesText !== 'string' || filesText.trim().length === 0) {
+    return {
+      monster: null,
+      fel: `steget "${spec.stepId}" i jobbet "${spec.job}" saknar ett tolkbart with.files-block.`,
+    };
+  }
+  const monster = filesText
+    .split('\n')
+    .map((r) => r.trim())
+    .filter((r) => r.length > 0);
+  if (monster.length === 0) {
+    return {
+      monster: null,
+      fel: `steget "${spec.stepId}" i jobbet "${spec.job}" gav noll glob-mönster efter tolkning.`,
+    };
+  }
+  return { monster, fel: null };
+}
+
+/**
+ * DOCS_ONLY endast om VARENDA fil i `filer` matchar D0-globen — allowlist,
+ * aldrig blocklist (samma invariant som D0/D1 i ci.yml). Noll ändrade filer
+ * ⇒ false (mirrorar tj-actions/changed-files: only_changed kräver minst en
+ * matchande fil — vakuöst sant hade varit ett katastrofalt fail-open, se
+ * ci.yml:s egen kommentar vid `acceptance-urval`-steget).
+ *
+ * `micromatch` (`{ dot: false }`, samma default tj-actions/changed-files
+ * använder) är samma bibliotek ci.yml:s egna kommentarer redan citerar som
+ * facit för hur dessa mönster tolkas (verifierat 2026-07-28 mot exakt denna
+ * version, se ci.yml rad ~146 "NOT OM FORMEN"/"VARFÖR RADERNA BEHÖVS").
+ */
+export function klassificeraDiff(filer, monster) {
+  if (filer.length === 0) return false;
+  const matchade = new Set(mm(filer, monster, { dot: false }));
+  return filer.every((f) => matchade.has(f));
+}
+
+/* ── Ändrade filer mot baseRef — committat ∪ arbetsträd ∪ otrackat ───────
+ *
+ * `origin/main...HEAD` (tre-punkts = mot merge-base) är samma bas CI:s
+ * PR-yta diffar mot. UNIONERAT med `git diff HEAD` (arbetsträdets ändringar,
+ * staged+unstaged mot HEAD) och `git ls-files --others --exclude-standard`
+ * (otrackade filer) — en ny fil som ligger på disk men aldrig committats ska
+ * klassas precis som en committad, annars klassas den som "inga ändringar".
+ *
+ * Detta gör äkta I/O (spawnSync mot REPO) och är därför INTE unit-testad med
+ * syntetiska fixturer som funktionerna ovan — se test-verify-ci-parity.mjs:s
+ * sandlåde-CLI-bevis för hur den prövas i praktiken (samma mönster som R1–R3).
+ */
+function korGitText(args) {
+  const res = spawnSync('git', args, { cwd: REPO, encoding: 'utf8' });
+  if (res.status !== 0) return null;
+  return res.stdout;
+}
+
+function hamtaAndradeFiler(baseRef) {
+  const verifiera = spawnSync('git', ['rev-parse', '--verify', '--quiet', baseRef], {
+    cwd: REPO,
+    encoding: 'utf8',
+  });
+  if (verifiera.status !== 0) {
+    return {
+      filer: null,
+      fel: `basreferensen "${baseRef}" kunde inte verifieras (git rev-parse --verify). Kör "git fetch" eller kontrollera att grenen finns lokalt.`,
+    };
+  }
+
+  const committat = korGitText(['diff', '--name-only', `${baseRef}...HEAD`]);
+  if (committat === null) {
+    return { filer: null, fel: `"git diff --name-only ${baseRef}...HEAD" misslyckades.` };
+  }
+  const arbetstrad = korGitText(['diff', '--name-only', 'HEAD']);
+  if (arbetstrad === null) {
+    return { filer: null, fel: '"git diff --name-only HEAD" (arbetsträd mot HEAD) misslyckades.' };
+  }
+  const otrackat = korGitText(['ls-files', '--others', '--exclude-standard']);
+  if (otrackat === null) {
+    return {
+      filer: null,
+      fel: '"git ls-files --others --exclude-standard" (otrackade filer) misslyckades.',
+    };
+  }
+
+  const alla = new Set();
+  for (const block of [committat, arbetstrad, otrackat]) {
+    for (const rad of block.split('\n')) {
+      const f = rad.trim();
+      if (f.length > 0) alla.add(f);
+    }
+  }
+  return { filer: [...alla].sort(), fel: null };
+}
+
+/**
+ * Orkestrerar diff-klassningen. FAIL-CLOSED till FULLT läge (docsOnly:false)
+ * vid ALL osäkerhet — glob kan inte hittas/tolkas, diff kan inte beräknas,
+ * inga ändringar hittade. Aldrig exit 2 för den sortens osäkerhet (det är
+ * verifieraDiffKlassningskoppling ovan, körd i preflighten, som äger det).
+ */
+function avgorDiffKlassning(policy, ciParsed, args) {
+  const spec = policy.diffClassification;
+
+  if (args.full) {
+    return {
+      lage: 'FULL (tvingad via --full)',
+      docsOnly: false,
+      rader: ['--full angiven — diff-klassning hoppas medvetet, kör allt.'],
+    };
+  }
+
+  const glob = parseraD0Glob(ciParsed, spec);
+  if (glob.fel) {
+    return {
+      lage: 'FULL (fallback)',
+      docsOnly: false,
+      rader: [
+        `⚠️  D0-glob kunde inte härledas ur ci.yml: ${glob.fel}`,
+        '   Fail-closed: kör fullt läge i stället för en gissad delmängd.',
+      ],
+    };
+  }
+
+  const diff = hamtaAndradeFiler(spec.baseRef);
+  if (diff.fel) {
+    return {
+      lage: 'FULL (fallback)',
+      docsOnly: false,
+      rader: [
+        `⚠️  Diffen mot "${spec.baseRef}" kunde inte beräknas: ${diff.fel}`,
+        '   Fail-closed: kör fullt läge i stället för en gissad delmängd.',
+      ],
+    };
+  }
+
+  if (diff.filer.length === 0) {
+    return {
+      lage: 'FULL (inga ändringar)',
+      docsOnly: false,
+      rader: [`0 ändrade filer mot ${spec.baseRef} (committat ∪ arbetsträd ∪ otrackat).`],
+    };
+  }
+
+  const docsOnly = klassificeraDiff(diff.filer, glob.monster);
+  if (docsOnly) {
+    return {
+      lage: 'DOCS_ONLY',
+      docsOnly: true,
+      rader: [
+        `${diff.filer.length} ändrad(e) fil(er) mot ${spec.baseRef} (committat ∪ arbetsträd ∪ otrackat) — samtliga matchar D0-glob.`,
+        `Hoppar: ${policy.derivedJobs.ciSuite.join(', ')} (ci-suite.yml) — CI:s should_skip_tests skulle skippat samma jobb.`,
+      ],
+    };
+  }
+  const exempel = diff.filer.find((f) => !mm.isMatch(f, glob.monster, { dot: false }));
+  return {
+    lage: 'KOD',
+    docsOnly: false,
+    rader: [
+      `${diff.filer.length} ändrad(e) fil(er) mot ${spec.baseRef} (committat ∪ arbetsträd ∪ otrackat) — minst en matchar inte D0-glob` +
+        (exempel ? ` (t.ex. "${exempel}")` : '') +
+        '.',
+      'Kör allt — allowlist, aldrig blocklist (mixad diff = samma resultat som ren kod-diff).',
+    ],
+  };
+}
+
+function skrivUtDiffKlassning(beslut) {
+  const ikon = { DOCS_ONLY: '✅' }[beslut.lage] ?? (beslut.docsOnly ? '✅' : '▶');
+  console.log(`\n\x1b[1m═══ Diff-klassning: ${ikon} ${beslut.lage} ═══\x1b[0m`);
+  for (const rad of beslut.rader) console.log(`   ${rad}`);
 }
 
 /* ── GH Actions-uttryck (`${{ … }}`) — substituera kända, fäll på okända ── */
@@ -396,17 +659,20 @@ function korCheckDocs() {
 
 /* ── Huvudflöde ───────────────────────────────────────────────────────── */
 
-function skrivUtPlan(jobbSteg) {
+function skrivUtPlan(jobbSteg, hoppaJobbLabels) {
   console.log('\n\x1b[1m═══ PLAN (--list, inget körs) ═══\x1b[0m');
   for (const { jobLabel, steg } of jobbSteg) {
-    console.log(`\n${jobLabel}:`);
+    const jobbHoppas = hoppaJobbLabels.has(jobLabel);
+    console.log(`\n${jobLabel}${jobbHoppas ? '  — HOPPAS (diff-klassning: DOCS_ONLY)' : ''}:`);
     for (const { namn, klass } of steg) {
-      const tag = {
-        infra: 'infra (hoppas)',
-        covered: 'check:docs (redan täckt)',
-        special: 'special',
-        derive: 'härleds+körs',
-      }[klass];
+      const tag = jobbHoppas
+        ? 'docs-only-diff (hoppas)'
+        : {
+            infra: 'infra (hoppas)',
+            covered: 'check:docs (redan täckt)',
+            special: 'special',
+            derive: 'härleds+körs',
+          }[klass];
       console.log(`  [${tag}] ${namn}`);
     }
   }
@@ -416,15 +682,22 @@ function skrivUtHjalp() {
   console.log(`verify-ci-parity — kör den grinduppsättning en vanlig kod-PR väcker i CI.
 
 Användning:
-  node scripts/verify-ci-parity.mjs           fullständigt läge (motsvarar CI)
+  node scripts/verify-ci-parity.mjs           diff-klassat fullständigt läge (motsvarar CI)
+  node scripts/verify-ci-parity.mjs --full     tvingat fullständigt läge, ingen diff-klassning
   node scripts/verify-ci-parity.mjs --fast     hoppar Acceptance + Webblasarbeteende (INTE CI-parity)
-  node scripts/verify-ci-parity.mjs --list     visa planen (härledd ur ci.yml/ci-suite.yml), kör inget
+  node scripts/verify-ci-parity.mjs --list     visa planen (inkl. diff-klassningen), kör inget
   node scripts/verify-ci-parity.mjs --help     denna text
 
   npm run verify:ci-parity[:fast]              samma, via package.json
 
+En ren docs-diff (varje ändrad fil mot origin/main matchar ci.yml:s D0-glob)
+skippar test-fast/acceptance/webblasarbeteende — CI hade skippat samma jobb.
+Minsta osäkerhet i klassningen faller till fullständigt läge, aldrig en
+gissad delmängd. --full stänger av klassningen helt.
+
 Exit 0 = grönt. Exit 1 = en grind rödmålad. Exit 2 = paritets-preflighten
-själv trasig (se .ci-parity-policy.json). Exit 64 = policy-/miljöfel.`);
+själv trasig, INKLUSIVE om diff-klassningens koppling till should_skip_tests
+har drifat (se .ci-parity-policy.json). Exit 64 = policy-/miljöfel.`);
 }
 
 async function main() {
@@ -452,6 +725,7 @@ async function main() {
     ...verifieraJobbmangd(ci.parsed, policy.knownJobs.ci, 'ci.yml'),
     ...verifieraJobbmangd(ciSuite.parsed, policy.knownJobs.ciSuite, 'ci-suite.yml'),
     ...verifieraSuiteInputInvarianter(ci.parsed, policy.suiteInputInvariants),
+    ...verifieraDiffKlassningskoppling(ci.parsed, policy.diffClassification),
   ];
   if (preflightFel.length > 0) {
     console.error('\n❌ PARITETEN ÄR TRASIG — verify-ci-parity litar inte på sin egen täckning:\n');
@@ -462,7 +736,16 @@ async function main() {
     );
     return EXIT_PARITY_BROKEN;
   }
-  console.log('✅ Paritets-preflight: jobbmängden + suite-input-invarianterna matchar policyn.');
+  console.log(
+    '✅ Paritets-preflight: jobbmängden + suite-input-invarianterna + diff-klassningens ' +
+      'koppling matchar policyn.',
+  );
+
+  const diffBeslut = avgorDiffKlassning(policy, ci.parsed, args);
+  skrivUtDiffKlassning(diffBeslut);
+  const hoppaJobbLabels = diffBeslut.docsOnly
+    ? new Set(policy.derivedJobs.ciSuite.map((namn) => `ci-suite.yml :: ${namn}`))
+    : new Set();
 
   // Bygg den fulla plan-listan: {jobLabel, steg:[{namn, step, klass}]}
   const planer = [];
@@ -484,7 +767,7 @@ async function main() {
   }
 
   if (args.list) {
-    skrivUtPlan(planer);
+    skrivUtPlan(planer, hoppaJobbLabels);
     return EXIT_OK;
   }
 
@@ -501,7 +784,13 @@ async function main() {
   const tmpRoot = mkdtempSync(join(os.tmpdir(), 'ci-parity-'));
   try {
     for (const { jobLabel, steg } of planer) {
+      const jobbSkippasAvDiffKlassning = hoppaJobbLabels.has(jobLabel);
       for (const { namn, step, klass } of steg) {
+        if (jobbSkippasAvDiffKlassning) {
+          resultat.push({ namn, jobLabel, status: 'SKIP', ms: 0, detail: 'docs-only-diff' });
+          continue;
+        }
+
         if (klass === 'infra' || klass === 'covered') {
           resultat.push({ namn, jobLabel, status: 'SKIP', ms: 0, detail: klass });
           continue;
@@ -578,6 +867,7 @@ async function main() {
   const totalMs = Date.now() - totalStart;
 
   console.log('\n\x1b[1m─────────── verify-ci-parity ───────────\x1b[0m');
+  console.log(`🔎 Diff-klassning: ${diffBeslut.lage}`);
   console.log(`\x1b[32m✅ ${passed.length} gröna\x1b[0m (inkl. check:docs 13 grindar)`);
   if (skipped.length > 0) {
     console.log(
