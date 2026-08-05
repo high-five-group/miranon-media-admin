@@ -30,6 +30,20 @@
   knappen av någon anledning inte går att klicka (bildblockering av CSS,
   vissa mailklienter) ska mottagaren ändå kunna kopiera länken för hand —
   samma redundans-princip som repots övriga mailmallar.
+
+  TASK-143 (2026-08-05): {{ .Data.display_name }} (mottagarens namn) och
+  {{ .Data.inviter_name }} (vem som bjuder in) — båda satta av
+  invite-user-EF:en (supabase/functions/invite-user/index.ts) via
+  inviteUserByEmail:s `data`-param, som GoTrue exponerar som `.Data` i
+  mailmallen (verifierat via context7/supabase.com/docs under detta korts
+  bygge: "Data — provides metadata from auth.users.user_metadata"). BÅDA
+  ANVÄNDS BAKOM {{if}}-VAKTER, ALDRIG BART: Go-templatens standardbeteende
+  för en saknad map-nyckel är att skriva ut den bokstavliga strängen
+  "<no value>", inte tom sträng — och EF:ens fil-header dokumenterar ett
+  känt (idag overifierat, men flaggat) fall där ETT OMSKICK av en REDAN
+  UTESTÅENDE rad kan lämna dessa fält tomma just för DEN mailen. Utan
+  vakterna hade den kanten synts som bokstavlig trasig text i ett riktigt
+  mail till Roger eller Lotta.
 -->
 <!doctype html>
 <html lang="sv">
@@ -101,14 +115,28 @@
                 >
                   Du har fått ett konto
                 </h1>
+                {{if .Data.display_name}}
+                <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #242424">
+                  Hej {{ .Data.display_name }}!
+                </p>
+                {{else}}
                 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #242424">
                   Hej!
                 </p>
+                {{end}}
+                {{if .Data.inviter_name}}
+                <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #242424">
+                  {{ .Data.inviter_name }} har bjudit in dig att skapa ett konto i
+                  <strong>Miranon Media Admin</strong> — appen där Roger och Lotta sköter
+                  event, anmälningar och mail.
+                </p>
+                {{else}}
                 <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.6; color: #242424">
                   Du har blivit inbjuden att skapa ett konto i
                   <strong>Miranon Media Admin</strong> — appen där Roger och Lotta sköter
                   event, anmälningar och mail.
                 </p>
+                {{end}}
                 <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #242424">
                   Klicka på knappen nedan för att välja ditt lösenord och komma igång.
                 </p>

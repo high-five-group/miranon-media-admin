@@ -46,6 +46,8 @@ function ValkommenRoute() {
   );
   const [epost, setEpost] = useState('');
   const [rollEtikett, setRollEtikett] = useState('');
+  const [mottagarNamn, setMottagarNamn] = useState<string | null>(null);
+  const [inbjudarNamn, setInbjudarNamn] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -72,6 +74,13 @@ function ValkommenRoute() {
         }
         setEpost(session.user.email);
         setRollEtikett(rollTillEtikett(session.user.app_metadata?.role));
+        // TASK-143: invite-user-EF:en sätter dessa i user_metadata vid
+        // inbjudan (samma icke-säkerhetsbärande fält och samma läsmönster
+        // som AuthProvider.tsx:s task-1.1-namekälla) — `lasStrangMetadata`
+        // ger `null` (aldrig ett tomt/whitespace-fält) för en session utan
+        // dem, så greeting-blocket nedan degraderar snyggt.
+        setMottagarNamn(lasStrangMetadata(session.user.user_metadata?.display_name));
+        setInbjudarNamn(lasStrangMetadata(session.user.user_metadata?.inviter_name));
         setTillstand('formular');
       })
       .catch((err) => {
@@ -95,7 +104,13 @@ function ValkommenRoute() {
       )}
       {tillstand === 'ogiltig-lank' && <OgiltigLank />}
       {tillstand === 'formular' && (
-        <LosenordsFormular epost={epost} rollEtikett={rollEtikett} onUtfall={setTillstand} />
+        <LosenordsFormular
+          epost={epost}
+          rollEtikett={rollEtikett}
+          mottagarNamn={mottagarNamn}
+          inbjudarNamn={inbjudarNamn}
+          onUtfall={setTillstand}
+        />
       )}
       {tillstand === 'klart' && <KontotSkapat />}
     </main>
@@ -110,6 +125,18 @@ function ValkommenRoute() {
 function rollTillEtikett(roll: unknown): string {
   if (roll === 'admin') return 'administratör';
   return typeof roll === 'string' && roll.length > 0 ? roll : 'användare';
+}
+
+/**
+ * `user_metadata` är otypad (`Record<string, any>`, samma anmärkning som
+ * `AuthProvider.tsx`s `sessionToUser`) — endast en icke-tom sträng
+ * accepteras, allt annat (saknas, fel typ, whitespace) → `null`. Delad av
+ * mottagarens `display_name` och inbjudarens `inviter_name` (TASK-143,
+ * båda satta av invite-user-EF:en, se `src/routes/valkommen.tsx` § greeting
+ * i `LosenordsFormular` nedan för hur `null` degraderar).
+ */
+function lasStrangMetadata(varde: unknown): string | null {
+  return typeof varde === 'string' && varde.trim() !== '' ? varde.trim() : null;
 }
 
 /**
@@ -197,6 +224,12 @@ function KontotSkapat() {
 interface LosenordsFormularProps {
   epost: string;
   rollEtikett: string;
+  /** Mottagarens eget namn, ur `user_metadata.display_name` — `null` när
+   * sessionen saknar det (se `lasStrangMetadata`). TASK-143. */
+  mottagarNamn: string | null;
+  /** Vem som bjöd in, ur `user_metadata.inviter_name` — `null` när
+   * sessionen saknar det. TASK-143. */
+  inbjudarNamn: string | null;
   /** Byter föräldrans tillstånd. `'ogiltig-lank'` täcker fallet där
    * sessionen dör MITT I flödet (t.ex. token hann gå ut medan formuläret
    * var öppet) — samma vänliga yta som en direkt ogiltig länk (AC #3). */
@@ -210,20 +243,28 @@ interface LosenordsFormularProps {
  * val — inget bekräftelsefält, NN/g + GitLabs skarpa invite-accept-kod
  * citerade i facit-README) med visa/dölj-knapp, TTL-fotnot under kortet.
  *
- * INGEN PERSONALISERAD HÄLSNING MED NAMN ELLER INBJUDARE — divergens mot
- * facitets attrapp-copy ("Välkommen, Lotta" / "Marcus Johansson har
- * bjudit in dig"). `invite-user`-EF:ens kontrakt (TASK-127.5, redan
- * mergad) är `{email, role}` — inget namn-fält för mottagaren och ingen
- * inbjudar-identitet propageras till den nya användarens session eller
- * metadata. Att hårdkoda "Marcus Johansson" hade varit fel state-of-the-
- * world-antagande (fel den dag en andra admin bjuder in någon) och att
- * härleda ett förnamn ur e-postadressens lokal-del är uttryckligen
- * förbjudet redan i `AuthProvider.tsx` (`sessionToUser`-kommentaren:
- * "Konsumenter får ALDRIG falla tillbaka på e-postadressen,
- * Gunilla-principen, TASK-1 beslut 5"). Se slutrapporten för fullständig
- * motivering — flaggat öppet, inte tyst kompromissat.
+ * PERSONALISERAD HÄLSNING (TASK-143) — DIVERGENSEN ÄR STÄNGD. `invite-user`-
+ * EF:ens kontrakt utökades (TASK-143) med mottagarens namn (klient-indata,
+ * precis som e-post/roll) och inbjudarens identitet (härledd SERVER-SIDE ur
+ * den ANROPANDE adminens egen verifierade JWT — aldrig klient-indata, se
+ * EF:ens fil-header). Båda landar i `user_metadata` och läses härifrån via
+ * `lasStrangMetadata` ovan. Ingen e-post-härledd namngissning förekommer
+ * någonstans (fortfarande förbjudet av `AuthProvider.tsx`s
+ * Gunilla-princip-kommentar) — `mottagarNamn`/`inbjudarNamn` kommer
+ * UTESLUTANDE ur den explicit satta metadatan.
+ *
+ * GRACEFUL DEGRADATION, INTE ETT HÅRT KRAV: en session utan namn (t.ex. en
+ * teoretisk kvarleva från FÖRE denna utökning) visar samma generiska copy
+ * som innan TASK-143 i stället för en trasig "Välkommen, " — se
+ * greeting-blocket nedan. `rollEtikett`-logiken är opåverkad.
  */
-function LosenordsFormular({ epost, rollEtikett, onUtfall }: LosenordsFormularProps) {
+function LosenordsFormular({
+  epost,
+  rollEtikett,
+  mottagarNamn,
+  inbjudarNamn,
+  onUtfall,
+}: LosenordsFormularProps) {
   const emailFaltId = useId();
   const emailBeskrivningId = useId();
   const [losenord, setLosenord] = useState('');
@@ -301,10 +342,21 @@ function LosenordsFormular({ epost, rollEtikett, onUtfall }: LosenordsFormularPr
   return (
     <div className="flex w-full max-w-xl flex-col gap-8">
       <div className="flex flex-col gap-3">
-        <h1 className="font-semibold text-3xl text-text">Du har bjudits in</h1>
+        <h1 className="font-semibold text-3xl text-text">
+          {mottagarNamn ? `Välkommen, ${mottagarNamn}` : 'Du har bjudits in'}
+        </h1>
         <p className="text-lg text-text-secondary">
-          Du får rollen <strong className="font-semibold text-text">{rollEtikett}</strong> i Miranon
-          Media Admin.
+          {inbjudarNamn ? (
+            <>
+              {inbjudarNamn} har bjudit in dig till Miranon Media Admin. Du får rollen{' '}
+              <strong className="font-semibold text-text">{rollEtikett}</strong>.
+            </>
+          ) : (
+            <>
+              Du får rollen <strong className="font-semibold text-text">{rollEtikett}</strong> i
+              Miranon Media Admin.
+            </>
+          )}
         </p>
       </div>
 

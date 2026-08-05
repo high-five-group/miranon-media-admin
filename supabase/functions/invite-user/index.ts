@@ -38,17 +38,60 @@ import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 // (github.com/supabase/auth, internal/api/invite.go + internal/api/mail.go),
 // hämtad via context7 under TASK-127.5:s bygge.
 //
-// TVÅ SEPARATA ADMIN-ANROP (invite + roll-lås) — INTE en enda transaktion:
-// `inviteUserByEmail` har inget app_metadata-argument, så rollen sätts i ett
-// EGET `updateUserById`-anrop direkt efter. Om DET anropet failar efter en
-// HELT NY inbjudan (kontrollerat via created_at===updated_at-heuristiken
-// nedan) städas den nyskapade, roll-lösa raden bort (best-effort) så att ett
-// omförsök blir rent — en existerande (omskickad) rad rörs ALDRIG av denna
-// städning, den kan bära en tidigare korrekt låst roll.
+// TVÅ SEPARATA ADMIN-ANROP (invite + roll-lås/metadata) — INTE en enda
+// transaktion: `inviteUserByEmail` har inget app_metadata-argument, så
+// rollen (OCH sedan TASK-143: display_name/inviter_name igen, se nedan)
+// sätts i ett EGET `updateUserById`-anrop direkt efter. Om DET anropet
+// failar efter en HELT NY inbjudan (kontrollerat via
+// created_at===updated_at-heuristiken nedan) städas den nyskapade,
+// roll-lösa raden bort (best-effort) så att ett omförsök blir rent — en
+// existerande (omskickad) rad rörs ALDRIG av denna städning, den kan bära
+// en tidigare korrekt låst roll/metadata.
 //
 // SMTP/leverans är UTANFÖR denna skivas omfattning (Grind 0, PRD § Utanför
 // omfattningen) — se testfilens header för hur det påverkar vilka vägar som
 // faktiskt kan bevisas mot staging idag.
+//
+// TASK-143 (2026-08-05): KONTRAKTET UTÖKAT MED NAMN + INBJUDARE.
+// Marcus beslut S96: "Vi ska DEFINITIVT ha namn där vid inbjudan!" — accept-
+// sidans (TASK-127.6) facit visar en personlig hälsning ("Välkommen, Lotta" /
+// "Marcus Johansson har bjudit in dig...") som det gamla {email, role}-
+// kontraktet inte kunde bära. Två nya bitar data, olika ursprung och olika
+// säkerhetsklass:
+//
+//   - `name` (MOTTAGARENS namn): KLIENT-INDATA, precis som email/role — den
+//     som utlöser inbjudan skriver in vem som bjuds in. Icke-säkerhetsbärande
+//     (bara personalisering), lagras därför i `user_metadata.display_name` —
+//     SAMMA fält och SAMMA konvention som `AuthProvider.tsx`s `sessionToUser`
+//     redan läser för INLOGGADE users (task-1.1-namekällan). Ingen ny
+//     namekälla uppfinns; detta fyller den befintliga för en helt ny user.
+//   - Inbjudarens identitet: ALDRIG klient-indata (AC#1) — härleds
+//     SERVER-SIDE ur den ANROPANDE adminens egen verifierade JWT, exakt
+//     samma spoof-säkra mönster som `create-event-note` använder för
+//     Författare-attribution (`readDisplayNameFromJwt` nedan är en medveten
+//     DUBBLETT av den funktionen — ADR-026 <3-tröskeln, samma motiv som
+//     `isAdminEmail` ovan; nu 2 konsumenter, ingen _shared-extraktion ännu).
+//     Lagras i `user_metadata.inviter_name`.
+//
+// KÄND KANT, VERIFIERAD MOT GOTRUES KÄLLKOD (internal/api/invite.go, hämtad
+// via context7 under detta korts bygge): för en NY inbjudan sätter
+// `inviteUserByEmail`s `data`-param `user_metadata` FÖRE mailet skickas (via
+// `SignupParams.Data` → `signupNewUser`), så den FÖRSTA mailen är alltid
+// korrekt personaliserad. För ETT OMSKICK av en REDAN EXISTERANDE, obekräftad
+// rad tar `Invite`-handlern en HELT ANNAN gren (`if !isCreate { ... }`) som
+// ALDRIG tillämpar det nya anropets `params.Data` — mailet för DET omskicket
+// byggs av GoTrue med raden precis SOM DEN REDAN LÅG I DATABASEN, inte det
+// nya anropets namn/inbjudare. Denna EF:s egen `updateUserById`-anrop (se
+// nedan) uppdaterar ALLTID `user_metadata` efteråt oavsett fresh/omskick —
+// så ETT EFTERFÖLJANDE omskick (eller accept-sidans läsning av den lagrade
+// metadatan) blir korrekt, men just DEN specifika mailen för ett omskick av
+// en rad vars metadata ännu inte hunnit uppdateras kan sakna namn. Praktiskt
+// overifierbart idag (noll skarpa, utestående inbjudningar finns i staging
+// vid detta korts bygge — DoD #7 på förälderkortet är fortfarande öppet) men
+// flaggat öppet, inte tyst antaget bort. `invite.html`s mall är byggd med
+// `{{if}}`-vakter kring båda fälten av exakt detta skäl — en tom/saknad
+// Go-map-nyckel renderar annars ordagrant `<no value>` i mailet
+// (text/template-standardbeteende), inte tom sträng.
 
 // Roller giltiga vid inbjudan. v1: enbart 'admin' — matchar dagens
 // ADMIN_EMAILS-modell (alla listade adresser har fulla admin-rättigheter,
@@ -66,6 +109,11 @@ function isValidRole(role: unknown): role is InviteRole {
 // anda som övriga EF:er (create-admin-user validerar bara presence). En
 // identitets-bärande adress förtjänar dock mer än "finns strängen".
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Sane längd-tak mot abuse (samma anda som create-event-note:s
+// MAX_TEXT_LENGTH) — ett namn är kort; 200 tecken ger ordentlig marginal
+// för långa namn utan att vara en öppen fritext-yta.
+const MAX_NAME_LENGTH = 200;
 
 // Caller-verifiering — endast users vars email finns i ADMIN_EMAILS-listan
 // (komma-separerad env-secret) får utlösa en inbjudan. Dubblett av
@@ -91,6 +139,35 @@ function badRequest(message: string, corsHeaders: Record<string, string>): Respo
   });
 }
 
+/**
+ * Läser `user_metadata.display_name` ur den REDAN VERIFIERADE JWT:ns payload
+ * (requireUser har verifierat signaturen; vi läser bara en claim — ingen ny
+ * nätverksrunda). Dubblett av `create-event-note`s hjälpfunktion av samma
+ * namn (ADR-026 <3-tröskeln, samma motiv som `isAdminEmail` ovan — 2
+ * konsumenter, ingen _shared-extraktion ännu). HÄR läser den den ANROPANDE
+ * ADMINENS egen identitet (inbjudaren), inte mottagarens — kontraktsmässigt
+ * en annan användning av samma mekanism, men koden är identisk.
+ * Base64url + UTF-8-säker avkodning (svenska namn som "Åsa Öberg" ska aldrig
+ * manglas — Gunilla-principen). null om claimen saknas/är tom/ogiltig.
+ */
+function readDisplayNameFromJwt(authHeader: string | null): string | null {
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const parts = authHeader.slice('Bearer '.length).trim().split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
+    const claims = JSON.parse(new TextDecoder().decode(bytes)) as {
+      user_metadata?: { display_name?: unknown };
+    };
+    const raw = claims.user_metadata?.display_name;
+    return typeof raw === 'string' && raw.trim() !== '' ? raw.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -108,6 +185,7 @@ Deno.serve(async (req) => {
   }
 
   // 1. Auth-gate: caller måste vara en inloggad user.
+  const authHeader = req.headers.get('Authorization');
   const auth = await requireUser(req, corsHeaders);
   if (auth instanceof Response) return auth;
   const { user } = auth;
@@ -137,6 +215,7 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as Record<string, unknown> | null;
     const rawEmail = body?.email;
     const role = body?.role;
+    const rawName = body?.name;
 
     if (typeof rawEmail !== 'string' || !EMAIL_RE.test(rawEmail.trim())) {
       return badRequest('email is required and must be a valid email address', corsHeaders);
@@ -147,8 +226,25 @@ Deno.serve(async (req) => {
       return badRequest(`role is required and must be one of: ${VALID_ROLES.join(', ')}`, corsHeaders);
     }
 
+    // AC#1 (TASK-143): mottagarens namn är KLIENT-INDATA (den som utlöser
+    // inbjudan skriver in vem som bjuds in) — till skillnad från inbjudarens
+    // identitet nedan, som ALDRIG får komma härifrån.
+    if (typeof rawName !== 'string' || !rawName.trim()) {
+      return badRequest('name is required (non-empty string)', corsHeaders);
+    }
+    if (rawName.trim().length > MAX_NAME_LENGTH) {
+      return badRequest(`name exceeds ${MAX_NAME_LENGTH} characters`, corsHeaders);
+    }
+    const name = rawName.trim();
+
+    // AC#1 (TASK-143): inbjudarens identitet härleds SERVER-SIDE ur den
+    // ANROPANDE adminens egen redan-verifierade JWT — aldrig ur `body`.
+    // Fallback-kedjan (display_name → e-post → user-id) matchar
+    // create-event-note:s exakta mönster, så fältet aldrig blir tomt.
+    const inviterName = readDisplayNameFromJwt(authHeader) ?? user.email ?? user.id;
+
     console.log(
-      `[invite-user] ALLOW caller_user_id=${user.id} caller_email=${user.email} -> inviting email=${email} role=${role}`,
+      `[invite-user] ALLOW caller_user_id=${user.id} caller_email=${user.email} inviter_name=${inviterName} -> inviting email=${email} role=${role} name=${name}`,
     );
 
     // Kräver service_role key — BARA för admin-operationer.
@@ -163,9 +259,16 @@ Deno.serve(async (req) => {
     // konfigurerade Site URL — inget hårt krav, ingen 500 vid avsaknad.
     const redirectTo = (Deno.env.get('INVITE_REDIRECT_URL') ?? '').trim() || undefined;
 
+    // `data` blir `user_metadata` (verifierat mot Supabase-docs + GoTrue-
+    // källkod via context7, se fil-header): korrekt för en FÄRSK inbjudan,
+    // ignorerat av GoTrue för ett omskick av en redan existerande rad (se
+    // fil-header § KÄND KANT) — täckt av `updateUserById` nedan istället.
     const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,
-      redirectTo ? { redirectTo } : {},
+      {
+        ...(redirectTo ? { redirectTo } : {}),
+        data: { display_name: name, inviter_name: inviterName },
+      },
     );
 
     if (inviteError) {
@@ -194,11 +297,17 @@ Deno.serve(async (req) => {
     const isFreshInvite = invitedUser.created_at === invitedUser.updated_at;
 
     // Rollen LÅSES i app_metadata (admin-only-writable, se fil-header).
-    const { error: roleError } = await supabaseAdmin.auth.admin.updateUserById(invitedUser.id, {
+    // user_metadata SÄTTS OM här (TASK-143) — inte bara vid `inviteUserByEmail`
+    // ovan — så att ETT OMSKICK alltid lämnar raden med FÄRSK display_name/
+    // inviter_name från DETTA anrop, oavsett vad GoTrue gjorde med mailet
+    // (se fil-header § KÄND KANT). Samma admin-anrop, två separata metadata-
+    // fält — ingen ny risk-yta jämfört med före TASK-143.
+    const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(invitedUser.id, {
       app_metadata: { role },
+      user_metadata: { display_name: name, inviter_name: inviterName },
     });
 
-    if (roleError) {
+    if (metadataError) {
       if (isFreshInvite) {
         // Best-effort kompensation: en NY inbjudan utan låst roll är en
         // trasig account-takeover-öppning (ADR-092) — städa bort raden så
@@ -213,16 +322,17 @@ Deno.serve(async (req) => {
       }
       // Genuint oväntat serverfel (inte caller-orsakat) — låt
       // mapErrorToResponse ge strukturerad JSON-logg + generisk 5xx-kropp
-      // (EF5/EF6), inte rollErrors interna detalj.
+      // (EF5/EF6), inte metadataErrors interna detalj.
       throw new Error(
-        `invite-user: kunde inte låsa app_metadata.role för invited_user_id=${invitedUser.id} (fresh=${isFreshInvite}): ${roleError.message}`,
+        `invite-user: kunde inte låsa app_metadata.role/user_metadata för invited_user_id=${invitedUser.id} (fresh=${isFreshInvite}): ${metadataError.message}`,
       );
     }
 
     // Djup modul: klienten ser ALDRIG Supabase-userens råa fältform —
-    // bara den smala, avsiktliga formen (id + e-post + låst roll).
+    // bara den smala, avsiktliga formen (id + e-post + låst roll + namnet
+    // som faktiskt sattes).
     return new Response(
-      JSON.stringify({ invited: { id: invitedUser.id, email: invitedUser.email, role } }),
+      JSON.stringify({ invited: { id: invitedUser.id, email: invitedUser.email, role, name } }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {

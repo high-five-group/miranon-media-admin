@@ -35,8 +35,13 @@ function b64url(value: object): string {
 
 /** Samma sessionsform som acceptance-syskonfilens `bygdSession()`, men med
  * `expiresAt` härlett ur ÄKTA `Date.now()` — denna klass fryser aldrig
- * klockan (ADR-094 § Beslut 3/4). */
-function bygdSession(overrides: { email?: string; role?: string } = {}) {
+ * klockan (ADR-094 § Beslut 3/4). `displayName`/`inviterName` (TASK-143) är
+ * OPTIONELLA överlägg — default `user_metadata: {}` speglar en session UTAN
+ * dem, vilket är exakt vad de BEFINTLIGA testerna nedan (heading "Du har
+ * bjudits in") ska fortsätta pröva: fallback-grenen, inte den personaliserade. */
+function bygdSession(
+  overrides: { email?: string; role?: string; displayName?: string; inviterName?: string } = {},
+) {
   const epost = overrides.email ?? 'ny.anvandare@visual-fixture.se';
   const expiresAt = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
   const user = {
@@ -46,7 +51,10 @@ function bygdSession(overrides: { email?: string; role?: string } = {}) {
     email: epost,
     email_confirmed_at: '2026-01-01T00:00:00Z',
     app_metadata: { provider: 'email', providers: ['email'], role: overrides.role ?? 'admin' },
-    user_metadata: {},
+    user_metadata: {
+      ...(overrides.displayName ? { display_name: overrides.displayName } : {}),
+      ...(overrides.inviterName ? { inviter_name: overrides.inviterName } : {}),
+    },
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   };
@@ -65,7 +73,10 @@ function bygdSession(overrides: { email?: string; role?: string } = {}) {
   };
 }
 
-function seedaInviteSession(page: Page, overrides: { email?: string; role?: string } = {}) {
+function seedaInviteSession(
+  page: Page,
+  overrides: { email?: string; role?: string; displayName?: string; inviterName?: string } = {},
+) {
   return page.addInitScript(
     ([key, session]) => {
       window.localStorage.setItem(key as string, JSON.stringify(session));
@@ -180,6 +191,60 @@ test.describe('/valkommen — formuläret (AC #1, #2, #5)', () => {
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();
     expect(results.violations).toEqual([]);
+  });
+});
+
+/**
+ * TASK-143 (AC#2): den personliga hälsningen facitet visar
+ * ("Välkommen, Lotta" / "Marcus Johansson har bjudit in dig … Du får
+ * rollen **administratör**.") — rent klient-side rendering ur en session
+ * vars `user_metadata` bär `display_name`/`inviter_name` (ingen nätverks-
+ * rundtrip inblandad, samma ADR-094-motiv som resten av filen). Syskon-
+ * describe-blocket ovan ("formuläret") bevisar medvetet den ANDRA grenen
+ * — fallback UTAN namn ("Du har bjudits in") — så BÅDA grenarna av
+ * `mottagarNamn ? … : …`/`inbjudarNamn ? … : …` i valkommen.tsx har ett
+ * test som fäller om grenlogiken bryts.
+ */
+test.describe('/valkommen — personlig hälsning ur user_metadata (TASK-143 AC#2/#3)', () => {
+  test('namn + inbjudare satta → "Välkommen, {namn}" och inbjudarens namn nämns med rollen', async ({
+    page,
+  }) => {
+    await seedaInviteSession(page, {
+      email: 'lotta@visual-fixture.se',
+      role: 'admin',
+      displayName: 'Lotta',
+      inviterName: 'Marcus Johansson',
+    });
+    await page.goto('/valkommen');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Välkommen, Lotta' })).toBeVisible();
+    await expect(
+      page.getByText('Marcus Johansson har bjudit in dig till Miranon Media Admin.'),
+    ).toBeVisible();
+    await expect(page.getByText('administratör')).toBeVisible();
+    // Fallback-rubriken ska INTE synas samtidigt — bevisar att det är en
+    // exklusiv gren, inte båda textblocken renderade på varandra.
+    await expect(page.getByRole('heading', { level: 1, name: 'Du har bjudits in' })).toHaveCount(0);
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('namn satt men INGEN inbjudare känd → personlig rubrik, generisk rollmening (ingen "undefined har bjudit in")', async ({
+    page,
+  }) => {
+    await seedaInviteSession(page, {
+      email: 'lotta@visual-fixture.se',
+      role: 'admin',
+      displayName: 'Lotta',
+    });
+    await page.goto('/valkommen');
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Välkommen, Lotta' })).toBeVisible();
+    await expect(page.getByText('har bjudit in dig')).toHaveCount(0);
+    await expect(page.getByText('Du får rollen')).toBeVisible();
   });
 });
 

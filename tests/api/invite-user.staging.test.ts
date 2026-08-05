@@ -40,8 +40,18 @@
 // Den FULLA rundturen (riktig mottagare, riktig mail-länk) hör till
 // TASK-127.9.
 //
-// Validerings-tester (EF3 deny-by-default): okänd/saknad roll och ogiltig
-// e-post nekas med 400 FÖRE något Supabase-adminanrop görs.
+// Validerings-tester (EF3 deny-by-default): okänd/saknad roll, ogiltig
+// e-post och saknat namn (TASK-143) nekas med 400 FÖRE något Supabase-
+// adminanrop görs.
+//
+// TASK-143: kontraktet utökades med ett tredje obligatoriskt fält, `name`
+// (mottagarens namn). Payloaden i de tester som ska nå FÖRBI validering
+// (allow/omskick nedan) bär därför alltid ett giltigt `name` — annars hade
+// testerna fortfarande varit "gröna" (klassen 400/≥400/<500 håller även för
+// en name-valideringsträff) men INTE längre bevisa vad kommentarerna säger
+// att de bevisar (GoTrues redan-bekräftad-gren/omskicks-idempotens). En
+// tyst driven testavsikt är precis den typ av fel detta korts premiss-pass
+// (ADR-086) finns för att förhindra att sprida vidare.
 
 import { expect, test } from '@playwright/test';
 import { classify401Body, getApiConfig, getValidAdminUserJWT, getValidUserJWT } from './helpers';
@@ -54,7 +64,7 @@ test.describe('invite-user — auth + admin-allowlist (TASK-127.5)', () => {
 
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${config.anonKey}` },
-      data: { email: 'foo@test.local', role: 'admin' },
+      data: { email: 'foo@test.local', role: 'admin', name: 'Foo Testsson' },
     });
 
     await classify401Body(res);
@@ -66,7 +76,7 @@ test.describe('invite-user — auth + admin-allowlist (TASK-127.5)', () => {
 
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${userJwt}` },
-      data: { email: 'foo@test.local', role: 'admin' },
+      data: { email: 'foo@test.local', role: 'admin', name: 'Foo Testsson' },
     });
 
     expect(res.status()).toBe(403);
@@ -80,7 +90,7 @@ test.describe('invite-user — auth + admin-allowlist (TASK-127.5)', () => {
 
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${adminJwt}` },
-      data: { email: 'foo@test.local', role: 'super-owner-root' },
+      data: { email: 'foo@test.local', role: 'super-owner-root', name: 'Foo Testsson' },
     });
 
     expect(res.status()).toBe(400);
@@ -94,12 +104,28 @@ test.describe('invite-user — auth + admin-allowlist (TASK-127.5)', () => {
 
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${adminJwt}` },
-      data: { email: 'not-an-email', role: 'admin' },
+      data: { email: 'not-an-email', role: 'admin', name: 'Foo Testsson' },
     });
 
     expect(res.status()).toBe(400);
     const body = (await res.json()) as { error?: string };
     expect(body.error).toMatch(/email/);
+  });
+
+  // TASK-143 AC#1: namnet är ett obligatoriskt kontraktsfält sedan denna
+  // skiva — samma deny-by-default-mönster (EF3) som roll/e-post ovan.
+  test('deny: admin-email men saknat namn → 400 (TASK-143 AC#1)', async ({ request }) => {
+    const config = getApiConfig();
+    const adminJwt = await getValidAdminUserJWT(request, config);
+
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${adminJwt}` },
+      data: { email: 'foo@test.local', role: 'admin' },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/name/);
   });
 
   test('allow: admin-email → gate passerad (4xx från redan-bekräftad mottagare, ej 401/403/5xx)', async ({
@@ -111,9 +137,11 @@ test.describe('invite-user — auth + admin-allowlist (TASK-127.5)', () => {
     // Target = admin-userens EGEN e-post → GoTrue ser en BEKRÄFTAD
     // användare och nekar FÖRE sendInvite (se fil-header). Bevisar att
     // auth-gaten passerade utan att skapa någon ny rad eller skicka mail.
+    // `name` (TASK-143) satt till ett giltigt värde så testet fortsätter
+    // bevisa DEN grenen — inte namn-valideringen.
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
       headers: { Authorization: `Bearer ${adminJwt}` },
-      data: { email: config.adminEmail, role: 'admin' },
+      data: { email: config.adminEmail, role: 'admin', name: 'Staging Admin' },
     });
 
     expect(res.status()).not.toBe(401);
@@ -131,7 +159,7 @@ test.describe('invite-user — auth + admin-allowlist (TASK-127.5)', () => {
     const call = () =>
       request.post(`${config.baseUrl}${ENDPOINT}`, {
         headers: { Authorization: `Bearer ${adminJwt}` },
-        data: { email: config.adminEmail, role: 'admin' },
+        data: { email: config.adminEmail, role: 'admin', name: 'Staging Admin' },
       });
 
     const first = await call();
