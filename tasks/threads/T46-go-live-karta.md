@@ -24,44 +24,99 @@ Ordningen är den naturliga exekveringsordningen; inget momentet kräver att
 skivbyggena väntar (de kör hermetiskt), men QA-korten `TASK-126.5`/`TASK-127.10`
 och rundturen `TASK-127.9` grindas av paketet.
 
-1. **Vercel Pro-projekt** kopplas till repot, Vite-preset + SPA-rewrites,
-   `--mode production` — Code förbereder config, Marcus skapar konto/projekt
-   (Pro-plan Marcus-kvitterad S95; underlag R1). Hosting-ADR mintas på
-   R1-underlaget (skiva `TASK-127.1`-klassens ADR-form, hosting-ADR:n egen).
-2. **DNS `admin.miranon.dev`** (CNAME → Vercel) — Marcus i GoDaddy.
+> **STATUS 2026-08-05 (S96):** punkt **1, 4, 6 och 7 är UTFÖRDA**, punkt **5
+> halvvägs**. Kvar: **2** (väntar produktionsdeploy-kvittens), **3**, och
+> prod-halvan av **6+7**. Per-punkt-detaljerna står i respektive punkt nedan.
+> Hela paketet skrevs som en förhandsplan — flera av dess antaganden föll vid
+> skarp exekvering, och rättelserna står inline i stället för att planen
+> lämnas kvar som den var.
+
+1. ✅ **UTFÖRD 2026-08-05.** Vercel Pro-projekt kopplat, Vite-preset +
+   SPA-rewrites, säkerhetsheaders. `vercel.json` ligger i repo-roten
+   (`ADR-091` beslut 1+3, form ur R1 §1.3+§2.2); hosting-ADR:n **är** `ADR-091`,
+   mintad 2026-08-03. Preview verifierad skarpt: sju headers mätta via
+   `vercel curl` (rå `curl` ger 302 från Deployment Protection) och
+   SPA-rewriten prövad på tre djupa routes → HTTP 200 text/html.
+   **Två fel som planen inte förutsåg, båda rättade:** `postinstall` körde
+   `git config core.hooksPath` och dödade bygget med exit 128 i Vercels
+   git-lösa byggmiljö (nu fail-safe); `vercel link` la ett brett `.env*` i
+   `.gitignore` EFTER repots `!`-undantag och slog därmed ut samtliga sex
+   undantagna filer (rivet, bevisat i isolerat testrepo).
+   **ÖPPET:** GitHub-integrationen kopplades INTE — `vercel link` svarade
+   *"Failed to connect high-five-group/miranon-media-admin to project"*.
+   Kräver att Vercels GitHub-app ges åtkomst till organisationen
+   (Marcus-moment). Utan den sker ingen auto-deploy vid push.
+2. **DNS `admin.miranon.dev`** (CNAME → Vercel) — kan nu utföras av Code via
+   `gddy` (PAT-autentiserad, prod), inte enbart av Marcus i webbgränssnittet.
+   Väntar på att en PRODUKTIONSdeploy är Marcus-kvitterad, eftersom CNAME:t
+   ska peka på den och inte på en preview.
 3. **CORS-utökning:** `CORS_ALLOWED_ORIGINS` får nya origin i staging + prod —
    Code-at-prod under Marcus-auktorisation (annars deployad men datalös app).
+   Origin är nu känt för preview; produktionens tillkommer med punkt 2.
 4. **Sändande subdomän `send.miranon.dev`** verifieras i Resend + SPF/DKIM —
    Marcus i Resend + GoDaddy (T44 M3-vägen; `RESEND_FROM` byts i samma moment).
 
-   Exakt checklista (TASK-127.4, verifierat mot Resends dashboard-dokumentation,
-   context7 `/websites/resend`, 2026-08-03 — **DNS-poströrelserna nedan är
-   MALLFORM**; Resend genererar det unika DKIM-värdet först när domänen läggs
-   till, det går inte att förbereda i förväg):
+   ✅ **UTFÖRD 2026-08-05.** `send.miranon.dev` står `verified` i Resend, alla
+   tre poster gröna. Domänen lades till 2026-08-03 men stod `failed` i två
+   dygn — orsaken var att checklistan nedan gissade postnamnen.
 
-   - a. Resend-dashboard → Domains → Add Domain → `send.miranon.dev`.
-   - b. Resend visar tre DNS-poster att lägga i GoDaddy-zonen för `miranon.dev`:
-     - MX: namn `send`, värde `feedback-smtp.<region>.amazonses.com`, prioritet 10
-       (`<region>` beror på Resend-kontots valda region, t.ex. `eu-west-1`).
-     - TXT (SPF): namn `send`, värde `v=spf1 include:amazonses.com ~all`
-     - TXT (DKIM): namn `resend._domainkey.send`, värde = Resend-genererat
-       unikt publikt nyckelvärde (syns först i dashboarden efter steg a).
-   - c. Verifiera i Resend-dashboarden — kan ta upp till 72 h DNS-propagering,
-     oftast klart inom minuter.
+   **⚠️ CHECKLISTAN VAR FEL. Rättad mot uppmätt verklighet 2026-08-05.**
+   Den skrevs som uttrycklig MALLFORM (se den strukna texten nedan) och
+   antog root-domänens mönster. Resend lägger bounce-hanteringen på en
+   `send`-subdomän AV den domän man verifierar — för `send.miranon.dev` blir
+   det alltså `send.send`, inte `send`. De `send`-poster som redan låg i
+   zonen tillhörde **root-domänen** `miranon.dev` (verified sedan
+   2026-06-29), och de nya posterna kolliderade därför i namn.
+
+   | Post | Checklistan sa | **Resend krävde faktiskt** |
+   |---|---|---|
+   | MX (prio 10) | `send` | **`send.send`** |
+   | TXT (SPF) | `send` | **`send.send`** |
+   | TXT (DKIM) | `resend._domainkey.send` | `resend._domainkey.send` ✓ |
+
+   Endast DKIM-raden stämde. Lärdomen är generell: **hämta postnamnen ur
+   Resends egen `get-domain`-respons i stället för att härleda dem** — den
+   listar exakt namn, värde och typ per post, och kostar ett anrop.
+
+   - a. Resend → Domains → Add Domain → `send.miranon.dev` (eller MCP:ns
+     `create-domain`). DKIM-värdet genereras först här och går inte att
+     förbereda.
+   - b. Läs `get-domain <id>` och lägg posterna **verbatim** i GoDaddy-zonen
+     för `miranon.dev`. Code kan göra det med `gddy dns add` (PAT, prod) —
+     använd `add`, aldrig `set`, så root-domänens poster inte skrivs över.
+   - c. Trigga `verify-domain` och verifiera status. DNS-propagering tog i
+     praktiken minuter, inte de 72 h Resend anger som tak; propageringen kan
+     bevakas med `dig +short <typ> <namn> @8.8.8.8` innan verifieringen
+     triggas om.
    - d. `RESEND_FROM` (bulk-mail-vägen, `send-email`-EF:en, T55/Grind F) byts
      från root (`miranon.dev`) till en `send.miranon.dev`-adress i SAMMA
      moment — **skild adress/nyckel från auth-mailets `konto@send.miranon.dev`**
      (PRD:n kräver att auth-mail och bulk-mail aldrig blandas ihop; samma
      princip bör hållas för avsändaradresser).
 
-5. **DMARC `p=reject` + rua** på `miranon.dev` — Marcus i GoDaddy (S95 beslut 4;
-   inget legitimt root-utskick existerar — bytet är riskfritt i dag).
+5. 🟡 **HALVVÄGS 2026-08-05.** `rua` pekar nu på `marcus@h5gruppen.se`;
+   policyn står kvar på `p=quarantine` i väntan på rapportdata.
 
-   Exakt post (verifierat mot Resends DMARC-guide, context7 `/websites/resend`):
-   TXT-post, namn `_dmarc`, värde `v=DMARC1; p=reject; rua=mailto:<Marcus
-   rapport-adress>` — satt DIREKT (ingen `p=none`-uppvärmningsfas, till
-   skillnad från Resends normalrekommendation för domäner med befintlig
-   utskicks-historik; `miranon.dev` har ingen sådan att skydda).
+   Nuvarande post: `v=DMARC1; p=quarantine; rua=mailto:marcus@h5gruppen.se`
+   (`adkim=r`/`aspf=r` borttagna — de är DMARC-specens förvalda värden och
+   ändrade alltså ingenting; posten blev bara renare).
+
+   **⚠️ PREMISSEN NEDAN VAR FALSK — därför sattes inte `p=reject` direkt.**
+   Punkten motiverade ursprungligen ett hopp över uppvärmningsfasen med att
+   *"inget legitimt root-utskick existerar"*. Mätt i Resend-loggen
+   2026-08-05: `invite@miranon.dev` skickade ett skarpt broadcast till
+   riktiga mottagare (Roger, Lotta m.fl.) **2026-07-10** — en månad innan
+   påståendet skrevs. Root-utskick existerar alltså och är legitimt.
+
+   Zonen bar dessutom redan en DMARC-post: GoDaddys automatgenererade
+   `p=quarantine` med `rua` till `dmarc_rua@onsecureserver.net` — alltså gick
+   rapporterna till GoDaddy, inte till oss, och ingen hade sett en enda.
+
+   `p=reject` är sannolikt ofarligt för Resend-vägen (root är `verified` med
+   DKIM i zonen, och DKIM-alignment räcker för DMARC-pass), men risken ligger
+   i allt ANNAT som kan skicka från `miranon.dev`. Rätt ordning är därför den
+   uppvärmningsfas punkten avfärdade: **läs rapporterna först, flippa på
+   data.** Marcus-beslut 2026-08-05.
 
 6. **Supabase custom SMTP** mot Resend — **delvis versionerat i repot sedan
    TASK-127.4** (`supabase/config.toml` § `[auth.email.smtp]` +
@@ -74,28 +129,66 @@ och rundturen `TASK-127.9` grindas av paketet.
    | SMTP-lösenordet (Resend API-nyckel, dedikerad — ej `RESEND_API_KEY`) | Supabase secret, aldrig i repo/chatt | Marcus/Code-at-prod |
    | Faktisk `supabase config push --project-ref <ref>` mot STAGING resp. PROD | Terminal-kommando, kräver `SUPABASE_ACCESS_TOKEN` | Code, Marcus-auktoriserad, EFTER punkt 4 (domänverifiering) |
 
-   **Säkerhetsnot (ny, TASK-127.4):** `supabase config push` saknar en
-   motsvarande `config pull` — inget sätt att synka nuvarande fjärr-state
-   till `config.toml` före FÖRSTA push på detta projekt (som idag har ett
-   helt dashboard-styrt auth-lager; `config.toml` bar noll `[auth]`-rader
-   före detta kort). "Config as Code"-modellen är deklarativ till sin natur,
-   vilket talar för att ospecificerade fält kan nollställas till
-   CLI-scaffoldens default vid push — INTE bekräftat mot en skarp push (ingen
-   sådan är körd). **Exekvera i denna ordning:** (1) STAGING först, aldrig
-   PROD först, (2) ta en manuell skärmdump/anteckning av nuvarande
-   Authentication-inställningar i dashboarden FÖRE första push (rollback-
-   referens), (3) kör push, (4) verifiera direkt efteråt att ospecificerade
-   fält (`enable_signup`, lösenordslängd, rate limits, ev. externa
-   OAuth-providers) är oförändrade — annars återställ manuellt i dashboarden.
+   ✅ **UTFÖRD MOT STAGING 2026-08-05.** SMTP-blocket aktivt
+   (`smtp.resend.com:465`, avsändare `konto@send.miranon.dev`), nyckeln i
+   macOS-Keychain och läst direkt in i processen —
+   `AUTH_SMTP_PASS=$(security find-generic-password -s RESEND_SMTP_PASS -w)
+   supabase config push` — så värdet aldrig passerar en agents kontext.
+   **PROD ÅTERSTÅR.**
 
-7. **Email OTP Expiration → 24 h** + redirect-URL:er för accept/reset —
-   **versionerat i repot sedan TASK-127.4** (`otp_expiry = 86400` +
-   `additional_redirect_urls` i `supabase/config.toml`), samma
-   push-mekanism och säkerhetsnot som punkt 6. Två delar kvarstår utanför
-   repot: (a) själva push-exekveringen (Marcus/Code, se punkt 6:s tabell),
-   (b) återställnings-sidans redirect-URL — `/valkommen` (accept, ADR-092)
-   är satt, men reset-lösenord-sidans path väljs först av `TASK-127.7` (ännu
-   obyggd) och läggs till i arrayen då.
+   **✅ SÄKERHETSNOTEN ÄR NU BELAGD — den var mer berättigad än den trodde.**
+   Noten sa att nollställnings-risken var *"INTE bekräftat mot en skarp push
+   (ingen sådan är körd)"*. Pushen är körd, och hypotesen höll: `config push`
+   ÄR deklarativ. Förste pushen mot staging ändrade **22 av 242 fält**, varav
+   **sex var oavsiktliga regressioner**:
+
+   | Fält | Före | Efter |
+   |---|---|---|
+   | `mailer_autoconfirm` | `False` | `True` — e-postbekräftelse AV |
+   | `mfa_totp_enroll_enabled` | `True` | `False` — TOTP-registrering AV |
+   | `mfa_totp_verify_enabled` | `True` | `False` — TOTP-verifiering AV |
+   | `mailer_otp_length` | `8` | `6` |
+   | `smtp_max_frequency` | `60` | `1` |
+   | `site_url` | `localhost:3000` | `127.0.0.1:3000` |
+
+   Endast TVÅ av dem hade förutsetts. MFA-avstängningen är den allvarligaste
+   och stod inte i notens egen exempellista. Samtliga är nu **låsta** i
+   `config.toml` § `[auth]` — läs varningskommentaren där före varje ändring.
+   (`custom_oauth_max_providers` 3 → 32767 inträffar också, men vid VARJE
+   skrivning oavsett väg — det är Management API som normaliserar fältet, inte
+   `config push`.)
+
+   **Rättad exekveringsordning, prövad skarpt:**
+   1. **STAGING FÖRST**, aldrig prod först — gäller alltjämt och bevisade sitt
+      värde: prod var det LÄNKADE projektet när sessionen började.
+   2. **Ta förebilden ur Management API**, inte som skärmdumpar:
+      `GET /v1/projects/<ref>/config/auth` ger 242 fält som JSON, vilket gör
+      efterkontrollen till en maskinell diff i stället för en ögonjämförelse.
+   3. **LÄS CLI:ts DIFF.** Det finns ingen `--dry-run` och ingen `config pull`,
+      men `config push` skriver ut en fullständig diff före bekräftelsen. Den
+      är den enda förhandsgranskning som existerar.
+   4. Kör push, hämta efterbilden, diffa mot förebilden fält för fält.
+   5. **För ETT ELLER TVÅ enskilda fält: använd `PATCH` mot samma endpoint i
+      stället.** Prod-ändringen 2026-08-05 (`site_url` + `disable_signup`)
+      rörde då 3 fält av 242, med samtliga känsliga verifierat oförändrade.
+
+7. ✅ **UTFÖRD MOT STAGING 2026-08-05** (samma push som punkt 6).
+   `mailer_otp_exp` verifierad `86400` och `uri_allow_list`
+   `https://admin.miranon.dev/valkommen` i Management API-svaret efter push.
+   **PROD ÅTERSTÅR** — samma ordning och säkerhetsnot som punkt 6.
+
+   **Utöver planen:** `site_url` sattes i samma veva, i BÅDA miljöerna. Den
+   var `http://localhost:3000` — utvecklingsstandarden som aldrig ändrades
+   sedan projekten skapades (prod 2026-03-30, staging 2026-06-13). Site URL
+   används i ALLA auth-mail som saknar explicit redirect, så varje
+   inbjudningslänk hade pekat på **mottagarens egen dator**. Det var en tyst
+   blockerare för hela inbjudningsvägen som ingen punkt i detta paket
+   fångade. Nu `https://admin.miranon.dev` och låst i `config.toml`.
+
+   **Kvar utanför repot:** återställnings-sidans redirect-URL — `/valkommen`
+   (accept, ADR-092) är satt, men reset-lösenord-sidans path väljs av
+   `TASK-127.7` och läggs till i arrayen där. Kortet är ute hos bygg-agent
+   2026-08-05 med den posten uttryckligen i uppdraget.
 
 ### 6g-grenens leverans-bevis (S43)
 
