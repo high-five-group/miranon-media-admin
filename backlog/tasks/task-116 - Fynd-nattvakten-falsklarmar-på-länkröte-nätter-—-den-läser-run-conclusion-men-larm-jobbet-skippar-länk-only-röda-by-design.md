@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-01 13:08'
+updated_date: '2026-08-05 15:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -45,6 +46,16 @@ Möjliga former, ingen vald här: (a) vakten läser **jobb-nivå** i stället f�
 - [ ] #3 Bevis-läget simulate_missing fungerar efter ändringen, verifierat med en dispatch
 - [ ] #4 Ärende #469 stängt enligt stängningsregeln med hänvisning till detta korts leverans
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AKTUALITETS-KONTROLL 2026-08-05 (S96 femte resumen, orkestreraren): KORTETS PREMISS HÅLLER INTE LÄNGRE — fixen är redan landad. Commit 39e55a58 'fix(ci): [S97] nattvakten falsklarmar pa lankkontroll-roda natter' åtgärdade detta i S97 (2026-08-04), tre dagar efter att kortet skapades (2026-08-01 13:08). Kortet är alltså en bokförings-rest, inte öppet arbete.
+
+Mätt av två oberoende källor i samma pass: orkestrerarens git-log-kontroll mot .github/workflows/nightly-watchdog.yml, samt en bygg-agent som spawnats på kortet och som självständigt rapporterade 'the file already appears to contain the fix described in the card' innan den stoppades.
+
+ÅTGÄRD FÖRE NÄSTA PLOCKNING: verifiera att S97-fixen täcker samtliga AC i detta kort. Gör den det ska kortet stängas som Done med hänvisning till 39e55a58, INTE byggas om. Täcker den bara delvis ska kvarvarande AC skrivas om mot faktiskt tillstånd.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
