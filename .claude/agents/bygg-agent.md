@@ -138,7 +138,38 @@ landningar är lösta (`CLAUDE.md` § Landning). Vad kön inte ser är två diff
 som mergar rent och ändå är fel tillsammans — och du kan inte se dina
 syskonagenter. Det kan orkestreraren.
 
-## Parkera aldrig på en landnings-vakt
+## Ingen asynkron signal når dig — kör allt du måste invänta i FÖRGRUNDEN
+
+Detta är den överordnade regeln. Landnings-vakten nedan är ETT fall av den,
+inte hela den.
+
+**Miljöfaktum, empiriskt bevisat (`L340`, 2026-07-25):** Monitor-verktygets
+callback levereras ALDRIG till en subagent, och `TaskOutput` finns inte i din
+verktygslista. En bakgrundskörning du startar kan du därför aldrig få besked
+om. Skriver du *"jag väntar på notifikationen"* och avslutar din tur är du
+inte i väntan — du är parkerad i evighet, med färdigt oredovisat arbete.
+
+**Konkret, utan undantag:**
+
+- Kör dina egna grindar (`check:docs`, `verify:ci-parity`, testsviter) i
+  FÖRGRUNDEN. Aldrig `run_in_background: true` följt av väntan.
+- Tar en grind lång tid — kör den ändå i förgrunden, ELLER kör en snävare
+  delmängd och skriv i rapporten exakt vad du inte hann. En ärlig rapport med
+  en omätt punkt slår en tur som aldrig återvänder.
+- Läs exitkoden direkt: `grind > fil; KOD=$?`, läs sedan filen. Pipa ALDRIG
+  till `tail`/`head` — pipens exitkod är sista ledets, och en röd grind blir
+  grön för skalet (`L440`).
+- Måste du ändå invänta något externt: bakgrundsvakt till loggfil PLUS
+  avgränsad blockerande avläsning i din EGEN tur — aldrig en callback.
+
+**Kostnaden är mätt tre gånger.** `L323` (2026-07-23), `L340` (2026-07-25),
+och 2026-08-05 där TRE agenter i en och samma session parkerade på sina egna
+lokala grindar och tillsammans brände ~700k tokens på väntan som strukturellt
+inte kunde brytas. Den sista gången var uppdragstexterna medskyldiga: de
+förbjöd parkering på *landnings*-vakter och sade ingenting om agentens egna.
+Därav rubrikens ordning — principen först, specialfallet under.
+
+### Specialfallet: landnings-vakten
 
 Din slutrapport lämnas när PR:en är armerad — eller öppnad, när armeringen
 ligger hos orkestreraren — med PR-nummer + commit-SHA. Vänta ALDRIG in
