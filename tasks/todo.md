@@ -15,6 +15,22 @@
 
 ## Aktuellt fokus
 
+**Session 96 ▶️ ÅTERUPPTAGEN (2026-08-05, `lifecycle: active`)** — **MILJÖ- OCH
+PROCESSPÅRET ÅTER I GÅNG** efter sjätte pausen. Resumen kördes i
+**huvudkatalogen** — ägarlappen (`.git/katalogagarskap-agare.json`) bar denna
+sessions egen id, ingen främmande ägare. `main` på `fd41db2e`, arbetsträd rent,
+CI grön per jobb (CI · Post-merge · Push on main); enda öppna PR är `#635`
+(dependabot web-vitals), oarmerad per stående beslut. **Numreringen
+re-verifierad mot disk på `fd41db2e` — samtliga sex axlar oförändrade sedan
+pausen** (`096`/`L470` + 6 fragment/`T124`/`task-145`/`f47`); S93 förbrukade
+inga nummer under pausen. **Marcus kvitterade handoffens punkt 1** — research-
+passets rekommendation (`docs/research/auth-invite-e2e-service-role-branschprecedent-2026-08-05.md`)
+går till verkställighet, med passets §8-fynd bokfört i samma veva. **NÄSTA:
+`TASK-127.9` enligt beslutet → `TASK-116` AC #3 (en dispatch, sedan stängning)
+→ `TASK-129`/`TASK-138`, båda plockbara → QA-korten `126.3`/`126.5`/`127.10` när
+Marcus vill.** **HANDOFF: sessionsdok S96 § Paushistorik paus 6.**
+*(S93 kör parallellt och är fortsatt `active` — dess kadensrad nedan, oförändrad.)*
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-05, `lifecycle: active`)** — **APPSPÅRET
 ÅTER I GÅNG** efter två dygns paus. Resumen kördes i **egen worktree**
 (`s93-resume-2`) — huvudkatalogen bar S96:s ägarlapp med **bevisligen levande
