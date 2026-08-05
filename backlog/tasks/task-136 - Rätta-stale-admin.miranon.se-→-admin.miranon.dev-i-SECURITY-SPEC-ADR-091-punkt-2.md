@@ -6,9 +6,12 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-04 10:45'
+updated_date: '2026-08-05 15:31'
 labels:
   - ready-for-agent
 dependencies: []
+modified_files:
+  - docs/specs/SECURITY-SPEC.md
 priority: low
 ordinal: 219000
 ---
@@ -33,10 +36,16 @@ Utbrutet ur `TASK-129` symptom 2 (fynd 2026-08-02) på Marcus beslut 2026-08-04 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 SECURITY-SPEC.md:s CORS-exempel (§ 'A05: CORS på Edge Functions') läser 'https://admin.miranon.dev' i stället för 'https://admin.miranon.se'
-- [ ] #2 Ingen annan 'miranon.se'-förekomst i repot rörd — verifierat via git diff att exakt en rad ändrats i exakt en fil
-- [ ] #3 SECURITY-SPEC.md:s frontmatter-fält 'updated' bumpat till landningsdatumet (governing doc per .frontmatter-policy.conf)
+- [x] #1 SECURITY-SPEC.md:s CORS-exempel (§ 'A05: CORS på Edge Functions') läser 'https://admin.miranon.dev' i stället för 'https://admin.miranon.se'
+- [x] #2 Ingen annan 'miranon.se'-förekomst i repot rörd — verifierat via git diff att exakt en rad ändrats i exakt en fil
+- [x] #3 SECURITY-SPEC.md:s frontmatter-fält 'updated' bumpat till landningsdatumet (governing doc per .frontmatter-policy.conf)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Premiss-provad mot disk (ADR-086): kortets 'rad 461' var stale — mätt 2026-08-05 mot HEAD, raden är 469 (troligen filförskjuten av commit bc355de7, TASK-127.6, samma dag). Rättad rad = 469, ingen scope-effekt (samma sträng, samma sektion). cors.ts (corsHeadersFor()) verifierat env-driven via CORS_ALLOWED_ORIGINS, ingen hårdkodad domän — kortets premiss höll. Kvarvarande out-of-scope-fynd, ej rört: SECURITY-SPEC rad 808 citerar 'admin.miranon.se' i en historisk ADR-093-riven-not (korrekt, beskriver det FÖRE detta kort) — utanför korts scope per AVGRÄNSNING. Orkestrerarens uppdragstext (2026-08-05) noterade att produktionens CORS_ALLOWED_ORIGINS-secret fortfarande bär admin.miranon.se utöver admin.miranon.dev — SECURITY-SPEC:s text ('Bara appens egen domän tillåts') är en normativ policy-rad, inte ett sakpåstående om secretens aktuella innehåll, så ingen filändring gjordes för den — bokfört här i stället, secreten ej rörd.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
