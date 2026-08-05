@@ -10,8 +10,8 @@
 #   med att grinden inte gör någonting alls. T104/TASK-60 etablerade formen:
 #   beviset ska vara körbart i repot, inte en mening i en agentrapport.
 #
-# 17 testfall, varav 15 planterar ett känt fel och 2 prövar att grinden är grön
-# på korrekt indata (utan de sista två mäter fällnings-testerna ingenting):
+# 24 testfall, varav 19 planterar ett känt fel och 5 prövar att grinden är grön
+# på korrekt indata (utan de gröna mäter fällnings-testerna ingenting):
 #   T1     — ren fixtur passerar (annars mäter resten ingenting)
 #   T2–T4  — enum + tillstånds-KOLUMN (T4 är falskpositiv-regressionen: ordet
 #            "paused" i prosan får aldrig räknas som radens tillstånd)
@@ -25,6 +25,12 @@
 #            saknas: utan tomhetskontroll validerar grinden mot tom sträng och
 #            rapporterar grönt)
 #   T15    — ledande nollor (T01→T02) läses som 1→2, inte som en lucka
+#   T18–T24— Inv 6 (barn-manifest, ADR-095 beslut 4, TASK-141): T18/T19 släpper
+#            ett giltigt tråd- respektive kort-barn; T20–T23 fäller ett
+#            barn-tråd-ID som saknas, ett barn-kort-ID som saknas, en förälder
+#            som saknas i registret, och ett ID på okänd form; T24 bevisar att
+#            ett SAKNAT manifest är grönt (opt-in, additivt startläge — inte
+#            samma sak som ett manifest som pekar fel).
 #
 # Test-isolering: skapar sandbox under /tmp med egna fixturer och en KOPIA av
 # grinden + policyn. Återställer (rm -rf) via trap. INGEN ändring av real-repo.
@@ -54,7 +60,7 @@ trap cleanup EXIT
 
 setup() {
     rm -rf "${TEST_DIR}"
-    mkdir -p "${TEST_DIR}/tasks/threads" "${TEST_DIR}/scripts"
+    mkdir -p "${TEST_DIR}/tasks/threads" "${TEST_DIR}/scripts" "${TEST_DIR}/backlog/tasks"
     cp "${GATE_SRC}" "${TEST_DIR}/scripts/check-thread-index.sh"
     cp "${POLICY_SRC}" "${TEST_DIR}/.thread-index-policy.conf"
     chmod +x "${TEST_DIR}/scripts/check-thread-index.sh"
@@ -68,6 +74,18 @@ index() {
 # card <filnamn> — skriver stdin till sandboxens tasks/threads/<filnamn>
 card() {
     cat > "${TEST_DIR}/tasks/threads/$1"
+}
+
+# manifest — skriver stdin till sandboxens tasks/threads/barn.md (Inv 6,
+# ADR-095 beslut 4, TASK-141)
+manifest() {
+    cat > "${TEST_DIR}/tasks/threads/barn.md"
+}
+
+# backlog_card <filnamn> — skriver stdin till sandboxens backlog/tasks/<filnamn>,
+# fixtur för Inv 6:s kort-halva (card_exists())
+backlog_card() {
+    cat > "${TEST_DIR}/backlog/tasks/$1"
 }
 
 run_gate() {
@@ -271,6 +289,103 @@ ${HEADER}
 | \`T10\` | Tio | \`closed\` | _x_ |
 EOF
 assert "T15 ledande nollor läses som bas 10" 0 "tråd-index OK"
+
+# ── T18: Inv 6 — giltig barn-TRÅD släpps ─────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+| \`T02\` | Andra | \`active\` | _x_ |
+EOF
+manifest <<EOF
+| Tråd | Barn |
+|---|---|
+| \`T01\` | \`T02\` |
+EOF
+assert "T18 barn-manifest: giltig barn-tråd passerar" 0 "tråd-index OK"
+
+# ── T19: Inv 6 — giltigt barn-KORT släpps ────────────────────────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+manifest <<EOF
+| Tråd | Barn |
+|---|---|
+| \`T01\` | \`TASK-1\` |
+EOF
+backlog_card "task-1 - Exempel.md" <<'EOF'
+---
+id: TASK-1
+---
+EOF
+assert "T19 barn-manifest: giltigt barn-kort passerar" 0 "tråd-index OK"
+
+# ── T20: Inv 6 — barn-tråd som INTE finns i registret fälls ─────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+manifest <<EOF
+| Tråd | Barn |
+|---|---|
+| \`T01\` | \`T99\` |
+EOF
+assert "T20 barn-manifest: barn-tråd som saknas fälls" 1 "INTE finns i registret"
+
+# ── T21: Inv 6 — barn-kort som INTE finns på disk fälls ──────────────────────
+# Ingen backlog_card() anropad — TASK-999 har ingen fixturfil.
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+manifest <<EOF
+| Tråd | Barn |
+|---|---|
+| \`T01\` | \`TASK-999\` |
+EOF
+assert "T21 barn-manifest: barn-kort som saknas fälls" 1 "TASK-999"
+
+# ── T22: Inv 6 — förälder som INTE finns i registret fälls ──────────────────
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+manifest <<EOF
+| Tråd | Barn |
+|---|---|
+| \`T05\` | \`T01\` |
+EOF
+assert "T22 barn-manifest: förälder som saknas i registret fälls" 1 "T05 (förälder) finns INTE i tråd-registret"
+
+# ── T23: Inv 6 — okänd ID-form i barn-cellen fälls ───────────────────────────
+# Varken tråd-ID:t (T<siffror>) eller kort-ID:t (TASK-<siffror>) matchas.
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+manifest <<EOF
+| Tråd | Barn |
+|---|---|
+| \`T01\` | \`XYZ-1\` |
+EOF
+assert "T23 barn-manifest: okänd ID-form fälls" 1 "okänd form"
+
+# ── T24: Inv 6 — SAKNAT manifest är grönt (opt-in) ───────────────────────────
+# Ingen manifest() anropad alls — filen finns inte i sandboxen. Additivt
+# startläge (ADR-095 beslut 4): frånvaro betyder "inga barn deklarerade ännu",
+# inte ett fel. Skiljer sig från T20–T23, som alla har en FIL som pekar fel.
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+assert "T24 barn-manifest: saknat manifest är grönt" 0 "tråd-index OK"
 
 echo
 echo "── Resultat ──"

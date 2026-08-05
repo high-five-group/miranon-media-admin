@@ -775,14 +775,19 @@ jobs:
         # av mig och kan avvika åt båda håll.
         #
         # test-check-thread-index.sh (TASK-108) hör hit av samma kadens-skäl.
-        # 17 fall: 15 planterar ett känt fel per invariant (T4 är
-        # falskpositiv-regressionen — ordet "paused" i prosan får aldrig räknas
-        # som radens tillstånd; T11 är täcknings-regressionen — trådfil UTAN
-        # lifecycle:-fält, exakt klassen check-lifecycle.sh tyst hoppar) och 2
-        # prövar grönt på korrekt indata. Sandboxad i mktemp, ingen
-        # nätverkstrafik. 1,1 s LOKALT mätt (fixturerna är små — det är
-        # registrets verkliga rader som är dyra, se grind-steget ovan).
-        # CI-tiden är inte mätt av mig.
+        # 24 fall (var 17 t.o.m. TASK-140): 19 planterar ett känt fel per
+        # invariant (T4 är falskpositiv-regressionen — ordet "paused" i prosan
+        # får aldrig räknas som radens tillstånd; T11 är täcknings-
+        # regressionen — trådfil UTAN lifecycle:-fält, exakt klassen
+        # check-lifecycle.sh tyst hoppar) och 5 prövar grönt på korrekt
+        # indata. T18–T24 (TASK-141) prövar Inv 6 (barn-manifest, ADR-095
+        # beslut 4): giltig barn-tråd/-kort släpps, saknad barn-tråd/-kort/
+        # förälder och okänd ID-form fälls, saknat manifest är grönt (opt-in).
+        # Sandboxad i mktemp, ingen nätverkstrafik. 3,7 s LOKALT mätt (macOS,
+        # 2026-08-05, `time bash scripts/test-check-thread-index.sh`) —
+        # fixturerna är små, det är registrets verkliga rader som är dyra
+        # (se grind-steget ovan, inte sandbox-sviten). CI-tiden är inte mätt
+        # av mig och kan avvika åt båda håll.
         #
         # test-check-listparitet.sh (TASK-85) hör hit av samma kadens-skäl.
         # Sviten prövar listparitets-grinden i BÅDA riktningar (post borttagen ur
