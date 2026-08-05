@@ -3158,9 +3158,9 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Marketplace-domen revs av sin egen uppföljning:** hub-agentens **villkorade** mandat tog stopp-vägen — Discover läser `entry.description` utan fallback. Följdfyndet var dyrare: `7d4bf51` (Del 7, föregående dag) var **inte** beteendemässigt neutralt utan rev versionsraden ur Discover. Åtgärd (hub `76d47b7`): en fjärde väg passet aldrig övervägde — version återställd så validatorns cross-check vaktar igen, description ersatt med en kort stabil bläddringstext.
 - **Uppströmsrapporten postad** till `anthropics/claude-code#72714` (öppen sedan 2026-07-01, noll kommentarer) med amplifikationsmätningen 22 worktree-skapelser/dag.
 - **Dependabot:** `#632`/`#633`/`#634` landade i mätt ordning; `#635` fick `recreate` i stället för armering — den pinnar 6.0.0 medan 6.0.1 rättar just den `PerformanceObserver`-kastväg som gör bumpen riskabel.
-- **Skörd:** `L456`–`L460` (`#739`) + `L461`+ vid stängningen. Tråd `T123` registrerad. `ADR-095` rättad i `#751` (stale ordinaltal + en formulering som motsade beslut 2 två stycken bort — båda fångade av bygg-agenten).
+- **Skörd:** `L456`–`L460` (`#739`) + `L461`–`L468` (`#754`, stängningsskörden). Tråd `T123` registrerad. `ADR-095` rättad i `#751` (stale ordinaltal + en formulering som motsade beslut 2 två stycken bort — båda fångade av bygg-agenten).
 - **Egna fel bokförda:** två delmängds-körningar av grindar · ett "för/efter-experiment" som inte var ett · ett "tyst fel" som inte var tyst · en felräkning · nära att flagga ett korrekt paket som misstänkt på föråldrad minnesbild.
-- **Numrering efter S97:** 98/096/L461/T124/task-142/f47. **`vol-06` måste roteras FÖRE nästa hub-lyft.**
+- **Numrering efter S97:** 98/096/L469/T124/task-142/f47. **`vol-06` måste roteras FÖRE nästa hub-lyft.** *(Lesson-axeln rättad 2026-08-05 i S98: posten skrevs `L461` vid stängningen, före `#754` landade `L461`–`L468`.)*
 - Full narrativ: sessionsdok S97 Del 1–10.
 
 ## Session-modellen

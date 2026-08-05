@@ -41,7 +41,10 @@ just den kastväg som gör bumpen riskabel. **Uppströmsrapporten postad** till
 `anthropics/claude-code#72714`. **NÄSTA (NY session S98): `T123`
 (backlog.md-bumpens efterslängar) · S96-resume (Grind 0 DNS + `T95`) ·
 S93-resume (appen) · `#635` vid måndagens Dependabot-körning · hub-lyftet måste
-**rotera `vol-06` FÖRST**.** Numrering efter S97: 98/096/L461/T124/task-142/f47.
+**rotera `vol-06` FÖRST**.** Numrering efter S97: 98/096/L469/T124/task-142/f47.
+*(Lesson-axeln rättad 2026-08-05 i S98: raden skrevs `L461` vid stängningen,
+före `#754` landade `L461`–`L468` som HEAD-mergen. Disk är auktoritativ —
+re-derivera alltid mot `tasks/lessons.md`, aldrig ur en kadensrad.)*
 Full narrativ: sessionsdok S97 Del 1–10 + BUILD-LOG S97-post.
 *(Föregående kadensrad nedan.)*
 
