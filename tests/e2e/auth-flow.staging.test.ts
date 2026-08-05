@@ -29,6 +29,23 @@ import { expect, type Request, test } from '../support/test-bas';
  * defense-in-depth-skyddet beror inte på production-build. Per Marcus' beslut
  * (Session 5, post-K4.2) flyttas Vercel-aktivering INTE hit; den är Fas 7-arbete
  * per fas-disciplin-policy.
+ *
+ * **FÖRUTSÄTTNINGEN OVAN ÄR PASSERAD (uppdaterat 2026-08-05, S96).** Stycket
+ * beskriver läget i Session 5 och stämmer inte längre om nuet: Vercel-
+ * deployment-pipelinen ÄR etablerad. Deploy-biten drogs fram ur Fas 7 på
+ * Marcus beslut i S95 (byggplan.md rad 88, öppet bokförd avvikelse — utan
+ * publik HTTPS-URL finns varken PWA-installation eller invite-länk-mål), och
+ * GitHub-integrationen är kopplad och verifierad: `vercel[bot]` skapar
+ * Preview-deployments per gren och Production-deployments per main-merge
+ * (mätt mot GitHub deployments-API 2026-08-05).
+ *
+ * Stycket lämnas kvar i stället för att raderas eftersom det förklarar varför
+ * `PLAYWRIGHT_TEST_BASE_URL` fortfarande är osatt här — men det ska inte
+ * längre läsas som en gällande blockering. Det gjordes en gång: S96:s
+ * research-pass citerade dessa rader som belägg för att `TASK-127.9` var
+ * Fas 7-bunden, vilket bokfördes vidare på kortet innan någon prövade
+ * påståendet mot faktiskt tillstånd. Den verkliga bristen var en enda
+ * saknad post i STAGINGS `uri_allow_list`, satt samma dag.
  */
 
 // ===================================================================

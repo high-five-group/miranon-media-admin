@@ -4,7 +4,7 @@ title: 'Skiva: Rundturs-e2e — inbjudan till inloggad, mot staging'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-05 19:13'
+updated_date: '2026-08-05 20:15'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,48 +33,55 @@ Täcker användarberättelser: 2, 13.
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-## Fas 7-beroendet — bokfört 2026-08-05 (S96), Marcus-kvitterat
+## Fas 7-beroendet — RÄTTAT 2026-08-05 (S96), efter Marcus pushback
 
-**AC #1 kan inte bli grön förrän Fas 7 landar.** Det är INTE enbart
-service-role-luckan som blockerar, vilket kortet tidigare antog.
+**Den tidigare noten här var fel och är riven.** Den påstod att AC #1 inte kan
+bli grön förrän Fas 7 landar. Marcus fällde påståendet med *"Jag har visst
+kopplat Github och Vercel och du har bekräftat det. Inget borde blockera
+Task-127.9 tycker jag"* — och mätningen gav honom rätt.
 
-Research-passet `docs/research/auth-invite-e2e-service-role-branschprecedent-2026-08-05.md`
-§8 hittade att repot redan bär ett daterat, Marcus-beslutat svar på
-redirect-domän-mismatchen (`admin.miranon.dev` mot CI:s `localhost:5173`) —
-`tests/e2e/auth-flow.staging.test.ts` rad 24–31, skrivet vid K4.2 (Session 5):
+### Vad som faktiskt gällde
 
-> "När Fas 7 etablerar Vercel-deployment-pipeline ska samma test-suite
-> kompletteras att köra mot Vercel preview-URL via `PLAYWRIGHT_TEST_BASE_URL`-
-> env i CI-steget ... Per Marcus' beslut (Session 5, post-K4.2) flyttas
-> Vercel-aktivering INTE hit; den är Fas 7-arbete per fas-disciplin-policy."
+Deploy-pipelinen är **framdragen ur Fas 7** på Marcus S95-beslut
+(`docs/byggplan.md` rad 88, öppet bokförd avvikelse). Vercel Pro-projektet är
+kopplat, `admin.miranon.dev` är live, och **GitHub-integrationen fungerar** —
+verifierat mot GitHub deployments-API: `vercel[bot]` skapar Preview per gren
+och Production per main-merge; PR `#817` bär en grön `Vercel`-check.
 
-`ci-suite.yml` rad 277–279 och 493–495 bekräftar att `PLAYWRIGHT_TEST_BASE_URL`
-medvetet lämnas osatt idag. Frontend-reachability har alltså varit en separat,
-redan schemalagd förutsättning i tolv sessioner — den är ingen ny eftersläpning
-och inget som ska lösas inom detta kort.
+Den enda verkliga bristen var **en saknad post i STAGINGS `uri_allow_list`**.
+Live-mätning mot Management API visade exakt två poster, båda mot
+`admin.miranon.dev` — prod-domänen, som pratar med prod-Supabase. Ett
+staging-test kunde inte använda dem.
 
-## Vad som byggs nu i stället
+**Åtgärdat samma dag:** `http://localhost:5173/**` tillagd i STAGINGS lista via
+riktad PATCH (1 fält av 242 ändrat, maskinellt diffat; prod omläst och
+verifierat ORÖRD). Det är samma rigg som elva redan gröna
+`tests/e2e/*.staging.test.ts` använder — `chromium-authenticated` mot lokal
+dev-server på port 5173 med staging-Supabase i botten.
 
-Marcus kvitterade 2026-08-05 research-passets rekommendation (Väg A):
-en staging-only Edge Function `test-invite-completion` bakom `ADMIN_EMAILS`,
-medvetet utelämnad ur `.prod-functions-allowlist.conf` (`test-auth`-
-precedenten), som exponerar `generateLink` + `deleteUser` för en admin-JWT-
-anropare. Noll nya CI-hemligheter — service-role är redan EF-runtime-intern.
+Posten kan INTE låsas i `supabase/config.toml` (delad fil, deklarativ push →
+hade spillt till prod). Konsekvensen är bokförd i filen: en framtida
+`config push` mot staging nollställer den tyst.
 
-Precedenten är läst i mergad kod, inte i blogginlägg: Ghost (PR #21637,
-DB-token-läsning), cal.com (Prisma-läsning i `forgot-password.e2e.ts`, explicit
-kallad "workaround"; `getInviteLink` ur API-svarskroppen) och twenty (PR #9332,
-clipboard). Samtliga kortar mail-hoppet och kör resten av UI-kedjan skarpt.
-Ingen av 6+ granskade projekt läser en riktig mailbox i CI.
+### Varför felet uppstod — värt att minnas
 
-Det gör mekanismen redo att koppla in samma dag Vercel-pipen landar — men det
-gör inte AC #1 grön.
+Research-passets §8 citerade `tests/e2e/auth-flow.staging.test.ts` rad 24–31,
+skriven i **Session 5**. Sann då. Skriven långt före S95:s Vercel-beslut. Den
+lästes som ett gällande beslut i stället för som en daterad ögonblicksbild, och
+`T46` Grind 0 punkt 1 bar samtidigt kvar ett `ÖPPET:`-stycke om
+GitHub-integrationen som redan var löst. Två inaktuella tillståndsytor,
+lästa med förtroende. Båda rättade i samma landning som denna not.
 
-## Ärlig status tills dess
+### Vad som byggdes och vad som återstår
 
-AC #1 och #2 vilar på Väg B: manuell verifiering, redan utförd en gång med
-städning (se `docs/research/task-127-9-rundtur-e2e-service-role-blocker-2026-08-05.md`).
-Kortet stängs INTE av EF-bygget.
+`test-invite-completion` (staging-only EF, `#817` + `#820`) löser mail-hoppet:
+den ger `action_link` + `hashed_token` via privilegierad backend-läsning, precis
+som Ghost, cal.com och twenty gör. Branschprecedenten i
+`docs/research/auth-invite-e2e-service-role-branschprecedent-2026-08-05.md`.
+
+**Kortet är plockbart.** Deps `127.3`/`127.5`/`127.6` är Done, EF:en finns,
+riggen finns, redirect-målet är satt. Kvar är att skriva rundturen och bocka
+AC #3:s förkrav.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
