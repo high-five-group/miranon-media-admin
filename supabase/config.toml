@@ -153,6 +153,23 @@ site_url = "https://admin.miranon.dev"
 # `config push` registreringen igen — tyst.
 enable_signup = false
 
+# LÅS. Lösenordsgolvet. Både staging och prod stod på CLI-defaulten `6` medan
+# appens egen kontroll kräver 8 (`src/routes/nytt-losenord.tsx` rad 177, med
+# ASVS 6.2.1 som referens i filhuvudet). Servern var alltså SVAGARE än UI:t —
+# klient-side-kontroller kan kringgås, så det verkliga golvet var 6.
+# Höjt till 8 i båda miljöerna 2026-08-05 (S96) via riktad PATCH mot
+# Management API; denna rad är låset som hindrar nästa `config push` från att
+# ta ner det till 6 igen.
+minimum_password_length = 8
+
+# KÄND KANT — HIBP GÅR INTE ATT LÅSA HÄR. `password_hibp_enabled` (kontroll
+# mot läckta lösenord via haveibeenpwned) är satt `true` i BÅDA miljöerna
+# 2026-08-05 (S96), men CLI 2.75.0:s config-scaffold saknar fältet helt
+# (verifierat med `supabase init` i en tom katalog: noll träffar på "hibp").
+# Det kan därför varken låsas eller versionshanteras här. Innan nästa
+# `config push` MÅSTE CLI:ts diff läsas för att se om pushen rör fältet —
+# diffen är enda förhandsgranskningen som finns.
+
 [auth.mfa.totp]
 # LÅS. Båda stod `true` på staging före första pushen; CLI-defaulten är
 # `false` för båda, så en push utan dessa rader STÄNGER AV TOTP-baserad
