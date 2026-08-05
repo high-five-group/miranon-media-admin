@@ -42,36 +42,36 @@ re-verifierad 2026-08-05 mot `1d7c56e8`: 096/L470/T124/**task-145**/f47
 
 <!-- Föregående kadensrad, bevarad: -->
 
-**Session 96 ▶️ ÅTERUPPTAGEN (2026-08-05, femte resumen, `lifecycle: active`)** —
-**APPEN FICK EN ADRESS: `https://admin.miranon.dev` ÄR LIVE.** T95:s hårda
-Grind 0 — *"det finns ingen frontend-deploy alls"* — är därmed falsifierad.
-15 PR:er (`#775`–`#790`). **Grind 0 gick från två utförda punkter till fem:**
-deploy (`vercel.json` mot ADR-091, auto-deploy från main på ~13 s efter Marcus
-GitHub-koppling) · domän (A-post, Let's Encrypt, sju headers + SPA-rewrite
-verifierade skarpt) · `send.miranon.dev` `verified` · SMTP + OTP mot staging.
-**SEX SKIVOR STÄNGDA:** `126.2` `126.3`\* `127.2` `127.3` `127.6` `127.7`
-`127.8`. **MÄTNINGEN SOM BAR PASSET:** `supabase config push` är DEKLARATIV —
-22 av 242 fält ändrades vid första skarpa pushen, **sex var oavsiktliga
-regressioner** (MFA/TOTP stängdes av, e-postbekräftelse av, OTP-längd 8→6,
-frekvensspärr 60s→1s) och bara två var förutsedda. Prod var det LÄNKADE
-projektet vid sessionsstart; prod-först hade slagit av tvåfaktor tyst. Samtliga
-låsta i `config.toml`. **TRE FALSIFIERADE PREMISSER:** T46:s DNS-checklista
-gissade postnamnen (`send.send`, inte `send` — därför stod domänen `failed` i
-två dygn) · DMARC-punktens *"inget legitimt root-utskick existerar"* motbevisad
-av Resend-loggen (skarpt broadcast 2026-07-10) · min egen bedömning att
-deployen var blockerad föll på första kontrollen när Marcus pressade.
-**TYST BLOCKERARE FUNNEN:** `site_url` stod `localhost:3000` i BÅDA miljöerna
-sedan projekten skapades — varje inbjudningslänk hade pekat på MOTTAGARENS egen
-dator. **TVÅ AGENTER FÅNGADE ETT FEL I MINA UPPDRAG** (ocommitterade
-kortstängningar är osynliga för nya worktrees), och en tredje **motbevisade min
-diagnos** av ett testfel och levererade en bättre — ADR-086 riktat mot
-orkestreraren. **NÄSTA RESUME (Marcus order): CORS · HIBP + lösenordsgolv ·
-`config push` för `/nytt-losenord` · prod-halvan av 6+7 · `TASK-127.9`
-(plockbar) · `TASK-143` före QA-korten.** **CORS blockerar allt användbart —
-appen är live men datalös.** \*`126.3`:s kod är landad; kortet väntar på Marcus
-Gunilla-grind. **HANDOFF: sessionsdok S96 § Paushistorik paus 5.** Numrering
-re-verifierad vid femte resumen (`f09e4183`, samtliga axlar oförändrade):
-096/L470/T124/task-144/f47.
+**Session 96 ⏸️ PAUSAD (2026-08-05, sjätte pausen, `lifecycle: paused`)** —
+**MILJÖPAKETET KOMPLETT OCH APPEN ÄR ANVÄNDBAR.** 15 PR:er (`#792`–`#813`).
+CORS · HIBP + lösenordsgolv 6→8 · `uri_allow_list` · prod-halvan av SMTP + OTP
+— **allt mot BÅDA miljöerna**, varje skrivning en riktad PATCH med maskinell
+242-fälts diff, noll oavsiktliga ändringar. **Grind 0: 6 av 7** (punkt 5 DMARC
+väntar på rapportdata, inte arbete). **FYRA KORT:** `TASK-143` Done
+(namn + inbjudare, spoof-immuniteten LIVE-bevisad mot staging) · `TASK-144`
+Done (svenska mail-mallar i prod) · `TASK-128` Done (bokförings-rest — fixen låg
+redan på main) · `TASK-136` landad · `TASK-116` delavstämd 3 av 4 AC.
+**SECRETEN SOM INTE GICK ATT LÄSA:** stagings CORS-lista är write-only och
+bokföringen pekade på fel projekt (2026-05-04-posten hashade till PRODUKTIONENS
+digest — staging fanns inte förrän 2026-06-13). Värdet BEVISADES via
+SHA256-matchning mot digesten plus preflight-svep, och bar två odokumenterade
+Vite-portar som en blind skrivning hade raderat tyst. **PRODS
+`uri_allow_list` VAR HELT TOM** — även `/valkommen` saknades, så varje
+inbjudningslänk mot prod fick sin `redirectTo` tyst ignorerad.
+**`config push` AVSTYRDES AV SIN EGEN DIFF** (`AUTH_SMTP_PASS` unset kunde ha
+rivit stagings SMTP). **FYRA FEL I MITT ARBETE FÅNGADES EXTERNT, NOLL AV MIG
+SJÄLV:** korten som inte aktualitets-prövades före sju agent-spawns (Marcus —
+två av sex redan lösta i S97) · `TASK-144`-luckan (agent) · en felaktig
+merge-commit-hänvisning (agent) · **en rekommendation utan belägg** (Marcus
+fråga *"är det hur branschledare gör?"*). Den sista rev mitt eget svar TVÅ
+gånger: research-passet visar att **väg A ÄR branschmönstret** — fyra varianter
+i läsbar mergad kod, inget av 6+ projekt läser en riktig mailbox i CI.
+**NÄSTA RESUME PUNKT 1: Marcus beslut på research-passet** (`docs/research/
+auth-invite-e2e-service-role-branschprecedent-2026-08-05.md`), inklusive dess
+§8-fynd att AC #1 är **Fas 7-beroende**, inte enbart service-role-blockerad.
+**HANDOFF: sessionsdok S96 § PAUSLÄGE (sjätte pausen).** Numrering
+disk-verifierad på `6ee089bf`: 096/L470/T124/task-145/f47, +6 nummerlösa
+fragment. **S93 kör parallellt och är LEVANDE.**
 *(Föregående kadensrad nedan.)*
 
 <!-- Föregående kadensrad, bevarad: -->
