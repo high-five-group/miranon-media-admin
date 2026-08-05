@@ -115,16 +115,45 @@ finns för att lösa.
 längre alltid varenda jobb.** Skriptet läser samma D0-glob ur ci.yml:s
 `changed`-jobb som CI självt gör (`should_skip_tests`) och skippar
 test-fast/acceptance/webblasarbeteende när VARJE ändrad fil (mot
-`origin/main`, otrackade filer inräknade) matchar den — exakt den delmängd CI
-redan hade skippat. Mätt lokalt (denna maskin, ej CI-runner, ej isolerat från
-samtida last): en ren docs-diff gick från 1091,0 s till att skippa de tre
-tyngsta jobben helt; se PR:en för exakta tal. Minsta osäkerhet i klassningen
-(D0-globen kan inte tolkas, diffen kan inte beräknas) faller till samma
-fullständiga läge som innan — aldrig en gissad delmängd. `--full` tvingar
-fullständigt läge oavsett diff. Detta är en ANNAN axel än `--fast`: `--fast`
-är en medveten nedskalning (kostnad mot säkerhet); diff-klassningen är
-härledd direkt ur CI:s egen gating och kan bara köra MER än CI, aldrig
-mindre.
+`origin/main`, otrackade filer inräknade) matchar den — samma delmängd CI
+redan hade skippat.
+
+**Klassningen läser SÖKVÄG, inte filändelse.** D0 är en positiv allowlist
+(`**/*.md`, `docs/**`, `tasks/**`, `tests/vale-regression/**`,
+`.github/ISSUE_TEMPLATE/**`, `.vale/**`, `.claude/**`) med explicita undantag
+(`.github/workflows/**`, `package.json`, `package-lock.json`, `audit-ci.jsonc`,
+`tsconfig*.json`, `biome.json`, `vite.config.ts`, `playwright.config.ts`,
+`tsr.config.json`, `.nvmrc`, `.gitignore`). Formen är avsiktlig: **allt som
+inte uttryckligen står i allowlisten hamnar i full klass**, så en ny filtyp
+kräver ingen uppdatering av regeln för att behandlas säkert.
+
+Mätt lokalt på denna maskin (ej CI-runner, ej isolerat från samtida last),
+2026-08-05: full körning på kod-diff **910,7 s** · docs-only-diff **332,7 s**
+(19 grindar körda, 22 skippade) · `npm run check:docs` ensamt **172 s** · CI
+parallellt **401,0 s** som referens. Talen är enskilda körningar, inte en serie
+i `metrics:flake`-riggens mening.
+
+Minsta osäkerhet i klassningen (D0-globen kan inte tolkas, diffen kan inte
+beräknas, ett okänt jobb dyker upp) faller till fullt läge — **osäkerhet
+eskalerar alltid uppåt, aldrig till en gissad delmängd.** `--full` tvingar
+fullt läge oavsett diff.
+
+Detta är en ANNAN axel än `--fast`: `--fast` är en medveten nedskalning
+(kostnad mot säkerhet); diff-klassningen är härledd ur CI:s egen gating.
+**Härledningen är avsikten, inte en garanti** — paritetsvakten fäller
+fail-closed på strukturella avvikelser (nytt jobb, ändrade suite-inputs), men
+en logikbugg i klassningen själv ligger utanför vad den kan se. Raden sade
+tidigare att skriptet *"kan bara köra MER än CI, aldrig mindre"*; det var ett
+matematiskt löfte ingen implementation kan hålla, och det är precis den
+ADR-083-klass — prosa som påstår en täckning ingen mekanism håller — som
+resten av denna fil finns för att undvika.
+
+**Känd kant, medvetet ej undantagen:** `.claude/**` ligger i allowlisten, så
+en ändring i `.claude/settings.json` (hook-mekanismen) klassas som docs-only.
+För CI är det korrekt — CI kör inte våra lokala hooks. För oss är det inte
+harmlöst: en trasig hook-config stoppar varje agent i repot. Att handplocka
+undantag ur den härledda globen vore däremot exakt den drift härledningen
+finns för att förhindra, så kanten bokförs i stället för att lappas.
 
 **Varför raden står här och inte bara i skriptets egen header:** samma
 mönster som `seed:review` och `metrics:flake` nedan — fyra mätta instanser i
