@@ -382,7 +382,7 @@ jobs:
   # n=91 kort, se grindens § KARENSEN).
   #
   # npm ci ÄR FÖRUTSÄTTNINGEN, inte en vana: grindens default är
-  # node_modules/.bin/backlog — den pinnade devDependencyn backlog.md@1.47.1
+  # node_modules/.bin/backlog — den pinnade devDependencyn backlog.md@1.48.0
   # (TASK-102). `npx backlog` är förbjudet som form: paketet `backlog` i
   # registret är ETT ANNAT paket av en annan författare, och npx
   # auto-installerar det utan att fråga när stdin inte är en TTY — vilket den
