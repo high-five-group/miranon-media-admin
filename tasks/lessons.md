@@ -9497,3 +9497,66 @@ väljer "härled och kör CI:s recept verbatim" framför "bygg en egen förenkla
 variant" — designen som generellt är RÄTT (den stänger drift-risken en
 handhållen lista alltid har) betalar detta pris regelbundet, och priset ska
 förväntas, inte tolkas som att designvalet var fel.
+
+### L469 — Prosa om ett fel är inte felet: en mönstermatchning utan fältavgränsning träffar dokumentationen av problemet, inklusive sin egen
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05 (S98), vid första skarpa nattkörningen av
+`scripts/check-pausade-sessioner.sh` (nattnätets sannings-avstämning för
+pausade sessioner, byggd dagen innan i `e1e7407d`/`#748`). Grindens allra
+första fällning i produktion var en falsk positiv — mot sig själv.
+
+**Vad som hände:** grinden prövar om ett sessionsdok som påstår `lifecycle:
+paused` faktiskt är pausat, genom att leta landade commits taggade
+`[S<N>]` efter paus-punkten. Sökningen skrevs som:
+
+```bash
+git log "${PAUS_SHA}..HEAD" --no-merges --grep="\[S${N}\]" --format='%H %ct'
+```
+
+Nattkörningen (run `30974653786`) fällde S96 med **exakt en** träff: commit
+`e1e7407d` — grindens egen skapelse-commit. Den är taggad **`[S97]`** i
+subject-raden, men dess body förklarar felbilden grinden byggdes för att
+fånga, och citerar därför ordagrant *"fem `[S96]`-taggade PR:er landade i
+den"*. `git log --grep` prövar **hela** commit-meddelandet, body inkluderad.
+Grinden matchade alltså sin egen beskrivning av problemet och rapporterade
+den som problemet.
+
+S96 hade ingen paus-drift. Den enda avvikelse grinden någonsin rapporterade
+var sitt eget dokumentationsstycke.
+
+Två egenskaper gjorde felet svårt att se i förväg. Det uppstod **först i
+produktion**, eftersom testriggarna byggde syntetiska commits med korta
+meddelanden utan body — den befintliga sviten hade till och med ett
+närliggande fall (`[S97]` i subject fäller inte S96) men inget som satte
+taggen i bodyn. Och det uppstod **för att skriptet var välskrivet**: ju
+utförligare en mekanism motiverar sig själv i sin egen commit, desto mer
+text finns för den att träffa.
+
+Samma felklass finns dokumenterad i angränsande form i `L468` punkt 2 — en
+marker-string-scanner som fällde ett dokumentationsstycke för att det NÄMNDE
+en secret-variabels namn. Två oberoende instanser inom två dygn.
+
+**Lärdomen:** när en mekanism söker efter en markör i fritext, avgränsa
+sökningen till det **fält där markören har betydelse** — inte till hela
+texten där den också kan förekomma som omnämnande. Skillnaden mellan att
+*bära* en tagg och att *nämna* en tagg är hela skillnaden mellan signal och
+brus, och verktyg som `git log --grep`, marker-scanners och
+innehållsklassare har normalt hela texten som default. Ställ frågan
+uttryckligen vid bygget: **var i texten är markören ett påstående, och var
+är den bara ett citat?**
+
+Bygg dessutom minst ett testfall där markören står **enbart** i den yta som
+INTE ska räknas. Det fallet är billigt att skriva och är det enda som
+skiljer en korrekt avgränsning från en som råkar fungera. Lägg samtidigt
+motsidan — markören i rätt fält, något annat i fel fält — annars kan
+matchningen degenerera till "leta aldrig" och ändå se grön ut.
+
+**Varför `[UNIVERSAL]`:** gäller varje kodbas där en mekanism söker efter
+markörer i text som människor också skriver *om* mekanismen — commit-taggar,
+secret-namn, feature-flaggor, ärendereferenser, TODO-markörer. Risken växer
+med dokumentationskvaliteten, vilket gör den kontraintuitiv: den träffar
+hårdast de projekt som skriver ut sina skäl. Och den träffar mekanismen
+själv först, eftersom en mekanisms egen commit är den text som oftast
+citerar den markör den letar efter.
