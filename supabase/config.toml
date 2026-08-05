@@ -69,6 +69,16 @@ verify_jwt = true
 [functions.invite-user]
 verify_jwt = true
 
+# test-invite-completion — STAGING-ONLY testharness-EF (Väg A,
+# docs/research/auth-invite-e2e-service-role-branschprecedent-2026-08-05.md
+# § Rekommendation, Marcus-kvitterad 2026-08-05). Samma gateway-försvar som
+# invite-user — requireUser + ADMIN_EMAILS-allowlisten i koden grindar
+# faktiskt anropet, plus en adress-allowlist (se EF:ens fil-header).
+# MEDVETET UTELÄMNAD ur .prod-functions-allowlist.conf — test-auth-
+# precedenten. Rör inte den filen för denna post.
+[functions.test-invite-completion]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #
