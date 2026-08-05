@@ -3,10 +3,10 @@ id: TASK-140
 title: >-
   Formalisera besläktad — existens-grind mot trådregistrets ID:n (ADR-095 beslut
   3)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-04 22:54'
-updated_date: '2026-08-04 23:29'
+updated_date: '2026-08-05 01:19'
 labels:
   - ready-for-agent
 dependencies: []
@@ -41,12 +41,16 @@ VARNING (mätt kostnad): grinden tar ~165 s att köra eftersom `backlog/config.y
 - [x] #7 check-thread-index.sh grön mot nuvarande register efter ändringen
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat i PR #747 (main 1446e779). besläktad formaliserad som existens-grind i scripts/check-thread-index.sh (Inv 5), config-driven via THREAD_RELATED_KEYWORD med negationsmönster som filtrerar bort 'obesläktad'. SYMMETRISK relation: validerar att målet finns, kräver uttryckligen INGEN spegelpost — bevisat både genom kodinspektion och testdesign (målets rad lämnad orörd, grinden läste den aldrig). Korsläsning av hela registret: 67 besläktad-mål, noll trasiga. Fällde först på CI:s shellcheck-flaggor (SC2250 + SC2310) som lokalt anrop utan flaggor missade; fixat med brace-form + riktad disable med skriven motivering, formen hämtad ur check-permissions-claims.sh rad 115.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

@@ -15,6 +15,38 @@
 
 ## Aktuellt fokus
 
+**Session 97 ✅ AVSLUTAD (2026-08-05, `lifecycle: closed` efter Marcus
+coverage-kvittens)** — **SEX MEKANISMER BYGGDA I KOD, TVÅ ROTORSAKER FIXADE.**
+Sessionen spände över **fyra pauser**; fjärde resumen var den tyngsta (44
+commits, PR `#738`–`#752`). **Marcus fråga vände sessionen:** *"är allt UTFÖRT,
+inte bara förberett?"* — svaret var nej, och mandatet blev att bygga.
+**BYGGT:** claims-täckning + `merge-tree` (`#745`) · `besläktad`-grinden
+(`#747`, symmetrisk, **inget spegelkrav**) · `barn`-manifestet (`#750`,
+asymmetrisk, **noll datarader** — mekanismen byggd, migreringen är Marcus
+beslut) · nattlarmets timeout-klassning (`#748`) · länkröte-fixen (`#746`) ·
+**`verify:ci-parity`** (`#752`, härleder ur `ci.yml` med fail-closed
+paritetsvakt). **ADR-095** mintad (`#740`): Marcus öppnade för
+Supabase-migrering av hela dokumentationssubstratet, nio system sade nej —
+starkast **Backstage självt**, som kallar sin egen databas en *ingest-cache*.
+**TVÅ ROTORSAKER:** `BEHIND`-deadlocken var **egen konfiguration** (strict +
+merge_queue motverkade varandra; `ADR-076` hade bokfört kostnaden som accepterad
+sex dagar före kön fanns och ingen konsumerade raden) — fixad `#749`,
+**skarpbevisad** när `#752` landade efter `#751` utan handpåläggning · och
+grind-diskrepansen med **fyra instanser på en session**, löst genom härledning
+i stället för duplicering. **AGENT-FÅNGSTER:** hub-agentens villkorade mandat
+stoppade ett borttag som hade tystat Discover · `TASK-141`-agenten fann två fel
+i ADR-095 (stale ordinaltal + en formulering som motsade beslut 2 två stycken
+bort) · Dependabot-granskningen fann att `#635` pinnar 6.0.0 medan 6.0.1 rättar
+just den kastväg som gör bumpen riskabel. **Uppströmsrapporten postad** till
+`anthropics/claude-code#72714`. **NÄSTA (NY session S98): `T123`
+(backlog.md-bumpens efterslängar) · S96-resume (Grind 0 DNS + `T95`) ·
+S93-resume (appen) · `#635` vid måndagens Dependabot-körning · hub-lyftet måste
+**rotera `vol-06` FÖRST**.** Numrering efter S97: 98/096/L461/T124/task-142/f47.
+Full narrativ: sessionsdok S97 Del 1–10 + BUILD-LOG S97-post.
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 97 ▶️ ÅTERUPPTAGEN (2026-08-05, fjärde resumen — efter fjärde pausen,
 `lifecycle: active`)** — **MARCUS-MANDAT PÅ HELA CARRY-BLOCKET.** LÄS-fasen:
 numreringen re-verifierad mot disk (**095/L456/T123/task-139/f47** — alla fem

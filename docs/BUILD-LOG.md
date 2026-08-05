@@ -3148,6 +3148,21 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
   nästa lesson L444.
 - Full narrativ: sessionsdok S95 Del 1–4.
 
+## Session 97 — Mekaniserings-programmet: från beslut till körbar kod (2026-08-04 → 2026-08-05)
+
+- **Commit-range:** `cb32b541` (sessionsdokets födelse) → `12d0b043`. **Fyra pauser**, fjärde resumen är sessionens tyngsta: 44 commits, PR `#738`–`#752`.
+- **Mål:** betala av CARRY-blockets fem beslutsposter — och, efter Marcus fråga *"är allt UTFÖRT, inte bara förberett?"*, bygga mekanismerna i kod i stället för att lämna dem specade.
+- **SEX MEKANISMER BYGGDA:** claims-täckning + `merge-tree`-grinden (`#745`, `task-139`, mutationstestad svit) · `besläktad`-existensgrinden (`#747`, `TASK-140`, Inv 5, symmetrisk — **inget spegelkrav**) · `barn`-manifestet (`#750`, `TASK-141`, Inv 6, asymmetrisk, **noll datarader**) · nattlarmets timeout-klassning (`#748`) · länkröte-fixen (`#746`) · `verify:ci-parity` (`#752`).
+- **ADR-095 mintad** (`#740`) — Marcus öppnade uttryckligen för Supabase-migrering av hela dokumentationssubstratet; nio granskade system sade nej, starkast **Backstage självt** som kallar sin egen databas en *ingest-cache*. Sju beslut, paraply-form. **Öppet eskalerat, ej avgjort:** vad som *räknas* som barn (`T85`/`T86` kräver människo-omdöme).
+- **TVÅ ROTORSAKER FIXADE, inte kringgångna.** (1) **`BEHIND`-deadlocken var egen konfiguration:** rulesetet bar `strict_required_status_checks_policy` samtidigt som `merge_queue`, och strict krävde uppdaterad gren som villkor för att posten ens fick köas — `ADR-076` hade bokfört kostnaden som ACCEPTERAD sex dagar innan kön aktiverades, och ingen konsumerade raden när förutsättningen ändrades. Fixat i `#749`, **skarpbevisat** när `#752` landade efter `#751` utan handpåläggning. (2) **Grind-diskrepansen hade FYRA instanser på en session** — `#740`, `#743`, `#747` röda plus en felräkning där `grep -c` på regelkoden räknade in shellchecks footer. Rotorsak: ingen lokal uppsättning motsvarade CI:s. `#752` **härleder** ur `ci.yml`/`ci-suite.yml` med fail-closed paritetsvakt.
+- **Marketplace-domen revs av sin egen uppföljning:** hub-agentens **villkorade** mandat tog stopp-vägen — Discover läser `entry.description` utan fallback. Följdfyndet var dyrare: `7d4bf51` (Del 7, föregående dag) var **inte** beteendemässigt neutralt utan rev versionsraden ur Discover. Åtgärd (hub `76d47b7`): en fjärde väg passet aldrig övervägde — version återställd så validatorns cross-check vaktar igen, description ersatt med en kort stabil bläddringstext.
+- **Uppströmsrapporten postad** till `anthropics/claude-code#72714` (öppen sedan 2026-07-01, noll kommentarer) med amplifikationsmätningen 22 worktree-skapelser/dag.
+- **Dependabot:** `#632`/`#633`/`#634` landade i mätt ordning; `#635` fick `recreate` i stället för armering — den pinnar 6.0.0 medan 6.0.1 rättar just den `PerformanceObserver`-kastväg som gör bumpen riskabel.
+- **Skörd:** `L456`–`L460` (`#739`) + `L461`+ vid stängningen. Tråd `T123` registrerad. `ADR-095` rättad i `#751` (stale ordinaltal + en formulering som motsade beslut 2 två stycken bort — båda fångade av bygg-agenten).
+- **Egna fel bokförda:** två delmängds-körningar av grindar · ett "för/efter-experiment" som inte var ett · ett "tyst fel" som inte var tyst · en felräkning · nära att flagga ett korrekt paket som misstänkt på föråldrad minnesbild.
+- **Numrering efter S97:** 98/096/L461/T124/task-142/f47. **`vol-06` måste roteras FÖRE nästa hub-lyft.**
+- Full narrativ: sessionsdok S97 Del 1–10.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
