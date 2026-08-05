@@ -15,29 +15,35 @@
 
 ## Aktuellt fokus
 
-**Session 96 ▶️ ÅTERUPPTAGEN (2026-08-05, fjärde resumen — efter fjärde
-pausen, `lifecycle: active`)** — **MARCUS PEKADE UT S96 MEDAN TRE ANDRA DOK
-STOD PAUSADE.** LÄS-fasen: `main` **`53ad8a4b`** grön per jobb (CI ·
-Post-merge · Push on main) · rent träd · ägarlappen FRI (filen frånvarande) ·
-kön tom på arbets-PR:er (endast dependabot `#635` öppen, oarmerad).
-**Vägvals-grinden gav fyra pausade dok** — S92, S93, S96, S98 — läst ur
-frontmatter, inte via `grep -l` (som falsktäffar på prosa-omnämnanden);
-Marcus kvitterade S96 trots att **S98 pausades samma dag med okonsumerad
-HANDOFF**. **Numreringen re-verifierad mot disk och genomgående FÖRBRUKAD
-sedan pausen** — handoffen skrevs "efter S97", men både S97 och S98 har
-körts: ADR 095→**096** · lesson L444→**L470** · tråd T120→**T124** · kort
-task-139→**task-143** · fälla **f47** (oförändrad) · main `4bbd1f98`→
-`53ad8a4b`. **Fem divergenser flaggade**, varav en operativ: **Vercel-MCP:n
-är fortfarande oautentiserad** (verktygsytan exponerar endast
-`authenticate`/`complete_authentication`), medan Resend ÄR autentiserad —
-S96:s carry förutsätter autentiserade verktyg för Grind 0:s DNS-moment, så
-hälften av förkravet står kvar. MCP-ytan bestäms vid sessionsstart och
-uppdateras inte retroaktivt. **Carry lever:** `TASK-132` (HIGH,
-deadlock-fyndet på `TASK-127`-spåret) · `TASK-134` (MEDIUM) · `TASK-136` +
-`TASK-138` (LOW, plockbara) · `TASK-127.3`/`127.6` · `T46`/`T44` paused,
-`T95` active. **NÄSTA: Marcus återkommer med input på Grind 0 efter
-tillstånds-återställningen.** Numrering att re-verifiera:
-99/096/L470/T124/task-143/f47.
+**Session 96 ⏸️ PAUSAD (2026-08-05, femte pausen, `lifecycle: paused`)** —
+**APPEN FICK EN ADRESS: `https://admin.miranon.dev` ÄR LIVE.** T95:s hårda
+Grind 0 — *"det finns ingen frontend-deploy alls"* — är därmed falsifierad.
+15 PR:er (`#775`–`#790`). **Grind 0 gick från två utförda punkter till fem:**
+deploy (`vercel.json` mot ADR-091, auto-deploy från main på ~13 s efter Marcus
+GitHub-koppling) · domän (A-post, Let's Encrypt, sju headers + SPA-rewrite
+verifierade skarpt) · `send.miranon.dev` `verified` · SMTP + OTP mot staging.
+**SEX SKIVOR STÄNGDA:** `126.2` `126.3`\* `127.2` `127.3` `127.6` `127.7`
+`127.8`. **MÄTNINGEN SOM BAR PASSET:** `supabase config push` är DEKLARATIV —
+22 av 242 fält ändrades vid första skarpa pushen, **sex var oavsiktliga
+regressioner** (MFA/TOTP stängdes av, e-postbekräftelse av, OTP-längd 8→6,
+frekvensspärr 60s→1s) och bara två var förutsedda. Prod var det LÄNKADE
+projektet vid sessionsstart; prod-först hade slagit av tvåfaktor tyst. Samtliga
+låsta i `config.toml`. **TRE FALSIFIERADE PREMISSER:** T46:s DNS-checklista
+gissade postnamnen (`send.send`, inte `send` — därför stod domänen `failed` i
+två dygn) · DMARC-punktens *"inget legitimt root-utskick existerar"* motbevisad
+av Resend-loggen (skarpt broadcast 2026-07-10) · min egen bedömning att
+deployen var blockerad föll på första kontrollen när Marcus pressade.
+**TYST BLOCKERARE FUNNEN:** `site_url` stod `localhost:3000` i BÅDA miljöerna
+sedan projekten skapades — varje inbjudningslänk hade pekat på MOTTAGARENS egen
+dator. **TVÅ AGENTER FÅNGADE ETT FEL I MINA UPPDRAG** (ocommitterade
+kortstängningar är osynliga för nya worktrees), och en tredje **motbevisade min
+diagnos** av ett testfel och levererade en bättre — ADR-086 riktat mot
+orkestreraren. **NÄSTA RESUME (Marcus order): CORS · HIBP + lösenordsgolv ·
+`config push` för `/nytt-losenord` · prod-halvan av 6+7 · `TASK-127.9`
+(plockbar) · `TASK-143` före QA-korten.** **CORS blockerar allt användbart —
+appen är live men datalös.** \*`126.3`:s kod är landad; kortet väntar på Marcus
+Gunilla-grind. **HANDOFF: sessionsdok S96 § PAUSLÄGE.** Numrering att
+re-verifiera: 99/096/L470/T124/task-144/f47.
 *(Föregående kadensrad nedan.)*
 
 <!-- Föregående kadensrad, bevarad: -->
