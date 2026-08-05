@@ -1,10 +1,10 @@
 ---
 id: TASK-143
 title: 'Utöka Användarinbjudan med namn och inbjudare — invite-user-EF:ens kontrakt'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-05 12:42'
-updated_date: '2026-08-05 15:43'
+updated_date: '2026-08-05 16:06'
 labels:
   - ready-for-agent
 dependencies: []
