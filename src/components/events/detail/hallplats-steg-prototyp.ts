@@ -25,7 +25,12 @@
  */
 import type { Registration } from '@/domain/models/Registration';
 import type { PersonHistoryEntry } from '@/domain/schemas';
-import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
+import {
+  PaymentStatus,
+  RegistrationSource,
+  type RegistrationSourceValue,
+  RegistrationStatus,
+} from '@/domain/types/Status';
 
 /** Den vinnande variantens stabila nyckel (ADR-074 beslut 1; konvergens-passet
     S93 Del 3 § Valet — B/C rivna, `a` behåller sin nyckel per Marcus beslut). */
@@ -160,12 +165,113 @@ export function betalningsSplit(aktiva: Registration[]): BetalningsSplit {
  * slutrapporten.
  */
 export function registerOrdning(r: Registration): number {
+  // ITERATIONSVÅG (Marcus 2026-08-05, punkt 3): "Avbokade måste även synas i
+  // registret självt." De låg tidigare ENBART bakom sin egen räknerad och var
+  // helt bortfiltrerade ur listan (`aktiva` exkluderar dem). Nu sorteras de
+  // SIST — efter de administrativa undantagen — och bär sitt grå "Avbokad"-
+  // märke som varje annan post bär sitt. Registret visar därmed hela sanningen
+  // om eventet, och filterpanelens Status-dimension kan isolera dem.
+  if (r.status === RegistrationStatus.AVBOKAD) return 6;
   if (r.status === RegistrationStatus.INSTALLT) return 4;
   if (r.status === RegistrationStatus.FLYTTA_TILL_VANTELISTA) return 5;
   if (r.status === RegistrationStatus.OBEKRAFTAD) return 0;
   if (!avgiftKlar(r)) return 1;
   if (!slutKlar(r)) return 2;
   return 3;
+}
+
+/** Registrets filter-tillstånd (ITERATIONSVÅG, Marcus 2026-08-05).
+ *
+ *  ETT tillstånd ersätter FYRA separata useState (`filter`, `hallplatsFilter`,
+ *  `protoBetalningsFilter`, `protoAvbokadeAktiv`). Splittringen var inte bara
+ *  omständlig — den var en BUGGKÄLLA: konvergens-passet fann att den gamla
+ *  "Rensa filtret" nollade ett av fyra och därför gjorde ingenting i tre fall
+ *  av fyra. Med ett tillstånd kan klassen inte uppstå igen.
+ *
+ *  TVÅ AXLAR, med avsikt olika natur:
+ *  · `steg` — "vad saknas": ömsesidigt uteslutande, för en person kan bara stå
+ *    på ETT ställe i kedjan. Sätts av topp-räknarna ELLER panelens dropdown —
+ *    samma tillstånd, två ingångar, så panelen alltid visar sanningen om vad
+ *    som är valt.
+ *  · `vagIn` — hur personen kom in: OBEROENDE axel som kombineras fritt med
+ *    `steg` ("visa medföljande som saknar slutbetalning"). Den ersätter
+ *    Alla/Manuella/Medföljande-fliken, som inte kunde kombineras med något. */
+export type RegisterFilter = {
+  steg: RegisterStegFilter | null;
+  vagIn: VagInFilter | null;
+};
+
+/** Väg in-axeln. `'formular'` är EGET värde, inte ett `RegistrationSource` —
+    formulärvägen är NORMEN och bär `kalla: null` i basen (K37, "tysta normen").
+    Utan ett eget filtervärde hade den enda vägen Lotta använder mest varit den
+    enda hon inte kunde filtrera fram. */
+export type VagInFilter = RegistrationSourceValue | 'formular';
+
+/** Stegaxelns val — hållplatsens egna steg plus de logistiska ytorna som bär
+    egna räknerader (eventinfo/bor över) och de två betalnings-splitraderna. */
+export type RegisterStegFilter =
+  | 'vantar-bekraftelse'
+  | 'avgift-saknas'
+  | 'slut-saknas'
+  | 'klar'
+  | 'eventinfo-saknas'
+  | 'bor-over'
+  | 'avbokad';
+
+export const REGISTER_STEG_LABEL: Record<RegisterStegFilter, string> = {
+  'vantar-bekraftelse': 'Väntar på bekräftelse',
+  'avgift-saknas': 'Saknar anmälningsavgift',
+  'slut-saknas': 'Saknar slutbetalning',
+  klar: 'Klara',
+  'eventinfo-saknas': 'Saknar eventinfo',
+  'bor-over': 'Bor över',
+  avbokad: 'Avbokade',
+};
+
+export const VAG_IN_LABEL: Record<VagInFilter, string> = {
+  formular: 'Via formulär',
+  [RegistrationSource.MANUELL]: 'Manuellt tillagd',
+  [RegistrationSource.MEDFOLJANDE]: 'Medföljande',
+  [RegistrationSource.VANTELISTA]: 'Från väntelistan',
+};
+
+/** Väg in-axelns predikat — `'formular'` matchar den tysta normen (`kalla` är
+    null eller ett värde vi inte känner igen). */
+export function vagInTest(f: VagInFilter): (r: Registration) => boolean {
+  if (f === 'formular') {
+    return (r) =>
+      r.kalla !== RegistrationSource.MANUELL &&
+      r.kalla !== RegistrationSource.MEDFOLJANDE &&
+      r.kalla !== RegistrationSource.VANTELISTA;
+  }
+  return (r) => r.kalla === f;
+}
+
+/** Stegaxelns predikat — EN plats, så filterpanelen och topp-räknarna aldrig
+    kan svara olika på samma val. */
+export function stegTest(f: RegisterStegFilter): (r: Registration) => boolean {
+  switch (f) {
+    case 'vantar-bekraftelse':
+      return (r) => r.status === RegistrationStatus.OBEKRAFTAD;
+    case 'avgift-saknas':
+      return (r) => r.status !== RegistrationStatus.AVBOKAD && !avgiftKlar(r);
+    case 'slut-saknas':
+      return (r) => r.status !== RegistrationStatus.AVBOKAD && !slutKlar(r);
+    case 'klar':
+      return (r) => r.status !== RegistrationStatus.AVBOKAD && betalKlar(r);
+    case 'eventinfo-saknas':
+      return (r) => r.status !== RegistrationStatus.AVBOKAD && r.deltagarinfoSkickad == null;
+    case 'bor-over':
+      return (r) => r.borOver === true;
+    case 'avbokad':
+      return (r) => r.status === RegistrationStatus.AVBOKAD;
+  }
+}
+
+export const TOMT_REGISTER_FILTER: RegisterFilter = { steg: null, vagIn: null };
+
+export function harAktivtFilter(f: RegisterFilter): number {
+  return (f.steg != null ? 1 : 0) + (f.vagIn != null ? 1 : 0);
 }
 
 /**
