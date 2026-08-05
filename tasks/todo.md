@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 96 ⏸️ PAUSAD (2026-08-05, femte pausen, `lifecycle: paused`)** —
+**Session 96 ▶️ ÅTERUPPTAGEN (2026-08-05, femte resumen, `lifecycle: active`)** —
 **APPEN FICK EN ADRESS: `https://admin.miranon.dev` ÄR LIVE.** T95:s hårda
 Grind 0 — *"det finns ingen frontend-deploy alls"* — är därmed falsifierad.
 15 PR:er (`#775`–`#790`). **Grind 0 gick från två utförda punkter till fem:**
@@ -42,8 +42,9 @@ orkestreraren. **NÄSTA RESUME (Marcus order): CORS · HIBP + lösenordsgolv ·
 `config push` för `/nytt-losenord` · prod-halvan av 6+7 · `TASK-127.9`
 (plockbar) · `TASK-143` före QA-korten.** **CORS blockerar allt användbart —
 appen är live men datalös.** \*`126.3`:s kod är landad; kortet väntar på Marcus
-Gunilla-grind. **HANDOFF: sessionsdok S96 § PAUSLÄGE.** Numrering att
-re-verifiera: 99/096/L470/T124/task-144/f47.
+Gunilla-grind. **HANDOFF: sessionsdok S96 § Paushistorik paus 5.** Numrering
+re-verifierad vid femte resumen (`f09e4183`, samtliga axlar oförändrade):
+096/L470/T124/task-144/f47.
 *(Föregående kadensrad nedan.)*
 
 <!-- Föregående kadensrad, bevarad: -->
