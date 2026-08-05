@@ -232,3 +232,35 @@ content_path = "./supabase/templates/invite.html"
 [auth.email.template.recovery]
 subject = "Återställ ditt lösenord — Miranon Media"
 content_path = "./supabase/templates/recovery.html"
+
+# LÅS, VERIFIERAD (TASK-144, 2026-08-05). Prod saknade båda mallarna helt
+# fram till denna skiva — Supabase-defaults på engelska ('You have been
+# invited' / 'Reset Your Password'). En riktad PATCH mot Management API
+# (aldrig `config push` — se varningen i [auth]-blocket ovan) deployade
+# invite+recovery-mallens subject+content_path hit: 4 fält av 242 ändrade på
+# prod, maskinellt diffat före/efter, noll oavsiktliga träffar. Staging bar
+# sedan tidigare invite-mallens FÖRE-TASK-143-läge (utan
+# {{ .Data.display_name }}/{{ .Data.inviter_name }}) — uppdaterad i samma
+# svep till filens aktuella innehåll (1 fält av 242 på staging).
+#
+# LÅSNINGEN ÄR BEVISAD, INTE ANTAGEN: `supabase config push` kört mot
+# staging (indata "n" pipead, ALDRIG bekräftad — se AC#3-utredningen i
+# TASK-144:s slutrapport) svarade "Remote Auth config is up to date" efter
+# ovanstående sync, dvs NOLL diff mellan detta config.toml och det levande
+# projektet. En efterkontroll mot Management API bekräftade dessutom att
+# ingen av de 242 fälten rörde sig av push-anropet. Det bevisar att
+# [auth.email.template.invite]/[recovery] verkligen ÄR mekanismen som håller
+# mallarna låsta mot nästa push — inte bara en dokumentationstext utan effekt.
+#
+# ENDAST DESSA TVÅ AV 13 MAILER-MALLTYPER ÄR LÅSTA HÄR, MEDVETET. Åter-
+# stående mailer_subjects_*/mailer_templates_*-par (confirmation,
+# email_change, magic_link, sju notification-mallar, reauthentication) är
+# INTE varumärkta eller svenska på NÅGON miljö — de skiljer sig mellan
+# staging och prod bara i VILKEN engelsk default-text-ögonblicksbild som
+# frusit historiskt (Management API:s `mailer_*_custom_contents`-flaggor
+# visar samtliga 13 som "custom"/fryst på prod, men bara invite+recovery
+# som custom på staging — resten är plattformens NUVARANDE, ospärrade
+# default där). Att kopiera stagings version av de 11 in i prod hade bytt
+# en engelsk formulering mot en annan OCH låst fast dem i en godtycklig
+# ögonblicksbild, utan Roger/Lotta-värde och utanför detta korts mandat.
+# Mätt 2026-08-05 mot Management API (242 fält, båda miljöerna).
