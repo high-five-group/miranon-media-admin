@@ -28,7 +28,19 @@ function edgeFunctionError(endpoint: string, status: number, bodyText: string): 
 
 // Env-variabler valideras i src/env.ts (via @t3-oss/env-core) vid uppstart.
 // Ingen defensiv if-check här — uppstarten kraschar redan om något saknas.
-export const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY);
+//
+// `auth.experimental.passkey: true` (TASK-127.8, ADR-093 beslut 2): utan
+// denna flagga kastar SDK:n synkront på VARJE anrop mot
+// `supabase.auth.passkey.*`/`registerPasskey`/`signInWithPasskey`, redan
+// client-side, innan något nätverksanrop görs
+// (`assertPasskeyExperimentalEnabled`, `@supabase/auth-js/src/lib/helpers.ts`).
+// Flaggan aktiverar INGET på servern — den tillåter bara SDK:n att FRÅGA
+// servern. Alla faktiska anrop bor i `src/lib/auth/passkey.ts` (den enda
+// filen som bär beta-risken, AC #3) — ingen annan fil importerar
+// passkey-metoderna direkt.
+export const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
+  auth: { experimental: { passkey: true } },
+});
 
 /**
  * Returnerar Authorization-header med session-token. Throws AuthError när

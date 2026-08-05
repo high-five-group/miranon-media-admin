@@ -4,7 +4,7 @@ title: 'Skiva: Passkey-erbjudandet efter första inloggningen'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-03 11:38'
+updated_date: '2026-08-05 13:42'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,16 +23,16 @@ Täcker användarberättelse: 9.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Erbjudandet visas efter första inloggningen och kan avböjas utan att återkomma vid varje inloggning
-- [ ] #2 Registrerad passkey fungerar för inloggning; lösenordet kvarstår alltid som fallback
-- [ ] #3 Plattformens beta-API inkapslat i egen modul — en API-ändring träffar en fil, inte flödet
-- [ ] #4 Acceptance- och a11y-sviterna gröna; flödet degraderar snyggt på enheter utan stöd
+- [x] #1 Erbjudandet visas efter första inloggningen och kan avböjas utan att återkomma vid varje inloggning
+- [x] #2 Registrerad passkey fungerar för inloggning; lösenordet kvarstår alltid som fallback
+- [x] #3 Plattformens beta-API inkapslat i egen modul — en API-ändring träffar en fil, inte flödet
+- [x] #4 Acceptance- och a11y-sviterna gröna; flödet degraderar snyggt på enheter utan stöd
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
