@@ -42,10 +42,23 @@ och rundturen `TASK-127.9` grindas av paketet.
    git-lösa byggmiljö (nu fail-safe); `vercel link` la ett brett `.env*` i
    `.gitignore` EFTER repots `!`-undantag och slog därmed ut samtliga sex
    undantagna filer (rivet, bevisat i isolerat testrepo).
-   **ÖPPET:** GitHub-integrationen kopplades INTE — `vercel link` svarade
+   ~~**ÖPPET:** GitHub-integrationen kopplades INTE — `vercel link` svarade
    *"Failed to connect high-five-group/miranon-media-admin to project"*.
    Kräver att Vercels GitHub-app ges åtkomst till organisationen
-   (Marcus-moment). Utan den sker ingen auto-deploy vid push.
+   (Marcus-moment). Utan den sker ingen auto-deploy vid push.~~
+   **STÄNGD 2026-08-05 (S96) — Marcus kopplade GitHub-appen.** Verifierat mot
+   GitHub deployments-API, inte mot minne: `vercel[bot]` skapar
+   **Preview**-deployments per gren (t.ex. `50b2224e`, `175bd8b2`) och
+   **Production**-deployments per main-merge (`12acc3d6`, `6774c7ad`), och
+   PR `#817` bär en grön `Vercel`-check med projektlänk. Auto-deploy vid push
+   fungerar alltså.
+
+   **Denna rad stod kvar som ÖPPEN efter att den lösts, och det kostade.**
+   S96 läste den som gällande och drog slutsatsen att `TASK-127.9` var
+   Fas 7-blockerad — en slutsats som bokfördes vidare på kortet innan någon
+   prövade den mot faktiskt tillstånd. Marcus fällde den med *"Jag har visst
+   kopplat Github och Vercel."* En tillståndsyta som inte uppdateras när
+   tillståndet ändras är värre än ingen yta alls: den läses med förtroende.
 2. ✅ **UTFÖRD 2026-08-05.** `admin.miranon.dev` är live —
    **A-post `76.76.21.21`**, inte CNAME. Vercels inspect erbjöd två vägar,
    och alternativ b (byt nameservers till Vercel) hade flyttat hela zonen

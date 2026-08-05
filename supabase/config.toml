@@ -147,6 +147,31 @@ additional_redirect_urls = [
   "https://admin.miranon.dev/nytt-losenord",
 ]
 
+# STAGING BÄR ETT TREDJE VÄRDE SOM MEDVETET INTE STÅR HÄR:
+# `http://localhost:5173/**`, satt 2026-08-05 (S96) via riktad PATCH mot
+# Management API (1 fält av 242 ändrat, maskinellt diffat; prod omläst och
+# verifierat ORÖRD i samma pass).
+#
+# Varför det inte kan låsas i denna fil: `config.toml` är EN fil för BÅDA
+# projekten, och `config push` är deklarativ. En localhost-post här hade
+# hamnat i PRODUKTIONENS redirect-allowlist vid nästa push mot prod — en
+# öppning som inte har där att göra. Fältet är alltså per definition
+# miljöspecifikt, och CLI:t har ingen miljöskillnads-mekanism.
+#
+# Konsekvensen, öppet: en framtida `supabase config push` mot STAGING
+# NOLLSTÄLLER localhost-posten (deklarativ push, se varningen ovan), och
+# `TASK-127.9`:s rundturs-e2e slutar då fungera tyst — GoTrue ger inget fel,
+# den ignorerar bara `redirectTo`. Sätt tillbaka den med samma riktade PATCH.
+# Samma ej-låsbara klass som `password_hibp_enabled` nedan.
+#
+# Vad posten är till för: `chromium-authenticated`-projektet
+# (playwright.config.ts rad 407) kör staging-e2e mot en lokal dev-server på
+# port 5173 — samma rigg som elva redan gröna `tests/e2e/*.staging.test.ts`.
+# Utan ett redirect-mål som matchar den servern kan inbjudningslänken inte
+# följas tillbaka in i appen. Wildcard-formen `/**` är Supabases egen
+# dokumenterade konvention för just detta (deras config-as-code-exempel visar
+# `http://localhost:3000/*/*` sida vid sida med en Vercel-preview-wildcard).
+
 # Default-adressen Supabase Auth sätter i ALLA mail som saknar explicit
 # redirect. CLI-defaulten är `http://127.0.0.1:3000` och både staging och prod
 # stod på `http://localhost:3000` — en utvecklingsadress som aldrig ändrades
