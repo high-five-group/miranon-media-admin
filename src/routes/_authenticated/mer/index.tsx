@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ClipboardList, Filter, Hourglass, LogOut, Mail, Star } from 'lucide-react';
+import { ClipboardList, Filter, Hourglass, LogOut, Mail, Smartphone, Star } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 import { Button, NavCard } from '@/components/primitives';
 
@@ -14,9 +14,9 @@ export const Route = createFileRoute('/_authenticated/mer/')({
  * PRD beslut 9); raderna bärs av NavCard-primitiven (task-9.1, spec §14).
  *
  * Facit-formen: synlig "Mer"-h1 i appens h1-skala (30/600 = Hem-hälsningen)
- * → ETT nav-landmärke "Mer-sidor" med TVÅ luftgrupper (listorna ·
- * handlingarna, handling före verktyg) → centrerad Logga ut UTANFÖR nav.
- * Måtten (computed-låsta, M6): skalets 16 px-sidmarginal — sektionen har
+ * → ETT nav-landmärke "Mer-sidor" med luftgrupper (listorna · handlingarna,
+ * handling före verktyg · Inställningar sist) → centrerad Logga ut UTANFÖR
+ * nav. Måtten (computed-låsta, M6): skalets 16 px-sidmarginal — sektionen har
  * INGEN egen sidopadding (dubbelkants-fyndet) · 32 px vertikal rytm (gap-8)
  * · 10 px radgap inom grupp (gap-2.5) · topp-luft i Hem-paritet
  * (pt-2 lg:pt-10) · Logga ut-blocket med extra topp-luft (pt-4).
@@ -24,6 +24,14 @@ export const Route = createFileRoute('/_authenticated/mer/')({
  * Ikonvalen är domänbegrepps-mappade och Marcus-kvitterade (PRD beslut 5) —
  * Bygg segment bär Filter, INTE Users (Personer-flikens ikon; krocken funnen
  * i M6-detaljsvepet): segment byggs med filter.
+ *
+ * TREDJE gruppen (Inställningar) tillkom task-126.3: tråd T47:s parkerade
+ * Inställnings-hemvist ("Ingen Inställningar (de-scopad, T47)" — noten stod
+ * här till och med task-126.3) aktiveras av "Installera appen" som första
+ * och hittills enda posten. Egen `<ul>` i stället för att buntas med
+ * handling/verktyg-gruppen: Installera appen är varken en lista eller ett
+ * marknadsföringsverktyg utan en app-/enhetsinställning — samma rytm
+ * (gap-2.5 inom, gap-8 mellan) håller utan att facitets mått rubbas.
  */
 function MerPage() {
   const { logout } = useAuth();
@@ -61,6 +69,13 @@ function MerPage() {
             <NavCard to="/mer/segment" icon={Filter} label="Bygg segment" />
           </li>
         </ul>
+        {/* Inställningar (task-126.3, T47 aktiverad) — se filhuvudets
+            "TREDJE gruppen"-not. */}
+        <ul className="flex flex-col gap-2.5">
+          <li>
+            <NavCard to="/mer/installera-appen" icon={Smartphone} label="Installera appen" />
+          </li>
+        </ul>
       </nav>
 
       {/* Logout är en HANDLING, inte navigering → UTANFÖR nav-landmärket,
@@ -70,7 +85,7 @@ function MerPage() {
           sköts av _authenticated-guarden: logout() → onAuthStateChange →
           router.invalidate() (main.tsx) → beforeLoad re-evaluerar → redirect
           (ADR-037-kedjan, oförändrad). Ingen bekräftelsedialog (Fas 6e-
-          beslutet står). Ingen Inställningar (de-scopad, T47). */}
+          beslutet står). */}
       <div className="flex justify-center pt-4">
         <Button intent="ghost" onPress={() => void logout()}>
           <LogOut size={20} aria-hidden />
