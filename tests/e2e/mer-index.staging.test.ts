@@ -28,9 +28,14 @@ import { expect, test } from '../support/test-bas';
  * RIVNING ÖPPET BOKFÖRD (task-19.2, PRD task-19 beslut 2): Skapa nytt
  * event-raden är RIVEN ur Mer — ingången bor nu på event-listans vy-rad
  * (S73-facit-utökningen K74) och sidans hemvist är /event/skapa
- * (Marcus-kvitterad 2026-07-21). M6-facitets sex rader är därmed FEM;
+ * (Marcus-kvitterad 2026-07-21). M6-facitets sex rader var därmed FEM;
  * gamla routen /mer/skapa-event omdirigerar (bevisas i
  * skapa-event.staging.test.ts).
+ *
+ * TREDJE GRUPPEN TILLKOM task-126.3 (T47 aktiverad): "Installera appen"
+ * (Inställningar-hemvisten) höjer raderna till SEX i TRE grupper. Testet
+ * "INGEN Inställningar-post" nedan gäller ORÖRT — "Installera appen"
+ * innehåller aldrig substrängen "inställning".
  */
 
 test.describe('Mer-landningen (Fas 6e L2 — statiskt skal + logout-golv)', () => {
@@ -117,21 +122,24 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     await expect(page.locator('header')).toHaveCount(0);
   });
 
-  test('AC 1: fem NavCard-rader i TVÅ grupper med facit-ordning, tysta ikoner, chevron per rad', async ({
+  test('AC 1: sex NavCard-rader i TRE grupper med facit-ordning, tysta ikoner, chevron per rad', async ({
     page,
   }) => {
     await page.goto('/mer');
     const nav = page.getByRole('navigation', { name: 'Mer-sidor' });
     await expect(nav).toBeVisible();
 
-    // Tvågruppsstrukturen (samsyn C, Revision S64): exakt TVÅ listor i nav
-    // (roll-baserat: ul bär implicit list-rollen).
+    // Tregruppsstrukturen (samsyn C, Revision S64 + task-126.3:s tredje
+    // grupp, T47 aktiverad): exakt TRE listor i nav (roll-baserat: ul bär
+    // implicit list-rollen).
     const grupper = nav.getByRole('list');
-    await expect(grupper).toHaveCount(2);
+    await expect(grupper).toHaveCount(3);
 
-    // Grupp 1 = listorna, grupp 2 = handling före verktyg — exakt ordning.
-    // Skapa nytt event-raden RIVEN (task-19.2 — se rivnings-bokföringen i
-    // fil-huvudet); grupp 2 bär numera enbart Bygg segment.
+    // Grupp 1 = listorna, grupp 2 = handling före verktyg, grupp 3 =
+    // Inställningar — exakt ordning. Skapa nytt event-raden RIVEN
+    // (task-19.2 — se rivnings-bokföringen i fil-huvudet); grupp 2 bär
+    // numera enbart Bygg segment, grupp 3 (task-126.3) enbart
+    // Installera appen.
     await expect(grupper.nth(0).getByRole('link')).toHaveText([
       'Anmälningar',
       'Väntelista',
@@ -139,7 +147,8 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
       'Maillogg',
     ]);
     await expect(grupper.nth(1).getByRole('link')).toHaveText(['Bygg segment']);
-    await expect(nav.getByRole('link')).toHaveCount(5);
+    await expect(grupper.nth(2).getByRole('link')).toHaveText(['Installera appen']);
+    await expect(nav.getByRole('link')).toHaveCount(6);
 
     // Varje rad bär EXAKT två dekorativa svg (radikon + chevron, båda
     // aria-hidden) — etiketten ensam bär länknamnet (redan assertat via
@@ -157,7 +166,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     // (S73 K25-prövningens Marcus-kvitterade konsekvens, PRD task-18
     // beslut 15) — chevron betyder att raden leder vidare, och Mer-menyns
     // rader bär den för app-koherens med eventsidans åtgärdsrader.
-    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(5);
+    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(6);
   });
 
   test('Skapa nytt event är RIVEN ur Mer (task-19.2) — ingången bor på event-listan', async ({
