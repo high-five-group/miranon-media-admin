@@ -12,7 +12,7 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
 import { Anteckningar } from './detail/Anteckningar';
-import { Atgarder, CheckInKort } from './detail/Atgarder';
+import { Atgarder, AtgarderKort, CheckInKort, SkrivUtKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
 import { Betalningar } from './detail/Betalningar';
 import { Deltagare } from './detail/Deltagare';
@@ -276,7 +276,20 @@ export function EventDetail({ eventId }: { eventId: string }) {
           som rubrikfritt kort ÖVER Åtgärds-gruppen, gruppen före datagrupperna.
           Länkmåls- och kopplingsinterimen är öppet bokförda i Atgarder.tsx. */}
       <CheckInKort eventId={eventId} />
-      <Atgarder eventId={eventId} />
+      {/* [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus 2026-08-05, punkt 4): i
+          variant-läge ERSÄTTS Åtgärds-gruppen av två kort i check-in-kortets
+          egen form — "Gå till åtgärder" (utskicken + manuell anmälan flyttar
+          dit) och "Skriv ut denna detaljsida" (sidans utskrift stannar).
+          Motiveringen i sin helhet: Atgarder.tsx § AtgarderKort.
+          Skarpa vyn (`protoVariant == null`) renderar gruppen OFÖRÄNDRAD. */}
+      {isHallplatsVariant(variantParam) ? (
+        <>
+          <AtgarderKort />
+          <SkrivUtKort />
+        </>
+      ) : (
+        <Atgarder eventId={eventId} />
+      )}
 
       <OmEventet event={event} />
 

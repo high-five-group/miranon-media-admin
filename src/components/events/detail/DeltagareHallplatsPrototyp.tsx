@@ -30,7 +30,21 @@
  * KASTBAR: rivs med `git rm` på denna fil + `hallplats-steg-prototyp.ts` +
  * återställ prototyp-grenarna i Deltagare.tsx/Betalningar.tsx/EventDetail.tsx.
  */
-import { HALLPLATS_LABEL, type HallplatsSteg } from './hallplats-steg-prototyp';
+import { Filter, Printer } from 'lucide-react';
+import { useState } from 'react';
+import { Button as AriaButton, Disclosure, DisclosurePanel } from 'react-aria-components';
+import { Select, SelectItem } from '@/components/primitives/Select';
+import {
+  HALLPLATS_LABEL,
+  type HallplatsSteg,
+  harAktivtFilter,
+  REGISTER_STEG_LABEL,
+  type RegisterFilter,
+  type RegisterStegFilter,
+  TOMT_REGISTER_FILTER,
+  VAG_IN_LABEL,
+  type VagInFilter,
+} from './hallplats-steg-prototyp';
 
 /**
  * Steg-märket (GEMENSAMT-kravet): litet, diskret, i kortets METAYTA (inte
@@ -55,9 +69,39 @@ export function HallplatsMarke({ steg }: { steg: HallplatsSteg }) {
   return (
     <span
       data-testid="hallplats-marke"
-      className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 font-medium text-caption ${ton[steg]}`}
+      className={`inline-flex w-fit items-center justify-center rounded-full px-2 py-0.5 text-center font-medium text-caption ${ton[steg]}`}
     >
-      {HALLPLATS_LABEL[steg]}
+      {/* ITERATIONSVÅG (Marcus 2026-08-05): "statuspillarna måste ha en låst
+          bredd efter den bredaste status-texten. Jag gillar inte när de är
+          olika breda."
+
+          BREDDLÅSET ÄR REPOTS EGET MÖNSTER, inte ett nytt: samma osynliga
+          grid-platshållare som `MarkeringsBatchBar`s "Bekräfta 99 anmälningar"
+          använder — alla varianter i EN grid-cell, den synliga ovanpå, cellen
+          blir så bred som den bredaste.
+
+          ALLA SEX ETIKETTER LÄGGS IN, inte "den längsta". Första försöket valde
+          längsta etikett på `.length` och mätte 143,69 mot 142,33 px i egen
+          granskning — teckenANTAL är fel proxy för renderad BREDD: "Väntar på
+          bekräftelse" (21 tecken, breda ä/k/f) är bredare än "På väg till
+          väntelistan" (23 tecken, smala i/l/t). Med hela uppsättningen i cellen
+          behöver ingen veta vilken som är bredast — layouten avgör, och den kan
+          inte ha fel. Nya etiketter följer med automatiskt.
+
+          `aria-hidden` på platshållarna: hjälpmedel ska läsa personens FAKTISKA
+          steg, aldrig hela etikettuppsättningen. */}
+      <span className="grid">
+        {Object.values(HALLPLATS_LABEL).map((label) => (
+          <span
+            key={label}
+            aria-hidden="true"
+            className="invisible col-start-1 row-start-1 whitespace-nowrap"
+          >
+            {label}
+          </span>
+        ))}
+        <span className="col-start-1 row-start-1 whitespace-nowrap">{HALLPLATS_LABEL[steg]}</span>
+      </span>
     </span>
   );
 }
@@ -101,7 +145,23 @@ export function HallplatsRad({
 }) {
   const tonKlass = ton === 'error' ? 'text-error' : ton === 'warning' ? 'text-warning' : '';
   return (
-    <div className="flex flex-col gap-1.5 py-2">
+    // ITERATIONSVÅG (Marcus 2026-08-05): "'Klara-raden' är högre än de andra
+    // raderna … alla rader måste såklart vara lika höga och se likadana ut i
+    // koden också."
+    //
+    // MÄTT ROTORSAK, inte gissad: raden är 1 px LÄGRE, inte högre (52 mot 53 px
+    // — knapphöjd, padding och radhöjd är identiska på alla fyra). Tailwinds
+    // `divide-y` på föräldern lägger border-bottom på alla barn UTOM det sista,
+    // så sista raden saknade sin pixel. Samma 52 px mättes på "Avbokade", som
+    // också är sist i sin stack. Det Marcus SÅG var sannolikt mellanrummet
+    // under blocket, som får raden att läsa som högre — men asymmetrin fanns
+    // och är det som rättas.
+    //
+    // Kanten bärs nu av RADEN själv, inte av förälderns `divide-y`: varje rad
+    // är därmed identisk i koden (Marcus krav) och alla får samma 53 px,
+    // inklusive den sista. Blocket avslutas med en kant precis som varje annan
+    // rad — konsekvent, och den markerar samtidigt blockgränsen mot nästa stack.
+    <div className="flex flex-col border-border border-b py-2">
       <button
         type="button"
         aria-pressed={aktiv}
@@ -131,6 +191,28 @@ function HallplatsSaknasDelta({ antal }: { antal: number }) {
 }
 
 /**
+ * ITERATIONSVÅG (Marcus 2026-08-05): "'5 av 12 mottagna' och '3 mottagna' är i
+ * fetstil, det bör de inte vara."
+ *
+ * `HallplatsRad`s värde-span bär `font-medium` OVILLKORLIGT sedan byggkrav 4
+ * (S96) — den ändringen fanns för att jämna ut radhöjden mellan toner, och
+ * den regeln står kvar. Men på de två betalningsraderna är värdet inte bara
+ * en siffra utan en HEL MENING, och `font-medium` träffade då även orden.
+ * Räkneraderna med rent tal ("Väntar på bekräftelse", "Klara") är oförändrade.
+ *
+ * Formen är den gängse i sifferrader: VÄRDET bär vikten, ENHETEN gör det inte.
+ * Färgen rörs inte — bara vikten var det Marcus pekade på.
+ */
+function HallplatsTalOchText({ tal, text }: { tal: number; text: string }) {
+  return (
+    <>
+      {tal}
+      <span className="font-normal">{` ${text}`}</span>
+    </>
+  );
+}
+
+/**
  * Byggkrav 2:s split-data (S96) — "Väntar på betalning" ersätts av två
  * räknerader i Betalningar-blockets EGNA grammatik ("Anmälningsavgifter — x
  * av y mottagna −n" / "Slutbetalningar — x mottagna −n"). Siffrorna är
@@ -147,8 +229,11 @@ export type HallplatsBetalningsSplit = {
   avgifterSaknas: number;
   slutMottagna: number;
   slutSaknas: number;
-  aktivFilter: 'avgift' | 'slut' | null;
-  onFilterClick: (typ: 'avgift' | 'slut') => void;
+  /** ITERATIONSVÅG: samma stegaxel som räknarna ovan skriver — betalnings-
+      raderna hade förut ett EGET filter-state ('avgift' | 'slut'), vilket var
+      en av de fyra parallella som nu är enade. */
+  aktivFilter: RegisterStegFilter | null;
+  onFilterClick: (typ: RegisterStegFilter) => void;
 };
 
 export type HallplatsCounts = {
@@ -156,6 +241,154 @@ export type HallplatsCounts = {
   'vantar-betalning': number;
   klar: number;
 };
+
+/**
+ * [PROTOTYPE] [S93] REGISTRETS FILTERRAD (ITERATIONSVÅG, Marcus 2026-08-05).
+ *
+ * Marcus: "'Alla/Manuella/Medföljande-togglen' behöver byggas om … jag funderar
+ * på om vi ska sätta in exakt den filtrerings-lösningen vi har på eventsidan.
+ * Då kan Lotta filtrera som hon vill, och då kan vi även få in utskriftsknapp
+ * där precis som det är på eventfiltreringen. Frågan är var vi ska göra av
+ * Markera-knappen och 'rensa filtret-knappen', de kan inte sitta där de gör,
+ * ser fult ut."
+ *
+ * MÖNSTRET ÄR EVENTLISTANS, inte ett nytt: `EventsList.tsx` (task-17.7) bär
+ * redan tratt-ingången med aktiv-badge, dropdown-panelen, "Visar X av Y" i
+ * foten, Rensa filter och Skriv ut — research-grundat i
+ * `docs/research/filtervy-listor-monster-2026-07-24.md`. Formen kopieras hit
+ * i stället för att uppfinnas.
+ *
+ * TRE LÖSA KONTROLLER BLIR EN RAD: fliken (Alla/Manuella/Medföljande), den
+ * högerställda "Rensa filtret" och den högerställda "Markera" satt var för sig
+ * på egna rader. Nu står tratten till vänster och Markera till höger på SAMMA
+ * rad; Rensa flyttar in i panelfoten där eventlistan har den.
+ *
+ * UTSKRIFTEN HÄR ÄR REGISTRETS — den synliga, filtrerade listan (Del 3 beslut
+ * 3: "utskriften = hela registret med märken"). Sidans utskrift är en ANNAN
+ * knapp, uppe vid åtgärds-ingången; Marcus ville ha båda.
+ */
+export function RegisterFilterRad({
+  filter,
+  onFilterChange,
+  visadeAntal,
+  totaltAntal,
+  markeraKnapp,
+}: {
+  filter: RegisterFilter;
+  onFilterChange: (f: RegisterFilter) => void;
+  visadeAntal: number;
+  totaltAntal: number;
+  /** Markera-knappen monteras av `ArbetsKo` (den äger markerings-läget) men
+      RENDERAS här, på filterradens högerkant — Marcus placering. */
+  markeraKnapp: React.ReactNode;
+}) {
+  const [oppen, setOppen] = useState(false);
+  const aktiva = harAktivtFilter(filter);
+  return (
+    <Disclosure
+      isExpanded={oppen}
+      onExpandedChange={setOppen}
+      className="flex flex-col print:hidden"
+    >
+      <div className="flex items-center justify-between gap-2">
+        {/* Tratt-ingången — EXAKT eventlistans form (facit k02): svärtad när
+            öppen eller när filter är aktiva, accent-badge med antalet, och
+            sr-only-namnet som bär antalet för hjälpmedel (badgen är dekor). */}
+        <AriaButton
+          slot="trigger"
+          className={`relative inline-flex shrink-0 items-center justify-center rounded-full p-2.5 motion-safe:transition-colors ${
+            oppen || aktiva > 0 ? 'bg-text text-text-inverse' : 'bg-bg-muted hover:bg-bg-emphasized'
+          }`}
+        >
+          <Filter aria-hidden="true" size={18} className="shrink-0" />
+          {aktiva > 0 ? (
+            <span
+              aria-hidden="true"
+              className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-medium text-[10px] text-text-inverse"
+            >
+              {aktiva}
+            </span>
+          ) : null}
+          <span className="sr-only">
+            {oppen ? 'Dölj filter' : 'Visa filter'}
+            {aktiva > 0 ? `, ${aktiva} ${aktiva === 1 ? 'aktivt' : 'aktiva'} filterval` : ''}
+          </span>
+        </AriaButton>
+        {markeraKnapp}
+      </div>
+      <DisclosurePanel data-testid="register-filter-panel">
+        <div className="mt-3 flex flex-col gap-4 rounded-2xl bg-bg-muted p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select
+              data-testid="filter-steg"
+              label="Visa"
+              size="sm"
+              selectedKey={filter.steg ?? ALLA_VAL}
+              onSelectionChange={(k) =>
+                onFilterChange({
+                  ...filter,
+                  steg:
+                    k == null || String(k) === ALLA_VAL ? null : (String(k) as RegisterStegFilter),
+                })
+              }
+            >
+              <SelectItem id={ALLA_VAL}>Alla i registret</SelectItem>
+              {(Object.keys(REGISTER_STEG_LABEL) as RegisterStegFilter[]).map((v) => (
+                <SelectItem key={v} id={v}>
+                  {REGISTER_STEG_LABEL[v]}
+                </SelectItem>
+              ))}
+            </Select>
+            <Select
+              data-testid="filter-vag-in"
+              label="Väg in"
+              size="sm"
+              selectedKey={filter.vagIn ?? ALLA_VAL}
+              onSelectionChange={(k) =>
+                onFilterChange({
+                  ...filter,
+                  vagIn: k == null || String(k) === ALLA_VAL ? null : (String(k) as VagInFilter),
+                })
+              }
+            >
+              <SelectItem id={ALLA_VAL}>Alla vägar in</SelectItem>
+              {(Object.keys(VAG_IN_LABEL) as VagInFilter[]).map((v) => (
+                <SelectItem key={v} id={v}>
+                  {VAG_IN_LABEL[v]}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-border-light border-t pt-3">
+            <span className="text-small text-text-secondary">
+              {`Visar ${visadeAntal} av ${totaltAntal} i registret`}
+            </span>
+            <div className="flex items-center gap-2">
+              {aktiva > 0 ? (
+                <AriaButton
+                  onPress={() => onFilterChange(TOMT_REGISTER_FILTER)}
+                  className="rounded-full px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+                >
+                  Rensa filter
+                </AriaButton>
+              ) : null}
+              <AriaButton
+                onPress={() => window.print()}
+                className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+              >
+                <Printer aria-hidden="true" size={18} className="shrink-0" />
+                Skriv ut
+              </AriaButton>
+            </div>
+          </div>
+        </div>
+      </DisclosurePanel>
+    </Disclosure>
+  );
+}
+
+/** Nollägets id i dropdownarna — `null` går inte att bära som RAC-nyckel. */
+const ALLA_VAL = '__alla';
 
 /**
  * VARIANT A — tre rader, exakt SummeringsRad-grammatiken.
@@ -175,12 +408,14 @@ export function HallplatsToppA({
   betalning,
 }: {
   counts: HallplatsCounts;
-  filter: HallplatsSteg | null;
-  onFilterClick: (steg: keyof HallplatsCounts) => void;
+  filter: RegisterStegFilter | null;
+  onFilterClick: (steg: RegisterStegFilter) => void;
   betalning: HallplatsBetalningsSplit;
 }) {
   return (
-    <div className="divide-y divide-border">
+    // `divide-y` borttagen — varje HallplatsRad bär sin egen kant, se dess
+    // docblock (lika höjd + kod-symmetri, Marcus 2026-08-05).
+    <div>
       <HallplatsRad
         term={HALLPLATS_LABEL['vantar-bekraftelse']}
         aktiv={filter === 'vantar-bekraftelse'}
@@ -191,18 +426,27 @@ export function HallplatsToppA({
       </HallplatsRad>
       <HallplatsRad
         term="Anmälningsavgifter"
-        aktiv={betalning.aktivFilter === 'avgift'}
-        onClick={() => betalning.onFilterClick('avgift')}
+        aktiv={betalning.aktivFilter === 'avgift-saknas'}
+        onClick={() => betalning.onFilterClick('avgift-saknas')}
       >
-        {`${betalning.avgifterMottagna} av ${betalning.avgifterTotalt} mottagna`}
+        <HallplatsTalOchText
+          tal={betalning.avgifterMottagna}
+          text={`av ${betalning.avgifterTotalt} mottagna`}
+        />
         <HallplatsSaknasDelta antal={betalning.avgifterSaknas} />
       </HallplatsRad>
+      {/* ITERATIONSVÅG (Marcus 2026-08-05, punkt 1): "Det ska vara 'Klara'".
+          Raden räknar `slutKlar` = Mottagen ELLER Ej relevant — en föreläsning
+          utan slutbetalning är FÄRDIG, inte "mottagen". Ordet var en term-drift
+          som blev synlig när `betalningsSplit()` enade talen (S96 review-fix).
+          AVGIFTSRADEN ovan behåller "mottagna" på Marcus beslut: den har inget
+          Ej relevant-fall, så där är ordet fortfarande sant. */}
       <HallplatsRad
         term="Slutbetalningar"
-        aktiv={betalning.aktivFilter === 'slut'}
-        onClick={() => betalning.onFilterClick('slut')}
+        aktiv={betalning.aktivFilter === 'slut-saknas'}
+        onClick={() => betalning.onFilterClick('slut-saknas')}
       >
-        {`${betalning.slutMottagna} mottagna`}
+        <HallplatsTalOchText tal={betalning.slutMottagna} text="klara" />
         <HallplatsSaknasDelta antal={betalning.slutSaknas} />
       </HallplatsRad>
       <HallplatsRad term="Klara" aktiv={filter === 'klar'} onClick={() => onFilterClick('klar')}>

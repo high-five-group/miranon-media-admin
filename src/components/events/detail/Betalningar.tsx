@@ -364,6 +364,31 @@ function BetalningsPersonRad({
       : null,
   ].filter((rad): rad is string => rad !== null);
 
+  // [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus 2026-08-05, punkt 2): "Nej inte på
+  // kortet. Vi måste få in utskickshistoriken under 'Öppna detaljer' på något
+  // sätt" — och (sista punkten) "behålla samma tydlighet på anmälningsavgift/
+  // slutbetalning och deras kommentarer som är just nu".
+  //
+  // HELA utskickshistoriken, inte bara betalningspåminnelserna: bekräftelse och
+  // eventinfo satt förut på registrets KORT (`KortInnehall`s metayta) och är
+  // rivna därifrån. Ordningen är Lottas utskicksordning (K42): bekräftelse →
+  // påminnelser → eventinfo.
+  const utskick = [
+    registration.bekraftelseSkickad
+      ? {
+          key: 'bekr',
+          text: `Bekräftelse ${DAGMANAD.format(new Date(registration.bekraftelseSkickad))}`,
+        }
+      : null,
+    ...historik.map((rad) => ({ key: rad, text: rad })),
+    registration.deltagarinfoSkickad
+      ? {
+          key: 'info',
+          text: `Eventinfo ${DAGMANAD.format(new Date(registration.deltagarinfoSkickad))}`,
+        }
+      : null,
+  ].filter((p): p is { key: string; text: string } => p !== null);
+
   return (
     <li className="flex flex-col gap-2 py-3">
       {registration.personId ? (
@@ -393,38 +418,68 @@ function BetalningsPersonRad({
           )}
         </span>
       )}
-      <BetalningsLinje
-        registration={registration}
-        betalning="avgift"
-        eventNamn={eventNamn}
-        vald={avgiftKlar(registration)}
-        notering={registration.noteringAnmalningsavgift ?? null}
-        mutationer={mutationer}
-        protoDataMode={protoDataMode}
-      />
-      {registration.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
-        <p className="text-small text-text-muted">Slutbetalning · Ej relevant (föreläsning)</p>
-      ) : (
-        <BetalningsLinje
-          registration={registration}
-          betalning="slut"
-          eventNamn={eventNamn}
-          vald={registration.slutbetalning === PaymentStatus.MOTTAGEN}
-          notering={registration.noteringSlutbetalning ?? null}
-          mutationer={mutationer}
-          protoDataMode={protoDataMode}
-        />
-      )}
-      {historik.length > 0 && (
-        <ul className="flex flex-col gap-0.5">
-          {historik.map((rad) => (
-            <li key={rad} className="flex items-center gap-1.5 text-caption text-text-muted">
-              <MailCheck aria-hidden="true" size={12} className="shrink-0" />
-              {rad}
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* [PROTOTYPE] [S93] ITERATIONSVÅG — TVÅ ZONER, inte en staplad kolumn.
+          ARBETE till vänster (kryss · notering · påminn — OFÖRÄNDRADE, Marcus
+          krav på bevarad tydlighet) och SKICKAT till höger.
+
+          Skälet är att de två svarar på olika frågor och konkurrerar när de
+          staplas: betalningslinjerna är HANDLING, historiken är LÄSNING. När
+          Lotta jagar en obetald vill hon se "har jag redan skickat något till
+          Anna?" utan att tappa kryssrutan ur blick — staplat hamnar svaret
+          under fingret, i sidled står det bredvid. Med 16 personer i listan är
+          skillnaden hela ytans läsbarhet.
+
+          `md:` — på smala skärmar faller höger zon under vänster, oförändrad
+          ordning. Zonrubrikerna är sr-only: de bär strukturen för hjälpmedel,
+          men på skärmen skulle två etiketter per person bli brus (formen är
+          självförklarande visuellt). */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-6">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <h4 className="sr-only">{`Betalningar för ${namn}`}</h4>
+          <BetalningsLinje
+            registration={registration}
+            betalning="avgift"
+            eventNamn={eventNamn}
+            vald={avgiftKlar(registration)}
+            notering={registration.noteringAnmalningsavgift ?? null}
+            mutationer={mutationer}
+            protoDataMode={protoDataMode}
+          />
+          {registration.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
+            <p className="text-small text-text-muted">Slutbetalning · Ej relevant (föreläsning)</p>
+          ) : (
+            <BetalningsLinje
+              registration={registration}
+              betalning="slut"
+              eventNamn={eventNamn}
+              vald={registration.slutbetalning === PaymentStatus.MOTTAGEN}
+              notering={registration.noteringSlutbetalning ?? null}
+              mutationer={mutationer}
+              protoDataMode={protoDataMode}
+            />
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col gap-1 md:w-56">
+          <h4 className="sr-only">{`Skickat till ${namn}`}</h4>
+          {utskick.length > 0 ? (
+            <ul className="flex flex-col gap-0.5">
+              {utskick.map((post) => (
+                <li
+                  key={post.key}
+                  className="flex items-center gap-1.5 text-caption text-text-muted"
+                >
+                  <MailCheck aria-hidden="true" size={12} className="shrink-0" />
+                  {post.text}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            // Frånvaron är informationen (K42-andan) — men i en RESERVERAD zon
+            // måste den sägas, annars läses tomrummet som ett renderingsfel.
+            <p className="text-caption text-text-muted">Inget skickat ännu</p>
+          )}
+        </div>
+      </div>
     </li>
   );
 }

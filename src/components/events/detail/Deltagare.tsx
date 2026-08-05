@@ -37,18 +37,26 @@ import { queryKeys } from '@/queries/keys';
 import { BetalningsDetaljer, DetaljRad } from './Betalningar';
 // [PROTOTYPE] [S93] hållplats-pass — se DeltagareHallplatsPrototyp.tsx (frågan,
 // huvudprototypfilen) + hallplats-steg-prototyp.ts (delad logik/fixturer).
-import { type HallplatsCounts, HallplatsMarke, HallplatsToppA } from './DeltagareHallplatsPrototyp';
+import {
+  type HallplatsCounts,
+  HallplatsMarke,
+  HallplatsToppA,
+  RegisterFilterRad,
+} from './DeltagareHallplatsPrototyp';
 import { DetaljGrupp } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
 import {
-  avgiftKlar,
   betalningsSplit,
   HALLPLATS_PROTO_FIXTURES,
   type HallplatsVariant,
   hallplatsSteg,
   isHallplatsVariant,
+  type RegisterFilter,
+  type RegisterStegFilter,
   registerOrdning,
-  slutKlar,
+  stegTest,
+  TOMT_REGISTER_FILTER,
+  vagInTest,
 } from './hallplats-steg-prototyp';
 
 /**
@@ -968,31 +976,47 @@ function KortInnehall({
             trång (mätt: ingen sågtand på 768/1280 varken före eller efter). */}
         <span className="flex w-30 shrink-0 flex-wrap items-center justify-end gap-1.5 sm:w-[45%]">
           {/* [PROTOTYPE] [S93] review-fix-våg 2 (defekt 3) — i en hållplats-
-              variant BÄR steg-märket (`hallplatsMarke`, metaytan nedan)
-              redan exakt samma information ("Väntar på bekräftelse") som
-              denna röda status-pill. Två märken på samma axel för samma
-              person var dubbel-etikettering (granskningsfynd); steg-märket
-              ERSÄTTER pillen i variant-läge — kategori-pillen (`pill`
-              nedan) är en ANNAN axel och står kvar i båda lägena. */}
+              variant BÄR steg-märket (`hallplatsMarke`) redan exakt samma
+              information ("Väntar på bekräftelse") som denna röda status-pill.
+              Två märken på samma axel för samma person var dubbel-etikettering
+              (granskningsfynd); steg-märket ERSÄTTER pillen i variant-läge. */}
           {!arBekraftad(reg) && !vald && !hallplatsMarke && (
             <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
               Obekräftad
             </span>
           )}
-          {pill && (
-            <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
-              {pill}
-            </span>
-          )}
+          {/* ITERATIONSVÅG (Marcus 2026-08-05): "De här pillsen som sitter på
+              kortet 'Medföljande' och 'Manuell' kan vi då ersätta med
+              statuspillen som just nu sitter under mail-adressen."
+
+              STEG-MÄRKET OCH KATEGORI-PILLEN BYTER ALLTSÅ INTE PLATS — märket
+              flyttar UPP hit och kategorin utgår ur kortet helt. Marcus svar på
+              den direkta frågan: "det räcker att den är filtrerbar, vi testar
+              de först." Vägen in blir i stället en dimension i registrets
+              filterpanel, så informationen finns kvar men tar ingen kortyta.
+
+              Detta ÅTERSTÄLLER inte review-fix-våg 2 (defekt 3) ovan: den fixen
+              förbjöd TVÅ märken på samma axel samtidigt, och det gäller fortsatt
+              — Obekräftad-pillen viker fortfarande för steg-märket. Skillnaden
+              är bara VAR det enda kvarvarande märket sitter.
+
+              Skarpa vyn (`hallplatsMarke` undefined) är ORÖRD: där står
+              kategori-pillen kvar precis som förut. */}
+          {hallplatsMarke ??
+            (pill && (
+              <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+                {pill}
+              </span>
+            ))}
         </span>
       </div>
       <div
         data-testid="deltagar-metayta"
         className="flex flex-col gap-1 px-4 pt-2.5 pb-3 text-caption text-text-muted"
       >
-        {/* [PROTOTYPE] [S93] Steg-märket — GEMENSAMT-kravet: diskret, i
-            metaytan (inte pill-slotten uppe till höger). */}
-        {hallplatsMarke}
+        {/* ITERATIONSVÅG (Marcus 2026-08-05): steg-märket bor inte längre här —
+            det flyttade upp i pill-slotten och ersatte kategori-pillen. Se
+            pill-slotten ovan för hela motiveringen. */}
         {anmald &&
           (lankat ? (
             <Link
@@ -1010,9 +1034,21 @@ function KortInnehall({
           ) : (
             <MetaRad ikon={Inbox}>{anmald}</MetaRad>
           ))}
-        {bekraftelse && <MetaRad ikon={MailCheck}>{`Bekräftelse ${bekraftelse}`}</MetaRad>}
-        {paminnelse && <MetaRad ikon={MailCheck}>{`Påminnelse ${paminnelse}`}</MetaRad>}
-        {eventinfo && <MetaRad ikon={MailCheck}>{`Eventinfo ${eventinfo}`}</MetaRad>}
+        {/* ITERATIONSVÅG (Marcus 2026-08-05, punkt 2): "Nej inte på kortet. Vi
+            måste få in utskickshistoriken under 'Öppna detaljer' på något sätt."
+            De tre utskicksraderna renderas därför INTE i variant-läge — de bor
+            nu i arbetsytans SKICKAT-zon (Betalningar.tsx § BetalningsPersonRad),
+            komplett med betalningspåminnelserna som redan låg där. Skarpa vyn
+            (`hallplatsMarke` undefined) behåller dem OFÖRÄNDRADE. */}
+        {!hallplatsMarke && bekraftelse && (
+          <MetaRad ikon={MailCheck}>{`Bekräftelse ${bekraftelse}`}</MetaRad>
+        )}
+        {!hallplatsMarke && paminnelse && (
+          <MetaRad ikon={MailCheck}>{`Påminnelse ${paminnelse}`}</MetaRad>
+        )}
+        {!hallplatsMarke && eventinfo && (
+          <MetaRad ikon={MailCheck}>{`Eventinfo ${eventinfo}`}</MetaRad>
+        )}
         {genomforda != null && (
           <span data-testid="deltagar-historik" className="mt-0.5 flex items-center gap-1.5">
             <History aria-hidden="true" size={12} className="shrink-0" />
@@ -1348,22 +1384,16 @@ function ArbetsKo({
   const panelId = useId();
   const [flik, setFlik] = useState<FlikNyckel>('alla');
   const [filter, setFilter] = useState<SummeringsFilter | null>(null);
-  // [PROTOTYPE] [S93] hållplats-filtret — EGET state, parallellt med `filter`
-  // (aldrig i FILTER_TEST/SummeringsFilter — de tre hållplats-hinken existerar
-  // bara i denna DEV-gren). Ömsesidigt uteslutande med `filter` (se
-  // vaxlaFilter/vaxlaHallplatsFilter nedan): endast ETT filter i taget.
-  const [hallplatsFilter, setHallplatsFilter] = useState<keyof HallplatsCounts | null>(null);
-  // [PROTOTYPE] [S93] byggkrav 2 (variant A ENDAST) — vilken av de två
-  // betalnings-split-raderna som är aktiv; ömsesidigt uteslutande med
-  // `filter`/`hallplatsFilter` (se vaxlaBetalningsFilter nedan).
-  const [protoBetalningsFilter, setProtoBetalningsFilter] = useState<'avgift' | 'slut' | null>(
-    null,
-  );
-  // [PROTOTYPE] [S93] byggkrav 1 (variant A ENDAST) — Avbokade-radens filter.
-  // Boolean (inte en nyckel i hallplatsFilter/HallplatsCounts): avbokade är
-  // INTE en av de tre stegen och läser HELA `registreringar`, inte `visade`
-  // (se `protoAvbokade` nedan — samma källa som förr, ny klick-yta).
-  const [protoAvbokadeAktiv, setProtoAvbokadeAktiv] = useState(false);
+  // [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus 2026-08-05) — ETT filtertillstånd
+  // för hela registret, i stället för de TRE separata proto-states som fanns
+  // här förut (`hallplatsFilter` · `protoBetalningsFilter` ·
+  // `protoAvbokadeAktiv`, alla ömsesidigt uteslutande och alla nollade var för
+  // sig). Splittringen var en mätt buggkälla: konvergens-passet fann att den
+  // gamla "Rensa filtret" bara nollade `filter` och därför gjorde INGENTING i
+  // tre fall av fyra. Med ett tillstånd kan klassen inte uppstå igen.
+  //
+  // `filter`/`setFilter` ovan rörs INTE — de bär skarpa vyn, som är oförändrad.
+  const [registerFilter, setRegisterFilter] = useState<RegisterFilter>(TOMT_REGISTER_FILTER);
 
   const aktiva = useMemo(() => registreringar.filter(arAktiv), [registreringar]);
 
@@ -1441,13 +1471,20 @@ function ArbetsKo({
   // fyra-hinks-sorteringen (delar "väntar på betalning" i avgift/slut, samma
   // delning som byggkrav 2:s summeringsrader). No-op utanför variant A
   // (unifiedSorted beräknas men används aldrig — se render nedan).
+  // [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus punkt 3): registrets bas är HELA
+  // `registreringar` — INTE `visade`. Två skäl, båda Marcus beslut:
+  //  · avbokade ska "även synas i registret självt", och `aktiva` filtrerar
+  //    bort dem (de sorteras sist via registerOrdning och bär sitt grå märke);
+  //  · Alla/Manuella/Medföljande-FLIKEN som `visade` bar är riven — vägen in
+  //    är nu en axel i filterpanelen i stället, applicerad i `registerListaA`.
+  // Skarpa vyn läser fortfarande `visade` genom sina egna grenar, orörd.
   const unifiedSorted = useMemo(
     () =>
-      [...visade].sort((a, b) => {
+      [...registreringar].sort((a, b) => {
         const diff = registerOrdning(a) - registerOrdning(b);
         return diff !== 0 ? diff : inskickadTid(a) - inskickadTid(b);
       }),
-    [visade],
+    [registreringar],
   );
 
   /**
@@ -1492,17 +1529,7 @@ function ArbetsKo({
   // och därmed ur `visade` helt, så flik-valet (Alla/Manuella/Medföljande)
   // gäller inte för denna rad (samma disconnect som den gamla `AvbokadeRad`
   // redan hade mot `visade`).
-  const traffar = protoAvbokadeAktiv
-    ? protoAvbokade
-    : protoBetalningsFilter === 'avgift'
-      ? visade.filter((r) => !avgiftKlar(r))
-      : protoBetalningsFilter === 'slut'
-        ? visade.filter((r) => !slutKlar(r))
-        : filter != null
-          ? visade.filter(FILTER_TEST[filter])
-          : hallplatsFilter != null
-            ? visade.filter((r) => hallplatsSteg(r) === hallplatsFilter)
-            : null;
+  const traffar = filter != null ? visade.filter(FILTER_TEST[filter]) : null;
 
   // [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST (Del 3 beslut 3):
   // "registret ... markera-läget verkar över visad lista" — den visade listan
@@ -1512,12 +1539,24 @@ function ArbetsKo({
   // hallplatsFilter/protoBetalningsFilter/protoAvbokadeAktiv är alltid
   // null/false utanför variant A); variant A:s EGEN Rensa-knapp (se render
   // nedan) måste nolla alla fyra, därav `rensaAllaFilterA`.
-  const registerListaA = traffar ?? unifiedSorted;
-  const rensaAllaFilterA = () => {
-    setFilter(null);
-    setHallplatsFilter(null);
-    setProtoBetalningsFilter(null);
-    setProtoAvbokadeAktiv(false);
+  // [PROTOTYPE] [S93] ITERATIONSVÅG — variant A:s visade lista: `unifiedSorted`
+  // (som nu INKLUDERAR avbokade, se `registerBas`) genom filtrets två axlar.
+  // Axlarna KOMBINERAS ("medföljande som saknar slutbetalning"), till skillnad
+  // från den gamla fliken som inte kunde kombineras med något.
+  const registerListaA = useMemo(() => {
+    let ut = unifiedSorted;
+    if (registerFilter.steg != null) ut = ut.filter(stegTest(registerFilter.steg));
+    if (registerFilter.vagIn != null) ut = ut.filter(vagInTest(registerFilter.vagIn));
+    return ut;
+  }, [unifiedSorted, registerFilter]);
+
+  /** Sätter stegaxeln från en topp-räknare — samma tillstånd som panelens
+      dropdown skriver, så panelen alltid visar sanningen om vad som är valt
+      (klick igen på en aktiv rad nollar axeln, oförändrat växlings-beteende). */
+  const vaxlaSteg = (s: RegisterStegFilter) => {
+    markering.stang();
+    setUtfall(null);
+    setRegisterFilter((nu) => ({ ...nu, steg: nu.steg === s ? null : s }));
   };
 
   // Kryss-lägets STABILA sorterings-snapshot (K52): fångas när läget ÖPPNAS så
@@ -1535,14 +1574,6 @@ function ArbetsKo({
     markering.stang();
     // Nytt arbetssteg ⇒ förra batchens kvittens är förbrukad (fynd (c)).
     setUtfall(null);
-    // [PROTOTYPE] [S93] Ett verkligt filter ERSÄTTER hållplats-filtret (samma
-    // ömsesidiga uteslutning som gäller `filter` sinsemellan) — no-op utanför
-    // prototypen (hallplatsFilter är alltid null där).
-    setHallplatsFilter(null);
-    // [PROTOTYPE] [S93] byggkrav 1/2 (variant A) — samma ömsesidiga
-    // uteslutning; no-op utanför variant A (båda alltid null/false där).
-    setProtoBetalningsFilter(null);
-    setProtoAvbokadeAktiv(false);
     setFilter((nu) => {
       const next = nu === f ? null : f;
       if (f === 'borOver' && next === 'borOver') {
@@ -1552,39 +1583,12 @@ function ArbetsKo({
     });
   };
 
-  /** [PROTOTYPE] [S93] Hållplats-räknarnas klick — se vaxlaFilter ovan för
-      den ömsesidiga uteslutningen. */
-  const vaxlaHallplatsFilter = (steg: keyof HallplatsCounts) => {
-    markering.stang();
-    setUtfall(null);
-    setFilter(null);
-    setProtoBetalningsFilter(null);
-    setProtoAvbokadeAktiv(false);
-    setHallplatsFilter((nu) => (nu === steg ? null : steg));
-  };
-
-  /** [PROTOTYPE] [S93] byggkrav 2 (variant A ENDAST) — Anmälningsavgifter/
-      Slutbetalningar-radernas klick. Samma ömsesidiga uteslutning som
-      vaxlaFilter/vaxlaHallplatsFilter ovan. */
-  const vaxlaBetalningsFilter = (typ: 'avgift' | 'slut') => {
-    markering.stang();
-    setUtfall(null);
-    setFilter(null);
-    setHallplatsFilter(null);
-    setProtoAvbokadeAktiv(false);
-    setProtoBetalningsFilter((nu) => (nu === typ ? null : typ));
-  };
-
-  /** [PROTOTYPE] [S93] byggkrav 1 (variant A ENDAST) — Avbokade-radens klick.
-      Samma ömsesidiga uteslutning som ovan. */
-  const vaxlaAvbokadeFilter = () => {
-    markering.stang();
-    setUtfall(null);
-    setFilter(null);
-    setHallplatsFilter(null);
-    setProtoBetalningsFilter(null);
-    setProtoAvbokadeAktiv((nu) => !nu);
-  };
+  // [PROTOTYPE] [S93] ITERATIONSVÅG — de tre växlarna
+  // (`vaxlaHallplatsFilter` · `vaxlaBetalningsFilter` · `vaxlaAvbokadeFilter`)
+  // är RIVNA. Var och en nollade de tre ANDRA filter-states för hand, och det
+  // var precis den bokföringen som en gång missades i "Rensa filtret". Alla
+  // topp-räknare går nu genom `vaxlaSteg` ovan, som skriver EN axel i ETT
+  // tillstånd — ingen manuell ömsesidig uteslutning kvar att glömma.
 
   // [PROTOTYPE] [S93] review-fix (uppdraget § FYND 2) — `?data=proto`:
   // stubbad, samma read-only-förstärkning som bekraftaMarkerade ovan.
@@ -1776,24 +1780,31 @@ function ArbetsKo({
         <div className="flex flex-col gap-2">
           <HallplatsToppA
             counts={hallplatsCounts}
-            filter={hallplatsFilter}
-            onFilterClick={vaxlaHallplatsFilter}
+            filter={registerFilter.steg}
+            onFilterClick={vaxlaSteg}
             betalning={{
               avgifterMottagna,
               avgifterTotalt,
               avgifterSaknas,
               slutMottagna,
               slutSaknas,
-              aktivFilter: protoBetalningsFilter,
-              onFilterClick: vaxlaBetalningsFilter,
+              aktivFilter: registerFilter.steg,
+              onFilterClick: vaxlaSteg,
             }}
           />
           <div className="flex flex-col border-border border-t pt-1">
-            <div className="divide-y divide-border">
+            {/* ITERATIONSVÅG (Marcus 2026-08-05): "alla rader måste såklart
+                vara lika höga". Samma `divide-y`-asymmetri som rättades i
+                HallplatsRad drabbade sista raden HÄR också — "Avbokade" mättes
+                till 52 px mot syskonens 53. Kanten läggs på VARJE barn i
+                stället för mellan dem. Ändringen är scopad till variant-grenen
+                (klasserna sitter på denna wrapper, inte i `SummeringsRad`) —
+                skarpa vyns egen stack behåller sin `divide-y` OFÖRÄNDRAD. */}
+            <div className="[&>*]:border-border [&>*]:border-b">
               <SummeringsRad
                 term="Eventinfo skickad"
-                aktiv={filter === 'saknarEventinfo'}
-                onClick={() => vaxlaFilter('saknarEventinfo')}
+                aktiv={registerFilter.steg === 'eventinfo-saknas'}
+                onClick={() => vaxlaSteg('eventinfo-saknas')}
                 signalSlot
                 signal={
                   // [PROTOTYPE] [S93] konvergens-pass (Del 3 beslut 2-rivning
@@ -1815,18 +1826,29 @@ function ArbetsKo({
               <SummeringsRad
                 term="Bor över"
                 ikon={BedDouble}
-                aktiv={filter === 'borOver'}
-                onClick={() => vaxlaFilter('borOver')}
+                aktiv={registerFilter.steg === 'bor-over'}
+                onClick={() => {
+                  // Bor över öppnar KRYSS-läget (K52) och behöver därför sin
+                  // snapshot — den enda topp-raden som gör mer än att filtrera.
+                  if (registerFilter.steg !== 'bor-over') {
+                    setBorOverSnapshot(
+                      new Set(aktiva.filter((r) => r.borOver === true).map((r) => r.id)),
+                    );
+                  }
+                  vaxlaSteg('bor-over');
+                }}
               >
                 <span className="tabular-nums">{borOverTotalt}</span>
               </SummeringsRad>
               {/* BYGGKRAV 1 (S96) — Avbokade-rad LÄNGST NER under "Bor över",
-                  samma SummeringsRad-grammatik (ersatte den gamla
-                  `<details>`-formen, riven ur filen i konvergens-passet). */}
+                  samma SummeringsRad-grammatik. ITERATIONSVÅG (Marcus punkt 3):
+                  raden är nu en GENVÄG till filtret, inte den enda vägen till
+                  avbokade — de ligger med i registret självt (sist, med sitt
+                  grå märke) sedan `registerOrdning` fick sin avbokad-hink. */}
               <SummeringsRad
                 term="Avbokade"
-                aktiv={protoAvbokadeAktiv}
-                onClick={vaxlaAvbokadeFilter}
+                aktiv={registerFilter.steg === 'avbokad'}
+                onClick={() => vaxlaSteg('avbokad')}
               >
                 <span className="tabular-nums">{protoAvbokade.length}</span>
               </SummeringsRad>
@@ -1845,26 +1867,32 @@ function ArbetsKo({
 
       <div className="flex flex-col gap-2.5 py-3">
         {/* K41: Formulär-fliken riven — formulärvägen är NORMEN och behöver
-            ingen egen flik. Kapseln är familjens ToggleButtonGroup-primitiv. */}
-        <ToggleButtonGroup
-          label="Visa deltagare"
-          spread
-          selectedKey={flik}
-          onSelectionChange={(key: FlikNyckel) => {
-            setUtfall(null);
-            setFlik(key);
-          }}
-        >
-          <ToggleButton id="alla" size="sm">
-            {`Alla (${totalt})`}
-          </ToggleButton>
-          <ToggleButton id="manuell" size="sm">
-            {`Manuella (${antalKategori('manuell')})`}
-          </ToggleButton>
-          <ToggleButton id="medfoljande" size="sm">
-            {`Medföljande (${antalKategori('medfoljande')})`}
-          </ToggleButton>
-        </ToggleButtonGroup>
+            ingen egen flik. Kapseln är familjens ToggleButtonGroup-primitiv.
+            [PROTOTYPE] [S93] ITERATIONSVÅG: fliken renderas ENDAST i skarpa
+            vyn. I variant A är vägen in en axel i filterpanelen (se
+            RegisterFilterRad) — Marcus: togglen "behöver byggas om och exakt
+            matcha" eventsidans filtrering. */}
+        {protoVariant !== 'a' && (
+          <ToggleButtonGroup
+            label="Visa deltagare"
+            spread
+            selectedKey={flik}
+            onSelectionChange={(key: FlikNyckel) => {
+              setUtfall(null);
+              setFlik(key);
+            }}
+          >
+            <ToggleButton id="alla" size="sm">
+              {`Alla (${totalt})`}
+            </ToggleButton>
+            <ToggleButton id="manuell" size="sm">
+              {`Manuella (${antalKategori('manuell')})`}
+            </ToggleButton>
+            <ToggleButton id="medfoljande" size="sm">
+              {`Medföljande (${antalKategori('medfoljande')})`}
+            </ToggleButton>
+          </ToggleButtonGroup>
+        )}
 
         {protoVariant === 'a' ? (
           // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 3) — registret
@@ -1873,12 +1901,34 @@ function ArbetsKo({
           // (traffar när ett steg-räknar-/logistik-filter är valt, annars
           // HELA den enade steg-sorterade listan) — "markera-läget verkar
           // över visad lista".
-          visade.length === 0 ? (
-            <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
+          unifiedSorted.length === 0 ? (
+            <p className="py-2 text-small text-text-secondary">Inga anmälningar ännu.</p>
           ) : (
             <>
-              {traffar != null && <RensaFiltretKnapp onClick={rensaAllaFilterA} />}
-              {filter === 'borOver' ? (
+              {/* [PROTOTYPE] [S93] ITERATIONSVÅG — filterraden ERSÄTTER tre lösa
+                  kontroller: fliken (ovan, nu skarp-vy-only), den högerställda
+                  "Rensa filtret" (flyttad in i panelfoten) och den högerställda
+                  Markera-knappen (flyttad hit, till radens högerkant). Marcus:
+                  "de kan inte sitta där de gör, ser fult ut." */}
+              <RegisterFilterRad
+                filter={registerFilter}
+                onFilterChange={(f) => {
+                  markering.stang();
+                  setUtfall(null);
+                  setRegisterFilter(f);
+                }}
+                visadeAntal={registerListaA.length}
+                totaltAntal={unifiedSorted.length}
+                markeraKnapp={
+                  <MarkeraKnapp
+                    aktivt={markering.aktivt}
+                    onOppna={oppnaMarkering}
+                    onStang={markering.stang}
+                    buttonRef={markeraKnappRef}
+                  />
+                }
+              />
+              {registerFilter.steg === 'bor-over' ? (
                 <BorOverKrysslage
                   lista={markeringsLista}
                   protoDataMode={protoDataMode}
@@ -1886,14 +1936,6 @@ function ArbetsKo({
                 />
               ) : (
                 <>
-                  <div className="flex justify-end pb-1.5">
-                    <MarkeraKnapp
-                      aktivt={markering.aktivt}
-                      onOppna={oppnaMarkering}
-                      onStang={markering.stang}
-                      buttonRef={markeraKnappRef}
-                    />
-                  </div>
                   {markering.aktivt && (
                     <MarkeringsBatchBar
                       antal={markering.antal}
