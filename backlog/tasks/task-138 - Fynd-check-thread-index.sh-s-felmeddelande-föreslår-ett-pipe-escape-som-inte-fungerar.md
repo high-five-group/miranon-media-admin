@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-04 12:11'
-updated_date: '2026-08-04 12:12'
+updated_date: '2026-08-05 15:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,6 +24,23 @@ MÄTT 2026-08-04 (T119-passets agent, S96 slutbunt). scripts/check-thread-index.
 <!-- AC:BEGIN -->
 - [ ] #1 Felmeddelandet i scripts/check-thread-index.sh (nuvarande rad ~122) rekommenderar inte längre ett pipe-escape som inte fungerar mot skriptets egen ${line//[^|]/}-räkning
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AKTUALITETS-KONTROLL 2026-08-05 (S96 femte resumen, orkestreraren): PROBLEMET KVARSTÅR, men kortets radhänvisning är stale och underskattar omfattningen.
+
+Kortet pekar på scripts/check-thread-index.sh rad 122. Den raden bär i dag ett helt annat felmeddelande (indexet saknas / bruten ryggrad). Den felaktiga escape-rekommendationen sitter på TVÅ ställen:
+
+  rad 205: 'Fix: escapa pipe-tecken i titel/ingång som \| — annars läser varje maskinell läsare fel kolumn.'
+  rad 346: 'Fix: escapa pipe-tecken i cellerna som \| — annars läser varje maskinell läsare fel kolumn.'
+
+Filen har vuxit sedan mätningen (TASK-140 och TASK-141 landade grindar i samma skript: commits 335461e3, 513c244e, 0df78b2b). Radnumret 122 ärvdes alltså oprövat.
+
+KONSEKVENS FÖR SCOPET: fixen ska röra båda förekomsterna, inte en. Ett testfall som bara täcker den ena lämnar den andra kvar som felaktig vägledning.
+
+Kortet plockades och stoppades i detta pass — inte för att premissen föll, utan för att det ligger utanför S96:s scope (Marcus styrning 2026-08-05). Det är plockbart som det står, med radnumren ovan.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
