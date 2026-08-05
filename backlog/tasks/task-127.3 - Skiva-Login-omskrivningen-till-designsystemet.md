@@ -1,10 +1,10 @@
 ---
 id: TASK-127.3
 title: 'Skiva: Login-omskrivningen till designsystemet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-02 14:32'
-updated_date: '2026-08-05 11:39'
+updated_date: '2026-08-05 12:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,39 +30,26 @@ Täcker användarberättelse: 6.
 - [x] #4 Prototyp-facit följt; varje avvikelse öppet bokförd
 <!-- AC:END -->
 
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-BYGGKRAV UR PROTOTYP-PASSET (TASK-127.2 divergensfas, 2026-08-03) — variant-oberoende, gäller oavsett vilken variant Marcus väljer.
+STÄNGD 2026-08-05 (S96, orkestrerarens CI-verifiering — tvåstegs-stängningen per ADR-071).
 
-SKARP BUGG FÅNGAD OCH DIAGNOSTISERAD i prototypen: efter ett misslyckat inloggningsförsök kunde nästa försök med RÄTT lösenord aldrig slutföras — submit-handlern eldade aldrig, tyst och reproducerbart.
+LEVERERAD via PR #776 (MERGED 2026-08-05). CI grön per jobb verifierad före Done-flippen: Pure+Build pass, Acceptance (hermetisk) pass 7m21s, Webblasarbeteende pass, Docs link check pass, CI Passed or Skipped pass. A11y/Staging/purge korrekt SKIPPING för denna diff-klass.
 
-ROTORSAK: React Arias default validationBehavior="native" speglar isInvalid/errorMessage via input.setCustomValidity(...). Webbläsaren rensar den strängen ENDAST vid en lyckad native submit — inte för att värdet ändras. Nästa submit blockeras därför av webbläsarens EGEN constraint-validering INNAN onSubmit hinner köra; input.validity.customError är fortfarande true trots ett giltigt nytt värde.
+BYGG-AGENTENS PREMISS-PASS FÅNGADE ETT FEL I MITT UPPDRAG (ADR-086 i praktiken): uppdraget påstod att TASK-127.2 var Done. Agentens worktree såg To Do — korrekt, eftersom stängningen låg OCOMMITTAD i huvudkatalogen när worktreen grenades. Agenten byggde mot det verifierade facitet i stället för mot påståendet, och rörde aldrig 127.2:s kort. Samma fångst gjordes oberoende av 126.3-agenten.
 
-ÅTGÄRD I PROTOTYPEN: validationBehavior="aria" på lösenordsfältet. Bevisat i båda riktningar — felet reproducerat två gånger, fixen applicerad, därefter verifierat skarpt (fel → felmeddelande → nytt lösenord → lyckad övergång) på BÅDA skärmarna, som delar samma lösenordsfält-komponent.
+LÄRDOM: en kortändring som inte är committad existerar inte för en agent-worktree. Stäng kort och COMMITTA i samma andetag innan agenter spawnas som beror på statusen — samma klass som CLAUDE.md:s kortnummer-regel om uppskjuten bokföring.
 
-VARFÖR DETTA STÅR HÄR: prototypkod befordras aldrig (throwaway-kontraktets klausul iv) — den skarpa implementationen skrivs nyskriven i denna skiva. Utan denna not återintroduceras buggen med hög sannolikhet, eftersom den bara syns vid ANDRA försöket och inte fångas av ett test som prövar ett enda felaktigt försök.
+ÖPPNA POSTER, EJ BLOCKERANDE: (1) tests/e2e/pwa-offline.staging.test.ts källsynkad men ej körd lokalt (kräver byggd preview) — CI:s staging-jobb äger den. (2) Kontrast-fynd på text-caption visade sig vara en mätartefakt (0.2s mm-avsloj-reveal), men kombinationen färg+storlek är strukturellt sårbar för samma mätfälla hos framtida konsumenter av Input-primitivens description-prop. Registrerat, ej åtgärdat — token-nivå-ändring ligger utanför en login-skivas mandat.
 
-TESTKRAV SOM FÖLJER: sviten ska pröva sekvensen fel → rätt, inte bara fel. Ett test som slutar vid det första felmeddelandet hade varit grönt genom hela buggen.
-
-BYGGKRAV UR KONVERGENSFASEN (Marcus, 2026-08-03), verbatim: "Och i den skarpa versionen så ska man INTE behöva scrolla, ALLT ska synas på skärmen."
-
-GÄLLER DEN SKARPA IMPLEMENTATIONEN, inte bara prototypen. Hela innehållet ska rymmas inom viewporten utan vertikal scroll.
-
-VAD SOM GÖR KRAVET SVÅRT, och som måste mätas i stället för antas:
-- Accept-sidan bär mest innehåll (rubrik, kontextstycke, tre punkter, fyra formulärfält, knapp) och spränger höjden först.
-- På mobil staplas spalterna; bild + text + formulär i en kolumn ryms sannolikt inte utan att något ger vika.
-- Med mjukt tangentbord uppe krymper synlig yta ofta till omkring halva viewporten. Ett falt som "syns" i tom viewport gor det inte nar anvandaren skriver. Detta ar det verkliga testfallet, inte den tomma sidan.
-
-GRÄNSEN: kravet far ALDRIG uppfyllas genom att bryta ett annat golv - typsnitt under lasbarhetsgransen, borttagna fokusmarkeringar eller komprimerade traffytor under 44px. Ryms det inte: eskalera till Marcus med matt underlag om vad som sprangs, inte en tyst kompromiss.
+AVBLOCKERAR: TASK-127.7 och TASK-127.8 (båda dep [TASK-127.3]).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

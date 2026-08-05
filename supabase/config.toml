@@ -91,16 +91,24 @@ verify_jwt = true
 #      obyggd och har inte valt sin route ännu. Läggs till i
 #      additional_redirect_urls när den skivan landar.
 #
-# ⚠️ ÖPPEN FRÅGA, DOKUMENTERAD INTE GISSAD BORT — push-semantik: CLI:t har
-# `supabase config push` men INGET `config pull`. Det finns alltså inget
-# sätt att synka nuvarande fjärr-state till denna fil FÖRE en första push,
-# och "Config as Code"-modellen (CLI v2) är deklarativ till sin natur — git
-# är tänkt som sanningskälla. Det talar för att fält som INTE står i denna
-# fil kan nollställas till CLI-scaffoldens default vid push (t.ex.
-# enable_signup, minimum_password_length, rate limits) snarare än lämnas
-# orörda. INTE bekräftat mot en skarp push — ingen sådan har körts i detta
-# kort. Säker exekveringsordning (T46-kartan): STAGING FÖRST, en
-# dashboard-ögonblicksbild TAGEN FÖRE första push, diff mot den EFTER.
+# ✅ AVGJORD 2026-08-05 (S96) — frågan nedan stod öppen tills en skarp push
+# kördes. Den är nu körd, och hypotesen BEKRÄFTADES: `supabase config push` ÄR
+# deklarativ, och fält som inte står här nollställs till CLI-scaffoldens
+# default. Första pushen mot staging ändrade 22 av 242 fält; SEX var
+# oavsiktliga regressioner (se [auth]-blockets varning nedan för listan).
+# Det finns fortfarande inget `config pull` och ingen `--dry-run` — MEN CLI:t
+# skriver ut en fullständig diff före bekräftelsen, och den är den enda
+# förhandsgranskning som existerar. LÄS DEN VARJE GÅNG.
+#
+# Exekveringsordningen ur T46-kartan gäller alltjämt och bevisade sitt värde:
+# STAGING FÖRST, förebild TAGEN FÖRE, diff mot den EFTER. Förebilden hämtas
+# bäst ur Management API (`GET /v1/projects/<ref>/config/auth`, 242 fält)
+# snarare än som skärmdumpar — då blir efterkontrollen en maskinell diff i
+# stället för en ögonjämförelse.
+#
+# För ETT ELLER TVÅ enskilda fält är en riktad `PATCH` mot samma endpoint
+# säkrare än en full push: prod-ändringen 2026-08-05 (site_url + signup) rörde
+# 3 fält av 242, med samtliga känsliga fält verifierat oförändrade.
 # ─────────────────────────────────────────────────────────────────────────
 
 [auth]
