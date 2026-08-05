@@ -1,7 +1,7 @@
 ---
 owner: marcus803
-updated: 2026-07-30
-review_by: 2027-01-30
+updated: 2026-08-05
+review_by: 2027-02-05
 status: draft
 ---
 
@@ -16,6 +16,61 @@ status: draft
 > **Mätningarna** kördes mot `npm 11.8.0` / `node v24.13.1` på macOS (darwin x64),
 > mot `backlog.md@1.47.1` och mot repots träd vid `8f8d97e`. Väggtidsmätningar bär
 > sin loadavg. Där något är bedömning och inte mätning står det utskrivet.
+>
+> **Uppdatering (2026-08-05, tråd `T123` — omverifiering mot 1.48.0):** repot
+> bumpade `backlog.md` 1.47.1 → 1.48.0 i PR `#634` (`5c9b4946`) efter en mätning
+> av `task <id> --plain`-formatets bakåtkompatibilitet — inte av de tre
+> egenskaper detta pass byggde sin rekommendation på. De omverifierades nu
+> skarpt mot **1.48.0**, mot npm-registret direkt (`npm view
+> backlog.md@1.48.0 --json`, en riktig `npm install backlog.md@1.48.0
+> --save-exact` i ett scratch-projekt, `npm audit signatures` i den
+> installationen, samt registrets attesterings-endpoint hämtad och dess
+> DSSE-payload avkodad manuellt):
+>
+> - **SLSA-provenance — identisk form, ny referens, inget försämrat.**
+>   Attesteringen (`https://registry.npmjs.org/-/npm/v1/attestations/backlog.md@1.48.0`)
+>   avkodas till `{"ref":"refs/tags/v1.48.0","repository":"https://github.com/MrLesk/Backlog.md","path":".github/workflows/release.yml"}`
+>   — samma repo, samma release-workflow, taggen har bara följt med versionen.
+>   `npm audit signatures` i den riktiga installationen gav exakt samma svar som
+>   §1 mätte för 1.47.1: *"2 packages have verified registry signatures / 2
+>   packages have verified attestations"*.
+> - **Scripts-deklarationen — OFÖRÄNDRAD, ingen röd flagga.** Fortfarande
+>   exakt ett script, `postuninstall` (`node postuninstall.cjs`); inget nytt
+>   `preinstall`/`postinstall` har tillkommit. Skriptets innehåll inspekterades
+>   den här gången även i klartext (§1 nöjde sig med det empiriska "kördes
+>   inte"-testet): det spawnar `npm/bun uninstall -g` mot de sex
+>   plattformspaketen och sväljer varje fel tyst — en ofarlig städfunktion, inte
+>   en exfiltrationsyta.
+> - **Beroendeträdet — OFÖRÄNDRAT.** Fortfarande noll `dependencies`; samma sex
+>   `optionalDependencies` (`backlog.md-{linux,darwin,windows}-{x64,arm64}`,
+>   nu på `1.48.0`), var och en fortsatt utan egna beroenden.
+>
+> **Bonus, utanför de tre kraven men bekräftande:** repot bär nu FAKTISKT
+> `backlog.md@1.48.0` som pinnad `devDependency` (samma landning, `#634`), så
+> `npx audit-ci --config audit-ci.jsonc` kunde köras skarpt mot repots egen
+> `package-lock.json` i stället för mot den simulerade kopian §3 byggde på.
+> Utfall: `Passed npm security audit`, 0 på alla fem nivåer
+> (info/low/moderate/high/critical), 759 paket totalt.
+>
+> **Vad som INTE omprövades, och varför det är rätt avgränsning:** §2:s
+> precedent-katalog, §4:s femte-former och §5:s väggtidsmätningar
+> (`npx` mot direkt binär) är resonemang och mätningar mot **verktygsklassen**,
+> inte mot den enskilda artefakten — en versionsbump av `backlog.md` ändrar
+> dem inte, och de omprövades därför inte.
+>
+> **Nytt observerat, medvetet inte utrett vidare:** registrets
+> `dist-tags.latest` är i skrivande stund `1.49.3`, inte `1.48.0` — paketet har
+> alltså gått vidare förbi den version repot pinnar. Det ligger utanför detta
+> pass, av samma skäl originalpasset gav för att inte utreda vad som ändrats
+> *till* 1.47.1: repot pinnar medvetet den version som faktiskt är i bruk, och
+> nästa omverifiering hör ihop med nästa medvetna bump — inte med varje ny
+> release uppströms.
+>
+> **Ärlighetskrav:** npm-registret var nåbart hela passet och samtliga tre
+> punkter mättes skarpt — ingen punkt i denna uppdatering är obelagd eller
+> gissad. Rådata (registrets JSON-svar, den avkodade attesterings-payloaden,
+> installationsloggen, `audit-ci`-utskriften) ligger i sessionens scratchpad
+> under filnamn prefixade `T123-` och är inte incheckad i repot.
 
 ---
 
@@ -486,9 +541,13 @@ avgöras och är inte avgjorda av detta pass:
   våg lämnar kort i det fällande tillståndet.
 - **Kostnaden för ett separat verktygs-manifest** är oprövad — jag hittade ingen
   precedent för formen och mätte den inte.
-- **`backlog.md@1.48.0`** är `latest` i registret. Jag undersökte inte vad som
-  ändrats sedan `1.47.1`, och rekommendationen nedan pinnar medvetet den version
-  som faktiskt är i bruk.
+- **`backlog.md@1.48.0`** var `latest` i registret vid publiceringen av detta
+  pass. Jag undersökte då inte vad som ändrats sedan `1.47.1`, och
+  rekommendationen pinnade medvetet den version som faktiskt var i bruk.
+  **Löst 2026-08-05** (`T123`) för de tre egenskaper som bär rekommendationen
+  — se uppdateringsblockquoten direkt under proveniens-styckets rubrik.
+  Registret har sedan dess gått vidare till `1.49.3`; det gapet är INTE
+  utrett (se uppdateringsblockquoten § "Nytt observerat").
 
 ---
 
@@ -581,7 +640,8 @@ korten utan fältet. **Ingen av dessa två är avgjord av detta pass.**
 
 - `backlog.md` på npm — <https://www.npmjs.com/package/backlog.md>
 - Källa bakom attesteringen — <https://github.com/MrLesk/Backlog.md>
-- Attestering (SLSA provenance v1) — <https://registry.npmjs.org/-/npm/v1/attestations/backlog.md@1.47.1>
+- Attestering (SLSA provenance v1, 1.47.1 — passets ursprungsmätning) — <https://registry.npmjs.org/-/npm/v1/attestations/backlog.md@1.47.1>
+- Attestering (SLSA provenance v1, 1.48.0 — omverifierad `T123` 2026-08-05) — <https://registry.npmjs.org/-/npm/v1/attestations/backlog.md@1.48.0>
 - Det kolliderande paketet — <https://www.npmjs.com/package/backlog>
 
 ### Precedent — verifierade workflow-filer
