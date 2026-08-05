@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 16:16'
-updated_date: '2026-08-03 12:03'
+updated_date: '2026-08-05 15:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,7 +34,7 @@ VARFÖR DET SPELAR ROLL: falsklarm på den viktigaste signalen är hur larm slut
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -58,4 +58,18 @@ TVÅSIDIGT BEVIS (mot ORÖRD kod före fixen): T9b/T9c + 8 andra fall körda mot
 GRINDAR: shellcheck --severity=style --enable=all (CI:s exakta flaggor) på båda skripten + .heartbeat-svep-policy.conf → 0/0/0/0. npm run check:docs → 13/13 gröna (CLAUDE.md-frontmatter opåverkad, pre-commit-hooket bumpar updated: automatiskt vid commit). npx biome check . → 0 errors (repo-brett existerande 6 warnings/27 infos, orörda av denna diff, ingen av mina tre filer bland dem — biome lintar inte .sh/.md).
 
 AVVIKELSE MOT UPPDRAGET: uppdraget angav "åtta mätta instanser"; kortets egna Implementation Notes säger uttryckligen SJU (#614, #617, #621, #623, #624, plus #617 två gånger till = 7). Jag har utgått från kortets tal (sju), inte uppdragets (åtta), per ADR-086 — kortet är den primära källan.
+
+PREMISS-PASS (bygg-agent, 2026-08-05): FYNDET ÄR TVÅ HYPOTESER SOM PRÖVADES INNAN BYGGE — resultat: fixen är REDAN på plats, kortet var en bokförings-rest. Ingen ny kod skrevs.
+
+1) Läste scripts/heartbeat-svep.sh rad för rad: isInMergeQueue finns redan i GraphQL-queryn (rad 344) och som 6:e TSV-kolumn (rad 358), och kandidat-villkoret kräver redan inqueue=="false" (rad 415). git log -S"isInMergeQueue" -- scripts/heartbeat-svep.sh visar exakt EN träff: commit 2d6bad0e ("fix(scripts): [TASK-128] heartbeat-svepets armerings-kandidat larmar inte längre på köade PR:er"), landad via PR #645 (mergedAt 2026-08-03T12:22:22Z, merge-commit 1e9247a5). git merge-base --is-ancestor 1e9247a5 HEAD bekräftar att den commit:en är förfader till denna worktrees HEAD (2519c7f2). CLAUDE.md § Landning-raden "Fixad i TASK-128" är alltså VERIFIERAD SANN, inte en hypotes som visade sig fel.
+
+2) gh pr checks 645 bekräftar CI grön per jobb på den landade fixen: samtliga required-jobb (CI Passed or Skipped, CodeQL, Docs link check, Acceptance, Pure+Build, Lint+Audit+TypeCheck, Analyze×2, Detect changed files) pass; A11y/Staging/Staging sentinel purge legitimt skippade (samma D0-klassning som alltid). DoD #3 ("CI grön per jobb på pushad commit") är därmed uppfyllt av den redan landade fixen och bockas här mot detta verifierade bevis, inte mot en ny commit.
+
+3) Verifierade även uppdragets premiss 2 (isInMergeQueue INTE i gh pr list --json): skriptet hämtar fältet via gh api graphql (rad 335-360), inte via gh pr list --json — konsistent med den premissen.
+
+4) FÄRSKT TVÅSIDIGT BEVIS byggt denna session (den historiska notisen ovan hävdade redan tvåsidigt bevis, men jag byggde ett eget oberoende): tog en scratch-kopia av heartbeat-svep.sh, tog bort exakt raden '&& "${inqueue}" == "false"' ur kandidat-villkoret (rad 413-415), körde scripts/test-heartbeat-svep.sh mot den REVERTERADE koden → 35 passerade, 1 FAILADE: T9b (KÖAD, isInMergeQueue=true) gav exit 4, väntade 0 — exakt den regression fixen skyddar mot. Återställde med git checkout -- scripts/heartbeat-svep.sh (git diff --stat tomt efteråt, git status rent), körde om testsviten mot ORÖRD/fixad kod → 36 passerade, 0 failade, exit 0. Ingen spårad fil lämnades ändrad.
+
+OVÄNTAT FYND (registrerat, EJ åtgärdat — utanför detta korts scope): scripts/heartbeat-svep.sh rad 126 och rad 426 föreslår fortfarande disambigueringskommandot 'gh pr merge <nr> --auto --merge'. Per CLAUDE.md § Landning (uppdaterad 2026-08-04, S97) är strategiflaggan BORTA ur formen sedan dess — exakt det kommandot svarar nu '! The merge strategy for main is set by the merge queue' och exit 1. Skriptets egen ALARM-text ger alltså en instruktion som numera felar. Ej fixat här (scope-beslut, rapporterat till orkestreraren i stället för att fatta det på eget bevåg) — kandidat för nytt fynd-kort eller tråd.
+
+Status lämnas OFÖRÄNDRAD (To Do) och Done sätts INTE av denna agent — det är orkestrerarens steg efter egen CI-verifiering av DENNA (bokförings-)commit, per bygg-agentens ALLTID-PÅ-regel.
 <!-- SECTION:NOTES:END -->
