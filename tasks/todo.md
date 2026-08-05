@@ -24,8 +24,9 @@ UNDER PAUSEN** och samtliga fem axlar re-deriverades mot disk: ADR `090`→`095`
 bekräftad (handoffen bar den som hypotes). **Prototyp-läget verifierat, inte
 antaget:** konvergens-passet ligger kvar på `main` (`#667` merged 2026-08-03,
 `DeltagareHallplatsPrototyp.tsx` + `hallplats-steg-prototyp.ts`), dev-servern
-åter uppe på `5173` ur worktreen (symlinkad `node_modules`, HTTP 200 på route
-+ båda modulerna), och granskningsfixturen `reco44UBx6GXcxwu5` **lever** i
+åter uppe på `5173` ur worktreen (symlinkad `node_modules`, HTTP 200 på både
+routen och båda modulerna), och granskningsfixturen `reco44UBx6GXcxwu5`
+**lever** i
 staging — 16 anmälda / 9 anmälningsavgifter / 3 slutbetalningar, utgår
 2026-08-16. **FYND doket inte bokförde:** ett tidigare S93-resume-försök samma
 dag fastnade på ägarlappen och eskalerade i stället för att ta worktree —
