@@ -1,10 +1,10 @@
 ---
 id: TASK-127.7
 title: 'Skiva: Glömt lösenord + återställning'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-05 13:03'
+updated_date: '2026-08-05 13:29'
 labels:
   - ready-for-agent
 dependencies:
@@ -59,12 +59,26 @@ i väntan på denna skiva). Nu en riktig `<Link to="/glomt-losenord">`.
 catch-gren"-konvention, motiverad av att GoTrues rate-limit är
 adress-korrelerad (känd-adress-signal om den läckt till UI:t). Se
 `src/routes/glomt-losenord.tsx`s docblock för fullt resonemang.
+
+STÄNGD 2026-08-05 (S96, orkestrerarens CI-verifiering — tvåstegs-stängningen per ADR-071).
+
+LEVERERAD via PR #786 (MERGED 13:27Z). CI grön per jobb: Lint+Audit+TypeCheck · Pure+Build · Acceptance (hermetisk) · Webblasarbeteende · Docs link check · CodeQL · Analyze ×2 · Detect changed files · CI Passed or Skipped · **Vercel** — samtliga SUCCESS. A11y/Staging/purge korrekt SKIPPED för diff-klassen.
+
+CODEQL FÄLLDE FÖRST — 1 high severity, åtgärdad av orkestreraren i commit a8ca8631. Regeln js/incomplete-url-substring-sanitization träffade url.includes('pwnedpasswords.com') i tests/webblasarbeteende/nytt-losenord.test.ts:110. I SAK en falsk positiv (koden är en observation som räknar nätverksanrop, inte en säkerhetsgrind — ingenting godkänns på matchningens grund), men formen rättades i stället för att varningen avfärdades: exakt värdnamnstest på parsad URL. Bevis i båda riktningar, fem fall: gamla formen gav TRE falska träffar (?x=pwnedpasswords.com · pwnedpasswords.com.elak.example · path-prefixet /auth/v1/userdata), nya noll. src/lib/env-coherence.ts:17 bär ett ytligt likartat mönster men rördes INTE — den är fail-closed och CodeQL flaggade den aldrig.
+
+ÖPPEN POST SOM ORKESTRERAREN ÄGER: additional_redirect_urls bär nu https://admin.miranon.dev/nytt-losenord i config.toml, men **supabase config push är INTE körd** — värdet är alltså inte skarpt i någon miljö. Marcus order 2026-08-05: miljökonfiguration (denna push, CORS, HIBP) tas samlat i nästa resume. Tills dess fungerar återställningslänken inte mot staging/prod.
+
+AGENTENS AVVIKELSER, båda accepterade: (1) login.tsx ändrad trots att uppdragets Ram-sektion inte nämnde filen — motiverat av att kortet äger user story 5 och att login.tsx:s egen kommentar pekade hit; en ren funktionsflytt, ingen redesign. (2) Striktare enumeration-neutralitet än syskonsidorna: 200, 5xx OCH nätverkskrasch ger identisk bekräftelsetext, så svarstiden inte läcker. Motiverat mot ADR-093 § ASVS 6.3.8.
+
+test:api kunde inte köras fullt lokalt (staging-mutexen upptagen av orelaterad körning). Agenten valde att INTE kringgå skyddet med MM_STAGING_PREFLIGHT=off — rätt beslut; CI körde den.
+
+AVBLOCKERAR: inget nytt (TASK-127.9 väntade redan bara på 127.6, som är Done).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
