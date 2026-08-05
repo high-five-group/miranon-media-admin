@@ -526,6 +526,81 @@ VAL="$(falt '.session_id')"
 if [[ "${VAL}" = "${AGARE_SID}" ]]; then OK=0; else OK=1; fi
 pastar "SessionStart möter FRÄMMANDE lapp ⇒ lämnas ORÖRD (stjäl aldrig)" "${OK}"
 
+# ═══ SIDA 9b — RAPPORTENS INNEHÅLL: bär BÅDA vägarna handlingsregeln? ═══
+#
+#   SIDA 9 ovan prövar bara att hooken inte SKRIVER. Att den RAPPORTERAR
+#   rätt sak prövades aldrig — och i den luckan levde en skarp bugg
+#   (S93, 2026-08-05): stale-grenens text nämnde `rm` som enda handling och
+#   saknade worktree-regeln som normalgrenen bar. En resume-session mötte en
+#   LEVANDE ägare vars lapp råkade vara >1 h gammal, fick stale-grenen, och
+#   STOPPADE för att fråga Marcus i stället för att ta en worktree.
+#   Se scripts/katalogagarskap-markor.sh § EN REGEL, EN STRÄNG.
+echo
+echo "SIDA 9b — rapportens innehåll (S93-buggen: stale-grenen tappade regeln)"
+
+# Som kor_markor, men returnerar hookens stdout i stället för att kasta den.
+markor_rapport() {
+    local cwd="$1" sid="$2"
+    jq -nc --arg cwd "${cwd}" --arg sid "${sid}" \
+        '{session_id: $sid, cwd: $cwd, hook_event_name: "SessionStart"}' \
+        | KATALOG_POLICY="${POLICY}" bash "${MARKOR_HOOK}" 2>/dev/null
+}
+
+# rapport_text <hook-stdout> → additionalContext-strängen (tom om ingen)
+rapport_text() {
+    printf '%s' "$1" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null
+}
+
+NU_9B="$(date +%s)"
+
+# (a) FÄRSK främmande lapp — normalgrenen. Bar regeln redan före fixen.
+satt_markor "${AGARE_SID}" "${NU_9B}"
+UT_9B_FARSK="$(markor_rapport "${HUVUD}" "${FRAMLING_SID}")"
+TXT_9B_FARSK="$(rapport_text "${UT_9B_FARSK}")"
+case "${TXT_9B_FARSK}" in *worktree*) OK=0 ;; *) OK=1 ;; esac
+pastar "färsk lapp ⇒ rapporten nämner worktree-vägen" "${OK}"
+
+# (b) GAMMAL främmande lapp — stale-grenen. DETTA var buggen: föll före fixen.
+satt_markor "${AGARE_SID}" "$(( NU_9B - KATALOG_STALE_TIMMAR * 3600 - 60 ))"
+UT_9B_GAMMAL="$(markor_rapport "${HUVUD}" "${FRAMLING_SID}")"
+TXT_9B_GAMMAL="$(rapport_text "${UT_9B_GAMMAL}")"
+case "${TXT_9B_GAMMAL}" in *worktree*) OK=0 ;; *) OK=1 ;; esac
+pastar "GAMMAL lapp ⇒ rapporten nämner worktree-vägen (S93-regressionen)" "${OK}"
+
+# (c) Stale-grenen får inte lämna `rm` som enda handlingsalternativ — det var
+#     just den inramningen som gjorde situationen till en död/levande-fråga.
+case "${TXT_9B_GAMMAL}" in
+    *"ADR-090 beslut 2"*) OK=0 ;;
+    *) OK=1 ;;
+esac
+pastar "GAMMAL lapp ⇒ rapporten citerar ADR-090 beslut 2, inte bara rm" "${OK}"
+
+# (d) Regeln ska komma ur EN delad sträng: samma nyckelmening i BÅDA vägarna.
+#     Divergerar de igen är det exakt återfallet fixen finns för att hindra.
+REGEL_NYCKEL="den senare arbetar i en egen worktree"
+if [[ "${TXT_9B_FARSK}" == *"${REGEL_NYCKEL}"* && "${TXT_9B_GAMMAL}" == *"${REGEL_NYCKEL}"* ]]; then
+    OK=0
+else
+    OK=1
+fi
+pastar "båda rapportvägarna bär IDENTISK regel-mening (delad källa)" "${OK}"
+
+# (e) Regeln ska säga att detta INTE eskaleras — det var felbeteendet.
+case "${TXT_9B_GAMMAL}" in
+    *"inte en eskalering till Marcus"*) OK=0 ;;
+    *) OK=1 ;;
+esac
+pastar "GAMMAL lapp ⇒ rapporten säger uttryckligen att det ej eskaleras" "${OK}"
+
+# (f) Kontraktet i skripthuvudet: additionalContext bär PÅSTÅENDEN, aldrig
+#     imperativ (injektionsförsvaret). Deny-textens versala "ARBETA I DIN EGEN
+#     WORKTREE" hör hemma i permissionDecisionReason — inte här.
+case "${TXT_9B_GAMMAL}" in
+    *"ARBETA I DIN EGEN WORKTREE"*) OK=1 ;;
+    *) OK=0 ;;
+esac
+pastar "rapporten är deklarativ — ingen imperativ deny-formulering" "${OK}"
+
 # ═══ SIDA 10 — fällnings-logg (T120, observerbarhet) ═══
 echo
 echo "SIDA 10 — fällnings-logg"
