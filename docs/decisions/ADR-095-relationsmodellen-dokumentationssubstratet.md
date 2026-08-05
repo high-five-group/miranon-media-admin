@@ -88,8 +88,22 @@ Additivt och glest: bara trådar med faktiska barn får en post. Rör ingen av d
 oavsett om tråden har en kortfil eller inte — vilket löser `T95`-fallet utan
 specialfall.
 
-`check-thread-index.sh` utökas med en **femte invariant** (manifest → giltiga
-tråd-/kort-ID:n, båda riktningar) i samma stil som befintliga inv. 3/4.
+`check-thread-index.sh` utökas med en **ny invariant** (manifest → giltiga
+tråd-/kort-ID:n) i samma stil som befintliga inv. 3/4.
+
+> **Rättelse 2026-08-05 (samma session, vid bygget):** denna rad sade
+> ursprungligen *"femte invariant … båda riktningar"*. **Båda formuleringarna
+> var fel.** (1) Ordinaltalet: `TASK-140` (`besläktad`) landade först och tog
+> slot 5, så `barn`-invarianten blev faktiskt **Inv 6** — bygg-agenten byggde
+> mot koden i stället för mot detta ordinaltal och flaggade avvikelsen.
+> Ordinaltal i en ADR är stale i samma stund en annan post landar före; de hör
+> inte hemma här. (2) *"Båda riktningar"* var tvetydigt på ett **farligt** sätt
+> — det kan läsas som ett bidirektionellt indexfil-par likt inv. 3/4, vilket är
+> **precis den manuella spegling beslut 2 två stycken högre upp förbjuder**.
+> Bygg-agenten läste det korrekt som "båda ID-namnrymderna" (tråd-ID och
+> kort-ID valideras var för sig) och skrev ut sitt skäl. Frasen är struken här
+> hellre än omformulerad: invarianten validerar existens i den enda riktning
+> manifestet deklarerar, och det är hela poängen med en asymmetrisk relation.
 
 `barn` deklareras i EN riktning: tråden pekar på sina kort och barn-trådar.
 "Vem är förälder till X" härleds mekaniskt vid behov och **speglas aldrig för
@@ -177,7 +191,7 @@ adresserbara `L<N>`-ID:n, mekaniskt grindade av
 ## Uppföljning
 
 Ordningen är beslutad, tidpunkten inte: (3) `besläktad`-grinden, sedan (4)
-`barn`-manifestet med sin femte invariant. Båda är egna arbets-kort och
+`barn`-manifestet med sin egen invariant. Båda är egna arbets-kort och
 plockas i Marcus takt.
 
 **Korten (tillagda 2026-08-05, samma session):** `TASK-140` bär beslut 3,
