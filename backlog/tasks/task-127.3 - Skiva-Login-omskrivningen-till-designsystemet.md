@@ -4,7 +4,7 @@ title: 'Skiva: Login-omskrivningen till designsystemet'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:32'
-updated_date: '2026-08-03 15:54'
+updated_date: '2026-08-05 11:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,11 +24,13 @@ Täcker användarberättelse: 6.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Login-vyn använder designsystemets primitiver fullt ut — ingen rå Tailwind kvar
-- [ ] #2 Felmeddelanden är enumeration-neutrala: samma svar oavsett om adressen finns
-- [ ] #3 Befintlig autentiserad e2e och a11y-sviten gröna
-- [ ] #4 Prototyp-facit följt; varje avvikelse öppet bokförd
+- [x] #1 Login-vyn använder designsystemets primitiver fullt ut — ingen rå Tailwind kvar
+- [x] #2 Felmeddelanden är enumeration-neutrala: samma svar oavsett om adressen finns
+- [x] #3 Befintlig autentiserad e2e och a11y-sviten gröna
+- [x] #4 Prototyp-facit följt; varje avvikelse öppet bokförd
 <!-- AC:END -->
+
+
 
 ## Implementation Notes
 

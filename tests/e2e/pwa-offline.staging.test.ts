@@ -45,7 +45,9 @@ test.describe('PWA offline (ADR-047 B3b)', () => {
 
   test('cachat skal renderas vid offline-reload (DoD 5)', async ({ context, page }) => {
     await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Logga in' })).toBeVisible();
+    // Rubriktext TASK-127.3 (S96-facit variant B): "Välkommen tillbaka"
+    // ersätter "Logga in" — se src/routes/login.tsx docblock.
+    await expect(page.getByRole('heading', { name: 'Välkommen tillbaka' })).toBeVisible();
 
     // Robust SW-väntan (ingen sleep): ready löser när SW:n är aktiverad —
     // precachen fylls under install-fasen, så aktiverad ⇒ precachad.
@@ -62,7 +64,7 @@ test.describe('PWA offline (ADR-047 B3b)', () => {
     await context.setOffline(true);
     await page.reload();
     // Cachat skal: login-sidan renderar helt utan nät.
-    await expect(page.getByRole('heading', { name: 'Logga in' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Välkommen tillbaka' })).toBeVisible();
     await context.setOffline(false);
   });
 });

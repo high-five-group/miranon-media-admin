@@ -55,14 +55,16 @@ test.describe('Utloggat tillstånd', () => {
   test('Test 1: / redirectar utloggad användare till /login', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/login/);
-    await expect(page.locator('h1#login-heading')).toHaveText(/Logga in/i);
+    // Rubriktext TASK-127.3 (S96-facit variant B, konvergerad): "Välkommen
+    // tillbaka" ersätter "Logga in" — se login.tsx docblock.
+    await expect(page.locator('h1#login-heading')).toHaveText(/Välkommen tillbaka/i);
   });
 
   test('Test 2: /login renderar form med a11y-attribut', async ({ page }) => {
     await page.goto('/login');
 
     // Rubrik (id-baserad, aria-labelledby refererar till denna).
-    await expect(page.locator('h1#login-heading')).toHaveText(/Logga in/i);
+    await expect(page.locator('h1#login-heading')).toHaveText(/Välkommen tillbaka/i);
 
     // E-postadress-fält med label-input-koppling + autocomplete.
     const emailInput = page.locator('#login-email');
@@ -94,7 +96,7 @@ test.describe('Utloggat tillstånd', () => {
 
     // URL ska vara /login med redirect=%2Fhem (URL-encoded).
     await expect(page).toHaveURL(/\/login\?redirect=%2Fhem/);
-    await expect(page.locator('h1#login-heading')).toHaveText(/Logga in/i);
+    await expect(page.locator('h1#login-heading')).toHaveText(/Välkommen tillbaka/i);
   });
 
   test('Test 5: oinloggad nav till /hem läcker INGA functions/v1/*-anrop före /login-redirect', async ({
