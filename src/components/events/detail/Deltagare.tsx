@@ -31,6 +31,7 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
+import { cn } from '@/lib/cn';
 import { queryKeys } from '@/queries/keys';
 // [PROTOTYPE] [S93] konvergens-pass (Del 3 beslut 1): Betalningars arbetsyta
 // flyttar in i Anmälda deltagare — se ArbetsKo:s "Öppna detaljer" nedan.
@@ -1927,7 +1928,23 @@ function ArbetsKo({
         </div>
       )}
 
-      <div className="flex flex-col gap-2.5 py-3">
+      {/* [PROTOTYPE] [S93] ITERATIONSVÅG 7 (Marcus 2026-08-06): "Även den som
+          ligger längst ner i blocket precis över 'öppna detaljer'" — den
+          ljusgrå avdelaren under denna wrapper.
+
+          MÄTT, inte gissat: kanten sitter INTE på denna div (dess klasslista
+          har ingen `border`). Den är ÄRVD från `DetaljGrupp`s
+          `divide-y divide-border`, som lägger en kant på varje barn utom det
+          sista — och denna wrapper är inte sista barnet, eftersom arbetsytan
+          med "Öppna detaljer" följer under. Exakt samma mönster som rev den
+          "fetare" avdelaren under Avbokade i iterationsvåg 2; `border-b-0`
+          river den ärvda utan att röra något barns egen kant.
+
+          SCOPAD TILL VARIANT A: klassen är villkorad, inte ovillkorlig.
+          Wrappern är GEMENSAM för båda vyerna (bara innehållet är grenat), så
+          en ovillkorlig `border-b-0` hade tagit bort avdelaren i skarpa vyn
+          också — där ingen bett om det. */}
+      <div className={cn('flex flex-col gap-2.5 py-3', protoVariant === 'a' && 'border-b-0')}>
         {/* K41: Formulär-fliken riven — formulärvägen är NORMEN och behöver
             ingen egen flik. Kapseln är familjens ToggleButtonGroup-primitiv.
             [PROTOTYPE] [S93] ITERATIONSVÅG: fliken renderas ENDAST i skarpa

@@ -383,8 +383,14 @@ export function RegisterFilterRad({
               konstant men löser INTE radbrytningen, eftersom 535,8 px inte
               ryms på 502 oavsett om knappen är synlig. (2) Korta texten så
               allt ryms — offrar formuleringen Marcus godkände dagen innan, och
-              håller bara tills texten växer nästa gång. */}
-          <div className="flex flex-col gap-2 border-border-light border-t pt-3">
+              håller bara tills texten växer nästa gång.
+
+              AVDELAREN ÖVER FOTEN RIVEN (Marcus 2026-08-06, iterationsvåg 7):
+              "Det ligger en ljusgrå avdelare som knappt syns under
+              filtrerings-dropdownarna, ta bort den." Det var fotens egen
+              `border-t border-border-light`. `pt-3` står kvar — luften mellan
+              selecterna och foten var aldrig kantens jobb. */}
+          <div className="flex flex-col gap-2 pt-3">
             {/* TALENS OLIKA BASER (Marcus 2026-08-06): "topp-räknarna räknar
                 aktiva (12) medan registret nu visar ALLA (14, inkl. två
                 avbokade). '5 av 12 mottagna' bredvid 'Visar 14 av 14' kan
