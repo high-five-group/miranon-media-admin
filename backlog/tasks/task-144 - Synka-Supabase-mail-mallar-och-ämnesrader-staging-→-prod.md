@@ -4,7 +4,7 @@ title: Synka Supabase mail-mallar och ämnesrader staging → prod
 status: Done
 assignee: []
 created_date: '2026-08-05 15:27'
-updated_date: '2026-08-05 16:46'
+updated_date: '2026-08-06 09:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -76,6 +76,22 @@ AC#3 — LÅSBART, redan låst: [auth.email.template.invite]/[recovery] fanns re
 Lokala grindar: typecheck/biome/build gröna (ingen appkod ändrad). test:api MEDVETET hoppat — api-staging-projektet slår mot samma levande staging-Supabase som TASK-127.9:s parallella e2e-körning använder just nu; en kollision där ger falska signaler i båda riktningarna utan att verifiera något jag ändrat (noll kodändringar). CI:s api-staging-jobb kör bakom den globala staging-tests-mutexen och är rätt plats för det.
 <!-- SECTION:NOTES:END -->
 
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-06 09:38
+---
+Samtliga fyra DoD-poster bockade i efterhand 2026-08-06 (S96) efter verifiering — inte för att blidka en grind. Kortet stängdes som Done i S96:s tidigare pass (commit `7db972c0`, "stäng TASK-144 efter CI-verifiering") men alla fyra lämnades obockade, vilket gjorde `check-backlog-closure.sh` röd i nattkörningen (larm-ärende `#825`). Kraven var uppfyllda; kvitteringen saknades.
+
+Verifikat per post, hämtat ur leverans-PR `#805` (mergad som `a2aa4762`):
+
+- DoD #1 — samtliga tre AC var redan bockade.
+- DoD #3 — status-rollup 11 SUCCESS, 3 SKIPPED, plus Vercel SUCCESS. Noll fällda jobb.
+- DoD #4 — diffen bar två filer: kortet självt och `supabase/config.toml`. Inget orelaterat.
+- DoD #2 — lokala grindar kan inte re-köras i efterhand mot en historisk commit. CI körde samma grindklasser på det pushade trädet och var grön per jobb, vilket är ett starkare bevis än den lokala körningen posten efterfrågar. Det sägs öppet här i stället för att bockas tyst.
+---
+<!-- COMMENTS:END -->
+
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
@@ -94,8 +110,8 @@ VERIFIERINGENS GRÄNS, öppet bokförd: CI kan inte se miljötillstånd. 'Test s
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
