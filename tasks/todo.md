@@ -64,8 +64,9 @@ prototyp-lokalt datum, bas-fälten är Marcus beslut. **PROCESSFYND:**
 `@layer utilities`) — två vågor i rad var verkningslösa, lesson-kandidat ·
 grenen låg 4 commits bakom `main` hela passet (den formella pausen `#839`
 landade under tiden), löst med merge, EN konflikt, ingen bokföring förlorad.
-**`#838` bär 24 commits och står FORTFARANDE DRAFT — måste ur draft och landa
-som FÖRSTA handling vid resume.** **NÄSTA: `/to-prd` × 3 → `/to-issues`**
+**`#838` bär 26 commits, är UR DRAFT och ARMERAD** (`enabledAt 17:02:40Z`) men
+hade INTE landat vid paus-skrivningen — **verifiera först, armera bara om vid
+utsparkning.** **NÄSTA: `/to-prd` × 3 → `/to-issues`**
 (Marcus förvarnade att det blir nästa resumes arbete). **HANDOFF: sessionsdok
 S93 § PAUSLÄGE (facit låst).** Numrering disk-verifierad mot `7c3f4ea7`:
 096/**L480**/T128/task-145/f47. **EJ KÖRT: `test:visual`** — vågorna 19–20
