@@ -386,6 +386,15 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
     bekraftelseSkickad: '2026-07-19T09:00:00.000Z',
     anmalningsavgift: PaymentStatus.EJ_MOTTAGEN,
     slutbetalning: PaymentStatus.EJ_MOTTAGEN,
+    // [PROTOTYPE] [S93] ITERATIONSVÅG 11 — LÅNGT-fallet. Peter Lund (08) visar
+    // hur MYCKET som får plats; denna visar hur en ENSKILD notering bryter
+    // när Lotta skriver som hon faktiskt skriver. Utan ett långt fall i
+    // fixturen ser varje notering ut att rymmas på en rad, och radbrytningen
+    // upptäcks först i prod.
+    noteringAnmalningsavgift:
+      'Hörde av sig 22/7: fick inte OCR-numret att fungera i Swish-appen, ' +
+      'ska prova igen via bankgiro i stället. Bad om kvitto till jobbet ' +
+      'eftersom arbetsgivaren betalar halva avgiften.',
   }),
   bas({
     id: 'proto-hallplats-04',
@@ -454,7 +463,23 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
     slutbetalning: PaymentStatus.EJ_MOTTAGEN,
     inskickad: '2026-07-25T14:00:00.000Z',
   }),
-  // 08: Del 3 fall B — bekräftad, betalar aldrig, redan påmind
+  // 08: Del 3 fall B — bekräftad, betalar aldrig, redan påmind.
+  //
+  // [PROTOTYPE] [S93] ITERATIONSVÅG 11 — DENNA POST ÄR "MAXAD" (Marcus
+  // 2026-08-06: "Du får ju skriva ut några exempel därav några som har allt
+  // som en person kan ha, alla noteringar, alla utskick. Så man kan se hur
+  // det kan se ut sedan.").
+  //
+  // Peter Lund var redan fallet "betalar aldrig, redan påmind" och är därför
+  // den ENDA posten där hela utskicks-kedjan är trovärdig samtidigt:
+  // bekräftelse → påminnelse avgift → påminnelse slutbetalning → eventinfo,
+  // plus notering på BÅDA betalningarna. Fyra utskick + två noteringar är
+  // taket för vad en person kan bära på denna yta.
+  //
+  // Posten BERIKADES i stället för att en ny lades till: fixturen är 14
+  // poster och konsumeras även av registret, gruppdynamiken och
+  // beläggningen — en femtonde post hade flyttat varenda räknare i de
+  // vyerna för en fråga som bara gäller betalningskortets form.
   bas({
     id: 'proto-hallplats-08',
     namn: 'Peter Lund',
@@ -464,6 +489,10 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
     slutbetalning: PaymentStatus.EJ_MOTTAGEN,
     betalningspaminnelseSkickad: '2026-07-10T09:00:00.000Z',
     paminnelseAnmalningsavgiftSkickad: '2026-07-10T09:00:00.000Z',
+    paminnelseSlutbetalningSkickad: '2026-07-24T08:30:00.000Z',
+    deltagarinfoSkickad: '2026-07-28T07:00:00.000Z',
+    noteringAnmalningsavgift: 'Ringde 24/7 — lovade Swisha samma kväll, inget inkommet.',
+    noteringSlutbetalning: 'Vill dela upp i två delbetalningar. Väntar på besked från Roger.',
   }),
   // 09–10: Del 3 fall C — avbokade (exkluderas ur `aktiva`, egen räknerad)
   bas({

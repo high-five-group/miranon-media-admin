@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Check, ChevronDown, Clock, Mail, MailCheck } from 'lucide-react';
+import { Bell, Check, ChevronDown, Clock, Mail, MailCheck } from 'lucide-react';
 // [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName } from '@/components/registrations/registration-display';
 import { StatusBadge } from '@/components/registrations/StatusBadge';
+import { Tidslinje, type TidslinjeHandelse } from '@/components/registrations/Tidslinje';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import {
   BETALNING_LABEL,
@@ -105,6 +106,16 @@ export function deadlineStatus(startdatum: string | null): { text: string; cls: 
   if (diff === 0) return { text: 'Deadline idag', cls: 'font-medium text-warning' };
   return { text: `Deadline passerad · ${datum}`, cls: 'font-medium text-error' };
 }
+
+/** [PROTOTYPE] [S93] ITERATIONSVÅG 11 — utskicksloggens tidsstämpel: dag,
+    månad OCH klockslag. Se `utskickslogg` i BetalningsPersonRad för varför
+    klockslaget bär här men inte i registret. */
+const LOGGTID = new Intl.DateTimeFormat('sv-SE', {
+  day: 'numeric',
+  month: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 /** Rött saknas-delta (K27): minustecknet är bäraren, rött förstärker; endast vid avvikelse. */
 function SaknasDelta({ antal, testid }: { antal: number; testid: string }) {
@@ -251,29 +262,44 @@ function BetalningsLasRad({
 
   return (
     <div
-      className="flex items-center justify-between gap-4 py-3"
+      className="py-3"
       title={
         protoDataMode ? 'Förhandsvisning (proto) — krysset är inaktiverat, inget sparas' : undefined
       }
     >
-      <BetalKryss
-        text={label}
-        namn={namn}
-        vald={vald}
-        lugn
-        disabled={protoDataMode}
-        onChange={(v) => {
-          if (protoDataMode) return;
-          mutationer.status.mutate({
-            registration,
-            betalning,
-            value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
-          });
-        }}
-      />
-      <span className={`min-w-0 text-right text-body ${egenNotering ? '' : 'text-text-muted'}`}>
-        {egenNotering || (vald ? 'Mottagen' : 'Saknas')}
-      </span>
+      <div className="flex items-center justify-between gap-4">
+        <BetalKryss
+          text={label}
+          namn={namn}
+          vald={vald}
+          lugn
+          disabled={protoDataMode}
+          onChange={(v) => {
+            if (protoDataMode) return;
+            mutationer.status.mutate({
+              registration,
+              betalning,
+              value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+            });
+          }}
+        />
+        <span className="shrink-0 text-right text-body text-text-muted">
+          {vald ? 'Mottagen' : 'Saknas'}
+        </span>
+      </div>
+      {/* NOTERINGEN PÅ EGEN RAD, FULL BREDD (Marcus 2026-08-06: "kommer det ju
+          inte få plats några noteringar eller? Vart ska dem skrivas ut?").
+          Föregående våg lade noteringen i höger-slotten, och den var för smal
+          för hur Lotta faktiskt skriver — fixturens Sara Nilsson bär numera ett
+          långt fall just för att bevisa radbrytningen här i stället för i prod.
+
+          `pl-7` = kryssets 20 px + gap-2:s 8 px, så noteringen linjerar exakt
+          under betalningsordet, inte under krysset. Dämpad (`text-small`,
+          `text-text-secondary`): den kvalificerar raden ovanför, den tävlar
+          inte med den. */}
+      {egenNotering && (
+        <p className="mt-1.5 mb-0 pl-7 text-small text-text-secondary">{egenNotering}</p>
+      )}
     </div>
   );
 }
@@ -494,6 +520,52 @@ function BetalningsPersonRad({
       : null,
   ].filter((p): p is { key: string; text: string } => p !== null);
 
+  // [PROTOTYPE] [S93] ITERATIONSVÅG 11 — UTSKICKEN BLIR EN RIKTIG LOGG
+  // (Marcus 2026-08-06: "'skickat' som vi har längst ner på varje kort måste
+  // bli och se ut mer som en utskickslogg").
+  //
+  // Formen är `Tidslinje` (registrations/Tidslinje.tsx) — samma komponent som
+  // bär Händelser på anmälnings-sidan, alltså samma yta Marcus pekade ut som
+  // förebild. Den är dokumenterad som "aktivitetslogg i branschledar-formen
+  // (Shopify/Stripe activity)": genomgående linje, ikon-noder i cirklar,
+  // texten bär och tiden mutad under. Ingen ny form mintas — och Tidslinje är
+  // [BIBLIOTEKS-KANDIDAT] med promovering "vid andra konsumenten", precis som
+  // StatusBadge; detta är den andra konsumenten även för den.
+  //
+  // ORDNINGEN ÄR OFÖRÄNDRAD: bekräftelse → påminnelser → eventinfo (K42,
+  // Lottas utskicksordning). Tidslinje sorterar aldrig själv — callern äger
+  // ordningen — så bytet av form ändrar inte vad Lotta ser i vilken följd.
+  //
+  // Tidsformatet bär KLOCKSLAG här men inte i registret: en logg som säger
+  // "Påminnelse 24 juli" två rader under "Bekräftelse 24 juli" gör dem
+  // oskiljbara, och ordningsföljden blir det enda som skiljer — vilket är
+  // precis vad en logg ska belägga, inte förutsätta.
+  const utskickslogg: TidslinjeHandelse[] = [
+    { nar: registration.bekraftelseSkickad ?? null, text: 'Bekräftelse skickad', ikon: Mail },
+    {
+      nar: registration.paminnelseAnmalningsavgiftSkickad ?? null,
+      text: 'Påminnelse om anmälningsavgift',
+      ikon: Bell,
+    },
+    {
+      nar: registration.paminnelseSlutbetalningSkickad ?? null,
+      text: 'Påminnelse om slutbetalning',
+      ikon: Bell,
+    },
+    { nar: registration.deltagarinfoSkickad ?? null, text: 'Eventinfo skickad', ikon: Mail },
+  ].flatMap((p) =>
+    p.nar != null && !Number.isNaN(Date.parse(p.nar))
+      ? [
+          {
+            id: `${p.text}-${p.nar}`,
+            text: p.text,
+            tid: LOGGTID.format(new Date(p.nar)),
+            ikon: p.ikon,
+          },
+        ]
+      : [],
+  );
+
   // [PROTOTYPE] [S93] ITERATIONSVÅG 10 — PERSONEN FÅR EN KROPP.
   //
   // Marcus 2026-08-06: "varje personblock har väl innehållet som det behöver
@@ -583,30 +655,33 @@ function BetalningsPersonRad({
               protoDataMode={protoDataMode}
             />
           )}
-          {/* UTSKICKEN BLIR EN RAD, INTE EN LÅDA.
-              Punkt 7 (Marcus 2026-08-06) var "utskickshistoriken behöver få en
-              egen ruta, nu hänger de liksom i luften bara" — och lådan löste
-              det. Men den löste svävandet genom att bygga ÄNNU en behållare
-              bredvid personen, och reserverade `md:w-60` för att i majoritets-
-              fallet meddela frånvaro ("Inget skickat ännu" på 2 av 3 i
-              skärmbilden). När personen själv har en kropp behövs ingen låda:
-              raden ligger i kortet, med etikett till vänster som alla andra.
-              Svävandet var aldrig utskickens fel — det var personens. */}
-          <div className="flex items-start justify-between gap-4 py-3">
-            <span className="shrink-0 pt-0.5 text-small text-text-muted">Skickat</span>
-            {utskick.length > 0 ? (
-              <ul className="flex min-w-0 flex-col items-end gap-0.5">
-                {utskick.map((post) => (
-                  <li key={post.key} className="flex items-center gap-1.5 text-right text-body">
-                    <MailCheck aria-hidden="true" size={13} className="shrink-0 text-text-muted" />
-                    {post.text}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <span className="text-right text-body text-text-muted">Inget ännu</span>
-            )}
-          </div>
+          {/* UTSKICKSLOGGEN (våg 11). Vägen hit i två steg, båda värda att
+              minnas: punkt 7 sa att historiken "hängde i luften" och fick en
+              `md:w-60`-LÅDA bredvid personen; våg 10 rev lådan och gjorde den
+              till en etikett-värde-rad i kortet. Raden löste svävandet men
+              gjorde historiken till ett VÄRDE — och en logg är ingen
+              värde-slot: fyra utskick högerställda i en `dd` blir en klump
+              utan tidsaxel, vilket är exakt vad Marcus såg när han sa att den
+              "måste bli och se ut mer som en utskickslogg".
+
+              Rubriken är en `<p>`, INTE en `<h3>` — samma skäl som tidigare i
+              filen: fjorton syskon-rubriker under en enda `<h2>` vore en
+              semantisk lögn. `Tidslinje` renderar en `<ol>`, så loggen är
+              navigerbar som den ordnade lista den faktiskt är. */}
+          {utskickslogg.length > 0 ? (
+            <div className="flex flex-col pt-3">
+              <p className="my-0 font-medium text-caption text-text-secondary">Utskick</p>
+              <Tidslinje handelser={utskickslogg} />
+            </div>
+          ) : (
+            // Tom logg behåller etikett-värde-formen: en tidslinje utan noder
+            // vore en tom axel, och frånvaron måste sägas rakt ut (annars
+            // läses tomrummet som ett renderingsfel).
+            <div className="flex items-center justify-between gap-4 py-3">
+              <span className="text-small text-text-muted">Utskick</span>
+              <span className="text-right text-body text-text-muted">Inget skickat ännu</span>
+            </div>
+          )}
         </div>
       </li>
     );
