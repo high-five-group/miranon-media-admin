@@ -30,7 +30,7 @@
  * KASTBAR: rivs med `git rm` på denna fil + `hallplats-steg-prototyp.ts` +
  * återställ prototyp-grenarna i Deltagare.tsx/Betalningar.tsx/EventDetail.tsx.
  */
-import { Filter, Printer } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import { useState } from 'react';
 import { Disclosure, DisclosurePanel } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
@@ -305,15 +305,23 @@ export function RegisterFilterRad({
       onExpandedChange={setOppen}
       className="flex flex-col print:hidden"
     >
-      {/* PUNKT 4 (Marcus 2026-08-06): "Filtreringsknappen behöver flyttas så
-          den sitter på höger sidan till höger om markeraknappen."
+      {/* PLACERINGENS TREDJE VÄNDA (Marcus 2026-08-06, iterationsvåg 4):
+          "båda knapparna 'Markera' och 'Filtrera' bör flyttas till vänster
+          sida istället."
 
-          Raden var `justify-between` med tratten längst till vänster och
-          Markera längst till höger — eventlistans form, där tratten sitter
-          bredvid en periodväxlare som fyller vänsterkanten. Här finns ingen
-          sådan granne, så tratten stod ensam i tomrummet. Nu är båda
-          högerställda med Markera FÖRE tratten, i den ordning Marcus angav. */}
-      <div className="flex items-center justify-end gap-2">
+          Historiken, för den som undrar varför raden bytt sida två gånger:
+          först `justify-between` (tratten vänster, Markera höger — eventlistans
+          form, där tratten har en periodväxlare som granne på vänsterkanten;
+          här fanns ingen sådan granne, så tratten stod ensam i tomrummet) →
+          sedan båda HÖGERSTÄLLDA på Marcus punkt 4 i iterationsvåg 2 → nu båda
+          VÄNSTERSTÄLLDA. Det som ändrades däremellan är att tratten fick text
+          i stället för ikon (se nedan): två textknappar har en helt annan
+          tyngd på raden än en textknapp plus en liten ikonruta, och
+          vänsterkanten är där ögat börjar läsa.
+
+          Inbördes ordning OFÖRÄNDRAD — Markera före Filtrera, den ordning
+          Marcus angav i iterationsvåg 2 och upprepade nu. */}
+      <div className="flex items-center justify-start gap-2">
         {markeraKnapp}
         {/* ITERATIONSVÅG 3 (Marcus 2026-08-06, punkt 2): "byta ut den runda
             filtreringsknappen ... till en rektangulär knapp precis som
@@ -343,7 +351,22 @@ export function RegisterFilterRad({
             `components.css` som ska ändras, inte denna knapp lokalt.
 
             AKTIV-LÄGET behåller sin distinkta signal, men i systemets form:
-            solid primär i stället för handrullad `bg-text`. */}
+            solid primär i stället för handrullad `bg-text`.
+
+            IKONEN RIVEN, TEXT I STÄLLET (Marcus 2026-08-06, iterationsvåg 4):
+            "Filtrera-knappens ikon bör bytas ut mot texten 'Filtrera'."
+            Ordet ERSÄTTER tratten, står inte bredvid den — knappen är nu
+            teckenmässigt samma sorts objekt som Markera intill, vilket är hela
+            poängen med att de flyttades ihop till vänsterkanten.
+
+            BADGEN STÅR KVAR och är fortsatt `aria-hidden` dekor: den bär
+            antalet aktiva filterval, vilket texten "Filtrera" inte gör.
+            sr-only-namnet bär samma antal för hjälpmedel — men säger inte
+            längre "Visa/Dölj filter", eftersom den synliga texten nu bär
+            knappens namn och `Disclosure` bär öppet/stängt via
+            `aria-expanded`. Att låta sr-only upprepa ett namn som redan står
+            skrivet vore precis den överflödiga a11y-struktur som rev två CI-
+            grindar i iterationsvåg 2. */}
         <Button
           slot="trigger"
           intent="primary"
@@ -351,19 +374,18 @@ export function RegisterFilterRad({
           size="sm"
           className="relative shrink-0"
         >
-          <Filter aria-hidden="true" size={18} className="shrink-0" />
+          Filtrera
           {aktiva > 0 ? (
-            <span
-              aria-hidden="true"
-              className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-medium text-[10px] text-text-inverse"
-            >
-              {aktiva}
-            </span>
+            <>
+              <span
+                aria-hidden="true"
+                className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-medium text-[10px] text-text-inverse"
+              >
+                {aktiva}
+              </span>
+              <span className="sr-only">{`, ${aktiva} ${aktiva === 1 ? 'aktivt' : 'aktiva'} filterval`}</span>
+            </>
           ) : null}
-          <span className="sr-only">
-            {oppen ? 'Dölj filter' : 'Visa filter'}
-            {aktiva > 0 ? `, ${aktiva} ${aktiva === 1 ? 'aktivt' : 'aktiva'} filterval` : ''}
-          </span>
         </Button>
       </div>
       <DisclosurePanel data-testid="register-filter-panel">
