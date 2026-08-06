@@ -583,11 +583,32 @@ function MarkeringsBatchBar({
   onMarkeraAlla,
   onRensa,
   valdaNamn,
+  markeraKnapp,
+  aktivt,
 }: {
   antal: number;
   totalt: number;
   allaValda: boolean;
   pending: boolean;
+  /** [PROTOTYPE] [S93] ITERATIONSVÅG 5 (Marcus 2026-08-06): "Vi flyttar ner
+      Markera-knappen till samma rad som 'åtgärder' och 'markera alla' och
+      sätter den längst till vänster. När man trycker 'Markera' så kommer
+      knapparna 'åtgärder' och 'markera alla' fram till höger på samma rad."
+
+      Satt ⇒ baren renderas ÄVEN när markeringsläget är AV, med enbart denna
+      knapp. Utelämnad ⇒ skarpa vyns oförändrade form (baren monteras först när
+      läget slås på, av anroparen).
+
+      VARFÖR DET ÄR BÄTTRE ÄN ATT BARA FLYTTA EN KNAPP: förut dök hela baren
+      upp som en NY RAD när läget slogs på, och allt under den hoppade nedåt.
+      Nu står raden still och knapparna växer ut åt höger — en vertikal
+      förskjutning byttes mot en horisontell utvidgning. */
+  markeraKnapp?: React.ReactNode;
+  /** Explicit `false` ⇒ markeringsläget är AV: Åtgärder/Markera alla/Rensa och
+      live-räknaren renderas inte. Utelämnad ⇒ dagens beteende (allt visas),
+      vilket är vad skarpa vyn får eftersom den monterar baren först i aktivt
+      läge. */
+  aktivt?: boolean;
   /** Skarpa vyn: bekräfta-mutationen bakom kontrollfrågan. Utelämnad ⇒
       variant-A-läget (se `valdaNamn`) — exakt en av de två är alltid satt. */
   onBekrafta?: () => Promise<void>;
@@ -600,11 +621,13 @@ function MarkeringsBatchBar({
   const [visaPlatshallare, setVisaPlatshallare] = useState(false);
   const platshallareId = useId();
   const atgarderLage = valdaNamn != null;
+  const visaHandlingar = aktivt !== false;
 
   return (
     <>
       <div data-testid="markering-batchbar" className="flex flex-wrap items-center gap-2 pb-2.5">
-        {onBekrafta ? (
+        {markeraKnapp}
+        {visaHandlingar && onBekrafta ? (
           <DialogTrigger>
             <Button intent="success" size="sm" isDisabled={antal === 0 || pending}>
               <Mail aria-hidden="true" size={14} className="shrink-0" />
@@ -654,7 +677,7 @@ function MarkeringsBatchBar({
               </Dialog>
             </Modal>
           </DialogTrigger>
-        ) : (
+        ) : visaHandlingar ? (
           <Button
             intent="primary"
             size="sm"
@@ -665,31 +688,40 @@ function MarkeringsBatchBar({
           >
             Åtgärder
           </Button>
+        ) : null}
+        {visaHandlingar && (
+          <Button
+            intent="secondary"
+            size="sm"
+            isDisabled={allaValda || pending}
+            onPress={onMarkeraAlla}
+          >
+            Markera alla
+          </Button>
         )}
-        <Button
-          intent="secondary"
-          size="sm"
-          isDisabled={allaValda || pending}
-          onPress={onMarkeraAlla}
-        >
-          Markera alla
-        </Button>
-        {antal > 0 && (
+        {visaHandlingar && antal > 0 && (
           <Button intent="ghost" size="sm" isDisabled={pending} onPress={onRensa}>
             Rensa
           </Button>
         )}
         {/* Live-räknaren: seende ser antalet i knappen, skärmläsaren får det här.
-            `polite` — urvalet är löpande arbete, aldrig ett avbrott värt assertive. */}
-        <span
-          data-testid="markering-live"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          className="sr-only"
-        >
-          {`${antal} av ${totalt} markerade`}
-        </span>
+            `polite` — urvalet är löpande arbete, aldrig ett avbrott värt assertive.
+
+            Villkorad på `visaHandlingar` sedan iterationsvåg 5: i AV-läget finns
+            inget urval att räkna, och en `role="status"` som står och säger
+            "0 av 9 markerade" när ingen markerar är brus i skärmläsaren — samma
+            klass av oombedd a11y-struktur som rev två CI-grindar i våg 2. */}
+        {visaHandlingar && (
+          <span
+            data-testid="markering-live"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className="sr-only"
+          >
+            {`${antal} av ${totalt} markerade`}
+          </span>
+        )}
       </div>
       {/* [PROTOTYPE] [S93] konvergens-pass, "Åtgärder"-platshållaren (Del 3
           beslut 5) — litet kort, INTE en riktig sida. Renderas som EGEN
@@ -1935,11 +1967,14 @@ function ArbetsKo({
             <p className="py-2 text-small text-text-secondary">Inga anmälningar ännu.</p>
           ) : (
             <>
-              {/* [PROTOTYPE] [S93] ITERATIONSVÅG — filterraden ERSÄTTER tre lösa
-                  kontroller: fliken (ovan, nu skarp-vy-only), den högerställda
-                  "Rensa filtret" (flyttad in i panelfoten) och den högerställda
-                  Markera-knappen (flyttad hit, till radens högerkant). Marcus:
-                  "de kan inte sitta där de gör, ser fult ut." */}
+              {/* [PROTOTYPE] [S93] ITERATIONSVÅG 5 (Marcus 2026-08-06):
+                  filtervyn står nu ALLTID framme — Filtrera-knappen och hela
+                  `Disclosure` är rivna ur `RegisterFilterRad`, och Markera
+                  flyttade ner till batch-barens vänsterkant. Marcus: "Vi tar
+                  bort Filtrera-knappen helt. Vi låter 'filtreringsvyn' vara
+                  framme som default." Motiveringen bor i komponentens
+                  docblock; kort: raden som trycktes ihop fanns bara för att
+                  det gick att fälla ut något. */}
               <RegisterFilterRad
                 filter={registerFilter}
                 onFilterChange={(f) => {
@@ -1954,14 +1989,6 @@ function ArbetsKo({
                 // filtrerar bort dem. Skillnaden är precis det tal foten
                 // förklarar — se RegisterFilterRad § Talens olika baser.
                 avbokadeAntal={protoAvbokade.length}
-                markeraKnapp={
-                  <MarkeraKnapp
-                    aktivt={markering.aktivt}
-                    onOppna={oppnaMarkering}
-                    onStang={markering.stang}
-                    buttonRef={markeraKnappRef}
-                  />
-                }
               />
               {registerFilter.steg === 'bor-over' ? (
                 <BorOverKrysslage
@@ -1971,19 +1998,30 @@ function ArbetsKo({
                 />
               ) : (
                 <>
-                  {markering.aktivt && (
-                    <MarkeringsBatchBar
-                      antal={markering.antal}
-                      totalt={registerListaA.length}
-                      allaValda={markering.allaValda}
-                      pending={false}
-                      onMarkeraAlla={markering.markeraAlla}
-                      onRensa={markering.rensa}
-                      valdaNamn={registerListaA
-                        .filter((r) => markering.valda.has(r.id))
-                        .map(displayName)}
-                    />
-                  )}
+                  {/* Baren renderas ALLTID i variant-läget (till skillnad från
+                      skarpa vyn nedan, som monterar den först vid aktivt läge):
+                      Markera-knappen bor i dess vänsterkant och måste stå kvar
+                      även när markeringsläget är av. `aktivt` styr resten. */}
+                  <MarkeringsBatchBar
+                    antal={markering.antal}
+                    totalt={registerListaA.length}
+                    allaValda={markering.allaValda}
+                    pending={false}
+                    onMarkeraAlla={markering.markeraAlla}
+                    onRensa={markering.rensa}
+                    aktivt={markering.aktivt}
+                    markeraKnapp={
+                      <MarkeraKnapp
+                        aktivt={markering.aktivt}
+                        onOppna={oppnaMarkering}
+                        onStang={markering.stang}
+                        buttonRef={markeraKnappRef}
+                      />
+                    }
+                    valdaNamn={registerListaA
+                      .filter((r) => markering.valda.has(r.id))
+                      .map(displayName)}
+                  />
                   {registerListaA.length > 0 ? (
                     <DeltagarListan
                       rader={registerListaA}

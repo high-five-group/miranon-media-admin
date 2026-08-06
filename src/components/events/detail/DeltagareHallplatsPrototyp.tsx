@@ -31,8 +31,6 @@
  * återställ prototyp-grenarna i Deltagare.tsx/Betalningar.tsx/EventDetail.tsx.
  */
 import { Printer } from 'lucide-react';
-import { useState } from 'react';
-import { Disclosure, DisclosurePanel } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import {
@@ -270,10 +268,26 @@ export type HallplatsCounts = {
  * Migreringen av eventlistan + appens övriga handrullade knappar är Marcus
  * punkt 4, deferrad till tråd-registret.
  *
- * TRE LÖSA KONTROLLER BLIR EN RAD: fliken (Alla/Manuella/Medföljande), den
- * högerställda "Rensa filtret" och den högerställda "Markera" satt var för sig
- * på egna rader. Nu står tratten till vänster och Markera till höger på SAMMA
- * rad; Rensa flyttar in i panelfoten där eventlistan har den.
+ * PANELEN ÄR INTE LÄNGRE FÄLLBAR (Marcus 2026-08-06, iterationsvåg 5) —
+ * `Disclosure`/`DisclosurePanel` och hela Filtrera-knappen är RIVNA, och
+ * filtervyn står alltid framme. Marcus: *"Vi tar bort Filtrera-knappen helt. Vi
+ * låter 'filtreringsvyn' vara framme som default."*
+ *
+ * SKÄLET ÄR ROTORSAKS-, INTE SYMPTOMFIX. Knappraden ovanför panelen trycktes
+ * ihop och radbröt — texten på två rader, och båda fot-knapparna bröt INUTI sig
+ * själva ("Rensa / filter", "Skriv / ut"). Den raden existerade bara för att
+ * det fanns något att fälla ut. Utan utfällning finns ingen rad att trycka ihop,
+ * och komponenten tappar ett helt TILLSTÅND (öppen/stängd) i samma veva.
+ *
+ * PRISET ÄR LÅGT och betalades medvetet: panelen är två `Select` plus en fot, så
+ * permanent synlighet kostar ca en radhöjd vertikalt. Aktiv-filter-BADGEN som
+ * satt på Filtrera-knappen försvann med den — men den var bara en proxy för
+ * "det finns filter du inte ser". Med panelen framme läses selecternas värden
+ * direkt, vilket är en starkare signal än en siffra i ett hörn.
+ *
+ * MARKERA-KNAPPEN BOR INTE HÄR LÄNGRE. Den flyttade ner till
+ * `MarkeringsBatchBar`s vänsterkant (`Deltagare.tsx`) — se den komponentens
+ * docblock för varför det också gör markeringslägets på/av-växling stillare.
  *
  * UTSKRIFTEN HÄR ÄR REGISTRETS — den synliga, filtrerade listan (Del 3 beslut
  * 3: "utskriften = hela registret med märken"). Sidans utskrift är en ANNAN
@@ -285,7 +299,6 @@ export function RegisterFilterRad({
   visadeAntal,
   totaltAntal,
   avbokadeAntal,
-  markeraKnapp,
 }: {
   filter: RegisterFilter;
   onFilterChange: (f: RegisterFilter) => void;
@@ -293,103 +306,12 @@ export function RegisterFilterRad({
   totaltAntal: number;
   /** TALENS OLIKA BASER (Marcus 2026-08-06) — se fotens docblock nedan. */
   avbokadeAntal: number;
-  /** Markera-knappen monteras av `ArbetsKo` (den äger markerings-läget) men
-      RENDERAS här, på filterradens högerkant — Marcus placering. */
-  markeraKnapp: React.ReactNode;
 }) {
-  const [oppen, setOppen] = useState(false);
   const aktiva = harAktivtFilter(filter);
   return (
-    <Disclosure
-      isExpanded={oppen}
-      onExpandedChange={setOppen}
-      className="flex flex-col print:hidden"
-    >
-      {/* PLACERINGENS TREDJE VÄNDA (Marcus 2026-08-06, iterationsvåg 4):
-          "båda knapparna 'Markera' och 'Filtrera' bör flyttas till vänster
-          sida istället."
-
-          Historiken, för den som undrar varför raden bytt sida två gånger:
-          först `justify-between` (tratten vänster, Markera höger — eventlistans
-          form, där tratten har en periodväxlare som granne på vänsterkanten;
-          här fanns ingen sådan granne, så tratten stod ensam i tomrummet) →
-          sedan båda HÖGERSTÄLLDA på Marcus punkt 4 i iterationsvåg 2 → nu båda
-          VÄNSTERSTÄLLDA. Det som ändrades däremellan är att tratten fick text
-          i stället för ikon (se nedan): två textknappar har en helt annan
-          tyngd på raden än en textknapp plus en liten ikonruta, och
-          vänsterkanten är där ögat börjar läsa.
-
-          Inbördes ordning OFÖRÄNDRAD — Markera före Filtrera, den ordning
-          Marcus angav i iterationsvåg 2 och upprepade nu. */}
-      <div className="flex items-center justify-start gap-2">
-        {markeraKnapp}
-        {/* ITERATIONSVÅG 3 (Marcus 2026-08-06, punkt 2): "byta ut den runda
-            filtreringsknappen ... till en rektangulär knapp precis som
-            Markera-knappen bredvid ... bakgrundsfärgen ska vara den som är vid
-            hover just nu ... kolla vad vi har för befintliga lösningar."
-
-            DEN BEFINTLIGA LÖSNINGEN SATT PÅ SAMMA RAD: `Button`-primitivens
-            `emphasis="subtle"` — det är formen Markera-knappens tvillingform
-            (`Avbryt`, Deltagare.tsx) redan bär i markeringsläge. Att gå via
-            primitiven i stället för att handplocka `bg-bg-emphasized` ger tre
-            saker på köpet som en handrullad knapp aldrig får: samma `rounded`
-            (4 px) som Markera — punkt 1 · samma `min-h-8` (32 px) som sidans
-            övriga knappar — punkt 4 · `contrast-more`-kanten (11-golvet).
-
-            RESULTATET LIGGER NÄRA ORDALYDELSEN — MÄTT, inte antaget. Marcus
-            bad om nuvarande HOVER-färg (`bg-bg-emphasized` = `rgb(237,238,233)`).
-            `subtle` är primärfärgen vid 10 %, och eftersom detta systems
-            primär är nästan svart (`rgb(40,41,40)`, inte en kulör) blir ytan
-            NEUTRALT GRÅ — inte tonad i någon färg. På panelens bakgrund landar
-            den kring `rgb(224,225,222)`: samma familj som referensen, en aning
-            mörkare, alltså om något tydligare än vad som begärdes.
-
-            HOVER byttes ut som Marcus bad om: 10 % → 16 % (renderat ca
-            `rgb(212,213,210)`). Skillnaden är avsiktligt återhållen — det är
-            primitivens egen `subtle`-trappa, delad med varje annan knapp i
-            appen. Vill Marcus ha ett kraftigare hopp är det tokens i
-            `components.css` som ska ändras, inte denna knapp lokalt.
-
-            AKTIV-LÄGET behåller sin distinkta signal, men i systemets form:
-            solid primär i stället för handrullad `bg-text`.
-
-            IKONEN RIVEN, TEXT I STÄLLET (Marcus 2026-08-06, iterationsvåg 4):
-            "Filtrera-knappens ikon bör bytas ut mot texten 'Filtrera'."
-            Ordet ERSÄTTER tratten, står inte bredvid den — knappen är nu
-            teckenmässigt samma sorts objekt som Markera intill, vilket är hela
-            poängen med att de flyttades ihop till vänsterkanten.
-
-            BADGEN STÅR KVAR och är fortsatt `aria-hidden` dekor: den bär
-            antalet aktiva filterval, vilket texten "Filtrera" inte gör.
-            sr-only-namnet bär samma antal för hjälpmedel — men säger inte
-            längre "Visa/Dölj filter", eftersom den synliga texten nu bär
-            knappens namn och `Disclosure` bär öppet/stängt via
-            `aria-expanded`. Att låta sr-only upprepa ett namn som redan står
-            skrivet vore precis den överflödiga a11y-struktur som rev två CI-
-            grindar i iterationsvåg 2. */}
-        <Button
-          slot="trigger"
-          intent="primary"
-          emphasis={oppen || aktiva > 0 ? 'solid' : 'subtle'}
-          size="sm"
-          className="relative shrink-0"
-        >
-          Filtrera
-          {aktiva > 0 ? (
-            <>
-              <span
-                aria-hidden="true"
-                className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-medium text-[10px] text-text-inverse"
-              >
-                {aktiva}
-              </span>
-              <span className="sr-only">{`, ${aktiva} ${aktiva === 1 ? 'aktivt' : 'aktiva'} filterval`}</span>
-            </>
-          ) : null}
-        </Button>
-      </div>
-      <DisclosurePanel data-testid="register-filter-panel">
-        <div className="mt-3 flex flex-col gap-4 rounded-2xl bg-bg-muted p-4">
+    <div className="flex flex-col print:hidden">
+      <div data-testid="register-filter-panel">
+        <div className="flex flex-col gap-4 rounded-2xl bg-bg-muted p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <Select
               data-testid="filter-steg"
@@ -431,7 +353,27 @@ export function RegisterFilterRad({
               ))}
             </Select>
           </div>
-          <div className="flex items-center justify-between gap-3 border-border-light border-t pt-3">
+          {/* FOTENS RADBRYTNING (Marcus 2026-08-06, skärmavbild kl. 12.27):
+              "titta ... och se hur hela raden trycks ihop och radbryts när
+              rensa-knappen kommer fram."
+
+              MÄTT I BILDEN: texten bröt till två rader OCH båda knapparna bröt
+              INUTI sig själva — "Rensa / filter" och "Skriv / ut". Det senare
+              är aldrig avsett; ett flex-barn utan `whitespace-nowrap` bryter i
+              sin egen text långt innan raden wrappar.
+
+              TRE ORSAKER SAMVERKADE: (1) "Rensa filter" renderas bara när
+              filter är aktiva, så raden går från två till TRE element utan
+              förvarning — precis det Marcus såg; (2) fotens text förlängdes
+              samma dag av avbokade-tillägget ovan; (3) `flex` utan `wrap` gav
+              barnen inget annat sätt att krympa än att bryta internt.
+
+              FIXEN: `flex-wrap` på raden så texten och knappgruppen kan lägga
+              sig på var sin rad när bredden inte räcker, plus `whitespace-nowrap`
+              på knapparna så de aldrig bryts inuti sig själva. Texten får
+              `min-w-0` + `basis` så den krymper FÖRST — den tål radbrytning,
+              det gör inte en knappetikett. */}
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-border-light border-t pt-3">
             {/* TALENS OLIKA BASER (Marcus 2026-08-06): "topp-räknarna räknar
                 aktiva (12) medan registret nu visar ALLA (14, inkl. två
                 avbokade). '5 av 12 mottagna' bredvid 'Visar 14 av 14' kan
@@ -457,7 +399,7 @@ export function RegisterFilterRad({
                 Tillägget hänger på TOTALEN, inte på `visadeAntal`: 14 = 12 + 2
                 oavsett vad filtret just nu visar. Noll avbokade ⇒ inget
                 tillägg — då finns ingen krock att förklara. */}
-            <span className="text-small text-text-secondary">
+            <span className="min-w-0 flex-1 basis-48 text-small text-text-secondary">
               {`Visar ${visadeAntal} av ${totaltAntal} i registret`}
               {avbokadeAntal > 0
                 ? ` — ${avbokadeAntal} av dem ${avbokadeAntal === 1 ? 'är avbokad' : 'är avbokade'}`
@@ -479,25 +421,31 @@ export function RegisterFilterRad({
                 inkonsekvensen punkt 1 vill bort från vore flyttad en meter i
                 stället för borttagen. Nu bär båda samma primitiv, samma
                 `rounded`, samma 32 px. */}
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               {aktiva > 0 ? (
                 <Button
                   intent="ghost"
                   size="sm"
+                  className="whitespace-nowrap"
                   onPress={() => onFilterChange(TOMT_REGISTER_FILTER)}
                 >
                   Rensa filter
                 </Button>
               ) : null}
-              <Button intent="ghost" size="sm" onPress={() => window.print()}>
+              <Button
+                intent="ghost"
+                size="sm"
+                className="whitespace-nowrap"
+                onPress={() => window.print()}
+              >
                 <Printer aria-hidden="true" size={18} className="shrink-0" />
                 Skriv ut
               </Button>
             </div>
           </div>
         </div>
-      </DisclosurePanel>
-    </Disclosure>
+      </div>
+    </div>
   );
 }
 
