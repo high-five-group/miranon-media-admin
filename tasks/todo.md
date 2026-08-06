@@ -15,6 +15,29 @@
 
 ## Aktuellt fokus
 
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-06, `lifecycle: active`)** — **APPSPÅRET
+ÅTER I GÅNG** efter pausen med iterationsvåg 2 armerad. Resumen kördes i
+**samma worktree** (`s93-resume-2`, ny gren `docs/s93-resume-3`) — huvudkatalogen
+bär fortfarande S96:s ägarlapp med **bevisligen levande process** (pid 93545),
+och HEAD där bytte gren mitt under min läsning; worktree-lappets egen pid 57625
+är död, så trädet var S93:s eget att återta. **PAUSENS PUNKT 1 VERIFIERAD: #830
+LANDADE** — `MERGED` 2026-08-06T09:12:37Z, merge-commit `c4da4d12`; ingen
+utsparkning, ingen omarmering behövd. **Landningsläget rent:** `main` på
+`2406e573` med CI/Post-merge/Push gröna, noll röda, enda öppna PR är den
+parkerade Dependabot-posten `#635`. **Numreringen höll denna gång** —
+disk-verifierad 2026-08-06 identisk med handoffens paus-tida värden:
+`096`/`L470`/`T125`/`task-145`/`f47`, plus sex okonsoliderade lessons-fragment.
+Dev-servern på 5173 är NERE (dog med förra sessionen, som handoffen förutsåg).
+**NÄSTA: Marcus granskning av iterationsvåg 2** (sju punkter, byggda och
+egen-granskade — hans ögon har inte varit på dem) → ev. våg 3 → facit-låsning →
+`/to-prd` × 3. **ÖPPET, obesvarat av Marcus:** heartbeat-fyndet (delad
+state-fil + icke-atomär skrivning) och talens olika baser (`5 av 12 mottagna`
+bredvid `Visar 14 av 14`). **HANDOFF: sessionsdok S93 § Paushistorik
+(2026-08-06).**
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 93 ⏸️ PAUSAD (2026-08-06, `lifecycle: paused`)** — **TVÅ
 ITERATIONSVÅGOR PÅ KONVERGENS-PROTOTYPEN.** Resumen kördes i egen worktree
 (S96 ägde huvudkatalogen, ADR-090 beslut 2); ett tidigare resume-försök samma
