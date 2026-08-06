@@ -418,8 +418,12 @@ export function RegisterFilterRad({
                 tillägg — då finns ingen krock att förklara. */}
             <span className="text-small text-text-secondary">
               {`Visar ${visadeAntal} av ${totaltAntal} i registret`}
+              {/* KORT BINDESTRECK, inte tankstreck (Marcus 2026-08-06,
+                  iterationsvåg 9): "Jag gillar mer ett vanligt kort
+                  bindestreck (-)". Gäller denna UI-sträng; docblock och
+                  commit-prosa runtomkring följer repots vanliga typografi. */}
               {avbokadeAntal > 0
-                ? ` — ${avbokadeAntal} av dem ${avbokadeAntal === 1 ? 'är avbokad' : 'är avbokade'}`
+                ? ` - ${avbokadeAntal} av dem ${avbokadeAntal === 1 ? 'är avbokad' : 'är avbokade'}`
                 : ''}
             </span>
             {/* ITERATIONSVÅG 3 (Marcus 2026-08-06, punkt 3): "Skriv ut-knappen
