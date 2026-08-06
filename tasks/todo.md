@@ -15,6 +15,31 @@
 
 ## Aktuellt fokus
 
+**Session 96 ⏸️ PAUSAD (2026-08-06, sjunde pausen, `lifecycle: paused`)** —
+**`TASK-127.9` STÄNGD: HELA INBJUDNINGSKEDJAN BEVISAD ÄNDE TILL ÄNDE.** 14 PR:er
+(`#815`–`#836`). `test-invite-completion` byggd som staging-only EF med
+adress-allowlist (`+e2e-`, kollad före varje Admin-API-anrop — utan den vore
+`generateLink` en account-takeover-väg mellan admins), plus rundturs-e2e som går
+`invite-user` → länk → `/valkommen` → `/login` → `/hem` genom riktig
+UI-interaktion. **Bevisat i CI: 177 tester, 177 passerade.**
+**FAS 7-BLOCKERINGEN VAR INBILLAD** — Marcus fällde påståendet, och mätningen gav
+honom rätt: Vercel-integrationen fungerade redan, och hela bristen var **en
+saknad post i STAGINGS `uri_allow_list`**. Riktad PATCH, 1 fält av 242, prod
+verifierat orörd. Fyra inaktuella statusytor rättade. **FYRA RÖDA KÖRNINGAR MED
+FYRA FELUTPEKADE SKYLDIGA:** rotorsaken var S93:s `6f1d8c1a` (sr-only-rubriker
+som bröt både axe `heading-order` och Playwrights strict mode); larm-heuristiken
+pekade ut oskyldiga PR:er med färdiga revert-kommandon, och `#828` utpekade
+rundturen vars **eget test var grönt i samma körning som fällde den**. S93 tog
+fixen (`#830`) med en bättre lösning än vår rekommendation. **SKÖRD `L470`–`L479`**
+— sex fragment konsoliderade, **fragment-kön är TOM**, två kandidater förkastade
+mot befintliga poster. `T124` född · `TASK-143`/`144`-driften rättad (234 kort, 0
+inkonsistenta) · fyra larm-ärenden stängda. **NÄSTA: `TASK-116` AC #3 (en
+dispatch, kortast väg till stängt kort) → `TASK-129`/`TASK-138` → `T124` när
+Marcus valt form → QA-korten `126.3`/`126.5`/`127.10`.**
+**HANDOFF: sessionsdok S96 § PAUSLÄGE (sjunde pausen).** Numrering disk-verifierad
+2026-08-06 mot `eef720ad`: 096/**L480**/T125/task-145/f47.
+*(S93 kör parallellt och är `active` — dess kadensrad nedan, oförändrad.)*
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-06, `lifecycle: active`)** — **APPSPÅRET
 ÅTER I GÅNG** efter pausen med iterationsvåg 2 armerad. Resumen kördes i
 **samma worktree** (`s93-resume-2`, ny gren `docs/s93-resume-3`) — huvudkatalogen
