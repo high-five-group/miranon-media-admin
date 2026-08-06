@@ -456,12 +456,25 @@ function BetalningsPersonRad({
           skillnaden hela ytans läsbarhet.
 
           `md:` — på smala skärmar faller höger zon under vänster, oförändrad
-          ordning. Zonrubrikerna är sr-only: de bär strukturen för hjälpmedel,
-          men på skärmen skulle två etiketter per person bli brus (formen är
-          självförklarande visuellt). */}
+          ordning. Zonerna bär INGA rubrikelement — se kommentarerna nedan för
+          vad som stod här och varför två CI-grindar rev det. */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-6">
+        {/* CI-FÅNGST (körning 31084229170, larm #821/#824/#825 — rapporterad
+            via S96): den sr-only-rubrik som stod här RÖK TVÅ GRINDAR samtidigt
+            och är därför borttagen, inte nedgraderad.
+
+            (a) `axe` heading-order: den var en `<h4>` direkt under
+                `DetaljGrupp`s `<h2>` — nivåhopp, "Heading levels should only
+                increase by one".
+            (b) Playwrights strict mode: dess text bar PERSONENS NAMN, så
+                `getByText('Eva Lindqvist')` inom Betalningar-sektionen matchade
+                tre element i stället för ett och fällde mark-paid-testet.
+
+            Rubriken tillförde inget som inte redan fanns: varje betalningslinje
+            bär sin egen etikett via kryssets `aria-label` ("Anmälningsavgift
+            för <namn>"), så zonen var aldrig onavigerbar utan den. Den var min
+            gardering, och den kostade två grindar. */}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <h4 className="sr-only">{`Betalningar för ${namn}`}</h4>
           <BetalningsLinje
             registration={registration}
             betalning="avgift"
@@ -500,7 +513,13 @@ function BetalningsPersonRad({
             den en synlig rubrik för att rutan ska betyda något — annars är det
             bara en grå låda med datum i. */}
         <div className="flex shrink-0 flex-col gap-1.5 rounded-xl bg-bg-muted p-3 md:w-60">
-          <h4 className="font-medium text-caption text-text-secondary">Skickat</h4>
+          {/* Samma CI-fångst: detta var också en `<h4>` under `<h2>`. Den är
+              nu en vanlig `<p>`, INTE en `<h3>` — en rubrik per person hade
+              gett fjorton syskon-rubriker under en enda h2 utan att personen
+              själv är en rubriknivå, vilket är en semantisk lögn även när axe
+              råkar vara nöjd. Rutan bär sin egen avgränsning visuellt, och
+              listan under är en riktig `<ul>` med sina egna poster. */}
+          <p className="font-medium text-caption text-text-secondary">Skickat</p>
           {utskick.length > 0 ? (
             <ul className="flex flex-col gap-0.5">
               {utskick.map((post) => (
