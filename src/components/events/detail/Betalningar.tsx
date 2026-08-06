@@ -267,26 +267,47 @@ function BetalningsLasRad({
         protoDataMode ? 'Förhandsvisning (proto) — krysset är inaktiverat, inget sparas' : undefined
       }
     >
-      <div className="flex items-center justify-between gap-4">
-        <BetalKryss
-          text={label}
-          namn={namn}
-          vald={vald}
-          lugn
-          disabled={protoDataMode}
-          onChange={(v) => {
-            if (protoDataMode) return;
-            mutationer.status.mutate({
-              registration,
-              betalning,
-              value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
-            });
-          }}
-        />
-        <span className="shrink-0 text-right text-body text-text-muted">
-          {vald ? 'Mottagen' : 'Saknas'}
-        </span>
-      </div>
+      {/* HÖGER-SLOTTEN ÄR RIVEN (våg 13, Marcus 2026-08-06: "'Saknas' kan vi
+          ta bort också. Det räcker det ej kryssade rutan, + att vi har togglen
+          högst upp" · "Att bara ha 'Mottagen' … säger ju bara exakt samma sak
+          som kryssrutan, eller hur?").
+
+          Han har rätt på båda, och räkningen är värre än den låter: i fliken
+          "Saknar betalning (9)" sa ytan SAMMA sak tre gånger — fliknamnet, det
+          obockade krysset och ordet "Saknas". "Mottagen" sa den två gånger.
+          Ingen av dem bar något krysset inte redan bär.
+
+          MARCUS BAD OM EN DATUM-PILL I STÄLLET ("Mottagen 2024-12-13") — den
+          går INTE att bygga, och det är en DATA-gräns, inte en design-fråga:
+          basens `Anmälningsavgift` (fldJtKQ3qLxRKOvR6) och `Slutbetalning`
+          (fldIImadnJUZHr5Qh) är singleSelect med enbart Mottagen/Ej mottagen
+          (data-model.md:233-234). Ingen tidsstämpel finns. Samma gräns är
+          redan bokförd på anmälnings-sidan: "Betalning-mottagen saknar
+          tidsstämpel i basen ⇒ ingen betalningsnod fabriceras (RÅ-disciplinen)"
+          (AnmalanDetail.tsx:136-137).
+
+          Formen finns däremot redan om fältet någon gång tillkommer:
+          deadline-pillen i denna vy (`rounded-full bg-surface px-2.5 py-1
+          text-small` + ikon, texten "ord · datum") är precedenten. Beslutet om
+          två additiva dateTime-fält ligger hos Marcus (ADR-063-vägen).
+
+          KVAR STÅR "Ej relevant (föreläsning)" — den enda utsagan på ytan som
+          saknar kryss och därför inte kan vara redundant. */}
+      <BetalKryss
+        text={label}
+        namn={namn}
+        vald={vald}
+        lugn
+        disabled={protoDataMode}
+        onChange={(v) => {
+          if (protoDataMode) return;
+          mutationer.status.mutate({
+            registration,
+            betalning,
+            value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+          });
+        }}
+      />
       {/* NOTERINGEN PÅ EGEN RAD, FULL BREDD (Marcus 2026-08-06: "kommer det ju
           inte få plats några noteringar eller? Vart ska dem skrivas ut?").
           Föregående våg lade noteringen i höger-slotten, och den var för smal
@@ -657,12 +678,16 @@ function BetalningsPersonRad({
             // Ej relevant får radens form men ALDRIG ett kryss — en av-bock
             // hade skrivit 'Ej mottagen' och rivit basens semantik (befintligt
             // öppet skiv-beslut, oförändrat).
-            <div className="flex items-center justify-between gap-4 py-3">
-              <span className="text-small text-text-muted">Slutbetalning</span>
-              <span className="text-right text-body text-text-muted">
-                Ej relevant (föreläsning)
-              </span>
-            </div>
+            //
+            // Våg 13: raden följer med när höger-slotten rivs. Den var det
+            // enda som stod kvar högerställt när alla andra rader blev
+            // vänsterställda, och en ensam höger-kolumn läser som att något
+            // fattas i de andra. `pl-7` = kryssets 20 px + gap-2:s 8 px, så
+            // ordet "Slutbetalning" står på exakt samma vänsterlinje som
+            // grannradernas etiketter trots att kryssrutan saknas.
+            <p className="my-0 py-3 pl-7 text-small text-text-muted">
+              Slutbetalning · Ej relevant (föreläsning)
+            </p>
           ) : (
             <BetalningsLasRad
               registration={registration}
