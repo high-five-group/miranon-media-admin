@@ -15,6 +15,64 @@
 
 ## Aktuellt fokus
 
+**Session 96 ▶️ ÅTERUPPTAGEN (2026-08-06, `lifecycle: active`)** — **ÅTTONDE
+PASSET ÖPPNADE MED EN SKARP DEFEKT I PROD, INTE MED HANDOFFENS PUNKT 1.** Marcus
+prövade lösenordsåterställningen på `admin.miranon.dev` och fick inget mail.
+Rotorsaken är belagd i prods egen auth-logg (`13:51:16Z`, `/recover`,
+`status 500`): **`535 "Authentication credentials invalid"`** — Resend avvisar
+prods SMTP-inloggning, mailet lämnar aldrig Supabase. Resend-loggen bekräftar
+oberoende (noll mail till adressen; senaste posterna är stagings test-inbjudningar
+`07:58`/`07:59`). **Konsekvensen är bredare än återställningen: ALL utgående post
+från prod är trasig, inbjudningar inkluderat.** Prod och staging bär OLIKA
+`smtp_pass`-digester; stagings fungerar. Marcus prod-konto finns (skapat
+2026-06-30) men har `last_sign_in_at: None` — fyra misslyckade inloggningar
+`13:44`–`13:47` föregick försöket. **Varför ingen såg det:** `/glomt-losenord` är
+medvetet fail-open (`TASK-127.7`, ADR-093) och visar "Kolla din inkorg" även vid
+`500`; och Del 12:s prod-SMTP verifierades med **maskinell diff**, vilket bevisar
+att fälten ändrades — inte att credentialen fungerar. **STOPPA-fråga ute till
+Marcus** om credential-källan (Keychain-nyckeln · ny sending-only nyckel · egen
+hand i Studio). Mail-låset (`TASK-137`) fällde min tänkta `AUTH`-test mot
+`smtp.resend.com` — ej kringgången. Resumen kördes i **huvudkatalogen** (ingen
+ägarlapp på `.git/katalogagarskap-agare.json`; ägarskap tas vid första skrivning
+per T120). `main` på `58c7867a`, arbetsträd rent, `Nattvakt`/`Post-merge`/`Push
+on main` gröna. **Numreringen re-verifierad mot disk — TVÅ AVVIKELSER mot
+handoffen:** nästa tråd är **`T127`** (handoffen sa `T125`; S93 förbrukade
+`T125`–`T126`) och det finns **3 nummerlösa lessons-fragment** (handoffen sa
+noll). Oförändrat: `096`/`L480`/`task-145`/`f47`. **NÄSTA: prod-SMTP:n på Marcus
+val → `TASK-116` AC #3 → `TASK-129`/`TASK-138` → `T124` när formen är vald → QA-
+korten `126.3`/`126.5`/`127.10`.** **HANDOFF: sessionsdok S96 § Paushistorik
+paus 7.**
+*(S93 är `paused` sedan `#839` — dess kadensrad nedan, oförändrad.)*
+
+**Session 93 ⏸️ PAUSAD (2026-08-06, `lifecycle: paused`)** — **SJU
+ITERATIONSVÅGOR PÅ KONVERGENS-PROTOTYPEN + TVÅ PROCESSFEL.** Handoffens alla
+fem numreringsaxlar HÖLL denna gång (till skillnad från förra resumen), och
+pausens punkt 1 bekräftades: `#830` landade av sig själv (`c4da4d12`).
+Tillstånds-återställningen: **PR #833**. **VÅG 3** rev EN rot bakom Marcus fyra
+punkter — filterraden var handrullad (`rounded-full`, 37–38 px) medan sidans
+knappar går via `Button`-primitiven (`rounded` 4 px, 32 px); allt gick över till
+primitiven, `EventsList.tsx` lämnad ORÖRD som produktionskod. **VÅGORNA 4–9:**
+Filtrera som text → hela `Disclosure` RIVEN (filtervyn alltid framme, Markera ner
+i batch-baren, mätt `y=625,3` i BÅDA lägena ⇒ ingen vertikal förskjutning) →
+fotens höjd konstant (502 px tillgängligt mot 535,8 behövt ⇒ text på egen rad,
+**höjdskillnad 0 px**) → två ärvda avdelare rivna → synlig hover + badge på Rensa
+filter → kort bindestreck. **TRE EGNA FEL, alla fångade av mätning:**
+Avbokade-raden byggdes som DUBBLETT (den fanns redan i logistik-gruppen, 197 px
+bort) · fotens text mättes aldrig mot radens utrymme · `hover:`-klassen bet inte
+mot primitivens `data-[hovered]:` (tailwind-merge ser ingen konflikt). **MARCUS
+FÄLLDE KADENSEN:** *"Varför pushar du varje iterationsrunda?"* — regeln fanns i
+`prototype`-skillens § 5 men lästes aldrig, eftersom resume→handoff→punktlista
+inte laddar skillen. Omklassad från lesson till **`T126`** med eget kort på hans
+order, rotorsaken märkt som OPRÖVAD hypotes. Kadensen lades om från våg 4: lokal
+commit per varv, `#838` satt till **DRAFT**. **`T125`** registrerad
+(knapp-standardiseringen). **NÄSTA RESUME:** `git checkout docs/s93-resume-3` i
+`s93-resume-2`, starta dev-servern, ta emot Marcus nästa iteration — **armera
+INTE `#838`**. **HANDOFF: sessionsdok S93 § PAUSLÄGE.** Numrering disk-verifierad
+2026-08-06: 096/L470/**T127**/task-145/f47 + tre nummerlösa fragment.
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 96 ⏸️ PAUSAD (2026-08-06, sjunde pausen, `lifecycle: paused`)** —
 **`TASK-127.9` STÄNGD: HELA INBJUDNINGSKEDJAN BEVISAD ÄNDE TILL ÄNDE.** 14 PR:er
 (`#815`–`#836`). `test-invite-completion` byggd som staging-only EF med
