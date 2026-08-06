@@ -15,6 +15,35 @@
 
 ## Aktuellt fokus
 
+**Session 93 ⏸️ PAUSAD (2026-08-06, `lifecycle: paused`)** — **SJU
+ITERATIONSVÅGOR PÅ KONVERGENS-PROTOTYPEN + TVÅ PROCESSFEL.** Handoffens alla
+fem numreringsaxlar HÖLL denna gång (till skillnad från förra resumen), och
+pausens punkt 1 bekräftades: `#830` landade av sig själv (`c4da4d12`).
+Tillstånds-återställningen: **PR #833**. **VÅG 3** rev EN rot bakom Marcus fyra
+punkter — filterraden var handrullad (`rounded-full`, 37–38 px) medan sidans
+knappar går via `Button`-primitiven (`rounded` 4 px, 32 px); allt gick över till
+primitiven, `EventsList.tsx` lämnad ORÖRD som produktionskod. **VÅGORNA 4–9:**
+Filtrera som text → hela `Disclosure` RIVEN (filtervyn alltid framme, Markera ner
+i batch-baren, mätt `y=625,3` i BÅDA lägena ⇒ ingen vertikal förskjutning) →
+fotens höjd konstant (502 px tillgängligt mot 535,8 behövt ⇒ text på egen rad,
+**höjdskillnad 0 px**) → två ärvda avdelare rivna → synlig hover + badge på Rensa
+filter → kort bindestreck. **TRE EGNA FEL, alla fångade av mätning:**
+Avbokade-raden byggdes som DUBBLETT (den fanns redan i logistik-gruppen, 197 px
+bort) · fotens text mättes aldrig mot radens utrymme · `hover:`-klassen bet inte
+mot primitivens `data-[hovered]:` (tailwind-merge ser ingen konflikt). **MARCUS
+FÄLLDE KADENSEN:** *"Varför pushar du varje iterationsrunda?"* — regeln fanns i
+`prototype`-skillens § 5 men lästes aldrig, eftersom resume→handoff→punktlista
+inte laddar skillen. Omklassad från lesson till **`T126`** med eget kort på hans
+order, rotorsaken märkt som OPRÖVAD hypotes. Kadensen lades om från våg 4: lokal
+commit per varv, `#838` satt till **DRAFT**. **`T125`** registrerad
+(knapp-standardiseringen). **NÄSTA RESUME:** `git checkout docs/s93-resume-3` i
+`s93-resume-2`, starta dev-servern, ta emot Marcus nästa iteration — **armera
+INTE `#838`**. **HANDOFF: sessionsdok S93 § PAUSLÄGE.** Numrering disk-verifierad
+2026-08-06: 096/L470/**T127**/task-145/f47 + tre nummerlösa fragment.
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 96 ⏸️ PAUSAD (2026-08-06, sjunde pausen, `lifecycle: paused`)** —
 **`TASK-127.9` STÄNGD: HELA INBJUDNINGSKEDJAN BEVISAD ÄNDE TILL ÄNDE.** 14 PR:er
 (`#815`–`#836`). `test-invite-completion` byggd som staging-only EF med
