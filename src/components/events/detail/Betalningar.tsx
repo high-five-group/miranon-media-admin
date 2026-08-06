@@ -219,6 +219,7 @@ function BetalningsLinje({
   notering,
   mutationer,
   protoDataMode = false,
+  protoAktiv = false,
 }: {
   registration: Registration;
   betalning: Betalning;
@@ -231,6 +232,9 @@ function BetalningsLinje({
       avfyras; `title` på raden + kort text i arbetsytan förklarar varför
       (se BetalningsDetaljer). */
   protoDataMode?: boolean;
+  /** [PROTOTYPE] [S93] ITERATIONSVÅG punkt 6 — variant-läget river Påminn-
+      slotten helt (mailto-eran är stängd, Del 3 beslut 4). Se slotten nedan. */
+  protoAktiv?: boolean;
 }) {
   const namn = displayName(registration);
   const label = BETALNING_LABEL[betalning];
@@ -282,36 +286,49 @@ function BetalningsLinje({
         onBlur={sparaNotering}
       />
       {/* K33: ikon-SLOTTEN alltid renderad (likbredds-läxan) — alla
-          notisrutor exakt samma bredd, med eller utan ikon. */}
-      <div className="size-8 shrink-0">
-        {!vald &&
-          (protoDataMode ? (
-            // [PROTOTYPE] [S93] review-fix — `<span>`, inte `<a>`: ingen
-            // `mailto:`-navigation, ingen onClick, ingen mutation. Samma
-            // yta/ikon (K33), visuellt dämpad (data-disabled-mönstret ovan).
-            <span
-              aria-disabled="true"
-              className="flex size-8 items-center justify-center rounded-full text-text-muted opacity-60"
-            >
-              <Mail aria-hidden="true" size={16} />
-            </span>
-          ) : (
-            <a
-              href={`mailto:${registration.email ?? ''}?subject=${encodeURIComponent(`Påminnelse: ${label.toLowerCase()} för ${eventNamn}`)}`}
-              aria-label={`Påminn ${namn} om ${label.toLowerCase()} via mail`}
-              onClick={() =>
-                mutationer.paminnelse.mutate({
-                  registration,
-                  betalning,
-                  tidpunkt: new Date().toISOString(),
-                })
-              }
-              className="flex size-8 items-center justify-center rounded-full text-text-secondary hover:text-text"
-            >
-              <Mail aria-hidden="true" size={16} />
-            </a>
-          ))}
-      </div>
+          notisrutor exakt samma bredd, med eller utan ikon.
+
+          PUNKT 6 (Marcus 2026-08-06): "Den lilla mail-ikonen kan vi ta bort,
+          eftersom vi inte gör några åtgärder här längre." Påminn-vägen är en
+          `mailto:`-genväg ur mailto-eran, och Del 3 beslut 4 stängde den eran:
+          alla utskick blir riktiga server-utskick från åtgärds-sidan. Ikonen
+          lovade en åtgärd som inte längre hör hemma på denna yta.
+
+          SLOTTEN RIVS HELT i variant-läge, inte bara ikonen — en tom 32 px-slot
+          hade lämnat ett hål i radens högerkant utan att bära något. K33:s
+          likbredds-skäl gäller bara när slotten ibland är fylld. Skarpa vyn
+          (`protoAktiv` false) behåller både slot och ikon OFÖRÄNDRADE. */}
+      {!protoAktiv && (
+        <div className="size-8 shrink-0">
+          {!vald &&
+            (protoDataMode ? (
+              // [PROTOTYPE] [S93] review-fix — `<span>`, inte `<a>`: ingen
+              // `mailto:`-navigation, ingen onClick, ingen mutation. Samma
+              // yta/ikon (K33), visuellt dämpad (data-disabled-mönstret ovan).
+              <span
+                aria-disabled="true"
+                className="flex size-8 items-center justify-center rounded-full text-text-muted opacity-60"
+              >
+                <Mail aria-hidden="true" size={16} />
+              </span>
+            ) : (
+              <a
+                href={`mailto:${registration.email ?? ''}?subject=${encodeURIComponent(`Påminnelse: ${label.toLowerCase()} för ${eventNamn}`)}`}
+                aria-label={`Påminn ${namn} om ${label.toLowerCase()} via mail`}
+                onClick={() =>
+                  mutationer.paminnelse.mutate({
+                    registration,
+                    betalning,
+                    tidpunkt: new Date().toISOString(),
+                  })
+                }
+                className="flex size-8 items-center justify-center rounded-full text-text-secondary hover:text-text"
+              >
+                <Mail aria-hidden="true" size={16} />
+              </a>
+            ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -391,33 +408,42 @@ function BetalningsPersonRad({
 
   return (
     <li className="flex flex-col gap-2 py-3">
-      {registration.personId ? (
-        <Link
-          to="/personer/$personId"
-          params={{ personId: registration.personId }}
-          className="self-start font-medium text-body underline-offset-2 hover:underline"
-        >
-          {namn}
-        </Link>
-      ) : (
-        <span className="self-start font-medium text-body">{namn}</span>
-      )}
-      {/* [PROTOTYPE] [S93] fråga 7 — bekräftelseläge + kategori, samma
-          pill-form som Anmälda deltagares kort (KATEGORI_PILL-formen). */}
-      {(protoObekraftad || protoKategoriPill) && (
-        <span className="flex flex-wrap items-center gap-1.5">
-          {protoObekraftad && (
-            <span className="rounded-full bg-error-bg px-2 py-0.5 font-medium text-caption text-error">
-              Obekräftad
-            </span>
-          )}
-          {protoKategoriPill && (
-            <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
-              {protoKategoriPill}
-            </span>
-          )}
-        </span>
-      )}
+      <div className="flex items-center justify-between gap-3">
+        {registration.personId ? (
+          <Link
+            to="/personer/$personId"
+            params={{ personId: registration.personId }}
+            className="min-w-0 font-medium text-body underline-offset-2 hover:underline"
+          >
+            {namn}
+          </Link>
+        ) : (
+          <span className="min-w-0 font-medium text-body">{namn}</span>
+        )}
+        {/* [PROTOTYPE] [S93] fråga 7 — bekräftelseläge + kategori, samma
+          pill-form som Anmälda deltagares kort (KATEGORI_PILL-formen).
+
+          PUNKT 5 (Marcus 2026-08-06): "pillen behöver flyttas ut och sitta på
+          samma rad som namnet fast till höger." Pillarna låg förut på en EGEN
+          rad under namnet (`li`:ns flex-col staplade dem), vilket kostade en
+          radhöjd per person och lämnade högerkanten tom. Namnraden är nu en
+          egen flex-rad: namn till vänster, pillar högerställda. Samma
+          namn-till-vänster/status-till-höger-form som registrets kort. */}
+        {(protoObekraftad || protoKategoriPill) && (
+          <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+            {protoObekraftad && (
+              <span className="rounded-full bg-error-bg px-2 py-0.5 font-medium text-caption text-error">
+                Obekräftad
+              </span>
+            )}
+            {protoKategoriPill && (
+              <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+                {protoKategoriPill}
+              </span>
+            )}
+          </span>
+        )}
+      </div>
       {/* [PROTOTYPE] [S93] ITERATIONSVÅG — TVÅ ZONER, inte en staplad kolumn.
           ARBETE till vänster (kryss · notering · påminn — OFÖRÄNDRADE, Marcus
           krav på bevarad tydlighet) och SKICKAT till höger.
@@ -430,12 +456,25 @@ function BetalningsPersonRad({
           skillnaden hela ytans läsbarhet.
 
           `md:` — på smala skärmar faller höger zon under vänster, oförändrad
-          ordning. Zonrubrikerna är sr-only: de bär strukturen för hjälpmedel,
-          men på skärmen skulle två etiketter per person bli brus (formen är
-          självförklarande visuellt). */}
+          ordning. Zonerna bär INGA rubrikelement — se kommentarerna nedan för
+          vad som stod här och varför två CI-grindar rev det. */}
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-6">
+        {/* CI-FÅNGST (körning 31084229170, larm #821/#824/#825 — rapporterad
+            via S96): den sr-only-rubrik som stod här RÖK TVÅ GRINDAR samtidigt
+            och är därför borttagen, inte nedgraderad.
+
+            (a) `axe` heading-order: den var en `<h4>` direkt under
+                `DetaljGrupp`s `<h2>` — nivåhopp, "Heading levels should only
+                increase by one".
+            (b) Playwrights strict mode: dess text bar PERSONENS NAMN, så
+                `getByText('Eva Lindqvist')` inom Betalningar-sektionen matchade
+                tre element i stället för ett och fällde mark-paid-testet.
+
+            Rubriken tillförde inget som inte redan fanns: varje betalningslinje
+            bär sin egen etikett via kryssets `aria-label` ("Anmälningsavgift
+            för <namn>"), så zonen var aldrig onavigerbar utan den. Den var min
+            gardering, och den kostade två grindar. */}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <h4 className="sr-only">{`Betalningar för ${namn}`}</h4>
           <BetalningsLinje
             registration={registration}
             betalning="avgift"
@@ -444,6 +483,7 @@ function BetalningsPersonRad({
             notering={registration.noteringAnmalningsavgift ?? null}
             mutationer={mutationer}
             protoDataMode={protoDataMode}
+            protoAktiv={protoAktiv}
           />
           {registration.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
             <p className="text-small text-text-muted">Slutbetalning · Ej relevant (föreläsning)</p>
@@ -456,11 +496,30 @@ function BetalningsPersonRad({
               notering={registration.noteringSlutbetalning ?? null}
               mutationer={mutationer}
               protoDataMode={protoDataMode}
+              protoAktiv={protoAktiv}
             />
           )}
         </div>
-        <div className="flex shrink-0 flex-col gap-1 md:w-56">
-          <h4 className="sr-only">{`Skickat till ${namn}`}</h4>
+        {/* PUNKT 7 (Marcus 2026-08-06): "Utskickshistoriken behöver ju få en
+            egen ruta liksom, nu hänger de liksom i luften bara."
+
+            Zonen bar bara text på arbetsytans egen botten — utan avgränsning
+            läser den som löst svävande rader bredvid kryssen, inte som ett eget
+            innehållsstycke. Den får nu kortets etablerade tonala form
+            (`rounded-xl` + `bg-bg-muted` + inset), samma grammatik som
+            filterpanelen och åtgärds-korten på sidan; ingen ny form mintas.
+
+            Rubriken är INTE längre sr-only: när zonen är en egen ruta behöver
+            den en synlig rubrik för att rutan ska betyda något — annars är det
+            bara en grå låda med datum i. */}
+        <div className="flex shrink-0 flex-col gap-1.5 rounded-xl bg-bg-muted p-3 md:w-60">
+          {/* Samma CI-fångst: detta var också en `<h4>` under `<h2>`. Den är
+              nu en vanlig `<p>`, INTE en `<h3>` — en rubrik per person hade
+              gett fjorton syskon-rubriker under en enda h2 utan att personen
+              själv är en rubriknivå, vilket är en semantisk lögn även när axe
+              råkar vara nöjd. Rutan bär sin egen avgränsning visuellt, och
+              listan under är en riktig `<ul>` med sina egna poster. */}
+          <p className="font-medium text-caption text-text-secondary">Skickat</p>
           {utskick.length > 0 ? (
             <ul className="flex flex-col gap-0.5">
               {utskick.map((post) => (
@@ -474,7 +533,7 @@ function BetalningsPersonRad({
               ))}
             </ul>
           ) : (
-            // Frånvaron är informationen (K42-andan) — men i en RESERVERAD zon
+            // Frånvaron är informationen (K42-andan) — men i en RESERVERAD ruta
             // måste den sägas, annars läses tomrummet som ett renderingsfel.
             <p className="text-caption text-text-muted">Inget skickat ännu</p>
           )}

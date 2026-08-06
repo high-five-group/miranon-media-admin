@@ -204,10 +204,20 @@ export function AtgarderKort() {
  * ut-knapp som sitter i filtreringen på eventsidan. Blir nog visuellt snyggare."
  *
  * FORMEN ÄR KOPIERAD VERBATIM ur `EventsList.tsx`s panelfot — piller på
- * `bg-surface` (lyft mot tonal botten), `px-3.5 py-2`, Printer i 18 px, texten
- * "Skriv ut". Första försöket bar radformen (`RAD_KLASS`, 16 px-ikon, hel
- * mening) i ett eget kort; det var åtgärdsradens grammatik, inte
- * utskriftsknappens, och läste som ännu en navigation.
+ * `bg-surface`, `px-3.5 py-2`, Printer i 18 px, texten "Skriv ut". Första
+ * försöket bar radformen (`RAD_KLASS`, 16 px-ikon, hel mening) i ett eget kort;
+ * det var åtgärdsradens grammatik, inte utskriftsknappens.
+ *
+ * ANDRA VÄNDAN (Marcus 2026-08-06): "ALLA Skriv ut-knappar ska se EXAKT
+ * likadana ut, samma storlek, samma allting, och den som sitter i eventsidans
+ * filtrering är facit." Två avvikelser rättade: texten var "Skriv ut denna
+ * detaljsida" (facit säger bara "Skriv ut") och plattan var `bg-bg-muted` i
+ * stället för facits `bg-surface`. Nu är denna knapp och registrets
+ * (`RegisterFilterRad`) teckenidentiska med eventlistans.
+ *
+ * Att texten inte längre säger VILKEN utskrift det är: knappens plats bär det
+ * i stället — denna sitter vid sidans ingångar, registrets i registrets
+ * filterpanel. Facit-likheten vann över självförklarande text, på Marcus ord.
  *
  * Detta är SIDANS utskrift (hela detaljsidan med eventinfo och alla block) —
  * `window.print()`, oförändrad från gruppens rad 6. Registrets EGEN utskrift
@@ -223,10 +233,10 @@ export function SkrivUtKort() {
       <button
         type="button"
         onClick={() => window.print()}
-        className="inline-flex items-center gap-1.5 rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
       >
         <Printer aria-hidden="true" size={18} className="shrink-0" />
-        Skriv ut denna detaljsida
+        Skriv ut
       </button>
     </div>
   );
