@@ -1,10 +1,10 @@
 ---
 id: TASK-127.9
 title: 'Skiva: Rundturs-e2e — inbjudan till inloggad, mot staging'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-06 08:27'
+updated_date: '2026-08-06 09:22'
 labels:
   - ready-for-agent
 dependencies:
@@ -144,12 +144,41 @@ oskyldiga poster; en revert hade rivit korrekt arbete och lämnat orsaken kvar.
 Kortet hålls därför ÖPPET tills `mark-paid`-selektorerna är skärpta och
 post-merge är grönt. Fixen ligger i appspårets fil medan `S93` är `active` —
 vägvalet är Marcus, inte en agents.
+
+## DoD #3 UPPFYLLD 2026-08-06 — kortet stängt
+
+Post-merge-körning **`31088129280`** på `c4da4d12` (S93:s fix) är **grön**, och
+avgörande: jobbet `Verifierande svit på det mergade trädet / Staging (API + E2E)`
+stod `success` — alltså **faktiskt körd**, inte `skipped`. Steget körde
+**177 tester, 177 passerade**, mot 3 fällda i exakt samma svit före fixen.
+
+**En fälla värd att minnas för nästa gång DoD #3 ska bedömas:** post-merge på
+`f69e7cec` stod `success` men hade `Verifierande svit på det mergade trädet` =
+**`skipped`** — den landningen var docs-only och klassades bort. Grön post-merge
+betyder alltså inte "prövad och godkänd" om diffen är docs-only. Läs jobbnivån,
+aldrig bara körningens färg.
+
+### Rotorsaksfixen, för historiken
+
+`634950d7` (`fix(proto): [S93] arbetsytans rubriker rev två CI-grindar —
+borttagna`) tog bort `sr-only`-zonrubrikerna i stället för att nedgradera dem
+till `<h3>`, vilket var S96:s ursprungliga rekommendation. S93:s motivering
+höll bättre: *"en rubrik per person hade gett fjorton syskon-rubriker under en
+enda h2 utan att personen själv är en rubriknivå, vilket är en semantisk lögn
+även när axe råkar vara nöjd"* — och rubrikerna tillförde inget, eftersom varje
+betalningslinje redan bär sin egen etikett via kryssets `aria-label`.
+
+Larm-ärendena `#821`, `#824` och `#825` pekade samtliga ut **oskyldiga** PR:er
+med färdiga revert-kommandon, eftersom heuristiken är "föregående körning var
+grön ⇒ senaste landningen är skyldig". Orsaken hade landat tyst i en parallell
+session två landningar tidigare. Ärendena stängs med hänvisning till
+`634950d7`.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
