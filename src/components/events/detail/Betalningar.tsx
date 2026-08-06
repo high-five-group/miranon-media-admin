@@ -296,9 +296,27 @@ function BetalningsLasRad({
           `pl-7` = kryssets 20 px + gap-2:s 8 px, så noteringen linjerar exakt
           under betalningsordet, inte under krysset. Dämpad (`text-small`,
           `text-text-secondary`): den kvalificerar raden ovanför, den tävlar
-          inte med den. */}
+          inte med den.
+
+          LUFTEN (våg 12, Marcus 2026-08-06: "det blir för mycket text som
+          nästan står på varandra runt noteringstexten"). Tre mått, inte ett —
+          det klistrade åt tre håll samtidigt och en enda justering hade bara
+          flyttat trängseln:
+
+          (i)   `mt-3` mot statusraden ovanför (var `mt-1.5` — 6 px är mindre
+                än radavståndet INOM noteringen själv, så stycket läste som en
+                fjärde rad av etiketten i stället för som ett eget stycke).
+          (ii)  `leading-relaxed` INUTI noteringen — samma val som
+                AnmalanDetail gör för sin fritext. En flerradig notering med
+                tät radsättning är den enda texten på kortet som måste läsas
+                som prosa, inte skannas som data.
+          (iii) `pb-1` under: `py-3` räknade från styckets sista rad, vilket
+                gav mindre luft ner till avdelaren än upp till statusraden.
+                Asymmetrin syntes som att noteringen hängde i nederkanten. */}
       {egenNotering && (
-        <p className="mt-1.5 mb-0 pl-7 text-small text-text-secondary">{egenNotering}</p>
+        <p className="mt-3 mb-0 pb-1 pl-7 text-small text-text-secondary leading-relaxed">
+          {egenNotering}
+        </p>
       )}
     </div>
   );
@@ -664,22 +682,54 @@ function BetalningsPersonRad({
               utan tidsaxel, vilket är exakt vad Marcus såg när han sa att den
               "måste bli och se ut mer som en utskickslogg".
 
-              Rubriken är en `<p>`, INTE en `<h3>` — samma skäl som tidigare i
-              filen: fjorton syskon-rubriker under en enda `<h2>` vore en
-              semantisk lögn. `Tidslinje` renderar en `<ol>`, så loggen är
-              navigerbar som den ordnade lista den faktiskt är. */}
+              RUBRIKEN ÄR RIVEN (våg 12, Marcus 2026-08-06: "'Utskick' kan vi
+              ta bort, det sabbar designen och jag tror man fattar ändå. Men
+              behåll … tom yta liksom så vi behåller luft där").
+
+              Han har rätt i att den var överflödig: varje nod säger redan
+              "Bekräftelse skickad" / "Påminnelse om slutbetalning", så ordet
+              Utskick upprepade bara vad de fyra raderna under den redan sa —
+              och det gjorde det med en fjärde textvikt (`font-medium
+              text-caption`) i ett kort som redan bar tre.
+
+              LUFTEN ÄR KVAR, exakt som beställt: `pt-8` ersätter rubrikens
+              forna höjd (`pt-3` + ~18 px radhöjd ≈ 30 px, mot 32 px nu), så
+              avståndet från avdelaren ner till första noden är oförändrat.
+              Tomrummet är alltså inte en glömd rubrik — det är rubrikens
+              plats, medvetet lämnad tom.
+
+              A11y: INGEN ersättnings-etikett alls, och det är ett medvetet
+              val efter två avvisade försök. En sr-only-rubrik är utesluten —
+              den som stod på denna yta rev två CI-grindar samtidigt (axe
+              `heading-order` + Playwrights strict mode, se kommentaren längre
+              upp i filen). Ett `role="group"` + `aria-label` avvisades av
+              `lint/a11y/useSemanticElements`, som kräver `<fieldset>` — och
+              fieldset kräver `<legend>`, alltså en synlig rubrik igen: exakt
+              det Marcus rev.
+
+              Men etiketten behövs faktiskt inte. `Tidslinje` renderar en
+              `<ol>` där varje nod läses "Bekräftelse skickad, 20 juni kl.
+              11:00" — orden bär sitt eget sammanhang, och listan sitter redan
+              inuti personens `<li>`. Marcus "man fattar ändå" gäller
+              skärmläsaren lika mycket som ögat. Att lägga på en etikett här
+              hade varit samma garderings-reflex som gav sr-only-rubriken. */}
           {utskickslogg.length > 0 ? (
-            <div className="flex flex-col pt-3">
-              <p className="my-0 font-medium text-caption text-text-secondary">Utskick</p>
+            <div className="flex flex-col pt-8">
               <Tidslinje handelser={utskickslogg} />
             </div>
           ) : (
-            // Tom logg behåller etikett-värde-formen: en tidslinje utan noder
-            // vore en tom axel, och frånvaron måste sägas rakt ut (annars
-            // läses tomrummet som ett renderingsfel).
-            <div className="flex items-center justify-between gap-4 py-3">
-              <span className="text-small text-text-muted">Utskick</span>
-              <span className="text-right text-body text-text-muted">Inget skickat ännu</span>
+            // Tom logg: frånvaron måste sägas rakt ut (annars läses tomrummet
+            // som ett renderingsfel) — men UTAN etikett, samma rivning som
+            // ovan. Etikett-värde-formen som stod här gav ett högerställt
+            // "Inget skickat ännu" mot ett vänsterställt "Utskick", alltså
+            // exakt de två ord Marcus rev.
+            //
+            // `pt-8` = samma luft som logg-grenen. `pl-11` = Tidslinjes
+            // ikon-cirkel (32 px) + dess `gap-3` (12 px), så texten står
+            // precis där en nodtext hade stått — de två grenarna läser som
+            // samma yta i två tillstånd, inte som två olika layouter.
+            <div className="pt-8 pb-3">
+              <p className="my-0 pl-11 text-small text-text-muted">Inget skickat ännu</p>
             </div>
           )}
         </div>
