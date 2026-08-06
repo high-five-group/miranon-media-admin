@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ChevronRight, type LucideIcon, Printer, Send, UserCheck } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@/components/primitives/Button';
 import { DetaljGrupp } from './DetaljGrupp';
 
 /**
@@ -212,8 +213,22 @@ export function AtgarderKort() {
  * likadana ut, samma storlek, samma allting, och den som sitter i eventsidans
  * filtrering är facit." Två avvikelser rättade: texten var "Skriv ut denna
  * detaljsida" (facit säger bara "Skriv ut") och plattan var `bg-bg-muted` i
- * stället för facits `bg-surface`. Nu är denna knapp och registrets
- * (`RegisterFilterRad`) teckenidentiska med eventlistans.
+ * stället för facits `bg-surface`.
+ *
+ * TREDJE VÄNDAN (Marcus 2026-08-06, iterationsvåg 3 punkt 1): "ALLA Skriv
+ * ut-knappar måste ha samma hörnrundning som Markera-knappen." FACIT FLYTTAR
+ * — från eventlistans piller till `Button`-primitiven, och andra vändans
+ * "filtreringen är facit" är därmed RIVEN, inte glömd. Skälet är att pillret
+ * aldrig var en referens: det är en handrullad form (`rounded-full`, ~37 px)
+ * som divergerar från varje knapp som går via primitiven (`rounded` 4 px,
+ * 32 px). Att jaga likhet mot den var att standardisera på undantaget.
+ *
+ * BÅDA Skriv ut-knapparna blev `intent="ghost"`, inte bara registrets.
+ * Punkt 3 gällde ordagrant "Anmälda blockets filtrering", men andra vändans
+ * princip — alla Skriv ut identiska — är fortfarande Marcus, och att låta
+ * denna behålla en fylld platta hade brutit den för att lyda den andra
+ * bokstavstroget. Öppet val, synligt i browsern: kortet självt bär
+ * avgränsningen här, så knappen tappar ingen affordans den behövde.
  *
  * Att texten inte längre säger VILKEN utskrift det är: knappens plats bär det
  * i stället — denna sitter vid sidans ingångar, registrets i registrets
@@ -230,14 +245,10 @@ export function AtgarderKort() {
 export function SkrivUtKort() {
   return (
     <div data-testid="skriv-ut-kort" className="flex justify-end print:hidden">
-      <button
-        type="button"
-        onClick={() => window.print()}
-        className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
-      >
+      <Button intent="ghost" size="sm" onPress={() => window.print()}>
         <Printer aria-hidden="true" size={18} className="shrink-0" />
         Skriv ut
-      </button>
+      </Button>
     </div>
   );
 }

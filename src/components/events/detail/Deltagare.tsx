@@ -1949,6 +1949,11 @@ function ArbetsKo({
                 }}
                 visadeAntal={registerListaA.length}
                 totaltAntal={unifiedSorted.length}
+                // TALENS OLIKA BASER (Marcus 2026-08-06): `protoAvbokade` läser
+                // HELA `registreringar`; `aktiva` (som topp-räknarna bygger på)
+                // filtrerar bort dem. Skillnaden är precis det tal foten
+                // förklarar — se RegisterFilterRad § Talens olika baser.
+                avbokadeAntal={protoAvbokade.length}
                 markeraKnapp={
                   <MarkeraKnapp
                     aktivt={markering.aktivt}
