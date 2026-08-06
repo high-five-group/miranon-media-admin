@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-05
+updated: 2026-08-06
 review_by: 2026-11-15
 status: stable
 ---
@@ -9560,3 +9560,541 @@ med dokumentationskvaliteten, vilket gör den kontraintuitiv: den träffar
 hårdast de projekt som skriver ut sina skäl. Och den träffar mekanismen
 själv först, eftersom en mekanisms egen commit är den text som oftast
 citerar den markör den letar efter.
+
+### L470 — Agent-parkeringen överlevde dubbel instruktion — empiri, inte ny lärdom
+
+**En regel som står BÅDE i agentens egen definition OCH ordagrant i dess
+uppdrag efterlevs ändå inte. Instansen är inte ett nytt fenomen — den är
+mätdata på att instruktions-lagret inte bär den här klassen.**
+
+Datum: 2026-08-05 (S96, fjärde resumen) | Klass: `L340`-familjen
+(agent-parkering på asynkron signal)
+
+## Instansen (L470)
+
+`TASK-127.8`-agenten (passkey-skivan) avslutade sin tur med, verbatim:
+
+```text
+Waiting for the monitor's completion notification before proceeding.
+```
+
+Den hade då byggt **åtta filer** — `src/lib/auth/passkey.ts`,
+`src/routes/passkey.tsx`, fyra testfiler samt ändringar i
+`src/data/config/supabase-client.ts` och `src/routes/login.tsx` — och
+committat **noll** av dem. Ingen gren, ingen PR. Worktreen stod kvar på
+spawn-tidens SHA. Förbrukat: ~390k tokens, 202 verktygsanrop, 43 minuter.
+
+Arbetet var inte förlorat (orkestreraren väckte agenten med `SendMessage`), men
+utan den väckningen hade det dött med worktreen.
+
+## Varför instansen är värd att bokföra
+
+Det som skiljer den från S98:s tre instanser är **täckningen**. Regeln fanns på
+två ställen samtidigt:
+
+1. `.claude/agents/bygg-agent.md` § *"Ingen asynkron signal når dig — kör allt
+   du måste invänta i FÖRGRUNDEN"* (rad 141–162), som dessutom citerar `L340`
+   och skriver rakt ut: *"Skriver du 'jag väntar på notifikationen' och
+   avslutar din tur är du inte i väntan — du är parkerad i evighet, med färdigt
+   oredovisat arbete."*
+2. Orkestrerarens uppdragstext: *"**Parkera ALDRIG på en landnings-vakt.**
+   Pusha, öppna PR, rapportera — orkestreraren äger armering och merge-kön."*
+
+Agenten producerade ändå exakt den mening definitionen förbjuder, nästan
+ordagrant.
+
+S98 rättade `bygg-agent.md` och `research-pass.md` med instruktionstext, och
+bokförde samtidigt i sin egen handoff att **"fixen är instruktion, inte
+mekanism, och mätningen är konfunderad"**. Denna instans är belägget för att
+den självbedömningen var korrekt: mätningen är inte längre konfunderad, och
+instruktionen räckte inte.
+
+## Vad instansen INTE säger
+
+Den säger ingenting om vilken mekanism som är rätt. Marcus uppger 2026-08-05
+att en mekanisk lösning finns, och har uttryckligen bordlagt frågan — den tas
+upp om klassen återkommer. Denna post är därför ren empiri-bokföring, inte ett
+åtgärdsförslag: raden finns för att nästa mätning ska ha en fjärde datapunkt
+med känd täckning, inte för att driva ett beslut.
+
+Besläktat: `L340` (grundfyndet) · S98:s tre instanser · `T119`
+(mekaniserings-programmet — *"regler i prosa bryts av färska kontexter; det som
+håller är mekaniserat"*, vars tes den här instansen stärker).
+
+### L471 — Bokföring kan bli falsk utan att någon ändrar den
+
+**En anteckning som var korrekt när den skrevs kan bli osann av att VÄRLDEN
+ändras runt den — inte texten. Ett namn som pekade rätt 2026-05 kan peka på ett
+annat objekt 2026-08, utan att en enda tecken redigerats.** `[UNIVERSAL]`
+
+Datum: 2026-08-05 (S96, femte resumen) | Klass: tillståndsytor som ljuger
+
+## Instansen (L471)
+
+Jakten på stagings CORS-allowlist (se
+[[L475]]) hittade exakt en dokumenterad post,
+i `tasks/sessions/archive/2026-05/2026-05-04-security-hardening.md`:
+
+```text
+Staging-secret satt: CORS_ALLOWED_ORIGINS=https://admin.miranon.se,
+http://localhost:5173,http://localhost:4173 (per Marcus Gate A1-svar).
+```
+
+Den strängen hashade till **produktionens** digest, inte stagings.
+
+Förklaringen är kronologisk, inte slarv: 2026-05-04 fanns bara ETT projekt —
+det som skapades 2026-03-30 och i dag är prod. Staging föddes först
+2026-06-13. Dokumentet beskrev alltså helt korrekt "det projekt vi jobbar mot",
+och ordet *staging* syftade på en miljöroll som senare flyttade till en annan
+databas.
+
+## Varför det är lurigt
+
+Detta är svårare att upptäcka än en vanlig stale rad, eftersom texten läser som
+sann och **är** internt konsistent. Det finns inget att korrekturläsa bort. Bara
+en oberoende mätning — här digest-jämförelsen — kunde visa att namnet bytt
+referent.
+
+Samma familj som `T121`-klassen: en konfigurationsrad som fortsätter gälla
+bokstavligt medan dess innebörd flyttat.
+
+## Regeln (L471)
+
+Läser du en historisk anteckning om en miljö, ett projekt eller en resurs:
+**kontrollera att objektet den namnger är samma objekt i dag.** Fråga när
+anteckningen skrevs och vad som fanns då. Vid minsta tvekan — mät mot systemet
+i stället för att lita på namnet.
+
+Praktisk följd för oss: bokför miljöer med sitt **projekt-ref**
+(`pqtshyierkdgwdnxuirz`), inte bara med rollnamnet "staging". Ref:en byter
+aldrig referent.
+
+### L472 — Läs det egna beslutsarkivet före ett arkitekturförslag
+
+**Innan en arkitektur-rekommendation formuleras: sök det EGNA beslutsarkivet
+efter frågan. Den kan redan vara besvarad — ibland på användarens egen tidigare
+fråga, i samma ämne, med research bakom sig. Att rekommendera utan den
+sökningen är att kasta bort arbete som redan är betalt.** `[UNIVERSAL]`
+
+Datum: 2026-08-05 (S96, femte resumen) | Klass: förslag utan förankring
+
+## Instansen (L472)
+
+`TASK-127.9` (rundturs-e2e för inbjudningsflödet) blockerades av att
+`generateLink`/`deleteUser` kräver `service_role`, otillgängligt i CI. Jag lade
+fram två vägar och rekommenderade **A** — en snäv, staging-only Edge Function —
+med motiveringen att repot redan bär `test-auth` som fail-closed-precedent.
+
+Marcus svarade med en fråga, inte ett val:
+
+> *"Om alternativ A är hur branschledare gör så väljer jag det, är de det?"*
+
+Jag hade inte belagt det. Rekommendationen vilade på ett INTERNT mönster, inte
+på branschpraxis — och jag hade inte sagt det.
+
+## Vad sökningen hittade
+
+Två saker, i den ordningen:
+
+1. **Förstapartskällan pekade åt ett annat håll.** Supabases egen guide säger
+   *"Start Supabase locally in CI with `supabase start`"*, och den lokala
+   stacken kör en mail-catcher med API avsett för just automatiserad testning.
+   Det löser samtidigt alla tre luckor som blockerade kortet — ingen av dem
+   krävde en ny Edge Function.
+
+2. **Vårt eget arkiv hade redan svaret.** `ADR-063` § S91-not, skriven
+   2026-07-27, slår fast att *"branschen köper determinism genom att duplicera
+   backend per körning"*, citerar Googles SUT-ranking och Thoughtworks
+   HOLD-lista mot delad muterbar testmiljö, och konstaterar att de tvång som
+   stänger den dörren gäller **Airtable** — inte Supabase.
+
+Noten skrevs dessutom som svar på **Marcus egen fråga**, ordagrant nästan
+densamma: *"Vi tvingas att frångå branschledande mönster/config för att
+Airtable tvingar oss, är det rätt tolkat?"*
+
+Flödet i `TASK-127.9` rör bara Supabase Auth. Det låg alltså i precis den del
+där vårt eget arkiv redan sagt att branschmönstret är öppet för oss.
+
+## Regeln fanns — den efterlevdes inte
+
+Konstitutionen säger det uttryckligen: *"Inför ett arkitekturförslag: läs den
+styrande ADR:n i sin helhet och kartlägg hela options-rymden innan förslaget
+formuleras."* Jag hoppade båda leden och byggde på det första mönster jag råkade
+känna igen i repot.
+
+Det som gör instansen värd att skriva ned är inte att en regel bröts, utan
+**vad som maskerade brottet**: förslaget var internt konsistent, byggde på en
+äkta precedent i repot (`test-auth`), och lät välgrundat. Ingenting i formen
+avslöjade att en hel options-gren saknades. Bara den externa frågan gjorde det.
+
+## Regeln (L472)
+
+Innan du lägger fram ett arkitekturval:
+
+1. **Sök arkivet på ämnet** — ADR:er, research-filer, trådkort. En träff är
+   ofta ett färdigt svar med belägg.
+2. **Deklarera grunden explicit.** "Detta vilar på ett internt mönster, inte på
+   branschbelägg" är en helt annan rekommendation än en källbelagd — och
+   mottagaren kan bara väga den om skillnaden syns.
+3. **Ett internt mönster är inte precedent.** Att repot gör något på ett visst
+   sätt säger att det är möjligt, inte att det är rätt.
+
+Se även [[L471]] — motsatt
+felriktning: där ljög arkivet, här lästes det aldrig.
+
+### L473 — Plattformens svar är inte applikationens bevis
+
+**Ett grönt svar från gatewayen kan betyda att din kod aldrig kördes. Ett
+CORS-, auth- eller rate-limit-bevis måste NÅ applikationslagret för att bevisa
+något om det — annars mäter du plattformens default och kallar det din
+konfiguration.** `[UNIVERSAL]`
+
+Datum: 2026-08-05 (S96, femte resumen) | Klass: bevis som mäter fel lager
+
+## Instansen (L473)
+
+CORS-utökningen till `admin.miranon.dev` skulle verifieras mot prod. Första
+mätningen:
+
+```text
+curl -H "Origin: https://admin.miranon.dev" .../functions/v1/get-events
+→ 401
+→ access-control-allow-origin: *
+```
+
+Headern SÅG ut som ett tillåtande svar. Men vår `corsHeadersFor()` sätter
+aldrig `*` — den sätter den exakta origin-strängen eller ingen header alls.
+`*` kom från Supabases gateway, som avvisade på JWT-nivå **innan vår funktion
+kördes**. Svaret sa exakt ingenting om allowlisten.
+
+Med anon-nyckeln passerade anropet gatewayen och nådde vår kod:
+
+```text
+→ 401
+→ access-control-allow-origin: https://admin.miranon.dev
+```
+
+Samma statuskod, helt annat bevisvärde. 401:an är nu vår egen auth-kontroll,
+och headern kan bara komma från vår funktion.
+
+## Det generella mönstret
+
+Varje plattform med ett gateway-lager — Supabase, Vercel, Cloudflare, API
+Gateway, en ingress-controller — svarar på egen hand i vissa lägen. Deras
+default-svar bär ofta *permissiva* headers, eftersom de är generiska. Det gör
+dem farligt lika ett lyckat svar.
+
+Två frågor skiljer lagren åt:
+
+1. **Är svaret unikt för min konfiguration?** `*` är generiskt; den exakta
+   origin-strängen kan bara min kod ha satt.
+2. **Kan jag skilja lagren med samma anrop två gånger?** Här: utan nyckel
+   (gateway svarar) mot med nyckel (koden svarar). Skillnaden i headern är
+   beviset.
+
+## Regeln (L473)
+
+Innan ett infrastruktur-bevis bokförs som grönt: **peka ut vilken rad kod som
+producerade svaret.** Kan du inte det, har du inte bevisat din ändring — du har
+bevisat att tjänsten är uppe.
+
+### L474 — Regeln måste bo på den yta som levererar signalen — annars når den bara den som redan gjort fel
+
+**En regel som levereras enbart på fel-vägen når aldrig den som lyckas undvika
+felet. Ju försiktigare aktören är, desto säkrare missar den instruktionen.**
+`[UNIVERSAL]`
+
+**Datum:** 2026-08-05 (S93)
+**Klass:** mekanism-design / instruktionsleverans
+
+## Vad som hände
+
+Katalogägarskaps-mekanismen bär regeln för vad en session ska göra när
+huvudkatalogen är upptagen. Regeln fanns nedskriven, korrekt och otvetydig, i
+`scripts/deny-frammande-huvudkatalog.sh` § ÄGARSKAP-TAGANDE — verbatim:
+*"ARBETA I DIN EGEN WORKTREE I STÄLLET … eskalera det INTE till Marcus, du har
+all information som krävs för att välja rätt katalog."*
+
+Den texten är `permissionDecisionReason` på ett **deny**. Den levereras alltså
+**bara till en session som faktiskt försökt en git-skrivning och blivit nekad.**
+
+En resume-session läste i stället `SessionStart`-rapporten, konstaterade att
+huvudkatalogen hade en främmande lapp, och drog sin slutsats **i förväg** — utan
+att provocera fram en deny. Den nådde därför aldrig regeln. Den stoppade hela
+arbetet och eskalerade en fråga den hade fullt mandat att avgöra själv.
+
+## Den kontraintuitiva delen
+
+Sessionen gjorde det som normalt är rätt: den försökte inte en operation den
+trodde skulle nekas. **Just den försiktigheten kringgick den enda ytan som bar
+regeln.** En slarvigare session — en som bara kört på — hade blivit nekad, fått
+regeln, och gjort rätt.
+
+Det är värt att generalisera: **när en regel bara sitter på felvägen belönar
+systemet den som gör fel och straffar den som är försiktig.** Det är baklänges,
+och det upptäcks inte av tester som bara prövar felvägen.
+
+## Bidragande orsak — samma regel, två grenar, en tappade den
+
+`katalogagarskap-markor.sh` hade två rapportvägar för samma tillstånd. Bara den
+ena bar worktree-regeln; stale-grenen nämnde `rm` som enda handling. Lappen råkade
+vara över tidströskeln, så sessionen fick just den grenen — vilket ramade om
+situationen från "vilken katalog jobbar jag i?" till "är ägaren död, ska jag
+radera?". Två grenar av samma budskap divergerade tyst eftersom ingen delade
+källa band dem.
+
+Testsviten prövade att hooken inte **skrev** lappen, aldrig vad den
+**rapporterade**. Innehållsluckan var därför osynlig för grinden.
+
+## Regel
+
+1. **Placera regeln på den yta som levererar SIGNALEN, inte bara på den som
+   levererar AVSLAGET.** Ankomst-ytan (rapport, statusrad, SessionStart) och
+   handlings-ytan (deny, felutskrift) ska bära samma regel.
+2. **En regel som finns i två utflöden ska komma ur EN sträng.** Duplicerad
+   prosa divergerar; den delade källan gör divergensen omöjlig i stället för
+   osannolik.
+3. **Testa vad mekanismen SÄGER, inte bara vad den GÖR.** En hook vars utdata
+   styr en agents beteende har sitt innehåll som kontrakt.
+4. **Fråga vid varje ny regel: kan någon nå detta tillstånd utan att passera
+   den yta där regeln står?** Kan de det, står regeln på fel ställe.
+
+## Samma familj
+
+Detta är strukturellt samma fel som `[[code-role-discipline-ej-laddad]]`: en
+artefakt som bara pekas på i prosa levereras aldrig. ADR-079 rev den en gång
+genom att flytta Code-rollen till output-stylen (alltid i systemprompten). Här
+återuppstod klassen i en annan mekanism — vilket antyder att mönstret behöver
+kontrolleras aktivt vid varje ny regel, inte bara rivas där det hittas.
+
+Åtgärdat i samma landning: delad regel-sträng i båda rapportvägarna, sex
+innehållstester (fyra bevisat röd-kapabla mot gamla koden), och regeln inlinad
+i `session-resume`-skillen i stället för pekad på.
+
+### L475 — En write-only secret går att BEVISA, inte bara gissa
+
+**Kan värdet inte läsas ut men en digest exponeras, är varje hypotes
+verifierbar utan en enda skrivning: hasha kandidaten lokalt och jämför.
+Kombinerat med funktionell enumerering rekonstrueras hela värdet — och en
+destruktiv skrivning behöver aldrig ske i blindo.** `[UNIVERSAL]`
+
+Datum: 2026-08-05 (S96, femte resumen) | Klass: destruktiva skrivningar mot
+oläsbara konfigytor
+
+## Problemet
+
+`supabase secrets set CORS_ALLOWED_ORIGINS=…` skriver över **hela** värdet —
+listan är en enda komma-separerad sträng. För att lägga till en origin måste
+alla befintliga vara kända. Men värdet är write-only: CLI:t visar bara en
+digest, och Management API:ts `/secrets`-endpoint returnerar **samma digest**,
+inte värdet.
+
+Vår egen bokföring dög inte som facit heller (se
+[[L471]]).
+
+## Vägen fram
+
+Två oberoende instrument, som tillsammans ger visshet:
+
+1. **Digest-matchning.** Digesten visade sig vara rå SHA256 av strängen —
+   bevisat genom att en kandidat för ETT projekt matchade exakt. Därmed blev
+   varje hypotes prövbar lokalt, till noll risk och noll skrivningar.
+2. **Funktionell enumerering.** En `OPTIONS`-preflight mot en Edge Function
+   svarar 200 för allowlistad origin och 403 för icke-allowlistad, helt utan
+   autentisering. Det ger medlemskapet för varje origin man kan gissa — men
+   kan inte upptäcka poster man inte tänkt på.
+
+Instrument 2 matar instrument 1: preflighten hittade kandidaterna, hashen
+bevisade den exakta strängen inklusive ordning och separatorer.
+
+## Vad det gav
+
+Det dokumenterade värdet var två origins. Det verkliga var fyra — tre
+Vite-portar (`5173`, `5174`, `5175`) plus preview-porten, eftersom Vite trappar
+upp porten när 5173 är upptagen. **Ingen bokföring nämnde 5174 eller 5175.**
+En skrivning efter dokumentationen hade tystat två fungerande
+utvecklingsportar, och felet hade visat sig först när någon körde två
+dev-servrar samtidigt.
+
+Sökningen krävde tålamod: 504 whitespace- och separator-varianter av de två
+kända gav noll träffar. Det var det negativa utfallet som bevisade att en post
+saknades — och som motiverade portsvepet i stället för en kvalificerad gissning.
+
+## Regeln (L475)
+
+Innan en destruktiv skrivning mot en yta vars nuvarande värde inte kan läsas:
+leta efter ett *verifierbart* spår — digest, checksumma, funktionellt svar.
+Finns ett, är gissning inte längre nödvändig. Finns inget, är det en
+STOPPA-grind, inte en kalkylerad risk.
+
+### L476 — en post-merge-larm-heuristik som antar seriella landningar pekar fel i parallella sessioner
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05–2026-08-06, S96/S93, post-merge-larmet
+(`post-merge.yml` + `classify-post-merge.sh`).
+
+**Vad som hände:** larmets revert-heuristik resonerar "föregående post-merge-
+körning var GRÖN ⇒ den här landningen är den primära misstänkta" och skapar
+ett ärende med ett färdigt `git revert`-kommando. Fyra ärenden i samma serie
+(`#821`, `#824`, `#825`, `#828`) pekade var och en ut den senast landade,
+oskyldiga PR:en. Rotorsaken (`6f1d8c1a`) hade landat tyst i en PARALLELL
+session flera landningar tidigare — `sr-only`-zonrubriker i
+`Betalningar.tsx` som bröt både axe `heading-order` och Playwrights strict
+mode. `#828` är det skarpaste fallet: den utpekade PR:n (#826, rundturs-e2e
+för `TASK-127.9`) hade sitt EGET test grönt i samma körning som fällde den
+— de tre fällda testerna låg samtliga i `mark-paid.staging.test.ts`, en helt
+annan fil. Diagnostiserat i S96, åtgärdat i S93 (`634950d7`/`#830`),
+verifierat mot en efterföljande grön körning med `Staging (API + E2E)` =
+`success`, 177/177 tester.
+
+**Lärdomen:** en larm-heuristik byggd på "föregående var grön, alltså är
+SENASTE landningen skyldig" antar implicit att landningar är SERIELLA — att
+det bara finns en enda gren av orsak och verkan mellan två mätpunkter. I ett
+system med parallella sessioner/agenter som landar samtidigt är det antagandet
+falskt per konstruktion: flera landningar kan ligga mellan två mätpunkter, och
+den SENASTE är bara en av dem. Heuristiken pekar då konsekvent ut fel PR —
+inte slumpmässigt fel, utan SYSTEMATISKT fel, eftersom den alltid pekar på
+den mest NYLIGEN landade snarare än den som faktiskt införde regressionen.
+
+**Varför `[UNIVERSAL]`:** gäller varje larm- eller bisect-mekanism som
+härleder skuld ur "vad landade sist" i ett system som tillåter parallell
+landning (merge queues, CI-bisect, feature-flag-rollouts) — antagandet
+"en ändring i taget mellan två mätpunkter" måste verifieras, inte förutsättas,
+närhelst mer än en aktör kan landa oberoende av varandra. En korrekt heuristik
+måste antingen bisecta ALLA landningar i fönstret eller explicit läsa VILKA
+filer/ytor varje landning rörde, inte bara ordningen de landade i.
+
+### L477 — prosa som beskriver ett passerat läge konsumeras som fakta — tre oberoende instanser i samma pass, en av dem den egna granskarens
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05, S96 (femte resumen), orkestreraren, ur
+`TASK-127.9`-passet.
+
+**Vad som hände:** tre oberoende instanser av samma fel inom en enda session.
+(1) Fem Edge Functions filhuvuden citerade en "ADR-026 ≥3-tröskel för
+`_shared`-extraktion" som ADR-026 inte innehåller — ADR:n sätter **≥5** och
+gäller `parseList<T>`-helpers i `src/data/adapters/_shared/`, en helt annan
+yta. En bygg-agent läste headern, drog slutsatsen att tröskeln var korsad, och
+byggde ett scope-beslut på den (registrerat `T124`, `#819`). (2) Tråden
+`T46` (go-live-kartan) bar kvar ett `ÖPPET:`-stycke om att GitHub–Vercel-
+integrationen saknades — redan löst sedan S95. Orkestreraren bokförde
+`TASK-127.9`:s AC #1 som Fas 7-beroende på just den stycket, och Marcus
+fällde det direkt: *"Jag har visst kopplat Github och Vercel och du har
+bekräftat det."* (3) En kodkommentar i `tests/e2e/auth-flow.staging.test.ts`
+rad 24–31, skriven i Session 5, citerades som gällande — sann då, obsolet
+sedan Vercel-beslutet. Samtliga fyra ytor rättade i en landning (`#822`,
+`f69e7cec`).
+
+Den obekväma delen: **orkestreraren rapporterade instans (1) som fynd och gick
+sedan själv i fällan på (2) och (3) inom en timme.** Skillnaden var att
+rapportören den första gången var granskaren, den andra gången konsumenten.
+Marcus pushback var den fångande mekanismen — precis vad de bokförda
+fångst-raterna förutsäger (self-review ~9 %, extern fångst dominerande).
+
+**Lärdomen:** prosa som beskriver ett tillstånd — ett `ÖPPET:`-stycke, en
+kodkommentar, en filhuvud-hänvisning till ett beslut — bär inget eget
+bäst-före-datum. Den fortsätter att LÄSA som gällande långt efter att
+förutsättningen den beskrev har ändrats, och ingenting i formen skiljer en
+fortfarande-sann rad från en som blivit stale: båda är grammatiskt identiska
+påståenden. Det gäller symmetriskt åt båda hållen — att SKRIVA ett sådant
+stycke utan källhänvisning (instans 1) och att LÄSA ett sådant stycke utan att
+verifiera det mot nuläget (instans 2, 3) är samma grundfel sett från olika
+ändar. Och att ha nyss FÅNGAT felet hos någon annan ger inget skydd mot att
+begå det själv en timme senare — vaksamheten var riktad utåt, inte inåt.
+
+**Varför `[UNIVERSAL]`:** gäller varje kunskapsyta som beskriver ett
+TILLSTÅND snarare än en händelse — statusfält, "ÖPPET"/"TODO"-stycken,
+kodkommentarer om externa beroenden, filhuvud-citat av beslut på annan yta.
+Innan ett sådant stycke citeras som grund för ett beslut: verifiera mot
+NULÄGET (källan själv, inte en tredje hands referens till den), inte mot när
+stycket skrevs. Och att nyss ha granskat samma felklass hos en annan skribent
+är ingen immunitet — kontrollera den egna slutsatsen med samma disciplin som
+gavs åt fyndet.
+
+### L478 — en grind som inte gäller ytan kan dras in av den som kör den — och lydas som om den gjorde det
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05/06, orkestreraren, vid granskning av
+`backlog/tasks/task-14*.md`.
+
+**Vad som hände:** `npx markdownlint-cli2 "backlog/tasks/task-14*.md"`
+kördes direkt mot backlog-kort och gav fel. Samma kommentar skrevs om TVÅ
+gånger för att laga dem — innan configen lästes.
+`.markdownlint-cli2.jsonc` rad 38 säger rakt ut: *"backlog/ medvetet utanför
+globs — verktygsägd yta ([[L226]]; S48 Del 2 gren C)"*. Grinden vaktar
+alltså ALDRIG den ytan i sin normala körform (`npx markdownlint-cli2 .`
+eller CI:s egen invokation) — men en explicit filangivelse på kommandoraden
+kringgår configens `globs`/`ignores`-avgränsning fullständigt, eftersom
+`markdownlint-cli2` prioriterar kommandoradens argument över sin egen
+glob-lista. Verktyget lyder alltså blint den som frågar, oavsett om ytan är
+den avsedda. Reproducerat: samma kommando mot `backlog/tasks/task-14*.md`
+gav 12 äkta fel i två filer i denna landning också — mekanismen är stabil,
+inte ett engångsutfall.
+
+**Lärdomen:** `[[L226]]` fastslår att en dokumenterad exkludering ÄR
+governance, inte en lucka — men den raden beskriver bara CONFIGENS eget
+beteende vid NORMAL invokation. Den säger ingenting om vad som händer när en
+OPERATÖR kringgår avgränsningen genom att namnge filer explicit. Det är en
+annan axel: inte "är exkluderingen medveten" (L226:s fråga, redan besvarad
+JA) utan "kan en operatör själv dra in den exkluderade ytan, och lyder hen
+då resultatet som om det vore grindens dom." Här är svaret JA på båda —
+och just det gör felet farligt: verktyget svarar med exakt samma
+felformat och exakt samma allvarlighetsgrad oavsett om ytan är i scope eller
+inte, så utfallet BÄR ingen signal om att man just klev utanför configens
+avsedda gräns.
+
+**Varför `[UNIVERSAL]`:** gäller varje CLI-verktyg vars scope styrs av en
+config-fil (globs/ignores/allowlist) men som accepterar explicita
+sökvägsargument på kommandoraden — linters, formatters, testrunners. Innan
+ett verktygs UTFALL lyds som bindande: verifiera att INVOKATIONEN gick
+igenom verktygets normala, konfigurerade scope (ingen explicit path-override)
+— annars mäter kommandot en yta ingen grind faktiskt äger, och resultatet
+är operatörens eget påfund, inte verktygets dom.
+
+### L479 — trunkerad mätning gav inte bara ett missat fel — den gav en felaktig hypotes att bygga vidare på
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-05/06, orkestreraren, samma pass som `[[L478]]`.
+
+**Vad som hände:** `markdownlint`s utfall lästes via `tail -2`. Utskriften
+visade bara fel från `task-144`, vilket lästes som att `task-143` passerade
+rent. Slutsatsen byggdes vidare på: en jakt startade efter en STRUKTURELL
+skillnad mellan de två filerna som kunde förklara varför den ena var ren och
+den andra inte. Full utskrift (reproducerad i denna landning:
+`npx markdownlint-cli2 "backlog/tasks/task-14*.md"`, se `[[L478]]`) visade
+**fel i BÅDA filerna** — flertalet pre-existerande, ingen kopplad till den
+uppfunna strukturella skillnaden. Jakten sökte en asymmetri som aldrig fanns.
+
+**Lärdomen:** `[[L71]]` fastslår att ett verifieringsfilter snävare än
+felrymden maskerar fel utanför filtret — sant här också (`tail -2` är ett
+sådant filter). Men det som hände här går längre än att MISSA ett fel: den
+trunkerade utskriften gav en POSITIV, konkret men falsk signal — "endast
+`task-144` är röd" — och den signalen konsumerades som ett DATAPUNKT att
+förklara, inte som en artefakt av mätinstrumentet. Skillnaden mot att bara
+missa ett fel (L71:s fall) är att ett missat fel lämnar dig OMEDVETEN; en
+trunkerad men till synes fullständig utskrift lämnar dig med en FALSK
+FÖRKLARINGSUPPGIFT — och tid går åt att lösa ett problem (varför skiljer sig
+filerna åt) som inte existerar. Frånvaro av information i den bortklippta
+delen tolkades som NÄRVARO av en skillnad, inte som en lucka i mätningen.
+
+Släktskap, prövat och avgränsat: en parallell kandidat samma pass
+(exitkod-maskering via `security … | head -c 12`) övervägdes som samma
+klass men förkastades som egen post — den är redan fullt täckt av `[[L75]]`
+("Gäller generellt") och `L440` (grind-specifik instans), och hookens
+`.grind-exitkod-policy.conf` dokumenterar redan explicit att dess
+kommando-lista är "avsiktligt smal" — ingen ny mekanism-lucka upptäcktes där.
+Denna post (F) är en annan sak: inte pipe-exitkod utan STDOUT-trunkering, och
+inte "missat fel" utan "uppfunnen förklaring till ett artefakt".
+
+**Varför `[UNIVERSAL]`:** gäller varje läsning av flerdels-utfall (multi-fil
+lint, multi-test-svit, multi-körnings-loggar) via ett trunkerande verktyg
+(`tail`, `head`, en paginerad viewer). Innan en observerad ASYMMETRI mellan
+flera objekt (bara X är röd, bara Y skiljer sig) förklaras eller utreds:
+verifiera att HELA utfallet faktiskt lästes — en trunkering kan producera en
+skenbar asymmetri lika lätt som den kan dölja ett verkligt fel, och den
+skenbara varianten är farligare eftersom den ger något att aktivt jaga i
+stället för att bara tiga.
