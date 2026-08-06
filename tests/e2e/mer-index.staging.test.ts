@@ -280,6 +280,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
       .getByRole('link', { name: 'Mer' })
       .click();
     await expect(page.locator('div[aria-live="polite"].sr-only')).toHaveText('Mer');
-    await expect(page).toHaveTitle('Mer — Miranon Media Admin');
+    // Suffixet borttaget 2026-08-06 (S96) — se shell.staging.test.ts DoD 3.
+    await expect(page).toHaveTitle('Mer');
   });
 });

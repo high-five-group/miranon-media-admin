@@ -105,7 +105,7 @@ export function SegmentBuilder() {
     if (events && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = 'Segment — Miranon Media Admin';
+      document.title = 'Segment';
     }
   }, [events]);
 

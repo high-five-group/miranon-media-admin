@@ -106,7 +106,7 @@ export function Waitlist() {
     if (waitlist && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = 'Väntelista — Miranon Media Admin';
+      document.title = 'Väntelista';
     }
   }, [waitlist]);
 

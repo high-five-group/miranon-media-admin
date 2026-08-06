@@ -106,7 +106,7 @@ export function EventRegistrations({ eventId }: { eventId: string }) {
     if (registrations && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = 'Anmälda — Miranon Media Admin';
+      document.title = 'Anmälda';
     }
   }, [registrations]);
 

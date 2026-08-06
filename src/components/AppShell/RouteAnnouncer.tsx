@@ -37,7 +37,7 @@ export function RouteAnnouncer() {
         ?.staticData.title;
       if (title) {
         setMessage(title);
-        document.title = `${title} — Miranon Media Admin`;
+        document.title = title;
       }
     });
   }, [router]);

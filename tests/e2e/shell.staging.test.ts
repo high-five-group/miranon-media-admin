@@ -90,7 +90,11 @@ test.describe('App-skal (Fas 5 DoD)', () => {
       .getByRole('link', { name: 'Event' })
       .click();
     await expect(announcer).toHaveText('Event');
-    await expect(page).toHaveTitle('Event — Miranon Media Admin');
+    // Titeln bär ENBART sidnamnet sedan 2026-08-06 (S96, Marcus-beslut):
+    // Chrome sätter själv appnamnet först i det installerade fönstrets
+    // namnlist, så vårt eget suffix gav "Miranon Media Admin - Event —
+    // Miranon Media Admin". Sidnamnet i sig är WCAG 2.4.2-golv och står kvar.
+    await expect(page).toHaveTitle('Event');
   });
 
   test('DoD 6 — sektions-fel: fallback i Outlet, skal överlever, Försök igen resettar', async ({

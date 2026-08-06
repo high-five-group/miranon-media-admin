@@ -99,7 +99,7 @@ export function PersonDetail({ personId }: { personId: string }) {
     if (person && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = `${displayName(person)} — Miranon Media Admin`;
+      document.title = displayName(person);
     }
   }, [person]);
 

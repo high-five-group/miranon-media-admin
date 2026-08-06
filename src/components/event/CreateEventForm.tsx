@@ -130,7 +130,7 @@ export function CreateEventForm() {
 
   useEffect(() => {
     headingRef.current?.focus();
-    document.title = 'Skapa nytt event — Miranon Media Admin';
+    document.title = 'Skapa nytt event';
   }, []);
 
   // Bekräftelseläget tar fokus när det ersätter formuläret (fokus får aldrig

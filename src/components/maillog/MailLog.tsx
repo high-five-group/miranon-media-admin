@@ -105,7 +105,7 @@ export function MailLog() {
     if (maillog && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = 'Maillogg — Miranon Media Admin';
+      document.title = 'Maillogg';
     }
   }, [maillog]);
 

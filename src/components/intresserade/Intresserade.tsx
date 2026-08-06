@@ -104,7 +104,7 @@ export function Intresserade() {
     if (intresserade && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = 'Intresserade — Miranon Media Admin';
+      document.title = 'Intresserade';
     }
   }, [intresserade]);
 
