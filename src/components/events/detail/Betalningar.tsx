@@ -10,6 +10,7 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName } from '@/components/registrations/registration-display';
+import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import {
   BETALNING_LABEL,
@@ -159,6 +160,7 @@ function BetalKryss({
   vald,
   onChange,
   disabled = false,
+  lugn = false,
 }: {
   /** Synlig etikett (betalningsordet — facit-formen). */
   text: string;
@@ -169,6 +171,10 @@ function BetalKryss({
   /** [PROTOTYPE] [S93] review-fix — `?data=proto`: kontrollen görs read-only
       (native disabled-semantik), ingen mutation avfyras (se BetalningsLinje). */
   disabled?: boolean;
+  /** [PROTOTYPE] [S93] ITERATIONSVÅG 10 — etiketten dämpad i stället för röd.
+      Se `BetalningsLasRad` för skälet (rött på varje rad upprepar bara flikens
+      egen utsaga och tömmer färgen på betydelse). Skarpa vyn rörs inte. */
+  lugn?: boolean;
 }) {
   return (
     <Checkbox
@@ -185,8 +191,90 @@ function BetalKryss({
           className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
         />
       </span>
-      <span className={vald ? 'text-text-secondary' : 'font-medium text-error'}>{text}</span>
+      <span
+        className={
+          lugn ? 'text-text-muted' : vald ? 'text-text-secondary' : 'font-medium text-error'
+        }
+      >
+        {text}
+      </span>
     </Checkbox>
+  );
+}
+
+/**
+ * [PROTOTYPE] [S93] ITERATIONSVÅG 10 — betalningen som ETIKETT-VÄRDE-RAD
+ * (Marcus 2026-08-06: "designmässigt är det skit … vi får hämta inspiration
+ * från detalj-sidan för anmälan").
+ *
+ * Formen är `EtikettVardeRad`:s (DetaljGrupp.tsx): etiketten dämpad till
+ * vänster, VÄRDET primärt till höger, 48 px radhöjd (py-3 + 24 px). Krysset
+ * bor i etikett-slotten — avprickningen stannar på ytan (Del 3 beslut 1:
+ * "Lotta lämnar inte sidan för avprickning"), men den slutar skrika.
+ *
+ * TRE RIVNINGAR mot föregående form, var och en med sitt skäl:
+ *
+ * (a) `<Input>`-fältet är BORTA. Ytan är för ÖVERBLICK — editering görs på
+ *     åtgärds-sidan (Marcus 2026-08-06). Nio personer × två fält var arton
+ *     tomma rutor som bar noll information och ändå dominerade ytan.
+ *     Noteringen finns kvar som LÄSVÄRDE; den är det enda värdet som säger
+ *     något Lotta inte redan vet.
+ *
+ * (b) RÖTT lämnar etiketten. Skälet på `BetalKryss` var att "vilka betalningar
+ *     folk inte gjort syns direkt" — men fliken heter redan
+ *     "Saknar betalning (9)": ALLA i listan saknar per definition något, så
+ *     rött per rad upprepar bara flikens utsaga. Arton röda ord tömde färgen
+ *     på betydelse och konkurrerade med `Obekräftad`-badgen, som bär en
+ *     genuint avvikande sak. Vilken av de två som saknas bär krysset.
+ *
+ * (c) Värde-slotten är ALDRIG tom (`AnmalanDetail`-disciplinen "—"/"Ingen
+ *     notering"): finns notering ÄR den värdet, annars statusordet dämpat.
+ */
+function BetalningsLasRad({
+  registration,
+  betalning,
+  vald,
+  notering,
+  mutationer,
+  protoDataMode = false,
+}: {
+  registration: Registration;
+  betalning: Betalning;
+  vald: boolean;
+  notering: string | null;
+  mutationer: ArbetsytansMutationer;
+  protoDataMode?: boolean;
+}) {
+  const namn = displayName(registration);
+  const label = BETALNING_LABEL[betalning];
+  const egenNotering = notering?.trim();
+
+  return (
+    <div
+      className="flex items-center justify-between gap-4 py-3"
+      title={
+        protoDataMode ? 'Förhandsvisning (proto) — krysset är inaktiverat, inget sparas' : undefined
+      }
+    >
+      <BetalKryss
+        text={label}
+        namn={namn}
+        vald={vald}
+        lugn
+        disabled={protoDataMode}
+        onChange={(v) => {
+          if (protoDataMode) return;
+          mutationer.status.mutate({
+            registration,
+            betalning,
+            value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+          });
+        }}
+      />
+      <span className={`min-w-0 text-right text-body ${egenNotering ? '' : 'text-text-muted'}`}>
+        {egenNotering || (vald ? 'Mottagen' : 'Saknas')}
+      </span>
+    </div>
   );
 }
 
@@ -405,6 +493,124 @@ function BetalningsPersonRad({
         }
       : null,
   ].filter((p): p is { key: string; text: string } => p !== null);
+
+  // [PROTOTYPE] [S93] ITERATIONSVÅG 10 — PERSONEN FÅR EN KROPP.
+  //
+  // Marcus 2026-08-06: "varje personblock har väl innehållet som det behöver
+  // ha, men designmässigt är det skit … detalj-sidan för anmälan är SNYGG.
+  // Vi får hämta inspiration därifrån."
+  //
+  // Föregående form var `<li>` i en `divide-y`-lista: personen hade ingen
+  // kortyta alls, bara hårstreck emellan — och det ENDA som bar en
+  // inneslutning var utskicks-lådan, alltså ytans minst viktiga innehåll.
+  //
+  // Formen här är `DetaljGrupp`s (DetaljGrupp.tsx:26-32), den som gör
+  // anmälnings-sidan läsbar: RUBRIKEN UTANFÖR (namn + status, `px-4` in till
+  // "där rundningen slutar"), KORTET under (`rounded-2xl bg-bg-muted px-4`)
+  // med `divide-y` mellan raderna. Ingen ny form mintas — grammatiken finns
+  // redan och är e2e-bevisad på anmälnings-sidan.
+  //
+  // Hierarkin får fyra nivåer i stället för två: namnet `text-lg
+  // font-semibold` → etiketten `text-small text-text-muted` → värdet
+  // `text-body`. Förut var namn och fältetikett nästan lika tunga.
+  if (protoAktiv) {
+    return (
+      <li className="flex min-w-0 flex-col gap-2">
+        {/* Namnraden står UTANFÖR kortet — DetaljGrupp:s h2-position. Den är
+            medvetet INGEN rubrikelement: fjorton syskon-rubriker under en enda
+            `<h2>` vore en semantisk lögn (samma skäl som rev sr-only-rubriken
+            i CI-fångsten nedan), och listan är redan en `<ul>` med poster. */}
+        <div className="flex items-center justify-between gap-3 px-4">
+          {registration.personId ? (
+            <Link
+              to="/personer/$personId"
+              params={{ personId: registration.personId }}
+              className="min-w-0 font-semibold text-lg underline-offset-2 hover:underline"
+            >
+              {namn}
+            </Link>
+          ) : (
+            <span className="min-w-0 font-semibold text-lg">{namn}</span>
+          )}
+          {/* `StatusBadge` ersätter den handrullade pillen: samma tillstånd
+              hade förut TVÅ former i appen — `bg-error-bg`/`text-error` här
+              mot `<StatusBadge ton="warning">` på anmälnings-sidan
+              (AnmalanDetail.tsx:341). Ett ord, en färg, hela appen.
+              StatusBadge är märkt [BIBLIOTEKS-KANDIDAT] med promovering till
+              `primitives/` "vid andra konsumenten" — detta ÄR den andra. */}
+          {(protoObekraftad || protoKategoriPill) && (
+            <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+              {protoObekraftad && <StatusBadge ton="warning">Obekräftad</StatusBadge>}
+              {protoKategoriPill && (
+                <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+                  {protoKategoriPill}
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+        {/* `bg-surface`, INTE `bg-bg-muted` som DetaljGrupp använder: arbetsytan
+            är monterad INUTI en DetaljGrupp (Deltagare.tsx:s ArbetsKo), så
+            underlaget är redan muted — ett muted kort på muted botten är
+            osynligt (mätt i browsern 2026-08-06: första formen försvann helt).
+            Samma val som AnmalanDetail:s noterings-ruta gör inuti sin grupp. */}
+        <div className="divide-y divide-border rounded-2xl border border-transparent bg-surface px-4 contrast-more:border-border-strong">
+          <BetalningsLasRad
+            registration={registration}
+            betalning="avgift"
+            vald={avgiftKlar(registration)}
+            notering={registration.noteringAnmalningsavgift ?? null}
+            mutationer={mutationer}
+            protoDataMode={protoDataMode}
+          />
+          {registration.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
+            // Ej relevant får radens form men ALDRIG ett kryss — en av-bock
+            // hade skrivit 'Ej mottagen' och rivit basens semantik (befintligt
+            // öppet skiv-beslut, oförändrat).
+            <div className="flex items-center justify-between gap-4 py-3">
+              <span className="text-small text-text-muted">Slutbetalning</span>
+              <span className="text-right text-body text-text-muted">
+                Ej relevant (föreläsning)
+              </span>
+            </div>
+          ) : (
+            <BetalningsLasRad
+              registration={registration}
+              betalning="slut"
+              vald={registration.slutbetalning === PaymentStatus.MOTTAGEN}
+              notering={registration.noteringSlutbetalning ?? null}
+              mutationer={mutationer}
+              protoDataMode={protoDataMode}
+            />
+          )}
+          {/* UTSKICKEN BLIR EN RAD, INTE EN LÅDA.
+              Punkt 7 (Marcus 2026-08-06) var "utskickshistoriken behöver få en
+              egen ruta, nu hänger de liksom i luften bara" — och lådan löste
+              det. Men den löste svävandet genom att bygga ÄNNU en behållare
+              bredvid personen, och reserverade `md:w-60` för att i majoritets-
+              fallet meddela frånvaro ("Inget skickat ännu" på 2 av 3 i
+              skärmbilden). När personen själv har en kropp behövs ingen låda:
+              raden ligger i kortet, med etikett till vänster som alla andra.
+              Svävandet var aldrig utskickens fel — det var personens. */}
+          <div className="flex items-start justify-between gap-4 py-3">
+            <span className="shrink-0 pt-0.5 text-small text-text-muted">Skickat</span>
+            {utskick.length > 0 ? (
+              <ul className="flex min-w-0 flex-col items-end gap-0.5">
+                {utskick.map((post) => (
+                  <li key={post.key} className="flex items-center gap-1.5 text-right text-body">
+                    <MailCheck aria-hidden="true" size={13} className="shrink-0 text-text-muted" />
+                    {post.text}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <span className="text-right text-body text-text-muted">Inget ännu</span>
+            )}
+          </div>
+        </div>
+      </li>
+    );
+  }
 
   return (
     <li className="flex flex-col gap-2 py-3">
@@ -653,7 +859,11 @@ export function BetalningsDetaljer({
         </p>
       )}
       {lista.length > 0 ? (
-        <ul className="divide-y divide-border">
+        // [PROTOTYPE] [S93] ITERATIONSVÅG 10 — korten separeras av LUFT, inte
+        // av hårstreck: när varje person bär en egen kortyta blir en avdelare
+        // emellan en andra gräns runt samma sak (DetaljGrupp-formen på
+        // anmälnings-sidan har samma gap-4 mellan grupperna).
+        <ul className={protoAktiv ? 'flex flex-col gap-4' : 'divide-y divide-border'}>
           {lista.map((r) => (
             <BetalningsPersonRad
               key={r.id}
