@@ -686,8 +686,35 @@ function BetalningsPersonRad({
           {(protoObekraftad || protoKategoriPill) && (
             <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
               {protoObekraftad && <StatusBadge ton="warning">Obekräftad</StatusBadge>}
+              {/* KATEGORI-PILLEN FÅR KONTUR (våg 15, Marcus 2026-08-06: "vi
+                  måste lösa pill-färgen på de som är gråa för de syns ju inte
+                  alls just nu").
+
+                  Han hade rätt, och mätningen gjorde det värre än "syns dåligt":
+                  pillen bar `bg-bg-muted` OCH stod på namnraden, som ligger
+                  UTANFÖR kortet på arbetsytans egen `bg-bg-muted`-botten. Båda
+                  mättes till rgb(245,245,243) — KONTRAST 1.00, alltså
+                  matematiskt osynlig. Bara texten syntes; kapseln fanns inte.
+                  Exakt samma fel som personkortet hade i våg 10, samma orsak.
+
+                  FYLLNING KAN INTE LÖSA DET. Palettens neutraler ligger för
+                  tätt — mot muted botten ger `bg-surface` 1.09,
+                  `bg-bg-emphasized` 1.07 och `bg-bg-subtle` 1.04. Ingen av dem
+                  läses som en form. KANTEN är den enda som bär: `border-border`
+                  1.18, `border-border-strong` 1.60.
+
+                  Därför vit fyllning PLUS kontur — outline-chip-formen
+                  (Material/Polaris-idiomet för neutrala metadata-chips). Den
+                  skiljer sig medvetet från `StatusBadge` bredvid, som klarar
+                  sig utan kant eftersom dess TONADE bakgrund bär formen själv.
+                  Två olika behov, inte två godtyckliga former.
+
+                  Texten bär fortfarande ensam informationen (kontrast 7.25 mot
+                  fyllningen) — konturen är formförstärkning, aldrig bärare, så
+                  WCAG 1.4.11 gäller inte kapseln. `contrast-more` går till
+                  `border-strong` + textfärg för dem som begärt högre kontrast. */}
               {protoKategoriPill && (
-                <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">
+                <span className="rounded-full border border-border-strong bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-text-secondary contrast-more:text-text">
                   {protoKategoriPill}
                 </span>
               )}
