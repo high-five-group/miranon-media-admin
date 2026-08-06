@@ -292,12 +292,10 @@ export function Belaggning({ event }: { event: Event }) {
         <BelaggningForm event={event} onStang={() => setRedigerar(false)} />
       ) : (
         <>
-          {protoDataMode && (
-            <p className="pt-3 text-caption text-text-muted">
-              Förhandsvisning (proto) — talen nedan (utom Max antal platser, eventets riktiga värde)
-              är härledda ur fixturunderlaget; Ändra är inaktiverad, inget sparas.
-            </p>
-          )}
+          {/* Proto-banderollen RIVEN (S93 våg 20, Marcus 2026-08-06: "Ta nu
+              bort all 'proto' text som du lagt in, den förstår helheten").
+              `protoDataMode` styr fortfarande DATAKÄLLAN och håller Ändra
+              inaktiverad — bara förklaringstexten är borta. */}
           <dl className="divide-y divide-border">
             <EtikettVardeRad term="Max antal platser">
               {event.maxPlatser != null ? String(event.maxPlatser) : null}

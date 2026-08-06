@@ -124,17 +124,30 @@ function Composer({
 
   return (
     <div className="flex flex-col gap-2 pt-4 pb-3">
-      {protoDataMode && (
-        <p className="text-caption text-text-muted">
-          Förhandsvisning (proto) — anteckningar är inaktiverade nedan, inget sparas.
-        </p>
-      )}
+      {/* COMPOSERN VÄXER (S93 våg 20, Marcus 2026-08-06: "göra anteckningsrutan,
+          inmatningsrutan större, typ dubbelt så hög. Jag tycker den ser lite
+          fjuttig ut").
+
+          `size="sm"` gav `min-h-16` = 64 px, DOM-mätt — och `rows={3}` bar
+          ingenting, eftersom min-höjden ur `size` överskuggar den så länge
+          `field-sizing-content` håller rutan på sitt minimum.
+
+          Steget till `size="md"` (`min-h-28` = 112 px) är primitivens EGET
+          nästa steg — inte ett handrullat `min-h-32`. Samma disciplin som
+          T125/T127 slår fast för knappar och pillar: använd skalan, minta inte
+          ett värde bredvid den. Det ger 1,75× i stället för exakt 2×, och
+          "typ dubbelt" är precis den precision begäran bar.
+
+          `md` byter dessutom `text-small` mot `text-body`, vilket är rätt för
+          en yta där Lotta skriver prosa och inte läser data. `rows={4}` är
+          reserven för webbläsare utan `field-sizing` (Firefox/äldre Safari) —
+          uppdaterad från 3 så fallbacken matchar den nya min-höjden. */}
       <TextArea
         ref={rutaRef}
         label="Ny anteckning"
         hideLabel
-        size="sm"
-        rows={3}
+        size="md"
+        rows={4}
         autoGrow
         isDisabled={protoDataMode}
         placeholder="Skriv en anteckning …"

@@ -1307,14 +1307,8 @@ function BorOverKrysslage({
   }
   return (
     <>
-      {/* [PROTOTYPE] [S93] review-fix — delad förklaringstext (uppdraget
-          § FYND 2): "liten text"-delen; per-rad `title` (BorOverRad) bär
-          hover-formen. */}
-      {protoDataMode && (
-        <p className="pb-1 text-caption text-text-muted">
-          Förhandsvisning (proto) — Bor över är inaktiverad nedan, inget sparas.
-        </p>
-      )}
+      {/* Proto-banderollen RIVEN (S93 våg 20) — `protoDataMode` håller
+          fortfarande Bor över inaktiverad, bara texten är borta. */}
       <ul className="flex flex-col gap-2.5">
         {lista.map((reg) => (
           <li

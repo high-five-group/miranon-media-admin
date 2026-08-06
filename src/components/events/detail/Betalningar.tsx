@@ -289,12 +289,9 @@ function BetalningsLasRad({
       : null;
 
   return (
-    <div
-      className="py-3"
-      title={
-        protoDataMode ? 'Förhandsvisning (proto) — krysset är inaktiverat, inget sparas' : undefined
-      }
-    >
+    // `title`-tooltipen med proto-förklaringen är riven (S93 våg 20) —
+    // `protoDataMode` håller krysset inaktiverat, texten är borta.
+    <div className="py-3">
       {/* HÖGER-SLOTTEN ÄR RIVEN (våg 13, Marcus 2026-08-06: "'Saknas' kan vi
           ta bort också. Det räcker det ej kryssade rutan, + att vi har togglen
           högst upp" · "Att bara ha 'Mottagen' … säger ju bara exakt samma sak
@@ -461,14 +458,9 @@ function BetalningsLinje({
   };
 
   return (
-    <div
-      className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
-      title={
-        protoDataMode
-          ? 'Förhandsvisning (proto) — kryss, notering och påminn är inaktiverade, inget sparas'
-          : undefined
-      }
-    >
+    // `title`-tooltipen med proto-förklaringen är riven (S93 våg 20) —
+    // kontrollerna är fortfarande inaktiverade i proto-läge.
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
       <div className="w-40 shrink-0">
         <BetalKryss
           text={label}
@@ -1094,14 +1086,11 @@ export function BetalningsDetaljer({
           Försök igen.{fel.id ? ` Fel-ID: ${fel.id}.` : ''}
         </MessageBox>
       )}
-      {/* [PROTOTYPE] [S93] review-fix — EN delad förklaringstext för hela
-          arbetsytan (uppdraget § FYND 1): "liten text"-delen av
-          disabled-mönstret; per-rad `title` (BetalningsLinje) bär hover-formen. */}
-      {protoDataMode && (
-        <p className="text-caption text-text-muted">
-          Förhandsvisning (proto) — kryss, notering och påminn är inaktiverade nedan, inget sparas.
-        </p>
-      )}
+      {/* Proto-banderollen RIVEN (S93 våg 20) — `protoDataMode` håller
+          fortfarande kryssen inaktiverade, bara texten är borta. Den satt inte
+          "högst upp i ett block" som de tre Marcus räknade upp, utan inuti
+          arbetsytan bakom "Öppna detaljer"; den togs med på hans "ta bort ALL
+          proto-text". Samma för de två `title`-attributen ovan i filen. */}
       {lista.length > 0 ? (
         // [PROTOTYPE] [S93] ITERATIONSVÅG 10 — korten separeras av LUFT, inte
         // av hårstreck: när varje person bär en egen kortyta blir en avdelare

@@ -395,11 +395,8 @@ export function Gruppdynamik({ event }: { event: Event }) {
 
   return (
     <DetaljGrupp id="grupp-gruppdynamik" rubrik="Gruppdynamik">
-      {protoDataMode && (
-        <p className="pt-3 text-caption text-text-muted">
-          Förhandsvisning (proto) — talen nedan är härledda ur fixturunderlaget.
-        </p>
-      )}
+      {/* Proto-banderollen RIVEN (S93 våg 20) — `protoDataMode` styr fortsatt
+          datakällan, bara förklaringstexten är borta. */}
       {/* Summeringsrad + sekventiell mätare (streck-segment per nivå). */}
       <div className="flex flex-col gap-1.5 py-3">
         <div className="flex items-baseline justify-between gap-4">
