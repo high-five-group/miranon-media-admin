@@ -4,7 +4,7 @@ title: 'Utöka Användarinbjudan med namn och inbjudare — invite-user-EF:ens k
 status: Done
 assignee: []
 created_date: '2026-08-05 12:42'
-updated_date: '2026-08-05 16:06'
+updated_date: '2026-08-06 09:38'
 labels:
   - ready-for-agent
 dependencies: []
@@ -140,6 +140,20 @@ körd mot sig för mallarna). Rörd EJ — Marcus har redan en öppen
 STOPPA-fråga om detta.
 <!-- SECTION:NOTES:END -->
 
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-06 09:38
+---
+DoD #3 bockad i efterhand 2026-08-06 (S96) efter verifiering — inte för att blidka en grind. Kortet stängdes som Done i S96:s tidigare pass (commit `b1d0d61c`, "stäng TASK-143 efter CI-verifiering") men DoD #3 lämnades obockad, vilket gjorde `check-backlog-closure.sh` röd i nattkörningen (larm-ärende `#825`). Kravet var uppfyllt hela tiden; bara kvitteringen saknades.
+
+Verifikat, hämtat ur leverans-PR `#800` (mergad som `53d32731`):
+
+- DoD #3 — status-rollup 11 SUCCESS, 3 SKIPPED, plus Vercel SUCCESS. Noll fällda jobb.
+- DoD #4, omprövad och håller — diffen bar sex filer, samtliga inom kortets yta: kortet självt, `src/routes/valkommen.tsx`, `supabase/functions/invite-user/index.ts`, `supabase/templates/invite.html`, `tests/api/invite-user.staging.test.ts`, `tests/webblasarbeteende/valkommen.test.ts`.
+---
+<!-- COMMENTS:END -->
+
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
@@ -183,6 +197,6 @@ utanför detta kort).
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
