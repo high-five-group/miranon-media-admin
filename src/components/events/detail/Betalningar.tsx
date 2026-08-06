@@ -316,7 +316,12 @@ function BetalningsLasRad({
           }}
         />
         {mottagenDatum && (
-          <span className="shrink-0 rounded-full bg-bg-muted px-2.5 py-1 font-medium text-caption text-text-secondary">
+          // Pill-skalans `sm` (våg 16) — var px-2.5 py-1, alltså `md`-steget,
+          // vilket gjorde den bredare än kategori-pillen på samma kort.
+          // Fyllningen är `bg-bg-muted` och det är RÄTT här: denna pill står
+          // INUTI kortet (bg-surface), inte på namnraden — muted mot vitt är
+          // samma 1.09 som vitt mot muted, bara omvänt håll.
+          <span className="shrink-0 rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
             Mottagen {mottagenDatum}
           </span>
         )}
@@ -685,7 +690,11 @@ function BetalningsPersonRad({
               `primitives/` "vid andra konsumenten" — detta ÄR den andra. */}
           {(protoObekraftad || protoKategoriPill) && (
             <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-              {protoObekraftad && <StatusBadge ton="warning">Obekräftad</StatusBadge>}
+              {protoObekraftad && (
+                <StatusBadge ton="warning" storlek="sm">
+                  Obekräftad
+                </StatusBadge>
+              )}
               {/* KATEGORI-PILLEN FÅR KONTUR (våg 15, Marcus 2026-08-06: "vi
                   måste lösa pill-färgen på de som är gråa för de syns ju inte
                   alls just nu").
@@ -697,24 +706,23 @@ function BetalningsPersonRad({
                   matematiskt osynlig. Bara texten syntes; kapseln fanns inte.
                   Exakt samma fel som personkortet hade i våg 10, samma orsak.
 
-                  FYLLNING KAN INTE LÖSA DET. Palettens neutraler ligger för
-                  tätt — mot muted botten ger `bg-surface` 1.09,
-                  `bg-bg-emphasized` 1.07 och `bg-bg-subtle` 1.04. Ingen av dem
-                  läses som en form. KANTEN är den enda som bär: `border-border`
-                  1.18, `border-border-strong` 1.60.
+                  KONTUREN ÄR RIVEN IGEN (våg 16, Marcus: "Jag vill inte ha
+                  kontur på pillen. Då får vi hitta en annan färg vi kan
+                  använda."). Kvar står `bg-surface` — VIT fyllning på muted
+                  botten, 1.09.
 
-                  Därför vit fyllning PLUS kontur — outline-chip-formen
-                  (Material/Polaris-idiomet för neutrala metadata-chips). Den
-                  skiljer sig medvetet från `StatusBadge` bredvid, som klarar
-                  sig utan kant eftersom dess TONADE bakgrund bär formen själv.
-                  Två olika behov, inte två godtyckliga former.
+                  Talet är lågt, men det är fel mått för en 26 px hög YTA, och
+                  formen är dessutom appens ETABLERADE neutrala pill mot muted
+                  underlag: EventCard:191, NastaEventCard:131 och
+                  AnmalanDetail:475 (dagar-kvar) kör alla exakt `bg-surface`
+                  som pill-fyllning, och ingen av dem har någonsin rapporterats
+                  osynlig. Det som var trasigt var 1.00 — noll kontrast, muted
+                  på muted — inte 1.09.
 
-                  Texten bär fortfarande ensam informationen (kontrast 7.25 mot
-                  fyllningen) — konturen är formförstärkning, aldrig bärare, så
-                  WCAG 1.4.11 gäller inte kapseln. `contrast-more` går till
-                  `border-strong` + textfärg för dem som begärt högre kontrast. */}
+                  `contrast-more` behåller en kant för dem som BEGÄRT högre
+                  kontrast; det är inte samma sak som att alltid rita den. */}
               {protoKategoriPill && (
-                <span className="rounded-full border border-border-strong bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-text-secondary contrast-more:text-text">
+                <span className="rounded-full border border-transparent bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
                   {protoKategoriPill}
                 </span>
               )}
