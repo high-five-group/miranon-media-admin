@@ -34,5 +34,6 @@ jobb. Den billigaste fixen är nästan alltid att göra tillståndet ärligt, in
 lära vakten att blunda.
 
 **Kvarstår som prosa:** ingenting tvingar den som parkerar att sätta flaggan.
-Regeln lever nu i samma klass som den den ersatte — se
-[[arbetsformens-regel-nas-inte-av-vagen-in-i-arbetet]].
+Regeln lever därmed i exakt den form som tråden `T126` handlar om — en
+arbetsform-regel utan mekanism, som bara gäller för den som råkar läsa den.
+Den bör tas med när `T126`:s mekanism väljs.
