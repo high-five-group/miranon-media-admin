@@ -132,7 +132,25 @@ function SaknasDelta({ antal, testid }: { antal: number; testid: string }) {
     (disclosure-branschformen — skild från navigationsradernas höger-chevron).
     EXPORTERAD sedan konvergens-passet (S93 Del 3 beslut 1): återanvänds av
     `Deltagare.tsx`s DEV-gren för den INFLYTTADE arbetsytan (samma K27-form,
-    inte en kopia — se `Deltagare.tsx`s `ArbetsKo` för montering). */
+    inte en kopia — se `Deltagare.tsx`s `ArbetsKo` för montering).
+
+    HOVER (S93 våg 17, Marcus 2026-08-06: "'Öppna detaljer' har ingen hover,
+    fixa det"). Raden var klickbar utan att se klickbar ut — ren tappad
+    affordans, inte ett designval.
+
+    Formen speglar appens etablerade rad-hover: `hover:bg-bg-emphasized` +
+    `motion-safe:transition-colors`, samma som `AnmalanDetail`s eventlänk (396)
+    och `EventsList` 416. Ingen ny form mintas.
+
+    GEOMETRIN ÄR OFÖRÄNDRAD, med avsikt: `py-3` (12 px) på wrappern flyttades
+    till `py-1.5` + `py-1.5` på knappen, så 6+6+24+6+6 = 48 px precis som förut
+    — familjens radhöjd (DetaljGrupp § morf-pariteten) rörs inte. Vinsten är
+    att hover-plattan nu ligger på KNAPPEN och därför kan bära `rounded-lg`;
+    hade den suttit på wrappern med `py-3` blivit en kant-till-kant-platta utan
+    rundning, vilket är fel form i ett kort med rundade hörn.
+
+    `focus-visible` behövs inte här — den bärs globalt via
+    `--mm-color-focus-ring` (samma som alla andra knappar i filen). */
 export function DetaljRad({
   oppen,
   kontrollerarId,
@@ -143,13 +161,13 @@ export function DetaljRad({
   onToggle: () => void;
 }) {
   return (
-    <div className="py-3">
+    <div className="py-1.5">
       <button
         type="button"
         aria-expanded={oppen}
         aria-controls={kontrollerarId}
         onClick={onToggle}
-        className="flex w-full items-center justify-center gap-2 font-medium text-body"
+        className="flex w-full items-center justify-center gap-2 rounded-lg py-1.5 font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors"
       >
         {oppen ? 'Stäng detaljer' : 'Öppna detaljer'}
         <ChevronDown
