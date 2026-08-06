@@ -15,6 +15,32 @@
 
 ## Aktuellt fokus
 
+**Session 93 ⏸️ PAUSAD (2026-08-06, `lifecycle: paused`)** — **TVÅ
+ITERATIONSVÅGOR PÅ KONVERGENS-PROTOTYPEN.** Resumen kördes i egen worktree
+(S96 ägde huvudkatalogen, ADR-090 beslut 2); ett tidigare resume-försök samma
+dag hade fastnat på just den lappen och eskalerat — rotorsaken landade som
+`#807`. **HELA numreringen hade drivit** under pausen (ADR `090`→`095` ·
+`L443`→`L469` · tråd →`T123` · kort →`144`). **PR #812** (lifecycle-flipp,
+rev en egen MD004-groda: en radbrytning gjorde `+` till listmarkör och fällde
+**527 orörda rader** — ett tecken) · **#818** (iterationsvåg 1, Marcus åtta
+punkter; **fyra filter-states blev ETT** — splittringen var en mätt buggkälla)
+· **#830** (iterationsvåg 2, sju punkter + CI-fixen). **TVÅ EGNA FÅNGSTER
+FÖRE HANDOVER:** breddlåset höll inte (143,69 mot 142,33 px — teckenANTAL är
+fel proxy för renderad bredd) och Klara-raden var 1 px LÄGRE, inte högre som
+rapporterat. **CI FÄLLDE MINA EGNA A11Y-RUBRIKER** (körning 31084229170, larm
+`#821`/`#824`/`#825`): sr-only-zonrubriker rev BÅDE axe heading-order och
+Playwrights strict mode — det som faktiskt bar tillgängligheten var kryssets
+`aria-label` som redan fanns. Borttagna, `mark-paid` 13/13 mot staging.
+**ÖPPET FYND, obesvarat:** heartbeat-svepets state delas mellan sessioner
+(`/tmp/mm-heartbeat-svep/last-main-sha`) ⇒ bara EN session får veta om en
+landning; belagt tre gånger. **NÄSTA RESUME: verifiera att #830 landade →
+Marcus granskning av iterationsvåg 2 → ev. våg 3 → facit-låsning →
+`/to-prd` × 3.** **HANDOFF: sessionsdok S93 § PAUSLÄGE.** Numrering
+disk-verifierad 2026-08-06: 096/L470/T125/task-145/f47.
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 96 ▶️ ÅTERUPPTAGEN (2026-08-05, `lifecycle: active`)** — **MILJÖ- OCH
 PROCESSPÅRET ÅTER I GÅNG** efter sjätte pausen. Resumen kördes i
 **huvudkatalogen** — ägarlappen (`.git/katalogagarskap-agare.json`) bar denna
