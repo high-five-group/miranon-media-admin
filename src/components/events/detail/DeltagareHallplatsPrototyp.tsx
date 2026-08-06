@@ -290,7 +290,16 @@ export function RegisterFilterRad({
       onExpandedChange={setOppen}
       className="flex flex-col print:hidden"
     >
-      <div className="flex items-center justify-between gap-2">
+      {/* PUNKT 4 (Marcus 2026-08-06): "Filtreringsknappen behöver flyttas så
+          den sitter på höger sidan till höger om markeraknappen."
+
+          Raden var `justify-between` med tratten längst till vänster och
+          Markera längst till höger — eventlistans form, där tratten sitter
+          bredvid en periodväxlare som fyller vänsterkanten. Här finns ingen
+          sådan granne, så tratten stod ensam i tomrummet. Nu är båda
+          högerställda med Markera FÖRE tratten, i den ordning Marcus angav. */}
+      <div className="flex items-center justify-end gap-2">
+        {markeraKnapp}
         {/* Tratt-ingången — EXAKT eventlistans form (facit k02): svärtad när
             öppen eller när filter är aktiva, accent-badge med antalet, och
             sr-only-namnet som bär antalet för hjälpmedel (badgen är dekor). */}
@@ -314,7 +323,6 @@ export function RegisterFilterRad({
             {aktiva > 0 ? `, ${aktiva} ${aktiva === 1 ? 'aktivt' : 'aktiva'} filterval` : ''}
           </span>
         </AriaButton>
-        {markeraKnapp}
       </div>
       <DisclosurePanel data-testid="register-filter-panel">
         <div className="mt-3 flex flex-col gap-4 rounded-2xl bg-bg-muted p-4">

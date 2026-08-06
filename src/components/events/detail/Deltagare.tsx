@@ -1777,7 +1777,24 @@ function ArbetsKo({
         // (border-t) UTAN rubrik-text (byggkrav 3 rev — "Utskick"-texten fanns
         // bara för att skilja variant A från B/C; de är borta, så det finns
         // inget kvar att skilja mot).
-        <div className="flex flex-col gap-2">
+        // PUNKT 3 (Marcus 2026-08-06): "Under Avbokade-raden är sista
+        // avdelaren och den är fetare än de övriga."
+        //
+        // MÄTT: TVÅ kanter 1 px isär — Avbokade-radens egen `border-b` på
+        // y=1683,3 och en på DENNA wrapper på y=1684,3. Wrapperns kant kommer
+        // från `DetaljGrupp`s `divide-y divide-border`, som lägger en kant på
+        // varje barn utom det sista; variant-grenen är inte sista barnet (fler
+        // följer nedanför), så den fick en. Två 1 px-linjer med 1 px mellanrum
+        // läser som en dubbelt så tjock linje.
+        //
+        // `border-b-0` river den ÄRVDA kanten. Raderna behåller sina egna, så
+        // alla sju är fortsatt exakt lika höga (53 px) — kravet från förra
+        // vändan står kvar, det är bara den yttre dubbletten som försvinner.
+        // `gap-2` borttaget i samma vända: med kanten på Klara som enda
+        // avdelare lämnade gapet 8 px luft mellan just DEN radgränsen och
+        // ingen annan — raderna såg olika ut igen, fast åt andra hållet.
+        // Stacken är nu helt jämn: varje radgräns är exakt en 1 px-kant.
+        <div className="flex flex-col border-b-0">
           <HallplatsToppA
             counts={hallplatsCounts}
             filter={registerFilter.steg}
@@ -1792,7 +1809,20 @@ function ArbetsKo({
               onFilterClick: vaxlaSteg,
             }}
           />
-          <div className="flex flex-col border-border border-t pt-1">
+          {/* PUNKT 2 (Marcus 2026-08-06): "Nu är Klara-raden lika hög som de
+              andra raderna MEN det är dubbla avdelare/streck under. Det är som
+              att det är en jättesmal rad inklämd emellan."
+
+              MÄTT: Klara-raden slutade y=1473,3 med sin egen `border-b`, och
+              DENNA wrapper började y=1481,3 med en `border-t` — två linjer med
+              8 px tomrum emellan, vilket är precis vad en tunn tom rad ser ut
+              som. `border-t pt-1` fanns för att skilja logistik-gruppen från
+              steg-räknarna, men sedan förra vändan gav raderna sig själva
+              kanter och Klaras `border-b` gör redan exakt det jobbet.
+
+              Wrappern bär nu ingen egen kant och inget toppmellanrum — gruppen
+              avgränsas av radens kant, som varje annan radgräns i blocket. */}
+          <div className="flex flex-col">
             {/* ITERATIONSVÅG (Marcus 2026-08-05): "alla rader måste såklart
                 vara lika höga". Samma `divide-y`-asymmetri som rättades i
                 HallplatsRad drabbade sista raden HÄR också — "Avbokade" mättes
