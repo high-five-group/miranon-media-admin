@@ -34,6 +34,7 @@ import {
   harPaminnelse,
   isHallplatsVariant,
   kategoriPillText,
+  PROTO_MOTTAGEN_DATUM,
 } from './hallplats-steg-prototyp';
 
 /**
@@ -259,6 +260,15 @@ function BetalningsLasRad({
   const namn = displayName(registration);
   const label = BETALNING_LABEL[betalning];
   const egenNotering = notering?.trim();
+  // [PROTOTYPE] [S93] våg 14 — se PROTO_MOTTAGEN_DATUM: datumet är
+  // prototyp-lokalt tills basen får sina två additiva dateTime-fält.
+  const protoDatumIso = vald
+    ? PROTO_MOTTAGEN_DATUM[registration.id]?.[betalning === 'avgift' ? 'avgift' : 'slut']
+    : undefined;
+  const mottagenDatum =
+    protoDatumIso && !Number.isNaN(Date.parse(protoDatumIso))
+      ? DAGMANAD.format(new Date(protoDatumIso))
+      : null;
 
   return (
     <div
@@ -277,37 +287,40 @@ function BetalningsLasRad({
           obockade krysset och ordet "Saknas". "Mottagen" sa den två gånger.
           Ingen av dem bar något krysset inte redan bär.
 
-          MARCUS BAD OM EN DATUM-PILL I STÄLLET ("Mottagen 2024-12-13") — den
-          går INTE att bygga, och det är en DATA-gräns, inte en design-fråga:
-          basens `Anmälningsavgift` (fldJtKQ3qLxRKOvR6) och `Slutbetalning`
-          (fldIImadnJUZHr5Qh) är singleSelect med enbart Mottagen/Ej mottagen
-          (data-model.md:233-234). Ingen tidsstämpel finns. Samma gräns är
-          redan bokförd på anmälnings-sidan: "Betalning-mottagen saknar
-          tidsstämpel i basen ⇒ ingen betalningsnod fabriceras (RÅ-disciplinen)"
-          (AnmalanDetail.tsx:136-137).
+          MOTTAGEN-PILLEN (våg 14) är däremot INTE redundant och står kvar —
+          den bär ett DATUM krysset omöjligt kan bära. Formen speglar
+          deadline-pillen i samma vy ("ord · datum" i en rounded-full kapsel);
+          `bg-bg-muted` i stället för deadline-pillens `bg-surface`, eftersom
+          personkortet självt redan är `bg-surface` och pillen annars försvann.
 
-          Formen finns däremot redan om fältet någon gång tillkommer:
-          deadline-pillen i denna vy (`rounded-full bg-surface px-2.5 py-1
-          text-small` + ikon, texten "ord · datum") är precedenten. Beslutet om
-          två additiva dateTime-fält ligger hos Marcus (ADR-063-vägen).
+          DATUMET ÄR PROTOTYP-LOKALT (PROTO_MOTTAGEN_DATUM i
+          hallplats-steg-prototyp.ts) — basen bär inget mottagen-fält ännu, och
+          det är EJ beslutat. Se den konstantens docblock för hela skälet.
 
-          KVAR STÅR "Ej relevant (föreläsning)" — den enda utsagan på ytan som
-          saknar kryss och därför inte kan vara redundant. */}
-      <BetalKryss
-        text={label}
-        namn={namn}
-        vald={vald}
-        lugn
-        disabled={protoDataMode}
-        onChange={(v) => {
-          if (protoDataMode) return;
-          mutationer.status.mutate({
-            registration,
-            betalning,
-            value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
-          });
-        }}
-      />
+          KVAR STÅR ÄVEN "Ej relevant (föreläsning)" — den enda utsagan på ytan
+          som saknar kryss och därför inte kan vara redundant. */}
+      <div className="flex items-center justify-between gap-4">
+        <BetalKryss
+          text={label}
+          namn={namn}
+          vald={vald}
+          lugn
+          disabled={protoDataMode}
+          onChange={(v) => {
+            if (protoDataMode) return;
+            mutationer.status.mutate({
+              registration,
+              betalning,
+              value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+            });
+          }}
+        />
+        {mottagenDatum && (
+          <span className="shrink-0 rounded-full bg-bg-muted px-2.5 py-1 font-medium text-caption text-text-secondary">
+            Mottagen {mottagenDatum}
+          </span>
+        )}
+      </div>
       {/* NOTERINGEN PÅ EGEN RAD, FULL BREDD (Marcus 2026-08-06: "kommer det ju
           inte få plats några noteringar eller? Vart ska dem skrivas ut?").
           Föregående våg lade noteringen i höger-slotten, och den var för smal
@@ -324,9 +337,30 @@ function BetalningsLasRad({
           det klistrade åt tre håll samtidigt och en enda justering hade bara
           flyttat trängseln:
 
-          (i)   `mt-3` mot statusraden ovanför (var `mt-1.5` — 6 px är mindre
-                än radavståndet INOM noteringen själv, så stycket läste som en
-                fjärde rad av etiketten i stället för som ett eget stycke).
+          (i)   `pt-4` mot etikettraden ovanför — PADDING, inte margin, och det
+                är hela poängen.
+
+                Våg 12 satte `mt-3` och våg 14 först `mt-4`. BÅDA VAR
+                VERKNINGSLÖSA: en global oskiktad `p { margin: 0px }` i
+                stilmallen slår Tailwinds `.mt-*`, eftersom utilities ligger i
+                `@layer utilities` och CSS-kaskaden ger OSKIKTADE regler högre
+                prioritet än skiktade. DOM-mätt `marginTop: "0px"` med
+                `class="mt-4 …"` på elementet.
+
+                Det förklarar varför Marcus fortsatte se att noteringen
+                klistrade uppåt efter våg 12: den vågens synliga förbättring
+                kom helt från `leading-relaxed` och `pb-1`, aldrig från
+                marginalen. Padding rörs inte av reset:en och verkar direkt.
+
+                Måttet: luften NEDÅT är `pb-1` (4 px) + radens `py-3` (12 px) =
+                16 px, så `pt-4` = 16 px gör paret symmetriskt — Marcus krav
+                ordagrant ("lika mycket luft däremellan som det är mellan
+                noteringstexten och avdelaren under").
+
+                LÄXAN ÄR GENERELL: på denna kodbas är `mt-*`/`mb-*` på `<p>`
+                tysta no-ops. Använd padding, eller `gap` på föräldern. Att
+                `my-0`/`mb-0` står utskrivet på flera `<p>` i filen är därför
+                också dekoration — reset:en hade redan nollat dem.
           (ii)  `leading-relaxed` INUTI noteringen — samma val som
                 AnmalanDetail gör för sin fritext. En flerradig notering med
                 tät radsättning är den enda texten på kortet som måste läsas
@@ -335,7 +369,7 @@ function BetalningsLasRad({
                 gav mindre luft ner till avdelaren än upp till statusraden.
                 Asymmetrin syntes som att noteringen hängde i nederkanten. */}
       {egenNotering && (
-        <p className="mt-3 mb-0 pb-1 pl-7 text-small text-text-secondary leading-relaxed">
+        <p className="pt-4 pb-1 pl-7 text-small text-text-secondary leading-relaxed">
           {egenNotering}
         </p>
       )}
@@ -753,8 +787,15 @@ function BetalningsPersonRad({
             // ikon-cirkel (32 px) + dess `gap-3` (12 px), så texten står
             // precis där en nodtext hade stått — de två grenarna läser som
             // samma yta i två tillstånd, inte som två olika layouter.
+            // Texten säger vad rutan ÄR, inte bara att den är tom (Marcus våg
+            // 14). "Inget skickat ännu" ensamt förutsatte att läsaren redan
+            // visste vad ytan under betalningarna var till för — och rubriken
+            // som hade sagt det revs i våg 12. Meningen bär nu båda: vad som
+            // kommer stå här, och att inget gör det ännu.
             <div className="pt-8 pb-3">
-              <p className="my-0 pl-11 text-small text-text-muted">Inget skickat ännu</p>
+              <p className="my-0 pl-11 text-small text-text-muted">
+                Utskickslogg visas här — inget skickat ännu till denna person
+              </p>
             </div>
           )}
         </div>

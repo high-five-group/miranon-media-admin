@@ -328,6 +328,31 @@ export function kategoriPillText(r: Registration): string | null {
  * här). `id`-prefixet `proto-hallplats-` gör fixturerna omisskännliga i DOM
  * och devtools.
  */
+/**
+ * [PROTOTYPE] [S93] ITERATIONSVÅG 14 — MOTTAGEN-DATUM, PROTOTYP-LOKALT.
+ *
+ * Marcus 2026-08-06: "vi fångar datumet i appen. När Lotta kryssar i rutan
+ * anmälningsavgift eller slutbetalning då fångar vi det och sätter det datumet
+ * i pillen. Tänker jag rätt? Det måste väl bli så."
+ *
+ * Han tänker rätt — men fältet FINNS INTE i basen ännu (`Anmälningsavgift`
+ * fldJtKQ3qLxRKOvR6 och `Slutbetalning` fldIImadnJUZHr5Qh är singleSelect utan
+ * tidsstämpel, data-model.md:233-234). Datumen nedan bor därför HÄR, i den
+ * kastbara prototypfilen, och INTE i `Registration` — att lägga fält i
+ * domänmodellen för ett bas-fält som inte är beslutat vore att föregripa
+ * beslutet i kod ("bygg inte ifall", över-engineering-vakten).
+ *
+ * Syftet är enbart att Marcus ska SE pillen innan han beslutar om de två
+ * additiva dateTime-fälten. Skarpa vägen är bokförd i uppdragets rapport.
+ */
+export const PROTO_MOTTAGEN_DATUM: Readonly<Record<string, { avgift?: string; slut?: string }>> = {
+  'proto-hallplats-04': { avgift: '2026-07-21T10:12:00.000Z' },
+  'proto-hallplats-05': { avgift: '2026-07-16T08:40:00.000Z', slut: '2026-07-24T19:05:00.000Z' },
+  'proto-hallplats-06': { avgift: '2026-07-17T12:30:00.000Z' },
+  'proto-hallplats-07': { avgift: '2026-07-25T15:10:00.000Z' },
+  'proto-hallplats-13': { avgift: '2026-07-16T09:20:00.000Z', slut: '2026-07-25T11:45:00.000Z' },
+};
+
 function bas(overrides: Partial<Registration> & { id: string; namn: string }): Registration {
   return {
     fornamn: null,
