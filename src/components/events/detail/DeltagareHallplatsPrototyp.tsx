@@ -353,27 +353,38 @@ export function RegisterFilterRad({
               ))}
             </Select>
           </div>
-          {/* FOTENS RADBRYTNING (Marcus 2026-08-06, skärmavbild kl. 12.27):
-              "titta ... och se hur hela raden trycks ihop och radbryts när
-              rensa-knappen kommer fram."
+          {/* FOTENS HÖJD ÄR NU KONSTANT (Marcus 2026-08-06, iterationsvåg 6).
+              Marcus: "Vi kan inte ha det så att texten […] radbryts eller tar
+              en extra rad när 'rensa filtret-knappen' kommer upp. […] flytta
+              'upp' textraden på egen rad, behålla skriv ut-knappen och
+              rensa-knappen där de är."
 
-              MÄTT I BILDEN: texten bröt till två rader OCH båda knapparna bröt
-              INUTI sig själva — "Rensa / filter" och "Skriv / ut". Det senare
-              är aldrig avsett; ett flex-barn utan `whitespace-nowrap` bryter i
-              sin egen text långt innan raden wrappar.
+              MÄTT, och överskottet är för stort för att trixas bort: radens
+              inre bredd 502 px · texten på EN rad 319,2 px · knappgruppen
+              204,6 px · gap 12 px ⇒ 535,8 px behövs, alltså 33,8 px för
+              mycket. Vid smalare fönster växer underskottet.
 
-              TRE ORSAKER SAMVERKADE: (1) "Rensa filter" renderas bara när
-              filter är aktiva, så raden går från två till TRE element utan
-              förvarning — precis det Marcus såg; (2) fotens text förlängdes
-              samma dag av avbokade-tillägget ovan; (3) `flex` utan `wrap` gav
-              barnen inget annat sätt att krympa än att bryta internt.
+              ETT FÖRSTA FÖRSÖK (samma dag) satte `flex-wrap` + `whitespace-nowrap`
+              och löste HALVA problemet: knapparna slutade brytas inuti sig
+              själva ("Rensa / filter", "Skriv / ut" — aldrig avsett), men
+              texten bröt fortfarande, och foten VÄXTE med en rad i samma
+              ögonblick som "Rensa filter" dök upp. Det är den höjdändringen
+              Marcus störde sig på: layouten hoppar när man filtrerar.
 
-              FIXEN: `flex-wrap` på raden så texten och knappgruppen kan lägga
-              sig på var sin rad när bredden inte räcker, plus `whitespace-nowrap`
-              på knapparna så de aldrig bryts inuti sig själva. Texten får
-              `min-w-0` + `basis` så den krymper FÖRST — den tål radbrytning,
-              det gör inte en knappetikett. */}
-          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-border-light border-t pt-3">
+              NU: två egna rader, alltid. Texten får hela bredden (319,2 av
+              502 ⇒ ryms med marginal), knappgruppen ligger högerställd under
+              — Marcus placering, "där de är". Höjden slutar bero på om ett
+              filter är aktivt, vilket var hela poängen. Priset är en radhöjd
+              extra i ofiltrerat läge, medvetet betalat för stabiliteten.
+
+              TVÅ ALTERNATIV PRÖVADES OCH FÖLL. (1) Reservera plats för
+              "Rensa filter" med en osynlig platshållare — samma breddlås-teknik
+              som `MarkeringsBatchBar` redan använder. Den håller bredden
+              konstant men löser INTE radbrytningen, eftersom 535,8 px inte
+              ryms på 502 oavsett om knappen är synlig. (2) Korta texten så
+              allt ryms — offrar formuleringen Marcus godkände dagen innan, och
+              håller bara tills texten växer nästa gång. */}
+          <div className="flex flex-col gap-2 border-border-light border-t pt-3">
             {/* TALENS OLIKA BASER (Marcus 2026-08-06): "topp-räknarna räknar
                 aktiva (12) medan registret nu visar ALLA (14, inkl. två
                 avbokade). '5 av 12 mottagna' bredvid 'Visar 14 av 14' kan
@@ -399,7 +410,7 @@ export function RegisterFilterRad({
                 Tillägget hänger på TOTALEN, inte på `visadeAntal`: 14 = 12 + 2
                 oavsett vad filtret just nu visar. Noll avbokade ⇒ inget
                 tillägg — då finns ingen krock att förklara. */}
-            <span className="min-w-0 flex-1 basis-48 text-small text-text-secondary">
+            <span className="text-small text-text-secondary">
               {`Visar ${visadeAntal} av ${totaltAntal} i registret`}
               {avbokadeAntal > 0
                 ? ` — ${avbokadeAntal} av dem ${avbokadeAntal === 1 ? 'är avbokad' : 'är avbokade'}`
@@ -421,7 +432,7 @@ export function RegisterFilterRad({
                 inkonsekvensen punkt 1 vill bort från vore flyttad en meter i
                 stället för borttagen. Nu bär båda samma primitiv, samma
                 `rounded`, samma 32 px. */}
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center justify-end gap-2">
               {aktiva > 0 ? (
                 <Button
                   intent="ghost"
