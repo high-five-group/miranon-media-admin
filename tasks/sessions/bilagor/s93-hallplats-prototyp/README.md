@@ -781,3 +781,90 @@ matades in via `page.route()`. Mutations-endpoints intercepterades ALDRIG.
 - **Tal-koherens:** `konvergens-a-verklig.png`s tre räknerader matchar
   Eventplanering-radens egna fält exakt (se § Bilderna ovan) —
   cross-verifierat mot Airtable MCP, inte bara mot sig själv.
+
+## FACIT-LÅST (S93, 2026-08-06) — vågorna 10–20
+
+**Marcus lås:** *"Jag är nöjd. Lås som facit."* (2026-08-06). Elva
+iterationsvågor efter konvergens-passet ovan; nedan är vad som faktiskt
+ändrades och varför, som spec-underlag för `/to-prd` × 3.
+
+### Betalningsytan — från formulär till läsyta (vågorna 10–17)
+
+Ingången var Marcus dom över personblocken under "Öppna detaljer":
+*"innehållet som det behöver ha, men designmässigt är det skit"*, med
+anmälnings-detaljsidan utpekad som förebild. Grammatiken som ärvdes är
+`DetaljGrupp`/`EtikettVardeRad`: rubrik utanför, kort under, etikett dämpad
+vänster, värde primärt höger.
+
+| # | Ändring | Rivningens skäl |
+|---|---|---|
+| 10 | Personen fick en **kortyta** (`bg-surface`), namn + status utanför | Förut bar bara utskicks-lådan inneslutning — ytans minst viktiga innehåll |
+| 10 | **18 tomma `<Input>` rivna** | Ytan är för ÖVERBLICK; editering hör till åtgärds-sidan (Marcus) |
+| 10 | **Rött lämnade fältetiketten** | Fliken heter redan "Saknar betalning (9)" — rött per rad upprepade den |
+| 11 | Noteringen fick **egen rad, full bredd** | Höger-slotten var för smal för hur Lotta faktiskt skriver |
+| 11 | Utskicken blev **`Tidslinje`** | En logg är ingen värde-slot; fyra utskick i en `dd` blir en klump utan tidsaxel |
+| 12 | **Luft** runt noteringen: `pt-4` + `leading-relaxed` + `pb-1` | Symmetriskt mot avdelaren (16/17 px, DOM-mätt) |
+| 12 | **"Utskick"-rubriken riven**, luften kvar (`pt-8`) | Ordet upprepade noderna under det, med en fjärde textvikt |
+| 13 | **Höger-slotten helt riven** ("Saknas"/"Mottagen") | Sa samma sak som krysset — i Saknar-fliken tre gånger om |
+| 14 | **Mottagen-pill med datum** (prototyp-lokalt) | Datumet är äkta information krysset inte kan bära |
+| 15–16 | **Pill-skalan namngiven**, kontur prövad och riven | Se `T127` |
+| 17 | **Hover på "Öppna detaljer"** | Raden var klickbar utan att se klickbar ut |
+
+### Gruppdynamiken (vågorna 18–19)
+
+| # | Ändring | Skäl |
+|---|---|---|
+| 18 | Fixturen fick **motiveringar, badges och `T16`-divergensen** | Två av tre ytor renderade tomt — blocket gick inte att granska |
+| 19 | **Knappformen** härmar Deltagares (36 px platta i `py-2`-förälder) | Hover-plattan var 48 px = hela radhöjden, kant till kant |
+| 19 | Personkorten fick **`PersonMiniKort`-formen** | Marcus: *"vill jag ska se ut som dem på anmälan-detaljsidan"* |
+| 19 | **"Inga tidigare event"-raden riven** | Upprepade bucketens namn tio gånger |
+
+### Tvärs över (våg 20)
+
+- **Sju proto-texter rivna** (Marcus räknade tre; ordern var "all"). De fyra
+  övriga: `Deltagare` (Bor över), `Betalningar` (arbetsytans banderoll + två
+  `title`-tooltips). `protoDataMode` styr fortfarande datakällan och håller
+  kontrollerna inaktiverade — bara förklaringen är borta.
+- **Anteckningscomposern 64 → 112 px** via `size="md"` (primitivens eget nästa
+  steg, inte ett handrullat `min-h`). Byter också `text-small` → `text-body`.
+
+### Räckvidd — VIKTIGT för nästa pass
+
+**Vågorna 10–17 är prototyp-grenade** (`protoAktiv`); skarpa betalningsvyn är
+orörd. **Vågorna 19–20 är SKARP kod** — `Gruppdynamik` har ingen variant-gren
+för form, och proto-texterna satt i delad kod. De syns alltså utan `?variant=a`.
+
+### Bilderna — FACIT (`facit-*.png`)
+
+Tagna via chrome-devtools MCP mot dev-servern på **5173** i denna worktree,
+`?variant=a&data=proto` (in-memory-fixturer — ingen API-interception behövdes,
+till skillnad från konvergens-passets Node-skript). 430 px vyport.
+Dev-overlays (TanStack-badgen, prototyp-växlaren) är SYNLIGA i bilderna och
+medvetet inte bortredigerade: ett försök att dölja dem kollapsade layouten
+(farförälder-gissningen träffade `main`), och en facitbild ska visa vad som
+faktiskt renderades.
+
+- `facit-betalningar-arbetsytan.png` — Saknar betalning-fliken: personkort med
+  `bg-surface`, `Obekräftad`-badge i `sm`, tom utskickslogg med sin nya text,
+  Sara Nilssons långa notering över fyra rader.
+- `facit-betalningar-maxat-kort.png` — Peter Lund, taket för vad en person kan
+  bära: två noteringar + fyra utskick i `Tidslinje`-formen med klockslag.
+- `facit-gruppdynamik.png` — tre bucketar, `PersonMiniKort`-formade kort, och
+  **`T16`-divergensen synlig**: Gustav Wik i "3+ tidigare event" med badgen
+  `Ej påbörjat` (RIM-3-blindheten), plus två motiveringskort varav ett med
+  `Läs mer`.
+- `facit-anteckningar.png` — composern i sitt nya `md`-steg (112 px, mätt).
+
+### Verifiering (facit-låsningen)
+
+- `npm run typecheck` — 0 fel.
+- `npx @biomejs/biome check` — 0 fel i rörda filer.
+- `npm run build` — grön.
+- `npm run test:api` — **458 passed**.
+- `check-thread-index.sh` + `check-lifecycle.sh` — OK (`T127`).
+- **Grep-verifierat:** `Förhandsvisning (proto)` 0 träffar i `src/`, och
+  0 träffar i `tests/` FÖRE rivningen (ingen svit hängde på texten).
+- **EJ KÖRT:** `npm run test:visual`. Konvergens-passet körde en dubbel
+  stash-mätning för att bevisa att skarpa vyn var byte-identisk. Den mätningen
+  gäller INTE här — vågorna 19–20 ÄNDRAR skarp kod med avsikt, så baselines
+  förväntas skilja. Omtagning av visuella baselines är en post för nästa pass.
