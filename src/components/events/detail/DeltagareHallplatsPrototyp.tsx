@@ -438,21 +438,82 @@ export function RegisterFilterRad({
                 inkonsekvensen punkt 1 vill bort från vore flyttad en meter i
                 stället för borttagen. Nu bär båda samma primitiv, samma
                 `rounded`, samma 32 px. */}
+            {/* HOVERN VAR OSYNLIG (Marcus 2026-08-06, iterationsvåg 8):
+                "Skriv ut-knappen har ju ingen hover? Lös det."
+
+                DEN FANNS — den gick bara inte att se. MÄTT: `intent="ghost"`
+                hovrar till `--mm-button-ghost-bg-hover` = `bg-muted` =
+                `rgb(245,245,243)`, och panelen den ligger i ÄR `bg-bg-muted`
+                = `rgb(245,245,243)`. Identiska. Ghost-varianten är designad
+                för att ligga på vit yta; på en muted panel försvinner dess
+                hover in i bakgrunden.
+
+                KONTRASTMÄTNING som skiljer de två fallen åt: samma knapp i
+                `Atgarder.tsx`s `SkrivUtKort` ligger på `rgb(255,255,255)` och
+                dess hover ÄR synlig. Den rördes därför INTE — att "fixa" båda
+                hade ändrat en knapp som fungerade.
+
+                FIXEN ÄR REPOTS EGEN FÄRG: `bg-bg-emphasized`
+                (`rgb(237,238,233)`, den tonala betonings-ytan) är exakt vad
+                eventlistans motsvarande fot-knappar redan använder
+                (`EventsList.tsx` rad 416 och 426), plus `EventValjare` och
+                `ManuellAnmalanForm`. Ingen ny token, inget lokalt undantag.
+
+                MEN VARIANTEN MÅSTE VARA `data-[hovered]:`, INTE `hover:` —
+                och det var ett eget fel på vägen, fångat av mätning. Första
+                försöket skrev `hover:bg-bg-emphasized` och mätte EFTERÅT:
+                hovern stod kvar på `rgb(245,245,243)`, alltså oförändrad.
+                Skälet är `cn()`s tailwind-merge: primitivens basklass är
+                `data-[hovered]:bg-(--mm-button-ghost-bg-hover)`, och en
+                `hover:`-klass räknas som en ANNAN modifierare — merge:n ser
+                ingen konflikt, behåller BÅDA, och CSS-ordningen avgör till
+                primitivens fördel. Med samma modifierare känner merge:n igen
+                konflikten och låter den sist angivna vinna, som avsett.
+                Regeln: en override mot en react-aria-primitiv måste använda
+                primitivens EGEN variant-mekanism, annars blir den tyst
+                verkningslös.
+
+                MÄTT EFTER: vila `rgba(0,0,0,0)` · hover `rgb(237,238,233)` ·
+                panel `rgb(245,245,243)`.
+
+                BÅDA fot-knapparna fick den: "Rensa filter" satt i samma
+                osynliga läge, den hade bara ingen som klagade än. */}
             <div className="flex shrink-0 items-center justify-end gap-2">
               {aktiva > 0 ? (
                 <Button
                   intent="ghost"
                   size="sm"
-                  className="whitespace-nowrap"
+                  className="relative whitespace-nowrap data-[hovered]:bg-bg-emphasized"
                   onPress={() => onFilterChange(TOMT_REGISTER_FILTER)}
                 >
                   Rensa filter
+                  {/* AKTIV-FILTER-RÄKNAREN ÅTERUPPSTÅR HÄR (Marcus 2026-08-06):
+                      "Förut hade vi en siffra som fästes på filtreringsknappen
+                      […] kan vi inte sätta den nu på 'Rensa filter'-knappen?"
+
+                      Badgen dog med Filtrera-knappen i iterationsvåg 5. Den
+                      passar faktiskt BÄTTRE här: "Rensa filter" renderas bara
+                      när `aktiva > 0`, så siffran står aldrig och säger noll —
+                      och den svarar på frågan knappen väcker, "hur mycket är
+                      det jag rensar bort?".
+
+                      Formen är oförändrad från Filtrera-knappen: `aria-hidden`
+                      dekor, med antalet buret av en sr-only-sträng så knappens
+                      tillgängliga namn blir "Rensa filter, 2 aktiva filterval"
+                      — badgen läses aldrig som text av hjälpmedel. */}
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-medium text-[10px] text-text-inverse"
+                  >
+                    {aktiva}
+                  </span>
+                  <span className="sr-only">{`, ${aktiva} ${aktiva === 1 ? 'aktivt' : 'aktiva'} filterval`}</span>
                 </Button>
               ) : null}
               <Button
                 intent="ghost"
                 size="sm"
-                className="whitespace-nowrap"
+                className="whitespace-nowrap data-[hovered]:bg-bg-emphasized"
                 onPress={() => window.print()}
               >
                 <Printer aria-hidden="true" size={18} className="shrink-0" />
