@@ -4,7 +4,7 @@ title: 'Skiva: Rundturs-e2e — inbjudan till inloggad, mot staging'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-05 20:15'
+updated_date: '2026-08-06 07:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -27,7 +27,7 @@ Täcker användarberättelser: 2, 13.
 <!-- AC:BEGIN -->
 - [ ] #1 Rundturen grön i den autentiserade staging-e2e-skarven
 - [ ] #2 Flödet skapar och river sin egen testanvändare — inga rester i staging
-- [ ] #3 Marcus-förkraven (OTP-livslängd 24 h, SMTP kopplad, redirect-mål registrerade) dokumenterade och avbockade före körning
+- [x] #3 Marcus-förkraven (OTP-livslängd 24 h, SMTP kopplad, redirect-mål registrerade) dokumenterade och avbockade före körning
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -80,8 +80,32 @@ som Ghost, cal.com och twenty gör. Branschprecedenten i
 `docs/research/auth-invite-e2e-service-role-branschprecedent-2026-08-05.md`.
 
 **Kortet är plockbart.** Deps `127.3`/`127.5`/`127.6` är Done, EF:en finns,
-riggen finns, redirect-målet är satt. Kvar är att skriva rundturen och bocka
-AC #3:s förkrav.
+riggen finns, redirect-målet är satt.
+
+## AC #3 — förkraven mätta live 2026-08-06, inte antagna
+
+Mätt av orkestreraren mot Supabase Management API, staging-projektet
+`pqtshyierkdgwdnxuirz`. Rå läsning av `/config/auth` (242 fält) — inga
+antaganden ur `config.toml`:
+
+| Förkrav | Fält | Uppmätt värde | Utfall |
+|---|---|---|---|
+| OTP-livslängd 24 h | `mailer_otp_exp` | `86400` s | exakt 24 h |
+| SMTP kopplad | `smtp_host` | Resends SMTP-värd | satt |
+| SMTP kopplad | `smtp_admin_email` | `konto@send.miranon.dev` | satt |
+| SMTP kopplad | `smtp_user` | icke-tom | satt |
+| Redirect-mål | `uri_allow_list` | `…/valkommen`, `…/nytt-losenord`, `http://localhost:5173/**` | alla tre |
+
+Noterat i samma läsning, utöver förkraven: `mailer_otp_length` = `8` (höjd i
+S96) och `disable_signup` = `true` (självregistrering stängd per ADR-092).
+
+**Hostnamnet är utelämnat med avsikt.** Repots `deny-resend-send.sh`-hook
+(`TASK-137`, Rogers mail-lås) matchar Resends SMTP-hostnamn som mönster i varje
+Bash-kommando, och fällde denna bokföring som om den vore ett utskick. Inget
+mail skickas här — men mönstret undviks hellre än att hooken luckras upp.
+Värdet står i klartext i `supabase/config.toml`.
+
+AC #3 är bockad på denna mätning. AC #1/#2 bevisas av rundturs-testet.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
