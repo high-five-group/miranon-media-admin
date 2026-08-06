@@ -469,6 +469,16 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
         typ: 'Kurs',
       },
     ] satisfies PersonHistoryEntry[],
+    // [PROTOTYPE] [S93] ITERATIONSVÅG 18 — badgen KONSISTENT med bucketen.
+    // Karin har RIM 1 ×1 och RIM 2 ×0 ⇒ Erfarenhetsnivå "RIM steg 1" ⇒ badge
+    // "Resenär steg 1" (data-model.md § Personer.Erfarenhetsbadge). Hon är
+    // kontrollfallet mot Gustav Wik nedan, där badge och bucket DIVERGERAR.
+    erfarenhetsbadge: 'Resenär steg 1',
+    motivering:
+      'Har gått RIM 1 och en fjärrskådningshelg tidigare. Vill fördjupa mig i ' +
+      'det som öppnade sig då — särskilt hur man skiljer egna projektioner från ' +
+      'faktisk information. Har övat regelbundet sedan i våras men kört fast på ' +
+      'just den punkten och hoppas kunna få handledning på plats.',
   }),
   bas({
     id: 'proto-hallplats-06',
@@ -562,5 +572,61 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
     status: RegistrationStatus.OBEKRAFTAD,
     kalla: RegistrationSource.VANTELISTA,
     inskickad: '2026-07-28T09:00:00.000Z',
+    // [PROTOTYPE] [S93] ITERATIONSVÅG 18 — T16-DIVERGENSEN, GJORD SYNLIG.
+    //
+    // Gustav bär TRE genomförda RIM 3-event. Det ger:
+    //   · `antalGenomfordaEvent: 3`  ⇒ Gruppdynamik bucketar honom "3+ tidigare
+    //     event" (basens RIM-3-INKLUDERANDE räknare `Antal genomförda event`)
+    //   · `erfarenhetsbadge: 'Ej påbörjat'` ⇒ personens kanoniska badge, som är
+    //     RIM-3-BLIND: Erfarenhetsnivå räknar `Totala deltaganden (gammal)` =
+    //     RIM 1 × + RIM 2 × + Fjärrskådning ×, alltså UTAN RIM 3
+    //     (data-model.md § Kända buggar i insiktskedjan).
+    //
+    // Ett kort som säger "3+ tidigare event" och "Ej påbörjat" samtidigt ser ut
+    // som ett renderingsfel — men det ÄR basens sanning, och Gruppdynamiks
+    // docblock slår uttryckligen fast att divergensen ska visas RÅ, aldrig
+    // bortdesignas. Utan detta fixturfall kan formen aldrig granskas: den
+    // enda instansen är osynlig tills den dyker upp i prod.
+    //
+    // Posten fyller dessutom "3+ tidigare event"-bucketen, som stod på 0 och
+    // därför aldrig gick att se utfälld.
+    antalGenomfordaEvent: 3,
+    erfarenhetsbadge: 'Ej påbörjat',
+    kurshistorik: [
+      {
+        id: 'proto-hallplats-14-hist-1',
+        kursnamn: 'Resor i medvetandet 3',
+        eventLabel: 'Resor i medvetandet 3',
+        datum: '2025-03-08',
+        session: 'Dag 1',
+        status: 'Bekräftad (mail skickat)',
+        narvaro: true,
+        ort: 'Göteborg',
+        typ: 'Kurs',
+      },
+      {
+        id: 'proto-hallplats-14-hist-2',
+        kursnamn: 'Resor i medvetandet 3',
+        eventLabel: 'Resor i medvetandet 3',
+        datum: '2025-09-20',
+        session: 'Dag 1',
+        status: 'Bekräftad (mail skickat)',
+        narvaro: true,
+        ort: 'Stockholm',
+        typ: 'Kurs',
+      },
+      {
+        id: 'proto-hallplats-14-hist-3',
+        kursnamn: 'Resor i medvetandet 3',
+        eventLabel: 'Resor i medvetandet 3',
+        datum: '2026-04-11',
+        session: 'Dag 1',
+        status: 'Bekräftad (mail skickat)',
+        narvaro: true,
+        ort: 'Malmö',
+        typ: 'Kurs',
+      },
+    ] satisfies PersonHistoryEntry[],
+    motivering: 'Stod på väntelistan i våras och vill gärna ta chansen nu.',
   }),
 ];
