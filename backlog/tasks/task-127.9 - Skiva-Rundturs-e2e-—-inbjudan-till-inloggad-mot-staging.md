@@ -4,7 +4,7 @@ title: 'Skiva: Rundturs-e2e — inbjudan till inloggad, mot staging'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:33'
-updated_date: '2026-08-06 07:53'
+updated_date: '2026-08-06 08:27'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,8 +25,8 @@ Täcker användarberättelser: 2, 13.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rundturen grön i den autentiserade staging-e2e-skarven
-- [ ] #2 Flödet skapar och river sin egen testanvändare — inga rester i staging
+- [x] #1 Rundturen grön i den autentiserade staging-e2e-skarven
+- [x] #2 Flödet skapar och river sin egen testanvändare — inga rester i staging
 - [x] #3 Marcus-förkraven (OTP-livslängd 24 h, SMTP kopplad, redirect-mål registrerade) dokumenterade och avbockade före körning
 <!-- AC:END -->
 
@@ -106,12 +106,50 @@ mail skickas här — men mönstret undviks hellre än att hooken luckras upp.
 Värdet står i klartext i `supabase/config.toml`.
 
 AC #3 är bockad på denna mätning. AC #1/#2 bevisas av rundturs-testet.
+
+## AC #1 och #2 — bevisade 2026-08-06, i CI och lokalt
+
+Rundturs-testet (`tests/e2e/invite-rundtur.staging.test.ts`, PR `#826` →
+`5b493536`) är bevisat på två oberoende sätt:
+
+- **Lokalt:** två skarpa körningar mot `chromium-authenticated`, 8,3 s och
+  6,0 s, exit 0 båda gångerna.
+- **I CI:** `post-merge.yml`-körning `31084229170` på det mergade trädet.
+  Steget `E2E tests (staging)` körde **177 tester** och rundturen fanns bland
+  de **175 passerade**.
+
+AC #2 bärs mekaniskt: `test.afterEach` anropar `delete_user` och assertar
+`status === 200` **utan** `try/catch`, så en misslyckad teardown fäller testet
+i stället för att tystna. Två gröna körningar är därmed ett positivt bevis på
+att rivningen faktiskt kördes och lyckades.
+
+## DoD #3 ÄR INTE UPPFYLLD — och det är avsiktligt inte bortförklarat
+
+`post-merge`-jobbet på `5b493536` blev **rött**, men **inte av detta korts
+arbete**. De tre fällda testerna är samtliga `mark-paid.staging.test.ts`
+(rad 297, 521, 594), med `strict mode violation — resolved to 3 elements` på
+`Eva Lindqvist` och `Föreläsnings Person`.
+
+Rotorsaken ligger utanför detta kort: commit `6f1d8c1a` (*"proto(S93):
+iterationsvåg på konvergens-prototypen"*) lade två `sr-only`-rubriker i
+`src/components/events/detail/Betalningar.tsx` rad 438 och 463, båda med
+personens namn i texten. `mark-paid`-testet använder `getByText(<namn>)`, som
+därmed träffar tre element i stället för ett — länken plus de två nya
+rubrikerna. Samma rotorsak fäller `#821`, `#824` och `#825`.
+
+**Larm-automatikens revert-förslag pekar på fel PR.** Den resonerar
+"föregående post-merge var grön ⇒ denna landning är misstänkt", vilket utpekar
+oskyldiga poster; en revert hade rivit korrekt arbete och lämnat orsaken kvar.
+
+Kortet hålls därför ÖPPET tills `mark-paid`-selektorerna är skärpta och
+post-merge är grönt. Fixen ligger i appspårets fil medan `S93` är `active` —
+vägvalet är Marcus, inte en agents.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
