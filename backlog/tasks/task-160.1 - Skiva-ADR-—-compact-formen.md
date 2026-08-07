@@ -4,6 +4,7 @@ title: 'Skiva: ADR — compact-formen'
 status: To Do
 assignee: []
 created_date: '2026-08-07 16:52'
+updated_date: '2026-08-07 17:37'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,10 +20,12 @@ ordinal: 283000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ADR mintad: nischen (tre samtidiga villkor), zonen ~50 %, tudelad beslutsrätt HITL/AFK, markör-kontraktet inkl. commit-räcker-divergensen mot paus-formen, max-en-compact-regeln; decline-rationale för ersättning (A) och avvisning (C) bokförda
-- [ ] #2 ADR-nummer re-verifierat mot disk vid mintningen (parallella sessioner rör räknaren); README-räkningen synkad
-- [ ] #3 Docs-grindarna gröna lokalt före push; PR armerad, per-jobb-grön
+- [x] #1 ADR mintad: nischen (tre samtidiga villkor), zonen ~50 %, tudelad beslutsrätt HITL/AFK, markör-kontraktet inkl. commit-räcker-divergensen mot paus-formen, max-en-compact-regeln; decline-rationale för ersättning (A) och avvisning (C) bokförda
+- [x] #2 ADR-nummer re-verifierat mot disk vid mintningen (parallella sessioner rör räknaren); README-räkningen synkad
+- [x] #3 Docs-grindarna gröna lokalt före push; PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
