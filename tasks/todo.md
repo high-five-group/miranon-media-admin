@@ -15,6 +15,36 @@
 
 ## Aktuellt fokus
 
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`) — PRD × 3
+LEVERERADE** — **GITHUB ACTIONS LÅG NERE, OCH TVÅ VAKTER LJÖG OM DET.**
+`#838` stod `BLOCKED` med en required check i `CANCELLED` — jobbet hade kört
+**15 min 01 s med noll steg**, alltså *"fick aldrig en runner"*, medan
+samtliga substantiella jobb var gröna. Orsak: Actions i `major_outage`
+(incident `qcvjkzcs7j74`) medan Git/API/PR var `operational`. Heartbeat-svepet
+larmade level-triggered på en rollup som strukturellt inte kunde tystna
+(= S96:s `T128`), och den riktade ersättningsvakten bröt på ett
+`operational` som statussidan flaxat fram — **förgrundsverifieringen fångade
+båda**. Omkörningen stod `queued` i **13 tim med noll jobb**; rätt grepp blev
+`git merge origin/main`, som löste `DIRTY` **och** triggade färsk CI.
+**NUMMERKOLLISION:** S96 mintade sitt eget `T127` (+`T128`/`T129`) och landade
+först — S93:s pill-skala omnumrerad `T127` → **`T130`**, nästa tråd `T131`.
+**MARCUS-BESLUT som skrev om kortsnittet:** *"eventsidan är bara för översyn
+nu ju, så alla åtgärder flyttar till åtgärdssidan"* — kort 1 krympte till EN
+utgång och EN hermetisk skarv, kort 3 svalde hela betalningsvertikalen +
+avprickningens staging-skarv; **K27-anden riven öppet**, beslut 1 amenderat.
+**LEVERERAT:** `TASK-145` (eventsidans konsolidering) · `TASK-146`
+(bilage-fundamentet) · `TASK-147` (åtgärds-sidan) — 14 spec-specifika
+DoD-grindar, tre ADR-bar-träffar + `ADR-067`-revision. **FYND:** de sex
+åtgärdstyperna finns **ingenstans** på disk (beslut 5 säger "6 typer"; genom-
+sökt sessionsdok/research/ORDLISTA/specar/kod) — öppen punkt, ej gissad.
+`#838` LANDAD `07:55:07Z` (`3537e39e`). **NÄSTA: `/to-issues`** — kort 2 är
+mest redo (dess förkrav är ett bevis vi själva kan köra), kort 1 kräver
+Marcus datum-beslut, kort 3 väntar på divergens-passet + de sex typerna +
+Roger-avstämningen. Numrering: 096/**L480**/T131/task-148/f47 + tre
+nummerlösa fragment. **EJ KÖRT: `test:visual`.** **HANDOFF: sessionsdok S93
+Del 7.**
+*(S96 är `paused` sedan sin åttonde paus — dess kadensrad nedan, oförändrad.)*
+
 **Session 96 ⏸️ PAUSAD (2026-08-07, åttonde pausen, `lifecycle: paused`)** —
 **PRODS UTGÅENDE POST VAR DÖD, OCH DET VAR EN DIFF SOM DOLDE DET.** Marcus fick
 inget återställningsmail; prods auth-logg gav rotorsaken direkt — `/recover`
