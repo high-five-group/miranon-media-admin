@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-06
+updated: 2026-08-07
 review_by: 2026-11-06
 status: stable
 lifecycle: active
@@ -40,22 +40,149 @@ iteration!!!"*.
 **Regeln var alltså korrekt, färsk, mätunderbyggd och specifik. Den lästes
 aldrig.**
 
-## Rotorsaks-HYPOTES (ej bekräftad — se Nästa steg)
+## Rotorsak — MÄTT (2026-08-07, `TASK-149.2`)
+
+> **Klassning:** HYPOTES → **MÄTT**. Prövad mot fyra oberoende artefakter av en
+> aktör skild från den som formulerade hypotesen (kravet i ursprungstexten
+> nedan). Ingen av de fyra motsäger hypotesen — samtliga bekräftar den.
 
 Sessionen kom in i arbetet via `session-resume` → HANDOFF-block → Marcus
 punktlista. Ingen av de vägarna laddar `prototype`-skillen. Utföraren byggde i
 rätt scope, mot rätt fil, med rätt kvalitetsribba — och fel kadens, utan att
 någon gång passera texten som definierar kadensen.
 
-Den generella formen, om hypotesen håller: **vi placerar arbetsformens regler i
+Den generella formen, bekräftad nedan: **vi placerar arbetsformens regler i
 den skill som STARTAR arbetsformen, men arbete återupptas oftare än det
 startas.** Resume, handoff, "fortsätt där vi var", en ny punktlista i en
 pågående tråd — varje sådan väg in hoppar över startdörren och därmed över
 reglerna. Ju längre ett arbete lever, desto större andel av dess varv körs av
 någon som aldrig såg dem.
 
-**Detta är en hypotes formulerad av samma aktör som begick felet.** Den ska
-prövas mot faktiskt tillstånd innan något byggs — se Nästa steg 1.
+### Belägg 1 — `session-resume`s SKILL.md refererar aldrig `prototype` eller någon arbetsform-regel
+
+Källa: `~/.claude/plugins/cache/marcus-hub/marcus-system/1.29.0/skills/session-resume/SKILL.md`
+(aktiv installerad version, verifierad mot `~/.claude/plugins/installed_plugins.json`:
+`marcus-system@marcus-hub` → `1.29.0`). `grep -in "prototype\|arbetsform\|kadens\|iteration"`
+mot filen ger **noll träffar på `prototype` eller `arbetsform`**. De tre
+träffarna på "kadens" är en ANNAN axel — `todo-kadensraden (L67)` och
+`landnings-kadens` — dokets synk-disciplin, inte iterations-kadensen § 5.
+
+Vad resume-proceduren faktiskt läser, verbatim ur skillens `## Procedur`
+(steg 1, 2 och 4 av sju totalt — steg 3/5–7 rör numrering/parallellitet/
+monitor och är obesläktade, därför uteslutna ur citatet):
+
+> **Steg 1:** "Kör session-startens LÄS-fas (hub-rutin + ev. spoke-utvidgning
+> i `session-start`-skillen: läs-ordning, repo-state, audit-grind,
+> `git pull`)."
+>
+> **Steg 2:** "Lokalisera sessionsdoket: doket med `lifecycle: paused` i
+> `tasks/sessions/`-roten; läs `## PAUSLÄGE`-rubriken +
+> HANDOFF-blocket i sin helhet."
+>
+> **Steg 4:** "Rekonstruera läget: … korsläs HANDOFF-blocket mot
+> todo-kadensraden (L67) och BUILD-LOG."
+
+Steg 1 pekar vidare till `session-start`s LÄS-fas — kontrollerad separat:
+samma `grep` mot `session-start/SKILL.md` ger noll träffar på `prototype`
+eller `arbetsform` (enda träffen på "iteration" gäller en formaterings-/
+lint-grindloop, obesläktad). Läskedjan `session-resume` → `session-start`s
+LÄS-fas → HANDOFF/todo/BUILD-LOG innehåller alltså **ingen nod** som läser
+eller laddar `prototype`-skillen.
+
+### Belägg 2 — `prototype`-skillens trigger matchar inte en resume-prompt strukturellt
+
+Källa: samma pluginversions `skills/prototype/SKILL.md`-frontmatter,
+verbatim:
+
+> "Bygg en kastbar prototyp som besvarar EN specifik, nedskriven fråga —
+> frågan avgör formen. LOGIC-grenen är en interaktiv terminal-app som driver
+> en tillståndsmodell genom svåra fall; UI-grenen är TVÅFAS (stående
+> arbetsform, T66) — divergens (tre radikalt olika varianter växlingsbara på
+> en route → Marcus väljer EN) + konvergens (vinnaren itereras till helt
+> nöjd; befintlig yta startar som EXAKT kopia av faktiska vyn), återkommande
+> vid senare ändringsbehov. Svaret är produkten, koden kastas eller
+> absorberas per throwaway-kontraktet. **Körs som eget litet pass FÖRE
+> spec** — svaret matar PRD-kortet/grillningen."
+
+Till skillnad från t.ex. `first-principles`/`llm-council` bär beskrivningen
+INGEN explicit `MANDATORY TRIGGERS`-lista med fraser. Skill-laddning matchar
+den löpande beskrivningen mot den AKTUELLA prompten. Beskrivningens implicita
+avfyrnings-kontext är **att starta** ett nedskrivet-fråga-pass FÖRE en spec
+— inte att fortsätta ett redan pågående. En resume-prompt av S93:s form
+("ta emot Marcus nästa iteration", en punktlista i en redan etablerad
+divergens/konvergens-våg) ber INTE om att "bygga en kastbar prototyp som
+besvarar EN fråga körd FÖRE spec" — den ber om att fortsätta ett facit som
+redan existerar. Strukturellt matchar den alltså inte beskrivningens
+triggerytor, och skulle inte ha laddat om skillen ens om systemet försökt
+matcha på fri text. Detta är samma mekanism-gap som Belägg 1 visar på
+skill-referens-nivå, bekräftat på trigger-matchnings-nivå.
+
+### Belägg 3 — S93-sessionsdokets egen bokföring
+
+Källa: `tasks/sessions/2026-08-02-session-93.md`, `grep -n "kadens"`,
+rad 585–588 (sessionens EGEN, samtida bokföring — inte en efterhandskonstruktion):
+
+> "Regeln fanns ordagrant i `prototype`-skillens § 5 *Iterations-kadensen*,
+> skriven efter förra instansen (`T116`, `TASK-127.2`) och komplett med
+> mätningen som motiverade den. **Den lästes aldrig** — sessionen kom in via
+> `session-resume` → HANDOFF → punktlista, en kedja där skillen inte
+> laddas."
+
+Sessionen som begick felet bokförde alltså SJÄLV, i realtid, samma kedja
+som Belägg 1–2 verifierar strukturellt mot disk i efterhand. Tre oberoende
+källor (skillens egen text, dess trigger-mekanik, sessionens samtidiga
+loggföring) konvergerar på samma orsak.
+
+### Generalisering — prövad mot två andra arbetsform-regler (AC 2)
+
+Frågan: bor `prototype` § 5 ensam på detta sätt, eller är mönstret bredare?
+Två andra regler, båda föreslagna i uppdraget, kontrollerade mot disk:
+
+**Grilling-kärnans regler (ADR-baren, STOPPA-OCH-FRÅGA, GRILLNING-normalstart)
+— INTE startdörrs-bundna, har en ANDRA bärare.** Källa:
+`skills/grilling/SKILL.md` § "ADR-baren": *"Hemvist (S47 Del 10 beslut 5):
+denna sektion är barens kanoniska fulltext. Kortformen bor som NÄR-rad i
+hub-CLAUDE.md § 'Instruktioner — Alltid gäller'."* Samma dubbel-bärarmönster
+gäller STOPPA-OCH-FRÅGA-konventionen och GRILLNING-normalstart-regeln — båda
+finns ordagrant i hub-`CLAUDE.md`. Skillnaden mot `prototype` § 5: `CLAUDE.md`
+laddas av HARNESSET vid varje sessionsstart, oavsett vilken skill (om någon)
+som matchar prompten — det är INTE en skill-trigger-matchning. **Belägg
+förstahand:** denna byggagent-session invokerade aldrig `session-start` eller
+`grilling`, och fick ändå hub- + spoke-`CLAUDE.md` i sin helhet som
+system-reminder vid sessionsstart (synligt i denna sessions egen
+konversationshistorik). Reglerna når alltså en resume:ad (eller vilken som
+helst) utförare via en bärare som är oberoende av skill-trigger-matchning.
+
+**Session-paus-kravet — DELAT utfall, en del mekaniserad, en del inte.**
+Källa: `skills/session-paus/SKILL.md` § 2, den FÖRANKRADE rubrik-formen
+(`## PAUSLÄGE — Session <N> pausad`) + `lifecycle:`-enum-kravet. Denna del
+HAR en mekanisk bärare oberoende av skill-laddning:
+`scripts/check-lifecycle.sh`, invokerad som grind 6 ("Lifecycle på
+sessionsdok + trådkort") i `scripts/check-docs.sh:232` och därmed körd av
+`npm run check:docs` samt i `.github/workflows/ci.yml` och `nightly.yml` —
+en felformaterad paus-skrivning FÄLLS vid landning oavsett om
+`session-paus`-skillen någonsin lästes. **Men** samma skills operativa steg
+— stoppa heartbeat-monitorn (`TaskStop`), släpp ägarlappen
+(`katalogagarskap-markor.sh --slapp`), städa worktrees
+(`stada-worktrees.sh`) — saknar VARJE mekanisk eller CLAUDE.md-bärare; de
+existerar ENBART som prosa i skillens `## Procedur`. Dessa steg är i SAMMA
+riskklass som `prototype` § 5: nås bara av den väg som explicit laddar
+`session-paus`. Skillnaden mot T126:s ursprungsfall är att ingen instans av
+detta ännu är OBSERVERAD (session-paus triggas av "pausa"-verbet, inte av
+resume) — men den strukturella sårbarheten är identisk, och bokförs här som
+fynd snarare än ny tråd (se `tasks/threads/README.md`-noten om att status
+inte ändras av detta kort).
+
+**Slutsats av generaliseringen:** mönstret är INTE unikt för `prototype` § 5,
+men det är heller inte universellt — det uppstår specifikt när en regels
+ENDA bärare är prosa i en skill vars trigger inte matchar
+återupptagnings-vägen. Regler med en ANDRA bärare (alltid-laddad `CLAUDE.md`,
+eller en mekanisk CI-/lokal grind) undviker klassen strukturellt. Detta
+matchar `TASK-149`-PRD:ns "facit-modell": grindklassens dubbla bärare
+(kort-DoD + agentfil) är precis den formen som gör en regel oberoende av
+inträdesväg. En fullständig inventering av ALLA arbetsform-regler efter
+bärarklass är `TASK-149.6`, utanför denna skivas scope (AC 2 kräver
+"minst två", inte en fullständig katalog).
 
 ## Varför detta INTE är en lesson
 
@@ -89,15 +216,21 @@ Ingen av dem är vald. Riktningarna är dessutom inte ömsesidigt uteslutande:
 
 ## Nästa steg
 
-1. **Pröva hypotesen mot faktiskt tillstånd.** Laddas `prototype` verkligen
-   aldrig av `session-resume`? Finns andra vägar in i samma arbetsform, och
-   missar de samma regel? Detta är ett läsande pass mot skill-filerna och
-   resume-kedjan — det ska INTE göras av den som skrev hypotesen ovan utan
-   verifiering mot disk.
-2. **Inventera hur många andra arbetsform-regler som bor på samma sätt.** Om
-   `prototype` § 5 är ensam är detta en punktfix; är den en av tio är det ett
-   program. Frågan avgör vilken åtgärdsriktning som är rimlig.
-3. **Välj mekanism** (Marcus) och bygg den.
+1. ✅ **KLART (`TASK-149.2`, 2026-08-07).** Hypotesen prövad mot faktiskt
+   tillstånd av en aktör skild från den som formulerade den — se
+   § "Rotorsak — MÄTT" ovan. `prototype` laddas verkligen aldrig av
+   `session-resume` (eller den `session-start`-LÄS-fas den anropar); ingen
+   annan väg in i samma arbetsform hittad som når regeln.
+2. **Delvis klart.** Två andra arbetsform-regler (grilling-kärnan,
+   session-paus-kravet) kontrollerade för samma leveransgap — se
+   § "Generalisering" ovan. Mönstret är verkligt men inte universellt: det
+   uppstår när en regels ENDA bärare är en skills prosa och den skillens
+   trigger inte matchar återupptagnings-vägen. En FULLSTÄNDIG inventering av
+   alla arbetsform-regler efter bärarklass är utanför denna skivas scope —
+   se `TASK-149.6`.
+3. **Välj mekanism** (Marcus) och bygg den — `TASK-149.1` (ADR-097),
+   `TASK-149.3` (tillståndsfil + push-hook), `TASK-149.4`
+   (hub-integrationen).
 4. **Bevisa tvåsidigt** — och kom ihåg `CLAUDE.md` § *En ny hook kan ALDRIG
    skarpbevisas i sessionen som byggde den*, om (a) väljs.
 
