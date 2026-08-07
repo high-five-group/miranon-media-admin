@@ -1,20 +1,44 @@
 /**
- * [PROTOTYPE] [S100] ÅTGÄRDS-SIDAN — konvergens-prototyp, variant `a`.
+ * [PROTOTYPE] [S100] ÅTGÄRDS-SIDAN — konvergens-prototyp, varv 3.
  *
  * FRÅGAN SOM BESVARAS (throwaway-kontraktet klausul i):
  *   "Hur ska åtgärds-sidan se ut — den enda platsen där något verkställs?"
  *
  * FORMEN ÄR B′ (Marcus-vald 2026-08-07): hubb med eventväljare överst,
  * PERMANENT REDIGERBAR mottagar-yta, och en åtgärdsmeny där den valda
- * åtgärden fälls ut IN-PLACE med de övriga raderna KVARSTÅENDE.
+ * åtgärden fälls ut IN-PLACE med de övriga raderna KVARSTÅENDE. Strukturen
+ * stod fast genom varv 2:s underleverans — det var UTFÖRANDET som revs.
  *
- * DIVERGENS-PASSET ÄR MEDVETET RIVET. Grillad samsyn S93 beslut 8 föreskrev
- * tre varianter; Marcus rev det 2026-08-07 med motiveringen att appen redan
- * bär tillräckligt många låsta facit för att grammatiken ska vara känd — tre
- * radikalt olika varianter mot en känd grammatik hade gjort två av dem döda
- * vid ankomst. I stället visades TRE STRUKTURSKISSER i text, Marcus valde B,
- * och den byggs som EN variant. Rivningen är öppen, inte tyst: den bokförs i
- * `docs/specs/ATGARDSSIDAN-UNDERLAG.md` § 9 och i `TASK-147`.
+ * VARV 3 RÄTTAR FYRA SAKER MARCUS PEKADE UT (2026-08-07), och alla fyra är
+ * KOPIERINGAR ur befintliga ytor, inte nya påfund:
+ *
+ *  1. SIDHUVUDET är `ManuellAnmalanForm` § `Sidhuvud`, klass för klass: rund
+ *     tillbaka-chevron (`size-11 rounded-full bg-bg-muted`, `ChevronLeft 26`),
+ *     sedan `<header … border-border border-b px-4 pb-5>` med `h1
+ *     font-semibold text-3xl`. Marcus: "det är ju likadant på de flesta sidor
+ *     och så borde du byggt direkt." Varv 2 bar en naken `h1` utan linje.
+ *
+ *  2. ÖVERSTA BLOCKET är samma sidas Eventet-block: rubrikfritt kort
+ *     (`divide-y divide-border rounded-2xl bg-bg-muted px-4`) med väljaren
+ *     överst, sammanfattning som `dl`, och sekundär navigering sist. Bara det
+ *     som påverkar HANDLINGEN står i sammanfattningen (18.18 punkt 4).
+ *
+ *  3. MOTTAGARNA ÄR PERSONKORT, ALDRIG RADER. Marcus: "det är big NO NO, Lotta
+ *     måste känna igen sig!! Personerna ska listas på sina personkort EXAKT som
+ *     dem gör på eventdetaljer." Formen är `Gruppdynamik` § `PersonKort` —
+ *     som i sin tur ärvde den av `PersonMiniKort` på anmälans-detaljsidan
+ *     (S93 våg 19): initial-cirkel `size-9` i `bg-bg-emphasized`, namn i
+ *     `font-medium text-body`, allt i en `rounded-xl bg-surface`-yta med
+ *     transparent kant. Ett kort som dras hit från eventdetaljen ser identiskt
+ *     ut med kortet det kom ifrån — det är hela poängen.
+ *
+ *  4. SÖKNINGEN BEHÅLLS men träffarna listas också som kort. Marcus: "söka på
+ *     den, de va bra. Men de ska listas på kort."
+ *
+ * DET SOM SAKNADES I VARV 2 SITTER NU PÅ KORTET: statusbadge (`StatusBadge`,
+ * pill-skalans `sm` per `T127`), betalningsstatus per person i den linjerade
+ * underraden, och deadline-signalen i eventblocket (`deadlineStatus` —
+ * DELAD med betalningsvyn, inte en andra kopia av 14-dagars-regeln).
  *
  * GRAMMATIKEN ÄR ÄRVD, INTE UPPFUNNEN — `DetaljGrupp`/`EtikettVardeRad` ur
  * eventsidans S93-facit, radformens hover-platta och `NumRuta` ur
@@ -33,9 +57,12 @@
  * leverans-grindarna via spec-ledet.
  */
 import { useQuery } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import {
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
+  Clock,
   FileText,
   Paperclip,
   Plus,
@@ -43,18 +70,21 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
+import { deadlineStatus } from '@/components/events/detail/Betalningar';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { TextArea } from '@/components/primitives/TextArea';
+import { displayName } from '@/components/registrations/registration-display';
+import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
-import { DetaljGrupp } from '../detail/DetaljGrupp';
+import { DetaljGrupp, EtikettVardeRad } from '../detail/DetaljGrupp';
 import { EventValjare } from '../EventValjare';
 
 /* ------------------------------------------------------------------ *
@@ -76,8 +106,26 @@ function NumRuta({ n }: { n: number }) {
   );
 }
 
+/** Kortytan — Eventet-blockets/DetaljGrupps tonala kort (18.18 punkt 2). */
 const KORT_KLASS =
   'rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
+
+/**
+ * Initialerna för cirkeln ("AA" ur "Anna Andersson") — max två, versala.
+ *
+ * Tredje duplikatet, med samma motiv som `Gruppdynamik` bokförde vid det
+ * andra: `PersonMiniKort`s API är FÖRSEGLAT, så formen ärvs men inte koden.
+ * Med tre förekomster är hjälparen nu en verklig `lib/`-kandidat — den
+ * noteras för spec-ledet i stället för att lyftas i kastbar kod.
+ */
+function initialer(namn: string): string {
+  return namn
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((d) => d[0]?.toUpperCase() ?? '')
+    .join('');
+}
 
 /* ------------------------------------------------------------------ *
  * De SEX åtgärdstyperna (underlaget § 3, Marcus-bekräftade 2026-08-07).
@@ -104,8 +152,10 @@ type AtgardsTyp = {
   urvalsfilter?: (r: Registration) => boolean;
 };
 
-const obetald = (r: Registration) =>
-  r.anmalningsavgift === PaymentStatus.EJ_MOTTAGEN || r.slutbetalning === PaymentStatus.EJ_MOTTAGEN;
+const saknarAnmalningsavgift = (r: Registration) =>
+  r.anmalningsavgift === PaymentStatus.EJ_MOTTAGEN;
+const saknarSlutbetalning = (r: Registration) => r.slutbetalning === PaymentStatus.EJ_MOTTAGEN;
+const obetald = (r: Registration) => saknarAnmalningsavgift(r) || saknarSlutbetalning(r);
 const obekraftad = (r: Registration) => r.status === RegistrationStatus.OBEKRAFTAD;
 
 const ATGARDER: AtgardsTyp[] = [
@@ -181,15 +231,109 @@ const KLASS_TEXT: Record<BilageKlass, (antal: number) => string> = {
   C: (antal) => `Genereras för var och en — ${antal} st`,
 };
 
-/* ------------------------------------------------------------------ *
- * Hjälpare
- * ------------------------------------------------------------------ */
-function visningsNamn(r: Registration): string {
-  return r.namn ?? [r.fornamn, r.efternamn].filter(Boolean).join(' ') ?? 'Namn saknas';
+/* ================================================================== *
+ * PERSONKORTET — formen är facit, inte ett val.
+ *
+ * `Gruppdynamik` § `PersonKort` klass för klass (som i sin tur ärvde
+ * `PersonMiniKort`s form på Marcus order 2026-08-06: "de personkorten vill jag
+ * ska se ut som dem på anmälan-detaljsidan"). Två skillnader, båda av samma
+ * skäl som förlagan bokförde sina:
+ *
+ *  · HANDLINGS-KNAPP I STÄLLET FÖR CHEVRON. Kortet leder ingenstans här — det
+ *    LÄGGS TILL eller TAS BORT. En chevron hade lovat navigering som inte
+ *    finns ("länk utan mål ljuger", `AnmalanDetail`s regel).
+ *  · UNDERRADEN BÄR BETALNINGSSTATUS i stället för kurshistorik. Samma
+ *    linjering (`pl-12` = cirkelns 36 px + gap-3:s 12 px), samma
+ *    streck-grammatik, annan sanning — det är den sanning åtgärds-sidan
+ *    arbetar med.
+ * ================================================================== */
+
+/** Betalnings-underraden: ETT streck + EN utsaga, aldrig en tom uppräkning. */
+function BetalRader({ reg }: { reg: Registration }) {
+  const saknade: string[] = [];
+  if (saknarAnmalningsavgift(reg)) saknade.push('Anmälningsavgift');
+  if (saknarSlutbetalning(reg)) saknade.push('Slutbetalning');
+
+  // Ej relevant (föreläsnings-semantiken) är INTE en brist och får aldrig
+  // klassas som en — den utsagan står för sig själv.
+  const ejRelevant =
+    reg.anmalningsavgift === PaymentStatus.EJ_RELEVANT &&
+    reg.slutbetalning === PaymentStatus.EJ_RELEVANT;
+
+  const rader: { text: string; streck: string; klass: string }[] = ejRelevant
+    ? [{ text: 'Betalning ej relevant', streck: 'bg-border-strong', klass: 'text-text-muted' }]
+    : saknade.length > 0
+      ? saknade.map((s) => ({
+          text: `${s} saknas`,
+          streck: 'bg-warning',
+          klass: 'text-text-secondary',
+        }))
+      : [{ text: 'Betalning klar', streck: 'bg-success', klass: 'text-text-secondary' }];
+
+  if (!reg.email) {
+    rader.push({ text: 'Ingen e-postadress', streck: 'bg-error', klass: 'text-text-secondary' });
+  }
+
+  return (
+    <ul className="flex flex-col gap-1 pl-12">
+      {rader.map((r) => (
+        <li
+          key={r.text}
+          data-testid="mottagar-statusrad"
+          className="flex items-center gap-1.5 text-caption"
+        >
+          <span aria-hidden="true" className={`h-3.5 w-1 shrink-0 rounded-full ${r.streck}`} />
+          <span className={`truncate ${r.klass}`}>{r.text}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
-function mottagarOrd(n: number): string {
-  return n === 1 ? 'mottagare' : 'mottagare';
+/**
+ * Personkortet. `handling` är kortets enda interaktiva element — ta bort (X)
+ * i mottagarlistan, lägg till (+) i plockaren.
+ */
+function PersonKort({
+  reg,
+  handling,
+  testid,
+}: {
+  reg: Registration;
+  handling: ReactNode;
+  testid: string;
+}) {
+  const namn = displayName(reg);
+  return (
+    <div
+      data-testid={testid}
+      className="flex flex-col gap-2 rounded-xl border border-transparent bg-surface px-3 py-2.5 contrast-more:border-border-strong"
+    >
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
+        >
+          {initialer(namn)}
+        </span>
+        <span data-testid="mottagar-namn" className="min-w-0 truncate font-medium text-body">
+          {namn}
+        </span>
+        <span className="ml-auto flex shrink-0 items-center gap-2">
+          {/* Statusbadgen som saknades i varv 2. Pill-skalans `sm` (T127) —
+              kort-/listmiljö, inte header. Bekräftad är NORMEN och bär inget
+              märke (K16/K37: normen är tyst). */}
+          {obekraftad(reg) && (
+            <StatusBadge ton="warning" storlek="sm">
+              Obekräftad
+            </StatusBadge>
+          )}
+          {handling}
+        </span>
+      </div>
+      <BetalRader reg={reg} />
+    </div>
+  );
 }
 
 /* ================================================================== *
@@ -224,7 +368,7 @@ function MottagarYta({
         .filter((r) =>
           sok.trim() === ''
             ? true
-            : visningsNamn(r).toLowerCase().includes(sok.trim().toLowerCase()) ||
+            : displayName(r).toLowerCase().includes(sok.trim().toLowerCase()) ||
               (r.email ?? '').toLowerCase().includes(sok.trim().toLowerCase()),
         ),
     [alla, valdaIds, sok],
@@ -242,30 +386,31 @@ function MottagarYta({
       </div>
 
       <div data-testid="mottagar-kort" className={`divide-y divide-border ${KORT_KLASS}`}>
-        {valda.length === 0 && (
+        {valda.length === 0 ? (
           <p className="py-3 text-small text-text-secondary">
             Inga mottagare valda. Lägg till från eventet nedan.
           </p>
-        )}
-
-        {visade.map((r) => (
-          <div key={r.id} className="flex items-center justify-between gap-3 py-3">
-            <div className="flex min-w-0 flex-col">
-              <span className="truncate font-medium text-body">{visningsNamn(r)}</span>
-              <span className="truncate text-small text-text-muted">
-                {r.email ?? 'E-post saknas'}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => onTaBort(r.id)}
-              aria-label={`Ta bort ${visningsNamn(r)} från mottagarna`}
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg text-text-muted hover:bg-bg-emphasized hover:text-text motion-safe:transition-colors"
-            >
-              <X aria-hidden="true" size={16} />
-            </button>
+        ) : (
+          <div className="flex flex-col gap-2 py-3">
+            {visade.map((r) => (
+              <PersonKort
+                key={r.id}
+                reg={r}
+                testid="mottagar-personkort"
+                handling={
+                  <button
+                    type="button"
+                    onClick={() => onTaBort(r.id)}
+                    aria-label={`Ta bort ${displayName(r)} från mottagarna`}
+                    className="flex size-8 items-center justify-center rounded-lg text-text-muted hover:bg-bg-emphasized hover:text-text motion-safe:transition-colors"
+                  >
+                    <X aria-hidden="true" size={16} />
+                  </button>
+                }
+              />
+            ))}
           </div>
-        ))}
+        )}
 
         {dolda > 0 && (
           <div className="flex flex-col py-1.5">
@@ -314,36 +459,40 @@ function MottagarYta({
         </div>
 
         {plockareOppen && (
-          <div className="flex flex-col gap-2 py-3">
+          <div className="flex flex-col gap-3 py-3">
             <Input
               label="Sök deltagare"
               value={sok}
               onChange={setSok}
               placeholder="Namn eller e-post…"
             />
-            <div className="scrollbar-inline max-h-64 divide-y divide-border overflow-auto rounded-lg bg-surface">
+            {/* Träffarna är KORT, inte rader (Marcus 2026-08-07) — samma
+                personkort som listan ovan, så en person ser likadan ut före
+                och efter att hon dragits in. */}
+            <div className="scrollbar-inline flex max-h-96 flex-col gap-2 overflow-auto">
               {kandidater.length === 0 ? (
-                <p className="px-3 py-3 text-small text-text-muted">
+                <p className="py-1 text-small text-text-muted">
                   {alla.length === valda.length
                     ? 'Alla anmälda är redan mottagare.'
                     : 'Ingen matchar sökningen.'}
                 </p>
               ) : (
                 kandidater.map((r) => (
-                  <button
+                  <PersonKort
                     key={r.id}
-                    type="button"
-                    onClick={() => onLaggTill(r.id)}
-                    className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-bg-muted motion-safe:transition-colors"
-                  >
-                    <span className="flex min-w-0 flex-col">
-                      <span className="truncate font-medium text-body">{visningsNamn(r)}</span>
-                      <span className="truncate text-small text-text-muted">
-                        {r.email ?? 'E-post saknas'}
-                      </span>
-                    </span>
-                    <Plus aria-hidden="true" size={16} className="shrink-0 text-text-secondary" />
-                  </button>
+                    reg={r}
+                    testid="kandidat-personkort"
+                    handling={
+                      <button
+                        type="button"
+                        onClick={() => onLaggTill(r.id)}
+                        aria-label={`Lägg till ${displayName(r)} som mottagare`}
+                        className="flex size-8 items-center justify-center rounded-lg text-text-secondary hover:bg-bg-emphasized hover:text-text motion-safe:transition-colors"
+                      >
+                        <Plus aria-hidden="true" size={18} />
+                      </button>
+                    }
+                  />
                 ))
               )}
             </div>
@@ -518,7 +667,7 @@ function ArbetsYta({
           Varje mottagare får sitt eget mail — ingen ser vem mer som fick det.
         </span>
         <Button intent="success" isDisabled={mottagare.length === 0}>
-          Granska och skicka till {mottagare.length} {mottagarOrd(mottagare.length)}
+          Granska och skicka till {mottagare.length} mottagare
         </Button>
       </div>
     </div>
@@ -588,6 +737,26 @@ function AtgardsMeny({
 }
 
 /* ================================================================== *
+ * SIDHUVUDET — `ManuellAnmalanForm` § `Sidhuvud`, klass för klass.
+ * Marcus 2026-08-07: "kopiera exakt var rubriken sitter, och strecket under,
+ * det är ju likadant på de flesta sidor."
+ * ================================================================== */
+function Sidhuvud({ tillbakaLank }: { tillbakaLank: ReactNode }) {
+  return (
+    <>
+      {tillbakaLank}
+      <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
+        <h1 className="font-semibold text-3xl">Åtgärder</h1>
+      </header>
+    </>
+  );
+}
+
+/** Tillbaka-chevronen — rund, `bg-bg-muted`, samma mått som förlagan. */
+const TILLBAKA_KLASS =
+  'mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted';
+
+/* ================================================================== *
  * SIDAN
  * ================================================================== */
 export function AtgardsSida({ eventId }: { eventId?: string }) {
@@ -625,11 +794,14 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
      (task-18.18, S83 pass 4-facit; Linear/Rails-precedenten). */
   if (eventId == null) {
     return (
-      <section className="flex flex-col gap-4 pt-2 lg:pt-10">
-        <h1 className="px-4 font-semibold text-3xl">Åtgärder</h1>
-        <p className="px-4 text-body text-text-secondary">
-          Välj vilket event du vill göra åtgärder på.
-        </p>
+      <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+        <Sidhuvud
+          tillbakaLank={
+            <Link to="/hem" aria-label="Tillbaka" className={TILLBAKA_KLASS}>
+              <ChevronLeft aria-hidden="true" size={26} />
+            </Link>
+          }
+        />
         <EventValjare
           onByte={(id) => {
             window.location.href = `/event/${id}/atgarder${window.location.search}`;
@@ -639,17 +811,82 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
     );
   }
 
+  // Deadline-signalen: DELAD med betalningsvyn (`deadlineStatus`), aldrig en
+  // andra kopia av 14-dagars-regeln. Den saknades helt i varv 2.
+  const deadline = valtEvent ? deadlineStatus(valtEvent.startdatum) : null;
+
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      <div className="flex flex-col gap-2 px-4">
-        <h1 className="font-semibold text-3xl">Åtgärder</h1>
-        <EventValjare
-          valtEventId={eventId}
-          valtEvent={valtEvent}
-          onByte={(id) => {
-            window.location.href = `/event/${id}/atgarder${window.location.search}`;
-          }}
-        />
+      <Sidhuvud
+        tillbakaLank={
+          <Link
+            to="/event/$eventId"
+            params={{ eventId }}
+            aria-label="Tillbaka till eventet"
+            className={TILLBAKA_KLASS}
+          >
+            <ChevronLeft aria-hidden="true" size={26} />
+          </Link>
+        }
+      />
+
+      {/* ÖVERSTA BLOCKET — Eventet-blockets form (18.18 punkt 2–6): rubrikfritt
+          kort, väljaren överst, sammanfattning som bär bara det som påverkar
+          HANDLINGEN, sekundär navigering sist. */}
+      <div data-testid="eventet-block" className={`divide-y divide-border ${KORT_KLASS}`}>
+        <div className="py-4">
+          <EventValjare
+            valtEventId={eventId}
+            valtEvent={valtEvent}
+            onByte={(id) => {
+              window.location.href = `/event/${id}/atgarder${window.location.search}`;
+            }}
+          />
+        </div>
+
+        {!anmalningar.isPending && (
+          <dl className="divide-y divide-border">
+            <EtikettVardeRad term="Anmälda">
+              <span className="tabular-nums">{alla.length}</span>
+            </EtikettVardeRad>
+            {alla.filter(obekraftad).length > 0 && (
+              <EtikettVardeRad term="Obekräftade">
+                <span className="tabular-nums">{alla.filter(obekraftad).length}</span>
+              </EtikettVardeRad>
+            )}
+            {alla.filter(obetald).length > 0 && (
+              <EtikettVardeRad term="Saknar betalning">
+                <span className="tabular-nums">{alla.filter(obetald).length}</span>
+              </EtikettVardeRad>
+            )}
+          </dl>
+        )}
+
+        {/* Deadline-pillen i betalningsvyns EXAKTA form (facit-bilagan
+            `facit-betalningar-arbetsytan.png`): kapsel i `bg-surface`, klocka,
+            och färgen som följer läget — lugnt/imorgon/passerad. */}
+        {deadline && (
+          <div className="py-3">
+            <p
+              data-testid="atgarder-deadline"
+              className={`inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 text-small ${deadline.cls}`}
+            >
+              <Clock aria-hidden="true" size={14} />
+              {deadline.text}
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-col py-1.5">
+          <Link
+            to="/event/$eventId"
+            params={{ eventId }}
+            className="-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left text-small text-text-secondary hover:bg-bg-emphasized motion-safe:transition-colors"
+          >
+            Gå till eventdetaljer
+            <ChevronRight aria-hidden="true" size={16} className="ml-auto shrink-0" />
+          </Link>
+        </div>
       </div>
 
       {anmalningar.isError && (
