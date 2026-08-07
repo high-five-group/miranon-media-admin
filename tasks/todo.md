@@ -81,31 +81,27 @@ sessioner ger främmande larm); en riktad vakt på `#905` kördes i stället.
 
 <!-- Föregående kadensrad, bevarad: -->
 
-**Session 99 ▶️ AKTIV (2026-08-07, `lifecycle: active`, resume 2) —
-UPPDRAG 8 KOMPLETT (ADR-101-SYSTEMET LIVE); UPPDRAG 9 GRILLAT TILL GO;
-TASK-161 MINTAD.** Compact-formen: alla sex agent-skivor landade
-per-jobb-gröna och Done — ADR-101 · mätpunkterna · PreCompact-grinden
-(20/20) · hub-skillen `pre-compact` (**plugin 1.31.0**, biter nästa
-session) · post-compact-igenkänningen (SessionStart kan inte blockera —
-fail-open medvetet) · tröskeln (`CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000`
-= ~50 % av 1M-fönstret). ADR-086-kedjan fällde guide-agent-fakta två
-gånger (procent-variabeln fanns inte; T111:s "ingen PreCompact-hook"
-vederlagd — bokfört i ADR-101). **Uppdrag 9 grillat: fyra kvitterade
-frågor + rotorsaks-paketet** (elimination default · review-bumpens
-mini-audit · ägar-deklarationer) — **PRD `task-161` + skivorna
-`161.1`–`161.10`** (`d718c161`). Lärdomslager-researchen landad
-(`docs/research/lardomslager-branschpraxis-2026-08-07.md`: fångst =
-branschpraxis, formen = NASA-pre-fix-analog; hubbens ADR-085 löste
-formfrågan → skiva 161.9). **Tråd `T137`** registrerad (central
-CI/grind-visionen, research-krav — exekveras ej nu) → nästa tråd
-**T138** · nästa ADR **103** (102 förbrukad av S93). **NÄSTA: spawna
-våg 1 (161.1 + 161.2 + 161.9, inga fil-överlapp) → beroendekedjan
-(.3 efter .2 · .4 efter .1+.3 · .5 efter .2 · .6 efter .5 · .7 efter
-.1 · .8 efter .4) → QA.** **Marcus-moment: QA-korten `160.7` + `161.10` ·
-boka `148.5` · triagera `154`–`156` · Dependabot `#635` · läs
-lärdomslager-rapporten (spår-beslutet).** **Skarpbevis-skulder nästa
-session: deny-precompact · post-compact-igenkanning ·
-tröskel-verifikatet.** **HANDOFF: sessionsdok S99 Del 10.**
+**Session 99 ⏸️ PAUSAD (2026-08-07, tredje pausen, `lifecycle: paused`) —
+UPPDRAG 1–8 KOMPLETTA; UPPDRAG 9 GRILLAT + SPECCAT, EXEKVERINGEN ÄR
+RESUMENS JOBB.** Compact-formen LIVE (ADR-101: grind 20/20 · hub-skill
+**plugin 1.31.0** · post-compact-igenkänning · tröskel
+`CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000` — skill + tröskel biter från
+nästa session; QA `160.7` kvar). Uppdrag 9: rotorsaks-paketet kvitterat
+(elimination default · review-bumpens mini-audit · ägar-deklarationer) —
+**PRD `task-161` + skivorna `161.1`–`161.10` mintade, INGEN spawnad**
+(Marcus paus-beslut: exekveringen i resumen). Lärdomslager-researchen
+landad (fångst = branschpraxis, formen = NASA-pre-fix-analog, ADR-085 är
+husets formfacit → skiva 161.9); **tråd `T137`** (central
+CI/grind-visionen, research-krav). Paus-formen valdes per ADR-101:s egen
+nisch-regel: tom pipeline + naturlig landningspunkt ⇒ paus, inte
+compact. **NÄSTA: resume → betala TRE skarpbevis-skulder
+(deny-precompact · post-compact-igenkanning · tröskel-verifikatet) →
+spawna våg 1 (161.1 + 161.2 + 161.9) → beroendekedjan → QA.**
+**Marcus-moment: QA `160.7` + `161.10` · boka `148.5` · triagera
+`154`–`156` · Dependabot `#635` · lärdomslager-spårbeslutet.**
+**HANDOFF: sessionsdok S99 § PAUSLÄGE (tredje pausen) + Del 9–10.**
+Numrering vid paus: ADR-103/L480 + 6 fragment/T138/task-162/f47 —
+re-verifiera mot disk, tre sessioner rörde räknarna i dag.
 *(S100:s äldre kadensrad nedan, bevarad.)*
 
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 2) —
