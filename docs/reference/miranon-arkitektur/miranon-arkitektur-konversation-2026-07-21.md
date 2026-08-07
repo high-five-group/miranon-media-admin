@@ -1,5 +1,14 @@
 # Miranon Media — AI-assistent, publiceringsarkitektur & vägen från Airtable till Supabase
 
+> **Frusen ögonblicksbild av en utforskande konversation, 21 juli 2026 —
+> vendoriserad till repot 2026-07-25 (S87).** Rå-transkriptet redigeras
+> aldrig efter landning; det är beviskällan bakom
+> [`arkitektur-destillat-och-gap-2026-07-25.md`](arkitektur-destillat-och-gap-2026-07-25.md),
+> som destillerar innehållet och mappar det mot repots faktiska läge.
+> **Konversationen är INPUT, inte beslut** — inget här är mintat som ADR
+> eller inskrivet i byggplanen. För nuvarande tolkning och öppna frågor,
+> läs destillatet.
+
 **Konversation mellan Marcus och Claude (Anthropic)**
 **Datum:** 21 juli 2026
 **Ämnen:** In-app AI-assistent, publiceringsmönster, Supabase-migrering, anmälningsflöden, Airtables framtid, vibe coding-säkerhet, Passionslyftet, dataarkitektur för småföretag
