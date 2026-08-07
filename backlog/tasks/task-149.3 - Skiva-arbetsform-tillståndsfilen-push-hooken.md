@@ -1,10 +1,10 @@
 ---
 id: TASK-149.3
 title: 'Skiva: arbetsform-tillståndsfilen + push-hooken'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-07 10:30'
-updated_date: '2026-08-07 11:44'
+updated_date: '2026-08-07 12:17'
 labels:
   - ready-for-agent
 dependencies:
@@ -43,7 +43,7 @@ ordinal: 257000
 - [x] #3 PreToolUse-hook på Bash git push: nekar med anvisning när iterationsläge råder; frånvaro av fil = släpp igenom; fail-closed på korrupt fil; registrerad i .claude/settings.json
 - [x] #4 Tvåsidig testsvit i deny-familjens form: fäller/släpper/fail-closed; shellcheck-strict grön
 - [x] #5 Skarpbeviset bokfört som ÖPPEN SKULD i kortet och slutrapporten — aldrig rapporterat som taget
-- [ ] #6 PR armerad, per-jobb-grön
+- [x] #6 PR armerad, per-jobb-grön
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -99,10 +99,16 @@ uppdatera DEN raden) — rättad till "19" i samma andetag som den 19:e filen
 lades till, för att inte upprepa TASK-106-klassens kopierade-tal-drift.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängning i S99-resume 1 (2026-08-07): #876 mergad a95d271c, per-jobb-grön (Lint/Pure+Build/Acceptance 8m8s/Webblasarbeteende/Docs/CodeQL pass; staging/a11y CI-gatad skip). AC 6 + DoD bockade mot verifikatet. Skarpbeviset av deny-arbetsform-push.sh KVARSTÅR som öppen skuld (AC 5): hooken landade under pågående S99 ⇒ oladdad i denna session (hooks-guide-regeln); betalas som första handling i en session född efter a95d271c.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
