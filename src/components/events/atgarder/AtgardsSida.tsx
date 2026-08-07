@@ -86,6 +86,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -101,17 +102,26 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
-/* ARBETSYTAN IMPORTERAS, INTE KOPIERAS (varv 12) — samma komponent
-   eventdetaljen visar under "Öppna detaljer", monterad i betalnings-blocket
-   nedan. `deadlineStatus` föll med den fristående pillen; arbetsytan bär sin
-   egen. */
-import { BetalningsDetaljer } from '@/components/events/detail/Betalningar';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { TextArea } from '@/components/primitives/TextArea';
 import { displayName } from '@/components/registrations/registration-display';
+/* VARV 13 REV VARV 12:s MONTERING AV `BetalningsDetaljer`.
+   Den var rätt ambition och fel mekanism: eventdetaljens arbetsyta KAN inte
+   skriva, och det är dess uttalade DoD-krav sedan `TASK-145.4` — se
+   `BetalningsSkrivYta` nedan för hela historien och belägget. Åtgärds-sidan
+   bygger därför sin EGEN skrivyta, vilket är vad `TASK-147` § skiva 8 säger.
+
+   `deadlineStatus` föll redan i varv 12 med den fristående pillen och kommer
+   inte tillbaka: den nya skrivytan bär sin egen deadline-signal. */
+import {
+  BETALNING_LABEL,
+  type Betalning,
+  useSetPaymentStatus,
+  useUpdatePaymentNote,
+} from '@/data/mutations/registrationPayments';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
@@ -991,6 +1001,214 @@ function MottagarYta({
 }
 
 /* ================================================================== *
+ * BETALNINGARNAS SKRIVYTA (varv 13) — åtgärds-sidans EGEN, inte en montering.
+ *
+ * VARFÖR EN EGEN OCH INTE EVENTDETALJENS: varv 12 monterade
+ * `BetalningsDetaljer` och Marcus såg direkt att det inte gick att skriva
+ * notisen. Han hade rätt, och orsaken var strukturell — `TASK-145.4` (landad
+ * 2026-08-07 17:23, `c4160cae`) gjorde den ytan till en REN LÄSYTA:
+ *
+ *   `<BetalKryss … lugn disabled onChange={() => {}} />`
+ *
+ * Ovillkorligt `disabled`, tom `onChange`, och `<Input>`-fältet helt borta.
+ * Filens egen docblock säger varför, ordagrant: "BÅDA betalnings-kryssen
+ * flyttar till Åtgärds-sidan (TASK-147). Krysset här är därför ALLTID
+ * `isDisabled` … (DoD #7: noll skriv-affordanser)" och "(a) `<Input>`-fältet är
+ * BORTA. Ytan är för ÖVERBLICK — editering görs på åtgärds-sidan."
+ *
+ * Ingen flagg-kombination hade alltså gett skrivbarhet: att inte skriva ÄR
+ * komponentens krav. `TASK-147` § skiva 8 ("betalningarnas skrivvertikal") och
+ * § rad 39 säger var den bor i stället — här.
+ *
+ * FORMEN ÄR LÄSYTANS, SÅ LOTTA KÄNNER IGEN SIG: personens namn utanför kortet
+ * (`DetaljGrupp`-grammatiken), kortet i `bg-surface` eftersom ytan står på
+ * `KORT_KLASS`s muted botten (ett muted kort på muted botten mättes till
+ * kontrast 1.00 i S93 våg 10 — osynligt), en rad per betalning med `divide-y`
+ * emellan. Skillnaden mot läsytan är EN sak: kontrollerna lever.
+ *
+ * TVÅ VAKTER FÖLJER MED UR `TASK-147` § Implementationsbeslut, båda kodade:
+ *
+ *  (1) "Ej relevant" FÅR ALDRIG SKRIVAS ÖVER — föreläsnings-semantiken. En
+ *      slutbetalning i det läget får radens form men ALDRIG ett kryss; en
+ *      av-bock hade skrivit "Ej mottagen" och rivit basens semantik. Samma
+ *      lösning som läsytan: `pl-7` (kryssets 20 px + gap-2:s 8 px) så ordet
+ *      står på grannradernas vänsterlinje trots att rutan saknas.
+ *  (2) Basens takt tål inte obegränsad parallellitet. Det gäller BATCH-
+ *      avprickning, som inte finns här — denna yta skriver en betalning i
+ *      taget, per klick. Vakten är alltså inte kodad utan OTILLÄMPLIG i detta
+ *      steg, och det noteras hellre än glöms: bygger någon "markera alla"
+ *      (Marcus varv 6-idé) är den det första som måste lösas.
+ *
+ * MUTATIONS-INSTANSERNA ÄR DELADE, en per operation, skapade här och skickade
+ * ned — exakt förlagans motiv: den optimistiska uppdateringen kan avmontera en
+ * rad, och per-rad-hooks hade tappat felläget vid rollback.
+ * ================================================================== */
+function SkrivKryss({
+  text,
+  namn,
+  vald,
+  onChange,
+}: {
+  text: string;
+  /** Accessible name blir "<text> för <namn>" — WCAG 2.5.3-säkert, förlagans form. */
+  namn: string;
+  vald: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <Checkbox
+      isSelected={vald}
+      onChange={onChange}
+      aria-label={`${text} för ${namn}`}
+      className="group flex cursor-pointer items-center gap-2 text-small"
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+        <Check
+          aria-hidden="true"
+          size={14}
+          className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+        />
+      </span>
+      {/* DÄMPAD, ALDRIG RÖD — läsytans `lugn`-form. Rött per rad upprepar bara
+          flikens egen utsaga ("Saknar betalning (9)") och tömmer färgen på
+          betydelse; krysset bär redan vilken betalning som saknas. */}
+      <span className={vald ? 'text-text-secondary' : 'text-text-muted'}>{text}</span>
+    </Checkbox>
+  );
+}
+
+/** En betalning: levande kryss + levande notering. Noteringen commitas vid
+    blur (Stripe-klassens per-betalnings-memo, förlagans commit-punkt). */
+function SkrivRad({
+  registration,
+  betalning,
+  vald,
+  notering,
+  onStatus,
+  onNotering,
+}: {
+  registration: Registration;
+  betalning: Betalning;
+  vald: boolean;
+  notering: string | null;
+  onStatus: (v: boolean) => void;
+  onNotering: (text: string) => void;
+}) {
+  const namn = displayName(registration);
+  const label = BETALNING_LABEL[betalning];
+  /** Lokalt utkast medan Lotta skriver; null = inget utkast (visa cache-värdet). */
+  const [utkast, setUtkast] = useState<string | null>(null);
+
+  const spara = () => {
+    if (utkast === null) return;
+    const trimmat = utkast.trim();
+    setUtkast(null);
+    if (trimmat === (notering ?? '')) return;
+    onNotering(trimmat);
+  };
+
+  return (
+    <div className="flex flex-col gap-2 py-3">
+      <SkrivKryss text={label} namn={namn} vald={vald} onChange={onStatus} />
+      {/* NOTERINGEN PÅ EGEN RAD, FULL BREDD — läsytans lösning på Marcus fråga
+          2026-08-06 ("kommer det ju inte få plats några noteringar eller? Vart
+          ska dem skrivas ut?"). `pl-7` linjerar fältet under betalningsordet,
+          inte under krysset. */}
+      <div className="pl-7">
+        <Input
+          size="sm"
+          label={`Notering ${label.toLowerCase()} för ${namn}`}
+          hideLabel
+          placeholder="Notering…"
+          value={utkast ?? notering ?? ''}
+          onChange={setUtkast}
+          onBlur={spara}
+        />
+      </div>
+    </div>
+  );
+}
+
+function BetalningsSkrivYta({
+  eventId,
+  registreringar,
+}: {
+  eventId: string;
+  registreringar: Registration[];
+}) {
+  const status = useSetPaymentStatus(eventId);
+  const notering = useUpdatePaymentNote(eventId);
+
+  const fel = status.isError ? status : notering.isError ? notering : null;
+
+  if (registreringar.length === 0) {
+    return <p className="py-3 text-small text-text-muted">Inga aktiva anmälningar på eventet.</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-4 py-3">
+      {fel && (
+        <MessageBox intent="error" title="Kunde inte spara" onDismiss={() => fel.reset()}>
+          Försök igen.
+        </MessageBox>
+      )}
+      {registreringar.map((r) => (
+        <div key={r.id} className="flex min-w-0 flex-col gap-2">
+          {/* Namnet UTANFÖR kortet — `DetaljGrupp`s h2-position, men medvetet
+              inget rubrikelement: femton syskon-rubriker under en enda h2 vore
+              en semantisk lögn (läsytans egen motivering). */}
+          <span className="min-w-0 px-4 font-semibold text-lg">{displayName(r)}</span>
+          <div className="divide-y divide-border rounded-2xl border border-transparent bg-surface px-4 contrast-more:border-border-strong">
+            <SkrivRad
+              registration={r}
+              betalning="avgift"
+              vald={r.anmalningsavgift === PaymentStatus.MOTTAGEN}
+              notering={r.noteringAnmalningsavgift ?? null}
+              onStatus={(v) =>
+                status.mutate({
+                  registration: r,
+                  betalning: 'avgift',
+                  value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+                })
+              }
+              onNotering={(text) =>
+                notering.mutate({ registration: r, betalning: 'avgift', notering: text })
+              }
+            />
+            {r.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
+              /* VAKT 1: "Ej relevant" får radens form men ALDRIG ett kryss —
+                 en av-bock hade skrivit "Ej mottagen" och rivit basens
+                 föreläsnings-semantik. `pl-7` = kryssets 20 px + gap-2:s 8 px,
+                 så ordet står på grannradernas vänsterlinje ändå. */
+              <p className="py-3 pl-7 text-small text-text-muted">
+                Slutbetalning · Ej relevant (föreläsning)
+              </p>
+            ) : (
+              <SkrivRad
+                registration={r}
+                betalning="slut"
+                vald={r.slutbetalning === PaymentStatus.MOTTAGEN}
+                notering={r.noteringSlutbetalning ?? null}
+                onStatus={(v) =>
+                  status.mutate({
+                    registration: r,
+                    betalning: 'slut',
+                    value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+                  })
+                }
+                onNotering={(text) =>
+                  notering.mutate({ registration: r, betalning: 'slut', notering: text })
+                }
+              />
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ================================================================== *
  * BILAGEVÄLJAREN — utan förvals-logik. Kryssruta, namn, storlek.
  *
  * `antalMottagare`-proppen FÖLL MED KLASSTEXTERNA (varv 10): den fanns bara
@@ -1544,11 +1762,12 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
               {/* Panelen alltid i DOM:en med `hidden` — `aria-controls` måste
                   peka på ett element som finns (samma regel som mottagar-ytan). */}
               <div id={betalningsPanelId} hidden={!betalningarOppna}>
-                {valtEvent && (
-                  <BetalningsDetaljer
-                    event={valtEvent}
+                {eventId && (
+                  <BetalningsSkrivYta
+                    eventId={eventId}
+                    /* Basens 'Är aktiv'-formel: endast Avbokad räknas bort —
+                       samma predikat läsytan använder. */
                     registreringar={alla.filter((r) => r.status !== RegistrationStatus.AVBOKAD)}
-                    protoAktiv
                   />
                 )}
               </div>
