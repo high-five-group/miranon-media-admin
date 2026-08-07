@@ -1,10 +1,10 @@
 ---
 id: TASK-149.5
 title: 'Skiva: push-ekonomins kodifiering'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-07 10:33'
-updated_date: '2026-08-07 11:49'
+updated_date: '2026-08-07 11:58'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,8 +24,14 @@ ordinal: 259000
 - [x] #1 Premiss-pass: CONTRIBUTING § Landnings-ordningen + CLAUDE.md § Landning lästa; kompletteringen adderar utan duplicering/motsägelse
 - [x] #2 Undantagslistan kodifierad i CONTRIBUTING: pushas direkt (nummerbärande artefakter, lifecycle-flippar, allt före paus/handoff, hub-bumps, säkerhetsfixar) vs väntar till färdig enhet (iterationsvarv, WIP inom skiva, utkast)
 - [x] #3 Gransknings-regeln kodifierad: verifieringsmoment sker mot dev-server/staging, aldrig mot väntad landning; kort pekare i CLAUDE.md till CONTRIBUTING-avsnittet + ADR-097
-- [ ] #4 Docs-grindarna gröna; PR armerad, per-jobb-grön
+- [x] #4 Docs-grindarna gröna; PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Levererad via PR #877 (merge 8f007d21), CI grön per jobb. Undantagslistan + gransknings-regeln i CONTRIBUTING; pekare i CLAUDE.md.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
