@@ -1,9 +1,10 @@
 ---
 id: TASK-148.1
 title: 'Skiva: ADR-096 — väntekontraktet kodifieras'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-07 09:47'
+updated_date: '2026-08-07 10:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,11 +20,13 @@ ordinal: 247000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass: ADR-nummer 096 ledigt (filcount == README-rader == sista+1) och stop-vaktens existens/registrering bekräftade mot kod FÖRE författning
-- [ ] #2 ADR-096 författad per repots ADR-form: kontraktet (subagent GÖR, orkestrerare VÄNTAR), mekaniseringen, instruktionskompletteringen, harness-mätningen; ADR-087 refererad som syskonmekanism; extern köhanterare avrådd med decline-rationale
-- [ ] #3 ADR-README-rad tillagd; docs-grindarna gröna lokalt
+- [x] #1 Premiss-pass: ADR-nummer 096 ledigt (filcount == README-rader == sista+1) och stop-vaktens existens/registrering bekräftade mot kod FÖRE författning
+- [x] #2 ADR-096 författad per repots ADR-form: kontraktet (subagent GÖR, orkestrerare VÄNTAR), mekaniseringen, instruktionskompletteringen, harness-mätningen; ADR-087 refererad som syskonmekanism; extern köhanterare avrådd med decline-rationale
+- [x] #3 ADR-README-rad tillagd; docs-grindarna gröna lokalt
 - [ ] #4 PR skapad, armerad med gh pr merge --auto, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
