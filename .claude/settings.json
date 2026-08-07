@@ -77,6 +77,17 @@
             "statusMessage": "Subagentens väntekontrakt (ADR-096) — Monitor/run_in_background i subagent-kontext"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-arbetsform-push.sh\"",
+            "timeout": 10,
+            "statusMessage": "Arbetsformens tillståndsbärare (ADR-097) — git push nekas under aktiv iteration"
+          }
+        ]
       }
     ],
     "Stop": [
