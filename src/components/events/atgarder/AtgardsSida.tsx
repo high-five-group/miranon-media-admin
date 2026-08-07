@@ -16,7 +16,11 @@
  *    med en annan kortform än den hon just klickat på — kontinuiteten bröts
  *    i det ögonblick den behövdes mest.
  *  · RÄKNAREN FÖRST: "7 av 19 deltagare markerade" (Marcus ordval), före
- *    listan. Den svarar på "vad tog jag med mig hit?" innan något annat.
+ *    listan. Den svarar på "vad tog jag med mig hit?" innan något annat — och
+ *    är sedan varv 4b också listans ACCORDION-HUVUD: korten är INFÄLLDA från
+ *    början, så åtgärderna syns direkt utan att hon behöver scrolla förbi fem
+ *    kort à ~170 px. Marcus: "Så hon direkt kan 'Se' åtgärderna och välja en
+ *    åtgärd." Hon kom hit för att GÖRA något; det hon skulle göra måste synas.
  *  · ÖVERSTA BLOCKET BÄR BARA EVENTVÄLJAREN. Sammanfattningen och
  *    deadline-pillen sköt ned mottagarlistan; hon vet redan vilket event hon
  *    står i — hon kom från dess detaljsida. Deadline flyttade till
@@ -85,6 +89,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CircleCheck,
   Clock,
   FileText,
   History,
@@ -96,7 +101,7 @@ import {
   Sparkles,
   Upload,
 } from 'lucide-react';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { deadlineStatus } from '@/components/events/detail/Betalningar';
 import { Button } from '@/components/primitives/Button';
@@ -558,13 +563,28 @@ function MottagarYta({
   onVaxla: (id: string, vald: boolean) => void;
   onLaggTill: (id: string) => void;
 }) {
-  const [visaAlla, setVisaAlla] = useState(false);
+  /* LISTAN ÄR INFÄLLD FRÅN BÖRJAN (Marcus 2026-08-07: "Dem 5 som man ser direkt
+     i listan nu måste nog också vara infällda från början. Så hon direkt kan
+     'Se' åtgärderna och välja en åtgärd").
+
+     Fem kort à ~170 px sköt ned Åtgärd-menyn under vikningen: hon kom hit för
+     att GÖRA något, och det hon skulle göra syntes inte. Infälld blir sidan en
+     halv skärm — räknaren svarar "vad tog jag med mig", åtgärderna står direkt
+     under, och korten är ett klick bort när hon vill kontrollera dem.
+
+     Räknar-raden ÄR accordion-huvudet: samma grammatik som `Gruppdynamik` §
+     `NivaAccordion` — knappens `py-1.5` i en förälder med `py-2`, så
+     hover-plattan läser som en KNAPP i raden, inte som raden själv. */
+  const [listaOppen, setListaOppen] = useState(false);
   const [plockareOppen, setPlockareOppen] = useState(false);
   const [sok, setSok] = useState('');
+  const listPanelId = useId();
 
-  const SYNLIGA = 5;
-  const visade = visaAlla ? synliga : synliga.slice(0, SYNLIGA);
-  const dolda = synliga.length - visade.length;
+  /** De MARKERADES namn i listordning — previewns innehåll. */
+  const mottagarNamn = useMemo(
+    () => synliga.filter((r) => valda.has(r.id)).map(displayName),
+    [synliga, valda],
+  );
 
   const synligaIds = useMemo(() => new Set(synliga.map((r) => r.id)), [synliga]);
   const kandidater = useMemo(
@@ -588,58 +608,97 @@ function MottagarYta({
 
       <div data-testid="mottagar-kort" className={`divide-y divide-border ${KORT_KLASS}`}>
         {/* RÄKNAREN — det första hon ska se (Marcus: "typ '7 av 19 deltagare
-            markerade'"). Live-region: antalet ändras när hon av-/påmarkerar. */}
-        <p
-          data-testid="markering-rakning"
-          aria-live="polite"
-          className="py-3 font-medium text-body"
-        >
-          <span className="tabular-nums">{valda.size}</span> av{' '}
-          <span className="tabular-nums">{alla.length}</span> deltagare markerade
-        </p>
+            markerade'"), och tillika listans accordion-huvud. Antalet står som
+            TEXT i knapp-etiketten så skärmläsaren får hela bilden; `aria-live`
+            gör att ändringen annonseras när hon av-/påmarkerar inne i panelen.
 
-        <div className="flex flex-col gap-2 py-3">
-          {synliga.length === 0 ? (
-            <p className="text-small text-text-secondary">
-              Inga deltagare markerade. Lägg till från eventet nedan.
-            </p>
-          ) : (
-            visade.map((r) => (
-              <MarkerbartDeltagarKort
-                key={r.id}
-                reg={r}
-                vald={valda.has(r.id)}
-                onChange={(v) => onVaxla(r.id, v)}
-              />
-            ))
-          )}
-        </div>
+            VIKTEN HÖJDES I VARV 4c (Marcus: "'14 av 16' syns inte så bra
+            liksom, det fångas inte av ögat"). Raden bar `font-medium text-body`
+            — samma grad som allt annat på sidan, alltså ingenting som drog
+            blicken. Nu: `text-xl` på SIFFRORNA (grad-språnget bär), och en
+            grön `CircleCheck` framför. Bocken är samma gröna signal som
+            markerade kort bär, så räknaren och korten läser som samma sak
+            — och den är `aria-hidden` dekor: texten är bäraren (WCAG 1.4.1). */}
+        <div className="flex flex-col py-2">
+          <button
+            type="button"
+            aria-expanded={listaOppen}
+            aria-controls={listPanelId}
+            onClick={() => setListaOppen((v) => !v)}
+            className="-mx-2 flex w-auto items-center justify-between gap-4 rounded-lg px-2 py-1.5 text-left hover:bg-bg-emphasized motion-safe:transition-colors"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <CircleCheck aria-hidden="true" size={20} className="shrink-0 text-(--mm-success)" />
+              <span data-testid="markering-rakning" aria-live="polite" className="text-body">
+                <span className="font-semibold text-xl tabular-nums">{valda.size}</span> av{' '}
+                <span className="font-semibold text-xl tabular-nums">{alla.length}</span> deltagare
+                markerade
+              </span>
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              size={18}
+              className={`shrink-0 text-text-secondary motion-safe:transition-transform ${
+                listaOppen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
 
-        {dolda > 0 && (
-          <div className="flex flex-col py-1.5">
-            <button
-              type="button"
-              onClick={() => setVisaAlla(true)}
-              aria-expanded={false}
-              className={RAD_KLASS}
+          {/* NAMN-PREVIEWN (Marcus 2026-08-07): "en liten preview-lista med
+              namnen på dem hon tog med sig … det kanske räcker som en liten
+              bekräftelse på att 'Ja, alla är med' och hon kanske inte behöver
+              öppna och scrolla genom alla kort."
+
+              FORMEN ÄR ÄRVD, inte uppfunnen: eventdetaljens egen
+              Åtgärds-platshållare (`Deltagare` § `MarkeringsBatchBar`,
+              `valdaNamn`) listar redan exakt de här namnen i en
+              `rounded-xl border-(--mm-navcard-border) bg-surface p-3
+              text-small`-ruta — det är bryggan hon just klev över. Samma ruta
+              möter henne på andra sidan.
+
+              LÖPANDE TEXT, INTE EN RAD PER NAMN. Platshållarens `<ul>` med ett
+              namn per rad hade blivit 14 rader ≈ 210 px och skjutit ned
+              åtgärderna igen — precis det varv 4b löste. Kommaseparerad text
+              skummas lika snabbt och tar en tredjedel av höjden.
+
+              ENDAST DE MARKERADE räknas upp: previewn svarar på "vilka tog jag
+              med mig", och ett avmarkerat kort är inte med.
+
+              GRADEN ÄR `text-caption`, INTE `text-small`, och padding `p-2.5`
+              — mätt, inte valt på känsla. Med `text-small`/`p-3` blev rutan
+              131 px och sköt ned den sista åtgärdsraden till 884 px, alltså
+              28 px IN BAKOM tab-baren (som börjar på 856). Previewn får inte
+              kosta det varv 4b just vann. Namnen är sekundär bekräftelse, inte
+              läsyta — samma vikt som metaytan på deltagarkortet. */}
+          {mottagarNamn.length > 0 && (
+            <p
+              data-testid="mottagar-preview"
+              className="mt-2 rounded-xl border border-(--mm-navcard-border) bg-surface p-2.5 text-caption text-text-secondary contrast-more:border-(--mm-navcard-border-contrast)"
             >
-              <span className="text-text-secondary">+{dolda} till</span>
-              <ChevronDown
-                aria-hidden="true"
-                size={18}
-                className="ml-auto shrink-0 text-text-secondary"
-              />
-            </button>
-          </div>
-        )}
+              {mottagarNamn.join(', ')}
+            </p>
+          )}
 
-        {visaAlla && synliga.length > SYNLIGA && (
-          <div className="flex flex-col py-1.5">
-            <button type="button" onClick={() => setVisaAlla(false)} className={RAD_KLASS}>
-              <span className="text-text-secondary">Visa färre</span>
-            </button>
+          {/* `pt-2` skiljer panelen från knappen; föräldern bär redan `py-2`
+              nedåt så ingen egen `pb` behövs. Panelen renderas alltid i DOM:en
+              med `hidden` — aria-controls måste peka på ett element som finns. */}
+          <div id={listPanelId} hidden={!listaOppen} className="flex flex-col gap-2 pt-2">
+            {synliga.length === 0 ? (
+              <p className="text-small text-text-secondary">
+                Inga deltagare markerade. Lägg till från eventet nedan.
+              </p>
+            ) : (
+              synliga.map((r) => (
+                <MarkerbartDeltagarKort
+                  key={r.id}
+                  reg={r}
+                  vald={valda.has(r.id)}
+                  onChange={(v) => onVaxla(r.id, v)}
+                />
+              ))
+            )}
           </div>
-        )}
+        </div>
 
         {/* PLOCKAREN — de som INTE är markerade, utan att lämna sidan. */}
         <div className="flex flex-col py-1.5">
