@@ -116,7 +116,7 @@ import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
-import { DetaljGrupp } from '../detail/DetaljGrupp';
+import { AndraRad, DetaljGrupp } from '../detail/DetaljGrupp';
 import { EventValjare } from '../EventValjare';
 
 /* ------------------------------------------------------------------ *
@@ -141,6 +141,47 @@ function NumRuta({ n }: { n: number }) {
 /** Kortytan — Eventet-blockets/DetaljGrupps tonala kort (18.18 punkt 2). */
 const KORT_KLASS =
   'rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
+
+/**
+ * TEXTYTANS MORF-PARITET — den låsta rutan och `TextArea` bär SAMMA höjd och
+ * SAMMA inre padding, så inget flyttar sig när läget växlar (Marcus varv 9:
+ * "jag avskyr sådana layoutförändringar").
+ *
+ * HÖJDEN ÄR HÄRLEDD, INTE VALD — `TextArea rows={7}` renderar:
+ *
+ *     7 rader × 24 px      = 168 px   (`text-body` = 1rem/1.5, tailwind.css 86–87)
+ *   + `py-2`  (8 + 8)      =  16 px   (textAreaVariants bas)
+ *   + kant    (1 + 1)      =   2 px
+ *   ------------------------------
+ *                            186 px
+ *
+ * `min-h-28` (112 px) ur `size="md"` är mindre och binder alltså inte — raderna
+ * vinner. Talet gäller så länge `text-body` är 1.5 och `rows` är 7; ändras
+ * något av dem måste konstanten räknas om. Det är samma beroende `DetaljGrupp`s
+ * 48 px-paritet redan bär, och det är därför den är e2e-mätt där.
+ *
+ * DOM-MÄTT, INTE BARA RÄKNAT (2026-08-07, Chrome mot byggd CSS, isolerad
+ * mätsida — appens egen route ligger bakom auth): låst 186,00 px mot
+ * `TextArea rows={7}` 186,00 px, **Δ = 0**.
+ *
+ * `lh`-ENHETEN PRÖVADES OCH FÖLL — värd att veta, eftersom den ser ut som det
+ * självklart bättre svaret (typografi-följsam, inget hårt tal). `h-[calc(7lh+
+ * 1rem+2px)]` mätte **162,00 px, Δ = −24**: `+` utan omgivande mellanslag är
+ * ogiltigt i CSS `calc()`, så hela regeln droppas tyst och elementet faller
+ * till innehållets egen höjd. Formen `calc(7lh_+_1rem_+_2px)` hade sannolikt
+ * fungerat, men den vinner bara robusthet vi inte behöver just nu — det hårda
+ * talet är mätt, och över-engineering-vakten skär spekulativ robusthet ovanför
+ * golvet.
+ *
+ * `border border-transparent` OCH `px-3 py-2` reserverar kantens och
+ * paddingens pixlar i det låsta läget — samma princip som pill-skalans tredje
+ * regel (T130): utan dem börjar texten på en annan rad än den gör i fältet, och
+ * hoppet flyttar bara från rutans kant till dess innehåll.
+ *
+ * `overflow-auto` på den låsta rutan, eftersom `TextArea` rullar vid överflöd —
+ * en text längre än sju rader får inte spränga en yta som fältet hade rullat.
+ */
+const TEXTYTA_KLASS = 'h-[186px] rounded border border-transparent px-3 py-2';
 
 /**
  * Namn-previewns gräns. **7 sedan varv 7 — Marcus höjde den från 5 med öppna
@@ -1024,14 +1065,49 @@ function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Regis
 
   return (
     <div className="flex flex-col gap-1 pb-3">
-      {/* MEDDELANDET — mallens text visas och går att ändra (beslut 5). */}
+      {/* MEDDELANDET — mallens text visas och går att ändra (beslut 5).
+
+          MORF-PARITETEN ÄR ÄRVD UR `DetaljGrupp`, INTE UPPFUNNEN HÄR (varv 9).
+          Marcus: "När jag trycker på 'Ändra' så blir hela rutan mycket större,
+          jag avskyr sådana layoutförändringar."
+
+          Domen var riktig, och felet var att ytan ärvde grammatiken men inte
+          GEOMETRIN. `EtikettVardeRad`s docblock säger regeln rakt ut: "py-3 +
+          24 px textrad = 48 px, exakt lika med RedigeringsRad (py-2 + 32 px
+          fält). Ändra ALDRIG ena sidan utan den andra — Δ=0 px är DOM-mätt i
+          e2e." Ämne-raden här körde `py-2.5` i BÅDA lägena med ett fält i
+          `size="md"` (`min-h-10` = 40 px) mot en 24 px textrad — 16 px hopp
+          inbyggt i formen.
+
+          RÄTTAT PÅ BÅDA AXLARNA, med förlagans egna tal:
+           · Ämne låst:      `py-3` + 24 px textrad          = 48 px
+           · Ämne redigerar: `py-2` + `size="sm"` (min-h-8)  = 48 px
+
+          `text-body` är 1rem/1.5 = 24 px per rad (`tailwind.css` rad 86–87) —
+          det är TALET hela pariteten vilar på, i förlagan såväl som här.
+
+          HELA MORFEN DOM-MÄTT 2026-08-07 (Chrome mot byggd CSS, isolerad
+          mätsida; appens route ligger bakom auth). Före → efter, per del:
+
+            Ämne-raden     48 → 60 px  (Δ +12)   blev  48 → 48  (Δ 0)
+            Textytan      144 → 186 px (Δ +42)   blev 186 → 186 (Δ 0)
+            Knappraden     40 → 40 px  (Δ   0)   blev  48 → 48  (Δ 0)
+            ------------------------------------------------------------
+            TOTALT HOPP        +54 px                      0 px
+
+          Marcus klagomål var alltså inte en känsla utan 54 px, och den största
+          delen — 42 av dem — satt i textytan, där den låsta rutan bara var så
+          hög som mallens text råkade vara. Knappraden hoppade inte, men den
+          växte 40 → 48 px när den bytte till förlagans `AndraRad`; det är rätt
+          riktning, eftersom 48 px ÄR eventdetaljens mått. */}
       <div className="divide-y divide-border rounded-lg bg-surface px-3">
-        <div className="flex items-center justify-between gap-4 py-2.5">
+        <div className={`flex items-center justify-between gap-4 ${redigerar ? 'py-2' : 'py-3'}`}>
           <span className="shrink-0 text-small text-text-muted">Ämne</span>
           {redigerar ? (
             <Input
               label="Ämne"
               hideLabel
+              size="sm"
               value={amne}
               onChange={setAmne}
               className="w-full max-w-80"
@@ -1040,22 +1116,52 @@ function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Regis
             <span className="truncate text-right text-body">{amne || '—'}</span>
           )}
         </div>
+
+        {/* TEXTYTAN — förlagan har ingen FLERRADIG morf, så pariteten härleds
+            här och delas via EN konstant. Se `TEXTYTA_KLASS`: båda lägena bär
+            samma höjd OCH samma inre padding, så varken rutans kant eller
+            textens första rad flyttar sig en pixel när läget växlar. */}
         <div className="py-2.5">
           {redigerar ? (
             <TextArea label="Meddelandetext" hideLabel value={text} onChange={setText} rows={7} />
           ) : (
-            <p className="whitespace-pre-wrap text-body text-text-secondary">{text}</p>
+            <p
+              className={`${TEXTYTA_KLASS} overflow-auto whitespace-pre-wrap text-body text-text-secondary`}
+            >
+              {text}
+            </p>
           )}
         </div>
-        <div className="py-2">
-          <button
-            type="button"
-            onClick={() => setRedigerar(!redigerar)}
-            className="flex w-full items-center justify-center gap-2 font-medium text-body"
-          >
-            {redigerar ? 'Klar med texten' : '✎ Ändra texten'}
-          </button>
-        </div>
+
+        {/* ÄNDRA-RADEN ÄR FÖRLAGANS EGEN KOMPONENT, inte en kopia av den
+            (Marcus: "måste ju exakt matcha hur det ser ut på eventdetalj-sidan
+            till exempel"). `AndraRad` importeras ur `DetaljGrupp` — då kan
+            formerna inte glida isär, för det finns bara en.
+
+            Den gamla raden var en KOPIA som redan glidit: `py-2` i stället för
+            `py-3`, och penn-"ikonen" var unicode-tecknet `✎` (U+270E) i
+            textsträngen — inte `<Pencil size={16} />` ur lucide. Ett tecken ur
+            brödtextens font kan aldrig matcha en ikon i vikt, mått eller
+            optisk linje, och det syntes.
+
+            KLAR-LÄGET bär `AndraRad`s geometri exakt (py-3 + 24 px = 48 px) men
+            behöver en annan etikett än "Ändra", vilket förlagan inte tar som
+            prop. Att utvidga `AndraRad` för prototypens skull vore att ändra
+            eventsidans facit-låsta komponent — därför en egen rad, med
+            klasserna hämtade ur samma förlaga och beroendet öppet bokfört. */}
+        {redigerar ? (
+          <div className="py-3">
+            <button
+              type="button"
+              onClick={() => setRedigerar(false)}
+              className="flex w-full items-center justify-center gap-2 font-medium text-body"
+            >
+              Klar med texten
+            </button>
+          </div>
+        ) : (
+          <AndraRad onPress={() => setRedigerar(true)} />
+        )}
       </div>
 
       <BilageValjare valda={bilagor} antalMottagare={mottagare.length} onVaxla={vaxlaBilaga} />
