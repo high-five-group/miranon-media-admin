@@ -15,6 +15,34 @@
 
 ## Aktuellt fokus
 
+**Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 3) —
+DE TRETTON VARVEN HAR REDAN LANDAT, OCH HANDOFFEN VISSTE INTE OM DET.**
+Resume-läsningen fann **tre divergenser**. (1) PAUSLÄGE:s *"TRETTON VARV
+OCOMMITTADE MOT ORIGIN … alla lokala"* var föråldrat i samma andetag det
+skrevs: `#930` mergade **`17:15:31Z`** (merge-commit `532ec944`) och bar hela
+kedjan `e7b5ebd8` → `d40b38d5` in i `main` — handoffens NÄSTA-punkt 3 ("bestäm
+med Marcus om varven landar") är alltså passerad, inte öppen. (2) `task-160` är
+taget av S99 → **nästa kort `task-161`**; övriga axlar oförändrade
+(`101`/`L480` + sex fragment/`T137`/`f47`). (3) Ägarlappen har **bytt ägare**
+under pausen — PID `47876` (session `c91a05a2`), levande; PAUSLÄGE noterade
+`90883`. Denna session fortsätter i sin egen worktree per ADR-090 beslut 2.
+**ETT FELSTEG VAR MITT:** jag läste `#930` som `auto=false` + ej draft och
+klassade den som vilande armerings-kandidat, och körde `gh pr ready 930
+--undo`. Den var i själva verket **CLEAN vid armeringen och köad direkt** —
+`autoMergeRequest` sätts aldrig i det läget (CLAUDE.md § tabellrad 2). Jag
+gjorde för hand exakt den förväxling `TASK-128` mekaniserade bort; kommandot
+föll ofarligt (`EXIT=1`, *"is closed"*) eftersom PR:n redan mergat.
+**NÄSTA: GRANSKNINGS-YTAN** — och kod-läsningen inför den gav ett fynd som
+ändrar utgångsläget: **appen HAR redan en granskningsyta**, i
+`SegmentMailCompose.tsx` (rad 207–304) — bekräftelse-modal med
+skriv-för-att-bekräfta, förhandsvisning och oåterkallelighets-varning. Grinden
+är **mottagarantalet**, inte ordet "skicka". Åtgärds-sidans `Granska och
+skicka`-knapp (`AtgardsSida.tsx` rad 1503–1507) saknar `onPress` — knappen
+finns, ytan bakom den inte.
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 100 ⏸️ PAUSAD (2026-08-07, TREDJE pausen, `lifecycle: paused`) —
 TRETTON VARV PÅ ÅTGÄRDS-SIDAN, EN RIVEN MONTERING OCH EN FÄRG SOM LANDADE I
 FYRA HUGG.** Resumen fann först att **paus-PR:n `#905` stod RÖD, inte
