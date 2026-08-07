@@ -168,10 +168,14 @@ PR:er, rörs ej. **Del 6 LANDAD: uppdrag 6 grillat till samsyn** (sex kvitterade
 domänhierarkin: koden äger beteende & mekanik, prosa är karta;
 §0-termposten hub-landad `7913c16`; ingen ny grind, decline ×3) ·
 `157.1` ✅ (ADR-098, `#889`) · `149.4` ✅ (hub `93892dd`, plugin
-**1.30.0**) · `task-159` + tre skivor mintade. **NÄSTA: spawna 157.2 +
-158.1 → 159.1 efter 158.1:s landning (ADR-räknings-serialiseringen) →
-grilla 7 (memory) → 8 (/compact) → 9 (styrande-docs-auditen, mot
-159-ADR:n som måttstock).**
+**1.30.0**) · `task-159` + tre skivor mintade. **Del 7 LANDAD: uppdrag 7 klart** — memory-ytan kuraterad på Marcus
+beslut (BEHÅLL 6: tre mandat + tre maskinfakta · RADERA 10 inkl. kaizen;
+Marcus stänger själv av auto-memory, kvarvarande läses endast instruerat) ·
+`158.1` ✅ (ADR-099, `#903` — ADR-041 beslut 6 rivet öppet) · `157.2` i
+bygge. **NÄSTA: spawna 159.1 (ADR-100) + 158.2 (arkiverings-skriptet,
+båda avblockade av #903) → grilla 8 (/compact) → 9
+(styrande-docs-auditen, mot 159-ADR:n som måttstock) · Marcus-moment:
+stäng av auto-memory · boka 148.5 · triagera 154–156 · Dependabot #635.**
 *(Paus-kadensraden nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
