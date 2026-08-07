@@ -131,3 +131,19 @@ rapport-mot-disk-fångsten ~64 %; de omdömes-tunga posterna grindas av
 Marcus-ytan ~27 % i stället för self-confirm ~9 %). Chat-orkestrerade
 sessioner oförändrade — där håller beslut 2 som skrivet. Besluts-texten
 ovan är fryst (L53).
+
+### 2026-08-07 — Beslut 6 rivet: fas-avslut-bindningen ersatt av rullande fönster (ADR-099, PRD TASK-158)
+
+Beslut 6 ("ADR-023 harmoniseras additivt … Arkivering fastställs som
+fas-avslut-bunden") **rivs ÖPPET, inte tyst.** Premissen — att faser är
+korta nog att en fas-gräns ger en rimlig arkiveringskadens — visade sig
+falsk: Fas 6 har varat 30+ sessioner, och `tasks/sessions/`-roten växte
+under tiden till 86 dokument utan att kadensen någonsin utlöstes.
+[ADR-099](ADR-099-sessionsdok-rotens-rullande-fonster.md) ersätter
+fas-avslut-bindningen med ett rullande fönster: roten behåller de N senast
+stängda dokumenten (N som konfig-värde, startvärde ~10) plus samtliga
+`active`/`paused`-dokument; äldre stängda dokument arkiveras. Grillad
+samsyn: `tasks/sessions/2026-08-07-session-99.md` § Del 5 (2026-08-07,
+"Uppdrag 5"). Beslut 6:s ursprungstext ovan bevaras oförändrad
+(immutabilitet, L53) — denna not styr tolkningen framåt. Övriga beslut i
+denna ADR (1–5) är helt opåverkade.

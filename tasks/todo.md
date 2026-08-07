@@ -15,6 +15,73 @@
 
 ## Aktuellt fokus
 
+**Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 2) —
+`#900` LANDAD, PAUS-PR:N `#905` VAR RÖD OCH ÄR LAGAD.** Resume-läsningen fann
+**tre divergenser mot handoffen**, alla mot `origin/main` `09de3e50`. (1) Steg 1
+i handoffens NÄSTA är **klart**: `#900` MERGED `14:14:07Z` (merge-commit
+`68addb6b`) — research-filen, varv 5 och Dokument-ytan ligger i `main`. (2)
+**Paus-PR:n `#905` stod RÖD, ej BLOCKED-på-väntan:** `Docs link check` FAILURE
+→ `CI Passed or Skipped` FAILURE, tre brutna länkar. Rotorsaken är sekvens, inte
+innehåll — grenen `docs/s100-paus-2` armerades `14:09:48Z`, alltså **fyra
+minuter före `#900` mergade**, och länkade till
+`docs/research/mottagar-preview-monster-2026-08-07.md` +
+`tasks/sessions/bilagor/s100-dokumentytan/` som bara fanns i `#900`s gren.
+Lagad med merge av `origin/main` i denna landning; båda målen verifierade på
+disk efteråt. **Klassen är värd att minnas: en paus-landning som länkar till en
+ännu icke-landad systergren är strukturellt röd, och `BLOCKED` i
+`gh pr view` skiljer inte "väntar på CI" från "CI har fällt".** (3)
+**Numreringen rörde sig på tre axlar under pausen** — `ADR-099` finns (nästa
+**`100`**, ej `098`), fragmenten är **sex** (ej fem; nytt:
+`uppdragets-kallmarkning-maste-avse-gallande-text`), och `task-159` är mintad
+(nästa **`task-160`**, ej `task-158`). Håller: **`L480`** · **`T133`** ·
+**`f47`**. **Parallellitet:** `S99` + `S93` båda `lifecycle: active`,
+ägarlappen i den delade git-katalogen satt `12:15:55Z` av en **levande** ägare
+(PID 90883, starttid verifierad) — denna session arbetar därför vidare i egen
+worktree per `ADR-090` beslut 2, som under hela passet. **NÄSTA: dev-servern på
+4173 → Marcus granskar varv 5 av åtgärds-sidan i browsern → fler iterationer
+efter hans omstyrning, ett varv per omstyrning med egen landning.**
+Dokument-ytan rörs INTE (parkerad på Marcus order).
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
+**Session 100 ⏸️ PAUSAD IGEN (2026-08-07, andra pausen, `lifecycle: paused`) —
+FEM VARV PÅ ÅTGÄRDS-SIDAN, ETT RESEARCH-PASS OCH DOKUMENT-YTAN.** Passet gick i
+snabb iteration med Marcus granskning i browsern mellan varje varv; **varje
+omstyrning träffade UTFÖRANDET, aldrig strukturen B′** som stått orörd sedan
+Del 2. Varv 3 (`#888`): fyra formkrav, allt kopierat ur befintliga ytor.
+**Varv 4 (`#892`) revs av frågan som styr hela ytan — *"Hur kom Lotta hit?"***
+Hon markerade personkort på eventdetaljen, alltså måste hon möta **exakt samma
+kort igen, gröna** (`Deltagare` § `MarkerbartKort`); gruppdynamikens kompakta
+kort är en SÖKTRÄFF och hör bara i plockaren. Varv 4b–4c (`#894`): listan
+INFÄLLD från början så åtgärderna syns utan scroll (sista raden 811 px mot
+tab-barens 856), räknaren i 20 px/600 + grön `CircleCheck`. **Marcus dom på
+previewn:** *"Jävlar vilken ful preview … oanvändbar och måste göras om"* →
+**RESEARCH-PASS** (bakgrundsagent, Sonnet 5) →
+[`docs/research/mottagar-preview-monster-2026-08-07.md`](../docs/research/mottagar-preview-monster-2026-08-07.md):
+tre oberoende förstapartskällor konvergerar på **gräns 5** (MUI `max = 5` i
+källkod · Fluent UI `maxDisplayablePersonas: 5` · Microsoft "default and
+recommended"), spridningen ärligt redovisad (Gestalt 3 · Primer 4 med
+mönsterbyte · Ant Design inget default); **chips avvisade** (Salesforce bygger
+hela tangentbordsmodellen kring borttagning) och **avatarstapel avvisad** (inga
+foton i `Registration`/`Person`). Varv 5 (`#900`) bygger previewn mot fynden +
+tillägger `aria-atomic="true"` som passet fann saknat. **DOKUMENT-YTAN (`T131`,
+scope-punkt 2) BYGGD** — `/mer/dokument`, tre grupper en per dokumentklass, med
+den avvisade formen och dess villkor bokförda i koden; **PARKERAD på Marcus
+order** (*"Vi avvaktar med den lite"*). Metod-skifte: *"Skit i strukturskisser.
+Bygg direkt efter instruktion bara."* **TVÅ MILJÖ-FYND:** `node_modules` var
+TOMT i worktreen och gav en falskt grön typecheck (grön grind mot tomma
+beroenden ≠ godkännande) · stagings CORS avvisade `4173` mitt i ett pass trots
+att porten står tillåten — **ej utredd**. **NÄSTA: verifiera att `#900` landat →
+starta dev-servern på 4173 → fler iterationer på åtgärds-sidan efter Marcus
+granskning.** **HANDOFF: sessionsdok S100 § PAUSLÄGE (andra pausen).** Numrering
+disk-verifierad: `098`/**`L480`** + fem fragment/`T133`/`task-158`/`f47` —
+re-verifiera i mint-ögonblicket. Heartbeat-monitorn startades ALDRIG under
+resumen (öppet bokfört val: främmande sessioners larm var Del 2:s rotorsak).
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 1) —
 OMBYGGNADEN AV ÅTGÄRDS-SIDAN, MOT FYRA MARCUS-KRAV.** Marcus kvitterade
 tillståndsflippen och gav fyra formkrav direkt in i ombyggnaden: (1) rubrik +
@@ -97,10 +164,18 @@ registrerad FÖRE sessionsstart ⇒ laddad, betalas nu;
 här — skulden bokförd i 149.3-kortet, betalas i session född efter
 `a95d271c`. Heartbeat-monitorn igång; kända DIRTY-larm `#862` (S93
 draft, T132-klassen) + `#882` (S100:s paus-PR) — främmande sessioners
-PR:er, rörs ej. **NÄSTA: skarpbevis 148.2 → minta task-158 + sex skivor
-(uppdrag 5) → spawna 157.1 (ADR-098) + 149.4 (hub, OISOLERAD) → grilla
-6/7/8/9 (9 = styrande-docs-auditen, tillagt av Marcus vid resume 1 —
-sessionsdok Del 1 § Ordnad scope punkt 9).**
+PR:er, rörs ej. **Del 6 LANDAD: uppdrag 6 grillat till samsyn** (sex kvitterade frågor —
+domänhierarkin: koden äger beteende & mekanik, prosa är karta;
+§0-termposten hub-landad `7913c16`; ingen ny grind, decline ×3) ·
+`157.1` ✅ (ADR-098, `#889`) · `149.4` ✅ (hub `93892dd`, plugin
+**1.30.0**) · `task-159` + tre skivor mintade. **Del 7 LANDAD: uppdrag 7 klart** — memory-ytan kuraterad på Marcus
+beslut (BEHÅLL 6: tre mandat + tre maskinfakta · RADERA 10 inkl. kaizen;
+Marcus stänger själv av auto-memory, kvarvarande läses endast instruerat) ·
+`158.1` ✅ (ADR-099, `#903` — ADR-041 beslut 6 rivet öppet) · `157.2` i
+bygge. **NÄSTA: spawna 159.1 (ADR-100) + 158.2 (arkiverings-skriptet,
+båda avblockade av #903) → grilla 8 (/compact) → 9
+(styrande-docs-auditen, mot 159-ADR:n som måttstock) · Marcus-moment:
+stäng av auto-memory · boka 148.5 · triagera 154–156 · Dependabot #635.**
 *(Paus-kadensraden nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->

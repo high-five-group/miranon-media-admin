@@ -4,6 +4,7 @@ title: 'Skiva: radlängds-grinden i check-thread-index.sh'
 status: To Do
 assignee: []
 created_date: '2026-08-07 11:34'
+updated_date: '2026-08-07 13:43'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,6 +25,12 @@ ordinal: 269000
 - [ ] #2 Invariant 7 byggd: rad över taket fäller med radnummer + uppmätt längd + anvisning (flytta narrativet till kortet); rött-först-bevis via self-test mot fixtur — aldrig mot live-registret
 - [ ] #3 Tvåsidig testsvit utökad (fäller fet fixtur-rad · släpper tunn · fail-closed); shellcheck-strict grön; PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TRIAGE-INSPEL från 157.1-agenten (2026-08-07): check-thread-index.sh tar >2 min vid 100 % CPU för 132 trådar — trolig O(n²) i tid_exists/nästlade loopar. Radlängds-grinden byggs i samma familj: ärv INTE mönstret; håll grinden O(n) och överväg att flagga befintlig kostnad som eget fynd-kort om den består efter migrationen (157.2 krymper radlängd, inte trådantal).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
