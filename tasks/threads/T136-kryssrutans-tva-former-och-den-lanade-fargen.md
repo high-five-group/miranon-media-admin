@@ -15,9 +15,13 @@ lifecycle: paused
 
 Marcus, verbatim:
 
+<!-- vale Vale.Repetition = NO -->
+<!-- Citatet är ORDAGRANT och behåller sitt "kan kan"; Vale.Repetition fäller
+     på det, men ett citat rättas inte åt talaren. Undantaget är radlokalt. -->
 > *"nu har vi också flera olika typer av checkboxar. En blå och en svart. Jag
 > gillar den blåa mer faktiskt. Vi kan kan införa den i hela appen. Men samma
 > sak här som med pills och knappar, inventera och kolla."*
+<!-- vale Vale.Repetition = YES -->
 
 Det är samma klass som `T125` (knapparna) och `T130` (pillarna): en form som
 drivit isär, upptäckt först när två varianter mötte varandra på en yta.
