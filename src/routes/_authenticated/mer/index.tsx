@@ -1,5 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ClipboardList, Filter, Hourglass, LogOut, Mail, Smartphone, Star } from 'lucide-react';
+import {
+  ClipboardList,
+  Filter,
+  Hourglass,
+  LogOut,
+  Mail,
+  Paperclip,
+  Smartphone,
+  Star,
+} from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 import { Button, NavCard } from '@/components/primitives';
 
@@ -67,6 +76,15 @@ function MerPage() {
               Marcus-kvitterad 2026-07-21); gamla routen omdirigerar. */}
           <li>
             <NavCard to="/mer/segment" icon={Filter} label="Bygg segment" />
+          </li>
+          {/* [PROTOTYPE] [S100] Dokument-ytan (`T131`) — ORDLISTA § Bilaga:
+              "Dokument är YTAN i Mer där bilagor hanteras". Hör till HANDLING/
+              VERKTYG-gruppen, inte listorna: den förvaltar material, den
+              listar inte personer. Ikonen är Paperclip = bilaga (domän-
+              begreppsmappningen, PRD beslut 5); FileText hade läst som
+              "dokument i allmänhet", vilket är precis det ORDLISTA varnar för. */}
+          <li>
+            <NavCard to="/mer/dokument" icon={Paperclip} label="Dokument" />
           </li>
         </ul>
         {/* Inställningar (task-126.3, T47 aktiverad) — se filhuvudets
