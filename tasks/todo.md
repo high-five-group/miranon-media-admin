@@ -15,6 +15,28 @@
 
 ## Aktuellt fokus
 
+**Session 99 ⏸️ PAUSAD (2026-08-07, andra pausen, `lifecycle: paused`)** —
+**UPPDRAG 1–7 AV 9 KLARA; ALLT I LUFTEN LANDAT.** Resume 1 i siffror:
+149-familjen KOMPLETT (ADR-097-systemet live, 149.3/149.4 stängda,
+plugin **1.30.0**) · registermigrationen LANDAD (`#910`: 221→84 KB, 0
+feta rader, 87 kort — T133-konflikten orkestrerar-löst) · **ADR-098,
+ADR-099, ADR-100** landade (tunna radformen · rullande fönstret ·
+sanningshierarkin med CLAUDE.md-pekar-rad + hubbens §0-post `057498a`) ·
+arkiverings-skriptet BYGGT (`#913`, testsvit 30/30; skarpa migrationen =
+158.3) · memory-ytan kuraterad (behåll 6/radera 10, **auto-memory AV**,
+user-scope-verifierat) · skarpbeviset `deny-subagent-vantan` TAGET ·
+task-158 + task-159 mintade med skivor. **Kvarvarande skivor:** 157.3 →
+157.4 QA · 158.3 → 158.4 → 158.5 → 158.6 QA · 159.2 → 159.3 QA · 148.5
+(Marcus bokar) → 148.6 → 148.7 QA. **Skarpbevis-skuld:**
+`deny-arbetsform-push.sh` — laddbar FÖRST i nästa session, betalas som
+resumens första handling. **NÄSTA: resume → skarpbeviset → spawna
+157.3 + 158.3 + 159.2 → grilla uppdrag 8 (/compact) → 9
+(styrande-docs-auditen, ADR-100 är måttstocken).** **HANDOFF: sessionsdok
+S99 § PAUSLÄGE (andra pausen) + Del 8.** Numrering vid paus:
+099/ADR-101/L480 + 4 fragment/T134 (S93 rör sig — re-verifiera)/
+task-160/f47. Heartbeat-monitorn stoppad med avsikt — starta vid resume.
+*(S100:s kadensrad nedan, oförändrad.)*
+
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 2) —
 `#900` LANDAD, PAUS-PR:N `#905` VAR RÖD OCH ÄR LAGAD.** Resume-läsningen fann
 **tre divergenser mot handoffen**, alla mot `origin/main` `09de3e50`. (1) Steg 1

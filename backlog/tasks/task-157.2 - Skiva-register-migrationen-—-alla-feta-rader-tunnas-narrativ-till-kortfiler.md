@@ -1,10 +1,10 @@
 ---
 id: TASK-157.2
 title: 'Skiva: register-migrationen — alla feta rader tunnas, narrativ till kortfiler'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-07 11:33'
-updated_date: '2026-08-07 14:35'
+updated_date: '2026-08-07 15:28'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,7 +23,7 @@ ordinal: 268000
 <!-- AC:BEGIN -->
 - [x] #1 Premiss-pass: ADR-098:s radform + radlängds-tak lästa på main; registret ommätt; lista över rader som överskrider taket byggd mekaniskt före någon redigering
 - [x] #2 Varje fet rad tunnad till ADR-098-formen; narrativ flyttat till trådens kortfil (kort fött där det saknades); besläktad-deklarationer flyttade per ADR-098:s hemvist-beslut; INGET innehåll raderat — mekanisk innehålls-bevarande-kontroll redovisad rad för rad i slutrapporten
-- [ ] #3 check-thread-index.sh:s befintliga invarianter gröna efter migrationen; registrets nya storlek redovisad (rader + KB); docs-grindarna gröna; PR armerad, per-jobb-grön
+- [x] #3 check-thread-index.sh:s befintliga invarianter gröna efter migrationen; registrets nya storlek redovisad (rader + KB); docs-grindarna gröna; PR armerad, per-jobb-grön
 <!-- AC:END -->
 
 ## Final Summary
@@ -57,12 +57,14 @@ Grindar: check-thread-index.sh EXIT=0, check-lifecycle.sh EXIT=0, check:docs
 EXIT=0 (13/13 gröna), typecheck EXIT=0, biome check EXIT=0. build/test:api ej
 körda — ren docs-diff (tasks/threads/* + ett backlog-kort), L147 rörd-fil-
 klass = check:docs.
+
+Stängning i S99-resume 1 (2026-08-07): #910 mergad d232928b, per-jobb-grön. Registret 221337→84184 byte, 0 rader >500 byte, 65 nya + 22 kompletterade kort, inget raderat (mekaniskt bevisat 87/87). Orkestrerar-löst merge-konflikt mot #909: T133 räddad till tunn radform (260 byte) + kortfil med ordagrann cell-flytt; GitHub släppte armeringen vid konflikten — omarmerad 14:46:06Z. Byte-mätmetoden (inte tecken) bekräftad som ADR-098:s bindande; O(n²)-hypotesen stödd indirekt (grinden 11,3 s post-migration mot >2 min före).
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
