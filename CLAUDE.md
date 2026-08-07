@@ -443,6 +443,14 @@ saknar en framtida tur att vakna i; orkestreraren är den durabla parten och
 äger all väntan, inklusive svepet ovan. Kontraktet kodifierat i
 [ADR-096](docs/decisions/ADR-096-subagentens-vantekontrakt.md).
 
+**Push-ekonomins princip: commit är gratis, push kostar**
+([ADR-097](docs/decisions/ADR-097-arbetsformens-tillstandsbarare.md)).
+Undantagslistan — vad som pushas direkt kontra väntar till en färdig enhet
+— och gransknings-regeln (verifiera mot dev-server/staging, aldrig mot en
+väntad landning) bor i [`CONTRIBUTING.md`](CONTRIBUTING.md) §
+Landnings-ordningen, inte här — samma budget-skäl som `ADR-097` § `(d)`
+avvisar för hela arbetsformens regelmängd.
+
 **`autoMergeRequest: null` betyder INTE "ej armerad".** Fältet beror på PR:ens
 tillstånd i armerings-ögonblicket. `gh pr merge --help` säger det rakt ut:
 *"If required checks have not yet passed, auto-merge will be enabled. If
@@ -481,6 +489,19 @@ och två gånger till på SAMMA PR inom sex minuter (#557, TASK-115 instans 6+7)
 — i samtliga fall en falsk röd från G0-transienten (se
 `scripts/check-staging-preflight-wiring.mjs` § bounded retry), inte ett
 verkligt trädfel. Källa: `backlog/tasks/task-115` + `tasks/sessions/2026-07-26-session-91.md` rad ~7908–7909.
+
+**Åtgärdsregeln för en armerings-kandidat: draft eller armera i samma
+andetag, aldrig vilande.** En PR skapas som draft ELLER armeras när den
+öppnas — `gh pr create --draft` eller `gh pr merge --auto` — CLEAN+oarmerad
+är aldrig ett vilande tillstånd. Svepet kan inte ur ett statiskt API-svar
+skilja en medvetet parkerad PR från en glömd
+(`tasks/lessons.d/parkerad-pr-utan-draft-ar-oskiljbar-fran-glomd.md`, mätt
+två gånger — `#838` 2026-08-06 och `#862` 2026-08-07, den andra gången av
+lärdomens egen författare, i samma session som skrev den). Ett svep-larm om
+armerings-kandidat är därför en ORDER till PR:ens ägare, inte enbart
+information: armera den, eller sätt den till draft (`gh pr ready <nr>
+--undo`) — i SAMMA svep larmet upptäcks. En främmande, AKTIV sessions PR
+rörs aldrig av någon annan än ägaren — det är ägarens eget svep som bär den.
 
 **En köad gren kan inte uppdateras via `gh`.** Push avvisas med `GH006` så
 länge PR:en står i kön, och `--disable-auto` släpper inte låset — `gh` 2.96.0
