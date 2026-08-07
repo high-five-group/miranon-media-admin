@@ -15,6 +15,30 @@
 
 ## Aktuellt fokus
 
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`) — FEMTE
+RESUMEN: BYGGAGENTERNA UT** — pausens båda verifikationssteg **KLARA**:
+`#850` mergad `09:38:46Z` (`aa132f62`) och paus-landningen `#851` mergad
+`09:45:43Z` (`c3cf9f1e`). Svepet: `main` = `c3cf9f1e` (CI `in_progress`) ·
+en öppen PR (`#635` Dependabot web-vitals, parkerad) · fyra öppna larm-ärenden
+(`#847`/`#844`/`#780`/`#464`, samtliga kända sedan Del 7). **DIVERGENS
+FLAGGAD:** huvudkatalogen står på `docs/s99-del2-vantekontraktet` (`aa132f62`)
+och dess kopia av sessionsdoket saknar Del 8 + PAUSLÄGE och läser
+`lifecycle: active` — **samma fälla Del 7 § Ingången bokförde**; resumen läste
+worktree-kopian. Katalogval: ägarlappen tillhör **S99** (pid `90883`, levande)
+⇒ arbetet sker i `.claude/worktrees/s93-resume-2` på `docs/s93-resume-5`.
+**Numreringen disk-verifierad mot `c3cf9f1e` — fem axlar, noll avvikelser:**
+096/**L480**/T132/task-148/f47 + tre nummerlösa fragment. Etiketterna
+verifierade per kort: **elva `ready-for-agent`**, två `ready-for-human`
+(QA-korten `145.7` + `146.6`). Beroendegrafen läst ur korten: utan beroenden
+just nu är `145.1`, `146.1`, `146.2`, `146.3` — men ordningsregeln
+*eventsidan före fundamentet* håller tillbaka `146.2`/`146.3`.
+**NÄSTA: första vågen = `TASK-145.1` (kedjehuvudet) + `TASK-146.1`
+(fristående).** Dev-servern lever på 5173 (HTTP 200);
+granskningsfixturen t.o.m. 2026-08-16.
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 93 ⏸️ PAUSAD (2026-08-07, `lifecycle: paused`) — ALLT KLART FÖR
 BYGGAGENTER** — **TRETTON SKIVOR PUBLICERADE, ELVA AFK-BARA.** `TASK-145`
 (eventsidan) sju skivor · `TASK-146` (bilage-fundamentet) sex · bara de två
