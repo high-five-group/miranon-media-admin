@@ -42,6 +42,12 @@ CONFIG=".facit-policy.conf"
 die() { printf 'check-facit: %s\n' "$1" >&2; exit "${2:-3}"; }
 
 [[ -f "${CONFIG}" ]] || die "${CONFIG} saknas — körs grinden från repo-roten?"
+
+# Pre-deklareras FÖRE source så shellcheck-strict (--enable=all) ser arrayen
+# som tilldelad — samma form som check-thread-index.sh:112-115. Utan raden
+# fäller SC2154 på användningen i (c).
+declare -a FACIT_PROTO_MARKORER=()
+
 # shellcheck source=/dev/null
 source "${CONFIG}"
 

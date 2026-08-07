@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+#
+# SC2312 varnar för att $(run_exit) maskerar kommandots returvärde. Den är
+# falsk-positiv här MED AVSIKT: run_exit() fångar redan check-facit.sh:s
+# exitkod och echo:ar den som DATA, så substitutionens egen returkod saknar
+# betydelse — det är hela poängen med formen. Fil-nivå (måste stå före första
+# kommandot) i stället för nio spridda rad-direktiv. Precedent för disable-
+# formen: arkivera-sessionsdok.sh:296.
+# shellcheck disable=SC2312
+#
 # scripts/test-check-facit.sh
 #
 # Empirisk test-suite för scripts/check-facit.sh (ADR-102-grind).
