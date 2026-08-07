@@ -1016,22 +1016,26 @@ function BilageValjare({ valda, onVaxla }: { valda: Set<string>; onVaxla: (id: s
           två ikoner för tre klasser, och `Sparkles` sade "genereras" bara för
           den som redan visste det.
 
-          HOVER-TONEN RÄTTAD: raden bar `hover:bg-bg-muted`, vilket är EXAKT
-          `KORT_KLASS`-bakgrunden som arbetsytan står på — hover försvann alltså
-          in i omgivningen i stället för att lyfta raden. Marcus såg det direkt:
-          "Bilage-raderna kan inte ha en hover-färg som är samma som bakgrunden
-          på blocket de står på." Nu `bg-bg-emphasized`, appens dominerande
-          hover-ton (23 förekomster i `src/components/` mot bilage-radernas
-          avvikande 5) och samma som `RAD_KLASS` i den här filen redan bär.
+          HOVER ÄR HELT BORTA (varv 11, Marcus: "Jag vill nog ta bort hover
+          helt"). Vägen dit gick via en rättning: raden bar `hover:bg-bg-muted`,
+          vilket är EXAKT `KORT_KLASS`-bakgrunden som arbetsytan står på — hover
+          försvann in i omgivningen i stället för att lyfta raden. Den byttes
+          först till `bg-bg-emphasized` (varv 10), och därefter valde Marcus bort
+          hela effekten.
+
+          VAD SOM BÄR AFFORDANSEN NU: `cursor-pointer` för mus, kryssrutans egen
+          fokusring för tangentbord, och kryssrutans eget markerade läge som
+          resultat-återkoppling. Raden är fortfarande klickbar i hela sin bredd
+          (`<label>` runt kryssrutan) utan att signalera det visuellt vid hover —
+          ett medvetet val, inte en glömska. Faller det vid granskning är
+          mellantinget en ton som INTE är `bg-bg-muted`, eftersom just den färgen
+          var det ursprungliga felet.
 
           `items-center` i stället för `items-start`: raden är enradig nu, så
           kryssrutans `mt-0.5`-justering mot en tvåradig text är onödig. */}
       <div className="divide-y divide-border rounded-lg bg-surface">
         {BILAGOR.map((b) => (
-          <label
-            key={b.id}
-            className="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-bg-emphasized motion-safe:transition-colors"
-          >
+          <label key={b.id} className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
             <input
               type="checkbox"
               checked={valda.has(b.id)}
@@ -1187,31 +1191,39 @@ function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Regis
         </MessageBox>
       )}
 
-      {/* KNAPPEN ÄR NU GRÅ OCH LITEN, OCH DET FÖLJER INTENT-REGELN — det bryter
-          den inte (varv 10, Marcus: "Sätt in en mindre knapp som vi har, ta den
-          gråa färgen och byt knapptexten till bara 'Granska'").
+      {/* KNAPPEN ÄR MÖRKGRÅ SOLID, OCH DET FÖLJER INTENT-REGELN — det bryter den
+          inte. Färgen tog två varv att landa, och båda stegen är värda att minnas:
 
-          Den gamla var `intent="success"` (grön) med texten "Granska och skicka
-          till N mottagare", och skälet stod här: grönt eftersom "handlingen når
-          utomstående" (`Button.tsx` § intent-regeln, task-19.3 · task-18.16
-          grön-knapp-regeln · SegmentMailCompose-precedenten).
+          Varv 10 gjorde den `secondary` på Marcus order ("ta den gråa färgen").
+          Varv 11 rev det: "Den syns knappt, jag skulle vilja ha en den vanliga
+          mörkgråa." Diagnosen var exakt rätt — `--mm-button-secondary-bg` är
+          `transparent` (`components.css` rad 34), alltså en ren outline utan
+          fyllning. Den "gråa färgen" han menade var `primary`:
+          `--mm-btn-primary-bg` = `--p-neutral-800` = `#282928`, appens vanliga
+          mörkgrå solid-knapp.
 
-          MEN KNAPPEN SKICKAR INTE LÄNGRE — den öppnar granska-steget, och det är
-          DÄR sändningen sker. En knapp som bara leder till nästa steg når ingen
-          utomstående, så den gröna intent-regeln gäller den inte. `secondary`
-          (neutral outline, `Button.tsx` § "NEUTRALA stödformer") är rätt form
-          för ett mellansteg, och grönt hade dessutom byggt en falsk vana: den
-          färgen ska betyda "nu går det iväg" den dag knappen faktiskt gör det.
+          VARFÖR INTE GRÖN, FORTFARANDE: ursprungsformen var `intent="success"`
+          därför att "handlingen når utomstående" (`Button.tsx` § intent-regeln,
+          task-19.3 · task-18.16 grön-knapp-regeln · SegmentMailCompose-
+          precedenten). Knappen SKICKAR fortfarande inte — den öppnar
+          granska-steget, och det är DÄR sändningen sker. Texten "Granska och
+          skicka" beskriver hela kedjan hon påbörjar, inte vad detta klick gör.
+          Grönt ska betyda "nu går det iväg" den dag en knapp faktiskt gör det;
+          spenderas färgen på ett mellansteg är den värdelös när det gäller.
 
-          Texten bär inte längre mottagarantalet. Räknaren finns redan två gånger
-          på sidan — i mottagar-ytans accordion-huvud och på åtgärdsraden — och en
-          tredje kopia i knappen var den minst synliga av dem. */}
-      <div className="flex items-center justify-between gap-3 pt-1">
-        <span className="text-small text-text-muted">
-          Varje mottagare får sitt eget mail — ingen ser vem mer som fick det.
-        </span>
-        <Button intent="secondary" size="sm" isDisabled={mottagare.length === 0}>
-          Granska
+          Mottagarantalet är kvar UTE ur texten (varv 10): räknaren finns redan i
+          mottagar-ytans accordion-huvud och på åtgärdsraden, och knappens kopia
+          var den minst synliga av de tre.
+
+          HJÄLPTEXTEN BREDVID ÄR BORTA (varv 11, Marcus: "det är fortfarande
+          självklart att alla får var sitt mail och att ingen ser vad den andre
+          fick"). Den beskrev en EGENSKAP hos sändvägen — loopad singelsändning,
+          aldrig en synlig mottagarlista — och den egenskapen är ett verkligt
+          krav som lever i underlaget § 7, inte i den här meningen. Raden är
+          alltså borta ur ytan utan att kravet rörs. */}
+      <div className="flex justify-end pt-1">
+        <Button size="sm" isDisabled={mottagare.length === 0}>
+          Granska och skicka
         </Button>
       </div>
     </div>
