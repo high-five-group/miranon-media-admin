@@ -369,6 +369,42 @@ just det kön gjort omöjligt. Kvar står det kön INTE ser — två diffar som 
 rent var för sig och ändå är fel tillsammans. Agenten kan inte se sina
 syskonagenter; orkestreraren kan, och granskar därför diffen innan den köas.
 
+**Push-ekonomins undantagslista — vad som pushas direkt kontra väntar**
+(`ADR-097` § 3). Push-kadensen ovan (§ Push-kadensen) sätter riktningen —
+pusha vid en färdig enhet, inte per commit — men riktningen har egna
+undantag åt båda hållen:
+
+Pushas direkt, sparas aldrig till en färdig enhet:
+
+- **Nummerbärande artefakter** (ADR-, lesson-, kort-nummer) — en opushad
+  numrering förlänger fönstret där en parallell session kan allokera samma
+  nästa-lediga-nummer (`CLAUDE.md` § Kortnummer, `TASK-93`-kollisionen).
+- **Lifecycle-flippar** (sessionsdokets `paused`/`active`/`done`) —
+  orkestrerarens svep och andra sessioner läser tillståndet ur `main`, inte
+  ur ett lokalt träd.
+- **Allt före paus/handoff** — write-ahead-principen (`ADR-096` § Beslut del
+  3, "Persistens före väntan"): persistens är en förutsättning för att gå in
+  i väntan, aldrig en eftertanke.
+- **Hub-bumps** (plugin-version) — andra sessioner läser den bumpade
+  versionen först vid sin egen sessionsstart; en opushad bump är osynlig för
+  dem tills dess.
+- **Säkerhetsfixar** — kostnaden av att sitta på en känd sårbarhet slår varje
+  CI-besparing.
+
+Väntar till en färdig enhet är klar att granskas:
+
+- **Iterationsvarv** — `prototype`-skillens § 5; ett varv är per definition
+  inte en färdig enhet (`T126`, `ADR-097` § 1).
+- **WIP inom en skiva** — lokal commit per steg, en push när skivan är klar.
+- **Utkast** — ett dokument som inte är redo att läsas som beslutat.
+
+**Gransknings-regeln.** Marcus verifieringsmoment pekas mot väntfria ytor —
+dev-server (`npm run dev`) eller staging (`CLAUDE.md` §
+"Granskningsdata i staging") — aldrig mot en väntad landning. En granskning
+som förutsätter att en PR redan är mergad gör granskningen beroende av kön,
+vilket är precis den väntan i handlingsögonblicket `ADR-096`/`ADR-097`
+flyttar bort.
+
 **Den upphävda manuella formen bevaras nedan** — inte som instruktion, utan för
 att den förklarar varför kön behövdes. Följ den inte; den är historik. Här stod
 fram till `TASK-96` också en avgränsning om att merge queue var en egen öppen

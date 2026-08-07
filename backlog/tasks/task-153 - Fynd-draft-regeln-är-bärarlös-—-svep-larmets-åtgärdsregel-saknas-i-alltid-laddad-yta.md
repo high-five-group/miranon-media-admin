@@ -3,9 +3,10 @@ id: TASK-153
 title: >-
   Fynd: draft-regeln är bärarlös — svep-larmets åtgärdsregel saknas i
   alltid-laddad yta
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-07 11:06'
+updated_date: '2026-08-07 11:49'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,16 +21,16 @@ Symptom: regeln 'parkerad PR sätts till draft' bor enbart i ett lessons-fragmen
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass: lessons-fragmentet parkerad-pr-utan-draft läst; heartbeat-svepets armeringskandidat-larmtext + isDraft-filtrering läst i scripts/heartbeat-svep.sh; dagens #862-instans (CLEAN oarmerad feature-PR ägd av parallell session) verifierad i PR-historiken
-- [ ] #2 Åtgärdsregeln kodifierad i CLAUDE.md § Landning (alltid-laddad yta): en PR skapas som draft ELLER armeras i samma andetag — aldrig CLEAN+oarmerad som vilande tillstånd; svep-larm om armeringskandidat är en ORDER till ägaren (armera eller sätt draft i samma svep), och främmande aktiv sessions PR rörs aldrig — ägarens eget svep bär den
-- [ ] #3 bygg-agent-instruktionen kompletterad: skapas en PR som INTE ska armeras (gransknings-väntan per uppdraget) skapas den med gh pr create --draft från början
+- [x] #1 Premiss-pass: lessons-fragmentet parkerad-pr-utan-draft läst; heartbeat-svepets armeringskandidat-larmtext + isDraft-filtrering läst i scripts/heartbeat-svep.sh; dagens #862-instans (CLEAN oarmerad feature-PR ägd av parallell session) verifierad i PR-historiken
+- [x] #2 Åtgärdsregeln kodifierad i CLAUDE.md § Landning (alltid-laddad yta): en PR skapas som draft ELLER armeras i samma andetag — aldrig CLEAN+oarmerad som vilande tillstånd; svep-larm om armeringskandidat är en ORDER till ägaren (armera eller sätt draft i samma svep), och främmande aktiv sessions PR rörs aldrig — ägarens eget svep bär den
+- [x] #3 bygg-agent-instruktionen kompletterad: skapas en PR som INTE ska armeras (gransknings-väntan per uppdraget) skapas den med gh pr create --draft från början
 - [ ] #4 Korshänvisning: lessons-fragmentets 'kvarstår som prosa'-rad uppdaterad att peka på den nya bäraren; docs-grindarna gröna; PR armerad, per-jobb-grön
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
