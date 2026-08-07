@@ -15,6 +15,43 @@
 
 ## Aktuellt fokus
 
+**Session 100 ⏸️ PAUSAD IGEN (2026-08-07, andra pausen, `lifecycle: paused`) —
+FEM VARV PÅ ÅTGÄRDS-SIDAN, ETT RESEARCH-PASS OCH DOKUMENT-YTAN.** Passet gick i
+snabb iteration med Marcus granskning i browsern mellan varje varv; **varje
+omstyrning träffade UTFÖRANDET, aldrig strukturen B′** som stått orörd sedan
+Del 2. Varv 3 (`#888`): fyra formkrav, allt kopierat ur befintliga ytor.
+**Varv 4 (`#892`) revs av frågan som styr hela ytan — *"Hur kom Lotta hit?"***
+Hon markerade personkort på eventdetaljen, alltså måste hon möta **exakt samma
+kort igen, gröna** (`Deltagare` § `MarkerbartKort`); gruppdynamikens kompakta
+kort är en SÖKTRÄFF och hör bara i plockaren. Varv 4b–4c (`#894`): listan
+INFÄLLD från början så åtgärderna syns utan scroll (sista raden 811 px mot
+tab-barens 856), räknaren i 20 px/600 + grön `CircleCheck`. **Marcus dom på
+previewn:** *"Jävlar vilken ful preview … oanvändbar och måste göras om"* →
+**RESEARCH-PASS** (bakgrundsagent, Sonnet 5) →
+[`docs/research/mottagar-preview-monster-2026-08-07.md`](../docs/research/mottagar-preview-monster-2026-08-07.md):
+tre oberoende förstapartskällor konvergerar på **gräns 5** (MUI `max = 5` i
+källkod · Fluent UI `maxDisplayablePersonas: 5` · Microsoft "default and
+recommended"), spridningen ärligt redovisad (Gestalt 3 · Primer 4 med
+mönsterbyte · Ant Design inget default); **chips avvisade** (Salesforce bygger
+hela tangentbordsmodellen kring borttagning) och **avatarstapel avvisad** (inga
+foton i `Registration`/`Person`). Varv 5 (`#900`) bygger previewn mot fynden +
+tillägger `aria-atomic="true"` som passet fann saknat. **DOKUMENT-YTAN (`T131`,
+scope-punkt 2) BYGGD** — `/mer/dokument`, tre grupper en per dokumentklass, med
+den avvisade formen och dess villkor bokförda i koden; **PARKERAD på Marcus
+order** (*"Vi avvaktar med den lite"*). Metod-skifte: *"Skit i strukturskisser.
+Bygg direkt efter instruktion bara."* **TVÅ MILJÖ-FYND:** `node_modules` var
+TOMT i worktreen och gav en falskt grön typecheck (grön grind mot tomma
+beroenden ≠ godkännande) · stagings CORS avvisade `4173` mitt i ett pass trots
+att porten står tillåten — **ej utredd**. **NÄSTA: verifiera att `#900` landat →
+starta dev-servern på 4173 → fler iterationer på åtgärds-sidan efter Marcus
+granskning.** **HANDOFF: sessionsdok S100 § PAUSLÄGE (andra pausen).** Numrering
+disk-verifierad: `098`/**`L480`** + fem fragment/`T133`/`task-158`/`f47` —
+re-verifiera i mint-ögonblicket. Heartbeat-monitorn startades ALDRIG under
+resumen (öppet bokfört val: främmande sessioners larm var Del 2:s rotorsak).
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 1) —
 OMBYGGNADEN AV ÅTGÄRDS-SIDAN, MOT FYRA MARCUS-KRAV.** Marcus kvitterade
 tillståndsflippen och gav fyra formkrav direkt in i ombyggnaden: (1) rubrik +
