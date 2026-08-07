@@ -3,10 +3,10 @@ id: TASK-153
 title: >-
   Fynd: draft-regeln är bärarlös — svep-larmets åtgärdsregel saknas i
   alltid-laddad yta
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-07 11:06'
-updated_date: '2026-08-07 11:49'
+updated_date: '2026-08-07 11:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,6 +26,12 @@ Symptom: regeln 'parkerad PR sätts till draft' bor enbart i ett lessons-fragmen
 - [x] #3 bygg-agent-instruktionen kompletterad: skapas en PR som INTE ska armeras (gransknings-väntan per uppdraget) skapas den med gh pr create --draft från början
 - [ ] #4 Korshänvisning: lessons-fragmentets 'kvarstår som prosa'-rad uppdaterad att peka på den nya bäraren; docs-grindarna gröna; PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Levererad via PR #877 (merge 8f007d21), CI grön per jobb. Draft-eller-armera-åtgärdsregeln i CLAUDE.md § Landning; --draft-instruktionen i bygg-agenten; lessons-fragmentet pekar på bäraren.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
