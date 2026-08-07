@@ -97,10 +97,14 @@ registrerad FÖRE sessionsstart ⇒ laddad, betalas nu;
 här — skulden bokförd i 149.3-kortet, betalas i session född efter
 `a95d271c`. Heartbeat-monitorn igång; kända DIRTY-larm `#862` (S93
 draft, T132-klassen) + `#882` (S100:s paus-PR) — främmande sessioners
-PR:er, rörs ej. **NÄSTA: skarpbevis 148.2 → minta task-158 + sex skivor
-(uppdrag 5) → spawna 157.1 (ADR-098) + 149.4 (hub, OISOLERAD) → grilla
-6/7/8/9 (9 = styrande-docs-auditen, tillagt av Marcus vid resume 1 —
-sessionsdok Del 1 § Ordnad scope punkt 9).**
+PR:er, rörs ej. **Del 6 LANDAD: uppdrag 6 grillat till samsyn** (sex kvitterade frågor —
+domänhierarkin: koden äger beteende & mekanik, prosa är karta;
+§0-termposten hub-landad `7913c16`; ingen ny grind, decline ×3) ·
+`157.1` ✅ (ADR-098, `#889`) · `149.4` ✅ (hub `93892dd`, plugin
+**1.30.0**) · `task-159` + tre skivor mintade. **NÄSTA: spawna 157.2 +
+158.1 → 159.1 efter 158.1:s landning (ADR-räknings-serialiseringen) →
+grilla 7 (memory) → 8 (/compact) → 9 (styrande-docs-auditen, mot
+159-ADR:n som måttstock).**
 *(Paus-kadensraden nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
