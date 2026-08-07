@@ -87,6 +87,11 @@
       "sökväg": "scripts/seed-review-fixture.mjs",
       "funktion": "main",
       "skäl": "Granskningsfixturen (seed:review + seed:review:clean). En CI-purge mitt i körningen städar bort data Marcus granskar."
+    },
+    {
+      "sökväg": "scripts/create-bilagor-table.mjs",
+      "funktion": "main",
+      "skäl": "Bilagor-tabellens schema-skript (schema:bilagor, TASK-146.2). Skriver mot samma delade staging-bas via Metadata-API:t — en lokal körning samtidigt med ett CI-staging-jobb ska stoppas av samma skäl som purge/seed-review."
     }
   ],
   "nodeSkriptUpptäckt": {
@@ -109,6 +114,10 @@
       {
         "sökväg": "scripts/verify-ci-parity.mjs",
         "skäl": "Nämner STAGING_AIRTABLE_TOKEN en gång i ett dokumentationsstycke — förklarar VARFÖR ci-suite.yml:s purge/test-staging-jobb medvetet UTESLUTS ur derivedJobs (de kräver staging-secrets som saknas lokalt). Skriptet härleder och kör aldrig purge/test-staging-jobbens run:-block; mekaniken som bevisar uteslutningen är verifieraSuiteInputInvarianter (körs vid varje anrop), inte denna kommentar. Ingen kodväg i filen läser process.env för denna nyckel eller gör ett Airtable-anrop."
+      },
+      {
+        "sökväg": "scripts/test-create-bilagor-table.mjs",
+        "skäl": "Hermetisk testsvit (TASK-146.2) — importerar bara de pura funktionerna (validateConfig, planFields, buildCreateTableBody m.fl.), anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, samma mönster som test-seed-review-fixture.mjs/test-purge-staging-sentinels.mjs."
       }
     ]
   }
