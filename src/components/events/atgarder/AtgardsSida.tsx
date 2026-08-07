@@ -100,6 +100,7 @@ import {
   Plus,
   Sparkles,
   Upload,
+  UserPlus,
 } from 'lucide-react';
 import { type ReactNode, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
@@ -167,26 +168,39 @@ function namnPreview(namn: string[]): string {
 }
 
 /* ------------------------------------------------------------------ *
- * De SEX åtgärdstyperna (underlaget § 3, Marcus-bekräftade 2026-08-07).
+ * De FYRA åtgärdstyperna (varv 6, Marcus 2026-08-07).
  *
- * `utskick: false` på manuell anmälan och markera betalda — ORDLISTA glossar
- * åtgärdsval som "(utskickstyp)", vilket är för smalt; två av sex är inte
- * utskick. Glossen skärps när sidan byggs skarpt.
+ * LISTAN VAR SEX OCH ÄR NU FYRA — båda strykningarna har samma motiv:
+ * en åtgärdslista ska bara innehålla saker som GÖRS MOT URVALET.
  *
- * `leder: true` = raden navigerar bort (chevron höger, ärlighetsprincipen);
- * övriga fäller ut in-place (chevron ned). Distinktionen är densamma som
- * `AtgarderKort` redan gör med aria-expanded.
+ *  · "Manuell anmälan" flyttade UPP till mottagar-ytan, som en andra väg in
+ *    bredvid "Lägg till fler personer från eventet". Den hörde aldrig hemma
+ *    här: den bygger urvalet, den verkar inte på det. Marcus: "flytta upp
+ *    'manuell anmälan' dit. Då blir 'Skicka bekräftelse' första åtgärd i
+ *    åtgärdsblocket/listan vilket är väldigt rimligt."
+ *  · "Markera betalda" ströks helt. Den skriver i basen om BETALNINGAR, och
+ *    betalningarna har redan en egen ingång längre ned. Marcus: "Det får
+ *    eventuellt bli en 'markera alla funktion' i betalningsblocket sen" —
+ *    alltså en parkerad idé på rätt plats, inte en åtgärd på fel.
+ *
+ * FÖLJDEN: alla fyra kvarvarande ÄR utskick, och alla fyra fäller ut here.
+ * Fälten `utskick` och `leder` blev därmed konstanta och är borttagna
+ * tillsammans med sina grenar — ett fält som alltid har samma värde döljer
+ * att valet inte längre finns. ORDLISTAs gloss "(utskickstyp)" för åtgärdsval,
+ * som docblocken tidigare kallade "för smal", är nu exakt rätt.
+ *
+ * NAMNEN ÄR MARCUS EGNA, verbatim ur omstyrningen: varje rad inleds med
+ * verbet "Skicka", vilket gör listan till fyra parallella handlingar i stället
+ * för fyra substantiv av olika slag ("Bekräftelse" ~ "Fritt utskick").
  * ------------------------------------------------------------------ */
 type AtgardsTyp = {
   nr: number;
   nyckel: string;
   namn: string;
-  utskick: boolean;
-  leder?: boolean;
   /** Prototyp-stubb: mallens ämnesrad. Ingen mall-datakälla finns ännu. */
-  amne?: string;
+  amne: string;
   /** Prototyp-stubb: mallens brödtext. */
-  mall?: string;
+  mall: string;
   /** Vilka i urvalet åtgärden är relevant för — driver räknaren på raden. */
   urvalsfilter?: (r: Registration) => boolean;
 };
@@ -198,41 +212,30 @@ const obetald = (r: Registration) => saknarAnmalningsavgift(r) || saknarSlutbeta
 const obekraftad = (r: Registration) => r.status === RegistrationStatus.OBEKRAFTAD;
 
 const ATGARDER: AtgardsTyp[] = [
-  { nr: 1, nyckel: 'manuell', namn: 'Manuell anmälan', utskick: false, leder: true },
   {
-    nr: 2,
+    nr: 1,
     nyckel: 'bekraftelse',
-    namn: 'Bekräftelse',
-    utskick: true,
+    namn: 'Skicka bekräftelsemail',
     amne: 'Din plats är bekräftad',
     mall: 'Hej {förnamn},\n\nDin plats på {event} är bekräftad. Vi ses {datum} i {ort}.\n\nVarmt välkommen!\nRoger och Lotta',
     urvalsfilter: obekraftad,
   },
   {
-    nr: 3,
+    nr: 2,
     nyckel: 'paminnelse',
-    namn: 'Betalningspåminnelse',
-    utskick: true,
+    namn: 'Skicka betalningspåminnelse',
     amne: 'Påminnelse om betalning',
     mall: 'Hej {förnamn},\n\nVi ser att betalningen för {event} inte kommit in ännu. Sista dag är {deadline}.\n\nHör gärna av dig om något krånglar.\nRoger och Lotta',
     urvalsfilter: obetald,
   },
   {
-    nr: 4,
-    nyckel: 'markera-betalda',
-    namn: 'Markera betalda',
-    utskick: false,
-    urvalsfilter: obetald,
-  },
-  {
-    nr: 5,
+    nr: 3,
     nyckel: 'eventinfo',
-    namn: 'Eventinfo',
-    utskick: true,
+    namn: 'Skicka eventinformation',
     amne: 'Information inför {event}',
     mall: 'Hej {förnamn},\n\nSnart är det dags! Här kommer praktisk information inför {event}.\n\nRoger och Lotta',
   },
-  { nr: 6, nyckel: 'fritt', namn: 'Fritt utskick', utskick: true, amne: '', mall: '' },
+  { nr: 4, nyckel: 'fritt', namn: 'Skicka mail', amne: '', mall: '' },
 ];
 
 /* ------------------------------------------------------------------ *
@@ -573,12 +576,16 @@ function KandidatKort({ reg, onLaggTill }: { reg: Registration; onLaggTill: () =
  * alltså av två rörelser: avmarkera i listan, och plocka in ur "Lägg till fler".
  * ================================================================== */
 function MottagarYta({
+  eventId,
   valda,
   synliga,
   alla,
   onVaxla,
   onLaggTill,
 }: {
+  /** Eventet urvalet gäller. Saknas det finns inget att anmäla någon TILL,
+      och den manuella vägen in utelämnas — se raden nedan. */
+  eventId?: string;
   /** De markerade — mottagarna. */
   valda: ReadonlySet<string>;
   /** Korten som visas i listan: markeringen hon kom med, plus inplockade. */
@@ -799,6 +806,43 @@ function MottagarYta({
             </div>
           </div>
         )}
+
+        {/* DEN ANDRA VÄGEN IN — personen som inte är anmäld till eventet alls.
+            Marcus 2026-08-07: "Under 'lägg till fler personer från eventet'
+            vill jag lägga '+ Lägg till en person manuellt', alltså flytta upp
+            'manuell anmälan' dit."
+
+            SYSKON TILL PLOCKAR-RADEN, INTE INUTI DEN: de två raderna svarar på
+            samma fråga ("vem mer?") med varsin källa — eventets anmälda, och
+            någon som inte finns där än. Hade den bott inuti plockarens utfällda
+            panel vore den osynlig i det läge där Lotta faktiskt undrar, och
+            hon hade fått öppna en lista med fel personer för att hitta vägen
+            förbi den.
+
+            CHEVRON HÖGER, inte ned: raden LEDER BORT. Det är samma ärlighets-
+            princip åtgärdslistan bar tills den blev fyra utfällbara rader —
+            semantiken flyttade hit tillsammans med funktionen.
+
+            `fran: 'atgarder'` är hela tillbaka-vägen: manuell anmälan läser den
+            och riktar sin pil hit i stället för till eventdetaljen. */}
+        {eventId != null && (
+          <div className="flex flex-col py-1.5">
+            <Link
+              to="/event/$eventId/ny-anmalan"
+              params={{ eventId }}
+              search={{ fran: 'atgarder' as const }}
+              className={RAD_KLASS}
+            >
+              <UserPlus aria-hidden="true" size={16} className="shrink-0" />
+              Lägg till en person manuellt
+              <ChevronRight
+                aria-hidden="true"
+                size={18}
+                className="ml-auto shrink-0 text-text-secondary"
+              />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -871,17 +915,9 @@ function BilageValjare({
 /* ================================================================== *
  * ÅTGÄRDENS ARBETSYTA — fälls ut in-place under sin egen rad.
  * ================================================================== */
-function ArbetsYta({
-  atgard,
-  mottagare,
-  antalIUrval,
-}: {
-  atgard: AtgardsTyp;
-  mottagare: Registration[];
-  antalIUrval: number;
-}) {
-  const [amne, setAmne] = useState(atgard.amne ?? '');
-  const [text, setText] = useState(atgard.mall ?? '');
+function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Registration[] }) {
+  const [amne, setAmne] = useState(atgard.amne);
+  const [text, setText] = useState(atgard.mall);
   const [bilagor, setBilagor] = useState<Set<string>>(new Set());
   const [redigerar, setRedigerar] = useState(atgard.nyckel === 'fritt');
 
@@ -895,24 +931,11 @@ function ArbetsYta({
 
   const utanEpost = mottagare.filter((r) => !r.email).length;
 
-  /* "Markera betalda" är ingen utskickstyp — den bär varken text eller
-     bilagor, och dess vakt är en annan: statusvärdet "Ej relevant" får
-     ALDRIG skrivas över av ett urval (föreläsnings-semantiken). */
-  if (!atgard.utskick) {
-    return (
-      <div className="flex flex-col gap-3 pb-3">
-        <MessageBox intent="info" title="Detta skriver i basen">
-          {antalIUrval} av {mottagare.length} valda saknar betalning. Bara de markeras som betalda —
-          de som redan är klara eller står som &quot;Ej relevant&quot; rörs inte.
-        </MessageBox>
-        <div className="flex justify-end">
-          <Button intent="success" isDisabled={antalIUrval === 0}>
-            Granska och markera {antalIUrval} som betalda
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  /* SKRIV-GRENEN ÄR BORTA MED "Markera betalda" (varv 6). Den bar den enda
+     icke-utskicks-åtgärden och därmed den enda vakt som gällde basskrivning:
+     statusvärdet "Ej relevant" får ALDRIG skrivas över av ett urval
+     (föreläsnings-semantiken). Den vakten är INTE avskaffad — den följer med
+     dit funktionen tar vägen, om Marcus tar "markera alla" i betalningsblocket. */
 
   return (
     <div className="flex flex-col gap-1 pb-3">
@@ -998,38 +1021,33 @@ function AtgardsMeny({
             <div className="flex flex-col py-1.5">
               <button
                 type="button"
-                onClick={() => !a.leder && onVaxla(a.nyckel)}
-                aria-expanded={a.leder ? undefined : arOppen}
+                onClick={() => onVaxla(a.nyckel)}
+                aria-expanded={arOppen}
                 className={RAD_KLASS}
               >
                 <NumRuta n={a.nr} />
                 {a.namn}
                 <span className="ml-auto flex shrink-0 items-center gap-2">
-                  {!a.leder && iUrval !== mottagare.length && (
+                  {iUrval !== mottagare.length && (
                     <span className="text-small text-text-secondary tabular-nums">
                       {iUrval} av {mottagare.length}
                     </span>
                   )}
-                  {/* Chevron-semantiken skiljer radtyperna ärligt: höger =
-                      leder bort (rad 1 → manuell anmälan-sidan), ned = fäller
-                      ut här. Samma distinktion AtgarderKort redan gör. */}
-                  {a.leder ? (
-                    <ChevronRight aria-hidden="true" size={18} className="text-text-secondary" />
-                  ) : (
-                    <ChevronDown
-                      aria-hidden="true"
-                      size={18}
-                      className={`text-text-secondary motion-safe:transition-transform ${
-                        arOppen ? 'rotate-180' : ''
-                      }`}
-                    />
-                  )}
+                  {/* ALLA FYRA RADER FÄLLER UT HÄR sedan varv 6 — chevron ned
+                      utan undantag. Den bort-ledande grenen (chevron höger) föll
+                      med "Manuell anmälan", och dess semantik följde med till
+                      mottagar-ytan där vägen bort numera bor. */}
+                  <ChevronDown
+                    aria-hidden="true"
+                    size={18}
+                    className={`text-text-secondary motion-safe:transition-transform ${
+                      arOppen ? 'rotate-180' : ''
+                    }`}
+                  />
                 </span>
               </button>
             </div>
-            {arOppen && !a.leder && (
-              <ArbetsYta atgard={a} mottagare={mottagare} antalIUrval={iUrval} />
-            )}
+            {arOppen && <ArbetsYta atgard={a} mottagare={mottagare} />}
           </div>
         );
       })}
@@ -1179,6 +1197,7 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
       ) : (
         <>
           <MottagarYta
+            eventId={eventId}
             valda={valda}
             synliga={synliga}
             alla={alla}

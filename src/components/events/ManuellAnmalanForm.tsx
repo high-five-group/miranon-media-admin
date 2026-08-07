@@ -97,8 +97,17 @@ declare module '@tanstack/react-router' {
  * aria-live + roster-invalidering (i hooken) → BEKRÄFTELSELÄGE. 409 (dubblett)
  * → inline affärs-fel, formuläret kvar med värden; övriga fel → MessageBox.
  */
-export function ManuellAnmalanForm({ eventId }: { eventId?: string }) {
-  return eventId != null ? <ValtLage eventId={eventId} /> : <TomtLage />;
+/** Varifrån hon kom. Styr ENBART tillbaka-pilens mål — se routens docblock. */
+export type NyAnmalanUrsprung = 'atgarder';
+
+export function ManuellAnmalanForm({
+  eventId,
+  fran,
+}: {
+  eventId?: string;
+  fran?: NyAnmalanUrsprung;
+}) {
+  return eventId != null ? <ValtLage eventId={eventId} fran={fran} /> : <TomtLage />;
 }
 
 /** Sidhuvudet — delat mellan lägena: stor rund chevron + h1 med avgränsande
@@ -165,7 +174,7 @@ function TomtLage() {
 
 /** Valda läget: Eventet-blocket först, sedan formuläret (identiskt oavsett
     ingång — punkt 7). */
-function ValtLage({ eventId }: { eventId: string }) {
+function ValtLage({ eventId, fran }: { eventId: string; fran?: NyAnmalanUrsprung }) {
   const navigate = useNavigate();
   const dataSource = useDataSource();
   const queryClient = useQueryClient();
@@ -248,7 +257,20 @@ function ValtLage({ eventId }: { eventId: string }) {
   };
   const harFel = fel.fornamn || fel.efternamn || fel.epost;
 
-  const tillbaka = () => navigate({ to: '/event/$eventId', params: { eventId } });
+  /* TILLBAKA-VÄGEN FÖLJER VÄGEN IN (Marcus 2026-08-07): kom hon hit från
+     åtgärds-sidans "Lägg till en person manuellt" ska pilen — och bekräftelse-
+     lägets Klar-knapp — lämna henne DÄR hon var, inte på eventdetaljen. Utan
+     `fran` är målet oförändrat, så varje befintlig väg in beter sig som förut.
+
+     Ett objekt och inte två grenar på användningsstället: målet läses av BÅDA
+     bärarna nedan (chevronen i sidhuvudet + `tillbaka()` efter sparad anmälan),
+     och två separata villkor hade kunnat glida isär vid nästa ändring. */
+  const tillbakaMal =
+    fran === 'atgarder'
+      ? { to: '/event/$eventId/atgarder' as const, etikett: 'Tillbaka till åtgärderna' }
+      : { to: '/event/$eventId' as const, etikett: 'Tillbaka till eventet' };
+
+  const tillbaka = () => navigate({ to: tillbakaMal.to, params: { eventId } });
 
   function handleSubmit() {
     setVisaFel(true);
@@ -276,9 +298,9 @@ function ValtLage({ eventId }: { eventId: string }) {
       headingRef={headingRef}
       tillbakaLank={
         <Link
-          to="/event/$eventId"
+          to={tillbakaMal.to}
           params={{ eventId }}
-          aria-label="Tillbaka till eventet"
+          aria-label={tillbakaMal.etikett}
           className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
         >
           <ChevronLeft aria-hidden="true" size={26} />
