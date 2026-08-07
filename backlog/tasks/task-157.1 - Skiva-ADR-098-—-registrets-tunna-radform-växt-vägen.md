@@ -1,9 +1,10 @@
 ---
 id: TASK-157.1
 title: 'Skiva: ADR-098 — registrets tunna radform + växt-vägen'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-07 11:32'
+updated_date: '2026-08-07 13:03'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,15 +20,15 @@ ordinal: 267000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass: nästa lediga ADR-nummer disk-verifierat vid byggtillfället; registrets aktuella mått ommätta (wc -l, wc -c, radlängds-fördelning); besläktad-deklarationernas nuvarande validering läst i check-thread-index.sh
-- [ ] #2 ADR-098 författad: tunna radformen med radlängds-tak, narrativ-i-kort-principen, migrations-beslutet, växt-vägen med explicit trigger (steg B genererat index), rotation avrådd med decline-rationale, besläktad-hemvisten avgjord mot ADR-095
+- [x] #1 Premiss-pass: nästa lediga ADR-nummer disk-verifierat vid byggtillfället; registrets aktuella mått ommätta (wc -l, wc -c, radlängds-fördelning); besläktad-deklarationernas nuvarande validering läst i check-thread-index.sh
+- [x] #2 ADR-098 författad: tunna radformen med radlängds-tak, narrativ-i-kort-principen, migrations-beslutet, växt-vägen med explicit trigger (steg B genererat index), rotation avrådd med decline-rationale, besläktad-hemvisten avgjord mot ADR-095
 - [ ] #3 README-rad + rot-README-räkning; docs-grindarna gröna; PR armerad, per-jobb-grön
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
