@@ -25,7 +25,7 @@ som bygger läser kort.
 `TASK-145.1` (enad lista) och `TASK-145.3` (markera-läget) såg ut som två
 skivor. I koden var de en:
 
-```
+```text
 Deltagare.tsx:1652   markeringKandidatIds = protoVariant === 'a'
                        ? registerListaA.map(r => r.id) : obekraftadeIds
 Deltagare.tsx:2103   <GruppRubrik handling={<MarkeraKnapp … />}>
