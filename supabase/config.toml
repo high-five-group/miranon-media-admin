@@ -90,6 +90,21 @@ verify_jwt = true
 [functions.test-pdf-generation]
 verify_jwt = true
 
+# test-attachments-storage — STAGING-ONLY testharness-EF (TASK-146.3,
+# "Skiva: Privat bucket, path-form per event och signerad åtkomst"). Samma
+# gateway-försvar som ovan — requireUser grindar faktiskt anropet, funktionen
+# rör bara syntetiska testobjekt i en reserverad ZZ-TEST-EVENT--namnrymd
+# (aldrig persondata). Existerar för att bevisa AC #2/#3/#4 som BETEENDE
+# (en riktig signerad hämtning, en riktig gräns-uppladdning) i stället för
+# konfiguration — SUPABASE_SERVICE_ROLE_KEY finns inte i CI, men varje
+# deployad Edge Function får den auto-injicerad, samma väg
+# test-pdf-generation redan valde för sitt runtime-bevis. MEDVETET
+# UTELÄMNAD ur .prod-functions-allowlist.conf — test-auth-precedenten. Rör
+# inte den filen för denna post. Se funktionens filhuvud för fullt
+# resonemang.
+[functions.test-attachments-storage]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #
