@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 99 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 1)**
+— paus-antagandet höll: `#876` (149.3) mergad `a95d271c` + paus-PR:n
+`#881` mergad `6bfdb751`, båda per-jobb-gröna (Acceptance 8m8s körd;
+staging/a11y CI-gatad skip) → **`149.3` FLIPPAD Done** (AC 6 + DoD
+bockade, stängnings-summary i kortet). **Numrering re-verifierad mot
+disk — EN divergens:** nästa tråd är **T133**, inte handoffens T131 —
+T131 (Dokument-ytan) OCH T132 (svepets draftfilter) förbrukade av S93.
+Övriga axlar håller: 099/ADR-098/L480 + 4 fragment/task-158
+(RESERVERAT)/f47. **Skarpbevis-läget delat:** `deny-subagent-vantan.sh`
+registrerad FÖRE sessionsstart ⇒ laddad, betalas nu;
+`deny-arbetsform-push.sh` landade UNDER sessionen (`a95d271c`) ⇒ oladdad
+här — skulden bokförd i 149.3-kortet, betalas i session född efter
+`a95d271c`. Heartbeat-monitorn igång; kända DIRTY-larm `#862` (S93
+draft, T132-klassen) + `#882` (S100:s paus-PR) — främmande sessioners
+PR:er, rörs ej. **NÄSTA: skarpbevis 148.2 → minta task-158 + sex skivor
+(uppdrag 5) → spawna 157.1 (ADR-098) + 149.4 (hub, OISOLERAD) → grilla
+6/7/8.**
+*(Paus-kadensraden nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 99 ⏸️ PAUSAD (2026-08-07, första pausen, `lifecycle: paused`)** —
 **PROCESS-SYNEN: FEM AV ÅTTA UPPDRAG GRILLADE OCH EXEKVERADE PÅ EN DAG.**
 Uppdrag 1 (parkerings-problemet) → **ADR-096** väntekontraktet +
