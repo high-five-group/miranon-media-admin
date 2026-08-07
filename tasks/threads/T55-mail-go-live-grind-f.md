@@ -49,7 +49,7 @@ blockerar ej men värdefullt → defer (durabelt), förkasta aldrig tyst.
 
 ## Relaterat
 
-- [session-46](../sessions/2026-06-30-session-46.md) § Del 2 (pivot + deferral).
+- [session-46](../sessions/archive/2026-06/2026-06-30-session-46.md) § Del 2 (pivot + deferral).
 - [T51](README.md) — Reply-To gold-standard-självtest (= första skarpa utskicket).
 - [T53](T53-test-till-sig-sjalv-skicka.md) — test-till-sig-själv (förhandsgransknings-väg).
 - [T46](T46-go-live-karta.md) — go-live-karta (Mail-raden rättad till deployad-men-sövd).

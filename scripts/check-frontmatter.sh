@@ -134,7 +134,8 @@ for file in "${GOVERNING_DOCS[@]}"; do
     fi
 
     # Check 2: updated-match mot git log (skippas om unsafe-shallow per ADR-033 K4)
-    # Hard-fail-rapport sker POST-loop så alla 9 docs' Check 1+3+4+5
+    # Hard-fail-rapport sker POST-loop så alla docs' (antal ägs av
+    # .frontmatter-policy.conf § FRONTMATTER_GOVERNING_DOCS) Check 1+3+4+5
     # rapporteras innan shallow-error visas (debug-experience-design).
     if [[ "${UNSAFE_SHALLOW}" -eq 0 ]]; then
         GIT_UPDATED=$(git log -1 --format=%cs -- "${file}" 2>/dev/null || echo "")
@@ -151,7 +152,8 @@ for file in "${GOVERNING_DOCS[@]}"; do
 done
 
 # === Unsafe-shallow hard-fail (ADR-033 K4 lager 2) ===
-# Placerad POST-loop så att alla 9 docs' Check 1+3+4+5-rapporter visas
+# Placerad POST-loop så att alla docs' (antal ägs av .frontmatter-policy.conf
+# § FRONTMATTER_GOVERNING_DOCS) Check 1+3+4+5-rapporter visas
 # FÖRE shallow-error (debug-experience). Hard-fail per Marcus' design-val
 # 2026-05-16 (L_C nivå 1 + defense-in-depth korrekt-logik: lager N
 # fail:ar hårt PRECIS när lager <N har failat).

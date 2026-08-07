@@ -34,19 +34,35 @@
 #
 # LÄNKOMSKRIVNINGEN — TVÅ pass, körda EFTER samtliga flyttar i samma
 # körning (AC #3: atomiskt, ingen transient bruten länk):
-#   PASS A — blanket path-citat. Var och en av de citerade formerna
-#     "tasks/sessions/<filnamn>" som förekommer i NÅGON git-spårad fil
-#     UTANFÖR arkivet skrivs om till "tasks/sessions/archive/<månad>/
-#     <filnamn>". Detta är repots etablerade konvention för prosa-citat
-#     (läses som en repo-rot-relativ sökväg av läsare/agenter, oavsett
-#     citerande fils egen plats — samma konvention som CLAUDE.md självt
-#     använder för ADR-citat).
+#   PASS A — blanket sökväg-substräng. Var och en av förekomsterna av
+#     substrängen "sessions/<filnamn>" i NÅGON git-spårad fil UTANFÖR
+#     arkivet skrivs om till "sessions/archive/<månad>/<filnamn>". Detta
+#     fångar ALLA tre former repot faktiskt använder eftersom de samtliga
+#     INNEHÅLLER den substrängen: den fulla citeringsformen
+#     "tasks/sessions/<filnamn>" (repo-rot-relativ prosa-citat, samma
+#     konvention som CLAUDE.md använder för ADR-citat), relativa länkar en
+#     katalognivå under roten ("../sessions/<filnamn>", t.ex.
+#     tasks/threads/*.md) och relativa länkar direkt under tasks/
+#     ("sessions/<filnamn>", t.ex. tasks/todo.md). Substräng-matchningen är
+#     medvetet BREDARE än att bara känna igen markdown-länksyntax — den är
+#     syntax-agnostisk och river alltså inte på en fjärde variant som ännu
+#     inte observerats.
+#     KORRIGERAD 2026-08-07 (TASK-158.3, skriptets första skarpa körning):
+#     den smalare matchningen ("tasks/sessions/<filnamn>" som HELA sök-
+#     strängen) missade de två kortare relativa formerna — lychee fångade
+#     22 brutna länkar i 11 filer (tasks/todo.md + tio tasks/threads/-kort)
+#     vid den första körningen. Testfixturen i TASK-158.2 täckte bara den
+#     fulla formen + Pass B:s bara-relativa syskonform, inte de kortare
+#     relativa formerna en katalognivå upp — ett täckningsgap i testsviten,
+#     inte bara i skriptet.
 #   PASS B — bara relativa systerlänkar. Markdown-länksyntax
 #     "](<filnamn>" UTAN sökvägsprefix förekommer ENDAST mellan syskon-dok
 #     direkt i tasks/sessions/-roten (verifierat via grep 2026-08-07 — tre
 #     HANDOFF-block-länkar, session-79/80/81). Sådana länkar i dok som
 #     STANNAR i roten skrivs om till "](archive/<månad>/<filnamn>" (relativt
-#     roten, dit den refererande filen fortfarande hör).
+#     roten, dit den refererande filen fortfarande hör). Denna form saknar
+#     "sessions/"-prefixet helt och fångas därför INTE av Pass A — de två
+#     passen är komplementära, inte överlappande.
 #
 # VAD SOM MEDVETET INTE RÖRS: ett arkiverat dokuments EGET innehåll skrivs
 # ALDRIG om — varken av Pass A eller Pass B, inte ens FÖR de dok som
@@ -364,20 +380,28 @@ for ((I = 0; I < ANTAL_ARKIV; I++)); do
   echo "ARKIVERAD ${FILNAMN} → ${NY_REL} — closed, äldre än fönstrets ${FONSTER} senaste"
 done
 
-# ── Fas 2: Pass A — blanket path-citat, alla git-spårade filer utom arkivet ──
+# ── Fas 2: Pass A — blanket sökväg-substräng, alla git-spårade filer utom arkivet ──
 echo
-echo "── Pass A: path-citat (\"tasks/sessions/<filnamn>\") ──"
+echo "── Pass A: sökväg-substräng (\"sessions/<filnamn>\", alla prefixformer) ──"
 LANK_A_ANTAL=0
 for ((I = 0; I < ANTAL_ARKIV; I++)); do
   FILNAMN="${ARKIV_FILNAMN[${I}]}"
   NY_REL="${NY_SOKVAG[${I}]}"
   GAMMAL_REF="tasks/sessions/${FILNAMN}"
   NY_REF="${NY_REL}"
+  # Sök/ersätt-substrängen saknar "tasks/"-prefixet ("sessions/<filnamn>",
+  # inte "tasks/sessions/<filnamn>") så EN matchning fångar samtliga
+  # observerade citeringsformer — se PASS A-kommentaren i filhuvudet för
+  # varför. GAMMAL_REF/NY_REF (fulla, repo-rot-relativa formen) behålls för
+  # rapportraderna nedan — de är den läsbara kanoniska referensen även när
+  # den faktiska matchningen skedde på en kortare substräng.
+  SOK_STRANG="${GAMMAL_REF#tasks/}"
+  NY_STRANG="${NY_REF#tasks/}"
 
   TRAFFAR=()
   while IFS= read -r -d '' f; do
     TRAFFAR+=("${f}")
-  done < <(git -C "${TOPPNIVA}" grep -z -I -l -F -e "${GAMMAL_REF}" -- "${PATHSPEC_EXKLUDERING[@]}" 2>/dev/null || true)
+  done < <(git -C "${TOPPNIVA}" grep -z -I -l -F -e "${SOK_STRANG}" -- "${PATHSPEC_EXKLUDERING[@]}" 2>/dev/null || true)
 
   for f in "${TRAFFAR[@]:-}"; do
     [[ -n "${f}" ]] || continue
@@ -386,7 +410,7 @@ for ((I = 0; I < ANTAL_ARKIV; I++)); do
       echo "SKULLE SKRIVAS OM ${f} — \"${GAMMAL_REF}\" → \"${NY_REF}\""
       continue
     fi
-    OLD="${GAMMAL_REF}" NEW="${NY_REF}" perl -0777 -pi -e '
+    OLD="${SOK_STRANG}" NEW="${NY_STRANG}" perl -0777 -pi -e '
       my $old = $ENV{OLD};
       my $new = $ENV{NEW};
       s/\Q$old\E/$new/g;

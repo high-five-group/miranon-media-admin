@@ -41,7 +41,7 @@ default-vyer, tema, konto-uppgifter). Då:
 
 ## Spår
 
-- Audit-fynd + Väg 1-beslut: `tasks/sessions/2026-06-29-session-42.md` (Del 2 + Del 4).
+- Audit-fynd + Väg 1-beslut: `tasks/sessions/archive/2026-06/2026-06-29-session-42.md` (Del 2 + Del 4).
 - De-scope-markörer: `docs/byggplan.md` §4 (6e-raden + Filer-listan) +
   `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` (Fas 6e-sektionen + Mer-flik-tabellen).
 - Blockerar ej: 6e är förstklassigt klar mot ADR-058 utan Inställningar-ytan.

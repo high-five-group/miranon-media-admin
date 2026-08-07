@@ -8,7 +8,7 @@ updated_date: '2026-07-11 22:43'
 labels: []
 dependencies: []
 references:
-  - tasks/sessions/2026-07-11-session-62.md
+  - tasks/sessions/archive/2026-07/2026-07-11-session-62.md
   - docs/specs/ACCESSIBILITY-CHECKLIST.md
   - src/router.ts
 ordinal: 18000

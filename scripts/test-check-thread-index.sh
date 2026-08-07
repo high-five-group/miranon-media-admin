@@ -10,7 +10,7 @@
 #   med att grinden inte gör någonting alls. T104/TASK-60 etablerade formen:
 #   beviset ska vara körbart i repot, inte en mening i en agentrapport.
 #
-# 24 testfall, varav 19 planterar ett känt fel och 5 prövar att grinden är grön
+# 28 testfall, varav 22 planterar ett känt fel och 6 prövar att grinden är grön
 # på korrekt indata (utan de gröna mäter fällnings-testerna ingenting):
 #   T1     — ren fixtur passerar (annars mäter resten ingenting)
 #   T2–T4  — enum + tillstånds-KOLUMN (T4 är falskpositiv-regressionen: ordet
@@ -31,6 +31,13 @@
 #            som saknas i registret, och ett ID på okänd form; T24 bevisar att
 #            ett SAKNAT manifest är grönt (opt-in, additivt startläge — inte
 #            samma sak som ett manifest som pekar fel).
+#   T25–T28— Inv 7 (radlängds-tak, ADR-098 beslut 1–2, TASK-157.3): T25 fäller
+#            en fet fixtur-rad (800 tecken); T26 bevisar gränsfallet EXAKT vid
+#            taket (500) släpps (inte en "-gt" av misstag som skulle fälla
+#            gränsen själv); T27 bevisar gränsfallet EN tecken över taket
+#            (501) fälls med den EXAKT uppmätta längden i felmeddelandet;
+#            T28 bevisar fail-closed — policy utan THREAD_ROW_MAX_LEN fälls,
+#            inte tyst passerar mot en tom/nollställd gräns.
 #
 # Test-isolering: skapar sandbox under /tmp med egna fixturer och en KOPIA av
 # grinden + policyn. Återställer (rm -rf) via trap. INGEN ändring av real-repo.
@@ -86,6 +93,21 @@ manifest() {
 # fixtur för Inv 6:s kort-halva (card_exists())
 backlog_card() {
     cat > "${TEST_DIR}/backlog/tasks/$1"
+}
+
+# row_of_len <tid> <target_len> — bygger en väl-formad tabellrad (rätt
+# pipe-antal, giltigt tillstånd) med EXAKT angiven total radlängd. Fyllnaden
+# läggs i Titel-kolumnen som en obruten teckensvit. Isolerar Inv 7
+# (radlängd) från Inv 1a (pipe-antal) — en fet rad byggd så här fäller
+# ENDAST radlängds-invarianten, inget annat.
+row_of_len() {
+    local tid="$1" target="$2"
+    local head="| \`${tid}\` | "
+    local tail=" | \`active\` | _x_ |"
+    local pad_len=$(( target - ${#head} - ${#tail} ))
+    printf '%s' "${head}"
+    printf '%*s' "${pad_len}" '' | tr ' ' 'x'
+    printf '%s\n' "${tail}"
 }
 
 run_gate() {
@@ -386,6 +408,49 @@ ${HEADER}
 | \`T01\` | Första | \`active\` | _x_ |
 EOF
 assert "T24 barn-manifest: saknat manifest är grönt" 0 "tråd-index OK"
+
+# ── T25: Inv 7 — fet fixtur-rad (800 tecken) fälls ───────────────────────────
+setup
+{
+    printf '%s\n' "${HEADER}"
+    row_of_len "T01" 800
+} | index
+assert "T25 radlängd: fet rad (800 tecken) fälls" 1 "800 tecken lång (tak 500)"
+
+# ── T26: Inv 7 — gränsfall EXAKT vid taket (500) släpps ──────────────────────
+# "-gt", inte "-ge" — en rad exakt vid gränsen är GILTIG, inte över den. Ett
+# strikt-taget-fel tecken i jämförelsen (-ge i stället för -gt) hade fällt
+# denna rad, och detta test är det som skulle fånga det.
+setup
+{
+    printf '%s\n' "${HEADER}"
+    row_of_len "T01" 500
+} | index
+assert "T26 radlängd: rad exakt vid taket (500) släpps" 0 "tråd-index OK"
+
+# ── T27: Inv 7 — gränsfall EN tecken över taket (501) fälls ─────────────────
+# Bevisar att felmeddelandet bär den FAKTISKT uppmätta längden, inte en
+# avrundad eller schablonmässig siffra.
+setup
+{
+    printf '%s\n' "${HEADER}"
+    row_of_len "T01" 501
+} | index
+assert "T27 radlängd: rad en tecken över taket (501) fälls exakt" 1 "501 tecken lång (tak 500)"
+
+# ── T28: Inv 7 — policy utan THREAD_ROW_MAX_LEN fälls fail-closed ───────────
+# Samma klass som T16/T17: en conf som sourcar utan fel men saknat värdet
+# hade — utan explicit tomhetskontroll — validerat mot 0 och antingen fällt
+# ALLT (0 är inte > 0) eller, värre, tyst passerat en verkligt fet rad om
+# kontrollen saknades helt. Grinden ska fälla på CONFIG-defekten direkt,
+# innan den ens läser en rad.
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Första | \`active\` | _x_ |
+EOF
+grep -v '^THREAD_ROW_MAX_LEN=' "${POLICY_SRC}" > "${TEST_DIR}/.thread-index-policy.conf"
+assert "T28 policy utan THREAD_ROW_MAX_LEN fälls fail-closed" 1 "THREAD_ROW_MAX_LEN måste vara > 0"
 
 echo
 echo "── Resultat ──"

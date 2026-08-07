@@ -183,4 +183,4 @@ update). Verifierat i svaret.
 
 - CSV: `~/Downloads/alla-anmalda-medveten-kontakt-2026-07-08.csv` (Psionautics, 88 anm).
 - Xlsx: `~/Downloads/2026-06-24 uppdaterade deltagare.xlsx` (FJS + RIM1).
-- Sessionsdok: [`../../tasks/sessions/2026-07-08-session-60.md`](../../tasks/sessions/2026-07-08-session-60.md).
+- Sessionsdok: [`../../tasks/sessions/archive/2026-07/2026-07-08-session-60.md`](../../tasks/sessions/archive/2026-07/2026-07-08-session-60.md).

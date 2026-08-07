@@ -23,6 +23,15 @@
 #   no-lifecycle-legacy.md            INGEN lifecycle alls          → FLAGGAD (fail-closed)
 #   session-99  closed, skyddslistad  → SKA STANNA trots att den är äldre än fönstret
 #
+# Plus två fristående citerande filer UTANFÖR tasks/sessions/ som täcker de
+# KORTARE relativa formerna Pass A missade fram till TASK-158.3 (2026-08-07,
+# skriptets första skarpa körning — lychee fångade 22 brutna länkar i 11
+# filer som den smalare "tasks/sessions/<filnamn>"-matchningen aldrig såg):
+#   tasks/shallow-citing.md           länk "](sessions/<filnamn>)"   → Pass A-mål
+#                                      (samma relativa djup som tasks/todo.md)
+#   tasks/threads/nested-citing.md    länk "](../sessions/<filnamn>)" → Pass A-mål
+#                                      (samma relativa djup som tasks/threads/*.md)
+#
 # Plus en separat rigg för sessionsnummer-sorteringens numeriska korrekthet
 # (…-session-99.md vs …-session-100.md — ren strängsortering ger FEL
 # ordning här, se arkivera-sessionsdok.shs egen kommentar).
@@ -125,6 +134,15 @@ cat > "${HUVUD}/docs/citing.md" <<'EOF'
 Extern referens: tasks/sessions/2026-06-01-session-1.md är källan.
 EOF
 
+# De två kortare relativa formerna (TASK-158.3-regressionen, se filhuvudet).
+mkdir -p "${HUVUD}/tasks/threads"
+cat > "${HUVUD}/tasks/shallow-citing.md" <<'EOF'
+Se [session-1](sessions/2026-06-01-session-1.md) för bakgrund.
+EOF
+cat > "${HUVUD}/tasks/threads/nested-citing.md" <<'EOF'
+Se [session-1](../sessions/2026-06-01-session-1.md) för bakgrund.
+EOF
+
 cat > "${POLICY}" <<'EOF'
 ARKIVERA_SESSIONSDOK_FONSTER=3
 ARKIVERA_SESSIONSDOK_SKYDDADE=(
@@ -173,6 +191,14 @@ bekrafta "Pass A förhandsvisar omskrivning av session-3s prosa-citat" "${OBS}" 
 if grep -qF 'SKULLE SKRIVAS OM tasks/sessions/2026-07-01-session-4.md — "](2026-06-01-session-1.md" → "](archive/2026-06/2026-06-01-session-1.md"' "${UT_TORR}"; then OBS=ja; else OBS=nej; fi
 bekrafta "Pass B förhandsvisar omskrivning av session-4s bara-relativa länk" "${OBS}" "ja"
 
+# TASK-158.3-regressionstäckning: de två kortare relativa formerna som Pass A
+# missade fram till fixen (se filhuvudet).
+if grep -qF 'SKULLE SKRIVAS OM tasks/shallow-citing.md — "tasks/sessions/2026-06-01-session-1.md" → "tasks/sessions/archive/2026-06/2026-06-01-session-1.md"' "${UT_TORR}"; then OBS=ja; else OBS=nej; fi
+bekrafta "Pass A förhandsvisar omskrivning av tasks/shallow-citing.mds \"sessions/<filnamn>\"-länk" "${OBS}" "ja"
+
+if grep -qF 'SKULLE SKRIVAS OM tasks/threads/nested-citing.md — "tasks/sessions/2026-06-01-session-1.md" → "tasks/sessions/archive/2026-06/2026-06-01-session-1.md"' "${UT_TORR}"; then OBS=ja; else OBS=nej; fi
+bekrafta "Pass A förhandsvisar omskrivning av tasks/threads/nested-citing.mds \"../sessions/<filnamn>\"-länk" "${OBS}" "ja"
+
 # Torrkörningen ska INTE ha ändrat något på disk.
 if [[ -f "${HUVUD}/tasks/sessions/2026-06-01-session-1.md" ]]; then OBS=ja; else OBS=nej; fi
 bekrafta "torrkörningen lämnade session-1 kvar på sin gamla plats" "${OBS}" "ja"
@@ -220,6 +246,19 @@ bekrafta "session-3 har noll kvarvarande träffar på den gamla, oarkiverade sö
 # Pass B: session-4s bara-relativa länk omskriven till archive/<månad>/<filnamn>.
 if grep -qF "](archive/2026-06/2026-06-01-session-1.md)" "${HUVUD}/tasks/sessions/2026-07-01-session-4.md"; then OBS=ja; else OBS=nej; fi
 bekrafta "session-4s bara-relativa länk pekar nu på archive/2026-06/…" "${OBS}" "ja"
+
+# TASK-158.3-regressionstäckning: de två kortare relativa formerna skrivs
+# om till KORREKT UPPLÖSTA (fortsatt fungerande) länkar — inte bara till
+# NÅGON ny sträng. "sessions/<filnamn>" (tasks/-djup) blir
+# "sessions/archive/<månad>/<filnamn>"; "../sessions/<filnamn>"
+# (tasks/threads/-djup) blir "../sessions/archive/<månad>/<filnamn>" — i
+# båda fallen olöst av att prefixet ("tasks/" saknas resp. "../" finns)
+# lämnas EXAKT som det stod, bara segmentet efter "sessions/" ändras.
+if grep -qF "](sessions/archive/2026-06/2026-06-01-session-1.md)" "${HUVUD}/tasks/shallow-citing.md"; then OBS=ja; else OBS=nej; fi
+bekrafta "tasks/shallow-citing.mds \"sessions/<filnamn>\"-länk pekar nu på sessions/archive/2026-06/…" "${OBS}" "ja"
+
+if grep -qF "](../sessions/archive/2026-06/2026-06-01-session-1.md)" "${HUVUD}/tasks/threads/nested-citing.md"; then OBS=ja; else OBS=nej; fi
+bekrafta "tasks/threads/nested-citing.mds \"../sessions/<filnamn>\"-länk pekar nu på ../sessions/archive/2026-06/…" "${OBS}" "ja"
 
 # Orörda dok: active/paused/skyddslistad/flaggade ska stå exakt som innan.
 if [[ -f "${HUVUD}/tasks/sessions/2026-07-02-session-5.md" ]]; then OBS=ja; else OBS=nej; fi

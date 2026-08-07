@@ -13,7 +13,7 @@ dependencies: []
 references:
   - >-
     docs/decisions/ADR-074-prototyp-substratets-adress-struktur-och-vaxlar-standard.md
-  - tasks/sessions/2026-07-22-session-76.md
+  - tasks/sessions/archive/2026-07/2026-07-22-session-76.md
   - src/components/dev/PrototypeSwitcher.tsx
 priority: medium
 ordinal: 78000
