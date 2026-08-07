@@ -208,3 +208,18 @@ Kvitterade beslut:
   Kedjan tråd → samsyn → revision → konvergens → facit → PRD → skivor
   är sluten; kvar är exekveringen + QA + design-review. Tråden vilar
   tills skivorna körs (S65/T76-piloten).
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+Mer-vyn till FK-mönstret (IMG_1541) — grillad struktur-samsyn A–H i kortet: 7 rader (Mina sidor överst, äkta v1 `/mer/mina-sidor`), luft-gruppering utan rubriker, `NavCard`-primitiven (11/11/11, minimalt API), Logga ut-semantiken står, konvergens-pass enbart (T66-instansiering, öppet divergens-överhopp). F (rubrik-frågan: synlig "Mer"-rubrik vs sr-only-h1) ÖPPEN → egen research-grundad grillning FÖRE konvergens-passet (kan öppet riva Hem-K10:s "ingen topprubrik" vid evidens). PRD föds i Mer-sessionen EFTER låst facit (ETT PRD: struktur + facit)
+
+**Ingång (fullständig, ursprunglig):**
+[T69-mer-vyn-fk-monstret.md](T69-mer-vyn-fk-monstret.md) · grillad samsyn 2026-07-07 (Code-chatt ∥ S56/S57); ORDLISTA "Mina sidor" + T68 i samma landning; **UPPTAGEN som S64 2026-07-12** (sessionsdok Del 1 = scope-plats) · **REVISION S64:** rubrik-frågan BESVARAD (synlig h1 på alla vyer utom Hem; sr-only-kandidaten avvisad av research) + Hem-identiteten avgjord ("hela appen ÄR Mina sidor") → B/B2 RIVNA (ingen Mina sidor-rad/-sida; sex rader i två grupper), task-4 beslut 4 rivet (Hem-platshållaren bort via PRD-skiva), T77 född, ORDLISTA omskriven (`1a9e929`) — se kortets § Revision S64

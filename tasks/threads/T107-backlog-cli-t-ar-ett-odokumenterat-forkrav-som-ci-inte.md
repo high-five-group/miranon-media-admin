@@ -1,0 +1,22 @@
+---
+owner: marcus803
+updated: 2026-08-07
+review_by: 2026-11-07
+status: stable
+lifecycle: closed
+---
+
+# T107 — Backlog-CLI:t är ett odokumenterat förkrav som CI inte har — och det blockerar mekaniseringen av kort-stängningen
+
+> Tråd-kort (ADR-053), fött vid registrets tunna radform-migration
+> (`TASK-157.2`, [ADR-098](../../docs/decisions/ADR-098-tradregistrets-tunna-radform-vaxt-vagen.md)).
+> Innehållet nedan är den ORDAGRANNA texten som tidigare bodde i registrets
+> Titel-/Ingång-kolumner för denna rad — flyttad, inte omskriven eller
+> sammanfattad. Ursprunglig radhistorik (innan migrationen):
+> `git log -p -- tasks/threads/README.md`.
+
+**Ursprunglig Titel-cell:**
+**Backlog-CLI:t är ett odokumenterat förkrav som CI inte har — och det blockerar mekaniseringen av kort-stängningen.** Upptäckt 2026-07-29 (S91 femtonde resumen) när `scripts/check-backlog-closure.sh` skulle wiras i CI. `backlog.md@1.47.1` är **globalt installerad på Marcus maskin** (`/Users/marcus/.npm-global/bin/backlog`), är varken `dependency` eller `devDependency`, finns inte i `node_modules`, och nämns inte i `CLAUDE.md` eller `CONTRIBUTING.md`. `npx backlog` fungerar lokalt enbart för att den globala installationen fångas upp. **Konsekvensen är bredare än grinden:** hela kort-arbetsflödet — `/to-prd`, `/to-issues`, `/do-work`, varje AC-bockning i varje bygg-agents leverans — vilar på ett verktyg som ingen fil deklarerar och ingen ny maskin får automatiskt. En agent i en färsk miljö skulle antingen ladda ned ett **opinnat** paket per anrop eller falla. **Varför det INTE är ett ja/nej-beslut** (Marcus 2026-07-29: _"Det är inte mitt beslut. Det är ett beslut vi ska ta efter research-runda och utforskning"_): repot SHA-pinnar sina verktyg med checksumme-verifiering (`actionlint`, `shellcheck`) och kör `audit-ci` som grind — att lägga till en npm-dependency är därför en leverantörskedje-yta som ska vägas, inte antas. **Formerna att utforska:** (a) pinnad `devDependency` — lockfilen ger äkta integritets-pinning, men adderar en dependency; (b) pinnad global install i CI-jobbet, som `shellcheck`-mönstret — men npm ger ingen tarball-SHA256 på samma sätt; (c) grinden läser task-filerna direkt i stället för via CLI:t, vilket kräver att `CLAUDE.md`:s _"läses/ändras ENDAST via backlog-CLI:t"_ prövas mot `L226`, som uttryckligen sanktionerar _"mall-/DoD-nivåns semantiska grind"_ på just denna yta; (d) acceptera att grinden är lokal-bara — svagast, eftersom den då vilar på omdöme, den empiriskt svagaste mekanismen (~9 %). **Blockerar:** CI-wiringen av `scripts/check-backlog-closure.sh` (byggd, testad 10/10, shellcheck 0/0/0/0, körd skarpt 21→1 — men ej wirad). Besläktad: `TASK-82` (guard-sviter utan CI-bärare — samma klass, löst där). **TILLKOMMET KRAV 2026-07-30 (S91, ur `TASK-89` + `TASK-90`): invariant 1 saknar tidsdimension, och det blir ett CI-problem först när wiringen sker.** Grinden fäller på tillståndet _alla AC bockade + öppet status_ — vilket är exakt det tillstånd en bygg-agents kontrakt KRÄVER (den bockar AC, den får inte sätta Done). Under en sjuvåg fäller den alltså på sju korrekta kort. Lokalt är det ofarligt och snarare en arbetslista: felet är inte att ett kort är obockat direkt efter landning, utan att det FÖRBLIR det. **Men en CI-wirad grind kör på PR:er som landar mitt i en våg**, och då blir samma fällning en falsk röd i en required check — `T87`:s signal-förstörelse. `TASK-90`:s agent verifierade att formen är mekaniskt möjlig: CLI:t exponerar `Updated:`, så ett karens-fönster kan bo i policy-filen. **Medvetet EJ byggt** (orkestrerar-beslut 2026-07-30): karensen löser ett problem som bara existerar i en konfiguration vi ännu inte valt, och hör därför till formvalet nedan — inte före det. Väljs form (a)–(c) måste karens-frågan besvaras i samma andetag; väljs (d) faller den bort. **Körkostnad mätt samma dag:** 170 CLI-anrop och 154–165 s väggtid lokalt vid loadavg 3,8–5,1 — lokala tal, ingen CI-mätning
+
+**Ursprunglig Ingång-cell:**
+_Löst och stängd 2026-08-01: research-rundan togs, Marcus valde form (a) — `backlog.md@1.47.1` pinnad devDependency, landad med mätt karens i `TASK-102` (`154acca`, PR #509); CI-wiring PR #525 (merge `bc26fd6`) med grindens testsvit wirad i gatekeeper-steget; första skarpa natten grön för grinden: jobbet Backlog-stängning (natt-grind) success i run 30683902551 (körningens enda röda jobb var extern länkkontroll — eget stående ärende, orelaterat)_

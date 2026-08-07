@@ -292,3 +292,15 @@ Klass: dok-konsolidering / operativ-vy. Blockerar ej; värdefullt (ADR-053: regi
 förkasta aldrig tyst). Trådtillstånd `paused` — kartan är ritad, men dess spårade subjekt
 (6h-grenen + closeout T39/T40) utvecklas alltjämt; stängs när go-live nås på båda vägarna.
 Relaterat: T44, T39, T40, ADR-062, ADR-067, segment-arkitektur.md.
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Ingång (fullständig, ursprunglig):**
+[T46-go-live-karta.md](T46-go-live-karta.md) — uppstod Session 41 (Fas 6h closeout); ritas vid prod-deploy-session-designen; **ärver T40-resten (2026-07-24, S84):** prod-frontend-deploy-kontrollen (PWA:ns deploy-tillstånd overifierat) + allowlist-utvidgnings-frågan (9 app-använda EF:er utanför allowlisten — pre-flight-dokets §3.4, per-rad-Marcus-beslut)

@@ -146,3 +146,18 @@ denna tråd är dess skarpaste empiri hittills) ·
 extern-trigger-vägen som inte kunde uteslutas är nu också den enda som håller) ·
 [`T110`](T110-orkestrerarens-felklasser.md) (orkestrerarens felklasser —
 maskinvila-hypotesen är en klass D-instans: slutsats ur för få observationer).
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+**Väckningskedjan över turgränsen: bakgrundsvakter dog trots vaken maskin.** Registrerad 2026-08-01 på Marcus order (*"bokföras och förberedas för stabil åtgärd"*), ur orkestreringens förlopp 2026-07-31→08-01: ~10:45–11:03Z landade 11 PR:er ur en våg om 13 agenter; 11 agenter parkerade sig därefter på bakgrundsvakter mot merge-kön — och efter 11:03Z nådde INGA task-notifikationer orkestrator-sessionen förrän Marcus första meddelande på förmiddagen 2026-08-01; allt arbete stod stilla över natten. **FALSIFIERAT:** orkestrerarens första hypotes var maskinvila — Marcus 2026-08-01: `caffeinate -dimsu` var aktivt hela tiden; maskinen var vaken, felet ligger i orkestrerings-/harness-kedjan. Hypotesen rivs öppet, och den hann rapporteras som "troligast" — en egen lärdom om hypotes-disciplin. **MÄTT:** (1) en agents vakt (`gh pr checks 518 --watch`, bakgrundsjobb) fullföljde med exit 0 utan att agentens återupptagning nådde sessionen — agenten väcktes först av orkestrerarens SendMessage nästa dag, och alla fyra så väckta agenter återupptogs då korrekt med bevarad kontext · (2) sandbox-spärren avvisade tre vaktformer för worktree-isolerade agenter (två sammansatta shell-loopar + Monitor-verktyget) med worktree-isolationsfel — en "tills merged"-vakt är i praktiken obyggbar för worktree-agenter under nuvarande spärr, därav `gh pr checks --watch` som inte täcker kö-fasen · (3) TaskList visade "No tasks found" medan 11 spawnade agenter var aktiva — spawnade agenter syns inte i harnessets task-lista (`T108`-angränsande detektor-lucka). **KLASS:** `T108`:s tes bekräftad skarpt — en vakt som bor i den aktör som slutat arbeta dör med den; `T111`:s förutsättning skärpt — autonom drift kräver extern trigger, väckning inifrån räcker inte ens med vaken maskin. **Åtgärdsval 2026-08-01 (Marcus GO, klass A):** riktning (ii) orkestrerar-svep vid varje väckning + persistent heartbeat och (iii) vakt-design-regeln LÅSTA som stabil åtgärd, kodifierade i `CLAUDE.md` § Landning respektive `.claude/agents/bygg-agent.md` § Parkera aldrig på en landnings-vakt; (iv) harness-mätningen KVARSTÅR ÖPPEN (kort-kandidat post-S91); (i) cron-heartbeat VILANDE tills `T111`-bygget. ADR-bar prövad: UNDER baren (kortets § Åtgärdsval). **Ny instans 2026-08-02 (orkestrerar-empiri, ej oberoende verifierad):** stängningsbatch-agenten (PR #574) dead-parkade på egen bakgrundsgrind — "no active task" vid första väckningsförsök, återupptagen korrekt via ett andra SendMessage — samma mönster som § Mätt (1), inträffat EFTER vakt-design-regeln redan var kodifierad i drift. Besläktad: `T108` · `T111` · `T110`
+
+**Ingång (fullständig, ursprunglig):**
+[T112-vackningskedjan-over-turgransen.md](T112-vackningskedjan-over-turgransen.md)

@@ -227,3 +227,18 @@ ordagrant: *"T87 ska INTE aktiveras. Det är mycket visuellt arbete kvar i
 appen."* Detta är en FÖRNYAD bekräftelse av Marcus-beslut A (S81), inte en ny
 trigger — trigger-formuleringen ovan ("grinden aktiveras när
 UI-iterationstakten lugnat") står oförändrad, liksom `lifecycle: paused`.
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+Visual-grindens aktivering — task-36.7 byggde hela vakten (hermetisk fixturvärld · 12 st 2x-linux-baselines Marcus-välsignade PR nr 140 · `visual-baselines.yml` bevisad ände-till-ände) men SISTA steget (CI-jobbet i ci-suite som blockerande grind, AC 7–8) parkerades på Marcus-beslut A (S81): tidig UI-fas med många avsiktliga utseende-ändringar — aktiv grind hade blockerat auto-mergen per design-ändring (mot T85:s hastighetsarbete); rådgivande läge förkastat (L321-klassen). Aktiverings-jobbet ligger färdigt i kortet; trigger: UI-takten lugnar (bas-maximeringen / Lotta skarp drift)
+
+**Ingång (fullständig, ursprunglig):**
+[T87-visual-grind-aktivering.md](T87-visual-grind-aktivering.md) · besläktad `T85`
