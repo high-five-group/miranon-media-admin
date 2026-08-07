@@ -136,14 +136,38 @@
      Färgen var därför inte reproducerbar: Lotta hade kunnat se en annan färg än
      Marcus, på samma skärmbild. Den är nu en riktig token.
 
-     `--p-blue-9` är valt av paletten själv, inte av mig: den bär 5,48:1 under
-     vit text (bocken), och den flyttades 2026-07-26 medvetet till perceptuellt
-     avstånd 27,3 från fokusringens #1B4965 — "fokusringen är den DOVA mörkblå,
-     info är den KLARA". Just den egenskapen är vad en fokuserad kryssruta
-     behöver: ringen måste gå att skilja från rutan den ligger runt. */
-  --mm-checkbox-selected-bg: var(--p-blue-9);
-  --mm-checkbox-selected-border: var(--p-blue-9);
-  --mm-checkbox-check: var(--mm-text-inverse);
+     GULD SEDAN VARV 15 (Marcus: "jag tror vi ska byta färg till typ gul/guld
+     eller vad vi har i paletten"). Blått var varv 14:s val och höll 5,48:1 på
+     båda axlarna; guld är smakvalet, och det tvingade fram TVÅ ändringar, inte
+     en — bocken kunde inte förbli vit.
+
+     PALETTEN HADE REDAN MÄTT RISKEN och skrivit den som varning (primitives.css
+     rad 21–24, fynd F9): "Guld steg 9 når 2,57:1 mot vit yta och klarar alltså
+     inte WCAG 1.4.11 (3:1) som UI-yta. Det är fysiken hos en mättad gul-orange
+     … behövs guld som yta mot vitt är steg 10 den ljusaste som duger."
+
+     HELA FÄLTET DOM-MÄTT 2026-08-07 (Chrome, isolerad mätsida) — bock mot
+     platta · platta mot vit sida:
+
+       gold-9  + vit bock    2,57 ✗ · 2,57 ✗   faller på båda
+       gold-9  + mörk bock   6,04 ✓ · 2,57 ✗   plattan syns inte
+       gold-10 + mörk bock   5,08 ✓ · 3,06 ✓   VALD
+       gold-10 + vit bock    3,06 ✓ · 3,06 ✓   godkänd men tightast
+       gold-11 + vit bock    4,91 ✓ · 4,91 ✓   säkrast, men mörkast/brunast
+
+     VARFÖR MÖRK BOCK: mot gold-10 ger vit bock 3,06:1 och mörk 5,08:1. Bocken
+     är det som ska läsas, alltså tar den det starkare värdet. Det är också
+     varför `--mm-checkbox-check` INTE längre är `text-inverse` — den tokenen
+     betyder "det som syns mot en mörk platta", och guld är ingen mörk platta.
+
+     PLATTANS 3,06:1 ÄR MARGINELL, öppet bokfört: golvet är 3:1 och detta är två
+     hundradelar över. Den håller mot `--mm-surface` (vitt), som är vad båda
+     kryss-ytorna faktiskt står på. Flyttas en kryssruta till en ljusare eller
+     tonad botten måste talet mätas om — gold-11 (4,91:1) är då reservvalet.
+     Detta är en mätning per YTA, inte en generell garanti. */
+  --mm-checkbox-selected-bg: var(--p-gold-10);
+  --mm-checkbox-selected-border: var(--p-gold-10);
+  --mm-checkbox-check: var(--p-neutral-900);
 
   /* ── Select (Fas 3 K2) — trigger återanvänder Input-fält-tokens ── */
   --mm-select-popover-bg: var(--mm-surface-overlay);
