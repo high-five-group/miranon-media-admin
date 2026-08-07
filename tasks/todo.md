@@ -83,6 +83,34 @@ ljust/mörkt läge (öppen mätpunkt) → `TASK-116` AC #3 → `TASK-129`/`TASK-
 **HANDOFF: sessionsdok S96 § Del 17.**
 *(S93 är `paused` sedan `#839` — dess kadensrad nedan, oförändrad.)*
 
+**Session 93 ⏸️ PAUSAD (2026-08-06, `lifecycle: paused`) — FACIT LÅST** —
+**ELVA ITERATIONSVÅGOR (10–20) OCH MARCUS LÅS.** Betalningsytan blev en
+LÄSYTA i anmälningssidans grammatik (`DetaljGrupp`/`EtikettVardeRad`): **18
+tomma `<Input>` rivna** (ytan är för ÖVERBLICK — editering hör till
+åtgärds-sidan) · höger-slotten **helt riven** (i fliken "Saknar betalning (9)"
+sa ytan samma sak TRE gånger: fliknamn, obockat kryss, ordet "Saknas") ·
+noteringen fick egen rad med symmetrisk luft · utskicken blev `Tidslinje`
+(Shopify/Stripe activity-formen) · mottagen-pill med datum. **Gruppdynamiken:**
+fixturen berikades så blocket gick att granska alls — två av tre ytor
+renderade tomt — inklusive **`T16`-divergensen gjord synlig** (Gustav Wik "3+
+tidigare event" + badge "Ej påbörjat", RIM-3-blindheten). Knappformen härmar
+nu Deltagares, personkorten `PersonMiniKort`s. **Sju proto-texter rivna** ·
+composern 64 → 112 px. **`T130` mintad** (pill-skalan: 23 pillar i TRE former,
+inte två). **DATAGRÄNS:** `Mottagen <datum>` kan inte byggas skarpt — basens
+betalningsfält är singleSelect utan tidsstämpel; pillen visas mot
+prototyp-lokalt datum, bas-fälten är Marcus beslut. **PROCESSFYND:**
+`mt-*`/`mb-*` på `<p>` är TYSTA NO-OPS (global oskiktad `p { margin: 0 }` slår
+`@layer utilities`) — två vågor i rad var verkningslösa, lesson-kandidat ·
+grenen låg 4 commits bakom `main` hela passet (den formella pausen `#839`
+landade under tiden), löst med merge, EN konflikt, ingen bokföring förlorad.
+**`#838` bär 26 commits, är UR DRAFT och ARMERAD** (`enabledAt 17:02:40Z`) men
+hade INTE landat vid paus-skrivningen — **verifiera först, armera bara om vid
+utsparkning.** **NÄSTA: `/to-prd` × 3 → `/to-issues`**
+(Marcus förvarnade att det blir nästa resumes arbete). **HANDOFF: sessionsdok
+S93 § PAUSLÄGE (facit låst).** Numrering disk-verifierad mot `7c3f4ea7`:
+096/**L480**/T131/task-145/f47. **EJ KÖRT: `test:visual`** — vågorna 19–20
+ändrar skarp kod med avsikt, baselines förväntas skilja.
+
 **Session 93 ⏸️ PAUSAD (2026-08-06, `lifecycle: paused`)** — **SJU
 ITERATIONSVÅGOR PÅ KONVERGENS-PROTOTYPEN + TVÅ PROCESSFEL.** Handoffens alla
 fem numreringsaxlar HÖLL denna gång (till skillnad från förra resumen), och

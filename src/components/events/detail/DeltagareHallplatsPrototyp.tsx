@@ -30,9 +30,8 @@
  * KASTBAR: rivs med `git rm` på denna fil + `hallplats-steg-prototyp.ts` +
  * återställ prototyp-grenarna i Deltagare.tsx/Betalningar.tsx/EventDetail.tsx.
  */
-import { Filter, Printer } from 'lucide-react';
-import { useState } from 'react';
-import { Button as AriaButton, Disclosure, DisclosurePanel } from 'react-aria-components';
+import { Printer } from 'lucide-react';
+import { Button } from '@/components/primitives/Button';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import {
   HALLPLATS_LABEL,
@@ -255,13 +254,40 @@ export type HallplatsCounts = {
  * MÖNSTRET ÄR EVENTLISTANS, inte ett nytt: `EventsList.tsx` (task-17.7) bär
  * redan tratt-ingången med aktiv-badge, dropdown-panelen, "Visar X av Y" i
  * foten, Rensa filter och Skriv ut — research-grundat i
- * `docs/research/filtervy-listor-monster-2026-07-24.md`. Formen kopieras hit
- * i stället för att uppfinnas.
+ * `docs/research/filtervy-listor-monster-2026-07-24.md`. STRUKTUREN kopierades
+ * hit i stället för att uppfinnas.
  *
- * TRE LÖSA KONTROLLER BLIR EN RAD: fliken (Alla/Manuella/Medföljande), den
- * högerställda "Rensa filtret" och den högerställda "Markera" satt var för sig
- * på egna rader. Nu står tratten till vänster och Markera till höger på SAMMA
- * rad; Rensa flyttar in i panelfoten där eventlistan har den.
+ * MEN FORMEN HAR DIVERGERAT sedan iterationsvåg 3 (Marcus 2026-08-06,
+ * punkt 1–4), och det är avsiktligt: eventlistans kontroller är handrullade
+ * piller (`rounded-full`, ~37 px), medan sidans övriga knappar går via
+ * `Button`-primitiven (`rounded` 4 px, `min-h-8` 32 px). De två språken möttes
+ * på denna rad — Markera intill tratten — och det var den skillnaden Marcus
+ * fyra punkter beskrev. Kontrollerna här går nu via primitiven. Eventlistan
+ * är PRODUKTIONSKOD och lämnades ORÖRD på Marcus scope-beslut ("vi håller oss
+ * till prototypen"); den divergensen är alltså känd och bokförd, inte drift.
+ * Migreringen av eventlistan + appens övriga handrullade knappar är Marcus
+ * punkt 4, deferrad till tråd-registret.
+ *
+ * PANELEN ÄR INTE LÄNGRE FÄLLBAR (Marcus 2026-08-06, iterationsvåg 5) —
+ * `Disclosure`/`DisclosurePanel` och hela Filtrera-knappen är RIVNA, och
+ * filtervyn står alltid framme. Marcus: *"Vi tar bort Filtrera-knappen helt. Vi
+ * låter 'filtreringsvyn' vara framme som default."*
+ *
+ * SKÄLET ÄR ROTORSAKS-, INTE SYMPTOMFIX. Knappraden ovanför panelen trycktes
+ * ihop och radbröt — texten på två rader, och båda fot-knapparna bröt INUTI sig
+ * själva ("Rensa / filter", "Skriv / ut"). Den raden existerade bara för att
+ * det fanns något att fälla ut. Utan utfällning finns ingen rad att trycka ihop,
+ * och komponenten tappar ett helt TILLSTÅND (öppen/stängd) i samma veva.
+ *
+ * PRISET ÄR LÅGT och betalades medvetet: panelen är två `Select` plus en fot, så
+ * permanent synlighet kostar ca en radhöjd vertikalt. Aktiv-filter-BADGEN som
+ * satt på Filtrera-knappen försvann med den — men den var bara en proxy för
+ * "det finns filter du inte ser". Med panelen framme läses selecternas värden
+ * direkt, vilket är en starkare signal än en siffra i ett hörn.
+ *
+ * MARKERA-KNAPPEN BOR INTE HÄR LÄNGRE. Den flyttade ner till
+ * `MarkeringsBatchBar`s vänsterkant (`Deltagare.tsx`) — se den komponentens
+ * docblock för varför det också gör markeringslägets på/av-växling stillare.
  *
  * UTSKRIFTEN HÄR ÄR REGISTRETS — den synliga, filtrerade listan (Del 3 beslut
  * 3: "utskriften = hela registret med märken"). Sidans utskrift är en ANNAN
@@ -272,60 +298,20 @@ export function RegisterFilterRad({
   onFilterChange,
   visadeAntal,
   totaltAntal,
-  markeraKnapp,
+  avbokadeAntal,
 }: {
   filter: RegisterFilter;
   onFilterChange: (f: RegisterFilter) => void;
   visadeAntal: number;
   totaltAntal: number;
-  /** Markera-knappen monteras av `ArbetsKo` (den äger markerings-läget) men
-      RENDERAS här, på filterradens högerkant — Marcus placering. */
-  markeraKnapp: React.ReactNode;
+  /** TALENS OLIKA BASER (Marcus 2026-08-06) — se fotens docblock nedan. */
+  avbokadeAntal: number;
 }) {
-  const [oppen, setOppen] = useState(false);
   const aktiva = harAktivtFilter(filter);
   return (
-    <Disclosure
-      isExpanded={oppen}
-      onExpandedChange={setOppen}
-      className="flex flex-col print:hidden"
-    >
-      {/* PUNKT 4 (Marcus 2026-08-06): "Filtreringsknappen behöver flyttas så
-          den sitter på höger sidan till höger om markeraknappen."
-
-          Raden var `justify-between` med tratten längst till vänster och
-          Markera längst till höger — eventlistans form, där tratten sitter
-          bredvid en periodväxlare som fyller vänsterkanten. Här finns ingen
-          sådan granne, så tratten stod ensam i tomrummet. Nu är båda
-          högerställda med Markera FÖRE tratten, i den ordning Marcus angav. */}
-      <div className="flex items-center justify-end gap-2">
-        {markeraKnapp}
-        {/* Tratt-ingången — EXAKT eventlistans form (facit k02): svärtad när
-            öppen eller när filter är aktiva, accent-badge med antalet, och
-            sr-only-namnet som bär antalet för hjälpmedel (badgen är dekor). */}
-        <AriaButton
-          slot="trigger"
-          className={`relative inline-flex shrink-0 items-center justify-center rounded-full p-2.5 motion-safe:transition-colors ${
-            oppen || aktiva > 0 ? 'bg-text text-text-inverse' : 'bg-bg-muted hover:bg-bg-emphasized'
-          }`}
-        >
-          <Filter aria-hidden="true" size={18} className="shrink-0" />
-          {aktiva > 0 ? (
-            <span
-              aria-hidden="true"
-              className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-medium text-[10px] text-text-inverse"
-            >
-              {aktiva}
-            </span>
-          ) : null}
-          <span className="sr-only">
-            {oppen ? 'Dölj filter' : 'Visa filter'}
-            {aktiva > 0 ? `, ${aktiva} ${aktiva === 1 ? 'aktivt' : 'aktiva'} filterval` : ''}
-          </span>
-        </AriaButton>
-      </div>
-      <DisclosurePanel data-testid="register-filter-panel">
-        <div className="mt-3 flex flex-col gap-4 rounded-2xl bg-bg-muted p-4">
+    <div className="flex flex-col print:hidden">
+      <div data-testid="register-filter-panel">
+        <div className="flex flex-col gap-4 rounded-2xl bg-bg-muted p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <Select
               data-testid="filter-steg"
@@ -367,31 +353,181 @@ export function RegisterFilterRad({
               ))}
             </Select>
           </div>
-          <div className="flex items-center justify-between gap-3 border-border-light border-t pt-3">
+          {/* FOTENS HÖJD ÄR NU KONSTANT (Marcus 2026-08-06, iterationsvåg 6).
+              Marcus: "Vi kan inte ha det så att texten […] radbryts eller tar
+              en extra rad när 'rensa filtret-knappen' kommer upp. […] flytta
+              'upp' textraden på egen rad, behålla skriv ut-knappen och
+              rensa-knappen där de är."
+
+              MÄTT, och överskottet är för stort för att trixas bort: radens
+              inre bredd 502 px · texten på EN rad 319,2 px · knappgruppen
+              204,6 px · gap 12 px ⇒ 535,8 px behövs, alltså 33,8 px för
+              mycket. Vid smalare fönster växer underskottet.
+
+              ETT FÖRSTA FÖRSÖK (samma dag) satte `flex-wrap` + `whitespace-nowrap`
+              och löste HALVA problemet: knapparna slutade brytas inuti sig
+              själva ("Rensa / filter", "Skriv / ut" — aldrig avsett), men
+              texten bröt fortfarande, och foten VÄXTE med en rad i samma
+              ögonblick som "Rensa filter" dök upp. Det är den höjdändringen
+              Marcus störde sig på: layouten hoppar när man filtrerar.
+
+              NU: två egna rader, alltid. Texten får hela bredden (319,2 av
+              502 ⇒ ryms med marginal), knappgruppen ligger högerställd under
+              — Marcus placering, "där de är". Höjden slutar bero på om ett
+              filter är aktivt, vilket var hela poängen. Priset är en radhöjd
+              extra i ofiltrerat läge, medvetet betalat för stabiliteten.
+
+              TVÅ ALTERNATIV PRÖVADES OCH FÖLL. (1) Reservera plats för
+              "Rensa filter" med en osynlig platshållare — samma breddlås-teknik
+              som `MarkeringsBatchBar` redan använder. Den håller bredden
+              konstant men löser INTE radbrytningen, eftersom 535,8 px inte
+              ryms på 502 oavsett om knappen är synlig. (2) Korta texten så
+              allt ryms — offrar formuleringen Marcus godkände dagen innan, och
+              håller bara tills texten växer nästa gång.
+
+              AVDELAREN ÖVER FOTEN RIVEN (Marcus 2026-08-06, iterationsvåg 7):
+              "Det ligger en ljusgrå avdelare som knappt syns under
+              filtrerings-dropdownarna, ta bort den." Det var fotens egen
+              `border-t border-border-light`. `pt-3` står kvar — luften mellan
+              selecterna och foten var aldrig kantens jobb. */}
+          <div className="flex flex-col gap-2 pt-3">
+            {/* TALENS OLIKA BASER (Marcus 2026-08-06): "topp-räknarna räknar
+                aktiva (12) medan registret nu visar ALLA (14, inkl. två
+                avbokade). '5 av 12 mottagna' bredvid 'Visar 14 av 14' kan
+                läsas som en motsägelse."
+
+                KROCKEN ÄR ÄKTA och uppstod i iterationsvåg 1: avbokade togs in
+                i registret (Marcus punkt 3, 2026-08-05) men topp-räknarna
+                behöll sin bas i `aktiva`. Att ge toppen samma bas vore FEL —
+                en avbokad ska inte räknas som "saknar betalning", då hade
+                `avgifterSaknas` ljugit i stället.
+
+                FIXEN SITTER HÄR för att det är HÄR 14:an föds. Ett första
+                försök la en "Avbokade"-rad i `HallplatsToppA`; DOM-mätningen
+                visade då två identiska knappar 197 px isär — raden fanns redan
+                i logistik-gruppen. Informationen SAKNADES alltså aldrig, den
+                stod bara 200 px från talet den förklarar.
+
+                ORDVALET undviker "aktiva": det är ett begrepp Lotta aldrig
+                sett, infört för att lappa ett tal (Gunilla-principen — hon ska
+                FÖRSTÅ, inte få en idé). "2 av dem är avbokade" räcker för att
+                12 + 2 = 14 ska gå ihop, och pekar mot raden som redan finns.
+
+                Tillägget hänger på TOTALEN, inte på `visadeAntal`: 14 = 12 + 2
+                oavsett vad filtret just nu visar. Noll avbokade ⇒ inget
+                tillägg — då finns ingen krock att förklara. */}
             <span className="text-small text-text-secondary">
               {`Visar ${visadeAntal} av ${totaltAntal} i registret`}
+              {/* KORT BINDESTRECK, inte tankstreck (Marcus 2026-08-06,
+                  iterationsvåg 9): "Jag gillar mer ett vanligt kort
+                  bindestreck (-)". Gäller denna UI-sträng; docblock och
+                  commit-prosa runtomkring följer repots vanliga typografi. */}
+              {avbokadeAntal > 0
+                ? ` - ${avbokadeAntal} av dem ${avbokadeAntal === 1 ? 'är avbokad' : 'är avbokade'}`
+                : ''}
             </span>
-            <div className="flex items-center gap-2">
+            {/* ITERATIONSVÅG 3 (Marcus 2026-08-06, punkt 3): "Skriv ut-knappen
+                på Anmälda blockets filtrering kanske ska nog ha samma
+                bakgrundsfärg som blocket så den inte syns i normalt läge,
+                endast vid hover liksom."
+
+                Det ÄR `intent="ghost"`: transparent i vila, `bg-muted` först
+                vid hover. Den formen fanns redan — och satt redan på raden,
+                i "Rensa filter" bredvid, som aldrig burit någon platta. Den
+                gamla `bg-surface`-plattan var faktiskt det ljusaste elementet
+                i en `bg-bg-muted`-panel, alltså det som stack ut mest.
+
+                HELA FOTEN TOGS SAMLAT, inte bara Skriv ut: hade bara den ena
+                bytt form hade den stått bredvid ett kvarvarande piller, och
+                inkonsekvensen punkt 1 vill bort från vore flyttad en meter i
+                stället för borttagen. Nu bär båda samma primitiv, samma
+                `rounded`, samma 32 px. */}
+            {/* HOVERN VAR OSYNLIG (Marcus 2026-08-06, iterationsvåg 8):
+                "Skriv ut-knappen har ju ingen hover? Lös det."
+
+                DEN FANNS — den gick bara inte att se. MÄTT: `intent="ghost"`
+                hovrar till `--mm-button-ghost-bg-hover` = `bg-muted` =
+                `rgb(245,245,243)`, och panelen den ligger i ÄR `bg-bg-muted`
+                = `rgb(245,245,243)`. Identiska. Ghost-varianten är designad
+                för att ligga på vit yta; på en muted panel försvinner dess
+                hover in i bakgrunden.
+
+                KONTRASTMÄTNING som skiljer de två fallen åt: samma knapp i
+                `Atgarder.tsx`s `SkrivUtKort` ligger på `rgb(255,255,255)` och
+                dess hover ÄR synlig. Den rördes därför INTE — att "fixa" båda
+                hade ändrat en knapp som fungerade.
+
+                FIXEN ÄR REPOTS EGEN FÄRG: `bg-bg-emphasized`
+                (`rgb(237,238,233)`, den tonala betonings-ytan) är exakt vad
+                eventlistans motsvarande fot-knappar redan använder
+                (`EventsList.tsx` rad 416 och 426), plus `EventValjare` och
+                `ManuellAnmalanForm`. Ingen ny token, inget lokalt undantag.
+
+                MEN VARIANTEN MÅSTE VARA `data-[hovered]:`, INTE `hover:` —
+                och det var ett eget fel på vägen, fångat av mätning. Första
+                försöket skrev `hover:bg-bg-emphasized` och mätte EFTERÅT:
+                hovern stod kvar på `rgb(245,245,243)`, alltså oförändrad.
+                Skälet är `cn()`s tailwind-merge: primitivens basklass är
+                `data-[hovered]:bg-(--mm-button-ghost-bg-hover)`, och en
+                `hover:`-klass räknas som en ANNAN modifierare — merge:n ser
+                ingen konflikt, behåller BÅDA, och CSS-ordningen avgör till
+                primitivens fördel. Med samma modifierare känner merge:n igen
+                konflikten och låter den sist angivna vinna, som avsett.
+                Regeln: en override mot en react-aria-primitiv måste använda
+                primitivens EGEN variant-mekanism, annars blir den tyst
+                verkningslös.
+
+                MÄTT EFTER: vila `rgba(0,0,0,0)` · hover `rgb(237,238,233)` ·
+                panel `rgb(245,245,243)`.
+
+                BÅDA fot-knapparna fick den: "Rensa filter" satt i samma
+                osynliga läge, den hade bara ingen som klagade än. */}
+            <div className="flex shrink-0 items-center justify-end gap-2">
               {aktiva > 0 ? (
-                <AriaButton
+                <Button
+                  intent="ghost"
+                  size="sm"
+                  className="relative whitespace-nowrap data-[hovered]:bg-bg-emphasized"
                   onPress={() => onFilterChange(TOMT_REGISTER_FILTER)}
-                  className="rounded-full px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
                 >
                   Rensa filter
-                </AriaButton>
+                  {/* AKTIV-FILTER-RÄKNAREN ÅTERUPPSTÅR HÄR (Marcus 2026-08-06):
+                      "Förut hade vi en siffra som fästes på filtreringsknappen
+                      […] kan vi inte sätta den nu på 'Rensa filter'-knappen?"
+
+                      Badgen dog med Filtrera-knappen i iterationsvåg 5. Den
+                      passar faktiskt BÄTTRE här: "Rensa filter" renderas bara
+                      när `aktiva > 0`, så siffran står aldrig och säger noll —
+                      och den svarar på frågan knappen väcker, "hur mycket är
+                      det jag rensar bort?".
+
+                      Formen är oförändrad från Filtrera-knappen: `aria-hidden`
+                      dekor, med antalet buret av en sr-only-sträng så knappens
+                      tillgängliga namn blir "Rensa filter, 2 aktiva filterval"
+                      — badgen läses aldrig som text av hjälpmedel. */}
+                  <span
+                    aria-hidden="true"
+                    className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-medium text-[10px] text-text-inverse"
+                  >
+                    {aktiva}
+                  </span>
+                  <span className="sr-only">{`, ${aktiva} ${aktiva === 1 ? 'aktivt' : 'aktiva'} filterval`}</span>
+                </Button>
               ) : null}
-              <AriaButton
+              <Button
+                intent="ghost"
+                size="sm"
+                className="whitespace-nowrap data-[hovered]:bg-bg-emphasized"
                 onPress={() => window.print()}
-                className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
               >
                 <Printer aria-hidden="true" size={18} className="shrink-0" />
                 Skriv ut
-              </AriaButton>
+              </Button>
             </div>
           </div>
         </div>
-      </DisclosurePanel>
-    </Disclosure>
+      </div>
+    </div>
   );
 }
 
@@ -460,6 +596,12 @@ export function HallplatsToppA({
       <HallplatsRad term="Klara" aktiv={filter === 'klar'} onClick={() => onFilterClick('klar')}>
         {counts.klar}
       </HallplatsRad>
+      {/* TALENS OLIKA BASER (Marcus 2026-08-06) löstes INTE här — en
+          "Avbokade"-rad lades först till på denna plats och REVS igen när
+          DOM-mätningen visade två identiska knappar 197 px isär: raden fanns
+          redan, i logistik-gruppen (`Deltagare.tsx`, intill Eventinfo skickad
+          och Bor över). Upplysningen bor nu i registrets fot i stället, där
+          talet 14 faktiskt föds — se `RegisterFilterRad`. */}
     </div>
   );
 }

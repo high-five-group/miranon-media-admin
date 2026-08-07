@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Check, ChevronDown, Clock, Mail, MailCheck } from 'lucide-react';
+import { Bell, Check, ChevronDown, Clock, Mail, MailCheck } from 'lucide-react';
 // [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
@@ -10,6 +10,8 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName } from '@/components/registrations/registration-display';
+import { StatusBadge } from '@/components/registrations/StatusBadge';
+import { Tidslinje, type TidslinjeHandelse } from '@/components/registrations/Tidslinje';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import {
   BETALNING_LABEL,
@@ -32,6 +34,7 @@ import {
   harPaminnelse,
   isHallplatsVariant,
   kategoriPillText,
+  PROTO_MOTTAGEN_DATUM,
 } from './hallplats-steg-prototyp';
 
 /**
@@ -105,6 +108,16 @@ export function deadlineStatus(startdatum: string | null): { text: string; cls: 
   return { text: `Deadline passerad · ${datum}`, cls: 'font-medium text-error' };
 }
 
+/** [PROTOTYPE] [S93] ITERATIONSVÅG 11 — utskicksloggens tidsstämpel: dag,
+    månad OCH klockslag. Se `utskickslogg` i BetalningsPersonRad för varför
+    klockslaget bär här men inte i registret. */
+const LOGGTID = new Intl.DateTimeFormat('sv-SE', {
+  day: 'numeric',
+  month: 'long',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
 /** Rött saknas-delta (K27): minustecknet är bäraren, rött förstärker; endast vid avvikelse. */
 function SaknasDelta({ antal, testid }: { antal: number; testid: string }) {
   if (antal <= 0) return null;
@@ -119,7 +132,25 @@ function SaknasDelta({ antal, testid }: { antal: number; testid: string }) {
     (disclosure-branschformen — skild från navigationsradernas höger-chevron).
     EXPORTERAD sedan konvergens-passet (S93 Del 3 beslut 1): återanvänds av
     `Deltagare.tsx`s DEV-gren för den INFLYTTADE arbetsytan (samma K27-form,
-    inte en kopia — se `Deltagare.tsx`s `ArbetsKo` för montering). */
+    inte en kopia — se `Deltagare.tsx`s `ArbetsKo` för montering).
+
+    HOVER (S93 våg 17, Marcus 2026-08-06: "'Öppna detaljer' har ingen hover,
+    fixa det"). Raden var klickbar utan att se klickbar ut — ren tappad
+    affordans, inte ett designval.
+
+    Formen speglar appens etablerade rad-hover: `hover:bg-bg-emphasized` +
+    `motion-safe:transition-colors`, samma som `AnmalanDetail`s eventlänk (396)
+    och `EventsList` 416. Ingen ny form mintas.
+
+    GEOMETRIN ÄR OFÖRÄNDRAD, med avsikt: `py-3` (12 px) på wrappern flyttades
+    till `py-1.5` + `py-1.5` på knappen, så 6+6+24+6+6 = 48 px precis som förut
+    — familjens radhöjd (DetaljGrupp § morf-pariteten) rörs inte. Vinsten är
+    att hover-plattan nu ligger på KNAPPEN och därför kan bära `rounded-lg`;
+    hade den suttit på wrappern med `py-3` blivit en kant-till-kant-platta utan
+    rundning, vilket är fel form i ett kort med rundade hörn.
+
+    `focus-visible` behövs inte här — den bärs globalt via
+    `--mm-color-focus-ring` (samma som alla andra knappar i filen). */
 export function DetaljRad({
   oppen,
   kontrollerarId,
@@ -130,13 +161,13 @@ export function DetaljRad({
   onToggle: () => void;
 }) {
   return (
-    <div className="py-3">
+    <div className="py-1.5">
       <button
         type="button"
         aria-expanded={oppen}
         aria-controls={kontrollerarId}
         onClick={onToggle}
-        className="flex w-full items-center justify-center gap-2 font-medium text-body"
+        className="flex w-full items-center justify-center gap-2 rounded-lg py-1.5 font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors"
       >
         {oppen ? 'Stäng detaljer' : 'Öppna detaljer'}
         <ChevronDown
@@ -159,6 +190,7 @@ function BetalKryss({
   vald,
   onChange,
   disabled = false,
+  lugn = false,
 }: {
   /** Synlig etikett (betalningsordet — facit-formen). */
   text: string;
@@ -169,6 +201,10 @@ function BetalKryss({
   /** [PROTOTYPE] [S93] review-fix — `?data=proto`: kontrollen görs read-only
       (native disabled-semantik), ingen mutation avfyras (se BetalningsLinje). */
   disabled?: boolean;
+  /** [PROTOTYPE] [S93] ITERATIONSVÅG 10 — etiketten dämpad i stället för röd.
+      Se `BetalningsLasRad` för skälet (rött på varje rad upprepar bara flikens
+      egen utsaga och tömmer färgen på betydelse). Skarpa vyn rörs inte. */
+  lugn?: boolean;
 }) {
   return (
     <Checkbox
@@ -185,8 +221,179 @@ function BetalKryss({
           className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
         />
       </span>
-      <span className={vald ? 'text-text-secondary' : 'font-medium text-error'}>{text}</span>
+      <span
+        className={
+          lugn ? 'text-text-muted' : vald ? 'text-text-secondary' : 'font-medium text-error'
+        }
+      >
+        {text}
+      </span>
     </Checkbox>
+  );
+}
+
+/**
+ * [PROTOTYPE] [S93] ITERATIONSVÅG 10 — betalningen som ETIKETT-VÄRDE-RAD
+ * (Marcus 2026-08-06: "designmässigt är det skit … vi får hämta inspiration
+ * från detalj-sidan för anmälan").
+ *
+ * Formen är `EtikettVardeRad`:s (DetaljGrupp.tsx): etiketten dämpad till
+ * vänster, VÄRDET primärt till höger, 48 px radhöjd (py-3 + 24 px). Krysset
+ * bor i etikett-slotten — avprickningen stannar på ytan (Del 3 beslut 1:
+ * "Lotta lämnar inte sidan för avprickning"), men den slutar skrika.
+ *
+ * TRE RIVNINGAR mot föregående form, var och en med sitt skäl:
+ *
+ * (a) `<Input>`-fältet är BORTA. Ytan är för ÖVERBLICK — editering görs på
+ *     åtgärds-sidan (Marcus 2026-08-06). Nio personer × två fält var arton
+ *     tomma rutor som bar noll information och ändå dominerade ytan.
+ *     Noteringen finns kvar som LÄSVÄRDE; den är det enda värdet som säger
+ *     något Lotta inte redan vet.
+ *
+ * (b) RÖTT lämnar etiketten. Skälet på `BetalKryss` var att "vilka betalningar
+ *     folk inte gjort syns direkt" — men fliken heter redan
+ *     "Saknar betalning (9)": ALLA i listan saknar per definition något, så
+ *     rött per rad upprepar bara flikens utsaga. Arton röda ord tömde färgen
+ *     på betydelse och konkurrerade med `Obekräftad`-badgen, som bär en
+ *     genuint avvikande sak. Vilken av de två som saknas bär krysset.
+ *
+ * (c) Värde-slotten är ALDRIG tom (`AnmalanDetail`-disciplinen "—"/"Ingen
+ *     notering"): finns notering ÄR den värdet, annars statusordet dämpat.
+ */
+function BetalningsLasRad({
+  registration,
+  betalning,
+  vald,
+  notering,
+  mutationer,
+  protoDataMode = false,
+}: {
+  registration: Registration;
+  betalning: Betalning;
+  vald: boolean;
+  notering: string | null;
+  mutationer: ArbetsytansMutationer;
+  protoDataMode?: boolean;
+}) {
+  const namn = displayName(registration);
+  const label = BETALNING_LABEL[betalning];
+  const egenNotering = notering?.trim();
+  // [PROTOTYPE] [S93] våg 14 — se PROTO_MOTTAGEN_DATUM: datumet är
+  // prototyp-lokalt tills basen får sina två additiva dateTime-fält.
+  const protoDatumIso = vald
+    ? PROTO_MOTTAGEN_DATUM[registration.id]?.[betalning === 'avgift' ? 'avgift' : 'slut']
+    : undefined;
+  const mottagenDatum =
+    protoDatumIso && !Number.isNaN(Date.parse(protoDatumIso))
+      ? DAGMANAD.format(new Date(protoDatumIso))
+      : null;
+
+  return (
+    // `title`-tooltipen med proto-förklaringen är riven (S93 våg 20) —
+    // `protoDataMode` håller krysset inaktiverat, texten är borta.
+    <div className="py-3">
+      {/* HÖGER-SLOTTEN ÄR RIVEN (våg 13, Marcus 2026-08-06: "'Saknas' kan vi
+          ta bort också. Det räcker det ej kryssade rutan, + att vi har togglen
+          högst upp" · "Att bara ha 'Mottagen' … säger ju bara exakt samma sak
+          som kryssrutan, eller hur?").
+
+          Han har rätt på båda, och räkningen är värre än den låter: i fliken
+          "Saknar betalning (9)" sa ytan SAMMA sak tre gånger — fliknamnet, det
+          obockade krysset och ordet "Saknas". "Mottagen" sa den två gånger.
+          Ingen av dem bar något krysset inte redan bär.
+
+          MOTTAGEN-PILLEN (våg 14) är däremot INTE redundant och står kvar —
+          den bär ett DATUM krysset omöjligt kan bära. Formen speglar
+          deadline-pillen i samma vy ("ord · datum" i en rounded-full kapsel);
+          `bg-bg-muted` i stället för deadline-pillens `bg-surface`, eftersom
+          personkortet självt redan är `bg-surface` och pillen annars försvann.
+
+          DATUMET ÄR PROTOTYP-LOKALT (PROTO_MOTTAGEN_DATUM i
+          hallplats-steg-prototyp.ts) — basen bär inget mottagen-fält ännu, och
+          det är EJ beslutat. Se den konstantens docblock för hela skälet.
+
+          KVAR STÅR ÄVEN "Ej relevant (föreläsning)" — den enda utsagan på ytan
+          som saknar kryss och därför inte kan vara redundant. */}
+      <div className="flex items-center justify-between gap-4">
+        <BetalKryss
+          text={label}
+          namn={namn}
+          vald={vald}
+          lugn
+          disabled={protoDataMode}
+          onChange={(v) => {
+            if (protoDataMode) return;
+            mutationer.status.mutate({
+              registration,
+              betalning,
+              value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+            });
+          }}
+        />
+        {mottagenDatum && (
+          // Pill-skalans `sm` (våg 16) — var px-2.5 py-1, alltså `md`-steget,
+          // vilket gjorde den bredare än kategori-pillen på samma kort.
+          // Fyllningen är `bg-bg-muted` och det är RÄTT här: denna pill står
+          // INUTI kortet (bg-surface), inte på namnraden — muted mot vitt är
+          // samma 1.09 som vitt mot muted, bara omvänt håll.
+          <span className="shrink-0 rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
+            Mottagen {mottagenDatum}
+          </span>
+        )}
+      </div>
+      {/* NOTERINGEN PÅ EGEN RAD, FULL BREDD (Marcus 2026-08-06: "kommer det ju
+          inte få plats några noteringar eller? Vart ska dem skrivas ut?").
+          Föregående våg lade noteringen i höger-slotten, och den var för smal
+          för hur Lotta faktiskt skriver — fixturens Sara Nilsson bär numera ett
+          långt fall just för att bevisa radbrytningen här i stället för i prod.
+
+          `pl-7` = kryssets 20 px + gap-2:s 8 px, så noteringen linjerar exakt
+          under betalningsordet, inte under krysset. Dämpad (`text-small`,
+          `text-text-secondary`): den kvalificerar raden ovanför, den tävlar
+          inte med den.
+
+          LUFTEN (våg 12, Marcus 2026-08-06: "det blir för mycket text som
+          nästan står på varandra runt noteringstexten"). Tre mått, inte ett —
+          det klistrade åt tre håll samtidigt och en enda justering hade bara
+          flyttat trängseln:
+
+          (i)   `pt-4` mot etikettraden ovanför — PADDING, inte margin, och det
+                är hela poängen.
+
+                Våg 12 satte `mt-3` och våg 14 först `mt-4`. BÅDA VAR
+                VERKNINGSLÖSA: en global oskiktad `p { margin: 0px }` i
+                stilmallen slår Tailwinds `.mt-*`, eftersom utilities ligger i
+                `@layer utilities` och CSS-kaskaden ger OSKIKTADE regler högre
+                prioritet än skiktade. DOM-mätt `marginTop: "0px"` med
+                `class="mt-4 …"` på elementet.
+
+                Det förklarar varför Marcus fortsatte se att noteringen
+                klistrade uppåt efter våg 12: den vågens synliga förbättring
+                kom helt från `leading-relaxed` och `pb-1`, aldrig från
+                marginalen. Padding rörs inte av reset:en och verkar direkt.
+
+                Måttet: luften NEDÅT är `pb-1` (4 px) + radens `py-3` (12 px) =
+                16 px, så `pt-4` = 16 px gör paret symmetriskt — Marcus krav
+                ordagrant ("lika mycket luft däremellan som det är mellan
+                noteringstexten och avdelaren under").
+
+                LÄXAN ÄR GENERELL: på denna kodbas är `mt-*`/`mb-*` på `<p>`
+                tysta no-ops. Använd padding, eller `gap` på föräldern. Att
+                `my-0`/`mb-0` står utskrivet på flera `<p>` i filen är därför
+                också dekoration — reset:en hade redan nollat dem.
+          (ii)  `leading-relaxed` INUTI noteringen — samma val som
+                AnmalanDetail gör för sin fritext. En flerradig notering med
+                tät radsättning är den enda texten på kortet som måste läsas
+                som prosa, inte skannas som data.
+          (iii) `pb-1` under: `py-3` räknade från styckets sista rad, vilket
+                gav mindre luft ner till avdelaren än upp till statusraden.
+                Asymmetrin syntes som att noteringen hängde i nederkanten. */}
+      {egenNotering && (
+        <p className="pt-4 pb-1 pl-7 text-small text-text-secondary leading-relaxed">
+          {egenNotering}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -251,14 +458,9 @@ function BetalningsLinje({
   };
 
   return (
-    <div
-      className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
-      title={
-        protoDataMode
-          ? 'Förhandsvisning (proto) — kryss, notering och påminn är inaktiverade, inget sparas'
-          : undefined
-      }
-    >
+    // `title`-tooltipen med proto-förklaringen är riven (S93 våg 20) —
+    // kontrollerna är fortfarande inaktiverade i proto-läge.
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
       <div className="w-40 shrink-0">
         <BetalKryss
           text={label}
@@ -405,6 +607,246 @@ function BetalningsPersonRad({
         }
       : null,
   ].filter((p): p is { key: string; text: string } => p !== null);
+
+  // [PROTOTYPE] [S93] ITERATIONSVÅG 11 — UTSKICKEN BLIR EN RIKTIG LOGG
+  // (Marcus 2026-08-06: "'skickat' som vi har längst ner på varje kort måste
+  // bli och se ut mer som en utskickslogg").
+  //
+  // Formen är `Tidslinje` (registrations/Tidslinje.tsx) — samma komponent som
+  // bär Händelser på anmälnings-sidan, alltså samma yta Marcus pekade ut som
+  // förebild. Den är dokumenterad som "aktivitetslogg i branschledar-formen
+  // (Shopify/Stripe activity)": genomgående linje, ikon-noder i cirklar,
+  // texten bär och tiden mutad under. Ingen ny form mintas — och Tidslinje är
+  // [BIBLIOTEKS-KANDIDAT] med promovering "vid andra konsumenten", precis som
+  // StatusBadge; detta är den andra konsumenten även för den.
+  //
+  // ORDNINGEN ÄR OFÖRÄNDRAD: bekräftelse → påminnelser → eventinfo (K42,
+  // Lottas utskicksordning). Tidslinje sorterar aldrig själv — callern äger
+  // ordningen — så bytet av form ändrar inte vad Lotta ser i vilken följd.
+  //
+  // Tidsformatet bär KLOCKSLAG här men inte i registret: en logg som säger
+  // "Påminnelse 24 juli" två rader under "Bekräftelse 24 juli" gör dem
+  // oskiljbara, och ordningsföljden blir det enda som skiljer — vilket är
+  // precis vad en logg ska belägga, inte förutsätta.
+  const utskickslogg: TidslinjeHandelse[] = [
+    { nar: registration.bekraftelseSkickad ?? null, text: 'Bekräftelse skickad', ikon: Mail },
+    {
+      nar: registration.paminnelseAnmalningsavgiftSkickad ?? null,
+      text: 'Påminnelse om anmälningsavgift',
+      ikon: Bell,
+    },
+    {
+      nar: registration.paminnelseSlutbetalningSkickad ?? null,
+      text: 'Påminnelse om slutbetalning',
+      ikon: Bell,
+    },
+    { nar: registration.deltagarinfoSkickad ?? null, text: 'Eventinfo skickad', ikon: Mail },
+  ].flatMap((p) =>
+    p.nar != null && !Number.isNaN(Date.parse(p.nar))
+      ? [
+          {
+            id: `${p.text}-${p.nar}`,
+            text: p.text,
+            tid: LOGGTID.format(new Date(p.nar)),
+            ikon: p.ikon,
+          },
+        ]
+      : [],
+  );
+
+  // [PROTOTYPE] [S93] ITERATIONSVÅG 10 — PERSONEN FÅR EN KROPP.
+  //
+  // Marcus 2026-08-06: "varje personblock har väl innehållet som det behöver
+  // ha, men designmässigt är det skit … detalj-sidan för anmälan är SNYGG.
+  // Vi får hämta inspiration därifrån."
+  //
+  // Föregående form var `<li>` i en `divide-y`-lista: personen hade ingen
+  // kortyta alls, bara hårstreck emellan — och det ENDA som bar en
+  // inneslutning var utskicks-lådan, alltså ytans minst viktiga innehåll.
+  //
+  // Formen här är `DetaljGrupp`s (DetaljGrupp.tsx:26-32), den som gör
+  // anmälnings-sidan läsbar: RUBRIKEN UTANFÖR (namn + status, `px-4` in till
+  // "där rundningen slutar"), KORTET under (`rounded-2xl bg-bg-muted px-4`)
+  // med `divide-y` mellan raderna. Ingen ny form mintas — grammatiken finns
+  // redan och är e2e-bevisad på anmälnings-sidan.
+  //
+  // Hierarkin får fyra nivåer i stället för två: namnet `text-lg
+  // font-semibold` → etiketten `text-small text-text-muted` → värdet
+  // `text-body`. Förut var namn och fältetikett nästan lika tunga.
+  if (protoAktiv) {
+    return (
+      <li className="flex min-w-0 flex-col gap-2">
+        {/* Namnraden står UTANFÖR kortet — DetaljGrupp:s h2-position. Den är
+            medvetet INGEN rubrikelement: fjorton syskon-rubriker under en enda
+            `<h2>` vore en semantisk lögn (samma skäl som rev sr-only-rubriken
+            i CI-fångsten nedan), och listan är redan en `<ul>` med poster. */}
+        <div className="flex items-center justify-between gap-3 px-4">
+          {registration.personId ? (
+            <Link
+              to="/personer/$personId"
+              params={{ personId: registration.personId }}
+              className="min-w-0 font-semibold text-lg underline-offset-2 hover:underline"
+            >
+              {namn}
+            </Link>
+          ) : (
+            <span className="min-w-0 font-semibold text-lg">{namn}</span>
+          )}
+          {/* `StatusBadge` ersätter den handrullade pillen: samma tillstånd
+              hade förut TVÅ former i appen — `bg-error-bg`/`text-error` här
+              mot `<StatusBadge ton="warning">` på anmälnings-sidan
+              (AnmalanDetail.tsx:341). Ett ord, en färg, hela appen.
+              StatusBadge är märkt [BIBLIOTEKS-KANDIDAT] med promovering till
+              `primitives/` "vid andra konsumenten" — detta ÄR den andra. */}
+          {(protoObekraftad || protoKategoriPill) && (
+            <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+              {protoObekraftad && (
+                <StatusBadge ton="warning" storlek="sm">
+                  Obekräftad
+                </StatusBadge>
+              )}
+              {/* KATEGORI-PILLEN FÅR KONTUR (våg 15, Marcus 2026-08-06: "vi
+                  måste lösa pill-färgen på de som är gråa för de syns ju inte
+                  alls just nu").
+
+                  Han hade rätt, och mätningen gjorde det värre än "syns dåligt":
+                  pillen bar `bg-bg-muted` OCH stod på namnraden, som ligger
+                  UTANFÖR kortet på arbetsytans egen `bg-bg-muted`-botten. Båda
+                  mättes till rgb(245,245,243) — KONTRAST 1.00, alltså
+                  matematiskt osynlig. Bara texten syntes; kapseln fanns inte.
+                  Exakt samma fel som personkortet hade i våg 10, samma orsak.
+
+                  KONTUREN ÄR RIVEN IGEN (våg 16, Marcus: "Jag vill inte ha
+                  kontur på pillen. Då får vi hitta en annan färg vi kan
+                  använda."). Kvar står `bg-surface` — VIT fyllning på muted
+                  botten, 1.09.
+
+                  Talet är lågt, men det är fel mått för en 26 px hög YTA, och
+                  formen är dessutom appens ETABLERADE neutrala pill mot muted
+                  underlag: EventCard:191, NastaEventCard:131 och
+                  AnmalanDetail:475 (dagar-kvar) kör alla exakt `bg-surface`
+                  som pill-fyllning, och ingen av dem har någonsin rapporterats
+                  osynlig. Det som var trasigt var 1.00 — noll kontrast, muted
+                  på muted — inte 1.09.
+
+                  `contrast-more` behåller en kant för dem som BEGÄRT högre
+                  kontrast; det är inte samma sak som att alltid rita den. */}
+              {protoKategoriPill && (
+                <span className="rounded-full border border-transparent bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
+                  {protoKategoriPill}
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+        {/* `bg-surface`, INTE `bg-bg-muted` som DetaljGrupp använder: arbetsytan
+            är monterad INUTI en DetaljGrupp (Deltagare.tsx:s ArbetsKo), så
+            underlaget är redan muted — ett muted kort på muted botten är
+            osynligt (mätt i browsern 2026-08-06: första formen försvann helt).
+            Samma val som AnmalanDetail:s noterings-ruta gör inuti sin grupp. */}
+        <div className="divide-y divide-border rounded-2xl border border-transparent bg-surface px-4 contrast-more:border-border-strong">
+          <BetalningsLasRad
+            registration={registration}
+            betalning="avgift"
+            vald={avgiftKlar(registration)}
+            notering={registration.noteringAnmalningsavgift ?? null}
+            mutationer={mutationer}
+            protoDataMode={protoDataMode}
+          />
+          {registration.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
+            // Ej relevant får radens form men ALDRIG ett kryss — en av-bock
+            // hade skrivit 'Ej mottagen' och rivit basens semantik (befintligt
+            // öppet skiv-beslut, oförändrat).
+            //
+            // Våg 13: raden följer med när höger-slotten rivs. Den var det
+            // enda som stod kvar högerställt när alla andra rader blev
+            // vänsterställda, och en ensam höger-kolumn läser som att något
+            // fattas i de andra. `pl-7` = kryssets 20 px + gap-2:s 8 px, så
+            // ordet "Slutbetalning" står på exakt samma vänsterlinje som
+            // grannradernas etiketter trots att kryssrutan saknas.
+            <p className="my-0 py-3 pl-7 text-small text-text-muted">
+              Slutbetalning · Ej relevant (föreläsning)
+            </p>
+          ) : (
+            <BetalningsLasRad
+              registration={registration}
+              betalning="slut"
+              vald={registration.slutbetalning === PaymentStatus.MOTTAGEN}
+              notering={registration.noteringSlutbetalning ?? null}
+              mutationer={mutationer}
+              protoDataMode={protoDataMode}
+            />
+          )}
+          {/* UTSKICKSLOGGEN (våg 11). Vägen hit i två steg, båda värda att
+              minnas: punkt 7 sa att historiken "hängde i luften" och fick en
+              `md:w-60`-LÅDA bredvid personen; våg 10 rev lådan och gjorde den
+              till en etikett-värde-rad i kortet. Raden löste svävandet men
+              gjorde historiken till ett VÄRDE — och en logg är ingen
+              värde-slot: fyra utskick högerställda i en `dd` blir en klump
+              utan tidsaxel, vilket är exakt vad Marcus såg när han sa att den
+              "måste bli och se ut mer som en utskickslogg".
+
+              RUBRIKEN ÄR RIVEN (våg 12, Marcus 2026-08-06: "'Utskick' kan vi
+              ta bort, det sabbar designen och jag tror man fattar ändå. Men
+              behåll … tom yta liksom så vi behåller luft där").
+
+              Han har rätt i att den var överflödig: varje nod säger redan
+              "Bekräftelse skickad" / "Påminnelse om slutbetalning", så ordet
+              Utskick upprepade bara vad de fyra raderna under den redan sa —
+              och det gjorde det med en fjärde textvikt (`font-medium
+              text-caption`) i ett kort som redan bar tre.
+
+              LUFTEN ÄR KVAR, exakt som beställt: `pt-8` ersätter rubrikens
+              forna höjd (`pt-3` + ~18 px radhöjd ≈ 30 px, mot 32 px nu), så
+              avståndet från avdelaren ner till första noden är oförändrat.
+              Tomrummet är alltså inte en glömd rubrik — det är rubrikens
+              plats, medvetet lämnad tom.
+
+              A11y: INGEN ersättnings-etikett alls, och det är ett medvetet
+              val efter två avvisade försök. En sr-only-rubrik är utesluten —
+              den som stod på denna yta rev två CI-grindar samtidigt (axe
+              `heading-order` + Playwrights strict mode, se kommentaren längre
+              upp i filen). Ett `role="group"` + `aria-label` avvisades av
+              `lint/a11y/useSemanticElements`, som kräver `<fieldset>` — och
+              fieldset kräver `<legend>`, alltså en synlig rubrik igen: exakt
+              det Marcus rev.
+
+              Men etiketten behövs faktiskt inte. `Tidslinje` renderar en
+              `<ol>` där varje nod läses "Bekräftelse skickad, 20 juni kl.
+              11:00" — orden bär sitt eget sammanhang, och listan sitter redan
+              inuti personens `<li>`. Marcus "man fattar ändå" gäller
+              skärmläsaren lika mycket som ögat. Att lägga på en etikett här
+              hade varit samma garderings-reflex som gav sr-only-rubriken. */}
+          {utskickslogg.length > 0 ? (
+            <div className="flex flex-col pt-8">
+              <Tidslinje handelser={utskickslogg} />
+            </div>
+          ) : (
+            // Tom logg: frånvaron måste sägas rakt ut (annars läses tomrummet
+            // som ett renderingsfel) — men UTAN etikett, samma rivning som
+            // ovan. Etikett-värde-formen som stod här gav ett högerställt
+            // "Inget skickat ännu" mot ett vänsterställt "Utskick", alltså
+            // exakt de två ord Marcus rev.
+            //
+            // `pt-8` = samma luft som logg-grenen. `pl-11` = Tidslinjes
+            // ikon-cirkel (32 px) + dess `gap-3` (12 px), så texten står
+            // precis där en nodtext hade stått — de två grenarna läser som
+            // samma yta i två tillstånd, inte som två olika layouter.
+            // Texten säger vad rutan ÄR, inte bara att den är tom (Marcus våg
+            // 14). "Inget skickat ännu" ensamt förutsatte att läsaren redan
+            // visste vad ytan under betalningarna var till för — och rubriken
+            // som hade sagt det revs i våg 12. Meningen bär nu båda: vad som
+            // kommer stå här, och att inget gör det ännu.
+            <div className="pt-8 pb-3">
+              <p className="my-0 pl-11 text-small text-text-muted">
+                Utskickslogg visas här — inget skickat ännu till denna person
+              </p>
+            </div>
+          )}
+        </div>
+      </li>
+    );
+  }
 
   return (
     <li className="flex flex-col gap-2 py-3">
@@ -644,16 +1086,17 @@ export function BetalningsDetaljer({
           Försök igen.{fel.id ? ` Fel-ID: ${fel.id}.` : ''}
         </MessageBox>
       )}
-      {/* [PROTOTYPE] [S93] review-fix — EN delad förklaringstext för hela
-          arbetsytan (uppdraget § FYND 1): "liten text"-delen av
-          disabled-mönstret; per-rad `title` (BetalningsLinje) bär hover-formen. */}
-      {protoDataMode && (
-        <p className="text-caption text-text-muted">
-          Förhandsvisning (proto) — kryss, notering och påminn är inaktiverade nedan, inget sparas.
-        </p>
-      )}
+      {/* Proto-banderollen RIVEN (S93 våg 20) — `protoDataMode` håller
+          fortfarande kryssen inaktiverade, bara texten är borta. Den satt inte
+          "högst upp i ett block" som de tre Marcus räknade upp, utan inuti
+          arbetsytan bakom "Öppna detaljer"; den togs med på hans "ta bort ALL
+          proto-text". Samma för de två `title`-attributen ovan i filen. */}
       {lista.length > 0 ? (
-        <ul className="divide-y divide-border">
+        // [PROTOTYPE] [S93] ITERATIONSVÅG 10 — korten separeras av LUFT, inte
+        // av hårstreck: när varje person bär en egen kortyta blir en avdelare
+        // emellan en andra gräns runt samma sak (DetaljGrupp-formen på
+        // anmälnings-sidan har samma gap-4 mellan grupperna).
+        <ul className={protoAktiv ? 'flex flex-col gap-4' : 'divide-y divide-border'}>
           {lista.map((r) => (
             <BetalningsPersonRad
               key={r.id}

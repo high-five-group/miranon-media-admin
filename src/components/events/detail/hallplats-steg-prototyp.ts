@@ -328,6 +328,31 @@ export function kategoriPillText(r: Registration): string | null {
  * här). `id`-prefixet `proto-hallplats-` gör fixturerna omisskännliga i DOM
  * och devtools.
  */
+/**
+ * [PROTOTYPE] [S93] ITERATIONSVÅG 14 — MOTTAGEN-DATUM, PROTOTYP-LOKALT.
+ *
+ * Marcus 2026-08-06: "vi fångar datumet i appen. När Lotta kryssar i rutan
+ * anmälningsavgift eller slutbetalning då fångar vi det och sätter det datumet
+ * i pillen. Tänker jag rätt? Det måste väl bli så."
+ *
+ * Han tänker rätt — men fältet FINNS INTE i basen ännu (`Anmälningsavgift`
+ * fldJtKQ3qLxRKOvR6 och `Slutbetalning` fldIImadnJUZHr5Qh är singleSelect utan
+ * tidsstämpel, data-model.md:233-234). Datumen nedan bor därför HÄR, i den
+ * kastbara prototypfilen, och INTE i `Registration` — att lägga fält i
+ * domänmodellen för ett bas-fält som inte är beslutat vore att föregripa
+ * beslutet i kod ("bygg inte ifall", över-engineering-vakten).
+ *
+ * Syftet är enbart att Marcus ska SE pillen innan han beslutar om de två
+ * additiva dateTime-fälten. Skarpa vägen är bokförd i uppdragets rapport.
+ */
+export const PROTO_MOTTAGEN_DATUM: Readonly<Record<string, { avgift?: string; slut?: string }>> = {
+  'proto-hallplats-04': { avgift: '2026-07-21T10:12:00.000Z' },
+  'proto-hallplats-05': { avgift: '2026-07-16T08:40:00.000Z', slut: '2026-07-24T19:05:00.000Z' },
+  'proto-hallplats-06': { avgift: '2026-07-17T12:30:00.000Z' },
+  'proto-hallplats-07': { avgift: '2026-07-25T15:10:00.000Z' },
+  'proto-hallplats-13': { avgift: '2026-07-16T09:20:00.000Z', slut: '2026-07-25T11:45:00.000Z' },
+};
+
 function bas(overrides: Partial<Registration> & { id: string; namn: string }): Registration {
   return {
     fornamn: null,
@@ -386,6 +411,15 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
     bekraftelseSkickad: '2026-07-19T09:00:00.000Z',
     anmalningsavgift: PaymentStatus.EJ_MOTTAGEN,
     slutbetalning: PaymentStatus.EJ_MOTTAGEN,
+    // [PROTOTYPE] [S93] ITERATIONSVÅG 11 — LÅNGT-fallet. Peter Lund (08) visar
+    // hur MYCKET som får plats; denna visar hur en ENSKILD notering bryter
+    // när Lotta skriver som hon faktiskt skriver. Utan ett långt fall i
+    // fixturen ser varje notering ut att rymmas på en rad, och radbrytningen
+    // upptäcks först i prod.
+    noteringAnmalningsavgift:
+      'Hörde av sig 22/7: fick inte OCR-numret att fungera i Swish-appen, ' +
+      'ska prova igen via bankgiro i stället. Bad om kvitto till jobbet ' +
+      'eftersom arbetsgivaren betalar halva avgiften.',
   }),
   bas({
     id: 'proto-hallplats-04',
@@ -435,6 +469,16 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
         typ: 'Kurs',
       },
     ] satisfies PersonHistoryEntry[],
+    // [PROTOTYPE] [S93] ITERATIONSVÅG 18 — badgen KONSISTENT med bucketen.
+    // Karin har RIM 1 ×1 och RIM 2 ×0 ⇒ Erfarenhetsnivå "RIM steg 1" ⇒ badge
+    // "Resenär steg 1" (data-model.md § Personer.Erfarenhetsbadge). Hon är
+    // kontrollfallet mot Gustav Wik nedan, där badge och bucket DIVERGERAR.
+    erfarenhetsbadge: 'Resenär steg 1',
+    motivering:
+      'Har gått RIM 1 och en fjärrskådningshelg tidigare. Vill fördjupa mig i ' +
+      'det som öppnade sig då — särskilt hur man skiljer egna projektioner från ' +
+      'faktisk information. Har övat regelbundet sedan i våras men kört fast på ' +
+      'just den punkten och hoppas kunna få handledning på plats.',
   }),
   bas({
     id: 'proto-hallplats-06',
@@ -454,7 +498,23 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
     slutbetalning: PaymentStatus.EJ_MOTTAGEN,
     inskickad: '2026-07-25T14:00:00.000Z',
   }),
-  // 08: Del 3 fall B — bekräftad, betalar aldrig, redan påmind
+  // 08: Del 3 fall B — bekräftad, betalar aldrig, redan påmind.
+  //
+  // [PROTOTYPE] [S93] ITERATIONSVÅG 11 — DENNA POST ÄR "MAXAD" (Marcus
+  // 2026-08-06: "Du får ju skriva ut några exempel därav några som har allt
+  // som en person kan ha, alla noteringar, alla utskick. Så man kan se hur
+  // det kan se ut sedan.").
+  //
+  // Peter Lund var redan fallet "betalar aldrig, redan påmind" och är därför
+  // den ENDA posten där hela utskicks-kedjan är trovärdig samtidigt:
+  // bekräftelse → påminnelse avgift → påminnelse slutbetalning → eventinfo,
+  // plus notering på BÅDA betalningarna. Fyra utskick + två noteringar är
+  // taket för vad en person kan bära på denna yta.
+  //
+  // Posten BERIKADES i stället för att en ny lades till: fixturen är 14
+  // poster och konsumeras även av registret, gruppdynamiken och
+  // beläggningen — en femtonde post hade flyttat varenda räknare i de
+  // vyerna för en fråga som bara gäller betalningskortets form.
   bas({
     id: 'proto-hallplats-08',
     namn: 'Peter Lund',
@@ -464,6 +524,10 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
     slutbetalning: PaymentStatus.EJ_MOTTAGEN,
     betalningspaminnelseSkickad: '2026-07-10T09:00:00.000Z',
     paminnelseAnmalningsavgiftSkickad: '2026-07-10T09:00:00.000Z',
+    paminnelseSlutbetalningSkickad: '2026-07-24T08:30:00.000Z',
+    deltagarinfoSkickad: '2026-07-28T07:00:00.000Z',
+    noteringAnmalningsavgift: 'Ringde 24/7 — lovade Swisha samma kväll, inget inkommet.',
+    noteringSlutbetalning: 'Vill dela upp i två delbetalningar. Väntar på besked från Roger.',
   }),
   // 09–10: Del 3 fall C — avbokade (exkluderas ur `aktiva`, egen räknerad)
   bas({
@@ -508,5 +572,61 @@ export const HALLPLATS_PROTO_FIXTURES: Registration[] = [
     status: RegistrationStatus.OBEKRAFTAD,
     kalla: RegistrationSource.VANTELISTA,
     inskickad: '2026-07-28T09:00:00.000Z',
+    // [PROTOTYPE] [S93] ITERATIONSVÅG 18 — T16-DIVERGENSEN, GJORD SYNLIG.
+    //
+    // Gustav bär TRE genomförda RIM 3-event. Det ger:
+    //   · `antalGenomfordaEvent: 3`  ⇒ Gruppdynamik bucketar honom "3+ tidigare
+    //     event" (basens RIM-3-INKLUDERANDE räknare `Antal genomförda event`)
+    //   · `erfarenhetsbadge: 'Ej påbörjat'` ⇒ personens kanoniska badge, som är
+    //     RIM-3-BLIND: Erfarenhetsnivå räknar `Totala deltaganden (gammal)` =
+    //     RIM 1 × + RIM 2 × + Fjärrskådning ×, alltså UTAN RIM 3
+    //     (data-model.md § Kända buggar i insiktskedjan).
+    //
+    // Ett kort som säger "3+ tidigare event" och "Ej påbörjat" samtidigt ser ut
+    // som ett renderingsfel — men det ÄR basens sanning, och Gruppdynamiks
+    // docblock slår uttryckligen fast att divergensen ska visas RÅ, aldrig
+    // bortdesignas. Utan detta fixturfall kan formen aldrig granskas: den
+    // enda instansen är osynlig tills den dyker upp i prod.
+    //
+    // Posten fyller dessutom "3+ tidigare event"-bucketen, som stod på 0 och
+    // därför aldrig gick att se utfälld.
+    antalGenomfordaEvent: 3,
+    erfarenhetsbadge: 'Ej påbörjat',
+    kurshistorik: [
+      {
+        id: 'proto-hallplats-14-hist-1',
+        kursnamn: 'Resor i medvetandet 3',
+        eventLabel: 'Resor i medvetandet 3',
+        datum: '2025-03-08',
+        session: 'Dag 1',
+        status: 'Bekräftad (mail skickat)',
+        narvaro: true,
+        ort: 'Göteborg',
+        typ: 'Kurs',
+      },
+      {
+        id: 'proto-hallplats-14-hist-2',
+        kursnamn: 'Resor i medvetandet 3',
+        eventLabel: 'Resor i medvetandet 3',
+        datum: '2025-09-20',
+        session: 'Dag 1',
+        status: 'Bekräftad (mail skickat)',
+        narvaro: true,
+        ort: 'Stockholm',
+        typ: 'Kurs',
+      },
+      {
+        id: 'proto-hallplats-14-hist-3',
+        kursnamn: 'Resor i medvetandet 3',
+        eventLabel: 'Resor i medvetandet 3',
+        datum: '2026-04-11',
+        session: 'Dag 1',
+        status: 'Bekräftad (mail skickat)',
+        narvaro: true,
+        ort: 'Malmö',
+        typ: 'Kurs',
+      },
+    ] satisfies PersonHistoryEntry[],
+    motivering: 'Stod på väntelistan i våras och vill gärna ta chansen nu.',
   }),
 ];

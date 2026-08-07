@@ -92,31 +92,86 @@ function manadAr(datum: string | null): string {
   return Number.isNaN(d.getTime()) ? '' : MANAD_AR.format(d);
 }
 
-/** Ett vitt personkort i en nivågrupp — namn, kanonisk badge, kurshistorik. */
+/**
+ * Initialerna för cirkeln ("AA" ur "Anna Andersson") — max två, versala.
+ *
+ * Duplicerad ur `PersonMiniKort.tsx` med avsikt: den komponentens API är
+ * FÖRSEGLAT ("className/style/children är förseglade: radens form är facit-låst
+ * … konsumenter komponerar inte om den"), så den kan inte bära gruppdynamikens
+ * badge och kurshistorik. Vi ärver dess FORM, inte dess kod. Om en tredje
+ * konsument dyker upp är hjälparen kandidat för `lib/` — inte förr.
+ */
+function initialer(namn: string): string {
+  return namn
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((d) => d[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+/**
+ * Ett personkort i en nivågrupp — initial-cirkel, namn, kanonisk badge och
+ * (när den finns) kurshistoriken.
+ *
+ * FORMEN ÄR `PersonMiniKort`s (S93 våg 19, Marcus 2026-08-06: "de personkorten
+ * vill jag ska se ut som dem på anmälan-detaljsidan"): initial-cirkel i
+ * `bg-bg-emphasized` + namn, i en `rounded-xl bg-surface`-yta med
+ * `border-transparent` och `contrast-more`-kant. CRM-record-idiomet.
+ *
+ * TVÅ MEDVETNA AVVIKELSER från förlagan, båda för att undvika en lögn:
+ *
+ *  · INGEN CHEVRON. `PersonMiniKort` är en `createLink`-länk vars chevron
+ *    lovar navigering. Detta kort leder ingenstans — anmälningarna här bär
+ *    ofta `personId: null` (manuell/+1 innan A2 kopplat dem), och en chevron
+ *    utan mål är exakt den sortens falska affordans som `AnmalanDetail`s
+ *    behörighetsrad undviker med sitt "länk utan mål ljuger". Klickbarhet är
+ *    en egen fråga, inte en formfråga.
+ *  · INGEN ROLL-UNDERRAD. Förlagans andra rad bär relationsrollen
+ *    ("Medföljande (+1)"). Här finns ingen roll — bucketen ÄR rollen.
+ *
+ * "INGA TIDIGARE EVENT"-RADEN ÄR RIVEN (samma våg, Marcus: "på dem som listas
+ * under 'Första eventet' så behövs inte raden … det är ju bara
+ * dubbelinformation"). Han har rätt: raden stod ENDAST i kort utan
+ * kurshistorik, och de korten bor per definition i bucketen "Första eventet" —
+ * så raden upprepade bucketens namn tio gånger. Samma redundans-klass som
+ * "Saknas"/"Mottagen" i betalningsvyn.
+ */
 function PersonKort({ reg }: { reg: Registration }) {
   const kurser = genomfordaKurser(reg.kurshistorik);
+  const namn = displayName(reg);
   return (
     <div
       data-testid="gruppdynamik-personkort"
-      className="flex flex-col gap-1.5 rounded-xl border border-border bg-surface px-4 py-3 contrast-more:border-border-strong"
+      className="flex flex-col gap-2 rounded-xl border border-transparent bg-surface px-3 py-2.5 contrast-more:border-border-strong"
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <span data-testid="gruppdynamik-namn" className="font-semibold text-body">
-          {displayName(reg)}
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
+        >
+          {initialer(namn)}
+        </span>
+        <span data-testid="gruppdynamik-namn" className="min-w-0 truncate font-medium text-body">
+          {namn}
         </span>
         {/* Kanonisk Erfarenhetsbadge RÅ ur basen (RIM-3-BLIND). När den avviker
-            från nivå-bucketen ÄR det den kända luckan (T16) — visad, ej dold. */}
+            från nivå-bucketen ÄR det den kända luckan (T16) — visad, ej dold.
+            Pill-skalans `sm` per T127 (px-2 py-0.5 + transparent kant). */}
         {reg.erfarenhetsbadge && (
           <span
             data-testid="gruppdynamik-badge"
-            className="shrink-0 rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary"
+            className="ml-auto shrink-0 rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong"
           >
             {reg.erfarenhetsbadge}
           </span>
         )}
       </div>
-      {kurser.length > 0 ? (
-        <ul className="flex flex-col gap-1">
+      {/* Kurshistoriken renderas ENDAST när den finns — tomläget bar förut en
+          rad som upprepade bucketen (se docblocket ovan). `pl-12` = cirkelns
+          36 px + `gap-3`:s 12 px, så raderna linjerar under namnet. */}
+      {kurser.length > 0 && (
+        <ul className="flex flex-col gap-1 pl-12">
           {kurser.map((h) => {
             const kf = kursfargForKurs(h.kursnamn);
             // Legendens korta etikett för mappade kurser (facit: "RIM 1"); rå
@@ -140,10 +195,6 @@ function PersonKort({ reg }: { reg: Registration }) {
             );
           })}
         </ul>
-      ) : (
-        <span className="text-caption text-text-muted">
-          Inga tidigare event — första gången hos Miranon Media
-        </span>
       )}
     </div>
   );
@@ -162,13 +213,27 @@ function NivaAccordion({
   const [oppen, setOppen] = useState(false);
   const panelId = useId();
   return (
-    <div className="flex flex-col">
+    // HOVER-PLATTANS FORM (S93 våg 19, Marcus 2026-08-06: "när jag hovrar så
+    // täcks ju allt yta mellan seperatorerna mellan raderna, 'knappen' är
+    // alltså inte likadan som på till exempel 'anmälda deltagare-blocket'").
+    //
+    // Mätt, och han hade rätt: knappen bar `py-3` och satt i en förälder UTAN
+    // padding, så hover-plattan blev 48 px — exakt radhöjden — och gick kant
+    // till kant mellan `divide-y`-separatorerna. Deltagares hållplats-rader
+    // gör tvärtom: `py-1.5` på knappen (36 px platta) i en förälder med `py-2`,
+    // vilket lämnar 8 px luft över och under så plattan läser som en KNAPP i
+    // raden, inte som raden själv.
+    //
+    // Formen härmas nu exakt (`py-2` på föräldern, `py-1.5` + `w-auto` på
+    // knappen). Radhöjden går 48 → 52 px, samma som Deltagares — det är
+    // avsikten: Marcus jämförde med just den ytan.
+    <div className="flex flex-col py-2">
       <button
         type="button"
         aria-expanded={oppen}
         aria-controls={panelId}
         onClick={() => setOppen((v) => !v)}
-        className="-mx-2 flex items-center justify-between gap-4 rounded-lg px-2 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors"
+        className="-mx-2 flex w-auto items-center justify-between gap-4 rounded-lg px-2 py-1.5 text-left hover:bg-bg-emphasized motion-safe:transition-colors"
       >
         <span className="flex items-center gap-2 text-small text-text-muted">
           <span aria-hidden="true" className={`w-1 shrink-0 self-stretch rounded-full ${streck}`} />
@@ -183,7 +248,9 @@ function NivaAccordion({
           />
         </span>
       </button>
-      <div id={panelId} hidden={!oppen} className="flex flex-col gap-2.5 pb-3">
+      {/* `pt-2` skiljer panelen från knappen; föräldern bär redan `py-2` nedåt
+          så ingen egen `pb` behövs (den hade adderats till förälderns). */}
+      <div id={panelId} hidden={!oppen} className="flex flex-col gap-2 pt-2">
         {personer.map((r) => (
           <PersonKort key={r.id} reg={r} />
         ))}
@@ -328,11 +395,8 @@ export function Gruppdynamik({ event }: { event: Event }) {
 
   return (
     <DetaljGrupp id="grupp-gruppdynamik" rubrik="Gruppdynamik">
-      {protoDataMode && (
-        <p className="pt-3 text-caption text-text-muted">
-          Förhandsvisning (proto) — talen nedan är härledda ur fixturunderlaget.
-        </p>
-      )}
+      {/* Proto-banderollen RIVEN (S93 våg 20) — `protoDataMode` styr fortsatt
+          datakällan, bara förklaringstexten är borta. */}
       {/* Summeringsrad + sekventiell mätare (streck-segment per nivå). */}
       <div className="flex flex-col gap-1.5 py-3">
         <div className="flex items-baseline justify-between gap-4">
