@@ -3,27 +3,46 @@ import { expect, type Page, test } from '../support/test-bas';
 import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
- * task-18.8 — Betalningar-gruppens inline-ARBETSYTA på eventsidan (S73-facit
- * K27–K34). Ersätter Fas 5.5-svitens gamla betalnings-vy-tester — ytan
- * ersattes av arbetsytan (K27: Marcus "stanna på samma sida"); filnamnet
- * behålls som betalnings-flödets e2e-hem.
+ * TASK-145.4 — Betalningsytan: blockets rivning, inflytten och läsyte-formen.
+ *
+ * Ersätter task-18.8:s svit för samma arbetsyta. Filnamnet behålls
+ * ("mark-paid") som betalnings-flödets e2e-hem, men SUBJEKTET har flyttat på
+ * TVÅ sätt sedan förra formen:
+ *
+ * 1. Betalningar är INTE längre ett eget toppnivå-block
+ *    (`section[aria-labelledby="grupp-betalningar"]`, PRD TASK-145 § AC #1)
+ *    — arbetsytan är inflyttad som fällbar LÄSYTA under registret, inuti
+ *    "Anmälda deltagare" (`section[aria-labelledby="grupp-deltagare"]`).
+ * 2. Ytan är INTE längre skrivbar. PRD TASK-145 § Implementationsbeslut
+ *    river K27-anden öppet ("Lotta lämnar inte sidan för avprickning"):
+ *    "en halv redigerbarhet (kryssa ja, skriva nej) är en sämre gräns än
+ *    ingen alls." BÅDA betalnings-kryssen, noteringsredigeringen och
+ *    Påminn-knappen flyttar till Åtgärds-sidan (TASK-147, ej byggd).
+ *    Följaktligen är de gamla SKRIV-testerna (kryssets optimistiska
+ *    live-härledning, av-bock, notering-blur-save, Påminn+mailto+historik-
+ *    logg, fel-väg-rollback) INTE uppdaterade till nya lokatorer — de är
+ *    KONVERTERADE till sin motsats: mekaniska bevis att ytan INTE kan
+ *    skriva (DoD #7). Att låtsas testa ett skrivflöde som inte längre
+ *    existerar vore otillförlitligt, inte bevarad täckning.
+ *
+ * "Betalningar — kortet med saknas-deltan"-sviten (de gamla `delta-avgifter`/
+ * `delta-slutbetalningar`-testid-testerna mot `BetalningsInnehall`s egen
+ * `<dl>`) är RIVEN i sin helhet, inte konverterad: den underliggande summan
+ * (avgifter/slutbetalningar mottagna, röda deltan, avbokad-exkludering) är
+ * SAMMA formel (`betalningsSplit()`, delad) som TASK-145.1/145.2:s
+ * summeringsblock (`HallplatsToppA`) redan renderar ovillkorligt på
+ * produktionens eventsida och redan har täckning för
+ * (`tests/e2e/event-bor-over.staging.test.ts`, `Anmälningsavgifter…mottagna`-
+ * assertionen). Ett duplicerat test mot ett element som inte längre
+ * existerar (`BetalningsInnehall`s `<dl>`, borta med toppblocket) hade
+ * bevisat samma sanning en gång till, inte utökat täckningen.
  *
  * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
- * testMatch-kontrakt, inte staging-exklusivt).
- *
- * **Deterministisk via `page.route`-mock** av get-event + get-registrations +
- * update-record — mark-paid-precedentens split: SERVER-write-kontraktet
- * (allowlist deny-by-default, faktisk mutation, omläsning, restore) bevisas av
- * `tests/api/update-record.staging.test.ts` mot skarp staging; dessa e2e
- * bevisar KLIENTENS form och beteende flak-fritt utan att mutera delad
- * staging-data.
- *
- * Täckning (AC #2 + facit-avprickningen): röda saknas-deltan (minustecknet
- * bär, text-error computed), disclosure-raden, flikarna med live-räknare,
- * deadline-STATUS-BADGEN (start − 14-regeln, LÅST), kryssens optimistiska
- * live-härledning (delta + flik-flytt FÖRE nätverkssvar), noteringens
- * blur-commit, Påminn-mailikonens mailto-ämnesrad + historik-logg,
- * Ej relevant-fallet, fel-väg med rollback, tomlägen, axe 0.
+ * testMatch-kontrakt, inte staging-exklusivt). Deterministisk via
+ * `page.route`-mock av get-event + get-registrations + update-record —
+ * SERVER-write-kontraktet prövas mot skarp staging i
+ * `tests/api/update-record.staging.test.ts`; dessa e2e bevisar klientens
+ * form och beteende flak-fritt utan att mutera delad staging-data.
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
@@ -33,12 +52,9 @@ const EVENT_ID = 'recBETALNING0001';
 // Scenario 2-id för tvåscenario-testerna (S75-diagnos 2): ADR-072 persistar
 // query-cachen (throttle-synk ~1 s, src/queries/persist.ts) och global
 // staleTime är 5 min (router.ts) — en re-goto på SAMMA id hydreras därför ur
-// scenario 1:s cache och refetchar aldrig (scenario 2:s mock nås aldrig; CI
-// stabilt rött, lokalt lyckoträff). Distinkta id ger distinkta query-nycklar
-// (['events','detail',id] + ['registrations', event.id]) → scenario 1-data kan
-// per konstruktion aldrig servera scenario 2. OBS: scenario 2:s EVENT-mock
-// måste bära id:t — registrations-nyckeln byggs ur SVARETS event.id
-// (Betalningar.tsx), inte ur route-parametern.
+// scenario 1:s cache och refetchar aldrig. Distinkta id ger distinkta
+// query-nycklar (['events','detail',id] + ['registrations', event.id]) →
+// scenario 1-data kan per konstruktion aldrig servera scenario 2.
 const EVENT_ID_2 = 'recBETALNING0002';
 
 type Mock = Record<string, unknown>;
@@ -74,7 +90,10 @@ function eventMock(overrides: Mock = {}): Mock {
   };
 }
 
-/** Komplett Registration som passerar RegistrationSchema (.parse i adaptern). */
+/** Komplett Registration som passerar RegistrationSchema (.parse i adaptern).
+    Samtliga status='Bekräftad (mail skickat)' som DEFAULT — registrets steg-
+    hinkar (TASK-145.1) sorterar annars obekräftade överst, vilket är
+    korrekt men ovidkommande brus för denna sviten fokus (betalningsytan). */
 function reg(id: string, namn: string, overrides: Mock = {}): Mock {
   return {
     id,
@@ -85,7 +104,7 @@ function reg(id: string, namn: string, overrides: Mock = {}): Mock {
     telefon: null,
     eventNamn: 'Resor i medvetandet 1',
     ort: null,
-    status: 'Obekräftad',
+    status: 'Bekräftad (mail skickat)',
     flagga: null,
     anmalningsavgift: 'Ej mottagen',
     slutbetalning: 'Ej mottagen',
@@ -108,26 +127,18 @@ function reg(id: string, namn: string, overrides: Mock = {}): Mock {
 /**
  * Facit-listan (fiktiva namn — PII-regeln; FACIT-betalningar-arbetsytan):
  * 8 aktiva → 5 av 8 avgifter mottagna (−3), 2 slutbetalningar (−6);
- * Saknar betalning (6) · Klara (2). Eva har avgift-påminnelse 18 juli;
- * Sara har notering + BÅDA påminnelserna 16 juli (K34-demot).
- * En AVBOKAD rad ingår — den ska ALDRIG räknas (basens Är aktiv-regel).
+ * Saknar betalning (6) · Klara (2). Sara har notering (K34-demot: läs-
+ * texten). En AVBOKAD rad ingår — den ska ALDRIG räknas (basens Är
+ * aktiv-formel) och ska aldrig synas i "Öppna detaljer"-listan.
  */
 function facitRegistrations(): Mock[] {
   return [
-    reg('recBET000000eva1', 'Eva Lindqvist', {
-      paminnelseAnmalningsavgiftSkickad: '2026-07-18T09:00:00.000Z',
-      personId: 'recPERSONeva0001',
-    }),
+    reg('recBET000000eva1', 'Eva Lindqvist', { personId: 'recPERSONeva0001' }),
     reg('recBET00000johan', 'Johan Berg'),
     reg('recBET000000sara', 'Sara Nyström', {
       noteringAnmalningsavgift: 'Lovade betala efter lönen',
-      paminnelseAnmalningsavgiftSkickad: '2026-07-16T09:00:00.000Z',
-      paminnelseSlutbetalningSkickad: '2026-07-16T09:05:00.000Z',
     }),
-    reg('recBET00000peter', 'Peter Åkesson', {
-      anmalningsavgift: 'Mottagen',
-      noteringAnmalningsavgift: 'Swishade 30/6',
-    }),
+    reg('recBET00000peter', 'Peter Åkesson', { anmalningsavgift: 'Mottagen' }),
     reg('recBET00000maria', 'Maria Holm', { anmalningsavgift: 'Mottagen' }),
     reg('recBET0000anders', 'Anders Ek', { anmalningsavgift: 'Mottagen' }),
     reg('recBET00000karin', 'Karin Sjögren', {
@@ -140,7 +151,7 @@ function facitRegistrations(): Mock[] {
       anmalningsavgift: 'Mottagen',
       slutbetalning: 'Mottagen',
     }),
-    // Avbokad — utanför Är aktiv: syns aldrig i räkningar eller flikar.
+    // Avbokad — utanför Är aktiv: syns aldrig i räkningar, register eller arbetsyta.
     reg('recBET0000avbokd', 'Avbokad Person', { status: 'Avbokad/Ombokad' }),
   ];
 }
@@ -223,112 +234,68 @@ function startdatumOmDagar(dagar: number): { iso: string; deadlineText: string }
   return { iso, deadlineText: DAGMANAD.format(deadline) };
 }
 
-function betalningsGrupp(page: Page) {
-  return page.locator('section[aria-labelledby="grupp-betalningar"]');
+/** "Anmälda deltagare"-gruppen — arbetsytan är nu INFLYTTAD häri (AC #1/#2),
+    inte längre ett eget `grupp-betalningar`-toppblock. */
+function gruppen(page: Page) {
+  return page.locator('section[aria-labelledby="grupp-deltagare"]');
 }
 
-/** Klicka ett RAC-kryss via dess LABEL (inputen är visuellt gömd — labeln är
-    den verkliga träffytan; hit-target-checken fäller klick på inputen). */
-async function klickaKryss(page: Page, namn: string) {
-  await betalningsGrupp(page)
-    .getByRole('checkbox', { name: namn })
-    .locator('xpath=ancestor::label[1]')
-    .click();
+/** Den fällbara betalnings-arbetsytan SPECIFIKT (Deltagare.tsx:s
+    `#deltagare-betalningsdetaljer`) — scopar bort registrets EGNA kort/namn
+    så en persons namn i registret inte förväxlas med samma namn i
+    arbetsytans egen person-rad. */
+function arbetsytan(page: Page) {
+  return page.locator('#deltagare-betalningsdetaljer');
 }
 
 async function oppnaDetaljer(page: Page) {
-  await betalningsGrupp(page).getByRole('button', { name: 'Öppna detaljer' }).click();
+  await gruppen(page).getByRole('button', { name: 'Öppna detaljer' }).click();
 }
 
-test.describe('Betalningar — kortet med saknas-deltan (task-18.8, K27)', () => {
-  test('räkneraderna härleds ur anmälningarna; röda deltan med minustecken (text-error computed); avbokad räknas aldrig', async ({
-    page,
-  }) => {
-    await mockSidan(page);
-    await page.goto(`/event/${EVENT_ID}`);
+/** En persons EGEN rad inuti den öppna arbetsytan. */
+function personRad(page: Page, namn: string) {
+  return arbetsytan(page).locator('li').filter({ hasText: namn });
+}
 
-    const grupp = betalningsGrupp(page);
-    // 8 aktiva (avbokade raden UTANFÖR): 5 avgifter mottagna, 2 slutbetalningar.
-    await expect(grupp).toContainText('5 av 8 mottagna');
-    await expect(grupp).toContainText('2 mottagna');
-
-    // Deltan: minustecknet är bäraren (U+2212), rött förstärker (aldrig färg ensam).
-    const deltaAvgifter = grupp.getByTestId('delta-avgifter');
-    const deltaSlut = grupp.getByTestId('delta-slutbetalningar');
-    await expect(deltaAvgifter).toHaveText('−3');
-    await expect(deltaSlut).toHaveText('−6');
-
-    const errorColor = await tokenColor(page, '--mm-error');
-    await expect(deltaAvgifter).toHaveCSS('color', errorColor);
-    await expect(deltaSlut).toHaveCSS('color', errorColor);
-  });
-
-  test('inga deltan när inget saknas; tomläge utan anmälningar saknar disclosure', async ({
-    page,
-  }) => {
-    const klara = [
-      reg('recBET00000karin', 'Karin Sjögren', {
-        anmalningsavgift: 'Mottagen',
-        slutbetalning: 'Mottagen',
-      }),
-    ];
-    await mockSidan(page, { registrations: klara });
-    await page.goto(`/event/${EVENT_ID}`);
-
-    const grupp = betalningsGrupp(page);
-    await expect(grupp).toContainText('1 av 1 mottagna');
-    await expect(grupp.getByTestId('delta-avgifter')).toHaveCount(0);
-    await expect(grupp.getByTestId('delta-slutbetalningar')).toHaveCount(0);
-
-    // Utan anmälningar: räkneraderna kvar (0-form), ingen "Öppna detaljer".
-    // DISTINKT eventId — scenario-isoleringen (se EVENT_ID_2-kommentaren):
-    // re-goto på samma id hade hydrerats ur scenario 1:s persistade cache.
-    await page.unrouteAll();
-    await mockSidan(page, { event: eventMock({ id: EVENT_ID_2 }), registrations: [] });
-    await page.goto(`/event/${EVENT_ID_2}`);
-    await expect(betalningsGrupp(page)).toContainText('0 av 0 mottagna');
-    await expect(betalningsGrupp(page).getByRole('button', { name: 'Öppna detaljer' })).toHaveCount(
-      0,
-    );
-  });
-});
-
-test.describe('Betalningar — arbetsytan (task-18.8, K29–K34)', () => {
+test.describe('Betalningsytan — disclosure, flikar, deadline (TASK-145.4 AC #2/#3)', () => {
   test('disclosure öppnar arbetsytan (aria-expanded/controls); flikar med räknare; växling filtrerar', async ({
     page,
   }) => {
     await mockSidan(page);
     await page.goto(`/event/${EVENT_ID}`);
 
-    const grupp = betalningsGrupp(page);
+    const grupp = gruppen(page);
     const toggle = grupp.getByRole('button', { name: 'Öppna detaljer' });
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     const regionId = await toggle.getAttribute('aria-controls');
-    expect(regionId).toBeTruthy();
+    expect(regionId).toBe('deltagare-betalningsdetaljer');
 
     await toggle.click();
     const stang = grupp.getByRole('button', { name: 'Stäng detaljer' });
     await expect(stang).toHaveAttribute('aria-expanded', 'true');
 
     // Flikarna i familje-kapseln (radiogroup-semantik) med facit-räknarna.
-    const flikar = grupp.getByRole('radiogroup', { name: 'Visa betalningar' });
+    const flikar = arbetsytan(page).getByRole('radiogroup', { name: 'Visa betalningar' });
     const saknarFlik = flikar.getByRole('radio', { name: 'Saknar betalning (6)' });
     const klaraFlik = flikar.getByRole('radio', { name: 'Klara (2)' });
     await expect(saknarFlik).toHaveAttribute('aria-checked', 'true');
 
     // Saknar-fliken: de sex med minst en obetald linje; klara syns inte.
-    await expect(grupp.getByText('Eva Lindqvist')).toBeVisible();
-    await expect(grupp.getByText('Peter Åkesson')).toBeVisible();
-    await expect(grupp.getByText('Karin Sjögren')).toHaveCount(0);
+    await expect(personRad(page, 'Eva Lindqvist')).toBeVisible();
+    await expect(personRad(page, 'Peter Åkesson')).toBeVisible();
+    await expect(personRad(page, 'Karin Sjögren')).toHaveCount(0);
 
     await klaraFlik.click();
     await expect(klaraFlik).toHaveAttribute('aria-checked', 'true');
-    await expect(grupp.getByText('Karin Sjögren')).toBeVisible();
-    await expect(grupp.getByText('Lars Öhman')).toBeVisible();
-    await expect(grupp.getByText('Eva Lindqvist')).toHaveCount(0);
+    await expect(personRad(page, 'Karin Sjögren')).toBeVisible();
+    await expect(personRad(page, 'Lars Öhman')).toBeVisible();
+    await expect(personRad(page, 'Eva Lindqvist')).toHaveCount(0);
+
+    // Avbokad Person syns ALDRIG i arbetsytan (Är aktiv-formeln, oförändrad).
+    await expect(arbetsytan(page).getByText('Avbokad Person')).toHaveCount(0);
   });
 
-  test('deadline-badgen bär start-minus-14-regeln (AC #2): lugnt läge + passerad i error', async ({
+  test('deadline-badgen bär start-minus-14-regeln: lugnt läge + passerad i error', async ({
     page,
   }) => {
     // Lugnt: start om 20 dagar → deadline om 6 dagar, neutral färg.
@@ -337,185 +304,157 @@ test.describe('Betalningar — arbetsytan (task-18.8, K29–K34)', () => {
     await page.goto(`/event/${EVENT_ID}`);
     await oppnaDetaljer(page);
 
-    const badge = betalningsGrupp(page).getByTestId('betalning-deadline');
+    const badge = arbetsytan(page).getByTestId('betalning-deadline');
     await expect(badge).toHaveText(`Deadline ${lugn.deadlineText} · om 6 dagar`);
 
     // Passerad: start om 3 dagar → deadline 11 dagar sedan, error-färg.
-    // DISTINKT eventId — scenario-isoleringen (se EVENT_ID_2-kommentaren):
-    // re-goto på samma id hade hydrerats ur scenario 1:s persistade cache.
     await page.unrouteAll();
     const passerad = startdatumOmDagar(3);
     await mockSidan(page, { event: eventMock({ id: EVENT_ID_2, startdatum: passerad.iso }) });
     await page.goto(`/event/${EVENT_ID_2}`);
     await oppnaDetaljer(page);
 
-    const badge2 = betalningsGrupp(page).getByTestId('betalning-deadline');
+    const badge2 = arbetsytan(page).getByTestId('betalning-deadline');
     await expect(badge2).toHaveText(`Deadline passerad · ${passerad.deadlineText}`);
     await expect(badge2).toHaveCSS('color', await tokenColor(page, '--mm-error'));
   });
 
-  test('kryssets optimistiska live-härledning (AC #2): delta, flik-räknare och grupp-flytt FÖRE nätverkssvar; payload; aria-live', async ({
-    page,
-  }) => {
-    await mockSidan(page);
-    let releaseUpdate: () => void = () => {};
-    const updateGate = new Promise<void>((resolve) => {
-      releaseUpdate = resolve;
-    });
-    let updatePayload: Record<string, unknown> | null = null;
-    await page.route(UPDATE_RECORD, async (route) => {
-      updatePayload = route.request().postDataJSON() as Record<string, unknown>;
-      await updateGate; // flippen måste synas UTAN att vänta på svaret
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
-    });
-
+  test('tomläge i fliken: alla har betalat', async ({ page }) => {
+    const klara = [
+      reg('recBET00000karin', 'Karin Sjögren', {
+        anmalningsavgift: 'Mottagen',
+        slutbetalning: 'Mottagen',
+      }),
+    ];
+    await mockSidan(page, { registrations: klara });
     await page.goto(`/event/${EVENT_ID}`);
     await oppnaDetaljer(page);
-    const grupp = betalningsGrupp(page);
 
-    // Peter: avgift klar, slut saknas → slut-krysset flyttar honom till Klara.
-    await klickaKryss(page, 'Slutbetalning för Peter Åkesson');
-
-    // FÖRE nätverkssvaret (gaten hålls): deltat 6→5, flikarna 6→5 resp. 2→3,
-    // Peter borta ur Saknar-fliken — hela härledningen är live ur cachen.
-    await expect(grupp.getByTestId('delta-slutbetalningar')).toHaveText('−5');
-    await expect(grupp.getByRole('radio', { name: 'Saknar betalning (5)' })).toBeVisible();
-    await expect(grupp.getByRole('radio', { name: 'Klara (3)' })).toBeVisible();
-    await expect(grupp.getByText('Peter Åkesson')).toHaveCount(0);
-
-    // Payload: rätt operation + serverns fält-shape.
-    expect(updatePayload).toMatchObject({
-      operationKey: 'mark-final-payment-paid',
-      recordId: 'recBET00000peter',
-      fields: { Slutbetalning: 'Mottagen' },
-    });
-
-    releaseUpdate();
-    await expect(page.locator('[data-mm-announcer]')).toContainText(
-      'Slutbetalning markerad som mottagen för Peter Åkesson',
-    );
-  });
-
-  test('av-bock skriver Ej mottagen via avgifts-operationen och flyttar tillbaka till Saknar', async ({
-    page,
-  }) => {
-    await mockSidan(page);
-    let releaseUpdate: () => void = () => {};
-    const updateGate = new Promise<void>((resolve) => {
-      releaseUpdate = resolve;
-    });
-    let updatePayload: Record<string, unknown> | null = null;
-    await page.route(UPDATE_RECORD, async (route) => {
-      updatePayload = route.request().postDataJSON() as Record<string, unknown>;
-      await updateGate; // återflytten måste synas UTAN att vänta på svaret
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
-    });
-
-    await page.goto(`/event/${EVENT_ID}`);
-    await oppnaDetaljer(page);
-    const grupp = betalningsGrupp(page);
-
-    await grupp.getByRole('radio', { name: 'Klara (2)' }).click();
-    await klickaKryss(page, 'Anmälningsavgift för Karin Sjögren');
-
-    // FÖRE nätverkssvaret (gaten hålls): återflytten 2→1 och deltat −3→−4 är
-    // live ur cachen. Tillståndet är TRANSIENT — onSettled-refetchen mot den
-    // statiska mocken återställer pre-mutations-facit, så gaten är det enda
-    // deterministiska assert-fönstret (S75-diagnosen, grann-testets mönster).
-    await expect(grupp.getByRole('radio', { name: 'Klara (1)' })).toBeVisible();
-    await expect(grupp.getByTestId('delta-avgifter')).toHaveText('−4');
-
-    expect(updatePayload).toMatchObject({
-      operationKey: 'mark-registration-fee-paid',
-      recordId: 'recBET00000karin',
-      fields: { Anmälningsavgift: 'Ej mottagen' },
-    });
-
-    releaseUpdate();
-    await expect(page.locator('[data-mm-announcer]')).toContainText(
-      'Anmälningsavgift markerad som ej mottagen för Karin Sjögren',
-    );
-  });
-
-  test('noteringen sparas på blur via noterings-operationen med betalningens EGET fält', async ({
-    page,
-  }) => {
-    await mockSidan(page);
-    let updatePayload: Record<string, unknown> | null = null;
-    await page.route(UPDATE_RECORD, async (route) => {
-      updatePayload = route.request().postDataJSON() as Record<string, unknown>;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
-    });
-
-    await page.goto(`/event/${EVENT_ID}`);
-    await oppnaDetaljer(page);
-    const grupp = betalningsGrupp(page);
-
-    const falt = grupp.getByRole('textbox', {
-      name: 'Notering slutbetalning för Johan Berg',
-    });
-    await falt.fill('Betalar via faktura vecka 32');
-    await falt.blur();
-
-    await expect(page.locator('[data-mm-announcer]')).toContainText(
-      'Notering för slutbetalning sparad för Johan Berg',
-    );
-    expect(updatePayload).toMatchObject({
-      operationKey: 'update-registration-payment-note',
-      recordId: 'recBET00000johan',
-      fields: { 'Notering slutbetalning': 'Betalar via faktura vecka 32' },
-    });
-
-    // Befintlig notering renderas ur läs-shapen (facit: Sara/Lovade betala…).
     await expect(
-      grupp.getByRole('textbox', { name: 'Notering anmälningsavgift för Sara Nyström' }),
-    ).toHaveValue('Lovade betala efter lönen');
-  });
-
-  test('Påminn: ikon endast på obetalda linjer, mailto med betalningen i ämnesraden, klick loggar historik-rad direkt', async ({
-    page,
-  }) => {
-    await mockSidan(page);
-    let updatePayload: Record<string, unknown> | null = null;
-    await page.route(UPDATE_RECORD, async (route) => {
-      updatePayload = route.request().postDataJSON() as Record<string, unknown>;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
-    });
-
-    await page.goto(`/event/${EVENT_ID}`);
-    await oppnaDetaljer(page);
-    const grupp = betalningsGrupp(page);
-
-    // K34-historiken ur läs-shapen: Eva (avgift 18 juli) + Sara (båda 16 juli).
-    await expect(grupp.getByText('Påminnelse om anmälningsavgift skickad 18 juli')).toBeVisible();
-    await expect(grupp.getByText('Påminnelse om slutbetalning skickad 16 juli')).toBeVisible();
-
-    // Peters avgift är mottagen → ingen påminn-ikon på den linjen;
-    // hans obetalda slutbetalning har en (ikonen följer linjen, inte personen).
-    await expect(
-      grupp.getByRole('link', { name: 'Påminn Peter Åkesson om anmälningsavgift via mail' }),
-    ).toHaveCount(0);
-    const peterSlut = grupp.getByRole('link', {
-      name: 'Påminn Peter Åkesson om slutbetalning via mail',
-    });
-    await expect(peterSlut).toHaveAttribute(
-      'href',
-      `mailto:peter.åkesson@example.com?subject=${encodeURIComponent(
-        'Påminnelse: slutbetalning för Resor i medvetandet 1',
-      )}`,
-    );
-
-    // Klicket loggar tidsstämpeln (optimistiskt — raden syns direkt).
-    await peterSlut.click();
-    await expect(
-      grupp.getByText(`Påminnelse om slutbetalning skickad ${DAGMANAD.format(new Date())}`),
+      arbetsytan(page).getByRole('radio', { name: 'Saknar betalning (0)' }),
     ).toBeVisible();
-    expect(updatePayload).toMatchObject({
-      operationKey: 'log-payment-reminder',
-      recordId: 'recBET00000peter',
+    await expect(arbetsytan(page).getByText('Alla anmälda har betalat.')).toBeVisible();
+  });
+
+  test('utan aktiva anmälningar: ingen "Öppna detaljer" (arbetsytan har inget att visa)', async ({
+    page,
+  }) => {
+    await mockSidan(page, { event: eventMock({ id: EVENT_ID_2 }), registrations: [] });
+    await page.goto(`/event/${EVENT_ID_2}`);
+    await expect(gruppen(page).getByRole('button', { name: 'Öppna detaljer' })).toHaveCount(0);
+  });
+});
+
+test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#9/#10, DoD #7)', () => {
+  test('kryssen är ALLTID inaktiverade — DoD #7: noll skriv-affordanser', async ({ page }) => {
+    await mockSidan(page);
+    let updateCalled = false;
+    await page.route(UPDATE_RECORD, async (route) => {
+      updateCalled = true;
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
     });
-    const fields = (updatePayload as { fields?: Record<string, unknown> } | null)?.fields ?? {};
-    expect(typeof fields['Påminnelse slutbetalning skickad']).toBe('string');
+
+    await page.goto(`/event/${EVENT_ID}`);
+    await oppnaDetaljer(page);
+
+    // Samtliga kryssrutor på ytan (bägge flikarna) är `isDisabled` — mekaniskt
+    // bevisat, inte antaget: en RAC Checkbox med isDisabled sätter native
+    // `disabled` på sin underliggande input (Playwrights `toBeDisabled()`).
+    const kryssenSaknar = arbetsytan(page).getByRole('checkbox');
+    const antalSaknar = await kryssenSaknar.count();
+    expect(antalSaknar).toBeGreaterThan(0);
+    for (let i = 0; i < antalSaknar; i++) {
+      await expect(kryssenSaknar.nth(i)).toBeDisabled();
+    }
+
+    // Det andra, STARKARE beviset (samma metod README:s review-fix-våg redan
+    // etablerade för proto-läget): Playwright VÄGRAR klicka ett disabled
+    // element — ett genuint klickförsök timeoutar i stället för att lyckas.
+    let klicketTimeoutade = false;
+    try {
+      await arbetsytan(page)
+        .getByRole('checkbox', { name: 'Anmälningsavgift för Peter Åkesson' })
+        .locator('xpath=ancestor::label[1]')
+        .click({ timeout: 2000 });
+    } catch {
+      klicketTimeoutade = true;
+    }
+    expect(klicketTimeoutade).toBe(true);
+
+    // Klara-fliken (den andra av-prickningsformen — "Ej relevant" har inget
+    // kryss alls, se eget test) bär samma egenskap.
+    await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
+    const kryssenKlara = arbetsytan(page).getByRole('checkbox');
+    const antalKlara = await kryssenKlara.count();
+    expect(antalKlara).toBeGreaterThan(0);
+    for (let i = 0; i < antalKlara; i++) {
+      await expect(kryssenKlara.nth(i)).toBeDisabled();
+    }
+
+    expect(updateCalled).toBe(false);
+  });
+
+  test('noteringen renderas som LÄSTEXT — inget redigerbart fält finns (AC #5)', async ({
+    page,
+  }) => {
+    await mockSidan(page);
+    await page.goto(`/event/${EVENT_ID}`);
+    await oppnaDetaljer(page);
+
+    // De arton tomma <Input>-fälten (våg 10) är rivna för gott — noll
+    // textboxar kvar på hela ytan, i BÅDA flikarna.
+    await expect(arbetsytan(page).getByRole('textbox')).toHaveCount(0);
+    await expect(personRad(page, 'Sara Nyström').getByText('Lovade betala efter lönen')).toBeVisible();
+
+    await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
+    await expect(arbetsytan(page).getByRole('textbox')).toHaveCount(0);
+    await expect(personRad(page, 'Karin Sjögren').getByText('Swishade 12/6')).toBeVisible();
+    await expect(personRad(page, 'Karin Sjögren').getByText('Swishade 12/7')).toBeVisible();
+  });
+
+  test('Påminn-ikonen/mailto-länken finns inte längre — utskicket flyttar till Åtgärds-sidan', async ({
+    page,
+  }) => {
+    await mockSidan(page);
+    await page.goto(`/event/${EVENT_ID}`);
+    await oppnaDetaljer(page);
+
+    // Ingen mailto:-länk kvar NÅGONSTANS på ytan (BÅDA flikarna) — Påminn
+    // (K33-slotten) är riven ur läsyte-formen, inte bara dolt.
+    await expect(arbetsytan(page).locator('a[href^="mailto:"]')).toHaveCount(0);
+    await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
+    await expect(arbetsytan(page).locator('a[href^="mailto:"]')).toHaveCount(0);
+  });
+
+  test('Mottagen-pillen visar ordet UTAN datum — Väg C (AC #10): domänmodellen bär ännu inget mottagen-datum-fält', async ({
+    page,
+  }) => {
+    await mockSidan(page);
+    await page.goto(`/event/${EVENT_ID}`);
+    await oppnaDetaljer(page);
+    await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
+
+    // Karin har BÅDA betalningarna mottagna — pillen renderar exakt
+    // "Mottagen" (inget datum-suffix; PROTO_MOTTAGEN_DATUM är riven, och
+    // TASK-147 äger det riktiga fältet). EXAKT text, inte ett substrings-
+    // match, så ett smugglat datum hade fällt testet.
+    const karin = personRad(page, 'Karin Sjögren');
+    await expect(karin.getByText('Mottagen', { exact: true })).toHaveCount(2);
+  });
+
+  test('höger-slotten ("Saknas"/plain "Mottagen" som EGEN redundant rad) finns inte — krysset bär statusen (AC #9)', async ({
+    page,
+  }) => {
+    await mockSidan(page);
+    await page.goto(`/event/${EVENT_ID}`);
+    await oppnaDetaljer(page);
+
+    // "Saknas" som ord förekommer INGENSTANS på ytan — den gamla höger-
+    // slotten sa det, krysset (obockat) säger det nu ensamt.
+    await expect(arbetsytan(page).getByText('Saknas', { exact: true })).toHaveCount(0);
+
+    // Obetalda personer bär INGEN "Mottagen"-pill (bara krysset, obockat).
+    await expect(personRad(page, 'Eva Lindqvist').getByText('Mottagen')).toHaveCount(0);
   });
 
   test('Ej relevant slutbetalning: stilla textrad utan kryss/notering/påminn; räknas som klar', async ({
@@ -530,76 +469,65 @@ test.describe('Betalningar — arbetsytan (task-18.8, K29–K34)', () => {
     ];
     await mockSidan(page, { registrations: lista });
     await page.goto(`/event/${EVENT_ID}`);
-
-    const grupp = betalningsGrupp(page);
-    // Slutbetalnings-deltat räknar INTE Ej relevant: bara Johan saknas (−1).
-    await expect(grupp.getByTestId('delta-slutbetalningar')).toHaveText('−1');
-
     await oppnaDetaljer(page);
-    await grupp.getByRole('radio', { name: 'Klara (1)' }).click();
-    await expect(grupp.getByText('Föreläsnings Person')).toBeVisible();
-    await expect(grupp.getByText('Slutbetalning · Ej relevant (föreläsning)')).toBeVisible();
+
+    await arbetsytan(page).getByRole('radio', { name: 'Klara (1)' }).click();
+    const rad = personRad(page, 'Föreläsnings Person');
+    await expect(rad).toBeVisible();
+    await expect(rad.getByText('Slutbetalning · Ej relevant (föreläsning)')).toBeVisible();
     await expect(
-      grupp.getByRole('checkbox', { name: 'Slutbetalning för Föreläsnings Person' }),
-    ).toHaveCount(0);
-    await expect(
-      grupp.getByRole('link', { name: 'Påminn Föreläsnings Person om slutbetalning via mail' }),
+      rad.getByRole('checkbox', { name: 'Slutbetalning för Föreläsnings Person' }),
     ).toHaveCount(0);
   });
 
-  test('fel-väg: update-record 500 → rollback av delta/flik + MessageBox med Fel-ID', async ({
-    page,
-  }) => {
+  test('axe 0 på öppen arbetsyta (bägge flikarna)', async ({ page }) => {
     await mockSidan(page);
-    await page.route(UPDATE_RECORD, (route) =>
-      route.fulfill({
-        status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Internal', requestId: 'req-18-8-test' }),
-      }),
-    );
-
     await page.goto(`/event/${EVENT_ID}`);
     await oppnaDetaljer(page);
-    const grupp = betalningsGrupp(page);
+    await expect(arbetsytan(page).getByRole('radiogroup', { name: 'Visa betalningar' })).toBeVisible();
 
-    await klickaKryss(page, 'Slutbetalning för Peter Åkesson');
+    const resultsSaknar = await new AxeBuilder({ page }).analyze();
+    expect(resultsSaknar.violations).toEqual([]);
 
-    // Rollback: deltat åter −6, Peter kvar i Saknar-fliken; felet synligt med Fel-ID.
-    const alertBox = grupp.getByRole('alert').filter({ hasText: 'Kunde inte uppdatera' });
-    await expect(alertBox).toBeVisible();
-    await expect(alertBox).toContainText('req-18-8-test');
-    await expect(grupp.getByTestId('delta-slutbetalningar')).toHaveText('−6');
-    await expect(grupp.getByRole('radio', { name: 'Saknar betalning (6)' })).toBeVisible();
-    // exact: felrubriken bär också namnet — här avses radens namn-element.
-    await expect(grupp.getByText('Peter Åkesson', { exact: true })).toBeVisible();
+    await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
+    const resultsKlara = await new AxeBuilder({ page }).analyze();
+    expect(resultsKlara.violations).toEqual([]);
   });
+});
 
-  test('tomläge i fliken: alla har betalat', async ({ page }) => {
-    const klara = [
-      reg('recBET00000karin', 'Karin Sjögren', {
-        anmalningsavgift: 'Mottagen',
-        slutbetalning: 'Mottagen',
+test.describe('Utskickshistoriken som Tidslinje (TASK-145.4 AC #8)', () => {
+  test('utskicken renderas som Tidslinje med KLOCKSLAG — inte som klump i en värde-slot', async ({
+    page,
+  }) => {
+    const lista = [
+      reg('recBET000000eva1', 'Eva Lindqvist', {
+        status: 'Bekräftad (mail skickat)',
+        paminnelseAnmalningsavgiftSkickad: '2026-07-18T09:15:00.000Z',
       }),
     ];
-    await mockSidan(page, { registrations: klara });
+    await mockSidan(page, { registrations: lista });
     await page.goto(`/event/${EVENT_ID}`);
     await oppnaDetaljer(page);
 
-    const grupp = betalningsGrupp(page);
-    await expect(grupp.getByRole('radio', { name: 'Saknar betalning (0)' })).toBeVisible();
-    await expect(grupp.getByText('Alla anmälda har betalat.')).toBeVisible();
+    const eva = personRad(page, 'Eva Lindqvist');
+    // Text och tid är SKILDA noder (Tidslinje.tsx) — texten bär, tiden mutad
+    // under, med klockslag (inte bara dag+månad som registrets kort).
+    await expect(eva.getByText('Påminnelse om anmälningsavgift', { exact: true })).toBeVisible();
+    // sv-SE Intl-formatet lägger "kl." mellan datum och klockslag ("18 juli
+    // kl. 11:15") — mätt i renderad DOM, inte antaget.
+    await expect(eva.getByText(/18 juli kl\. \d{2}:\d{2}/)).toBeVisible();
   });
 
-  test('axe 0 på öppen arbetsyta (nya mönster: kryss, flikar, badge, historik)', async ({
-    page,
-  }) => {
-    await mockSidan(page);
+  test('tom logg: frånvaron sägs rakt ut, ingen klump-rad', async ({ page }) => {
+    const lista = [reg('recBET00000johan', 'Johan Berg', { status: 'Bekräftad (mail skickat)' })];
+    await mockSidan(page, { registrations: lista });
     await page.goto(`/event/${EVENT_ID}`);
     await oppnaDetaljer(page);
-    await expect(betalningsGrupp(page).getByRole('radiogroup')).toBeVisible();
 
-    const results = await new AxeBuilder({ page }).analyze();
-    expect(results.violations).toEqual([]);
+    await expect(
+      personRad(page, 'Johan Berg').getByText(
+        'Utskickslogg visas här — inget skickat ännu till denna person',
+      ),
+    ).toBeVisible();
   });
 });

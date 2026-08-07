@@ -34,7 +34,6 @@ import {
   harPaminnelse,
   isHallplatsVariant,
   kategoriPillText,
-  PROTO_MOTTAGEN_DATUM,
 } from './hallplats-steg-prototyp';
 
 /**
@@ -233,16 +232,55 @@ function BetalKryss({
 }
 
 /**
- * [PROTOTYPE] [S93] ITERATIONSVÅG 10 — betalningen som ETIKETT-VÄRDE-RAD
- * (Marcus 2026-08-06: "designmässigt är det skit … vi får hämta inspiration
- * från detalj-sidan för anmälan").
+ * [TASK-145.4] MOTTAGEN-PILLENS TEXT — VÄG C (Marcus 2026-08-07, PRD TASK-145
+ * § Implementation Notes: "vi måste ha in datum, det har alltid proffs …
+ * Det gör inget att gamla betalningar inte har datum"). Datum NÄR
+ * domänmodellens fält bär värde, annars bara "Mottagen" — ALDRIG ett
+ * fabricerat datum (RÅ-disciplinen; samma disciplin `AnmalanDetail.tsx`
+ * redan följer för sina egna tidsstämplar).
+ *
+ * `iso` kommer f.n. ALLTID som `null`: `Registration` bär ännu inget
+ * mottagen-datum-fält. TASK-147 äger de två additiva dateTime-fälten i
+ * basen, allowlist-utökningen och skrivvägen som stämplar datumet vid
+ * avprickning — att lägga fältet i domänmodellen HÄR, för ett bas-fält som
+ * inte är beslutat, vore att föregripa beslutet i kod (över-engineering-
+ * vakten; samma resonemang som höll `PROTO_MOTTAGEN_DATUM` prototyp-lokal
+ * i stället för i `Registration` — den konstanten är riven med denna skiva,
+ * se `hallplats-steg-prototyp.ts`). ACCEPTERAD KONSEKVENS (PRD, öppet
+ * bokförd): appen bär permanent TVÅ KLASSER i samma lista — nya betalningar
+ * visar datum, gamla visar bara "Mottagen". Den konsekvensen gäller redan
+ * från dag ett, eftersom ingen betalning ännu KAN bära ett datum.
+ *
+ * Ren funktion, oexporterad: kontraktet ("datum när det finns, annars bara
+ * ordet") är testbart via komponentens rendering redan idag — TASK-147
+ * behöver bara byta ut anropsplatsens `null` mot det riktiga fältet när
+ * det landar.
+ */
+function mottagenPillText(iso: string | null): string {
+  if (!iso || Number.isNaN(Date.parse(iso))) return 'Mottagen';
+  return `Mottagen ${DAGMANAD.format(new Date(iso))}`;
+}
+
+/**
+ * [TASK-145.4] BETALNINGEN SOM ETIKETT-VÄRDE-RAD, LÄSYTA (våg 10, Marcus
+ * 2026-08-06: "designmässigt är det skit … vi får hämta inspiration från
+ * detalj-sidan för anmälan"; formen amenderad av PRD TASK-145
+ * § Implementationsbeslut, "Eventsidan är en LÄSYTA").
  *
  * Formen är `EtikettVardeRad`:s (DetaljGrupp.tsx): etiketten dämpad till
  * vänster, VÄRDET primärt till höger, 48 px radhöjd (py-3 + 24 px). Krysset
- * bor i etikett-slotten — avprickningen stannar på ytan (Del 3 beslut 1:
- * "Lotta lämnar inte sidan för avprickning"), men den slutar skrika.
+ * bor i etikett-slotten och visar STATUS — det SKRIVER ingenting.
  *
- * TRE RIVNINGAR mot föregående form, var och en med sitt skäl:
+ * K27-ANDEN ÄR RIVEN, öppet bokfört (PRD TASK-145 § Implementationsbeslut):
+ * grillad samsyn S93 beslut 1 lät avprickningen stanna kvar interaktiv på
+ * denna yta ("Lotta lämnar inte sidan för avprickning"); PRD:n river det
+ * medvetet — "en halv redigerbarhet (kryssa ja, skriva nej) är en sämre
+ * gräns än ingen alls". BÅDA betalnings-kryssen flyttar till Åtgärds-sidan
+ * (TASK-147). Krysset här är därför ALLTID `isDisabled` — ingen
+ * `mutationer`/`protoDataMode`-grind behövs längre, eftersom det aldrig
+ * finns något att grinda (DoD #7: noll skriv-affordanser).
+ *
+ * TRE RIVNINGAR mot föregående form (våg 10), var och en med sitt skäl:
  *
  * (a) `<Input>`-fältet är BORTA. Ytan är för ÖVERBLICK — editering görs på
  *     åtgärds-sidan (Marcus 2026-08-06). Nio personer × två fält var arton
@@ -259,85 +297,42 @@ function BetalKryss({
  *
  * (c) Värde-slotten är ALDRIG tom (`AnmalanDetail`-disciplinen "—"/"Ingen
  *     notering"): finns notering ÄR den värdet, annars statusordet dämpat.
+ *
+ * HÖGER-SLOTTEN ("Saknas"/"Mottagen" utan datum) är RIVEN sedan tidigare
+ * (våg 13, Marcus 2026-08-06: "'Saknas' kan vi ta bort också … 'Mottagen'
+ * … säger ju bara exakt samma sak som kryssrutan") — krysset bar redan
+ * samma information (AC #9). MOTTAGEN-PILLEN nedan är INTE den raden: den
+ * renderas alltid när `vald`, med eller utan datum (AC #10), eftersom den
+ * bär vad krysset omöjligt kan bära — antingen datumet, eller det faktum
+ * att basen ännu inte känner det.
  */
 function BetalningsLasRad({
   registration,
   betalning,
   vald,
   notering,
-  mutationer,
-  protoDataMode = false,
 }: {
   registration: Registration;
   betalning: Betalning;
   vald: boolean;
   notering: string | null;
-  mutationer: ArbetsytansMutationer;
-  protoDataMode?: boolean;
 }) {
   const namn = displayName(registration);
   const label = BETALNING_LABEL[betalning];
   const egenNotering = notering?.trim();
-  // [PROTOTYPE] [S93] våg 14 — se PROTO_MOTTAGEN_DATUM: datumet är
-  // prototyp-lokalt tills basen får sina två additiva dateTime-fält.
-  const protoDatumIso = vald
-    ? PROTO_MOTTAGEN_DATUM[registration.id]?.[betalning === 'avgift' ? 'avgift' : 'slut']
-    : undefined;
-  const mottagenDatum =
-    protoDatumIso && !Number.isNaN(Date.parse(protoDatumIso))
-      ? DAGMANAD.format(new Date(protoDatumIso))
-      : null;
 
   return (
-    // `title`-tooltipen med proto-förklaringen är riven (S93 våg 20) —
-    // `protoDataMode` håller krysset inaktiverat, texten är borta.
     <div className="py-3">
-      {/* HÖGER-SLOTTEN ÄR RIVEN (våg 13, Marcus 2026-08-06: "'Saknas' kan vi
-          ta bort också. Det räcker det ej kryssade rutan, + att vi har togglen
-          högst upp" · "Att bara ha 'Mottagen' … säger ju bara exakt samma sak
-          som kryssrutan, eller hur?").
-
-          Han har rätt på båda, och räkningen är värre än den låter: i fliken
-          "Saknar betalning (9)" sa ytan SAMMA sak tre gånger — fliknamnet, det
-          obockade krysset och ordet "Saknas". "Mottagen" sa den två gånger.
-          Ingen av dem bar något krysset inte redan bär.
-
-          MOTTAGEN-PILLEN (våg 14) är däremot INTE redundant och står kvar —
-          den bär ett DATUM krysset omöjligt kan bära. Formen speglar
-          deadline-pillen i samma vy ("ord · datum" i en rounded-full kapsel);
-          `bg-bg-muted` i stället för deadline-pillens `bg-surface`, eftersom
-          personkortet självt redan är `bg-surface` och pillen annars försvann.
-
-          DATUMET ÄR PROTOTYP-LOKALT (PROTO_MOTTAGEN_DATUM i
-          hallplats-steg-prototyp.ts) — basen bär inget mottagen-fält ännu, och
-          det är EJ beslutat. Se den konstantens docblock för hela skälet.
-
-          KVAR STÅR ÄVEN "Ej relevant (föreläsning)" — den enda utsagan på ytan
-          som saknar kryss och därför inte kan vara redundant. */}
       <div className="flex items-center justify-between gap-4">
-        <BetalKryss
-          text={label}
-          namn={namn}
-          vald={vald}
-          lugn
-          disabled={protoDataMode}
-          onChange={(v) => {
-            if (protoDataMode) return;
-            mutationer.status.mutate({
-              registration,
-              betalning,
-              value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
-            });
-          }}
-        />
-        {mottagenDatum && (
+        <BetalKryss text={label} namn={namn} vald={vald} lugn disabled onChange={() => {}} />
+        {vald && (
           // Pill-skalans `sm` (våg 16) — var px-2.5 py-1, alltså `md`-steget,
           // vilket gjorde den bredare än kategori-pillen på samma kort.
           // Fyllningen är `bg-bg-muted` och det är RÄTT här: denna pill står
           // INUTI kortet (bg-surface), inte på namnraden — muted mot vitt är
           // samma 1.09 som vitt mot muted, bara omvänt håll.
           <span className="shrink-0 rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
-            Mottagen {mottagenDatum}
+            {mottagenPillText(null)}
           </span>
         )}
       </div>
@@ -750,8 +745,6 @@ function BetalningsPersonRad({
             betalning="avgift"
             vald={avgiftKlar(registration)}
             notering={registration.noteringAnmalningsavgift ?? null}
-            mutationer={mutationer}
-            protoDataMode={protoDataMode}
           />
           {registration.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
             // Ej relevant får radens form men ALDRIG ett kryss — en av-bock
@@ -773,8 +766,6 @@ function BetalningsPersonRad({
               betalning="slut"
               vald={registration.slutbetalning === PaymentStatus.MOTTAGEN}
               notering={registration.noteringSlutbetalning ?? null}
-              mutationer={mutationer}
-              protoDataMode={protoDataMode}
             />
           )}
           {/* UTSKICKSLOGGEN (våg 11). Vägen hit i två steg, båda värda att

@@ -14,7 +14,6 @@ import { queryKeys } from '@/queries/keys';
 import { Anteckningar } from './detail/Anteckningar';
 import { Atgarder, AtgarderKort, CheckInKort, SkrivUtKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
-import { Betalningar } from './detail/Betalningar';
 import { Deltagare } from './detail/Deltagare';
 import { Gruppdynamik } from './detail/Gruppdynamik';
 import { isHallplatsVariant } from './detail/hallplats-steg-prototyp';
@@ -321,11 +320,15 @@ export function EventDetail({ eventId }: { eventId: string }) {
           hela deltagarlistan. Bara det senare tjänar på att gå att fälla. */}
       <Deltagare event={event} />
 
-      {/* Betalningar (task-18.8): röda saknas-deltan + inline-ARBETSYTAN
-          (K27–K34) — ersätter 18.1:s interim-rader och den gamla
-          betalnings-vyn (K27: Marcus "stanna på samma sida"). Deltan och
-          grupper härleds LIVE ur anmälnings-cachen, inte event-aggregaten. */}
-      <Betalningar event={event} />
+      {/* [TASK-145.4] Betalningar som TOPPNIVÅ-block är RIVET (AC #1; PRD
+          TASK-145 § Implementationsbeslut, "Betalnings-toppblocket
+          försvinner"). Arbetsytan (`BetalningsDetaljer`, deadline-badgen
+          inkluderad) är inflyttad som fällbar LÄSYTA under registret — se
+          `Deltagare.tsx`s `ArbetsKo` ("Öppna detaljer"). `Betalningar`/
+          `BetalningsInnehall` (Betalningar.tsx) står kvar som overkallad,
+          vestigial kod: städning är uttryckligen utanför denna skivas
+          omfattning (PRD § Utanför omfattningen, "Skarpa betalningsvyns
+          kvarvarande kod utanför det som flyttar"). */}
 
       {/* Närvaro-registret (task-18.9; K60): genomfört event → LMS-register
           (rader × sessioner, Total närvaro %); kommande event → lugnt läge.
