@@ -4,7 +4,7 @@ title: 'Skiva: Registret som EN lista — steg-hinkar, steg-märken, FIFO'
 status: To Do
 assignee: []
 created_date: '2026-08-07 08:57'
-updated_date: '2026-08-07 12:38'
+updated_date: '2026-08-07 13:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -117,9 +117,72 @@ ersättningen (badge tar dess plats) lämnades OFÖRÄNDRAD — den har redan
 Marcus-precedens ("det räcker att den är filtrerbar", flik-togglen lever
 kvar) och skapar ingen informationslucka. Se `Deltagare.tsx`s
 `KortInnehall`-docblock för fullständig motivering.
+
+## Uppföljning — AC #11 (fd #9) preciserad: uppdatera i stället för att lämna rött
+
+Orkestrerarens rättelse (efter PR #885 landade på main, AC-numreringen skiftade
+9→11 och texten omskrevs till "assertioner SKA uppdateras, inte lämnas röda"):
+de två filerna vars subjekt DENNA skiva medvetet ändrat är nu uppdaterade i
+stället för lämnade röda.
+
+**`tests/e2e/event-deltagare.staging.test.ts` — FÖRE 6 gröna/11, EFTER
+11 GRÖNA/11.** Fem tester omskrivna (samma djup, ny form):
+- "kön är FAST och äldst först; arkivet är fällbart..." → "registret är EN
+  steg-hink + FIFO-sorterad lista — ingen fällbar arkiv-rubrik längre"
+  (regressionsvakt mot att GruppRubrik/accordion återuppstår + full
+  ordnings-/märkes-verifiering).
+- "arkivets default FÖLJER kön..." (fynd (b), tillståndet riven med
+  accordionen) → "registret visar ALLA direkt när ingen väntar på
+  bekräftelse — inget dolt tillstånd kvar" (samma Lotta-värde, ny mekanism).
+- "summeringsradens klick FILTRERAR..." — tre `getByText('Obekräftade
+  (2)'/'Bekräftade (2)')`-rader bytta mot `getByTestId('deltagar-register')`
+  synlighet; SJÄLVA filter-/Rensa-mekaniken (`traffar`, oförändrad kod) var
+  redan grön och rörs inte.
+- "kategori-flikarna filtrerar..." — kategori-pill-assertioner bytta mot
+  steg-märke (`.last()`, samma breddlås-mönster som event-detail.staging);
+  "Bekräftade (1)"-klicket + "Inga obekräftade"-texten bytta mot direkt
+  synlighet i registret.
+- "axe 0 i grundläget, i filtrerat läge och med arkivet utfällt" → tredje
+  a11y-läget bytt från "arkivet utfällt" (riven yta) till "markera-läget
+  aktivt" (registrets NYA extra-interaktiva tillstånd — checkboxar,
+  batch-baren — samma roll den gamla accordion-expansionen spelade).
+
+Ny helper `kortet(page, namn)` tillagd (samma konvention som
+`event-detail.staging.test.ts`).
+
+**`tests/e2e/event-detail.staging.test.ts`, "Personkorten"-blocket — FÖRE
+0 gröna/8, EFTER 8 GRÖNA/8.** `oppnaSidan()`s "Bekräftade (2)"-klick riven
+(navigations-fix, matchar exakt det tidigare byggförsökets korrekta ansats).
+Tre assertionsgrupper uppdaterade till steg-märkes-semantiken (Anna, David i
+identitets-testet + Bertil i 390px-testet): kategori-/Obekräftad-pillen
+`toHaveCount(0)`, steg-märket `.last().toBeVisible()`.
+
+**Avsiktlig DIVERGENS från det tidigare byggförsökets mönster, öppet
+bokförd:** "ENDAST utförda åtgärder renderas — ej-skickat visas aldrig"
+(David: Bekräftelse/Påminnelse/Eventinfo-raderna) lämnades **HELT
+OFÖRÄNDRAD** — bara `oppnaSidan()`-fixen krävdes. Det tidigare försöket
+gjorde `hallplatsMarke` ovillkorlig utan `visaUtskicksRader`-motsvarigheten,
+vilket TOG BORT de raderna (matchade inte produktionens verkliga beteende).
+Denna skivas `visaUtskicksRader`-fynd (se ovan) håller dem kvar i
+produktionens register, så testets URSPRUNGLIGA assertioner var redan
+korrekta för den faktiska implementationen.
+
+**`event-bekraftelse.staging.test.ts` — orörd, 10 gröna/11 röda, ALDRIG
+raderad.** Subjektet (Markera-lägets ÖVRIGA form: batch-barens knapptext,
+bekräfta-flödet, interim-utgången) rivs i `TASK-145.3`, som äger
+dispositionen EXPLICIT via sin egen AC #2 ("bekräfta-flödet med
+kontrollfråga är RIVET ur eventsidan, inte dolt") och AC #4
+("Avprickningens E2E-täckning hanteras EXPLICIT när bekräfta-flödet rivs:
+filen tas inte bort tyst utan att TASK-147 bär skulden att återupprätta
+täckningen"). Verifierat mot `task-145.3`s kort — namngiven, inte glömd.
+
+**`event-bor-over.staging.test.ts` — orörd, 6/6 GRÖNA, omkörd och
+bekräftad oförändrad.**
+
+Alla fyra siffror mätta EMPIRISKT mot `chromium-authenticated` (egen
+dev-server port 5174), inte förväntade. Samtliga fyra lokala DoD-grindar
+(typecheck/biome/build/test:api) omkörda gröna efter ändringarna.
 <!-- SECTION:NOTES:END -->
-
-
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

@@ -4,8 +4,13 @@ import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.4 — Anmälda deltagare som ARBETSKÖ (S73-facit K35–K58): summeringsrader
- * med klickfilter, kategori-flikar, FAST Obekräftade-kö + fällbart Bekräftade-arkiv och
- * eventinfo-signalens alltid reserverade slot.
+ * med klickfilter, kategori-flikar och eventinfo-signalens alltid reserverade
+ * slot. [ÄNDRAT, TASK-145.1] Obekräftade-kön/Bekräftade-arkivet (var sin
+ * `GruppRubrik`, fällbar accordion) är RIVNA — registret är sedan denna
+ * skiva EN ovillkorlig lista, steg-hink- + FIFO-sorterad, med steg-märket
+ * som enda grupperingssignal (se `Deltagare.tsx`s `ArbetsKo`-docblock för
+ * hela skivgränsen). Summeringsraderna, klickfiltret och kategori-flikarna
+ * är OFÖRÄNDRADE.
  *
  * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
  * testMatch-kontrakt, inte staging-exklusivt).
@@ -17,7 +22,7 @@ import { mockValjarLista } from './helpers/valjar-lista';
  * bevisar KLIENTENS form och beteende flak-fritt utan delad staging-data.
  *
  * Täckning: summeringsradernas ordning + värden (AC #2), klickfiltret med
- * Rensa filtret, grupperingen med äldst-först/senast-först (AC #2),
+ * Rensa filtret, registrets steg-hink- + FIFO-gruppering (TASK-145.1 AC #2/#3),
  * kategori-flikarna, signal-slottens båda lägen utan geometri-hopp (AC #3),
  * avbokade räknas bort, axe 0.
  */
@@ -169,6 +174,12 @@ function gruppen(page: Page) {
   return page.locator('section[aria-labelledby="grupp-deltagare"]');
 }
 
+/** [TASK-145.1] Kortet för en namngiven deltagare — samma konvention som
+    `event-detail.staging.test.ts`s `kortet()`. */
+function kortet(page: Page, namn: string) {
+  return gruppen(page).getByTestId('deltagar-kort').filter({ hasText: namn });
+}
+
 async function oppnaEventsidan(page: Page): Promise<void> {
   await page.goto(`/event/${EVENT_ID}`);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -201,54 +212,59 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(gruppen(page).getByText('Eva Sten')).toHaveCount(0);
   });
 
-  test('kön är FAST och äldst först; arkivet är fällbart och senast först', async ({ page }) => {
+  // [ÄNDRAT, TASK-145.1] Obekräftade-kön och Bekräftade-arkivet (var sin
+  // `GruppRubrik`, egen äldst-/senast-först-sortering, fällbar accordion) är
+  // rivna (AC #1) — registret är sedan denna skiva EN ovillkorlig lista,
+  // sorterad på fyra steg-hinkar (väntar på bekräftelse → avgift saknas →
+  // slut saknas → klara, AC #2) och FIFO (äldst-registrerad-först) inom
+  // varje hink (AC #3). Steg-märket ÄR grupperingen — inga sektionsrubriker
+  // (AC #4/#5). Ersätter det gamla testet med samma DJUP mot den nya formen
+  // i stället för att lämnas rött (AC #11 klausul 1).
+  test('registret är EN steg-hink + FIFO-sorterad lista — ingen fällbar arkiv-rubrik längre', async ({
+    page,
+  }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    const bekraftade = gruppen(page).getByRole('button', { name: 'Bekräftade (2)', exact: true });
+    // Regressionsvakt: den gamla accordion-knappen/rubriktexten får aldrig
+    // återuppstå (Marcus design-review S91 gäller nu båda de forna grupperna).
+    await expect(gruppen(page).getByRole('button', { name: /^Bekräftade/ })).toHaveCount(0);
+    await expect(gruppen(page).getByText('Obekräftade (2)')).toHaveCount(0);
+    await expect(gruppen(page).getByText('Bekräftade (2)', { exact: true })).toHaveCount(0);
 
-    // Obekräftade-rubriken är INGEN knapp längre (Marcus design-review S91):
-    // kön ska tömmas, inte gömmas, och den visar ändå aldrig mer än ~3 kort.
-    // Regressionsvakt — återinförs en växling här faller detta fall.
-    await expect(gruppen(page).getByText('Obekräftade (2)')).toBeVisible();
-    await expect(gruppen(page).getByRole('button', { name: 'Obekräftade (2)' })).toHaveCount(0);
-
-    // Inbox-fokus (K40): kön står alltid öppen, arkivet är ett klick bort.
-    await expect(bekraftade).toHaveAttribute('aria-expanded', 'false');
-
-    // ÄLDST FÖRST i kön: Bertil (06-20) före Anna (07-01).
-    const ko = gruppen(page).getByTestId('obekraftade-ko');
-    await expect(ko).toBeVisible();
-    expect(await ko.getByTestId('deltagar-namn').allTextContents()).toEqual([
+    // Steg-hink (AC #2): Bertil/Anna (väntar på bekräftelse) FÖRE David/
+    // Cecilia (väntar på betalning — ingen har mottagen anmälningsavgift).
+    // FIFO inom hink (AC #3): Bertil (06-20) före Anna (07-01); David
+    // (06-25) före Cecilia (07-05).
+    const register = gruppen(page).getByTestId('deltagar-register');
+    await expect(register).toBeVisible();
+    expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Bertil Sund',
       'Anna Ek',
-    ]);
-
-    // SENAST FÖRST i arkivet: Cecilia (07-05) före David (06-25) — panelen är
-    // dold tills accordionen öppnas.
-    const arkivPanelId = await bekraftade.getAttribute('aria-controls');
-    const arkiv = page.locator(`#${arkivPanelId}`);
-    await expect(arkiv).toBeHidden();
-    await bekraftade.click();
-    await expect(bekraftade).toHaveAttribute('aria-expanded', 'true');
-    expect(await arkiv.getByTestId('deltagar-namn').allTextContents()).toEqual([
-      'Cecilia Lund',
       'David Nord',
+      'Cecilia Lund',
     ]);
 
-    // Toggle tillbaka — accordionen stänger igen.
-    await bekraftade.click();
-    await expect(arkiv).toBeHidden();
+    // Steg-märket ÄR grupperingen (AC #4) — exakt ETT märke per person
+    // (AC #5). `.last()`: HallplatsMarke:s breddlås staplar alla sex
+    // etiketterna i samma grid-cell (fem aria-hidden-platshållare + den
+    // synliga sist i DOM-ordningen) — texten matchar annars flera noder.
+    await expect(
+      kortet(page, 'Bertil Sund').getByText('Väntar på bekräftelse').last(),
+    ).toBeVisible();
+    await expect(kortet(page, 'David Nord').getByText('Väntar på betalning').last()).toBeVisible();
   });
 
-  test('arkivets default FÖLJER kön, men ett explicit klick vinner (fynd (b))', async ({
+  // [ÄNDRAT, TASK-145.1] Bekräftade-arkivets forna fäll-/öppna-tillstånd
+  // (`bekraftadeVal`/`bekraftadeOppen`, "fynd (b)") är riven tillsammans med
+  // GruppRubrik-accordionen (AC #1) — det finns inget dolt tillstånd kvar
+  // att växla mellan. Ersätter det gamla testet: samma underliggande värde
+  // för Lotta (hon ska aldrig behöva jaga fram bekräftade i ett dolt läge)
+  // bevisas nu genom att registret ALLTID visar alla direkt, oavsett fixtur
+  // eller filterbyten (AC #11 klausul 1 — uppdatera i stället för att lämna rött).
+  test('registret visar ALLA direkt när ingen väntar på bekräftelse — inget dolt tillstånd kvar', async ({
     page,
   }) => {
-    // `bekraftadeOppen` var förr ett startvärde som beräknades EN gång vid
-    // monteringen — samma sluttillstånd fick därför två utseenden beroende på
-    // hur man kom dit. Nu betyder `null` "aldrig växlad" och härleds live ur
-    // kön; ett klick skriver en riktig boolean som därefter respekteras.
-    // Fixtur utan obekräftade: kön är tom ⇒ registret ska stå UTFÄLLT.
     const allaBekraftade = DELTAGARE.map((r) =>
       r.status === 'Obekräftad'
         ? {
@@ -261,21 +277,27 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await mocka(page, eventDetail(), allaBekraftade);
     await oppnaEventsidan(page);
 
-    const arkiv = gruppen(page).getByRole('button', { name: 'Bekräftade (4)', exact: true });
-    await expect(arkiv).toHaveAttribute('aria-expanded', 'true');
-    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible();
+    // Alla fyra i registret direkt (steg-hink: samtliga saknar mottagen
+    // anmälningsavgift ⇒ EN hink, FIFO: Bertil 06-20 → David 06-25 →
+    // Anna 07-01 → Cecilia 07-05) — ingen accordion att fälla ut.
+    const register = gruppen(page).getByTestId('deltagar-register');
+    await expect(register).toBeVisible();
+    expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual([
+      'Bertil Sund',
+      'David Nord',
+      'Anna Ek',
+      'Cecilia Lund',
+    ]);
 
-    // Explicit fällning vinner över härledningen…
-    await arkiv.click();
-    await expect(arkiv).toHaveAttribute('aria-expanded', 'false');
-
-    // …och överlever en omrendering av hela grenen (filter på och av).
+    // …och registret överlever en omrendering av hela grenen (filter på och
+    // av): den gamla arkiv-knappens `aria-expanded`-mätning ersätts med
+    // registrets egen synlighet genom samma filter-cykel.
     const rad = gruppen(page).getByRole('button', { name: /^Anmälningsbekräftelse/ });
     await rad.click();
+    await expect(register).toBeHidden();
     await gruppen(page).getByRole('button', { name: 'Rensa filtret' }).click();
-    await expect(
-      gruppen(page).getByRole('button', { name: 'Bekräftade (4)', exact: true }),
-    ).toHaveAttribute('aria-expanded', 'false');
+    await expect(register).toBeVisible();
+    await expect(register.getByTestId('deltagar-namn')).toHaveCount(4);
   });
 
   test('summeringsradens klick FILTRERAR till flat lista + Rensa filtret; klick igen rensar', async ({
@@ -290,8 +312,12 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await obekraftadeRad.click();
     await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'true');
 
-    // Accordion-rubrikerna är borta — urvalet står som flat lista.
-    await expect(gruppen(page).getByText('Obekräftade (2)')).toHaveCount(0);
+    // [ÄNDRAT, TASK-145.1] Accordion-rubrikerna (GruppRubrik) är rivna
+    // (AC #1) — urvalet stod redan som flat lista, men "registret" (den
+    // OVILLKORLIGA listan, ny sedan denna skiva) är en HELT ANNAN render-gren
+    // än `traffar`-filtrets flata lista och ska därför vara BORTA medan
+    // filtret är aktivt (samma `traffar != null`-villkor som döljer den).
+    await expect(gruppen(page).getByTestId('deltagar-register')).toHaveCount(0);
     expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Anna Ek',
       'Bertil Sund',
@@ -311,16 +337,17 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
       'Cecilia Lund',
     ]);
 
-    // Rensa filtret → accordions tillbaka.
+    // Rensa filtret → registret tillbaka (AC #1: ingen accordion kvar att
+    // "gå tillbaka till" — den OVILLKORLIGA listan återuppstår i stället).
     await rensa.click();
-    await expect(gruppen(page).getByText('Obekräftade (2)')).toBeVisible();
+    await expect(gruppen(page).getByTestId('deltagar-register')).toBeVisible();
 
     // Klick på en AKTIV rad rensar också (toggle-semantiken).
     await obekraftadeRad.click();
     await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'true');
     await obekraftadeRad.click();
     await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'false');
-    await expect(gruppen(page).getByText('Obekräftade (2)')).toBeVisible();
+    await expect(gruppen(page).getByTestId('deltagar-register')).toBeVisible();
   });
 
   test('kategori-flikarna filtrerar listorna; summeringarna räknar ALLTID hela eventet', async ({
@@ -334,28 +361,32 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(flikar.getByRole('radio', { name: 'Manuella (1)' })).toBeVisible();
     await expect(flikar.getByRole('radio', { name: 'Medföljande (1)' })).toBeVisible();
 
-    // Manuella → bara Bertil (Källa 'Manuell'), och han bär sin pill.
+    // Manuella → bara Bertil (Källa 'Manuell'). [ÄNDRAT, TASK-145.1]
+    // Kategori-pillen ("Manuellt tillagd") har vikit för steg-märket
+    // (AC #4/#5, samma redan Marcus-beslutade princip som `?variant=a`:
+    // "det räcker att den är filtrerbar" — flik-togglen lever kvar orörd).
     await flikar.getByRole('radio', { name: 'Manuella (1)' }).click();
     expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Bertil Sund',
     ]);
-    await expect(gruppen(page).getByText('Manuellt tillagd')).toBeVisible();
+    await expect(gruppen(page).getByText('Manuellt tillagd')).toHaveCount(0);
+    await expect(
+      kortet(page, 'Bertil Sund').getByText('Väntar på bekräftelse').last(),
+    ).toBeVisible();
     // Summeringarna står kvar på hela eventet (K38) — flikvalet rör bara listan.
     await expect(gruppen(page).getByRole('button', { name: /^Anmälningsbekräftelse/ })).toHaveText(
       'Anmälningsbekräftelse skickad2 av 4−2',
     );
 
-    // Medföljande → bara David (Källa '+1'), i Bekräftade-gruppen.
+    // [ÄNDRAT, TASK-145.1] Medföljande → bara David (Källa '+1'). Han syns
+    // DIREKT i den ovillkorliga registerlistan — inget arkiv att fälla ut,
+    // och kategori-pillen ("Medföljande") har likaså vikit för steg-märket.
     await flikar.getByRole('radio', { name: 'Medföljande (1)' }).click();
-    const bekraftade = gruppen(page).getByRole('button', { name: 'Bekräftade (1)', exact: true });
-    await expect(bekraftade).toBeVisible();
-    await bekraftade.click();
-    expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
-      'David Nord',
-    ]);
-    await expect(gruppen(page).getByText('Medföljande', { exact: true })).toBeVisible();
-    // Kön är tom i denna kategori — positiv rad i stället för accordion.
-    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible();
+    const register = gruppen(page).getByTestId('deltagar-register');
+    await expect(register).toBeVisible();
+    expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual(['David Nord']);
+    await expect(gruppen(page).getByText('Medföljande', { exact: true })).toHaveCount(0);
+    await expect(kortet(page, 'David Nord').getByText('Väntar på betalning').last()).toBeVisible();
   });
 
   test('AC #3: signal-slotten renderar i BÅDA lägena med identisk geometri (badge / tom reserv)', async ({
@@ -440,7 +471,13 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(gruppen(page).getByText('Inga deltagare i denna kategori.')).toBeVisible();
   });
 
-  test('axe 0 i grundläget, i filtrerat läge och med arkivet utfällt', async ({ page }) => {
+  // [ÄNDRAT, TASK-145.1] "Arkivet utfällt" fanns som ett tredje meningsfullt
+  // a11y-läge eftersom accordionen introducerade extra interaktiva element
+  // (chevron-knappen, `aria-expanded`/`aria-controls`). Den ytan är riven
+  // (AC #1). Markera-läget fyller samma roll nu — DET är registrets nya
+  // extra-interaktiva tillstånd (checkboxar, batch-baren) och förtjänar
+  // därför axe-täckningen den gamla accordion-expansionen hade.
+  test('axe 0 i grundläget, i filtrerat läge och med markera-läget aktivt', async ({ page }) => {
     await mocka(page, eventDetail({ startdatum: omDagar(7), slutdatum: omDagar(8) }));
     await oppnaEventsidan(page);
 
@@ -456,8 +493,9 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     };
 
     await kor();
-    await gruppen(page).getByRole('button', { name: 'Bekräftade (2)', exact: true }).click();
+    await gruppen(page).getByRole('button', { name: 'Markera anmälningar' }).click();
     await kor();
+    await gruppen(page).getByRole('button', { name: 'Avbryt markering' }).click();
     await gruppen(page)
       .getByRole('button', { name: /^Obekräftade anmälningar/ })
       .click();
