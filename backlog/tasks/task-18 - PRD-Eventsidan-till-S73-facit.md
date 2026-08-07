@@ -4,7 +4,9 @@ title: 'PRD: Eventsidan till S73-facit'
 status: To Do
 assignee: []
 created_date: '2026-07-21 07:56'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-human
 dependencies: []
 ordinal: 40000
 ---
