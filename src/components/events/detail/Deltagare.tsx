@@ -3,14 +3,12 @@ import { Link } from '@tanstack/react-router';
 import {
   BedDouble,
   Check,
-  ChevronDown,
   Clock,
   History,
   Inbox,
   type LucideIcon,
   Mail,
   MailCheck,
-  TriangleAlert,
   X,
 } from 'lucide-react';
 // [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
@@ -69,10 +67,27 @@ import {
  * utskicksordning (K42: bekräftelse → påminnelse → eventinfo) med
  * eventinfo-signalens alltid reserverade slot (K43/K44) → kategori-flikarna i
  * familje-kapseln (K41: formulär-fliken riven, formulärvägen är normen) →
- * Obekräftade ÖPPEN äldst först och Bekräftade STÄNGD senast först som
- * accordions (K40, inbox-fokus: kön i ansiktet, arkivet ett klick bort).
- * Klick på en summeringsrad ersätter accordions med en flat filtrerad lista
+ * REGISTRET, sedan TASK-145.1 EN enda `DeltagarListan` (se `registerLista`
+ * i `ArbetsKo`), inte längre Obekräftade/Bekräftade som två separata
+ * accordions (K40s ursprungliga par är rivet — se § REGISTRET nedan).
+ * Klick på en summeringsrad ersätter registret med en flat filtrerad lista
  * + "Rensa filtret" (K57: förklarande texter rivna — man har ju tryckt).
+ *
+ * § REGISTRET (TASK-145.1; PRD TASK-145 "Registret blir EN lista") —
+ * Obekräftade-kön och Bekräftade-arkivet, var och en med egen `GruppRubrik`
+ * och egen sorteringsordning, är RIVNA. Ersättaren är EN `DeltagarListan`
+ * sorterad på FYRA steg-hinkar (`registerOrdning`, hallplats-steg-
+ * prototyp.ts) — väntar på bekräftelse → anmälningsavgift saknas →
+ * slutbetalning saknas → klara, med inställt/på-väg-till-väntelista sist —
+ * och INOM varje hink i anmälningsordning (äldst-registrerad-först, samma
+ * FIFO-semantik Obekräftade-kön hade, nu enhetlig över hela registret).
+ * Steg-märket (`HallplatsMarke`, `registerHallplatsMarke` i `ArbetsKo`) ÄR
+ * grupperingen — inga sektionsrubriker renderas, exakt ETT märke per person
+ * även när flera steg är ogjorda (prioritetsordningen bor i
+ * `hallplatsSteg()`). SKIVGRÄNS (öppet bokförd): flik-togglen, de fyra
+ * KLICKBARA summeringsraderna ovan och filtrerings-/`traffar`-grenen är
+ * ALLA OFÖRÄNDRADE — TASK-145.1 rör ENDAST registrets egen gruppering/
+ * sortering/märkning; en ny fyra-hinks räknar-rad äger `TASK-145.2`.
  *
  * PERSONKORTEN (task-18.5; S73-facit K45/K62) bor i `DeltagarKort` nedan.
  *
@@ -88,9 +103,13 @@ import {
  *
  * I deras ställe: ett explicit MARKERA-LÄGE (`useMarkeringsLage`) där hela
  * kortet är klickyta med checkbox-semantik, en batch-bar med live-räknare och
- * breddlås, och kontrollfrågan kvar på massmutationen. Vägen in är ENBART
- * Markera-knappen på rubrikraden; Esc och Avbryt är vägarna ut. Auto-utskicks-
- * krysset (K44) i signal-slotten är orört.
+ * breddlås, och kontrollfrågan kvar på massmutationen. Vägen in är
+ * Markera-knappen, sedan TASK-145.1 förankrad i batch-barens vänsterkant
+ * (§ REGISTRET ovan — rubrikraden den satt på är riven); Esc och Avbryt är
+ * vägarna ut, oförändrat. Kandidatmängden är sedan TASK-145.1 den RENDERADE
+ * registerlistan (`registerLista`), inte längre bara Obekräftade-kön — se
+ * `markeringKandidatIds` i `ArbetsKo`. Auto-utskicks-krysset (K44) i
+ * signal-slotten är orört.
  *
  * SKELETT-AVGRÄNSNINGEN (öppet bokförd): Bor över-arbetsraden är task-18.7. Bor
  * över-raden saknas HELT ur summeringen (bas-fältet föds i 18.7 — en rad som
@@ -107,9 +126,10 @@ import {
  *
  * A11y (11/10): summeringsraderna är knappar med `aria-pressed` (filtret är ett
  * toggle-tillstånd); flikarna är ToggleButtonGroup (radiogroup + pilnavigering);
- * accordions bär `aria-expanded`/`aria-controls` mot panelens id; räknarna står
- * som TEXT i etiketterna (skärmläsaren får hela bilden); signal-badgen bär sin
- * text (färg aldrig ensam bärare); listorna är `<ul>`.
+ * registret (§ REGISTRET) är en `<ul>` utan `aria-expanded`/`aria-controls`
+ * sedan `GruppRubrik`s accordion-par revs (TASK-145.1) — steg-märket bär sin
+ * egen text, färg aldrig ensam bärare; räknarna står som TEXT i etiketterna
+ * (skärmläsaren får hela bilden); signal-badgen bär sin text likaså.
  */
 
 /** Aktiv anmälan (basens 'Är aktiv'-formel): endast Avbokad/Ombokad räknas bort. */
@@ -291,93 +311,23 @@ function AvDelta({ klara, totalt }: { klara: number; totalt: number }) {
 }
 
 /**
- * Accordion-rubrik (K40: "dropdown-rubriker under tabbraden") — vänsterställd
- * etikett + roterande chevron; obekräftade-rubriken i varningston med ikon
- * (texten bär, färgen förstärker).
- *
- * `handling` (K47) är en valfri HANDLINGS-slot på raden — Bekräfta alla-pillen.
- * Visuellt på raden, strukturellt UTANFÖR toggle-knappen som dess syskon (L303:
- * interaktivt bor aldrig i interaktivt); toggle-knappen blir flex-1 så chevronen
- * stannar vid dess högerkant.
+ * [RIVEN, TASK-145.1] `GruppRubrik` (Obekräftade/Bekräftade-rubrikerna, K40
+ * accordion-raden med chevron/`aria-expanded`) bodde här. Dess två
+ * produktions-anropsplatser (Obekräftade-kön, Bekräftade-arkivet) är rivna
+ * (AC #1: "inga sektionsrubriker renderas" — steg-märket ÄR grupperingen,
+ * AC #4). `?variant=a` använde aldrig `GruppRubrik` (egen `HallplatsToppA`/
+ * `SummeringsRad`-form i `DeltagareHallplatsPrototyp.tsx`), så komponenten
+ * har noll kvarvarande anropsplatser.
  */
-/**
- * Grupp-rubrikraden — i TVÅ former, och skillnaden är avsiktlig.
- *
- * FÄLLBAR (Bekräftade): `oppen` + `onToggle` + `kontrollerarId` angivna ⇒ raden
- * är en disclosure-knapp med chevron och `aria-expanded`. Bekräftade är ett
- * REGISTER som växer mot hela deltagarlistan; där betalar fällningen för sig.
- *
- * FAST (Obekräftade): utelämna `onToggle` ⇒ ren rubrikrad, ingen knapp, ingen
- * chevron. Obekräftade är en KÖ som ska tömmas, inte ett arkiv att gömma: den
- * visar aldrig mer än ~3 kort (byggkrav 4 låser höjden och scrollar inuti), så
- * fällningen sparade ingen plats — den kunde bara dölja arbete som väntar.
- * Marcus design-review 2026-07-26 (S91): "varför skulle du vilja gömma den".
- * Öppen revidering av S73-facits accordion-par; kö-vs-register-distinktionen
- * är densamma som L353 landade i.
- *
- * Att fällningen fanns tvingade dessutom fram en lapp: Markera-knappen
- * måste force-öppna panelen, annars kunde läget startas i en kollapsad yta.
- * Den lappen är riven i och med detta — mekanismen behövs inte när det inte
- * går att stänga.
- */
-function GruppRubrik({
-  oppen,
-  varning,
-  kontrollerarId,
-  onToggle,
-  handling,
-  children,
-}: {
-  oppen?: boolean;
-  varning?: boolean;
-  kontrollerarId?: string;
-  onToggle?: () => void;
-  /** Interaktiv handling på rubrikraden — renderas som syskon till rubriken. */
-  handling?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  const etikett = (
-    <span
-      className={`flex items-center gap-1.5 font-semibold text-small ${varning ? 'text-error' : ''}`}
-    >
-      {varning && <TriangleAlert aria-hidden="true" size={14} className="shrink-0" />}
-      {children}
-    </span>
-  );
-  return (
-    <div className="flex items-center rounded-lg bg-bg-emphasized">
-      {onToggle == null ? (
-        <span className="flex min-w-0 flex-1 items-center px-3 py-2.5">{etikett}</span>
-      ) : (
-        <button
-          type="button"
-          aria-expanded={oppen}
-          aria-controls={kontrollerarId}
-          onClick={onToggle}
-          className="flex min-w-0 flex-1 items-center justify-between gap-3 px-3 py-2.5 text-left"
-        >
-          {etikett}
-          <ChevronDown
-            aria-hidden="true"
-            size={16}
-            className={`shrink-0 text-text-secondary motion-safe:transition-transform ${oppen ? 'rotate-180' : ''}`}
-          />
-        </button>
-      )}
-      {/* pr-1 = 4 px — samma inset som knappens topp/botten mot baren
-          (rubrik-radens py-2.5 kring 32 px-knappen; review-våg 3). */}
-      {handling != null && <span className="flex shrink-0 items-center pr-1">{handling}</span>}
-    </div>
-  );
-}
 
 /**
  * MARKERA/AVBRYT-KNAPPEN (task-48 byggkrav 1, EMPHASIS-PARET från S91) —
  * utbruten till en egen funktion sedan konvergens-passet (S93 Del 3 beslut 3)
- * eftersom den nu har TVÅ anropsplatser: skarpa vyns `GruppRubrik`-handling
- * (oförändrad) OCH variant A:s egna högerställda rad ovanför det enade
- * registret (registret saknar sektionsrubriker att fästa knappen vid — se
- * `ArbetsKo`). Ren extraktion, ingen beteendeändring.
+ * eftersom den nu har TVÅ anropsplatser: `?variant=a`s egna högerställda rad
+ * ovanför det enade registret OCH — sedan TASK-145.1 — produktionens EGEN
+ * `MarkeringsBatchBar`-vänsterkant (AC #11: knappens nya, egna förankring
+ * sedan `GruppRubrik`s `handling`-slot försvann med rubriken den satt på).
+ * Ren extraktion/omflyttning, ingen ändring av knappens EGEN form.
  */
 function MarkeraKnapp({
   aktivt,
@@ -918,6 +868,7 @@ function KortInnehall({
   lankat,
   vald,
   hallplatsMarke,
+  visaUtskicksRader = hallplatsMarke == null,
 }: {
   reg: Registration;
   eventId: string;
@@ -926,6 +877,19 @@ function KortInnehall({
   /** [PROTOTYPE] [S93] Steg-märket — undefined utanför hållplats-prototypen
       (default, zero-behaviour-change; se DeltagareHallplatsPrototyp.tsx). */
   hallplatsMarke?: React.ReactNode;
+  /** [TASK-145.1] De tre utskicks-metaraderna (Bekräftelse/Påminnelse/
+      Eventinfo-datum) döljs historiskt när `hallplatsMarke` är satt, eftersom
+      `?variant=a` flyttat SAMMA information till BetalningsDetaljer/"Öppna
+      detaljer" (protoVariant === 'a'-arbetsytan, se render nedan i `ArbetsKo`).
+      Produktionens skarpa register (TASK-145.1) har ÄNNU INTE den
+      ersättningen — den byggs av en senare skiva — så raderna måste stå kvar
+      trots att steg-märket nu är på, annars försvinner information utan
+      ersättning för Lotta. Default `hallplatsMarke == null` bevarar BÅDA
+      REDAN BYGGDA anropsplatsernas beteende orört (skarpa vyns gamla kort:
+      hallplatsMarke undefined ⇒ true, oförändrat; `?variant=a`: hallplatsMarke
+      satt ⇒ false, oförändrat) — bara `DeltagarKort`/`MarkerbartKort`s NYA
+      produktionsanrop (registret, TASK-145.1) sätter denna explicit `true`. */
+  visaUtskicksRader?: boolean;
 }) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
@@ -1073,13 +1037,13 @@ function KortInnehall({
             nu i arbetsytans SKICKAT-zon (Betalningar.tsx § BetalningsPersonRad),
             komplett med betalningspåminnelserna som redan låg där. Skarpa vyn
             (`hallplatsMarke` undefined) behåller dem OFÖRÄNDRADE. */}
-        {!hallplatsMarke && bekraftelse && (
+        {visaUtskicksRader && bekraftelse && (
           <MetaRad ikon={MailCheck}>{`Bekräftelse ${bekraftelse}`}</MetaRad>
         )}
-        {!hallplatsMarke && paminnelse && (
+        {visaUtskicksRader && paminnelse && (
           <MetaRad ikon={MailCheck}>{`Påminnelse ${paminnelse}`}</MetaRad>
         )}
-        {!hallplatsMarke && eventinfo && (
+        {visaUtskicksRader && eventinfo && (
           <MetaRad ikon={MailCheck}>{`Eventinfo ${eventinfo}`}</MetaRad>
         )}
         {genomforda != null && (
@@ -1113,11 +1077,14 @@ function DeltagarKort({
   reg,
   eventId,
   hallplatsMarke,
+  visaUtskicksRader,
 }: {
   reg: Registration;
   eventId: string;
   /** [PROTOTYPE] [S93] — se KortInnehall. */
   hallplatsMarke?: React.ReactNode;
+  /** [TASK-145.1] — se KortInnehall. */
+  visaUtskicksRader?: boolean;
 }) {
   return (
     <div
@@ -1130,6 +1097,7 @@ function DeltagarKort({
         lankat
         vald={false}
         hallplatsMarke={hallplatsMarke}
+        visaUtskicksRader={visaUtskicksRader}
       />
     </div>
   );
@@ -1174,6 +1142,7 @@ function MarkerbartKort({
   vald,
   onChange,
   hallplatsMarke,
+  visaUtskicksRader,
 }: {
   reg: Registration;
   eventId: string;
@@ -1181,6 +1150,8 @@ function MarkerbartKort({
   onChange: (vald: boolean) => void;
   /** [PROTOTYPE] [S93] — se KortInnehall. */
   hallplatsMarke?: React.ReactNode;
+  /** [TASK-145.1] — se KortInnehall. */
+  visaUtskicksRader?: boolean;
 }) {
   return (
     <Checkbox
@@ -1203,6 +1174,7 @@ function MarkerbartKort({
         lankat={false}
         vald={vald}
         hallplatsMarke={hallplatsMarke}
+        visaUtskicksRader={visaUtskicksRader}
       />
     </Checkbox>
   );
@@ -1342,6 +1314,7 @@ function DeltagarListan({
   markering,
   hallplatsMarke,
   ariaLabel = 'Obekräftade anmälningar',
+  visaUtskicksRader,
 }: {
   rader: Registration[];
   /** Eventets record-ID — kortens Anmäld-rad länkar till anmälans sida (18.17). */
@@ -1361,6 +1334,9 @@ function DeltagarListan({
       skarpa vyns oförändrade text) — variant A:s enade register skickar en
       egen etikett, se `ArbetsKo`. */
   ariaLabel?: string;
+  /** [TASK-145.1] — se KortInnehall; vidarebefordrad till varje korts
+      `visaUtskicksRader`. */
+  visaUtskicksRader?: boolean;
 }) {
   const rullKlasser = rullande
     ? 'focus-ring-inset scrollbar-inline max-h-[25.5rem] overflow-y-auto pr-2.5'
@@ -1385,9 +1361,15 @@ function DeltagarListan({
               vald={markering.valda.has(reg.id)}
               onChange={(vald) => markering.vaxla(reg.id, vald)}
               hallplatsMarke={hallplatsMarke?.(reg)}
+              visaUtskicksRader={visaUtskicksRader}
             />
           ) : (
-            <DeltagarKort reg={reg} eventId={eventId} hallplatsMarke={hallplatsMarke?.(reg)} />
+            <DeltagarKort
+              reg={reg}
+              eventId={eventId}
+              hallplatsMarke={hallplatsMarke?.(reg)}
+              visaUtskicksRader={visaUtskicksRader}
+            />
           )}
         </li>
       ))}
@@ -1408,7 +1390,9 @@ function ArbetsKo({
   /** [PROTOTYPE] [S93] `?data=proto` — stubbar bekräfta-mutationen (§ DATA). */
   protoDataMode?: boolean;
 }) {
-  const panelId = useId();
+  // [RIVEN, TASK-145.1] `panelId` (useId) bodde här — dess enda konsumenter
+  // var Obekräftade/Bekräftade-panelernas `id`-attribut, borta med
+  // `GruppRubrik`s två produktions-anropsplatser (AC #1).
   const [flik, setFlik] = useState<FlikNyckel>('alla');
   const [filter, setFilter] = useState<SummeringsFilter | null>(null);
   // [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus 2026-08-05) — ETT filtertillstånd
@@ -1479,16 +1463,10 @@ function ArbetsKo({
   );
   const antalKategori = (k: DeltagarKategori) => aktiva.filter((r) => kategori(r) === k).length;
 
-  // Obekräftade ÄLDST först (den som väntat längst står överst — köns hela
-  // poäng); Bekräftade SENAST först (arkivets nyaste överst).
-  const obekraftade = useMemo(
-    () => visade.filter((r) => !arBekraftad(r)).sort((a, b) => inskickadTid(a) - inskickadTid(b)),
-    [visade],
-  );
-  const bekraftade = useMemo(
-    () => visade.filter(arBekraftad).sort((a, b) => inskickadTid(b) - inskickadTid(a)),
-    [visade],
-  );
+  // [RIVEN, TASK-145.1] `obekraftade`/`bekraftade` (Obekräftade-kön/
+  // Bekräftade-arkivet, var sin äldst-/senast-först-sortering) bodde här —
+  // ersatta av `registerLista` nedan (AC #1: EN lista, `registerOrdning`-
+  // sorterad). Ingen annan anropsplats kvar (verifierat med grep).
 
   // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 2/3) — variant A ENDAST:
   // registret blir EN lista, steg-ordning (ogjort överst) + anmälningsordning
@@ -1514,29 +1492,40 @@ function ArbetsKo({
     [registreringar],
   );
 
-  /**
-   * Inbox-fokus (K40): kön öppen, arkivet ett klick bort — är kön tom fälls
-   * arkivet ut i stället. Endast Bekräftade är fällbar (se GruppRubrik):
-   * Obekräftade-kön står alltid öppen sedan S91:s review.
-   *
-   * `null` betyder ALDRIG VÄXLAD och är hela poängen (Marcus design-review
-   * 2026-07-26, S91, fynd (b)). Förr var detta `useState(obekraftadeTotalt === 0)`
-   * — ett startvärde som beräknades EN gång vid monteringen, vilket gav samma
-   * sluttillstånd två olika utseenden: tömdes kön genom en batch i sessionen
-   * stod arkivet kvar HOPFÄLLT (uppmätt aria-expanded=false), medan en färsk
-   * sidladdning på exakt samma data fällde ut det. Det icke-berörda
-   * default-läget FÖLJER nu kön i stället för monteringsögonblicket.
-   *
-   * Ett explicit klick skriver en riktig boolean och respekteras därefter —
-   * Lottas eget val vinner alltid över härledningen, även när kön går till noll.
-   *
-   * Härledningen läser `obekraftadeTotalt` (hela eventet), inte den visade
-   * köns längd: en kategori-flik som råkar sakna obekräftade betyder inte att
-   * arbetet är gjort. Samma storhet som det gamla startvärdet läste — det som
-   * ändras är NÄR den utvärderas, inte VAD.
-   */
-  const [bekraftadeVal, setBekraftadeVal] = useState<boolean | null>(null);
-  const bekraftadeOppen = bekraftadeVal ?? obekraftadeTotalt === 0;
+  // TASK-145.1 (AC #1–#3) — PRODUKTIONENS EGNA enade register. Samma
+  // jämförare som `unifiedSorted` ovan (steg-hink → FIFO inom hink), men på
+  // `visade` (flik-filtrerad `aktiva` — samma bas Obekräftade-kön/Bekräftade-
+  // arkivet läste förut) i stället för hela `registreringar`: flik-togglen
+  // (Alla/Manuella/Medföljande, nedan i render) är OFÖRÄNDRAD och ska
+  // fortsätta filtrera registret (ingen AC river den), och avbokade är
+  // fortsatt bortfiltrerade — samma exkludering `aktiva` redan gjorde.
+  // `registerOrdning`s avbokad-hink (6) berör därför aldrig denna lista, bara
+  // `unifiedSorted`s variant-A-bas (som läser hela `registreringar`,
+  // avbokade inräknade — Marcus egen ITERATIONSVÅG-decision, se ovan). Egen
+  // `useMemo` i stället för att återanvända `unifiedSorted`: `?variant=a`s
+  // redan facit-låsta beräkning rörs inte alls av denna skiva.
+  const registerLista = useMemo(
+    () =>
+      [...visade].sort((a, b) => {
+        const diff = registerOrdning(a) - registerOrdning(b);
+        return diff !== 0 ? diff : inskickadTid(a) - inskickadTid(b);
+      }),
+    [visade],
+  );
+
+  // TASK-145.1 (AC #4/#5) — produktionens EGNA steg-märke. Separat från
+  // `hallplatsMarkeFn` ovan (alltjämt `protoVariant != null`-gated, konsumerad
+  // av `?variant=a`s ARBETSKÖ-render): delas INTE med produktionens
+  // `traffar`-drivna filterlista (oförändrad, se render — ingen AC rör den),
+  // bara `registerLista` bär märket. Samma redan facit-byggda komponent/
+  // logik (`HallplatsMarke`/`hallplatsSteg`) som `hallplatsMarkeFn` — ingen
+  // ny märkes-form uppfunnen, bara en ny anropsplats.
+  const registerHallplatsMarke = (r: Registration) => <HallplatsMarke steg={hallplatsSteg(r)} />;
+
+  // [RIVEN, TASK-145.1] `bekraftadeVal`/`bekraftadeOppen` (Bekräftade-
+  // arkivets fäll-/öppna-tillstånd, K40 inbox-fokus) bodde här — dess enda
+  // anropsplats var `GruppRubrik`s `oppen`/`onToggle` på den nu rivna
+  // Bekräftade-rubriken (AC #1). Registret har ingen fällbar sektion kvar.
 
   // [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST (Del 3 beslut 1) —
   // den INFLYTTADE betalnings-arbetsytans K27-disclosure (se render, "Öppna
@@ -1643,14 +1632,18 @@ function ArbetsKo({
   const bulk = useConfirmAll(event.id);
   const [utfall, setUtfall] = useState<Utfall | null>(null);
 
-  // Markera-lägets kandidater: skarpa vyn = kön så som den visas (flikvalet
-  // gäller, oförändrat). [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST
-  // (Del 3 beslut 3, "markera-läget verkar över visad lista"): kandidaterna
-  // är i stället `registerListaA` — den aktuella filtrerade vyn, eller HELA
-  // den enade listan när inget filter är valt.
-  const obekraftadeIds = useMemo(() => obekraftade.map((r) => r.id), [obekraftade]);
+  // Markera-lägets kandidater — TASK-145.1 (AC #10): produktionens
+  // kandidatmängd är den RENDERADE registerlistan (`registerLista`), inte
+  // längre den gamla Obekräftade-kön (`obekraftadeIds`, riven — dess enda
+  // konsument var just denna rad). Samma FORM `?variant=a` redan bär
+  // (nedan): "markera-läget verkar över visad lista" — flikvalet (som
+  // `visade`/`registerLista` läser) och senare filtrering följer därmed
+  // automatiskt med, precis som facit. [PROTOTYPE] [S93] konvergens-pass,
+  // variant A ENDAST (Del 3 beslut 3): kandidaterna där är i stället
+  // `registerListaA` — den aktuella filtrerade vyn, eller HELA den enade
+  // listan när inget filter är valt.
   const markeringKandidatIds =
-    protoVariant === 'a' ? registerListaA.map((r) => r.id) : obekraftadeIds;
+    protoVariant === 'a' ? registerListaA.map((r) => r.id) : registerLista.map((r) => r.id);
   const markering = useMarkeringsLage(markeringKandidatIds);
 
   /**
@@ -2079,87 +2072,61 @@ function ArbetsKo({
         ) : visade.length === 0 ? (
           <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
         ) : (
-          <>
-            {obekraftade.length > 0 ? (
-              <div>
-                {/* Byggkrav 1: Markera ERSÄTTER Bekräfta alla-pillen på samma
-                    plats; i läget står Avbryt där. K47/K48-formen (pill +
-                    kontrollfråga på rubriken) är riven — massmutationen har
-                    flyttat till batch-baren där urvalet syns innan det
-                    skickas.
-
-                    EMPHASIS-PARET (Marcus design-review 2026-07-26, S91):
-                    Markera bär `primary` SOLID (#282928) = exakt S86-facit;
-                    Avbryt ärver den subtle plattan. Bygget hade satt Markera
-                    till `primary`/`subtle` med stöd i §19:s rad om
-                    toolbar-ytklass — men facit var Marcus-låst och vägde
-                    tyngre, och kollisionen skulle ha lyfts i stället för att
-                    lösas tyst. §19 är amenderad: en LÄGESÖPPNARE är sektionens
-                    primära kontroll, inte ett rad-verktyg, och bär därför
-                    solid. Avbryt är däremot en lågviktad utgång och tar den
-                    subtle plattan — synligare än ghost, som saknade
-                    bakgrund helt och läste som en textlänk. */}
-                <GruppRubrik
-                  varning
-                  handling={
-                    <MarkeraKnapp
-                      aktivt={markering.aktivt}
-                      onOppna={oppnaMarkering}
-                      onStang={markering.stang}
-                      buttonRef={markeraKnappRef}
-                    />
-                  }
-                >
-                  {`Obekräftade (${obekraftade.length})`}
-                </GruppRubrik>
-                <div id={`${panelId}-obekraftade`} className="pt-1.5">
-                  {markering.aktivt && (
-                    <MarkeringsBatchBar
-                      antal={markering.antal}
-                      totalt={obekraftade.length}
-                      allaValda={markering.allaValda}
-                      pending={bulk.isPending}
-                      onBekrafta={bekraftaMarkerade}
-                      onMarkeraAlla={markering.markeraAlla}
-                      onRensa={markering.rensa}
-                    />
-                  )}
-                  <DeltagarListan
-                    rader={obekraftade}
-                    eventId={event.id}
-                    rullande
-                    testId="obekraftade-ko"
-                    markering={
-                      markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
-                    }
-                    hallplatsMarke={hallplatsMarkeFn}
-                  />
-                </div>
-              </div>
-            ) : (
-              <p className="text-small text-text-secondary">
-                Inga obekräftade — alla är bekräftade.
-              </p>
-            )}
-            {bekraftade.length > 0 && (
-              <div>
-                <GruppRubrik
-                  oppen={bekraftadeOppen}
-                  kontrollerarId={`${panelId}-bekraftade`}
-                  onToggle={() => setBekraftadeVal(!bekraftadeOppen)}
-                >
-                  {`Bekräftade (${bekraftade.length})`}
-                </GruppRubrik>
-                <div id={`${panelId}-bekraftade`} hidden={!bekraftadeOppen} className="pt-1.5">
-                  <DeltagarListan
-                    rader={bekraftade}
-                    eventId={event.id}
-                    hallplatsMarke={hallplatsMarkeFn}
-                  />
-                </div>
-              </div>
-            )}
-          </>
+          // TASK-145.1 — REGISTRET SOM EN LISTA (AC #1–#7, #10, #11).
+          // Obekräftade-kön och Bekräftade-arkivet (var sin `GruppRubrik`,
+          // äldst-/senast-först-sortering) är RIVNA (AC #1) — `registerLista`
+          // (ovan) är den enda listan, `registerOrdning`-sorterad i fyra
+          // steg-hinkar med FIFO inom var och en (AC #2/#3). Steg-märket
+          // (`registerHallplatsMarke`) ÄR grupperingen — ingen sektionsrubrik
+          // renderas (AC #4), exakt ETT märke per person (AC #5, se
+          // `hallplatsSteg`s prioritetsordning). Samma `rullande`-klipphöjd
+          // kön hade, ingen ny höjd mintad (AC #6); `ariaLabel` egen —
+          // ärver INTE `DeltagarListan`s köns-hårdkodade default (AC #7).
+          //
+          // MARKERA-KNAPPENS EGNA FÖRANKRING (AC #11): `GruppRubrik`s
+          // `handling`-slot försvann med rubriken den satt på — knappen
+          // flyttar i stället till `MarkeringsBatchBar`s vänsterkant via
+          // dess `markeraKnapp`-prop, SAMMA redan facit-byggda/testade
+          // mekanism `?variant=a` använder (ITERATIONSVÅG 5, se
+          // `MarkeringsBatchBar`s docblock) — bara ANROPSPLATSEN är ny.
+          // `aktivt={markering.aktivt}` gör att baren nu renderas
+          // OVILLKORLIGT (`markeraKnapp` måste synas även i vilo-läge), men
+          // `onBekrafta`/`totalt`/knapptexten är EXAKT samma props som förut
+          // (bara flyttade hit) — bekräfta-flödet och batch-barens
+          // knapptext rörs INTE (AC #11 andra klausulen; TASK-145.3 äger
+          // markera-lägets ÖVRIGA form).
+          <div>
+            <MarkeringsBatchBar
+              antal={markering.antal}
+              totalt={registerLista.length}
+              allaValda={markering.allaValda}
+              pending={bulk.isPending}
+              onBekrafta={bekraftaMarkerade}
+              onMarkeraAlla={markering.markeraAlla}
+              onRensa={markering.rensa}
+              aktivt={markering.aktivt}
+              markeraKnapp={
+                <MarkeraKnapp
+                  aktivt={markering.aktivt}
+                  onOppna={oppnaMarkering}
+                  onStang={markering.stang}
+                  buttonRef={markeraKnappRef}
+                />
+              }
+            />
+            <DeltagarListan
+              rader={registerLista}
+              eventId={event.id}
+              rullande
+              testId="deltagar-register"
+              ariaLabel="Deltagarregister"
+              markering={
+                markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
+              }
+              hallplatsMarke={registerHallplatsMarke}
+              visaUtskicksRader
+            />
+          </div>
         )}
       </div>
       {/* [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 1) — Betalningars

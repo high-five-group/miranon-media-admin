@@ -464,3 +464,52 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await kor();
   });
 });
+
+/**
+ * TASK-145.1 DoD #7 — mekaniskt bevis för skrivvägs-frånvaro, SKOPAT till
+ * registret självt (`deltagar-register`), inte hela `grupp-deltagare`-
+ * sektionen: `AutoKryss` (auto-utskicks-krysset i eventinfo-signalens slot,
+ * task-18.6, summeringsblocket — TASK-145.1 AC #8 rör det INTE) är en KÄND,
+ * redan existerande skrivaffordans DÄR när `signalText` är falsy (händer med
+ * `eventDetail()`s default `startdatum` — 60 dagar fram, utanför
+ * `EVENTINFO_DAGAR_FORE`-fönstret). Att räkna checkboxar i HELA sektionen
+ * hade alltså gett en falsk positiv redan idag, oberoende av denna skiva.
+ *
+ * "Eventsidan är bara för översyn nu ju" (Marcus, S93 Del 7) är alltså ÄNNU
+ * INTE sant för HELA sidan — Bor över-krysslaget och markera-lägets egna
+ * kort-checkboxar (när läget aktivt trycks på) är ANDRA, avsiktliga
+ * skrivvägar som lever kvar tills TASK-145.4/145.5. Vad DENNA gate bevisar
+ * är smalare och specifikt TASK-145.1s eget ansvar: registrets EGEN
+ * DEFAULT-rendering (Lotta har inte tryckt Markera) bär noll
+ * checkbox-affordanser — `DeltagarListan` väljer `DeltagarKort` (länkar,
+ * ingen mutation) framför `MarkerbartKort` (checkbox) exakt när
+ * `markering` är `null`, se `ArbetsKo`s render.
+ */
+test.describe('TASK-145.1 — registret som EN lista (DoD #7)', () => {
+  test('registret renderar noll checkbox-affordanser förrän Markera-läget öppnas', async ({
+    page,
+  }) => {
+    await mocka(page, eventDetail());
+    await oppnaEventsidan(page);
+
+    // `data-testid="deltagar-register"` sitter på `<ul>` (DeltagarListan) —
+    // Markera-knappen är en SYSKON-nod i batch-baren OVANFÖR listan (AC #11),
+    // inte ett barn av den. Checkbox-räkningen scopas till listan (§ docblock
+    // ovan: precis DÄR ska noll-påståendet gälla); knapp-klicken scopas till
+    // hela `gruppen` som redan alla andra tester i denna fil gör.
+    const register = gruppen(page).getByTestId('deltagar-register');
+    await expect(register).toBeVisible();
+    // Fyra aktiva personkort (Eva/Avbokad räknas bort), inga checkboxar.
+    await expect(register.getByTestId('deltagar-kort')).toHaveCount(4);
+    await expect(register.getByRole('checkbox')).toHaveCount(0);
+
+    // Negativ kontroll, INLINE (inget att injicera utifrån via page.route —
+    // Markera-knappen sitter i registrets EGEN batch-bar sedan AC #11):
+    // öppnas läget på riktigt SKA gaten tillåta exakt det, annars vore den
+    // för sträng och skulle fälla en legitim, avsiktlig arbetsyta.
+    await gruppen(page).getByRole('button', { name: 'Markera anmälningar' }).click();
+    await expect(register.getByRole('checkbox')).toHaveCount(4);
+    await gruppen(page).getByRole('button', { name: 'Avbryt markering' }).click();
+    await expect(register.getByRole('checkbox')).toHaveCount(0);
+  });
+});
