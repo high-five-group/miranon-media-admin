@@ -14,10 +14,21 @@ import { mockValjarLista } from './helpers/valjar-lista';
  * av `tests/api/*.staging.test.ts` mot skarp staging; dessa e2e bevisar
  * KLIENTENS form och beteende flak-fritt utan delad staging-data.
  *
- * Täckning (AC #2): raden SIST i summeringen med HÄRLETT antal · kryss-läget i
- * EN kolumn med ALLA anmälda (även urkryssade) · ikryssade överst · STABIL
- * ordning under markeringen (raderna hoppar inte under fingret) · live-räknaren
- * · write-operationens payload · axe 0.
+ * Täckning (AC #2): raden med HÄRLETT antal, näst SIST i summeringen (under
+ * Avbokade sedan TASK-145.2) · kryss-läget i EN kolumn med ALLA anmälda
+ * (även urkryssade) · ikryssade överst · STABIL ordning under markeringen
+ * (raderna hoppar inte under fingret) · live-räknaren · write-operationens
+ * payload · axe 0.
+ *
+ * RADUPPSÄTTNINGEN UPPDATERAD (TASK-145.2, E2E-disciplinen — "uppdatera
+ * assertioner som prövar den yta du medvetet ändrat"): de fem gamla
+ * summeringsraderna (Obekräftade anmälningar/Anmälningsbekräftelse skickad/
+ * Betalningspåminnelse skickad/Eventinfo skickad/Bor över) är ersatta av de
+ * sju facit-låsta raderna (grillad samsyn beslut 2, S93 Del 3) — Väntar på
+ * bekräftelse/Anmälningsavgifter/Slutbetalningar/Klara/Eventinfo skickad/
+ * Bor över/Avbokade. Bor över-RADENS EGEN form (term, ikon, klick →
+ * kryss-läget, härlett antal) är ORÖRD — bara dess plats i raduppsättningen
+ * och de rader som omger den har ändrats.
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
@@ -213,23 +224,31 @@ async function oppnaEventsidan(page: Page): Promise<void> {
 }
 
 test.describe('Bor över — raden + kryss-läget (task-18.7)', () => {
-  test('raden står SIST i summeringen med HÄRLETT antal (avbokade borträknade)', async ({
+  test('raden bär HÄRLETT antal och står näst SIST — under den, sist av alla, Avbokade (avbokade borträknade ur Bor över)', async ({
     page,
   }) => {
     await mocka(page);
     await oppnaEventsidan(page);
 
-    // K50: Bor över SIST — universell rad på ALLA event.
+    // TASK-145.2 (facit-låst, grillad samsyn beslut 2): sju rader — fyra
+    // steg-räknare (Väntar på bekräftelse/Anmälningsavgifter/
+    // Slutbetalningar/Klara) + logistik-gruppen (Eventinfo skickad/Bor
+    // över/Avbokade). Bor övers EGNA form (term "Bor över", härlett antal)
+    // är oförändrad — bara raderna omkring den har bytt form.
     const etiketter = await gruppen(page).locator('button[aria-pressed]').allTextContents();
     expect(etiketter).toEqual([
-      'Obekräftade anmälningar2',
-      'Anmälningsbekräftelse skickad2 av 4−2',
-      'Betalningspåminnelse skickad0',
+      'Väntar på bekräftelse2',
+      'Anmälningsavgifter0 av 4 mottagna−4',
+      'Slutbetalningar0 klara−4',
+      'Klara0',
       'Eventinfo skickad0 av 4−4',
       'Bor över1',
+      'Avbokade1',
     ]);
 
-    // Eva (Avbokad/Ombokad) bär borOver i mocken men räknas ALDRIG — 1, inte 2.
+    // Eva (Avbokad/Ombokad) bär borOver i mocken men räknas ALDRIG in i
+    // Bor över-radens tal — 1, inte 2. Hon räknas i stället i Avbokade-
+    // radens EGET tal (1, ovan), oberoende av Bor över.
     await expect(gruppen(page).getByText('Eva Sten')).toHaveCount(0);
   });
 

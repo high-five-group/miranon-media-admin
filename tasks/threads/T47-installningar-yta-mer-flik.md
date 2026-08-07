@@ -45,3 +45,18 @@ default-vyer, tema, konto-uppgifter). Då:
 - De-scope-markörer: `docs/byggplan.md` §4 (6e-raden + Filer-listan) +
   `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` (Fas 6e-sektionen + Mer-flik-tabellen).
 - Blockerar ej: 6e är förstklassigt klar mot ADR-058 utan Inställningar-ytan.
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+Inställningar-yta för Mer-fliken — 6e-de-scopad (ingen specificerad funktion vid 6e; tom "ifall"-sida vore spekulation över golvet, ADR-058 iv-1/Väg 1). **Behovet kom S95:** "Installera appen"-ytan är det konkreta inställnings-behov tråden väntade på — aktiveras via skiva `TASK-126.3` (T95 Spår A)
+
+**Ingång (fullständig, ursprunglig):**
+[T47-installningar-yta-mer-flik.md](T47-installningar-yta-mer-flik.md) — uppstod Session 42 (6e arch-audit iv-1/Väg 1 de-scope); aktivering S95 via `TASK-126.3`, tråden stängs när ytan är byggd

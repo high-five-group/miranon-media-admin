@@ -1,9 +1,10 @@
 ---
 id: TASK-158.2
 title: 'Skiva: arkiverings-skriptet — fönsterregeln + atomisk länk-omskrivning'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 12:26'
+updated_date: '2026-08-07 15:28'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,19 +21,25 @@ ordinal: 273000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass mot live: rotens faktiska bestånd per lifecycle, arkivets månadsmappsform och de inkommande länkarnas form (77 filer länkar in) verifierade FÖRE implementation
-- [ ] #2 Skript i scripts/ med universell logik; fönstertalet + undantag i egen policy-konfig; idempotent; torrkörnings-läge som default-säkring (gren-städarens mönster)
-- [ ] #3 Flytt + omskrivning av ALLA inkommande länkar sker atomiskt i samma körning — ingen transient bruten länk i något commit-bart mellanläge
-- [ ] #4 paused/active-dok flyttas ALDRIG oavsett ålder; fail-closed på oparsbart lifecycle-fält
-- [ ] #5 Tvåsidig testsvit i test-familjens form: fäller/släpper/fail-closed; shellcheck-strict grön
-- [ ] #6 PR armerad, per-jobb-grön
+- [x] #1 Premiss-pass mot live: rotens faktiska bestånd per lifecycle, arkivets månadsmappsform och de inkommande länkarnas form (77 filer länkar in) verifierade FÖRE implementation
+- [x] #2 Skript i scripts/ med universell logik; fönstertalet + undantag i egen policy-konfig; idempotent; torrkörnings-läge som default-säkring (gren-städarens mönster)
+- [x] #3 Flytt + omskrivning av ALLA inkommande länkar sker atomiskt i samma körning — ingen transient bruten länk i något commit-bart mellanläge
+- [x] #4 paused/active-dok flyttas ALDRIG oavsett ålder; fail-closed på oparsbart lifecycle-fält
+- [x] #5 Tvåsidig testsvit i test-familjens form: fäller/släpper/fail-closed; shellcheck-strict grön
+- [x] #6 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängning i S99-resume 1 (2026-08-07): #913 mergad 57f8d143, per-jobb-grön. Skript + policy-konfig (N=10) + testsvit 30/30; fail-closed på no-lifecycle-doken bevisad mot skarp rot (torrkörning, inget rört); ci.yml shellcheck-scope 20→21. Divergenser öppet bokförda: länkyte-talet (operativt 26 unika filer vid N=10) + staging-502 = lokal concurrency-artefakt (194/194 vid 2 workers). Skarp migration är 158.3.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Ordningen ADR → migration → grind är bindande: ADR-099 landad före migrations- och grind-skivorna exekveras
 <!-- DOD:END -->

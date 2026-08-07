@@ -33,6 +33,7 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 - Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer). Bevisa att det fungerar — "det funkar" ≠ "det är rätt".
 - Fånga lärdomar i `tasks/lessons.md` efter varje korrigering. Markera universella med `[UNIVERSAL]`.
 - **Uppdrag till agenter källmärker varje faktapåstående** (fil/commit/kommando) — obelagda påståenden behandlas av mottagaren som HYPOTES ([ADR-086](docs/decisions/ADR-086-uppdragets-premisser-provas-av-mottagaren.md)).
+- **Sanningshierarkin — varje kunskapsklass har EXAKT EN auktoritativ källa** (koden äger beteende & mekanik, ADR:er äger varför, CI äger utfall, git+frys-märkta ögonblicksbilder äger historik, en utpekad referens-fil äger externa system, kort+sessionsdok äger pågående arbete): [ADR-100](docs/decisions/ADR-100-sanningshierarkin-koden-ager-beteendet.md). Karta, aldrig kopia — vid en motsägelse mellan två styrande ytor vinner den ADR:n pekar ut.
 
 ---
 

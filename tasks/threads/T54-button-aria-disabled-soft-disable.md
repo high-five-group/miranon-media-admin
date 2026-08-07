@@ -42,3 +42,15 @@ vy-fix.
 - [session-45](../sessions/2026-06-29-session-45.md) § Del 2 (arch-audit-residualen).
 - [T50](T50-ui-hardning-sand-grind.md) — första konkreta konsumenten (faro-knappen).
 - KVALITETSDEFINITIONER-11-REACT.md (a11y-axeln) + ADR-058 (arch-audit område v).
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Ingång (fullständig, ursprunglig):**
+[T54-button-aria-disabled-soft-disable.md](T54-button-aria-disabled-soft-disable.md) — uppstod Session 45 (T50 arch-audit, ADR-058 område v residual); beyond-golv-förfining (axe-0 redan mött via synlig knapp + fält-instruktion + aria-live); tvärsnitt: alla villkorligt-disablade knappar; options (A) lämna · (B) utöka Button med softDisabled · (C) annat

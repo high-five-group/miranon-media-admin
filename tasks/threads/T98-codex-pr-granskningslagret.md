@@ -219,3 +219,18 @@ fångar de nästa nitton fynden också.
   golv, inte ett tak.**
 - Codex-inställningarna på chatgpt.com ej inspekterade (kräver Marcus inloggning).
 - Inga kort skapade — åtgärdspaketet ovan är förslag, ej publicerade skivor.
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+Codex PR-granskningslagret — `chatgpt-codex-connector[bot]` kommenterar på PR:er sedan 2026-07-24 (konfig på chatgpt.com, UTANFÖR repot) och INGEN har läst en enda kommentar: noll reaktioner, noll svar, noll omnämnanden. 16 PR:er med skarpa reviews (#163–#189, 19 inventerade fynd), sedan tyst kvot-vägg #190–#211 (18 PR:er fick bara "usage limits" — samma klass som TASK-51:s larm: frånvaro presenterad som ingenting). FYRA orsaker: konfig osynlig för LÄS-fasen · ingen skill föreskriver PR-kommentarsläsning (CI-begreppet = checks, ej reviews; `gh pr merge --auto` ignorerar COMMENTED) · namnkollision med de BESTÄLLDA Codex-rapporterna (T85/T86) som lästs rigoröst · **TIMING, den strukturellt värsta** (skärpt mot 30 mergade PR:er 2026-07-25, efter att första formuleringen "timing var inte orsaken" föll på bredare data): docs-PR:er lever ~57–75 s medan Codex svarar 67–99 s EFTER merge (#221/#219/#212/#186 fyra av fyra) — på vår vanligaste PR-typ kan INGEN grind fånga fyndet eftersom mergen redan skett när reviewn föds; ADR-077:s docs-klassning som ger snabbhet är samma mekanism som gör granskningslagret verkningslöst där. Fem fynd kvarstår i koden, kodvägs-verifierade mot HEAD `c7e3eeb`: EventValjare `isError` saknas helt (API-fel visas som "Inga event matchar sökningen" — blockerar manuell anmälan, ALLVARLIGAST) · AnmalanDetail `announceRef` återställs ej vid param-byte (route utan `key`) · EventsList "Visar 0 av 0" vid fel · print-knapp utan spärr · EventDetail rAF-race (svag). Ingen ändrar utseendet i normalläget. RESEARCH KLAR 2026-07-25: bot-reviews räknas INTE mot branch protection (avsiktligt) → mekanisering kräver egen CI-check mot API:t, danger/reviewdog-mönstret; branschens felläge är exakt vårt (volym tränar bort läsning) → severity-triage i tre nivåer, mätare "<30 % åtgärdade ⇒ konfig behöver arbete"; `AGENTS.md ## Code Review Rules` är styrfilen vi saknar (finns ej i repot ⇒ boten kör okonfigurerad). Processfixen värd mer än de fem kodfixarna. Grillnings-kandidat: blockerande vs rådgivande (branschmönstret vs vårt L321/L322-kyrkogårdsarv, samma resonemang som parkerade T87)
+
+**Ingång (fullständig, ursprunglig):**
+[T98-codex-pr-granskningslagret.md](T98-codex-pr-granskningslagret.md) · besläktad `T85` `T86`

@@ -1,10 +1,10 @@
 ---
 id: TASK-145.1
 title: 'Skiva: Registret som EN lista — steg-hinkar, steg-märken, FIFO'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 08:57'
-updated_date: '2026-08-07 13:00'
+updated_date: '2026-08-07 15:40'
 labels:
   - ready-for-agent
 dependencies: []

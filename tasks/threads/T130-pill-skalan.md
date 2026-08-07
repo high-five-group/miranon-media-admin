@@ -111,3 +111,18 @@ piller; registrerad ur samma prototyp-pass fyra dagar tidigare, och dess
 finns, uppgiften är migrering, inte design) · `T119` (mekaniserings-programmet
 — steg 5 hör dit) · `ADR-021`/`DESIGN-SYSTEM-SPEC` §1 (3-lagers token-systemet
 — en ny pill-token hör i `components.css`, aldrig i en komponent).
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+**Appens pillar har TRE storlekar, två av dem oavsiktliga.** Registrerad 2026-08-06 (S93, iterationsvåg 16) på Marcus order: *"samma sak med pillar som med knappar. Vi måste inventera alla pillar vi har i appen och sätta en standard på storlekar färg och allt sånt. […] Jag vill ju att alla pills håller en konsekvent utseendemönster i de olika 'miljöerna'."* **UPPTÄCKT** när betalningsvyns personkort kom att visa tre pillar bredvid varandra — Marcus: *"'Obekräftad' är störst och har fetstilt, den är ju hämtad från anmälan-detaljsidan där det passar bra i det utförandet. Den passar inte lika bra i denna miljö."* Diagnosen höll: `StatusBadge` skrevs för detaljsidans HEADER och användes i betalningsvyns LISTA. **INVENTERAT** (grep över `src/`, knappar och räknar-badges bortsorterade): 23 status-/metadata-pillar i tre former — `px-2 py-0.5 text-caption` ×9 (lista/kort) · `px-2.5 py-1 text-small` ×6 (detaljsida/header) · `px-2.5 py-0.5 text-caption` ×3 (`EventCard`/`NastaEventCard`/dagar-kvar) — plus fyra avvikare (`px-3 py-1` i `AnmalanDetail` 329 + `EventDetail` 255; `px-1.5 py-0.5` UTAN `font-medium` i `CheckinPrototyp` 365/689). **Den tredje formen är den öppna frågan:** legitimt kort-steg eller drift? **REDAN GJORT (endast betalningsvyn):** `StatusBadge` fick en `storlek`-prop (`sm`/`md`) med `md` som default, så den facit-låsta anmälnings-sidan renderar identiskt (verifierat i browsern: 31 px / 14 px font / `py-1`). **TREDJE REGELN UPPTÄCKT GENOM MÄTNING:** varje pill måste bära `border border-transparent` — kanten ritas aldrig men reserverar sin px, annars mäter en pill med kant 24 px bredvid en utan på 22. **FÄRGFRÅGAN delvis besvarad:** en neutral pill kan inte FYLLAS så den syns mot `bg-bg-muted` (paletten ger 1.04–1.09), och Marcus avvisade kontur — svaret blev `bg-surface`, appens etablerade form; det trasiga var 1.00 (muted på muted), inte 1.09. Kvar: ny token eller placeringsregel. **KVARSTÅR:** ~20 förekomster orörda; `StatusBadge` OCH `Tidslinje` är båda `[BIBLIOTEKS-KANDIDAT]` med promovering *"vid andra konsumenten"* som nu är förfallen. Besläktad: `T125` (**samma klass, för knappar** — dess "jobbet är mindre än det låter"-analys gäller ordagrant här: primitiven finns, uppgiften är migrering) · `T119` (grind-steget) · `DESIGN-SYSTEM-SPEC` §1 (ny pill-token hör i `components.css`)
+
+**Ingång (fullständig, ursprunglig):**
+[`T130-pill-skalan.md`](T130-pill-skalan.md)

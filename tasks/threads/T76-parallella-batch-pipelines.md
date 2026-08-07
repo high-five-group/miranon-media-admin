@@ -203,3 +203,18 @@ Grillningen 2026-07-11 tog designen till samsyn; piloten återstår.
    triggad · B-formen aldrig körd i drift · >2 pipelines kräver ny
    prövning. Nya behov föder ny tråd; kanonisk trail S66-doket
    Del 2–5.
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+Parallella batch-pipelines i samma repo — grillad samsyn KLAR (2026-07-11, tredje-stols-chatt bredvid S62): EN orkestrator + git worktree per pipeline (max 2 i v1) · Marcus partitionerar korten explicit (auto-plock = deterministisk dubbel-plock; fynd/trådar registreras serialiserat av orkestratorn) · staging-semafor i skriptet (TASK-6-empirin) · kortlivad branch + draft-PR per kort, merge-commit, auto-merge vid grönt; **B-switch PRE-BESLUTAD vid skarp Lotta-drift** (PR väntar på design-review; färdigspecas i pilot-ADR:n + T46 go-live-post + skill-flagga) · drain-halt (friska pipelinen kör klart pågående kort, inget nytt plockas). T71:s fan-out-avvisning revideras öppet FÖRST efter bevisad pilot; sandbox ortogonal → T61. Pilot kräver två genuint DISJUNKTA plockbara kort (TASK-5/6 rör båda `playwright.config.ts` → sekventiellt batch 4); vid bevis: pilot-ADR:n (nummer-not S63: 072 konsumerades av persist-ADR:n) + /work-batch 1.14.0 i EN landning. **PILOT BEVISAD (S65: 5/5 first-pass, ADR-073) → FÖRBÄTTRINGSPASSET + FÖRSTA SKARPA BRUKET (S66: batch 2 = 8.4 ∥ 9.2 first-pass 4/4, 0 konflikter; ADR-073-amenderingen + /work-batch 1.15.0 + semaforen som repo-artefakt + L277/L278) → TRÅDEN STÄNGD** — kumulativ empiri 7 kort/2 batchar first-pass 100 %; öppna gränser (drain obeprövad · B-formen ej i drift · >2 pipelines) ärvs av ADR-073, ej av tråden
+
+**Ingång (fullständig, ursprunglig):**
+[T76-parallella-batch-pipelines.md](T76-parallella-batch-pipelines.md) — kanonisk samsyns-plats (grillningen kördes utanför sessions-yta; öppet bokförd Del-avvikelse) · styrande tills vidare: [ADR-071](../../docs/decisions/ADR-071-afk-batch-kontraktet.md) · besläktad `T61` `T67` `T46` `T71`

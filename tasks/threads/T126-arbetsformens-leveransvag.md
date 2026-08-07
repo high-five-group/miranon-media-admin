@@ -249,3 +249,18 @@ denna tråd är en instans med en identifierad leveransväg-orsak) ·
 `T116`/`TASK-127.2` (förra instansen av samma kadens-fel, vars åtgärd är den som
 inte bet) · `T110` (orkestrerarens felklasser) · `ADR-090` (samma klass: regel
 utan leveransväg till utföraren, senare mekaniserad som hook).
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+**Arbetsformens regler når inte den som kom in genom en annan dörr.** Registrerad 2026-08-06 (S93) på Marcus order: *"Det här med att iterations-kadensen inte bet/funka, ska inte vara en lesson. Det ska bli en tråd. Rotorsak ska hittas och lösningen ska mekaniseras eller fixas så det aldrig blir en fråga igen."* **ANDRA INSTANSEN av samma fel:** en PR pushades och armerades per iterationsvarv i stället för lokal commit per varv + EN push när Marcus är nöjd. Marcus: *"Jag har påtalat det här förut men de åtgärder vi införde då verkar ju inte bita alls."* **ÅTGÄRDEN FANNS OCH LÄSTES ALDRIG:** efter förra instansen (`T116`, S96, `TASK-127.2`) skrevs regeln in i `prototype`-skillens § 5 *Iterations-kadensen*, komplett med mätningen som motiverade den (`#664` 15 min i kön, `#666` 20 min, 10–30 min per varv för sekunders arbete). Den var korrekt, färsk, mätunderbyggd och specifik. **ROTORSAKS-HYPOTES (ej bekräftad):** sessionen kom in via `session-resume` → HANDOFF → Marcus punktlista, en kedja där `prototype`-skillen aldrig laddas — vi placerar arbetsformens regler i den skill som STARTAR arbetsformen, men arbete ÅTERUPPTAS oftare än det startas, och varje sådan väg in hoppar över startdörren. Hypotesen är formulerad av samma aktör som begick felet och ska prövas mot disk innan något byggs. **VARFÖR INTE EN LESSON:** läsning är exakt det som fallerade, så en prosa-post om att prosa inte nås är självmotsägande som åtgärd — kravet är mekanisering eller strukturell fix. **ÅTGÄRDSRIKTNINGAR (ej beslutade):** (a) `PreToolUse`-spärr på `git push` under pågående iterationsvarv — ovanligt tydliga signaler finns (`[PROTOTYPE]`-märkta filer, prototyp-commits på grenen, körande dev-server) · (b) explicit ARBETSFORM-rad i handoffen som resume läser upp · (c) resume laddar skill utifrån deklarerad arbetsform · (d) flytta regeln till alltid-laddad yta. **ÖPPEN SKULD I SAMMA FAMILJ:** draft-regeln för parkerade PR:er lever nu i exakt samma form (prosa i ett lessons-fragment, ingen mekanism) och bör tas med när formen väljs. Besläktad: `T119` (mekaniserings-programmet — denna är en instans med identifierad leveransväg-orsak) · `T116` (förra instansen, vars åtgärd inte bet) · `T110` · `ADR-090`
+
+**Ingång (fullständig, ursprunglig):**
+[`T126-arbetsformens-leveransvag.md`](T126-arbetsformens-leveransvag.md)

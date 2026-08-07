@@ -180,3 +180,18 @@ delegera för att PRODUCERA"** är beslutad i
 § Orkestrerar-rollen + session-start/resume-skillsen). Frågorna 1–2 och
 4–5 (cron-formen, halva A-bygget, skill-formen, mätkostnaden) står kvar
 öppna — trådens trigger oförändrad (`TASK-119` + cron-beslutet).
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+**Autonom orkestrering med kontext-tröskel — kan orkestreraren pausa och starta om sig själv?** Registrerad 2026-07-31 (S91, nittonde pausen) på Marcus fråga om nattkörning som vid 40 % kontextfyllnad själv kör `session-paus`, nollställer kontexten och återupptar via `session-resume`. **VERIFIERAD SAMMA DAG mot dokumentation + CLI.** **Halva A (mät + pausa vid tröskel) är LÖST i princip:** kontextförbrukningen läses ur transcript-JSONL:s `usage.cache_read_input_tokens` — mätt **532 411 av 1 000 000 (~53 %)** efter 15 agenter och 551 turns — och `session-paus` är redan Code-körbar (ADR-069). **Halva B (nollställ kontexten) är BELAGT OMÖJLIG:** `/clear` är enbart interaktivt · `--continue`/`--resume`/`--fork-session` ärver per dokumentation *"the full history, including tool calls and results"* · Agent SDK har identisk mekanik · ingen `PreCompact`/`ContextThreshold`-hook finns. Rotorsaken är en designpremiss: sessioner är byggda för konversations-KONTINUITET, inte kontext-ÅTERSTÄLLNING. **⚠️ VERIFIERINGENS EGEN LUCKA:** agenten saknade orkestrerarens verktygsyta och skrev av att routines inte kan startas från en session — men `CronCreate`/`CronList` finns som deferred tools plus `/schedule`-skillen. **Cron-vägen är därmed den enda som inte kunde uteslutas, och dess avgörande fråga är obesvarad: startar varje cron-körning i FÄRSK kontext?** Mät den. **TREDJE SPÅRET, billigast:** vid mätningen drevs förbrukningen inte av agent-rapporterna (~30k) utan av orkestrerarens EGNA läsningar — restlistan, sessionsdoket, trådregistret, PR-diffar. Gör kontexten ITERATIV i stället för växande genom att delegera all tung läsning; kräver ingen ny mekanism. **Autokompaktering** är vad som sker om inget görs, men tröskel och vad som överlever är odokumenterat — vilket i sig är ett argument för halva A: en medveten paus med disk-handoff slår en okänd kondensering. **Läs tillsammans med `T110`** — autonom drift tar bort den sista externa fångst-mekanismen. Besläktad: `T110` · `T108` · `work-batch` · `ADR-069`
+
+**Ingång (fullständig, ursprunglig):**
+[T111-autonom-orkestrering-kontexttroskel.md](T111-autonom-orkestrering-kontexttroskel.md)

@@ -55,3 +55,15 @@ blockerar ej men värdefullt → defer (durabelt), förkasta aldrig tyst.
 - [T46](T46-go-live-karta.md) — go-live-karta (Mail-raden rättad till deployad-men-sövd).
 - [T44](T44-fas-6h-externa-provisionerings-forkrav.md) — externa provisionerings-förkrav (M3).
 - ADR-067 (bulk-mail-send-kontrakt) · ADR-061 (lokal-miljö-isolation, prod/staging-refs).
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Ingång (fullständig, ursprunglig):**
+[T55-mail-go-live-grind-f.md](T55-mail-go-live-grind-f.md) — uppstod Session 46 (pivot till UI-spår); send-email prod-deployad men SÖVD (S44), fail-closed tills `ENVIRONMENT=production` sätts; ~90% klart, inga prod-ändringar i S46; plockas i "redo för Lotta"-passet EFTER UI (om ingen extern drivare). Tvilling: T51 (Reply-To-självtest = första skarpa utskicket) · T53 (test-till-sig-själv). Ägare: Marcus/Code i prod-panelen (Chat rör ALDRIG secret)

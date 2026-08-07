@@ -15,6 +15,28 @@
 
 ## Aktuellt fokus
 
+**Session 99 ⏸️ PAUSAD (2026-08-07, andra pausen, `lifecycle: paused`)** —
+**UPPDRAG 1–7 AV 9 KLARA; ALLT I LUFTEN LANDAT.** Resume 1 i siffror:
+149-familjen KOMPLETT (ADR-097-systemet live, 149.3/149.4 stängda,
+plugin **1.30.0**) · registermigrationen LANDAD (`#910`: 221→84 KB, 0
+feta rader, 87 kort — T133-konflikten orkestrerar-löst) · **ADR-098,
+ADR-099, ADR-100** landade (tunna radformen · rullande fönstret ·
+sanningshierarkin med CLAUDE.md-pekar-rad + hubbens §0-post `057498a`) ·
+arkiverings-skriptet BYGGT (`#913`, testsvit 30/30; skarpa migrationen =
+158.3) · memory-ytan kuraterad (behåll 6/radera 10, **auto-memory AV**,
+user-scope-verifierat) · skarpbeviset `deny-subagent-vantan` TAGET ·
+task-158 + task-159 mintade med skivor. **Kvarvarande skivor:** 157.3 →
+157.4 QA · 158.3 → 158.4 → 158.5 → 158.6 QA · 159.2 → 159.3 QA · 148.5
+(Marcus bokar) → 148.6 → 148.7 QA. **Skarpbevis-skuld:**
+`deny-arbetsform-push.sh` — laddbar FÖRST i nästa session, betalas som
+resumens första handling. **NÄSTA: resume → skarpbeviset → spawna
+157.3 + 158.3 + 159.2 → grilla uppdrag 8 (/compact) → 9
+(styrande-docs-auditen, ADR-100 är måttstocken).** **HANDOFF: sessionsdok
+S99 § PAUSLÄGE (andra pausen) + Del 8.** Numrering vid paus:
+099/ADR-101/L480 + 4 fragment/T134 (S93 rör sig — re-verifiera)/
+task-160/f47. Heartbeat-monitorn stoppad med avsikt — starta vid resume.
+*(S100:s kadensrad nedan, oförändrad.)*
+
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 2) —
 `#900` LANDAD, PAUS-PR:N `#905` VAR RÖD OCH ÄR LAGAD.** Resume-läsningen fann
 **tre divergenser mot handoffen**, alla mot `origin/main` `09de3e50`. (1) Steg 1
@@ -168,10 +190,14 @@ PR:er, rörs ej. **Del 6 LANDAD: uppdrag 6 grillat till samsyn** (sex kvitterade
 domänhierarkin: koden äger beteende & mekanik, prosa är karta;
 §0-termposten hub-landad `7913c16`; ingen ny grind, decline ×3) ·
 `157.1` ✅ (ADR-098, `#889`) · `149.4` ✅ (hub `93892dd`, plugin
-**1.30.0**) · `task-159` + tre skivor mintade. **NÄSTA: spawna 157.2 +
-158.1 → 159.1 efter 158.1:s landning (ADR-räknings-serialiseringen) →
-grilla 7 (memory) → 8 (/compact) → 9 (styrande-docs-auditen, mot
-159-ADR:n som måttstock).**
+**1.30.0**) · `task-159` + tre skivor mintade. **Del 7 LANDAD: uppdrag 7 klart** — memory-ytan kuraterad på Marcus
+beslut (BEHÅLL 6: tre mandat + tre maskinfakta · RADERA 10 inkl. kaizen;
+Marcus stänger själv av auto-memory, kvarvarande läses endast instruerat) ·
+`158.1` ✅ (ADR-099, `#903` — ADR-041 beslut 6 rivet öppet) · `157.2` i
+bygge. **NÄSTA: spawna 159.1 (ADR-100) + 158.2 (arkiverings-skriptet,
+båda avblockade av #903) → grilla 8 (/compact) → 9
+(styrande-docs-auditen, mot 159-ADR:n som måttstock) · Marcus-moment:
+stäng av auto-memory · boka 148.5 · triagera 154–156 · Dependabot #635.**
 *(Paus-kadensraden nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
@@ -200,6 +226,33 @@ paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
 (RESERVERAT)/f47. Heartbeat-monitorn stoppad med avsikt — starta vid
 resume.
 *(S93:s kadensrad nedan, oförändrad.)*
+
+**Session 93 ⏸️ PAUSAD (2026-08-07, `lifecycle: paused`) — SEX SKIVOR LANDADE,
+TAKTEN UNDERKÄND** — `145.1` (registret som EN lista) · `145.2`
+(summeringsblocket med Bor över + Avbokade i facit-låst form) · `146.1`
+(PDF-runtime **BEVIS**) · `146.2` (Bilagor-tabellen, additivitet mätt över 19
+tabeller) · `146.3` (privat bucket, AC #3 bevisad i tre oberoende ben) —
+samtliga `Done`. **`145.4` (betalningsytan) ARMERAD OCH KÖAD** vid
+paus-skrivningen; `PROTO_MOTTAGEN_DATUM` riven till noll träffar.
+Enabling-detour: wiring-vaktens självtest gjort config-drivet (`#906`).
+**MARCUS UNDERKÄNDE TAKTEN** — verbatim: *"Vi kodar ju inte ett nytt Google
+liksom"* + prototyp-jämförelsen. Mätt: `145.1` ensam kostade **2,5 timmar,
+varav 72 min rent slöseri** från mina felaktiga uppdrag. Diagnos: skillnaden
+mot prototypen är apparaten, inte koden. **TVÅ MARCUS-BESLUT VÄNTAR:** (1)
+`main`-rödan (`#895`, 12 väntade staging-tester, ingen regression) — karantän,
+låt vara, eller prioritera om · (2) takten — agent-apparat eller direkt
+redigering för `145.3`/`145.5`/`145.6`. **BESLUTAT MEN EJ PÅBÖRJAT:** nästa
+resume tar `145.3`+`145.5`+`145.6` med EN agent i ett svep, en PR per skiva.
+**FEM SPEC-FEL, alla mina, alla fångade externt** → två fragment skördade
+(skivning mot kodens kopplingar · källmärkning måste avse gällande text).
+**TVÅ TRÅDAR:** `T132` (svepets DIRTY-väg filtrerar inte `isDraft`) · `T133`
+(Airtable-PAT har create-rätt mot BÅDA baserna). Numrering disk-verifierad mot
+`318b0cd6`: **101**/L480 + sex fragment/**T134**/**task-160**/f47 — axlarna
+rörde sig kraftigt (S99/S100 tog `ADR-096`–`100`, `task-149`–`159`).
+**HANDOFF: sessionsdok S93 § PAUSLÄGE.**
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
 
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`) — FEMTE
 RESUMEN: BYGGAGENTERNA UT** — pausens båda verifikationssteg **KLARA**:

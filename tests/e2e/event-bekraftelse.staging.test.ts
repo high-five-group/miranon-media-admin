@@ -7,8 +7,19 @@ import { mockValjarLista } from './helpers/valjar-lista';
  *
  * Ersätter task-18.6:s hantera-flöde: per-kort-knappen (K46) och Bekräfta
  * alla-pillen med kontrollfråga på rubriken (K47/K48) är RIVNA; batch-
- * bekräftelse via ett explicit markera-läge tog deras plats. Auto-utskicks-
- * krysset (K44) står orört och behåller sina två tester.
+ * bekräftelse via ett explicit markera-läge tog deras plats.
+ *
+ * AUTO-UTSKICKS-KRYSSET (K44) — RIVET av TASK-145.2, inte längre "orört av
+ * task-48": grillad samsyn beslut 2 (S93 Del 3, `tasks/sessions/2026-08-02-
+ * session-93.md` rad 158–162) namnger auto-kryssen som en av exakt tre
+ * rivningar ur summeringsblocket. De två gamla testerna som verifierade
+ * krysset (`AC #3: auto-krysset står i signal-slotten…` / `AC #3: schemalagt
+ * datum ur BASEN…`) är ERSATTA av ETT test som mekaniskt bevisar att krysset
+ * är BORTA — samma E2E-disciplin som TASK-145.1s AC #11 ("uppdatera
+ * assertioner i stället för att lämna dem röda"), tillämpad på en yta vars
+ * subjekt är RIVET, inte flyttat. `update-event`-mocken (`UPDATE_EVENT`) och
+ * `Mockar.updateEventCalls` lämnas orörda — det nya testet återanvänder dem
+ * för att bevisa att anropet ALDRIG sker.
  *
  * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
  * testMatch-kontrakt, inte staging-exklusivt).
@@ -905,47 +916,38 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
   });
 });
 
-test.describe('Auto-utskicks-krysset (task-18.6 K44 — orört av task-48)', () => {
-  test('AC #3: auto-krysset står i signal-slotten, speglar bas-fälten och skriver dem', async ({
+test.describe('Eventinfo-radens signal-slot — auto-utskicks-krysset RIVET (TASK-145.2)', () => {
+  test('signal-slotten bär ALDRIG längre ett kryss — bara "Dags att skicka"-badgen eller tomt, och update-event anropas aldrig', async ({
     page,
   }) => {
+    // Utanför tvåveckorsfönstret (eventDetail()s default startdatum, 60 dagar
+    // fram) visade den gamla koden AutoKryss-fallbacken här. Efter rivningen
+    // (grillad samsyn beslut 2) ska slotten stå HELT TOM i samma läge —
+    // reserverad höjd (K44/AC #3 i TASK-145.1), men utan innehåll.
     const mockar = await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    // Utanför tvåveckorsfönstret → badgen är släckt och slotten bär krysset.
     const slot = gruppen(page).getByTestId('eventinfo-signal-slot');
-    const kryss = slot.getByRole('checkbox');
-    // RAC-kryssets input är visuellt gömd — LABELN är den verkliga träffytan
-    // (mark-paid-svitens klickaKryss-precedent; hit-target-checken fäller inputen).
-    const kryssYta = kryss.locator('xpath=ancestor::label[1]');
-    await expect(kryss).toBeVisible();
-    // deltagarinfoAutoAvstangt=false ⇒ auto-utskicket är PÅ (ikryssat).
-    await expect(kryss).toBeChecked();
-    await expect(slot.getByText(/^Schemalagt att skickas automatiskt/)).toBeVisible();
+    await expect(slot).toBeVisible();
+    await expect(slot.getByRole('checkbox')).toHaveCount(0);
+    await expect(slot).toBeEmpty();
 
-    // Kryssa UR → opt-out skrivs till basen via update-event.
-    await kryssYta.click();
-    await expect.poll(() => mockar.updateEventCalls.length).toBe(1);
-    expect(mockar.updateEventCalls[0].deltagarinfoAutoAvstangt).toBe(true);
-    expect(mockar.updateEventCalls[0].eventId).toBe(EVENT_ID);
-    await expect(kryss).not.toBeChecked();
-    await expect(slot.getByText('Skickas inte automatiskt')).toBeVisible();
-
-    // Kryssa I igen → opt-out av + schemalagt datum sätts (härlett ur tvåveckorsgränsen).
-    await kryssYta.click();
-    await expect.poll(() => mockar.updateEventCalls.length).toBe(2);
-    expect(mockar.updateEventCalls[1].deltagarinfoAutoAvstangt).toBe(false);
-    expect(mockar.updateEventCalls[1].deltagarinfoSchemalagd).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // Ingen skrivväg kvar på denna yta: update-event (auto-krysset skrev hit)
+    // anropas aldrig, oavsett vad Lotta gör på sidan.
+    expect(mockar.updateEventCalls).toHaveLength(0);
   });
 
-  test('AC #3: schemalagt datum ur BASEN vinner över den härledda gränsen', async ({ page }) => {
-    await mocka(
-      page,
-      eventDetail({ deltagarinfoSchemalagd: '2026-12-24', deltagarinfoAutoAvstangt: false }),
-    );
+  test('inom tvåveckorsfönstret visas ENDAST "Dags att skicka"-badgen, aldrig ett kryss bredvid den', async ({
+    page,
+  }) => {
+    // Samma bas som `deltagarinfoSchemalagd`-testet ovan hade (schemalagt
+    // datum ur BASEN) demonstrerade tidigare — men nu prövas att badgen och
+    // krysset aldrig samexisterar, sedan krysset revs helt.
+    await mocka(page, eventDetail({ startdatum: omDagar(7), slutdatum: omDagar(8) }));
     await oppnaEventsidan(page);
 
     const slot = gruppen(page).getByTestId('eventinfo-signal-slot');
-    await expect(slot.getByText('Schemalagt att skickas automatiskt 24 december')).toBeVisible();
+    await expect(slot.getByText(/^Dags att skicka/)).toBeVisible();
+    await expect(slot.getByRole('checkbox')).toHaveCount(0);
   });
 });
