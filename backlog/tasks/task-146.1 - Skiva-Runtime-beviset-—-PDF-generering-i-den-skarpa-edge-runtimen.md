@@ -1,10 +1,10 @@
 ---
 id: TASK-146.1
 title: 'Skiva: Runtime-beviset — PDF-generering i den skarpa edge-runtimen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 09:04'
-updated_date: '2026-08-07 10:17'
+updated_date: '2026-08-07 13:20'
 labels:
   - ready-for-agent
 dependencies: []
@@ -86,7 +86,7 @@ per uppdragets instruktion.
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
 - [ ] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
