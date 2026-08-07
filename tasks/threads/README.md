@@ -173,6 +173,7 @@ Kör den innan du landar en ändring i tabellen. Den prövar formen — inte om 
 | `T130` | **Appens pillar har TRE storlekar, två av dem oavsiktliga.** | `paused` | [T130-pill-skalan.md](T130-pill-skalan.md) · besläktad `T125` `T119` |
 | `T131` | **Dokument-ytan har ingen form — den bröts ut ur bilage-fundamentet för att en skiva inte kan föregå sitt facit.** | `paused` | [T131-dokument-ytan-har-ingen-form-den-brots-ut-ur-bilage.md](T131-dokument-ytan-har-ingen-form-den-brots-ut-ur-bilage.md) · besläktad `T130` |
 | `T132` | **Heartbeat-svepets DIRTY-väg filtrerar inte `isDraft`, medan armerings-kandidat-vägen gör det.** | `paused` | [T132-heartbeat-svepets-dirty-vag-filtrerar-inte-isdraft.md](T132-heartbeat-svepets-dirty-vag-filtrerar-inte-isdraft.md) · besläktad `T128` `T112` |
+| `T133` | **Airtable-PAT:en har `create`-behörighet mot BÅDA baserna — prod-skyddet ligger helt i vår egen kod, inte i tokenets scope.** | `paused` | [T133-airtable-pat-create-ratt-mot-bada-baserna.md](T133-airtable-pat-create-ratt-mot-bada-baserna.md) |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
