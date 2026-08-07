@@ -4,7 +4,7 @@ title: 'PRD: Åtgärds-sidan — den enda platsen där något verkställs'
 status: To Do
 assignee: []
 created_date: '2026-08-07 07:52'
-updated_date: '2026-08-07 08:39'
+updated_date: '2026-08-07 08:56'
 labels: []
 dependencies: []
 ordinal: 232000
@@ -162,11 +162,18 @@ Skiva 6 beror på kort 2. Skiva 10 beror på kort 2 och på Roger-avstämningen.
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-SAMLAT UNDERLAG: docs/specs/ATGARDSSIDAN-UNDERLAG.md — allt som är sagt och beslutat om åtgärds-sidan, konsoliderat 2026-08-07 ur sessionsdok, bilaga, två research-pass, ORDLISTA och docblock i produktionskod. LÄS DEN FÖRE SKIVNING.
+MOTTAGEN-DATUM — MARCUS BESLUT 2026-08-07, VÄG C: datumet SKA byggas, och DETTA KORT ÄGER DET (skrivningen bor där avprickningen bor).
 
-DE SEX ÅTGÄRDSTYPERNA ÄR BEKRÄFTADE (Marcus 2026-08-07) och därmed INTE längre en öppen punkt: manuell anmälan · bekräftelse · betalningspåminnelse · markera betalda · eventinfo · fritt utskick. Enumerationen saknades i alla artefakter och rekonstruerades ur prototypens platshållartext + tabellen över vilka Åtgärds-rader som flyttar; underlagsdokumentet § 3 bär både listan och hur den återfanns.
+VAD SOM SKA IN:
+- Två ADDITIVA dateTime-fält i basen (anmälningsavgift mottagen-datum + slutbetalning mottagen-datum), i BÅDA baserna. Precedens: task-18.8 la fyra additiva fält med egen allowlist-operation.
+- Utökad skriv-allowlist i berörd edge-funktion.
+- Skrivväg: datumet stämplas när Lotta prickar av.
 
-ORDLISTA-avvikelse att åtgärda vid bygget: glossen 'åtgärdsval (utskickstyp)' är för smal — manuell anmälan och markera betalda är inte utskick.
+TVÅ KONSEKVENSER SOM MÅSTE BYGGAS, ej valfria:
+1. AV-BOCKEN MÅSTE NOLLA DATUMET. Annars lämnar en felkryssning ett datum som ser äkta ut.
+2. GAMLA BETALNINGAR FÅR ALDRIG ETT DATUM RETROAKTIVT. Marcus accepterade explicit att appen bär två klasser i samma lista: 'Det gör inget att gamla betalningar inte har datum.'
 
-PROCEDUR (Marcus 2026-08-07): sidan tas i EGEN NY SESSION som kör hela kedjan — ev. grillning (agentens bedömning; produktbesluten är redan kvitterade, det som saknas är FORMEN) → divergens-pass (EJ valfritt, beslut 8) → Marcus väljer variant → konvergens-pass → facit → PRD uppdateras → /to-issues.
+VARFÖR HÄR OCH INTE I TASK-145: eventsidan blev ren översyn 2026-08-07, så avprickningen — och därmed stämplingen — flyttade hit. TASK-145 renderar bara datumet när fältet bär värde.
+
+BASENS UTGÅNGSLÄGE (verifierat mot data-model.md): Anmälningsavgift fldJtKQ3qLxRKOvR6 och Slutbetalning fldIImadnJUZHr5Qh är BÅDA singleSelect UTAN tidsstämpel. Basen vet ATT, aldrig NÄR.
 <!-- SECTION:NOTES:END -->
