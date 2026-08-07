@@ -15,6 +15,36 @@
 
 ## Aktuellt fokus
 
+**Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 2) —
+`#900` LANDAD, PAUS-PR:N `#905` VAR RÖD OCH ÄR LAGAD.** Resume-läsningen fann
+**tre divergenser mot handoffen**, alla mot `origin/main` `09de3e50`. (1) Steg 1
+i handoffens NÄSTA är **klart**: `#900` MERGED `14:14:07Z` (merge-commit
+`68addb6b`) — research-filen, varv 5 och Dokument-ytan ligger i `main`. (2)
+**Paus-PR:n `#905` stod RÖD, ej BLOCKED-på-väntan:** `Docs link check` FAILURE
+→ `CI Passed or Skipped` FAILURE, tre brutna länkar. Rotorsaken är sekvens, inte
+innehåll — grenen `docs/s100-paus-2` armerades `14:09:48Z`, alltså **fyra
+minuter före `#900` mergade**, och länkade till
+`docs/research/mottagar-preview-monster-2026-08-07.md` +
+`tasks/sessions/bilagor/s100-dokumentytan/` som bara fanns i `#900`s gren.
+Lagad med merge av `origin/main` i denna landning; båda målen verifierade på
+disk efteråt. **Klassen är värd att minnas: en paus-landning som länkar till en
+ännu icke-landad systergren är strukturellt röd, och `BLOCKED` i
+`gh pr view` skiljer inte "väntar på CI" från "CI har fällt".** (3)
+**Numreringen rörde sig på tre axlar under pausen** — `ADR-099` finns (nästa
+**`100`**, ej `098`), fragmenten är **sex** (ej fem; nytt:
+`uppdragets-kallmarkning-maste-avse-gallande-text`), och `task-159` är mintad
+(nästa **`task-160`**, ej `task-158`). Håller: **`L480`** · **`T133`** ·
+**`f47`**. **Parallellitet:** `S99` + `S93` båda `lifecycle: active`,
+ägarlappen i den delade git-katalogen satt `12:15:55Z` av en **levande** ägare
+(PID 90883, starttid verifierad) — denna session arbetar därför vidare i egen
+worktree per `ADR-090` beslut 2, som under hela passet. **NÄSTA: dev-servern på
+4173 → Marcus granskar varv 5 av åtgärds-sidan i browsern → fler iterationer
+efter hans omstyrning, ett varv per omstyrning med egen landning.**
+Dokument-ytan rörs INTE (parkerad på Marcus order).
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 100 ⏸️ PAUSAD IGEN (2026-08-07, andra pausen, `lifecycle: paused`) —
 FEM VARV PÅ ÅTGÄRDS-SIDAN, ETT RESEARCH-PASS OCH DOKUMENT-YTAN.** Passet gick i
 snabb iteration med Marcus granskning i browsern mellan varje varv; **varje
