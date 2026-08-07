@@ -91,14 +91,12 @@ import {
   ChevronRight,
   CircleCheck,
   Clock,
-  FileText,
   History,
   Inbox,
   type LucideIcon,
   MailCheck,
   Paperclip,
   Plus,
-  Sparkles,
   Upload,
   UserPlus,
 } from 'lucide-react';
@@ -307,14 +305,31 @@ const ATGARDER: AtgardsTyp[] = [
 /* ------------------------------------------------------------------ *
  * BILAGEVÄLJARENS STUBB — de tre dokumentklasserna (ORDLISTA § Bilaga).
  *
- * Klass C är strukturellt olik de andra två och det MÅSTE synas i väljaren:
- * en person-genererad bilaga är inte EN fil till sex mottagare, det är SEX
- * filer — en per mottagare. Det är ett andra, oberoende skäl till att den
- * bilage-bärande sändvägen måste vara loopad singelsändning (underlaget § 7
- * härledde grenen ur den tysta batch-bristen; klass C ger den samma svar).
+ * Klass C är strukturellt olik de andra två: en person-genererad bilaga är
+ * inte EN fil till sex mottagare, det är SEX filer — en per mottagare. Det är
+ * ett andra, oberoende skäl till att den bilage-bärande sändvägen måste vara
+ * loopad singelsändning (underlaget § 7 härledde grenen ur den tysta
+ * batch-bristen; klass C ger den samma svar).
+ *
+ * ÖPPEN PUNKT, VARV 10 — KLASSKILLNADEN SYNS INTE LÄNGRE I YTAN. Raden ovan
+ * sade tidigare att den "MÅSTE synas i väljaren", och den syntes: varje rad
+ * bar en klasstext ur `KLASS_TEXT`, där C:s löd "Genereras för var och en —
+ * N st". Marcus tog bort hjälptexterna ("det här med 'samma till alla' är inte
+ * hjälpsamt, det är självklart") — vilket stämmer för A och B, men C:s text
+ * var inte självklar, den var klassens hela poäng.
+ *
+ * Kunskapen bor alltså nu HÄR och ingenstans i gränssnittet. Det är ett
+ * medvetet läge, inte en förlust som glömts bort: prototypens fråga gäller
+ * formen, och bäraren av klass C-skillnaden är en egen designfråga som ska
+ * ställas när bilage-fundamentet (`TASK-146`) faktiskt finns. Bygg den inte
+ * som en återinförd hjälptext utan att fråga — det är den lösning Marcus just
+ * avvisade.
  *
  * INGEN FÖRVALS-LOGIK (grillad samsyn beslut 5, bokstavligt): ingen bilaga är
- * förkryssad. En gissad förvald bilaga är farligare än en tom väljare.
+ * förkryssad. Regeln levde i den borttagna raden "Ingenting är förvalt — du
+ * väljer aktivt vad som följer med"; den lever nu i `useState(new Set())` och
+ * i denna docblock. Beteendet är oförändrat — bara dess synliga förklaring är
+ * borta. En gissad förvald bilaga är farligare än en tom väljare.
  * ------------------------------------------------------------------ */
 type BilageKlass = 'A' | 'B' | 'C';
 
@@ -333,11 +348,9 @@ const BILAGOR: Bilaga[] = [
   { id: 'c1', namn: 'Betalningskvitto', klass: 'C' },
 ];
 
-const KLASS_TEXT: Record<BilageKlass, (antal: number) => string> = {
-  A: () => 'Samma fil till alla',
-  B: () => 'Fylls med eventets uppgifter — samma till alla',
-  C: (antal) => `Genereras för var och en — ${antal} st`,
-};
+/* `KLASS_TEXT` LÅG HÄR och är borttagen med hjälptexterna (varv 10). Den var
+   ytans enda bärare av klasskillnaden — se `BILAGOR`-docblockens öppna punkt
+   innan något återinförs. */
 
 /* ================================================================== *
  * DELTAGARKORTET — samma kort Lotta MARKERADE på eventdetaljen.
@@ -975,17 +988,14 @@ function MottagarYta({
 }
 
 /* ================================================================== *
- * BILAGEVÄLJAREN — utan förvals-logik, klass C synligt särskild.
+ * BILAGEVÄLJAREN — utan förvals-logik. Kryssruta, namn, storlek.
+ *
+ * `antalMottagare`-proppen FÖLL MED KLASSTEXTERNA (varv 10): den fanns bara
+ * för att klass C:s rad skulle kunna säga "Genereras för var och en — N st".
+ * Den togs bort i stället för att lämnas oanvänd — en prop som inget läser
+ * påstår ett beroende som inte finns.
  * ================================================================== */
-function BilageValjare({
-  valda,
-  antalMottagare,
-  onVaxla,
-}: {
-  valda: Set<string>;
-  antalMottagare: number;
-  onVaxla: (id: string) => void;
-}) {
+function BilageValjare({ valda, onVaxla }: { valda: Set<string>; onVaxla: (id: string) => void }) {
   return (
     <div className="flex flex-col gap-2 py-3">
       <div className="flex items-center justify-between">
@@ -998,42 +1008,46 @@ function BilageValjare({
         </span>
       </div>
 
-      <div className="divide-y divide-border rounded-lg bg-surface">
-        {BILAGOR.map((b) => {
-          const ar = valda.has(b.id);
-          return (
-            <label
-              key={b.id}
-              className="flex cursor-pointer items-start gap-3 px-3 py-2.5 hover:bg-bg-muted motion-safe:transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={ar}
-                onChange={() => onVaxla(b.id)}
-                className="mt-0.5 size-4 shrink-0 accent-[var(--mm-color-primary)]"
-              />
-              <span className="flex min-w-0 flex-col">
-                <span className="flex items-center gap-2">
-                  {b.klass === 'A' ? (
-                    <FileText aria-hidden="true" size={14} className="shrink-0 text-text-muted" />
-                  ) : (
-                    <Sparkles aria-hidden="true" size={14} className="shrink-0 text-text-muted" />
-                  )}
-                  <span className="truncate font-medium text-body">{b.namn}</span>
-                </span>
-                <span className="text-small text-text-muted">
-                  {KLASS_TEXT[b.klass](antalMottagare)}
-                  {b.storlek ? ` · ${b.storlek}` : ''}
-                </span>
-              </span>
-            </label>
-          );
-        })}
-      </div>
+      {/* RADEN ÄR NU KRYSSRUTA + NAMN + STORLEK, inget mer (varv 10).
 
-      <p className="text-small text-text-muted">
-        Ingenting är förvalt — du väljer aktivt vad som följer med.
-      </p>
+          IKONERNA ÄR BORTA (Marcus: "Ta bort alla ikoner för dokumenten,
+          räcker med kryssrutan"). De bar klass-skillnaden visuellt — `FileText`
+          för A, `Sparkles` för B/C — och den bärningen var svag redan innan:
+          två ikoner för tre klasser, och `Sparkles` sade "genereras" bara för
+          den som redan visste det.
+
+          HOVER-TONEN RÄTTAD: raden bar `hover:bg-bg-muted`, vilket är EXAKT
+          `KORT_KLASS`-bakgrunden som arbetsytan står på — hover försvann alltså
+          in i omgivningen i stället för att lyfta raden. Marcus såg det direkt:
+          "Bilage-raderna kan inte ha en hover-färg som är samma som bakgrunden
+          på blocket de står på." Nu `bg-bg-emphasized`, appens dominerande
+          hover-ton (23 förekomster i `src/components/` mot bilage-radernas
+          avvikande 5) och samma som `RAD_KLASS` i den här filen redan bär.
+
+          `items-center` i stället för `items-start`: raden är enradig nu, så
+          kryssrutans `mt-0.5`-justering mot en tvåradig text är onödig. */}
+      <div className="divide-y divide-border rounded-lg bg-surface">
+        {BILAGOR.map((b) => (
+          <label
+            key={b.id}
+            className="flex cursor-pointer items-center gap-3 px-3 py-2.5 hover:bg-bg-emphasized motion-safe:transition-colors"
+          >
+            <input
+              type="checkbox"
+              checked={valda.has(b.id)}
+              onChange={() => onVaxla(b.id)}
+              className="size-4 shrink-0 accent-[var(--mm-color-primary)]"
+            />
+            <span className="truncate font-medium text-body">{b.namn}</span>
+            {/* Storleken höger-justerad — samma plats som räknarna på sidans
+                övriga rader (`RAD_KLASS` § `ml-auto`). Den finns BARA på klass
+                A; se `BILAGOR`-docblocken för varför B och C saknar den. */}
+            {b.storlek && (
+              <span className="ml-auto shrink-0 text-small text-text-muted">{b.storlek}</span>
+            )}
+          </label>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1164,7 +1178,7 @@ function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Regis
         )}
       </div>
 
-      <BilageValjare valda={bilagor} antalMottagare={mottagare.length} onVaxla={vaxlaBilaga} />
+      <BilageValjare valda={bilagor} onVaxla={vaxlaBilaga} />
 
       {utanEpost > 0 && (
         <MessageBox intent="warning" title="Några saknar e-post">
@@ -1173,16 +1187,31 @@ function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Regis
         </MessageBox>
       )}
 
-      {/* Sändknappen: GRÖN, aldrig röd — handlingen når utomstående, och
-          danger är destruktionsklassens intent (SegmentMailCompose-precedenten,
-          task-18.16 grön-knapp-regeln). Oåterkalleligheten skyddas av
-          granska-steget, inte av färgen. */}
+      {/* KNAPPEN ÄR NU GRÅ OCH LITEN, OCH DET FÖLJER INTENT-REGELN — det bryter
+          den inte (varv 10, Marcus: "Sätt in en mindre knapp som vi har, ta den
+          gråa färgen och byt knapptexten till bara 'Granska'").
+
+          Den gamla var `intent="success"` (grön) med texten "Granska och skicka
+          till N mottagare", och skälet stod här: grönt eftersom "handlingen når
+          utomstående" (`Button.tsx` § intent-regeln, task-19.3 · task-18.16
+          grön-knapp-regeln · SegmentMailCompose-precedenten).
+
+          MEN KNAPPEN SKICKAR INTE LÄNGRE — den öppnar granska-steget, och det är
+          DÄR sändningen sker. En knapp som bara leder till nästa steg når ingen
+          utomstående, så den gröna intent-regeln gäller den inte. `secondary`
+          (neutral outline, `Button.tsx` § "NEUTRALA stödformer") är rätt form
+          för ett mellansteg, och grönt hade dessutom byggt en falsk vana: den
+          färgen ska betyda "nu går det iväg" den dag knappen faktiskt gör det.
+
+          Texten bär inte längre mottagarantalet. Räknaren finns redan två gånger
+          på sidan — i mottagar-ytans accordion-huvud och på åtgärdsraden — och en
+          tredje kopia i knappen var den minst synliga av dem. */}
       <div className="flex items-center justify-between gap-3 pt-1">
         <span className="text-small text-text-muted">
           Varje mottagare får sitt eget mail — ingen ser vem mer som fick det.
         </span>
-        <Button intent="success" isDisabled={mottagare.length === 0}>
-          Granska och skicka till {mottagare.length} mottagare
+        <Button intent="secondary" size="sm" isDisabled={mottagare.length === 0}>
+          Granska
         </Button>
       </div>
     </div>
