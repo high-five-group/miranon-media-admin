@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-07 07:44'
+updated_date: '2026-08-07 08:56'
 labels: []
 dependencies: []
 ordinal: 230000
@@ -153,3 +154,18 @@ Skiva 1–3 kan börja parallellt med 4–6; QA sist och beroende av alla.
 - [ ] #7 test:visual omtagen med granskade baslinjer — drift i gruppdynamik/proto-rivning är väntad, inte accepterad osedd
 - [ ] #8 Mottagen-datum: prototyp-lokalt datum får INTE finnas i landad kod utan Marcus bas-beslut
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MOTTAGEN-DATUM — MARCUS BESLUT 2026-08-07, VÄG C. Datumet SKA finnas: 'vi måste ha in datum, det har alltid proffs. Vi ska göra det proffsigt. […] Det gör inget att gamla betalningar inte har datum.'
+
+ARBETSFÖRDELNINGEN, som följer av att avprickningen flyttat till åtgärds-sidan:
+- DETTA kort RENDERAR datumet när domänmodellens fält bär ett värde, annars bara 'Mottagen'. Ingen basändring här.
+- TASK-147 äger de två additiva dateTime-fälten, allowlist-utökningen och skrivvägen som stämplar datumet vid avprickning.
+- Den prototyp-lokala uppslagstabellen PROTO_MOTTAGEN_DATUM RIVS i detta kort. Den är påhittad data och bryter mot RÅ-disciplinen som anmälnings-detaljsidan redan följer ('Betalning-mottagen saknar tidsstämpel i basen ⇒ ingen betalningsnod fabriceras').
+
+ACCEPTERAD KONSEKVENS, öppet bokförd: appen bär permanent TVÅ KLASSER i samma lista — nya betalningar visar datum, gamla visar bara 'Mottagen'. Marcus har vägt och accepterat det. Retroaktiva datum får aldrig fabriceras.
+
+Att pillen står datumlös tills TASK-147 landat är inte ett fel — det är exakt vad basen kan belägga i det läget.
+<!-- SECTION:NOTES:END -->
