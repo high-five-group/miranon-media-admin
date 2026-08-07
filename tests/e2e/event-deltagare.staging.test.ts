@@ -3,38 +3,37 @@ import { expect, type Page, test } from '../support/test-bas';
 import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
- * TASK-145.1 — Registret som EN lista (steg-hinkar, steg-märken, FIFO).
- *
- * ERSÄTTER task-18.4:s skelett-svit. Obekräftade-kön och Bekräftade-arkivet
- * (var sin GruppRubrik, var sin sorteringsordning, kategori-flikarna, de
- * fem gamla klickbara summeringsraderna) är RIVNA ur produktionsvyn — se
- * `Deltagare.tsx`s `ArbetsKo`-docblock för den fullständiga skivgränsen och
- * `backlog/tasks/task-145.1`. I deras ställe: EN ovillkorlig lista sorterad
- * på fyra steg-hinkar (väntar på bekräftelse → anmälningsavgift saknas →
- * slutbetalning saknas → klara, med inställt/på-väg-till-väntelista sist,
- * avbokade allra sist) och INOM varje hink i anmälningsordning (äldst
- * registrerad först — samma FIFO-semantik den gamla Obekräftade-kön hade,
- * nu tillämpad enhetligt över hela registret). Steg-märket ÄR grupperingen:
- * inga sektionsrubriker renderas, och exakt ETT märke visas per person.
+ * task-18.4 — Anmälda deltagare som ARBETSKÖ (S73-facit K35–K58): summeringsrader
+ * med klickfilter, kategori-flikar, FAST Obekräftade-kö + fällbart Bekräftade-arkiv och
+ * eventinfo-signalens alltid reserverade slot.
  *
  * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
  * testMatch-kontrakt, inte staging-exklusivt).
  *
  * **Deterministisk via `page.route`-mock** av get-event + get-registrations —
- * samma split som 18.1/18.8: SERVER-kontraktet bevisas av
- * `tests/api/get-registrations.staging.test.ts` mot skarp staging; detta
- * e2e-testet bevisar KLIENTENS form och beteende flak-fritt.
+ * samma split som 18.1/18.8: SERVER-kontraktet (deltagar-shapens fält-mappning,
+ * Källa-semantiken, person-batchen) bevisas av
+ * `tests/api/get-registrations.staging.test.ts` mot skarp staging; dessa e2e
+ * bevisar KLIENTENS form och beteende flak-fritt utan delad staging-data.
  *
- * Täckning: rubrikerna är BORTA (AC #1), steg-hinkarnas ordning (AC #2),
- * FIFO inom hink (AC #3), steg-märket är grupperingen — inga rubriker
- * (AC #4), exakt ETT märke per person inkl. undantagens egna ärliga märken
- * (AC #5), inline-scrollens klipphöjd återanvänd oförändrad (AC #6),
- * scroll-ytans egen aria-label (AC #7), tomt register, axe 0.
+ * Täckning: summeringsradernas ordning + värden (AC #2), klickfiltret med
+ * Rensa filtret, grupperingen med äldst-först/senast-först (AC #2),
+ * kategori-flikarna, signal-slottens båda lägen utan geometri-hopp (AC #3),
+ * avbokade räknas bort, axe 0.
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const EVENT_ID = 'recDELTAGARE0001';
+
+/** YYYY-MM-DD `n` dagar från idag. Assertionerna nedan är MEDVETET toleranta mot
+ *  ±1 dags TZ-drift mellan Node och browsern (T27-klassen) — datumen ligger med
+ *  bred marginal inne i respektive fönster. */
+function omDagar(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 type Json = Record<string, unknown>;
 
@@ -45,26 +44,26 @@ function eventDetail(overrides: Json = {}): Json {
     eventNamn: 'Resor i medvetandet 1',
     typ: 'Utbildning',
     ort: 'Skövde',
-    startdatum: '2026-12-01',
-    slutdatum: '2026-12-02',
+    // Långt fram = utanför tvåveckorsfönstret → signal-slotten står TOM.
+    startdatum: omDagar(60),
+    slutdatum: omDagar(61),
     tidKvarTillEvent: '8 veckor',
     maxPlatser: 12,
-    antalAnmalda: 7,
-    platserKvar: 5,
-    anmaldBelaggning: 0.58,
-    bekraftadBelaggning: 0.42,
+    antalAnmalda: 4,
+    platserKvar: 8,
+    anmaldBelaggning: 0.33,
+    bekraftadBelaggning: 0.17,
     antalNyaAnmalningar: 2,
-    antalAnmalningsavgifter: 3,
-    antalSlutbetalningar: 1,
+    antalAnmalningsavgifter: 2,
+    antalSlutbetalningar: 0,
     antalSlutbetalningFelande: 4,
     status: 'Planerat',
     eventKey: 'Event-99',
     reserverade: 0,
-    manuelltTillagda: 0,
-    viaFormular: 7,
-    medfoljande: 0,
+    manuelltTillagda: 1,
+    viaFormular: 2,
+    medfoljande: 1,
     vantelista: 0,
-    deltagarinfoAutoAvstangt: false,
     ...overrides,
   };
 }
@@ -101,73 +100,49 @@ function registrering(overrides: Json): Json {
 }
 
 /**
- * SJU aktiva registreringar — en per steg-hink plus BÅDA undantagen — plus en
- * avbokad. Två i samma hink (Bertil/Anna, väntar-bekräftelse) bevisar FIFO;
- * övriga hinkar har en post var, tillräckligt för ordningsbeviset.
- *
- *   Bertil  Obekräftad          06-20 (äldst av de två väntande)
- *   Anna    Obekräftad          07-01
- *   Cecilia Bekräftad, avgift saknas   07-05
- *   David   Bekräftad, avgift ok, slut saknas  06-25
- *   Erik    Bekräftad, BÅDA mottagna (klar)    06-15
- *   Frida   Inställt                            07-06
- *   Gustav  Flytta till väntelista               07-07
- *   Hanna   Avbokad/Ombokad — sist av alla
+ * Fyra AKTIVA anmälningar + en avbokad (som ska räknas bort överallt):
+ *   Bertil  Obekräftad  06-20 (äldst av kön)   Källa Manuell
+ *   Anna    Obekräftad  07-01
+ *   Cecilia Bekräftad   07-05 (senast av arkivet)  bekräftelse skickad
+ *   David   Bekräftad   06-25  Källa +1 · bekräftelse + eventinfo + påminnelse
+ *   Eva     Avbokad/Ombokad — aldrig med i någon räkning eller lista
  */
 const DELTAGARE: Json[] = [
-  registrering({
-    id: 'recBertil',
-    namn: 'Bertil Sund',
-    inskickad: '2026-06-20T09:00:00.000Z',
-  }),
   registrering({
     id: 'recAnna',
     namn: 'Anna Ek',
     inskickad: '2026-07-01T09:00:00.000Z',
   }),
   registrering({
+    id: 'recBertil',
+    namn: 'Bertil Sund',
+    inskickad: '2026-06-20T09:00:00.000Z',
+    kalla: 'Manuell',
+  }),
+  registrering({
     id: 'recCecilia',
     namn: 'Cecilia Lund',
     status: 'Bekräftad (mail skickat)',
-    bekraftelseSkickad: '2026-07-04T09:00:00.000Z',
     inskickad: '2026-07-05T09:00:00.000Z',
+    bekraftelseSkickad: '2026-07-06T09:00:00.000Z',
   }),
   registrering({
     id: 'recDavid',
     namn: 'David Nord',
     status: 'Bekräftad (mail skickat)',
-    bekraftelseSkickad: '2026-06-24T09:00:00.000Z',
-    anmalningsavgift: 'Mottagen',
     inskickad: '2026-06-25T09:00:00.000Z',
+    kalla: '+1',
+    medfoljandeTill: 'recCecilia',
+    bekraftelseSkickad: '2026-06-26T09:00:00.000Z',
+    deltagarinfoSkickad: '2026-07-10T09:00:00.000Z',
+    betalningspaminnelseSkickad: '2026-07-08T09:00:00.000Z',
+    antalGenomfordaEvent: 3,
   }),
   registrering({
-    id: 'recErik',
-    namn: 'Erik Berg',
-    status: 'Bekräftad (mail skickat)',
-    bekraftelseSkickad: '2026-06-14T09:00:00.000Z',
-    anmalningsavgift: 'Mottagen',
-    slutbetalning: 'Mottagen',
-    inskickad: '2026-06-15T09:00:00.000Z',
-  }),
-  registrering({
-    id: 'recFrida',
-    namn: 'Frida Holm',
-    status: 'Inställt',
-    bekraftelseSkickad: '2026-07-05T09:00:00.000Z',
-    inskickad: '2026-07-06T09:00:00.000Z',
-  }),
-  registrering({
-    id: 'recGustav',
-    namn: 'Gustav Wik',
-    status: 'Flytta till väntelista',
-    bekraftelseSkickad: '2026-07-06T09:00:00.000Z',
-    inskickad: '2026-07-07T09:00:00.000Z',
-  }),
-  registrering({
-    id: 'recHanna',
-    namn: 'Hanna Ström',
+    id: 'recEva',
+    namn: 'Eva Sten',
     status: 'Avbokad/Ombokad',
-    inskickad: '2026-06-01T09:00:00.000Z',
+    inskickad: '2026-06-10T09:00:00.000Z',
   }),
 ];
 
@@ -200,207 +175,292 @@ async function oppnaEventsidan(page: Page): Promise<void> {
   await expect(gruppen(page).getByRole('heading', { name: 'Anmälda deltagare' })).toBeVisible();
 }
 
-/** Registrets kort, i renderad DOM-ordning. */
-function registerKort(page: Page) {
-  return gruppen(page).getByTestId('deltagar-register').getByTestId('deltagar-kort');
-}
-
-test.describe('Registret som EN lista (TASK-145.1)', () => {
-  test('AC #1: Obekräftade-/Bekräftade-rubrikerna finns inte — registret är EN lista', async ({
+test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
+  test('summeringsraderna står i Lottas utskicksordning med räknade värden (avbokade borträknade)', async ({
     page,
   }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    // Ingen av de gamla rubrikerna/knapparna finns kvar, i någon form.
-    await expect(gruppen(page).getByText(/^Obekräftade \(/)).toHaveCount(0);
-    await expect(gruppen(page).getByText(/^Bekräftade \(/)).toHaveCount(0);
-    await expect(gruppen(page).getByRole('button', { name: /^Obekräftade/ })).toHaveCount(0);
-    await expect(
-      gruppen(page).getByRole('button', { name: 'Bekräftade (1)', exact: true }),
-    ).toHaveCount(0);
-    // EN lista, alla åtta (inkl. avbokad) synliga direkt utan att fälla ut något.
-    await expect(registerKort(page)).toHaveCount(8);
+    // K42: bekräftelse (mail 1) → betalningspåminnelse → eventinfo (mail 2).
+    // Bor över-raden SIST sedan task-18.7 (bas-fältet föddes där; denna fixtur
+    // sätter ingen borOver → 0). Dess kryss-läge har egen svit event-bor-over.
+    const rader = gruppen(page).locator('button[aria-pressed="false"]');
+    const etiketter = await gruppen(page).locator('button[aria-pressed]').allTextContents();
+    expect(etiketter).toEqual([
+      'Obekräftade anmälningar2',
+      'Anmälningsbekräftelse skickad2 av 4−2',
+      'Betalningspåminnelse skickad1',
+      'Eventinfo skickad1 av 4−3',
+      'Bor över0',
+    ]);
+    // Alla fem står otryckta i grundläget (inget filter aktivt).
+    await expect(rader).toHaveCount(5);
+
+    // Eva (Avbokad/Ombokad) syns aldrig i kön — 4 aktiva, inte 5.
+    await expect(gruppen(page).getByText('Eva Sten')).toHaveCount(0);
   });
 
-  test('AC #2 + #5: steg-hinkarnas ordning, avbokade sist, undantagen bär egna märken', async ({
-    page,
-  }) => {
+  test('kön är FAST och äldst först; arkivet är fällbart och senast först', async ({ page }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    // Väntar på bekräftelse → avgift saknas → slut saknas → klar → Inställt →
-    // väntelista → Avbokad (registerOrdning, hallplats-steg-prototyp.ts).
-    expect(await registerKort(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
+    const bekraftade = gruppen(page).getByRole('button', { name: 'Bekräftade (2)', exact: true });
+
+    // Obekräftade-rubriken är INGEN knapp längre (Marcus design-review S91):
+    // kön ska tömmas, inte gömmas, och den visar ändå aldrig mer än ~3 kort.
+    // Regressionsvakt — återinförs en växling här faller detta fall.
+    await expect(gruppen(page).getByText('Obekräftade (2)')).toBeVisible();
+    await expect(gruppen(page).getByRole('button', { name: 'Obekräftade (2)' })).toHaveCount(0);
+
+    // Inbox-fokus (K40): kön står alltid öppen, arkivet är ett klick bort.
+    await expect(bekraftade).toHaveAttribute('aria-expanded', 'false');
+
+    // ÄLDST FÖRST i kön: Bertil (06-20) före Anna (07-01).
+    const ko = gruppen(page).getByTestId('obekraftade-ko');
+    await expect(ko).toBeVisible();
+    expect(await ko.getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Bertil Sund',
       'Anna Ek',
-      'Cecilia Lund',
-      'David Nord',
-      'Erik Berg',
-      'Frida Holm',
-      'Gustav Wik',
-      'Hanna Ström',
     ]);
 
-    // Varje kort bär EXAKT ETT steg-märke, med rätt text.
-    //
-    // BREDDLÅSET (`HallplatsMarke`, DeltagareHallplatsPrototyp.tsx): märket
-    // renderar ALLA SEX etiketterna staplade i samma grid-cell — fem
-    // `aria-hidden` platshållare (`invisible`, för bredd-låsningen) + DEN
-    // FAKTISKA, synliga etiketten sist i DOM-ordningen. `toHaveText` på hela
-    // `hallplats-marke`-noden läser därför ALLA sex sammanslagna — `marke()`
-    // nedan filtrerar bort `aria-hidden`-platshållarna med `.and()`, så bara
-    // den verkliga (synliga) etiketten återstår.
-    const marke = (namn: string) =>
-      registerKort(page)
-        .filter({ hasText: namn })
-        .getByTestId('hallplats-marke')
-        .locator('span')
-        .and(page.locator(':not([aria-hidden])'))
-        .last();
-    await expect(marke('Bertil Sund')).toHaveText('Väntar på bekräftelse');
-    await expect(marke('Anna Ek')).toHaveText('Väntar på bekräftelse');
-    // Cecilia och David delar BÅDA badgen "Väntar på betalning" — märket
-    // (`hallplatsSteg()`) är GROVARE än sorteringen (`registerOrdning()`,
-    // som delar "väntar på betalning" i avgift-/slut-hinkarna ovan). Cecilia
-    // SORTERAS före David (hon saknar ännu avgiften), men de bär samma
-    // etikett — det är sorteringen, inte märket, som är finmaskig.
-    await expect(marke('Cecilia Lund')).toHaveText('Väntar på betalning');
-    await expect(marke('David Nord')).toHaveText('Väntar på betalning');
-    await expect(marke('Erik Berg')).toHaveText('Klar');
-    await expect(marke('Frida Holm')).toHaveText('Inställt');
-    await expect(marke('Gustav Wik')).toHaveText('På väg till väntelistan');
-    await expect(marke('Hanna Ström')).toHaveText('Avbokad');
-
-    // Varje kort bär EXAKT ETT märke — aldrig noll, aldrig två.
-    for (const namn of [
-      'Bertil Sund',
-      'Anna Ek',
+    // SENAST FÖRST i arkivet: Cecilia (07-05) före David (06-25) — panelen är
+    // dold tills accordionen öppnas.
+    const arkivPanelId = await bekraftade.getAttribute('aria-controls');
+    const arkiv = page.locator(`#${arkivPanelId}`);
+    await expect(arkiv).toBeHidden();
+    await bekraftade.click();
+    await expect(bekraftade).toHaveAttribute('aria-expanded', 'true');
+    expect(await arkiv.getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Cecilia Lund',
       'David Nord',
-      'Erik Berg',
-      'Frida Holm',
-      'Gustav Wik',
-      'Hanna Ström',
-    ]) {
-      await expect(
-        registerKort(page).filter({ hasText: namn }).getByTestId('hallplats-marke'),
-      ).toHaveCount(1);
-    }
+    ]);
+
+    // Toggle tillbaka — accordionen stänger igen.
+    await bekraftade.click();
+    await expect(arkiv).toBeHidden();
   });
 
-  test('AC #3: FIFO inom hink — äldst registrerad står överst', async ({ page }) => {
-    await mocka(page, eventDetail());
+  test('arkivets default FÖLJER kön, men ett explicit klick vinner (fynd (b))', async ({
+    page,
+  }) => {
+    // `bekraftadeOppen` var förr ett startvärde som beräknades EN gång vid
+    // monteringen — samma sluttillstånd fick därför två utseenden beroende på
+    // hur man kom dit. Nu betyder `null` "aldrig växlad" och härleds live ur
+    // kön; ett klick skriver en riktig boolean som därefter respekteras.
+    // Fixtur utan obekräftade: kön är tom ⇒ registret ska stå UTFÄLLT.
+    const allaBekraftade = DELTAGARE.map((r) =>
+      r.status === 'Obekräftad'
+        ? {
+            ...r,
+            status: 'Bekräftad (mail skickat)',
+            bekraftelseSkickad: '2026-07-07T09:00:00.000Z',
+          }
+        : r,
+    );
+    await mocka(page, eventDetail(), allaBekraftade);
     await oppnaEventsidan(page);
 
-    // Bertil (06-20) och Anna (07-01) delar hink (väntar på bekräftelse) —
-    // Bertil registrerade sig FÖRST och står överst.
-    const namn = await registerKort(page).getByTestId('deltagar-namn').allTextContents();
-    expect(namn.indexOf('Bertil Sund')).toBeLessThan(namn.indexOf('Anna Ek'));
-  });
+    const arkiv = gruppen(page).getByRole('button', { name: 'Bekräftade (4)', exact: true });
+    await expect(arkiv).toHaveAttribute('aria-expanded', 'true');
+    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible();
 
-  test('AC #4: steg-märket ÄR grupperingen — inga sektionsrubriker i DOM:en', async ({ page }) => {
-    await mocka(page, eventDetail());
-    await oppnaEventsidan(page);
+    // Explicit fällning vinner över härledningen…
+    await arkiv.click();
+    await expect(arkiv).toHaveAttribute('aria-expanded', 'false');
 
-    // Ingen rubriknivå (h2/h3 etc.) mellan gruppens egen <h2> och korten —
-    // grupperingen bärs enbart av märket på varje kort.
+    // …och överlever en omrendering av hela grenen (filter på och av).
+    const rad = gruppen(page).getByRole('button', { name: /^Anmälningsbekräftelse/ });
+    await rad.click();
+    await gruppen(page).getByRole('button', { name: 'Rensa filtret' }).click();
     await expect(
-      gruppen(page).locator('h2, h3, h4').filter({ hasNotText: 'Anmälda deltagare' }),
-    ).toHaveCount(0);
+      gruppen(page).getByRole('button', { name: 'Bekräftade (4)', exact: true }),
+    ).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('AC #6: inline-scrollen har SAMMA klipphöjd som kön hade (byggkrav 4, ~25.5rem)', async ({
+  test('summeringsradens klick FILTRERAR till flat lista + Rensa filtret; klick igen rensar', async ({
     page,
   }) => {
-    const manga = Array.from({ length: 6 }, (_, i) =>
-      registrering({
-        id: `recManga${i}`,
-        namn: `Deltagare ${i + 1}`,
-        inskickad: `2026-07-0${i + 1}T09:00:00.000Z`,
-      }),
-    );
-    await mocka(page, eventDetail(), manga);
+    await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    const register = gruppen(page).getByTestId('deltagar-register');
-    const matt = await register.evaluate((el) => ({
-      client: el.clientHeight,
-      scroll: el.scrollHeight,
-      overflowY: getComputedStyle(el).overflowY,
-    }));
+    const obekraftadeRad = gruppen(page).getByRole('button', {
+      name: /^Obekräftade anmälningar/,
+    });
+    await obekraftadeRad.click();
+    await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'true');
 
-    // Fler kort än ryms — innehållet är högre än rutan och rutan scrollar.
-    expect(matt.scroll).toBeGreaterThan(matt.client);
-    expect(matt.overflowY).toBe('auto');
-    // max-h ≈ 25.5rem (408 px) — samma gräns byggkrav 4 låste för kön,
-    // ÅTERANVÄND oförändrad, ingen ny klipphöjd mintad.
-    expect(matt.client).toBeLessThanOrEqual(408);
-    expect(matt.client).toBeGreaterThan(240);
-    await expect(register).toHaveAttribute('tabindex', '0');
+    // Accordion-rubrikerna är borta — urvalet står som flat lista.
+    await expect(gruppen(page).getByText('Obekräftade (2)')).toHaveCount(0);
+    expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
+      'Anna Ek',
+      'Bertil Sund',
+    ]);
+    const rensa = gruppen(page).getByRole('button', { name: 'Rensa filtret' });
+    await expect(rensa).toBeVisible();
+
+    // Eventinfo-raden filtrerar på dem som SAKNAR eventinfo (det åtgärdbara):
+    // alla utom David.
+    await gruppen(page)
+      .getByRole('button', { name: /^Eventinfo skickad/ })
+      .click();
+    await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'false');
+    expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
+      'Anna Ek',
+      'Bertil Sund',
+      'Cecilia Lund',
+    ]);
+
+    // Rensa filtret → accordions tillbaka.
+    await rensa.click();
+    await expect(gruppen(page).getByText('Obekräftade (2)')).toBeVisible();
+
+    // Klick på en AKTIV rad rensar också (toggle-semantiken).
+    await obekraftadeRad.click();
+    await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'true');
+    await obekraftadeRad.click();
+    await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'false');
+    await expect(gruppen(page).getByText('Obekräftade (2)')).toBeVisible();
   });
 
-  test('AC #7: scroll-ytans aria-label är "Deltagarregister" — ärver INTE köns hårdkodade namn', async ({
+  test('kategori-flikarna filtrerar listorna; summeringarna räknar ALLTID hela eventet', async ({
     page,
   }) => {
-    const manga = Array.from({ length: 6 }, (_, i) =>
-      registrering({
-        id: `recManga${i}`,
-        namn: `Deltagare ${i + 1}`,
-        inskickad: `2026-07-0${i + 1}T09:00:00.000Z`,
-      }),
-    );
-    await mocka(page, eventDetail(), manga);
+    await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    const register = gruppen(page).getByTestId('deltagar-register');
-    await expect(register).toHaveAttribute('aria-label', 'Deltagarregister');
-    await expect(register).not.toHaveAttribute('aria-label', 'Obekräftade anmälningar');
+    const flikar = gruppen(page).getByRole('radiogroup', { name: 'Visa deltagare' });
+    await expect(flikar.getByRole('radio', { name: 'Alla (4)' })).toBeChecked();
+    await expect(flikar.getByRole('radio', { name: 'Manuella (1)' })).toBeVisible();
+    await expect(flikar.getByRole('radio', { name: 'Medföljande (1)' })).toBeVisible();
+
+    // Manuella → bara Bertil (Källa 'Manuell'), och han bär sin pill.
+    await flikar.getByRole('radio', { name: 'Manuella (1)' }).click();
+    expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
+      'Bertil Sund',
+    ]);
+    await expect(gruppen(page).getByText('Manuellt tillagd')).toBeVisible();
+    // Summeringarna står kvar på hela eventet (K38) — flikvalet rör bara listan.
+    await expect(gruppen(page).getByRole('button', { name: /^Anmälningsbekräftelse/ })).toHaveText(
+      'Anmälningsbekräftelse skickad2 av 4−2',
+    );
+
+    // Medföljande → bara David (Källa '+1'), i Bekräftade-gruppen.
+    await flikar.getByRole('radio', { name: 'Medföljande (1)' }).click();
+    const bekraftade = gruppen(page).getByRole('button', { name: 'Bekräftade (1)', exact: true });
+    await expect(bekraftade).toBeVisible();
+    await bekraftade.click();
+    expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
+      'David Nord',
+    ]);
+    await expect(gruppen(page).getByText('Medföljande', { exact: true })).toBeVisible();
+    // Kön är tom i denna kategori — positiv rad i stället för accordion.
+    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible();
   });
 
-  test('tomt event: ingen krasch, vänlig tom-text', async ({ page }) => {
+  test('AC #3: signal-slotten renderar i BÅDA lägena med identisk geometri (badge / tom reserv)', async ({
+    page,
+  }) => {
+    // TVÅ event-ID:n i stället för route-byte + reload: persist-hydreringen
+    // serverar annars scenario 1-data under samma query-nyckel efter en reload
+    // (TASK-28-fyndets klass). Skilda ID:n ⇒ skilda nycklar ⇒ inget överlapp.
+    const UTANFOR = EVENT_ID;
+    const INNE = 'recDELTAGARE0002';
+    const perEvent: Record<string, Json> = {
+      [UTANFOR]: eventDetail(),
+      [INNE]: eventDetail({
+        id: INNE,
+        startdatum: omDagar(7),
+        slutdatum: omDagar(8),
+      }),
+    };
+    await page.route(GET_EVENT, async (route) => {
+      const id = new URL(route.request().url()).searchParams.get('id') ?? UTANFOR;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ event: perEvent[id] ?? perEvent[UTANFOR] }),
+      });
+    });
+    await page.route(GET_REGISTRATIONS, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ registrations: DELTAGARE }),
+      });
+    });
+
+    // Läge 1 — utanför tvåveckorsfönstret (start om 60 dagar): TOM RESERV.
+    await oppnaEventsidan(page);
+    const slotTom = gruppen(page).getByTestId('eventinfo-signal-slot');
+    await expect(slotTom).toHaveCount(1);
+    await expect(gruppen(page).getByText(/Dags att skicka/)).toHaveCount(0);
+    const hojdTom = (await slotTom.boundingBox())?.height;
+    expect(hojdTom).toBeGreaterThan(0);
+
+    // Läge 2 — inne i fönstret (start om 7 dagar): BADGEN tänds.
+    await page.goto(`/event/${INNE}`);
+    await expect(gruppen(page).getByRole('heading', { name: 'Anmälda deltagare' })).toBeVisible();
+    const slotBadge = gruppen(page).getByTestId('eventinfo-signal-slot');
+    await expect(slotBadge.getByText(/^Dags att skicka/)).toBeVisible();
+    const hojdBadge = (await slotBadge.boundingBox())?.height;
+
+    // Geometrin får ALDRIG hoppa mellan lägena (L303: slotten alltid reserverad).
+    expect(hojdBadge).toBe(hojdTom);
+
+    // Slotten ligger UTANFÖR filter-knappen — interaktivt i interaktivt är förbjudet.
+    const knappIslot = await slotBadge.locator('button').count();
+    expect(knappIslot).toBe(0);
+  });
+
+  test('signalen tystnar när ALLA fått eventinfo, även inne i fönstret', async ({ page }) => {
+    const allaFatt = DELTAGARE.map((r) =>
+      r.status === 'Avbokad/Ombokad'
+        ? r
+        : { ...r, deltagarinfoSkickad: '2026-07-10T09:00:00.000Z' },
+    );
+    await mocka(page, eventDetail({ startdatum: omDagar(7), slutdatum: omDagar(8) }), allaFatt);
+    await oppnaEventsidan(page);
+
+    await expect(gruppen(page).getByRole('button', { name: /^Eventinfo skickad/ })).toHaveText(
+      'Eventinfo skickad4 av 4',
+    );
+    await expect(gruppen(page).getByText(/Dags att skicka/)).toHaveCount(0);
+    // Slotten står kvar reserverad även när signalen är släckt.
+    await expect(gruppen(page).getByTestId('eventinfo-signal-slot')).toHaveCount(1);
+  });
+
+  test('tomt event: inga anmälda → lugn text, inga grupp-rubriker', async ({ page }) => {
     await mocka(page, eventDetail(), []);
     await oppnaEventsidan(page);
 
-    await expect(gruppen(page).getByText('Inga anmälningar ännu.')).toBeVisible();
-    await expect(registerKort(page)).toHaveCount(0);
+    await expect(
+      gruppen(page).getByRole('button', { name: /^Obekräftade anmälningar/ }),
+    ).toHaveText('Obekräftade anmälningar0');
+    await expect(gruppen(page).getByText('Inga deltagare i denna kategori.')).toBeVisible();
   });
 
-  test('axe 0 på det enade registret', async ({ page }) => {
-    await mocka(page, eventDetail());
+  test('axe 0 i grundläget, i filtrerat läge och med arkivet utfällt', async ({ page }) => {
+    await mocka(page, eventDetail({ startdatum: omDagar(7), slutdatum: omDagar(8) }));
     await oppnaEventsidan(page);
 
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .include('section[aria-labelledby="grupp-deltagare"]')
-      .analyze();
-    expect(
-      results.violations,
-      results.violations.map((v) => `${v.id}: ${v.help}`).join('\n'),
-    ).toEqual([]);
-  });
+    const kor = async () => {
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .include('section[aria-labelledby="grupp-deltagare"]')
+        .analyze();
+      expect(
+        results.violations,
+        results.violations.map((v) => `${v.id}: ${v.help}`).join('\n'),
+      ).toEqual([]);
+    };
 
-  /**
-   * MEKANISKT BEVIS (DoD #7, skivans EGEN scope — inte hela eventsidans, se
-   * TASK-145.5): registret som DENNA skiva bygger bär noll skriv-affordanser.
-   * Markera-läget och Bekräfta-flödet är RIVNA i samma steg som rubrikerna
-   * (docblocket ovan `ArbetsKo`) — det gamla GruppRubrik-anchor:ade
-   * "Markera anmälningar"-läget hade en checkbox per kort och en
-   * Bekräfta-mutation; ingendera finns kvar. Kortet är en ren länk
-   * (navigation, ingen skrivning).
-   */
-  test('DoD #7 (skivans scope): registret bär noll skriv-affordanser', async ({ page }) => {
-    await mocka(page, eventDetail());
-    await oppnaEventsidan(page);
-
-    const register = gruppen(page).getByTestId('deltagar-register');
-    await expect(register.getByRole('button')).toHaveCount(0);
-    await expect(register.getByRole('checkbox')).toHaveCount(0);
-    await expect(register.locator('input, textarea, select')).toHaveCount(0);
-    await expect(register.getByRole('button', { name: /^Markera/ })).toHaveCount(0);
-    await expect(gruppen(page).getByRole('button', { name: /^Markera/ })).toHaveCount(0);
-    await expect(gruppen(page).getByRole('button', { name: /^Bekräfta/ })).toHaveCount(0);
-    // Varje kort är en NAVIGATIONS-länk (person + anmälan), aldrig en knapp.
-    await expect(registerKort(page).first().locator('a')).not.toHaveCount(0);
+    await kor();
+    await gruppen(page).getByRole('button', { name: 'Bekräftade (2)', exact: true }).click();
+    await kor();
+    await gruppen(page)
+      .getByRole('button', { name: /^Obekräftade anmälningar/ })
+      .click();
+    await kor();
   });
 });

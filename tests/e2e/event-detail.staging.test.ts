@@ -1188,9 +1188,8 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     await page.goto(`/event/${PK_EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(gruppen(page).getByRole('heading', { name: 'Anmälda deltagare' })).toBeVisible();
-    // [ÄNDRAT, TASK-145.1] Inget arkiv att fälla ut längre — registret är EN
-    // ovillkorlig lista (Obekräftade-kön/Bekräftade-arkivets rubriker och
-    // GruppRubrik-knappen är rivna). Samtliga kort är alltid synliga direkt.
+    // Arkivet är stängt per K40 — personkorten där behövs i flera assertioner.
+    await gruppen(page).getByRole('button', { name: 'Bekräftade (2)', exact: true }).click();
   }
 
   /** Kortet för en namngiven deltagare. */
@@ -1221,26 +1220,14 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     await expect(identitet.getByText('E-post', { exact: true })).toBeVisible();
     await expect(identitet.getByText('anna@example.se')).toBeVisible();
 
-    // [ÄNDRAT, TASK-145.1] Pill-slotten står UTANFÖR länken (status är ingen
-    // del av identiteten). Slotten bär numera ALLTID steg-märket i stället
-    // för den gamla röda "Obekräftad"-pillen ELLER kategori-pillen — AC #4/#5
-    // (exakt ETT märke per person; review-fix-våg 2 defekt 3s dubbel-
-    // etikettering kan inte längre uppstå eftersom `hallplatsMarke` är
-    // ovillkorlig, se `Deltagare.tsx`s `KortInnehall`).
-    await expect(identitet.getByText('Väntar på bekräftelse')).toHaveCount(0);
-    await expect(anna.getByText('Obekräftad')).toHaveCount(0);
-    // `HallplatsMarke`s breddlås staplar alla sex etiketterna i samma
-    // grid-cell (fem `aria-hidden`-platshållare + den synliga sist i
-    // DOM-ordningen, se `DeltagareHallplatsPrototyp.tsx`) — `.last()` väljer
-    // den FAKTISKA, synliga instansen när texten även matchar en platshållare.
-    await expect(anna.getByText('Väntar på bekräftelse').last()).toBeVisible();
+    // Kategori-pillen står UTANFÖR länken (status är ingen del av identiteten)
+    // och normen (via formulär) bär inget märke alls.
+    await expect(identitet.getByText('Obekräftad')).toHaveCount(0);
+    await expect(anna.getByText('Obekräftad')).toBeVisible();
     await expect(anna.getByText('Manuellt tillagd')).toHaveCount(0);
-    // David (Bekräftad, Källa '+1', obetald): kategori-pillen "Medföljande"
-    // har vikit för steg-märket "Väntar på betalning" — samma slot, ETT märke.
-    await expect(kortet(page, 'David Nord').getByText('Medföljande', { exact: true })).toHaveCount(
-      0,
-    );
-    await expect(kortet(page, 'David Nord').getByText('Väntar på betalning').last()).toBeVisible();
+    await expect(
+      kortet(page, 'David Nord').getByText('Medföljande', { exact: true }),
+    ).toBeVisible();
   });
 
   test('metaytan ligger UTANFÖR person-länken och bär Anmäld dag + klockslag på EN rad', async ({
@@ -1267,9 +1254,7 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     expect(rader[0]).toMatch(/^Anmäld 1 juli \d{2}:\d{2}$/);
   });
 
-  test('ENDAST Anmäld-raden renderas — utskicksraderna vek för steg-märket (TASK-145.1)', async ({
-    page,
-  }) => {
+  test('ENDAST utförda åtgärder renderas — ej-skickat visas aldrig', async ({ page }) => {
     await mockaPersonkort(page);
     await oppnaSidan(page);
 
@@ -1280,16 +1265,16 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     expect(annaRader).toEqual([annaRader[0]]);
     await expect(kortet(page, 'Anna Ek').getByText(/Ej skickat|Ej skickad/)).toHaveCount(0);
 
-    // [ÄNDRAT, TASK-145.1] David har alla tre utskicken utförda i FIXTUREN,
-    // men `KortInnehall` gömmer Bekräftelse-/Påminnelse-/Eventinfo-raderna
-    // NÄR ett steg-märke visas (`!hallplatsMarke && …`, se `Deltagare.tsx`) —
-    // de bor nu i betalningsytans SKICKAT-zon (`TASK-145.4`). Registret bär
-    // numera ALLTID ett steg-märke (AC #4/#5), så David bär bara Anmäld-raden
-    // precis som Anna.
+    // David har alla tre utförda — var och en på sin egen rad, i Lottas
+    // utskicksordning (bekräftelse → påminnelse → eventinfo, K42).
     const davidRader = await kortet(page, 'David Nord')
       .getByTestId('deltagar-meta-rad')
       .allTextContents();
-    expect(davidRader).toEqual([davidRader[0]]);
+    expect(davidRader.slice(1)).toEqual([
+      'Bekräftelse 26 juni',
+      'Påminnelse 8 juli',
+      'Eventinfo 10 juli',
+    ]);
     expect(davidRader[0]).toMatch(/^Anmäld 25 juni \d{2}:\d{2}$/);
   });
 
@@ -1359,20 +1344,15 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     ).toHaveCount(3);
   });
 
-  test('390 px med steg-märket: namnet och e-posten bryts inte mitt i ordet', async ({ page }) => {
+  test('390 px med TVÅ pillar: namnet och e-posten bryts inte mitt i ordet', async ({ page }) => {
     // DEFEKT fångad i facit-avprickningens 390-px-mätning: pillspannet stod
     // shrink-0 och åt så mycket bredd att identitetskolumnen kollapsade —
     // namnet radbröts och e-posten bröts MITT I ORDET ("bertil@exa/mple.se").
     // Pillarna wrappar nu i stället. Mätt som RADBOXAR (getClientRects), inte
     // klass-närvaro (L246).
-    //
-    // [ÄNDRAT, TASK-145.1] Den ursprungliga defekten krävde TVÅ samtidiga
-    // pillar (Obekräftad + kategori). Den kombinationen kan inte längre
-    // uppstå (AC #5, ETT märke per person) — steg-märket "Väntar på
-    // bekräftelse" (Bertil: Obekräftad, Källa Manuell) är LÄNGRE än någon av
-    // de gamla pillarna var för sig, så bredd-regressionen är fortfarande
-    // ett giltigt fall att vakta, bara med den nya enda pillen.
     await page.setViewportSize({ width: 390, height: 844 });
+    // HELA facit-uppsättningen + Bertil — samma scen som facit-avprickningens
+    // skärmdump, så testet och den renderade verifieringen bevisar samma bild.
     await mockaPersonkort(page, [
       ...PK_DELTAGARE,
       pkRegistrering({
@@ -1389,10 +1369,9 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     const bertil = kortet(page, 'Bertil Sund');
-    // Steg-märket ersätter BÅDA de gamla pillarna (AC #4/#5).
-    await expect(bertil.getByText('Väntar på bekräftelse').last()).toBeVisible();
-    await expect(bertil.getByText('Obekräftad')).toHaveCount(0);
-    await expect(bertil.getByText('Manuellt tillagd')).toHaveCount(0);
+    // Båda pillarna renderas (kombinationen obekräftad + manuellt tillagd).
+    await expect(bertil.getByText('Obekräftad')).toBeVisible();
+    await expect(bertil.getByText('Manuellt tillagd')).toBeVisible();
 
     // Radboxarna räknas över TEXTINNEHÅLLET via en Range — elementens egna
     // getClientRects() ger alltid 1 (flex-items blockifieras), vilket hade

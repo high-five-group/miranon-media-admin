@@ -3,12 +3,14 @@ import { Link } from '@tanstack/react-router';
 import {
   BedDouble,
   Check,
+  ChevronDown,
   Clock,
   History,
   Inbox,
   type LucideIcon,
   Mail,
   MailCheck,
+  TriangleAlert,
   X,
 } from 'lucide-react';
 // [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
@@ -20,8 +22,11 @@ import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { Skeleton } from '@/components/primitives/Skeleton';
+import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName, inskickadTid } from '@/components/registrations/registration-display';
+import { bekraftelseUtfall, useConfirmAll } from '@/data/mutations/registrationConfirmation';
 import { useSetBorOver } from '@/data/mutations/registrationLodging';
+import { useUpdateEvent } from '@/data/mutations/useUpdateEvent';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
@@ -56,53 +61,55 @@ import {
 } from './hallplats-steg-prototyp';
 
 /**
- * Anmälda deltagare — REGISTRET SOM EN LISTA (TASK-145.1; PRD TASK-145 §
- * "Registret blir EN lista"). Ersätter task-18.4:s skelett: Obekräftade-kön
- * och Bekräftade-arkivet, var och en med egen rubrik och egen sorteringsordning,
- * är RIVNA. I deras ställe en enda `DeltagarListan` sorterad på FYRA
- * steg-hinkar (`registerOrdning`, hallplats-steg-prototyp.ts) — väntar på
- * bekräftelse → anmälningsavgift saknas → slutbetalning saknas → klara, med
- * inställt/på-väg-till-väntelista sist — och INOM varje hink i
- * anmälningsordning (äldst-registrerad-först, samma FIFO-semantik den gamla
- * Obekräftade-kön hade, nu tillämpad enhetligt över hela registret i stället
- * för bara kön). Steg-märket (`HallplatsMarke`) ÄR grupperingen — inga
- * sektionsrubriker renderas, och exakt ETT märke visas per person även när
- * flera steg är ogjorda (prioritetsordningen bor i `hallplatsSteg()`).
- * Undantagen (Avbokad, Inställt, På väg till väntelistan) bär sina egna
- * ärliga märken och sorteras sist, inte bortfiltrerade.
+ * Anmälda deltagare som ARBETSKÖ — skelettet (task-18.4; S73-facit K35–K58).
+ * Nyskriven mot facit-bilagan (throwaway-kontraktet — prototypkod absorberas
+ * aldrig); K-referenserna pekar på den låsta konvergens-trailen.
  *
- * Inline-scrollen (`rullande`, `DeltagarListan`) är ÅTERANVÄND OFÖRÄNDRAD —
- * samma `max-h-[25.5rem]`-klipphöjd kön hade, ingen ny höjd mintad. Scroll-
- * ytans tillgänglighetsetikett är "Deltagarregister" (sektionens egen text,
- * ärver INTE `DeltagarListan`s default som var köns hårdkodade namn).
+ * Formen (uppifrån och ned): fyra KLICKBARA summeringsrader i Lottas
+ * utskicksordning (K42: bekräftelse → påminnelse → eventinfo) med
+ * eventinfo-signalens alltid reserverade slot (K43/K44) → kategori-flikarna i
+ * familje-kapseln (K41: formulär-fliken riven, formulärvägen är normen) →
+ * Obekräftade ÖPPEN äldst först och Bekräftade STÄNGD senast först som
+ * accordions (K40, inbox-fokus: kön i ansiktet, arkivet ett klick bort).
+ * Klick på en summeringsrad ersätter accordions med en flat filtrerad lista
+ * + "Rensa filtret" (K57: förklarande texter rivna — man har ju tryckt).
  *
- * PERSONKORTEN (task-18.5; S73-facit K45/K62) bor i `DeltagarKort` nedan,
- * oförändrade.
+ * PERSONKORTEN (task-18.5; S73-facit K45/K62) bor i `DeltagarKort` nedan.
  *
- * SKIVGRÄNS, ÖPPET BOKFÖRD (TASK-145 kedjehuvud): denna skiva rör ENDAST
- * registrets EGEN gruppering/sortering/märkning. De gamla fem klickbara
- * summeringsraderna (Obekräftade/Bekräftelse/Påminnelse/Eventinfo/Bor över),
- * kategori-flikarna och MARKERA-LÄGET (`useMarkeringsLage` + batch-bekräftelse,
- * task-48) är samtliga RIVNA ur produktionsvyn i samma steg — de kan inte
- * överleva rubrikrivningen (Markera-knappen var anchor:ad på Obekräftade-
- * rubriken, som är borta) och deras ersättningar är explicit ANDRA skivors
- * ansvar: `TASK-145.2` (steg-räknarna + filtreringen) och `TASK-145.3`
- * (markera-läget över den nya listan + utgången mot Åtgärds-sidan). Fram
- * till dess är registret en REN LÄSYTA utan bulk-handling — den redan byggda,
- * facit-låsta helheten (räknare + filter + markera + "Åtgärder"-utgång +
- * betalningsytans inflytt) finns kvar OFÖRÄNDRAD bakom `?variant=a` (DEV-
- * grindad, `protoVariant === 'a'`) och graderas dit skiva för skiva.
+ * HANTERA-FLÖDET — FACIT-REVIDERAT av task-48 (S86-prototypen, Marcus-låst
+ * 2026-07-25). Tre former ur task-18.6 är RIVNA och kommer inte tillbaka:
+ *   · K46 — personkortets "Skicka bekräftelse" i kortfoten. Solid eller
+ *     outline spelade ingen roll: en knapp per kort dräpte kortens läsbarhet.
+ *   · K47/K48 — "Bekräfta alla"-pillen på Obekräftade-rubriken med sin
+ *     kontrollfråga. Den bekräftade ALLA eller inget; urvalet var osynligt.
+ *   · Med K46 följde `useSendConfirmation` (den optimistiska enskilda vägen
+ *     från eventsidan). 1-klicks-genvägen byggs på HEM-vyn i stället —
+ *     Marcus-beslut 2 på kortet. Skriv INTE in anmälans egen sida här.
  *
- * Semantiken (ORDLISTA, S73 K53): `hallplatsSteg()`/`registerOrdning()` läser
- * basens `Status`-fält, aldrig en utskicks-tidsstämpel.
+ * I deras ställe: ett explicit MARKERA-LÄGE (`useMarkeringsLage`) där hela
+ * kortet är klickyta med checkbox-semantik, en batch-bar med live-räknare och
+ * breddlås, och kontrollfrågan kvar på massmutationen. Vägen in är ENBART
+ * Markera-knappen på rubrikraden; Esc och Avbryt är vägarna ut. Auto-utskicks-
+ * krysset (K44) i signal-slotten är orört.
  *
- * Avbokade räknas bort ur `aktiva`/steg-räknarna (samma basformel-disciplin
- * som Betalningar-gruppen) men syns numera I REGISTRET SJÄLVT, sist, med sitt
- * grå "Avbokad"-märke (`registerOrdning`s ITERATIONSVÅG, Marcus 2026-08-05).
+ * SKELETT-AVGRÄNSNINGEN (öppet bokförd): Bor över-arbetsraden är task-18.7. Bor
+ * över-raden saknas HELT ur summeringen (bas-fältet föds i 18.7 — en rad som
+ * alltid visar 0 vore en osanning).
  *
- * A11y (11/10): listan är en `<ul>` med steg-märket som textbärare (färg
- * aldrig ensam bärare); rullnings-regionen är ett riktigt tab-stopp
- * (`tabIndex`, `aria-label`) när klippet faktiskt biter.
+ * Semantiken (ORDLISTA, S73 K53): Obekräftad/Bekräftad ligger exakt på basens
+ * Status-ord — grupperingen läser `Status`, inte tidsstämpeln. Summeringsraden
+ * "Anmälningsbekräftelse skickad" läser däremot utskicks-tidsstämpeln: raden är
+ * en UTSKICKS-logg, gruppen är anmälans TILLSTÅND. Divergerar de visas det som
+ * det är — aldrig hopslaget.
+ *
+ * Avbokade/ombokade räknas bort överallt (`arAktiv`, samma basformel-disciplin
+ * som Betalningar-gruppen) — en avbokad anmälan är inte Lottas arbete.
+ *
+ * A11y (11/10): summeringsraderna är knappar med `aria-pressed` (filtret är ett
+ * toggle-tillstånd); flikarna är ToggleButtonGroup (radiogroup + pilnavigering);
+ * accordions bär `aria-expanded`/`aria-controls` mot panelens id; räknarna står
+ * som TEXT i etiketterna (skärmläsaren får hela bilden); signal-badgen bär sin
+ * text (färg aldrig ensam bärare); listorna är `<ul>`.
  */
 
 /** Aktiv anmälan (basens 'Är aktiv'-formel): endast Avbokad/Ombokad räknas bort. */
@@ -113,6 +120,20 @@ function arAktiv(r: Registration): boolean {
 /** Bekräftad ⟺ basens Status har lämnat 'Obekräftad' (ORDLISTA; S73 K53). */
 function arBekraftad(r: Registration): boolean {
   return r.status !== RegistrationStatus.OBEKRAFTAD;
+}
+
+/**
+ * Senast skickade betalningspåminnelse: basens odelade `Betalningspåminnelse
+ * skickad` ELLER någon av task-18.8:s två per-betalnings-tidsstämplar. Summan
+ * "har fått en påminnelse" måste tåla båda formerna — basen bär dem parallellt
+ * tills bas-maximeringen (T16) enar dem.
+ */
+function harPaminnelse(r: Registration): boolean {
+  return (
+    r.betalningspaminnelseSkickad != null ||
+    r.paminnelseAnmalningsavgiftSkickad != null ||
+    r.paminnelseSlutbetalningSkickad != null
+  );
 }
 
 /**
@@ -142,6 +163,27 @@ const KATEGORI_PILL: Partial<Record<DeltagarKategori, string>> = {
   manuell: 'Manuellt tillagd',
   medfoljande: 'Medföljande',
   vantelista: 'Från väntelistan',
+};
+
+/** Flikarnas nycklar — 'alla' plus de två kategorier som har egen flik (K41). */
+type FlikNyckel = 'alla' | 'manuell' | 'medfoljande';
+
+/**
+ * Summeringsradernas filter (K40: radens siffra ÄR urvalet man ser vid klick).
+ * Eventinfo-radens klick visar de som SAKNAR eventinfo — det åtgärdbara är att-
+ * göra-mängden, aldrig den avklarade.
+ */
+type SummeringsFilter = 'obekraftade' | 'bekraftelse' | 'paminda' | 'saknarEventinfo' | 'borOver';
+
+const FILTER_TEST: Record<SummeringsFilter, (r: Registration) => boolean> = {
+  obekraftade: (r) => !arBekraftad(r),
+  bekraftelse: (r) => r.bekraftelseSkickad != null,
+  paminda: harPaminnelse,
+  saknarEventinfo: (r) => r.deltagarinfoSkickad == null,
+  // Radens SIFFRA är de ikryssade; radens KLICK öppnar däremot kryss-läget med
+  // ALLA anmälda (K52 — arbetsrad, inte filterlista). Testet står kvar som
+  // urvals-definition (räknaren) och för Record-fullständigheten.
+  borOver: (r) => r.borOver === true,
 };
 
 /** Två veckor före eventets start — Lottas eventinfo-gräns (mail 2, K42/K44). */
@@ -249,19 +291,93 @@ function AvDelta({ klara, totalt }: { klara: number; totalt: number }) {
 }
 
 /**
- * [RIVEN, TASK-145.1] `GruppRubrik` (Obekräftade/Bekräftade-rubrikerna, K40)
- * bodde här — se docblocket ovan `ArbetsKo`. Ingen ersättare i denna skiva:
- * registret bär inga sektionsrubriker längre (steg-märket ÄR grupperingen).
+ * Accordion-rubrik (K40: "dropdown-rubriker under tabbraden") — vänsterställd
+ * etikett + roterande chevron; obekräftade-rubriken i varningston med ikon
+ * (texten bär, färgen förstärker).
+ *
+ * `handling` (K47) är en valfri HANDLINGS-slot på raden — Bekräfta alla-pillen.
+ * Visuellt på raden, strukturellt UTANFÖR toggle-knappen som dess syskon (L303:
+ * interaktivt bor aldrig i interaktivt); toggle-knappen blir flex-1 så chevronen
+ * stannar vid dess högerkant.
  */
 /**
- * MARKERA/AVBRYT-KNAPPEN (task-48 byggkrav 1, EMPHASIS-PARET från S91) —
- * utbruten till en egen funktion sedan konvergens-passet (S93 Del 3 beslut 3).
+ * Grupp-rubrikraden — i TVÅ former, och skillnaden är avsiktlig.
  *
- * [ÄNDRAT, TASK-145.1] Bar tidigare TVÅ anropsplatser: skarpa vyns
- * `GruppRubrik`-handling OCH `?variant=a`s egna högerställda rad ovanför det
- * enade registret. Den förra är riven med `GruppRubrik` (se ovan) — enda
- * kvarvarande anropsplats är `?variant=a`s batch-bar (`ArbetsKo`), tills
- * `TASK-145.3` bygger produktionsvyns ersättning över den nya listan.
+ * FÄLLBAR (Bekräftade): `oppen` + `onToggle` + `kontrollerarId` angivna ⇒ raden
+ * är en disclosure-knapp med chevron och `aria-expanded`. Bekräftade är ett
+ * REGISTER som växer mot hela deltagarlistan; där betalar fällningen för sig.
+ *
+ * FAST (Obekräftade): utelämna `onToggle` ⇒ ren rubrikrad, ingen knapp, ingen
+ * chevron. Obekräftade är en KÖ som ska tömmas, inte ett arkiv att gömma: den
+ * visar aldrig mer än ~3 kort (byggkrav 4 låser höjden och scrollar inuti), så
+ * fällningen sparade ingen plats — den kunde bara dölja arbete som väntar.
+ * Marcus design-review 2026-07-26 (S91): "varför skulle du vilja gömma den".
+ * Öppen revidering av S73-facits accordion-par; kö-vs-register-distinktionen
+ * är densamma som L353 landade i.
+ *
+ * Att fällningen fanns tvingade dessutom fram en lapp: Markera-knappen
+ * måste force-öppna panelen, annars kunde läget startas i en kollapsad yta.
+ * Den lappen är riven i och med detta — mekanismen behövs inte när det inte
+ * går att stänga.
+ */
+function GruppRubrik({
+  oppen,
+  varning,
+  kontrollerarId,
+  onToggle,
+  handling,
+  children,
+}: {
+  oppen?: boolean;
+  varning?: boolean;
+  kontrollerarId?: string;
+  onToggle?: () => void;
+  /** Interaktiv handling på rubrikraden — renderas som syskon till rubriken. */
+  handling?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const etikett = (
+    <span
+      className={`flex items-center gap-1.5 font-semibold text-small ${varning ? 'text-error' : ''}`}
+    >
+      {varning && <TriangleAlert aria-hidden="true" size={14} className="shrink-0" />}
+      {children}
+    </span>
+  );
+  return (
+    <div className="flex items-center rounded-lg bg-bg-emphasized">
+      {onToggle == null ? (
+        <span className="flex min-w-0 flex-1 items-center px-3 py-2.5">{etikett}</span>
+      ) : (
+        <button
+          type="button"
+          aria-expanded={oppen}
+          aria-controls={kontrollerarId}
+          onClick={onToggle}
+          className="flex min-w-0 flex-1 items-center justify-between gap-3 px-3 py-2.5 text-left"
+        >
+          {etikett}
+          <ChevronDown
+            aria-hidden="true"
+            size={16}
+            className={`shrink-0 text-text-secondary motion-safe:transition-transform ${oppen ? 'rotate-180' : ''}`}
+          />
+        </button>
+      )}
+      {/* pr-1 = 4 px — samma inset som knappens topp/botten mot baren
+          (rubrik-radens py-2.5 kring 32 px-knappen; review-våg 3). */}
+      {handling != null && <span className="flex shrink-0 items-center pr-1">{handling}</span>}
+    </div>
+  );
+}
+
+/**
+ * MARKERA/AVBRYT-KNAPPEN (task-48 byggkrav 1, EMPHASIS-PARET från S91) —
+ * utbruten till en egen funktion sedan konvergens-passet (S93 Del 3 beslut 3)
+ * eftersom den nu har TVÅ anropsplatser: skarpa vyns `GruppRubrik`-handling
+ * (oförändrad) OCH variant A:s egna högerställda rad ovanför det enade
+ * registret (registret saknar sektionsrubriker att fästa knappen vid — se
+ * `ArbetsKo`). Ren extraktion, ingen beteendeändring.
  */
 function MarkeraKnapp({
   aktivt,
@@ -345,11 +461,19 @@ function anmalanOrd(antal: number): string {
 type Utfall = { ton: 'success' | 'error'; titel: string; text: string };
 
 /**
- * [RIVEN, TASK-145.1] `SKICKAT_TITEL`/`MISSLYCKAD_TITEL`/`skickatKvittens`
- * (batch-bekräftelsens kvittenstext) bodde här — exklusivt konsumerade av
- * `bekraftaMarkerade`, riven i samma steg (se `ArbetsKo`s "Hantera-flödet"-
- * kommentar).
+ * Konstant rubrik per riktning (GOV.UK: "use the same heading for green
+ * notification banners within the same service" — igenkänning framför
+ * variation, och rubriken bär utfallet så färgen aldrig är ensam bärare).
  */
+const SKICKAT_TITEL = 'Skickat';
+const MISSLYCKAD_TITEL = 'Bekräftelsen gick inte igenom';
+
+/** Kvittensens brödtext — antalet kommer ur SERVERNS `confirmed`, aldrig urvalet. */
+function skickatKvittens(antal: number): string {
+  return antal === 1
+    ? 'Bekräftelsen är skickad. Anmälan står nu som Bekräftad.'
+    : `${antal} bekräftelser är skickade. Anmälningarna står nu som Bekräftade.`;
+}
 
 /**
  * MARKERA-LÄGETS TILLSTÅNDSMASKIN (task-48).
@@ -626,15 +750,70 @@ function MarkeringsBatchBar({
   );
 }
 
+/** ISO-datum (YYYY-MM-DD) ur ett Date — lokal tid, aldrig UTC-skiftat (T27-klassen). */
+function isoDatum(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /**
- * [RIVEN, TASK-145.1] `isoDatum`/`AutoKryss` (K44, auto-utskicks-krysset i
- * eventinfo-signalens slot) bodde här. Den var den ENDA skriv-affordansen
- * kvar i de gamla fem summeringsraderna — och de raderna är rivna i samma
- * steg (se docblocket ovan `ArbetsKo`). Slotten visar numera bara "Dags att
- * skicka"-badgen när den är tänd, annars tomt med bevarad höjd; en ny
- * fyra-raders steg-räknare (`TASK-145.2`) tar radernas plats, alltjämt
- * gated bakom `?variant=a` tills den skivan graderar den till produktion.
+ * AUTO-UTSKICKS-KRYSSET (K44) i signal-slotten: ikryssat = eventinfon är schemalagd
+ * att gå ut automatiskt på datumet; urkryssat = inget automatiskt utskick. NEUTRAL
+ * ton — urkryssat är ett medvetet val, inte ett fel (skilt från betalkryssens röda
+ * obetalt-semantik).
+ *
+ * Läser och skriver de två ADDITIVA bas-fälten (task-18.6): 'Deltagarinfo schemalagd'
+ * (datum) och 'Deltagarinfo auto-utskick avstängt' (opt-out). Saknas ett schemalagt
+ * datum i basen visas tvåveckorsgränsen — och det är också datumet som SKRIVS när
+ * krysset sätts på, så basen bär ett verkligt datum efteråt.
+ *
+ * ÖPPET BOKFÖRT (PRD task-18 §Utanför omfattningen): utskicks-MOTORN finns inte än.
+ * Krysset styr fälten som motorn ska läsa — det utför inget utskick självt.
  */
+function AutoKryss({ event }: { event: Event }) {
+  const grans = eventinfoGrans(event.startdatum ?? null);
+  const { mutate, isPending } = useUpdateEvent(event.id);
+  // Optimistisk överlagring UNDER sparandet (hooken är pessimistisk): krysset får
+  // aldrig stå still under fingret. Nollas när mutationen landat — därefter styr
+  // cachen (servern är sanningen).
+  const [underSparande, setUnderSparande] = useState<boolean | null>(null);
+
+  if (grans == null) return null;
+
+  const faktiskt = !(event.deltagarinfoAutoAvstangt ?? false);
+  const vald = underSparande ?? faktiskt;
+  const datum = event.deltagarinfoSchemalagd ?? isoDatum(grans);
+  const datumText = DAGMANAD.format(new Date(datum));
+
+  return (
+    <Checkbox
+      isSelected={vald}
+      isDisabled={isPending}
+      onChange={(v) => {
+        setUnderSparande(v);
+        mutate(
+          {
+            deltagarinfoAutoAvstangt: !v,
+            // Sätts krysset PÅ skrivs datumet med (basen ska bära schemat, inte bara
+            // frånvaron av opt-out). Kryssas det UR rörs datumet inte — så att
+            // återkryssning behåller Lottas eventuella egna datum.
+            ...(v ? { deltagarinfoSchemalagd: datum } : {}),
+          },
+          { onSettled: () => setUnderSparande(null) },
+        );
+      }}
+      className="group flex cursor-pointer items-center gap-2 text-small text-text-secondary"
+    >
+      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+        <Check
+          aria-hidden="true"
+          size={14}
+          className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+        />
+      </span>
+      {vald ? `Schemalagt att skickas automatiskt ${datumText}` : 'Skickas inte automatiskt'}
+    </Checkbox>
+  );
+}
 
 /** Klockslag ur en dateTime ('09:00'); null/ogiltigt → null (Gunilla: aldrig rå ISO). */
 const KLOCKSLAG = new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit' });
@@ -1091,11 +1270,23 @@ function BorOverRad({
   );
 }
 
-/**
- * [RIVEN, TASK-145.1] `RensaFiltretKnapp` bodde här — dess enda anropsplats
- * var den gamla `filter`/`traffar`-drivna flata listan (K57), riven i samma
- * steg som `arBekraftad`-grupperingen (se docblocket ovan `ArbetsKo`).
- */
+/** K57: högerställd "Rensa filtret"-rad. Utbruten sedan konvergens-passet
+    (S93 Del 3): TVÅ anropsplatser (skarpa vyns/`filter`-drivna branch,
+    oförändrad · variant A:s enade register, som måste nolla FLER filter-
+    states — se `ArbetsKo`s `rensaAllaFilterA`). Ren extraktion. */
+function RensaFiltretKnapp({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="mt-1.5 flex justify-end">
+      <button
+        type="button"
+        onClick={onClick}
+        className="font-medium text-small underline-offset-2 hover:underline"
+      >
+        Rensa filtret
+      </button>
+    </div>
+  );
+}
 
 /** KRYSS-LÄGET (K52): ALLA visade anmälda i EN kolumn, säng-kryss per rad.
     Utbruten sedan konvergens-passet (S93 Del 3): TVÅ anropsplatser (skarpa
@@ -1212,13 +1403,23 @@ function ArbetsKo({
 }: {
   event: Event;
   registreringar: Registration[];
-  /** [PROTOTYPE] [S93] hållplats-pass — 'a' = den ännu ograderade förhandsvisningen
-      bakom `?variant=a` (DEV-only); null = produktionsvyn, som TASK-145.1
-      äger. Se docblocket ovan `ArbetsKo`s definition för skivgränsen. */
+  /** [PROTOTYPE] [S93] hållplats-pass — null = skarpa vyn, orörd. */
   protoVariant?: HallplatsVariant | null;
   /** [PROTOTYPE] [S93] `?data=proto` — stubbar bekräfta-mutationen (§ DATA). */
   protoDataMode?: boolean;
 }) {
+  const panelId = useId();
+  const [flik, setFlik] = useState<FlikNyckel>('alla');
+  const [filter, setFilter] = useState<SummeringsFilter | null>(null);
+  // [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus 2026-08-05) — ETT filtertillstånd
+  // för hela registret, i stället för de TRE separata proto-states som fanns
+  // här förut (`hallplatsFilter` · `protoBetalningsFilter` ·
+  // `protoAvbokadeAktiv`, alla ömsesidigt uteslutande och alla nollade var för
+  // sig). Splittringen var en mätt buggkälla: konvergens-passet fann att den
+  // gamla "Rensa filtret" bara nollade `filter` och därför gjorde INGENTING i
+  // tre fall av fyra. Med ett tillstånd kan klassen inte uppstå igen.
+  //
+  // `filter`/`setFilter` ovan rörs INTE — de bär skarpa vyn, som är oförändrad.
   const [registerFilter, setRegisterFilter] = useState<RegisterFilter>(TOMT_REGISTER_FILTER);
 
   const aktiva = useMemo(() => registreringar.filter(arAktiv), [registreringar]);
@@ -1243,11 +1444,10 @@ function ArbetsKo({
     }
     return counts;
   }, [aktiva]);
-  // TASK-145.1: steg-märket ÄR grupperingen (AC #4) och exakt ETT märke visas
-  // per person (AC #5) — ovillkorligt, i BÅDA lägena. Var tidigare gated på
-  // `protoVariant != null` (prototyp-only); registret bär nu alltid sitt
-  // steg-märke, inte bara bakom `?variant=a`.
-  const hallplatsMarkeFn = (r: Registration) => <HallplatsMarke steg={hallplatsSteg(r)} />;
+  const hallplatsMarkeFn =
+    protoVariant != null
+      ? (r: Registration) => <HallplatsMarke steg={hallplatsSteg(r)} />
+      : undefined;
 
   // [PROTOTYPE] [S93] byggkrav 2 (variant A ENDAST, S96) — "Väntar på
   // betalning" delas i två räknerader i Betalningar-blockets EGNA grammatik.
@@ -1262,26 +1462,49 @@ function ArbetsKo({
   const { avgifterMottagna, avgifterTotalt, avgifterSaknas, slutMottagna, slutSaknas } =
     betalningsSplit(aktiva);
 
-  // Summeringarna räknar ALLTID hela eventet (K38) — bevarade eftersom
-  // ?variant=a:s HallplatsToppA/logistik-rader (nedan) fortfarande läser dem.
+  // Summeringarna räknar ALLTID hela eventet (K38) — flikvalet påverkar bara
+  // listorna under, aldrig "hur många".
   const totalt = aktiva.length;
+  const obekraftadeTotalt = aktiva.filter((r) => !arBekraftad(r)).length;
+  const bekraftelseSkickade = aktiva.filter((r) => r.bekraftelseSkickad != null).length;
+  const pamindaTotalt = aktiva.filter(harPaminnelse).length;
   const eventinfoSkickade = aktiva.filter((r) => r.deltagarinfoSkickad != null).length;
   // LIVE-RÄKNAREN (K52): alltid HÄRLEDD ur kryssen i samma cache-rad som
   // kryss-läget muterar optimistiskt — aldrig ett lagrat räknefält (PRD beslut 8).
   const borOverTotalt = aktiva.filter((r) => r.borOver === true).length;
 
-  // TASK-145.1 (AC #2/#3): registret är EN lista, steg-ordning (ogjort
-  // överst) + anmälningsordning (ÄLDST FÖRST — samma FIFO-semantik som den
-  // gamla Obekräftade-kön hade, nu tillämpad enhetligt över samtliga steg i
-  // stället för bara kön) inom varje steg. `registerOrdning`
-  // (hallplats-steg-prototyp.ts) är den finmaskigare fyra-hinks-sorteringen
-  // (delar "väntar på betalning" i avgift/slut, samma delning som
-  // `betalningsSplit`s två räknerader). Basen är HELA `registreringar`, inte
-  // `aktiva` — avbokade ska "även synas i registret självt" (Marcus
-  // 2026-08-05); `aktiva` filtrerar bort dem, `registerOrdning` sorterar dem
-  // sist i stället och de bär sitt grå "Avbokad"-märke som varje annan post.
-  // Konsumeras av BÅDA lägena: produktionsvyns render (nedan) direkt, och
-  // `?variant=a`s `registerListaA` genom filtrets två axlar.
+  const visade = useMemo(
+    () => (flik === 'alla' ? aktiva : aktiva.filter((r) => kategori(r) === flik)),
+    [aktiva, flik],
+  );
+  const antalKategori = (k: DeltagarKategori) => aktiva.filter((r) => kategori(r) === k).length;
+
+  // Obekräftade ÄLDST först (den som väntat längst står överst — köns hela
+  // poäng); Bekräftade SENAST först (arkivets nyaste överst).
+  const obekraftade = useMemo(
+    () => visade.filter((r) => !arBekraftad(r)).sort((a, b) => inskickadTid(a) - inskickadTid(b)),
+    [visade],
+  );
+  const bekraftade = useMemo(
+    () => visade.filter(arBekraftad).sort((a, b) => inskickadTid(b) - inskickadTid(a)),
+    [visade],
+  );
+
+  // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 2/3) — variant A ENDAST:
+  // registret blir EN lista, steg-ordning (ogjort överst) + anmälningsordning
+  // (ÄLDST FÖRST — samma FIFO-semantik som den gamla Obekräftade-kön, nu
+  // tillämpad enhetligt över samtliga steg i stället för bara kön) inom varje
+  // steg. `registerOrdning` (hallplats-steg-prototyp.ts) är den finmaskigare
+  // fyra-hinks-sorteringen (delar "väntar på betalning" i avgift/slut, samma
+  // delning som byggkrav 2:s summeringsrader). No-op utanför variant A
+  // (unifiedSorted beräknas men används aldrig — se render nedan).
+  // [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus punkt 3): registrets bas är HELA
+  // `registreringar` — INTE `visade`. Två skäl, båda Marcus beslut:
+  //  · avbokade ska "även synas i registret självt", och `aktiva` filtrerar
+  //    bort dem (de sorteras sist via registerOrdning och bär sitt grå märke);
+  //  · Alla/Manuella/Medföljande-FLIKEN som `visade` bar är riven — vägen in
+  //    är nu en axel i filterpanelen i stället, applicerad i `registerListaA`.
+  // Skarpa vyn läser fortfarande `visade` genom sina egna grenar, orörd.
   const unifiedSorted = useMemo(
     () =>
       [...registreringar].sort((a, b) => {
@@ -1291,10 +1514,49 @@ function ArbetsKo({
     [registreringar],
   );
 
+  /**
+   * Inbox-fokus (K40): kön öppen, arkivet ett klick bort — är kön tom fälls
+   * arkivet ut i stället. Endast Bekräftade är fällbar (se GruppRubrik):
+   * Obekräftade-kön står alltid öppen sedan S91:s review.
+   *
+   * `null` betyder ALDRIG VÄXLAD och är hela poängen (Marcus design-review
+   * 2026-07-26, S91, fynd (b)). Förr var detta `useState(obekraftadeTotalt === 0)`
+   * — ett startvärde som beräknades EN gång vid monteringen, vilket gav samma
+   * sluttillstånd två olika utseenden: tömdes kön genom en batch i sessionen
+   * stod arkivet kvar HOPFÄLLT (uppmätt aria-expanded=false), medan en färsk
+   * sidladdning på exakt samma data fällde ut det. Det icke-berörda
+   * default-läget FÖLJER nu kön i stället för monteringsögonblicket.
+   *
+   * Ett explicit klick skriver en riktig boolean och respekteras därefter —
+   * Lottas eget val vinner alltid över härledningen, även när kön går till noll.
+   *
+   * Härledningen läser `obekraftadeTotalt` (hela eventet), inte den visade
+   * köns längd: en kategori-flik som råkar sakna obekräftade betyder inte att
+   * arbetet är gjort. Samma storhet som det gamla startvärdet läste — det som
+   * ändras är NÄR den utvärderas, inte VAD.
+   */
+  const [bekraftadeVal, setBekraftadeVal] = useState<boolean | null>(null);
+  const bekraftadeOppen = bekraftadeVal ?? obekraftadeTotalt === 0;
+
   // [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST (Del 3 beslut 1) —
   // den INFLYTTADE betalnings-arbetsytans K27-disclosure (se render, "Öppna
   // detaljer"). Egen lokal state, precis som Betalningar.tsx:s egen `oppen`.
   const [betalningOppen, setBetalningOppen] = useState(false);
+
+  // [PROTOTYPE] [S93] `traffar` bär NU FYRA filter (verkliga `filter` +
+  // hållplats-prototypens `hallplatsFilter` + byggkrav 1/2:s
+  // `protoAvbokadeAktiv`/`protoBetalningsFilter`, variant A ENDAST) —
+  // ömsesidigt uteslutande (se vaxlaFilter/vaxlaHallplatsFilter/
+  // vaxlaBetalningsFilter/vaxlaAvbokadeFilter), så den befintliga
+  // filtrerings-grenen nedan (Rensa filtret, borOver-specialfallet,
+  // DeltagarListan) återanvänds OFÖRÄNDRAD för alla fyra.
+  //
+  // Avbokade-filtret (byggkrav 1) läser `protoAvbokade` (HELA `registreringar`)
+  // i stället för `visade` — avbokade är i övrigt bortfiltrerade ur `aktiva`
+  // och därmed ur `visade` helt, så flik-valet (Alla/Manuella/Medföljande)
+  // gäller inte för denna rad (samma disconnect som den gamla `AvbokadeRad`
+  // redan hade mot `visade`).
+  const traffar = filter != null ? visade.filter(FILTER_TEST[filter]) : null;
 
   // [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST (Del 3 beslut 3):
   // "registret ... markera-läget verkar över visad lista" — den visade listan
@@ -1326,49 +1588,69 @@ function ArbetsKo({
 
   // Kryss-lägets STABILA sorterings-snapshot (K52): fångas när läget ÖPPNAS så
   // att en nykryssad rad inte hoppar upp under fingret — omsorteringen sker
-  // först vid nästa öppning. `Set` av record-ID:n. null = läget är stängt.
+  // först vid nästa öppning. `Set` av record-ID:n (visnings-oberoende av vilken
+  // flik som är vald). null = läget är stängt.
   const [borOverSnapshot, setBorOverSnapshot] = useState<Set<string> | null>(null);
   const lodging = useSetBorOver(event.id);
 
+  const vaxlaFilter = (f: SummeringsFilter) => {
+    // Ett filter ERSÄTTER hela accordion-grenen som bär markera-läget. Läts
+    // läget leva vidare osynligt skulle det återuppstå med gamla val när
+    // filtret rensas, och dess Esc-lyssnare äta Escape under tiden
+    // (review-fynd 3). Läget är bundet till sin yta: försvinner ytan, stängs det.
+    markering.stang();
+    // Nytt arbetssteg ⇒ förra batchens kvittens är förbrukad (fynd (c)).
+    setUtfall(null);
+    setFilter((nu) => {
+      const next = nu === f ? null : f;
+      if (f === 'borOver' && next === 'borOver') {
+        setBorOverSnapshot(new Set(aktiva.filter((r) => r.borOver === true).map((r) => r.id)));
+      }
+      return next;
+    });
+  };
+
+  // [PROTOTYPE] [S93] ITERATIONSVÅG — de tre växlarna
+  // (`vaxlaHallplatsFilter` · `vaxlaBetalningsFilter` · `vaxlaAvbokadeFilter`)
+  // är RIVNA. Var och en nollade de tre ANDRA filter-states för hand, och det
+  // var precis den bokföringen som en gång missades i "Rensa filtret". Alla
+  // topp-räknare går nu genom `vaxlaSteg` ovan, som skriver EN axel i ETT
+  // tillstånd — ingen manuell ömsesidig uteslutning kvar att glömma.
+
   // [PROTOTYPE] [S93] review-fix (uppdraget § FYND 2) — `?data=proto`:
-  // stubbad, samma read-only-förstärkning i variant-läget. Kontrollen
-  // (BorOverRad) görs redan `disabled` nedan — denna guard är
+  // stubbad, samma read-only-förstärkning som bekraftaMarkerade ovan.
+  // Kontrollen (BorOverRad) görs redan `disabled` nedan — denna guard är
   // försvar-i-djup, inte den enda spärren.
   const toggleBorOver = (reg: Registration, borOver: boolean) => {
     if (protoDataMode) return;
     lodging.mutate({ registration: reg, borOver });
   };
 
-  // Kryss-lägets lista: ikryssade — enligt snapshoten — överst. Array.sort är
-  // stabil (ES2019) så inbördes ordning bevaras inom varje grupp. TASK-145.1:
-  // basen är `aktiva` (var `visade`, den gamla flik-filtrerade mängden — fliken
-  // är riven i denna skiva). Konsumeras endast av `?variant=a`s Bor över-rad
-  // (nedan); produktionsvyn har ingen Bor över-ingång ännu (`TASK-145.2`).
+  // Kryss-lägets lista: ALLA visade anmälda (arbetsrad, inte filterlista) med
+  // ikryssade — enligt snapshoten — överst. Array.sort är stabil (ES2019) så
+  // inbördes ordning bevaras inom varje grupp.
   const markeringsLista =
-    borOverSnapshot != null
-      ? [...aktiva].sort(
+    filter === 'borOver' && borOverSnapshot != null
+      ? [...visade].sort(
           (a, b) => Number(borOverSnapshot.has(b.id)) - Number(borOverSnapshot.has(a.id)),
         )
       : [];
 
-  // [RIVEN, TASK-145.1] Batch-bekräftelsens massmutation (task-48,
-  // `bekraftaMarkerade`/`bulk`) hade sin ENDA anropsplats i det gamla
-  // Obekräftade-anchor:ade `MarkeringsBatchBar`-läget (`onBekrafta`), som är
-  // riven i denna skiva tillsammans med GruppRubrik (se docblocket ovan
-  // `ArbetsKo`). `MarkeringsBatchBar`s `onBekrafta`-gren finns kvar i
-  // komponenten (delad med `?variant=a`s "Åtgärder"-läge) men har numera
-  // ingen anropare — ingen skrivväg är RIVEN "dolt", den är strukturellt
-  // ONÅBAR, precis som `AutoKryss` ovan. `utfall` lever kvar som delad
-  // kvittens-state: `setUtfall(null)` anropas fortfarande av
-  // `vaxlaSteg`/`oppnaMarkering` (`?variant=a`).
+  // Hantera-flödet (task-48): ENDAST batch, alltid pessimistiskt bakom
+  // kontrollfrågan. Den enskilda optimistiska vägen (useSendConfirmation) revs
+  // med K46 — ett halvt bulk-utfall får aldrig visas som helt, och en
+  // 1-klicks-genväg hör hemma på Hem-vyn, inte i eventsidans arbetskö.
+  const bulk = useConfirmAll(event.id);
   const [utfall, setUtfall] = useState<Utfall | null>(null);
 
-  // Markera-lägets kandidater: PRODUKTIONSVYN har inget markera-läge (denna
-  // skiva river Obekräftade-kön som var dess enda anchor — `TASK-145.3`
-  // bygger ersättningen över den nya listan). `?variant=a` är oförändrad:
-  // `registerListaA` — den aktuella filtrerade vyn, eller HELA den enade
-  // listan när inget filter är valt.
-  const markeringKandidatIds = protoVariant === 'a' ? registerListaA.map((r) => r.id) : [];
+  // Markera-lägets kandidater: skarpa vyn = kön så som den visas (flikvalet
+  // gäller, oförändrat). [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST
+  // (Del 3 beslut 3, "markera-läget verkar över visad lista"): kandidaterna
+  // är i stället `registerListaA` — den aktuella filtrerade vyn, eller HELA
+  // den enade listan när inget filter är valt.
+  const obekraftadeIds = useMemo(() => obekraftade.map((r) => r.id), [obekraftade]);
+  const markeringKandidatIds =
+    protoVariant === 'a' ? registerListaA.map((r) => r.id) : obekraftadeIds;
   const markering = useMarkeringsLage(markeringKandidatIds);
 
   /**
@@ -1391,6 +1673,51 @@ function ArbetsKo({
     varAktivt.current = markering.aktivt;
   }, [markering.aktivt]);
 
+  const bekraftaMarkerade = async () => {
+    setUtfall(null);
+    const ids = [...markering.valda];
+    // [PROTOTYPE] [S93] `?data=proto` — READ-ONLY FÖRSTÄRKT (uppdraget § DATA):
+    // mutationen STUBBAS, inget nätverksanrop. Samma kvittens-UI som skarpt —
+    // c-variantens genväg ska visa HELA flödet, bara utan att skriva.
+    if (protoDataMode) {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      setUtfall({
+        ton: 'success',
+        titel: SKICKAT_TITEL,
+        text: skickatKvittens(ids.length),
+      });
+      markering.stang();
+      return;
+    }
+    try {
+      const result = await bulk.mutateAsync({ registrationIds: ids });
+      // Aldrig binärt: allt annat än rent skickat visas som det ÄR (K53-ärligheten).
+      // URVALET ÖVERLEVER ett icke-rent utfall (review-fynd 2): servern svarar
+      // 200 även vid 'partial'/'failed'/'skipped', och att då nolla markeringen
+      // hade tvingat Lotta att markera om tolv kort för att försöka igen. Endast
+      // ett RENT skickat utfall betyder att arbetet är utfört — bara då stängs
+      // läget. Samma logik som catch-grenen, som alltid behållit urvalet.
+      if (result.status !== 'sent') {
+        setUtfall({ ton: 'error', titel: MISSLYCKAD_TITEL, text: bekraftelseUtfall(result) });
+        return;
+      }
+      // FRAMGÅNGEN KVITTERAS (fynd (c)): tystnaden var förr reserverad för
+      // exakt det utfall som borde bekräftas tydligast.
+      setUtfall({
+        ton: 'success',
+        titel: SKICKAT_TITEL,
+        text: skickatKvittens(result.confirmed.length),
+      });
+      markering.stang();
+    } catch {
+      setUtfall({
+        ton: 'error',
+        titel: MISSLYCKAD_TITEL,
+        text: 'Bekräftelserna kunde inte skickas. Försök igen.',
+      });
+    }
+  };
+
   /** Nytt arbetssteg i blocket ⇒ kvittensen för det förra är förbrukad. */
   const oppnaMarkering = () => {
     setUtfall(null);
@@ -1403,7 +1730,71 @@ function ArbetsKo({
 
   return (
     <>
-      {protoVariant === 'a' && (
+      {protoVariant == null ? (
+        <div className="divide-y divide-border">
+          <SummeringsRad
+            term="Obekräftade anmälningar"
+            aktiv={filter === 'obekraftade'}
+            onClick={() => vaxlaFilter('obekraftade')}
+          >
+            {obekraftadeTotalt > 0 ? (
+              <span className="font-medium text-error tabular-nums">{obekraftadeTotalt}</span>
+            ) : (
+              '0'
+            )}
+          </SummeringsRad>
+          {/* K42 — raderna i LOTTAS UTSKICKSORDNING: bekräftelsen (mail 1, bär
+              betalningsinstruktionerna) → ev. betalningspåminnelse → eventinfo
+              (mail 2, två veckor före). */}
+          <SummeringsRad
+            term="Anmälningsbekräftelse skickad"
+            aktiv={filter === 'bekraftelse'}
+            onClick={() => vaxlaFilter('bekraftelse')}
+          >
+            <AvDelta klara={bekraftelseSkickade} totalt={totalt} />
+          </SummeringsRad>
+          <SummeringsRad
+            term="Betalningspåminnelse skickad"
+            aktiv={filter === 'paminda'}
+            onClick={() => vaxlaFilter('paminda')}
+          >
+            <span className="tabular-nums">{pamindaTotalt}</span>
+          </SummeringsRad>
+          <SummeringsRad
+            term="Eventinfo skickad"
+            aktiv={filter === 'saknarEventinfo'}
+            onClick={() => vaxlaFilter('saknarEventinfo')}
+            signalSlot
+            signal={
+              // K44: slotten ALLTID reserverad — dags-att-skicka-signalen när den är
+              // tänd, annars auto-utskicks-krysset (task-18.6). Aldrig båda: när det
+              // är dags att skicka NU är schemat inte längre frågan.
+              signalText ? (
+                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
+                  <Clock aria-hidden="true" size={14} className="shrink-0" />
+                  {signalText}
+                </span>
+              ) : (
+                <AutoKryss event={event} />
+              )
+            }
+          >
+            <AvDelta klara={eventinfoSkickade} totalt={totalt} />
+          </SummeringsRad>
+          {/* K50: Bor över SIST — universell rad på ALLA event (hemma-hos-eventen
+              är normalfallet med sovande gäster); säng-glyfen bär radens identitet.
+              Radens SIFFRA är de ikryssade (härledd live); radens KLICK öppnar
+              KRYSS-LÄGET (K52 — arbetsrad, inte filterlista). */}
+          <SummeringsRad
+            term="Bor över"
+            ikon={BedDouble}
+            aktiv={filter === 'borOver'}
+            onClick={() => vaxlaFilter('borOver')}
+          >
+            <span className="tabular-nums">{borOverTotalt}</span>
+          </SummeringsRad>
+        </div>
+      ) : (
         // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 § Valet) — variant A
         // vann divergensen; B (Stations-railen)/C (Nästa steg-panelen) är
         // FÖRKASTADE och RIVNA (se DeltagareHallplatsPrototyp.tsx). Enda
@@ -1413,16 +1804,6 @@ function ArbetsKo({
         // (border-t) UTAN rubrik-text (byggkrav 3 rev — "Utskick"-texten fanns
         // bara för att skilja variant A från B/C; de är borta, så det finns
         // inget kvar att skilja mot).
-        //
-        // TASK-145.1: detta HELA blocket (steg-räknarna, filtreringen, Bor
-        // över/Avbokade-logistiken) är OFÖRÄNDRAT och KVAR bakom `?variant=a`
-        // — dess graduering till produktion är `TASK-145.2`s ansvar, inte
-        // denna skivas. De gamla fem klickbara summeringsraderna
-        // (Obekräftade/Bekräftelse/Påminnelse/Eventinfo/Bor över) som stod
-        // här för produktionsvyn är RIVNA i samma steg som registrets
-        // rubriker (se docblocket ovan `ArbetsKo`s definition) — produktions-
-        // vyn har därför ingen räknare-rad alls tills `TASK-145.2` landar.
-        //
         // PUNKT 3 (Marcus 2026-08-06): "Under Avbokade-raden är sista
         // avdelaren och den är fetare än de övriga."
         //
@@ -1486,10 +1867,9 @@ function ArbetsKo({
                   // [PROTOTYPE] [S93] konvergens-pass (Del 3 beslut 2-rivning
                   // 1): Auto-kryssen ("AutoKryss", task-18.6) RIVS ur
                   // variant-läget — eventinfo-raden bär endast räknaren +
-                  // signal-badgen. [ÄNDRAT, TASK-145.1] `AutoKryss` själv och
-                  // produktionsvynens motsvarande fallback-gren är rivna i
-                  // samma steg (se docblocket ovan `ArbetsKo`s definition) —
-                  // AutoKryss finns numera INGENSTANS i denna fil.
+                  // signal-badgen. Skarpa vyns egen SummeringsRad ovan
+                  // (protoVariant == null-grenen) behåller AutoKryss-fallbacken
+                  // OFÖRÄNDRAD.
                   signalText ? (
                     <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 font-medium text-small text-warning">
                       <Clock aria-hidden="true" size={14} className="shrink-0" />
@@ -1559,13 +1939,33 @@ function ArbetsKo({
           en ovillkorlig `border-b-0` hade tagit bort avdelaren i skarpa vyn
           också — där ingen bett om det. */}
       <div className={cn('flex flex-col gap-2.5 py-3', protoVariant === 'a' && 'border-b-0')}>
-        {/*
-         * [RIVEN, TASK-145.1] Kategori-flikarna (Alla/Manuella/Medföljande,
-         * K41) bodde här för produktionsvyn. Vägen in är riven tillsammans
-         * med registrets rubriker — registret har ingen kategori-filtrering
-         * längre (`?variant=a`s `RegisterFilterRad`-axel `vagIn` är den
-         * kommande ersättningen, se docblocket ovan `ArbetsKo`s definition).
-         */}
+        {/* K41: Formulär-fliken riven — formulärvägen är NORMEN och behöver
+            ingen egen flik. Kapseln är familjens ToggleButtonGroup-primitiv.
+            [PROTOTYPE] [S93] ITERATIONSVÅG: fliken renderas ENDAST i skarpa
+            vyn. I variant A är vägen in en axel i filterpanelen (se
+            RegisterFilterRad) — Marcus: togglen "behöver byggas om och exakt
+            matcha" eventsidans filtrering. */}
+        {protoVariant !== 'a' && (
+          <ToggleButtonGroup
+            label="Visa deltagare"
+            spread
+            selectedKey={flik}
+            onSelectionChange={(key: FlikNyckel) => {
+              setUtfall(null);
+              setFlik(key);
+            }}
+          >
+            <ToggleButton id="alla" size="sm">
+              {`Alla (${totalt})`}
+            </ToggleButton>
+            <ToggleButton id="manuell" size="sm">
+              {`Manuella (${antalKategori('manuell')})`}
+            </ToggleButton>
+            <ToggleButton id="medfoljande" size="sm">
+              {`Medföljande (${antalKategori('medfoljande')})`}
+            </ToggleButton>
+          </ToggleButtonGroup>
+        )}
 
         {protoVariant === 'a' ? (
           // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 3) — registret
@@ -1654,30 +2054,112 @@ function ArbetsKo({
               )}
             </>
           )
-        ) : unifiedSorted.length === 0 ? (
-          // TASK-145.1 (kortets fallback-tomtext) — samma text som
-          // `?variant=a`s motsvarande tomma-läge ovan.
-          <p className="py-2 text-small text-text-secondary">Inga anmälningar ännu.</p>
+        ) : traffar != null ? (
+          <>
+            {/* K57: "Visar:"-raden och instruktionstexten RIVNA — man har ju
+                tryckt på raden. Rensa-knappen står ensam, högerställd på
+                kortets inner-inset. */}
+            <RensaFiltretKnapp onClick={() => setFilter(null)} />
+            {filter === 'borOver' ? (
+              <BorOverKrysslage
+                lista={markeringsLista}
+                protoDataMode={protoDataMode}
+                onToggle={toggleBorOver}
+              />
+            ) : traffar.length > 0 ? (
+              <DeltagarListan
+                rader={traffar}
+                eventId={event.id}
+                hallplatsMarke={hallplatsMarkeFn}
+              />
+            ) : (
+              <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>
+            )}
+          </>
+        ) : visade.length === 0 ? (
+          <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
         ) : (
-          // TASK-145.1 — REGISTRET SOM EN LISTA (AC #1–#7). Obekräftade-kön
-          // och Bekräftade-arkivet (med sina två GruppRubrik-rader,
-          // Markera-läget och Bekräfta-flödet) är RIVNA — se docblocket ovan
-          // `ArbetsKo`s definition för den fullständiga skivgränsen. Listan
-          // är `unifiedSorted` (registerOrdning-sorterad, FIFO inom hink)
-          // OVILLKORLIGT — ingen flik-/counter-filtrering kvar att växla
-          // bort den mot. Samma `DeltagarListan` som `?variant=a` använder:
-          // `rullande` återanvänder byggkrav 4:s klipphöjd OFÖRÄNDRAD (AC #6),
-          // `ariaLabel="Deltagarregister"` ärver INTE `DeltagarListan`s
-          // default (köns hårdkodade namn, AC #7), och `hallplatsMarkeFn` är
-          // nu ovillkorlig (AC #4/#5, se derivationen ovan).
-          <DeltagarListan
-            rader={unifiedSorted}
-            eventId={event.id}
-            rullande
-            testId="deltagar-register"
-            ariaLabel="Deltagarregister"
-            hallplatsMarke={hallplatsMarkeFn}
-          />
+          <>
+            {obekraftade.length > 0 ? (
+              <div>
+                {/* Byggkrav 1: Markera ERSÄTTER Bekräfta alla-pillen på samma
+                    plats; i läget står Avbryt där. K47/K48-formen (pill +
+                    kontrollfråga på rubriken) är riven — massmutationen har
+                    flyttat till batch-baren där urvalet syns innan det
+                    skickas.
+
+                    EMPHASIS-PARET (Marcus design-review 2026-07-26, S91):
+                    Markera bär `primary` SOLID (#282928) = exakt S86-facit;
+                    Avbryt ärver den subtle plattan. Bygget hade satt Markera
+                    till `primary`/`subtle` med stöd i §19:s rad om
+                    toolbar-ytklass — men facit var Marcus-låst och vägde
+                    tyngre, och kollisionen skulle ha lyfts i stället för att
+                    lösas tyst. §19 är amenderad: en LÄGESÖPPNARE är sektionens
+                    primära kontroll, inte ett rad-verktyg, och bär därför
+                    solid. Avbryt är däremot en lågviktad utgång och tar den
+                    subtle plattan — synligare än ghost, som saknade
+                    bakgrund helt och läste som en textlänk. */}
+                <GruppRubrik
+                  varning
+                  handling={
+                    <MarkeraKnapp
+                      aktivt={markering.aktivt}
+                      onOppna={oppnaMarkering}
+                      onStang={markering.stang}
+                      buttonRef={markeraKnappRef}
+                    />
+                  }
+                >
+                  {`Obekräftade (${obekraftade.length})`}
+                </GruppRubrik>
+                <div id={`${panelId}-obekraftade`} className="pt-1.5">
+                  {markering.aktivt && (
+                    <MarkeringsBatchBar
+                      antal={markering.antal}
+                      totalt={obekraftade.length}
+                      allaValda={markering.allaValda}
+                      pending={bulk.isPending}
+                      onBekrafta={bekraftaMarkerade}
+                      onMarkeraAlla={markering.markeraAlla}
+                      onRensa={markering.rensa}
+                    />
+                  )}
+                  <DeltagarListan
+                    rader={obekraftade}
+                    eventId={event.id}
+                    rullande
+                    testId="obekraftade-ko"
+                    markering={
+                      markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
+                    }
+                    hallplatsMarke={hallplatsMarkeFn}
+                  />
+                </div>
+              </div>
+            ) : (
+              <p className="text-small text-text-secondary">
+                Inga obekräftade — alla är bekräftade.
+              </p>
+            )}
+            {bekraftade.length > 0 && (
+              <div>
+                <GruppRubrik
+                  oppen={bekraftadeOppen}
+                  kontrollerarId={`${panelId}-bekraftade`}
+                  onToggle={() => setBekraftadeVal(!bekraftadeOppen)}
+                >
+                  {`Bekräftade (${bekraftade.length})`}
+                </GruppRubrik>
+                <div id={`${panelId}-bekraftade`} hidden={!bekraftadeOppen} className="pt-1.5">
+                  <DeltagarListan
+                    rader={bekraftade}
+                    eventId={event.id}
+                    hallplatsMarke={hallplatsMarkeFn}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
       {/* [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 1) — Betalningars
