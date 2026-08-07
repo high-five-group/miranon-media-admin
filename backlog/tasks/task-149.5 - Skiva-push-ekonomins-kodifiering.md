@@ -1,10 +1,10 @@
 ---
 id: TASK-149.5
 title: 'Skiva: push-ekonomins kodifiering'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-07 10:33'
-updated_date: '2026-08-07 11:47'
+updated_date: '2026-08-07 11:49'
 labels:
   - ready-for-agent
 dependencies:

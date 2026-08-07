@@ -3,10 +3,10 @@ id: TASK-153
 title: >-
   Fynd: draft-regeln är bärarlös — svep-larmets åtgärdsregel saknas i
   alltid-laddad yta
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-07 11:06'
-updated_date: '2026-08-07 11:47'
+updated_date: '2026-08-07 11:49'
 labels:
   - ready-for-agent
 dependencies: []
