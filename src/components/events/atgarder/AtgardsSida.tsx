@@ -151,20 +151,31 @@ const KORT_KLASS =
 const PREVIEW_GRANS = 5;
 
 /**
- * "Anna, Bert, Cissi, David och Erik och 9 till." — svensk uppräkning med
- * `och` före det sista namnet, och overflow som REN TEXT.
+ * Previewns innehåll i BÅDA sina former, ur EN beräkning.
+ *
+ * `pillar` + `rest` är det synliga (namn-pillar och en eventuell "och N till"),
+ * `mening` är samma sak som sammanhållen svensk uppräkning för skärmläsaren:
+ * "Anna, Bert, Cissi, David och Erik och 9 till."
+ *
+ * DE DELAR TRUNKERING MED AVSIKT. Formerna räknades tidigare var för sig —
+ * meningen här, pillarnas `slice` på användningsstället — och två uttryck för
+ * samma regel glider isär vid nästa ändring av gränsen. Nu är det omöjligt:
+ * ändras regeln ändras båda formerna i samma andetag.
  *
  * Under gränsen: bara uppräkningen. Exakt EN över gränsen ger ingen "+1 till"
  * — då är det billigare att visa namnet än att räkna det (samma regel som
  * "frånvaron är informationen": en rest på ett är ingen rest).
  */
-function namnPreview(namn: string[]): string {
+function namnPreview(namn: string[]): { pillar: string[]; rest: number; mening: string } {
   const uppraknat = (n: string[]) =>
     n.length <= 1 ? (n[0] ?? '') : `${n.slice(0, -1).join(', ')} och ${n[n.length - 1]}`;
 
-  if (namn.length <= PREVIEW_GRANS + 1) return `${uppraknat(namn)}.`;
+  if (namn.length <= PREVIEW_GRANS + 1) {
+    return { pillar: namn, rest: 0, mening: `${uppraknat(namn)}.` };
+  }
+  const pillar = namn.slice(0, PREVIEW_GRANS);
   const rest = namn.length - PREVIEW_GRANS;
-  return `${namn.slice(0, PREVIEW_GRANS).join(', ')} och ${rest} till.`;
+  return { pillar, rest, mening: `${pillar.join(', ')} och ${rest} till.` };
 }
 
 /* ------------------------------------------------------------------ *
@@ -618,6 +629,9 @@ function MottagarYta({
     [synliga, valda],
   );
 
+  /** Previewns två former ur en beräkning — se `namnPreview`. */
+  const preview = useMemo(() => namnPreview(mottagarNamn), [mottagarNamn]);
+
   const synligaIds = useMemo(() => new Set(synliga.map((r) => r.id)), [synliga]);
   const kandidater = useMemo(
     () =>
@@ -715,26 +729,69 @@ function MottagarYta({
               inget standardkontrakt för en sådan mini-popover — varje sådan
               yta blir ett eget, otestat mönster.
 
-              VARKEN CHIPS ELLER AVATARSTAPEL, av två skäl som sammanfaller:
-              chips signalerar borttagbarhet (Salesforce: "By default, pills
-              include a remove button" — hela tangentbordsmodellen är byggd
-              kring borttagning) och urvalet redigeras INTE här utan i korten
-              nedanför; och en avatarstapel förutsätter foton som varken
-              `Registration` eller `Person` bär, så den hade degraderat till
-              initial-cirklar — strikt svagare än att visa namnet.
+              AVATARSTAPEL AVVISAD och det står fast: den förutsätter foton som
+              varken `Registration` eller `Person` bär, så den hade degraderat
+              till initial-cirklar — strikt svagare än att visa namnet.
+
+              PILL-FORMEN ÄR MARCUS BESLUT 2026-08-07 ("kan vi inte sätta
+              namnen i pills?") OCH DEN RIVER INTE PASSET — den besvarar en
+              fråga passet aldrig ställde. Passets chips-avsnitt vägde chip som
+              INTERAKTIONSMÖNSTER mot en read-only yta, och landade rätt: en
+              pill med x-knapp lovar en borttagning som inte sker här. Men det
+              vägde aldrig avgränsade namn-enheter mot kommaseparerad löptext
+              som LÄSBARHETSFRÅGA, vilket är den faktiska bristen — namnen
+              drunknade i en mening.
+
+              Passets egen text pekar ut vägen: en pill som "liknar
+              `StatusBadge` … korrekt signalerar 'icke-interaktiv'" avvisades
+              inte som FEL, utan som "ren dekoration utan chip-formens
+              egentliga poäng". Dekoration är precis vad som behövdes.
+
+              FORMEN ÄR DÄRFÖR STATUSBADGES, INTE EN NY: pill-skalans `sm`-steg
+              (`px-2 py-0.5 text-caption`) — listmiljön, som previewn är — plus
+              `border border-transparent`, T130:s tredje regel: kanten ritas
+              aldrig men reserverar sin px så `contrast-more` kan tändas utan
+              att layouten hoppar. INGEN x-knapp och INGEN ikon: det är precis
+              det som skiljer den från Salesforce-pillen och gör den ärlig.
+
+              `bg-bg-muted` mot previewns `bg-surface` är T130:s neutral-fall
+              SPEGELVÄNT. Där misslyckades muted-på-muted (1.00) och svaret blev
+              `bg-surface`; här står plattan på surface, så muted är den som
+              syns. Samma två toner, omvänd ordning.
+
+              TILLGÄNGLIGHETEN FÖLJER PINTEREST-MÖNSTRET passet identifierade
+              som det etablerade svaret: EN sammanhållen accessible name för
+              hela gruppen, inte N annonserade fragment. Utan det läser
+              skärmläsaren "Anna Andersson Erik Berg Karin Dahl" utan
+              separatorer — sämre än meningen den ersatte. Meningen finns därför
+              kvar i `sr-only` och pillarna är `aria-hidden`; det synliga och
+              det upplästa bär samma innehåll i två former.
 
               PASSETS EGEN RESERVATION, bokförd: vårt scenario (read-only
               namn-bekräftelse utan foton, 1–30 poster) ligger MELLAN de
               etablerade mönstren, inte på ett av dem. Gränsen 5 är därför
               lånad från avatargruppernas talkluster, inte belagd för just
-              denna form. */}
+              denna form. Den är ORÖRD i detta varv — en ändring i taget. */}
           {mottagarNamn.length > 0 && (
-            <p
+            <div
               data-testid="mottagar-preview"
-              className="mt-2 rounded-xl border border-(--mm-navcard-border) bg-surface p-2.5 text-caption text-text-secondary contrast-more:border-(--mm-navcard-border-contrast)"
+              className="mt-2 rounded-xl border border-(--mm-navcard-border) bg-surface p-2.5 contrast-more:border-(--mm-navcard-border-contrast)"
             >
-              {namnPreview(mottagarNamn)}
-            </p>
+              <span className="sr-only">{preview.mening}</span>
+              <span aria-hidden="true" className="flex flex-wrap items-center gap-1.5">
+                {preview.pillar.map((namn) => (
+                  <span
+                    key={namn}
+                    className="inline-flex items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong"
+                  >
+                    {namn}
+                  </span>
+                ))}
+                {preview.rest > 0 && (
+                  <span className="text-caption text-text-muted">och {preview.rest} till</span>
+                )}
+              </span>
+            </div>
           )}
 
           {/* `pt-2` skiljer panelen från knappen; föräldern bär redan `py-2`
