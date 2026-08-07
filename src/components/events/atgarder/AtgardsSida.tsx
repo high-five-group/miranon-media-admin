@@ -89,6 +89,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CircleCheck,
   Clock,
   FileText,
   History,
@@ -579,6 +580,12 @@ function MottagarYta({
   const [sok, setSok] = useState('');
   const listPanelId = useId();
 
+  /** De MARKERADES namn i listordning — previewns innehåll. */
+  const mottagarNamn = useMemo(
+    () => synliga.filter((r) => valda.has(r.id)).map(displayName),
+    [synliga, valda],
+  );
+
   const synligaIds = useMemo(() => new Set(synliga.map((r) => r.id)), [synliga]);
   const kandidater = useMemo(
     () =>
@@ -603,7 +610,15 @@ function MottagarYta({
         {/* RÄKNAREN — det första hon ska se (Marcus: "typ '7 av 19 deltagare
             markerade'"), och tillika listans accordion-huvud. Antalet står som
             TEXT i knapp-etiketten så skärmläsaren får hela bilden; `aria-live`
-            gör att ändringen annonseras när hon av-/påmarkerar inne i panelen. */}
+            gör att ändringen annonseras när hon av-/påmarkerar inne i panelen.
+
+            VIKTEN HÖJDES I VARV 4c (Marcus: "'14 av 16' syns inte så bra
+            liksom, det fångas inte av ögat"). Raden bar `font-medium text-body`
+            — samma grad som allt annat på sidan, alltså ingenting som drog
+            blicken. Nu: `text-xl` på SIFFRORNA (grad-språnget bär), och en
+            grön `CircleCheck` framför. Bocken är samma gröna signal som
+            markerade kort bär, så räknaren och korten läser som samma sak
+            — och den är `aria-hidden` dekor: texten är bäraren (WCAG 1.4.1). */}
         <div className="flex flex-col py-2">
           <button
             type="button"
@@ -612,13 +627,13 @@ function MottagarYta({
             onClick={() => setListaOppen((v) => !v)}
             className="-mx-2 flex w-auto items-center justify-between gap-4 rounded-lg px-2 py-1.5 text-left hover:bg-bg-emphasized motion-safe:transition-colors"
           >
-            <span
-              data-testid="markering-rakning"
-              aria-live="polite"
-              className="font-medium text-body"
-            >
-              <span className="tabular-nums">{valda.size}</span> av{' '}
-              <span className="tabular-nums">{alla.length}</span> deltagare markerade
+            <span className="flex min-w-0 items-center gap-2">
+              <CircleCheck aria-hidden="true" size={20} className="shrink-0 text-(--mm-success)" />
+              <span data-testid="markering-rakning" aria-live="polite" className="text-body">
+                <span className="font-semibold text-xl tabular-nums">{valda.size}</span> av{' '}
+                <span className="font-semibold text-xl tabular-nums">{alla.length}</span> deltagare
+                markerade
+              </span>
             </span>
             <ChevronDown
               aria-hidden="true"
@@ -628,6 +643,41 @@ function MottagarYta({
               }`}
             />
           </button>
+
+          {/* NAMN-PREVIEWN (Marcus 2026-08-07): "en liten preview-lista med
+              namnen på dem hon tog med sig … det kanske räcker som en liten
+              bekräftelse på att 'Ja, alla är med' och hon kanske inte behöver
+              öppna och scrolla genom alla kort."
+
+              FORMEN ÄR ÄRVD, inte uppfunnen: eventdetaljens egen
+              Åtgärds-platshållare (`Deltagare` § `MarkeringsBatchBar`,
+              `valdaNamn`) listar redan exakt de här namnen i en
+              `rounded-xl border-(--mm-navcard-border) bg-surface p-3
+              text-small`-ruta — det är bryggan hon just klev över. Samma ruta
+              möter henne på andra sidan.
+
+              LÖPANDE TEXT, INTE EN RAD PER NAMN. Platshållarens `<ul>` med ett
+              namn per rad hade blivit 14 rader ≈ 210 px och skjutit ned
+              åtgärderna igen — precis det varv 4b löste. Kommaseparerad text
+              skummas lika snabbt och tar en tredjedel av höjden.
+
+              ENDAST DE MARKERADE räknas upp: previewn svarar på "vilka tog jag
+              med mig", och ett avmarkerat kort är inte med.
+
+              GRADEN ÄR `text-caption`, INTE `text-small`, och padding `p-2.5`
+              — mätt, inte valt på känsla. Med `text-small`/`p-3` blev rutan
+              131 px och sköt ned den sista åtgärdsraden till 884 px, alltså
+              28 px IN BAKOM tab-baren (som börjar på 856). Previewn får inte
+              kosta det varv 4b just vann. Namnen är sekundär bekräftelse, inte
+              läsyta — samma vikt som metaytan på deltagarkortet. */}
+          {mottagarNamn.length > 0 && (
+            <p
+              data-testid="mottagar-preview"
+              className="mt-2 rounded-xl border border-(--mm-navcard-border) bg-surface p-2.5 text-caption text-text-secondary contrast-more:border-(--mm-navcard-border-contrast)"
+            >
+              {mottagarNamn.join(', ')}
+            </p>
+          )}
 
           {/* `pt-2` skiljer panelen från knappen; föräldern bär redan `py-2`
               nedåt så ingen egen `pb` behövs. Panelen renderas alltid i DOM:en

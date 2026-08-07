@@ -12,7 +12,9 @@ Prototyp-växlarens rail är bortdöljd i bilderna.
 
 | Fil | Visar |
 |---|---|
-| **`v4b-forsta-skarmen.png`** | **Sidan som Lotta möter den** — allt ryms utan scroll: sidhuvud, väljare, räknaren (infälld), hela Åtgärd-menyn, betalningarna |
+| **`v4c-forsta-skarmen.png`** | **Sidan som Lotta möter den, senaste varvet** — grön bock + stora siffror i räknaren, namn-previewn under, hela Åtgärd-menyn fri från tab-baren |
+| `v4c-infalld.png` / `v4c-utfalld.png` / `v4c-desktop.png` | Samma varv: hela sidan, listan utfälld, 1280 px |
+| `v4b-forsta-skarmen.png` | Varv 4b — infällningen, **före** räknarens grad-höjning och previewn |
 | `v4b-infalld.png` | Samma, hela sidan |
 | `v4b-utfalld-lista.png` | Efter klick på räknaren — de 14 markerade korten |
 | `v4b-atgard-vald.png` | En åtgärd vald direkt ur infällt läge |
@@ -59,6 +61,26 @@ mot sågtanden.
 
 **Beteendet mätt:** räknaren gick 14 → 13 vid avmarkering av ett kort, och
 kortet låg kvar i listan i vitt läge.
+
+**Räknaren + previewn mätt (varv 4c), 430×932.** Marcus: *"'14 av 16' syns inte
+så bra liksom, det fångas inte av ögat"* + förslaget om en namn-preview.
+
+Siffrorna står nu i **20 px / 600** mot radens 16 px, med en `CircleCheck` i
+`rgb(96,107,87)` (`--mm-success`) framför — samma gröna signal som de markerade
+korten bär. Bocken är `aria-hidden`; texten är bäraren.
+
+Previewn listar alla 14 namnen kommaseparerat i `Deltagare` §
+`MarkeringsBatchBar`s platshållar-ruta (`rounded-xl` + `--mm-navcard-border` +
+`bg-surface`) — samma ruta hon just klev över på eventdetaljen.
+
+**Höjdbudgeten är mätt, inte gissad.** Med `text-small`/`p-3` blev rutan 131 px
+och sköt ned den sista åtgärdsraden till 884 px — **28 px in bakom tab-baren**
+(som börjar på 856). Med `text-caption`/`p-2.5` mäter rutan **94 px** och sista
+raden slutar på **847 px**, alltså 9 px fri. Alla sex åtgärder syns.
+Sidhöjd 1197 px.
+
+Previewn följer markeringen: efter avmarkering av ett kort gick den 14 → 13
+namn i takt med räknaren.
 
 **Infällningen mätt (varv 4b), 430×932:** panelen bär `hidden` vid inladdning
 och räknar-knappen `aria-expanded="false"`; alla 14 korten finns i DOM:en (så
