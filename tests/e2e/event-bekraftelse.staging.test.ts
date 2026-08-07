@@ -34,10 +34,19 @@ import { mockValjarLista } from './helpers/valjar-lista';
  * get-registrations serverar, så batchens utfall bevisas överleva
  * onSettled-refetchen (annars hade korten studsat tillbaka — en falsk grön).
  *
- * Täckning: rivningarna (AC #2), markera-lägets in-/utgång inkl. Esc, valt
- * korts form + pill-växlingen, batch-barens tre knappar + breddlåset,
- * kontrollfrågan med båda vägarna, länkarnas vila, live-räknaren, köns
- * scroll-form, axe 0 i läget (AC #1).
+ * BATCH-BEKRÄFTELSEN ÄR RIVEN UR EVENTSIDAN (TASK-145.3 AC #2) — filens namn
+ * är därmed historiskt, inte beskrivande. Den behålls ändå: `git mv` hade
+ * kostat historiken på ett innehåll som till största delen lever vidare
+ * (markera-läget), och filnamnet är inte en yta någon läser för att förstå
+ * täckningen. Vilka test som adapterats, tagits bort och tillkommit — och var
+ * skulden för de borttagna bokförts — står i describe-blockets eget docblock
+ * nedan.
+ *
+ * Täckning: rivningarna inkl. batch-bekräftelsens (AC #2), markera-lägets
+ * in-/utgång inkl. Esc, den vertikala stabiliteten (AC #1), valt korts form +
+ * det enda steg-märket, batch-barens tre knappar + live-räknaren, markering i
+ * FILTRERAT läge (AC #2), utgångens ärlighet (AC #3), länkarnas vila,
+ * registrets scroll-form, axe 0 i läget och med utgången utfälld.
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
@@ -192,33 +201,32 @@ function blandadeObekraftade(): Json[] {
 }
 
 type Mockar = {
-  /** Varje POST-body mot bekräftelse-EF:en (kontrollfrågans bevis: noll = inget hänt). */
+  /** Varje POST-body mot bekräftelse-EF:en. Noll anrop är AC #2:s mekaniska
+      bevis: en RIVEN mutation kan inte avfyras, en dold hade kunnat. */
   confirmCalls: Json[];
-  /** Varje POST-body mot update-event (auto-krysset). */
+  /** Varje POST-body mot update-event (auto-krysset, rivet av TASK-145.2). */
   updateEventCalls: Json[];
-  /** Antal get-registrations-svar som FAKTISKT landat (fördröjningen inräknad). */
-  hamtningarKlara: number;
 };
-
-/** Fördröj varje omhämtning EFTER den första — staging-latensen i miniatyr. */
-type MockOptioner = { refetchFordrojningMs?: number };
 
 /**
  * TILLSTÅNDSBÄRANDE mockar: bekräftelse-anropet muterar `deltagare`-listan som
- * get-registrations serverar (status + tidsstämpel) — precis som servern gör — så att
- * refetchen efter mutationen bekräftar utfallet i stället för att rulla tillbaka det.
+ * get-registrations serverar (status + tidsstämpel) — precis som servern gör.
+ *
+ * [RIVEN, TASK-145.3] `MockOptioner.refetchFordrojningMs` och
+ * `Mockar.hamtningarKlara` bodde här. De fanns för `fynd (a)` ("kön töms av
+ * SERVERNS svar — inte av omhämtningen"), som prövade batch-bekräftelsens
+ * cache-patch. Det testet är borttaget med sitt subjekt (se describe-blockets
+ * docblock), och kvarlämnad mät-ställning utan mätare är död kod.
+ *
+ * CONFIRM-routen står däremot KVAR, med avsikt: den är inte längre en
+ * fixtur för ett flöde utan en FÄLLA — om en bekräfta-väg någonsin smyger
+ * tillbaka in i eventsidan fångar `confirmCalls` den.
  */
-async function mocka(
-  page: Page,
-  event: Json,
-  deltagare: Json[] = grundData(),
-  optioner: MockOptioner = {},
-): Promise<Mockar> {
+async function mocka(page: Page, event: Json, deltagare: Json[] = grundData()): Promise<Mockar> {
   await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
-  const mockar: Mockar = { confirmCalls: [], updateEventCalls: [], hamtningarKlara: 0 };
+  const mockar: Mockar = { confirmCalls: [], updateEventCalls: [] };
   let aktuellt = event;
   const lista = [...deltagare];
-  let hamtningar = 0;
 
   await page.route(GET_EVENT, async (route: Route) => {
     await route.fulfill({
@@ -228,14 +236,6 @@ async function mocka(
     });
   });
   await page.route(GET_REGISTRATIONS, async (route: Route) => {
-    hamtningar += 1;
-    // Första hämtningen (sidladdningen) är snabb; omhämtningarna bär
-    // fördröjningen, så testet kan skilja "svaret drev vyn" från "refetchen
-    // drev vyn" utan att mäta klocka.
-    if (hamtningar > 1 && optioner.refetchFordrojningMs) {
-      await new Promise((r) => setTimeout(r, optioner.refetchFordrojningMs));
-    }
-    mockar.hamtningarKlara += 1;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -299,17 +299,24 @@ function kryssI(kort: ReturnType<typeof markerbaraKort>) {
   return kort.getByRole('checkbox');
 }
 
+/** Registret — EN lista sedan TASK-145.1 (kön/arkivet är rivna). */
+function registret(page: Page) {
+  return gruppen(page).getByTestId('deltagar-register');
+}
+
 /**
- * Knappens inset mot sin rubrikrad (review-våg 3-precedenten): handling-slotten
- * är knappens förälder och rubrikraden dess farförälder. Två knappar med samma
- * inset står på SAMMA plats — en stabilare mätning än absoluta koordinater.
+ * Knappens inset mot BATCH-BAREN (TASK-145.1 AC #11 flyttade knappen dit;
+ * rubrikraden den satt på är riven). Knappen är barns barn av baren, så baren
+ * är dess förälder. Två knappar med samma inset står på SAMMA plats — en
+ * stabilare mätning än absoluta koordinater, eftersom baren själv kan flytta
+ * i sidled när innehållet växer ut åt höger.
  */
-async function insetIRubrikraden(knapp: ReturnType<typeof gruppen>) {
+async function insetIBatchbaren(knapp: ReturnType<typeof gruppen>) {
   return knapp.evaluate((el) => {
-    const rad = (el.parentElement as HTMLElement).parentElement as HTMLElement;
+    const bar = el.closest('[data-testid="markering-batchbar"]') as HTMLElement;
     const b = el.getBoundingClientRect();
-    const r = rad.getBoundingClientRect();
-    return { top: b.top - r.top, bottom: r.bottom - b.bottom, right: r.right - b.right };
+    const r = bar.getBoundingClientRect();
+    return { top: b.top - r.top, bottom: r.bottom - b.bottom, left: b.left - r.left };
   });
 }
 
@@ -325,11 +332,49 @@ async function oppnaMarkeringslaget(page: Page): Promise<void> {
   await expect(gruppen(page).getByRole('button', { name: 'Avbryt markering' })).toBeVisible();
 }
 
-test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
-  test('AC #2: rivningarna — per-kort-knappen (K46) och Bekräfta alla-pillen (K47/K48) finns inte', async ({
+/**
+ * TASK-145.3 — MARKERA-LÄGET ÖVER VISAD LISTA OCH UTGÅNGEN MOT ÅTGÄRDS-SIDAN.
+ *
+ * AC #4, EXPLICIT HANTERING AV TÄCKNINGEN (kortets ordalydelse: "filen tas inte
+ * bort tyst utan att TASK-147 bär skulden"). Filen står kvar. Det som ändrats:
+ *
+ * ADAPTERADE (subjektet lever, ytan har flyttat): rivningarna, Markera→Avbryt
+ * på samma plats, kortet som klickyta, batch-barens knappar + live-räknaren,
+ * korthöjden, fokus-återlämningen, Esc, länkarnas vila, registrets scroll-form
+ * och axe. Kön (`obekraftade-ko`) och arkivet är rivna av TASK-145.1 — samtliga
+ * lokalisatorer pekar nu på REGISTRET (`deltagar-register`), och antalen är
+ * registrets (alla aktiva) i stället för köns (bara obekräftade).
+ *
+ * BORTTAGNA, med skulden bokförd på `TASK-147` (Åtgärds-sidan är den yta som
+ * ska återupprätta dem, eftersom SUBJEKTET flyttar dit — inte försvinner):
+ *   1. `byggkrav 3: bekräfta-knappens bredd är LÅST på tvåsiffrig maxform`
+ *   2. `byggkrav 6: kontrollfrågan står FÖRE sändning — avbryt skickar ingenting`
+ *   3. `AC #1: bekräftad kontrollfråga skickar EXAKT de markerade`
+ *   4. `fynd (a): kön töms av SERVERNS svar — inte av omhämtningen`
+ *   5. `fynd (c): en ren framgång KVITTERAS`
+ *   6. `review-fynd 2: ett icke-rent utfall BEHÅLLER urvalet och läget`
+ *   7. `review-fynd 5: Esc med kontrollfrågan uppe stänger BARA dialogen`
+ * Samtliga sju prövade bekräfta-flödet från eventsidan — det flöde AC #2 river
+ * ("RIVET ur eventsidan, inte dolt"). Ett test som öppnar en dialog som inte
+ * finns kan inte hållas grönt, och att skriva om dem mot en yta som ännu inte
+ * är byggd vore att testa spekulation.
+ *
+ * BORTTAGET UTAN SKULD: `fynd (b): arkivet fälls ut när kön töms I SESSIONEN`.
+ * Dess subjekt är Bekräftade-arkivets `aria-expanded`, och arkivet självt är
+ * rivet av TASK-145.1 (registret är EN lista utan fällbara sektioner). Det
+ * finns ingen yta kvar att återupprätta täckningen på — varken här eller på
+ * Åtgärds-sidan.
+ *
+ * TILLKOMNA (skivans egna AC): den vertikala stabiliteten (AC #1), att
+ * bekräfta-flödet FAKTISKT är borta och att bekräftelse-EF:en aldrig anropas
+ * (AC #2), markera-läget i FILTRERAT läge (AC #2, PRD användarberättelse 12)
+ * och utgångens ärlighet (AC #3).
+ */
+test.describe('Markera-läget — urvalet och utgången mot Åtgärds-sidan (task-48 + TASK-145.3)', () => {
+  test('AC #2: rivningarna — per-kort-knappen (K46), Bekräfta alla-pillen (K47/K48) OCH batch-bekräftelsen finns inte', async ({
     page,
   }) => {
-    await mocka(page, eventDetail());
+    const mockar = await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
     // K46: kortfotens Skicka bekräftelse är riven HELT — även i vilande läge.
@@ -342,32 +387,89 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     ).toHaveCount(0);
     await expect(gruppen(page).getByRole('button', { name: 'Markera anmälningar' })).toBeVisible();
 
-    // Rivningen gäller även arkivet — inga kvarglömda knappar bland bekräftade.
-    await gruppen(page).getByRole('button', { name: 'Bekräftade (1)', exact: true }).click();
-    await expect(
-      gruppen(page).getByRole('button', { name: /^Skicka bekräftelse till/ }),
-    ).toHaveCount(0);
+    // TASK-145.3 AC #2 — batch-bekräftelsen är RIVEN, inte dold: varken i
+    // vilande läge eller i markera-läget finns en Bekräfta-knapp kvar, och
+    // ingen dialog kan öppnas.
+    await expect(gruppen(page).getByRole('button', { name: /^Bekräfta \d+ anmäl/ })).toHaveCount(0);
+    await oppnaMarkeringslaget(page);
+    await expect(gruppen(page).getByRole('button', { name: /^Bekräfta \d+ anmäl/ })).toHaveCount(0);
+    await expect(gruppen(page).getByRole('button', { name: 'Åtgärder' })).toBeVisible();
+
+    // Hela vägen igenom utgången: markera allt, tryck Åtgärder, öppna
+    // platshållaren — bekräftelse-EF:en anropas ALDRIG. Det är det mekaniska
+    // beviset för "rivet, inte dolt": en dold knapp hade fortfarande kunnat
+    // avfyra mutationen, en riven kan inte.
+    await gruppen(page).getByRole('button', { name: 'Markera alla' }).click();
+    await gruppen(page).getByRole('button', { name: 'Åtgärder' }).click();
+    await expect(gruppen(page).getByTestId('atgarder-platshallare')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(mockar.confirmCalls).toHaveLength(0);
   });
 
-  test('byggkrav 1: Markera → Avbryt står på SAMMA plats i rubrikraden', async ({ page }) => {
+  test('AC #1: markera-läget förskjuter inte sidans innehåll vertikalt — vilande, aktivt och med urval', async ({
+    page,
+  }) => {
+    // Mätt i RENDERAD DOM, inte resonerat: registrets överkant och sidans
+    // totala höjd före/efter växlingen. Baren monteras ALLTID (även i vilande
+    // läge, med enbart Markera-knappen) och knapparna växer ut åt HÖGER när
+    // läget slås på — en horisontell utvidgning i stället för en ny rad.
+    await mocka(page, eventDetail(), mangaObekraftade());
+    await oppnaEventsidan(page);
+
+    const geometri = async () =>
+      registret(page).evaluate((el) => {
+        // Baren är registrets SYSKON i samma wrapper. Ingen optional chaining:
+        // saknas den ska mätningen falla synligt (−1), inte kasta.
+        const bar = el.parentElement
+          ? (el.parentElement.querySelector('[data-testid="markering-batchbar"]') as HTMLElement)
+          : null;
+        return {
+          top: Math.round(el.getBoundingClientRect().top + window.scrollY),
+          dok: Math.round(document.documentElement.scrollHeight),
+          bar: bar === null ? -1 : Math.round(bar.getBoundingClientRect().height),
+        };
+      });
+
+    const vilande = await geometri();
+    await oppnaMarkeringslaget(page);
+    const aktivt = await geometri();
+    expect(Math.abs(aktivt.top - vilande.top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(aktivt.dok - vilande.dok)).toBeLessThanOrEqual(1);
+    expect(Math.abs(aktivt.bar - vilande.bar)).toBeLessThanOrEqual(1);
+
+    // …och när Rensa dyker upp vid första markeringen (den tredje knappen på
+    // raden) står geometrin fortfarande still.
+    await markerbaraKort(page).first().click();
+    const medUrval = await geometri();
+    expect(Math.abs(medUrval.top - vilande.top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(medUrval.dok - vilande.dok)).toBeLessThanOrEqual(1);
+
+    // Vägen ut lämnar den också still.
+    await gruppen(page).getByRole('button', { name: 'Avbryt markering' }).click();
+    const efter = await geometri();
+    expect(Math.abs(efter.top - vilande.top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(efter.dok - vilande.dok)).toBeLessThanOrEqual(1);
+  });
+
+  test('byggkrav 1: Markera → Avbryt står på SAMMA plats i batch-barens vänsterkant', async ({
+    page,
+  }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
     const markera = gruppen(page).getByRole('button', { name: 'Markera anmälningar' });
-    const foreInset = await insetIRubrikraden(markera);
+    const foreInset = await insetIBatchbaren(markera);
     await markera.click();
 
     const avbryt = gruppen(page).getByRole('button', { name: 'Avbryt markering' });
     await expect(avbryt).toBeVisible();
     await expect(markera).toHaveCount(0);
 
-    // SAMMA PLATS mätt som inset mot rubrikraden (review-våg 3-precedenten):
-    // båda knapparna sitter i handling-slotten med identiskt avstånd till
-    // radens kanter. Bredden skiljer — etiketterna skiljer — men platsen är
-    // densamma. Absoluta viewport-koordinater duger inte: rubrikraden flyttar
-    // sig i sidled när batch-baren monteras under den.
-    const efterInset = await insetIRubrikraden(avbryt);
-    expect(Math.abs(efterInset.right - foreInset.right)).toBeLessThanOrEqual(1);
+    // SAMMA PLATS mätt som inset mot baren (review-våg 3-precedenten, nu mot
+    // knappens nya förankring). Bredden skiljer — etiketterna skiljer — men
+    // platsen är densamma: vänsterkanten är förankringen.
+    const efterInset = await insetIBatchbaren(avbryt);
+    expect(Math.abs(efterInset.left - foreInset.left)).toBeLessThanOrEqual(1);
     expect(Math.abs(efterInset.top - foreInset.top)).toBeLessThanOrEqual(1);
     expect(Math.abs(efterInset.bottom - foreInset.bottom)).toBeLessThanOrEqual(1);
 
@@ -377,22 +479,26 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     await expect(markerbaraKort(page)).toHaveCount(0);
   });
 
-  test('byggkrav 2: hela kortet är klickyta med checkbox-semantik; valt kort byter form och tappar Obekräftad-pillen', async ({
+  test('byggkrav 2: hela kortet är klickyta med checkbox-semantik; valt kort byter form och behåller sitt ENDA steg-märke', async ({
     page,
   }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
     await oppnaMarkeringslaget(page);
 
-    // Kön har två obekräftade → två markerbara kort med checkbox-roll.
+    // Registret bär ALLA aktiva (TASK-145.1) — tre kort, inte köns två.
     const kort = markerbaraKort(page);
-    await expect(kort).toHaveCount(2);
+    await expect(kort).toHaveCount(3);
     const anna = kort.filter({ hasText: 'Anna Ek' });
     await expect(kryssI(anna)).not.toBeChecked();
 
-    // Vilande: Obekräftad-pillen står, kategori-pillen står.
-    await expect(anna.getByText('Obekräftad')).toBeVisible();
-    await expect(anna.getByText('Manuellt tillagd')).toBeVisible();
+    // EXAKT ETT märke per person i BÅDA lägena (PRD användarberättelse 5).
+    // Steg-märket ERSATTE både Obekräftad-pillen och kategori-pillen i
+    // registret (TASK-145.1/145.2) — det är alltså inte längre pill-växlingen
+    // som prövas här, utan att märket är ETT och står kvar genom valet.
+    await expect(anna.getByTestId('hallplats-marke')).toHaveCount(1);
+    await expect(anna.getByText('Obekräftad', { exact: true })).toHaveCount(0);
+    await expect(anna.getByText('Manuellt tillagd')).toHaveCount(0);
 
     // Hela kortet är klickytan — ett klick mitt i kortet väljer.
     await anna.click();
@@ -401,11 +507,7 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     // VALT: success-bakgrund + success-kant (byggkrav 2, token-kedjan).
     await expect(anna).toHaveCSS('background-color', await tokenColor(page, '--mm-success-bg'));
     await expect(anna).toHaveCSS('border-top-color', await tokenColor(page, '--mm-success'));
-
-    // Obekräftad-pillen FÖRSVINNER (ingen 'Vald'-pill ersätter den);
-    // kategori-pillen står kvar.
-    await expect(anna.getByText('Obekräftad')).toHaveCount(0);
-    await expect(anna.getByText('Manuellt tillagd')).toBeVisible();
+    await expect(anna.getByTestId('hallplats-marke')).toHaveCount(1);
 
     // WCAG 1.4.1 (byggkrav 7, REVIDERAT 2026-07-26 i Marcus design-review):
     // check-glyfen är riven. Bäraren är kanten, och det som gör den till en
@@ -416,10 +518,10 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     // 1.4.1 faller, vilket detta fall då fångar.
     await expect(anna.getByTestId('markering-check')).toHaveCount(0);
     const ovald = kort.filter({ hasNotText: 'Anna Ek' });
-    await expect(ovald).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+    await expect(ovald.first()).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
   });
 
-  test('byggkrav 3: batch-baren — Bekräfta X mutad vid 0, Markera alla, Rensa vid ≥1, live-räknare', async ({
+  test('byggkrav 3: batch-baren — Åtgärder mutad vid 0, Markera alla, Rensa vid ≥1, live-räknare', async ({
     page,
   }) => {
     await mocka(page, eventDetail());
@@ -427,22 +529,21 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     await oppnaMarkeringslaget(page);
 
     const bar = gruppen(page).getByTestId('markering-batchbar');
-    const bekrafta = bar.getByRole('button', { name: /^Bekräfta \d+ anmäl/ });
+    const atgarder = bar.getByRole('button', { name: 'Åtgärder' });
     const markeraAlla = bar.getByRole('button', { name: 'Markera alla' });
     const rensa = bar.getByRole('button', { name: 'Rensa' });
 
-    // 0 valda: bekräfta-knappen mutad (primitivens isDisabled — appens etablerade
-    // form; soft-disable-frågan är T54 och avgörs inte i en skiva), Rensa finns
-    // inte, Markera alla är aktiv.
-    await expect(bekrafta).toHaveText(/Bekräfta 0 anmälningar/);
-    await expect(bekrafta).toBeDisabled();
+    // 0 valda: Åtgärder mutad (primitivens isDisabled — appens etablerade form;
+    // soft-disable-frågan är T54 och avgörs inte i en skiva), Rensa finns inte,
+    // Markera alla är aktiv.
+    await expect(atgarder).toBeDisabled();
     await expect(rensa).toHaveCount(0);
     await expect(markeraAlla).toBeEnabled();
 
-    // Markera alla → båda valda; knappen muteras när allt är valt, Rensa dyker upp.
+    // Markera alla → alla tre valda; knappen muteras när allt är valt, Rensa
+    // dyker upp, Åtgärder blir tryckbar.
     await markeraAlla.click();
-    await expect(bekrafta).toHaveText(/Bekräfta 2 anmälningar/);
-    await expect(bekrafta).toBeEnabled();
+    await expect(atgarder).toBeEnabled();
     await expect(markeraAlla).toBeDisabled();
     await expect(rensa).toBeVisible();
 
@@ -453,241 +554,92 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     const live = gruppen(page)
       .getByRole('status')
       .filter({ hasText: /markerade$/ });
-    await expect(live).toHaveText('2 av 2 markerade');
+    await expect(live).toHaveText('3 av 3 markerade');
     await expect(live).toHaveAttribute('aria-live', 'polite');
     await expect(live).toHaveAttribute('aria-atomic', 'true');
 
     // Rensa → tillbaka till noll.
     await rensa.click();
-    await expect(bekrafta).toHaveText(/Bekräfta 0 anmälningar/);
-    await expect(bekrafta).toBeDisabled();
+    await expect(atgarder).toBeDisabled();
     await expect(rensa).toHaveCount(0);
+    await expect(live).toHaveText('0 av 3 markerade');
     await expect(kryssI(markerbaraKort(page).first())).not.toBeChecked();
   });
 
-  test('byggkrav 3: bekräfta-knappens bredd är LÅST på tvåsiffrig maxform', async ({ page }) => {
-    // Sex obekräftade: 0 → 1 → 6 valda ändrar etikettens teckenlängd
-    // ("0 anmälningar" / "1 anmälan" / "6 anmälningar") utan att bredden rör sig.
-    await mocka(page, eventDetail(), mangaObekraftade());
-    await oppnaEventsidan(page);
-    await oppnaMarkeringslaget(page);
-
-    const bar = gruppen(page).getByTestId('markering-batchbar');
-    const bekrafta = bar.getByRole('button', { name: /^Bekräfta \d+ anmäl/ });
-    const vid0 = await bekrafta.boundingBox();
-
-    await markerbaraKort(page).first().click();
-    await expect(bekrafta).toHaveText(/Bekräfta 1 anmälan/);
-    const vid1 = await bekrafta.boundingBox();
-
-    await bar.getByRole('button', { name: 'Markera alla' }).click();
-    await expect(bekrafta).toHaveText(/Bekräfta 6 anmälningar/);
-    const vid6 = await bekrafta.boundingBox();
-
-    expect(vid0).not.toBeNull();
-    if (vid0 && vid1 && vid6) {
-      // Låst av den osynliga platshållaren 'Bekräfta 99 anmälningar' + tabular-nums.
-      expect(Math.abs(vid1.width - vid0.width)).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(vid6.width - vid0.width)).toBeLessThanOrEqual(0.5);
-    }
-  });
-
-  test('byggkrav 6: kontrollfrågan står FÖRE sändning — avbryt skickar ingenting', async ({
+  test('AC #2: markera-läget verkar över VISAD lista — ett filtrerat läge markeras utan att filtret rensas', async ({
     page,
   }) => {
-    const mockar = await mocka(page, eventDetail());
-    await oppnaEventsidan(page);
-    await oppnaMarkeringslaget(page);
-
-    await markerbaraKort(page).filter({ hasText: 'Bertil Sund' }).click();
-    await gruppen(page)
-      .getByTestId('markering-batchbar')
-      .getByRole('button', { name: /^Bekräfta 1 anmälan/ })
-      .click();
-
-    // Massmutations-grinden: dialogen står, INGET har skickats.
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByText(/1 obekräftad anmälan/)).toBeVisible();
-    expect(mockar.confirmCalls).toHaveLength(0);
-
-    await dialog.getByRole('button', { name: 'Avbryt' }).click();
-    await expect(dialog).toBeHidden();
-    expect(mockar.confirmCalls).toHaveLength(0);
-
-    // Markeringen står kvar efter avbrytet — arbetet får inte tappas.
-    await expect(kryssI(markerbaraKort(page).filter({ hasText: 'Bertil Sund' }))).toBeChecked();
-  });
-
-  test('AC #1: bekräftad kontrollfråga skickar EXAKT de markerade och tömmer dem ur kön', async ({
-    page,
-  }) => {
-    const mockar = await mocka(page, eventDetail());
-    await oppnaEventsidan(page);
-    await oppnaMarkeringslaget(page);
-
-    // Markera BARA Bertil — Anna ska stå kvar obekräftad efteråt.
-    await markerbaraKort(page).filter({ hasText: 'Bertil Sund' }).click();
-    await gruppen(page)
-      .getByTestId('markering-batchbar')
-      .getByRole('button', { name: /^Bekräfta 1 anmälan/ })
-      .click();
-
-    const dialog = page.getByRole('dialog');
-    await dialog.getByRole('button', { name: /^Skicka 1 bekräftelse/ }).click();
-
-    // ETT anrop med EXAKT det markerade record-ID:t (bulk är en operation).
-    await expect.poll(() => mockar.confirmCalls.length).toBe(1);
-    expect(mockar.confirmCalls[0].registrationIds).toEqual(['recBertil']);
-    expect(typeof mockar.confirmCalls[0].idempotencyKey).toBe('string');
-
-    await expect(dialog).toBeHidden();
-    // Kön krymper till Anna; summeringsraderna följer med. Rubriken är ren
-    // text sedan S91 (kön är inte längre fällbar) — därför getByText.
-    await expect(gruppen(page).getByText('Obekräftade (1)')).toBeVisible();
-    await expect(
-      gruppen(page).getByRole('button', { name: /^Obekräftade anmälningar/ }),
-    ).toHaveText('Obekräftade anmälningar1');
-    await expect(gruppen(page).getByRole('button', { name: /^Anmälningsbekräftelse/ })).toHaveText(
-      'Anmälningsbekräftelse skickad2 av 3−1',
-    );
-    // Läget stängs när batchen gått igenom — arbetet är utfört.
-    await expect(gruppen(page).getByRole('button', { name: 'Markera anmälningar' })).toBeVisible();
-  });
-
-  test('fynd (a): kön töms av SERVERNS svar — inte av omhämtningen', async ({ page }) => {
-    // Marcus design-review 2026-07-26 (S91): vyn stod oförändrad i ~5,5 s efter
-    // att läget stängt, eftersom svaret kastades och koden väntade på en full
-    // get-registrations-runda. Omhämtningen bär här 5 s fördröjning; kön ska
-    // vara tom INNAN den landat. Ingen klock-assertion — räknaren
-    // `hamtningarKlara` avgör deterministiskt VEM som drev vyn.
-    const mockar = await mocka(page, eventDetail(), grundData(), { refetchFordrojningMs: 5000 });
-    await oppnaEventsidan(page);
-    await oppnaMarkeringslaget(page);
-
-    const bar = gruppen(page).getByTestId('markering-batchbar');
-    await bar.getByRole('button', { name: 'Markera alla' }).click();
-    await bar.getByRole('button', { name: /^Bekräfta 2 anmäl/ }).click();
-
-    const foreSandning = mockar.hamtningarKlara;
-    await page
-      .getByRole('dialog')
-      .getByRole('button', { name: /^Skicka 2 bekräftelser/ })
-      .click();
-
-    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible({
-      timeout: 3000,
-    });
-    // Kärnan: ingen omhämtning har hunnit landa — serverns svar drev vyn.
-    expect(mockar.hamtningarKlara).toBe(foreSandning);
-    await expect(
-      gruppen(page).getByRole('button', { name: /^Obekräftade anmälningar/ }),
-    ).toHaveText('Obekräftade anmälningar0');
-
-    // Patchen skriver serverns EGNA fält: status flyttar korten till arkivet
-    // och tidsstämpeln syns på metaraden.
-    const arkiv = gruppen(page).getByRole('button', { name: 'Bekräftade (3)', exact: true });
-    await expect(arkiv).toBeVisible();
-    await expect(gruppen(page).getByText('Bekräftelse 22 juli')).toHaveCount(2);
-
-    // …och när omhämtningen väl landar står bilden kvar (ingen tillbakarullning).
-    await expect
-      .poll(() => mockar.hamtningarKlara, { timeout: 15000 })
-      .toBeGreaterThan(foreSandning);
-    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible();
-  });
-
-  test('fynd (b): arkivet fälls ut när kön töms I SESSIONEN, inte bara vid sidladdning', async ({
-    page,
-  }) => {
-    // Regressionsvakt mot monteringstidpunktens värde: `bekraftadeOppen` var
-    // ett engångsberäknat startvärde, så samma sluttillstånd såg olika ut
-    // beroende på hur man kom dit (uppmätt aria-expanded=false efter batch,
-    // true efter reload).
+    // PRD användarberättelse 12: "markera inom ett filtrerat läge … utan att
+    // bocka tjugo kort". Fram till TASK-145.3 bar produktionens filtrerade gren
+    // ingen batch-bar alls — vägen fanns inte.
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    const arkivFore = gruppen(page).getByRole('button', { name: 'Bekräftade (1)', exact: true });
-    await expect(arkivFore).toHaveAttribute('aria-expanded', 'false');
+    // Ofiltrerat: registret bär alla tre aktiva.
+    await expect(registret(page).getByTestId('deltagar-kort')).toHaveCount(3);
 
-    await oppnaMarkeringslaget(page);
-    const bar = gruppen(page).getByTestId('markering-batchbar');
-    await bar.getByRole('button', { name: 'Markera alla' }).click();
-    await bar.getByRole('button', { name: /^Bekräfta 2 anmäl/ }).click();
-    await page
-      .getByRole('dialog')
-      .getByRole('button', { name: /^Skicka 2 bekräftelser/ })
+    // Filtrera på steg-räknaren "Väntar på bekräftelse" → två av tre.
+    await gruppen(page)
+      .getByRole('button', { name: /^Väntar på bekräftelse/ })
       .click();
+    await expect(registret(page).getByTestId('deltagar-kort')).toHaveCount(2);
+    await expect(gruppen(page).getByRole('button', { name: 'Rensa filtret' })).toBeVisible();
 
-    await expect(gruppen(page).getByText('Inga obekräftade — alla är bekräftade.')).toBeVisible();
-    await expect(
-      gruppen(page).getByRole('button', { name: 'Bekräftade (3)', exact: true }),
-    ).toHaveAttribute('aria-expanded', 'true');
-    // Utfällt betyder verkligen synligt innehåll, inte bara ett attribut.
-    await expect(gruppen(page).getByTestId('deltagar-namn')).toHaveCount(3);
+    // Markera-läget finns HÄR, och verkar över den filtrerade listan.
+    await oppnaMarkeringslaget(page);
+    await expect(markerbaraKort(page)).toHaveCount(2);
+    await gruppen(page).getByRole('button', { name: 'Markera alla' }).click();
+    const live = gruppen(page)
+      .getByRole('status')
+      .filter({ hasText: /markerade$/ });
+    await expect(live).toHaveText('2 av 2 markerade');
+
+    // Urvalet följer med ut i utgången — och filtret står kvar.
+    await gruppen(page).getByRole('button', { name: 'Åtgärder' }).click();
+    const platshallare = gruppen(page).getByTestId('atgarder-platshallare');
+    await expect(platshallare.getByText('Anna Ek')).toBeVisible();
+    await expect(platshallare.getByText('Bertil Sund')).toBeVisible();
+    await expect(platshallare.getByText('Cecilia Lund')).toHaveCount(0);
+    await expect(gruppen(page).getByRole('button', { name: 'Rensa filtret' })).toBeVisible();
   });
 
-  test('fynd (c): en ren framgång KVITTERAS — med antal, för AT, och utan att bli kvarliggande', async ({
+  test('AC #3: utgången är en ÄRLIG interim — ingen länk och ingen chevron mot en sida som inte finns', async ({
     page,
   }) => {
-    // Förr var det lyckade utfallet flödets enda tysta väg: utfalls-ytan tändes
-    // bara vid partial/failed/fel. Sex i kön så det finns arbete kvar efteråt.
-    await mocka(page, eventDetail(), mangaObekraftade());
+    await mocka(page, eventDetail());
     await oppnaEventsidan(page);
     await oppnaMarkeringslaget(page);
+    await markerbaraKort(page).filter({ hasText: 'Bertil Sund' }).click();
 
-    // TVÅ markerade ⇒ pluralform med serverns antal ur `confirmed`.
-    await markerbaraKort(page).nth(0).click();
-    await markerbaraKort(page).nth(1).click();
-    await gruppen(page)
-      .getByTestId('markering-batchbar')
-      .getByRole('button', { name: /^Bekräfta 2 anmäl/ })
-      .click();
-    await page
-      .getByRole('dialog')
-      .getByRole('button', { name: /^Skicka 2 bekräftelser/ })
-      .click();
+    const atgarder = gruppen(page).getByRole('button', { name: 'Åtgärder' });
+    // Knappen är en DISCLOSURE mot en yta på samma sida, inte en navigation:
+    // den bär aria-expanded/aria-controls och är ingen `<a>`. Blir den en länk
+    // eller får den en chevron innan Åtgärds-sidan finns, lovar ytan en resa
+    // som inte går att göra — det är precis vad AC #3 förbjuder.
+    await expect(atgarder).toHaveAttribute('aria-expanded', 'false');
+    await expect(atgarder).toHaveAttribute('aria-controls', /.+/);
+    await expect(gruppen(page).locator('a[href*="/atgarder"]')).toHaveCount(0);
 
-    const kvittens = gruppen(page).getByTestId('bekraftelse-utfall');
-    await expect(kvittens).toBeVisible();
-    await expect(kvittens.getByText('Skickat')).toBeVisible();
-    await expect(
-      kvittens.getByText('2 bekräftelser är skickade. Anmälningarna står nu som Bekräftade.'),
-    ).toBeVisible();
-    // AT-bäraren: MessageBox intent="success" ⇒ role="status" (artigt), samma
-    // live-region-form som batch-barens räknare. Rivs rollen är kvittensen
-    // stum för den som inte ser plattan — därför lokaliseras den via ROLLEN.
-    await expect(kvittens.getByRole('status')).toBeVisible();
-
-    // INTE en kvarliggande artefakt: nästa arbetssteg i blocket rensar den.
-    await gruppen(page).getByRole('button', { name: 'Markera anmälningar' }).click();
-    await expect(kvittens).toHaveCount(0);
-
-    // …och singularformen, som dessutom går att stänga för hand — kontrollen
-    // en självförsvinnande toast saknar (Polaris a11y-not).
-    await markerbaraKort(page).nth(0).click();
-    await gruppen(page)
-      .getByTestId('markering-batchbar')
-      .getByRole('button', { name: /^Bekräfta 1 anmälan/ })
-      .click();
-    await page
-      .getByRole('dialog')
-      .getByRole('button', { name: /^Skicka 1 bekräftelse/ })
-      .click();
-    await expect(
-      kvittens.getByText('Bekräftelsen är skickad. Anmälan står nu som Bekräftad.'),
-    ).toBeVisible();
-    await kvittens.getByRole('button', { name: 'Stäng meddelande' }).click();
-    await expect(kvittens).toHaveCount(0);
+    await atgarder.click();
+    await expect(atgarder).toHaveAttribute('aria-expanded', 'true');
+    const platshallare = gruppen(page).getByTestId('atgarder-platshallare');
+    await expect(platshallare).toBeVisible();
+    // Texten säger rakt ut att sidan inte finns ännu — ingen halvsanning.
+    await expect(platshallare.getByText(/Åtgärds-sidan är inte byggd ännu/)).toBeVisible();
+    await expect(platshallare.getByText('Bertil Sund')).toBeVisible();
+    // Ingen navigation ut ur platshållaren heller.
+    await expect(platshallare.locator('a')).toHaveCount(0);
   });
 
-  test('fynd (e): korthöjden är oberoende av kategori-pillen — mellan kort OCH genom lägena', async ({
+  test('fynd (e): korthöjden är oberoende av märkets innehåll — mellan kort OCH genom lägena', async ({
     page,
   }) => {
     // Sågtanden: pill-slotten var innehålls-styrd (`max-w-[45%]`), så
     // identitetskolumnen ärvde variationen och e-posten radbröts bara på korten
-    // MED kategori-pill. Uppmätt på 430 px före fixen: 166/145/166/145, och
-    // samma kort hoppade 166 → 145 när Obekräftad-pillen vek vid val.
+    // MED märke. Uppmätt på 430 px före fixen: 166/145/166/145, och samma kort
+    // hoppade 166 → 145 när Obekräftad-pillen vek vid val. Slotten är sedan
+    // dess RESERVERAD; märkets egen bredd är dessutom låst av dess interna
+    // grid över alla sex etiketter (HallplatsMarke).
     await page.setViewportSize({ width: 430, height: 900 });
     await mocka(page, eventDetail(), blandadeObekraftade());
     await oppnaEventsidan(page);
@@ -697,8 +649,10 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
         .getByTestId(testid)
         .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
 
-    // Kön bär två kort MED och två UTAN kategori-pill.
-    await expect(gruppen(page).getByText('Manuellt tillagd')).toHaveCount(2);
+    // Fyra kort, varannat med "Manuellt tillagd" som VÄG IN — vägen in syns
+    // inte längre på kortet (den är en filteraxel sedan TASK-145.1), så alla
+    // fyra bär samma ENDA märke. Det är exakt den likformighet som ska hålla.
+    await expect(registret(page).getByTestId('hallplats-marke')).toHaveCount(4);
     const vilande = await hojder('deltagar-kort');
     expect(vilande).toHaveLength(4);
     expect(Math.max(...vilande) - Math.min(...vilande)).toBeLessThanOrEqual(1);
@@ -709,16 +663,14 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     expect(Math.max(...iLage) - Math.min(...iLage)).toBeLessThanOrEqual(1);
     expect(Math.abs(iLage[0] - vilande[0])).toBeLessThanOrEqual(1);
 
-    // …och när Obekräftad-pillen viker för markeringen. Både ett kort MED
-    // kategori-pill och ett UTAN, eftersom det var just skillnaden dem emellan
-    // som drev hoppet.
+    // …och när två kort väljs.
     await markerbaraKort(page).filter({ hasText: 'Anna Ekstrand' }).click();
     await markerbaraKort(page).filter({ hasText: 'Bertil Sundberg' }).click();
     const valda = await hojder('markerbart-kort');
     expect(Math.max(...valda) - Math.min(...valda)).toBeLessThanOrEqual(1);
     expect(Math.abs(valda[0] - vilande[0])).toBeLessThanOrEqual(1);
 
-    // Pill-slotten är RESERVERAD: identisk bredd oavsett om pillen finns.
+    // Pill-slotten är RESERVERAD: identisk bredd på varje kort.
     const slotBredder = await gruppen(page)
       .getByTestId('markerbart-kort')
       .evaluateAll((els) =>
@@ -729,84 +681,6 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
         }),
       );
     expect(new Set(slotBredder).size).toBe(1);
-  });
-
-  test('review-fynd 2: ett icke-rent utfall BEHÅLLER urvalet och läget', async ({ page }) => {
-    // Servern svarar 200 även vid partial/failed — att nolla markeringen då
-    // hade tvingat Lotta att markera om allt för att försöka igen. Endast ett
-    // RENT skickat utfall betyder att arbetet är utfört.
-    const mockar = await mocka(page, eventDetail());
-    await page.route(CONFIRM, async (route: Route) => {
-      const body = route.request().postDataJSON() as { registrationIds: string[] };
-      mockar.confirmCalls.push(body as unknown as Json);
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          status: 'partial',
-          requested: body.registrationIds.length,
-          attempted: body.registrationIds.length,
-          confirmed: [body.registrationIds[0]],
-          skipped: [],
-          // failed-shapen är {registrationId, reason} per
-          // ConfirmRegistrations.schema.ts:36 — en array av strängar faller på
-          // zod-parsningen och landar i catch-grenen i stället för partial-grenen.
-          failed: body.registrationIds.slice(1).map((id) => ({
-            registrationId: id,
-            reason: 'send_failed',
-          })),
-          bekraftelseSkickad: '2026-07-22T12:00:00.000Z',
-        }),
-      });
-    });
-    await oppnaEventsidan(page);
-    await oppnaMarkeringslaget(page);
-
-    await gruppen(page)
-      .getByTestId('markering-batchbar')
-      .getByRole('button', {
-        name: 'Markera alla',
-      })
-      .click();
-    await gruppen(page)
-      .getByTestId('markering-batchbar')
-      .getByRole('button', { name: /^Bekräfta \d+ anmäl/ })
-      .click();
-    await page
-      .getByRole('dialog')
-      .getByRole('button', { name: /^Skicka 2 bekräftelser/ })
-      .click();
-
-    await expect.poll(() => mockar.confirmCalls.length).toBe(1);
-    // Utfallet visas ärligt — och läget står KVAR med urvalet intakt.
-    await expect(gruppen(page).getByText(/1 bekräftelser skickade, 1 misslyckades/)).toBeVisible();
-    await expect(gruppen(page).getByRole('button', { name: 'Avbryt markering' })).toBeVisible();
-    await expect(
-      gruppen(page).getByTestId('markering-batchbar').getByRole('button', { name: 'Rensa' }),
-    ).toBeVisible();
-  });
-
-  test('review-fynd 5: Esc med kontrollfrågan uppe stänger BARA dialogen', async ({ page }) => {
-    // Rivningsskydd: Esc-hanteraren sitter på document och modalen fångar
-    // Escape i sin egen onKeyDown med stopPropagation. Att de inte krockar
-    // hänger på Reacts eventdelegering — utan detta test är regressionen tyst.
-    await mocka(page, eventDetail());
-    await oppnaEventsidan(page);
-    await oppnaMarkeringslaget(page);
-
-    await markerbaraKort(page).first().click();
-    await gruppen(page)
-      .getByTestId('markering-batchbar')
-      .getByRole('button', { name: /^Bekräfta \d+ anmäl/ })
-      .click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-
-    await page.keyboard.press('Escape');
-    await expect(dialog).toBeHidden();
-    // Läget och urvalet överlever — bara dialogen stängdes.
-    await expect(gruppen(page).getByRole('button', { name: 'Avbryt markering' })).toBeVisible();
-    await expect(kryssI(markerbaraKort(page).first())).toBeChecked();
   });
 
   test('review-fynd 1: fokus återlämnas till Markera-knappen när läget stängs', async ({
@@ -842,32 +716,36 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     await oppnaEventsidan(page);
 
     // VILANDE: personkortet bär BÅDA länkarna (person + anmälan) — 18.17/K62-formen
-    // är oförändrad, prototypens avsaknad var förenkling.
-    const ko = gruppen(page).getByTestId('obekraftade-ko');
-    await expect(ko.locator('a[href*="/personer/"]')).toHaveCount(1);
-    await expect(ko.locator('a[href*="/anmalan/"]')).toHaveCount(2);
+    // är oförändrad, prototypens avsaknad var förenkling. Registret bär alla
+    // tre aktiva: en person-koppling (Anna) och tre anmälnings-länkar.
+    const reg = registret(page);
+    await expect(reg.locator('a[href*="/personer/"]')).toHaveCount(1);
+    await expect(reg.locator('a[href*="/anmalan/"]')).toHaveCount(3);
     // Historikraden (K45) står kvar — Anna har två tidigare event.
-    await expect(ko.getByTestId('deltagar-historik').first()).toHaveText(
-      '2 tidigare event hos Miranon Media',
-    );
+    await expect(
+      reg
+        .getByTestId('deltagar-kort')
+        .filter({ hasText: 'Anna Ek' })
+        .getByTestId('deltagar-historik'),
+    ).toHaveText('2 tidigare event hos Miranon Media');
 
     // MARKERA-LÄGET: länkarna vilar (iOS edit-mode-konventionen) — noll ankare
-    // i kön, så L303:s interaktivt-i-interaktivt hålls med kortet som checkbox.
+    // i registret, så L303:s interaktivt-i-interaktivt hålls med kortet som checkbox.
     await oppnaMarkeringslaget(page);
-    await expect(ko.locator('a')).toHaveCount(0);
+    await expect(reg.locator('a')).toHaveCount(0);
     // Innehållet finns kvar som text — bara affordansen vilar.
-    await expect(ko.getByText('Anmäld 1 juli')).toBeVisible();
-    await expect(ko.getByTestId('deltagar-historik').first()).toBeVisible();
+    await expect(reg.getByText('Anmäld 1 juli')).toBeVisible();
+    await expect(reg.getByTestId('deltagar-historik').first()).toBeVisible();
   });
 
-  test('byggkrav 4: kön scrollar inline med ~3 kort synliga i stället för att växa', async ({
+  test('byggkrav 4: registret scrollar inline med ~3 kort synliga i stället för att växa', async ({
     page,
   }) => {
     await mocka(page, eventDetail(), mangaObekraftade());
     await oppnaEventsidan(page);
 
-    const ko = gruppen(page).getByTestId('obekraftade-ko');
-    const matt = await ko.evaluate((el) => ({
+    const reg = registret(page);
+    const matt = await reg.evaluate((el) => ({
       client: el.clientHeight,
       scroll: el.scrollHeight,
       overflowY: getComputedStyle(el).overflowY,
@@ -880,11 +758,15 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
     expect(matt.client).toBeLessThanOrEqual(408);
     expect(matt.client).toBeGreaterThan(240);
 
-    // Scrollregionen är tangentbordsnåbar (byggkrav 7) — fokuserbar rullningsyta.
-    await expect(ko).toHaveAttribute('tabindex', '0');
+    // Scrollregionen är tangentbordsnåbar (byggkrav 7) — fokuserbar rullningsyta,
+    // med registrets EGEN etikett (TASK-145.1 AC #7), inte köns ärvda.
+    await expect(reg).toHaveAttribute('tabindex', '0');
+    await expect(reg).toHaveAttribute('aria-label', 'Deltagarregister');
   });
 
-  test('axe 0 i markera-läget med valda kort och med kontrollfrågan uppe', async ({ page }) => {
+  test('axe 0 i markera-läget med valda kort och med utgångens platshållare utfälld', async ({
+    page,
+  }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
     await oppnaMarkeringslaget(page);
@@ -895,24 +777,14 @@ test.describe('Markera-läget — batch-bekräftelse (task-48)', () => {
       .analyze();
     expect(lage.violations).toEqual([]);
 
-    await gruppen(page)
-      .getByTestId('markering-batchbar')
-      .getByRole('button', { name: /^Bekräfta 1 anmälan/ })
-      .click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-    // Vänta ut modalens IN-transition innan scanningen: mitt i fade:en komposit-
-    // beräknar axe färgen ur en HALVGENOMSKINLIG knapp (mätt 4,17:1 mot #767f6e —
-    // en animations-artefakt, inte tokenens kontrast). Färdig-läget = success-
-    // tokenens faktiska värde (--mm-success #606b57, vitt på det = 5,6:1).
-    await expect(dialog.getByRole('button', { name: /^Skicka 1 bekräftelse/ })).toHaveCSS(
-      'background-color',
-      await tokenColor(page, '--mm-button-success-bg'),
-    );
-    await expect(page.locator('[data-entering]')).toHaveCount(0);
-    await expect(page.locator('div.fixed.inset-0.z-50')).toHaveCSS('opacity', '1');
-    const dialoglage = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
-    expect(dialoglage.violations).toEqual([]);
+    // Utgången är en disclosure på samma sida (AC #3) — inte en modal. Scannas
+    // i UTFÄLLT läge, eftersom det är den DOM som Lotta faktiskt möter.
+    await gruppen(page).getByRole('button', { name: 'Åtgärder' }).click();
+    await expect(gruppen(page).getByTestId('atgarder-platshallare')).toBeVisible();
+    const utfallt = await new AxeBuilder({ page })
+      .include('section[aria-labelledby="grupp-deltagare"]')
+      .analyze();
+    expect(utfallt.violations).toEqual([]);
   });
 });
 

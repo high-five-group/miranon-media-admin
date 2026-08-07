@@ -193,20 +193,32 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    // K42: bekräftelse (mail 1) → betalningspåminnelse → eventinfo (mail 2).
-    // Bor över-raden SIST sedan task-18.7 (bas-fältet föddes där; denna fixtur
-    // sätter ingen borOver → 0). Dess kryss-läge har egen svit event-bor-over.
+    // [ÄNDRAT, TASK-145.2 → uppdaterat i TASK-145.3] Blocket har SJU rader, inte
+    // fem. De fyra STEG-raderna (Väntar på bekräftelse → Anmälningsavgifter →
+    // Slutbetalningar → Klara) ersatte de tre gamla utskicks-raderna
+    // (Obekräftade anmälningar / Anmälningsbekräftelse skickad /
+    // Betalningspåminnelse skickad), och Avbokade tillkom sist — grillad samsyn
+    // beslut 2 (S93 Del 3) namnger exakt tre rivningar och åtta rader.
+    // LOGISTIK-GRUPPEN (Eventinfo skickad / Bor över / Avbokade) står kvar
+    // efter dem, i den ordningen.
+    //
+    // Testet lämnades rött när TASK-145.2 landade. Det rättas HÄR, i den skiva
+    // som konsoliderar registret, i stället för att skrivas om till något
+    // ytligare: samma DJUP (hela raduppsättningen, i ordning, med räknade
+    // värden) mot den nya formen.
     const rader = gruppen(page).locator('button[aria-pressed="false"]');
     const etiketter = await gruppen(page).locator('button[aria-pressed]').allTextContents();
     expect(etiketter).toEqual([
-      'Obekräftade anmälningar2',
-      'Anmälningsbekräftelse skickad2 av 4−2',
-      'Betalningspåminnelse skickad1',
+      'Väntar på bekräftelse2',
+      'Anmälningsavgifter0 av 4 mottagna−4',
+      'Slutbetalningar0 klara−4',
+      'Klara0',
       'Eventinfo skickad1 av 4−3',
       'Bor över0',
+      'Avbokade1',
     ]);
-    // Alla fem står otryckta i grundläget (inget filter aktivt).
-    await expect(rader).toHaveCount(5);
+    // Alla sju står otryckta i grundläget (inget filter aktivt).
+    await expect(rader).toHaveCount(7);
 
     // Eva (Avbokad/Ombokad) syns aldrig i kön — 4 aktiva, inte 5.
     await expect(gruppen(page).getByText('Eva Sten')).toHaveCount(0);
@@ -292,9 +304,20 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // …och registret överlever en omrendering av hela grenen (filter på och
     // av): den gamla arkiv-knappens `aria-expanded`-mätning ersätts med
     // registrets egen synlighet genom samma filter-cykel.
-    const rad = gruppen(page).getByRole('button', { name: /^Anmälningsbekräftelse/ });
+    //
+    // [ÄNDRAT, TASK-145.3 AC #2] Registret FÖRSVINNER inte längre när ett
+    // filter är valt. Fram till denna skiva var filtrerat och ofiltrerat läge
+    // två separata render-grenar, och den filtrerade saknade både `testId`,
+    // `rullande` och batch-bar. Nu är det EN gren: samma `deltagar-register`
+    // krymper till träffarna och växer tillbaka när filtret rensas.
+    // Raden som klickas är dessutom en av de NYA steg-raderna — den gamla
+    // `Anmälningsbekräftelse skickad` revs av TASK-145.2 och testet stod rött.
+    const rad = gruppen(page).getByRole('button', { name: /^Eventinfo skickad/ });
     await rad.click();
-    await expect(register).toBeHidden();
+    await expect(rad).toHaveAttribute('aria-pressed', 'true');
+    await expect(register).toBeVisible();
+    // Alla utom David saknar eventinfo (fixturen) ⇒ tre av fyra.
+    await expect(register.getByTestId('deltagar-namn')).toHaveCount(3);
     await gruppen(page).getByRole('button', { name: 'Rensa filtret' }).click();
     await expect(register).toBeVisible();
     await expect(register.getByTestId('deltagar-namn')).toHaveCount(4);
@@ -306,48 +329,53 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    const obekraftadeRad = gruppen(page).getByRole('button', {
-      name: /^Obekräftade anmälningar/,
+    // [ÄNDRAT, TASK-145.2 → TASK-145.3] Raden heter "Väntar på bekräftelse"
+    // sedan de tre gamla utskicks-raderna revs. Testet stod rött på den gamla
+    // etiketten.
+    const vantarRad = gruppen(page).getByRole('button', {
+      name: /^Väntar på bekräftelse/,
     });
-    await obekraftadeRad.click();
-    await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'true');
+    const register = gruppen(page).getByTestId('deltagar-register');
+    await vantarRad.click();
+    await expect(vantarRad).toHaveAttribute('aria-pressed', 'true');
 
-    // [ÄNDRAT, TASK-145.1] Accordion-rubrikerna (GruppRubrik) är rivna
-    // (AC #1) — urvalet stod redan som flat lista, men "registret" (den
-    // OVILLKORLIGA listan, ny sedan denna skiva) är en HELT ANNAN render-gren
-    // än `traffar`-filtrets flata lista och ska därför vara BORTA medan
-    // filtret är aktivt (samma `traffar != null`-villkor som döljer den).
-    await expect(gruppen(page).getByTestId('deltagar-register')).toHaveCount(0);
-    expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
-      'Anna Ek',
+    // [ÄNDRAT, TASK-145.3 AC #2] Registret FÖRSVINNER inte längre när ett
+    // filter är valt — filtrerat och ofiltrerat läge är EN render-gren. Det är
+    // det som gör markera-läget nåbart ur ett filtrerat läge (PRD
+    // användarberättelse 12), och det som gör listan steg-/FIFO-sorterad även
+    // filtrerad (samma jämförare, `registerLista`).
+    await expect(register).toBeVisible();
+    expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Bertil Sund',
+      'Anna Ek',
     ]);
     const rensa = gruppen(page).getByRole('button', { name: 'Rensa filtret' });
     await expect(rensa).toBeVisible();
 
     // Eventinfo-raden filtrerar på dem som SAKNAR eventinfo (det åtgärdbara):
-    // alla utom David.
+    // alla utom David. FIFO inom steg-hink: Bertil (06-20) och Anna (07-01)
+    // väntar på bekräftelse (hink 0), Cecilia saknar avgift (hink 1).
     await gruppen(page)
       .getByRole('button', { name: /^Eventinfo skickad/ })
       .click();
-    await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'false');
-    expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
-      'Anna Ek',
+    await expect(vantarRad).toHaveAttribute('aria-pressed', 'false');
+    expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Bertil Sund',
+      'Anna Ek',
       'Cecilia Lund',
     ]);
 
-    // Rensa filtret → registret tillbaka (AC #1: ingen accordion kvar att
-    // "gå tillbaka till" — den OVILLKORLIGA listan återuppstår i stället).
+    // Rensa filtret → hela registret tillbaka.
     await rensa.click();
-    await expect(gruppen(page).getByTestId('deltagar-register')).toBeVisible();
+    await expect(register).toBeVisible();
+    await expect(register.getByTestId('deltagar-namn')).toHaveCount(4);
 
     // Klick på en AKTIV rad rensar också (toggle-semantiken).
-    await obekraftadeRad.click();
-    await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'true');
-    await obekraftadeRad.click();
-    await expect(obekraftadeRad).toHaveAttribute('aria-pressed', 'false');
-    await expect(gruppen(page).getByTestId('deltagar-register')).toBeVisible();
+    await vantarRad.click();
+    await expect(vantarRad).toHaveAttribute('aria-pressed', 'true');
+    await vantarRad.click();
+    await expect(vantarRad).toHaveAttribute('aria-pressed', 'false');
+    await expect(register.getByTestId('deltagar-namn')).toHaveCount(4);
   });
 
   test('kategori-flikarna filtrerar listorna; summeringarna räknar ALLTID hela eventet', async ({
@@ -366,26 +394,33 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // (AC #4/#5, samma redan Marcus-beslutade princip som `?variant=a`:
     // "det räcker att den är filtrerbar" — flik-togglen lever kvar orörd).
     await flikar.getByRole('radio', { name: 'Manuella (1)' }).click();
-    expect(await gruppen(page).getByTestId('deltagar-namn').allTextContents()).toEqual([
-      'Bertil Sund',
-    ]);
-    await expect(gruppen(page).getByText('Manuellt tillagd')).toHaveCount(0);
+    const register = gruppen(page).getByTestId('deltagar-register');
+    expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual(['Bertil Sund']);
+    // [ÄNDRAT, TASK-145.4 → uppdaterat i TASK-145.3] Räkningen scopas till
+    // REGISTRET, inte hela sektionen. Sedan betalningsytan flyttade in under
+    // registret (TASK-145.4) bär `grupp-deltagare` även den INFÄLLDA arbetsytan
+    // (`hidden`, men i DOM), och dess personrader har en egen kategori-pill —
+    // `toHaveCount` räknar dolda noder, så sektions-scopet gav en falsk röd.
+    // Påståendet som ska gälla är registrets: där bär kortet inget kategori-
+    // märke, bara steg-märket.
+    await expect(register.getByText('Manuellt tillagd')).toHaveCount(0);
     await expect(
       kortet(page, 'Bertil Sund').getByText('Väntar på bekräftelse').last(),
     ).toBeVisible();
     // Summeringarna står kvar på hela eventet (K38) — flikvalet rör bara listan.
-    await expect(gruppen(page).getByRole('button', { name: /^Anmälningsbekräftelse/ })).toHaveText(
-      'Anmälningsbekräftelse skickad2 av 4−2',
+    // [ÄNDRAT, TASK-145.2] Raden heter "Anmälningsavgifter" sedan de tre gamla
+    // utskicks-raderna revs.
+    await expect(gruppen(page).getByRole('button', { name: /^Anmälningsavgifter/ })).toHaveText(
+      'Anmälningsavgifter0 av 4 mottagna−4',
     );
 
     // [ÄNDRAT, TASK-145.1] Medföljande → bara David (Källa '+1'). Han syns
     // DIREKT i den ovillkorliga registerlistan — inget arkiv att fälla ut,
     // och kategori-pillen ("Medföljande") har likaså vikit för steg-märket.
     await flikar.getByRole('radio', { name: 'Medföljande (1)' }).click();
-    const register = gruppen(page).getByTestId('deltagar-register');
     await expect(register).toBeVisible();
     expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual(['David Nord']);
-    await expect(gruppen(page).getByText('Medföljande', { exact: true })).toHaveCount(0);
+    await expect(register.getByText('Medföljande', { exact: true })).toHaveCount(0);
     await expect(kortet(page, 'David Nord').getByText('Väntar på betalning').last()).toBeVisible();
   });
 
@@ -465,10 +500,15 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await mocka(page, eventDetail(), []);
     await oppnaEventsidan(page);
 
-    await expect(
-      gruppen(page).getByRole('button', { name: /^Obekräftade anmälningar/ }),
-    ).toHaveText('Obekräftade anmälningar0');
+    // [ÄNDRAT, TASK-145.2] Raden heter "Väntar på bekräftelse" sedan de tre
+    // gamla utskicks-raderna revs; noll är noll i båda formerna.
+    await expect(gruppen(page).getByRole('button', { name: /^Väntar på bekräftelse/ })).toHaveText(
+      'Väntar på bekräftelse0',
+    );
     await expect(gruppen(page).getByText('Inga deltagare i denna kategori.')).toBeVisible();
+    // TASK-145.3: batch-baren monteras aldrig över en tom lista — Markera är
+    // inte en affordans när det inte finns något att markera.
+    await expect(gruppen(page).getByTestId('markering-batchbar')).toHaveCount(0);
   });
 
   // [ÄNDRAT, TASK-145.1] "Arkivet utfällt" fanns som ett tredje meningsfullt
@@ -496,9 +536,16 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await gruppen(page).getByRole('button', { name: 'Markera anmälningar' }).click();
     await kor();
     await gruppen(page).getByRole('button', { name: 'Avbryt markering' }).click();
+    // [ÄNDRAT, TASK-145.2] Raden heter "Väntar på bekräftelse" sedan de tre
+    // gamla utskicks-raderna revs.
     await gruppen(page)
-      .getByRole('button', { name: /^Obekräftade anmälningar/ })
+      .getByRole('button', { name: /^Väntar på bekräftelse/ })
       .click();
+    await kor();
+    // [TILLKOMMET, TASK-145.3 AC #2] Det FILTRERADE läget bär numera också
+    // markera-läget — ett fjärde a11y-läge som inte fanns förut och som därför
+    // aldrig scannats.
+    await gruppen(page).getByRole('button', { name: 'Markera anmälningar' }).click();
     await kor();
   });
 });
