@@ -294,6 +294,22 @@ paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
 resume.
 *(S93:s kadensrad nedan, oförändrad.)*
 
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, sjunde
+resumen) — AUDIT-UPPDRAGET: PROTOTYP→SKARP-PROCESSEN SYNAS I GRUNDEN** —
+Marcus order vid resume, tvådelad: (1) **full audit** av allt som gått snett
+från prototypbygget till skarpa bygget — rotorsakerna (`ADR-102` R1–R9 med
+flera) ska VERIFIERAS mot disk/git, varje lösning per rotorsak ska GRILLAS,
+och slutmålet är att prototyp→skarp-processen blir *"rolig och enkel …
+problemfri och tydlig"*; (2) **skarpa versionen i mål** (`A1`–`A6` → arbete
+per B4-ordningen: identisk → Marcus jämför → godkänner → först då rivs
+prototypen). Huvudkatalogen är sessionens EGEN — ägarlappen togs över vid
+sessionsstart (samma terminalprocess, PID 47876, ny session `5a232dcd`).
+Numrering re-verifierad mot `a2ebf8c8`: 103/L480 + åtta fragment/T137/
+**task-162** (**DIVERGENS:** handoffens `task-161` förbrukades av S99 under
+pausen — kortet + tio skivor finns på disk)/f47.
+**HANDOFF: sessionsdok S93 § Del 11 + Paushistorik (sjätte pausen).**
+*(Föregående paus-läge nedan oförändrat.)*
+
 **Session 93 ⏸️ PAUSAD (2026-08-07, sjätte pausen, `lifecycle: paused`) —
 FACIT-HAVERIET BOKFÖRT OCH MEKANISERAT** — `main` = `73e94776`. **`ADR-102`
 mintad på Marcus order:** *"Prototypen ÄR facit … Prototypen och skarpa version
