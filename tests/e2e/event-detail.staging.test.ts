@@ -564,36 +564,34 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     expect(checkInHojd).toBe(atgardsRadHojd);
   });
 
-  test('Åtgärder: sex rader i frekvensordning med radnummer 1–6 (18.15) och chevroner', async ({
-    page,
-  }) => {
+  test('Åtgärder: TVÅ rader med radnummer 1–2 (TASK-145.5) och chevroner', async ({ page }) => {
     await mockEvent(page, eventDetail());
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
 
-    // Frekvensordningen (K21: vanligaste först) — Lägg till är en LÄNK till
-    // manuell anmälan-sidan (K16/K17), resten knappar. Numren 1–6 följer
-    // ordningen (18.15 byggkrav 1: ordningen ändras ej).
+    // [ÄNDRAT, TASK-145.5 AC #4] Sex rader blev TVÅ. De fyra grå löftena
+    // (bekräftelsemail · betalningspåminnelse · markera betalda · eventinfo)
+    // stod `aria-disabled` sedan task-18.3, kopplades aldrig, och är var och en
+    // ett utskick eller en bulkmutation — alltså precis det eventsidan inte
+    // längre gör. Kvar står de två som faktiskt gör något: en LÄNK till manuell
+    // anmälan (K16/K17) och den skarpa utskriften.
+    //
+    // NUMRERINGEN: 18.15 byggkrav 1 sade att numren "ändras ej". Den garantin är
+    // MEDVETET bruten här och bokförd i `Atgarder.tsx`s docblock — den gällde en
+    // serie över sex rader, och fyra av dem finns inte längre.
     const lagg = grupp.getByRole('link', { name: 'Lägg till manuell anmälan' });
     await expect(lagg).toHaveAttribute('href', `/event/${EVENT_ID}/ny-anmalan`);
 
     const rader = grupp.locator('a, button');
-    await expect(rader).toHaveCount(6);
-    const radNamn = [
-      'Lägg till manuell anmälan',
-      'Skicka bekräftelsemail till obekräftade',
-      'Skicka betalningspåminnelse till obetalda',
-      'Markera alla obetalda som betalda',
-      'Skicka eventinfo till alla anmälda',
-      'Skriv ut denna detaljsida',
-    ];
+    await expect(rader).toHaveCount(2);
+    const radNamn = ['Lägg till manuell anmälan', 'Skriv ut denna detaljsida'];
     for (const [i, namn] of radNamn.entries()) {
       // AT-PARITETEN (18.15 AC 2): radNAMNET är oförändrat — numret är
       // aria-hidden dekor och ingår ALDRIG i det tillgängliga namnet.
       await expect(rader.nth(i)).toHaveAccessibleName(namn);
-      // Radnumret leder raden (visuell referens: "gå till åtgärd 4").
+      // Radnumret leder raden (visuell referens, Gunilla-principen).
       await expect(rader.nth(i).locator('span[aria-hidden="true"]').first()).toHaveText(
         String(i + 1),
       );
@@ -608,8 +606,8 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     await expect(grupp.locator('svg.lucide-printer')).toHaveCount(0);
     await expect(page.locator('[data-testid="checkin-kort"] svg.lucide-user-check')).toHaveCount(1);
 
-    // K25-chevronen på ALLA sex rader (chevron = raden leder vidare).
-    await expect(grupp.locator('svg.lucide-chevron-right')).toHaveCount(6);
+    // K25-chevronen på BÅDA raderna (chevron = raden leder vidare).
+    await expect(grupp.locator('svg.lucide-chevron-right')).toHaveCount(2);
   });
 
   test('numrutan (18.15): vit 24×24-ruta i radens radie-språk som ALDRIG delar färg med hover-plattan', async ({
@@ -620,7 +618,7 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
-    const rad = grupp.getByRole('button', { name: 'Skicka bekräftelsemail till obekräftade' });
+    const rad = grupp.getByRole('button', { name: 'Skriv ut denna detaljsida' });
     const ruta = rad.locator('span[aria-hidden="true"]').first();
 
     // Formen (byggkrav 2, renderad — L245/L246): 24×24 (size-6), radius 8 px
@@ -679,7 +677,7 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
-    const rad = grupp.getByRole('button', { name: 'Skicka bekräftelsemail till obekräftade' });
+    const rad = grupp.getByRole('button', { name: 'Skriv ut denna detaljsida' });
 
     // Vila: transparent bakgrund (plattan finns bara vid hover).
     const bgVila = await rad.evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -733,7 +731,13 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     expect(anrop).toBe(1);
   });
 
-  test('okopplade rader bär aria-disabled tills sina flöden finns (18.6/18.8); de skarpa gör det inte', async ({
+  // [VÄNT, TASK-145.5 AC #4] Testet hette "okopplade rader bär aria-disabled
+  // tills sina flöden finns" och vaktade interimet. Interimet är RIVET: de fyra
+  // okopplade raderna var utskick eller bulkmutationer, och eventsidan är en ren
+  // översyn. Testet vaktar därför nu FRÅNVARON i stället för tillståndet — samma
+  // rad, motsatt riktning, så en återinförd grå rad fälls i stället för att
+  // passera tyst.
+  test('de fyra grå löftena är RIVNA — ingen rad i gruppen bär kvar aria-disabled', async ({
     page,
   }) => {
     await mockEvent(page, eventDetail());
@@ -747,11 +751,14 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
       'Markera alla obetalda som betalda',
       'Skicka eventinfo till alla anmälda',
     ]) {
-      await expect(grupp.getByRole('button', { name: namn })).toHaveAttribute(
-        'aria-disabled',
-        'true',
-      );
+      await expect(grupp.getByRole('button', { name: namn })).toHaveCount(0);
     }
+    // Generaliserat: ingen rad alls i gruppen står i det rivna interim-läget.
+    // Ett `aria-disabled` element är fortfarande ett löfte — noll element är
+    // inget löfte alls.
+    await expect(grupp.locator('[aria-disabled="true"]')).toHaveCount(0);
+
+    // De två kvarvarande raderna är skarpa och annonserar sig som sådana.
     await expect(
       grupp.getByRole('link', { name: 'Lägg till manuell anmälan' }),
     ).not.toHaveAttribute('aria-disabled', 'true');

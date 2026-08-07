@@ -552,23 +552,22 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
 
 /**
  * TASK-145.1 DoD #7 — mekaniskt bevis för skrivvägs-frånvaro, SKOPAT till
- * registret självt (`deltagar-register`), inte hela `grupp-deltagare`-
- * sektionen: `AutoKryss` (auto-utskicks-krysset i eventinfo-signalens slot,
- * task-18.6, summeringsblocket — TASK-145.1 AC #8 rör det INTE) är en KÄND,
- * redan existerande skrivaffordans DÄR när `signalText` är falsy (händer med
- * `eventDetail()`s default `startdatum` — 60 dagar fram, utanför
- * `EVENTINFO_DAGAR_FORE`-fönstret). Att räkna checkboxar i HELA sektionen
- * hade alltså gett en falsk positiv redan idag, oberoende av denna skiva.
+ * registret självt (`deltagar-register`): registrets EGEN DEFAULT-rendering
+ * (Lotta har inte tryckt Markera) bär noll checkbox-affordanser —
+ * `DeltagarListan` väljer `DeltagarKort` (länkar, ingen mutation) framför
+ * `MarkerbartKort` (checkbox) exakt när `markering` är `null`, se `ArbetsKo`s
+ * render.
  *
- * "Eventsidan är bara för översyn nu ju" (Marcus, S93 Del 7) är alltså ÄNNU
- * INTE sant för HELA sidan — Bor över-krysslaget och markera-lägets egna
- * kort-checkboxar (när läget aktivt trycks på) är ANDRA, avsiktliga
- * skrivvägar som lever kvar tills TASK-145.4/145.5. Vad DENNA gate bevisar
- * är smalare och specifikt TASK-145.1s eget ansvar: registrets EGEN
- * DEFAULT-rendering (Lotta har inte tryckt Markera) bär noll
- * checkbox-affordanser — `DeltagarListan` väljer `DeltagarKort` (länkar,
- * ingen mutation) framför `MarkerbartKort` (checkbox) exakt när
- * `markering` är `null`, se `ArbetsKo`s render.
+ * [RÄTTAT, TASK-145.5 AC #3] Docblocket motiverade tidigare det smala scopet
+ * med att `AutoKryss` (auto-utskicks-krysset i eventinfo-signalens slot) var en
+ * "KÄND, redan existerande skrivaffordans" i summeringsblocket som hade gett en
+ * falsk positiv vid ett bredare scope. Det är INTE längre sant: `AutoKryss` revs
+ * av TASK-145.2 (grillad samsyn beslut 2 — se `Deltagare.tsx`s RIVEN-docblock
+ * och `event-bekraftelse.staging.test.ts` § Eventinfo-radens signal-slot).
+ * Motiveringen stod kvar som en beskrivning av ett tillstånd som upphört, vilket
+ * är exakt den klass av stale prosa som CLAUDE.md § verify:ci-parity bokför som
+ * dyrast. Scopet BEHÅLLS ändå — men av det smalare, sanna skälet ovan, och den
+ * breda grinden bor nu i `TASK-145.5`-sviten nedan.
  */
 test.describe('TASK-145.1 — registret som EN lista (DoD #7)', () => {
   test('registret renderar noll checkbox-affordanser förrän Markera-läget öppnas', async ({
@@ -596,5 +595,152 @@ test.describe('TASK-145.1 — registret som EN lista (DoD #7)', () => {
     await expect(register.getByRole('checkbox')).toHaveCount(4);
     await gruppen(page).getByRole('button', { name: 'Avbryt markering' }).click();
     await expect(register.getByRole('checkbox')).toHaveCount(0);
+  });
+});
+
+/**
+ * TASK-145.5 — EVENTSIDAN ÄR EN REN ÖVERSYN (AC #1/#2, DoD #7).
+ *
+ * "Som Roger vill jag att eventsidan aldrig ändrar data av misstag, så att den
+ * kan visas och läsas utan risk" (PRD TASK-145, användarberättelse 24). AC #2
+ * kräver att detta är MEKANISKT fällt, inte kontrollerat med ögat.
+ *
+ * VAD GRINDEN MÄTER, OCH VARFÖR JUST DET. Den skannar eventsidan SOM DEN
+ * RENDERAS VID LADDNING — Lotta har inte tryckt på något. I det läget ska ytan
+ * bära noll skriv-affordanser överhuvudtaget. Formen är vald för att den är
+ * ofrånkomlig: varje kvarvarande skrivväg måste då antingen synas direkt (och
+ * fällas här) eller kräva en explicit handling, och varje sådan handling har
+ * sin EGEN grind i en egen svit. Ett gate som i stället försökte räkna upp
+ * "tillåtna" kontroller hade behövt en undantagslista, och en undantagslista är
+ * precis vägen tillbaka till en yta ingen längre överblickar.
+ *
+ * DE TRE AVSIKTLIGA UNDANTAGEN, var och en bakom en explicit handling och var
+ * och en gatead på annat håll — inte glömda, utan namngivna:
+ *
+ *  1. BETALNINGSYTANS kryss (bakom "Öppna detaljer"). De renderas men är
+ *     ALLTID `disabled` — bevisat i `mark-paid.staging.test.ts` § Betalningsytan
+ *     — LÄSYTA, som dessutom visar att ett genuint klickförsök TIMEOUTAR och
+ *     att update-record aldrig anropas. Andra testet nedan mäter samma sak från
+ *     SEKTIONENS nivå, så påståendet håller även om arbetsytans egen lokalisator
+ *     skulle ändras.
+ *  2. MARKERA-LÄGETS kort-checkboxar (bakom Markera-knappen). De MUTERAR
+ *     INGENTING — de väljer. `TASK-145.3` rev bekräfta-flödet som var deras enda
+ *     mutation, och `event-bekraftelse.staging.test.ts` bevisar att
+ *     bekräftelse-EF:en aldrig anropas.
+ *  3. BOR ÖVER-KRYSSLÄGET (bakom Bor över-raden). Detta är den ENDA
+ *     kvarvarande, verkliga mutationen på ytan — `useSetBorOver`. Den har egen
+ *     svit (`event-bor-over.staging.test.ts`).
+ *
+ * ÖPPEN FRÅGA TILL MARCUS, EJ AVGJORD HÄR (rapporterad i slutrapporten): AC #1
+ * säger ordagrant "inga muterande kryssrutor", och undantag 3 ÄR en muterande
+ * kryssruta. Den rivs ändå INTE här, av två skäl som pekar åt samma håll:
+ * grillad samsyn beslut 2 (S93 Del 3) räknar upp åtta rader och namnger exakt
+ * tre rivningar — Bor över är inte en av dem, och det kvitterandet verifierades
+ * av Marcus när `TASK-145.1` av misstag raderade radens E2E-svit. PRD:ns egen
+ * enumeration är dessutom smalare än AC-texten: "båda betalnings-kryssen
+ * (anmälningsavgift och slutbetalning), noterings-redigeringen och
+ * påminn-knappen lämnar eventsidan" — Bor över nämns inte. Att riva en kontroll
+ * som en annan yta kvitterat som överlevande, på en AC-formulering som redan är
+ * omöjlig att läsa bokstavligt (markera-lägets kryss är också kryssrutor), vore
+ * att kompensera för ett spec-fel i tysthet.
+ */
+test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => {
+  test('den laddade eventsidan bär noll skriv-affordanser i deltagar- och åtgärdsytan', async ({
+    page,
+  }) => {
+    await mocka(page, eventDetail());
+    await oppnaEventsidan(page);
+
+    const atgardsytan = page.locator('section[aria-labelledby="grupp-atgarder"]');
+    await expect(atgardsytan).toBeVisible();
+
+    for (const yta of [gruppen(page), atgardsytan]) {
+      // Inga kryssrutor alls — varken muterande eller markerande. Var och en av
+      // de tre avsiktliga undantagen kräver en handling Lotta inte gjort än.
+      await expect(yta.getByRole('checkbox')).toHaveCount(0);
+      // Inget redigerbart fält: `getByRole('textbox')` täcker både
+      // `<input type="text">` och `<textarea>`, alltså både den rivna
+      // notering-inputen och varje handrullad ersättare.
+      await expect(yta.getByRole('textbox')).toHaveCount(0);
+      await expect(yta.locator('[contenteditable="true"]')).toHaveCount(0);
+      // Ingen påminn-avfyrning, i någon av dess två historiska former (knapp
+      // med mutation, länk med mailto).
+      await expect(yta.getByRole('button', { name: /påminn/i })).toHaveCount(0);
+      await expect(yta.getByRole('link', { name: /påminn/i })).toHaveCount(0);
+    }
+
+    // MAILTO-VÄGARNA mäts på HELA sidan, inte per sektion: en mailto-länk är en
+    // utgång ur appen och hör inte hemma någonstans på en översyn. Del 3
+    // beslut 4 stängde mailto-eran.
+    await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
+
+    // AC #4 — de fyra grå löftena är RIVNA, inte nedtonade. Ett `aria-disabled`
+    // element är fortfarande ett löfte; noll element är inget löfte alls.
+    for (const namn of [
+      'Skicka bekräftelsemail till obekräftade',
+      'Skicka betalningspåminnelse till obetalda',
+      'Markera alla obetalda som betalda',
+      'Skicka eventinfo till alla anmälda',
+    ]) {
+      await expect(atgardsytan.getByRole('button', { name: namn })).toHaveCount(0);
+    }
+    // …och ingen rad i gruppen bär kvar interim-tillståndet.
+    await expect(atgardsytan.locator('[aria-disabled="true"]')).toHaveCount(0);
+  });
+
+  test('den öppnade betalningsytan är LÄSYTA — mätt från sektionens nivå, inte arbetsytans', async ({
+    page,
+  }) => {
+    // Samma påstående som `mark-paid.staging.test.ts` bevisar inifrån
+    // arbetsytan, men mätt UTIFRÅN: alla kryss i hela `grupp-deltagare` är
+    // inaktiverade när detaljerna är öppna. Två oberoende lokalisatorer på
+    // samma egenskap är avsiktligt — den inre kan bytas ut utan att någon
+    // märker att den yttre garantin försvann.
+    await mocka(page, eventDetail());
+    await oppnaEventsidan(page);
+
+    await gruppen(page).getByRole('button', { name: 'Öppna detaljer' }).click();
+    const kryssen = gruppen(page).getByRole('checkbox');
+    const antal = await kryssen.count();
+    expect(antal).toBeGreaterThan(0);
+    for (let i = 0; i < antal; i++) {
+      await expect(kryssen.nth(i)).toBeDisabled();
+    }
+
+    // Och ytan bär fortfarande inget redigerbart fält och ingen mailto —
+    // noterings-redigeringen är riven, inte dold bakom disclosure:n.
+    await expect(gruppen(page).getByRole('textbox')).toHaveCount(0);
+    await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
+  });
+
+  test('AC #3: eventinfo-radens signal-slot bär inget kryss i något av sina lägen', async ({
+    page,
+  }) => {
+    // Rivningen gjordes av TASK-145.2; denna skiva äger att den är bevisad som
+    // en del av SKRIVVÄGS-frånvaron, inte bara som en egen assertion om en
+    // saknad glyf. GEOMETRIN (identisk höjd i båda lägena) mäts av testet
+    // "AC #3: signal-slotten renderar i BÅDA lägena med identisk geometri"
+    // ovan i samma fil — det påståendet dupliceras inte här.
+    await mocka(page, eventDetail());
+    await oppnaEventsidan(page);
+    const slotTom = gruppen(page).getByTestId('eventinfo-signal-slot');
+    await expect(slotTom).toBeVisible();
+    await expect(slotTom.getByRole('checkbox')).toHaveCount(0);
+    // Tom reserv: slotten står kvar men bär ingenting alls — varken badge
+    // eller det rivna fallback-krysset.
+    await expect(slotTom).toBeEmpty();
+    expect((await slotTom.boundingBox())?.height).toBeGreaterThan(0);
+  });
+
+  test('AC #3: inne i tvåveckorsfönstret bär slotten ENDAST badgen — aldrig ett kryss bredvid den', async ({
+    page,
+  }) => {
+    await mocka(page, eventDetail({ startdatum: omDagar(7), slutdatum: omDagar(8) }));
+    await oppnaEventsidan(page);
+    const slot = gruppen(page).getByTestId('eventinfo-signal-slot');
+    await expect(slot.getByText(/^Dags att skicka/)).toBeVisible();
+    await expect(slot.getByRole('checkbox')).toHaveCount(0);
+    // Slotten är inte heller en interaktiv yta i sig (L303/K44).
+    await expect(slot.locator('button')).toHaveCount(0);
   });
 });

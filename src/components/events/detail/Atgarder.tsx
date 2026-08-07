@@ -50,29 +50,25 @@ function NumRuta({ n }: { n: number }) {
 type Ledande = { nummer: number; ikon?: never } | { ikon: LucideIcon; nummer?: never };
 
 /** Åtgärdsradens knappform — numrerad sedan 18.15 (Åtgärds-gruppens enda
-    knappform; ikonvarianten utgick med rivningen). `ariaDisabled`: raden
-    renderar per facit men dess flöde finns ännu inte — tillståndet annonseras
-    ärligt för hjälpmedel tills flödet kopplas (öppet bokfört interim; se
-    Atgarder nedan). */
+    knappform; ikonvarianten utgick med rivningen).
+
+    [RIVEN, TASK-145.5] `ariaDisabled` bodde här. Den fanns för de fyra
+    okopplade utskicks-/mutations-raderna, och de raderna är rivna (AC #4 — se
+    `Atgarder` nedan). Ett interim-tillstånd utan interim är inte en bevarad
+    möjlighet, det är en fälla: nästa rad som råkar sakna flöde hade kunnat
+    landa grå i stället för att inte landa alls. */
 function HandlingsRad({
   nummer,
   onPress,
-  ariaDisabled,
   children,
 }: {
   nummer: number;
   onPress?: () => void;
-  ariaDisabled?: boolean;
   children: string;
 }) {
   return (
     <div className="flex flex-col py-1.5">
-      <button
-        type="button"
-        onClick={onPress}
-        aria-disabled={ariaDisabled || undefined}
-        className={RAD_KLASS}
-      >
+      <button type="button" onClick={onPress} className={RAD_KLASS}>
         <NumRuta n={nummer} />
         {children}
         <ChevronRight
@@ -269,14 +265,45 @@ export function SkrivUtKort() {
  * (Deltagare-kortens Mail/MailCheck; check-in-kortets UserCheck orörd).
  * Numren följer frekvensordningen och ändras ej (byggkrav 1).
  *
- * Kopplingsläget per rad (kortets spec: "Skriv ut är skarp; utskicks-raderna
- * kopplas till sina flöden när de finns"):
- * - Skriv ut: SKARP (window.print — utskriften bor här sedan K19-flytten).
- * - Bekräftelsemail: kopplas i 18.6 (hantera-flödets bulk-form).
- * - Betalningspåminnelse + Markera betalda: kopplas i 18.8 (arbetsytan).
- * - Eventinfo: kopplas när utskicks-styrningen byggs (PRD beslut 14).
- * Okopplade rader bär aria-disabled (ärligt AT-tillstånd) men behåller
- * facit-formens hover-platta — interimet löses upp skiva för skiva.
+ * DE FYRA GRÅ LÖFTENA ÄR RIVNA (TASK-145.5 AC #4). Raderna 2–5 —
+ * "Skicka bekräftelsemail till obekräftade", "Skicka betalningspåminnelse till
+ * obetalda", "Markera alla obetalda som betalda", "Skicka eventinfo till alla
+ * anmälda" — stod `aria-disabled` sedan task-18.3 och kopplades aldrig. Var och
+ * en är ett UTSKICK eller en BULKMUTATION, alltså precis det eventsidan inte
+ * längre gör: sidan är en ren översyn och allt som verkställer något bor på
+ * Åtgärds-sidan (`TASK-147`, PRD TASK-145 § Implementationsbeslut). Fyra grå
+ * rader som lovar mutationer på en läsyta är den mest direkta motsägelsen ytan
+ * kunde bära, och ett interim som stått okopplat i fyra månader är inte ett
+ * interim längre.
+ *
+ * KVAR STÅR DE TVÅ SOM FAKTISKT GÖR NÅGOT: "Lägg till manuell anmälan" (en
+ * riktig länk till en byggd sida — den skriver inte här, den navigerar) och
+ * "Skriv ut denna detaljsida" (`window.print`, skarp sedan K19-flytten).
+ * Utskrift muterar ingenting.
+ *
+ * NUMRERINGENS REFERENTBARHET, ADRESSERAD ÖPPET (AC #4 andra klausulen).
+ * task-18.15 införde radnumren 1–6 för att "gå till åtgärd 4" ska vara entydigt
+ * i instruktioner och manualer (Gunilla-principen), och slog samtidigt fast att
+ * "numren följer frekvensordningen och ändras ej (byggkrav 1)". Den
+ * STABILITETS-garantin bryts här, medvetet och synligt: de två kvarvarande
+ * raderna numreras om till 1–2.
+ *
+ * Skälet att omnumrering vinner över att behålla "1" och "6": numren garanterade
+ * en ordning över SEX rader, och fyra av dem finns inte längre. En manual som
+ * säger "gå till åtgärd 4" pekade på en rad som aldrig fungerade — referensen
+ * var trasig redan innan rivningen. Kvar att välja mellan var ett hål i serien
+ * ("1" följt av "6", obegripligt för Gunilla) och en tät serie som beskriver vad
+ * som faktiskt står på skärmen. Referentbarheten för de rader som FLYTTAR ägs av
+ * `TASK-147`: den sidan avgör om Åtgärds-sidan bär en egen numrering.
+ *
+ * ÖPPEN FRÅGA TILL MARCUS, EJ AVGJORD HÄR: Marcus egen iterationsvåg
+ * (2026-08-05, punkt 4, citerad ordagrant i `AtgarderKort` ovan) går längre än
+ * denna rivning — "Åtgärdsgruppen högst upp måste in på åtgärdssidan", alltså
+ * ÄVEN rad 1, med ett "Gå till åtgärder"-kort i gruppens ställe. Det steget tas
+ * INTE här: det lägger en ny ingång mot en sida som ännu inte finns, och samma
+ * princip som `MarkeringsBatchBar` § UTGÅNGEN följer (lova ingen navigation som
+ * saknas). Rivningen av de grå löftena är AC #4:s ordalydelse; flytten av hela
+ * gruppen hör ihop med att `TASK-147` landar.
  */
 export function Atgarder({ eventId }: { eventId: string }) {
   return (
@@ -284,19 +311,7 @@ export function Atgarder({ eventId }: { eventId: string }) {
       <HandlingsLank nummer={1} to="/event/$eventId/ny-anmalan" eventId={eventId}>
         Lägg till manuell anmälan
       </HandlingsLank>
-      <HandlingsRad nummer={2} ariaDisabled>
-        Skicka bekräftelsemail till obekräftade
-      </HandlingsRad>
-      <HandlingsRad nummer={3} ariaDisabled>
-        Skicka betalningspåminnelse till obetalda
-      </HandlingsRad>
-      <HandlingsRad nummer={4} ariaDisabled>
-        Markera alla obetalda som betalda
-      </HandlingsRad>
-      <HandlingsRad nummer={5} ariaDisabled>
-        Skicka eventinfo till alla anmälda
-      </HandlingsRad>
-      <HandlingsRad nummer={6} onPress={() => window.print()}>
+      <HandlingsRad nummer={2} onPress={() => window.print()}>
         Skriv ut denna detaljsida
       </HandlingsRad>
     </DetaljGrupp>
