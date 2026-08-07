@@ -7,7 +7,6 @@ import {
   History,
   Inbox,
   type LucideIcon,
-  Mail,
   MailCheck,
   X,
 } from 'lucide-react';
@@ -16,13 +15,10 @@ import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
-import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { MessageBox } from '@/components/primitives/MessageBox';
-import { Modal } from '@/components/primitives/Modal';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName, inskickadTid } from '@/components/registrations/registration-display';
-import { bekraftelseUtfall, useConfirmAll } from '@/data/mutations/registrationConfirmation';
 import { useSetBorOver } from '@/data/mutations/registrationLodging';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
@@ -90,25 +86,30 @@ import {
  *
  * PERSONKORTEN (task-18.5; S73-facit K45/K62) bor i `DeltagarKort` nedan.
  *
- * HANTERA-FLÖDET — FACIT-REVIDERAT av task-48 (S86-prototypen, Marcus-låst
- * 2026-07-25). Tre former ur task-18.6 är RIVNA och kommer inte tillbaka:
- *   · K46 — personkortets "Skicka bekräftelse" i kortfoten. Solid eller
- *     outline spelade ingen roll: en knapp per kort dräpte kortens läsbarhet.
+ * HANTERA-FLÖDET — RIVET UR EVENTSIDAN (TASK-145.3 AC #2). Fyra former är
+ * borta och kommer inte tillbaka hit:
+ *   · K46 — personkortets "Skicka bekräftelse" i kortfoten (task-48). Solid
+ *     eller outline spelade ingen roll: en knapp per kort dräpte kortens
+ *     läsbarhet. Med den följde `useSendConfirmation`.
  *   · K47/K48 — "Bekräfta alla"-pillen på Obekräftade-rubriken med sin
- *     kontrollfråga. Den bekräftade ALLA eller inget; urvalet var osynligt.
- *   · Med K46 följde `useSendConfirmation` (den optimistiska enskilda vägen
- *     från eventsidan). 1-klicks-genvägen byggs på HEM-vyn i stället —
- *     Marcus-beslut 2 på kortet. Skriv INTE in anmälans egen sida här.
+ *     kontrollfråga (task-48). Den bekräftade ALLA eller inget; urvalet var
+ *     osynligt.
+ *   · BATCH-BEKRÄFTELSEN som ersatte dem (`useConfirmAll` + kontrollfrågan i
+ *     batch-baren) — riven av TASK-145.3. Eventsidan är en REN ÖVERSYN; allt
+ *     som verkställer något bor på Åtgärds-sidan (`TASK-147`).
+ *   · Utfalls-ytan (`MessageBox`-kvittensen) som bara den kunde producera.
  *
- * I deras ställe: ett explicit MARKERA-LÄGE (`useMarkeringsLage`) där hela
- * kortet är klickyta med checkbox-semantik, en batch-bar med live-räknare och
- * breddlås, och kontrollfrågan kvar på massmutationen. Vägen in är
- * Markera-knappen, sedan TASK-145.1 förankrad i batch-barens vänsterkant
- * (§ REGISTRET ovan — rubrikraden den satt på är riven); Esc och Avbryt är
- * vägarna ut, oförändrat. Kandidatmängden är sedan TASK-145.1 den RENDERADE
- * registerlistan (`registerLista`), inte längre bara Obekräftade-kön — se
- * `markeringKandidatIds` i `ArbetsKo`. Auto-utskicks-krysset (K44) i
- * signal-slotten är orört.
+ * Kvar står ett explicit MARKERA-LÄGE (`useMarkeringsLage`) där hela kortet är
+ * klickyta med checkbox-semantik, och en batch-bar vars primärknapp bär texten
+ * **Åtgärder** och tar urvalet vidare. Vägen in är Markera-knappen, förankrad i
+ * batch-barens vänsterkant (§ REGISTRET ovan — rubrikraden den satt på är
+ * riven); Esc och Avbryt är vägarna ut, oförändrat.
+ *
+ * KANDIDATMÄNGDEN ÄR VISAD LISTA (TASK-145.3 AC #2): `visadRegisterLista` i
+ * `ArbetsKo` — den filtrerade vyn när ett steg-/logistik-filter är valt,
+ * annars hela den steg-sorterade listan. Markera-läget kräver alltså inget
+ * filter, men följer med i ett. Auto-utskicks-krysset (K44) i signal-slotten
+ * är rivet sedan TASK-145.2.
  *
  * SKELETT-AVGRÄNSNINGEN (öppet bokförd): Bor över-arbetsraden är task-18.7. Bor
  * över-raden saknas HELT ur summeringen (bas-fältet föds i 18.7 — en rad som
@@ -355,65 +356,27 @@ function MarkeraKnapp({
   );
 }
 
-/** Böjer "anmälan/anmälningar" efter antal — svenskan har ingen 0-singular. */
-function anmalanOrd(antal: number): string {
-  return antal === 1 ? 'anmälan' : 'anmälningar';
-}
-
 /**
- * BATCHENS UTFALLS-YTA — båda riktningarna, samma plats (Marcus design-review
- * 2026-07-26, S91, fynd (c)).
+ * [RIVEN, TASK-145.3] `anmalanOrd` · `Utfall` · `SKICKAT_TITEL` ·
+ * `MISSLYCKAD_TITEL` · `skickatKvittens` bodde här — hela batchens
+ * UTFALLS-YTA (Marcus design-review 2026-07-26, S91, fynd (c)) med sin
+ * GOV.UK/Polaris/Carbon-grundade MessageBox-form.
  *
- * Förr tändes ytan ENBART vid partial/failed/fel: ett rent lyckat utfall var
- * den enda tysta vägen genom flödet, alltså precis tvärtemot vad som borde
- * kvitteras tydligast. Lotta tryckte skicka, läget stängde, och ingenting sa
- * att det gick igenom.
+ * De var samtliga konsumenter av EN sak: bekräfta-flödet från eventsidan.
+ * AC #2 river det flödet — "bekräfta-flödet med kontrollfråga är RIVET ur
+ * eventsidan, inte dolt" — och när `bekraftaMarkerade` försvann fanns ingen
+ * kvar som SATTE ett utfall. En utfalls-yta utan producent är död kod, inte
+ * en bevarad möjlighet.
  *
- * FORM — research-grundad (web-research-disciplinen; mönstret, inte bara
- * mekanismen):
- *  · GOV.UK Design System, notification banner: den GRÖNA versionen används
- *    "to confirm that something they're expecting to happen has happened", och
- *    "should be removed when the user moves to a new page". Alltså: inline på
- *    arbetsytan, med en livslängd bunden till arbetssteget — inte en artefakt
- *    som ligger kvar. https://design-system.service.gov.uk/components/notification-banner/
- *  · Shopify Polaris, Toast: rätt form för korta framgångskvitton, MEN dess
- *    egna a11y-not varnar för att den "disappears automatically" och är svår
- *    att nå för användare med syn- eller finmotorik-begränsningar; med
- *    handling krävs ≥10 000 ms. https://polaris-react.shopify.com/components/feedback-indicators/toast
- *  · IBM Carbon, notification: inline-notiser är persistenta tills användaren
- *    avfärdar dem; toast är för passiva framgångsmeddelanden.
- *    https://carbondesignsystem.com/components/notification/usage/
+ * FORSKNINGEN ÄR INTE FÖRLORAD, den flyttar med sitt subjekt: utskicket sker
+ * på Åtgärds-sidan (`TASK-147`), och kvittensens form — inline framför toast,
+ * ingen självförsvinnande timer, stäng-knapp, dubbel bärare för
+ * skärmläsaren — är den form som ska byggas DÄR. Referenserna står kvar i
+ * git-historiken för denna fil (commit-meddelandet pekar hit).
  *
- * VALET: MessageBox på samma yta som felen (appen har ingen toast — den är
- * Fas 5-scope, MessageBox-docblocken). Ingen självförsvinnande timer: Polaris
- * egen varning gäller, och GOV.UK:s "removed when the user moves on" översätts
- * i en SPA till nästa arbetssteg i blocket — kvittensen rensas när markera-
- * läget öppnas igen, när fliken byts, när ett summeringsfilter växlas och när
- * nästa batch startar. Dessutom en stäng-knapp, den kontroll en toast saknar.
- *
- * SKÄRMLÄSAREN får kvittensen på det mönster som redan finns i blocket:
- * `MessageBox intent="success"` renderar `role="status"` (polite) — samma
- * live-region-form som batch-barens sr-only-räknare — OCH mutationens
- * `alertScreenReader` (den globala announcern, region i DOM före texten) är
- * kvar som den garanterade bäraren. Två bärare är medvetet: en artig
- * dubbelläsning är billigare än tystnad för den som inte ser plattan.
+ * `MessageBox` importeras fortfarande: `Deltagare` bär den för
+ * hämtningsfelet (`isError`), en helt annan konsument.
  */
-type Utfall = { ton: 'success' | 'error'; titel: string; text: string };
-
-/**
- * Konstant rubrik per riktning (GOV.UK: "use the same heading for green
- * notification banners within the same service" — igenkänning framför
- * variation, och rubriken bär utfallet så färgen aldrig är ensam bärare).
- */
-const SKICKAT_TITEL = 'Skickat';
-const MISSLYCKAD_TITEL = 'Bekräftelsen gick inte igenom';
-
-/** Kvittensens brödtext — antalet kommer ur SERVERNS `confirmed`, aldrig urvalet. */
-function skickatKvittens(antal: number): string {
-  return antal === 1
-    ? 'Bekräftelsen är skickad. Anmälan står nu som Bekräftad.'
-    : `${antal} bekräftelser är skickade. Anmälningarna står nu som Bekräftade.`;
-}
 
 /**
  * MARKERA-LÄGETS TILLSTÅNDSMASKIN (task-48).
@@ -487,40 +450,39 @@ function useMarkeringsLage(kandidatIds: readonly string[]) {
 }
 
 /**
- * BATCH-BAREN (task-48 byggkrav 3) — markera-lägets handlingsyta, ovanför kön.
+ * BATCH-BAREN (task-48 byggkrav 3) — markera-lägets handlingsyta, ovanför
+ * registret.
  *
- * §19: solid success på bekräfta-knappen är förenligt med emphasis-regeln —
- * baren ÄR blockets primära handlingsyta (inte en kort- eller radyta), och
- * handlingen når utomstående (bekräftelsemail). Markera alla är neutral
- * stödform (secondary), Rensa lågviktad (ghost) och dyker upp först när det
- * finns något att rensa.
+ * §19: Åtgärder är blockets primära handlingsyta (inte en kort- eller radyta)
+ * och bär därför solid primary. Markera alla är neutral stödform (secondary),
+ * Rensa lågviktad (ghost) och dyker upp först när det finns något att rensa.
  *
- * BREDDLÅSET: etiketten växlar mellan "0/1/6/99 anmälningar" och skulle annars
- * få knappen att ändra bredd under fingret vid varje klick. En osynlig
- * platshållare i tvåsiffrig maxform sätter bredden en gång; den synliga texten
- * ligger i samma grid-cell ovanpå med `tabular-nums` så siffran inte heller
- * rör sig inom sin egen bredd. Platshållaren är `aria-hidden` — knappens
- * tillgängliga namn är den SYNLIGA texten.
+ * GEOMETRIN ÄR KONSTANT ÖVER LÄGENA (TASK-145.3 AC #1). Baren renderas ALLTID
+ * — även när markera-läget är AV — med Markera-knappen i sin vänsterkant;
+ * `aktivt` styr bara om Åtgärder/Markera alla/Rensa VÄXER UT åt höger på
+ * samma rad. Förut monterades hela baren först när läget slogs på, och allt
+ * under den hoppade nedåt (ITERATIONSVÅG 5, Marcus 2026-08-06: "Vi flyttar ner
+ * Markera-knappen till samma rad som 'åtgärder' och 'markera alla' och sätter
+ * den längst till vänster"). En vertikal förskjutning byttes mot en
+ * horisontell utvidgning — det är den formen AC #1 mäter i renderad DOM.
  *
- * KONTROLLFRÅGAN (byggkrav 6, PRD task-18 beslut 7 + 20) sitter på
- * bekräfta-knappen: massmutationer passerar alltid en confirm-grind. Bulken är
- * pessimistisk — knappen står i "Skickar…" tills servern svarat, så ett halvt
- * utfall aldrig visas som helt.
+ * [RIVEN, TASK-145.3] BEKRÄFTA-FLÖDET (`onBekrafta`, `pending`, breddlåsets
+ * tvåsiffriga platshållare, `DialogTrigger`/`Modal`/`Dialog`-kontrollfrågan,
+ * task-48 byggkrav 6 + PRD task-18 beslut 7/20) bodde här och är BORTA, inte
+ * dolt (AC #2). Utskicket är inte längre eventsidans arbete: eventsidan är en
+ * ren översyn och allt som VERKSTÄLLER något bor på Åtgärds-sidan
+ * (`TASK-147`). Primärknappen bär därför ALLTID texten Åtgärder och tar
+ * urvalet vidare — det är eventsidans enda utgång mot en handling.
  *
- * [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 1/4/5) — `onBekrafta`
- * satt ⇒ SKARPA vyns oförändrade "Bekräfta"-flöde (ovan, DialogTrigger +
- * kontrollfråga). `onBekrafta` utelämnad (variant A ENDAST) ⇒ primärknappen
- * byter text till "Åtgärder": utskicket flyttar till åtgärds-sidan (byggs i
- * ett eget senare pass), så DENNA knapp öppnar bara en inline-platshållare
- * (litet kort, INTE en riktig sida) — bekräfta-mutationen och kontrollfrågan
- * är rivna ur variant-läget, inte bara dolda.
+ * UTGÅNGEN ÄR EN ÄRLIG INTERIM (AC #3): Åtgärds-sidan finns inte ännu, så
+ * knappen är en DISCLOSURE mot en platshållare på samma sida — inte en länk
+ * och inte en chevron. Båda de senare hade lovat en navigation som saknas.
+ * Formen byts mot en riktig väg vidare när `TASK-147` landar.
  */
 function MarkeringsBatchBar({
   antal,
   totalt,
   allaValda,
-  pending,
-  onBekrafta,
   onMarkeraAlla,
   onRensa,
   valdaNamn,
@@ -530,95 +492,25 @@ function MarkeringsBatchBar({
   antal: number;
   totalt: number;
   allaValda: boolean;
-  pending: boolean;
-  /** [PROTOTYPE] [S93] ITERATIONSVÅG 5 (Marcus 2026-08-06): "Vi flyttar ner
-      Markera-knappen till samma rad som 'åtgärder' och 'markera alla' och
-      sätter den längst till vänster. När man trycker 'Markera' så kommer
-      knapparna 'åtgärder' och 'markera alla' fram till höger på samma rad."
-
-      Satt ⇒ baren renderas ÄVEN när markeringsläget är AV, med enbart denna
-      knapp. Utelämnad ⇒ skarpa vyns oförändrade form (baren monteras först när
-      läget slås på, av anroparen).
-
-      VARFÖR DET ÄR BÄTTRE ÄN ATT BARA FLYTTA EN KNAPP: förut dök hela baren
-      upp som en NY RAD när läget slogs på, och allt under den hoppade nedåt.
-      Nu står raden still och knapparna växer ut åt höger — en vertikal
-      förskjutning byttes mot en horisontell utvidgning. */
-  markeraKnapp?: React.ReactNode;
-  /** Explicit `false` ⇒ markeringsläget är AV: Åtgärder/Markera alla/Rensa och
-      live-räknaren renderas inte. Utelämnad ⇒ dagens beteende (allt visas),
-      vilket är vad skarpa vyn får eftersom den monterar baren först i aktivt
-      läge. */
-  aktivt?: boolean;
-  /** Skarpa vyn: bekräfta-mutationen bakom kontrollfrågan. Utelämnad ⇒
-      variant-A-läget (se `valdaNamn`) — exakt en av de två är alltid satt. */
-  onBekrafta?: () => Promise<void>;
   onMarkeraAlla: () => void;
   onRensa: () => void;
-  /** [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST: satt ⇒ "Åtgärder"-
-      läget. De markerades namn, i visningsordning — visas i platshållaren. */
-  valdaNamn?: string[];
+  /** De markerades namn, i visningsordning — urvalet som följer med vidare
+      (AC #2), visat i interim-platshållaren tills Åtgärds-sidan finns. */
+  valdaNamn: string[];
+  /** Markera/Avbryt-knappen, förankrad i barens vänsterkant. Renderas i BÅDA
+      lägena — se § GEOMETRIN ovan. */
+  markeraKnapp: React.ReactNode;
+  /** Markera-läget på/av. `false` ⇒ enbart `markeraKnapp` syns. */
+  aktivt: boolean;
 }) {
   const [visaPlatshallare, setVisaPlatshallare] = useState(false);
   const platshallareId = useId();
-  const atgarderLage = valdaNamn != null;
-  const visaHandlingar = aktivt !== false;
 
   return (
     <>
       <div data-testid="markering-batchbar" className="flex flex-wrap items-center gap-2 pb-2.5">
         {markeraKnapp}
-        {visaHandlingar && onBekrafta ? (
-          <DialogTrigger>
-            <Button intent="success" size="sm" isDisabled={antal === 0 || pending}>
-              <Mail aria-hidden="true" size={14} className="shrink-0" />
-              <span className="grid">
-                {/* Breddlåsets platshållare — tvåsiffrig maxform, aldrig läst av AT. */}
-                <span
-                  aria-hidden="true"
-                  className="invisible col-start-1 row-start-1 whitespace-nowrap"
-                >
-                  Bekräfta 99 anmälningar
-                </span>
-                <span className="col-start-1 row-start-1 whitespace-nowrap tabular-nums">
-                  {`Bekräfta ${antal} ${anmalanOrd(antal)}`}
-                </span>
-              </span>
-            </Button>
-            {/* isKeyboardDismissDisabled under sändning (review-fynd 5): båda
-                dialogknapparna är isDisabled={pending} för att skydda en pågående
-                batch — utan detta gick Escape förbi spärren, dialogen försvann mitt
-                i "Skickar…" och Lotta stod utan återkoppling. */}
-            <Modal isDismissable isKeyboardDismissDisabled={pending}>
-              <Dialog
-                title="Skicka bekräftelse?"
-                actions={({ close }) => (
-                  <>
-                    <Button intent="ghost" onPress={close} isDisabled={pending}>
-                      Avbryt
-                    </Button>
-                    <Button
-                      intent="success"
-                      isDisabled={pending}
-                      onPress={async () => {
-                        await onBekrafta();
-                        close();
-                      }}
-                    >
-                      {pending
-                        ? 'Skickar…'
-                        : `Skicka ${antal} ${antal === 1 ? 'bekräftelse' : 'bekräftelser'}`}
-                    </Button>
-                  </>
-                )}
-              >
-                {`Bekräftelsemailet skickas till ${antal} obekräftad${antal === 1 ? '' : 'a'} ${anmalanOrd(
-                  antal,
-                )}, och ${antal === 1 ? 'anmälan blir Bekräftad' : 'anmälningarna blir Bekräftade'}. Det går inte att ångra.`}
-              </Dialog>
-            </Modal>
-          </DialogTrigger>
-        ) : visaHandlingar ? (
+        {aktivt && (
           <Button
             intent="primary"
             size="sm"
@@ -629,30 +521,26 @@ function MarkeringsBatchBar({
           >
             Åtgärder
           </Button>
-        ) : null}
-        {visaHandlingar && (
-          <Button
-            intent="secondary"
-            size="sm"
-            isDisabled={allaValda || pending}
-            onPress={onMarkeraAlla}
-          >
+        )}
+        {aktivt && (
+          <Button intent="secondary" size="sm" isDisabled={allaValda} onPress={onMarkeraAlla}>
             Markera alla
           </Button>
         )}
-        {visaHandlingar && antal > 0 && (
-          <Button intent="ghost" size="sm" isDisabled={pending} onPress={onRensa}>
+        {aktivt && antal > 0 && (
+          <Button intent="ghost" size="sm" onPress={onRensa}>
             Rensa
           </Button>
         )}
-        {/* Live-räknaren: seende ser antalet i knappen, skärmläsaren får det här.
-            `polite` — urvalet är löpande arbete, aldrig ett avbrott värt assertive.
+        {/* Live-räknaren: seende ser antalet i platshållaren, skärmläsaren får
+            det här. `polite` — urvalet är löpande arbete, aldrig ett avbrott
+            värt assertive.
 
-            Villkorad på `visaHandlingar` sedan iterationsvåg 5: i AV-läget finns
-            inget urval att räkna, och en `role="status"` som står och säger
-            "0 av 9 markerade" när ingen markerar är brus i skärmläsaren — samma
-            klass av oombedd a11y-struktur som rev två CI-grindar i våg 2. */}
-        {visaHandlingar && (
+            Villkorad på `aktivt` sedan iterationsvåg 5: i AV-läget finns inget
+            urval att räkna, och en `role="status"` som står och säger "0 av 9
+            markerade" när ingen markerar är brus i skärmläsaren — samma klass
+            av oombedd a11y-struktur som rev två CI-grindar i våg 2. */}
+        {aktivt && (
           <span
             data-testid="markering-live"
             role="status"
@@ -664,22 +552,24 @@ function MarkeringsBatchBar({
           </span>
         )}
       </div>
-      {/* [PROTOTYPE] [S93] konvergens-pass, "Åtgärder"-platshållaren (Del 3
-          beslut 5) — litet kort, INTE en riktig sida. Renderas som EGEN
-          syskon-div (inte inuti raden ovan) så skarpa vyns DOM (onBekrafta
-          satt) är BYTE-IDENTISK med före denna ändring. */}
-      {atgarderLage && visaPlatshallare && (
+      {/* INTERIM-PLATSHÅLLAREN (AC #3) — ett litet kort på samma sida, INTE en
+          sida och inte ett löfte om en. Texten säger rakt ut att sidan inte
+          finns ännu och att urvalet följer med dit när den gör det; Gunilla ska
+          förstå exakt vad som händer härnäst utan att kunna något om kort-ID:n.
+          Renderas som EGEN syskon-div (inte inuti raden ovan) så barens egen
+          radgeometri är oberoende av om platshållaren är utfälld. */}
+      {aktivt && visaPlatshallare && (
         <div
           id={platshallareId}
           data-testid="atgarder-platshallare"
           className="mb-2.5 rounded-xl border border-(--mm-navcard-border) bg-surface p-3 text-small contrast-more:border-(--mm-navcard-border-contrast)"
         >
           <p className="font-medium">
-            {`Åtgärds-sidan — eget prototyp-pass; ${antal} mottagare medtagna`}
+            {`Åtgärds-sidan är inte byggd ännu. Här står de ${antal} du markerat — de följer med dit när sidan finns.`}
           </p>
-          {(valdaNamn?.length ?? 0) > 0 && (
+          {valdaNamn.length > 0 && (
             <ul className="mt-1.5 flex flex-col gap-0.5 text-text-secondary">
-              {(valdaNamn ?? []).map((namn) => (
+              {valdaNamn.map((namn) => (
                 <li key={namn}>{namn}</li>
               ))}
             </ul>
@@ -1500,9 +1390,20 @@ function ArbetsKo({
   // flik-valet, precis som den gamla `AvbokadeRad` redan var.
   const registerTraffar = useMemo(() => {
     if (registerFilter.steg == null) return null;
-    if (registerFilter.steg === 'avbokad') return protoAvbokade;
-    return visade.filter(stegTest(registerFilter.steg));
-  }, [registerFilter.steg, visade, protoAvbokade]);
+    // [TASK-145.3] Även avbokade FIFO-sorteras: de delar hink (`registerOrdning`
+    // 6) så bara anmälningsordningen skiljer dem åt, och registret ska visa
+    // samma ordningsprincip oavsett vilket filter som är valt.
+    if (registerFilter.steg === 'avbokad') {
+      return [...protoAvbokade].sort((a, b) => inskickadTid(a) - inskickadTid(b));
+    }
+    // [TASK-145.3] Filtret läser `registerLista` (redan steg-/FIFO-sorterad),
+    // inte `visade` (källordningen). Fram till denna skiva sorterades den
+    // filtrerade vyn INTE alls — samma register kunde alltså visa samma
+    // personer i två olika ordningar beroende på om ett filter var valt.
+    // "Registret blir EN lista sorterad på fyra steg-hinkar" (PRD) gäller
+    // registret, inte bara dess ofiltrerade läge.
+    return registerLista.filter(stegTest(registerFilter.steg));
+  }, [registerFilter.steg, registerLista, protoAvbokade]);
 
   // [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST (Del 3 beslut 3):
   // "registret ... markera-läget verkar över visad lista" — den visade listan
@@ -1530,7 +1431,6 @@ function ArbetsKo({
       (klick igen på en aktiv rad nollar axeln, oförändrat växlings-beteende). */
   const vaxlaSteg = (s: RegisterStegFilter) => {
     markering.stang();
-    setUtfall(null);
     setRegisterFilter((nu) => ({ ...nu, steg: nu.steg === s ? null : s }));
   };
 
@@ -1571,25 +1471,36 @@ function ArbetsKo({
         )
       : [];
 
-  // Hantera-flödet (task-48): ENDAST batch, alltid pessimistiskt bakom
-  // kontrollfrågan. Den enskilda optimistiska vägen (useSendConfirmation) revs
-  // med K46 — ett halvt bulk-utfall får aldrig visas som helt, och en
-  // 1-klicks-genväg hör hemma på Hem-vyn, inte i eventsidans arbetskö.
-  const bulk = useConfirmAll(event.id);
-  const [utfall, setUtfall] = useState<Utfall | null>(null);
+  // [RIVEN, TASK-145.3] Hantera-flödet (task-48) — `useConfirmAll`-bulken och
+  // `utfall`-staten bodde här. Bekräftelse-utskicket är inte längre
+  // eventsidans arbete (AC #2): sidan är en ren översyn, och allt som
+  // VERKSTÄLLER något bor på Åtgärds-sidan (`TASK-147`). Med
+  // `bekraftaMarkerade` försvann den enda producenten av ett `utfall`, så
+  // staten och dess MessageBox-yta är rivna med — se docblocket där
+  // `SKICKAT_TITEL`/`skickatKvittens` en gång bodde.
 
-  // Markera-lägets kandidater — TASK-145.1 (AC #10): produktionens
-  // kandidatmängd är den RENDERADE registerlistan (`registerLista`), inte
-  // längre den gamla Obekräftade-kön (`obekraftadeIds`, riven — dess enda
-  // konsument var just denna rad). Samma FORM `?variant=a` redan bär
-  // (nedan): "markera-läget verkar över visad lista" — flikvalet (som
-  // `visade`/`registerLista` läser) och senare filtrering följer därmed
-  // automatiskt med, precis som facit. [PROTOTYPE] [S93] konvergens-pass,
-  // variant A ENDAST (Del 3 beslut 3): kandidaterna där är i stället
-  // `registerListaA` — den aktuella filtrerade vyn, eller HELA den enade
-  // listan när inget filter är valt.
+  // REGISTRETS VISADE LISTA — TASK-145.3 (AC #2): markera-läget verkar över
+  // VISAD lista, alltså den filtrerade vyn när ett steg-/logistik-filter är
+  // valt (`registerTraffar`) och annars hela den steg-sorterade listan
+  // (`registerLista`). Fram till denna skiva hade produktionens FILTRERADE
+  // gren ingen batch-bar alls — Lotta kunde inte "filtrera fram de nio som
+  // saknar slutbetalning" och sedan markera sex av dem (PRD användarberättelse
+  // 12), vilket är hela skivans berättelse. EN lista, ETT ställe där markera
+  // verkar.
+  //
+  // `bor-over` är undantaget och renderas aldrig genom denna variabel: den
+  // grenen är KRYSS-läget (`BorOverKrysslage`, K52), en egen arbetsrad med
+  // egen sortering — inte registret.
+  const visadRegisterLista = registerTraffar ?? registerLista;
+
+  // Markera-lägets kandidater — TASK-145.1 (AC #10), TASK-145.3 (AC #2):
+  // produktionens kandidatmängd är den RENDERADE listan, alltså
+  // `visadRegisterLista` ovan. [PROTOTYPE] [S93] konvergens-pass, variant A
+  // ENDAST (Del 3 beslut 3): kandidaterna där är i stället `registerListaA` —
+  // dess EGEN filtrerade vy, eller hela den enade listan när inget filter är
+  // valt.
   const markeringKandidatIds =
-    protoVariant === 'a' ? registerListaA.map((r) => r.id) : registerLista.map((r) => r.id);
+    protoVariant === 'a' ? registerListaA.map((r) => r.id) : visadRegisterLista.map((r) => r.id);
   const markering = useMarkeringsLage(markeringKandidatIds);
 
   /**
@@ -1612,56 +1523,12 @@ function ArbetsKo({
     varAktivt.current = markering.aktivt;
   }, [markering.aktivt]);
 
-  const bekraftaMarkerade = async () => {
-    setUtfall(null);
-    const ids = [...markering.valda];
-    // [PROTOTYPE] [S93] `?data=proto` — READ-ONLY FÖRSTÄRKT (uppdraget § DATA):
-    // mutationen STUBBAS, inget nätverksanrop. Samma kvittens-UI som skarpt —
-    // c-variantens genväg ska visa HELA flödet, bara utan att skriva.
-    if (protoDataMode) {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      setUtfall({
-        ton: 'success',
-        titel: SKICKAT_TITEL,
-        text: skickatKvittens(ids.length),
-      });
-      markering.stang();
-      return;
-    }
-    try {
-      const result = await bulk.mutateAsync({ registrationIds: ids });
-      // Aldrig binärt: allt annat än rent skickat visas som det ÄR (K53-ärligheten).
-      // URVALET ÖVERLEVER ett icke-rent utfall (review-fynd 2): servern svarar
-      // 200 även vid 'partial'/'failed'/'skipped', och att då nolla markeringen
-      // hade tvingat Lotta att markera om tolv kort för att försöka igen. Endast
-      // ett RENT skickat utfall betyder att arbetet är utfört — bara då stängs
-      // läget. Samma logik som catch-grenen, som alltid behållit urvalet.
-      if (result.status !== 'sent') {
-        setUtfall({ ton: 'error', titel: MISSLYCKAD_TITEL, text: bekraftelseUtfall(result) });
-        return;
-      }
-      // FRAMGÅNGEN KVITTERAS (fynd (c)): tystnaden var förr reserverad för
-      // exakt det utfall som borde bekräftas tydligast.
-      setUtfall({
-        ton: 'success',
-        titel: SKICKAT_TITEL,
-        text: skickatKvittens(result.confirmed.length),
-      });
-      markering.stang();
-    } catch {
-      setUtfall({
-        ton: 'error',
-        titel: MISSLYCKAD_TITEL,
-        text: 'Bekräftelserna kunde inte skickas. Försök igen.',
-      });
-    }
-  };
-
-  /** Nytt arbetssteg i blocket ⇒ kvittensen för det förra är förbrukad. */
-  const oppnaMarkering = () => {
-    setUtfall(null);
-    markering.oppna();
-  };
+  // [RIVEN, TASK-145.3] `bekraftaMarkerade` (bulk-mutationen med sin
+  // proto-stubb, sitt icke-binära utfall och sin kvittens) och `oppnaMarkering`
+  // (som bara nollade kvittensen innan den öppnade läget) bodde här. AC #2:
+  // "bekräfta-flödet med kontrollfråga är RIVET ur eventsidan, inte dolt".
+  // Vägen in i markera-läget är nu `markering.oppna` rakt av — det finns ingen
+  // kvittens kvar att förbruka.
 
   // Signalen tänds bara när det finns något ATT skicka (K44).
   const signalText =
@@ -1802,13 +1669,9 @@ function ArbetsKo({
         </div>
       </div>
 
-      {utfall != null && (
-        <div data-testid="bekraftelse-utfall" className="pt-3">
-          <MessageBox intent={utfall.ton} title={utfall.titel} onDismiss={() => setUtfall(null)}>
-            {utfall.text}
-          </MessageBox>
-        </div>
-      )}
+      {/* [RIVEN, TASK-145.3] Bekräftelse-utfallets MessageBox-yta
+          (`data-testid="bekraftelse-utfall"`) bodde här — se `bekraftaMarkerade`
+          ovan. Ingen producent kvar ⇒ ingen yta kvar. */}
 
       {/* [PROTOTYPE] [S93] ITERATIONSVÅG 7 (Marcus 2026-08-06): "Även den som
           ligger längst ner i blocket precis över 'öppna detaljer'" — den
@@ -1839,7 +1702,6 @@ function ArbetsKo({
             spread
             selectedKey={flik}
             onSelectionChange={(key: FlikNyckel) => {
-              setUtfall(null);
               setFlik(key);
             }}
           >
@@ -1878,7 +1740,6 @@ function ArbetsKo({
                 filter={registerFilter}
                 onFilterChange={(f) => {
                   markering.stang();
-                  setUtfall(null);
                   setRegisterFilter(f);
                 }}
                 visadeAntal={registerListaA.length}
@@ -1905,14 +1766,13 @@ function ArbetsKo({
                     antal={markering.antal}
                     totalt={registerListaA.length}
                     allaValda={markering.allaValda}
-                    pending={false}
                     onMarkeraAlla={markering.markeraAlla}
                     onRensa={markering.rensa}
                     aktivt={markering.aktivt}
                     markeraKnapp={
                       <MarkeraKnapp
                         aktivt={markering.aktivt}
-                        onOppna={oppnaMarkering}
+                        onOppna={markering.oppna}
                         onStang={markering.stang}
                         buttonRef={markeraKnappRef}
                       />
@@ -1942,99 +1802,96 @@ function ArbetsKo({
               )}
             </>
           )
-        ) : registerTraffar != null ? (
+        ) : registerFilter.steg === 'bor-over' ? (
+          // KRYSS-LÄGET (K52) är registrets enda gren som INTE är registret:
+          // en egen arbetsrad med egen sortering och egen (avsiktlig)
+          // skrivväg. Markera-läget verkar inte här — se `visadRegisterLista`.
           <>
-            {/* TASK-145.2 (AC #2/#6) — samma "Rensa filtret + platt lista"-
-                rendering skarpa vyn redan bar, nu på `registerFilter`/
-                `registerTraffar` (steg-axeln) i stället för den rivna
-                `filter`/`traffar`. `setRegisterFilter(TOMT_REGISTER_FILTER)`
-                nollar HELA filtertillståndet (steg OCH vagIn) i ETT anrop —
-                den latenta buggen där tre av fyra tillstånd överlevde
-                (ITERATIONSVÅG-kommentaren ovan) kan inte uppstå igen, för
-                det finns bara ETT tillstånd kvar att nolla. K57: "Visar:"-
-                raden och instruktionstexten RIVNA — man har ju tryckt på
-                raden. Rensa-knappen står ensam, högerställd. */}
             <RensaFiltretKnapp onClick={() => setRegisterFilter(TOMT_REGISTER_FILTER)} />
-            {registerFilter.steg === 'bor-over' ? (
-              <BorOverKrysslage
-                lista={markeringsLista}
-                protoDataMode={protoDataMode}
-                onToggle={toggleBorOver}
-              />
-            ) : registerTraffar.length > 0 ? (
-              // [TASK-145.4] `visaUtskicksRader`-övertrampet är BORTA (se
-              // KortInnehall § TASK-145.1-docblocket) — ersättningen
-              // (BetalningsDetaljer/"Öppna detaljer", Tidslinje) finns nu i
-              // produktionen (AC #2/#8), så defaultbeteendet
-              // (`hallplatsMarke == null`, alltid falskt här) gäller.
-              <DeltagarListan
-                rader={registerTraffar}
-                eventId={event.id}
-                hallplatsMarke={registerHallplatsMarke}
-              />
-            ) : (
-              <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>
-            )}
+            <BorOverKrysslage
+              lista={markeringsLista}
+              protoDataMode={protoDataMode}
+              onToggle={toggleBorOver}
+            />
           </>
-        ) : visade.length === 0 ? (
-          <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>
         ) : (
           // TASK-145.1 — REGISTRET SOM EN LISTA (AC #1–#7, #10, #11).
           // Obekräftade-kön och Bekräftade-arkivet (var sin `GruppRubrik`,
-          // äldst-/senast-först-sortering) är RIVNA (AC #1) — `registerLista`
-          // (ovan) är den enda listan, `registerOrdning`-sorterad i fyra
-          // steg-hinkar med FIFO inom var och en (AC #2/#3). Steg-märket
-          // (`registerHallplatsMarke`) ÄR grupperingen — ingen sektionsrubrik
-          // renderas (AC #4), exakt ETT märke per person (AC #5, se
-          // `hallplatsSteg`s prioritetsordning). Samma `rullande`-klipphöjd
-          // kön hade, ingen ny höjd mintad (AC #6); `ariaLabel` egen —
-          // ärver INTE `DeltagarListan`s köns-hårdkodade default (AC #7).
+          // äldst-/senast-först-sortering) är RIVNA — `registerLista` (ovan)
+          // är den enda listan, `registerOrdning`-sorterad i fyra steg-hinkar
+          // med FIFO inom var och en. Steg-märket (`registerHallplatsMarke`)
+          // ÄR grupperingen — ingen sektionsrubrik renderas, exakt ETT märke
+          // per person (se `hallplatsSteg`s prioritetsordning).
           //
-          // MARKERA-KNAPPENS EGNA FÖRANKRING (AC #11): `GruppRubrik`s
-          // `handling`-slot försvann med rubriken den satt på — knappen
-          // flyttar i stället till `MarkeringsBatchBar`s vänsterkant via
-          // dess `markeraKnapp`-prop, SAMMA redan facit-byggda/testade
-          // mekanism `?variant=a` använder (ITERATIONSVÅG 5, se
-          // `MarkeringsBatchBar`s docblock) — bara ANROPSPLATSEN är ny.
-          // `aktivt={markering.aktivt}` gör att baren nu renderas
-          // OVILLKORLIGT (`markeraKnapp` måste synas även i vilo-läge), men
-          // `onBekrafta`/`totalt`/knapptexten är EXAKT samma props som förut
-          // (bara flyttade hit) — bekräfta-flödet och batch-barens
-          // knapptext rörs INTE (AC #11 andra klausulen; TASK-145.3 äger
-          // markera-lägets ÖVRIGA form).
+          // TASK-145.3 (AC #2) — EN GREN, INTE TVÅ. Fram till denna skiva var
+          // filtrerat och ofiltrerat läge två SEPARATA renderingar: den
+          // filtrerade bar ingen batch-bar, ingen `rullande`-klipphöjd, inget
+          // `testId` och ingen `ariaLabel`. Följden var att markera-läget inte
+          // gick att nå ur ett filtrerat läge alls — precis den berättelse
+          // skivan äger ("Lotta filtrerar fram de nio som saknar
+          // slutbetalning, slår på Markera, bockar sex av dem"). Grenarna är
+          // nu EN, driven av `visadRegisterLista`; "Rensa filtret" är det enda
+          // som tillkommer när ett filter är valt.
+          //
+          // K57: "Visar:"-raden och instruktionstexten är RIVNA — man har ju
+          // tryckt på raden. Rensa-knappen står ensam, högerställd.
+          // `setRegisterFilter(TOMT_REGISTER_FILTER)` nollar HELA
+          // filtertillståndet (steg OCH vagIn) i ETT anrop.
+          //
+          // MARKERA-KNAPPENS EGNA FÖRANKRING (145.1 AC #11): `GruppRubrik`s
+          // `handling`-slot försvann med rubriken den satt på — knappen bor i
+          // `MarkeringsBatchBar`s vänsterkant via dess `markeraKnapp`-prop.
           <div>
-            <MarkeringsBatchBar
-              antal={markering.antal}
-              totalt={registerLista.length}
-              allaValda={markering.allaValda}
-              pending={bulk.isPending}
-              onBekrafta={bekraftaMarkerade}
-              onMarkeraAlla={markering.markeraAlla}
-              onRensa={markering.rensa}
-              aktivt={markering.aktivt}
-              markeraKnapp={
-                <MarkeraKnapp
+            {registerTraffar != null && (
+              <RensaFiltretKnapp onClick={() => setRegisterFilter(TOMT_REGISTER_FILTER)} />
+            )}
+            {visadRegisterLista.length === 0 ? (
+              <p className="py-2 text-small text-text-secondary">
+                {registerTraffar != null
+                  ? 'Inga träffar i denna kategori.'
+                  : 'Inga deltagare i denna kategori.'}
+              </p>
+            ) : (
+              <>
+                <MarkeringsBatchBar
+                  antal={markering.antal}
+                  totalt={visadRegisterLista.length}
+                  allaValda={markering.allaValda}
+                  onMarkeraAlla={markering.markeraAlla}
+                  onRensa={markering.rensa}
                   aktivt={markering.aktivt}
-                  onOppna={oppnaMarkering}
-                  onStang={markering.stang}
-                  buttonRef={markeraKnappRef}
+                  markeraKnapp={
+                    <MarkeraKnapp
+                      aktivt={markering.aktivt}
+                      onOppna={markering.oppna}
+                      onStang={markering.stang}
+                      buttonRef={markeraKnappRef}
+                    />
+                  }
+                  // AC #2, "tar urvalet vidare": namnen läses ur den VISADE
+                  // listan i dess visningsordning, så platshållaren speglar
+                  // exakt det Lotta ser sig ha markerat.
+                  valdaNamn={visadRegisterLista
+                    .filter((r) => markering.valda.has(r.id))
+                    .map(displayName)}
                 />
-              }
-            />
-            {/* [TASK-145.4] Samma rivning som `registerTraffar`-grenen ovan —
-                `visaUtskicksRader`-övertrampet är borta, defaultbeteendet
-                (falskt, eftersom `hallplatsMarke` alltid är satt här) gäller. */}
-            <DeltagarListan
-              rader={registerLista}
-              eventId={event.id}
-              rullande
-              testId="deltagar-register"
-              ariaLabel="Deltagarregister"
-              markering={
-                markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
-              }
-              hallplatsMarke={registerHallplatsMarke}
-            />
+                {/* [TASK-145.4] `visaUtskicksRader`-övertrampet är BORTA (se
+                    KortInnehall § TASK-145.1-docblocket) — ersättningen
+                    (BetalningsDetaljer/"Öppna detaljer", Tidslinje) finns nu i
+                    produktionen, så defaultbeteendet gäller. */}
+                <DeltagarListan
+                  rader={visadRegisterLista}
+                  eventId={event.id}
+                  rullande
+                  testId="deltagar-register"
+                  ariaLabel="Deltagarregister"
+                  markering={
+                    markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
+                  }
+                  hallplatsMarke={registerHallplatsMarke}
+                />
+              </>
+            )}
           </div>
         )}
       </div>
