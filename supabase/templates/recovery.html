@@ -63,18 +63,28 @@
           >
             <tr>
               <td style="padding: 32px 32px 8px 32px">
-                <p
-                  style="
-                    margin: 0 0 24px 0;
-                    font-size: 15px;
-                    font-weight: 700;
-                    letter-spacing: 0.02em;
-                    color: #a3491c;
-                    text-transform: uppercase;
-                  "
-                >
-                  Miranon Media
-                </p>
+                <!--
+                  Ordmärket som PNG, ALDRIG SVG. Gmails webbmail saknar
+                  SVG-stöd (caniemail `image-svg`: `n` så sent som 2024-07)
+                  och Gmail mobil har det bara för icke-Google-konton — en
+                  SVG hade blivit ett tomt hål för just de mottagare vi
+                  skickar mest till. Källa: public/miranon-media-ordmarke.svg,
+                  renderad i 2× (360×69 px, visas 180 px) till
+                  public/e-post/ordmarke.png som deployas med appen.
+
+                  alt-texten är inte kosmetik: många klienter blockerar bilder
+                  tills mottagaren klickar "visa bilder", och då är den det
+                  enda som syns. Den lyder därför exakt som textraden bilden
+                  ersatte (S96, 2026-08-06) — sämsta utfall blir det
+                  utseende mailet hade före bilden, aldrig ett tomt hål.
+                -->
+                <img
+                  src="https://admin.miranon.dev/e-post/ordmarke.png"
+                  width="180"
+                  height="34"
+                  alt="Miranon Media"
+                  style="display: block; margin: 0 0 24px 0; border: 0"
+                />
                 <h1
                   style="
                     margin: 0 0 16px 0;
@@ -131,7 +141,7 @@
                 <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #525151">
                   Det här mailet går inte att svara på.<br />
                   Vänliga hälsningar,<br />
-                  Miranon Media
+                  Roger och Lotta
                 </p>
               </td>
             </tr>
