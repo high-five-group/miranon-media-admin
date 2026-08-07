@@ -16,7 +16,7 @@
 #   sessionsdok + trådkort" och skriptets header säger "validerar även
 #   tråd-kort" — båda sanna, båda smalare än de låter.
 #
-# GRINDEN VALIDERAR (sex invarianter, ingen överlappar check-lifecycle.sh):
+# GRINDEN VALIDERAR (sju invarianter, ingen överlappar check-lifecycle.sh):
 #   1. RADFORM — varje trådrad har rätt antal kolumner och ett enum-giltigt
 #      tillstånd i tillstånds-kolumnen. Gäller ALLA rader, med eller utan fil.
 #   2. NUMRERING — stigande, inga dubbletter, inga luckor. Registret har
@@ -46,6 +46,18 @@
 #      par likt Inv 3/4 (index↔fil), eftersom ett sådant par vore precis den
 #      manuella spegling beslut 2 uttryckligen förbjuder. Manifestfilen får
 #      saknas helt (opt-in, tomt startläge räknas som grönt).
+#   7. RADLÄNGDS-TAK (ADR-098 beslut 1–2) — varje trådrads rå längd (${#line},
+#      radbrytningen exkluderad) får inte överstiga THREAD_ROW_MAX_LEN
+#      (config: .thread-index-policy.conf, 500 vid detta skrivtillfälle).
+#      Narrativ som spränger taket hör hemma i trådens EGET kort, inte i
+#      indexraden — ADR-098 beslut 2 skärper ADR-053 beslut 2 (progressiv
+#      disclosure) från discretionär till mekaniskt framtvingad. Kontrollen
+#      körs INUTI huvudloopen (samma pass som Inv 1/2/3/5-insamling) och
+#      lägger till noll nya loopar — TASK-157.3-triage: skriptet mättes till
+#      >2 min/100 % CPU vid 132 trådar FÖRE radlängds-migrationen (TASK-157.2)
+#      p.g.a. cut/grep-kostnad på enstaka rader upp mot 8 410 tecken; Inv 7
+#      ärver INTE det mönstret — en enda jämförelse (O(1)) per redan besökt
+#      rad, alltså O(n) totalt över registret.
 #
 # MEDVETET UTANFÖR SCOPE (ej glömda kontroller):
 #   (a) TILLSTÅNDSDRIFT fil↔index — ägs av check-lifecycle.sh rad 108–129.
@@ -62,7 +74,7 @@
 # sig grinden på cwd=repo-root (ingen cd) — CI kör från repo-roten; testsviten
 # cd:ar in i sin sandbox före anrop.
 #
-# Exit 0 om indexet passerar alla sex invarianter. Exit 1 vid drift.
+# Exit 0 om indexet passerar alla sju invarianter. Exit 1 vid drift.
 #
 # Källa: docs/decisions/ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md
 # Etablerad: TASK-108 (2026-07-31)
@@ -70,6 +82,8 @@
 # Inv 5 etablerad: TASK-140 (2026-08-05)
 # Inv 6 källa: docs/decisions/ADR-095-relationsmodellen-dokumentationssubstratet.md
 # Inv 6 etablerad: TASK-141 (2026-08-05)
+# Inv 7 källa: docs/decisions/ADR-098-tradregistrets-tunna-radform-vaxt-vagen.md
+# Inv 7 etablerad: TASK-157.3 (2026-08-07)
 
 set -euo pipefail
 
@@ -94,6 +108,7 @@ THREAD_RELATED_KEYWORD=""
 THREAD_CHILDREN_MANIFEST=""
 THREAD_CHILDREN_CARD_PREFIX=""
 THREAD_CHILDREN_CARD_DIR=""
+THREAD_ROW_MAX_LEN=0
 declare -a THREAD_VALID_STATES=()
 
 # shellcheck source=/dev/null
@@ -110,6 +125,7 @@ die_conf() { echo "❌ ${POLICY_FILE}: $1"; exit 1; }
 [[ -n "${THREAD_CHILDREN_MANIFEST}" ]] || die_conf "THREAD_CHILDREN_MANIFEST är tom"
 [[ -n "${THREAD_CHILDREN_CARD_PREFIX}" ]] || die_conf "THREAD_CHILDREN_CARD_PREFIX är tom"
 [[ -n "${THREAD_CHILDREN_CARD_DIR}" ]] || die_conf "THREAD_CHILDREN_CARD_DIR är tom"
+[[ "${THREAD_ROW_MAX_LEN}" -gt 0 ]] || die_conf "THREAD_ROW_MAX_LEN måste vara > 0"
 
 EXIT_CODE=0
 BT='`'  # backtick-token för förankrad (ej bar-substräng) matchning
@@ -197,6 +213,16 @@ while IFS= read -r line; do
     NUM=$((10#${BASH_REMATCH[1]}))
     SEEN_ANY=1
     ALL_TIDS+=("${TID}")
+
+    # (7) radlängds-tak (ADR-098 beslut 1–2) — rå radlängd, radbrytningen
+    # exkluderad (${#line}, samma mått som (1a) nedan använder för
+    # pipe-räkningen). Körs oberoende av (1a)/(1b) — en rad kan ha rätt
+    # pipe-antal och ändå spränga taket. O(1) per rad, ingen ny loop.
+    if [[ "${#line}" -gt "${THREAD_ROW_MAX_LEN}" ]]; then
+        echo "❌ ${THREAD_INDEX}:${LINE_NO} — ${TID} är ${#line} tecken lång (tak ${THREAD_ROW_MAX_LEN})"
+        echo "   Fix: flytta narrativet till trådens EGET kort (ADR-098 beslut 2) — indexraden bär bara ID · titel · tillstånd · ingång."
+        EXIT_CODE=1
+    fi
 
     # (1a) kolumnantal — en extra pipe i titeln förskjuter tillstånds-kolumnen
     PIPES="${line//[^|]/}"
@@ -384,5 +410,5 @@ if [[ -f "${THREAD_CHILDREN_MANIFEST}" ]]; then
     done < "${THREAD_CHILDREN_MANIFEST}"
 fi
 
-[[ "${EXIT_CODE}" -eq 0 ]] && echo "✅ tråd-index OK (radform + enum + numrering + index↔fil + besläktad↔registret + barn-manifest↔registret)"
+[[ "${EXIT_CODE}" -eq 0 ]] && echo "✅ tråd-index OK (radform + enum + numrering + index↔fil + besläktad↔registret + barn-manifest↔registret + radlängd↔tak)"
 exit "${EXIT_CODE}"
