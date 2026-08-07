@@ -136,37 +136,52 @@
      Färgen var därför inte reproducerbar: Lotta hade kunnat se en annan färg än
      Marcus, på samma skärmbild. Den är nu en riktig token.
 
-     GULD SEDAN VARV 15 (Marcus: "jag tror vi ska byta färg till typ gul/guld
-     eller vad vi har i paletten"). Blått var varv 14:s val och höll 5,48:1 på
-     båda axlarna; guld är smakvalet, och det tvingade fram TVÅ ändringar, inte
-     en — bocken kunde inte förbli vit.
+     GULD SEDAN VARV 15, OCH KANTEN BÄR KONTRASTEN SEDAN VARV 16.
 
-     PALETTEN HADE REDAN MÄTT RISKEN och skrivit den som varning (primitives.css
-     rad 21–24, fynd F9): "Guld steg 9 når 2,57:1 mot vit yta och klarar alltså
-     inte WCAG 1.4.11 (3:1) som UI-yta. Det är fysiken hos en mättad gul-orange
-     … behövs guld som yta mot vitt är steg 10 den ljusaste som duger."
+     Marcus valde först guld ("typ gul/guld eller vad vi har i paletten") och
+     därefter STEG 9 specifikt, efter att ha sett hela fältet: "Jag gillade mest
+     gold 9, den översta, syntes ju supertydligt."
 
-     HELA FÄLTET DOM-MÄTT 2026-08-07 (Chrome, isolerad mätsida) — bock mot
-     platta · platta mot vit sida:
+     GOLD-9 SOM PLATTA MOT VIT MÄTER 2,57:1 och faller alltså under WCAG
+     1.4.11:s 3:1. Paletten hade förutsett det och skrivit varningen i sin egen
+     fil (primitives.css rad 21–24, fynd F9): "Guld steg 9 når 2,57:1 mot vit
+     yta … behövs guld som yta mot vitt är steg 10 den ljusaste som duger."
 
-       gold-9  + vit bock    2,57 ✗ · 2,57 ✗   faller på båda
-       gold-9  + mörk bock   6,04 ✓ · 2,57 ✗   plattan syns inte
-       gold-10 + mörk bock   5,08 ✓ · 3,06 ✓   VALD
-       gold-10 + vit bock    3,06 ✓ · 3,06 ✓   godkänd men tightast
-       gold-11 + vit bock    4,91 ✓ · 4,91 ✓   säkrast, men mörkast/brunast
+     MEN DEN VARNINGEN GÄLLER PLATTAN SOM ENSAM BÄRARE, och kryssrutan behöver
+     inte bära kontrasten där. Appens etablerade lösning står i `Deltagare.tsx`
+     rad 1068 och i denna fils eget markerbara kort: "KANTEN ÄR WCAG
+     1.4.1-BÄRAREN — inte den gröna plattan … Plattan mäter 1,05:1 mot vitt och
+     bär i praktiken ingenting för den färgblinde. Tona aldrig ned kanten."
+     Markeringskorten på SAMMA sida kör alltså redan en platta på 1,05:1 med
+     kanten som bärare — gold-9 på 2,57:1 är dubbelt så stark som den.
 
-     VARFÖR MÖRK BOCK: mot gold-10 ger vit bock 3,06:1 och mörk 5,08:1. Bocken
-     är det som ska läsas, alltså tar den det starkare värdet. Det är också
-     varför `--mm-checkbox-check` INTE längre är `text-inverse` — den tokenen
-     betyder "det som syns mot en mörk platta", och guld är ingen mörk platta.
+     HELA FÄLTET DOM-MÄTT 2026-08-07 (Chrome, isolerad mätsida):
 
-     PLATTANS 3,06:1 ÄR MARGINELL, öppet bokfört: golvet är 3:1 och detta är två
-     hundradelar över. Den håller mot `--mm-surface` (vitt), som är vad båda
-     kryss-ytorna faktiskt står på. Flyttas en kryssruta till en ljusare eller
-     tonad botten måste talet mätas om — gold-11 (4,91:1) är då reservvalet.
-     Detta är en mätning per YTA, inte en generell garanti. */
-  --mm-checkbox-selected-bg: var(--p-gold-10);
-  --mm-checkbox-selected-border: var(--p-gold-10);
+       PLATTAN ENSAM SOM BÄRARE          bock/platta · platta/vit
+         gold-9  + vit bock                 2,57 ✗ · 2,57 ✗
+         gold-9  + mörk bock                6,04 ✓ · 2,57 ✗
+         gold-10 + mörk bock                5,08 ✓ · 3,06 ✓  (varv 15:s val)
+         gold-11 + vit bock                 4,91 ✓ · 4,91 ✓
+
+       KANTEN SOM BÄRARE                 bock/platta · KANT/vit
+         gold-9 platta + gold-11 kant       6,04 ✓ · 4,91 ✓  ← VALD
+         gold-9 platta + gold-12 kant       6,04 ✓ · 11,07 ✓
+         gold-9 platta + mörk kant          6,04 ✓ · 15,52 ✓
+
+     VALET GER BÅDE FÄRGEN OCH ETT STARKARE GOLV än varv 15: 4,91:1 mot 3,06:1.
+     Kanten är ett enda steg mörkare i samma familj, så den läses som en kontur
+     på guldet — inte som en andra färg.
+
+     VARFÖR MÖRK BOCK: mot gold-9 ger vit bock 2,57:1 och mörk 6,04:1. Bocken är
+     det som ska läsas, alltså tar den det starkare värdet. Det är också varför
+     `--mm-checkbox-check` INTE är `text-inverse` — den tokenen betyder "det som
+     syns mot en MÖRK platta", och guld är ingen mörk platta.
+
+     TONA ALDRIG NED KANTEN, av exakt samma skäl som förlagan skriver ut: utan
+     den vilar valt tillstånd på en platta som inte klarar golvet. Ändras
+     kantens ton måste båda talen mätas om. */
+  --mm-checkbox-selected-bg: var(--p-gold-9);
+  --mm-checkbox-selected-border: var(--p-gold-11);
   --mm-checkbox-check: var(--p-neutral-900);
 
   /* ── Select (Fas 3 K2) — trigger återanvänder Input-fält-tokens ── */
