@@ -121,6 +121,86 @@
   --mm-input-description-text: var(--mm-text-secondary);
   --mm-input-error-text: var(--mm-error);
 
+  /* ── Kryssruta (S100 varv 14) ──
+     Marcus 2026-08-07: "nu har vi också flera olika typer av checkboxar. En blå
+     och en svart. Jag gillar den blåa mer faktiskt."
+
+     DEN BLÅA VAR INGEN DESIGN — den var en ODEFINIERAD TOKEN. Bilage-väljaren
+     bar `accent-[var(--mm-color-primary)]`, och `--mm-color-primary` finns
+     ingenstans i `src/styles/` (DOM-mätt: variabeln löser till tom sträng, och
+     `accent-color` föll därmed till `auto`). Blått var alltså WEBBLÄSARENS
+     default — på macOS systemets accentfärg, som användaren själv kan ändra i
+     Systeminställningar. Mätt sida vid sida: en checkbox HELT utan accent-klass
+     renderade identiskt blå med bilagornas.
+
+     Färgen var därför inte reproducerbar: Lotta hade kunnat se en annan färg än
+     Marcus, på samma skärmbild. Den är nu en riktig token.
+
+     GULD SEDAN VARV 15, OCH KANTEN BÄR KONTRASTEN SEDAN VARV 16.
+
+     Marcus valde först guld ("typ gul/guld eller vad vi har i paletten") och
+     därefter STEG 9 specifikt, efter att ha sett hela fältet: "Jag gillade mest
+     gold 9, den översta, syntes ju supertydligt."
+
+     GOLD-9 SOM PLATTA MOT VIT MÄTER 2,57:1 och faller alltså under WCAG
+     1.4.11:s 3:1. Paletten hade förutsett det och skrivit varningen i sin egen
+     fil (primitives.css rad 21–24, fynd F9): "Guld steg 9 når 2,57:1 mot vit
+     yta … behövs guld som yta mot vitt är steg 10 den ljusaste som duger."
+
+     MEN DEN VARNINGEN GÄLLER PLATTAN SOM ENSAM BÄRARE, och kryssrutan behöver
+     inte bära kontrasten där. Appens etablerade lösning står i `Deltagare.tsx`
+     rad 1068 och i denna fils eget markerbara kort: "KANTEN ÄR WCAG
+     1.4.1-BÄRAREN — inte den gröna plattan … Plattan mäter 1,05:1 mot vitt och
+     bär i praktiken ingenting för den färgblinde. Tona aldrig ned kanten."
+     Markeringskorten på SAMMA sida kör alltså redan en platta på 1,05:1 med
+     kanten som bärare — gold-9 på 2,57:1 är dubbelt så stark som den.
+
+     HELA FÄLTET DOM-MÄTT 2026-08-07 (Chrome, isolerad mätsida):
+
+       PLATTAN ENSAM SOM BÄRARE          bock/platta · platta/vit
+         gold-9  + vit bock                 2,57 ✗ · 2,57 ✗
+         gold-9  + mörk bock                6,04 ✓ · 2,57 ✗
+         gold-10 + mörk bock                5,08 ✓ · 3,06 ✓  (varv 15:s val)
+         gold-11 + vit bock                 4,91 ✓ · 4,91 ✓
+
+       KANTEN SOM BÄRARE                 bock/platta · KANT/vit
+         gold-9 platta + gold-11 kant       6,04 ✓ · 4,91 ✓  ← VALD
+         gold-9 platta + gold-12 kant       6,04 ✓ · 11,07 ✓
+         gold-9 platta + mörk kant          6,04 ✓ · 15,52 ✓
+
+     Kanten är ett enda steg mörkare i samma familj, så den läses som en kontur
+     på guldet — inte som en andra färg.
+
+     BOCKEN ÄR VIT SEDAN VARV 18, OCH DET KOSTADE ETT STEG PÅ PLATTAN.
+     Marcus: "Det gick inte att få en vit bock inuti checkboxen? Skulle bli
+     mycket snyggare." Det gick — men inte på steg 9.
+
+     BOCKEN MÄTS MOT PLATTAN DEN LIGGER PÅ, och den mätningen är oberoende av
+     kantens. Kant-tricket som räddade steg 9 i varv 16 hjälper alltså INTE
+     här: det löser plattan mot BAKGRUNDEN, inte bocken mot plattan. Enda vägen
+     till en laglig vit bock var att flytta plattan ett steg:
+
+       gold-9  + vit bock    2,57 ✗     (steget Marcus först pekade ut)
+       gold-9  + mörk bock   6,04 ✓     (varv 16–17)
+       gold-10 + vit bock    3,06 ✓  ← VALD
+       gold-11 + vit bock    4,91 ✓     (säkrast, men märkbart brunare)
+
+     Skillnaden gold-9 → gold-10 (#d4960a → #c28900) är ett enda steg och syns
+     knappt sida vid sida; skillnaden mörk → vit bock syns direkt. Bytet ger
+     alltså mer än det kostar.
+
+     3,06:1 ÄR MARGINELL — två hundradelar över golvet — och gäller bocken mot
+     just denna platta. Ändras plattans ton måste bocken mätas om, och gold-11
+     (4,91:1) är då reservvalet.
+
+     PLATTAN MOT BAKGRUNDEN klarar nu golvet på EGEN HAND (3,06:1), men kanten
+     står kvar och bär 4,91:1. TONA ALDRIG NED DEN, av samma skäl som förlagan
+     skriver ut: marginalen på plattan är två hundradelar, och kanten är det som
+     gör valt tillstånd otvetydigt. Ändras kantens ton måste båda talen mätas om. */
+  --mm-checkbox-selected-bg: var(--p-gold-10);
+  --mm-checkbox-selected-border: var(--p-gold-11);
+  --mm-checkbox-check: #ffffff;
+
   /* ── Select (Fas 3 K2) — trigger återanvänder Input-fält-tokens ── */
   --mm-select-popover-bg: var(--mm-surface-overlay);
   --mm-select-popover-border: var(--mm-border);

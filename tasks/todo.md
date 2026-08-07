@@ -15,6 +15,44 @@
 
 ## Aktuellt fokus
 
+**Session 100 ⏸️ PAUSAD (2026-08-07, TREDJE pausen, `lifecycle: paused`) —
+TRETTON VARV PÅ ÅTGÄRDS-SIDAN, EN RIVEN MONTERING OCH EN FÄRG SOM LANDADE I
+FYRA HUGG.** Resumen fann först att **paus-PR:n `#905` stod RÖD, inte
+väntande** — grenen armerades fyra minuter före `#900` mergade och länkade till
+filer som bara fanns där; `BLOCKED` i `gh pr view` skiljer inte "väntar på CI"
+från "CI har fällt". Lagad med merge, landade `14:32:07Z`. **VARV 6–18, alla
+lokala commits, INGET pushat** (iterations-kadensen `T126` efterlevd med avsikt
+denna gång): åtgärdslistan sex → **fyra** utskick med Marcus namn verbatim och
+manuell anmälan flyttad upp till mottagar-ytan · previewns namn i **pillar**
+(gräns 5 → **7**) · **morf-pariteten ärvd ur `DetaljGrupp`** — Marcus *"jag
+avskyr sådana layoutförändringar"* var DOM-mätt **54 px**, nu **0** · bilage-raden
+avskalad till kryss·namn·storlek · Granska-knappen mörkgrå solid ·
+**betalningarnas EGNA skrivyta** · kryssrutan en form och en riktig token.
+**TRE FEL VAR MINA:** `leder: true` navigerade aldrig (chevron lovade en väg som
+inte fanns) · **varv 12 monterade en yta som strukturellt inte kan skriva** —
+`TASK-145.4` (`c4160cae`, landad 17:23 samma dag) hade gjort
+`BetalningsDetaljer` till ren läsyta med *"DoD #7: noll skriv-affordanser"*, och
+jag byggde **30 commits bakom `main`** utan att märka det · **den blå
+checkboxen var en trasig token** (`--mm-color-primary` finns inte → `accent-color`
+föll till webbläsarens default, alltså användarens egen systemaccent — en färg
+Lotta kunde ha sett annorlunda). **KRYSSRUTANS FÄRG TOG FYRA HUGG** (blå → guld
+→ steg 9 → steg 10 med vit bock); två insikter bär vidare: **kanten kan bära
+golvet när plattan inte kan** (markeringskorten kör redan 1,05:1 med kanten som
+bärare), och **bocken mäts mot plattan oberoende av kanten** — därför hjälpte
+samma trick inte i sista hugget. Slutlig form `--p-gold-10` platta ·
+`--p-gold-11` kant · vit bock · 16×16 = **3,06 · 4,91 · 3,06**, alla över WCAG
+1.4.11. **`T136` REGISTRERAD** (kryssrutans app-svep) — mintades som `T134`,
+kolliderade vid landning eftersom en parallell session hunnit ta både 134 och
+135, och flyttades vid merge. **NÄSTA: GRANSKNINGS-SIDAN/YTAN** (Marcus vid
+pausen). **HANDOFF: sessionsdok S100 § PAUSLÄGE (tredje pausen).** Numrering
+disk-verifierad efter merge: `101`/**`L480`** + sex fragment/`T137`/`task-160`/`f47`
+— tre axlar rörde sig under passet, re-verifiera i mint-ögonblicket OCH vid
+landning. Heartbeat-monitorn startades aldrig (bokfört val: tre parallella
+sessioner ger främmande larm); en riktad vakt på `#905` kördes i stället.
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 99 ▶️ AKTIV (2026-08-07, `lifecycle: active`, resume 2) —
 UPPDRAG 8 GRILLAT TILL GO; SKARPBEVISET BETALT; TRE SKIVOR LANDADE.**
 Resume 2 i siffror: tillstånds-återställningen `#919` + skarpbeviset
@@ -26,14 +64,16 @@ tvåsidigt) · **uppdrag 8 grillat: fem kvitterade frågor + GO** —
 compact-formen som komplement med smal nisch (tre villkor, max en/session,
 zonen ~50 %, tudelad beslutsrätt, markör med commit-räcker-divergensen) —
 **PRD `task-160` + skivorna `160.1`–`160.7` mintade** (`24a45a6c`).
-Numrerings-drift: T134 + T135 förbrukade av parallella sessioner → nästa
-tråd **T136**; S100 pausade tredje gången (deras `#930` röd — främmande,
-orörd per ägar-regeln). **NÄSTA: spawna 160.1 (ADR, nummer re-verifieras) och
+Numrerings-drift: T134 + T135 + T136 förbrukade av parallella sessioner →
+nästa tråd **T137**; S100 pausade tredje gången (`#930` stod röd i svepet,
+lagades av ägaren och landade `532ec944` — främmande PR, orörd av oss per
+ägar-regeln). **NÄSTA: spawna 160.1 (ADR, nummer re-verifieras) och
 160.6 → 160.2/160.3 efter 160.1:s landning → 160.4/160.5 i
 beroendeordning → grilla uppdrag 9 (styrande-docs-auditen, ADR-100 är
 måttstocken).** **Marcus-moment: boka `148.5` · triagera `154`–`156` ·
 Dependabot `#635` · QA-korten 157.4 · 158.4–158.6 · 159.3 · 160.7.**
-**HANDOFF: sessionsdok S99 Del 9.** *(S100:s kadensrad nedan, oförändrad.)*
+**HANDOFF: sessionsdok S99 Del 9.** *(S100:s äldre kadensrad nedan,
+bevarad.)*
 
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 2) —
 `#900` LANDAD, PAUS-PR:N `#905` VAR RÖD OCH ÄR LAGAD.** Resume-läsningen fann
