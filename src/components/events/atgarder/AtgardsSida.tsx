@@ -86,36 +86,48 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleCheck,
-  Clock,
-  FileText,
   History,
   Inbox,
   type LucideIcon,
   MailCheck,
   Paperclip,
   Plus,
-  Sparkles,
   Upload,
+  UserPlus,
 } from 'lucide-react';
 import { type ReactNode, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
-import { deadlineStatus } from '@/components/events/detail/Betalningar';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { TextArea } from '@/components/primitives/TextArea';
 import { displayName } from '@/components/registrations/registration-display';
+/* VARV 13 REV VARV 12:s MONTERING AV `BetalningsDetaljer`.
+   Den var rätt ambition och fel mekanism: eventdetaljens arbetsyta KAN inte
+   skriva, och det är dess uttalade DoD-krav sedan `TASK-145.4` — se
+   `BetalningsSkrivYta` nedan för hela historien och belägget. Åtgärds-sidan
+   bygger därför sin EGEN skrivyta, vilket är vad `TASK-147` § skiva 8 säger.
+
+   `deadlineStatus` föll redan i varv 12 med den fristående pillen och kommer
+   inte tillbaka: den nya skrivytan bär sin egen deadline-signal. */
+import {
+  BETALNING_LABEL,
+  type Betalning,
+  useSetPaymentStatus,
+  useUpdatePaymentNote,
+} from '@/data/mutations/registrationPayments';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
-import { DetaljGrupp } from '../detail/DetaljGrupp';
+import { AndraRad, DetaljGrupp } from '../detail/DetaljGrupp';
 import { EventValjare } from '../EventValjare';
 
 /* ------------------------------------------------------------------ *
@@ -142,51 +154,169 @@ const KORT_KLASS =
   'rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
 
 /**
- * Namn-previewns gräns. Härledd, inte vald — se previewns docblock nedan:
- * MUI `AvatarGroup` (`max = 5`), Fluent UI v8 `Facepile`
- * (`maxDisplayablePersonas: 5`) och Microsofts egen rekommendation
- * konvergerar på fem. Belägg: `docs/research/mottagar-preview-monster-2026-08-07.md` § 2.
+ * KRYSSRUTANS RUTA — EN form för sidans båda kryss-ytor (varv 14).
+ *
+ * Marcus 2026-08-07: "nu har vi också flera olika typer av checkboxar. En blå
+ * och en svart. Jag gillar den blåa mer faktiskt."
+ *
+ * Han hade sett två former på SAMMA sida, och båda var mina: bilageväljarens
+ * native `<input type="checkbox">` (varv 10) och betalningarnas RAC-kryss
+ * (varv 13). De skilde sig i tre mått samtidigt — 16 mot 20 px, radie 0 mot
+ * 4 px, och färg.
+ *
+ * FÄRGEN VAR EN BUGG, INTE ETT VAL. Se `components.css` § Kryssruta: den blå
+ * kom ur att `--mm-color-primary` inte existerar, så `accent-color` föll till
+ * webbläsarens `auto` — på macOS användarens EGEN systemaccent. Blått är nu en
+ * riktig token (`--p-blue-9`), och därmed samma färg för Lotta som för Marcus.
+ *
+ * RAC-FORMEN VANN ÖVER NATIVE, av två skäl som båda är mätbara: den är appens
+ * etablerade (4 av 5 kryss i `src/components/` bär exakt denna klassrad —
+ * `Betalningar`, `Deltagare`, `CheckinPrototyp` och denna fil), och `accent-color`
+ * kan bara styra FÄRG — inte radie, storlek eller bockens form. Native hade
+ * alltså aldrig kunnat matcha de andra fyra.
+ *
+ * INVENTERINGEN AV HELA APPEN ÄR EN EGEN TRÅD (`T134`), per Marcus: "samma sak
+ * här som med pills och knappar, inventera och kolla". Denna konstant löser
+ * ÅTGÄRDS-SIDAN; de tre andra filerna ägs av S93 och rörs inte härifrån.
+ *
+ * STORLEKEN ÄR 16 px SEDAN VARV 17 (Marcus: "Kan vi göra checkboxen lite
+ * mindre? Känns ganska stor"), ned från förlagans `size-5` (20 px). Bocken
+ * följde med 14 → 12 px så proportionen inuti rutan hålls.
+ *
+ * DETTA ÄR EN MEDVETEN AVVIKELSE FRÅN DE TRE ANDRA, inte en ny drift: de bär
+ * fortfarande 20 px, och `T134`:s app-svep ska ta ställning till vilket mått
+ * som blir appens. Åtgärds-sidan går först eftersom den är ytan Marcus
+ * granskar; avvikelsen är bokförd i tråden så svepet ärver frågan i stället
+ * för att upptäcka den.
  */
-const PREVIEW_GRANS = 5;
+const KRYSSRUTA_KLASS =
+  'flex size-4 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-(--mm-checkbox-selected-border) group-data-[selected]:bg-(--mm-checkbox-selected-bg)';
 
 /**
- * "Anna, Bert, Cissi, David och Erik och 9 till." — svensk uppräkning med
- * `och` före det sista namnet, och overflow som REN TEXT.
+ * TEXTYTANS MORF-PARITET — den låsta rutan och `TextArea` bär SAMMA höjd och
+ * SAMMA inre padding, så inget flyttar sig när läget växlar (Marcus varv 9:
+ * "jag avskyr sådana layoutförändringar").
+ *
+ * HÖJDEN ÄR HÄRLEDD, INTE VALD — `TextArea rows={7}` renderar:
+ *
+ *     7 rader × 24 px      = 168 px   (`text-body` = 1rem/1.5, tailwind.css 86–87)
+ *   + `py-2`  (8 + 8)      =  16 px   (textAreaVariants bas)
+ *   + kant    (1 + 1)      =   2 px
+ *   ------------------------------
+ *                            186 px
+ *
+ * `min-h-28` (112 px) ur `size="md"` är mindre och binder alltså inte — raderna
+ * vinner. Talet gäller så länge `text-body` är 1.5 och `rows` är 7; ändras
+ * något av dem måste konstanten räknas om. Det är samma beroende `DetaljGrupp`s
+ * 48 px-paritet redan bär, och det är därför den är e2e-mätt där.
+ *
+ * DOM-MÄTT, INTE BARA RÄKNAT (2026-08-07, Chrome mot byggd CSS, isolerad
+ * mätsida — appens egen route ligger bakom auth): låst 186,00 px mot
+ * `TextArea rows={7}` 186,00 px, **Δ = 0**.
+ *
+ * `lh`-ENHETEN PRÖVADES OCH FÖLL — värd att veta, eftersom den ser ut som det
+ * självklart bättre svaret (typografi-följsam, inget hårt tal). `h-[calc(7lh+
+ * 1rem+2px)]` mätte **162,00 px, Δ = −24**: `+` utan omgivande mellanslag är
+ * ogiltigt i CSS `calc()`, så hela regeln droppas tyst och elementet faller
+ * till innehållets egen höjd. Formen `calc(7lh_+_1rem_+_2px)` hade sannolikt
+ * fungerat, men den vinner bara robusthet vi inte behöver just nu — det hårda
+ * talet är mätt, och över-engineering-vakten skär spekulativ robusthet ovanför
+ * golvet.
+ *
+ * `border border-transparent` OCH `px-3 py-2` reserverar kantens och
+ * paddingens pixlar i det låsta läget — samma princip som pill-skalans tredje
+ * regel (T130): utan dem börjar texten på en annan rad än den gör i fältet, och
+ * hoppet flyttar bara från rutans kant till dess innehåll.
+ *
+ * `overflow-auto` på den låsta rutan, eftersom `TextArea` rullar vid överflöd —
+ * en text längre än sju rader får inte spränga en yta som fältet hade rullat.
+ */
+const TEXTYTA_KLASS = 'h-[186px] rounded border border-transparent px-3 py-2';
+
+/**
+ * Namn-previewns gräns. **7 sedan varv 7 — Marcus höjde den från 5 med öppna
+ * ögon:** "7 borde vi i alla fall få plats med nu."
+ *
+ * FEMMAN VAR RESEARCH-HÄRLEDD OCH RIVS ÖPPET, inte tyst. Tre oberoende
+ * förstapartskällor konvergerade på fem — MUI `AvatarGroup` (`max = 5`),
+ * Fluent UI v8 `Facepile` (`maxDisplayablePersonas: 5`), Microsoft Learn ("the
+ * default and recommended number"). Belägg:
+ * `docs/research/mottagar-preview-monster-2026-08-07.md` § 2.
+ *
+ * VARFÖR HÖJNINGEN ÄR LEGITIM OCH INTE DRIFT: passet reserverade sig SJÄLVT
+ * mot sin egen siffra — vårt scenario (read-only namn-bekräftelse utan foton)
+ * ligger MELLAN de etablerade mönstren, och femman var lånad ur
+ * avatargruppernas talkluster, aldrig belagd för den här formen. Talen gällde
+ * dessutom AVATARER: cirklar som överlappar och äter bredd. Namn-pillar
+ * radbryts i stället för att trängas, så bredd-argumentet bakom femman gäller
+ * inte den form vi faktiskt byggde. Kvar av passet står spridningen (Gestalt 3
+ * · Primer 4 med mönsterbyte · Ant Design inget default) som visar att det
+ * aldrig fanns EN branschsiffra att avvika ifrån.
+ */
+const PREVIEW_GRANS = 7;
+
+/**
+ * Previewns innehåll i BÅDA sina former, ur EN beräkning.
+ *
+ * `pillar` + `rest` är det synliga (namn-pillar och en eventuell "och N till"),
+ * `mening` är samma sak som sammanhållen svensk uppräkning för skärmläsaren:
+ * "Anna, Bert, Cissi, David och Erik och 9 till."
+ *
+ * DE DELAR TRUNKERING MED AVSIKT. Formerna räknades tidigare var för sig —
+ * meningen här, pillarnas `slice` på användningsstället — och två uttryck för
+ * samma regel glider isär vid nästa ändring av gränsen. Nu är det omöjligt:
+ * ändras regeln ändras båda formerna i samma andetag.
  *
  * Under gränsen: bara uppräkningen. Exakt EN över gränsen ger ingen "+1 till"
  * — då är det billigare att visa namnet än att räkna det (samma regel som
  * "frånvaron är informationen": en rest på ett är ingen rest).
  */
-function namnPreview(namn: string[]): string {
+function namnPreview(namn: string[]): { pillar: string[]; rest: number; mening: string } {
   const uppraknat = (n: string[]) =>
     n.length <= 1 ? (n[0] ?? '') : `${n.slice(0, -1).join(', ')} och ${n[n.length - 1]}`;
 
-  if (namn.length <= PREVIEW_GRANS + 1) return `${uppraknat(namn)}.`;
+  if (namn.length <= PREVIEW_GRANS + 1) {
+    return { pillar: namn, rest: 0, mening: `${uppraknat(namn)}.` };
+  }
+  const pillar = namn.slice(0, PREVIEW_GRANS);
   const rest = namn.length - PREVIEW_GRANS;
-  return `${namn.slice(0, PREVIEW_GRANS).join(', ')} och ${rest} till.`;
+  return { pillar, rest, mening: `${pillar.join(', ')} och ${rest} till.` };
 }
 
 /* ------------------------------------------------------------------ *
- * De SEX åtgärdstyperna (underlaget § 3, Marcus-bekräftade 2026-08-07).
+ * De FYRA åtgärdstyperna (varv 6, Marcus 2026-08-07).
  *
- * `utskick: false` på manuell anmälan och markera betalda — ORDLISTA glossar
- * åtgärdsval som "(utskickstyp)", vilket är för smalt; två av sex är inte
- * utskick. Glossen skärps när sidan byggs skarpt.
+ * LISTAN VAR SEX OCH ÄR NU FYRA — båda strykningarna har samma motiv:
+ * en åtgärdslista ska bara innehålla saker som GÖRS MOT URVALET.
  *
- * `leder: true` = raden navigerar bort (chevron höger, ärlighetsprincipen);
- * övriga fäller ut in-place (chevron ned). Distinktionen är densamma som
- * `AtgarderKort` redan gör med aria-expanded.
+ *  · "Manuell anmälan" flyttade UPP till mottagar-ytan, som en andra väg in
+ *    bredvid "Lägg till fler personer från eventet". Den hörde aldrig hemma
+ *    här: den bygger urvalet, den verkar inte på det. Marcus: "flytta upp
+ *    'manuell anmälan' dit. Då blir 'Skicka bekräftelse' första åtgärd i
+ *    åtgärdsblocket/listan vilket är väldigt rimligt."
+ *  · "Markera betalda" ströks helt. Den skriver i basen om BETALNINGAR, och
+ *    betalningarna har redan en egen ingång längre ned. Marcus: "Det får
+ *    eventuellt bli en 'markera alla funktion' i betalningsblocket sen" —
+ *    alltså en parkerad idé på rätt plats, inte en åtgärd på fel.
+ *
+ * FÖLJDEN: alla fyra kvarvarande ÄR utskick, och alla fyra fäller ut here.
+ * Fälten `utskick` och `leder` blev därmed konstanta och är borttagna
+ * tillsammans med sina grenar — ett fält som alltid har samma värde döljer
+ * att valet inte längre finns. ORDLISTAs gloss "(utskickstyp)" för åtgärdsval,
+ * som docblocken tidigare kallade "för smal", är nu exakt rätt.
+ *
+ * NAMNEN ÄR MARCUS EGNA, verbatim ur omstyrningen: varje rad inleds med
+ * verbet "Skicka", vilket gör listan till fyra parallella handlingar i stället
+ * för fyra substantiv av olika slag ("Bekräftelse" ~ "Fritt utskick").
  * ------------------------------------------------------------------ */
 type AtgardsTyp = {
   nr: number;
   nyckel: string;
   namn: string;
-  utskick: boolean;
-  leder?: boolean;
   /** Prototyp-stubb: mallens ämnesrad. Ingen mall-datakälla finns ännu. */
-  amne?: string;
+  amne: string;
   /** Prototyp-stubb: mallens brödtext. */
-  mall?: string;
+  mall: string;
   /** Vilka i urvalet åtgärden är relevant för — driver räknaren på raden. */
   urvalsfilter?: (r: Registration) => boolean;
 };
@@ -198,54 +328,60 @@ const obetald = (r: Registration) => saknarAnmalningsavgift(r) || saknarSlutbeta
 const obekraftad = (r: Registration) => r.status === RegistrationStatus.OBEKRAFTAD;
 
 const ATGARDER: AtgardsTyp[] = [
-  { nr: 1, nyckel: 'manuell', namn: 'Manuell anmälan', utskick: false, leder: true },
   {
-    nr: 2,
+    nr: 1,
     nyckel: 'bekraftelse',
-    namn: 'Bekräftelse',
-    utskick: true,
+    namn: 'Skicka bekräftelsemail',
     amne: 'Din plats är bekräftad',
     mall: 'Hej {förnamn},\n\nDin plats på {event} är bekräftad. Vi ses {datum} i {ort}.\n\nVarmt välkommen!\nRoger och Lotta',
     urvalsfilter: obekraftad,
   },
   {
-    nr: 3,
+    nr: 2,
     nyckel: 'paminnelse',
-    namn: 'Betalningspåminnelse',
-    utskick: true,
+    namn: 'Skicka betalningspåminnelse',
     amne: 'Påminnelse om betalning',
     mall: 'Hej {förnamn},\n\nVi ser att betalningen för {event} inte kommit in ännu. Sista dag är {deadline}.\n\nHör gärna av dig om något krånglar.\nRoger och Lotta',
     urvalsfilter: obetald,
   },
   {
-    nr: 4,
-    nyckel: 'markera-betalda',
-    namn: 'Markera betalda',
-    utskick: false,
-    urvalsfilter: obetald,
-  },
-  {
-    nr: 5,
+    nr: 3,
     nyckel: 'eventinfo',
-    namn: 'Eventinfo',
-    utskick: true,
+    namn: 'Skicka eventinformation',
     amne: 'Information inför {event}',
     mall: 'Hej {förnamn},\n\nSnart är det dags! Här kommer praktisk information inför {event}.\n\nRoger och Lotta',
   },
-  { nr: 6, nyckel: 'fritt', namn: 'Fritt utskick', utskick: true, amne: '', mall: '' },
+  { nr: 4, nyckel: 'fritt', namn: 'Skicka mail', amne: '', mall: '' },
 ];
 
 /* ------------------------------------------------------------------ *
  * BILAGEVÄLJARENS STUBB — de tre dokumentklasserna (ORDLISTA § Bilaga).
  *
- * Klass C är strukturellt olik de andra två och det MÅSTE synas i väljaren:
- * en person-genererad bilaga är inte EN fil till sex mottagare, det är SEX
- * filer — en per mottagare. Det är ett andra, oberoende skäl till att den
- * bilage-bärande sändvägen måste vara loopad singelsändning (underlaget § 7
- * härledde grenen ur den tysta batch-bristen; klass C ger den samma svar).
+ * Klass C är strukturellt olik de andra två: en person-genererad bilaga är
+ * inte EN fil till sex mottagare, det är SEX filer — en per mottagare. Det är
+ * ett andra, oberoende skäl till att den bilage-bärande sändvägen måste vara
+ * loopad singelsändning (underlaget § 7 härledde grenen ur den tysta
+ * batch-bristen; klass C ger den samma svar).
+ *
+ * ÖPPEN PUNKT, VARV 10 — KLASSKILLNADEN SYNS INTE LÄNGRE I YTAN. Raden ovan
+ * sade tidigare att den "MÅSTE synas i väljaren", och den syntes: varje rad
+ * bar en klasstext ur `KLASS_TEXT`, där C:s löd "Genereras för var och en —
+ * N st". Marcus tog bort hjälptexterna ("det här med 'samma till alla' är inte
+ * hjälpsamt, det är självklart") — vilket stämmer för A och B, men C:s text
+ * var inte självklar, den var klassens hela poäng.
+ *
+ * Kunskapen bor alltså nu HÄR och ingenstans i gränssnittet. Det är ett
+ * medvetet läge, inte en förlust som glömts bort: prototypens fråga gäller
+ * formen, och bäraren av klass C-skillnaden är en egen designfråga som ska
+ * ställas när bilage-fundamentet (`TASK-146`) faktiskt finns. Bygg den inte
+ * som en återinförd hjälptext utan att fråga — det är den lösning Marcus just
+ * avvisade.
  *
  * INGEN FÖRVALS-LOGIK (grillad samsyn beslut 5, bokstavligt): ingen bilaga är
- * förkryssad. En gissad förvald bilaga är farligare än en tom väljare.
+ * förkryssad. Regeln levde i den borttagna raden "Ingenting är förvalt — du
+ * väljer aktivt vad som följer med"; den lever nu i `useState(new Set())` och
+ * i denna docblock. Beteendet är oförändrat — bara dess synliga förklaring är
+ * borta. En gissad förvald bilaga är farligare än en tom väljare.
  * ------------------------------------------------------------------ */
 type BilageKlass = 'A' | 'B' | 'C';
 
@@ -264,11 +400,9 @@ const BILAGOR: Bilaga[] = [
   { id: 'c1', namn: 'Betalningskvitto', klass: 'C' },
 ];
 
-const KLASS_TEXT: Record<BilageKlass, (antal: number) => string> = {
-  A: () => 'Samma fil till alla',
-  B: () => 'Fylls med eventets uppgifter — samma till alla',
-  C: (antal) => `Genereras för var och en — ${antal} st`,
-};
+/* `KLASS_TEXT` LÅG HÄR och är borttagen med hjälptexterna (varv 10). Den var
+   ytans enda bärare av klasskillnaden — se `BILAGOR`-docblockens öppna punkt
+   innan något återinförs. */
 
 /* ================================================================== *
  * DELTAGARKORTET — samma kort Lotta MARKERADE på eventdetaljen.
@@ -573,12 +707,16 @@ function KandidatKort({ reg, onLaggTill }: { reg: Registration; onLaggTill: () =
  * alltså av två rörelser: avmarkera i listan, och plocka in ur "Lägg till fler".
  * ================================================================== */
 function MottagarYta({
+  eventId,
   valda,
   synliga,
   alla,
   onVaxla,
   onLaggTill,
 }: {
+  /** Eventet urvalet gäller. Saknas det finns inget att anmäla någon TILL,
+      och den manuella vägen in utelämnas — se raden nedan. */
+  eventId?: string;
   /** De markerade — mottagarna. */
   valda: ReadonlySet<string>;
   /** Korten som visas i listan: markeringen hon kom med, plus inplockade. */
@@ -610,6 +748,9 @@ function MottagarYta({
     () => synliga.filter((r) => valda.has(r.id)).map(displayName),
     [synliga, valda],
   );
+
+  /** Previewns två former ur en beräkning — se `namnPreview`. */
+  const preview = useMemo(() => namnPreview(mottagarNamn), [mottagarNamn]);
 
   const synligaIds = useMemo(() => new Set(synliga.map((r) => r.id)), [synliga]);
   const kandidater = useMemo(
@@ -690,16 +831,12 @@ function MottagarYta({
               … oanvändbar och måste göras om." Formen är nu omgjord mot
               research-passet `docs/research/mottagar-preview-monster-2026-08-07.md`.
 
-              GRÄNSEN ÄR 5, OCH DEN ÄR HÄRLEDD, INTE VALD. Tre oberoende
-              förstapartskällor konvergerar på fem: MUI `AvatarGroup` har
-              `max = 5` i källkoden, Fluent UI v8 `Facepile` har
-              `maxDisplayablePersonas: 5` i sin `defaultProps`, och Microsofts
-              egen dokumentation kallar det "the default and recommended
-              number". Spridningen är ärlig och står i passet: Pinterest
-              Gestalt avviker till 3, GitHub Primer sätter hårt tak vid 4 och
-              BYTER mönster i stället för att trunkera djupare. Det finns
-              alltså inte EN branschsiffra — det finns ett kluster 3–5, och 5
-              är dess starkast belagda punkt.
+              GRÄNSEN ÄR 7 SEDAN VARV 7 — se `PREVIEW_GRANS` för hela
+              härledningen och för varför höjningen från passets 5 är legitim
+              och inte drift (kort: passet reserverade sig mot sin egen siffra,
+              och talen gällde AVATARER som äter bredd genom att överlappa —
+              namn-pillar radbryts i stället, så bredd-argumentet bakom femman
+              gäller inte formen vi byggde).
 
               "OCH N TILL" ÄR REN TEXT, INTE EN KNAPP. Sidan har redan en
               fungerande "se alla"-mekanik: räknar-raden ovanför ÄR
@@ -708,26 +845,69 @@ function MottagarYta({
               inget standardkontrakt för en sådan mini-popover — varje sådan
               yta blir ett eget, otestat mönster.
 
-              VARKEN CHIPS ELLER AVATARSTAPEL, av två skäl som sammanfaller:
-              chips signalerar borttagbarhet (Salesforce: "By default, pills
-              include a remove button" — hela tangentbordsmodellen är byggd
-              kring borttagning) och urvalet redigeras INTE här utan i korten
-              nedanför; och en avatarstapel förutsätter foton som varken
-              `Registration` eller `Person` bär, så den hade degraderat till
-              initial-cirklar — strikt svagare än att visa namnet.
+              AVATARSTAPEL AVVISAD och det står fast: den förutsätter foton som
+              varken `Registration` eller `Person` bär, så den hade degraderat
+              till initial-cirklar — strikt svagare än att visa namnet.
+
+              PILL-FORMEN ÄR MARCUS BESLUT 2026-08-07 ("kan vi inte sätta
+              namnen i pills?") OCH DEN RIVER INTE PASSET — den besvarar en
+              fråga passet aldrig ställde. Passets chips-avsnitt vägde chip som
+              INTERAKTIONSMÖNSTER mot en read-only yta, och landade rätt: en
+              pill med x-knapp lovar en borttagning som inte sker här. Men det
+              vägde aldrig avgränsade namn-enheter mot kommaseparerad löptext
+              som LÄSBARHETSFRÅGA, vilket är den faktiska bristen — namnen
+              drunknade i en mening.
+
+              Passets egen text pekar ut vägen: en pill som "liknar
+              `StatusBadge` … korrekt signalerar 'icke-interaktiv'" avvisades
+              inte som FEL, utan som "ren dekoration utan chip-formens
+              egentliga poäng". Dekoration är precis vad som behövdes.
+
+              FORMEN ÄR DÄRFÖR STATUSBADGES, INTE EN NY: pill-skalans `sm`-steg
+              (`px-2 py-0.5 text-caption`) — listmiljön, som previewn är — plus
+              `border border-transparent`, T130:s tredje regel: kanten ritas
+              aldrig men reserverar sin px så `contrast-more` kan tändas utan
+              att layouten hoppar. INGEN x-knapp och INGEN ikon: det är precis
+              det som skiljer den från Salesforce-pillen och gör den ärlig.
+
+              `bg-bg-muted` mot previewns `bg-surface` är T130:s neutral-fall
+              SPEGELVÄNT. Där misslyckades muted-på-muted (1.00) och svaret blev
+              `bg-surface`; här står plattan på surface, så muted är den som
+              syns. Samma två toner, omvänd ordning.
+
+              TILLGÄNGLIGHETEN FÖLJER PINTEREST-MÖNSTRET passet identifierade
+              som det etablerade svaret: EN sammanhållen accessible name för
+              hela gruppen, inte N annonserade fragment. Utan det läser
+              skärmläsaren "Anna Andersson Erik Berg Karin Dahl" utan
+              separatorer — sämre än meningen den ersatte. Meningen finns därför
+              kvar i `sr-only` och pillarna är `aria-hidden`; det synliga och
+              det upplästa bär samma innehåll i två former.
 
               PASSETS EGEN RESERVATION, bokförd: vårt scenario (read-only
               namn-bekräftelse utan foton, 1–30 poster) ligger MELLAN de
-              etablerade mönstren, inte på ett av dem. Gränsen 5 är därför
-              lånad från avatargruppernas talkluster, inte belagd för just
-              denna form. */}
+              etablerade mönstren, inte på ett av dem. Det är den reservationen
+              som gjorde höjningen till 7 möjlig utan att riva passet — den stod
+              nedskriven i passet självt, inte konstruerad i efterhand. */}
           {mottagarNamn.length > 0 && (
-            <p
+            <div
               data-testid="mottagar-preview"
-              className="mt-2 rounded-xl border border-(--mm-navcard-border) bg-surface p-2.5 text-caption text-text-secondary contrast-more:border-(--mm-navcard-border-contrast)"
+              className="mt-2 rounded-xl border border-(--mm-navcard-border) bg-surface p-2.5 contrast-more:border-(--mm-navcard-border-contrast)"
             >
-              {namnPreview(mottagarNamn)}
-            </p>
+              <span className="sr-only">{preview.mening}</span>
+              <span aria-hidden="true" className="flex flex-wrap items-center gap-1.5">
+                {preview.pillar.map((namn) => (
+                  <span
+                    key={namn}
+                    className="inline-flex items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong"
+                  >
+                    {namn}
+                  </span>
+                ))}
+                {preview.rest > 0 && (
+                  <span className="text-caption text-text-muted">och {preview.rest} till</span>
+                )}
+              </span>
+            </div>
           )}
 
           {/* `pt-2` skiljer panelen från knappen; föräldern bär redan `py-2`
@@ -778,11 +958,29 @@ function MottagarYta({
 
         {plockareOppen && (
           <div className="flex flex-col gap-3 py-3">
+            {/* SÖKFÄLTET STÅR UTAN SYNLIG ETIKETT sedan varv 7 (Marcus: "kan vi
+                ta bort 'Sök deltagare' … snyggare med rent där"). Panelen är
+                redan rubricerad av raden som fällde ut den, så etiketten sade
+                samma sak två gånger.
+
+                `hideLabel` OCH INTE BORTTAGEN LABEL: propen flyttar texten till
+                `aria-label`, så fältet behåller sitt tillgängliga namn (WCAG
+                4.1.2). En placeholder är ALDRIG ett giltigt namn — den
+                försvinner vid första tecknet och exponeras inte konsekvent av
+                skärmläsare. Det visuella och det tillgängliga skiljer sig alltså
+                åt här med avsikt, vilket är precis vad `hideLabel` finns för.
+
+                PLACEHOLDERN BEHÖLLS, i Marcus andra form ("Sök på namn eller
+                e-post…"): utan den är fältet en tom ruta som inte säger vad den
+                accepterar, och frågan uppstår i exakt det ögonblick den kan
+                besvaras gratis. Den kostar ingenting visuellt — den är borta så
+                fort Lotta skriver. */}
             <Input
               label="Sök deltagare"
+              hideLabel
               value={sok}
               onChange={setSok}
-              placeholder="Namn eller e-post…"
+              placeholder="Sök på namn eller e-post…"
             />
             <div className="scrollbar-inline flex max-h-96 flex-col gap-2 overflow-auto">
               {kandidater.length === 0 ? (
@@ -799,23 +997,270 @@ function MottagarYta({
             </div>
           </div>
         )}
+
+        {/* DEN ANDRA VÄGEN IN — personen som inte är anmäld till eventet alls.
+            Marcus 2026-08-07: "Under 'lägg till fler personer från eventet'
+            vill jag lägga '+ Lägg till en person manuellt', alltså flytta upp
+            'manuell anmälan' dit."
+
+            SYSKON TILL PLOCKAR-RADEN, INTE INUTI DEN: de två raderna svarar på
+            samma fråga ("vem mer?") med varsin källa — eventets anmälda, och
+            någon som inte finns där än. Hade den bott inuti plockarens utfällda
+            panel vore den osynlig i det läge där Lotta faktiskt undrar, och
+            hon hade fått öppna en lista med fel personer för att hitta vägen
+            förbi den.
+
+            CHEVRON HÖGER, inte ned: raden LEDER BORT. Det är samma ärlighets-
+            princip åtgärdslistan bar tills den blev fyra utfällbara rader —
+            semantiken flyttade hit tillsammans med funktionen.
+
+            `fran: 'atgarder'` är hela tillbaka-vägen: manuell anmälan läser den
+            och riktar sin pil hit i stället för till eventdetaljen. */}
+        {eventId != null && (
+          <div className="flex flex-col py-1.5">
+            <Link
+              to="/event/$eventId/ny-anmalan"
+              params={{ eventId }}
+              search={{ fran: 'atgarder' as const }}
+              className={RAD_KLASS}
+            >
+              <UserPlus aria-hidden="true" size={16} className="shrink-0" />
+              Lägg till en person manuellt
+              <ChevronRight
+                aria-hidden="true"
+                size={18}
+                className="ml-auto shrink-0 text-text-secondary"
+              />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
 /* ================================================================== *
- * BILAGEVÄLJAREN — utan förvals-logik, klass C synligt särskild.
+ * BETALNINGARNAS SKRIVYTA (varv 13) — åtgärds-sidans EGEN, inte en montering.
+ *
+ * VARFÖR EN EGEN OCH INTE EVENTDETALJENS: varv 12 monterade
+ * `BetalningsDetaljer` och Marcus såg direkt att det inte gick att skriva
+ * notisen. Han hade rätt, och orsaken var strukturell — `TASK-145.4` (landad
+ * 2026-08-07 17:23, `c4160cae`) gjorde den ytan till en REN LÄSYTA:
+ *
+ *   `<BetalKryss … lugn disabled onChange={() => {}} />`
+ *
+ * Ovillkorligt `disabled`, tom `onChange`, och `<Input>`-fältet helt borta.
+ * Filens egen docblock säger varför, ordagrant: "BÅDA betalnings-kryssen
+ * flyttar till Åtgärds-sidan (TASK-147). Krysset här är därför ALLTID
+ * `isDisabled` … (DoD #7: noll skriv-affordanser)" och "(a) `<Input>`-fältet är
+ * BORTA. Ytan är för ÖVERBLICK — editering görs på åtgärds-sidan."
+ *
+ * Ingen flagg-kombination hade alltså gett skrivbarhet: att inte skriva ÄR
+ * komponentens krav. `TASK-147` § skiva 8 ("betalningarnas skrivvertikal") och
+ * § rad 39 säger var den bor i stället — här.
+ *
+ * FORMEN ÄR LÄSYTANS, SÅ LOTTA KÄNNER IGEN SIG: personens namn utanför kortet
+ * (`DetaljGrupp`-grammatiken), kortet i `bg-surface` eftersom ytan står på
+ * `KORT_KLASS`s muted botten (ett muted kort på muted botten mättes till
+ * kontrast 1.00 i S93 våg 10 — osynligt), en rad per betalning med `divide-y`
+ * emellan. Skillnaden mot läsytan är EN sak: kontrollerna lever.
+ *
+ * TVÅ VAKTER FÖLJER MED UR `TASK-147` § Implementationsbeslut, båda kodade:
+ *
+ *  (1) "Ej relevant" FÅR ALDRIG SKRIVAS ÖVER — föreläsnings-semantiken. En
+ *      slutbetalning i det läget får radens form men ALDRIG ett kryss; en
+ *      av-bock hade skrivit "Ej mottagen" och rivit basens semantik. Samma
+ *      lösning som läsytan: `pl-7` (kryssets 20 px + gap-2:s 8 px) så ordet
+ *      står på grannradernas vänsterlinje trots att rutan saknas.
+ *  (2) Basens takt tål inte obegränsad parallellitet. Det gäller BATCH-
+ *      avprickning, som inte finns här — denna yta skriver en betalning i
+ *      taget, per klick. Vakten är alltså inte kodad utan OTILLÄMPLIG i detta
+ *      steg, och det noteras hellre än glöms: bygger någon "markera alla"
+ *      (Marcus varv 6-idé) är den det första som måste lösas.
+ *
+ * MUTATIONS-INSTANSERNA ÄR DELADE, en per operation, skapade här och skickade
+ * ned — exakt förlagans motiv: den optimistiska uppdateringen kan avmontera en
+ * rad, och per-rad-hooks hade tappat felläget vid rollback.
  * ================================================================== */
-function BilageValjare({
-  valda,
-  antalMottagare,
-  onVaxla,
+function SkrivKryss({
+  text,
+  namn,
+  vald,
+  onChange,
 }: {
-  valda: Set<string>;
-  antalMottagare: number;
-  onVaxla: (id: string) => void;
+  text: string;
+  /** Accessible name blir "<text> för <namn>" — WCAG 2.5.3-säkert, förlagans form. */
+  namn: string;
+  vald: boolean;
+  onChange: (v: boolean) => void;
 }) {
+  return (
+    <Checkbox
+      isSelected={vald}
+      onChange={onChange}
+      aria-label={`${text} för ${namn}`}
+      className="group flex cursor-pointer items-center gap-2 text-small"
+    >
+      <span className={KRYSSRUTA_KLASS}>
+        <Check
+          aria-hidden="true"
+          size={12}
+          className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
+        />
+      </span>
+      {/* DÄMPAD, ALDRIG RÖD — läsytans `lugn`-form. Rött per rad upprepar bara
+          flikens egen utsaga ("Saknar betalning (9)") och tömmer färgen på
+          betydelse; krysset bär redan vilken betalning som saknas. */}
+      <span className={vald ? 'text-text-secondary' : 'text-text-muted'}>{text}</span>
+    </Checkbox>
+  );
+}
+
+/** En betalning: levande kryss + levande notering. Noteringen commitas vid
+    blur (Stripe-klassens per-betalnings-memo, förlagans commit-punkt). */
+function SkrivRad({
+  registration,
+  betalning,
+  vald,
+  notering,
+  onStatus,
+  onNotering,
+}: {
+  registration: Registration;
+  betalning: Betalning;
+  vald: boolean;
+  notering: string | null;
+  onStatus: (v: boolean) => void;
+  onNotering: (text: string) => void;
+}) {
+  const namn = displayName(registration);
+  const label = BETALNING_LABEL[betalning];
+  /** Lokalt utkast medan Lotta skriver; null = inget utkast (visa cache-värdet). */
+  const [utkast, setUtkast] = useState<string | null>(null);
+
+  const spara = () => {
+    if (utkast === null) return;
+    const trimmat = utkast.trim();
+    setUtkast(null);
+    if (trimmat === (notering ?? '')) return;
+    onNotering(trimmat);
+  };
+
+  return (
+    <div className="flex flex-col gap-2 py-3">
+      <SkrivKryss text={label} namn={namn} vald={vald} onChange={onStatus} />
+      {/* NOTERINGEN TAR PLATTANS FULLA BREDD sedan varv 17 (Marcus: "Kan vi dra
+          ut noteringsrutan hela vägen ut till kanten på checkboxen så dem tar
+          hela bredden typ på den plattan de sitter på?").
+
+          `pl-7`-indraget är BORTA. Det ärvdes ur läsytan, där noteringen är
+          löpande TEXT och linjerar under betalningsordet för att läsas som en
+          kvalificering av raden ovanför. Ett FÄLT är något annat: dess kant
+          ritar en låda, och en låda som börjar 28 px in ser ut att sakna sin
+          vänstra fjärdedel. Kortets egen `px-4` är nu enda marginalen, så
+          fältet står kant i kant med rutan ovanför — samma vänsterlinje som
+          kryssrutan, hela vägen ut till höger. */}
+      <Input
+        size="sm"
+        label={`Notering ${label.toLowerCase()} för ${namn}`}
+        hideLabel
+        placeholder="Notering…"
+        value={utkast ?? notering ?? ''}
+        onChange={setUtkast}
+        onBlur={spara}
+      />
+    </div>
+  );
+}
+
+function BetalningsSkrivYta({
+  eventId,
+  registreringar,
+}: {
+  eventId: string;
+  registreringar: Registration[];
+}) {
+  const status = useSetPaymentStatus(eventId);
+  const notering = useUpdatePaymentNote(eventId);
+
+  const fel = status.isError ? status : notering.isError ? notering : null;
+
+  if (registreringar.length === 0) {
+    return <p className="py-3 text-small text-text-muted">Inga aktiva anmälningar på eventet.</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-4 py-3">
+      {fel && (
+        <MessageBox intent="error" title="Kunde inte spara" onDismiss={() => fel.reset()}>
+          Försök igen.
+        </MessageBox>
+      )}
+      {registreringar.map((r) => (
+        <div key={r.id} className="flex min-w-0 flex-col gap-2">
+          {/* Namnet UTANFÖR kortet — `DetaljGrupp`s h2-position, men medvetet
+              inget rubrikelement: femton syskon-rubriker under en enda h2 vore
+              en semantisk lögn (läsytans egen motivering). */}
+          <span className="min-w-0 px-4 font-semibold text-lg">{displayName(r)}</span>
+          <div className="divide-y divide-border rounded-2xl border border-transparent bg-surface px-4 contrast-more:border-border-strong">
+            <SkrivRad
+              registration={r}
+              betalning="avgift"
+              vald={r.anmalningsavgift === PaymentStatus.MOTTAGEN}
+              notering={r.noteringAnmalningsavgift ?? null}
+              onStatus={(v) =>
+                status.mutate({
+                  registration: r,
+                  betalning: 'avgift',
+                  value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+                })
+              }
+              onNotering={(text) =>
+                notering.mutate({ registration: r, betalning: 'avgift', notering: text })
+              }
+            />
+            {r.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
+              /* VAKT 1: "Ej relevant" får radens form men ALDRIG ett kryss —
+                 en av-bock hade skrivit "Ej mottagen" och rivit basens
+                 föreläsnings-semantik. `pl-7` = kryssets 20 px + gap-2:s 8 px,
+                 så ordet står på grannradernas vänsterlinje ändå. */
+              <p className="py-3 pl-7 text-small text-text-muted">
+                Slutbetalning · Ej relevant (föreläsning)
+              </p>
+            ) : (
+              <SkrivRad
+                registration={r}
+                betalning="slut"
+                vald={r.slutbetalning === PaymentStatus.MOTTAGEN}
+                notering={r.noteringSlutbetalning ?? null}
+                onStatus={(v) =>
+                  status.mutate({
+                    registration: r,
+                    betalning: 'slut',
+                    value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+                  })
+                }
+                onNotering={(text) =>
+                  notering.mutate({ registration: r, betalning: 'slut', notering: text })
+                }
+              />
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ================================================================== *
+ * BILAGEVÄLJAREN — utan förvals-logik. Kryssruta, namn, storlek.
+ *
+ * `antalMottagare`-proppen FÖLL MED KLASSTEXTERNA (varv 10): den fanns bara
+ * för att klass C:s rad skulle kunna säga "Genereras för var och en — N st".
+ * Den togs bort i stället för att lämnas oanvänd — en prop som inget läser
+ * påstår ett beroende som inte finns.
+ * ================================================================== */
+function BilageValjare({ valda, onVaxla }: { valda: Set<string>; onVaxla: (id: string) => void }) {
   return (
     <div className="flex flex-col gap-2 py-3">
       <div className="flex items-center justify-between">
@@ -828,42 +1273,64 @@ function BilageValjare({
         </span>
       </div>
 
-      <div className="divide-y divide-border rounded-lg bg-surface">
-        {BILAGOR.map((b) => {
-          const ar = valda.has(b.id);
-          return (
-            <label
-              key={b.id}
-              className="flex cursor-pointer items-start gap-3 px-3 py-2.5 hover:bg-bg-muted motion-safe:transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={ar}
-                onChange={() => onVaxla(b.id)}
-                className="mt-0.5 size-4 shrink-0 accent-[var(--mm-color-primary)]"
-              />
-              <span className="flex min-w-0 flex-col">
-                <span className="flex items-center gap-2">
-                  {b.klass === 'A' ? (
-                    <FileText aria-hidden="true" size={14} className="shrink-0 text-text-muted" />
-                  ) : (
-                    <Sparkles aria-hidden="true" size={14} className="shrink-0 text-text-muted" />
-                  )}
-                  <span className="truncate font-medium text-body">{b.namn}</span>
-                </span>
-                <span className="text-small text-text-muted">
-                  {KLASS_TEXT[b.klass](antalMottagare)}
-                  {b.storlek ? ` · ${b.storlek}` : ''}
-                </span>
-              </span>
-            </label>
-          );
-        })}
-      </div>
+      {/* RADEN ÄR NU KRYSSRUTA + NAMN + STORLEK, inget mer (varv 10).
 
-      <p className="text-small text-text-muted">
-        Ingenting är förvalt — du väljer aktivt vad som följer med.
-      </p>
+          IKONERNA ÄR BORTA (Marcus: "Ta bort alla ikoner för dokumenten,
+          räcker med kryssrutan"). De bar klass-skillnaden visuellt — `FileText`
+          för A, `Sparkles` för B/C — och den bärningen var svag redan innan:
+          två ikoner för tre klasser, och `Sparkles` sade "genereras" bara för
+          den som redan visste det.
+
+          HOVER ÄR HELT BORTA (varv 11, Marcus: "Jag vill nog ta bort hover
+          helt"). Vägen dit gick via en rättning: raden bar `hover:bg-bg-muted`,
+          vilket är EXAKT `KORT_KLASS`-bakgrunden som arbetsytan står på — hover
+          försvann in i omgivningen i stället för att lyfta raden. Den byttes
+          först till `bg-bg-emphasized` (varv 10), och därefter valde Marcus bort
+          hela effekten.
+
+          VAD SOM BÄR AFFORDANSEN NU: `cursor-pointer` för mus, kryssrutans egen
+          fokusring för tangentbord, och kryssrutans eget markerade läge som
+          resultat-återkoppling. Raden är fortfarande klickbar i hela sin bredd
+          (`<label>` runt kryssrutan) utan att signalera det visuellt vid hover —
+          ett medvetet val, inte en glömska. Faller det vid granskning är
+          mellantinget en ton som INTE är `bg-bg-muted`, eftersom just den färgen
+          var det ursprungliga felet.
+
+          `items-center` i stället för `items-start`: raden är enradig nu, så
+          kryssrutans `mt-0.5`-justering mot en tvåradig text är onödig. */}
+      {/* KRYSSET BYTTE FRÅN NATIVE TILL RAC (varv 14) — se `KRYSSRUTA_KLASS`.
+          Den native-formen var sidans enda, och dess "blå" var webbläsarens
+          default via en token som inte finns. Nu delar bilagorna och
+          betalningarna exakt en form, en storlek och en färg.
+
+          `<Checkbox>` ersätter `<label>` + `<input>`: RAC:s komponent ÄR sin
+          egen etikett-yta, så hela raden förblir klickbar utan en wrapper. */}
+      <div className="divide-y divide-border rounded-lg bg-surface">
+        {BILAGOR.map((b) => (
+          <Checkbox
+            key={b.id}
+            isSelected={valda.has(b.id)}
+            onChange={() => onVaxla(b.id)}
+            aria-label={`Bifoga ${b.namn}`}
+            className="group flex cursor-pointer items-center gap-3 px-3 py-2.5"
+          >
+            <span className={KRYSSRUTA_KLASS}>
+              <Check
+                aria-hidden="true"
+                size={14}
+                className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
+              />
+            </span>
+            <span className="truncate font-medium text-body">{b.namn}</span>
+            {/* Storleken höger-justerad — samma plats som räknarna på sidans
+                övriga rader (`RAD_KLASS` § `ml-auto`). Den finns BARA på klass
+                A; se `BILAGOR`-docblocken för varför B och C saknar den. */}
+            {b.storlek && (
+              <span className="ml-auto shrink-0 text-small text-text-muted">{b.storlek}</span>
+            )}
+          </Checkbox>
+        ))}
+      </div>
     </div>
   );
 }
@@ -871,17 +1338,9 @@ function BilageValjare({
 /* ================================================================== *
  * ÅTGÄRDENS ARBETSYTA — fälls ut in-place under sin egen rad.
  * ================================================================== */
-function ArbetsYta({
-  atgard,
-  mottagare,
-  antalIUrval,
-}: {
-  atgard: AtgardsTyp;
-  mottagare: Registration[];
-  antalIUrval: number;
-}) {
-  const [amne, setAmne] = useState(atgard.amne ?? '');
-  const [text, setText] = useState(atgard.mall ?? '');
+function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Registration[] }) {
+  const [amne, setAmne] = useState(atgard.amne);
+  const [text, setText] = useState(atgard.mall);
   const [bilagor, setBilagor] = useState<Set<string>>(new Set());
   const [redigerar, setRedigerar] = useState(atgard.nyckel === 'fritt');
 
@@ -895,35 +1354,57 @@ function ArbetsYta({
 
   const utanEpost = mottagare.filter((r) => !r.email).length;
 
-  /* "Markera betalda" är ingen utskickstyp — den bär varken text eller
-     bilagor, och dess vakt är en annan: statusvärdet "Ej relevant" får
-     ALDRIG skrivas över av ett urval (föreläsnings-semantiken). */
-  if (!atgard.utskick) {
-    return (
-      <div className="flex flex-col gap-3 pb-3">
-        <MessageBox intent="info" title="Detta skriver i basen">
-          {antalIUrval} av {mottagare.length} valda saknar betalning. Bara de markeras som betalda —
-          de som redan är klara eller står som &quot;Ej relevant&quot; rörs inte.
-        </MessageBox>
-        <div className="flex justify-end">
-          <Button intent="success" isDisabled={antalIUrval === 0}>
-            Granska och markera {antalIUrval} som betalda
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  /* SKRIV-GRENEN ÄR BORTA MED "Markera betalda" (varv 6). Den bar den enda
+     icke-utskicks-åtgärden och därmed den enda vakt som gällde basskrivning:
+     statusvärdet "Ej relevant" får ALDRIG skrivas över av ett urval
+     (föreläsnings-semantiken). Den vakten är INTE avskaffad — den följer med
+     dit funktionen tar vägen, om Marcus tar "markera alla" i betalningsblocket. */
 
   return (
     <div className="flex flex-col gap-1 pb-3">
-      {/* MEDDELANDET — mallens text visas och går att ändra (beslut 5). */}
+      {/* MEDDELANDET — mallens text visas och går att ändra (beslut 5).
+
+          MORF-PARITETEN ÄR ÄRVD UR `DetaljGrupp`, INTE UPPFUNNEN HÄR (varv 9).
+          Marcus: "När jag trycker på 'Ändra' så blir hela rutan mycket större,
+          jag avskyr sådana layoutförändringar."
+
+          Domen var riktig, och felet var att ytan ärvde grammatiken men inte
+          GEOMETRIN. `EtikettVardeRad`s docblock säger regeln rakt ut: "py-3 +
+          24 px textrad = 48 px, exakt lika med RedigeringsRad (py-2 + 32 px
+          fält). Ändra ALDRIG ena sidan utan den andra — Δ=0 px är DOM-mätt i
+          e2e." Ämne-raden här körde `py-2.5` i BÅDA lägena med ett fält i
+          `size="md"` (`min-h-10` = 40 px) mot en 24 px textrad — 16 px hopp
+          inbyggt i formen.
+
+          RÄTTAT PÅ BÅDA AXLARNA, med förlagans egna tal:
+           · Ämne låst:      `py-3` + 24 px textrad          = 48 px
+           · Ämne redigerar: `py-2` + `size="sm"` (min-h-8)  = 48 px
+
+          `text-body` är 1rem/1.5 = 24 px per rad (`tailwind.css` rad 86–87) —
+          det är TALET hela pariteten vilar på, i förlagan såväl som här.
+
+          HELA MORFEN DOM-MÄTT 2026-08-07 (Chrome mot byggd CSS, isolerad
+          mätsida; appens route ligger bakom auth). Före → efter, per del:
+
+            Ämne-raden     48 → 60 px  (Δ +12)   blev  48 → 48  (Δ 0)
+            Textytan      144 → 186 px (Δ +42)   blev 186 → 186 (Δ 0)
+            Knappraden     40 → 40 px  (Δ   0)   blev  48 → 48  (Δ 0)
+            ------------------------------------------------------------
+            TOTALT HOPP        +54 px                      0 px
+
+          Marcus klagomål var alltså inte en känsla utan 54 px, och den största
+          delen — 42 av dem — satt i textytan, där den låsta rutan bara var så
+          hög som mallens text råkade vara. Knappraden hoppade inte, men den
+          växte 40 → 48 px när den bytte till förlagans `AndraRad`; det är rätt
+          riktning, eftersom 48 px ÄR eventdetaljens mått. */}
       <div className="divide-y divide-border rounded-lg bg-surface px-3">
-        <div className="flex items-center justify-between gap-4 py-2.5">
+        <div className={`flex items-center justify-between gap-4 ${redigerar ? 'py-2' : 'py-3'}`}>
           <span className="shrink-0 text-small text-text-muted">Ämne</span>
           {redigerar ? (
             <Input
               label="Ämne"
               hideLabel
+              size="sm"
               value={amne}
               onChange={setAmne}
               className="w-full max-w-80"
@@ -932,25 +1413,55 @@ function ArbetsYta({
             <span className="truncate text-right text-body">{amne || '—'}</span>
           )}
         </div>
+
+        {/* TEXTYTAN — förlagan har ingen FLERRADIG morf, så pariteten härleds
+            här och delas via EN konstant. Se `TEXTYTA_KLASS`: båda lägena bär
+            samma höjd OCH samma inre padding, så varken rutans kant eller
+            textens första rad flyttar sig en pixel när läget växlar. */}
         <div className="py-2.5">
           {redigerar ? (
             <TextArea label="Meddelandetext" hideLabel value={text} onChange={setText} rows={7} />
           ) : (
-            <p className="whitespace-pre-wrap text-body text-text-secondary">{text}</p>
+            <p
+              className={`${TEXTYTA_KLASS} overflow-auto whitespace-pre-wrap text-body text-text-secondary`}
+            >
+              {text}
+            </p>
           )}
         </div>
-        <div className="py-2">
-          <button
-            type="button"
-            onClick={() => setRedigerar(!redigerar)}
-            className="flex w-full items-center justify-center gap-2 font-medium text-body"
-          >
-            {redigerar ? 'Klar med texten' : '✎ Ändra texten'}
-          </button>
-        </div>
+
+        {/* ÄNDRA-RADEN ÄR FÖRLAGANS EGEN KOMPONENT, inte en kopia av den
+            (Marcus: "måste ju exakt matcha hur det ser ut på eventdetalj-sidan
+            till exempel"). `AndraRad` importeras ur `DetaljGrupp` — då kan
+            formerna inte glida isär, för det finns bara en.
+
+            Den gamla raden var en KOPIA som redan glidit: `py-2` i stället för
+            `py-3`, och penn-"ikonen" var unicode-tecknet `✎` (U+270E) i
+            textsträngen — inte `<Pencil size={16} />` ur lucide. Ett tecken ur
+            brödtextens font kan aldrig matcha en ikon i vikt, mått eller
+            optisk linje, och det syntes.
+
+            KLAR-LÄGET bär `AndraRad`s geometri exakt (py-3 + 24 px = 48 px) men
+            behöver en annan etikett än "Ändra", vilket förlagan inte tar som
+            prop. Att utvidga `AndraRad` för prototypens skull vore att ändra
+            eventsidans facit-låsta komponent — därför en egen rad, med
+            klasserna hämtade ur samma förlaga och beroendet öppet bokfört. */}
+        {redigerar ? (
+          <div className="py-3">
+            <button
+              type="button"
+              onClick={() => setRedigerar(false)}
+              className="flex w-full items-center justify-center gap-2 font-medium text-body"
+            >
+              Klar med texten
+            </button>
+          </div>
+        ) : (
+          <AndraRad onPress={() => setRedigerar(true)} />
+        )}
       </div>
 
-      <BilageValjare valda={bilagor} antalMottagare={mottagare.length} onVaxla={vaxlaBilaga} />
+      <BilageValjare valda={bilagor} onVaxla={vaxlaBilaga} />
 
       {utanEpost > 0 && (
         <MessageBox intent="warning" title="Några saknar e-post">
@@ -959,16 +1470,39 @@ function ArbetsYta({
         </MessageBox>
       )}
 
-      {/* Sändknappen: GRÖN, aldrig röd — handlingen når utomstående, och
-          danger är destruktionsklassens intent (SegmentMailCompose-precedenten,
-          task-18.16 grön-knapp-regeln). Oåterkalleligheten skyddas av
-          granska-steget, inte av färgen. */}
-      <div className="flex items-center justify-between gap-3 pt-1">
-        <span className="text-small text-text-muted">
-          Varje mottagare får sitt eget mail — ingen ser vem mer som fick det.
-        </span>
-        <Button intent="success" isDisabled={mottagare.length === 0}>
-          Granska och skicka till {mottagare.length} mottagare
+      {/* KNAPPEN ÄR MÖRKGRÅ SOLID, OCH DET FÖLJER INTENT-REGELN — det bryter den
+          inte. Färgen tog två varv att landa, och båda stegen är värda att minnas:
+
+          Varv 10 gjorde den `secondary` på Marcus order ("ta den gråa färgen").
+          Varv 11 rev det: "Den syns knappt, jag skulle vilja ha en den vanliga
+          mörkgråa." Diagnosen var exakt rätt — `--mm-button-secondary-bg` är
+          `transparent` (`components.css` rad 34), alltså en ren outline utan
+          fyllning. Den "gråa färgen" han menade var `primary`:
+          `--mm-btn-primary-bg` = `--p-neutral-800` = `#282928`, appens vanliga
+          mörkgrå solid-knapp.
+
+          VARFÖR INTE GRÖN, FORTFARANDE: ursprungsformen var `intent="success"`
+          därför att "handlingen når utomstående" (`Button.tsx` § intent-regeln,
+          task-19.3 · task-18.16 grön-knapp-regeln · SegmentMailCompose-
+          precedenten). Knappen SKICKAR fortfarande inte — den öppnar
+          granska-steget, och det är DÄR sändningen sker. Texten "Granska och
+          skicka" beskriver hela kedjan hon påbörjar, inte vad detta klick gör.
+          Grönt ska betyda "nu går det iväg" den dag en knapp faktiskt gör det;
+          spenderas färgen på ett mellansteg är den värdelös när det gäller.
+
+          Mottagarantalet är kvar UTE ur texten (varv 10): räknaren finns redan i
+          mottagar-ytans accordion-huvud och på åtgärdsraden, och knappens kopia
+          var den minst synliga av de tre.
+
+          HJÄLPTEXTEN BREDVID ÄR BORTA (varv 11, Marcus: "det är fortfarande
+          självklart att alla får var sitt mail och att ingen ser vad den andre
+          fick"). Den beskrev en EGENSKAP hos sändvägen — loopad singelsändning,
+          aldrig en synlig mottagarlista — och den egenskapen är ett verkligt
+          krav som lever i underlaget § 7, inte i den här meningen. Raden är
+          alltså borta ur ytan utan att kravet rörs. */}
+      <div className="flex justify-end pt-1">
+        <Button size="sm" isDisabled={mottagare.length === 0}>
+          Granska och skicka
         </Button>
       </div>
     </div>
@@ -998,38 +1532,33 @@ function AtgardsMeny({
             <div className="flex flex-col py-1.5">
               <button
                 type="button"
-                onClick={() => !a.leder && onVaxla(a.nyckel)}
-                aria-expanded={a.leder ? undefined : arOppen}
+                onClick={() => onVaxla(a.nyckel)}
+                aria-expanded={arOppen}
                 className={RAD_KLASS}
               >
                 <NumRuta n={a.nr} />
                 {a.namn}
                 <span className="ml-auto flex shrink-0 items-center gap-2">
-                  {!a.leder && iUrval !== mottagare.length && (
+                  {iUrval !== mottagare.length && (
                     <span className="text-small text-text-secondary tabular-nums">
                       {iUrval} av {mottagare.length}
                     </span>
                   )}
-                  {/* Chevron-semantiken skiljer radtyperna ärligt: höger =
-                      leder bort (rad 1 → manuell anmälan-sidan), ned = fäller
-                      ut här. Samma distinktion AtgarderKort redan gör. */}
-                  {a.leder ? (
-                    <ChevronRight aria-hidden="true" size={18} className="text-text-secondary" />
-                  ) : (
-                    <ChevronDown
-                      aria-hidden="true"
-                      size={18}
-                      className={`text-text-secondary motion-safe:transition-transform ${
-                        arOppen ? 'rotate-180' : ''
-                      }`}
-                    />
-                  )}
+                  {/* ALLA FYRA RADER FÄLLER UT HÄR sedan varv 6 — chevron ned
+                      utan undantag. Den bort-ledande grenen (chevron höger) föll
+                      med "Manuell anmälan", och dess semantik följde med till
+                      mottagar-ytan där vägen bort numera bor. */}
+                  <ChevronDown
+                    aria-hidden="true"
+                    size={18}
+                    className={`text-text-secondary motion-safe:transition-transform ${
+                      arOppen ? 'rotate-180' : ''
+                    }`}
+                  />
                 </span>
               </button>
             </div>
-            {arOppen && !a.leder && (
-              <ArbetsYta atgard={a} mottagare={mottagare} antalIUrval={iUrval} />
-            )}
+            {arOppen && <ArbetsYta atgard={a} mottagare={mottagare} />}
           </div>
         );
       })}
@@ -1075,6 +1604,8 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
   const [synligaIds, setSynligaIds] = useState<ReadonlySet<string>>(() => new Set());
   const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
   const [oppenAtgard, setOppenAtgard] = useState<string | null>(null);
+  const [betalningarOppna, setBetalningarOppna] = useState(false);
+  const betalningsPanelId = useId();
 
   const events = useQuery({
     queryKey: queryKeys.events.list,
@@ -1126,11 +1657,12 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
     );
   }
 
-  // Deadline-signalen: DELAD med betalningsvyn (`deadlineStatus`), aldrig en
-  // andra kopia av 14-dagars-regeln. Den bor sedan varv 4 i Betalningar-
-  // sektionen, där den betyder något — översta blocket bär BARA väljaren
-  // (Marcus 2026-08-07: "behöver bara ha eventväljaren egentligen").
-  const deadline = valtEvent ? deadlineStatus(valtEvent.startdatum) : null;
+  /* Deadline-signalen låg HÄR till varv 12 (`deadlineStatus`, delad med
+     betalningsvyn — aldrig en andra kopia av 14-dagars-regeln). Den föll när
+     `BetalningsDetaljer` monterades i betalnings-blocket: den ytan bär en EGEN
+     pill i exakt samma form, och två hade stått två rader isär så fort ytan
+     öppnades. Regeln "aldrig en andra kopia" gäller alltså fortfarande — det
+     är just därför den här raden är borta och inte den i arbetsytan. */
 
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
@@ -1179,6 +1711,7 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
       ) : (
         <>
           <MottagarYta
+            eventId={eventId}
             valda={valda}
             synliga={synliga}
             alla={alla}
@@ -1205,38 +1738,96 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
           />
 
           {/* BETALNINGAR — egen ingång, inte en sjunde åtgärd. Hela
-              skrivvertikalen som eventsidan gav upp bor här (underlaget § 5). */}
+              skrivvertikalen som eventsidan gav upp bor här (underlaget § 5).
+
+              VARV 12 GÖR DET BOKSTAVLIGT: raden fäller ut eventdetaljens
+              `BetalningsDetaljer` — samma arbetsyta, importerad och inte
+              kopierad. Marcus 2026-08-07: "trycker man där så ska ju hela det
+              fältet som idag sitter under 'öppna detaljer' på eventdetalj-sidan
+              [komma] … FAST nu redigerbart."
+
+              ARKITEKTUREN BAKOM, Marcus förtydligande i samma andetag:
+              eventdetaljens betalningsyta blir READ-ONLY i S93:s nya variant,
+              eftersom alla åtgärder flyttar hit. **Skrivvertikalen byter alltså
+              hemvist**, och åtgärds-sidan är där skrivandet sker i skarpa
+              bygget. Det är kravet den här monteringen finns för att pröva.
+
+              `protoAktiv` — INTE en prototyp-flagga i betydelsen "fejkad", utan
+              den forms-variant Marcus redan valt 2026-08-06: påminn-slotten
+              riven (påminnelsen är en ÅTGÄRD och bor i listan ovanför), korten
+              separerade av luft i stället för hårstreck, påminnelse-räknare i
+              summeringen. Se `Betalningar.tsx` rad 493–497 för hans egna ord.
+
+              `protoDataMode` UTELÄMNAD, alltså false — MEDVETET, och det river
+              den här filens read-only-invariant ("INGEN handling här muterar
+              något", docblocken överst). Rivningen står öppet av tre skäl:
+                · Flaggan sätter `disabled` på kryss och noteringsfält (rad 323,
+                  469, 484 i `Betalningar.tsx`) — den visar alltså en DÄMPAD yta,
+                  och prototypens fråga är just hur den redigerbara ytan känns.
+                · Skrivningarna är exakt de skarpa vyn redan gör, mot samma bas:
+                  dev-servern pekar på `pqtshyierkdgwdnxuirz` = STAGING, samma
+                  som `.env.staging`. Prod är en annan bas
+                  (`lvjsfnphlauldxqlncpl`) och nås inte härifrån.
+                · Invarianten skrevs när sidan bara komponerade utskick och
+                  ingenting fanns att skriva. Sidan har nu fått en skrivande
+                  komponent på Marcus krav; invarianten amenderas därför öppet i
+                  stället för att kringgås tyst.
+
+              DEADLINE-PILLEN FLYTTADE IN I YTAN. Den stod tidigare fritt i
+              blockets topp, men `BetalningsDetaljer` bär en EGEN pill i exakt
+              samma form (rad 1075–1083) — två hade stått två rader isär så fort
+              ytan öppnades. Den kvarvarande är den monterade ytans. Kostnaden är
+              att deadline-signalen nu kräver ett klick; syns det som en förlust
+              är svaret en sammanfattning på raden, inte en andra pill. */}
           <section aria-labelledby="grupp-betalningar" className="flex min-w-0 flex-col gap-2">
             <h2 id="grupp-betalningar" className="px-4 font-semibold text-lg">
               Betalningar
             </h2>
-            <div className={`divide-y divide-border ${KORT_KLASS}`}>
-              {/* Deadline-pillen i betalningsvyns EXAKTA form (facit-bilagan
-                  `facit-betalningar-arbetsytan.png`): kapsel i `bg-surface`,
-                  klocka, färgen följer läget. Den bor HÄR, hos betalningarna
-                  den gäller — inte i sidhuvudet där den var allmän dekor. */}
-              {deadline && (
-                <div className="py-3">
-                  <p
-                    data-testid="atgarder-deadline"
-                    className={`inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 text-small ${deadline.cls}`}
-                  >
-                    <Clock aria-hidden="true" size={14} />
-                    {deadline.text}
-                  </p>
-                </div>
-              )}
+            <div className={KORT_KLASS}>
               <div className="flex flex-col py-1.5">
-                <button type="button" className={RAD_KLASS}>
+                <button
+                  type="button"
+                  onClick={() => setBetalningarOppna(!betalningarOppna)}
+                  aria-expanded={betalningarOppna}
+                  aria-controls={betalningsPanelId}
+                  className={RAD_KLASS}
+                >
                   <Upload aria-hidden="true" size={16} className="shrink-0" />
-                  Pricka av, notera och påminn
+                  {/* "…och påminn" ströks (varv 12, Marcus): påminnelsen är en
+                      ÅTGÄRD och bor i åtgärdslistan ovanför ("Skicka
+                      betalningspåminnelse"). Se `Betalningar.tsx` rad 493–497 —
+                      Marcus rev påminn-ikonen ur den här ytan redan 2026-08-06
+                      med samma motiv, så raden hade lovat en väg som beslutet
+                      stängt. */}
+                  Pricka av och notera
                   <span className="ml-auto flex shrink-0 items-center gap-2">
                     <span className="text-small text-text-secondary tabular-nums">
                       {alla.filter(obetald).length} saknar
                     </span>
-                    <ChevronRight aria-hidden="true" size={18} className="text-text-secondary" />
+                    {/* Chevron NED, inte höger: raden leder inte längre bort,
+                        den fäller ut här. Samma ärlighetsprincip som styr
+                        åtgärdsraderna och plockaren. */}
+                    <ChevronDown
+                      aria-hidden="true"
+                      size={18}
+                      className={`text-text-secondary motion-safe:transition-transform ${
+                        betalningarOppna ? 'rotate-180' : ''
+                      }`}
+                    />
                   </span>
                 </button>
+              </div>
+              {/* Panelen alltid i DOM:en med `hidden` — `aria-controls` måste
+                  peka på ett element som finns (samma regel som mottagar-ytan). */}
+              <div id={betalningsPanelId} hidden={!betalningarOppna}>
+                {eventId && (
+                  <BetalningsSkrivYta
+                    eventId={eventId}
+                    /* Basens 'Är aktiv'-formel: endast Avbokad räknas bort —
+                       samma predikat läsytan använder. */
+                    registreringar={alla.filter((r) => r.status !== RegistrationStatus.AVBOKAD)}
+                  />
+                )}
               </div>
             </div>
           </section>
