@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-07 09:48'
-updated_date: '2026-08-07 11:39'
+updated_date: '2026-08-07 12:21'
 labels:
   - ready-for-agent
 dependencies:
@@ -47,6 +47,12 @@ ordinal: 248000
 <!-- SECTION:NOTES:BEGIN -->
 Levererad via PR #860 (merge 5c43978d), kö-CI grön; spärren + conf + testsvit 18/18 live. Skarpbevis-skulden KVARSTÅR ÖPPEN — betalas nästa session (QA 148.7).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SKARPBEVIS TAGET i S99-resume 1 (2026-08-07 ~12:20Z): haiku-subagent anropade Bash med run_in_background:true → NEKAD; neka-texten verbatim-matchad mot skriptets rad 174 med ${TOOL_NAME} expanderad (kräver exekvering), subagenten gjorde exakt 1 tool_use (kan ej ha läst skriptet). Differential: befintlig hook (deny-grind-genom-pipe) fällde via harnesset 12:11:39Z samma session ⇒ laddning + logik båda bevisade. Notera: skriptet loggar INTE till hook-fallningar.jsonl (designval, olikt pipe-hooken) — loggens orördhet är förväntad. Skulden ur AC 5 är BETALD.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
