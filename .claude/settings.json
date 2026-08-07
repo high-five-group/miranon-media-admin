@@ -124,6 +124,16 @@
             "statusMessage": "Katalogägarskaps-lappen (ADR-090 beslut 2, rapporterar — skriver aldrig)"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/post-compact-igenkanning.sh\"",
+            "timeout": 10,
+            "statusMessage": "COMPACT-FORMEN (ADR-101) — post-compact-omorientering, tyst utom vid source=compact"
+          }
+        ]
       }
     ],
     "SessionEnd": [
