@@ -4,6 +4,7 @@ title: 'Skiva: harness-mätprotokollet — var bryts väckningskedjan'
 status: To Do
 assignee: []
 created_date: '2026-08-07 09:49'
+updated_date: '2026-08-07 10:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,11 +20,13 @@ ordinal: 250000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Protokolldok i docs/research/ per research-konventionen: sex differentialceller (bakgrunds-Bash, Monitor-event, subagent-completion — vardera mot idle respektive nyss aktiv session); varje cell skiljer EN variabel
-- [ ] #2 Facitmetoden specificerad: vilka JSONL-fält och tidsstämplar som läses post-hoc, och hur notifikations-leverans separeras från agent-resume
-- [ ] #3 Varje cell körbar: konkreta steg och förväntat utfall per hypotes; ingen cell kräver tolkning i stunden
+- [x] #1 Protokolldok i docs/research/ per research-konventionen: sex differentialceller (bakgrunds-Bash, Monitor-event, subagent-completion — vardera mot idle respektive nyss aktiv session); varje cell skiljer EN variabel
+- [x] #2 Facitmetoden specificerad: vilka JSONL-fält och tidsstämplar som läses post-hoc, och hur notifikations-leverans separeras från agent-resume
+- [x] #3 Varje cell körbar: konkreta steg och förväntat utfall per hypotes; ingen cell kräver tolkning i stunden
 - [ ] #4 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
