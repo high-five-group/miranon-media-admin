@@ -293,13 +293,33 @@ paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
 resume.
 *(S93:s kadensrad nedan, oförändrad.)*
 
-**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, sjätte resumen, `lifecycle: active`)
-— SEX SKIVOR LANDADE, TAKTEN UNDERKÄND** — **`145.4` VERIFIERAD LANDAD** vid
-resumens första handling: `#915` MERGED `15:46:38Z` (`1af3299d`), CI grön per
-jobb på `f0871120` (11 success / 3 skipped / 0 fel) → kortet stängt (DoD #3 +
-`Done`). `main` = `09bb484d`. **DE TVÅ MARCUS-BESLUTEN ÄR FORTFARANDE
-OBESVARADE** och blockerar allt vidare bygge. Föregående paus-läge nedan
-oförändrat: `145.1` (registret som EN lista) · `145.2`
+**Session 93 ⏸️ PAUSAD (2026-08-07, sjätte pausen, `lifecycle: paused`) —
+FACIT-HAVERIET BOKFÖRT OCH MEKANISERAT** — `main` = `73e94776`. **`ADR-102`
+mintad på Marcus order:** *"Prototypen ÄR facit … Prototypen och skarpa version
+ska vara IDENTISKA"* + *"INGEN prototyp raderas förens jag godkänt att det
+skarpa bygget är EXAKT som prototypen."* Fem beslut (B1–B5), **NIO rotorsaker**
+mätta — den skarpaste: orkestreraren öppnade en bild från konvergens-passet
+(5 aug), kallade den FACIT inför Marcus, **20 min efter att ha beskrivit exakt
+den felklassen** och en dag efter att själv ha skrivit lärdomen om den.
+**MEKANISERAT** (`#949`): `facit.json`-manifest + `scripts/check-facit.sh` som
+CI-grind FÖRE merge (en DoD-post kan aldrig grinda en merge — agentens fynd);
+tvåsidigt bevis 18/18; `TASK-145.6` nu `blocked` **av kod**, inte av prosa.
+Grinden avgör INTE om ytan SER UT som facit — den jämförelsen är Marcus öga.
+**FACITKARTAN** (`#950`): elva block, åtta identiska, **sex avvikelser `A1`–`A6`**
+— fem av sex i registret. **TAKTEN:** `145.1`–`146.3` gav netto **−134 rader**
+i `src/` (ingenting byggdes från noll); ett-agent-svepet kostade **510k tokens
+totalt mot 500–620k PER skiva** ≈ **3× billigare** → `T134`:s första datapunkt.
+`145.3`+`145.5` landade grönt; `145.6` **ej byggd** (rivning hade flippat
+betalningsytan skrivbar — agentens stopp verifierat korrekt). `main` gick från
+**12 röda till 2**, båda andras. Karantänen behövdes aldrig. **`T135`:**
+post-merge avbryts trots att filen säger *"ALDRIG"* — reproducerad 2/2, orsak
+EJ fastställd. **MOTTAGEN-DATUMET var ingen drift:** fusk-tabellen revs per
+Marcus väg C, förmågan finns kvar och väntar `TASK-147`. **VÄNTAR MARCUS:**
+`A1`–`A6`:s skivning · åtgärds-sidans hopkoppling (S100 varv 4, 1 850 rader).
+Numrering disk-verifierad mot `73e94776`: **103**/L480 + sju fragment/**T137**
+(`T136` mintad av annan session)/**task-161**/f47.
+**HANDOFF: sessionsdok S93 § PAUSLÄGE.**
+*(Föregående paus-läge nedan oförändrat.)* `145.1` (registret som EN lista) · `145.2`
 (summeringsblocket med Bor över + Avbokade i facit-låst form) · `146.1`
 (PDF-runtime **BEVIS**) · `146.2` (Bilagor-tabellen, additivitet mätt över 19
 tabeller) · `146.3` (privat bucket, AC #3 bevisad i tre oberoende ben) —
