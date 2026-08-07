@@ -4,7 +4,7 @@ title: 'PRD: Åtgärds-sidan — den enda platsen där något verkställs'
 status: To Do
 assignee: []
 created_date: '2026-08-07 07:52'
-updated_date: '2026-08-07 08:56'
+updated_date: '2026-08-07 09:29'
 labels: []
 dependencies: []
 ordinal: 232000
@@ -162,18 +162,13 @@ Skiva 6 beror på kort 2. Skiva 10 beror på kort 2 och på Roger-avstämningen.
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-MOTTAGEN-DATUM — MARCUS BESLUT 2026-08-07, VÄG C: datumet SKA byggas, och DETTA KORT ÄGER DET (skrivningen bor där avprickningen bor).
+DOKUMENT-YTAN TAS I SAMMA SESSION (Marcus 2026-08-07). T131 bröts ut ur TASK-146 men ingår i DENNA sidas sessionsarbete, inte i ett eget spår.
 
-VAD SOM SKA IN:
-- Två ADDITIVA dateTime-fält i basen (anmälningsavgift mottagen-datum + slutbetalning mottagen-datum), i BÅDA baserna. Precedens: task-18.8 la fyra additiva fält med egen allowlist-operation.
-- Utökad skriv-allowlist i berörd edge-funktion.
-- Skrivväg: datumet stämplas när Lotta prickar av.
+SKÄLET: bilageväljaren på åtgärds-sidan visar det Dokument-ytan förvaltar. Designas väljaren utan att biblioteket är designat — vilken metadata som finns, hur bilagor grupperas per event, hur en ersatt version syns — designas den baklänges. Två vyer av samma objekt.
 
-TVÅ KONSEKVENSER SOM MÅSTE BYGGAS, ej valfria:
-1. AV-BOCKEN MÅSTE NOLLA DATUMET. Annars lämnar en felkryssning ett datum som ser äkta ut.
-2. GAMLA BETALNINGAR FÅR ALDRIG ETT DATUM RETROAKTIVT. Marcus accepterade explicit att appen bär två klasser i samma lista: 'Det gör inget att gamla betalningar inte har datum.'
+TVÅ PROTOTYP-PASS, INTE ETT: ytorna är distinkta (event-knuten åtgärds-sida respektive Mer-yta) och ska ha var sin form. Det delade är domänen och metadatats vokabulär.
 
-VARFÖR HÄR OCH INTE I TASK-145: eventsidan blev ren översyn 2026-08-07, så avprickningen — och därmed stämplingen — flyttade hit. TASK-145 renderar bara datumet när fältet bär värde.
+BIEFFEKT: TASK-146 får därmed tillbaka en UI-konsument — utbrytningen hade lämnat fundamentet utan användare.
 
-BASENS UTGÅNGSLÄGE (verifierat mot data-model.md): Anmälningsavgift fldJtKQ3qLxRKOvR6 och Slutbetalning fldIImadnJUZHr5Qh är BÅDA singleSelect UTAN tidsstämpel. Basen vet ATT, aldrig NÄR.
+PARALLELLITET MOT BYGGSPÅRET: körs denna session samtidigt som agenter bygger TASK-145 finns tre krockytor (platshållarna, prototyp-växlarens registrering, hållplats-substratet som TASK-145.6 river). Reglerna står i docs/specs/ATGARDSSIDAN-UNDERLAG.md § 9 — egna filer och egen route, platshållarna orörda av båda tills facit är låst, TASK-145.6 allra sist.
 <!-- SECTION:NOTES:END -->
