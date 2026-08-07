@@ -3,9 +3,10 @@ id: TASK-152
 title: >-
   Fynd: 264 mergade lokala grenar utan städmekanism — paus-svepet städar
   worktrees men aldrig grenar
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-07 10:51'
+updated_date: '2026-08-07 11:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,10 +21,14 @@ Symptom: 264 av 283 lokala grenar är redan mergade i main och växer session f�
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass: git branch --merged main räknad vid byggtillfället; worktree-städningens faktiska scope läst i session-paus-skillen/skripten
-- [ ] #2 Grenstädnings-steg byggt enligt repots skript-konvention (universell logik + policy-konfig): raderar lokala grenar mergade i main, skyddar aktiva worktree-grenar + konfigurerbar skyddslista; torrkörnings-läge default
+- [x] #1 Premiss-pass: git branch --merged main räknad vid byggtillfället; worktree-städningens faktiska scope läst i session-paus-skillen/skripten
+- [x] #2 Grenstädnings-steg byggt enligt repots skript-konvention (universell logik + policy-konfig): raderar lokala grenar mergade i main, skyddar aktiva worktree-grenar + konfigurerbar skyddslista; torrkörnings-läge default
 - [ ] #3 Tvåsidig testsvit (raderar mergad gren · skonar omergad · skonar worktree-bunden · skonar skyddslistad); shellcheck-strict grön; PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

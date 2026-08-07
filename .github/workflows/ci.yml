@@ -1075,7 +1075,10 @@ jobs:
         # wiringen (S97, pre-commit-anropet av TASK-91-vakten) +
         # .claims-tackning-policy.conf + .merge-tree-mandat-policy.conf,
         # tillagda i TASK-139 (T119 (d): täcknings-passet + merge-tree-
-        # grinden mekaniserade) —
+        # grinden mekaniserade) +
+        # .stada-grenar-policy.conf, tillagd i TASK-152-wiringen
+        # (scripts/stada-grenar.sh — generell städning av lokalt mergade
+        # grenar) —
         # en sourced conf utanför scopet är samma lucka som de övriga redan
         # stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
@@ -1083,8 +1086,8 @@ jobs:
         # åtta i TASK-85, till nio i TASK-108-wiringen, till tio i
         # TASK-119-wiringen, till elva i TASK-137-wiringen och till tolv i
         # T119(a)-wiringen, till tretton i T119(b)-wiringen, till fjorton i
-        # T119(d) item 5-wiringen, till femton i T119(d) item 4-wiringen och
-        # till sjutton i TASK-139.
+        # T119(d) item 5-wiringen, till femton i T119(d) item 4-wiringen,
+        # till sjutton i TASK-139 och till arton i TASK-152.
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1108,7 +1111,8 @@ jobs:
             .grind-exitkod-policy.conf \
             .staging-preflight-hook-policy.conf \
             .claims-tackning-policy.conf \
-            .merge-tree-mandat-policy.conf
+            .merge-tree-mandat-policy.conf \
+            .stada-grenar-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
