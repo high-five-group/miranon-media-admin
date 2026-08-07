@@ -143,12 +143,26 @@ const KORT_KLASS =
   'rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
 
 /**
- * Namn-previewns gräns. Härledd, inte vald — se previewns docblock nedan:
- * MUI `AvatarGroup` (`max = 5`), Fluent UI v8 `Facepile`
- * (`maxDisplayablePersonas: 5`) och Microsofts egen rekommendation
- * konvergerar på fem. Belägg: `docs/research/mottagar-preview-monster-2026-08-07.md` § 2.
+ * Namn-previewns gräns. **7 sedan varv 7 — Marcus höjde den från 5 med öppna
+ * ögon:** "7 borde vi i alla fall få plats med nu."
+ *
+ * FEMMAN VAR RESEARCH-HÄRLEDD OCH RIVS ÖPPET, inte tyst. Tre oberoende
+ * förstapartskällor konvergerade på fem — MUI `AvatarGroup` (`max = 5`),
+ * Fluent UI v8 `Facepile` (`maxDisplayablePersonas: 5`), Microsoft Learn ("the
+ * default and recommended number"). Belägg:
+ * `docs/research/mottagar-preview-monster-2026-08-07.md` § 2.
+ *
+ * VARFÖR HÖJNINGEN ÄR LEGITIM OCH INTE DRIFT: passet reserverade sig SJÄLVT
+ * mot sin egen siffra — vårt scenario (read-only namn-bekräftelse utan foton)
+ * ligger MELLAN de etablerade mönstren, och femman var lånad ur
+ * avatargruppernas talkluster, aldrig belagd för den här formen. Talen gällde
+ * dessutom AVATARER: cirklar som överlappar och äter bredd. Namn-pillar
+ * radbryts i stället för att trängas, så bredd-argumentet bakom femman gäller
+ * inte den form vi faktiskt byggde. Kvar av passet står spridningen (Gestalt 3
+ * · Primer 4 med mönsterbyte · Ant Design inget default) som visar att det
+ * aldrig fanns EN branschsiffra att avvika ifrån.
  */
-const PREVIEW_GRANS = 5;
+const PREVIEW_GRANS = 7;
 
 /**
  * Previewns innehåll i BÅDA sina former, ur EN beräkning.
@@ -711,16 +725,12 @@ function MottagarYta({
               … oanvändbar och måste göras om." Formen är nu omgjord mot
               research-passet `docs/research/mottagar-preview-monster-2026-08-07.md`.
 
-              GRÄNSEN ÄR 5, OCH DEN ÄR HÄRLEDD, INTE VALD. Tre oberoende
-              förstapartskällor konvergerar på fem: MUI `AvatarGroup` har
-              `max = 5` i källkoden, Fluent UI v8 `Facepile` har
-              `maxDisplayablePersonas: 5` i sin `defaultProps`, och Microsofts
-              egen dokumentation kallar det "the default and recommended
-              number". Spridningen är ärlig och står i passet: Pinterest
-              Gestalt avviker till 3, GitHub Primer sätter hårt tak vid 4 och
-              BYTER mönster i stället för att trunkera djupare. Det finns
-              alltså inte EN branschsiffra — det finns ett kluster 3–5, och 5
-              är dess starkast belagda punkt.
+              GRÄNSEN ÄR 7 SEDAN VARV 7 — se `PREVIEW_GRANS` för hela
+              härledningen och för varför höjningen från passets 5 är legitim
+              och inte drift (kort: passet reserverade sig mot sin egen siffra,
+              och talen gällde AVATARER som äter bredd genom att överlappa —
+              namn-pillar radbryts i stället, så bredd-argumentet bakom femman
+              gäller inte formen vi byggde).
 
               "OCH N TILL" ÄR REN TEXT, INTE EN KNAPP. Sidan har redan en
               fungerande "se alla"-mekanik: räknar-raden ovanför ÄR
@@ -769,9 +779,9 @@ function MottagarYta({
 
               PASSETS EGEN RESERVATION, bokförd: vårt scenario (read-only
               namn-bekräftelse utan foton, 1–30 poster) ligger MELLAN de
-              etablerade mönstren, inte på ett av dem. Gränsen 5 är därför
-              lånad från avatargruppernas talkluster, inte belagd för just
-              denna form. Den är ORÖRD i detta varv — en ändring i taget. */}
+              etablerade mönstren, inte på ett av dem. Det är den reservationen
+              som gjorde höjningen till 7 möjlig utan att riva passet — den stod
+              nedskriven i passet självt, inte konstruerad i efterhand. */}
           {mottagarNamn.length > 0 && (
             <div
               data-testid="mottagar-preview"
@@ -842,11 +852,29 @@ function MottagarYta({
 
         {plockareOppen && (
           <div className="flex flex-col gap-3 py-3">
+            {/* SÖKFÄLTET STÅR UTAN SYNLIG ETIKETT sedan varv 7 (Marcus: "kan vi
+                ta bort 'Sök deltagare' … snyggare med rent där"). Panelen är
+                redan rubricerad av raden som fällde ut den, så etiketten sade
+                samma sak två gånger.
+
+                `hideLabel` OCH INTE BORTTAGEN LABEL: propen flyttar texten till
+                `aria-label`, så fältet behåller sitt tillgängliga namn (WCAG
+                4.1.2). En placeholder är ALDRIG ett giltigt namn — den
+                försvinner vid första tecknet och exponeras inte konsekvent av
+                skärmläsare. Det visuella och det tillgängliga skiljer sig alltså
+                åt här med avsikt, vilket är precis vad `hideLabel` finns för.
+
+                PLACEHOLDERN BEHÖLLS, i Marcus andra form ("Sök på namn eller
+                e-post…"): utan den är fältet en tom ruta som inte säger vad den
+                accepterar, och frågan uppstår i exakt det ögonblick den kan
+                besvaras gratis. Den kostar ingenting visuellt — den är borta så
+                fort Lotta skriver. */}
             <Input
               label="Sök deltagare"
+              hideLabel
               value={sok}
               onChange={setSok}
-              placeholder="Namn eller e-post…"
+              placeholder="Sök på namn eller e-post…"
             />
             <div className="scrollbar-inline flex max-h-96 flex-col gap-2 overflow-auto">
               {kandidater.length === 0 ? (
