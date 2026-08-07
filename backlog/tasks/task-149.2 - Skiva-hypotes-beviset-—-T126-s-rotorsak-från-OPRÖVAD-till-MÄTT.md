@@ -1,10 +1,10 @@
 ---
 id: TASK-149.2
 title: 'Skiva: hypotes-beviset — T126:s rotorsak från OPRÖVAD till MÄTT'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-07 10:28'
-updated_date: '2026-08-07 10:51'
+updated_date: '2026-08-07 11:04'
 labels:
   - ready-for-agent
 dependencies: []
