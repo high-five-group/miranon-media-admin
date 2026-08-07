@@ -15,6 +15,38 @@
 
 ## Aktuellt fokus
 
+**Session 93 ⏸️ PAUSAD (2026-08-07, `lifecycle: paused`) — ALLT KLART FÖR
+BYGGAGENTER** — **TRETTON SKIVOR PUBLICERADE, ELVA AFK-BARA.** `TASK-145`
+(eventsidan) sju skivor · `TASK-146` (bilage-fundamentet) sex · bara de två
+QA-korten är `ready-for-human`. **ÅTGÄRDS-SIDANS UNDERLAG LANDAT** som
+[`docs/specs/ATGARDSSIDAN-UNDERLAG.md`](../docs/specs/ATGARDSSIDAN-UNDERLAG.md)
+— tio avsnitt, konsoliderade ur sessionsdok, bilaga, två research-pass,
+ORDLISTA och **docblock i produktionskod** (där mest låg: tabellen över vilka
+Åtgärds-rader som flyttar, med Marcus verbatim per rad). **DE SEX
+ÅTGÄRDSTYPERNA BEKRÄFTADE:** manuell anmälan · bekräftelse ·
+betalningspåminnelse · markera betalda · eventinfo · fritt utskick.
+**MARCUS DATUM-BESLUT (väg C):** datumet SKA byggas —`TASK-145` renderar när
+fältet bär värde, `TASK-147` äger fält + allowlist + skrivväg;
+`PROTO_MOTTAGEN_DATUM` rivs; accepterad konsekvens att gamla betalningar
+aldrig får datum. **TRE SKIV-BESLUT mot disk:** betalningsytans rivning+form
+ihopslagen (en delad skiva hade fallit på DoD #5) · markera-läget beror på
+FILTRERINGEN (mätt: kandidatlistan ÄR den filtrerade) · **Dokument-ytan
+utbruten till `T131`** — och därefter, på Marcus fråga, **inflyttad i
+åtgärds-sidans session** eftersom bilageväljaren visar det Dokument-ytan
+förvaltar. **FYND:** repot har varken `supabase/migrations` eller
+storage-konfiguration ⇒ båda provisionerings-skivorna kräver incheckade
+idempotenta skript, vilket gjorde dem AFK-bara. **ORDNING:** eventsidan FÖRE
+fundamentet — `TASK-146` saknar UI-konsument tills åtgärds-sessionen levererat.
+**NÄSTA: verifiera `#850` → svep → skicka ut byggagenter** (`145.1`→`145.2`→
+`145.3`, parallellt `145.4`→`145.5`→`145.6`; `146.1` fristående; `145.6`
+ALLRA SIST). Parallell ny session tar åtgärds-sidan + Dokument-ytan med
+underlaget som ingång — tre krockytor och deras regler i underlaget § 9.
+Numrering: 096/**L480**/T132/task-148/f47 + tre nummerlösa fragment.
+**HANDOFF: sessionsdok S93 § PAUSLÄGE.**
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`) — PRD × 3
 LEVERERADE** — **GITHUB ACTIONS LÅG NERE, OCH TVÅ VAKTER LJÖG OM DET.**
 `#838` stod `BLOCKED` med en required check i `CANCELLED` — jobbet hade kört
