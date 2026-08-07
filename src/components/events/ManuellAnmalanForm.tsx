@@ -131,7 +131,7 @@ function TomtLage() {
 
   useEffect(() => {
     headingRef.current?.focus();
-    document.title = 'Lägg till manuell anmälan — Miranon Media Admin';
+    document.title = 'Lägg till manuell anmälan';
   }, []);
 
   return (
@@ -231,7 +231,7 @@ function ValtLage({ eventId }: { eventId: string }) {
 
   useEffect(() => {
     headingRef.current?.focus();
-    document.title = 'Lägg till manuell anmälan — Miranon Media Admin';
+    document.title = 'Lägg till manuell anmälan';
   }, []);
 
   // Bekräftelseläget tar fokus när det ersätter formuläret (fokus får aldrig falla

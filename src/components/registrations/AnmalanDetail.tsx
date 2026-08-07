@@ -243,7 +243,7 @@ export function AnmalanDetail({
     if (reg && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = `${displayName(reg)} — Anmälan — Miranon Media Admin`;
+      document.title = `${displayName(reg)} — Anmälan`;
     }
   }, [reg]);
 

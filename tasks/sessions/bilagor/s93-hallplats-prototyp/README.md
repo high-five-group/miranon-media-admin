@@ -807,7 +807,7 @@ vänster, värde primärt höger.
 | 12 | **"Utskick"-rubriken riven**, luften kvar (`pt-8`) | Ordet upprepade noderna under det, med en fjärde textvikt |
 | 13 | **Höger-slotten helt riven** ("Saknas"/"Mottagen") | Sa samma sak som krysset — i Saknar-fliken tre gånger om |
 | 14 | **Mottagen-pill med datum** (prototyp-lokalt) | Datumet är äkta information krysset inte kan bära |
-| 15–16 | **Pill-skalan namngiven**, kontur prövad och riven | Se `T127` |
+| 15–16 | **Pill-skalan namngiven**, kontur prövad och riven | Se `T130` |
 | 17 | **Hover på "Öppna detaljer"** | Raden var klickbar utan att se klickbar ut |
 
 ### Gruppdynamiken (vågorna 18–19)
@@ -861,7 +861,8 @@ faktiskt renderades.
 - `npx @biomejs/biome check` — 0 fel i rörda filer.
 - `npm run build` — grön.
 - `npm run test:api` — **458 passed**.
-- `check-thread-index.sh` + `check-lifecycle.sh` — OK (`T127`).
+- `check-thread-index.sh` + `check-lifecycle.sh` — OK (`T130`, mintad som
+  `T127`).
 - **Grep-verifierat:** `Förhandsvisning (proto)` 0 träffar i `src/`, och
   0 träffar i `tests/` FÖRE rivningen (ingen svit hängde på texten).
 - **EJ KÖRT:** `npm run test:visual`. Konvergens-passet körde en dubbel

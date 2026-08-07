@@ -64,7 +64,7 @@ export function AnmalningarList() {
     if (registrations && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = 'Anmälningar — Miranon Media Admin';
+      document.title = 'Anmälningar';
     }
   }, [registrations]);
 

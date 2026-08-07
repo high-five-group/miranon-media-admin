@@ -6,7 +6,7 @@ status: stable
 lifecycle: paused
 ---
 
-# T127 — Appens pillar har tre storlekar, två av dem oavsiktliga
+# T130 — Appens pillar har tre storlekar, två av dem oavsiktliga
 
 > **Registrerad** 2026-08-06 (S93, iterationsvåg 16) på Marcus order:
 > *"samma sak med pillar som med knappar. Vi måste inventera alla pillar vi har

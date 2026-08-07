@@ -126,7 +126,7 @@ export function EventDetail({ eventId }: { eventId: string }) {
   // document.title följer eventNAMNET (nyckeln är titel-STRÄNGEN — `event`-
   // objektet byter identitet per render när placeholdern räknas om, och en
   // objekt-nycklad effekt hade avbrutit sin egen frame i cleanupen).
-  const titel = event ? `${eventName(event)} — Miranon Media Admin` : null;
+  const titel = event ? eventName(event) : null;
   const titelRef = useRef<string | null>(null);
   useEffect(() => {
     titelRef.current = titel;

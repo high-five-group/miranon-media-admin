@@ -114,7 +114,7 @@ export function EventAttendance({ eventId }: { eventId: string }) {
     if (attendance && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = 'Närvaro — Miranon Media Admin';
+      document.title = 'Närvaro';
     }
   }, [attendance]);
 

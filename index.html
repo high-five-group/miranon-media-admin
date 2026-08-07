@@ -3,7 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#D4960A" />
+    <!-- Namnlistens färg följer systemets ljus/mörk-läge (Marcus-beslut
+         2026-08-06, S96). Meta-taggen ÖVERSTYR manifestets `theme_color`
+         (MDN, manifest/theme_color), och `media`-attributet är den enda
+         plats där ljus/mörk-axeln finns — manifest-formatet har bara ETT
+         färgfält.
+
+         Ljus: #ffffff = appens egen bakgrund (--mm-bg → --p-neutral-0), så
+         listen försvinner in i innehållet. Mörk: #202124 = Chromes egen
+         mörka verktygsfältston, alltså en approximation av "ärv
+         webbläsarens färg" — äkta arv går inte, eftersom vite-plugin-pwa
+         injicerar en egen default (Vue-grönt) så fort manifest-fältet
+         utelämnas. Se vite.config.ts.
+
+         ÖPPEN MÄTPUNKT: att meta-taggen överstyr manifestet är dokumenterat
+         för webbsidor. Om ett INSTALLERAT skrivbordsfönster följer taggen
+         och dess media-varianter är INTE dokumenterat i MDN eller web.dev —
+         det mäts i skarp installerad app efter denna deploy. Faller det ut
+         negativt gäller manifestets vita värde i båda lägena. -->
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#202124" media="(prefers-color-scheme: dark)" />
+
     <!-- Browser-favicon: runda varianten med vit bakgrund (Marcus-beslut
          Session 16 K5b). SVG för moderna browsers, ICO + PNG som fallback;
          apple-touch från samma set. PWA-manifest-ikonerna (full-bleed +

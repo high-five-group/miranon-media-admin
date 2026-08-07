@@ -38,10 +38,17 @@ per T120). `main` på `58c7867a`, arbetsträd rent, `Nattvakt`/`Post-merge`/`Pus
 on main` gröna. **Numreringen re-verifierad mot disk — TVÅ AVVIKELSER mot
 handoffen:** nästa tråd är **`T127`** (handoffen sa `T125`; S93 förbrukade
 `T125`–`T126`) och det finns **3 nummerlösa lessons-fragment** (handoffen sa
-noll). Oförändrat: `096`/`L480`/`task-145`/`f47`. **NÄSTA: prod-SMTP:n på Marcus
-val → `TASK-116` AC #3 → `TASK-129`/`TASK-138` → `T124` när formen är vald → QA-
-korten `126.3`/`126.5`/`127.10`.** **HANDOFF: sessionsdok S96 § Paushistorik
-paus 7.**
+noll). Oförändrat: `096`/`L480`/`task-145`/`f47`.
+**LEVERERAT SEDAN DESS (Del 17):** prods SMTP lagad med ny domänlåst
+Resend-nyckel och **funktionellt bevisad** (`/recover` `500`+`535` → `200`;
+mailet `delivered`) · mail-taket 2 → 30 i prod · **`#841`** logotyp + "Roger och
+Lotta" i båda mallarna · **`#842`** titel utan appnamn-suffix (14 rader, 13
+filer) + namnlist som följer ljus/mörkt läge · mallarna deployade till BÅDA
+miljöerna med diff-bevis (2 fält av 242 vardera, `smtp_pass`/`uri_allow_list`
+orörda) · **`T127`–`T129`** registrerade. **NÄSTA: Marcus mäter namnlisten i
+ljust/mörkt läge (öppen mätpunkt) → `TASK-116` AC #3 → `TASK-129`/`TASK-138` →
+`T124` när formen är vald → QA-korten `126.3`/`126.5`/`127.10`.**
+**HANDOFF: sessionsdok S96 § Del 17.**
 *(S93 är `paused` sedan `#839` — dess kadensrad nedan, oförändrad.)*
 
 **Session 93 ⏸️ PAUSAD (2026-08-06, `lifecycle: paused`) — FACIT LÅST** —
@@ -56,7 +63,7 @@ fixturen berikades så blocket gick att granska alls — två av tre ytor
 renderade tomt — inklusive **`T16`-divergensen gjord synlig** (Gustav Wik "3+
 tidigare event" + badge "Ej påbörjat", RIM-3-blindheten). Knappformen härmar
 nu Deltagares, personkorten `PersonMiniKort`s. **Sju proto-texter rivna** ·
-composern 64 → 112 px. **`T127` mintad** (pill-skalan: 23 pillar i TRE former,
+composern 64 → 112 px. **`T130` mintad** (pill-skalan: 23 pillar i TRE former,
 inte två). **DATAGRÄNS:** `Mottagen <datum>` kan inte byggas skarpt — basens
 betalningsfält är singleSelect utan tidsstämpel; pillen visas mot
 prototyp-lokalt datum, bas-fälten är Marcus beslut. **PROCESSFYND:**
@@ -69,7 +76,7 @@ hade INTE landat vid paus-skrivningen — **verifiera först, armera bara om vid
 utsparkning.** **NÄSTA: `/to-prd` × 3 → `/to-issues`**
 (Marcus förvarnade att det blir nästa resumes arbete). **HANDOFF: sessionsdok
 S93 § PAUSLÄGE (facit låst).** Numrering disk-verifierad mot `7c3f4ea7`:
-096/**L480**/T128/task-145/f47. **EJ KÖRT: `test:visual`** — vågorna 19–20
+096/**L480**/T131/task-145/f47. **EJ KÖRT: `test:visual`** — vågorna 19–20
 ändrar skarp kod med avsikt, baselines förväntas skilja.
 
 **Session 93 ⏸️ PAUSAD (2026-08-06, `lifecycle: paused`)** — **SJU

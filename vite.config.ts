@@ -73,7 +73,18 @@ export default defineConfig(({ mode }) => {
           lang: 'sv',
           start_url: '/',
           display: 'standalone',
-          theme_color: '#d4960a',
+          // Vit, inte guld (Marcus-beslut 2026-08-06, S96): färgen målar det
+          // installerade fönstrets namnlist, och guldet (#d4960a) ramade in
+          // en app vars egen bakgrund är vit.
+          //
+          // FÄLTET FÅR INTE UTELÄMNAS. Mätt vid detta bygge: utan raden
+          // injicerar vite-plugin-pwa sin EGEN default — `theme_color:
+          // "#42b883"` (Vue-grönt, node_modules/vite-plugin-pwa/dist/
+          // index.js:854) — så en utelämning ger inte "ingen färg" utan
+          // grön namnlist. Manifest-formatet saknar dessutom ljus/mörk-
+          // variant; den axeln ägs av index.html:s meta-taggar, som
+          // ÖVERSTYR detta värde (MDN, manifest/theme_color).
+          theme_color: '#ffffff',
           background_color: '#ffffff',
           // W3C manifest-kategorier (github.com/w3c/manifest/wiki/Categories):
           // adminverktyg för en verksamhet — närmast 'business'/'productivity'.
