@@ -31,7 +31,8 @@ här — skulden bokförd i 149.3-kortet, betalas i session född efter
 draft, T132-klassen) + `#882` (S100:s paus-PR) — främmande sessioners
 PR:er, rörs ej. **NÄSTA: skarpbevis 148.2 → minta task-158 + sex skivor
 (uppdrag 5) → spawna 157.1 (ADR-098) + 149.4 (hub, OISOLERAD) → grilla
-6/7/8.**
+6/7/8/9 (9 = styrande-docs-auditen, tillagt av Marcus vid resume 1 —
+sessionsdok Del 1 § Ordnad scope punkt 9).**
 *(Paus-kadensraden nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
