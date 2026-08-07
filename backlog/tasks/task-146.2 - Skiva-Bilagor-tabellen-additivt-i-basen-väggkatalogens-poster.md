@@ -4,6 +4,7 @@ title: 'Skiva: Bilagor-tabellen additivt i basen + väggkatalogens poster'
 status: To Do
 assignee: []
 created_date: '2026-08-07 09:04'
+updated_date: '2026-08-07 13:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,9 +27,11 @@ Täcker användarberättelser: 4, 14
 - [ ] #1 Metadata- och eventkopplings-tabellen finns i staging, skapad av ett INCHECKAT, idempotent skript — inte av konsolklick
 - [ ] #2 Skriptet är omkörbart utan sidoeffekt och dokumenterar sin egen fältuppsättning
 - [ ] #3 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
-- [ ] #4 Väggkatalogens två attachment-poster landade med v1-kompensation och Fas E-krav, per katalogens form
-- [ ] #5 Prod-körningen bokförd som Marcus-moment, EJ utförd av agenten
+- [ ] #4 Prod-körningen bokförd som Marcus-moment, EJ utförd av agenten
+- [ ] #5 Väggkatalogens två attachment-poster (P28 + P29, sektion G) är VERIFIERADE som redan landade av TASK-146.1 (#855) — inga dubletter skapas, ingen omräkning av CLAUDE.md görs
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
