@@ -1,10 +1,10 @@
 ---
 id: TASK-145.2
 title: 'Skiva: Summeringsblocket — steg-räknarna, logistik-gruppen och Avbokade'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 08:58'
-updated_date: '2026-08-07 14:02'
+updated_date: '2026-08-07 15:40'
 labels:
   - ready-for-agent
 dependencies:

@@ -1,10 +1,10 @@
 ---
 id: TASK-146.2
 title: 'Skiva: Bilagor-tabellen additivt i basen + väggkatalogens poster'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 09:04'
-updated_date: '2026-08-07 13:45'
+updated_date: '2026-08-07 15:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -45,7 +45,7 @@ DoD-STATUS PER POST: #1 check (alla 5 AC avbockade). #2 check — lokala grindar
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
 - [ ] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
