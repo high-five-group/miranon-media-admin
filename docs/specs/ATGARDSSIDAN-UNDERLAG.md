@@ -245,6 +245,50 @@ konsekvenser: av-bocken måste **nolla** datumet, och gamla betalningar får
 
 ## 9. Proceduren för nästa session
 
+### Dokument-ytan tas i SAMMA session (Marcus 2026-08-07)
+
+Dokument-ytan i Mer — där bilagor förvaltas — bryts ut ur bilage-fundamentet
+(`T131`) men **ingår i denna sessions arbete**, inte i ett eget spår.
+
+**Skälet är inte att båda är nya ytor.** Det är att **bilageväljaren på
+åtgärds-sidan visar det Dokument-ytan förvaltar**. Designas väljaren utan att
+biblioteket är designat — vilken metadata som finns, hur bilagor grupperas per
+event, hur en ersatt version syns — designas den baklänges. De två ytorna är
+två vyer av samma objekt.
+
+**Bieffekt värd att veta:** utbrytningen lämnade `TASK-146` utan UI-konsument
+(klass A gick inte att ladda upp någonstans ifrån). Tas Dokument-ytan här får
+fundamentet sin konsument tillbaka, och den sekvenserings-invändningen faller.
+
+**Två prototyp-pass, inte ett.** Ytorna är distinkta — en event-knuten
+åtgärds-sida och en Mer-yta — och ska ha var sin form. Det som delas är
+domänen och därmed metadatats vokabulär.
+
+### Parallellitet mot byggspåret — tre krockytor
+
+Körs denna session parallellt med agenter som bygger `TASK-145`
+(eventsidans konsolidering), möts spåren på exakt tre ställen:
+
+| Krockyta | Varför |
+|---|---|
+| De två platshållarna — batch-barens Åtgärder-knapp och Gå-till-åtgärder-kortet | ligger i filer som `TASK-145.3` och `145.6` skriver om, men är åtgärds-sidans skarv |
+| Prototyp-växlarens registrering i eventdetaljen | båda spåren vill lägga till respektive ta bort poster där |
+| Hållplats-prototypens substrat | `TASK-145.6` **river** det; en åtgärds-prototyp som lutar sig mot samma mekanism får mattan bortdragen |
+
+**Reglerna som gör det riskfritt:**
+
+1. **Åtgärds-sessionen bygger i EGNA filer och EGEN route.** Den rör inte
+   eventsidans komponenter.
+2. **Platshållarna lämnas orörda av båda spåren** tills åtgärds-sidans facit är
+   låst. Kopplingen platshållare → riktig navigation blir ett eget kort EFTER
+   båda.
+3. **`TASK-145.6` tas allra sist** — den beror redan på alla andra skivor, men
+   det ska vara medvetet, inte en tillfällighet.
+
+Plus kortnummer-regeln: `git fetch` före varje `task create`, och committa
+kortet i samma andetag. `T127` blev `T130` 2026-08-07 för att den regeln inte
+räckte till under ett Actions-avbrott.
+
 Marcus 2026-08-07: sidan tas i en **egen ny session** som kör hela kedjan.
 
 ```text
