@@ -379,3 +379,18 @@ Sekvensen mot T85 är designad: processhastighets-spåret (Codex-vågorna)
   (beslutsläge 5).
 - **D.** Nästa transkript-släpp från Marcus → samma analysform (gap-analys
   med pre-K-forensik; se memory `kaizen-i-samarbetet`).
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (_..._ vs _..._) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+Pocock v1.1-integrationen — korpus-bevakning → arbetssätts-delta (fyra YT-transkript 2026-07-24, gap-analys med pre-K-forensik). LANDAT: hub del 1 (`d369d99`, plugin 1.19.0 — grilling-kärnans fakta/beslut-distinktion + enact-gate, do-work-valideringskadensen, NY skill `/research`) + korpus-landningen (rå-transkript + destillat/gap-analys). KVAR: review-piloten i do-work-skarven (subagent, spec-trohet + standards/Fowler-smells — PLAN PRECISERAD + Marcus-kvitterad 2026-07-24 — hypotes/mått/låsta beslutskriterier/loggtabell i kortets § Pilotplanen; start-villkoret öppet reviderat → **AKTIVERAD 2026-07-24** (hub `291865d`, plugin 1.20.0 — PILOT-blocket i do-work steg 4→5-skarven; L329 skördad vid distributionen); nattbygget 17.7/18.15/18.16–19 = pilot-skiva 1–6 per kortets § Körplanen (18.16-beslutet: MED, Marcus 2026-07-24); mäts 10–15 skivor → permanentas eller rivs öppet) · Wayfinder-grillningen (kart-kortklass uppströms om PRD-kortet; namnfrågan "PRD-kort"→"spec-kort" buntad; trigger AT-Max/nästa dimmiga initiativ) · teach-piloten + guide-builder-korsbefruktningen + Lotta-onboarding (behovs-triggade). Bevakningen är återkommande (kaizen-direktivet)
+
+**Ingång (fullständig, ursprunglig):**
+[T86-pocock-v11-integrationen.md](T86-pocock-v11-integrationen.md) · [delta-destillatet](../../docs/reference/pocock/v1.1-delta-och-gap-analys-2026-07-24.md) · besläktad `T71` `T85` `T56` `T84`

@@ -45,3 +45,15 @@ ADR-067:s avsiktliga design. Beslutet revs ÖPPET, med kvittens (ej tyst rivning
   människo-synliga riktig-inkorg-verifieringen).
 - [T50](T50-ui-hardning-sand-grind.md) — bärande UI-härdning; dess Form-sektions
   "BESLUTAT: med" är det denna tråd reviderar.
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Ingång (fullständig, ursprunglig):**
+[T53-test-till-sig-sjalv-skicka.md](T53-test-till-sig-sjalv-skicka.md) — uppstod Session 45 (T50-scope-precisering); REVIDERAR Session 44:s "BESLUTAT: med" mot disk-evidens (send-email segmentIds-only, ADR-067 consent-GOLV); options-rymd (A) ingen test-väg · (B) test-segment med Resend-test-adresser (ingen EF-ändring, endast icke-prod) · (C) net-new EF-kontrakt + ADR

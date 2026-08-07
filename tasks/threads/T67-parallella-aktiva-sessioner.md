@@ -104,3 +104,18 @@ hub-PR:n som skriver in detektionssteget i `session-start`/`session-resume`
 (orkestrerarens ägande, per ADR-089/ADR-090 § Verkställande). Återupptas
 (`paused` → `closed`, eller `active` om mekaniseringen kräver spoke-uppföljning)
 när den hub-landningen är verifierad.
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+Parallella aktiva sessioner — arbetssätts-pilot (seriella räknare, delad checkout, delade append-ytor, end-pass-serialisering, levande regel-ytor). Pilot = S57 ∥ S56 (systemets första samtidigt-aktiva parallellkörning); guardrails 1–6 i S57 Del 1; empirin ackumuleras i S57-doket. **DESIGNSTEGET VERKSTÄLLT 2026-08-02 (S94):** web-research levererad ([`sessions-parallellitet-frontier-praxis-2026-08-02.md`](../../docs/research/sessions-parallellitet-frontier-praxis-2026-08-02.md), spawnad mitt i grillningen på Marcus villkor) och fällde halva ursprungsförslaget — mekanismen (worktree per session) stenhårt etablerad, men triggerformen (tyst auto-isolering) tunt-till-inget belagd; vim/tmux/Codespaces landar alla på detektera+fråga. Grillad samsyn 7/7 punkt 6 → [ADR-090](../../docs/decisions/ADR-090-sessions-parallellitet-detektera-och-fraga.md): detektera + fråga i session-starts LÄS-fas, ovillkorad worktree öppet bokförd som framtida väg. `paused` i stället för `active`/`closed`: beslutet är fattat men mekaniseringen (hub-skillen `session-start`/`session-resume`) landar i en SEPARAT hub-PR — se kortets § Designsteget VERKSTÄLLT för motiveringen
+
+**Ingång (fullständig, ursprunglig):**
+[T67-parallella-aktiva-sessioner.md](T67-parallella-aktiva-sessioner.md) · S57 Del 1 · [ADR-090](../../docs/decisions/ADR-090-sessions-parallellitet-detektera-och-fraga.md)

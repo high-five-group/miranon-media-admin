@@ -257,3 +257,18 @@ Våg 2a/2b/2c tas som egna pass (PRD-kort/skivor eller session-scope) med
 design-doket som styrande underlag; ADR mintas vid implementation. Våg 3
 väntar på bas-maximeringens designfönster (run-scoping är ett
 bas-designkrav).
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+Riskanpassad CI / processhastighet — processgransknings-spåret (extern Codex-analys + Codes verifikation 2026-07-23). VÅG 1 EXEKVERAD S77: ruleset `main-skydd` (ADR-076, merge-grinden mekaniserad efter 2 månaders deferral av ADR-029 utelämning #5) + actionlint release-pinnad + Test+Build splittat (mutexen ENDAST på `test-staging`, PR #99). VÅG 2 KOMPLETT S78–S81: 2a (36.1–36.5) + 2c (36.6) + 2b (36.7 S81: hermetisk fixturvärld + 12 st 2x-linux-baselines Marcus-välsignade + visual-baselines.yml ände-till-ände; GRIND-jobbet medvetet parkerat → `T87`, Marcus-beslut A). EFTERGRANSKAD 2026-07-24 (Codex, dom 6,5→8/10 — paketet bekräftat verkligt; rapport + Codes verifikation i docs/research/). KVAR: ~~36.8 (QA-vandringen, ready-for-human, dep 36.7 ✓ — OBS eftergranskningens förbehåll: punkt 11 förutsätter T87-aktivering)~~ **TASK-36.8 är Done** per backlog-CLI:t 2026-07-31 (`TASK-108`); eftergranskningens T87-förbehåll bärs vidare av `T87` själv. Kvar är alltså våg 3 (staging-per-run-isolering — samdesign med bas-maximeringen ADR-063 post-Fas-6; tangerar T27/T45) samt KORRIGERINGSPAKETET ur eftergranskningen (kortets §: mätardefinitionerna FÖRE beslutsanvändning · nattlarms-observatör · Vale-SHA256 · app-bindning · cron-timezone; beslutsklass: 36.7-formalian · 36.8-ordningen · nightly-visual · merge-only-husregeln) — SEKVENS LÅST 2026-07-24: paketet = nästa processfönster efter nattbygget, bindande före T86-pilotbeslutet; nattbygget blockeras ej. Design-doket är styrande för vågarna
+
+**Ingång (fullständig, ursprunglig):**
+[T85-riskanpassad-ci.md](T85-riskanpassad-ci.md) · [design-doket](../../docs/research/riskanpassad-ci-design-2026-07-23.md) · [ADR-076](../../docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)

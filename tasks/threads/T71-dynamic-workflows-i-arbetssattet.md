@@ -348,3 +348,18 @@ headless-spåret som framtida form) och `/work-batch`-skillen byggd i hubben
   datakälla. Kör efter A.
 - **C.** Grillning → ev. ADR om orkestrerings-substratets hemvist, inklusive
   `do-work`-loopens form (stanna-och-rapportera) och begreppskrocken ovan.
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Titel (fullständig, ursprunglig):**
+Dynamic workflows / ultracode i Pocock-arbetssättet — utforskningen KLAR (S60), beslutet ej taget. Kärnfynd: workflows kan strukturellt inte bära mid-run HITL (`grilling`/`to-prd`/`to-issues`/`prototype` har alla en grind mitt i), men Matt efterlyser bokstavligen deterministisk kvalitets-framtvingning (L48) och kallar sin AFK-loop "en `for`-loop som väntar på att automatiseras" (L57). Passar: research-fasen (`/deep-research`), AT-Max-defektsvepet (ADR-063), review-fasen (`/code-review ultra`). Passar EJ: fan-out av `do-work` (entropi-multiplikator, L47; kortet stängs i samma commit som koden). Agent teams förkastade — deras task-lista är session-scoped medan vårt `backlog/` är durabelt. Rekommendation: `/effort ultracode` EJ som default (tar bort grindar; self-review-fångst ~9 %) — använd `ultracode:`-keyword per prompt. Beslutet är ADR-bart
+
+**Ingång (fullständig, ursprunglig):**
+[T71-dynamic-workflows-i-arbetssattet.md](T71-dynamic-workflows-i-arbetssattet.md) · besläktad `T67`, `T56` · **UPPTAGEN S61 (2026-07-11):** kortets rekommendationer docs-omverifierade (höll 100 %), grillad samsyn (S61 Del 2) + pilot grön (Del 3); **S62 (2026-07-11):** [ADR-071](../../docs/decisions/ADR-071-afk-batch-kontraktet.md) MINTAD + `/work-batch` byggd (hub `3174a1e`, plugin 1.13.0) — beslutet verkställt; orkestrerings-skript-begreppet landat i SYSTEMET.md §0 (begreppskrock-lösningen)

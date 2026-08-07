@@ -82,3 +82,15 @@ auktoriserad), **ej** M-taggade:
 - T39 (compute-segment prod-drift — adresseras vid prod-deploy)
 - T40 (prod-test-user — samma secure-channel-princip för credentials)
 - L206 (fail-closed ENVIRONMENT-flagga) · L207 (risk-trappa)
+
+## Migrerat ur indexraden (`TASK-157.2`, 2026-08-07)
+
+> Ordagrann text som tidigare bodde i `tasks/threads/README.md`s Titel-
+> och/eller Ingång-kolumn för denna tråd, flyttad hit av registrets
+> tunna radform-migration (ADR-098). Inget härunder är omskrivet —
+> emfas-markörernas STIL (*...* vs *...*) normaliseras separat av
+> `npx markdownlint-cli2 --fix` mot filens egen etablerade MD049-stil,
+> inte av denna migration.
+
+**Ingång (fullständig, ursprunglig):**
+[T44-fas-6h-externa-provisionerings-forkrav.md](T44-fas-6h-externa-provisionerings-forkrav.md) — ⚠️ GRINDAR 6h: M1 Resend-konto / M2 staging-test-nyckel→L2d / M3 prod-nyckel+verifierad-domän→prod-real-send (Marcus-ägda, secure-channel); Code-at-prod-deploy separat. **Root-vs-subdomän-frågan AVGJORD S95:** utskick från `send.miranon.dev`, DMARC `p=reject` (T95-grillningen beslut 3+4; se kortet + T46:s Grind 0-paket)

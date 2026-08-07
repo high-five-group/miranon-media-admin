@@ -1,0 +1,22 @@
+---
+owner: marcus803
+updated: 2026-08-07
+review_by: 2026-11-07
+status: stable
+lifecycle: active
+---
+
+# T122 — Relationsmodellen för hela dokumentationssubstratet — hur eliten gör, och vad vi ska bygga
+
+> Tråd-kort (ADR-053), fött vid registrets tunna radform-migration
+> (`TASK-157.2`, [ADR-098](../../docs/decisions/ADR-098-tradregistrets-tunna-radform-vaxt-vagen.md)).
+> Innehållet nedan är den ORDAGRANNA texten som tidigare bodde i registrets
+> Titel-/Ingång-kolumner för denna rad — flyttad, inte omskriven eller
+> sammanfattad. Ursprunglig radhistorik (innan migrationen):
+> `git log -p -- tasks/threads/README.md`.
+
+**Ursprunglig Titel-cell:**
+**Relationsmodellen för hela dokumentationssubstratet — hur eliten gör, och vad vi ska bygga.** Registrerad 2026-08-04 (S97) på Marcus order efter att `T119`:s `barn:`-fråga visat sig för smal. Hans ram, verbatim: _"Vi behöver ju liksom bygga i mönstret av en RIKTIG RELATIONSDATABAS, eller hur nu absoluta eliten inom dokumentation och liknande löser sådant här. […] Om det betyder att vi behöver migrera hela vårt dokumentationssystem till en extern databas typ Supabase eller liknande så GÖR VI DET. Jag vill bygga proffsigt och skalbart för framtiden."_ Frågan är alltså INTE var ett fält ska bo utan hur relationer modelleras i ett kunskapssystem som ska hålla i år — och `besläktad` (symmetrisk peer) hör till samma modell som `barn` (asymmetrisk). **RESEARCH-PASSET LANDAT** (`docs/research/relationsarkitektur-dokumentationssystem-2026-08-04.md`): **nio** oberoende granskade system — Backstage, Obsidian+Breadcrumbs, Notion, Airtable, Linear, Jira, adr-tools/MADR, Python PEP, plus Kubernetes KEP och Rust RFC som negativa precedent — konvergerar på EN datamodell: **asymmetriska relationer deklareras EN gång och motsatt riktning HÄRLEDS mekaniskt av ett processlager, aldrig manuellt dubbelbokförd; symmetriska deklareras en gång per par.** **Supabase-svaret är NEJ, med den starkaste enskilda datapunkten från Backstage självt** — branschens mest citerade property-graph-för-devdocs — som uttryckligen beskriver sin databas som en INGEST-CACHE och inte en sanningskälla (_"entities are ingested from various authoritative sources and held in a database"_, `life-of-an-entity.md`). Byggs ett frågeindex någon gång ska det vara SQLite genererat ur filerna i CI, aldrig handunderhållet och aldrig sanningskälla; Supabase skulle importera exakt den nätverks- och mutex-kostnadsklass `ADR-063` redan dokumenterat för produktdata, utan motsvarande nytta för ett lager som måste kunna läsas av en agent utan nätverk. **REKOMMENDERAD ORDNING (ej beslutad):** (1) formalisera `besläktad` FÖRST — en grind som validerar att varje omnämnt tråd-ID existerar, återanvänder `check-thread-index.sh`s befintliga ID-idiom och rör ingen befintlig rad strukturellt; (2) `barn`-manifestet enligt `T119` Option C, additivt och glest, med en femte invariant i samma stil som inv. 3/4 — deklarera i EN riktning, härled den andra; (3) bygg INGET genererat index nu, inget mätt behov finns; (4) rör inte ADR-lagrets `Supersedes`-konvention, den ÄR redan branschmönstret och dess låga ändringsfrekvens gör manuell disciplin rimlig där. **Passets egen självrättelse värd att minnas:** dess första utkast påstod att `lessons.md` saknade adresserbara ID:n — fel, upptäckt genom att köra repots EGEN grind (`check-lesson-numbers.sh`) som bekräftade 426 poster med `L<N>`-form. Egna regex-gissningar slog fel där en befintlig grind hade svaret. **ADR-BAREN TRÄFFAS** — beslutet att INTE migrera är svårt att riva senare utan att skriva om varje Code-sessions grundantagande om att allt kan läsas utan nätverk. En ADR krävs när formen väljs; den mintas INTE av en agent. Besläktad: `T119` (den smalare föregångaren) · `ADR-063` (extern datakälla, dess kostnader) · `T109`
+
+**Ursprunglig Ingång-cell:**
+**BESLUTAD 2026-08-05 (S97) — [`ADR-095`](../../docs/decisions/ADR-095-relationsmodellen-dokumentationssubstratet.md) mintad** på Marcus mandat att gå på rekommendationen. Paraply-form (beslut 7): filer förblir sanning, ingen Supabase · två relationsklasser aldrig i samma fält · `besläktad`-grinden FÖRST, sedan `barn`-manifestet (Option C) med femte invariant · inget genererat index nu · `Supersedes` orörd. **Kvar som ARBETE:** två kort (grinden, manifestet) — ordningen beslutad, tidpunkten inte. **Kvar som MARCUS-BESLUT:** den semantiska frågan vad som räknas som barn (`T86`:s 15+ kort kräver människo-omdöme; öppet avgränsat i ADR:ns § Avgränsningar)
