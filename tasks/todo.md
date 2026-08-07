@@ -227,8 +227,13 @@ paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
 resume.
 *(S93:s kadensrad nedan, oförändrad.)*
 
-**Session 93 ⏸️ PAUSAD (2026-08-07, `lifecycle: paused`) — SEX SKIVOR LANDADE,
-TAKTEN UNDERKÄND** — `145.1` (registret som EN lista) · `145.2`
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, sjätte resumen, `lifecycle: active`)
+— SEX SKIVOR LANDADE, TAKTEN UNDERKÄND** — **`145.4` VERIFIERAD LANDAD** vid
+resumens första handling: `#915` MERGED `15:46:38Z` (`1af3299d`), CI grön per
+jobb på `f0871120` (11 success / 3 skipped / 0 fel) → kortet stängt (DoD #3 +
+`Done`). `main` = `09bb484d`. **DE TVÅ MARCUS-BESLUTEN ÄR FORTFARANDE
+OBESVARADE** och blockerar allt vidare bygge. Föregående paus-läge nedan
+oförändrat: `145.1` (registret som EN lista) · `145.2`
 (summeringsblocket med Bor över + Avbokade i facit-låst form) · `146.1`
 (PDF-runtime **BEVIS**) · `146.2` (Bilagor-tabellen, additivitet mätt över 19
 tabeller) · `146.3` (privat bucket, AC #3 bevisad i tre oberoende ben) —
