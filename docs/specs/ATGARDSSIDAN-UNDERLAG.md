@@ -230,16 +230,24 @@ bristen kunde vara tyst. **Beviset måste vara att bilagan kommer fram.**
 | Fråga | Vem avgör | Blockerar |
 |---|---|---|
 | Kvitto-gränsen mot Rogers faktureringssystem | Roger, sedan Marcus | kvitto-skivan |
-| Hela formen — layout, flöde, ordning | divergens-passet, sedan Marcus | allt formberoende |
+| Hela formen — layout, flöde, ordning | konvergens-passet (S100), sedan Marcus | allt formberoende |
 | Utskickshistorikens kort-visning | Marcus | en detalj i formen |
 | Namnkollisionen: två "Åtgärder" på samma sida | löses när sidan får sitt namn | namngivningen |
-| Mottagen-datum i basen (additiva fält?) | Marcus | kvittots datumuppgift |
 
-**Om mottagen-datum:** basens båda betalningsfält är enkelval **utan
-tidsstämpel**. Prototypen visar datumet mot ett prototyp-lokalt värde som
-**inte får landa skarpt**. Tas beslutet om två additiva datumfält följer två
-konsekvenser: av-bocken måste **nolla** datumet, och gamla betalningar får
-**aldrig** ett datum retroaktivt.
+**STÄNGD 2026-08-07 — mottagen-datum i basen.** Frågan stod här som öppen och
+var det inte: Marcus tog **väg C** samma dag. Datumet SKA byggas — `TASK-145`
+renderar när fältet bär värde, `TASK-147` äger fält + allowlist + skrivväg,
+och `PROTO_MOTTAGEN_DATUM` rivs. De två konsekvenserna gäller oförändrat:
+av-bocken måste **nolla** datumet, och gamla betalningar får **aldrig** ett
+datum retroaktivt. Att gamla betalningar därmed står utan datum för alltid är
+en **accepterad** konsekvens, inte en förbisedd.
+
+Bakgrunden, kvar för läsbarhet: basens båda betalningsfält är enkelval **utan
+tidsstämpel**, vilket är skälet till att additiva fält krävs.
+
+*(Raden låg kvar som öppen i fyra dagar efter att beslutet togs — beslutet
+bokfördes i `tasks/todo.md`:s kadensrad men konsumerades aldrig hit. Fångad
+vid S100:s LÄS-fas.)*
 
 ---
 
@@ -302,10 +310,60 @@ grillning också men mycket har vi ju koll på redan."* Underlaget i detta
 dokument täcker produktbesluten; det som saknas är **formen**, och den kommer
 ur prototyp-passen — inte ur en intervju.
 
-**Divergens-passet är däremot inte valfritt** — grillad samsyn beslut 8
-föreskriver det uttryckligen, och prototyp-kedjans stående form är divergens
-(tre radikalt olika varianter på en route → Marcus väljer EN) följt av
-konvergens (vinnaren itereras till facit).
+**Divergens-passet var enligt beslut 8 inte valfritt** — det föreskrev
+uttryckligen tre radikalt olika varianter på en route → Marcus väljer EN,
+följt av konvergens.
+
+#### RIVET 2026-08-07 (S100) — beslut 8:s divergens-pass ersatt av strukturskisser
+
+**Marcus rev det öppet vid sessionsstarten**, ordagrant: *"Jag föreslår att du
+enbart bygger EN variant. Jag tycker att vi har tillräckligt många klara sidor
+i appen som fått facit låsta … du kan ge allt du har i en enda variant och den
+kommer bli riktigt bra om du FÖRST tittar på ALLA klara sidor i appen."*
+
+**Skälet håller:** divergens finns för att utforska en OKÄND formrymd. Appens
+grammatik är inte okänd — eventdetaljen, anmälningsdetaljen, login och
+inbjudan bär låsta facit. Tre radikalt olika varianter mot en känd grammatik
+hade gjort två av dem döda vid ankomst.
+
+**Men strukturvalet behölls**, eftersom grammatiken ger stilen och inte
+strukturen: åtgärds-sidan är den enda sidan som tar emot ett urval från en
+annan sida, den bär två olikartade vertikaler (utskick + betalningarnas
+skrivvertikal) och har ett flödesmoment (förhandsvisning → körning →
+delutfall) som ingen befintlig sida har. Formen blev därför **tre
+strukturskisser i text** (A staplad · B hubb-med-arbetsytor · C urvalet i
+centrum med arbetslåda) → Marcus valde **B** → EN byggd variant som itereras
+till facit.
+
+**Kedjan blir alltså:**
+
+```text
+sid-inventering  →  tre strukturskisser (text)  →  Marcus väljer struktur
+                 →  EN byggd variant           →  konvergens till facit
+                 →  PRD uppdateras             →  /to-issues  →  skivor
+```
+
+#### Två krav som tillkom 2026-08-07 och formade B
+
+**1. Mottagar-urvalet är REDIGERBART på sidan, inte medtaget-och-låst.**
+Marcus: *"hon kanske drar in 7 stycken från eventdetaljsidan in på
+åtgärdssidan, men sen vill skicka tillbaka 1 person och hämta in 2 nya, det
+ska hon kunna göra utan att lämna åtgärdssidan."* Följd: mottagar-ytan är
+permanent och förstklassig — varje rad avmarkeringsbar, plus en sökbar
+plockare över eventets övriga anmälda. Urvalet från registret är därmed bara
+ett **startvärde**, inte ett kontrakt.
+
+**2. Sidan står på egna ben, med eventväljare.** Marcus: *"hon ska kunna gå
+direkt dit från hem-vyn och välja vilka event hon vill hantera … Funktionen
+för sidan liknar väl den vi har idag för hennes Manuella-anmälningssida, hon
+kan komma till den från flera håll."* Formen är ärvd verbatim ur manuell
+anmälan (`task-18.18`, S83 pass 4-facit): **TVÅ TILLSTÅND, INTE TVÅ SIDOR** —
+`/atgarder` renderar samma komponent i tomt läge med eventväljaren fristående
+som sidans enda handling, och valet navigerar in i
+`/event/$eventId/atgarder`. Branschprecedent: Linear `linear.app/new` +
+`/team/LIN/new`, Rails `/parent/:id/children/new`. Hem-vyns knapp är denna
+routes tänkta ingång och byggs inte i detta pass — samma avgränsning manuell
+anmälan gjorde.
 
 ### Beroenden
 

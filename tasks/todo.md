@@ -15,6 +15,74 @@
 
 ## Aktuellt fokus
 
+**Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 1) —
+OMBYGGNADEN AV ÅTGÄRDS-SIDAN, MOT FYRA MARCUS-KRAV.** Marcus kvitterade
+tillståndsflippen och gav fyra formkrav direkt in i ombyggnaden: (1) rubrik +
+avgränsande linje kopieras EXAKT ur `ManuellAnmalanForm` § `Sidhuvud`
+(`border-border border-b px-4 pb-5`, `h1 font-semibold text-3xl`, rund
+chevron-tillbaka `size-11 rounded-full bg-bg-muted`) — *"det är ju likadant på
+de flesta sidor och så borde du byggt direkt"*; (2) översta blockets IDÉ tas ur
+samma sidas Eventet-block (`divide-y divide-border rounded-2xl bg-bg-muted
+px-4` med väljaren överst); (3) **deltagarna listas som PERSONKORT, aldrig
+rader** — *"big NO NO, Lotta måste känna igen sig"*; korten ska se **exakt**
+likadana ut som på eventdetaljerna (`Gruppdynamik` § `PersonKort`) och
+anmälans-detaljsidan (`PersonMiniKort`), så att en deltagare som dras från
+eventdetaljen in i Åtgärder ser identisk ut; (4) sök-för-att-addera behålls —
+men träffarna listas på kort, inte i en radlista. **Numrering re-verifierad mot
+`origin/main` vid resumen — TVÅ divergenser mot handoffen:** fragmenten är
+**fem** (nytt: `skivning-provas-mot-kodens-kopplingar-inte-mot-funktionsytan`)
+och nästa tråd är **`T133`**, inte `T132` (S93 förbrukade både `T131` och
+`T132`) — S99:s resume-rad landade samma slutsats oberoende. Övriga axlar
+håller: `ADR-098`/**`L480`**/`task-158`/`f47`. **Paus-PR:n `#882` stod DIRTY
+vid resumen — verklig konflikt** (S99 skrev sin kadensrad i `todo.md`), löst
+med merge av `origin/main` i denna landning; `mergeStateStatus` var alltså sant
+den här gången, till skillnad från `#873`-mätningen.
+**NÄSTA: (1) åtgärds-sidans yta byggd om mot de fyra kraven · (2)
+Dokument-ytans prototyp (`T131`) · (3) facit → `TASK-147` → `/to-issues`.**
+*(Paus-kadensraden nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
+**Session 100 ⏸️ PAUSAD (2026-08-07, första pausen, `lifecycle: paused`) —
+ÅTGÄRDS-SIDANS FÖRSTA VARV UNDERLEVERERADE, OCH DET ÄR BOKFÖRT SOM SÅDANT.**
+Sessionen startade som den TREDJE parallella (S99 äger huvudkatalogen, S93 kör
+byggagenter) och tog egen worktree per `ADR-090` beslut 2. **Marcus rev
+grillad samsyn `S93` beslut 8 öppet:** divergens-passets tre varianter
+ersattes av tre **strukturskisser i text** → Marcus valde **B** → EN byggd
+variant. Rivningen är bokförd i artefakt, inte bara i chatt
+(`ATGARDSSIDAN-UNDERLAG.md` § 9, `baaf551b`), tillsammans med två krav som
+tillkom under passet — **mottagar-urvalet är REDIGERBART på sidan** (dra in
+och ut utan att lämna den) och **sidan står på egna ben med eventväljare**
+(TVÅ TILLSTÅND-formen ur `task-18.18`) — plus stängningen av
+mottagen-datum-frågan i § 8, som stått öppen i fyra dagar efter att Marcus
+väg C togs. **SID-INVENTERINGEN:** 26 sidor, fem med låst facit; djupstuderade
+eventdetaljen + anmälningsdetaljen. Två fynd bär vidare: `SegmentMailCompose`
+löser mottagarna SERVER-side (*"aldrig en klient-byggd lista"*) medan
+åtgärds-sidan bär ett KLIENT-buret urval — kontraktsskillnad mot `ADR-067`
+som hör i sändvägs-skivan; och **dokumentklass C** (person-genererad) gör
+bilageväljaren till något annat än en filväljare — en klass C-bilaga är SEX
+filer till sex mottagare, vilket ger den bilage-bärande sändvägen ett ANDRA,
+oberoende skäl utöver den tysta batch-bristen. **MARCUS DOM (verbatim):**
+*"En ordentlig underleverans Claude! Den här sidan ser ut att vara ihopkastad
+i panik."* Domen är riktig: ytan är en funktionell skiss utan statusbadges,
+deadline-signal eller visuell hierarki — grammatiken lästes men omsattes
+inte — och **Dokument-ytan (`T131`, scope-punkt 2) byggdes inte alls**.
+Rotorsaken bokförd: orkestreraren brände Marcus granskningsfönster på att
+kvittera heartbeat-larm om ANDRA sessioners PR:er i stället för att bygga
+nästa oberoende scope-post. **MÄTT UNDER PASSET:** stagings CORS-allowlist
+tillåter EXAKT `5173`/`4173` (egen port ⇒ 403 preflight) · `mergeStateStatus=
+DIRTY` är en HYPOTES (`#873` stod DIRTY men `git merge-tree` gav rent träd och
+fältet rättade sig själv) · service worker på `4173` är den sannolika men
+**OBEKRÄFTADE** orsaken till att Marcus såg gamla login-sidan (tre mätningar —
+4173/5173/prod — visade alla den NYA). **NÄSTA: (1) gör om åtgärds-sidans yta
+mot facit-bilderna, samma struktur, riktigt utförande · (2) bygg Dokument-ytans
+prototyp · (3) därefter facit → `TASK-147` → `/to-issues`.**
+**HANDOFF: sessionsdok S100 § PAUSLÄGE.** Numrering disk-verifierad mot
+`origin/main`: `098`/**`L480`** + fyra fragment/`T132`/`task-158`/`f47` —
+kortnumren rörde sig 149 → 158 under passet, re-verifiera i mint-ögonblicket.
+Heartbeat-monitorn **stoppad med avsikt** — starta den vid resume.
+*(S99:s kadensrad nedan, oförändrad.)*
+
 **Session 99 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 1)**
 — paus-antagandet höll: `#876` (149.3) mergad `a95d271c` + paus-PR:n
 `#881` mergad `6bfdb751`, båda per-jobb-gröna (Acceptance 8m8s körd;
@@ -31,7 +99,8 @@ här — skulden bokförd i 149.3-kortet, betalas i session född efter
 draft, T132-klassen) + `#882` (S100:s paus-PR) — främmande sessioners
 PR:er, rörs ej. **NÄSTA: skarpbevis 148.2 → minta task-158 + sex skivor
 (uppdrag 5) → spawna 157.1 (ADR-098) + 149.4 (hub, OISOLERAD) → grilla
-6/7/8.**
+6/7/8/9 (9 = styrande-docs-auditen, tillagt av Marcus vid resume 1 —
+sessionsdok Del 1 § Ordnad scope punkt 9).**
 *(Paus-kadensraden nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
