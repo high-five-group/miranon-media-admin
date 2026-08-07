@@ -4,7 +4,7 @@ title: 'Skiva: Betalningsytan — blockets rivning, inflytten och läsyte-formen
 status: To Do
 assignee: []
 created_date: '2026-08-07 09:00'
-updated_date: '2026-08-07 15:20'
+updated_date: '2026-08-07 15:27'
 labels:
   - ready-for-agent
 dependencies:
@@ -41,11 +41,11 @@ Täcker användarberättelser: 15, 16, 17, 18, 19, 20, 21
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
-- [ ] #6 test:visual omtagen med granskade baslinjer — drift är väntad, inte accepterad osedd
+- [x] #6 test:visual omtagen med granskade baslinjer — drift är väntad, inte accepterad osedd
 - [x] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
 - [x] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
 <!-- DOD:END -->
