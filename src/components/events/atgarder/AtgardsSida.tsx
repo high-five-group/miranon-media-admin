@@ -154,6 +154,35 @@ const KORT_KLASS =
   'rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
 
 /**
+ * KRYSSRUTANS RUTA — EN form för sidans båda kryss-ytor (varv 14).
+ *
+ * Marcus 2026-08-07: "nu har vi också flera olika typer av checkboxar. En blå
+ * och en svart. Jag gillar den blåa mer faktiskt."
+ *
+ * Han hade sett två former på SAMMA sida, och båda var mina: bilageväljarens
+ * native `<input type="checkbox">` (varv 10) och betalningarnas RAC-kryss
+ * (varv 13). De skilde sig i tre mått samtidigt — 16 mot 20 px, radie 0 mot
+ * 4 px, och färg.
+ *
+ * FÄRGEN VAR EN BUGG, INTE ETT VAL. Se `components.css` § Kryssruta: den blå
+ * kom ur att `--mm-color-primary` inte existerar, så `accent-color` föll till
+ * webbläsarens `auto` — på macOS användarens EGEN systemaccent. Blått är nu en
+ * riktig token (`--p-blue-9`), och därmed samma färg för Lotta som för Marcus.
+ *
+ * RAC-FORMEN VANN ÖVER NATIVE, av två skäl som båda är mätbara: den är appens
+ * etablerade (4 av 5 kryss i `src/components/` bär exakt denna klassrad —
+ * `Betalningar`, `Deltagare`, `CheckinPrototyp` och denna fil), och `accent-color`
+ * kan bara styra FÄRG — inte radie, storlek eller bockens form. Native hade
+ * alltså aldrig kunnat matcha de andra fyra.
+ *
+ * INVENTERINGEN AV HELA APPEN ÄR EN EGEN TRÅD (`T134`), per Marcus: "samma sak
+ * här som med pills och knappar, inventera och kolla". Denna konstant löser
+ * ÅTGÄRDS-SIDAN; de tre andra filerna ägs av S93 och rörs inte härifrån.
+ */
+const KRYSSRUTA_KLASS =
+  'flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-(--mm-checkbox-selected-border) group-data-[selected]:bg-(--mm-checkbox-selected-bg)';
+
+/**
  * TEXTYTANS MORF-PARITET — den låsta rutan och `TextArea` bär SAMMA höjd och
  * SAMMA inre padding, så inget flyttar sig när läget växlar (Marcus varv 9:
  * "jag avskyr sådana layoutförändringar").
@@ -1062,11 +1091,11 @@ function SkrivKryss({
       aria-label={`${text} för ${namn}`}
       className="group flex cursor-pointer items-center gap-2 text-small"
     >
-      <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+      <span className={KRYSSRUTA_KLASS}>
         <Check
           aria-hidden="true"
           size={14}
-          className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+          className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
         />
       </span>
       {/* DÄMPAD, ALDRIG RÖD — läsytans `lugn`-form. Rött per rad upprepar bara
@@ -1254,15 +1283,29 @@ function BilageValjare({ valda, onVaxla }: { valda: Set<string>; onVaxla: (id: s
 
           `items-center` i stället för `items-start`: raden är enradig nu, så
           kryssrutans `mt-0.5`-justering mot en tvåradig text är onödig. */}
+      {/* KRYSSET BYTTE FRÅN NATIVE TILL RAC (varv 14) — se `KRYSSRUTA_KLASS`.
+          Den native-formen var sidans enda, och dess "blå" var webbläsarens
+          default via en token som inte finns. Nu delar bilagorna och
+          betalningarna exakt en form, en storlek och en färg.
+
+          `<Checkbox>` ersätter `<label>` + `<input>`: RAC:s komponent ÄR sin
+          egen etikett-yta, så hela raden förblir klickbar utan en wrapper. */}
       <div className="divide-y divide-border rounded-lg bg-surface">
         {BILAGOR.map((b) => (
-          <label key={b.id} className="flex cursor-pointer items-center gap-3 px-3 py-2.5">
-            <input
-              type="checkbox"
-              checked={valda.has(b.id)}
-              onChange={() => onVaxla(b.id)}
-              className="size-4 shrink-0 accent-[var(--mm-color-primary)]"
-            />
+          <Checkbox
+            key={b.id}
+            isSelected={valda.has(b.id)}
+            onChange={() => onVaxla(b.id)}
+            aria-label={`Bifoga ${b.namn}`}
+            className="group flex cursor-pointer items-center gap-3 px-3 py-2.5"
+          >
+            <span className={KRYSSRUTA_KLASS}>
+              <Check
+                aria-hidden="true"
+                size={14}
+                className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
+              />
+            </span>
             <span className="truncate font-medium text-body">{b.namn}</span>
             {/* Storleken höger-justerad — samma plats som räknarna på sidans
                 övriga rader (`RAD_KLASS` § `ml-auto`). Den finns BARA på klass
@@ -1270,7 +1313,7 @@ function BilageValjare({ valda, onVaxla }: { valda: Set<string>; onVaxla: (id: s
             {b.storlek && (
               <span className="ml-auto shrink-0 text-small text-text-muted">{b.storlek}</span>
             )}
-          </label>
+          </Checkbox>
         ))}
       </div>
     </div>

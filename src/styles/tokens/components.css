@@ -121,6 +121,30 @@
   --mm-input-description-text: var(--mm-text-secondary);
   --mm-input-error-text: var(--mm-error);
 
+  /* ── Kryssruta (S100 varv 14) ──
+     Marcus 2026-08-07: "nu har vi också flera olika typer av checkboxar. En blå
+     och en svart. Jag gillar den blåa mer faktiskt."
+
+     DEN BLÅA VAR INGEN DESIGN — den var en ODEFINIERAD TOKEN. Bilage-väljaren
+     bar `accent-[var(--mm-color-primary)]`, och `--mm-color-primary` finns
+     ingenstans i `src/styles/` (DOM-mätt: variabeln löser till tom sträng, och
+     `accent-color` föll därmed till `auto`). Blått var alltså WEBBLÄSARENS
+     default — på macOS systemets accentfärg, som användaren själv kan ändra i
+     Systeminställningar. Mätt sida vid sida: en checkbox HELT utan accent-klass
+     renderade identiskt blå med bilagornas.
+
+     Färgen var därför inte reproducerbar: Lotta hade kunnat se en annan färg än
+     Marcus, på samma skärmbild. Den är nu en riktig token.
+
+     `--p-blue-9` är valt av paletten själv, inte av mig: den bär 5,48:1 under
+     vit text (bocken), och den flyttades 2026-07-26 medvetet till perceptuellt
+     avstånd 27,3 från fokusringens #1B4965 — "fokusringen är den DOVA mörkblå,
+     info är den KLARA". Just den egenskapen är vad en fokuserad kryssruta
+     behöver: ringen måste gå att skilja från rutan den ligger runt. */
+  --mm-checkbox-selected-bg: var(--p-blue-9);
+  --mm-checkbox-selected-border: var(--p-blue-9);
+  --mm-checkbox-check: var(--mm-text-inverse);
+
   /* ── Select (Fas 3 K2) — trigger återanvänder Input-fält-tokens ── */
   --mm-select-popover-bg: var(--mm-surface-overlay);
   --mm-select-popover-border: var(--mm-border);
