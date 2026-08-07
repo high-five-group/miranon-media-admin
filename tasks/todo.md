@@ -227,6 +227,33 @@ paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
 resume.
 *(S93:s kadensrad nedan, oförändrad.)*
 
+**Session 93 ⏸️ PAUSAD (2026-08-07, `lifecycle: paused`) — SEX SKIVOR LANDADE,
+TAKTEN UNDERKÄND** — `145.1` (registret som EN lista) · `145.2`
+(summeringsblocket med Bor över + Avbokade i facit-låst form) · `146.1`
+(PDF-runtime **BEVIS**) · `146.2` (Bilagor-tabellen, additivitet mätt över 19
+tabeller) · `146.3` (privat bucket, AC #3 bevisad i tre oberoende ben) —
+samtliga `Done`. **`145.4` (betalningsytan) ARMERAD OCH KÖAD** vid
+paus-skrivningen; `PROTO_MOTTAGEN_DATUM` riven till noll träffar.
+Enabling-detour: wiring-vaktens självtest gjort config-drivet (`#906`).
+**MARCUS UNDERKÄNDE TAKTEN** — verbatim: *"Vi kodar ju inte ett nytt Google
+liksom"* + prototyp-jämförelsen. Mätt: `145.1` ensam kostade **2,5 timmar,
+varav 72 min rent slöseri** från mina felaktiga uppdrag. Diagnos: skillnaden
+mot prototypen är apparaten, inte koden. **TVÅ MARCUS-BESLUT VÄNTAR:** (1)
+`main`-rödan (`#895`, 12 väntade staging-tester, ingen regression) — karantän,
+låt vara, eller prioritera om · (2) takten — agent-apparat eller direkt
+redigering för `145.3`/`145.5`/`145.6`. **BESLUTAT MEN EJ PÅBÖRJAT:** nästa
+resume tar `145.3`+`145.5`+`145.6` med EN agent i ett svep, en PR per skiva.
+**FEM SPEC-FEL, alla mina, alla fångade externt** → två fragment skördade
+(skivning mot kodens kopplingar · källmärkning måste avse gällande text).
+**TVÅ TRÅDAR:** `T132` (svepets DIRTY-väg filtrerar inte `isDraft`) · `T133`
+(Airtable-PAT har create-rätt mot BÅDA baserna). Numrering disk-verifierad mot
+`318b0cd6`: **101**/L480 + sex fragment/**T134**/**task-160**/f47 — axlarna
+rörde sig kraftigt (S99/S100 tog `ADR-096`–`100`, `task-149`–`159`).
+**HANDOFF: sessionsdok S93 § PAUSLÄGE.**
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`) — FEMTE
 RESUMEN: BYGGAGENTERNA UT** — pausens båda verifikationssteg **KLARA**:
 `#850` mergad `09:38:46Z` (`aa132f62`) och paus-landningen `#851` mergad

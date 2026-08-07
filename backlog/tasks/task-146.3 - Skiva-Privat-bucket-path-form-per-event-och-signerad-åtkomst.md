@@ -1,10 +1,10 @@
 ---
 id: TASK-146.3
 title: 'Skiva: Privat bucket, path-form per event och signerad åtkomst'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 09:05'
-updated_date: '2026-08-07 13:53'
+updated_date: '2026-08-07 15:40'
 labels:
   - ready-for-agent
 dependencies: []
