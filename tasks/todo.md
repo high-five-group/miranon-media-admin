@@ -32,9 +32,28 @@ verifierade per kort: **elva `ready-for-agent`**, två `ready-for-human`
 (QA-korten `145.7` + `146.6`). Beroendegrafen läst ur korten: utan beroenden
 just nu är `145.1`, `146.1`, `146.2`, `146.3` — men ordningsregeln
 *eventsidan före fundamentet* håller tillbaka `146.2`/`146.3`.
-**NÄSTA: första vågen = `TASK-145.1` (kedjehuvudet) + `TASK-146.1`
-(fristående).** Dev-servern lever på 5173 (HTTP 200);
-granskningsfixturen t.o.m. 2026-08-16.
+**FÖRSTA VÅGEN KÖRD — ETT BEVIS IN, ETT STOPP.** `TASK-146.1` **BEVIS**:
+PDF-generering fungerar i den skarpa Edge Runtime (`supabase-edge-runtime-1.74.2`,
+Deno v2.1.4 — aldrig Node-proxyn), svenska tecken verifierade två oberoende
+vägar med negativ kontroll, heapUsed-delta ~2,8 MB / ~18 ms / kallstart 1180 ms
+mot 290–316 ms varm; `cancelled by supervisor` inträffade inte. Landad `#855`
+(`38565ae8`). **Ärlig lucka: staging-sviten står `skipping` i CI** — beviset
+vilar på lokal körning mot live staging, inte på grinden.
+**`TASK-145.1` STOPPAD, EJ ARMERAD — `#862` står `draft`.** Sju AC
+live-verifierade och DoD-7-grinden bevisad i båda riktningar, men diffen
+raderar **två E2E-filer** (1 310 rader): `event-bor-over` (359) och
+`event-bekraftelse` (951). **Bor över är kvitterad som överlevande rad**
+(grillad samsyn beslut 2, Del 3) men **ingen skiva äger den** — och luckan är
+större: `Avbokade` saknar också ägare som rad. Hål i `/to-issues`-passet, ej
+agentens fel. Tredje frågan: produktionsvyn tömdes på räknare/filter/markera-läge
+(`145.2`/`145.3`:s AC-yta) ⇒ `main` visar en tunnare eventsida i mellanläget.
+**NÄSTA: Marcus avgör de tre frågorna — `145.2` och `145.3` beror båda på
+`145.1`, så hela eventsidan står still tills dess.** Numreringen rörde sig
+under passet: S99 tog `ADR-096` + `task-148`, senare syntes `task-152`/`153`
+⇒ **nästa ADR 097**, kortnummer räknas om mot disk vid varje `task create`.
+Lärdomen `parkerad-pr-utan-draft` fick sin **andra instans — av sin egen
+författare** (`#866`); hör till `T126`:s mekanism-val. Dev-servern lever på
+5173; granskningsfixturen t.o.m. 2026-08-16.
 *(Föregående kadensrad nedan.)*
 
 <!-- Föregående kadensrad, bevarad: -->
