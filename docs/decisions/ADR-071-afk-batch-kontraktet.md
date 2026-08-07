@@ -3,7 +3,7 @@
 - Status: Accepted (Session 62 — 2026-07-11; grillad samsyn S61 Del 2 [5 beslut,
   samtliga på Code-rekommendation med Marcus-kvittens] + pilot bevisad Del 3
   [TASK-3 autonomt To Do→Done] + batch 2 Del 4 [granskningsfärdig-läget bevisat];
-  kanonisk samsyns-trail: `tasks/sessions/2026-07-11-session-61.md` Del 2–4)
+  kanonisk samsyns-trail: `tasks/sessions/archive/2026-07/2026-07-11-session-61.md` Del 2–4)
 - Datum: 2026-07-11
 - Fas: Session 61–62 — arbetssätt/exekverings-process (ingen
   byggfas-status-ändring)
@@ -37,7 +37,7 @@
 > Vinsten är dubbel: den delade kön slipper bevis-körningarna, och röd CI
 > återfår sin enda ärliga betydelse — OVÄNTAD regression. Kanonisk trail:
 > `docs/research/riskanpassad-ci-design-2026-07-23.md` (våg 2b) +
-> `tasks/sessions/2026-07-24-session-80.md` Del 3.
+> `tasks/sessions/archive/2026-07/2026-07-24-session-80.md` Del 3.
 >
 > **Amendering (Session 76, 2026-07-22 — T81 review-utfalls-klasserna;
 > grillad samsyn S76 Del 2 [5 beslut, samtliga på Code-rekommendation
@@ -96,7 +96,7 @@
 > HÄR — EJ ORDLISTA.md (processtermer, inte produktdomän;
 > T71-precedentet i beslut 2). Hub-referensrad i work-batch-skillen
 > tas i S76:s hub-bunt (T78 b + T82) = ett plugin-bump-moment.
-> Kanonisk samsyns-trail: `tasks/sessions/2026-07-22-session-76.md`
+> Kanonisk samsyns-trail: `tasks/sessions/archive/2026-07/2026-07-22-session-76.md`
 > Del 2.
 
 ## Kontext
@@ -198,7 +198,7 @@ review-modeller, tre stop-policyer, två substrat prövades i grillningen).
 
 ## Referenser
 
-- `tasks/sessions/2026-07-11-session-61.md` Del 2 (grillad samsyn), Del 3
+- `tasks/sessions/archive/2026-07/2026-07-11-session-61.md` Del 2 (grillad samsyn), Del 3
   (pilot), Del 4 (batch 2) — kanonisk trail.
 - Tråd-registret: T61 (AFK-loopen) · T71 (dynamic workflows) · T75
   (tvåstegs-stängningen).

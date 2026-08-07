@@ -4,6 +4,7 @@ title: 'Skiva: engångsmigrationen — ~70 äldre stängda dok arkiveras'
 status: To Do
 assignee: []
 created_date: '2026-08-07 12:28'
+updated_date: '2026-08-07 16:15'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,13 +21,15 @@ ordinal: 274000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Migrationen körs MED arkiverings-skriptet (dess första skarpa körning) — ingen separat handrutin
-- [ ] #2 Rotens bestånd efter körningen matchar fönsterregeln, verifierat med mekanisk räkning per lifecycle
-- [ ] #3 Docs link check (lychee) grön på den landade committen — noll brutna länkar efter flytt + omskrivning
-- [ ] #4 Flytten sker som git-flytt (historik följbar); inget dok raderas; arkivets README-pekare uppdaterad
-- [ ] #5 Synk-horisonten (ADR-048) orörd — ingen ändring i synk-konfigurationen
+- [x] #1 Migrationen körs MED arkiverings-skriptet (dess första skarpa körning) — ingen separat handrutin
+- [x] #2 Rotens bestånd efter körningen matchar fönsterregeln, verifierat med mekanisk räkning per lifecycle
+- [x] #3 Docs link check (lychee) grön på den landade committen — noll brutna länkar efter flytt + omskrivning
+- [x] #4 Flytten sker som git-flytt (historik följbar); inget dok raderas; arkivets README-pekare uppdaterad
+- [x] #5 Synk-horisonten (ADR-048) orörd — ingen ändring i synk-konfigurationen
 - [ ] #6 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

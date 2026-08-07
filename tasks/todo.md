@@ -4440,7 +4440,7 @@ BUILD-LOG S83-post.
 
 > Slutsummeringen nedan flyttades VERBATIM från rad 7 vid S61-stängningen
 > (rad 7 bär alltid senast stängda sessionen). Full narrativ: sessionsdok
-> [`2026-07-08-session-60.md`](sessions/2026-07-08-session-60.md) Del 1–6 +
+> [`2026-07-08-session-60.md`](sessions/archive/2026-07/2026-07-08-session-60.md) Del 1–6 +
 > BUILD-LOG S60-posten.
 
 *Senast uppdaterad: 2026-07-11 (**Session 60 ✅ AVSLUTAD 2026-07-11** (`lifecycle: closed`; 3 pauser/resume-cykler, numret 60 bevarat hela vägen; Marcus coverage-kvittens "A - inget osäkrat, stäng"; **nästa arbete öppnar Session 61**) — **Airtable-avstämning FJS+RIM1 + Psionautics → 5-material-segmentmodell för Skool-inbjudan (Resend).** KLART: sessionsdok fött (`26597df`); Fas 1 read-only-avstämning + **GRIND 1-godkänd A/B/C** (FJS Event-18: 22 närv = 8A+14B, 3 no-show · RIM1 Event-19: 18 närv = 12A+6B, 6 no-show); **20 walk-in-anmälningar** (Marcus Airtable Scripting, ID 916–935); **2 kantfall fixade** — Jasmin namnlös-lead reverse-flow → **fälla 21 BEKRÄFTAD**; Lene case-e-post-dubblett konsoliderad+raderad → **ny fälla**; **FJS+RIM1-närvaro markerad (80 Deltaganden), verifierad** (Andreas FS×1+RIM1×1, 4/4) → segment-värdet för FJS+RIM1 LEVERERAT. LÅSTA BESLUT: 5-material-modellen (utbildnings-gated, källäst); bas-defekterna → data-model §Kända fällor + **T16** (ej tråd/backlog, SYSTEMET.md §2/§7); T18 = plugin-1.12.0-gapet. **DEL 3 KLART (resume):** Psionautics Event-17 A10-bulk 220 → **källavstämning mot Lottas CSV avslöjade över-markering** → path A-korrektion **64 Deltaganden → Ej avstämt** (10 icke-Bekräftade + 44 orphan/test) → verifierat **156 Närvarande** (78 Bekräftade); **status-flip 17/18/19→Genomfört**; **dok klar** (execute-log ny + data-model fälla 40 case-e-post + 41 orphan-Deltaganden + fälla 21/A2-hypotes BEKRÄFTAD + **L254–L255** [UNIVERSAL] + BUILD-LOG S60). STOPPA fångade namn-kollision (2× Stefan Martinsson) före felaktig revert. **DEL 4 KLART (2:a resume):** segment-beräkningen (read-only, källäst) gav **4 material-listor** (RIM 3 = noll närvaro, väntat) och avtäckte **sex bas-defekter** → Marcus STOPPADE exporten → planläge → uppröjning. **NY fälla 42** (anmälan utan e-post → A2 Gren 4 skapar permanent omatchbar Person; skild rot från 40:s skiftläge) — **Ulrika Arvas + Stefan Martinsson konsoliderade** (re-pekat + dubbletter raderade, verifierat 4/4 resp 2/4). **NY fälla 43:** de 186 namnlösa är **DATAFÖRLUST VID KÄLLAN, ej bugg** — 365 namnlösa anmälningar ↔ exakt 365 `firstname: null` i backfill-mapping.yaml ↔ ursprungs-xlsx saknar namnkolumner före 2026-01; återvinningsgrad **0/187** mot två oberoende källor; `create-registration` kräver namn → ej kodväg. Marcus-verifierat: namn fördes aldrig i början. **Roll-matrisen** `docs/reference/testkonton.md` skapad. **INFÖRT FEL, UPPTÄCKT + ÅTERSTÄLLT SAMMA DAG:** `rectU34rbPfo6VD10` klassades som testkonto enbart på adress-match (`highfive.epost@gmail.com`) → dess 2 Närvarande-Delt reverterades → Event-17 skrevs om till 154/66. **Fel.** Marcus: adressen har DUBBELROLL; Lottas CSV (facit, låg i ~/Downloads, lästes aldrig) visar "Marcus Johansson … Bekräftad … Ja[betalt] … Formulär 2026-02-21" — riktig betalande deltagare. Återställt: **Event-17 är 156 Närvarande + 64 Ej avstämt = 220, precis som Del 3 hade rätt i.** → **fälla 44** + **L258** (falskt positivt; spegelbild av L256:s falskt negativa — samma rot: proxy förväxlad med det den mäter). **Ann-Marie** → medföljande till Stefans BEKRÄFTADE anmälan. Dok: fälla 42+43+44, fälla 40 korsref, fälla 41 preciserad, execute-log §Steg 4–5, T16-vidgning, **L256–L258** [UNIVERSAL]. **MARCUS IDENTITET KONSOLIDERAD:** hans Psionautics-anmälan+närvaro+touchpoint re-pekade till `rec8sFNULpjfe0Lw9` (highfive@), tom post raderad — **pre-flight-grinden fällde första försöket** (en touchpoint rapporterad som tp=0 av felläst fält-ID-svar; utan grinden hade historik raderats). Marcus namn ifyllt på `reczBItiZhCLlE2Cs` (han var själv en av de 186 namnlösa). Beslut: **två deltagar-identiteter behålls** (highfive@ → Psionautics; inbox@ → FS/RIM1/RIM2) — sammanslagning vore kosmetisk, A2 matchar på e-post. **Exporten klar men EJ committad** (416 e-postadresser): RIM1 310 · FS 134 · RIM2 85 · **Psio 77** · union 416 (1:1 unika; endast de 2 ÄKTA testartefakterna + Ann-Marie utan e-post exkluderade). **L259** [UNIVERSAL]: konserveringskontroller (`Σ = 220`) är blinda för felklassificering — 156+64 och 154+66 summerar båda till 220; kategori-korrekthet kräver extern källa. **Fälla 42-förfining** [HYPOTES]: roten är A2:s trigger-snapshot (fält tomma vid RECORD_CREATED), ej anmälans sluttillstånd. **DEL 5 — SKOOL-MEKANIKEN AVTÄCKT → PARTITION:** Skool har bara **3 låsta "mentala ankare"** (FS, RIM1, RIM2); **inget Psionautics-ankare** (Marcus: innehåll finns ej ännu → de 39 rena Psionautics-deltagarna bjuds in utan låst material). **Marcus testade empiriskt: samma adress ×3 → 3 inbjudningsmail** ⇒ Skool dedupar INTE ⇒ **grillningens slutsats "partition behövs inte för Skool" RIVEN** (Del 1 §Samsyn, in-place-not); Marcus ursprungliga dubbel-inbjudan-oro var KORREKT för Skool-flödet. Segment-modellen i basen oförändrad (överlappande); det är LEVERANSEN som partitioneras. **Leverans genererad** (`~/Downloads/skool-export-2026-07-09/` + INSTRUKTION.md, EJ i git — 416 adresser): **8 Skool-uppladdningar** (partition: RIM1 197 · FS 62 · RIM1+RIM2 42 · inga-ankare 39 · FS+RIM1+RIM2 38 · FS+RIM1 33 · RIM2 4 · FS+RIM2 1 = 416, var person exakt en gång, verifierat) + **2 Resend-listor** (personlig hälsning 230 / namnlös 186 — fälla 43; disjunkta, verifierat). Ordning: Resend-förvarning FÖRST, sedan Skool. `Mentalt ankare` tillagt i ORDLISTA.md. **Skools CSV-mall verifierad** (`test-skool.csv`: ingen header, en adress/rad, ingen trailing NL) → filerna regenererade; partition-generatorn bevarad som `skool-partition.mjs` (fäller exit 1 vid dubblett/avvikelse). `Mentala ankare` = PLURAL (Marcus-korr). **LEVERANSEN KLAR + VERIFIERAD** (`~/Downloads/skool-export-2026-07-09/`, EJ i git): 8 partitionerade Skool-filer i Skools nakna format (ingen header/trailing-NL, mall-verifierad) + 2 disjunkta Resend-listor. Generatorn `skool-partition.mjs` bevarad i repot, **fäller exit 1** vid dubbel-inbjudan/partition≠union. **DEL 6 KLART (2026-07-10): RESEND-RIGGEN STÅR — sidospåret stängt.** 2 segment importerade (230 personlig / 186 namnlös), 2 broadcasts riggade + BEVISADE (skarpt minitest: `first_name`-chip → "Hej Marcus,"/"Hej där,"; citerad From `"Roger & Lotta - Miranon Media"`; avprenumerera-länk verifierad utan klick) — **R&L väljer sänddag**. Två grundorsaker lösta: OpenDNS/Telenor felstämplade `cdn.resend.app` som PHISHING (`hit-phish.opendns.com`) → Mac-DNS 1.1.1.1/8.8.8.8 (memory-fil skriven); editor-chips binds via egenskapsNYCKELN (`first_name` gemener — `FIRST_NAME` är legacy reserved; docs-lucka, endast video). **T74** registrerad (consent två sanningskällor; flaggan bärs av 0 records idag, live-verifierat). **NYTT (Marcus): Psionautics-ankaret på väg → Skool-partitionen räknas om med 4:e ankare (~14 grupper; unionen 416 + Resend-riggen OPÅVERKADE; sänddag kräver att ankaret finns i Skool).** **OMRÄKNAT (07-10):** Psionautics = 4:e ankaret → **14 grupper** (invarianter gröna, konservering grupp-för-grupp verifierad) → `~/Downloads/skool-export-2026-07-10/` + ny INSTRUKTION (sekvens-krav: Psio-ankaret måste finnas i Skool före sänddagen). **KONSOLIDERAT (07-11):** ett Resend-segment (416) + EN broadcast, nytt minitest grönt (fossil-strukturen två segment riven — Marcus fångade); R&L-mail granskat+korrigerat (417/416, 14 grupper, team-invite ersätter creds-per-mail) + Dropbox-referensdoc levererad. **STÄNGNINGSSEKVENSEN KLAR (07-11):** material-mappningen → `segment-arkitektur.md` §Material-mappningen (ADR-bar-prövad: under baren, ingen ADR); skörd **L260–L262** [UNIVERSAL] (broadcast-låst-kandidaten förkastad öppet); **hub-lyft K60.1–K60.9** (L254–L262 → marcus-system `bc20f0f`); MD033-CI-miss under sekvensen fångad+fixad (`d84e4a9`). Numrering vid stängning: nästa ADR **071** · lesson **L263** · fälla **45** · tråd **T74 finns, nästa T75**. Kvar för R&L (utanför Code): skapa Psionautics-ankaret i Skool → Resend-Send → 14 Skool-uppladdningar (INSTRUKTION.md i `~/Downloads/skool-export-2026-07-10/`). Numrering disk-verifierad: nästa ADR **071**, lesson **L260**, fälla **45**, tråd **T74**. Öppet: dubbelroll-adresser (T72) → staging-först, `Testdata`-fält i basen, plus-adressering; PII i git (T73). Carry: T16 (radera äkta testartefakter+orphans, fälla 42-basfix) + Jessica-Anteckningar. Numrering: ADR 070 (ingen mintad), nästa lesson **L260**, nästa fälla **45**, ingen ny tråd. Full narrativ: sessionsdok Del 4 + `docs/backfill/execute-log.md`. S59 ✅ i egen sektion nedan.)*
@@ -5262,7 +5262,7 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 > AVVIKELSE ingen, betyg 11/10/10 × 3 ytor) → **Fas 6c KLAR** (arkitektoniskt förstklassigt).
 > SESSIONSGRÄNS, EJ fas-avslut: ingen phase-end-verify/CHANGELOG/arkivering; lessons-HUB-lyft
 > PENDING (vid FULLT Fas 6 fas-avslut efter 6d). Full förlopp: sessionsdokets Del 7 + `## PAUSLÄGE`/
-> `### HANDOFF`-block + Del 6. Trail: [`tasks/sessions/2026-06-20-session-26.md`](sessions/2026-06-20-session-26.md).
+> `### HANDOFF`-block + Del 6. Trail: [`tasks/sessions/archive/2026-06/2026-06-20-session-26.md`](sessions/archive/2026-06/2026-06-20-session-26.md).
 
 - [x] **Tillstånds-återställning** (`2f139c7`) — `lifecycle` paused→active + `Väntelista.Event`-supersession (T16/T19-karta: `singleLineText`-konstant, ingen T15-klass) inskriven.
 - [x] **Leverabel 1 — get-registrations T15 väg-D-fix** (`29e55ed`) — record-ID-batch via `Anmälningar (länkat fält)` ersätter `buildLinkedRecordFilter`; eventId-grenen + helper-trio (get-attendance-spegel) + `byInskickadDesc`; okänt event → 404; event-lösa grenen oförändrad. Staging-fixtur seedad (event `reci2UQEPBMl3ebNl` = 3 länkade anmälningar, batch=2 multi-chunk) + EF deployad staging v9. **CI staging-conformance GRÖN (65 passed).**
@@ -5282,7 +5282,7 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 > Ren dok-/process-session (ingen produktkod; en test-fixtur-touch). Föregår pausad
 > Session 26 (6c ej återupptaget). SESSIONSGRÄNS, ej fas-avslut → ingen arkivering
 > (ADR-023), ingen CHANGELOG-release. Trail:
-> [`tasks/sessions/2026-06-21-session-29.md`](sessions/2026-06-21-session-29.md).
+> [`tasks/sessions/archive/2026-06/2026-06-21-session-29.md`](sessions/archive/2026-06/2026-06-21-session-29.md).
 > Lessons L165–L168 (`[UNIVERSAL]`), hub-lyft pending.
 
 - [x] **Dok-födelse + tråd-flip** (`39abd35`) — sessionsdok fött, T17 `paused`→`active`.
@@ -5299,7 +5299,7 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 > Ren dok-/process-session (ingen produktkod; en test-fixtur-touch). Föregår pausad
 > Session 26 (6c ej återupptaget). SESSIONSGRÄNS, ej fas-avslut → ingen arkivering
 > (ADR-023), ingen CHANGELOG-release. Trail:
-> [`tasks/sessions/2026-06-21-session-28.md`](sessions/2026-06-21-session-28.md).
+> [`tasks/sessions/archive/2026-06/2026-06-21-session-28.md`](sessions/archive/2026-06/2026-06-21-session-28.md).
 > Lessons L162–L164 (`[UNIVERSAL]`), hub-lyft pending.
 
 - [x] **Pass 0** — orientering + komplett interaktions-inventering (9 EF + _shared); sessionsdok fött `346c386`.
@@ -5315,7 +5315,7 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 
 > Ren dok-/process-session (ingen kod, inget nytt ADR). Föregår pausad Session 26 (6c ej
 > återupptaget). SESSIONSGRÄNS, ej fas-avslut → ingen arkivering (ADR-023). Trail:
-> [`tasks/sessions/2026-06-21-session-27.md`](sessions/2026-06-21-session-27.md).
+> [`tasks/sessions/archive/2026-06/2026-06-21-session-27.md`](sessions/archive/2026-06/2026-06-21-session-27.md).
 > Lessons L155–L161 (`[UNIVERSAL]` utom L161), hub-lyft pending.
 
 - [x] **PI-interaktionsregel i hub** (`0212282`, marcus-system) — "inga klick-formulär" alltid-på meta-disciplin i `project-instructions-base.md`. Källa-vs-yta: kräver omklistring i varje spokes claude.ai-PI-ruta.
@@ -5328,7 +5328,7 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 
 > Inc 4 + tre 6b-landningar + arch-audit, allt CI-grönt. SESSIONSGRÄNS, ej fas-avslut
 > (Fas 6 fortsätter 6c–6e). Trail:
-> [`tasks/sessions/2026-06-20-session-25.md`](sessions/2026-06-20-session-25.md).
+> [`tasks/sessions/archive/2026-06/2026-06-20-session-25.md`](sessions/archive/2026-06/2026-06-20-session-25.md).
 > Lessons L151–L154 `[UNIVERSAL]` (hub-lyft pending, samma kö som L149–L150).
 
 - [x] **Inc 4** (2026-06-20) — kall `/arch-audit` mot Fas 6a: fem områden rena, 11/10/10,
@@ -5355,7 +5355,7 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 > Inc 1–3b landade (kvalitetshållning→hub, ADR-057 fitness-invariant + drift-fixar,
 > arch-audit skill-par + ADR-058, plugin 4→5 v1.4.0). Inc 4 deferrad till Session 25.
 > SESSIONSGRÄNS, ej fas-avslut (Fas 6 fortsätter 6b). Trail:
-> [`tasks/sessions/2026-06-20-session-24.md`](sessions/2026-06-20-session-24.md). Lessons L149–L150.
+> [`tasks/sessions/archive/2026-06/2026-06-20-session-24.md`](sessions/archive/2026-06/2026-06-20-session-24.md). Lessons L149–L150.
 
 - [x] **Inc 1** (2026-06-20) — kvalitetshållning → alltid-på-lagret. base-PI ny sektion
   `KVALITETSHÅLLNING — ALLTID-PÅ` + hub-CLAUDE +2 punkter (över-engineering-vakt + lager-
@@ -5386,7 +5386,7 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 
 > Pausad 2026-06-19 via `/session-paus` (ADR-051/052, **inte** avslut: nummer 23 behålls, ingen
 > finalisering) — återupptas som **session 23** via `/session-resume` i färsk chatt. Trail:
-> [`tasks/sessions/2026-06-18-session-23.md`](sessions/2026-06-18-session-23.md) § PAUSLÄGE
+> [`tasks/sessions/archive/2026-06/2026-06-18-session-23.md`](sessions/archive/2026-06/2026-06-18-session-23.md) § PAUSLÄGE
 > (NULÄGE + CARRY + öppna trådar + nästa steg). Nästa: **Landning 6** (write `Personer.Anteckningar`)
 > — sista landningen i Fas 6a; lös Synk-gate-2-status för Anteckningar vid resume.
 
@@ -5424,7 +5424,7 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
 > `/session-end` + phase-end-verify körd; `lifecycle: closed`. **Fas 5.5 markerad KLAR** (byggplan
 > §2/§4 v1.11, CHANGELOG 0.7.0, README). Lessons L137–L139 skördade (hub-lyft pending nästa K-sista).
 > Arkivering av sessionsdok 16–22 = öppen Marcus-beslut (oarkiverad backlog, ej fas-avslut-arkiverad
-> historiskt). Trail: [`tasks/sessions/2026-06-17-session-22.md`](sessions/2026-06-17-session-22.md).
+> historiskt). Trail: [`tasks/sessions/archive/2026-06/2026-06-17-session-22.md`](sessions/archive/2026-06/2026-06-17-session-22.md).
 
 - [x] **Sessionsdok fött** (`b5ff420`), `lifecycle: active`.
 - [x] **Enabling-detour Landning 1 — CI-rotorsak-fix** (`6610d6d`, CI-grön run `27699101873`): `fetch-depth: 250 → 0` (full historik) atomiskt över ADR-039:s 6 bärare; **ADR-054** (Accepted); ADR-029/030/039-errata; T10/T11b frikopplade; **tråd T08** registrerad (avveckla apparaten). Rotorsak: finit djup var anti-mönstret (brast 4 ggr); dok-commit sköt shallow-fönstret 263→264 → 3 orörda governing-docs föll på falsk drift.
@@ -5483,7 +5483,7 @@ korrigeringsnoten; prövas mot L26/L230 i S51:s skörd).
   (`59a5281`); ADR-049 fält-val (`1c7e469`); ADR-016 dubbel-erratum;
   README-räkning 48→49; forward-fix efter rött CI (`2108dd6`); CI grön
   run 27463660822. Lessons L110–L113. Trail:
-  [`tasks/sessions/2026-06-13-session-18.md`](sessions/2026-06-13-session-18.md).
+  [`tasks/sessions/archive/2026-06/2026-06-13-session-18.md`](sessions/archive/2026-06/2026-06-13-session-18.md).
 
 #### Öppna trådar från Session 18
 

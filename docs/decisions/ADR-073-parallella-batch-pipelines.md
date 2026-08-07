@@ -4,7 +4,7 @@
   [5 beslut, samtliga Marcus-kvitterade, kanonisk plats: tråd-kortet] +
   pilot BEVISAD S65 på partitionen task-8.1–8.3 ∥ task-9.1/9.3;
   design-kvittens "A/A, max-kort 5" i delegerad senior-form; kanonisk
-  pilot-trail: `tasks/sessions/2026-07-12-session-65.md` Del 2–5)
+  pilot-trail: `tasks/sessions/archive/2026-07/2026-07-12-session-65.md` Del 2–5)
 - Datum: 2026-07-12
 - Fas: Session 65 — arbetssätt/exekverings-process (ingen
   byggfas-status-ändring)
@@ -250,7 +250,7 @@ grillning + pilot).
 
 - `tasks/threads/T76-parallella-batch-pipelines.md` — kanonisk
   grillnings-samsyn (5 beslut).
-- `tasks/sessions/2026-07-12-session-65.md` Del 2 (design + empiriska
+- `tasks/sessions/archive/2026-07/2026-07-12-session-65.md` Del 2 (design + empiriska
   verifieringar), Del 3–5 (pilot-utfallet per fas + batch-facit).
 - [ADR-071](ADR-071-afk-batch-kontraktet.md) (amenderas — beslut 5:s
   omprövningströskel utlöst och besvarad) ·

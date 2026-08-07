@@ -2,7 +2,7 @@
 
 - Status: Accepted (Session 63 — 2026-07-12; grillad samsyn S63 Del 2
   [5 beslut, samtliga på Code-rekommendation med Marcus-kvittens per fråga];
-  kanonisk samsyns-trail: `tasks/sessions/2026-07-12-session-63.md` Del 2)
+  kanonisk samsyns-trail: `tasks/sessions/archive/2026-07/2026-07-12-session-63.md` Del 2)
 - Datum: 2026-07-12
 - Fas: Session 63 — task-7-designen, lugnt laddläge (ingen
   byggfas-status-ändring)
@@ -86,7 +86,7 @@ för sällsynt fallback).
 
 ## Referenser
 
-- Grillad samsyn: `tasks/sessions/2026-07-12-session-63.md` Del 2 (research-
+- Grillad samsyn: `tasks/sessions/archive/2026-07/2026-07-12-session-63.md` Del 2 (research-
   fynden käll-länkade via S63:s research-agent: TanStack persistQueryClient-
   dok + maintainer-diskussion #3782, OWASP HTML5 Security Cheat Sheet,
   Linear-sync-reverse-engineering)

@@ -182,7 +182,7 @@ Kvitterade beslut:
 - Upptag: Marcus initierar Mer-sessionen när S56 + S57 stängt →
   `lifecycle: active` + kedjan i H.
 - **UPPTAGEN 2026-07-12 som Session 64** (sessionsdok
-  `tasks/sessions/2026-07-12-session-64.md` Del 1 = kanonisk
+  `tasks/sessions/archive/2026-07/2026-07-12-session-64.md` Del 1 = kanonisk
   scope-plats): `lifecycle: active`; kedjan börjar med
   rubrik-grillningen (Öppna frågor 1). Beroendet i H uppfyllt —
   task-4.2 (Hem-skelettmönstret) är Done.

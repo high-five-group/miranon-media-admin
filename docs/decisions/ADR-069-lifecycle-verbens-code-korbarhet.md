@@ -2,7 +2,7 @@
 
 - Status: Accepted (Session 53 — 2026-07-05; grillad samsyn /grill-with-docs,
   7 beslut Marcus-kvitterade; kanonisk samsyns-trail: sessionsdok
-  `tasks/sessions/2026-07-05-session-53.md` Del 2)
+  `tasks/sessions/archive/2026-07/2026-07-05-session-53.md` Del 2)
 - Datum: 2026-07-05
 - Fas: Session 53 — process-fundament (T62; ingen byggfas-status-ändring)
 

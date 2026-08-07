@@ -16,4 +16,4 @@ lifecycle: paused
 > `git log -p -- tasks/threads/README.md`.
 
 **Ursprunglig Ingång-cell:**
-_(ingen kort än — endast registrerad); uppstod Session 44; sker vid Marcus självtest i appen (fas 2 sista steget), EJ Code-initierat (säkerhets-invarianten); fas 1 bevisade emittering api-pure men ej end-to-end (efemär-fixtur ej self-seedbar, jfr T45); pekare: [session-44](../sessions/2026-06-29-session-44.md) § Del 1 "Reply-To gold-standard-verifiering"_
+_(ingen kort än — endast registrerad); uppstod Session 44; sker vid Marcus självtest i appen (fas 2 sista steget), EJ Code-initierat (säkerhets-invarianten); fas 1 bevisade emittering api-pure men ej end-to-end (efemär-fixtur ej self-seedbar, jfr T45); pekare: [session-44](../sessions/archive/2026-06/2026-06-29-session-44.md) § Del 1 "Reply-To gold-standard-verifiering"_

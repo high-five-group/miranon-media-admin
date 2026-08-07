@@ -40,7 +40,7 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
 - **Kostnad/manifestation.** ADR-014:s race-skydd vilade på en unique-constraint på idempotens-
   nyckelfältet → strukturellt oförmöget att ge race-säkerheten ADR-014:s egen DoD krävde. Källor:
   [ADR-059](../decisions/ADR-059-idempotens-lagring-defer-fas-e.md) (Kontext, rad ~16);
-  ADR-014 §Erratum (rad ~38, ~42); [Session 26](../../tasks/sessions/2026-06-20-session-26.md) Del 2
+  ADR-014 §Erratum (rad ~38, ~42); [Session 26](../../tasks/sessions/archive/2026-06/2026-06-20-session-26.md) Del 2
   (falsifiering); 04-research DQ1.
 - **v1-kompensation.** Klient-skydd: TanStack `mutationKey`-dedup + disabled submit under `isPending`;
   klient-UUIDv7-nyckel bevaras i request-kontraktet och loggas. Smalt multi-session-race-fönster
