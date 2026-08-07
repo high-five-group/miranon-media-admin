@@ -4,6 +4,7 @@ title: 'Skiva: Registret som EN lista — steg-hinkar, steg-märken, FIFO'
 status: To Do
 assignee: []
 created_date: '2026-08-07 08:57'
+updated_date: '2026-08-07 10:51'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,23 +22,23 @@ Täcker användarberättelser: 1, 2, 3, 4, 5, 6, 10, 25
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Obekräftade- och Bekräftade-rubrikerna är rivna; registret renderas som EN deltagarlista
-- [ ] #2 Listan sorteras på fyra steg-hinkar i ordningen väntar på bekräftelse → anmälningsavgift saknas → slutbetalning saknas → klara, med inställt/på-väg-till-väntelista sist
-- [ ] #3 Inom varje hink sorteras personerna i anmälningsordning (äldst registrerad först)
-- [ ] #4 Steg-märket ÄR grupperingen — inga sektionsrubriker renderas
-- [ ] #5 Exakt ETT märke per person även när flera steg är ogjorda; undantagen (Avbokad, Inställt, På väg till väntelistan) bär egna ärliga märken
-- [ ] #6 Inline-scrollen är återanvänd med samma klipphöjd som kön hade — ingen ny höjd mintas
-- [ ] #7 Scroll-ytans tillgänglighetsetikett följer sektionen och ärver INTE köns hårdkodade namn
+- [x] #1 Obekräftade- och Bekräftade-rubrikerna är rivna; registret renderas som EN deltagarlista
+- [x] #2 Listan sorteras på fyra steg-hinkar i ordningen väntar på bekräftelse → anmälningsavgift saknas → slutbetalning saknas → klara, med inställt/på-väg-till-väntelista sist
+- [x] #3 Inom varje hink sorteras personerna i anmälningsordning (äldst registrerad först)
+- [x] #4 Steg-märket ÄR grupperingen — inga sektionsrubriker renderas
+- [x] #5 Exakt ETT märke per person även när flera steg är ogjorda; undantagen (Avbokad, Inställt, På väg till väntelistan) bär egna ärliga märken
+- [x] #6 Inline-scrollen är återanvänd med samma klipphöjd som kön hade — ingen ny höjd mintas
+- [x] #7 Scroll-ytans tillgänglighetsetikett följer sektionen och ärver INTE köns hårdkodade namn
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
-- [ ] #6 test:visual omtagen med granskade baslinjer — drift är väntad, inte accepterad osedd
+- [x] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
+- [x] #6 test:visual omtagen med granskade baslinjer — drift är väntad, inte accepterad osedd
 - [ ] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
 - [ ] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
 <!-- DOD:END -->
