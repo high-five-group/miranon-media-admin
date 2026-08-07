@@ -4,6 +4,7 @@ title: 'PRD: Åtgärds-sidan — den enda platsen där något verkställs'
 status: To Do
 assignee: []
 created_date: '2026-08-07 07:52'
+updated_date: '2026-08-07 08:39'
 labels: []
 dependencies: []
 ordinal: 232000
@@ -157,3 +158,15 @@ Skiva 6 beror på kort 2. Skiva 10 beror på kort 2 och på Roger-avstämningen.
 - [ ] #9 De sex åtgärdstyperna nedskrivna av Marcus FÖRE åtgärdsvalets skiva låses (enumerationen saknas i alla artefakter)
 - [ ] #10 Roger-avstämningen om kvitto-gränsen bokförd före kvitto-skivan låses
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+SAMLAT UNDERLAG: docs/specs/ATGARDSSIDAN-UNDERLAG.md — allt som är sagt och beslutat om åtgärds-sidan, konsoliderat 2026-08-07 ur sessionsdok, bilaga, två research-pass, ORDLISTA och docblock i produktionskod. LÄS DEN FÖRE SKIVNING.
+
+DE SEX ÅTGÄRDSTYPERNA ÄR BEKRÄFTADE (Marcus 2026-08-07) och därmed INTE längre en öppen punkt: manuell anmälan · bekräftelse · betalningspåminnelse · markera betalda · eventinfo · fritt utskick. Enumerationen saknades i alla artefakter och rekonstruerades ur prototypens platshållartext + tabellen över vilka Åtgärds-rader som flyttar; underlagsdokumentet § 3 bär både listan och hur den återfanns.
+
+ORDLISTA-avvikelse att åtgärda vid bygget: glossen 'åtgärdsval (utskickstyp)' är för smal — manuell anmälan och markera betalda är inte utskick.
+
+PROCEDUR (Marcus 2026-08-07): sidan tas i EGEN NY SESSION som kör hela kedjan — ev. grillning (agentens bedömning; produktbesluten är redan kvitterade, det som saknas är FORMEN) → divergens-pass (EJ valfritt, beslut 8) → Marcus väljer variant → konvergens-pass → facit → PRD uppdateras → /to-issues.
+<!-- SECTION:NOTES:END -->
