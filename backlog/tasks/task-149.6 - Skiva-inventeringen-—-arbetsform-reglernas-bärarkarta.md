@@ -4,6 +4,7 @@ title: 'Skiva: inventeringen — arbetsform-reglernas bärarkarta'
 status: To Do
 assignee: []
 created_date: '2026-08-07 10:34'
+updated_date: '2026-08-07 11:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,10 +20,12 @@ ordinal: 260000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Samtliga arbetsform-regler i spoke (CLAUDE.md, CONTRIBUTING, agentfiler, skills-referenser) + hubbens disciplin-skills inventerade; varje regel klassad: mekanisk bärare / kort-buren / startdörrs-bunden — med källa (fil:avsnitt) och belägg per rad
-- [ ] #2 Kartan landad som research-dok; varje startdörrs-bunden regel med drift-risk har ett eget nytt kort skapat via backlog-CLI (fynd-kort, inte fixar i denna skiva)
+- [x] #1 Samtliga arbetsform-regler i spoke (CLAUDE.md, CONTRIBUTING, agentfiler, skills-referenser) + hubbens disciplin-skills inventerade; varje regel klassad: mekanisk bärare / kort-buren / startdörrs-bunden — med källa (fil:avsnitt) och belägg per rad
+- [x] #2 Kartan landad som research-dok; varje startdörrs-bunden regel med drift-risk har ett eget nytt kort skapat via backlog-CLI (fynd-kort, inte fixar i denna skiva)
 - [ ] #3 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
