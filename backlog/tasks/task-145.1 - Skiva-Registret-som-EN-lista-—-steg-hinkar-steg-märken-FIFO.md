@@ -4,7 +4,7 @@ title: 'Skiva: Registret som EN lista — steg-hinkar, steg-märken, FIFO'
 status: To Do
 assignee: []
 created_date: '2026-08-07 08:57'
-updated_date: '2026-08-07 11:27'
+updated_date: '2026-08-07 11:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,7 +31,11 @@ Täcker användarberättelser: 1, 2, 3, 4, 5, 6, 10, 25
 - [ ] #7 Scroll-ytans tillgänglighetsetikett följer sektionen och ärver INTE köns hårdkodade namn
 - [ ] #8 Summeringsblocket lämnas ORÖRT av denna skiva — steg-raderna OCH logistik-gruppen (Eventinfo-signalraden, Bor över, Avbokade) står kvar exakt som förut; blocket ägs av TASK-145.2
 - [ ] #9 Inga befintliga E2E-filer raderas i denna skiva; ett test vars subjekt flyttar hör till skivan som äger subjektet, inte till denna
+- [ ] #10 Markera-lägets kandidatmängd är den RENDERADE listan, inte den gamla obekräftade-kön — samma form facit redan bär (registerListaA), så att senare filtrering följer med automatiskt
+- [ ] #11 Markera-knappen har en egen förankring utanför de rivna sektionsrubrikerna; ingen del av markera-lägets ÖVRIGA form (batch-barens knapptext, bekräfta-flödets rivning, interim-utgången) rörs här — den ägs av TASK-145.3
 <!-- AC:END -->
+
+
 
 
 
