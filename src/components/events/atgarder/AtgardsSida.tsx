@@ -178,9 +178,19 @@ const KORT_KLASS =
  * INVENTERINGEN AV HELA APPEN ÄR EN EGEN TRÅD (`T134`), per Marcus: "samma sak
  * här som med pills och knappar, inventera och kolla". Denna konstant löser
  * ÅTGÄRDS-SIDAN; de tre andra filerna ägs av S93 och rörs inte härifrån.
+ *
+ * STORLEKEN ÄR 16 px SEDAN VARV 17 (Marcus: "Kan vi göra checkboxen lite
+ * mindre? Känns ganska stor"), ned från förlagans `size-5` (20 px). Bocken
+ * följde med 14 → 12 px så proportionen inuti rutan hålls.
+ *
+ * DETTA ÄR EN MEDVETEN AVVIKELSE FRÅN DE TRE ANDRA, inte en ny drift: de bär
+ * fortfarande 20 px, och `T134`:s app-svep ska ta ställning till vilket mått
+ * som blir appens. Åtgärds-sidan går först eftersom den är ytan Marcus
+ * granskar; avvikelsen är bokförd i tråden så svepet ärver frågan i stället
+ * för att upptäcka den.
  */
 const KRYSSRUTA_KLASS =
-  'flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-(--mm-checkbox-selected-border) group-data-[selected]:bg-(--mm-checkbox-selected-bg)';
+  'flex size-4 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-(--mm-checkbox-selected-border) group-data-[selected]:bg-(--mm-checkbox-selected-bg)';
 
 /**
  * TEXTYTANS MORF-PARITET — den låsta rutan och `TextArea` bär SAMMA höjd och
@@ -1094,7 +1104,7 @@ function SkrivKryss({
       <span className={KRYSSRUTA_KLASS}>
         <Check
           aria-hidden="true"
-          size={14}
+          size={12}
           className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
         />
       </span>
@@ -1139,21 +1149,26 @@ function SkrivRad({
   return (
     <div className="flex flex-col gap-2 py-3">
       <SkrivKryss text={label} namn={namn} vald={vald} onChange={onStatus} />
-      {/* NOTERINGEN PÅ EGEN RAD, FULL BREDD — läsytans lösning på Marcus fråga
-          2026-08-06 ("kommer det ju inte få plats några noteringar eller? Vart
-          ska dem skrivas ut?"). `pl-7` linjerar fältet under betalningsordet,
-          inte under krysset. */}
-      <div className="pl-7">
-        <Input
-          size="sm"
-          label={`Notering ${label.toLowerCase()} för ${namn}`}
-          hideLabel
-          placeholder="Notering…"
-          value={utkast ?? notering ?? ''}
-          onChange={setUtkast}
-          onBlur={spara}
-        />
-      </div>
+      {/* NOTERINGEN TAR PLATTANS FULLA BREDD sedan varv 17 (Marcus: "Kan vi dra
+          ut noteringsrutan hela vägen ut till kanten på checkboxen så dem tar
+          hela bredden typ på den plattan de sitter på?").
+
+          `pl-7`-indraget är BORTA. Det ärvdes ur läsytan, där noteringen är
+          löpande TEXT och linjerar under betalningsordet för att läsas som en
+          kvalificering av raden ovanför. Ett FÄLT är något annat: dess kant
+          ritar en låda, och en låda som börjar 28 px in ser ut att sakna sin
+          vänstra fjärdedel. Kortets egen `px-4` är nu enda marginalen, så
+          fältet står kant i kant med rutan ovanför — samma vänsterlinje som
+          kryssrutan, hela vägen ut till höger. */}
+      <Input
+        size="sm"
+        label={`Notering ${label.toLowerCase()} för ${namn}`}
+        hideLabel
+        placeholder="Notering…"
+        value={utkast ?? notering ?? ''}
+        onChange={setUtkast}
+        onBlur={spara}
+      />
     </div>
   );
 }
