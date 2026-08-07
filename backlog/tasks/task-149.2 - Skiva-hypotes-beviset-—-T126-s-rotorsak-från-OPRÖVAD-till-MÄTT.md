@@ -4,6 +4,7 @@ title: 'Skiva: hypotes-beviset — T126:s rotorsak från OPRÖVAD till MÄTT'
 status: To Do
 assignee: []
 created_date: '2026-08-07 10:28'
+updated_date: '2026-08-07 10:51'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,11 +20,13 @@ ordinal: 256000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Resume-vägens skill-laddning prövad mot artefakter: session-resume-skillens faktiska text + S93-sessionsdokets förlopp + prototype-skillens trigger-description — belägg för VARFÖR laddningen uteblev, inte bara ATT den uteblev
-- [ ] #2 Generaliseringen prövad: minst två andra arbetsform-regler i skills kontrollerade för samma leveransgap (startdörrs-bundenhet)
-- [ ] #3 T126-kortet uppdaterat via backlog-CLI: rotorsaken omklassad HYPOTES → MÄTT med belägg, eller öppet falsifierad med vad som faktiskt gäller
+- [x] #1 Resume-vägens skill-laddning prövad mot artefakter: session-resume-skillens faktiska text + S93-sessionsdokets förlopp + prototype-skillens trigger-description — belägg för VARFÖR laddningen uteblev, inte bara ATT den uteblev
+- [x] #2 Generaliseringen prövad: minst två andra arbetsform-regler i skills kontrollerade för samma leveransgap (startdörrs-bundenhet)
+- [x] #3 T126-kortet uppdaterat via backlog-CLI: rotorsaken omklassad HYPOTES → MÄTT med belägg, eller öppet falsifierad med vad som faktiskt gäller
 - [ ] #4 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
