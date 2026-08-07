@@ -12,20 +12,26 @@ Prototyp-växlarens rail är bortdöljd i bilderna.
 
 | Fil | Visar |
 |---|---|
-| `v4-atgarder-mobil.png` | Hela sidan: sidhuvud · översta blocket med BARA väljaren · räknaren · de gröna deltagarkorten · plockar-ingången · åtgärdsmenyn · betalningarna |
+| **`v4b-forsta-skarmen.png`** | **Sidan som Lotta möter den** — allt ryms utan scroll: sidhuvud, väljare, räknaren (infälld), hela Åtgärd-menyn, betalningarna |
+| `v4b-infalld.png` | Samma, hela sidan |
+| `v4b-utfalld-lista.png` | Efter klick på räknaren — de 14 markerade korten |
+| `v4b-atgard-vald.png` | En åtgärd vald direkt ur infällt läge |
+| `v4b-desktop.png` | Infällt läge i 1280 px |
 | `v4-plockare.png` | "Lägg till fler personer från eventet" öppen — de omarkerade som kompakta kort |
 | `v4-avmarkerad.png` | Efter avmarkering av ett kort: räknaren 14 → 13, kortet vitt men kvar i listan |
 | `v4-utfalld.png` | Bekräftelse-åtgärden utfälld in-place |
-| `v4-atgarder-desktop.png` | Samma sida i 1280 px |
+| `v4-atgarder-mobil.png` / `v4-atgarder-desktop.png` | Varv 4a, **före** infällningen — listan öppen från start |
 | `ref-eventdetalj-markerat-kort.png` | **Förlagan**: ett markerat kort på eventdetaljen |
 
-## Tre ändringar mot varv 3
+## Fyra ändringar mot varv 3
 
 1. **Mottagarna bär `Deltagare` § `MarkerbartKort`**, inte gruppdynamikens
    kompakta kort. Varv 3 mötte henne med en annan kortform än den hon just
    klickat på.
 2. **Räknaren först** — "14 av 16 deltagare markerade", före listan.
-3. **Översta blocket bär bara eventväljaren.** Sammanfattningen och
+3. **Listan är INFÄLLD från början** (varv 4b, Marcus: *"Så hon direkt kan 'Se'
+   åtgärderna och välja en åtgärd"*). Räknar-raden är accordion-huvudet.
+4. **Översta blocket bär bara eventväljaren.** Sammanfattningen och
    deadline-pillen sköt ned mottagarlistan; deadline flyttade till Betalningar,
    där den gäller.
 
@@ -53,6 +59,13 @@ mot sågtanden.
 
 **Beteendet mätt:** räknaren gick 14 → 13 vid avmarkering av ett kort, och
 kortet låg kvar i listan i vitt läge.
+
+**Infällningen mätt (varv 4b), 430×932:** panelen bär `hidden` vid inladdning
+och räknar-knappen `aria-expanded="false"`; alla 14 korten finns i DOM:en (så
+`aria-controls` pekar på ett verkligt element) men ritas inte. **Åtgärd-rubriken
+står på 430 px och den sista av de sex åtgärdsraderna slutar på 751 px — hela
+menyn ryms på första skärmen** (932 px), och sidans totalhöjd är 1101 px mot
+varv 4a:s dryga 2000. Klick på räknaren fäller ut samtliga 14 kort.
 
 Noll sidfel. **En avvikelse att känna till:** mot slutet av passet började
 stagings Edge Functions svara med CORS-avslag på `4173` (`get-events`,
