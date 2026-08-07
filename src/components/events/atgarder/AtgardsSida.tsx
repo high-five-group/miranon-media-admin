@@ -54,7 +54,7 @@ import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
-import { DetaljGrupp, EtikettVardeRad } from '../detail/DetaljGrupp';
+import { DetaljGrupp } from '../detail/DetaljGrupp';
 import { EventValjare } from '../EventValjare';
 
 /* ------------------------------------------------------------------ *
@@ -625,21 +625,23 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
      (task-18.18, S83 pass 4-facit; Linear/Rails-precedenten). */
   if (eventId == null) {
     return (
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-6">
-        <h1 className="font-semibold text-3xl">Åtgärder</h1>
-        <p className="text-body text-text-secondary">Välj vilket event du vill göra åtgärder på.</p>
+      <section className="flex flex-col gap-4 pt-2 lg:pt-10">
+        <h1 className="px-4 font-semibold text-3xl">Åtgärder</h1>
+        <p className="px-4 text-body text-text-secondary">
+          Välj vilket event du vill göra åtgärder på.
+        </p>
         <EventValjare
           onByte={(id) => {
             window.location.href = `/event/${id}/atgarder${window.location.search}`;
           }}
         />
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6">
-      <div className="flex flex-col gap-2">
+    <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+      <div className="flex flex-col gap-2 px-4">
         <h1 className="font-semibold text-3xl">Åtgärder</h1>
         <EventValjare
           valtEventId={eventId}
@@ -716,20 +718,16 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
           <PrototypNot />
         </>
       )}
-    </div>
+    </section>
   );
 }
 
 /** Prototyp-not synlig i ytan så Marcus ser vad som ännu inte har datakälla. */
 function PrototypNot() {
   return (
-    <div className={`${KORT_KLASS} py-1`}>
-      <EtikettVardeRad term="Prototyp">
-        <span className="text-small text-text-muted">
-          Mallar och bilagor är stubbar — bilage-fundamentet (TASK-146) är inte byggt. Inget
-          skickas, inget sparas.
-        </span>
-      </EtikettVardeRad>
-    </div>
+    <p className="px-4 text-small text-text-muted">
+      <strong className="font-medium">Prototyp.</strong> Mallar och bilagor är stubbar —
+      bilage-fundamentet (TASK-146) är inte byggt. Inget skickas, inget sparas.
+    </p>
   );
 }
