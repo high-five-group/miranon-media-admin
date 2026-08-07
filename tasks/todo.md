@@ -321,7 +321,7 @@ post-merge avbryts trots att filen säger *"ALDRIG"* — reproducerad 2/2, orsak
 EJ fastställd. **MOTTAGEN-DATUMET var ingen drift:** fusk-tabellen revs per
 Marcus väg C, förmågan finns kvar och väntar `TASK-147`. **VÄNTAR MARCUS:**
 `A1`–`A6`:s skivning · åtgärds-sidans hopkoppling (S100 varv 4, 1 850 rader).
-Numrering disk-verifierad mot `73e94776`: **103**/L480 + sju fragment/**T137**
+Numrering disk-verifierad mot `73e94776`: **103**/L480 + åtta fragment/**T137**
 (`T136` mintad av annan session)/**task-161**/f47.
 **HANDOFF: sessionsdok S93 § PAUSLÄGE.**
 *(Föregående paus-läge nedan oförändrat.)* `145.1` (registret som EN lista) · `145.2`
