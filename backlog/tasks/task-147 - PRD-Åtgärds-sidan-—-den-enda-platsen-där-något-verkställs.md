@@ -4,8 +4,9 @@ title: 'PRD: Åtgärds-sidan — den enda platsen där något verkställs'
 status: To Do
 assignee: []
 created_date: '2026-08-07 07:52'
-updated_date: '2026-08-07 11:27'
-labels: []
+updated_date: '2026-08-07 11:41'
+labels:
+  - ready-for-human
 dependencies: []
 ordinal: 232000
 ---

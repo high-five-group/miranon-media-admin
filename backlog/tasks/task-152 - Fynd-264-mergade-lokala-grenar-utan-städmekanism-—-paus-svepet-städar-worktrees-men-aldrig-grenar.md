@@ -3,10 +3,10 @@ id: TASK-152
 title: >-
   Fynd: 264 mergade lokala grenar utan städmekanism — paus-svepet städar
   worktrees men aldrig grenar
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-07 10:51'
-updated_date: '2026-08-07 11:16'
+updated_date: '2026-08-07 11:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,9 +26,11 @@ Symptom: 264 av 283 lokala grenar är redan mergade i main och växer session f�
 - [ ] #3 Tvåsidig testsvit (raderar mergad gren · skonar omergad · skonar worktree-bunden · skonar skyddslistad); shellcheck-strict grön; PR armerad, per-jobb-grön
 <!-- AC:END -->
 
+## Implementation Notes
 
-
-
+<!-- SECTION:NOTES:BEGIN -->
+Levererad via PR #868 (merge 6d6ac7b8), kö-CI grön. stada-grenar.sh + conf + testsvit 17/17; torrkörning fann 252 kandidater. Hub-integration (paus-svepet) bokförd som uppföljning — ingår i 158-arbetet eller eget kort.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

@@ -134,6 +134,15 @@ och armerar i sitt svep. Lägger uppdraget armeringen hos dig:
 avvisar formen med `! The merge strategy for main is set by the merge queue`.
 Därefter slutrapport direkt.
 
+Säger uppdraget explicit att PR:en INTE ska armeras därför att den väntar på
+granskning eller ett beslut (medveten parkering — inte bara normalfallet
+ovan, där orkestreraren armerar strax i sitt svep): skapa den som draft
+direkt, `gh pr create --draft`, i stället för att öppna den odraftad och
+lämna den oarmerad. En CLEAN, odraftad PR utan armering är oskiljbar från en
+glömd för varje bevakningsmekanism
+(`tasks/lessons.d/parkerad-pr-utan-draft-ar-oskiljbar-fran-glomd.md`,
+`CLAUDE.md` § Landning) — draft är en sann utsaga om PR:en, inte en tystning.
+
 Skälet för diff-granskningen är inte längre `BEHIND`. Kön bygger varje post mot
 `main` plus posterna före den, så mekaniska konflikter mellan parallella
 landningar är lösta (`CLAUDE.md` § Landning). Vad kön inte ser är två diffar

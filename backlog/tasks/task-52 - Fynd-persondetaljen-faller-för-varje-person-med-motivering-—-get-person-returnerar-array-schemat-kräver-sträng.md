@@ -6,8 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-25 23:43'
-updated_date: '2026-07-30 19:22'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-human
 dependencies: []
 ordinal: 113000
 ---

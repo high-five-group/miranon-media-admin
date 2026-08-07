@@ -4,7 +4,9 @@ title: 'PRD: Användarinbjudan och auth-flödet (T95 Spår B)'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:16'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-human
 dependencies: []
 ordinal: 199000
 ---

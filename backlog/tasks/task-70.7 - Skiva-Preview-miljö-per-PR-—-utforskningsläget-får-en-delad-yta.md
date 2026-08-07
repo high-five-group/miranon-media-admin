@@ -4,8 +4,9 @@ title: 'Skiva: Preview-miljö per PR — utforskningsläget får en delad yta'
 status: To Do
 assignee: []
 created_date: '2026-07-28 17:13'
-updated_date: '2026-07-29 19:15'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-human
 dependencies: []
 parent_task_id: TASK-70
 ordinal: 150000

@@ -15,6 +15,52 @@
 
 ## Aktuellt fokus
 
+**Session 99 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 1)**
+— paus-antagandet höll: `#876` (149.3) mergad `a95d271c` + paus-PR:n
+`#881` mergad `6bfdb751`, båda per-jobb-gröna (Acceptance 8m8s körd;
+staging/a11y CI-gatad skip) → **`149.3` FLIPPAD Done** (AC 6 + DoD
+bockade, stängnings-summary i kortet). **Numrering re-verifierad mot
+disk — EN divergens:** nästa tråd är **T133**, inte handoffens T131 —
+T131 (Dokument-ytan) OCH T132 (svepets draftfilter) förbrukade av S93.
+Övriga axlar håller: 099/ADR-098/L480 + 4 fragment/task-158
+(RESERVERAT)/f47. **Skarpbevis-läget delat:** `deny-subagent-vantan.sh`
+registrerad FÖRE sessionsstart ⇒ laddad, betalas nu;
+`deny-arbetsform-push.sh` landade UNDER sessionen (`a95d271c`) ⇒ oladdad
+här — skulden bokförd i 149.3-kortet, betalas i session född efter
+`a95d271c`. Heartbeat-monitorn igång; kända DIRTY-larm `#862` (S93
+draft, T132-klassen) + `#882` (S100:s paus-PR) — främmande sessioners
+PR:er, rörs ej. **NÄSTA: skarpbevis 148.2 → minta task-158 + sex skivor
+(uppdrag 5) → spawna 157.1 (ADR-098) + 149.4 (hub, OISOLERAD) → grilla
+6/7/8.**
+*(Paus-kadensraden nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
+**Session 99 ⏸️ PAUSAD (2026-08-07, första pausen, `lifecycle: paused`)** —
+**PROCESS-SYNEN: FEM AV ÅTTA UPPDRAG GRILLADE OCH EXEKVERADE PÅ EN DAG.**
+Uppdrag 1 (parkerings-problemet) → **ADR-096** väntekontraktet +
+PreToolUse-spärren (`deny-subagent-vantan.sh`, `#860`) +
+instruktionskompletteringen (`#857`) + mätprotokollet (`#856`); rotorsaken
+var redan strukturellt belagd, kompensationen mekaniserad. Uppdrag 2
+(T126) → **ADR-097** tillståndsbärare + rotorsaken OPRÖVAD→**MÄTT**
+(`#865`) + arbetsform-tillståndsfilen + push-hooken
+(`deny-arbetsform-push.sh`, `#876` i kön) + bärarkartan (132 regler,
+`#870`) + push-ekonomin/draft-regeln kodifierade (`#877`). Uppdrag 3 →
+tio kandidater, fyra fynd-kort exekverade (`150`–`153`: larmtext-lögnen
+rättad · #844-driften löst + 39 kort etiketterade · `stada-grenar.sh` ·
+draft-bäraren), `#871`-transienten triagerad. Uppdrag 4 (trådregistret
+214 KB mot Read-taket) → **TASK-157**: tunna radformen + migration +
+radlängds-grind (ADR-098 mintas i resumen). Uppdrag 5
+(sessionsdok-arkiveringen) → samsyn: rullande fönster, ADR-099 —
+**task-158 mintas som FÖRSTA jobb i resumen** (Marcus-beslut, 44 %
+kontext). **Uppdrag 6–8 OGRILLADE.** Skarpbevis-skulder: TVÅ hookar.
+**NÄSTA: resume → skarpbevisen → minta 158 → spawna 157.1 + 149.4 →
+grilla 6/7/8.** **HANDOFF: sessionsdok S99 § PAUSLÄGE.** Numrering vid
+paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
+(RESERVERAT)/f47. Heartbeat-monitorn stoppad med avsikt — starta vid
+resume.
+*(S93:s kadensrad nedan, oförändrad.)*
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`) — FEMTE
 RESUMEN: BYGGAGENTERNA UT** — pausens båda verifikationssteg **KLARA**:
 `#850` mergad `09:38:46Z` (`aa132f62`) och paus-landningen `#851` mergad
