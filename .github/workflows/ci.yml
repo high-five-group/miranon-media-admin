@@ -1078,7 +1078,10 @@ jobs:
         # grinden mekaniserade) +
         # .subagent-vantan-policy.conf, tillagd i TASK-148.2-wiringen
         # (ADR-096 § Beslut del 2, PreToolUse-spärren mot Monitor/
-        # run_in_background i subagent-kontext) —
+        # run_in_background i subagent-kontext) +
+        # .stada-grenar-policy.conf, tillagd i TASK-152-wiringen
+        # (scripts/stada-grenar.sh — generell städning av lokalt mergade
+        # grenar) —
         # en sourced conf utanför scopet är samma lucka som de övriga redan
         # stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
@@ -1087,7 +1090,8 @@ jobs:
         # TASK-119-wiringen, till elva i TASK-137-wiringen och till tolv i
         # T119(a)-wiringen, till tretton i T119(b)-wiringen, till fjorton i
         # T119(d) item 5-wiringen, till femton i T119(d) item 4-wiringen,
-        # till sjutton i TASK-139 och till arton i TASK-148.2.
+        # till sjutton i TASK-139, till arton i TASK-148.2 och till nitton
+        # i TASK-152.
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1112,7 +1116,8 @@ jobs:
             .staging-preflight-hook-policy.conf \
             .claims-tackning-policy.conf \
             .merge-tree-mandat-policy.conf \
-            .subagent-vantan-policy.conf
+            .subagent-vantan-policy.conf \
+            .stada-grenar-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
