@@ -4,7 +4,7 @@ title: 'Skiva: post-compact-igenkänningen'
 status: In Progress
 assignee: []
 created_date: '2026-08-07 16:59'
-updated_date: '2026-08-07 18:18'
+updated_date: '2026-08-07 18:20'
 labels:
   - ready-for-agent
 dependencies:
@@ -35,6 +35,8 @@ ordinal: 286000
 
 <!-- SECTION:NOTES:BEGIN -->
 Sekvensberoende öppet bokfört (premiss-pass, ADR-086): TASK-160.2 (PR #943) var OPEN/BLOCKED (armerad i kön, ej på main) och TASK-160.3 (pre-compact-skillen) var fortfarande To Do när denna skiva byggdes — mätt via 'gh pr view 943' och 'npx backlog task task-160.3 --plain' 2026-08-07. Skivan basera på origin/main (utan .precompact-policy.conf); scripts/post-compact-igenkanning.sh sourcar .precompact-policy.conf OM den finns, annars fallback till det ADR-101-dokumenterade default-filnamnet .claude/precompact-markor.json (verifierat mot origin/feat/task-160-2-precompact-grinden:.precompact-policy.conf). Markörens JSON-schema (fokus_instruktion/satt_vid/sattare) är fullt specificerat i ADR-101 § Beslut 4, så TASK-160.3:s frånvaro är ingen teknisk blockerare — skriptet läser bara markörens NÄRVARO, aldrig dess innehåll. Fail-open valt medvetet: SessionStart kan strukturellt inte blockera sessionsstart (hooks.md, Can block? Nej), så varje internt fel (jq saknas, trasig indata, otolkbar policy) ger TYST exit 0 utan additionalContext — samma hållning som scripts/katalogagarskap-markor.sh. Skarpbevis-skulden (hooken kan inte laddas i denna byggsession) är dokumenterad i skriptets eget header med differentialrecept: provocera en REDAN laddad SessionStart-hook (katalogagarskap-markor.sh) parallellt nästa session för att skilja 'fel logik' från 'ej laddad än'.
+
+PR #946 skapad och armerad (gh pr merge --auto, ingen strategiflagga; enabledAt 2026-08-07T18:20:28Z, mergeMethod MERGE satt av kön). AC4 lämnas medvetet obockad — bundlar 'per-jobb-grön' som DoD #3 explicit lämnar öppet för orkestrerarens CI-verifiering; kortet sätts INTE Done av byggagenten.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
