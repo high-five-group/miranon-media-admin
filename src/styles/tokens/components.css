@@ -168,21 +168,38 @@
          gold-9 platta + gold-12 kant       6,04 ✓ · 11,07 ✓
          gold-9 platta + mörk kant          6,04 ✓ · 15,52 ✓
 
-     VALET GER BÅDE FÄRGEN OCH ETT STARKARE GOLV än varv 15: 4,91:1 mot 3,06:1.
      Kanten är ett enda steg mörkare i samma familj, så den läses som en kontur
      på guldet — inte som en andra färg.
 
-     VARFÖR MÖRK BOCK: mot gold-9 ger vit bock 2,57:1 och mörk 6,04:1. Bocken är
-     det som ska läsas, alltså tar den det starkare värdet. Det är också varför
-     `--mm-checkbox-check` INTE är `text-inverse` — den tokenen betyder "det som
-     syns mot en MÖRK platta", och guld är ingen mörk platta.
+     BOCKEN ÄR VIT SEDAN VARV 18, OCH DET KOSTADE ETT STEG PÅ PLATTAN.
+     Marcus: "Det gick inte att få en vit bock inuti checkboxen? Skulle bli
+     mycket snyggare." Det gick — men inte på steg 9.
 
-     TONA ALDRIG NED KANTEN, av exakt samma skäl som förlagan skriver ut: utan
-     den vilar valt tillstånd på en platta som inte klarar golvet. Ändras
-     kantens ton måste båda talen mätas om. */
-  --mm-checkbox-selected-bg: var(--p-gold-9);
+     BOCKEN MÄTS MOT PLATTAN DEN LIGGER PÅ, och den mätningen är oberoende av
+     kantens. Kant-tricket som räddade steg 9 i varv 16 hjälper alltså INTE
+     här: det löser plattan mot BAKGRUNDEN, inte bocken mot plattan. Enda vägen
+     till en laglig vit bock var att flytta plattan ett steg:
+
+       gold-9  + vit bock    2,57 ✗     (steget Marcus först pekade ut)
+       gold-9  + mörk bock   6,04 ✓     (varv 16–17)
+       gold-10 + vit bock    3,06 ✓  ← VALD
+       gold-11 + vit bock    4,91 ✓     (säkrast, men märkbart brunare)
+
+     Skillnaden gold-9 → gold-10 (#d4960a → #c28900) är ett enda steg och syns
+     knappt sida vid sida; skillnaden mörk → vit bock syns direkt. Bytet ger
+     alltså mer än det kostar.
+
+     3,06:1 ÄR MARGINELL — två hundradelar över golvet — och gäller bocken mot
+     just denna platta. Ändras plattans ton måste bocken mätas om, och gold-11
+     (4,91:1) är då reservvalet.
+
+     PLATTAN MOT BAKGRUNDEN klarar nu golvet på EGEN HAND (3,06:1), men kanten
+     står kvar och bär 4,91:1. TONA ALDRIG NED DEN, av samma skäl som förlagan
+     skriver ut: marginalen på plattan är två hundradelar, och kanten är det som
+     gör valt tillstånd otvetydigt. Ändras kantens ton måste båda talen mätas om. */
+  --mm-checkbox-selected-bg: var(--p-gold-10);
   --mm-checkbox-selected-border: var(--p-gold-11);
-  --mm-checkbox-check: var(--p-neutral-900);
+  --mm-checkbox-check: #ffffff;
 
   /* ── Select (Fas 3 K2) — trigger återanvänder Input-fält-tokens ── */
   --mm-select-popover-bg: var(--mm-surface-overlay);
