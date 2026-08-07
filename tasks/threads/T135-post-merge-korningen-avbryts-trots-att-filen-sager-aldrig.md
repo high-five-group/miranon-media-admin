@@ -64,6 +64,31 @@ Kandidater, ingen verifierad:
 för `0682a5b0` (`TASK-145.2`), `1af3299d` (`TASK-145.4`) och `57f8d143` står
 alla `cancelled`.
 
+### REPRODUCERAD — två av två dispatch-försök, inte ett engångsfall
+
+Kortet ovan skrevs efter EN mätning. En omkörning gjordes direkt efteråt, med
+avsikten att få det underlag den första inte hann ge. **Den avbröts också.**
+
+| Försök | Körning | `main` vid start | Utfall |
+|---|---|---|---|
+| 1 | `31196593426` | `f0171117` | staging-jobbet `cancelled` |
+| 2 | `31197915169` | `6756bb92` | staging-jobbet `cancelled` |
+
+Därtill en tredje instans utan dispatch: `31198327068` (`d25bd4d9`),
+`cancelled` på samma vis.
+
+**Vad omkörningen tillförde utöver reproduktionen:** körningslistan för
+16:30–16:44 visar att flera post-merge-körningar mot `main` överlappar i tiden
+— `16:30-16:43`, `16:35-16:43` och `16:38-16:39`. Med parallella sessioner som
+landar löpande är samtidiga post-merge-körningar alltså normaltillståndet, inte
+ett kantfall. Det stärker kandidat 1 och 2 utan att avgöra mellan dem.
+
+**Operativ slutsats, dragen i stunden:** att jaga ett färskt staging-utfall via
+upprepade dispatch-försök är inte en väg som går att lita på medan andra
+sessioner landar. Den billiga vägen till samma svar är att låta nästa kod-PR
+köra sviten på sin egen gren — vilket är exakt vad `TASK-145.3` (`#929`) sedan
+gjorde.
+
 ## Vad som INTE är fel — rättelse av en första hypotes
 
 Den första hypotesen var att en avbruten körning tappar täckningen **tyst**.
