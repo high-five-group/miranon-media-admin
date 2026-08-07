@@ -1,7 +1,7 @@
 ---
 owner: marcus803
-updated: 2026-07-31
-review_by: 2027-01-27
+updated: 2026-08-07
+review_by: 2027-02-07
 status: stable
 ---
 
@@ -12,7 +12,8 @@ Airtable-basen (`app8uGPrVCVOm6LfD`) är ett **medvetet valt v1-prototyp-datalag
 bakom `DataSourceAdapter`-kontraktet ([ADR-057](../decisions/ADR-057-lager-oberoende-fitness-invariant.md))
 — noll arkitektonisk inlåsning. Dokumentet är **levande**: nya väggar läggs till när de
 upptäcks, det är inte en engångsinventering. Grundskörden: Session 26 Pass 1 (45 verifierade,
-fil:rad-belagda poster); sektion F tillkom S91. Se ändringsloggen sist för utvidgningarna.
+fil:rad-belagda poster); sektion F tillkom S91, sektion G tillkom `TASK-146.1`.
+Se ändringsloggen sist för utvidgningarna.
 
 Dubbla syftet: (1) stenkoll på exakt vad vi medvetet betalar i v1; (2) **migrations-kravspec**
 för Supabase-adaptern — varje plattform-posts *Fas E-krav* är ett krav på Postgres-vägen, inte
@@ -446,6 +447,78 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
   branschens efemär-backend-mönster tillgängligt för oss överhuvudtaget, och den lägst rankade
   SUT-formen kan lämnas helt.
 
+### G. Bilagor och filhantering
+
+> Tillagd `TASK-146.1` (2026-08-07). Kandidat-poster identifierade men medvetet
+> INTE landade av forskningspasset
+> [`utskicks-bilage-arkitektur-2026-08-03.md`](../research/utskicks-bilage-arkitektur-2026-08-03.md)
+> § Delfråga 4 ("katalogen ändras EJ av detta pass") — PRD-kortet
+> [TASK-146](../../backlog/tasks/task-146%20-%20PRD-Bilage-fundamentet-%E2%80%94-delad-hemvist-tre-dokumentklasser-och-PDF-generering-inom-plattformen.md)
+> gav grind-skivan `TASK-146.1` uttrycklig DoD-instruktion att landa dem här
+> ("Att lämna dem oförda vore att låta ett belagt fynd dö med sitt dokument").
+
+#### P28 · Attachment-URL:er utgår efter 2 timmar (sedan 2022-11-08)
+
+- **Begränsning.** [`support.airtable.com/docs/airtable-attachment-url-behavior`](https://support.airtable.com/docs/airtable-attachment-url-behavior),
+  ordagrant: *"On November 8, 2022, Airtable introduced expiring attachment
+  URLs across our product surface areas to help increase attachment
+  security."* Giltighetstid: *"we will ensure that download URLs stay active
+  for at least 2 hours after receiving them"* — Airtable reserverar sig för
+  att ändra exakt fönster, men golvet är 2 timmar. Ingen förnyelsemekanism
+  dokumenteras utöver att hämta record igen (ny URL följer med ett nytt
+  API-svar). Airtables egen rekommendation för persistent åtkomst är
+  uttryckligen: *"use an external hosting service or integration — like
+  Zapier, Workato, or your code — to store a copy of the attachment
+  separately from Airtable."*
+- **Kostnad/manifestation.** En server-genererad PDF (brev, kvitto) som ska
+  kunna refereras långt efter 2 timmar — t.ex. från en framtida
+  Utskickslogg, eller vid omsändning — kan inte luta sig mot att Airtables
+  egen attachment-URL fortfarande fungerar vid det tillfället. Ingen
+  manifestation i DENNA kodbas ännu (bilage-fundamentet, TASK-146, är
+  grönfält) — posten är FRAMÅTRIKTAD: den är skälet till att TASK-146
+  medvetet valde bort Airtable-native attachment-fält som hemvist för
+  bytesen, dokumenterat i research-passet § Delfråga 4 ("Vad detta faktiskt
+  underbygger").
+- **v1-kompensation.** **Ej tillämplig i vår arkitektur.** `Bilagor`-tabellen
+  (TASK-146.2) håller metadata och eventkoppling, inte bytesen själva —
+  Bilagor-tabellen är alltså inte i vägen för denna vägg, men väggen är
+  SKÄLET till att den designades så. Ingen kompensationsmekanism byggs mot
+  P28 eftersom Airtable aldrig blir den enda hemvisten för en genererad
+  fil.
+- **Fas E-krav.** Postgres/Supabase Storage har ingen motsvarande
+  utgångstid på server-side läsning (`.download()` med service-role-nyckel,
+  se research-passet § Delfråga 2) — endast signerade URL:er, vars
+  giltighetstid VI väljer vid utfärdandet, inte plattformen.
+
+#### P29 · Upload Attachment-API:t är kapat till 5 MB direkt-byte-uppladdning
+
+- **Begränsning.** [`airtable.com/developers/web/api/upload-attachment`](https://airtable.com/developers/web/api/upload-attachment):
+  `POST /v0/{baseId}/{recordId}/{attachmentFieldIdOrName}/uploadAttachment`,
+  body `{ contentType, file (base64), filename }` — ordagrant: *"Upload an
+  attachment up to 5 MB to an attachment cell via the file bytes
+  directly."* Större filer måste gå via den andra vägen: sätta fältet till
+  `[{ url: "…" }]` vid record-create/update, där Airtable själv hämtar och
+  lagrar filen (Airtable blir den hämtande parten — samma mönster som
+  Resends `path`-fält, research-passet § Delfråga 1). Generellt
+  per-fil-tak ([`support.airtable.com/docs/attachment-field`](https://support.airtable.com/docs/attachment-field)):
+  *"Airtable supports individual attachments up to 5GB in size"* (1 GB på
+  Free-plan) via URL-baserad attach; per-bas total lagringsgräns per plan
+  (Team-planen, vårt abonnemang, sekundärkälla `tasks/lessons.md` rad
+  ~2054): 20 GB.
+- **Kostnad/manifestation.** Samma relevans som P28: skälet TASK-146 aldrig
+  seriöst övervägde bytes-i-basen. Ett server-side flöde som ville POSTa
+  en genererad fil direkt in i ett Airtable attachment-fält skulle antingen
+  tvingas stanna under 5 MB (direkt-byte) eller gå via URL-baserad attach —
+  vilket kräver att bytesen REDAN ligger någon annanstans, cirkulärt om
+  Airtable vore den enda hemvisten. Ingen manifestation i denna kodbas
+  ännu (grönfält, samma skäl som P28).
+- **v1-kompensation.** **Ej tillämplig** — samma skäl som P28. Bilagornas
+  bytes går aldrig via Airtables upload-API i vår arkitektur.
+- **Fas E-krav.** Supabase Storage har ett separat, mycket högre tak
+  ([`supabase.com/docs/guides/storage/uploads/file-limits`](https://supabase.com/docs/guides/storage/uploads/file-limits):
+  50 MB-golv på Free-plan, upp till 500 GB Pro/Team) hanterat av vår egen
+  bucket-konfiguration, inte en leverantörs fasta API-gräns.
+
 ---
 
 ## Allvarlighets-axel — synliga fel vs tyst korruption
@@ -501,3 +574,4 @@ detalj, åtgärds-rekommendation och live-stickprov.
 | 2026-06-21 | **Session 26 — initial skörd.** Dokumentet skapat ur Pass 1-råskörden (45 verifierade, fil:rad-belagda poster): 25 plattform-poster (grupperade A–E) + 15 data-instans-fällor (sammanfattade, pekar till data-model) + allvarlighets-axel (3 tyst-korruption-poster märkta). Klassningsbeslut applicerade: O1 + O3 utelämnade, O2 → underrad P25, O4 → data-instans (hypotes-flagga bevarad), O5 → P19 ("kräver escaping"). |
 | 2026-07-27 | **Session 91 — sektion F, testbarhet och miljö-isolering** (Marcus order: dokumentet ska bära ALLA Airtable-tvingade kompromisser). Två nya plattform-poster: **P26** (ingen bas-duplicering via API — per-körning-isolering strukturellt omöjlig; två oberoende spärrar) och **P27** (icke-självhostbar — efemär backend otillgänglig; precedent-rymden tom). **P4 utvidgad** med två manifestationer: att 5 req/s-taket är DELAT och därmed gör test-shardning verkningslös även med perfekt isolering, samt en ⚠️ **öppen avvikelse** — klienten väntar 1 s efter 429 där dokumentationen kräver 30 s (tre ställen i `airtable-client.ts`; ej åtgärdad, ej trådförd). Beläggen fanns sedan 2026-07-26 i tre research-pass men saknade katalogpost; gränsdragningen tvång kontra eget val bor i [ADR-063 § S91-not](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md). Plattform-poster nu 27, grupperade A–F. |
 | 2026-07-31 | **`TASK-53` (commit `123dbca`) — P4:s öppna avvikelse STÄNGD.** 1 s-backoffen efter 429 ersatt av Airtable-konform väntan i en egen mekanism ([`_shared/airtable-retry.ts`](../../supabase/functions/_shared/airtable-retry.ts)), delad av alla tre call-sites: exponentiellt från 30 s med additiv jitter och tak på 2 omförsök (härlett ur Supabase Edge Functions 150 s idle timeout — ett tredje omförsök hade gett 504). Verifierad med mockat 429-enhetstest som mäter faktisk väntetid; skarp framkallning valdes bort eftersom kvoten är delad (P26). Posten är därmed den första i katalogen som gått från öppen avvikelse till åtgärdad — noten behålls som historik, inte som skuld. |
+| 2026-08-07 | **`TASK-146.1` — sektion G, bilagor och filhantering.** Två nya plattform-poster landade från kandidaterna forskningspasset [`utskicks-bilage-arkitektur-2026-08-03.md`](../research/utskicks-bilage-arkitektur-2026-08-03.md) § Delfråga 4 medvetet lämnade olandade: **P28** (attachment-URL:er utgår efter 2 timmar, sedan 2022-11-08 — v1-kompensation ej tillämplig, `Bilagor`-tabellen håller bara metadata) och **P29** (Upload Attachment-API kapat till 5 MB direkt-byte-uppladdning — v1-kompensation ej tillämplig, samma skäl). Båda är FRAMÅTRIKTADE: grönfält i denna kodbas, ingen manifestation ännu — de är skälet TASK-146 valde delad hemvist (bytes i Supabase Storage) i stället för Airtable-native attachment-fält, inte en åtgärdad brist. Plattform-poster nu 29, grupperade A–G. |

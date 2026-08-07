@@ -79,6 +79,17 @@ verify_jwt = true
 [functions.test-invite-completion]
 verify_jwt = true
 
+# test-pdf-generation — STAGING-ONLY testharness-EF (TASK-146.1, "Runtime-
+# beviset"). Samma gateway-försvar som ovan — requireUser grindar faktiskt
+# anropet, funktionen rör ingen data. MEDVETET UTELÄMNAD ur
+# .prod-functions-allowlist.conf — test-auth-precedenten. Rör inte den filen
+# för denna post. Existerar för att stänga en lucka research-passet
+# (docs/research/utskicks-bilage-arkitektur-2026-08-03.md § Delfråga 3) öppet
+# lämnade: pdf-lib mättes under Node som proxy, aldrig mot den skarpa Deno-
+# baserade Edge Runtime. Se funktionens filhuvud för fullt resonemang.
+[functions.test-pdf-generation]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #
