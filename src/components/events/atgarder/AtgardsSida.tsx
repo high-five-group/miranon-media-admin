@@ -141,6 +141,31 @@ function NumRuta({ n }: { n: number }) {
 const KORT_KLASS =
   'rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
 
+/**
+ * Namn-previewns gräns. Härledd, inte vald — se previewns docblock nedan:
+ * MUI `AvatarGroup` (`max = 5`), Fluent UI v8 `Facepile`
+ * (`maxDisplayablePersonas: 5`) och Microsofts egen rekommendation
+ * konvergerar på fem. Belägg: `docs/research/mottagar-preview-monster-2026-08-07.md` § 2.
+ */
+const PREVIEW_GRANS = 5;
+
+/**
+ * "Anna, Bert, Cissi, David och Erik och 9 till." — svensk uppräkning med
+ * `och` före det sista namnet, och overflow som REN TEXT.
+ *
+ * Under gränsen: bara uppräkningen. Exakt EN över gränsen ger ingen "+1 till"
+ * — då är det billigare att visa namnet än att räkna det (samma regel som
+ * "frånvaron är informationen": en rest på ett är ingen rest).
+ */
+function namnPreview(namn: string[]): string {
+  const uppraknat = (n: string[]) =>
+    n.length <= 1 ? (n[0] ?? '') : `${n.slice(0, -1).join(', ')} och ${n[n.length - 1]}`;
+
+  if (namn.length <= PREVIEW_GRANS + 1) return `${uppraknat(namn)}.`;
+  const rest = namn.length - PREVIEW_GRANS;
+  return `${namn.slice(0, PREVIEW_GRANS).join(', ')} och ${rest} till.`;
+}
+
 /* ------------------------------------------------------------------ *
  * De SEX åtgärdstyperna (underlaget § 3, Marcus-bekräftade 2026-08-07).
  *
@@ -629,7 +654,19 @@ function MottagarYta({
           >
             <span className="flex min-w-0 items-center gap-2">
               <CircleCheck aria-hidden="true" size={20} className="shrink-0 text-(--mm-success)" />
-              <span data-testid="markering-rakning" aria-live="polite" className="text-body">
+              {/* `aria-atomic="true"` (research-passet § 5, MDN:s aria-live-
+                  guide): utan den annonserar en skärmläsare bara den ÄNDRADE
+                  noden när siffran går 14 → 13 — alltså "13", utan "av 16
+                  deltagare markerade". MDN:s eget exempel är en klocka som
+                  läses upp som "34" i stället för "17:34". Systerkomponenten
+                  `Deltagare` § `MarkeringsBatchBar` bär den redan; vår
+                  saknade den. */}
+              <span
+                data-testid="markering-rakning"
+                aria-live="polite"
+                aria-atomic="true"
+                className="text-body"
+              >
                 <span className="font-semibold text-xl tabular-nums">{valda.size}</span> av{' '}
                 <span className="font-semibold text-xl tabular-nums">{alla.length}</span> deltagare
                 markerade
@@ -646,36 +683,50 @@ function MottagarYta({
 
           {/* NAMN-PREVIEWN (Marcus 2026-08-07): "en liten preview-lista med
               namnen på dem hon tog med sig … det kanske räcker som en liten
-              bekräftelse på att 'Ja, alla är med' och hon kanske inte behöver
-              öppna och scrolla genom alla kort."
+              bekräftelse på att 'Ja, alla är med'."
 
-              FORMEN ÄR ÄRVD, inte uppfunnen: eventdetaljens egen
-              Åtgärds-platshållare (`Deltagare` § `MarkeringsBatchBar`,
-              `valdaNamn`) listar redan exakt de här namnen i en
-              `rounded-xl border-(--mm-navcard-border) bg-surface p-3
-              text-small`-ruta — det är bryggan hon just klev över. Samma ruta
-              möter henne på andra sidan.
+              FÖRSTA FÖRSÖKET VAR EN OGRÄNSAD `join(', ')` över alla 14 namnen
+              — ett textstycke på 94 px. Marcus dom: "Jävlar vilken ful preview
+              … oanvändbar och måste göras om." Formen är nu omgjord mot
+              research-passet `docs/research/mottagar-preview-monster-2026-08-07.md`.
 
-              LÖPANDE TEXT, INTE EN RAD PER NAMN. Platshållarens `<ul>` med ett
-              namn per rad hade blivit 14 rader ≈ 210 px och skjutit ned
-              åtgärderna igen — precis det varv 4b löste. Kommaseparerad text
-              skummas lika snabbt och tar en tredjedel av höjden.
+              GRÄNSEN ÄR 5, OCH DEN ÄR HÄRLEDD, INTE VALD. Tre oberoende
+              förstapartskällor konvergerar på fem: MUI `AvatarGroup` har
+              `max = 5` i källkoden, Fluent UI v8 `Facepile` har
+              `maxDisplayablePersonas: 5` i sin `defaultProps`, och Microsofts
+              egen dokumentation kallar det "the default and recommended
+              number". Spridningen är ärlig och står i passet: Pinterest
+              Gestalt avviker till 3, GitHub Primer sätter hårt tak vid 4 och
+              BYTER mönster i stället för att trunkera djupare. Det finns
+              alltså inte EN branschsiffra — det finns ett kluster 3–5, och 5
+              är dess starkast belagda punkt.
 
-              ENDAST DE MARKERADE räknas upp: previewn svarar på "vilka tog jag
-              med mig", och ett avmarkerat kort är inte med.
+              "OCH N TILL" ÄR REN TEXT, INTE EN KNAPP. Sidan har redan en
+              fungerande "se alla"-mekanik: räknar-raden ovanför ÄR
+              accordion-huvudet för hela kortlistan. En andra klickyta hade
+              byggt parallellt maskineri för samma jobb, och APG erbjuder
+              inget standardkontrakt för en sådan mini-popover — varje sådan
+              yta blir ett eget, otestat mönster.
 
-              GRADEN ÄR `text-caption`, INTE `text-small`, och padding `p-2.5`
-              — mätt, inte valt på känsla. Med `text-small`/`p-3` blev rutan
-              131 px och sköt ned den sista åtgärdsraden till 884 px, alltså
-              28 px IN BAKOM tab-baren (som börjar på 856). Previewn får inte
-              kosta det varv 4b just vann. Namnen är sekundär bekräftelse, inte
-              läsyta — samma vikt som metaytan på deltagarkortet. */}
+              VARKEN CHIPS ELLER AVATARSTAPEL, av två skäl som sammanfaller:
+              chips signalerar borttagbarhet (Salesforce: "By default, pills
+              include a remove button" — hela tangentbordsmodellen är byggd
+              kring borttagning) och urvalet redigeras INTE här utan i korten
+              nedanför; och en avatarstapel förutsätter foton som varken
+              `Registration` eller `Person` bär, så den hade degraderat till
+              initial-cirklar — strikt svagare än att visa namnet.
+
+              PASSETS EGEN RESERVATION, bokförd: vårt scenario (read-only
+              namn-bekräftelse utan foton, 1–30 poster) ligger MELLAN de
+              etablerade mönstren, inte på ett av dem. Gränsen 5 är därför
+              lånad från avatargruppernas talkluster, inte belagd för just
+              denna form. */}
           {mottagarNamn.length > 0 && (
             <p
               data-testid="mottagar-preview"
               className="mt-2 rounded-xl border border-(--mm-navcard-border) bg-surface p-2.5 text-caption text-text-secondary contrast-more:border-(--mm-navcard-border-contrast)"
             >
-              {mottagarNamn.join(', ')}
+              {namnPreview(mottagarNamn)}
             </p>
           )}
 

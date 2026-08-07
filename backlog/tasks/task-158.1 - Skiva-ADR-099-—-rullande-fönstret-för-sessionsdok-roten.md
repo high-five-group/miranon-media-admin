@@ -1,9 +1,10 @@
 ---
 id: TASK-158.1
 title: 'Skiva: ADR-099 — rullande fönstret för sessionsdok-roten'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-07 12:25'
+updated_date: '2026-08-07 14:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,12 +20,14 @@ ordinal: 272000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass: ADR-041, ADR-023 och ADR-048 lästa i sin helhet FÖRE författande; avvikelse mot PRD:ns premisser → stanna och flagga
-- [ ] #2 ADR-099 kodifierar fönsterregeln (~10 senast stängda + samtliga paused/active i roten; talet pekas ut som konfig-värde, inte hårdkodat i prosa)
-- [ ] #3 Fas-avslut-bindningen (ADR-041) rivs ÖPPET med amenderings-block i ADR-041 + kvittens-referens till S99 Del 5 — aldrig tyst
-- [ ] #4 ADR-index/README-räkningen stämmer efter mintningen
+- [x] #1 Premiss-pass: ADR-041, ADR-023 och ADR-048 lästa i sin helhet FÖRE författande; avvikelse mot PRD:ns premisser → stanna och flagga
+- [x] #2 ADR-099 kodifierar fönsterregeln (~10 senast stängda + samtliga paused/active i roten; talet pekas ut som konfig-värde, inte hårdkodat i prosa)
+- [x] #3 Fas-avslut-bindningen (ADR-041) rivs ÖPPET med amenderings-block i ADR-041 + kvittens-referens till S99 Del 5 — aldrig tyst
+- [x] #4 ADR-index/README-räkningen stämmer efter mintningen
 - [ ] #5 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
