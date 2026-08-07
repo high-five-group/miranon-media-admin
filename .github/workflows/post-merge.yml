@@ -482,7 +482,7 @@ jobs:
 
           ## Tolkningshjälp — läs FÖRE revert
 
-          - **Är \`Acceptance (hermetisk)\` det enda röda jobbet?** Sviten är känd flaky under full workerlast (\`TASK-64\`, öppen och obelagd: fyra körningar har gett fyra olika uppsättningar fallerande tester i fyra olika filer). En flake är då en reell möjlighet — kör om körningen innan du reverterar.
+          - **Är \`Acceptance (hermetisk)\` det enda röda jobbet?** Sviten har en mätt flake-historia (\`TASK-64\` + \`TASK-74\`, båda Done sedan 2026-07-29 med belägg — klass A:s fix mätt 3/8 → 0/8 fällningar, klass B:s rest kartlagd i \`TASK-74\`). En första omkörning är därför ett rimligt steg. Men fäller körningen igen: det är INTE längre täckt av känd flake — behandla upprepad fällning som en möjlig äkta regression och gå revert-vägen.
           - **Är \`Exponeringsfönster (merge → svar)\` det enda röda jobbet?** Då är det MÄTNINGEN som gått sönder, inte \`main\`. Reverta ingenting; laga mät-steget i \`post-merge.yml\`.
           - **Är staging, bygget, acceptance-självtestet eller a11y rött?** Ingen av brasklapparna ovan gäller — behandla det som en äkta regression.
           EOF

@@ -4,6 +4,7 @@ title: 'Skiva: Registret som EN lista — steg-hinkar, steg-märken, FIFO'
 status: To Do
 assignee: []
 created_date: '2026-08-07 08:57'
+updated_date: '2026-08-07 11:27'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,7 +29,11 @@ Täcker användarberättelser: 1, 2, 3, 4, 5, 6, 10, 25
 - [ ] #5 Exakt ETT märke per person även när flera steg är ogjorda; undantagen (Avbokad, Inställt, På väg till väntelistan) bär egna ärliga märken
 - [ ] #6 Inline-scrollen är återanvänd med samma klipphöjd som kön hade — ingen ny höjd mintas
 - [ ] #7 Scroll-ytans tillgänglighetsetikett följer sektionen och ärver INTE köns hårdkodade namn
+- [ ] #8 Summeringsblocket lämnas ORÖRT av denna skiva — steg-raderna OCH logistik-gruppen (Eventinfo-signalraden, Bor över, Avbokade) står kvar exakt som förut; blocket ägs av TASK-145.2
+- [ ] #9 Inga befintliga E2E-filer raderas i denna skiva; ett test vars subjekt flyttar hör till skivan som äger subjektet, inte till denna
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

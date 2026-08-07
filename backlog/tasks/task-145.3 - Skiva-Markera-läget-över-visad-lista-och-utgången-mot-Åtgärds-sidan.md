@@ -4,6 +4,7 @@ title: 'Skiva: Markera-läget över visad lista och utgången mot Åtgärds-sida
 status: To Do
 assignee: []
 created_date: '2026-08-07 08:58'
+updated_date: '2026-08-07 11:27'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,7 +29,10 @@ Täcker användarberättelser: 11, 12, 13, 14
 - [ ] #3 Att slå på och av markera-läget förskjuter inte sidans innehåll vertikalt (mätt i renderad DOM)
 - [ ] #4 Batch-barens primärknapp bär texten Åtgärder och tar urvalet vidare; bekräfta-flödet med kontrollfråga är RIVET ur eventsidan, inte dolt
 - [ ] #5 Utgången är en ärlig interim-platshållare så länge Åtgärds-sidan inte finns — ingen chevron som lovar en navigation som saknas
+- [ ] #6 Avprickningens E2E-täckning hanteras EXPLICIT när bekräfta-flödet rivs: filen tas inte bort tyst utan att TASK-147 bär skulden att återupprätta täckningen på Åtgärds-sidan
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
