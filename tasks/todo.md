@@ -15,6 +15,46 @@
 
 ## Aktuellt fokus
 
+**Session 100 ⏸️ PAUSAD (2026-08-07, första pausen, `lifecycle: paused`) —
+ÅTGÄRDS-SIDANS FÖRSTA VARV UNDERLEVERERADE, OCH DET ÄR BOKFÖRT SOM SÅDANT.**
+Sessionen startade som den TREDJE parallella (S99 äger huvudkatalogen, S93 kör
+byggagenter) och tog egen worktree per `ADR-090` beslut 2. **Marcus rev
+grillad samsyn `S93` beslut 8 öppet:** divergens-passets tre varianter
+ersattes av tre **strukturskisser i text** → Marcus valde **B** → EN byggd
+variant. Rivningen är bokförd i artefakt, inte bara i chatt
+(`ATGARDSSIDAN-UNDERLAG.md` § 9, `baaf551b`), tillsammans med två krav som
+tillkom under passet — **mottagar-urvalet är REDIGERBART på sidan** (dra in
+och ut utan att lämna den) och **sidan står på egna ben med eventväljare**
+(TVÅ TILLSTÅND-formen ur `task-18.18`) — plus stängningen av
+mottagen-datum-frågan i § 8, som stått öppen i fyra dagar efter att Marcus
+väg C togs. **SID-INVENTERINGEN:** 26 sidor, fem med låst facit; djupstuderade
+eventdetaljen + anmälningsdetaljen. Två fynd bär vidare: `SegmentMailCompose`
+löser mottagarna SERVER-side (*"aldrig en klient-byggd lista"*) medan
+åtgärds-sidan bär ett KLIENT-buret urval — kontraktsskillnad mot `ADR-067`
+som hör i sändvägs-skivan; och **dokumentklass C** (person-genererad) gör
+bilageväljaren till något annat än en filväljare — en klass C-bilaga är SEX
+filer till sex mottagare, vilket ger den bilage-bärande sändvägen ett ANDRA,
+oberoende skäl utöver den tysta batch-bristen. **MARCUS DOM (verbatim):**
+*"En ordentlig underleverans Claude! Den här sidan ser ut att vara ihopkastad
+i panik."* Domen är riktig: ytan är en funktionell skiss utan statusbadges,
+deadline-signal eller visuell hierarki — grammatiken lästes men omsattes
+inte — och **Dokument-ytan (`T131`, scope-punkt 2) byggdes inte alls**.
+Rotorsaken bokförd: orkestreraren brände Marcus granskningsfönster på att
+kvittera heartbeat-larm om ANDRA sessioners PR:er i stället för att bygga
+nästa oberoende scope-post. **MÄTT UNDER PASSET:** stagings CORS-allowlist
+tillåter EXAKT `5173`/`4173` (egen port ⇒ 403 preflight) · `mergeStateStatus=
+DIRTY` är en HYPOTES (`#873` stod DIRTY men `git merge-tree` gav rent träd och
+fältet rättade sig själv) · service worker på `4173` är den sannolika men
+**OBEKRÄFTADE** orsaken till att Marcus såg gamla login-sidan (tre mätningar —
+4173/5173/prod — visade alla den NYA). **NÄSTA: (1) gör om åtgärds-sidans yta
+mot facit-bilderna, samma struktur, riktigt utförande · (2) bygg Dokument-ytans
+prototyp · (3) därefter facit → `TASK-147` → `/to-issues`.**
+**HANDOFF: sessionsdok S100 § PAUSLÄGE.** Numrering disk-verifierad mot
+`origin/main`: `098`/**`L480`** + fyra fragment/`T132`/`task-158`/`f47` —
+kortnumren rörde sig 149 → 158 under passet, re-verifiera i mint-ögonblicket.
+Heartbeat-monitorn **stoppad med avsikt** — starta den vid resume.
+*(S93:s kadensrad nedan, oförändrad.)*
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`) — FEMTE
 RESUMEN: BYGGAGENTERNA UT** — pausens båda verifikationssteg **KLARA**:
 `#850` mergad `09:38:46Z` (`aa132f62`) och paus-landningen `#851` mergad
