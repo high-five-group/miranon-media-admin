@@ -4,6 +4,7 @@ title: 'Skiva: PreCompact-grinden — deny-familjen'
 status: To Do
 assignee: []
 created_date: '2026-08-07 16:54'
+updated_date: '2026-08-07 17:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,12 +21,22 @@ ordinal: 284000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass mot live: PreCompact-hook-indatans form (trigger-fältet manual/auto) verifierad mot aktuell harness-version FÖRE full implementation
-- [ ] #2 Hook + policy-conf i deny-familjens form: trigger auto nekar ALLTID med anvisning som pekar på pre-compact-skillen; trigger manual nekar om markörfilen saknas eller är äldre än policyns färskhetsfönster (~15 min); fail-closed på korrupt markör; frånvaro av markör vid manual = neka (grinden är motsatsen till arbetsform-push-grindens frånvaro-släpp — markören är ett AKTIVT bevis)
-- [ ] #3 Tvåsidig testsvit i deny-familjens form (fäller/släpper/fail-closed mot fixtur); shellcheck-strict grön mot CI-pin; registrerad i settings
-- [ ] #4 Skarpbevis-skulden ÖPPET bokförd i kortet och slutrapporten med differentialreceptet — ALDRIG rapporterad som tagen (hooken kan inte laddas i byggsessionen)
+- [x] #1 Premiss-pass mot live: PreCompact-hook-indatans form (trigger-fältet manual/auto) verifierad mot aktuell harness-version FÖRE full implementation
+- [x] #2 Hook + policy-conf i deny-familjens form: trigger auto nekar ALLTID med anvisning som pekar på pre-compact-skillen; trigger manual nekar om markörfilen saknas eller är äldre än policyns färskhetsfönster (~15 min); fail-closed på korrupt markör; frånvaro av markör vid manual = neka (grinden är motsatsen till arbetsform-push-grindens frånvaro-släpp — markören är ett AKTIVT bevis)
+- [x] #3 Tvåsidig testsvit i deny-familjens form (fäller/släpper/fail-closed mot fixtur); shellcheck-strict grön mot CI-pin; registrerad i settings
+- [x] #4 Skarpbevis-skulden ÖPPET bokförd i kortet och slutrapporten med differentialreceptet — ALDRIG rapporterad som tagen (hooken kan inte laddas i byggsessionen)
 - [ ] #5 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+SKARPBEVIS-SKULD (öppet bokförd, CLAUDE.md § 'En ny hook kan ALDRIG skarpbevisas i sessionen som byggde den'): scripts/deny-precompact.sh är registrerad i .claude/settings.json men INTE tagen i bruk i byggsessionen — ingen reload-väg finns. Logiken är bevisad TVÅSIDIGT i byggsessionen: (a) tvåsidig testsvit scripts/test-deny-precompact.sh, 20/20 gröna mot en äkta git-fixtur; (b) manuell körning mot DENNA worktrees verkliga tillstånd (riktig git rev-parse --show-toplevel) för tre lägen — auto nekas, manual utan markör nekas, manual med färsk markör släpper — samtliga bekräftade med exit-kod + stderr-text i slutrapporten.
+
+DIFFERENTIALRECEPT för nästa session (betalar skulden): (1) kör /compact <valfri instruktion> UTAN en satt markörfil — hooken ska neka och stderr-meddelandet 'ingen markörfil ... NEKAS' ska synas för Marcus (hooks.md: manuell /compact visar stderr för användaren). (2) Provocera SAMTIDIGT en REDAN laddad syskonhook som kontroll, t.ex. en git push under aktiv arbetsform 'iteration' (ska nekas av deny-arbetsform-push.sh) — om kontrollhooken nekar men PreCompact-hooken INTE gör det är felet i REGISTRERINGEN av just detta event, inte i hooks generellt. (3) Sätt en giltig markör (JSON-formen i .precompact-policy.conf) och bekräfta att /compact DÅ går igenom. (4) Auto-triggerbanan (trigger=auto) kräver den sänkta tröskeln (TASK-160.5, ej byggd av denna skiva) för att fyra naturligt i en levande session — fram tills dess är auto-grenen bevisad genom manuellt konstruerad hook-JSON (denna sessions manuella körning), INTE genom en verklig harness-triggad auto-compact.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

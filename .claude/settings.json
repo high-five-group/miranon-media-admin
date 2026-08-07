@@ -90,6 +90,19 @@
         ]
       }
     ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-precompact.sh\"",
+            "timeout": 10,
+            "statusMessage": "COMPACT-FORMEN (ADR-101) — okontrollerad kompaktering nekas"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
