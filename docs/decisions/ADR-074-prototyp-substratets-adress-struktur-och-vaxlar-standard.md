@@ -4,7 +4,7 @@
   [4 beslut, samtliga på Code-rekommendation med Marcus-kvittens, flera
   villkorade "djupt genomtänkt och branschledarmässigt" → research-pass
   per beslut före låsning]; kanonisk samsyns-trail:
-  `tasks/sessions/2026-07-22-session-76.md` Del 3)
+  `tasks/sessions/archive/2026-07/2026-07-22-session-76.md` Del 3)
 - Datum: 2026-07-22
 - Fas: Session 76 — arbetssätt/dev-verktyg (ingen
   byggfas-status-ändring)
@@ -237,7 +237,7 @@ arbetssättet för kommande familjer/produkter.
 
 ## Referenser
 
-- `tasks/sessions/2026-07-22-session-76.md` Del 3 (kanonisk trail,
+- `tasks/sessions/archive/2026-07/2026-07-22-session-76.md` Del 3 (kanonisk trail,
   inkl. research-källänkarna).
 - Tråd-registret: T80 (spåret) · T78 (växlar-standardiseringen, b-delen
   hub) · T83 (Claude Design/bibliotekslagret).

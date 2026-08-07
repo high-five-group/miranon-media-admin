@@ -221,7 +221,7 @@ den håller säkerhets-committen enkelspårig. Avvikelsen gäller denna icke-mal
 **Spårbarhet:**
 
 - Advisory: <https://github.com/advisories/GHSA-fx2h-pf6j-xcff>
-- Sessionsdok: `tasks/sessions/2026-06-13-session-19.md` (resume-19)
+- Sessionsdok: `tasks/sessions/archive/2026-06/2026-06-13-session-19.md` (resume-19)
 - Commit: denna commit (vite-bump + denna post).
 
 <!-- vale Vale.Terms = YES -->

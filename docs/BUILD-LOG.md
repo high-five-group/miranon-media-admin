@@ -1232,7 +1232,7 @@ miljön + samma Airtable-bas. Att deploya mot/mutera den enda miljön avvisades;
 rätt åtgärd är att bygga riktig staging först (Session 19, research-gated,
 ADR-050). Fas 5.5 förblir pågående (ej KLAR); byggplanens fas-tabell orörd.
 Lessons L110–L113 skördade (4 UNIVERSAL). Sessionsdok-trail:
-[`tasks/sessions/2026-06-13-session-18.md`](../tasks/sessions/2026-06-13-session-18.md).
+[`tasks/sessions/archive/2026-06/2026-06-13-session-18.md`](../tasks/sessions/archive/2026-06/2026-06-13-session-18.md).
 
 ---
 
@@ -1277,7 +1277,7 @@ workspace, L118).
 FÖRE nästa prod-redeploy (annars fail-fast). (2) Prod-deploy endast via
 allowlist-skriptet. Lessons L114–L118 skördade (3 UNIVERSAL). Nästa: Session 20
 bygg-steg 3–8. Sessionsdok-trail:
-[`tasks/sessions/2026-06-13-session-19.md`](../tasks/sessions/2026-06-13-session-19.md).
+[`tasks/sessions/archive/2026-06/2026-06-13-session-19.md`](../tasks/sessions/archive/2026-06/2026-06-13-session-19.md).
 
 ---
 
@@ -1317,7 +1317,7 @@ fixad via **kirurgisk** vite-bump 8.0.12→8.0.16 (`dfb895e`) — §2-avvikelse 
 **Status:** ADR-050 KOMPLETT; `staging==prod`-defekten (L110) strukturellt stängd.
 Öppet: ADR-050 **T4** (löpande schema-sync-disciplin staging↔prod). Lessons L132–L136
 (5 UNIVERSAL). Sessionsdok-trail:
-[`tasks/sessions/2026-06-13-session-19.md`](../tasks/sessions/2026-06-13-session-19.md)
+[`tasks/sessions/archive/2026-06/2026-06-13-session-19.md`](../tasks/sessions/archive/2026-06/2026-06-13-session-19.md)
 Del 2.
 
 ---
@@ -1351,7 +1351,7 @@ Commit-kedja `f7404d5` → `c811a2c` → `2fba5f6` → `4a0e419` → `ccde82b` �
 
 **Not — Session 20 saknar post i denna logg:** ett do-confirm-glapp vid Session 20:s avslut (BUILD-LOG är killer item per ADR-051 beslut 3). Luckan är **registrerad som T03** i [`tasks/threads/README.md`](../tasks/threads/README.md) för backfill i egen session — den backfillas medvetet INTE här (ADR-023-immutabilitets-klass, annan sessions arbete). Hålet görs synligt där det finns, ej tyst.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-14-session-21.md`](../tasks/sessions/2026-06-14-session-21.md). Sessionen är ej formellt avslutad — `/session-end` (ADR-041) är ett separat steg efter denna landnings-klunga; `lifecycle` förblir `active` tills dess.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-14-session-21.md`](../tasks/sessions/archive/2026-06/2026-06-14-session-21.md). Sessionen är ej formellt avslutad — `/session-end` (ADR-041) är ett separat steg efter denna landnings-klunga; `lifecycle` förblir `active` tills dess.
 
 ---
 
@@ -1388,7 +1388,7 @@ Verifiering: typecheck + biome (exit 0) + build + api-pure (72) + adr-count (55=
 
 ADR-055:s avvisade alternativ 2 var formulerat med namnet "useDataSource" — kunde läsas som att det avvisade alternativet byggdes. Förtydligande (ej beslutsändring): alternativ 2 beskrivs nu per mekanism (dedikerad React Context-provider, skild från router-context) + kontrast-mening att den levererade `useDataSource()`-hooken (`src/data/useDataSource.ts`) läser router-context. Kort klargörande kommentar i hook-filen.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-17-session-22.md`](../tasks/sessions/2026-06-17-session-22.md). Sessionen ej formellt avslutad; `lifecycle: active` tills `/session-end`. Nästa: `/session-end` (lessons-skörd L137+ deferrad dit).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-17-session-22.md`](../tasks/sessions/archive/2026-06/2026-06-17-session-22.md). Sessionen ej formellt avslutad; `lifecycle: active` tills `/session-end`. Nästa: `/session-end` (lessons-skörd L137+ deferrad dit).
 
 ---
 
@@ -1420,7 +1420,7 @@ Bruten i tre commit-säkra steg över deploy-grinden (L145):
 
 **Verifiering (slutlig, CI `e1034ee`):** typecheck + biome (4 pre-existerande CSS-varningar) + build + API pure 80 + API staging 51 + E2E 34 + A11y 12 + docs-grindar (frontmatter 9/9, lifecycle, vale 0, markdownlint 0). Alla jobb success. **Fas 6a KLAR** — Fas 6b (Events) nästa session.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-18-session-23.md`](../tasks/sessions/2026-06-18-session-23.md) (Del 1–8). Fas-avslut EJ tillämpligt (Fas 6 fortsätter 6b–6e; ingen fas stängd, sessionsdok ej arkiverat).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-18-session-23.md`](../tasks/sessions/archive/2026-06/2026-06-18-session-23.md) (Del 1–8). Fas-avslut EJ tillämpligt (Fas 6 fortsätter 6b–6e; ingen fas stängd, sessionsdok ej arkiverat).
 
 ---
 
@@ -1452,7 +1452,7 @@ Valideringskörning av `/arch-audit` mot Fas 6a KALLT (reproducera+korrigera 14-
 
 **Verifiering:** spoke per-commit docs-grindar (markdownlint 0, Vale 0, frontmatter 9/9, ADR-count 58==58), per-jobb-CI auktoritativt grön (slutlig HEAD `86e16be`); hub shellcheck-ren skript + plugin disk-verifierad v1.4.0/5 skills (hub saknar CI, T13). Inga produktkod-grindar tillämpliga (ingen kod rörd).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-20-session-24.md`](../tasks/sessions/2026-06-20-session-24.md) (Del 1–5). SESSIONSGRÄNS, ej fas-avslut: ingen phase-end-verify, ingen arkivering, ingen CHANGELOG-release (ADR-023). Nästa: **Session 25** (Inc 4 + Fas 6b).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-20-session-24.md`](../tasks/sessions/archive/2026-06/2026-06-20-session-24.md) (Del 1–5). SESSIONSGRÄNS, ej fas-avslut: ingen phase-end-verify, ingen arkivering, ingen CHANGELOG-release (ADR-023). Nästa: **Session 25** (Inc 4 + Fas 6b).
 
 ---
 
@@ -1484,7 +1484,7 @@ Fem områden GODKÄNDA, 0 avvikelse, 11/10/10: port-paritet 15==15==15 intakt ef
 
 **Verifiering:** CI-run `27883557439` (HEAD `4642482`) alla 5 jobb gröna — api-staging 61 passed (inkl. 4 get-attendance väg-D-conformance, S-bevis mot staging), Test+Build + Docs-link-check gröna. ADR-count 58==58 (inget nytt ADR).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-20-session-25.md`](../tasks/sessions/2026-06-20-session-25.md) (Del 1–6). SESSIONSGRÄNS, ej fas-avslut: ingen arkivering, ingen CHANGELOG-release (ADR-023). Nästa: **Session 26** (Fas 6c — Registrations + Väntelista).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-20-session-25.md`](../tasks/sessions/archive/2026-06/2026-06-20-session-25.md) (Del 1–6). SESSIONSGRÄNS, ej fas-avslut: ingen arkivering, ingen CHANGELOG-release (ADR-023). Nästa: **Session 26** (Fas 6c — Registrations + Väntelista).
 
 ---
 
@@ -1520,7 +1520,7 @@ get-waitlist: egen `Väntelista`-tabell, aktiv-filtrerad `NOT({Flyttad till anm�
 
 **Verifiering:** alla fyra L4-landningar CI-gröna per-jobb (`49671c4`/`3c40c06`+`96af589`/`09ee57e` + denna). api-staging create-registration-conformance grön mot deployad staging; e2e create-modal 5/5 grön; markdownlint 0 + docs-link-check grön; ADR-count 60==60.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-20-session-26.md`](../tasks/sessions/2026-06-20-session-26.md). SESSIONSGRÄNS, ej fas-avslut: ingen audit, ingen arkivering, ingen CHANGELOG-release. **Nästa:** 6c /arch-audit + phase-end-verify (egen session).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-20-session-26.md`](../tasks/sessions/archive/2026-06/2026-06-20-session-26.md). SESSIONSGRÄNS, ej fas-avslut: ingen audit, ingen arkivering, ingen CHANGELOG-release. **Nästa:** 6c /arch-audit + phase-end-verify (egen session).
 
 ### 6c arch-audit + Fas 6c KLAR (resume-finalisering 2026-06-22)
 
@@ -1550,7 +1550,7 @@ Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process
 
 **Verifiering:** alla sju landningars CI gröna (utom hub-PI som saknar CI) — sista spoke-run per commit: `41345e9`/`40431c4`/`4cc9fb9`/`0dd1aa1` alla Docs-link-check körd+grön, Test+Build skipped by-design (docs-only). ADR-count oförändrat (inget nytt ADR).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-21-session-27.md`](../tasks/sessions/2026-06-21-session-27.md) (Del 1–3). Nästa-session-ordning (Marcus-beslutad): **T19 (FÖRE 6c) → T17 → /session-resume Session 26 6c-bygget.**
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-21-session-27.md`](../tasks/sessions/archive/2026-06/2026-06-21-session-27.md) (Del 1–3). Nästa-session-ordning (Marcus-beslutad): **T19 (FÖRE 6c) → T17 → /session-resume Session 26 6c-bygget.**
 
 ---
 
@@ -1575,7 +1575,7 @@ Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process
 
 **Verifiering:** alla landningars CI gröna per-jobb (Docs link check körd+grön på dok-commits; Test+Build körd+grön på `cd46bee` (test-fixtur), skipped by-design på rena docs-commits). ADR-count oförändrat (inget nytt ADR). `Väntelista.Event`-typ live-verifierad MCP-pull 2026-06-21 mot prod `app8uGPrVCVOm6LfD`.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-21-session-28.md`](../tasks/sessions/2026-06-21-session-28.md) (Del 1–3). T19-tråd kvar `active` (§9 fylls av 6c). Nästa-session-ordning (Marcus-beslutad): **T17 → /session-resume Session 26 6c-bygget.**
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-21-session-28.md`](../tasks/sessions/archive/2026-06/2026-06-21-session-28.md) (Del 1–3). T19-tråd kvar `active` (§9 fylls av 6c). Nästa-session-ordning (Marcus-beslutad): **T17 → /session-resume Session 26 6c-bygget.**
 
 ---
 
@@ -1598,7 +1598,7 @@ Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process
 
 **Verifiering:** alla landningars CI gröna per-jobb (Docs link check körd+grön; Test+Build körd+grön på `3d8292a` (.conf+scripts), skipped by-design på rena docs-commits). ADR-count oförändrat (inget nytt ADR). systemet.md governing (12/12), real check-frontmatter "alla 12 styrande docs passerar".
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-21-session-29.md`](../tasks/sessions/2026-06-21-session-29.md). Trådar: T17 (denna leverans), T22 (hub-reconciliation), T23 (mekanisera fixtur-koppling). Nästa-session-ordning (Marcus-beslutad): **/session-resume Session 26 → 6c-bygget** (T17 var FÖRE 6c — nu klar).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-21-session-29.md`](../tasks/sessions/archive/2026-06/2026-06-21-session-29.md). Trådar: T17 (denna leverans), T22 (hub-reconciliation), T23 (mekanisera fixtur-koppling). Nästa-session-ordning (Marcus-beslutad): **/session-resume Session 26 → 6c-bygget** (T17 var FÖRE 6c — nu klar).
 
 ---
 
@@ -1618,7 +1618,7 @@ Föregår den pausade Session 26 (6c-bygget, ej återupptaget). Ren dok-/process
 
 **Verifiering:** alla landningars CI gröna per-jobb (Docs link check körd+grön på docs-/erratum-commits; Test+Build körd+grön på kod-landningar). ADR-count oförändrat (inget nytt ADR — ADR-017-erratum är additivt). Inga EF/deploy/write.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-23-session-30.md`](../tasks/sessions/2026-06-23-session-30.md) (Del 1 scope + Del 2 L1 + Del 3 L2 + Del 4 audit). Nästa: NY session → Fas 6e (Mer, villkorlig) ELLER FULLT Fas 6 fas-avslut. `lifecycle: closed`.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-23-session-30.md`](../tasks/sessions/archive/2026-06/2026-06-23-session-30.md) (Del 1 scope + Del 2 L1 + Del 3 L2 + Del 4 audit). Nästa: NY session → Fas 6e (Mer, villkorlig) ELLER FULLT Fas 6 fas-avslut. `lifecycle: closed`.
 
 ---
 
@@ -1640,7 +1640,7 @@ Egen session (ADR-051): tog upp + stängde tråd T26 (e2e-svit-flakiness under p
 
 **Verifiering:** alla landningars CI gröna per-jobb (E2E 78 passed × 3 körningar, noll flaky efter härdning; docs-grindar markdownlint/Vale/lifecycle gröna på dok-commits). ADR-count oförändrat (inget nytt ADR). Inga EF/deploy/write/app-kod.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-23-session-31.md`](../tasks/sessions/2026-06-23-session-31.md) (sent fött, POST 0-åtgärd; Del 1 scope + Del 2 landningar + Del 3 lessons + Del 4 tråd-bokföring + Del 5 nästa). Nästa: NY session → miljö-isolations-lösnings-session (T30 → ADR) ELLER Fas 6e / FULLT Fas 6 fas-avslut. `lifecycle: closed`.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-23-session-31.md`](../tasks/sessions/archive/2026-06/2026-06-23-session-31.md) (sent fött, POST 0-åtgärd; Del 1 scope + Del 2 landningar + Del 3 lessons + Del 4 tråd-bokföring + Del 5 nästa). Nästa: NY session → miljö-isolations-lösnings-session (T30 → ADR) ELLER Fas 6e / FULLT Fas 6 fas-avslut. `lifecycle: closed`.
 
 ---
 
@@ -1666,7 +1666,7 @@ Egen session (ADR-051): tog upp + stängde T30-klustret (tre symptom T12/T28/T29
 
 **Verifiering:** alla landningars CI gröna per-jobb. Keystone-grinden bevisad av CI-kört test (api-pure, failar om grinden tas bort). Build-tids-vägran demonstrerad (`vite build --mode development` + prod-ref → kastar). Auth mot staging grön efter cred-synk (user+admin, noll 400). `check-lifecycle.sh` grön (T30 kort↔index `closed`-match). Inga EF/deploy/prod-touch.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-23-session-32.md`](../tasks/sessions/2026-06-23-session-32.md) (Del 1 scope + Del 2 landningar + Del 3 lessons L180–L184 + Del 4 tråd-bokföring + Del 5 nästa). Nästa: NY session (Fas 6 öppen). `lifecycle: closed`.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-23-session-32.md`](../tasks/sessions/archive/2026-06/2026-06-23-session-32.md) (Del 1 scope + Del 2 landningar + Del 3 lessons L180–L184 + Del 4 tråd-bokföring + Del 5 nästa). Nästa: NY session (Fas 6 öppen). `lifecycle: closed`.
 
 ---
 
@@ -1689,7 +1689,7 @@ Byggde Fas 6g:s två första lager — segment-beräknings-motorn (L1) + segment
 
 **Verifiering:** L1 24 enhetstester + api-staging HIT/MISS/AUTH (mot deployad staging-EF); L2 9 taxonomi-enhetstester + e2e a11y AxeBuilder 0 violations; alla CI-grindar gröna (typecheck, biome, check-frontmatter/lifecycle/adr-count); JOIN-nyckel teckenexakt (STEG-0 STOPPA-grind). ADR-count 64 oförändrad denna fas. Hashar: `7d0e895`, `10bf75a`, `6f94583`, `704cc56`, `7afc7e9` (+ securing-landningen).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-25-session-35.md`](../tasks/sessions/2026-06-25-session-35.md) (Del 1 scope + Del 2 landningar). Nästa: NY session → Fas 6g L3 (Spara segment). `lifecycle: active` tills do-confirm-passet.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-25-session-35.md`](../tasks/sessions/archive/2026-06/2026-06-25-session-35.md) (Del 1 scope + Del 2 landningar). Nästa: NY session → Fas 6g L3 (Spara segment). `lifecycle: active` tills do-confirm-passet.
 
 ---
 
@@ -1715,7 +1715,7 @@ Levererade Fas 6g L3 (spara en segment-regel som en rad i Segment-tabellen + lis
 
 **STATUS — deploy-tillstånd:** 6g-EF:erna (`compute-segment`, `save-segment`, `get-segments`) är **STAGING-deployade, EJ prod**. Prod-deploy är en medveten SEPARAT handling (ej L3-scope) — Lotta kan ej spara segment i prod-appen förrän dess. Schema-fältet `App-segmentregel` finns dock på BÅDA baser (staging+prod).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-26-session-36.md`](../tasks/sessions/2026-06-26-session-36.md) (Del 1 scope + Del 2 landningar). Nästa: NY session → Fas 6g L4 (frys/export — SKOOL-lista, ADR-062 beslut 4). `lifecycle: active` tills do-confirm-passet.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-26-session-36.md`](../tasks/sessions/archive/2026-06/2026-06-26-session-36.md) (Del 1 scope + Del 2 landningar). Nästa: NY session → Fas 6g L4 (frys/export — SKOOL-lista, ADR-062 beslut 4). `lifecycle: active` tills do-confirm-passet.
 
 ## Session 37 — Fas 6g L4 (SKOOL-export) + 6g arch-audit → Fas 6g KLAR (2026-06-27)
 
@@ -1730,9 +1730,9 @@ Levererade Fas 6g L4 (SKOOL-export, ren READ + klient-export, ingen EF/WRITE) + 
 - **Landning 3 — 6g arch-audit (ADR-058) → Fas 6g KLAR** (`3c547d2`; audit = LÄS+BETYGSÄTT, ingen kod rörd) — fitness-audit mot HELA 6g-ytan (L1–L4, Sessions 35–37). **Fem områden GODKÄNDA:** (i) lager-oberoende 0 kringgång + route tunn; (ii) port-paritet 18==18==18 (nya `computeSegment`/`saveSegment`/`listSegments` + ärliga `NOT_IMPLEMENTED`-Supabase-stubbar); (iii) EF-ribba 3/3 (compute-segment / save-segment / get-segments bär EF1/EF2/EF4–6); (iv) golv hållet JA (EF-ribba + consent-allokering + dedup + axe 0 + deny-by-default-allowlist) / spekulation NEJ (ingen död kod, stubbar = ADR-056-port); (v) ärliga betyg — bibliotek 11/11/11 (`segment-export.ts` ärligt 11/11/**10**, SKOOL-kopplad reuse), vyer 11/10/10 (axe 0 förtjänat). **AVVIKELSE: ingen fitness-brist.** → **Fas 6g KLAR (L1–L4).** Bi-fynd: 6e (Mer) aldrig arch-auditerad (Session 33 felaktig "ingen app-kod"-justifiering, get-leads/get-mail-log + vyer hade landat) → tråd **T38** (retro-audit-förkrav före FULLT Fas 6-avslut).
 - **Close-landning** (Session 37 do-confirm) — byggplan §2 per-subfas audit-status-matris (ADR-058) + closeout-förkrav-not; tråd T38; lessons **L199–L201** (`[UNIVERSAL]`, hub-lyft pending); todo + Del 2 + denna BUILD-LOG. `lifecycle: active → closed`. **SESSIONSGRÄNS, ej fas-avslut** (Fas 6 öppen mot 6e-retro/6f/6h) → ingen arkivering / CHANGELOG / phase-end-verify / byggplan-6-flip / hub-lyft.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-27-session-37.md`](../tasks/sessions/2026-06-27-session-37.md) (Del 1 scope + Del 2 sex landningar). Transcript ej tillgängligt (`/mnt/transcripts/` saknas, ADR-041) → Code-transparens-rekonstruktion mot disk/git. Nästa: NY session 38 → kvarvarande Fas 6 (6e retro-audit / 6f Skapa event / 6h Mail) → därefter FULLT Fas 6 fas-avslut.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-27-session-37.md`](../tasks/sessions/archive/2026-06/2026-06-27-session-37.md) (Del 1 scope + Del 2 sex landningar). Transcript ej tillgängligt (`/mnt/transcripts/` saknas, ADR-041) → Code-transparens-rekonstruktion mot disk/git. Nästa: NY session 38 → kvarvarande Fas 6 (6e retro-audit / 6f Skapa event / 6h Mail) → därefter FULLT Fas 6 fas-avslut.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-27-session-37.md`](../tasks/sessions/2026-06-27-session-37.md). Nästa: L4 frys/export-design (Chat-dirigerad efter Marcus design-kvittens).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-27-session-37.md`](../tasks/sessions/archive/2026-06/2026-06-27-session-37.md). Nästa: L4 frys/export-design (Chat-dirigerad efter Marcus design-kvittens).
 
 ---
 
@@ -1753,7 +1753,7 @@ Levererade Fas 6g L4 (SKOOL-export, ren READ + klient-export, ingen EF/WRITE) + 
 - **Landning 6f arch-audit (ADR-058) → 6f auditerad** (audit = LÄS+BETYGSÄTT, ingen kod rörd) — fitness-audit mot HELA 6f-ytan (L0–L2). **Fem områden GODKÄNDA:** (i) lager-oberoende 0 kringgång + route tunn; (ii) port-paritet **20==20==20** (createEvent/getEventFormats + ärliga Supabase-`NOT_IMPLEMENTED`-stubbar); (iii) EF-ribba 2/2 (create-event 405/401/400 + get-event-formats read-EF); (iv) golv hållet JA (idempotens live-bevisad + deny-by-default + typecast:false + Eventtyp-required + axe 0) / spekulation NEJ (ingen check-then-create/temp-id/hårdkodad-options-spegel/död kod); (v) ärliga betyg — bibliotek **11/11/11** (`upsertAirtableRecord` genuint generisk), vy **11/10/10** (axe 0 förtjänat). **AVVIKELSE: ingen fitness-brist.** Bi-fynd: 6e-retro (T38) + prod-deploy-skuld registrerade, ej inböjda. byggplan §2-matrisen: 6f → ✅ ren.
 - **Landning prod-deploy — create-event-vertikalen staging→prod (de 2 EF:erna), full smoke deferrad** (`7cadb07` allowlist-tillägg) — 6f:s enda prod-muterande handling, separat-auktoriserad. **STEG 1** (`7cadb07`): create-event + get-event-formats tillagda i `.prod-functions-allowlist.conf` (`--list` deploy-set 7, `test-deploy-prod-functions.sh` 4/4 PASS fail-closed intakt, CI grön) — enabling-detour FÖRE prod-mutation eftersom kanonisk `scripts/deploy-prod-functions.sh` är fail-closed mot allowlisten (todo.md:319 KRITISK, L115). **STEG 2:** prod-fält `Idempotensnyckel` (`fldkc33LVnbnz2ZmW`, singleLineText, tomt på alla 50 prod-rader) skapat FÖRE EF (hård ordning, §Kända fällor 37). **STEG 3:** create-event + get-event-formats **ACTIVE v1 på PROD** (`lvjsfnphlauldxqlncpl`) via skriptet + `ALLOWLIST_FILE`-override (engångs-temp, ej committad) → endast de 2; de **5 redan-live OBERÖRDA** (v9/v10 + updated-at 2026-05-04 oförändrad — skriptet deployar annars HELA setet, override smalnade körningen; committad allowlist förblir 7). **STEG 4' (READ-only, beslut C):** auth-grind prod-bevisad — create-event anon→401 / fel metod→405 / anon-Bearer→401, get-event-formats anon→401; **inget 200 utan äkta user** (grind läcker ej); radantal oförändrat 50 (ingen create). **DEFERRAT:** full autentiserad idempotens-prod-create-smoke (`requireUser` kräver prod-user-JWT; prod-GoTrue ≠ staging; prod-auth-kontoskapelse/lösenord-i-kanal = ej tillåtna vägar) → tråd **T40**. **§Kända fällor 37-prerekvisit UPPFYLLT** (deployad + grind-bevisad; mekanismen redan staging-live-bevisad). **Trådar:** T39 (prod-funktions-drift-sync, de 5 ligger efter HEAD — 16 `_shared`-commits) + T40 (full prod-smoke). **Lessons:** L204 + L205 [UNIVERSAL]. Committad allowlist = 7 (deklaration); denna körning deployade 2.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-27-session-38.md`](../tasks/sessions/2026-06-27-session-38.md) (Del 1 scope + Del 2 L0/L1/L2 + 6f arch-audit + prod-deploy). Nästa (Chat dirigerar): 6e-retro-audit (T38) + 6h Mail + T39 prod-funktions-drift-sync + T40 full prod-smoke före FULLT Fas 6-avslut.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-27-session-38.md`](../tasks/sessions/archive/2026-06/2026-06-27-session-38.md) (Del 1 scope + Del 2 L0/L1/L2 + 6f arch-audit + prod-deploy). Nästa (Chat dirigerar): 6e-retro-audit (T38) + 6h Mail + T39 prod-funktions-drift-sync + T40 full prod-smoke före FULLT Fas 6-avslut.
 
 ---
 
@@ -1800,7 +1800,7 @@ docs/reference/data-model.md         (L0/L2a, Utskickslogg-sektion + fälla 38)
 tasks/threads/README.md              (L0, T41/T42/T43)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-28-session-39.md`](../tasks/sessions/2026-06-28-session-39.md) (Del 1 scope + Del 2 L0–L2c). Nästa: **NY Session 40 → Fas 6h L2d** (riktig Resend-integration, grindad på staging-Resend-test-nyckel) → L3 (klient) → 6h arch-audit → prod-deploy → Fas 6 closeout-förkrav (T38/T39/T40) → FULLT Fas 6-avslut.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-28-session-39.md`](../tasks/sessions/archive/2026-06/2026-06-28-session-39.md) (Del 1 scope + Del 2 L0–L2c). Nästa: **NY Session 40 → Fas 6h L2d** (riktig Resend-integration, grindad på staging-Resend-test-nyckel) → L3 (klient) → 6h arch-audit → prod-deploy → Fas 6 closeout-förkrav (T38/T39/T40) → FULLT Fas 6-avslut.
 
 ---
 
@@ -1842,7 +1842,7 @@ docs/byggplan.md                     (6h audit-matris-rad → byggd L0–L2d sta
 tasks/lessons.md                     (L208–L210, Session 40-H2)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-28-session-40.md`](../tasks/sessions/2026-06-28-session-40.md) (Del 1 scope + Del 2 STEG 0–5 + durabilitets-registreringar + handoff). **Sessionsavslut:** do-confirm-pass (POST 1–6, 5 åtgärdade) + `lifecycle: closed` (`bcda7ff`). Nästa: **NY Session 41 → Fas 6h L3 (klient)** — compose-UI + adapter (operationKey `send-email`, klient-side Idempotency-Key) + e2e; obligatoriskt forensiskt pre-pass mot create-event (6f)/save-segment (6g) klient→EF-mönstret → 6h arch-audit → prod-deploy (M3 + Code-at-prod-deploy, T44) → Fas 6 closeout (T38/T39/T40).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-28-session-40.md`](../tasks/sessions/archive/2026-06/2026-06-28-session-40.md) (Del 1 scope + Del 2 STEG 0–5 + durabilitets-registreringar + handoff). **Sessionsavslut:** do-confirm-pass (POST 1–6, 5 åtgärdade) + `lifecycle: closed` (`bcda7ff`). Nästa: **NY Session 41 → Fas 6h L3 (klient)** — compose-UI + adapter (operationKey `send-email`, klient-side Idempotency-Key) + e2e; obligatoriskt forensiskt pre-pass mot create-event (6f)/save-segment (6g) klient→EF-mönstret → 6h arch-audit → prod-deploy (M3 + Code-at-prod-deploy, T44) → Fas 6 closeout (T38/T39/T40).
 
 ---
 
@@ -1900,7 +1900,7 @@ tasks/lessons.md                           (L211–L212)
 tasks/threads/README.md + T46-*.md         (T46 go-live-karta)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-28-session-41.md`](../tasks/sessions/2026-06-28-session-41.md) (Del 1 scope + Del 2 landnings-kadens). **Sessionsavslut:** session-end do-confirm-pass + `lifecycle: closed`. Nästa: **prod-deploy-sessioner** — (1) Skool-export (prod-deploy 6g-EF:er, närmast, inga externa deps); (2) Mail 6h (T44 M3 + Code-at-prod-deploy) → Fas 6 closeout-förkrav (T38/T39/T40) → FULLT Fas 6-avslut. Go-live-karta (T46) ritas vid prod-deploy-design.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-28-session-41.md`](../tasks/sessions/archive/2026-06/2026-06-28-session-41.md) (Del 1 scope + Del 2 landnings-kadens). **Sessionsavslut:** session-end do-confirm-pass + `lifecycle: closed`. Nästa: **prod-deploy-sessioner** — (1) Skool-export (prod-deploy 6g-EF:er, närmast, inga externa deps); (2) Mail 6h (T44 M3 + Code-at-prod-deploy) → Fas 6 closeout-förkrav (T38/T39/T40) → FULLT Fas 6-avslut. Go-live-karta (T46) ritas vid prod-deploy-design.
 
 ---
 
@@ -1946,12 +1946,12 @@ src/domain/types/Filters.ts                (MailLogFilters-typdef borttagen)
 tests/e2e/mer-index.staging.test.ts        (ny — logout-affordans + axe-0 + redirect)
 docs/byggplan.md                           (§4 6e: Inställningar de-scopad → T47)
 docs/specs/BYGGPLAN-LÄTTLÄST-v3.md         (Fas 6e-bullet + Mer-flik-tabell)
-tasks/sessions/2026-06-29-session-42.md    (Del 2/3/4 + verdikt + lessons-kandidater)
+tasks/sessions/archive/2026-06/2026-06-29-session-42.md    (Del 2/3/4 + verdikt + lessons-kandidater)
 tasks/lessons.md                           (L213–L214)
 tasks/threads/README.md + T47-*.md         (T47 + T48; T38→closed)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-29-session-42.md`](../tasks/sessions/2026-06-29-session-42.md) (Del 1 scope + Del 2/3/4 audit-record + verdikt). **Sessionsavslut:** session-end do-confirm-pass + `lifecycle: closed`. Nästa: **NY Session 43** → Fas 6 prod-deploys (Skool-export 6g + Mail 6h via T44 M3) → Fas 6 closeout-förkrav (T39/T40) → FULLT Fas 6-avslut.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-29-session-42.md`](../tasks/sessions/archive/2026-06/2026-06-29-session-42.md) (Del 1 scope + Del 2/3/4 audit-record + verdikt). **Sessionsavslut:** session-end do-confirm-pass + `lifecycle: closed`. Nästa: **NY Session 43** → Fas 6 prod-deploys (Skool-export 6g + Mail 6h via T44 M3) → Fas 6 closeout-förkrav (T39/T40) → FULLT Fas 6-avslut.
 
 ---
 
@@ -1997,7 +1997,7 @@ tasks/lessons.md                           (L215–L217)
 
 PROD-EF:er deployade (ej i git — out-of-CI prod-handling): `supabase/functions/{compute-segment,save-segment,get-segments}` → ACTIVE v1 på `lvjsfnphlauldxqlncpl`.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-29-session-43.md`](../tasks/sessions/2026-06-29-session-43.md). **EJ fas-avslut; ingen lifecycle-flip** (session-end separat). Nästa: 6h prod-deploy (T44 M3) → T39/T40 → FULLT Fas 6-avslut.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-29-session-43.md`](../tasks/sessions/archive/2026-06/2026-06-29-session-43.md). **EJ fas-avslut; ingen lifecycle-flip** (session-end separat). Nästa: 6h prod-deploy (T44 M3) → T39/T40 → FULLT Fas 6-avslut.
 
 ---
 
@@ -2037,7 +2037,7 @@ supabase/functions/_shared/resend-batch.ts   (buildBatchPayload + ResendEmailSpe
 supabase/functions/send-email/index.ts        (läser RESEND_REPLY_TO, anropar buildBatchPayload)
 tests/api/resend-batch.test.ts                (3 buildBatchPayload-tester)
 .prod-functions-allowlist.conf                (10→11: send-email)
-tasks/sessions/2026-06-29-session-44.md        (Del 1 fas-plan + Fas 2-utfall; Del 2 landnings-kadens)
+tasks/sessions/archive/2026-06/2026-06-29-session-44.md        (Del 1 fas-plan + Fas 2-utfall; Del 2 landnings-kadens)
 tasks/threads/README.md                        (T50–T52)
 tasks/threads/T50-ui-hardning-sand-grind.md   (nytt tråd-kort)
 docs/BUILD-LOG.md                              (Session 44-sektion)
@@ -2046,7 +2046,7 @@ tasks/lessons.md                               (L218)
 
 PROD-handlingar (ej i git — out-of-CI prod-mutationer): Airtable-kolumn `Idempotensnyckel` (`fldXnfsdYxTB7PALv`) på prod-basen; prod-secrets `RESEND_FROM`+`RESEND_REPLY_TO`; `send-email` → ACTIVE v1 på `lvjsfnphlauldxqlncpl` (SÖVD, `ENVIRONMENT` ej satt).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-29-session-44.md`](../tasks/sessions/2026-06-29-session-44.md) (Del 1 + Del 2). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **T50** UI-härdning → Grind F (öppna spärren) → Marcus självtest (T51) → redo för Lotta; därefter Fas 6 closeout (T39/T40) → FULLT Fas 6-avslut.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-29-session-44.md`](../tasks/sessions/archive/2026-06/2026-06-29-session-44.md) (Del 1 + Del 2). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **T50** UI-härdning → Grind F (öppna spärren) → Marcus självtest (T51) → redo för Lotta; därefter Fas 6 closeout (T39/T40) → FULLT Fas 6-avslut.
 
 ---
 
@@ -2087,7 +2087,7 @@ Ren — i ✅ (lager-oberoende; vyn når data endast via `useDataSource`, 0 krin
 ```text
 src/components/segment/SegmentMailCompose.tsx   (härdad bekräftelse-modal: granska + type-to-confirm + danger + aria-live)
 tests/e2e/mer-segment-send.staging.test.ts      (happy-path utökad: låst→fel→rätt→upplåst; locator-justeringar)
-tasks/sessions/2026-06-29-session-45.md          (Del 1 scope; Del 2 landnings-kadens)
+tasks/sessions/archive/2026-06/2026-06-29-session-45.md          (Del 1 scope; Del 2 landnings-kadens)
 tasks/threads/T50-ui-hardning-sand-grind.md     (stale beslut rättat; active→closed)
 tasks/threads/T53-test-till-sig-sjalv-skicka.md (nytt tråd-kort, paused)
 tasks/threads/T54-button-aria-disabled-soft-disable.md  (nytt tråd-kort, paused)
@@ -2096,7 +2096,7 @@ docs/BUILD-LOG.md                                (Session 45-sektion)
 tasks/lessons.md                                 (L219)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-29-session-45.md`](../tasks/sessions/2026-06-29-session-45.md) (Del 1 + Del 2). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session** → Fas 6h closeout (Grind F öppnar spärren → Marcus självtest mot egen adress = första/enda skarpa utskick, verifierar Reply-To live T51) → redo för Lotta; därefter Fas 6 closeout (T39/T40) → FULLT Fas 6-avslut.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-29-session-45.md`](../tasks/sessions/archive/2026-06/2026-06-29-session-45.md) (Del 1 + Del 2). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session** → Fas 6h closeout (Grind F öppnar spärren → Marcus självtest mot egen adress = första/enda skarpa utskick, verifierar Reply-To live T51) → redo för Lotta; därefter Fas 6 closeout (T39/T40) → FULLT Fas 6-avslut.
 
 ---
 
@@ -2132,7 +2132,7 @@ Alla landningar CI-gröna per commit (senast run `28682731539`, Del 16 `e9eee5a`
 ```text
 docs/reference/pocock/**                         (vendorerad korpus: 34 filer Del 4 + plan-doket Del 8)
 ORDLISTA.md                                      (född governad, 16 poster)
-tasks/sessions/2026-06-30-session-47.md          (Del 1–16 + sessionsavslut)
+tasks/sessions/archive/2026-06/2026-06-30-session-47.md          (Del 1–16 + sessionsavslut)
 tasks/threads/README.md                          (T56/T57/T58/T59-rader)
 tasks/todo.md                                    (kadens-poster per landning/paus)
 tasks/lessons.md                                 (L221–L225)
@@ -2141,7 +2141,7 @@ docs/decisions/README.md                         (ADR-bar-pekare, Del 11)
 ~/Repon/marcus-system (hub)                      (plugin 1.4.0→1.6.0: grilling/grill-me/grill-with-docs + NÄR-rader; 9538572 · 2ee63f7 · 094f018)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-06-30-session-47.md`](../tasks/sessions/2026-06-30-session-47.md) (Del 1–16). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 48** via /session-start — kandidater per Del 16-kartan: T57-landningen (verktygsval → fork 4-bygge → do-work → TDD) / migrerings-hub-session 1 (Del 3 steg 1 + mät-apparat + handoff-klassning + invokerings-UX) / T56 (djupa moduler).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-06/2026-06-30-session-47.md`](../tasks/sessions/archive/2026-06/2026-06-30-session-47.md) (Del 1–16). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 48** via /session-start — kandidater per Del 16-kartan: T57-landningen (verktygsval → fork 4-bygge → do-work → TDD) / migrerings-hub-session 1 (Del 3 steg 1 + mät-apparat + handoff-klassning + invokerings-UX) / T56 (djupa moduler).
 
 ---
 
@@ -2170,14 +2170,14 @@ Alla landningar CI-gröna PER JOBB: run 28698267109 (dok-födelse + T60) · 2871
 
 ```text
 backlog/                                         (substrat-instansen: config.yml + task-1 + task-1.1)
-tasks/sessions/2026-07-04-session-48.md          (Del 1–3 + sessionsavslut)
+tasks/sessions/archive/2026-07/2026-07-04-session-48.md          (Del 1–3 + sessionsavslut)
 tasks/threads/README.md                          (T60 registrerad; T57 → closed)
 tasks/todo.md                                    (kadens per landning + end)
 tasks/lessons.md                                 (L226–L227)
 ~/Repon/marcus-system (hub)                      (lessons-lyft K47.1–3 + K48.1–2: f573efd)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-04-session-48.md`](../tasks/sessions/2026-07-04-session-48.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 49** via /session-start — kandidater: **fork 4-bygget ÖVERST** (hub-plugin: to-prd/to-issues-adaptioner · PRD-kort-/issue-mallar [hierarkiska barn-ID-fyndet] · DoD-defaults + etikettvokabulär i config · agent-instruktionsrad · L225-grindfråga) / migrerings-hub-session 1 / T56 (djupa moduler).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-04-session-48.md`](../tasks/sessions/archive/2026-07/2026-07-04-session-48.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 49** via /session-start — kandidater: **fork 4-bygget ÖVERST** (hub-plugin: to-prd/to-issues-adaptioner · PRD-kort-/issue-mallar [hierarkiska barn-ID-fyndet] · DoD-defaults + etikettvokabulär i config · agent-instruktionsrad · L225-grindfråga) / migrerings-hub-session 1 / T56 (djupa moduler).
 
 ---
 
@@ -2212,13 +2212,13 @@ backlog/archive/tasks/                           (task-1 + task-1.1 arkiverade; 
 docs/reference/systemet.md                       (§0-post Issue-substrat/PRD-kort/Skiva)
 .markdownlint-cli2.jsonc · .vale.ini · .frontmatter-policy.conf ·
 scripts/check-lifecycle.sh · .github/workflows/ci.yml   (legibility-rader, L226)
-tasks/sessions/2026-07-04-session-49.md          (Del 1–3 + sessionsavslut)
+tasks/sessions/archive/2026-07/2026-07-04-session-49.md          (Del 1–3 + sessionsavslut)
 tasks/threads/README.md                          (T60-not: buntas med migrerings-hub-session 1)
 tasks/todo.md · tasks/lessons.md                 (kadens + L228–L229)
 ~/Repon/marcus-system (hub)                      (plugin 1.7.0: e16add2; lessons-lyft K49.1–2: f0e62f2)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-04-session-49.md`](../tasks/sessions/2026-07-04-session-49.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa (rättad 2026-07-04 — UI-först-ordningen riven av Marcus-pushback; se sessionsdokets korrigeringsnot): **NY session 50** via /session-start — **INTEGRATIONEN SLUTFÖRS FÖRST: do-work-landningen ÖVERST och ENDA huvudkandidat** (grillning via /grill-with-docs [prövotids-dp9] mot code-role-disciplinen + issue-substrat.md + Backlog.md-CLI:t; TDD-adaptionen [Del 15] + etikett-driven plockning som operativ kö ingår i grillningens grenar; bygge → hub-plugin 1.7.0→1.8.0). DÄREFTER S51: UI-spårets start = integrationens slutstation i drift — första skarpa hel-kedje-körningen /to-prd → /to-issues → do-work på riktig arbetsenhet (triggar fork 5+6-byggena [låst trigger] + första drift-metrik-matningen ADR-068 p.8). Inga produkt- eller sidospår före do-work. Städ-/mognadsskikt därefter: migrerings-hub-session 1 (inkl. T60 + invokerings-UX) / T56 / L193–L222-lyftet.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-04-session-49.md`](../tasks/sessions/archive/2026-07/2026-07-04-session-49.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa (rättad 2026-07-04 — UI-först-ordningen riven av Marcus-pushback; se sessionsdokets korrigeringsnot): **NY session 50** via /session-start — **INTEGRATIONEN SLUTFÖRS FÖRST: do-work-landningen ÖVERST och ENDA huvudkandidat** (grillning via /grill-with-docs [prövotids-dp9] mot code-role-disciplinen + issue-substrat.md + Backlog.md-CLI:t; TDD-adaptionen [Del 15] + etikett-driven plockning som operativ kö ingår i grillningens grenar; bygge → hub-plugin 1.7.0→1.8.0). DÄREFTER S51: UI-spårets start = integrationens slutstation i drift — första skarpa hel-kedje-körningen /to-prd → /to-issues → do-work på riktig arbetsenhet (triggar fork 5+6-byggena [låst trigger] + första drift-metrik-matningen ADR-068 p.8). Inga produkt- eller sidospår före do-work. Städ-/mognadsskikt därefter: migrerings-hub-session 1 (inkl. T60 + invokerings-UX) / T56 / L193–L222-lyftet.
 
 ---
 
@@ -2247,14 +2247,14 @@ CI-gröna PER JOBB (docs-only → Test + Build by-design-skippade; Docs link che
 
 ```text
 docs/reference/systemet.md                       (§0-post do-work; hook-bump updated:)
-tasks/sessions/2026-07-05-session-50.md          (Del 1–3 + sessionsavslut)
+tasks/sessions/archive/2026-07/2026-07-05-session-50.md          (Del 1–3 + sessionsavslut)
 tasks/todo.md · tasks/lessons.md                 (kadens + L231)
 ~/Repon/marcus-system (hub)                      (plugin 1.8.0: bf384e8 — skills/do-work/SKILL.md,
                                                   issue-substrat.md, manifest-paret, CLAUDE.md NÄR-rad;
                                                   lessons-lyft K50.1: 0fef62f)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-50.md`](../tasks/sessions/2026-07-05-session-50.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 51 via /session-start = UI-spårets start.** Ordning inom S51: (i) omstarts-verifiering i A2-passet (förväntat plugin 1.8.0, 11 skill-kataloger, 5 slash-only inkl. do-work), (ii) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (prototype + diagnosing-bugs per låsta designer S47 Del 13/14; plugin-bump antagen 1.8.0→1.9.0, låses vid bygget), (iii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat för första PRD-kortet, beslutas där), (iv) första drift-metrik-matningen per gren F-minimiformen (ADR-068 p.8). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (inkl. T60 + invokerings-UX) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-05-session-50.md`](../tasks/sessions/archive/2026-07/2026-07-05-session-50.md) (Del 1–3 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 51 via /session-start = UI-spårets start.** Ordning inom S51: (i) omstarts-verifiering i A2-passet (förväntat plugin 1.8.0, 11 skill-kataloger, 5 slash-only inkl. do-work), (ii) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (prototype + diagnosing-bugs per låsta designer S47 Del 13/14; plugin-bump antagen 1.8.0→1.9.0, låses vid bygget), (iii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat för första PRD-kortet, beslutas där), (iv) första drift-metrik-matningen per gren F-minimiformen (ADR-068 p.8). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (inkl. T60 + invokerings-UX) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
 
 > **Korrigeringsnot (2026-07-05, post-close):** NÄSTA-ordningen supersederad av
 > Marcus-direktiv + kvittens efter stängning — S51 = övnings-ramverkets
@@ -2298,12 +2298,12 @@ README.md                                     (berättelsen överst; status/foku
 docs/byggplan.md                              (ramrubrik + Fas E-märkning + v1.13)
 docs/reference/systemet.md                    (§0-post Övnings-ramverket + §11-rad)
 tasks/todo.md · tasks/threads/README.md       (huvuden + G3 + restlista-reparationen + T61)
-tasks/sessions/2026-07-05-session-51.md       (Del 1–4 + sessionsavslut)
+tasks/sessions/archive/2026-07/2026-07-05-session-51.md       (Del 1–4 + sessionsavslut)
 tasks/lessons.md                              (L232–L233)
 ~/Repon/marcus-system (hub)                   (lessons-lyft K51.1–2: f665e1f)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-51.md`](../tasks/sessions/2026-07-05-session-51.md) (Del 1–4 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 52 via /session-start = UI-SPÅRETS START.** Ordning inom S52: (i) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (bump antagen 1.8.0→1.9.0), (ii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat som FÖRSTA PRD-kort, beslutas vid start), (iii) första drift-metrik-matningen (gren F-minimiformen). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (S47 Del 3 steg 1 [rigor-migreringen] + mät-apparaten + handoff-klassningen [migrerings-Decision A] + invokerings-UX + T60) / AFK/Ralph-loop + sandbox (T61, trigger armerad; egen landning, Marcus-takt — naturlig evidensgrind: S52:s hel-kedje-körning + drift-metriken) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-05-session-51.md`](../tasks/sessions/archive/2026-07/2026-07-05-session-51.md) (Del 1–4 + avslut). **EJ fas-avslut; lifecycle-flip i do-confirm-passet.** Nästa: **NY session 52 via /session-start = UI-SPÅRETS START.** Ordning inom S52: (i) fork 5+6-byggena som AKT 0 före första /to-prd-körningen (bump antagen 1.8.0→1.9.0), (ii) första skarpa hel-kedje-körningen /to-prd → /to-issues → /do-work på riktig arbetsenhet (UI-spåret registrerad kandidat som FÖRSTA PRD-kort, beslutas vid start), (iii) första drift-metrik-matningen (gren F-minimiformen). Därefter städ-/mognadsskikt: migrerings-hub-session 1 (S47 Del 3 steg 1 [rigor-migreringen] + mät-apparaten + handoff-klassningen [migrerings-Decision A] + invokerings-UX + T60) / AFK/Ralph-loop + sandbox (T61, trigger armerad; egen landning, Marcus-takt — naturlig evidensgrind: S52:s hel-kedje-körning + drift-metriken) / T56 / L193–L222-lyftet. Mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
 
 ## Session 53 — T62: lifecycle-verbens Code-körbarhet (ADR-069 + plugin 1.10.0) (2026-07-05)
 
@@ -2340,7 +2340,7 @@ docs/decisions/ADR-069-lifecycle-verbens-code-korbarhet.md   (NY — Accepted)
 docs/decisions/ADR-041-/043-/051-*.md         (+Updates-noter, frysta texter orörda)
 docs/decisions/README.md                      (katalograd 069 + Updates-hänvisningar 041/043/051)
 README.md                                     (räknerad 69)
-tasks/sessions/2026-07-05-session-53.md       (NY — Del 1–4)
+tasks/sessions/archive/2026-07/2026-07-05-session-53.md       (NY — Del 1–4)
 tasks/todo.md · tasks/threads/README.md       (S53-sektion + T62-flipp ×2)
 tasks/lessons.md                              (L234)
 ~/Repon/marcus-system (hub 35a6233)           (skills/session-paus + session-resume NYA;
@@ -2349,7 +2349,7 @@ tasks/lessons.md                              (L234)
                                                plugin.json + marketplace.json 1.10.0)
 ```
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-53.md`](../tasks/sessions/2026-07-05-session-53.md) (Del 1–4). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden, dogfoodad).** Nästa: **omstart (Marcus, aktiverar 1.10.0) → /session-resume SESSION 52** (resume-Code-halvans skarpa första-bruk) → /to-issues på TASK-1 → /do-work + första drift-metrik-matningen → S52 end-prövning.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-05-session-53.md`](../tasks/sessions/archive/2026-07/2026-07-05-session-53.md) (Del 1–4). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden, dogfoodad).** Nästa: **omstart (Marcus, aktiverar 1.10.0) → /session-resume SESSION 52** (resume-Code-halvans skarpa första-bruk) → /to-issues på TASK-1 → /do-work + första drift-metrik-matningen → S52 end-prövning.
 
 ---
 
@@ -2388,7 +2388,7 @@ Samtliga pushar CI-gröna per jobb (produktkods-commits inkl. Test + Build; enda
 - T64 (purge-cred-vägvalet) vilar på Marcus-beslut; T65 (Hem-designiterationen) + T66 (prototyp-skill-uppdateringen, hub-materia) registrerade `paused`.
 - Lessons-hub-lyftet (L193–L242-klassen) PENDING till hub-/migrerings-session (lessons-hub-sync).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-05-session-52.md`](../tasks/sessions/2026-07-05-session-52.md) (Del 1–11 + två Paushistorik-block). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (nästa lediga nummer per disk, antagen 54) = migrerings-hub-session 1** (rigor-migreringen + mät-apparaten + handoff-klassningen + invokerings-UX + T60 + lessons-hub-lyftet; T66-skill-uppdateringen kan buntas) — alternativt Marcus-vald: T65 (efter brödsmulor/shell), T61 (AFK-loop), TASK-3, T64-vägvalet.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-05-session-52.md`](../tasks/sessions/archive/2026-07/2026-07-05-session-52.md) (Del 1–11 + två Paushistorik-block). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (nästa lediga nummer per disk, antagen 54) = migrerings-hub-session 1** (rigor-migreringen + mät-apparaten + handoff-klassningen + invokerings-UX + T60 + lessons-hub-lyftet; T66-skill-uppdateringen kan buntas) — alternativt Marcus-vald: T65 (efter brödsmulor/shell), T61 (AFK-loop), TASK-3, T64-vägvalet.
 
 ## Session 54 — MIGRERINGS-HUB-SESSION 1: rigor-migreringen + backlogg-lyftet + plugin 1.11.0 + T60 (2026-07-06)
 
@@ -2418,7 +2418,7 @@ Samtliga spoke-pushar CI-gröna per jobb FÖRSTA passet (runs 28803186379 / 2880
 - Kartans steg 2 (Decision B: code-role-discipline §4.1/§5), steg 3 (retirera relä-apparaten — steg 1-beviset klart i Del 2), steg 4 (omskriv, systemet.md SIST) + Accepted-graderingen av två-aktörs-ADR:n = senare migrerings-sessioner.
 - T64 (Marcus-vägval) / T65 (Hem-konvergensen — blir första T66-konvergens-passet) / TASK-3 (oetiketterat) oförändrade; mail sövt (T51/T53/T55); Fas 6-closeout-förkraven (T38/T39/T40) bärs vidare.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-06-session-54.md`](../tasks/sessions/2026-07-06-session-54.md) (Del 1–6). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (55)** — produktspåret (T65 / nästa vy-PRD / TASK-3-klassning / T64-vägval / T61) eller migrerings-hub-session 2 (kartans steg 2+3) — Marcus väljer.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-06-session-54.md`](../tasks/sessions/archive/2026-07/2026-07-06-session-54.md) (Del 1–6). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (55)** — produktspåret (T65 / nästa vy-PRD / TASK-3-klassning / T64-vägval / T61) eller migrerings-hub-session 2 (kartans steg 2+3) — Marcus väljer.
 
 ---
 
@@ -2448,7 +2448,7 @@ Samtliga pushar CI-gröna per jobb (kod-commits inkl. Test + Build; docs-only by
 - T65 `active`: design LÅST — kortet föds vid /to-prd (facit-specen Del 12 som input) → skarpt NYSKRIVET bygge genom leverans-grindarna (NY session).
 - Klass C-spåren (Del 3/12): scrollbar-gutter-kortkandidaten, headerns öde app-brett, devtools-gaten, versionskällan; klass D: Mina sidor-ytan, xAPI → Fas 6.5.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-06-session-55.md`](../tasks/sessions/2026-07-06-session-55.md) (Del 1–13 + bilagor). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (56)** — /to-prd på T65-facit → skivning → skarpt Hem-bygge.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-06-session-55.md`](../tasks/sessions/archive/2026-07/2026-07-06-session-55.md) (Del 1–13 + bilagor). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **NY session (56)** — /to-prd på T65-facit → skivning → skarpt Hem-bygge.
 
 ---
 
@@ -2464,7 +2464,7 @@ Samtliga pushar CI-gröna per jobb (kod-commits inkl. Test + Build; docs-only by
 - **PAUS efter 4.2** (ADR-051-formen, Marcus-kvittens "kör paus"; parallellkörningen S57 ∥ S56 pågick). KVAR (4.3–4.6) levererades senare på andra ytor: 4.3+4.4 S61 (AFK-batch-piloten) · 4.5 S62 (batch 3) · QA 4.6 S64/S67 (QA-vågen). TASK-4 helt **Done** (inkl. efterfödda 4.7).
 - **Administrativ stängning S73 Del 2 (2026-07-19):** `lifecycle: paused → closed` · skörd **L292–L293** [UNIVERSAL] ur paus-blockets kandidater (precedens-ändring aktiverar latent död konfiguration — inventera vad som VINNER · "min diff grön" ≠ "min run grön" — CI dömer hela trädet vid din SHA) · T65-registerraden `closed` med leverans-not · ingen full retrospektiv (öppet bokfört i dokets stängnings-sektion).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-07-session-56.md`](../tasks/sessions/2026-07-07-session-56.md) (Del 1–5 + PAUSLÄGE-historik + stängnings-sektion). **EJ fas-avslut.**
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-07-session-56.md`](../tasks/sessions/archive/2026-07/2026-07-07-session-56.md) (Del 1–5 + PAUSLÄGE-historik + stängnings-sektion). **EJ fas-avslut.**
 
 ---
 
@@ -2495,7 +2495,7 @@ Samtliga spoke-pushar CI-gröna per jobb (docs-only: Test+Build by-design-skippa
 - Öppen tidsbegränsad restpost: plugin-skillsens session-paus/resume-rader pekar på arkiverad claude-app-skills-plats — inaktuella till steg 4-bumpen (bokfört Del 2/Del 4).
 - Kvar av kartan: steg 4a+4b (grillad design, egna sessioner) + steg 5/Accepted-graderingen (ADR mintas som nästa lediga nummer då; Updates-noter 041/042/043/034; mät-apparat-beskrivningen).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-07-session-57.md`](../tasks/sessions/2026-07-07-session-57.md) (Del 1–6). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **steg 4a** (flytt-oberoende ytor + plugin-bunten, SERIELL session) → **steg 4b** (SYSTEMET.md-bygget); S56 stänger separat i Marcus ordning (guardrail 2).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-07-session-57.md`](../tasks/sessions/archive/2026-07/2026-07-07-session-57.md) (Del 1–6). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **steg 4a** (flytt-oberoende ytor + plugin-bunten, SERIELL session) → **steg 4b** (SYSTEMET.md-bygget); S56 stänger separat i Marcus ordning (guardrail 2).
 
 ---
 
@@ -2551,7 +2551,7 @@ start). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr-count 69==69
   konsolidering ARKITEKTUR/WORKFLOW + ADR) — egen session S59. Steg 5 (radera-på-riktigt) + Accepted-
   graderingen (Updates-noter 041/042/043/034; count-bump; mät-apparat-beskrivningen).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-07-session-58.md`](../tasks/sessions/2026-07-07-session-58.md) (Del 1 + end-passet). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **steg 4b** (SYSTEMET.md-bygget) i ny session S59 (fräsch kontext); OMSTART före start.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-07-session-58.md`](../tasks/sessions/archive/2026-07/2026-07-07-session-58.md) (Del 1 + end-passet). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Nästa: **steg 4b** (SYSTEMET.md-bygget) i ny session S59 (fräsch kontext); OMSTART före start.
 
 ---
 
@@ -2602,7 +2602,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - Skörd L252–L253 (båda [UNIVERSAL]: färsk-agent-testet, empiri-citera-från-källa); hub-lyft via
   lessons-hub-sync (pending/nästa hub-sync-moment).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-07-session-59.md`](../tasks/sessions/2026-07-07-session-59.md) (Del 1–3). Transcript (Code-körd, ADR-069): `991542f4-…jsonl` (~2,47 MB vid referens; refererad, ej kopierad). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Migreringskartans exekvering är därmed KLAR; kvar är endast de prövotids-gatade steg 5 + Accepted.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-07-session-59.md`](../tasks/sessions/archive/2026-07/2026-07-07-session-59.md) (Del 1–3). Transcript (Code-körd, ADR-069): `991542f4-…jsonl` (~2,47 MB vid referens; refererad, ej kopierad). **EJ fas-avslut; lifecycle-flip efter Marcus-kvittens av coverage-rapporten (ADR-069-grinden).** Migreringskartans exekvering är därmed KLAR; kvar är endast de prövotids-gatade steg 5 + Accepted.
 
 ## Session 60 — Airtable-avstämning maj-eventen (FJS + RIM1 + Psionautics) → Genomfört + korrekt närvaro (2026-07-08)
 
@@ -2619,7 +2619,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Del 6 (2026-07-09 → 07-11):** **Resend-riggen komplett** — kontakter importerade och riggen bevisad (skarpt minitest: `first_name`-chip → "Hej Marcus,"/"Hej där,"; citerad From; avprenumerera-länk verifierad); därefter **konsoliderad till ETT segment (416) + EN broadcast** (två-segments-splitten var en fossil av två-texters-planen; Marcus fångade den; nytt minitest grönt 07-11). R&L-mail granskat+korrigerat (417/416, 14 grupper, Psionautics-ankar-steget tillagt, team-invite ersätter creds-per-mail) + Dropbox-referensdoc (`Community-inbjudan-referens.docx`). Två grundorsaker avtäckta+lösta: (1) **OpenDNS/Telenor felstämplade `cdn.resend.app` som phishing** (`hit-phish.opendns.com`, Cisco Umbrella-cert) → Mac-DNS 1.1.1.1/8.8.8.8; (2) **editor-chips binds via egenskapsnyckeln** (`first_name` gemener; `FIRST_NAME` = legacy reserved token; docs-lucka — endast video). **T74** registrerad (consent två sanningskällor vid Resend-broadcast; vakuöst idag — 0 records bär flaggan, live-verifierat). R&L väljer sänddag. **NYTT:** Psionautics-ankare på väg → partitionen räknas om med 4:e ankare (~14 grupper; union + Resend-rigg opåverkade).
 - **Numrering:** ingen ADR mintad (count 70); lessons L254–L259 skrivna (nästa L260); trådar T72/T73/T74 registrerade (nästa T75); nästa fälla 45.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-08-session-60.md`](../tasks/sessions/2026-07-08-session-60.md) (Del 1–6). **EJ fas-avslut** (data-spår, ej byggplan-fas). Skool-partitionens omräkning (Psionautics-ankaret) + hub-lyft + session-end återstår.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-08-session-60.md`](../tasks/sessions/archive/2026-07/2026-07-08-session-60.md) (Del 1–6). **EJ fas-avslut** (data-spår, ej byggplan-fas). Skool-partitionens omräkning (Psionautics-ankaret) + hub-lyft + session-end återstår.
 
 ---
 
@@ -2635,7 +2635,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Drift-metrik S61:** 3 kort autonomt levererade (1 direkt-Done + 2 via granskningsvåg) · first-pass-CI 2/3 · alla defekter fångade av grindarna före/vid CI, inga ogrindat till main · 0 mänskliga ingripanden i körningarna · 0 permission-stopp (allowlisten `71c9143` räckte exakt).
 - **Numrering:** ingen ADR mintad (count 70; **ADR-071 deferrad till S62-bygget** per grillad samsyn beslut 4 — beslutet durabelt i Del 2 + T61/T71-korten); lessons **L263–L266** [UNIVERSAL] (nästa L267; hub-lyft deferrad → buntas med S62:s hub-landning); tråd **T75** registrerad (nästa T76); nästa fälla 45 (oförändrad).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-11-session-61.md`](../tasks/sessions/2026-07-11-session-61.md) (Del 1–6). **EJ fas-avslut.** Kvar till S62: bygget (`/work-batch`-skill + ADR-071 + T75-buntning + hub-lyft L263–L266, EN hub-landning) → batch 3 (4.5) som skillens första bruk → QA 4.6 (Marcus) → TASK-5/6-klassning + webbtavle-kollen.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-11-session-61.md`](../tasks/sessions/archive/2026-07/2026-07-11-session-61.md) (Del 1–6). **EJ fas-avslut.** Kvar till S62: bygget (`/work-batch`-skill + ADR-071 + T75-buntning + hub-lyft L263–L266, EN hub-landning) → batch 3 (4.5) som skillens första bruk → QA 4.6 (Marcus) → TASK-5/6-klassning + webbtavle-kollen.
 
 ---
 
@@ -2650,7 +2650,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Post-batch (Del 5):** TASK-5/6 klassade `ready-for-agent` på Marcus kvittens (AC ×3 per kort ur FÖRVÄNTAT-styckena, `b517d79`) = batch 4-kandidater · webbtavle-kollen UTFÖRD empiriskt (tavlan visar ocommittade ändringar vid serverstart 17/17; `/api/tasks` = uppstarts-snapshot; websocket-UI-kanalen separat) — S61-observationen är display-quirk i backlog.md 1.47.1, inte substrat-egenskap; EXPLICIT förkastad som vidare spår · QA 4.6 framskjuten (Marcus-takt) · docs-lint-defekten `588e29b`→`d8d5e4f` öppet bokförd → L270.
 - **Numrering:** **ADR-071 mintad** (count 71, nästa 072) · lessons **L267–L270** [UNIVERSAL] (nästa L271; hub-lyft L267–L270 vid nästa hub-sync-moment) · tråd T75 closed, ingen ny (nästa T76) · fälla 45 oförändrad.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-11-session-62.md`](../tasks/sessions/2026-07-11-session-62.md) (Del 1–5). **EJ fas-avslut.** Kvar till S63 (HANDOFF): **task-7-grillningen** (/grill-me) → design → /to-prd → /to-issues; i Marcus-takt: QA 4.6 (sista grinden för TASK-4-PRD:n) · batch 4-kandidater TASK-5/6 plockbara för `/work-batch`.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-11-session-62.md`](../tasks/sessions/archive/2026-07/2026-07-11-session-62.md) (Del 1–5). **EJ fas-avslut.** Kvar till S63 (HANDOFF): **task-7-grillningen** (/grill-me) → design → /to-prd → /to-issues; i Marcus-takt: QA 4.6 (sista grinden för TASK-4-PRD:n) · batch 4-kandidater TASK-5/6 plockbara för `/work-batch`.
 
 ---
 
@@ -2665,7 +2665,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Vägvalet (Marcus):** S63 stängs; S64 = T69-upptaget (Mer-vyn: grillning → PRD → skivor) → S65 = T76-piloten på partitionen task-8-skivorna ∥ T69-skivorna (Code-bedömning: disjunkt sånär som på tre kollisionsytor bokförda i T76-kortet — lockfilen [8.3:s beroenden], design-system-specen [8.2:s sektion], routeTree vid route-ändringar; TASK-5/6 hålls utanför piloten).
 - **Numrering:** **ADR-072 mintad** (count 72, nästa 073) · lesson **L271** [UNIVERSAL] (nästa L272; hub-lyft L267–L271 vid nästa hub-sync-moment) · fälla 45 oförändrad · ingen ny tråd (nästa T77).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-12-session-63.md`](../tasks/sessions/2026-07-12-session-63.md) (Del 1–5). **EJ fas-avslut.** Kvar till S64 (HANDOFF): **T69-upptaget** (Mer-vyn FK-mönstret: design-kedjan) → S65: T76-pilot-bygget + pilot; i Marcus-takt: QA 4.6 (sista grinden för TASK-4-PRD:n) · batch 4 (TASK-5/6, sekventiellt) · task-8-skivorna 8.1–8.3 plockbara.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-12-session-63.md`](../tasks/sessions/archive/2026-07/2026-07-12-session-63.md) (Del 1–5). **EJ fas-avslut.** Kvar till S64 (HANDOFF): **T69-upptaget** (Mer-vyn FK-mönstret: design-kedjan) → S65: T76-pilot-bygget + pilot; i Marcus-takt: QA 4.6 (sista grinden för TASK-4-PRD:n) · batch 4 (TASK-5/6, sekventiellt) · task-8-skivorna 8.1–8.3 plockbara.
 
 ---
 
@@ -2679,7 +2679,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Spec-kedjan (Del 4–5):** **TASK-9 publicerad** (PRD: Mer-vyn till FK-mönstret — ETT kort bär struktur + facit per H-beslutet; 14 UB, 10 implementationsbeslut; skarv-kvittens A: primitiv-axe + mer-e2e/axe, inga nya; 2 extra DoD-spec-grindar) · **skivorna 9.1–9.4** (NavCard M oblockad · Mer-vyn M ←9.1 · Hem-platshållaren S oberoende · QA S ready-for-human; skiv-godkännande Marcus "A"; täcknings-pass utan föräldralösa). **9.1 + 9.3 oblockade = T76-partitionens pipeline B.** L268-fallbacken (skill-avfyrning) öppet bokförd ×2; L270-återfall ×2 fångade+remedierade (`47a9ec0`, `b9fdbf8`), öppet bokförda utan ny lesson.
 - **Numrering:** ingen ADR mintad (nästa 073) · lesson **L272** [UNIVERSAL] (tsr-split-stale — transformerad dev-modul är egen cache-nyckel; computed-assertioner slår pixel-titt) · fälla 45 oförändrad · **T77 född** (nästa T78).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-12-session-64.md`](../tasks/sessions/2026-07-12-session-64.md) (Del 1–6). **EJ fas-avslut.** Kvar till S65 (HANDOFF): **T76-pilot-bygget + piloten på partitionen task-8-skivorna ∥ task-9-skivorna (9.1/9.3)**; i Marcus-takt: QA 4.6 · batch 4 (TASK-5/6, sekventiellt) · 8.1–8.3 plockbara för /work-batch.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-12-session-64.md`](../tasks/sessions/archive/2026-07/2026-07-12-session-64.md) (Del 1–6). **EJ fas-avslut.** Kvar till S65 (HANDOFF): **T76-pilot-bygget + piloten på partitionen task-8-skivorna ∥ task-9-skivorna (9.1/9.3)**; i Marcus-takt: QA 4.6 · batch 4 (TASK-5/6, sekventiellt) · 8.1–8.3 plockbara för /work-batch.
 
 ---
 
@@ -2693,7 +2693,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Granskningsvågen + post-batch-fällorna (Del 7):** två fällor i människans verifieringsmiljö fångade + TASK-10-bokförda (fälla 4: stale node_modules på main efter manifest-merge + Vite-omstartskravet, `d0b17de` · fälla 5: byggd SW på dev-originet 5173 servar gammal bundle cache-first, verifierad kedja disk→transform→färsk kontext, `07b17e8`) → reparerad miljö → Marcus-kvittens alla 4 kort → **Done med final-summary** (tvåstegs-stängningen) → **8.4 + 9.2 oblockade**. Plugin 1.13.0→1.14.0 utförd (omstart = sessionsbytet, L267).
 - **Numrering:** ADR **073** mintad (nästa 074) · lessons **L273–L276** skördade [UNIVERSAL] (nästa L277) · fälla 45 oförändrad · tråd T78 nästa.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-12-session-65.md`](../tasks/sessions/2026-07-12-session-65.md) (Del 1–8). **EJ fas-avslut.** Kvar till S66 (HANDOFF): förbättringspasset parallell-formen (research-pass: merge queue-precedent, affected-graph-partitionering, SW-/dev-origin-hygien + skyddsräckes-skivor ur TASK-10-klassningen + TASK-5/6 som sekventiell batch 4) → parallell-batch 2 (8.4 ∥ 9.2); i Marcus-takt QA 4.6 · 8.5 · 9.4.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-12-session-65.md`](../tasks/sessions/archive/2026-07/2026-07-12-session-65.md) (Del 1–8). **EJ fas-avslut.** Kvar till S66 (HANDOFF): förbättringspasset parallell-formen (research-pass: merge queue-precedent, affected-graph-partitionering, SW-/dev-origin-hygien + skyddsräckes-skivor ur TASK-10-klassningen + TASK-5/6 som sekventiell batch 4) → parallell-batch 2 (8.4 ∥ 9.2); i Marcus-takt QA 4.6 · 8.5 · 9.4.
 
 ---
 
@@ -2708,7 +2708,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Slutlandningen:** ADR-073 AMENDERAD (B-receptet → egen preview-port · F1-komplementet · beslut 2-skärpningen; immutabilitets-formen, 73==73) · hub `01eb164`: **/work-batch 1.15.0** (claims-check, förgrenings-SHA-regeln, semafor-artefakten, merge-tree-grinden, claims-kvittot, pr-ci-bevisformen, post-CI-bockar, reviderat B-recept, nytt delta 7 post-batch-miljösteget).
 - **Numrering:** ingen ny ADR (amendering; nästa 074) · lessons **L277–L280** skördade [UNIVERSAL] + **L276-korrigeringen** (nästa L281) · fälla 45 oförändrad · tråd T78 nästa.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-12-session-66.md`](../tasks/sessions/2026-07-12-session-66.md) (Del 1–5). **EJ fas-avslut.** Kvar efter S66: QA-korten 4.6 · 8.5 · 9.4 (`ready-for-human`, Marcus-takt) · TASK-11/12-konsolideringen (Marcus-triage) · PRD-stängningarna TASK-4/8/9 (väntar respektive QA) · hub-lyftet L267–L280 (nästa hub-sync) · plugin-update till 1.15.0 (Marcus Update-klick + omstart) · ADR-073:s öppna gränser ärvda (drain aldrig triggad · B-formen aldrig körd i drift · >2 pipelines kräver ny prövning).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-12-session-66.md`](../tasks/sessions/archive/2026-07/2026-07-12-session-66.md) (Del 1–5). **EJ fas-avslut.** Kvar efter S66: QA-korten 4.6 · 8.5 · 9.4 (`ready-for-human`, Marcus-takt) · TASK-11/12-konsolideringen (Marcus-triage) · PRD-stängningarna TASK-4/8/9 (väntar respektive QA) · hub-lyftet L267–L280 (nästa hub-sync) · plugin-update till 1.15.0 (Marcus Update-klick + omstart) · ADR-073:s öppna gränser ärvda (drain aldrig triggad · B-formen aldrig körd i drift · >2 pipelines kräver ny prövning).
 
 ---
 
@@ -2723,7 +2723,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Kort-facit:** 10 kort Done (TASK-11, TASK-12, 8.6, 4.7, 4.6, 8.5, 9.4, TASK-4, TASK-8, TASK-9) + 2 födda (TASK-13, TASK-14) + PR #46 stängd med motiv. Tavlans To Do rymmer endast de två nya fynden.
 - **Numrering:** ingen ny ADR (73==73; nästa 074) · lessons **L281–L283** skördade [UNIVERSAL] (nästa L284) · fälla 45 oförändrad · tråd T78 nästa.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-18-session-67.md`](../tasks/sessions/2026-07-18-session-67.md) (Del 1–5). **EJ fas-avslut.** Kvar efter S67: TASK-13 + TASK-14 i Marcus-takt · hub-lyftet L267–L283 (nästa hub-sync) · omstarten aktiverar 1.15.0 · nästa PRD/batch med parallell form som default (kräver 1.15.0-registryn, ny session).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-18-session-67.md`](../tasks/sessions/archive/2026-07/2026-07-18-session-67.md) (Del 1–5). **EJ fas-avslut.** Kvar efter S67: TASK-13 + TASK-14 i Marcus-takt · hub-lyftet L267–L283 (nästa hub-sync) · omstarten aktiverar 1.15.0 · nästa PRD/batch med parallell form som default (kräver 1.15.0-registryn, ny session).
 
 ---
 
@@ -2737,7 +2737,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Hub-syncen L267–L283** (hub `6f881d3`, 287 rader): sex sessions-sektioner K62.1–K67.3, 17 UNIVERSAL-poster med commit-trail-headerblock per S61-precedenten; S67-handoffens vid-nästa-hub-beröring-villkor löst i samma session som beröringen.
 - **Numrering:** ingen ny ADR (amendering 2 på ADR-073 ändrar inte antalet; 73==73, nästa 074) · inga nya lessons — 5 kandidater förkastade med motiv i Del 6 (nästa L284) · fälla 45 · tråd T78 (inga nya trådar; ADR-053-triagen i Del 6).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-18-session-68.md`](../tasks/sessions/2026-07-18-session-68.md) (Del 1–6). **EJ fas-avslut.** Kvar efter S68: TASK-14-mätningen kall morgon (prioriterad ingång) · TASK-13 · dependabot-passet #58–#63 · Marcus-moment: Update-klicket + omstarten (aktiverar 1.16.0).
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-18-session-68.md`](../tasks/sessions/archive/2026-07/2026-07-18-session-68.md) (Del 1–6). **EJ fas-avslut.** Kvar efter S68: TASK-14-mätningen kall morgon (prioriterad ingång) · TASK-13 · dependabot-passet #58–#63 · Marcus-moment: Update-klicket + omstarten (aktiverar 1.16.0).
 
 ---
 
@@ -2751,7 +2751,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **TASK-16 fött** (utan triage-etikett): ADR-060-purgens wiring — interim-premissen falsifierad ×2; återackumuleringstakten ~250 rader/månad ⇒ ~6 veckors horisont som deadline-signal på kortet (L285-mönstret).
 - **Numrering:** ingen ny ADR (ADR-060 fick Updates-post; 73==73, nästa 074) · lessons **L284–L285** [UNIVERSAL] (miljö-delad latens = kedja × RTT × exekverings-region · tolererat interim kräver horisont + trigger) + 4 kandidater förkastade med motiv i Del 6 (nästa L286) · fälla 45 · tråd T78 (inga nya trådar).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-18-session-69.md`](../tasks/sessions/2026-07-18-session-69.md) (Del 1–6). **EJ fas-avslut.** Kvar efter S69: Dependabot-passet #58–#63 (+ pröva allowlist-avlistningen GHSA-gv7w-rqvm-qjhr) som S70-ingång · TASK-16 väntar Marcus-klassning · nästa PRD/parallell batch på 1.16.0.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-18-session-69.md`](../tasks/sessions/archive/2026-07/2026-07-18-session-69.md) (Del 1–6). **EJ fas-avslut.** Kvar efter S69: Dependabot-passet #58–#63 (+ pröva allowlist-avlistningen GHSA-gv7w-rqvm-qjhr) som S70-ingång · TASK-16 väntar Marcus-klassning · nästa PRD/parallell batch på 1.16.0.
 
 ---
 
@@ -2768,7 +2768,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Hygien + avvikelser (öppet bokförda):** labels `dependencies`+`ci` skapade (config-deklarerade men saknade — dependabots timeline-klagan) · **L280-återfall ×1** (tail-pipe maskade markdownlint-exit → `8c619e2` pushad röd [MD018]; fixad `976ec99`, grindar därefter på obruten exit-kod) · vakt-avvikelse ×1 → **L286** · npm install-lockfil-driften → **L287** · R2:s dependabot-gren skarpbevisad ×4 (parallella PR-runs under pågående main-run).
 - **Numrering:** ingen ny ADR (ignore-regeln under ADR-baren, inom ADR-031:s ram; 73==73, nästa 074) · lessons **L286–L287** [UNIVERSAL] (vakt-matchning = headSha × workflow-identitet + jobbform-kontroll · npm ci som post-merge-synkverb) + 5 kandidater förkastade med motiv i Del 3 (nästa L288) · fälla 45 · tråd T78 (inga nya trådar; S17-riv-tråden stängd).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-19-session-70.md`](../tasks/sessions/2026-07-19-session-70.md) (Del 1–3). **EJ fas-avslut.** Kvar efter S70: TASK-16 plockbar (ready-for-agent, deadline-signal ≈ 2026-08-30) · nästa PRD/parallell batch på 1.16.0 · hub-lyftet L284–L287 vid nästa hub-beröring · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-19-session-70.md`](../tasks/sessions/archive/2026-07/2026-07-19-session-70.md) (Del 1–3). **EJ fas-avslut.** Kvar efter S70: TASK-16 plockbar (ready-for-agent, deadline-signal ≈ 2026-08-30) · nästa PRD/parallell batch på 1.16.0 · hub-lyftet L284–L287 vid nästa hub-beröring · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session 71 — TASK-16: ADR-060-purgens wiring — sentinel-purge skarp i drift (22+288 raderade · kortet Done · L288–L289) (2026-07-19)
 
@@ -2780,7 +2780,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Hygien + avvikelser (öppet bokförda):** CI-grön-första-pass: nej (extern outage + Eventtyp-fyndet; fail-safe-riktningen gjorde fyndet till ofarlig no-op, 0 felraderingar) · **L289-klassen**: MCP-förkollen frågade smalare än guardens faktiska predikat (två namngivna fält vs namn-agnostisk) — missade Eventtyp · L280-återfall ×1 (tail-pipe i lokala dry-run-verifieringen maskade exit; omkörd på obruten form) · gh-CLI-frågan (Marcus) besvarad verifierat: 2.88.1 bakom 3 advisories ⇒ `brew upgrade gh` → 2.96.0 efter sista vakten (lokalt verktyg — ingen repo-yta) · CI:s förväntade jobbform är nu SEX jobb (Staging sentinel purge tillkom; docs-only skippar purge+Test+Build by design, bevisat run 29685962055).
 - **Numrering:** ingen ny ADR (formen var REDAN beslutad i ADR-060 p3–4 — wiringen är implementering; ADR-060 Updates-post bär landningen; 73==73, nästa 074) · lessons **L288–L289** [UNIVERSAL] (strukturell fail-safe-vakt måste skilja konstruktions-referens från data-koppling · förkontroll måste ställa vaktens faktiska fråga) + 4 kandidater förkastade med motiv i Del 3 (nästa L290) · fälla 45 · tråd T78 (inga nya trådar — Eventtyp-fyndet fixat i sessionen, shields.io löst durabelt).
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-19-session-71.md`](../tasks/sessions/2026-07-19-session-71.md) (Del 1–3). **EJ fas-avslut.** Kvar efter S71: S72 = grillning + hela kedjan på event-vyn (Marcus-deklarerad riktning; ger skivor för parallell batch-test) · hub-lyftet L284–L289 vid nästa hub-beröring · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-19-session-71.md`](../tasks/sessions/archive/2026-07/2026-07-19-session-71.md) (Del 1–3). **EJ fas-avslut.** Kvar efter S71: S72 = grillning + hela kedjan på event-vyn (Marcus-deklarerad riktning; ger skivor för parallell batch-test) · hub-lyftet L284–L289 vid nästa hub-beröring · Marcus-moment: Update-klicket i claude.ai.
 
 ---
 
@@ -2794,7 +2794,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Avvikelser (öppet bokförda):** 4 röda main-commits (scrollbar-sagan) · L280-återfall ×2 · kort-SHA-vakten (evig tystnad, Marcus-knuff) · stale dev-server på 5173 (L275/L282-klassen bekräftad i drift). PRD-krav avtäckt: **"bor över"-antalet FINNS EJ i basen** (additivt fält per ADR-063 + EF-/modell-utökning).
 - **Numrering:** ingen ny ADR (allt under baren; 73==73, nästa 074) · lessons **L290–L291** [UNIVERSAL] (vaktens fråga bevisas besvarbar före armering [skärper L286/L289] · grind-förkontroll = grindens HELA form [instansierar L289 på svit-nivå]) · fälla 45 · tråd **T79** (T78 född S72) · nästa lesson L292.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-19-session-72.md`](../tasks/sessions/2026-07-19-session-72.md) (Del 1–4) + bilagan [`tasks/sessions/bilagor/s72-event-lista-konvergens/`](../tasks/sessions/bilagor/s72-event-lista-konvergens/). **EJ fas-avslut.** Kvar efter S72: **S73 = EVENTSIDAN (detaljvyn `/event/$eventId`)**, Marcus-deklarerad; öppen punkt list-PRD:ts födelsetidpunkt · hub-lyftet L284–L291 vid nästa hub-beröring · T78 · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-19-session-72.md`](../tasks/sessions/archive/2026-07/2026-07-19-session-72.md) (Del 1–4) + bilagan [`tasks/sessions/bilagor/s72-event-lista-konvergens/`](../tasks/sessions/bilagor/s72-event-lista-konvergens/). **EJ fas-avslut.** Kvar efter S72: **S73 = EVENTSIDAN (detaljvyn `/event/$eventId`)**, Marcus-deklarerad; öppen punkt list-PRD:ts födelsetidpunkt · hub-lyftet L284–L291 vid nästa hub-beröring · T78 · Marcus-moment: Update-klicket i claude.ai.
 
 ---
 
@@ -2809,7 +2809,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Avvikelser/incidenter (öppet bokförda):** K69-grindincidenten (obunden förkontroll-kedja → röd push, läkt `2cbcaed`) · facit-landningens MD004 (radbrytnings-plus, läkt `9bd3b00`) ·  Vite-watchern DÖV ×2 (levande server, stale modul — curl-verifierings-formen etablerad) · GitHub sekundär-throttling på CI-efterkontroller (403 med full kvot) · enda röda runs genom fem pass: K56 + K69 + `c94b90e` — alla öppet bokförda och läkta.
 - **Numrering:** ingen ny ADR (allt under baren; 73==73, nästa 074) · lessons **L292–L304** (S56-skörden + 11 ur 18 kandidater; kandidat 3 förkastad som L286/L290-instans, kandidat 4 som L25-förstärkning — motiv i Del 8) · tråd **T79** (nästa T80) · fälla 45 orörd · hub-lyftet L284–L304 + T78-hubhalvan buntat till nästa hub-beröring.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-19-session-73.md`](../tasks/sessions/2026-07-19-session-73.md) (Del 1–8 + Paushistorik ×3) + bilagan [`tasks/sessions/bilagor/s73-eventsida-konvergens/`](../tasks/sessions/bilagor/s73-eventsida-konvergens/) + S72-bilagans utöknings-notering. **EJ fas-avslut.** Kvar efter S73: **PRD:erna för HELA event-familjen** (lista + eventsida + skapa; /to-prd → /to-issues → ADR-073-batch) · chevron-konsekvensen (Marcus-kvittens) · hemvist-/Mer-ingångsfrågorna (avgörs i PRD) · T79-spåret · hub-lyftet · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-19-session-73.md`](../tasks/sessions/archive/2026-07/2026-07-19-session-73.md) (Del 1–8 + Paushistorik ×3) + bilagan [`tasks/sessions/bilagor/s73-eventsida-konvergens/`](../tasks/sessions/bilagor/s73-eventsida-konvergens/) + S72-bilagans utöknings-notering. **EJ fas-avslut.** Kvar efter S73: **PRD:erna för HELA event-familjen** (lista + eventsida + skapa; /to-prd → /to-issues → ADR-073-batch) · chevron-konsekvensen (Marcus-kvittens) · hemvist-/Mer-ingångsfrågorna (avgörs i PRD) · T79-spåret · hub-lyftet · Marcus-moment: Update-klicket i claude.ai.
 
 ---
 
@@ -2822,7 +2822,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Avvikelser:** inga röda runs (alla gröna per jobb, docs-only-formen; TASK-15-symptomet reproducerades inte trots UTF-8-kortfilnamn) · MD018-fångst lokalt vid dok-födelsen (läkt före push) · /to-prd-invokeringen blockerad av disable-model-invocation → cache-läsnings-formen (L306).
 - **Numrering:** ingen ny ADR (73==73; Anteckningar-ADR:n mintas vid TASK-18.11) · lessons **L305–L306** (kandidat 3 MD018 förkastad med motiv — Del 4) · inga nya trådar (T79-raden synkad) · fälla 45 orörd.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-21-session-74.md`](../tasks/sessions/2026-07-21-session-74.md) (Del 1–4). **EJ fas-avslut.** Kvar efter S74: exekveringen (`/work-batch` på Marcus-order med max-kort; ev. 2-pipeline-partition på startkedjorna) · gransknings-skulden betalas i QA-vågen (TASK-4.6-precedenten) · prod-deploy av fält/EF separat auktoriserad · hub-lyftet L284–L306 + T78-hubhalvan · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-21-session-74.md`](../tasks/sessions/archive/2026-07/2026-07-21-session-74.md) (Del 1–4). **EJ fas-avslut.** Kvar efter S74: exekveringen (`/work-batch` på Marcus-order med max-kort; ev. 2-pipeline-partition på startkedjorna) · gransknings-skulden betalas i QA-vågen (TASK-4.6-precedenten) · prod-deploy av fält/EF separat auktoriserad · hub-lyftet L284–L306 + T78-hubhalvan · Marcus-moment: Update-klicket i claude.ai.
 
 ---
 
@@ -2840,7 +2840,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Avvikelser:** run 29933197540 väntat-oväntat RÖD (äkta fångst, ej flake) · MD004 radbrytnings-plussets instans 2+3+4 läkta före push (instans 4 nådde CI — Docs link check röd en gång, `d51b4dd` läkning) · en pipe-maskerad exit + en ogrindad commit-kedja + en cd-läcka self-fångade · session-end kördes före växlar-godkännandet (L310-rotorsaken).
 - **Numrering:** ADR **074** mintad (+6 amenderingar: 071 ×1 + 074 ×5) · lessons **L307–L310** ([UNIVERSAL] ×3 + L310 process) · trådar T83 född; T18/T78/T80/T81/T82 stängda · TASK-29 Done GODKÄND (16 AC över sex vågor) · nästa: 075/L311/T84/f45/TASK-30.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-22-session-76.md`](../tasks/sessions/2026-07-22-session-76.md) (Del 1–7). **EJ fas-avslut.** Kvar efter S76: S75-resumen (work-batch 12, huvudspåret) · review-loopens Done-flippar (fråga 4) + TASK-25 · hub-lyftet L284–L309 (buntat vid hub-sync-moment) · GRANSKNINGSDATA-städet · T83/T63 vid design-horisonten · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-22-session-76.md`](../tasks/sessions/archive/2026-07/2026-07-22-session-76.md) (Del 1–7). **EJ fas-avslut.** Kvar efter S76: S75-resumen (work-batch 12, huvudspåret) · review-loopens Done-flippar (fråga 4) + TASK-25 · hub-lyftet L284–L309 (buntat vid hub-sync-moment) · GRANSKNINGSDATA-städet · T83/T63 vid design-horisonten · Marcus-moment: Update-klicket i claude.ai.
 
 ---
 
@@ -2863,7 +2863,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **EF-delen SKJUTEN, öppet motiverad:** prod kör 11 av 13 allowlistade funktioner flera versioner efter staging och saknar notes-EF:erna — T39 i full omfattning; T40:s autentiserade prod-smoke är inte uppsatt. Eget pass. **FYND:** `test-auth` ligger deployad i prod trots allowlist-förbudet (från tiden före allowlisten).
 - **Numrering:** ingen ny ADR (075 kvar; K84-förenandet bars av befintlig spec, under ADR-baren) · lessons **L311–L320** ([UNIVERSAL] ×8) · tråd **T84** född (guidad omgranskning som praxis) · fynd-kort **TASK-35** (test-auth i prod) · nästa: 077/L321/T85/f45/TASK-36 *(rättat i S77 steg 0: raden skrevs "076" men session 76 var redan förbrukad av mellansessionen — disk-verifieringen vinner)*.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-21-session-75.md`](../tasks/sessions/2026-07-21-session-75.md) (Del 1–18). **EJ fas-avslut.** Kvar efter S75: EF-delen av prod-deployen (T39/T40) · test-auth-städet · väljar-grillningen 18.18/18.19 + bygget · 17.7 · 18.15 · 18.16/18.17 i backlog-ordning · hub-lyftet L284–L320 · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-21-session-75.md`](../tasks/sessions/archive/2026-07/2026-07-21-session-75.md) (Del 1–18). **EJ fas-avslut.** Kvar efter S75: EF-delen av prod-deployen (T39/T40) · test-auth-städet · väljar-grillningen 18.18/18.19 + bygget · 17.7 · 18.15 · 18.16/18.17 i backlog-ordning · hub-lyftet L284–L320 · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session 77 — Processgransknings-landningen: merge-grinden mekaniserad, Test+Build splittat, riskanpassad CI designad (2026-07-23)
 
@@ -2876,7 +2876,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Avvikelser (öppet bokförda):** MD004-instans i NY form — radbruten `+` inuti BLOCKQUOTE (`> + …`) flippade dokumentets consistent-förväntan; förkastad som ny lesson med motiv (L222-instans; spårdata: quote-prefixet gömmer markören för `^+`-grep — sök `^> \+` också) · MD018-instans (radbruten `#3`) · båda läkta lokalt före push · **END-PASS-INCIDENTEN:** L149-recidiv (grind i &&-kedja) släppte en MD038 till PR nr 101, vars RÖDA run ändå auto-mergades — aggregatorn skippades av sitt if-villkor och en skippad required check räknas som uppfylld (fail-open-hålet; runs 30023934304/30024005788) → main rött, backstop-fångat inom minuter, läkt i fix-PR med FAIL-CLOSED-aggregator (kör alltid, failar explicit; **L322** + ADR-076-not; fail-grenens gate-proof = bevis-skuld → T85 våg 2a). Sessionens facit: first-pass-grönt t.o.m. PR #100; incidenten är sessionens enda röda — och dess mest värdefulla bevis: backstopen fungerade, hålet stängdes samma stund.
 - **Numrering:** ADR **076** mintad · lessons **L321–L322** ([UNIVERSAL] ×2; kandidat MD004-quote förkastad med motiv) · tråd **T85** född (rad + kort) · fälla 45 orörd · nästa: 078-session/077/L323/T86/f45/TASK-36.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-23-session-77.md`](../tasks/sessions/2026-07-23-session-77.md) (Del 1–4). **EJ fas-avslut.** Kvar efter S77: våg 2a (D1 + dedup + nightly + mätning) · 2b (visual) · 2c (ADR-071-amenderingen, beslut A låst) per T85 i Marcus-takt · våg 3 vid bas-maximeringen (ADR-063, post-Fas-6) · T56 djupa moduler-passet vid naturligt fönster (Marcus-prioritet, SKA-kravet 2026-07-23) · hub-lyftet L284–L321 (buntat till hub-sync-moment) · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-23-session-77.md`](../tasks/sessions/archive/2026-07/2026-07-23-session-77.md) (Del 1–4). **EJ fas-avslut.** Kvar efter S77: våg 2a (D1 + dedup + nightly + mätning) · 2b (visual) · 2c (ADR-071-amenderingen, beslut A låst) per T85 i Marcus-takt · våg 3 vid bas-maximeringen (ADR-063, post-Fas-6) · T56 djupa moduler-passet vid naturligt fönster (Marcus-prioritet, SKA-kravet 2026-07-23) · hub-lyftet L284–L321 (buntat till hub-sync-moment) · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session 78 — T85 våg 2 speccad + 36.1 gate-proof levererad via work-batch (2026-07-23)
 
@@ -2889,7 +2889,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Genomgående first-pass-grönt:** noll röda CI-runs över PR #104–#108 + två gate-proof-avfyrningar med exakt förväntat utfall.
 - **Numrering:** ingen ny ADR (076 kvar; ADR-077 mintas vid ci.yml-arbetet S79) · lessons **L323–L325** ([UNIVERSAL] ×3: subagent-CI-svans · risk-klass≠fil-hemvist · GHA-cache-scoping) + L322-not uppdaterad (skulden betald) · ingen ny tråd (T85 uppdaterad med bevis-skuld-kvittensen + replik-drift-bärare) · fälla 45 orörd · nästa: 079-session/077/L326/T86/f45/task-37.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-23-session-78.md`](../tasks/sessions/2026-07-23-session-78.md) (Del 1–4 + HANDOFF). **EJ fas-avslut.** Kvar efter S78 (HANDOFF på toppnivå i sessionsdoket): ci.yml-trion 36.2 (reusable nattnätet) → 36.3 (D1 + `.playwright-mcp/`-gitignore) → 36.4 (dedup HEAD^2-formen) + ADR-077 · 36.5 (mätskript) → 36.6 (rött-först) → 36.7 (visual, egen session) → 36.8 (QA) · hub-lyftet L284–L325 · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-23-session-78.md`](../tasks/sessions/archive/2026-07/2026-07-23-session-78.md) (Del 1–4 + HANDOFF). **EJ fas-avslut.** Kvar efter S78 (HANDOFF på toppnivå i sessionsdoket): ci.yml-trion 36.2 (reusable nattnätet) → 36.3 (D1 + `.playwright-mcp/`-gitignore) → 36.4 (dedup HEAD^2-formen) + ADR-077 · 36.5 (mätskript) → 36.6 (rött-först) → 36.7 (visual, egen session) → 36.8 (QA) · hub-lyftet L284–L325 · Marcus-moment: Update-klicket i claude.ai.
 
 ---
 
@@ -2907,7 +2907,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **36.4 merge-dedup levererad (PR #121 `b75df1c`) — trions sista skiva, ci.yml-trion KOMPLETT:** på main-push läser `changed`-jobbet merge-commitens andra förälder (mergade PR-headen); tunga jobb hoppas ENDAST om merge-commitens träd == PR-headens träd OCH den SHA:n har en grön CI-run (full SHA, L314). Innehållsadresserad, ingen ny lagringsyta; **cache-formen falsifierad, ej byggd** (L325). **Fail-closed på VARJE avvikelse** (ingen andra förälder · träd-avvikelse · API-fel · icke-grön ⇒ full svit) — asymmetrin medveten (nyckeln ÄR trädet → bara onödig körning, aldrig otestat förbi); sundhet vilar på merge-grindens strict up-to-date (ADR-076). Dedup-steg i changed-jobbet (fetch-depth: 0 → **invarianten ORÖRD**, testsvit 7/7); `permissions += actions: read` (minsta grant); suite-if `+= dedup_hit != true`; skippad suite → `ci-passed` grön (L322 intakt). **Logiken unit-testad lokalt mot 6 grenar** (1 hit + 5 fail-closed) FÖRE bygget; mekanism verifierad disk+API på `bf592ca`. **Kontrastbevis-par:** MISS PR-event run **30047428027** (full svit, staging RAN) · HIT main-push run **30047936570** (Test suite SKIPPAD på en config-ändring som normalt kör full svit; dedup-steg: "Dedup-TRÄFF: träd == a7f60c52^{tree} → tunga jobb hoppas"). Noll defekter, first-pass-grönt.
 - **Numrering:** ADR **077** mintad (36.2; 36.3+36.4 refererade den utan amendering, som avsett) · lesson **L326** ([UNIVERSAL]: reusable-permissions-eskalering + spike-postur + varje-anropare; 36.3+36.4 rena, inga nya lessons) · ingen ny tråd (T85 forts.) · fälla 45 orörd · nästa: 079/077/L327/T86/f45/task-37.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-23-session-79.md`](../tasks/sessions/2026-07-23-session-79.md) (Del 1–4). **EJ fas-avslut.** **ci.yml-trion (36.2/36.3/36.4) KLAR.** Kvar av task-36: **36.5** (mätskript, dep 36.2) → **36.6** (rött-först, ADR-071-amendering) → **36.7** (visual, egen session, ready-for-human) → **36.8** (QA) · hub-lyftet L284–L326 · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-23-session-79.md`](../tasks/sessions/archive/2026-07/2026-07-23-session-79.md) (Del 1–4). **EJ fas-avslut.** **ci.yml-trion (36.2/36.3/36.4) KLAR.** Kvar av task-36: **36.5** (mätskript, dep 36.2) → **36.6** (rött-först, ADR-071-amendering) → **36.7** (visual, egen session, ready-for-human) → **36.8** (QA) · hub-lyftet L284–L326 · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session 80 — T85 våg 2 forts.: 36.5 mätskriptet + 36.6 rött-först-bärarbytet (CI-hastighet är siffror; röd CI återfår sin betydelse) (2026-07-24)
 
@@ -2919,7 +2919,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Sessionsfacit:** PR #124–#129 samtliga grön/jobb **first-pass**; noll defekter i körning (två självfångade lokalt före commit: utkast-block i main() + MD028). **Första skarpa schemalagda nightly GRÖN** (run 30065650800, larm SKIPPAT — nattnätet bevisat i produktion). Inga nya lessons (två rena leveranser); ingen ny ADR (öppet motiverat); ingen ny tråd (T85 forts., kortet uppdaterat: 2a KOMPLETT + 2c VERKSTÄLLD).
 - **Numrering:** oförändrad efter S80 — nästa: 081/077/L327/T86/f45/task-37.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-80.md`](../tasks/sessions/2026-07-24-session-80.md) (Del 1–3). **EJ fas-avslut.** Kvar av task-36 (båda ready-for-human): **36.7** (visual, EGEN session) → **36.8** (QA, dep 36.7) · hub-lyftet L284–L326 vid hub-sync-moment · dependabot-PR #65/#126 Marcus-review · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-24-session-80.md`](../tasks/sessions/archive/2026-07/2026-07-24-session-80.md) (Del 1–3). **EJ fas-avslut.** Kvar av task-36 (båda ready-for-human): **36.7** (visual, EGEN session) → **36.8** (QA, dep 36.7) · hub-lyftet L284–L326 vid hub-sync-moment · dependabot-PR #65/#126 Marcus-review · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session 81 — task-36.7: visuell regression från noll — vakten byggd och bevisad, grinden medvetet parkerad (T87) (2026-07-24)
 
@@ -2933,7 +2933,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Sessionsfacit:** PR #131/#133/#136/#139/#140/#141 samtliga gröna per jobb; två självfångade felkörningar öppet bokförda (plain-formen TASK-6 + ankarfel i event-lista-specen — vyn betedde sig rätt). Ingen ny ADR (A-beslutet under baren, öppet motiverat — T87 bär det). Numrerings-drift bokförd: T86+S82 konsumerade av parallell pocock-session.
 - **Numrering efter S81:** nästa 83/078/L329/T88/f45/task-37.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-81.md`](../tasks/sessions/2026-07-24-session-81.md) (Del 1–7). **EJ fas-avslut.** Kvar av task-36: **36.8** (QA-vandringen, ready-for-human, dep 36.7 ✓ AVBLOCKAD) · T87 vilande (grind-aktiveringen) · hub-lyftet L284–L328 vid hub-sync-moment · dependabot-PR #65/#137 Marcus-review · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-24-session-81.md`](../tasks/sessions/archive/2026-07/2026-07-24-session-81.md) (Del 1–7). **EJ fas-avslut.** Kvar av task-36: **36.8** (QA-vandringen, ready-for-human, dep 36.7 ✓ AVBLOCKAD) · T87 vilande (grind-aktiveringen) · hub-lyftet L284–L328 vid hub-sync-moment · dependabot-PR #65/#137 Marcus-review · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session 84 — EF-prod-synken: T39-pre-flight → A-kedjan — prod på HEAD, datavägen bevisad, T39/T40/T33 stängda (2026-07-24)
 
@@ -2946,7 +2946,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Kvälls-incidenterna (stängnings-PR #161):** GitHub-API-incident bröt PR-skapandet (löst med retry-vakt via REST) och lämnade syskonsessionens gröna js-yaml-fix-PR #160 oarmerad → Code armerade, CLEAN-merge direkt (advisory GHSA-pm4m-ph32-ghv5, high, publicerad 18:47 samma kväll) · Lychee-429 på gitlab.com-länk i orörd ADR-032 (2 CI-instanser, lokalt 200) → `.lycheeignore`-post per digg.se-precedentens 2-instans-beslut; config-ändringen triggade korrekt fulla sviten som gick grön per jobb.
 - **Numrering efter S84:** nästa 85/078/L333/T88/f46/task-39.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-84.md`](../tasks/sessions/2026-07-24-session-84.md) (Del 1–4). **EJ fas-avslut.** Kvar: TASK-37 (audit-läget) + TASK-38 (metod-vakterna) plockbara · T46 bär go-live-resterna · hub-lyftet L284–L332 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-24-session-84.md`](../tasks/sessions/archive/2026-07/2026-07-24-session-84.md) (Del 1–4). **EJ fas-avslut.** Kvar: TASK-37 (audit-läget) + TASK-38 (metod-vakterna) plockbara · T46 bär go-live-resterna · hub-lyftet L284–L332 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session 83 — Prototyp-passen inför nattbygget: konvergens per yta → ready-for-agent ×6 (2026-07-24)
 
@@ -2963,7 +2963,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **ADR-078 mintad vid stängningen** (Marcus-order): INSTANT-regeln — navigering väntar aldrig på data vi redan har; placeholder ur listcache, skydd för partiella fält, prefetch på avsikt, skeleton i slutgeometri, golvet deklareras mätt. Bevisad i PR #163.
 - **Numrering efter S83:** nästa 85/079/L338/T91/f46/task-39.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-24-session-83.md`](../tasks/sessions/2026-07-24-session-83.md) (Del 1–7). **EJ fas-avslut.** Kvar: nattbygget i FRISK session (work-batch, max-kort 6) → morgongranskning → T85-korrigeringsfönstret · konventions-hemmet (grillning) · hub-lyftet L284–L337 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-24-session-83.md`](../tasks/sessions/archive/2026-07/2026-07-24-session-83.md) (Del 1–7). **EJ fas-avslut.** Kvar: nattbygget i FRISK session (work-batch, max-kort 6) → morgongranskning → T85-korrigeringsfönstret · konventions-hemmet (grillning) · hub-lyftet L284–L337 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session 85 — Dukningen för nattbygget: audit-läkningen + go-redo för S86 (2026-07-25)
 

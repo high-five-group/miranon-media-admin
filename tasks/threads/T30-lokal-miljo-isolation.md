@@ -40,7 +40,7 @@ Forensisk kedja — varje led belagt mot disk:
   lokal dev i hela ADR:n (`grep -c` = 0); dess öppna trådar T1–T4 (Supabase-tier,
   staging-bas-ID, namn-vs-ID-adressering, schema-sync) rör inte lokal-ytan. Lokal
   disk var en BLIND FLÄCK i staging-migrationen — inte en känd, deferrad skuld.
-- **Halv-migrationen.** Session 26 (2026-06-20, [`tasks/sessions/2026-06-20-session-26.md`](../sessions/2026-06-20-session-26.md)
+- **Halv-migrationen.** Session 26 (2026-06-20, [`tasks/sessions/archive/2026-06/2026-06-20-session-26.md`](../sessions/archive/2026-06/2026-06-20-session-26.md)
   ~rad 320) rättade `.env.test`:s `TEST_SUPABASE_URL` + anon-key till staging
   (`pqtshyierkdgwdnxuirz`) — men `TEST_USER`-creds OCH `.env.local` lämnades på
   prod. Dokraden nämner bara URL:en, inte creds/`.env.local` → en opportunistisk

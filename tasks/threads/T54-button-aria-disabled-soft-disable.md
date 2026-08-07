@@ -39,7 +39,7 @@ vy-fix.
 
 ## Relaterat
 
-- [session-45](../sessions/2026-06-29-session-45.md) § Del 2 (arch-audit-residualen).
+- [session-45](../sessions/archive/2026-06/2026-06-29-session-45.md) § Del 2 (arch-audit-residualen).
 - [T50](T50-ui-hardning-sand-grind.md) — första konkreta konsumenten (faro-knappen).
 - KVALITETSDEFINITIONER-11-REACT.md (a11y-axeln) + ADR-058 (arch-audit område v).
 

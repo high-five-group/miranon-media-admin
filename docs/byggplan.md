@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-02
+updated: 2026-08-07
 review_by: 2026-11-15
 status: stable
 ---
@@ -564,7 +564,7 @@ Defer per Session 16 K3:
 
 ### Fas 5.5 — Vertikal write-slice
 
-✅ Slutförd 2026-06-17 över Sessions 18/19 (server-kontrakt K1 + isolerad staging) + Session 22 (klient-UI K2). Server-sidan: operation `mark-registration-fee-paid` skriver `Anmälningsavgift` (INTE `Status` — ADR-049 supersederar DoD-radens fält-exempel), isolerad staging-miljö byggd (ADR-050), deny/allow-svit grön (`tests/api/update-record.staging.test.ts`, 401-anon via delad `requireUser`-gateway). Klient-sidan: datakälla-åtkomst via TanStack Router-context-DI ([ADR-055](decisions/ADR-055-datakalla-atkomst-router-context-di.md) — första UI→data-wiringen, precedens för Fas 6), optimistic mutation per ADR-016:s fem komponenter (`src/data/mutations/markRegistrationPaid.ts`), typad `EdgeFunctionError` med strukturerad `requestId`, fel-yta via MessageBox `role="alert"` (avvikelse från DoD 6:s "toast"-ord — ingen toast-infra finns; medveten, dokumenterad), aria-live för lyckad flip via `alertScreenReader`. 3 e2e (`tests/e2e/mark-paid.staging.test.ts`) via deterministisk `page.route`-gate täcker DoD 1/5/6/7/8 (mockad e2e — server-write-kontraktet bevisas separat av staging-sviten). Slicen är **mall för Fas 6:s mutationer** (DoD 10). Faktiska fil-/testsökvägar avviker från Filer-listan nedan (drift mot byggd struktur, dokumenterad): `event/$eventId.tsx` (ej `betalning.tsx`), `mark-paid.staging.test.ts` (ej `markPaid.spec.ts`), `field-allowlists.ts` i `supabase/functions/_shared/`. DoD-trail: feature-CI run `27706856446` (alla jobb success inkl. `test:e2e:staging`). Korsreferens: `tasks/sessions/2026-06-17-session-22.md` Del 2.
+✅ Slutförd 2026-06-17 över Sessions 18/19 (server-kontrakt K1 + isolerad staging) + Session 22 (klient-UI K2). Server-sidan: operation `mark-registration-fee-paid` skriver `Anmälningsavgift` (INTE `Status` — ADR-049 supersederar DoD-radens fält-exempel), isolerad staging-miljö byggd (ADR-050), deny/allow-svit grön (`tests/api/update-record.staging.test.ts`, 401-anon via delad `requireUser`-gateway). Klient-sidan: datakälla-åtkomst via TanStack Router-context-DI ([ADR-055](decisions/ADR-055-datakalla-atkomst-router-context-di.md) — första UI→data-wiringen, precedens för Fas 6), optimistic mutation per ADR-016:s fem komponenter (`src/data/mutations/markRegistrationPaid.ts`), typad `EdgeFunctionError` med strukturerad `requestId`, fel-yta via MessageBox `role="alert"` (avvikelse från DoD 6:s "toast"-ord — ingen toast-infra finns; medveten, dokumenterad), aria-live för lyckad flip via `alertScreenReader`. 3 e2e (`tests/e2e/mark-paid.staging.test.ts`) via deterministisk `page.route`-gate täcker DoD 1/5/6/7/8 (mockad e2e — server-write-kontraktet bevisas separat av staging-sviten). Slicen är **mall för Fas 6:s mutationer** (DoD 10). Faktiska fil-/testsökvägar avviker från Filer-listan nedan (drift mot byggd struktur, dokumenterad): `event/$eventId.tsx` (ej `betalning.tsx`), `mark-paid.staging.test.ts` (ej `markPaid.spec.ts`), `field-allowlists.ts` i `supabase/functions/_shared/`. DoD-trail: feature-CI run `27706856446` (alla jobb success inkl. `test:e2e:staging`). Korsreferens: `tasks/sessions/archive/2026-06/2026-06-17-session-22.md` Del 2.
 
 #### Mål
 

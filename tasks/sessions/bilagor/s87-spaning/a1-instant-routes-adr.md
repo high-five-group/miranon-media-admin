@@ -8,7 +8,7 @@ Nej — S83-beslutet håller för den SMALA route-ADR:n, men avböjandet vilar p
 
 ## FYND
 - **S83:s avböjande var ett val MELLAN två kandidater, inte en prövning mot ADR-baren. Ingen decline-rationale mot de tre villkoren finns nedskriven.**
-  BEVIS: tasks/sessions/2026-07-24-session-83.md:496-498: 'Route-mönstret mintades INTE — Marcus valde INSTANT-regeln av de två kandidaterna; route-beslutet står kvar som byggkrav i 18.18-kortet med sina tre precedent.'
+  BEVIS: tasks/sessions/archive/2026-07/2026-07-24-session-83.md:496-498: 'Route-mönstret mintades INTE — Marcus valde INSTANT-regeln av de två kandidaterna; route-beslutet står kvar som byggkrav i 18.18-kortet med sina tre precedent.'
 - **ADR-078 (syskon-ADR:n) nämner inte route-frågan med ett ord — den handlar uteslutande om cache/placeholder/prefetch/skeleton. Ingen överlappning, ingen krock.**
   BEVIS: docs/decisions/ADR-078-instant-regeln.md, hela filen (108 rader) läst: Beslut 1-5 rör placeholderData, partiellt fält-skydd, prefetch på avsikt, skeleton-slutgeometri, deklarerat golv.
 - **Alternativ b = /event/$eventId/ny-anmalan behålls oförändrad + en TUNN /anmalan/ny som renderar SAMMA komponent i tomt läge och navigerar in i den nästlade routen vid val. Alternativ c (search-param) förkastat: bryter path-param-grammatiken för en enda sida. Precedent: Linear (/new + /team/LIN/new), Rails nested creation, Jira gating-fält.**
@@ -30,7 +30,7 @@ Nej — S83-beslutet håller för den SMALA route-ADR:n, men avböjandet vilar p
 - **URL-STATE-SPEC.md är repots utsedda hem för adress-grammatik och bär redan ett beslutsblock av EXAKT denna klass (routes-inte-flikar med Reconcilierad-rationale) — men den är föråldrad: den listar en route som inte finns och saknar fyra som finns.**
   BEVIS: docs/specs/URL-STATE-SPEC.md:104-126 (C1-blocket) + :114,:225 listar /event/$eventId/betalning; ls -R src/routes/ visar anmalda.tsx, narvaro.tsx, ny-anmalan.tsx, anmalan/$registrationId.tsx — ingen betalning.tsx. Hemvist-precedenten: ADR-074 beslut 4 ('hemvist URL-STATE-SPEC §Dev-parametrar') + byggplan.md:274
 - **Konventions-hemmet är redan öppen Marcus-order av ADR-bar-klass, med den exakta skiktning som gör spec-sektionen till rätt fordon här. Batch-ordern deklarerar öppet att konventions-bilagan bara är en läskopia.**
-  BEVIS: tasks/sessions/2026-07-24-session-83.md:424-458 (Del 7, Marcus-citatet + öppen fråga) · tasks/lessons.md:4965-4982 (L337) · tasks/sessions/bilagor/s85-nattbygget/batch-order.md:60-66 ('Detta är en batch-lokal LÄSKOPIA, inte konventionernas hem')
+  BEVIS: tasks/sessions/archive/2026-07/2026-07-24-session-83.md:424-458 (Del 7, Marcus-citatet + öppen fråga) · tasks/lessons.md:4965-4982 (L337) · tasks/sessions/bilagor/s85-nattbygget/batch-order.md:60-66 ('Detta är en batch-lokal LÄSKOPIA, inte konventionernas hem')
 
 ## LUCKOR
 - Ingen bar-prövning av route-frågan finns nedskriven någonstans. Jag sökte i hela S83-doket (513 rader), i ADR-078, i docs/decisions/README.md, i tasks/threads/README.md och via grep i tasks/lessons.md — HITTADE INTE. Det enda som finns är meningen på S83:496-498.

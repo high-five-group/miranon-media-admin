@@ -38,7 +38,7 @@ ADR-067:s avsiktliga design. Beslutet revs ÖPPET, med kvittens (ej tyst rivning
 
 ## Relaterat
 
-- [session-45](../sessions/2026-06-29-session-45.md) § Del 1 "Ej i scope" (den
+- [session-45](../sessions/archive/2026-06/2026-06-29-session-45.md) § Del 1 "Ej i scope" (den
   precisering som föder denna tråd).
 - ADR-067 (bulk-mail-send-kontraktet — segmentIds-only, consent-GOLV).
 - [T51](README.md) — Reply-To gold-standard-verifiering (Marcus självtest = den

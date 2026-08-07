@@ -259,7 +259,7 @@ kontroll av markdown-LÄNKAR (`grep -rnoE "\]\([^)]*tests/[^)]*\)"`). Utfall:
 | `tests/e2e/event-detail.staging.test.ts:33` — "…egna beteenden bevisas i event-anteckningar.staging.test.ts" | **levande pekare i KOD**, samma klass | **lagad**: ny hemvist + flytten noterad |
 | `tests/visual/event-anmalda.spec.ts:12` — `toHaveScreenshot('event-anmalda.png')` | INGEN pekare — ett baseline-FILNAMN som råkar likna | orörd (att röra den hade brutit den visuella baseline-jämförelsen) |
 | `docs/research/staging-svitens-tidsbudget-2026-07-26.md` (7 tabellrader) | daterad MÄTDATA med proveniens-block | orörd — samma behandling som 59.3/59.4/59.5 gav sina filers rader |
-| `tasks/todo.md:3439`, `tasks/sessions/2026-07-11-session-61.md`, `2026-06-20-session-26.md`, `tasks/sessions/bilagor/s87-spaning/{a1,a7,a9}` | historiska poster + frusna spanings-bilagor | orörda |
+| `tasks/todo.md:3439`, `tasks/sessions/archive/2026-07/2026-07-11-session-61.md`, `2026-06-20-session-26.md`, `tasks/sessions/bilagor/s87-spaning/{a1,a7,a9}` | historiska poster + frusna spanings-bilagor | orörda |
 | `backlog/tasks/task-3`, `task-18.9`, `task-18.13`, `task-18.18` | historiska kort — **samtliga verifierade `Done`** (18.13 kontrollerad explicit: dess rivnings-scope är avslutat, inte framåtriktat) | orörda |
 
 **NOLL markdown-LÄNKAR** pekade på någon av de sju (kontrollerat över hela

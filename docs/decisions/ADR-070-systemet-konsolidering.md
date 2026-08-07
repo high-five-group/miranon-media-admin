@@ -2,7 +2,7 @@
 
 - Status: Accepted (Session 59 — 2026-07-08; grillad samsyn S57 Del 5 [6 beslut,
   `/grill-me`] + Marcus-kvittens denna session; kanonisk samsyns-trail:
-  `tasks/sessions/2026-07-07-session-59.md` Del 2–3)
+  `tasks/sessions/archive/2026-07/2026-07-07-session-59.md` Del 2–3)
 - Datum: 2026-07-08
 - Fas: Session 59 — process/dokumentation (migreringskartans steg 4b; ingen
   byggfas-status-ändring)

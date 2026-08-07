@@ -50,7 +50,7 @@ byggas.
 
 ## Relaterat
 
-- Full plan: [session-44](../sessions/2026-06-29-session-44.md) § Del 1, undersektion
+- Full plan: [session-44](../sessions/archive/2026-06/2026-06-29-session-44.md) § Del 1, undersektion
   "Nästa session — UI-härdning".
 - [T51](README.md) — Reply-To gold-standard-verifiering (förhandsvisning visar de
   faktiska avsändar-/Reply-To-värdena Lotta ser).

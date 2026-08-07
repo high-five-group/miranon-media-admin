@@ -309,7 +309,7 @@ mintad — beslutet är inte taget. Tas tråden upp är grillning normalstarten
 (options-rymden är bred, beslutet permanent).
 
 **S61-uppdatering (2026-07-11):** Tråden upptagen tillsammans med `T61`.
-Grillning körd till samsyn ([S61 Del 2](../sessions/2026-07-11-session-61.md)
+Grillning körd till samsyn ([S61 Del 2](../sessions/archive/2026-07/2026-07-11-session-61.md)
 — AFK-batch-kontraktet, 5 beslut: granskningsfärdig-läget · halt-first +
 hårda gränser · trunk-push + omprövningströskel · orkestrerings-skript i
 session med `/work-batch`-skill + ADR-071 vid bevis · pilot TASK-3).

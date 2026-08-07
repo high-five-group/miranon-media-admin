@@ -8,7 +8,7 @@ referens, inte FK-formspråk).
 Målbilds-underlag för UI-spårets FK-linje: Hem-arrangemang, list-mönster,
 grupprubriker, badges, wizard-steg och pill-tabbaren. Beslutet (ljus bas i
 Miranon-identitet, FK:s STRUKTUR — inte dess mörka färgvärld) bor i
-sessionsdok `tasks/sessions/2026-07-05-session-52.md` Del 3; kortet
+sessionsdok `tasks/sessions/archive/2026-07/2026-07-05-session-52.md` Del 3; kortet
 `PRD: UI-uppgradering Hem-vyn` pekar hit.
 
 | Fil | Motiv |
