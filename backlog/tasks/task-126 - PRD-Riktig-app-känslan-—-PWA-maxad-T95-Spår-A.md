@@ -4,8 +4,9 @@ title: 'PRD: Riktig app-känslan — PWA maxad (T95 Spår A)'
 status: To Do
 assignee: []
 created_date: '2026-08-02 14:15'
-updated_date: '2026-08-03 12:28'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-human
 dependencies: []
 ordinal: 198000
 ---

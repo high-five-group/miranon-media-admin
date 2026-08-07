@@ -4,7 +4,9 @@ title: Dynamisk sidtitel i route-lagret — RouteAnnouncer-tävlingen bort
 status: To Do
 assignee: []
 created_date: '2026-07-25 06:50'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-human
 dependencies: []
 ordinal: 107000
 ---

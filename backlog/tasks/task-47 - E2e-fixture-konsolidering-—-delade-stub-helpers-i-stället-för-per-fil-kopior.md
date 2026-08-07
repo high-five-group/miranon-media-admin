@@ -4,7 +4,9 @@ title: E2e-fixture-konsolidering — delade stub-helpers i stället för per-fil
 status: To Do
 assignee: []
 created_date: '2026-07-25 06:51'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 108000
 ---

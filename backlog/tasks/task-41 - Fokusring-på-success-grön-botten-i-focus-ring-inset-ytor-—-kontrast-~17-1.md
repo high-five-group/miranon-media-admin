@@ -4,7 +4,9 @@ title: 'Fokusring på success-grön botten i focus-ring-inset-ytor — kontrast 
 status: To Do
 assignee: []
 created_date: '2026-07-25 01:48'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 102000
 ---
