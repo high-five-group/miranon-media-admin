@@ -1,9 +1,10 @@
 ---
 id: TASK-149.6
 title: 'Skiva: inventeringen — arbetsform-reglernas bärarkarta'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 10:34'
+updated_date: '2026-08-07 11:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,10 +20,16 @@ ordinal: 260000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Samtliga arbetsform-regler i spoke (CLAUDE.md, CONTRIBUTING, agentfiler, skills-referenser) + hubbens disciplin-skills inventerade; varje regel klassad: mekanisk bärare / kort-buren / startdörrs-bunden — med källa (fil:avsnitt) och belägg per rad
-- [ ] #2 Kartan landad som research-dok; varje startdörrs-bunden regel med drift-risk har ett eget nytt kort skapat via backlog-CLI (fynd-kort, inte fixar i denna skiva)
-- [ ] #3 PR armerad, per-jobb-grön
+- [x] #1 Samtliga arbetsform-regler i spoke (CLAUDE.md, CONTRIBUTING, agentfiler, skills-referenser) + hubbens disciplin-skills inventerade; varje regel klassad: mekanisk bärare / kort-buren / startdörrs-bunden — med källa (fil:avsnitt) och belägg per rad
+- [x] #2 Kartan landad som research-dok; varje startdörrs-bunden regel med drift-risk har ett eget nytt kort skapat via backlog-CLI (fynd-kort, inte fixar i denna skiva)
+- [x] #3 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Levererad via PR #870 (merge b929ce31), CI grön per jobb. Bärarkartan 132 regler; fynd-korten 154–156 födda.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

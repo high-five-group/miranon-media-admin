@@ -3,9 +3,10 @@ id: TASK-150
 title: >-
   Fynd: post-merge-larmets vägledning citerar TASK-64 som öppen flake — kortet
   är Done sedan 2026-07-29
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 10:50'
+updated_date: '2026-08-07 11:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,15 +21,21 @@ Symptom: .github/workflows/post-merge.yml rad ~485 skriver i varje rött post-me
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass: rad ~485 i post-merge-workflown läst + TASK-64:s och TASK-74:s faktiska status verifierade via backlog-CLI
-- [ ] #2 Vägledningstexten rättad mot faktiskt läge: flake-historiken beskrivs med korrekt status (båda korten Done med mätt bevis 3/8→0/8) och triage-rådet omformulerat så en äkta regression inte avfärdas som känd flake
-- [ ] #3 Öppna ärendet #847 kommenterat med rättelsen; actionlint/yamllint gröna; PR armerad, per-jobb-grön
+- [x] #1 Premiss-pass: rad ~485 i post-merge-workflown läst + TASK-64:s och TASK-74:s faktiska status verifierade via backlog-CLI
+- [x] #2 Vägledningstexten rättad mot faktiskt läge: flake-historiken beskrivs med korrekt status (båda korten Done med mätt bevis 3/8→0/8) och triage-rådet omformulerat så en äkta regression inte avfärdas som känd flake
+- [x] #3 Öppna ärendet #847 kommenterat med rättelsen; actionlint/yamllint gröna; PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Levererad via PR #864 (merge b64eee71), kö-CI grön per jobb; post-merge-transienten (staging 429-klass) triagerad och stängd i #871 — orelaterad till diffen. #847 kommenterat.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
