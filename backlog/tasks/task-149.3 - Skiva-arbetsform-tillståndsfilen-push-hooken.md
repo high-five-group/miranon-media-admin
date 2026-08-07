@@ -4,7 +4,7 @@ title: 'Skiva: arbetsform-tillståndsfilen + push-hooken'
 status: Done
 assignee: []
 created_date: '2026-08-07 10:30'
-updated_date: '2026-08-07 12:17'
+updated_date: '2026-08-07 15:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,6 +45,14 @@ ordinal: 257000
 - [x] #5 Skarpbeviset bokfört som ÖPPEN SKULD i kortet och slutrapporten — aldrig rapporterat som taget
 - [x] #6 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -103,12 +111,6 @@ lades till, för att inte upprepa TASK-106-klassens kopierade-tal-drift.
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Stängning i S99-resume 1 (2026-08-07): #876 mergad a95d271c, per-jobb-grön (Lint/Pure+Build/Acceptance 8m8s/Webblasarbeteende/Docs/CodeQL pass; staging/a11y CI-gatad skip). AC 6 + DoD bockade mot verifikatet. Skarpbeviset av deny-arbetsform-push.sh KVARSTÅR som öppen skuld (AC 5): hooken landade under pågående S99 ⇒ oladdad i denna session (hooks-guide-regeln); betalas som första handling i en session född efter a95d271c.
-<!-- SECTION:FINAL_SUMMARY:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [x] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
+SKARPBEVISET BETALT i S99 resume 2 (2026-08-07, session född efter a95d271c): differentialmätning per receptet — (a) kontrollhooken deny-grind-genom-pipe.sh FÄLLDE live i samma session (pipat check:docs-anrop nekat med L440-text); (b) deny-arbetsform-push.sh FÄLLDE skarpt: git push mot docs/s99-resume-2 NEKAD 15:56Z med iteration aktiv (satt 15:56:39Z av s99-skarpbevis-resume2), verbatim-anvisningen levererad; (c) konservativ egenskap mätt: sammansatt 'rensa && push' nekas också — hooken utvärderar tillståndsfilen FÖRE anropet, rensa+push kräver separata Bash-anrop; (d) släpp-sidan: efter rensa gick samma push igenom (grenen pushad, PR #919). Båda hookarna fäller i samma levande session ⇒ registrering + logik bevisade. AC 5-skulden STÄNGD.
+<!-- SECTION:FINAL_SUMMARY:END -->
