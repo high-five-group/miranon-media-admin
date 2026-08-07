@@ -90,7 +90,6 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleCheck,
-  Clock,
   History,
   Inbox,
   type LucideIcon,
@@ -102,7 +101,11 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
-import { deadlineStatus } from '@/components/events/detail/Betalningar';
+/* ARBETSYTAN IMPORTERAS, INTE KOPIERAS (varv 12) — samma komponent
+   eventdetaljen visar under "Öppna detaljer", monterad i betalnings-blocket
+   nedan. `deadlineStatus` föll med den fristående pillen; arbetsytan bär sin
+   egen. */
+import { BetalningsDetaljer } from '@/components/events/detail/Betalningar';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -1325,6 +1328,8 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
   const [synligaIds, setSynligaIds] = useState<ReadonlySet<string>>(() => new Set());
   const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
   const [oppenAtgard, setOppenAtgard] = useState<string | null>(null);
+  const [betalningarOppna, setBetalningarOppna] = useState(false);
+  const betalningsPanelId = useId();
 
   const events = useQuery({
     queryKey: queryKeys.events.list,
@@ -1376,11 +1381,12 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
     );
   }
 
-  // Deadline-signalen: DELAD med betalningsvyn (`deadlineStatus`), aldrig en
-  // andra kopia av 14-dagars-regeln. Den bor sedan varv 4 i Betalningar-
-  // sektionen, där den betyder något — översta blocket bär BARA väljaren
-  // (Marcus 2026-08-07: "behöver bara ha eventväljaren egentligen").
-  const deadline = valtEvent ? deadlineStatus(valtEvent.startdatum) : null;
+  /* Deadline-signalen låg HÄR till varv 12 (`deadlineStatus`, delad med
+     betalningsvyn — aldrig en andra kopia av 14-dagars-regeln). Den föll när
+     `BetalningsDetaljer` monterades i betalnings-blocket: den ytan bär en EGEN
+     pill i exakt samma form, och två hade stått två rader isär så fort ytan
+     öppnades. Regeln "aldrig en andra kopia" gäller alltså fortfarande — det
+     är just därför den här raden är borta och inte den i arbetsytan. */
 
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
@@ -1456,38 +1462,95 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
           />
 
           {/* BETALNINGAR — egen ingång, inte en sjunde åtgärd. Hela
-              skrivvertikalen som eventsidan gav upp bor här (underlaget § 5). */}
+              skrivvertikalen som eventsidan gav upp bor här (underlaget § 5).
+
+              VARV 12 GÖR DET BOKSTAVLIGT: raden fäller ut eventdetaljens
+              `BetalningsDetaljer` — samma arbetsyta, importerad och inte
+              kopierad. Marcus 2026-08-07: "trycker man där så ska ju hela det
+              fältet som idag sitter under 'öppna detaljer' på eventdetalj-sidan
+              [komma] … FAST nu redigerbart."
+
+              ARKITEKTUREN BAKOM, Marcus förtydligande i samma andetag:
+              eventdetaljens betalningsyta blir READ-ONLY i S93:s nya variant,
+              eftersom alla åtgärder flyttar hit. **Skrivvertikalen byter alltså
+              hemvist**, och åtgärds-sidan är där skrivandet sker i skarpa
+              bygget. Det är kravet den här monteringen finns för att pröva.
+
+              `protoAktiv` — INTE en prototyp-flagga i betydelsen "fejkad", utan
+              den forms-variant Marcus redan valt 2026-08-06: påminn-slotten
+              riven (påminnelsen är en ÅTGÄRD och bor i listan ovanför), korten
+              separerade av luft i stället för hårstreck, påminnelse-räknare i
+              summeringen. Se `Betalningar.tsx` rad 493–497 för hans egna ord.
+
+              `protoDataMode` UTELÄMNAD, alltså false — MEDVETET, och det river
+              den här filens read-only-invariant ("INGEN handling här muterar
+              något", docblocken överst). Rivningen står öppet av tre skäl:
+                · Flaggan sätter `disabled` på kryss och noteringsfält (rad 323,
+                  469, 484 i `Betalningar.tsx`) — den visar alltså en DÄMPAD yta,
+                  och prototypens fråga är just hur den redigerbara ytan känns.
+                · Skrivningarna är exakt de skarpa vyn redan gör, mot samma bas:
+                  dev-servern pekar på `pqtshyierkdgwdnxuirz` = STAGING, samma
+                  som `.env.staging`. Prod är en annan bas
+                  (`lvjsfnphlauldxqlncpl`) och nås inte härifrån.
+                · Invarianten skrevs när sidan bara komponerade utskick och
+                  ingenting fanns att skriva. Sidan har nu fått en skrivande
+                  komponent på Marcus krav; invarianten amenderas därför öppet i
+                  stället för att kringgås tyst.
+
+              DEADLINE-PILLEN FLYTTADE IN I YTAN. Den stod tidigare fritt i
+              blockets topp, men `BetalningsDetaljer` bär en EGEN pill i exakt
+              samma form (rad 1075–1083) — två hade stått två rader isär så fort
+              ytan öppnades. Den kvarvarande är den monterade ytans. Kostnaden är
+              att deadline-signalen nu kräver ett klick; syns det som en förlust
+              är svaret en sammanfattning på raden, inte en andra pill. */}
           <section aria-labelledby="grupp-betalningar" className="flex min-w-0 flex-col gap-2">
             <h2 id="grupp-betalningar" className="px-4 font-semibold text-lg">
               Betalningar
             </h2>
-            <div className={`divide-y divide-border ${KORT_KLASS}`}>
-              {/* Deadline-pillen i betalningsvyns EXAKTA form (facit-bilagan
-                  `facit-betalningar-arbetsytan.png`): kapsel i `bg-surface`,
-                  klocka, färgen följer läget. Den bor HÄR, hos betalningarna
-                  den gäller — inte i sidhuvudet där den var allmän dekor. */}
-              {deadline && (
-                <div className="py-3">
-                  <p
-                    data-testid="atgarder-deadline"
-                    className={`inline-flex items-center gap-1.5 self-start rounded-full bg-surface px-2.5 py-1 text-small ${deadline.cls}`}
-                  >
-                    <Clock aria-hidden="true" size={14} />
-                    {deadline.text}
-                  </p>
-                </div>
-              )}
+            <div className={KORT_KLASS}>
               <div className="flex flex-col py-1.5">
-                <button type="button" className={RAD_KLASS}>
+                <button
+                  type="button"
+                  onClick={() => setBetalningarOppna(!betalningarOppna)}
+                  aria-expanded={betalningarOppna}
+                  aria-controls={betalningsPanelId}
+                  className={RAD_KLASS}
+                >
                   <Upload aria-hidden="true" size={16} className="shrink-0" />
-                  Pricka av, notera och påminn
+                  {/* "…och påminn" ströks (varv 12, Marcus): påminnelsen är en
+                      ÅTGÄRD och bor i åtgärdslistan ovanför ("Skicka
+                      betalningspåminnelse"). Se `Betalningar.tsx` rad 493–497 —
+                      Marcus rev påminn-ikonen ur den här ytan redan 2026-08-06
+                      med samma motiv, så raden hade lovat en väg som beslutet
+                      stängt. */}
+                  Pricka av och notera
                   <span className="ml-auto flex shrink-0 items-center gap-2">
                     <span className="text-small text-text-secondary tabular-nums">
                       {alla.filter(obetald).length} saknar
                     </span>
-                    <ChevronRight aria-hidden="true" size={18} className="text-text-secondary" />
+                    {/* Chevron NED, inte höger: raden leder inte längre bort,
+                        den fäller ut här. Samma ärlighetsprincip som styr
+                        åtgärdsraderna och plockaren. */}
+                    <ChevronDown
+                      aria-hidden="true"
+                      size={18}
+                      className={`text-text-secondary motion-safe:transition-transform ${
+                        betalningarOppna ? 'rotate-180' : ''
+                      }`}
+                    />
                   </span>
                 </button>
+              </div>
+              {/* Panelen alltid i DOM:en med `hidden` — `aria-controls` måste
+                  peka på ett element som finns (samma regel som mottagar-ytan). */}
+              <div id={betalningsPanelId} hidden={!betalningarOppna}>
+                {valtEvent && (
+                  <BetalningsDetaljer
+                    event={valtEvent}
+                    registreringar={alla.filter((r) => r.status !== RegistrationStatus.AVBOKAD)}
+                    protoAktiv
+                  />
+                )}
               </div>
             </div>
           </section>
