@@ -15,6 +15,38 @@
 
 ## Aktuellt fokus
 
+**Session 96 ⏸️ PAUSAD (2026-08-07, åttonde pausen, `lifecycle: paused`)** —
+**PRODS UTGÅENDE POST VAR DÖD, OCH DET VAR EN DIFF SOM DOLDE DET.** Marcus fick
+inget återställningsmail; prods auth-logg gav rotorsaken direkt — `/recover`
+`500` med SMTP-svaret **`535 "Authentication credentials invalid"`**. Resend
+avvisade inloggningen, mailet lämnade aldrig Supabase, och det gällde **all**
+prod-post — inbjudningar inkluderat. **Del 12:s maskinella diff bevisade att
+SMTP-fälten ÄNDRADES, inte att credentialen FUNGERADE**; den skillnaden kostade
+ett dygn utan att någon mekanism sa till. Fix: ny domänlåst sending-only
+Resend-nyckel via riktad PATCH (2 fält av 242), och **beviset taget
+funktionellt** — `/recover` `200` + Resend `delivered` samma sekund.
+Mail-taket i prod 2 → 30. **MAILMALLARNA** fick ordmärket som PNG (aldrig SVG —
+Gmails webbmail saknar stöd) och sidfoten **"Roger och Lotta"**, deployat till
+BÅDA miljöerna med diff-bevis. **APPEN:** fönstertitelns appnamn-suffix bort på
+**14 rader i 13 filer** (brödsmulorna i namnlisten var våra egna) + namnlist som
+följer ljus/mörkt läge — där en utelämning av `theme_color` hade gett
+`vite-plugin-pwa`:s **Vue-gröna** default, fångat genom att läsa den byggda
+artefakten. **PWA-frågan besvarad:** Marcus installerade appen och behåller
+vägen; ingen ADR har någonsin vägt nedladdningsbar app mot PWA.
+**GITHUB ACTIONS LÅG NERE I NIO TIMMAR** (`qcvjkzcs7j74`) mitt i passet — tre
+operativa lärdomar, inklusive en tyst konsumerad armering som Marcus såg före
+mig. **4 PR:er landade** (`#840`–`#843`). **`T127`–`T129` registrerade.**
+**NÄSTA: Marcus två mätningar (namnlisten i mörkt läge · mailet med logotypen)
+→ `TASK-116` AC #3 → `TASK-129`/`TASK-138` → `T124` när formen är vald →
+QA-korten `126.3`/`126.5`/`127.10`.**
+**HANDOFF: sessionsdok S96 § PAUSLÄGE (åttonde pausen).** Numrering
+disk-verifierad 2026-08-07 mot `23fecaa7`: 096/**L480** + 3 fragment/**T130**/
+task-145/f47. Heartbeat-monitorn är **stoppad med avsikt** — starta den vid
+resume.
+*(Föregående kadensrad nedan.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 96 ▶️ ÅTERUPPTAGEN (2026-08-06, `lifecycle: active`)** — **ÅTTONDE
 PASSET ÖPPNADE MED EN SKARP DEFEKT I PROD, INTE MED HANDOFFENS PUNKT 1.** Marcus
 prövade lösenordsåterställningen på `admin.miranon.dev` och fick inget mail.
