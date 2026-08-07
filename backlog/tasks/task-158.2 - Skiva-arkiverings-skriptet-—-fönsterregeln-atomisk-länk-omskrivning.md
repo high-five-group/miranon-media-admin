@@ -1,9 +1,10 @@
 ---
 id: TASK-158.2
 title: 'Skiva: arkiverings-skriptet — fönsterregeln + atomisk länk-omskrivning'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-07 12:26'
+updated_date: '2026-08-07 14:44'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,13 +21,15 @@ ordinal: 273000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass mot live: rotens faktiska bestånd per lifecycle, arkivets månadsmappsform och de inkommande länkarnas form (77 filer länkar in) verifierade FÖRE implementation
-- [ ] #2 Skript i scripts/ med universell logik; fönstertalet + undantag i egen policy-konfig; idempotent; torrkörnings-läge som default-säkring (gren-städarens mönster)
-- [ ] #3 Flytt + omskrivning av ALLA inkommande länkar sker atomiskt i samma körning — ingen transient bruten länk i något commit-bart mellanläge
-- [ ] #4 paused/active-dok flyttas ALDRIG oavsett ålder; fail-closed på oparsbart lifecycle-fält
-- [ ] #5 Tvåsidig testsvit i test-familjens form: fäller/släpper/fail-closed; shellcheck-strict grön
+- [x] #1 Premiss-pass mot live: rotens faktiska bestånd per lifecycle, arkivets månadsmappsform och de inkommande länkarnas form (77 filer länkar in) verifierade FÖRE implementation
+- [x] #2 Skript i scripts/ med universell logik; fönstertalet + undantag i egen policy-konfig; idempotent; torrkörnings-läge som default-säkring (gren-städarens mönster)
+- [x] #3 Flytt + omskrivning av ALLA inkommande länkar sker atomiskt i samma körning — ingen transient bruten länk i något commit-bart mellanläge
+- [x] #4 paused/active-dok flyttas ALDRIG oavsett ålder; fail-closed på oparsbart lifecycle-fält
+- [x] #5 Tvåsidig testsvit i test-familjens form: fäller/släpper/fail-closed; shellcheck-strict grön
 - [ ] #6 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
