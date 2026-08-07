@@ -404,7 +404,9 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     // De arton tomma <Input>-fälten (våg 10) är rivna för gott — noll
     // textboxar kvar på hela ytan, i BÅDA flikarna.
     await expect(arbetsytan(page).getByRole('textbox')).toHaveCount(0);
-    await expect(personRad(page, 'Sara Nyström').getByText('Lovade betala efter lönen')).toBeVisible();
+    await expect(
+      personRad(page, 'Sara Nyström').getByText('Lovade betala efter lönen'),
+    ).toBeVisible();
 
     await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
     await expect(arbetsytan(page).getByRole('textbox')).toHaveCount(0);
@@ -484,7 +486,9 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     await mockSidan(page);
     await page.goto(`/event/${EVENT_ID}`);
     await oppnaDetaljer(page);
-    await expect(arbetsytan(page).getByRole('radiogroup', { name: 'Visa betalningar' })).toBeVisible();
+    await expect(
+      arbetsytan(page).getByRole('radiogroup', { name: 'Visa betalningar' }),
+    ).toBeVisible();
 
     const resultsSaknar = await new AxeBuilder({ page }).analyze();
     expect(resultsSaknar.violations).toEqual([]);
