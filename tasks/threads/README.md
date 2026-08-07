@@ -174,6 +174,7 @@ Kör den innan du landar en ändring i tabellen. Den prövar formen — inte om 
 | `T131` | **Dokument-ytan har ingen form — den bröts ut ur bilage-fundamentet för att en skiva inte kan föregå sitt facit.** | `paused` | [T131-dokument-ytan-har-ingen-form-den-brots-ut-ur-bilage.md](T131-dokument-ytan-har-ingen-form-den-brots-ut-ur-bilage.md) · besläktad `T130` |
 | `T132` | **Heartbeat-svepets DIRTY-väg filtrerar inte `isDraft`, medan armerings-kandidat-vägen gör det.** | `paused` | [T132-heartbeat-svepets-dirty-vag-filtrerar-inte-isdraft.md](T132-heartbeat-svepets-dirty-vag-filtrerar-inte-isdraft.md) · besläktad `T128` `T112` |
 | `T133` | **Airtable-PAT:en har `create`-behörighet mot BÅDA baserna — prod-skyddet ligger helt i vår egen kod, inte i tokenets scope.** | `paused` | [T133-airtable-pat-create-ratt-mot-bada-baserna.md](T133-airtable-pat-create-ratt-mot-bada-baserna.md) |
+| `T134` | **Agent-apparatens genomloppstid står inte i proportion till kodens storlek** — sex skivor gav netto −134 rader i `src/`, ingenting byggdes från noll, ändå underkändes takten. Ska utreda var tiden faktiskt går och om skill/agentinstruktion behöver ändras. | `paused` | [T134-agent-apparatens-genomloppstid-mot-kodens-storlek.md](T134-agent-apparatens-genomloppstid-mot-kodens-storlek.md) |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
