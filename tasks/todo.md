@@ -15,6 +15,34 @@
 
 ## Aktuellt fokus
 
+**Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 1) —
+OMBYGGNADEN AV ÅTGÄRDS-SIDAN, MOT FYRA MARCUS-KRAV.** Marcus kvitterade
+tillståndsflippen och gav fyra formkrav direkt in i ombyggnaden: (1) rubrik +
+avgränsande linje kopieras EXAKT ur `ManuellAnmalanForm` § `Sidhuvud`
+(`border-border border-b px-4 pb-5`, `h1 font-semibold text-3xl`, rund
+chevron-tillbaka `size-11 rounded-full bg-bg-muted`) — *"det är ju likadant på
+de flesta sidor och så borde du byggt direkt"*; (2) översta blockets IDÉ tas ur
+samma sidas Eventet-block (`divide-y divide-border rounded-2xl bg-bg-muted
+px-4` med väljaren överst); (3) **deltagarna listas som PERSONKORT, aldrig
+rader** — *"big NO NO, Lotta måste känna igen sig"*; korten ska se **exakt**
+likadana ut som på eventdetaljerna (`Gruppdynamik` § `PersonKort`) och
+anmälans-detaljsidan (`PersonMiniKort`), så att en deltagare som dras från
+eventdetaljen in i Åtgärder ser identisk ut; (4) sök-för-att-addera behålls —
+men träffarna listas på kort, inte i en radlista. **Numrering re-verifierad mot
+`origin/main` vid resumen — TVÅ divergenser mot handoffen:** fragmenten är
+**fem** (nytt: `skivning-provas-mot-kodens-kopplingar-inte-mot-funktionsytan`)
+och nästa tråd är **`T133`**, inte `T132` (S93 förbrukade både `T131` och
+`T132`) — S99:s resume-rad landade samma slutsats oberoende. Övriga axlar
+håller: `ADR-098`/**`L480`**/`task-158`/`f47`. **Paus-PR:n `#882` stod DIRTY
+vid resumen — verklig konflikt** (S99 skrev sin kadensrad i `todo.md`), löst
+med merge av `origin/main` i denna landning; `mergeStateStatus` var alltså sant
+den här gången, till skillnad från `#873`-mätningen.
+**NÄSTA: (1) åtgärds-sidans yta byggd om mot de fyra kraven · (2)
+Dokument-ytans prototyp (`T131`) · (3) facit → `TASK-147` → `/to-issues`.**
+*(Paus-kadensraden nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 100 ⏸️ PAUSAD (2026-08-07, första pausen, `lifecycle: paused`) —
 ÅTGÄRDS-SIDANS FÖRSTA VARV UNDERLEVERERADE, OCH DET ÄR BOKFÖRT SOM SÅDANT.**
 Sessionen startade som den TREDJE parallella (S99 äger huvudkatalogen, S93 kör
@@ -53,6 +81,52 @@ prototyp · (3) därefter facit → `TASK-147` → `/to-issues`.**
 `origin/main`: `098`/**`L480`** + fyra fragment/`T132`/`task-158`/`f47` —
 kortnumren rörde sig 149 → 158 under passet, re-verifiera i mint-ögonblicket.
 Heartbeat-monitorn **stoppad med avsikt** — starta den vid resume.
+*(S99:s kadensrad nedan, oförändrad.)*
+
+**Session 99 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 1)**
+— paus-antagandet höll: `#876` (149.3) mergad `a95d271c` + paus-PR:n
+`#881` mergad `6bfdb751`, båda per-jobb-gröna (Acceptance 8m8s körd;
+staging/a11y CI-gatad skip) → **`149.3` FLIPPAD Done** (AC 6 + DoD
+bockade, stängnings-summary i kortet). **Numrering re-verifierad mot
+disk — EN divergens:** nästa tråd är **T133**, inte handoffens T131 —
+T131 (Dokument-ytan) OCH T132 (svepets draftfilter) förbrukade av S93.
+Övriga axlar håller: 099/ADR-098/L480 + 4 fragment/task-158
+(RESERVERAT)/f47. **Skarpbevis-läget delat:** `deny-subagent-vantan.sh`
+registrerad FÖRE sessionsstart ⇒ laddad, betalas nu;
+`deny-arbetsform-push.sh` landade UNDER sessionen (`a95d271c`) ⇒ oladdad
+här — skulden bokförd i 149.3-kortet, betalas i session född efter
+`a95d271c`. Heartbeat-monitorn igång; kända DIRTY-larm `#862` (S93
+draft, T132-klassen) + `#882` (S100:s paus-PR) — främmande sessioners
+PR:er, rörs ej. **NÄSTA: skarpbevis 148.2 → minta task-158 + sex skivor
+(uppdrag 5) → spawna 157.1 (ADR-098) + 149.4 (hub, OISOLERAD) → grilla
+6/7/8.**
+*(Paus-kadensraden nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
+**Session 99 ⏸️ PAUSAD (2026-08-07, första pausen, `lifecycle: paused`)** —
+**PROCESS-SYNEN: FEM AV ÅTTA UPPDRAG GRILLADE OCH EXEKVERADE PÅ EN DAG.**
+Uppdrag 1 (parkerings-problemet) → **ADR-096** väntekontraktet +
+PreToolUse-spärren (`deny-subagent-vantan.sh`, `#860`) +
+instruktionskompletteringen (`#857`) + mätprotokollet (`#856`); rotorsaken
+var redan strukturellt belagd, kompensationen mekaniserad. Uppdrag 2
+(T126) → **ADR-097** tillståndsbärare + rotorsaken OPRÖVAD→**MÄTT**
+(`#865`) + arbetsform-tillståndsfilen + push-hooken
+(`deny-arbetsform-push.sh`, `#876` i kön) + bärarkartan (132 regler,
+`#870`) + push-ekonomin/draft-regeln kodifierade (`#877`). Uppdrag 3 →
+tio kandidater, fyra fynd-kort exekverade (`150`–`153`: larmtext-lögnen
+rättad · #844-driften löst + 39 kort etiketterade · `stada-grenar.sh` ·
+draft-bäraren), `#871`-transienten triagerad. Uppdrag 4 (trådregistret
+214 KB mot Read-taket) → **TASK-157**: tunna radformen + migration +
+radlängds-grind (ADR-098 mintas i resumen). Uppdrag 5
+(sessionsdok-arkiveringen) → samsyn: rullande fönster, ADR-099 —
+**task-158 mintas som FÖRSTA jobb i resumen** (Marcus-beslut, 44 %
+kontext). **Uppdrag 6–8 OGRILLADE.** Skarpbevis-skulder: TVÅ hookar.
+**NÄSTA: resume → skarpbevisen → minta 158 → spawna 157.1 + 149.4 →
+grilla 6/7/8.** **HANDOFF: sessionsdok S99 § PAUSLÄGE.** Numrering vid
+paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
+(RESERVERAT)/f47. Heartbeat-monitorn stoppad med avsikt — starta vid
+resume.
 *(S93:s kadensrad nedan, oförändrad.)*
 
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`) — FEMTE
@@ -72,9 +146,28 @@ verifierade per kort: **elva `ready-for-agent`**, två `ready-for-human`
 (QA-korten `145.7` + `146.6`). Beroendegrafen läst ur korten: utan beroenden
 just nu är `145.1`, `146.1`, `146.2`, `146.3` — men ordningsregeln
 *eventsidan före fundamentet* håller tillbaka `146.2`/`146.3`.
-**NÄSTA: första vågen = `TASK-145.1` (kedjehuvudet) + `TASK-146.1`
-(fristående).** Dev-servern lever på 5173 (HTTP 200);
-granskningsfixturen t.o.m. 2026-08-16.
+**FÖRSTA VÅGEN KÖRD — ETT BEVIS IN, ETT STOPP.** `TASK-146.1` **BEVIS**:
+PDF-generering fungerar i den skarpa Edge Runtime (`supabase-edge-runtime-1.74.2`,
+Deno v2.1.4 — aldrig Node-proxyn), svenska tecken verifierade två oberoende
+vägar med negativ kontroll, heapUsed-delta ~2,8 MB / ~18 ms / kallstart 1180 ms
+mot 290–316 ms varm; `cancelled by supervisor` inträffade inte. Landad `#855`
+(`38565ae8`). **Ärlig lucka: staging-sviten står `skipping` i CI** — beviset
+vilar på lokal körning mot live staging, inte på grinden.
+**`TASK-145.1` STOPPAD, EJ ARMERAD — `#862` står `draft`.** Sju AC
+live-verifierade och DoD-7-grinden bevisad i båda riktningar, men diffen
+raderar **två E2E-filer** (1 310 rader): `event-bor-over` (359) och
+`event-bekraftelse` (951). **Bor över är kvitterad som överlevande rad**
+(grillad samsyn beslut 2, Del 3) men **ingen skiva äger den** — och luckan är
+större: `Avbokade` saknar också ägare som rad. Hål i `/to-issues`-passet, ej
+agentens fel. Tredje frågan: produktionsvyn tömdes på räknare/filter/markera-läge
+(`145.2`/`145.3`:s AC-yta) ⇒ `main` visar en tunnare eventsida i mellanläget.
+**NÄSTA: Marcus avgör de tre frågorna — `145.2` och `145.3` beror båda på
+`145.1`, så hela eventsidan står still tills dess.** Numreringen rörde sig
+under passet: S99 tog `ADR-096` + `task-148`, senare syntes `task-152`/`153`
+⇒ **nästa ADR 097**, kortnummer räknas om mot disk vid varje `task create`.
+Lärdomen `parkerad-pr-utan-draft` fick sin **andra instans — av sin egen
+författare** (`#866`); hör till `T126`:s mekanism-val. Dev-servern lever på
+5173; granskningsfixturen t.o.m. 2026-08-16.
 *(Föregående kadensrad nedan.)*
 
 <!-- Föregående kadensrad, bevarad: -->

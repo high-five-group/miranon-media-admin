@@ -4,7 +4,9 @@ title: 'supabase/config.toml har driftat: ~7 av ~20 EF:er listade'
 status: To Do
 assignee: []
 created_date: '2026-07-23 02:06'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-agent
 dependencies: []
 ordinal: 82000
 ---

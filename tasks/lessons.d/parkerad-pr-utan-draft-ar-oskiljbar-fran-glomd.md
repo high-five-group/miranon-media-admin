@@ -33,10 +33,14 @@ mekanismen. Ett larm på ett feluttryckt tillstånd är mekanismen som gör sitt
 jobb. Den billigaste fixen är nästan alltid att göra tillståndet ärligt, inte att
 lära vakten att blunda.
 
-**Kvarstår som prosa:** ingenting tvingar den som parkerar att sätta flaggan.
-Regeln lever därmed i exakt den form som tråden `T126` handlar om — en
-arbetsform-regel utan mekanism, som bara gäller för den som råkar läsa den.
-Den bör tas med när `T126`:s mekanism väljs.
+**Bar av mekanism sedan `TASK-153` (2026-08-07):** åtgärdsregeln — en PR
+skapas som draft ELLER armeras i samma andetag, aldrig vilande — är
+kodifierad i `CLAUDE.md` § Landning (alltid-laddad yta, inte en startdörr)
+och i `.claude/agents/bygg-agent.md` § Landning. Ingen mekanisk spärr finns
+än — ingen hook nekar en odraftad, oarmerad PR, till skillnad från
+`T126`:s push-hook (`TASK-149.3`) — bäraren är läsordningen, inte en grind.
+Men den bor nu där varje utförare och orkestrerarens svep faktiskt möter
+den, i stället för i det här fragmentet som bara den som råkar läsa det ser.
 
 **Andra instansen, mätt 2026-08-07 (S93 femte resumen) — av den som skrivit
 lärdomen.** `#862` (`TASK-145.1`) lämnades medvetet oarmerad i väntan på

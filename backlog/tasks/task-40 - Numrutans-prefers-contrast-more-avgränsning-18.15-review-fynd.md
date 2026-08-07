@@ -4,7 +4,9 @@ title: Numrutans prefers-contrast-more-avgränsning (18.15-review-fynd)
 status: To Do
 assignee: []
 created_date: '2026-07-25 00:58'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-human
 dependencies: []
 ordinal: 101000
 ---

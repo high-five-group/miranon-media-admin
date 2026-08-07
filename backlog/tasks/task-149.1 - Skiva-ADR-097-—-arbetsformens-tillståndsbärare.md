@@ -1,10 +1,10 @@
 ---
 id: TASK-149.1
 title: 'Skiva: ADR-097 — arbetsformens tillståndsbärare'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-07 10:28'
-updated_date: '2026-08-07 10:59'
+updated_date: '2026-08-07 11:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,10 +23,14 @@ ordinal: 255000
 - [x] #1 Premiss-pass: ADR-097 nästa lediga nummer verifierat mot disk (filcount == README == sista+1); ADR-096:s slutliga form läst på main FÖRE författning
 - [x] #2 ADR-097 författad: principen (regler bor i tillstånd som mekanismer läser, inte i startdörrar), mekanismvalet (a)+(b) med decline-rationale för (c) skill-laddning-vid-resume och (d) alltid-laddad-yta, push-ekonomins princip, session-batchad push FÖRKASTAD med de fyra mätta skälen
 - [x] #3 README-rad + rot-READMEs ADR-räkning bumpade; docs-grindarna gröna lokalt
-- [ ] #4 PR armerad med gh pr merge --auto, per-jobb-grön
+- [x] #4 PR armerad med gh pr merge --auto, per-jobb-grön
 <!-- AC:END -->
 
+## Implementation Notes
 
+<!-- SECTION:NOTES:BEGIN -->
+Levererad via PR #863 (merge f3ee43d1), CI grön per jobb. ADR-097 mintad.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

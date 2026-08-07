@@ -3,10 +3,10 @@ id: TASK-136
 title: >-
   Rätta stale admin.miranon.se → admin.miranon.dev i SECURITY-SPEC (ADR-091
   punkt 2)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-04 10:45'
-updated_date: '2026-08-05 15:31'
+updated_date: '2026-08-07 11:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -45,12 +45,20 @@ Utbrutet ur `TASK-129` symptom 2 (fynd 2026-08-02) på Marcus beslut 2026-08-04 
 
 <!-- SECTION:NOTES:BEGIN -->
 Premiss-provad mot disk (ADR-086): kortets 'rad 461' var stale — mätt 2026-08-05 mot HEAD, raden är 469 (troligen filförskjuten av commit bc355de7, TASK-127.6, samma dag). Rättad rad = 469, ingen scope-effekt (samma sträng, samma sektion). cors.ts (corsHeadersFor()) verifierat env-driven via CORS_ALLOWED_ORIGINS, ingen hårdkodad domän — kortets premiss höll. Kvarvarande out-of-scope-fynd, ej rört: SECURITY-SPEC rad 808 citerar 'admin.miranon.se' i en historisk ADR-093-riven-not (korrekt, beskriver det FÖRE detta kort) — utanför korts scope per AVGRÄNSNING. Orkestrerarens uppdragstext (2026-08-05) noterade att produktionens CORS_ALLOWED_ORIGINS-secret fortfarande bär admin.miranon.se utöver admin.miranon.dev — SECURITY-SPEC:s text ('Bara appens egen domän tillåts') är en normativ policy-rad, inte ett sakpåstående om secretens aktuella innehåll, så ingen filändring gjordes för den — bokfört här i stället, secreten ej rörd.
+
+Stängd retroaktivt 2026-08-07 (TASK-151, #844-driftsvep): arbetet var klart och mergat 2026-08-05, men CLI-statusflippen till Done uteblev — nattgrindens enda drift-post (1 av 235 prövade kort).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SECURITY-SPEC.md rad ~469 rättad admin.miranon.se → admin.miranon.dev (§ A05 CORS-exempel). Landat via PR #796 (commit 21759afc, mergeCommit 1d4700b4), mergad till main 2026-08-05T15:43:04Z — verifierat ancestor av origin/main och läst live i HEAD:s docs/specs/SECURITY-SPEC.md. CI grön per jobb på PR:en (Lint+Audit+TypeCheck, Test suite/Pure+Build, Acceptance, Webblasarbeteende, Docs link check — samtliga SUCCESS). Stängt av TASK-151 (#844-drift) 2026-08-07 — AC redan avbockade sedan tidigare, endast status/DoD/final-summary saknades.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

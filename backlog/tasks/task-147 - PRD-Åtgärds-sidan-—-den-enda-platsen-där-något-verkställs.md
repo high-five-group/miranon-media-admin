@@ -4,8 +4,9 @@ title: 'PRD: Åtgärds-sidan — den enda platsen där något verkställs'
 status: To Do
 assignee: []
 created_date: '2026-08-07 07:52'
-updated_date: '2026-08-07 09:29'
-labels: []
+updated_date: '2026-08-07 11:41'
+labels:
+  - ready-for-human
 dependencies: []
 ordinal: 232000
 ---
@@ -157,7 +158,10 @@ Skiva 6 beror på kort 2. Skiva 10 beror på kort 2 och på Roger-avstämningen.
 - [ ] #8 Kvittonummer: unikhet under samtidighet + ingen retroaktiv omnumrering + allokering server-side bevisad
 - [ ] #9 De sex åtgärdstyperna nedskrivna av Marcus FÖRE åtgärdsvalets skiva låses (enumerationen saknas i alla artefakter)
 - [ ] #10 Roger-avstämningen om kvitto-gränsen bokförd före kvitto-skivan låses
+- [ ] #11 Avprickningens E2E-täckning återupprättad på Åtgärds-sidan — skulden ärvd från TASK-145.3, där bekräfta-flödet revs ur eventsidan
 <!-- DOD:END -->
+
+
 
 ## Implementation Notes
 

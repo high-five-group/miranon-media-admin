@@ -4,7 +4,9 @@ title: 'PRD: Arbetsformens leveransväg — kadens och regler som når varje utf
 status: To Do
 assignee: []
 created_date: '2026-08-07 10:26'
-labels: []
+updated_date: '2026-08-07 11:19'
+labels:
+  - ready-for-human
 dependencies: []
 ordinal: 254000
 ---
