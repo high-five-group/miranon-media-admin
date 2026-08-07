@@ -54,9 +54,11 @@
 //
 // ═══ SANDLÅDAN ÄR EN KOPIA AV DET RIKTIGA TRÄDET ═══
 // Inte en syntetisk mini-config: `/tmp/t91-check-staging-preflight-wiring/` får
-// repots FAKTISKA playwright.config.ts, tests/, de två Node-skripten och
-// vakten — i samma inbördes relation som i repot, så den faktiska
-// sökvägsupplösningen provas. Mutationerna skär alltså i den riktiga wiringen.
+// repots FAKTISKA playwright.config.ts, tests/, de policy-deklarerade
+// Node-skripten (härlett ur .staging-preflight-wiring-policy.json, se
+// NODE_YTOR nedan — inte en handskriven lista) och vakten — i samma inbördes
+// relation som i repot, så den faktiska sökvägsupplösningen provas.
+// Mutationerna skär alltså i den riktiga wiringen.
 // node_modules symlänkas (kopieras aldrig). Vakten körs med cwd satt till det
 // RIKTIGA repot, vilket samtidigt bevisar att den härleder sin rot ur sin egen
 // plats och inte ur cwd.
@@ -80,14 +82,32 @@ const VAKT = join(SANDLADA, 'scripts', 'check-staging-preflight-wiring.mjs');
 const POLICY = '.staging-preflight-wiring-policy.json';
 const CONFIG = 'playwright.config.ts';
 
+// ═══ POLICYN ÄR KÄLLAN — inte en fjärde handskriven kopia ═══
+// Sandlådans kopieringslista och G0:s förväntan härleddes tidigare ur
+// handskrivna literaler (två Node-skript, uppräknade). TASK-146.2 lade till
+// ett tredje Node-skript (scripts/create-bilagor-table.mjs) korrekt i
+// .staging-preflight-wiring-policy.json — men den hårdkodade listan visste
+// inte om det, så vakten SJÄLV var grön (den läser policyn) medan dess EGET
+// självtest föll inuti sin egen sandlåda (G0/G1/G2, se kortets uppdrag).
+// Samma anti-mönster CLAUDE.md § Custom CI-grindvakts-logik förbjuder för
+// vakten gäller lika mycket för dess självtest. Härled i stället.
+const wiringPolicy = JSON.parse(readFileSync(join(REPO, POLICY), 'utf-8'));
+const PREFLIGHT_SYMBOL = wiringPolicy.preflightSymbol;
+const NODE_YTOR = wiringPolicy.nodeSkript ?? [];
+const BARARE_ANTAL = (wiringPolicy.playwrightProjekt ?? []).filter(
+  (p) => p.klass === 'bärare',
+).length;
+
 const KOPIERADE_FILER = [
   'package.json',
   CONFIG,
   POLICY,
   'scripts/check-staging-preflight-wiring.mjs',
-  'scripts/purge-staging-sentinels.mjs',
-  'scripts/seed-review-fixture.mjs',
+  // scripts/lib/staging-preflight.mjs är den delade modulen ALLA Node-ytor
+  // importerar från — den är själv ingen "yta" i policyns mening (den bär
+  // ingen egen nodeSkript-post) och förblir därför hårdkodad med flit.
   'scripts/lib/staging-preflight.mjs',
+  ...NODE_YTOR.map((p) => p.sökväg),
 ];
 
 // tests/ ensamt räcker INTE: testfilerna importerar `../../src/…` och
@@ -214,17 +234,32 @@ function fall(namn, spec) {
 
 byggSandlada();
 
-fall('G0  orörd kopia av trädet → GRÖN, och namnger alla fem ytor', {
+// Playwright-halvan (Yta 1–3) är INTE del av detta korts scope (TASK-146.2
+// rörde bara Node-ytorna) och förblir därför literal med flit — se kortets
+// gräns-avsnitt. Bärarantalet i rubriktexten härleds ändå ur policyn i
+// stället för att vara ett fjärde ställe med talet "3" inskrivet för hand.
+const G0_PLAYWRIGHT_KRAVTEXT = [
+  'api-staging → api-setup',
+  'kontraktsvakt → api-setup',
+  'chromium-authenticated → setup',
+  'staging-preview → preview-setup',
+];
+// Node-halvan (Yta 4+) härleds ur samma policy-läsning som KOPIERADE_FILER
+// ovan — en rad per deklarerad nodeSkript-post, i den ordning policyn
+// listar dem. Formen är IDENTISK med vaktens egen framgångsrad
+// (`✅ ${post.sökväg} → ${symbol}() i ${post.funktion}()`, minus ✅-prefixet
+// som `fall()` matchar med `.includes()`).
+const G0_NODE_KRAVTEXT = NODE_YTOR.map(
+  (post) => `${post.sökväg} → ${PREFLIGHT_SYMBOL}() i ${post.funktion}()`,
+);
+// Talet i rubriken är härlett — inte skrivet för hand — så det aldrig kan
+// ljuga om antalet ytor: bärare (Playwright, fast 3) + antal Node-ytor
+// policyn faktiskt deklarerar just nu.
+const G0_TOTAL_YTOR = BARARE_ANTAL + NODE_YTOR.length;
+
+fall(`G0  orörd kopia av trädet → GRÖN, och namnger samtliga ${G0_TOTAL_YTOR} ytor`, {
   kod: 0,
-  kravText: [
-    'api-staging → api-setup',
-    'kontraktsvakt → api-setup',
-    'chromium-authenticated → setup',
-    'staging-preview → preview-setup',
-    'scripts/purge-staging-sentinels.mjs → kravStagingLedigt() i main()',
-    'scripts/seed-review-fixture.mjs → kravStagingLedigt() i main()',
-    '0 oklassade',
-  ],
+  kravText: [...G0_PLAYWRIGHT_KRAVTEXT, ...G0_NODE_KRAVTEXT, '0 oklassade'],
 });
 
 /* Yta 1 — api-setup → api-staging + kontraktsvakt */
