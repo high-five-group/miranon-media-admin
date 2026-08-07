@@ -1,10 +1,10 @@
 ---
 id: TASK-160.5
 title: 'Skiva: tröskel-konfigen — zonen ~50 procent'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 17:00'
-updated_date: '2026-08-07 18:29'
+updated_date: '2026-08-07 18:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,10 +23,16 @@ ordinal: 287000
 <!-- AC:BEGIN -->
 - [x] #1 Auto-compact-tröskeln satt till ~50 procent via harnessets dokumenterade tröskel-miljövariabel i settings-miljöblocket — EFTER att PreCompact-grinden står (beroendet är säkerhetsordning: sänkt tröskel utan grind tidigarelägger okontrollerad kompaktering)
 - [x] #2 Sessionsstart-kravet bokfört: miljövärdet biter först i session född efter ändringen — samma klass som hook-registrering; verifikatsvägen dokumenterad i kortet
-- [ ] #3 Docs-grindarna gröna; PR armerad, per-jobb-grön
+- [x] #3 Docs-grindarna gröna; PR armerad, per-jobb-grön
 <!-- AC:END -->
 
-
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -84,10 +90,8 @@ inte ovanpå den ursprungliga worktree-branchen, för att undvika att blanda in 
 orelaterade kortstängningar i denna PR:s diff.
 <!-- SECTION:NOTES:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd i S99 resume 2 (2026-08-07): PR #948 mergad a9aea8ed, per-jobb-grön (9 pass + 1 skip). Tröskeln satt EFTER grinden (säkerhetsordningen verifierad mot origin/main): CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000 i settings-env — uppdragets variabel-kandidat CLAUDE_AUTOCOMPACT_PCT_OVERRIDE falsifierades mot förstapartsdok av agentens eget premiss-pass; den verifierade token-variabeln (100k–1M, T111:s mätta 1M-fönster ⇒ 500k = ~50 %-zonen) var redan korrekt källmärkt i ADR-101. Sessionsstart-kravet + trestegs-verifikatsväg bokförda i kortet; biter i session född efter a9aea8ed.
+<!-- SECTION:FINAL_SUMMARY:END -->
