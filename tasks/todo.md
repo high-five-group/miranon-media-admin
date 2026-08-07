@@ -38,10 +38,17 @@ per T120). `main` på `58c7867a`, arbetsträd rent, `Nattvakt`/`Post-merge`/`Pus
 on main` gröna. **Numreringen re-verifierad mot disk — TVÅ AVVIKELSER mot
 handoffen:** nästa tråd är **`T127`** (handoffen sa `T125`; S93 förbrukade
 `T125`–`T126`) och det finns **3 nummerlösa lessons-fragment** (handoffen sa
-noll). Oförändrat: `096`/`L480`/`task-145`/`f47`. **NÄSTA: prod-SMTP:n på Marcus
-val → `TASK-116` AC #3 → `TASK-129`/`TASK-138` → `T124` när formen är vald → QA-
-korten `126.3`/`126.5`/`127.10`.** **HANDOFF: sessionsdok S96 § Paushistorik
-paus 7.**
+noll). Oförändrat: `096`/`L480`/`task-145`/`f47`.
+**LEVERERAT SEDAN DESS (Del 17):** prods SMTP lagad med ny domänlåst
+Resend-nyckel och **funktionellt bevisad** (`/recover` `500`+`535` → `200`;
+mailet `delivered`) · mail-taket 2 → 30 i prod · **`#841`** logotyp + "Roger och
+Lotta" i båda mallarna · **`#842`** titel utan appnamn-suffix (14 rader, 13
+filer) + namnlist som följer ljus/mörkt läge · mallarna deployade till BÅDA
+miljöerna med diff-bevis (2 fält av 242 vardera, `smtp_pass`/`uri_allow_list`
+orörda) · **`T127`–`T129`** registrerade. **NÄSTA: Marcus mäter namnlisten i
+ljust/mörkt läge (öppen mätpunkt) → `TASK-116` AC #3 → `TASK-129`/`TASK-138` →
+`T124` när formen är vald → QA-korten `126.3`/`126.5`/`127.10`.**
+**HANDOFF: sessionsdok S96 § Del 17.**
 *(S93 är `paused` sedan `#839` — dess kadensrad nedan, oförändrad.)*
 
 **Session 93 ⏸️ PAUSAD (2026-08-06, `lifecycle: paused`)** — **SJU
