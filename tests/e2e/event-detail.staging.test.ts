@@ -1188,8 +1188,10 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     await page.goto(`/event/${PK_EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(gruppen(page).getByRole('heading', { name: 'Anmälda deltagare' })).toBeVisible();
-    // Arkivet är stängt per K40 — personkorten där behövs i flera assertioner.
-    await gruppen(page).getByRole('button', { name: 'Bekräftade (2)', exact: true }).click();
+    // [ÄNDRAT, TASK-145.1] Inget arkiv att fälla ut längre — Obekräftade-kön
+    // och Bekräftade-arkivet (med sin `GruppRubrik`-knapp) är rivna till EN
+    // ovillkorlig, alltid synlig registerlista (AC #1). Samtliga kort nås
+    // direkt utan klick.
   }
 
   /** Kortet för en namngiven deltagare. */
@@ -1220,14 +1222,28 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     await expect(identitet.getByText('E-post', { exact: true })).toBeVisible();
     await expect(identitet.getByText('anna@example.se')).toBeVisible();
 
-    // Kategori-pillen står UTANFÖR länken (status är ingen del av identiteten)
-    // och normen (via formulär) bär inget märke alls.
-    await expect(identitet.getByText('Obekräftad')).toHaveCount(0);
-    await expect(anna.getByText('Obekräftad')).toBeVisible();
+    // [ÄNDRAT, TASK-145.1] Pill-slotten står UTANFÖR länken (status är ingen
+    // del av identiteten). Slotten bär numera ALLTID steg-märket i stället
+    // för den gamla röda "Obekräftad"-pillen ELLER kategori-pillen — AC #4/#5
+    // (exakt ETT märke per person; review-fix-våg 2 defekt 3s dubbel-
+    // etikettering kan inte längre uppstå eftersom registrets EGNA
+    // `hallplatsMarke`-anrop är ovillkorligt, se `Deltagare.tsx`s
+    // `registerHallplatsMarke`).
+    await expect(identitet.getByText('Väntar på bekräftelse')).toHaveCount(0);
+    await expect(anna.getByText('Obekräftad')).toHaveCount(0);
+    // `HallplatsMarke`s breddlås staplar alla sex etiketterna i samma
+    // grid-cell (fem `aria-hidden`-platshållare + den synliga sist i
+    // DOM-ordningen) — `.last()` väljer den FAKTISKA, synliga instansen när
+    // texten även matchar en platshållare.
+    await expect(anna.getByText('Väntar på bekräftelse').last()).toBeVisible();
     await expect(anna.getByText('Manuellt tillagd')).toHaveCount(0);
-    await expect(
-      kortet(page, 'David Nord').getByText('Medföljande', { exact: true }),
-    ).toBeVisible();
+    // David (Bekräftad, Källa '+1', obetald avgift): kategori-pillen
+    // "Medföljande" har vikit för steg-märket "Väntar på betalning" — samma
+    // slot, ETT märke.
+    await expect(kortet(page, 'David Nord').getByText('Medföljande', { exact: true })).toHaveCount(
+      0,
+    );
+    await expect(kortet(page, 'David Nord').getByText('Väntar på betalning').last()).toBeVisible();
   });
 
   test('metaytan ligger UTANFÖR person-länken och bär Anmäld dag + klockslag på EN rad', async ({
@@ -1254,6 +1270,15 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     expect(rader[0]).toMatch(/^Anmäld 1 juli \d{2}:\d{2}$/);
   });
 
+  // [OFÖRÄNDRAD, TASK-145.1 — verifierat, inte bara lämnad] KortInnehall
+  // döljer i grunden utskicksraderna när ett steg-märke visas (samma rad som
+  // döljer Obekräftad-/kategori-pillen, se testet ovan). Registrets EGNA
+  // kort sätter däremot `visaUtskicksRader` explicit (Deltagare.tsx §
+  // registrets DeltagarListan-anrop): utskicksraderna hade annars försvunnit
+  // utan ersättning i produktionen (BetalningsDetaljer/"Öppna detaljer", dit
+  // `?variant=a` flyttat samma info, är INTE del av produktionen förrän en
+  // senare skiva). Denna test provar alltså fortsatt samma sanning som förut
+  // — INGEN assertion nedan är ändrad, bara `oppnaSidan()`s navigation ovan.
   test('ENDAST utförda åtgärder renderas — ej-skickat visas aldrig', async ({ page }) => {
     await mockaPersonkort(page);
     await oppnaSidan(page);
@@ -1344,12 +1369,20 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     ).toHaveCount(3);
   });
 
-  test('390 px med TVÅ pillar: namnet och e-posten bryts inte mitt i ordet', async ({ page }) => {
+  test('390 px med steg-märket: namnet och e-posten bryts inte mitt i ordet', async ({ page }) => {
     // DEFEKT fångad i facit-avprickningens 390-px-mätning: pillspannet stod
     // shrink-0 och åt så mycket bredd att identitetskolumnen kollapsade —
     // namnet radbröts och e-posten bröts MITT I ORDET ("bertil@exa/mple.se").
     // Pillarna wrappar nu i stället. Mätt som RADBOXAR (getClientRects), inte
     // klass-närvaro (L246).
+    //
+    // [ÄNDRAT, TASK-145.1] Ursprungsdefekten krävde TVÅ samtidiga pillar
+    // (Obekräftad + kategori). Den kombinationen kan inte längre uppstå
+    // (AC #4/#5, ETT märke per person) — steg-märket "Väntar på bekräftelse"
+    // (Bertil: Obekräftad, Källa Manuell) är LÄNGRE än någon av de gamla
+    // pillarna var för sig (HallplatsMarke-breddlåset tar den bredaste av
+    // alla sex etiketter), så bredd-regressionen är fortsatt ett giltigt
+    // fall att vakta — bara med den nya enda pillen i stället för två.
     await page.setViewportSize({ width: 390, height: 844 });
     // HELA facit-uppsättningen + Bertil — samma scen som facit-avprickningens
     // skärmdump, så testet och den renderade verifieringen bevisar samma bild.
@@ -1369,9 +1402,11 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     const bertil = kortet(page, 'Bertil Sund');
-    // Båda pillarna renderas (kombinationen obekräftad + manuellt tillagd).
-    await expect(bertil.getByText('Obekräftad')).toBeVisible();
-    await expect(bertil.getByText('Manuellt tillagd')).toBeVisible();
+    // Steg-märket ersätter BÅDA de gamla pillarna (AC #4/#5) — se `.last()`-
+    // motiveringen i testet ovan (breddlåsets platshållare).
+    await expect(bertil.getByText('Väntar på bekräftelse').last()).toBeVisible();
+    await expect(bertil.getByText('Obekräftad')).toHaveCount(0);
+    await expect(bertil.getByText('Manuellt tillagd')).toHaveCount(0);
 
     // Radboxarna räknas över TEXTINNEHÅLLET via en Range — elementens egna
     // getClientRects() ger alltid 1 (flex-items blockifieras), vilket hade
