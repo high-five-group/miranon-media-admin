@@ -836,6 +836,14 @@ för form, och proto-texterna satt i delad kod. De syns alltså utan `?variant=a
 
 ### Bilderna — FACIT (`facit-*.png`)
 
+**Den auktoritativa deklarationen är [`facit.json`](facit.json), inte denna
+prosa.** Manifestet är maskinläsbart och grindat av `scripts/check-facit.sh`
+(ADR-102): odeklarerad facit-bild, saknad bild eller rivet prototyp-substrat
+före Marcus godkännande gör trädet rött. Texten nedan förklarar bilderna;
+manifestet avgör vilka som ÄR facit — och deklarerar uttryckligen att
+åtgärds-ytan saknar låst facit-bild, så att frånvaron inte kan förväxlas med
+ett förbiseende.
+
 Tagna via chrome-devtools MCP mot dev-servern på **5173** i denna worktree,
 `?variant=a&data=proto` (in-memory-fixturer — ingen API-interception behövdes,
 till skillnad från konvergens-passets Node-skript). 430 px vyport.
