@@ -15,27 +15,25 @@
 
 ## Aktuellt fokus
 
-**Session 99 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 2) —
-LÄS-FASEN REN: PAUS-PR:N `#916` LANDAD PER JOBB (9 SUCCESS + 1 SKIPPED),
-INGET PLOCKAT UNDER PAUSEN.** Resume-läsningen fann två divergenser, disk
-vann: **S100 är återupptagen** (`lifecycle: active`, egen låst worktree) där
-handoffen skrev "pausad" — räkna med nummer-drift och kör `git fetch` före
-varje antagande; **fragmenten är sex, inte fyra** (samtliga FÖRE
-paus-committen — handoffens räkning var låg redan vid skrivningen). Övrig
-numrering HÅLLER disk-verifierad: ADR-101 · L480 · T134 (S93 rör sig —
-re-verifiera vid mintning) · task-160 · f47. Samtliga elva kvarvarande
-skivor står To Do otilldelade (157.3 → 157.4 QA · 158.3 → 158.4 → 158.5 →
-158.6 QA · 159.2 → 159.3 QA · 148.5 [Marcus bokar] → 148.6 → 148.7 QA).
-**Ägarlapps-läget vid resume:** huvudkatalogen ägdes av annan levande
-session (`c91a05a2`, PID 47876) — denna session (PID 90883, samma process
-som S99:s start) arbetar därför i egen worktree per ADR-090 beslut 2.
-Heartbeat-monitorn STARTAD vid denna landning. **NÄSTA: skarpbeviset
-`deny-arbetsform-push.sh` (differentialreceptet i 149.3-kortet; sessionen
-är född efter `a95d271c` ⇒ hooken laddbar) → spawna 157.3 + 158.3 + 159.2
-(158.3-agenten: S99-doket är aktivt i sessionsdok-roten och flyttas
-ALDRIG) → grilla uppdrag 8 (/compact) → 9 (styrande-docs-auditen, ADR-100
-är måttstocken).** **HANDOFF: sessionsdok S99 § Paushistorik (resume 2) +
-Del 8.** *(S100:s kadensrad nedan, oförändrad.)*
+**Session 99 ▶️ AKTIV (2026-08-07, `lifecycle: active`, resume 2) —
+UPPDRAG 8 GRILLAT TILL GO; SKARPBEVISET BETALT; TRE SKIVOR LANDADE.**
+Resume 2 i siffror: tillstånds-återställningen `#919` + skarpbeviset
+`deny-arbetsform-push` BETALT med fyra mätpunkter (bokfört `#921`) ·
+`157.3`/`158.3`/`159.2` alla per-jobb-gröna och Done (`#923`/`#925`/`#922`;
+O(n²)-triaget falsifierat 5,65 s; 67 dok arkiverade, roten 19; 158.2:s
+länk-omskrivnings-gap funnet vid FÖRSTA skarpa körningen och fixat
+tvåsidigt) · **uppdrag 8 grillat: fem kvitterade frågor + GO** —
+compact-formen som komplement med smal nisch (tre villkor, max en/session,
+zonen ~50 %, tudelad beslutsrätt, markör med commit-räcker-divergensen) —
+**PRD `task-160` + skivorna `160.1`–`160.7` mintade** (`24a45a6c`).
+Numrerings-drift: T134 + T135 förbrukade av parallella sessioner → nästa
+tråd **T136**; S100 pausade tredje gången (deras `#930` röd — främmande,
+orörd per ägar-regeln). **NÄSTA: spawna 160.1 (ADR, nummer re-verifieras) och
+160.6 → 160.2/160.3 efter 160.1:s landning → 160.4/160.5 i
+beroendeordning → grilla uppdrag 9 (styrande-docs-auditen, ADR-100 är
+måttstocken).** **Marcus-moment: boka `148.5` · triagera `154`–`156` ·
+Dependabot `#635` · QA-korten 157.4 · 158.4–158.6 · 159.3 · 160.7.**
+**HANDOFF: sessionsdok S99 Del 9.** *(S100:s kadensrad nedan, oförändrad.)*
 
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 2) —
 `#900` LANDAD, PAUS-PR:N `#905` VAR RÖD OCH ÄR LAGAD.** Resume-läsningen fann
