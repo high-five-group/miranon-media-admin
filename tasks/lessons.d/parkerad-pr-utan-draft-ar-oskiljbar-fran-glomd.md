@@ -37,3 +37,15 @@ lära vakten att blunda.
 Regeln lever därmed i exakt den form som tråden `T126` handlar om — en
 arbetsform-regel utan mekanism, som bara gäller för den som råkar läsa den.
 Den bör tas med när `T126`:s mekanism väljs.
+
+**Andra instansen, mätt 2026-08-07 (S93 femte resumen) — av den som skrivit
+lärdomen.** `#862` (`TASK-145.1`) lämnades medvetet oarmerad i väntan på
+Marcus beslut i två scope-frågor. Svepet larmade inom ett svep-intervall med
+ordagrant samma text som ovan, nu med `#862`. Draft sattes i efterhand.
+
+Det stärker fragmentets sista stycke i stället för att motsäga det: regeln var
+**läst i samma session** — den citeras till och med i resumens egen
+rapportering av svepets kända egenskap — och efterlevdes ändå inte i
+parkerings-ögonblicket. En regel som misslyckas för sin egen författare, en dag
+efter att den skrevs, är inte ett läsnings-problem. Det är belägg för att
+`T126`:s mekanism ska bära den, inte prosan.
