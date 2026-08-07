@@ -822,18 +822,21 @@ function KortInnehall({
   /** [PROTOTYPE] [S93] Steg-märket — undefined utanför hållplats-prototypen
       (default, zero-behaviour-change; se DeltagareHallplatsPrototyp.tsx). */
   hallplatsMarke?: React.ReactNode;
-  /** [TASK-145.1] De tre utskicks-metaraderna (Bekräftelse/Påminnelse/
-      Eventinfo-datum) döljs historiskt när `hallplatsMarke` är satt, eftersom
-      `?variant=a` flyttat SAMMA information till BetalningsDetaljer/"Öppna
-      detaljer" (protoVariant === 'a'-arbetsytan, se render nedan i `ArbetsKo`).
-      Produktionens skarpa register (TASK-145.1) har ÄNNU INTE den
-      ersättningen — den byggs av en senare skiva — så raderna måste stå kvar
-      trots att steg-märket nu är på, annars försvinner information utan
-      ersättning för Lotta. Default `hallplatsMarke == null` bevarar BÅDA
-      REDAN BYGGDA anropsplatsernas beteende orört (skarpa vyns gamla kort:
-      hallplatsMarke undefined ⇒ true, oförändrat; `?variant=a`: hallplatsMarke
-      satt ⇒ false, oförändrat) — bara `DeltagarKort`/`MarkerbartKort`s NYA
-      produktionsanrop (registret, TASK-145.1) sätter denna explicit `true`. */
+  /** De tre utskicks-metaraderna (Bekräftelse/Påminnelse/Eventinfo-datum)
+      döljs när `hallplatsMarke` är satt, eftersom samma information numera
+      visas som Tidslinje i den inflyttade betalningsarbetsytan
+      (BetalningsDetaljer/"Öppna detaljer", se ArbetsKo). Default
+      `hallplatsMarke == null` bevarar det OFÖRÄNDRADE, ej-hallplats-kortet
+      (skarpa vyns kort utan steg-märke, om något sådant anrop någonsin
+      uppstår — finns inget idag).
+      HISTORIK (TASK-145.1 → TASK-145.4): TASK-145.1 satte denna explicit
+      `true` på registrets BÅDA produktionsanrop, eftersom ersättningen
+      (arbetsytan) då bara existerade i `?variant=a` och raderna annars
+      försvunnit utan ersättning. TASK-145.4 flyttade arbetsytan in i
+      produktionen (AC #2/#8) och tog samtidigt bort övertrampet — registrets
+      kort visar därför nu utskickshistoriken ENDAST i Tidslinjen, aldrig på
+      kortet, i BÅDA lägena (matchar `?variant=a`s form, som aldrig hade
+      övertrampet). */
   visaUtskicksRader?: boolean;
 }) {
   const queryClient = useQueryClient();
@@ -1959,11 +1962,15 @@ function ArbetsKo({
                 onToggle={toggleBorOver}
               />
             ) : registerTraffar.length > 0 ? (
+              // [TASK-145.4] `visaUtskicksRader`-övertrampet är BORTA (se
+              // KortInnehall § TASK-145.1-docblocket) — ersättningen
+              // (BetalningsDetaljer/"Öppna detaljer", Tidslinje) finns nu i
+              // produktionen (AC #2/#8), så defaultbeteendet
+              // (`hallplatsMarke == null`, alltid falskt här) gäller.
               <DeltagarListan
                 rader={registerTraffar}
                 eventId={event.id}
                 hallplatsMarke={registerHallplatsMarke}
-                visaUtskicksRader
               />
             ) : (
               <p className="py-2 text-small text-text-secondary">Inga träffar i denna kategori.</p>
@@ -2014,6 +2021,9 @@ function ArbetsKo({
                 />
               }
             />
+            {/* [TASK-145.4] Samma rivning som `registerTraffar`-grenen ovan —
+                `visaUtskicksRader`-övertrampet är borta, defaultbeteendet
+                (falskt, eftersom `hallplatsMarke` alltid är satt här) gäller. */}
             <DeltagarListan
               rader={registerLista}
               eventId={event.id}
@@ -2024,7 +2034,6 @@ function ArbetsKo({
                 markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
               }
               hallplatsMarke={registerHallplatsMarke}
-              visaUtskicksRader
             />
           </div>
         )}
@@ -2037,7 +2046,16 @@ function ArbetsKo({
           `aktiva.length > 0`-vakt och wrapper-form som Betalningar.tsx:s egen
           K28-kommentar (toggeln + regionen i EN wrapper, ingen divide-y
           mellan dem). */}
-      {protoVariant === 'a' && aktiva.length > 0 && (
+      {/* [TASK-145.4] AC #2 — arbetsytan renderas nu OVILLKORLIGT (tidigare
+          `protoVariant === 'a' && …`), för BÅDA lägena, eftersom facit-formen
+          nedan (BetalningsDetaljer, protoAktiv) är den ENDA formen som ska
+          visas: skarpa vyn hade fram till denna skiva ingen ersättning alls
+          (Betalningar-toppblocket bar den gamla, skrivbara formen — se
+          EventDetail.tsx). `protoAktiv` är ovillkorligt sant: läsyte-formen
+          (kortyta, ingen Input, Tidslinje, ingen röd etikett) är den enda
+          formen som får landa, i BÅDA lägena — inte en prototyp-specifik gren
+          längre. */}
+      {aktiva.length > 0 && (
         <div>
           <DetaljRad
             oppen={betalningOppen}

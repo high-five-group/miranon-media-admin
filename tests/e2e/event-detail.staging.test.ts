@@ -199,13 +199,16 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     // Grupperna i facit-ordning (check-in-kortet är rubrikfritt per K26;
     // Gruppdynamik är sidans sista datagrupp sedan 18.10 — Anteckningar 18.11
     // blir den allra sista efteråt).
+    // [ÄNDRAT, TASK-145.4] "Betalningar" är BORTA ur listan — blocket är
+    // rivet som toppnivå-rubrik (AC #1; PRD TASK-145 § Implementationsbeslut).
+    // Arbetsytan lever kvar, fällbar under registret ("Öppna detaljer"),
+    // men bär ingen egen h2 — se tests/e2e/mark-paid.staging.test.ts.
     const rubriker = await page.getByRole('heading', { level: 2 }).allTextContents();
     expect(rubriker).toEqual([
       'Åtgärder',
       'Om eventet',
       'Beläggning',
       'Anmälda deltagare',
-      'Betalningar',
       'Närvaro',
       'Gruppdynamik',
       'Anteckningar',
@@ -1270,16 +1273,21 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     expect(rader[0]).toMatch(/^Anmäld 1 juli \d{2}:\d{2}$/);
   });
 
-  // [OFÖRÄNDRAD, TASK-145.1 — verifierat, inte bara lämnad] KortInnehall
-  // döljer i grunden utskicksraderna när ett steg-märke visas (samma rad som
-  // döljer Obekräftad-/kategori-pillen, se testet ovan). Registrets EGNA
-  // kort sätter däremot `visaUtskicksRader` explicit (Deltagare.tsx §
-  // registrets DeltagarListan-anrop): utskicksraderna hade annars försvunnit
-  // utan ersättning i produktionen (BetalningsDetaljer/"Öppna detaljer", dit
-  // `?variant=a` flyttat samma info, är INTE del av produktionen förrän en
-  // senare skiva). Denna test provar alltså fortsatt samma sanning som förut
-  // — INGEN assertion nedan är ändrad, bara `oppnaSidan()`s navigation ovan.
-  test('ENDAST utförda åtgärder renderas — ej-skickat visas aldrig', async ({ page }) => {
+  // [ÄNDRAT, TASK-145.4] `KortInnehall` döljer utskicksraderna när ett
+  // steg-märke visas (samma rad som döljer Obekräftad-/kategori-pillen, se
+  // testet ovan). Registrets EGNA kort satte fram till TASK-145.4 tillbaka
+  // `visaUtskicksRader` explicit — ersättningen (BetalningsDetaljer/"Öppna
+  // detaljer", Tidslinje) fanns då bara i `?variant=a`. TASK-145.4 flyttade
+  // in arbetsytan i produktionen (AC #2/#8) och tog samtidigt bort
+  // övertrampet: registrets kort visar ALDRIG längre utskicksrader — bara
+  // Anmäld-raden — oavsett person, eftersom `hallplatsMarke` alltid är satt
+  // i produktionen nu. Informationen är inte borta, bara flyttad: se
+  // `tests/e2e/mark-paid.staging.test.ts` § "Utskickshistoriken som
+  // Tidslinje" för beviset att den finns kvar, som Tidslinje-noder med
+  // klockslag, i den inflyttade arbetsytan.
+  test('ENDAST Anmäld-raden renderas på kortet — utskickshistoriken flyttat till arbetsytans Tidslinje', async ({
+    page,
+  }) => {
     await mockaPersonkort(page);
     await oppnaSidan(page);
 
@@ -1290,17 +1298,18 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     expect(annaRader).toEqual([annaRader[0]]);
     await expect(kortet(page, 'Anna Ek').getByText(/Ej skickat|Ej skickad/)).toHaveCount(0);
 
-    // David har alla tre utförda — var och en på sin egen rad, i Lottas
-    // utskicksordning (bekräftelse → påminnelse → eventinfo, K42).
+    // David har alla tre utskick GJORDA i basen, men kortet visar dem INTE
+    // längre (TASK-145.4) — bara Anmäld-raden, precis som Anna. De tre
+    // texterna som förr stod HÄR ("Bekräftelse 26 juni" m.fl.) står nu i
+    // stället i arbetsytans Tidslinje, med klockslag.
     const davidRader = await kortet(page, 'David Nord')
       .getByTestId('deltagar-meta-rad')
       .allTextContents();
-    expect(davidRader.slice(1)).toEqual([
-      'Bekräftelse 26 juni',
-      'Påminnelse 8 juli',
-      'Eventinfo 10 juli',
-    ]);
+    expect(davidRader).toHaveLength(1);
     expect(davidRader[0]).toMatch(/^Anmäld 25 juni \d{2}:\d{2}$/);
+    await expect(kortet(page, 'David Nord').getByText('Bekräftelse 26 juni')).toHaveCount(0);
+    await expect(kortet(page, 'David Nord').getByText(/Påminnelse 8 juli/)).toHaveCount(0);
+    await expect(kortet(page, 'David Nord').getByText(/Eventinfo 10 juli/)).toHaveCount(0);
   });
 
   test('historikraden: Första eventet / N tidigare event — HELA namnet Miranon Media', async ({
