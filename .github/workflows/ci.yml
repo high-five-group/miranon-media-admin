@@ -728,6 +728,24 @@ jobs:
         # "bash scripts/check-<namn>.sh" i en kommentar mellan
         # paritet-markörerna — grinden läser regionen som data.
         run: bash scripts/check-listparitet.sh
+
+      - name: Validate locked facit is addressable (ADR-102 gate)
+        # Per ADR-102 B1/B3: den låsta prototypen ÄR facit, och prototyp-kod
+        # rivs aldrig före Marcus godkännande. Grinden läser facit-manifesten
+        # under tasks/sessions/bilagor/ och fäller på (a) facit-bilder utan
+        # manifest, (b) manifest som inte stämmer med disken — odeklarerad
+        # bild, saknad bild, yta utan "bilder"-nyckel — och (c) rivning av
+        # prototyp-markörerna medan "godkand" är null.
+        #
+        # ROTORSAKEN, mätt: TASK-145.3:s utförare rapporterade "bilderna finns
+        # inte i repot och fanns inte i uppdraget" och byggde vidare mot en
+        # annan baslinje — dagen EFTER att bilderna landat. Ett misslyckat
+        # uppslag lästes som frånvaro. Grinden gör det uppslaget omöjligt att
+        # missa: facit har en deklarerad adress, eller så är trädet rött.
+        #
+        # Grinden avgör INTE om ytan SER UT som facit — den jämförelsen är
+        # Marcus öga. Config: .facit-policy.conf.
+        run: bash scripts/check-facit.sh
       # paritet:slut docs-grindar-ci
 
       - name: Test consistency gates (truth-table self-verification)
@@ -838,6 +856,7 @@ jobs:
           bash scripts/test-check-listparitet.sh
           bash scripts/test-check-backlog-closure.sh
           bash scripts/test-stop-vakt.sh
+          bash scripts/test-check-facit.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
