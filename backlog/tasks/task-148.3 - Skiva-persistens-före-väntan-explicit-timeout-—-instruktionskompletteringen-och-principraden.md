@@ -3,10 +3,10 @@ id: TASK-148.3
 title: >-
   Skiva: persistens före väntan + explicit timeout — instruktionskompletteringen
   och principraden
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-07 09:49'
-updated_date: '2026-08-07 10:24'
+updated_date: '2026-08-07 11:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,10 +26,14 @@ ordinal: 249000
 - [x] #1 Premiss-pass: bygg-agentens befintliga asynkron-signal-sektion läst i sin helhet; kompletteringen adderar utan att duplicera eller motsäga befintliga rader
 - [x] #2 bygg-agent-instruktionen kompletterad: (a) commit + push FÖRE varje anrop som kan konverteras till bakgrund, (b) explicit timeout på potentiellt långa kommandon — försvaret mot harnessens tysta bakgrunds-konvertering
 - [x] #3 CLAUDE.md bär principraden med Temporal-mönstret namngivet (subagent = Activity som GÖR, orkestrerare = Workflow som VÄNTAR) och pekare till ADR-096
-- [ ] #4 Docs-grindarna gröna; PR armerad, per-jobb-grön
+- [x] #4 Docs-grindarna gröna; PR armerad, per-jobb-grön
 <!-- AC:END -->
 
+## Implementation Notes
 
+<!-- SECTION:NOTES:BEGIN -->
+Levererad via PR #857 (merge d0ed38ae), CI grön per jobb. bygg-agent.md kompletterad + CLAUDE.md-principraden live.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

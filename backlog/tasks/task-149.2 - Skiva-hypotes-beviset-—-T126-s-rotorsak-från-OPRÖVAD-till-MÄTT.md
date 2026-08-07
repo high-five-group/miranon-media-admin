@@ -1,10 +1,10 @@
 ---
 id: TASK-149.2
 title: 'Skiva: hypotes-beviset — T126:s rotorsak från OPRÖVAD till MÄTT'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-07 10:28'
-updated_date: '2026-08-07 11:04'
+updated_date: '2026-08-07 11:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,10 +23,14 @@ ordinal: 256000
 - [x] #1 Resume-vägens skill-laddning prövad mot artefakter: session-resume-skillens faktiska text + S93-sessionsdokets förlopp + prototype-skillens trigger-description — belägg för VARFÖR laddningen uteblev, inte bara ATT den uteblev
 - [x] #2 Generaliseringen prövad: minst två andra arbetsform-regler i skills kontrollerade för samma leveransgap (startdörrs-bundenhet)
 - [x] #3 T126-kortet uppdaterat via backlog-CLI: rotorsaken omklassad HYPOTES → MÄTT med belägg, eller öppet falsifierad med vad som faktiskt gäller
-- [ ] #4 PR armerad, per-jobb-grön
+- [x] #4 PR armerad, per-jobb-grön
 <!-- AC:END -->
 
+## Implementation Notes
 
+<!-- SECTION:NOTES:BEGIN -->
+Levererad via PR #865 (merge 98a92eef), CI grön per jobb. T126 rotorsak MÄTT.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
