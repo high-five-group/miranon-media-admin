@@ -66,6 +66,17 @@
             "statusMessage": "L440 — grindens exitkod genom en pipe"
           }
         ]
+      },
+      {
+        "matcher": "Monitor|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-subagent-vantan.sh\"",
+            "timeout": 10,
+            "statusMessage": "Subagentens väntekontrakt (ADR-096) — Monitor/run_in_background i subagent-kontext"
+          }
+        ]
       }
     ],
     "Stop": [
