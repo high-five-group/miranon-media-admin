@@ -4,9 +4,9 @@ title: 'Skiva: Prototyp-substratets rivning'
 status: To Do
 assignee: []
 created_date: '2026-08-07 09:02'
-updated_date: '2026-08-07 17:16'
+updated_date: '2026-08-07 18:16'
 labels:
-  - ready-for-agent
+  - blocked
 dependencies:
   - TASK-145.1
   - TASK-145.2

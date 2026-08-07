@@ -1086,7 +1086,9 @@ jobs:
         # (ADR-097 § Beslut del 2, PreToolUse-spärren mot git push under
         # aktiv iteration) +
         # .arkivera-sessionsdok-policy.conf, tillagd i TASK-158.2-wiringen
-        # (ADR-099 rullande fönster — scripts/arkivera-sessionsdok.sh) —
+        # (ADR-099 rullande fönster — scripts/arkivera-sessionsdok.sh) +
+        # .precompact-policy.conf, tillagd i TASK-160.2-wiringen (ADR-101
+        # § Beslut 5, PreCompact-grinden mot okontrollerad kompaktering) —
         # en sourced conf utanför scopet är samma lucka som de övriga redan
         # stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
@@ -1096,7 +1098,8 @@ jobs:
         # T119(a)-wiringen, till tretton i T119(b)-wiringen, till fjorton i
         # T119(d) item 5-wiringen, till femton i T119(d) item 4-wiringen,
         # till sjutton i TASK-139, till arton i TASK-148.2, till nitton i
-        # TASK-152, till tjugo i TASK-149.3 och till tjugoett i TASK-158.2.
+        # TASK-152, till tjugo i TASK-149.3, till tjugoett i TASK-158.2 och
+        # till tjugotvå i TASK-160.2.
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1124,7 +1127,8 @@ jobs:
             .subagent-vantan-policy.conf \
             .stada-grenar-policy.conf \
             .arbetsform-push-policy.conf \
-            .arkivera-sessionsdok-policy.conf
+            .arkivera-sessionsdok-policy.conf \
+            .precompact-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
