@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-05
+updated: 2026-08-07
 review_by: 2026-11-15
 status: stable
 ---
@@ -435,6 +435,13 @@ står oarmerat → väck ägar-agenter → starta nästa post.
 Vakt-event är väckarklocka, aldrig fakta: förgrundsverifiera före varje
 handling — fem falska terminal-signaler i ett enda pass är belagda
 (S91 Del 39.5), inklusive ett "MERGED med SHA" vars SHA aldrig nådde `main`.
+
+**Namnet på mönstret: subagent = Activity, orkestrerare = Workflow.**
+Temporals egen distinktion, applicerad här: en subagent utför sitt
+avgränsade jobb och returnerar — den äger aldrig väntan, eftersom den
+saknar en framtida tur att vakna i; orkestreraren är den durabla parten och
+äger all väntan, inklusive svepet ovan. Kontraktet kodifierat i
+[ADR-096](docs/decisions/ADR-096-subagentens-vantekontrakt.md).
 
 **`autoMergeRequest: null` betyder INTE "ej armerad".** Fältet beror på PR:ens
 tillstånd i armerings-ögonblicket. `gh pr merge --help` säger det rakt ut:

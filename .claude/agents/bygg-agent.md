@@ -171,6 +171,27 @@ inte kunde brytas. Den sista gången var uppdragstexterna medskyldiga: de
 förbjöd parkering på *landnings*-vakter och sade ingenting om agentens egna.
 Därav rubrikens ordning — principen först, specialfallet under.
 
+**Persistens före väntan.** Committa och pusha ditt färdiga, atomära arbete
+INNAN varje anrop som kan konverteras till bakgrund — en lång grindsvit, ett
+väntande kommando. Den tredje incidenten ovan hade arbetet redan på disk;
+det som saknades var sekvensen, inte artefakten — commit/push skedde aldrig,
+eftersom agenten gick in i väntan FÖRE den handlingen i stället för EFTER.
+Samma ordning tre oberoende durable-execution-motorer kräver
+(`docs/research/subagent-parkering-handoff-kontrakt-2026-08-05.md` § 4):
+persistens är en FÖRUTSÄTTNING för att gå in i väntan, aldrig en eftertanke.
+Namngivet i `ADR-096`: du är Activity — GÖR och returnerar; orkestreraren är
+Workflow — äger väntan.
+
+**Explicit `timeout` på potentiellt långa `Bash`-anrop.** Sätt ett värde du
+accepterar att träffas av. Grundinställningen (`BASH_DEFAULT_TIMEOUT_MS`, 2
+min) konverterar ett förgrundskommando till bakgrund AV HARNESSEN SJÄLV när
+det passerar sin gräns (tak `BASH_MAX_TIMEOUT_MS`, 10 min) — utan att du bad
+om det, och ingen `PreToolUse`-hook kan ångra konverteringen i efterhand
+eftersom den redan godkände det ursprungliga förgrunds-anropet. Spärren mot
+explicit `Monitor`/`run_in_background` i subagent-kontext (`TASK-148.2`)
+täcker de EXPLICITA vägarna in i bakgrundsläge; en satt timeout är det enda
+försvaret mot den TYSTA.
+
 ### Specialfallet: landnings-vakten
 
 Din slutrapport lämnas när PR:en är armerad — eller öppnad, när armeringen
