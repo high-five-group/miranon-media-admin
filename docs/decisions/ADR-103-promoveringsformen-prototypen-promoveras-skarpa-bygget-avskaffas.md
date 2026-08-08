@@ -97,7 +97,9 @@ havererade genom apparaten (150 min/skiva, 500–620k tokens).
 ## Vad som INTE beslutas här
 
 - **Godkännande-mekaniken** (`godkand`-fältet ska bära Marcus faktiska
-  kvittens, inte självbetjäning) — G2-grillningen.
+  kvittens, inte självbetjäning) — AVGJORD 2026-08-08:
+  [`ADR-104`](ADR-104-godkannande-mekaniken-kanalseparation.md)
+  (G2-grillningen, S93 Del 14 — kanalseparation).
 - **Stale-dok-vakten och parallellsessions-friktionen** (K1/K6, F55) —
   G6-grillningen.
 - **Fork-subagentformens ekonomi** — omätt; eget mätkort före vidare
