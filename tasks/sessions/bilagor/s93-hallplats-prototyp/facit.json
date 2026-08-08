@@ -2,22 +2,40 @@
   "prototyp": "s93-hallplats",
   "last": "2026-08-06",
   "lasning": "Jag är nöjd. Lås som facit.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-08",
+    "citat": "Jag godkänner, allt verkar funka och se ut som det ska på eventsidan.",
+    "sha": "590e600c8a0be7c9493f89e5d40b9fa12616a541"
+  },
   "ytor": [
     {
       "yta": "anteckningar",
-      "bilder": ["facit-anteckningar.png"],
-      "kallor": ["src/components/events/detail/Anteckningar.tsx"]
+      "bilder": [
+        "facit-anteckningar.png"
+      ],
+      "kallor": [
+        "src/components/events/detail/Anteckningar.tsx"
+      ]
     },
     {
       "yta": "betalningar",
-      "bilder": ["facit-betalningar-arbetsytan.png", "facit-betalningar-maxat-kort.png"],
-      "kallor": ["src/components/events/detail/Betalningar.tsx"]
+      "bilder": [
+        "facit-betalningar-arbetsytan.png",
+        "facit-betalningar-maxat-kort.png"
+      ],
+      "kallor": [
+        "src/components/events/detail/Betalningar.tsx"
+      ]
     },
     {
       "yta": "gruppdynamik",
-      "bilder": ["facit-gruppdynamik.png"],
-      "kallor": ["src/components/events/detail/Gruppdynamik.tsx"]
+      "bilder": [
+        "facit-gruppdynamik.png"
+      ],
+      "kallor": [
+        "src/components/events/detail/Gruppdynamik.tsx"
+      ]
     },
     {
       "yta": "atgarder",

@@ -4,9 +4,9 @@ title: 'Skiva: Prototyp-substratets rivning'
 status: To Do
 assignee: []
 created_date: '2026-08-07 09:02'
-updated_date: '2026-08-08 17:57'
+updated_date: '2026-08-08 20:03'
 labels:
-  - blocked
+  - ready-for-agent
 dependencies:
   - TASK-145.1
   - TASK-145.2
@@ -111,6 +111,8 @@ kartan ovan skrevs i stället.
 [TASK-162.4, ADR-103-bokföringssynk, 2026-08-08] Description omskriven: "riv prototypen" → "riv flaggan/variant-maskineriet EFTER Marcus godkänner den promoverade ytan (TASK-162.5)" (ADR-103 Konsekvenser + B2 steg 4). DoD #6 omskriven till "Baslinje omtagen EFTER godkänd promovering (ADR-103 B4)" av samma skäl som TASK-145.3/145.5. Kortet FÖRBLIR blocked (label oförändrad) — godkännandet (TASK-162.5) är den faktiska gaten, inte en dependency-kant i detta pass (STOPPA-vid-scope-tvekan: en cross-PRD-beroendekant lades INTE till, ej efterfrågad av uppdraget).
 
 VARNING TILL FRAMTIDA UTFÖRARE: § EXEKVERINGSKARTAN ovan skrevs FÖRE TASK-162.2/162.3:s landade promovering och beskriver Deltagare.tsx/EventDetail.tsx-stegen (punkt 1–2) mot ett kodläge som delvis inte längre finns i sin ursprungliga form — 162.3 har redan rivit protoVariant-tråden ur ArbetsKo på ett ANNAT sätt än kartan beskriver (protoVariant-propen, hallplatsMarkeFn, flik-statet är redan borta). Variant-villkorets UTANFÖR-maskineri (?variant=-läsningen i EventDetail.tsx, isHallplatsVariant, switchern, protoDataMode) är dock uttryckligen ORÖRT av 162.2/162.3 och återstår att riva. Punkt 3–8 (Betalningar.tsx, Belaggning/Anteckningar/Gruppdynamik, DeltagareHallplatsPrototyp.tsx, hallplats-steg-prototyp.ts) rör block 162.2/162.3 inte vidrörde och är sannolikt fortfarande giltiga — men mät om mot faktisk kod före exekvering (ADR-086), lita inte blint på kartan.
+
+AVBLOCKERAD 2026-08-08: godkand-fältet stämplat av Marcus via !-kanalen (av: marcus, datum: 2026-08-08, sha: 590e600c, citat i manifestet) — ADR-102 B3-spärren är uppfylld, check-facit grön (0 ogodkända). Rivningen fri att plockas.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
