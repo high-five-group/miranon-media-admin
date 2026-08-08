@@ -373,6 +373,22 @@ paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
 resume.
 *(S93:s kadensrad nedan, oförändrad.)*
 
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-08, `lifecycle: active`, åttonde
+resumen) — 162-KÖN KÖRS VIDARE MOT MARCUS QA** — Marcus resume-order utan
+ny scope; arbetet fortsätter per handoffens NÄSTA-lista. Paus-PR:en `#996`
+mergade i resume-ögonblicket (kön byggde den när svepet började) — doket
+lästes från paus-grenen och `main` fast-forwardades före återställningen.
+Huvudkatalogen tillgänglig (ägarlappen släppt vid paus; S99 fjärde pausen
+`#995` + S100 båda `lifecycle: paused` — ingen parallell session aktiv).
+Numrering re-verifierad mot `c929ec6e`, INGEN divergens: 104/L480 + 8
+fragment/T139 (indexet, inte filräkning — T137/T138 är indexrader utan
+kort)/task-163/f47. **NÄSTA per handoff:** post-merge-CI för `#991`/`#992`
+PER JOBB (särskilt staging-e2e) → stängnings-commits `162.2`+`162.3` →
+spawna `162.4` → G2-grillningen före/vid `162.5` Marcus QA → efter godkänd
+QA `145.6` (flagg-rivning + regressionslås).
+**HANDOFF: sessionsdok S93 § Paushistorik (åttonde) + Del 12.**
+*(Föregående paus-läge nedan oförändrat.)*
+
 **Session 93 ⏸️ PAUSAD (2026-08-08, åttonde pausen, `lifecycle: paused`) —
 PROMOVERINGSFORMEN ETABLERAD, 162-KÖN 3 AV 5 LANDADE** — sjunde resumen
 levererade hela audit-kedjan: fyra axlar (rotorsaks-verifiering R1–R9 ·
