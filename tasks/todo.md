@@ -15,6 +15,29 @@
 
 ## Aktuellt fokus
 
+**Session 99 ⏸️ PAUSAD (2026-08-08, fjärde pausen, `lifecycle: paused`) —
+AGENT-SIDAN AV UPPDRAG 9 KOMPLETT; ALLT KVARVARANDE ÄR MARCUS-MOMENT.**
+Nio av nio agent-skivor i `task-161` Done-flippade efter per-jobb-verifikat
+(kedjan `#961`→`#989`; Del 11–12 bär narrativet). Dagens extraleveranser:
+nanoid-blockeraren röjd (parallell session vann, vår dubblett städad) ·
+Explore-kartan ÅTERFUNNEN ur worktree-sessionens egen transkript-katalog och
+landad frusen (`docs/research/styrande-docs-audit-substrat-2026-08-07.md`,
+`#976`) på Marcus artefakt-order · skarpbevis 2 av 4 betalda (160.2
+manual-neka skarpt via Marcus `/compact` · 160.5 steg 1; resten fyrar
+naturligt) · register-auditen svarad (alla fem axlar intakta; **uppdrag 10
+registrerat EJ prioriterat**, trigger: ökad parallellitet) · tvillingen kapad
+(psionautics `d2415cc`) · BYGGPLAN-LÄTTLÄST fick STOP-utfall (redaktionellt
+Marcus-beslut). **NÄSTA (allt Marcus): QA `160.7` + `161.10` ·
+BYGGPLAN-LÄTTLÄST-beslutet · hub-sync-vägvalet (FÖRE session-ends skörd) ·
+boka `148.5` · triagera `154`–`156` · `#635` · lärdomslager-spårbeslutet.**
+**HANDOFF: sessionsdok S99 § PAUSLÄGE (fjärde pausen) + Del 11–12.**
+Numrering disk-rederiverad vid paus (`b5703ba6`): **104**/**L480** + 8
+fragment/**T139**/**task-163**/**f47** — tre axlar togs av S93 i dag,
+re-derivera alltid i mint-ögonblicket.
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 100 ⏸️ PAUSAD (2026-08-08, FJÄRDE pausen, `lifecycle: paused`) —
 GRANSKNINGS-YTAN BYGGD I FEM VARV, MED ETT RESEARCH-PASS SOM AVGJORDE FORMEN.**
 Marcus fråga vid start ändrade utgångsläget: appen HADE redan en granskningsyta
