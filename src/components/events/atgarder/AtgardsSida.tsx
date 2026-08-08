@@ -100,7 +100,7 @@ import {
   Upload,
   UserPlus,
 } from 'lucide-react';
-import { type ReactNode, useId, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
@@ -580,7 +580,17 @@ function MetaRad({ ikon: Ikon, children }: { ikon: LucideIcon; children: ReactNo
 }
 
 /** Kortets innehåll — förlagans `KortInnehall` i sin `lankat={false}`-gren. */
-function DeltagarKortInnehall({ reg, vald }: { reg: Registration; vald: boolean }) {
+function DeltagarKortInnehall({
+  reg,
+  vald,
+  doljStatusPill = false,
+}: {
+  reg: Registration;
+  vald: boolean;
+  /** Resultatläget: "Obekräftad" säger fel sak om ett kort som just skickats.
+      Se `UtfallsKort` för villkoret som gjorde flaggan nödvändig. */
+  doljStatusPill?: boolean;
+}) {
   const pill = KATEGORI_PILL[kategori(reg)];
   const anmald = anmaldText(reg);
   const bekraftelse = dagManad(reg.bekraftelseSkickad);
@@ -602,7 +612,7 @@ function DeltagarKortInnehall({ reg, vald }: { reg: Registration; vald: boolean 
         </span>
         {/* Reserverad pill-slot — se blockets docblock (sågtand-mätningen). */}
         <span className="flex w-30 shrink-0 flex-wrap items-center justify-end gap-1.5 sm:w-[45%]">
-          {!arBekraftad(reg) && !vald && (
+          {!arBekraftad(reg) && !vald && !doljStatusPill && (
             <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
               Obekräftad
             </span>
@@ -1817,12 +1827,32 @@ function UtfallsKort({ reg, skal }: { reg: Registration; skal: string | null }) 
           ton på de lyckade. Färgen på RADEN säger utfallet; färgen på KORTET
           säger markeringen. Håller inte den delningen i din blick är det den här
           kommentaren som ska rivas först. */}
-      <DeltagarKortInnehall reg={reg} vald={!lyckades} />
+      {/* `doljStatusPill` — "Obekräftad"-pillen har ingen mening här (Marcus
+          varv 22: "I det skickade läget så kan ju inte korten ha kvar
+          'Obekräftade' pillen, den måste bort").
+
+          Han har rätt, och felet var strukturellt och inte kosmetiskt: pillen
+          renderas på villkoret `!arBekraftad(reg) && !vald` — alltså "obekräftad
+          OCH inte markerad". I markeringsläget bär det villkoret mening, för
+          där betyder omarkerad "den här står utanför det du håller på med". I
+          resultatläget betyder omarkerad något helt annat — "den här är
+          klar" — så villkoret slog till på exakt de kort som just fått sitt
+          bekräftelsemail. Pillen sade "Obekräftad" om personer som nyss
+          bekräftades. */}
+      <DeltagarKortInnehall reg={reg} vald={!lyckades} doljStatusPill />
       <div
-        className={`border-t px-4 py-2 text-caption ${
+        className={`flex items-center gap-1.5 border-t px-4 py-2 text-caption ${
           lyckades ? 'border-border text-text-muted' : 'border-(--mm-success)/30 text-error'
         }`}
       >
+        {/* BOCKEN ÄR APPENS EGEN (Marcus varv 22: "vill ja ska ha vår bock
+            också, så det ser proffsigare ut") — samma `Check` ur lucide som
+            kryssrutan och `SlideToConfirm` bär, aldrig ett unicode-tecken.
+            Varv 3 lärde den läxan en gång: `✎` ur brödtextens font kunde inte
+            matcha en riktig ikon i vikt, mått eller optisk linje, och det
+            syntes. Måttet följer raden den sitter i (12 px = `text-caption`s
+            egen storlek), inte kryssrutans 16. */}
+        {lyckades && <Check aria-hidden="true" size={12} strokeWidth={3} className="shrink-0" />}
         {lyckades ? 'Skickat' : skal}
       </div>
     </div>
@@ -1883,6 +1913,43 @@ function GranskningsSida({
      det som bedöms förorenar just den bilden. */
   const [protoLage, setProtoLage] = useState<UtfallsLage>('delvis');
 
+  /* NY VY BÖRJAR HÖGST UPP (Marcus varv 22): "jag kommer inte in högst upp på
+     sidan, utan jag kommer in i mitten typ."
+
+     ORSAKEN ÄR ATT DET INTE ÄR EN NAVIGATION. Sidbytet sker genom att hubben
+     byter ut sitt eget innehåll, inte genom en router-övergång — och då finns
+     ingen som återställer rullningen. Lotta trycker "Granska och skicka" långt
+     ned i en utfälld åtgärdsrad, och den rullningen ligger kvar när den nya
+     ytan renderas; hon landar mitt i mottagarlistan i stället för på meningen
+     som säger vad som ska hända.
+
+     `lage` i beroendelistan täcker BÅDA övergångarna med samma rad: mount
+     (åtgärder → granska) och bytet till resultatet, som annars hade haft exakt
+     samma problem — den ytan är kortare, så man kunde landat nedanför hela
+     dess innehåll.
+
+     `behavior` lämnas åt webbläsarens default (`auto` = direkt). En mjuk
+     rullning här hade varit en animation ovanpå ett vy-byte — inget att följa
+     med blicken, bara fördröjning — och `prefers-reduced-motion` hade behövt
+     bäras för hand.
+
+     `skickar` ÄR UNDANTAGET, och det är ett designval som lint råkade tvinga
+     fram. Biome fällde första formen (`useExhaustiveDependencies`: `lage`
+     stod i beroendelistan utan att läsas i kroppen) — en riktig fångst, för
+     mönstret "kör om vid tillståndsbyte" utan att röra tillståndet är precis
+     så en effekt slutar betyda vad den ser ut att betyda.
+
+     Rätt svar var inte att tysta regeln utan att fråga vad som SKA hända i
+     varje läge, och då föll det ut självt: under körningen ska sidan INTE
+     hoppa. Lotta står nere vid knappen hon just tryckt, "Skickar…" annonseras
+     där, och att rycka henne till toppen mitt i väntan hade tagit bort det
+     enda som svarar på om något händer. Resultatet scrollar upp; själva
+     väntan gör det inte. */
+  useEffect(() => {
+    if (lage === 'skickar') return;
+    window.scrollTo(0, 0);
+  }, [lage]);
+
   /* FÖRHANDSVISNINGEN GÄLLER EN NAMNGIVEN MOTTAGARE, inte "en mottagare".
      Var och en får sitt eget mail (PRD berättelse 10), så det finns ingen
      enda sann text att visa — det finns N stycken. Att visa den FÖRSTA och
@@ -1941,7 +2008,32 @@ function GranskningsSida({
           }
         />
 
-        {/* HUR MÅNGA — intent- och titel-logiken ORDAGRANT ur
+        {/* VILKA OCH VARFÖR — delningen som gör räknaren läsbar.
+            Fallna först: de är det som återstår att göra något åt, och en
+            lista som inleds med fjorton avbetade kort begraver de sex som
+            behöver uppmärksamhet. */}
+        <DetaljGrupp id="grupp-utfall-mottagare" rubrik="Mottagare">
+          <div className="flex flex-col gap-2 py-4">
+            {utfall.fallna.map(({ reg, skal }) => (
+              <UtfallsKort key={reg.id} reg={reg} skal={skal} />
+            ))}
+            {utfall.lyckade.map((reg) => (
+              <UtfallsKort key={reg.id} reg={reg} skal={null} />
+            ))}
+          </div>
+        </DetaljGrupp>
+
+        {/* SAMMANFATTNINGEN SITTER NED VID VÄGEN UT (Marcus varv 22): "den
+            gröna rutan som är högst upp vill ja ha över knappen 'Tillbaka till
+            åtgärderna'."
+
+            DEN LÄSER RÄTT DÄR, och skälet är att den inte längre gör samma
+            jobb som i granskningen. FÖRE skick är sammanfattningen en varning —
+            den ska läsas innan man handlar, alltså överst. EFTER skick är den
+            en kvittens, och en kvittens hör ihop med att lämna sidan: man
+            skummar korten, ser att det stämmer, läser summan och går.
+
+            HUR MÅNGA — intent- och titel-logiken ORDAGRANT ur
             `SegmentMailCompose` rad 306–347, som i sin tur bär regeln i sin
             egen kommentar: noll lyckade renderas ALDRIG som grön framgång,
             utan som neutral varning med en uppdelning som visar VARFÖR.
@@ -1949,8 +2041,16 @@ function GranskningsSida({
             `MessageBox` sätter själv `role="alert"` vid warning/error och
             `role="status"` annars (primitivens rad 63) — utfallet annonseras
             alltså för skärmläsare utan en rad extra kod, och en separat
-            announcer ovanpå hade varit `L138`s överträdelse. */}
-        <div className="px-4">
+            announcer ovanpå hade varit `L138`s överträdelse.
+
+            EN SPÄNNING ATT DÖMA VID DELUTFALLET, öppet noterad: flytten är
+            gjord i ALLA tre lägena. Vid "allt gick fram" är den självklar. Vid
+            ett delutfall står korten först röda utan att rutan förklarat varför
+            — och den förklaringen ("skälet står på korten") kommer nu efter det
+            man redan sett. Marcus prövade "Allt gick fram"; delutfallet är inte
+            dömt än. Håller det inte är rätt fix ett villkor på utfallsklassen,
+            inte att flytta tillbaka den i båda. */}
+        <div className="flex flex-col gap-4 px-4">
           <MessageBox
             intent={
               antalLyckade === 0 ? 'warning' : utfall.status === 'partial' ? 'info' : 'success'
@@ -1973,35 +2073,20 @@ function GranskningsSida({
             )}
             {antalFallna > 0 && (
               <p>
-                {antalFallna} {antalFallna === 1 ? 'fick det inte' : 'fick det inte'} — skälet står
-                på {antalFallna === 1 ? 'kortet' : 'korten'} nedan.{' '}
+                {antalFallna} fick det inte — skälet står på{' '}
+                {antalFallna === 1 ? 'kortet' : 'korten'} ovanför.{' '}
                 {antalLyckade > 0
                   ? 'De ligger kvar markerade, så du kan gå tillbaka och köra om just dem.'
                   : 'De ligger kvar markerade.'}
               </p>
             )}
           </MessageBox>
-        </div>
 
-        {/* VILKA OCH VARFÖR — delningen som gör räknaren ovanför läsbar.
-            Fallna först: de är det som återstår att göra något åt, och en
-            lista som inleds med fjorton avbetade kort begraver de sex som
-            behöver uppmärksamhet. */}
-        <DetaljGrupp id="grupp-utfall-mottagare" rubrik="Mottagare">
-          <div className="flex flex-col gap-2 py-4">
-            {utfall.fallna.map(({ reg, skal }) => (
-              <UtfallsKort key={reg.id} reg={reg} skal={skal} />
-            ))}
-            {utfall.lyckade.map((reg) => (
-              <UtfallsKort key={reg.id} reg={reg} skal={null} />
-            ))}
+          <div className="flex items-center gap-2">
+            <Button intent="primary" onPress={onTillbaka}>
+              Tillbaka till åtgärderna
+            </Button>
           </div>
-        </DetaljGrupp>
-
-        <div className="flex items-center gap-2 px-4">
-          <Button intent="primary" onPress={onTillbaka}>
-            Tillbaka till åtgärderna
-          </Button>
         </div>
 
         <PrototypRigg
