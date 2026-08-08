@@ -96,17 +96,12 @@ npm run verify:ci-parity         # scripts/verify-ci-parity.mjs — kör CI:s up
 npm run verify:ci-parity:fast    # samma minus Acceptance+Webblasarbeteende — iteration bara
 ```
 
-**Kör det INTE före varje push.** Mätt 2026-08-05 (S98,
-[`verify-ci-parity-regel-vantetid-2026-08-05.md`](docs/research/verify-ci-parity-regel-vantetid-2026-08-05.md)):
-full körning kostar **910,7 s** på en kod-diff, medan CI svarar på **401,0 s**
-parallellt. Felfrekvensen i mätfönstret var **3 av 99 ≈ 3 %**, vilket ger en
-förväntad besparing på ~12 s per PR (~30 s även med tio minuters fix-tid
-inräknad). **Kostnaden är alltså ungefär 30× besparingen.** En rutin som körde
-den på varje landning mättes till 96–110 min per session mot 45–57 min för vad
-som faktiskt gjordes — **2,3–2,9× dyrare**.
-
-Värre: `Acceptance` + `Webblasarbeteende` står för ~91 % av kostnaden och fällde
-**noll** fel i mätfönstret. Samtliga röda låg i de billiga jobben.
+**Kör det INTE före varje push.** Full körning kostar **910,7 s** mot CI:s
+**401,0 s** parallellt — felfrekvensen i mätfönstret var **3 av 99 ≈ 3 %**,
+vilket gör kostnaden ungefär **30× besparingen**. En rutin som körde
+verktyget på varje landning mättes **2,3–2,9× dyrare** än vad som faktiskt
+gjordes; `Acceptance` + `Webblasarbeteende` stod ensamma för ~91 % av
+kostnaden och fällde **noll** fel — samtliga röda låg i de billiga jobben.
 
 **Plocka fram det i tre lägen:**
 
@@ -116,49 +111,46 @@ Värre: `Acceptance` + `Webblasarbeteende` står för ~91 % av kostnaden och fä
 3. Ändringen är stor eller riskabel nog att en extra CI-cykel kostar mer än
    vanligt
 
-**Varför raden ser ut så här nu:** den sade tidigare *"Verifiera mot den FULLA
-uppsättningen före push"* — skriven 2026-08-05 tillsammans med verktyget, och
-**tio veckor efter** `ADR-036` slog fast att lokal verifiering är DoD-disciplin
-(två snabba kommandon), inte en full CI-replik. Raden gick alltså utöver det
-styrande beslutet, och lästes bokstavligt samma dag: en agent körde 153
-acceptance-tester på en ändring som bestod av en enda markdown-fil. Rivningen
-återställer `ADR-036` — den ändrar den inte. Se
+**Varför raden ser ut så här nu, och underlagets styrka:** en tidigare
+formulering gick utöver `ADR-036` (lokal verifiering är DoD-disciplin, inte
+full CI-replik) och lästes bokstavligt samma dag den skrevs — en agent körde
+153 acceptance-tester på en ändring som bestod av en enda markdown-fil.
+Felfrekvensen ovan vilar på n=99 med 3 röda — ett stickprov, inte statistik;
+eskalering uppåt är alltid tillåten, och talet omprövas när `npm run
+metrics:ci` bär mer data. Beslutets sammanfattande tabell och fullständig
+historik:
 [`ADR-036`](docs/decisions/ADR-036-kvalitetsgrind-ci-enda-mekaniska-enforcement.md)
-§ Updates 2026-08-05 (andra amenderingen).
-
-**Underlagets styrka, öppet:** felfrekvensen vilar på n=99 med 3 röda. Det är
-ett stickprov, inte statistik. Riktningen är entydig och eskalering uppåt är
-alltid tillåten — men talet ska omprövas när `npm run metrics:ci` bär mer data.
+§ Updates 2026-08-05 (andra amenderingen). Full mätserie och metod:
+[`verify-ci-parity-regel-vantetid-2026-08-05.md`](docs/research/verify-ci-parity-regel-vantetid-2026-08-05.md).
 
 **Härlett ur `ci.yml`/`ci-suite.yml`, inte en fjärde handhållen kopia.**
-Skriptet YAML-parsar de två workflow-filerna och kör lint-/docs-jobbens samt
-`test-fast`/`acceptance`/`webblasarbeteende`-jobbens `run:`-block VERBATIM,
-steg för steg — en ny rad i ett känt jobb plockas upp automatiskt nästa
-körning, ingen manifest-post att glömma. `npm run check:docs` (de fjorton
-dokumentations-grindarna) återanvänds som första steg i stället för att
-dupliceras. Det enda som är deklarerat i `.ci-parity-policy.json` är
-UNDANTAGEN — infrastruktur-steg, steg redan täckta av check:docs, och tre
-pinnade binärer (shellcheck/actionlint/vale) som version-kollas mot pin:en
-extraherad ur ci.yml:s egen text. En **paritets-grind** körs INNAN något
-annat: fäller fail-closed (exit 2) om ci.yml/ci-suite.yml får en HELT NY
-jobb policyn inte känner till, eller om `suite`-jobbets
-`run_staging`/`run_a11y`-inputs slutar vara literalt `false` (då måste
-purge/a11y/test-staging — uteslutna på just det antagandet — tas in).
+Skriptet YAML-parsar de två workflow-filerna och kör deras `run:`-block
+VERBATIM vid varje körning (en ny rad i ett känt jobb plockas upp
+automatiskt, ingen manifest-post att glömma), och återanvänder `npm run
+check:docs` för dokumentations-grindarna i stället för att duplicera dem. En
+**paritets-grind** körs INNAN något annat och fäller fail-closed (exit 2) om
+ci.yml/ci-suite.yml drifar bort från vad `.ci-parity-policy.json` känner
+till — samma [ADR-083](docs/decisions/ADR-083-prosa-som-pastar-mekanism.md)-
+disciplin resten av filen följer. Default är alltid det fullständiga läget,
+med avsikt (Acceptance-klassen ensam är CI:s tyngsta jobb — se
+[`CONTRIBUTING.md`](CONTRIBUTING.md) § Acceptance-klassen); `--fast` är en
+medveten nedskalning för iteration, aldrig en ersättning för fullständig
+täckning. Full mekanik (UNDANTAGEN, SUITE-YTAN, exit-koder): skriptets eget
+huvud, `scripts/verify-ci-parity.mjs`.
 
-**Kostnaden är verklig och `--fast` är INTE en ersättning.** Full körning tar
-god stund (Acceptance-klassen ensam är CI:s tyngsta jobb — se
-§ Acceptance-klassen); `--fast` finns för snabb lokal iteration och skriver
-ut en banderoll som inte går att missa, men räknas aldrig som fullständig
-täckning. Default är alltid det fullständiga läget, med avsikt — ett
-snabbläge som råkar bli standard återskapar exakt det problem verktyget
-finns för att lösa.
-
-**"Fullständigt" är sedan TASK-142 (2026-08-05) villkorat av DIFFEN, inte
-längre alltid varenda jobb.** Skriptet läser samma D0-glob ur ci.yml:s
-`changed`-jobb som CI självt gör (`should_skip_tests`) och skippar
-test-fast/acceptance/webblasarbeteende när VARJE ändrad fil (mot
-`origin/main`, otrackade filer inräknade) matchar den — samma delmängd CI
-redan hade skippat.
+**Sedan `TASK-142` (2026-08-05) är "fullständigt" villkorat av DIFFEN, inte
+längre alltid varenda jobb** — skriptet läser samma D0-glob ur ci.yml:s
+`changed`-jobb som CI självt gör och skippar test-fast/acceptance/
+webblasarbeteende när VARJE ändrad fil matchar den. Minsta osäkerhet i
+klassningen faller till fullt läge (`--full` tvingar det oavsett diff) —
+**osäkerhet eskalerar alltid uppåt, aldrig till en gissad delmängd.** Detta
+är en ANNAN axel än `--fast` (en medveten nedskalning; diff-klassningen är
+i stället härledd ur CI:s egen gating) — härledningen är avsikten, inte en
+garanti: paritetsvakten fäller fail-closed på strukturella avvikelser, men
+en logikbugg i klassningen själv ligger utanför vad den kan se (en tidigare
+formulering påstod att skriptet *"kan bara köra MER än CI, aldrig mindre"*
+— ett löfte ingen implementation kan hålla). Full algoritm (diff-bas,
+micromatch, exit-koder): `scripts/verify-ci-parity.mjs` § DIFF-KLASSNINGEN.
 
 **Klassningen läser SÖKVÄG, inte filändelse.** D0 är en positiv allowlist
 (disk-verifierad mot `ci.yml`s `paritet:start klassning-d0`-block, TASK-161.2
@@ -178,27 +170,6 @@ säkert. Denna prosa-kopia är ett underhållet UNDANTAG från den regeln (skrip
 självt härleder listan live ur `ci.yml`, se ovan) — hålls för hand, kan därför
 återigen glida; `scripts/check-listparitet.sh` bevakar INTE denna kopia (den
 bevakar `paritet:start/slut`-parningen inom `ci.yml` självt, inte denna fil).
-
-Mätt lokalt på denna maskin (ej CI-runner, ej isolerat från samtida last),
-2026-08-05: full körning på kod-diff **910,7 s** · docs-only-diff **332,7 s**
-(19 grindar körda, 22 skippade) · `npm run check:docs` ensamt **172 s** · CI
-parallellt **401,0 s** som referens. Talen är enskilda körningar, inte en serie
-i `metrics:flake`-riggens mening.
-
-Minsta osäkerhet i klassningen (D0-globen kan inte tolkas, diffen kan inte
-beräknas, ett okänt jobb dyker upp) faller till fullt läge — **osäkerhet
-eskalerar alltid uppåt, aldrig till en gissad delmängd.** `--full` tvingar
-fullt läge oavsett diff.
-
-Detta är en ANNAN axel än `--fast`: `--fast` är en medveten nedskalning
-(kostnad mot säkerhet); diff-klassningen är härledd ur CI:s egen gating.
-**Härledningen är avsikten, inte en garanti** — paritetsvakten fäller
-fail-closed på strukturella avvikelser (nytt jobb, ändrade suite-inputs), men
-en logikbugg i klassningen själv ligger utanför vad den kan se. Raden sade
-tidigare att skriptet *"kan bara köra MER än CI, aldrig mindre"*; det var ett
-matematiskt löfte ingen implementation kan hålla, och det är precis den
-ADR-083-klass — prosa som påstår en täckning ingen mekanism håller — som
-resten av denna fil finns för att undvika.
 
 **Känd kant, medvetet ej undantagen:** `.claude/**` ligger i allowlisten, så
 en ändring i `.claude/settings.json` (hook-mekanismen) klassas som docs-only.

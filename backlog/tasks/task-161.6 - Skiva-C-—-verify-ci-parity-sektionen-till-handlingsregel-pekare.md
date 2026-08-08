@@ -4,6 +4,7 @@ title: 'Skiva: C — verify:ci-parity-sektionen till handlingsregel + pekare'
 status: To Do
 assignee: []
 created_date: '2026-08-07 19:09'
+updated_date: '2026-08-08 07:21'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,10 +21,12 @@ ordinal: 296000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 CLAUDE.md § verify:ci-parity omformad i samma form som 161.5: handlingsregeln (kör INTE före varje push + de tre lägena) bevaras ordagrant; mätserierna, härlednings-mekaniken och diff-klassnings-detaljerna flyttar till research-filen/skriptets huvud med pekare; dubbletten av mättalen (två kopior i samma fil, 73 rader isär) elimineras till EN
-- [ ] #2 Samma prövnings- och bevarande-regler som 161.5 (i-ögonblicket-kriteriet, varför-block orörda utan prövning, lychee på pekare)
-- [ ] #3 Docs-grindarna gröna lokalt; PR armerad, per-jobb-grön; tecken-tal före/efter i PR-texten
+- [x] #1 CLAUDE.md § verify:ci-parity omformad i samma form som 161.5: handlingsregeln (kör INTE före varje push + de tre lägena) bevaras ordagrant; mätserierna, härlednings-mekaniken och diff-klassnings-detaljerna flyttar till research-filen/skriptets huvud med pekare; dubbletten av mättalen (två kopior i samma fil, 73 rader isär) elimineras till EN
+- [x] #2 Samma prövnings- och bevarande-regler som 161.5 (i-ögonblicket-kriteriet, varför-block orörda utan prövning, lychee på pekare)
+- [x] #3 Docs-grindarna gröna lokalt; PR armerad, per-jobb-grön; tecken-tal före/efter i PR-texten
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
