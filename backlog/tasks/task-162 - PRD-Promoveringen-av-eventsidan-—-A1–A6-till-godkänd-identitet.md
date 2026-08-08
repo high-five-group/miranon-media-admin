@@ -1,9 +1,10 @@
 ---
 id: TASK-162
 title: 'PRD: Promoveringen av eventsidan — A1–A6 till godkänd identitet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 07:34'
+updated_date: '2026-08-08 19:22'
 labels: []
 dependencies: []
 ordinal: 301000
@@ -78,11 +79,17 @@ Underlag: facitkartan (A1–A6), processaudit-syntesen Del 5 och sessionsdokets 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
-- [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
-- [ ] #7 Datavägs-invarianten verifierad: inga protoDataMode-grenar flippade
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
+- [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
+- [x] #7 Datavägs-invarianten verifierad: inga protoDataMode-grenar flippade
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD:t fullbordat 2026-08-08: samtliga fem skivor Done — 162.1 grinden (#983/#987) · 162.2 åtgärds-ytan A1 (#991) · 162.3 registret A2–A6 (#992 + korrigeringarna #999/#1000) · 162.4 härdningen (#1016) · 162.5 Marcus QA godkänd i klartext (citat på skivan). A1–A6 är därmed vid godkänd identitet: promoverade formen ovillkorlig på skarpa URL:en, bevisad 8/8 mot ariaSnapshot-referenserna vid landning + post-merge-dispatch 31272915166 HELT grön inkl. staging. DoD #5–#7 betalda på respektive skiva (ariaSnapshot-paren 162.2/162.3, bevis-spår i PR-kroppar, protoDataMode 0 träffar). Kvarvarande kedja ägs av andra kort: godkand-stämpeln via !-kanalen (ADR-104, väntar 167-skriptet) → 145.6 rivning + regressionslås.
+<!-- SECTION:FINAL_SUMMARY:END -->
