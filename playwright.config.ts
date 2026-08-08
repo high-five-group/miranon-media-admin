@@ -267,6 +267,23 @@ export default defineConfig({
       // avtäckte. Därav det absoluta taket ovan.
       scale: 'device',
     },
+    // [TASK-162.1] Promoverings-grinden (ADR-103 B4) — ariaSnapshot-referenser
+    // ur variant-läget, checkade in som grindens facit. EGET pathTemplate,
+    // INTE toHaveScreenshot:s `snapshotPathTemplate` ovan: den literalen bär
+    // `__screenshots__` + `{platform}` — fel katalognamn för en `.aria.yml`
+    // (den är ingen bild), och `{platform}` är fel FÖR DEN HÄR ARTEFAKTEN:
+    // toHaveScreenshot:s platform-segmentering finns för att bara CI-födda
+    // -linux-baselines checkas in (pixelrendering skiljer sig mellan OS,
+    // AC 3 ovan) — ariaSnapshot bär ingen pixel, bara DOM/ARIA-strukturen
+    // Playwrights EGEN Chromium beräknar identiskt oavsett värd-OS, så en
+    // lokalt genererad (darwin) referens ÄR den kanoniska filen, inte en
+    // personlig jämförelse-baseline. `{projectName}` behålls (visual-desktop/
+    // visual-mobile), eftersom facitkartans metod mätte BÅDA vyporterna och
+    // en responsiv gren skulle kunna divergera dem — omätt tills en sådan
+    // gren faktiskt finns, så segmenteringen kostar inget att behålla.
+    toMatchAriaSnapshot: {
+      pathTemplate: '{testDir}/__aria__/{testFileName}/{arg}-{projectName}{ext}',
+    },
   },
   use: {
     locale: 'sv-SE',

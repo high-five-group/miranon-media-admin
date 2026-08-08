@@ -27,6 +27,15 @@
         "src/components/events/atgarder/AtgardsSida.tsx"
       ],
       "not": "INGEN facit-bild låstes för denna yta. Facit är den KÖRANDE prototypen (?variant=a) — Marcus svar i ADR-102 § Vad som INTE beslutas här. Den mätta divergensen (ADR-102 § Kontext, EventDetail.tsx rad 284-290) sitter här: prototypen bär AtgarderKort (en knapp, 'Gå till åtgärder'), skarpa bär den gamla listan."
+    },
+    {
+      "yta": "register",
+      "bilder": [],
+      "kallor": [
+        "src/components/events/detail/Deltagare.tsx",
+        "src/components/events/detail/DeltagareHallplatsPrototyp.tsx"
+      ],
+      "not": "INGEN facit-bild låstes för denna yta, samma skäl som atgarder-ytan: facit är den KÖRANDE prototypen (?variant=a) — ADR-102 § Vad som INTE beslutas här. Skillnad mot atgarder-ytan (TASK-162.1, ADR-103 B4): registrets mekaniska facit ÄR incheckat — ariaSnapshot-referenserna under tests/visual/__aria__/eventsida-promoverings-grind.spec.ts/ (register-default/-aktivt-filter/-bor-over/-noll-traffar.aria.yml), fångade ur variant-läget i den hermetiska fixturvärlden FÖRE någon flip. De fyra avvikelserna facitkartan (docs/research/eventsidan-prototyp-mot-skarpa-facitkarta-2026-08-07.md § A2/A3/A5/A6) pekar ut sitter alla i denna yta."
     }
   ]
 }

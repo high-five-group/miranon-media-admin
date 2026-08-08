@@ -1,0 +1,9 @@
+- text: Visa
+- button "Avbokade Visa"
+- text: Väg in
+- button "Alla vägar in Väg in"
+- text: Visar 0 av 5 i registret
+- button "Rensa filter , 1 aktivt filterval"
+- button "Skriv ut"
+- button "Markera anmälningar"
+- paragraph: Inga träffar i denna kategori.

@@ -1,0 +1,23 @@
+- text: Visa
+- button "Bor över Visa"
+- text: Väg in
+- button "Alla vägar in Väg in"
+- text: Visar 0 av 5 i registret
+- button "Rensa filter , 1 aktivt filterval"
+- button "Skriv ut"
+- list:
+  - listitem:
+    - checkbox "Anna Andersson"
+    - text: Anna Andersson
+  - listitem:
+    - checkbox "Björn Bergström"
+    - text: Björn Bergström
+  - listitem:
+    - checkbox "Cecilia Ceder"
+    - text: Cecilia Ceder
+  - listitem:
+    - checkbox "David Dahl"
+    - text: David Dahl
+  - listitem:
+    - checkbox "Filip Forsberg Manuellt tillagd"
+    - text: Filip Forsberg Manuellt tillagd
