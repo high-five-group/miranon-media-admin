@@ -14,6 +14,13 @@ detaljbelägg i källfilerna:
 | Tidslinjen (56 poster, transkript-utvidgad) | `prototyp-till-skarp-processaudit-tidslinje-2026-08-08.md` | Sonnet-agent |
 | R1–R6-verifieringen (adversarial) | `adr-102-rotorsaksverifiering-r1-r6-2026-08-08.md` | Opus-agent |
 | R7–R9-verifieringen (adversarial) | `adr-102-rotorsaksverifiering-r7-r9-2026-08-08.md` | Opus-agent |
+| First principles-dekonstruktionen (ramaxeln) | `first-principles-dekonstruktion-prototyp-till-skarp-2026-08-08.md` | Marcus + orkestreraren |
+| RP1 frontier-processer (referensaxeln) | `ui-prototyp-till-produktion-frontier-processer-2026-08-08.md` | Opus-agent |
+| RP2 mekanisk jämförelse (referensaxeln) | `mekanisk-design-mot-yta-jamforelse-branschmonster-2026-08-08.md` | Sonnet-agent |
+| RP3 isolering & parallellitet (referensaxeln) | `prototypkod-isolering-och-parallella-strommar-branschmonster-2026-08-08.md` | Sonnet-agent |
+
+Del 1–4 och Del 6 skrevs efter spår A (rotorsaks-axeln + tidslinje-axeln);
+Del 5 tillkom samma dag efter ram- och referensaxlarna (FP + RP1–RP3).
 
 Orkestrerarens stickprov 2026-08-08 (agentfynd är hypoteser tills prövade,
 ADR-086): `EventDetail.tsx:284` saknar `import.meta.env.DEV`-grind medan
@@ -147,13 +154,95 @@ nästa iteration.
 
 ---
 
-## Del 5 — Öppet outrett (carry)
+## Del 5 — Ram- och referensaxlarna: integrationen (tillagd efter FP + RP1–RP3)
+
+### Referensaxelns fyra huvudfynd (detaljer + källor i RP-filerna)
+
+1. **Spec-bäraren:** ingen ledare gör en PNG till auktoritativ spec. Formerna
+   är körbar artefakt med adress, självinnehållen spec-text, eller bunt med EN
+   instruktion. Figma förstapart: bilden bär intent, *"is not a spec for the
+   LLM to replicate one to one"*. Vi ÄGDE en körbar prototyp på riktig URL —
+   och valde `facit-*.png` som bärare. G1:s rotorsaker är följder av det
+   valet, inte oberoende problem. (RP1 a.)
+2. **AC-formen:** ingen etablerad satsform för "matchar design X i läge Y"
+   existerar — frånvaron är fyndet. Fältet löser det strukturellt (namngivna
+   tillstånd med egen baslinje) plus som LOOP MED BEVISUTGÅNG (Anthropic
+   verbatim: *"take a screenshot of the result and compare it to the
+   original. list differences and fix them"*). `ADR-102` B5 är en sats en
+   mottagare kan bocka; ledarna skriver körningar som lämnar spår. (RP1 b.)
+3. **Apparat kontra direkt:** ingen storlekströskel finns hos någon — axeln
+   är HITL/AFK, beslutet hör hemma vid FAS-GRÄNSER, och Pocock klassar
+   UI-prototyp-arbete som HITL. Anthropic: multi-agent ≈ 15× tokens, få
+   kodningsuppgifter är genuint parallella. Vår default var inverterad.
+   (RP1 c; matar G5 tillsammans med fork-fyndet nedan.)
+4. **Två-artefakt-frågan är i själva verket TVÅ OBEROENDE beslut som vi
+   buntat ihop:** (i) "prototypen är facit" och (ii) "prototypen bor i skarpa
+   kodens filer". `ADR-102` B1–B5 kräver inte samlokalisering — den kom från
+   `ADR-074`, beslutad för divergens-passets live-växling. Ingen av de fem
+   granskade aktörerna samlokaliserar prototyp och skarp yta i main under
+   bygget. (RP1 d.)
+
+### Ramaxeln möter referensaxeln: forken som ersätter G3:s öppna fråga
+
+FP-draget (promovering, väg 1) och branschen möts i en skarp fork, och
+variabeln som avgör vilken pol som är koherent är **T66-konvergensfasen —
+vår egen konstruktion** (NN/g-/Double Diamond-förankrad, INTE Pocock-ärvd):
+
+- **Pol A — "v0-polen" (promovering):** OM konvergensfasen behålls (prototypen
+  itereras till GODKÄND SLUTFORM) är prototypen ytans enda kompletta spec
+  (FP T2) och promovering + härdningschecklista den koherenta fullbordan.
+  Prototyp-formen blir flagga med central läspunkt (O3, Fowler-stöd per RP3)
+  som rivs mekaniskt efter promovering (Piranha-klassens protokoll).
+  Precedent: Vercel v0 (*"production-ready code… lives in your repo"*).
+- **Pol B — "Pocock-polen" (gren-parkering):** OM konvergensfasen skalas ner
+  till FRÅGE-BESVARANDE parkeras prototypen på `prototype/<namn>`-gren
+  (aldrig mergad — promovering är hos Pocock ett NAMNGIVET antimönster,
+  PR #763), och skarpa byggs från körbar spec-adress med bevis-loop
+  (screenshot-compare-fix) + mekanisk jämförelse som grind (O1
+  BackstopJS-klassen / O3 `ariaSnapshot`, båda med stark precedent per RP2).
+- **Mittfältet — vår nuvarande form — har NOLL precedent:** konvergens till
+  slutform + samlokalisering i main + återbygge + PNG-spec. Det är den
+  kombinationen som producerade R7 och R8 samtidigt, och den är inte ärvd —
+  den föddes hos oss ur `ADR-074` + throwaway-kontraktet.
+
+Grillningens G3 ställs därmed om från "vilken variant-form?" till **"vilken
+pol?"** — och svaret styr G1 (spec-bärare), G4 (AC-form) och spår B:s
+riktning för `A1`–`A6`.
+
+### Nya fynd att bära vidare (registrerade, inte tyst förkastade)
+
+- **`fork`-subagentformen** (ärver hela konversationen i stället för
+  blind start) fanns i förstapartsdokumentationen hela tiden — direkt
+  K4-kandidat. `T134`:s 3×-mätning mätte spawn-från-noll; fork är omätt.
+  **Mät före G5-beslut.** (RP1.)
+- **URL-flytten:** `anthropic.com/engineering/claude-code-best-practices`
+  308-redirectar till `code.claude.com/docs/en/best-practices` med OMSKRIVEN
+  text — varje citat från gamla sidan i våra ADR:er/skills/lessons kan avse
+  text som inte längre finns. `ADR-100`-klass; tangerar S99:s `task-161`
+  (styrande docs-auditen) — samordnas dit, dupliceras inte. (RP1.)
+- **AI-defaults-risken i divergensfasen:** Anthropics `frontend-design`-
+  plugin beskriver tre igenkännbara AI-design-defaults (*"defaults rather
+  than choices"*) — vår divergens-fas har inget skydd mot att tre "radikalt
+  olika" varianter landar i tre AI-defaults. Kandidat till
+  `/prototype`-skillens nästa iteration. (RP1.)
+- **Lost Pixel arkiverat** 2026-04-22 — stryks som self-hosted-kandidat.
+  (RP2.)
+- **K1 förstapartsbekräftad** som namngiven klass (*"config drift across
+  worktrees"*, Anthropics worktree-dok) men utan färdig branschlösning för
+  vår underklass; K6:s närmaste precedent är CODEOWNERS. (RP3.)
+- **Rivningsprotokolls-validering:** `ADR-102` B3/B4 (rivning först på
+  Marcus-godkännande) är en legitim delmängd av branschens
+  deprecate→archive→delete-familj — inte ett hemmabygge. (RP3.)
+
+## Del 6 — Öppet outrett (carry; skrivet efter spår A, uppdaterat efter Del 5)
 
 Från rapporternas egna osäkerhets-sektioner, samlat: ~194 Marcus-turer i
 transkriptet ogranskade (filter-urval); F55:s orsak/lösning (592 rader
 oläst); `T135`:s rotorsak; produktions-bundle-beviset för `:284`-grenen
 (inferens, mätning utskriven i R7–R9-rapporten); facit-mekanismens
 förebyggande effekt (byggd sist i fönstret, aldrig prövad på ny händelse);
-S100-underleveransens rotorsaks-släktskap (HYPOTES); branschprecedent för
-G3:s options-rymder; aggregerad totalkostnad för hela arcen (ingen källa
-summerar Del 2–8 i jämförbara enheter).
+S100-underleveransens rotorsaks-släktskap (HYPOTES); ~~branschprecedent för
+G3:s options-rymder~~ (**numera mätt** — RP1–RP3, se Del 5); aggregerad
+totalkostnad för hela arcen (ingen källa summerar Del 2–8 i jämförbara
+enheter); `fork`-subagentformens kostnad mot spawn-från-noll (omätt,
+K4/G5-kritisk); Pococks PR #763-modell i praktisk drift (obelagd).
