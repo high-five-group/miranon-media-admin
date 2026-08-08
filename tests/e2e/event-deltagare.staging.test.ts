@@ -4,13 +4,19 @@ import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
  * task-18.4 — Anmälda deltagare som ARBETSKÖ (S73-facit K35–K58): summeringsrader
- * med klickfilter, kategori-flikar och eventinfo-signalens alltid reserverade
- * slot. [ÄNDRAT, TASK-145.1] Obekräftade-kön/Bekräftade-arkivet (var sin
+ * med klickfilter och eventinfo-signalens alltid reserverade slot.
+ * [ÄNDRAT, TASK-145.1] Obekräftade-kön/Bekräftade-arkivet (var sin
  * `GruppRubrik`, fällbar accordion) är RIVNA — registret är sedan denna
  * skiva EN ovillkorlig lista, steg-hink- + FIFO-sorterad, med steg-märket
  * som enda grupperingssignal (se `Deltagare.tsx`s `ArbetsKo`-docblock för
- * hela skivgränsen). Summeringsraderna, klickfiltret och kategori-flikarna
- * är OFÖRÄNDRADE.
+ * hela skivgränsen). Summeringsraderna och klickfiltret är OFÖRÄNDRADE.
+ *
+ * [ÄNDRAT, TASK-162.3 — Registrets promovering, ADR-103 B2 steg 1] Kategori-
+ * flikarna ("Alla/Manuella/Medföljande") är RIVNA — registrets filterpanel
+ * (Visa-dropdown åtta val + Väg in-dropdown fem val, kombinerbara) är nu den
+ * OVILLKORLIGA registerformen, promoverad från `?variant=a`. Avbokade ingår
+ * numera i registrets bas (grå-märkta, sist). Se `Deltagare.tsx`s
+ * `ArbetsKo`-docblock § REGISTRET för hela promoverings-trailen.
  *
  * Körs i chromium-authenticated-projektet (`.staging.test.ts` = projektets
  * testMatch-kontrakt, inte staging-exklusivt).
@@ -22,9 +28,10 @@ import { mockValjarLista } from './helpers/valjar-lista';
  * bevisar KLIENTENS form och beteende flak-fritt utan delad staging-data.
  *
  * Täckning: summeringsradernas ordning + värden (AC #2), klickfiltret med
- * Rensa filtret, registrets steg-hink- + FIFO-gruppering (TASK-145.1 AC #2/#3),
- * kategori-flikarna, signal-slottens båda lägen utan geometri-hopp (AC #3),
- * avbokade räknas bort, axe 0.
+ * registrets "Rensa filter"-knapp, registrets steg-hink- + FIFO-gruppering
+ * (TASK-145.1 AC #2/#3, avbokade inräknade sedan TASK-162.3 AC #2),
+ * "Väg in"-filtret (TASK-162.3, kategori-flikarnas ersättare), signal-slottens
+ * båda lägen utan geometri-hopp (AC #3), axe 0.
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
@@ -220,8 +227,13 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // Alla sju står otryckta i grundläget (inget filter aktivt).
     await expect(rader).toHaveCount(7);
 
-    // Eva (Avbokad/Ombokad) syns aldrig i kön — 4 aktiva, inte 5.
-    await expect(gruppen(page).getByText('Eva Sten')).toHaveCount(0);
+    // Eva (Avbokad/Ombokad) räknas bort ur just DESSA SUMMERINGAR (4 aktiva,
+    // inte 5 — bevisat av etiketterna ovan). [ÄNDRAT, TASK-162.3 AC #2] Hon
+    // syns numera i REGISTRET självt (grå-märkt, sist) — se det egna
+    // registertestet nedan för fullständig ordning/märkning.
+    await expect(
+      gruppen(page).getByTestId('deltagar-register').getByText('Eva Sten'),
+    ).toBeVisible();
   });
 
   // [ÄNDRAT, TASK-145.1] Obekräftade-kön och Bekräftade-arkivet (var sin
@@ -247,7 +259,9 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // Steg-hink (AC #2): Bertil/Anna (väntar på bekräftelse) FÖRE David/
     // Cecilia (väntar på betalning — ingen har mottagen anmälningsavgift).
     // FIFO inom hink (AC #3): Bertil (06-20) före Anna (07-01); David
-    // (06-25) före Cecilia (07-05).
+    // (06-25) före Cecilia (07-05). [ÄNDRAT, TASK-162.3 AC #2] Eva
+    // (Avbokad/Ombokad) är SIST — `registerOrdning`s hink 6, avbokade ingår
+    // numera i registrets bas i stället för att vara bortfiltrerade.
     const register = gruppen(page).getByTestId('deltagar-register');
     await expect(register).toBeVisible();
     expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual([
@@ -255,6 +269,7 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
       'Anna Ek',
       'David Nord',
       'Cecilia Lund',
+      'Eva Sten',
     ]);
 
     // Steg-märket ÄR grupperingen (AC #4) — exakt ETT märke per person
@@ -265,6 +280,10 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
       kortet(page, 'Bertil Sund').getByText('Väntar på bekräftelse').last(),
     ).toBeVisible();
     await expect(kortet(page, 'David Nord').getByText('Väntar på betalning').last()).toBeVisible();
+    // [TILLKOMMET, TASK-162.3 AC #2] Eva bär det grå Avbokad-märket, inte ett
+    // steg-märke — registret visar sanningen om avbokade utan att blanda ihop
+    // dem med det aktiva arbetsflödet.
+    await expect(kortet(page, 'Eva Sten').getByText('Avbokad').last()).toBeVisible();
   });
 
   // [ÄNDRAT, TASK-145.1] Bekräftade-arkivets forna fäll-/öppna-tillstånd
@@ -289,9 +308,12 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await mocka(page, eventDetail(), allaBekraftade);
     await oppnaEventsidan(page);
 
-    // Alla fyra i registret direkt (steg-hink: samtliga saknar mottagen
-    // anmälningsavgift ⇒ EN hink, FIFO: Bertil 06-20 → David 06-25 →
+    // Alla fyra AKTIVA i registret direkt (steg-hink: samtliga saknar
+    // mottagen anmälningsavgift ⇒ EN hink, FIFO: Bertil 06-20 → David 06-25 →
     // Anna 07-01 → Cecilia 07-05) — ingen accordion att fälla ut.
+    // [ÄNDRAT, TASK-162.3 AC #2] Eva (Avbokad/Ombokad, orörd av
+    // `allaBekraftade`-mappningen ovan) är SIST — registrets bas inkluderar
+    // numera avbokade.
     const register = gruppen(page).getByTestId('deltagar-register');
     await expect(register).toBeVisible();
     expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual([
@@ -299,6 +321,7 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
       'David Nord',
       'Anna Ek',
       'Cecilia Lund',
+      'Eva Sten',
     ]);
 
     // …och registret överlever en omrendering av hela grenen (filter på och
@@ -316,14 +339,22 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await rad.click();
     await expect(rad).toHaveAttribute('aria-pressed', 'true');
     await expect(register).toBeVisible();
-    // Alla utom David saknar eventinfo (fixturen) ⇒ tre av fyra.
+    // Alla utom David saknar eventinfo (fixturen) ⇒ tre av de fyra AKTIVA.
+    // Eva är AVBOKAD — `stegTest('eventinfo-saknas')` utesluter avbokade
+    // explicit (samma guard som räddar Avbokade-summeringsraden från att
+    // dubbelräknas), så hon kan aldrig dyka upp i detta filter.
     await expect(register.getByTestId('deltagar-namn')).toHaveCount(3);
-    await gruppen(page).getByRole('button', { name: 'Rensa filtret' }).click();
+    // [ÄNDRAT, TASK-162.3] Knappen heter "Rensa filter" (panelens badge-bärande
+    // knapp), inte längre "Rensa filtret" (den rivna flik-formens länk).
+    await gruppen(page)
+      .getByRole('button', { name: /^Rensa filter/ })
+      .click();
     await expect(register).toBeVisible();
-    await expect(register.getByTestId('deltagar-namn')).toHaveCount(4);
+    // Hela registret tillbaka — FEM nu, Eva inräknad (TASK-162.3 AC #2).
+    await expect(register.getByTestId('deltagar-namn')).toHaveCount(5);
   });
 
-  test('summeringsradens klick FILTRERAR till flat lista + Rensa filtret; klick igen rensar', async ({
+  test('summeringsradens klick FILTRERAR registret + Rensa filter; klick igen rensar', async ({
     page,
   }) => {
     await mocka(page, eventDetail());
@@ -343,18 +374,23 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // filter är valt — filtrerat och ofiltrerat läge är EN render-gren. Det är
     // det som gör markera-läget nåbart ur ett filtrerat läge (PRD
     // användarberättelse 12), och det som gör listan steg-/FIFO-sorterad även
-    // filtrerad (samma jämförare, `registerLista`).
+    // filtrerad (samma jämförare, `registerListaA` sedan TASK-162.3).
     await expect(register).toBeVisible();
     expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual([
       'Bertil Sund',
       'Anna Ek',
     ]);
-    const rensa = gruppen(page).getByRole('button', { name: 'Rensa filtret' });
+    // [ÄNDRAT, TASK-162.3] "Rensa filter" (panelens badge-bärande knapp) i
+    // stället för den rivna flik-formens "Rensa filtret"-länk. Namnet bär en
+    // sr-only-räknare ("Rensa filter , 1 aktivt filterval") — regex matchar
+    // prefixet oavsett räknarens värde.
+    const rensa = gruppen(page).getByRole('button', { name: /^Rensa filter/ });
     await expect(rensa).toBeVisible();
 
     // Eventinfo-raden filtrerar på dem som SAKNAR eventinfo (det åtgärdbara):
-    // alla utom David. FIFO inom steg-hink: Bertil (06-20) och Anna (07-01)
-    // väntar på bekräftelse (hink 0), Cecilia saknar avgift (hink 1).
+    // alla AKTIVA utom David (Eva/avbokad utesluts alltid, se testet ovan).
+    // FIFO inom steg-hink: Bertil (06-20) och Anna (07-01) väntar på
+    // bekräftelse (hink 0), Cecilia saknar avgift (hink 1).
     await gruppen(page)
       .getByRole('button', { name: /^Eventinfo skickad/ })
       .click();
@@ -365,36 +401,42 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
       'Cecilia Lund',
     ]);
 
-    // Rensa filtret → hela registret tillbaka.
+    // Rensa filter → hela registret tillbaka. FEM nu (TASK-162.3 AC #2: Eva
+    // ingår i registrets bas), inte fyra.
     await rensa.click();
     await expect(register).toBeVisible();
-    await expect(register.getByTestId('deltagar-namn')).toHaveCount(4);
+    await expect(register.getByTestId('deltagar-namn')).toHaveCount(5);
 
     // Klick på en AKTIV rad rensar också (toggle-semantiken).
     await vantarRad.click();
     await expect(vantarRad).toHaveAttribute('aria-pressed', 'true');
     await vantarRad.click();
     await expect(vantarRad).toHaveAttribute('aria-pressed', 'false');
-    await expect(register.getByTestId('deltagar-namn')).toHaveCount(4);
+    await expect(register.getByTestId('deltagar-namn')).toHaveCount(5);
   });
 
-  test('kategori-flikarna filtrerar listorna; summeringarna räknar ALLTID hela eventet', async ({
+  // [RIVET+ERSATT, TASK-162.3 AC #1] Kategori-flikarna ("Alla/Manuella/
+  // Medföljande", ToggleButtonGroup, radiogroup) fanns här som ett eget test
+  // — de är promoverade bort. Registrets filterpanel bär numera SAMMA
+  // filtreringsförmåga plus mer (åtta steg-val, kombinerbara med väg in) via
+  // "Väg in"-dropdownen (fem val: Alla vägar in/Via formulär/Manuellt
+  // tillagd/Medföljande/Från väntelistan) — de tre gamla flikvärdena finns
+  // kvar som ett DELMÄNGD av de fem. Detta test bevisar samma underliggande
+  // Lotta-värde (filtrera registret på väg in) mot den nya formen.
+  test('"Väg in"-filtret filtrerar registret på källa; summeringarna räknar ALLTID hela eventet', async ({
     page,
   }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    const flikar = gruppen(page).getByRole('radiogroup', { name: 'Visa deltagare' });
-    await expect(flikar.getByRole('radio', { name: 'Alla (4)' })).toBeChecked();
-    await expect(flikar.getByRole('radio', { name: 'Manuella (1)' })).toBeVisible();
-    await expect(flikar.getByRole('radio', { name: 'Medföljande (1)' })).toBeVisible();
-
-    // Manuella → bara Bertil (Källa 'Manuell'). [ÄNDRAT, TASK-145.1]
-    // Kategori-pillen ("Manuellt tillagd") har vikit för steg-märket
-    // (AC #4/#5, samma redan Marcus-beslutade princip som `?variant=a`:
-    // "det räcker att den är filtrerbar" — flik-togglen lever kvar orörd).
-    await flikar.getByRole('radio', { name: 'Manuella (1)' }).click();
     const register = gruppen(page).getByTestId('deltagar-register');
+
+    // Manuellt tillagd → bara Bertil (Källa 'Manuell'). Kategori-pillen
+    // ("Manuellt tillagd") har vikit för steg-märket (AC #4/#5, samma redan
+    // Marcus-beslutade princip som `?variant=a` bar innan promoveringen:
+    // "det räcker att den är filtrerbar").
+    await page.getByRole('button', { name: 'Väg in' }).click();
+    await page.getByRole('option', { name: 'Manuellt tillagd' }).click();
     expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual(['Bertil Sund']);
     // [ÄNDRAT, TASK-145.4 → uppdaterat i TASK-145.3] Räkningen scopas till
     // REGISTRET, inte hela sektionen. Sedan betalningsytan flyttade in under
@@ -407,21 +449,32 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(
       kortet(page, 'Bertil Sund').getByText('Väntar på bekräftelse').last(),
     ).toBeVisible();
-    // Summeringarna står kvar på hela eventet (K38) — flikvalet rör bara listan.
-    // [ÄNDRAT, TASK-145.2] Raden heter "Anmälningsavgifter" sedan de tre gamla
-    // utskicks-raderna revs.
+    // Summeringarna står kvar på hela eventet (K38) — registrets filterpanel
+    // rör bara listan. [ÄNDRAT, TASK-145.2] Raden heter "Anmälningsavgifter"
+    // sedan de tre gamla utskicks-raderna revs.
     await expect(gruppen(page).getByRole('button', { name: /^Anmälningsavgifter/ })).toHaveText(
       'Anmälningsavgifter0 av 4 mottagna−4',
     );
 
-    // [ÄNDRAT, TASK-145.1] Medföljande → bara David (Källa '+1'). Han syns
-    // DIREKT i den ovillkorliga registerlistan — inget arkiv att fälla ut,
-    // och kategori-pillen ("Medföljande") har likaså vikit för steg-märket.
-    await flikar.getByRole('radio', { name: 'Medföljande (1)' }).click();
+    // Medföljande → bara David (Källa '+1'). Han syns DIREKT i den
+    // ovillkorliga registerlistan — inget arkiv att fälla ut, och
+    // kategori-pillen ("Medföljande") har likaså vikit för steg-märket.
+    await page.getByRole('button', { name: 'Väg in' }).click();
+    await page.getByRole('option', { name: 'Medföljande' }).click();
     await expect(register).toBeVisible();
     expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual(['David Nord']);
     await expect(register.getByText('Medföljande', { exact: true })).toHaveCount(0);
     await expect(kortet(page, 'David Nord').getByText('Väntar på betalning').last()).toBeVisible();
+
+    // [TILLKOMMET, TASK-162.3] Axlarna KOMBINERAS — flikarna kunde inte göra
+    // detta. "Väg in: Medföljande" + "Visa: Klara" ger NOLL träffar (David
+    // väntar på betalning, inte klar) trots att Medföljande-axeln ensam gav
+    // en träff — bevis att båda filtren verkar samtidigt, inte det ena i
+    // taget.
+    await page.getByRole('button', { name: 'Visa' }).click();
+    await page.getByRole('option', { name: 'Klara' }).click();
+    await expect(register.getByTestId('deltagar-namn')).toHaveCount(0);
+    await expect(gruppen(page).getByText('Inga träffar i denna kategori.')).toBeVisible();
   });
 
   test('AC #3: signal-slotten renderar i BÅDA lägena med identisk geometri (badge / tom reserv)', async ({
@@ -505,10 +558,18 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await expect(gruppen(page).getByRole('button', { name: /^Väntar på bekräftelse/ })).toHaveText(
       'Väntar på bekräftelse0',
     );
-    await expect(gruppen(page).getByText('Inga deltagare i denna kategori.')).toBeVisible();
-    // TASK-145.3: batch-baren monteras aldrig över en tom lista — Markera är
+    // [ÄNDRAT, TASK-162.3] Meddelandet är den promoverade formens
+    // "Inga anmälningar ännu." (`unifiedSorted.length === 0`-grenen i
+    // `ArbetsKo`, gäller nu OVILLKORLIGT) — den rivna flik-formens
+    // "Inga deltagare i denna kategori." hörde till ett flik-VAL, ett begrepp
+    // som inte längre finns (den texten står i stället kvar för ett AKTIVT
+    // FILTER utan träffar, se "Väg in"-testet ovan).
+    await expect(gruppen(page).getByText('Inga anmälningar ännu.')).toBeVisible();
+    // TASK-145.3/TASK-162.3: varken filterpanelen eller batch-baren monteras
+    // när registret är HELT tomt (noll registreringar totalt) — Markera är
     // inte en affordans när det inte finns något att markera.
     await expect(gruppen(page).getByTestId('markering-batchbar')).toHaveCount(0);
+    await expect(gruppen(page).getByTestId('register-filter-panel')).toHaveCount(0);
   });
 
   // [ÄNDRAT, TASK-145.1] "Arkivet utfällt" fanns som ett tredje meningsfullt
@@ -583,16 +644,21 @@ test.describe('TASK-145.1 — registret som EN lista (DoD #7)', () => {
     // hela `gruppen` som redan alla andra tester i denna fil gör.
     const register = gruppen(page).getByTestId('deltagar-register');
     await expect(register).toBeVisible();
-    // Fyra aktiva personkort (Eva/Avbokad räknas bort), inga checkboxar.
-    await expect(register.getByTestId('deltagar-kort')).toHaveCount(4);
+    // [ÄNDRAT, TASK-162.3 AC #2] FEM personkort — Eva/Avbokad ingår numera i
+    // registrets bas (grå-märkt, sist) i stället för att vara bortfiltrerad —
+    // inga checkboxar förrän Markera-läget öppnas.
+    await expect(register.getByTestId('deltagar-kort')).toHaveCount(5);
     await expect(register.getByRole('checkbox')).toHaveCount(0);
 
     // Negativ kontroll, INLINE (inget att injicera utifrån via page.route —
     // Markera-knappen sitter i registrets EGEN batch-bar sedan AC #11):
     // öppnas läget på riktigt SKA gaten tillåta exakt det, annars vore den
     // för sträng och skulle fälla en legitim, avsiktlig arbetsyta.
+    // [ÄNDRAT, TASK-162.3] Markera-lägets kandidatmängd är `registerListaA`
+    // (promoverad, ovillkorlig) — Eva kan därför markeras precis som alla
+    // andra registerposter, fem checkboxar i stället för fyra.
     await gruppen(page).getByRole('button', { name: 'Markera anmälningar' }).click();
-    await expect(register.getByRole('checkbox')).toHaveCount(4);
+    await expect(register.getByRole('checkbox')).toHaveCount(5);
     await gruppen(page).getByRole('button', { name: 'Avbryt markering' }).click();
     await expect(register.getByRole('checkbox')).toHaveCount(0);
   });
@@ -651,23 +717,36 @@ test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => 
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
-    const atgardsytan = page.locator('section[aria-labelledby="grupp-atgarder"]');
-    await expect(atgardsytan).toBeVisible();
+    // [ÄNDRAT, koordinering TASK-162.2 (PR #991), 2026-08-08] `section[aria-
+    // labelledby="grupp-atgarder"]` finns inte längre — åtgärds-ytans
+    // PROMOVERADE form (`AtgarderKort` + `SkrivUtKort`, TASK-162.2) är två
+    // fristående SYSKON-kort utan gemensamt sektions-skal (se
+    // `eventsida-promoverings-grind.spec.ts`s docblock, "React-fragment,
+    // inget gemensamt DOM-skal"). Sanity-kollen att åtgärds-ytan faktiskt
+    // RENDERAT (annars vore varje nedanstående noll-räkning en tom seger)
+    // pekar därför mot `AtgarderKort`s egen, redan STABILA lokator i stället
+    // för den rivna sektionen — samma `data-testid="atgarder-kort"` den
+    // delade promoverings-grinden (TASK-162.1) redan bevisar mot.
+    await expect(page.getByTestId('atgarder-kort')).toBeVisible();
 
-    for (const yta of [gruppen(page), atgardsytan]) {
-      // Inga kryssrutor alls — varken muterande eller markerande. Var och en av
-      // de tre avsiktliga undantagen kräver en handling Lotta inte gjort än.
-      await expect(yta.getByRole('checkbox')).toHaveCount(0);
-      // Inget redigerbart fält: `getByRole('textbox')` täcker både
-      // `<input type="text">` och `<textarea>`, alltså både den rivna
-      // notering-inputen och varje handrullad ersättare.
-      await expect(yta.getByRole('textbox')).toHaveCount(0);
-      await expect(yta.locator('[contenteditable="true"]')).toHaveCount(0);
-      // Ingen påminn-avfyrning, i någon av dess två historiska former (knapp
-      // med mutation, länk med mailto).
-      await expect(yta.getByRole('button', { name: /påminn/i })).toHaveCount(0);
-      await expect(yta.getByRole('link', { name: /påminn/i })).toHaveCount(0);
-    }
+    // Övriga assertioner scopas till HELA SIDAN i stället för en
+    // deltagar-/åtgärds-sektion var för sig: påståendet ("noll skriv-
+    // affordanser") håller oavsett vilket DOM-skal respektive yta bär, och
+    // blir därmed robust mot framtida omformning av endera ytan — samma
+    // bredd mailto-kollen längre ner redan hade.
+    //
+    // Inga kryssrutor alls — varken muterande eller markerande. Var och en av
+    // de tre avsiktliga undantagen kräver en handling Lotta inte gjort än.
+    await expect(page.getByRole('checkbox')).toHaveCount(0);
+    // Inget redigerbart fält: `getByRole('textbox')` täcker både
+    // `<input type="text">` och `<textarea>`, alltså både den rivna
+    // notering-inputen och varje handrullad ersättare.
+    await expect(page.getByRole('textbox')).toHaveCount(0);
+    await expect(page.locator('[contenteditable="true"]')).toHaveCount(0);
+    // Ingen påminn-avfyrning, i någon av dess två historiska former (knapp
+    // med mutation, länk med mailto).
+    await expect(page.getByRole('button', { name: /påminn/i })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /påminn/i })).toHaveCount(0);
 
     // MAILTO-VÄGARNA mäts på HELA sidan, inte per sektion: en mailto-länk är en
     // utgång ur appen och hör inte hemma någonstans på en översyn. Del 3
@@ -682,10 +761,10 @@ test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => 
       'Markera alla obetalda som betalda',
       'Skicka eventinfo till alla anmälda',
     ]) {
-      await expect(atgardsytan.getByRole('button', { name: namn })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: namn })).toHaveCount(0);
     }
-    // …och ingen rad i gruppen bär kvar interim-tillståndet.
-    await expect(atgardsytan.locator('[aria-disabled="true"]')).toHaveCount(0);
+    // …och ingen rad någonstans på sidan bär kvar interim-tillståndet.
+    await expect(page.locator('[aria-disabled="true"]')).toHaveCount(0);
   });
 
   test('den öppnade betalningsytan är LÄSYTA — mätt från sektionens nivå, inte arbetsytans', async ({

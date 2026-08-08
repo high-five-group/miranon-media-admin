@@ -17,14 +17,12 @@ import { Checkbox } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName, inskickadTid } from '@/components/registrations/registration-display';
 import { useSetBorOver } from '@/data/mutations/registrationLodging';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
-import { cn } from '@/lib/cn';
 import { queryKeys } from '@/queries/keys';
 // [PROTOTYPE] [S93] konvergens-pass (Del 3 beslut 1): Betalningars arbetsyta
 // flyttar in i Anmälda deltagare — se ArbetsKo:s "Öppna detaljer" nedan.
@@ -60,29 +58,42 @@ import {
  *
  * Formen (uppifrån och ned): fyra KLICKBARA summeringsrader i Lottas
  * utskicksordning (K42: bekräftelse → påminnelse → eventinfo) med
- * eventinfo-signalens alltid reserverade slot (K43/K44) → kategori-flikarna i
- * familje-kapseln (K41: formulär-fliken riven, formulärvägen är normen) →
- * REGISTRET, sedan TASK-145.1 EN enda `DeltagarListan` (se `registerLista`
- * i `ArbetsKo`), inte längre Obekräftade/Bekräftade som två separata
- * accordions (K40s ursprungliga par är rivet — se § REGISTRET nedan).
- * Klick på en summeringsrad ersätter registret med en flat filtrerad lista
- * + "Rensa filtret" (K57: förklarande texter rivna — man har ju tryckt).
+ * eventinfo-signalens alltid reserverade slot (K43/K44) → REGISTRETS
+ * FILTERPANEL (`RegisterFilterRad` — Visa-dropdown åtta val + Väg in-dropdown
+ * fem val, kombinerbara) → REGISTRET, sedan TASK-145.1 EN enda
+ * `DeltagarListan` (se `registerListaA` i `ArbetsKo`), inte längre
+ * Obekräftade/Bekräftade som två separata accordions (K40s ursprungliga par
+ * är rivet — se § REGISTRET nedan).
  *
- * § REGISTRET (TASK-145.1; PRD TASK-145 "Registret blir EN lista") —
- * Obekräftade-kön och Bekräftade-arkivet, var och en med egen `GruppRubrik`
- * och egen sorteringsordning, är RIVNA. Ersättaren är EN `DeltagarListan`
- * sorterad på FYRA steg-hinkar (`registerOrdning`, hallplats-steg-
- * prototyp.ts) — väntar på bekräftelse → anmälningsavgift saknas →
- * slutbetalning saknas → klara, med inställt/på-väg-till-väntelista sist —
+ * [RIVEN, TASK-162.3] Kategori-flikarna ("Alla/Manuella/Medföljande",
+ * ToggleButtonGroup, K41) OCH den gamla flata "Rensa filtret"-grenen
+ * (K57) är BORTA — ADR-103 B2 steg 1: variant-formens filterpanel
+ * (byggd i konvergens-passet, vågorna 5/6/8/9) är nu den OVILLKORLIGA
+ * registerformen, för BÅDA `protoVariant`-lägena. "Väg in"-dropdownen
+ * ersätter flikarnas tre värden med fem, kombinerbara med steg-axeln
+ * ("medföljande som saknar slutbetalning") — se `RegisterFilterRad`
+ * (DeltagareHallplatsPrototyp.tsx). Git bevarar flik-grenens kod
+ * (TASK-145.1–145.3-historiken i denna fils blame).
+ *
+ * § REGISTRET (TASK-145.1; PRD TASK-145 "Registret blir EN lista";
+ * TASK-162.3 "Registrets promovering") — Obekräftade-kön och
+ * Bekräftade-arkivet, var och en med egen `GruppRubrik` och egen
+ * sorteringsordning, är RIVNA. Ersättaren är EN `DeltagarListan` sorterad på
+ * FYRA steg-hinkar (`registerOrdning`, hallplats-steg-prototyp.ts) — väntar
+ * på bekräftelse → anmälningsavgift saknas → slutbetalning saknas → klara,
+ * med inställt/på-väg-till-väntelista/AVBOKAD sist (TASK-162.3 AC #2:
+ * avbokade är numera EN DEL av registrets bas, grå-märkta av `HallplatsMarke`,
+ * inte längre bortfiltrerade — se `unifiedSorted`/`registerListaA` nedan) —
  * och INOM varje hink i anmälningsordning (äldst-registrerad-först, samma
  * FIFO-semantik Obekräftade-kön hade, nu enhetlig över hela registret).
  * Steg-märket (`HallplatsMarke`, `registerHallplatsMarke` i `ArbetsKo`) ÄR
  * grupperingen — inga sektionsrubriker renderas, exakt ETT märke per person
  * även när flera steg är ogjorda (prioritetsordningen bor i
- * `hallplatsSteg()`). SKIVGRÄNS (öppet bokförd): flik-togglen, de fyra
- * KLICKBARA summeringsraderna ovan och filtrerings-/`traffar`-grenen är
- * ALLA OFÖRÄNDRADE — TASK-145.1 rör ENDAST registrets egen gruppering/
- * sortering/märkning; en ny fyra-hinks räknar-rad äger `TASK-145.2`.
+ * `hallplatsSteg()`). SKIVGRÄNS (öppet bokförd): de fyra KLICKBARA
+ * summeringsraderna ovan (redan ovillkorliga sedan TASK-145.2) är OFÖRÄNDRADE
+ * av denna skiva — TASK-162.3 rör ENDAST registrets egen filterpanel/bas/
+ * avdelare/Bor över-ram/noll-träffar-form (A2–A6, facitkartan); en ny
+ * fyra-hinks räknar-rad äger `TASK-145.2`.
  *
  * PERSONKORTEN (task-18.5; S73-facit K45/K62) bor i `DeltagarKort` nedan.
  *
@@ -105,11 +116,13 @@ import {
  * batch-barens vänsterkant (§ REGISTRET ovan — rubrikraden den satt på är
  * riven); Esc och Avbryt är vägarna ut, oförändrat.
  *
- * KANDIDATMÄNGDEN ÄR VISAD LISTA (TASK-145.3 AC #2): `visadRegisterLista` i
- * `ArbetsKo` — den filtrerade vyn när ett steg-/logistik-filter är valt,
- * annars hela den steg-sorterade listan. Markera-läget kräver alltså inget
- * filter, men följer med i ett. Auto-utskicks-krysset (K44) i signal-slotten
- * är rivet sedan TASK-145.2.
+ * KANDIDATMÄNGDEN ÄR VISAD LISTA (TASK-145.3 AC #2, promoverad TASK-162.3):
+ * `registerListaA` i `ArbetsKo` — den filtrerade vyn när ett steg-/
+ * logistik-/väg-in-filter är valt, annars hela den steg-sorterade listan
+ * (`unifiedSorted`, avbokade inräknade). Markera-läget kräver alltså inget
+ * filter, men följer med i ett — och kan numera markera avbokade poster
+ * också, eftersom de är en del av registrets bas (AC #2). Auto-utskicks-
+ * krysset (K44) i signal-slotten är rivet sedan TASK-145.2.
  *
  * SKELETT-AVGRÄNSNINGEN (öppet bokförd): Bor över-arbetsraden är task-18.7. Bor
  * över-raden saknas HELT ur summeringen (bas-fältet föds i 18.7 — en rad som
@@ -121,13 +134,22 @@ import {
  * en UTSKICKS-logg, gruppen är anmälans TILLSTÅND. Divergerar de visas det som
  * det är — aldrig hopslaget.
  *
- * Avbokade/ombokade räknas bort överallt (`arAktiv`, samma basformel-disciplin
- * som Betalningar-gruppen) — en avbokad anmälan är inte Lottas arbete.
+ * Avbokade/ombokade räknas bort ur SUMMERINGARNA och topp-räknarna (`arAktiv`,
+ * samma basformel-disciplin som Betalningar-gruppen) — en avbokad anmälan är
+ * inte Lottas ARBETE. [ÄNDRAT, TASK-162.3 AC #2] Registret självt är
+ * undantaget: avbokade syns numera i registrets bas (grå-märkta av
+ * `HallplatsMarke`, sist i ordningen via `registerOrdning`s hink 6) —
+ * Marcus iterationsvågs-beslut "avbokade ska även synas i registret självt",
+ * promoverat från `?variant=a` till den ovillkorliga formen. `protoAvbokade`
+ * (nedan) läser fortfarande HELA `registreringar` oberoende av detta, för
+ * Avbokade-summeringsraden och steg-filtrets 'avbokad'-val.
  *
  * A11y (11/10): summeringsraderna är knappar med `aria-pressed` (filtret är ett
- * toggle-tillstånd); flikarna är ToggleButtonGroup (radiogroup + pilnavigering);
- * registret (§ REGISTRET) är en `<ul>` utan `aria-expanded`/`aria-controls`
- * sedan `GruppRubrik`s accordion-par revs (TASK-145.1) — steg-märket bär sin
+ * toggle-tillstånd); filterpanelen (§ REGISTRET) är två `Select`-primitiv, ingen
+ * radiogroup längre — [RIVEN, TASK-162.3] kategori-flikarna (ToggleButtonGroup,
+ * "Alla/Manuella/Medföljande") är promoverade bort, se § REGISTRET nedan;
+ * registret är en `<ul>` utan `aria-expanded`/`aria-controls` sedan
+ * `GruppRubrik`s accordion-par revs (TASK-145.1) — steg-märket bär sin
  * egen text, färg aldrig ensam bärare; räknarna står som TEXT i etiketterna
  * (skärmläsaren får hela bilden); signal-badgen bär sin text likaså.
  */
@@ -183,8 +205,13 @@ const KATEGORI_PILL: Partial<Record<DeltagarKategori, string>> = {
   vantelista: 'Från väntelistan',
 };
 
-/** Flikarnas nycklar — 'alla' plus de två kategorier som har egen flik (K41). */
-type FlikNyckel = 'alla' | 'manuell' | 'medfoljande';
+/**
+ * [RIVEN, TASK-162.3 AC #1] `FlikNyckel` ('alla' | 'manuell' | 'medfoljande',
+ * K41) bodde här — kategori-flikarnas nyckeltyp. Ersatt av `VagInFilter`
+ * (hallplats-steg-prototyp.ts), registerpanelens "Väg in"-axel, som redan
+ * bar samma tre värden plus två till ('formular', 'vantelista') och kan
+ * KOMBINERAS med steg-axeln — flikarna kunde inte kombineras med något.
+ */
 
 /**
  * [RIVEN, TASK-145.2] `SummeringsFilter`/`FILTER_TEST` (de fem gamla
@@ -1080,29 +1107,19 @@ function BorOverRad({
   );
 }
 
-/** K57: högerställd "Rensa filtret"-rad. Utbruten sedan konvergens-passet
-    (S93 Del 3): TVÅ anropsplatser (skarpa vyns/`filter`-drivna branch,
-    oförändrad · variant A:s enade register, som måste nolla FLER filter-
-    states — se `ArbetsKo`s `rensaAllaFilterA`). Ren extraktion. */
-function RensaFiltretKnapp({ onClick }: { onClick: () => void }) {
-  return (
-    <div className="mt-1.5 flex justify-end">
-      <button
-        type="button"
-        onClick={onClick}
-        className="font-medium text-small underline-offset-2 hover:underline"
-      >
-        Rensa filtret
-      </button>
-    </div>
-  );
-}
+/**
+ * [RIVEN, TASK-162.3 AC #1] K57:s högerställda "Rensa filtret"-knapp
+ * (`RensaFiltretKnapp`) bodde här — den gamla flata registerformens rensa-
+ * väg. Registrets ENDA rensa-ingång är nu `RegisterFilterRad`s "Rensa
+ * filter"-knapp (DeltagareHallplatsPrototyp.tsx), som redan bar en
+ * räknebadge den gamla länken saknade. Git bevarar funktionen i denna fils
+ * blame.
+ */
 
-/** KRYSS-LÄGET (K52): ALLA visade anmälda i EN kolumn, säng-kryss per rad.
-    Utbruten sedan konvergens-passet (S93 Del 3): TVÅ anropsplatser (skarpa
-    vyns/`filter`-drivna branch, oförändrad · variant A:s enade register —
-    "Bor över"-raden är delad, oförändrad, mellan varianterna). Ren
-    extraktion, ingen beteendeändring. */
+/** KRYSS-LÄGET (K52): ALLA aktiva anmälda i EN kolumn, säng-kryss per rad.
+    Utbruten sedan konvergens-passet (S93 Del 3). [ÄNDRAT, TASK-162.3] En
+    enda anropsplats sedan flik-grenens egen kryss-branch är riven — se
+    `ArbetsKo`s render. */
 function BorOverKrysslage({
   lista,
   protoDataMode,
@@ -1215,23 +1232,34 @@ function DeltagarListan({
   );
 }
 
+// [RIVEN, TASK-162.3 AC #1/#4] `protoVariant` (`HallplatsVariant | null`) var
+// tidigare en egen prop här — hela `ArbetsKo`s rendering grenade på den
+// (flikar kontra filterpanel). Sedan promoveringen läser INGEN gren i denna
+// funktion `protoVariant` längre (registrets form är ovillkorlig), så propen
+// är genuint död, inte bara oanvänd i denna ändring. `Deltagare()` (nedan)
+// beräknar fortsatt `protoVariant` för `protoDataMode`-härledningen och
+// åtgärds-ytans (TASK-162.2) egna behov — den variabeln och hela
+// `?variant=`-maskineriet är ORÖRDA (AC #4); det är bara TRÅDNINGEN in i
+// just denna funktion som utgår, eftersom mottagaren inte längre kan läsa
+// den till något.
 function ArbetsKo({
   event,
   registreringar,
-  protoVariant = null,
   protoDataMode = false,
 }: {
   event: Event;
   registreringar: Registration[];
-  /** [PROTOTYPE] [S93] hållplats-pass — null = skarpa vyn, orörd. */
-  protoVariant?: HallplatsVariant | null;
   /** [PROTOTYPE] [S93] `?data=proto` — stubbar bekräfta-mutationen (§ DATA). */
   protoDataMode?: boolean;
 }) {
   // [RIVEN, TASK-145.1] `panelId` (useId) bodde här — dess enda konsumenter
   // var Obekräftade/Bekräftade-panelernas `id`-attribut, borta med
   // `GruppRubrik`s två produktions-anropsplatser (AC #1).
-  const [flik, setFlik] = useState<FlikNyckel>('alla');
+  // [RIVEN, TASK-162.3 AC #1] `flik`/`setFlik` (FlikNyckel-statet som drev
+  // kategori-flikarna) bodde här. Registrets "väg in"-axel bor numera i
+  // `registerFilter.vagIn` (ETT tillstånd nedan) i stället för ett separat
+  // state — samma konsolidering som `registerFilter.steg` redan gjorde med
+  // de fem gamla summeringsraderna (se kommentaren nedan).
   // [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus 2026-08-05) — ETT filtertillstånd
   // för hela registret, i stället för de TRE separata proto-states som fanns
   // här förut (`hallplatsFilter` · `protoBetalningsFilter` ·
@@ -1268,10 +1296,12 @@ function ArbetsKo({
     }
     return counts;
   }, [aktiva]);
-  const hallplatsMarkeFn =
-    protoVariant != null
-      ? (r: Registration) => <HallplatsMarke steg={hallplatsSteg(r)} />
-      : undefined;
+  // [RIVEN, TASK-162.3 AC #1] `hallplatsMarkeFn` (`protoVariant != null ? …
+  // : undefined`) bodde här — registrets STEG-märke är nu ovillkorligt (samma
+  // form i BÅDA `protoVariant`-lägena), så den villkorade varianten hade blivit
+  // AKTIVT FEL efter promoveringen (den hade tystat märket i produktion utan
+  // `?variant=a`). `registerHallplatsMarke` (nedan) — redan ovillkorlig,
+  // redan skarpa vyns egen — är nu den ENDA källan för registrets märke.
 
   // [PROTOTYPE] [S93] byggkrav 2 (variant A ENDAST, S96) — "Väntar på
   // betalning" delas i två räknerader i Betalningar-blockets EGNA grammatik.
@@ -1286,8 +1316,8 @@ function ArbetsKo({
   const { avgifterMottagna, avgifterTotalt, avgifterSaknas, slutMottagna, slutSaknas } =
     betalningsSplit(aktiva);
 
-  // Summeringarna räknar ALLTID hela eventet (K38) — flikvalet påverkar bara
-  // listorna under, aldrig "hur många".
+  // Summeringarna räknar ALLTID hela eventet (K38) — registrets filterpanel
+  // (Visa/Väg in) påverkar bara listan under, aldrig "hur många".
   const totalt = aktiva.length;
   // [RIVEN, TASK-145.2] `obekraftadeTotalt`/`bekraftelseSkickade`/
   // `pamindaTotalt` bodde här — de matade de tre rivna summeringsraderna
@@ -1299,32 +1329,33 @@ function ArbetsKo({
   // kryss-läget muterar optimistiskt — aldrig ett lagrat räknefält (PRD beslut 8).
   const borOverTotalt = aktiva.filter((r) => r.borOver === true).length;
 
-  const visade = useMemo(
-    () => (flik === 'alla' ? aktiva : aktiva.filter((r) => kategori(r) === flik)),
-    [aktiva, flik],
-  );
-  const antalKategori = (k: DeltagarKategori) => aktiva.filter((r) => kategori(r) === k).length;
+  // [RIVEN, TASK-162.3 AC #1] `visade` (flik-filtrerad `aktiva`) och
+  // `antalKategori` (flikarnas räknare) bodde här. `markeringsLista` (nedan,
+  // Bor över-kryssläget) läser `aktiva` direkt nu — flik-axeln fanns aldrig i
+  // variant A:s egen rendering (den var alltid 'alla' där), så bytet är
+  // no-op för Bor över-lägets kandidatmängd.
 
   // [RIVEN, TASK-145.1] `obekraftade`/`bekraftade` (Obekräftade-kön/
   // Bekräftade-arkivet, var sin äldst-/senast-först-sortering) bodde här —
-  // ersatta av `registerLista` nedan (AC #1: EN lista, `registerOrdning`-
-  // sorterad). Ingen annan anropsplats kvar (verifierat med grep).
+  // ersatta av `unifiedSorted`/`registerListaA` nedan (AC #1: EN lista,
+  // `registerOrdning`-sorterad). Ingen annan anropsplats kvar (verifierat
+  // med grep).
 
-  // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 2/3) — variant A ENDAST:
-  // registret blir EN lista, steg-ordning (ogjort överst) + anmälningsordning
-  // (ÄLDST FÖRST — samma FIFO-semantik som den gamla Obekräftade-kön, nu
-  // tillämpad enhetligt över samtliga steg i stället för bara kön) inom varje
-  // steg. `registerOrdning` (hallplats-steg-prototyp.ts) är den finmaskigare
-  // fyra-hinks-sorteringen (delar "väntar på betalning" i avgift/slut, samma
-  // delning som byggkrav 2:s summeringsrader). No-op utanför variant A
-  // (unifiedSorted beräknas men används aldrig — se render nedan).
-  // [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus punkt 3): registrets bas är HELA
-  // `registreringar` — INTE `visade`. Två skäl, båda Marcus beslut:
-  //  · avbokade ska "även synas i registret självt", och `aktiva` filtrerar
-  //    bort dem (de sorteras sist via registerOrdning och bär sitt grå märke);
-  //  · Alla/Manuella/Medföljande-FLIKEN som `visade` bar är riven — vägen in
-  //    är nu en axel i filterpanelen i stället, applicerad i `registerListaA`.
-  // Skarpa vyn läser fortfarande `visade` genom sina egna grenar, orörd.
+  // REGISTRETS BAS (konvergens-passet, Del 3 beslut 2/3 — PROMOVERAD,
+  // TASK-162.3 AC #1/#2): EN lista, steg-ordning (ogjort överst) +
+  // anmälningsordning (ÄLDST FÖRST — samma FIFO-semantik som den gamla
+  // Obekräftade-kön, nu tillämpad enhetligt över samtliga steg i stället för
+  // bara kön) inom varje steg. `registerOrdning` (hallplats-steg-prototyp.ts)
+  // är den finmaskigare fyra-hinks-sorteringen (delar "väntar på betalning" i
+  // avgift/slut, samma delning som byggkrav 2:s summeringsrader), med
+  // avbokade sist (hink 6).
+  //
+  // BASEN ÄR HELA `registreringar` — INTE `aktiva`, ITERATIONSVÅG (Marcus
+  // punkt 3), promoverad från `?variant=a` till den ENDA formen av denna
+  // skiva: "avbokade ska även synas i registret självt", och `aktiva`
+  // filtrerar bort dem. Vägen in (tidigare Alla/Manuella/Medföljande-fliken)
+  // är sedan TASK-162.3 en axel i filterpanelen i stället, applicerad i
+  // `registerListaA` nedan.
   const unifiedSorted = useMemo(
     () =>
       [...registreringar].sort((a, b) => {
@@ -1334,35 +1365,9 @@ function ArbetsKo({
     [registreringar],
   );
 
-  // TASK-145.1 (AC #1–#3) — PRODUKTIONENS EGNA enade register. Samma
-  // jämförare som `unifiedSorted` ovan (steg-hink → FIFO inom hink), men på
-  // `visade` (flik-filtrerad `aktiva` — samma bas Obekräftade-kön/Bekräftade-
-  // arkivet läste förut) i stället för hela `registreringar`: flik-togglen
-  // (Alla/Manuella/Medföljande, nedan i render) är OFÖRÄNDRAD och ska
-  // fortsätta filtrera registret (ingen AC river den), och avbokade är
-  // fortsatt bortfiltrerade — samma exkludering `aktiva` redan gjorde.
-  // `registerOrdning`s avbokad-hink (6) berör därför aldrig denna lista, bara
-  // `unifiedSorted`s variant-A-bas (som läser hela `registreringar`,
-  // avbokade inräknade — Marcus egen ITERATIONSVÅG-decision, se ovan). Egen
-  // `useMemo` i stället för att återanvända `unifiedSorted`: `?variant=a`s
-  // redan facit-låsta beräkning rörs inte alls av denna skiva.
-  const registerLista = useMemo(
-    () =>
-      [...visade].sort((a, b) => {
-        const diff = registerOrdning(a) - registerOrdning(b);
-        return diff !== 0 ? diff : inskickadTid(a) - inskickadTid(b);
-      }),
-    [visade],
-  );
-
-  // TASK-145.1 (AC #4/#5) — produktionens EGNA steg-märke. Separat från
-  // `hallplatsMarkeFn` ovan (alltjämt `protoVariant != null`-gated, konsumerad
-  // av `?variant=a`s ARBETSKÖ-render). [TASK-145.2] Delas numera ÄVEN med
-  // produktionens `registerTraffar`-drivna filterlista (nedan i render) —
-  // Steg-märket ÄR grupperingen överallt i registret, filtrerat eller ej.
-  // Samma redan facit-byggda komponent/logik (`HallplatsMarke`/
-  // `hallplatsSteg`) som `hallplatsMarkeFn` — ingen ny märkes-form
-  // uppfunnen, bara en ny anropsplats.
+  // Registrets EGNA steg-märke (TASK-145.1 AC #4/#5, ovillkorlig sedan
+  // TASK-162.3 — se `hallplatsMarkeFn`s rivnings-kommentar ovan). Steg-märket
+  // ÄR grupperingen överallt i registret, filtrerat eller ej.
   const registerHallplatsMarke = (r: Registration) => <HallplatsMarke steg={hallplatsSteg(r)} />;
 
   // [RIVEN, TASK-145.1] `bekraftadeVal`/`bekraftadeOppen` (Bekräftade-
@@ -1375,50 +1380,25 @@ function ArbetsKo({
   // detaljer"). Egen lokal state, precis som Betalningar.tsx:s egen `oppen`.
   const [betalningOppen, setBetalningOppen] = useState(false);
 
-  // TASK-145.2 (AC #2/#5) — PRODUKTIONENS EGEN filtrerade flata registervy.
-  // Ersätter den rivna `traffar` (SummeringsFilter-baserad) med samma
-  // `registerFilter.steg`/`stegTest` som toppblockets sju rader nu skriver/
-  // läser (samma mekanism `?variant=a`s `registerListaA` redan bar, men denna
-  // gren återanvänder OFÖRÄNDRAT den befintliga "Rensa filtret + platt lista"-
-  // renderingen i stället för filterpanelen `RegisterFilterRad` — den senare
-  // hör inte till denna skivas AC-lista).
+  // [RIVEN, TASK-162.3 AC #1] `registerTraffar` (den gamla flata "Rensa
+  // filtret"-grenens filtrerade vy, med ett eget specialfall för
+  // `registerFilter.steg === 'avbokad'` som läste `protoAvbokade` direkt) och
+  // `visadRegisterLista` (`registerTraffar ?? registerLista`) bodde här.
+  // Specialfallet behövs inte längre: `registerListaA` (nedan) filtrerar
+  // `unifiedSorted`, som redan INKLUDERAR avbokade (hink 6) — `stegTest
+  // ('avbokad')` träffar dem via SAMMA väg som alla andra steg-val, med
+  // SAMMA registerOrdning+FIFO-sortering i stället för en avvikande
+  // `inskickadTid`-bara sortering. `protoAvbokade` lever kvar — den matar
+  // fortfarande Avbokade-summeringsradens räknare och `RegisterFilterRad`s
+  // "N av dem är avbokade"-tillägg (TALENS OLIKA BASER, se render).
   //
-  // 'avbokad' är specialfallet (AC #5): avbokade är bortfiltrerade ur `aktiva`
-  // och därmed ur `visade` helt (samma exkludering som `arAktiv`), så det
-  // enda sättet att visa dem är att läsa `protoAvbokade` (HELA `registreringar`,
-  // samma källa Avbokade-radens räknare redan bygger på) — oberoende av
-  // flik-valet, precis som den gamla `AvbokadeRad` redan var.
-  const registerTraffar = useMemo(() => {
-    if (registerFilter.steg == null) return null;
-    // [TASK-145.3] Även avbokade FIFO-sorteras: de delar hink (`registerOrdning`
-    // 6) så bara anmälningsordningen skiljer dem åt, och registret ska visa
-    // samma ordningsprincip oavsett vilket filter som är valt.
-    if (registerFilter.steg === 'avbokad') {
-      return [...protoAvbokade].sort((a, b) => inskickadTid(a) - inskickadTid(b));
-    }
-    // [TASK-145.3] Filtret läser `registerLista` (redan steg-/FIFO-sorterad),
-    // inte `visade` (källordningen). Fram till denna skiva sorterades den
-    // filtrerade vyn INTE alls — samma register kunde alltså visa samma
-    // personer i två olika ordningar beroende på om ett filter var valt.
-    // "Registret blir EN lista sorterad på fyra steg-hinkar" (PRD) gäller
-    // registret, inte bara dess ofiltrerade läge.
-    return registerLista.filter(stegTest(registerFilter.steg));
-  }, [registerFilter.steg, registerLista, protoAvbokade]);
-
-  // [PROTOTYPE] [S93] konvergens-pass, variant A ENDAST (Del 3 beslut 3):
-  // "registret ... markera-läget verkar över visad lista" — den visade listan
-  // är ANTINGEN ett aktivt steg-räknar-/logistik-filter (`registerTraffar`
-  // ovan sedan TASK-145.2, tidigare `traffar`) ELLER, om inget är valt, HELA
-  // den enade steg-sorterade listan (unifiedSorted). Variant A:s EGEN
-  // "Rensa filter" (`RegisterFilterRad`, se render nedan) nollar
-  // `registerFilter` i sin helhet (`TOMT_REGISTER_FILTER`, båda axlarna) —
-  // [TASK-145.2] samma nollnings-anrop skarpa vyns `RensaFiltretKnapp` nu
-  // använder (se render), sedan den gamla separata `filter`-staten (och dess
-  // egen ofullständiga nollning) revs helt.
-  // [PROTOTYPE] [S93] ITERATIONSVÅG — variant A:s visade lista: `unifiedSorted`
-  // (som nu INKLUDERAR avbokade, se `registerBas`) genom filtrets två axlar.
-  // Axlarna KOMBINERAS ("medföljande som saknar slutbetalning"), till skillnad
-  // från den gamla fliken som inte kunde kombineras med något.
+  // REGISTRETS FILTRERADE VY (TASK-145.2/145.3, promoverad TASK-162.3):
+  // `registerFilter.steg`/`vagIn` läser samma `stegTest`/`vagInTest`
+  // (hallplats-steg-prototyp.ts) som toppblockets sju rader och
+  // `RegisterFilterRad`s två dropdowns skriver — EN mekanism, aldrig två som
+  // kan divergera. Axlarna KOMBINERAS ("medföljande som saknar
+  // slutbetalning"), till skillnad från den rivna flikens ena axel som inte
+  // kunde kombineras med något.
   const registerListaA = useMemo(() => {
     let ut = unifiedSorted;
     if (registerFilter.steg != null) ut = ut.filter(stegTest(registerFilter.steg));
@@ -1436,8 +1416,7 @@ function ArbetsKo({
 
   // Kryss-lägets STABILA sorterings-snapshot (K52): fångas när läget ÖPPNAS så
   // att en nykryssad rad inte hoppar upp under fingret — omsorteringen sker
-  // först vid nästa öppning. `Set` av record-ID:n (visnings-oberoende av vilken
-  // flik som är vald). null = läget är stängt.
+  // först vid nästa öppning. `Set` av record-ID:n. null = läget är stängt.
   const [borOverSnapshot, setBorOverSnapshot] = useState<Set<string> | null>(null);
   const lodging = useSetBorOver(event.id);
 
@@ -1461,12 +1440,16 @@ function ArbetsKo({
     lodging.mutate({ registration: reg, borOver });
   };
 
-  // Kryss-lägets lista: ALLA visade anmälda (arbetsrad, inte filterlista) med
-  // ikryssade — enligt snapshoten — överst. Array.sort är stabil (ES2019) så
-  // inbördes ordning bevaras inom varje grupp.
+  // Kryss-lägets lista: ALLA aktiva anmälda (arbetsrad, inte filterlista;
+  // avbokade hör inte hemma i en säng-tilldelning) med ikryssade — enligt
+  // snapshoten — överst. Array.sort är stabil (ES2019) så inbördes ordning
+  // bevaras inom varje grupp. [ÄNDRAT, TASK-162.3 AC #1] Läste tidigare
+  // `visade` (flik-filtrerad `aktiva`) — flik-axeln fanns aldrig i variant
+  // A:s egen Bor över-rendering (den var alltid 'alla' där, se den rivna
+  // `FlikNyckel`-kommentaren ovan), så bytet till `aktiva` direkt är no-op.
   const markeringsLista =
     registerFilter.steg === 'bor-over' && borOverSnapshot != null
-      ? [...visade].sort(
+      ? [...aktiva].sort(
           (a, b) => Number(borOverSnapshot.has(b.id)) - Number(borOverSnapshot.has(a.id)),
         )
       : [];
@@ -1479,28 +1462,23 @@ function ArbetsKo({
   // staten och dess MessageBox-yta är rivna med — se docblocket där
   // `SKICKAT_TITEL`/`skickatKvittens` en gång bodde.
 
-  // REGISTRETS VISADE LISTA — TASK-145.3 (AC #2): markera-läget verkar över
-  // VISAD lista, alltså den filtrerade vyn när ett steg-/logistik-filter är
-  // valt (`registerTraffar`) och annars hela den steg-sorterade listan
-  // (`registerLista`). Fram till denna skiva hade produktionens FILTRERADE
-  // gren ingen batch-bar alls — Lotta kunde inte "filtrera fram de nio som
-  // saknar slutbetalning" och sedan markera sex av dem (PRD användarberättelse
-  // 12), vilket är hela skivans berättelse. EN lista, ETT ställe där markera
-  // verkar.
+  // [RIVEN, TASK-162.3 AC #1] `visadRegisterLista` (`registerTraffar ??
+  // registerLista`) bodde här. Markera-lägets kandidatmängd är sedan
+  // promoveringen alltid `registerListaA` (nedan) — TASK-145.1 (AC #10) och
+  // TASK-145.3 (AC #2): produktionens kandidatmängd är den RENDERADE listan,
+  // alltså den filtrerade vyn när ett steg-/väg in-filter är valt och annars
+  // HELA den enade steg-sorterade listan. Fram till TASK-145.3 hade
+  // produktionens FILTRERADE gren ingen batch-bar alls — Lotta kunde inte
+  // "filtrera fram de nio som saknar slutbetalning" och sedan markera sex av
+  // dem (PRD användarberättelse 12), vilket är hela den skivans berättelse.
+  // EN lista, ETT ställe där markera verkar — och sedan TASK-162.3 kan Lotta
+  // markera avbokade poster också, eftersom de nu är en del av samma lista
+  // (AC #2).
   //
   // `bor-over` är undantaget och renderas aldrig genom denna variabel: den
   // grenen är KRYSS-läget (`BorOverKrysslage`, K52), en egen arbetsrad med
   // egen sortering — inte registret.
-  const visadRegisterLista = registerTraffar ?? registerLista;
-
-  // Markera-lägets kandidater — TASK-145.1 (AC #10), TASK-145.3 (AC #2):
-  // produktionens kandidatmängd är den RENDERADE listan, alltså
-  // `visadRegisterLista` ovan. [PROTOTYPE] [S93] konvergens-pass, variant A
-  // ENDAST (Del 3 beslut 3): kandidaterna där är i stället `registerListaA` —
-  // dess EGEN filtrerade vy, eller hela den enade listan när inget filter är
-  // valt.
-  const markeringKandidatIds =
-    protoVariant === 'a' ? registerListaA.map((r) => r.id) : visadRegisterLista.map((r) => r.id);
+  const markeringKandidatIds = registerListaA.map((r) => r.id);
   const markering = useMarkeringsLage(markeringKandidatIds);
 
   /**
@@ -1656,8 +1634,10 @@ function ArbetsKo({
                 SummeringsRad-grammatik (term-vänster/värde-höger, aldrig
                 "N har avbokat" — facit-bilagan § 1). Klick filtrerar
                 registret på de avbokade, lästa ur HELA `registreringar`
-                (`protoAvbokade`, AC #5) — oberoende av flik-valet, eftersom
-                avbokade redan är bortfiltrerade ur `aktiva`/`visade`. */}
+                (`protoAvbokade`, AC #5) — samma personer som nu (TASK-162.3
+                AC #2) redan syns i registrets OFILTRERADE bas; raden ger en
+                GENVÄG till just dem, oberoende av `aktiva` som denna räknare
+                exkluderar dem ur. */}
             <SummeringsRad
               term="Avbokade"
               aktiv={registerFilter.steg === 'avbokad'}
@@ -1685,10 +1665,10 @@ function ArbetsKo({
           "fetare" avdelaren under Avbokade i iterationsvåg 2; `border-b-0`
           river den ärvda utan att röra något barns egen kant.
 
-          SCOPAD TILL VARIANT A: klassen är villkorad, inte ovillkorlig.
-          Wrappern är GEMENSAM för båda vyerna (bara innehållet är grenat), så
-          en ovillkorlig `border-b-0` hade tagit bort avdelaren i skarpa vyn
-          också — där ingen bett om det. */}
+          OVILLKORLIG SEDAN TASK-162.3 (AC #3, facitkartan § A4). Klassen var
+          tidigare scopad till `protoVariant === 'a'` — nu river den avdelaren
+          i BÅDA lägena, eftersom registrets form (denna wrapper HELA
+          innehållet) inte längre grenar på `protoVariant`. */}
       {/* [TASK-162.1] `data-testid="register-yta"` — promoverings-grindens
           lokator (ADR-103 B4). Wrappern är redan GEMENSAM för båda vyerna
           (se kommentaren ovan), så testid:t ändrar ingen gren och flippar
@@ -1696,176 +1676,68 @@ function ArbetsKo({
           runt precis det innehåll som facitkartan (A2–A6) pekar ut som
           registrets yta, utan att dra in toppblocket (6a, redan identiskt)
           eller betalningsarbetsytan (6h, redan identisk) i referensen. */}
-      <div
-        data-testid="register-yta"
-        className={cn('flex flex-col gap-2.5 py-3', protoVariant === 'a' && 'border-b-0')}
-      >
-        {/* K41: Formulär-fliken riven — formulärvägen är NORMEN och behöver
-            ingen egen flik. Kapseln är familjens ToggleButtonGroup-primitiv.
-            [PROTOTYPE] [S93] ITERATIONSVÅG: fliken renderas ENDAST i skarpa
-            vyn. I variant A är vägen in en axel i filterpanelen (se
-            RegisterFilterRad) — Marcus: togglen "behöver byggas om och exakt
-            matcha" eventsidans filtrering. */}
-        {protoVariant !== 'a' && (
-          <ToggleButtonGroup
-            label="Visa deltagare"
-            spread
-            selectedKey={flik}
-            onSelectionChange={(key: FlikNyckel) => {
-              setFlik(key);
-            }}
-          >
-            <ToggleButton id="alla" size="sm">
-              {`Alla (${totalt})`}
-            </ToggleButton>
-            <ToggleButton id="manuell" size="sm">
-              {`Manuella (${antalKategori('manuell')})`}
-            </ToggleButton>
-            <ToggleButton id="medfoljande" size="sm">
-              {`Medföljande (${antalKategori('medfoljande')})`}
-            </ToggleButton>
-          </ToggleButtonGroup>
-        )}
-
-        {protoVariant === 'a' ? (
-          // [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 3) — registret
-          // är EN lista, ingen sektionsrubrik: Steg-märkena (befintliga, se
-          // HallplatsMarke) ÄR grupperingen. Visad lista = `registerListaA`
-          // (traffar när ett steg-räknar-/logistik-filter är valt, annars
-          // HELA den enade steg-sorterade listan) — "markera-läget verkar
-          // över visad lista".
-          unifiedSorted.length === 0 ? (
-            <p className="py-2 text-small text-text-secondary">Inga anmälningar ännu.</p>
-          ) : (
-            <>
-              {/* [PROTOTYPE] [S93] ITERATIONSVÅG 5 (Marcus 2026-08-06):
-                  filtervyn står nu ALLTID framme — Filtrera-knappen och hela
-                  `Disclosure` är rivna ur `RegisterFilterRad`, och Markera
-                  flyttade ner till batch-barens vänsterkant. Marcus: "Vi tar
-                  bort Filtrera-knappen helt. Vi låter 'filtreringsvyn' vara
-                  framme som default." Motiveringen bor i komponentens
-                  docblock; kort: raden som trycktes ihop fanns bara för att
-                  det gick att fälla ut något. */}
-              <RegisterFilterRad
-                filter={registerFilter}
-                onFilterChange={(f) => {
-                  markering.stang();
-                  setRegisterFilter(f);
-                }}
-                visadeAntal={registerListaA.length}
-                totaltAntal={unifiedSorted.length}
-                // TALENS OLIKA BASER (Marcus 2026-08-06): `protoAvbokade` läser
-                // HELA `registreringar`; `aktiva` (som topp-räknarna bygger på)
-                // filtrerar bort dem. Skillnaden är precis det tal foten
-                // förklarar — se RegisterFilterRad § Talens olika baser.
-                avbokadeAntal={protoAvbokade.length}
-              />
-              {registerFilter.steg === 'bor-over' ? (
-                <BorOverKrysslage
-                  lista={markeringsLista}
-                  protoDataMode={protoDataMode}
-                  onToggle={toggleBorOver}
-                />
-              ) : (
-                <>
-                  {/* Baren renderas ALLTID i variant-läget (till skillnad från
-                      skarpa vyn nedan, som monterar den först vid aktivt läge):
-                      Markera-knappen bor i dess vänsterkant och måste stå kvar
-                      även när markeringsläget är av. `aktivt` styr resten. */}
-                  <MarkeringsBatchBar
-                    antal={markering.antal}
-                    totalt={registerListaA.length}
-                    allaValda={markering.allaValda}
-                    onMarkeraAlla={markering.markeraAlla}
-                    onRensa={markering.rensa}
-                    aktivt={markering.aktivt}
-                    markeraKnapp={
-                      <MarkeraKnapp
-                        aktivt={markering.aktivt}
-                        onOppna={markering.oppna}
-                        onStang={markering.stang}
-                        buttonRef={markeraKnappRef}
-                      />
-                    }
-                    valdaNamn={registerListaA
-                      .filter((r) => markering.valda.has(r.id))
-                      .map(displayName)}
-                  />
-                  {registerListaA.length > 0 ? (
-                    <DeltagarListan
-                      rader={registerListaA}
-                      eventId={event.id}
-                      rullande
-                      testId="deltagar-register"
-                      ariaLabel="Deltagarregister"
-                      markering={
-                        markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
-                      }
-                      hallplatsMarke={hallplatsMarkeFn}
-                    />
-                  ) : (
-                    <p className="py-2 text-small text-text-secondary">
-                      Inga träffar i denna kategori.
-                    </p>
-                  )}
-                </>
-              )}
-            </>
-          )
-        ) : registerFilter.steg === 'bor-over' ? (
-          // KRYSS-LÄGET (K52) är registrets enda gren som INTE är registret:
-          // en egen arbetsrad med egen sortering och egen (avsiktlig)
-          // skrivväg. Markera-läget verkar inte här — se `visadRegisterLista`.
-          <>
-            <RensaFiltretKnapp onClick={() => setRegisterFilter(TOMT_REGISTER_FILTER)} />
-            <BorOverKrysslage
-              lista={markeringsLista}
-              protoDataMode={protoDataMode}
-              onToggle={toggleBorOver}
-            />
-          </>
+      <div data-testid="register-yta" className="flex flex-col gap-2.5 border-b-0 py-3">
+        {/*
+         * REGISTRETS PROMOVERING (TASK-162.3, ADR-103 B2 steg 1) —
+         * facitkartans A2–A6, EN skiva eftersom avvikelserna delar kod och
+         * tillstånd (R9-felet igen annars). Villkoret som höll denna form
+         * bakom `protoVariant === 'a'` är FLIPPAT: filterpanelen
+         * (`RegisterFilterRad`), registrets bas (avbokade inräknade,
+         * AC #2), Bor över-kryssläget bakom SAMMA panel-ram (AC #3) och
+         * batch-baren vid noll träffar (AC #3) är nu den OVILLKORLIGA formen
+         * — för BÅDA `protoVariant`-lägena. Kategori-flikarna
+         * ("Alla/Manuella/Medföljande", K41) och den gamla flata
+         * "Rensa filtret"-grenen (`RensaFiltretKnapp`, `registerLista`,
+         * `registerTraffar`, `visadRegisterLista`) är RIVNA (AC #1) — git
+         * bevarar dem i denna fils blame (TASK-145.1–145.3).
+         *
+         * `protoVariant`/`protoDataMode` SJÄLVA rörs INTE (AC #4): den
+         * villkorar fortsatt DATAVÄGEN (`Deltagare()` nedan, `?data=proto` vs
+         * `?data=verklig`) och styr andra ytor (åtgärds-ytan, TASK-162.2).
+         * Rivningen av `?variant=`-maskineriet i sig ligger i TASK-145.6,
+         * efter Marcus godkännande (ADR-103 B2 steg 4) — utanför denna skiva.
+         */}
+        {unifiedSorted.length === 0 ? (
+          <p className="py-2 text-small text-text-secondary">Inga anmälningar ännu.</p>
         ) : (
-          // TASK-145.1 — REGISTRET SOM EN LISTA (AC #1–#7, #10, #11).
-          // Obekräftade-kön och Bekräftade-arkivet (var sin `GruppRubrik`,
-          // äldst-/senast-först-sortering) är RIVNA — `registerLista` (ovan)
-          // är den enda listan, `registerOrdning`-sorterad i fyra steg-hinkar
-          // med FIFO inom var och en. Steg-märket (`registerHallplatsMarke`)
-          // ÄR grupperingen — ingen sektionsrubrik renderas, exakt ETT märke
-          // per person (se `hallplatsSteg`s prioritetsordning).
-          //
-          // TASK-145.3 (AC #2) — EN GREN, INTE TVÅ. Fram till denna skiva var
-          // filtrerat och ofiltrerat läge två SEPARATA renderingar: den
-          // filtrerade bar ingen batch-bar, ingen `rullande`-klipphöjd, inget
-          // `testId` och ingen `ariaLabel`. Följden var att markera-läget inte
-          // gick att nå ur ett filtrerat läge alls — precis den berättelse
-          // skivan äger ("Lotta filtrerar fram de nio som saknar
-          // slutbetalning, slår på Markera, bockar sex av dem"). Grenarna är
-          // nu EN, driven av `visadRegisterLista`; "Rensa filtret" är det enda
-          // som tillkommer när ett filter är valt.
-          //
-          // K57: "Visar:"-raden och instruktionstexten är RIVNA — man har ju
-          // tryckt på raden. Rensa-knappen står ensam, högerställd.
-          // `setRegisterFilter(TOMT_REGISTER_FILTER)` nollar HELA
-          // filtertillståndet (steg OCH vagIn) i ETT anrop.
-          //
-          // MARKERA-KNAPPENS EGNA FÖRANKRING (145.1 AC #11): `GruppRubrik`s
-          // `handling`-slot försvann med rubriken den satt på — knappen bor i
-          // `MarkeringsBatchBar`s vänsterkant via dess `markeraKnapp`-prop.
-          <div>
-            {registerTraffar != null && (
-              <RensaFiltretKnapp onClick={() => setRegisterFilter(TOMT_REGISTER_FILTER)} />
-            )}
-            {visadRegisterLista.length === 0 ? (
-              <p className="py-2 text-small text-text-secondary">
-                {registerTraffar != null
-                  ? 'Inga träffar i denna kategori.'
-                  : 'Inga deltagare i denna kategori.'}
-              </p>
+          <>
+            {/* [PROTOTYPE] [S93] ITERATIONSVÅG 5 (Marcus 2026-08-06):
+                filtervyn står nu ALLTID framme — Filtrera-knappen och hela
+                `Disclosure` är rivna ur `RegisterFilterRad`, och Markera
+                flyttade ner till batch-barens vänsterkant. Marcus: "Vi tar
+                bort Filtrera-knappen helt. Vi låter 'filtreringsvyn' vara
+                framme som default." Motiveringen bor i komponentens
+                docblock; kort: raden som trycktes ihop fanns bara för att
+                det gick att fälla ut något. */}
+            <RegisterFilterRad
+              filter={registerFilter}
+              onFilterChange={(f) => {
+                markering.stang();
+                setRegisterFilter(f);
+              }}
+              visadeAntal={registerListaA.length}
+              totaltAntal={unifiedSorted.length}
+              // TALENS OLIKA BASER (Marcus 2026-08-06): `protoAvbokade` läser
+              // HELA `registreringar`; `aktiva` (som topp-räknarna bygger på)
+              // filtrerar bort dem. Skillnaden är precis det tal foten
+              // förklarar — se RegisterFilterRad § Talens olika baser.
+              avbokadeAntal={protoAvbokade.length}
+            />
+            {registerFilter.steg === 'bor-over' ? (
+              <BorOverKrysslage
+                lista={markeringsLista}
+                protoDataMode={protoDataMode}
+                onToggle={toggleBorOver}
+              />
             ) : (
               <>
+                {/* Baren renderas ALLTID (AC #3, facitkartan § A6) — även vid
+                    noll träffar och även när markeringsläget är av: Markera-
+                    knappen bor i dess vänsterkant och måste stå kvar.
+                    `aktivt` styr resten. */}
                 <MarkeringsBatchBar
                   antal={markering.antal}
-                  totalt={visadRegisterLista.length}
+                  totalt={registerListaA.length}
                   allaValda={markering.allaValda}
                   onMarkeraAlla={markering.markeraAlla}
                   onRensa={markering.rensa}
@@ -1878,31 +1750,30 @@ function ArbetsKo({
                       buttonRef={markeraKnappRef}
                     />
                   }
-                  // AC #2, "tar urvalet vidare": namnen läses ur den VISADE
-                  // listan i dess visningsordning, så platshållaren speglar
-                  // exakt det Lotta ser sig ha markerat.
-                  valdaNamn={visadRegisterLista
+                  valdaNamn={registerListaA
                     .filter((r) => markering.valda.has(r.id))
                     .map(displayName)}
                 />
-                {/* [TASK-145.4] `visaUtskicksRader`-övertrampet är BORTA (se
-                    KortInnehall § TASK-145.1-docblocket) — ersättningen
-                    (BetalningsDetaljer/"Öppna detaljer", Tidslinje) finns nu i
-                    produktionen, så defaultbeteendet gäller. */}
-                <DeltagarListan
-                  rader={visadRegisterLista}
-                  eventId={event.id}
-                  rullande
-                  testId="deltagar-register"
-                  ariaLabel="Deltagarregister"
-                  markering={
-                    markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
-                  }
-                  hallplatsMarke={registerHallplatsMarke}
-                />
+                {registerListaA.length > 0 ? (
+                  <DeltagarListan
+                    rader={registerListaA}
+                    eventId={event.id}
+                    rullande
+                    testId="deltagar-register"
+                    ariaLabel="Deltagarregister"
+                    markering={
+                      markering.aktivt ? { valda: markering.valda, vaxla: markering.vaxla } : null
+                    }
+                    hallplatsMarke={registerHallplatsMarke}
+                  />
+                ) : (
+                  <p className="py-2 text-small text-text-secondary">
+                    Inga träffar i denna kategori.
+                  </p>
+                )}
               </>
             )}
-          </div>
+          </>
         )}
       </div>
       {/* [PROTOTYPE] [S93] KONVERGENS-PASSET (Del 3 beslut 1) — Betalningars
@@ -1970,12 +1841,7 @@ export function Deltagare({ event }: { event: Event }) {
   if (protoDataMode) {
     return (
       <DetaljGrupp id="grupp-deltagare" rubrik="Anmälda deltagare">
-        <ArbetsKo
-          event={event}
-          registreringar={HALLPLATS_PROTO_FIXTURES}
-          protoVariant={protoVariant}
-          protoDataMode
-        />
+        <ArbetsKo event={event} registreringar={HALLPLATS_PROTO_FIXTURES} protoDataMode />
       </DetaljGrupp>
     );
   }
@@ -1996,7 +1862,7 @@ export function Deltagare({ event }: { event: Event }) {
           </MessageBox>
         </div>
       ) : (
-        <ArbetsKo event={event} registreringar={data} protoVariant={protoVariant} />
+        <ArbetsKo event={event} registreringar={data} />
       )}
     </DetaljGrupp>
   );

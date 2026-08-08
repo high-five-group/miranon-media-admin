@@ -4,6 +4,7 @@ title: 'Skiva: Registrets promovering (A2–A6)'
 status: To Do
 assignee: []
 created_date: '2026-08-08 07:42'
+updated_date: '2026-08-08 09:22'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,11 +21,11 @@ Registrets fem avvikelser (A2 navigering, A3 basen, A4 avdelaren, A5 Bor över-r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Filterpanelen renderar ovillkorligt: Visa-dropdown (åtta val) + Väg in-dropdown (fem val) kombinerbara, räkneraden Visar N av M med avbokade-tillägg, Rensa filter med räknebadge, Skriv ut i panelens fot; flik-grenens kod borttagen (git bevarar)
-- [ ] #2 Registrets bas inkluderar avbokade: grå-märkta, sist i ordningen
-- [ ] #3 Avdelaren under registret riven ovillkorligt; batch-baren med Markera står kvar vid noll träffar; Bor över-kryssläget behåller filterpanelen som ram
-- [ ] #4 Variant-villkoret, växlaren och variant-maskineriet orörda
-- [ ] #5 ariaSnapshot-grinden grön i alla fyra lägen (default, aktivt filter, Bor över-kryss, noll träffar)
+- [x] #1 Filterpanelen renderar ovillkorligt: Visa-dropdown (åtta val) + Väg in-dropdown (fem val) kombinerbara, räkneraden Visar N av M med avbokade-tillägg, Rensa filter med räknebadge, Skriv ut i panelens fot; flik-grenens kod borttagen (git bevarar)
+- [x] #2 Registrets bas inkluderar avbokade: grå-märkta, sist i ordningen
+- [x] #3 Avdelaren under registret riven ovillkorligt; batch-baren med Markera står kvar vid noll träffar; Bor över-kryssläget behåller filterpanelen som ram
+- [x] #4 Variant-villkoret, växlaren och variant-maskineriet orörda
+- [x] #5 ariaSnapshot-grinden grön i alla fyra lägen (default, aktivt filter, Bor över-kryss, noll träffar)
 - [ ] #6 Berörda e2e- och acceptance-tester uppdaterade till promoverad form i SAMMA ändring; sviterna gröna
 <!-- AC:END -->
 
@@ -33,8 +34,8 @@ Registrets fem avvikelser (A2 navigering, A3 basen, A4 avdelaren, A5 Bor över-r
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
 - [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
-- [ ] #7 Datavägs-invarianten verifierad: inga protoDataMode-grenar flippade
+- [x] #7 Datavägs-invarianten verifierad: inga protoDataMode-grenar flippade
 <!-- DOD:END -->
