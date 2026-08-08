@@ -12,7 +12,7 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
 import { Anteckningar } from './detail/Anteckningar';
-import { Atgarder, AtgarderKort, CheckInKort, SkrivUtKort } from './detail/Atgarder';
+import { AtgarderKort, CheckInKort, SkrivUtKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
 import { Deltagare } from './detail/Deltagare';
 import { Gruppdynamik } from './detail/Gruppdynamik';
@@ -271,24 +271,22 @@ export function EventDetail({ eventId }: { eventId: string }) {
         )}
       </header>
 
-      {/* Check-in-ingången + Åtgärder (task-18.3; S73-facit K19–K26): check-in
-          som rubrikfritt kort ÖVER Åtgärds-gruppen, gruppen före datagrupperna.
-          Länkmåls- och kopplingsinterimen är öppet bokförda i Atgarder.tsx. */}
+      {/* Check-in-ingången + åtgärds-ytan (task-18.3; S73-facit K19–K26;
+          PROMOVERAD TASK-162.2, ADR-103 B2 steg 1): check-in som rubrikfritt
+          kort ÖVER åtgärds-ytan, ytan före datagrupperna. `AtgarderKort`
+          ("Gå till åtgärder") + `SkrivUtKort` (fristående "Skriv ut") är
+          sedan denna commit den OVILLKORLIGA formen — den gamla rubricerade
+          Åtgärder-gruppen (`Atgarder`, tidigare renderad här när
+          `variantParam` INTE var satt) är riven; git bevarar den (senast i
+          main före denna commit). Länkmåls- och kopplingsinterimen är öppet
+          bokförda i Atgarder.tsx § AtgarderKort.
+          `variantParam`/`isHallplatsVariant` STYR INTE längre denna yta —
+          maskineriet i övrigt (registret i Deltagare.tsx, prototyp-railen
+          nedan) är ORÖRT (ADR-103 B2 steg 4/TASK-145.6 river flaggan efter
+          Marcus godkännande). */}
       <CheckInKort eventId={eventId} />
-      {/* [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus 2026-08-05, punkt 4): i
-          variant-läge ERSÄTTS Åtgärds-gruppen av två kort i check-in-kortets
-          egen form — "Gå till åtgärder" (utskicken + manuell anmälan flyttar
-          dit) och "Skriv ut denna detaljsida" (sidans utskrift stannar).
-          Motiveringen i sin helhet: Atgarder.tsx § AtgarderKort.
-          Skarpa vyn (`protoVariant == null`) renderar gruppen OFÖRÄNDRAD. */}
-      {isHallplatsVariant(variantParam) ? (
-        <>
-          <AtgarderKort />
-          <SkrivUtKort />
-        </>
-      ) : (
-        <Atgarder eventId={eventId} />
-      )}
+      <AtgarderKort />
+      <SkrivUtKort />
 
       <OmEventet event={event} />
 
