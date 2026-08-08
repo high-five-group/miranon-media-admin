@@ -15,6 +15,23 @@
 
 ## Aktuellt fokus
 
+**Session 99 ▶️ ÅTERUPPTAGEN (2026-08-08, `lifecycle: active`, resume 3) —
+UPPDRAG 9-EXEKVERINGEN STARTAR; NUMRERINGEN HÖLL PÅ FYRA AV FEM AXLAR.**
+Resume-läsningen disk-verifierade handoffen: paus-PR:n `#955` MERGED
+`19:34:02Z` utan röda jobb · alla elva 161-kort orörda `To Do` · ADR **103** /
+**L480** / **T138** / **task-162** / **f47** stämmer — men lessons-fragmenten
+är **8**, inte handoffens 6 (två nya under pausen; lessons-skörden räknar om
+vid session-end). Ägarlappen FRÄMMANDE och har BYTT session-ID på samma PID
+under pausen (`5a232dcd`/47876); S93 + S100 båda `lifecycle: active` → egen
+worktree `s99-resume-3` per ADR-090 beslut 2. **NÄSTA: tre
+skarpbevis-skulder (deny-precompact · post-compact-igenkänning ·
+tröskel-verifikatet; varna Marcus före prompt-genererande verifikat) → våg 1
+`161.1`+`161.2`+`161.9` → beroendekedjan → `161.10` QA.** Marcus-moment
+enligt S99-paus-raden nedan.
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 3) —
 DE TRETTON VARVEN HAR REDAN LANDAT, OCH HANDOFFEN VISSTE INTE OM DET.**
 Resume-läsningen fann **tre divergenser**. (1) PAUSLÄGE:s *"TRETTON VARV
