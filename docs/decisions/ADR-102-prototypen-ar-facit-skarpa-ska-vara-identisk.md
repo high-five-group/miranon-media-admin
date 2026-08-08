@@ -4,6 +4,25 @@
 - Datum: 2026-08-07
 - Fas: Session 93, PRD `TASK-145`/`TASK-146`
 
+> **Amendering (2026-08-08, S93 sjunde resumen — grillad samsyn Del 12,
+> `ADR-103`):** **B4:s sekvens är ERSATT av promoveringsordningen** i
+> `ADR-103` B2 — steg 1 ("skarpa görs identisk") var ett återbygge, och
+> återbygget är avskaffat: prototypens form PROMOVERAS (villkoret flippas,
+> skarpas datavägar behålls), Marcus granskar, godkänner, och FÖRST DÅ rivs
+> flaggan/variant-koden — aldrig formen. B1 står orörd och FULLBORDAS av
+> promoveringsformen; B2:s identitetskrav uppfylls numera strukturellt
+> (en artefakt kan inte divergera från sig själv); B3:s spärr står orörd
+> och vaktar promoveringsordningens steg 4; B5:s AC-form ersätts i
+> praktiken av promoverings-AC med bevis-loop (`ADR-103` B4).
+> Facit-bilderna byter roll från spec till REGRESSIONSSTÖD. Beslutstexten
+> nedan bevaras oförändrad (immutabilitet). Bakgrund: fyra-axlars-auditen
+> fann att rotorsakerna R1–R6 i allt väsentligt är symptom på
+> översättningskedjan prototyp→bilder→AC→agent, och att formen
+> "konvergens till slutform + samlokalisering + återbygge + PNG-spec"
+> saknar branschprecedent — se
+> `docs/research/processaudit-syntes-och-grillningsunderlag-2026-08-08.md`
+> Del 5.
+
 ## Kontext
 
 Marcus ord som utlöste beslutet, verbatim:
