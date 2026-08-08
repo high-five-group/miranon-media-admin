@@ -1,16 +1,29 @@
 ---
 owner: marcus803
 updated: 2026-08-08
-review_by: 2026-11-15
+review_by: 2027-02-08
 status: stable
 ---
 
 
 <!-- markdownlint-disable MD041 -->  <!-- filen saknar h1 (data-doc utan toc-rubrik som default) -->
-> **Primär version.**
+> **Primär version. Tvillingen är KAPAD (TASK-161.8, 2026-08-08).**
 >
-> Kopia för psionautics-projektets Claude-chatt synkas separat till
-> `~/Repon/psionautics/docs/reference/hur-systemet-funkar.md` efter varje uppdatering här.
+> Denna fil deklarerade tidigare en AKTIV manuell synk till en psionautics-
+> kopia "efter varje uppdatering här". Verifierat mot disk 2026-08-08: den
+> synken har INTE skett sedan **2026-04-28** — psionautics-repots senaste
+> commit är från det datumet (`53ab498`, `git -C ~/Repon/psionautics log -1`),
+> och kopian bär fortfarande april-innehållet (gamla Snabbfakta-tal, gammalt
+> ändringslogg-datum) medan denna fil sedan dess fått substansändringar
+> (senast TASK-161.2, 2026-08-08). Kopian bar dessutom REDAN sin egen
+> avvecklings-deklaration: *"Efter eventet 1–3 maj 2026 avvecklas denna
+> kopia"* — det datumet är passerat. Detta beslut FULLFÖLJER den
+> avvecklingen i stället för att uppfinna en ny: kopian (rätt sökväg
+> `~/Repon/psionautics/docs/hur-systemet-funkar.md` — INTE `docs/reference/`
+> som både denna rad och kopians egen "Primär version"-rad tidigare felaktigt
+> angav) är nu FRUSEN som historisk artefakt med egen banderoll, inte längre
+> ett aktivt synk-mål. Denna fil är fortsatt den enda LEVANDE Gunilla-nivå-
+> förklaringen — ingen tvillingskyldighet kvarstår.
 
 ---
 
@@ -24,10 +37,11 @@ via `78ad1c68`; det datumet hade aldrig följt med hit).*
 
 > **Äger:** Gunilla-nivå-förklaringen av systemet — ingen sak-auktoritet.
 > **Kartlägger:** `docs/reference/data-model.md` (datamodellens fält/mekanik,
-> för Claude Code) och `~/Repon/psionautics/docs/reference/hur-systemet-
-> funkar.md` (manuellt synkad systerkopia, denna fil är källan för den
-> synken). **Vid konflikt vinner:** `data-model.md` för datamodellen; denna
-> fil är den enda bäraren av sin egen Gunilla-nivå-förklaring.
+> för Claude Code). **Vid konflikt vinner:** `data-model.md` för
+> datamodellen; denna fil är den enda bäraren av sin egen
+> Gunilla-nivå-förklaring. Den tidigare psionautics-systerkopian är sedan
+> TASK-161.8 (2026-08-08) en FRUSEN, ej längre synkad artefakt (se
+> banderollen ovan) — den ägs inte längre av denna rad.
 
 ---
 
@@ -308,6 +322,7 @@ En Person kan vara i olika tillstånd beroende på hur långt relationen gått. 
 
 | Datum | Ändring |
 |---|---|
+| 2026-08-08 | **TASK-161.8 — tvillingen kapad (styrande-docs-auditen AC2).** Psionautics-kopian verifierad mot disk: osynkad sedan 2026-04-28 (psionautics senaste commit `53ab498`), och kopian bar redan sin egen avvecklings-deklaration ("Efter eventet 1–3 maj 2026 avvecklas denna kopia") vars datum passerat. Ingen "deklarerad synk-ägare med riktning" — beslutet är KAPNING: kopian frusen med egen banderoll i psionautics-repot (samma landning), denna fils "Primär version"-banderoll + ägar-deklaration omskriven för att inte längre utlova en synk som inte sker. Sido-fynd: bägge sidors cross-repo-sökvägspekare var felaktiga (`docs/reference/`-prefixet fanns bara på EN sida) — rättat i samma landning. |
 | 2026-04-28 | **Version 3.** Snabbfakta uppdaterad (Psionautics-admin "i drift", Miranon Media-admin "under uppbyggnad", backfill markerad klar). Scenario 3 nuläge-not uppdaterad till live-state 2026-04-28 (1 012 av 1 500 Närvarande, 67.5%). Scenario 3 + 4: backfill markerad genomförd 2026-04-19. Scenario 4 lösning rättad från "ska köras" till "klar — 924 historiska Deltaganden importerade". "Vad kan gå fel"-tabell utökad med 2 rader (mail-PATCH-tystnad, Inställt räknas som aktiv). Vägen framåt: backfill markerad klar, Miranon Media-admin status preciserad. Insiktskedjan: RIM 3 tillagd i exempel-listan (RIM 1 / RIM 2 / RIM 3 / Fjärrskådning). |
 | 2026-04-16 | Version 2 — omstrukturerad till tabell-format. Samma innehåll, tätare presentation. |
 | 2026-04-16 | Version 1 — scenariodriven prosa (ersatt). |

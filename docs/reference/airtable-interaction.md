@@ -1,19 +1,24 @@
 ---
 owner: marcus803
 updated: 2026-08-08
-review_by: 2026-12-21
+review_by: 2027-02-08
 status: stable
 ---
 
 # App↔Airtable — interaktions-kontraktet
 
-> **Äger:** app↔Airtable-interaktionskontraktet — Edge Function-katalogen,
-> write-kontraktet (§7) och `_shared`-API:t (§8). **Kartlägger:**
-> `docs/specs/SECURITY-SPEC.md` §6.1 (operations-registrets sanningskälla —
-> denna fils §7-tabell speglar den, äger den inte) och `field-allowlists.ts`
-> (koden, `ADR-100` §1 domän 1). **Vid konflikt vinner:** koden alltid för
-> write-tillstånd; SECURITY-SPEC för operations-registret; detta dok för
-> interaktionsmönstren i övrigt.
+> **Äger:** app↔Airtable-interaktionskontraktet i TUNN form — det fullständiga
+> EF-registret (§5.0, samtliga 28 funktioner: namn/tabell/typ/syfte, ingen
+> mekanism-narrativ), write-kontraktet (§7) och `_shared`-filöversikten (§8).
+> **Kartlägger:** `docs/specs/SECURITY-SPEC.md` §6.1 (operations-registrets
+> sanningskälla — denna fils §7-tabell speglar den, äger den inte),
+> `field-allowlists.ts` (koden, `ADR-100` §1 domän 1), och sin egen
+> §5-BILAGA (mekanism-narrativ för de ursprungliga 12 katalogiserade
+> funktionerna — FRUSEN ögonblicksbild t.o.m. commit `da654409`,
+> se banderollen där; TASK-161.8, 2026-08-08). **Vid konflikt vinner:** koden
+> alltid för mekanism/write-tillstånd; SECURITY-SPEC för operations-registret;
+> denna fils §5.0-register för VILKA EF:er som finns och deras syfte; §5-BILAGAN
+> för INGENTING framåtriktat (den är historik, inte kontrakt).
 
 Detta dok äger **interaktionen** mellan admin-appen och Airtable-basen: hur appen
 **frågar** och **skriver** mot basen, fält-för-fält per Edge Function, plus de
@@ -48,6 +53,24 @@ som fast fakta. Ett interaktions-dok utan den gränsen blir självt en stale-fä
 > `berikaPersonhistorik` (`_shared/registration-read.ts:193-250`). Öppet bokfört
 > gap, inte en ny stale-fälla — nästa läsare som behöver dessa kontrakt fil:rad-
 > belagda får göra det som eget arbete.
+>
+> **TASK-161.8-omformningen (2026-08-08, disk-facit `a7c02091`, styrande-docs-
+> auditens frys-eller-återuppliva-beslut för detta dok):** "11 av 28"-gapet ovan
+> var kärnan i AC1 — mätt drift som formellt aldrig stängdes, bara ärligt
+> bokförd. Beslutet (motiverat fullt i landningens PR-text): varken frysa hela
+> doket (det har en genuin, aktiv konsument — `CONTRIBUTING.md`:s per-session
+> DoD-rad + `SECURITY-SPEC.md` §6.1 + `data-model.md`s Edge Functions-pekare —
+> och en färsk, icke-tom ägar-deklaration, se ovan) eller skriva full
+> mekanism-narrativ för alla 28 (samma "föda ny onarrativt verifierad text"-
+> risk `TASK-161.2` redan avvisade för just denna lucka). I stället: **§5.0
+> nedan är nu ett FULLSTÄNDIGT, TUNT register över samtliga 28 funktioner**
+> (namn/tabell/typ/syfte, verifierat mot disk-facit `a7c02091` — inga
+> fil:rad-citat, alltså inget nytt att åldras) — luckan är stängd på
+> EXISTENS/SYFTE-nivå. Den DJUPA mekanism-narrativen (fil:rad-belägg,
+> T15-exponering, filter-mönster) förblir fullständig för de 12 ursprungliga
+> och FRUSEN för dem (se banderollen vid §5-BILAGAN nedan) — inte skriven för
+> de resterande 16. Det är fortsatt ett öppet, bokfört gap på DJUP-axeln,
+> aldrig en dold "komplett"-sanning.
 
 ---
 
@@ -57,7 +80,9 @@ som fast fakta. Ett interaktions-dok utan den gränsen blir självt en stale-fä
 2. Vad detta dok är / inte är
 3. Färskhets-kontraktet (STABIL MEKANIK vs AKTUELLT TILLSTÅND)
 4. Interaktions-arkitektur (översikt)
-5. Edge Function-kontrakt-katalog
+5. Edge Function-register
+   - 5.0 Fullständigt EF-register (tunt, samtliga 28)
+   - 5-BILAGA Mekanism-narrativ (FRUSEN, 12 av 28, t.o.m. `da654409`)
 6. Filter-mönster-kontraktet (+ T15-asymmetrin)
 7. Write-kontraktet (field-allowlists)
 8. Helper-API:t (`_shared`)
@@ -114,19 +139,76 @@ dess fulla modell och fitness-audit hör till T17, inte hit.
 
 ---
 
-## 5. Edge Function-kontrakt-katalog
+## 5. Edge Function-register
 
-**28 funktioner finns i dag i `supabase/functions/`** (utöver `_shared/`, disk-
-räknat `da654409` 2026-08-08). Denna katalog dokumenterar **11** av dem — de som
-fanns byggda t.o.m. Fas 6c (2026-06-22, belägg-commit `e499a89`). De resterande
-17 (`compute-segment`, `create-event`, `create-event-note`, `get-event-formats`,
-`get-event-notes`, `get-leads`, `get-registration`, `get-segments`, `invite-user`,
-`save-segment`, `send-email`, `send-registration-confirmation`,
-`test-attachments-storage`, `test-invite-completion`, `test-pdf-generation`,
-`update-event`, plus write-ytan i §7) är byggda men INTE katalogiserade här —
-öppet bokfört gap (se färskhets-banderollen ovan), inte en dold "elva totalt"-
-sanning. `[STABIL MEKANIK]` för de 11 katalogiserade — kontrakten är lästa ur
-källkoden; huruvida en given funktion är *deployad* är AKTUELLT TILLSTÅND (se §10).
+### 5.0 Fullständigt EF-register (tunt, samtliga 28)
+
+**28 funktioner finns i `supabase/functions/`** (utöver `_shared/`; disk-räknat
+`a7c02091` 2026-08-08, `ls -d supabase/functions/*/ | grep -v _shared | wc -l`).
+Tabellen nedan är **TUNN med avsikt** (ADR-100 §2, karta-aldrig-kopia): namn,
+tabell, typ, en rads syfte, pekare till källan — **inga fil:rad-citat**, så
+raden kan inte åldras det sätt §5-BILAGANS mekanism-narrativ redan gjorde tre
+gånger (B4/B5/B6, `docs/research/styrande-docs-audit-substrat-2026-08-07.md`).
+Verifierad mot disk 2026-08-08 (TASK-161.8): tabellnamn läst ur varje EF:s
+`TABLE_NAME`/`operation.tableId`-konstant eller `_shared`-import, inte gissat.
+
+| # | Namn | Tabell(er) | Typ | Syfte (en rad) | Djup-narrativ |
+|---|---|---|---|---|---|
+| 1 | `get-events` | Eventplanering | läs | Alla event + `Bor över`-batch | §5-BILAGA |
+| 2 | `get-event` | Eventplanering | läs | Ett event + beläggnings-batchar | §5-BILAGA |
+| 3 | `get-persons` | Personer | läs | Sökbara, paginerade personer | §5-BILAGA |
+| 4 | `get-person` | Personer, Deltaganden | läs | En person + kurshistorik (record-ID-batch) | §5-BILAGA |
+| 5 | `get-attendance` | Eventplanering, Deltaganden, Personer | läs | Närvaro per event (record-ID-batch) | §5-BILAGA |
+| 6 | `get-registrations` | Anmälningar | läs | Anmälningar per event/status (väg D) | §5-BILAGA |
+| 7 | `get-waitlist` | Väntelista | läs | Global väntelista (ingen filter) | §5-BILAGA |
+| 8 | `get-mail-log` | Utskickslogg | läs | Global utskicksloggslista | §5-BILAGA |
+| 9 | `update-record` | (operationsberoende: Anmälningar/Personer) | skriv | Operations-baserad write (M4), se §7 | §5-BILAGA |
+| 10 | `create-registration` | Anmälningar | skriv | Manuell anmälan, server-byggda fält | §5-BILAGA |
+| 11 | `create-admin-user` | — (Supabase Auth) | icke-Airtable | Skapar admin-user, `ADMIN_EMAILS`-gate | §5-BILAGA |
+| 12 | `test-auth` | — | icke-Airtable | Minimal `requireUser`-testendpoint | §5-BILAGA |
+| 13 | `compute-segment` | Deltaganden, Personer, Segment | läs (POST) | Beräknat segment-medlemskap från källan, strikt Närvaropoäng=1 (ADR-064); delar upplösning med `send-email` | källkod |
+| 14 | `create-event` | Eventplanering | skriv | Skapar nytt event, server-byggda create-fält (ADR-066) | källkod |
+| 15 | `create-event-note` | Anteckningar | skriv | Anteckning i eventets ström, FÖRFATTARE satt server-side ur JWT (ADR-075) | källkod |
+| 16 | `get-event-formats` | Eventformat | läs | Global lista för `create-event`s Eventtyp-dropdown | källkod |
+| 17 | `get-event-notes` | Anteckningar, Eventplanering | läs | Eventets anteckningar, record-ID-batch (T15-säker) | källkod |
+| 18 | `get-leads` | Personer | läs | "Intresserade" — lead-filter (Fas 6e L1) | källkod |
+| 19 | `get-registration` | Anmälningar, Eventplanering | läs | En anmälan (delar läskärna med `get-registrations` via `registration-read.ts`) | källkod |
+| 20 | `get-segments` | Segment | läs | App-sparade segment, global lista (ADR-065) | källkod |
+| 21 | `invite-user` | — (Supabase Auth) | icke-Airtable | Utlöser användarinbjudan, roll i `app_metadata` (ADR-092/093) | källkod |
+| 22 | `save-segment` | Segment | skriv | Sparar namngiven segmentregel (ADR-065) | källkod |
+| 23 | `send-email` | Utskickslogg (+ segment-upplösning) | skriv | Bulk-mailutskick via Resend, mottagare segment-upplösta server-side | källkod |
+| 24 | `send-registration-confirmation` | Anmälningar | skriv | Bekräftelsemail + statusflip, mottagare löst server-side (task-18.6) | källkod |
+| 25 | `test-attachments-storage` | — (Supabase Storage) | staging-only test | TASK-146.3 — privat bucket/signerad åtkomst; utesluten ur prod-allowlist | källkod |
+| 26 | `test-invite-completion` | — (Supabase Auth) | staging-only test | Provisionerar/river testanvändare för invite-flödet | källkod |
+| 27 | `test-pdf-generation` | — | staging-only test | TASK-146.1 — runtime-bevis för PDF-generering; utesluten ur prod-allowlist | källkod |
+| 28 | `update-event` | Eventplanering | skriv | Uppdaterar befintligt event, partiell update (task-18.1) | källkod |
+
+`[STABIL MEKANIK]` för alla 28 rader (namn/tabell/typ är kod-lästa, inte
+gissade) — men **djupet skiljer sig**: rad 1–12 har fullständig mekanism-
+narrativ i §5-BILAGAN (fil:rad-belägg, T15-exponering, filter-mönster); rad
+13–28 har ENDAST denna tunna rad — inget fil:rad-citat väntar där att åldras,
+men djupet finns heller inte. En läsare som behöver mekanism-detalj för rad
+13–28 läser källkoden direkt (kolumnen "Djup-narrativ" pekar dit) — det är
+inte ett nytt narrativt författningsarbete den här passeringen gör (samma
+scope-disciplin `TASK-161.2` redan tillämpade på denna exakta lucka).
+Huruvida en given funktion är *deployad* är AKTUELLT TILLSTÅND, inte kod (§10).
+
+---
+
+### 5-BILAGA — Mekanism-narrativ (FRUSEN, 12 av 28)
+
+> **Frusen ögonblicksbild.** Nedanstående §5.1–§5.3 är den detaljerade
+> mekanism-narrativen (fil:rad-belägg, T15-exponering, filter-mönster) för de
+> **12 funktioner som var byggda t.o.m. Fas 6c** (2026-06-22). **Frysdatum:
+> TASK-161.8, 2026-08-08** (disk-facit `a7c02091`) — innehållet uppdateras
+> INTE längre framåt när dessa 12 funktioners källkod ändras. **Levande
+> källa:** §5.0 ovan (vilka 28 EF:er finns, en rad var) + `field-allowlists.ts`
+> för write-kontraktet (§7, som förblir levande) + källkoden direkt för
+> mekanism-detalj. De tre ADR-100 §4-elementen: frusen-markör (denna rad),
+> frysdatum (2026-08-08), pekare till levande källa (§5.0 + koden) — alla tre
+> uppfyllda. Narrativen nedan var sant TASK-161.2-rättad mot HEAD `da654409`
+> (2026-08-08) och rörs inte av denna frysning; den blir bara historisk från
+> och med nu i stället för att förväntas hållas synkad.
 
 ### 5.1 Läs-EF (Airtable → app)
 
@@ -380,11 +462,11 @@ VERIFIERAS VIA CODE]` (ej byggt) tills EF:en finns och beläggs fil:rad i §5.
 > §5-katalogen som STABIL MEKANIK: `get-registrations` väg D (§5.1), `get-waitlist`
 > (§5.1, NY), `create-registration` (§5.2, NY). §9 bär därför inga 6c-poster längre.
 
-**Inga planerade-men-ej-byggda kontrakt katalogiserade just nu.** Nästa väntade
-poster hör till Fas 6e (Mer-fliken): `send-email` (write, Resend-direkt — ADR-015),
-`get-leads` och `get-mail-log` (läs). De beskrivs här föreskrivande när 6e-bygget
-inleds; tills dess är adapter-stubbarna `throw 'Not deployed yet — see Fas 6e'`
-([`src/data/adapters/AirtableAdapter.ts`](../../src/data/adapters/AirtableAdapter.ts)).
+**Inga planerade-men-ej-byggda kontrakt katalogiserade just nu.**
+**TASK-161.8-rättelse (2026-08-08):** denna sektion sa tidigare att
+`send-email`, `get-leads` och `get-mail-log` väntade på Fas 6e — stale;
+samtliga tre är byggda och listade i §5.0 (rad 8, 18, 23). Ingen känd
+föreskrivande post kvarstår just nu.
 
 ---
 
@@ -414,3 +496,4 @@ bas-ID som är inkopplat är runtime-tillstånd, inte kod.
 | 2026-06-22 | **§9 → STABIL MEKANIK** (Session 26-fortsättning, 6c-completion, L4). Alla tre §9-kontrakt byggda i Fas 6c → markörerna ersatta med fil:rad-belagda kontrakt i §9. (Supersederad samma dag av nästa rad — kontrakten flyttades till §5.) |
 | 2026-06-22 | **Full stamp-honest reconciliation** (Session 26-fortsättning, L5, väg X). En §9-ensam edit (raden ovan) bröt §5↔§9-koherensen — self-review fångade. KOMPLETT fix: **stämpel `346c386` → `e499a89`** (git-verifierat 5 ändrade filer: 3 EF + 2 `_shared`). §5 (EF-katalog): `get-registrations` → väg D `:128-170`; **NYA** `get-waitlist` + `create-registration` katalogiserade; "Nio" → "Elva funktioner". §6: `:67`-T15-buggen → väg D landad, `buildLinkedRecordFilter` noll live-callers (**T15 stängd**), record-ID-batch-raden + dormant-markering. §7: "två" → "tre" operationer (create-registration-rad), `getOperation`/`findDisallowedField` rad-skift 52/60→76/84. §8: `createAirtableRecord` (276) tillagd, belägg-commit → HEAD. §9: tömd på 6c-poster (flyttade till §5), åter "planerade-men-ej-byggda" (nästa: 6e). Doket nu internt konsistent + SANT vid HEAD. Återstår: T19 Pass 2 bredare prosa-granskning (ej 6c-fotavtrycket). |
 | 2026-08-08 | **TASK-161.2-rättelsen (styrande-docs-auditen, disk-facit `da654409`).** Radreferenserna hade åldrats osynligt sedan `e499a89` (2026-06-22) utan att stämpeln följdes upp — exakt den drift §3 finns för att fånga. Samtliga ~50 `fil:rad`-citat i §4–§8 omverifierade mot HEAD och rättade (`get-events`, `get-event`, `get-persons`, `get-attendance`, `get-registrations`, `get-mail-log`, `create-registration`, `create-admin-user`, `airtable-client.ts`, `field-allowlists.ts`). **Räknetal rättade:** §5 "Elva funktioner" → 28 på disk / 11 katalogiserade (öppet gap bokfört, resten ej dokumenterade i denna passering); §7 "tre operationer" → 13 (tabellen fylld fullständigt, källan är `field-allowlists.ts` direkt). **Strukturell drift korrigerad:** `get-registrations`s läs-kärna (`mapRegistration`, `berikaPersonhistorik`, `fetchByRecordIds`) flyttade till `_shared/registration-read.ts` i task-18.17 — doket citerade fortfarande de gamla `get-registrations/index.ts`-raderna. **Sakligt felaktigt claim rättat:** "`get-event` identisk med get-events för EN rad" — `get-event` bär sedan task-18.2 dessutom `fetchBelaggning`. **Ny export tillagd i §8:** `upsertAirtableRecord` (ADR-066) saknades helt. **Kvarstående, öppet bokfört gap (ej stängt denna passering):** tre läs-sidans berikningar (get-events Bor-över-batch, get-event Beläggning-batch, get-registrations/get-registration Personhistorik-berikning) och 8 write-EF:er som §7:s fulla operations-tabell avslöjade (`create-event`, `update-event`, `save-segment`, `send-email`, `create-event-note` m.fl.) saknar §5-katalogpost — flaggat, inte skrivet, för att hålla denna rättelse till mätt drift (räkning + referenser) i stället för att föda ny onarrativt verifierad text (elimination/disk-synk-principen, TASK-161 § Implementationsbeslut). |
+| 2026-08-08 | **TASK-161.8 — frys-eller-återuppliva-beslutet (styrande-docs-auditen AC1, disk-facit `a7c02091`).** 161.2:s öppna gap (11 av 28 katalogiserade) avgjordes: varken helfrysning (doket har en genuin aktiv konsument — `CONTRIBUTING.md` §DoD, `SECURITY-SPEC.md` §6.1, `data-model.md`s EF-pekare — och en färsk, icke-tom ägar-deklaration sedan TASK-161.4) eller full mekanism-narrativ för alla 28 (samma risk 161.2 redan avvisade: att föda ny onarrativt verifierad text). Beslut: **§5 omstrukturerad i två delar** inom SAMMA fil (ingen ny fil, ingen pekar-churn i konsumenterna ovan) — **§5.0** är ett nytt, komplett, TUNT register (namn/tabell/typ/en-rads-syfte, verifierat mot disk, inga fil:rad-citat) över samtliga 28 funktioner; **§5-BILAGA** (f.d. §5.1–§5.3) är den befintliga mekanism-narrativen för de 12 ursprungliga, nu explicit FRYST per ADR-100 §4:s tre element (frusen-markör + frysdatum 2026-08-08 + pekare till §5.0/koden som levande källa) — uppdateras ej längre framåt. Ägar-deklarationen (toppen av doket) uppdaterad i linje med detta. §9 samtidigt rättad: stale-påstående att `send-email`/`get-leads`/`get-mail-log` väntade på Fas 6e (samtliga tre redan byggda, nu i §5.0). Existens/syfte-gapet är stängt för alla 28; djup-mekanism-gapet kvarstår öppet och bokfört för rad 13–28 (samma scope-disciplin som 161.2). `review_by` bumpad 2026-12-21 → 2027-02-08 efter mini-audit (ADR-100 § Updates 2026-08-08 del A): drift-koll gjord (denna rad), pekar-integritet verifierad (§2/§6/§8:s cross-doc-pekare oförändrade och fortsatt giltiga), ägar-deklaration omskriven och giltig. |

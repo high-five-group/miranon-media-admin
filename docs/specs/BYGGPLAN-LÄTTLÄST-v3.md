@@ -20,6 +20,41 @@ status: stable
 > `docs/byggplan.md` (fas-status och sak-besluten, källan denna fil
 > översätter till vardagsspråk). **Vid konflikt vinner:** `docs/byggplan.md`
 > alltid — denna fil är en läsbarhetsöversättning, aldrig en andra sanning.
+>
+> **KÄND DRIFT, ÖPPET BOKFÖRD — TASK-161.8 (2026-08-08), AC3.** Detta dok
+> klassades mot `docs/byggplan.md` §2/§4 (den auktoritativa fas-tabellen) i
+> stället för mot en gissning. Fyndet: raderna ovan + §4 nedan är sakligt
+> INAKTUELLA — de säger "Fas 6e pågår, sedan kommer 6f/6g/6h" (senast
+> uppdaterad 2026-06-25), medan `byggplan.md` visar att **6e, 6f, 6g OCH 6h
+> alla redan är BYGGDA** (6f/6g/6h dessutom arch-audit-godkända; 6g
+> PROD-DEPLOYAD S43) — plus en HEL NY closeout-regel tillagd 2026-07-27
+> (S91-premisserna: Fas 6 stängs inte förrän fem "facit-lösa ytor"
+> — Personer/Hem/Mer/Segment/Mail-handling — gått genom
+> prototyp→Marcus-väljer→facit→PRD→skivor-kedjan) som detta dok inte har
+> någon kännedom om alls, plus att Fas 7-arbete (deploy-pipeline) redan
+> påbörjats PARALLELLT (S95-avvikelsen). Det är alltså inte en liten
+> tal-rättelse — det är flera fasers arbete + en ny styrande regel som
+> saknas i berättelsen.
+>
+> **Beslut: varken frys-banderoll eller en agent-gissad uppdatering.** Kortets
+> egen instruktion (TASK-161.8 AC3) tillåter STOPP vid genuin tveksamhet i
+> stället för att gissa — och tveksamheten här är genuin på två sätt: (1)
+> detta är INTE ett dokument där mekanisk drift-rättning räcker (som
+> `airtable-interaction.md`s EF-antal) — det är Marcus/Roger/Lottas
+> stakeholder-kommunikation, och HUR mycket av S91-komplexiteten (facit-kedjan,
+> fem ytor, Fas 7-framdragningen) som ska förenklas till Gunilla-nivå är ett
+> redaktionellt beslut, inte en faktakontroll; (2) doket är designat att vara
+> "levande" (rad 13) — att frysa det vore att gissa att det INTE längre
+> behövs, vilket motsäger dess syfte (pedagogisk parallell-berättelse för en
+> app som fortfarande byggs). Ingen av de två alternativen kan väljas utan
+> att gissa på Marcus vägnar. **Bokfört i `backlog/tasks/task-161.8` notes
+> och i landningens PR-text; inte tyst förkastat.** Nästa steg äger Marcus:
+> antingen beställ en fullständig Fas-6-till-nu-uppdatering (efter Fas 6:s
+> closeout, eller nu), eller bekräfta att en frysning ÄR rätt eftersom
+> Gunilla-berättelsen inte längre fyller sitt syfte. Tills dess: läs
+> `docs/byggplan.md` §2/§4 för sant fas-läge — pekaren två rader ovan
+> ("Vid konflikt vinner: byggplan.md alltid") gäller redan, och skyddar
+> läsaren mekaniskt även med denna kända drift kvar.
 
 <!-- markdownlint-disable-next-line MD028 -->  <!-- BYGGPLAN-LÄTTLÄST formatering (pedagogisk struktur per ADR-025) -->
 
@@ -607,7 +642,7 @@ Det här är de externa verktyg och tjänster appen står på. Du behöver inte 
 
 | Version | Datum | Ändring |
 |---------|-------|---------|
-| **v3** | **2026-05-09** (initial), **2026-05-13** (Fas 2 KLAR) | **Aktuell.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. **Uppdaterad 2026-05-13:** Fas 2 — Routing + Auth markerad KLAR efter Sessions 4 + 5 + 5b. Defense-in-depth tre-skikt-arkitektur levererad. Fas 2.5 (schema-kontrakt-sync) flyttad till "Det här bygger vi nu". Status-rad och "Senast uppdaterad"-stämpel uppdaterade per ADR-025 levande dokument-disciplin. **Uppdaterad 2026-06-10:** Fas 2.5 — Dubbelkoll på datan markerad KLAR efter Session 13 (1 pass, estimat hållet). "Så gick det"-stycke tillagt. Fas-tabellen rättad: Fas 2-raden stod kvar som "🟡 Nästa" sedan 2026-05-13 (drift, nu ✅ Klar) och Fas 3 är nu 🟡 Nästa. **Uppdaterad 2026-06-11:** Fas 3 (Byggklossar) + Fas 3.5 (Tillgänglighetstest) markerade KLARA efter Sessions 14–15 — byggklossarna på 1 pass i stället för planerade 2. "Så gick det"-stycken tillagda för båda. Fas-tabell + status-rad uppdaterade (Fas 5 är nu 🟡 Nästa). Kvarlämnad övergångstext under en dubblerad "Fas 3: UI-primitiver"-rubrik i sektion 7 städad (rest från 2026-05-13-flytten). **Uppdaterad 2026-06-12:** Fas 5 (Skalet) markerad KLAR efter Session 16 (1 pass, estimat hållet). "Så gick det"-stycke tillagt — appen är nu installerbar, fungerar offline och har navigationsskal med fullt godkända tillgänglighetstester. Fas-tabell + status-rad uppdaterade (Fas 5.5 är nu 🟡 Nästa). **Uppdaterad 2026-06-18:** Fas 5.5 (Första riktiga interaktionen — markera betalning) markerad KLAR efter Sessions 18/19 + 22 (2 pass, estimat hållet). "Så gick det"-stycke tillagt — appen kan nu för första gången ändra riktig data (markera anmälningsavgift som betald) med optimistisk uppdatering och automatisk återställning vid fel, plus en separat övningsmiljö för säkra tester. Fas-tabell + status-rad uppdaterade (Fas 6 är nu 🟡 Nästa). Driftfix: doc:et låg ett fas-steg efter byggplan.md sedan 2026-06-12 — Session 22:s sessionsavslut uppdaterade inte detta dokument (ADR-025 levande dokument-disciplin). **Uppdaterad 2026-06-25:** Fas 6e omdefinierad — slutar nu vid Maillogg; "Skicka mail" flyttad ut till en egen del. Två nya delar tillagda: Fas 6g (Segment — bygga grupper av deltagare, för bl.a. SKOOL-community) och Fas 6h (skicka mail till ett segment). Mailet byggs efter segment-ytan eftersom utskicket behöver veta vilka som ingår. Fas 6 växte från sex till åtta delar (5,5 → 7,5 pass); totalen från Fas 2 från 18,5 till 20,5 pass. Speglar ADR-062 i byggplan.md. Fas-tabell + status-rad + estimat + "Hur lång tid tar det"-summa uppdaterade. |
+| **v3** | **2026-05-09** (initial), **2026-05-13** (Fas 2 KLAR) | **Aktuell — men se TASK-161.8-noten nedan för känd, öppet bokförd drift.** Speglar byggplan-revisionen från maj 2026 (P0–P3a). Lagt till: Fas A (säkerhetsvakten), Fas 2.5 (dubbelkoll på datan), Fas 3.5 (tillgänglighetstest), Fas 5.5 (första riktiga interaktionen), Fas 6 uppdelad i 6a–6e (strangler-fig), Fas 8 (framtid), Fas B (Airtable-städning som parallellspår), Fas E (databasbyte). Fas 5 förenklad — fyra polish-funktioner flyttade till Fas 7. Skriven i du-form. Senast uppdaterad-stämpel + status-rad i header. **Uppdaterad 2026-05-13:** Fas 2 — Routing + Auth markerad KLAR efter Sessions 4 + 5 + 5b. Defense-in-depth tre-skikt-arkitektur levererad. Fas 2.5 (schema-kontrakt-sync) flyttad till "Det här bygger vi nu". Status-rad och "Senast uppdaterad"-stämpel uppdaterade per ADR-025 levande dokument-disciplin. **Uppdaterad 2026-06-10:** Fas 2.5 — Dubbelkoll på datan markerad KLAR efter Session 13 (1 pass, estimat hållet). "Så gick det"-stycke tillagt. Fas-tabellen rättad: Fas 2-raden stod kvar som "🟡 Nästa" sedan 2026-05-13 (drift, nu ✅ Klar) och Fas 3 är nu 🟡 Nästa. **Uppdaterad 2026-06-11:** Fas 3 (Byggklossar) + Fas 3.5 (Tillgänglighetstest) markerade KLARA efter Sessions 14–15 — byggklossarna på 1 pass i stället för planerade 2. "Så gick det"-stycken tillagda för båda. Fas-tabell + status-rad uppdaterade (Fas 5 är nu 🟡 Nästa). Kvarlämnad övergångstext under en dubblerad "Fas 3: UI-primitiver"-rubrik i sektion 7 städad (rest från 2026-05-13-flytten). **Uppdaterad 2026-06-12:** Fas 5 (Skalet) markerad KLAR efter Session 16 (1 pass, estimat hållet). "Så gick det"-stycke tillagt — appen är nu installerbar, fungerar offline och har navigationsskal med fullt godkända tillgänglighetstester. Fas-tabell + status-rad uppdaterade (Fas 5.5 är nu 🟡 Nästa). **Uppdaterad 2026-06-18:** Fas 5.5 (Första riktiga interaktionen — markera betalning) markerad KLAR efter Sessions 18/19 + 22 (2 pass, estimat hållet). "Så gick det"-stycke tillagt — appen kan nu för första gången ändra riktig data (markera anmälningsavgift som betald) med optimistisk uppdatering och automatisk återställning vid fel, plus en separat övningsmiljö för säkra tester. Fas-tabell + status-rad uppdaterade (Fas 6 är nu 🟡 Nästa). Driftfix: doc:et låg ett fas-steg efter byggplan.md sedan 2026-06-12 — Session 22:s sessionsavslut uppdaterade inte detta dokument (ADR-025 levande dokument-disciplin). **Uppdaterad 2026-06-25:** Fas 6e omdefinierad — slutar nu vid Maillogg; "Skicka mail" flyttad ut till en egen del. Två nya delar tillagda: Fas 6g (Segment — bygga grupper av deltagare, för bl.a. SKOOL-community) och Fas 6h (skicka mail till ett segment). Mailet byggs efter segment-ytan eftersom utskicket behöver veta vilka som ingår. Fas 6 växte från sex till åtta delar (5,5 → 7,5 pass); totalen från Fas 2 från 18,5 till 20,5 pass. Speglar ADR-062 i byggplan.md. Fas-tabell + status-rad + estimat + "Hur lång tid tar det"-summa uppdaterade. **TASK-161.8-not (2026-08-08, ej en innehålls-uppdatering):** klassad mot `byggplan.md` §2/§4 — funnen INAKTUELL sedan 2026-06-25 (6e/6f/6g/6h alla byggda, ny S91-closeout-regel saknas, Fas 7 redan påbörjad parallellt). STOPPAT vid genuin tveksamhet (frys vs. redaktionell omskrivning kräver Marcus-input) i stället för att gissa — se banderollen i dokets header för full motivering. Ingen sakuppdatering gjord i denna passering. |
 | v2 | 2026-04-13 | Tonomställning från "om Lotta" till "till dig". Strukturmedling. **Frusen** efter v3 — beskrev planen innan byggplan-revisionen. |
 | v1 | 2026-04-13 | Första versionen. Skriven om Lotta i tredje person. **[Arkiverad](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md)** 2026-05-06 i Pre-Fas-2-städningen. |
 
