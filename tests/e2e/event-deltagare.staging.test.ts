@@ -187,6 +187,34 @@ function kortet(page: Page, namn: string) {
   return gruppen(page).getByTestId('deltagar-kort').filter({ hasText: namn });
 }
 
+/**
+ * [TILLKOMMET, TASK-162.3 uppföljning — disambiguering mot Visa-dropdownen]
+ * Summeringsradens EGNA togglable knapp (`SummeringsRad`/`HallplatsToppA`s
+ * rader, `aria-pressed={aktiv}` — Deltagare.tsx). Registrets "Visa"-dropdown
+ * (`RegisterFilterRad`s `Select`, TASK-162.3) bär sitt VALDA värdes etikett
+ * som en del av sitt tillgängliga namn ("{valt värde} Visa") — när det valda
+ * värdet råkar dela prefix med en summeringsrads namn (t.ex. båda heter
+ * "Väntar på bekräftelse", `REGISTER_STEG_LABEL['vantar-bekraftelse']` i
+ * `hallplats-steg-prototyp.ts`) kolliderar en enkel `getByRole('button',
+ * {name: /^.../})` i strict mode — bevisat i CI (run 31267199889,
+ * `event-deltagare.staging.test.ts:371`, error-context-dumpen visade två
+ * träffar: raden OCH dropdown-triggern).
+ *
+ * `[aria-pressed]` skiljer dem: Select-triggern bär `aria-expanded`/
+ * `aria-haspopup`, ALDRIG `aria-pressed` (samma dump). Samma attribut testet
+ * redan litar på strukturellt (`button[aria-pressed]` i testet "summerings-
+ * raderna står i Lottas utskicksordning" ovan) — ingen ny mekanism.
+ *
+ * `src/` är FACIT-LÅST till Marcus QA (TASK-162.5, ADR-103) och registrets
+ * ariaSnapshot-referenser (TASK-162.1-grinden) fryser dropdownens
+ * tillgängliga namn — en `src`-ändring av dropdownens accessible name skulle
+ * bryta båda. Disambigueringen hör därför hemma HÄR, i testet, inte i
+ * produktkoden.
+ */
+function summeringsRad(page: Page, namn: RegExp) {
+  return gruppen(page).getByRole('button', { name: namn }).and(page.locator('[aria-pressed]'));
+}
+
 async function oppnaEventsidan(page: Page): Promise<void> {
   await page.goto(`/event/${EVENT_ID}`);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
@@ -363,9 +391,12 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // [ÄNDRAT, TASK-145.2 → TASK-145.3] Raden heter "Väntar på bekräftelse"
     // sedan de tre gamla utskicks-raderna revs. Testet stod rött på den gamla
     // etiketten.
-    const vantarRad = gruppen(page).getByRole('button', {
-      name: /^Väntar på bekräftelse/,
-    });
+    // [RÄTTAT, TASK-162.3 uppföljning] `summeringsRad()` i stället för en
+    // rå `getByRole('button', {name: /^.../})` — se helperns docblock ovan:
+    // registrets "Visa"-dropdown kan bära EXAKT samma etikett ("Väntar på
+    // bekräftelse") som sitt tillgängliga namns valda-värde-del, vilket gav
+    // strict-mode-brott här (CI run 31267199889, rad 371 i den formen).
+    const vantarRad = summeringsRad(page, /^Väntar på bekräftelse/);
     const register = gruppen(page).getByTestId('deltagar-register');
     await vantarRad.click();
     await expect(vantarRad).toHaveAttribute('aria-pressed', 'true');
@@ -599,9 +630,13 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await gruppen(page).getByRole('button', { name: 'Avbryt markering' }).click();
     // [ÄNDRAT, TASK-145.2] Raden heter "Väntar på bekräftelse" sedan de tre
     // gamla utskicks-raderna revs.
-    await gruppen(page)
-      .getByRole('button', { name: /^Väntar på bekräftelse/ })
-      .click();
+    // [RÄTTAT, TASK-162.3 uppföljning] `summeringsRad()` — samma latenta
+    // dropdown-kollision som `vantarRad` ovan (se helperns docblock): denna
+    // klick sätter `steg='vantar-bekraftelse'`, vilket gör registrets "Visa"-
+    // dropdowns tillgängliga namn identiskt med radens eget prefix. Klicket
+    // föll inte i CI (bara EN träff existerar innan state hinner uppdateras),
+    // men är samma buggklass och rättas i samma andetag.
+    await summeringsRad(page, /^Väntar på bekräftelse/).click();
     await kor();
     // [TILLKOMMET, TASK-145.3 AC #2] Det FILTRERADE läget bär numera också
     // markera-läget — ett fjärde a11y-läge som inte fanns förut och som därför
