@@ -7,11 +7,21 @@ status: stable
 
 
 <!-- markdownlint-disable MD041 -->  <!-- filen saknar h1 (data-doc utan toc-rubrik som default) -->
-> **Primär version.**
+> **Äger:** Airtable-basens fältschema (tabeller, fält-ID:n, typer,
+> skrivbarhet, formler) och datakvalitets-fällorna (§Kända fällor).
+> **Kartlägger:** `docs/reference/schema_reference.md` (frusen
+> historik-ögonblicksbild, se dess egen banderoll) och
+> `docs/reference/airtable-constraints.md` (plattformens strukturella
+> väggar). **Vid konflikt vinner:** detta dokument (`ADR-100` §2 domän
+> 5-undantag — den avsedda, förvaltade kopian av Airtable-basens fakta).
+> Denna deklaration konsoliderar dokumentets tidigare fyra spridda
+> auktoritets-anspråk (denna callout + de tre nedan, per Ö9 i
+> `docs/research/styrande-docs-audit-substrat-2026-08-07.md`) till en enda
+> plats.
 >
-> Detta är källsanningen för datamodellen. Kopia för psionautics-projektets
-> Claude-chatt synkas separat till `~/Repon/psionautics/docs/data-model.md`
-> efter varje uppdatering här. Vid arbete: redigera ALLTID denna fil först.
+> **Primär version.** Kopia för psionautics-projektets Claude-chatt synkas
+> separat till `~/Repon/psionautics/docs/data-model.md` efter varje
+> uppdatering här. Vid arbete: redigera ALLTID denna fil först.
 
 ---
 
@@ -27,12 +37,12 @@ En **navigations- och förståelsekarta** över datamodellen. Det här dokumente
 
 Läses av Claude Code (vid strategi, analys och implementation). Människor — Marcus, Roger, Lotta — läser [`hur-systemet-funkar.md`](./hur-systemet-funkar.md) istället.
 
-Detta dokument är **AUKTORITATIV** för datamodellen. `schema_reference.md` är arkiverad för historik (1 845 rader, senaste git-uppdatering i källrepot 2026-04-03) — den saknar 5 fält som lagts till i april samt prod-speglingen 2026-07-23 och är inte längre korrekt sanningskälla för fält. Sedan 2026-08-01 finns den som projektnära kopia i [`docs/reference/schema_reference.md`](./schema_reference.md) (Marcus-beslut; original i frysta Vue-repot, käll-commit `42e32fe`): dess kvarvarande värde är ytorna detta dokument medvetet inte täcker — interfaces, vyer, formulär, Zapier/Make och automationerna A1–A11 i läsbar form med skriptkod.
+Se ägar-deklarationen ovan. `schema_reference.md` är arkiverad för historik (1 845 rader, senaste git-uppdatering i källrepot 2026-04-03) — den saknar 5 fält som lagts till i april samt prod-speglingen 2026-07-23 och är inte längre korrekt sanningskälla för fält. Sedan 2026-08-01 finns den som projektnära kopia i [`docs/reference/schema_reference.md`](./schema_reference.md) (Marcus-beslut; original i frysta Vue-repot, käll-commit `42e32fe`): dess kvarvarande värde är ytorna detta dokument medvetet inte täcker — interfaces, vyer, formulär, Zapier/Make och automationerna A1–A11 i läsbar form med skriptkod.
 
 ### Principer
 
-- **Sanningskälla:** detta dokument beskriver bara det som är verifierat. Osäkerheter markeras `[HYPOTES — EJ VERIFIERAD]`. Saknade bitar listas i avsnittet *Luckor*.
-- **Detta dokument är primär källa för fält-IDs och options.** Vyer, formulär och Zaps dokumenteras separat (eller delegeras till live MCP-pull mot bas `app8uGPrVCVOm6LfD`).
+- **Verifieringsdisciplin:** detta dokument beskriver bara det som är verifierat. Osäkerheter markeras `[HYPOTES — EJ VERIFIERAD]`. Saknade bitar listas i avsnittet *Luckor*.
+- **Fält-IDs och options:** se ägar-deklarationen ovan. Vyer, formulär och Zaps dokumenteras separat (eller delegeras till live MCP-pull mot bas `app8uGPrVCVOm6LfD`).
 - **Uppdateras vid varje förändring.** Nytt fält, ändrad formel, ny automation → uppdatera detta dokument i samma commit.
 - **Spårbarhet.** Påståenden om schema/options/fält-IDs spåras till live MCP-pull (datum). Påståenden om Edge Functions spåras till commit-hash. Påståenden om automationer spåras till `miranon_automations_COMPLETE.json` 2026-03-16. Påståenden om datakvalitet spåras till sessionsfil + datum.
 

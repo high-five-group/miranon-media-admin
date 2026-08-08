@@ -14,6 +14,12 @@ status: stable
 > **Föregångare:** `docs/conversion-plan.md` (arkiveras till `docs/archive/conversion-plan-2026-04-14.md` i P3b)
 > **Fas-sekvensens proveniens:** ursprungligen föreslagen i `docs/archive/byggplan-direktiv.md` §5 (preliminär, finslipad i P1; flyttad `tasks/` → `docs/archive/` i Session 17, commit `f343db3d` — direktivet är SLUTFÖRT). **Auktoritativ källa för fas-sekvensen i dag är denna byggplan §2** (se § Dokumentstruktur — tre lager nedan: Plan-lagret äger sekvens) — byggplanen är direktivets levande efterträdare, inte en parallell auktoritet vid sidan av det.
 > **ADR-katalog:** `docs/decisions/` (räkningen är README.md:s CI-grindade token — se [README.md](../README.md) § Arkitekturbeslut + `scripts/check-adr-count.sh` — inte upprepad här som ett eget, ogrindat tal, ADR-100 §2; §5 nedan listar bara de 10 skrivna i P3a; numrering tilldelas av Code mot befintlig katalog vid commit-tillfället; fullt index i `docs/decisions/README.md`)
+> **Äger:** fas-sekvensen och fas-status (§2 fas-tabellen nedan) för
+> React-bygget. **Kartlägger:** `docs/decisions/` (ADR-index, räkningen ägs
+> av `README.md`), `docs/archive/byggplan-direktiv.md` (avslutad proveniens,
+> ej längre levande). **Vid konflikt vinner:** denna byggplan §2 för
+> fas-status; `README.md` för ADR-antalet; de enskilda ADR:erna för
+> sak-besluten bakom varje fas.
 
 ---
 

@@ -7,6 +7,14 @@ status: stable
 
 # App↔Airtable — interaktions-kontraktet
 
+> **Äger:** app↔Airtable-interaktionskontraktet — Edge Function-katalogen,
+> write-kontraktet (§7) och `_shared`-API:t (§8). **Kartlägger:**
+> `docs/specs/SECURITY-SPEC.md` §6.1 (operations-registrets sanningskälla —
+> denna fils §7-tabell speglar den, äger den inte) och `field-allowlists.ts`
+> (koden, `ADR-100` §1 domän 1). **Vid konflikt vinner:** koden alltid för
+> write-tillstånd; SECURITY-SPEC för operations-registret; detta dok för
+> interaktionsmönstren i övrigt.
+
 Detta dok äger **interaktionen** mellan admin-appen och Airtable-basen: hur appen
 **frågar** och **skriver** mot basen, fält-för-fält per Edge Function, plus de
 fällor som bor SPECIFIKT i interaktionen (T15-klassen: länk-display ≠ record-ID).

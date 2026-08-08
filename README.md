@@ -1,3 +1,10 @@
+---
+owner: marcus803
+updated: 2026-08-08
+review_by: 2027-02-08
+status: stable
+---
+
 # miranon-media-admin
 
 React-admin för Miranon Media — eventhantering, anmälningar och rapportering ovanpå Airtable + Supabase.
@@ -12,6 +19,14 @@ React-admin för Miranon Media — eventhantering, anmälningar och rapportering
 [![TanStack](https://img.shields.io/badge/TanStack-Router%20%2B%20Query%20%2B%20Table-FF4154)](package.json)
 
 > **Status:** Övning 2 pågår — Fas 6 (strangler-fig). Aktuellt fas- och sub-fas-läge ägs av [`docs/byggplan.md`](docs/byggplan.md) §2 (kanonisk plats — status dupliceras inte hit).
+>
+> **Äger:** projektets orienteringsyta för nya läsare (vad detta är, badges,
+> berättelsen) och den CI-grindade ADR-räkningen (`scripts/check-adr-count.sh`
+> § Arkitekturbeslut nedan). **Kartlägger:** [`docs/byggplan.md`](docs/byggplan.md)
+> (fas-status, pekad ovan) och [`docs/decisions/README.md`](docs/decisions/README.md)
+> (ADR-index/-format). **Vid konflikt vinner:** `docs/byggplan.md` §2 för
+> fas-status; `docs/decisions/README.md` för ADR-innehåll — denna fil äger
+> bara RÄKNINGEN av ADR:er, inte deras innehåll.
 
 ## Berättelsen — Experimentet och övningarna
 

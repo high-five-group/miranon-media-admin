@@ -7,6 +7,16 @@ status: stable
 
 # CLAUDE.md — Miranon Media Admin (React)
 
+> **Äger:** de projekt-specifika alltid-gäller-instruktionerna till Code
+> (triage-processen `ADR-053`, DoD-kommandolistans pekare-form,
+> verktygsfakta) — ordalydelsen bor här, inte kopierad någon annanstans.
+> **Kartlägger:** repots övriga styrande docs (`docs/byggplan.md`,
+> `docs/reference/data-model.md`, `CONTRIBUTING.md`, `docs/decisions/`) via
+> pekare, aldrig kopia (`ADR-100` §2). **Vid konflikt vinner:** den yta
+> `ADR-100` §1:s domäntabell pekar ut för den aktuella kunskapsklassen —
+> denna fils egen prosa om en annan yta viker alltid för den utpekade
+> källan.
+
 ---
 
 ## Vad är detta projekt?

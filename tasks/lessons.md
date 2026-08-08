@@ -12,6 +12,13 @@ status: stable
 
 # tasks/lessons.md — Projektets organisatoriska minne (index)
 
+> **Äger:** registret över volymfilerna (`tasks/lessons/vol-01..06.md`) —
+> vilken volym som är aktiv och dess L-nummer-span. **Kartlägger:**
+> volymfilerna själva (den faktiska lärdomstexten bor där, inte här). **Vid
+> konflikt vinner:** volymfilerna för lärdomsinnehåll; detta index för
+> navigering (aktiv volym, L-nummer-span) — domänerna är disjunkta, så ingen
+> egentlig konflikt är möjlig.
+>
 > Aggregerade lärdomar från detta projekt. Varje korrigering, insikt och
 > mönster fångas och märks `[UNIVERSAL]` när den bör lyftas till hub-repot
 > (marcus-system). **Innehållet bor i volymfiler under `tasks/lessons/` — den

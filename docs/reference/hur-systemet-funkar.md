@@ -22,6 +22,13 @@ frontmatterets `updated`-fält — body-datumet stod som "2026-04-28" trots att
 filens senaste substansändring dessförinnan var 2026-06-24, git-verifierat
 via `78ad1c68`; det datumet hade aldrig följt med hit).*
 
+> **Äger:** Gunilla-nivå-förklaringen av systemet — ingen sak-auktoritet.
+> **Kartlägger:** `docs/reference/data-model.md` (datamodellens fält/mekanik,
+> för Claude Code) och `~/Repon/psionautics/docs/reference/hur-systemet-
+> funkar.md` (manuellt synkad systerkopia, denna fil är källan för den
+> synken). **Vid konflikt vinner:** `data-model.md` för datamodellen; denna
+> fil är den enda bäraren av sin egen Gunilla-nivå-förklaring.
+
 ---
 
 ## Snabbfakta

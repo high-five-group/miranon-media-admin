@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-05
+updated: 2026-08-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -10,6 +10,15 @@ status: stable
 
 *Skapad: 2026-04-07 | Integrerad från gap-analysis.md*
 *Gäller: miranon-media-admin (React 19 SPA med Vite + Supabase)*
+
+> **Äger:** säkerhetsmodellen (M1–M8), CSP-policyn, OWASP-matrisen och
+> Edge Function-säkerhetsribban (§6.10) — inklusive operations-registret
+> §6.1 (den fulla sanningskällan `docs/reference/airtable-interaction.md`
+> §7:s tabell speglar). **Kartlägger:** `docs/reference/airtable-
+> interaction.md` (interaktionsmönstren operations-registret används i).
+> **Vid konflikt vinner:** denna spec för säkerhetsbeslut och
+> operations-registret; CI:s faktiska scan-utfall (`ADR-100` §1 domän 3)
+> för om ett specifikt jobb är grönt just nu.
 
 ---
 

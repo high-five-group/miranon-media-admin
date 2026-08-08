@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-29
+updated: 2026-08-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -15,6 +15,11 @@ status: stable
 > **Version 3** — Fas 6d klar (Session 30), Fas 6e pågår. Senast uppdaterad: 2026-06-25.
 > **Status just nu:** Fas 0, Fas 1, Fas A, Fas 2, Fas 2.5, Fas 3, Fas 3.5, Fas 5 och Fas 5.5 är klara. **Fas 6 pågår — delarna 6a (Personer), 6b (Event), 6c (Anmälningar + väntelista) och 6d (Hem) är klara. Del 6e (Mer-fliken) bygger vi nu; sedan kommer 6f (Skapa nytt event), 6g (Segment — bygga grupper av deltagare) och 6h (Skicka mail till ett segment).**
 > **Föregångare:** [v2](../archive/BYGGPLAN-LÄTTLÄST-v2-2026-04-13.md) (april 2026, arkiverad 2026-05-09) och [v1](../archive/BYGGPLAN-LÄTTLÄST-v1-2026-04-13.md) (arkiverad 2026-05-06). v3 ersätter v2 och speglar byggplan-revisionen från maj 2026.
+> **Äger:** den Gunilla-läsbara parallell-berättelsen (ordval, pedagogisk
+> struktur) — inget sak-innehåll om VAR bygget faktiskt står. **Kartlägger:**
+> `docs/byggplan.md` (fas-status och sak-besluten, källan denna fil
+> översätter till vardagsspråk). **Vid konflikt vinner:** `docs/byggplan.md`
+> alltid — denna fil är en läsbarhetsöversättning, aldrig en andra sanning.
 
 <!-- markdownlint-disable-next-line MD028 -->  <!-- BYGGPLAN-LÄTTLÄST formatering (pedagogisk struktur per ADR-025) -->
 

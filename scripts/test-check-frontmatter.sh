@@ -2,8 +2,9 @@
 # scripts/test-check-frontmatter.sh
 #
 # Empirisk test-suite för scripts/check-frontmatter.sh.
-# 14 testfall: T1 all-pass, T2-T7 per-check-fel, T8 multi-fel, T9
-# config-saknas, T10-T12 shallow-clone-detection, T13 UTF-8-filnamn.
+# 15 testfall: T1 all-pass, T2-T7 per-check-fel, T8 multi-fel, T9
+# config-saknas, T10-T12 shallow-clone-detection, T13 UTF-8-filnamn,
+# T14 tre nya governing-poster (TASK-161.4, 14→17) valideras oberoende.
 #
 # Test-isolering: skapar /tmp/k7b-test-validator/ med git-repo + fixtures.
 # Återställer (rm -rf) efter via trap. INGEN ändring av real-repo.
@@ -151,9 +152,12 @@ write_doc_no_frontmatter() {
 write_all_valid() {
     local today; today=$(date +%F)
     write_doc "CLAUDE.md" "marcus803" "${today}" "2027-12-31" "stable"
+    write_doc "CONTRIBUTING.md" "marcus803" "${today}" "2027-12-31" "stable"
+    write_doc "README.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "ORDLISTA.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "docs/byggplan.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md" "marcus803" "${today}" "2027-12-31" "stable"
+    write_doc "docs/specs/DESIGN-SYSTEM-SPEC.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "docs/specs/KVALITETSDEFINITIONER-11-REACT.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "docs/specs/SECURITY-SPEC.md" "marcus803" "${today}" "2027-12-31" "stable"
     write_doc "docs/reference/hur-systemet-funkar.md" "marcus803" "${today}" "2027-12-31" "stable"
@@ -221,10 +225,10 @@ mark() {
 }
 
 # ============================================================
-# T1: all-pass — alla 14 styrande docs valid
+# T1: all-pass — alla 17 styrande docs valid
 # ============================================================
 echo ""
-echo "═══ T1: all-pass — alla 14 styrande docs har valid frontmatter ═══"
+echo "═══ T1: all-pass — alla 17 styrande docs har valid frontmatter ═══"
 setup_repo
 write_all_valid
 git add . >/dev/null 2>&1
@@ -232,7 +236,7 @@ git commit -q -m "fixture-t1" >/dev/null 2>&1
 out=$(run_validator); ec=$?
 ok=0
 check_exit "T1" 0 "${ec}" || ok=1
-check_contains "T1" "Frontmatter-validering: alla 14 styrande docs passerar" "${out}" || ok=1
+check_contains "T1" "Frontmatter-validering: alla 17 styrande docs passerar" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
@@ -598,7 +602,7 @@ out=$(run_validator); ec=$?
 ok=0
 check_exit "T12" 0 "${ec}" || ok=1
 check_not_contains "T12 (no-unsafe)" "Unsafe-shallow clone detected" "${out}" || ok=1
-check_contains "T12 (success)" "Frontmatter-validering: alla 14 styrande docs passerar" "${out}" || ok=1
+check_contains "T12 (success)" "Frontmatter-validering: alla 17 styrande docs passerar" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
@@ -625,6 +629,35 @@ out=$(run_validator); ec=$?
 ok=0
 check_exit "T13" 1 "${ec}" || ok=1
 check_contains "T13 (v3.md flaggad)" "docs/specs/BYGGPLAN-LÄTTLÄST-v3.md — Check 5 (owner): 'wrong-owner'" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+# T14: tre nya poster (TASK-161.4, 14→17) — CONTRIBUTING.md/README.md/
+# docs/specs/DESIGN-SYSTEM-SPEC.md valideras oberoende, inte tyst skippade
+# ============================================================
+# Regressionsskydd för TASK-161.4:s listtillväxt. Samma resonemang som T13
+# (UTF-8-filnamn): en fil som LÄGGS TILL i FRONTMATTER_GOVERNING_DOCS men
+# aldrig faktiskt itereras skulle ge exit 0 lika tyst som en korrekt
+# validerad fil — T1/T12:s enda "alla 17 ... passerar"-facit kan inte skilja
+# de fallen åt. Tre SAMTIDIGA, distinkta fel — ett per ny fil, en annan
+# check-typ vardera (Check 1/4/3) — bevisar att var och en av de tre läses
+# och valideras individuellt, inte bara att listans totalsumma stämmer.
+echo ""
+echo "═══ T14: tre nya poster — CONTRIBUTING.md/README.md/DESIGN-SYSTEM-SPEC.md valideras oberoende ═══"
+setup_repo
+write_all_valid
+TODAY=$(date +%F)
+write_doc_no_frontmatter "CONTRIBUTING.md"
+write_doc "README.md" "marcus803" "${TODAY}" "2027-12-31" "published"
+write_doc "docs/specs/DESIGN-SYSTEM-SPEC.md" "marcus803" "${TODAY}" "2024-01-01" "stable"
+git add . >/dev/null 2>&1
+git commit -q -m "fixture-t14" >/dev/null 2>&1
+out=$(run_validator); ec=$?
+ok=0
+check_exit "T14" 1 "${ec}" || ok=1
+check_contains "T14 (CONTRIBUTING.md Check1)" "CONTRIBUTING.md:1 — Check 1 (existens): frontmatter saknas" "${out}" || ok=1
+check_contains "T14 (README.md Check4)" "README.md — Check 4 (status): 'published'" "${out}" || ok=1
+check_contains "T14 (DESIGN-SPEC Check3)" "docs/specs/DESIGN-SYSTEM-SPEC.md — Check 3 (review_by): '2024-01-01' har passerat" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
