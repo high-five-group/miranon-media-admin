@@ -1,10 +1,10 @@
 ---
 id: TASK-162.4
 title: 'Skiva: Härdning + bokföringssynk'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 07:43'
-updated_date: '2026-08-08 18:08'
+updated_date: '2026-08-08 19:00'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,7 +26,7 @@ Härdningen efter flipparna (T6-kraven ur ADR-103): tillgänglighetsbeviset på 
 - [x] #2 DoD-posten om visual-baslinjen på TASK-145.3 och TASK-145.5 omskriven via CLI till: baslinje omtagen EFTER godkänd promovering
 - [x] #3 TASK-145.6 omdefinierad via CLI per ADR-103: riv flaggan/variant-maskineriet efter godkänd promovering + dra regressionslåsets baslinje; fortsatt blocked
 - [x] #4 Död-kod-koll efter flipparna: inga föräldralösa exporter ur de borttagna grenarna (mätt och bokfört i skivans PR)
-- [ ] #5 Samtliga sviter gröna
+- [x] #5 Samtliga sviter gröna
 - [x] #6 TASK-145.5 AC #1-kravtexten omskriven via CLI per Marcus 1A-beslut (Bor över-krysset står kvar): texten ska säga vad den menar i stället för "inga muterande kryssrutor" rakt av
 <!-- AC:END -->
 
@@ -68,11 +68,17 @@ EJ KLARAD, MOTIVERAD
 - DoD #3 (CI grön per jobb): ägs av orkestrerarens svep efter push, per uppdraget.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd och mergad som PR #1016 (032d7ad0). AC #5 betald 2026-08-08 kväll: post-merge-dispatch run 31272915166 på ec1a2947 (träd med #1016+#1017) HELT grön inklusive Staging (API+E2E) — första fullt gröna staging-körningen; axe-sviten tvåsidigt bevisad vid leverans (26/26 + injicerad violation föll rött). DoD #3: kö-CI grön per jobb vid merge + dispatch-beviset. QA-input (Visa-dropdownens tillgängliga namn) bokförd i notes för 162.5.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
 - [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
