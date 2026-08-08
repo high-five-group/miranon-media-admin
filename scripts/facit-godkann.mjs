@@ -63,6 +63,34 @@
 // EN konsument som för flera — värdena ska ändå aldrig hardkodas i två
 // skript samtidigt.
 //
+// BIOME-REN SERIALISERING (EFTERFIX, 2026-08-08 — PR #1024 hand-rättade
+// facit.json efter att den FÖRSTA skarpa stämplingen bröt `biome check .`;
+// commit 1a920a01). `JSON.stringify(x, null, 2)` expanderar VARJE array till
+// flera rader oavsett längd — Biomes formatter (biome.json: `lineWidth: 100`,
+// inget JSON-specifikt override, "files.includes" exkluderar inte
+// facit-manifesten) kollapsar korta arrayer ("bilder": [...], "kallor":
+// [...]) till EN rad. Skillnaden är strukturell, inte kosmetisk: varje
+// FRAMTIDA stämpling hade snubblat på exakt samma sätt — friktion i Marcus
+// egen kanal, motsatsen till vad kanalseparationen ska vara. Skriptet
+// spawnar därför den LOKALA biome-binären (`node_modules/.bin/biome format
+// --write`) på manifestet EFTER writeFileSync (se biomeFormatera() +
+// anropet i main()), i stället för att hand-matcha Biomes array-brytnings-
+// regler i JS. Motiverat: (a) garanterar BYTE-FÖR-BYTE paritet med `biome
+// check .` för evigt, oavsett framtida ändringar i biome.json (lineWidth,
+// trailingCommas, quoteStyle) — en handmatchad formatterare vore en
+// PARALLELL, duplicerad implementation av Biomes regler som måste hållas i
+// synk för hand, exakt det mönster repot annanstans river öppet
+// (scripts/verify-ci-parity.mjs: "härlett ur ci.yml, inte en fjärde
+// handhållen kopia"), (b) biome är redan en HÅRD devDependency (samma
+// binär DoD-kvartetten kräver), så den är garanterat närvarande i varje
+// miljö där detta skript rimligen körs, (c) kostnaden (en extra
+// subprocess-spawn, low-frequency interaktivt Marcus-kommando, inte en
+// het kodväg) är försumbar. FELVÄGEN ÄR AVSIKTLIGT ICKE-FATAL: går
+// formateringen inte (binären saknas, en behörighetsfråga) skrivs en
+// VARNING men skriptet avslutar ändå med exit 0 — den faktiska
+// godkännande-handlingen (fältet ÄR korrekt satt på disk) får aldrig
+// blockeras av att en sekundär kosmetisk efterbehandling råkar fela.
+//
 // Källa: docs/decisions/ADR-104-godkannande-mekaniken-kanalseparation.md
 //
 // Exit: 0 = OK (fältet stämplat) ELLER hjälp visad (no-arg/--help/-h),
@@ -209,6 +237,30 @@ function resolveMainSha(repoRoot) {
 }
 
 // ---------------------------------------------------------------------------
+// biomeFormatera — se § BIOME-REN SERIALISERING i filens huvud för det fulla
+// resonemanget bakom att spawna biome i stället för att hand-matcha dess
+// array-brytningsregler. ICKE-FATAL: returnerar { ok:false, reason } vid
+// fel i stället för att kasta — en misslyckad kosmetisk efterformatering
+// får aldrig blockera själva godkännande-handlingen.
+// ---------------------------------------------------------------------------
+export function biomeFormatera(filePath, repoRoot) {
+  const biomeBin = join(repoRoot, 'node_modules', '.bin', 'biome');
+  if (!existsSync(biomeBin)) {
+    return {
+      ok: false,
+      reason: `${biomeBin} saknas (node_modules ej installerat? kör 'npm ci').`,
+    };
+  }
+  try {
+    execFileSync(biomeBin, ['format', '--write', filePath], { cwd: repoRoot, stdio: 'pipe' });
+    return { ok: true };
+  } catch (err) {
+    const detalj = err.stderr ? err.stderr.toString('utf8').trim() : err.message;
+    return { ok: false, reason: detalj };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // renderHelp — skriptet är MARCUS yta, inte agentens (§ Kanalseparation
 // ovan): no-arg-utskriften är hans PRIMÄRA dokumentation, inte en
 // utvecklar-bekvämlighet. Han kommer aldrig minnas kommandoformen utantill.
@@ -336,6 +388,18 @@ export function main(argv = process.argv.slice(2), { repoRoot = REPO_ROOT } = {}
   }
 
   writeFileSync(manifestPath, `${JSON.stringify(nyttManifest, null, 2)}\n`, 'utf8');
+
+  // Se § BIOME-REN SERIALISERING i filens huvud. Icke-fatal med avsikt:
+  // stämplingen ÄR redan gjord och korrekt oavsett vad som händer här.
+  const formatResultat = biomeFormatera(manifestPath, repoRoot);
+  if (!formatResultat.ok) {
+    console.warn(
+      `⚠️  Kunde inte Biome-formatera ${manifestPath} automatiskt (${formatResultat.reason}). ` +
+        `Fältet ÄR stämplat korrekt — men filen kan avvika från "npx @biomejs/biome check ." ` +
+        `tills du kör "npx @biomejs/biome format --write '${manifestPath}'" manuellt.`,
+    );
+  }
+
   console.log(`✅ ${manifestPath}: "godkand" stämplat (av: marcus, sha: ${sha}).`);
   if (nyttManifest.godkand.undantag) {
     for (const { yta, skal } of nyttManifest.godkand.undantag) {
