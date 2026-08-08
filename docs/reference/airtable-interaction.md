@@ -294,7 +294,13 @@ kod utan live-caller.
 All write går via `update-record` (PATCH), `create-registration` (POST) eller en av
 de nyare write-EF:erna (`create-event`, `update-event`, `save-segment`, `send-email`,
 `create-event-note` — se §5:s öppna gap, dessa saknar egen §5-katalogpost) + en
-operations-allowlist i `supabase/functions/_shared/field-allowlists.ts`. Registret
+operations-allowlist i `supabase/functions/_shared/field-allowlists.ts`.
+**Sanningskällan är koden, inte tabellen nedan** — [SECURITY-SPEC §6.1](../specs/SECURITY-SPEC.md)
+säger det redan rakt av: *"Operations-registret (`field-allowlists.ts`) är den enda
+sanningskällan för 'vad får skrivas av vem.'"* Tabellen här är en underhållen
+SPEGLING för uppslag utan att läsa källkoden (§2:s syfte med detta dok) — inte en
+konkurrerande andra källa; vid minsta osäkerhet om den fortfarande stämmer vinner
+`OPERATIONS`/`getOperation` i koden alltid (ADR-100 §2, karta-aldrig-kopia). Registret
 `OPERATIONS` (`:29`) bär i dag **13** operationer (TASK-161.2-rättelse — dokumenterat
 som "tre" fram till 2026-08-08; disk-facit `da654409`):
 

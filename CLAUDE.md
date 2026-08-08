@@ -33,7 +33,7 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 - Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer). Bevisa att det fungerar — "det funkar" ≠ "det är rätt".
 - Fånga lärdomar i `tasks/lessons.md` efter varje korrigering. Markera universella med `[UNIVERSAL]`.
 - **Uppdrag till agenter källmärker varje faktapåstående** (fil/commit/kommando) — obelagda påståenden behandlas av mottagaren som HYPOTES ([ADR-086](docs/decisions/ADR-086-uppdragets-premisser-provas-av-mottagaren.md)).
-- **Sanningshierarkin — varje kunskapsklass har EXAKT EN auktoritativ källa** (koden äger beteende & mekanik, ADR:er äger varför, CI äger utfall, git+frys-märkta ögonblicksbilder äger historik, en utpekad referens-fil äger externa system, kort+sessionsdok äger pågående arbete): [ADR-100](docs/decisions/ADR-100-sanningshierarkin-koden-ager-beteendet.md). Karta, aldrig kopia — vid en motsägelse mellan två styrande ytor vinner den ADR:n pekar ut.
+- **Sanningshierarkin — varje kunskapsklass har EXAKT EN auktoritativ källa:** domäntabellen bor i [ADR-100](docs/decisions/ADR-100-sanningshierarkin-koden-ager-beteendet.md) §1 — slå upp den där, den återges inte här. Karta, aldrig kopia — vid en motsägelse mellan två styrande ytor vinner den ADR:n pekar ut.
 
 ---
 
@@ -662,7 +662,7 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 
 **Metod:** Marcus och Code planerar → Code bygger fas för fas → Marcus verifierar i browsern → feedback → nästa steg.
 
-**Fasordning och fas-status:** se `docs/byggplan.md` §4 (styrande).
+**Fasordning och fas-status:** se `docs/byggplan.md` §2 (Fas-tabell, styrande).
 
 ---
 
@@ -675,7 +675,7 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 
 Tillgänglighet är alltid 11 — inga undantag. Bibliotekskod ska bära flera produkter.
 
-Fullständiga checklistor: [`docs/specs/KVALITETSDEFINITIONER-11-REACT.md`](docs/specs/KVALITETSDEFINITIONER-11-REACT.md) (lokalt sedan ADR-021; React-versionen ersätter Vue-eran per ADR-027 stack-skifte 2026-05-11).
+Fullständiga checklistor: [`docs/specs/KVALITETSDEFINITIONER-11-REACT.md`](docs/specs/KVALITETSDEFINITIONER-11-REACT.md) (lokalt sedan ADR-021; React-versionen ersätter Vue-eran per ADR-027 stack-skifte 2026-05-11). **Öppen deferral:** det dokumentet är INTE komplett — §3 (Komplett 11/10-checklista) och §4–§5 (Källor / Vad vi INTE tar med) är TBD, fylls progressivt vid Fas 3.5 resp. Fas 6 per dokumentets egen § Status. Tabellen ovan i DENNA fil är därför bärare av kvalitetsribban tills dess, inte en kopia som ska elimineras (ADR-100 § Updates 2026-08-08).
 
 ---
 
