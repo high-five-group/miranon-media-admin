@@ -1,10 +1,10 @@
 ---
 id: TASK-161.3
 title: 'Skiva: B — motsägelse-paren löses mot utpekad vinnare'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 19:04'
-updated_date: '2026-08-08 07:31'
+updated_date: '2026-08-08 07:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -117,10 +117,16 @@ Modell-identitet (denna agent): "You are powered by the model named Sonnet 5. Th
 is claude-sonnet-5" (systemprompt, verbatim).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd i S99 resume 3 (2026-08-08) i TVÅ pass. Pass 1 (PR #972, merge de69c0eb): fem par lösta med disk-verifikat (Ö1 fas-status §4→§2, Ö3 ADR-antal→pekare [eget fynd], Ö5 operations-registret→SECURITY-SPEC-pekare, Ö7 kvalitetsribba-deferral, sanningshierarki-parentesen eliminerad) — AC1/AC2 lämnades ÖPPNA eftersom Explore-kartan saknades som fil (två agenter träffade samma vägg). Kartan ÅTERFANNS i s99-resume-2:s sessions-transkript och landades som frusen artefakt (docs/research/styrande-docs-audit-substrat-2026-08-07.md, PR #976) på Marcus order. Pass 2 (PR #978, merge 0a313d21, per-jobb-grön): samtliga elva par redovisade mot kartan — Ö2/Ö6/Ö9 lösta nu, Ö4 verifierad redan-upplöst av 161.2, Ö8 av 161.7, Ö10/Ö11 EXPLICIT överlämnade till 161.4 (lösningen ÄR ägar-deklarationerna/grind-listan); per-par-tabell i kortets notes. Lesson-kandidat: refererat underlag ska landa som filartefakt i samma landning som specen.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
