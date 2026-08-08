@@ -680,6 +680,17 @@ test.describe('TASK-145.1 — registret som EN lista (DoD #7)', () => {
  * "tillåtna" kontroller hade behövt en undantagslista, och en undantagslista är
  * precis vägen tillbaka till en yta ingen längre överblickar.
  *
+ * SCOPET ÄR PER YTA, INTE HELA SIDAN — testtiteln säger uttryckligen
+ * "i deltagar- och åtgärdsytan". Sidans SISTA grupp, Anteckningar
+ * (task-18.11/ADR-075, `EventDetail.tsx` rad ~344–347), bär en AVSIKTLIG
+ * skriv-yta (composern, "Skriv en anteckning …") som ligger UTANFÖR detta
+ * påstående — den är produkt, inte en regression. [RÄTTAT, koordinering
+ * TASK-162.2/TASK-162.3] En tidigare form (`8f02feb4`) breddade scopet till
+ * hela sidan (motiverat av att åtgärds-ytans sektions-skal föll bort i
+ * TASK-162.2:s promovering) och svepte därmed av misstag in Anteckningar-
+ * composern — se scope-kommentaren inne i testet nedan för hela trailen.
+ *
+
  * DE TRE AVSIKTLIGA UNDANTAGEN, var och en bakom en explicit handling och var
  * och en gatead på annat håll — inte glömda, utan namngivna:
  *
@@ -724,47 +735,74 @@ test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => 
     // `eventsida-promoverings-grind.spec.ts`s docblock, "React-fragment,
     // inget gemensamt DOM-skal"). Sanity-kollen att åtgärds-ytan faktiskt
     // RENDERAT (annars vore varje nedanstående noll-räkning en tom seger)
-    // pekar därför mot `AtgarderKort`s egen, redan STABILA lokator i stället
-    // för den rivna sektionen — samma `data-testid="atgarder-kort"` den
-    // delade promoverings-grinden (TASK-162.1) redan bevisar mot.
-    await expect(page.getByTestId('atgarder-kort')).toBeVisible();
+    // pekar därför mot BÅDA kortens egna, redan STABILA lokatorer i stället
+    // för den rivna sektionen — `data-testid="atgarder-kort"` (den delade
+    // promoverings-grinden, TASK-162.1, bevisar redan mot den) och
+    // `data-testid="skriv-ut-kort"` (`Atgarder.tsx`) för det andra kortet.
+    const atgarderKort = page.getByTestId('atgarder-kort');
+    const skrivUtKort = page.getByTestId('skriv-ut-kort');
+    await expect(atgarderKort).toBeVisible();
+    await expect(skrivUtKort).toBeVisible();
 
-    // Övriga assertioner scopas till HELA SIDAN i stället för en
-    // deltagar-/åtgärds-sektion var för sig: påståendet ("noll skriv-
-    // affordanser") håller oavsett vilket DOM-skal respektive yta bär, och
-    // blir därmed robust mot framtida omformning av endera ytan — samma
-    // bredd mailto-kollen längre ner redan hade.
-    //
-    // Inga kryssrutor alls — varken muterande eller markerande. Var och en av
-    // de tre avsiktliga undantagen kräver en handling Lotta inte gjort än.
-    await expect(page.getByRole('checkbox')).toHaveCount(0);
-    // Inget redigerbart fält: `getByRole('textbox')` täcker både
-    // `<input type="text">` och `<textarea>`, alltså både den rivna
-    // notering-inputen och varje handrullad ersättare.
-    await expect(page.getByRole('textbox')).toHaveCount(0);
-    await expect(page.locator('[contenteditable="true"]')).toHaveCount(0);
-    // Ingen påminn-avfyrning, i någon av dess två historiska former (knapp
-    // med mutation, länk med mailto).
-    await expect(page.getByRole('button', { name: /påminn/i })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: /påminn/i })).toHaveCount(0);
+    // [RÄTTAT, ren översyn-scope — koordinering TASK-162.2/TASK-162.3]
+    // Assertionerna scopas PER YTA (deltagar-gruppen + åtgärds-ytans två
+    // kort), precis som testtiteln lovar — INTE hela sidan. Föregående form
+    // (TASK-162.3, `8f02feb4`) breddade scopet till hela sidan med
+    // motiveringen att åtgärds-ytans sektions-skal föll bort i
+    // promoveringen (kommentaren ovan) — men breddningen svepte samtidigt in
+    // Anteckningar-composern ("Skriv en anteckning …", task-18.11/ADR-075,
+    // `Anteckningar.tsx`), sidans SISTA grupp och en AVSIKTLIG skriv-yta (se
+    // `EventDetail.tsx` rad ~344–347) som aldrig ingick i detta påstående.
+    // Rätt fix var att ersätta den rivna sektionslokatorn med de två kortens
+    // testid:n ovan, inte att svepa in resten av sidan — `gruppen(page)`
+    // (deltagar-ytan) + de två korten TILLSAMMANS motsvarar exakt
+    // 145.5-formens `[gruppen(page), atgardsytan]` (`92a3d564`).
+    const ytorna = [gruppen(page), atgarderKort, skrivUtKort];
 
-    // MAILTO-VÄGARNA mäts på HELA sidan, inte per sektion: en mailto-länk är en
-    // utgång ur appen och hör inte hemma någonstans på en översyn. Del 3
-    // beslut 4 stängde mailto-eran.
+    for (const yta of ytorna) {
+      // Inga kryssrutor alls — varken muterande eller markerande. Var och en av
+      // de tre avsiktliga undantagen kräver en handling Lotta inte gjort än.
+      await expect(yta.getByRole('checkbox')).toHaveCount(0);
+      // Inget redigerbart fält: `getByRole('textbox')` täcker både
+      // `<input type="text">` och `<textarea>`, alltså både den rivna
+      // notering-inputen och varje handrullad ersättare. Anteckningar-
+      // composern ligger UTANFÖR `ytorna` med avsikt (se ovan) — den är
+      // avsiktlig produkt, inte en regression detta test ska fälla.
+      await expect(yta.getByRole('textbox')).toHaveCount(0);
+      await expect(yta.locator('[contenteditable="true"]')).toHaveCount(0);
+      // Ingen påminn-avfyrning, i någon av dess två historiska former (knapp
+      // med mutation, länk med mailto).
+      await expect(yta.getByRole('button', { name: /påminn/i })).toHaveCount(0);
+      await expect(yta.getByRole('link', { name: /påminn/i })).toHaveCount(0);
+    }
+
+    // MAILTO-VÄGARNA mäts på HELA sidan, inte per yta: en mailto-länk är en
+    // utgång ur appen och hör inte hemma någonstans på en översyn — samma
+    // bredd testet redan hade i 145.5-formen (`92a3d564`), oförändrad av
+    // denna rättelse.
     await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
 
     // AC #4 — de fyra grå löftena är RIVNA, inte nedtonade. Ett `aria-disabled`
     // element är fortfarande ett löfte; noll element är inget löfte alls.
+    // Scopas till åtgärds-ytans två kort (inte deltagar-gruppen) — samma
+    // smalare scope 145.5-formen bar för just denna kontroll (`atgardsytan`
+    // ensam, inte hela `[gruppen(page), atgardsytan]`-paret): löftena hörde
+    // bara hemma i den forna Åtgärder-gruppen.
+    const atgardsKorten = [atgarderKort, skrivUtKort];
     for (const namn of [
       'Skicka bekräftelsemail till obekräftade',
       'Skicka betalningspåminnelse till obetalda',
       'Markera alla obetalda som betalda',
       'Skicka eventinfo till alla anmälda',
     ]) {
-      await expect(page.getByRole('button', { name: namn })).toHaveCount(0);
+      for (const yta of atgardsKorten) {
+        await expect(yta.getByRole('button', { name: namn })).toHaveCount(0);
+      }
     }
-    // …och ingen rad någonstans på sidan bär kvar interim-tillståndet.
-    await expect(page.locator('[aria-disabled="true"]')).toHaveCount(0);
+    // …och ingen rad i åtgärds-ytans kort bär kvar interim-tillståndet.
+    for (const yta of atgardsKorten) {
+      await expect(yta.locator('[aria-disabled="true"]')).toHaveCount(0);
+    }
   });
 
   test('den öppnade betalningsytan är LÄSYTA — mätt från sektionens nivå, inte arbetsytans', async ({
