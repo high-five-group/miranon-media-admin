@@ -13,7 +13,7 @@ status: stable
 > **Ägare:** Marcus + Claude Code (planering + implementation)
 > **Föregångare:** `docs/conversion-plan.md` (arkiveras till `docs/archive/conversion-plan-2026-04-14.md` i P3b)
 > **Auktoritativ källa för fas-sekvens:** `docs/archive/byggplan-direktiv.md` §5 (post-P1; flyttad `tasks/` → `docs/archive/` i Session 17, commit `f343db3d` — direktivet är SLUTFÖRT, denna byggplan är dess levande efterträdare)
-> **ADR-katalog:** `docs/decisions/` (102 ADR:er på disk 2026-08-08, TASK-161.2-räkning — §5 nedan listar bara de 10 skrivna i P3a; numrering tilldelas av Code mot befintlig katalog vid commit-tillfället; fullt index i `docs/decisions/README.md`)
+> **ADR-katalog:** `docs/decisions/` (räkningen är README.md:s CI-grindade token — se [README.md](../README.md) § Arkitekturbeslut + `scripts/check-adr-count.sh` — inte upprepad här som ett eget, ogrindat tal, ADR-100 §2; §5 nedan listar bara de 10 skrivna i P3a; numrering tilldelas av Code mot befintlig katalog vid commit-tillfället; fullt index i `docs/decisions/README.md`)
 
 ---
 
