@@ -4,6 +4,7 @@ title: 'Skiva: C — merge-queue-sektionen till handlingsregel + pekare'
 status: To Do
 assignee: []
 created_date: '2026-08-07 19:07'
+updated_date: '2026-08-08 06:58'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,10 +21,12 @@ ordinal: 295000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 CLAUDE.md § Landning sker via MERGE QUEUE omformad: handlingsreglerna bevaras ORDAGRANT (armera med --auto · armera aldrig under bygg-agent · draft-eller-armera-regeln · disambiguerings-receptet · autoMergeRequest-tabellen · svep-regeln) — underlaget (strict-historiken, mäthistorikerna, dequeue-mätningen, Temporal-namngivningen) flyttar till sin utpekade hemvist (CONTRIBUTING § Landnings-ordningen / ADR-076 / ADR-096 / research-filer) med pekare
-- [ ] #2 Varje flytt prövad mot i-ögonblicket-kriteriet (regeln gäller där ingen slår upp en ADR) och de befintliga varför-raden-står-här-blocken RÖRS INTE utan explicit prövning bokförd i PR-texten; ingen kunskap raderas — allt flyttat är lychee-verifierat nåbart
-- [ ] #3 Docs-grindarna gröna lokalt; PR armerad, per-jobb-grön; diffen visar sektionens tecken-tal före/efter i PR-texten
+- [x] #1 CLAUDE.md § Landning sker via MERGE QUEUE omformad: handlingsreglerna bevaras ORDAGRANT (armera med --auto · armera aldrig under bygg-agent · draft-eller-armera-regeln · disambiguerings-receptet · autoMergeRequest-tabellen · svep-regeln) — underlaget (strict-historiken, mäthistorikerna, dequeue-mätningen, Temporal-namngivningen) flyttar till sin utpekade hemvist (CONTRIBUTING § Landnings-ordningen / ADR-076 / ADR-096 / research-filer) med pekare
+- [x] #2 Varje flytt prövad mot i-ögonblicket-kriteriet (regeln gäller där ingen slår upp en ADR) och de befintliga varför-raden-står-här-blocken RÖRS INTE utan explicit prövning bokförd i PR-texten; ingen kunskap raderas — allt flyttat är lychee-verifierat nåbart
+- [x] #3 Docs-grindarna gröna lokalt; PR armerad, per-jobb-grön; diffen visar sektionens tecken-tal före/efter i PR-texten
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
