@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-24
+updated: 2026-08-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -17,7 +17,10 @@ status: stable
 # Hur systemet funkar
 
 *Guide till Miranon Medias och Psionautics bakomliggande system.*
-*För Marcus, Roger, Lotta. Version 3 · 2026-04-28.*
+*För Marcus, Roger, Lotta. Version 3 · 2026-08-08 (TASK-161.2: synkad mot
+frontmatterets `updated`-fält — body-datumet stod som "2026-04-28" trots att
+filens senaste substansändring dessförinnan var 2026-06-24, git-verifierat
+via `78ad1c68`; det datumet hade aldrig följt med hit).*
 
 ---
 
