@@ -1349,6 +1349,11 @@ jobs:
           # som jämför det mot check-docs.sh:s motsvarande markerade block. Alla
           # kommentarer måste stå OVANFÖR start-markören — regionen mellan
           # markörerna läses som data.
+          #
+          # './tasks/lessons/*.md' TILLAGT TASK-161.9 (2026-08-08,
+          # ADR-085-volymformen): 'tasks/*.md' korsar inte in i underkatalogen
+          # (samma gräns-fråga som lessons.d ovan) — utan raden lämnas
+          # volymfilernas länkar tyst okontrollerade.
           # paritet:start lychee-ci
           args: >-
             --offline
@@ -1362,6 +1367,7 @@ jobs:
             './tasks/sessions/*.md'
             './tasks/threads/*.md'
             './tasks/lessons.d/*.md'
+            './tasks/lessons/*.md'
             './.claude/**/*.md'
             './*.md'
           # paritet:slut lychee-ci

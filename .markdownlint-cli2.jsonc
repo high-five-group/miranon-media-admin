@@ -40,6 +40,12 @@
   // eftersom ett olintat fragment annars bär in sina fel i lessons.md vid
   // konsolideringen — då fälls grinden på en fil ingen just rörde.
   //
+  // tasks/lessons/*.md TILLAGT TASK-161.9 (2026-08-08, ADR-085-volymformen).
+  // "tasks/*.md" korsar INTE kataloggränsen till en underkatalog (standard
+  // glob-semantik) — utan denna egna post blir volymfilerna tyst olintade,
+  // exakt den täcknings-lucka lessons.d-raden ovan redan varnar för i sitt
+  // eget fall.
+  //
   // .claude/**/*.md tillagd S91 (TASK-71). Agentdefinitionerna är prosa som
   // styr agenternas arbete och låg tidigare utanför SAMTLIGA docs-grindar.
   // Posten hör ihop med .claude/**-raderna i ci.yml:s BÅDA changed-files-listor:
@@ -55,6 +61,7 @@
     "tasks/sessions/*.md",
     "tasks/threads/*.md",
     "tasks/lessons.d/*.md",
+    "tasks/lessons/*.md",
     ".claude/**/*.md",
     "./*.md"
   ],
