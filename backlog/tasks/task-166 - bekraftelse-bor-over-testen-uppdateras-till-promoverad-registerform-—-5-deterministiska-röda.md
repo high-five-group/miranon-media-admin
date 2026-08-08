@@ -3,10 +3,10 @@ id: TASK-166
 title: >-
   bekraftelse-/bor-over-testen uppdateras till promoverad registerform — 5
   deterministiska röda
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 18:04'
-updated_date: '2026-08-08 18:22'
+updated_date: '2026-08-08 19:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,13 +23,19 @@ Post-merge-körningarna 31269265089 och 31270539778 fäller SAMMA 5 test i två 
 <!-- AC:BEGIN -->
 - [x] #1 Samtliga 5 fallande test uppdaterade till promoverad registerform; inga src-ändringar
 - [x] #2 Övriga assertioner i de två filerna genomsökta mot promoverad form (samma svep-miss får inte upprepas inom filerna)
-- [ ] #3 Testen bevisade gröna i post-merge-körning på main
+- [x] #3 Testen bevisade gröna i post-merge-körning på main
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Fixad och mergad som PR #1017 (ced4ae13). AC #3 betald: post-merge-dispatch run 31272915166 på ec1a2947 HELT grön inklusive Staging (API+E2E) — samtliga 5 tidigare deterministiska röda gröna. Notera: ced4ae13 fick INGEN egen CI-körning (batchad push, T135-familjen — instans bokförd); beviset bärs av dispatchen på efterföljande träd. DoD #3: kö-CI grön per jobb vid merge.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
