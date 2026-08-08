@@ -8,6 +8,12 @@ status: stable
 
 # Architecture Decision Records
 
+> **Äger:** ADR-formatet, korrigering-vs-supersedering-reglerna och den
+> CI-grindade ADR-räkningen (indexet nedan). **Kartlägger:** de enskilda
+> ADR-filerna (varje ADR äger sitt eget beslut och varför). **Vid konflikt
+> vinner:** en enskild ADR för SITT beslut; detta dok för formatet och
+> räkningen alla ADR:er följer.
+
 Denna mapp innehåller Architecture Decision Records (ADR) för Miranon Media Admin — ett kort, permanent spår av **varför** tekniska val gjordes så att framtida läsare (inklusive framtida jag) förstår kontexten bakom koden.
 
 ## Format

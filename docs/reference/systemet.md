@@ -1,12 +1,17 @@
 ---
 owner: marcus803
-updated: 2026-07-08
+updated: 2026-08-08
 review_by: 2026-10-08
 status: stable
 ---
 
 # Systemet — flyttat till hubben (pekare)
 
+> **Äger:** Inget – ren karta. **Kartlägger:** hela samarbetssystemets
+> mekanik, i sin helhet — `marcus-system/SYSTEMET.md` (hub-repot). **Vid
+> konflikt vinner:** hub-`SYSTEMET.md` alltid; denna fil finns bara för
+> upptäckbarhet från spokens orienteringsytor.
+>
 > **Mekanik-kartan över samarbets-systemet (Code/Marcus) bor nu kanoniskt i
 > hubben:** `marcus-system/SYSTEMET.md` (steg 4b-konsolideringen, Session 59 —
 > EN källa per system-del). Slå upp systemets mekanik där: roller, hub/spoke,

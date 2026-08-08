@@ -1,4 +1,20 @@
+---
+owner: marcus803
+updated: 2026-08-08
+review_by: 2027-02-08
+status: stable
+---
+
 # Bidrag
+
+> **Äger:** landnings-ordningen, DoD-disciplinens exakta kommandon och
+> arbetsformens sessions-/push-disciplin (`ADR-097`). **Kartlägger:**
+> `ADR-036` (kvalitetsgrindens beslut), `ADR-076` (merge queue-arkitekturen),
+> `ADR-097` (arbetsformens tillståndsbärare) — sak-besluten lever i
+> ADR:erna, detta dok operationaliserar dem till konkreta steg. **Vid
+> konflikt vinner:** den ADR ett avsnitt pekar till för sitt sak-beslut; CI:s
+> faktiska utfall (ADR-100 §1 domän 3) vinner alltid över detta doks
+> beskrivning av vad som "borde" hända.
 
 Detta är ett privat projekt med en tydlig roll-fördelning mellan två aktörer.
 

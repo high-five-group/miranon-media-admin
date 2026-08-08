@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-06-20
+updated: 2026-08-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -11,6 +11,15 @@ status: stable
 # Kvalitetsdefinitioner — 11/10 (React)
 
 > **Levande dokument** — skapad 2026-05-11 (K0åf) | **Status just nu:** §1 Teknisk kvalitet + §2 Återanvändbarhet ifyllda (Session 14 K3); §3–§5 deferrade (se ## Status nedan) | **Föregångare:** [Vue-versionen 2026-04-03](../archive/KVALITETSDEFINITIONER-11-vue-2026-04-03.md) (arkiverad per ADR-027)
+>
+> **Äger:** §1 Teknisk kvalitet + §2 Återanvändbarhet — de ifyllda delarna
+> av 11/11/11-ribban. **Kartlägger:** Vue-arkivet, ACCESSIBILITY-CHECKLIST.md,
+> ARIA-UPGRADE.md, DESIGN-SYSTEM-SPEC.md (triangulerande referenser för
+> §3–§5, ännu ofyllda). **Vid konflikt vinner — ÖPPEN INVERTERING:** idag är
+> `CLAUDE.md` § Kvalitetsribba fortsatt bärare av HELA ribban tills §3–§5 här
+> fylls (`ADR-100` § Updates 2026-08-08, öppen deferral, `CLAUDE.md`:s egen
+> rad citerar denna deferral) — denna fil vinner bara för §1–§2:s
+> detaljnivå. Denna deklaration ändrar inte den deferralen.
 
 *Baserad på källkodsanalys av Radix UI, Headless UI, Ark UI, Melt UI och FK Designsystem (Vue-eran) + React Aria + shadcn/ui (kommer från Fas 3+).*
 

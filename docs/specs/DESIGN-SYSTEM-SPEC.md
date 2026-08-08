@@ -1,9 +1,23 @@
+---
+owner: marcus803
+updated: 2026-08-08
+review_by: 2027-02-08
+status: stable
+---
 
 # DESIGN-SYSTEM-SPEC.md — Teknisk specifikation
 
 *Operativ motpart till DESIGN-MANIFESTO.md*
 *Skapad: 2026-04-05 | Gäller: miranon-media-admin*
 *Reponamn: miranon-media-admin (inte miranon-media-admin-react)*
+
+> **Äger:** design-tokens tre-lagers-modellen (primitiv/semantisk/komponent)
+> och komponentkravens golv (kontrast, reducerad rörelse, print).
+> **Kartlägger:** `~/Repon/marcus-system/design-system/DESIGN-FOUNDATION-v1.md`
+> (spacing-/typografigrunden) och `docs/specs/KVALITETSDEFINITIONER-11-REACT.md`
+> (tillgänglighets-ribban denna spec ska uppfylla). **Vid konflikt vinner:**
+> de faktiska token-filerna på disk (`src/styles/tokens/*.css`, ADR-100 §1
+> domän 1 — koden äger mekaniken) om detta dok och koden divergerar.
 
 ---
 

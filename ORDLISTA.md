@@ -7,6 +7,14 @@ status: stable
 
 # Ordlista — Miranon Media (produktdomänen)
 
+> **Äger:** produktdomänens BEGREPP (vad något ÄR, på begreppsnivå).
+> **Kartlägger:** `docs/reference/data-model.md` (mekaniken — fält-ID:n,
+> formler, statusvärde-enumereringar) och hubbens `SYSTEMET.md` §0
+> (samarbetssystemets termer). **Vid konflikt vinner:** denna ordlista för
+> begreppsdefinitioner; `data-model.md` för mekanik; hubben för
+> systemtermer — domänerna överlappar inte, så ingen egentlig konflikt är
+> möjlig om avgränsningen nedan hålls.
+
 Kanoniskt domänspråk för produktdomänen — Lottas värld: event, anmälningar,
 personer, närvaro, mail. Ordlistan äger BEGREPPEN (vad något ÄR, på begreppsnivå);
 mekaniken — fält-ID:n, formler, statusvärde-enumereringar, kända fällor — bor i

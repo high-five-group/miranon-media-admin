@@ -570,11 +570,11 @@ jobs:
 
       - name: Validate frontmatter on governing docs
         # Per ADR-030 § Del 3: 5-check-validator för YAML-frontmatter på
-        # 14 styrande docs (TASK-161.2, 2026-08-08 — räknat om mot
-        # .frontmatter-policy.conf FRONTMATTER_GOVERNING_DOCS; stod som "9"
-        # sedan listan växte utan att kommentaren följdes upp) (existens,
-        # updated-match, review_by > today, status-enum, owner-enum).
-        # Config: .frontmatter-policy.conf.
+        # 17 styrande docs (TASK-161.4, 2026-08-08 — räknat om mot
+        # .frontmatter-policy.conf FRONTMATTER_GOVERNING_DOCS; stod som "14"
+        # (TASK-161.2) innan CONTRIBUTING.md/README.md/DESIGN-SYSTEM-SPEC.md
+        # lades till listan) (existens, updated-match, review_by > today,
+        # status-enum, owner-enum). Config: .frontmatter-policy.conf.
         # Empirisk 9-test-suite verifierad K7.B 2026-05-14.
         # Hub-spoke-portabel design per K7 Lesson #6 (UNIVERSAL).
         run: bash scripts/check-frontmatter.sh

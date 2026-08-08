@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-07-11
+updated: 2026-08-08
 review_by: 2026-09-25
 status: stable
 ---
@@ -8,6 +8,12 @@ status: stable
 # Segment-ytans arkitektur — branschledar-mönstret + var basen möter sina gränser
 
 > Syfte: en sammanhållen, läsbar bild av HUR segment-ytan (Fas 6g) är byggd till branschledar-standard, och VAR den möter Airtable-basens nuvarande gränser. Uppslagsverk/orientering — sak-besluten lever i ADR-062/063/064 + data-model §Kända fällor; detta dok binder dem, fryser dem inte. Vid konflikt gäller ADR:erna.
+>
+> **Äger:** Inget eget sak-beslut – uppslagsverk. **Kartlägger:**
+> ADR-062/063/064 (branschledar-mönstret, segment-motorns beslut) +
+> `data-model.md` §Kända fällor. **Vid konflikt vinner:** ADR:erna. (Formell
+> ägar-deklaration per `ADR-100` § Updates 2026-08-08 — detta dok var
+> källförlagan för den tredelade formen, se § Ärlighet om underlaget där.)
 
 ## Tesen i en mening
 

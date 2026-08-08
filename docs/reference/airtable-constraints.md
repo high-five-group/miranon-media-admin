@@ -1,11 +1,19 @@
 ---
 owner: marcus803
-updated: 2026-08-07
+updated: 2026-08-08
 review_by: 2027-02-07
 status: stable
 ---
 
 # Airtable — strukturella begränsningar (plattform)
+
+> **Äger:** Airtable-plattformens strukturella väggar (P1–P29), varje posts
+> v1-kompensation och Fas E-migrationskrav. **Kartlägger:**
+> `docs/reference/data-model.md` §Kända fällor (avgränsning: fält-specifika
+> fällor bor där, plattforms-generella väggar bor här — se avgränsningsraden
+> nedan). **Vid konflikt vinner:** detta dokument för plattforms-väggar
+> (`ADR-100` §1 domän 5-undantag); koden (`DataSourceAdapter`-kontraktet,
+> `ADR-057`) för om en vägg fortfarande gäller idag.
 
 Auktoritativ katalog över Airtables **strukturella** begränsningar i detta projekt.
 Airtable-basen (`app8uGPrVCVOm6LfD`) är ett **medvetet valt v1-prototyp-datalager**
