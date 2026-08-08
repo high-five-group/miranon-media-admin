@@ -350,3 +350,110 @@
 # som slack.com-posten ovan (filen landade 2026-08-04). Påverkar
 # docs/research/kodfils-partitionering-parallella-agenter-2026-08-04.md.
 ^https://cacm\.acm\.org/.*$
+
+# ═══════════════════════════════════════════════════════════════════════
+# TASK-165 (2026-08-08) — #464-triage av nightly-links run 31236116308
+# (HEAD b39ffa3c), Summary: 8 Errors + 1 Timeout. Alla fem distinkta
+# domäner nedan är EXTERNA per klassningen i backlog/tasks/task-165 —
+# noll interna ruttnade pekare i denna körning.
+# ═══════════════════════════════════════════════════════════════════════
+
+# cakeinpanic.medium.com — Medium personlig-blogg-subdomän, bot-skydd.
+# Två instanser samma URL: nightly-links 31145756912 (2026-08-07) OCH
+# 31236116308 (2026-08-08). Klassbevis, mätt lokalt 2026-08-08:
+#   cakeinpanic.medium.com   403/403 (plain- och Chrome-UA) →
+#                            UA/fingerprint-klassen, samma familj som
+#                            medium.com-posten ovan men EGEN subdomän —
+#                            ^https://medium\.com/.*$ matchar inte
+#                            personliga Medium-subdomäner (samma skäl som
+#                            splashthat.com/support.splashthat.com fick
+#                            varsin rad ovan).
+# Källan är citerad i
+# docs/research/ci-parity-lokal-trigger-branschmonster-2026-08-05.md; det
+# är grindens hämtning som blockeras, inte källans existens.
+^https://cakeinpanic\.medium\.com/.*$
+
+# dteare.medium.com — samma Medium-subdomän-bot-block-klass som
+# cakeinpanic.medium.com ovan. Två instanser samma URL: nightly-links
+# 31145756912 (2026-08-07) OCH 31236116308 (2026-08-08). Klassbevis, mätt
+# lokalt 2026-08-08:
+#   dteare.medium.com   403/403 (plain- och Chrome-UA) →
+#                       UA/fingerprint-klassen.
+# Källan är citerad i docs/research/t95-r2-desktop-form-2026-08-02.md.
+^https://dteare\.medium\.com/.*$
+
+# blog.chromium.org — Googles rate-limiter mot GHA:s delade IP-ranges,
+# samma google.com/sorry-captcha-mönster som testing.googleblog.com/
+# www.leanessays.com ovan (#464-klassen). Ny instans, EN gång: sedd i
+# nightly-links 31236116308 (2026-08-08), INTE i föregående röda natt
+# 31145756912 (2026-08-07). Klassbevis, mätt lokalt 2026-08-08:
+#   blog.chromium.org   200/200 (plain- och Chrome-UA) → GHA-IP-klassen,
+#                       inte UA/fingerprint-klassen.
+# Path-scopad, inte domän-bred (slack.com/get-started-precedenten): en
+# enda sidväg är verifierad, resten av blog.chromium.org är overifierad.
+# Påverkar
+# docs/research/hook-beslut-ask-vs-deny-och-begriplighet-2026-08-04.md.
+^https://blog\.chromium\.org/2020/01/introducing-quieter-permission-ui-for\.html$
+
+# developer.salesforce.com — Akamai bot-management (Lightning-komponent-
+# referensen), 403 mot lychees browser-UA-header. Sedd i nightly-links
+# 31236116308 (2026-08-08). Klassbevis, mätt lokalt 2026-08-08:
+#   developer.salesforce.com   plain-UA → 301 till en NY sökväg (docs har
+#                              flyttats till .../docs/platform/lightning-
+#                              component-reference/guide/lightning-pill.
+#                              html?type=Example, 200 där) men Chrome-UA
+#                              (lychees form) → 403 direkt, ingen
+#                              redirect, `akamai-grn`-header närvarande →
+#                              UA/fingerprint-klassen (Akamai Bot Manager
+#                              blockerar klienter som utger sig för en
+#                              riktig webbläsare). Sidan EXISTERAR bevisat
+#                              (200 via plain-UA-redirecten) — det är
+#                              grindens hämtningsform som blockeras, inte
+#                              källans existens.
+# Path-scopad (samma skäl som slack.com/get-started ovan):
+# developer.salesforce.com är ett stort flersidigt dokumentationsträd,
+# overifierat i övrigt. Påverkar
+# docs/research/mottagar-preview-monster-2026-08-07.md.
+^https://developer\.salesforce\.com/docs/component-library/bundle/lightning-pill-container/documentation$
+
+# workspaceupdates.googleblog.com — samma google.com/sorry GHA-IP-klass
+# som testing.googleblog.com/www.leanessays.com/blog.chromium.org ovan
+# (#464-klassen). Ny instans, EN gång: sedd i nightly-links 31236116308
+# (2026-08-08). Klassbevis, mätt lokalt 2026-08-08:
+#   workspaceupdates.googleblog.com   200/200 (plain- och Chrome-UA) →
+#                                      GHA-IP-klassen.
+# Path-scopad av samma skäl som blog.chromium.org ovan. Påverkar
+# docs/research/mottagar-preview-monster-2026-08-07.md.
+^https://workspaceupdates\.googleblog\.com/2021/10/visual-updates-for-composing-email-in-gmail\.html$
+
+# ronjeffries.com — CI-runner-specifik TIMEOUT, samma klass som
+# digg.se/tanstack.com/opentelemetry.io-precedenten (GHA-IP-nivå-
+# strypning, inte länkröta). 2-instans-beslut per digg.se-precedenten:
+# identisk TIMEOUT två nätter i rad — nightly-links 31145756912
+# (2026-08-07) OCH 31236116308 (2026-08-08), samma sökväg båda gångerna.
+# --accept-timeouts (ADR-082 beslut 2) räckte inte ensamt: natten
+# 2026-08-08 hade även fem äkta fel i error_map (posterna ovan), och
+# is_success_ignoring_timeouts() kräver ett TOMT error_map — en natt med
+# ENDAST denna timeout hade redan gått grön. Klassbevis, mätt lokalt
+# 2026-08-08: HTTP 200 på 1,1 s (plain-UA) — sidan är frisk och snabb.
+# Påverkar
+# docs/research/nummerallokering-parallella-aktorer-2026-07-29.md.
+^https://ronjeffries\.com/xprog/articles/practices/pracnotneed/$
+
+# ═══════════════════════════════════════════════════════════════════════
+# TASK-165 forts. — fynd UTANFÖR run 31236116308:s scope, upptäckta vid
+# lokal full-scope-reverifiering (samma dag, arbetsträdet 45 commits
+# längre fram än körningens HEAD b39ffa3c). Ingen #464-kommentar nämner
+# dessa ännu — de skulle ha rödmålat NÄSTA natt om de lämnats. Fixade
+# proaktivt i samma landning eftersom AC #3 (grön dispatch efter fixen)
+# annars hade fallerat av en ANNAN orsak än den kortet beskriver.
+# ═══════════════════════════════════════════════════════════════════════
+
+# help.brevo.com — Zendesk-liknande hjälpcenter, bot-skydd. Samma klass
+# som help.shopify.com/help.tickettailor.com/help.classdojo.com ovan.
+# Två förekomster samma URL i
+# docs/research/post-send-tillstandet-bulkutskick-2026-08-08.md (rad 133
+# + 564). Klassbevis, mätt lokalt 2026-08-08:
+#   help.brevo.com   403/403 (plain- och Chrome-UA) →
+#                    UA/fingerprint-klassen.
+^https://help\.brevo\.com/.*$

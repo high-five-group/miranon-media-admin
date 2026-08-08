@@ -479,7 +479,7 @@ G3/G6.
 - [Unleash: "Technical debt"](https://docs.getunleash.io/concepts/technical-debt) (glosaria/koncept-nivå; typ-tabellen är sekundärkälla, se § Vad jag inte kunde belägga)
 - [Trunk Based Development: "Feature Flags"](https://trunkbaseddevelopment.com/feature-flags/) — trunkbaseddevelopment.com
 - [Vite: "Env Variables and Modes"](https://vite.dev/guide/env-and-mode) — `vite.dev`
-- [Uber Engineering: "Introducing Piranha"](https://www.uber.com/us/en/blog/piranha/) / [`eng.uber.com/piranha`](https://eng.uber.com/piranha/) · [`github.com/uber/piranha`](https://github.com/uber/piranha)
+- [Uber Engineering: "Introducing Piranha"](https://www.uber.com/us/en/blog/piranha/) · [`github.com/uber/piranha`](https://github.com/uber/piranha)
 - [GitHub: "About code owners"](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) — `docs.github.com`
 - [git-scm: `git-worktree`](https://git-scm.com/docs/git-worktree) — git-scm.com
 - [Anthropic: "Run parallel sessions with worktrees"](https://code.claude.com/docs/en/worktrees) — code.claude.com/docs
