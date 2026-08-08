@@ -24,14 +24,14 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 ## Instruktioner — Alltid gäller
 
 - **Styrande dokument för byggandet:** `docs/byggplan.md`. Läs den innan varje fas. Avvik aldrig utan att uppdatera byggplanen först.
-- Research före implementation: kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
+- Research före implementation (princip: `~/.claude/CLAUDE.md` § Instruktioner, "Research först, bygg sedan"): kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
 - **Airtable-schema före write:** konsultera `docs/reference/data-model.md` (fält-skrivbarhet, formel/rollup-fält, §Kända fällor, write-fält-IDs) INNAN du designar någon Airtable-fält-operation. Anta aldrig fält-form — verifiera mot referensen eller live via Code. Gäller vid Code:s fält-operations-design och utförande.
 - **Prod-basens UI-/automations-lager (historisk karta):** [`docs/reference/schema_reference.md`](docs/reference/schema_reference.md) — interfaces, vyer, formulär, Zapier/Make och automationerna A1–A11 med skriptkod; frusen ögonblicksbild mars 2026, kopierad ur frysta Vue-repot 2026-08-01. För fält-data är `data-model.md` auktoritativ.
 - **Airtable-plattformens väggar:** `docs/reference/airtable-constraints.md` är den auktoritativa katalogen över vad Airtable strukturellt INTE kan (29 poster, A–G), var och en med `v1-kompensation` + `Fas E-krav` — den är därmed också migrations-kravspecen. Konsultera INNAN arkitektur-, test- eller CI-design som rör datakällan, och anta aldrig att en vägg är vår egen design. Vad valet kostar i testbarhet: [ADR-063](docs/decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md) § S91-not.
 - **Samarbetssystemets mekanik:** hur vårt Code/Marcus-system fungerar och sitter ihop bor i hubbens `SYSTEMET.md` (`marcus-system/SYSTEMET.md`) — den navigerbara mekanik-kartan (roller, hub/spoke, plugin/skills, governing/CI, lifecycle, tråd/backlog-substrat, MCP, distribution). Spoke-pekare: [`docs/reference/systemet.md`](docs/reference/systemet.md). Slå upp on-demand när du behöver systemets mekanik; läs inte in den i förväg.
-- Testa nytt bibliotek/approach med minimalt test (1 komponent, 1 hook) innan full implementation
-- Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer). Bevisa att det fungerar — "det funkar" ≠ "det är rätt".
-- Fånga lärdomar i `tasks/lessons.md` efter varje korrigering. Markera universella med `[UNIVERSAL]`.
+- Testa nytt bibliotek/approach med minimalt test (1 komponent, 1 hook) — princip: `~/.claude/CLAUDE.md` § Instruktioner ("minimalt test... innan full implementation").
+- Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer) — grundprincipen (`~/.claude/CLAUDE.md` § Instruktioner, "Verifiera innan klart") gäller alltid.
+- Fånga lärdomar i `tasks/lessons.md` — kadens och `[UNIVERSAL]`-märkning: `~/.claude/CLAUDE.md` § Instruktioner ("Fånga varje lärdom").
 - **Uppdrag till agenter källmärker varje faktapåstående** (fil/commit/kommando) — obelagda påståenden behandlas av mottagaren som HYPOTES ([ADR-086](docs/decisions/ADR-086-uppdragets-premisser-provas-av-mottagaren.md)).
 - **Sanningshierarkin — varje kunskapsklass har EXAKT EN auktoritativ källa** (koden äger beteende & mekanik, ADR:er äger varför, CI äger utfall, git+frys-märkta ögonblicksbilder äger historik, en utpekad referens-fil äger externa system, kort+sessionsdok äger pågående arbete): [ADR-100](docs/decisions/ADR-100-sanningshierarkin-koden-ager-beteendet.md). Karta, aldrig kopia — vid en motsägelse mellan två styrande ytor vinner den ADR:n pekar ut.
 
@@ -41,7 +41,8 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 
 När något OVÄNTAT uppstår (utanför nuvarande scope — nära eller långt ifrån, men alltid
 oväntat), kör denna triage innan du fortsätter. Lita inte på omdöme i stunden — det är den
-empiriskt svagaste mekanismen (~9%), samma svaghetsklass ADR-043 kodade bort för lifecycle.
+empiriskt svagaste mekanismen (självgransknings-fångstraten, se `~/.claude/CLAUDE.md`
+§ Roll-arkitektur), samma svaghetsklass ADR-043 kodade bort för lifecycle.
 Klassa mot två axlar: närhet till nuvarande scope, och om det BLOCKERAR nuvarande arbete.
 
 - Blockerar + i scope → hantera nu (enabling-detour, egen landning).
