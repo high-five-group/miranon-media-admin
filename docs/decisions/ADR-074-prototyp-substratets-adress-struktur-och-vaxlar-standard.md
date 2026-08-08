@@ -127,6 +127,21 @@
 >
 > Beslut 2:s tokens-krav, a11y-golv och rörelse-förbud (Amendering 5)
 > gäller oförändrat för den nya axeln.
+>
+> **Amendering 7 (2026-08-08, S93 sjunde resumen — grillad samsyn Del 12,
+> `ADR-103` B3; UTVIDGAR beslut 1 med kodform-krav, river ingenting):**
+> variant-GRENARNA i komponentkoden får från nästa prototyp-pass en
+> standardiserad form — **EN central läspunkt per yta** (variant-beslutet
+> fattas på ett ställe, aldrig fläckvis; Fowlers "Inversion of Control"),
+> **build-time-grindad** bakom `import.meta.env.DEV` (prototypgrenar
+> strukturellt onåbara i produktionsbygget), med **referens-scanning**
+> mot manifestet som rivningsgrind. Beslut 1:s URL-kontrakt
+> (`?variant=`/`?data=`/vy-axeln) och växlaren är orörda — det är
+> SPRIDNINGEN i komponentkoden som standardiseras bort (S93-empirin:
+> 127 spridda förekomster över 8 filer gjorde rivning till kirurgi och
+> lämnade en gren produktions-nåbar). Prototypens SLUTPUNKT är samtidigt
+> omdefinierad av `ADR-103`: throwaway-kontraktets rivning ersätts av
+> promoveringsordningen (formen promoveras, flaggan rivs).
 
 T80 föddes S75 Del 8 (Marcus review-våg 1): `?variant`-konventionen var
 odokumenterad i specs (URL-STATE-SPEC saknade den; ADR-044 täcker endast
