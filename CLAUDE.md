@@ -381,50 +381,15 @@ All landning går via branch + PR (direktpush till `main` avvisas av ruleset,
 post mot `main` plus posterna före den, så `BEHIND` uppstår inte längre av att
 två PR:er landar nära varandra.
 
-**Den raden gällde bara poster som HANN IN i kön — tills 2026-08-05.** Rulesetet
-bar samtidigt `strict_required_status_checks_policy: true`, och strict kräver
-uppdaterad gren som **villkor för att posten ens får köas**. En PR som blev
-`BEHIND` *innan* den hann köas släpptes därför aldrig in, och kön fick aldrig
-chansen att sekvensera den — den stod still med `auto=true` på obestämd tid.
-Mätt skarpt: `#747` och `#748` rörde sig inte förrän `gh pr update-branch`
-kördes för hand på båda.
-
-**Rotorsaken är åtgärdad, inte symptomet:** `strict` är AVSTÄNGD sedan
-2026-08-05, eftersom merge queue gör den redundant. Förstapartskällan säger det
-rakt ut — kön *"provides the same benefits as Require branches to be up to date
-before merging, but does not require a pull request author to update their pull
-request branch"*. Fullt underlag, inklusive vad som INTE ändrades och vad som
-måste sättas tillbaka om `merge_queue`-regeln någonsin rivs:
-[ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md) § Amendering
-2026-08-05.
-
-**Varför historiken står kvar här:** raden sade i sex dagar att kön löser
-`BEHIND`, och den var sann i sin egen mening — den beskrev bara inte att en post
-kan hindras från att nå kön. `ADR-076` hade till och med bokfört
-branch-uppdateringen som en accepterad kostnad (2026-07-23), sex dagar innan kön
-fanns, och ingen konsumerade den raden när förutsättningen ändrades.
-
-**Strategiflaggan är BORTA ur formen sedan 2026-08-04 (S97).** Raden sade
-tidigare `gh pr merge --auto --merge`. Den formen avvisas nu: `gh` svarar
-`! The merge strategy for main is set by the merge queue` — kön äger
-strategin, och att också ange den är ett fel, inte en redundans. Mätt skarpt
-vid armeringen av `#705`; `--auto` ensamt gav EXIT=0 och korrekt
-`autoMergeRequest.mergeMethod: MERGE`.
-
-**Exitkoden beror på PR:ens läge — meddelandet gör det inte.** Raden sade
-till 2026-08-05 att formen ger `exit 1` rakt av. Mätt om samma dag mot en
-REDAN ARMERAD PR (`#796`): samma avvisningstext, men **exit 0**, och den
-befintliga armeringen lämnades orörd (`enabledAt` oförändrad). S97:s
-`exit 1` mättes vid armering av en oarmerad PR. Båda mätningarna står, och
-skillnaden är operativt viktig: **läs texten, inte bara exitkoden** — ett
-skript som bara kollar `$?` ser formen som lyckad i det ena fallet och
-misslyckad i det andra, fast den är fel i båda.
-
-**Den gamla regeln — *"armera aldrig två samtidigt"* — är UPPHÄVD.** Den var
-korrekt så länge sekvenseringen var en mänsklig hand. Den handen är nu
-mekaniserad (`TASK-70.1`, A7:3): kön är en `merge_queue`-regel i rulesetet
-`main-skydd`, `min_entries_to_merge: 1` så en ensam PR landar direkt utan att
-vänta på sällskap.
+**Strategiflaggan anges INTE** — kön äger strategin, och `gh` avvisar formen
+med `! The merge strategy for main is set by the merge queue`.
+**Exitkoden beror på PR:ens läge, meddelandet gör det inte** — samma
+avvisningstext kan ge `exit 1` (oarmerad PR) eller `exit 0` (redan armerad PR,
+armeringen orörd). **Läs texten, inte bara `$?`.** Mätningarna (`#705`,
+`#796`) och strict-avstängningens historik (`#747`/`#748`, den upphävda
+manuella sekvenseringsregeln): [`CONTRIBUTING.md`](CONTRIBUTING.md) §
+Landnings-ordningen · [ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)
+§ Amendering 2026-08-05.
 
 **Vad som fortfarande gäller:** armera aldrig en PR vars bygg-agent fortfarande
 arbetar, och kör aldrig `update-branch` mot en sådan gren.
@@ -450,11 +415,11 @@ Vakt-event är väckarklocka, aldrig fakta: förgrundsverifiera före varje
 handling — fem falska terminal-signaler i ett enda pass är belagda
 (S91 Del 39.5), inklusive ett "MERGED med SHA" vars SHA aldrig nådde `main`.
 
-**Namnet på mönstret: subagent = Activity, orkestrerare = Workflow.**
-Temporals egen distinktion, applicerad här: en subagent utför sitt
-avgränsade jobb och returnerar — den äger aldrig väntan, eftersom den
-saknar en framtida tur att vakna i; orkestreraren är den durabla parten och
-äger all väntan, inklusive svepet ovan. Kontraktet kodifierat i
+**Namnet på mönstret: subagent = Activity, orkestrerare = Workflow** —
+Temporal-mönstret som förebild för namngivningen: en subagent utför sitt
+avgränsade jobb och returnerar, den äger aldrig väntan, eftersom den saknar en
+framtida tur att vakna i; orkestreraren är den durabla parten och äger all
+väntan, inklusive svepet ovan. Fullt kontrakt:
 [ADR-096](docs/decisions/ADR-096-subagentens-vantekontrakt.md).
 
 **Push-ekonomins princip: commit är gratis, push kostar**
@@ -485,24 +450,20 @@ inte bara `autoMergeRequest`.** Tabellrad 2 ovan — en PR som var `CLEAN` vid
 armeringen köas direkt utan att `autoMergeRequest` någonsin sätts — är den
 VANLIGA vägen genom kön, inte ett undantag. Ett skript som bara läser
 `autoMergeRequest == null` kan därför inte skilja "korrekt köad" (tyst) från
-"aldrig armerad"/"utsparkad med konsumerad armering" (larma) — precis den
-förväxlingen som fick `scripts/heartbeat-svep.sh`s armerings-kandidat att
-falsklarma sju gånger på en enda natt (PR #614, #617×3, #621, #623, #624,
-2026-08-02). `isInMergeQueue` skiljer dem åt utan att röra den ursprungliga
-ambiguiteten i raden ovan: `isInMergeQueue: true` ⇒ tyst, `false` ⇒ larma
-(kan fortfarande vara ANTINGEN aldrig-armerad ELLER utsparkad — den
-skillnaden kräver fortfarande det andra `gh pr merge --auto`).
-Fixad i `TASK-128`.
+"aldrig armerad"/"utsparkad med konsumerad armering" (larma) —
+`isInMergeQueue` skiljer dem åt: `isInMergeQueue: true` ⇒ tyst, `false` ⇒
+larma (kan fortfarande vara ANTINGEN aldrig-armerad ELLER utsparkad — den
+skillnaden kräver fortfarande det andra `gh pr merge --auto`). Fixad i
+`TASK-128` (falsklarmade sju gånger på en enda natt innan fixen — full
+instansdata på kortet).
 
-**Det fjärde läget är dyrast, inte bara ett fjärde alternativ.** En
-`failed_checks`-dequeue konsumerar armeringen tyst — ingen signal skiljer
-PR:en från en som aldrig armerats. Utan ett svep som armerar om den står en
-färdig PR still på obestämd tid (`T108`-klassen: ett tillstånd utan
-bevakare). Mätt två gånger 2026-08-01 på samma dag (#527 12:24, #539 12:33),
-och två gånger till på SAMMA PR inom sex minuter (#557, TASK-115 instans 6+7)
-— i samtliga fall en falsk röd från G0-transienten (se
-`scripts/check-staging-preflight-wiring.mjs` § bounded retry), inte ett
-verkligt trädfel. Källa: `backlog/tasks/task-115` + `tasks/sessions/2026-07-26-session-91.md` rad ~7908–7909.
+**Det fjärde läget (tabellraden ovan) är dyrast, inte bara ett fjärde
+alternativ:** en `failed_checks`-dequeue konsumerar armeringen tyst — ingen
+signal skiljer PR:en från en som aldrig armerats. Utan ett svep som armerar om
+står en färdig PR still på obestämd tid (`T108`-klassen: ett tillstånd utan
+bevakare). Mätt fyra gånger 2026-08-01, samtliga en G0-transient (inte ett
+verkligt trädfel): `backlog/tasks/task-115` +
+`tasks/sessions/2026-07-26-session-91.md` rad ~7908–7909.
 
 **Åtgärdsregeln för en armerings-kandidat: draft eller armera i samma
 andetag, aldrig vilande.** En PR skapas som draft ELLER armeras när den
@@ -519,27 +480,21 @@ rörs aldrig av någon annan än ägaren — det är ägarens eget svep som bär
 
 **En köad gren kan inte uppdateras via `gh`.** Push avvisas med `GH006` så
 länge PR:en står i kön, och `--disable-auto` släpper inte låset — `gh` 2.96.0
-har ingen dequeue-flagga. Det är fortfarande sant och oförändrat.
+har ingen dequeue-flagga.
 
 **Men CLI:ts yta är smalare än plattformens — en väg ur finns.** GraphQL-
-mutationen `dequeuePullRequest(input: {id: <PR:ens GraphQL-nod-ID>})` tar
-bort posten ur kön direkt, och kräver inga rättigheter utöver ett vanligt
-repo-admin-token. Mätt skarpt 2026-08-01 mot en genuint köad, kastbar test-PR:
-armerad 21:57:38 UTC, `dequeuePullRequest` lyckades 21:57:43 UTC, kön
-bekräftat tom 21:57:49 UTC — 11 sekunder totalt, `main` opåverkad. Samma pass
-prövade `enqueuePullRequest(input: {pullRequestId, jump: true})`: fungerar
-också, men kräver att PR:ens egna required checks redan är gröna (den råa
-mutationen kringgår inte den grinden — mätt: ett försök före grön status gav
-`"Required status check ... is expected"`). Fullt underlag inklusive alla
-kommandon och tidsstämplar:
+mutationen `dequeuePullRequest` tar bort en köad post direkt utan att kräva
+rättigheter utöver ett vanligt repo-admin-token; `enqueuePullRequest(jump:
+true)` kan hoppa i kön men kräver att PR:ens egna required checks redan är
+gröna. Skarpt prövat och tidsatt (armerad → dequeued → kö bekräftat tom, 11
+sekunder totalt, `main` opåverkad):
 [`docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md`](docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md).
 
-**Den operativa regeln kvarstår ändå, med rätt skäl den här gången:** köa
-inte förrän diffen är den du vill landa. Skälet är inte längre att
-möjligheten att ändra "försvinner" — den gör inte det. Skälet är att den enda
-vägen ur går via en handskriven GraphQL-mutation utanför `gh`, vår vanliga
-verktygsyta, och att förlita sig på den som daglig rutin (i stället för ett
-medvetet, mätt undantag) är en väg dit vi inte har anledning att gå.
+**Den operativa regeln kvarstår ändå: köa inte förrän diffen är den du vill
+landa.** Den enda vägen ur en köad gren går via en handskriven
+GraphQL-mutation utanför `gh`, vår vanliga verktygsyta — att förlita sig på
+den som daglig rutin (i stället för ett medvetet, mätt undantag) är en väg
+dit vi inte har anledning att gå.
 
 **Om kön går sönder:** vägen tillbaka är att ta bort `merge_queue`-regeln ur
 rulesetet via `gh api` — den kräver ingen landning och är därför oberoende av
