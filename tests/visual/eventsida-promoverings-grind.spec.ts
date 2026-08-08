@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { expect, test } from '../support/fixturvarld/hermetic';
 
@@ -167,5 +168,95 @@ test.describe('TASK-162.2 — åtgärds-ytan promoverad: samma referens, INGEN ?
     await expect(page.getByTestId('skriv-ut-kort')).toMatchAriaSnapshot({
       name: 'skriv-ut-kort.aria.yml',
     });
+  });
+});
+
+/**
+ * [TASK-162.4, ADR-103 B4/PRD TASK-162 § Testbeslut — "A11y-golvet består:
+ * promoverade ytor behåller nivå 11; axe-pass ingår i härdningen"] Axe-pass
+ * på EXAKT samma promoverade ytor/lokatorer som ariaSnapshot-grinden ovan
+ * bevisar formen på: åtgärds-korten (`atgarder-kort`/`skriv-ut-kort`) och
+ * registret (`register-yta`) i samtliga fyra filter-lägen.
+ *
+ * VARFÖR HÄR OCH INTE I `event-detail.staging.test.ts`/
+ * `event-deltagare.staging.test.ts`: dessa filer BÄR redan egna axe-scanningar
+ * av samma ytor (helsides-scan rad ~485 resp. registrets grundläge/filtrerat/
+ * markera-läge rad ~612 i respektive fil, uppdaterade i TASK-162.2/162.3) —
+ * men de kör i `chromium-authenticated`-projektet, som kräver en riktig
+ * staging-inloggning (`setup`-projektets storageState) och port 5173. En
+ * agent-worktree kan strukturellt inte köra dem (5173-förbudet,
+ * CONTRIBUTING.md § Landnings-ordningen); post-merge-nätet är den enda platsen
+ * de faktiskt körs. PRD TASK-162:s EGET testbeslut pekar ut den hermetiska
+ * fixturvärlden som PRIMÄR skarv för just denna feature-yta — samma `test`/
+ * `gotoPromoverad` som ariaSnapshot-grinden ovan already bär, alltså den
+ * faktiska LOKALA MOTSVARIGHETEN till axe-runner-jobbet (`npm run test:a11y`)
+ * för en yta jobbet självt inte når (DEV-guardat, ADR-044/045 — eventsidan är
+ * ingen DEV-route). Körs lokalt: `npm run test:visual` (ingen staging,
+ * ingen port 5173, samma fixtur-env som visual/acceptance).
+ *
+ * Detta ÄR en TILLKOMMANDE, oberoende täckning — inte en ersättning för
+ * ovanstående staging-sviter (som bevisar mot verklig auth-kontext) eller för
+ * `npm run test:a11y` (DEV-primitiven). Tre lager, tre olika saker bevisade.
+ */
+test.describe('TASK-162.4 — axe-pass på de promoverade ytorna (ADR-103, härdningen)', () => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  /** Kör axe scopat till en lokator; violations skrivs ut läsbart vid fällning. */
+  async function axeNoll(page: import('@playwright/test').Page, selector: string) {
+    const resultat = await new AxeBuilder({ page })
+      .withTags(WCAG_TAGGAR)
+      .include(selector)
+      .analyze();
+    expect(
+      resultat.violations,
+      resultat.violations
+        .map((v) => `[${v.impact ?? 'utan impact'}] ${v.id}: ${v.help}`)
+        .join('\n'),
+    ).toEqual([]);
+  }
+
+  test('åtgärds-ytan — AtgarderKort + SkrivUtKort: axe 0 violations', async ({ page }) => {
+    await gotoPromoverad(page);
+    const resultat = await new AxeBuilder({ page })
+      .withTags(WCAG_TAGGAR)
+      .include('[data-testid="atgarder-kort"]')
+      .include('[data-testid="skriv-ut-kort"]')
+      .analyze();
+    expect(
+      resultat.violations,
+      resultat.violations
+        .map((v) => `[${v.impact ?? 'utan impact'}] ${v.id}: ${v.help}`)
+        .join('\n'),
+    ).toEqual([]);
+  });
+
+  test('registret — default (inget filter): axe 0 violations', async ({ page }) => {
+    await gotoPromoverad(page);
+    await axeNoll(page, '[data-testid="register-yta"]');
+  });
+
+  test('registret — aktivt filter (Visa: Väntar på bekräftelse): axe 0 violations', async ({
+    page,
+  }) => {
+    await gotoPromoverad(page);
+    await page.getByRole('button', { name: 'Visa' }).click();
+    await page.getByRole('option', { name: 'Väntar på bekräftelse' }).click();
+    await axeNoll(page, '[data-testid="register-yta"]');
+  });
+
+  test('registret — Bor över-kryss: axe 0 violations', async ({ page }) => {
+    await gotoPromoverad(page);
+    // Toppradens EGNA "Bor över"-rad — samma borOverSnapshot-fälla som
+    // ariaSnapshot-grinden ovan dokumenterar (panelens "Visa"-dropdown ger en
+    // TOM kryss-lista, fel läge).
+    await page.getByRole('button', { name: /^Bor över/ }).click();
+    await axeNoll(page, '[data-testid="register-yta"]');
+  });
+
+  test('registret — noll träffar (Visa: Avbokade): axe 0 violations', async ({ page }) => {
+    await gotoPromoverad(page);
+    await page.getByRole('button', { name: 'Visa' }).click();
+    await page.getByRole('option', { name: 'Avbokade' }).click();
+    await axeNoll(page, '[data-testid="register-yta"]');
   });
 });

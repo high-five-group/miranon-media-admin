@@ -4,7 +4,7 @@ title: 'Skiva: Prototyp-substratets rivning'
 status: To Do
 assignee: []
 created_date: '2026-08-07 09:02'
-updated_date: '2026-08-07 18:16'
+updated_date: '2026-08-08 17:57'
 labels:
   - blocked
 dependencies:
@@ -20,7 +20,7 @@ ordinal: 238000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Prototypen har gjort sitt — den skarpa eventsidan ÄR nu den form Marcus låste. Substratet rivs sist, när formen står, aldrig före. Samma ordning som familje-rivningen i task-18.13.
+Flaggan/variant-maskineriet för hållplats-prototypen rivs — inte prototypen i sig: den är redan PROMOVERAD till skarpa formen (ADR-103 B2 steg 1, TASK-162.2 åtgärds-ytan + TASK-162.3 registret). Rivningen (ADR-103 B2 steg 4) sker EFTER Marcus godkänner den promoverade ytan (TASK-162.5) — aldrig före (ADR-102 B3:s spärr, oförändrad). Regressionslåsets visual-baslinje tas om på den godkända ytan i samma fönster (ADR-103 B4). Samma ordning som familje-rivningen i task-18.13: substratet rivs sist, när formen står.
 
 Täcker användarberättelser: 22, 23
 <!-- SECTION:DESCRIPTION:END -->
@@ -107,6 +107,10 @@ event-bekraftelse 16) med marginal. En halvriven substrat-rivning är bevisligen
 sämre än ingen: punkt 4:s blandläge uppstår i just det mellantillståndet.
 Arbetet återställdes därför i sin helhet (grenen raderad, aldrig pushad) och
 kartan ovan skrevs i stället.
+
+[TASK-162.4, ADR-103-bokföringssynk, 2026-08-08] Description omskriven: "riv prototypen" → "riv flaggan/variant-maskineriet EFTER Marcus godkänner den promoverade ytan (TASK-162.5)" (ADR-103 Konsekvenser + B2 steg 4). DoD #6 omskriven till "Baslinje omtagen EFTER godkänd promovering (ADR-103 B4)" av samma skäl som TASK-145.3/145.5. Kortet FÖRBLIR blocked (label oförändrad) — godkännandet (TASK-162.5) är den faktiska gaten, inte en dependency-kant i detta pass (STOPPA-vid-scope-tvekan: en cross-PRD-beroendekant lades INTE till, ej efterfrågad av uppdraget).
+
+VARNING TILL FRAMTIDA UTFÖRARE: § EXEKVERINGSKARTAN ovan skrevs FÖRE TASK-162.2/162.3:s landade promovering och beskriver Deltagare.tsx/EventDetail.tsx-stegen (punkt 1–2) mot ett kodläge som delvis inte längre finns i sin ursprungliga form — 162.3 har redan rivit protoVariant-tråden ur ArbetsKo på ett ANNAT sätt än kartan beskriver (protoVariant-propen, hallplatsMarkeFn, flik-statet är redan borta). Variant-villkorets UTANFÖR-maskineri (?variant=-läsningen i EventDetail.tsx, isHallplatsVariant, switchern, protoDataMode) är dock uttryckligen ORÖRT av 162.2/162.3 och återstår att riva. Punkt 3–8 (Betalningar.tsx, Belaggning/Anteckningar/Gruppdynamik, DeltagareHallplatsPrototyp.tsx, hallplats-steg-prototyp.ts) rör block 162.2/162.3 inte vidrörde och är sannolikt fortfarande giltiga — men mät om mot faktisk kod före exekvering (ADR-086), lita inte blint på kartan.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
@@ -116,7 +120,7 @@ kartan ovan skrevs i stället.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
-- [ ] #6 test:visual omtagen med granskade baslinjer — drift är väntad, inte accepterad osedd
+- [ ] #6 Baslinje omtagen EFTER godkänd promovering (ADR-103 B4)
 - [ ] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
 - [ ] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
 <!-- DOD:END -->

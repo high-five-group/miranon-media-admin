@@ -743,18 +743,21 @@ test.describe('TASK-145.1 — registret som EN lista (DoD #7)', () => {
  *     kvarvarande, verkliga mutationen på ytan — `useSetBorOver`. Den har egen
  *     svit (`event-bor-over.staging.test.ts`).
  *
- * ÖPPEN FRÅGA TILL MARCUS, EJ AVGJORD HÄR (rapporterad i slutrapporten): AC #1
- * säger ordagrant "inga muterande kryssrutor", och undantag 3 ÄR en muterande
- * kryssruta. Den rivs ändå INTE här, av två skäl som pekar åt samma håll:
- * grillad samsyn beslut 2 (S93 Del 3) räknar upp åtta rader och namnger exakt
- * tre rivningar — Bor över är inte en av dem, och det kvitterandet verifierades
- * av Marcus när `TASK-145.1` av misstag raderade radens E2E-svit. PRD:ns egen
- * enumeration är dessutom smalare än AC-texten: "båda betalnings-kryssen
+ * BESLUTET (Marcus 1A, S93 Del 3, 2026-08-07 — kravtexten synkad TASK-162.4,
+ * 2026-08-08): den tidigare formuleringen av `TASK-145.5` AC #1 sa ordagrant
+ * "inga muterande kryssrutor", och undantag 3 ÄR en muterande kryssruta. Den
+ * rivs ändå INTE här — kortets AC #1 är omskriven via CLI (TASK-162.4) till
+ * att uttryckligen undanta Bor över-krysset i stället för att motsäga sig
+ * själv, av två skäl som pekar åt samma håll: grillad samsyn beslut 2 (S93
+ * Del 3) räknar upp åtta rader och namnger exakt tre rivningar — Bor över är
+ * inte en av dem, och det kvitterandet verifierades av Marcus när
+ * `TASK-145.1` av misstag raderade radens E2E-svit. PRD:ns egen enumeration
+ * är dessutom smalare än den gamla AC-texten: "båda betalnings-kryssen
  * (anmälningsavgift och slutbetalning), noterings-redigeringen och
- * påminn-knappen lämnar eventsidan" — Bor över nämns inte. Att riva en kontroll
- * som en annan yta kvitterat som överlevande, på en AC-formulering som redan är
- * omöjlig att läsa bokstavligt (markera-lägets kryss är också kryssrutor), vore
- * att kompensera för ett spec-fel i tysthet.
+ * påminn-knappen lämnar eventsidan" — Bor över nämns inte. Att riva en
+ * kontroll som en annan yta kvitterat som överlevande, på en AC-formulering
+ * som redan var omöjlig att läsa bokstavligt (markera-lägets kryss är också
+ * kryssrutor), hade varit att kompensera för ett spec-fel i tysthet.
  */
 test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => {
   test('den laddade eventsidan bär noll skriv-affordanser i deltagar- och åtgärdsytan', async ({
