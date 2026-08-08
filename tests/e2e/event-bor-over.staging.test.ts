@@ -186,8 +186,37 @@ function gruppen(page: Page) {
   return page.locator('section[aria-labelledby="grupp-deltagare"]');
 }
 
+/**
+ * [ÄNDRAT, TASK-166 — disambiguering mot registrets "Visa"-dropdown] Sedan
+ * TASK-162.3 promoverade registerpanelen (`RegisterFilterRad`) till den
+ * OVILLKORLIGA formen ovanför registret i BÅDA lägena (facitkartan § A5:
+ * "Bor över-kryssläget behåller filterpanelen som ram") bär panelens "Visa"-
+ * dropdown VALDA värdes etikett som en del av sitt eget tillgängliga namn.
+ * `REGISTER_STEG_LABEL['bor-over']` (hallplats-steg-prototyp.ts) är just
+ * "Bor över" — SAMMA sträng som denna summeringsrads egen term — och när
+ * raden klickas skriver den samma `registerFilter.steg`-tillstånd som
+ * dropdownen läser (`vaxlaSteg`, Deltagare.tsx), så dropdownens tillgängliga
+ * namn blir "Bor över Visa" i samma ögonblick som raden själv bär
+ * "Bor över 1".
+ *
+ * BEVISAT I CI (post-merge run 31270539778, `event-bor-over.staging.test.ts:262`):
+ * `getByRole('button', { name: /^Bor över/ })` gav ett strict-mode-brott —
+ * "resolved to 2 elements" — mellan `aria-pressed="true"` raden (`aka
+ * getByRole('button', { name: 'Bor över 1' })`) och Select-triggern
+ * (`aria-expanded`/`aria-haspopup`, `aka getByRole('button', { name: 'Bor
+ * över Visa' })`).
+ *
+ * `[aria-pressed]` skiljer dem — SAMMA disambiguerings-mekanism som
+ * `event-deltagare.staging.test.ts`s `summeringsRad()`-helper redan
+ * etablerade för den identiska kollisionsklassen (dropdownens valda värde
+ * kan dela prefix med en summeringsrads egen term). Select-triggern bär
+ * ALDRIG `aria-pressed`. `src/` är facit-låst (ADR-103) — disambigueringen
+ * hör hemma här, i testet, inte i produktkoden.
+ */
 function borOverRaden(page: Page) {
-  return gruppen(page).getByRole('button', { name: /^Bor över/ });
+  return gruppen(page)
+    .getByRole('button', { name: /^Bor över/ })
+    .and(page.locator('[aria-pressed]'));
 }
 
 function kryssen(page: Page) {
@@ -249,7 +278,26 @@ test.describe('Bor över — raden + kryss-läget (task-18.7)', () => {
     // Eva (Avbokad/Ombokad) bär borOver i mocken men räknas ALDRIG in i
     // Bor över-radens tal — 1, inte 2. Hon räknas i stället i Avbokade-
     // radens EGET tal (1, ovan), oberoende av Bor över.
-    await expect(gruppen(page).getByText('Eva Sten')).toHaveCount(0);
+    //
+    // [ÄNDRAT, TASK-162.3 AC #2 → TASK-166] Fram till promoveringen var Eva
+    // helt bortfiltrerad ur REGISTRET (denna assertion löd `toHaveCount(0)`);
+    // registrets bas inkluderar numera avbokade (grå-märkta, sist), så hon
+    // syns nu i registret — men fortfarande inte i Bor över-radens tal ovan.
+    // Samma facit `event-deltagare.staging.test.ts` redan bevisar för samma
+    // fixturperson: synlig, sist i ordningen, grått "Avbokad"-märke i stället
+    // för ett steg-märke.
+    const register = gruppen(page).getByTestId('deltagar-register');
+    await expect(register.getByText('Eva Sten')).toBeVisible();
+    const namn = await register.getByTestId('deltagar-namn').allTextContents();
+    expect(namn[namn.length - 1]).toBe('Eva Sten');
+    // `.last()`: HallplatsMarke:s breddlås staplar alla sex etiketterna i
+    // samma grid-cell (fem aria-hidden-platshållare + den synliga sist i
+    // DOM-ordningen) — `getByText('Avbokad')` matchar annars två noder med
+    // identisk text (samma disambiguering som event-deltagare.staging.test.ts
+    // redan använder för denna exakta situation).
+    await expect(
+      register.getByTestId('deltagar-kort').last().getByText('Avbokad').last(),
+    ).toBeVisible();
   });
 
   test('klicket öppnar KRYSS-LÄGET: alla anmälda i EN kolumn, ikryssade överst', async ({
@@ -349,7 +397,15 @@ test.describe('Bor över — raden + kryss-läget (task-18.7)', () => {
 
     // Vid OMÖPPNING sätter sig ordningen om — då står de ikryssade överst
     // (inbördes i listans ordning: Cecilia före David).
-    await gruppen(page).getByRole('button', { name: 'Rensa filtret' }).click();
+    // [ÄNDRAT, TASK-162.3 → TASK-166] Knappen heter "Rensa filter" (panelens
+    // badge-bärande knapp, `RegisterFilterRad`), inte längre "Rensa filtret"
+    // (den rivna flik-formens länk, TASK-162.3 AC #1). Namnet bär en
+    // sr-only-räknare ("Rensa filter, 1 aktivt filterval") — regex matchar
+    // prefixet oavsett räknarens värde, samma mönster som
+    // `event-deltagare.staging.test.ts` redan använder.
+    await gruppen(page)
+      .getByRole('button', { name: /^Rensa filter/ })
+      .click();
     await expect(kryssen(page)).toHaveCount(0);
     await borOverRaden(page).click();
     expect(await kryssNamn(page).allTextContents()).toEqual([
