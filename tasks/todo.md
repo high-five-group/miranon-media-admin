@@ -15,6 +15,43 @@
 
 ## Aktuellt fokus
 
+**Session 100 ⏸️ PAUSAD (2026-08-08, FJÄRDE pausen, `lifecycle: paused`) —
+GRANSKNINGS-YTAN BYGGD I FEM VARV, MED ETT RESEARCH-PASS SOM AVGJORDE FORMEN.**
+Marcus fråga vid start ändrade utgångsläget: appen HADE redan en granskningsyta
+(`SegmentMailCompose` rad 207–304), men grinden där är **mottagarantalet**, inte
+ordet "skicka" — och han kallade den *"baslinje, aldrig genomdesignad"*, alltså
+mekanik att låna men inte facit att kopiera. **Formen blev EGEN SIDA, inte
+modal** (Marcus-val), och research-passet
+[`post-send-tillstandet-bulkutskick-2026-08-08.md`](../docs/research/post-send-tillstandet-bulkutskick-2026-08-08.md)
+avgjorde vad som händer efter skick: **resultatet ersätter granskningens
+innehåll på SAMMA yta** — tre konvergerande linjer (GOV.UK:s kriterium pågående
+resa → notifikation på plats · `ADR-067` D3: ingen leverans-data att visa på en
+separat sida · storleksklassen mot Intercoms 1 000-tröskel). **VARV 19–23, sju
+lokala commits, INGET pushat** (`T126` efterlevd): gransknings-vyn som egen sida
+med urvalsfiltret som **biter** och platshållarna **ifyllda** (ofyllda lämnas i
+klartext och varnas om — ett mail med `{deadline}` i texten är vad granskningen
+finns för att stoppa) · tre rader bort på Marcus order · **utfallet i tre lägen**
+där `MessageBox` säger HUR MÅNGA och korten VILKA OCH VARFÖR · scroll till
+toppen, bock på "Skickat", `Obekräftad`-pillen bort · **"Utskicket lyckades"**
+ersätter "skickades" (ett utskick KAN skickas utan att lyckas — stämplingslögnens
+kärna). **TVÅ FEL VAR MINA:** `#930` klassades som vilande armerings-kandidat
+fast den var CLEAN-köad (`autoMergeRequest` sätts aldrig då — `TASK-128`:s egen
+förväxling, gjord för hand) · research-passet prövade uppdragets premiss mot
+**fel träd** (huvudkatalogen såg inte sessionens opushade varv) och kallade det
+verifierat; rättat i filen före commit. **ORDLISTA fick posten `Delutfall`**
+(`9a6a66a8`) — Marcus fråga *"vad betyder delutfallet?"* visade att ett bärande
+krav i två styrande dokument saknade kanonisk betydelse. **BLOCKERANDE VID
+RESUME: bindestreckens scope** — Marcus vill ha korta bindestreck "överallt";
+ytan är åtgärdad men A/B/C-frågan (UI-strängar · plus kodkommentarer · hela
+repot, 1 382 spårade filer varav flera ägda av S93/S99) är obesvarad och kräver
+ett beslut, inte ett bygge. **HANDOFF: sessionsdok S100 § PAUSLÄGE (fjärde
+pausen).** Numrering disk-verifierad mot `origin/main`: `103`/**`L480`** + åtta
+fragment/`T137`/`task-162`/`f47` — tre axlar rörde sig under passet, grenen låg
+**64 commits bakom** `main` vid pausen.
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 3) —
 DE TRETTON VARVEN HAR REDAN LANDAT, OCH HANDOFFEN VISSTE INTE OM DET.**
 Resume-läsningen fann **tre divergenser**. (1) PAUSLÄGE:s *"TRETTON VARV
