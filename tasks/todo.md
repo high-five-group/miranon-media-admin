@@ -350,6 +350,25 @@ paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
 resume.
 *(S93:s kadensrad nedan, oförändrad.)*
 
+**Session 93 ⏸️ PAUSAD (2026-08-08, åttonde pausen, `lifecycle: paused`) —
+PROMOVERINGSFORMEN ETABLERAD, 162-KÖN 3 AV 5 LANDADE** — sjunde resumen
+levererade hela audit-kedjan: fyra axlar (rotorsaks-verifiering R1–R9 ·
+56-posters tidslinje transkript-utvidgad · First principles ·
+branschresearch RP1–RP3, `#962`+`#966`) → polval-grillningen (6 kvitterade
+beslut) → **`ADR-103` promoveringsformen** ("skarpa bygget" avskaffat;
+promovera → granska → godkänn → riv flaggan) + amenderingar 102/074
+(`#975`) → PRD `task-162` + 5 skivor (`#979`+`#981`) → **162.1 Done**
+(grinden: 12 ariaSnapshot-referenser + tvåsidigt bevis, `#983`+`#987`) →
+**162.2 + 162.3 MERGADE** (`#991`+`#992`) — **den promoverade ytan är i
+`main`**, bevisad identisk även på skarpa URL:en (8/8). Enabling:
+nanoid-fixen (`#959`). **`T138`** född + gren-sanering (358→72 lokala;
+remote-halvan var oprunad ref-cache — rättat öppet, `#988`+`#990`).
+**VÄNTAR:** 162.4-spawn (deps mergade) → **162.5 Marcus QA** →
+G2-grillningen → `145.6` rivning. Numrering vid paus mot `b5703ba6`:
+104/L480+8 fragment/**T139**/**task-163**/f47.
+**HANDOFF: sessionsdok S93 § PAUSLÄGE (åttonde).**
+*(Föregående resume-block nedan oförändrat.)*
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, sjunde
 resumen) — AUDIT-UPPDRAGET: PROTOTYP→SKARP-PROCESSEN SYNAS I GRUNDEN** —
 Marcus order vid resume, tvådelad: (1) **full audit** av allt som gått snett
