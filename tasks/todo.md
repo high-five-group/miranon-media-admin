@@ -412,7 +412,13 @@ andra tillämpning efter 162-kön+QA+G2; facit-låsningen Marcus moment).
 **HELHETSPLANEN I FIL: sessionsdok S93 § Del 13 Verkställighets-ordningen**
 (1 post-merge-bevis→stängningar · 2 spawna 162.4 · 3 163–165+larmstäd ·
 4 G2 · 5 QA→145.6 · 6 S100-övertagandet · 7 vilande).
-**HANDOFF: sessionsdok S93 § Paushistorik (åttonde) + Del 12–13.**
+**G2 AVGJORD (Del 14, 2026-08-08 kväll): ADR-104 kanalseparation** — fem
+kvitterade beslut + helhetskvittens; `!`-kanalens hook-osynlighet MÄTT
+förstahand; bygg-kortet **task-167** (skript+hook+grind-invariant) mintat.
+Steg 1–3 slutna: 162.2/162.3/162.4 levererade · 163–166 fixade/stängda ·
+`#464` STÄNGT med grönt bevis. Kvar: post-merge-grönt→larmstäd · 167 ·
+QA 162.5 (avslutas med `!`-stämplingen) · 145.6 · S100-övertagandet.
+**HANDOFF: sessionsdok S93 § Paushistorik (åttonde) + Del 12–14.**
 *(Föregående paus-läge nedan oförändrat.)*
 
 **Session 93 ⏸️ PAUSAD (2026-08-08, åttonde pausen, `lifecycle: paused`) —
