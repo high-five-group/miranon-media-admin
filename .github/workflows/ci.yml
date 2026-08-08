@@ -962,6 +962,25 @@ jobs:
         # ≈0,1 s LOKALT mätt (macOS, 2026-07-29) — CI-tiden är inte mätt av mig.
         run: node scripts/test-seed-review-fixture.mjs
 
+      - name: Test facit:godkann-skriptets guard-funktioner (TASK-167)
+        # Per ADR-039 § lesson→grind (L43): en testsvit utan CI-bärare bevisar
+        # ingenting (TASK-82:s precedent). scripts/facit-godkann.mjs är Marcus
+        # egen stämplingskanal (ADR-104 § Beslut 2) — samma klass av lokalt
+        # utvecklarverktyg som seed-review-fixture.mjs ovan, och samma HEMVIST-
+        # argument gäller: sviten är hermetisk (egen /tmp-sandlåda, ETT äkta
+        # men tomt git-repo för att pröva `git rev-parse main` → `HEAD`-
+        # fallbacken, ingen nätverkstrafik, inga secrets) och prövar de PURA
+        # funktionerna (parseArgs, tillampaGodkannande, lasPolicy) plus main()
+        # end-to-end mot sandlådan — aldrig det verkliga repots facit-manifest.
+        #
+        # TVÅSIDIGT: varje felväg (okänt pass, redan satt fält utan --ersatt,
+        # tomt citat, trasig undantags-form, trasig JSON, saknad/ofullständig
+        # policy) prövas i BÅDA riktningar — 29 fall.
+        #
+        # ≈0,3 s LOKALT mätt (macOS, 2026-08-08) — CI-tiden är inte mätt av mig
+        # och kan avvika åt båda håll.
+        run: node scripts/test-facit-godkann.mjs
+
       - name: Check staging-preflightens wiring (TASK-91 deletion-vakt)
         # Staging-preflighten (TASK-77 + TASK-84) hänger på FEM ytor: tre
         # Playwright-dependencies och två anrop i main(). Semaforens LOGIK är väl
