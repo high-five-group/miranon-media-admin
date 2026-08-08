@@ -1,10 +1,10 @@
 ---
 id: TASK-162.1
 title: 'Skiva: Promoverings-grinden + manifest-utvidgningen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 07:39'
-updated_date: '2026-08-08 08:17'
+updated_date: '2026-08-08 08:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,7 +29,7 @@ Prefaktoreringen som gör promoveringen enkel: bevismekanismen byggs FÖRE någo
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-Promoverings-grinden byggd som Playwright-spec tests/visual/eventsida-promoverings-grind.spec.ts (ADR-103 B4), körd mot ?variant=a&data=verklig i hermetiska fixturvärlden. Sex ariaSnapshot-referenser incheckade under tests/visual/__aria__/eventsida-promoverings-grind.spec.ts/ (2x per visual-desktop/visual-mobile = 12 filer): atgarder-kort, skriv-ut-kort, register-default, register-aktivt-filter (Visa: Väntar på bekräftelse), register-bor-over, register-noll-traffar (Visa: Avbokade — fixturen har noll avbokade, verifierat mot REGISTRATIONS_RESPONSE). Ny lokator data-testid="register-yta" i Deltagare.tsx (redan gemensam wrapper för variant- och skarpa-grenen, flippar ingen form). Tvåsidigt grindbevis kört lokalt: grönt (12/12, exit 0) mot identisk yta, rött (exit 1, 2 fällda med exakt diff Förväntat/Mottaget) mot en avsiktlig textmutation i AtgarderKort, mutationen reverterad och grönt återbevisat efteråt. facit.json utvidgat med registrets yta (bilder: [], png-frånvaro öppet deklarerad — facit är ariaSnapshot-referenserna, samma mönster som atgarder-ytan). scripts/check-facit.sh: 5 ytor, grönt. scripts/test-check-facit.sh: 18/18. playwright.config.ts fick expect.toMatchAriaSnapshot.pathTemplate (egen __aria__-katalog, inget platform-suffix eftersom ARIA-strukturen är OS-oberoende till skillnad från pixlar).
+STÄNGNING (2026-08-08, orkestreraren): PR #983 mergad genom kön 08:38:24Z (merge-SHA a7c02091) — per-jobb-CI grönt via merge-grinden. Alla fyra AC bockade av utföraren; tvåsidigt grind-bevis i PR:en (grön 12/12 · röd med exakt diff på avsiktlig mutation · reverterad + grönt återbevisat). Öppen flagga bokförd: grinden körs i förgrund av utförare, ej i CI förrän T87.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
