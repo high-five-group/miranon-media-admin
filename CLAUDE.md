@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-07
+updated: 2026-08-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -81,7 +81,9 @@ npm run build               # bygg grön
 
 De fyra ovan är DoD-disciplinen (`ADR-036`, `CONTRIBUTING.md`) och är vad som
 körs före push. CI kör betydligt fler grindar (shellcheck-strict, actionlint,
-yamllint, audit-ci, 13 dokumentations-grindar, ~20 gatekeeper-testsviter,
+yamllint, audit-ci, 14 dokumentations-grindar (`npm run check:docs`s egen
+slutrad, TASK-161.2-omräkning 2026-08-08 — stod som "13" här, exakt den
+kopierings-drift stycket nedan varnar för), ~20 gatekeeper-testsviter,
 Acceptance-klassen, Webblasarbeteende-klassen) — **och det är CI:s jobb, inte
 ditt.** Merge queue hindrar en röd PR från att landa, så kostnaden av att
 missa något lokalt är en extra CI-cykel, inte ett trasigt `main`.
@@ -131,7 +133,7 @@ alltid tillåten — men talet ska omprövas när `npm run metrics:ci` bär mer 
 Skriptet YAML-parsar de två workflow-filerna och kör lint-/docs-jobbens samt
 `test-fast`/`acceptance`/`webblasarbeteende`-jobbens `run:`-block VERBATIM,
 steg för steg — en ny rad i ett känt jobb plockas upp automatiskt nästa
-körning, ingen manifest-post att glömma. `npm run check:docs` (de tretton
+körning, ingen manifest-post att glömma. `npm run check:docs` (de fjorton
 dokumentations-grindarna) återanvänds som första steg i stället för att
 dupliceras. Det enda som är deklarerat i `.ci-parity-policy.json` är
 UNDANTAGEN — infrastruktur-steg, steg redan täckta av check:docs, och tre
@@ -158,13 +160,23 @@ test-fast/acceptance/webblasarbeteende när VARJE ändrad fil (mot
 redan hade skippat.
 
 **Klassningen läser SÖKVÄG, inte filändelse.** D0 är en positiv allowlist
-(`**/*.md`, `docs/**`, `tasks/**`, `tests/vale-regression/**`,
-`.github/ISSUE_TEMPLATE/**`, `.vale/**`, `.claude/**`) med explicita undantag
-(`.github/workflows/**`, `package.json`, `package-lock.json`, `audit-ci.jsonc`,
-`tsconfig*.json`, `biome.json`, `vite.config.ts`, `playwright.config.ts`,
-`tsr.config.json`, `.nvmrc`, `.gitignore`). Formen är avsiktlig: **allt som
-inte uttryckligen står i allowlisten hamnar i full klass**, så en ny filtyp
-kräver ingen uppdatering av regeln för att behandlas säkert.
+(disk-verifierad mot `ci.yml`s `paritet:start klassning-d0`-block, TASK-161.2
+2026-08-08 — kopian nedan var tidigare ofullständig, saknade 9 av 17
+positiv-poster och 1 av 12 undantag): `**/*.md`, `LICENSE`, `docs/**`,
+`tasks/**`, `tests/vale-regression/**`, `scripts/test-vale-regression.sh`,
+`.github/ISSUE_TEMPLATE/**`, `.github/PULL_REQUEST_TEMPLATE.md`,
+`.github/CODEOWNERS`, `.vscode/extensions.json`, `.editorconfig`,
+`.lycheeignore`, `.vale.ini`, `.vale/**`, `.markdownlint-cli2.jsonc`,
+`.claude/**`, `.claude/**/.*`) med explicita undantag (`.github/workflows/**`,
+`.github/dependabot.yml`, `package.json`, `package-lock.json`,
+`audit-ci.jsonc`, `tsconfig*.json`, `biome.json`, `vite.config.ts`,
+`playwright.config.ts`, `tsr.config.json`, `.nvmrc`, `.gitignore`). Formen är
+avsiktlig: **allt som inte uttryckligen står i allowlisten hamnar i full
+klass**, så en ny filtyp kräver ingen uppdatering av regeln för att behandlas
+säkert. Denna prosa-kopia är ett underhållet UNDANTAG från den regeln (skriptet
+självt härleder listan live ur `ci.yml`, se ovan) — hålls för hand, kan därför
+återigen glida; `scripts/check-listparitet.sh` bevakar INTE denna kopia (den
+bevakar `paritet:start/slut`-parningen inom `ci.yml` självt, inte denna fil).
 
 Mätt lokalt på denna maskin (ej CI-runner, ej isolerat från samtida last),
 2026-08-05: full körning på kod-diff **910,7 s** · docs-only-diff **332,7 s**
@@ -610,9 +622,21 @@ innehållet — anta aldrig att materialet inte existerar.
 
 **FK-inspirerat 3-lagers token-system** (DESIGN-SYSTEM-SPEC.md §1):
 
-1. **Primitiv** (`src/styles/tokens/primitives.css`) — råa värden: `--mm-amber-500: #FFBA05`, `--mm-blue-900: #1B4965`, etc.
-2. **Semantisk** (`src/styles/tokens/semantic.css`) — roller: `--mm-color-primary`, `--mm-color-focus-ring`, `--mm-color-text-default`.
+1. **Primitiv** (`src/styles/tokens/primitives.css`) — råa värden, prefix **`--p-`** (ej `--mm-`,
+   sedan tolvstegsskale-migreringen, commit `13582077`): `--p-gold-500: #d4960a`,
+   `--p-blue-700: #1b4965`, etc.
+2. **Semantisk** (`src/styles/tokens/semantic.css`) — roller, prefix `--mm-`: `--mm-primary`,
+   `--mm-focus-ring`, `--mm-text`.
 3. **Komponent** (`src/styles/tokens/components.css`) — komponentspecifikt: `--mm-button-primary-bg`, `--mm-dialog-overlay-bg`.
+
+> Räkningen ovan är disk-verifierad (TASK-161.2, 2026-08-08, `da654409`) — de tre
+> primitiv-/semantik-exemplen som stod här tidigare (`--mm-amber-500`,
+> `--mm-blue-900`, `--mm-color-primary`, `--mm-color-focus-ring`,
+> `--mm-color-text-default`) existerar INTE i `src/styles/tokens/` (5 av de 7
+> ursprungliga exemplen). `--mm-color-primary` var dessutom en LEVANDE bugg tills
+> S100 varv 14 (commit `9d1875ea`, 2026-08-07): en checkbox konsumerade den
+> odefinierade variabeln och föll tyst till webbläsarens `accent-color: auto`
+> (se `components.css` § Kryssruta för hela historiken).
 
 **Regler:**
 

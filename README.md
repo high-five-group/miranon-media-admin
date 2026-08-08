@@ -2,7 +2,7 @@
 
 React-admin för Miranon Media — eventhantering, anmälningar och rapportering ovanpå Airtable + Supabase.
 
-[![CI](https://github.com/marcus803/miranon-media-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/marcus803/miranon-media-admin/actions/workflows/ci.yml)
+[![CI](https://github.com/high-five-group/miranon-media-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/high-five-group/miranon-media-admin/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-UNLICENSED-red.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D24-brightgreen)](.nvmrc)
 [![Biome](https://img.shields.io/badge/lint-Biome%202-60a5fa)](biome.json)
