@@ -1611,7 +1611,7 @@ test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (ta
     await expect(erik.getByTestId('gruppdynamik-badge')).toHaveText('Resenär steg 1–2');
   });
 
-  test('Första eventet: tom kurshistorik ⇒ "första gången"-raden, ingen kurshistorik-rad', async ({
+  test('Första eventet: tom kurshistorik ⇒ ingen kurshistorik-rad, ingen riven "första gången"-rad (S93 våg 19)', async ({
     page,
   }) => {
     await mockaGruppdynamik(page);
@@ -1621,8 +1621,13 @@ test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (ta
     const anna = gruppen(page)
       .getByTestId('gruppdynamik-personkort')
       .filter({ hasText: 'Anna Ek' });
-    await expect(anna).toContainText('första gången hos Miranon Media');
+    // Raden reven avsiktligt i S93 våg 19 (f889e9ce, Marcus 2026-08-06: "det
+    // är ju bara dubbelinformation" — bucketen "Första eventet" ÄR
+    // informationen, se docblocket i PersonKort). Kortet bär i stället bara
+    // namn + kanonisk badge, ingen kurshistorik och ingen redundant rad.
+    await expect(anna).not.toContainText('första gången hos Miranon Media');
     await expect(anna.getByTestId('gruppdynamik-kurshistorik-rad')).toHaveCount(0);
+    await expect(anna.getByTestId('gruppdynamik-badge')).toHaveText('Ej påbörjat');
   });
 
   test('motiveringarna som vita kort — Läs mer visas BARA vid faktisk overflow', async ({
