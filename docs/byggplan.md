@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-07
+updated: 2026-08-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -12,8 +12,8 @@ status: stable
 > **Version:** 1.0
 > **Ägare:** Marcus + Claude Code (planering + implementation)
 > **Föregångare:** `docs/conversion-plan.md` (arkiveras till `docs/archive/conversion-plan-2026-04-14.md` i P3b)
-> **Auktoritativ källa för fas-sekvens:** `tasks/byggplan-direktiv.md` §5 (post-P1)
-> **ADR-katalog:** `docs/decisions/` (10 ADR:er listade i §5 — numrering tilldelas av Code mot befintlig katalog vid commit-tillfället; index i `docs/decisions/README.md`)
+> **Auktoritativ källa för fas-sekvens:** `docs/archive/byggplan-direktiv.md` §5 (post-P1; flyttad `tasks/` → `docs/archive/` i Session 17, commit `f343db3d` — direktivet är SLUTFÖRT, denna byggplan är dess levande efterträdare)
+> **ADR-katalog:** `docs/decisions/` (räkningen är README.md:s CI-grindade token — se [README.md](../README.md) § Arkitekturbeslut + `scripts/check-adr-count.sh` — inte upprepad här som ett eget, ogrindat tal, ADR-100 §2; §5 nedan listar bara de 10 skrivna i P3a; numrering tilldelas av Code mot befintlig katalog vid commit-tillfället; fullt index i `docs/decisions/README.md`)
 
 ---
 
@@ -32,7 +32,7 @@ status: stable
 
 ### Syfte
 
-`docs/byggplan.md` är den styrande planen för Miranon Media Admin (React). Den ersätter `docs/conversion-plan.md` (arkiverad) och `tasks/byggplan-direktiv.md` (markeras SLUTFÖRT när P3 är klar).
+`docs/byggplan.md` är den styrande planen för Miranon Media Admin (React). Den ersätter `docs/conversion-plan.md` (arkiverad) och `docs/archive/byggplan-direktiv.md` (SLUTFÖRT — flyttad dit i Session 17 sedan P3 avslutades).
 
 Skillnaden mot conversion-plan: byggplan utgår från **etablerad arkitektur post-Fas A** (operations-baserat API, AuthContext|Response, klient-DSN, structured logging) och **låst datamodell post-Fas E target-research** (06b Supabase-target + 07 migrationsplan + 08 Odoo-validering). Conversion-plan utgick från en pre-research-arkitektur och har därför drift som hade krävt patch-på-patch.
 
@@ -59,7 +59,7 @@ Per fas finns en fas-prompt med åtta sektioner:
 
 | Lager | Dokument | Roll |
 |---|---|---|
-| **Strategi** | `tasks/byggplan-direktiv.md` (post-P3 SLUTFÖRT), `IDENTITET.md`, `KVALITETSDEFINITIONER-11-REACT.md` | Vad och varför — låsta principer |
+| **Strategi** | `docs/archive/byggplan-direktiv.md` (post-P3 SLUTFÖRT), `IDENTITET.md`, `KVALITETSDEFINITIONER-11-REACT.md` | Vad och varför — låsta principer |
 | **Plan** | **`docs/byggplan.md`** (detta dokument) | Hur — fas-för-fas, sekvens, beroenden |
 | **Implementation** | `docs/decisions/` (ADR), `docs/BUILD-LOG.md`, `tasks/sessions/` | Vad faktiskt skedde — beslut, avvikelser, retrospektiv |
 

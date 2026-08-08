@@ -325,6 +325,22 @@ och sluta tänka på ordningen — strategiflaggan ska INTE anges, kön äger
 strategin och `gh` avvisar formen med `! The merge strategy for main is set
 by the merge queue`.**
 
+**Strategiflaggan är BORTA ur formen sedan 2026-08-04 (S97).** Formen löd
+tidigare `gh pr merge --auto --merge`. Mätt skarpt vid armeringen av `#705`:
+`--auto` ensamt gav `EXIT=0` och korrekt `autoMergeRequest.mergeMethod: MERGE`
+— den gamla formen med `--merge` avvisas nu i stället för att vara en
+harmlös redundans.
+
+**Exitkoden beror på PR:ens läge — meddelandet gör det inte.** Samma
+avvisningstext (`! The merge strategy for main is set by the merge queue`)
+gav `exit 1` när S97 mätte den vid armering av en OARMERAD PR (2026-08-04,
+`#705`-passet). Mätt om 2026-08-05 mot en REDAN ARMERAD PR (`#796`): samma
+avvisningstext, men **exit 0**, och den befintliga armeringen lämnades orörd
+(`enabledAt` oförändrad). Båda mätningarna står, och skillnaden är operativt
+viktig: **läs texten, inte bara exitkoden** — ett skript som bara kollar `$?`
+ser formen som lyckad i det ena fallet och misslyckad i det andra, fast den
+är fel i båda.
+
 Kö-parametrarna, med skälen:
 
 | Parameter | Värde | Varför |

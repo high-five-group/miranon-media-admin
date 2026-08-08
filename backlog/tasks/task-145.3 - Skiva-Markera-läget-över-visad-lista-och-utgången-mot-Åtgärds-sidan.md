@@ -4,7 +4,7 @@ title: 'Skiva: Markera-läget över visad lista och utgången mot Åtgärds-sida
 status: To Do
 assignee: []
 created_date: '2026-08-07 08:58'
-updated_date: '2026-08-07 16:53'
+updated_date: '2026-08-07 17:34'
 labels:
   - ready-for-agent
 dependencies:
@@ -82,7 +82,7 @@ EJ KLARADE DoD, MOTIVERADE
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
 - [ ] #6 test:visual omtagen med granskade baslinjer — drift är väntad, inte accepterad osedd

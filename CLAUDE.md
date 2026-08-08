@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-07
+updated: 2026-08-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -24,16 +24,16 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 ## Instruktioner — Alltid gäller
 
 - **Styrande dokument för byggandet:** `docs/byggplan.md`. Läs den innan varje fas. Avvik aldrig utan att uppdatera byggplanen först.
-- Research före implementation: kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
+- Research före implementation (princip: `~/.claude/CLAUDE.md` § Instruktioner, "Research först, bygg sedan"): kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
 - **Airtable-schema före write:** konsultera `docs/reference/data-model.md` (fält-skrivbarhet, formel/rollup-fält, §Kända fällor, write-fält-IDs) INNAN du designar någon Airtable-fält-operation. Anta aldrig fält-form — verifiera mot referensen eller live via Code. Gäller vid Code:s fält-operations-design och utförande.
 - **Prod-basens UI-/automations-lager (historisk karta):** [`docs/reference/schema_reference.md`](docs/reference/schema_reference.md) — interfaces, vyer, formulär, Zapier/Make och automationerna A1–A11 med skriptkod; frusen ögonblicksbild mars 2026, kopierad ur frysta Vue-repot 2026-08-01. För fält-data är `data-model.md` auktoritativ.
 - **Airtable-plattformens väggar:** `docs/reference/airtable-constraints.md` är den auktoritativa katalogen över vad Airtable strukturellt INTE kan (29 poster, A–G), var och en med `v1-kompensation` + `Fas E-krav` — den är därmed också migrations-kravspecen. Konsultera INNAN arkitektur-, test- eller CI-design som rör datakällan, och anta aldrig att en vägg är vår egen design. Vad valet kostar i testbarhet: [ADR-063](docs/decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md) § S91-not.
 - **Samarbetssystemets mekanik:** hur vårt Code/Marcus-system fungerar och sitter ihop bor i hubbens `SYSTEMET.md` (`marcus-system/SYSTEMET.md`) — den navigerbara mekanik-kartan (roller, hub/spoke, plugin/skills, governing/CI, lifecycle, tråd/backlog-substrat, MCP, distribution). Spoke-pekare: [`docs/reference/systemet.md`](docs/reference/systemet.md). Slå upp on-demand när du behöver systemets mekanik; läs inte in den i förväg.
-- Testa nytt bibliotek/approach med minimalt test (1 komponent, 1 hook) innan full implementation
-- Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer). Bevisa att det fungerar — "det funkar" ≠ "det är rätt".
-- Fånga lärdomar i `tasks/lessons.md` efter varje korrigering. Markera universella med `[UNIVERSAL]`.
+- Testa nytt bibliotek/approach med minimalt test (1 komponent, 1 hook) — princip: `~/.claude/CLAUDE.md` § Instruktioner ("minimalt test... innan full implementation").
+- Verifiera per komponent: 11/11/11 (bibliotek) eller 11/10/10 (vyer) — grundprincipen (`~/.claude/CLAUDE.md` § Instruktioner, "Verifiera innan klart") gäller alltid.
+- Fånga lärdomar i `tasks/lessons.md` — kadens och `[UNIVERSAL]`-märkning: `~/.claude/CLAUDE.md` § Instruktioner ("Fånga varje lärdom").
 - **Uppdrag till agenter källmärker varje faktapåstående** (fil/commit/kommando) — obelagda påståenden behandlas av mottagaren som HYPOTES ([ADR-086](docs/decisions/ADR-086-uppdragets-premisser-provas-av-mottagaren.md)).
-- **Sanningshierarkin — varje kunskapsklass har EXAKT EN auktoritativ källa** (koden äger beteende & mekanik, ADR:er äger varför, CI äger utfall, git+frys-märkta ögonblicksbilder äger historik, en utpekad referens-fil äger externa system, kort+sessionsdok äger pågående arbete): [ADR-100](docs/decisions/ADR-100-sanningshierarkin-koden-ager-beteendet.md). Karta, aldrig kopia — vid en motsägelse mellan två styrande ytor vinner den ADR:n pekar ut.
+- **Sanningshierarkin — varje kunskapsklass har EXAKT EN auktoritativ källa:** domäntabellen bor i [ADR-100](docs/decisions/ADR-100-sanningshierarkin-koden-ager-beteendet.md) §1 — slå upp den där, den återges inte här. Karta, aldrig kopia — vid en motsägelse mellan två styrande ytor vinner den ADR:n pekar ut.
 
 ---
 
@@ -41,7 +41,8 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 
 När något OVÄNTAT uppstår (utanför nuvarande scope — nära eller långt ifrån, men alltid
 oväntat), kör denna triage innan du fortsätter. Lita inte på omdöme i stunden — det är den
-empiriskt svagaste mekanismen (~9%), samma svaghetsklass ADR-043 kodade bort för lifecycle.
+empiriskt svagaste mekanismen (självgransknings-fångstraten, se `~/.claude/CLAUDE.md`
+§ Roll-arkitektur), samma svaghetsklass ADR-043 kodade bort för lifecycle.
 Klassa mot två axlar: närhet till nuvarande scope, och om det BLOCKERAR nuvarande arbete.
 
 - Blockerar + i scope → hantera nu (enabling-detour, egen landning).
@@ -81,7 +82,9 @@ npm run build               # bygg grön
 
 De fyra ovan är DoD-disciplinen (`ADR-036`, `CONTRIBUTING.md`) och är vad som
 körs före push. CI kör betydligt fler grindar (shellcheck-strict, actionlint,
-yamllint, audit-ci, 13 dokumentations-grindar, ~20 gatekeeper-testsviter,
+yamllint, audit-ci, 14 dokumentations-grindar (`npm run check:docs`s egen
+slutrad, TASK-161.2-omräkning 2026-08-08 — stod som "13" här, exakt den
+kopierings-drift stycket nedan varnar för), ~20 gatekeeper-testsviter,
 Acceptance-klassen, Webblasarbeteende-klassen) — **och det är CI:s jobb, inte
 ditt.** Merge queue hindrar en röd PR från att landa, så kostnaden av att
 missa något lokalt är en extra CI-cykel, inte ett trasigt `main`.
@@ -131,7 +134,7 @@ alltid tillåten — men talet ska omprövas när `npm run metrics:ci` bär mer 
 Skriptet YAML-parsar de två workflow-filerna och kör lint-/docs-jobbens samt
 `test-fast`/`acceptance`/`webblasarbeteende`-jobbens `run:`-block VERBATIM,
 steg för steg — en ny rad i ett känt jobb plockas upp automatiskt nästa
-körning, ingen manifest-post att glömma. `npm run check:docs` (de tretton
+körning, ingen manifest-post att glömma. `npm run check:docs` (de fjorton
 dokumentations-grindarna) återanvänds som första steg i stället för att
 dupliceras. Det enda som är deklarerat i `.ci-parity-policy.json` är
 UNDANTAGEN — infrastruktur-steg, steg redan täckta av check:docs, och tre
@@ -158,13 +161,23 @@ test-fast/acceptance/webblasarbeteende när VARJE ändrad fil (mot
 redan hade skippat.
 
 **Klassningen läser SÖKVÄG, inte filändelse.** D0 är en positiv allowlist
-(`**/*.md`, `docs/**`, `tasks/**`, `tests/vale-regression/**`,
-`.github/ISSUE_TEMPLATE/**`, `.vale/**`, `.claude/**`) med explicita undantag
-(`.github/workflows/**`, `package.json`, `package-lock.json`, `audit-ci.jsonc`,
-`tsconfig*.json`, `biome.json`, `vite.config.ts`, `playwright.config.ts`,
-`tsr.config.json`, `.nvmrc`, `.gitignore`). Formen är avsiktlig: **allt som
-inte uttryckligen står i allowlisten hamnar i full klass**, så en ny filtyp
-kräver ingen uppdatering av regeln för att behandlas säkert.
+(disk-verifierad mot `ci.yml`s `paritet:start klassning-d0`-block, TASK-161.2
+2026-08-08 — kopian nedan var tidigare ofullständig, saknade 9 av 17
+positiv-poster och 1 av 12 undantag): `**/*.md`, `LICENSE`, `docs/**`,
+`tasks/**`, `tests/vale-regression/**`, `scripts/test-vale-regression.sh`,
+`.github/ISSUE_TEMPLATE/**`, `.github/PULL_REQUEST_TEMPLATE.md`,
+`.github/CODEOWNERS`, `.vscode/extensions.json`, `.editorconfig`,
+`.lycheeignore`, `.vale.ini`, `.vale/**`, `.markdownlint-cli2.jsonc`,
+`.claude/**`, `.claude/**/.*`) med explicita undantag (`.github/workflows/**`,
+`.github/dependabot.yml`, `package.json`, `package-lock.json`,
+`audit-ci.jsonc`, `tsconfig*.json`, `biome.json`, `vite.config.ts`,
+`playwright.config.ts`, `tsr.config.json`, `.nvmrc`, `.gitignore`). Formen är
+avsiktlig: **allt som inte uttryckligen står i allowlisten hamnar i full
+klass**, så en ny filtyp kräver ingen uppdatering av regeln för att behandlas
+säkert. Denna prosa-kopia är ett underhållet UNDANTAG från den regeln (skriptet
+självt härleder listan live ur `ci.yml`, se ovan) — hålls för hand, kan därför
+återigen glida; `scripts/check-listparitet.sh` bevakar INTE denna kopia (den
+bevakar `paritet:start/slut`-parningen inom `ci.yml` självt, inte denna fil).
 
 Mätt lokalt på denna maskin (ej CI-runner, ej isolerat från samtida last),
 2026-08-05: full körning på kod-diff **910,7 s** · docs-only-diff **332,7 s**
@@ -368,50 +381,15 @@ All landning går via branch + PR (direktpush till `main` avvisas av ruleset,
 post mot `main` plus posterna före den, så `BEHIND` uppstår inte längre av att
 två PR:er landar nära varandra.
 
-**Den raden gällde bara poster som HANN IN i kön — tills 2026-08-05.** Rulesetet
-bar samtidigt `strict_required_status_checks_policy: true`, och strict kräver
-uppdaterad gren som **villkor för att posten ens får köas**. En PR som blev
-`BEHIND` *innan* den hann köas släpptes därför aldrig in, och kön fick aldrig
-chansen att sekvensera den — den stod still med `auto=true` på obestämd tid.
-Mätt skarpt: `#747` och `#748` rörde sig inte förrän `gh pr update-branch`
-kördes för hand på båda.
-
-**Rotorsaken är åtgärdad, inte symptomet:** `strict` är AVSTÄNGD sedan
-2026-08-05, eftersom merge queue gör den redundant. Förstapartskällan säger det
-rakt ut — kön *"provides the same benefits as Require branches to be up to date
-before merging, but does not require a pull request author to update their pull
-request branch"*. Fullt underlag, inklusive vad som INTE ändrades och vad som
-måste sättas tillbaka om `merge_queue`-regeln någonsin rivs:
-[ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md) § Amendering
-2026-08-05.
-
-**Varför historiken står kvar här:** raden sade i sex dagar att kön löser
-`BEHIND`, och den var sann i sin egen mening — den beskrev bara inte att en post
-kan hindras från att nå kön. `ADR-076` hade till och med bokfört
-branch-uppdateringen som en accepterad kostnad (2026-07-23), sex dagar innan kön
-fanns, och ingen konsumerade den raden när förutsättningen ändrades.
-
-**Strategiflaggan är BORTA ur formen sedan 2026-08-04 (S97).** Raden sade
-tidigare `gh pr merge --auto --merge`. Den formen avvisas nu: `gh` svarar
-`! The merge strategy for main is set by the merge queue` — kön äger
-strategin, och att också ange den är ett fel, inte en redundans. Mätt skarpt
-vid armeringen av `#705`; `--auto` ensamt gav EXIT=0 och korrekt
-`autoMergeRequest.mergeMethod: MERGE`.
-
-**Exitkoden beror på PR:ens läge — meddelandet gör det inte.** Raden sade
-till 2026-08-05 att formen ger `exit 1` rakt av. Mätt om samma dag mot en
-REDAN ARMERAD PR (`#796`): samma avvisningstext, men **exit 0**, och den
-befintliga armeringen lämnades orörd (`enabledAt` oförändrad). S97:s
-`exit 1` mättes vid armering av en oarmerad PR. Båda mätningarna står, och
-skillnaden är operativt viktig: **läs texten, inte bara exitkoden** — ett
-skript som bara kollar `$?` ser formen som lyckad i det ena fallet och
-misslyckad i det andra, fast den är fel i båda.
-
-**Den gamla regeln — *"armera aldrig två samtidigt"* — är UPPHÄVD.** Den var
-korrekt så länge sekvenseringen var en mänsklig hand. Den handen är nu
-mekaniserad (`TASK-70.1`, A7:3): kön är en `merge_queue`-regel i rulesetet
-`main-skydd`, `min_entries_to_merge: 1` så en ensam PR landar direkt utan att
-vänta på sällskap.
+**Strategiflaggan anges INTE** — kön äger strategin, och `gh` avvisar formen
+med `! The merge strategy for main is set by the merge queue`.
+**Exitkoden beror på PR:ens läge, meddelandet gör det inte** — samma
+avvisningstext kan ge `exit 1` (oarmerad PR) eller `exit 0` (redan armerad PR,
+armeringen orörd). **Läs texten, inte bara `$?`.** Mätningarna (`#705`,
+`#796`) och strict-avstängningens historik (`#747`/`#748`, den upphävda
+manuella sekvenseringsregeln): [`CONTRIBUTING.md`](CONTRIBUTING.md) §
+Landnings-ordningen · [ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md)
+§ Amendering 2026-08-05.
 
 **Vad som fortfarande gäller:** armera aldrig en PR vars bygg-agent fortfarande
 arbetar, och kör aldrig `update-branch` mot en sådan gren.
@@ -437,11 +415,11 @@ Vakt-event är väckarklocka, aldrig fakta: förgrundsverifiera före varje
 handling — fem falska terminal-signaler i ett enda pass är belagda
 (S91 Del 39.5), inklusive ett "MERGED med SHA" vars SHA aldrig nådde `main`.
 
-**Namnet på mönstret: subagent = Activity, orkestrerare = Workflow.**
-Temporals egen distinktion, applicerad här: en subagent utför sitt
-avgränsade jobb och returnerar — den äger aldrig väntan, eftersom den
-saknar en framtida tur att vakna i; orkestreraren är den durabla parten och
-äger all väntan, inklusive svepet ovan. Kontraktet kodifierat i
+**Namnet på mönstret: subagent = Activity, orkestrerare = Workflow** —
+Temporal-mönstret som förebild för namngivningen: en subagent utför sitt
+avgränsade jobb och returnerar, den äger aldrig väntan, eftersom den saknar en
+framtida tur att vakna i; orkestreraren är den durabla parten och äger all
+väntan, inklusive svepet ovan. Fullt kontrakt:
 [ADR-096](docs/decisions/ADR-096-subagentens-vantekontrakt.md).
 
 **Push-ekonomins princip: commit är gratis, push kostar**
@@ -472,24 +450,20 @@ inte bara `autoMergeRequest`.** Tabellrad 2 ovan — en PR som var `CLEAN` vid
 armeringen köas direkt utan att `autoMergeRequest` någonsin sätts — är den
 VANLIGA vägen genom kön, inte ett undantag. Ett skript som bara läser
 `autoMergeRequest == null` kan därför inte skilja "korrekt köad" (tyst) från
-"aldrig armerad"/"utsparkad med konsumerad armering" (larma) — precis den
-förväxlingen som fick `scripts/heartbeat-svep.sh`s armerings-kandidat att
-falsklarma sju gånger på en enda natt (PR #614, #617×3, #621, #623, #624,
-2026-08-02). `isInMergeQueue` skiljer dem åt utan att röra den ursprungliga
-ambiguiteten i raden ovan: `isInMergeQueue: true` ⇒ tyst, `false` ⇒ larma
-(kan fortfarande vara ANTINGEN aldrig-armerad ELLER utsparkad — den
-skillnaden kräver fortfarande det andra `gh pr merge --auto`).
-Fixad i `TASK-128`.
+"aldrig armerad"/"utsparkad med konsumerad armering" (larma) —
+`isInMergeQueue` skiljer dem åt: `isInMergeQueue: true` ⇒ tyst, `false` ⇒
+larma (kan fortfarande vara ANTINGEN aldrig-armerad ELLER utsparkad — den
+skillnaden kräver fortfarande det andra `gh pr merge --auto`). Fixad i
+`TASK-128` (falsklarmade sju gånger på en enda natt innan fixen — full
+instansdata på kortet).
 
-**Det fjärde läget är dyrast, inte bara ett fjärde alternativ.** En
-`failed_checks`-dequeue konsumerar armeringen tyst — ingen signal skiljer
-PR:en från en som aldrig armerats. Utan ett svep som armerar om den står en
-färdig PR still på obestämd tid (`T108`-klassen: ett tillstånd utan
-bevakare). Mätt två gånger 2026-08-01 på samma dag (#527 12:24, #539 12:33),
-och två gånger till på SAMMA PR inom sex minuter (#557, TASK-115 instans 6+7)
-— i samtliga fall en falsk röd från G0-transienten (se
-`scripts/check-staging-preflight-wiring.mjs` § bounded retry), inte ett
-verkligt trädfel. Källa: `backlog/tasks/task-115` + `tasks/sessions/2026-07-26-session-91.md` rad ~7908–7909.
+**Det fjärde läget (tabellraden ovan) är dyrast, inte bara ett fjärde
+alternativ:** en `failed_checks`-dequeue konsumerar armeringen tyst — ingen
+signal skiljer PR:en från en som aldrig armerats. Utan ett svep som armerar om
+står en färdig PR still på obestämd tid (`T108`-klassen: ett tillstånd utan
+bevakare). Mätt fyra gånger 2026-08-01, samtliga en G0-transient (inte ett
+verkligt trädfel): `backlog/tasks/task-115` +
+`tasks/sessions/2026-07-26-session-91.md` rad ~7908–7909.
 
 **Åtgärdsregeln för en armerings-kandidat: draft eller armera i samma
 andetag, aldrig vilande.** En PR skapas som draft ELLER armeras när den
@@ -506,27 +480,21 @@ rörs aldrig av någon annan än ägaren — det är ägarens eget svep som bär
 
 **En köad gren kan inte uppdateras via `gh`.** Push avvisas med `GH006` så
 länge PR:en står i kön, och `--disable-auto` släpper inte låset — `gh` 2.96.0
-har ingen dequeue-flagga. Det är fortfarande sant och oförändrat.
+har ingen dequeue-flagga.
 
 **Men CLI:ts yta är smalare än plattformens — en väg ur finns.** GraphQL-
-mutationen `dequeuePullRequest(input: {id: <PR:ens GraphQL-nod-ID>})` tar
-bort posten ur kön direkt, och kräver inga rättigheter utöver ett vanligt
-repo-admin-token. Mätt skarpt 2026-08-01 mot en genuint köad, kastbar test-PR:
-armerad 21:57:38 UTC, `dequeuePullRequest` lyckades 21:57:43 UTC, kön
-bekräftat tom 21:57:49 UTC — 11 sekunder totalt, `main` opåverkad. Samma pass
-prövade `enqueuePullRequest(input: {pullRequestId, jump: true})`: fungerar
-också, men kräver att PR:ens egna required checks redan är gröna (den råa
-mutationen kringgår inte den grinden — mätt: ett försök före grön status gav
-`"Required status check ... is expected"`). Fullt underlag inklusive alla
-kommandon och tidsstämplar:
+mutationen `dequeuePullRequest` tar bort en köad post direkt utan att kräva
+rättigheter utöver ett vanligt repo-admin-token; `enqueuePullRequest(jump:
+true)` kan hoppa i kön men kräver att PR:ens egna required checks redan är
+gröna. Skarpt prövat och tidsatt (armerad → dequeued → kö bekräftat tom, 11
+sekunder totalt, `main` opåverkad):
 [`docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md`](docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md).
 
-**Den operativa regeln kvarstår ändå, med rätt skäl den här gången:** köa
-inte förrän diffen är den du vill landa. Skälet är inte längre att
-möjligheten att ändra "försvinner" — den gör inte det. Skälet är att den enda
-vägen ur går via en handskriven GraphQL-mutation utanför `gh`, vår vanliga
-verktygsyta, och att förlita sig på den som daglig rutin (i stället för ett
-medvetet, mätt undantag) är en väg dit vi inte har anledning att gå.
+**Den operativa regeln kvarstår ändå: köa inte förrän diffen är den du vill
+landa.** Den enda vägen ur en köad gren går via en handskriven
+GraphQL-mutation utanför `gh`, vår vanliga verktygsyta — att förlita sig på
+den som daglig rutin (i stället för ett medvetet, mätt undantag) är en väg
+dit vi inte har anledning att gå.
 
 **Om kön går sönder:** vägen tillbaka är att ta bort `merge_queue`-regeln ur
 rulesetet via `gh api` — den kräver ingen landning och är därför oberoende av
@@ -610,9 +578,21 @@ innehållet — anta aldrig att materialet inte existerar.
 
 **FK-inspirerat 3-lagers token-system** (DESIGN-SYSTEM-SPEC.md §1):
 
-1. **Primitiv** (`src/styles/tokens/primitives.css`) — råa värden: `--mm-amber-500: #FFBA05`, `--mm-blue-900: #1B4965`, etc.
-2. **Semantisk** (`src/styles/tokens/semantic.css`) — roller: `--mm-color-primary`, `--mm-color-focus-ring`, `--mm-color-text-default`.
+1. **Primitiv** (`src/styles/tokens/primitives.css`) — råa värden, prefix **`--p-`** (ej `--mm-`,
+   sedan tolvstegsskale-migreringen, commit `13582077`): `--p-gold-500: #d4960a`,
+   `--p-blue-700: #1b4965`, etc.
+2. **Semantisk** (`src/styles/tokens/semantic.css`) — roller, prefix `--mm-`: `--mm-primary`,
+   `--mm-focus-ring`, `--mm-text`.
 3. **Komponent** (`src/styles/tokens/components.css`) — komponentspecifikt: `--mm-button-primary-bg`, `--mm-dialog-overlay-bg`.
+
+> Räkningen ovan är disk-verifierad (TASK-161.2, 2026-08-08, `da654409`) — de tre
+> primitiv-/semantik-exemplen som stod här tidigare (`--mm-amber-500`,
+> `--mm-blue-900`, `--mm-color-primary`, `--mm-color-focus-ring`,
+> `--mm-color-text-default`) existerar INTE i `src/styles/tokens/` (5 av de 7
+> ursprungliga exemplen). `--mm-color-primary` var dessutom en LEVANDE bugg tills
+> S100 varv 14 (commit `9d1875ea`, 2026-08-07): en checkbox konsumerade den
+> odefinierade variabeln och föll tyst till webbläsarens `accent-color: auto`
+> (se `components.css` § Kryssruta för hela historiken).
 
 **Regler:**
 
@@ -638,7 +618,7 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 
 **Metod:** Marcus och Code planerar → Code bygger fas för fas → Marcus verifierar i browsern → feedback → nästa steg.
 
-**Fasordning och fas-status:** se `docs/byggplan.md` §4 (styrande).
+**Fasordning och fas-status:** se `docs/byggplan.md` §2 (Fas-tabell, styrande).
 
 ---
 
@@ -651,7 +631,7 @@ Fullständig spec: [`docs/specs/DESIGN-SYSTEM-SPEC.md`](docs/specs/DESIGN-SYSTEM
 
 Tillgänglighet är alltid 11 — inga undantag. Bibliotekskod ska bära flera produkter.
 
-Fullständiga checklistor: [`docs/specs/KVALITETSDEFINITIONER-11-REACT.md`](docs/specs/KVALITETSDEFINITIONER-11-REACT.md) (lokalt sedan ADR-021; React-versionen ersätter Vue-eran per ADR-027 stack-skifte 2026-05-11).
+Fullständiga checklistor: [`docs/specs/KVALITETSDEFINITIONER-11-REACT.md`](docs/specs/KVALITETSDEFINITIONER-11-REACT.md) (lokalt sedan ADR-021; React-versionen ersätter Vue-eran per ADR-027 stack-skifte 2026-05-11). **Öppen deferral:** det dokumentet är INTE komplett — §3 (Komplett 11/10-checklista) och §4–§5 (Källor / Vad vi INTE tar med) är TBD, fylls progressivt vid Fas 3.5 resp. Fas 6 per dokumentets egen § Status. Tabellen ovan i DENNA fil är därför bärare av kvalitetsribban tills dess, inte en kopia som ska elimineras (ADR-100 § Updates 2026-08-08).
 
 ---
 

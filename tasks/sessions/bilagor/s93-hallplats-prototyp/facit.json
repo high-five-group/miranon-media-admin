@@ -1,0 +1,32 @@
+{
+  "prototyp": "s93-hallplats",
+  "last": "2026-08-06",
+  "lasning": "Jag är nöjd. Lås som facit.",
+  "godkand": null,
+  "ytor": [
+    {
+      "yta": "anteckningar",
+      "bilder": ["facit-anteckningar.png"],
+      "kallor": ["src/components/events/detail/Anteckningar.tsx"]
+    },
+    {
+      "yta": "betalningar",
+      "bilder": ["facit-betalningar-arbetsytan.png", "facit-betalningar-maxat-kort.png"],
+      "kallor": ["src/components/events/detail/Betalningar.tsx"]
+    },
+    {
+      "yta": "gruppdynamik",
+      "bilder": ["facit-gruppdynamik.png"],
+      "kallor": ["src/components/events/detail/Gruppdynamik.tsx"]
+    },
+    {
+      "yta": "atgarder",
+      "bilder": [],
+      "kallor": [
+        "src/components/events/detail/Atgarder.tsx",
+        "src/components/events/atgarder/AtgardsSida.tsx"
+      ],
+      "not": "INGEN facit-bild låstes för denna yta. Facit är den KÖRANDE prototypen (?variant=a) — Marcus svar i ADR-102 § Vad som INTE beslutas här. Den mätta divergensen (ADR-102 § Kontext, EventDetail.tsx rad 284-290) sitter här: prototypen bär AtgarderKort (en knapp, 'Gå till åtgärder'), skarpa bär den gamla listan."
+    }
+  ]
+}

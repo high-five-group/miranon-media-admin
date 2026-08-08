@@ -46,8 +46,27 @@ ytan är åtgärdad men A/B/C-frågan (UI-strängar · plus kodkommentarer · he
 repot, 1 382 spårade filer varav flera ägda av S93/S99) är obesvarad och kräver
 ett beslut, inte ett bygge. **HANDOFF: sessionsdok S100 § PAUSLÄGE (fjärde
 pausen).** Numrering disk-verifierad mot `origin/main`: `103`/**`L480`** + åtta
-fragment/`T137`/`task-162`/`f47` — tre axlar rörde sig under passet, grenen låg
-**64 commits bakom** `main` vid pausen.
+fragment/**`T138`**/`task-162`/`f47` — tre axlar rörde sig under passet, grenen
+låg **64 commits bakom** `main` vid pausen. **`T137` RÄTTAD TILL `T138` VID
+MERGEN:** min första mätning räknade FILER i `tasks/threads/` och missade att
+`T137` är registrerad i INDEXET av S99 (uppdrag 9-grillningen, CI-hub-visionen)
+utan egen kortfil. S99:s samtidiga rad hade rätt siffra hela tiden — en
+tråd-mätning måste läsa registret, inte katalogen.
+*(S99:s aktiva kadensrad nedan, oförändrad.)*
+
+**Session 99 ▶️ ÅTERUPPTAGEN (2026-08-08, `lifecycle: active`, resume 3) —
+UPPDRAG 9-EXEKVERINGEN STARTAR; NUMRERINGEN HÖLL PÅ FYRA AV FEM AXLAR.**
+Resume-läsningen disk-verifierade handoffen: paus-PR:n `#955` MERGED
+`19:34:02Z` utan röda jobb · alla elva 161-kort orörda `To Do` · ADR **103** /
+**L480** / **T138** / **task-162** / **f47** stämmer — men lessons-fragmenten
+är **8**, inte handoffens 6 (två nya under pausen; lessons-skörden räknar om
+vid session-end). Ägarlappen FRÄMMANDE och har BYTT session-ID på samma PID
+under pausen (`5a232dcd`/47876); S93 + S100 båda `lifecycle: active` → egen
+worktree `s99-resume-3` per ADR-090 beslut 2. **NÄSTA: tre
+skarpbevis-skulder (deny-precompact · post-compact-igenkänning ·
+tröskel-verifikatet; varna Marcus före prompt-genererande verifikat) → våg 1
+`161.1`+`161.2`+`161.9` → beroendekedjan → `161.10` QA.** Marcus-moment
+enligt S99-paus-raden nedan.
 *(Föregående kadensrad nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
@@ -118,27 +137,28 @@ sessioner ger främmande larm); en riktad vakt på `#905` kördes i stället.
 
 <!-- Föregående kadensrad, bevarad: -->
 
-**Session 99 ▶️ AKTIV (2026-08-07, `lifecycle: active`, resume 2) —
-UPPDRAG 8 GRILLAT TILL GO; SKARPBEVISET BETALT; TRE SKIVOR LANDADE.**
-Resume 2 i siffror: tillstånds-återställningen `#919` + skarpbeviset
-`deny-arbetsform-push` BETALT med fyra mätpunkter (bokfört `#921`) ·
-`157.3`/`158.3`/`159.2` alla per-jobb-gröna och Done (`#923`/`#925`/`#922`;
-O(n²)-triaget falsifierat 5,65 s; 67 dok arkiverade, roten 19; 158.2:s
-länk-omskrivnings-gap funnet vid FÖRSTA skarpa körningen och fixat
-tvåsidigt) · **uppdrag 8 grillat: fem kvitterade frågor + GO** —
-compact-formen som komplement med smal nisch (tre villkor, max en/session,
-zonen ~50 %, tudelad beslutsrätt, markör med commit-räcker-divergensen) —
-**PRD `task-160` + skivorna `160.1`–`160.7` mintade** (`24a45a6c`).
-Numrerings-drift: T134 + T135 + T136 förbrukade av parallella sessioner →
-nästa tråd **T137**; S100 pausade tredje gången (`#930` stod röd i svepet,
-lagades av ägaren och landade `532ec944` — främmande PR, orörd av oss per
-ägar-regeln). **NÄSTA: spawna 160.1 (ADR, nummer re-verifieras) och
-160.6 → 160.2/160.3 efter 160.1:s landning → 160.4/160.5 i
-beroendeordning → grilla uppdrag 9 (styrande-docs-auditen, ADR-100 är
-måttstocken).** **Marcus-moment: boka `148.5` · triagera `154`–`156` ·
-Dependabot `#635` · QA-korten 157.4 · 158.4–158.6 · 159.3 · 160.7.**
-**HANDOFF: sessionsdok S99 Del 9.** *(S100:s äldre kadensrad nedan,
-bevarad.)*
+**Session 99 ⏸️ PAUSAD (2026-08-07, tredje pausen, `lifecycle: paused`) —
+UPPDRAG 1–8 KOMPLETTA; UPPDRAG 9 GRILLAT + SPECCAT, EXEKVERINGEN ÄR
+RESUMENS JOBB.** Compact-formen LIVE (ADR-101: grind 20/20 · hub-skill
+**plugin 1.31.0** · post-compact-igenkänning · tröskel
+`CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000` — skill + tröskel biter från
+nästa session; QA `160.7` kvar). Uppdrag 9: rotorsaks-paketet kvitterat
+(elimination default · review-bumpens mini-audit · ägar-deklarationer) —
+**PRD `task-161` + skivorna `161.1`–`161.10` mintade, INGEN spawnad**
+(Marcus paus-beslut: exekveringen i resumen). Lärdomslager-researchen
+landad (fångst = branschpraxis, formen = NASA-pre-fix-analog, ADR-085 är
+husets formfacit → skiva 161.9); **tråd `T137`** (central
+CI/grind-visionen, research-krav). Paus-formen valdes per ADR-101:s egen
+nisch-regel: tom pipeline + naturlig landningspunkt ⇒ paus, inte
+compact. **NÄSTA: resume → betala TRE skarpbevis-skulder
+(deny-precompact · post-compact-igenkanning · tröskel-verifikatet) →
+spawna våg 1 (161.1 + 161.2 + 161.9) → beroendekedjan → QA.**
+**Marcus-moment: QA `160.7` + `161.10` · boka `148.5` · triagera
+`154`–`156` · Dependabot `#635` · lärdomslager-spårbeslutet.**
+**HANDOFF: sessionsdok S99 § PAUSLÄGE (tredje pausen) + Del 9–10.**
+Numrering vid paus: ADR-103/L480 + 6 fragment/T138/task-162/f47 —
+re-verifiera mot disk, tre sessioner rörde räknarna i dag.
+*(S100:s äldre kadensrad nedan, bevarad.)*
 
 **Session 100 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, resume 2) —
 `#900` LANDAD, PAUS-PR:N `#905` VAR RÖD OCH ÄR LAGAD.** Resume-läsningen fann
@@ -330,13 +350,49 @@ paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
 resume.
 *(S93:s kadensrad nedan, oförändrad.)*
 
-**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, sjätte resumen, `lifecycle: active`)
-— SEX SKIVOR LANDADE, TAKTEN UNDERKÄND** — **`145.4` VERIFIERAD LANDAD** vid
-resumens första handling: `#915` MERGED `15:46:38Z` (`1af3299d`), CI grön per
-jobb på `f0871120` (11 success / 3 skipped / 0 fel) → kortet stängt (DoD #3 +
-`Done`). `main` = `09bb484d`. **DE TVÅ MARCUS-BESLUTEN ÄR FORTFARANDE
-OBESVARADE** och blockerar allt vidare bygge. Föregående paus-läge nedan
-oförändrat: `145.1` (registret som EN lista) · `145.2`
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-07, `lifecycle: active`, sjunde
+resumen) — AUDIT-UPPDRAGET: PROTOTYP→SKARP-PROCESSEN SYNAS I GRUNDEN** —
+Marcus order vid resume, tvådelad: (1) **full audit** av allt som gått snett
+från prototypbygget till skarpa bygget — rotorsakerna (`ADR-102` R1–R9 med
+flera) ska VERIFIERAS mot disk/git, varje lösning per rotorsak ska GRILLAS,
+och slutmålet är att prototyp→skarp-processen blir *"rolig och enkel …
+problemfri och tydlig"*; (2) **skarpa versionen i mål** (`A1`–`A6` → arbete
+per B4-ordningen: identisk → Marcus jämför → godkänner → först då rivs
+prototypen). Huvudkatalogen är sessionens EGEN — ägarlappen togs över vid
+sessionsstart (samma terminalprocess, PID 47876, ny session `5a232dcd`).
+Numrering re-verifierad mot `a2ebf8c8`: 103/L480 + åtta fragment/T137/
+**task-162** (**DIVERGENS:** handoffens `task-161` förbrukades av S99 under
+pausen — kortet + tio skivor finns på disk)/f47.
+**HANDOFF: sessionsdok S93 § Del 11 + Paushistorik (sjätte pausen).**
+*(Föregående paus-läge nedan oförändrat.)*
+
+**Session 93 ⏸️ PAUSAD (2026-08-07, sjätte pausen, `lifecycle: paused`) —
+FACIT-HAVERIET BOKFÖRT OCH MEKANISERAT** — `main` = `73e94776`. **`ADR-102`
+mintad på Marcus order:** *"Prototypen ÄR facit … Prototypen och skarpa version
+ska vara IDENTISKA"* + *"INGEN prototyp raderas förens jag godkänt att det
+skarpa bygget är EXAKT som prototypen."* Fem beslut (B1–B5), **NIO rotorsaker**
+mätta — den skarpaste: orkestreraren öppnade en bild från konvergens-passet
+(5 aug), kallade den FACIT inför Marcus, **20 min efter att ha beskrivit exakt
+den felklassen** och en dag efter att själv ha skrivit lärdomen om den.
+**MEKANISERAT** (`#949`): `facit.json`-manifest + `scripts/check-facit.sh` som
+CI-grind FÖRE merge (en DoD-post kan aldrig grinda en merge — agentens fynd);
+tvåsidigt bevis 18/18; `TASK-145.6` nu `blocked` **av kod**, inte av prosa.
+Grinden avgör INTE om ytan SER UT som facit — den jämförelsen är Marcus öga.
+**FACITKARTAN** (`#950`): elva block, åtta identiska, **sex avvikelser `A1`–`A6`**
+— fem av sex i registret. **TAKTEN:** `145.1`–`146.3` gav netto **−134 rader**
+i `src/` (ingenting byggdes från noll); ett-agent-svepet kostade **510k tokens
+totalt mot 500–620k PER skiva** ≈ **3× billigare** → `T134`:s första datapunkt.
+`145.3`+`145.5` landade grönt; `145.6` **ej byggd** (rivning hade flippat
+betalningsytan skrivbar — agentens stopp verifierat korrekt). `main` gick från
+**12 röda till 2**, båda andras. Karantänen behövdes aldrig. **`T135`:**
+post-merge avbryts trots att filen säger *"ALDRIG"* — reproducerad 2/2, orsak
+EJ fastställd. **MOTTAGEN-DATUMET var ingen drift:** fusk-tabellen revs per
+Marcus väg C, förmågan finns kvar och väntar `TASK-147`. **VÄNTAR MARCUS:**
+`A1`–`A6`:s skivning · åtgärds-sidans hopkoppling (S100 varv 4, 1 850 rader).
+Numrering disk-verifierad mot `73e94776`: **103**/L480 + åtta fragment/**T137**
+(`T136` mintad av annan session)/**task-161**/f47.
+**HANDOFF: sessionsdok S93 § PAUSLÄGE.**
+*(Föregående paus-läge nedan oförändrat.)* `145.1` (registret som EN lista) · `145.2`
 (summeringsblocket med Bor över + Avbokade i facit-låst form) · `146.1`
 (PDF-runtime **BEVIS**) · `146.2` (Bilagor-tabellen, additivitet mätt över 19
 tabeller) · `146.3` (privat bucket, AC #3 bevisad i tre oberoende ben) —

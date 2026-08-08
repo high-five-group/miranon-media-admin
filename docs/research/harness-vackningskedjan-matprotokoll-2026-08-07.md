@@ -488,6 +488,190 @@ sanity-check på att subagenten verkligen körde det instruerade
 
 ---
 
+## § 7 — Tillägg (TASK-160.6): compact-formens öppna hypoteser
+
+> **Proveniens:** additivt tillägg, `TASK-160.6` ("Skiva: mätpunkts-tillägget
+> i väckningskedjs-protokollet"), barn-kort till `TASK-160` (PRD:
+> Compact-formen — kontrollerad kompaktering med smal nisch). Besvarar
+> PRD:ns användarberättelse 9: den mätande sessionen (`TASK-148.5`, ännu ej
+> körd vid tilläggets skrivtillfälle) ska ha compact-formens två öppna
+> hypoteser som egna mätpunkter, med samma mätdisciplin § 0–§ 6 redan
+> etablerar — inte en ny rigg. § 3:s sex celler mäter VÄCKNINGSKEDJANS
+> leverans (bryts kedjan vid notifikations-leverans eller vid agent-resume);
+> Cell 7–8 nedan mäter en annan länk: vad SJÄLVA KOMPAKTERINGEN gör med
+> pågående bakgrundsarbete, och hur ett upprepat PreCompact-nekande beter
+> sig. Formen (Testar / Steg / Förväntat utfall per hypotes) är identisk med
+> § 3; varje cell lägger dessutom till **vilken justering i
+> pre-compact-skillen (`TASK-160.3`) respektive PreCompact-grinden
+> (`TASK-160.2`) varje utfall leder till**, per AC#2. Båda de korten stod
+> `To Do` när detta skrevs (2026-08-07) — cellerna nedan skriver alltså mot
+> `TASK-160`s PRD § Implementationsbeslut, inte mot levererad kod, och är
+> avsiktligt formulerade så att facit kan appliceras oavsett i vilken
+> ordning `160.2`/`160.3` och `148.5` faktiskt landar.
+
+| # | Testar | Sessionstillstånd vid kompaktering/nekande |
+|---|---|---|
+| 7a | Spawnad subagents task-notifikation | Kompaktering sker MEDAN subagenten fortfarande kör |
+| 7b | Aktiv `Monitor`-instans | Kompaktering sker MEDAN Monitorn väntar på sin händelse |
+| 8 | Nekad auto-compact, retry-beteende | Kontexten kvar i zonen; PreCompact-hooken nekar upprepade auto-försök |
+
+### Cell 7a — Överlever en spawnad subagents task-notifikation en kompaktering?
+
+**Testar:** om en subagent spawnas i bakgrund (`run_in_background: true`) och
+en KONTROLLERAD kompaktering (pre-compact-skillens väg, manuell `/compact` —
+`trigger: auto` är per `160.2`s kontrakt alltid nekad) sker MEDAN subagenten
+fortfarande arbetar: når subagentens task-notifikation ändå fram till
+sessionen efteråt, eller är kopplingen tyst bruten?
+
+**Steg:**
+
+1. Spawna en subagent med känd körtid, EXPLICIT `run_in_background: true`,
+   instruerad att skriva en extern markörfil vid avslut (samma facitmetod
+   som § 2/§ 4 — ground truth i fil, aldrig antagen).
+2. Innan subagenten är klar: trigga en kontrollerad kompaktering.
+3. Efter kompakteringen: förbli overksam (samma IDLE_GAP-disciplin som § 2)
+   minst lika länge som subagentens kvarvarande körtid + 5 minuter.
+4. Läs markörfilen (ground truth) och kör facitmetoden (§ 4) mot den
+   POST-kompakterade sessionens JSONL. Notera: kompakteringen kan skriva en
+   ny fil eller samma fil med en egen händelserad för kompakteringen —
+   verifiera vilket vid körning i stället för att anta, och bokför som eget
+   fynd om det avviker.
+5. Avgör: dyker `enqueue`-raden och den syntetiska `user`-vändningen upp i
+   det POST-kompakterade transkriptet (Utfall A-analogt), eller uteblir
+   notifikationen helt (Utfall B-analogt)?
+
+**Förväntat utfall per hypotes:**
+
+- **Om förstapartsdocs antydan håller (NEJ, notifikationen överlever inte):**
+  subagentens resultat är förlorat för sessionen efter kompakteringen.
+  **Justering:** pre-compact-skillen (`160.3`) måste lägga till ett nytt
+  villkor i sitt säkra-läget-i-fil-kontrakt (AC#1): inga pågående
+  bakgrundsjobb vid kompakteringsögonblicket — annars instruera att invänta
+  dem FÖRST, eller bokföra dem explicit i markörfilen så fokus-instruktionen
+  varnar att resultatet är förlorat. PRD:ns robusthetsantagande
+  ("monitor-omstart planeras som om inget överlever") BEKRÄFTAS för detta
+  fall — ingen förenkling av skillen.
+- **Om notifikationen ÄNDÅ når fram** (kompaktering rör bara
+  konversationshistoriken, inte harnessens bakgrunds-kö): **Justering:**
+  skillens robusthetsantagande kan mjukas upp specifikt för
+  subagent-notifikationer — markörfilen behöver inte längre varna att
+  resultatet går förlorat, men bör ändå notera "väntas efter kompaktering" i
+  fokus-instruktionen (AC#1) så ordningen känns igen. PreCompact-grinden
+  (`160.2`) påverkas INTE av detta utfall — den styr NÄR kompaktering får
+  ske, inte vad som överlever den.
+
+### Cell 7b — Överlever en aktiv `Monitor`-instans en kompaktering?
+
+**Testar:** motsvarande fråga för `Monitor`-verktyget: om en `Monitor`
+väntar på en bakgrundshändelse när en kontrollerad kompaktering sker,
+fortsätter den att bevaka och leverera sitt event efteråt, eller måste den
+alltid startas om — vilket PRD:ns post-compact-steg redan planerar för
+("starta om monitorn")?
+
+**Steg:**
+
+1. Starta en `Monitor` mot ett långkörande bakgrundskommando (samma mönster
+   som § 3 Cell 3; `timeout_ms` satt rymligt).
+2. Trigga kontrollerad kompaktering medan Monitorn väntar.
+3. Efter kompaktering: samma väntefönster- och facitmetod-disciplin som
+   Cell 7a.
+4. Avgör om Monitorns händelse levereras efteråt, eller om den tystnar
+   (kräver `TaskStop` + en ny `Monitor`-instans för att observeras alls).
+
+**Förväntat utfall per hypotes:**
+
+- **Om Monitorn INTE överlever** (nollhypotesen, konsekvent med
+  subagent-antagandet i Cell 7a): **Justering:** post-compact-igenkänningens
+  (`160.4`) "starta om monitorn"-steg blir OBLIGATORISKT snarare än
+  villkorat, och pre-compact-skillens (`160.3`) markörfil måste bokföra
+  EXAKT vilket kommando/vilken beskrivning Monitorn bevakade före
+  kompakteringen, så post-compact-steget kan återskapa den utan gissning.
+  PreCompact-grinden (`160.2`) kräver ingen ändring.
+- **Om Monitorn ÖVERLEVER:** **Justering:** post-compact-igenkänningen
+  (`160.4`) kan förenklas till "verifiera att Monitorn fortfarande lever,
+  starta om ENDAST om den tystnat". Detta är det enda av Cell 7a/7b:s fyra
+  möjliga utfall som direkt FÖRENKLAR en redan planerad skiva i stället för
+  att bara bekräfta den, och bör därför dubbelkollas (upprepad körning)
+  innan `160.4` byggs mot antagandet — samma försiktighetsprincip § 3
+  Cell 2/4/6 tillämpar på sina "förvånande utfall".
+
+### Cell 8 — Retry-beteendet hos en nekad auto-compact
+
+**Testar:** när kontexten ligger i zonen (tröskel-miljövariabeln satt, per
+`160.5`) och harnessens EGNA auto-compact-försök triggas, nekar
+PreCompact-hooken (`trigger: auto`, alltid-neka per `160.2`s kontrakt) —
+larmar harnesset detta nekande VARJE efterföljande tur kontexten kvarstår i
+zonen (level-triggered, samma mönster som `heartbeat-svep.sh`s RÖTT/DIRTY-
+rapportering, CLAUDE.md § Landning), eller EN gång och sedan tyst
+(edge-triggered)? Och: om varken kontrollerad eller okontrollerad
+kompaktering sker och kontexten fortsätter växa mot det dokumenterade hårda
+taket — vad händer när taket nås medan hooken fortfarande nekar varje
+försök?
+
+**Steg:**
+
+1. Sätt auto-compact-tröskeln lågt (samma mekanism `160.5` planerar) i en
+   engångs-testsession, med PreCompact-hooken aktiv och konfigurerad att
+   alltid neka `trigger: auto` (`160.2`s kontrakt).
+2. Fortsätt arbeta normalt utan att köra pre-compact-skillen, så tröskeln
+   passeras och hålls passerad över flera turer.
+3. Observera per tur: nekas ett NYTT auto-compact-försök vid VARJE tur
+   kontexten ligger över tröskeln, eller nekas det en gång varefter
+   harnessen tystnar tills något annat händer?
+4. Om praktiskt genomförbart inom en HITL-mätsession (annars bokförs steget
+   som overifierat i facit-rapporten, samma disciplin § 6 tillämpar på sina
+   gränser): fortsätt tills kontexten närmar sig det hårda taket. Notera om
+   sessionen kraschar, om en okontrollerad kompaktering ändå tvingas igenom,
+   eller om harnessen degraderar på annat sätt (avvisat verktygsanrop,
+   trunkerad historik).
+
+**Förväntat utfall per hypotes:**
+
+- **Om level-triggered (nekar varje tur):** förväntat och ofarligt — matchar
+  den redan etablerade heartbeat-svep-konventionen. **Justering:** ingen
+  förändring krävs i PreCompact-grindens (`160.2`) nekande-kontrakt, men
+  dess anvisningstext (AC#2) bör EXPLICIT nämna att nekandet upprepas varje
+  tur — så en orkestrerare som missar den första anvisningen inte tolkar
+  efterföljande tystnad som "problemet försvann" (det finns ingen
+  tystnad i detta utfall, men texten bör säga det rakt ut).
+- **Om edge-triggered (nekar en gång, sedan tyst):** **Justering:**
+  PreCompact-grinden (`160.2`) behöver en eskalerande andra kanal — t.ex. en
+  skriven markör eller en upprepad anvisning i ETT senare verktygsresultat —
+  eftersom en ENDA nekad-notifikation är precis den klass av obevakat
+  tillstånd `T108`/`T112` beskriver (CLAUDE.md § Landning): en orkestrerare
+  som missar den enda anvisningen får ingen ny chans att se den. Detta är
+  det allvarligaste av Cell 8:s utfall och bör flaggas som prioriterat i
+  `TASK-148.5`s facit-rapport.
+- **Vid det hårda taket, oavsett retry-typ — två deluttfall:**
+  - **Hooken lyckas blockera ALLT** (ingen kompaktering sker; sessionen
+    kraschar eller låser sig vid taket): **Justering:** PreCompact-grinden
+    (`160.2`) behöver en NÖDVENTIL — ett villkor där grinden släpper igenom
+    en okontrollerad kompaktering hellre än att låsa sessionen helt.
+    Fail-closed får skydda mot okontrollerad summarisering, men inte tippa
+    över i att skydda mot ATT KUNNA FORTSÄTTA ARBETA alls.
+  - **Harnessen tvingar igenom kompaktering ändå** (en sista-utväg-mekanism
+    harnessen äger, som hooken inte kan blockera): **Justering:** ingen
+    nödventil krävs i grinden, men pre-compact-skillens (`160.3`)
+    markörfils-krav bör dokumentera att en sista, OKONTROLLERAD
+    kompaktering ändå kan inträffa som nödfallsväg — så
+    post-compact-igenkänningen (`160.4`) inte antar att varje kompaktering
+    den upptäcker var kontrollerad via skillen.
+
+**Gräns, i § 6:s anda:** Cell 8:s sista steg (vid-det-hårda-taket) är dyrt
+att mäta i en enda HITL-session (kräver att faktiskt fylla kontextfönstret)
+och kan behöva en egen, dedikerad mätsession snarare än att bäras av
+`TASK-148.5`s redan planerade ~64 minuters protokolltid för Cell 1–6. Hinner
+`TASK-148.5` inte detta steg ska det bokföras EXPLICIT som overifierat i
+facit-rapporten — aldrig tystas ned eller antas löst.
+
+**Sekvensering mot Cell 1–6:** Cell 7–8 mäter en annan mekanism (vad
+kompaktering respektive ett nekande gör) än väckningskedjans leverans (§ 3)
+och har inget beroende till dem i endera riktningen — de kan köras i samma
+`TASK-148.5`-session eller i en separat mätsession, i valfri ordning
+sinsemellan.
+
+---
+
 ## Källförteckning
 
 - `backlog/tasks/task-148.4` — kortet detta dokument levererar mot
@@ -500,3 +684,11 @@ sanity-check på att subagenten verkligen körde det instruerade
 - [`docs/research/harness-namnrymd-agenter-2026-07-30.md`](harness-namnrymd-agenter-2026-07-30.md) — scratchpad-namngivningsrisken protokollets markörfil-namn undviker
 - `docs/decisions/ADR-086-uppdragets-premisser-provas-av-mottagaren.md` — premiss-passets mandat
 - **Egen mätning (denna session, 2026-08-07):** JSONL-schema verifierat mot en faktisk lokal sessions-transcript (`type: "queue-operation"`, `enqueue`/`dequeue`/`remove`, den syntetiska `user`-vändningen, `<usage><duration_ms>`), `Monitor`-verktygets schema (ToolSearch), `date`/`jq`/`python3`-portabilitet kontrollerad skarpt på exekverande maskin.
+
+**§ 7-tillägget (TASK-160.6), egna källor utöver ovanstående:**
+
+- `backlog/tasks/task-160` — PRD: Compact-formen, § Implementationsbeslut (PreCompact-grindens trigger-kontrakt, markörfilens krav, robusthetsantagandet) och användarberättelse 9
+- `backlog/tasks/task-160.2` — Skiva: PreCompact-grinden — deny-familjen (AC#2: trigger auto/manual-kontraktet cellerna mäter mot)
+- `backlog/tasks/task-160.3` — Skiva: pre-compact-skillen i hub-pluginet (AC#1: säkra-läget-i-fil-kontraktet cellerna justerar)
+- `tasks/sessions/2026-08-07-session-99.md` § Del 9 — grillningens källbelägg för bakgrundstask-överlevnad som HYPOTES (guide-agent-pass 2026-08-07: fokus-instruktioner, PreCompact block-men-ej-inject, `source: "compact"`, tröskel-variabeln)
+- `docs/decisions/ADR-096-subagentens-vantekontrakt.md` — Activity/Workflow-distinktionen, `T108`/`T112`-referensen i Cell 8:s edge-triggered-utfall

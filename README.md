@@ -2,7 +2,7 @@
 
 React-admin för Miranon Media — eventhantering, anmälningar och rapportering ovanpå Airtable + Supabase.
 
-[![CI](https://github.com/marcus803/miranon-media-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/marcus803/miranon-media-admin/actions/workflows/ci.yml)
+[![CI](https://github.com/high-five-group/miranon-media-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/high-five-group/miranon-media-admin/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-UNLICENSED-red.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D24-brightgreen)](.nvmrc)
 [![Biome](https://img.shields.io/badge/lint-Biome%202-60a5fa)](biome.json)
@@ -142,7 +142,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - Datakälla-åtkomst via TanStack Router-context-DI (ADR-055) — första UI→data-wiringen, precedens för Fas 6; typad `EdgeFunctionError` med strukturerad `requestId`; fel-yta via MessageBox `role="alert"` + aria-live för lyckad flip
   - Server deny/allow + restore-teardown (`update-record.staging.test.ts`) + 3 klient-e2e (`mark-paid.staging.test.ts`, DoD 1/5/6/7/8 via `page.route`-gate); mall för Fas 6:s mutationer
 
-**Arkitekturbeslut:** 100 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
+**Arkitekturbeslut:** 102 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 
 **Statistik (post-Fas 2, historisk ögonblicksbild):**
 

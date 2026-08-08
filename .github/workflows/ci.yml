@@ -570,8 +570,11 @@ jobs:
 
       - name: Validate frontmatter on governing docs
         # Per ADR-030 § Del 3: 5-check-validator för YAML-frontmatter på
-        # 9 styrande docs (existens, updated-match, review_by > today,
-        # status-enum, owner-enum). Config: .frontmatter-policy.conf.
+        # 14 styrande docs (TASK-161.2, 2026-08-08 — räknat om mot
+        # .frontmatter-policy.conf FRONTMATTER_GOVERNING_DOCS; stod som "9"
+        # sedan listan växte utan att kommentaren följdes upp) (existens,
+        # updated-match, review_by > today, status-enum, owner-enum).
+        # Config: .frontmatter-policy.conf.
         # Empirisk 9-test-suite verifierad K7.B 2026-05-14.
         # Hub-spoke-portabel design per K7 Lesson #6 (UNIVERSAL).
         run: bash scripts/check-frontmatter.sh
@@ -728,6 +731,24 @@ jobs:
         # "bash scripts/check-<namn>.sh" i en kommentar mellan
         # paritet-markörerna — grinden läser regionen som data.
         run: bash scripts/check-listparitet.sh
+
+      - name: Validate locked facit is addressable (ADR-102 gate)
+        # Per ADR-102 B1/B3: den låsta prototypen ÄR facit, och prototyp-kod
+        # rivs aldrig före Marcus godkännande. Grinden läser facit-manifesten
+        # under tasks/sessions/bilagor/ och fäller på (a) facit-bilder utan
+        # manifest, (b) manifest som inte stämmer med disken — odeklarerad
+        # bild, saknad bild, yta utan "bilder"-nyckel — och (c) rivning av
+        # prototyp-markörerna medan "godkand" är null.
+        #
+        # ROTORSAKEN, mätt: TASK-145.3:s utförare rapporterade "bilderna finns
+        # inte i repot och fanns inte i uppdraget" och byggde vidare mot en
+        # annan baslinje — dagen EFTER att bilderna landat. Ett misslyckat
+        # uppslag lästes som frånvaro. Grinden gör det uppslaget omöjligt att
+        # missa: facit har en deklarerad adress, eller så är trädet rött.
+        #
+        # Grinden avgör INTE om ytan SER UT som facit — den jämförelsen är
+        # Marcus öga. Config: .facit-policy.conf.
+        run: bash scripts/check-facit.sh
       # paritet:slut docs-grindar-ci
 
       - name: Test consistency gates (truth-table self-verification)
@@ -838,6 +859,7 @@ jobs:
           bash scripts/test-check-listparitet.sh
           bash scripts/test-check-backlog-closure.sh
           bash scripts/test-stop-vakt.sh
+          bash scripts/test-check-facit.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
@@ -1086,7 +1108,9 @@ jobs:
         # (ADR-097 § Beslut del 2, PreToolUse-spärren mot git push under
         # aktiv iteration) +
         # .arkivera-sessionsdok-policy.conf, tillagd i TASK-158.2-wiringen
-        # (ADR-099 rullande fönster — scripts/arkivera-sessionsdok.sh) —
+        # (ADR-099 rullande fönster — scripts/arkivera-sessionsdok.sh) +
+        # .precompact-policy.conf, tillagd i TASK-160.2-wiringen (ADR-101
+        # § Beslut 5, PreCompact-grinden mot okontrollerad kompaktering) —
         # en sourced conf utanför scopet är samma lucka som de övriga redan
         # stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
@@ -1096,7 +1120,11 @@ jobs:
         # T119(a)-wiringen, till tretton i T119(b)-wiringen, till fjorton i
         # T119(d) item 5-wiringen, till femton i T119(d) item 4-wiringen,
         # till sjutton i TASK-139, till arton i TASK-148.2, till nitton i
-        # TASK-152, till tjugo i TASK-149.3 och till tjugoett i TASK-158.2.
+        # TASK-152, till tjugo i TASK-149.3, till tjugoett i TASK-158.2,
+        # till tjugotvå i TASK-160.2 och till tjugotre i ADR-102-wiringen
+        # (.facit-policy.conf — agenten som byggde grinden lade till conf-filen
+        # men wirade den inte in hit; luckan fångades av att shellcheck-strict
+        # fällde på skriptet, inte av att någon läste listan).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1124,7 +1152,9 @@ jobs:
             .subagent-vantan-policy.conf \
             .stada-grenar-policy.conf \
             .arbetsform-push-policy.conf \
-            .arkivera-sessionsdok-policy.conf
+            .arkivera-sessionsdok-policy.conf \
+            .precompact-policy.conf \
+            .facit-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
@@ -1322,6 +1352,11 @@ jobs:
           # som jämför det mot check-docs.sh:s motsvarande markerade block. Alla
           # kommentarer måste stå OVANFÖR start-markören — regionen mellan
           # markörerna läses som data.
+          #
+          # './tasks/lessons/*.md' TILLAGT TASK-161.9 (2026-08-08,
+          # ADR-085-volymformen): 'tasks/*.md' korsar inte in i underkatalogen
+          # (samma gräns-fråga som lessons.d ovan) — utan raden lämnas
+          # volymfilernas länkar tyst okontrollerade.
           # paritet:start lychee-ci
           args: >-
             --offline
@@ -1335,6 +1370,7 @@ jobs:
             './tasks/sessions/*.md'
             './tasks/threads/*.md'
             './tasks/lessons.d/*.md'
+            './tasks/lessons/*.md'
             './.claude/**/*.md'
             './*.md'
           # paritet:slut lychee-ci

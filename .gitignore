@@ -32,6 +32,14 @@ dist-ssr
 # pågående arbetsform (t.ex. iteration), inte något delat mellan träd.
 .claude/arbetsform-tillstand.json
 
+# Compact-formens markörfil (ADR-101 § Beslut 4, TASK-160.2): satt av
+# pre-compact-skillen (TASK-160.3), läst av scripts/deny-precompact.sh,
+# rensad av post-compact-igenkänningen (TASK-160.4) som en engångsbiljett.
+# Otrackad OCH per-arbetsträd med avsikt — samma familj som
+# .claude/arbetsform-tillstand.json ovan, men motsatt gate-riktning
+# (FRÅNVARO nekar här, i stället för att släppa).
+.claude/precompact-markor.json
+
 # Agent-worktrees (Claude Code skapar dem under .claude/worktrees/ för
 # isolerade subagenter). Exkluderingen fanns tidigare ENDAST i
 # .git/info/exclude, som är lokal och odelad — den överlevde alltså inte en ny

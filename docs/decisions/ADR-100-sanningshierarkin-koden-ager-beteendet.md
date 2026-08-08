@@ -258,3 +258,111 @@ skiva — den är en separat, framtida grillning och exekvering.
   kuraterad, pekande instruktionsfil framför uttömmande kopia
 - [Claude Code — Best practices for agentic coding (Anthropic)](https://code.claude.com/docs/en/best-practices) —
   samma princip applicerad på `CLAUDE.md` specifikt
+
+## Updates
+
+### 2026-08-08 (S99) — review_by-bumpens innebörd + ägar-deklarationens form
+
+Additiv amendering, `TASK-161.1` (PRD `TASK-161`, styrande-docs-auditen —
+uppdrag 9). Grillad samsyn: `tasks/sessions/2026-08-07-session-99.md` § Del 10
+("review_by-bumpens innebörd definieras (förfallo-grinden FINNS redan —
+check-frontmatter Check 3, verifierad) · ägar-deklaration per styrande dok").
+Ingen ny ADR — denna post **operationaliserar** §2 (karta-inte-kopia) och §3
+(läsregeln) ovan, den ändrar ingen tidigare beslutstext.
+
+**Bakgrund, verifierad mot disk.** Kadensgrinden existerar redan och gör exakt
+en sak mekaniskt: `scripts/check-frontmatter.sh` Check 3
+(rad ~125–132) fäller ett styrande dok (listan i
+`.frontmatter-policy.conf` `FRONTMATTER_GOVERNING_DOCS`) vars `review_by`
+saknas eller har passerat dagens datum. Vad grinden INTE gör — och aldrig har
+gjort — är att pröva om bumpen till ett nytt datum föregicks av något. En
+mekanisk kadens utan definierad innebörd kan uppfyllas av att bara skriva ett
+senare datum, exakt den formen av "kopia som slutar leva men fortsätter påstå
+sig leva" som `TASK-161`s problemformulering identifierar som en av driftens
+tre ansikten.
+
+#### A. Vad en `review_by`-bump KRÄVER
+
+Att bumpa `review_by` på ett styrande dok i `FRONTMATTER_GOVERNING_DOCS`
+**kräver** en mini-audit av dokumentet, i tre namngivna steg:
+
+1. **Drift-koll mot ägd yta** — varje faktapåstående dokumentet gör om
+   kunskapsklass 1 (§1, "systemets NUVARANDE beteende & mekanik") vägs mot
+   koden. Detta är läsregeln (§3) tillämpad framåtriktat i stället för
+   reaktivt: i stället för att vänta på att en läsare möter en drift-instans,
+   är bumpen tillfället en skribent aktivt letar efter en.
+2. **Pekar-integritet** — varje pekare dokumentet bär till en annan
+   auktoritativ källa (§1, rad 1–7 — kod, ADR, CI, git/frys, referens-fil,
+   kort/sessionsdok, memory) verifieras peka på något som fortfarande
+   existerar och fortfarande säger vad pekningen påstår. En trasig pekare är
+   samma felklass §2 varnar för — bara i pekar-riktningen i stället för i
+   kopierat innehåll.
+3. **Ägar-deklarationens giltighet** — dokumentets egen rad (del B nedan)
+   prövas: stämmer fortfarande `X` (vad dokumentet självt äger), `Y` (vad det
+   kartlägger) och `Z` (vem som vinner vid konflikt) mot dokumentets faktiska
+   innehåll efter eventuella ändringar sedan förra bumpen?
+
+**Ingen ny grind mintas för mini-auditens tre steg.** Samma avvägning som §6
+redan gjorde för semantisk verifiering: att LÄSA om ett påstående fortfarande
+stämmer, om en pekare fortfarande träffar rätt, eller om en ägar-deklaration
+fortfarande är sann kräver tolkning — en grind som gissar det svaret slår fel
+brett i stället för snävt och mekaniskt rätt. Kadensgrindens mekaniska roll
+är och förblir oförändrad: den fäller ett förfallet datum, inget annat. Vad
+denna post gör är att ge SJÄLVA BUMPEN en definierad innebörd — samma mönster
+som `ADR-086`s premiss-pass gav "obelagt påstående" en definierad, prövbar
+betydelse utan att bygga en ny mekanisk grind för det.
+
+#### B. Ägar-deklarationens form
+
+Varje styrande dokument i `FRONTMATTER_GOVERNING_DOCS` ska bära en
+ägar-deklarationsrad, nära öppningen av dokumentet (samma placering som de
+två förlagorna nedan redan använder — inte i YAML-frontmatter; samma
+prosa-konvention-inte-mekanism-val som frys-banderollen i §4 gör, av samma
+skäl: `check-frontmatter.sh` grindar existens av fält, aldrig prosans
+innehåll):
+
+> **Äger:** X · **Kartlägger:** Y · **Vid konflikt vinner:** Z
+
+- **X** — den kunskap DETTA dokument själv är den auktoritativa källan för
+  (kan vara explicit tomt: `Inget – ren karta`, för ett dokument som enbart
+  sammanfattar andra källor).
+- **Y** — de andra auktoritativa källorna (§1, rad 1–7) dokumentet pekar till
+  eller sammanfattar, namngivna specifikt (t.ex. "ADR-062/063/064",
+  "`docs/reference/data-model.md`") — aldrig en generisk hänvisning.
+- **Z** — vilken källa som vinner om dokumentets egen prosa och en annan yta
+  tycks säga olika saker. Normalt samma svar som §1:s domäntabell redan ger
+  för den aktuella kunskapsklassen — raden gör svaret läsbart utan ett extra
+  uppslag i den här ADR:n.
+
+**Källmärkt formfacit — verifierat, inte citerat ur minne (`ADR-086`).**
+Två befintliga rader bär redan delar av mönstret, i lösare prosaform, och är
+förlagan denna mall generaliserar:
+
+- `docs/reference/segment-arkitektur.md` rad 10: *"...Uppslagsverk/
+  orientering — sak-besluten lever i ADR-062/063/064 + data-model §Kända
+  fällor; detta dok binder dem, fryser dem inte. Vid konflikt gäller
+  ADR:erna."* — bär redan Kartlägger- och Vid-konflikt-vinner-komponenterna,
+  utan en Äger-komponent (dokumentet äger inga beslut själv).
+- Rot-`README.md` rad 14: *"**Status:** Övning 2 pågår — Fas 6
+  (strangler-fig). Aktuellt fas- och sub-fas-läge ägs av `docs/byggplan.md`
+  §2 (kanonisk plats — status dupliceras inte hit)."* — bär en
+  delegerings-deklaration ("ägs av... kanonisk plats") i samma anda,
+  återigen utan den explicita tredelade formen. (Källradens egen
+  markdown-länk är avsiktligt inte återskapad i citatet här — den pekar
+  korrekt från `README.md`s egen plats, inte från `docs/decisions/`.)
+
+**Ärlighet om underlaget:** ingen av de två raderna bär den exakta strängen
+`Äger X · Kartlägger Y · vid konflikt vinner Z` — den strängen fanns inte i
+repot före denna amendering (verifierat: `grep -rn "Äger \|Kartlägger"` mot
+hela `docs/`+`tasks/`+rot-nivå gav noll träffar på den samlade formen före
+denna commit). De två raderna är precedent för det UNDERLIGGANDE mönstret
+(peka + namnge konflikt-vinnaren), inte färdiga instanser av mallen. Denna
+amendering DEFINIERAR den enhetliga formen och kompletterar den med den
+tredje, tidigare outtalade komponenten (`Äger:` X) — utrullningen till
+enskilda dokument (att faktiskt skriva raden in i `CLAUDE.md`, `ORDLISTA.md`,
+`docs/byggplan.md` med flera) är `TASK-161.4`, inte denna skiva.
+
+**Scope:** exakt de dokument `.frontmatter-policy.conf`
+`FRONTMATTER_GOVERNING_DOCS` redan listar — samma yta kadensgrinden (del A)
+gäller. Ett dokument utanför den listan bär ingen `review_by`-plikt och
+därmed heller ingen ägar-deklarationsplikt av denna post.

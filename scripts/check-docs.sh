@@ -46,7 +46,7 @@
 # MELLAN filer: `.claude/agents/bygg-agent.md` sade "nio". Den halvan är löst
 # genom att slutradens tal nu är härlett och kopian borttagen.)
 #
-# DE TRETTON:
+# DE FJORTON:
 #   ci.yml docs-jobbet (villkorat på docs_changed):
 #     1. lychee link check          — kräver lychee-binär, SKIPPAS om den saknas
 #     2. markdownlint-cli2
@@ -71,6 +71,12 @@
 #        rubriken ovan blev sann i SAMMA commit som denna rad skrevs —
 #        ADR-083 förbjuder ordningen "lista först, mekanism sen". Femte
 #        invarianten (besläktad, ADR-095 beslut 2–3) tillagd i TASK-140.
+#    14. scripts/check-facit.sh — låst facits adresserbarhet (ADR-102). Läser
+#        facit-manifesten under tasks/sessions/bilagor/ och fäller på
+#        odeklarerad facit-bild, saknat manifest, samt rivning av
+#        prototyp-substratet före Marcus godkännande (B3). Scope-kriteriet
+#        håller: en .md-/bilage-ändring kan fälla den (t.ex. en ny
+#        facit-*.png utan manifest-rad).
 #        Sjätte invarianten (barn-manifest, ADR-095 beslut 4) tillagd i
 #        TASK-141.
 #
@@ -183,6 +189,10 @@ skip_gate() {
 # nedan avgränsar blocket för scripts/check-listparitet.sh, som jämför det mot
 # ci.yml:s `paritet:start lychee-ci`-block. Kommentarer måste stå OVANFÖR
 # start-markören — regionen mellan markörerna läses som data.
+#
+# './tasks/lessons/*.md' TILLAGT TASK-161.9 (2026-08-08, ADR-085-volymformen):
+# samma glob-kataloggräns-fråga som lessons.d ovan — 'tasks/*.md' korsar inte
+# in i underkatalogen. Utan raden är volymfilernas länkar tyst okontrollerade.
 if command -v lychee >/dev/null 2>&1; then
     # paritet:start lychee-lokal
     run_gate "lychee link check" \
@@ -191,6 +201,7 @@ if command -v lychee >/dev/null 2>&1; then
         --exclude-path .claude/worktrees \
         './docs/**/*.md' './tasks/*.md' './tasks/sessions/*.md' \
         './tasks/threads/*.md' './tasks/lessons.d/*.md' \
+        './tasks/lessons/*.md' \
         './.claude/**/*.md' './*.md'
     # paritet:slut lychee-lokal
 else
@@ -243,6 +254,7 @@ run_gate "Permissions-påståenden (prosa som påstår mekanism)" bash scripts/c
 # alltså ~+4,8 %. CI-TIDEN ÄR INTE MÄTT AV MIG.
 run_gate "fetch-depth-invarianten (ADR-029/030 erratum)" bash scripts/check-fetch-depth-invariant.sh
 run_gate "Listparitet (CONTRIBUTING ↔ purge-policy, lychee-scopen)" bash scripts/check-listparitet.sh
+run_gate "Låst facits adresserbarhet + rivningsspärr (ADR-102)" bash scripts/check-facit.sh
 # paritet:slut docs-grindar-lokal
 
 # --- Sammanfattning -------------------------------------------------------

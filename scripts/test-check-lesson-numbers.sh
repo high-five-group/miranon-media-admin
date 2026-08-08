@@ -2,8 +2,12 @@
 # scripts/test-check-lesson-numbers.sh
 #
 # Empirisk test-suite för scripts/check-lesson-numbers.sh (ADR-081-grind).
-# 6 testfall: T1 rent, T2 dubblett, T3 numrerat fragment, T4 nummerlöst
-# fragment, T5 README-exklusion, T6 config saknas.
+# 8 testfall: T1 rent, T2 dubblett (samma fil), T3 numrerat fragment,
+# T4 nummerlöst fragment, T5 README-exklusion, T6 config saknas,
+# T7 dubblett TVÄRS ÖVER två volymfiler, T8 unika nummer spridda över tre
+# volymfiler → exit 0. T7/T8 tillagda TASK-161.9 (2026-08-08) när
+# LESSON_FILE_GLOB ersatte LESSON_FILE — den nya kapaciteten (skanna flera
+# filer som EN mängd) är annars obevisad i endera riktningen.
 #
 # Test-isolering: skapar /tmp/s91-test-lesson-numbers/ med lessons-fixtur +
 # fragment-katalog. Återställer (rm -rf) via trap. INGEN ändring av real-repo.
@@ -13,6 +17,7 @@
 #
 # Källa: docs/decisions/ADR-081-nummer-tilldelas-vid-landning.md
 # Etablerad: Session 91 (mekaniseringens punkt 6)
+# Utökad: TASK-161.9 (glob-stöd, ADR-085-volymformen)
 
 set -uo pipefail
 
@@ -40,7 +45,18 @@ setup() {
 
 write_config() {
     cat > "${TEST_DIR}/.lesson-policy.conf" <<'CONF'
-LESSON_FILE="tasks/lessons.md"
+LESSON_FILE_GLOB="tasks/lessons.md"
+LESSON_HEADING_PREFIX="L"
+LESSON_FRAGMENT_DIR="tasks/lessons.d"
+LESSON_EXCLUDE_BASENAMES=("README.md")
+CONF
+}
+
+# write_volume_config — samma som write_config men glob matchar FLERA filer
+# (ADR-085-formen), för T7/T8:s multi-fil-fall.
+write_volume_config() {
+    cat > "${TEST_DIR}/.lesson-policy.conf" <<'CONF'
+LESSON_FILE_GLOB="tasks/lessons/vol-*.md"
 LESSON_HEADING_PREFIX="L"
 LESSON_FRAGMENT_DIR="tasks/lessons.d"
 LESSON_EXCLUDE_BASENAMES=("README.md")
@@ -54,6 +70,18 @@ write_lessons() {
     for ((i = 1; i <= n; i++)); do
         printf '### L%d\n\n**Post %d.**\n\n' "${i}" "${i}" \
             >> "${TEST_DIR}/tasks/lessons.md"
+    done
+}
+
+# write_volume <file> <first> <last> — skriver ### L<first>..### L<last> till
+# tasks/lessons/<file>, för multi-fil-testfallen.
+write_volume() {
+    local file=$1 first=$2 last=$3 i
+    mkdir -p "${TEST_DIR}/tasks/lessons"
+    : > "${TEST_DIR}/tasks/lessons/${file}"
+    for ((i = first; i <= last; i++)); do
+        printf '### L%d\n\n**Post %d.**\n\n' "${i}" "${i}" \
+            >> "${TEST_DIR}/tasks/lessons/${file}"
     done
 }
 
@@ -164,6 +192,38 @@ out=$(run_gate); ec=$?
 ok=0
 check_exit "T6" 3 "${ec}" || ok=1
 check_contains "T6" "saknas" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+echo "═══ T7: samma nummer i TVÅ OLIKA volymfiler → exit 1 (cross-fil-dubblett) ═══"
+setup
+write_volume_config
+write_volume "vol-01.md" 1 3
+write_volume "vol-02.md" 4 6
+# Kollisionen: vol-02 antar (felaktigt) att L2 fortfarande är ledigt.
+printf '### L2\n\n**Kollisionen — andra volymen antog samma nästa-lediga.**\n' \
+    >> "${TEST_DIR}/tasks/lessons/vol-02.md"
+out=$(run_gate); ec=$?
+ok=0
+check_exit "T7" 1 "${ec}" || ok=1
+check_contains "T7" "Duplicerade lesson-nummer" "${out}" || ok=1
+check_contains "T7" "L2 —" "${out}" || ok=1
+check_contains "T7" "vol-01.md" "${out}" || ok=1
+check_contains "T7" "vol-02.md" "${out}" || ok=1
+mark "${ok}"
+
+# ============================================================
+echo "═══ T8: unika nummer spridda över tre volymfiler → exit 0 (släpper) ═══"
+setup
+write_volume_config
+write_volume "vol-01.md" 1 3
+write_volume "vol-02.md" 4 6
+write_volume "vol-03.md" 7 9
+out=$(run_gate); ec=$?
+ok=0
+check_exit "T8" 0 "${ec}" || ok=1
+check_contains "T8" "Lesson-numrering OK" "${out}" || ok=1
+check_contains "T8" "9 unika poster i 3 fil" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
