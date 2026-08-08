@@ -4,6 +4,7 @@ title: 'Skiva: volym-spliten — spoke-lessons per ADR-085:s form'
 status: To Do
 assignee: []
 created_date: '2026-08-07 19:13'
+updated_date: '2026-08-08 06:19'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,11 +20,13 @@ ordinal: 299000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Premiss-pass: ADR-085 (hubbens volym-split) läst i sin helhet + hubbens faktiska volymstruktur inspekterad som facit; tasks/lessons.md:s beroende-ytor inventerade (check-lesson-numbers.sh, lessons-hub-sync-skillen, CLAUDE.md-referenser) FÖRE flytt
-- [ ] #2 tasks/lessons.md splittad per ADR-085:s form (precedent-tillämpning — inget nytt formbeslut): volymfiler + tunn indexerad ingång; de två stale-raderna i filhuvudet rättade (Senaste lyft + läses-varje-session-påståendet ersätts med sanning + pekare till session-start-skillens läsregel); INGEN lesson raderas, numrering obruten, git-flytt där form tillåter
-- [ ] #3 check-lesson-numbers.sh grön mot nya strukturen (utökas vid behov, tvåsidigt testad); lessons-hub-sync-skillens spoke-antaganden verifierade mot nya formen — divergens bokförs öppet som hub-följdärende, skillen ändras INTE härifrån
+- [x] #1 Premiss-pass: ADR-085 (hubbens volym-split) läst i sin helhet + hubbens faktiska volymstruktur inspekterad som facit; tasks/lessons.md:s beroende-ytor inventerade (check-lesson-numbers.sh, lessons-hub-sync-skillen, CLAUDE.md-referenser) FÖRE flytt
+- [x] #2 tasks/lessons.md splittad per ADR-085:s form (precedent-tillämpning — inget nytt formbeslut): volymfiler + tunn indexerad ingång; de två stale-raderna i filhuvudet rättade (Senaste lyft + läses-varje-session-påståendet ersätts med sanning + pekare till session-start-skillens läsregel); INGEN lesson raderas, numrering obruten, git-flytt där form tillåter
+- [x] #3 check-lesson-numbers.sh grön mot nya strukturen (utökas vid behov, tvåsidigt testad); lessons-hub-sync-skillens spoke-antaganden verifierade mot nya formen — divergens bokförs öppet som hub-följdärende, skillen ändras INTE härifrån
 - [ ] #4 Docs-grindarna gröna lokalt; PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

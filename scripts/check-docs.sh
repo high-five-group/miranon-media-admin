@@ -189,6 +189,10 @@ skip_gate() {
 # nedan avgränsar blocket för scripts/check-listparitet.sh, som jämför det mot
 # ci.yml:s `paritet:start lychee-ci`-block. Kommentarer måste stå OVANFÖR
 # start-markören — regionen mellan markörerna läses som data.
+#
+# './tasks/lessons/*.md' TILLAGT TASK-161.9 (2026-08-08, ADR-085-volymformen):
+# samma glob-kataloggräns-fråga som lessons.d ovan — 'tasks/*.md' korsar inte
+# in i underkatalogen. Utan raden är volymfilernas länkar tyst okontrollerade.
 if command -v lychee >/dev/null 2>&1; then
     # paritet:start lychee-lokal
     run_gate "lychee link check" \
@@ -197,6 +201,7 @@ if command -v lychee >/dev/null 2>&1; then
         --exclude-path .claude/worktrees \
         './docs/**/*.md' './tasks/*.md' './tasks/sessions/*.md' \
         './tasks/threads/*.md' './tasks/lessons.d/*.md' \
+        './tasks/lessons/*.md' \
         './.claude/**/*.md' './*.md'
     # paritet:slut lychee-lokal
 else
