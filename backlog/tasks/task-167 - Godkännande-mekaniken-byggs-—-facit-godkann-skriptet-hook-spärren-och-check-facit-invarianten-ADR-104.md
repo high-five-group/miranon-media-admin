@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-08 18:48'
+updated_date: '2026-08-08 19:30'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,11 +21,23 @@ Bygger ADR-104:s tre artefakter (G2-grillningen, S93 Del 14). (1) SKRIPTET npm r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Skriptet stämplar korrekt schema inkl. undantags-form; felväg vid okänt pass/redan-satt fält
-- [ ] #2 Hooken nekar Edit/Write/Bash-skrivningar mot godkand-fältet — tvåsidigt bevisad i testsvit + manuell körning; skarpbevis bokfört som öppen skuld
-- [ ] #3 check-facit-invarianten fäller på riven markör med godkand: null och släpper igenom med satt fält — tvåsidigt bevisad
-- [ ] #4 Samtliga tre artefakter citerar ADR-104; config-värden i .facit-policy.conf, ej hardkodade
+- [x] #1 Skriptet stämplar korrekt schema inkl. undantags-form; felväg vid okänt pass/redan-satt fält
+- [x] #2 Hooken nekar Edit/Write/Bash-skrivningar mot godkand-fältet — tvåsidigt bevisad i testsvit + manuell körning; skarpbevis bokfört som öppen skuld
+- [x] #3 check-facit-invarianten fäller på riven markör med godkand: null och släpper igenom med satt fält — tvåsidigt bevisad
+- [x] #4 Samtliga tre artefakter citerar ADR-104; config-värden i .facit-policy.conf, ej hardkodade
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Tilläggskrav (Marcus, 2026-08-08, mitt i bygget): facit-godkann.mjs är SJÄLVDOKUMENTERANDE. Körs det utan argument, eller med --help/-h, skriver det ut en färdig copy/paste-!-exempelrad + de kända pass-namnen (kataloger under FACIT_BILAGE_ROT med manifest) + undantags-formens exempel — exit 0 (hjälp, inte fel). Ett FAKTISKT stämplingsförsök som saknar --pass/--citat förblir exit 1 (skiljs på argv.length===0 || --help/-h, prövat före övrig parsning). Implementerat i renderHelp() + main()s tidiga gren; 8 nya tester (renderHelp x4 + main-nivå x4), totalt 38 tester i test-facit-godkann.mjs.
+
+Premiss-pass-fynd (ADR-086): uppdragets punkt (3) talar om att 'grind-invarianten byggs' i scripts/check-facit.sh — men invariant (c) (godkand:null => proto-markörer måste finnas kvar) FANNS REDAN, byggd under ADR-102-arbetet (mätt: git log/läsning av check-facit.sh + test-check-facit.sh T8/T9 fanns redan före denna session). Det som FAKTISKT byggdes här för artefakt 3 är: (a) facit-validera.mjs:s godkand-SCHEMA-validering utökad från bar sträng till ADR-104:s objektform {av,datum,citat,sha,undantag?}, (b) test-check-facit.sh utökad med T12-T16 (schema-specifika fall) + T9 uppdaterad till nya schemat, (c) ADR-104-citat tillagt i både check-facit.sh och facit-validera.mjs. Bokfört öppet — bygger inte vidare på uppdragets 'byggs'-premiss som att invarianten var frånvarande.
+
+Designbeslut, bokfört: (1) Hookens Bash-nät har TVÅ kanaler — kanal A denyar direkt anrop av 'npm run facit:godkann'/scripts/facit-godkann.mjs (den farligaste bypass-vägen: skriptet skriver fältet korrekt formaterat, ingen heredoc/redirect-heuristik hade fångat det), kanal B den generiska heredoc/redirect/sed/jq-mönstermatchningen uppdraget efterfrågade explicit. (2) Hooken är FAIL-OPEN på infra-fel (jq/node saknas, trasig stdin), MEDVETET avvikande från deny-resend-send.sh:s fail-closed — motiverat av att blast-radien (Edit/Write är de mest frekventa verktygen i hela sessionen) är oproportionerlig mot en risk som redan har ett OBEROENDE andra lager (check-facit.sh, obligatorisk CI-grind som redan kräver .facit-policy.conf för att bli grön) — 'rivningsprövningen är dubbel' (ADR-104 § Beslut 3). Fullt resonemang i skriptets eget huvud. (3) scripts/test-deny-facit-godkand-skrivning.sh är IEJ wirad i ci.yml — matchar det etablerade, mätta mönstret att INGEN av repots sex befintliga deny-*.sh-hookars testsviter är CI-wirade (grep-verifierat: noll träffar på 'test-deny-' i .github/workflows/*.yml). Logiken bevisas lokalt (27 tvåsidiga fall + manuell körning), inte i CI — samma klass som skarpbevis-skulden. scripts/test-facit-godkann.mjs ÄR wirad (ci.yml, lint-jobbet) eftersom facit-godkann.mjs är en REN node-CLI (samma klass som seed-review-fixture.mjs), inte en harness-hook.
+
+SKARPBEVIS-SKULD, ÖPPEN (L450): scripts/deny-facit-godkand-skrivning.sh registrerades i .claude/settings.json i DENNA byggsession och laddas därmed INTE i denna session (hook-omladdningsregeln). Logiken är bevisad TVÅSIDIGT här: 27 fall i test-deny-facit-godkand-skrivning.sh (planterade DENY + ALLOW för Edit/Write/Bash, båda kanalerna, fail-open-fallen, exit-kod=2 på deny-vägen) + manuell körning mot verklig JSON-payload (jq -nc ... | bash scripts/deny-facit-godkand-skrivning.sh, verifierat NEKAR med exit 2). Skarpbeviset (differentialmätning: provocera en REDAN laddad hook parallellt, t.ex. deny-grind-genom-pipe.sh, för att skilja 'fel logik' från 'ej laddad än') är INTE gjort och betalas som en av nästa sessions första handlingar — bokfört som skuld, aldrig som gjort.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

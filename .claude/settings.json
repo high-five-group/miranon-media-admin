@@ -88,6 +88,17 @@
             "statusMessage": "Arbetsformens tillståndsbärare (ADR-097) — git push nekas under aktiv iteration"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-facit-godkand-skrivning.sh\"",
+            "timeout": 10,
+            "statusMessage": "FACIT-GODKÄNNANDETS KANALSEPARATION (ADR-104) — agent-skrivning mot \"godkand\"-fältet nekas"
+          }
+        ]
       }
     ],
     "PreCompact": [

@@ -12,6 +12,8 @@
 //
 // Källa: docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md
 //        R4 (facit förväxlingsbart) + R5 (täckningens luckor osynliga).
+//        docs/decisions/ADR-104-godkannande-mekaniken-kanalseparation.md
+//        § Beslut 2 (schemat "godkand" bär sedan TASK-167).
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -58,14 +60,63 @@ for (const falt of ['prototyp', 'last', 'lasning']) {
   }
 }
 
+// Schemat för ett SATT "godkand" (ADR-104 § Beslut 2, TASK-167): ett
+// objekt { av, datum, citat, sha, undantag?: [{ yta, skal }] } — Marcus
+// egen kanal (scripts/facit-godkann.mjs) stämplar det, ALDRIG en bar
+// sträng. Den äldre sträng-formen ("2026-08-10") fanns bara som en
+// tillfällig testfixtur (aldrig i ett verkligt manifest i detta repo) och
+// stöds inte längre — se ADR-104 för hela resonemanget bakom bytet.
+const ISO_DATUM = /^\d{4}-\d{2}-\d{2}$/;
+const validateGodkandUndantag = (undantag) => {
+  if (!Array.isArray(undantag)) {
+    rapportera(
+      `${manifestPath}: "godkand.undantag" ska vara en array av { yta, skal }, inte ${typeof undantag}.`,
+    );
+    return;
+  }
+  undantag.forEach((post, idx) => {
+    if (!post || typeof post !== 'object' || Array.isArray(post)) {
+      rapportera(`${manifestPath}: "godkand.undantag[${idx}]" ska vara ett objekt { yta, skal }.`);
+      return;
+    }
+    if (typeof post.yta !== 'string' || post.yta.trim() === '') {
+      rapportera(`${manifestPath}: "godkand.undantag[${idx}].yta" saknas eller är tomt.`);
+    }
+    if (typeof post.skal !== 'string' || post.skal.trim() === '') {
+      rapportera(`${manifestPath}: "godkand.undantag[${idx}].skal" saknas eller är tomt.`);
+    }
+  });
+};
+
 if (!('godkand' in manifest)) {
   rapportera(
     `${manifestPath}: nyckeln "godkand" saknas. Den ska vara null tills Marcus godkänt att skarpa är identisk med prototypen (ADR-102 B3) — en saknad nyckel får aldrig läsas som godkänd.`,
   );
-} else if (manifest.godkand !== null && typeof manifest.godkand !== 'string') {
-  rapportera(
-    `${manifestPath}: "godkand" ska vara null eller ett datum som sträng, inte ${typeof manifest.godkand}.`,
-  );
+} else if (manifest.godkand !== null) {
+  const g = manifest.godkand;
+  if (typeof g !== 'object' || Array.isArray(g)) {
+    rapportera(
+      `${manifestPath}: "godkand" ska vara null eller ett objekt { av, datum, citat, sha, undantag? } (ADR-104), inte ${Array.isArray(g) ? 'en array' : typeof g}.`,
+    );
+  } else {
+    if (typeof g.av !== 'string' || g.av.trim() === '') {
+      rapportera(`${manifestPath}: "godkand.av" saknas eller är tomt.`);
+    }
+    if (typeof g.datum !== 'string' || !ISO_DATUM.test(g.datum)) {
+      rapportera(
+        `${manifestPath}: "godkand.datum" ska vara ett ISO-datum (YYYY-MM-DD), fick ${JSON.stringify(g.datum)}.`,
+      );
+    }
+    if (typeof g.citat !== 'string' || g.citat.trim() === '') {
+      rapportera(`${manifestPath}: "godkand.citat" saknas eller är tomt.`);
+    }
+    if (typeof g.sha !== 'string' || g.sha.trim() === '') {
+      rapportera(`${manifestPath}: "godkand.sha" saknas eller är tomt.`);
+    }
+    if ('undantag' in g) {
+      validateGodkandUndantag(g.undantag);
+    }
+  }
 }
 
 if (!Array.isArray(manifest.ytor) || manifest.ytor.length === 0) {

@@ -22,7 +22,11 @@
 #       inte försvinna ur koden. ADR-102 B3: prototyp-kod rivs ALDRIG före
 #       Marcus godkännande. Utan denna spärr är blockeringen av rivnings-
 #       skivan en handpåläggning — precis den prosa-utan-mekanism som
-#       ADR-102 finns för att ersätta.
+#       ADR-102 finns för att ersätta. VEM/HUR "godkand" får sättas — och
+#       vilket SCHEMA ett satt värde bär (ett objekt, aldrig en bar sträng)
+#       — är ADR-104:s domän (§ Beslut 2–3, TASK-167): denna grind läser
+#       bara "är fältet null eller inte", schemavalideringen bor i
+#       scripts/lib/facit-validera.mjs (invariant b, se nedan).
 #
 # VAD GRINDEN INTE GÖR, uttryckligen: den avgör INTE om skarpa ytan SER UT
 # som facit. Den jämförelsen är Marcus öga, och en grind som påstod sig göra

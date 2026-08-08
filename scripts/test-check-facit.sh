@@ -10,8 +10,11 @@
 #
 # scripts/test-check-facit.sh
 #
-# Empirisk test-suite för scripts/check-facit.sh (ADR-102-grind).
-# 11 testfall, TVÅSIDIGA: varje invariant prövas både i sitt gröna och sitt
+# Empirisk test-suite för scripts/check-facit.sh (ADR-102-grind) OCH för
+# scripts/lib/facit-validera.mjs:s "godkand"-schemavalidering (ADR-104 §
+# Beslut 2, TASK-167 — schemat bytte från bar sträng till objektet
+# { av, datum, citat, sha, undantag? }).
+# 16 testfall, TVÅSIDIGA: varje invariant prövas både i sitt gröna och sitt
 # röda läge. En grind som bara bevisats grön är inte bevisad — den kan vara
 # blind (L43, ADR-039 § lesson→grind).
 #
@@ -23,9 +26,17 @@
 #   T6  toppnivåns "godkand" saknas         (B3)          → 1
 #   T7  tom bilder[] = deklarerad frånvaro  (R5, grön)    → 0
 #   T8  proto-markör riven, godkand null    (B3, röd)     → 1
-#   T9  proto-markör riven, godkand satt    (B3, grön)    → 0
+#   T9  proto-markör riven, godkand SATT (objektschema,
+#       ADR-104)                            (B3, grön)    → 0
 #   T10 config saknas                                     → 3
 #   T11 trasig JSON                                       → 1
+#   T12 godkand som bar sträng (GAMLA schemat, ADR-104
+#       river stödet)                       (schema)      → 1
+#   T13 godkand-objekt saknar "av"           (schema)      → 1
+#   T14 godkand.datum inte ISO-format        (schema)      → 1
+#   T15 godkand-objekt fullständigt + undantag[] (schema,
+#       grön)                                              → 0
+#   T16 godkand.undantag[].skal saknas       (schema)      → 1
 #
 # Test-isolering: skapar /tmp/s93-test-facit/ med bilage-fixtur + src-fixtur.
 # Återställer (rm -rf) via trap. INGEN ändring av real-repo.
@@ -217,13 +228,19 @@ riv_markor
 check_exit "T8 rivning före godkännande" 1 "$(run_exit)"
 check_utdata "T8 skäl" "rivs ALDRIG före Marcus godkännande"
 
+# Ett STRUKTURELLT GILTIGT "godkand"-objekt (ADR-104 § Beslut 2, TASK-167)
+# — återanvänds av T9 och T15.
+GODKAND_OK='{"av":"marcus","datum":"2026-08-10","citat":"Jag är nöjd. Lås som facit.","sha":"abc1234def5678"}'
+
 # --- T9: proto-markör riven men godkand satt (B3, GRÖN) ------------------
 # Samma rivning som T8. Skillnaden är ENBART godkännandet — spärren ska
 # släppa, annars vore den ett permanent hinder i stället för en ordning.
+# godkand bär det NYA objektschemat (ADR-104) — den gamla bara-sträng-formen
+# testas separat i T12, som ett RÖTT fall (schemat river medvetet stödet).
 setup
-write_manifest '"2026-08-10"' '["facit-yta.png"]'
+write_manifest "${GODKAND_OK}" '["facit-yta.png"]'
 riv_markor
-check_exit "T9 rivning efter godkännande" 0 "$(run_exit)"
+check_exit "T9 rivning efter godkännande (objektschema)" 0 "$(run_exit)"
 
 # --- T10: config saknas --------------------------------------------------
 setup
@@ -236,6 +253,38 @@ setup
 printf '{ detta är inte json\n' > "${TEST_DIR}/${BILAGE}/facit.json"
 check_exit "T11 trasig JSON" 1 "$(run_exit)"
 check_utdata "T11 skäl" "JSON"
+
+# --- T12: godkand som bar sträng — GAMLA schemat, nu RÖTT (ADR-104) ------
+# Fram till TASK-167 var en sträng ("2026-08-10") ett GILTIGT godkand-värde.
+# ADR-104 byter schemat till ett objekt — denna testrad bevisar att det
+# gamla formatet medvetet inte längre accepteras, inte att det glömdes bort.
+setup
+write_manifest '"2026-08-10"' '["facit-yta.png"]'
+check_exit "T12 godkand som bar sträng (gamla schemat) NEKAS" 1 "$(run_exit)"
+check_utdata "T12 skäl" "objekt.*av, datum, citat, sha"
+
+# --- T13: godkand-objekt saknar "av" --------------------------------------
+setup
+write_manifest '{"datum":"2026-08-10","citat":"x","sha":"abc123"}' '["facit-yta.png"]'
+check_exit "T13 godkand.av saknas" 1 "$(run_exit)"
+check_utdata "T13 skäl" "godkand\.av"
+
+# --- T14: godkand.datum är inte ISO-format --------------------------------
+setup
+write_manifest '{"av":"marcus","datum":"10 augusti 2026","citat":"x","sha":"abc123"}' '["facit-yta.png"]'
+check_exit "T14 godkand.datum inte ISO-format" 1 "$(run_exit)"
+check_utdata "T14 skäl" "godkand\.datum"
+
+# --- T15: godkand-objekt fullständigt + undantag[] (GRÖN) -----------------
+setup
+write_manifest '{"av":"marcus","datum":"2026-08-10","citat":"Delvis nöjd.","sha":"abc123","undantag":[{"yta":"atgarder","skal":"körande prototyp är facit"}]}' '["facit-yta.png"]'
+check_exit "T15 godkand-objekt med giltigt undantag[]" 0 "$(run_exit)"
+
+# --- T16: godkand.undantag[].skal saknas ----------------------------------
+setup
+write_manifest '{"av":"marcus","datum":"2026-08-10","citat":"x","sha":"abc123","undantag":[{"yta":"atgarder"}]}' '["facit-yta.png"]'
+check_exit "T16 godkand.undantag[].skal saknas" 1 "$(run_exit)"
+check_utdata "T16 skäl" "undantag\[0\]\.skal"
 
 echo
 echo "=== Resultat: ${PASSED} passerade, ${FAILED} failade ==="

@@ -36,6 +36,7 @@
     "schema:bilagor": "node --env-file-if-exists=.env.seed scripts/create-bilagor-table.mjs",
     "seed:review": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs",
     "seed:review:clean": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs --clean",
+    "facit:godkann": "node scripts/facit-godkann.mjs",
     "metrics:ci": "node scripts/ci-metrics.mjs",
     "metrics:agents": "node scripts/agent-spawn-metrics.mjs",
     "metrics:flake": "node scripts/flake-matserie.mjs",
