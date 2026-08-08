@@ -4,7 +4,7 @@ title: 'Länkröta-ärendet #464 — nattliga fynden triageras och släcks'
 status: To Do
 assignee: []
 created_date: '2026-08-08 17:11'
-updated_date: '2026-08-08 17:34'
+updated_date: '2026-08-08 17:54'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,8 +24,6 @@ Stående ärende #464 (öppnat 2026-07-30, icke-blockerande per ADR-082 beslut 4
 - [ ] #3 nightly-links-körning grön efter fixen (dispatch eller nästa natt)
 - [ ] #4 Ärendet #464 stängt med motivering
 <!-- AC:END -->
-
-
 
 ## Implementation Notes
 
@@ -69,6 +67,56 @@ Denna PR fixar samtliga kända röda fynd (8+1 från run 31236116308, +3 nya fr�
 1. Efter att denna PR är mergad till main: dispatcha `nightly.yml` (`gh workflow run nightly.yml --repo high-five-group/miranon-media-admin`) och verifiera att `nightly-links`-jobbet går grönt.
 2. Grönt bevis: stäng #464 med `gh issue close 464 --repo high-five-group/miranon-media-admin --reason completed --comment "<länk till den gröna körningen>"` — matchar ärendets egen stängningsregel ("stäng när körningen är grön igen").
 3. Rött bevis (osannolikt men möjligt — nätvägen är overifierad lokalt→GHA): en ny kommentar läggs automatiskt av `links-arende`-jobbet på #464; triagera enligt samma mönster som denna PR.
+
+## Uppföljning — rest-fynd ur PR #1008:s post-merge bevis-dispatch (run 31269833863)
+
+PR #1008 mergade som `2c4f6080`. Bevis-dispatchen jag startade mot PR-grenen
+INNAN merge (körd 2026-08-08 17:36Z, EFTER armering, precis enligt uppdraget)
+föll ändå: `Länkkontroll (utan cache)` gav **3 Errors + 5 Timeouts** — verifierat
+själv mot jobbloggen (`gh run view 31269833863 --job 93133809435 --log`), inte
+bara mot orkestrerarens sammanfattning.
+
+Samtliga 8 rest-fynd klassade med samma bevisform som förra passet (lokal curl
+plain- + Chrome-UA, 2026-08-08):
+
+| # | Domän/URL | Fel i runner | Fil | Klass | Lokalt bevis |
+|---|---|---|---|---|---|
+| 1 | www.iso.org/standard/70017.html | 403 | docs/decisions/ADR-100-...md (r249) | UA/fingerprint (symmetriskt — INTE runner-nätvägen) | 403/403 plain+Chrome |
+| 2 | wirfs-brock.com/rebecca/blog/2011/01/18/... | ERROR connection refused | docs/research/reversibilitet-som-delegeringsaxel-2026-07-29.md (r748) | Runner-IP (asymmetriskt) | 200/200 plain+Chrome |
+| 3 | vite.dev/guide/static-deploy | ERROR connection failed | docs/research/t95-r1-hosting-vercel-2026-08-02.md (r453) | Runner-IP (asymmetriskt) — DOMÄN-BRED, se #7/#8 | 200/200 plain+Chrome |
+| 4 | www.cs.umd.edu/~ben/papers/Shneiderman1996eyes.pdf | TIMEOUT | docs/research/hallplats-modellen-eventsidan-2026-07-26.md (r876) | Runner-IP (asymmetriskt) | 200/200 plain+Chrome |
+| 5 | sunnyday.mit.edu/accidents/safetyscience-single.pdf (http://) | TIMEOUT | docs/research/nummerallokering-parallella-aktorer-2026-07-29.md (r1054) | Runner-IP (asymmetriskt) | 200/200 plain+Chrome |
+| 6 | agilealliance.org/glossary/acceptance/ | TIMEOUT | docs/research/testklass-namn-och-support-kataloger-2026-08-02.md (r363) | UA/fingerprint — HYBRID, se not | plain-UA→301 (äkta flytt, ny sökväg 200); Chrome-UA→403 på BÅDA sökvägarna |
+| 7 | vite.dev/guide/env-and-mode | TIMEOUT | docs/research/prototypkod-isolering-...2026-08-08.md (r481) | Runner-IP, domän-bred (3 sidvägar i samma körning) | 200/200 plain+Chrome |
+| 8 | vite.dev/ | TIMEOUT | docs/specs/BYGGPLAN-LÄTTLÄST-v3.md (r585) | Runner-IP, domän-bred | 200/200 plain |
+
+**Not om #6 (agilealliance.org) — hybridfall, INTE ren runner-nätväg:** plain-UA
+avslöjar en ÄKTA flytt (301 → `/glossary/acceptance-testing/`, 200 där), men
+Chrome-UA (lychees form) ger 403 på BÅDA sökvägarna — domän-brett WAF/Sucuri-
+liknande bot-skydd, inte path-specifikt. Att uppdatera citatet till den nya
+sökvägen hade INTE hjälpt CI (verifierat: även den nya vägen 403:ar mot
+Chrome-UA). Citatet lämnas därför orört; posten är UA/fingerprint-klassad,
+inte runner-IP-klassad, trots att den låg i Timeouts-kartan i denna körning.
+
+**Not om #3/#7/#8 (vite.dev):** tre skilda sidvägar föll i EN OCH SAMMA
+körning — starkare bevis än tvånatts-kravet i tanstack.com-precedenten.
+Domän-bred post.
+
+Samtliga tillagda i `.lycheeignore` (nytt block, "TASK-165 forts. 2").
+
+**Verifiering:**
+- Lokal `lychee` (0.24.2) mot de 8 berörda filerna: 0 Errors, exit 0.
+- Lokal `lychee` mot nightly.yml:s fulla scope: 0 Errors, exit 0 (3839 total,
+  119 excluded).
+- `npm run check:docs`: 14/14 gröna.
+- `npm run typecheck` / `biome check` / `npm run build`: gröna.
+- `npm run test:api`: FÖRSTA körningen gav 15 fel, samtliga `502 Bad Gateway`
+  från skarpa Supabase Edge Functions (staging-plattforms-blipp, inget med
+  denna .lycheeignore-only-diff att göra). OMKÖRNING: 465/465 gröna — bekräftat
+  transient.
+
+AC #3/#4 förblir öppna. Ny dispatch mot denna gren startad efter armering
+(se PR-beskrivningen för run-ID) — invänta INTE utfallet (ADR-096).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done

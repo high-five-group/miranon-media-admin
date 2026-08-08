@@ -457,3 +457,84 @@
 #   help.brevo.com   403/403 (plain- och Chrome-UA) →
 #                    UA/fingerprint-klassen.
 ^https://help\.brevo\.com/.*$
+
+# ═══════════════════════════════════════════════════════════════════════
+# TASK-165 forts. 2 — rest-fynd ur PR #1008:s post-merge bevis-dispatch
+# (nightly.yml mot fix/task-165-lankrota-464-triage, run 31269833863,
+# 2026-08-08 17:36Z, KÖRD EFTER att föregående landning redan var
+# armerad). Summary: 3 Errors + 5 Timeouts. Bevisformen är ASYMMETRISK
+# för samtliga poster utom iso.org och agilealliance.org: lokalt
+# 200/200 (plain- OCH Chrome-UA) samtidigt som GHA-runnern gav TIMEOUT
+# eller connection-fel på SAMMA URL i SAMMA körning — runner-nätvägen är
+# alltså problemet, inte länkens hälsa. Detta är exakt den klass
+# NCBI-fyndet i föregående block förutspådde.
+# ═══════════════════════════════════════════════════════════════════════
+
+# www.iso.org — ISO:s standardkatalog, bot-skydd. EN instans
+# (run 31269833863). Klassbevis, mätt lokalt 2026-08-08:
+#   www.iso.org   403/403 (plain- och Chrome-UA) → UA/fingerprint-
+#                 klassen (symmetriskt fel — inte runner-nätvägen).
+# Path-scopad (samma skäl som slack.com/get-started ovan): iso.org är en
+# stor flersidig standardkatalog, overifierad i övrigt. Påverkar
+# docs/decisions/ADR-100-sanningshierarkin-koden-ager-beteendet.md (r249).
+^https://www\.iso\.org/standard/70017\.html$
+
+# wirfs-brock.com — Rebecca Wirfs-Brocks personliga blogg. Runnern gav
+# "Connection refused - server may be down or port blocked" (run
+# 31269833863); lokalt frisk. Klassbevis, mätt lokalt 2026-08-08:
+#   wirfs-brock.com   200/200 (plain- och Chrome-UA) → ASYMMETRISKT,
+#                     runner-IP-klassen (samma familj som danger.systems
+#                     — värd-sidigt avvisande av GHA-nätet, inte en
+#                     rutten länk). EN-INSTANS-POST, öppet bokförd.
+# Påverkar
+# docs/research/reversibilitet-som-delegeringsaxel-2026-07-29.md (r748).
+^https://wirfs-brock\.com/rebecca/blog/2011/01/18/agile-architecture-myths-2-architecture-decisions-should-be-made-at-the-last-responsible-moment/$
+
+# vite.dev — TRE skilda sidvägar föll i SAMMA körning (run 31269833863):
+# /guide/static-deploy (ERROR "Connection failed"), /guide/env-and-mode
+# (TIMEOUT), / (TIMEOUT). Klassbevis, mätt lokalt 2026-08-08: samtliga
+# tre 200/200 (plain- och Chrome-UA) → ASYMMETRISKT, runner-IP-klassen
+# (samma mönster som tanstack.com/opentelemetry.io/nx.dev — CDN blockerar
+# GHA:s delade IP-ranges). Domän-bred, inte path-scopad: tre oberoende
+# sidvägar under samma domän i en och samma körning är STARKARE bevis än
+# tanstack.com-precedentens tvånatts-krav. Påverkar
+# docs/research/t95-r1-hosting-vercel-2026-08-02.md (r453),
+# docs/research/prototypkod-isolering-och-parallella-strommar-branschmonster-2026-08-08.md (r481),
+# docs/specs/BYGGPLAN-LÄTTLÄST-v3.md (r585).
+^https://vite\.dev/.*$
+
+# cs.umd.edu — Shneiderman 1996-artikeln (Ben Shneidermans egen sida).
+# Runnern gav TIMEOUT (run 31269833863); lokalt frisk. Klassbevis, mätt
+# lokalt 2026-08-08:
+#   www.cs.umd.edu   200/200 (plain- och Chrome-UA) → ASYMMETRISKT,
+#                    runner-IP-klassen. EN-INSTANS-POST, öppet bokförd.
+# Påverkar
+# docs/research/hallplats-modellen-eventsidan-2026-07-26.md (r876).
+^https://www\.cs\.umd\.edu/~ben/papers/Shneiderman1996eyes\.pdf$
+
+# sunnyday.mit.edu — Nancy Leveson-gruppens säkerhetsvetenskap-arkiv
+# (http://, inte https:// — sidan saknar TLS). Runnern gav TIMEOUT (run
+# 31269833863); lokalt frisk. Klassbevis, mätt lokalt 2026-08-08:
+#   sunnyday.mit.edu   200/200 (plain- och Chrome-UA) → ASYMMETRISKT,
+#                      runner-IP-klassen. EN-INSTANS-POST, öppet bokförd.
+# Påverkar
+# docs/research/nummerallokering-parallella-aktorer-2026-07-29.md (r1054).
+^http://sunnyday\.mit\.edu/accidents/safetyscience-single\.pdf$
+
+# agilealliance.org/glossary/acceptance/ — HYBRIDFALL, INTE runner-
+# nätvägen ensam. Klassbevis, mätt lokalt 2026-08-08:
+#   plain-UA    → 301 till NY sökväg (/glossary/acceptance-testing/,
+#                 200 där) — sidan har genuint flyttat, precis som
+#                 developer.salesforce.com/eng.uber.com-fallen ovan.
+#   Chrome-UA   → 403 DIREKT på BÅDA sökvägarna (gammal och ny) —
+#                 domän-brett Sucuri/WAF-liknande bot-skydd
+#                 (nginx + x-cdn-c/x-proxy-cache-info-headrar), inte
+#                 path-specifikt.
+# Eftersom lychee ALLTID kör med Chrome-UA-headern (nightly.ymls
+# --header) ser grinden aldrig 301-vägen — citatet lämnas därför ORÖRT
+# (en uppdatering till den nya sökvägen hade INTE hjälpt, den blockeras
+# lika hårt). UA/fingerprint-klassen, path-scopad (samma skäl som
+# slack.com/get-started — resten av agilealliance.org overifierat).
+# Påverkar
+# docs/research/testklass-namn-och-support-kataloger-2026-08-02.md (r363).
+^https://agilealliance\.org/glossary/acceptance/$
