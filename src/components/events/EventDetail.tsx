@@ -1,10 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useRouter } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
-// [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
-import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useRef } from 'react';
-import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
@@ -16,7 +13,6 @@ import { AtgarderKort, CheckInKort, SkrivUtKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
 import { Deltagare } from './detail/Deltagare';
 import { Gruppdynamik } from './detail/Gruppdynamik';
-import { isHallplatsVariant } from './detail/hallplats-steg-prototyp';
 import { Narvaro } from './detail/Narvaro';
 import { OmEventet } from './detail/OmEventet';
 import { useForberedEventDetalj } from './EventCard';
@@ -26,24 +22,6 @@ import { EventValjare } from './EventValjare';
 function eventName(e: Event): string {
   return e.eventNamn ?? e.eventlabel ?? 'Namnlöst event';
 }
-
-/**
- * [PROTOTYPE] [S93] hållplats-pass — KONVERGENS-PASSET (Del 3 § Valet, ADR-074
- * beslut 1: stabila nycklar). Divergensens B (Stations-railen)/C (Nästa
- * steg-panelen) är FÖRKASTADE och RIVNA — vinnaren `a` behåller sin nyckel
- * (Marcus beslut). Enda kvarvarande post ⇒ `PrototypeSwitcher`s
- * ensam-variant-form (prototyp-ikonen i stället för bokstavsknappar).
- * `steg`/`stegLabel` bumpat till konvergens-axelns nästa steg (S72-
- * identitetsmodellen: VARIANT = divergens-axeln · STEG = konvergens-axeln).
- *
- * Railen monteras HÄR (enda platsen på sidan) så Deltagare.tsx OCH
- * Betalningar.tsx — båda DEV-grindat läsande samma `?variant=`/`?data=` via
- * oberoende `useQueryState` (nuqs synkar) — inte vardera monterar sin egen
- * rail (en dubblerad flytande rail vore fel).
- */
-const HALLPLATS_PROTO_VARIANTS = [
-  { key: 'a', label: 'A — Radbytet', steg: 2, stegLabel: 'Konvergens' },
-];
 
 /**
  * Eventsidan — S73-facitets grundform (task-18.1). Toppraden bär identiteten
@@ -75,12 +53,6 @@ export function EventDetail({ eventId }: { eventId: string }) {
   const navigate = useNavigate();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const harFokuserat = useRef(false);
-
-  // [PROTOTYPE] [S93] hållplats-pass fix-våg (uppdraget § C) — railen ska
-  // ENDAST monteras när URL:en faktiskt är prototyp-läget (?variant=a|b|c),
-  // inte för varje DEV-render. Samma oberoende `useQueryState`-läsning som
-  // Belaggning.tsx/Deltagare.tsx/Betalningar.tsx (nuqs synkar).
-  const [variantParam] = useQueryState('variant');
 
   const {
     data: event,
@@ -280,10 +252,10 @@ export function EventDetail({ eventId }: { eventId: string }) {
           `variantParam` INTE var satt) är riven; git bevarar den (senast i
           main före denna commit). Länkmåls- och kopplingsinterimen är öppet
           bokförda i Atgarder.tsx § AtgarderKort.
-          `variantParam`/`isHallplatsVariant` STYR INTE längre denna yta —
-          maskineriet i övrigt (registret i Deltagare.tsx, prototyp-railen
-          nedan) är ORÖRT (ADR-103 B2 steg 4/TASK-145.6 river flaggan efter
-          Marcus godkännande). */}
+          [RIVEN, TASK-145.6] `variantParam`/`isHallplatsVariant`/prototyp-
+          railen som stod nedan är rivna (ADR-103 B2 steg 4, efter Marcus
+          godkännande) — registret i Deltagare.tsx behåller sin promoverade
+          form oförändrad. */}
       <CheckInKort eventId={eventId} />
       <AtgarderKort />
       <SkrivUtKort />
@@ -322,11 +294,11 @@ export function EventDetail({ eventId }: { eventId: string }) {
           TASK-145 § Implementationsbeslut, "Betalnings-toppblocket
           försvinner"). Arbetsytan (`BetalningsDetaljer`, deadline-badgen
           inkluderad) är inflyttad som fällbar LÄSYTA under registret — se
-          `Deltagare.tsx`s `ArbetsKo` ("Öppna detaljer"). `Betalningar`/
-          `BetalningsInnehall` (Betalningar.tsx) står kvar som overkallad,
-          vestigial kod: städning är uttryckligen utanför denna skivas
-          omfattning (PRD § Utanför omfattningen, "Skarpa betalningsvyns
-          kvarvarande kod utanför det som flyttar"). */}
+          `Deltagare.tsx`s `ArbetsKo` ("Öppna detaljer"). [RIVEN, TASK-145.6]
+          `Betalningar`/`BetalningsInnehall` (Betalningar.tsx) stod kvar som
+          overkallad, vestigial kod (deras enda live-referens var hållplats-
+          prototypens `protoAktiv`-läsning) — rivna helt i samma skiva som
+          variant-maskineriet, ej bara bokförda: AC #5. */}
 
       {/* Närvaro-registret (task-18.9; K60): genomfört event → LMS-register
           (rader × sessioner, Total närvaro %); kommande event → lugnt läge.
@@ -345,15 +317,6 @@ export function EventDetail({ eventId }: { eventId: string }) {
           tidsstämplad ström (composer överst, nyast först) med server-satt författare
           och härledd Under/Efter-fas. Egen get-event-notes-fetch (events.notes-cachen). */}
       <Anteckningar event={event} />
-
-      {/* [PROTOTYPE] [S93] hållplats-pass — DEV-grindad divergens-växlare
-          (ADR-044-mekaniken). Se Deltagare.tsx/Betalningar.tsx för de
-          faktiska ?variant=a|b|c/?data=proto-grenarna. Railen monteras ENDAST
-          i prototyp-läget (fix-våg § C): URL:en (?variant=a|b|c) är ingången,
-          inte DEV allena — annars läcker den in på den SKARPA vyns pixlar. */}
-      {import.meta.env.DEV && isHallplatsVariant(variantParam) && (
-        <PrototypeSwitcher variants={HALLPLATS_PROTO_VARIANTS} />
-      )}
     </>,
   );
 }

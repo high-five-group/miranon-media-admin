@@ -27,9 +27,11 @@ import { Button } from '@/components/primitives/Button';
  * `?variant=a`-villkoret, nu riven (git bevarar, senast i main före denna
  * commit; se rivningsnoterna nedan). Radformen ovan (K20/K25/K72) lever kvar
  * i `CheckInKort` och delvis i `AtgarderKort` (samma `RAD_KLASS`).
- * Variant-villkoret/växlaren/`?variant`-maskineriet i övrigt (registret,
- * `PrototypeSwitcher`) är ORÖRT av denna skiva — rivs i `TASK-145.6` efter
- * Marcus godkännande (ADR-103 B2 steg 4).
+ * [RIVEN, TASK-145.6] Variant-villkoret/switcher-monteringen/`?variant`-
+ * maskineriet i övrigt (registret, `PrototypeSwitcher`) — ORÖRT av denna
+ * skiva — är nu riven i sin helhet (ADR-103 B2 steg 4, efter Marcus
+ * godkännande). Se `EventDetail.tsx`/`Deltagare.tsx`/`Betalningar.tsx` för
+ * rivningen.
  */
 const RAD_KLASS =
   '-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';

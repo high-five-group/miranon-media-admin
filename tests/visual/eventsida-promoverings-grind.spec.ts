@@ -3,17 +3,25 @@ import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { expect, test } from '../support/fixturvarld/hermetic';
 
 /**
- * PROMOVERINGS-GRINDEN (TASK-162.1, ADR-103 B4) — ariaSnapshot-referenser ur
- * variant-läget (`?variant=a&data=verklig`), FÅNGADE FÖRE NÅGON FLIP.
+ * REGRESSIONSLÅSET för eventsidans promoverade ytor (ADR-103 B4, TASK-145.6).
  *
- * Detta är prefaktoreringen ADR-103 B2 beskriver: bevismekanismen byggs INNAN
- * åtgärds-ytan (skiva 162.2) eller registret (skiva 162.3) promoveras. De sex
- * referensfilerna denna spec genererar (`--update-snapshots`, körda en gång
- * vid byggandet av DENNA skiva) ÄR grindens facit — incheckade `.aria.yml`-
- * filer under `tests/visual/__aria__/`. Skiva 162.2/162.3 pekar SAMMA
- * locators mot den promoverade (flippade) skarpa ytan: identisk rendering ⇒
- * identisk ariaSnapshot ⇒ grönt. Varje skillnad — även en enda rad — fäller
- * rött, med Playwrights egen diff i testutdatan.
+ * [RIVEN, TASK-145.6, ROLLBYTE] Denna spec bar ursprungligen ETT PAR
+ * (TASK-162.1/162.2/162.3, ADR-103 B4): sex `ariaSnapshot`-referenser
+ * FÅNGADE UR VARIANT-LÄGET (`?variant=a&data=verklig`), FÖRE någon flip —
+ * och en andra hälft som pekade SAMMA lokatorer mot den promoverade skarpa
+ * ytan, för att bevisa att promoveringen INTE ändrade formen. Variant-halvan
+ * (`gotoVariantA`, `?variant=a&data=verklig`) är riven med denna skiva:
+ * `?variant=`-maskineriet den förutsatte finns inte längre (Marcus
+ * godkännande, ADR-103 B2 steg 4) — det fanns inget kvar att jämföra MOT.
+ *
+ * De SEX incheckade referensfilerna (`tests/visual/__aria__/…/*.aria.yml`)
+ * är ORÖRDA — samma facit som alltid, samma `name:`-nycklar. Vad som ändras
+ * är BARA vad testerna bevisar: inte längre "variant == skarpt", utan
+ * REGRESSION — att den promoverade ytan fortsätter rendera EXAKT den låsta
+ * formen, för alla framtida ändringar i `Deltagare.tsx`/`Atgarder.tsx`.
+ * Rivningen tar villkor och växlar, ALDRIG form (DoD #5) — därför är det
+ * korrekt och avsett att alla sex tester förblir GRÖNA oförändrade rakt
+ * igenom denna skiva.
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (ADR-103 B4): deterministiskt, noll nya
  * beroenden, och det jämför STRUKTUR OCH TILLGÄNGLIGT NAMN — exakt det som
@@ -23,25 +31,26 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * empiriskt visar sig missa en formskillnad — inte default.
  *
  * SCOPE — VARFÖR DESSA SEX YTOR OCH INGA FLER: facitkartans blockkarta (A1,
- * A2–A6) pekar ut EXAKT de block som skiljer sig mellan prototyp och skarpa.
- * De fem block som redan är identiska (toppblocket 6a, deltagarkorten 6g,
- * betalningsarbetsytan 6h, Beläggning/Gruppdynamik/Anteckningar) ingår
- * MEDVETET inte i referensen — de har inget att bevisas mot, och att dra in
- * dem hade gjort varje referens större och sprödare (en oskyldig datapunkt i
- * ett oberört block hade kunnat fälla grinden för fel skäl).
+ * A2–A6) pekar ut EXAKT de block som skilde sig mellan prototyp och skarpa
+ * innan promoveringen. De fem block som redan var identiska (toppblocket 6a,
+ * deltagarkorten 6g, betalningsarbetsytan 6h, Beläggning/Gruppdynamik/
+ * Anteckningar) ingår MEDVETET inte i referensen — de hade inget att bevisas
+ * mot, och att dra in dem hade gjort varje referens större och sprödare (en
+ * oskyldig datapunkt i ett oberört block hade kunnat fälla grinden för fel
+ * skäl).
  *
  *   · Åtgärds-ytan (A1): `AtgarderKort` (`data-testid="atgarder-kort"`) och
  *     `SkrivUtKort` (`data-testid="skriv-ut-kort"`) är SYSKON i EventDetail.tsx
  *     (React-fragment, inget gemensamt DOM-skal) — därför TVÅ separata
  *     referenser i stället för en. Att linda in dem i en ny gemensam div hade
- *     LAGT TILL ett DOM-landmärke prototypens facit inte har, vilket är
- *     exakt den formändring grinden finns för att förhindra.
+ *     LAGT TILL ett DOM-landmärke facit inte har, vilket är exakt den
+ *     formändring grinden finns för att förhindra.
  *   · Registret (A2–A6): fyra lägen genom SAMMA lokator
  *     (`data-testid="register-yta"`, TASK-162.1-tillägget i Deltagare.tsx —
- *     wrappern är GEMENSAM för variant- och skarpa-grenen redan innan
- *     tillägget, se docblocket där, så testid:t flippar ingen form).
+ *     wrappern är GEMENSAM för hela registret, testid:t flippar ingen form).
  *
- * FYRA LÄGEN, VALDA MOT KÄNDA FAKTA (uppdraget + facitkartan § A2/§ A6):
+ * FYRA REGISTER-LÄGEN, VALDA MOT KÄNDA FAKTA (uppdraget + facitkartan
+ * § A2/§ A6):
  *   1. Default — `TOMT_REGISTER_FILTER`, ingen interaktion.
  *   2. Aktivt filter — "Visa: Väntar på bekräftelse" (en axel, en enkel och
  *      läsbar referens; kombinerade axlar är produktbeteende, inte grindens
@@ -55,49 +64,40 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  *      `REGISTRATIONS_RESPONSE`, verifierat: samtliga fem Skövde-poster har
  *      status Obekräftad/Bekräftad/Betalningspåminnelse, ingen Avbokad) —
  *      känt faktum ur uppdraget, verifierat mot fixturen i stället för antaget.
- *
- * `?data=verklig` (S90-kontraktet, se EventDetail.tsx/Deltagare.tsx) gör att
- * variant-läget hämtar via NÄTVERKET precis som skarpa gör — samma metod
- * facitkartans research-pass använde, så referensen är byggd mot samma
- * fixturdata skiva 162.2/162.3 kommer rendera EFTER flippen. Utan `data=verklig`
- * hade variant-läget läst sina egna in-memory `HALLPLATS_PROTO_FIXTURES`
- * (`hallplats-steg-prototyp.ts`) i stället — en ANNAN datamängd, och en
- * jämförelse mot den hade bevisat fel sak.
  */
 
-async function gotoVariantA(page: import('@playwright/test').Page) {
-  await page.goto(`/event/${VISUAL_EVENT_ID}?variant=a&data=verklig`);
-  // Ankaret för BÅDA ytorna: väntar in att sidan lämnat sitt laddningsskelett
-  // innan någon ariaSnapshot tas (toMatchAriaSnapshot väntar/pollar redan,
-  // men en explicit väntan här gör testets FÖRSTA steg entydigt — laddning,
-  // inte assertion — om servern är ovanligt långsam).
+async function gotoPromoverad(page: import('@playwright/test').Page) {
+  // INGA query-params: `?variant`/`?data` läses inte längre av någon fil
+  // (TASK-145.6 rev hela `?variant=`-maskineriet) — sidan renderar alltid den
+  // enda, promoverade formen. Samma ankare som förr.
+  await page.goto(`/event/${VISUAL_EVENT_ID}`);
   await expect(page.getByTestId('atgarder-kort')).toBeVisible();
 }
 
-test.describe('promoverings-grinden — ariaSnapshot-referenser ur variant-läget (ADR-103 B4)', () => {
+test.describe('regressionslåset — ariaSnapshot mot den promoverade ytan (ADR-103 B4, TASK-145.6)', () => {
   test('åtgärds-ytan — "Gå till åtgärder"-kortet (AtgarderKort)', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await expect(page.getByTestId('atgarder-kort')).toMatchAriaSnapshot({
       name: 'atgarder-kort.aria.yml',
     });
   });
 
   test('åtgärds-ytan — "Skriv ut"-kortet (SkrivUtKort)', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await expect(page.getByTestId('skriv-ut-kort')).toMatchAriaSnapshot({
       name: 'skriv-ut-kort.aria.yml',
     });
   });
 
   test('registret — default (inget filter)', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await expect(page.getByTestId('register-yta')).toMatchAriaSnapshot({
       name: 'register-default.aria.yml',
     });
   });
 
   test('registret — aktivt filter (Visa: Väntar på bekräftelse)', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await page.getByRole('button', { name: 'Visa' }).click();
     await page.getByRole('option', { name: 'Väntar på bekräftelse' }).click();
     await expect(page.getByTestId('register-yta')).toMatchAriaSnapshot({
@@ -106,9 +106,9 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser ur variant-läge
   });
 
   test('registret — Bor över-kryss', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     // Toppblockets EGEN "Bor över"-rad, inte panelens "Visa"-dropdown — se
-    // docblocket ovan för varför (borOverSnapshot-fällan).
+    // filens docblock för varför (borOverSnapshot-fällan).
     await page.getByRole('button', { name: /^Bor över/ }).click();
     await expect(page.getByTestId('register-yta')).toMatchAriaSnapshot({
       name: 'register-bor-over.aria.yml',
@@ -116,7 +116,7 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser ur variant-läge
   });
 
   test('registret — noll träffar (Visa: Avbokade)', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await page.getByRole('button', { name: 'Visa' }).click();
     await page.getByRole('option', { name: 'Avbokade' }).click();
     await expect(page.getByTestId('register-yta')).toMatchAriaSnapshot({
@@ -126,47 +126,39 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser ur variant-läge
 });
 
 /**
- * [TASK-162.2, ADR-103 B2 steg 2] ANDRA HALVAN AV PARET denna fils docblock
- * beskriver: referenserna ovan fångades ur VARIANT-läget FÖRE flippen;
- * skivan som gör flippen (åtgärds-ytan, A1) pekar HÄR samma två lokatorer
- * mot den PROMOVERADE ytan — ingen `?variant`, ingen `?data` — och återanvänder
- * SAMMA referensfiler (`atgarder-kort.aria.yml`/`skriv-ut-kort.aria.yml`, ej
- * skapade om, ej muterade). `AtgarderKort`/`SkrivUtKort` är ORÖRDA komponenter
- * (`detail/Atgarder.tsx`); det enda som flippades i `EventDetail.tsx` var
- * VILLKORET för deras render (den gamla `Atgarder`-grenen, se rivningsnoten
- * där). Identisk komponent, identisk render ⇒ identisk ariaSnapshot är alltså
- * den strukturella invarianten detta par bevisar, inte bara en förhoppning:
- * grön här betyder att ingenting läckt in mellan de två renderingsvägarna.
- *
- * Registrets motsvarande "efter"-hälft (A2–A6) hör till TASK-162.3 (registret
- * promoveras som EN skiva, se PRD TASK-162 § Implementationsbeslut) och
- * landar i en separat commit — därför bara åtgärds-ytans två lokatorer här.
+ * [TASK-145.6, AC #4] STALE VARIANT-URL — degraderar till den skarpa vyn utan
+ * krasch och utan halvbyggd yta. Innan rivningen villkorade `?variant=a`
+ * (+ `?data=proto|verklig`) vilken datakälla/form sex olika filer renderade;
+ * en länk som fortfarande bär den gamla queryn (bokmärke, delad URL, öppen
+ * flik) får nu träffa en app där INGEN fil längre läser parametern —
+ * `useQueryState('variant')` är riven överallt (grep-verifierat, se
+ * `EventDetail.tsx`/`Deltagare.tsx`/`Betalningar.tsx`/`Belaggning.tsx`/
+ * `Anteckningar.tsx`/`Gruppdynamik.tsx`). Samma ariaSnapshot-referens som
+ * regressionslåset ovan bevisar det MEKANISKT, inte bara "sidan kraschar
+ * inte": en stale `?variant=a&data=proto`-URL måste rendera BYTE FÖR BYTE
+ * samma träd som ingen query alls — inte en tom yta, inte fixturdata, inte
+ * ett kvarvarande prototyp-fragment.
  */
-async function gotoPromoverad(page: import('@playwright/test').Page) {
-  // INGA query-params: den promoverade (skarpa) ytan renderar AtgarderKort +
-  // SkrivUtKort OVILLKORLIGT sedan TASK-162.2 — `?variant`/`?data` styr inte
-  // längre om de visas (protoDataMode-formeln, se t.ex. Anteckningar.tsx,
-  // kräver `isHallplatsVariant(variantParam)` — alltid falskt utan
-  // `?variant`, så datavägen är obönhörligt den skarpa). Samma ankare som
-  // variant-capturens `gotoVariantA`.
-  await page.goto(`/event/${VISUAL_EVENT_ID}`);
-  await expect(page.getByTestId('atgarder-kort')).toBeVisible();
-}
-
-test.describe('TASK-162.2 — åtgärds-ytan promoverad: samma referens, INGEN ?variant (ADR-103 B2)', () => {
-  test('åtgärds-ytan — promoverad "Gå till åtgärder"-kortet == variant-referensen', async ({
-    page,
-  }) => {
-    await gotoPromoverad(page);
+test.describe('TASK-145.6 AC #4 — stale ?variant=-URL degraderar till skarpa vyn', () => {
+  test('?variant=a&data=proto renderar identiskt med ingen query alls', async ({ page }) => {
+    await page.goto(`/event/${VISUAL_EVENT_ID}?variant=a&data=proto`);
+    await expect(page.getByTestId('atgarder-kort')).toBeVisible();
+    // Ingen krasch (sidan laddade) och ingen halvbyggd yta: exakt samma
+    // låsta form som regressionslåsets "default"-test ovan, med den stale
+    // frågan ur uppdragets S86-kontrakt fortfarande i URL:en.
     await expect(page.getByTestId('atgarder-kort')).toMatchAriaSnapshot({
       name: 'atgarder-kort.aria.yml',
     });
+    await expect(page.getByTestId('register-yta')).toMatchAriaSnapshot({
+      name: 'register-default.aria.yml',
+    });
   });
 
-  test('åtgärds-ytan — promoverad "Skriv ut"-kortet == variant-referensen', async ({ page }) => {
-    await gotoPromoverad(page);
-    await expect(page.getByTestId('skriv-ut-kort')).toMatchAriaSnapshot({
-      name: 'skriv-ut-kort.aria.yml',
+  test('okänd ?variant=z degraderar likaså (ingen känd variant kan matcha)', async ({ page }) => {
+    await page.goto(`/event/${VISUAL_EVENT_ID}?variant=z`);
+    await expect(page.getByTestId('atgarder-kort')).toBeVisible();
+    await expect(page.getByTestId('register-yta')).toMatchAriaSnapshot({
+      name: 'register-default.aria.yml',
     });
   });
 });
@@ -188,7 +180,7 @@ test.describe('TASK-162.2 — åtgärds-ytan promoverad: samma referens, INGEN ?
  * CONTRIBUTING.md § Landnings-ordningen); post-merge-nätet är den enda platsen
  * de faktiskt körs. PRD TASK-162:s EGET testbeslut pekar ut den hermetiska
  * fixturvärlden som PRIMÄR skarv för just denna feature-yta — samma `test`/
- * `gotoPromoverad` som ariaSnapshot-grinden ovan already bär, alltså den
+ * `gotoPromoverad` som ariaSnapshot-grinden ovan redan bär, alltså den
  * faktiska LOKALA MOTSVARIGHETEN till axe-runner-jobbet (`npm run test:a11y`)
  * för en yta jobbet självt inte når (DEV-guardat, ADR-044/045 — eventsidan är
  * ingen DEV-route). Körs lokalt: `npm run test:visual` (ingen staging,

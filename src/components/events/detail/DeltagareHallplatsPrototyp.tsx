@@ -1,16 +1,9 @@
 /**
- * [PROTOTYPE] [S93] — HUVUDPROTOTYPFILEN. KASTBAR KOD (throwaway-kontraktet).
- *
- * DIVERGENS-FRÅGAN (verbatim ur uppdraget, besvarad — se § Konvergens nedan):
- *
- * "Hur ska alternativ C — hållplatsen som ETIKETT — bäras på eventsidans
- * Anmälda deltagare-block: vilken av tre strukturella utföranden (a
- * Radbytet, b Stations-railen, c Nästa steg-panelen) gör 'vad gör jag
- * härnäst' och 'hitta Anna utan förkunskap' självklara för Lotta, och vilka
- * delval låser Marcus?"
- *
- * Underlag: docs/research/hallplats-modellen-eventsidan-2026-07-26.md
- * (Del 6, alternativ C; Del 3, sex undantagsfall; Del 8, åtta öppna frågor).
+ * Registrets steg-märke, toppräknare och filterpanel — PRODUKTIONSKOD sedan
+ * TASK-145.1/145.2/162.3 (ADR-103 B2 steg 1), trots filnamnet: den
+ * ursprungliga divergens-frågan (alternativ C — hållplatsen som ETIKETT,
+ * tre strukturella utföranden — docs/research/hallplats-modellen-
+ * eventsidan-2026-07-26.md) är besvarad och den vinnande formen promoverad.
  *
  * § KONVERGENS (S93 Del 3, 2026-08-03, 8/8 Marcus-kvitterade beslut):
  * variant A — RADBYTET — vann divergensen. B (Stations-railen) och C
@@ -18,17 +11,23 @@
  * konvergens-passet (`HallplatsToppB`/`HallplatsToppC`-motsvarigheten
  * `HallplatsHarnastPanel`/den gamla `<details>`-formen `AvbokadeRad` —
  * samtliga borta). Kvar: `HallplatsToppA` (nu byggd ut mot HELA den grillade
- * strukturen i `Deltagare.tsx`s DEV-gren) + de delade byggstenarna
- * (`HallplatsMarke`, `HallplatsRad`, `HallplatsSaknasDelta`).
+ * strukturen i `Deltagare.tsx`) + de delade byggstenarna (`HallplatsMarke`,
+ * `HallplatsRad`, `HallplatsSaknasDelta`) + registrets filterpanel
+ * (`RegisterFilterRad`).
  *
- * Registret därunder (nu EN enad, steg-sorterad lista — se
- * `hallplats-steg-prototyp.ts`s `registerOrdning`) är fortfarande SAMMA
- * `DeltagarListan`/`useMarkeringsLage`-mekanik som produktionskoden, inte en
- * kopia (task-48 byggkrav 4 orört; se Deltagare.tsx:s DEV-grindade gren för
- * wiringen).
+ * Registret därunder (EN enad, steg-sorterad lista — se
+ * `hallplats-steg-prototyp.ts`s `registerOrdning`) är SAMMA
+ * `DeltagarListan`/`useMarkeringsLage`-mekanik som resten av produktionskoden,
+ * inte en kopia (task-48 byggkrav 4 orört; se Deltagare.tsx för wiringen).
  *
- * KASTBAR: rivs med `git rm` på denna fil + `hallplats-steg-prototyp.ts` +
- * återställ prototyp-grenarna i Deltagare.tsx/Betalningar.tsx/EventDetail.tsx.
+ * [RIVEN, TASK-145.6, ADR-103 B2 steg 4] `?variant=`/`?data=proto`-
+ * maskineriet som villkorade DENNA fils montering i Deltagare.tsx/
+ * EventDetail.tsx är rivet efter Marcus godkännande — filens EGET innehåll
+ * hade inga variant-grenar (ingen `protoVariant`/`isHallplatsVariant`-
+ * läsning här, verifierat med grep) och krävde därför ingen kodändring.
+ * FILNAMNET är en öppet bokförd kvarleva (AC #5): en `git mv` hade krävt
+ * import-uppdatering i `Deltagare.tsx` för en rent kosmetisk vinst,
+ * deferrad hellre än gjord mitt i denna rivning.
  */
 import { Printer } from 'lucide-react';
 import { Button } from '@/components/primitives/Button';
