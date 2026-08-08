@@ -11,31 +11,18 @@
   "ytor": [
     {
       "yta": "anteckningar",
-      "bilder": [
-        "facit-anteckningar.png"
-      ],
-      "kallor": [
-        "src/components/events/detail/Anteckningar.tsx"
-      ]
+      "bilder": ["facit-anteckningar.png"],
+      "kallor": ["src/components/events/detail/Anteckningar.tsx"]
     },
     {
       "yta": "betalningar",
-      "bilder": [
-        "facit-betalningar-arbetsytan.png",
-        "facit-betalningar-maxat-kort.png"
-      ],
-      "kallor": [
-        "src/components/events/detail/Betalningar.tsx"
-      ]
+      "bilder": ["facit-betalningar-arbetsytan.png", "facit-betalningar-maxat-kort.png"],
+      "kallor": ["src/components/events/detail/Betalningar.tsx"]
     },
     {
       "yta": "gruppdynamik",
-      "bilder": [
-        "facit-gruppdynamik.png"
-      ],
-      "kallor": [
-        "src/components/events/detail/Gruppdynamik.tsx"
-      ]
+      "bilder": ["facit-gruppdynamik.png"],
+      "kallor": ["src/components/events/detail/Gruppdynamik.tsx"]
     },
     {
       "yta": "atgarder",
