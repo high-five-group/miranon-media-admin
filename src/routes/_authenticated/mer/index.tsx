@@ -9,6 +9,7 @@ import {
   Smartphone,
   Star,
 } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { useAuth } from '@/auth/useAuth';
 import { Button, NavCard } from '@/components/primitives';
 
@@ -44,6 +45,24 @@ export const Route = createFileRoute('/_authenticated/mer/')({
  */
 function MerPage() {
   const { logout } = useAuth();
+
+  // [PROTOTYPE] [TASK-164] Dokument-ytan (`T131`, `3a225d89`) — DEV-grind via
+  // ADR-103 beslut 3 (O3-flaggformen), EventDetail.tsx:349ff (`isHallplatsVariant`)
+  // som förlaga. TVÅ villkor, inte ett: `import.meta.env.DEV` ensam räcker INTE
+  // — mer-index.staging.test.ts (och all `.staging.test.ts`-e2e) kör mot
+  // `npm run dev` (playwright.config.ts webServer, chromium-authenticated-
+  // projektet), aldrig mot ett `vite build`-bygge, så DEV är SANT även under
+  // testkörningen (Vites egen `resolveConfig`: DEV = !isProduction = !(NODE_ENV
+  // === 'production'), och NODE_ENV sätts aldrig i repot). En ensam DEV-grind
+  // hade alltså INTE dolt raden för testets vanliga `page.goto('/mer')` (utan
+  // `?variant=`) och testet hade förblivit rött. `variant`-villkoret (samma
+  // `useQueryState('variant')`-konvention som personer/index.tsx och
+  // EventDetail.tsx) är det som faktiskt håller raden dold vid vanlig
+  // navigering — DEV-grinden ensam bär produktionslöftet (strukturellt onåbar
+  // i `vite build`, ADR-103 B3 lager 1). Granska med `/mer?variant=dokument`
+  // på dev-servern.
+  const [variant] = useQueryState('variant');
+  const visaDokumentPrototyp = import.meta.env.DEV && variant === 'dokument';
 
   return (
     <section className="flex flex-col gap-8 pt-2 lg:pt-10">
@@ -82,10 +101,14 @@ function MerPage() {
               VERKTYG-gruppen, inte listorna: den förvaltar material, den
               listar inte personer. Ikonen är Paperclip = bilaga (domän-
               begreppsmappningen, PRD beslut 5); FileText hade läst som
-              "dokument i allmänhet", vilket är precis det ORDLISTA varnar för. */}
-          <li>
-            <NavCard to="/mer/dokument" icon={Paperclip} label="Dokument" />
-          </li>
+              "dokument i allmänhet", vilket är precis det ORDLISTA varnar för.
+              DEV-grindad (se `visaDokumentPrototyp` ovan, TASK-164) — ORÖRD
+              vid promovering (ADR-103 B2 steg 4 river villkoret, inte formen). */}
+          {visaDokumentPrototyp && (
+            <li>
+              <NavCard to="/mer/dokument" icon={Paperclip} label="Dokument" />
+            </li>
+          )}
         </ul>
         {/* Inställningar (task-126.3, T47 aktiverad) — se filhuvudets
             "TREDJE gruppen"-not. */}
