@@ -4,6 +4,7 @@ title: 'Skiva: Registrets promovering (A2–A6)'
 status: To Do
 assignee: []
 created_date: '2026-08-08 07:42'
+updated_date: '2026-08-08 09:19'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,13 +21,15 @@ Registrets fem avvikelser (A2 navigering, A3 basen, A4 avdelaren, A5 Bor över-r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Filterpanelen renderar ovillkorligt: Visa-dropdown (åtta val) + Väg in-dropdown (fem val) kombinerbara, räkneraden Visar N av M med avbokade-tillägg, Rensa filter med räknebadge, Skriv ut i panelens fot; flik-grenens kod borttagen (git bevarar)
-- [ ] #2 Registrets bas inkluderar avbokade: grå-märkta, sist i ordningen
-- [ ] #3 Avdelaren under registret riven ovillkorligt; batch-baren med Markera står kvar vid noll träffar; Bor över-kryssläget behåller filterpanelen som ram
-- [ ] #4 Variant-villkoret, växlaren och variant-maskineriet orörda
-- [ ] #5 ariaSnapshot-grinden grön i alla fyra lägen (default, aktivt filter, Bor över-kryss, noll träffar)
+- [x] #1 Filterpanelen renderar ovillkorligt: Visa-dropdown (åtta val) + Väg in-dropdown (fem val) kombinerbara, räkneraden Visar N av M med avbokade-tillägg, Rensa filter med räknebadge, Skriv ut i panelens fot; flik-grenens kod borttagen (git bevarar)
+- [x] #2 Registrets bas inkluderar avbokade: grå-märkta, sist i ordningen
+- [x] #3 Avdelaren under registret riven ovillkorligt; batch-baren med Markera står kvar vid noll träffar; Bor över-kryssläget behåller filterpanelen som ram
+- [x] #4 Variant-villkoret, växlaren och variant-maskineriet orörda
+- [x] #5 ariaSnapshot-grinden grön i alla fyra lägen (default, aktivt filter, Bor över-kryss, noll träffar)
 - [ ] #6 Berörda e2e- och acceptance-tester uppdaterade till promoverad form i SAMMA ändring; sviterna gröna
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
