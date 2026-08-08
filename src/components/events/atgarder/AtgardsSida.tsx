@@ -100,12 +100,13 @@ import {
   Upload,
   UserPlus,
 } from 'lucide-react';
-import { type ReactNode, useId, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
+import { SlideToConfirm } from '@/components/primitives/SlideToConfirm';
 import { TextArea } from '@/components/primitives/TextArea';
 import { displayName } from '@/components/registrations/registration-display';
 /* VARV 13 REV VARV 12:s MONTERING AV `BetalningsDetaljer`.
@@ -405,6 +406,76 @@ const BILAGOR: Bilaga[] = [
    innan något återinförs. */
 
 /* ================================================================== *
+ * PLATSHÅLLARNA — granskningens skarpaste verktyg (varv 19).
+ *
+ * PRD `TASK-147` berättelse 9 säger "förhandsvisa utskicket **som mottagaren
+ * ser det**". En förhandsvisning som visar `Hej {förnamn},` visar alltså inte
+ * utskicket — den visar mallen, och mallen är inte det som går ut. Skillnaden
+ * är hela poängen med att granska.
+ *
+ * DE OFYLLDA ÄR FYNDET, INTE ETT FEL I VISNINGEN. Går en platshållare inte att
+ * fylla lämnas den KVAR i klartext och räknas upp ovanför texten. Det är exakt
+ * den klass av fel granskningen finns för att fånga: ett mail som gick ut med
+ * `Sista dag är {deadline}.` är ett mail Lotta hade stoppat om hon sett det.
+ * Att i stället tyst ersätta med tom sträng eller ett streck hade DÖLJT felet
+ * bakom en yta som såg färdig ut.
+ *
+ * `{deadline}` HÄRLEDS, den läses inte: 14 dagar före startdatum, samma LÅSTA
+ * regel som `Betalningar.tsx` § `deadlineStatus` (K30, Marcus 2026-07-21).
+ * Regeln kopieras INTE hit — bara dess datum-uträkning, och den dagen basens
+ * egen 'Deadline slutbetalning' blir källa byter båda ställen samtidigt.
+ * ================================================================== */
+const DAGMANAD_LANG = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
+
+/** Deadline-DATUMET (inte statusraden) — 14 dagar före start, eller null. */
+function deadlineDatum(startdatum: string | null | undefined): string | null {
+  if (!startdatum) return null;
+  const start = new Date(startdatum);
+  if (Number.isNaN(start.getTime())) return null;
+  const d = new Date(start);
+  d.setDate(d.getDate() - 14);
+  return DAGMANAD_LANG.format(d);
+}
+
+/**
+ * Fyller mallens platshållare för EN mottagare och rapporterar vad som inte
+ * gick att fylla. Ofyllda lämnas orörda i texten — se blockets docblock.
+ */
+function fyllPlatshallare(
+  mall: string,
+  reg: Registration | undefined,
+  event: Event | undefined,
+): { text: string; ofyllda: string[] } {
+  const varden: Record<string, string | null | undefined> = {
+    förnamn: reg?.fornamn,
+    event: event?.eventNamn ?? event?.eventlabel,
+    datum: dagManad(event?.startdatum),
+    ort: event?.ort,
+    deadline: deadlineDatum(event?.startdatum),
+  };
+
+  const ofyllda: string[] = [];
+  const text = mall.replace(/\{([a-zåäöA-ZÅÄÖ]+)\}/g, (traff, nyckel: string) => {
+    const varde = varden[nyckel];
+    if (varde == null || varde === '') {
+      if (!ofyllda.includes(traff)) ofyllda.push(traff);
+      return traff;
+    }
+    return varde;
+  });
+
+  return { text, ofyllda };
+}
+
+/** Det som bärs över till gransknings-vyn — hela utskicket, fruset vid klicket. */
+type Granskning = {
+  atgard: AtgardsTyp;
+  amne: string;
+  text: string;
+  bilagor: string[];
+};
+
+/* ================================================================== *
  * DELTAGARKORTET — samma kort Lotta MARKERADE på eventdetaljen.
  *
  * "HUR KOM LOTTA HIT?" är frågan som styr hela den här ytan (Marcus
@@ -509,7 +580,17 @@ function MetaRad({ ikon: Ikon, children }: { ikon: LucideIcon; children: ReactNo
 }
 
 /** Kortets innehåll — förlagans `KortInnehall` i sin `lankat={false}`-gren. */
-function DeltagarKortInnehall({ reg, vald }: { reg: Registration; vald: boolean }) {
+function DeltagarKortInnehall({
+  reg,
+  vald,
+  doljStatusPill = false,
+}: {
+  reg: Registration;
+  vald: boolean;
+  /** Resultatläget: "Obekräftad" säger fel sak om ett kort som just skickats.
+      Se `UtfallsKort` för villkoret som gjorde flaggan nödvändig. */
+  doljStatusPill?: boolean;
+}) {
   const pill = KATEGORI_PILL[kategori(reg)];
   const anmald = anmaldText(reg);
   const bekraftelse = dagManad(reg.bekraftelseSkickad);
@@ -531,7 +612,7 @@ function DeltagarKortInnehall({ reg, vald }: { reg: Registration; vald: boolean 
         </span>
         {/* Reserverad pill-slot — se blockets docblock (sågtand-mätningen). */}
         <span className="flex w-30 shrink-0 flex-wrap items-center justify-end gap-1.5 sm:w-[45%]">
-          {!arBekraftad(reg) && !vald && (
+          {!arBekraftad(reg) && !vald && !doljStatusPill && (
             <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
               Obekräftad
             </span>
@@ -1338,7 +1419,15 @@ function BilageValjare({ valda, onVaxla }: { valda: Set<string>; onVaxla: (id: s
 /* ================================================================== *
  * ÅTGÄRDENS ARBETSYTA — fälls ut in-place under sin egen rad.
  * ================================================================== */
-function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Registration[] }) {
+function ArbetsYta({
+  atgard,
+  mottagare,
+  onGranska,
+}: {
+  atgard: AtgardsTyp;
+  mottagare: Registration[];
+  onGranska: (g: Granskning) => void;
+}) {
   const [amne, setAmne] = useState(atgard.amne);
   const [text, setText] = useState(atgard.mall);
   const [bilagor, setBilagor] = useState<Set<string>>(new Set());
@@ -1352,7 +1441,13 @@ function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Regis
       return n;
     });
 
-  const utanEpost = mottagare.filter((r) => !r.email).length;
+  /* URVALSFILTRETS DELMÄNGD — de av mottagarna åtgärden faktiskt är relevant
+     för. Samma uträkning som åtgärdsraden visar ("5 av 7"); den låg tidigare
+     bara i `AtgardsMeny` och konsumerades inte här, vilket var precis varför
+     raden kunde informera utan att begränsa. Se granska-knappen nedan. */
+  const iUrval = atgard.urvalsfilter ? mottagare.filter(atgard.urvalsfilter) : mottagare;
+
+  const utanEpost = iUrval.filter((r) => !r.email).length;
 
   /* SKRIV-GRENEN ÄR BORTA MED "Markera betalda" (varv 6). Den bar den enda
      icke-utskicks-åtgärden och därmed den enda vakt som gällde basskrivning:
@@ -1465,7 +1560,7 @@ function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Regis
 
       {utanEpost > 0 && (
         <MessageBox intent="warning" title="Några saknar e-post">
-          {utanEpost} av {mottagare.length} mottagare har ingen e-postadress och kommer att
+          {utanEpost} av {iUrval.length} mottagare har ingen e-postadress och kommer att
           undertryckas av servern.
         </MessageBox>
       )}
@@ -1500,8 +1595,32 @@ function ArbetsYta({ atgard, mottagare }: { atgard: AtgardsTyp; mottagare: Regis
           aldrig en synlig mottagarlista — och den egenskapen är ett verkligt
           krav som lever i underlaget § 7, inte i den här meningen. Raden är
           alltså borta ur ytan utan att kravet rörs. */}
+      {/* KNAPPEN LEDER NU NÅGONSTANS (varv 19). Till varv 18 saknade den
+          `onPress` helt — texten lovade ett granska-steg som inte fanns, vilket
+          är samma klass av tomt löfte som `leder: true` bar i varv 6.
+
+          URVALSFILTRET FÖLJER MED, och det är ett BESLUT, inte en detalj:
+          raden ovanför säger "5 av 7" när filtret biter, och till varv 18
+          skickade knappen ändå till alla 7 — flaggat till Marcus vid andra
+          pausen, obesvarat. Att bära över hela urvalet till en yta som säger
+          "det här skickas till N personer" hade gjort den motsägelsen till en
+          LÖGN i granskningen, alltså på exakt den yta som finns för att inte
+          ljuga. Granskningen tar därför filtrets delmängd. Vill Marcus ha
+          motsatt riktning är rätt fix att filtret slutar visas, inte att
+          granskningen visar fel tal. */}
       <div className="flex justify-end pt-1">
-        <Button size="sm" isDisabled={mottagare.length === 0}>
+        <Button
+          size="sm"
+          isDisabled={iUrval.length === 0}
+          onPress={() =>
+            onGranska({
+              atgard,
+              amne,
+              text,
+              bilagor: [...bilagor],
+            })
+          }
+        >
           Granska och skicka
         </Button>
       </div>
@@ -1516,10 +1635,12 @@ function AtgardsMeny({
   mottagare,
   oppen,
   onVaxla,
+  onGranska,
 }: {
   mottagare: Registration[];
   oppen: string | null;
   onVaxla: (nyckel: string) => void;
+  onGranska: (g: Granskning) => void;
 }) {
   return (
     <DetaljGrupp id="grupp-atgard" rubrik="Åtgärd">
@@ -1558,7 +1679,7 @@ function AtgardsMeny({
                 </span>
               </button>
             </div>
-            {arOppen && <ArbetsYta atgard={a} mottagare={mottagare} />}
+            {arOppen && <ArbetsYta atgard={a} mottagare={mottagare} onGranska={onGranska} />}
           </div>
         );
       })}
@@ -1571,12 +1692,18 @@ function AtgardsMeny({
  * Marcus 2026-08-07: "kopiera exakt var rubriken sitter, och strecket under,
  * det är ju likadant på de flesta sidor."
  * ================================================================== */
-function Sidhuvud({ tillbakaLank }: { tillbakaLank: ReactNode }) {
+function Sidhuvud({
+  tillbakaLank,
+  rubrik = 'Åtgärder',
+}: {
+  tillbakaLank: ReactNode;
+  rubrik?: string;
+}) {
   return (
     <>
       {tillbakaLank}
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
-        <h1 className="font-semibold text-3xl">Åtgärder</h1>
+        <h1 className="font-semibold text-3xl">{rubrik}</h1>
       </header>
     </>
   );
@@ -1585,6 +1712,671 @@ function Sidhuvud({ tillbakaLank }: { tillbakaLank: ReactNode }) {
 /** Tillbaka-chevronen — rund, `bg-bg-muted`, samma mått som förlagan. */
 const TILLBAKA_KLASS =
   'mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted';
+
+/* ================================================================== *
+ * UTFALLET — varv 21. Formen är styrd av research-passet
+ * `docs/research/post-send-tillstandet-bulkutskick-2026-08-08.md`.
+ *
+ * DOMEN DÄRIFRÅN, i en mening: resultatet ersätter granskningens innehåll på
+ * SAMMA yta — ingen navigation, ingen egen bekräftelse-sida, ingen
+ * historik-redirect. Tre oberoende linjer konvergerade: GOV.UK Design Systems
+ * namngivna kriterium (pågående resa → notifikation på plats, linjär tjänst
+ * som TAR SLUT → egen bekräftelse-sida), vårt eget `ADR-067` D3 (status är
+ * acceptans vid submit, aldrig leverans — en rapportsida hade inget att visa
+ * som inte redan syns synkront), och storleksklassen (dussintal, mot
+ * Intercoms uttalade 1 000-tröskel för bakgrundsjobbs-mönstret).
+ *
+ * DELNINGEN SOM GÖR YTAN ÄRLIG UTAN ATT BLI EN LOGG: `MessageBox` säger HUR
+ * MÅNGA, korten säger VILKA OCH VARFÖR. Räknaren ensam är en halv upplysning
+ * — "sex föll" utan att peka ut vilka sex tvingar Lotta att jämföra ett tal
+ * mot en lista. Korten står redan utskrivna; de kan bära sitt eget utfall.
+ *
+ * DE FYRA KLASSERNA ÄR SERVERNS, INTE VÅRA (`ADR-067` D3, ORDLISTA §
+ * Delutfall): `sent` alla gick fram · `partial` delutfallet · `failed` ingen
+ * gick fram · `skipped` ingen fanns kvar efter serverns filter. Simuleringen
+ * nedan härleder klassen ur samma regler servern använder, så formen prövas
+ * mot verkliga tillstånd och inte mot påhittade.
+ * ================================================================== */
+type UtfallsLage = 'allt' | 'delvis' | 'inget';
+
+const SKAL_INGEN_EPOST = 'Saknar e-postadress';
+const SKAL_TACKAT_NEJ = 'Har tackat nej till utskick';
+const SKAL_EJ_LEVERERAD = 'Kunde inte levereras';
+
+type Utfall = {
+  status: 'sent' | 'partial' | 'failed' | 'skipped';
+  lyckade: Registration[];
+  fallna: { reg: Registration; skal: string }[];
+};
+
+/**
+ * [PROTOTYPE] Simulerat utfall — INGET SKICKAS, ingenting lämnar webbläsaren.
+ *
+ * Marcus 2026-08-08, ordagrant: *"VIKTIGT att inga riktiga mail för skickas,
+ * inte under några omständigheter!!"* Funktionen bygger ett svar i minnet ur
+ * mottagarlistan som redan finns renderad. Filen har noll sändvägar —
+ * `sendEmail`, `MailPayload` och `resend` ger alla noll träffar i den, mätt
+ * 2026-08-08 — så det finns ingen kod här att råka anropa.
+ *
+ * SAKNAD E-POST FALLER ALLTID, i alla tre lägena. Det är inte en simulerings-
+ * detalj utan den enda utfallsdel klienten FAKTISKT vet före skick: adressen
+ * saknas i datan vi redan läst. Att låta "allt gick fram" visa en person utan
+ * adress som lyckad hade gjort riggen falsk på precis den punkt ytan finns
+ * för att vara sann.
+ */
+function simuleraUtfall(mottagare: Registration[], lage: UtfallsLage): Utfall {
+  const utanEpost = mottagare.filter((r) => !r.email);
+  const medEpost = mottagare.filter((r) => r.email);
+
+  const fallna: { reg: Registration; skal: string }[] = utanEpost.map((reg) => ({
+    reg,
+    skal: SKAL_INGEN_EPOST,
+  }));
+  let lyckade: Registration[] = [];
+
+  if (lage === 'allt') {
+    lyckade = medEpost;
+  } else if (lage === 'inget') {
+    for (const reg of medEpost) fallna.push({ reg, skal: SKAL_EJ_LEVERERAD });
+  } else {
+    // Delutfallet: ungefär två tredjedelar går fram. Skälen VÄXLAR med avsikt
+    // — en yta som bara visar ett skäl prövar inte om flera skäl går att läsa.
+    const gransen = Math.ceil(medEpost.length * (2 / 3));
+    lyckade = medEpost.slice(0, gransen);
+    medEpost.slice(gransen).forEach((reg, i) => {
+      fallna.push({ reg, skal: i % 2 === 0 ? SKAL_TACKAT_NEJ : SKAL_EJ_LEVERERAD });
+    });
+  }
+
+  /* KLASSEN HÄRLEDS, den väljs inte — samma regler som `ADR-067` D3.
+     `skipped` skiljs från `failed` på om NÅGOT ens försöktes: föll allt på
+     serverns egna filter (ingen adress, tackat nej) fanns det ingen att
+     skicka till; föll det på leverans gjordes ett försök som misslyckades. */
+  const forsoktes = fallna.some((f) => f.skal === SKAL_EJ_LEVERERAD);
+  const status: Utfall['status'] =
+    lyckade.length > 0 && fallna.length === 0
+      ? 'sent'
+      : lyckade.length > 0
+        ? 'partial'
+        : forsoktes
+          ? 'failed'
+          : 'skipped';
+
+  return { status, lyckade, fallna };
+}
+
+/** Kortet i resultatläget — samma innehåll som mottagarkortet, plus utfallet. */
+function UtfallsKort({ reg, skal }: { reg: Registration; skal: string | null }) {
+  const lyckades = skal === null;
+  return (
+    <div
+      className={`flex flex-col rounded-xl border ${
+        lyckades
+          ? 'border-(--mm-navcard-border) bg-surface contrast-more:border-(--mm-navcard-border-contrast)'
+          : 'border-(--mm-success) bg-(--mm-success-bg) contrast-more:border-(--mm-success)'
+      }`}
+    >
+      {/* FALLNA KORT BEHÅLLER MARKERINGS-FORMEN, och det är ett beslut värt att
+          kunna försvara: grönt betyder VALD i markeringslägets grammatik, inte
+          "lyckad". De fallna ÄR fortfarande valda — PRD berättelse 12 kräver att
+          de ligger kvar markerade så omkörningen träffar just dem — medan de
+          lyckade är avbetade och därför vita.
+
+          RISKEN ATT GRÖNT LÄSES SOM FRAMGÅNG ÄR VERKLIG, och den bärs av
+          utfallsraden nedanför: skälet står i fel-färg på de fallna och i dämpad
+          ton på de lyckade. Färgen på RADEN säger utfallet; färgen på KORTET
+          säger markeringen. Håller inte den delningen i din blick är det den här
+          kommentaren som ska rivas först. */}
+      {/* `doljStatusPill` — "Obekräftad"-pillen har ingen mening här (Marcus
+          varv 22: "I det skickade läget så kan ju inte korten ha kvar
+          'Obekräftade' pillen, den måste bort").
+
+          Han har rätt, och felet var strukturellt och inte kosmetiskt: pillen
+          renderas på villkoret `!arBekraftad(reg) && !vald` — alltså "obekräftad
+          OCH inte markerad". I markeringsläget bär det villkoret mening, för
+          där betyder omarkerad "den här står utanför det du håller på med". I
+          resultatläget betyder omarkerad något helt annat — "den här är
+          klar" — så villkoret slog till på exakt de kort som just fått sitt
+          bekräftelsemail. Pillen sade "Obekräftad" om personer som nyss
+          bekräftades. */}
+      <DeltagarKortInnehall reg={reg} vald={!lyckades} doljStatusPill />
+      <div
+        className={`flex items-center gap-1.5 border-t px-4 py-2 text-caption ${
+          lyckades ? 'border-border text-text-muted' : 'border-(--mm-success)/30 text-error'
+        }`}
+      >
+        {/* BOCKEN ÄR APPENS EGEN (Marcus varv 22: "vill ja ska ha vår bock
+            också, så det ser proffsigare ut") — samma `Check` ur lucide som
+            kryssrutan och `SlideToConfirm` bär, aldrig ett unicode-tecken.
+            Varv 3 lärde den läxan en gång: `✎` ur brödtextens font kunde inte
+            matcha en riktig ikon i vikt, mått eller optisk linje, och det
+            syntes. Måttet följer raden den sitter i (12 px = `text-caption`s
+            egen storlek), inte kryssrutans 16. */}
+        {lyckades && <Check aria-hidden="true" size={12} strokeWidth={3} className="shrink-0" />}
+        {lyckades ? 'Skickat' : skal}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== *
+ * GRANSKNINGS-SIDAN — varv 19, EGEN VY och inte en modal.
+ *
+ * MARCUS VALDE FORMEN 2026-08-07, och gav samtidigt skälet till att
+ * `SegmentMailCompose`s bekräftelse-modal inte är facit: "modalen i
+ * segmentutskicket är inte designad, den har inte gått igenom denna process,
+ * den är byggd som 'baslinje' typ bara." Mekaniken därifrån bärs alltså över
+ * där den håller — pessimistisk hållning, oåterkalleligheten sagd rakt ut,
+ * grön knapp eftersom handlingen når utomstående — men formen byggs här.
+ *
+ * VARFÖR SIDA SLÅR MODAL, konkret och inte som smak: `TASK-147` § Estimat
+ * lägger granskningen och den pessimistiska körningens ärliga delutfall i
+ * SAMMA skiva (7). Ett utfall i formen "fjorton av tjugo, de sex ligger kvar
+ * markerade" ska överleva att Lotta tittar bort — en modal tar det med sig när
+ * den stängs. Sidan har dessutom plats för mottagarna i sin fulla form, vilket
+ * modalen aldrig hade: den fick nöja sig med ett ANTAL.
+ *
+ * DÄRAV OCKSÅ GRINDENS FORM. Segment-modalen låter Lotta skriva mottagar-
+ * ANTALET för att låsa upp (GitHub type-to-confirm) — ett rimligt val när
+ * antalet är det enda hon ser, eftersom det tvingar fram läsningen av den
+ * konsekvensbärande variabeln. Här är den läsningen redan framtvingad av
+ * layouten: varje mottagare står utskriven ovanför. Kvar att skydda mot är
+ * det OAVSIKTLIGA klicket, och det är precis vad `SlideToConfirm` är byggd
+ * för (S73 K77–K84: "DRAGET är bekräftelsen"). Formen är alltså vald mot vad
+ * som återstår att skydda, inte kopierad.
+ *
+ * ÖPPEN FÖR MARCUS: vill han ha talet tillbaka som grind är bytet en rad —
+ * primitiven finns och är prövad. Detta är varv 1 av ytan.
+ * ================================================================== */
+function GranskningsSida({
+  granskning,
+  mottagare,
+  valtEvent,
+  onVaxla,
+  onTillbaka,
+}: {
+  granskning: Granskning;
+  mottagare: Registration[];
+  valtEvent: Event | undefined;
+  onVaxla: (id: string, vald: boolean) => void;
+  onTillbaka: () => void;
+}) {
+  const [armerad, setArmerad] = useState(false);
+  /* TRE LÄGEN PÅ SAMMA YTA (research-domen): granska → skickar → resultat.
+     Hubben rörs inte, och `onTillbaka` fungerar i alla tre — vägen ut är
+     densamma hela vägen. */
+  const [lage, setLage] = useState<'granska' | 'skickar' | 'resultat'>('granska');
+  const [utfall, setUtfall] = useState<Utfall | null>(null);
+  /* PROTOTYP-RIGGENS VAL — vilket utfall simuleringen ska ge. Lever avskilt
+     längst ned i ytan, inte i innehållet: Marcus 2026-08-08 vill se de tre
+     ytorna "så som de kommer se ut i skarpa versionen", och en väljare mitt i
+     det som bedöms förorenar just den bilden. */
+  const [protoLage, setProtoLage] = useState<UtfallsLage>('delvis');
+
+  /* NY VY BÖRJAR HÖGST UPP (Marcus varv 22): "jag kommer inte in högst upp på
+     sidan, utan jag kommer in i mitten typ."
+
+     ORSAKEN ÄR ATT DET INTE ÄR EN NAVIGATION. Sidbytet sker genom att hubben
+     byter ut sitt eget innehåll, inte genom en router-övergång — och då finns
+     ingen som återställer rullningen. Lotta trycker "Granska och skicka" långt
+     ned i en utfälld åtgärdsrad, och den rullningen ligger kvar när den nya
+     ytan renderas; hon landar mitt i mottagarlistan i stället för på meningen
+     som säger vad som ska hända.
+
+     `lage` i beroendelistan täcker BÅDA övergångarna med samma rad: mount
+     (åtgärder → granska) och bytet till resultatet, som annars hade haft exakt
+     samma problem — den ytan är kortare, så man kunde landat nedanför hela
+     dess innehåll.
+
+     `behavior` lämnas åt webbläsarens default (`auto` = direkt). En mjuk
+     rullning här hade varit en animation ovanpå ett vy-byte — inget att följa
+     med blicken, bara fördröjning — och `prefers-reduced-motion` hade behövt
+     bäras för hand.
+
+     `skickar` ÄR UNDANTAGET, och det är ett designval som lint råkade tvinga
+     fram. Biome fällde första formen (`useExhaustiveDependencies`: `lage`
+     stod i beroendelistan utan att läsas i kroppen) — en riktig fångst, för
+     mönstret "kör om vid tillståndsbyte" utan att röra tillståndet är precis
+     så en effekt slutar betyda vad den ser ut att betyda.
+
+     Rätt svar var inte att tysta regeln utan att fråga vad som SKA hända i
+     varje läge, och då föll det ut självt: under körningen ska sidan INTE
+     hoppa. Lotta står nere vid knappen hon just tryckt, "Skickar…" annonseras
+     där, och att rycka henne till toppen mitt i väntan hade tagit bort det
+     enda som svarar på om något händer. Resultatet scrollar upp; själva
+     väntan gör det inte. */
+  useEffect(() => {
+    if (lage === 'skickar') return;
+    window.scrollTo(0, 0);
+  }, [lage]);
+
+  /* FÖRHANDSVISNINGEN GÄLLER EN NAMNGIVEN MOTTAGARE, inte "en mottagare".
+     Var och en får sitt eget mail (PRD berättelse 10), så det finns ingen
+     enda sann text att visa — det finns N stycken. Att visa den FÖRSTA och
+     säga vems den är, är ärligare än att visa mallen och låtsas att den är
+     utskicket. */
+  const forsta = mottagare[0];
+  const forhandsvisning = fyllPlatshallare(granskning.text, forsta, valtEvent);
+  const amneVisning = fyllPlatshallare(granskning.amne, forsta, valtEvent);
+  const ofyllda = [...new Set([...forhandsvisning.ofyllda, ...amneVisning.ofyllda])];
+
+  const utanEpost = mottagare.filter((r) => !r.email).length;
+  const valdaBilagor = BILAGOR.filter((b) => granskning.bilagor.includes(b.id));
+  const kanSkicka = mottagare.length > 0;
+
+  /* SERVERN ÄR FACIT — `L355`, och mönstret är `useConfirmAll`s
+     (`registrationConfirmation.ts`): exakt de som lyckades avmarkeras, resten
+     ligger kvar. Det är INTE en optimistisk mutation — skrivningen sker EFTER
+     svaret, med serverns egen lista. Följden är att urvalet efter körningen
+     redan ÄR omkörnings-urvalet: går Lotta tillbaka till hubben står de sex
+     kvar markerade och de fjorton är borta.
+
+     Fördröjningen finns för att `skickar`-läget ska gå att SE. Den är riggens,
+     inte formens — i skarp kod är det mutationens faktiska väntan. */
+  function skicka() {
+    setLage('skickar');
+    window.setTimeout(() => {
+      const nytt = simuleraUtfall(mottagare, protoLage);
+      setUtfall(nytt);
+      for (const reg of nytt.lyckade) onVaxla(reg.id, false);
+      setLage('resultat');
+    }, 1400);
+  }
+
+  /* RESULTATLÄGET RENDERAS FÖR SIG — det är en annan yta med samma sidhuvud,
+     inte granskningen med ett meddelande ovanpå. Vägen ut (`onTillbaka`) är
+     densamma i alla tre lägena, och urvalet den lämnar efter sig är redan
+     omkörnings-urvalet. */
+  if (lage === 'resultat' && utfall) {
+    const antalLyckade = utfall.lyckade.length;
+    const antalFallna = utfall.fallna.length;
+    const totalt = antalLyckade + antalFallna;
+
+    return (
+      <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+        <Sidhuvud
+          rubrik={antalLyckade === 0 ? 'Inget skickades' : 'Skickat'}
+          tillbakaLank={
+            <button
+              type="button"
+              onClick={onTillbaka}
+              aria-label="Tillbaka till åtgärderna"
+              className={TILLBAKA_KLASS}
+            >
+              <ChevronLeft aria-hidden="true" size={26} />
+            </button>
+          }
+        />
+
+        {/* VILKA OCH VARFÖR — delningen som gör räknaren läsbar.
+            Fallna först: de är det som återstår att göra något åt, och en
+            lista som inleds med fjorton avbetade kort begraver de sex som
+            behöver uppmärksamhet. */}
+        <DetaljGrupp id="grupp-utfall-mottagare" rubrik="Mottagare">
+          <div className="flex flex-col gap-2 py-4">
+            {utfall.fallna.map(({ reg, skal }) => (
+              <UtfallsKort key={reg.id} reg={reg} skal={skal} />
+            ))}
+            {utfall.lyckade.map((reg) => (
+              <UtfallsKort key={reg.id} reg={reg} skal={null} />
+            ))}
+          </div>
+        </DetaljGrupp>
+
+        {/* SAMMANFATTNINGEN SITTER NED VID VÄGEN UT (Marcus varv 22): "den
+            gröna rutan som är högst upp vill ja ha över knappen 'Tillbaka till
+            åtgärderna'."
+
+            DEN LÄSER RÄTT DÄR, och skälet är att den inte längre gör samma
+            jobb som i granskningen. FÖRE skick är sammanfattningen en varning —
+            den ska läsas innan man handlar, alltså överst. EFTER skick är den
+            en kvittens, och en kvittens hör ihop med att lämna sidan: man
+            skummar korten, ser att det stämmer, läser summan och går.
+
+            HUR MÅNGA — intent- och titel-logiken ORDAGRANT ur
+            `SegmentMailCompose` rad 306–347, som i sin tur bär regeln i sin
+            egen kommentar: noll lyckade renderas ALDRIG som grön framgång,
+            utan som neutral varning med en uppdelning som visar VARFÖR.
+
+            `MessageBox` sätter själv `role="alert"` vid warning/error och
+            `role="status"` annars (primitivens rad 63) — utfallet annonseras
+            alltså för skärmläsare utan en rad extra kod, och en separat
+            announcer ovanpå hade varit `L138`s överträdelse.
+
+            EN SPÄNNING ATT DÖMA VID DELUTFALLET, öppet noterad: flytten är
+            gjord i ALLA tre lägena. Vid "allt gick fram" är den självklar. Vid
+            ett delutfall står korten först röda utan att rutan förklarat varför
+            — och den förklaringen ("skälet står på korten") kommer nu efter det
+            man redan sett. Marcus prövade "Allt gick fram"; delutfallet är inte
+            dömt än. Håller det inte är rätt fix ett villkor på utfallsklassen,
+            inte att flytta tillbaka den i båda. */}
+        <div className="flex flex-col gap-4 px-4">
+          <MessageBox
+            intent={
+              antalLyckade === 0 ? 'warning' : utfall.status === 'partial' ? 'info' : 'success'
+            }
+            /* "LYCKADES", INTE "SKICKADES" (Marcus varv 23). Orden är inte
+               synonymer här, och skillnaden är precis den som gör ytan ärlig:
+               ETT UTSKICK KAN SKICKAS UTAN ATT LYCKAS. Det var hela poängen
+               med att riva stämplingslögnen — mailto-eran satte "skickad" på
+               ett klick som bara öppnade ett fönster. "Skickades" beskriver
+               vår handling; "lyckades" beskriver utfallet, vilket är vad
+               raden faktiskt rapporterar. */
+            title={
+              antalLyckade === 0
+                ? 'Ingen fick mailet'
+                : utfall.status === 'partial'
+                  ? 'Utskicket lyckades delvis'
+                  : 'Utskicket lyckades'
+            }
+          >
+            {antalLyckade > 0 && (
+              <p>
+                <strong>
+                  {antalLyckade} av {totalt}
+                </strong>{' '}
+                {antalLyckade === 1 ? 'person fick' : 'personer fick'} mailet.
+              </p>
+            )}
+            {antalFallna > 0 && (
+              <p>
+                {antalFallna} fick det inte - skälet står på{' '}
+                {antalFallna === 1 ? 'kortet' : 'korten'} ovanför.{' '}
+                {antalLyckade > 0
+                  ? 'De ligger kvar markerade, så du kan gå tillbaka och köra om just dem.'
+                  : 'De ligger kvar markerade.'}
+              </p>
+            )}
+          </MessageBox>
+
+          <div className="flex items-center gap-2">
+            <Button intent="primary" onPress={onTillbaka}>
+              Tillbaka till åtgärderna
+            </Button>
+          </div>
+        </div>
+
+        <PrototypRigg
+          lage={protoLage}
+          onValj={setProtoLage}
+          onAterstall={() => {
+            setUtfall(null);
+            setArmerad(false);
+            setLage('granska');
+          }}
+        />
+      </section>
+    );
+  }
+
+  return (
+    <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+      <Sidhuvud
+        rubrik="Granska och skicka"
+        tillbakaLank={
+          <button
+            type="button"
+            onClick={onTillbaka}
+            aria-label="Tillbaka till åtgärderna"
+            className={TILLBAKA_KLASS}
+          >
+            <ChevronLeft aria-hidden="true" size={26} />
+          </button>
+        }
+      />
+
+      {/* KONSEKVENSEN FÖRST OCH STÖRST (NN/g) — vad som händer, i en mening.
+          Åtgärdsnamnen inleds alla med verbet "Skicka" (varv 6), så meningen
+          bygger sig själv utan att namnet behöver böjas. */}
+      <p className="px-4 text-lg">
+        <strong className="font-semibold">{granskning.atgard.namn}</strong> till{' '}
+        <strong className="font-semibold text-xl tabular-nums">{mottagare.length}</strong>{' '}
+        {mottagare.length === 1 ? 'person' : 'personer'}.
+      </p>
+
+      {/* FYNDEN — det granskningen faktiskt avslöjade. Står FÖRE innehållet:
+          en varning under en 186 px textyta är en varning man scrollar förbi. */}
+      {ofyllda.length > 0 && (
+        <div className="px-4">
+          <MessageBox intent="warning" title="Något i texten kunde inte fyllas i">
+            {ofyllda.join(', ')} står kvar som det är och går ut ordagrant så. Fyll i det för hand i
+            texten, eller gå tillbaka och ändra.
+          </MessageBox>
+        </div>
+      )}
+
+      {utanEpost > 0 && (
+        <div className="px-4">
+          <MessageBox intent="warning" title="Några saknar e-post">
+            {utanEpost} av {mottagare.length} har ingen e-postadress och kommer att undertryckas av
+            servern.
+          </MessageBox>
+        </div>
+      )}
+
+      {/* MOTTAGARNA I SIN FULLA FORM — samma kort hela vägen från eventdetaljen
+          (varv 4:s "hur kom Lotta hit?"). De är AVMARKERINGSBARA även här:
+          PRD berättelse 2 säger att sista kontrollen sker där handlingen sker,
+          och handlingen sker numera på den här sidan. Markeringen är samma
+          `valda`-state som hubben äger — ETT urval, två vyer, aldrig en kopia
+          som kan glida isär. */}
+      {/* RUBRIKEN BÄR INGET TAL (Marcus varv 20). Den sade "Mottagare · 8" två
+          rader under "Skicka bekräftelsemail till 8 personer" — samma tal, samma
+          skärmbild, ingen ny upplysning.
+
+          VARFÖR DET INTE ÄR SAMMA SAK SOM HUBBENS RÄKNARE: mottagar-ytans
+          accordion-huvud bär "7 av 19 deltagare markerade" och det talet BEHÖVS,
+          eftersom listan där är INFÄLLD — räknaren är då det enda som svarar på
+          "vad tog jag med mig hit?". Här är listan utfälld och står direkt under
+          meningen som redan sagt talet. */}
+      <DetaljGrupp id="grupp-granska-mottagare" rubrik="Mottagare">
+        <div className="flex flex-col gap-2 py-4">
+          {mottagare.length === 0 ? (
+            <p className="text-body text-text-muted">
+              Ingen är markerad längre. Gå tillbaka och markera minst en person.
+            </p>
+          ) : (
+            mottagare.map((r) => (
+              <MarkerbartDeltagarKort
+                key={r.id}
+                reg={r}
+                vald={true}
+                onChange={(vald) => onVaxla(r.id, vald)}
+              />
+            ))
+          )}
+        </div>
+      </DetaljGrupp>
+
+      {/* UTSKICKET SOM MOTTAGAREN SER DET. Ämnesraden bär `EtikettVardeRad`s
+          geometri (py-3 + 24 px textrad = 48 px) och textytan `TEXTYTA_KLASS`
+          — samma två mått arbetsytan landade i varv 9, så inget flyttar sig
+          mellan de två vyerna. */}
+      <DetaljGrupp id="grupp-granska-utskicket" rubrik="Utskicket">
+        <div className="flex items-center justify-between gap-4 py-3">
+          <span className="shrink-0 text-small text-text-muted">Ämne</span>
+          <span className="truncate text-right text-body">{amneVisning.text || '—'}</span>
+        </div>
+
+        <div className="py-2.5">
+          {/* "FÖRHANDSVISNINGSEXEMPEL" ÄR HELA ETIKETTEN (Marcus varv 20).
+              Raden sade tidigare "Visas som <Namn> får den. Var och en får sitt
+              eget mail med sina egna uppgifter." — två meningar för att bära
+              samma sak ordet "exempel" bär ensamt. Att texten är ETT exempel
+              säger redan att det finns fler; att den namngav vem det var ett
+              exempel för var en precision ingen bad om.
+
+              INNEHÅLLET ÄR OFÖRÄNDRAT: platshållarna fylls fortfarande ur
+              första mottagaren, så exemplet är ett verkligt utfall och inte en
+              påhittad "Anna Andersson". Det är bara etiketten som krympt. */}
+          {forsta && <p className="pb-1.5 text-caption text-text-muted">Förhandsvisningsexempel</p>}
+          <p
+            className={`${TEXTYTA_KLASS} overflow-auto whitespace-pre-wrap bg-surface text-body text-text-secondary`}
+          >
+            {forhandsvisning.text}
+          </p>
+        </div>
+
+        <div className="flex items-start justify-between gap-4 py-3">
+          <span className="shrink-0 text-small text-text-muted">Bilagor</span>
+          <span className="flex flex-col items-end gap-0.5 text-right text-body">
+            {valdaBilagor.length === 0 ? (
+              <span className="text-text-muted">Inga</span>
+            ) : (
+              valdaBilagor.map((b) => (
+                <span key={b.id} className="flex items-center gap-1.5">
+                  <Paperclip aria-hidden="true" size={12} className="shrink-0" />
+                  {b.namn}
+                </span>
+              ))
+            )}
+          </span>
+        </div>
+      </DetaljGrupp>
+
+      {/* GRINDEN. VARNINGSRADEN ÖVER DEN ÄR BORTA (Marcus varv 20): "Ett skickat
+          utskick går inte att ångra. Mottagare som saknar e-post eller har
+          tackat nej tas bort av servern." Hans skäl river den vid roten —
+          *"de fattar man ändå och de är ju därför slide-to-confirm sitter där"*.
+          Han har rätt i formen: ett handtag man måste DRA säger oåterkallelighet
+          starkare än en mening som påstår den. Raden förklarade den mekanism
+          som stod bredvid.
+
+          MEN DEN BAR TVÅ SAKER, OCH BARA DEN ENA ÄR ERSATT. Consent-meningen —
+          att servern tyst undertrycker den som tackat nej till utskick — har nu
+          ingen bärare någonstans i ytan. Den lämnas MEDVETET obyggd i stället
+          för att flyttas någon annanstans i granskningen: undertryckandet är ett
+          UTFALL, inte en förutsägelse (klienten filtrerar aldrig själv — det är
+          `SegmentMailCompose`s kontrakt, ADR-067), och att gissa det före skick
+          vore att visa ett tal vi inte kan stå för. Rätt hemvist är därför
+          resultatredovisningen, som är exakt den yta research-passet om
+          post-send-tillståndet nu utreder. Saknad e-post har fortfarande sin
+          egen varning högre upp, där den kan mätas. */}
+      <div className="flex flex-col gap-4 px-4">
+        <SlideToConfirm
+          label="Bekräfta utskicket"
+          prompt="Dra för att bekräfta"
+          confirmedLabel="Bekräftat"
+          isSelected={armerad}
+          onChange={setArmerad}
+        />
+
+        {/* DYNAMISKA GRÖN-REGELN, samma som skapa-sidans knapprad: oarmerat når
+            klicket ingen utomstående → primary; armerat går utskicket iväg →
+            success. Grönt betyder "nu går det iväg" och spenderas aldrig på ett
+            mellansteg — det var exakt skälet till att hubbens knapp INTE är
+            grön (varv 11). Här är den det, för här är det sant. */}
+        <div className="flex items-center gap-2">
+          <Button
+            intent={armerad ? 'success' : 'primary'}
+            isDisabled={!armerad || !kanSkicka || lage === 'skickar'}
+            onPress={skicka}
+          >
+            {lage === 'skickar'
+              ? 'Skickar…'
+              : `Skicka till ${mottagare.length} ${mottagare.length === 1 ? 'person' : 'personer'}`}
+          </Button>
+          <Button intent="secondary" onPress={onTillbaka} isDisabled={lage === 'skickar'}>
+            Tillbaka
+          </Button>
+        </div>
+
+        {/* IN-FLIGHT: LIVE-REGION, INGEN FOKUSFLYTT. Cloudscape (AWS) är
+            explicit för just den här klassen — "Info, in Progress, progress
+            bar → Do not move focus, use a live region component to announce
+            the message". Regionen ligger ALLTID i DOM:en så att en ändring
+            faktiskt annonseras; ett block som monteras in samtidigt som texten
+            dyker upp missas av skärmläsare.
+
+            INGEN RÄKNARE ("skickar 8 av 20") — MEDVETET UTELÄMNAD. Research-
+            passet rekommenderade en sådan vid körningar över Nielsens
+            10-sekundersgräns, men flaggade själv att rekommendationen vilar på
+            ett RESONEMANG om den loopade sändvägens skalning och inte på en
+            mätning. Att bygga den nu vore spekulativ komplexitet ovanför
+            golvet. Mät först. */}
+        <div aria-live="polite" aria-busy={lage === 'skickar'} className="min-h-6">
+          {lage === 'skickar' && <p className="text-small text-text-muted">Skickar utskicket…</p>}
+        </div>
+      </div>
+
+      <PrototypRigg
+        lage={protoLage}
+        onValj={setProtoLage}
+        onAterstall={
+          armerad
+            ? () => {
+                setArmerad(false);
+              }
+            : undefined
+        }
+      />
+    </section>
+  );
+}
+
+/* ================================================================== *
+ * PROTOTYP-RIGGEN — riggen, inte ytan. Står AVSKILD längst ned med avsikt.
+ *
+ * Marcus 2026-08-08: han vill se de tre ytorna *"så som de kommer se ut i
+ * skarpa versionen sen"*, och en väljare mitt i det som ska bedömas förorenar
+ * precis den bilden. Allt OVANFÖR den här rutan är därför den skarpa formen —
+ * samma komponenter, samma tokens, samma texter — och riggen är synligt en
+ * rigg: streckad kant, egen rubrik, inget av sidans kort-språk.
+ *
+ * DEN SKICKAR INGENTING. Valet styr bara vilket svar `simuleraUtfall` bygger
+ * i minnet; filen har noll sändvägar (`sendEmail`/`MailPayload`/`resend` ger
+ * noll träffar, mätt 2026-08-08).
+ * ================================================================== */
+function PrototypRigg({
+  lage,
+  onValj,
+  onAterstall,
+}: {
+  lage: UtfallsLage;
+  onValj: (l: UtfallsLage) => void;
+  onAterstall?: () => void;
+}) {
+  const val: { nyckel: UtfallsLage; etikett: string }[] = [
+    { nyckel: 'allt', etikett: 'Allt gick fram' },
+    { nyckel: 'delvis', etikett: 'Delutfall' },
+    { nyckel: 'inget', etikett: 'Inget gick fram' },
+  ];
+
+  return (
+    <div className="mx-4 flex flex-col gap-2 rounded-lg border border-border border-dashed p-3">
+      <p className="text-caption text-text-muted">
+        <strong className="font-medium">Prototyp-rigg.</strong> Välj vilket utfall som ska
+        simuleras. Inget skickas - svaret byggs i webbläsaren.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        {val.map((v) => (
+          <button
+            key={v.nyckel}
+            type="button"
+            onClick={() => onValj(v.nyckel)}
+            aria-pressed={lage === v.nyckel}
+            className={`rounded-full px-3 py-1 text-small ${
+              lage === v.nyckel
+                ? 'bg-bg-emphasized font-medium'
+                : 'text-text-secondary hover:bg-bg-muted'
+            }`}
+          >
+            {v.etikett}
+          </button>
+        ))}
+        {onAterstall && (
+          <button
+            type="button"
+            onClick={onAterstall}
+            className="ml-auto text-small text-text-secondary underline"
+          >
+            Nollställ handtaget
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /* ================================================================== *
  * SIDAN
@@ -1605,6 +2397,11 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
   const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
   const [oppenAtgard, setOppenAtgard] = useState<string | null>(null);
   const [betalningarOppna, setBetalningarOppna] = useState(false);
+  /* GRANSKNINGEN — satt ⇒ sidan visar gransknings-vyn i stället för hubben.
+     Utskickets INNEHÅLL fryses här (ämne, text, bilagor är arbetsytans lokala
+     state), men MOTTAGARNA gör det inte: de läses live ur `valda` så
+     avmarkering i granskningen är samma handling som avmarkering i hubben. */
+  const [granskning, setGranskning] = useState<Granskning | null>(null);
   const betalningsPanelId = useId();
 
   const events = useQuery({
@@ -1663,6 +2460,30 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
      pill i exakt samma form, och två hade stått två rader isär så fort ytan
      öppnades. Regeln "aldrig en andra kopia" gäller alltså fortfarande — det
      är just därför den här raden är borta och inte den i arbetsytan. */
+
+  /* GRANSKNINGS-VYN ERSÄTTER HUBBEN — Marcus-valet 2026-08-07: egen sida, inte
+     modal. Mottagarna räknas om ur `valda` VID VARJE RENDER, med åtgärdens
+     urvalsfilter pålagt: avmarkerar Lotta någon i granskningen krymper både
+     listan och talet i samma andetag, utan att hubben behöver veta om det. */
+  if (granskning) {
+    const filter = granskning.atgard.urvalsfilter;
+    return (
+      <GranskningsSida
+        granskning={granskning}
+        mottagare={filter ? mottagare.filter(filter) : mottagare}
+        valtEvent={valtEvent}
+        onVaxla={(id, vald) =>
+          setValda((nu) => {
+            const n = new Set(nu);
+            if (vald) n.add(id);
+            else n.delete(id);
+            return n;
+          })
+        }
+        onTillbaka={() => setGranskning(null)}
+      />
+    );
+  }
 
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
@@ -1735,6 +2556,7 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
             mottagare={mottagare}
             oppen={oppenAtgard}
             onVaxla={(n) => setOppenAtgard((o) => (o === n ? null : n))}
+            onGranska={setGranskning}
           />
 
           {/* BETALNINGAR — egen ingång, inte en sjunde åtgärd. Hela
@@ -1843,7 +2665,7 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
 function PrototypNot() {
   return (
     <p className="px-4 text-small text-text-muted">
-      <strong className="font-medium">Prototyp.</strong> Mallar och bilagor är stubbar —
+      <strong className="font-medium">Prototyp.</strong> Mallar och bilagor är stubbar -
       bilage-fundamentet (TASK-146) är inte byggt. Inget skickas, inget sparas.
     </p>
   );

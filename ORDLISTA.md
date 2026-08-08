@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-03
+updated: 2026-08-08
 review_by: 2027-01-02
 status: stable
 ---
@@ -193,6 +193,24 @@ lovar därför bara vad basen bär. Kristalliserat i task-18.6.
 (mekanismen, inte begreppet).
 *I koden:* `deltagarinfoSchemalagd` / `deltagarinfoAutoAvstangt` (Event-shapen);
 `AutoKryss` (`detail/Deltagare.tsx`).
+
+**Delutfall** — resultatet när ett utskick till flera mottagare lyckas för
+NÅGRA men inte alla: fjorton av tjugo fick sitt mail, sex fick det inte. Det
+är varken "skickat" eller "misslyckat" utan ett tredje, eget tillstånd — och
+det ska sägas som det är, med båda talen och skälet per fallen mottagare
+("saknar e-post", "har tackat nej till utskick", "kunde inte levereras").
+Kravet är att ett halvt utfall aldrig visas som helt: en yta som säger
+"Utskicket är skickat" när sex inte fick något ljuger, och en som säger att
+allt gick fel får Lotta att skicka om till alla — varpå fjorton får dubbla
+mail. De fallna ligger därför kvar markerade så omkörningen träffar just dem.
+Serverns fyra klasser bär begreppet (`ADR-067` D3): `sent` (alla gick fram),
+`partial` (delutfallet), `failed` (ingen gick fram), `skipped` (ingen fanns
+kvar att skicka till efter serverns filter). Kristalliserat i task-147.
+*Undvik:* fel (ett delutfall är inte ett fel — fjorton mail gick fram),
+delvis misslyckat (samma slagsida), partiellt (engelska-kalkering).
+*I koden:* `MailSendResult` (`status`, `accepted`, `suppressedConsent`,
+`suppressedNoEmail`, `rejected`); `bekraftelseUtfall`
+(`data/mutations/registrationConfirmation.ts`).
 
 **Obekräftad/Bekräftad** — anmälans bekräftelsestatus: Bekräftad ⟺
 anmälningsbekräftelsen (mail 1, bär betalningsinstruktionerna) är skickad;
