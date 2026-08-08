@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-07 19:02'
+updated_date: '2026-08-08 05:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,10 +22,12 @@ ordinal: 291000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ADR-100 amenderad ÖPPET (additiv Updates-sektion, daterad): review_by-bump KRÄVER mini-audit (drift-koll mot ägd yta + pekar-integritet + ägar-deklarationens giltighet) — kadensgrinden finns redan (check-frontmatter Check 3), amenderingen ger den innebörd
-- [ ] #2 Ägar-deklarationens form definierad i samma amendering: varje styrande dok bär raden Äger X · Kartlägger Y · vid konflikt vinner Z (husets mönster: segment-arkitektur rad 9, README rad 14)
+- [x] #1 ADR-100 amenderad ÖPPET (additiv Updates-sektion, daterad): review_by-bump KRÄVER mini-audit (drift-koll mot ägd yta + pekar-integritet + ägar-deklarationens giltighet) — kadensgrinden finns redan (check-frontmatter Check 3), amenderingen ger den innebörd
+- [x] #2 Ägar-deklarationens form definierad i samma amendering: varje styrande dok bär raden Äger X · Kartlägger Y · vid konflikt vinner Z (husets mönster: segment-arkitektur rad 9, README rad 14)
 - [ ] #3 Docs-grindarna gröna lokalt; PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
