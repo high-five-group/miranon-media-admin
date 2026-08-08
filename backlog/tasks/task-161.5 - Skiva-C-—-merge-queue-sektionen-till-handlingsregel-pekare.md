@@ -1,10 +1,10 @@
 ---
 id: TASK-161.5
 title: 'Skiva: C — merge-queue-sektionen till handlingsregel + pekare'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 19:07'
-updated_date: '2026-08-08 06:58'
+updated_date: '2026-08-08 07:07'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,12 +26,16 @@ ordinal: 295000
 - [x] #3 Docs-grindarna gröna lokalt; PR armerad, per-jobb-grön; diffen visar sektionens tecken-tal före/efter i PR-texten
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd i S99 resume 3 (2026-08-08): PR #971 mergad 3f4ca4a7, per-jobb-grön (gh pr checks: 0 fail/pending). Merge-queue-sektionen 11 660 → 8 605 tecken (−26,2 %); sex handlingsregler diff-verifierade byte-identiska mot original; underlag flyttat med pekare: strict-historiken → ADR-076 (fanns redan), Temporal-namngivningen → ADR-096 (fanns redan), dequeue/enqueue-mätningen → research-filen (fanns redan), mäthistoriken #705/#796 → NY text i CONTRIBUTING § Landnings-ordningen (fanns INTE där sedan innan, grep-verifierat). Ett av två varför-block eliminerat efter bokförd prövning (ren retrospektiv, redan dubblerad i ADR-076); det andra bevarat. Två extra kompressioner (TASK-128-/TASK-115-PR-listorna) bokförda öppet i PR-texten, källorna verifierade bära full detalj. Lychee 0 fel på 3 810 länkar.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

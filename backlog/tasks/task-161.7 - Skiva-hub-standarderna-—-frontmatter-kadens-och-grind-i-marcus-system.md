@@ -1,10 +1,10 @@
 ---
 id: TASK-161.7
 title: 'Skiva: hub-standarderna — frontmatter, kadens och grind i marcus-system'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 19:10'
-updated_date: '2026-08-08 06:42'
+updated_date: '2026-08-08 07:07'
 labels:
   - ready-for-agent
 dependencies:
@@ -72,10 +72,16 @@ fast-forwardades igen före Ö8-editeringen; alla fem mål-rader verifierade
 oförändrade på samma radnummer efter den landningen.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd i S99 resume 3 (2026-08-08): spoke-PR #968 mergad 4df71eb0 per-jobb-grön (0 fail/pending) + hub-commit 0addc413 direktpushad till marcus-system main (landningsform verifierad live: rulesets tom lista, branch protection 404). Hubben: fem styrande docs (CLAUDE.md, SYSTEMET.md, IDENTITET.md, README.md, SKILLS-INVENTORY.md) fick frontmatter + ägar-deklaration per ADR-100-formen; check-frontmatter-logiken duplicerad som universellt skript + hubbens egen .frontmatter-policy.conf (Lesson #6, T137-kompatibel); ny pre-commit-hook bär BÅDA rollerna (auto-bump updated + hård review_by-gate) — vägvalet mot hub-CI bokfört (noll befintlig CI-infrastruktur). Tvåsidig svit 4/4 PASS + dogfooding: den riktiga hub-committen gick själv genom den nyaktiverade hooken. Spoke: fem Ö8-dubblettrader till pekare, specialiseringen bevarad. Divergens öppet bokförd i notes: Explore-kartan/Ö8-listan finns inte som filartefakt — paren re-deriverade via grep hub-mot-spoke (5/5); lesson-kandidat av kontinuitets-klassen (L26-familjen). Ingen plugin-bump (inget under plugins/ rört). test:api-fallet var staging-preflight-lås från samtidig post-merge-körning, ej diff-relaterat (verifierat vid omkörning; diffen är ren markdown = D0-klass).
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
