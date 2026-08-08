@@ -1,10 +1,10 @@
 ---
 id: TASK-161.8
 title: 'Skiva: frys eller återuppliva — tre dok ut ur mellanläget'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 19:12'
-updated_date: '2026-08-08 09:03'
+updated_date: '2026-08-08 09:32'
 labels:
   - ready-for-agent
 dependencies:
@@ -61,10 +61,16 @@ Premiss-pass-divergenser (ADR-086), registrerade:
   gammal, och kopian bar redan sin egen förfallna avvecklings-deklaration.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd i S99 resume 3 (2026-08-08): PR #989 mergad, per-jobb-grön (gh pr checks: 0 fail/pending). Tre mellanläges-beslut, alla motiverade i PR-texten: (1) airtable-interaction TVÅDELAD — nytt tunt levande register §5.0 (28/28 EF mot disk) + gamla narrativet fryst som §5-BILAGA med ADR-100 §4-banderoll; CONTRIBUTING-pekaren följdrättad. (2) Tvillingen KAPAD — psionautics-kopian fryst med banderoll och committad direkt i det repot (d2415cc, konventionen verifierad); sökvägsfel rättade på BÅDA sidor; tvillingen var 3+ månader stale. (3) BYGGPLAN-LÄTTLÄST: STOP-utfall per kortets egen klausul — driften dokumenterad i dokets KÄND DRIFT-banderoll, men Gunilla-nivå-förenklingen av S91-komplexiteten är redaktionellt Marcus-beslut; beställ uppdatering eller bekräfta frysning. Tre premiss-divergenser fångade och bokförda (uppdragets CLAUDE.md-påstående falskt · tvilling-pathen fel åt båda håll · synk-löftet förfallet). Bifynd bokfört: psionautics-remoten pekar på gamla org-namnet. AGENT-SIDAN AV TASK-161 ÄR HÄRMED KOMPLETT — kvar: 161.10 QA (Marcus).
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
