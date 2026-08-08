@@ -1704,6 +1704,132 @@ const TILLBAKA_KLASS =
   'mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted';
 
 /* ================================================================== *
+ * UTFALLET — varv 21. Formen är styrd av research-passet
+ * `docs/research/post-send-tillstandet-bulkutskick-2026-08-08.md`.
+ *
+ * DOMEN DÄRIFRÅN, i en mening: resultatet ersätter granskningens innehåll på
+ * SAMMA yta — ingen navigation, ingen egen bekräftelse-sida, ingen
+ * historik-redirect. Tre oberoende linjer konvergerade: GOV.UK Design Systems
+ * namngivna kriterium (pågående resa → notifikation på plats, linjär tjänst
+ * som TAR SLUT → egen bekräftelse-sida), vårt eget `ADR-067` D3 (status är
+ * acceptans vid submit, aldrig leverans — en rapportsida hade inget att visa
+ * som inte redan syns synkront), och storleksklassen (dussintal, mot
+ * Intercoms uttalade 1 000-tröskel för bakgrundsjobbs-mönstret).
+ *
+ * DELNINGEN SOM GÖR YTAN ÄRLIG UTAN ATT BLI EN LOGG: `MessageBox` säger HUR
+ * MÅNGA, korten säger VILKA OCH VARFÖR. Räknaren ensam är en halv upplysning
+ * — "sex föll" utan att peka ut vilka sex tvingar Lotta att jämföra ett tal
+ * mot en lista. Korten står redan utskrivna; de kan bära sitt eget utfall.
+ *
+ * DE FYRA KLASSERNA ÄR SERVERNS, INTE VÅRA (`ADR-067` D3, ORDLISTA §
+ * Delutfall): `sent` alla gick fram · `partial` delutfallet · `failed` ingen
+ * gick fram · `skipped` ingen fanns kvar efter serverns filter. Simuleringen
+ * nedan härleder klassen ur samma regler servern använder, så formen prövas
+ * mot verkliga tillstånd och inte mot påhittade.
+ * ================================================================== */
+type UtfallsLage = 'allt' | 'delvis' | 'inget';
+
+const SKAL_INGEN_EPOST = 'Saknar e-postadress';
+const SKAL_TACKAT_NEJ = 'Har tackat nej till utskick';
+const SKAL_EJ_LEVERERAD = 'Kunde inte levereras';
+
+type Utfall = {
+  status: 'sent' | 'partial' | 'failed' | 'skipped';
+  lyckade: Registration[];
+  fallna: { reg: Registration; skal: string }[];
+};
+
+/**
+ * [PROTOTYPE] Simulerat utfall — INGET SKICKAS, ingenting lämnar webbläsaren.
+ *
+ * Marcus 2026-08-08, ordagrant: *"VIKTIGT att inga riktiga mail för skickas,
+ * inte under några omständigheter!!"* Funktionen bygger ett svar i minnet ur
+ * mottagarlistan som redan finns renderad. Filen har noll sändvägar —
+ * `sendEmail`, `MailPayload` och `resend` ger alla noll träffar i den, mätt
+ * 2026-08-08 — så det finns ingen kod här att råka anropa.
+ *
+ * SAKNAD E-POST FALLER ALLTID, i alla tre lägena. Det är inte en simulerings-
+ * detalj utan den enda utfallsdel klienten FAKTISKT vet före skick: adressen
+ * saknas i datan vi redan läst. Att låta "allt gick fram" visa en person utan
+ * adress som lyckad hade gjort riggen falsk på precis den punkt ytan finns
+ * för att vara sann.
+ */
+function simuleraUtfall(mottagare: Registration[], lage: UtfallsLage): Utfall {
+  const utanEpost = mottagare.filter((r) => !r.email);
+  const medEpost = mottagare.filter((r) => r.email);
+
+  const fallna: { reg: Registration; skal: string }[] = utanEpost.map((reg) => ({
+    reg,
+    skal: SKAL_INGEN_EPOST,
+  }));
+  let lyckade: Registration[] = [];
+
+  if (lage === 'allt') {
+    lyckade = medEpost;
+  } else if (lage === 'inget') {
+    for (const reg of medEpost) fallna.push({ reg, skal: SKAL_EJ_LEVERERAD });
+  } else {
+    // Delutfallet: ungefär två tredjedelar går fram. Skälen VÄXLAR med avsikt
+    // — en yta som bara visar ett skäl prövar inte om flera skäl går att läsa.
+    const gransen = Math.ceil(medEpost.length * (2 / 3));
+    lyckade = medEpost.slice(0, gransen);
+    medEpost.slice(gransen).forEach((reg, i) => {
+      fallna.push({ reg, skal: i % 2 === 0 ? SKAL_TACKAT_NEJ : SKAL_EJ_LEVERERAD });
+    });
+  }
+
+  /* KLASSEN HÄRLEDS, den väljs inte — samma regler som `ADR-067` D3.
+     `skipped` skiljs från `failed` på om NÅGOT ens försöktes: föll allt på
+     serverns egna filter (ingen adress, tackat nej) fanns det ingen att
+     skicka till; föll det på leverans gjordes ett försök som misslyckades. */
+  const forsoktes = fallna.some((f) => f.skal === SKAL_EJ_LEVERERAD);
+  const status: Utfall['status'] =
+    lyckade.length > 0 && fallna.length === 0
+      ? 'sent'
+      : lyckade.length > 0
+        ? 'partial'
+        : forsoktes
+          ? 'failed'
+          : 'skipped';
+
+  return { status, lyckade, fallna };
+}
+
+/** Kortet i resultatläget — samma innehåll som mottagarkortet, plus utfallet. */
+function UtfallsKort({ reg, skal }: { reg: Registration; skal: string | null }) {
+  const lyckades = skal === null;
+  return (
+    <div
+      className={`flex flex-col rounded-xl border ${
+        lyckades
+          ? 'border-(--mm-navcard-border) bg-surface contrast-more:border-(--mm-navcard-border-contrast)'
+          : 'border-(--mm-success) bg-(--mm-success-bg) contrast-more:border-(--mm-success)'
+      }`}
+    >
+      {/* FALLNA KORT BEHÅLLER MARKERINGS-FORMEN, och det är ett beslut värt att
+          kunna försvara: grönt betyder VALD i markeringslägets grammatik, inte
+          "lyckad". De fallna ÄR fortfarande valda — PRD berättelse 12 kräver att
+          de ligger kvar markerade så omkörningen träffar just dem — medan de
+          lyckade är avbetade och därför vita.
+
+          RISKEN ATT GRÖNT LÄSES SOM FRAMGÅNG ÄR VERKLIG, och den bärs av
+          utfallsraden nedanför: skälet står i fel-färg på de fallna och i dämpad
+          ton på de lyckade. Färgen på RADEN säger utfallet; färgen på KORTET
+          säger markeringen. Håller inte den delningen i din blick är det den här
+          kommentaren som ska rivas först. */}
+      <DeltagarKortInnehall reg={reg} vald={!lyckades} />
+      <div
+        className={`border-t px-4 py-2 text-caption ${
+          lyckades ? 'border-border text-text-muted' : 'border-(--mm-success)/30 text-error'
+        }`}
+      >
+        {lyckades ? 'Skickat' : skal}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================== *
  * GRANSKNINGS-SIDAN — varv 19, EGEN VY och inte en modal.
  *
  * MARCUS VALDE FORMEN 2026-08-07, och gav samtidigt skälet till att
@@ -1746,6 +1872,16 @@ function GranskningsSida({
   onTillbaka: () => void;
 }) {
   const [armerad, setArmerad] = useState(false);
+  /* TRE LÄGEN PÅ SAMMA YTA (research-domen): granska → skickar → resultat.
+     Hubben rörs inte, och `onTillbaka` fungerar i alla tre — vägen ut är
+     densamma hela vägen. */
+  const [lage, setLage] = useState<'granska' | 'skickar' | 'resultat'>('granska');
+  const [utfall, setUtfall] = useState<Utfall | null>(null);
+  /* PROTOTYP-RIGGENS VAL — vilket utfall simuleringen ska ge. Lever avskilt
+     längst ned i ytan, inte i innehållet: Marcus 2026-08-08 vill se de tre
+     ytorna "så som de kommer se ut i skarpa versionen", och en väljare mitt i
+     det som bedöms förorenar just den bilden. */
+  const [protoLage, setProtoLage] = useState<UtfallsLage>('delvis');
 
   /* FÖRHANDSVISNINGEN GÄLLER EN NAMNGIVEN MOTTAGARE, inte "en mottagare".
      Var och en får sitt eget mail (PRD berättelse 10), så det finns ingen
@@ -1760,6 +1896,126 @@ function GranskningsSida({
   const utanEpost = mottagare.filter((r) => !r.email).length;
   const valdaBilagor = BILAGOR.filter((b) => granskning.bilagor.includes(b.id));
   const kanSkicka = mottagare.length > 0;
+
+  /* SERVERN ÄR FACIT — `L355`, och mönstret är `useConfirmAll`s
+     (`registrationConfirmation.ts`): exakt de som lyckades avmarkeras, resten
+     ligger kvar. Det är INTE en optimistisk mutation — skrivningen sker EFTER
+     svaret, med serverns egen lista. Följden är att urvalet efter körningen
+     redan ÄR omkörnings-urvalet: går Lotta tillbaka till hubben står de sex
+     kvar markerade och de fjorton är borta.
+
+     Fördröjningen finns för att `skickar`-läget ska gå att SE. Den är riggens,
+     inte formens — i skarp kod är det mutationens faktiska väntan. */
+  function skicka() {
+    setLage('skickar');
+    window.setTimeout(() => {
+      const nytt = simuleraUtfall(mottagare, protoLage);
+      setUtfall(nytt);
+      for (const reg of nytt.lyckade) onVaxla(reg.id, false);
+      setLage('resultat');
+    }, 1400);
+  }
+
+  /* RESULTATLÄGET RENDERAS FÖR SIG — det är en annan yta med samma sidhuvud,
+     inte granskningen med ett meddelande ovanpå. Vägen ut (`onTillbaka`) är
+     densamma i alla tre lägena, och urvalet den lämnar efter sig är redan
+     omkörnings-urvalet. */
+  if (lage === 'resultat' && utfall) {
+    const antalLyckade = utfall.lyckade.length;
+    const antalFallna = utfall.fallna.length;
+    const totalt = antalLyckade + antalFallna;
+
+    return (
+      <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+        <Sidhuvud
+          rubrik={antalLyckade === 0 ? 'Inget skickades' : 'Skickat'}
+          tillbakaLank={
+            <button
+              type="button"
+              onClick={onTillbaka}
+              aria-label="Tillbaka till åtgärderna"
+              className={TILLBAKA_KLASS}
+            >
+              <ChevronLeft aria-hidden="true" size={26} />
+            </button>
+          }
+        />
+
+        {/* HUR MÅNGA — intent- och titel-logiken ORDAGRANT ur
+            `SegmentMailCompose` rad 306–347, som i sin tur bär regeln i sin
+            egen kommentar: noll lyckade renderas ALDRIG som grön framgång,
+            utan som neutral varning med en uppdelning som visar VARFÖR.
+
+            `MessageBox` sätter själv `role="alert"` vid warning/error och
+            `role="status"` annars (primitivens rad 63) — utfallet annonseras
+            alltså för skärmläsare utan en rad extra kod, och en separat
+            announcer ovanpå hade varit `L138`s överträdelse. */}
+        <div className="px-4">
+          <MessageBox
+            intent={
+              antalLyckade === 0 ? 'warning' : utfall.status === 'partial' ? 'info' : 'success'
+            }
+            title={
+              antalLyckade === 0
+                ? 'Ingen fick mailet'
+                : utfall.status === 'partial'
+                  ? 'Utskicket skickades delvis'
+                  : 'Utskicket skickades'
+            }
+          >
+            {antalLyckade > 0 && (
+              <p>
+                <strong>
+                  {antalLyckade} av {totalt}
+                </strong>{' '}
+                {antalLyckade === 1 ? 'person fick' : 'personer fick'} mailet.
+              </p>
+            )}
+            {antalFallna > 0 && (
+              <p>
+                {antalFallna} {antalFallna === 1 ? 'fick det inte' : 'fick det inte'} — skälet står
+                på {antalFallna === 1 ? 'kortet' : 'korten'} nedan.{' '}
+                {antalLyckade > 0
+                  ? 'De ligger kvar markerade, så du kan gå tillbaka och köra om just dem.'
+                  : 'De ligger kvar markerade.'}
+              </p>
+            )}
+          </MessageBox>
+        </div>
+
+        {/* VILKA OCH VARFÖR — delningen som gör räknaren ovanför läsbar.
+            Fallna först: de är det som återstår att göra något åt, och en
+            lista som inleds med fjorton avbetade kort begraver de sex som
+            behöver uppmärksamhet. */}
+        <DetaljGrupp id="grupp-utfall-mottagare" rubrik="Mottagare">
+          <div className="flex flex-col gap-2 py-4">
+            {utfall.fallna.map(({ reg, skal }) => (
+              <UtfallsKort key={reg.id} reg={reg} skal={skal} />
+            ))}
+            {utfall.lyckade.map((reg) => (
+              <UtfallsKort key={reg.id} reg={reg} skal={null} />
+            ))}
+          </div>
+        </DetaljGrupp>
+
+        <div className="flex items-center gap-2 px-4">
+          <Button intent="primary" onPress={onTillbaka}>
+            Tillbaka till åtgärderna
+          </Button>
+        </div>
+
+        <PrototypRigg
+          lage={protoLage}
+          onValj={setProtoLage}
+          onAterstall={() => {
+            setUtfall(null);
+            setArmerad(false);
+            setLage('granska');
+          }}
+        />
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
@@ -1921,24 +2177,112 @@ function GranskningsSida({
         <div className="flex items-center gap-2">
           <Button
             intent={armerad ? 'success' : 'primary'}
-            isDisabled={!armerad || !kanSkicka}
-            onPress={() => {
-              /* PROTOTYPEN SKICKAR INGENTING. Sändvertikalen är `TASK-147`
-                 skiva 5–6 och grenas i två (bilage-fri batch respektive
-                 bilage-bärande singel-loop) — att avfyra något härifrån vore
-                 att bygga den skivan i kastbar kod. */
-            }}
+            isDisabled={!armerad || !kanSkicka || lage === 'skickar'}
+            onPress={skicka}
           >
-            Skicka till {mottagare.length} {mottagare.length === 1 ? 'person' : 'personer'}
+            {lage === 'skickar'
+              ? 'Skickar…'
+              : `Skicka till ${mottagare.length} ${mottagare.length === 1 ? 'person' : 'personer'}`}
           </Button>
-          <Button intent="secondary" onPress={onTillbaka}>
+          <Button intent="secondary" onPress={onTillbaka} isDisabled={lage === 'skickar'}>
             Tillbaka
           </Button>
         </div>
+
+        {/* IN-FLIGHT: LIVE-REGION, INGEN FOKUSFLYTT. Cloudscape (AWS) är
+            explicit för just den här klassen — "Info, in Progress, progress
+            bar → Do not move focus, use a live region component to announce
+            the message". Regionen ligger ALLTID i DOM:en så att en ändring
+            faktiskt annonseras; ett block som monteras in samtidigt som texten
+            dyker upp missas av skärmläsare.
+
+            INGEN RÄKNARE ("skickar 8 av 20") — MEDVETET UTELÄMNAD. Research-
+            passet rekommenderade en sådan vid körningar över Nielsens
+            10-sekundersgräns, men flaggade själv att rekommendationen vilar på
+            ett RESONEMANG om den loopade sändvägens skalning och inte på en
+            mätning. Att bygga den nu vore spekulativ komplexitet ovanför
+            golvet. Mät först. */}
+        <div aria-live="polite" aria-busy={lage === 'skickar'} className="min-h-6">
+          {lage === 'skickar' && <p className="text-small text-text-muted">Skickar utskicket…</p>}
+        </div>
       </div>
 
-      <PrototypNot />
+      <PrototypRigg
+        lage={protoLage}
+        onValj={setProtoLage}
+        onAterstall={
+          armerad
+            ? () => {
+                setArmerad(false);
+              }
+            : undefined
+        }
+      />
     </section>
+  );
+}
+
+/* ================================================================== *
+ * PROTOTYP-RIGGEN — riggen, inte ytan. Står AVSKILD längst ned med avsikt.
+ *
+ * Marcus 2026-08-08: han vill se de tre ytorna *"så som de kommer se ut i
+ * skarpa versionen sen"*, och en väljare mitt i det som ska bedömas förorenar
+ * precis den bilden. Allt OVANFÖR den här rutan är därför den skarpa formen —
+ * samma komponenter, samma tokens, samma texter — och riggen är synligt en
+ * rigg: streckad kant, egen rubrik, inget av sidans kort-språk.
+ *
+ * DEN SKICKAR INGENTING. Valet styr bara vilket svar `simuleraUtfall` bygger
+ * i minnet; filen har noll sändvägar (`sendEmail`/`MailPayload`/`resend` ger
+ * noll träffar, mätt 2026-08-08).
+ * ================================================================== */
+function PrototypRigg({
+  lage,
+  onValj,
+  onAterstall,
+}: {
+  lage: UtfallsLage;
+  onValj: (l: UtfallsLage) => void;
+  onAterstall?: () => void;
+}) {
+  const val: { nyckel: UtfallsLage; etikett: string }[] = [
+    { nyckel: 'allt', etikett: 'Allt gick fram' },
+    { nyckel: 'delvis', etikett: 'Delutfall' },
+    { nyckel: 'inget', etikett: 'Inget gick fram' },
+  ];
+
+  return (
+    <div className="mx-4 flex flex-col gap-2 rounded-lg border border-border border-dashed p-3">
+      <p className="text-caption text-text-muted">
+        <strong className="font-medium">Prototyp-rigg.</strong> Välj vilket utfall som ska
+        simuleras. Inget skickas — svaret byggs i webbläsaren.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        {val.map((v) => (
+          <button
+            key={v.nyckel}
+            type="button"
+            onClick={() => onValj(v.nyckel)}
+            aria-pressed={lage === v.nyckel}
+            className={`rounded-full px-3 py-1 text-small ${
+              lage === v.nyckel
+                ? 'bg-bg-emphasized font-medium'
+                : 'text-text-secondary hover:bg-bg-muted'
+            }`}
+          >
+            {v.etikett}
+          </button>
+        ))}
+        {onAterstall && (
+          <button
+            type="button"
+            onClick={onAterstall}
+            className="ml-auto text-small text-text-secondary underline"
+          >
+            Nollställ handtaget
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
