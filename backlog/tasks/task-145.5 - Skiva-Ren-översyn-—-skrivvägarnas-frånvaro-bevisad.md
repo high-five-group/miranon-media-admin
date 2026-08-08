@@ -4,7 +4,7 @@ title: 'Skiva: Ren översyn — skrivvägarnas frånvaro bevisad'
 status: To Do
 assignee: []
 created_date: '2026-08-07 09:01'
-updated_date: '2026-08-07 17:34'
+updated_date: '2026-08-08 17:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -22,9 +22,21 @@ Ingen kan av misstag ändra data från eventsidan — sidan är en ren översyn.
 Täcker användarberättelser: 24
 <!-- SECTION:DESCRIPTION:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [ ] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
+- [ ] #6 Baslinje omtagen EFTER godkänd promovering (ADR-103 B4)
+- [x] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
+- [x] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
+<!-- DOD:END -->
+
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Eventsidan bär noll skrivkontroller: inga muterande kryssrutor, inget redigerbart noteringsfält, ingen påminn-avfyrning, inga mailto-vägar
+- [x] #1 Eventsidan bär noll skrivkontroller utöver det kvitterade undantaget Bor över-krysset (Marcus 1A-beslut, S93 Del 3, 2026-08-07): inga muterande kryssrutor i övrigt, inget redigerbart noteringsfält, ingen påminn-avfyrning, inga mailto-vägar
 - [x] #2 Frånvaron är MEKANISKT fälld av en grind eller ett test, inte kontrollerad med ögat
 - [x] #3 Auto-kryssen är rivna ur eventinfo-radens signal-slot; slotten visar bara Dags-att-skicka-badgen när den är tänd, annars tomt med bevarad höjd
 - [x] #4 Åtgärds-radernas grå löften är hanterade: varje rivning eller ändring öppet bokförd, och numreringens referentbarhet uttryckligen adresserad
@@ -82,16 +94,6 @@ EJ KLARADE DoD, MOTIVERADE
   *-linux.png, *-darwin.png gitignorad (.gitignore:97). Den committade
   linux-baslinjen är dessutom stale sedan FÖRE TASK-145.1 (37e638df,
   run 30295150783).
-<!-- SECTION:NOTES:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [x] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
-- [ ] #6 test:visual omtagen med granskade baslinjer — drift är väntad, inte accepterad osedd
-- [x] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
-- [x] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
-<!-- DOD:END -->
+[TASK-162.4, bokföringssynk, 2026-08-08] AC #1 omskriven via CLI per Marcus 1A-beslut (S93 Del 3, 2026-08-07): kravtexten sa "inga muterande kryssrutor" men Bor över-krysset (useSetBorOver) är ett REDAN KVITTERAT undantag — se § "AC #1 — OKRYSSAD, KRÄVER MARCUS BESLUT" ovan för hela argumentationen (den slutsatsen står kvar, bara rubriken är nu stale eftersom AC:et är checkat). Texten säger nu vad den menar i stället för att vara bokstavligen fel; de underliggande mätningarna var redan kompletta och oförändrade. AC #1 och DoD #1 checkade i samma pass.
+<!-- SECTION:NOTES:END -->
