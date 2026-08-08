@@ -2055,12 +2055,19 @@ function GranskningsSida({
             intent={
               antalLyckade === 0 ? 'warning' : utfall.status === 'partial' ? 'info' : 'success'
             }
+            /* "LYCKADES", INTE "SKICKADES" (Marcus varv 23). Orden är inte
+               synonymer här, och skillnaden är precis den som gör ytan ärlig:
+               ETT UTSKICK KAN SKICKAS UTAN ATT LYCKAS. Det var hela poängen
+               med att riva stämplingslögnen — mailto-eran satte "skickad" på
+               ett klick som bara öppnade ett fönster. "Skickades" beskriver
+               vår handling; "lyckades" beskriver utfallet, vilket är vad
+               raden faktiskt rapporterar. */
             title={
               antalLyckade === 0
                 ? 'Ingen fick mailet'
                 : utfall.status === 'partial'
-                  ? 'Utskicket skickades delvis'
-                  : 'Utskicket skickades'
+                  ? 'Utskicket lyckades delvis'
+                  : 'Utskicket lyckades'
             }
           >
             {antalLyckade > 0 && (
@@ -2073,7 +2080,7 @@ function GranskningsSida({
             )}
             {antalFallna > 0 && (
               <p>
-                {antalFallna} fick det inte — skälet står på{' '}
+                {antalFallna} fick det inte - skälet står på{' '}
                 {antalFallna === 1 ? 'kortet' : 'korten'} ovanför.{' '}
                 {antalLyckade > 0
                   ? 'De ligger kvar markerade, så du kan gå tillbaka och köra om just dem.'
@@ -2339,7 +2346,7 @@ function PrototypRigg({
     <div className="mx-4 flex flex-col gap-2 rounded-lg border border-border border-dashed p-3">
       <p className="text-caption text-text-muted">
         <strong className="font-medium">Prototyp-rigg.</strong> Välj vilket utfall som ska
-        simuleras. Inget skickas — svaret byggs i webbläsaren.
+        simuleras. Inget skickas - svaret byggs i webbläsaren.
       </p>
       <div className="flex flex-wrap items-center gap-2">
         {val.map((v) => (
@@ -2658,7 +2665,7 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
 function PrototypNot() {
   return (
     <p className="px-4 text-small text-text-muted">
-      <strong className="font-medium">Prototyp.</strong> Mallar och bilagor är stubbar —
+      <strong className="font-medium">Prototyp.</strong> Mallar och bilagor är stubbar -
       bilage-fundamentet (TASK-146) är inte byggt. Inget skickas, inget sparas.
     </p>
   );
