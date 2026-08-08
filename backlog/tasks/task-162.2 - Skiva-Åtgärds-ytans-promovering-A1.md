@@ -4,6 +4,7 @@ title: 'Skiva: Åtgärds-ytans promovering (A1)'
 status: To Do
 assignee: []
 created_date: '2026-08-08 07:40'
+updated_date: '2026-08-08 09:12'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,11 +21,13 @@ Första flippen per ADR-103 B2: åtgärds-ytans variant-form (kortet i check-in-
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Åtgärds-ytan renderar ovillkorligt kortformen: Gå till åtgärder-kortet + fristående Skriv ut-knapp; den gamla rubricerade gruppens gren borttagen (git bevarar)
-- [ ] #2 Variant-villkoret, växlaren och variant-maskineriet orörda — rivning sker först i rivningskortet efter Marcus godkännande
-- [ ] #3 ariaSnapshot-grinden grön för åtgärds-ytan (referens == promoverad)
-- [ ] #4 Berörda e2e- och acceptance-tester uppdaterade till promoverad form i SAMMA ändring; sviterna gröna
+- [x] #1 Åtgärds-ytan renderar ovillkorligt kortformen: Gå till åtgärder-kortet + fristående Skriv ut-knapp; den gamla rubricerade gruppens gren borttagen (git bevarar)
+- [x] #2 Variant-villkoret, växlaren och variant-maskineriet orörda — rivning sker först i rivningskortet efter Marcus godkännande
+- [x] #3 ariaSnapshot-grinden grön för åtgärds-ytan (referens == promoverad)
+- [x] #4 Berörda e2e- och acceptance-tester uppdaterade till promoverad form i SAMMA ändring; sviterna gröna
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

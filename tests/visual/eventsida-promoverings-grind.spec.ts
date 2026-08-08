@@ -123,3 +123,49 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser ur variant-läge
     });
   });
 });
+
+/**
+ * [TASK-162.2, ADR-103 B2 steg 2] ANDRA HALVAN AV PARET denna fils docblock
+ * beskriver: referenserna ovan fångades ur VARIANT-läget FÖRE flippen;
+ * skivan som gör flippen (åtgärds-ytan, A1) pekar HÄR samma två lokatorer
+ * mot den PROMOVERADE ytan — ingen `?variant`, ingen `?data` — och återanvänder
+ * SAMMA referensfiler (`atgarder-kort.aria.yml`/`skriv-ut-kort.aria.yml`, ej
+ * skapade om, ej muterade). `AtgarderKort`/`SkrivUtKort` är ORÖRDA komponenter
+ * (`detail/Atgarder.tsx`); det enda som flippades i `EventDetail.tsx` var
+ * VILLKORET för deras render (den gamla `Atgarder`-grenen, se rivningsnoten
+ * där). Identisk komponent, identisk render ⇒ identisk ariaSnapshot är alltså
+ * den strukturella invarianten detta par bevisar, inte bara en förhoppning:
+ * grön här betyder att ingenting läckt in mellan de två renderingsvägarna.
+ *
+ * Registrets motsvarande "efter"-hälft (A2–A6) hör till TASK-162.3 (registret
+ * promoveras som EN skiva, se PRD TASK-162 § Implementationsbeslut) och
+ * landar i en separat commit — därför bara åtgärds-ytans två lokatorer här.
+ */
+async function gotoPromoverad(page: import('@playwright/test').Page) {
+  // INGA query-params: den promoverade (skarpa) ytan renderar AtgarderKort +
+  // SkrivUtKort OVILLKORLIGT sedan TASK-162.2 — `?variant`/`?data` styr inte
+  // längre om de visas (protoDataMode-formeln, se t.ex. Anteckningar.tsx,
+  // kräver `isHallplatsVariant(variantParam)` — alltid falskt utan
+  // `?variant`, så datavägen är obönhörligt den skarpa). Samma ankare som
+  // variant-capturens `gotoVariantA`.
+  await page.goto(`/event/${VISUAL_EVENT_ID}`);
+  await expect(page.getByTestId('atgarder-kort')).toBeVisible();
+}
+
+test.describe('TASK-162.2 — åtgärds-ytan promoverad: samma referens, INGEN ?variant (ADR-103 B2)', () => {
+  test('åtgärds-ytan — promoverad "Gå till åtgärder"-kortet == variant-referensen', async ({
+    page,
+  }) => {
+    await gotoPromoverad(page);
+    await expect(page.getByTestId('atgarder-kort')).toMatchAriaSnapshot({
+      name: 'atgarder-kort.aria.yml',
+    });
+  });
+
+  test('åtgärds-ytan — promoverad "Skriv ut"-kortet == variant-referensen', async ({ page }) => {
+    await gotoPromoverad(page);
+    await expect(page.getByTestId('skriv-ut-kort')).toMatchAriaSnapshot({
+      name: 'skriv-ut-kort.aria.yml',
+    });
+  });
+});

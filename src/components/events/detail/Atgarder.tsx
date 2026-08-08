@@ -2,24 +2,34 @@ import { Link } from '@tanstack/react-router';
 import { ChevronRight, type LucideIcon, Printer, Send, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/primitives/Button';
-import { DetaljGrupp } from './DetaljGrupp';
 
 /**
- * Åtgärds-gruppen + check-in-ingången (task-18.3; S73-facit K19–K26, K47, K72;
+ * Check-in-ingången + åtgärds-ytan (task-18.3; S73-facit K19–K26, K47, K72;
  * amenderad av task-18.15). Nyskriven mot facit-bilagan (throwaway-kontraktet —
  * prototypkod absorberas aldrig); facit-referenserna (K-stegen) pekar på den
  * låsta konvergens-trailen.
  *
- * Radformen (K20/K25/K72): VÄNSTERSTÄLLDA rader med ledande kolumn (radnummer
- * i Åtgärds-gruppen sedan 18.15; check-in-ingången behåller sin 16 px-ikon),
- * chevron höger (18 px — chevron betyder att raden leder vidare; den gamla
- * ingen-chevron-regeln revs öppet i denna skiva, spec §14) och hover-PLATTAN
- * (K56-grammatiken: -mx-2 px-2 rounded-lg + bg-emphasized + motion-safe) —
- * plattan skjuter 8 px utanför kortets 16 px-inset utan att texten flyttas.
- * Radens totalhöjd är konstant (wrapper py-1.5 + knapp py-1.5 = 12 px lodrätt
- * kring 24 px-textraden — numrutans 24 px fyller raden utan att höja den);
- * wrappern är flex-col så flex-stretchen ger knappen full bredd trots w-auto
- * (K54-vakten: aldrig w-full ihop med -mx-2).
+ * Radformen (K20/K25/K72): VÄNSTERSTÄLLDA rader med ledande kolumn (ikon för
+ * check-in-ingången, 16 px), chevron höger (18 px — chevron betyder att raden
+ * leder vidare; den gamla ingen-chevron-regeln revs öppet i denna skiva, spec
+ * §14) och hover-PLATTAN (K56-grammatiken: -mx-2 px-2 rounded-lg +
+ * bg-emphasized + motion-safe) — plattan skjuter 8 px utanför kortets
+ * 16 px-inset utan att texten flyttas. Radens totalhöjd är konstant (wrapper
+ * py-1.5 + knapp py-1.5 = 12 px lodrätt kring 24 px-textraden); wrappern är
+ * flex-col så flex-stretchen ger knappen full bredd trots w-auto (K54-vakten:
+ * aldrig w-full ihop med -mx-2).
+ *
+ * [TASK-162.2, ADR-103 B2 steg 1] Åtgärds-GRUPPEN (den rubricerade sektionen
+ * med numrerade rader, `Atgarder`, tidigare nedan i filen) är PROMOVERAD
+ * BORT: `AtgarderKort` ("Gå till åtgärder") + `SkrivUtKort` (fristående
+ * "Skriv ut"-knapp) är sedan denna skiva den OVILLKORLIGA formen på
+ * eventsidan (`EventDetail.tsx`) — den gamla grenen fanns bakom
+ * `?variant=a`-villkoret, nu riven (git bevarar, senast i main före denna
+ * commit; se rivningsnoterna nedan). Radformen ovan (K20/K25/K72) lever kvar
+ * i `CheckInKort` och delvis i `AtgarderKort` (samma `RAD_KLASS`).
+ * Variant-villkoret/växlaren/`?variant`-maskineriet i övrigt (registret,
+ * `PrototypeSwitcher`) är ORÖRT av denna skiva — rivs i `TASK-145.6` efter
+ * Marcus godkännande (ADR-103 B2 steg 4).
  */
 const RAD_KLASS =
   '-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
@@ -49,37 +59,16 @@ function NumRuta({ n }: { n: number }) {
     (18.15), check-in-ingången behåller sin ikon (berörs ej av skivan). */
 type Ledande = { nummer: number; ikon?: never } | { ikon: LucideIcon; nummer?: never };
 
-/** Åtgärdsradens knappform — numrerad sedan 18.15 (Åtgärds-gruppens enda
-    knappform; ikonvarianten utgick med rivningen).
-
-    [RIVEN, TASK-145.5] `ariaDisabled` bodde här. Den fanns för de fyra
-    okopplade utskicks-/mutations-raderna, och de raderna är rivna (AC #4 — se
-    `Atgarder` nedan). Ett interim-tillstånd utan interim är inte en bevarad
-    möjlighet, det är en fälla: nästa rad som råkar sakna flöde hade kunnat
-    landa grå i stället för att inte landa alls. */
-function HandlingsRad({
-  nummer,
-  onPress,
-  children,
-}: {
-  nummer: number;
-  onPress?: () => void;
-  children: string;
-}) {
-  return (
-    <div className="flex flex-col py-1.5">
-      <button type="button" onClick={onPress} className={RAD_KLASS}>
-        <NumRuta n={nummer} />
-        {children}
-        <ChevronRight
-          aria-hidden="true"
-          size={18}
-          className="ml-auto shrink-0 text-text-secondary"
-        />
-      </button>
-    </div>
-  );
-}
+/**
+ * [RIVEN, TASK-162.2, ADR-103 B2 steg 1] `HandlingsRad` (Åtgärds-gruppens
+ * numrerade KNAPP-rad — "Skriv ut denna detaljsida" var dess enda
+ * anropsplats) bodde här. Riven med hela gruppen (`Atgarder`, tidigare
+ * nedan): dess enda konsument är borta, och `SkrivUtKort` (som ersätter
+ * utskriftsraden i den promoverade formen) är en helt annan radform
+ * (`Button`-primitiven, inte `RAD_KLASS`-raden). Git bevarar
+ * implementationen (senast i main före denna commit). `HandlingsLank`
+ * (nedan) består oförändrad — `CheckInKort`s enda konsument är orörd.
+ */
 
 /** Åtgärdsradens länkform — samma renderade grammatik som knappraden (K26:
     samma överallt), som router-typad länk; ledande slot per Ledande-unionen. */
@@ -114,8 +103,10 @@ function HandlingsLank({
 
 /**
  * Check-in-ingången (K23–K26): eventdagens PRIMÄRHANDLING som eget framhävt
- * kort ÖVER Åtgärds-gruppen (Eventbrite/Luma-klassen), aldrig en rad i den.
- * Kortet bär EXAKT åtgärdsradens form i ett eget kort-skal UTAN rubrik (K26) —
+ * kort ÖVER åtgärds-ytan (Eventbrite/Luma-klassen; sedan TASK-162.2
+ * `AtgarderKort` + `SkrivUtKort`, tidigare den rubricerade Åtgärds-gruppen),
+ * aldrig en rad i den. Kortet bär EXAKT åtgärdsradens form i ett eget
+ * kort-skal UTAN rubrik (K26) —
  * det speciella bärs av placeringen + ensamheten, inte av avvikande mått.
  *
  * LÄNKMÅLET ÄR BELAGT-INTERIM (öppet avgjort i skivan, PRD beslut 18-mönstret):
@@ -161,6 +152,12 @@ export function CheckInKort({ eventId }: { eventId: string }) {
  * navigation som inte finns, så knappen fäller ut en platshållare i stället —
  * samma ärlighet som batch-barens "Åtgärder"-knapp, och samma text, så Marcus
  * ser att BÅDA ingångarna leder till samma kommande yta.
+ *
+ * [TASK-162.2, ADR-103 B2 steg 1] PROMOVERAD: rubriken ovan säger
+ * "i variant-läge" — det gällde till och med denna skiva. `EventDetail.tsx`
+ * renderar sedan denna commit `AtgarderKort` OVILLKORLIGT (`?variant=a` styr
+ * inte längre om kortet visas). Innehållet, platshållaren och länkmåls-
+ * interimet ovan är ORÖRDA — bara VILLKORET för render är rivet.
  */
 export function AtgarderKort() {
   const [oppen, setOppen] = useState(false);
@@ -250,70 +247,21 @@ export function SkrivUtKort() {
 }
 
 /**
- * Åtgärds-gruppen (K19–K21): sidans operativa handlingar samlade ÖVERST före
- * datagrupperna (Omedelbarhet — på eventdagar är åtgärderna sidans poäng),
- * i frekvensordning med Lägg till manuell anmälan först (K21: vanligaste
- * handlingen närmast handen; länken går till manuell anmälan-sidan, K16/K17 —
- * skarp form byggd i 18.12).
- *
- * RIVNINGSNOT (task-18.15, FACIT-REVIDERING AV S73-K47, riven ÖPPET per
- * 18.3-precedenten): kuvert-grammatikens LEDANDE ikoner (Mail på varje
- * skicka-handling, BadgeCheck för markera, Printer för utskriften) är
- * ersatta av RADNUMMER 1–6 — referentbarhet vann ("gå till åtgärd 4" i
- * instruktioner och manualer är entydigt, Gunilla-principen: numrerade steg
- * förstås utan förkunskaper). Kuvert-grammatiken BESTÅR i övriga ytor
- * (Deltagare-kortens Mail/MailCheck; check-in-kortets UserCheck orörd).
- * Numren följer frekvensordningen och ändras ej (byggkrav 1).
- *
- * DE FYRA GRÅ LÖFTENA ÄR RIVNA (TASK-145.5 AC #4). Raderna 2–5 —
- * "Skicka bekräftelsemail till obekräftade", "Skicka betalningspåminnelse till
- * obetalda", "Markera alla obetalda som betalda", "Skicka eventinfo till alla
- * anmälda" — stod `aria-disabled` sedan task-18.3 och kopplades aldrig. Var och
- * en är ett UTSKICK eller en BULKMUTATION, alltså precis det eventsidan inte
- * längre gör: sidan är en ren översyn och allt som verkställer något bor på
- * Åtgärds-sidan (`TASK-147`, PRD TASK-145 § Implementationsbeslut). Fyra grå
- * rader som lovar mutationer på en läsyta är den mest direkta motsägelsen ytan
- * kunde bära, och ett interim som stått okopplat i fyra månader är inte ett
- * interim längre.
- *
- * KVAR STÅR DE TVÅ SOM FAKTISKT GÖR NÅGOT: "Lägg till manuell anmälan" (en
- * riktig länk till en byggd sida — den skriver inte här, den navigerar) och
- * "Skriv ut denna detaljsida" (`window.print`, skarp sedan K19-flytten).
- * Utskrift muterar ingenting.
- *
- * NUMRERINGENS REFERENTBARHET, ADRESSERAD ÖPPET (AC #4 andra klausulen).
- * task-18.15 införde radnumren 1–6 för att "gå till åtgärd 4" ska vara entydigt
- * i instruktioner och manualer (Gunilla-principen), och slog samtidigt fast att
- * "numren följer frekvensordningen och ändras ej (byggkrav 1)". Den
- * STABILITETS-garantin bryts här, medvetet och synligt: de två kvarvarande
- * raderna numreras om till 1–2.
- *
- * Skälet att omnumrering vinner över att behålla "1" och "6": numren garanterade
- * en ordning över SEX rader, och fyra av dem finns inte längre. En manual som
- * säger "gå till åtgärd 4" pekade på en rad som aldrig fungerade — referensen
- * var trasig redan innan rivningen. Kvar att välja mellan var ett hål i serien
- * ("1" följt av "6", obegripligt för Gunilla) och en tät serie som beskriver vad
- * som faktiskt står på skärmen. Referentbarheten för de rader som FLYTTAR ägs av
- * `TASK-147`: den sidan avgör om Åtgärds-sidan bär en egen numrering.
- *
- * ÖPPEN FRÅGA TILL MARCUS, EJ AVGJORD HÄR: Marcus egen iterationsvåg
- * (2026-08-05, punkt 4, citerad ordagrant i `AtgarderKort` ovan) går längre än
- * denna rivning — "Åtgärdsgruppen högst upp måste in på åtgärdssidan", alltså
- * ÄVEN rad 1, med ett "Gå till åtgärder"-kort i gruppens ställe. Det steget tas
- * INTE här: det lägger en ny ingång mot en sida som ännu inte finns, och samma
- * princip som `MarkeringsBatchBar` § UTGÅNGEN följer (lova ingen navigation som
- * saknas). Rivningen av de grå löftena är AC #4:s ordalydelse; flytten av hela
- * gruppen hör ihop med att `TASK-147` landar.
+ * [RIVEN, TASK-162.2, ADR-103 B2 steg 1] Åtgärds-gruppen (`Atgarder`,
+ * K19–K21; amenderad task-18.15/TASK-145.5) bodde här — en rubricerad sektion
+ * (`DetaljGrupp id="grupp-atgarder" rubrik="Åtgärder"`) med två numrerade
+ * rader (Lägg till manuell anmälan · Skriv ut denna detaljsida). Den fanns
+ * bakom `?variant=a`-villkoret sedan Marcus iterationsvåg 2026-08-05 (citerad
+ * ordagrant i `AtgarderKort` ovan) lade dagens `AtgarderKort`/`SkrivUtKort`
+ * som ERSÄTTARE i variant-läget — se den öppna frågan git-historiken bär:
+ * *"Åtgärdsgruppen högst upp måste in på åtgärdssidan"*, alltså även raden som
+ * denna grupp behöll. `EventDetail.tsx` renderar sedan denna skiva
+ * `AtgarderKort` + `SkrivUtKort` OVILLKORLIGT i stället — den formen Marcus
+ * beställde, tidigare bara nåbar bakom flaggan. "Lägg till manuell anmälan"
+ * har ingen ersättande länk på eventsidan under tiden (den flyttar in i
+ * `AtgarderKort`s hopkoppling när åtgärds-sidan byggs, eget kort efter S100),
+ * per samma order. Git bevarar hela historiken (senast i main före denna
+ * commit) — rivningsnoterna för de fyra grå löftena (TASK-145.5) och
+ * radnumrerings-omnumreringen (18.15) finns kvar där, sökbara via
+ * `git log -p -- src/components/events/detail/Atgarder.tsx`.
  */
-export function Atgarder({ eventId }: { eventId: string }) {
-  return (
-    <DetaljGrupp id="grupp-atgarder" rubrik="Åtgärder">
-      <HandlingsLank nummer={1} to="/event/$eventId/ny-anmalan" eventId={eventId}>
-        Lägg till manuell anmälan
-      </HandlingsLank>
-      <HandlingsRad nummer={2} onPress={() => window.print()}>
-        Skriv ut denna detaljsida
-      </HandlingsRad>
-    </DetaljGrupp>
-  );
-}

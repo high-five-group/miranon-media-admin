@@ -203,9 +203,13 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     // rivet som toppnivå-rubrik (AC #1; PRD TASK-145 § Implementationsbeslut).
     // Arbetsytan lever kvar, fällbar under registret ("Öppna detaljer"),
     // men bär ingen egen h2 — se tests/e2e/mark-paid.staging.test.ts.
+    // [ÄNDRAT, TASK-162.2, ADR-103 B2 steg 1] "Åtgärder" är BORTA ur listan —
+    // den rubricerade gruppen (`section[aria-labelledby="grupp-atgarder"]`,
+    // en h2) är promoverad bort. Ersättarna, `AtgarderKort`+`SkrivUtKort`, är
+    // RUBRIKFRIA kort (se `Åtgärds-ytans promovering`-describen nedan för
+    // rendering) — precis som `CheckInKort`, ingen h2 alls.
     const rubriker = await page.getByRole('heading', { level: 2 }).allTextContents();
     expect(rubriker).toEqual([
-      'Åtgärder',
       'Om eventet',
       'Beläggning',
       'Anmälda deltagare',
@@ -512,21 +516,27 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
 });
 
 /**
- * task-18.3 — Åtgärds-gruppen + check-in-ingången + chevron-koherensen
- * (S73-facit K19–K26, K47, K72) — amenderad av task-18.15: åtgärds-radernas
- * LEDANDE ikoner (kuvert-grammatiken K47) är ersatta av radnummer 1–6 i vita
- * rutor (referentbarhet — "gå till åtgärd 4", Gunilla-principen; öppen
- * facit-revidering, S83 konvergens-pass 2). Kuvertet består i övriga ytor;
- * check-in-kortets UserCheck är orörd.
+ * TASK-162.2 (ADR-103 B2 steg 1) — åtgärds-ytans promovering: check-in-
+ * ingången + åtgärds-ytan (ärver task-18.3, S73-facit K19–K26, K47, K72;
+ * amenderad av task-18.15/TASK-145.5, PROMOVERAD av TASK-162.2). `AtgarderKort`
+ * ("Gå till åtgärder") + `SkrivUtKort` (fristående "Skriv ut") är sedan denna
+ * skiva den OVILLKORLIGA formen på eventsidan — den gamla rubricerade
+ * Åtgärder-gruppen (numrerade rader 1–2, egen h2 "Åtgärder") fanns tidigare
+ * här bakom `?variant=a`; grenen är riven (git bevarar, `git log -p` mot
+ * `Atgarder.tsx`/`EventDetail.tsx`). Variant-villkoret/växlaren/
+ * `?variant`-maskineriet i övrigt (registret, PrototypeSwitcher) är ORÖRT —
+ * rivs i `TASK-145.6` efter Marcus godkännande.
  *
- * Renderad verifiering (L245/L246): hover-plattans grammatik, måttpariteten
- * check-in ↔ åtgärdsrad och numrutans form bevisas via computed-style/
- * DOM-mätning — aldrig klass-tittande. Utskicks-raderna + Markera betalda är
- * ÄNNU inte kopplade (flödena byggs i 18.6/18.8) och bär aria-disabled tills
- * dess — öppet bokfört interim; Skriv ut är skarp (window.print).
+ * Renderad verifiering (L245/L246): hover-plattans grammatik och
+ * måttpariteten check-in ↔ AtgarderKort bevisas via computed-style/
+ * DOM-mätning — aldrig klass-tittande. AtgarderKorts hopkoppling mot en
+ * riktig åtgärds-sida är INTERIM (eget kort efter S100) och fäller ut en
+ * platshållartext i stället för att navigera — samma ärlighet som
+ * check-in-ingångens interim-mål (öppet bokfört, `Atgarder.tsx` §
+ * `AtgarderKort`).
  */
-test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
-  test('check-in-ingången: eget rubrikfritt kort ÖVER Åtgärder i exakt åtgärdsradens mått', async ({
+test.describe('Åtgärds-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
+  test('check-in-ingången: eget rubrikfritt kort ÖVER åtgärds-ytan i exakt åtgärdsradens mått', async ({
     page,
   }) => {
     await mockEvent(page, eventDetail());
@@ -550,134 +560,54 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     expect(kortStil.radie).toBe('16px');
     expect(await kort.locator('h2').count()).toBe(0);
 
-    // Placeringen: kortet ligger ovanför Åtgärds-gruppen (K23 — eventdagens
+    // Placeringen: kortet ligger ovanför åtgärds-ytan (K23 — eventdagens
     // primärhandling), och raden delar åtgärdsradens mått (K26, DOM-mätt).
-    const atgarder = page.locator('section[aria-labelledby="grupp-atgarder"]');
+    const atgarderKort = page.getByTestId('atgarder-kort');
     const kortBox = await kort.boundingBox();
-    const atgarderBox = await atgarder.boundingBox();
+    const atgarderBox = await atgarderKort.boundingBox();
     expect((kortBox?.y ?? 0) + (kortBox?.height ?? 0)).toBeLessThanOrEqual(atgarderBox?.y ?? 0);
 
     const checkInHojd = (await checkIn.boundingBox())?.height;
     const atgardsRadHojd = (
-      await atgarder.getByRole('link', { name: 'Lägg till manuell anmälan' }).boundingBox()
+      await atgarderKort.getByRole('button', { name: 'Gå till åtgärder' }).boundingBox()
     )?.height;
     expect(checkInHojd).toBe(atgardsRadHojd);
   });
 
-  test('Åtgärder: TVÅ rader med radnummer 1–2 (TASK-145.5) och chevroner', async ({ page }) => {
-    await mockEvent(page, eventDetail());
-    await page.goto(`/event/${EVENT_ID}`);
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-
-    const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
-
-    // [ÄNDRAT, TASK-145.5 AC #4] Sex rader blev TVÅ. De fyra grå löftena
-    // (bekräftelsemail · betalningspåminnelse · markera betalda · eventinfo)
-    // stod `aria-disabled` sedan task-18.3, kopplades aldrig, och är var och en
-    // ett utskick eller en bulkmutation — alltså precis det eventsidan inte
-    // längre gör. Kvar står de två som faktiskt gör något: en LÄNK till manuell
-    // anmälan (K16/K17) och den skarpa utskriften.
-    //
-    // NUMRERINGEN: 18.15 byggkrav 1 sade att numren "ändras ej". Den garantin är
-    // MEDVETET bruten här och bokförd i `Atgarder.tsx`s docblock — den gällde en
-    // serie över sex rader, och fyra av dem finns inte längre.
-    const lagg = grupp.getByRole('link', { name: 'Lägg till manuell anmälan' });
-    await expect(lagg).toHaveAttribute('href', `/event/${EVENT_ID}/ny-anmalan`);
-
-    const rader = grupp.locator('a, button');
-    await expect(rader).toHaveCount(2);
-    const radNamn = ['Lägg till manuell anmälan', 'Skriv ut denna detaljsida'];
-    for (const [i, namn] of radNamn.entries()) {
-      // AT-PARITETEN (18.15 AC 2): radNAMNET är oförändrat — numret är
-      // aria-hidden dekor och ingår ALDRIG i det tillgängliga namnet.
-      await expect(rader.nth(i)).toHaveAccessibleName(namn);
-      // Radnumret leder raden (visuell referens, Gunilla-principen).
-      await expect(rader.nth(i).locator('span[aria-hidden="true"]').first()).toHaveText(
-        String(i + 1),
-      );
-    }
-
-    // RIVNINGEN (18.15): de ledande lucide-ikonerna är ersatta av numrutor —
-    // kuvert-grammatiken (K47) består i övriga ytor, och check-in-kortets
-    // UserCheck (utanför gruppen) är orörd (byggkrav 3).
-    await expect(grupp.locator('svg.lucide-mail')).toHaveCount(0);
-    await expect(grupp.locator('svg.lucide-plus')).toHaveCount(0);
-    await expect(grupp.locator('svg.lucide-badge-check')).toHaveCount(0);
-    await expect(grupp.locator('svg.lucide-printer')).toHaveCount(0);
-    await expect(page.locator('[data-testid="checkin-kort"] svg.lucide-user-check')).toHaveCount(1);
-
-    // K25-chevronen på BÅDA raderna (chevron = raden leder vidare).
-    await expect(grupp.locator('svg.lucide-chevron-right')).toHaveCount(2);
-  });
-
-  test('numrutan (18.15): vit 24×24-ruta i radens radie-språk som ALDRIG delar färg med hover-plattan', async ({
+  test('AtgarderKort: "Gå till åtgärder"-knapp med Send-ikon och chevron, fäller ut platshållartext', async ({
     page,
   }) => {
     await mockEvent(page, eventDetail());
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
-    const rad = grupp.getByRole('button', { name: 'Skriv ut denna detaljsida' });
-    const ruta = rad.locator('span[aria-hidden="true"]').first();
+    const kort = page.getByTestId('atgarder-kort');
+    const knapp = kort.getByRole('button', { name: 'Gå till åtgärder' });
+    await expect(knapp).toBeVisible();
+    await expect(knapp).toHaveAttribute('aria-expanded', 'false');
 
-    // Formen (byggkrav 2, renderad — L245/L246): 24×24 (size-6), radius 8 px
-    // (rounded-lg — radens/hover-plattans radie-språk, K56; kortets YTTERradie
-    // är 16 px och en annan skala), siffran i text-caption (12 px) semibold.
-    const box = await ruta.boundingBox();
-    expect(box?.width).toBe(24);
-    expect(box?.height).toBe(24);
+    // Ledande ikon (Send, 16 px) + K25-chevronen (18 px, raden leder vidare —
+    // här ett utfällbart interim, inte en navigation).
+    await expect(knapp.locator('svg.lucide-send')).toHaveCount(1);
+    await expect(knapp.locator('svg.lucide-chevron-right')).toHaveCount(1);
 
-    // LEDANDE positionen (byggkrav 1: numrutan ERSÄTTER den ledande ikonen) —
-    // rutan står först i raden, vid radens innehållskant (px-2 = 8 px).
-    // Delta-mätt i SAMMA ögonblick som box-mätningen (ompasserings-härdning:
-    // ingen retry-separerad om-mätning som kan jämföra gamla mot färska x).
-    const radBox = await rad.boundingBox();
-    expect((box?.x ?? 0) - (radBox?.x ?? 0)).toBe(8);
-
-    await expect(ruta).toHaveCSS('border-radius', '8px');
-    await expect(ruta).toHaveCSS('font-size', '12px');
-    await expect(ruta).toHaveCSS('font-weight', '600');
-    // Siffran CENTRERAD i rutan (byggkrav 2, renderad — flex-centreringen).
-    await expect(ruta).toHaveCSS('justify-content', 'center');
-    await expect(ruta).toHaveCSS('align-items', 'center');
-
-    // FÄRGVAKTEN (beslutsgrundad, S83-konvergensen: grå ruta föll på att den
-    // delade färg med hover-plattan — Marcus-fångst): rutan är bg-surface och
-    // får ALDRIG dela värde med bg-emphasized, i VILA och under HOVER.
-    // Siffran bär text-text-secondary (byggkrav 2, renderad).
-    const [surface, emphasized, sekundar] = await page.evaluate(() => {
-      const probe = document.createElement('span');
-      document.body.appendChild(probe);
-      const las = (token: string) => {
-        probe.style.color = token;
-        return getComputedStyle(probe).color;
-      };
-      const trio = [
-        las('var(--mm-surface)'),
-        las('var(--mm-bg-emphasized)'),
-        las('var(--mm-text-secondary)'),
-      ];
-      probe.remove();
-      return trio;
-    });
-    expect(surface).not.toBe(emphasized);
-    await expect(ruta).toHaveCSS('background-color', surface);
-    await expect(ruta).toHaveCSS('color', sekundar);
-    await rad.hover();
-    await expect(rad).toHaveCSS('background-color', emphasized);
-    await expect(ruta).toHaveCSS('background-color', surface);
+    // Platshållartexten är DOLD tills knappen klickas (interimet är öppet
+    // bokfört: åtgärds-sidan finns inte ännu, se Atgarder.tsx § AtgarderKort).
+    await expect(kort.getByText(/Åtgärds-sidan — eget prototyp-pass/)).toHaveCount(0);
+    await knapp.click();
+    await expect(knapp).toHaveAttribute('aria-expanded', 'true');
+    await expect(kort.getByText(/Åtgärds-sidan — eget prototyp-pass/)).toBeVisible();
   });
 
-  test('hover-plattan (K72): emphasized-platta med rundade hörn på hovrad rad, transparent i vila', async ({
+  test('hover-plattan (K72): AtgarderKorts knapp bär emphasized-platta med rundade hörn på hover, transparent i vila', async ({
     page,
   }) => {
     await mockEvent(page, eventDetail());
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
-    const rad = grupp.getByRole('button', { name: 'Skriv ut denna detaljsida' });
+    const kort = page.getByTestId('atgarder-kort');
+    const rad = kort.getByRole('button', { name: 'Gå till åtgärder' });
 
     // Vila: transparent bakgrund (plattan finns bara vid hover).
     const bgVila = await rad.evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -700,8 +630,7 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     // Plattans -mx-2-geometri (K72): knappen skjuter 8 px UTANFÖR kortets
     // 16 px innehålls-inset (kant + padding) — plattan får luft utan att
     // texten flyttas. DOM-mätt mot kortets computed kant/padding-kedja.
-    const kortet = grupp.locator('[data-testid="grupp-kort"]');
-    const kortMatt = await kortet.evaluate((el) => {
+    const kortMatt = await kort.evaluate((el) => {
       const s = getComputedStyle(el);
       return {
         x: el.getBoundingClientRect().x,
@@ -713,7 +642,7 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     expect(radX).toBe(kortMatt.x + kortMatt.inset - 8);
   });
 
-  test('Skriv ut är skarp: raden anropar window.print', async ({ page }) => {
+  test('SkrivUtKort: "Skriv ut"-knappen är skarp — anropar window.print', async ({ page }) => {
     await mockEvent(page, eventDetail());
     await page.addInitScript(() => {
       (window as unknown as { __printAnrop: number }).__printAnrop = 0;
@@ -724,47 +653,56 @@ test.describe('Åtgärder + check-in-ingången (task-18.3)', () => {
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Skriv ut denna detaljsida' }).click();
+    const skrivUtKort = page.getByTestId('skriv-ut-kort');
+    await expect(skrivUtKort.locator('svg.lucide-printer')).toHaveCount(1);
+    await skrivUtKort.getByRole('button', { name: 'Skriv ut' }).click();
     const anrop = await page.evaluate(
       () => (window as unknown as { __printAnrop: number }).__printAnrop,
     );
     expect(anrop).toBe(1);
   });
 
-  // [VÄNT, TASK-145.5 AC #4] Testet hette "okopplade rader bär aria-disabled
-  // tills sina flöden finns" och vaktade interimet. Interimet är RIVET: de fyra
-  // okopplade raderna var utskick eller bulkmutationer, och eventsidan är en ren
-  // översyn. Testet vaktar därför nu FRÅNVARON i stället för tillståndet — samma
-  // rad, motsatt riktning, så en återinförd grå rad fälls i stället för att
-  // passera tyst.
-  test('de fyra grå löftena är RIVNA — ingen rad i gruppen bär kvar aria-disabled', async ({
+  // [ÄNDRAT, TASK-162.2] Testet hette "de fyra grå löftena är RIVNA" och
+  // vaktade FRÅNVARON av de fyra okopplade utskicks-/mutationsraderna inuti
+  // den gamla gruppen (TASK-145.5). Gruppen SJÄLV är nu riven (AC #1) — testet
+  // generaliseras därför en nivå till: hela sektionen, dess h2 och samtliga
+  // gamla rader (inklusive de fyra grå löftena) ska vara BORTA, och
+  // ersättarna OVILLKORLIGT synliga. Samma rad, vidare räckvidd — en halv
+  // rivning ska fällas lika säkert som en kvarglömd grå rad.
+  test('den gamla rubricerade Åtgärder-gruppen är RIVEN — ingen sektion, ingen h2, ingen gammal rad', async ({
     page,
   }) => {
     await mockEvent(page, eventDetail());
     await page.goto(`/event/${EVENT_ID}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
-    const grupp = page.locator('section[aria-labelledby="grupp-atgarder"]');
+    // Sektionen (`DetaljGrupp id="grupp-atgarder"`) och dess h2 "Åtgärder" —
+    // bevisas ur TVÅ håll (sektionslokatorn OCH heading-rollen) så en halv
+    // rivning (t.ex. bara sektionen bortmonterad, h2 kvarglömd någon
+    // annanstans) inte kan slinka igenom en av dem.
+    await expect(page.locator('section[aria-labelledby="grupp-atgarder"]')).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 2, name: 'Åtgärder' })).toHaveCount(0);
+
+    // "Lägg till manuell anmälan" finns INTE längre på eventsidan (flyttar in
+    // i AtgarderKorts hopkoppling när åtgärds-sidan byggs, eget kort efter
+    // S100) — och den skarpa "Skriv ut denna detaljsida"-radformen samt de
+    // fyra grå löftena (TASK-145.5) är rivna med gruppen.
+    await expect(page.getByRole('link', { name: 'Lägg till manuell anmälan' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Skriv ut denna detaljsida' })).toHaveCount(0);
     for (const namn of [
       'Skicka bekräftelsemail till obekräftade',
       'Skicka betalningspåminnelse till obetalda',
       'Markera alla obetalda som betalda',
       'Skicka eventinfo till alla anmälda',
     ]) {
-      await expect(grupp.getByRole('button', { name: namn })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: namn })).toHaveCount(0);
     }
-    // Generaliserat: ingen rad alls i gruppen står i det rivna interim-läget.
-    // Ett `aria-disabled` element är fortfarande ett löfte — noll element är
-    // inget löfte alls.
-    await expect(grupp.locator('[aria-disabled="true"]')).toHaveCount(0);
 
-    // De två kvarvarande raderna är skarpa och annonserar sig som sådana.
-    await expect(
-      grupp.getByRole('link', { name: 'Lägg till manuell anmälan' }),
-    ).not.toHaveAttribute('aria-disabled', 'true');
-    await expect(
-      grupp.getByRole('button', { name: 'Skriv ut denna detaljsida' }),
-    ).not.toHaveAttribute('aria-disabled', 'true');
+    // Ersättarna, OVILLKORLIGT synliga (AC #1 andra hälften) — check-in-
+    // kortets UserCheck-ikon (utanför åtgärds-ytan) är orörd.
+    await expect(page.getByTestId('atgarder-kort')).toBeVisible();
+    await expect(page.getByTestId('skriv-ut-kort')).toBeVisible();
+    await expect(page.locator('[data-testid="checkin-kort"] svg.lucide-user-check')).toHaveCount(1);
   });
 });
 
