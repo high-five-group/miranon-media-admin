@@ -4,7 +4,7 @@ title: 'Skiva: Registrets promovering (A2–A6)'
 status: To Do
 assignee: []
 created_date: '2026-08-08 07:42'
-updated_date: '2026-08-08 09:19'
+updated_date: '2026-08-08 09:22'
 labels:
   - ready-for-agent
 dependencies:
@@ -29,15 +29,13 @@ Registrets fem avvikelser (A2 navigering, A3 basen, A4 avdelaren, A5 Bor över-r
 - [ ] #6 Berörda e2e- och acceptance-tester uppdaterade till promoverad form i SAMMA ändring; sviterna gröna
 <!-- AC:END -->
 
-
-
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
 - [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
-- [ ] #7 Datavägs-invarianten verifierad: inga protoDataMode-grenar flippade
+- [x] #7 Datavägs-invarianten verifierad: inga protoDataMode-grenar flippade
 <!-- DOD:END -->
