@@ -1812,7 +1812,16 @@ function GranskningsSida({
           och handlingen sker numera på den här sidan. Markeringen är samma
           `valda`-state som hubben äger — ETT urval, två vyer, aldrig en kopia
           som kan glida isär. */}
-      <DetaljGrupp id="grupp-granska-mottagare" rubrik={`Mottagare · ${mottagare.length}`}>
+      {/* RUBRIKEN BÄR INGET TAL (Marcus varv 20). Den sade "Mottagare · 8" två
+          rader under "Skicka bekräftelsemail till 8 personer" — samma tal, samma
+          skärmbild, ingen ny upplysning.
+
+          VARFÖR DET INTE ÄR SAMMA SAK SOM HUBBENS RÄKNARE: mottagar-ytans
+          accordion-huvud bär "7 av 19 deltagare markerade" och det talet BEHÖVS,
+          eftersom listan där är INFÄLLD — räknaren är då det enda som svarar på
+          "vad tog jag med mig hit?". Här är listan utfälld och står direkt under
+          meningen som redan sagt talet. */}
+      <DetaljGrupp id="grupp-granska-mottagare" rubrik="Mottagare">
         <div className="flex flex-col gap-2 py-4">
           {mottagare.length === 0 ? (
             <p className="text-body text-text-muted">
@@ -1842,12 +1851,17 @@ function GranskningsSida({
         </div>
 
         <div className="py-2.5">
-          {forsta && (
-            <p className="pb-1.5 text-caption text-text-muted">
-              Visas som <span className="font-medium">{displayName(forsta)}</span> får den. Var och
-              en får sitt eget mail med sina egna uppgifter.
-            </p>
-          )}
+          {/* "FÖRHANDSVISNINGSEXEMPEL" ÄR HELA ETIKETTEN (Marcus varv 20).
+              Raden sade tidigare "Visas som <Namn> får den. Var och en får sitt
+              eget mail med sina egna uppgifter." — två meningar för att bära
+              samma sak ordet "exempel" bär ensamt. Att texten är ETT exempel
+              säger redan att det finns fler; att den namngav vem det var ett
+              exempel för var en precision ingen bad om.
+
+              INNEHÅLLET ÄR OFÖRÄNDRAT: platshållarna fylls fortfarande ur
+              första mottagaren, så exemplet är ett verkligt utfall och inte en
+              påhittad "Anna Andersson". Det är bara etiketten som krympt. */}
+          {forsta && <p className="pb-1.5 text-caption text-text-muted">Förhandsvisningsexempel</p>}
           <p
             className={`${TEXTYTA_KLASS} overflow-auto whitespace-pre-wrap bg-surface text-body text-text-secondary`}
           >
@@ -1872,14 +1886,25 @@ function GranskningsSida({
         </div>
       </DetaljGrupp>
 
-      {/* GRINDEN. Oåterkalleligheten sägs FÖRE draget, aldrig efter — texten
-          är det Lotta ska ha läst när handen når handtaget. */}
-      <div className="flex flex-col gap-4 px-4">
-        <p className="text-small text-text-muted">
-          Ett skickat utskick går inte att ångra. Mottagare som saknar e-post eller har tackat nej
-          tas bort av servern.
-        </p>
+      {/* GRINDEN. VARNINGSRADEN ÖVER DEN ÄR BORTA (Marcus varv 20): "Ett skickat
+          utskick går inte att ångra. Mottagare som saknar e-post eller har
+          tackat nej tas bort av servern." Hans skäl river den vid roten —
+          *"de fattar man ändå och de är ju därför slide-to-confirm sitter där"*.
+          Han har rätt i formen: ett handtag man måste DRA säger oåterkallelighet
+          starkare än en mening som påstår den. Raden förklarade den mekanism
+          som stod bredvid.
 
+          MEN DEN BAR TVÅ SAKER, OCH BARA DEN ENA ÄR ERSATT. Consent-meningen —
+          att servern tyst undertrycker den som tackat nej till utskick — har nu
+          ingen bärare någonstans i ytan. Den lämnas MEDVETET obyggd i stället
+          för att flyttas någon annanstans i granskningen: undertryckandet är ett
+          UTFALL, inte en förutsägelse (klienten filtrerar aldrig själv — det är
+          `SegmentMailCompose`s kontrakt, ADR-067), och att gissa det före skick
+          vore att visa ett tal vi inte kan stå för. Rätt hemvist är därför
+          resultatredovisningen, som är exakt den yta research-passet om
+          post-send-tillståndet nu utreder. Saknad e-post har fortfarande sin
+          egen varning högre upp, där den kan mätas. */}
+      <div className="flex flex-col gap-4 px-4">
         <SlideToConfirm
           label="Bekräfta utskicket"
           prompt="Dra för att bekräfta"
