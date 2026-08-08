@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-01
+updated: 2026-08-08
 review_by: 2026-11-15
 status: stable
 ---
@@ -88,7 +88,7 @@ app8uGPrVCVOm6LfD
 | Path to Conversion | `tblor5TK8HeryGXIj` | 1 | **Tom strukturell behållare** — bara `Name` (singleLineText). |
 | Instagram Posts | `tblMpQI1crF521Xsp` | 1 | **Tom strukturell behållare** — bara `Name` (singleLineText). |
 
-**18 tabeller. 358 fält totalt 2026-04-28.** Källa: `02-live-state.md` §1–§2.
+**18 tabeller. 358 fält totalt 2026-04-28.** (Proveniens: extraherat ur `02-live-state.md` §1–§2 — research-underlag, ej en parallell sanningskälla; detta dokument förblir bäraren, ADR-100 §2.)
 
 #### Prod-basens additiva tillskott 2026-07-23 (S75 prod-deploy-vågen)
 
@@ -360,7 +360,7 @@ App-skrivet fält (Fas 6g L3, [ADR-065](../decisions/ADR-065-segment-regel-persi
 
 **ID-topologi staging↔prod (verifierat live 2026-06-26, Session 36 pass 2):** staging-basen (`apphjj8Q7lkXCMsL4`) och prod (`app8uGPrVCVOm6LfD`) delar IDENTISKA tabell- och fält-ID:n för de DUPLICERADE fälten (Segment-tabell-id `tbll2N6JKCj4u6y9o` på BÅDA) — motsäger [ADR-050](../decisions/ADR-050-isolerad-staging-miljo.md) T2:s antagande om "nya tabell-ID:n" på kopian. Data-isolationen håller ändå: `list_records` på staging-Segment = tomt, prod bär de 9 legacy-raderna, och `create_field` är empiriskt baseId-respekterande (staging-skrivning landade staging-only, prod orört — verifierat denna landning). NYA fält får dock DISTINKTA ID:n per bas: `App-segmentregel` = prod `fldhN1wH6sXODdfb7` ≠ staging `flduG7pKaHb9tTzBY`. `describe_table`-by-namn är opålitlig mot dessa baser → adressera Segment per id. **TODO:** en additiv [ADR-050](../decisions/ADR-050-isolerad-staging-miljo.md)-korrigerings-not (README § Korrigering vs supersedering) bör landas separat — denna data-model-not registrerar fyndet durabelt tills dess.
 
-Källa för Schema cheat sheet: `02-live-state.md` §3 + `01-extraction.md` §A.4 + `01-extraction.md` §I (Edge Function-kontrakt).
+Proveniens för Schema cheat sheet: extraherat ur `02-live-state.md` §3 + `01-extraction.md` §A.4 + `01-extraction.md` §I (Edge Function-kontrakt) — research-underlag, ej en parallell sanningskälla (ADR-100 §2).
 
 ### Utskickslogg — fält + write-fält (Fas 6h)
 
@@ -381,7 +381,7 @@ Revisionslogg för bulk-mailutskick. **6h:s write-mål** ([ADR-067](../decisions
 
 **Send-skrivbara fält 6h:** 5 (Namn på utskick, Skickat till, Filter snapshot, Mailutskick copy, Utskicks-ID-valfri) + den additiva `Idempotensnyckel`-kolumnen (`fldgB4EWDIksNCvN2`, skapad L2a på staging; prod vid deploy). **Bulkutskick** (`tblWarzSse85NI1Zx`) är en full Make-legacy-kampanjtabell (Status singleSelect, Segment-länk, Ämne/Mailtext, `Skicka`-button → Make-webhook, Förhandsgranskning-formula) — coexistens lämnas orörd; 6h skapar ingen Bulkutskick-rad i L0-scope.
 
-> **Schema-projektion vs live (L189-not):** den landade `MailLogEntrySchema` (read-projektion, S33) modellerar 8 av tabellens 9 fält — den **utelämnar** `Antal öppnade mail` (`fldmDGQsMv8BbPWok`, link → Email Opens). Ingen motsägelse (alla projicerade fält stämmer mot live till namn/typ/formelform); det utelämnade fältet hör till opens-ingestion (deferrad). Live är auktoritativ.
+> **Schema-projektion vs live (L189-not):** den landade `MailLogEntrySchema` (read-projektion, S33) modellerar 8 av tabellens 9 fält — den **utelämnar** `Antal öppnade mail` (`fldmDGQsMv8BbPWok`, link → Email Opens). Ingen motsägelse (alla projicerade fält stämmer mot live till namn/typ/formelform); det utelämnade fältet hör till opens-ingestion (deferrad). Verifieras mot Airtable-live, inte mot detta dokuments egen prosa — Airtable äger ursprunget, detta dokument förblir bäraren i repot (ADR-100 §2).
 
 ---
 

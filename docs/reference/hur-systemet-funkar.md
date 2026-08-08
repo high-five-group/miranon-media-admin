@@ -40,6 +40,14 @@ via `78ad1c68`; det datumet hade aldrig följt med hit).*
 
 ## Ordlista
 
+> **Nybörjar-primer, inte en andra ordlista.** Detta är absoluta grundbegrepp
+> för den som är helt ny (Gunilla-nivå) — vad *är* Airtable, en automation,
+> en Edge Function. Produktdomänens begrepp (Person, Event, Anmälan m.fl.)
+> äger [`ORDLISTA.md`](../../ORDLISTA.md) i repo-roten (dess eget deklarerade
+> snitt, rad 11–15); samarbetssystemets termer bor i hubbens `SYSTEMET.md` §0.
+> Vid en dubblett vinner den ytan — den här listan är en karta för nybörjaren,
+> inte en tredje auktoritet (ADR-100 §2).
+
 | Ord | Betyder |
 |---|---|
 | **Airtable** | Molndatabas. Som Excel, fast tabellerna kan länka till varandra. |
