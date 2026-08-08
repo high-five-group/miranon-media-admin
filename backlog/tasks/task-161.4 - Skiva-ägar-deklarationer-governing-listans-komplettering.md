@@ -1,10 +1,10 @@
 ---
 id: TASK-161.4
 title: 'Skiva: ägar-deklarationer + governing-listans komplettering'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 19:05'
-updated_date: '2026-08-08 08:03'
+updated_date: '2026-08-08 08:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -94,10 +94,16 @@ check (EXIT=0, endast pre-existerande varningar i orörd kod), build
 (EXIT=0), test:api (465 passed, EXIT=0).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd i S99 resume 3 (2026-08-08): PR #982 mergad 720e8801, per-jobb-grön (gh pr checks: 0 fail/pending). Governing-listan 14→17 (CONTRIBUTING, README, DESIGN-SYSTEM-SPEC med ny frontmatter + grind); ägar-deklarationen (ADR-100-formen) installerad på samtliga 17; data-model.md:s FYRA faktiska kvarvarande auktoritets-anspråk konsoliderade till EN deklaration — agenten upptäckte att kartans Ö9-rader redan omformats av 161.3 och identifierade de verkliga anspråken mot dagens disk i stället för den frusna kartan. Ö10 STÄNGD (deklarationens Äger-fält skiljer mekaniskt kartor från källor) · Ö11 STÄNGD SOM DESIGNAT (schema_reference avsiktligt UTAN grind, frusen med banderoll — bokfört explicit). Testsviten tvåsidigt utökad: T14 bevisar tre samtidiga distinkta fel i de tre nya posterna; 15/15 PASS. ci.yml-kommentaren synkad 14→17; CLAUDE.md:85:s '14' verifierad vara ANNAN räkning (git blame) och korrekt orörd. Fullt DoD grönt inkl. test:api 465/465. Lesson-kandidat bokförd: Read med bar absolut-path läste delade checkouten i stället för agent-worktreen — fångad före edit.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
