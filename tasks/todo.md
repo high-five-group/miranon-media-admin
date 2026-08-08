@@ -402,11 +402,17 @@ Huvudkatalogen tillgänglig (ägarlappen släppt vid paus; S99 fjärde pausen
 `#995` + S100 båda `lifecycle: paused` — ingen parallell session aktiv).
 Numrering re-verifierad mot `c929ec6e`, INGEN divergens: 104/L480 + 8
 fragment/T139 (indexet, inte filräkning — T137/T138 är indexrader utan
-kort)/task-163/f47. **NÄSTA per handoff:** post-merge-CI för `#991`/`#992`
-PER JOBB (särskilt staging-e2e) → stängnings-commits `162.2`+`162.3` →
-spawna `162.4` → G2-grillningen före/vid `162.5` Marcus QA → efter godkänd
-QA `145.6` (flagg-rivning + regressionslås).
-**HANDOFF: sessionsdok S93 § Paushistorik (åttonde) + Del 12.**
+kort)/task-163/f47. **UPPDATERAT under passet (Del 13):** staging-
+diagnosen gav 9 unika röda i fyra klasser → testfixarna `#999`+`#1000`
+MERGADE · fynd-korten **task-163–165** + tråd **T139** mintade (`#1001`)
+på Marcus GO — de stående röda har ägare · AC #6-TOLKNINGEN KVITTERAD
+(stäng på promoverings-ytornas gröna, främmande röda på egna kort) ·
+**S100-ÖVERTAGANDET KVITTERAT** (åtgärds-/granskningssidan = promoveringens
+andra tillämpning efter 162-kön+QA+G2; facit-låsningen Marcus moment).
+**HELHETSPLANEN I FIL: sessionsdok S93 § Del 13 Verkställighets-ordningen**
+(1 post-merge-bevis→stängningar · 2 spawna 162.4 · 3 163–165+larmstäd ·
+4 G2 · 5 QA→145.6 · 6 S100-övertagandet · 7 vilande).
+**HANDOFF: sessionsdok S93 § Paushistorik (åttonde) + Del 12–13.**
 *(Föregående paus-läge nedan oförändrat.)*
 
 **Session 93 ⏸️ PAUSAD (2026-08-08, åttonde pausen, `lifecycle: paused`) —
