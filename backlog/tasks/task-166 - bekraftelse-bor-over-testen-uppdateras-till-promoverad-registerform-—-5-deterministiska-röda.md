@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-08 18:04'
+updated_date: '2026-08-08 18:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,15 +21,15 @@ Post-merge-körningarna 31269265089 och 31270539778 fäller SAMMA 5 test i två 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Samtliga 5 fallande test uppdaterade till promoverad registerform; inga src-ändringar
-- [ ] #2 Övriga assertioner i de två filerna genomsökta mot promoverad form (samma svep-miss får inte upprepas inom filerna)
+- [x] #1 Samtliga 5 fallande test uppdaterade till promoverad registerform; inga src-ändringar
+- [x] #2 Övriga assertioner i de två filerna genomsökta mot promoverad form (samma svep-miss får inte upprepas inom filerna)
 - [ ] #3 Testen bevisade gröna i post-merge-körning på main
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

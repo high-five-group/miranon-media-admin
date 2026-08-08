@@ -583,7 +583,13 @@ test.describe('Markera-läget — urvalet och utgången mot Åtgärds-sidan (tas
       .getByRole('button', { name: /^Väntar på bekräftelse/ })
       .click();
     await expect(registret(page).getByTestId('deltagar-kort')).toHaveCount(2);
-    await expect(gruppen(page).getByRole('button', { name: 'Rensa filtret' })).toBeVisible();
+    // [ÄNDRAT, TASK-162.3 → TASK-166] Knappen heter "Rensa filter" (den
+    // promoverade filterpanelens badge-bärande knapp, `RegisterFilterRad`),
+    // inte längre "Rensa filtret" (den rivna flik-formens länk, TASK-162.3
+    // AC #1). Namnet bär en sr-only-räknare ("Rensa filter, 1 aktivt
+    // filterval") — regex matchar prefixet oavsett räknarens värde, samma
+    // mönster som `event-deltagare.staging.test.ts` redan använder.
+    await expect(gruppen(page).getByRole('button', { name: /^Rensa filter/ })).toBeVisible();
 
     // Markera-läget finns HÄR, och verkar över den filtrerade listan.
     await oppnaMarkeringslaget(page);
@@ -600,7 +606,7 @@ test.describe('Markera-läget — urvalet och utgången mot Åtgärds-sidan (tas
     await expect(platshallare.getByText('Anna Ek')).toBeVisible();
     await expect(platshallare.getByText('Bertil Sund')).toBeVisible();
     await expect(platshallare.getByText('Cecilia Lund')).toHaveCount(0);
-    await expect(gruppen(page).getByRole('button', { name: 'Rensa filtret' })).toBeVisible();
+    await expect(gruppen(page).getByRole('button', { name: /^Rensa filter/ })).toBeVisible();
   });
 
   test('AC #3: utgången är en ÄRLIG interim — ingen länk och ingen chevron mot en sida som inte finns', async ({
