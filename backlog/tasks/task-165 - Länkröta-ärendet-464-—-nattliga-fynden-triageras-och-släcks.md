@@ -1,10 +1,10 @@
 ---
 id: TASK-165
 title: 'Länkröta-ärendet #464 — nattliga fynden triageras och släcks'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-08 17:11'
-updated_date: '2026-08-08 17:54'
+updated_date: '2026-08-08 18:09'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,8 +21,8 @@ Stående ärende #464 (öppnat 2026-07-30, icke-blockerande per ADR-082 beslut 4
 <!-- AC:BEGIN -->
 - [x] #1 Varje fynd i senaste röda körningen klassat extern/intern med motivering i kortet
 - [x] #2 Fix landad (.lycheeignore och/eller pekar-fixar)
-- [ ] #3 nightly-links-körning grön efter fixen (dispatch eller nästa natt)
-- [ ] #4 Ärendet #464 stängt med motivering
+- [x] #3 nightly-links-körning grön efter fixen (dispatch eller nästa natt)
+- [x] #4 Ärendet #464 stängt med motivering
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -119,10 +119,16 @@ AC #3/#4 förblir öppna. Ny dispatch mot denna gren startad efter armering
 (se PR-beskrivningen för run-ID) — invänta INTE utfallet (ADR-096).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Två fix-pass: #1008 (run 31236116308:s 8+1 fynd) + #1011 (run 31269833863:s 8 rest-fynd på runner-nätvägen). Samtliga fynd klassade med bevis i båda riktningar (lokal curl plain+Chrome-UA); noll interna pekare ruttnade. Bevis: Länkkontroll (utan cache) GRÖN i run 31270626838. Ärendet #464 stängt 2026-08-08 med körnings-URL. DoD #3: kö-CI grön per jobb på båda PR:erna (docs-klass); länk-jobbets gröna är skarpbeviset.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
