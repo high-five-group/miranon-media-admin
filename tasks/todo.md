@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 99 ▶️ ÅTERUPPTAGEN (2026-08-08, `lifecycle: active`, fjärde
+resumen) — MARCUS-MOMENTEN ÄR ALLT SOM ÅTERSTÅR** — Marcus resume-order
+utan ny scope; agent-pipelinen är TOM och arbetet fortsätter per
+MARCUS-SEKVENSEN: QA `160.7` + `161.10` (PRD 160/161 stängs efter dem) ·
+BYGGPLAN-LÄTTLÄST-beslutet (frys eller Gunilla-uppdatering) ·
+hub-sync-vägvalet (MÅSTE föregå session-ends skörd) · boka `148.5` ·
+triagera `154`–`156` · Dependabot `#635` · lärdomslager-spårbeslutet.
+Paus-PR:en `#995` verifierad mergad (`8c98f942`) grön per jobb. Egen
+worktree `s99-resume-4` per ADR-090 beslut 2 (främmande LEVANDE ägarlapp:
+S93 äger huvudkatalogen på gren `docs/fynd-kort-staende-roda` och mintar
+fynd-kort otrackat — task-163/164/165 sågs under resumens läsning, och
+huvudkatalogens arbetsyta MUTERADE mellan två läsningar). Numrering
+re-verifierad mot `2404b421`: **104**/**L480** + 8 fragment/**T139**/
+**f47** håller; task-axeln DIVERGERAR från handoffens 163 — committad max
+är 162 men S93:s otrackade mints gör nästa lediga ≥166; re-derivera i
+mint-ögonblicket och räkna med osynliga systerträds-kort (CLI-hålet,
+CLAUDE.md § Kortnummer).
+**HANDOFF: sessionsdok S99 § Paushistorik (fjärde) + Del 11–12.**
+*(Föregående paus-läge nedan oförändrat.)*
+
 **Session 99 ⏸️ PAUSAD (2026-08-08, fjärde pausen, `lifecycle: paused`) —
 AGENT-SIDAN AV UPPDRAG 9 KOMPLETT; ALLT KVARVARANDE ÄR MARCUS-MOMENT.**
 Nio av nio agent-skivor i `task-161` Done-flippade efter per-jobb-verifikat
