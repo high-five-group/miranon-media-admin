@@ -1,0 +1,23 @@
+- text: Visa
+- button "Väntar på bekräftelse Visa"
+- text: Väg in
+- button "Alla vägar in Väg in"
+- text: Visar 2 av 5 i registret
+- button "Rensa filter , 1 aktivt filterval"
+- button "Skriv ut"
+- button "Markera anmälningar"
+- list:
+  - listitem:
+    - link "Anna Andersson E-post anna.andersson@example.se":
+      - /url: /personer/recVisualPers00001
+    - text: Väntar på bekräftelse
+    - link "Öppna anmälan för Anna Andersson":
+      - /url: /event/recVisualEvent0001/anmalan/recVisualReg000001
+      - text: /Anmäld \d+ september \d+:\d+/
+  - listitem:
+    - link "Björn Bergström E-post bjorn.bergstrom@example.se":
+      - /url: /personer/recVisualPers00002
+    - text: Väntar på bekräftelse
+    - link "Öppna anmälan för Björn Bergström":
+      - /url: /event/recVisualEvent0001/anmalan/recVisualReg000002
+      - text: /Anmäld \d+ september \d+:\d+/

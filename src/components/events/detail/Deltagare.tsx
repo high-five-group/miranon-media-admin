@@ -1689,7 +1689,17 @@ function ArbetsKo({
           Wrappern är GEMENSAM för båda vyerna (bara innehållet är grenat), så
           en ovillkorlig `border-b-0` hade tagit bort avdelaren i skarpa vyn
           också — där ingen bett om det. */}
-      <div className={cn('flex flex-col gap-2.5 py-3', protoVariant === 'a' && 'border-b-0')}>
+      {/* [TASK-162.1] `data-testid="register-yta"` — promoverings-grindens
+          lokator (ADR-103 B4). Wrappern är redan GEMENSAM för båda vyerna
+          (se kommentaren ovan), så testid:t ändrar ingen gren och flippar
+          ingen form — det ger bara ariaSnapshot-grinden ett stabilt fäste
+          runt precis det innehåll som facitkartan (A2–A6) pekar ut som
+          registrets yta, utan att dra in toppblocket (6a, redan identiskt)
+          eller betalningsarbetsytan (6h, redan identisk) i referensen. */}
+      <div
+        data-testid="register-yta"
+        className={cn('flex flex-col gap-2.5 py-3', protoVariant === 'a' && 'border-b-0')}
+      >
         {/* K41: Formulär-fliken riven — formulärvägen är NORMEN och behöver
             ingen egen flik. Kapseln är familjens ToggleButtonGroup-primitiv.
             [PROTOTYPE] [S93] ITERATIONSVÅG: fliken renderas ENDAST i skarpa
