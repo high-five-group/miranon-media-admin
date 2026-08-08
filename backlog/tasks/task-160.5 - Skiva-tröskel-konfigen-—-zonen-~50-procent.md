@@ -4,7 +4,7 @@ title: 'Skiva: tröskel-konfigen — zonen ~50 procent'
 status: Done
 assignee: []
 created_date: '2026-08-07 17:00'
-updated_date: '2026-08-07 18:59'
+updated_date: '2026-08-08 07:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,14 +25,6 @@ ordinal: 287000
 - [x] #2 Sessionsstart-kravet bokfört: miljövärdet biter först i session född efter ändringen — samma klass som hook-registrering; verifikatsvägen dokumenterad i kortet
 - [x] #3 Docs-grindarna gröna; PR armerad, per-jobb-grön
 <!-- AC:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [x] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -88,6 +80,8 @@ ej mergad PR #947 "docs(backlog): [S99] 160.2 + 160.3 Done efter verifikat"). De
 skivas kod byggdes därför på en NY gren grenad direkt ur origin/main (efter git fetch),
 inte ovanpå den ursprungliga worktree-branchen, för att undvika att blanda in PR #947:s
 orelaterade kortstängningar i denna PR:s diff.
+
+VERIFIKATSVÄG STEG 1 BETALT 2026-08-08 (S99 resume 3 — första sessionen född efter mergen a9aea8ed): printenv CLAUDE_CODE_AUTO_COMPACT_WINDOW i sessionens Bash-subprocess gav exakt 500000 — env-blocket i .claude/settings.json injiceras och biter. Steg 2 (auto-nekningen vid ~500k tokens = zonlarmet, PreCompact-hooken fäller trigger=auto) återstår och fyrar naturligt när en session når zonen; steg 3-kaveatet (statusraden oanvändbar som signal) står oförändrat.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -95,3 +89,11 @@ orelaterade kortstängningar i denna PR:s diff.
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Stängd i S99 resume 2 (2026-08-07): PR #948 mergad a9aea8ed, per-jobb-grön (9 pass + 1 skip). Tröskeln satt EFTER grinden (säkerhetsordningen verifierad mot origin/main): CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000 i settings-env — uppdragets variabel-kandidat CLAUDE_AUTOCOMPACT_PCT_OVERRIDE falsifierades mot förstapartsdok av agentens eget premiss-pass; den verifierade token-variabeln (100k–1M, T111:s mätta 1M-fönster ⇒ 500k = ~50 %-zonen) var redan korrekt källmärkt i ADR-101. Sessionsstart-kravet + trestegs-verifikatsväg bokförda i kortet; biter i session född efter a9aea8ed.
 <!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
