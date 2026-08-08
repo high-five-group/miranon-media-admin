@@ -10,8 +10,6 @@ import {
   MailCheck,
   X,
 } from 'lucide-react';
-// [PROTOTYPE] [S93] hållplats-pass — kastbar wiring (throwaway-kontraktet):
-import { useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
@@ -24,11 +22,12 @@ import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
-// [PROTOTYPE] [S93] konvergens-pass (Del 3 beslut 1): Betalningars arbetsyta
-// flyttar in i Anmälda deltagare — se ArbetsKo:s "Öppna detaljer" nedan.
+// Betalningars arbetsyta flyttade in i Anmälda deltagare (S93 konvergens-pass
+// Del 3 beslut 1) — se ArbetsKo:s "Öppna detaljer" nedan.
 import { BetalningsDetaljer, DetaljRad } from './Betalningar';
-// [PROTOTYPE] [S93] hållplats-pass — se DeltagareHallplatsPrototyp.tsx (frågan,
-// huvudprototypfilen) + hallplats-steg-prototyp.ts (delad logik/fixturer).
+// Registrets steg-märke, toppräknare och filterpanel — PRODUKTIONSKOD sedan
+// TASK-145.1/145.2/162.3 trots filnamnet (S93-hållplats-prototypens
+// huvudfil): innehållet promoverades i sin helhet, se filens egen docblock.
 import {
   type HallplatsCounts,
   HallplatsMarke,
@@ -39,10 +38,7 @@ import { DetaljGrupp } from './DetaljGrupp';
 import { DAGMANAD } from './datumSpann';
 import {
   betalningsSplit,
-  HALLPLATS_PROTO_FIXTURES,
-  type HallplatsVariant,
   hallplatsSteg,
-  isHallplatsVariant,
   type RegisterFilter,
   type RegisterStegFilter,
   registerOrdning,
@@ -1064,20 +1060,15 @@ function MarkerbartKort({
 function BorOverRad({
   reg,
   onToggle,
-  disabled = false,
 }: {
   reg: Registration;
   onToggle: (reg: Registration, borOver: boolean) => void;
-  /** [PROTOTYPE] [S93] review-fix — `?data=proto`: kontrollen görs read-only
-      (native disabled-semantik), ingen mutation avfyras (se toggleBorOver). */
-  disabled?: boolean;
 }) {
   const pill = KATEGORI_PILL[kategori(reg)];
   return (
     <Checkbox
       data-testid="bor-over-rad"
       isSelected={reg.borOver === true}
-      isDisabled={disabled}
       onChange={(v) => onToggle(reg, v)}
       className="group flex cursor-pointer items-center gap-3 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 contrast-more:border-(--mm-navcard-border-contrast)"
     >
@@ -1122,33 +1113,22 @@ function BorOverRad({
     `ArbetsKo`s render. */
 function BorOverKrysslage({
   lista,
-  protoDataMode,
   onToggle,
 }: {
   lista: Registration[];
-  protoDataMode: boolean;
   onToggle: (reg: Registration, borOver: boolean) => void;
 }) {
   if (lista.length === 0) {
     return <p className="py-2 text-small text-text-secondary">Inga deltagare i denna kategori.</p>;
   }
   return (
-    <>
-      {/* Proto-banderollen RIVEN (S93 våg 20) — `protoDataMode` håller
-          fortfarande Bor över inaktiverad, bara texten är borta. */}
-      <ul className="flex flex-col gap-2.5">
-        {lista.map((reg) => (
-          <li
-            key={reg.id}
-            title={
-              protoDataMode ? 'Inaktiverad i förhandsvisningen (proto) — inget sparas' : undefined
-            }
-          >
-            <BorOverRad reg={reg} onToggle={onToggle} disabled={protoDataMode} />
-          </li>
-        ))}
-      </ul>
-    </>
+    <ul className="flex flex-col gap-2.5">
+      {lista.map((reg) => (
+        <li key={reg.id}>
+          <BorOverRad reg={reg} onToggle={onToggle} />
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -1234,24 +1214,13 @@ function DeltagarListan({
 
 // [RIVEN, TASK-162.3 AC #1/#4] `protoVariant` (`HallplatsVariant | null`) var
 // tidigare en egen prop här — hela `ArbetsKo`s rendering grenade på den
-// (flikar kontra filterpanel). Sedan promoveringen läser INGEN gren i denna
-// funktion `protoVariant` längre (registrets form är ovillkorlig), så propen
-// är genuint död, inte bara oanvänd i denna ändring. `Deltagare()` (nedan)
-// beräknar fortsatt `protoVariant` för `protoDataMode`-härledningen och
-// åtgärds-ytans (TASK-162.2) egna behov — den variabeln och hela
-// `?variant=`-maskineriet är ORÖRDA (AC #4); det är bara TRÅDNINGEN in i
-// just denna funktion som utgår, eftersom mottagaren inte längre kan läsa
-// den till något.
-function ArbetsKo({
-  event,
-  registreringar,
-  protoDataMode = false,
-}: {
-  event: Event;
-  registreringar: Registration[];
-  /** [PROTOTYPE] [S93] `?data=proto` — stubbar bekräfta-mutationen (§ DATA). */
-  protoDataMode?: boolean;
-}) {
+// (flikar kontra filterpanel). Sedan promoveringen läste ingen gren i denna
+// funktion `protoVariant` längre (registrets form var ovillkorlig), så propen
+// var genuint död. [RIVEN, TASK-145.6] `protoDataMode` (`?data=proto` —
+// stubbade bekräfta-/Bor-över-mutationerna i fixturläget) är riven av samma
+// skäl: hela hållplats-prototypens `?variant=`-maskineri är borta, och
+// `registreringar` kommer numera alltid ur den riktiga hämtningen.
+function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Registration[] }) {
   // [RIVEN, TASK-145.1] `panelId` (useId) bodde här — dess enda konsumenter
   // var Obekräftade/Bekräftade-panelernas `id`-attribut, borta med
   // `GruppRubrik`s två produktions-anropsplatser (AC #1).
@@ -1431,12 +1400,7 @@ function ArbetsKo({
   // topp-räknare går nu genom `vaxlaSteg` ovan, som skriver EN axel i ETT
   // tillstånd — ingen manuell ömsesidig uteslutning kvar att glömma.
 
-  // [PROTOTYPE] [S93] review-fix (uppdraget § FYND 2) — `?data=proto`:
-  // stubbad, samma read-only-förstärkning som bekraftaMarkerade ovan.
-  // Kontrollen (BorOverRad) görs redan `disabled` nedan — denna guard är
-  // försvar-i-djup, inte den enda spärren.
   const toggleBorOver = (reg: Registration, borOver: boolean) => {
-    if (protoDataMode) return;
     lodging.mutate({ registration: reg, borOver });
   };
 
@@ -1666,9 +1630,9 @@ function ArbetsKo({
           river den ärvda utan att röra något barns egen kant.
 
           OVILLKORLIG SEDAN TASK-162.3 (AC #3, facitkartan § A4). Klassen var
-          tidigare scopad till `protoVariant === 'a'` — nu river den avdelaren
-          i BÅDA lägena, eftersom registrets form (denna wrapper HELA
-          innehållet) inte längre grenar på `protoVariant`. */}
+          tidigare scopad till `protoVariant === 'a'` — river nu avdelaren
+          alltid, eftersom registrets form (denna wrapper HELA innehållet)
+          inte grenar på något variant-villkor (TASK-145.6 rev resten). */}
       {/* [TASK-162.1] `data-testid="register-yta"` — promoverings-grindens
           lokator (ADR-103 B4). Wrappern är redan GEMENSAM för båda vyerna
           (se kommentaren ovan), så testid:t ändrar ingen gren och flippar
@@ -1691,11 +1655,10 @@ function ArbetsKo({
          * `registerTraffar`, `visadRegisterLista`) är RIVNA (AC #1) — git
          * bevarar dem i denna fils blame (TASK-145.1–145.3).
          *
-         * `protoVariant`/`protoDataMode` SJÄLVA rörs INTE (AC #4): den
-         * villkorar fortsatt DATAVÄGEN (`Deltagare()` nedan, `?data=proto` vs
-         * `?data=verklig`) och styr andra ytor (åtgärds-ytan, TASK-162.2).
-         * Rivningen av `?variant=`-maskineriet i sig ligger i TASK-145.6,
-         * efter Marcus godkännande (ADR-103 B2 steg 4) — utanför denna skiva.
+         * [RIVEN, TASK-145.6] `protoVariant`/`protoDataMode` och hela
+         * `?variant=`/`?data=proto`-maskineriet (ADR-103 B2 steg 4, efter
+         * Marcus godkännande) är rivna — registret läser numera alltid den
+         * riktiga hämtningen, ingen datagren kvar att välja mellan.
          */}
         {unifiedSorted.length === 0 ? (
           <p className="py-2 text-small text-text-secondary">Inga anmälningar ännu.</p>
@@ -1724,11 +1687,7 @@ function ArbetsKo({
               avbokadeAntal={protoAvbokade.length}
             />
             {registerFilter.steg === 'bor-over' ? (
-              <BorOverKrysslage
-                lista={markeringsLista}
-                protoDataMode={protoDataMode}
-                onToggle={toggleBorOver}
-              />
+              <BorOverKrysslage lista={markeringsLista} onToggle={toggleBorOver} />
             ) : (
               <>
                 {/* Baren renderas ALLTID (AC #3, facitkartan § A6) — även vid
@@ -1784,15 +1743,13 @@ function ArbetsKo({
           `aktiva.length > 0`-vakt och wrapper-form som Betalningar.tsx:s egen
           K28-kommentar (toggeln + regionen i EN wrapper, ingen divide-y
           mellan dem). */}
-      {/* [TASK-145.4] AC #2 — arbetsytan renderas nu OVILLKORLIGT (tidigare
-          `protoVariant === 'a' && …`), för BÅDA lägena, eftersom facit-formen
-          nedan (BetalningsDetaljer, protoAktiv) är den ENDA formen som ska
-          visas: skarpa vyn hade fram till denna skiva ingen ersättning alls
-          (Betalningar-toppblocket bar den gamla, skrivbara formen — se
-          EventDetail.tsx). `protoAktiv` är ovillkorligt sant: läsyte-formen
-          (kortyta, ingen Input, Tidslinje, ingen röd etikett) är den enda
-          formen som får landa, i BÅDA lägena — inte en prototyp-specifik gren
-          längre. */}
+      {/* [TASK-145.4] AC #2 — arbetsytan renderas OVILLKORLIGT (tidigare
+          `protoVariant === 'a' && …`): skarpa vyn hade fram till denna skiva
+          ingen ersättning alls (Betalningar-toppblocket bar den gamla,
+          skrivbara formen — se EventDetail.tsx). [RIVEN, TASK-145.6]
+          `BetalningsDetaljer`s `protoAktiv`/`protoDataMode`-props är rivna —
+          läsyte-formen (kortyta, ingen Input, Tidslinje, ingen röd etikett)
+          är nu komponentens ENDA form, inte längre ett variant-val. */}
       {aktiva.length > 0 && (
         <div>
           <DetaljRad
@@ -1801,12 +1758,7 @@ function ArbetsKo({
             onToggle={() => setBetalningOppen((v) => !v)}
           />
           <div id="deltagare-betalningsdetaljer" hidden={!betalningOppen}>
-            <BetalningsDetaljer
-              event={event}
-              registreringar={aktiva}
-              protoAktiv
-              protoDataMode={protoDataMode}
-            />
+            <BetalningsDetaljer event={event} registreringar={aktiva} />
           </div>
         </div>
       )}
@@ -1820,32 +1772,6 @@ export function Deltagare({ event }: { event: Event }) {
     queryKey: queryKeys.registrations.byEvent(event.id),
     queryFn: () => dataSource.fetchRegistrations({ eventId: event.id }),
   });
-  // [PROTOTYPE] [S93] hållplats-pass — DEV-grindad ?variant=a + ?data=proto
-  // (underform A, S86-mekaniken). B/C är rivna i konvergens-passet (Del 3
-  // § Valet) — `isHallplatsVariant` känner numera bara igen `a`. Utan
-  // ?variant renderas EXAKT dagens träd: `protoVariant` är null, och varje
-  // gren nedan faller igenom till den OFÖRÄNDRADE
-  // isPending/isError/ArbetsKo-kedjan.
-  const [variantParam] = useQueryState('variant');
-  const [dataParam] = useQueryState('data');
-  const protoVariant: HallplatsVariant | null =
-    import.meta.env.DEV && isHallplatsVariant(variantParam) ? variantParam : null;
-  // [PROTOTYPE] [S93] fix-våg (uppdraget § D, Marcus punkt 3 — knappen gjorde
-  // inget): PrototypeSwitcher togglar `?data=` mellan null och 'verklig'
-  // (S90-kontraktet) — i variant-läge är FIXTURERNA default (bypassar den
-  // riktiga hämtningen, in-memory fixtur; ADR-061 rörs aldrig), `?data=verklig`
-  // ger riktig hämtning. Den tidigare `=== 'proto'`-kontrollen läste ett
-  // värde växlaren aldrig satte.
-  const protoDataMode = protoVariant != null && dataParam !== 'verklig';
-
-  if (protoDataMode) {
-    return (
-      <DetaljGrupp id="grupp-deltagare" rubrik="Anmälda deltagare">
-        <ArbetsKo event={event} registreringar={HALLPLATS_PROTO_FIXTURES} protoDataMode />
-      </DetaljGrupp>
-    );
-  }
-
   return (
     <DetaljGrupp id="grupp-deltagare" rubrik="Anmälda deltagare">
       {isPending ? (

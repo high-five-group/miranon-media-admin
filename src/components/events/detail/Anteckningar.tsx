@@ -1,8 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-// [PROTOTYPE] [S93] hållplats-pass review-fix-våg 2 (uppdraget § FYND 2,
-// defekt 2) — kastbar wiring, se Deltagare.tsx/Betalningar.tsx för samma
-// mönster:
-import { useQueryState } from 'nuqs';
 import { useRef, useState } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -14,7 +10,6 @@ import type { Event } from '@/domain/models/Event';
 import type { EventNote } from '@/domain/models/EventNote';
 import { queryKeys } from '@/queries/keys';
 import { DetaljGrupp } from './DetaljGrupp';
-import { isHallplatsVariant } from './hallplats-steg-prototyp';
 
 /**
  * Anteckningar (task-18.11; S73-facit K66–K71, ADR-075) — sidans sista grupp.
@@ -89,35 +84,24 @@ function AnteckningsKort({ note, event }: { note: EventNote; event: Event }) {
  * Fel-ytan (role=alert) renderas ur mutationens error. Författaren skickas
  * ALDRIG — EF:en sätter den server-side (ADR-075).
  *
- * [PROTOTYPE] [S93] review-fix-våg 2 (uppdraget § FYND 2, defekt 2):
- * `protoDataMode` (`?data=proto`) fanns tidigare INTE här — granskningsfynd:
- * composern skrev en RIKTIG anteckning på det RIKTIGA eventet trots att sidan
- * i övrigt var read-only-förstärkt i proto-läget. Samma disabled-mönster som
- * Betalningar.tsx/Deltagare.tsx: `isDisabled` på skrivrutan (native RAC-
- * semantik, blockerar inmatning helt) + `spara`/`rensa` guardar EXPLICIT
- * (försvar-i-djup, inte den enda spärren) + en delad förklaringsrad.
+ * [RIVEN, TASK-145.6] `protoDataMode` (`?data=proto`, review-fix-våg 2)
+ * stubbade skrivrutan i hållplats-prototypens fixturläge — se
+ * `Deltagare.tsx`/`Betalningar.tsx` för motsvarande rivning. Skarpa vyn
+ * (denna funktion) var alltid skrivbar; ingen gren rörs.
  */
-function Composer({
-  eventId,
-  protoDataMode = false,
-}: {
-  eventId: string;
-  protoDataMode?: boolean;
-}) {
+function Composer({ eventId }: { eventId: string }) {
   const [text, setText] = useState('');
   const rutaRef = useRef<HTMLTextAreaElement>(null);
   const mutation = useCreateEventNote(eventId);
-  const kanSpara = !protoDataMode && text.trim().length > 0 && !mutation.isPending;
+  const kanSpara = text.trim().length > 0 && !mutation.isPending;
 
   const spara = () => {
-    if (protoDataMode) return;
     const rensad = text.trim();
     if (!rensad || mutation.isPending) return;
     mutation.mutate(rensad, { onSuccess: () => setText('') });
   };
 
   const rensa = () => {
-    if (protoDataMode) return;
     setText('');
     rutaRef.current?.focus();
   };
@@ -149,7 +133,6 @@ function Composer({
         size="md"
         rows={4}
         autoGrow
-        isDisabled={protoDataMode}
         placeholder="Skriv en anteckning …"
         value={text}
         onChange={setText}
@@ -161,11 +144,11 @@ function Composer({
       )}
       <div className="flex items-center justify-end gap-2">
         {text.length > 0 && (
-          <Button intent="ghost" size="sm" onPress={rensa} isDisabled={protoDataMode}>
+          <Button intent="ghost" size="sm" onPress={rensa}>
             Rensa
           </Button>
         )}
-        <Button size="sm" onPress={spara} isDisabled={protoDataMode || !kanSpara}>
+        <Button size="sm" onPress={spara} isDisabled={!kanSpara}>
           Spara
         </Button>
       </div>
@@ -232,22 +215,9 @@ function Strommen({ event }: { event: Event }) {
  * (facit-formen: linje under composern). Grupp-skalet delas med sidans övriga grupper.
  */
 export function Anteckningar({ event }: { event: Event }) {
-  // [PROTOTYPE] [S93] hållplats-pass review-fix-våg 2 — samma DEV-grindade,
-  // oberoende `useQueryState`-läsning som Deltagare.tsx/Betalningar.tsx (nuqs
-  // synkar). Utan ?variant renderas EXAKT dagens träd.
-  const [variantParam] = useQueryState('variant');
-  const [dataParam] = useQueryState('data');
-  // [PROTOTYPE] [S93] fix-våg (uppdraget § D, Marcus punkt 3 — knappen gjorde
-  // inget): PrototypeSwitcher togglar `?data=` mellan null och 'verklig'
-  // (S90-kontraktet) — i variant-läge är FIXTURERNA default, `?data=verklig`
-  // ger riktig data. Den inverterade `=== 'proto'`-kontrollen läste ett
-  // värde växlaren aldrig satte.
-  const protoDataMode =
-    import.meta.env.DEV && isHallplatsVariant(variantParam) && dataParam !== 'verklig';
-
   return (
     <DetaljGrupp id="grupp-anteckningar" rubrik="Anteckningar">
-      <Composer eventId={event.id} protoDataMode={protoDataMode} />
+      <Composer eventId={event.id} />
       <div className="pt-3 pb-4">
         <Strommen event={event} />
       </div>
