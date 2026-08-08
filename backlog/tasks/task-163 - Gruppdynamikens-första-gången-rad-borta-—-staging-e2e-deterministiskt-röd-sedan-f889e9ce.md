@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-08 17:10'
+updated_date: '2026-08-08 17:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,10 +21,16 @@ Testet event-detail.staging.test.ts:1614 ('Första eventet: tom kurshistorik ⇒
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rotorsaken fastställd mot f889e9ce:s faktiska diff och bokförd i kortet
-- [ ] #2 Fix landad (test- eller src-sida enligt diagnosen, aldrig båda på gissning)
+- [x] #1 Rotorsaken fastställd mot f889e9ce:s faktiska diff och bokförd i kortet
+- [x] #2 Fix landad (test- eller src-sida enligt diagnosen, aldrig båda på gissning)
 - [ ] #3 Testet bevisat grönt i post-merge-körning på main
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Rotorsak (AC1) bekräftad mot f889e9ce (Gruppdynamik.tsx-diffen + commit-body punkt 3): raden 'Inga tidigare event — första gången hos Miranon Media' är AVSIKTLIGT RIVEN, Marcus-kvitterad ('det är ju bara dubbelinformation' — bucketen 'Första eventet' ÄR informationen). Diffen visar villkoret gick från ternary (kurser.length>0 ? ... : <span>Inga tidigare event...</span>) till ren && (kurser.length>0 && <ul>...), utan else-gren. Mätt i commit-bodyn: '"Inga tidigare event" 0 träffar i DOM'. Ingen commit mellan f889e9ce och HEAD (6d64ead6) rörde tests/e2e/event-detail.staging.test.ts:s Anna-assertion (git log f889e9ce..HEAD -- <fil> = 4 träffar, ingen av dem denna testblock) — testet uppdaterades aldrig. Klassning: TEST-mot-itererat-facit-divergens, fix på TEST-sidan (AC2). Fix (denna PR): raden 'första gången hos Miranon Media' assertas nu FRÅNVARANDE (not.toContainText) i stället för närvarande, kurshistorik-rad-count 0 kvarstår, plus en ny positiv assertion på badge 'Ej påbörjat' så testet fortfarande bevisar något om vad som FAKTISKT renderas (matchar rapporterad felutskrift 'AEAnna EkEj påbörjat'). Testnamnet uppdaterat bort från den rivna radens ordalydelse. Ingen ändring i Gruppdynamik.tsx — src-sidan är oförändrad, designintentionen är entydig, inget STOPPA-läge.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
