@@ -249,7 +249,7 @@ Vill du ha noll fönster: vänta ut den pågående landningen innan du startar.
 - [ ] Sessionens trådar synkade till `tasks/threads/` (uppfångade/deferrade/förkastade per ADR-053-triagen — registret + ev. tråd-kort)
 - [ ] Om sessionen upptäckte en ny strukturell Airtable-vägg: förd till `docs/reference/airtable-constraints.md` + dess ändringslogg
 - [ ] Om sessionen ändrade datamodellen (nytt/ändrat/borttaget fält, ändrad formel/rollup, ny/ändrad automation, ny option): förd till `docs/reference/data-model.md` + dess ändringslogg
-- [ ] Om sessionen ändrade app↔Airtable-interaktionen (EF läser/skriver, filter-mönster, write-allowlist, helper-API): förd till `docs/reference/airtable-interaction.md` (fil:rad-belägg + commit-sha) + dess ändringslogg
+- [ ] Om sessionen lade till/tog bort en Edge Function: förd till `docs/reference/airtable-interaction.md` §5.0 (namn/tabell/typ/en-rads-syfte, INGET fil:rad-citat — TASK-161.8 tunnade den delen medvetet) + dess ändringslogg. Om sessionen ändrade write-allowlisten (`field-allowlists.ts`): §7-tabellen där (fil:rad-belägg är OK i §7, den är fortsatt levande). §5-BILAGAN (mekanism-narrativ för de 12 ursprungliga EF:erna) är FRUSEN sedan TASK-161.8 — skriv inte ny fil:rad-narrativ dit.
 - [ ] Om sessionen ändrade samarbets-systemets MEKANIK (ny/borttagen disciplin-skill, reviderad roll-arkitektur, ny governing-/distributions-mekanism, nytt lifecycle-verb): förd till hubbens `SYSTEMET.md` + dess ändringslogg. Tillstånds-ändringar (governing-listans antal, plugin-version, radnummer) triggar INTE uppdatering — doket pekar redan till källan för dem
 - [ ] `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` uppdaterad om sessionen har implications för icke-tekniska läsare (per ADR-025)
 - [ ] Commits pushade
