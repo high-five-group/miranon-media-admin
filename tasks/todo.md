@@ -15,6 +15,25 @@
 
 ## Aktuellt fokus
 
+**Session 99 ⏸️ PAUSAD (2026-08-09, femte pausen, `lifecycle: paused`)
+— BEVAKNINGS-PASS UTAN MOMENT; ALLT KVARVARANDE ÄR FORTSATT MARCUS.**
+Paus på Marcus order utan ny scope. Resume 4 landade återupptagningen
+(`#1002`/`8474872f`, post-merge 0 avvikande jobb) men inga Marcus-moment
+hanns med före paus-ordern — passet bevakade parallell-flottan (S93
+resume 8→10 + kedjan `task-162`–`172` + ADR-104 · S100 STÄNGD `#1032` ·
+S101 född och pausad). **Öppen observation: S101:s paus-PR `#1059` står
+KONFLIKTAD och obevakad** (orörd sedan 15:26Z; bokförd även av S93:s
+resume-10-block; rörs ej utan order). `#635` väntar fortsatt Marcus.
+**NÄSTA (allt Marcus, oförändrat): QA `160.7` + `161.10` ·
+BYGGPLAN-LÄTTLÄST-beslutet · hub-sync-vägvalet (FÖRE session-ends
+skörd) · boka `148.5` · triagera `154`–`156` · `#635` ·
+lärdomslager-spårbeslutet.** **HANDOFF: sessionsdok S99 § PAUSLÄGE
+(femte pausen) + § Paushistorik (fjärde) + Del 11–12.** Numrering
+disk-rederiverad vid paus (`b84cc157`): **108**/**L480** + 8
+fragment/**T140**/**task-174**/f47 (ej omverifierad) — fyra axlar rörde
+sig under ett enda bevaknings-pass.
+*(Föregående kadensrad nedan, bevarad.)*
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-09, `lifecycle: active`, tionde
 resumen) — 15-STRECKS-RUNDAN ÄR HUVUDSPÅRET.** Paus-PR:en `#1058`
 verifierad MERGED (`393825b0` = main-toppen); Post-merge + CodeQL + CI
