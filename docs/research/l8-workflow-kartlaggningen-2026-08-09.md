@@ -14,8 +14,11 @@ status: draft
 > transkriptet i korpusfilen
 > [`l8-workflow-transkript-2026-08-09.txt`](l8-workflow-transkript-2026-08-09.txt)
 > (8 072 ord, tidsstämplar `(MM:SS)` refereras nedan). Två systertranskript
-> (*Building a Full Stack App*, *Dev Environment From Scratch*) är
-> korpus-kandidater för senare pass — ej lästa i denna session.
+> (*Building a Full Stack App*, *Dev Environment From Scratch*) var vid
+> huvudanalysen ej lästa; efter Marcus re-scoping samma dag är BÅDA
+> djuplästa och destillerade i § Addendum, med korpusfiler
+> [`l8-fullstack-transkript-2026-08-09.txt`](l8-fullstack-transkript-2026-08-09.txt)
+> och [`l8-devenv-transkript-2026-08-09.txt`](l8-devenv-transkript-2026-08-09.txt).
 > Arbetsform: S82-precedentet (Pocock-integrationen) — korpus + destillat +
 > gap-analys i `docs/research/`, docs-only-PR via egen worktree.
 > Verifierings-status per verktygsnamn: se § A.8 — transkriptet är talat och
@@ -522,3 +525,140 @@ mätningarna är reaktiva per incident, inte en designstandard.
    PRD-kort + skivor via `/to-prd`/`/to-issues`.
 3. Hub-kandidaterna (K6, K7, delar av K2/K4) bokförs för hub-moment —
    utförs aldrig från denna spoke-session.
+
+## Addendum (2026-08-09) — systertranskripten djuplästa
+
+> Marcus re-scopade samma dag: båda systertranskripten lästes i
+> huvudloopen före vidare prioritering. Tidsstämplar refererar respektive
+> korpusfil. **Verifieringsstatus:** verktygen som är NYA i detta addendum
+> (Herder, Atomic Vault, Claude Design, pi-openai-server-compaction) är
+> EJ webverifierade — de bär research-flagga in i sina kandidat-pass;
+> etablerade verktyg (Nix/Determinate, Home Manager, OpenTofu, Hetzner,
+> Starship, lazy.nvim m.fl.) behandlas som kända.
+
+### AD.1 — *Building a Full Stack App* (13 452 ord): systemet i drift
+
+Kun bygger "Eddie's Wallet" (barn-plånboks-app åt sonen) från tom terminal
+till fungerande e2e-MVP (iOS-simulator → riktig backend på VPS) i EN
+session, via FirstMate + Pi-agenten + GPT 5.6 "Luna" (medvetet INTE bästa
+modellen — demonstration av modell-frugalitet). Det transkriptet ger som
+Workflow-videon inte gav:
+
+- **FirstMates faktiska driftmekanik** (00:11–01:33): delegerar ALLT
+  ("FirstMate does not try to do everything by itself"); river färdiga
+  crewmate-sessioner själv; crewmate-statusuppdateringar köas som
+  "follow-ups" när FirstMate är upptagen; människans meddelanden köas
+  likadant. **Crewmates är NORMALA agenter i normala flikar — observerbara
+  och styrbara direkt** ("this is better than how sub-agents work in most
+  agent harnesses where it's really hard to look at what a sub-agent is
+  doing") — ett uttalat designkrav med direkt bäring på vår K4-design.
+- **Herder** (00:00, 00:28): "my replacement for TMOX" — agent-MEDVETEN
+  terminal-multiplexer: sidopanel med agenter/kataloger/status,
+  agent-sökpanel, förstår harnesses. Fördjupas i AD.2.
+- **Nyprojekt-mönstret** (00:05–00:26): röst-ramble av kraven (~3 000
+  tecken) → agenten rationaliserar → parallellt: marknadsresearch +
+  teknisk research → rapporter → diskussion i Lavish (aldrig
+  wall-of-text) → wireframe-prototyper ("NOT polished — so we can get
+  this prototype very quickly") → PRD som README → designsystem via
+  **Claude Design** (Sonnet räckte; export → FirstMate integrerar) →
+  parallella byggspår backend/frontend → **MVP-grinden definieras som
+  e2e-bevis** ("simulator signs in with my real Apple account against
+  the real backend").
+- **Progressiv processhärdning** (00:51–00:53): inget No Mistakes under
+  prototypfasen, direkta PR-mergar utan approval tidigt — *"once we have
+  an MVP built, we will turn on no mistakes"*, approval-flöden senare.
+  Tumregeln: *"if this is a code change you would otherwise have a human
+  review — turn on no mistakes"*. Grindarna VÄXER med produktens mognad.
+- **Atomic Vault** (01:00–01:03): secrets-hantering byggd av Max Howell
+  (Homebrew-skaparen). Agenten BEGÄR en secret → människan ser vilken
+  session + vilket kommando → godkänner per åtkomst; token exponeras
+  som env-var, aldrig klartext för agenten. *"As we delegate more and
+  more to agents, this is going to become more and more important."*
+- **Browser-styrning av HANS riktiga Chrome** (01:13–01:20): Chrome
+  DevTools-AXI + remote debugging → agenten klickar igenom Apple
+  Developer-portalen åt honom; per-session-permission.
+- **Kompaktering som implementationsdetalj** (00:48, 01:28): fyra
+  auto-kompakteringar utan märkbar degradering; server-side compaction
+  (Codex; `pi-openai-server-compaction`-extension i Pi) + **FirstMate
+  persisterar uppdrag i FILER så kompakterings-förluster är hämtbara** —
+  extern bekräftelse av vår kontinuitets-arkitektur (filartefakter enda
+  sanningskällan).
+- **Människans kvarvarande roll, demonstrerad:** de enda ingreppen var
+  domänkunskap (VPS-kostnaden var fel i researchen) och
+  över-engineering-nedskärningar (audit/export-krav raderade;
+  dev/prod-miljösplit avvisad — *"5.6 has this tendency to
+  over-engineer"*). Stående order: *"Don't ask me unless there is
+  something only I can do."*
+- Smått men talande: kvot-widget över flera abonnemang · fast mode som
+  medvetet kostnadsval · Whisper-felstavningar som modellen själv rättar
+  ur kontext.
+
+### AD.2 — *Dev Environment From Scratch* (6 814 ord): grunden
+
+Från nyinstallerad Mac till komplett miljö, helt deklarativt:
+
+- **Nix som reproducerbarhets-fundament** (00:55–02:16): Determinate
+  Nix + nix-darwin (macOS-inställningar som kod) + Home Manager
+  (dotfiles-repo med symlänkar — runtime-ändringar versionsspåras
+  automatiskt) + nix-homebrew med `cleanup = zap` (paket UTANFÖR
+  konfigen avinstalleras vid rebuild — tvingar allt genom koden) +
+  pinnade versioner. Det uttalade motivet är AGENT-ERANS
+  katastrofscenario: *"if my AI agent did something stupid and
+  completely destroyed my system, can I recover it instantly?"*
+- **Herder-fördjupningen** (33:51–35:48): byggd i agent-eran, förstår
+  agenter och deras status out-of-the-box över alla harnesses (*"you can
+  replicate some of this with hooks, but Herder supports this out of the
+  box"*), workspace-sidopanel, Windows-stöd; han övergav tmux efter
+  många år — config bär tmux-muskelminnets keybinds.
+- **Globala minnesfilens FULLTEXT** (40:06–43:12) — regler utöver de
+  Workflow-videon visade: aldrig agent som co-author i commits (*"it's
+  ultimately the human that's accountable"*) · rör aldrig
+  auto-genererade filer · **"be picky about the UI... obsessed with
+  pixel perfection — if something clearly looks off, even if unrelated,
+  try to get it fixed along the way"** · samma för testfel/flakighet:
+  *"even if it's not caused by what you are working on — still get it
+  fixed"*. Distribueras via Home Manager-symlänkar till ALLA harnesses
+  samtidigt.
+- Claude Code-detaljer: settings.json under dotfiles-symlänk;
+  statusline (modell + kontext-%) som enda CC-specifika anpassningen —
+  *"most of my setup is deliberately agent agnostic"*.
+- Neovim-lagret: neogit/gitsigns — notabelt att han VISST läser diffar,
+  i git-förvaltnings-bemärkelse ("review DIFFs and stage changes I have
+  reviewed and feel good about") — det han vägrar är diff-läsning som
+  GRIND för varje agentändring.
+
+### AD.3 — Vad addendumet ändrar i analysen
+
+**Vågordningen i Fas D STÅR.** Ingen kandidat faller; tre berikas, en
+tillkommer, två spänningar tillkommer, en princip-lista förlängs:
+
+1. **K4 berikas med tre designkrav** ur AD.1: crewmates ska vara
+   observerbara/styrbara som förstklassiga sessioner (inte opaka
+   subagenter) · follow-up-kö för statusuppdateringar när orkestreraren
+   är upptagen · orkestreraren river färdiga sessioner. Herder-frågan
+   ("agent-medveten sessionshanterare") är i vår värld harnessets roll —
+   bokförs i K4-grillningen.
+2. **K1 berikas** med progressiv-härdnings-tumregeln (AD.1): grindnivån
+   följer ändringsklassens mognad — kartlägg mot vår befintliga
+   prototyp/skarp-distinktion (throwaway-kontraktet) i stället för att
+   uppfinna ny mekanik.
+3. **NY kandidat K9 — secrets-authorization (Atomic Vault-klassen).**
+   Per-åtkomst-godkännande av agenters secret-användning är ett genuint
+   gap hos oss (env-filer + Supabase-secrets utan
+   authorization-flöde). Research-flagga: verifiera Atomic Vault
+   (existens, mognad, macOS-form) + jämför med 1Password
+   CLI/agent-integrationer. Våg-placering: Marcus avgör (säkerhetsklass
+   talar för tidigt; beroende av inget).
+4. **Två nya spänningar till C.4:** (5) Kuns "fixa orelaterat längs
+   vägen"-regel står i DIREKT konflikt med vår ADR-053-triage och
+   ren-scope-disciplinen — hans optimerar solo-hastighet, vår
+   auditbarhet; att importera regeln rakt av vore att riva triagen.
+   (6) "Aldrig co-author" kolliderar trivialt med vår
+   commit-konvention — bokförs, ingen åtgärd föreslås.
+5. **Princip-tillägg:** P11 progressiv processhärdning (grindar växer
+   med mognad) · P12 reproducerbar miljö som agent-katastrofskydd (Nix)
+   · P13 kompaktering görs ofarlig via fil-persistens — P13 är extern
+   BEKRÄFTELSE av vår befintliga kontinuitets-arkitektur, inte ett gap.
+6. **"Utanför planen"-spåret (terminal/tmux) har nu innehåll:** Nix-
+   reproducerbarheten + Herder är dess kärna, underlaget är AD.2 —
+   spåret förblir eget beslut med eget värde, nu konkret.
