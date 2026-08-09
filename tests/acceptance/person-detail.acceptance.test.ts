@@ -175,7 +175,7 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     await page.goto(`/personer/${PERSON_ID}`);
     // P4: e-post särskiljer namnlösa leads → unik h1/flik-titel.
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Namnlös person — anna@example.test' }),
+      page.getByRole('heading', { level: 1, name: 'Namnlös person - anna@example.test' }),
     ).toBeVisible();
   });
 

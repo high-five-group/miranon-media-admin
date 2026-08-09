@@ -169,7 +169,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     // skild från RIM-serien.
     await expect(
       page.getByRole('radiogroup', {
-        name: 'Resor i medvetandet — fristående föreläsning (ej del 1/2/3)',
+        name: 'Resor i medvetandet - fristående föreläsning (ej del 1/2/3)',
       }),
     ).toBeVisible();
   });
@@ -222,7 +222,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     await page.getByRole('button', { name: 'Räkna antal' }).click();
 
     await expect(
-      page.getByText('0 personer matchar — inga med genomförd närvaro ännu.'),
+      page.getByText('0 personer matchar - inga med genomförd närvaro ännu.'),
     ).toBeVisible();
     // Ärlig signal, INTE ett feltillstånd.
     await expect(page.getByRole('alert')).toHaveCount(0);
@@ -317,7 +317,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     await choosePar(page, 'Psionautics (utbildning)', 'Inkludera');
     await page.getByRole('button', { name: 'Räkna antal' }).click();
     await expect(
-      page.getByText('0 personer matchar — inga med genomförd närvaro ännu.'),
+      page.getByText('0 personer matchar - inga med genomförd närvaro ännu.'),
     ).toBeVisible();
 
     await expect(page.getByRole('button', { name: 'Exportera till SKOOL-lista' })).toBeDisabled();
