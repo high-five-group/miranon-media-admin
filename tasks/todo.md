@@ -15,6 +15,25 @@
 
 ## Aktuellt fokus
 
+**Session 93 ▶️ AKTIV (2026-08-09, Del 16-landningen) — PRD-171 DONE PÅ
+EN DAG: ÅTGÄRDS-/GRANSKNINGSSIDAN ÄR SKARP.** Hela promoverings-kedjan
+exekverad med förgrundsverifikat per led: `171.1` referenserna (`#1037`,
+divergens-fynd: ingen variant-gren) → `171.2` noll-diff-flippen +
+markörerna (`#1039`) → `171.3` härdningen (`#1041`, äkta a11y-fynd fixat
+utan aria-träd-ändring) → `171.4` Marcus `!`-stämpling (`#1044`) →
+`171.5` rivningen (`#1046`, PrototypRigg kvar DEV-grindad som
+testinfra) → baslinje-run `31311560867` NOLL drift → `171.7`
+QA-vandringen kvitterad *"Ser bra ut"*. Parallellt: `168` Done
+(hook-tuningen, 27→37 testfall, fem falsk-positiva klasser släppta) ·
+`169` levererad (grinden 21→5; resten väntar `146.4`/`158.4`) · S101
+född parallellt utan friktion. **NÄSTA: `172` bindestrecks-svepet
+(avblockat, agent spawnas) · `171.6` hopkopplingen villkorad mot `147` ·
+`169`-resten + `146.4`/`158.4` är Marcus-prioritering · hub-sync-paketet
+vid hub-moment.** **HANDOFF: sessionsdok S93 Del 15–16.**
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 93 ▶️ AKTIV (2026-08-09, Del 15-landningen) — FACIT LÅST,
 SKIVORNA UTE.** Dagens kedja efter resume: S100 STÄNGD (`#1032`) ·
 `task-169`-agent i arbete · `task-170`/`171`/`172` mintade

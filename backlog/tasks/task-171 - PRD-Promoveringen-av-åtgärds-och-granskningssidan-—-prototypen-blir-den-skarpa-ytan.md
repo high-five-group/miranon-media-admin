@@ -3,10 +3,10 @@ id: TASK-171
 title: >-
   PRD: Promoveringen av åtgärds- och granskningssidan — prototypen blir den
   skarpa ytan
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 08:07'
-updated_date: '2026-08-09 08:30'
+updated_date: '2026-08-09 12:59'
 labels: []
 dependencies: []
 ordinal: 314000
@@ -81,14 +81,14 @@ Facit-låsningens dagordning (S100:s öppna formval, döms vid låsningen): delu
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
-- [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
-- [ ] #7 Datavägs-invarianten verifierad: inga datakälla-grenar flippade
-- [ ] #8 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
+- [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
+- [x] #7 Datavägs-invarianten verifierad: inga datakälla-grenar flippade
+- [x] #8 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -96,3 +96,9 @@ Facit-låsningens dagordning (S100:s öppna formval, döms vid låsningen): delu
 <!-- SECTION:NOTES:BEGIN -->
 FACIT-LÅST 2026-08-09 (S93-resumen, Marcus i klartext, verbatim): "Du får göra bedömningen om granulariteten och beroendena. Och inget borde väl blockera nu, jag låser Åtgärdssidan och Granskningsidan (och granskningssidans olika ytor/lägen) som facit. Det är okej för v1, jag vill att de blir 'skarpa' sidor i appen nu." — Låsningen täcker därmed också S100:s tidigare odömda formval (delutfallets ruta-placering, fallna kortens gröna form, avmarkerings-beteendet, hover-scopet) som de står, för v1. Ändring efteråt = ny iteration per ADR-104 beslut 4. task-147 AC #9 (de sex åtgärdstyperna) förblir ÖPPEN — hör till 147:s åtgärdsvals-skiva, blockerar inte promoveringen. Referens-grinden är därmed avblockad; skivorna 171.1-171.7 publicerade samma dag.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD:t fullbordat 2026-08-09, samma dag det mintades — promoveringsformens ANDRA tillämpning, första med granskningsyta: 171.1 referenserna (#1037; divergens-fyndet: ingen variant-gren, eget manifest per ADR-104 beslut 1) · 171.2 flippen = noll-diff + markör-registrering + test-konsument-svep (#1039) · 171.3 härdningen (#1041; ett äkta serious-a11y-fynd fixat utan aria-träd-ändring) · 171.4 Marcus stämpling via !-kanalen (#1044, kanalseparationen höll) · 171.5 rivningen (#1046; PrototypRigg kvar DEV-grindad som testinfrastruktur) · 171.7 QA-vandringen kvitterad 'Ser bra ut. Vi kör vidare'. Regressionslåset: referenser 40/40 utan omtagning + baslinje-run 31311560867 NOLL drift. DoD #5-#8 belagda per skiva (se respektive final summary). KVARSTÅENDE ÖPPET, medvetet: 171.6 hopkopplingen (To Do, hård dep task-147 — sidan blir prod-nåbar först när sändvägen finns; dep:en flyttas till 147:s sändvägs-skiva när den mintas). Ytan är därmed skarp i appen men onåbar för Lotta tills 147 — exakt den sekvens PRD:n speccade.
+<!-- SECTION:FINAL_SUMMARY:END -->
