@@ -1,10 +1,10 @@
 ---
 id: TASK-145.5
 title: 'Skiva: Ren översyn — skrivvägarnas frånvaro bevisad'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 09:01'
-updated_date: '2026-08-08 17:59'
+updated_date: '2026-08-09 07:55'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,8 +28,8 @@ Täcker användarberättelser: 24
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
-- [ ] #6 Baslinje omtagen EFTER godkänd promovering (ADR-103 B4)
+- [x] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
+- [x] #6 Baslinje omtagen EFTER godkänd promovering (ADR-103 B4)
 - [x] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
 - [x] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
 <!-- DOD:END -->
@@ -96,4 +96,12 @@ EJ KLARADE DoD, MOTIVERADE
   run 30295150783).
 
 [TASK-162.4, bokföringssynk, 2026-08-08] AC #1 omskriven via CLI per Marcus 1A-beslut (S93 Del 3, 2026-08-07): kravtexten sa "inga muterande kryssrutor" men Bor över-krysset (useSetBorOver) är ett REDAN KVITTERAT undantag — se § "AC #1 — OKRYSSAD, KRÄVER MARCUS BESLUT" ovan för hela argumentationen (den slutsatsen står kvar, bara rubriken är nu stale eftersom AC:et är checkat). Texten säger nu vad den menar i stället för att vara bokstavligen fel; de underliggande mätningarna var redan kompletta och oförändrade. AC #1 och DoD #1 checkade i samma pass.
+
+[TASK-169, backlog-städet, 2026-08-09] DoD #5+#6 bockade mot belägg. DoD#5 (design-review mot S93-facit): TASK-162.5 (PR #1022, merge 8eda0da5, 2026-08-08T19:24:59Z) — Marcus verbatim: 'Jag har tittat på Q&A-kortet och jag godkänner, allt verkar funka och se ut som det ska på eventsidan', checklistpunkter A1 (åtgärds-kortet) + A4 (avdelaren/batch-baren) explicit OK — täcker Atgarder.tsx-rivningen denna skiva gör. Granskningen skedde på dev-server-state EFTER 145.5s kod landat (PR #933, merge 52614d0f, 2026-08-07T17:15:44Z). DoD#6 (baslinje omtagen EFTER godkänd promovering, ADR-103 B4): baseline-commit cfd76b79 (2026-08-08T21:29:17Z) och PR #1027 (merge 3f716ee5, 2026-08-09T06:50:28Z) ligger BÅDA efter godkännandet (PR #1022, 2026-08-08T19:24:59Z) — uppfyller B4s sekvenskrav.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Alla AC (1-4) och all DoD (1-8) uppfyllda och bockade. Kod landad 2026-08-07 (PR #933). Design-review + baseline-krav (DoD#5/#6) stängda 2026-08-09 mot TASK-162.5s Marcus-godkännande (PR #1022) och den efterföljande baseline-omtagningen (PR #1027) — se implementation notes för full källkedja. Stängt av TASK-169 (backlog-städet).
+<!-- SECTION:FINAL_SUMMARY:END -->

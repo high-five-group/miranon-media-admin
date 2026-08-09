@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-07 10:50'
-updated_date: '2026-08-07 11:58'
+updated_date: '2026-08-09 08:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,12 +31,14 @@ Symptom: nattgrinden Backlog-stängning fäller (#844, 2026-08-07): kort vars ar
 
 <!-- SECTION:NOTES:BEGIN -->
 Levererad via PR #873 (merge 1f7b9ab4), CI grön per jobb. TASK-136+142 stängda med belägg; 39 kort etiketterade (16 agent/23 human); #844 kommenterat. Konflikt mot main löst additivt av agenten själv. Struktur-fynd bokfört: obockade AC på landat arbete är osynliga för stängningsgrinden — kort-kandidat i resumen.
+
+[TASK-169, backlog-städet, 2026-08-09] DoD#3 bockad mot belägg: PR #873 (merge 1f7b9ab4, 2026-08-07T11:51:34Z) — samtliga CI-jobb SUCCESS/SKIPPED, 42 filer i diffen, samtliga backlog/tasks/*.md (path-scopad enligt PR body), verifierat via gh pr view.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

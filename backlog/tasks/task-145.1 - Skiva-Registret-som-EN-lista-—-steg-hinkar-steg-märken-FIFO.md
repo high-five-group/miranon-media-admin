@@ -4,7 +4,7 @@ title: 'Skiva: Registret som EN lista — steg-hinkar, steg-märken, FIFO'
 status: Done
 assignee: []
 created_date: '2026-08-07 08:57'
-updated_date: '2026-08-07 15:40'
+updated_date: '2026-08-09 08:10'
 labels:
   - ready-for-agent
 dependencies: []
@@ -182,16 +182,18 @@ bekräftad oförändrad.**
 Alla fyra siffror mätta EMPIRISKT mot `chromium-authenticated` (egen
 dev-server port 5174), inte förväntade. Samtliga fyra lokala DoD-grindar
 (typecheck/biome/build/test:api) omkörda gröna efter ändringarna.
+
+[TASK-169, backlog-städet, 2026-08-09] DoD#3+#7+#8 bockade mot belägg. DoD#3: PR #862s gating checks (Lint/TypeCheck, Pure+Build, Acceptance, Webblasarbeteende, Docs) samtliga SUCCESS — den separata POST-MERGE-stagingjobbet (run 31182074188, SHA 9be1ada4) föll, men post-merge.yml:s eget huvud slår fast att Staging (API+E2E) 'INTE och ska ALDRIG bli en required check' (rulesetets enda krav är 'CI Passed or Skipped' i ci.yml) — det gatade alltså aldrig mergen. Marcus egen commit 06dc40b7 (verbatim): '145.1 med staging-jobbet FÄLLT — de medvetet röda testerna som 145.3/147 äger.' TASK-145.3 (äger de röda testerna) är nu Done (PR #929, landad 2026-08-07) och fixade exakt de testerna enligt sina egna notes. Dagens nattkörning (31291660374, 2026-08-09T03:04) bekräftar 'Nattlig fullsvit / Staging (API + E2E)' = SUCCESS på main — debten är alltså bevisat löst. DoD#7 (skrivvägs-frånvaro): notes deferrade explicit till TASK-145.4/145.5; 145.5 (nu Done) bevisar detta mekaniskt för HELA eventsidan (AC#1+#2, egen testsvit). DoD#8 (mottagen-datum-tabellen får ej finnas i landad kod): grep -rn PROTO_MOTTAGEN_DATUM src/ visar ENDAST kommentar-referenser till dess historiska rivning (TASK-145.4, redan Done, egen DoD#8 checkad) — ingen levande deklaration finns.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
 - [x] #6 test:visual omtagen med granskade baslinjer — drift är väntad, inte accepterad osedd
-- [ ] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
-- [ ] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
+- [x] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
+- [x] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
 <!-- DOD:END -->

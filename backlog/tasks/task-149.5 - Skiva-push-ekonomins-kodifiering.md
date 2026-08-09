@@ -4,7 +4,7 @@ title: 'Skiva: push-ekonomins kodifiering'
 status: Done
 assignee: []
 created_date: '2026-08-07 10:33'
-updated_date: '2026-08-07 11:58'
+updated_date: '2026-08-09 08:01'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,12 +31,14 @@ ordinal: 259000
 
 <!-- SECTION:NOTES:BEGIN -->
 Levererad via PR #877 (merge 8f007d21), CI grön per jobb. Undantagslistan + gransknings-regeln i CONTRIBUTING; pekare i CLAUDE.md.
+
+[TASK-169, backlog-städet, 2026-08-09] DoD #1+#3 bockade mot belägg. #1: AC redan [x]. #3: PR #877 (merge 8f007d21, 2026-08-07T11:54:58Z) — samtliga CI-jobb SUCCESS/SKIPPED (verifierat via gh pr view 877 --json statusCheckRollup).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

@@ -4,7 +4,7 @@ title: 'Skiva: Privat bucket, path-form per event och signerad åtkomst'
 status: Done
 assignee: []
 created_date: '2026-08-07 09:05'
-updated_date: '2026-08-07 15:40'
+updated_date: '2026-08-09 08:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -122,16 +122,18 @@ skriptet har en fail-closed miljövakt (assertStagingOnly) som vägrar köra
 mot något annat ref. Service-role-nyckeln hämtades engångs via
 `supabase projects api-keys`, levde bara i en env-variabel under skriptets
 körning, och skrevs aldrig till disk eller loggades.
+
+[TASK-169, backlog-städet, 2026-08-09] DoD#3+#7 bockade mot belägg. DoD#3: PR #899s gating checks gröna; post-merge-stagingjobbet (SHA ba4a8259) visade CANCELLED (superseded), täckt av Marcus commit 06dc40b7 (samma källkedja som 145.1/145.2, se dessas notes). Dagens nattkörning (31291660374) bekräftar staging SUCCESS på main nu. DoD#7 (bas-additiviteten): bevisas av TASK-146.2 (Done, eget DoD checkad för samma bas-additivitet). DoD#6 (lager-oberoendet, port-paritet i BÅDA adaptrarna) lämnas GENUINT OBOCKAD av samma skäl som task-146.1/146.2: TASK-146.4 (adaptern) fortfarande To Do. Flippar INTE status — se task-169s slutrapport.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
 - [ ] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
-- [ ] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
+- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
 - [x] #8 Väggkatalogens två attachment-poster landade
 <!-- DOD:END -->

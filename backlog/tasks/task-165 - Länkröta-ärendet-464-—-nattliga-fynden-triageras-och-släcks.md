@@ -4,7 +4,7 @@ title: 'Länkröta-ärendet #464 — nattliga fynden triageras och släcks'
 status: Done
 assignee: []
 created_date: '2026-08-08 17:11'
-updated_date: '2026-08-08 18:09'
+updated_date: '2026-08-09 08:10'
 labels:
   - ready-for-agent
 dependencies: []
@@ -117,6 +117,8 @@ Samtliga tillagda i `.lycheeignore` (nytt block, "TASK-165 forts. 2").
 
 AC #3/#4 förblir öppna. Ny dispatch mot denna gren startad efter armering
 (se PR-beskrivningen för run-ID) — invänta INTE utfallet (ADR-096).
+
+[TASK-169, backlog-städet, 2026-08-09] DoD#4 bockad mot belägg: PR #1008 (merge 2c4f6080) — .lycheeignore, kortfilen, en docs/research-fil (borttagning av död sekundärlänk per Notes); PR #1011 (merge 551cc797) — .lycheeignore + kortfilen. Samtliga filer matchar exakt uppdragets scope (länkfix + kortdokumentation), inga orelaterade filer.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -130,5 +132,5 @@ Två fix-pass: #1008 (run 31236116308:s 8+1 fynd) + #1011 (run 31269833863:s 8 r
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

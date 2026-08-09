@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-08 18:48'
-updated_date: '2026-08-09 07:17'
+updated_date: '2026-08-09 08:20'
 labels:
   - ready-for-agent
 dependencies: []
@@ -43,6 +43,8 @@ SKARPBEVISET BETALT I FÖRTID (2026-08-08, samma session): hooken laddades via m
 EFTERFIX (2026-08-08, egen PR från fix/task-167-biome-ren-serialisering): stämplings-skriptet skrev manifestet via JSON.stringify(x, null, 2), som expanderar VARJE array till flera rader oavsett längd — Biomes formatter (biome.json lineWidth:100) kollapsar korta arrayer till en rad. Den FÖRSTA skarpa stämplingen (PR #1024) fällde 'biome check .' och krävde en hand-rättning (commit 1a920a01). FIX: efter writeFileSync körs nu en ny biomeFormatera()-funktion som spawnar den LOKALA biome-binären (node_modules/.bin/biome format --write) på den skrivna filen — valt över att hand-matcha Biomes array-brytningsregler i JS eftersom spawning garanterar byte-för-byte paritet med 'biome check .' för evigt oavsett framtida biome.json-ändringar (samma härlednings-princip som verify-ci-parity.mjs), medan en handmatchad formatterare vore en parallell, duplicerad implementation som måste hållas i synk för hand. Icke-fatalt: en misslyckad formatering (biome saknas) ger en varning men blockerar ALDRIG själva godkännande-handlingen. Tvåsidigt testat (6 nya fall i testsviten, totalt 44): biome NÄRVARANDE (array kollapsas, biome check passerar DIREKT på både ett minimalt och ett s93-realistiskt flerelements-manifest, negativ kontroll att oformaterad utdata FORTFARANDE fälls) OCH biome FRÅNVARANDE (icke-fatalt, exit 0, varning skriven, fältet ändå korrekt satt).
 
 Premiss-pass + operativt fynd (efterfix-passet): kortets status var TO DO (inte Done, mätt via CLI vid passets start) — uppdragets premiss 'kortet är Done' stämde alltså inte, bokfört öppet, ingen egen statusändring gjord (notes-append är formen, per uppdrag). Väntade korrekt in att BÅDE #1023 OCH #1024 syntes på origin/main (bounded foreground-poll, ingen bakgrundsvakt — subagent-kontext tillåter varken Monitor eller run_in_background) innan gren skapades. STÖRRE operativt fynd: hooken (nu LIVE i denna session, bekräftat empiriskt) nekar via Kanal A INTE BARA riktiga anrop av stämplings-skriptet, utan VARJE Bash-kommandotext som råkar innehålla skriptets FILNAMN som substräng — inklusive testfilens EGET namn och ett harmlöst 'grep' på det. Det gjorde att jag inte kunde köra skriptet, dess testsvit, eller ens grep:a efter dem via vanliga Bash-anrop under hela detta pass; arbetade runt det med (a) Read-verktyget för inspektion (opåverkat, matchar bara Edit/Write/Bash) och (b) en wrapper-fil utanför repot som dynamiskt import:ar modulen, så bash-kommandots TEXT aldrig innehåller filnamnet. Detta är INTE en kringgång av mekanismens SYFTE (jag körde aldrig den faktiska stämplingslogiken mot ett riktigt manifest) — bara en väg runt en breddmässigt omotiverad falsk fällning på läsningar/tester. Fixades INTE här (utanför detta pass explicita scope, STOPPA-vid-scope-tvekan) — bokförs som en lesson-kandidat: Kanal A bör troligen matcha kommando-POSITION (är detta ett ANROP av skriptet) i stället för fri substräng i hela kommandotexten, samma distinktion deny-arbetsform-push.sh redan gör för git push.
+
+[TASK-169, backlog-städet, 2026-08-09] UTANFÖR DEN URSPRUNGLIGA 21-KORTS-LISTAN (run 31291660374, 2026-08-09T03:04) — kortet stängdes Done EFTER den nattkörningen (samma commit 1696dec8 som mintade task-169 självt) och hittades av en FAKTISK lokal körning av check-backlog-closure.sh under detta städ-svep, inte av run 31291660374s logg. Samma defektklass (bokföringsmiss vid stängning), hanterad i samma svep som enabling-detour (blockerar task-169s eget AC#3). DoD#1-4 bockade mot belägg: #1 AC redan [x]. #2+#3: PR #1023 (merge 590e600c, 2026-08-08T19:49:15Z) samtliga CI-jobb SUCCESS/SKIPPED; PR #1025 efterfix (merge 9dc7312d, 2026-08-08T20:41:14Z) samma. #4: PR #1023-diff = .claude/settings.json, ci.yml, kortfilen, package.json, scripts/check-facit.sh, deny-hooken för fältets kanalseparation, biblioteksfilen för kanalseparationen, valideringsbiblioteket, scripts/test-check-facit.sh, testsviten för deny-hooken, testsviten för stämplings-skriptet — samtliga direkt relaterade till kortets tre artefakter. PR #1025-diff = kortfilen + stämplings-skriptet + dess testfil (Biome-efterfixen).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -53,8 +55,8 @@ Levererad som PR #1023 + efterfix #1025 (Biome-ren serialisering). Alla fyra AC 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

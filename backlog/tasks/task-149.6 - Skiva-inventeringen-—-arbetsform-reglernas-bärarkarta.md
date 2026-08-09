@@ -4,7 +4,7 @@ title: 'Skiva: inventeringen — arbetsform-reglernas bärarkarta'
 status: Done
 assignee: []
 created_date: '2026-08-07 10:34'
-updated_date: '2026-08-07 11:39'
+updated_date: '2026-08-09 08:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,12 +29,14 @@ ordinal: 260000
 
 <!-- SECTION:NOTES:BEGIN -->
 Levererad via PR #870 (merge b929ce31), CI grön per jobb. Bärarkartan 132 regler; fynd-korten 154–156 födda.
+
+[TASK-169, backlog-städet, 2026-08-09] DoD#1-4 bockade mot belägg. #1: AC redan [x]. #2: PR #870 — npm run check:docs 13/13 gröna (efter en Vale.Terms-fix). #3: PR #870 (merge b929ce31, 2026-08-07T11:28:39Z) — samtliga CI-jobb SUCCESS/SKIPPED, verifierat via gh pr view. #4: PR-filer (gh pr view 870 --json files) = task-149.6 + task-154/155/156 (fynd-korten AC#2 explicit kräver skapade) + docs/research/arbetsform-reglernas-bararkarta-2026-08-07.md — allt i scope.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
