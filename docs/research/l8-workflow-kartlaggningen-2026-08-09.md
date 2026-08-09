@@ -24,6 +24,40 @@ status: draft
 > Verifierings-status per verktygsnamn: se § A.8 — transkriptet är talat och
 > namn kan vara transkriberings-förvanskade; webverifiering redovisas där.
 
+## Ledstjärnan — Marcus vision för transformationen
+
+> Formulerad ur Marcus egna ord vid S101 (2026-08-09), på hans order att
+> säkra visionen i fil som ledstjärna för hela transformations-arbetet.
+> Citaten är verbatim ur hans beställningar denna session. Skärps vid
+> grillningarna — justeringar landar som öppna amendments, aldrig tysta.
+
+**Slutbilden:** ETT hubb-system som pluggas in i varje scope — *"den här
+med Firstmate är ju exakt det jag ser framför mig, liksom ett HUBB-system
+som man kan plugga in i varje scope"*. Kunskaps-hubben finns
+(marcus-system-pluginet); exekverings-hubben är det som byggs.
+Parallelliteten och portabiliteten är inte features utan grundtillstånd:
+*"Parallelliteten, portabiliteten ... är exakt min ambition."*
+
+**Rollbilden:** Marcus är kaptenen — riktning, prioritering,
+kvalitetsribban, besluten. Code är förstestyrman — äger allt jonglerande:
+spawn, bevakning, validering, landning, rivning. Marcus tid går till
+ändarna (avsikt in, omdöme ut); mitten är systemets.
+
+**Iterationsupplevelsen:** planer och UI-beslut ska mötas som
+interaktiva ytor, inte löptext — *"Lavish verkar ju vara next-level för
+vårt UI-arbete/iterationsprocess."*
+
+**Golvet som aldrig offras:** *"Kvaliteten går alltid före allt annat."*
+Kuns flöde importeras aldrig på bekostnad av vårt golv — 11/10-ribban,
+a11y-golvet, transparens-rapporten, extern fångst före ribb-flytt
+(C.4-2-sekvensen), Gunilla-principen. Vi tar hans exekverings-skikt till
+vårt kvalitets- och kunskaps-skikt — kombinationen är målet, inte bytet.
+
+**Mätstickan:** varje transformationskandidat ska göra minst en av
+Fem Kvaliteter (`IDENTITET.md`: Omedelbarhet, Kontinuitet, Transparens,
+Odödlighet, Profetia) mätbart starkare — annars är den inte
+transformation utan dekoration.
+
 ## Fas A — Kuns system, destillerat
 
 ### A.1 Nivåmodellen
