@@ -15,6 +15,23 @@
 
 ## Aktuellt fokus
 
+**Session 93 ▶️ AKTIV (2026-08-09, Del 15-landningen) — FACIT LÅST,
+SKIVORNA UTE.** Dagens kedja efter resume: S100 STÄNGD (`#1032`) ·
+`task-169`-agent i arbete · `task-170`/`171`/`172` mintade
+(`#1032`/`#1033`) · skarv kvitterad + bindestreck scope A · **Marcus
+FACIT-LÅSTE åtgärds-/granskningssidan i klartext** (verbatim i sessionsdok
+Del 15 + `task-171`-notes; v1-låsning inkl. S100:s odömda formval) ·
+skivorna `171.1`–`171.7` publicerade i beroendeordning. Processfynd:
+hook-falsk-positiv klass 4 → `task-168`-notes. **NÄSTA: spawna `171.1`
+(referenserna) när skiv-PR:en landat · kedjan `171.2`→`171.3`→`171.4`
+(Marcus QA + `!`-stämpling)→`171.5`→`171.7` (QA-vandringen) · `171.6`
+villkorad mot `147` · `172` körs EFTER `171.5` (sekvens-villkoret) ·
+`169`-stängning efter grön grind/dispatch.**
+**HANDOFF: sessionsdok S93 Del 15.**
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 100 ✅ STÄNGD (2026-08-09, via S93-övertagandet — ingen femte
 resume; `lifecycle: closed`).** Bo-triagen utförd och bokförd i
 sessionsdok S100 § Del 7: bindestrecks-frågan (A/B/C + följdfrågor +

@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-09 08:07'
+updated_date: '2026-08-09 08:30'
 labels: []
 dependencies: []
 ordinal: 314000
@@ -89,3 +90,9 @@ Facit-låsningens dagordning (S100:s öppna formval, döms vid låsningen): delu
 - [ ] #7 Datavägs-invarianten verifierad: inga datakälla-grenar flippade
 - [ ] #8 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FACIT-LÅST 2026-08-09 (S93-resumen, Marcus i klartext, verbatim): "Du får göra bedömningen om granulariteten och beroendena. Och inget borde väl blockera nu, jag låser Åtgärdssidan och Granskningsidan (och granskningssidans olika ytor/lägen) som facit. Det är okej för v1, jag vill att de blir 'skarpa' sidor i appen nu." — Låsningen täcker därmed också S100:s tidigare odömda formval (delutfallets ruta-placering, fallna kortens gröna form, avmarkerings-beteendet, hover-scopet) som de står, för v1. Ändring efteråt = ny iteration per ADR-104 beslut 4. task-147 AC #9 (de sex åtgärdstyperna) förblir ÖPPEN — hör till 147:s åtgärdsvals-skiva, blockerar inte promoveringen. Referens-grinden är därmed avblockad; skivorna 171.1-171.7 publicerade samma dag.
+<!-- SECTION:NOTES:END -->
