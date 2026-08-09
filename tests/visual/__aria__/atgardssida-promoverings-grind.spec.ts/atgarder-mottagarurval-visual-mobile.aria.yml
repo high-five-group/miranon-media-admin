@@ -1,0 +1,13 @@
+- button "4 av 5 deltagare markerade" [expanded]
+- text: Anna Andersson, Björn Bergström, Cecilia Ceder och Filip Forsberg.
+- checkbox /Anna Andersson E-post anna\.andersson@example\.se Anmäld \d+ september \d+:\d+/ [checked]
+- text: /Anna Andersson E-post anna\.andersson@example\.se Anmäld \d+ september \d+:\d+/
+- checkbox /Björn Bergström E-post bjorn\.bergstrom@example\.se Anmäld \d+ september \d+:\d+/ [checked]
+- text: /Björn Bergström E-post bjorn\.bergstrom@example\.se Anmäld \d+ september \d+:\d+/
+- checkbox /Cecilia Ceder E-post cecilia\.ceder@example\.se Anmäld 2 september \d+:\d+/ [checked]
+- text: /Cecilia Ceder E-post cecilia\.ceder@example\.se Anmäld 2 september \d+:\d+/
+- checkbox /Filip Forsberg E-post filip\.forsberg@example\.se Manuellt tillagd Anmäld \d+ augusti \d+:\d+ Påminnelse \d+ september/ [checked]
+- text: /Filip Forsberg E-post filip\.forsberg@example\.se Manuellt tillagd Anmäld \d+ augusti \d+:\d+ Påminnelse \d+ september/
+- button "Lägg till fler personer från eventet 1"
+- link "Lägg till en person manuellt":
+  - /url: /event/recVisualEvent0001/ny-anmalan?fran=atgarder

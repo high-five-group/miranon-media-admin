@@ -1,0 +1,22 @@
+- button "Tillbaka till åtgärderna"
+- heading "Granska och skicka" [level=1]
+- paragraph:
+  - strong: Skicka bekräftelsemail
+  - text: till
+  - strong: "2"
+  - text: personer.
+- region "Mottagare":
+  - heading "Mottagare" [level=2]
+  - checkbox /Anna Andersson E-post anna\.andersson@example\.se Anmäld \d+ september \d+:\d+/ [checked]
+  - text: /Anna Andersson E-post anna\.andersson@example\.se Anmäld \d+ september \d+:\d+/
+  - checkbox /Björn Bergström E-post bjorn\.bergstrom@example\.se Anmäld \d+ september \d+:\d+/ [checked]
+  - text: /Björn Bergström E-post bjorn\.bergstrom@example\.se Anmäld \d+ september \d+:\d+/
+- region "Utskicket":
+  - heading "Utskicket" [level=2]
+  - text: Ämne Din plats är bekräftad
+  - paragraph: Förhandsvisningsexempel
+  - paragraph: /Hej Anna, Din plats på Utbildning Skövde är bekräftad\. Vi ses \d+ september i Skövde\. Varmt välkommen! Roger och Lotta/
+  - text: Bilagor Inga
+- switch "Bekräfta utskicket"
+- button "Skicka till 2 personer" [disabled]
+- button "Tillbaka"

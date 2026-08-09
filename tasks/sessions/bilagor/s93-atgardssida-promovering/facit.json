@@ -1,0 +1,32 @@
+{
+  "prototyp": "s93-atgardssida-promovering",
+  "last": "2026-08-09",
+  "lasning": "Du får göra bedömningen om granulariteten och beroendena. Och inget borde väl blockera nu, jag låser Åtgärdssidan och Granskningsidan (och granskningssidans olika ytor/lägen) som facit. Det är okej för v1, jag vill att de blir 'skarpa' sidor i appen nu.",
+  "godkand": null,
+  "ytor": [
+    {
+      "yta": "atgarder-tomt-lage",
+      "bilder": [],
+      "kallor": [
+        "src/routes/_authenticated/atgarder.tsx",
+        "src/components/events/atgarder/AtgardsSida.tsx"
+      ],
+      "not": "INGEN facit-bild låst — facit är ariaSnapshot-referensen tests/visual/__aria__/atgardssida-promoverings-grind.spec.ts/atgardssida-tomt-*.aria.yml (TASK-171.1, ADR-103 B4), fångad ur den enda existerande renderingen (ingen ?variant=-gren finns för denna yta ännu, se spec-filens docblock om divergensen mot uppdragets antagande). Eventväljaren utan valt event — det tomma läget S93 Del 15 låser."
+    },
+    {
+      "yta": "atgarder-mottagarurval",
+      "bilder": [],
+      "kallor": [
+        "src/routes/_authenticated/event/$eventId/atgarder.tsx",
+        "src/components/events/atgarder/AtgardsSida.tsx"
+      ],
+      "not": "INGEN facit-bild låst — facit är tests/visual/__aria__/atgardssida-promoverings-grind.spec.ts/atgarder-mottagarurval-*.aria.yml: mottagar-ytan (data-testid=\"mottagar-kort\") med listan öppnad, seedad ur fixturens obekräftade/obetalda urval (Anna, Björn, Cecilia, Filip — verifierat mot REGISTRATIONS_RESPONSE, David utanför seedet)."
+    },
+    {
+      "yta": "atgarder-granskning",
+      "bilder": [],
+      "kallor": ["src/components/events/atgarder/AtgardsSida.tsx"],
+      "not": "INGEN facit-bild låst — facit är fyra ariaSnapshot-referenser under samma spec-fil: atgarder-granskning-*.aria.yml (granskningsläget, urvalsfilter biter + ifyllda platshållare) samt atgarder-utfall-{allt,delvis,inget}-*.aria.yml (de tre utfallslägena via PrototypRigg). PrototypRigg självt är MEDVETET UTANFÖR referensernas scope (data-testid=\"granskning-yta\" avgränsar bort den, se ankarkommentaren i AtgardsSida.tsx) — riggens egen docblock säger det rakt ut: \"riggen, inte ytan\"."
+    }
+  ]
+}

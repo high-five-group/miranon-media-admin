@@ -1,0 +1,12 @@
+- button "Tillbaka till åtgärderna"
+- heading "Skickat" [level=1]
+- region "Mottagare":
+  - heading "Mottagare" [level=2]
+  - text: /Filip Forsberg E-post filip\.forsberg@example\.se Manuellt tillagd Anmäld \d+ augusti \d+:\d+ Påminnelse \d+ september Har tackat nej till utskick Anna Andersson E-post anna\.andersson@example\.se Anmäld \d+ september \d+:\d+ Skickat Björn Bergström E-post bjorn\.bergstrom@example\.se Anmäld \d+ september \d+:\d+ Skickat Cecilia Ceder E-post cecilia\.ceder@example\.se Anmäld 2 september \d+:\d+ Skickat/
+- status:
+  - strong: Utskicket lyckades delvis
+  - paragraph:
+    - strong: 3 av 4
+    - text: personer fick mailet.
+  - paragraph: 1 fick det inte - skälet står på kortet ovanför. De ligger kvar markerade, så du kan gå tillbaka och köra om just dem.
+- button "Tillbaka till åtgärderna"
