@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-09 08:08'
-updated_date: '2026-08-09 14:21'
+updated_date: '2026-08-09 15:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -61,6 +61,8 @@ SYSTEMATISKT SVEP (direktiv): AST-skannade tests/acceptance/ (samma check-langa-
 TREDJE TACKNINGSLUCKAN (samma leverans): forsta passet svepte tests/api + tests/visual (via ac lokala korningar) men INTE tests/acceptance/ - en hel testyta missad tills CI sjalv fallde den. Detta ar samma rotorsak som datumspann-missen (CI-fynd #1): mitt eget verify:ci-parity:fast-rationale tackte CI-STEGENS struktur men aldrig KONSEKVENSERNA av sjalva strang-andringarna over alla konsument-ytor. Larr for framtida strang-svep: identifiera ALLA testkonsument-ytor (api, acceptance, visual, e2e) INNAN sista push, inte iterativt efter varje CI-rod.
 
 Lokalt verifierat: HELA acceptance-sviten (npx playwright test --project=acceptance) - forsta korningen 176/177 (1 fallande, ISOLERAT verifierad som OBESLAKTAD pre-existing lokal flake: hem.acceptance.test.ts dagar-kvar-pillen, passerade i isolerad korning, ror ingen fil i min diff, sannolikt 8-worker-resurskonkurrens); ANDRA fulla korningen 177/177 rent. Plus typecheck 0, biome check 0 (aven efter en självorsakad regression av import-ordningen i check-langa-streck.mjs - rattad, biome stabil), build gront, test:api 465 passed, check-langa-streck.mjs 0 ofangade, self-test 16/16.
+
+MARCUS-BESLUT 2026-08-09 (S93, vid paus 10): 'Nej det funkar inte. ALLA 15 långa bindestreck i användarsynlig text MÅSTE bort.' — REST-undantagen kvitteras INTE som permanenta; datumspann-frågan är därmed också AVGJORD (korta streck vinner även i datumspann; det äldre tätt-tankstreck-direktivet i datumSpann.ts rivs öppet). SCHEMALAGT SOM NÄSTA RESUMES HUVUDSPÅR: (1) ändra alla 15 REST-strängar till korta streck, (2) synka ALLA test-konsumenter i samma pass (api/acceptance/visual — inkl. anmalan-detalj.acceptance rad 371 som asserterar en-dash-spannet), (3) referens-/baseline-omtagning för berörda facit-låsta ytor + Marcus omgodkännande-stämpling via !-kanalen (ny iteration per ADR-104 beslut 4, --ersatt-flaggan), (4) töm fil-undantagen ur .langa-streck-policy.json så endast tom-markörens 9 KEEP återstår, (5) därefter bockas AC #1 och kortet Done-flippas. Tom-markören '—' (9 st) FÖRBLIR undantagen — Marcus namngivna symbol för inget värde.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
