@@ -3,10 +3,10 @@ id: TASK-171.1
 title: >-
   Skiva: Referenserna — fixturer, ariaSnapshot-referenser och
   manifest-utvidgningen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 08:21'
-updated_date: '2026-08-09 09:06'
+updated_date: '2026-08-09 09:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -44,14 +44,20 @@ AC #4: NYTT manifest (inte en utökning av det redan godkända s93-hallplats-pro
 DoD-status: #1 (AC) klara via --check-ac. #2 lokala grindar gröna: typecheck 0, biome check . exit 0 (inga fel i mina filer), build grönt, test:api 465/465 grönt, test:visual 12/12 grönt (två körningar), check-facit.sh + test-check-facit.sh gröna. #3 (CI grön per jobb) EJ verifierbar av mig — orkestrerarens domän. #4 path-scopad add, verifierat inga orelaterade filer. #5 (ariaSnapshot-paret variant-före==promoverad-efter) BOCKAS INTE — efter-sidan finns first i 171.2 per kortets egen instruktion; endast före-sidan (referenserna) är incheckad i denna skiva. #6 bevis-loopens spår: textform i PR-beskrivningen (grön-röd-med-diff-grön, två separata loopar: ariaSnapshot-grinden och strukturinvarianten) — inga PNG-skärmdumpar producerade eftersom facit här är ariaSnapshot, inte pixel (samma mönster som 162.1: png-frånvaron öppet deklarerad). #7/#8 rör datavägs-invarianten/test-konsument-svepet, som hör till 171.2 (ingen flip sker i denna skiva). DoD-boxarna lämnas OMARKERADE i sin helhet — matchar precedentet i task-162.1 (samtliga sju DoD-boxar där är fortfarande tomma trots Done-status), och orkestreraren äger stängningen.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1037 (merge 081df6aa genom kön; post-merge/CI/Push on main success, väktar-verifikat). Sex lägen fixturerade i hermetiska fixturvärlden, 12 ariaSnapshot-referenser (desktop+mobile) tagna och gröna x2, nytt manifest s93-atgardssida-promovering per ADR-104 beslut 1 (per pass), check-facit tvåsidigt bevisad i tre riktningar (mutation/trasig källa/probe-markör, allt revert-verifierat). Divergens-fyndet bokfört: ytan har ingen variant-gren — referenserna togs mot skarpa URL:erna. DoD #5 (par-beviset) bockad med 171.2-belägg: flippen degenererade till identitet, referenserna gröna OFÖRÄNDRADE i 171.2 (PR #1039) — variant före == promoverad efter är bevisat som samma yta. DoD #8 bockad med 171.2:s svep-belägg (träffyta bilagd där; denna skivas enda konsument är dess egen spec).
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
-- [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
-- [ ] #7 Datavägs-invarianten verifierad: inga datakälla-grenar flippade
-- [ ] #8 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
+- [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
+- [x] #7 Datavägs-invarianten verifierad: inga datakälla-grenar flippade
+- [x] #8 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
 <!-- DOD:END -->
