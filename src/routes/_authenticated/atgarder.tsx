@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
 import { AtgardsSida } from '@/components/events/atgarder/AtgardsSida';
 
 export const Route = createFileRoute('/_authenticated/atgarder')({
@@ -8,7 +7,10 @@ export const Route = createFileRoute('/_authenticated/atgarder')({
 });
 
 /**
- * [PROTOTYPE] [S100] Åtgärds-sidan UTAN event — tomt läge.
+ * Åtgärds-sidan UTAN event — tomt läge. PRODUKTIONSKOD sedan TASK-171.5
+ * (ADR-103 B2 steg 4) — Marcus godkännande (2026-08-09,
+ * tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json) gör denna
+ * formen den enda och permanenta, inte en av flera prototyp-varianter.
  *
  * Tunn ingång som renderar SAMMA komponent som
  * `/event/$eventId/atgarder` i tomt läge: eventväljaren står fristående som
@@ -21,14 +23,12 @@ export const Route = createFileRoute('/_authenticated/atgarder')({
  * hantera." Hem-vyns knapp är denna routes tänkta ingång — den byggs inte i
  * detta pass, precis som manuell anmälans motsvarande knapp lämnades utanför
  * sin skiva.
+ *
+ * [RIVEN, TASK-171.5, ADR-103 B2 steg 4] `PrototypeSwitcher`-monteringen +
+ * `PROTO_VARIANTS` (en enda post, `key: 'a'`) rivna efter Marcus
+ * godkännande — ingen kod läste `variantParam` (171.1/171.2:s mätta
+ * divergens), så borttagningen är ren byggställning, ingen formändring.
  */
-const PROTO_VARIANTS = [{ key: 'a', label: 'A — Hubben', steg: 1, stegLabel: 'Konvergens' }];
-
 function AtgarderUtanEventPage() {
-  return (
-    <>
-      <AtgardsSida />
-      {import.meta.env.DEV ? <PrototypeSwitcher variants={PROTO_VARIANTS} /> : null}
-    </>
-  );
+  return <AtgardsSida />;
 }

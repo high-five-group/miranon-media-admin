@@ -1,7 +1,12 @@
 /**
- * [PROTOTYPE] [S100] ÅTGÄRDS-SIDAN — konvergens-prototyp, varv 4.
+ * ÅTGÄRDS-SIDAN — PRODUKTIONSKOD sedan TASK-171.5 (ADR-103 B2 steg 4),
+ * varv 4-formen promoverad. Marcus godkände formen i sin helhet 2026-08-09
+ * (tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json,
+ * "godkand": marcus, citat "Ser bra ut, godkänner") — nedanstående är
+ * därmed den skarpa, permanenta ytan, inte längre en prototyp under
+ * bedömning.
  *
- * FRÅGAN SOM BESVARAS (throwaway-kontraktet klausul i):
+ * FRÅGAN SOM BESVARADES (throwaway-kontraktet klausul i, S100):
  *   "Hur ska åtgärds-sidan se ut — den enda platsen där något verkställs?"
  *
  * VARV 4 STÄLLER OM HELA YTAN KRING EN FRÅGA VARV 3 ALDRIG STÄLLDE:
@@ -80,8 +85,18 @@
  * bilage-fundamentet (`TASK-146`) är inte byggt — så de är prototyp-lokala
  * stubbar, tydligt märkta nedan.
  *
- * KASTBAR: koden absorberas ALDRIG (klausul iv). Vinnaren skrivs OM genom
- * leverans-grindarna via spec-ledet.
+ * [RIVEN, TASK-171.5, ADR-103 B2 steg 4] `PrototypeSwitcher`-monteringen +
+ * `PROTO_VARIANTS` i båda routerna (`routes/_authenticated/atgarder.tsx`,
+ * `routes/_authenticated/event/$eventId/atgarder.tsx`) är rivna efter
+ * Marcus godkännande. Ytan hade ingen variant-gren att flippa MOT
+ * (171.1/171.2:s mätta divergens: `PROTO_VARIANTS` bar en enda post, ingen
+ * kod läste `variantParam`) — rivningen är alltså ren
+ * byggställningsborttagning, ingen formändring. `PrototypRigg` (nedan) är
+ * PRÖVAD mot samma rivning och STÅR KVAR med skäl: referens-specen
+ * (`tests/visual/atgardssida-promoverings-grind.spec.ts`, TASK-171.1) når
+ * de tre utfallslägena genom riggens knappar, och task-147:s riktiga
+ * sändväg finns inte än. Riggen är därför öppet bokförd som DEV-grindad
+ * test-/QA-infrastruktur i väntan på 147 — se dess egen docblock nedan.
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -2122,15 +2137,17 @@ function GranskningsSida({
           </div>
         </div>
 
-        <PrototypRigg
-          lage={protoLage}
-          onValj={setProtoLage}
-          onAterstall={() => {
-            setUtfall(null);
-            setArmerad(false);
-            setLage('granska');
-          }}
-        />
+        {import.meta.env.DEV ? (
+          <PrototypRigg
+            lage={protoLage}
+            onValj={setProtoLage}
+            onAterstall={() => {
+              setUtfall(null);
+              setArmerad(false);
+              setLage('granska');
+            }}
+          />
+        ) : null}
       </section>
     );
   }
@@ -2337,17 +2354,19 @@ function GranskningsSida({
         </div>
       </div>
 
-      <PrototypRigg
-        lage={protoLage}
-        onValj={setProtoLage}
-        onAterstall={
-          armerad
-            ? () => {
-                setArmerad(false);
-              }
-            : undefined
-        }
-      />
+      {import.meta.env.DEV ? (
+        <PrototypRigg
+          lage={protoLage}
+          onValj={setProtoLage}
+          onAterstall={
+            armerad
+              ? () => {
+                  setArmerad(false);
+                }
+              : undefined
+          }
+        />
+      ) : null}
     </section>
   );
 }
@@ -2364,6 +2383,15 @@ function GranskningsSida({
  * DEN SKICKAR INGENTING. Valet styr bara vilket svar `simuleraUtfall` bygger
  * i minnet; filen har noll sändvägar (`sendEmail`/`MailPayload`/`resend` ger
  * noll träffar, mätt 2026-08-08).
+ *
+ * [TASK-171.5, ADR-103 B2 steg 4] PRÖVAD MOT RIVNING, STÅR KVAR:
+ * referens-specen (`tests/visual/atgardssida-promoverings-grind.spec.ts`,
+ * funktionen `valjArmeraSkicka`) klickar riggens knappar för att nå de tre
+ * utfallslägena — rivs riggen kan varken testerna eller framtida QA nå dem
+ * innan task-147 levererar den riktiga sändvägen. Riggen är därför
+ * DEV-grindad (`import.meta.env.DEV`) vid båda sina monteringspunkter i
+ * stället för riven: öppet bokförd test-/QA-infrastruktur, inte skarp UI
+ * Lotta ska möta i produktion.
  * ================================================================== */
 function PrototypRigg({
   lage,
