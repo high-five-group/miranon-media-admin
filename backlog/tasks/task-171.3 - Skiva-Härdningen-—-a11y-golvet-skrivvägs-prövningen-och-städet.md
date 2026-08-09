@@ -1,10 +1,10 @@
 ---
 id: TASK-171.3
 title: 'Skiva: Härdningen — a11y-golvet, skrivvägs-prövningen och städet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 08:23'
-updated_date: '2026-08-09 10:28'
+updated_date: '2026-08-09 10:47'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,8 +26,6 @@ ordinal: 318000
 - [x] #3 ariaSnapshot-referenserna OFÖRÄNDRADE genom härdningen
 - [x] #4 Inga prototyp-grenar produktions-nåbara utom via railen
 <!-- AC:END -->
-
-
 
 ## Implementation Notes
 
@@ -144,14 +142,20 @@ kod-splitting-beteende är utanför denna härdnings-skivas scope — bokförs
 öppet, inte tyst, i linje med triage-principen (ADR-053).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1041 (merge d062fc32 genom kön — required checks gröna; post-merge bevakas level-triggat, monitorn kvitterade main-avancemanget). Härdningen: ETT äkta serious-fynd (scrollable-region-focusable, mobil 375px — låsta textytan utan tangentbordsåtkomst) fixat med tabIndex per NyaAnmalningarCard-precedentet, MEDVETET utan aria-label (referens-låset); axe 36/36 grönt båda viewporter efter, referenserna bevisat oförändrade i samma körning. Skrivvägs-kartan bokförd i notes (EF-allowlist + ADR-061 fail-fast + env-coherence grönt = prod onåbar). DEV-städet byggbevisat (renderingsanropet konst-foldat till null i dist). DoD #5/#8 bockade med 171.1/171.2-ägda belägg (identitets-beviset resp. svep-träffytan — ej omprövade här); DoD #6 bockad med beläggs-not: bevis-loopens spår är axe FÖRE/EFTER-mätserien + fix-diffen i PR-kroppen, inte skärmdump — formen bär samma funktion (spår, inte bock) och avvikelsen bokförs öppet. Öppen icke-blockerande observation kvar i notes: PrototypeSwitcher-importen (~6 KB) i route-chunkarna — dör med rivningen 171.5.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
-- [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
+- [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
+- [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
 - [x] #7 Datavägs-invarianten verifierad: inga datakälla-grenar flippade
-- [ ] #8 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #8 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
 <!-- DOD:END -->
