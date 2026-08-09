@@ -1517,7 +1517,20 @@ function ArbetsYta({
           {redigerar ? (
             <TextArea label="Meddelandetext" hideLabel value={text} onChange={setText} rows={7} />
           ) : (
+            // TASK-171.3 (härdningen): `tabIndex={0}` — den låsta rutan är
+            // `overflow-auto` och texten kan överstiga 186 px (axe
+            // `scrollable-region-focusable`, WCAG 2.1.1: en scrollbar yta utan
+            // fokuserbart innehåll är otillgänglig för tangentbord). Fokusordning
+            // utan strukturändring — rollen/namnet/aria-trädet rörs inte
+            // (36/36 gröna promoverings-grind-tester efter fixen, referens-
+            // grindens sex ariaSnapshot-tester ORÖRDA). Samma precedent som
+            // `NyaAnmalningarCard.tsx` (B6 AC #6) — INGEN `aria-label` här
+            // dock: den precedenten saknar ett facit-låst referens-par (denna
+            // ytas AC #3), och innehållet SJÄLVT är namnet en skärmläsare
+            // läser vid fokus (löpande text, inte en lista av rader).
             <p
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:139.
+              tabIndex={0}
               className={`${TEXTYTA_KLASS} overflow-auto whitespace-pre-wrap text-body text-text-secondary`}
             >
               {text}
@@ -2228,7 +2241,13 @@ function GranskningsSida({
             {forsta && (
               <p className="pb-1.5 text-caption text-text-muted">Förhandsvisningsexempel</p>
             )}
+            {/* TASK-171.3 (härdningen): `tabIndex={0}` — samma
+                `scrollable-region-focusable`-fix som hubbens ArbetsYta-preview
+                ovan (se den platsens kommentar för det fulla motivet). Fokusordning
+                utan strukturändring. */}
             <p
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:139.
+              tabIndex={0}
               className={`${TEXTYTA_KLASS} overflow-auto whitespace-pre-wrap bg-surface text-body text-text-secondary`}
             >
               {forhandsvisning.text}
