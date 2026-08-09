@@ -159,6 +159,46 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för åtgärds-/
 });
 
 /**
+ * [TASK-171.5, AC #2, ADR-103 B2 steg 4] STALE-URL-BEVISET — samma mönster
+ * som `eventsida-promoverings-grind.spec.ts` (TASK-145.6 AC #4), anpassat
+ * till DENNA ytas faktiska mekanik: `PrototypeSwitcher`-monteringen är
+ * riven ur båda routerna (`routes/_authenticated/atgarder.tsx`,
+ * `routes/_authenticated/event/$eventId/atgarder.tsx`), men railens
+ * URL-kontrakt (`?variant=<nyckel>&data=verklig`, ADR-074 beslut 1) är
+ * generellt — en gammal bokmärkt eller delad länk kan fortfarande bära
+ * dessa query-parametrar. Ingen kod i `AtgardsSida.tsx` eller de två
+ * routerna har NÅGONSIN läst `variantParam`/`dataMode` (171.1/171.2:s
+ * grep-verifierade fynd, upprepat här som del av detta bevis) — skillnaden
+ * mot eventsidan är alltså att det inte finns någon gren att degradera
+ * FRÅN, bara att bevisa att en stale query-sträng inte gör något alls.
+ *
+ * Båda testerna återanvänder de OFÖRÄNDRADE referensfilerna ovan
+ * (`atgardssida-tomt.aria.yml` / `atgarder-mottagarurval.aria.yml`) —
+ * exakt samma bevis-form som referens-grinden, bara med en stale
+ * query-sträng i `page.goto`.
+ */
+test.describe('TASK-171.5 — stale-URL-beviset (rivningens AC #2)', () => {
+  test('stale ?variant=&data= på /atgarder påverkar inte tomt läge', async ({ page }) => {
+    await page.goto('/atgarder?variant=a&data=verklig');
+    await expect(page.getByTestId('atgardssida-tomt')).toBeVisible();
+    await expect(page.getByTestId('atgardssida-tomt')).toMatchAriaSnapshot({
+      name: 'atgardssida-tomt.aria.yml',
+    });
+  });
+
+  test('stale ?variant=&data= på /event/$eventId/atgarder påverkar inte mottagarurvalet', async ({
+    page,
+  }) => {
+    await page.goto(`/event/${VISUAL_EVENT_ID}/atgarder?variant=a&data=verklig`);
+    await expect(page.getByTestId('eventet-block')).toBeVisible();
+    await page.getByRole('button', { name: /deltagare markerade/ }).click();
+    await expect(page.getByTestId('mottagar-kort')).toMatchAriaSnapshot({
+      name: 'atgarder-mottagarurval.aria.yml',
+    });
+  });
+});
+
+/**
  * [TASK-171.3, PRD TASK-171 § Testbeslut — "A11y-golvet 11 består; axe-pass
  * i härdningen"] Axe-pass på den promoverade åtgärds-/granskningsytan, i
  * SAMTLIGA lägen referens-grinden ovan navigerar genom.
