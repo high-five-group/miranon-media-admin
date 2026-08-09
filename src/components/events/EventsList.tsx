@@ -440,7 +440,7 @@ export function EventsList() {
   // (GOV.UK:s länk-href-princip, öppet deklarerad syntes i researchen).
   const utskriftsHuvud = (
     <div className="hidden text-small text-text-secondary print:block">
-      Event — {PERIOD_LABEL[period]}
+      Event - {PERIOD_LABEL[period]}
       {aktivaBeskrivning ? ` · ${aktivaBeskrivning}` : ''} · {events.length} event · Utskrivet{' '}
       {LANGDATUM_IDAG.format(new Date())}
     </div>

@@ -54,7 +54,7 @@ export function InstalleraAppen() {
       <header className="flex flex-col gap-1">
         <h1 className="font-semibold text-2xl">Installera appen</h1>
         <p className="text-small text-text-muted">
-          När appen är installerad öppnas den som en egen app på din hemskärm eller i Dock — precis
+          När appen är installerad öppnas den som en egen app på din hemskärm eller i Dock - precis
           som dina andra appar. Du slipper leta i webbläsaren varje gång, och adressfältet är borta.
         </p>
       </header>
@@ -165,7 +165,7 @@ function IosSteg() {
     <ol className="flex flex-col gap-3 text-body">
       <li>
         <strong>1. Öppna Safari.</strong> Det här sättet att installera fungerar bara i webbläsaren
-        Safari (ikonen med den blå kompassen) — inte i Chrome eller andra webbläsare på din iPhone
+        Safari (ikonen med den blå kompassen) - inte i Chrome eller andra webbläsare på din iPhone
         eller iPad.
       </li>
       <li className="flex items-start gap-2">
@@ -205,7 +205,7 @@ function MacSteg() {
     <ol className="flex flex-col gap-3 text-body">
       <li>
         <strong>1. Öppna menyn "Arkiv".</strong> Den ligger längst upp på skärmen, i raden med
-        menyer (inte i webbläsarfönstret) — bredvid menyn som heter "Safari".
+        menyer (inte i webbläsarfönstret) - bredvid menyn som heter "Safari".
       </li>
       <li>
         <strong>2. Välj "Lägg till i Dock…"</strong> i menyn som visas.
@@ -214,7 +214,7 @@ function MacSteg() {
         <strong>3. Tryck på "Lägg till"</strong> i rutan som dyker upp.
       </li>
       <li>
-        <strong>4. Klart!</strong> Appen finns nu i Dock — raden med programikoner längst ner på
+        <strong>4. Klart!</strong> Appen finns nu i Dock - raden med programikoner längst ner på
         skärmen. Öppna den därifrån, precis som vilket annat program på datorn som helst.
       </li>
     </ol>
@@ -243,7 +243,7 @@ function ChromiumSteg({ state }: { state: InstallPromptState }) {
   }
   return (
     <p className="text-body">
-      Leta efter en installationsikon i adressfältet högst upp — den ser ut som en liten skärm med
+      Leta efter en installationsikon i adressfältet högst upp - den ser ut som en liten skärm med
       en pil nedåt. Hittar du ingen ikon: öppna menyn med de tre punkterna uppe i högra hörnet och
       välj "Installera appen".
     </p>

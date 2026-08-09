@@ -51,7 +51,7 @@ const MODALITET_GEMENER: Record<Modalitet, string> = {
  */
 export function labelForPar(par: Par): string {
   if (par.kurs === 'Resor i medvetandet' && par.modalitet === 'Föreläsning') {
-    return 'Resor i medvetandet — fristående föreläsning (ej del 1/2/3)';
+    return 'Resor i medvetandet - fristående föreläsning (ej del 1/2/3)';
   }
   return `${par.kurs} (${MODALITET_GEMENER[par.modalitet]})`;
 }

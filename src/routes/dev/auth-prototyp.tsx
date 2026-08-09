@@ -17,7 +17,7 @@ export const Route = createFileRoute('/dev/auth-prototyp')({
       throw redirect({ to: '/' });
     }
   },
-  staticData: { title: 'Auth-prototyp — login + inbjudan' },
+  staticData: { title: 'Auth-prototyp - login + inbjudan' },
   component: AuthPrototypPage,
 });
 
@@ -46,7 +46,7 @@ export const Route = createFileRoute('/dev/auth-prototyp')({
  */
 
 const VARIANTER: PrototypeVariant[] = [
-  { key: 'b', label: 'Variant B', steg: 4, stegLabel: 'Steg 4 — konvergens' },
+  { key: 'b', label: 'Variant B', steg: 4, stegLabel: 'Steg 4 - konvergens' },
 ];
 
 const VYER: PrototypeVy[] = [

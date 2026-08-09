@@ -174,7 +174,7 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
       row({ namn: null, fornamn: null, efternamn: null, email: 'namnlos@example.se' }),
     ]);
     await page.goto('/mer/intresserade');
-    await expect(page.getByText('Namnlös person — namnlos@example.se')).toBeVisible();
+    await expect(page.getByText('Namnlös person - namnlos@example.se')).toBeVisible();
   });
 
   test('namnlös lead UTAN e-post → "Namnlös person" (generisk fallback)', async ({

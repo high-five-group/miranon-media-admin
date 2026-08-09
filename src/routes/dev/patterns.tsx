@@ -44,7 +44,7 @@ export const Route = createFileRoute('/dev/patterns')({
       throw redirect({ to: '/' });
     }
   },
-  staticData: { title: 'Mönsterbibliotek — referens' },
+  staticData: { title: 'Mönsterbibliotek - referens' },
   component: PatternsPage,
 });
 
@@ -58,9 +58,9 @@ function PatternsPage() {
   const [senasteHandelse, setSenasteHandelse] = useState('—');
   return (
     <main className="p-8">
-      <h1 className="text-2xl">Mönsterbibliotek — referens (endast dev-läge)</h1>
+      <h1 className="text-2xl">Mönsterbibliotek - referens (endast dev-läge)</h1>
       <p className="mt-2 text-small text-text-secondary">
-        Fem React Aria-mönster per byggplan §4 Fas 3.5 — Fas 6 konsumerar dessa.
+        Fem React Aria-mönster per byggplan §4 Fas 3.5 - Fas 6 konsumerar dessa.
       </p>
       <p aria-live="polite" className="mt-2 text-small">
         Senaste händelse: <span data-testid="senaste-handelse">{senasteHandelse}</span>
@@ -133,7 +133,7 @@ function PatternsPage() {
               </Button>
             </Heading>
             <DisclosurePanel className="px-3 pb-2 text-body">
-              Expanderbart innehåll om anmälningar — panelen är dold för skärmläsare när den är
+              Expanderbart innehåll om anmälningar - panelen är dold för skärmläsare när den är
               stängd.
             </DisclosurePanel>
           </Disclosure>

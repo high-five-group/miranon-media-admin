@@ -145,7 +145,7 @@ export function useInstallPrompt(): InstallPromptState {
   const promptToInstall = useCallback(async (): Promise<'accepted' | 'dismissed'> => {
     if (!deferredEvent) {
       throw new Error(
-        'promptToInstall anropad utan fångad plattformshändelse — konsumenten måste gata anropet bakom promptAvailable (AC 2, task-126.2)',
+        'promptToInstall anropad utan fångad plattformshändelse - konsumenten måste gata anropet bakom promptAvailable (AC 2, task-126.2)',
       );
     }
     try {

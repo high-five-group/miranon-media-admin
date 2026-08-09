@@ -84,7 +84,7 @@ test.describe('labelForPar — Gunilla-läsbar etikett', () => {
 
   test('FÄLLA 35: naket "Resor i medvetandet" (Föreläsning) får omisskännlig etikett', () => {
     const label = labelForPar({ kurs: 'Resor i medvetandet', modalitet: 'Föreläsning' });
-    expect(label).toBe('Resor i medvetandet — fristående föreläsning (ej del 1/2/3)');
+    expect(label).toBe('Resor i medvetandet - fristående föreläsning (ej del 1/2/3)');
     // ...och är SKILD från serie-etiketterna (ingen sammanblandning).
     expect(label).not.toBe(labelForPar({ kurs: 'Resor i medvetandet 1', modalitet: 'Utbildning' }));
   });

@@ -26,7 +26,7 @@ export const Route = createFileRoute('/_authenticated/personer/')({
  * ORÖRD (`PersonsList` + `p-4`-skalet) — prototypen läggs BREDVID, aldrig i.
  */
 const PROTO_VARIANTS = [
-  { key: 'a', label: 'Personlistan — konvergens', steg: 11, stegLabel: 'k11' },
+  { key: 'a', label: 'Personlistan - konvergens', steg: 11, stegLabel: 'k11' },
 ];
 
 // Personer-listan (Fas 6a) — sökbar, cursor-paginerad vy (ADR-056) via

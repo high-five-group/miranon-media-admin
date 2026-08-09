@@ -523,7 +523,7 @@ function VariantA({ eventId, event, rader }: { eventId: string; event: Event; ra
       <header className="flex flex-col gap-1">
         <h1 className="font-semibold text-2xl">Närvaroregister</h1>
         <p className="text-small text-text-secondary">
-          {event.eventNamn ?? event.eventlabel ?? 'Eventet'} — efter eventet: markera alla
+          {event.eventNamn ?? event.eventlabel ?? 'Eventet'} - efter eventet: markera alla
           närvarande och rätta sedan avvikelserna.
         </p>
       </header>
@@ -712,7 +712,7 @@ function VariantA({ eventId, event, rader }: { eventId: string; event: Event; ra
                         </Select>
                       ) : (
                         <span className="text-caption text-text-muted">
-                          –<span className="sr-only">Ingen session</span>
+                          -<span className="sr-only">Ingen session</span>
                         </span>
                       )}
                     </td>
@@ -941,7 +941,7 @@ function VariantC({ eventId, event, rader }: { eventId: string; event: Event; ra
 
       {q !== '' && traffar.length === 0 ? (
         <MessageBox intent="info" title="Ingen träff">
-          {`Ingen deltagare matchar "${sok}". Kontrollera stavningen — eller lägg till personen som anmäld först.`}
+          {`Ingen deltagare matchar "${sok}". Kontrollera stavningen - eller lägg till personen som anmäld först.`}
         </MessageBox>
       ) : (
         <>
@@ -1081,7 +1081,7 @@ export function CheckinPrototyp({
 
 /** Divergens-varianterna (ADR-074 beslut 1: stabila nycklar a/b/c). */
 export const CHECKIN_PROTO_VARIANTS = [
-  { key: 'a', label: 'A — Registret', steg: 1, stegLabel: 'Divergens' },
-  { key: 'b', label: 'B — Lista-först', steg: 1, stegLabel: 'Divergens' },
-  { key: 'c', label: 'C — Sök-först', steg: 1, stegLabel: 'Divergens' },
+  { key: 'a', label: 'A - Registret', steg: 1, stegLabel: 'Divergens' },
+  { key: 'b', label: 'B - Lista-först', steg: 1, stegLabel: 'Divergens' },
+  { key: 'c', label: 'C - Sök-först', steg: 1, stegLabel: 'Divergens' },
 ];

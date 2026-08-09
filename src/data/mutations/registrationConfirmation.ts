@@ -36,7 +36,7 @@ export function bekraftelseUtfall(result: ConfirmRegistrationsResult): string {
     return `${antal} bekräftelser skickade, ${result.failed.length} misslyckades.`;
   }
   if (result.skipped.length > 0 && result.failed.length === 0) {
-    return 'Inget skickades — anmälningarna var redan bekräftade eller saknar e-post.';
+    return 'Inget skickades - anmälningarna var redan bekräftade eller saknar e-post.';
   }
   return 'Ingen bekräftelse kunde skickas.';
 }

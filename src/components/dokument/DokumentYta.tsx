@@ -250,7 +250,7 @@ export function DokumentYta() {
         <DetaljGrupp id="grupp-genererade" rubrik="Skapas för varje person">
           <GruppText>
             Byggs på plats ur personens egna uppgifter. Skickar du till sex personer skapas sex
-            olika filer — en åt var och en.
+            olika filer - en åt var och en.
           </GruppText>
           {GENERATORER.map((g) => (
             <GeneratorRad key={g.id} gen={g} />
@@ -259,7 +259,7 @@ export function DokumentYta() {
       </div>
 
       <p className="text-small text-text-muted">
-        <strong className="font-medium">Prototyp.</strong> Innehållet är påhittat —
+        <strong className="font-medium">Prototyp.</strong> Innehållet är påhittat -
         bilage-fundamentet (TASK-146) är inte byggt. Inget laddas upp, inget sparas.
       </p>
     </section>

@@ -30,9 +30,9 @@ export const Route = createFileRoute('/_authenticated/personer/$personId')({
  * BREDVID, aldrig i.
  */
 const PROTO_VARIANTS = [
-  { key: 'a', label: 'A — Historik-först', steg: 1, stegLabel: 'Divergens' },
-  { key: 'b', label: 'B — Kontakt-först', steg: 1, stegLabel: 'Divergens' },
-  { key: 'c', label: 'C — Tidslinje', steg: 1, stegLabel: 'Divergens' },
+  { key: 'a', label: 'A - Historik-först', steg: 1, stegLabel: 'Divergens' },
+  { key: 'b', label: 'B - Kontakt-först', steg: 1, stegLabel: 'Divergens' },
+  { key: 'c', label: 'C - Tidslinje', steg: 1, stegLabel: 'Divergens' },
 ];
 
 const PROTO_NYCKLAR: readonly string[] = ['a', 'b', 'c'];

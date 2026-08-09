@@ -145,13 +145,13 @@ function PasskeyRoute() {
                 Vill du logga in snabbare nästa gång?
               </h1>
               <p className="text-body text-text-secondary">
-                En passkey är ett säkert sätt att logga in utan att skriva lösenordet — du bekräftar
+                En passkey är ett säkert sätt att logga in utan att skriva lösenordet - du bekräftar
                 i stället med fingeravtryck, ansiktsigenkänning eller enhetens egen låskod. Den
                 sparas på din enhet eller i din lösenordshanterare, aldrig hos oss, och kan inte
                 gissas eller stjälas på samma sätt som ett lösenord.
               </p>
               <p className="text-body text-text-secondary">
-                Lösenordet fortsätter fungera precis som vanligt — en passkey är ett extra
+                Lösenordet fortsätter fungera precis som vanligt - en passkey är ett extra
                 alternativ, aldrig ett krav.
               </p>
             </div>
@@ -206,7 +206,7 @@ function PasskeyRoute() {
             <div className="flex flex-col gap-2">
               <h1 className="font-semibold text-3xl text-text">Passkey skapad</h1>
               <p className="text-body text-text-secondary">
-                Nästa gång kan du logga in med den i stället för lösenordet — lösenordet fungerar
+                Nästa gång kan du logga in med den i stället för lösenordet - lösenordet fungerar
                 fortfarande, om du någon gång hellre vill använda det.
               </p>
             </div>

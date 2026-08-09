@@ -32,6 +32,6 @@ export const Route = createFileRoute('/dev/installera-appen')({
       throw redirect({ to: '/' });
     }
   },
-  staticData: { title: 'Installera appen — dev-demo' },
+  staticData: { title: 'Installera appen - dev-demo' },
   component: InstalleraAppen,
 });

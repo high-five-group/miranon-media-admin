@@ -25,7 +25,7 @@ export function initSentry(): void {
   if (!isProd && !isStaging) return;
 
   if (!env.VITE_SENTRY_DSN) {
-    console.warn('[sentry] VITE_SENTRY_DSN not set — skipping init');
+    console.warn('[sentry] VITE_SENTRY_DSN not set - skipping init');
     return;
   }
 

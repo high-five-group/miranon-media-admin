@@ -227,7 +227,7 @@ export function CreateEventForm() {
         <div className="px-4">
           <MessageBox intent="error" title="Kunde inte hämta eventformat">
             {formats.error instanceof Error ? formats.error.message : 'Okänt fel.'} Eventformat
-            krävs för att skapa ett event — försök ladda om sidan.
+            krävs för att skapa ett event - försök ladda om sidan.
           </MessageBox>
         </div>
       )}

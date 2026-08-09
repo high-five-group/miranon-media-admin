@@ -549,7 +549,7 @@ function PlatserKvarRad({ event: e }: { event: Event }) {
     <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-1 py-3">
       <dt className="text-small text-text-muted">Platser kvar</dt>
       <dd className="text-right text-body">
-        {kvar != null && max != null ? `${kvar} av ${max}` : '–'}
+        {kvar != null && max != null ? `${kvar} av ${max}` : '-'}
       </dd>
       <dd className="col-span-2">
         <BelaggningsStapel event={e} />
