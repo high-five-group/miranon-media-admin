@@ -4,7 +4,7 @@ title: 'Skiva: Runtime-beviset — PDF-generering i den skarpa edge-runtimen'
 status: Done
 assignee: []
 created_date: '2026-08-07 09:04'
-updated_date: '2026-08-07 13:20'
+updated_date: '2026-08-09 08:10'
 labels:
   - ready-for-agent
 dependencies: []
@@ -80,6 +80,8 @@ docs/reference/airtable-constraints.md § G, plus uppdaterad räkning i CLAUDE.m
 
 DoD #3 (CI grön per jobb) lämnas okryssad — orkestrerarens ansvar efter push,
 per uppdragets instruktion.
+
+[TASK-169, backlog-städet, 2026-08-09] DoD#7 (bas-additiviteten) bockad — samma krav bevisas av TASK-146.2 (schemadiff, ett auto-mirror-fält, dokumenterat), som är Done med sitt eget DoD för samma bas-additivitet checkad. DoD#6 (lager-oberoendet: noll direkta lagrings-anrop i UI-lagret + PORT-PARITET I BÅDA ADAPTRARNA) lämnas GENUINT OBOCKAD: Marcus egen stängnings-commit bbdb6971 (verbatim) säger '146.1 rör varken UI-lagret, adapter-kontraktet eller basen' — så halva kravet (UI-lagret) är vakuöst sant för denna skivas diff, men den andra halvan (port-paritet i BÅDA adaptrarna) kan inte prövas: TASK-146.4 (adaptern) är fortfarande status To Do, adaptrarna existerar inte än. Flippar INTE status — Marcus fattade detta beslut explicit och medvetet ('Ej tyst avbockade') vid stängningen. Se task-169s slutrapport för fullständig motivering av varför denna klass (Done-med-dokumenterat-undantag, blockerad på syskonkort) inte löses av mig ensidigt. Kortet fortsätter trigga check-backlog-closure.sh invariant 2 tills 146.4 landar eller ett policybeslut fattas.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
@@ -90,6 +92,6 @@ per uppdragets instruktion.
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
 - [ ] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
-- [ ] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
+- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
 - [x] #8 Väggkatalogens två attachment-poster landade
 <!-- DOD:END -->

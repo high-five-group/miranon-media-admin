@@ -4,7 +4,7 @@ title: 'Skiva: ADR-099 — rullande fönstret för sessionsdok-roten'
 status: Done
 assignee: []
 created_date: '2026-08-07 12:25'
-updated_date: '2026-08-07 14:14'
+updated_date: '2026-08-09 08:09'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,6 +26,12 @@ ordinal: 272000
 - [x] #4 ADR-index/README-räkningen stämmer efter mintningen
 - [x] #5 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+[TASK-169, backlog-städet, 2026-08-09] DoD#5 (serie-ordningen ADR→migration→grind bindande) GENUINT UTAN BELÄGG ännu och lämnas OBOCKAD med avsikt: TASK-158.4 (drift-grinden i nattnätet) är fortfarande status To Do — grinden som skulle bevisa ordningens sista led existerar inte än. Detta är strukturellt annorlunda än övriga rutor i denna städ-omgång: det är inte en glömd bock utan en väntande sibling-leverans. Flippar INTE status (kortets övriga AC/DoD är fullt bevisade och kortet är funktionellt klart) — se slutrapport för task-169 för fullständig motivering av varför jag inte heller flippar status. Kortet kommer fortsätta trigga check-backlog-closure.sh invariant 2 tills antingen (a) TASK-158.4 landar och boxen kan bockas mot verkligt belägg, eller (b) Marcus/orkestreraren fattar ett explicit policybeslut om hur denna klass (Done-med-dokumenterat-undantag) ska hanteras av grinden.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

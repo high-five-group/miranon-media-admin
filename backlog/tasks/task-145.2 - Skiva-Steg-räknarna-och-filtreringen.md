@@ -4,7 +4,7 @@ title: 'Skiva: Summeringsblocket — steg-räknarna, logistik-gruppen och Avboka
 status: Done
 assignee: []
 created_date: '2026-08-07 08:58'
-updated_date: '2026-08-07 15:40'
+updated_date: '2026-08-09 08:10'
 labels:
   - ready-for-agent
 dependencies:
@@ -59,17 +59,19 @@ Facit-bildens filnamn (uppdraget citerade "variant-a-avbokade-oppnad.png") finns
 Verifiering: typecheck 0 fel · biome 0 fel (rörda filer + full repo) · build grön · test:api 461/461 (mot skarp staging) · event-bor-over.staging.test.ts 6/6 (baseline 6/6, oförändrat) · event-bekraftelse.staging.test.ts 11 failed/10 passed, IDENTISK feltabell mot en verifierad ren baseline (git stash) för Markera-läget-blocket — mina två nya AutoKryss-ersättningstester gröna · test:visual 94/94 efter lokal baseline-generering (darwin.png gitignorerade, saknades i färsk worktree för sex specar — matchar 145.1s dokumenterade mönster exakt); eventsida.spec.ts:s nya baseline visuellt granskad mot facit-bilden konvergens-a-avbokade-oppnad.png — samma sju-radersform, samma grammatik.
 
 MM_STAGING_PREFLIGHT=off användes för lokala E2E-körningar (chromium-authenticated) eftersom ett CI-jobb (post-merge.yml, körning 31183309169) höll staging-preflighten låst under hela passet. Testerna är fullt deterministiska (page.route-mockade, ingen staging-data), och overriden är dokumenterad som ett aktivt, medvetet val i mekanismens egen källkod (tests/support/staging-preflight.ts).
+
+[TASK-169, backlog-städet, 2026-08-09] DoD#3+#7+#8 bockade mot belägg — samma källkedja som task-145.1 (samma städ-svep, se dess notes för full motivering). DoD#3: PR #902s gating checks gröna; det separata post-merge-stagingjobbet (SHA 0682a5b0) visade CANCELLED (superseded av senare merge i samma concurrency-grupp, inte ett fall) — täckt av Marcus commit 06dc40b7. Dagens nattkörning (31291660374) bekräftar staging SUCCESS på main nu. DoD#7: notes band explicit scope till 145.4/145.5 ('kan inte bli sann förrän 145.4/145.5 landat') — båda nu Done, 145.5 bär det mekaniska beviset för hela sidan. DoD#8: notes säger uttryckligen 'PROTO_MOTTAGEN_DATUM rör jag inte alls ... rivs av 145.4, inte av dig' — TASK-145.4 (Done) rev den; grep -rn PROTO_MOTTAGEN_DATUM src/ visar endast kommentarer om historisk rivning, ingen levande deklaration.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
 - [x] #6 test:visual omtagen med granskade baslinjer — drift är väntad, inte accepterad osedd
-- [ ] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
-- [ ] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
+- [x] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
+- [x] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
 - [x] #9 Bor över och Avbokade verifierade mot facit-bilderna (variant-a-avbokade-oppnad.png m.fl.) — inte mot minnet av hur de såg ut
 <!-- DOD:END -->

@@ -4,7 +4,7 @@ title: 'Skiva: ADR-097 — arbetsformens tillståndsbärare'
 status: Done
 assignee: []
 created_date: '2026-08-07 10:28'
-updated_date: '2026-08-07 11:39'
+updated_date: '2026-08-09 07:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,12 +30,14 @@ ordinal: 255000
 
 <!-- SECTION:NOTES:BEGIN -->
 Levererad via PR #863 (merge f3ee43d1), CI grön per jobb. ADR-097 mintad.
+
+[TASK-169, backlog-städet, 2026-08-09] DoD #1-4 bockade mot belägg (natt-grind run 31291660374: status Done, 0 AC/4 DoD obockade — bokföringsfel, inte saknat arbete). #1: AC redan [x]. #2: PR #863 (merge f3ee43d1, 2026-08-07T11:06:16Z) — alla jobb gröna. #3: PR #863 MERGED, per-jobb-grön. #4: diff scopad till README.md, kortfilen, docs/decisions/ADR-097-arbetsformens-tillstandsbarare.md, docs/decisions/README.md — ADR-097 verifierad på main.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

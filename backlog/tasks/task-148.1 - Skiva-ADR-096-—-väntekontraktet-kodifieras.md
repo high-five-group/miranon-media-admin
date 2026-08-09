@@ -4,7 +4,7 @@ title: 'Skiva: ADR-096 — väntekontraktet kodifieras'
 status: Done
 assignee: []
 created_date: '2026-08-07 09:47'
-updated_date: '2026-08-07 10:38'
+updated_date: '2026-08-09 07:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,12 +30,14 @@ ordinal: 247000
 
 <!-- SECTION:NOTES:BEGIN -->
 Levererad via PR #854 (merge d433714c), CI grön per jobb (CI + Post-merge + Push on main). ADR-096 mintad, README-räkningen 95→96.
+
+[TASK-169, backlog-städet, 2026-08-09] DoD #1-4 bockade mot belägg (natt-grind run 31291660374 flaggade kortet: status Done, 0 AC/4 DoD obockade — bokföringsfel vid stängning, inte saknat arbete). #1: AC redan [x] i filen. #2: PR #854 (merge d433714c, 2026-08-07T10:18:26Z) — Lint+TypeCheck+Docs-link SUCCESS på docs-klass, Test suite korrekt skippad. #3: PR #854 MERGED, samtliga jobb SUCCESS/SKIPPED. #4: diff scopad till README.md, kortfilen, docs/decisions/ADR-096-subagentens-vantekontrakt.md, docs/decisions/README.md — verifierat mot PR-diff.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

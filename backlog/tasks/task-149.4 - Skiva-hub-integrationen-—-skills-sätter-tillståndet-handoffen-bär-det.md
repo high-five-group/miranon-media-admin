@@ -4,7 +4,7 @@ title: 'Skiva: hub-integrationen — skills sätter tillståndet, handoffen bär
 status: Done
 assignee: []
 created_date: '2026-08-07 10:32'
-updated_date: '2026-08-07 12:45'
+updated_date: '2026-08-09 08:01'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,6 +28,12 @@ ordinal: 258000
 - [x] #4 PR i hub-repot armerad/landad enligt hubbens flöde; spoke-verifikat att nya versionen är aktiv
 <!-- AC:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+[TASK-169, backlog-städet, 2026-08-09] DoD #3 bockad — belägg: den PUSHADE STÄNGNINGS-COMMITEN i detta repo, PR #887 (merge 190c045e, 2026-08-07T12:50:42Z, gh pr view 887), diff path-scopad till task-149.4s egen kortfil, samtliga CI-jobb SUCCESS/SKIPPED. (Batch-researchen föreslog N/A eftersom hubbrepot marcus-system saknar CI — sant men onödigt: kravtexten 'på pushad commit' är uppfylld av spokens egen closure-PR, som prövas oberoende av hub-arbetets natur.)
+<!-- SECTION:NOTES:END -->
+
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
@@ -38,6 +44,6 @@ Stängning i S99-resume 1 (2026-08-07): hub-commit 93892dd (marcus-system main, 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

@@ -4,7 +4,7 @@ title: 'Skiva: arkiverings-skriptet — fönsterregeln + atomisk länk-omskrivni
 status: Done
 assignee: []
 created_date: '2026-08-07 12:26'
-updated_date: '2026-08-07 15:28'
+updated_date: '2026-08-09 08:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,6 +28,12 @@ ordinal: 273000
 - [x] #5 Tvåsidig testsvit i test-familjens form: fäller/släpper/fail-closed; shellcheck-strict grön
 - [x] #6 PR armerad, per-jobb-grön
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+[TASK-169, backlog-städet, 2026-08-09] DoD#5 (serie-ordningen ADR→migration→grind bindande) GENUINT UTAN BELÄGG ännu och lämnas OBOCKAD med avsikt — samma skäl som task-158.1: TASK-158.4 (drift-grinden) är fortfarande To Do. Flippar INTE status. Se task-169s slutrapport för fullständig motivering. Kortet fortsätter trigga check-backlog-closure.sh invariant 2 tills 158.4 landar eller ett policybeslut fattas.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
