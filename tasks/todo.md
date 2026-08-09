@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-09, `lifecycle: active`, tionde
+resumen) — 15-STRECKS-RUNDAN ÄR HUVUDSPÅRET.** Paus-PR:en `#1058`
+verifierad MERGED (`393825b0` = main-toppen); Post-merge + CodeQL + CI
+gröna på main. Huvudkatalogen är S93:s (ingen främmande ägarlapp;
+S101:s paus-PR `#1059` står DIRTY — främmande sessions PR, ägarens
+svep bär den, bokförd som fynd) — resume-gren `docs/s93-resume-10`
+från `origin/main`. Numrering re-verifierad mot disk: nästa ADR
+**108** · **L480** + 8 nummerlösa fragment · **T140** håller;
+**task-173 FÖRBRUKAT** av S101 (PRD-Review-grinden + 7 skivor) →
+nästa kort **task-174**; f47 ej omprövad. **NÄSTA per MARCUS-SEKVENS
+(kvitterad väg): 15-strecks-rundan per `172`-notes femstegsplan →
+Marcus omgodkännande-stämpling (`--ersatt`) → `172` Done →
+session-end-blocket (lessons-skörd 17+ kandidater · hub-sync-paketet ·
+CLAUDE.md-rättelsen · ritual) → S93 STÄNGS.** `171.6` väntar `147` ·
+`169`-resten väntar `146.4`/`158.4` (Marcus prio).
+**HANDOFF: sessionsdok S93 § Paushistorik (tionde) + Del 15–16.**
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 101 ⏸️ PAUSAD (2026-08-09, efter Del 8; PAUSLÄGE amenderat
 samma dag på Marcus order) — L8-TRANSFORMATIONENS ETABLERING KOMPLETT.**
 Kartläggningen av Kun Chens system (tre transkript djuplästa +
