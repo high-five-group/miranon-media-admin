@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-09 07:18'
+updated_date: '2026-08-09 08:30'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,6 +25,12 @@ Uppföljning av ADR-104-hooken (task-167). Mätt friktion 2026-08-08 (två insta
 - [ ] #2 Samtliga befintliga deny-fall fäller fortfarande — ingen försvagning av skyddet
 - [ ] #3 Skarpbevis eller öppen skuld bokförd per L450-regeln
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FJÄRDE mätta falsk-positiva klassen (2026-08-09, S93): ett backlog task create-anrop vars DESCRIPTION-text NÄMNER stämplingskommandot fälldes av hooken — payload-text i ett CLI-anrop är inte en anropsväg. Omformulering krävdes för att publicera skiva 171.4. Substräng-matchningen träffar alltså även kort-/dok-TEXT som passerar genom Bash-argument, inte bara faktiska kommandon.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
