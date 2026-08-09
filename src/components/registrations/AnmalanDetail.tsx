@@ -243,7 +243,7 @@ export function AnmalanDetail({
     if (reg && !announceRef.current) {
       announceRef.current = true;
       headingRef.current?.focus();
-      document.title = `${displayName(reg)} — Anmälan`;
+      document.title = `${displayName(reg)} - Anmälan`;
     }
   }, [reg]);
 
@@ -420,7 +420,7 @@ export function AnmalanDetail({
               <EtikettVardeRad term="Ort">{reg.eventOrt ?? reg.ort}</EtikettVardeRad>
               <EtikettVardeRad term="Datum">
                 {datum(reg.startdatum)}
-                {reg.slutdatum && datum(reg.slutdatum) ? ` – ${datum(reg.slutdatum)}` : ''}
+                {reg.slutdatum && datum(reg.slutdatum) ? ` - ${datum(reg.slutdatum)}` : ''}
               </EtikettVardeRad>
               <EtikettVardeRad term="Tid kvar">{reg.tidKvar}</EtikettVardeRad>
               {behorighet && (

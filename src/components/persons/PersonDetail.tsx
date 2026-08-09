@@ -19,7 +19,7 @@ function displayName(person: PersonDetailType): string {
   if (composed) return composed;
   // Namnlös lead → e-post särskiljer (unika h1/flik-titlar för skärmläsare);
   // utan e-post faller vi tillbaka på den generiska etiketten.
-  return person.email ? `Namnlös person — ${person.email}` : 'Namnlös person';
+  return person.email ? `Namnlös person - ${person.email}` : 'Namnlös person';
 }
 
 /** En rad i fält/värde-listan; hoppar tomma värden (renderar inte null). */

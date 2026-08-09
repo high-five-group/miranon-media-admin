@@ -251,7 +251,7 @@ export class AirtableAdapter implements DataSourceAdapter {
    * See ADR-026 (Runtime-validering vid datagräns med Zod .parse()).
    */
   async fetchEngagements(_personId?: string): Promise<Engagement[]> {
-    throw new Error('Not deployed yet — see Gate 4B-resolution (post-Fas E)');
+    throw new Error('Not deployed yet - see Gate 4B-resolution (post-Fas E)');
   }
 
   /**

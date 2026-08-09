@@ -60,7 +60,7 @@ async function getAuthHeader(): Promise<string> {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) {
-    throw new AuthError('No Supabase session — UI-flow guard should have redirected to /login');
+    throw new AuthError('No Supabase session - UI-flow guard should have redirected to /login');
   }
   return `Bearer ${session.access_token}`;
 }

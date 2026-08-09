@@ -28,7 +28,7 @@ import type {
 import type { ListParams, PersonsPage } from '../../domain/types/Pagination';
 import type { DataSourceAdapter } from './DataSourceAdapter';
 
-const NOT_IMPLEMENTED = 'SupabaseAdapter: Not implemented — migrate Edge Functions first';
+const NOT_IMPLEMENTED = 'SupabaseAdapter: Not implemented - migrate Edge Functions first';
 
 export class SupabaseAdapter implements DataSourceAdapter {
   async fetchEvents(): Promise<Event[]> {

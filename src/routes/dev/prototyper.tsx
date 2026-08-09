@@ -11,7 +11,7 @@ export const Route = createFileRoute('/dev/prototyper')({
       throw redirect({ to: '/' });
     }
   },
-  staticData: { title: 'Prototyp-växlaren — referens' },
+  staticData: { title: 'Prototyp-växlaren - referens' },
   component: PrototyperPage,
 });
 
@@ -34,12 +34,12 @@ export const Route = createFileRoute('/dev/prototyper')({
  * så att en regression i persistens eller alias-inmappning är läsbar direkt.
  */
 const DEMO_VARIANTS: PrototypeVariant[] = [
-  { key: 'A', label: 'Variant A', steg: 1, stegLabel: 'Steg 1 — divergens' },
-  { key: 'B', label: 'Variant B', steg: 3, stegLabel: 'Steg 3 — konvergens låst' },
+  { key: 'A', label: 'Variant A', steg: 1, stegLabel: 'Steg 1 - divergens' },
+  { key: 'B', label: 'Variant B', steg: 3, stegLabel: 'Steg 3 - konvergens låst' },
 ];
 
 const ENDA_VARIANTEN: PrototypeVariant[] = [
-  { key: 'K', label: 'Konvergensen', steg: 2, stegLabel: 'Steg 2 — enda varianten' },
+  { key: 'K', label: 'Konvergensen', steg: 2, stegLabel: 'Steg 2 - enda varianten' },
 ];
 
 function PrototyperPage() {
@@ -52,7 +52,7 @@ function PrototyperPage() {
     <section className="flex flex-col gap-6 p-4">
       <h1 className="font-semibold text-3xl">Prototyp-växlaren</h1>
       <p className="max-w-prose text-body text-text-secondary">
-        Stående dev-verktyg (ADR-074). Railen monteras nedan — dra i greppet, stega mellan
+        Stående dev-verktyg (ADR-074). Railen monteras nedan - dra i greppet, stega mellan
         varianterna och växla datakälla; URL-kontraktet speglas i rutan under.
       </p>
 

@@ -19,7 +19,7 @@ function displayName(person: Intresserad): string {
   if (composed) return composed;
   // Namnlös lead → e-post särskiljer (unika rad-etiketter för skärmläsare);
   // utan e-post faller vi tillbaka på den generiska etiketten.
-  return person.email ? `Namnlös person — ${person.email}` : 'Namnlös person';
+  return person.email ? `Namnlös person - ${person.email}` : 'Namnlös person';
 }
 
 /**

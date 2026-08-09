@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-09 08:08'
+updated_date: '2026-08-09 13:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,10 +22,22 @@ Marcus-beslut 2026-08-09 (S93-resumen, ur S100:s blockerande fråga; S100 sessio
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Inga långa streck (— eller –) i användar-synliga strängar i src/, utom config-listade undantag (tom-markören)
-- [ ] #2 Mekanisk grind fäller nya förekomster — tvåsidigt bevis: seedat fel fälls, ren kod passerar
-- [ ] #3 Undantagen bor i config-fil, inte hårdkodade i skriptet
-- [ ] #4 Sekvens-villkoret mot task-171:s referenser efterlevt och bokfört i notes
+- [x] #2 Mekanisk grind fäller nya förekomster — tvåsidigt bevis: seedat fel fälls, ren kod passerar
+- [x] #3 Undantagen bor i config-fil, inte hårdkodade i skriptet
+- [x] #4 Sekvens-villkoret mot task-171:s referenser efterlevt och bokfört i notes
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Sekvens-villkor (AC #4): task-171-kedjan Done + riven (PR #1046, 54e3ff36) FORE detta svep - verifierat, ingen mitt-i-kedjan-risk.
+
+AC #1 DELVIS, ej avbockad. Traffyta (AST, @babel/parser): 93 rentat forekomster. 73 ersatta. 9 KEEP (tom-markoren, namngiven exception). 12 REST (NYA fil-scopade exceptions utover tom-markoren) - eventsida-/event-lista-las: Atgarder.tsx, Betalningar.tsx, DatumFalt.tsx, Deltagare.tsx(4), DetaljGrupp.tsx, Gruppdynamik.tsx, Narvaro.tsx, datumSpann.ts(3), EventCard.tsx. Se .langa-streck-policy.json for rationale per post. AC #1 kan inte bockas arligt eftersom fler an tom-markoren undantas - REST kraver ny iteration + Marcus-godkannande (ADR-104 beslut 4).
+
+UPPTACKT: datumSpann.ts rad 4-8 dokumenterar ett aldre Marcus-direktiv (tatt tankstreck for datumspann, svensk skrivregel) som KAN sta i konflikt mot task-172s blankettinstruktion. Filen ligger i REST och rordes ej - konflikten olost, flaggad for nasta iteration.
+
+Obesläktat, ej fixat (scope creep): verify:ci-parity:fast visade tva pre-existing roda poster - biome.json $schema 2.5.4 vs CLI 2.5.5, och markdownlint MD004 i tasks/sessions/2026-08-02-session-93.md:2259. Ingen fil rord av detta kort.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

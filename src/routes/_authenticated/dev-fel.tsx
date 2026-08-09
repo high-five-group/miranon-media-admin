@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_authenticated/dev-fel')({
 function DevFelPage() {
   const [skaKasta, setSkaKasta] = useState(false);
   if (skaKasta) {
-    throw new Error('Medvetet sektions-fel — DEV-feltrigger (Session 16 K4, DoD 6-verifiering)');
+    throw new Error('Medvetet sektions-fel - DEV-feltrigger (Session 16 K4, DoD 6-verifiering)');
   }
   return (
     <>

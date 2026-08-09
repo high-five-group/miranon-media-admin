@@ -254,9 +254,9 @@ export function SegmentBuilder() {
           {mutation.data && !mutation.isPending && !mutation.isError && (
             <p className="text-body">
               {isStale ? (
-                <span className="text-text-muted">Antalet är inaktuellt — räkna igen.</span>
+                <span className="text-text-muted">Antalet är inaktuellt - räkna igen.</span>
               ) : mutation.data.count === 0 ? (
-                <span>0 personer matchar — inga med genomförd närvaro ännu.</span>
+                <span>0 personer matchar - inga med genomförd närvaro ännu.</span>
               ) : (
                 <span>
                   <strong>{mutation.data.count}</strong>{' '}

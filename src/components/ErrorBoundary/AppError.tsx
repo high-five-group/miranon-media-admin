@@ -51,8 +51,8 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
         >
           <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Något gick fel</h1>
           <p style={{ margin: '0.75rem 0 0' }}>
-            Appen kunde inte återhämta sig från ett fel. Ladda om sidan för att fortsätta —
-            ingenting du har sparat går förlorat.
+            Appen kunde inte återhämta sig från ett fel. Ladda om sidan för att fortsätta - du
+            förlorar inget av det du har sparat.
           </p>
           <button
             type="button"

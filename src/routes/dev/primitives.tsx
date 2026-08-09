@@ -33,7 +33,7 @@ export const Route = createFileRoute('/dev/primitives')({
       throw redirect({ to: '/' });
     }
   },
-  staticData: { title: 'Primitiver — demo' },
+  staticData: { title: 'Primitiver - demo' },
   component: PrimitivesPage,
 });
 
@@ -43,7 +43,7 @@ function PrimitivesPage() {
   const [senastTryckt, setSenastTryckt] = useState('—');
   return (
     <main className="p-8">
-      <h1 className="text-2xl">Primitiver — demo (endast dev-läge)</h1>
+      <h1 className="text-2xl">Primitiver - demo (endast dev-läge)</h1>
       <p className="mt-2 text-small text-text-secondary">
         Visuell verifiering av alla size × intent-kombinationer per Fas 3 DoD 3.
       </p>
@@ -53,7 +53,7 @@ function PrimitivesPage() {
       {INTENTS.map((intent) => (
         <section key={intent} aria-labelledby={`rubrik-${intent}`} className="mt-8">
           <h2 id={`rubrik-${intent}`} className="text-xl">
-            Button — {intent}
+            Button - {intent}
           </h2>
           <div className="mt-4 flex flex-wrap items-center gap-4">
             {SIZES.map((size) => (
@@ -163,7 +163,7 @@ function PrimitivesPage() {
         <div className="mt-4 flex flex-col gap-4">
           {MESSAGE_INTENTS.map((intent) => (
             <MessageBox key={intent} intent={intent} title={`Rubrik (${intent})`}>
-              Brödtext för {intent}-meddelandet — alltid i neutral textfärg.
+              Brödtext för {intent}-meddelandet - alltid i neutral textfärg.
             </MessageBox>
           ))}
           <MessageBox
@@ -234,7 +234,7 @@ function PrimitivesPage() {
         </h2>
         <p className="mt-2 text-small text-text-secondary">
           Lugnt laddläge (spec §15): statiskt demo-kort i permanent laddläge. Roselli-anatomin ägs
-          av konsumenten — aria-busy på innehålls-containern + sr-only-besked; blocken är
+          av konsumenten - aria-busy på innehålls-containern + sr-only-besked; blocken är
           aria-hidden.
         </p>
         <div
@@ -266,7 +266,7 @@ function PrimitivesPage() {
         <p className="mt-2 text-small text-text-secondary">
           Pill-toggeln (S72-facitets form, spec §16): alltid exakt ett val, radiogroup-semantik,
           pilnavigering. Tre belagda former: period (spread), vy-ikoner (inline) och flik-kapslar
-          (sm). Hovra en OVALD pill — plattan är ett genomskinligt skrim, så den håller sitt steg
+          (sm). Hovra en OVALD pill - plattan är ett genomskinligt skrim, så den håller sitt steg
           även på ett track vars ton konsumenten satt själv (fjärde gruppen).
         </p>
         <div className="mt-4 flex flex-col gap-4">
@@ -348,8 +348,8 @@ function PrimitivesPage() {
           SlideToConfirm
         </h2>
         <p className="mt-2 text-small text-text-secondary">
-          Dra-till-bekräfta-handtaget (S73-facit-utökningen K77–K84, spec §18): draget är
-          bekräftelsen vid tunga handlingar — tangentbordet (Space/Enter) är alltid en likvärdig
+          Dra-till-bekräfta-handtaget (S73-facit-utökningen K77-K84, spec §18): draget är
+          bekräftelsen vid tunga handlingar - tangentbordet (Space/Enter) är alltid en likvärdig
           väg. Armerat läge = bock + text utan fyllnad (K82).
         </p>
         <div className="mt-4 flex flex-col gap-4">
@@ -386,9 +386,9 @@ function PrimitivesPage() {
         </h2>
         <p className="mt-2 text-small text-text-secondary">
           Bibliotekskomponent + hook (task-126.2): default-läget nedan renderar en knapp ENDAST när
-          Chromiums installationshändelse faktiskt fångats (AC 2 — strukturellt omöjlig död knapp).
+          Chromiums installationshändelse faktiskt fångats (AC 2 - strukturellt omöjlig död knapp).
           Inspektions-läget använder render-prop-formen för att exponera hela plattformstillståndet
-          — den väg Mer-flikens install-yta (task-126.3) bygger sin pedagogik ovanpå.
+          - den väg Mer-flikens install-yta (task-126.3) bygger sin pedagogik ovanpå.
         </p>
         <div className="mt-4 flex flex-col gap-4">
           <div data-testid="installprompt-default">

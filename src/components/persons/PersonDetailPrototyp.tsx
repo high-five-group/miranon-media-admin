@@ -82,7 +82,7 @@ function displayName(person: PersonDetailType): string {
   if (person.namn) return person.namn;
   const composed = [person.fornamn, person.efternamn].filter(Boolean).join(' ');
   if (composed) return composed;
-  return person.email ? `Namnlös person — ${person.email}` : 'Namnlös person';
+  return person.email ? `Namnlös person - ${person.email}` : 'Namnlös person';
 }
 
 type PillTon = 'neutral' | 'aktiv' | 'kommande';
@@ -180,7 +180,7 @@ function AnteckningLas({ note, odaterad = false }: { note: string | null; odater
     <div className="flex flex-col gap-2">
       {odaterad && note && (
         <span className="text-caption text-text-muted">
-          Odaterad — ingen författare, ingen tidpunkt
+          Odaterad - ingen författare, ingen tidpunkt
         </span>
       )}
       {note ? (
@@ -438,7 +438,7 @@ function VariantA({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           <div className="flex flex-col items-center gap-1 rounded-2xl border border-transparent bg-bg-muted px-4 py-12 text-center contrast-more:border-border-strong">
             <p className="font-medium text-body">Ingen kurshistorik ännu</p>
             <p className="text-small text-text-muted">
-              Personen har inte deltagit i något event — historiken fylls när ett deltagande
+              Personen har inte deltagit i något event - historiken fylls när ett deltagande
               registreras.
             </p>
           </div>
@@ -601,7 +601,7 @@ function VariantB({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           )}
           {person.ejGodkandMail && (
             <p className="py-3 text-small text-text-muted">
-              Personen har tackat nej till mailutskick — mejla bara personligt.
+              Personen har tackat nej till mailutskick - mejla bara personligt.
             </p>
           )}
         </div>
@@ -1044,7 +1044,7 @@ function VariantC({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           <ul className="flex flex-col gap-1 py-3">
             {oplacerade.map((post) => (
               <li key={post} className="text-small text-text-muted">
-                {post} — saknar datum
+                {post} - saknar datum
               </li>
             ))}
           </ul>

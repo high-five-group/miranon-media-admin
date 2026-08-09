@@ -21,7 +21,7 @@ export function useDataSource(): DataSourceAdapter {
   // den i produktion är root-context-injektionen bruten (regression).
   if (!dataSource) {
     throw new Error(
-      'dataSource saknas i router-context — root-context-injektionen (ADR-055) är bruten',
+      'dataSource saknas i router-context - root-context-injektionen (ADR-055) är bruten',
     );
   }
   return dataSource;

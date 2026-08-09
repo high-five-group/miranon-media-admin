@@ -22,8 +22,8 @@ export function SectionError({ reset }: ErrorComponentProps) {
   return (
     <MessageBox intent="error" title="Något gick fel">
       <p>
-        Den här delen av sidan kunde inte visas. Försök igen — om felet kvarstår, ladda om hela
-        sidan.
+        Den här delen av sidan kunde inte visas. Försök igen - ladda om hela sidan om felet
+        kvarstår.
       </p>
       <Button
         intent="secondary"

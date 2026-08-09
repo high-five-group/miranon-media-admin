@@ -160,7 +160,7 @@ export function SegmentMailCompose() {
           )}
           {noRecipients && (
             <MessageBox intent="warning" title="Inga mottagare">
-              Det här segmentet har inga mottagare just nu — det går inte att skicka ett utskick.
+              Det här segmentet har inga mottagare just nu - det går inte att skicka ett utskick.
             </MessageBox>
           )}
           {countReady && !noRecipients && (
@@ -296,7 +296,7 @@ export function SegmentMailCompose() {
                 annonseras). Komplement till den synliga faro-knappens tillståndsbyte. */}
             <p aria-live="polite" className="text-small text-text-muted">
               {confirmMatch
-                ? `Rätt antal angivet — knappen "Skicka till ${recipientCount} ${recipientCount === 1 ? 'person' : 'personer'}" är nu upplåst.`
+                ? `Rätt antal angivet - knappen "Skicka till ${recipientCount} ${recipientCount === 1 ? 'person' : 'personer'}" är nu upplåst.`
                 : ''}
             </p>
           </div>

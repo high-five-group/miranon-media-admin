@@ -1,0 +1,112 @@
+{
+  "_readme": [
+    "Config för scripts/check-langa-streck.mjs (TASK-172, scope A —",
+    "Marcus-beslut 2026-08-09: 'Ta bort alla långa bindestreck överallt, jag",
+    "gillar de korta bindestrecken (-)'). Skriptets LOGIK är universell (AST-",
+    "läsning av StringLiteral/JSXText/TemplateElement, exkluderar",
+    "kommentarer); VÄRDENA här — undantagen — är projekt-specifika, per",
+    "CLAUDE.md-regeln om config-drivna grindvakter (Lesson #6, UNIVERSAL).",
+    "",
+    "TVÅ UNDANTAGS-TYPER:",
+    "  'global'     — matchar VARJE sträng/JSX-text vars TRIMMADE innehåll är",
+    "                 EXAKT värdet, oavsett fil. Används för tom-markören.",
+    "  'file-value' — matchar bara i EN namngiven fil, mot det EXAKTA",
+    "                 (whitespace-normaliserade — \\s+ → enkelt mellanslag,",
+    "                 trimmat) innehållet. Används för REST-posterna nedan.",
+    "",
+    "REST-POSTERNA (11 st, 8 filer) är medvetet KVARLÄMNADE långa streck —",
+    "INTE tom-markören, utan sträckor svepet lät vara orörda eftersom filen är",
+    "nåbar från EventDetail.tsx:s renderträd (`/event/:id`, 'eventsidan'),",
+    "som bär BÅDE en pixel-baseline (tests/visual/eventsida.spec.ts,",
+    "CI-only — darwin/linux-plattformsskillnaden gör den overifierbar",
+    "lokalt) OCH en ariaSnapshot-regressionslås",
+    "(tests/visual/eventsida-promoverings-grind.spec.ts, ADR-103 B4). En",
+    "textändring i en sådan yta är en NY ITERATION som kräver Marcus-",
+    "godkännande (ADR-104 beslut 4) — inte del av detta sveps mandat. Se",
+    "TASK-172 notes för fullständig källa per post och`",
+    "docs/research/ (om ett separat forskningspass tas för nästa iteration).",
+    "",
+    "En ny fil/värde som INTE står här FÄLLS av grinden — det är avsett.",
+    "'REST' växer alltså aldrig av sig själv; varje ny post kräver samma",
+    "läsning av träffytan mot referens-låsen som TASK-172 gjorde."
+  ],
+  "exceptions": [
+    {
+      "type": "global",
+      "match": "—",
+      "rationale": "Tom-markören — symbol för 'inget värde' (t.ex. 'Ämne: —' i AtgardsSida.tsx). Marcus-beslut 2026-08-09 (task-172 Description), BEHÅLLS explicit. Gäller endast em-dash (—); en-dash (–) som platshållare KONVERTERAS i stället till kort bindestreck (-) — se task-172-rapportens motivering."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/Atgarder.tsx",
+      "match": "Åtgärds-sidan — eget prototyp-pass. Härifrån går utskicken: bekräftelse, betalningspåminnelse, eventinfo, fritt utskick — och manuell anmälan.",
+      "rationale": "REST (eventsida-lås). AtgarderKort/CheckInKort/SkrivUtKort exporteras härifrån och monteras direkt i EventDetail.tsx — del av både pixel-baseline och (delvis) ariaSnapshot-låset."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/Betalningar.tsx",
+      "match": "Utskickslogg visas här — inget skickat ännu till denna person",
+      "rationale": "REST (eventsida-lås). Betalningar.tsx importeras av Deltagare.tsx, som monteras direkt i EventDetail.tsx."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/DatumFalt.tsx",
+      "match": "–",
+      "rationale": "REST (eventsida-lås). Dekorativt (aria-hidden) datumintervall-separator-glyf; DatumFalt.tsx importeras av OmEventet.tsx, som monteras direkt i EventDetail.tsx. aria-hidden gör den osynlig för ariaSnapshot-låset men INTE för pixel-baselinen (CI-only, overifierbar lokalt darwin/linux)."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/Deltagare.tsx",
+      "match": "Dags att skicka — eventet är idag",
+      "rationale": "REST (eventsida-lås). Deltagare.tsx monteras direkt i EventDetail.tsx (registret, delvis ariaSnapshot-låst)."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/Deltagare.tsx",
+      "match": "Dags att skicka — eventet är imorgon",
+      "rationale": "REST (eventsida-lås). Se föregående post."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/Deltagare.tsx",
+      "match": "Dags att skicka — eventet är om",
+      "rationale": "REST (eventsida-lås). Template literal-huvud (kombineras med ${dagarKvar} + ' dagar'); whitespace-normaliserad, trailing-mellanslag trimmat av grinden."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/Deltagare.tsx",
+      "match": "du markerat — de följer med dit när sidan finns.",
+      "rationale": "REST (eventsida-lås). Template literal-svans; whitespace-normaliserad."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/DetaljGrupp.tsx",
+      "match": "–",
+      "rationale": "REST (eventsida-lås). Generisk fält/värde-radkomponent; importeras av OmEventet, Belaggning, Anteckningar, Narvaro, Gruppdynamik, Deltagare — samtliga monterade i EventDetail.tsx."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/datumSpann.ts",
+      "match": "–",
+      "rationale": "REST (eventsida-lås). datumSpannText() konsumeras av OmEventet.tsx, Deltagare.tsx och Betalningar.tsx — samtliga monterade/importerade i EventDetail.tsx:s renderträd (eventsidan). Täcker samtliga tre förekomster (rad 28/31/32) — normaliseringen (whitespace kollapsat, trimmat) gör ' – ' och '–' till samma värde. UPPTÄCKT UNDER SVEPET (missad i första passet, fångad av grindens EGEN körning post-edit — se task-172-rapporten): filens egen kommentar (rad 4-8) dokumenterar en ÄLDRE 'Marcus-direktivet'-konvention ('tätt tankstreck, svenska skrivregler') för datumspann som en möjlig konflikt mot task-172:s blankettinstruktion — olöst, flaggat för nästa iteration, INTE avgjort av detta undantag."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/Gruppdynamik.tsx",
+      "match": "1–2 tidigare event",
+      "rationale": "REST (eventsida-lås). Gruppdynamik.tsx monteras direkt i EventDetail.tsx."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/detail/Narvaro.tsx",
+      "match": "–",
+      "rationale": "REST (eventsida-lås). Narvaro.tsx monteras direkt i EventDetail.tsx."
+    },
+    {
+      "type": "file-value",
+      "file": "src/components/events/EventCard.tsx",
+      "match": "–",
+      "rationale": "REST (event-lista-lås). EventCard.tsx monteras i EventsList.tsx (`/event`, tests/visual/event-lista.spec.ts, CI-only pixel-baseline) — okänt om fixturens events träffar null-grenen som visar platshållaren; konservativt undantagen i stället för antagen säker."
+    }
+  ]
+}

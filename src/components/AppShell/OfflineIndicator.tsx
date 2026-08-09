@@ -21,7 +21,7 @@ export function OfflineIndicator() {
     <div role="status" aria-live="polite">
       {!isOnline && (
         <p className="border-warning border-b bg-warning-bg px-4 py-2 text-center text-small contrast-more:border-b-2">
-          Du är offline — visar senast hämtade data.
+          Du är offline - visar senast hämtade data.
         </p>
       )}
     </div>
