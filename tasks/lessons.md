@@ -35,10 +35,12 @@ status: stable
 > enskilda lärdomar on-demand (`grep -n "^### L3" tasks/lessons/` → `Read` med
 > `offset`), eller läs de senaste via `offset` mot den aktiva volymens slut.
 >
-> **Senaste lyft till hubben:** `L456`–`L468` (Session 97, 13 poster, alla
-> `[UNIVERSAL]`) → hub `K97.1`–`K97.13` (hub-commit `da6199c`, spoke-commits
-> `16938ce6` + `d1be7441`). `L469`–`L479` (11 poster) är ännu INTE lyfta —
-> nästa hub-lyft tar dem.
+> **Senaste lyft till hubben:** `L469`–`L511`:s `[UNIVERSAL]`-poster
+> (Session 93 tionde resumen, 39 poster) → hub `K93.1`–`K93.39`
+> (hub-commit `a205132`, spoke-commits `7c06377c` + `aa2b802c`). EJ
+> lyfta ur spannet, med skäl: `L470` (bär ingen markör — ren
+> empiri-bokföring) · `L493`/`L504`/`L509` (uttrycklig "Varför
+> INTE"-rationale). Ingen olyft rest kvarstår.
 
 ---
 
