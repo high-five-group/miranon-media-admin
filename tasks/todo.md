@@ -15,6 +15,24 @@
 
 ## Aktuellt fokus
 
+**Session 93 ⏸️ PAUSAD (2026-08-09, tionde pausen, `lifecycle: paused`) —
+PRD-171 FULLBORDAT PÅ EN DAG; 15-STRECKS-BESLUTET ÄR NÄSTA RESUMES
+HUVUDSPÅR.** Dagens facit: åtgärds-/granskningssidan SKARP (godkänd
+`cfc62f9f` · riven `54e3ff36` · regressionslåst med noll drift) · `168`
+Done · `169` levererad (21→5) · `172` levererad+mergad (`#1055`, tre
+varv) men ÖPPEN på Marcus-beslutet *"ALLA 15 långa bindestreck i
+användarsynlig text MÅSTE bort"* (femstegsplan i kortets notes; avgör
+även datumspann-frågan). **NÄSTA RESUME: 15-strecks-rundan → Marcus
+omgodkännande-stämpling (`--ersatt`) → `172` Done → session-end-blocket
+(lessons-skörd 17+ kandidater · hub-sync-paketet · CLAUDE.md-rättelsen)
+→ S93 STÄNGS** (Marcus-kvitterad bedömning: hinner). `171.6` väntar
+`147` · `169`-resten väntar `146.4`/`158.4` (Marcus prio). Numrering vid
+paus (hypotes — S101 aktiv och snabb): 108/L480+8/T140/task-173/f47.
+**HANDOFF: sessionsdok S93 § PAUSLÄGE (tionde pausen) + Del 15–16.**
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 93 ▶️ AKTIV (2026-08-09, Del 16-landningen) — PRD-171 DONE PÅ
 EN DAG: ÅTGÄRDS-/GRANSKNINGSSIDAN ÄR SKARP.** Hela promoverings-kedjan
 exekverad med förgrundsverifikat per led: `171.1` referenserna (`#1037`,
