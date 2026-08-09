@@ -1,10 +1,10 @@
 ---
 id: TASK-171.5
 title: 'Skiva: Rivningen + regressionslåset'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 08:26'
-updated_date: '2026-08-09 11:25'
+updated_date: '2026-08-09 11:49'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,7 +30,7 @@ ordinal: 320000
 - [x] #1 Variant-koden/railen riven; formen orörd (diff visar endast villkor/växlar)
 - [x] #2 check-facit grön med godkand satt; stale-URL-bevis bilagt
 - [x] #3 ariaSnapshot-referenserna gröna mot rivna ytan utan omtagning
-- [ ] #4 Visual-baslinjen omtagen via CI-artefakt EFTER rivningen
+- [x] #4 Visual-baslinjen omtagen via CI-artefakt EFTER rivningen
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -165,11 +165,17 @@ vid prövning (task-171.4 Done + Marcus-stämpel på main, 145.6-precedentet
 läst före design, PrototypRigg-beroendet mot specen genuint verifierat).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1046 (merge 54e3ff36 genom kön; Push on main + första CI success, resterande bevakas level-triggat). AC #4 betald av orkestreraren post-merge: visual-baselines-run 31311560867 dispatschad på rivna main — completed/success med verbatim-utfallet 'Inga baseline-ändringar — renderingen matchar incheckade bilder', dvs NOLL drift: rivningen ändrade inga pixlar, incheckade baselines står oförändrade som regressionslås (starkaste möjliga utfall — ingen bild-PR att välsigna). Rivningen: switcher + PROTO_VARIANTS + markörer rivna, formen bevisat orörd; PrototypRigg KVAR DEV-grindad (hård testberoende i referens-specen tills 147:s sändväg; byggbevisat borta ur prod-bundle). Stale-URL-bevis bidirektionellt. Flaggat i notes för framtida triage: stale READ-ONLY-docblock i AtgardsSida.tsx motsägs av 171.3:s skrivvägskarta.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Datavägs-invarianten verifierad: inga datakälla-grenar flippade
 - [x] #6 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
