@@ -1,0 +1,9 @@
+- button "Tillbaka till åtgärderna"
+- heading "Inget skickades" [level=1]
+- region "Mottagare":
+  - heading "Mottagare" [level=2]
+  - text: /Anna Andersson E-post anna\.andersson@example\.se Anmäld \d+ september \d+:\d+ Kunde inte levereras Björn Bergström E-post bjorn\.bergstrom@example\.se Anmäld \d+ september \d+:\d+ Kunde inte levereras Cecilia Ceder E-post cecilia\.ceder@example\.se Anmäld 2 september \d+:\d+ Kunde inte levereras Filip Forsberg E-post filip\.forsberg@example\.se Manuellt tillagd Anmäld \d+ augusti \d+:\d+ Påminnelse \d+ september Kunde inte levereras/
+- alert:
+  - strong: Ingen fick mailet
+  - paragraph: 4 fick det inte - skälet står på korten ovanför. De ligger kvar markerade.
+- button "Tillbaka till åtgärderna"

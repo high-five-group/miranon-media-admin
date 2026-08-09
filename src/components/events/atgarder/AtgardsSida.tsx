@@ -1994,36 +1994,48 @@ function GranskningsSida({
 
     return (
       <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-        <Sidhuvud
-          rubrik={antalLyckade === 0 ? 'Inget skickades' : 'Skickat'}
-          tillbakaLank={
-            <button
-              type="button"
-              onClick={onTillbaka}
-              aria-label="Tillbaka till åtgärderna"
-              className={TILLBAKA_KLASS}
-            >
-              <ChevronLeft aria-hidden="true" size={26} />
-            </button>
-          }
-        />
+        {/* [TASK-171.1] Wrappern bär grindens ariaSnapshot-fäste
+            (`data-testid="granskning-yta"`, ADR-103 B4) och avgränsar
+            MEDVETET bort `PrototypRigg` nedanför — riggens egen docblock
+            säger det rakt ut: "riggen, inte ytan". Referensen ska förbli
+            giltig även efter en framtida rivning av riggens byggställning
+            (TASK-171.5 AC #3: "gröna mot rivna ytan UTAN OMTAGNING"), och en
+            snapshot som råkade fånga debug-knapparna hade fällt just då.
+            `flex flex-col gap-6` speglar sektionens EGEN klass exakt så
+            att ingen synlig spalt ändras — samma testid delas mellan
+            "granska"- och "resultat"-läget (mutuellt uteslutande DOM-träd),
+            precis som `register-yta` delas mellan registrets fyra lägen. */}
+        <div data-testid="granskning-yta" className="flex flex-col gap-6">
+          <Sidhuvud
+            rubrik={antalLyckade === 0 ? 'Inget skickades' : 'Skickat'}
+            tillbakaLank={
+              <button
+                type="button"
+                onClick={onTillbaka}
+                aria-label="Tillbaka till åtgärderna"
+                className={TILLBAKA_KLASS}
+              >
+                <ChevronLeft aria-hidden="true" size={26} />
+              </button>
+            }
+          />
 
-        {/* VILKA OCH VARFÖR — delningen som gör räknaren läsbar.
+          {/* VILKA OCH VARFÖR — delningen som gör räknaren läsbar.
             Fallna först: de är det som återstår att göra något åt, och en
             lista som inleds med fjorton avbetade kort begraver de sex som
             behöver uppmärksamhet. */}
-        <DetaljGrupp id="grupp-utfall-mottagare" rubrik="Mottagare">
-          <div className="flex flex-col gap-2 py-4">
-            {utfall.fallna.map(({ reg, skal }) => (
-              <UtfallsKort key={reg.id} reg={reg} skal={skal} />
-            ))}
-            {utfall.lyckade.map((reg) => (
-              <UtfallsKort key={reg.id} reg={reg} skal={null} />
-            ))}
-          </div>
-        </DetaljGrupp>
+          <DetaljGrupp id="grupp-utfall-mottagare" rubrik="Mottagare">
+            <div className="flex flex-col gap-2 py-4">
+              {utfall.fallna.map(({ reg, skal }) => (
+                <UtfallsKort key={reg.id} reg={reg} skal={skal} />
+              ))}
+              {utfall.lyckade.map((reg) => (
+                <UtfallsKort key={reg.id} reg={reg} skal={null} />
+              ))}
+            </div>
+          </DetaljGrupp>
 
-        {/* SAMMANFATTNINGEN SITTER NED VID VÄGEN UT (Marcus varv 22): "den
+          {/* SAMMANFATTNINGEN SITTER NED VID VÄGEN UT (Marcus varv 22): "den
             gröna rutan som är högst upp vill ja ha över knappen 'Tillbaka till
             åtgärderna'."
 
@@ -2050,49 +2062,50 @@ function GranskningsSida({
             man redan sett. Marcus prövade "Allt gick fram"; delutfallet är inte
             dömt än. Håller det inte är rätt fix ett villkor på utfallsklassen,
             inte att flytta tillbaka den i båda. */}
-        <div className="flex flex-col gap-4 px-4">
-          <MessageBox
-            intent={
-              antalLyckade === 0 ? 'warning' : utfall.status === 'partial' ? 'info' : 'success'
-            }
-            /* "LYCKADES", INTE "SKICKADES" (Marcus varv 23). Orden är inte
+          <div className="flex flex-col gap-4 px-4">
+            <MessageBox
+              intent={
+                antalLyckade === 0 ? 'warning' : utfall.status === 'partial' ? 'info' : 'success'
+              }
+              /* "LYCKADES", INTE "SKICKADES" (Marcus varv 23). Orden är inte
                synonymer här, och skillnaden är precis den som gör ytan ärlig:
                ETT UTSKICK KAN SKICKAS UTAN ATT LYCKAS. Det var hela poängen
                med att riva stämplingslögnen — mailto-eran satte "skickad" på
                ett klick som bara öppnade ett fönster. "Skickades" beskriver
                vår handling; "lyckades" beskriver utfallet, vilket är vad
                raden faktiskt rapporterar. */
-            title={
-              antalLyckade === 0
-                ? 'Ingen fick mailet'
-                : utfall.status === 'partial'
-                  ? 'Utskicket lyckades delvis'
-                  : 'Utskicket lyckades'
-            }
-          >
-            {antalLyckade > 0 && (
-              <p>
-                <strong>
-                  {antalLyckade} av {totalt}
-                </strong>{' '}
-                {antalLyckade === 1 ? 'person fick' : 'personer fick'} mailet.
-              </p>
-            )}
-            {antalFallna > 0 && (
-              <p>
-                {antalFallna} fick det inte - skälet står på{' '}
-                {antalFallna === 1 ? 'kortet' : 'korten'} ovanför.{' '}
-                {antalLyckade > 0
-                  ? 'De ligger kvar markerade, så du kan gå tillbaka och köra om just dem.'
-                  : 'De ligger kvar markerade.'}
-              </p>
-            )}
-          </MessageBox>
+              title={
+                antalLyckade === 0
+                  ? 'Ingen fick mailet'
+                  : utfall.status === 'partial'
+                    ? 'Utskicket lyckades delvis'
+                    : 'Utskicket lyckades'
+              }
+            >
+              {antalLyckade > 0 && (
+                <p>
+                  <strong>
+                    {antalLyckade} av {totalt}
+                  </strong>{' '}
+                  {antalLyckade === 1 ? 'person fick' : 'personer fick'} mailet.
+                </p>
+              )}
+              {antalFallna > 0 && (
+                <p>
+                  {antalFallna} fick det inte - skälet står på{' '}
+                  {antalFallna === 1 ? 'kortet' : 'korten'} ovanför.{' '}
+                  {antalLyckade > 0
+                    ? 'De ligger kvar markerade, så du kan gå tillbaka och köra om just dem.'
+                    : 'De ligger kvar markerade.'}
+                </p>
+              )}
+            </MessageBox>
 
-          <div className="flex items-center gap-2">
-            <Button intent="primary" onPress={onTillbaka}>
-              Tillbaka till åtgärderna
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button intent="primary" onPress={onTillbaka}>
+                Tillbaka till åtgärderna
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -2111,56 +2124,59 @@ function GranskningsSida({
 
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      <Sidhuvud
-        rubrik="Granska och skicka"
-        tillbakaLank={
-          <button
-            type="button"
-            onClick={onTillbaka}
-            aria-label="Tillbaka till åtgärderna"
-            className={TILLBAKA_KLASS}
-          >
-            <ChevronLeft aria-hidden="true" size={26} />
-          </button>
-        }
-      />
+      {/* [TASK-171.1] Samma anker + samma avgränsning mot `PrototypRigg` som
+          resultatlägets wrapper ovan — se den docblocken för hela skälet. */}
+      <div data-testid="granskning-yta" className="flex flex-col gap-6">
+        <Sidhuvud
+          rubrik="Granska och skicka"
+          tillbakaLank={
+            <button
+              type="button"
+              onClick={onTillbaka}
+              aria-label="Tillbaka till åtgärderna"
+              className={TILLBAKA_KLASS}
+            >
+              <ChevronLeft aria-hidden="true" size={26} />
+            </button>
+          }
+        />
 
-      {/* KONSEKVENSEN FÖRST OCH STÖRST (NN/g) — vad som händer, i en mening.
+        {/* KONSEKVENSEN FÖRST OCH STÖRST (NN/g) — vad som händer, i en mening.
           Åtgärdsnamnen inleds alla med verbet "Skicka" (varv 6), så meningen
           bygger sig själv utan att namnet behöver böjas. */}
-      <p className="px-4 text-lg">
-        <strong className="font-semibold">{granskning.atgard.namn}</strong> till{' '}
-        <strong className="font-semibold text-xl tabular-nums">{mottagare.length}</strong>{' '}
-        {mottagare.length === 1 ? 'person' : 'personer'}.
-      </p>
+        <p className="px-4 text-lg">
+          <strong className="font-semibold">{granskning.atgard.namn}</strong> till{' '}
+          <strong className="font-semibold text-xl tabular-nums">{mottagare.length}</strong>{' '}
+          {mottagare.length === 1 ? 'person' : 'personer'}.
+        </p>
 
-      {/* FYNDEN — det granskningen faktiskt avslöjade. Står FÖRE innehållet:
+        {/* FYNDEN — det granskningen faktiskt avslöjade. Står FÖRE innehållet:
           en varning under en 186 px textyta är en varning man scrollar förbi. */}
-      {ofyllda.length > 0 && (
-        <div className="px-4">
-          <MessageBox intent="warning" title="Något i texten kunde inte fyllas i">
-            {ofyllda.join(', ')} står kvar som det är och går ut ordagrant så. Fyll i det för hand i
-            texten, eller gå tillbaka och ändra.
-          </MessageBox>
-        </div>
-      )}
+        {ofyllda.length > 0 && (
+          <div className="px-4">
+            <MessageBox intent="warning" title="Något i texten kunde inte fyllas i">
+              {ofyllda.join(', ')} står kvar som det är och går ut ordagrant så. Fyll i det för hand
+              i texten, eller gå tillbaka och ändra.
+            </MessageBox>
+          </div>
+        )}
 
-      {utanEpost > 0 && (
-        <div className="px-4">
-          <MessageBox intent="warning" title="Några saknar e-post">
-            {utanEpost} av {mottagare.length} har ingen e-postadress och kommer att undertryckas av
-            servern.
-          </MessageBox>
-        </div>
-      )}
+        {utanEpost > 0 && (
+          <div className="px-4">
+            <MessageBox intent="warning" title="Några saknar e-post">
+              {utanEpost} av {mottagare.length} har ingen e-postadress och kommer att undertryckas
+              av servern.
+            </MessageBox>
+          </div>
+        )}
 
-      {/* MOTTAGARNA I SIN FULLA FORM — samma kort hela vägen från eventdetaljen
+        {/* MOTTAGARNA I SIN FULLA FORM — samma kort hela vägen från eventdetaljen
           (varv 4:s "hur kom Lotta hit?"). De är AVMARKERINGSBARA även här:
           PRD berättelse 2 säger att sista kontrollen sker där handlingen sker,
           och handlingen sker numera på den här sidan. Markeringen är samma
           `valda`-state som hubben äger — ETT urval, två vyer, aldrig en kopia
           som kan glida isär. */}
-      {/* RUBRIKEN BÄR INGET TAL (Marcus varv 20). Den sade "Mottagare · 8" två
+        {/* RUBRIKEN BÄR INGET TAL (Marcus varv 20). Den sade "Mottagare · 8" två
           rader under "Skicka bekräftelsemail till 8 personer" — samma tal, samma
           skärmbild, ingen ny upplysning.
 
@@ -2169,37 +2185,37 @@ function GranskningsSida({
           eftersom listan där är INFÄLLD — räknaren är då det enda som svarar på
           "vad tog jag med mig hit?". Här är listan utfälld och står direkt under
           meningen som redan sagt talet. */}
-      <DetaljGrupp id="grupp-granska-mottagare" rubrik="Mottagare">
-        <div className="flex flex-col gap-2 py-4">
-          {mottagare.length === 0 ? (
-            <p className="text-body text-text-muted">
-              Ingen är markerad längre. Gå tillbaka och markera minst en person.
-            </p>
-          ) : (
-            mottagare.map((r) => (
-              <MarkerbartDeltagarKort
-                key={r.id}
-                reg={r}
-                vald={true}
-                onChange={(vald) => onVaxla(r.id, vald)}
-              />
-            ))
-          )}
-        </div>
-      </DetaljGrupp>
+        <DetaljGrupp id="grupp-granska-mottagare" rubrik="Mottagare">
+          <div className="flex flex-col gap-2 py-4">
+            {mottagare.length === 0 ? (
+              <p className="text-body text-text-muted">
+                Ingen är markerad längre. Gå tillbaka och markera minst en person.
+              </p>
+            ) : (
+              mottagare.map((r) => (
+                <MarkerbartDeltagarKort
+                  key={r.id}
+                  reg={r}
+                  vald={true}
+                  onChange={(vald) => onVaxla(r.id, vald)}
+                />
+              ))
+            )}
+          </div>
+        </DetaljGrupp>
 
-      {/* UTSKICKET SOM MOTTAGAREN SER DET. Ämnesraden bär `EtikettVardeRad`s
+        {/* UTSKICKET SOM MOTTAGAREN SER DET. Ämnesraden bär `EtikettVardeRad`s
           geometri (py-3 + 24 px textrad = 48 px) och textytan `TEXTYTA_KLASS`
           — samma två mått arbetsytan landade i varv 9, så inget flyttar sig
           mellan de två vyerna. */}
-      <DetaljGrupp id="grupp-granska-utskicket" rubrik="Utskicket">
-        <div className="flex items-center justify-between gap-4 py-3">
-          <span className="shrink-0 text-small text-text-muted">Ämne</span>
-          <span className="truncate text-right text-body">{amneVisning.text || '—'}</span>
-        </div>
+        <DetaljGrupp id="grupp-granska-utskicket" rubrik="Utskicket">
+          <div className="flex items-center justify-between gap-4 py-3">
+            <span className="shrink-0 text-small text-text-muted">Ämne</span>
+            <span className="truncate text-right text-body">{amneVisning.text || '—'}</span>
+          </div>
 
-        <div className="py-2.5">
-          {/* "FÖRHANDSVISNINGSEXEMPEL" ÄR HELA ETIKETTEN (Marcus varv 20).
+          <div className="py-2.5">
+            {/* "FÖRHANDSVISNINGSEXEMPEL" ÄR HELA ETIKETTEN (Marcus varv 20).
               Raden sade tidigare "Visas som <Namn> får den. Var och en får sitt
               eget mail med sina egna uppgifter." — två meningar för att bära
               samma sak ordet "exempel" bär ensamt. Att texten är ETT exempel
@@ -2209,32 +2225,34 @@ function GranskningsSida({
               INNEHÅLLET ÄR OFÖRÄNDRAT: platshållarna fylls fortfarande ur
               första mottagaren, så exemplet är ett verkligt utfall och inte en
               påhittad "Anna Andersson". Det är bara etiketten som krympt. */}
-          {forsta && <p className="pb-1.5 text-caption text-text-muted">Förhandsvisningsexempel</p>}
-          <p
-            className={`${TEXTYTA_KLASS} overflow-auto whitespace-pre-wrap bg-surface text-body text-text-secondary`}
-          >
-            {forhandsvisning.text}
-          </p>
-        </div>
-
-        <div className="flex items-start justify-between gap-4 py-3">
-          <span className="shrink-0 text-small text-text-muted">Bilagor</span>
-          <span className="flex flex-col items-end gap-0.5 text-right text-body">
-            {valdaBilagor.length === 0 ? (
-              <span className="text-text-muted">Inga</span>
-            ) : (
-              valdaBilagor.map((b) => (
-                <span key={b.id} className="flex items-center gap-1.5">
-                  <Paperclip aria-hidden="true" size={12} className="shrink-0" />
-                  {b.namn}
-                </span>
-              ))
+            {forsta && (
+              <p className="pb-1.5 text-caption text-text-muted">Förhandsvisningsexempel</p>
             )}
-          </span>
-        </div>
-      </DetaljGrupp>
+            <p
+              className={`${TEXTYTA_KLASS} overflow-auto whitespace-pre-wrap bg-surface text-body text-text-secondary`}
+            >
+              {forhandsvisning.text}
+            </p>
+          </div>
 
-      {/* GRINDEN. VARNINGSRADEN ÖVER DEN ÄR BORTA (Marcus varv 20): "Ett skickat
+          <div className="flex items-start justify-between gap-4 py-3">
+            <span className="shrink-0 text-small text-text-muted">Bilagor</span>
+            <span className="flex flex-col items-end gap-0.5 text-right text-body">
+              {valdaBilagor.length === 0 ? (
+                <span className="text-text-muted">Inga</span>
+              ) : (
+                valdaBilagor.map((b) => (
+                  <span key={b.id} className="flex items-center gap-1.5">
+                    <Paperclip aria-hidden="true" size={12} className="shrink-0" />
+                    {b.namn}
+                  </span>
+                ))
+              )}
+            </span>
+          </div>
+        </DetaljGrupp>
+
+        {/* GRINDEN. VARNINGSRADEN ÖVER DEN ÄR BORTA (Marcus varv 20): "Ett skickat
           utskick går inte att ångra. Mottagare som saknar e-post eller har
           tackat nej tas bort av servern." Hans skäl river den vid roten —
           *"de fattar man ändå och de är ju därför slide-to-confirm sitter där"*.
@@ -2252,36 +2270,36 @@ function GranskningsSida({
           resultatredovisningen, som är exakt den yta research-passet om
           post-send-tillståndet nu utreder. Saknad e-post har fortfarande sin
           egen varning högre upp, där den kan mätas. */}
-      <div className="flex flex-col gap-4 px-4">
-        <SlideToConfirm
-          label="Bekräfta utskicket"
-          prompt="Dra för att bekräfta"
-          confirmedLabel="Bekräftat"
-          isSelected={armerad}
-          onChange={setArmerad}
-        />
+        <div className="flex flex-col gap-4 px-4">
+          <SlideToConfirm
+            label="Bekräfta utskicket"
+            prompt="Dra för att bekräfta"
+            confirmedLabel="Bekräftat"
+            isSelected={armerad}
+            onChange={setArmerad}
+          />
 
-        {/* DYNAMISKA GRÖN-REGELN, samma som skapa-sidans knapprad: oarmerat når
+          {/* DYNAMISKA GRÖN-REGELN, samma som skapa-sidans knapprad: oarmerat når
             klicket ingen utomstående → primary; armerat går utskicket iväg →
             success. Grönt betyder "nu går det iväg" och spenderas aldrig på ett
             mellansteg — det var exakt skälet till att hubbens knapp INTE är
             grön (varv 11). Här är den det, för här är det sant. */}
-        <div className="flex items-center gap-2">
-          <Button
-            intent={armerad ? 'success' : 'primary'}
-            isDisabled={!armerad || !kanSkicka || lage === 'skickar'}
-            onPress={skicka}
-          >
-            {lage === 'skickar'
-              ? 'Skickar…'
-              : `Skicka till ${mottagare.length} ${mottagare.length === 1 ? 'person' : 'personer'}`}
-          </Button>
-          <Button intent="secondary" onPress={onTillbaka} isDisabled={lage === 'skickar'}>
-            Tillbaka
-          </Button>
-        </div>
+          <div className="flex items-center gap-2">
+            <Button
+              intent={armerad ? 'success' : 'primary'}
+              isDisabled={!armerad || !kanSkicka || lage === 'skickar'}
+              onPress={skicka}
+            >
+              {lage === 'skickar'
+                ? 'Skickar…'
+                : `Skicka till ${mottagare.length} ${mottagare.length === 1 ? 'person' : 'personer'}`}
+            </Button>
+            <Button intent="secondary" onPress={onTillbaka} isDisabled={lage === 'skickar'}>
+              Tillbaka
+            </Button>
+          </div>
 
-        {/* IN-FLIGHT: LIVE-REGION, INGEN FOKUSFLYTT. Cloudscape (AWS) är
+          {/* IN-FLIGHT: LIVE-REGION, INGEN FOKUSFLYTT. Cloudscape (AWS) är
             explicit för just den här klassen — "Info, in Progress, progress
             bar → Do not move focus, use a live region component to announce
             the message". Regionen ligger ALLTID i DOM:en så att en ändring
@@ -2294,8 +2312,9 @@ function GranskningsSida({
             ett RESONEMANG om den loopade sändvägens skalning och inte på en
             mätning. Att bygga den nu vore spekulativ komplexitet ovanför
             golvet. Mät först. */}
-        <div aria-live="polite" aria-busy={lage === 'skickar'} className="min-h-6">
-          {lage === 'skickar' && <p className="text-small text-text-muted">Skickar utskicket…</p>}
+          <div aria-live="polite" aria-busy={lage === 'skickar'} className="min-h-6">
+            {lage === 'skickar' && <p className="text-small text-text-muted">Skickar utskicket…</p>}
+          </div>
         </div>
       </div>
 
@@ -2437,7 +2456,11 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
      (task-18.18, S83 pass 4-facit; Linear/Rails-precedenten). */
   if (eventId == null) {
     return (
-      <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+      // [TASK-171.1] data-testid ger promoverings-grinden ett stabilt fäste
+      // för tomt-lägets ariaSnapshot-referens (ADR-103 B4) — samma mönster
+      // som `register-yta` (TASK-162.1): en ren anker-attribut, ingen form
+      // ändras eller flyttas.
+      <section data-testid="atgardssida-tomt" className="flex flex-col gap-6 pt-2 lg:pt-10">
         <Sidhuvud
           tillbakaLank={
             <Link to="/hem" aria-label="Tillbaka" className={TILLBAKA_KLASS}>
