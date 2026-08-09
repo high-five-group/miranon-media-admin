@@ -1,10 +1,10 @@
 ---
 id: TASK-171.2
 title: 'Skiva: Flippen — prototypformen blir den ovillkorliga + test-konsument-svepet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 08:22'
-updated_date: '2026-08-09 09:38'
+updated_date: '2026-08-09 09:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -62,14 +62,20 @@ DoD-status: #1 samtliga fyra AC avbockade via --check-ac. #2 lokala grindar grö
 DIVERGENS MOT UPPDRAGET: ingen ny divergens utöver den 171.1 redan bokförde (noll variant-gren). Uppdragets instruktion om vad som ska göras om premissen håller (referenser, markör-registrering, test-konsument-svep, datakälla-verifiering, rail-bevarande) följdes exakt.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1039 (merge 2cb96bae genom kön — required checks gröna; post-merge pågick vid stängningen och bevakas level-triggat av heartbeat-monitorn). Premissen prövad och HÖLL: ingen variant-gren finns, flippen = noll-diff (git diff visar endast .facit-policy.conf + kortet). Substansen: tre prototyp-markörer registrerade i FACIT_PROTO_MARKORER (en per källfil i manifestet, unikhet grep-verifierad), tvåsidigt invariant-bevis revert-verifierat (mutation -> rött med rätt markör citerad -> revert -> grönt, x2), test-check-facit 27/27 opåverkad. Test-konsument-svepet: en genuin konsument (171.1:s spec), fyra falska positiva friade med skäl (AtgarderKort/bekräftelsesidan = 171.6/147-ytor). ariaSnapshot 12/12 gröna x2 = par-bevisets identitets-form. Railen kvar per ADR-102 B3.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
-- [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
-- [ ] #7 Datavägs-invarianten verifierad: inga datakälla-grenar flippade
-- [ ] #8 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
+- [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
+- [x] #7 Datavägs-invarianten verifierad: inga datakälla-grenar flippade
+- [x] #8 Test-konsument-svepets träffyta bilagd (grep-svep) och alla träffar uppdaterade i samma skiva som sin flip
 <!-- DOD:END -->
