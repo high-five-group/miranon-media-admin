@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-08
+updated: 2026-08-09
 review_by: 2026-11-15
 status: stable
 ---
@@ -255,21 +255,34 @@ utanför läs-ordningen hittas inte när det behövs.
 och bevisar ingenting. Och klass B är övervägande **lokal** — för en flake som
 bara CI ser kan en lokal serie vara fel instrument helt och hållet.
 
-### En ny hook kan ALDRIG skarpbevisas i sessionen som byggde den
+### En ny hooks skarpbevis kan inte FÖRLITAS på i sessionen som byggde den
 
-Hookar registrerade i `.claude/settings.json` **mitt i en session tas inte i
-bruk i den sessionen**. Förstapartskällan
-([hooks-guide](https://code.claude.com/docs/en/hooks-guide)) säger det i sitt
-felsökningsavsnitt: *"the file watcher may have missed the change: restart
-your session to force a reload."* Det finns ingen reload-väg —
-`/reload-hooks` existerar inte och `/hooks`-menyn är read-only.
+Hookar registrerade i `.claude/settings.json` mitt i en session **kan inte
+förlitas på att tas i bruk i den sessionen** — men "tas ALDRIG i bruk", som
+denna rad påstod fram till 2026-08-09, är falsifierat av en mätning.
+Förstapartskällan
+([hooks-guide](https://code.claude.com/docs/en/hooks-guide)) beskriver en
+MÖJLIGHET, inte en visshet: *"the file watcher **may have missed** the
+change: restart your session to force a reload."* Det finns ingen manuell
+reload-väg — `/reload-hooks` existerar inte och `/hooks`-menyn är read-only
+— men watchern KAN plocka upp ändringen själv: mätt 2026-08-08 (S93,
+`task-167`-kortets notes) laddades en nyregistrerad deny-hook mitt i sin
+egen byggsession när settings-ändringen anlände via git-merge
+(main-ff-synken) och fällde skarpt ett verkligt agent-kommando. Den gamla
+absoluta formen var exakt felklassen den själv varnar för: ett "aldrig"
+byggt på en källa som säger "may".
 
-**Planera in det, upptäck det inte vid beviset:**
+**Planera för utebliven laddning — och ta emot en tidig fällning som bevis:**
 
 1. Bevisa **logiken** i byggsessionen — tvåsidig testsvit + manuell körning av
    skriptet mot verkligt tillstånd. Båda går utmärkt.
 2. Bokför **skarpbeviset som öppen skuld i handoffen**, aldrig som gjort.
-3. Betala skulden som en av **nästa sessions första handlingar**.
+3. Betala skulden som en av **nästa sessions första handlingar** — ELLER
+   stäng den i förtid: fäller hooken skarpt redan i byggsessionen (t.ex.
+   efter att settings-ändringen återvänt via en main-synk) är det ett
+   GILTIGT skarpbevis och skulden bokförs som betald med instansen som
+   belägg (`task-167`-precedentet). Tidig laddning är en bonus att ta emot,
+   aldrig en plan att räkna med.
 
 Skilj alltid "hooken är fel" från "hooken är inte laddad" med en
 **differentialmätning**: kör skriptet manuellt med identisk hook-JSON (ska
@@ -277,10 +290,15 @@ fälla), och provocera samtidigt en BEFINTLIG hook via harnesset (ska fälla).
 Faller den befintliga men inte den nya är det registreringen, inte logiken.
 
 Samma strukturella klass som MCP-verktygsytan (S97 Del 2): båda bestäms vid
-sessionsstart och uppdateras inte retroaktivt. **Fråga "bestäms detta vid
-sessionsstart?" innan du planerar ett bevis som förutsätter motsatsen.**
+sessionsstart, och en mitt-i-sessionen-ändring kan inte FÖRLITAS på att slå
+igenom retroaktivt — för hookar KAN den göra det (mätningen ovan), men bara
+som bonus. **Fråga "bestäms detta vid sessionsstart?" innan du planerar ett
+bevis som förutsätter motsatsen.**
 Underlag: `tasks/lessons.md` L450 (konsoliderad ur det tidigare fragmentet
-`tasks/lessons.d/hook-registrerad-mitt-i-sessionen-laddas-inte.md`).
+`tasks/lessons.d/hook-registrerad-mitt-i-sessionen-laddas-inte.md`);
+ALDRIG-formen falsifierad och mildrad 2026-08-09 (S93 tionde resumen;
+instansen i `task-167`-kortets notes, skarpbeviset betalt i förtid
+2026-08-08).
 
 ### Worktree-isoleringens gräns går vid EGET REPOS huvudkatalog — inte vid cross-repo
 
