@@ -1,10 +1,10 @@
 ---
 id: TASK-145.6
 title: 'Skiva: Prototyp-substratets rivning'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 09:02'
-updated_date: '2026-08-08 20:48'
+updated_date: '2026-08-09 07:17'
 labels:
   - ready-for-agent
 dependencies:
@@ -231,14 +231,20 @@ filerna innehöll levande variant-kod (grep-verifierat) — att ändra dem hade
 lagt orelaterade filer i diffen (DoD #4).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Rivningen byggd och mergad som PR #1026 (5fc1cb59): variant-grenarna rivna (−1475 rader netto, 11 filer), växlaren orörd (ADR-074), stale-URL-degradering bevisad med två nya tester, regressionslåsets ariaSnapshot-tester gröna mot OFÖRÄNDRADE referenser (formen orörd av rivningen — ADR-103 B4). Rivningen skedde EFTER Marcus stämpel via ADR-104-kanalen (av/datum/citat/sha i manifestet, check-facit 0 ogodkända). DoD #3: post-merge på 5fc1cb59 HELT grön inkl. staging. DoD #6: visual-baslinjen omtagen post-merge (run 31279357710 → PR #1027, 2 bilder = eventsidan × 2 vyportar, Marcus-välsignad och mergad 3f716ee5). DoD #7: skrivvägs-frånvarons staging-bevis gröna i samma post-merge-körning. EVENTSIDAN ÄR DÄRMED KLAR: promoverad, godkänd, riven, regressionslåst.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Design-review mot S93:s FACIT-bilder (ej S73-facit); avvikelser bokförda öppet
-- [ ] #6 Baslinje omtagen EFTER godkänd promovering (ADR-103 B4)
-- [ ] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
+- [x] #6 Baslinje omtagen EFTER godkänd promovering (ADR-103 B4)
+- [x] #7 Skrivvägs-frånvaron mekaniskt bevisad: noll skriv-affordanser i den renderade eventsidan
 - [x] #8 Mottagen-datum: den prototyp-lokala uppslagstabellen får INTE finnas i landad kod (Marcus väg C)
 <!-- DOD:END -->
