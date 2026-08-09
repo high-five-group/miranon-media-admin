@@ -59,7 +59,7 @@ const ERFARENHETS_NIVAER: readonly {
 }[] = [
   { etikett: 'Första eventet', streck: 'bg-(--mm-erfarenhet-ny)', test: (n) => n === 0 },
   {
-    etikett: '1–2 tidigare event',
+    etikett: '1-2 tidigare event',
     streck: 'bg-(--mm-erfarenhet-mellan)',
     test: (n) => n >= 1 && n <= 2,
   },

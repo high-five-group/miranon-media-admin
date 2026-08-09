@@ -111,7 +111,7 @@ export function RedigeringsRad({
       </dt>
       <dd className="flex min-w-0 flex-1 items-center justify-end gap-3">
         <span data-testid="nuvarande-varde" className="truncate text-small text-text-secondary">
-          {nuvarande || '–'}
+          {nuvarande || '-'}
         </span>
         <div data-testid="falt-slot" className={`${slotKlass} shrink-0`}>
           {children}

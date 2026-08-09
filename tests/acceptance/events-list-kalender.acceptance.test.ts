@@ -362,7 +362,7 @@ test.describe('Kalendervyn till S72-facit (task-17.4)', () => {
     // Sekundärraden: datum + ort ("veckodag 16 juli · Skövde"; spannet "17–18 juli").
     await expect(rader.nth(0)).toContainText(`16 ${manadNamn}`);
     await expect(rader.nth(0)).toContainText('Skövde');
-    await expect(rader.nth(1)).toContainText(`17–18 ${manadNamn}`);
+    await expect(rader.nth(1)).toContainText(`17-18 ${manadNamn}`);
 
     // K14: vertikala kursfärgs-strecket bär EXAKT kursens token-kulör.
     const rim1 = await resolvedTokenColor(page, '--mm-kurs-rim1');

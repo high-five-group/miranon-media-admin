@@ -234,7 +234,7 @@ export function EventCard({
             size={14}
             className={`shrink-0 ${installt ? 'opacity-60 contrast-more:opacity-100' : 'text-text-secondary'}`}
           />
-          {e.borOverAntal ?? '–'} bor över
+          {e.borOverAntal ?? '-'} bor över
         </span>
       </div>
       {/* Beläggningsblocket ALLTID (slot-modellen): texten bär, stapeln

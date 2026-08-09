@@ -530,7 +530,7 @@ test.describe('Utskickshistoriken som Tidslinje (TASK-145.4 AC #8)', () => {
 
     await expect(
       personRad(page, 'Johan Berg').getByText(
-        'Utskickslogg visas här — inget skickat ännu till denna person',
+        'Utskickslogg visas här - inget skickat ännu till denna person',
       ),
     ).toBeVisible();
   });

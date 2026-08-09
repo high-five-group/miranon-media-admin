@@ -186,8 +186,8 @@ export function AtgarderKort() {
       </div>
       {oppen && (
         <p className="pb-3 text-small text-text-secondary">
-          Åtgärds-sidan — eget prototyp-pass. Härifrån går utskicken: bekräftelse,
-          betalningspåminnelse, eventinfo, fritt utskick — och manuell anmälan.
+          Åtgärds-sidan - eget prototyp-pass. Härifrån går utskicken: bekräftelse,
+          betalningspåminnelse, eventinfo, fritt utskick - och manuell anmälan.
         </p>
       )}
     </div>

@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-09 08:08'
-updated_date: '2026-08-09 15:22'
+updated_date: '2026-08-09 18:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,7 +21,7 @@ Marcus-beslut 2026-08-09 (S93-resumen, ur S100:s blockerande fråga; S100 sessio
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Inga långa streck (— eller –) i användar-synliga strängar i src/, utom config-listade undantag (tom-markören)
+- [x] #1 Inga långa streck (— eller –) i användar-synliga strängar i src/, utom config-listade undantag (tom-markören)
 - [x] #2 Mekanisk grind fäller nya förekomster — tvåsidigt bevis: seedat fel fälls, ren kod passerar
 - [x] #3 Undantagen bor i config-fil, inte hårdkodade i skriptet
 - [x] #4 Sekvens-villkoret mot task-171:s referenser efterlevt och bokfört i notes
@@ -63,6 +63,28 @@ TREDJE TACKNINGSLUCKAN (samma leverans): forsta passet svepte tests/api + tests/
 Lokalt verifierat: HELA acceptance-sviten (npx playwright test --project=acceptance) - forsta korningen 176/177 (1 fallande, ISOLERAT verifierad som OBESLAKTAD pre-existing lokal flake: hem.acceptance.test.ts dagar-kvar-pillen, passerade i isolerad korning, ror ingen fil i min diff, sannolikt 8-worker-resurskonkurrens); ANDRA fulla korningen 177/177 rent. Plus typecheck 0, biome check 0 (aven efter en självorsakad regression av import-ordningen i check-langa-streck.mjs - rattad, biome stabil), build gront, test:api 465 passed, check-langa-streck.mjs 0 ofangade, self-test 16/16.
 
 MARCUS-BESLUT 2026-08-09 (S93, vid paus 10): 'Nej det funkar inte. ALLA 15 långa bindestreck i användarsynlig text MÅSTE bort.' — REST-undantagen kvitteras INTE som permanenta; datumspann-frågan är därmed också AVGJORD (korta streck vinner även i datumspann; det äldre tätt-tankstreck-direktivet i datumSpann.ts rivs öppet). SCHEMALAGT SOM NÄSTA RESUMES HUVUDSPÅR: (1) ändra alla 15 REST-strängar till korta streck, (2) synka ALLA test-konsumenter i samma pass (api/acceptance/visual — inkl. anmalan-detalj.acceptance rad 371 som asserterar en-dash-spannet), (3) referens-/baseline-omtagning för berörda facit-låsta ytor + Marcus omgodkännande-stämpling via !-kanalen (ny iteration per ADR-104 beslut 4, --ersatt-flaggan), (4) töm fil-undantagen ur .langa-streck-policy.json så endast tom-markörens 9 KEEP återstår, (5) därefter bockas AC #1 och kortet Done-flippas. Tom-markören '—' (9 st) FÖRBLIR undantagen — Marcus namngivna symbol för inget värde.
+
+FEMSTEGSPLANEN UTFÖRD (2026-08-09, S93 resume 10, agent-worktree agent-a325d5ad5ec85e8b6):
+
+PREMISS-DIVERGENS (ADR-086): policyfilens _readme och kortets tidigare notes pastod "15 REST-strängar i 11 filer". Provat mot disk med tom REST-policy + skriptets egen AST-korning: FAKTISKT 17 raw-forekomster i 11 filer (EventCard.tsx:237, EventsCalendar.tsx:74+75, Atgarder.tsx:188 [2 em-dash i samma JSXText], Betalningar.tsx:611, DatumFalt.tsx:52, Deltagare.tsx:251+252+253+591, DetaljGrupp.tsx:114, Gruppdynamik.tsx:62, Narvaro.tsx:194, datumSpann.ts:28+31+32, AnmalanDetail.tsx:423). Filantalet (11) stammer - forekomst-antalet gjorde det inte. Bokfort har per ADR-086, byggde INTE vidare pa "15"-talet.
+
+STEG 1 (strängarna): samtliga 17 forekomster andrade till kort bindestreck (-). datumSpann.ts rad 4-8-kommentaren (det aldre "tatt tankstreck, svenska skrivregler"-direktivet) riven oppet och ersatt med kallhanvisad text till MARCUS-BESLUTET 2026-08-09 (denna notes-sektion).
+
+STEG 2 (test-konsumenter, SAMMA pass): systematiskt AST/grep-svep over api+acceptance+visual+e2e EFTER varje sträng-andring, INNAN push (larr fran forra passets CI-fynd). 9 verkliga assertion-traffar fixade: tests/acceptance/events-list-kalender.acceptance.test.ts:365 (kalenderspann), tests/acceptance/anmalan-detalj.acceptance.test.ts:371 (kant fran forra CI-fyndet), tests/acceptance/event-ny-anmalan.acceptance.test.ts:385+586 (tva datumspann-assertions - missade av forsta filsokningen, fangade av en bred sakerhetsnats-grep i andra passet), tests/e2e/event-detail.staging.test.ts:240+258+323+596+599 (datumspann x3 + Atgarder-platshallare x2), tests/e2e/mark-paid.staging.test.ts:533 (Betalningar-platshallare). Testens EGNA test()-namnstrangar och kommentarer lamnades ORORDA med avsikt (dokumentation, ej assertion - samma etablerade princip som forra passet). Fixtur-data ("Resenär steg 1-2" i event-detail.staging.test.ts, "eventlabel"-falt) rord EJ - representerar verklig data, ej en sträng jag svepte i src/.
+
+STEG 3 (referens-/baseline-omtagning): eventsida-promoverings-grind.spec.ts + atgardssida-promoverings-grind.spec.ts (ariaSnapshot-laset, ADR-103 B4) korda lokalt EFTER strang-andringarna - samtliga GRONA ORORDA (de andrade strangarna forekom inte i de incheckade .aria.yml-referenserna alls, verifierat med grep fore andring). Ingen lokal ariaSnapshot-regenerering behovdes. Pixel-baseline (toHaveScreenshot, CI-only per policyns _readme): npm run test:visual lokalt gav 148 passed + 12 failed - samtliga 12 ar "-darwin.png saknas, skriver actual" pa en FARSK worktree (linux.png-filerna ar de enda git-sparade, darwin ar .gitignore-rad 105, personliga lokala jamforelsebaslinjer som en ny worktree aldrig ärver). Bekraftat strukturellt, ej diff-orsakat: timestamp pa linux.png = worktree-checkout (20:06), darwin.png = just denna testkorning (20:26). 148+12=160, exakt kortets egna "160 vid forra passet"-tal. De 6 incheckade linux.png-baslinjerna (hem/event-lista/event-anmalda/eventsida/mer-anmalningar/personer) ar nu STALE mot ny text men INGEN PR-gate lases mot dem (grep over .github/workflows/*.yml: npm run test:visual anropas ENDAST i visual-baselines.yml, workflow_dispatch, aldrig i ci.yml/ci-suite.yml) - de sjalvlaker automatiskt nasta gang visual-baselines.yml dispatchas (oppnar en granskningsbar baseline-PR per befintlig mekanism, ingen sarskild atgard kravs av detta kort.
+
+Marcus omgodkannande-stämpling (ADR-104 beslut 4, ny iteration): Atgarder.tsx, Betalningar.tsx, Deltagare.tsx, Gruppdynamik.tsx ar samtliga "kallor" i tasks/sessions/bilagor/s93-hallplats-prototyp/facit.json (godkand redan satt, icke-null). Andringen ar en medveten andring av en godkand promoverad yta - kräver nytt godkannande per beslut 4. check-facit.sh bar INGEN staleness-grind (verifierat i skriptets kallkod: den lasererar bara "ar faltet null" for B3-sparren, aldrig SHA-match) - CI fäller INTE pa detta, men principen kravs anda. Kommando Marcus kor sjalv via !-kanalen:
+npm run facit:godkann -- --pass s93-hallplats-prototyp --citat "<Marcus eget citat efter granskning>" --ersatt
+DatumFalt.tsx/DetaljGrupp.tsx/Narvaro.tsx/EventCard.tsx/EventsCalendar.tsx/AnmalanDetail.tsx ar INTE "kallor" i nagot facit-manifest (grep-verifierat over samtliga tasks/sessions/bilagor/*/facit.json) - inget omgodkannande kravs for dem.
+
+STEG 4 (policy-tomning): .langa-streck-policy.json fil-value-undantagen tomda helt (0 kvar, var 14 poster tackande 17 forekomster). Endast tom-markorens ("—") globala undantag kvarstar. _readme omskriven till att beskriva det nya laget, kallhanvisar MARCUS-BESLUTET.
+
+STEG 5 (kortet): AC #1 bockad denna commit. Done-flippen INTE utford - orkestreraren stanger kortet efter CI-verifiering per do-work-kadensen.
+
+GRINDAR (samtliga korda i FORGRUNDEN i denna session, exitkod last separat fran $?/pipe): check-langa-streck.mjs exit 0 (174 filer skannade, 0 ofangade, 1 globalt undantag, 0 fil-undantag). test-check-langa-streck.mjs exit 0 (16/16). typecheck exit 0. biome check exit 0 (0 fel - 6 pre-existing warnings + 27 pre-existing infos ORORDA, ingen fil jag andrat). build exit 0. test:api exit 0 (465 passed). test:acceptance (med RATT env-flagga PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1 - se PREMISS-DIVERGENS nedan) exit 1 bada fulla korningarna (176/177 bagge gangerna), samma kanda pre-existing flake som forra passet (hem.acceptance.test.ts:476 dagar-kvar-pillen) - ISOLERAT verifierad 1/1 gron, ror ingen fil i denna diff. check-facit.sh exit 0 (2 manifest, 8 ytor, 0 ogodkanda).
+
+PREMISS-DIVERGENS #2: uppdragets exakta verifieringskommando "npx playwright test --project=acceptance" (utan PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1) misslyckas hart - webServer-konfigurationen faller da tillbaka pa E2E_DEV_PORT (5173, portlast for staging-CORS), inte den dedikerade acceptance-porten, och gav "port already in use". package.json:s egen test:acceptance-script bar env-flaggan; anvande den korrekta formen i stallet (PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1 npx playwright test --project=acceptance), vilket motsvarar npm run test:acceptance.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done

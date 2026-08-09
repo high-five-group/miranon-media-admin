@@ -609,7 +609,7 @@ function BetalningsPersonRad({ registration }: { registration: Registration }) {
           // kommer stå här, och att inget gör det ännu.
           <div className="pt-8 pb-3">
             <p className="my-0 pl-11 text-small text-text-muted">
-              Utskickslogg visas här — inget skickat ännu till denna person
+              Utskickslogg visas här - inget skickat ännu till denna person
             </p>
           </div>
         )}
