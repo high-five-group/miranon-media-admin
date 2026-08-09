@@ -368,7 +368,7 @@ test.describe('Per-anmälan-detaljvyn (task-18.17)', () => {
     await expect(eventLank).toHaveAttribute('href', `/event/${EVENT_ID}`);
     await expect(avser.getByText('Event-31')).toBeVisible();
     await expect(avser.getByText('Utbildning', { exact: true })).toBeVisible();
-    await expect(avser.getByText('10 augusti 2026 – 12 augusti 2026')).toBeVisible();
+    await expect(avser.getByText('10 augusti 2026 - 12 augusti 2026')).toBeVisible();
     await expect(avser.getByText('2 veckor och 3 dagar')).toBeVisible();
     await expect(avser.getByText('Godkänd för RIM 2')).toBeVisible();
     const grund = avser.getByRole('link', {

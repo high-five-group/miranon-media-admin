@@ -192,7 +192,7 @@ function NarvaroRegister({ eventId }: { eventId: string }) {
                         </>
                       ) : (
                         <span className="text-text-muted">
-                          –<span className="sr-only">Ej närvarande</span>
+                          -<span className="sr-only">Ej närvarande</span>
                         </span>
                       )}
                     </td>

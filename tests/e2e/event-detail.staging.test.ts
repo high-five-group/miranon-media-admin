@@ -237,7 +237,7 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await expect(omGrupp.getByText('Utbildning', { exact: true })).toBeVisible();
     await expect(omGrupp.getByText('Skövde', { exact: true })).toBeVisible();
     // Långdatum-spannet (Gunilla — aldrig rå ISO i läsytan).
-    await expect(omGrupp.getByText('31 juli – 1 augusti 2026')).toBeVisible();
+    await expect(omGrupp.getByText('31 juli - 1 augusti 2026')).toBeVisible();
     await expect(omGrupp.getByText('Planerat', { exact: true })).toBeVisible();
     expect(await omGrupp.getByText('2026-07-31').count()).toBe(0);
   });
@@ -255,7 +255,7 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     const omGrupp = page.locator('section[aria-labelledby="grupp-om-eventet"]');
-    await expect(omGrupp.getByText('15–16 augusti 2026', { exact: true })).toBeVisible();
+    await expect(omGrupp.getByText('15-16 augusti 2026', { exact: true })).toBeVisible();
     expect(await omGrupp.getByText('15 augusti – 16 augusti 2026').count()).toBe(0);
   });
 
@@ -320,7 +320,7 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await expect(nuvarande).toHaveText([
       'Utbildning',
       'Skövde',
-      '31 juli – 1 augusti 2026',
+      '31 juli - 1 augusti 2026',
       'Planerat',
     ]);
   });
@@ -593,10 +593,10 @@ test.describe('Åtgärds-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
 
     // Platshållartexten är DOLD tills knappen klickas (interimet är öppet
     // bokfört: åtgärds-sidan finns inte ännu, se Atgarder.tsx § AtgarderKort).
-    await expect(kort.getByText(/Åtgärds-sidan — eget prototyp-pass/)).toHaveCount(0);
+    await expect(kort.getByText(/Åtgärds-sidan - eget prototyp-pass/)).toHaveCount(0);
     await knapp.click();
     await expect(knapp).toHaveAttribute('aria-expanded', 'true');
-    await expect(kort.getByText(/Åtgärds-sidan — eget prototyp-pass/)).toBeVisible();
+    await expect(kort.getByText(/Åtgärds-sidan - eget prototyp-pass/)).toBeVisible();
   });
 
   test('hover-plattan (K72): AtgarderKorts knapp bär emphasized-platta med rundade hörn på hover, transparent i vila', async ({
@@ -1557,7 +1557,7 @@ test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (ta
     await oppnaSidan(page);
 
     await expect(niva(page, 'Första eventet')).toContainText('1');
-    await expect(niva(page, '1–2 tidigare event')).toContainText('1');
+    await expect(niva(page, '1-2 tidigare event')).toContainText('1');
     await expect(niva(page, '3\\+ tidigare event')).toContainText('1');
   });
 
@@ -1679,7 +1679,7 @@ test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (ta
 
     // Öppna alla accordions så personkorten + kurshistoriken axe-täcks öppna.
     await niva(page, 'Första eventet').click();
-    await niva(page, '1–2 tidigare event').click();
+    await niva(page, '1-2 tidigare event').click();
     await niva(page, '3\\+ tidigare event').click();
 
     const results = await new AxeBuilder({ page })

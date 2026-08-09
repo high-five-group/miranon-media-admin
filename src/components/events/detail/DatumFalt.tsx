@@ -50,7 +50,7 @@ export function DatumFalt({
             {(seg) => <DateSegment segment={seg} className={segKlass} />}
           </DateInput>
           <span aria-hidden="true" className="text-text-muted">
-            –
+            -
           </span>
           <DateInput slot="end" className="flex">
             {(seg) => <DateSegment segment={seg} className={segKlass} />}

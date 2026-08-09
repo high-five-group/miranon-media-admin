@@ -248,9 +248,9 @@ function eventinfoSignal(startdatum: string | null, idag = new Date()): string |
   dag.setHours(0, 0, 0, 0);
   if (dag < grans || dag > start) return null;
   const dagarKvar = Math.round((start.getTime() - dag.getTime()) / 86_400_000);
-  if (dagarKvar === 0) return 'Dags att skicka — eventet är idag';
-  if (dagarKvar === 1) return 'Dags att skicka — eventet är imorgon';
-  return `Dags att skicka — eventet är om ${dagarKvar} dagar`;
+  if (dagarKvar === 0) return 'Dags att skicka - eventet är idag';
+  if (dagarKvar === 1) return 'Dags att skicka - eventet är imorgon';
+  return `Dags att skicka - eventet är om ${dagarKvar} dagar`;
 }
 
 /**
@@ -588,7 +588,7 @@ function MarkeringsBatchBar({
           className="mb-2.5 rounded-xl border border-(--mm-navcard-border) bg-surface p-3 text-small contrast-more:border-(--mm-navcard-border-contrast)"
         >
           <p className="font-medium">
-            {`Åtgärds-sidan är inte byggd ännu. Här står de ${antal} du markerat — de följer med dit när sidan finns.`}
+            {`Åtgärds-sidan är inte byggd ännu. Här står de ${antal} du markerat - de följer med dit när sidan finns.`}
           </p>
           {valdaNamn.length > 0 && (
             <ul className="mt-1.5 flex flex-col gap-0.5 text-text-secondary">

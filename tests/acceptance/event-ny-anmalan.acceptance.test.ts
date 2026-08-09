@@ -382,7 +382,7 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     const trigger = valjarTrigger(page);
     await expect(trigger).toContainText('Resor i medvetandet 1');
     await expect(trigger).toContainText('Skövde');
-    await expect(trigger).toContainText('31 juli – 1 augusti 2099');
+    await expect(trigger).toContainText('31 juli - 1 augusti 2099');
     await expect(page.getByText('RIM 1 (e2e)')).toHaveCount(0);
 
     // Eventet-blocket ligger FÖRE Deltagare (facit punkt 1: "är detta rätt
@@ -583,7 +583,7 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     await expect(page.getByRole('option', { name: /Passerat event/ })).toHaveCount(0);
 
     // Alternativraden bär B-formens kontextrad: kollapsat spann inom månaden.
-    await expect(options.nth(1)).toContainText('15–16 augusti 2099');
+    await expect(options.nth(1)).toContainText('15-16 augusti 2099');
   });
 
   test('sök matchar namn ELLER ort', async ({ page, network }) => {

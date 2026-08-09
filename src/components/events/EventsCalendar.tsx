@@ -71,8 +71,8 @@ function dateText(e: Event): string {
   const sameMonth =
     start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
   return sameMonth
-    ? `${dayOnly.format(start)}–${dayMonth.format(end)}`
-    : `${dayMonth.format(start)}–${dayMonth.format(end)}`;
+    ? `${dayOnly.format(start)}-${dayMonth.format(end)}`
+    : `${dayMonth.format(start)}-${dayMonth.format(end)}`;
 }
 
 /** Månadsnav-knappens FK-form (vit rund knapp i kapsel-tracket). */

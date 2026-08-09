@@ -7,128 +7,33 @@
     "kommentarer); VÄRDENA här — undantagen — är projekt-specifika, per",
     "CLAUDE.md-regeln om config-drivna grindvakter (Lesson #6, UNIVERSAL).",
     "",
-    "TVÅ UNDANTAGS-TYPER:",
-    "  'global'     — matchar VARJE sträng/JSX-text vars TRIMMADE innehåll är",
-    "                 EXAKT värdet, oavsett fil. Används för tom-markören.",
-    "  'file-value' — matchar bara i EN namngiven fil, mot det EXAKTA",
-    "                 (whitespace-normaliserade — \\s+ → enkelt mellanslag,",
-    "                 trimmat) innehållet. Används för REST-posterna nedan.",
+    "EN UNDANTAGS-TYP KVAR:",
+    "  'global' — matchar VARJE sträng/JSX-text vars TRIMMADE innehåll är",
+    "             EXAKT värdet, oavsett fil. Används ENDAST för tom-",
+    "             markören (—), Marcus namngivna symbol för 'inget värde'.",
     "",
-    "REST-POSTERNA (15 st, 11 filer) är medvetet KVARLÄMNADE långa streck —",
-    "INTE tom-markören. TVÅ SKILDA SKÄL, båda 'REST':",
-    "  (a) eventsida-/event-lista-lås — filen är nåbar från EventDetail.tsx:s",
-    "      renderträd (`/event/:id`, 'eventsidan') eller EventsList.tsx",
-    "      (`/event`), som bär BÅDE en pixel-baseline (CI-only —",
-    "      darwin/linux-plattformsskillnaden gör den overifierbar lokalt) OCH",
-    "      (för eventsidan) en ariaSnapshot-regressionslås",
-    "      (tests/visual/eventsida-promoverings-grind.spec.ts, ADR-103 B4).",
-    "  (b) DATUMSPANN — ÖPPEN MARCUS-FRÅGA, skarpt bekräftad 2026-08-09: en",
-    "      äldre dokumenterad konvention ('tätt tankstreck, svenska",
-    "      skrivregler', datumSpann.ts rad 4-8) står i konflikt mot detta",
-    "      korts blankettinstruktion. Bekräftad av PR #1055:s CI (run",
-    "      31316595089, Acceptance) som fällde",
-    "      tests/acceptance/anmalan-detalj.acceptance.test.ts:371 när",
-    "      AnmalanDetail.tsx:s datumspann konverterades i första passet —",
-    "      återställd samma dag. GÄLLER ALLA datumspann-strängar (skäl b),",
-    "      oavsett om de råkar dela fil med skäl (a) eller inte.",
-    "En textändring i endera klassen är en NY ITERATION som kräver Marcus-",
-    "godkännande (ADR-104 beslut 4 för a; ett explicit datumspann-beslut för",
-    "b) — inte del av detta sveps mandat. Se TASK-172 notes för fullständig",
-    "källa per post.",
+    "REST-UNDANTAGEN ÄR TÖMDA (MARCUS-BESLUT 2026-08-09, S93 paus 10, ur",
+    "task-172 notes): 'Nej det funkar inte. ALLA 15 långa bindestreck i",
+    "användarsynlig text MÅSTE bort.' De 17 'file-value'-posterna (verifierat",
+    "AST-räknat mot disk — INTE 15, se task-172 notes § MARCUS-BESLUT för",
+    "avstämningen) som tidigare undantog eventsida-/event-lista-låsta ytor",
+    "OCH datumspann-ytor (öppen fråga) är samtliga KONVERTERADE till kort",
+    "bindestreck i källan och borttagna härifrån. Datumspann-frågan är",
+    "därmed också AVGJORD: korta streck vinner även i datumspann (det äldre",
+    "'tätt tankstreck, svenska skrivregler'-direktivet i",
+    "src/components/events/detail/datumSpann.ts är rivet öppet, se filens",
+    "egen kommentar).",
     "",
-    "En ny fil/värde som INTE står här FÄLLS av grinden — det är avsett.",
-    "'REST' växer alltså aldrig av sig själv; varje ny post kräver samma",
-    "läsning av träffytan mot referens-låsen som TASK-172 gjorde."
+    "En ny fil/värde med ett långt streck FÄLLS av grinden — det är avsett.",
+    "Endast tom-markören (—) undantas hädanefter. En eventuell NY fil-value-",
+    "post kräver samma källmärkta rationale-disciplin som REST-posterna",
+    "bar innan de tömdes ut."
   ],
   "exceptions": [
     {
       "type": "global",
       "match": "—",
-      "rationale": "Tom-markören — symbol för 'inget värde' (t.ex. 'Ämne: —' i AtgardsSida.tsx). Marcus-beslut 2026-08-09 (task-172 Description), BEHÅLLS explicit. Gäller endast em-dash (—); en-dash (–) som platshållare KONVERTERAS i stället till kort bindestreck (-) — se task-172-rapportens motivering."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/Atgarder.tsx",
-      "match": "Åtgärds-sidan — eget prototyp-pass. Härifrån går utskicken: bekräftelse, betalningspåminnelse, eventinfo, fritt utskick — och manuell anmälan.",
-      "rationale": "REST (eventsida-lås). AtgarderKort/CheckInKort/SkrivUtKort exporteras härifrån och monteras direkt i EventDetail.tsx — del av både pixel-baseline och (delvis) ariaSnapshot-låset."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/Betalningar.tsx",
-      "match": "Utskickslogg visas här — inget skickat ännu till denna person",
-      "rationale": "REST (eventsida-lås). Betalningar.tsx importeras av Deltagare.tsx, som monteras direkt i EventDetail.tsx."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/DatumFalt.tsx",
-      "match": "–",
-      "rationale": "REST (eventsida-lås). Dekorativt (aria-hidden) datumintervall-separator-glyf; DatumFalt.tsx importeras av OmEventet.tsx, som monteras direkt i EventDetail.tsx. aria-hidden gör den osynlig för ariaSnapshot-låset men INTE för pixel-baselinen (CI-only, overifierbar lokalt darwin/linux)."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/Deltagare.tsx",
-      "match": "Dags att skicka — eventet är idag",
-      "rationale": "REST (eventsida-lås). Deltagare.tsx monteras direkt i EventDetail.tsx (registret, delvis ariaSnapshot-låst)."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/Deltagare.tsx",
-      "match": "Dags att skicka — eventet är imorgon",
-      "rationale": "REST (eventsida-lås). Se föregående post."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/Deltagare.tsx",
-      "match": "Dags att skicka — eventet är om",
-      "rationale": "REST (eventsida-lås). Template literal-huvud (kombineras med ${dagarKvar} + ' dagar'); whitespace-normaliserad, trailing-mellanslag trimmat av grinden."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/Deltagare.tsx",
-      "match": "du markerat — de följer med dit när sidan finns.",
-      "rationale": "REST (eventsida-lås). Template literal-svans; whitespace-normaliserad."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/DetaljGrupp.tsx",
-      "match": "–",
-      "rationale": "REST (eventsida-lås). Generisk fält/värde-radkomponent; importeras av OmEventet, Belaggning, Anteckningar, Narvaro, Gruppdynamik, Deltagare — samtliga monterade i EventDetail.tsx."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/datumSpann.ts",
-      "match": "–",
-      "rationale": "DATUMSPANN — ÖPPEN MARCUS-FRÅGA (ej eventsida-lås primärt, se nedan). datumSpannText() konsumeras av OmEventet.tsx, Deltagare.tsx och Betalningar.tsx — samtliga monterade/importerade i EventDetail.tsx:s renderträd (eventsidan), så ändring hade ÄVEN riskerat eventsida-låset. Täcker samtliga tre förekomster (rad 28/31/32) — normaliseringen (whitespace kollapsat, trimmat) gör ' – ' och '–' till samma värde. UPPTÄCKT UNDER SVEPET (missad i första passet, fångad av grindens EGEN körning post-edit — se task-172-rapporten): filens egen kommentar (rad 4-8) dokumenterar en ÄLDRE 'Marcus-direktivet'-konvention ('tätt tankstreck, svenska skrivregler') för datumspann. Skarpt BEKRÄFTAT konfliktande 2026-08-09 (samma dag, samma svep): PR #1055 CI (run 31316595089) fällde tests/acceptance/anmalan-detalj.acceptance.test.ts rad 371 när en SYSTERSTRÄNG (AnmalanDetail.tsx, ej denna fil) konverterades — se de två posterna nedan. Datumspann-typografin är alltså en OLÖST, ÖPPEN Marcus-fråga över HELA appen, inte bara denna fil; väntar explicit beslut innan NÅGON datumspann-sträng rörs åt något håll."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/registrations/AnmalanDetail.tsx",
-      "match": "–",
-      "rationale": "DATUMSPANN — ÖPPEN MARCUS-FRÅGA (SKARPT BEKRÄFTAD 2026-08-09). 'Avser'-blockets Datum-rad (rad ~423, EtikettVardeRad term=\"Datum\") renderar eventets datumspann med en-dash-separator, t.ex. '10 augusti 2026 – 12 augusti 2026'. Konverterades till kort bindestreck i första passet av detta svep (missad — filen var INTE identifierad som datumspann-bärande, bara som eventsida-/AnmalanDetail-lokalt narrativ), vilket fällde tests/acceptance/anmalan-detalj.acceptance.test.ts:371 i CI (PR #1055, run 31316595089, Acceptance-hermetisk) — testet asserterar exakt en-dash-formen. ÅTERSTÄLLD till en-dash samma dag efter orkestrerarens diagnos. Samma öppna Marcus-fråga som datumSpann.ts ovan — väntar beslut, rörs inte åt något håll förrän det finns."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/EventsCalendar.tsx",
-      "match": "–",
-      "rationale": "DATUMSPANN — ÖPPEN MARCUS-FRÅGA (samma klass som ovan, återställd i samma svep 2026-08-09 EFTER PR #1055:s CI-fynd, INTE själv fälld av CI — kalenderns datumspann-header (dateText(), rad ~74) fångas inte av något lokalt körbart test, men är SAMMA semantiska mönster: två Intl.DateTimeFormat-strängar hopfogade med en-dash. Konservativt återställd tillsammans med AnmalanDetail.tsx och datumSpann.ts i stället för att lämnas konverterad och riskera samma öppna typografifråga oupptäckt. Väntar samma Marcus-beslut."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/Gruppdynamik.tsx",
-      "match": "1–2 tidigare event",
-      "rationale": "REST (eventsida-lås). Gruppdynamik.tsx monteras direkt i EventDetail.tsx."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/detail/Narvaro.tsx",
-      "match": "–",
-      "rationale": "REST (eventsida-lås). Narvaro.tsx monteras direkt i EventDetail.tsx."
-    },
-    {
-      "type": "file-value",
-      "file": "src/components/events/EventCard.tsx",
-      "match": "–",
-      "rationale": "REST (event-lista-lås). EventCard.tsx monteras i EventsList.tsx (`/event`, tests/visual/event-lista.spec.ts, CI-only pixel-baseline) — okänt om fixturens events träffar null-grenen som visar platshållaren; konservativt undantagen i stället för antagen säker."
+      "rationale": "Tom-markören — symbol för 'inget värde' (t.ex. 'Ämne: —' i AtgardsSida.tsx). Marcus-beslut 2026-08-09 (task-172 Description), BEHÅLLS explicit — bekräftat kvarstående i MARCUS-BESLUTET vid S93 paus 10 ('Tom-markören \"—\" (9 st) FÖRBLIR undantagen'). Gäller endast em-dash (—); en-dash (–) som platshållare KONVERTERAS i stället till kort bindestreck (-)."
     }
   ]
 }
