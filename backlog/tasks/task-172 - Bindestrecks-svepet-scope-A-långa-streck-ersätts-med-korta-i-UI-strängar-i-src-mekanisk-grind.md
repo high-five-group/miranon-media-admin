@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-09 08:08'
-updated_date: '2026-08-09 13:43'
+updated_date: '2026-08-09 13:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -37,6 +37,14 @@ AC #1 DELVIS, ej avbockad. Traffyta (AST, @babel/parser): 93 rentat forekomster.
 UPPTACKT: datumSpann.ts rad 4-8 dokumenterar ett aldre Marcus-direktiv (tatt tankstreck for datumspann, svensk skrivregel) som KAN sta i konflikt mot task-172s blankettinstruktion. Filen ligger i REST och rordes ej - konflikten olost, flaggad for nasta iteration.
 
 Obesläktat, ej fixat (scope creep): verify:ci-parity:fast visade tva pre-existing roda poster - biome.json $schema 2.5.4 vs CLI 2.5.5, och markdownlint MD004 i tasks/sessions/2026-08-02-session-93.md:2259. Ingen fil rord av detta kort.
+
+CI-FYND (2026-08-09, samma dag, PR #1055 run 31316595089): Acceptance-hermetisk fallde tests/acceptance/anmalan-detalj.acceptance.test.ts rad 371 - testet asserterar datumspannet med en-dash (10 augusti 2026 EN-DASH 12 augusti 2026) i AnmalanDetail.tsx-s Avser-block (Datum-raden). Forsta passets sweep konverterade den raden till kort bindestreck utan att kanna igen den som en datumspann-yta (klassad bara som eventsida-lokal narrativ, inte som samma typografiklass som datumSpann.ts). Detta ar EXAKT den datumspann-konflikt jag sjalv flaggade som olost i forsta rapporten - nu SKARPT bekraftad av CI, inte bara en teoretisk risk.
+
+Atgard: AnmalanDetail.tsx rad 423 ATERSTALLD till en-dash. EventsCalendar.tsx rad 74-75 (samma semantiska monster - kalenderns datumspann-header) ATERSTALLD i SAMMA svep, konservativt, aven om CI inte fallde pa den (inget lokalt korbart test tacker den). Bada tillagda som REST-undantag i .langa-streck-policy.json, samma klass som datumSpann.ts - vantar ett explicit Marcus-beslut om datumspann-typografin innan NAGON av de tre filerna ändras at nagot hall.
+
+Lardom for min egen verify:ci-parity:fast-rationale: den taeckte CI-STEGENS struktur (mina tva nya steg), men INTE sjalva strang-andringarnas Acceptance-yta - Acceptance skippades medvetet i --fast-laget. En strang-sweep av detta slag borde ha kort mot Acceptance innan push, inte bara mot test:api+test:visual. Bokfort har for framtida liknande svep.
+
+Lokalt verifierat efter fix: tests/acceptance/anmalan-detalj.acceptance.test.ts direkt (6/6 passed), typecheck 0, biome check 0, build gront, test:api 465 passed, test:visual 160 passed, check-langa-streck.mjs 0 ofangade (174 filer, 14 fil-undantag nu), test-check-langa-streck.mjs 16/16.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
