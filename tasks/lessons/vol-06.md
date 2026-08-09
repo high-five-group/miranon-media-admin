@@ -2269,3 +2269,711 @@ verifiera att HELA utfallet faktiskt lästes — en trunkering kan producera en
 skenbar asymmetri lika lätt som den kan dölja ett verkligt fel, och den
 skenbara varianten är farligare eftersom den ger något att aktivt jaga i
 stället för att bara tiga.
+
+### L480 — En rekommendation kräver hela ytan, inte bara filen du öppnade
+
+**Läser du en komponentfil och drar en slutsats om vad som SAKNAS på skärmen, har
+du bara läst en del av skärmen. Det som saknas kan mycket väl renderas av
+anroparen.** `[UNIVERSAL]`
+
+Mätt 2026-08-06 (S93, iterationsvåg 3). Marcus rapporterade att talen krockade:
+topp-räknarna visar 12 (aktiva), registret 14 (alla, inkl. två avbokade).
+Rekommendationen blev: *gör de saknade synliga — lägg en "Avbokade 2"-rad i
+toppen*, med motiveringen att Lotta då själv räknar 12 + 2 = 14.
+
+Underlaget var `HallplatsToppA` i `DeltagareHallplatsPrototyp.tsx`, där de fyra
+stegraderna bor. Där fanns ingen Avbokade-rad. Slutsatsen "raden saknas" följde.
+
+**Den var fel.** Raden fanns — i logistik-gruppen, renderad av `Deltagare.tsx`
+intill "Eventinfo skickad" och "Bor över". DOM-mätningen efter bygget visade
+**två identiska "Avbokade 2"-knappar 197 px isär**. Rekommendationen vilade på
+en premiss som en enda grep över anropande fil hade fällt.
+
+**Vad som räddade det:** att mäta den byggda ytan i browsern i stället för att
+lita på att koden gjorde det den skulle. Felet fångades före handover, inte av
+Marcus. Men det borde inte ha byggts alls.
+
+**Det generella:** en komponent äger sin egen JSX, aldrig skärmen. Frågor av
+formen *"visas X någonstans?"* eller *"saknas X?"* besvaras med en sökning över
+hela renderingsvägen — anropare, syskon, wrappers — eller med en DOM-mätning.
+Aldrig med "jag läste komponenten och såg inget".
+
+Symptomet var här dubbel rendering, vilket är billigt. Samma felklass i motsatt
+riktning — *"det finns redan, jag bygger inget"* — är dyrare, eftersom den inte
+lämnar något spår att mäta.
+
+**Fixen som blev kvar:** upplysningen bor nu där talet 14 föds, i registrets fot
+("Visar 14 av 14 i registret — 2 av dem är avbokade"). Informationen saknades
+alltså aldrig; den stod 200 px från talet den förklarade.
+
+### L481 — Facit måste bäras av en mekanism — en nedskriven lärdom räcker bevisligen inte [UNIVERSAL]
+
+**Mätt 2026-08-07 (S93 Del 11).** Eventsidans skarpa yta landade i ett läge som
+inte var identiskt med den prototyp Marcus låst som facit. Ingen enskild
+felhandling förklarar det; sex mekanism-luckor gjorde utfallet troligt.
+
+#### Den skarpaste enskilda mätpunkten
+
+Orkestreraren öppnade `konvergens-a-markera-atgarder.png` (daterad 5 augusti,
+konvergens-passet), kallade den **facit** inför Marcus, och byggde en slutsats
+på den. Det verkliga facit heter `facit-*.png` och är daterat 6 augusti — elva
+iterationsvågor senare.
+
+Det inträffade:
+
+- **tjugo minuter** efter att samma orkestrerare beskrivit exakt den felklassen
+  för Marcus, och
+- **en dag** efter att samma orkestrerare skrivit lärdomen
+  `uppdragets-kallmarkning-maste-avse-gallande-text.md` (*"Föråldrat citat som
+  gällande facit"*), och
+- i en katalog där båda filerna ligger sida vid sida, samma filändelse, åtskilda
+  enbart av ett prefix.
+
+**Slutsatsen är inte "läs noggrannare".** Att lärdomen fanns nedskriven, färsk,
+och av samma författare, ändrade ingenting. Det är beviset för att facit inte
+kan bäras av minne eller läsdisciplin.
+
+#### Vad som brast, i klasser
+
+1. **Facit försvinner mellan verktygen.** I plugin `marcus-system@1.29.0` nämner
+   `/to-prd`, `/to-issues` och `/do-work` facit-bilder **noll** gånger (enda
+   grep-träffen är ordet "förebilder"). Skillen som skriver acceptanskriterierna
+   vet inte att bilderna finns.
+2. **Kriterier beskriver defekter i stället för mål.** *"De grå löftena är
+   hanterade"* går att uppfylla bokstavligt med godtycklig form.
+3. **Granskningen är en bock utan spärr.** DoD-posten "design-review mot facit"
+   stod okryssad på båda landade skivorna — som landade gröna.
+4. **Facit går att förväxla med icke-facit** när båda bor i samma katalog.
+5. **Facit-täckningens luckor är osynliga.** Saknas en bild för en yta går det
+   inte att skilja från ett förbiseende.
+6. **Ingen mekanisk jämförelse prototyp-mot-skarp existerar.** Den visuella
+   vakten jämförde mot en baslinje äldre än hela ombyggnaden.
+
+#### Regeln
+
+**Är en artefakt facit, ska maskineriet bära den — inte läsaren.** Konkret:
+kriteriet pekar på facit i stället för att beskriva en delförändring;
+granskningen fäller i stället för att bockas; och facit är omöjligt att förväxla
+med ett passerat mellansteg.
+
+Under den baren är "facit" bara en bild i en mapp som någon ska komma ihåg att
+titta på — och den här mätningen visar vad det är värt.
+
+Beslutet: [`ADR-102`](../../docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md).
+
+### L482 — Grillnings-substrat kod-verifieras FÖRE frågorna — dokumenten är karta, koden är terräng
+
+**Innan en grillningsfråga formuleras ur research-dok, trådar eller ADR:er:
+verifiera substratets bärande premisser mot koden. En fråga byggd på en
+dok-premiss som koden redan falsifierat slösar en hel kvittensrunda — och
+riskerar att låsa ett beslut om att bygga något som redan finns.** `[UNIVERSAL]`
+
+Mätt 2026-08-07 (S99, uppdrag 1-grillningen). Grillningens fråga 2 och 5
+presenterade "bygg ADR-087-hooken" som en skiva, med substratets ord "PENDING
+IMPLEMENTATION" som grund — hämtat ur research-passens text (2026-07-30) och
+ett Explore-svep som läste dokument, inte `scripts/`. Verkligheten:
+`scripts/stop-vakt.sh` var byggd, registrerad på båda hook-eventen och
+tvåsidigt bevisad sedan `TASK-113` (commit `2971a165`). Divergensen upptäcktes
+först i `/to-prd`:s skarv-steg — EFTER att Marcus kvitterat en plan som
+innehöll en redan byggd komponent — för att en `ls scripts/` råkade visa
+`test-stop-vakt.sh`.
+
+Marcus fällde principen i klartext: *"KODEN är och ska vara den enda
+sanningskällan. Hade du använt research-pass på att utforska koden innan
+grillningen eller innan frågorna så skulle vi slippa överraskningar."*
+
+**Formen som håller:** grillnings-förberedelsens faktainsamling får aldrig
+stanna vid dokument-svep. För varje mekanism substratet påstår vara
+byggd/obyggd/pending: ett kod-bevis (filen finns/finns inte, registreringen
+finns/finns inte, testsviten finns/finns inte) INNAN premissen bär en fråga.
+Kostnad: sekunder per premiss. Alternativkostnad: en felaktig skiva i en
+kvitterad plan, en korrektionsrunda, och förtroendeslitage på grillningen som
+form.
+
+**Släktskap:** ADR-086 kräver redan att UPPDRAGS-mottagaren prövar premisser —
+denna lärdom flyttar samma disciplin ett steg tidigare, till
+grillnings-förberedelsen: intervjuaren prövar sitt eget substrat innan det blir
+frågor. Pre-K-forensikregeln (hub-CLAUDE.md) säger samma sak för
+config-förslag; detta är dess grillnings-form.
+
+### L483 — Mät det ändringen påverkar, inte bara det du ändrade
+
+**En mätning riktad mot ändringens egen yta missar vad ändringen gjorde med
+grannarna. Text som växer trycker ihop det som delar dess rad.** `[UNIVERSAL]`
+
+Mätt 2026-08-06 (S93, iterationsvåg 3). Passet mätte knappgeometri noggrant —
+höjd, bredd, `border-radius`, bakgrundsfärg, i vila och hover, före och efter —
+och rapporterade allt med tal. Varje knapp var 32 px och 4 px radie som avsett.
+
+Samtidigt förlängdes registrets fot från `"Visar 14 av 14 i registret"` till
+`"Visar 14 av 14 i registret — 2 av dem är avbokade"`. Foten är en
+`flex justify-between` med tre element: texten, "Rensa filter" och "Skriv ut".
+
+Marcus skärmavbild visade resultatet: texten bröt till två rader, **och båda
+knapparna bröt inuti sig själva** — "Rensa / filter", "Skriv / ut". Mätningen
+hade tittat rakt på de knapparna och sett 32 px höjd, i ett läge där "Rensa
+filter" inte var renderad (inget filter aktivt).
+
+**Två fel i samma mätning.** (1) Den mätte objekt, inte layout — geometri per
+element säger ingenting om hur de får plats tillsammans. (2) Den mätte ett
+tillstånd, inte alla — knappen som bröt visas bara när filter är aktiva, och
+mätskriptet körde med tomt filter.
+
+**Praktiskt:** när en ändring rör text i en delad rad, mät radens totala
+utrymmesbehov mot dess faktiska bredd, och kör mätningen i det tillstånd där
+FLEST element är synliga. Ett `flex`-barn utan `whitespace-nowrap` bryter inuti
+sig självt långt innan raden wrappar — det är sällan vad som avses.
+
+Samma disciplin som fällde breddlåset i iterationsvåg 1 (teckenantal är fel proxy
+för renderad bredd), men en nivå upp: där mättes fel STORHET, här mättes rätt
+storhet på fel OMFÅNG.
+
+Besläktad: [[L480]] —
+båda är samma grundfel, att avgränsa observationen till det man själv rörde.
+
+### L484 — En ny conf-fil måste wiras in i grindens egen lista — annars fångas den bara av tur [UNIVERSAL]
+
+**Mätt 2026-08-07 (S93 Del 11).** En agent byggde en config-driven grind
+(`scripts/check-facit.sh` + `.facit-policy.conf`) enligt repots konvention:
+universell logik i skriptet, projekt-specifika värden i conf-filen.
+
+Conf-filen wirades **inte** in i `ci.yml`:s shellcheck-lista. Den fanns bara i
+en prosakommentar (rad 747). Listan bär 22 andra conf-filer och dess egen
+kommentar varnar ordagrant för precis detta:
+
+> *"en sourced conf utanför scopet är samma lucka som de övriga redan stänger"*
+
+#### Varför den ändå fångades — och varför det inte är ett skyddsräcke
+
+CI fällde, men på **skriptet**, inte på conf-filen: `check-facit.sh` bar två
+äkta shellcheck-strict-fynd (`SC2154`, `SC2312`). Under felsökningen av dem
+lästes listan, och luckan blev synlig.
+
+**Hade skriptet varit rent hade conf-filen glidit igenom osedd** — utanför
+scopet, utan att någon grind någonsin nämnt den. Fångsten var en bieffekt av ett
+orelaterat fel, inte en mekanism.
+
+#### Den andra halvan: grind-påståendet var fel om sitt eget läge
+
+Agenten rapporterade `shellcheck 0`. Det var utan `--enable=all` — alltså inte
+CI:s läge. CI kör `--severity=style --enable=all`, och de två fynden är
+default-disabled optional checks. **Ett grindpåstående måste ange vilket LÄGE
+grinden kördes i**, annars är "0" en uppgift om fel sak.
+
+#### Regeln
+
+**Lägger du till en fil som en grind SOURCAR eller LÄSER — wira in den i
+grindens egen lista i samma andetag som du skapar den.** Konventionen som säger
+"värden i conf-filen" är halv tills conf-filen faktiskt granskas.
+
+Och: **kör grinden med CI:s exakta flaggor, inte standardläget.** Skillnaden
+mellan `shellcheck` och `shellcheck --severity=style --enable=all` var här två
+verkliga fel och en missad lista.
+
+Relaterad felklass: `L440` (exitkod förlorad i pipe) — samma familj, en grind
+som ser grön ut utan att ha prövat det den påstår.
+
+### L485 — En parkerad PR utan draft-flagga är oskiljbar från en glömd
+
+**Parkerar du en PR med avsikt — under iteration, i väntan på granskning — sätt
+den till draft i samma andetag. Annars ser varje bevakningsmekanism en färdig,
+oarmerad PR och larmar korrekt, om och om igen.** `[UNIVERSAL]`
+
+Mätt 2026-08-06 (S93). När iterations-kadensen lades om (lokal commit, ingen
+push) disarmerades `#838` för att den inte skulle landa mitt i Marcus granskning.
+`scripts/heartbeat-svep.sh` larmade omedelbart:
+
+> ARMERINGS-KANDIDAT — PR #838 är CLEAN utan aktiv auto-merge-begäran. Kan vara
+> ALDRIG ARMERAD eller UTSPARKAD med konsumerad armering.
+
+Larmet var **rätt**. Svepet kan inte ur ett statiskt API-svar skilja "medvetet
+parkerad" från "glömd" — och eftersom det är level-triggered (`L443`) upprepas
+larmet var 90:e sekund så länge tillståndet håller.
+
+**Fel väg ut:** undantagslistan i `.heartbeat-svep-policy.conf`. Den är
+FÖRFATTAR-baserad, så det enda sättet att tysta en egen PR där hade varit att
+undanta den egna identiteten — vilket tystar varje framtida PR från samma
+avsändare. Policyn säger uttryckligen att en glömd PR från en människa måste
+fortsätta larma; att riva den regeln för ett tillfälligt tillstånd vore att byta
+ett brus-problem mot ett `T108`-tillstånd (ett tillstånd utan bevakare).
+
+**Rätt väg ut, och den fanns redan:** `gh pr ready <nr> --undo`. Svepet filtrerar
+`isDraft` i själva kandidat-villkoret (`scripts/heartbeat-svep.sh:395`) — ingen
+config behövde röras. Draft är dessutom en sann utsaga om PR:en, inte en
+tystning: den ÄR inte klar att landa.
+
+**Det generella:** när en bevakningsmekanism larmar på ditt eget avsiktliga
+tillstånd, fråga först om tillståndet är korrekt UTTRYCKT innan du dämpar
+mekanismen. Ett larm på ett feluttryckt tillstånd är mekanismen som gör sitt
+jobb. Den billigaste fixen är nästan alltid att göra tillståndet ärligt, inte att
+lära vakten att blunda.
+
+**Bar av mekanism sedan `TASK-153` (2026-08-07):** åtgärdsregeln — en PR
+skapas som draft ELLER armeras i samma andetag, aldrig vilande — är
+kodifierad i `CLAUDE.md` § Landning (alltid-laddad yta, inte en startdörr)
+och i `.claude/agents/bygg-agent.md` § Landning. Ingen mekanisk spärr finns
+än — ingen hook nekar en odraftad, oarmerad PR, till skillnad från
+`T126`:s push-hook (`TASK-149.3`) — bäraren är läsordningen, inte en grind.
+Men den bor nu där varje utförare och orkestrerarens svep faktiskt möter
+den, i stället för i det här fragmentet som bara den som råkar läsa det ser.
+
+**Andra instansen, mätt 2026-08-07 (S93 femte resumen) — av den som skrivit
+lärdomen.** `#862` (`TASK-145.1`) lämnades medvetet oarmerad i väntan på
+Marcus beslut i två scope-frågor. Svepet larmade inom ett svep-intervall med
+ordagrant samma text som ovan, nu med `#862`. Draft sattes i efterhand.
+
+Det stärker fragmentets sista stycke i stället för att motsäga det: regeln var
+**läst i samma session** — den citeras till och med i resumens egen
+rapportering av svepets kända egenskap — och efterlevdes ändå inte i
+parkerings-ögonblicket. En regel som misslyckas för sin egen författare, en dag
+efter att den skrevs, är inte ett läsnings-problem. Det är belägg för att
+`T126`:s mekanism ska bära den, inte prosan.
+
+### L486 — En skivning som inte prövats mot kodens faktiska kopplingar är en hypotes
+
+**Skiva inte efter funktionsyta — pröva varje skivgräns mot koden den ska skära
+igenom, innan korten publiceras. En gräns som ser ren ut i en beskrivning kan
+gå rakt igenom en delad symbol.** `[UNIVERSAL]`
+
+Mätt 2026-08-07 (S93 femte resumen). `/to-issues` delade `TASK-145` i sju
+skivor efter vad Lotta ser: registret, räknarna, markera-läget, betalningsytan.
+Varje skiva läste sunt för sig. **Två av gränserna höll inte mot koden**, och
+båda upptäcktes först när en byggagent stod i dem.
+
+#### Fel 1 — en rad utan ägare
+
+`TASK-145.2` specades som *"fyra klickbara steg-räknare"*. Summeringsblocket
+innehåller åtta rader; de fyra andra — Eventinfo-signalraden, Bor över,
+Avbokade — hamnade utanför varje kort. Agenten sökte i backlog-korten, fann
+noll träffar på "Bor över", och tog bort raden med sitt E2E-test.
+
+Beslutet fanns hela tiden — i **grillad samsyn beslut 2** (sessionsdok) och i
+**facit-bilagan** (radens exakta form, med bevisbild). Men inte i ett kort. Den
+som bygger läser kort.
+
+#### Fel 2 — en delad symbol mitt i en gräns
+
+`TASK-145.1` (enad lista) och `TASK-145.3` (markera-läget) såg ut som två
+skivor. I koden var de en:
+
+```text
+Deltagare.tsx:1652   markeringKandidatIds = protoVariant === 'a'
+                       ? registerListaA.map(r => r.id) : obekraftadeIds
+Deltagare.tsx:2103   <GruppRubrik handling={<MarkeraKnapp … />}>
+                       {`Obekräftade (${obekraftade.length})`}
+```
+
+Markera-knappens enda anropsplats satt **inuti rubriken** `145.1` skulle riva,
+och kandidatmängden **var** kön som revs. Att nå `145.1`:s första AC utan att
+röra `145.3`:s yta var strukturellt omöjligt.
+
+**Ironin som gör lärdomen skarp:** samma sessions Del 8 bokförde redan
+kopplingen — *"markera-läget beror på filtreringen, inte bara på registret:
+`markeringKandidatIds` ÄR den filtrerade listan (`Deltagare.tsx`:1652)"* — och
+skivade ändå isär dem. Att KÄNNA till en koppling räcker inte; den måste
+prövas mot varje gräns man drar.
+
+#### Det generella
+
+En skivning är en **hypotes om var koden går att dela**. Den prövas billigast
+före publicering — genom att för varje gräns spåra de symboler skivan ska röra
+och fråga *vem mer läser dem?* Prövas den i stället av en byggagent kostar den
+ett helt pass, och agenten tvingas välja mellan att gissa en form eller stanna.
+
+**Två sunda beteenden räddade båda fallen:** agenten flaggade den oägda raden
+öppet i stället för att tyst hoppa över den, och stannade vid den omöjliga
+gränsen med fil och rad i stället för att bygga runt. Fångsten skedde alltså
+externt — självgranskningen av skivningen hade noll träffar, precis som
+fångst-raterna förutsäger.
+
+### L487 — Ett källmärkt uppdrag kan vara precist och ändå fel — källan måste vara GÄLLANDE, och förbudet får inte svälja skyldigheten
+
+**Tre distinkta sätt att skriva ett uppdrag som en kompetent mottagare utför
+exakt som skrivet och ändå fel: citera en föråldrad rad, namnge en delmängd som
+läses som helheten, och formulera ett förbud som svalde en skyldighet.**
+`[UNIVERSAL]`
+
+Mätt 2026-08-07 (S93 femte resumen). Fem uppdrag till byggagenter i ett pass;
+**tre av dem bar var sin instans**. Samtliga fångades av mottagaren, ingen av
+självgranskningen.
+
+#### 1. Källan var precis, men föråldrad
+
+`TASK-145.2`s uppdrag citerade facit-bilagans rad 131 ordagrant:
+
+> *"Eventinfo-raden + Bor över-raden står kvar, ORÖRDA (signal-slot,
+> `AutoKryss`, kryss-läget)"*
+
+Samma fil, rad 681, river `AutoKryss` (*"### 4. Auto-kryssen riven"*), och
+grillad samsyn beslut 2 — citerad i **samma uppdrag** — namnger auto-kryssen som
+rivning nummer ett. Uppdragets två källhänvisningar motsade varandra; rad 131
+var skriven före konvergens-passet.
+
+`ADR-086` kräver att varje faktapåstående källmärks, och det gjordes. **Men en
+källmärkning till en föråldrad rad ser exakt likadan ut som en till en
+gällande.** I ett dokument som växer våg för våg är den tidiga texten kvar och
+läser som nutid. Disciplinen räcker alltså inte: citatet måste dessutom
+kontrolleras mot senare avsnitt i samma fil.
+
+#### 2. Delmängden lästes som helheten
+
+`TASK-145.1`s uppföljning bad om att laga *"Personkorten-blocket"* i
+`event-detail.staging.test.ts`. Agenten lagade exakt det — 0/8 → 8/8 — och
+rapporterade precist. Samma fil bar ett **annat** block
+(`Markera-läget — batch-bekräftelse`) som uppdraget aldrig nämnde. Det stod kvar
+rött och slog igenom på `main` när den verifierande sviten körde staging-testerna
+som PR-klassen skippar.
+
+Att namnge en delmängd är att tyst utesluta resten. Skriv ut regeln, inte bara
+instansen.
+
+#### 3. Förbudet svalde skyldigheten
+
+`TASK-145.1` AC #9 löd *"Inga befintliga E2E-filer raderas i denna skiva"*.
+Agenten tillämpade det symmetriskt: rörde dem inte alls, och lämnade tretton
+tester röda på ytor skivan själv medvetet ändrat.
+
+Läsningen är rimlig. Texten sade vad som var förbjudet och underförstod vad som
+krävdes. Rättad lydelse: *"Ingen fil RADERAS. Assertioner som prövar den yta
+skivan medvetet ändrat SKA däremot uppdateras — att lämna dem röda är inte samma
+sak som att bevara täckning."*
+
+#### Det generella
+
+Ett uppdrag läses **bokstavligt** av en mottagare som inte kan veta vad du menade.
+Tre kontroller före utskick, var och en billig:
+
+1. **Är varje citat gällande?** Sök samma term i resten av filen — ett dokument
+   som växer i vågor bevarar sin egen historia som löptext.
+2. **Namnger jag en instans där jag menar en klass?** Om ja, skriv klassen.
+3. **Bär mitt förbud en outtalad skyldighet?** "Radera inte" är inte "lämna
+   orört". Skriv ut båda halvorna.
+
+**Fångst-mönstret är det viktigaste i posten.** Alla tre hittades av mottagande
+agenter som prövade premisserna mot disk — noll av dem av författarens
+genomläsning. Det är `ADR-086`s premiss-pass som fungerar, och det är samma
+asymmetri som fångst-raterna redan beskriver: självgranskning är svag, extern
+fångst dominerar. Skriv därför uppdrag som **går att motsäga** — med sökbara
+källor och mätbara påståenden — hellre än uppdrag som låter säkra.
+
+### L488 — En ändrad yta kräver svep över ALLA test-konsument-ytor före push, inte de man råkar känna till
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08–09, tre instanssiter i samma vecka: `162.3` (fyra
+missade filer, bokfört på `166`-kortet) · `172` varv 1–2 (acceptance-ytan +
+datumspann-tvillingarna missade tills CI fällde — kortets egen bokföring
+"TREDJE TÄCKNINGSLUCKAN") · `172`-slutrundan (systematiskt AST/grep-svep där
+den ANDRA, bredare grep-omgången fångade två träffar första filsökningen
+missat).
+
+**Lärdomen:** en sträng eller ett beteende som ändras har konsumenter i
+api/acceptance/visual/e2e — och konsument-ytorna är inte symmetriska:
+`--fast`-lägen och PR-klassning skippar vissa av dem lokalt och i CI.
+Verifieringens scope härleds ur ändringens KONSEKVENSER över alla ytor, inte
+ur diffens fil-lista. Identifiera ytorna FÖRE sista push med en systematisk
+sökning (och en andra, bredare omgång — första sökningen missar); iteration
+efter CI-rött är det dyra alternativet.
+
+**Varför `[UNIVERSAL]`:** gäller varje repo med mer än en testklass.
+
+### L489 — En absolut regel byggd på en möjlighets-källa faller för första motexemplet
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (`167`-notes, skarpbeviset betalt i förtid); rättad
+2026-08-09 (`#1062`).
+
+**Vad som hände:** CLAUDE.md sade att en mitt-i-sessionen-registrerad hook
+*"tas ALDRIG i bruk"*. Förstapartskällan säger *"the file watcher **may have
+missed** the change"* — en möjlighet. Mätningen: en settings-ändring som
+anlände via main-ff-synk laddades mitt i byggsessionen och hooken fällde
+skarpt. Regeln mildrad till "kan inte FÖRLITAS på": planera för utebliven
+laddning, ta emot en tidig fällning som giltigt bevis.
+
+**Lärdomen:** en regel ska bära samma modalitet som sin källa. Ett "may" som
+skrivs om till "aldrig" är bekvämare att planera mot men falsifieras av
+första motexemplet — och tills dess blockerar det giltiga bevis (en tidig
+skarp fällning skulle ha avfärdats som omöjlig). Granne till `[[L481]]`:
+samma dokumentations-klass, motsatt riktning.
+
+### L490 — En granskningsyta mot fel träd ger falsk oro
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (S93 Del 13, dev-server-instansen).
+
+Marcus granskade `localhost:5173` — som serverade `main`, inte bygget som
+väntade i kön. Ytan såg trasig/oförändrad ut och skapade felsöknings-oro utan
+att något fel fanns. Före en granskning: verifiera VILKET träd ytan serverar
+(gren/SHA), särskilt när landningar är i flykt. Gransknings-regeln (verifiera
+mot dev-server/staging, aldrig mot en väntad landning) förutsätter att
+dev-servern faktiskt kör det som ska granskas. Syskon till `[[L494]]` — samma
+rotklass: fel träd som facit.
+
+### L491 — Ett monitor-event kan utebli, och TaskGet är fel liveness-instrument — förgrundsverifiera
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (nionde pausens carry).
+
+En enskild landning passerade utan monitor-event, och `TaskGet` svarade
+"not found" på en bevisligen levande background-task. Vakt-event är
+väckarklocka, aldrig fakta — och även FRÅNVARON av event är osäker
+information: lång tystnad verifieras mot monitorns eget liv, inte tolkas som
+"inget har hänt". Före varje handling som bygger på ett vakt-tillstånd:
+förgrundsverifiera mot git/REST.
+
+### L492 — Ett verktyg som skriver repo-filer måste vara formatter-rent
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (`167`-bygget; Biome-efterfixen `#1025`).
+
+`facit-godkann`-skriptets JSON-serialisering skrev en form Biome ville skriva
+om — en efterfix-PR krävdes. Ett skript som producerar incheckade artefakter
+ska producera dem i formatter-normaliserad form (kör formattern som del av
+skrivningen, eller matcha dess stil exakt) — annars är varje körning av
+verktyget en framtida röd grind som fäller FÖRFATTAREN i efterhand, inte
+verktyget.
+
+### L493 — ADR-mintning bumpar README-räkningen i SAMMA commit
+
+**Fångad:** 2026-08-08 (ADR-039-grinden fällde `#1020`).
+
+`docs/decisions/README`-räkningen är en del av mintningens
+definition-of-done, inte en separat städning — en ADR-commit utan
+räknings-bump är per konstruktion röd. **Varför INTE `[UNIVERSAL]`:**
+grinden och räkningen är spoke-specifika (ADR-039); klassen "en räknare
+uppdateras i samma commit som sin källa" bärs redan av
+kopierings-drift-lärdomarna.
+
+### L494 — Ett research-pass i huvudkatalogen ser inte sessionens opushade arbete
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (S100:s carry, uppdrags-instansen).
+
+Ett research-pass prövade uppdragets premiss mot huvudkatalogens träd — som
+inte bar sessionens opushade arbete — och kallade utfallet "verifierat".
+Rapporten läste i efterhand som om passet kunnat se allt. Uppdrag som ber en
+agent pröva KODENS TILLSTÅND måste peka ut vilket träd som är facit
+(huvudkatalog, viss worktree, viss gren/SHA); mottagaren ska bokföra vilket
+träd som faktiskt lästes. Syskon till `[[L490]]`.
+
+### L495 — Ett ärvt villkor läses om mot den nya ytans semantik, inte mot sin egen kod
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (S100, resultatläges-instansen).
+
+`!arBekraftad && !vald` var rätt i markeringsläget och fel i resultatläget —
+och felet syntes bara i det andra läget, där den omarkerade personen är
+"klar", inte "utanför". Ett villkor som ärvs till en ny yta bär den GAMLA
+ytans antaganden; det måste läsas om mot vad symbolerna BETYDER i den nya
+kontexten, inte bara konstateras vara samma kod.
+
+### L496 — En lint-fångst kan vara en designfråga i förklädnad
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (S100, scroll-effekten).
+
+Biomes `useExhaustiveDependencies` på scroll-effekten var formellt korrekt
+OCH substantiellt viktig: rätt svar var inte att tysta regeln utan att fråga
+vad som ska hända per läge — varpå det föll ut att `skickar` inte ska
+scrolla. Innan en lint-varning tystas eller mekaniskt "fixas": pröva om den
+pekar på ett obesvarat designbeslut.
+
+### L497 — Marcus fråga om ett ord är ett fynd, inte en lucka i hans kunskap
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (S100, "Vad betyder delutfallet?").
+
+Frågan visade att ett bärande krav i två styrande dokument saknade kanonisk
+betydelse. När beslutsfattaren frågar vad ett begrepp betyder är
+default-tolkningen att BEGREPPET är odefinierat — svaret är
+ordliste-/kanoniseringsarbete (och en kontroll av var begreppet används),
+inte en förklaring av vad skribenten råkade mena.
+
+### L498 — En nummer-mätning läser REGISTRET, aldrig katalogen
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (S100, `T137`-instansen).
+
+Trådnumret såg ledigt ut i `tasks/threads/`-listningen men var taget i
+README-indexet — ett nummer kan vara reserverat utan att någon fil bär det.
+Felet överlevde egen verifiering och fångades av att en parallell sessions
+kadensrad krockade och bar rätt siffra: **merge-konflikten var granskaren.**
+Där ett register finns är registret den auktoritativa ytan; katalogen är en
+projektion.
+
+### L499 — En grön grind mot ett föråldrat träd är ett falskt godkännande — och klassen fäller även den som känner den
+
+**[UNIVERSAL]**
+
+**Fångad:** S100 varv 12 (2026-08-07) + TRE stale-arbetsträds-instanser samma
+dag 2026-08-08 trots känd klass (K1/`T138`; åttonde pausens carry — den
+kandidatlistan tappades ur carry-kedjan och skördas här med tappet öppet
+bokfört, se sessionsdok S93 Del 17).
+
+Varv 12 byggde 30 commits bakom `main` mot en fil som skrivits om samma
+eftermiddag; typecheck, biome och build var gröna, och ytan var ändå fel. En
+grind prövar trädet den står i — inte trädet som gäller. `git fetch` +
+fast-forward före ett bygge som rör filer andra sessioner äger är billigare
+än rivningen, och att klassen fällde tre gånger på en dag för läsare som
+KÄNDE den är beviset för att disciplinen ska in i uppdragens form (explicit
+synk-steg), inte i minnet.
+
+### L500 — Mint-ögonblicket är inte landnings-ögonblicket
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-07 (S100, `T134`→`T136`-kollisionen).
+
+Numret var ledigt när det mintades och taget när det skulle landa;
+kollisionen löstes vid merge men commit-taggarna `[T134]` i varv 14–18 kan
+inte skrivas om. Vid parallella sessioner: re-verifiera numret i
+mint-ögonblicket OCH kontrollera igen vid landning — och räkna med att
+historik-artefakter (commit-meddelanden) kan bära det gamla numret.
+
+### L501 — HMR-loggen fångar mellanlägen som ser ut som verkliga fel
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-07 (S100 varv 7, 9, 12–13 — tre instanser).
+
+`Error in route match` loggades för att en symbol refererades innan dess
+Edit hunnit landa — ett mellanläge, inget fel. Varje gång krävdes en
+framtvingad omladdning för att skilja mellanläge från verkligt fel. I en
+HMR-miljö är ett fel som uppstår MITT I en redigeringssekvens misstänkt tills
+det reproducerats efter full omladdning.
+
+### L502 — En trunkerad logg-läsning ger inte bara fel förklaring — den ger en ofullständig ARBETSORDER
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-09 (`172` varv 2).
+
+En delvis läst CI-logg gav ett direktiv om två specs; den fulla läsningen
+(881 rader, `gh run view --log-failed`) gav fem. Granne till `[[L478]]` och
+`[[L479]]`: där producerade trunkeringen en falsk förklaringsuppgift — här
+en beskuren åtgärdslista som SÅG komplett ut och skickades som order. Ett
+utfall läses i sin helhet innan det blir direktiv; "de fel jag såg" är inte
+"felen".
+
+### L503 — En spärr som substräng-matchar kommandotext fäller PAYLOAD — text i argument är data, inte anrop
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-09 (`168`-notes, falsk-positiv-klass 4+5).
+
+`backlog task create`/`task edit`-anrop vars beskrivnings- respektive
+notes-TEXT nämnde stämplingsskriptets namn fälldes av hooken — payload-text
+som passerar genom Bash-argument är inte en anropsväg. Fixen (`168`,
+`#1036`): matcha kommando-POSITION/skrivform (programmet som utförare,
+skriv-vektorns mål) i stället för fri substräng över hela kommandotexten. En
+vakt över kommandon måste skilja UTFÖRANDE från OMNÄMNANDE — annars nekar
+den bokföringen av sig själv.
+
+### L504 — En batch-CLI-edit faller atomiskt på ett antaget index
+
+**Fångad:** 2026-08-09 (`171.5`-stängningen).
+
+En `task edit`-batch mot DoD-index som inte fanns på kortet fällde HELA
+batchen — inget delresultat landade. Läs kortets faktiska yta (vilka
+AC-/DoD-index som existerar) före en batch-edit mot den. **Varför INTE
+`[UNIVERSAL]`:** instans av den redan etablerade verifiera-före-skriv-
+klassen, specifik för backlog-CLI:ts atomiska batch-semantik.
+
+### L505 — En radbruten prosarad som börjar med +, - eller * är en fantomlista
+
+**[UNIVERSAL]**
+
+**Fångad:** S93 iterationsvågen (527 fel ur ett tecken) + andra instansen
+2026-08-09 (plustecken först på radbruten rad, tionde pausens carry).
+
+markdownlints MD004 `consistent` läser FÖRSTA listmarkören i filen som norm
+— en prosarad vars radbrytning råkar lägga `+`, `-` eller `*` först på raden
+blir en lista i parserns ögon och kan kapa referensen för HELA filen. Vid
+radbrytning av prosa: låt aldrig ett listmarkör-tecken hamna först på raden.
+
+### L506 — Teckenantal är fel proxy för renderad textbredd — mät, härled inte
+
+**[UNIVERSAL]**
+
+**Fångad:** S93 iterationsvåg 1 (breddlåset; skördad ur andra pausens carry
+vid tionde resumen).
+
+Beslutet avgjordes av 143,69 mot 142,33 px — en skillnad teckenräkning inte
+kan se, eftersom typsnitt är proportionella. När en text ska passa ett
+utrymme: mät den renderade bredden (DOM/canvas-mätning), härled den inte ur
+stränglängden. Syskon till `[[L483]]` (rätt storhet, rätt omfång).
+
+### L507 — En delad markör i /tmp rapporterar till EN session
+
+**[UNIVERSAL]**
+
+**Fångad:** S93 (heartbeat-fyndet, andra pausens carry; skördad vid tionde
+resumen).
+
+Ett verktyg vars state delas mellan sessioner via en gemensam
+`/tmp`-baserad markör rapporterar bara till den session som råkar äga
+markören — de andra ser tystnad och tolkar den som "inget hänt".
+Generaliserbart till varje delad fil-markör utanför repot: delat state är
+per-maskin, inte per-session; ska flera sessioner bevaka samma sak behöver
+markören per-session-nyckling eller en uttalad ägare.
+
+### L508 — Promovering löser strukturellt vad grindar bara lappar
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-08 (ADR-103-arcen; åttonde pausens carry, skördad med
+carry-tappet öppet bokfört).
+
+En yta som promoverats till EN sanning behöver ingen vakt som jagar
+divergenser mellan två — grinden vaktar symptomet (att kopiorna glider
+isär), promoveringen tar bort symptomets källa (att det finns två). Innan en
+ny grind byggs för att hålla två ytor i synk: pröva om den ena ytan kan
+promoveras till enda bärare och den andra rivas eller reduceras till pekare.
+
+### L509 — macOS xargs saknar -a
+
+**Fångad:** 2026-08-08 (åttonde pausens carry).
+
+BSD-`xargs` (macOS) läser endast stdin; `-a fil` är GNU-specifikt. Använd
+`< fil xargs …` eller `cat fil | xargs …`. **Varför INTE `[UNIVERSAL]`:**
+verktygsfakta av stack-klass, inte en arbetsprincip — hör till
+plattformsfakta-sektionerna.
+
+### L510 — Ett citerat tal bär sin egen storhet, ett citerat kommando sin egen miljö — re-mät i exekverings-ögonblicket
+
+**[UNIVERSAL]**
+
+**Fångad:** 2026-08-09 (`172`-slutrundan, byggagentens premiss-pass — båda
+instanserna fångade av mottagaren, ADR-086 i funktion).
+
+(a) Policy-filens `_readme` sade "15 REST" — det räknade policy-POSTER;
+AST-mätningen gav 17 FÖREKOMSTER. Uppdraget sade "verifiera antalet mot
+filen, lita inte på siffran"; agenten mätte och byggde på 17. (b) Uppdragets
+literala `npx playwright test --project=acceptance` föll hårt utan
+`PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1` — `package.json`-skriptet var den
+gällande formen. Granne till `[[L487]]`: ett tal källmärks MOT SIN STORHET
+(poster ≠ förekomster ≠ filer) och ett kommando mot den yta som ska
+exekveras (repots skript-form, inte en historisk kommandorad). Mottagaren
+re-mäter båda med instrumentet som faktiskt ska användas.
+
+### L511 — Ett skript utan --help exekverar när det tillfrågas
+
+**[UNIVERSAL]**
+
+**Fångad:** S93 (seed-skriptet; skördad ur andra pausens carry vid tionde
+resumen).
+
+`--help` mot seed-skriptet KÖRDE skriptet skarpt — flaggan var okänd och
+ignorerades i stället för att stoppa (bas-vakterna höll, ingen skada).
+CLI-skript svarar på `--help`/`-h` utan sidoeffekter, och en OKÄND flagga är
+ett fel som stoppar körningen — aldrig något som tyst ignoreras medan
+skriptet kör sitt default-beteende.
