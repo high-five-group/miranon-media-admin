@@ -393,6 +393,25 @@ paus: 099/L480 + 4 fragment/T131 (re-verifiera — S93 rör sig)/task-158
 resume.
 *(S93:s kadensrad nedan, oförändrad.)*
 
+**Session 93 ⏸️ PAUSAD (2026-08-09, nionde pausen, `lifecycle: paused`) —
+EVENTSIDAN KLAR: PROMOVERAD, GODKÄND, RIVEN, REGRESSIONSLÅST.** Åttonde
+resumen tog hela vägen: staging-diagnosens fyra rotorsaker fixade
+(`#999`/`#1000`/`#1003`/`#1007`/`#1017`) → första helt gröna post-merge →
+larm-ytan nollställd (31+1 ärenden med motivering) → **G2-grillningen →
+`ADR-104` kanalseparation** (research-belagd, `!`-kanalens hook-osynlighet
+förstahands-mätt) → mekaniken byggd (`#1023`+`#1025`) → Marcus QA godkänd →
+`162.5`+PRD-`162` Done → **första skarpa `!`-stämplingen** (`#1024`) +
+hook-skarpbeviset betalt i förtid → rivningen (`#1026`, −1475 rader) →
+baslinjen omtagen + välsignad (`#1027`) → `145.6`+`167` Done (`#1029`).
+Kort `163`–`167` alla Done · `168` (hook-tuning) + `169` (backlog-städet,
+äger nattens enda röda: 21-korts-skulden, `#1028` stängt) mintade
+plockbara. **NÄSTA RESUME = S100-ÖVERTAGANDET** (kvitterat: bo-triage +
+bindestrecks-beslutet Marcus · PRD med test-konsument-svep-AC · Marcus
+facit-låsning · S100 stängs). Numrering vid paus mot `a253fb1f`:
+105/L480+8 fragment/T140/**task-170**/f47.
+**HANDOFF: sessionsdok S93 § PAUSLÄGE (nionde) + Del 12–14.**
+*(Föregående resume-block nedan oförändrat.)*
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-08, `lifecycle: active`, åttonde
 resumen) — 162-KÖN KÖRS VIDARE MOT MARCUS QA** — Marcus resume-order utan
 ny scope; arbetet fortsätter per handoffens NÄSTA-lista. Paus-PR:en `#996`
