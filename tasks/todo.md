@@ -15,6 +15,27 @@
 
 ## Aktuellt fokus
 
+**Session 93 ⏸️ PAUSAD (2026-08-09, elfte pausen, `lifecycle: paused`) —
+NATTAUTONOMIN FULLBORDAD; ENDAST STÄMPELN + STÄNGNINGEN KVAR.** Nattens
+kedja, samtliga MERGED: `#1060` resume · `#1059` S101-lösningen (Marcus-
+order, kedje-söm `c4037897`) · `#1062` CLAUDE.md-hook-rättelsen + biome-
+bumpen · `#1063` task-174 · `#1064` **15-strecks-rundan LEVERERAD** (17
+förekomster, policy tömd, testytor synkade; Done HÅLLS till stämpeln) ·
+`#1065` **skörden L480–L511** (8 fragment + 24 nya, carry-tappet öppet
+bokfört; lychee-fällning fixad `aa2b802c`). Hub `b210ee0`:
+**K93.1–K93.39** + SYSTEMET.md §0-termerna + /prototype-
+promoveringskontraktet, **plugin 1.33.0** (app-omstart krävs, sessionen
+kör 1.29.0). Stämpeln AVBÖJD av Code med ADR-104-skäl (kanalseparationen
+är agent-nekad väg; bokfört Del 17). **MORGONENS TVÅ HANDGREPP: (1)
+stämpel-raden via `!` (exakt rad i PAUSLÄGE § MARCUS-SEKVENS) → (2) GO →
+`172` Done + session-end → S93 STÄNGS.** `147`-skivningen + go-live-
+inventeringen = NY session (Marcus-beslut). Numrering vid paus (hypotes):
+108/L512+0/T140/task-175/f47.
+**HANDOFF: sessionsdok S93 § PAUSLÄGE (elfte pausen) + Del 17.**
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 99 ⏸️ PAUSAD (2026-08-09, femte pausen, `lifecycle: paused`)
 — BEVAKNINGS-PASS UTAN MOMENT; ALLT KVARVARANDE ÄR FORTSATT MARCUS.**
 Paus på Marcus order utan ny scope. Resume 4 landade återupptagningen
