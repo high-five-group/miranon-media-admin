@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 93 ▶️ ÅTERUPPTAGEN (2026-08-09, `lifecycle: active`, nionde
+resumen) — S100-ÖVERTAGANDET ÄR HUVUDSPÅRET.** Paus-PR:en `#1030`
+verifierad MERGED (`31b2547b`); Post-merge + CI + Push on main gröna per
+jobb. Huvudkatalogen är S93:s (S99/S100 `paused`, ingen främmande
+ägarlapp) — arbetet fortsätter där, resume-gren `docs/s93-resume-9` från
+`origin/main`. Numrering re-verifierad mot disk: nästa ADR **105** ·
+**L480** + 8 nummerlösa fragment · **T140** · **task-170** håller; f47 ej
+omprövad (re-derivera i mint-ögonblicket). Nattens enda röda ägs av
+`task-169` (Backlog-stängnings-grinden, 21 äldre Done-kort). **NÄSTA per
+MARCUS-SEKVENS (kvitterad väg): S100:s bo-triage + bindestrecks-frågan
+(A/B/C — Marcus) · PRD för åtgärds-/granskningssidans promovering ·
+Marcus facit-låser ytan · kön referenser → promovering → härdning → QA →
+`!`-stämpling → rivning · parallellt `task-169` (avblockar nattgrinden) ·
+`task-168` vid tillfälle · CLAUDE.md-rättelsen + hub-sync-paketet vid
+hub-moment.**
+**HANDOFF: sessionsdok S93 § Paushistorik (nionde) + Del 13–14.**
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 99 ▶️ ÅTERUPPTAGEN (2026-08-08, `lifecycle: active`, fjärde
 resumen) — MARCUS-MOMENTEN ÄR ALLT SOM ÅTERSTÅR** — Marcus resume-order
 utan ny scope; agent-pipelinen är TOM och arbetet fortsätter per
