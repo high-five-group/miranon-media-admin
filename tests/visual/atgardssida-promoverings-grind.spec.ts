@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { expect, test } from '../support/fixturvarld/hermetic';
 
@@ -154,5 +155,200 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för åtgärds-/
     await expect(page.getByTestId('granskning-yta')).toMatchAriaSnapshot({
       name: 'atgarder-utfall-inget.aria.yml',
     });
+  });
+});
+
+/**
+ * [TASK-171.3, PRD TASK-171 § Testbeslut — "A11y-golvet 11 består; axe-pass
+ * i härdningen"] Axe-pass på den promoverade åtgärds-/granskningsytan, i
+ * SAMTLIGA lägen referens-grinden ovan navigerar genom.
+ *
+ * SAMMA VENUE-VAL SOM TASK-162.4 (sibling-härdningen för eventsidans
+ * promovering — se `eventsida-promoverings-grind.spec.ts` rad ~166–191 för
+ * den fullständiga motiveringen, återgiven i korthet här): åtgärds-/
+ * granskningsytan är en `_authenticated`-route, inte DEV-guardad — så
+ * `npm run test:a11y` (skannar bara `/dev/primitives`+`/dev/patterns`) kan
+ * inte nå den. Den strukturellt "rätta" staging-motsvarigheten
+ * (`.staging.test.ts`, `chromium-authenticated`-projektet) kräver en riktig
+ * staging-inloggning och port 5173 — en agent-worktree kan inte köra den
+ * (mätt i denna skiva: port 5173 var upptagen av huvudkatalogens EGEN
+ * dev-server vid körningstillfället, `lsof -i :5173`/`ps` verifierat mot
+ * cwd `/Users/marcus/Repon/miranon-media-admin`, inte denna worktree — att
+ * peka en `chromium-authenticated`-körning dit hade krockat med en
+ * pågående session i huvudkatalogen, inte bara varit tekniskt olämpligt).
+ * Den hermetiska fixturvärlden ovan är därför PRIMÄR skarv för a11y-golvet
+ * här också, av samma skäl PRD TASK-162 § Testbeslut redan drog för
+ * eventsidan.
+ *
+ * ÅTERANVÄNDER `gotoAtgarder`/`oppnaOchGranska`/`valjArmeraSkicka` DEKLARERADE
+ * OVAN I SAMMA FIL — samma navigering som referens-grindens sex tester,
+ * ingen andra sanning om hur man tar sig till varje läge.
+ *
+ * BETALNINGSPANELEN (`BetalningsSkrivYta`) ÖPPNAS i sista testet men INGEN
+ * kryssruta/notering klickas — `useSetPaymentStatus`/`useUpdatePaymentNote`
+ * instansieras vid montering men `mutate()` anropas aldrig av testet, så
+ * ingen `update-record`-mock krävs i fixturvärlden: ingen begäran görs.
+ * Skrivvägen i sig (vilka EF-operationer, mot vilken bas) är kartlagd som
+ * statisk analys i kortets Implementation Notes — denna svit bevisar att
+ * PANELENS FORM är ren, inte att servern svarar rätt.
+ */
+test.describe('TASK-171.3 — axe-pass på den promoverade åtgärds-/granskningsytan (ADR-103, härdningen)', () => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  /** Kör axe över hela sidan; violations skrivs ut läsbart vid fällning. */
+  async function axeNoll(page: import('@playwright/test').Page) {
+    const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+    expect(
+      resultat.violations,
+      resultat.violations
+        .map((v) => `[${v.impact ?? 'utan impact'}] ${v.id}: ${v.help}`)
+        .join('\n'),
+    ).toEqual([]);
+  }
+
+  test('tomt läge — eventväljaren utan event: axe 0', async ({ page }) => {
+    await page.goto('/atgarder');
+    await expect(page.getByTestId('atgardssida-tomt')).toBeVisible();
+    await axeNoll(page);
+  });
+
+  test('hubben i vila — eventväljare + mottagar-yta, accordion stängd: axe 0', async ({ page }) => {
+    await gotoAtgarder(page);
+    await axeNoll(page);
+  });
+
+  test('mottagarurvalet öppet — markerade deltagarkort synliga: axe 0', async ({ page }) => {
+    await gotoAtgarder(page);
+    await page.getByRole('button', { name: /deltagare markerade/ }).click();
+    await expect(page.getByTestId('mottagar-kort')).toBeVisible();
+    await axeNoll(page);
+  });
+
+  test('åtgärdsraden expanderad i hubben (utan granskning) — förhandsvisningen synlig: axe 0', async ({
+    page,
+  }) => {
+    // Skiljer sig från nästa test: HÄR stannar vi i hubben (ArbetsYta, rad
+    // ~1516) i stället för att gå vidare till granskning-yta — den andra av
+    // sidans TVÅ `TEXTYTA_KLASS`-rutor (den låsta förhandsvisningen i
+    // GranskningsSida) täcks separat nedan.
+    await gotoAtgarder(page);
+    await page.getByRole('button', { name: /Skicka bekräftelsemail/ }).click();
+    await expect(page.getByText('Din plats är bekräftad')).toBeVisible();
+    await axeNoll(page);
+  });
+
+  test('granskningsläget öppet — urvalsfilter tillämpat, ifyllda platshållare: axe 0', async ({
+    page,
+  }) => {
+    await gotoAtgarder(page);
+    await oppnaOchGranska(page, 'Skicka bekräftelsemail');
+    await expect(page.getByTestId('granskning-yta')).toBeVisible();
+    await axeNoll(page);
+  });
+
+  test('utfallsläge — allt gick fram: axe 0', async ({ page }) => {
+    await gotoAtgarder(page);
+    await oppnaOchGranska(page, 'Skicka betalningspåminnelse');
+    await valjArmeraSkicka(page, 'Allt gick fram');
+    await axeNoll(page);
+  });
+
+  test('utfallsläge — delutfall: axe 0', async ({ page }) => {
+    await gotoAtgarder(page);
+    await oppnaOchGranska(page, 'Skicka betalningspåminnelse');
+    await valjArmeraSkicka(page, 'Delutfall');
+    await axeNoll(page);
+  });
+
+  test('utfallsläge — inget gick fram: axe 0', async ({ page }) => {
+    await gotoAtgarder(page);
+    await oppnaOchGranska(page, 'Skicka betalningspåminnelse');
+    await valjArmeraSkicka(page, 'Inget gick fram');
+    await axeNoll(page);
+  });
+
+  test('betalningspanelen öppen (BetalningsSkrivYta) — ingen mutation triggad: axe 0', async ({
+    page,
+  }) => {
+    await gotoAtgarder(page);
+    await page.getByRole('button', { name: 'Pricka av och notera' }).click();
+    // Scopat till betalningssektionen — "Anna Andersson" står även i
+    // mottagar-ytans preview-pill och deltagarkortet ovanför (strict mode
+    // ger flera träffar på osscopad text).
+    const betalningar = page.locator('section[aria-labelledby="grupp-betalningar"]');
+    await expect(betalningar.getByText('Anna Andersson')).toBeVisible();
+    await axeNoll(page);
+  });
+});
+
+/**
+ * [TASK-171.3, kortets AC #1 andra hälften] Kvalitetsribbans tre lägen
+ * (CLAUDE.md § Design-system: "Varje komponent ska klara prefers-contrast:
+ * more, prefers-reduced-motion, print"). Samma `emulateMedia`-mönster som
+ * `tests/a11y/NavCard.spec.ts`, tillämpat på HELA den promoverade ytan i
+ * stället för en enskild bibliotekskomponent — plus en axe-scan i varje
+ * läge: en strukturell CSS-punktkoll ensam bevisar inte att RESTEN av sidan
+ * förblir grön i samma renderade tillstånd.
+ */
+test.describe('TASK-171.3 — kvalitetsribbans tre lägen på den promoverade ytan', () => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  test('hög-kontrast-läge: KORT_KLASS-ytorna får synlig kantlinje (prefers-contrast: more)', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ contrast: 'more' });
+    await gotoAtgarder(page);
+
+    const eventetBlock = page.getByTestId('eventet-block');
+    const kant = await eventetBlock.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { farg: s.borderTopColor, bredd: s.borderTopWidth, stil: s.borderTopStyle };
+    });
+    expect(kant.stil).toBe('solid');
+    expect(kant.bredd).toBe('1px');
+
+    // Färgen löses ur SAMMA token-kedja som klassen deklarerar
+    // (`contrast-more:border-border-strong` → `--mm-border-strong`) via en
+    // DOM-probe — computed-assertion, aldrig hårdkodad färg (L272).
+    const strongToken = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--mm-border-strong)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    });
+    expect(kant.farg).toBe(strongToken);
+
+    const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+
+  test('reduced-motion: radernas hover-övergångar neutraliseras (prefers-reduced-motion: reduce)', async ({
+    page,
+  }) => {
+    await gotoAtgarder(page);
+    const rad = page.getByRole('button', { name: 'Pricka av och notera' });
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const varaktighet = await rad.evaluate(
+      (el) => Number.parseFloat(getComputedStyle(el).transitionDuration) || 0,
+    );
+    expect(varaktighet).toBeLessThanOrEqual(0.001);
+
+    const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+
+  test('print: sidhuvud, eventväljare och mottagar-yta förblir synliga', async ({ page }) => {
+    await gotoAtgarder(page);
+    await page.emulateMedia({ media: 'print' });
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Åtgärder' })).toBeVisible();
+    await expect(page.getByTestId('eventet-block')).toBeVisible();
+    await expect(page.getByRole('button', { name: /deltagare markerade/ })).toBeVisible();
+
+    const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+    expect(resultat.violations).toEqual([]);
   });
 });
