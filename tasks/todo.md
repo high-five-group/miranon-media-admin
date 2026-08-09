@@ -15,6 +15,20 @@
 
 ## Aktuellt fokus
 
+**Session 100 ✅ STÄNGD (2026-08-09, via S93-övertagandet — ingen femte
+resume; `lifecycle: closed`).** Bo-triagen utförd och bokförd i
+sessionsdok S100 § Del 7: bindestrecks-frågan (A/B/C + följdfrågor +
+tom-markören `—`) LYFT TILL MARCUS · de odömda formvalen +
+`TASK-147` rad 142 + staging-write-härdningen → input till
+promoverings-PRD:n · heartbeat-undantagen → **task-170** (mintad,
+familj `T128`/`T132`) · 4173-quirksen (CORS + service-worker-hypotesen)
+EXPLICIT förkastade (preview-miljö) · lesson-kandidaterna 1–5 kvarstår
+dok-bokförda till S93:s skörd. Grund-fakta disk-verifierade:
+`docs/s100-paus-3` helt inmergad (0 commits före main), prototypen i
+main som `[PROTOTYPE]` (varv 22–23 `34020353`/`5879faf6`), facit OLÅST.
+Worktree `s100-atgardssidan` + lokal gren städade.
+*(S93:s aktiva kadensrad nedan, oförändrad.)*
+
 **Session 93 ▶️ ÅTERUPPTAGEN (2026-08-09, `lifecycle: active`, nionde
 resumen) — S100-ÖVERTAGANDET ÄR HUVUDSPÅRET.** Paus-PR:en `#1030`
 verifierad MERGED (`31b2547b`); Post-merge + CI + Push on main gröna per
