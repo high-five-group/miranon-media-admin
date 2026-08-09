@@ -35,6 +35,27 @@ CLAUDE.md-rättelsen · ritual) → S93 STÄNGS.** `171.6` väntar `147` ·
 
 <!-- Föregående kadensrad, bevarad: -->
 
+**Session 101 ⏸️ PAUSAD (2026-08-09, efter Del 8; PAUSLÄGE amenderat
+samma dag på Marcus order) — L8-TRANSFORMATIONENS ETABLERING KOMPLETT.**
+Kartläggningen av Kun Chens system (tre transkript djuplästa +
+webverifierade) → gap-analys + plan (8 kandidater, 5 vågor) +
+ledstjärnan, allt i
+`docs/research/l8-workflow-kartlaggningen-2026-08-09.md` · K1-grillningen
+→ **ADR-105** (review-grinden) → **PRD TASK-173 + skivorna 173.1–173.7**
+(spec-kompletta, 1–6 ready-for-agent) · ställningstagande-grillningarna →
+**ADR-106** (agnostik-snittet) + **ADR-107** (reproducerbarhets-målet) ·
+ADR-104-katalogdriftfixen · åtta PR:er (`#1045`–`#1056`) gröna per jobb.
+**NÄSTA (vid resume, MARCUS OMPRIORITERING 2026-08-09): HUVUDSPÅRET är
+K4-verifikaten → K4-grillningen (exekverings-hubben — Marcus
+kärnentusiasm) med K3 (Lavish) framdragen parallellt (minimal-test vid
+nästa verkliga plan-tillfälle) · `173.1`-kedjan körs som
+AFK-bakgrunds-batch via `work-batch` · mottot styr takten: *"bygg
+ordentligt eller bygg inte alls"*.**
+**HANDOFF: sessionsdok S101 § PAUSLÄGE + Del 1–8.**
+*(S93:s paus-kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 93 ⏸️ PAUSAD (2026-08-09, tionde pausen, `lifecycle: paused`) —
 PRD-171 FULLBORDAT PÅ EN DAG; 15-STRECKS-BESLUTET ÄR NÄSTA RESUMES
 HUVUDSPÅR.** Dagens facit: åtgärds-/granskningssidan SKARP (godkänd

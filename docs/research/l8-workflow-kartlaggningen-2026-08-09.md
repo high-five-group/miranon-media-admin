@@ -52,6 +52,9 @@ Kuns flöde importeras aldrig på bekostnad av vårt golv — 11/10-ribban,
 a11y-golvet, transparens-rapporten, extern fångst före ribb-flytt
 (C.4-2-sekvensen), Gunilla-principen. Vi tar hans exekverings-skikt till
 vårt kvalitets- och kunskaps-skikt — kombinationen är målet, inte bytet.
+Mottot, Marcus verbatim (amendering 2026-08-09): *"bygg ordentligt
+eller bygg inte alls"* — entusiasmen sätter riktningen, mottot sätter
+takten.
 
 **Mätstickan:** varje transformationskandidat ska göra minst en av
 Fem Kvaliteter (`IDENTITET.md`: Omedelbarhet, Kontinuitet, Transparens,
