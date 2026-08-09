@@ -26,7 +26,8 @@
 #   node äger JSON", samma snitt som scripts/check-facit.sh mot
 #   scripts/lib/facit-validera.mjs.
 #
-#   Bash: TVÅ oberoende nät, båda medvetet BREDA (§ HELLRE FÖR BRETT nedan):
+#   Bash: TVÅ oberoende nät (§ HELLRE FÖR BRETT nedan gäller fortsatt, men
+#   se § TASK-168 — POSITION, INTE FRI SUBSTRÄNG för vad som ändrades):
 #     Kanal A — direkt anrop av Marcus egen stämplingskanal
 #       (`npm run facit:godkann` / `scripts/facit-godkann.mjs`). Detta är
 #       INTE en generisk JSON-mutation utan den mest direkta bypass-vägen:
@@ -36,17 +37,60 @@
 #       en process. Forskningspasset namnger detta explicit: "ingenting i
 #       !-mekanismen HINDRAR agenten från att, i SAMMA session, skriva
 #       samma fält via sitt eget ... Bash-anrop."
-#     Kanal B — generisk mutation: kommandot nämner "godkand" OCH en
-#       facit-manifest-sökväg OCH ett skriv-vektor-mönster (redirect,
-#       heredoc, `tee`, `sed -i`, `jq -i`).
+#     Kanal B — generisk mutation: kommandot nämner "godkand" OCH ett
+#       skriv-vektor-mönster (redirect, `tee`, `sed -i`, `jq -i`) vars MÅL
+#       är en facit-manifest-sökväg.
 #
 # § HELLRE FÖR BRETT ÄN FÖR SMALT (uppdragets egen formulering, TASK-167):
 #   en falsk fällning av en agent är billig (agenten ber Marcus stämpla via
 #   `!`-prefixet i stället), en missad förfalskning är dyr (hela
-#   godkännande-mekanikens syfte urholkat). Kanal B:s mönster matchar
-#   därför på RÅ SUBSTRÄNG utan att försöka avgöra om kommandot "verkligen"
-#   skulle lyckas — ett kommando som RÅKAR nämna alla tre ledden utan att
-#   vara en skrivning (osannolikt, men möjligt) nekas ändå.
+#   godkännande-mekanikens syfte urholkat). Denna princip STÅR KVAR —
+#   TASK-168 (nedan) smalnar INTE av vad som räknas som en skrivning, bara
+#   VAR i kommandotexten mönstret måste sitta.
+#
+# ═══ TASK-168 — POSITION, INTE FRI SUBSTRÄNG ═══
+#
+#   Mätt 2026-08-08/09 (fem falsk-positiva klasser, TASK-168-kortet bär hela
+#   listan med källor): fri substräng över HELA kommandotexten fällde även
+#   (1) rena LÄSNINGAR av manifestet (en python3-heredoc som bara `open()`ar
+#   filen matchade "heredoc"-mönstret trots att heredocen aldrig är en
+#   skriv-operation i sig — den är stdin till en tolk; den FAKTISKA
+#   skrivningen, om någon, sker via en redirect/`tee` som prövas separat),
+#   (2) kommandon som bara NÄMNER skriptets FILNAMN (`grep`/`git add`/en
+#   testsvit-invokering), (3) att köra facit-godkann.mjs:s EGEN testsvit —
+#   `node scripts/test-facit-godkann.mjs` matchade Kanal A:s gamla
+#   substräng-check eftersom "test-facit-godkann.mjs" RÅKAR SLUTA på
+#   "facit-godkann.mjs", (4)–(5) CLI-payload-TEXT (`backlog task
+#   create -d "..."` / `--append-notes "..."`) som nämner
+#   stämplingskommandot i sitt ARGUMENT, inte som en anropsväg.
+#
+#   FIXEN, i två delar:
+#     Kanal A matchar nu KOMMANDO-POSITION — är detta segmentet FAKTISKT ett
+#     anrop (`npm run <script>` i position 0/1/2, eller `node`/direkt-exec
+#     av skriptfilen i position 0/1)? — inte fri text någonstans i
+#     kommandot. Skriptnamnets GRÄNS krävs EXAKT eller efter `/` (inte fri
+#     suffix-match), annars matchar t.ex. "test-facit-godkann.mjs" falskt
+#     eftersom den strängen råkar SLUTA på skriptnamnet (klass 3 ovan).
+#     Kommandot segmenteras på samma sätt som
+#     scripts/deny-arbetsform-push.sh:s `ar_git_push` (§ MÖNSTER-MATCHNING
+#     där) — `;`/`&`/`|` OCH varje `$(`/backtick-öppning — så ett kedjat
+#     `echo x && npm run facit:godkann` fångas fortfarande.
+#
+#     Kanal B kräver att skriv-vektorns MÅL (token efter `>`/`>>`, eller
+#     manifest-sökvägen NÅGONSTANS i SAMMA SEGMENT som `tee`/`sed -i`/
+#     `jq -i`) är manifestet — inte att manifest-sökvägen förekommer
+#     NÅGONSTANS i HELA kommandot, oavsett om den delen faktiskt skriver
+#     någonstans. `tee`/`sed -i`/`jq -i` förblir segment-scopade (inget
+#     exakt målfönster extraheras för dem) — samma medvetna, dokumenterade
+#     grovhet som deny-arbetsform-push.sh ("ingen fullständig shell-parser
+#     byggs"); § HELLRE FÖR BRETT gäller fortfarande där.
+#
+#   Källa: TASK-168-kortet (fem instanser + källor) ·
+#          scripts/deny-arbetsform-push.sh § MÖNSTER-MATCHNING
+#          (segmenterings-förlagan, "kommando-position, inte
+#          argument-position") · scripts/deny-grind-genom-pipe.sh (samma
+#          princip, den ANDRA riktningen: `grep "grind" fil | head` nämner
+#          men kör aldrig grinden)
 #
 # ═══ FAIL-OPEN, MEDVETET, OSCOPAT — LÄS INNAN DU ÄNDRAR NÅGOT HÄR ═══
 #
@@ -97,8 +141,10 @@
 #        edit.sh (Edit|Write-förlagan, medvetet BREDDAD här) ·
 #        scripts/deny-resend-send.sh (fail-closed-kontraktets motpol,
 #        MEDVETET EJ följd här — se § FAIL-OPEN ovan) ·
-#        scripts/deny-arbetsform-push.sh (steg 1-resonemanget, återanvänt)
-# Etablerad: TASK-167, 2026-08-08
+#        scripts/deny-arbetsform-push.sh (steg 1-resonemanget, återanvänt +
+#        segmenterings-/kommando-positions-tekniken, TASK-168)
+# Etablerad: TASK-167, 2026-08-08. Position i stället för fri substräng:
+#            TASK-168, 2026-08-09.
 
 set -uo pipefail
 
@@ -129,7 +175,8 @@ esac
 [[ -f "${FACIT_POLICY}" ]] || exit 0
 # shellcheck source=/dev/null
 source "${FACIT_POLICY}" || exit 0
-[[ -n "${FACIT_BILAGE_ROT:-}" && -n "${FACIT_MANIFEST_NAMN:-}" ]] || exit 0
+[[ -n "${FACIT_BILAGE_ROT:-}" && -n "${FACIT_MANIFEST_NAMN:-}" \
+    && -n "${FACIT_GODKANN_NPM_SCRIPT:-}" && -n "${FACIT_GODKANN_SKRIPT_NAMN:-}" ]] || exit 0
 [[ -f "${HELPER}" ]] || exit 0
 
 # ar_manifest_sokvag <path> — sant om sökvägen är formad som ett
@@ -138,6 +185,148 @@ source "${FACIT_POLICY}" || exit 0
 ar_manifest_sokvag() {
     local p="$1"
     [[ "${p}" == *"${FACIT_BILAGE_ROT}"*"${FACIT_MANIFEST_NAMN}" ]]
+}
+
+# ═══ Kanal A — kommando-POSITION (TASK-168) ═══
+#
+# _ar_facit_segmentera <command> — delar på `;`/`&`/`|` OCH på varje
+# `$(`/backtick-öppning (en substitution KÖR sitt innehåll även inbäddat i
+# en sträng) — samma delnings-PRINCIP som
+# scripts/deny-arbetsform-push.sh:s `ar_git_push` (§ MÖNSTER-MATCHNING där).
+# SKILJER SIG i ETT: separatorn är en MARKÖRSTRÄNG (`@@FACIT_SEG@@`), INTE
+# en nyradstecken. En heredoc-BODY (BD4-fallet: `cat <<EOF > sökväg` följt
+# av JSON-rader) bär EGNA, RIKTIGA nyradstecken som måste stanna INUTI sitt
+# segment — en nyrad som separator hade splittat en sådan body i flera
+# separata "segment" och därmed skilt en redirects MÅL från "godkand"-
+# nämningen på NÄSTA rad (mätt: BD4 föll igenom vid första implementationen
+# av denna fix, 2026-08-09 — differentialbevis i slutrapporten).
+_ar_facit_segmentera() {
+    local cmd="$1"
+    # shellcheck disable=SC2016  # enkelfnuttarna ÄR avsikten (se förlagan).
+    printf '%s' "${cmd}" \
+        | sed -e 's/\$(/@@FACIT_SEG@@/g' -e 's/`/@@FACIT_SEG@@/g' \
+        | sed -e 's/[;&|]/@@FACIT_SEG@@/g'
+}
+
+# _ar_facit_for_varje_segment <command> <funktionsnamn> — anropar
+# <funktionsnamn> med varje segment som enda argument (markör-delat, se
+# _ar_facit_segmentera ovan — INTE `read`/herestring, som hade återinfört
+# nyrads-splittringen). Returnerar 0 så fort <funktionsnamn> returnerar 0
+# för något segment, annars 1.
+_ar_facit_for_varje_segment() {
+    local cmd="$1" fn="$2" rest segment
+    rest="$(_ar_facit_segmentera "${cmd}")@@FACIT_SEG@@"
+    while [[ "${rest}" == *"@@FACIT_SEG@@"* ]]; do
+        segment="${rest%%@@FACIT_SEG@@*}"
+        rest="${rest#*@@FACIT_SEG@@}"
+        [[ -n "${segment//[[:space:]]/}" ]] || continue
+        "${fn}" "${segment}" && return 0
+    done
+    return 1
+}
+
+# _ar_facit_arg_ar_skriptet <arg> — sant om argumentet ÄR skriptfilen:
+# exakt namnet, eller namnet efter en `/`. INTE fri suffix-match — annars
+# matchar t.ex. "test-facit-godkann.mjs" (testsvitens EGET namn, som RÅKAR
+# SLUTA på skriptnamnet) falskt (mätt, klass 3).
+# shellcheck disable=SC2329  # anropas från _ar_facit_kanal_a_segment, som
+# i sin tur bara anropas INDIREKT via funktionsnamn (se
+# _ar_facit_for_varje_segment) — shellcheck spårar inte den kedjan.
+_ar_facit_arg_ar_skriptet() {
+    local a="${1:-}"
+    [[ "${a}" = "${FACIT_GODKANN_SKRIPT_NAMN}" || "${a}" = *"/${FACIT_GODKANN_SKRIPT_NAMN}" ]]
+}
+
+# _ar_facit_kanal_a_segment <segment> — sant om SEGMENTET faktiskt anropar
+# stämplingskanalen: `npm run <FACIT_GODKANN_NPM_SCRIPT>` (position 0 "npm",
+# 1 "run"/"run-script", 2 exakt scriptnamnet — vad som följer, t.ex.
+# `-- --pass x`, spelar ingen roll), `node <skriptsökväg>`, eller DIREKT
+# körning av skriptfilen (samma gränsregel).
+# shellcheck disable=SC2329  # anropas INDIREKT via funktionsnamn, se
+# _ar_facit_for_varje_segment (`"${fn}" "${segment}"`) — shellcheck spårar
+# inte namn-via-variabel-anrop.
+_ar_facit_kanal_a_segment() {
+    local seg="$1"
+    # shellcheck disable=SC2086  # avsiktlig ordklyvning — kommando-POSITION.
+    set -- ${seg}
+    case "${1:-}" in
+        npm | */npm)
+            shift
+            case "${1:-}" in
+                run | run-script) ;;
+                *) return 1 ;;
+            esac
+            shift
+            [[ "${1:-}" = "${FACIT_GODKANN_NPM_SCRIPT}" ]]
+            ;;
+        node | */node)
+            shift
+            _ar_facit_arg_ar_skriptet "${1:-}"
+            ;;
+        *)
+            _ar_facit_arg_ar_skriptet "${1:-}"
+            ;;
+    esac
+}
+
+# ar_facit_kanal_a <command> — sant om NÅGOT segment i kommandot faktiskt
+# anropar stämplingskanalen.
+ar_facit_kanal_a() {
+    _ar_facit_for_varje_segment "$1" _ar_facit_kanal_a_segment
+}
+
+# ═══ Kanal B — skriv-vektorns MÅL (TASK-168) ═══
+#
+# _ar_facit_redirect_mot_manifest <segment> — sant om NÅGOT redirect-mål
+# (token omedelbart efter `>`/`>>`) i segmentet är manifestet. Detta är den
+# direkta fixen för den mätta falska fällningen "python3-läsning via <<EOF
+# nämnde fältnamn+sökväg utan att skriva någonstans": en bar heredoc har
+# INGET redirect-mål alls, så den ger ingen träff här.
+# shellcheck disable=SC2329  # anropas från _ar_facit_kanal_b_segment, som
+# i sin tur bara anropas INDIREKT via funktionsnamn — se
+# _ar_facit_kanal_a_segment ovan för samma mönster.
+_ar_facit_redirect_mot_manifest() {
+    local seg="$1" traffar mal
+    traffar="$(printf '%s\n' "${seg}" | grep -oE '>>?[[:space:]]*[^[:space:]<>]+' | sed -E 's/^>>?[[:space:]]*//')" || true
+    [[ -n "${traffar}" ]] || return 1
+    while IFS= read -r mal; do
+        [[ -n "${mal}" ]] || continue
+        ar_manifest_sokvag "${mal}" && return 0
+    done <<< "${traffar}"
+    return 1
+}
+
+# _ar_facit_kanal_b_segment <segment> — sant om SEGMENTET nämner "godkand"
+# OCH har en skriv-vektor vars mål (redirect) eller vars SEGMENT (tee/
+# sed -i/jq -i — segment-scopat, se hookens huvud § TASK-168) är
+# manifestet.
+# shellcheck disable=SC2329  # anropas INDIREKT via funktionsnamn, se
+# _ar_facit_for_varje_segment (`"${fn}" "${segment}"`).
+_ar_facit_kanal_b_segment() {
+    local segment="$1"
+    [[ "${segment}" == *"godkand"* ]] || return 1
+
+    _ar_facit_redirect_mot_manifest "${segment}" && return 0
+
+    if ar_manifest_sokvag "${segment}"; then
+        [[ "${segment}" =~ (^|[[:space:]])tee([[:space:]]|$) ]] && return 0
+        [[ "${segment}" =~ sed[[:space:]].*-i ]] && return 0
+        [[ "${segment}" =~ jq[[:space:]].*-i ]] && return 0
+    fi
+    return 1
+}
+
+# ar_facit_kanal_b <command> — sant om NÅGOT SEGMENT matchar
+# _ar_facit_kanal_b_segment. Segmenteringen (samma som Kanal A) är i sig en
+# del av fixen: en manifest-sökväg nämnd i ETT LEDLÖST kommando i en kedja
+# fäller inte ett helt ANNAT, ofarligt kommando i SAMMA kedja. Den billiga
+# helkommando-prefiltreringen ("godkand" nämnt ÖVERHUVUDTAGET) körs FÖRST
+# så segmenteringen (en process, tre pipe-led) hoppas över för den
+# överväldigande majoriteten av Bash-anrop som aldrig nämner ordet alls.
+ar_facit_kanal_b() {
+    local cmd="$1"
+    [[ "${cmd}" == *"godkand"* ]] || return 1
+    _ar_facit_for_varje_segment "${cmd}" _ar_facit_kanal_b_segment
 }
 
 case "${TOOL_NAME}" in
@@ -167,19 +356,19 @@ case "${TOOL_NAME}" in
         COMMAND="$(printf '%s' "${INPUT}" | jq -r '.tool_input.command // empty' 2> /dev/null)"
         [[ -n "${COMMAND}" ]] || exit 0
 
-        # Kanal A — direkt anrop av Marcus egen stämplingskanal. Se
-        # skriptets huvud för varför detta är ett EGET, oberoende nät.
-        if [[ "${COMMAND}" == *"facit:godkann"* || "${COMMAND}" == *"facit-godkann.mjs"* ]]; then
-            neka "Bash-kommandot anropar Marcus egen stämplingskanal (npm run facit:godkann / scripts/facit-godkann.mjs) direkt. Detta skript körs ENDAST av Marcus via !-prefixet (ADR-104 § Beslut 2)."
+        # Kanal A — direkt anrop av Marcus egen stämplingskanal, matchat
+        # på KOMMANDO-POSITION (TASK-168). Se skriptets huvud för varför
+        # detta är ett EGET, oberoende nät, och § TASK-168 för fixen.
+        if ar_facit_kanal_a "${COMMAND}"; then
+            neka "Bash-kommandot ANROPAR (kommando-position, inte fri text) Marcus egen stämplingskanal (npm run ${FACIT_GODKANN_NPM_SCRIPT} / ${FACIT_GODKANN_SKRIPT_NAMN}) direkt. Detta skript körs ENDAST av Marcus via !-prefixet (ADR-104 § Beslut 2)."
         fi
 
-        # Kanal B — generisk JSON-mutation mot manifestet. Kräver alla tre:
-        # "godkand" nämnt, en manifest-sökväg nämnd, ETT skriv-vektor-
-        # mönster. Se § HELLRE FÖR BRETT för varför ren substräng räcker.
-        if [[ "${COMMAND}" == *"godkand"* ]] \
-            && { [[ "${COMMAND}" == *"${FACIT_BILAGE_ROT}"* ]] || [[ "${COMMAND}" == *"${FACIT_MANIFEST_NAMN}"* ]]; } \
-            && { [[ "${COMMAND}" == *">"* ]] || [[ "${COMMAND}" == *"<<"* ]] || [[ "${COMMAND}" == *"tee"* ]] || [[ "${COMMAND}" =~ sed[[:space:]].*-i ]] || [[ "${COMMAND}" =~ jq[[:space:]].*-i ]]; }; then
-            neka "Bash-kommandot mönstermatchar en skrivning mot ett facit-manifest som nämner \"godkand\" (heredoc/redirect/tee/sed/jq-väg)."
+        # Kanal B — generisk skrivning MOT manifestet, matchad på
+        # skriv-vektorns MÅL i stället för fri substräng (TASK-168). Kräver
+        # "godkand" nämnt i SAMMA SEGMENT som skriv-vektorn. Se § HELLRE
+        # FÖR BRETT för varför tee/sed -i/jq -i förblir segment-scopade.
+        if ar_facit_kanal_b "${COMMAND}"; then
+            neka "Bash-kommandot skriver (redirect/tee/sed -i/jq -i) MOT ett facit-manifest som nämner \"godkand\"."
         fi
         ;;
     *)

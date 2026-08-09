@@ -22,16 +22,41 @@
 #            farligaste bypass-vägen — skriptet skriver fältet korrekt
 #            formaterat, ingen heredoc-heuristik hade fångat den), `node
 #            scripts/facit-godkann.mjs` direkt (kanal A, samma skäl),
-#            redirect (kanal B), heredoc (kanal B), `sed -i` (kanal B).
+#            redirect (kanal B), heredoc+redirect (kanal B), `sed -i`
+#            (kanal B).
+#   BD6–BD7  Bash NEKAS, KEDJADE FORMER (TASK-168 — segmenteringen får
+#            INTE försvaga skyddet): kanal A efter `&&`, kanal B efter `&&`
+#            med redirect-mål = manifestet.
 #   BA1–BA4  Bash SLÄPPER: läsning utan skriv-vektor, "godkand" nämnt utan
 #            manifest-sökväg, manifest-sökväg + redirect utan "godkand",
 #            ett helt orelaterat kommando.
-#   F1–F7    FAIL-OPEN (medvetet, oscopat — se hookens § FAIL-OPEN):
+#   BA5–BA11 Bash SLÄPPER, TASK-168:s FEM MÄTTA FALSK-POSITIVA KLASSER
+#            (kortets Description + notes, 2026-08-08/09) + en direkt
+#            regressionsbevisning av Kanal B:s mål-isolering:
+#              BA5  klass 2 — grep NÄMNER skriptets filnamn (läser, kör inte)
+#              BA6  klass 2 — `git add` NÄMNER skriptet + dess testsvit
+#              BA7  klass 3 — kör facit-godkann.mjs:s EGEN testsvit
+#                   (`node scripts/test-facit-godkann.mjs`; "test-" + namnet
+#                   RÅKAR sluta på skriptnamnet — suffix-fällan den gamla
+#                   substräng-matchningen gick i)
+#              BA8  klass 1 — python3-heredoc som bara LÄSER manifestet
+#                   (`open()`, ingen egen skriv-operation i segmentet)
+#              BA9  klass 4 — `backlog task create -d "..."` vars
+#                   payload-TEXT nämner stämplingskommandot
+#              BA10 klass 5 — `backlog task edit --append-notes "..."` vars
+#                   notes-TEXT nämner skriptets filnamn
+#              BA11 regression — manifestet NÄMNS (grep-mål) OCH "godkand"
+#                   nämns OCH kommandot har en redirect, men redirect-MÅLET
+#                   är en ANNAN fil — bevisar att Kanal B nu kräver att
+#                   MÅLET är manifestet, inte bara att båda förekommer
+#                   någonstans i kommandot
+#   F1–F8    FAIL-OPEN (medvetet, oscopat — se hookens § FAIL-OPEN):
 #            jq saknas, node saknas, tom stdin, trasig JSON, tool_name
-#            saknas, tool_name utanför {Edit,Write,Bash}, policyn saknas.
-#            SAMTLIGA prövas med ett i övrigt NEKANDE kommando/innehåll —
-#            om hooken släpper HÄR är den garanterat fail-open i det
-#            svagare fallet också.
+#            saknas, tool_name utanför {Edit,Write,Bash}, policyn saknas,
+#            policyn saknar de TVÅ NYA TASK-168-variablerna (finns men
+#            ofullständig). SAMTLIGA prövas med ett i övrigt NEKANDE
+#            kommando/innehåll — om hooken släpper HÄR är den garanterat
+#            fail-open i det svagare fallet också.
 #   E1       Exit-koden på en deny-väg är EXAKT 2.
 #
 # Test-isolering: TEST_DIR är en /tmp-sandlåda med KOPIOR av hooken, dess
@@ -76,6 +101,8 @@ setup() {
     cat > "${TEST_DIR}/.facit-policy.conf" <<'CONF'
 FACIT_BILAGE_ROT="bilagor"
 FACIT_MANIFEST_NAMN="facit.json"
+FACIT_GODKANN_NPM_SCRIPT="facit:godkann"
+FACIT_GODKANN_SKRIPT_NAMN="facit-godkann.mjs"
 CONF
     cat > "${MANIFEST}" <<'JSON'
 {
@@ -251,18 +278,30 @@ EXPECT_OUT="stämplingskanal"
 run_case "BD2  Bash kör 'node scripts/facit-godkann.mjs' DIREKT NEKAS (kanal A)" 2 "${JSON}"
 
 JSON="$(hook_json_bash "echo '{\"godkand\":\"2026-08-08\"}' >> ${MANIFEST_REL}")"
-EXPECT_OUT="heredoc/redirect/tee/sed/jq"
+EXPECT_OUT="MOT ett facit-manifest"
 run_case "BD3  Bash-redirect mot manifestet som nämner godkand NEKAS (kanal B)" 2 "${JSON}"
 
 JSON="$(hook_json_bash "cat <<EOF > ${MANIFEST_REL}
 {\"godkand\": {\"av\": \"agent\"}}
 EOF")"
-EXPECT_OUT="heredoc/redirect/tee/sed/jq"
-run_case "BD4  Bash-heredoc mot manifestet som nämner godkand NEKAS (kanal B)" 2 "${JSON}"
+EXPECT_OUT="MOT ett facit-manifest"
+run_case "BD4  Bash-heredoc+redirect mot manifestet som nämner godkand NEKAS (kanal B)" 2 "${JSON}"
 
 JSON="$(hook_json_bash "sed -i 's/\"godkand\": null/\"godkand\": {}/' ${MANIFEST_REL}")"
-EXPECT_OUT="heredoc/redirect/tee/sed/jq"
+EXPECT_OUT="MOT ett facit-manifest"
 run_case "BD5  Bash 'sed -i' mot manifestet som nämner godkand NEKAS (kanal B)" 2 "${JSON}"
+
+# ============================================================
+# BD6–BD7 — Bash NEKAS, KEDJADE FORMER (TASK-168: segmenteringen får INTE
+# försvaga skyddet jämfört med den gamla fria substräng-matchningen).
+echo ""
+JSON="$(hook_json_bash 'echo hej && npm run facit:godkann -- --pass test-pass --citat fusk')"
+EXPECT_OUT="stämplingskanal"
+run_case "BD6  kanal A EFTER && i en kedja NEKAS (segmenteringen tappar inte skyddet)" 2 "${JSON}"
+
+JSON="$(hook_json_bash "ls scripts/ && echo '{\"godkand\":\"2026-08-08\"}' >> ${MANIFEST_REL}")"
+EXPECT_OUT="MOT ett facit-manifest"
+run_case "BD7  kanal B EFTER && i en kedja NEKAS (redirect-mål = manifestet)" 2 "${JSON}"
 
 # ============================================================
 # BA1–BA4 — Bash SLÄPPER. Den viktigaste halvan — falsklarm kostar
@@ -285,7 +324,44 @@ NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
 run_case "BA4  helt orelaterat kommando SLÄPPS" 0 "${JSON}"
 
 # ============================================================
-# F1–F7 — FAIL-OPEN (medvetet, oscopat — se hookens § FAIL-OPEN).
+# BA5–BA11 — Bash SLÄPPER, TASK-168:s FEM MÄTTA FALSK-POSITIVA KLASSER +
+# en direkt regressionsbevisning av Kanal B:s mål-isolering. Se skriptets
+# eget huvud för klass-till-testfall-kartan.
+echo ""
+JSON="$(hook_json_bash "grep -n 'facit-godkann.mjs' scripts/deny-facit-godkand-skrivning.sh")"
+NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
+run_case "BA5  klass 2: grep NÄMNER skriptets filnamn (läser, kör inte) SLÄPPS" 0 "${JSON}"
+
+JSON="$(hook_json_bash 'git add scripts/facit-godkann.mjs scripts/test-facit-godkann.mjs')"
+NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
+run_case "BA6  klass 2: 'git add' NÄMNER skriptet + dess testsvit SLÄPPS" 0 "${JSON}"
+
+JSON="$(hook_json_bash 'node scripts/test-facit-godkann.mjs')"
+NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
+run_case "BA7  klass 3: kör facit-godkann.mjs:s EGEN testsvit SLÄPPS (suffix-fällan)" 0 "${JSON}"
+
+JSON="$(hook_json_bash "python3 <<'PYEOF'
+import json
+d = json.load(open('${MANIFEST_REL}'))
+print(d['godkand'])
+PYEOF")"
+NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
+run_case "BA8  klass 1: python3-heredoc som bara LÄSER manifestet SLÄPPS" 0 "${JSON}"
+
+JSON="$(hook_json_bash 'npx backlog task create "Titel" -d "Kör npm run facit:godkann för att godkänna passet"')"
+NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
+run_case "BA9  klass 4: 'task create -d' vars TEXT nämner stämplingskommandot SLÄPPS" 0 "${JSON}"
+
+JSON="$(hook_json_bash "npx backlog task edit 168 --append-notes 'Se scripts/facit-godkann.mjs för detaljer'")"
+NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
+run_case "BA10 klass 5: 'task edit --append-notes' vars TEXT nämner filnamnet SLÄPPS" 0 "${JSON}"
+
+JSON="$(hook_json_bash "grep godkand ${MANIFEST_REL} > /tmp/kopia-168.txt")"
+NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
+run_case "BA11 regression: manifest+godkand nämnda, men redirect-MÅLET är EN ANNAN fil SLÄPPS" 0 "${JSON}"
+
+# ============================================================
+# F1–F8 — FAIL-OPEN (medvetet, oscopat — se hookens § FAIL-OPEN).
 # Samtliga prövas med ett i övrigt NEKANDE kommando.
 echo ""
 DENY_JSON="$(hook_json_bash 'npm run facit:godkann -- --pass test-pass --citat fusk')"
@@ -319,6 +395,18 @@ run_case "F6  tool_name utanför {Edit,Write,Bash} (Read) SLÄPPS" 0 "${JSON}"
 NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
 run_case "F7  fail-open: policyn saknas HELT SLÄPPS trots nekande kommando" 0 "${DENY_JSON}" \
     "FACIT_GODKANN_POLICY=/finns/inte/.facit-policy.conf"
+
+# F8 — policyn FINNS men saknar de TVÅ NYA TASK-168-variablerna (t.ex. en
+# ouppdaterad policy-fil kvarlämnad från före denna fix). En egen,
+# ofullständig policy-fixtur skrivs bredvid den normala.
+OFULLSTANDIG_POLICY="${TEST_DIR}/.facit-policy-ofullstandig.conf"
+cat > "${OFULLSTANDIG_POLICY}" <<'CONF'
+FACIT_BILAGE_ROT="bilagor"
+FACIT_MANIFEST_NAMN="facit.json"
+CONF
+NOT_EXPECT_OUT="FACIT-GODKÄNNANDETS"
+run_case "F8  fail-open: policyn saknar FACIT_GODKANN_*-variablerna SLÄPPS trots nekande kommando" 0 "${DENY_JSON}" \
+    "FACIT_GODKANN_POLICY=${OFULLSTANDIG_POLICY}"
 
 # ============================================================
 # E1 — exit-koden på en deny-väg är EXAKT 2.

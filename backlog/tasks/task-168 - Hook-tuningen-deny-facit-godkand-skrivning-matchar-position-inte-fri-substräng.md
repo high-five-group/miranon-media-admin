@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-09 07:18'
-updated_date: '2026-08-09 08:30'
+updated_date: '2026-08-09 08:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,15 +21,23 @@ Uppföljning av ADR-104-hooken (task-167). Mätt friktion 2026-08-08 (två insta
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 De tre mätta falsk-positiva klasserna släpps igenom — tvåsidigt bevisat i testsviten
-- [ ] #2 Samtliga befintliga deny-fall fäller fortfarande — ingen försvagning av skyddet
-- [ ] #3 Skarpbevis eller öppen skuld bokförd per L450-regeln
+- [x] #1 De tre mätta falsk-positiva klasserna släpps igenom — tvåsidigt bevisat i testsviten
+- [x] #2 Samtliga befintliga deny-fall fäller fortfarande — ingen försvagning av skyddet
+- [x] #3 Skarpbevis eller öppen skuld bokförd per L450-regeln
 <!-- AC:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 FJÄRDE mätta falsk-positiva klassen (2026-08-09, S93): ett backlog task create-anrop vars DESCRIPTION-text NÄMNER stämplingskommandot fälldes av hooken — payload-text i ett CLI-anrop är inte en anropsväg. Omformulering krävdes för att publicera skiva 171.4. Substräng-matchningen träffar alltså även kort-/dok-TEXT som passerar genom Bash-argument, inte bara faktiska kommandon.
+
+Bokföring av klass 5 (uppdragets instruktion, borde skett FÖRST — gjordes efter diagnos/fix i stället; avvikelse flaggad öppet): 'backlog task edit --append-notes' vars notes-TEXT innehöll stämplingsskriptets filnamn som substräng föll för Kanal A:s gamla fria substräng-matchning (samma rotorsak som klass 4, en annan CLI-väg). KÄLLGRANSKNING: PR #1034:s body (gh pr view 1034 --json body) och kortfilen för task-169 innehåller INTE denna instans verbatim vid granskning 2026-08-09 — uppdragets källhänvisning till "PR #1034:s beskrivning" kunde INTE independent verifieras (sökt: grep mot task-169-kortet och PR-kommentarer, båda tomma träffar). Klass 5 räknas ändå som verifierad HYPOTES->BEVISAD via en ANNAN väg: jag reproducerade SAMMA rotorsaksklass (Kanal A fri substräng på skriptets filnamn) LIVE två gånger i denna session mot den ännu olastade hooken (grep-kommandon nekade felaktigt), vilket bekräftar mekanismen oavsett om PR #1034-källan gick att lokalisera.
+
+Fix levererad (TASK-168): scripts/deny-facit-godkand-skrivning.sh Kanal A matchar nu kommando-POSITION (npm run <script> pos 0/1/2, node/direkt-exec pos 0/1, med exakt gräns EFTER '/' — inte fri suffix-match, vilket annars falsk-fällde körning av stämplingsskriptets EGEN testsvit eftersom det filnamnet råkar sluta på skriptnamnet). Kanal B kräver nu att skriv-vektorns MÅL (redirect-token, eller manifest-sökväg i SAMMA segment som tee/sed -i/jq -i) är manifestet, inte fri substräng över hela kommandot. Segmentering (;/&/|/$(/backtick) återanvänder deny-arbetsform-push.sh:s teknik, men med en MARKÖRSTRÄNG i stället för nyradstecken som separator — en nyrads-baserad segmentering visade sig FELAKTIGT splittra en heredoc-BODY (BD4-testfallet) i flera delar och skilde därmed en redirects mål från "godkand"-nämningen på nästa rad; fångat av testsviten själv under bygget (BD4 föll vid första implementationen, grönt efter marköromskrivningen) — se PR-beskrivningen för fullt differentialbevis.
+
+Nya config-värden i .facit-policy.conf (FACIT_GODKANN_NPM_SCRIPT, FACIT_GODKANN_SKRIPT_NAMN) ersätter de tidigare hardkodade strängarna i hook-skriptet, per uppdragets krav #3.
+
+L450/skarpbevis: settings.json ORÖRT (endast skriptets INNEHÅLL ändrat) — men EMPIRISKT MÄTT i denna session att den levande PreToolUse-hooken som facto avfyras mot HUVUDKATALOGENS kopia av scriptet (via ${CLAUDE_PROJECT_DIR:-.}), INTE mot denna worktrees redigerade fil (verifierat: huvudkatalogens scripts/deny-facit-godkand-skrivning.sh är fortfarande 194 rader = originalversionen; ett grep-kommando som borde släppas genom den NYA logiken nekades ändå av den GAMLA meddelandetexten). Detta är alltså INTE L450:s mitt-i-sessionen-omladdningsfråga utan en SEPARAT, redan dokumenterad worktree-isolering-fråga (CLAUDE.md § Worktree-isoleringens gräns). Skarpbevis för logiken levererat i stället via DIREKT manuell körning av denna worktrees skriptfil (hook-JSON på stdin, äkta deny-fall faller, de fem falsk-positiva klasserna släpper) — se PR-beskrivningen för fullt utdrag.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
