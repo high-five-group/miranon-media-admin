@@ -109,7 +109,7 @@ async function oppnaSidan(page: Page): Promise<void> {
   await expect(page.getByTestId('eventet-block')).toBeVisible();
 }
 
-test.describe('Skicka test till mig — testmailets sändväg mot send-action-email (TASK-147.10 AC #1-#2)', () => {
+test.describe('Skicka till min inkorg — testmailets sändväg mot send-action-email (TASK-147.10 AC #1-#2)', () => {
   test('POST med testSend:true + EXAKT den FÖRSTA mottagaren, ingen mottagare i urvalet berörd, granska-läget orört', async ({
     page,
   }) => {
@@ -123,7 +123,7 @@ test.describe('Skicka test till mig — testmailets sändväg mot send-action-em
     // Riggen är BORTA för bekräftelse (TASK-147.2) — oförändrat av denna skiva.
     await expect(page.getByText('Prototyp-rigg.')).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Skicka test till mig' }).click();
+    await page.getByRole('button', { name: 'Skicka till min inkorg' }).click();
 
     // Body-kontraktet mot EF:ens testgren (TASK-147.10).
     await expect.poll(() => sentBody()).not.toBeNull();
@@ -140,8 +140,10 @@ test.describe('Skicka test till mig — testmailets sändväg mot send-action-em
 
     // Bekräftelsen — scopad mot texten (INTE en global getByText: "Eva
     // Lindqvist" förekommer på flera DOM-platser, samma scope-fälla dagens
-    // fix-våg (f5da0a1f) dokumenterar för denna filklass).
-    await expect(page.getByText(/^Testmail skickat till /)).toBeVisible();
+    // fix-våg (f5da0a1f) dokumenterar för denna filklass). Kopian bytte form
+    // (S102, Marcus form-beslut A): "Testmail skickat till X." → "Skickat
+    // till X" — etiketten "Testmail" står redan till vänster om raden.
+    await expect(page.getByText(/^Skickat till /)).toBeVisible();
 
     // FORTFARANDE GRANSKA-LÄGET, ingen mottagare avmarkerad — testmailet
     // rör inte den verkliga sändningens tillstånd.

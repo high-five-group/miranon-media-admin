@@ -4,7 +4,7 @@ title: 'Skiva: Testmail till mig — se mailet som mottagaren ser det'
 status: In Progress
 assignee: []
 created_date: '2026-08-10 07:40'
-updated_date: '2026-08-10 14:03'
+updated_date: '2026-08-10 19:52'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,6 +34,14 @@ Täcker: förlängning av användarberättelse 9; T53.
 - [x] #4 T53-tråden stängd med pekare hit
 <!-- AC:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -44,12 +52,15 @@ ARIA-DELTA (facit-låst granskningsläge, tasks/sessions/bilagor/s93-atgardssida
 T53-trådstängning (AC #4): tasks/threads/T53-test-till-sig-sjalv-skicka.md Tillstånd paused → closed (väg C byggd, arkitekturfrågan besvarad — kortets EGEN Done-flipp är separat, orkestrator-ägd). tasks/threads/README.md indexraden uppdaterad till samma status + pekare.
 
 Grindar (mätta, exitkoder separat lästa — aldrig genom pipe): npm run typecheck exit 0 · npx @biomejs/biome check . exit 0 (endast förbefintliga varningar/infos i base.css/test-bas.ts, ovidrörda av denna skiva) · npm run build exit 0 · npm run test:api 545 passed. Nya/ändrade sviter: tests/api/send-action-email.test.ts § runActionTestSend 31/31 (varav 9 nya testmail-fall) · tests/acceptance/atgarder-testmail-send.acceptance.test.ts 4/4 (ny fil, MSW-mockad) · tests/e2e/atgarder-testmail.staging.test.ts (ny fil, page.route-mockad — LOKALT EJ KÖRT: port 5173 bär en levande Marcus dev-server-process, PID 50138, lsof-verifierat; endast typecheck+biome-verifierad per 147.2-precedentet, skarp körning betalas av PR-CI) · regressionskörning: tests/acceptance/atgarder-bekraftelsemail-send.acceptance.test.ts + atgarder-paminnelse-eventinfo-fritt-send.acceptance.test.ts 6/6 · tests/visual/atgardssida-promoverings-grind.spec.ts 40/40 (visual-desktop + visual-mobile).
-<!-- SECTION:NOTES:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
+---
+S102-ITERATIONEN (A-iterationen per Marcus form-beslut, samma session som byggde 147.10): Marcus underkände den ursprungliga fristående intent="secondary"-knappen ("tråkig och passar inte in") och valde alternativ A — raden flyttades IN i grupp "Utskicket" (DetaljGrupp id="grupp-granska-utskicket") som en EGEN rad efter Bilagor-raden, med etikett "Testmail" vänster (samma text-small text-text-muted som Bilagor/Ämne) och en intent="ghost"-textknapp höger, samma affordance som SkrivUtKort (Atgarder.tsx:238). Knapptexten bytte till "Skicka till min inkorg" + Send-ikon (lucide, size 12, samma storleksklass som Bilagor-radens Paperclip). Utfallet ERSÄTTER knappen i samma höger-slot (både lyckat och fel-fall) i stället för att stå under den; aria-live="polite" flyttade med samma slot. Kopian bytte samtidigt: "Testmail skickat till X." blev "Skickat till X" (etiketten "Testmail" står redan till vänster).
+
+Fil: src/components/events/atgarder/AtgardsSida.tsx (raden flyttad in i DetaljGrupp, docblocken bevarade + plats-tillägg). forsta-villkoret, disabled-logiken och mutationen/state (sendActionTestEmail/testUtfall) OFÖRÄNDRADE, ren form-ändring.
+
+Testsynk: tests/acceptance/atgarder-testmail-send.acceptance.test.ts (4/4 grön, selektorer + success-kopia synkade) + tests/e2e/atgarder-testmail.staging.test.ts (selektor + success-regex synkade, LOKALT EJ KÖRT, port 5173 upptaget av Marcus dev-server, lsof-verifierat PID 71100 LISTEN, typecheck+biome-verifierad, samma precedent som ursprungliga 147.10-bygget).
+
+ARIA-DELTA (facit uppdaterat via playwright test --update-snapshots, granskat rad-för-rad): samma delta i BÅDA atgarder-granskning-visual-desktop.aria.yml och atgarder-granskning-visual-mobile.aria.yml. Från: text-rad "Bilagor Inga" följt av button "Skicka test till mig" (utanför region "Utskicket"). Till: text-rad "Bilagor Inga Testmail" (etiketten smälte samman med Bilagor-radens text) följt av button "Skicka till min inkorg" (nu INNANFÖR region "Utskicket"). Oförändrat radantal (2 rader). Noll aria-diff utanför granskningsvyn, git status verifierat mot hela __aria__-katalogen, endast dessa två filer rörda.
+
+Grindar (mätta, exitkoder separat lästa): node scripts/check-langa-streck.mjs exit 0. node scripts/check-mailto.mjs exit 0. npx @biomejs/biome check --write . (inga fixar, redan rent). npm run typecheck exit 0. npx @biomejs/biome check . exit 0 (endast förbefintliga varningar/infos i base.css/test-bas.ts, ovidrörda). npm run build exit 0. npm run test:api 596 passed. tests/acceptance/atgarder-testmail-send.acceptance.test.ts 4/4. Regressionskörning atgarder-bekraftelsemail-send + atgarder-paminnelse-eventinfo-fritt-send 6/6. tests/visual/atgardssida-promoverings-grind.spec.ts 40/40 (visual-desktop + visual-mobile, inklusive axe 0 överträdelser på granskningsläget).
+<!-- SECTION:NOTES:END -->
