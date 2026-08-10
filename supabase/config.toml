@@ -133,6 +133,22 @@ verify_jwt = true
 [functions.finalize-attachment-upload]
 verify_jwt = true
 
+# generate-event-attachment — TASK-146.5 "Klass B — event-mallad generering
+# ur systemmall" (PRD task-146, bilage-fundamentet). Till skillnad mot
+# test-pdf-generation/test-attachments-storage ÄR detta INGEN test-only
+# harness — den genererar en riktig "Deltagarinformation"-PDF ur en
+# hårdkodad systemmall och skriver den som en riktig Bilagor-rad (samma
+# fältform som en uppladdad bilaga, se index.ts § AC #4). requireUser
+# grindar faktiskt anropet — samma nivå som create-event-note/create-event
+# (ingen extra ADMIN_EMAILS-gate, ingen kontohantering). MEDVETET
+# UTELÄMNAD ur .prod-functions-allowlist.conf tills vidare: ingen UI-yta
+# anropar den ännu (Åtgärds-sidan/bilageväljaren är PRD:ns kort 3) —
+# fail-closed default (samma resonemang som .prod-functions-allowlist.conf
+# § header) tills en verklig konsument finns. Se funktionens filhuvud för
+# fullt resonemang, inklusive samtidighets-noten om TASK-146.4.
+[functions.generate-event-attachment]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #
