@@ -1,10 +1,10 @@
 ---
 id: TASK-147.8
 title: 'Skiva: Mailto-rivningen, grå löftena och namnet'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-10 07:04'
-updated_date: '2026-08-10 17:50'
+updated_date: '2026-08-10 18:16'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,15 +32,6 @@ Täcker användarberättelse 14 fullbordad (stämplingslögnen helt stängd).
 - [x] #4 Namnkollisionen löst per Marcus-beslutet i kortets notes
 <!-- AC:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [x] #5 Mailto-frånvaron mekaniskt fälld: noll mailto-vägar kvar (PRD DoD 6-arv)
-<!-- DOD:END -->
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -50,3 +41,18 @@ AC #4 (namnkollisionen) krävde en tolkning: ingen synlig rubrik "Åtgärder" fi
 
 FYND, ej åtgärdat (utanför scope, orelaterad fil): npm run test:api visar 570/571 - tests/api/generate-event-attachment.staging.test.ts:164 fäller pa ett hardkodat 4-fält-antagande (fields-set) som blev falskt när TASK-147.5 (redan landad på main, commit 9742334a) lade till Lagringsnyckel-fältet i samma EF utan att uppdatera detta tests assertion. Verifierat FORE mina ändringar (git diff origin/main mot filen är tom) och verifierat att detta INTE gatear PR-ytan (ci-suite.yml test-staging-jobbet är if: inputs.run_staging, villkorslöst false på PR-ytan per .ci-parity-policy.json). Rekommenderas en egen liten fix-skiva eller tråd-registrering - ej gjort här (skulle ha krävt en fil utanför denna skivas scope).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Done S102 batch ⑭ (Marcus tak-utvidgning i klartext 'Kör 147.8 också, koppla ingången'): PR #1133, merge 1b5b7592, commit 8535fc8e. Ingången kopplad (AtgarderKort → HandlingsLank-navigation), mailto-grinden byggd med tvåsidigt bevis (check-mailto.mjs + policy + 13-kontrollers självtest), PrototypRigg riven, namnet per Marcus-beslut. Aria-delta: atgarder-kort button→link (eventsidans facit), dokumenterat. CI grön per jobb via kön.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Mailto-frånvaron mekaniskt fälld: noll mailto-vägar kvar (PRD DoD 6-arv)
+<!-- DOD:END -->
