@@ -128,8 +128,18 @@ test.describe('Skicka betalningspåminnelse — verklig sändväg mot send-actio
     await oppnaSidan(page);
 
     await page.getByRole('button', { name: /deltagare markerade/ }).click();
-    await expect(page.getByText('Eva Lindqvist')).toBeVisible();
-    await expect(page.getByText('Johan Berg')).toBeVisible();
+    // Scopat till deltagarlistans namn-span (`data-testid="deltagar-namn"`,
+    // `AtgardsSida.tsx` § `DeltagarKortInnehall`) — SAMMA komponentträd som
+    // `atgarder-bekraftelsemail.staging.test.ts` (TASK-147.2), där otextscopad
+    // `getByText` matchade FYRA element (sr-only-sammanfattningen,
+    // mottagar-preview-badgen, deltagarkortet och den alltid-monterade-men-
+    // `hidden` Betalnings-panelens namnrad) och gav Playwrights strict-mode-fel
+    // (post-merge-run 31387516343, issue #1113). `data-testid="deltagar-namn"`
+    // sätts ENDAST på deltagarkortets namn-span, så filtreringen är unik.
+    await expect(
+      page.getByTestId('deltagar-namn').filter({ hasText: 'Eva Lindqvist' }),
+    ).toBeVisible();
+    await expect(page.getByTestId('deltagar-namn').filter({ hasText: 'Johan Berg' })).toBeVisible();
 
     await page.getByRole('button', { name: /Skicka betalningspåminnelse/ }).click();
     await page.getByRole('button', { name: 'Granska och skicka' }).click();
