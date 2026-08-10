@@ -1252,10 +1252,13 @@ function SegmentLista({
         <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
           Segment
         </h1>
+        {/* Marcus text verbatim (2026-08-10, resume-varvet). Den tidigare
+            tredje meningen ("Flera grupper i samma utskick: markera dem")
+            ströks i och med bytet — markera-funktionen får bära sig själv. */}
         <p className="text-small text-text-muted">
-          Grupper av personer du kan skicka riktade mail till. Spara en grupp och återanvänd den -
-          antalet räknas om varje gång, så det stämmer även när fler har gått en kurs. Flera grupper
-          i samma utskick: markera dem.
+          Grupper av personer som du kan skicka riktade mail till. Spara en grupp och återanvänd den
+          - antalet räknas upp automatiskt, så antalet stämmer även när fler personer tillfaller
+          segmentet.
         </p>
       </header>
 
