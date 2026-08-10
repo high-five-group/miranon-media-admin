@@ -1,0 +1,6 @@
+- searchbox "Sök person": zzz
+- button "Rensa sökningen"
+- status
+- status:
+  - paragraph: Inga träffar
+  - paragraph: Ingen person matchar "zzz".

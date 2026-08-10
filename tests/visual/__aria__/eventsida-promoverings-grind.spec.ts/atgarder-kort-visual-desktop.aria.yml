@@ -1,1 +1,2 @@
-- button "Gå till åtgärder"
+- link "Gå till åtgärder":
+  - /url: /event/recVisualEvent0001/atgarder

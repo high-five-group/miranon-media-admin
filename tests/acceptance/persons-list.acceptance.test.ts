@@ -110,7 +110,7 @@ test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
 
     // Sida 1.
     await expect(list.getByRole('listitem')).toHaveCount(2);
-    await expect(page.getByText('2 personer laddade (fler finns).')).toBeVisible();
+    await expect(page.getByText('Visar 2 personer (fler finns).')).toBeVisible();
     await expect(loadMore).toBeVisible();
 
     // Sida 2 appendas (cursor c1). Knappen finns kvar (fler sidor).
@@ -126,30 +126,40 @@ test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
     await expect(list.getByRole('listitem')).toHaveCount(5);
     await expect(loadMore).toHaveCount(0);
     // A11y: fokus tappas inte — flyttas till status-raden när knappen försvinner.
-    await expect(page.getByText('5 personer laddade.')).toBeFocused();
+    await expect(page.getByText('Visar 5 personer.')).toBeFocused();
   });
 
   test('DoD 5 — sökning skriver ?q och filtrerar via server-param', async ({ page }) => {
     await page.goto('/personer');
-    await expect(page.getByText('2 personer laddade (fler finns).')).toBeVisible();
+    await expect(page.getByText('Visar 2 personer (fler finns).')).toBeVisible();
 
     await page.getByRole('searchbox', { name: 'Sök person' }).fill('Person 00');
 
     await expect(page).toHaveURL(/[?&]q=Person/);
-    await expect(page.getByText('1 person laddade för "Person 00".')).toBeVisible();
+    // Den promoverade formens copy (ADR-103 B2 steg 1). Den GAMLA lydelsen
+    // ("1 person laddade för …") asserterade en grammatikbugg: verbet böjdes
+    // efter antalet. Konvergensens k09 rev den genom KONSTRUKTION — "Visar"
+    // böjs inte — så buggen kan inte återuppstå, och testet asserterar den
+    // därför inte längre.
+    await expect(page.getByText('Visar 1 person för "Person 00".')).toBeVisible();
     await expect(page.getByRole('list', { name: 'Personer' }).getByRole('listitem')).toHaveCount(1);
   });
 
   test('DoD 5 — tom sökning ger "Inga träffar"', async ({ page }) => {
     await page.goto('/personer');
     await page.getByRole('searchbox', { name: 'Sök person' }).fill('Finnsinte');
-    await expect(page.getByText('Inga träffar för "Finnsinte".')).toBeVisible();
+    // k11 rev tomläget: den gamla grå metaraden (`Inga träffar för "X".`) såg
+    // ut som om sidan gått sönder tyst. Formen är nu ett strukturerat,
+    // centrerat tomläge — en bärande rad + en dämpad förklaring. BÅDA
+    // asserteras, så en halv rendering inte passerar som grön.
+    await expect(page.getByText('Inga träffar')).toBeVisible();
+    await expect(page.getByText('Ingen person matchar "Finnsinte".')).toBeVisible();
     await expect(page.getByRole('list', { name: 'Personer' }).getByRole('listitem')).toHaveCount(0);
   });
 
   test('DoD 4 — axe 0 violations på den renderade listan', async ({ page }) => {
     await page.goto('/personer');
-    await expect(page.getByText('2 personer laddade (fler finns).')).toBeVisible();
+    await expect(page.getByText('Visar 2 personer (fler finns).')).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -226,7 +236,13 @@ test.describe('Personer-listan — läs-fel (get-persons 500)', () => {
 
     // Ser INTE ut som "det finns inga personer" — den andra, farligare felformen:
     // ett tomt svar och ett trasigt svar får aldrig se likadana ut för Lotta.
-    await expect(page.getByText('Inga personer ännu.')).toHaveCount(0);
+    //
+    // Copyn följer den PROMOVERADE formen (utan punkt, ADR-103 B2 steg 1). Den
+    // gamla lydelsen `'Inga personer ännu.'` hade blivit VAKUÖST GRÖN efter
+    // promoveringen: strängen med punkt finns inte längre någonstans, så
+    // `toHaveCount(0)` kunde aldrig fälla och assertionen hade slutat skydda
+    // det den finns för — utan att någonsin bli röd.
+    await expect(page.getByText('Inga personer ännu')).toHaveCount(0);
     await expect(page.getByRole('list', { name: 'Personer' })).toHaveCount(0);
 
     // Felet bärs av KOMPONENTENS egen gren, inte av route-ErrorBoundaryn:

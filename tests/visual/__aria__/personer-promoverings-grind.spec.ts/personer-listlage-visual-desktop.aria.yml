@@ -1,0 +1,45 @@
+- searchbox "Sök person"
+- status
+- status: /Visar \d+ personer \(fler finns\)\./
+- list "Personer":
+  - listitem:
+    - link "Anna Andersson":
+      - /url: /personer/recVisualPers00001
+    - text: anna.andersson@example.se 2 dagar sedan · Anmälde sig till RIM 1 i Skövde Aktiv anmälan
+  - listitem:
+    - link "Björn Bergström":
+      - /url: /personer/recVisualPers00002
+    - text: bjorn.bergstrom@example.se Igår · Anmälde sig till RIM 2 i Varberg Aktiv anmälan
+  - listitem:
+    - link "Cecilia Ceder":
+      - /url: /personer/recVisualPers00003
+    - text: /cecilia\.ceder@example\.se \d+ dagar sedan · Deltog på RIM 1 i Varberg Aktiv anmälan/
+  - listitem:
+    - link "David Dahl":
+      - /url: /personer/recVisualPers00004
+    - text: /david\.dahl@example\.se \d+ dagar sedan · Anmälde sig till Fjärrskådning i Skövde Aktiv anmälan/
+  - listitem:
+    - link "Ej tillgängligt":
+      - /url: /personer/recVisualPers00017
+    - text: p.lindqvist@example.se Igår · Hämtade Meditationen Kraftfältet
+  - listitem:
+    - link "Emma Eklund":
+      - /url: /personer/recVisualPers00005
+    - text: /emma\.eklund@example\.se \d+ dagar sedan · Anmälde sig till RIM 3 i Göteborg Aktiv anmälan/
+  - listitem:
+    - link "Filip Forsberg":
+      - /url: /personer/recVisualPers00006
+    - text: filip.forsberg@example.se 5 dagar sedan · Anmälde sig i Skövde Aktiv anmälan
+  - listitem:
+    - link "Gunilla Granqvist":
+      - /url: /personer/recVisualPers00007
+    - text: /gunilla\.granqvist@example\.se \d+ dagar sedan · Deltog på RIM 2 i Varberg/
+  - listitem:
+    - link "Hassan Haddad":
+      - /url: /personer/recVisualPers00008
+    - text: /hassan\.haddad@example\.se \d+ dagar sedan · Hämtade Pyramidernas Vajrar/
+  - listitem:
+    - link "Ingrid Isaksson":
+      - /url: /personer/recVisualPers00009
+    - text: ingrid.isaksson@example.se 3 dagar sedan · Anmälde sig till RIM 2 i Rönninge Aktiv anmälan
+- button "Ladda fler"

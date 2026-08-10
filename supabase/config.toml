@@ -174,6 +174,19 @@ verify_jwt = true
 [functions.get-event-attachments]
 verify_jwt = true
 
+# send-receipt-email — TASK-147.7 "Kvittogenereringen med nummerserien"
+# (PRD task-147, ADR-109). Repots ÅTTONDE write-vertikal, FJÄRDE mail-
+# vertikal. EN mottagare, EN betalning per anrop — allokerar kvittonumret
+# server-side (samtidighetssäkert, `_shared/receipt-numbering.ts`), bygger
+# PDF:en (pdf-lib) och sänder via Resends singel-endpoint (samma mekanik
+# som send-action-email/index.ts § makeRealSingleSender, TASK-147.5).
+# requireUser grindar anropet, samma nivå som send-action-email.
+# MEDVETET UTELÄMNAD ur .prod-functions-allowlist.conf tills vidare —
+# samma "ingen UI-yta i prod ännu"-resonemang som generate-event-attachment/
+# send-action-email ovan: hela TASK-147-arket körs mot staging.
+[functions.send-receipt-email]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #

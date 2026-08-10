@@ -716,12 +716,16 @@ test.describe('TASK-145.1 — registret som EN lista (DoD #7)', () => {
  * precis vägen tillbaka till en yta ingen längre överblickar.
  *
  * SCOPET ÄR PER YTA, INTE HELA SIDAN — testtiteln säger uttryckligen
- * "i deltagar- och åtgärdsytan". Sidans SISTA grupp, Anteckningar
+ * "i deltagar- och genvägarytan" ([TASK-147.8, NAMNBYTE] "åtgärdsytan" hette
+ * så till och med denna skiva — MARCUS-BESLUT 2026-08-10, S102,
+ * namnkollisionen: namnet "Åtgärder" tillhör nu enbart den riktiga
+ * Åtgärds-sidan, `AtgardsSida.tsx`; ingen renderad text ändras, bara
+ * namnet). Sidans SISTA grupp, Anteckningar
  * (task-18.11/ADR-075, `EventDetail.tsx` rad ~344–347), bär en AVSIKTLIG
  * skriv-yta (composern, "Skriv en anteckning …") som ligger UTANFÖR detta
  * påstående — den är produkt, inte en regression. [RÄTTAT, koordinering
  * TASK-162.2/TASK-162.3] En tidigare form (`8f02feb4`) breddade scopet till
- * hela sidan (motiverat av att åtgärds-ytans sektions-skal föll bort i
+ * hela sidan (motiverat av att genvägar-ytans sektions-skal föll bort i
  * TASK-162.2:s promovering) och svepte därmed av misstag in Anteckningar-
  * composern — se scope-kommentaren inne i testet nedan för hela trailen.
  *
@@ -760,18 +764,18 @@ test.describe('TASK-145.1 — registret som EN lista (DoD #7)', () => {
  * kryssrutor), hade varit att kompensera för ett spec-fel i tysthet.
  */
 test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => {
-  test('den laddade eventsidan bär noll skriv-affordanser i deltagar- och åtgärdsytan', async ({
+  test('den laddade eventsidan bär noll skriv-affordanser i deltagar- och genvägarytan', async ({
     page,
   }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
 
     // [ÄNDRAT, koordinering TASK-162.2 (PR #991), 2026-08-08] `section[aria-
-    // labelledby="grupp-atgarder"]` finns inte längre — åtgärds-ytans
+    // labelledby="grupp-atgarder"]` finns inte längre — genvägar-ytans
     // PROMOVERADE form (`AtgarderKort` + `SkrivUtKort`, TASK-162.2) är två
     // fristående SYSKON-kort utan gemensamt sektions-skal (se
     // `eventsida-promoverings-grind.spec.ts`s docblock, "React-fragment,
-    // inget gemensamt DOM-skal"). Sanity-kollen att åtgärds-ytan faktiskt
+    // inget gemensamt DOM-skal"). Sanity-kollen att genvägar-ytan faktiskt
     // RENDERAT (annars vore varje nedanstående noll-räkning en tom seger)
     // pekar därför mot BÅDA kortens egna, redan STABILA lokatorer i stället
     // för den rivna sektionen — `data-testid="atgarder-kort"` (den delade
@@ -783,10 +787,10 @@ test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => 
     await expect(skrivUtKort).toBeVisible();
 
     // [RÄTTAT, ren översyn-scope — koordinering TASK-162.2/TASK-162.3]
-    // Assertionerna scopas PER YTA (deltagar-gruppen + åtgärds-ytans två
+    // Assertionerna scopas PER YTA (deltagar-gruppen + genvägar-ytans två
     // kort), precis som testtiteln lovar — INTE hela sidan. Föregående form
     // (TASK-162.3, `8f02feb4`) breddade scopet till hela sidan med
-    // motiveringen att åtgärds-ytans sektions-skal föll bort i
+    // motiveringen att genvägar-ytans sektions-skal föll bort i
     // promoveringen (kommentaren ovan) — men breddningen svepte samtidigt in
     // Anteckningar-composern ("Skriv en anteckning …", task-18.11/ADR-075,
     // `Anteckningar.tsx`), sidans SISTA grupp och en AVSIKTLIG skriv-yta (se
@@ -822,7 +826,7 @@ test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => 
 
     // AC #4 — de fyra grå löftena är RIVNA, inte nedtonade. Ett `aria-disabled`
     // element är fortfarande ett löfte; noll element är inget löfte alls.
-    // Scopas till åtgärds-ytans två kort (inte deltagar-gruppen) — samma
+    // Scopas till genvägar-ytans två kort (inte deltagar-gruppen) — samma
     // smalare scope 145.5-formen bar för just denna kontroll (`atgardsytan`
     // ensam, inte hela `[gruppen(page), atgardsytan]`-paret): löftena hörde
     // bara hemma i den forna Åtgärder-gruppen.
@@ -837,7 +841,7 @@ test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => 
         await expect(yta.getByRole('button', { name: namn })).toHaveCount(0);
       }
     }
-    // …och ingen rad i åtgärds-ytans kort bär kvar interim-tillståndet.
+    // …och ingen rad i genvägar-ytans kort bär kvar interim-tillståndet.
     for (const yta of atgardsKorten) {
       await expect(yta.locator('[aria-disabled="true"]')).toHaveCount(0);
     }

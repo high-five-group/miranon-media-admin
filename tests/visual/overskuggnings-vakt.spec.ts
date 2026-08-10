@@ -462,7 +462,10 @@ test.describe('överskuggnings-vaktens verkan i den skarpa fixturen', () => {
 
     await page.goto('/personer');
 
-    await expect(page.getByText('Inga personer ännu.')).toBeVisible();
+    // Tomlägets copy följer den PROMOVERADE formen (utan punkt, ADR-103 B2
+    // steg 1) — k11 gjorde tomläget till en bärande rad + en dämpad
+    // förklaring i stället för en grå metarad.
+    await expect(page.getByText('Inga personer ännu')).toBeVisible();
     await expect(page.getByText('Gunilla Granqvist')).toHaveCount(0);
   });
 });

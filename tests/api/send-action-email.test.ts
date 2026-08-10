@@ -34,6 +34,7 @@ import {
   type AttachmentReader,
   type EventContext,
   isActionType,
+  mapRegistrationFields,
   type ResolvedAttachment,
   runActionSend,
   runActionTestSend,
@@ -1102,5 +1103,84 @@ test.describe('allowlist-SSOT (TASK-147.1)', () => {
     expect(findDisallowedField(operation, { Anmälningsavgift: 'Mottagen' })).toBe(
       'Anmälningsavgift',
     );
+  });
+});
+
+// ============================================================================
+// [S102-regression] `mapRegistrationFields` — den RENA fält-mappningen som
+// `send-action-email/index.ts`:s `readRegistration` anropar för att gå från
+// rå Airtable `fields` (Anmälningar) till `ActionTarget` + `eventIds`.
+//
+// BAKGRUND (blockerande defekt, avtäckt 2026-08-10 av 147.5:s FRAMME-
+// verifikat): koden läste `f['Event (länk)']` — ett fält som INTE finns i
+// Anmälningar-tabellen (live-verifierat `describe_table` mot staging
+// `apphjj8Q7lkXCMsL4`/`tbloOcrppVoyrHbrq`: fältet heter `Event`,
+// `fldi3enUaMdbuGSlm`). `eventIds` blev därför ALLTID `[]`, och
+// tillhörighetsvakten (`index.ts`: `if (!read.eventIds.includes(eventId))`)
+// avvisade VARJE skarpt anrop med 400 "does not belong to event". De sex
+// andra läsplatserna (create-registration/index.ts, _shared/registration-
+// read.ts, create-event-note/index.ts, get-event-notes/index.ts,
+// get-attendance/index.ts, send-action-email/index.ts:301 själv) läser alla
+// `f['Event']` korrekt — send-action-email/index.ts:344 var den ENDA
+// avvikande läsplatsen i hela repot.
+//
+// Testet exercerar den VERKLIGA produktionslogiken (funktionen `index.ts`
+// faktiskt anropar, inte en duplicerad kopia) mot en fixtur formad EXAKT som
+// Airtables REST-svar för Anmälningar: `Event` är en `multipleRecordLinks`-
+// array av record-ID-strängar, singleSelect-fälten är råa strängar.
+// ============================================================================
+test.describe('mapRegistrationFields — readRegistration-fältmappningen (S102-regression)', () => {
+  function rawFields(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+      'E-post': 'anna@example.com',
+      Förnamn: 'Anna',
+      Status: 'Obekräftad',
+      Anmälningsavgift: 'Ej mottagen',
+      Slutbetalning: 'Ej mottagen',
+      Event: ['recEvent1'], // multipleRecordLinks → Eventplanering (fldi3enUaMdbuGSlm)
+      ...overrides,
+    };
+  }
+
+  test('läser Event-länken (fältet heter "Event" i Anmälningar, INTE "Event (länk)") → eventIds icke-tom', () => {
+    const result = mapRegistrationFields('rec1', rawFields());
+
+    expect(result.eventIds).toEqual(['recEvent1']);
+  });
+
+  test('tillhörighetsvakten (index.ts: eventIds.includes(eventId)) kan bara passera med rätt fältnamn', () => {
+    const result = mapRegistrationFields('rec1', rawFields());
+
+    // Detta ÄR precis kontrollen `send-action-email/index.ts` kör innan den
+    // accepterar en anmälan i urvalet — reproducerad här mot den RIKTIGA
+    // eventIds-listan i stället för en mockad ActionTarget[].
+    expect(result.eventIds.includes('recEvent1')).toBe(true);
+  });
+
+  test('flerlänkad Anmälan (edge-fall) — alla record-ID:n bevaras, ingen trunkering', () => {
+    const result = mapRegistrationFields('rec1', rawFields({ Event: ['recEvent1', 'recEvent2'] }));
+
+    expect(result.eventIds).toEqual(['recEvent1', 'recEvent2']);
+  });
+
+  test('tom/frånvarande Event-länk (legitimt fall — obekräftad anmälan utan koppling än) → tom lista, inte kastat fel', () => {
+    expect(mapRegistrationFields('rec1', rawFields({ Event: [] })).eventIds).toEqual([]);
+    expect(mapRegistrationFields('rec1', rawFields({ Event: undefined })).eventIds).toEqual([]);
+  });
+
+  test('target-fälten mappas oberoende av Event-länken (E-post/Förnamn/Status/betalningsfälten)', () => {
+    const result = mapRegistrationFields(
+      'recXYZ',
+      rawFields({ Förnamn: 'Bertil', Status: 'Bekräftad (mail skickat)' }),
+    );
+
+    expect(result.target).toEqual({
+      id: 'recXYZ',
+      email: 'anna@example.com',
+      fornamn: 'Bertil',
+      status: 'Bekräftad (mail skickat)',
+      anmalningsavgift: 'Ej mottagen',
+      slutbetalning: 'Ej mottagen',
+    });
   });
 });
