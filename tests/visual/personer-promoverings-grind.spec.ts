@@ -4,19 +4,27 @@ import { expect, test } from '../support/fixturvarld/hermetic';
 /**
  * PROMOVERINGS-GRINDEN för Personer-listan (`ADR-103` B4).
  *
- * [FAS 1 — FÖRE-HALVAN, fångad UR VARIANT-LÄGET] Detta är den första halvan
- * av B4:s `ariaSnapshot`-PAR: referenserna fångas ur prototyp-formen
- * (`?variant=a`) INNAN villkoret flippas. Efter flippen pekas SAMMA lokatorer
- * och SAMMA `name:`-nycklar mot den promoverade skarpa ytan — skiljer sig
- * trädet på en enda byte fäller grinden, och det är exakt beviset för att
- * promoveringen tog FORMEN och inte något annat.
+ * [BÅDA HALVOR GJORDA — 2026-08-10] B4:s `ariaSnapshot`-PAR är komplett.
+ * Referenserna under `__aria__/` fångades ur prototyp-formen (`?variant=a`)
+ * INNAN villkoret flippades; de är sedan dess ORÖRDA. Efter flippen pekar
+ * samma lokatorer och samma `name:`-nycklar mot den promoverade, ovillkorliga
+ * ytan (`gotoPromoverad`). En grön körning betyder därför EN sak: trädet är
+ * byte-identiskt före och efter promoveringen — formen följde med, ingenting
+ * annat smög in.
  *
- * ORDNINGEN ÄR ENKELRIKTAD, och det är skälet denna fil skrivs före flippen:
- * variant-grenen renderas bara under `import.meta.env.DEV && variant === 'a'`
- * (`src/routes/_authenticated/personer/index.tsx`). Flippas villkoret först
- * upphör FÖRE-läget att existera, och paret kan aldrig konstrueras i
+ * ORDNINGEN VAR ENKELRIKTAD, och det är skälet FÖRE-halvan låstes i en egen
+ * commit före flippen: variant-grenen renderades bara under
+ * `import.meta.env.DEV && variant === 'a'`. Hade villkoret flippats först
+ * hade FÖRE-läget upphört att existera och paret aldrig kunnat konstrueras i
  * efterhand — inte ens genom att läsa gamla PNG:er, eftersom de inte bär
  * roll/namn-strukturen som `ariaSnapshot` jämför.
+ *
+ * ROLLBYTET som väntar: när Marcus godkänt och rivningen (B2 steg 4) tagit
+ * `PROTO_VARIANTS` och prototyp-filen, slutar denna fil bevisa
+ * "variant == promoverad" och blir REGRESSIONSLÅS — att ytan fortsätter
+ * rendera exakt den låsta formen. Samma rollbyte som
+ * `eventsida-promoverings-grind.spec.ts` bokför i sitt eget huvud. Filerna
+ * under `__aria__/` ändras inte av det: samma facit, ny innebörd.
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (`ADR-103` B4): deterministiskt, noll
  * nya beroenden, och det jämför STRUKTUR + TILLGÄNGLIGT NAMN. Pixel-diff
@@ -51,14 +59,16 @@ import { expect, test } from '../support/fixturvarld/hermetic';
 const SOKFALT = 'Sök person';
 
 /**
- * FÖRE-läget: prototyp-formen via `?variant=a`.
+ * EFTER-läget: den PROMOVERADE, ovillkorliga ytan.
  *
- * [FAS 2, EFTER FLIPPEN] Denna helper är den ENDA rad som ändras när
- * promoveringen är gjord: `?variant=a` faller bort och samma lokatorer pekar
- * mot den ovillkorliga ytan. Referenserna nedan rörs ALDRIG — de är facit.
+ * [FAS 2 GJORD — 2026-08-10] `?variant=a` är borta ur adressen eftersom
+ * villkoret är flippat (`ADR-103` B2 steg 1): routen renderar formen
+ * ovillkorligt. Detta var den ENDA rad som ändrades — referenserna är
+ * ORÖRDA sedan FÖRE-capturen, och det är precis därför en grön körning
+ * BEVISAR att promoveringen tog formen och ingenting annat.
  */
-async function gotoVariantA(page: import('@playwright/test').Page) {
-  await page.goto('/personer?variant=a');
+async function gotoPromoverad(page: import('@playwright/test').Page) {
+  await page.goto('/personer');
   // Ankaret finns på alla tre render-grenarna; att vänta på en KÄND person
   // säkrar att vi är i listläget och att fixturvärlden svarat — inte i
   // skeleton-läget som medvetet står utanför referensen.
@@ -66,16 +76,16 @@ async function gotoVariantA(page: import('@playwright/test').Page) {
   await expect(page.getByText('Gunilla Granqvist').first()).toBeVisible();
 }
 
-test.describe('promoverings-grinden — ariaSnapshot ur variant-läget (ADR-103 B4)', () => {
+test.describe('promoverings-grinden — ariaSnapshot mot den promoverade ytan (ADR-103 B4)', () => {
   test('listläget — default, ingen sökning', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await expect(page.getByTestId('personer-yta')).toMatchAriaSnapshot({
       name: 'personer-listlage.aria.yml',
     });
   });
 
   test('sökning med träff — "Gunilla"', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await page.getByRole('searchbox', { name: SOKFALT }).fill('Gunilla');
     // Sökningen är debouncad (PersonsListPrototyp § useEffect/clearTimeout);
     // att vänta ut det bortfiltrerade namnet är den deterministiska skarven —
@@ -87,7 +97,7 @@ test.describe('promoverings-grinden — ariaSnapshot ur variant-läget (ADR-103 
   });
 
   test('tomläget — "zzz" ger noll träffar (k11:s egna form)', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await page.getByRole('searchbox', { name: SOKFALT }).fill('zzz');
     await expect(page.getByText('Inga träffar')).toBeVisible();
     await expect(page.getByTestId('personer-yta')).toMatchAriaSnapshot({
@@ -125,19 +135,19 @@ test.describe('a11y-golvet — axe på samma ytor som formgrinden (ADR-103, här
   }
 
   test('listläget: axe 0 violations', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await axeNoll(page, '[data-testid="personer-yta"]');
   });
 
   test('sökning med träff: axe 0 violations', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await page.getByRole('searchbox', { name: SOKFALT }).fill('Gunilla');
     await expect(page.getByText('Hassan Haddad')).toHaveCount(0);
     await axeNoll(page, '[data-testid="personer-yta"]');
   });
 
   test('tomläget: axe 0 violations', async ({ page }) => {
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await page.getByRole('searchbox', { name: SOKFALT }).fill('zzz');
     await expect(page.getByText('Inga träffar')).toBeVisible();
     await axeNoll(page, '[data-testid="personer-yta"]');
