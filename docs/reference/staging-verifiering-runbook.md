@@ -134,7 +134,7 @@ Alla parametrar (defaults inom parentes):
 
 | Flagga | Betydelse |
 |---|---|
-| `--ort <namn>` | Fixturens Ort — också dess markör (`ZZ-GRANSKNING-FIXTUR`) |
+| `--ort <namn>` | Fixturens Ort — en riktig svensk stad (`Varberg`) |
 | `--bekraftade N` | Antal `Bekräftad (mail skickat)` (8) |
 | `--obekraftade N` | Antal `Obekräftad` (8) |
 | `--dagar N` | Dagar från idag till eventstart (8) |
@@ -170,6 +170,30 @@ betalstatus varieras i båda grupperna, och de bekräftade bär
 `Bekräftelse skickad` så meta-raden syns. Bygget är deterministiskt: samma
 flaggor ger samma fixtur, så en granskning går att återskapa exakt.
 
+### Datan ska LIKNA verkligheten (`TASK-97`)
+
+Fram till `TASK-97` bar varje rad `seed-review+zz-granskning-s103-01@granskning.test`
+och tom Ort. Det gick inte att designa personvyerna mot. Nu gäller:
+
+| Fält | Vad fixturen skriver | Varför |
+|---|---|---|
+| `E-post` | `astrid.almqvist@example.com`, roterat över `.com`/`.org`/`.net` | RFC 2606 § 3 reserverar domänerna permanent — adressen ser äkta ut och kan bevisbart aldrig tillhöra en verklig deltagare |
+| Eventets `Ort` | en riktig svensk stad (default `Varberg`) | orterna som faktiskt förekommer i basen: Rönninge, Varberg, Ödeshög, Falköping, Arboga, Bredaryd, Gotland, Östersund |
+| Anmälans `Ort` | eventets ort, på ~82 % av raderna | personens `Ort` är en ROLLUP över anmälans — det är den enda vägen dit. 82 % är prods andel, mätt 2026-08-10 |
+| `Personer.Telefon` | **sätts aldrig** | visas inte i personlistan (Marcus-beslut 2026-08-10). Anmälans `Mobilnummer` sätts som förut |
+
+**Luckan är avsiktlig.** Ett staging där varje kort bär exakt samma fält är
+MER enhetligt än verkligheten, och då ser man aldrig hur vyn beter sig med ett
+tomt fält förrän i prod. Fördelningen är index-baserad, aldrig slumpad: samma
+flaggor ger identisk fixtur.
+
+**Vill du ha flera orter i personlistan — seeda flera fixturer**
+(`--ort Varberg`, `--ort Falköping`). Det är säkert sedan `TASK-97`: de kan
+inte längre städa varandras rader, se nedan. Att i stället ge varje rad en
+egen stad hade gett en anmälan vars Ort motsäger eventets, vilket syns rakt
+upp i deltagarkortet — en fixtur som SER ut som en bugg i granskningsvyn är
+värre än en enfärgad kolumn.
+
 **`Person`-länken sätts av skriptet, inte av automation A2.** Automationerna
 är avstängda i staging (empiriskt: 16 skapade anmälningar gav 0 Deltaganden,
 och CI-sentinelerna saknar Person-länk). Utan länken blir personens
@@ -179,8 +203,8 @@ hos Miranon Media" på deltagarkortet, ofta just den rad granskningen gäller.
 ### Hur man städar
 
 ```bash
-npm run seed:review:clean -- --ort ZZ-GRANSKNING-FIXTUR --dry-run
-npm run seed:review:clean -- --ort ZZ-GRANSKNING-FIXTUR
+npm run seed:review:clean -- --ort Varberg --dry-run
+npm run seed:review:clean -- --ort Varberg
 ```
 
 Clean raderar anmälningarna först (då släpper personernas länk), sedan
@@ -188,6 +212,33 @@ personerna, sist eventet — och efter-verifierar att inget radera-bart står
 kvar. Den är lika hårt guardad som create-läget och rapporterar varje rad den
 LÄMNAR kvar, med orsak. En rad utan fixtur-markör rörs aldrig; fail-safe-
 riktningen är alltid "hellre lämna kvar och rapportera".
+
+**Hur clean hittar sina rader (`TASK-97`).** Tidigare söktes anmälningar och
+personer på e-postmönstret, som kodade orten. Realistiska adresser kan inte
+göra det jobbet — så identifieringen går nu via **länkgrafen**:
+
+```text
+event (rätt Ort + notering-sentinel)
+  → eventets Anmälningar (länkat fält)
+    → varje anmälans Person-länk   (läses FÖRE anmälan raderas)
+```
+
+Grafen startar i exakt den event-mängd planeringen godkänt för radering, så
+ett verkligt event i samma stad utan sentinel bidrar med noll rader — dess
+anmälningar listas aldrig ens. **Ort grovsorterar, sentineln avgör**, precis
+som förut.
+
+E-postmönstret finns kvar som **andra spärr**: en rad grafen pekar ut men vars
+adress inte är fixtur-formad raderas aldrig, den rapporteras. Mönstret känner
+igen båda formerna skriptet skrivit — den nya `@example.*`-formen och den
+pre-`TASK-97`:a `seed-review+…@granskning.test` — så fixturer som redan låg i
+basen förblev städbara över bytet.
+
+**Föräldralösa personer** har en egen, smal väg: fixtur-adress **och** noll
+anmälningslänkar. Den finns för avbrutna städningar (personerna blir annars
+oåtkomliga när anmälan är borta) och kan aldrig träffa en annan levande
+fixturs person — den har alltid minst en anmälan. Varje sådan radering
+redovisas rad för rad i loggen.
 
 ### Fixturens livstid — utgångsstämpeln och förfallo-svepet
 

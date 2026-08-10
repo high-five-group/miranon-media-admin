@@ -101,10 +101,30 @@ Deno.serve(async (req) => {
     { name: 'Telefon', isArray: false },
     { name: 'Ort', isArray: true },
   ];
-  let filterByFormula: string | undefined;
+  // KONSTANT bas-filter (S103, Marcus 2026-08-10): Personer-vyn visar ENDAST
+  // personer med minst en anmälan. Det är exakt komplementet till get-leads
+  // LEAD_FILTER (`AND({Antal hämtningar} > 0, {Antal anmälningar (totalt)} = 0)`),
+  // så de två ytorna täcker basen utan hål och utan överlapp: Intresserade bor
+  // under Mer, resten här.
+  //
+  // GRÄNSEN GÅR VID ANMÄLAN, INTE VID GENOMFÖRT EVENT. Marcus formulering var
+  // "gått en eller flera kurser", men han preciserade skälet: personer med
+  // anmälningar men noll genomförda är de som AVBOKAT eller fått förhinder, och
+  // de hör hemma här - ORDLISTA kallar dem återaktiverbara kontakter och
+  // förbjuder att de tappas. Ett filter på {Antal genomförda event} hade tyst
+  // gömt dem, tillsammans med alla som är anmälda till ett kommande event utan
+  // att ha gått förut - just de Lotta ska maila INFÖR kursen.
+  //
+  // Konstant formel, inget klient-input - samma form som get-leads: den kan
+  // aldrig bära injektion och behöver därför ingen escaping. Kombineras med
+  // sökfiltret via AND() när båda finns.
+  const BAS_FILTER = '{Antal anmälningar (totalt)} > 0';
+
+  let filterByFormula: string | undefined = BAS_FILTER;
   if (search) {
     try {
-      filterByFormula = buildSearchAcrossFieldsFilter(search, SEARCH_FIELDS);
+      const sokFilter = buildSearchAcrossFieldsFilter(search, SEARCH_FIELDS);
+      filterByFormula = `AND(${BAS_FILTER}, ${sokFilter})`;
     } catch (filterError) {
       console.warn(
         `[get-persons] DENY invalid search input: ${(filterError as Error).message}`,

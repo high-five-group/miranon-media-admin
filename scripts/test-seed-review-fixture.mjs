@@ -20,6 +20,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  arForaldralosFixturperson,
   arIsoDatum,
   avslutningsOrsak,
   betalstatusFor,
@@ -31,11 +32,13 @@ import {
   fixtureEmail,
   fixtureEmailFormula,
   fixtureEmailPattern,
+  harOrt,
   isFixtureEmailRecord,
   isFixtureEvent,
   isoDatum,
   isoTidBakat,
   kapacitetFor,
+  lankadeIdn,
   legacyEmailFormula,
   legacyRakningsavvikelser,
   legacyRegisterOversikt,
@@ -57,6 +60,19 @@ const PURGE_POLICY = JSON.parse(
 );
 
 const NU = new Date('2026-07-26T12:00:00.000Z');
+
+/**
+ * Default-fixturens rader — indata till varje markör-test nedan. Att de byggs
+ * av buildRegistrations i stället för att skrivas för hand är poängen: testet
+ * prövar de adresser skriptet FAKTISKT skriver, inte en avskrift av dem.
+ */
+const DEFAULTRADER = buildRegistrations({
+  ort: CONFIG.defaults.ort,
+  bekraftade: CONFIG.defaults.bekraftade,
+  obekraftade: CONFIG.defaults.obekraftade,
+  nu: NU,
+  config: CONFIG,
+});
 
 let failed = 0;
 function t(name, fn) {
@@ -118,17 +134,41 @@ t('beläggnings-tak på 100 % refuseras (A6 skickar fullbokat-notis)', () => {
 
 // --- FÄLLA 1: purge-kollisionen ---
 
+/** Varje markörbärande värde default-fixturen faktiskt skriver. */
+const defaultSamples = () => [
+  { table: 'Eventplanering', field: 'Ort', value: CONFIG.defaults.ort },
+  ...DEFAULTRADER.filter((r) => typeof r.anmalan.Ort === 'string').map((r) => ({
+    table: 'Anmälningar',
+    field: 'Ort',
+    value: r.anmalan.Ort,
+  })),
+  ...DEFAULTRADER.map((r) => ({
+    table: 'Anmälningar',
+    field: 'E-post',
+    value: r.anmalan['E-post'],
+  })),
+];
+
 t('FÄLLA 1: default-fixturens markörer kolliderar ALDRIG med skarpa purge-policyn', () => {
-  const slug = slugify(CONFIG.defaults.ort);
-  const samples = [
-    { table: 'Eventplanering', field: 'Ort', value: CONFIG.defaults.ort },
-    ...Array.from({ length: 16 }, (_, i) => ({
-      table: 'Anmälningar',
-      field: 'E-post',
-      value: fixtureEmail(slug, i, CONFIG.marker),
-    })),
-  ];
-  assert.deepEqual(purgeCollisions(samples, PURGE_POLICY), []);
+  assert.deepEqual(purgeCollisions(defaultSamples(), PURGE_POLICY), []);
+});
+
+t('FÄLLA 1: den REALISTISKA orten är lika immun — vakten prövar, antar inte', () => {
+  // TASK-97 bytte ZZ-GRANSKNING-FIXTUR mot en riktig svensk stad. Immuniteten
+  // får inte vila på att någon minns att purgen bara jagar ZZ-create-event-test.
+  for (const stad of ['Varberg', 'Rönninge', 'Ödeshög', 'Falköping', 'Skövde', 'Östersund']) {
+    assert.deepEqual(
+      purgeCollisions(
+        [
+          { table: 'Eventplanering', field: 'Ort', value: stad },
+          { table: 'Anmälningar', field: 'Ort', value: stad },
+        ],
+        PURGE_POLICY,
+      ),
+      [],
+      `${stad} får aldrig kunna purgas`,
+    );
+  }
 });
 
 t('FÄLLA 1: vakten FÅNGAR en fixtur som skulle purgas (Ort = ZZ-create-event-test)', () => {
@@ -155,9 +195,12 @@ t('FÄLLA 1: vakten FÅNGAR en create-test+<uuid>@staging.test-adress', () => {
   assert.equal(hits[0].target, 'create-registration-sentineler');
 });
 
-t('FÄLLA 1: fixtur-domänen ligger utanför purgens @staging.test-mönster', () => {
-  assert.ok(CONFIG.marker.emailDomain !== '@staging.test');
-  assert.ok(!CONFIG.marker.emailPrefix.startsWith('create-test+'));
+t('FÄLLA 1: fixtur-domänerna ligger utanför purgens @staging.test-mönster', () => {
+  for (const doman of CONFIG.marker.emailDomains) {
+    assert.notEqual(doman, 'staging.test');
+    assert.ok(!doman.endsWith('.staging.test'));
+  }
+  assert.ok(!CONFIG.marker.tidigareEmailPrefix.startsWith('create-test+'));
 });
 
 // --- FÄLLA 2: de permanenta fixturerna ---
@@ -168,17 +211,17 @@ t('FÄLLA 2: ZZ-Arbetsko och ZZ-History står i protectedRecordIds', () => {
 });
 
 t('FÄLLA 2: en skyddad person raderas ALDRIG — inte ens med matchande e-post', () => {
-  const pattern = fixtureEmailPattern('zz-granskning-fixtur', CONFIG.marker);
+  const pattern = fixtureEmailPattern(CONFIG.marker);
   const plan = planClean({
     events: [],
     registrations: [],
     persons: [
       {
         id: 'rec7F8jYc7rczwwkM',
-        fields: { 'E-post': fixtureEmail('zz-granskning-fixtur', 0, CONFIG.marker) },
+        fields: { 'E-post': DEFAULTRADER[0].person['E-post'] },
       },
     ],
-    ort: 'ZZ-GRANSKNING-FIXTUR',
+    ort: CONFIG.defaults.ort,
     pattern,
     config: CONFIG,
   });
@@ -186,16 +229,13 @@ t('FÄLLA 2: en skyddad person raderas ALDRIG — inte ens med matchande e-post'
   assert.equal(plan.skippedPersons[0].orsak, 'skyddad record-ID (permanent fixtur)');
 });
 
-t('FÄLLA 2: skriptet skapar EGNA personer — ingen anmälan pekar på en skyddad person', () => {
-  const rader = buildRegistrations({
-    ort: 'ZZ-GRANSKNING-FIXTUR',
-    bekraftade: 8,
-    obekraftade: 8,
-    nu: NU,
-    config: CONFIG,
-  });
-  for (const rad of rader) {
-    assert.ok(rad.person['E-post'].startsWith(CONFIG.marker.emailPrefix));
+t('FÄLLA 2: skriptet skapar EGNA personer — varje adress är fixtur-formad', () => {
+  const pattern = fixtureEmailPattern(CONFIG.marker);
+  for (const rad of DEFAULTRADER) {
+    assert.ok(
+      pattern.test(rad.person['E-post']),
+      `${rad.person['E-post']} måste matcha fixtur-mönstret`,
+    );
     assert.ok(!CONFIG.protectedRecordIds.includes(rad.person['E-post']));
   }
 });
@@ -216,20 +256,20 @@ t('FÄLLA 2: ett skyddat event raderas ALDRIG — inte ens med matchande Ort + s
   // förmodan) BÅDE clean-ortens Ort och Notering-sentinelen. Utan record-ID-
   // skyddet hade isFixtureEvent klassat det för radering — exakt det läge
   // skyddsräcke 3 lovar bort ("inte ens om de mot förmodan matchar en markör").
-  const pattern = fixtureEmailPattern('zz-granskning-fixtur', CONFIG.marker);
+  const pattern = fixtureEmailPattern(CONFIG.marker);
   const plan = planClean({
     events: [
       {
         id: 'recIFrxHZw165ycXk',
         fields: {
-          Ort: 'ZZ-GRANSKNING-FIXTUR',
+          Ort: CONFIG.defaults.ort,
           Notering: `${CONFIG.marker.noteringSentinel} planterat kollisionsfall`,
         },
       },
     ],
     registrations: [],
     persons: [],
-    ort: 'ZZ-GRANSKNING-FIXTUR',
+    ort: CONFIG.defaults.ort,
     pattern,
     config: CONFIG,
   });
@@ -354,32 +394,180 @@ t('slugify ger formel- och e-post-säkra tecken', () => {
   assert.match(slugify('ZZ  Test..Ort'), /^[a-z0-9-]+$/);
 });
 
-t('fixtur-e-posten är nollpaddad och index-unik', () => {
-  assert.equal(
-    fixtureEmail('zz-granskning-fixtur', 0, CONFIG.marker),
-    'seed-review+zz-granskning-fixtur-01@granskning.test',
-  );
-  assert.equal(
-    fixtureEmail('zz-granskning-fixtur', 15, CONFIG.marker),
-    'seed-review+zz-granskning-fixtur-16@granskning.test',
+// ═══════════════════════════════════════════════════════════════════════════
+// TASK-97 — REALISTISK DATA UTAN ATT TAPPA GREPPET
+//
+// Marcus 2026-08-10: "riktiga namn, riktiga e-postadresser, riktiga orter …
+// det ska likna verkligheten, inte massa ZZ-skit överallt." Sviten nedan är
+// tvåsidig: varje test om att adressen ser ÄKTA ut har en motpart som bevisar
+// att den ändå aldrig kan vara någons — och att clean fortfarande hittar den.
+// ═══════════════════════════════════════════════════════════════════════════
+
+t('TASK-97: e-posten är fornamn.efternamn på en RFC 2606-reserverad domän', () => {
+  assert.equal(fixtureEmail('Astrid', 'Almqvist', 0, CONFIG.marker), 'astrid.almqvist@example.com');
+  assert.equal(fixtureEmail('Åke', 'Törnqvist', 1, CONFIG.marker), 'ake.tornqvist@example.org');
+  assert.equal(fixtureEmail('Össur', 'Ödman', 2, CONFIG.marker), 'ossur.odman@example.net');
+  // Rotationen börjar om — listan ska inte se maskinstansad ut.
+  assert.equal(fixtureEmail('Bengt', 'Kvist', 3, CONFIG.marker), 'bengt.kvist@example.com');
+});
+
+t('TASK-97: INGEN fixtur-adress ligger på en icke-reserverad domän', () => {
+  // Hela realism-argumentet vilar på reservationen: en adress på example.com
+  // kan aldrig tilldelas någon. Faller den raden är "ser äkta ut" en risk.
+  for (const rad of DEFAULTRADER) {
+    assert.match(
+      rad.anmalan['E-post'],
+      /@example\.(com|org|net)$/,
+      `${rad.anmalan['E-post']} ligger utanför RFC 2606 § 3`,
+    );
+  }
+});
+
+t('TASK-97 · RÖD SIDA: en icke-reserverad domän REFUSERAS av validateConfig', () => {
+  for (const doman of ['miranon.se', 'gmail.com', 'example.se', 'staging.test']) {
+    assert.throws(
+      () => validateConfig({ ...CONFIG, marker: { ...CONFIG.marker, emailDomains: [doman] } }),
+      /RFC 2606/,
+      `${doman} måste refuseras`,
+    );
+  }
+  assert.throws(
+    () => validateConfig({ ...CONFIG, marker: { ...CONFIG.marker, emailDomains: [] } }),
+    /emailDomains saknas/,
   );
 });
 
-t('e-postmönstret matchar EXAKT sin egen slug — aldrig en annan fixturs', () => {
-  const p = fixtureEmailPattern('zz-granskning-fixtur', CONFIG.marker);
-  assert.ok(p.test('seed-review+zz-granskning-fixtur-01@granskning.test'));
-  assert.ok(!p.test('seed-review+zz-annan-ort-01@granskning.test'));
-  assert.ok(!p.test('zz-granskning-15@staging.test'), 'S91-fixturens adresser rörs aldrig');
-  assert.ok(!p.test('zz-arbetsko-person01@staging.test'), 'permanenta fixturen rörs aldrig');
-  assert.ok(!p.test('lotta@miranon.se'), 'riktiga adresser rörs aldrig');
+t('TASK-97: namnpoolen måste reducera till rena [a-z] — annars matchar inte mönstret', () => {
+  // Namnet BÄR adressens local-part sedan TASK-97. Ett namn som ger bindestreck
+  // hade gett en adress cleanens ankrade mönster inte känner igen — och raden
+  // hade lämnats kvar tyst, först upptäckt vid städningen.
+  assert.throws(
+    () => validateConfig({ ...CONFIG, fornamn: [...CONFIG.fornamn, 'Anna-Lena'] }),
+    /local-part måste bli rena/,
+  );
+  assert.throws(
+    () => validateConfig({ ...CONFIG, efternamn: [...CONFIG.efternamn, "O'Brien"] }),
+    /local-part måste bli rena/,
+  );
+  assert.throws(() => validateConfig({ ...CONFIG, fornamn: [] }), /fornamn saknas/);
 });
 
-t('filterByFormula-strängen bär inga ogiltiga citattecken', () => {
-  const f = fixtureEmailFormula('zz-granskning-fixtur', CONFIG.marker);
+t('TASK-97: mönstret matchar den NYA formen — och den pre-TASK-97:a', () => {
+  const p = fixtureEmailPattern(CONFIG.marker);
+  assert.ok(p.test('astrid.almqvist@example.com'));
+  assert.ok(p.test('viktor.zetterlund@example.org'));
+  assert.ok(p.test('hanna.rehn@example.net'));
+  // Formen skriptet skrev FÖRE bytet. Utan den vore varje fixtur som redan
+  // ligger i staging ostädbar från och med denna commit.
+  assert.ok(p.test('seed-review+zz-granskning-s103-01@granskning.test'));
+  assert.ok(p.test('seed-review+zz-granskning-fixtur-16@granskning.test'));
+});
+
+t('TASK-97 · GRÖN SIDA: mönstret matchar ALDRIG en riktig, permanent eller legacy-rad', () => {
+  const p = fixtureEmailPattern(CONFIG.marker);
+  const forbjudna = [
+    ['lotta@miranon.se', 'riktig adress'],
+    ['roger.andersson@miranon.se', 'riktig adress med punkt i local-part'],
+    ['zz-lead-person-01@staging.test', 'permanent lead-fixtur (asserteras vid värde)'],
+    ['zz-arbetsko-person01@staging.test', 'permanent rollup-fixtur'],
+    ['zz-granskning-15@staging.test', 'S91-fixturen (legacy-registrets område)'],
+    ['granskning-review@example.com', 'Skövde-fixturen (legacy-registrets område)'],
+    ['granskning-review-plus1@example.com', 'samma, med suffix'],
+    ['create-test+01234567-89ab-4cde-8f01-23456789abcd@staging.test', 'purge-ägd sentinel'],
+    ['astrid.almqvist@example.se', 'nära miss: icke-reserverad domän'],
+    ['astrid@example.com', 'nära miss: ingen punkt i local-part'],
+    ['astrid.almqvist.b@example.com', 'nära miss: tre led'],
+  ];
+  for (const [adress, vad] of forbjudna) {
+    assert.ok(!p.test(adress), `${vad}: ${adress} får ALDRIG matcha`);
+  }
+});
+
+t('TASK-97: grovfiltret är formel-säkert och täcker båda formerna', () => {
   assert.equal(
-    f,
-    "AND(FIND('seed-review+zz-granskning-fixtur-', {E-post}) = 1, FIND('@granskning.test', {E-post}) > 0)",
+    fixtureEmailFormula(CONFIG.marker),
+    "OR(FIND('@example.com', {E-post}) > 0, FIND('@example.org', {E-post}) > 0, " +
+      "FIND('@example.net', {E-post}) > 0, FIND('@granskning.test', {E-post}) > 0)",
   );
+  assert.ok(!fixtureEmailFormula(CONFIG.marker).includes("''"), 'inga tomma citattecken');
+});
+
+t('TASK-97: default-orten är en RIKTIG svensk stad — men aldrig legacy-ankarets', () => {
+  assert.ok(!/^ZZ-/i.test(CONFIG.defaults.ort), 'ingen ZZ-prefixad default-ort kvar');
+  for (const post of CONFIG.legacy) {
+    assert.notEqual(
+      CONFIG.defaults.ort,
+      post.ort,
+      `default-orten får inte krocka med legacy-posten ${post.namn} — dess guard hade larmat`,
+    );
+  }
+});
+
+t('TASK-97: anmälans Ort = eventets ort, på prods andel av raderna', () => {
+  const medOrt = DEFAULTRADER.filter((r) => 'Ort' in r.anmalan);
+  const utanOrt = DEFAULTRADER.filter((r) => !('Ort' in r.anmalan));
+  for (const rad of medOrt) assert.equal(rad.anmalan.Ort, CONFIG.defaults.ort);
+  assert.ok(utanOrt.length > 0, 'luckan MÅSTE finnas — prod är inte uniformt');
+  assert.ok(medOrt.length > utanOrt.length, 'de allra flesta rader bär Ort');
+  // Fältet UTELÄMNAS på luckraderna; en tomsträng hade gett rollupen ett tomt
+  // element i stället för ingen post alls.
+  for (const rad of utanOrt) assert.equal(rad.anmalan.Ort, undefined);
+});
+
+t('TASK-97: andelen med Ort landar på prods ~82 % över hela taket', () => {
+  const rader = buildRegistrations({
+    ort: 'Varberg',
+    bekraftade: CONFIG.limits.maxAnmalningar,
+    obekraftade: 0,
+    nu: NU,
+    config: CONFIG,
+  });
+  const andel = rader.filter((r) => 'Ort' in r.anmalan).length / rader.length;
+  assert.ok(
+    Math.abs(andel - CONFIG.realism.ortKvot) < 0.05,
+    `andelen ${(andel * 100).toFixed(1)} % ska ligga nära ${CONFIG.realism.ortKvot * 100} %`,
+  );
+});
+
+t('TASK-97: harOrt är deterministisk, jämnt spridd, och ger rad 0 en Ort', () => {
+  assert.equal(harOrt(0, 0.82), true, 'listans första rad ska inte se trasig ut');
+  // Samma index ⇒ samma svar, alltid. Ingen slump, inget beroende av klockan.
+  for (let i = 0; i < 200; i += 1) assert.equal(harOrt(i, 0.82), harOrt(i, 0.82));
+  // Luckorna klumpar inte ihop sig: aldrig två i rad vid 82 %.
+  for (let i = 1; i < 200; i += 1) {
+    assert.ok(harOrt(i, 0.82) || harOrt(i - 1, 0.82), `två luckor i rad vid index ${i}`);
+  }
+  // Ytterlägena: kvot 1 fyller allt.
+  for (let i = 0; i < 50; i += 1) assert.equal(harOrt(i, 1), true);
+});
+
+t('TASK-97 · RÖD SIDA: en ogiltig ortKvot REFUSERAS', () => {
+  for (const kvot of [0, -0.5, 1.5, undefined, 'mycket']) {
+    assert.throws(
+      () => validateConfig({ ...CONFIG, realism: { ortKvot: kvot } }),
+      /ortKvot/,
+      `${kvot} måste refuseras`,
+    );
+  }
+});
+
+t('TASK-97: personen får ALDRIG Telefon — Marcus-beslutet, mekaniserat', () => {
+  for (const rad of DEFAULTRADER) {
+    assert.equal('Telefon' in rad.person, false, 'Telefon visas inte i personlistan');
+    assert.deepEqual(Object.keys(rad.person).sort(), ['E-post', 'Efternamn', 'Förnamn']);
+    // …medan anmälans Mobilnummer är ett ANNAT fält och sätts som förut.
+    assert.match(rad.anmalan.Mobilnummer, /^070-/);
+  }
+});
+
+t('TASK-97: länkfälten är obligatoriska — de bär identifieringen', () => {
+  for (const nyckel of ['eventAnmalningar', 'anmalanPerson', 'personAnmalningar']) {
+    assert.throws(
+      () =>
+        validateConfig({ ...CONFIG, linkFields: { ...CONFIG.linkFields, [nyckel]: undefined } }),
+      new RegExp(`linkFields\\.${nyckel} saknas`),
+    );
+  }
 });
 
 // --- Event-bygget ---
@@ -554,22 +742,23 @@ t('isoTidBakat ger stabila, giltiga ISO-timestamps', () => {
 
 // --- Clean-planen ---
 
-const PATTERN = fixtureEmailPattern('zz-granskning-fixtur', CONFIG.marker);
-const FIXTUR_EPOST = fixtureEmail('zz-granskning-fixtur', 0, CONFIG.marker);
+const PATTERN = fixtureEmailPattern(CONFIG.marker);
+const FIXTUR_EPOST = DEFAULTRADER[0].person['E-post'];
+const ORT = CONFIG.defaults.ort;
 
 t('fixtur-eventet kräver BÅDE rätt Ort OCH notering-sentineln', () => {
   const medSentinel = {
     id: 'recA',
-    fields: { Ort: 'ZZ-GRANSKNING-FIXTUR', Notering: `${CONFIG.marker.noteringSentinel} …` },
+    fields: { Ort: ORT, Notering: `${CONFIG.marker.noteringSentinel} …` },
   };
   const utanSentinel = {
     id: 'recB',
-    fields: { Ort: 'ZZ-GRANSKNING-FIXTUR', Notering: 'Riktigt event som råkar heta likadant' },
+    fields: { Ort: ORT, Notering: 'Riktigt event i samma stad' },
   };
-  const utanNotering = { id: 'recC', fields: { Ort: 'ZZ-GRANSKNING-FIXTUR' } };
-  assert.equal(isFixtureEvent(medSentinel, 'ZZ-GRANSKNING-FIXTUR', CONFIG.marker), true);
-  assert.equal(isFixtureEvent(utanSentinel, 'ZZ-GRANSKNING-FIXTUR', CONFIG.marker), false);
-  assert.equal(isFixtureEvent(utanNotering, 'ZZ-GRANSKNING-FIXTUR', CONFIG.marker), false);
+  const utanNotering = { id: 'recC', fields: { Ort: ORT } };
+  assert.equal(isFixtureEvent(medSentinel, ORT, CONFIG.marker), true);
+  assert.equal(isFixtureEvent(utanSentinel, ORT, CONFIG.marker), false);
+  assert.equal(isFixtureEvent(utanNotering, ORT, CONFIG.marker), false);
 });
 
 t('Ort-matchen är EXAKT — prefix räcker inte (S91-fixturen överlever)', () => {
@@ -602,9 +791,9 @@ t('planClean klassar radera/skyddad/länkad/icke-markerad korrekt', () => {
     events: [
       {
         id: 'recEv1',
-        fields: { Ort: 'ZZ-GRANSKNING-FIXTUR', Notering: `${CONFIG.marker.noteringSentinel} x` },
+        fields: { Ort: ORT, Notering: `${CONFIG.marker.noteringSentinel} x` },
       },
-      { id: 'recEv2', fields: { Ort: 'ZZ-GRANSKNING-FIXTUR', Notering: 'Riktigt event' } },
+      { id: 'recEv2', fields: { Ort: ORT, Notering: 'Riktigt event' } },
     ],
     registrations: [
       { id: 'recAn1', fields: { 'E-post': FIXTUR_EPOST } },
@@ -615,7 +804,7 @@ t('planClean klassar radera/skyddad/länkad/icke-markerad korrekt', () => {
       { id: 'recPe2', fields: { 'E-post': FIXTUR_EPOST, Deltaganden: ['recX'] } },
       { id: 'recqxaFNwHAdQlAqb', fields: { 'E-post': FIXTUR_EPOST } },
     ],
-    ort: 'ZZ-GRANSKNING-FIXTUR',
+    ort: ORT,
     pattern: PATTERN,
     config: CONFIG,
   });
@@ -632,7 +821,7 @@ t('clean raderar INGENTING när inget bär markören (fail-safe)', () => {
     events: [{ id: 'recBepsw4Qy9scfoj', fields: { Ort: 'ZZ-GRANSKNING-S91' } }],
     registrations: [{ id: 'recR', fields: { 'E-post': 'zz-granskning-15@staging.test' } }],
     persons: [{ id: 'recP', fields: { 'E-post': 'zz-arbetsko-person01@staging.test' } }],
-    ort: 'ZZ-GRANSKNING-FIXTUR',
+    ort: ORT,
     pattern: PATTERN,
     config: CONFIG,
   });
@@ -643,6 +832,165 @@ t('clean raderar INGENTING när inget bär markören (fail-safe)', () => {
 
 t('saknat E-post-fält matchar aldrig', () => {
   assert.equal(isFixtureEmailRecord({ id: 'recF', fields: {} }, PATTERN), false);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TASK-97 — LÄNKGRAFEN ÄR CLEANENS BÄRANDE IDENTIFIERING
+//
+// E-posten kan inte längre koda orten (den ska se äkta ut), så grafen gör det
+// i stället: event med sentinel → dess anmälningar → deras Person-länkar.
+// Sviten är tvåsidig: den prövar att grafen NÅR sina egna rader, och att den
+// inte kan nå någon annans.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Ett fixtur-event med angivna anmälnings-länkar. */
+const grafEvent = (id, anmalningar, ort = ORT) => ({
+  id,
+  fields: {
+    Ort: ort,
+    Notering: `${CONFIG.marker.noteringSentinel} [UTGÅR: 2026-08-24] fixtur`,
+    [CONFIG.linkFields.eventAnmalningar]: anmalningar,
+  },
+});
+
+t('TASK-97: grafen läser eventets anmälnings-länkar i ordning och utan dubbletter', () => {
+  const idn = lankadeIdn(
+    [grafEvent('recEv1', ['recAn1', 'recAn2']), grafEvent('recEv2', ['recAn2', 'recAn3'])],
+    CONFIG.linkFields.eventAnmalningar,
+  );
+  assert.deepEqual(idn, ['recAn1', 'recAn2', 'recAn3']);
+});
+
+t('TASK-97: tomt eller saknat länkfält ger tom lista — aldrig ett kast', () => {
+  assert.deepEqual(lankadeIdn([], CONFIG.linkFields.eventAnmalningar), []);
+  assert.deepEqual(lankadeIdn([{ id: 'recEv', fields: {} }], 'Person'), []);
+  assert.deepEqual(lankadeIdn([{ id: 'recEv' }], 'Person'), [], 'ett event utan anmälningar är OK');
+  assert.deepEqual(lankadeIdn([{ id: 'recEv', fields: { Person: [] } }], 'Person'), []);
+});
+
+t('TASK-97 · GRÖN SIDA: ett VERKLIGT event i samma stad bidrar med NOLL rader', () => {
+  // Kärnan i bytet från ZZ-ort till riktig stad. Grafen startar i exakt den
+  // mängd planClean godkänner — ett event utan sentinel kommer aldrig med, och
+  // därmed listas dess anmälningar och personer aldrig ens.
+  const events = [
+    grafEvent('recFixtur', ['recAn1', 'recAn2']),
+    {
+      id: 'recVerkligtVarberg',
+      fields: {
+        Ort: ORT,
+        Notering: 'Riktigt event i Varberg — anmälningar från riktiga deltagare',
+        [CONFIG.linkFields.eventAnmalningar]: ['recRiktig1', 'recRiktig2'],
+      },
+    },
+  ];
+  const plan = planClean({
+    events,
+    registrations: [],
+    persons: [],
+    ort: ORT,
+    pattern: PATTERN,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, ['recFixtur']);
+  const fixturEvents = events.filter((rec) => plan.events.includes(rec.id));
+  assert.deepEqual(lankadeIdn(fixturEvents, CONFIG.linkFields.eventAnmalningar), [
+    'recAn1',
+    'recAn2',
+  ]);
+});
+
+t('TASK-97 · GRÖN SIDA: ett SKYDDAT event bidrar med noll rader, sentinel eller ej', () => {
+  const events = [grafEvent(CONFIG.protectedRecordIds[2], ['recAn1'])];
+  const plan = planClean({
+    events,
+    registrations: [],
+    persons: [],
+    ort: ORT,
+    pattern: PATTERN,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, []);
+  assert.deepEqual(
+    lankadeIdn(
+      events.filter((rec) => plan.events.includes(rec.id)),
+      CONFIG.linkFields.eventAnmalningar,
+    ),
+    [],
+    'de permanenta fixturernas anmälningar får aldrig ens listas',
+  );
+});
+
+t('TASK-97: föräldralös-vägen kräver BÅDA villkoren', () => {
+  const falt = CONFIG.linkFields.personAnmalningar;
+  const foraldralos = { id: 'recP1', fields: { 'E-post': FIXTUR_EPOST } };
+  const tomLista = { id: 'recP2', fields: { 'E-post': FIXTUR_EPOST, [falt]: [] } };
+  const harAnmalan = { id: 'recP3', fields: { 'E-post': FIXTUR_EPOST, [falt]: ['recAn1'] } };
+  const riktigPerson = { id: 'recP4', fields: { 'E-post': 'lotta@miranon.se' } };
+  assert.equal(arForaldralosFixturperson(foraldralos, PATTERN, falt), true);
+  assert.equal(arForaldralosFixturperson(tomLista, PATTERN, falt), true);
+  assert.equal(
+    arForaldralosFixturperson(harAnmalan, PATTERN, falt),
+    false,
+    'en person med anmälan tillhör en LEVANDE fixtur — grafen äger den, inte svepet',
+  );
+  assert.equal(
+    arForaldralosFixturperson(riktigPerson, PATTERN, falt),
+    false,
+    'en riktig adress är aldrig föräldralös fixturdata, hur tom länken än är',
+  );
+});
+
+t('TASK-97 · GRÖN SIDA: en annan LEVANDE fixturs personer kan aldrig fångas', () => {
+  // Två samtidiga granskningsfixturer är hela poängen med bytet: e-posten
+  // kodar inte längre orten, så det är grafen som håller isär dem.
+  const falt = CONFIG.linkFields.personAnmalningar;
+  const annanFixturperson = {
+    id: 'recAnnan',
+    fields: { 'E-post': 'bengt.lindqvist@example.org', [falt]: ['recAnAnnan'] },
+  };
+  assert.equal(arForaldralosFixturperson(annanFixturperson, PATTERN, falt), false);
+});
+
+t('TASK-97: en person grafen pekar ut men vars adress är främmande raderas ALDRIG', () => {
+  // Andra spärren. Länken säger "radera", adressen säger nej — nej vinner.
+  const plan = planClean({
+    events: [],
+    registrations: [{ id: 'recAn1', fields: { 'E-post': 'kund@miranon.se' } }],
+    persons: [{ id: 'recP1', fields: { 'E-post': 'kund@miranon.se' } }],
+    ort: ORT,
+    pattern: PATTERN,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.registrations, []);
+  assert.deepEqual(plan.persons, []);
+  assert.equal(plan.skippedRegistrations[0].orsak, 'e-post matchar inte fixtur-mönstret');
+  assert.equal(plan.skippedPersons[0].orsak, 'e-post matchar inte fixtur-mönstret');
+});
+
+t('TASK-97: en fixtur skapad FÖRE bytet är fortfarande städbar', () => {
+  // Orkestreraren städar de befintliga ZZ-GRANSKNING-fixturerna med DENNA kod.
+  // Faller detta test är de ostädbara — värre än att de var fula.
+  const gammalOrt = 'ZZ-GRANSKNING-S103';
+  const gammalEpost = 'seed-review+zz-granskning-s103-01@granskning.test';
+  const plan = planClean({
+    events: [
+      {
+        id: 'recGammal',
+        fields: {
+          Ort: gammalOrt,
+          Notering: `${CONFIG.marker.noteringSentinel} [UTGÅR: 2026-08-24]`,
+        },
+      },
+    ],
+    registrations: [{ id: 'recAn1', fields: { 'E-post': gammalEpost } }],
+    persons: [{ id: 'recP1', fields: { 'E-post': gammalEpost } }],
+    ort: gammalOrt,
+    pattern: PATTERN,
+    config: CONFIG,
+  });
+  assert.deepEqual(plan.events, ['recGammal']);
+  assert.deepEqual(plan.registrations, ['recAn1']);
+  assert.deepEqual(plan.persons, ['recP1']);
 });
 
 // --- Övrigt ---
@@ -975,6 +1323,11 @@ t('DEL B · GRÖN SIDA: legacy-mönstren matchar ALDRIG riktiga eller permanenta
     'zz-arbetsko-person01@staging.test',
     'create-test+01234567-89ab-4cde-8f01-23456789abcd@staging.test',
     'seed-review+zz-granskning-fixtur-01@granskning.test',
+    // TASK-97:s realistiska form. Skövde-postens mönster ligger på SAMMA
+    // domän (`granskning-…@example.com`) — bindestrecks-formen mot punkt-
+    // formen är det enda som skiljer dem, och det måste hålla.
+    'astrid.almqvist@example.com',
+    'viktor.zetterlund@example.org',
   ];
   for (const post of CONFIG.legacy) {
     const p = new RegExp(post.emailPattern);
@@ -1287,18 +1640,18 @@ t('TASK-101: utgångsstämpelns parser delar kalender-prövning med avslutningen
 // ═══════════════════════════════════════════════════════════════════════════
 
 t('AC #4: purge-policyn har NOLL target som kan matcha en granskningsfixtur', () => {
-  const slug = slugify(CONFIG.defaults.ort);
   const samples = [
-    { table: 'Eventplanering', field: 'Ort', value: CONFIG.defaults.ort },
-    ...Array.from({ length: 16 }, (_, i) => ({
-      table: 'Anmälningar',
-      field: 'E-post',
-      value: fixtureEmail(slug, i, CONFIG.marker),
-    })),
+    ...defaultSamples(),
     // Legacy-fixturernas markörer måste vara lika immuna.
     ...CONFIG.legacy.map((p) => ({ table: 'Eventplanering', field: 'Ort', value: p.ort })),
     { table: 'Anmälningar', field: 'E-post', value: 'zz-granskning-01@staging.test' },
     { table: 'Anmälningar', field: 'E-post', value: 'granskning-review@example.com' },
+    // Den pre-TASK-97:a formen ligger kvar i basen tills orkestreraren städat.
+    {
+      table: 'Anmälningar',
+      field: 'E-post',
+      value: 'seed-review+zz-granskning-s103-01@granskning.test',
+    },
   ];
   assert.deepEqual(purgeCollisions(samples, PURGE_POLICY), []);
 });
