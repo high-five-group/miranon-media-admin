@@ -194,6 +194,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Group,
+  Layers,
   ListPlus,
   MailCheck,
   Pencil,
@@ -1025,6 +1026,275 @@ function useUnionsUtfall(entiteter: SegmentEntitet[], parInfo: ParInfo[]) {
 }
 
 /* ================================================================== *
+ * TÄCKNINGSVYN — ett LÄGE på listan, ingen ny objekttyp
+ * (S104 Del 3 "partition som GENERATOR" + Del 4 konvergens, task-181)
+ * ================================================================== */
+
+/**
+ * Visar en genererad grupp-UPPSÄTTNING som HELHET: de fjorton förskapade
+ * grupperna, eller en enskild körning av "Dela upp i grupper" — aldrig en
+ * enstaka grupp (den frågan besvarar redan kortets eget antal).
+ *
+ * SVARAR PÅ TRE TAL, INGET ANNAT (Del 3: "det var den egenskapen som gjorde
+ * Skool-uppladdningen trygg"): hur många är i EXAKT en grupp, hur många i
+ * MER ÄN EN (ska vara noll per konstruktion — `byggGrupp`s `utan`-hälft
+ * utesluter grannarna, se PARTITION-GENERATORNS KÄRNA ovan — men kan bli
+ * >0 om någon redigerar en genererad grupps regel i efterhand), och hur
+ * många med genomförd närvaro i uppsättningens modalitet är i INGEN grupp
+ * alls. Den sista är den som gör RIM 4-rötan (filhuvudet § REGELFORMEN)
+ * synlig i stället för tyst: en ny kurs ger folk `harledKursAtomer` inte
+ * känner till, de hamnar i ingen atom och därmed i ingen grupp — täckningen
+ * visar dem, i stället för att uppsättningen tyst blir ofullständig.
+ *
+ * UPPSÄTTNINGS-IDENTITETEN HÄRLEDS UR ID-PREFIXET, INGEN FJÄRDE BOKFÖRING
+ * (minsta yta): `byggDeFjorton` ger alla sina entiteter prefixet
+ * `de-fjorton-`, en generator-körning ger alla sina samma `gen-<ts>-`
+ * (samma `Date.now()`-anrop, se `DelaUppIGrupper.skapa`). En entitet
+ * UTANFÖR de två familjerna (sparat Airtable-segment, ett obesparat "Nytt
+ * segment") hör inte till någon uppsättning — täckning är en fråga bara en
+ * GENERERAD partition kan svara på, för bara den lovar att ha delat upp
+ * ALLA atomer den byggdes ur.
+ *
+ * MODALITETEN LÄSES UR PREDIKATET, INTE UR EN EGEN KARTA (`harledModalitet`):
+ * `byggGrupp` sätter SAMMA modalitet-parameter på varje villkor den skapar
+ * — `med` OCH `utan` — så det räcker att läsa det FÖRSTA. En parallell
+ * karta (`FACIT_KARTA`s form) hade kunnat glida isär från predikatet den
+ * beskriver; att läsa modaliteten ur samma data som redan bär den kan det
+ * aldrig göra.
+ *
+ * FLERA UPPSÄTTNINGAR SAMTIDIGT (de fjorton finns alltid från mount, plus
+ * noll eller fler generator-körningar): den enklaste ÄRLIGA lösningen är
+ * täckning PER uppsättning, alla synliga samtidigt när läget är på — inte
+ * en väljare som pekar ut en. En väljare hade krävt ett default-val och en
+ * extra stat för en yta som i praktiken visar 1–2 uppsättningar samtidigt;
+ * att lista dem alla är varken dyrare att räkna (varje panel kör sin egen
+ * fråga oavsett vald/ej vald) eller svårare att läsa.
+ */
+type Uppsattning = {
+  nyckel: string;
+  namn: string;
+  entiteter: SegmentEntitet[];
+  modalitet: ModalitetsVal;
+};
+
+/** Modaliteten `byggGrupp` skrev in i varje villkor — se docblocket ovan. */
+function harledModalitet(entitet: SegmentEntitet): ModalitetsVal | null {
+  return (
+    entitet.predikat?.med[0]?.villkor[0]?.modalitet ?? entitet.predikat?.utan[0]?.modalitet ?? null
+  );
+}
+
+/** Grupperar posterna på id-prefix. Entiteter utanför `de-fjorton-`/`gen-<ts>-`
+ *  hör inte till någon uppsättning och bidrar inte till täckningsvyn. */
+function harledUppsattningar(poster: SegmentEntitet[]): Uppsattning[] {
+  const grupper = new Map<string, SegmentEntitet[]>();
+  const namn = new Map<string, string>();
+  for (const e of poster) {
+    let nyckel: string | null = null;
+    if (e.id.startsWith('de-fjorton-')) {
+      nyckel = 'de-fjorton';
+      namn.set(nyckel, 'De fjorton');
+    } else {
+      const traff = /^gen-(\d+)-/.exec(e.id);
+      if (traff?.[1]) {
+        nyckel = `gen-${traff[1]}`;
+        if (!namn.has(nyckel)) {
+          const tid = new Date(Number(traff[1])).toLocaleTimeString('sv-SE', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          namn.set(nyckel, `Uppdelning kl. ${tid}`);
+        }
+      }
+    }
+    if (nyckel === null) continue;
+    const lista = grupper.get(nyckel);
+    if (lista) lista.push(e);
+    else grupper.set(nyckel, [e]);
+  }
+  const uppsattningar: Uppsattning[] = [];
+  for (const [nyckel, entiteter] of grupper) {
+    const modalitet = entiteter.map(harledModalitet).find((m): m is ModalitetsVal => m !== null);
+    // Kan i praktiken inte inträffa (`villkorForAtom` sätter alltid en konkret
+    // modalitet), men en uppsättning utan känd modalitet kan inte besvara
+    // populationsfrågan och utelämnas därför hellre än att gissa.
+    if (modalitet === undefined) continue;
+    uppsattningar.push({ nyckel, namn: namn.get(nyckel) ?? nyckel, entiteter, modalitet });
+  }
+  return uppsattningar;
+}
+
+type TackningsUtfall =
+  | { status: 'raknar' }
+  | { status: 'fel' }
+  | { status: 'klar'; tackta: number; dubbla: number; utanfor: SegmentMember[] };
+
+/**
+ * TÄCKNINGENS RÄKNING. `useUnionsUtfall` ger gruppernas medlemsmängder på
+ * SAMMA frågefabrik som listans egna kort (`medlemsFraga`s signatur-cache)
+ * — ett redan räknat kort kostar noll här. Den enda NYA frågan är
+ * populationsregeln: alla taxonomins par för uppsättningens modalitet,
+ * byggd exakt som `useModalitetsFordelning`s `utbildningsRegel` för
+ * Utbildning — samma innehåll ⇒ samma `regelSignatur` ⇒ samma cache-post om
+ * den hooken råkar vara monterad någon annanstans (frågeekonomin, beslut 5).
+ *
+ * RÄKNAS ALLTID PÅ VERKLIGA MÄNGDER (beslut 4): varken `perEntitet` eller
+ * `population` går via `fyllUt`/skalprovet — de är `compute-segment`s
+ * obehandlade svar. Skalprovs-växeln kan stå i vilket läge som helst utan
+ * att en enda siffra här ändras; det är en EGENSKAP av att koden aldrig rör
+ * skalprovet, inte ett villkor som kollas.
+ */
+function useTackning(uppsattning: Uppsattning, parInfo: ParInfo[]): TackningsUtfall {
+  const {
+    perEntitet,
+    isPending: grupperVantar,
+    misslyckade,
+  } = useUnionsUtfall(uppsattning.entiteter, parInfo);
+
+  const populationRegel = useMemo<SegmentRule>(
+    () => ({
+      include: parInfo
+        .filter(
+          (p) => uppsattning.modalitet === 'Båda' || p.par.modalitet === uppsattning.modalitet,
+        )
+        .map((p) => p.par),
+      exclude: [],
+    }),
+    [parInfo, uppsattning.modalitet],
+  );
+  const population = useMedlemmar(populationRegel, true);
+
+  if (misslyckade > 0 || population.isError) return { status: 'fel' };
+  if (grupperVantar || population.data === undefined) return { status: 'raknar' };
+
+  const forekomster = new Map<string, number>();
+  for (const p of perEntitet) {
+    for (const m of p.data?.members ?? []) {
+      forekomster.set(m.id, (forekomster.get(m.id) ?? 0) + 1);
+    }
+  }
+  const dubbla = [...forekomster.values()].filter((n) => n >= 2).length;
+  const tackta = forekomster.size - dubbla;
+  const { data: populationSvar } = population;
+  const utanfor = populationSvar.members.filter((m) => !forekomster.has(m.id));
+
+  return { status: 'klar', tackta, dubbla, utanfor };
+}
+
+/**
+ * EN UPPSÄTTNING, ETT PANEL. Panelerna läggs ÖVER listan (mellan handlings-
+ * raden och korten) — listan döljs aldrig, täckningen är ett TILLÄGG, inte
+ * en ersättning. `role="status"` + `aria-live="polite"` på summeringen
+ * (kvalitetsribban): talen uppdateras när frågorna svarar, och det ska höras
+ * utan att man letar upp raden själv — samma mönster som
+ * fördelnings-kontrollen i `UtskicksVy`. Dubbeltäckningen bärs av
+ * `StatusBadge` (TEXT + ikon), aldrig av färg ensam.
+ *
+ * "Visa vilka"-listan speglar `UtskicksVy`s blandade-mottagare-mönster:
+ * antal ≤ `CHUNK` visas hel, annars de första `CHUNK` + ett rest-antal.
+ */
+function TackningsPanel({
+  uppsattning,
+  parInfo,
+}: {
+  uppsattning: Uppsattning;
+  parInfo: ParInfo[];
+}) {
+  const utfall = useTackning(uppsattning, parInfo);
+  const [visaUtanfor, setVisaUtanfor] = useState(false);
+  const utanforPanelId = useId();
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+      <h2 className="font-semibold text-body">Täckning: {uppsattning.namn}</h2>
+
+      {utfall.status === 'raknar' && (
+        <p aria-live="polite" className="text-small text-text-muted">
+          Räknar täckningen…
+        </p>
+      )}
+
+      {utfall.status === 'fel' && (
+        <MessageBox intent="error" title="Täckningen kunde inte räknas">
+          Något av delsvaren gick inte att hämta. Försök igen om en stund.
+        </MessageBox>
+      )}
+
+      {utfall.status === 'klar' && (
+        <div role="status" aria-live="polite" aria-atomic="true" className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {utfall.dubbla === 0 ? (
+              <StatusBadge ton="success" storlek="sm">
+                Varje person i exakt en grupp
+              </StatusBadge>
+            ) : (
+              // `StatusBadge.children` är typad `string` (samma disciplin som
+              // resten av filens `StatusBadge`-anrop) - en mall-sträng, inte
+              // flera barn-noder.
+              <StatusBadge ton="warning" storlek="sm">
+                {`${utfall.dubbla} ${personform(utfall.dubbla)} i mer än en grupp`}
+              </StatusBadge>
+            )}
+          </div>
+
+          <p className="text-small text-text-secondary">
+            {utfall.tackta} {personform(utfall.tackta)} täckta - i exakt en av grupperna.
+          </p>
+
+          {utfall.utanfor.length === 0 ? (
+            <p className="text-small text-text-secondary">
+              Kontrollerat: ingen är i ingen grupp - alla med genomförd närvaro i den här
+              modaliteten hör hemma i någon av grupperna.
+            </p>
+          ) : (
+            <MessageBox
+              intent="warning"
+              title={`${utfall.utanfor.length} ${personform(utfall.utanfor.length)} i ingen grupp`}
+            >
+              <p>
+                De har genomförd närvaro men är inte med i någon av uppsättningens grupper - de nås
+                inte om du skickar till hela uppsättningen.
+              </p>
+              <button
+                type="button"
+                aria-expanded={visaUtanfor}
+                aria-controls={utanforPanelId}
+                onClick={() => setVisaUtanfor((v) => !v)}
+                className="flex items-center gap-1.5 self-start font-medium text-small underline hover:no-underline"
+              >
+                {visaUtanfor
+                  ? 'Dölj vilka'
+                  : `Visa vilka (${Math.min(utfall.utanfor.length, CHUNK)})`}
+                <ChevronDown
+                  aria-hidden="true"
+                  size={16}
+                  className={`shrink-0 motion-safe:transition-transform ${
+                    visaUtanfor ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              <ul id={utanforPanelId} hidden={!visaUtanfor} className="flex flex-col gap-0.5 pt-1">
+                {utfall.utanfor.slice(0, CHUNK).map((m) => (
+                  <li key={m.id} className="text-small">
+                    {visatNamn(m)}
+                    <span className="text-text-muted"> · {m.email ?? 'ingen e-postadress'}</span>
+                  </li>
+                ))}
+                {utfall.utanfor.length > CHUNK && (
+                  <li className="text-small text-text-muted">
+                    + {utfall.utanfor.length - CHUNK} till
+                  </li>
+                )}
+              </ul>
+            </MessageBox>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================================================================== *
  * LISTAN — HEM
  * ================================================================== */
 
@@ -1204,6 +1474,8 @@ function SegmentLista({
   onMarkeraAlla,
   onRensa,
   onSkicka,
+  tackningsLage,
+  onTackning,
 }: {
   poster: SegmentEntitet[];
   parInfo: ParInfo[];
@@ -1222,9 +1494,13 @@ function SegmentLista({
   onMarkeraAlla: () => void;
   onRensa: () => void;
   onSkicka: () => void;
+  /** Täckningsvyns läge (S104 Del 4, task-181) — se docblocket ovan `TackningsPanel`. */
+  tackningsLage: boolean;
+  onTackning: () => void;
 }) {
   const rubrikRef = useRef<HTMLHeadingElement>(null);
   useVyFokus(rubrikRef, !laddar);
+  const uppsattningar = useMemo(() => harledUppsattningar(poster), [poster]);
 
   const markerbara = poster.length;
   const allaValda = markerbara > 0 && valda.size === markerbara;
@@ -1319,6 +1595,23 @@ function SegmentLista({
                 <Group aria-hidden="true" size={18} className="shrink-0" />
                 Dela upp i grupper
               </button>
+              {/* TÄCKNINGSVYNS INGÅNG (S104 Del 4 konvergens, task-181,
+                  uppdragets beslut 1: "ett LÄGE på listan, ALDRIG en ny
+                  objekttyp"). Tredje kapseln i samma familj som de två ovan
+                  - alla tre handlar om GRUPP-UPPSÄTTNINGEN som helhet, inte
+                  om ett enskilt segment. `aria-pressed` (till skillnad från
+                  "Markera"-knappen till höger, som byter etikett i stället)
+                  eftersom detta är ett RENT läge utan eget innehåll att peka
+                  på - trycket ÄR hela tillståndet (kvalitetsribban). */}
+              <button
+                type="button"
+                aria-pressed={tackningsLage}
+                onClick={onTackning}
+                className={KAPSEL_KLASS}
+              >
+                <Layers aria-hidden="true" size={18} className="shrink-0" />
+                Täckning
+              </button>
             </>
           )}
           {markerbara > 0 && (
@@ -1332,6 +1625,37 @@ function SegmentLista({
             </button>
           )}
         </div>
+
+        {/* TÄCKNINGSPANELERNA (S104 Del 4, task-181). Läggs ÖVER listan -
+            mellan handlingsraden och korten, listan döljs aldrig. Göms i
+            markera-läget: de två lägena löser olika ärenden och har inget
+            gemensamt att visa samtidigt (samma princip som "Nytt
+            segment"/"Dela upp i grupper" göms där). En uppsättning per
+            panel (flera-uppsättningar-beslutet i docblocket ovan
+            `TackningsPanel`) - de fjorton finns från mount, så listan är
+            aldrig tom när läget slås på.
+
+            `!laddar` GRINDAR ÄVEN HÄR (till skillnad från handlingsraden
+            ovan, som redan visas under laddning): innan `events` svarat är
+            `parInfo` tom, och en panel som räknar mot en tom taxonomi hade
+            kunnat visa "0 utanför" en bråkdel av en sekund innan det rätta
+            talet landar. Ett kort missvisande nollresultat är precis den
+            tysta felklass täckningsvyn finns för att avslöja - den ska
+            därför aldrig själv producera en. */}
+        {tackningsLage && !markeraLage && !laddar && (
+          <div className="flex flex-col gap-4">
+            {uppsattningar.length === 0 ? (
+              <p className="text-small text-text-muted">
+                Ingen genererad grupp-uppsättning att visa täckning för än. Täckning gäller de
+                fjorton förskapade grupperna eller en körning av "Dela upp i grupper".
+              </p>
+            ) : (
+              uppsattningar.map((u) => (
+                <TackningsPanel key={u.nyckel} uppsattning={u} parInfo={parInfo} />
+              ))
+            )}
+          </div>
+        )}
 
         {fel && (
           <MessageBox intent="error" title="Kunde inte hämta sparade segment">
@@ -1400,7 +1724,9 @@ function SegmentLista({
               Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är
               påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad. De
               fjorton förskapade grupperna bär dessutom sitt eget facit - se skalprovs-växeln för
-              vad det betyder.
+              vad det betyder. Täckningsknappen visar hur en hel grupp-uppsättnings grupper täcker
+              alla med genomförd närvaro i sin modalitet - alltid på riktiga tal, oavsett
+              skalprovets läge.
             </PrototypNot>
           </>
         )}
@@ -3658,6 +3984,10 @@ export function VariantD() {
    * ska klara samma storlek. Växeln bor däremot bara där publiken bor.
    */
   const [skalprov, setSkalprov] = useState(false);
+  /** Täckningsvyns läge (S104 Del 4, task-181) — bor på variant-nivå av samma
+   *  skäl som `skalprov`: läget hör till LISTAN, inte till en enskild
+   *  post, och listan är den enda ytan som renderar `SegmentLista`. */
+  const [tackningsLage, setTackningsLage] = useState(false);
 
   const segments = useQuery({
     queryKey: ['proto-d', 'segments'],
@@ -3848,6 +4178,8 @@ export function VariantD() {
         // när utskicksvyn öppnas. Vägen lista → utskick kostar noll walks.
         setVy({ namn: 'utskick', ids: [...valda], retur: 'lista' });
       }}
+      tackningsLage={tackningsLage}
+      onTackning={() => setTackningsLage((v) => !v)}
     />
   );
 }
