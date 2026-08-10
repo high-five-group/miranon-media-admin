@@ -1,0 +1,26 @@
+---
+id: TASK-193
+title: >-
+  send-action-email-bilagor saknar explicit content-type — Resend servar
+  application/octet-stream
+status: To Do
+assignee: []
+created_date: '2026-08-10 18:17'
+labels: []
+dependencies: []
+ordinal: 358000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+FYND (FRAMME-verifikatet varv 3, 2026-08-10, mail b1e1b27b-e579-4c39-960d-f0a0cc8b7ea1): makeRealSingleSender i send-action-email/index.ts mappar attachments till {filename, content} UTAN type-fält → Resend faller tillbaka på application/octet-stream i stället för application/pdf. Blockerar inget (filändelsen .pdf styr klienthantering, innehållet bevisat intakt %PDF-1.7) men är en billig korrekthetsförbättring. FÖRVÄNTAT: sätt type: 'application/pdf' (eller härled ur filändelsen) i attachment-payloaden; verifiera mot Resend API-dokumentationens attachment-schema (research före implementation).
+<!-- SECTION:DESCRIPTION:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->

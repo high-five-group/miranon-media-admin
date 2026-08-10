@@ -1,10 +1,10 @@
 ---
 id: TASK-147.5
 title: 'Skiva: Bilage-bärande sändvägen + bilageväljaren skarp'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-10 07:01'
-updated_date: '2026-08-10 15:29'
+updated_date: '2026-08-10 18:15'
 labels:
   - ready-for-agent
 dependencies:
@@ -27,7 +27,7 @@ Täcker användarberättelser: 7, 8, 25.
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Utskick med vald bilaga går via singelloop-grenen; utskick utan bilaga fortsatt via batchgrenen — grenvalet automatiskt
-- [ ] #2 Bilagan bevisad FRAMME i mottaget mail ände-till-ände (staging/testmottagare)
+- [x] #2 Bilagan bevisad FRAMME i mottaget mail ände-till-ände (staging/testmottagare)
 - [x] #3 Idempotensnyckeln deterministisk per mottagare: omkörning dubblerar ingen
 - [x] #4 Ingen bilaga förvald (grillad samsyn beslut 5 — bevarat beteende, verifierat)
 <!-- AC:END -->
@@ -50,11 +50,17 @@ Fynd: (1) PrototypNot-textens tva stale pastaenden rattade i samma commit (billi
 Modell-identitet: Sonnet 5 (claude-sonnet-5).
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Done S102 batch ⑬: PR #1128 (merge c55e8fb2) + em-dash-fix 1aea42d2. AC #2/DoD #5 FRAMME-bevisad 2026-08-10 varv 3: mail b1e1b27b-e579-4c39-960d-f0a0cc8b7ea1 till delivered@resend.dev, bilaga 'Deltagarinformation – ZZ-create-event-test – ....pdf' 1298 bytes, nedladdad+verifierad %PDF-1.7; idempotens skarp (2 anrop → 1 mail). Vägen krävde två fix-vågor: ref-incidenten (S102 Del 4) + Event-fältnamnsbuggen (147.1-arv, fixad PR #1134/69c17f40 med tvåsidigt regressionsbevis). CI grön per jobb på PR:en. Bifynd bokfört: attachment saknar explicit content-type (application/octet-stream) — eget kort.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Bilagan bevisad ände-till-ände FRAMME hos mottagaren (PRD DoD 5-arv)
+- [x] #5 Bilagan bevisad ände-till-ände FRAMME hos mottagaren (PRD DoD 5-arv)
 <!-- DOD:END -->

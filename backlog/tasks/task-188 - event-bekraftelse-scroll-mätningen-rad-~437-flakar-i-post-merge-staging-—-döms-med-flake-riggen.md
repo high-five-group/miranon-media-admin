@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-10 14:12'
+updated_date: '2026-08-10 18:16'
 labels: []
 dependencies: []
 ordinal: 354000
@@ -24,3 +25,9 @@ SYMPTOM (mätt, 3 instanser 2026-08-10): toBeLessThanOrEqual-mätningen i tests/
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TREDJE instansen 2026-08-10: post-merge-run för 0debb7cb (#1129, stängd mot detta kort) föll 3/3 på rad ~437 + ~445 (nu TVÅ mätpunkter i samma test). Instanser i dag totalt: 10430913 (hard 3/3), ecfc3596 (retry-pass), 0debb7cb (hard 3/3). Prioriteten stiger — varje kodlandnings post-merge riskerar rödmålning.
+<!-- SECTION:NOTES:END -->
