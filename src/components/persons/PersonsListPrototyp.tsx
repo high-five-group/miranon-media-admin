@@ -93,10 +93,31 @@ function displayName(person: Person): string {
   return composed || 'Okänt namn';
 }
 
-/** Kontaktrad — e-post och/eller telefon, det som finns. */
+/**
+ * Kontaktrad — e-post, telefon och ORT, det som finns.
+ *
+ * [PROTOTYPE] STEG 12 (k12) — orten tillkom i S103-grillningen. Raden i ett
+ * UPPSLAGSVERK har ett jobb: låta Lotta säga "ja, det är hen". Orten är det
+ * starkaste särskiljande draget efter namnet (två "Anna Andersson" skiljs av
+ * Skövde/Skara), den ligger redan i modellen, och den är redan sökbar i
+ * `get-persons` SEARCH_FIELDS - raden visar därmed det Lotta nyss sökte på.
+ */
 function contactLine(person: Person): string | null {
-  const parts = [person.email, person.telefon].filter(Boolean);
+  const parts = [person.email, person.telefon, ...person.ort].filter(Boolean);
   return parts.length > 0 ? parts.join(' · ') : null;
+}
+
+/**
+ * [PROTOTYPE] STEG 12 (k12) — hur kall kontakten är, i klartext.
+ *
+ * Speglar basens egen `Textfält bonus`-formel (Idag/Igår/N dagar sedan) så
+ * appen och Airtable talar samma språk om samma sak. Siffran bärs av
+ * `tabular-nums` i anropet så talen står i kolumn när ögat scannar nedåt.
+ */
+function dagarText(dagar: number): string {
+  if (dagar === 0) return 'Idag';
+  if (dagar === 1) return 'Igår';
+  return `${dagar} dagar sedan`;
 }
 
 /**
@@ -126,16 +147,6 @@ function useForberedPersonDetalj(): (personId: string) => void {
     },
     [dataSource, queryClient],
   );
-}
-
-/**
- * [PROTOTYPE] STEG 4 (k04) — anmälningarna som SPRÅK, inte som fältetikett.
- * `Anmälningar (totalt): 1` är basens kolumnnamn, inte svenska. Talet bär
- * `tabular-nums` så siffrorna står i kolumn när ögat scannar nedåt.
- */
-function anmalningarText(antal: number): string {
-  if (antal === 0) return 'Inga anmälningar';
-  return antal === 1 ? '1 anmälan' : `${antal} anmälningar`;
 }
 
 /**
@@ -445,13 +456,35 @@ export function PersonsListPrototyp() {
                       {displayName(person)}
                     </Link>
                     {contact && <span className="text-small text-text-muted">{contact}</span>}
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      {person.erfarenhetsbadge && <Pill>{person.erfarenhetsbadge}</Pill>}
-                      {person.harAktivAnmalan === 'Aktiv' && <Pill ton="aktiv">Aktiv anmälan</Pill>}
-                      <span className="text-caption text-text-muted tabular-nums">
-                        {anmalningarText(person.antalAnmalningar)}
+                    {/* [PROTOTYPE] STEG 12 (k12) — SENASTE INTERAKTION.
+                    Marcus-önskan ur S103-grillningen: "vad var det, och hur
+                    länge sedan". Texten kommer färdigformad ur basen sedan
+                    formeländringen samma dag (`Deltog · RIM 1, Falköping ·
+                    21 mar 2026`) - appen bygger ingen egen sträng och parsar
+                    ingen, så en formeländring i basen slår igenom utan
+                    kodändring (ADR-063: basen levererar det appen behöver).
+
+                    ERFARENHETSBADGEN OCH "N anmälningar" ÄR BORTA HÄRIFRÅN
+                    (fanns i k04-k11): båda är BEDÖMNING, och radens jobb i ett
+                    uppslagsverk är IDENTIFIERING. De bor kvar i detaljvyn.
+                    Därmed dog också "Ej påbörjat"-forken utan att behöva
+                    avgöras - den frågan förutsatte att badgen var på raden. */}
+                    {person.senasteInteraktion && (
+                      <span className="text-caption text-text-muted">
+                        {person.dagarSedanSenaste != null && (
+                          <span className="tabular-nums">
+                            {dagarText(person.dagarSedanSenaste)}
+                            {' · '}
+                          </span>
+                        )}
+                        {person.senasteInteraktion}
                       </span>
-                    </div>
+                    )}
+                    {person.harAktivAnmalan === 'Aktiv' && (
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <Pill ton="aktiv">Aktiv anmälan</Pill>
+                      </div>
+                    )}
                   </div>
                   <ChevronRight
                     aria-hidden="true"
