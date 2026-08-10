@@ -4,6 +4,7 @@ title: Stale READ-ONLY-docblock i AtgardsSida.tsx skrivs om till produktionsstat
 status: To Do
 assignee: []
 created_date: '2026-08-09 18:26'
+updated_date: '2026-08-10 10:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -18,9 +19,11 @@ Fynd flaggat i task-171.5:s final summary ("Flaggat i notes för framtida triage
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Docblocken i AtgardsSida.tsx beskriver ytans faktiska produktionsstatus — ingen stale READ-ONLY-/prototyp-era-referens kvar i filen
-- [ ] #2 Omskrivningen är ren kommentar-ändring: noll beteende-diff (typecheck, biome, build, test:api gröna)
+- [x] #1 Docblocken i AtgardsSida.tsx beskriver ytans faktiska produktionsstatus — ingen stale READ-ONLY-/prototyp-era-referens kvar i filen
+- [x] #2 Omskrivningen är ren kommentar-ändring: noll beteende-diff (typecheck, biome, build, test:api gröna)
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

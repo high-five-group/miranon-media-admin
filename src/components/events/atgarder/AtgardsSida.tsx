@@ -78,12 +78,31 @@
  * `segment/SegmentMailCompose.tsx` (pessimistisk bulk, skriv-för-att-bekräfta,
  * grön knapp eftersom handlingen når utomstående — aldrig danger).
  *
- * READ-ONLY FÖRSTÄRKT (prototype-skillen § Miljö- och adapter-förhållandet):
- * INGEN handling här muterar något. Mottagar-listan läses via `fetchRegistrations`
- * genom router-context-DI (adapter-gränsen kringgås aldrig); allt Lotta gör i
- * prototypen lever i minnet. Mallar och bilagor har ingen datakälla ännu —
- * bilage-fundamentet (`TASK-146`) är inte byggt — så de är prototyp-lokala
- * stubbar, tydligt märkta nedan.
+ * [TASK-174, 2026-08-10] PRODUKTIONSSTATUS PER DEL — inte längre enhetligt
+ * READ-ONLY. Mottagar-listan läses via `fetchRegistrations` genom
+ * router-context-DI (adapter-gränsen kringgås aldrig, oförändrat sedan
+ * prototyp-eran).
+ *
+ * BETALNINGARNA SKRIVER VERKLIGT sedan `TASK-171.5`s promovering:
+ * `BetalningsSkrivYta` (nedan) muterar basen via `useSetPaymentStatus`/
+ * `useUpdatePaymentNote` (`registrationPayments.ts`), takt-vaktad av
+ * `TASK-147.4`. Ingen prototyp-flagga skyddar längre kryssen — se
+ * `BetalningsSkrivYta`s egen docblock för hela historien.
+ *
+ * UTSKICKEN ÄR ÄNNU PROTOTYP-LOKALA: `simuleraUtfall` bygger svaret i
+ * minnet, filen har noll sändvägar (se dess docblock, taggen `[PROTOTYPE]`).
+ * `TASK-147.1`s server-EF (`send-action-email`) finns, men ingen åtgärd här
+ * är kopplad mot den än — [ÄNDRAS AV TASK-147.2 när Åtgärd 1, "Skicka
+ * bekräftelsemail", kopplas mot den riktiga sändvägen].
+ *
+ * MALLAR OCH BILAGOR ÄR BÅDA STUBBAR, av OLIKA skäl. Bilage-fundamentet
+ * (`TASK-146`) ÄR byggt (146.4 uppladdning + 146.5 event-mallad
+ * generering), men bilageväljaren nedan är ännu inte kopplad mot det —
+ * [ÄNDRAS AV TASK-147.5 när väljaren blir skarp]. Mallens ämnesrad/brödtext
+ * (`AtgardsTyp.mall`) har DÄREMOT ingen planerad skiva i `TASK-147`: en
+ * mall-editor för systemmallar är uttryckligen senare (PRD § Utanför
+ * omfattningen) — hårdkodningen är alltså inte en lucka som väntar på nästa
+ * skiva.
  *
  * [RIVEN, TASK-171.5, ADR-103 B2 steg 4] `PrototypeSwitcher`-monteringen +
  * `PROTO_VARIANTS` i båda routerna (`routes/_authenticated/atgarder.tsx`,
@@ -2642,45 +2661,28 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
           {/* BETALNINGAR — egen ingång, inte en sjunde åtgärd. Hela
               skrivvertikalen som eventsidan gav upp bor här (underlaget § 5).
 
-              VARV 12 GÖR DET BOKSTAVLIGT: raden fäller ut eventdetaljens
-              `BetalningsDetaljer` — samma arbetsyta, importerad och inte
-              kopierad. Marcus 2026-08-07: "trycker man där så ska ju hela det
-              fältet som idag sitter under 'öppna detaljer' på eventdetalj-sidan
-              [komma] … FAST nu redigerbart."
-
-              ARKITEKTUREN BAKOM, Marcus förtydligande i samma andetag:
-              eventdetaljens betalningsyta blir READ-ONLY i S93:s nya variant,
-              eftersom alla åtgärder flyttar hit. **Skrivvertikalen byter alltså
-              hemvist**, och åtgärds-sidan är där skrivandet sker i skarpa
-              bygget. Det är kravet den här monteringen finns för att pröva.
-
-              `protoAktiv` — INTE en prototyp-flagga i betydelsen "fejkad", utan
-              den forms-variant Marcus redan valt 2026-08-06: påminn-slotten
-              riven (påminnelsen är en ÅTGÄRD och bor i listan ovanför), korten
-              separerade av luft i stället för hårstreck, påminnelse-räknare i
-              summeringen. Se `Betalningar.tsx` rad 493–497 för hans egna ord.
-
-              `protoDataMode` UTELÄMNAD, alltså false — MEDVETET, och det river
-              den här filens read-only-invariant ("INGEN handling här muterar
-              något", docblocken överst). Rivningen står öppet av tre skäl:
-                · Flaggan sätter `disabled` på kryss och noteringsfält (rad 323,
-                  469, 484 i `Betalningar.tsx`) — den visar alltså en DÄMPAD yta,
-                  och prototypens fråga är just hur den redigerbara ytan känns.
-                · Skrivningarna är exakt de skarpa vyn redan gör, mot samma bas:
-                  dev-servern pekar på `pqtshyierkdgwdnxuirz` = STAGING, samma
-                  som `.env.staging`. Prod är en annan bas
-                  (`lvjsfnphlauldxqlncpl`) och nås inte härifrån.
-                · Invarianten skrevs när sidan bara komponerade utskick och
-                  ingenting fanns att skriva. Sidan har nu fått en skrivande
-                  komponent på Marcus krav; invarianten amenderas därför öppet i
-                  stället för att kringgås tyst.
+              [RIVEN, TASK-174] Detta stycke beskrev tidigare VARV 12:s
+              montering av eventdetaljens `BetalningsDetaljer` här (samma
+              arbetsyta, importerad — plus `protoAktiv`/`protoDataMode`-
+              resonemanget om varför den read-only-invarianten fick rivas för
+              just den monteringen). VARV 13 REV den monteringen (se filens
+              docblock överst, rad ~127): eventdetaljens arbetsyta kan
+              strukturellt inte skriva (`TASK-145.4`), så åtgärds-sidan fick
+              sin EGEN skrivyta i stället. Den som faktiskt renderas här är
+              `BetalningsSkrivYta` (nedan) — se dess docblock för
+              arkitekturen och de två vakterna. `protoAktiv`/`protoDataMode`
+              finns inte i den komponenten; hela resonemanget om att riva
+              read-only-invarianten för en specifik flagga är därför moot —
+              betalningsskrivningen ÄR produktionskoden, ovillkorat, sedan
+              `TASK-171.5`s promovering.
 
               DEADLINE-PILLEN FLYTTADE IN I YTAN. Den stod tidigare fritt i
-              blockets topp, men `BetalningsDetaljer` bär en EGEN pill i exakt
-              samma form (rad 1075–1083) — två hade stått två rader isär så fort
-              ytan öppnades. Den kvarvarande är den monterade ytans. Kostnaden är
-              att deadline-signalen nu kräver ett klick; syns det som en förlust
-              är svaret en sammanfattning på raden, inte en andra pill. */}
+              blockets topp, men den monterade betalningsytan bär en EGEN
+              pill i exakt samma form (rad ~1075–1083) — två hade stått två
+              rader isär så fort ytan öppnades. Den kvarvarande är den
+              monterade ytans. Kostnaden är att deadline-signalen nu kräver
+              ett klick; syns det som en förlust är svaret en sammanfattning
+              på raden, inte en andra pill. */}
           <section aria-labelledby="grupp-betalningar" className="flex min-w-0 flex-col gap-2">
             <h2 id="grupp-betalningar" className="px-4 font-semibold text-lg">
               Betalningar
