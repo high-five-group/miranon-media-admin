@@ -33,9 +33,14 @@ const PROTO_VARIANTS = [
   { key: 'a', label: 'A - Historik-först', steg: 1, stegLabel: 'Divergens' },
   { key: 'b', label: 'B - Kontakt-först', steg: 1, stegLabel: 'Divergens' },
   { key: 'c', label: 'C - Tidslinje', steg: 1, stegLabel: 'Divergens' },
+  // `d` är Marcus egen blockordning (S103) — INTE ett fjärde divergens-förslag.
+  // Formvalet på a/b/c hoppades över; D ÄR valet, och a/b/c står kvar enbart
+  // som jämförelseytor. Därav `steg: 2`/Konvergens: numret bumpas när en
+  // vinnare itereras (ADR-074 beslut 1).
+  { key: 'd', label: 'D - Syntesen', steg: 2, stegLabel: 'Konvergens' },
 ];
 
-const PROTO_NYCKLAR: readonly string[] = ['a', 'b', 'c'];
+const PROTO_NYCKLAR: readonly string[] = ['a', 'b', 'c', 'd'];
 
 function arProtoVariant(v: string | null): v is PersonDetailVariant {
   return v != null && PROTO_NYCKLAR.includes(v);
