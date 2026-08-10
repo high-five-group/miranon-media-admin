@@ -1,10 +1,10 @@
 ---
 id: TASK-147.4
 title: 'Skiva: Betalningarnas skrivvertikal'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 07:00'
-updated_date: '2026-08-10 10:22'
+updated_date: '2026-08-10 14:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -40,11 +40,17 @@ PREMISS-PASS (ADR-086): två av uppdragets faktapåståenden var stale, verifier
 IMPLEMENTATION: (a) Taktvakten byggd i src/data/mutations/registrationPayments.ts — useSetPaymentStatus fick scope: {id: 'atgardssida-betalningsstatus'} (TanStack Query v5s inbyggda mekanism för seriella mutationer, dokumenterad i docs/framework/react/guides/mutations.md — verifierad direkt i node_modules/@tanstack/query-core/src/mutationCache.ts#canRun, ingen egen semafor uppfanns). Scope är GLOBALT, inte event-scopat, eftersom Airtables 5 req/s-tak (docs/reference/airtable-constraints.md § P4) är bas-brett, delat mellan alla klienter. Ingen ny UI ('markera alla') byggd — det hade varit en form-ändring utanför skivans mandat (facit-lås); taktvakten skyddar i stället EXISTERANDE per-klick-avprickning mot en snabb klick-svit. (b) Ny fil tests/e2e/atgarder-betalningar.staging.test.ts — sju e2e-tester: avprickning avgift, ångra, slutbetalning (mark-final-payment-paid), notering (+ ADR-063-avgränsningen bevisad), fel-väg-rollback, Ej relevant-vakten (0 checkboxes + inget update-record-anrop mekaniskt bevisat) + axe, taktvakten (tre snabba klick, maxSamtidiga()===1 mätt via route-handler-räknare). (c) AtgardsSida.tsx docblock rad ~1171 uppdaterad (kommentar ENDAST, ingen JSX/DOM rörd — inget facit-brott) så den inte längre påstår vakten 'otillämplig'. AVVIKELSE, ÖPPET BOKFÖRD: den nya e2e-filen KÖRDES INTE lokalt (npm run test:e2e:staging) — uppdragets egen regel 4 pekar ut pr-ci-bevisformen för staging-mutex-känsliga grindar under en 14-korts batch; verifiering sker via PR:ens CI-jobb 'Test suite / Staging (API + E2E)'. DoD#2 lämnas därför delvis: typecheck/biome/build/test:api är gröna lokalt (mätt), men e2e-filens egen körning är EJ mätt lokalt — bokfört, inte gissat grönt.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Done S102 batch våg 1: PR-kedjan + e2e-klick-fix PR #1105 (merge 88396b49). Post-merge-run 31384608953 (88396b49) GRÖN = det post-merge-gröna staging-bevis Done-flippen väntade på. Lokala grindar gröna per byggarens rapport i leveransen.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Avprickningens E2E-täckning återupprättad (PRD DoD 11-arv)
 <!-- DOD:END -->

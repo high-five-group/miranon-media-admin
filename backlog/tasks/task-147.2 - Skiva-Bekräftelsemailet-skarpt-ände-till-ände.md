@@ -1,10 +1,10 @@
 ---
 id: TASK-147.2
 title: 'Skiva: Bekräftelsemailet skarpt ände-till-ände'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 06:59'
-updated_date: '2026-08-10 12:01'
+updated_date: '2026-08-10 14:12'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,11 +30,17 @@ Täcker användarberättelser: 1, 2, 3, 9, 11, 12, 14, 26.
 - [x] #4 Skärmläsare: körningens förlopp och resultat annonseras
 <!-- AC:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Done S102 batch ⑩: PR #1112, merge ecfc3596. E2e-selektorfix i uppföljande fix-våg PR #1117 (merge f5da0a1f, commit 1814e51a) — post-merge-run 31393478766 GRÖN = skarpt e2e-bevis. AC/DoD-belägg i kortets notes + PR-kedjan.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning mot tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json utförd (ADR-102 R3)
 - [x] #6 Delutfallet prövat som delutfall (PRD DoD 7-arv)
