@@ -18,6 +18,7 @@ import {
   type AttachmentReader,
   type EventContext,
   isActionType,
+  mapRegistrationFields,
   parseActionOutcome,
   type ResolvedAttachment,
   runActionSend,
@@ -325,24 +326,19 @@ async function resolveAttachments(
   return { ok: true, attachments: resolved };
 }
 
-/** Läs upp EN anmälan server-side → orkestratorns target-shape + dess Event-länk. */
+/**
+ * Läs upp EN anmälan server-side → orkestratorns target-shape + dess Event-länk.
+ * Fält-mappningen (inkl. VILKET fältnamn Event-länken bär) lever i
+ * `mapRegistrationFields` (_shared/send-action-email.ts) — dual-importable och
+ * Node-testad (tests/api/send-action-email.test.ts § S102-regression), i
+ * stället för duplicerad här där den bara vore Deno-nåbar.
+ */
 async function readRegistration(
   id: string,
 ): Promise<{ target: ActionTarget; eventIds: string[] } | null> {
   const record = await fetchAirtableRecord(REGISTRATIONS_TABLE, id);
   if (!record) return null;
-  const f = record.fields;
-  return {
-    target: {
-      id: record.id,
-      email: scalarString(f['E-post']),
-      fornamn: scalarString(f['Förnamn']),
-      status: selectName(f['Status'] ?? null),
-      anmalningsavgift: selectName(f['Anmälningsavgift'] ?? null),
-      slutbetalning: selectName(f['Slutbetalning'] ?? null),
-    },
-    eventIds: linkedIds(f['Event (länk)']),
-  };
+  return mapRegistrationFields(record.id, record.fields);
 }
 
 /** Läs upp eventet — bär de fyra platshållarna {event}/{ort}/{datum}/{deadline}. */
