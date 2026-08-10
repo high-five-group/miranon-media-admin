@@ -56,55 +56,30 @@ S103. Numrering RE-verifierad mot `4b085251` — oförändrad: **109 / task-195 
 T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
 § Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — KONVERGENSEN INLEDD;
-DE 14 SKOOL-GRUPPERNA FALSIFIERAR REGELSPRÅKET.** Fyra varianter på
-`/mer/segment` via `?variant=a|b|c|d` (`#1121`, sex commits): `a`
-regelverkstaden · `b` publiken först · `c` segment som entitet · **`d`
-syntesen** (Marcus: *"jag gillar alla tre"* → de är tre ÄRENDEN, inte tre svar;
-`c` som hem, `b` som detaljinnehåll, `a` som redigering). Snittet som bär `d`:
-listkortet har ingen skicka-knapp, så vägen till utskick går alltid via
-detaljsidan som ÄR publiken — "kontrollerar alltid" blir formens default.
-**Passet växte till arkitekturarbete:** segment ruttnar tyst när kursutbudet
-växer (RIM 4) → **Marcus-beslut**: predikat-baserade regler · tre familjer
-(nakna "Resor i medvetandet" = RIM-familjen, nivå intro, men FÖRELÄSNING) ·
-nivå nullbar · **modalitet OBLIGATORISK i varje villkor** (skaderisk-krav:
-material olämpligt för föreläsnings-publik). Två nya fält (familj, nivå), tre
-befintliga exponeras (modalitet, format, år). **PROD-RENSNING utförd:**
-`Segment` + `Bulkutskick` tomma (verifierat: ingen extern mottagare nåddes
-någonsin; backup utanför git). Underlag: research 7 branschledare (alla
-uttrycker regler som predikat; 0/7 hade migrations-precedens) + live
-bas-kartläggning. `#1121` + `#1127` LANDADE. **KONVERGENS-VARV EFTER MARCUS
-GRANSKNING (`#1132`, armerad vid paus):** CI-skräpet under "Sparade i basen"
-bortfiltrerat (sex `app-segment-test`-fixturer ur acceptance-sviten) ·
-grupperingen riven → EN lista · **Räkna-knappen riven** (var en regression från
-`b`; hamrings-skyddet ligger i cache-nyckeln, ej i ett klick) · skalprovet når
-listan med **mål per segment** (staging bar 4 `Närvarande`-rader på 2 personer
-→ alla segment visade 1) · underrubriken säger nu att ytan handlar om MAIL ·
-`"Med:"` + filter-ikonen rivna. **ARKITEKTURFYNDET:** de 14 Skool-grupperna
-(`~/Downloads/Inbjudningar-till-communityt.docx`, 416 inbjudningar) FALSIFIERAR
-regelspråket — `segment-membership.ts` rad 11: `include` är **OR, inget AND**;
-**10 av 14 grupper kräver AND ⇒ 127 av 416 personer ej uttryckbara**. Luckan
-sitter i EF-lagret (`resolveRuleMembers` delas med `send-email`) och syntes
-ALDRIG mot prototypens fem egna skisser. **Marcus-beslut:** partition blir en
-**GENERATOR** (skapar N vanliga predikat-segment) + en **täckningsvy** som
-listläge — aldrig en andra sorts segment (toggeln avvisad: två objekttyper
-hade tvingat omgranskning av T50:s tre lager). **Föreläsning:** formen gratis i
-dagens grammatik, men prod har **noll** föreläsnings-deltaganden `Närvarande`
-(alla "Ej avstämt", fälla #1) → bygg formen, förskapa segmentet när Lotta/Roger
-registrerat närvaron. **NÄSTA (resume S104): verifiera `#1132` → bygg
-AND-primitiven → snittberäkning klient-sidan → partition-generator →
-täckningsvy → de 14 som ytans innehåll → Marcus godkänner → facit → `ADR-109`
-(tre beslut) → basstruktur → PRD.** **EF-krav till PRD: FYRA** — `via: Par[]`
-per medlem · år kräver deltagandedatum · expansionen server-side · **AND-stödet
-in i `segment-membership.ts`** (klient-snittet är en prototyp-genväg som inte
-får promoveras). Numrering vid paus: **109/L512+2 fragment/T141/f47**; kort
-disk säger 190 MEN S102 har 190/191 i öppna `#1131` ⇒ **räkna med 192, verifiera
-vid mint**. **HANDOFF: sessionsdok S104 § Paushistorik 2 + Del 3.**
-Numrering RE-VERIFIERAD mot disk vid resume: 109/L512+2 fragment/T141/f47
-oförändrade; kort-prognosen BEKRÄFTAD — `#1131` MERGED, main bär task-190/191 ⇒
-nästa 192. `#1132` verifierad i merge-kön (`isInMergeQueue: true`, CLEAN,
-rollup SUCCESS) — armeringen överlevde pausen; paus-commiten `e65015eb` pushas
-när kön släppt grenen (GH006-låset). Dev-servern :5175 levde kvar.
+**Session 104 ⏸️ PAUSAD IGEN (2026-08-10 kväll, `lifecycle: paused`) —
+BYGGKONTRAKTET KOMPLETT: AND + GENERATOR + DE FJORTON + TÄCKNINGSVYN; MARCUS
+GRANSKNINGSVARV PÅGÅR, FACIT EJ LÅST.** Dagens kedja (13 commits, pushade som
+EN enhet på Marcus "landa allt"; PR skapad+armerad i paus-landningen —
+verifiera vid resume): AND-primitiven som konjunkt-grupper i `med` med
+klient-snitt per unikt villkor (`14c00f12`, differentialbevisad) →
+partition-generatorn "Dela upp i grupper" + de fjorton förskapade med
+facit-skalprovsmål 1–188 (`4877cb50`, agent-bygge; partitionen disjunkt-bevisad
+live: stagings 2 personer i exakt varsin grupp) → täckningsvyn som listläge
+(`131d39b0`, agent-bygge; "2 täckta · ingen utanför" mot staging) →
+main-synk (bakom-main-rödingen läkt 7/7) → **fem Marcus-varv i realtid**:
+underrubriken verbatim · **människomeningar UR AVSIKTEN på korten** ("Har gått
+både RIM 1 och RIM 2 - men ingen av de andra två utbildningarna"; Rogers ord
+UTBILDNING, ej kurs) · "0 personer ännu"-fraser + "modaliteten" utrensad ur
+UI-text · **LÅST KORTHÖJD (Marcus: GLOBAL APP-REGEL)** via min-h-[2lh], mätt
+14×168px · knappraden varv 2 (tre kapslar + Täckning som lågmäld textväxel;
+varv 1:s zonering föll för ÖGAT, ej mätningen — lesson-kandidat 8
+[UNIVERSAL]). **ÖPPET: kurs→utbildning i övriga UI-ytor (ställd, obesvarad) ·
+facit-låsning → segment-ADR:n (109 FÖRBRUKAD av S102 ⇒ nästa lediga 110+) →
+basstruktur → PRD med FYRA EF-krav.** Numrering vid paus: 110/L512+2
+fragment/T141/f47/task-195 — re-derivera vid mint. Arbetsform `iteration`
+rensad för landnings-pushen, ÅTERSÄTTS vid resume. **HANDOFF: sessionsdok
+S104 § PAUSLÄGE (efter Del 6) + Del 4–6.** *(Radens tidigare Del 2/3-narrativ:
+sessionsdok Del 2–3 + Paushistorik 1–2.)*
 *(S103:s kadensrad nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
