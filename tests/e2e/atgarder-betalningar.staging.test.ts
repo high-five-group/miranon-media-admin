@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
+import type { Locator } from '@playwright/test';
 import { expect, type Page, test } from '../support/test-bas';
 import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
@@ -186,6 +187,34 @@ function avgiftNotering(page: Page, namn: string) {
   });
 }
 
+/**
+ * KLICKYTAN för EN kryssruta — INTE inputet självt.
+ *
+ * RUND-FAS-DIAGNOS (post-merge-run 31380260103, "Test timeout of 30000ms
+ * exceeded" på `locator.click`, error-context.md): RAC:s `<Checkbox>`
+ * renderar ett VISUELLT DOLT `<input type="checkbox">` inuti en synlig
+ * `<label>` (den styrade spanen `KRYSSRUTA_KLASS` ligger ovanpå). Ett klick
+ * riktat mot inputets egen bounding box fångas i stället av spanen —
+ * Playwrights call log säger det rakt ut: "…subtree intercepts pointer
+ * events" — och auto-retry-loopen ger aldrig upp förrän 30 s-taket, eftersom
+ * elementet ÄR synligt/enabled/stabilt (det är TRÄFFYTAN som är fel, inte
+ * elementets tillstånd).
+ *
+ * SAMMA MÖNSTER ÄR REDAN ETABLERAT I REPOT — jag läste det men missade att
+ * applicera det: `event-bor-over.staging.test.ts` § `klickaKryss` (filtrerar
+ * på rad-labeln) och `mark-paid.staging.test.ts` rad 375-378
+ * (`.locator('xpath=ancestor::label[1]').click()`). Denna hjälpare är samma
+ * fix, generaliserad till en funktion i stället för upprepad på varje
+ * anropsplats. `getByRole('checkbox', …)` (ovan) används fortfarande OFÖRÄNDRAT
+ * för ASSERTIONER (`toBeChecked()`) — de läser bara `checked`-attributet och
+ * kräver ingen hit-testning, så de var aldrig problemet (bekräftat: samma
+ * körnings gröna `notering`- och `axe`-tester rör aldrig `.click()` på ett
+ * kryss och föll inte).
+ */
+function klicka(kryss: Locator): Promise<void> {
+  return kryss.locator('xpath=ancestor::label[1]').click();
+}
+
 const FACIT: Json[] = [
   reg('recEva0000000001', 'Eva Lindqvist'),
   reg('recJohan00000002', 'Johan Berg', { anmalningsavgift: 'Mottagen' }),
@@ -210,7 +239,7 @@ test.describe('Betalningarnas skrivvertikal på Åtgärds-sidan — avprickning 
 
     const kryss = avgiftKryss(page, 'Eva Lindqvist');
     await expect(kryss).not.toBeChecked();
-    await kryss.click();
+    await klicka(kryss);
     await expect(kryss).toBeChecked();
 
     await expect.poll(() => skrivningar.length).toBe(1);
@@ -229,7 +258,7 @@ test.describe('Betalningarnas skrivvertikal på Åtgärds-sidan — avprickning 
 
     const kryss = slutKryss(page, 'Karin Sjögren');
     await expect(kryss).not.toBeChecked();
-    await kryss.click();
+    await klicka(kryss);
     await expect(kryss).toBeChecked();
 
     await expect.poll(() => skrivningar.length).toBe(1);
@@ -248,7 +277,7 @@ test.describe('Betalningarnas skrivvertikal på Åtgärds-sidan — avprickning 
 
     const kryss = avgiftKryss(page, 'Johan Berg');
     await expect(kryss).toBeChecked(); // Johan startar Mottagen (facit-listan).
-    await kryss.click();
+    await klicka(kryss);
     await expect(kryss).not.toBeChecked();
 
     await expect.poll(() => skrivningar.length).toBe(1);
@@ -286,7 +315,7 @@ test.describe('Betalningarnas skrivvertikal på Åtgärds-sidan — avprickning 
     await oppnaSidanOchBetalningar(page);
 
     const kryss = avgiftKryss(page, 'Eva Lindqvist');
-    await kryss.click();
+    await klicka(kryss);
 
     await expect(page.getByRole('alert')).toContainText('Kunde inte spara');
     await expect(kryss).not.toBeChecked(); // rollback till föregående (Ej mottagen).
@@ -317,7 +346,7 @@ test.describe('Ej relevant-vakten — föreläsnings-semantiken (TASK-147.4 AC #
 
     // Personens EGEN avgiftskryss (Mottagen sedan facit) rörs för att bevisa
     // att panelen fungerar normalt — men slutbetalningens fält förblir orört.
-    await avgiftKryss(page, 'Föreläsnings Person').click();
+    await klicka(avgiftKryss(page, 'Föreläsnings Person'));
     await expect.poll(() => skrivningar.length).toBe(1);
     expect(skrivningar.some((s) => 'Slutbetalning' in s.fields)).toBe(false);
   });
@@ -340,9 +369,9 @@ test.describe('Taktvakten — batch-avprickning begränsad parallellitet (TASK-1
     // Klicken avvaktar INTE varandras nätverks-runda — `.click()` returnerar
     // så fort klick-eventet dispatchat, långt före ett 250 ms-fördröjt svar.
     // Utan taktvakten hade detta gett tre SAMTIDIGA update-record-anrop.
-    await avgiftKryss(page, 'Peter Åkesson').click();
-    await avgiftKryss(page, 'Maria Holm').click();
-    await avgiftKryss(page, 'Anders Ek').click();
+    await klicka(avgiftKryss(page, 'Peter Åkesson'));
+    await klicka(avgiftKryss(page, 'Maria Holm'));
+    await klicka(avgiftKryss(page, 'Anders Ek'));
 
     await expect.poll(() => skrivningar.length, { timeout: 5000 }).toBe(3);
 
