@@ -182,6 +182,38 @@ export const CONFIG = {
       // stället för att glömmas eller mätas bort.
       options: { linkedTableId: 'tblVE3UKWl1CKrphV' },
     },
+    {
+      // [TASK-147.5] ADDITIVT tillägg — den bilage-bärande sändvägen behöver
+      // kunna hämta EXAKT rätt storage-objekt givet bara en Bilagor-rad.
+      // `attachmentId` (den UUID som prefixar objektnamnet, se
+      // _shared/attachments.ts § buildAttachmentPath) genereras server-side
+      // vid uppladdning/generering och sparas ALDRIG i Airtable innan detta
+      // fält — utan det finns ingen väg tillbaka från record → bytes.
+      //
+      // NAMN ENSAMT RÄCKER INTE: staging bär (2026-08-10, live-verifierat)
+      // SEX Bilagor-rader för SAMMA event med IDENTISKT Namn ("Deltagarinfor-
+      // mation – ZZ-belaggning-fixtur – …") — varje upprepad klass B-
+      // generering skapar en ny rad men samma mall-namn. Ett filnamns-baserat
+      // storage.list()-suffixmatchning hade varit strukturellt tvetydig; det
+      // är samma "gissa aldrig"-disciplin resten av detta skript följer
+      // (se planFields § mismatches).
+      //
+      // Fältet är SERVER-INTERNT: mapAttachmentRecord (_shared/attachments.ts)
+      // exponerar det aldrig i den publika Attachment-domänformen — klienten
+      // ser namn/storlek/skapad/event, aldrig lagringsnyckeln.
+      name: 'Lagringsnyckel',
+      type: 'singleLineText',
+      description:
+        'Storage-objektets leaf-namn (attachmentId-sanitizeFilnamn(Namn)) under ' +
+        'bucket "bilagor", prefix eventId/. Satt av den skrivande EF:en ' +
+        '(upload-attachment/finalize-attachment-upload/generate-event-attachment) ' +
+        'vid radskapelse (TASK-147.5). Server-internt fält — klienten ser det ' +
+        'aldrig (Attachment-domänmodellen exponerar det inte). Krävs för att den ' +
+        'bilage-bärande sändvägen ska kunna hämta rätt bytes: flera Bilagor-rader ' +
+        'kan dela identiskt Namn (t.ex. upprepad klass B-generering), så Namn ' +
+        'ensamt kan inte adressera lagringsobjektet entydigt.',
+      options: {},
+    },
   ],
 
   requestThrottleMs: 250,

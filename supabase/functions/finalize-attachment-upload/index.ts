@@ -26,12 +26,12 @@ import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-c
 import {
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
+  buildAttachmentLeaf,
   buildAttachmentPath,
   EVENTPLANERING_TABLE,
   isValidAttachmentId,
   isValidEventId,
   mapAttachmentRecord,
-  sanitizeFilnamn,
 } from '../_shared/attachments.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireUser } from '../_shared/auth.ts';
@@ -97,8 +97,11 @@ Deno.serve(async (req) => {
 
     // Path DERIVERAS server-side — SAMMA formel som utfärdandet. Klienten
     // skickar aldrig en path direkt (§ AUKTORISATIONSBESLUTET ovan).
+    // `expectedFilename` ÄR leaf-delen av `path` (TASK-147.5: samma
+    // `buildAttachmentLeaf`-anrop skriver nu även Lagringsnyckel-fältet
+    // nedan — en beräkning, två användningar, aldrig två separata formler).
+    const expectedFilename = buildAttachmentLeaf(attachmentId, filnamn);
     const path = buildAttachmentPath(eventId, attachmentId, filnamn);
-    const expectedFilename = `${attachmentId}-${sanitizeFilnamn(filnamn)}`;
 
     const { data: listing, error: listError } = await supabaseAdmin.storage
       .from(BILAGOR_BUCKET_ID)
@@ -136,6 +139,8 @@ Deno.serve(async (req) => {
       'Storlek (bytes)': actualSizeBytes,
       Skapad: new Date().toISOString(),
       Event: [eventId],
+      // [TASK-147.5] Additivt — se upload-attachment/index.ts:s motsvarande rad.
+      Lagringsnyckel: expectedFilename,
     };
 
     const disallowed = findDisallowedField(operation, fields);

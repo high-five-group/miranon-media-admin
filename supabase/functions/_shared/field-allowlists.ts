@@ -283,9 +283,15 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // skapad — hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö;
   // ADR-050/ADR-063, samma mönster som create-event-note). Tabell per NAMN
   // (ADR-050 bas-portabilitet).
+  // 'Lagringsnyckel' (TASK-147.5, additiv) — storage-objektets leaf-namn,
+  // skrivet av upload-attachment/finalize-attachment-upload/generate-event-
+  // attachment vid radskapelse. Server-internt (aldrig i den publika
+  // Attachment-domänformen); krävs för att den bilage-bärande sändvägen ska
+  // kunna hämta rätt bytes tillbaka (Namn ensamt är tvetydigt — se
+  // scripts/create-bilagor-table.mjs § Lagringsnyckel för instansen).
   'create-attachment': {
     tableId: 'Bilagor',
-    allowedFields: ['Namn', 'Storlek (bytes)', 'Skapad', 'Event'],
+    allowedFields: ['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Lagringsnyckel'],
   },
   // Åtgärdsutskickens sändväg (TASK-147.1, ADR-067-revisionen — repots sjunde
   // write-vertikal, tredje mail-vertikal). send-action-email-EF:en bygger `fields`

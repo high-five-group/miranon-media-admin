@@ -102,14 +102,19 @@
  * dess rivning och referens-specens ommontering mot nätverksmockade utfall
  * är `TASK-147.8`s uttryckliga scope, inte denna skivas.
  *
- * MALLAR OCH BILAGOR ÄR BÅDA STUBBAR, av OLIKA skäl. Bilage-fundamentet
- * (`TASK-146`) ÄR byggt (146.4 uppladdning + 146.5 event-mallad
- * generering), men bilageväljaren nedan är ännu inte kopplad mot det —
- * [ÄNDRAS AV TASK-147.5 när väljaren blir skarp]. Mallens ämnesrad/brödtext
- * (`AtgardsTyp.mall`) har DÄREMOT ingen planerad skiva i `TASK-147`: en
- * mall-editor för systemmallar är uttryckligen senare (PRD § Utanför
- * omfattningen) — hårdkodningen är alltså inte en lucka som väntar på nästa
- * skiva.
+ * BILAGOR ÄR SKARPA SEDAN TASK-147.5: bilageväljaren (`ArbetsYta` §
+ * useQuery) läser eventets verkliga Bilagor-rader via
+ * `dataSource.fetchEventAttachments` — se filens `BILAGEVÄLJAREN`-docblock
+ * (§ BilageValjare) för varför klass A och B är oskiljbara i datat och
+ * varför klass C strukturellt saknas. Den bilage-bärande sändvägen (loopad
+ * singelsändning, ADR-067 D9) är kopplad in i `_shared/send-action-email.ts`
+ * § `runActionSend` — grenvalet är automatiskt (AC #1), klienten skickar
+ * bara `attachmentIds` (tom = oförändrad batchgren).
+ *
+ * MALLEN (ämnesrad/brödtext, `AtgardsTyp.mall`) FÖRBLIR STUBB — ingen
+ * planerad skiva i `TASK-147`: en mall-editor för systemmallar är
+ * uttryckligen senare (PRD § Utanför omfattningen), hårdkodningen är alltså
+ * inte en lucka som väntar på nästa skiva.
  *
  * [RIVEN, TASK-171.5, ADR-103 B2 steg 4] `PrototypeSwitcher`-monteringen +
  * `PROTO_VARIANTS` i båda routerna (`routes/_authenticated/atgarder.tsx`,
@@ -151,6 +156,7 @@ import { Skeleton } from '@/components/primitives/Skeleton';
 import { SlideToConfirm } from '@/components/primitives/SlideToConfirm';
 import { TextArea } from '@/components/primitives/TextArea';
 import { displayName } from '@/components/registrations/registration-display';
+import { formatMB } from '@/data/adapters/attachmentUpload';
 import { useSendActionEmail, useSendActionTestEmail } from '@/data/mutations/actionEmail';
 /* VARV 13 REV VARV 12:s MONTERING AV `BetalningsDetaljer`.
    Den var rätt ambition och fel mekanism: eventdetaljens arbetsyta KAN inte
@@ -167,6 +173,7 @@ import {
   useUpdatePaymentNote,
 } from '@/data/mutations/registrationPayments';
 import { useDataSource } from '@/data/useDataSource';
+import type { Attachment } from '@/domain/models/Attachment';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import type {
@@ -407,54 +414,34 @@ const ATGARDER: AtgardsTyp[] = [
 ];
 
 /* ------------------------------------------------------------------ *
- * BILAGEVÄLJARENS STUBB — de tre dokumentklasserna (ORDLISTA § Bilaga).
+ * BILAGEVÄLJAREN — SKARP sedan TASK-147.5. Den hårdkodade fyra-post-stubben
+ * (`BILAGOR`) är RIVEN: väljaren läser nu eventets VERKLIGA Bilagor-rader via
+ * `dataSource.fetchEventAttachments` (get-event-attachments-EF:en, `ArbetsYta`
+ * nedan) — samma `Attachment`-domänform TASK-146.4/146.5 redan producerar.
  *
- * Klass C är strukturellt olik de andra två: en person-genererad bilaga är
- * inte EN fil till sex mottagare, det är SEX filer — en per mottagare. Det är
- * ett andra, oberoende skäl till att den bilage-bärande sändvägen måste vara
- * loopad singelsändning (underlaget § 7 härledde grenen ur den tysta
- * batch-bristen; klass C ger den samma svar).
+ * KLASSERNA A OCH B ÄR ODELBARA I DATAT, INTE BARA I YTAN (ORDLISTA §
+ * Bilaga). `generate-event-attachment/index.ts` § SAMTIDIGHETS-NOT
+ * dokumenterar varför: Bilagor-tabellen fick ALDRIG ett dokumentklass-fält
+ * (146.5 behövde det inte). Väljaren listar därför ALLA rader länkade till
+ * eventet — det ÄR "klass A och klass B sändbara", eftersom det inte finns
+ * någon klass-signal att filtrera bort något med. Skillnaden mellan en
+ * uppladdad fil och en genererad Deltagarinformation-PDF syns bara i namnet,
+ * precis som den gjorde i stubben (docblocken ovan hade redan denna
+ * begränsning bokförd — den är alltså INGEN ny lucka TASK-147.5 öppnar).
  *
- * ÖPPEN PUNKT, VARV 10 — KLASSKILLNADEN SYNS INTE LÄNGRE I YTAN. Raden ovan
- * sade tidigare att den "MÅSTE synas i väljaren", och den syntes: varje rad
- * bar en klasstext ur `KLASS_TEXT`, där C:s löd "Genereras för var och en —
- * N st". Marcus tog bort hjälptexterna ("det här med 'samma till alla' är inte
- * hjälpsamt, det är självklart") — vilket stämmer för A och B, men C:s text
- * var inte självklar, den var klassens hela poäng.
+ * KLASS C (kvitto) ÄR STRUKTURELLT FRÅNVARANDE, INTE FILTRERAD BORT.
+ * Kvittogenereringen (`TASK-147.7`) är inte byggd — det finns ingen Bilagor-
+ * rad att lista för den, eftersom en person-genererad bilaga (SEX mottagare
+ * = SEX filer, se den rivna docblockens ursprungliga resonemang) uppstår vid
+ * SÄNDTILLFÄLLET, inte som en förberedd rad Lotta väljer i förväg. Det är en
+ * egen designfråga för 147.7, inte en gissning att göra här.
  *
- * Kunskapen bor alltså nu HÄR och ingenstans i gränssnittet. Det är ett
- * medvetet läge, inte en förlust som glömts bort: prototypens fråga gäller
- * formen, och bäraren av klass C-skillnaden är en egen designfråga som ska
- * ställas när bilage-fundamentet (`TASK-146`) faktiskt finns. Bygg den inte
- * som en återinförd hjälptext utan att fråga — det är den lösning Marcus just
- * avvisade.
- *
- * INGEN FÖRVALS-LOGIK (grillad samsyn beslut 5, bokstavligt): ingen bilaga är
- * förkryssad. Regeln levde i den borttagna raden "Ingenting är förvalt — du
- * väljer aktivt vad som följer med"; den lever nu i `useState(new Set())` och
- * i denna docblock. Beteendet är oförändrat — bara dess synliga förklaring är
- * borta. En gissad förvald bilaga är farligare än en tom väljare.
+ * INGEN FÖRVALS-LOGIK (grillad samsyn beslut 5, bokstavligt, AC #4):
+ * `useState(new Set())` i `ArbetsYta` är den ENDA källan till vilka bilagor
+ * som är valda — listan som RENDERAS (nu server-data i stället för en
+ * hårdkodad array) påverkar aldrig detta state. Ingen bilaga är, eller kan
+ * bli, förvald bara för att den finns i listan.
  * ------------------------------------------------------------------ */
-type BilageKlass = 'A' | 'B' | 'C';
-
-type Bilaga = {
-  id: string;
-  namn: string;
-  klass: BilageKlass;
-  /** Klass A: filstorlek. Klass B/C: null — filen finns inte förrän den skapas. */
-  storlek?: string;
-};
-
-const BILAGOR: Bilaga[] = [
-  { id: 'a1', namn: 'Hörlursinformation.pdf', klass: 'A', storlek: '184 kB' },
-  { id: 'a2', namn: 'Vägbeskrivning Skövde.pdf', klass: 'A', storlek: '92 kB' },
-  { id: 'b1', namn: 'Deltagarinformation', klass: 'B' },
-  { id: 'c1', namn: 'Betalningskvitto', klass: 'C' },
-];
-
-/* `KLASS_TEXT` LÅG HÄR och är borttagen med hjälptexterna (varv 10). Den var
-   ytans enda bärare av klasskillnaden — se `BILAGOR`-docblockens öppna punkt
-   innan något återinförs. */
 
 /* ================================================================== *
  * PLATSHÅLLARNA — granskningens skarpaste verktyg (varv 19).
@@ -1401,8 +1388,29 @@ function BetalningsSkrivYta({
  * för att klass C:s rad skulle kunna säga "Genereras för var och en — N st".
  * Den togs bort i stället för att lämnas oanvänd — en prop som inget läser
  * påstår ett beroende som inte finns.
+ *
+ * [TASK-147.5] `attachments` KOMMER NU FRÅN SERVERN (`ArbetsYta` § useQuery),
+ * inte en hårdkodad array — se docblocken ovan (raden precis före denna
+ * funktion). Storleken visas nu ALLTID (real data bär alltid en verklig
+ * `storlekBytes`; stubbens "bara klass A har storlek"-villkor var en fiktion
+ * som fanns för att härma att B/C:s filer inte existerar förrän sändningen
+ * — sant för klass C, ALDRIG sant för en redan skapad Bilagor-rad).
+ * `formatMB` ÄTERANVÄND ur `attachmentUpload.ts` (samma helper upload-flödet
+ * redan visar fel med) — ingen ny kB-vs-MB-formatterare uppfunnen här.
  * ================================================================== */
-function BilageValjare({ valda, onVaxla }: { valda: Set<string>; onVaxla: (id: string) => void }) {
+function BilageValjare({
+  attachments,
+  laddar,
+  fel,
+  valda,
+  onVaxla,
+}: {
+  attachments: Attachment[];
+  laddar: boolean;
+  fel: boolean;
+  valda: Set<string>;
+  onVaxla: (id: string) => void;
+}) {
   return (
     <div className="flex flex-col gap-2 py-3">
       <div className="flex items-center justify-between">
@@ -1447,32 +1455,43 @@ function BilageValjare({ valda, onVaxla }: { valda: Set<string>; onVaxla: (id: s
 
           `<Checkbox>` ersätter `<label>` + `<input>`: RAC:s komponent ÄR sin
           egen etikett-yta, så hela raden förblir klickbar utan en wrapper. */}
-      <div className="divide-y divide-border rounded-lg bg-surface">
-        {BILAGOR.map((b) => (
-          <Checkbox
-            key={b.id}
-            isSelected={valda.has(b.id)}
-            onChange={() => onVaxla(b.id)}
-            aria-label={`Bifoga ${b.namn}`}
-            className="group flex cursor-pointer items-center gap-3 px-3 py-2.5"
-          >
-            <span className={KRYSSRUTA_KLASS}>
-              <Check
-                aria-hidden="true"
-                size={14}
-                className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
-              />
-            </span>
-            <span className="truncate font-medium text-body">{b.namn}</span>
-            {/* Storleken höger-justerad — samma plats som räknarna på sidans
-                övriga rader (`RAD_KLASS` § `ml-auto`). Den finns BARA på klass
-                A; se `BILAGOR`-docblocken för varför B och C saknar den. */}
-            {b.storlek && (
-              <span className="ml-auto shrink-0 text-small text-text-muted">{b.storlek}</span>
-            )}
-          </Checkbox>
-        ))}
-      </div>
+      {laddar ? (
+        <p className="px-3 py-2.5 text-small text-text-muted">Hämtar bilagor …</p>
+      ) : fel ? (
+        <MessageBox intent="warning" title="Bilagorna kunde inte hämtas">
+          Prova att öppna åtgärden igen. Går det inte skickas mailet ändå, utan bilaga.
+        </MessageBox>
+      ) : attachments.length === 0 ? (
+        <p className="px-3 py-2.5 text-small text-text-muted">
+          Inga bilagor tillgängliga för det här eventet.
+        </p>
+      ) : (
+        <div className="divide-y divide-border rounded-lg bg-surface">
+          {attachments.map((b) => (
+            <Checkbox
+              key={b.id}
+              isSelected={valda.has(b.id)}
+              onChange={() => onVaxla(b.id)}
+              aria-label={`Bifoga ${b.namn}`}
+              className="group flex cursor-pointer items-center gap-3 px-3 py-2.5"
+            >
+              <span className={KRYSSRUTA_KLASS}>
+                <Check
+                  aria-hidden="true"
+                  size={14}
+                  className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
+                />
+              </span>
+              <span className="truncate font-medium text-body">{b.namn}</span>
+              {/* Storleken höger-justerad — samma plats som räknarna på sidans
+                  övriga rader (`RAD_KLASS` § `ml-auto`). */}
+              <span className="ml-auto shrink-0 text-small text-text-muted">
+                {formatMB(b.storlekBytes)}
+              </span>
+            </Checkbox>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1481,10 +1500,12 @@ function BilageValjare({ valda, onVaxla }: { valda: Set<string>; onVaxla: (id: s
  * ÅTGÄRDENS ARBETSYTA — fälls ut in-place under sin egen rad.
  * ================================================================== */
 function ArbetsYta({
+  eventId,
   atgard,
   mottagare,
   onGranska,
 }: {
+  eventId: string;
   atgard: AtgardsTyp;
   mottagare: Registration[];
   onGranska: (g: Granskning) => void;
@@ -1501,6 +1522,17 @@ function ArbetsYta({
       else n.add(id);
       return n;
     });
+
+  /* [TASK-147.5] Eventets VERKLIGA bilagor — se filens docblock ovan
+     ("BILAGEVÄLJAREN — SKARP sedan TASK-147.5") för hela resonemanget.
+     Samma cache-nyckel som `GranskningsSida` (nedan) läser för
+     "valda bilagor"-summeringen — React Query dedupar/delar EN fetch när
+     båda monteras kort efter varandra i samma navigering. */
+  const dataSource = useDataSource();
+  const attachments = useQuery({
+    queryKey: queryKeys.attachments.byEvent(eventId),
+    queryFn: () => dataSource.fetchEventAttachments(eventId),
+  });
 
   /* URVALSFILTRETS DELMÄNGD — de av mottagarna åtgärden faktiskt är relevant
      för. Samma uträkning som åtgärdsraden visar ("5 av 7"); den låg tidigare
@@ -1630,7 +1662,13 @@ function ArbetsYta({
         )}
       </div>
 
-      <BilageValjare valda={bilagor} onVaxla={vaxlaBilaga} />
+      <BilageValjare
+        attachments={attachments.data ?? []}
+        laddar={attachments.isLoading}
+        fel={attachments.isError}
+        valda={bilagor}
+        onVaxla={vaxlaBilaga}
+      />
 
       {utanEpost > 0 && (
         <MessageBox intent="warning" title="Några saknar e-post">
@@ -1706,11 +1744,13 @@ function ArbetsYta({
  * ÅTGÄRDSMENYN — kvarstående rader, en utfälld åt gången (Marcus-val).
  * ================================================================== */
 function AtgardsMeny({
+  eventId,
   mottagare,
   oppen,
   onVaxla,
   onGranska,
 }: {
+  eventId: string;
   mottagare: Registration[];
   oppen: string | null;
   onVaxla: (nyckel: string) => void;
@@ -1753,7 +1793,9 @@ function AtgardsMeny({
                 </span>
               </button>
             </div>
-            {arOppen && <ArbetsYta atgard={a} mottagare={mottagare} onGranska={onGranska} />}
+            {arOppen && (
+              <ArbetsYta eventId={eventId} atgard={a} mottagare={mottagare} onGranska={onGranska} />
+            )}
           </div>
         );
       })}
@@ -2011,6 +2053,18 @@ function GranskningsSida({
      denna skivas. */
   const [protoLage, setProtoLage] = useState<UtfallsLage>('delvis');
 
+  /* [TASK-147.5] SAMMA cache-nyckel som `ArbetsYta`s bilageväljare — löser
+     `granskning.bilagor` (Bilagor-record-ID:n) till namn för "valda
+     bilagor"-summeringen nedan. Eftersom väljaren redan hämtade listan
+     precis innan Lotta tryckte "Granska och skicka" är detta i praktiken
+     ALLTID en cache-träff (React Querys default gcTime överlever
+     remounten), ingen synlig omladdning. */
+  const dataSource = useDataSource();
+  const eventAttachments = useQuery({
+    queryKey: queryKeys.attachments.byEvent(eventId),
+    queryFn: () => dataSource.fetchEventAttachments(eventId),
+  });
+
   /* NY VY BÖRJAR HÖGST UPP (Marcus varv 22): "jag kommer inte in högst upp på
      sidan, utan jag kommer in i mitten typ."
 
@@ -2059,7 +2113,9 @@ function GranskningsSida({
   const ofyllda = [...new Set([...forhandsvisning.ofyllda, ...amneVisning.ofyllda])];
 
   const utanEpost = mottagare.filter((r) => !r.email).length;
-  const valdaBilagor = BILAGOR.filter((b) => granskning.bilagor.includes(b.id));
+  const valdaBilagor = (eventAttachments.data ?? []).filter((b) =>
+    granskning.bilagor.includes(b.id),
+  );
   const kanSkicka = mottagare.length > 0;
 
   /* SERVERN ÄR FACIT — `L355`, och mönstret är `useConfirmAll`s
@@ -2090,6 +2146,10 @@ function GranskningsSida({
         registrationIds: mottagare.map((r) => r.id),
         amne: granskning.amne,
         mailtext: granskning.text,
+        // [TASK-147.5, AC #1] Grenvalet är AUTOMATISKT server-side: tom
+        // lista (normalfallet) ⇒ bilage-fri batchgren, oförändrad. Klienten
+        // skickar bara VILKA — mekanismen bor i _shared/send-action-email.ts.
+        attachmentIds: granskning.bilagor,
       },
       {
         onSuccess: (result) => {
@@ -2846,6 +2906,7 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
           />
 
           <AtgardsMeny
+            eventId={eventId}
             mottagare={mottagare}
             oppen={oppenAtgard}
             onVaxla={(n) => setOppenAtgard((o) => (o === n ? null : n))}
@@ -2942,13 +3003,25 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
     var sant för HELA sidan fram till denna skiva — nu gäller det bara tre av
     de fyra åtgärderna. En not som påstod motsatsen av vad "Skicka
     bekräftelsemail" faktiskt gör hade varit exakt den stämplingslögn PRD
-    task-147 river. */
+    task-147 river.
+
+    [TASK-147.5, RÄTTAD] Noten var STALE på TVÅ punkter, upptäckt vid denna
+    skivas eget bygge (ingen ny rivning, en text som glömdes vid tidigare
+    landningar): "de tre övriga åtgärderna simulerar ännu" var redan falskt
+    sedan TASK-147.3 (filens egen docblock, § "ÄNDRAS AV TASK-147.2/147.3,
+    GJORT", säger uttryckligen "ALLA FYRA ÅTGÄRDER SKICKAR VERKLIGT"), och
+    "bilage-fundamentet (TASK-146) är inte byggt" är falskt sedan DENNA
+    skiva. Rättad i samma andetag som bilage-claimet, inte lämnad som en
+    känd men obekväm lögn i produktionsytan — se ~rad 105 (filens docblock)
+    för samma rättelse i sin fulla form. Mallens hårdkodning (ämnesrad/
+    brödtext) är den ENDA kvarvarande, MEDVETNA stubben (PRD § Utanför
+    omfattningen). */
 function PrototypNot() {
   return (
     <p className="px-4 text-small text-text-muted">
-      <strong className="font-medium">Prototyp.</strong> Mallar och bilagor är stubbar -
-      bilage-fundamentet (TASK-146) är inte byggt. "Skicka bekräftelsemail" skickar och sparar
-      verkligt; de tre övriga åtgärderna simulerar ännu - inget skickas eller sparas för dem.
+      <strong className="font-medium">Prototyp.</strong> Mallarnas ämnesrad och brödtext är
+      hårdkodade stubbar (ingen mall-editor ännu), allt annat skickar och sparar verkligt, inklusive
+      bilagor.
     </p>
   );
 }

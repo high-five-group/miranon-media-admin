@@ -28,10 +28,13 @@ import {
 import {
   type ActionSender,
   type ActionSendInput,
+  type ActionSingleSender,
   type ActionTarget,
   type ActionTestSendInput,
+  type AttachmentReader,
   type EventContext,
   isActionType,
+  type ResolvedAttachment,
   runActionSend,
   runActionTestSend,
 } from '../../supabase/functions/_shared/send-action-email';
@@ -113,11 +116,72 @@ function mockWriter(failFor: Set<string> = new Set()): ((
   return Object.assign(writer, { writes });
 }
 
+/**
+ * [TASK-147.5] Mock-singelsender: registrerar VARJE anrop för sig (en rad =
+ * ETT anrop, till skillnad från `mockSender` som tar hela batchen i ett).
+ * `rejectSet`/`throwSet` skiljs åt medvetet: en `{accepted:false}`-retur är
+ * en NORMAL Resend-radavvisning, ett kastat fel simulerar en TRANSIENT
+ * nätverkskrasch (docblockens § "en request-krasch är INTE en batch-
+ * avvisning" i `_shared/send-action-email.ts`).
+ */
+function mockSingleSender(
+  rejectSet: Set<string> = new Set(),
+  throwSet: Set<string> = new Set(),
+): ActionSingleSender & {
+  calls: {
+    registrationId: string;
+    email: string;
+    idempotencyKey: string;
+    attachments: readonly { filename: string; contentBase64: string }[];
+  }[];
+} {
+  const calls: {
+    registrationId: string;
+    email: string;
+    idempotencyKey: string;
+    attachments: readonly { filename: string; contentBase64: string }[];
+  }[] = [];
+  const sender: ActionSingleSender = async (spec, ctx) => {
+    calls.push({
+      registrationId: spec.registrationId,
+      email: spec.email,
+      idempotencyKey: ctx.idempotencyKey,
+      attachments: ctx.attachments,
+    });
+    if (throwSet.has(spec.email)) throw new Error('mock-network-krasch');
+    if (rejectSet.has(spec.email)) return { accepted: false, reason: 'mock-reject' };
+    return { accepted: true };
+  };
+  return Object.assign(sender, { calls });
+}
+
+/** Mock-attachment-reader: registrerar anropet, returnerar deterministiska payloads. NOLL riktig Storage. */
+function mockAttachmentReader(): AttachmentReader & {
+  calls: { attachments: readonly ResolvedAttachment[]; eventId: string }[];
+} {
+  const calls: { attachments: readonly ResolvedAttachment[]; eventId: string }[] = [];
+  const reader: AttachmentReader = async (attachments, eventId) => {
+    calls.push({ attachments, eventId });
+    return attachments.map((a) => ({ filename: a.namn, contentBase64: `base64(${a.id})` }));
+  };
+  return Object.assign(reader, { calls });
+}
+
+function resolvedAttachment(overrides: Partial<ResolvedAttachment> = {}): ResolvedAttachment {
+  return {
+    id: 'recBilaga1',
+    namn: 'Hörlursinformation.pdf',
+    lagringsnyckel: 'uuid-1-Hörlursinformation.pdf',
+    ...overrides,
+  };
+}
+
 function input(overrides: Partial<ActionSendInput> = {}): ActionSendInput {
   return {
     actionType: 'bekraftelse',
     targets: [target({ id: 'rec1' })],
     event: event(),
+    eventId: 'recEvent1',
     amne: 'Din plats är bekräftad',
     mailtext: 'Hej {förnamn}, din plats är bekräftad.',
     jobId: '11111111-1111-4111-8111-111111111111',
@@ -675,6 +739,345 @@ test.describe('runActionTestSend — testmailets orkestrator (TASK-147.10)', () 
 
     expect(result.status).toBe('sent');
     expect(sender.calls[0].emails).toEqual([TEST_ADDR]);
+  });
+});
+
+// ============================================================================
+// [TASK-147.5, ADR-067 D9] Bilage-BÄRANDE grenen — loopad singelsändning.
+// NOLL riktig Storage/Resend/Airtable: `mockSingleSender`/`mockAttachmentReader`
+// injiceras, exakt samma disciplin som batchgrenens `mockSender`/`mockWriter`
+// ovan. Detta ÄR kortets api-pure-bevis för AC #1 (grenval) och AC #3
+// (idempotens-nyckel) — AC #2 (bilagan bevisad FRAMME) kräver en deployad EF
+// och kan STRUKTURELLT inte bevisas här (send-email.staging.test.ts:s egen
+// header-not: "EJ som committade CI-tester" för allt som kräver en riktig
+// Resend-nyckel/mottagen-mail-verifiering — samma gräns 147.1 själv drog för
+// HTTP/staging-lagret, se filhuvudet ovan). Se PR-bodyn/kortets notes för
+// deploy-skulden.
+// ============================================================================
+test.describe('runActionSend — bilage-bärande grenen (TASK-147.5)', () => {
+  test('AC #1: attachments TOM/frånvarande ⇒ batchgrenen (sender), singleSender ORÖRD', async () => {
+    const sender = mockSender();
+    const writer = mockWriter();
+    const singleSender = mockSingleSender();
+    const readAttachments = mockAttachmentReader();
+
+    const result = await runActionSend(input(), {
+      sender,
+      writeFields: writer,
+      singleSender,
+      readAttachments,
+    });
+
+    expect(result.status).toBe('sent');
+    expect(sender.calls).toHaveLength(1);
+    expect(singleSender.calls).toHaveLength(0);
+    expect(readAttachments.calls).toHaveLength(0);
+  });
+
+  test('AC #1: attachments ICKE-TOM ⇒ den bilage-bärande grenen (singleSender), batch-sender ORÖRD', async () => {
+    const sender = mockSender();
+    const writer = mockWriter();
+    const singleSender = mockSingleSender();
+    const readAttachments = mockAttachmentReader();
+
+    const result = await runActionSend(input({ attachments: [resolvedAttachment()] }), {
+      sender,
+      writeFields: writer,
+      singleSender,
+      readAttachments,
+    });
+
+    expect(result.status).toBe('sent');
+    expect(sender.calls).toHaveLength(0);
+    expect(singleSender.calls).toHaveLength(1);
+    expect(readAttachments.calls).toHaveLength(1);
+  });
+
+  test('EN singel-sändning PER MOTTAGARE — tre mottagare ⇒ tre anrop, inte ett batch-anrop', async () => {
+    const singleSender = mockSingleSender();
+    const readAttachments = mockAttachmentReader();
+
+    await runActionSend(
+      input({
+        targets: [
+          target({ id: 'rec1', email: TEST_ADDR }),
+          target({ id: 'rec2', email: TEST_ADDR_2 }),
+          target({ id: 'rec3', email: 'suppressed@resend.dev' }),
+        ],
+        attachments: [resolvedAttachment()],
+      }),
+      { sender: mockSender(), writeFields: mockWriter(), singleSender, readAttachments },
+    );
+
+    expect(singleSender.calls).toHaveLength(3);
+    expect(singleSender.calls.map((c) => c.registrationId)).toEqual(['rec1', 'rec2', 'rec3']);
+  });
+
+  test('AC #3: idempotensnyckeln är DETERMINISTISK PER MOTTAGARE — <jobId>/<actionType>/<registrationId>', async () => {
+    const singleSender = mockSingleSender();
+    const readAttachments = mockAttachmentReader();
+
+    await runActionSend(
+      input({
+        jobId: 'x',
+        actionType: 'bekraftelse',
+        targets: [
+          target({ id: 'rec1', email: TEST_ADDR }),
+          target({ id: 'rec2', email: TEST_ADDR_2 }),
+        ],
+        attachments: [resolvedAttachment()],
+      }),
+      { sender: mockSender(), writeFields: mockWriter(), singleSender, readAttachments },
+    );
+
+    expect(singleSender.calls[0].idempotencyKey).toBe('x/bekraftelse/rec1');
+    expect(singleSender.calls[1].idempotencyKey).toBe('x/bekraftelse/rec2');
+  });
+
+  test('AC #3: OMKÖRNING (samma jobId) ⇒ SAMMA nyckel per mottagare — Resend-lagret hindrar dubblett', async () => {
+    const readAttachments = mockAttachmentReader();
+    const singleSender1 = mockSingleSender();
+    const singleSender2 = mockSingleSender();
+
+    await runActionSend(input({ jobId: 'abc123', attachments: [resolvedAttachment()] }), {
+      sender: mockSender(),
+      writeFields: mockWriter(),
+      singleSender: singleSender1,
+      readAttachments,
+    });
+    await runActionSend(input({ jobId: 'abc123', attachments: [resolvedAttachment()] }), {
+      sender: mockSender(),
+      writeFields: mockWriter(),
+      singleSender: singleSender2,
+      readAttachments,
+    });
+
+    expect(singleSender1.calls[0].idempotencyKey).toBe(singleSender2.calls[0].idempotencyKey);
+    expect(singleSender1.calls[0].idempotencyKey).toBe('abc123/bekraftelse/rec1');
+  });
+
+  test('bilagornas bytes hämtas EN gång — delade av ALLA mottagare, inte en läsning per rad', async () => {
+    const readAttachments = mockAttachmentReader();
+
+    await runActionSend(
+      input({
+        targets: [
+          target({ id: 'rec1', email: TEST_ADDR }),
+          target({ id: 'rec2', email: TEST_ADDR_2 }),
+        ],
+        attachments: [resolvedAttachment({ id: 'recA' }), resolvedAttachment({ id: 'recB' })],
+      }),
+      {
+        sender: mockSender(),
+        writeFields: mockWriter(),
+        singleSender: mockSingleSender(),
+        readAttachments,
+      },
+    );
+
+    expect(readAttachments.calls).toHaveLength(1);
+    expect(readAttachments.calls[0].attachments.map((a) => a.id)).toEqual(['recA', 'recB']);
+  });
+
+  test('de hämtade bilagorna bärs vidare TILL VARJE singel-sändning', async () => {
+    const readAttachments = mockAttachmentReader();
+    const singleSender = mockSingleSender();
+
+    await runActionSend(
+      input({ attachments: [resolvedAttachment({ id: 'recA', namn: 'Info.pdf' })] }),
+      { sender: mockSender(), writeFields: mockWriter(), singleSender, readAttachments },
+    );
+
+    expect(singleSender.calls[0].attachments).toEqual([
+      { filename: 'Info.pdf', contentBase64: 'base64(recA)' },
+    ]);
+  });
+
+  test('stämpel-fälten skrivs precis som batchgrenen (SAMMA stampFieldsFor) — atomicitet bevarad', async () => {
+    const writer = mockWriter();
+
+    const result = await runActionSend(
+      input({
+        actionType: 'eventinfo',
+        targets: [target({ id: 'rec1', status: 'Bekräftad (mail skickat)' })],
+        attachments: [resolvedAttachment()],
+      }),
+      {
+        sender: mockSender(),
+        writeFields: writer,
+        singleSender: mockSingleSender(),
+        readAttachments: mockAttachmentReader(),
+      },
+    );
+
+    expect(result.status).toBe('sent');
+    expect(writer.writes).toEqual([
+      { registrationId: 'rec1', fields: { 'Deltagarinfo skickad': NU } },
+    ]);
+  });
+
+  test('DELUTFALL: en mottagare avvisas (rejected) ⇒ ärligt "partial", resten "completed"', async () => {
+    const singleSender = mockSingleSender(new Set([TEST_ADDR_2]));
+
+    const result = await runActionSend(
+      input({
+        targets: [
+          target({ id: 'recOk', email: TEST_ADDR }),
+          target({ id: 'recFel', email: TEST_ADDR_2 }),
+        ],
+        attachments: [resolvedAttachment()],
+      }),
+      {
+        sender: mockSender(),
+        writeFields: mockWriter(),
+        singleSender,
+        readAttachments: mockAttachmentReader(),
+      },
+    );
+
+    expect(result.status).toBe('partial');
+    expect(result.completed).toEqual(['recOk']);
+    expect(result.failed).toEqual([{ registrationId: 'recFel', reason: 'mock-reject' }]);
+  });
+
+  test('EN REQUEST-KRASCH (kastat fel) för mottagare N förlorar INTE mottagare N-1s redan lyckade sändning', async () => {
+    const singleSender = mockSingleSender(new Set(), new Set([TEST_ADDR_2]));
+
+    const result = await runActionSend(
+      input({
+        targets: [
+          target({ id: 'recForst', email: TEST_ADDR }),
+          target({ id: 'recKrasch', email: TEST_ADDR_2 }),
+          target({ id: 'recSist', email: 'suppressed@resend.dev' }),
+        ],
+        attachments: [resolvedAttachment()],
+      }),
+      {
+        sender: mockSender(),
+        writeFields: mockWriter(),
+        singleSender,
+        readAttachments: mockAttachmentReader(),
+      },
+    );
+
+    // Alla tre FÖRSÖKTES (loopen fortsatte förbi kraschen) — den mittersta
+    // räknas failed med felets meddelande, de två andra completed.
+    expect(singleSender.calls).toHaveLength(3);
+    expect(result.status).toBe('partial');
+    expect(result.completed).toEqual(['recForst', 'recSist']);
+    expect(result.failed).toEqual([{ registrationId: 'recKrasch', reason: 'mock-network-krasch' }]);
+  });
+
+  test('ICKE-PROD-SPÄRREN (GOLV, SAMMA plats i ordningen): icke-test-adress ⇒ NOLL skickat, readAttachments ANROPAS ALDRIG', async () => {
+    const singleSender = mockSingleSender();
+    const readAttachments = mockAttachmentReader();
+
+    await expect(
+      runActionSend(
+        input({
+          targets: [
+            target({ id: 'rec1', email: TEST_ADDR }),
+            target({ id: 'rec2', email: 'lotta@example.com' }),
+          ],
+          attachments: [resolvedAttachment()],
+        }),
+        { sender: mockSender(), writeFields: mockWriter(), singleSender, readAttachments },
+      ),
+    ).rejects.toThrow(NonProdAddressError);
+
+    expect(singleSender.calls).toHaveLength(0);
+    // Spärren gäller FÖRE bilage-hämtningen — ingen Storage-läsning för en
+    // sändning som ändå vägras (samma "lastbärande, FÖRE allt annat"-ordning
+    // som batchgrenen).
+    expect(readAttachments.calls).toHaveLength(0);
+  });
+
+  test('prod-läge: spärren gäller inte (riktiga adresser tillåts) i den bilage-bärande grenen också', async () => {
+    const singleSender = mockSingleSender();
+
+    const result = await runActionSend(
+      input({
+        isProd: true,
+        targets: [target({ id: 'rec1', email: 'lotta@example.com' })],
+        attachments: [resolvedAttachment()],
+      }),
+      {
+        sender: mockSender(),
+        writeFields: mockWriter(),
+        singleSender,
+        readAttachments: mockAttachmentReader(),
+      },
+    );
+
+    expect(result.status).toBe('sent');
+    expect(singleSender.calls[0].email).toBe('lotta@example.com');
+  });
+
+  test('NOLL-LEVERANS (alla hoppade över) med attachments satt ⇒ "skipped", readAttachments ANROPAS ALDRIG', async () => {
+    const singleSender = mockSingleSender();
+    const readAttachments = mockAttachmentReader();
+
+    const result = await runActionSend(
+      input({
+        actionType: 'eventinfo',
+        targets: [target({ id: 'rec1', status: 'Inställt' })],
+        attachments: [resolvedAttachment()],
+      }),
+      { sender: mockSender(), writeFields: mockWriter(), singleSender, readAttachments },
+    );
+
+    expect(result.status).toBe('skipped');
+    expect(result.attempted).toBe(0);
+    expect(singleSender.calls).toHaveLength(0);
+    expect(readAttachments.calls).toHaveLength(0);
+  });
+
+  test('avbokad/inställd mottagare hoppas över — DELAT golv med batchgrenen (samma partitionering)', async () => {
+    const singleSender = mockSingleSender();
+
+    const result = await runActionSend(
+      input({
+        targets: [
+          target({ id: 'recAktiv', email: TEST_ADDR }),
+          target({ id: 'recAvbokad', status: 'Avbokad/Ombokad' }),
+        ],
+        attachments: [resolvedAttachment()],
+      }),
+      {
+        sender: mockSender(),
+        writeFields: mockWriter(),
+        singleSender,
+        readAttachments: mockAttachmentReader(),
+      },
+    );
+
+    expect(result.skipped).toEqual([{ registrationId: 'recAvbokad', reason: 'inactive' }]);
+    expect(singleSender.calls.map((c) => c.registrationId)).toEqual(['recAktiv']);
+  });
+
+  test('deps saknar singleSender/readAttachments ⇒ tydligt internt fel, inte en tyst krasch', async () => {
+    await expect(
+      runActionSend(input({ attachments: [resolvedAttachment()] }), {
+        sender: mockSender(),
+        writeFields: mockWriter(),
+      }),
+    ).rejects.toThrow(/singleSender \+ readAttachments/);
+  });
+
+  test('fält-skrivfel efter accepterat mail rapporteras som failed (aldrig tyst) — SAMMA disciplin som batchgrenen', async () => {
+    const writer = mockWriter(new Set(['rec1']));
+
+    const result = await runActionSend(input({ attachments: [resolvedAttachment()] }), {
+      sender: mockSender(),
+      writeFields: writer,
+      singleSender: mockSingleSender(),
+      readAttachments: mockAttachmentReader(),
+    });
+
+    expect(result.status).toBe('failed');
+    expect(result.completed).toEqual([]);
+    expect(result.failed[0].registrationId).toBe('rec1');
+    expect(result.failed[0].reason).toContain('mock-airtable-fel');
   });
 });
 

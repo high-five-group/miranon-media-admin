@@ -31,6 +31,15 @@ export type SendActionEmailInput = {
   mailtext: string;
   /** Klient-genererad UUID v4 — EF:en accepterar den i body (eller header). */
   idempotencyKey: string;
+  /**
+   * [TASK-147.5, ADR-067 D9] Bilagor valda i väljaren — Bilagor-record-ID:n
+   * (INTE bytes). VALFRI, default TOM: frånvaro/tom lista ⇒ servern väljer
+   * den bilage-fria batchgrenen AUTOMATISKT (AC #1 — grenvalet lever
+   * server-side i `_shared/send-action-email.ts`, klienten behöver inte
+   * veta vilken mekanism som används). Icke-tom ⇒ loopad singelsändning
+   * med bilagorna bifogade på varje mail.
+   */
+  attachmentIds?: string[];
 };
 
 /** Varför en mottagare hoppades över — server-satt, aldrig gissad i UI:t. */

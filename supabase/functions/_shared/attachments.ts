@@ -84,6 +84,18 @@ export function sanitizeFilnamn(raw: string): string {
 }
 
 /**
+ * Storage-objektets LEAF-namn (allt utom `eventId/`-prefixet): `<attachmentId>-
+ * <sanitizeFilnamn(filnamn)>`. Utbruten som EGEN funktion (TASK-147.5) eftersom
+ * den bilage-bärande sändvägen behöver PRECIS denna sträng för att skriva
+ * `Lagringsnyckel`-fältet vid radskapelse (upload-attachment/finalize-
+ * attachment-upload/generate-event-attachment) — samma formel som
+ * `buildAttachmentPath` nedan bygger på, inte en parallell variant.
+ */
+export function buildAttachmentLeaf(attachmentId: string, filnamn: string): string {
+  return `${attachmentId}-${sanitizeFilnamn(filnamn)}`;
+}
+
+/**
  * Den DETERMINISTISKA path-formen — SAMMA formel i create-attachment-upload-
  * ticket (vid utfärdande) och finalize-attachment-upload (vid verifiering).
  * `attachmentId` är alltid server-genererat (crypto.randomUUID()), aldrig
@@ -97,7 +109,28 @@ export function buildAttachmentPath(
   attachmentId: string,
   filnamn: string,
 ): string {
-  return `${eventId}/${attachmentId}-${sanitizeFilnamn(filnamn)}`;
+  return `${eventId}/${buildAttachmentLeaf(attachmentId, filnamn)}`;
+}
+
+/**
+ * Uint8Array → base64, UTAN spridningsoperator (`...bytes`) — undviker
+ * call-stack-taket på stora arrayer. Samma implementation som fanns
+ * DUPLICERAD i generate-event-attachment/index.ts (TASK-146.5); flyttad hit
+ * (TASK-147.5) eftersom den bilage-bärande sändvägen (send-action-email/
+ * index.ts) behöver EXAKT samma bas64-kodning för att bifoga hämtade
+ * Storage-bytes till Resends `attachments[].content` (HTTP-API:t accepterar
+ * "a buffer or Base64 string" — en base64-STRÄNG sidesteppar frågan om
+ * Deno-global `Buffer` helt, se docs/research/utskicks-bilage-arkitektur-
+ * 2026-08-03.md § Delfråga 1).
+ */
+export function toBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
 }
 
 /**

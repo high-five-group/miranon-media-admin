@@ -149,6 +149,31 @@ verify_jwt = true
 [functions.generate-event-attachment]
 verify_jwt = true
 
+# send-action-email — TASK-147.1 "Sändvägs-EF:n" (PRD task-147, Åtgärds-
+# sidan), ADR-067-revisionen. Repots SJUNDE write-vertikal, TREDJE mail-
+# vertikal. [RÄTTAT, TASK-147.5] Denna posten saknades sedan 147.1s
+# landning — funktionen har körts mot staging (verifierad 401-svarande,
+# se PR-historiken/kortets notes) utan en config.toml-post, vilket är en
+# dokumentations-/audit-lucka, inte ett funktionsfel (Supabase-plattformens
+# egen default är verify_jwt=true, samma värde denna posten sätter
+# explicit). Fylld i här eftersom TASK-147.5 rör funktionen tungt (den
+# bilage-bärande grenen) — samma "cheap-to-fix, adjacent"-motiv som andra
+# småfixar i denna landning. requireUser grindar OVANPÅ, samma
+# defense-in-depth-nivå som send-registration-confirmation/send-email.
+[functions.send-action-email]
+verify_jwt = true
+
+# get-event-attachments — TASK-147.5 "Bilage-bärande sändvägen + bilage-
+# väljaren skarp" (PRD task-147). LÄSER bara: eventets Bilagor-rader via
+# den omvända länken (SAMMA form som get-event-notes). Gateway-första-
+# försvar aktivt; requireUser läggs OVANPÅ i koden (defense-in-depth).
+# MEDVETET UTELÄMNAD ur .prod-functions-allowlist.conf tills vidare —
+# samma "ingen UI-yta i prod ännu"-resonemang som generate-event-attachment
+# ovan: hela TASK-147-arket (send-action-email inkluderat) körs mot
+# staging, ingen del av det är prod-deployad.
+[functions.get-event-attachments]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #

@@ -123,11 +123,53 @@ export type ActionSendResult = {
   failed: { registrationId: string; reason: string }[];
 };
 
+/**
+ * [TASK-147.5, ADR-067 D9] En bilaga vald i väljaren, RESOLVED server-side
+ * INNAN orkestratorn nås — send-action-email/index.ts:s jobb (existens +
+ * event-ägarskap + Lagringsnyckel-närvaro), inte orkestratorns. Samma
+ * uppdelning som `registrationIds` → `ActionTarget[]`: HTTP-validering utanför,
+ * ren logik inuti.
+ */
+export type ResolvedAttachment = { id: string; namn: string; lagringsnyckel: string };
+
+/** Bilagans bytes, redan hämtade + bas64-kodade — klara att bifogas på Resends `attachments[].content`. */
+export type AttachmentPayload = { filename: string; contentBase64: string };
+
+/**
+ * Injicerad Storage-läsare: given de RESOLVED bilagorna + eventId, hämta
+ * bytesen. EF:en ger en riktig Supabase-Storage-`.download()`-läsare
+ * (service-role); testet en mock — NOLL riktig Storage/Airtable i api-pure-
+ * kontraktstestet.
+ */
+export type AttachmentReader = (
+  attachments: readonly ResolvedAttachment[],
+  eventId: string,
+) => Promise<AttachmentPayload[]>;
+
+/**
+ * Injicerad SINGEL-sänd-gräns — EN mottagare per anrop, med bilagor bifogade.
+ * Skild från `ActionSender` (batch): Resends `/emails/batch`-ändpunkt stödjer
+ * INTE bilagor alls (tyst brist, ADR-067 D9) — `/emails` (singel) gör det.
+ * Kastar INTE för radfel; utfallet är `{accepted, reason?}` (no-throw-
+ * inspektion, samma disciplin som `ActionSender`s batch-utfall).
+ */
+export type ActionSingleSender = (
+  spec: ActionSpec,
+  ctx: { idempotencyKey: string; attachments: readonly AttachmentPayload[] },
+) => Promise<{ accepted: boolean; reason?: string }>;
+
 export type ActionSendInput = {
   actionType: ActionType;
   targets: readonly ActionTarget[];
   /** Eventet urvalet är bundet till (SCOPE-KÄRNAN: åtgärdssidans urval är event-bundet). */
   event: EventContext;
+  /**
+   * [TASK-147.5] Eventets record-ID — bär den bilage-bärande grenens
+   * Storage-path-prefix (`<eventId>/<lagringsnyckel>`). `EventContext` bär
+   * bara VISNINGSDATA (namn/ort/datum), inget record-ID — additivt fält,
+   * oanvänt av den bilage-fria grenen.
+   */
+  eventId: string;
   /** Redigerad ämnesrad-MALL (kan bära {förnamn}/{event}/{datum}/{ort}/{deadline}). */
   amne: string;
   /** Redigerad brödtext-MALL (samma platshållar-set). */
@@ -138,9 +180,23 @@ export type ActionSendInput = {
   isProd: boolean;
   /** Tidsstämpeln som skrivs (injicerad så testet slipper systemklockan). */
   nu: string;
+  /**
+   * [TASK-147.5, AC #1] Bilagor valda i väljaren — RESOLVED server-side.
+   * TOM/frånvarande ⇒ bilage-fri batchgren (grenvalet är AUTOMATISKT: denna
+   * fils egen `runActionSend` avgör, anroparen behöver inte veta vilken
+   * mekanism som används).
+   */
+  attachments?: readonly ResolvedAttachment[];
 };
 
-export type ActionSendDeps = { sender: ActionSender; writeFields: ActionFieldWriter };
+export type ActionSendDeps = {
+  sender: ActionSender;
+  writeFields: ActionFieldWriter;
+  /** Krävs ENDAST när `input.attachments` är icke-tom (den bilage-bärande grenen). */
+  singleSender?: ActionSingleSender;
+  /** Krävs ENDAST när `input.attachments` är icke-tom. */
+  readAttachments?: AttachmentReader;
+};
 
 /**
  * [TASK-147.10, ADR-067 D10/T53 väg C] Testmail-till-mig — SAMMA sändväg
@@ -288,30 +344,18 @@ function renderFor(
   return { subject, text, html: renderHtml(text) };
 }
 
-/**
- * Kör ett åtgärdsutskick (enskild mottagare = längd 1; hela urvalet = längd N
- * — SAMMA operation). Ordning är lastbärande:
- *  1. Partitionering: inaktiv (avbokad/inställt, delad golv-lista med
- *     confirm-registrations.ts) → (bekräftelse-specifikt: redan bekräftad) →
- *     e-post-lös hamnar bland `skipped` MED SKÄL; resten försöks.
- *  2. ICKE-PROD-SPÄRR (GOLV) FÖRE sändning: en enda icke-test-adress → kasta
- *     NonProdAddressError (noll mail, noll skrivning). Nyckel-OBEROENDE.
- *  3. Sänd EN gång för hela urvalet med deterministisk idempotens-nyckel.
- *  4. Skriv stämpel-fälten ENDAST för accepterade (atomicitets-kontraktet);
- *     `stampFieldsFor` kan returnera `null` (fritt / paminnelse-utan-
- *     kvarstående-skuld) → räknas som `completed` utan Airtable-anrop.
- *  5. Status (aldrig binär): attempted 0 → 'skipped'; inget klart → 'failed';
- *     något föll → 'partial'; annars 'sent'.
- */
-export async function runActionSend(
-  input: ActionSendInput,
-  deps: ActionSendDeps,
-): Promise<ActionSendResult> {
+/** Delad partitionering — se `runActionSend` steg 1. Ren, ingen I/O. */
+type Partitioned = {
+  skipped: { registrationId: string; reason: SkipReason }[];
+  specs: ActionSpec[];
+  targetByRegId: Map<string, ActionTarget>;
+};
+
+function partitionTargets(input: ActionSendInput): Partitioned {
   const skipped: { registrationId: string; reason: SkipReason }[] = [];
   const specs: ActionSpec[] = [];
   const targetByRegId = new Map<string, ActionTarget>();
 
-  // 1) Partitionering — varje mottagare landar i EXAKT en hink.
   for (const t of input.targets) {
     if (t.status !== null && INAKTIVA_STATUSAR.includes(t.status)) {
       skipped.push({ registrationId: t.id, reason: 'inactive' });
@@ -331,6 +375,46 @@ export async function runActionSend(
     targetByRegId.set(t.id, t);
   }
 
+  return { skipped, specs, targetByRegId };
+}
+
+/**
+ * [TASK-147.5, AC #1] Grenvalet — AUTOMATISKT, anroparen (send-action-email/
+ * index.ts) behöver inte veta vilken mekanism som används. Icke-tom
+ * `input.attachments` ⇒ den bilage-bärande grenen (loopad singelsändning,
+ * ADR-067 D9); annars den bilage-fria batchgrenen (D2, oförändrad).
+ */
+export async function runActionSend(
+  input: ActionSendInput,
+  deps: ActionSendDeps,
+): Promise<ActionSendResult> {
+  const partitioned = partitionTargets(input);
+  const attachments = input.attachments ?? [];
+  if (attachments.length > 0) {
+    return runActionSendWithAttachments(input, attachments, partitioned, deps);
+  }
+  return runActionSendBatch(input, partitioned, deps);
+}
+
+/**
+ * Bilage-FRI gren (ADR-067 D9, D2 oförändrad) — kör ett åtgärdsutskick via
+ * batch (enskild mottagare = längd 1; hela urvalet = längd N — SAMMA
+ * operation). Ordning är lastbärande:
+ *  1. Partitionering (ovan, DELAD med attachment-grenen).
+ *  2. ICKE-PROD-SPÄRR (GOLV) FÖRE sändning: en enda icke-test-adress → kasta
+ *     NonProdAddressError (noll mail, noll skrivning). Nyckel-OBEROENDE.
+ *  3. Sänd EN gång för hela urvalet med deterministisk idempotens-nyckel.
+ *  4. Skriv stämpel-fälten ENDAST för accepterade (atomicitets-kontraktet);
+ *     `stampFieldsFor` kan returnera `null` (fritt / paminnelse-utan-
+ *     kvarstående-skuld) → räknas som `completed` utan Airtable-anrop.
+ *  5. Status (aldrig binär): attempted 0 → 'skipped'; inget klart → 'failed';
+ *     något föll → 'partial'; annars 'sent'.
+ */
+async function runActionSendBatch(
+  input: ActionSendInput,
+  { skipped, specs, targetByRegId }: Partitioned,
+  deps: ActionSendDeps,
+): Promise<ActionSendResult> {
   // 2) Lastbärande icke-prod-spärr — FÖRE all sändning (samma GOLV som bulk-send
   //    och confirm-registrations, ALDRIG kringgången).
   if (!input.isProd) {
@@ -387,6 +471,133 @@ export async function runActionSend(
   }
 
   // 5) Status — aldrig binär.
+  let status: ActionSendResult['status'];
+  if (completed.length === 0) status = 'failed';
+  else if (failed.length > 0) status = 'partial';
+  else status = 'sent';
+
+  return {
+    status,
+    requested: input.targets.length,
+    attempted: specs.length,
+    completed,
+    skipped,
+    failed,
+  };
+}
+
+/**
+ * [TASK-147.5, ADR-067 D9] Bilage-BÄRANDE gren — loopad SINGELsändning, ETT
+ * `/emails`-anrop per mottagare (Resends `/emails/batch` stödjer inte
+ * bilagor alls, tyst brist). Delar partitionering, icke-prod-GOLV och
+ * stämpel-fältslogik ORÖRT med batchgrenen (`stampFieldsFor`,
+ * `partitionTargets`) — bara SÄNDMEKANIKEN skiljer, per uppdraget
+ * ("INGEN omdesign").
+ *
+ * Ordning:
+ *  1. Partitionering (DELAD, se ovan).
+ *  2. ICKE-PROD-SPÄRR (GOLV, SAMMA plats i ordningen som batchgrenen).
+ *  3. Hämta bilagornas bytes EN gång (delade av ALLA mottagare — klass A/B,
+ *     inte klass C:s per-mottagare-generering, utanför denna skivas scope).
+ *  4. Sänd EN gång PER MOTTAGARE, idempotensnyckel
+ *     `<jobId>/<actionType>/<registrationId>` — DETERMINISTISK PER MOTTAGARE
+ *     (AC #3), skild från batchgrenens jobb-nivå-nyckel och testgrenens
+ *     `<jobId>/test`. Ett kastat fel (nätverk) för EN mottagare fångas och
+ *     räknas som `failed` för just den — en transient nätverksglitch på
+ *     mottagare N ska inte förlora N-1 redan lyckade sändningar (loopens
+ *     motsvarighet till D3:s "aldrig binärt delutfall": batchens ENDA anrop
+ *     är atomiskt på transportnivå, loopens N anrop är det INTE, så samma
+ *     ärlighetsprincip kräver att en enskild request-krasch inte välter hela
+ *     körningen).
+ *  5. Skriv stämpel-fälten ENDAST för accepterade (atomicitets-kontraktet,
+ *     SAMMA `stampFieldsFor` som batchgrenen).
+ *  6. Status (aldrig binär) — SAMMA regel som batchgrenen.
+ */
+async function runActionSendWithAttachments(
+  input: ActionSendInput,
+  attachments: readonly ResolvedAttachment[],
+  { skipped, specs, targetByRegId }: Partitioned,
+  deps: ActionSendDeps,
+): Promise<ActionSendResult> {
+  if (!deps.singleSender || !deps.readAttachments) {
+    throw new Error(
+      'runActionSendWithAttachments kräver singleSender + readAttachments i deps — ' +
+        'anroparen bad om en bilage-bärande sändning utan att koppla in mekanismen.',
+    );
+  }
+
+  // 2) Lastbärande icke-prod-spärr — SAMMA plats i ordningen som batchgrenen.
+  if (!input.isProd) {
+    const offending = [
+      ...new Set(specs.filter((s) => !RESEND_TEST_ADDRESSES.includes(s.email)).map((s) => s.email)),
+    ];
+    if (offending.length > 0) {
+      throw new NonProdAddressError(offending);
+    }
+  }
+
+  if (specs.length === 0) {
+    return {
+      status: 'skipped',
+      requested: input.targets.length,
+      attempted: 0,
+      completed: [],
+      skipped,
+      failed: [],
+    };
+  }
+
+  // 3) Bilagornas bytes — EN hämtning, delad av alla mottagare i loopen.
+  const attachmentPayloads = await deps.readAttachments(attachments, input.eventId);
+
+  // 4) Sänd EN gång PER MOTTAGARE (deterministisk per-mottagare-nyckel, AC #3).
+  const failed: { registrationId: string; reason: string }[] = [];
+  const acceptedSpecs: ActionSpec[] = [];
+  for (const spec of specs) {
+    let outcome: { accepted: boolean; reason?: string };
+    try {
+      outcome = await deps.singleSender(spec, {
+        idempotencyKey: `${input.jobId}/${input.actionType}/${spec.registrationId}`,
+        attachments: attachmentPayloads,
+      });
+    } catch (error) {
+      // Se docblockens punkt 4 — en request-krasch är INTE en batch-avvisning
+      // och ska inte förlora tidigare mottagares redan lyckade sändningar.
+      outcome = { accepted: false, reason: error instanceof Error ? error.message : String(error) };
+    }
+    if (outcome.accepted) {
+      acceptedSpecs.push(spec);
+    } else {
+      failed.push({
+        registrationId: spec.registrationId,
+        reason: outcome.reason ?? 'Okänt fel — mailet avvisades.',
+      });
+    }
+  }
+
+  // 5) Skriv stämpel-fälten ENDAST för accepterade (atomicitets-kontraktet, DELAD logik).
+  const completed: string[] = [];
+  for (const ok of acceptedSpecs) {
+    const target = targetByRegId.get(ok.registrationId);
+    const fields = target ? stampFieldsFor(input.actionType, target, input.nu) : null;
+    if (fields === null) {
+      completed.push(ok.registrationId);
+      continue;
+    }
+    try {
+      await deps.writeFields(ok.registrationId, fields);
+      completed.push(ok.registrationId);
+    } catch (error) {
+      failed.push({
+        registrationId: ok.registrationId,
+        reason: `Mailet skickades men fältet kunde inte uppdateras: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      });
+    }
+  }
+
+  // 6) Status — aldrig binär (SAMMA regel som batchgrenen).
   let status: ActionSendResult['status'];
   if (completed.length === 0) status = 'failed';
   else if (failed.length > 0) status = 'partial';

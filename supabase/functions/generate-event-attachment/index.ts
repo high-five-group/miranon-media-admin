@@ -53,9 +53,11 @@ import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-c
 // filhuvudets SAMTIDIGHETS-NOT.
 import {
   BILAGOR_BUCKET_ID,
+  buildAttachmentLeaf,
   buildAttachmentPath,
   EVENTPLANERING_TABLE,
   mapAttachmentRecord,
+  toBase64,
 } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { scalarString, selectName } from '../_shared/coerce.ts';
@@ -121,17 +123,6 @@ function lasEventUppgifter(record: { id: string; fields: Record<string, unknown>
   const slut = formatSvenskDatum(f['Slutdatum']);
   const datumrad = start && slut && start !== slut ? `${start} – ${slut}` : (start ?? slut);
   return { eventlabel, kursnamn, ort, datumrad };
-}
-
-/** Base64 utan spridningsoperator (`...bytes`) — undviker call-stack-tak på stora arrayer (samma mönster som test-pdf-generation/index.ts). */
-function toBase64(bytes: Uint8Array): string {
-  let binary = '';
-  const chunkSize = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.subarray(i, i + chunkSize);
-    binary += String.fromCharCode(...chunk);
-  }
-  return btoa(binary);
 }
 
 /** Bygger PDF-bytesen ur systemmallen + eventets uppgifter. Ren funktion — inget I/O. */
@@ -209,8 +200,12 @@ Deno.serve(async (req) => {
     const attachmentId = crypto.randomUUID();
     // SAMMA deterministiska path-form som TASK-146.4:s mönster 1/2
     // (buildAttachmentPath, _shared/attachments.ts) — inte en egen variant
-    // som råkar se likadan ut.
-    const path = buildAttachmentPath(eventId, attachmentId, 'deltagarinformation.pdf');
+    // som råkar se likadan ut. `STORAGE_FILNAMN` är den fasta lagringsfil-
+    // benämningen (skild från `namn`, det EVENT-SPECIFIKA visningsnamnet
+    // nedan) — SAMMA sträng måste gå in i både path OCH Lagringsnyckel
+    // (TASK-147.5), annars pekar de på olika leaf-strängar.
+    const STORAGE_FILNAMN = 'deltagarinformation.pdf';
+    const path = buildAttachmentPath(eventId, attachmentId, STORAGE_FILNAMN);
     const { error: uploadError } = await supabaseAdmin.storage
       .from(BILAGOR_BUCKET_ID)
       .upload(path, pdfBytes, { contentType: 'application/pdf' });
@@ -231,6 +226,11 @@ Deno.serve(async (req) => {
       'Storlek (bytes)': pdfBytes.byteLength,
       Skapad: new Date().toISOString(),
       Event: [eventId],
+      // [TASK-147.5] Additivt — se upload-attachment/index.ts:s motsvarande
+      // rad. Byggd ur SAMMA `STORAGE_FILNAMN` som `path` ovan (inte `namn`,
+      // som varierar per event och alltså INTE är vad som faktiskt ligger i
+      // Storage).
+      Lagringsnyckel: buildAttachmentLeaf(attachmentId, STORAGE_FILNAMN),
     };
 
     const disallowed = findDisallowedField(operation, fields);

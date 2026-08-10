@@ -8,9 +8,15 @@
  * docs/reference/airtable-constraints.md § G). Bytesen är en TREDJE, delad
  * resurs bakom SAMMA adapter-kontrakt — inte "Airtable-data" (ADR-057).
  *
- * v1 bär bara klass A (uppladdad av Roger/Lotta). Bilagor-tabellen har idag
- * inget dokumentklass-fält — TASK-146.5 (klass B, event-mallad) lägger till
- * det ADDITIVT när den faktiska behovet uppstår, inte i förväg.
+ * [RÄTTAD, TASK-147.5] Bär klass A (uppladdad, TASK-146.4) OCH klass B
+ * (event-mallad, TASK-146.5) — denna raden sade tidigare "v1 bär bara klass
+ * A" och att TASK-146.5 skulle lägga till ett dokumentklass-fält "när det
+ * faktiska behovet uppstår". Det behovet uppstod aldrig: Bilagor-tabellen
+ * bär FORTFARANDE inget dokumentklass-fält (klass A och B är strukturellt
+ * odelbara i metadatat, generate-event-attachment/index.ts § SAMTIDIGHETS-
+ * NOT) — vad som FAKTISKT lades till additivt var `Lagringsnyckel`
+ * (TASK-147.5, server-internt, EXPONERAS ALDRIG här — se
+ * scripts/create-bilagor-table.mjs § Lagringsnyckel för varför).
  */
 export interface Attachment {
   id: string;
@@ -35,10 +41,14 @@ export interface Attachment {
  * Adaptern väljer SJÄLV mönster 1 (bytes genom edge-funktionen) eller mönster 2
  * (signerat, tidsbegränsat uppladdningstillstånd — klienten laddar upp direkt
  * mot lagringen) beroende på `file.size` mot `SMALL_UPLOAD_MAX_BYTES`
- * (`src/data/adapters/attachmentUpload.ts`). Anroparen (den kommande bilage-
- * väljaren, task-147.5) anropar EN metod och behöver aldrig veta vilket
- * mönster som användes — det håller adapter-API:t smalt (uppdragets egen
- * instruktion: "håll adapter-API:t smalt och välnamnat").
+ * (`src/data/adapters/attachmentUpload.ts`). Anroparen anropar EN metod och
+ * behöver aldrig veta vilket mönster som användes — det håller adapter-API:t
+ * smalt (uppdragets egen instruktion: "håll adapter-API:t smalt och
+ * välnamnat"). [RÄTTAD, TASK-147.5] Anroparen är INTE åtgärdssidans
+ * bilageväljare (den VÄLJER bland befintliga bilagor via
+ * `fetchEventAttachments`, laddar aldrig upp) — det är Dokument-ytan
+ * (TASK-147.6, ännu en kastbar S100-prototyp, `src/components/dokument/
+ * DokumentYta.tsx`) eller motsvarande framtida uppladdnings-yta.
  */
 export interface UploadAttachmentInput {
   /** Airtable-record-ID (rec-format) för eventet bilagan hör till. */
