@@ -34,6 +34,7 @@
     "generate:manifest-screenshots": "PLAYWRIGHT_MANIFEST_SCREENSHOTS=1 playwright test --project=manifest-screenshots",
     "purge:staging": "node --env-file-if-exists=.env.seed scripts/purge-staging-sentinels.mjs",
     "schema:bilagor": "node --env-file-if-exists=.env.seed scripts/create-bilagor-table.mjs",
+    "schema:kvitton": "node --env-file-if-exists=.env.seed scripts/create-kvitton-table.mjs",
     "seed:review": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs",
     "seed:review:clean": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs --clean",
     "facit:godkann": "node scripts/facit-godkann.mjs",
