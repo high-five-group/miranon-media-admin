@@ -26,6 +26,10 @@ import {
   betalstatusFor,
   buildEvent,
   buildRegistrations,
+  buildRikAnteckningar,
+  buildRikHistoryEventSpecs,
+  buildRikPrimaryRad,
+  buildRikTouchpoints,
   CONFIG,
   chunk,
   eventUrl,
@@ -770,12 +774,12 @@ t('Ort-matchen är EXAKT — prefix räcker inte (S91-fixturen överlever)', () 
   assert.equal(isFixtureEvent(s91, 'ZZ-GRANSKNING-FIXTUR', CONFIG.marker), false);
 });
 
-t('länk-guarden skyddar en person med Deltaganden', () => {
+t('länk-guarden skyddar en person med Anteckningar (S103: ÄNDRAD från Deltaganden)', () => {
   const rec = {
     id: 'recD',
-    fields: { 'E-post': FIXTUR_EPOST, Deltaganden: ['recQWjimysYJrkY0n'] },
+    fields: { 'E-post': FIXTUR_EPOST, 'Anteckningar 2': ['recQWjimysYJrkY0n'] },
   };
-  assert.deepEqual(personLinkGuardTrips(rec, CONFIG.personDataLinkFields), ['Deltaganden']);
+  assert.deepEqual(personLinkGuardTrips(rec, CONFIG.personDataLinkFields), ['Anteckningar 2']);
 });
 
 t('Anmälningar-länken triggar INTE guarden — den är fixturens egen', () => {
@@ -785,6 +789,36 @@ t('Anmälningar-länken triggar INTE guarden — den är fixturens egen', () => 
   };
   assert.deepEqual(personLinkGuardTrips(rec, CONFIG.personDataLinkFields), []);
 });
+
+t(
+  'S103 · BEVIS I BÅDA RIKTNINGAR: Deltaganden triggar INTE längre guarden (RIK-LÄGET kräver det)',
+  () => {
+    const rec = {
+      id: 'recRik',
+      fields: { 'E-post': FIXTUR_EPOST, Deltaganden: ['recX'], Touchpoints: ['recY'] },
+    };
+    assert.deepEqual(
+      personLinkGuardTrips(rec, CONFIG.personDataLinkFields),
+      [],
+      'en person med ENDAST Deltaganden/Touchpoints ska vara städbar — stadaOrt raderar dem explicit',
+    );
+  },
+);
+
+t(
+  'S103: en person med BÅDE Deltaganden OCH Anteckningar fälls fortfarande — bara Anteckningar rapporteras',
+  () => {
+    const rec = {
+      id: 'recBada',
+      fields: {
+        'E-post': FIXTUR_EPOST,
+        Deltaganden: ['recX'],
+        'Anteckningar 2': ['recZ'],
+      },
+    };
+    assert.deepEqual(personLinkGuardTrips(rec, CONFIG.personDataLinkFields), ['Anteckningar 2']);
+  },
+);
 
 t('planClean klassar radera/skyddad/länkad/icke-markerad korrekt', () => {
   const plan = planClean({
@@ -801,7 +835,7 @@ t('planClean klassar radera/skyddad/länkad/icke-markerad korrekt', () => {
     ],
     persons: [
       { id: 'recPe1', fields: { 'E-post': FIXTUR_EPOST } },
-      { id: 'recPe2', fields: { 'E-post': FIXTUR_EPOST, Deltaganden: ['recX'] } },
+      { id: 'recPe2', fields: { 'E-post': FIXTUR_EPOST, 'Anteckningar 2': ['recX'] } },
       { id: 'recqxaFNwHAdQlAqb', fields: { 'E-post': FIXTUR_EPOST } },
     ],
     ort: ORT,
@@ -1349,7 +1383,7 @@ t('DEL B · GRÖN SIDA: länk-guarden och protectedRecordIds gäller även i leg
     persons: [
       {
         id: 'recLankad',
-        fields: { 'E-post': 'zz-granskning-02@staging.test', Deltaganden: ['recX'] },
+        fields: { 'E-post': 'zz-granskning-02@staging.test', 'Anteckningar 2': ['recX'] },
       },
       { id: 'rec7F8jYc7rczwwkM', fields: { 'E-post': 'zz-granskning-03@staging.test' } },
     ],
@@ -1359,7 +1393,7 @@ t('DEL B · GRÖN SIDA: länk-guarden och protectedRecordIds gäller även i leg
   assert.deepEqual(plan.persons, [], 'ingen av de två får raderas');
   const orsak = (id) => plan.skipped.find((s) => s.id === id)?.orsak ?? '';
   assert.match(orsak('rec7F8jYc7rczwwkM'), /skyddad record-ID/);
-  assert.match(orsak('recLankad'), /länk-guard: Deltaganden/);
+  assert.match(orsak('recLankad'), /länk-guard: Anteckningar 2/);
 });
 
 t('DEL B: räknings-guarden är TYST när basen stämmer mot mätningen', () => {
@@ -1711,6 +1745,325 @@ t('TASK-95: --sweep och --legacy kräver inga anmälningar (0 + 0 är giltigt)',
     true,
   );
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// S103 — RIK-LÄGET (--rik): den rika personens kravbild
+// ═══════════════════════════════════════════════════════════════════════════
+
+t('--rik tolkas av parseArgs', () => {
+  assert.equal(parseArgs(['--rik'], CONFIG).rik, true);
+  assert.equal(parseArgs([], CONFIG).rik, false);
+});
+
+t('--rik kan INTE kombineras med --clean/--sweep/--legacy', () => {
+  assert.throws(() => parseArgs(['--rik', '--clean'], CONFIG), /--rik/);
+  assert.throws(() => parseArgs(['--rik', '--sweep'], CONFIG), /--rik/);
+  assert.throws(() => parseArgs(['--rik', '--legacy', 'Skovde-S75'], CONFIG), /--rik/);
+});
+
+t('validateConfig: richPerson.historyDagarBak saknas refuseras', () => {
+  const utanRik = { ...CONFIG, richPerson: { ...CONFIG.richPerson, historyDagarBak: [] } };
+  assert.throws(() => validateConfig(utanRik), /historyDagarBak/);
+});
+
+t(
+  'validateConfig: mismatchande längder mellan historyDagarBak/historyEventSources refuseras',
+  () => {
+    const fel = {
+      ...CONFIG,
+      richPerson: { ...CONFIG.richPerson, historyEventSources: ['Fjärrskådning'] },
+    };
+    assert.throws(() => validateConfig(fel), /historyEventSources/);
+  },
+);
+
+t('validateConfig: minst ETT historik-event måste bära ≥2 sessionsrader (AC: tvådagars)', () => {
+  const fel = {
+    ...CONFIG,
+    richPerson: {
+      ...CONFIG.richPerson,
+      historySessions: CONFIG.richPerson.historySessions.map((s) => [s[0]]),
+    },
+  };
+  assert.throws(() => validateConfig(fel), /tvådagars/);
+});
+
+t('validateConfig: motiveringar kräver minst en 400–600-tecken-text (AC)', () => {
+  const fel = {
+    ...CONFIG,
+    richPerson: {
+      ...CONFIG.richPerson,
+      motiveringar: CONFIG.richPerson.motiveringar.map((m) => (m ? 'kort' : m)),
+    },
+  };
+  assert.throws(() => validateConfig(fel), /400–600/);
+});
+
+t('validateConfig: motiveringar kräver minst en KORT text (< 150 tecken)', () => {
+  const lang = 'x'.repeat(500);
+  const fel = {
+    ...CONFIG,
+    richPerson: { ...CONFIG.richPerson, motiveringar: [lang, lang, null, lang] },
+  };
+  assert.throws(() => validateConfig(fel), /kort/);
+});
+
+t('validateConfig: anteckningar kräver minst TVÅ olika författare (AC)', () => {
+  const fel = {
+    ...CONFIG,
+    richPerson: {
+      ...CONFIG.richPerson,
+      anteckningar: CONFIG.richPerson.anteckningar.map((a) => ({ ...a, forfattare: 'Lotta' })),
+    },
+  };
+  assert.throws(() => validateConfig(fel), /olika författare/);
+});
+
+t('validateConfig: den skarpa CONFIG.richPerson håller alla egna krav', () => {
+  // Om detta test går rött har CONFIG själv drivit ifrån sina egna guards —
+  // samma disciplin som "den skarpa CONFIG passerar validateConfig" ovan.
+  assert.equal(validateConfig(CONFIG), CONFIG);
+});
+
+const NU_RIK = new Date('2026-08-10T12:00:00.000Z');
+
+t('buildRikPrimaryRad: e-post matchar fixtur-mönstret och skiljer sig från batchens rader', () => {
+  const rad = buildRikPrimaryRad({ ort: ORT, nu: NU_RIK, index: 16, config: CONFIG });
+  assert.ok(PATTERN.test(rad.anmalan['E-post']), 'måste matcha samma clean-mönster som batchen');
+  assert.ok(
+    !DEFAULTRADER.some((r) => r.anmalan['E-post'] === rad.anmalan['E-post']),
+    'index 16 ligger utanför default-batchens 0..15 — ingen namnkrock',
+  );
+});
+
+t(
+  'buildRikPrimaryRad: bär Telefon + Flagga (medvetet avsteg, se § DATAN SKA LIKNA VERKLIGHETEN)',
+  () => {
+    const rad = buildRikPrimaryRad({ ort: ORT, nu: NU_RIK, index: 16, config: CONFIG });
+    assert.equal(rad.person.Telefon, CONFIG.richPerson.telefon);
+    assert.equal(rad.person.Flagga, CONFIG.richPerson.flagga);
+  },
+);
+
+t('buildRikPrimaryRad: Ort sätts alltid (100 %) — ingen lucka för DEN här personen', () => {
+  const rad = buildRikPrimaryRad({ ort: ORT, nu: NU_RIK, index: 16, config: CONFIG });
+  assert.equal(rad.anmalan.Ort, ORT);
+});
+
+t('buildRikPrimaryRad: bär den KORTA motiveringen (sista posten i richPerson.motiveringar)', () => {
+  const rad = buildRikPrimaryRad({ ort: ORT, nu: NU_RIK, index: 16, config: CONFIG });
+  const kort = CONFIG.richPerson.motiveringar.at(-1);
+  assert.equal(rad.anmalan['Varför vill du gå den här utbildningen?'], kort);
+});
+
+t('buildRikPrimaryRad är deterministisk — samma indata ger samma rad', () => {
+  const a = buildRikPrimaryRad({ ort: ORT, nu: NU_RIK, index: 16, config: CONFIG });
+  const b = buildRikPrimaryRad({ ort: ORT, nu: NU_RIK, index: 16, config: CONFIG });
+  assert.deepEqual(a, b);
+});
+
+t('buildRikHistoryEventSpecs: en spec per historyDagarBak-post, alla i DÅTID', () => {
+  const specs = buildRikHistoryEventSpecs({ nu: NU_RIK, config: CONFIG });
+  assert.equal(specs.length, CONFIG.richPerson.historyDagarBak.length);
+  for (const spec of specs) {
+    assert.ok(new Date(spec.startdatum) < NU_RIK, `${spec.startdatum} måste ligga före nu`);
+    assert.equal(spec.status, CONFIG.select.eventStatusGenomfort);
+  }
+});
+
+t(
+  'buildRikHistoryEventSpecs: minst en spec bär ≥2 sessionsrader (tvådagars-AC:et, bevisat på byggd data)',
+  () => {
+    const specs = buildRikHistoryEventSpecs({ nu: NU_RIK, config: CONFIG });
+    assert.ok(specs.some((s) => s.sessions.length >= 2));
+  },
+);
+
+t('buildRikHistoryEventSpecs: datumen är SPRIDDA — ingen krock, äldst till senast', () => {
+  const specs = buildRikHistoryEventSpecs({ nu: NU_RIK, config: CONFIG });
+  const datum = specs.map((s) => s.startdatum);
+  assert.equal(new Set(datum).size, datum.length, 'varje historik-event har ett eget datum');
+});
+
+t(
+  'buildRikTouchpoints: en rad per touchpointDagarBak-post, Erbjudande-värden är PINNADE choices',
+  () => {
+    const tp = buildRikTouchpoints({ nu: NU_RIK, config: CONFIG });
+    assert.equal(tp.length, CONFIG.richPerson.touchpointDagarBak.length);
+    const PINNADE = new Set(['Meditationen Kraftfältet', 'Pyramidernas Vajrar', 'Annat']);
+    for (const rad of tp) {
+      assert.ok(PINNADE.has(rad.Erbjudande), `"${rad.Erbjudande}" är inte en pinnad choice`);
+      assert.equal(rad.Typ, CONFIG.select.tpTypHamtning);
+      assert.equal(rad.Metadata, CONFIG.richPerson.touchpointMetadataMarker);
+    }
+  },
+);
+
+t('buildRikTouchpoints: datumen är riktiga och SPRIDDA i tid (AC-krav)', () => {
+  const tp = buildRikTouchpoints({ nu: NU_RIK, config: CONFIG });
+  const datum = new Set(tp.map((r) => r.Datum));
+  assert.equal(datum.size, tp.length, 'varje touchpoint har ett eget datum');
+  for (const rad of tp) assert.ok(new Date(rad.Datum) < NU_RIK, 'touchpoints ligger i dåtid');
+});
+
+t('buildRikAnteckningar: minst två OLIKA författare, ingen sentinel i texten', () => {
+  const rader = buildRikAnteckningar({ config: CONFIG });
+  const forfattare = new Set(rader.map((r) => r.Författare));
+  assert.ok(forfattare.size >= 2, 'AC-krav: olika författare');
+  for (const rad of rader) {
+    assert.ok(
+      !rad.Anteckning.includes(CONFIG.marker.noteringSentinel),
+      'anteckningstexten ska ALDRIG bära en synlig sentinel — Marcus läser den vid granskning',
+    );
+  }
+});
+
+t(
+  'S103: personDataLinkFields-ändringen är den ENDA raden som styr guarden — regressionslås',
+  () => {
+    // Om någon av dagens tabeller byter namn i basen bryts detta lås innan
+    // stadaOrt/planClean tyst börjar radera fel saker.
+    assert.deepEqual(CONFIG.personDataLinkFields, ['Anteckningar 2']);
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// S103 — KASKAD-GUARDEN i planClean (upptäckt LIVE mot staging under detta
+// korts skarpa --rik-verifiering, se slutrapporten): en person som lämnas
+// kvar fick tidigare se sina EGNA anmälningar och event raderas ändå, vilket
+// bröt Deltagandenas Anmälan-/Event-länkar och tystade rollups (RIM ×,
+// Erfarenhetsbadge). Fixen gör guarden TRANSITIV: kvarlämnad person ⇒
+// kvarlämnad anmälan ⇒ kvarlämnat event (lokalt, bara för DEN klustret).
+// ═══════════════════════════════════════════════════════════════════════════
+
+t(
+  'KASKAD-GUARD RÖD SIDA (utan fixen hade detta fällt): en kvarlämnad persons EGEN anmälan lämnas också kvar',
+  () => {
+    const plan = planClean({
+      events: [],
+      registrations: [
+        {
+          id: 'recAnmRik',
+          fields: { 'E-post': FIXTUR_EPOST, Person: ['recPersonRik'] },
+        },
+      ],
+      persons: [
+        {
+          id: 'recPersonRik',
+          fields: { 'E-post': FIXTUR_EPOST, 'Anteckningar 2': ['recNote1'] },
+        },
+      ],
+      ort: ORT,
+      pattern: PATTERN,
+      config: CONFIG,
+    });
+    assert.deepEqual(plan.persons, [], 'personen är guard-blockerad');
+    assert.deepEqual(
+      plan.registrations,
+      [],
+      'KASKAD: anmälan får INTE raderas under den kvarlämnade personen',
+    );
+    assert.match(
+      plan.skippedRegistrations.find((s) => s.id === 'recAnmRik')?.orsak ?? '',
+      /hör till en person som lämnas kvar/,
+    );
+  },
+);
+
+t(
+  'KASKAD-GUARD: ett event med EN kvarlämnad anmälan lämnas också kvar (annars bryts Deltagandets Event-länk)',
+  () => {
+    const plan = planClean({
+      events: [
+        {
+          id: 'recEvRik',
+          fields: {
+            Ort: ORT,
+            Notering: `${CONFIG.marker.noteringSentinel} x`,
+            'Anmälningar (länkat fält)': ['recAnmRik'],
+          },
+        },
+      ],
+      registrations: [
+        { id: 'recAnmRik', fields: { 'E-post': FIXTUR_EPOST, Person: ['recPersonRik'] } },
+      ],
+      persons: [
+        { id: 'recPersonRik', fields: { 'E-post': FIXTUR_EPOST, 'Anteckningar 2': ['recNote1'] } },
+      ],
+      ort: ORT,
+      pattern: PATTERN,
+      config: CONFIG,
+    });
+    assert.deepEqual(
+      plan.events,
+      [],
+      'KASKAD: eventet krävs fortfarande av den kvarlämnade anmälan',
+    );
+    assert.match(
+      plan.skippedEvents.find((s) => s.id === 'recEvRik')?.orsak ?? '',
+      /krävs fortfarande av en anmälan som lämnas kvar/,
+    );
+  },
+);
+
+t(
+  'KASKAD-GUARD är LOKAL: ett event delat med ANDRA raderingsbara anmälningar raderas ändå när dess sista kvarlämnade anmälan är borta',
+  () => {
+    // Samma event, men nu bär den KVARLÄMNADE anmälan ett annat event-ID än
+    // det event som prövas — alltså krävs INTE just detta event av någon
+    // kvarlämnad rad, och det ska raderas som vanligt.
+    const plan = planClean({
+      events: [
+        {
+          id: 'recEvDelat',
+          fields: {
+            Ort: ORT,
+            Notering: `${CONFIG.marker.noteringSentinel} x`,
+            'Anmälningar (länkat fält)': ['recAnmTunn'],
+          },
+        },
+      ],
+      registrations: [
+        { id: 'recAnmTunn', fields: { 'E-post': FIXTUR_EPOST } },
+        { id: 'recAnmRik', fields: { 'E-post': FIXTUR_EPOST, Person: ['recPersonRik'] } },
+      ],
+      persons: [
+        { id: 'recPersonRik', fields: { 'E-post': FIXTUR_EPOST, 'Anteckningar 2': ['recNote1'] } },
+      ],
+      ort: ORT,
+      pattern: PATTERN,
+      config: CONFIG,
+    });
+    assert.deepEqual(plan.events, ['recEvDelat'], 'eventets ENDA länkade anmälan var raderingsbar');
+    assert.deepEqual(plan.registrations, ['recAnmTunn']);
+  },
+);
+
+t(
+  'KASKAD-GUARD GRÖN SIDA: normalfallet (ingen kvarlämnad person i scope) är HELT oförändrat',
+  () => {
+    const plan = planClean({
+      events: [
+        {
+          id: 'recEv',
+          fields: {
+            Ort: ORT,
+            Notering: `${CONFIG.marker.noteringSentinel} x`,
+            'Anmälningar (länkat fält)': ['recAnm'],
+          },
+        },
+      ],
+      registrations: [{ id: 'recAnm', fields: { 'E-post': FIXTUR_EPOST } }],
+      persons: [{ id: 'recPe', fields: { 'E-post': FIXTUR_EPOST } }],
+      ort: ORT,
+      pattern: PATTERN,
+      config: CONFIG,
+    });
+    assert.deepEqual(plan.events, ['recEv']);
+    assert.deepEqual(plan.registrations, ['recAnm']);
+    assert.deepEqual(plan.persons, ['recPe']);
+  },
+);
 
 process.on('beforeExit', () => {
   if (failed > 0) {

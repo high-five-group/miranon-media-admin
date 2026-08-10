@@ -14,6 +14,11 @@
 //   npm run seed:review -- --ort Falköping --dagar 5 --bekraftade 4 --obekraftade 12
 //   npm run seed:review -- --dry-run          # planera, skriv inget
 //   npm run seed:review -- --livstid 30       # längre granskningsfönster
+//   npm run seed:review -- --rik              # + EN person med HELA kravbilden
+//                                              # (kontakt, flerhändig historik,
+//                                              # hämtningar, motiveringar,
+//                                              # anteckningar, flagga — TASK-97-
+//                                              # uppföljningen/S103, se § RIK-LÄGET)
 //   npm run seed:review:clean                 # radera default-fixturen
 //   npm run seed:review:clean -- --ort Falköping --dry-run
 //   npm run seed:review -- --sweep            # ENDAST förfallo-svepet
@@ -59,11 +64,16 @@
 //     flera fixturer (`--ort Varberg`, `--ort Falköping`) — det är säkert
 //     numera, se IDENTIFIERINGEN nedan.
 //
-//   TELEFON SEEDAS INTE. Prod har den på ~58 % av färska personer, men Marcus
-//     avgjorde 2026-08-10: "telefon spelar ju ingen roll, det ska vi ju inte
-//     visa i personlistan ändå". `Personer.Telefon` lämnas alltså orörd.
-//     Anmälans `Mobilnummer` sätts som förut — det är ett annat fält, i en
-//     annan vy, och rörs inte av beslutet.
+//   TELEFON SEEDAS INTE — FÖR BATCHENS TUNNA RADER. Prod har den på ~58 % av
+//     färska personer, men Marcus avgjorde 2026-08-10: "telefon spelar ju
+//     ingen roll, det ska vi ju inte visa i personlistan ändå". `Personer.
+//     Telefon` lämnas alltså orörd på de tunna raderna. Anmälans
+//     `Mobilnummer` sätts som förut — det är ett annat fält, i en annan vy,
+//     och rörs inte av beslutet. UNDANTAG: `--rik` (S103-uppföljningen)
+//     SÄTTER Telefon på just DEN personen — persondetaljens kontaktblock har
+//     en tel-rad att granska, och det kravet väger tyngre än personlistans
+//     ursprungliga motivering. Se CONFIG.richPerson för avvägningen i sin
+//     helhet.
 //
 //   LUCKORNA ÄR PRODS, INTE PERFEKT UNIFORMITET. Mätt 2026-08-10: 660 av 662
 //     prod-personer har e-post, medan Ort saknas på nästan var femte färsk
@@ -158,9 +168,13 @@
 //      (personerna ZZ-Arbetsko / ZZ-History + eventen ZZ-belaggning-fixtur /
 //      ZZ-arbetsko-fixtur, TASK-114) står i CONFIG.protectedRecordIds och kan
 //      aldrig raderas — inte ens om de mot förmodan matchar en markör.
-//   4. Länk-guard vid clean: en person med data-länkar (Deltaganden) lämnas
+//   4. Länk-guard vid clean: en person med ANTECKNINGAR (Anteckningar 2) lämnas
 //      kvar och rapporteras i stället för att raderas. Fail-safe-riktning,
-//      samma form som purge-skriptets skyddsräcke 4.
+//      samma form som purge-skriptets skyddsräcke 4. ÄNDRAD i TASK-97-
+//      uppföljningen (S103) från `Deltaganden` till `Anteckningar 2` —
+//      Deltaganden/Touchpoints städas numera EXPLICIT av stadaOrt (RIK-LÄGET
+//      kräver det: den rika personen FÅR Deltaganden av design). Full
+//      avvägning i CONFIG.personDataLinkFields-kommentaren.
 //   5. Utgångsstämpeln (TASK-95): svepet raderar ENDAST en fixtur vars stämpel
 //      passerat. Saknad, trasig eller framtida stämpel ⇒ rörs aldrig. Det är
 //      den halva som gör att en pågående granskning inte kan städas bort.
@@ -208,11 +222,23 @@ export const CONFIG = {
   expectedBaseId: 'apphjj8Q7lkXCMsL4',
   forbiddenBaseIds: ['app8uGPrVCVOm6LfD'],
 
-  /** Tabeller: id används i API-anropen, namn för korsläsning mot purge-policyn. */
+  /**
+   * Tabeller: id används i API-anropen, namn för korsläsning mot purge-policyn.
+   *
+   * De tre sista (TASK-97-uppföljningen, S103) bär den RIKA personens
+   * kravbild. `Anteckningar` HAR en purge-target (`create-event-note-sentineler`)
+   * — dess `purgeName` är alltså inte kosmetisk, den korsläses skarpt (fälla 1)
+   * precis som Eventplanering/Anmälningar. Deltaganden/Touchpoints har ingen
+   * target i dagens policy; `purgeName` sätts ändå för att en framtida target
+   * fångas AUTOMATISKT av samma korsläsning, inte tyst missas.
+   */
   tables: {
     eventplanering: { id: 'tblVE3UKWl1CKrphV', purgeName: 'Eventplanering' },
     anmalningar: { id: 'tbloOcrppVoyrHbrq', purgeName: 'Anmälningar' },
     personer: { id: 'tbl6ZyCm3V026iFTU', purgeName: 'Personer' },
+    deltaganden: { id: 'tbldWHH6sSHWoQPHH', purgeName: 'Deltaganden' },
+    touchpoints: { id: 'tbl22SCvlHrgcAiZi', purgeName: 'Touchpoints' },
+    anteckningar: { id: 'tbl87a23xDv19Mb6R', purgeName: 'Anteckningar' },
   },
 
   /**
@@ -229,6 +255,20 @@ export const CONFIG = {
     regKallaManuell: 'Manuell',
     betalningMottagen: 'Mottagen',
     betalningEjMottagen: 'Ej mottagen',
+    /** Historik-eventen (--rik) är GENOMFÖRDA, inte planerade. */
+    eventStatusGenomfort: 'Genomfört',
+    /** Deltaganden.Status — pinnade, live-verifierade 2026-08-10 (--rik). */
+    deltagandeNarvarande: 'Närvarande',
+    deltagandeFranvarande: 'Frånvarande',
+    deltagandeEjAvstamt: 'Ej avstämt',
+    /** Deltaganden.Session — samma pinning-disciplin. */
+    sessionDag1: 'Dag 1',
+    sessionDag2: 'Dag 2',
+    /**
+     * Touchpoints.Typ — "hämtade ett erbjudande"-grenen av TP sammanfattning-
+     * formeln (`SWITCH`, live-verifierad via describe_table 2026-08-10).
+     */
+    tpTypHamtning: 'Angett e-post för att ta del av ett erbjudande',
   },
 
   /**
@@ -282,6 +322,27 @@ export const CONFIG = {
     anmalanPerson: 'Person',
     /** Personer → Anmälningar. Tom lista ⇒ föräldralös fixturperson. */
     personAnmalningar: 'Anmälningar (länkat fält)',
+    /**
+     * RIK-LÄGET (--rik, S103) — de fyra fälten nedan bär den rika personens
+     * kravbild. Namnen är basens LITERALA fältnamn (live-verifierade via
+     * describe_table 2026-08-10) — flera skiljer sig från "Syfte"-kolumnens
+     * etikett i data-model.md § Schema cheat sheet (t.ex. Deltagandens
+     * write-fält heter i basen "Anmälan"/"Event", inte "Anmälan (länk)"/
+     * "Event (länk)" — den senare är dokumentets SYFTES-etikett, inte
+     * fältnamnet; att skicka fel nyckel ger tyst ignorerat fält, inget fel).
+     */
+    /** Personer → Deltaganden (rollup-basen för RIM ×/Genomförda dagar m.fl.). */
+    personDeltaganden: 'Deltaganden',
+    /** Personer → Touchpoints. Källan för Alla hämtningar-rollupen. */
+    personTouchpoints: 'Touchpoints',
+    /**
+     * Personer → Anteckningar (task-18.11/S103). Namnet ÄR "Anteckningar 2" i
+     * basen (live-verifierat) — "Anteckningar" var redan upptaget av det
+     * gamla fritext-fältet (fldWGlNr3ujRHo85w). INTE ett skrivfel här.
+     */
+    personAnteckningar: 'Anteckningar 2',
+    /** Deltaganden → Personer, DIREKT länk (skild från lookupen "Person"). */
+    deltagandePersonLank: 'Person (länk)',
   },
 
   /**
@@ -302,8 +363,40 @@ export const CONFIG = {
     'recZyRIzbqWSifAQO',
   ],
 
-  /** Länkfält på Personer vars närvaro blockerar radering (skyddsräcke 4). */
-  personDataLinkFields: ['Deltaganden'],
+  /**
+   * Länkfält på Personer vars närvaro blockerar radering (skyddsräcke 4).
+   *
+   * ÄNDRAD (TASK-97-uppföljningen/S103): var `['Deltaganden']`, är nu
+   * `['Anteckningar 2']`. En MEDVETEN avvägning — den rika personen (--rik)
+   * FÅR Deltaganden/Touchpoints AV DESIGN, och den gamla listan hade blockerat
+   * varje städning av den för alltid.
+   *
+   * Varför det är säkert att släppa Deltaganden/Touchpoints ur guarden:
+   * personen når hit ENDAST efter att redan ha passerat `isFixtureEmailRecord`
+   * (planClean/planLegacyClean anropar guarden EFTER det filtret, aldrig
+   * före) — adressen är `@example.com/.org/.net`, RFC 2606 §3-reserverad och
+   * kan därför ALDRIG tillhöra en verklig deltagare (samma bevis som redan
+   * bär hela skriptets identifiering, se § IDENTIFIERINGEN). Ett Deltagande
+   * eller en Touchpoint kan alltså bara ha hamnat på en sådan person genom
+   * DETTA skript. `stadaOrt` samlar och raderar dem explicit (satellit-
+   * städningen, se dess kropp) INNAN personen raderas.
+   *
+   * Varför Anteckningar INTE får samma lättnad: `Anteckningar.Person`
+   * (task-18.11, S103) är samma dag som detta skrivs under aktiv utbyggnad av
+   * en `create-person-note`-EF i EN ANNAN gren — när den landar kan Marcus
+   * lägga en ÄKTA anteckning på just den rika granskningspersonen MEDAN han
+   * granskar. Skriptets egna anteckningar bär inget säkert maskin-läsbart
+   * märke (en sentinel i den synliga texten hade motsagt "ska likna
+   * verkligheten"-kravet, TASK-97) — så en blind "radera alla Anteckningar
+   * länkade till en fixturperson" KAN INTE skilja Marcus egen anteckning
+   * från skriptets. Guarden blockerar därför radering så länge NÅGON
+   * anteckning finns kvar — fail-safe, samma riktning som alla andra
+   * skyddsräcken i denna fil ("hellre lämna kvar"). Konsekvensen: en
+   * granskningsperson med anteckningar kräver ett MANUELLT beslut (radera
+   * anteckningarna för hand, eller acceptera att personen blir kvar) innan
+   * `--clean`/svepet kan slutföra den raderingen — se § RIK-LÄGET.
+   */
+  personDataLinkFields: ['Anteckningar 2'],
 
   /**
    * Beläggnings-tak (fälla 4). Automation A6 skickar fullbokat-notis vid
@@ -483,6 +576,133 @@ export const CONFIG = {
    * granskning eller ett snapshot att återskapa.
    */
   realism: { ortKvot: 0.82 },
+
+  /**
+   * RIK-LÄGET (--rik, S103) — den granskningsperson som bär HELA kravbilden
+   * (kontakt, flerhändig historik, hämtningar, motiveringar, anteckningar,
+   * flagga). All literal text/alla data-värden för den bor HÄR, samma
+   * konvention som namnpoolen ovan — logiken (buildRikPrimaryRad m.fl.) är
+   * universell, projekt-värdena är inte det.
+   *
+   * TELEFON är ett MEDVETET AVSTEG från § DATAN SKA LIKNA VERKLIGHETEN ovan
+   * ("TELEFON SEEDAS INTE"): den rika personens hela syfte är att bära
+   * kontaktblockets tel-rad i granskningen (Marcus, 2026-08-10, se uppdraget).
+   * Endast DENNA person får Telefon — batchens tunna personer förblir orörda,
+   * Marcus ursprungliga beslut om personlistan gäller oförändrat där.
+   */
+  richPerson: {
+    /**
+     * Historik-eventens datum, DAGAR BAKÅT från körningsögonblicket (negeras
+     * av byggaren innan de går in i `isoDatum` — funktionen hanterar negativa
+     * `dagar` identiskt med positiva). Spridda över nästan ett år så "spridda
+     * i tid" är bokstavligt sant, inte tre event skapade i samma sekund med
+     * bara olika Startdatum-etikett.
+     */
+    historyDagarBak: [365, 180, 60],
+    /**
+     * Eventkälla per historik-event, i SAMMA ordning som historyDagarBak.
+     * RIM 1 → RIM 2 (tvådagars, se historySessions) → Fjärrskådning ger en
+     * läsbar berättelse ("gick RIM 1, sen RIM 2, provade Fjärrskådning") och
+     * lämnar RIM 3 öppen för den kommande/primära anmälan (oförändrad
+     * `config.select.eventSource`, satt av den vanliga batch-koden).
+     */
+    historyEventSources: ['Resor i medvetandet 1', 'Resor i medvetandet 2', 'Fjärrskådning'],
+    /**
+     * Sessionsrader per historik-event (Deltaganden). Index 1 (RIM 2) bär
+     * TVÅ rader — AC-kravet "minst ett tvådagars-event, två sessionsrader på
+     * samma event" (grupperaPerEvent, `PersonDetailPrototyp.tsx`). Index 2
+     * (Fjärrskådning) sätts Frånvarande med flit: tredje närvaroläget utöver
+     * Kommande (primär) och Närvarande (index 0+1).
+     */
+    historySessions: [
+      [{ session: 'Dag 1', status: 'Närvarande' }],
+      [
+        { session: 'Dag 1', status: 'Närvarande' },
+        { session: 'Dag 2', status: 'Närvarande' },
+      ],
+      [{ session: 'Dag 1', status: 'Frånvarande' }],
+    ],
+    /**
+     * Motiveringstexter (`Varför vill du gå den här utbildningen?`), en per
+     * ANMÄLAN — index 0–2 = historik-eventen (samma ordning som ovan), index
+     * 3 = den primära/kommande anmälan. `Motivering (text)` på Personer är en
+     * ROLLUP över ALLA personens anmälningar (data-model.md §46) — flera
+     * ifyllda ger alltså FLERHET, det omätta ledet §46 själv efterlyser
+     * ("ingen live-data har ännu visat den"). `null` = fältet lämnas tomt
+     * (en realistisk lucka mitt i historiken — luckor är prods sanning, se
+     * § DATAN SKA LIKNA VERKLIGHETEN ovan, inte bara batchens tunna rader).
+     *
+     * Längderna är AVSIKTLIGA (AC-krav): index 0 ligger i 400–600-tecken-
+     * spannet (visar att motiveringsblocket klipper långtext), index 3 är
+     * kort. validateConfig prövar båda gränserna mekaniskt.
+     */
+    motiveringar: [
+      'Jag har länge känt att det finns mer att upptäcka bortom vardagens ' +
+        'larm och har läst en hel del om medvetandeutveckling på egen hand, ' +
+        'men känner att jag behöver vägledning och en trygg grupp för att ' +
+        'våga ta nästa steg fullt ut. En vän som gick förra årets kurs ' +
+        'berättade så varmt om vad det gav henne att jag bestämde mig direkt ' +
+        'samma kväll. Jag hoppas kunna lära mig verktyg jag kan bära med mig ' +
+        'i vardagen, inte bara under själva kursdagarna, och jag är nyfiken ' +
+        'på att möta andra som befinner sig på samma inre resa som jag just ' +
+        'nu gör, med samma frågor och samma försiktiga hopp om förändring.',
+      'Efter RIM 1 kände jag att jag bara skrapat på ytan. Vill gå vidare ' +
+        'med RIM 2 för att fördjupa andningsteknikerna och förstå mer av det ' +
+        'som hände förra gången.',
+      null,
+      'Vill fördjupa mig ytterligare efter RIM 2 — kändes ofullständigt att ' + 'sluta där.',
+    ],
+    /** Personer.Flagga — Lottas fritext-flagga (S103, fldCXSGQJEVlf1Sa7). */
+    flagga: 'Återkommande deltagare, mycket engagerad — har frågat om att bli kursledarassistent.',
+    /** Personer.Telefon — se modulhuvudets avstegs-not ovan. */
+    telefon: '070-233 14 56',
+    /**
+     * Touchpoints — kanal-/erbjudande-pooler, roterade över de tre raderna.
+     * `Erbjudande`-värdena är basens PINNADE singleSelect-choices (live-
+     * verifierade via describe_table 2026-08-10) — samma disciplin som
+     * CONFIG.select, ingen typecast.
+     */
+    touchpointKanaler: ['Nyhetsbrev', 'Instagram', 'Hemsida'],
+    touchpointErbjudanden: ['Meditationen Kraftfältet', 'Pyramidernas Vajrar', 'Annat'],
+    /** Dagar bakåt per touchpoint — spridda OBEROENDE av händelseeventen. */
+    touchpointDagarBak: [300, 150, 30],
+    /**
+     * Metadata-sentinel. Touchpoints har inget fält granskningen läser för
+     * innehåll (till skillnad från Anteckningens `Anteckning`-text kan denna
+     * bära en maskin-läsbar markör utan att bryta "ska likna verkligheten").
+     * Används av städningen (stadaOrt) för att identifiera EXAKT de
+     * touchpoints skriptet skapat, inte "alla touchpoints en fixturperson
+     * råkar bära".
+     */
+    touchpointMetadataMarker: '[SEED-REVIEW-FIXTUR]',
+    /**
+     * Anteckningar — författare + text, tre rader. INGEN sentinel i texten
+     * (skulle synas för Marcus vid granskning och motsäga "ska likna
+     * verkligheten"-kravet) — se personDataLinkFields-kommentaren ovan för
+     * vad det kostar: guarden blockerar automatisk radering av personen så
+     * länge NÅGON anteckning finns kvar.
+     */
+    anteckningar: [
+      {
+        forfattare: 'Lotta',
+        text:
+          'Ringde och undrade om det gick att dela upp betalningen för RIM 2 ' +
+          '— löste det med två delbetalningar.',
+      },
+      {
+        forfattare: 'Roger',
+        text:
+          'Frågade om allergier inför övernattningen på Resor i medvetandet ' +
+          '2. Noterat: laktosintolerant.',
+      },
+      {
+        forfattare: 'Lotta',
+        text:
+          'Mycket engagerad deltagare som frågat om att bli kursledarassistent ' +
+          'framöver — följ upp inför nästa kurstillfälle.',
+      },
+    ],
+  },
 
   batchSize: 10,
   requestThrottleMs: 250,
@@ -763,6 +983,130 @@ export function validateConfig(config) {
       }
     }
   }
+  // RIK-LÄGET (--rik, S103): historik-plan + motiverings-/anteckningsdata
+  // måste vara internt konsistenta INNAN skriptet kör en enda begäran —
+  // samma "fail loud, aldrig gissa"-disciplin som resten av validateConfig.
+  const rp = config.richPerson ?? {};
+  const historyN = rp.historyDagarBak?.length ?? 0;
+  if (historyN === 0) {
+    throw new Error('richPerson.historyDagarBak saknas — --rik kräver minst ett historik-event');
+  }
+  if (!rp.historyDagarBak.every((d) => Number.isInteger(d) && d > 0)) {
+    throw new Error('richPerson.historyDagarBak måste vara positiva heltal (dagar BAKÅT)');
+  }
+  if (rp.historyEventSources?.length !== historyN) {
+    throw new Error(
+      `richPerson.historyEventSources måste ha samma längd som historyDagarBak (${historyN})`,
+    );
+  }
+  if (!rp.historyEventSources.every((s) => typeof s === 'string' && s.length > 0)) {
+    throw new Error(
+      'richPerson.historyEventSources: varje post måste vara en icke-tom sträng (pinnat ' +
+        'Event (source)-choice — ingen typecast)',
+    );
+  }
+  if (rp.historySessions?.length !== historyN) {
+    throw new Error(
+      `richPerson.historySessions måste ha samma längd som historyDagarBak (${historyN})`,
+    );
+  }
+  for (const [i, sessioner] of rp.historySessions.entries()) {
+    if (!Array.isArray(sessioner) || sessioner.length === 0) {
+      throw new Error(`richPerson.historySessions[${i}] måste ha minst en sessionsrad`);
+    }
+    for (const s of sessioner) {
+      if (typeof s?.session !== 'string' || typeof s?.status !== 'string') {
+        throw new Error(
+          `richPerson.historySessions[${i}] bär en rad utan session/status — båda krävs`,
+        );
+      }
+    }
+  }
+  // Minst ETT historik-event måste bära ≥2 sessionsrader — AC-kravet om ett
+  // synligt tvådagars-event (grupperaPerEvent). Fångas här, inte upptäckt
+  // först i browsern.
+  if (!rp.historySessions.some((s) => s.length >= 2)) {
+    throw new Error(
+      'richPerson.historySessions: inget historik-event bär ≥2 sessionsrader — ' +
+        'AC-kravet "minst ett tvådagars-event" är då inte uppfyllt',
+    );
+  }
+  // Motiveringarna: N historik-event + 1 primär/kommande anmälan.
+  if (rp.motiveringar?.length !== historyN + 1) {
+    throw new Error(
+      `richPerson.motiveringar måste ha längd historyDagarBak.length + 1 (${historyN + 1}) — ` +
+        'en post per historik-anmälan plus den primära',
+    );
+  }
+  const ifyllda = rp.motiveringar.filter((m) => typeof m === 'string' && m.length > 0);
+  if (ifyllda.length < 2) {
+    throw new Error('richPerson.motiveringar: minst två måste vara ifyllda (kort + lång, AC-krav)');
+  }
+  if (!ifyllda.some((m) => m.length >= 400 && m.length <= 600)) {
+    throw new Error(
+      'richPerson.motiveringar: minst en text måste ligga i 400–600-teckenspannet (AC-kravet ' +
+        'om att motiveringsblockets klipp ska synas)',
+    );
+  }
+  if (!ifyllda.some((m) => m.length < 150)) {
+    throw new Error('richPerson.motiveringar: minst en text måste vara kort (< 150 tecken)');
+  }
+  for (const m of rp.motiveringar) {
+    if (m !== null && typeof m !== 'string') {
+      throw new Error('richPerson.motiveringar: varje post måste vara en sträng eller null');
+    }
+  }
+  if (typeof rp.flagga !== 'string' || rp.flagga.length === 0) {
+    throw new Error('richPerson.flagga saknas — Personer.Flagga kräver ett värde för --rik');
+  }
+  if (typeof rp.telefon !== 'string' || rp.telefon.length === 0) {
+    throw new Error('richPerson.telefon saknas — kontaktblockets tel-rad kräver ett värde');
+  }
+  for (const nyckel of ['touchpointKanaler', 'touchpointErbjudanden', 'touchpointDagarBak']) {
+    if (!Array.isArray(rp[nyckel]) || rp[nyckel].length === 0) {
+      throw new Error(`richPerson.${nyckel} saknas eller är tom`);
+    }
+  }
+  if (
+    rp.touchpointKanaler.length !== rp.touchpointErbjudanden.length ||
+    rp.touchpointErbjudanden.length !== rp.touchpointDagarBak.length
+  ) {
+    throw new Error(
+      'richPerson: touchpointKanaler/touchpointErbjudanden/touchpointDagarBak måste ha samma längd',
+    );
+  }
+  if (!rp.touchpointDagarBak.every((d) => Number.isInteger(d) && d > 0)) {
+    throw new Error('richPerson.touchpointDagarBak måste vara positiva heltal (dagar BAKÅT)');
+  }
+  for (const nyckel of ['touchpointKanaler', 'touchpointErbjudanden']) {
+    if (!rp[nyckel].every((v) => typeof v === 'string' && v.length > 0)) {
+      throw new Error(`richPerson.${nyckel}: varje post måste vara en icke-tom sträng`);
+    }
+  }
+  if (
+    typeof rp.touchpointMetadataMarker !== 'string' ||
+    !rp.touchpointMetadataMarker.startsWith('[')
+  ) {
+    throw new Error('richPerson.touchpointMetadataMarker måste vara en [-inledd sträng');
+  }
+  if (!Array.isArray(rp.anteckningar) || rp.anteckningar.length === 0) {
+    throw new Error('richPerson.anteckningar saknas — --rik kräver minst en anteckningsrad');
+  }
+  const forfattare = new Set();
+  for (const [i, a] of rp.anteckningar.entries()) {
+    if (typeof a?.forfattare !== 'string' || a.forfattare.length === 0) {
+      throw new Error(`richPerson.anteckningar[${i}].forfattare saknas`);
+    }
+    if (typeof a?.text !== 'string' || a.text.length === 0) {
+      throw new Error(`richPerson.anteckningar[${i}].text saknas`);
+    }
+    forfattare.add(a.forfattare);
+  }
+  if (forfattare.size < 2) {
+    throw new Error(
+      'richPerson.anteckningar: minst två OLIKA författare krävs (AC-kravet "olika författare")',
+    );
+  }
   return config;
 }
 
@@ -782,6 +1126,14 @@ export function parseArgs(argv, config) {
      * och den ofarliga är default.
      */
     bekrafta: argv.includes('--bekrafta'),
+    /**
+     * RIK-LÄGET (S103) — lägger en EXTRA person med hela kravbilden (kontakt,
+     * flerhändig historik, hämtningar, motiveringar, anteckningar, flagga)
+     * ovanpå den vanliga batchen. Additiv modifierare till create, ALDRIG ett
+     * eget läge — kan bara anges tillsammans med det vanliga create-flödet
+     * (se mutex-kontrollen nedan).
+     */
+    rik: argv.includes('--rik'),
     legacy: null,
     ort: config.defaults.ort,
     bekraftade: config.defaults.bekraftade,
@@ -851,6 +1203,11 @@ export function parseArgs(argv, config) {
   ].filter(Boolean);
   if (lagen.length > 1) {
     throw new Error(`${lagen.join(' och ')} kan inte kombineras — välj ETT läge`);
+  }
+  // --rik gäller ENDAST create — den lägger till en person i samma batch och
+  // har ingen mening i något av de andra lägena (de rör inte skapande alls).
+  if (args.rik && lagen.length > 0) {
+    throw new Error(`--rik kan inte kombineras med ${lagen.join(' eller ')} — --rik gäller create`);
   }
   // Fail-safe: --dry-run vinner ALLTID över --bekrafta. Anges båda är avsikten
   // att titta, inte att radera.
@@ -1197,15 +1554,29 @@ export function kapacitetFor(totaltAntal, belaggning) {
  * fällor 36 + 45) — att sätta det kräver en giltig option som inte går att
  * läsa utan schema-scope, och en gissad option ger 422 (ingen typecast).
  * Det befintliga granskningseventet bär fältet tomt och renderar rätt.
+ *
+ * `status`/`eventSource` är valfria overrides (RIK-LÄGET, S103): historik-
+ * event är GENOMFÖRDA (inte `Planerat`) och varierar kursnamn (RIM 1/RIM 2/
+ * Fjärrskådning) för en läsbar berättelse. Default oförändrat — den vanliga
+ * batchens enda anrop får exakt samma fält som innan denna utökning.
  */
-export function buildEvent({ ort, startdatum, slutdatum, maxPlatser, utgangsdatum, config }) {
+export function buildEvent({
+  ort,
+  startdatum,
+  slutdatum,
+  maxPlatser,
+  utgangsdatum,
+  config,
+  status = config.select.eventStatus,
+  eventSource = config.select.eventSource,
+}) {
   return {
-    'Event (source)': config.select.eventSource,
+    'Event (source)': eventSource,
     Typ: config.select.eventTyp,
     Ort: ort,
     Startdatum: startdatum,
     Slutdatum: slutdatum,
-    Status: config.select.eventStatus,
+    Status: status,
     'Max antal platser': maxPlatser,
     Eventtyp: [config.eventformatRecordId],
     // Sentineln FÖRST (isFixtureEvent kräver det), stämpeln direkt efter.
@@ -1297,6 +1668,109 @@ export function buildRegistrations({ ort, bekraftade, obekraftade, nu, config })
   return rader;
 }
 
+// ---------------------------------------------------------------------------
+// RIK-LÄGET (--rik, S103) — pura byggfunktioner för den rika personen.
+// Samma disciplin som buildRegistrations ovan: ren funktion av (index/nu/
+// config), aldrig I/O. korCreate översätter planen till Airtable-anrop.
+// ---------------------------------------------------------------------------
+
+/**
+ * Den rika personens PRIMÄRA rad — läggs till SIST i `rader` (index =
+ * `rader.length` FÖRE tillägget), så den aldrig krockar med batchens egna
+ * 0..totalt-1-index (namnpoolens period är 120, väl över taket 60+1). Formen
+ * är IDENTISK med en vanlig `buildRegistrations`-rad ({ person, anmalan }) —
+ * hela create-/purge-vakts-/efter-verifierings-koden hanterar den därför utan
+ * särskiljning, den är bara en rad till i batchen.
+ *
+ * Avviker medvetet från de tunna radernas realism-regler (Ort/Källa-luckor):
+ * detta är den EN person granskningen ska visa fullständig, inte ett
+ * statistiskt urval — 100 % Ort, bekräftad status, betalt.
+ */
+export function buildRikPrimaryRad({ ort, nu, index, config }) {
+  const fornamn = config.fornamn[index % config.fornamn.length];
+  const efternamn = config.efternamn[(index * 11) % config.efternamn.length];
+  const epost = fixtureEmail(fornamn, efternamn, index, config.marker);
+  const historyN = config.richPerson.historyDagarBak.length;
+  const kortMotivering = config.richPerson.motiveringar[historyN];
+  return {
+    person: {
+      Förnamn: fornamn,
+      Efternamn: efternamn,
+      'E-post': epost,
+      // Avsteg från § DATAN SKA LIKNA VERKLIGHETEN ("TELEFON SEEDAS INTE") —
+      // se CONFIG.richPerson-kommentaren för motiveringen.
+      Telefon: config.richPerson.telefon,
+      Flagga: config.richPerson.flagga,
+    },
+    anmalan: {
+      Förnamn: fornamn,
+      Efternamn: efternamn,
+      'E-post': epost,
+      Mobilnummer: config.richPerson.telefon,
+      Typ: config.select.eventTyp,
+      'Antal platser': 1,
+      Inskickad: isoTidBakat(nu, 3, index),
+      Status: config.select.regStatusBekraftad,
+      Anmälningsavgift: config.select.betalningMottagen,
+      Slutbetalning: config.select.betalningMottagen,
+      Ort: ort,
+      'Bekräftelse skickad': isoTidBakat(nu, 2, index),
+      ...(kortMotivering ? { 'Varför vill du gå den här utbildningen?': kortMotivering } : {}),
+    },
+  };
+}
+
+/**
+ * Historik-eventens PLAN — ren data, inga record-ID:n (de finns inte än).
+ * `korCreate` slår varje spec genom `buildEvent(status/eventSource-override)`
+ * för själva eventet, och använder `sessions`/`motivering` för att bygga
+ * Deltaganden- respektive anmälnings-fälten EFTER att event+person existerar.
+ *
+ * Returlängden är ALLTID `historyDagarBak.length` — validateConfig har redan
+ * bevisat att `historyEventSources`/`historySessions`/`motiveringar` har
+ * matchande längd, så indexeringen nedan kan aldrig gå utanför.
+ */
+export function buildRikHistoryEventSpecs({ nu, config }) {
+  const { historyDagarBak, historyEventSources, historySessions, motiveringar } = config.richPerson;
+  return historyDagarBak.map((dagarBak, i) => ({
+    startdatum: isoDatum(nu, -dagarBak),
+    slutdatum: isoDatum(nu, -dagarBak + 1),
+    eventSource: historyEventSources[i],
+    status: config.select.eventStatusGenomfort,
+    sessions: historySessions[i],
+    motivering: motiveringar[i],
+  }));
+}
+
+/**
+ * Touchpoint-raderna — Person-länken saknas med flit (okänd tills personen
+ * finns); `korCreate` lägger till den innan `createRecords`.
+ */
+export function buildRikTouchpoints({ nu, config }) {
+  const { touchpointKanaler, touchpointErbjudanden, touchpointDagarBak, touchpointMetadataMarker } =
+    config.richPerson;
+  return touchpointDagarBak.map((dagarBak, i) => ({
+    Kanal: touchpointKanaler[i % touchpointKanaler.length],
+    Typ: config.select.tpTypHamtning,
+    Erbjudande: touchpointErbjudanden[i % touchpointErbjudanden.length],
+    Datum: isoTidBakat(nu, dagarBak, i),
+    Metadata: touchpointMetadataMarker,
+  }));
+}
+
+/**
+ * Anteckningsraderna — Person-länken saknas med flit, se buildRikTouchpoints.
+ * INGEN sentinel i texten (§ CONFIG.richPerson.anteckningar-kommentaren) —
+ * konsekvensen (personDataLinkFields blockerar automatisk radering) är
+ * medveten och dokumenterad där, inte ett hål i denna funktion.
+ */
+export function buildRikAnteckningar({ config }) {
+  return config.richPerson.anteckningar.map((a) => ({
+    Författare: a.forfattare,
+    Anteckning: a.text,
+  }));
+}
+
 /** Exakt fixtur-match på event: rätt Ort OCH notering-sentineln. */
 export function isFixtureEvent(record, ort, marker) {
   const raderOrt = record.fields?.Ort;
@@ -1359,7 +1833,26 @@ export function personLinkGuardTrips(record, linkFields) {
   });
 }
 
-/** Klassa listade rader till en clean-plan (raderas / skyddas med orsak). */
+/**
+ * Klassa listade rader till en clean-plan (raderas / skyddas med orsak).
+ *
+ * ORDNINGEN ÄR BÄRANDE sedan RIK-LÄGET (S103): personer → anmälningar →
+ * event, ALDRIG oberoende av varandra. Skälet är KASKAD-GUARDEN: innan
+ * TASK-97-uppföljningen kunde en person lämnas kvar (länk-guard) MEDAN
+ * dess egna anmälningar och event ändå raderades — guarden "skyddade" då
+ * ett tomt skal, och personens Deltaganden blev antingen föräldralösa eller
+ * BRUTNA (deras Anmälan-/Event-länkar rensas tyst av Airtable när den
+ * länkade raden försvinner, vilket i sin tur tystar rollups som RIM ×/
+ * Erfarenhetsbadge — en defekt värre än att bara lämna en rad kvar).
+ *
+ * Fixen: en person som lämnas kvar (oavsett SKÄL — skyddad record-ID,
+ * icke-fixtur-adress eller länk-guard) gör att DESS anmälningar också
+ * lämnas kvar, vilket i sin tur gör att ETT event som fortfarande har en
+ * sådan kvarlämnad anmälan också lämnas kvar. Effekten är lokal: bara
+ * eventet/anmälningarna som hör till just den kvarlämnade personen
+ * påverkas — ett event delat med andra, redan raderingsbara personer
+ * raderas ändå så fort dess SISTA kvarlämnade anmälan är borta.
+ */
 export function planClean({ events, registrations, persons, ort, pattern, config }) {
   const plan = {
     events: [],
@@ -1369,23 +1862,7 @@ export function planClean({ events, registrations, persons, ort, pattern, config
     skippedRegistrations: [],
     skippedPersons: [],
   };
-  for (const rec of events) {
-    if (config.protectedRecordIds.includes(rec.id)) {
-      plan.skippedEvents.push({ id: rec.id, orsak: 'skyddad record-ID' });
-      continue;
-    }
-    if (isFixtureEvent(rec, ort, config.marker)) plan.events.push(rec.id);
-    else plan.skippedEvents.push({ id: rec.id, orsak: 'saknar fixtur-sentinel i Notering' });
-  }
-  for (const rec of registrations) {
-    if (config.protectedRecordIds.includes(rec.id)) {
-      plan.skippedRegistrations.push({ id: rec.id, orsak: 'skyddad record-ID' });
-      continue;
-    }
-    if (isFixtureEmailRecord(rec, pattern)) plan.registrations.push(rec.id);
-    else
-      plan.skippedRegistrations.push({ id: rec.id, orsak: 'e-post matchar inte fixtur-mönstret' });
-  }
+
   for (const rec of persons) {
     if (config.protectedRecordIds.includes(rec.id)) {
       plan.skippedPersons.push({ id: rec.id, orsak: 'skyddad record-ID (permanent fixtur)' });
@@ -1401,6 +1878,62 @@ export function planClean({ events, registrations, persons, ort, pattern, config
       continue;
     }
     plan.persons.push(rec.id);
+  }
+  // KASKAD-GUARDEN del 1: varje person som INTE landade i plan.persons
+  // lämnas kvar — oavsett orsak. Deras anmälningar får inte raderas under
+  // dem (se funktionens huvud).
+  const keptPersonIds = new Set(
+    persons.map((p) => p.id).filter((id) => !plan.persons.includes(id)),
+  );
+
+  for (const rec of registrations) {
+    if (config.protectedRecordIds.includes(rec.id)) {
+      plan.skippedRegistrations.push({ id: rec.id, orsak: 'skyddad record-ID' });
+      continue;
+    }
+    if (!isFixtureEmailRecord(rec, pattern)) {
+      plan.skippedRegistrations.push({ id: rec.id, orsak: 'e-post matchar inte fixtur-mönstret' });
+      continue;
+    }
+    const personLank = rec.fields?.[config.linkFields.anmalanPerson];
+    if (Array.isArray(personLank) && personLank.some((id) => keptPersonIds.has(id))) {
+      plan.skippedRegistrations.push({
+        id: rec.id,
+        orsak: 'hör till en person som lämnas kvar (kaskad-guard, § personDataLinkFields)',
+      });
+      continue;
+    }
+    plan.registrations.push(rec.id);
+  }
+  // KASKAD-GUARDEN del 2: samma resonemang en nivå upp — en anmälan som
+  // lämnas kvar (av VILKEN anledning som helst) gör att dess event också
+  // måste lämnas kvar, annars bryts anmälans egen Event-länk under den.
+  const keptRegistrationIds = new Set(
+    registrations.map((r) => r.id).filter((id) => !plan.registrations.includes(id)),
+  );
+
+  for (const rec of events) {
+    if (config.protectedRecordIds.includes(rec.id)) {
+      plan.skippedEvents.push({ id: rec.id, orsak: 'skyddad record-ID' });
+      continue;
+    }
+    if (!isFixtureEvent(rec, ort, config.marker)) {
+      plan.skippedEvents.push({ id: rec.id, orsak: 'saknar fixtur-sentinel i Notering' });
+      continue;
+    }
+    // Eventets EGET spegelfält (redan på den fetchade posten — ingen extra
+    // läsning): finns där en enda kvarlämnad anmälan krävs eventet ännu.
+    const egnaAnmalningar = rec.fields?.[config.linkFields.eventAnmalningar];
+    const kravsAnnu =
+      Array.isArray(egnaAnmalningar) && egnaAnmalningar.some((id) => keptRegistrationIds.has(id));
+    if (kravsAnnu) {
+      plan.skippedEvents.push({
+        id: rec.id,
+        orsak: 'krävs fortfarande av en anmälan som lämnas kvar (kaskad-guard)',
+      });
+      continue;
+    }
+    plan.events.push(rec.id);
   }
   return plan;
 }
@@ -1505,7 +2038,6 @@ async function pollEventKey(baseId, tableId, recordId, token, throttleMs) {
 
 async function korCreate({ args, config, token, purgePolicy }) {
   const { expectedBaseId, tables, requestThrottleMs, batchSize } = config;
-  const totalt = args.bekraftade + args.obekraftade;
   const nu = new Date();
 
   const rader = buildRegistrations({
@@ -1515,6 +2047,16 @@ async function korCreate({ args, config, token, purgePolicy }) {
     nu,
     config,
   });
+  // RIK-LÄGET (--rik, S103): en extra anmälan+person läggs till SIST i SAMMA
+  // batch som de tunna raderna. Allt nedanför (purge-vakten, kapaciteten,
+  // skapandet, efter-verifieringen) hanterar den utan särskiljning — den är
+  // bara en rad till i `rader`. `totalt` räknas därför härifrån och nedåt,
+  // INTE från args.bekraftade+args.obekraftade (som bara vore batchens tunna
+  // del och hade gett en felaktig kapacitets-/efter-verifieringsberäkning).
+  if (args.rik) {
+    rader.push(buildRikPrimaryRad({ ort: args.ort, nu, index: rader.length, config }));
+  }
+  const totalt = rader.length;
 
   // Skyddsräcke 2: markörerna får aldrig kunna fångas av setup-purgen. Sedan
   // TASK-97 korsläses ALLA värden fixturen skriver som skulle kunna vara en
@@ -1572,8 +2114,15 @@ async function korCreate({ args, config, token, purgePolicy }) {
   console.log(
     `▸ Realism: e-post på ${totalt}/${totalt}, Ort på ${medOrt}/${totalt} ` +
       `(${Math.round((medOrt / totalt) * 100)} % — mål ${Math.round(config.realism.ortKvot * 100)} %, ` +
-      'prods andel; små tal rundar) · Telefon seedas aldrig',
+      `prods andel; små tal rundar) · Telefon seedas ${args.rik ? 'ENDAST för --rik-personen' : 'aldrig'}`,
   );
+  if (args.rik) {
+    const historyN = config.richPerson.historyDagarBak.length;
+    console.log(
+      `▸ RIK-LÄGE: en extra person läggs till (index ${rader.length - 1}, sista raden) med ` +
+        `${historyN} historik-event, Touchpoints, Anteckningar, Flagga och Telefon utöver batchen.`,
+    );
+  }
   console.log(
     `▸ Markör: Ort "${args.ort}" + Notering-sentinel · adresser som ${rader[0].anmalan['E-post']} ` +
       '(RFC 2606-reserverade, kan aldrig nå en verklig mottagare)',
@@ -1682,8 +2231,199 @@ async function korCreate({ args, config, token, purgePolicy }) {
   }
   console.log(`   ✅ efter-verifiering: ${raknat}/${totalt} anmälningar länkade till eventet`);
 
+  // -------------------------------------------------------------------
+  // RIK-LÄGET (--rik, S103): historik-event, Deltaganden, Touchpoints och
+  // Anteckningar för personen som lades till sist i `rader` ovan. Körs
+  // EFTER den vanliga batchen är skarpt skapad OCH verifierad, så ett fel
+  // härifrån aldrig kan lämna den vanliga batchen halvfärdig.
+  // -------------------------------------------------------------------
+  let rikRapport = null;
+  if (args.rik) {
+    const rikIndex = rader.length - 1;
+    const rikPersonId = personer[rikIndex].id;
+    const rikAnmalanPrimarId = anmalningar[rikIndex].id;
+    const rikRad = rader[rikIndex];
+    const rikNamn = `${rikRad.person.Förnamn} ${rikRad.person.Efternamn}`;
+    console.log(`\n▸ RIK-LÄGE: bygger historik för ${rikNamn} (${rikPersonId}) …`);
+
+    // --- Historik-event (RIM 1 → RIM 2 tvådagars → Fjärrskådning) ---
+    const historySpecs = buildRikHistoryEventSpecs({ nu, config });
+    const historyEventFalt = historySpecs.map((spec) =>
+      buildEvent({
+        ort: args.ort,
+        startdatum: spec.startdatum,
+        slutdatum: spec.slutdatum,
+        maxPlatser: kapacitetFor(1, config.belaggning),
+        utgangsdatum,
+        config,
+        status: spec.status,
+        eventSource: spec.eventSource,
+      }),
+    );
+    const historyEvents = await createRecords(
+      expectedBaseId,
+      tables.eventplanering.id,
+      historyEventFalt,
+      token,
+      requestThrottleMs,
+      batchSize,
+    );
+    if (historyEvents.length !== historySpecs.length) {
+      throw new ApiError(
+        `RIK-LÄGE: ${historyEvents.length}/${historySpecs.length} historik-event skapade`,
+      );
+    }
+    console.log(`   ✅ ${historyEvents.length} historik-event skapade (samma Ort, samma livstid)`);
+
+    const historyEventKeys = [];
+    for (const ev of historyEvents) {
+      historyEventKeys.push(
+        await pollEventKey(
+          expectedBaseId,
+          tables.eventplanering.id,
+          ev.id,
+          token,
+          requestThrottleMs,
+        ),
+      );
+    }
+
+    // --- Historik-anmälningar: SAMMA person, en ny anmälan per event ---
+    const historyAnmalanFalt = historySpecs.map((spec, i) => {
+      const falt = {
+        Förnamn: rikRad.person.Förnamn,
+        Efternamn: rikRad.person.Efternamn,
+        'E-post': rikRad.person['E-post'],
+        Mobilnummer: config.richPerson.telefon,
+        Typ: config.select.eventTyp,
+        'Antal platser': 1,
+        Status: config.select.regStatusBekraftad,
+        Anmälningsavgift: config.select.betalningMottagen,
+        Slutbetalning: config.select.betalningMottagen,
+        Ort: args.ort,
+        Event: [historyEvents[i].id],
+        Person: [rikPersonId],
+        // Inskickad/Bekräftad FÖRE eventets EGET startdatum, inte "nu" — en
+        // historisk anmälan ska se ut som den skedde då, inte idag.
+        Inskickad: isoTidBakat(spec.startdatum, 21, i),
+        'Bekräftelse skickad': isoTidBakat(spec.startdatum, 20, i),
+      };
+      if (historyEventKeys[i]) falt.EventKey = historyEventKeys[i];
+      if (spec.motivering) falt['Varför vill du gå den här utbildningen?'] = spec.motivering;
+      return falt;
+    });
+    const historyAnmalningar = await createRecords(
+      expectedBaseId,
+      tables.anmalningar.id,
+      historyAnmalanFalt,
+      token,
+      requestThrottleMs,
+      batchSize,
+    );
+    if (historyAnmalningar.length !== historySpecs.length) {
+      throw new ApiError(
+        `RIK-LÄGE: ${historyAnmalningar.length}/${historySpecs.length} historik-anmälningar skapade`,
+      );
+    }
+    console.log(
+      `   ✅ ${historyAnmalningar.length} historik-anmälningar skapade ` +
+        `(${historySpecs.filter((s) => s.motivering).length} med motivering)`,
+    );
+
+    // --- Deltaganden: 1 för den KOMMANDE (primära) anmälan + N per historik ---
+    const deltagandeFalt = [
+      {
+        'Person (länk)': [rikPersonId],
+        Anmälan: [rikAnmalanPrimarId],
+        Event: [event.id],
+        Session: config.select.sessionDag1,
+        Status: config.select.deltagandeEjAvstamt,
+      },
+      ...historySpecs.flatMap((spec, i) =>
+        spec.sessions.map((s) => ({
+          'Person (länk)': [rikPersonId],
+          Anmälan: [historyAnmalningar[i].id],
+          Event: [historyEvents[i].id],
+          Session: s.session,
+          Status:
+            s.status === 'Närvarande'
+              ? config.select.deltagandeNarvarande
+              : config.select.deltagandeFranvarande,
+        })),
+      ),
+    ];
+    const deltaganden = await createRecords(
+      expectedBaseId,
+      tables.deltaganden.id,
+      deltagandeFalt,
+      token,
+      requestThrottleMs,
+      batchSize,
+    );
+    if (deltaganden.length !== deltagandeFalt.length) {
+      throw new ApiError(
+        `RIK-LÄGE: ${deltaganden.length}/${deltagandeFalt.length} Deltaganden skapade`,
+      );
+    }
+    console.log(
+      `   ✅ ${deltaganden.length} Deltaganden skapade (1 Kommande + ` +
+        `${deltagandeFalt.length - 1} historik, inkl. ett tvådagars-event)`,
+    );
+
+    // --- Touchpoints (hämtningar, riktiga datum spridda i tid) ---
+    const touchpointFalt = buildRikTouchpoints({ nu, config }).map((tp) => ({
+      ...tp,
+      'Person (länkat fält)': [rikPersonId],
+    }));
+    const touchpoints = await createRecords(
+      expectedBaseId,
+      tables.touchpoints.id,
+      touchpointFalt,
+      token,
+      requestThrottleMs,
+      batchSize,
+    );
+    if (touchpoints.length !== touchpointFalt.length) {
+      throw new ApiError(
+        `RIK-LÄGE: ${touchpoints.length}/${touchpointFalt.length} Touchpoints skapade`,
+      );
+    }
+    console.log(`   ✅ ${touchpoints.length} Touchpoints skapade (hämtningar, spridda i tid)`);
+
+    // --- Anteckningar (olika författare — INTE auto-städbara, se guarden) ---
+    const anteckningFalt = buildRikAnteckningar({ config }).map((a) => ({
+      ...a,
+      Person: [rikPersonId],
+    }));
+    const anteckningar = await createRecords(
+      expectedBaseId,
+      tables.anteckningar.id,
+      anteckningFalt,
+      token,
+      requestThrottleMs,
+      batchSize,
+    );
+    if (anteckningar.length !== anteckningFalt.length) {
+      throw new ApiError(
+        `RIK-LÄGE: ${anteckningar.length}/${anteckningFalt.length} Anteckningar skapade`,
+      );
+    }
+    console.log(
+      `   ✅ ${anteckningar.length} Anteckningar skapade — INTE auto-städbara ` +
+        '(§ personDataLinkFields, radera för hand vid behov)',
+    );
+
+    rikRapport = { personId: rikPersonId, namn: rikNamn };
+  }
+
   console.log('\nKlart. Öppna:\n');
   console.log(`  ${eventUrl(config.appBaseUrl, event.id)}\n`);
+  if (rikRapport) {
+    console.log(
+      `  Den rika personen — ${rikRapport.namn} (${rikRapport.personId}):\n` +
+        `  ${config.appBaseUrl}/personer/${rikRapport.personId}?variant=d\n`,
+    );
+  }
   console.log(
     'Ser appen gammal data ut? Kör `localStorage.clear()` i konsolen — query-cachen\n' +
       'persistas i localStorage och överlever hårdladdning (staleTime 5 min).',
@@ -1792,7 +2532,7 @@ async function samlaFixturgraf({ ort, config, token, pattern }) {
  * drifta isär mellan de två vägarna.
  */
 async function stadaOrt({ ort, config, token, dryRun }) {
-  const { expectedBaseId, tables, requestThrottleMs, batchSize } = config;
+  const { expectedBaseId, tables, requestThrottleMs, batchSize, linkFields } = config;
   const args = { ort, dryRun };
   const pattern = fixtureEmailPattern(config.marker);
 
@@ -1800,13 +2540,36 @@ async function stadaOrt({ ort, config, token, dryRun }) {
   const { events, registrations, persons } = graf;
 
   const plan = planClean({ events, registrations, persons, ort: args.ort, pattern, config });
+
+  /*
+   * SATELLIT-STÄDNING (RIK-LÄGET, S103). Deltaganden/Touchpoints hör till en
+   * PERSON men nås ALDRIG via länkgrafen ovan (den går event → anmälan →
+   * person). Raderas en person utan att dessa städas EXPLICIT blir de
+   * föräldralösa: Airtable rensar bara länk-VÄRDET på den raderade sidan,
+   * aldrig den andra tabellens rad. Endast personer som FAKTISKT raderas
+   * (plan.persons) bidrar — en person guarden lämnar kvar ska inte få sina
+   * Deltaganden/Touchpoints rörda.
+   *
+   * Säkert att auto-radera UTAN eget märke: personen är redan bevisad
+   * fixtur (isFixtureEmailRecord, RFC 2606 §3-reserverad adress — kan
+   * ALDRIG tillhöra en verklig deltagare), och Deltaganden/Touchpoints har
+   * INGEN organisk skrivväg som skulle kunna länka en ÄKTA rad till en
+   * sådan person (se personDataLinkFields-kommentaren i CONFIG för den
+   * fullständiga avvägningen, inklusive VARFÖR Anteckningar INTE får samma
+   * lättnad).
+   */
+  const raderasPersoner = persons.filter((p) => plan.persons.includes(p.id));
+  const deltagandeIds = lankadeIdn(raderasPersoner, linkFields.personDeltaganden);
+  const touchpointIds = lankadeIdn(raderasPersoner, linkFields.personTouchpoints);
+
   console.log(
     `▸ Länkgraf: ${graf.fixturEvents.length} av ${events.length} event bär sentineln ` +
       `→ ${registrations.length} anmälningar → ${graf.lankadePersoner.length} personer` +
       `${graf.tillagdaForaldralosa.length > 0 ? ` (+ ${graf.tillagdaForaldralosa.length} föräldralösa)` : ''}`,
   );
   console.log(
-    `▸ Raderas: ${plan.registrations.length} anmälningar, ${plan.persons.length} personer, ${plan.events.length} event`,
+    `▸ Raderas: ${plan.registrations.length} anmälningar, ${deltagandeIds.length} Deltaganden, ` +
+      `${touchpointIds.length} Touchpoints, ${plan.persons.length} personer, ${plan.events.length} event`,
   );
   // En föräldralös rad pekas INTE ut av grafen — den kommer in via adressen
   // plus frånvaron av anmälningar, och kan lika gärna vara en annan orts
@@ -1822,18 +2585,31 @@ async function stadaOrt({ ort, config, token, dryRun }) {
   for (const s of [...plan.skippedEvents, ...plan.skippedRegistrations, ...plan.skippedPersons]) {
     console.log(`   ⚠️  ${s.id} lämnas kvar — ${s.orsak}`);
   }
-  if (plan.events.length === 0 && plan.registrations.length === 0 && plan.persons.length === 0) {
+  if (
+    plan.events.length === 0 &&
+    plan.registrations.length === 0 &&
+    plan.persons.length === 0 &&
+    deltagandeIds.length === 0 &&
+    touchpointIds.length === 0
+  ) {
     console.log('\nInget att städa.');
     return { raderade: 0, planerade: 0 };
   }
-  const planerade = plan.events.length + plan.registrations.length + plan.persons.length;
+  const planerade =
+    plan.events.length +
+    plan.registrations.length +
+    plan.persons.length +
+    deltagandeIds.length +
+    touchpointIds.length;
   if (args.dryRun) {
     console.log('\nDry run klar — inget raderades.');
     return { raderade: 0, planerade };
   }
 
   // Ordningen är bärande: anmälningarna först (då släpper personernas
-  // Anmälningar-länk), personerna sedan, eventet sist.
+  // Anmälningar-länk), SATELLITERNA näst (Deltaganden/Touchpoints hör till
+  // personerna som raderas strax efter — städa dem medan personen fortfarande
+  // pekar ut dem), personerna sedan, eventet sist.
   const rAnm = await deleteRecords(
     expectedBaseId,
     tables.anmalningar.id,
@@ -1843,6 +2619,24 @@ async function stadaOrt({ ort, config, token, dryRun }) {
     batchSize,
   );
   console.log(`   🗑  ${rAnm}/${plan.registrations.length} anmälningar raderade`);
+  const rDelt = await deleteRecords(
+    expectedBaseId,
+    tables.deltaganden.id,
+    deltagandeIds,
+    token,
+    requestThrottleMs,
+    batchSize,
+  );
+  console.log(`   🗑  ${rDelt}/${deltagandeIds.length} Deltaganden raderade`);
+  const rTp = await deleteRecords(
+    expectedBaseId,
+    tables.touchpoints.id,
+    touchpointIds,
+    token,
+    requestThrottleMs,
+    batchSize,
+  );
+  console.log(`   🗑  ${rTp}/${touchpointIds.length} Touchpoints raderade`);
   const rPers = await deleteRecords(
     expectedBaseId,
     tables.personer.id,
@@ -1877,8 +2671,40 @@ async function stadaOrt({ ort, config, token, dryRun }) {
   });
   const rest = kvar.events.length + kvar.registrations.length + kvar.persons.length;
   if (rest > 0) throw new ApiError(`efter-verifiering: ${rest} radera-bara fixtur-rader kvarstår`);
-  console.log('   ✅ efter-verifiering: 0 radera-bara fixtur-rader kvar');
-  return { raderade: rAnm + rPers + rEv, planerade };
+  // Satelliternas efter-verifiering är en RIKTAD ID-koll, inte en graf-
+  // omgång — personerna som ägde dem är nu borta, så grafen kan inte längre
+  // hitta dem via person-länken. En omfråga mot EXAKT de ID:na vi just bad om
+  // att radera är den enda kvarvarande vägen att bevisa att de försvann.
+  const kvarDelt =
+    deltagandeIds.length > 0
+      ? await hamtaPerRecordId(
+          expectedBaseId,
+          tables.deltaganden.id,
+          deltagandeIds,
+          token,
+          requestThrottleMs,
+        )
+      : [];
+  const kvarTp =
+    touchpointIds.length > 0
+      ? await hamtaPerRecordId(
+          expectedBaseId,
+          tables.touchpoints.id,
+          touchpointIds,
+          token,
+          requestThrottleMs,
+        )
+      : [];
+  if (kvarDelt.length > 0) {
+    throw new ApiError(`efter-verifiering: ${kvarDelt.length} radera-bara Deltaganden kvarstår`);
+  }
+  if (kvarTp.length > 0) {
+    throw new ApiError(`efter-verifiering: ${kvarTp.length} radera-bara Touchpoints kvarstår`);
+  }
+  console.log(
+    '   ✅ efter-verifiering: 0 radera-bara fixtur-rader kvar (inkl. Deltaganden/Touchpoints)',
+  );
+  return { raderade: rAnm + rDelt + rTp + rPers + rEv, planerade };
 }
 
 async function korClean({ args, config, token }) {
