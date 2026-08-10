@@ -53,3 +53,38 @@ export const SendActionEmailResultSchema = z.object({
 });
 
 export type SendActionEmailResult = z.infer<typeof SendActionEmailResultSchema>;
+
+/**
+ * [TASK-147.10] "Skicka test till mig" — SAMMA EF (`send-action-email`),
+ * SAMMA fem grundfält som `SendActionEmailInput`, plus `testSend: true` som
+ * växlar EF:en till testgrenen (`_shared/send-action-email.ts` §
+ * `runActionTestSend`). `registrationIds` bär ALLTID exakt ETT ID — den
+ * FÖRSTA mottagaren i granskningens urval (T53 väg C / ADR-067 D10: "ett
+ * urval på längd 1"). Servern läser upp den anmälan ENDAST för platshållar-
+ * data (förnamn m.fl.); adressen mailet går till är alltid den inloggade
+ * användarens egen (`requireUser`) — ALDRIG registrationens, ALDRIG
+ * klient-buren. Ingen anmälan i urvalet berörs (AC #2): EF:ens testgren har
+ * ingen `ActionFieldWriter`-deps, så en fält-skrivning är strukturellt
+ * omöjlig härifrån, inte bara oanvänd.
+ */
+export type SendActionTestEmailInput = {
+  actionType: 'bekraftelse' | 'paminnelse' | 'eventinfo' | 'fritt';
+  eventId: string;
+  /** Längd 1 — den FÖRSTA mottagaren i urvalet. Adressen kontaktas ALDRIG. */
+  registrationIds: string[];
+  amne: string;
+  mailtext: string;
+  idempotencyKey: string;
+};
+
+/**
+ * Testmailets svar — enklare än `SendActionEmailResultSchema` (en mottagare,
+ * ingen partitionering, aldrig fält-skrivning): binärt `sent`/`failed` räcker
+ * ärligt när urvalet strukturellt bara kan vara längd 1.
+ */
+export const SendActionTestEmailResultSchema = z.object({
+  status: z.enum(['sent', 'failed']),
+  reason: z.string().optional(),
+});
+
+export type SendActionTestEmailResult = z.infer<typeof SendActionTestEmailResultSchema>;

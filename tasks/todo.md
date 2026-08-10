@@ -15,6 +15,34 @@
 
 ## Aktuellt fokus
 
+**Session 104 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — SEGMENT-PASSETS
+DIVERGENS KLAR; SYNTESEN BYGGD, MARCUS FORMVAL ÖPPET.** Fyra varianter på
+`/mer/segment` via `?variant=a|b|c|d` (`#1121`, sex commits): `a`
+regelverkstaden · `b` publiken först · `c` segment som entitet · **`d`
+syntesen** (Marcus: *"jag gillar alla tre"* → de är tre ÄRENDEN, inte tre svar;
+`c` som hem, `b` som detaljinnehåll, `a` som redigering). Snittet som bär `d`:
+listkortet har ingen skicka-knapp, så vägen till utskick går alltid via
+detaljsidan som ÄR publiken — "kontrollerar alltid" blir formens default.
+**Passet växte till arkitekturarbete:** segment ruttnar tyst när kursutbudet
+växer (RIM 4) → **Marcus-beslut**: predikat-baserade regler · tre familjer
+(nakna "Resor i medvetandet" = RIM-familjen, nivå intro, men FÖRELÄSNING) ·
+nivå nullbar · **modalitet OBLIGATORISK i varje villkor** (skaderisk-krav:
+material olämpligt för föreläsnings-publik). Två nya fält (familj, nivå), tre
+befintliga exponeras (modalitet, format, år). **PROD-RENSNING utförd:**
+`Segment` + `Bulkutskick` tomma (verifierat: ingen extern mottagare nåddes
+någonsin; backup utanför git). Underlag: research 7 branschledare (alla
+uttrycker regler som predikat; 0/7 hade migrations-precedens) + live
+bas-kartläggning. **NÄSTA (resume S104): diagnosticera `#1121`:s röda
+Lint-jobb** (streck-grinden fälld och fixad lokalt; verifiera i CI) → Marcus
+formval på `d` → konvergens → facit → ADR (förfinar `ADR-062` beslut 3) →
+basstruktur → PRD. **EF-krav till PRD:** `compute-segment` bör bära
+`via: Par[]` per medlem · år kräver deltagandedatum i källfrågan · expansionen
+måste ske server-side. Numrering vid paus: 108/L512+2 fragment/T140/task-182/f47
+(re-derivera). **HANDOFF: sessionsdok S104 § PAUSLÄGE + Del 2.**
+*(S103:s kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 103 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — PERSONER-LISTANS
 FORM ÄR KLAR MEN EJ GODKÄND; BASEN LEVERERAR NU TEXTEN.** Grillad samsyn:
 listan är ett **uppslagsverk** (gruppfrågor bor i Segment) → filterpanelen DOG

@@ -15,6 +15,7 @@ import {
   isActionType,
   parseActionOutcome,
   runActionSend,
+  runActionTestSend,
 } from '../_shared/send-action-email.ts';
 import { NonProdAddressError } from '../_shared/send-bulk.ts';
 
@@ -44,6 +45,14 @@ import { NonProdAddressError } from '../_shared/send-bulk.ts';
 // aldrig binär status, per-typ stämpel-fält) bor i den injicerade orkestratorn
 // _shared/send-action-email.ts (api-pure-testad); HÄR wiras de SKARPA gränserna:
 // Resend-sändningen och Airtable-läsningen/-PATCH:en.
+//
+// TESTMAIL-GRENEN (TASK-147.10, ADR-067 D10/T53 väg C): body.testSend === true
+// grenar mot `runActionTestSend` i stället för `runActionSend` — SAMMA EF, SAMMA
+// input-kontrakt (actionType/eventId/registrationIds/amne/mailtext/idempotencyKey),
+// ingen ny gren att underhålla parallellt. Skillnaden: EN mottagare (FÖRSTA
+// registrationId — endast platshållar-data), adressen ÖVERSKRIVS ALLTID med
+// `user.email` (den autentiserade anroparens egen, `requireUser`), TEST-prefixad
+// ämnesrad, och INGEN fält-skrivning sker — urvalets anmälan lämnas ORÖRD.
 
 const OPERATION_KEY = 'send-action-email';
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -227,6 +236,12 @@ Deno.serve(async (req) => {
   // misstag, inte två mail (send-registration-confirmation-mönstret).
   const ids = [...new Set(registrationIds as string[])];
 
+  // [TASK-147.10] Testmail-flaggan — additiv, valfri, default false (bakåt-
+  // kompatibel: befintliga anropare som aldrig sätter fältet är opåverkade).
+  // Endast literalt `true` grenar mot testvägen; allt annat (frånvaro, false,
+  // annan typ) går den befintliga verkliga sändvägen oförändrad.
+  const testSend = body?.testSend === true;
+
   if (typeof body?.amne !== 'string' || !body.amne.trim()) {
     return badRequest('amne is required (non-empty string)', corsHeaders);
   }
@@ -262,6 +277,46 @@ Deno.serve(async (req) => {
     const event = await readEvent(eventId);
     if (!event) {
       return jsonResponse({ error: `Event not found: ${eventId}` }, 404, corsHeaders);
+    }
+
+    // [TASK-147.10] TESTMAIL-GRENEN — EN mottagare (FÖRSTA registrationId,
+    // ENDAST platshållar-data), adressen ALLTID `user.email` (aldrig
+    // klient-buren, aldrig `target.email`). Egen retur-väg: `runActionSend`
+    // nedan (targets-loopen, `runActionSend`, stämpel-fält) rörs INTE.
+    if (testSend) {
+      const firstId = ids[0];
+      const read = await readRegistration(firstId);
+      if (!read) {
+        return jsonResponse({ error: `Registration not found: ${firstId}` }, 404, corsHeaders);
+      }
+      if (!read.eventIds.includes(eventId)) {
+        return badRequest(`Registration ${firstId} does not belong to event ${eventId}`, corsHeaders);
+      }
+      if (!user.email) {
+        return badRequest(
+          'Inloggad användare saknar e-postadress — testmail kan inte skickas.',
+          corsHeaders,
+        );
+      }
+
+      const result = await runActionTestSend(
+        {
+          target: read.target,
+          event,
+          amne,
+          mailtext,
+          testRecipientEmail: user.email,
+          jobId,
+          isProd,
+        },
+        { sender: makeRealSender() },
+      );
+
+      console.log(
+        `[${OPERATION_KEY}] TEST-SEND DONE | caller_user_id=${user.id} | jobId=${jobId} | ` +
+          `actionType=${actionType} | status=${result.status}`,
+      );
+      return jsonResponse(result, 200, corsHeaders);
     }
 
     // Mottagar-upplösning SERVER-SIDE (record-ID → adress/namn/status/betalning).

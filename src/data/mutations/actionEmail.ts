@@ -1,6 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDataSource } from '@/data/useDataSource';
-import type { SendActionEmailInput, SendActionEmailResult } from '@/domain/schemas';
+import type {
+  SendActionEmailInput,
+  SendActionEmailResult,
+  SendActionTestEmailInput,
+  SendActionTestEmailResult,
+} from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
 
 /**
@@ -48,5 +53,30 @@ export function useSendActionEmail(eventId: string) {
       queryClient.invalidateQueries({ queryKey: queryKeys.registrations.byEvent(eventId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.events.detail(eventId) });
     },
+  });
+}
+
+/**
+ * "Skicka test till mig" (TASK-147.10; EF-grenen TASK-147.2s `send-action-
+ * email` med `testSend: true`). SAMMA idempotencyKey-genereringsmönster som
+ * `useSendActionEmail` ovan, men ÄGER INGEN cache-invalidering: EF-grenen
+ * skriver strukturellt aldrig ett fält (`_shared/send-action-email.ts` §
+ * `runActionTestSend` tar ingen `ActionFieldWriter`-deps) — ingen anmälan i
+ * urvalet berörs, alltså finns inget cache-läge att synka om (AC #2).
+ */
+export function useSendActionTestEmail(eventId: string) {
+  const dataSource = useDataSource();
+
+  return useMutation<
+    SendActionTestEmailResult,
+    Error,
+    Omit<SendActionTestEmailInput, 'eventId' | 'idempotencyKey'>
+  >({
+    mutationFn: (vars) =>
+      dataSource.sendActionTestEmail({
+        ...vars,
+        eventId,
+        idempotencyKey: crypto.randomUUID(),
+      }),
   });
 }

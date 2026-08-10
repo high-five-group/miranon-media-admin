@@ -29,9 +29,11 @@ import {
   type ActionSender,
   type ActionSendInput,
   type ActionTarget,
+  type ActionTestSendInput,
   type EventContext,
   isActionType,
   runActionSend,
+  runActionTestSend,
 } from '../../supabase/functions/_shared/send-action-email';
 import { NonProdAddressError } from '../../supabase/functions/_shared/send-bulk';
 
@@ -506,7 +508,177 @@ test.describe('runActionSend — åtgärdsutskickens orkestrator (TASK-147.1)', 
     expect(sender.calls).toHaveLength(0);
     expect(writer.writes).toHaveLength(0);
   });
+});
 
+// ============================================================================
+// runActionTestSend — "Skicka test till mig" (TASK-147.10, ADR-067 D10/T53
+// väg C). SAMMA `ActionSender`-mock (`mockSender`) och SAMMA `target`/`event`-
+// byggare som ovan — testgrenen delar renderingen (`renderFor`) och GOLVet
+// (icke-prod-spärren) med `runActionSend`, den prövas alltså inte om här.
+//
+// STRUKTURELLT BEVIS FÖR AC #2 ("ingen anmälan i urvalet berörs"): varje test
+// nedan anropar `runActionTestSend` med `{ sender }` — INGET `writeFields` i
+// deps-objektet. `ActionTestSendDeps` (`_shared/send-action-email.ts`) har
+// ingen `ActionFieldWriter`-nyckel i sin typ, så en fält-skrivning är omöjlig
+// att uttrycka här, inte bara oanvänd i denna kod — TypeScript vägrar
+// kompilera ett anrop som försöker skicka ett `writeFields`.
+// ============================================================================
+test.describe('runActionTestSend — testmailets orkestrator (TASK-147.10)', () => {
+  function testInput(overrides: Partial<ActionTestSendInput> = {}): ActionTestSendInput {
+    return {
+      target: target({ id: 'recForsta', fornamn: 'Anna', email: 'anna.riktig@example.com' }),
+      event: event(),
+      amne: 'Din plats är bekräftad',
+      mailtext: 'Hej {förnamn}, din plats på {event} är bekräftad. Vi ses {datum} i {ort}.',
+      testRecipientEmail: TEST_ADDR,
+      jobId: '22222222-2222-4222-8222-222222222222',
+      isProd: false,
+      ...overrides,
+    };
+  }
+
+  test('adressen mailet FAKTISKT går till är testRecipientEmail — ALDRIG target.email (AC #2)', async () => {
+    const sender = mockSender();
+
+    const result = await runActionTestSend(
+      testInput({
+        target: target({ id: 'recForsta', email: 'anna.riktig@example.com' }),
+        testRecipientEmail: TEST_ADDR,
+        isProd: true, // prod-läge så target.email (icke-Resend-test-adress) inte fäller GOLV-spärren
+      }),
+      { sender },
+    );
+
+    expect(result.status).toBe('sent');
+    expect(sender.calls).toHaveLength(1);
+    expect(sender.calls[0].emails).toEqual([TEST_ADDR]);
+    expect(sender.calls[0].emails).not.toContain('anna.riktig@example.com');
+  });
+
+  test('ämnesraden TEST-prefixas (AC #1) — mailtextens rendering är OFÖRÄNDRAD', async () => {
+    const sender = mockSender();
+
+    await runActionTestSend(
+      testInput({
+        amne: 'Din plats är bekräftad',
+        target: target({ id: 'recForsta', fornamn: 'Anna' }),
+      }),
+      { sender },
+    );
+
+    expect(sender.calls[0].subjects).toEqual(['TEST: Din plats är bekräftad']);
+  });
+
+  test('platshållarna fylls ur target/event — SAMMA renderFor som runActionSend (mirror-kontraktet)', async () => {
+    const sender = mockSender();
+
+    await runActionTestSend(
+      testInput({
+        target: target({ id: 'recForsta', fornamn: 'Bertil' }),
+        event: event({
+          eventNamn: 'Resor i medvetandet 1',
+          ort: 'Skövde',
+          startdatum: '2026-09-01',
+        }),
+        mailtext: 'Hej {förnamn}, din plats på {event} är bekräftad. Vi ses {datum} i {ort}.',
+      }),
+      { sender },
+    );
+
+    expect(sender.calls[0].texts[0]).toContain('Hej Bertil,');
+    expect(sender.calls[0].texts[0]).toContain('Resor i medvetandet 1');
+    expect(sender.calls[0].texts[0]).toContain('Skövde');
+  });
+
+  test('ICKE-PROD-SPÄRREN (GOLV, återanvänd): gäller testRecipientEmail — target.email är IRRELEVANT för spärren', async () => {
+    const sender = mockSender();
+
+    // target.email ÄR en Resend-test-adress, men testRecipientEmail är det INTE
+    // — spärren ska ändå fälla, för adressen som FAKTISKT kontaktas är
+    // testRecipientEmail.
+    await expect(
+      runActionTestSend(
+        testInput({
+          target: target({ id: 'recForsta', email: TEST_ADDR }),
+          testRecipientEmail: 'lotta@example.com',
+          isProd: false,
+        }),
+        { sender },
+      ),
+    ).rejects.toThrow(NonProdAddressError);
+    expect(sender.calls).toHaveLength(0);
+  });
+
+  test('icke-prod: testRecipientEmail SOM Resend-test-adress går igenom oavsett target.email', async () => {
+    const sender = mockSender();
+
+    const result = await runActionTestSend(
+      testInput({
+        target: target({ id: 'recForsta', email: 'nagon.helt.annan@example.com' }),
+        testRecipientEmail: TEST_ADDR,
+        isProd: false,
+      }),
+      { sender },
+    );
+
+    expect(result.status).toBe('sent');
+    expect(sender.calls[0].emails).toEqual([TEST_ADDR]);
+  });
+
+  test('prod-läge: spärren gäller inte — godtycklig testRecipientEmail tillåts', async () => {
+    const sender = mockSender();
+
+    const result = await runActionTestSend(
+      testInput({ testRecipientEmail: 'lotta@example.com', isProd: true }),
+      { sender },
+    );
+
+    expect(result.status).toBe('sent');
+    expect(sender.calls[0].emails).toEqual(['lotta@example.com']);
+  });
+
+  test('idempotens-nyckeln är <jobId>/test — namnrymd-separerad från runActionSends <jobId>/<actionType>', async () => {
+    const sender = mockSender();
+
+    await runActionTestSend(testInput({ jobId: 'x' }), { sender });
+
+    expect(sender.calls[0].idempotencyKey).toBe('x/test');
+  });
+
+  test('avvisat mail ⇒ status "failed" med Resends skäl (fri text, passthrough)', async () => {
+    const sender = mockSender(new Set([TEST_ADDR]));
+
+    const result = await runActionTestSend(testInput({ testRecipientEmail: TEST_ADDR }), {
+      sender,
+    });
+
+    expect(result.status).toBe('failed');
+    expect(result.reason).toBe('mock-reject');
+  });
+
+  test('accepterat mail ⇒ status "sent", inget "reason"-fält', async () => {
+    const sender = mockSender();
+
+    const result = await runActionTestSend(testInput(), { sender });
+
+    expect(result.status).toBe('sent');
+    expect(result.reason).toBeUndefined();
+  });
+
+  test('FÖRSTA mottagaren utan egen e-post — testmailet skickas ändå (adressen kommer ALDRIG från target)', async () => {
+    const sender = mockSender();
+
+    const result = await runActionTestSend(
+      testInput({ target: target({ id: 'recForsta', email: null }), isProd: true }),
+      { sender },
+    );
+
+    expect(result.status).toBe('sent');
+    expect(sender.calls[0].emails).toEqual([TEST_ADDR]);
+  });
+});
+
+test.describe('allowlist-SSOT (TASK-147.1)', () => {
   test('allowlist-SSOT: operationen tillåter EXAKT unionen av de fyra åtgärdstypernas fält', () => {
     const operation = getOperation('send-action-email');
     expect(operation).not.toBeNull();

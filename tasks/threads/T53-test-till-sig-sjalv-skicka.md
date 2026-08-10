@@ -1,8 +1,16 @@
 # T53 — Test-till-sig-själv (skicka test-mail före skarpt utskick)
 
-- **Tillstånd:** `paused`
+- **Tillstånd:** `closed` — **STÄNGD 2026-08-10 (S102, TASK-147.10)**: väg C
+  byggd — `send-action-email`s testgren (`testSend: true`, `_shared/
+  send-action-email.ts` § `runActionTestSend`), ett urval på LÄNGD 1 (den
+  FÖRSTA mottagaren i granskningens urval, ENDAST platshållar-data) riktat
+  mot den inloggade användarens egen adress (server-side, `requireUser` —
+  aldrig klient-buren). Trådens ARKITEKTURFRÅGA (options-rymden A/B/C) är
+  därmed besvarad och byggd; kortets EGEN Done-flipp är ett separat,
+  orkestrator-ägt gate (AC #3, ADR-104-kanalen, Marcus-omgodkännande av
+  granskningsytans utökade form) — se `backlog task 147.10 --plain`.
 - **Uppstod:** Session 45 (T50-scope-precisering)
-- **Commit-tagg:** `git log --grep "\[T53\]"`
+- **Commit-tagg:** `git log --grep "\[T53\]"` · `git log --grep "\[TASK-147.10\]"`
 
 ## Scope
 

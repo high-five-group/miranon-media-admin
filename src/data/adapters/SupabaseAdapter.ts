@@ -21,6 +21,8 @@ import type {
   SegmentRule,
   SendActionEmailInput,
   SendActionEmailResult,
+  SendActionTestEmailInput,
+  SendActionTestEmailResult,
   UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -137,6 +139,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async sendActionEmail(_input: SendActionEmailInput): Promise<SendActionEmailResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async sendActionTestEmail(_input: SendActionTestEmailInput): Promise<SendActionTestEmailResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
