@@ -633,7 +633,7 @@ function PublikVy({
             value={sok}
             onChange={setSok}
             size="sm"
-            description="Söker i den redan hämtade publiken — kostar inget serveranrop."
+            description="Söker i den redan hämtade publiken - kostar inget serveranrop."
           />
 
           <div className="flex flex-col gap-2">
@@ -676,7 +676,7 @@ function PublikVy({
                             namn — aria-label bär semantiken, glyfen är dekor
                             (primitivens ikon-pill-mönster, spec §16). */}
                         <ToggleButton id="ingen" size="sm" aria-label="Påverkar inte publiken">
-                          <span aria-hidden="true">–</span>
+                          <span aria-hidden="true">-</span>
                         </ToggleButton>
                       </ToggleButtonGroup>
                     </li>
@@ -807,7 +807,7 @@ function PublikVy({
           <p>
             Segment är strikt filterbaserade: regeln är en lista kurser, inte en lista personer
             (ADR-064). Det du plockar här kan alltså varken sparas i segmentet eller följa med till
-            utskicket — servern räknar fram mottagarna ur regeln när mailet går.
+            utskicket - servern räknar fram mottagarna ur regeln när mailet går.
           </p>
           <p>
             Just nu: {tillagda.length} tillagda för hand, {bortplockade.size} borttagna. Frågan den
@@ -877,7 +877,7 @@ function PublikVy({
           <p className="font-medium text-body">0 personer matchar</p>
           <p className="max-w-prose text-small text-text-muted">
             Inga med genomförd närvaro ännu. Närvaron för de valda kurserna är inte avstämd i basen
-            — publiken fylls av sig själv när den blir det.
+            - publiken fylls av sig själv när den blir det.
           </p>
         </div>
       );
@@ -999,7 +999,7 @@ function PublikVy({
           äkta ut är värre än ingen publik alls. */}
       {skalprov && (
         <div className="px-4">
-          <MessageBox intent="warning" title="Skalprov påslaget — publiken är delvis påhittad">
+          <MessageBox intent="warning" title="Skalprov påslaget - publiken är delvis påhittad">
             Personerna med adress <code>@exempel.invalid</code> finns inte. Växeln sitter i
             filterpanelen och är bara till för att bedöma hur listan beter sig vid {SKALPROV_MAL}{' '}
             personer.
@@ -1169,7 +1169,7 @@ function Personplockare({
         onChange={setTerm}
         size="sm"
         placeholder="Namn eller e-post…"
-        description="Söker i alla personer — även de utan närvaro på de valda kurserna."
+        description="Söker i alla personer - även de utan närvaro på de valda kurserna."
       />
       <div aria-live="polite" aria-busy={traffar.isFetching} className="flex flex-col gap-2">
         {debounced.length < 2 && (
@@ -1230,11 +1230,11 @@ function SparaKapsel({ antal, harHandplock }: { antal: number; harHandplock: boo
       {visat && (
         <MessageBox
           intent="info"
-          title="Prototyp — ingenting sparades"
+          title="Prototyp - ingenting sparades"
           onDismiss={() => setVisat(false)}
         >
           {harHandplock
-            ? 'Regeln hade gått att spara. Dina handplockade ändringar hade INTE följt med — segmentet är regeln, inte listan.'
+            ? 'Regeln hade gått att spara. Dina handplockade ändringar hade INTE följt med - segmentet är regeln, inte listan.'
             : 'Regeln hade sparats som ett namngivet segment. Prototypen skriver aldrig.'}
         </MessageBox>
       )}
@@ -1362,14 +1362,14 @@ function UtskicksVy({
           <MessageBox intent="warning" title="Alla får inte mailet">
             {utanEpost > 0 && <p>{utanEpost} saknar e-postadress.</p>}
             {tackatNej > 0 && <p>{tackatNej} har tackat nej till utskick.</p>}
-            <p>Servern tar bort dem — de räknas aldrig som skickade.</p>
+            <p>Servern tar bort dem - de räknas aldrig som skickade.</p>
           </MessageBox>
         </div>
       )}
       {harHandplock && (
         <div className="px-4">
           <MessageBox intent="info" title="Handplockningen följer inte med">
-            Servern räknar fram mottagarna ur segmentets regel när mailet går (T50-lager b) — en
+            Servern räknar fram mottagarna ur segmentets regel när mailet går (T50-lager b) - en
             lista som byggts här i klienten används aldrig. Det är därför handplockning kräver att
             regeln kan bära personer, inte bara kurser.
           </MessageBox>
@@ -1472,7 +1472,7 @@ function UtskicksVy({
               title="Testmail-vägen finns inte ännu"
               onDismiss={() => setTestmailVisat(false)}
             >
-              Ingenting skickades. Servern kan i dag bara skicka till ett helt segment — en
+              Ingenting skickades. Servern kan i dag bara skicka till ett helt segment - en
               enkel-mottagar-gren byggs i task-147.1. Knappen står här för att formen ska gå att
               bedöma.
             </MessageBox>
@@ -1507,7 +1507,7 @@ function UtskicksVy({
           </Button>
         </div>
         <p className="text-caption text-text-muted">
-          Bekräftelsen är låst mot {antalFar} — antalet som FAKTISKT får mailet, inte publikens
+          Bekräftelsen är låst mot {antalFar} - antalet som FAKTISKT får mailet, inte publikens
           storlek. Talen skiljer sig när någon saknar e-post eller tackat nej.
         </p>
 
