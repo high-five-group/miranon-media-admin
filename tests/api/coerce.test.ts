@@ -192,6 +192,9 @@ test.describe('schema-parity — ort/allaHamtningar är string[] (SAKNAD-bug st�
       antalHamtningar: 2,
       allaHamtningar: ['Kraftfältet', 'Andetag'],
       motivering: [],
+      hamtningar: [],
+      motiveringar: [],
+      flagga: null,
       inbjudenCommunity: false,
       skapatKontoCommunity: false,
       historik: [],
@@ -232,6 +235,9 @@ test.describe('schema-parity — motivering är string[] (TASK-52-bug stängd)',
       antalHamtningar: 0,
       allaHamtningar: [],
       motivering: [],
+      hamtningar: [],
+      motiveringar: [],
+      flagga: null,
       inbjudenCommunity: false,
       skapatKontoCommunity: false,
       historik: [],
@@ -279,5 +285,158 @@ test.describe('schema-parity — motivering är string[] (TASK-52-bug stängd)',
       PersonDetailSchema.parse(validPersonDetail({ motivering: 'En sträng, ingen array' })),
     ).toThrow();
     expect(() => PersonDetailSchema.parse(validPersonDetail({ motivering: null }))).toThrow();
+  });
+});
+
+test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, get-person)', () => {
+  // Samma `validPersonDetail`-mönster som motivering-describe-blocket ovan,
+  // duplicerat lokalt (inte importerat mellan describe-block — matchar
+  // filens egen konvention: varje describe äger sin egen fixtur-builder).
+  function validPersonDetail(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'recX',
+      namn: 'A',
+      fornamn: null,
+      efternamn: null,
+      email: null,
+      telefon: null,
+      ort: [],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: null,
+      antalAnmalningar: 0,
+      antalDeltaganden: 0,
+      erfarenhetsniva: null,
+      erfarenhetsbadge: null,
+      senasteInteraktion: null,
+      senasteInteraktionDatum: null,
+      dagarSedanSenaste: null,
+      harAktivAnmalan: null,
+      ejGodkandMail: false,
+      radSkapad: null,
+      anmalningIds: [],
+      deltagandeIds: [],
+      aterkommande: null,
+      nastaEvent: null,
+      antalGenomfordaEvent: 0,
+      senasteDeltagandeDatum: null,
+      antalHamtningar: 0,
+      allaHamtningar: [],
+      motivering: [],
+      hamtningar: [],
+      motiveringar: [],
+      flagga: null,
+      inbjudenCommunity: false,
+      skapatKontoCommunity: false,
+      historik: [],
+      ...overrides,
+    };
+  }
+
+  test('PersonDetailSchema accepterar hamtningar som array av strukturerade poster', () => {
+    const parsed = PersonDetailSchema.parse(
+      validPersonDetail({
+        hamtningar: [
+          {
+            id: 'recTP001',
+            erbjudande: 'Meditationen Kraftfältet',
+            typ: 'Angett e-post för att ta del av ett erbjudande',
+            datum: '2026-04-19',
+          },
+          { id: 'recTP002', erbjudande: null, typ: 'Öppnat e-post', datum: null },
+        ],
+      }),
+    );
+    // FLERHET bevarad — ingen tyst första-element-reduktion (samma disciplin
+    // som motivering-blocket ovan, nu för en array av OBJEKT i stället för
+    // strängar).
+    expect(parsed.hamtningar).toHaveLength(2);
+    expect(parsed.hamtningar[0]).toEqual({
+      id: 'recTP001',
+      erbjudande: 'Meditationen Kraftfältet',
+      typ: 'Angett e-post för att ta del av ett erbjudande',
+      datum: '2026-04-19',
+    });
+    // `erbjudande` null för en touchpoint-typ som inte gäller ett erbjudande —
+    // inte en tom sträng, och `datum` null för en datumlös post.
+    expect(parsed.hamtningar[1]).toEqual({
+      id: 'recTP002',
+      erbjudande: null,
+      typ: 'Öppnat e-post',
+      datum: null,
+    });
+  });
+
+  test('PersonDetailSchema: hamtningar tom lista är giltig (inga touchpoints länkade)', () => {
+    const parsed = PersonDetailSchema.parse(validPersonDetail({ hamtningar: [] }));
+    expect(parsed.hamtningar).toEqual([]);
+  });
+
+  test('PersonDetailSchema AVVISAR hamtningar i den GAMLA platta string[]-formen', () => {
+    // hamtningar är en array av OBJEKT (id/erbjudande/typ/datum) — inte en
+    // array av strängar som `allaHamtningar`. Skulle get-person någonsin
+    // returnera den plattade formen på det nya fältnamnet ska schemat fälla.
+    expect(() =>
+      PersonDetailSchema.parse(
+        validPersonDetail({ hamtningar: ['Meditationen Kraftfältet (2026-04-19)'] }),
+      ),
+    ).toThrow();
+  });
+
+  test('PersonDetailSchema accepterar motiveringar som array av strukturerade poster', () => {
+    const parsed = PersonDetailSchema.parse(
+      validPersonDetail({
+        motiveringar: [
+          {
+            id: 'recANM001',
+            motivering: 'Jag vill lära mig mer.',
+            event: 'Resor i medvetandet 1',
+            datum: '2026-02-01T09:00:00.000Z',
+          },
+          { id: 'recANM002', motivering: null, event: null, datum: null },
+        ],
+      }),
+    );
+    expect(parsed.motiveringar).toHaveLength(2);
+    expect(parsed.motiveringar[0]).toEqual({
+      id: 'recANM001',
+      motivering: 'Jag vill lära mig mer.',
+      event: 'Resor i medvetandet 1',
+      datum: '2026-02-01T09:00:00.000Z',
+    });
+    expect(parsed.motiveringar[1]).toEqual({
+      id: 'recANM002',
+      motivering: null,
+      event: null,
+      datum: null,
+    });
+  });
+
+  test('PersonDetailSchema: motiveringar tom lista är giltig (inga anmälningar länkade)', () => {
+    const parsed = PersonDetailSchema.parse(validPersonDetail({ motiveringar: [] }));
+    expect(parsed.motiveringar).toEqual([]);
+  });
+
+  test('PersonDetailSchema AVVISAR motiveringar i den GAMLA platta string[]-formen', () => {
+    expect(() =>
+      PersonDetailSchema.parse(validPersonDetail({ motiveringar: ['Jag vill lära mig mer.'] })),
+    ).toThrow();
+  });
+
+  test('PersonDetailSchema: flagga accepterar sträng och null', () => {
+    expect(
+      PersonDetailSchema.parse(validPersonDetail({ flagga: 'Ring innan nästa event' })).flagga,
+    ).toBe('Ring innan nästa event');
+    expect(PersonDetailSchema.parse(validPersonDetail({ flagga: null })).flagga).toBeNull();
+  });
+
+  test('PersonDetailSchema AVVISAR flagga som saknas helt (regressionsvakt mot manuellFlagga-klassen)', () => {
+    // `Manuella flagga` (manuellFlagga) kunde ALDRIG sättas (choices=[],
+    // data-model.md §Kända fällor 25) — `flagga` ersätter den. Skulle
+    // get-person någonsin sluta läsa `Flagga` och tappa nyckeln helt ska
+    // schemat fälla, inte tyst acceptera ett `undefined`.
+    const utanFlagga = validPersonDetail() as Record<string, unknown>;
+    delete utanFlagga.flagga;
+    expect(() => PersonDetailSchema.parse(utanFlagga)).toThrow();
   });
 });

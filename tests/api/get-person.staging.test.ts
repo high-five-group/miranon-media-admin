@@ -80,6 +80,37 @@ test.describe('get-person — skarp conformance (ADR-056 detalj, Fas 6a L5b)', (
     expect(person.historik.every((h) => h.narvaro)).toBe(true);
   });
 
+  test('S103 steg 2: hamtningar/motiveringar/flagga är RIKTIGA poster, inte platta strängar', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await callGetPerson(request, config, jwt, HISTORY_PERSON_ID);
+    expect(res.status()).toBe(200);
+
+    const body = (await res.json()) as { person: unknown };
+    const person = PersonDetailSchema.parse(body.person);
+
+    // ZZ-History Person 01 bär inga Touchpoints (live-verifierat via
+    // get_record 2026-08-10: `Touchpoints`-fältet saknas helt i API-svaret) →
+    // batchen hoppas över, hamtningar = [] (inte ett fel, en tom länk).
+    expect(person.hamtningar).toEqual([]);
+
+    // Personen bär 2 Anmälningar (samma 2 som ger de 2 orterna ovan), ingendera
+    // med `Event`-länk eller ifylld motiveringstext (live-verifierat via
+    // get_record 2026-08-10) → motivering=null, event=null för båda. `Rad
+    // skapad` skiljer dem: recO8TSK2A0b0a5YF (07:35:48) är YNGRE än
+    // rec0wC9rEGKUIHC2W (07:35:41) → sorterad FÖRST (datum desc).
+    expect(person.motiveringar).toEqual([
+      { id: 'recO8TSK2A0b0a5YF', motivering: null, event: null, datum: '2026-06-19T07:35:48.000Z' },
+      { id: 'rec0wC9rEGKUIHC2W', motivering: null, event: null, datum: '2026-06-19T07:35:41.000Z' },
+    ]);
+
+    // Personen bär inget `Flagga`-värde (live-verifierat 2026-08-10) → null,
+    // inte tom sträng eller undefined (schemat hade fällt på det senare).
+    expect(person.flagga).toBeNull();
+  });
+
   test('okänt ID → 404 + body { error } (mall-kontraktet)', async ({ request }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);

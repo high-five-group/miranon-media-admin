@@ -34,6 +34,10 @@ export {
   PersonDetailSchema,
   type PersonHistoryEntry,
   PersonHistoryEntrySchema,
+  type PersonMotiveringEntry,
+  PersonMotiveringEntrySchema,
+  type PersonTouchpointEntry,
+  PersonTouchpointEntrySchema,
 } from './PersonDetail.schema';
 export { RegistrationSchema } from './Registration.schema';
 export {

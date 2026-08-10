@@ -352,7 +352,7 @@ De skrivbara fält som [ADR-066](../decisions/ADR-066-skapa-event-write-vertikal
 | E-post (manuell inmatning) | `fldhp3qXp2E6ekW5D` | email | Validerad fält-typ |
 | Telefon | `fldmMYIUhIc1HMnZi` | multilineText | – |
 | Manuella flagga | `fldNtwQt6tOCIdf4f` | singleSelect | **choices=[]** — tomt valslag, kan inte sättas. **AVLÖST 2026-08-10 av `Flagga` nedan**; se §Kända fällor 25. |
-| Flagga | prod `fldsNDwACc8hWDPeA` · staging `fldCXSGQJEVlf1Sa7` | singleLineText | **NY 2026-08-10 (S103).** Lottas egen FRITEXT-flagga. Ersätter `Manuella flagga` — Marcus beslut: *"det ska vara en flagga som Lotta själv skriver i fritext"*. Skrivbar. |
+| Flagga | prod `fldsNDwACc8hWDPeA` · staging `fldCXSGQJEVlf1Sa7` | singleLineText | **NY 2026-08-10 (S103).** Lottas egen FRITEXT-flagga. Ersätter `Manuella flagga` — Marcus beslut: *"det ska vara en flagga som Lotta själv skriver i fritext"*. Skrivbar. Läst av `get-person` (`flagga`-fältet i `PersonDetailSchema`) sedan S103 steg 2; ingen skrivväg byggd ännu. |
 | AI-flagga | `fldgB9iHDTAqd30Uf` | singleSelect | Särskilt stödbehov, Nybörjare, Stabil och mottaglig, Erfaren |
 | Anteckningar | `fldWGlNr3ujRHo85w` | multilineText | Använt 2026-04-26 för spårbarhet av Avvikelse-fall |
 | Ej godkänd för mailutskick | `fldbQB9BGJgB1HCg7` | checkbox | Filterflagga för bulkutskick |

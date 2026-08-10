@@ -8,6 +8,8 @@ import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 // staging-bas (tbl-id:n är bas-unika; ADR-050). Spegel av get-persons.
 const PERSONER_TABLE = 'Personer';
 const DELTAGANDEN_TABLE = 'Deltaganden';
+const TOUCHPOINTS_TABLE = 'Touchpoints';
+const ANMALNINGAR_TABLE = 'Anmälningar';
 
 // Fält att hämta ur Deltaganden för event-för-event-historik. Ett urval (fields[])
 // håller batch-svaret litet; alla finns verifierade i data-model.md + live-schema
@@ -23,22 +25,66 @@ const HISTORY_FIELDS = [
   'Event typ',
 ];
 
-// Max record-ID:n per Deltaganden-batch-anrop. En person kan ha hundratals
-// deltaganden (en/session; ~924 backfillade rader förekommer) — en enda
-// `OR(RECORD_ID()=…)`-formel över alla skulle spränga Airtables formel-/
-// URL-längd. Vi chunkar ID-listan: varje chunk ger en kort formel (≤50 IDs ≈
-// ~1.5 kB, väl under gränsen) och matchar ≤50 unika records = ETT listanrop per
-// chunk (ej per record → ej N+1). Övre gräns: obegränsat antal deltaganden
-// (ceil(N/50) anrop), NOLL trunkering. Sort sker i JS efter sammanslagning
-// (per-chunk-sort räcker inte över chunk-gränser).
+// Fält att hämta ur Touchpoints för hämtningarna (S103 steg 2). Live-schema
+// (tbl22SCvlHrgcAiZi, describe_table 2026-08-10): `Erbjudande` (singleSelect,
+// satt bara på "Angett e-post för att ta del av ett erbjudande") + `Typ`
+// (singleSelect, alla sju touchpoint-typerna) + `Datum` (dateTime, genuint
+// skalärt fält — inte en lookup). Medvetet UTELÄMNADE: `Kanal` (i praktiken
+// alltid tom i denna genomgång) och de sex formel-/sortkey-fälten (redundanta
+// med `erbjudande`+`datum`, som appen härleder själv i stället för att lita på
+// basens strängformatering).
+const TOUCHPOINT_FIELDS = ['Erbjudande', 'Typ', 'Datum'];
+
+// Fält att hämta ur Anmälningar för motiveringarna (S103 steg 2). Live-schema
+// (tbloOcrppVoyrHbrq, describe_table 2026-08-10): den RÅA motiveringstexten
+// (`Varför vill du gå den här utbildningen?`, multilineText — INTE
+// `Motivering (sammanfattning)`/`fldrMT8cWP3NmBc9T`, som redan bakar in
+// event+ort+datum i en enda formaterad sträng och därmed dubblar det `event`/
+// `datum` nedan levererar separat), `Kurs (from Event)` (lookup via
+// Event-länken, eventets kanoniska kursnamn) + `Vill anmäla sig till`
+// (multipleSelects, fallback när Event-länken saknas — backfill-anmälningar)
+// för `event`, och `Rad skapad` (createdTime) för `datum` — INTE `Inskickad`
+// (data-model.md § "Senaste anmälan datum": ojämnt ifylld, samma val basens
+// egen rollup gör).
+const ANMALNINGAR_MOTIVERING_FIELDS = [
+  'Varför vill du gå den här utbildningen?',
+  'Kurs (from Event)',
+  'Vill anmäla sig till',
+  'Rad skapad',
+];
+
+// Max record-ID:n per batch-anrop (Deltaganden/Touchpoints/Anmälningar delar
+// samma gräns — samma env-override, samma chunk-mekanik nedan). En person kan
+// ha hundratals deltaganden (en/session; ~924 backfillade rader förekommer) —
+// en enda `OR(RECORD_ID()=…)`-formel över alla skulle spränga Airtables
+// formel-/URL-längd. Vi chunkar ID-listan: varje chunk ger en kort formel
+// (≤50 IDs ≈ ~1.5 kB, väl under gränsen) och matchar ≤50 unika records = ETT
+// listanrop per chunk (ej per record → ej N+1). Övre gräns: obegränsat antal
+// länkade poster (ceil(N/50) anrop), NOLL trunkering. Sort sker i JS efter
+// sammanslagning (per-chunk-sort räcker inte över chunk-gränser).
 //
 // Env-override (`HISTORY_BATCH_SIZE`) finns ENBART för conformance-testbarhet:
 // staging sätter den lågt (=2) så att chunk-merge-vägen exerceras med en liten
 // fixtur (bevisar noll-trunkering vid chunk-gräns). Prod sätter inte secreten →
-// default 50 (oförändrat beteende). Ogiltigt/saknat värde → default.
+// default 50 (oförändrat beteende). Ogiltigt/saknat värde → default. Namnet
+// (`historyBatchSize`) är kvar från Deltaganden-batchens ursprung — funktionen
+// governar numera tre batcher, inte bara historiken; ett byte skulle kräva en
+// ny/omdöpt Supabase-secret för ett rent namnbyte, inget beteende vinns.
 function historyBatchSize(): number {
   const raw = Number.parseInt(Deno.env.get('HISTORY_BATCH_SIZE') ?? '', 10);
   return Number.isInteger(raw) && raw > 0 ? raw : 50;
+}
+
+// Datum-desc, datumlösa sist — EN sorteringsregel, återanvänd för historik/
+// hämtningarna/motiveringarna (tre anropsställen i Deno.serve nedan). ISO 8601
+// (datum ELLER datetime) sorterar korrekt som sträng.
+function sortDatumDescNullsLast<T extends { datum: string | null }>(entries: T[]): void {
+  entries.sort((a, b) => {
+    if (a.datum === b.datum) return 0;
+    if (a.datum === null) return 1;
+    if (b.datum === null) return -1;
+    return a.datum < b.datum ? 1 : -1;
+  });
 }
 
 type Fields = Record<string, unknown>;
@@ -75,6 +121,40 @@ function mapHistoryEntry(record: { id: string; fields: Fields }) {
   };
 }
 
+/** Mappar en Touchpoints-rad → en hämtnings-post (PersonTouchpointEntry-form). */
+function mapTouchpointEntry(record: { id: string; fields: Fields }) {
+  const f = record.fields;
+  return {
+    id: record.id,
+    // `Erbjudande` är satt bara på touchpoints av typen "Angett e-post för att
+    // ta del av ett erbjudande" — övriga typer ger null (inte en tom sträng;
+    // `typ` nedan säger vilken sort det VAR). Genuint skalärt fält
+    // (singleSelect, ej lookup/rollup) → selectName.
+    erbjudande: selectName(f['Erbjudande']),
+    typ: selectName(f['Typ']),
+    // Genuint skalärt fält (dateTime, ej lookup/rollup) → scalarString ändå,
+    // samma defensiva disciplin som historik-mappningen ovan.
+    datum: scalarString(f['Datum']),
+  };
+}
+
+/** Mappar en Anmälningar-rad → en motiverings-post (PersonMotiveringEntry-form). */
+function mapMotiveringEntry(record: { id: string; fields: Fields }) {
+  const f = record.fields;
+  return {
+    id: record.id,
+    motivering: scalarString(f['Varför vill du gå den här utbildningen?']),
+    // `Kurs (from Event)` (lookup via Event-länken) är eventets KANONISKA
+    // kursnamn — samma källa basens egen `Senaste anmälan (sammanfattning)`-
+    // formel föredrar (TASK-184). Faller tillbaka på anmälans EGNA `Vill
+    // anmäla sig till` när eventlänken saknas (backfill-anmälningar utan
+    // Event-länk) — samma idiom som den formeln, ingen egen uppfinning.
+    event: scalarString(f['Kurs (from Event)']) ?? scalarString(f['Vill anmäla sig till']),
+    // `Rad skapad` (createdTime), INTE `Inskickad` — se ANMALNINGAR_MOTIVERING_FIELDS-kommentaren.
+    datum: scalarString(f['Rad skapad']),
+  };
+}
+
 /**
  * Mappar Personer-raden → PersonDetail-form. Speglar get-persons `mapPerson`
  * (samma list-fält) och lägger till detaljvyns engagemangs-/lead-rollups.
@@ -83,6 +163,8 @@ function mapHistoryEntry(record: { id: string; fields: Fields }) {
 function mapPersonDetail(
   record: { id: string; fields: Fields },
   historik: ReturnType<typeof mapHistoryEntry>[],
+  hamtningar: ReturnType<typeof mapTouchpointEntry>[],
+  motiveringar: ReturnType<typeof mapMotiveringEntry>[],
 ) {
   const f = record.fields;
   return {
@@ -154,6 +236,15 @@ function mapPersonDetail(
     inbjudenCommunity: f['Inbjuden till community'] ?? false,
     skapatKontoCommunity: f['Skapat konto i community'] ?? false,
     historik,
+    // S103 steg 2: hämtningarna/motiveringarna som RIKTIGA poster, batch-
+    // hämtade av callern (samma mönster som `historik`) — bredvid, aldrig i
+    // stället för, `allaHamtningar`/`motivering` ovan.
+    hamtningar,
+    motiveringar,
+    // Lottas fritext-flagga (`Personer.Flagga`, singleLineText, S103) — läst
+    // per NAMN (ADR-050). Ersätter `Manuella flagga` (`manuellFlagga` ovan,
+    // som förblir orörd — dess avveckling är ett separat beslut).
+    flagga: scalarString(f['Flagga']),
   };
 }
 
@@ -227,15 +318,55 @@ Deno.serve(async (req) => {
       }
       // Sortera datum desc över ALLA chunks (per-chunk-sort räcker inte). Saknat
       // datum sist; ISO YYYY-MM-DD sorterar korrekt som sträng.
-      historik.sort((a, b) => {
-        if (a.datum === b.datum) return 0;
-        if (a.datum === null) return 1;
-        if (b.datum === null) return -1;
-        return a.datum < b.datum ? 1 : -1;
-      });
+      sortDatumDescNullsLast(historik);
     }
 
-    const person = mapPersonDetail(personRecord, historik);
+    // 3) Hämtningarna — batch-hämtad ur Touchpoints på de länkade record-ID:na
+    //    (`Personer.Touchpoints`). Samma chunkning/noll-trunkering/tomt-hopp
+    //    som historiken ovan (S103 steg 2) — ersätter INTE `allaHamtningar`
+    //    (rollup-formen), som mapPersonDetail fortsätter läsa orört.
+    const touchpointIds: string[] = Array.isArray(personRecord.fields['Touchpoints'])
+      ? (personRecord.fields['Touchpoints'] as string[])
+      : [];
+
+    const hamtningar: ReturnType<typeof mapTouchpointEntry>[] = [];
+    if (touchpointIds.length > 0) {
+      for (const ids of chunk(touchpointIds, historyBatchSize())) {
+        const filterByFormula = `OR(${ids.map((rid) => `RECORD_ID()='${rid}'`).join(',')})`;
+        const records = await fetchFromAirtable(TOUCHPOINTS_TABLE, {
+          filterByFormula,
+          fields: TOUCHPOINT_FIELDS,
+        });
+        hamtningar.push(...records.map(mapTouchpointEntry));
+      }
+      sortDatumDescNullsLast(hamtningar);
+    }
+
+    // 4) Motiveringarna — batch-hämtad ur Anmälningar på de länkade
+    //    record-ID:na (`Personer.Anmälningar (länkat fält)`). Samma
+    //    chunkning/noll-trunkering/tomt-hopp som historiken ovan (S103 steg
+    //    2) — ersätter INTE `motivering` (rollup-formen), som mapPersonDetail
+    //    fortsätter läsa orört.
+    const anmalningIdsForMotivering: string[] = Array.isArray(
+      personRecord.fields['Anmälningar (länkat fält)'],
+    )
+      ? (personRecord.fields['Anmälningar (länkat fält)'] as string[])
+      : [];
+
+    const motiveringar: ReturnType<typeof mapMotiveringEntry>[] = [];
+    if (anmalningIdsForMotivering.length > 0) {
+      for (const ids of chunk(anmalningIdsForMotivering, historyBatchSize())) {
+        const filterByFormula = `OR(${ids.map((rid) => `RECORD_ID()='${rid}'`).join(',')})`;
+        const records = await fetchFromAirtable(ANMALNINGAR_TABLE, {
+          filterByFormula,
+          fields: ANMALNINGAR_MOTIVERING_FIELDS,
+        });
+        motiveringar.push(...records.map(mapMotiveringEntry));
+      }
+      sortDatumDescNullsLast(motiveringar);
+    }
+
+    const person = mapPersonDetail(personRecord, historik, hamtningar, motiveringar);
 
     return new Response(JSON.stringify({ person }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

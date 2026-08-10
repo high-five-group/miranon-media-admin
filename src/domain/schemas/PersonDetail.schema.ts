@@ -20,6 +20,45 @@ export const PersonHistoryEntrySchema = z.object({
 });
 
 /**
+ * En hämtning/interaktion — en rad ur Touchpoints, batch-hämtad i ETT anrop av
+ * get-person (aldrig N+1) för de touchpoint-ID:n `Personer.Touchpoints`
+ * länkar (S103 steg 2). `erbjudande` är satt bara för touchpoints av typen
+ * "Angett e-post för att ta del av ett erbjudande" — övriga typer (Öppnat
+ * e-post, Inskickad anmälan, Avbokad anmälan, Närvaro registrerad,
+ * Soundwise-händelser) ger `null`; `typ` säger vilken sort det var så en
+ * `null`:ad `erbjudande` inte tolkas som saknad data. `datum` är
+ * Touchpoints egna `Datum`-fält (dateTime, ISO 8601) eller null. Ersätter
+ * INTE `allaHamtningar` (plattat rollup-format, kvar orört nedan) — detta är
+ * den strukturerade, icke-regex-beroende systern.
+ */
+export const PersonTouchpointEntrySchema = z.object({
+  id: z.string(),
+  erbjudande: z.string().nullable(),
+  typ: z.string().nullable(),
+  datum: z.string().nullable(),
+});
+
+/**
+ * En motivering — en rad ur Anmälningar, batch-hämtad i ETT anrop av
+ * get-person (aldrig N+1) för de anmälnings-ID:n `Personer.Anmälningar
+ * (länkat fält)` länkar (S103 steg 2). `event` föredrar eventets kanoniska
+ * kursnamn (`Kurs (from Event)`-lookupen) och faller tillbaka på anmälans
+ * egna `Vill anmäla sig till` när eventlänken saknas (backfill-anmälningar
+ * utan Event-länk) — samma idiom som basens egen `Senaste anmälan
+ * (sammanfattning)`-formel (TASK-184). `datum` är `Rad skapad` (createdTime)
+ * — INTE `Inskickad`, som är ojämnt ifylld (data-model.md § "Senaste
+ * anmälan datum": samma val som basens egen rollup för personens
+ * senaste-anmälan-datum). Ersätter INTE `motivering` (plattat rollup-format,
+ * kvar orört nedan).
+ */
+export const PersonMotiveringEntrySchema = z.object({
+  id: z.string(),
+  motivering: z.string().nullable(),
+  event: z.string().nullable(),
+  datum: z.string().nullable(),
+});
+
+/**
  * Rikare än list-`PersonSchema`: bär hela detaljvyns kravbild (byggplan §6a —
  * full kurshistorik + leads + kontakt). Återanvänder list-schemats fält via
  * `.extend()` och lägger till (a) person-radens engagemangs-/lead-rollups som
@@ -49,7 +88,20 @@ export const PersonDetailSchema = PersonSchema.extend({
   inbjudenCommunity: z.boolean(),
   skapatKontoCommunity: z.boolean(),
   historik: z.array(PersonHistoryEntrySchema),
+  // S103 steg 2: hämtningarna/motiveringarna som RIKTIGA poster (id + datum +
+  // erbjudande/event), BREDVID — inte i stället för — de äldre platta
+  // rollup-arrayerna ovan. `allaHamtningar`/`motivering` rivs inte här:
+  // `PersonDetailPrototyp.tsx` variant A/B/C konsumerar dem fortfarande.
+  hamtningar: z.array(PersonTouchpointEntrySchema),
+  motiveringar: z.array(PersonMotiveringEntrySchema),
+  // Lottas fritext-flagga (`Personer.Flagga`, S103) — ersätter `manuellFlagga`
+  // som aldrig kunde sättas (singleSelect med choices=[], data-model.md
+  // §Kända fällor 25). `manuellFlagga` lämnas ORÖRD ovan; dess avveckling är
+  // ett separat beslut som inte tas här.
+  flagga: z.string().nullable(),
 });
 
+export type PersonTouchpointEntry = z.infer<typeof PersonTouchpointEntrySchema>;
+export type PersonMotiveringEntry = z.infer<typeof PersonMotiveringEntrySchema>;
 export type PersonHistoryEntry = z.infer<typeof PersonHistoryEntrySchema>;
 export type PersonDetail = z.infer<typeof PersonDetailSchema>;
