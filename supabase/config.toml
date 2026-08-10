@@ -105,6 +105,34 @@ verify_jwt = true
 [functions.test-attachments-storage]
 verify_jwt = true
 
+# Bilage-uppladdningens PRODUKTIONS-EF:er (TASK-146.4, PRD task-146
+# "Bilage-fundamentet", ADR-057 lager-oberoendet). Till skillnad mot
+# test-attachments-storage ovan är dessa TRE ALLMÄNGILTIGA — inte
+# staging-only testharnesses — men de är MEDVETET UTELÄMNADE ur
+# .prod-functions-allowlist.conf i denna leverans (samma Fas 7-deploy-
+# skuld-mönster som redan täcker flera BEFINTLIGA produktions-EF:er, t.ex.
+# get-attendance/create-registration/update-event — se .prod-functions-
+# allowlist.conf:s egen header). Prod kräver dessutom att Bilagor-tabellen
+# (TASK-146.2) och bucketen "bilagor" (TASK-146.3) provisioneras där
+# FÖRST, per samma miljö-ordning (fält/tabell FÖRE EF) som create-event-note.
+#
+# upload-attachment — mönster 1 (AC #3): bytesen i request-body, skrivs med
+# service-role + en Bilagor-metadatarad i samma operation.
+[functions.upload-attachment]
+verify_jwt = true
+
+# create-attachment-upload-ticket — mönster 2, steg 1 (AC #4): utfärdar ett
+# tidsbegränsat, path-scopat uppladdningstillstånd. Bytesen passerar aldrig
+# denna funktion.
+[functions.create-attachment-upload-ticket]
+verify_jwt = true
+
+# finalize-attachment-upload — mönster 2, steg 2: verifierar att objektet
+# faktiskt landade på den server-deriverade platsen och skriver Bilagor-
+# metadataraden med lagringens FAKTISKA storlek.
+[functions.finalize-attachment-upload]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #

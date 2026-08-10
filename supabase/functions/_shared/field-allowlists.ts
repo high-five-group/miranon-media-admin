@@ -265,6 +265,28 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anteckningar',
     allowedFields: ['Författare', 'Anteckning', 'Event'],
   },
+  // Skapa en bilage-metadatarad (TASK-146.4, PRD task-146 "Bilage-fundamentet";
+  // ADR-057 lager-oberoendet). upload-attachment-EF:en (mönster 1) och
+  // finalize-attachment-upload-EF:en (mönster 2) bygger BÅDA `fields`
+  // SERVER-SIDE ur bytes/lagringens FAKTISKA tillstånd (Namn/'Storlek (bytes)'
+  // ur den verifierade filen, ALDRIG ett klient-påstått tal; Skapad ur
+  // `new Date().toISOString()`; Event ur det redan event-existens-verifierade
+  // `eventId`) — listan är därför en SSOT-grind mot framtida kod-drift, ej en
+  // klient-nåbar deny-yta. EXAKT de fyra fälten i den ADDITIVA Bilagor-tabellen
+  // (staging tblFamrna53MVf1nG, skapad additivt av
+  // scripts/create-bilagor-table.mjs, TASK-146.2 #855; skrivbarheten är
+  // konstruktions-given — tabellen skapades FÖR denna skrivning, ingen
+  // separat live-verifiering behövdes): 'Namn' (singleLineText, primär),
+  // 'Storlek (bytes)' (number), 'Skapad' (dateTime — manuellt satt, INTE
+  // Airtables createdTime, se scripts/create-bilagor-table.mjs § "Skapad"),
+  // 'Event' (multipleRecordLinks → Eventplanering). ⚠️ PROD-tabellen är INTE
+  // skapad — hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö;
+  // ADR-050/ADR-063, samma mönster som create-event-note). Tabell per NAMN
+  // (ADR-050 bas-portabilitet).
+  'create-attachment': {
+    tableId: 'Bilagor',
+    allowedFields: ['Namn', 'Storlek (bytes)', 'Skapad', 'Event'],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.

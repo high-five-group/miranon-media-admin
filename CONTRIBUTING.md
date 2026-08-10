@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-08
+updated: 2026-08-10
 review_by: 2027-02-08
 status: stable
 ---
@@ -90,10 +90,11 @@ seed-ankaret är dokumenterat i `docs/BUILD-LOG.md`, sök på variabelnamnet).
 Skilj symptomen åt innan felklassning.
 
 **Sentinel-städning (ADR-060, wirad via TASK-16):** create-conformance-
-testerna lämnar markör-märkta rader i staging-basen. Markörerna är fyra:
+testerna lämnar markör-märkta rader i staging-basen. Markörerna är fem:
 `create-test+` … `@staging.test` i Anmälningars e-postfält,
 `ZZ-create-event-test` i Eventplaneringens `Ort`, `ZZ-note-test+` …
-`@sentinel` i Anteckningar, och `app-segment-test+` i Segment.
+`@sentinel` i Anteckningar, `app-segment-test+` i Segment, och
+`ZZ-attachment-test-` i Bilagors `Namn` (TASK-146.4).
 Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
 `scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med
 två av fyra tills den grinden byggdes. CI städar dem automatiskt i jobbet **Staging sentinel

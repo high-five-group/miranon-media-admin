@@ -37,6 +37,14 @@
       "exactMatchField": "Namn på segment",
       "exactMatchPattern": "^app-segment-test\\+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
       "linkGuard": true
+    },
+    {
+      "name": "upload-attachment-sentineler",
+      "table": "Bilagor",
+      "filterByFormula": "FIND('ZZ-attachment-test-', {Namn}) = 1",
+      "exactMatchField": "Namn",
+      "exactMatchPattern": "^ZZ-attachment-test-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf$",
+      "linkGuard": false
     }
   ]
 }
