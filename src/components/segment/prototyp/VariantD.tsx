@@ -455,10 +455,14 @@ function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
  * SKISS-SEGMENTEN — byggda ur RIKTIG taxonomi, i den NYA formen.
  *
  * `Segment`-tabellen i prod är tom sedan 2026-08-10 (Marcus rensade alla
- * testsegment), och staging bär bara CI-fixturer med UUID-namn. Utan skisser
- * går formen inte att bedöma. De är därför märkta som skisser överallt de
- * syns, och deras ANTAL räknas på riktigt med samma `compute-segment` som en
- * sparad rad — bara posten är påhittad, aldrig siffran.
+ * testsegment), och staging bär bara CI-fixturer med UUID-namn — som dessutom
+ * filtreras bort ur vyn. Utan skisser går formen inte att bedöma.
+ *
+ * Deras ANTAL räknas på riktigt med samma `compute-segment` som en sparad rad:
+ * **posten är påhittad, aldrig siffran.** Den invarianten är hela skälet till
+ * att skisserna får finnas, och den gäller även efter att märkningen per kort
+ * togs bort (Marcus 2026-08-10) — förbehållet står nu EN gång, i
+ * `PrototypNot` under listan, i stället för som en pill på varje rad.
  *
  * Urvalet visar fem saker på en gång: familjeregeln som automatiskt omfattar
  * RIM 4 · nivåurval · en uteslutning · och PARET
@@ -652,7 +656,6 @@ function SegmentKort({
   vald,
   onOppna,
   onVaxla,
-  onRakna,
 }: {
   entitet: SegmentEntitet;
   definition: string;
@@ -662,21 +665,18 @@ function SegmentKort({
   vald: boolean;
   onOppna: () => void;
   onVaxla: (vald: boolean) => void;
-  onRakna: () => void;
 }) {
   const innehall = (
     <>
+      {/* `pr-16` är borta med pillen — den fanns bara för att hålla undan
+          rubriken från den absolut placerade etiketten uppe till höger. */}
       {markeraLage ? (
-        <span className={`line-clamp-2 font-semibold text-body ${entitet.skiss ? 'pr-16' : ''}`}>
-          {entitet.namn}
-        </span>
+        <span className="line-clamp-2 font-semibold text-body">{entitet.namn}</span>
       ) : (
         <button
           type="button"
           onClick={onOppna}
-          className={`line-clamp-2 text-left font-semibold text-body after:absolute after:inset-0 ${
-            entitet.skiss ? 'pr-16' : ''
-          }`}
+          className="line-clamp-2 text-left font-semibold text-body after:absolute after:inset-0"
         >
           {entitet.namn}
         </button>
@@ -689,37 +689,45 @@ function SegmentKort({
         />
         <span className="line-clamp-2 text-text-secondary">{definition}</span>
       </span>
+      {/* ANTALET KOMMER AV SIG SJÄLVT — Räkna-knappen är RIVEN (Marcus
+          2026-08-10). `b` mätte att en löpande räknad publik kostar ETT
+          `compute-segment`-anrop per UNIK regel (frågan nycklas på regelns
+          signatur, inte på segmentets id), så kortets tal är inte dyrare än
+          knappen var — bara ärligare.
+
+          ÄR TALET ÄNNU INTE KÄNT STÅR RADEN TOM, inte "Antal ej räknat".
+          Den texten beskrev appens interna tillstånd, inte segmentet, och det
+          enda den sa Lotta var att något inte gjorts. Höjden är ändå låst
+          (`min-h-8`) så ingenting flyttar sig när talet landar.
+
+          Live-regionen är ALLTID monterad och byter bara innehåll — en
+          `aria-live` som monteras samtidigt som sin text annonseras inte. */}
       <div className="flex min-h-8 flex-wrap items-center gap-1.5">
-        <span className="flex items-center gap-1.5 text-caption text-text-secondary">
-          <Users aria-hidden="true" size={14} className="shrink-0" />
-          <span aria-live="polite">
-            {raknar
-              ? 'Räknar…'
-              : antal === undefined
-                ? 'Antal ej räknat'
-                : antal === 0
-                  ? '0 personer - inga med genomförd närvaro ännu'
-                  : `${antal} ${personform(antal)}`}
-          </span>
+        <span
+          aria-live="polite"
+          className="flex items-center gap-1.5 text-caption text-text-secondary"
+        >
+          {raknar ? (
+            <>
+              <Users aria-hidden="true" size={14} className="shrink-0" />
+              Räknar…
+            </>
+          ) : antal === undefined ? null : (
+            <>
+              <Users aria-hidden="true" size={14} className="shrink-0" />
+              {antal === 0
+                ? '0 personer - inga med genomförd närvaro ännu'
+                : `${antal} ${personform(antal)}`}
+            </>
+          )}
         </span>
-        {antal === undefined && !raknar && !markeraLage && (
-          // `relative` lyfter knappen över rubrikens `after:inset-0`-överlägg.
-          <span className="relative shrink-0 print:hidden">
-            <Button intent="ghost" size="sm" onPress={onRakna}>
-              Räkna
-            </Button>
-          </span>
-        )}
       </div>
-      {/* Pillen står SIST i DOM:en: i markera-läget är hela kortet en
-          `Checkbox`, och DOM-ordningen blir dess accessible name — med pillen
-          först läste skärmläsaren "Skiss RIM - alla…", kategorin före
-          identiteten. Placeringen är `absolute`, så flytten kostar inget. */}
-      {entitet.skiss && (
-        <span className="absolute top-4 right-4 rounded-full border border-transparent bg-surface px-2.5 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
-          Skiss
-        </span>
-      )}
+      {/* SKISS-PILLEN ÄR RIVEN (Marcus 2026-08-10, samma beslut som rev
+          "Sparade i basen"-grupperingen). Med CI-fixturerna bortfiltrerade är
+          VARJE kort i listan en skiss, så pillen satt på alla och skilde
+          ingenting åt — den gjorde bara att listan inte gick att bedöma som
+          den yta Lotta möter. Att prototypen inte sparar något står kvar en
+          gång, i `PrototypNot` under listan, i stället för på varje rad. */}
     </>
   );
 
@@ -751,48 +759,51 @@ function SegmentKort({
 function SegmentKortMedAntal(props: {
   entitet: SegmentEntitet;
   parInfo: ParInfo[];
-  begard: boolean;
   markeraLage: boolean;
   vald: boolean;
   onOppna: () => void;
   onVaxla: (vald: boolean) => void;
-  onRakna: () => void;
 }) {
   const rule = regelFor(props.entitet, props.parInfo);
-  const { data, isFetching } = useMedlemmar(rule, props.begard);
+  // ALLTID PÅ (`true`), aldrig bakom ett klick. Kostnaden bärs av frågans
+  // nyckel, inte av en spärr: `medlemsFraga` nycklar på REGELNS SIGNATUR med
+  // 5 min `staleTime`, så N kort med samma regel delar ETT anrop och ett
+  // återbesök kostar noll. Tom regel besvaras lokalt utan nätanrop.
+  const { data, isFetching } = useMedlemmar(rule, true);
   return (
     <SegmentKort
       entitet={props.entitet}
       definition={definitionFor(props.entitet, props.parInfo)}
       antal={data?.count}
-      raknar={props.begard && isFetching && data === undefined}
+      raknar={isFetching && data === undefined}
       markeraLage={props.markeraLage}
       vald={props.vald}
       onOppna={props.onOppna}
       onVaxla={props.onVaxla}
-      onRakna={props.onRakna}
     />
   );
 }
 
 /**
- * LANDNINGSVYN. Entiteterna ÄR sidan (`c`s tes), men uppdelad i TVÅ block:
- * det basen faktiskt bär, och skisserna. Skälet är inte kosmetiskt —
- * `Segment`-tabellen i prod är tom sedan i dag, och ett tomläge som döljs
- * bakom fyra påhittade kort svarar inte på hur ytan möter Lotta första gången.
- * Båda finns därför samtidigt: det ärliga tomläget överst, formen under.
+ * LANDNINGSVYN. Entiteterna ÄR sidan (`c`s tes) — EN lista, ingen gruppering.
+ *
+ * Formen bar tidigare två block, "Sparade i basen" och "Skisser". Marcus rev
+ * den 2026-08-10 av ett skäl som gäller hela ytan: grupperingen fanns bara för
+ * prototypens skull, och i skarp drift finns den inte. En yta som ska bedömas
+ * som Lottas yta får inte bära vår egen bokföring i rubrikform.
+ *
+ * Tomläget står kvar och är fortfarande ärligt — det renderas när listan är
+ * tom, aldrig ovanpå ett fel (ett tomläge är ett påstående om basen, och
+ * misslyckas hämtningen VET vi inte om den är tom).
  */
 function SegmentLista({
-  sparade,
-  skisser,
+  poster,
   parInfo,
   laddar,
   fel,
-  begarda,
   markeraLage,
   valda,
   onOppna,
-  onRakna,
   onNytt,
   onOppnaMarkering,
   onStangMarkering,
@@ -801,16 +812,13 @@ function SegmentLista({
   onRensa,
   onSkicka,
 }: {
-  sparade: SegmentEntitet[];
-  skisser: SegmentEntitet[];
+  poster: SegmentEntitet[];
   parInfo: ParInfo[];
   laddar: boolean;
   fel: Error | null;
-  begarda: ReadonlySet<string>;
   markeraLage: boolean;
   valda: ReadonlySet<string>;
   onOppna: (id: string) => void;
-  onRakna: (id: string) => void;
   onNytt: () => void;
   onOppnaMarkering: () => void;
   onStangMarkering: () => void;
@@ -822,7 +830,7 @@ function SegmentLista({
   const rubrikRef = useRef<HTMLHeadingElement>(null);
   useVyFokus(rubrikRef, !laddar);
 
-  const markerbara = sparade.length + skisser.length;
+  const markerbara = poster.length;
   const allaValda = markerbara > 0 && valda.size === markerbara;
 
   const kortLista = (poster: SegmentEntitet[]) => (
@@ -832,12 +840,10 @@ function SegmentLista({
           key={e.id}
           entitet={e}
           parInfo={parInfo}
-          begard={begarda.has(e.id)}
           markeraLage={markeraLage}
           vald={valda.has(e.id)}
           onOppna={() => onOppna(e.id)}
           onVaxla={(v) => onVaxla(e.id, v)}
-          onRakna={() => onRakna(e.id)}
         />
       ))}
     </ul>
@@ -938,7 +944,7 @@ function SegmentLista({
           </div>
         ) : (
           <>
-            {fel ? null : sparade.length === 0 ? (
+            {fel ? null : poster.length === 0 ? (
               // TOMLÄGET, på riktigt: basen bär inga segment. Strukturerat och
               // lugnt (`EventsList.tsx § body`) — ingenting har gått fel.
               //
@@ -959,28 +965,23 @@ function SegmentLista({
                 </button>
               </div>
             ) : (
-              <section aria-labelledby="grupp-sparade" className="flex flex-col gap-3">
-                <h2 id="grupp-sparade" className="font-semibold text-lg">
-                  Sparade i basen
-                </h2>
-                {kortLista(sparade)}
-              </section>
+              // EN LISTA, INGEN GRUPPERING (Marcus 2026-08-10). Tidigare stod
+              // korten under "Sparade i basen" respektive "Skisser". Två fel i
+              // ett: "basen" är vårt ord — Lotta vet inte att det finns en
+              // Airtable-bas och ska inte behöva veta — och distinktionen är en
+              // PROTOTYP-egenskap. I skarp drift är varje rad i listan riktig,
+              // och då finns ingen gruppering att göra. Ytan gick alltså inte
+              // att bedöma som den yta den ska bli.
+              //
+              // Att inget här sparas på riktigt står kvar EN gång, i
+              // `PrototypNot` under listan — inte på varje kort.
+              kortLista(poster)
             )}
 
-            {skisser.length > 0 && (
-              <section aria-labelledby="grupp-skisser" className="flex flex-col gap-3">
-                <h2 id="grupp-skisser" className="font-semibold text-lg">
-                  Skisser
-                </h2>
-                <p className="text-small text-text-muted">
-                  Finns inte i basen. Byggda ur riktig taxonomi i den nya regelformen, så att formen
-                  går att bedöma - antalet räknas på riktigt.
-                </p>
-                {kortLista(skisser)}
-              </section>
-            )}
-
-            <PrototypNot />
+            <PrototypNot>
+              Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är
+              påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad.
+            </PrototypNot>
           </>
         )}
       </div>
@@ -1412,14 +1413,12 @@ function SegmentDetalj({
     <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+          {/* Skiss/Sparad-etiketten är riven här av samma skäl som pillen i
+              listan: "basen" är vårt ord, inte Lottas, och distinktionen är en
+              prototyp-egenskap som inte finns i skarp drift. */}
           <h1 ref={rubrikRef} tabIndex={-1} className="min-w-0 font-semibold text-3xl">
             {entitet.namn}
           </h1>
-          <span className="flex basis-full sm:basis-auto">
-            <span className="shrink-0 rounded-full border border-transparent bg-bg-muted px-3 py-1 font-medium text-small text-text-secondary contrast-more:border-border-strong">
-              {entitet.skiss ? 'Skiss' : 'Sparad i basen'}
-            </span>
-          </span>
         </div>
         {/* KONSEKVENSEN FÖRST: talet och dess uppdelning står i headern, före
             allt annat. Färg är aldrig ensam bärare — uppdelningen är text. */}
@@ -1843,17 +1842,6 @@ function RegelVerkstad({
     () => entitet.predikat ?? { med: [nyttVillkor()], utan: [] },
   );
   const [sparNot, setSparNot] = useState(false);
-  /* RÄKNINGEN BEGÄRS PER REGEL, ALDRIG EN GÅNG FÖR ALLA.
-     Första formen bar en `boolean` här — och den var en hamrings-bugg som
-     bara syntes i rörelse: efter det första klicket stod `enabled` kvar på
-     `true`, så VARJE chip-tryck därefter bytte query-nyckel och beställde en
-     ny full-walk över ~1012 `Deltaganden`-rader. Genom att i stället minnas
-     VILKEN signatur som begärdes stängs frågan av i samma ögonblick regeln
-     ändras: talet blir inaktuellt, knappen kommer tillbaka som "Räkna om",
-     och ingen walk sker utan att Lotta bett om den. Samma kontrakt som
-     `a` (`SegmentBuilder`-ärvt) — men uttryckt i cache-nyckeln, inte i en
-     jämförelse vid sidan av. */
-  const [begardSignatur, setBegardSignatur] = useState<string | null>(null);
 
   const formatIBasen = useMemo(
     () => [...new Set(parInfo.map((p) => p.format))].sort((a, b) => a.localeCompare(b, 'sv')),
@@ -1861,15 +1849,23 @@ function RegelVerkstad({
   );
 
   const rule = expandera(pred, parInfo);
-  const signatur = regelSignatur(rule);
   const ofullstandiga = [...pred.med, ...pred.utan].filter((v) => !villkorGiltigt(v)).length;
   const harRegel = rule.include.length > 0;
-  const { data, isFetching, isError, error } = useMedlemmar(rule, begardSignatur === signatur);
 
-  // Ett nytt urval är en ny signatur → ny query-nyckel OCH en avstängd fråga.
-  // Ett ÅTERBESÖK i regelrymden kostar däremot noll: cache-posten ligger kvar
-  // under sin signatur, så att ångra ett val ger tillbaka talet direkt.
-  const antal = begardSignatur === signatur ? data?.count : undefined;
+  /* RÄKNINGEN FÖLJER REGELN — ingen begäran, ingen knapp (Marcus 2026-08-10).
+     `enabled` är `harRegel`, inte en sparad signatur.
+
+     Skyddet mot hamring ligger kvar, men på rätt ställe: `medlemsFraga`
+     nycklar på REGELNS SIGNATUR med 5 min `staleTime`, så ett chip-tryck som
+     ger en regel vi redan räknat besvaras ur cachen utan nätanrop, och att
+     ångra ett val ger tillbaka talet direkt. Det som kostar en ny walk är
+     precis det som SKA kosta en: en regel ingen sett förut.
+
+     Historiken är värd att minnas: den första formen bar en `boolean` här och
+     hamrade en full-walk per chip-tryck. Fixen då blev en klick-spärr. Rätt
+     fix var cache-nyckeln — spärren var en behandling av symptomet. */
+  const { data, isFetching, isError, error } = useMedlemmar(rule, harRegel);
+  const antal = data?.count;
 
   const andra = (gren: 'med' | 'utan', id: string, ny: Villkor) =>
     setPred((p) => ({ ...p, [gren]: p[gren].map((v) => (v.id === id ? ny : v)) }));
@@ -1968,9 +1964,11 @@ function RegelVerkstad({
                   {error instanceof Error ? error.message : 'Okänt fel.'}
                 </MessageBox>
               ) : antal === undefined ? (
-                <p className="text-body text-text-muted">
-                  Antalet räknas när du ber om det - regeln söker igenom alla deltaganden.
-                </p>
+                // Regeln är ofullständig (ingen modalitet vald, inga villkor).
+                // Ingen räkning är begärd av användaren längre — den enda
+                // anledningen till att ett tal saknas är att det inte FINNS
+                // något att räkna ännu, och det säger raden rakt ut.
+                <p className="text-body text-text-muted">Antalet visas när regeln är komplett.</p>
               ) : antal === 0 ? (
                 // Fälla #34: neutralt, aldrig som fel.
                 <p className="text-lg">
@@ -1985,23 +1983,18 @@ function RegelVerkstad({
               )}
             </div>
 
-            {/* KNAPPEN FÖRSVINNER NÄR TALET STÅR DÄR — och kommer tillbaka
-                som "Räkna om" i samma sekund regeln ändras. En knapp som
-                erbjuder en handling utan verkan (räkna om det redan räknade)
-                är brus; en knapp som lyser upp igen är däremot ett besked om
-                att talet ovanför inte längre gäller. */}
-            {antal === undefined && (
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  intent="primary"
-                  onPress={() => setBegardSignatur(signatur)}
-                  isDisabled={!harRegel || isFetching}
-                >
-                  {isFetching ? 'Räknar…' : begardSignatur === null ? 'Räkna antal' : 'Räkna om'}
-                </Button>
-              </div>
-            )}
+            {/* RÄKNA-KNAPPEN ÄR RIVEN (Marcus 2026-08-10). Talet följer
+                regeln av sig självt: ändras ett villkor byter frågan nyckel
+                och det nya talet hämtas direkt.
 
+                Varför spärren fanns, och varför den ändå faller: varje
+                räkning är en walk över ~1012 `Deltaganden`-rader, så den
+                fick inte hamras. Men `b` mätte hela interaktionspasset till
+                ETT `compute-segment`-anrop — cache-nyckeln på regelns
+                signatur bär redan det skyddet, och ett återbesök i
+                regelrymden kostar noll eftersom den gamla signaturens svar
+                ligger kvar. Spärren skyddade alltså inte mot walken; den
+                lade bara ett klick mellan Lotta och svaret. */}
             {/* EXPANSIONEN, SAGD KORT. Kort med flit: den är en not om
                 mekaniken, inte en varning om ytan. */}
             <p className="text-caption text-text-muted">
@@ -2042,7 +2035,7 @@ function RegelVerkstad({
         {sparNot && (
           <MessageBox
             intent="info"
-            title="Prototyp - ingenting sparades i basen"
+            title="Prototyp - ingenting sparades"
             onDismiss={() => setSparNot(false)}
           >
             Regeln ligger kvar i sidan så länge den är öppen, så du kan följa den vidare till
@@ -2706,7 +2699,6 @@ function nyEntitet(): SegmentEntitet {
 export function VariantD() {
   const dataSource = useDataSource();
   const [vy, setVy] = useState<Vy>({ namn: 'lista' });
-  const [begarda, setBegarda] = useState<ReadonlySet<string>>(() => new Set());
   /** Segment skapade/ändrade i sidan (no-op-stubb: lever bara i minnet). */
   const [egna, setEgna] = useState<SegmentEntitet[]>([]);
   /**
@@ -2738,15 +2730,31 @@ export function VariantD() {
 
   const parInfo = useMemo(() => (events.data ? byggParInfo(events.data) : []), [events.data]);
 
+  /**
+   * CI-FIXTURERNA FILTRERAS BORT (Marcus 2026-08-10).
+   *
+   * Dev-servern kör `.env.development` → samma Supabase-projekt som staging,
+   * och staging-basens `Segment` bär acceptance-svitens egna rader:
+   * `app-segment-test+<uuid>`, alla med IDENTISK regel, nyskrivna vid varje
+   * CI-körning. De städas av purge-targeten (`TASK-87`) men hinner samlas
+   * mellan svepen, och i listan såg de ut som innehåll.
+   *
+   * Prefixet är sviten egna, stabila namnrymd — inte en gissning på formen.
+   * Filtret sitter HÄR, i prototypens vy, och rör varken purge-policyn eller
+   * `get-segments`: testdata ska inte synas när formen bedöms, men den ska
+   * fortsätta finnas där testerna letar efter den.
+   */
   const sparade = useMemo<SegmentEntitet[]>(
     () =>
-      (segments.data ?? []).map((s) => ({
-        id: s.id,
-        namn: s.namn ?? '(namnlöst segment)',
-        predikat: null,
-        arvdRegel: s.rule,
-        skiss: false,
-      })),
+      (segments.data ?? [])
+        .filter((s) => !(s.namn ?? '').startsWith('app-segment-test'))
+        .map((s) => ({
+          id: s.id,
+          namn: s.namn ?? '(namnlöst segment)',
+          predikat: null,
+          arvdRegel: s.rule,
+          skiss: false,
+        })),
     [segments.data],
   );
 
@@ -2846,16 +2854,13 @@ export function VariantD() {
 
   return (
     <SegmentLista
-      sparade={sparade}
-      skisser={skisser}
+      poster={alla}
       parInfo={parInfo}
       laddar={laddar}
       fel={fel}
-      begarda={begarda}
       markeraLage={markeraLage}
       valda={valda}
       onOppna={(id) => setVy({ namn: 'detalj', id })}
-      onRakna={(id) => setBegarda((s) => (s.has(id) ? s : new Set(s).add(id)))}
       onNytt={() => {
         const entitet = nyEntitet();
         setEgna((lista) => [...lista, entitet]);
@@ -2878,13 +2883,9 @@ export function VariantD() {
       onMarkeraAlla={() => setValda(new Set(alla.map((e) => e.id)))}
       onRensa={() => setValda(new Set())}
       onSkicka={() => {
-        // Markerade segment räknas nu på riktigt — och de vars tal redan
-        // hämtats i listan kostar ingen ny walk (delad cache-nyckel).
-        setBegarda((s) => {
-          const ny = new Set(s);
-          for (const id of valda) ny.add(id);
-          return ny;
-        });
+        // Ingen begäran att sätta längre: listan räknar redan varje kort, så
+        // de markerade segmentens tal ligger i cachen under sin regelsignatur
+        // när utskicksvyn öppnas. Vägen lista → utskick kostar noll walks.
         setVy({ namn: 'utskick', ids: [...valda], retur: 'lista' });
       }}
     />
