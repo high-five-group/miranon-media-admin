@@ -39,17 +39,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronLeft, ChevronRight, Download, Mail, Phone } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { TextArea } from '@/components/primitives/TextArea';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail as PersonDetailType, PersonHistoryEntry } from '@/domain/schemas';
 import { arGenomford } from '@/lib/genomford';
 import { kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
+// D-variantens SKARPA ytor (`#1151`). a/b/c rör dem aldrig — de behåller sina
+// no-op-stubbar, eftersom en prototyp aldrig skriver. D är undantaget med
+// avsikt: den är konvergens-vinnaren och ska prövas som den kommer att bli.
+import { PersonAnteckningar } from './PersonAnteckningar';
+import { PersonFlagEditor } from './PersonFlagEditor';
 
 // ═════════════════════════════════════════════════════════════════════════
 // DELAD GRAMMATIK — det som INTE får skilja varianterna åt
@@ -765,9 +769,25 @@ type StromPost = {
  */
 const HAMTNING_DATUM = /\((\d{4}-\d{2}-\d{2})\)\s*$/;
 
+/**
+ * Varifrån strömmens hämtningar kommer.
+ *
+ * `rollup` — den GAMLA vägen: `allaHamtningar`-strängarna med regex-plockat
+ *   datum. Variant C använder den och SKA fortsätta göra det: C finns för att
+ *   visa sin ärliga svaghet, och en tyst uppgradering hade raderat just det
+ *   varianten bevisar.
+ * `poster` — `person.hamtningar`, riktiga Touchpoint-poster med riktiga datum
+ *   (EF-utökningen, `#1149`). Variant D använder den.
+ *
+ * Explicit parameter, aldrig en fallback av typen "ta poster om de finns" —
+ * en sådan hade gjort C:s svaghet osynlig så fort datat blev bättre.
+ */
+type Hamtningskalla = 'rollup' | 'poster';
+
 function byggStrom(
   person: PersonDetailType,
   nuMs: number,
+  hamtningskalla: Hamtningskalla,
 ): {
   poster: StromPost[];
   oplacerade: string[];
@@ -836,24 +856,49 @@ function byggStrom(
     });
   }
 
-  // 3. Hämtningarna (se HAMTNING_DATUM-noten ovan).
-  for (const hamtning of person.allaHamtningar) {
-    const traff = HAMTNING_DATUM.exec(hamtning);
-    const tid = traff ? Date.parse(traff[1]) : Number.NaN;
-    if (!Number.isFinite(tid)) {
-      oplacerade.push(hamtning);
-      continue;
+  // 3. Hämtningarna — två källor, se Hamtningskalla-noten ovan.
+  if (hamtningskalla === 'poster') {
+    // RIKTIGA poster: `datum` är ett eget fält, inget regex. En post utan datum
+    // hamnar bland de oplacerade i stället för att tappas.
+    for (const h of person.hamtningar) {
+      const tid = h.datum ? Date.parse(h.datum) : Number.NaN;
+      const rubrik = h.erbjudande ?? h.typ ?? 'Okänd hämtning';
+      if (!Number.isFinite(tid)) {
+        oplacerade.push(rubrik);
+        continue;
+      }
+      lagg({
+        id: `hamtning-${h.id}`,
+        tidMs: tid,
+        slag: 'hamtning',
+        kommande: false,
+        rubrik,
+        // `typ` förklarar en post vars `erbjudande` är null (alla touchpoints
+        // är inte hämtningar) — visas bara när den tillför något.
+        meta: h.erbjudande && h.typ ? h.typ : 'Hämtade ett erbjudande',
+        prickKlass: 'bg-text-muted',
+        pillar: [],
+      });
     }
-    lagg({
-      id: `hamtning-${hamtning}`,
-      tidMs: tid,
-      slag: 'hamtning',
-      kommande: false,
-      rubrik: hamtning.replace(HAMTNING_DATUM, '').trim(),
-      meta: 'Hämtade ett erbjudande',
-      prickKlass: 'bg-text-muted',
-      pillar: [],
-    });
+  } else {
+    for (const hamtning of person.allaHamtningar) {
+      const traff = HAMTNING_DATUM.exec(hamtning);
+      const tid = traff ? Date.parse(traff[1]) : Number.NaN;
+      if (!Number.isFinite(tid)) {
+        oplacerade.push(hamtning);
+        continue;
+      }
+      lagg({
+        id: `hamtning-${hamtning}`,
+        tidMs: tid,
+        slag: 'hamtning',
+        kommande: false,
+        rubrik: hamtning.replace(HAMTNING_DATUM, '').trim(),
+        meta: 'Hämtade ett erbjudande',
+        prickKlass: 'bg-text-muted',
+        pillar: [],
+      });
+    }
   }
 
   // 4. Strömmens början.
@@ -920,7 +965,8 @@ function StromRad({ post, sist }: { post: StromPost; sist: boolean }) {
  * Anteckningen kan inte heller placeras: fältet saknar tidpunkt (task-43).
  */
 function VariantC({ person, nuMs }: { person: PersonDetailType; nuMs: number }) {
-  const { poster, oplacerade } = byggStrom(person, nuMs);
+  // 'rollup' MED AVSIKT — C:s hela poäng är att visa vad EF:en INTE levererade.
+  const { poster, oplacerade } = byggStrom(person, nuMs, 'rollup');
   const kommande = poster.filter((p) => p.kommande);
   const historiska = poster.filter((p) => !p.kommande);
   const flag = flaggor(person);
@@ -1113,92 +1159,34 @@ function flaggorD(person: PersonDetailType): string[] {
   ].filter((v): v is string => v !== null);
 }
 
-/**
- * [PROTOTYPE] B7:s composer — eventsidans form (`Anteckningar.tsx:92-157`)
- * med skrivningen bortkopplad. Auto-grow-rutan, "Rensa" som visas först vid
- * innehåll, fokusretur till rutan. Samma read-only-förstärkning som
- * `AnteckningLas`: en prototyp skriver aldrig, varken mot prod eller staging.
+/*
+ * `AnteckningComposerStub` RIVEN 2026-08-10 (`#1151` landad). Den härmade
+ * eventsidans composer med skrivningen bortkopplad, eftersom personens
+ * anteckning då var ETT fält utan skrivväg för en ström. Nu finns strömmen på
+ * riktigt (`PersonAnteckningar` + `create-person-note`), så stubben är
+ * ersatt av den skarpa komponenten. D är därmed den enda varianten som
+ * SKRIVER — a/b/c behåller `AnteckningLas` med sin no-op-knapp.
  */
-function AnteckningComposerStub() {
-  const [text, setText] = useState('');
-  const rutaRef = useRef<HTMLTextAreaElement>(null);
 
-  return (
-    <div className="flex flex-col gap-2 pt-4 pb-3">
-      <TextArea
-        ref={rutaRef}
-        label="Ny anteckning"
-        hideLabel
-        size="md"
-        rows={4}
-        autoGrow
-        placeholder="Skriv en anteckning …"
-        value={text}
-        onChange={setText}
-      />
-      <div className="flex items-center justify-end gap-2">
-        {text.length > 0 && (
-          <Button
-            intent="ghost"
-            size="sm"
-            onPress={() => {
-              setText('');
-              rutaRef.current?.focus();
-            }}
-          >
-            Rensa
-          </Button>
-        )}
-        <Button
-          size="sm"
-          isDisabled={text.trim().length === 0}
-          onPress={() => {
-            // [PROTOTYPE] No-op — se AnteckningLas-noten.
-          }}
-        >
-          Spara
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/** En hämtning uppdelad i namn + datum (B5). Datumlösa poster tappas ALDRIG. */
-type Hamtning = { id: string; namn: string; datum: string | null };
-
-/**
- * B5:s uppdelning. Använder samma `HAMTNING_DATUM` som C:s ström — och ärver
- * därmed dess anti-mönster-not i sin helhet: i PROD är `Alla hämtningar` en
- * ARRAYJOIN-klump i ETT element, så listan blir en enda rad där. Det är exakt
- * vad EF-utökningen stänger (`Touchpoints` är en ÄKTA länk, live-verifierad
- * 2026-08-10: `fldnuqNqlVzt47AAN` → `tbl22SCvlHrgcAiZi`) — hämtningarna kan
- * batch-hämtas som riktiga poster med riktiga datum, precis som Deltaganden.
+/*
+ * `delaHamtningar` RIVEN 2026-08-10 (`#1149` landad). Den plockade isär
+ * `allaHamtningar`-strängarna med regex för att få fram ett datum — ett
+ * anti-mönster som bars medvetet så länge EF:en inte levererade något bättre.
+ * Nu gör den det: `person.hamtningar` är riktiga Touchpoint-poster med ett
+ * eget `datum`-fält, sorterade datum-desc server-side. D läser dem direkt.
+ *
+ * `HAMTNING_DATUM` står kvar — variant C använder den fortfarande, med avsikt
+ * (se Hamtningskalla-noten vid byggStrom).
  */
-function delaHamtningar(allaHamtningar: string[]): Hamtning[] {
-  return allaHamtningar
-    .map((rad) => {
-      const traff = HAMTNING_DATUM.exec(rad);
-      return {
-        id: rad,
-        namn: traff ? rad.replace(HAMTNING_DATUM, '').trim() : rad,
-        datum: traff ? traff[1] : null,
-      };
-    })
-    .sort((a, b) => {
-      // Fallande, datumlösa sist — samma ordningsregel som get-persons historik.
-      if (a.datum === b.datum) return 0;
-      if (a.datum === null) return 1;
-      if (b.datum === null) return -1;
-      return a.datum < b.datum ? 1 : -1;
-    });
-}
 
 function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) {
-  const { poster, oplacerade } = byggStrom(person, nuMs);
+  // 'poster' — D konsumerar EF-utökningens riktiga Touchpoint-poster (`#1149`).
+  const { poster, oplacerade } = byggStrom(person, nuMs, 'poster');
   const kommande = poster.filter((p) => p.kommande);
   const historiska = poster.filter((p) => !p.kommande);
   const grupper = grupperaPerEvent(person.historik);
-  const hamtningar = delaHamtningar(person.allaHamtningar);
+  // Anmälningar utan motiveringstext bär ingenting att visa — se B6-noten.
+  const motiveringar = person.motiveringar.filter((m) => m.motivering);
   const flag = flaggorD(person);
   const aktiv = person.harAktivAnmalan === 'Aktiv';
 
@@ -1316,36 +1304,20 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
             </p>
           )}
 
-          {/* MANUELLA FLAGGAN — Marcus 2026-08-10: *"Manuell flagga är ju bra
-              att kunna skapa här, så den sedan kan 'fästas' på personen typ i
-              check-in vyn"*.
+          {/* FLAGGAN — Marcus 2026-08-10: *"Manuell flagga är ju bra att kunna
+              skapa här, så den sedan kan 'fästas' på personen typ i check-in
+              vyn"*, förtydligat samma kväll: *"det ska vara en flagga som Lotta
+              själv skriver i fritext … Choice-fältet i basen kan vi skrota."*
 
-              ⚠️ BLOCKERAD I BASEN, INTE I APPEN. `Manuella flagga`
-              (`fldNtwQt6tOCIdf4f`) är en singleSelect med `choices: []` —
-              LIVE-MÄTT mot prod-basen `app8uGPrVCVOm6LfD` 2026-08-10 via
-              `get_table_schema`, och därmed fortfarande exakt vad data-model.md
-              §Kända fällor 25 beskriver: "UI låter användaren välja från tom
-              lista → fältet kan inte sättas". En rullgardin här hade varit tom.
-
-              Formen byggs ändå — knappen är en no-op-stub (samma mönster som
-              AnteckningLas) så placeringen och vikten kan dömas nu. Skrivytan
-              kopplas in när options finns i basen (staging + prod), och VILKA
-              flaggor som ska finnas är Marcus/Lottas domänbeslut. */}
-          <div className="flex flex-wrap items-center gap-2 border-border/60 border-t pt-3">
-            {person.manuellFlagga ? (
-              <Pill ton="aktiv">{person.manuellFlagga}</Pill>
-            ) : (
-              <span className="text-small text-text-muted">Ingen flagga satt</span>
-            )}
-            <Button
-              intent="secondary"
-              size="sm"
-              onPress={() => {
-                // [PROTOTYPE] No-op. Fältet saknar valslag i basen — se noten ovan.
-              }}
-            >
-              Sätt flagga
-            </Button>
+              ✅ SKARP SKRIVYTA (`#1151`). Vägen dit gick INTE via en fix av det
+              gamla fältet: `Manuella flagga` (`fldNtwQt6tOCIdf4f`) är en
+              singleSelect med `choices: []` och kunde aldrig sättas
+              (data-model.md §Kända fällor 25, live-ombekräftad). Airtables
+              Meta-API kan varken ändra ett fälts typ eller radera det, så
+              fältet AVLÖSTES av ett nytt `Flagga` (singleLineText) i båda
+              baserna. `manuellFlagga` finns kvar i shapen men läses inte här. */}
+          <div className="border-border/60 border-t pt-3">
+            <PersonFlagEditor personId={person.id} flagga={person.flagga} />
           </div>
         </div>
       </section>
@@ -1458,21 +1430,24 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
       {/* B5 — HÄMTADE ERBJUDANDEN, med datum. Marcus: "med alla hämtade
           erbjudanden med datum och sånt så klart".
 
-          ⚠️ TUNN I DETTA STEG: datumet finns inte som fält utan plockas ur
-          strängen (se delaHamtningar + HAMTNING_DATUM). Fixturen ger tre
-          separata element och listan ser rätt ut; i PROD är samma rollup en
-          ARRAYJOIN-klump i ETT element, så listan blir EN rad där. Räknaren
-          (`antalHamtningar`) och listan är dessutom två olika rollups som kan
-          säga olika saker — båda visas hellre än att en tyst väljs bort. */}
+          ✅ INTE LÄNGRE TUNN (`#1149`): `person.hamtningar` är riktiga
+          Touchpoint-poster med ett eget `datum`-fält, batch-hämtade och
+          sorterade datum-desc server-side. Regex-plockningen ur strängen är
+          riven — och därmed också ARRAYJOIN-klumpen som hade gjort listan till
+          EN rad i prod.
+
+          Räknaren (`antalHamtningar`) och listan är fortfarande två olika
+          rollups som kan säga olika saker; båda visas hellre än att en tyst
+          väljs bort. */}
       <section aria-labelledby="proto-d-hamtningar" className="flex min-w-0 flex-col gap-2">
         <h2 id="proto-d-hamtningar" className="px-4 font-semibold text-lg">
           Hämtade erbjudanden
         </h2>
         <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
-          {hamtningar.length > 0 ? (
+          {person.hamtningar.length > 0 ? (
             <>
               <ul className="flex flex-col divide-y divide-border">
-                {hamtningar.map((h) => (
+                {person.hamtningar.map((h) => (
                   <li key={h.id} className="flex items-start gap-3 py-3">
                     <Download
                       aria-hidden="true"
@@ -1480,18 +1455,23 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                       className="mt-0.5 shrink-0 text-text-secondary"
                     />
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="text-body">{h.namn}</span>
+                      {/* `erbjudande` kan vara null — alla touchpoints är inte
+                          hämtningar. Då bär `typ` raden i stället för att den
+                          renderas namnlös. */}
+                      <span className="text-body">{h.erbjudande ?? h.typ ?? 'Okänd hämtning'}</span>
                       <span className="text-small text-text-muted">
-                        {h.datum ? langtDatum(h.datum) : 'Datum saknas'}
+                        {[h.datum ? langtDatum(h.datum) : 'Datum saknas', h.erbjudande && h.typ]
+                          .filter(Boolean)
+                          .join(' · ')}
                       </span>
                     </div>
                   </li>
                 ))}
               </ul>
-              {person.antalHamtningar !== hamtningar.length && (
+              {person.antalHamtningar !== person.hamtningar.length && (
                 <p className="py-3 text-small text-text-muted tabular-nums">
-                  Räknaren i basen säger {person.antalHamtningar} - listan {hamtningar.length}. De
-                  är två olika rollups.
+                  Räknaren i basen säger {person.antalHamtningar} - listan{' '}
+                  {person.hamtningar.length}. De är två olika rollups.
                 </p>
               )}
             </>
@@ -1517,70 +1497,64 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
       {/* B6 — MOTIVERINGARNA. Marcus: "listar ALLA personens motiveringar i
           fallande ordning också, och till vilket event motiveringen hör".
 
-          ⚠️ TUNNAST AV ALLA I DETTA STEG — och det syns i formen med avsikt.
-          `motivering` är en platt `string[]` ur en rollup-formel över personens
-          Anmälningar (`Motivering (text)`, fld4ENxbma679wvcC): den bär VARKEN
-          datum ELLER event-koppling. "Fallande ordning" och "till vilket event"
-          är alltså inte svåra här — de är STRUKTURELLT omöjliga tills
-          Anmälningarna batch-hämtas som poster. Motiveringen bor på
-          anmälnings-raden (`Motiveringar (lista)` rullar upp fldrMT8cWP3NmBc9T
-          via länken fld8pOivka8YdiywK, live-verifierat 2026-08-10), så samma
-          EF-utökning som ger B5 sina datum ger B6 både ordning och event. */}
+          ✅ BÅDA KRAVEN UPPFYLLDA (`#1149`): `person.motiveringar` är
+          Anmälnings-poster med `event` och `datum`, sorterade fallande
+          server-side. Den gamla platta `motivering: string[]` ligger kvar i
+          shapen men konsumeras inte här — a/b/c använder den fortfarande.
+
+          Anmälningar utan motiveringstext filtreras bort: en person kan ha sex
+          anmälningar och en enda motivering, och fem rader med tom kropp hade
+          varit brus, inte ärlighet (antalet anmälningar står i "Just nu"). */}
       <section aria-labelledby="proto-d-motiveringar" className="flex min-w-0 flex-col gap-2">
         <h2 id="proto-d-motiveringar" className="px-4 font-semibold text-lg">
           Motiveringar
         </h2>
         <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
-          {person.motivering.length > 0 ? (
-            <>
-              <ul className="flex flex-col divide-y divide-border">
-                {person.motivering.map((text) => (
-                  <li key={text} className="flex flex-col gap-1 py-3">
-                    <span className="text-small text-text-muted">
-                      Okänt event - anmälan saknar koppling i svaret
-                    </span>
-                    <p className="whitespace-pre-line text-body">{text}</p>
-                  </li>
-                ))}
-              </ul>
-              <p className="py-3 text-small text-text-muted">
-                Ordningen och eventet saknas: motiveringarna kommer som en samlad lista utan datum.
-              </p>
-            </>
+          {motiveringar.length > 0 ? (
+            <ul className="flex flex-col divide-y divide-border">
+              {motiveringar.map((m) => (
+                <li key={m.id} className="flex flex-col gap-1 py-3">
+                  <span className="text-small text-text-muted">
+                    {[m.event ?? 'Okänt event', m.datum ? langtDatum(m.datum) : null]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                  <p className="whitespace-pre-line text-body">{m.motivering}</p>
+                </li>
+              ))}
+            </ul>
           ) : (
             <p className="py-3 text-small text-text-muted">Inga motiveringar registrerade.</p>
           )}
         </div>
       </section>
 
-      {/* B7 — ANTECKNINGARNA, i eventdetaljens form. Marcus: "exakt samma
-          liksom som vi har på eventdetalj-sidan. samma utseende och funktion
-          med författar-attribut och de".
+      {/* B7 — ANTECKNINGARNA. Marcus: "exakt samma liksom som vi har på
+          eventdetalj-sidan. samma utseende och funktion med författar-attribut
+          och de".
 
-          ⚠️ FORMEN ÄR EVENTSIDANS, DATAT ÄR DET INTE. Eventsidan läser en egen
-          TABELL (`Anteckningar`, tblaUhH1KF9k9imul) där varje rad bär
-          Författare + tidpunkt och skrivs via create-event-note med författaren
-          satt SERVER-SIDE (ADR-075). Personens anteckning är i stället ETT
-          multilineText-fält (`fldWGlNr3ujRHo85w`) — odelat, utan författare,
-          utan tidpunkt (task-43-klassen). Tabellen har en Event-länk men INGEN
-          Person-länk, så strömmen kräver en basändring plus två EF:er innan
-          den kan bli verklig. Här visas därför composern (stub) över fältets
-          enda "post", märkt för vad den är. */}
+          ✅ RIKTIG STRÖM (`#1151`): egna rader i `Anteckningar`-tabellen med
+          Person-länk, författare satt SERVER-SIDE ur inloggad identitet
+          (`ADR-075`, samma kontrakt som event-strömmen) och tidpunkt ur
+          `createdTime`. Composern är skarp, inte en stub.
+
+          DET GAMLA FÄLTET LEVER KVAR NEDANFÖR. `Personer.Anteckningar`
+          (`fldWGlNr3ujRHo85w`) är ETT odelat multilineText utan författare och
+          utan tidpunkt (task-43-klassen), och det bär verklig text i drift —
+          bl.a. spårbarhet för Avvikelse-fall sedan 2026-04-26. Att bara sluta
+          rendera det hade DOLT data Lotta skrivit. Det visas därför som en
+          egen, märkt yta tills någon medvetet migrerar innehållet in i
+          strömmen; den migreringen är INTE gjord här. */}
       <Sektion id="proto-d-anteckningar" rubrik="Anteckningar">
-        <AnteckningComposerStub />
-        <div className="pt-3 pb-4">
-          {person.anteckningar ? (
-            <article className="flex flex-col gap-1.5 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)">
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="font-semibold text-body text-text-muted">Okänd författare</span>
-                <span className="shrink-0 text-caption text-text-muted">Ingen tidpunkt</span>
-              </div>
-              <p className="whitespace-pre-line text-body">{person.anteckningar}</p>
-            </article>
-          ) : (
-            <p className="text-caption text-text-muted">Inga anteckningar ännu</p>
-          )}
-        </div>
+        <PersonAnteckningar personId={person.id} />
+        {person.anteckningar && (
+          <div className="flex flex-col gap-1.5 py-3">
+            <span className="text-caption text-text-muted">
+              Äldre anteckning - odaterad, ingen författare
+            </span>
+            <p className="whitespace-pre-wrap text-body">{person.anteckningar}</p>
+          </div>
+        )}
       </Sektion>
     </>
   );
