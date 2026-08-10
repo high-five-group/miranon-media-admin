@@ -475,7 +475,7 @@ function VariantA({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
       <Sektion id="proto-a-leads" rubrik="Leads &amp; erbjudanden">
         {person.antalHamtningar === 0 &&
         person.allaHamtningar.length === 0 &&
-        !person.motivering ? (
+        person.motivering.length === 0 ? (
           <p className="py-3 text-small text-text-muted">
             Inga lead-magnet-hämtningar registrerade.
           </p>
@@ -495,10 +495,12 @@ function VariantA({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                 ))}
               </ul>
             )}
-            {person.motivering && (
+            {person.motivering.length > 0 && (
               <div className="flex flex-col gap-1 py-3">
                 <span className="text-small text-text-muted">Motivering</span>
-                <p className="whitespace-pre-line text-body">{person.motivering}</p>
+                {/* string[] (TASK-52, fler-värt) — "\n\n" ger ett stycke per
+                    motivering under whitespace-pre-line. */}
+                <p className="whitespace-pre-line text-body">{person.motivering.join('\n\n')}</p>
               </div>
             )}
           </>
@@ -699,7 +701,7 @@ function VariantB({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
       </Sektion>
 
       <Sektion id="proto-b-leads" rubrik="Leads &amp; erbjudanden">
-        {person.allaHamtningar.length === 0 && !person.motivering ? (
+        {person.allaHamtningar.length === 0 && person.motivering.length === 0 ? (
           <p className="py-3 text-small text-text-muted">
             Inga lead-magnet-hämtningar registrerade.
           </p>
@@ -714,10 +716,12 @@ function VariantB({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                 inte bo i en högerställd etikett-värde-rad. Klippt på tre rader
                 i Gruppdynamiks motiverings-form; handlingsläget behöver
                 intrycket, inte hela svaret. */}
-            {person.motivering && (
+            {person.motivering.length > 0 && (
               <div className="flex flex-col gap-1 py-3">
                 <span className="text-small text-text-muted">Motivering</span>
-                <p className="line-clamp-3 whitespace-pre-line text-body">{person.motivering}</p>
+                <p className="line-clamp-3 whitespace-pre-line text-body">
+                  {person.motivering.join('\n\n')}
+                </p>
               </div>
             )}
           </>
@@ -1049,10 +1053,10 @@ function VariantC({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
             ))}
           </ul>
         )}
-        {person.motivering && (
+        {person.motivering.length > 0 && (
           <div className="flex flex-col gap-1 py-3">
             <span className="text-small text-text-muted">Motivering</span>
-            <p className="whitespace-pre-line text-body">{person.motivering}</p>
+            <p className="whitespace-pre-line text-body">{person.motivering.join('\n\n')}</p>
           </div>
         )}
         {!person.anteckningar && (

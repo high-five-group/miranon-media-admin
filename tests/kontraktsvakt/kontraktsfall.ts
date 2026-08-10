@@ -49,14 +49,19 @@ import type { Felkontraktsfall, Kontraktsfall } from './kontraktsjamforelse';
  *
  * De tre bär 103 av 118 skarpa restanrop, och svansen bedömdes då som för dyr
  * för sin täckning. MÄTNINGEN VAR RIKTIG, SLUTSATSEN VAR DET INTE:
- * kontraktsrisk följer inte anropsvolym. `TASK-52` är en live-verifierad
- * produktionsdefekt — Airtables `Motivering (text)` är ett lookup och
- * returnerar en ARRAY medan `PersonDetail.schema.ts:44` kräver
- * `z.string().nullable()`, så zod fäller och persondetaljen visar felvy för
- * varje person med motivering. Den defekten sitter i `get-person`, alltså i
- * raden med ETT anrop, längst ned i den svans volym-argumentet skrev av.
- * Kartläggningen (`docs/research/kontraktsdrift-skyddet-2026-07-28.md` § 5–6)
- * kallar utökningen "den enskilt största riskreduktionen" av det skälet.
+ * kontraktsrisk följer inte anropsvolym. `TASK-52` VAR en live-verifierad
+ * produktionsdefekt (STÄNGD, se fallets egen kommentar nedan) — Airtables
+ * `Motivering (text)` är en FORMEL (inte ett lookup — TASK-68:s rättelse) vars
+ * ELSE-gren returnerar en rollup ORÖRD, alltså en ARRAY, medan
+ * `PersonDetail.schema.ts:44` då krävde `z.string().nullable()`, så zod fällde
+ * och persondetaljen visade felvy för varje person med motivering. Den
+ * defekten satt i `get-person`, alltså i raden med ETT anrop, längst ned i
+ * den svans volym-argumentet skrev av. Kartläggningen
+ * (`docs/research/kontraktsdrift-skyddet-2026-07-28.md` § 5–6) kallar
+ * utökningen "den enskilt största riskreduktionen" av det skälet — och
+ * utökningen var det som gjorde defekten synlig för den här vakten
+ * (om än inte förrän `tests/api/kontraktsvakt-jamforelse.test.ts`:s
+ * negativa self-test bevisade det, se nedan).
  *
  * ADR-080 anger 104 av 118 för de tre första. Omräkningen ger 103 (55+26+22).
  * Skillnaden är en enda anropsrad och rör ingen slutsats — men den bokförs
@@ -82,8 +87,8 @@ const URVAL =
   'Alla sju fixturhandlers bevakas (TASK-68). De tre volymbärarna — ' +
   'get-event-notes, get-registrations och get-events — står för 103 av 118 skarpa ' +
   'restanrop (hermetik-mätningen, S91), men svansen togs med ändå: kontraktsrisk ' +
-  'följer inte anropsvolym. TASK-52:s live-verifierade defekt sitter i get-person, ' +
-  'som bar ETT anrop. Utanför bevakningen står de 17 Edge Functions fixturvärlden ' +
+  'följer inte anropsvolym. TASK-52:s live-verifierade defekt satt i get-person ' +
+  '(STÄNGD), som bar ETT anrop. Utanför bevakningen står de 17 Edge Functions fixturvärlden ' +
   'inte mockar. Felkontrakten (404/400) bevakas sedan TASK-69 av FELKONTRAKTSFALL ' +
   'nedan — en egen jämförelse med egna parter, inte en gren av denna.';
 
@@ -215,43 +220,52 @@ export const KONTRAKTSFALL: readonly Kontraktsfall[] = [
     // ENKELPOST: EF:en svarar `{ person: {…} }` (get-person/index.ts:215) och
     // adaptern parsar med `PersonDetailSchema.parse` (AirtableAdapter.ts:131).
     //
-    // DETTA ÄR FALLET SKIVAN FINNS FÖR. `TASK-52` är live-verifierad och lever i
-    // produktion: `Motivering (text)` returnerar en ARRAY, get-person skickar den
-    // rått, `PersonDetail.schema.ts:44` kräver `z.string().nullable()` → ZodError
-    // i adaptern → felvy för varje person med motivering. `fixture-data.ts:960-965`
-    // skriver ut divergensen medvetet: fixturen är schema-trogen där verkligheten
-    // inte är det, för att vyn ska gå att rita. Ett larm härifrån är RÄTT UTFALL,
-    // inte ett fel i vakten — och det ska stängas av TASK-52 i basen eller i
-    // schemat, ALDRIG genom att lappa fixturen (larmets punkt 3: en tystad
-    // avvikelse är en tyst).
+    // DETTA ÄR FALLET SKIVAN FINNS FÖR. `TASK-52` VAR en live-verifierad
+    // produktionsdefekt: `Motivering (text)` returnerar en ARRAY, get-person
+    // skickade den rått, `PersonDetail.schema.ts:44` krävde
+    // `z.string().nullable()` → ZodError i adaptern → felvy för varje person
+    // med motivering. TASK-52 ÄR STÄNGD (denna commit): schemat är nu
+    // `z.array(z.string())` och get-person coercar med `stringArray` — samma
+    // mönster som `ort`/`allaHamtningar`. `fixture-data.ts` §RIK_DETALJ
+    // speglar nu den KORREKTA kontraktsformen (en array), inte längre en
+    // medveten divergens. Bas-sidans EGEN typdeklaration (`Motivering (text)`
+    // säger `singleLineText`, levererar array) kvarstår öppen som en
+    // T16-maximeringskandidat (data-model.md §Kända fällor #46) — det är en
+    // separat, bas-sidig fråga TASK-52 inte rörde.
     //
     // ANKARET ÄR `ZZ-History Person 01`, den permanenta historik-fixtur
     // get-person.staging.test redan konsumerar (`STÄDA INTE`) — samma
     // ankare-framför-färskvara-regel som get-event ovan.
     //
-    // ⚠ OCH DÄRFÖR ÄR DETTA FALL I DAG BLINT FÖR JUST MOTIVERING. Mätt mot staging
-    // 2026-07-28 (TASK-68, 28 personer prövade): ankaret har `motivering: null`,
-    // så schemat (som tillåter null) parsar, och typjämförelsen hoppar över
-    // nycklar som är null på någon sida. Vakten är alltså GRÖN på get-person utan
-    // att kontraktet är prövat på den punkten — frånvaro av data, inte ett grönt
-    // besked. De enda staging-rader som faktiskt bär en motivering är två
-    // `seed:review`-personer (`granskning-review*@example.com`), och de är
-    // transienta per konstruktion: att ankra vakten där hade återinfört exakt det
-    // purge-race TASK-61 avskaffade för get-event-notes.
+    // ⚠ OCH DÄRFÖR ÄR DETTA FALL FORTFARANDE BLINT FÖR JUST MOTIVERINGENS
+    // INNEHÅLL — av en ANNAN mekanism än före TASK-52. Ankaret saknar
+    // motivering (`motivering: []` efter coercion, live-verifierat 2026-08-10
+    // via Airtable-MCP mot staging: noll personer i basen har just nu ett
+    // ifyllt `Motivering (text)`), och `typtoken` klassar VARJE array som
+    // 'lista' oavsett innehåll — en tom array och en fylld array är samma typ
+    // för jämförelsen. Vakten är alltså GRÖN på get-person utan att
+    // motiveringens FLERHET är prövad mot verklig data — frånvaro av data,
+    // inte ett grönt besked om flerhet. De enda staging-rader som historiskt
+    // burit en motivering var två transienta `seed:review`-personer
+    // (`granskning-review*@example.com`); att ankra vakten där hade återinfört
+    // exakt det purge-race TASK-61 avskaffade för get-event-notes.
     //
-    // ATT VAKTEN *SKULLE* FÄLLA ÄR ÄNDÅ BEVISAT, bara inte av nattens data:
-    // `tests/api/kontraktsvakt-jamforelse.test.ts` spelar upp TASK-52:s exakta
-    // form (motivering som array) mot detta fall och får SCHEMA-STAGING +
-    // TYPDIVERGENS, i den rena sviten, vid varje PR.
+    // ATT VAKTEN *SKULLE* FÄLLA PÅ EN REGRESSION ÄR ÄNDÅ BEVISAT, bara inte av
+    // nattens data: `tests/api/kontraktsvakt-jamforelse.test.ts` spelar upp
+    // motsatt riktning mot detta fall (staging regredierar till en RÅ SKALÄR
+    // sträng i stället för arrayen) och får SCHEMA-STAGING + TYPDIVERGENS, i
+    // den rena sviten, vid varje PR.
     //
-    // ATT STÄNGA BLINDHETEN kräver att en PERMANENT staging-person får en ifylld
-    // motivering. Fältet är INTE ett lookup utan en FORMEL (`fld4ENxbma679wvcC`,
+    // ATT STÄNGA KVARVARANDE BLINDHET (flerhet, verkligt innehåll) kräver att
+    // en PERMANENT staging-person får en ifylld motivering. Fältet är INTE ett
+    // lookup utan en FORMEL (`fld4ENxbma679wvcC`,
     // `IF({fldIuuv4orI0DyLro} & "" = "", "", {fldIuuv4orI0DyLro})`) ovanpå
     // ROLLUPEN `Motivering (från anmälningsformulär)` (`fldIuuv4orI0DyLro`) över
-    // personens Anmälningar — verifierat mot staging-schemat 2026-07-28. Värdet
-    // kan därför inte skrivas på personen: det måste sättas på en av ankarets
-    // länkade Anmälningar. Det är en seedning av staging-data, alltså ett beslut
-    // utanför TASK-68 — registrerat, inte tyst förkastat.
+    // personens Anmälningar — verifierat mot staging-schemat 2026-07-28 och
+    // återbekräftat 2026-08-10. Värdet kan därför inte skrivas på personen: det
+    // måste sättas på en av ankarets länkade Anmälningar. Det är en seedning av
+    // staging-data, alltså ett beslut utanför TASK-52 — registrerat, inte tyst
+    // förkastat.
     //
     // KURSHISTORIKEN PRÖVAS BARA AV SCHEMAT. `historik` är kontraktets nästlade
     // array, och formprofilen ser den som typen 'lista' utan att gå in i den.

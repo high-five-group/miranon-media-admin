@@ -69,7 +69,7 @@ function personDetail(anteckningar: string | null): PersonDetailMock {
     senasteDeltagandeDatum: '2026-01-15',
     antalHamtningar: 0,
     allaHamtningar: [],
-    motivering: null,
+    motivering: [],
     inbjudenCommunity: false,
     skapatKontoCommunity: false,
     historik: [],

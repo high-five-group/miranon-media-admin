@@ -41,7 +41,11 @@ export const PersonDetailSchema = PersonSchema.extend({
   // "Alla hämtningar" = rollup över Touchpoints (1→många) → FLER-VÄRT; namnet
   // säger "alla" → string[] bevarar samtliga (en reduktion till en vore data-förlust).
   allaHamtningar: z.array(z.string()),
-  motivering: z.string().nullable(),
+  // `Motivering (text)` är en rollup-baserad FORMEL över personens
+  // Anmälningar (1→många) → FLER-VÄRT, samma skäl som `allaHamtningar`. Airtable
+  // returnerar en array så fort minst en anmälan bär en motivering — get-person
+  // coercar med `stringArray` (TASK-52; data-model.md §Kända fällor #46).
+  motivering: z.array(z.string()),
   inbjudenCommunity: z.boolean(),
   skapatKontoCommunity: z.boolean(),
   historik: z.array(PersonHistoryEntrySchema),

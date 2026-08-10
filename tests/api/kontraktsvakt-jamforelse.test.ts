@@ -201,19 +201,29 @@ test.describe('kontraktsvakten — enkelpost-kuvert', () => {
     expect(larmtext(PERSON, skarpt)).toContain('nyttFaltFranBasen');
   });
 
-  test('TASK-52:s form — motivering som ARRAY i staging → SCHEMA-STAGING', () => {
-    // DEN LIVE-VERIFIERADE PRODUKTIONSDEFEKTEN, spelad upp mot vakten utan
-    // staging: `Motivering (text)` är ett lookup i Airtable och returnerar en
-    // array, medan PersonDetail.schema.ts:44 kräver `z.string().nullable()`.
-    // Kartläggningen (§ 6, lager 1) säger att vakten hade fällt den FÖRSTA
-    // NATTEN om get-person stått i listan. Det påståendet är ett antagande så
-    // länge ingen prövat det — här prövas det.
+  test('motivering regredierar till en RÅ SKALÄR i staging → SCHEMA-STAGING + TYPDIVERGENS (TASK-52 stängd, vaktar mot återfall)', () => {
+    // HISTORIK: denna test spelade tidigare upp TASK-52:s LIVE-VERIFIERADE
+    // produktionsdefekt (motivering som array i staging mot ett schema som
+    // krävde `z.string().nullable()`) för att bevisa att vakten hade fällt
+    // den FÖRSTA NATTEN om get-person stått i listan. TASK-52 är nu STÄNGD:
+    // `PersonDetailSchema.motivering` är `z.array(z.string())` och get-person
+    // coercar med `stringArray` (samma mönster som `ort`/`allaHamtningar`).
+    // RIK-fixturen speglar den KORREKTA formen (en array), så det gamla
+    // syntetiska felet (`['Det är dags', null]`) skulle numera ge NOLL
+    // typdivergens (fixtur OCH staging är båda 'lista' — se `typtoken`,
+    // som ser hela arrayen som en enhet, inte dess element).
+    //
+    // Kontraktet är alltså VÄNT: regressionen som nu vore farlig är den
+    // MOTSATTA — att get-person (eller en framtida formeländring i basen)
+    // börjar skicka en RÅ SKALÄR sträng i stället för arrayen. Detta bevisar
+    // att vakten fångar DEN riktningen lika säkert som den fångade den
+    // ursprungliga — samma prövning, ny riktning, ingen kapacitet förlorad.
     const skarpt = skarptLikaSomFixturen(PERSON);
-    enkelpost(skarpt, PERSON.kuvertnyckel).motivering = ['Det är dags', null];
+    enkelpost(skarpt, PERSON.kuvertnyckel).motivering = 'Bara en sträng, ingen array';
     const utfall = klasser(PERSON, skarpt);
 
     expect(utfall).toContain('SCHEMA-STAGING');
-    // Typdivergensen fyrar också: sträng i fixturen, lista i staging. Två
+    // Typdivergensen fyrar också: lista i fixturen, sträng i staging. Två
     // oberoende signaler på samma drift.
     expect(utfall).toContain('TYPDIVERGENS');
     expect(larmtext(PERSON, skarpt)).toContain('motivering');

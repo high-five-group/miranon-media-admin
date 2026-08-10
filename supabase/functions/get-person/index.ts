@@ -103,7 +103,16 @@ function mapPersonDetail(
     antalDeltaganden: asNumber(f['Totala deltaganden']),
     erfarenhetsniva: f['Erfarenhetsnivå (Miranon Media)'] ?? null,
     erfarenhetsbadge: f['Erfarenhetsbadge'] ?? null,
-    senasteInteraktion: f['Senaste interaktion (text)'] ?? null,
+    // 'Senaste interaktion (text)' VÄLJER mellan 'Senast touchpoint (text)'/
+    // 'Senast deltagande (text)' — BÅDA delar Motiverings formelmönster
+    // (IF/FIND/LEFT; ELSE-grenen returnerar sin källrollup ORÖRD) och ärver
+    // därför samma array-risk TRANSITIVT om källrollupen någonsin blir
+    // fler-värd. EJ ett bekräftat fel (data-model.md §46: "strukturell
+    // misstanke, ej belagd") — defensiv scalarString per samma genomgång som
+    // stängde `motivering` (TASK-52): noll kostnad för dagens enkelvärdes-fall
+    // (fältet BÄR redan skarpa strängvärden i drift), loggar i stället för att
+    // krascha sidan om fältet någonsin blir fler-värt.
+    senasteInteraktion: scalarString(f['Senaste interaktion (text)']),
     senasteInteraktionDatum: f['Senaste interaktion (datum)'] ?? null,
     dagarSedanSenaste: typeof f['Dagar sedan senaste interaktion'] === 'number'
       ? f['Dagar sedan senaste interaktion']
@@ -117,7 +126,12 @@ function mapPersonDetail(
     deltagandeIds: Array.isArray(f['Deltaganden']) ? f['Deltaganden'] : [],
     // Detaljvyns extra rollups (ej i list-PersonSchema).
     aterkommande: f['Återkommande?'] ?? null,
-    nastaEvent: f['Nästa event (text)'] ?? null,
+    // Samma formelmönster som Motivering/senasteInteraktion (IF/FIND/LEFT,
+    // ELSE-gren returnerar källrollupen ORÖRD) — i praktiken ALLTID null i
+    // drift (`PersonDetailPrototyp.tsx` § variant A, `fixture-data.ts` §
+    // RIK_DETALJ not 2), men defensiv scalarString ändå: samma genomgång som
+    // stängde TASK-52, noll observerbar skillnad idag.
+    nastaEvent: scalarString(f['Nästa event (text)']),
     antalGenomfordaEvent: asNumber(f['Antal genomförda event']),
     // "Senaste deltagande datum" = MAX-rollup → ett värde → explicit skalär.
     senasteDeltagandeDatum: scalarString(f['Senaste deltagande datum']),
@@ -125,7 +139,18 @@ function mapPersonDetail(
     // "Alla hämtningar" = rollup över Touchpoints (1→MÅNGA) → FLER-VÄRT; namnet
     // säger "alla" → stringArray bevarar samtliga (firstString vore data-förlust).
     allaHamtningar: stringArray(f['Alla hämtningar']),
-    motivering: f['Motivering (text)'] ?? null,
+    // `Motivering (text)` (fld4ENxbma679wvcC) är en FORMEL vars ELSE-gren
+    // returnerar rollupen `Motivering (från anmälningsformulär)` ORÖRD —
+    // rollup över personens Anmälningar (1→MÅNGA), trots att fältet deklarerar
+    // `singleLineText`. API:et levererar därför en ARRAY så fort minst en
+    // anmälan bär en motivering (live-verifierat, data-model.md §Kända fällor
+    // #46; TASK-52/68/89). stringArray bevarar ALLA motiveringar — flera
+    // anmälningar kan var och en bära en; tyst första-element vore data-
+    // förlust (Lottas kärnkrav) — samma mönster som `ort`/`allaHamtningar`
+    // ovan. TASK-52 stänger den app-sidiga konsekvensen; bas-sidans egen
+    // typdeklaration (singleLineText vs faktisk array) kvarstår som öppen
+    // T16-maximeringskandidat, ej rörd här.
+    motivering: stringArray(f['Motivering (text)']),
     inbjudenCommunity: f['Inbjuden till community'] ?? false,
     skapatKontoCommunity: f['Skapat konto i community'] ?? false,
     historik,
