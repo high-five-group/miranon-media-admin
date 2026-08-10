@@ -1927,6 +1927,144 @@ t(
   },
 );
 
+// ═══════════════════════════════════════════════════════════════════════════
+// S103 — KASKAD-GUARDEN i planClean (upptäckt LIVE mot staging under detta
+// korts skarpa --rik-verifiering, se slutrapporten): en person som lämnas
+// kvar fick tidigare se sina EGNA anmälningar och event raderas ändå, vilket
+// bröt Deltagandenas Anmälan-/Event-länkar och tystade rollups (RIM ×,
+// Erfarenhetsbadge). Fixen gör guarden TRANSITIV: kvarlämnad person ⇒
+// kvarlämnad anmälan ⇒ kvarlämnat event (lokalt, bara för DEN klustret).
+// ═══════════════════════════════════════════════════════════════════════════
+
+t(
+  'KASKAD-GUARD RÖD SIDA (utan fixen hade detta fällt): en kvarlämnad persons EGEN anmälan lämnas också kvar',
+  () => {
+    const plan = planClean({
+      events: [],
+      registrations: [
+        {
+          id: 'recAnmRik',
+          fields: { 'E-post': FIXTUR_EPOST, Person: ['recPersonRik'] },
+        },
+      ],
+      persons: [
+        {
+          id: 'recPersonRik',
+          fields: { 'E-post': FIXTUR_EPOST, 'Anteckningar 2': ['recNote1'] },
+        },
+      ],
+      ort: ORT,
+      pattern: PATTERN,
+      config: CONFIG,
+    });
+    assert.deepEqual(plan.persons, [], 'personen är guard-blockerad');
+    assert.deepEqual(
+      plan.registrations,
+      [],
+      'KASKAD: anmälan får INTE raderas under den kvarlämnade personen',
+    );
+    assert.match(
+      plan.skippedRegistrations.find((s) => s.id === 'recAnmRik')?.orsak ?? '',
+      /hör till en person som lämnas kvar/,
+    );
+  },
+);
+
+t(
+  'KASKAD-GUARD: ett event med EN kvarlämnad anmälan lämnas också kvar (annars bryts Deltagandets Event-länk)',
+  () => {
+    const plan = planClean({
+      events: [
+        {
+          id: 'recEvRik',
+          fields: {
+            Ort: ORT,
+            Notering: `${CONFIG.marker.noteringSentinel} x`,
+            'Anmälningar (länkat fält)': ['recAnmRik'],
+          },
+        },
+      ],
+      registrations: [
+        { id: 'recAnmRik', fields: { 'E-post': FIXTUR_EPOST, Person: ['recPersonRik'] } },
+      ],
+      persons: [
+        { id: 'recPersonRik', fields: { 'E-post': FIXTUR_EPOST, 'Anteckningar 2': ['recNote1'] } },
+      ],
+      ort: ORT,
+      pattern: PATTERN,
+      config: CONFIG,
+    });
+    assert.deepEqual(
+      plan.events,
+      [],
+      'KASKAD: eventet krävs fortfarande av den kvarlämnade anmälan',
+    );
+    assert.match(
+      plan.skippedEvents.find((s) => s.id === 'recEvRik')?.orsak ?? '',
+      /krävs fortfarande av en anmälan som lämnas kvar/,
+    );
+  },
+);
+
+t(
+  'KASKAD-GUARD är LOKAL: ett event delat med ANDRA raderingsbara anmälningar raderas ändå när dess sista kvarlämnade anmälan är borta',
+  () => {
+    // Samma event, men nu bär den KVARLÄMNADE anmälan ett annat event-ID än
+    // det event som prövas — alltså krävs INTE just detta event av någon
+    // kvarlämnad rad, och det ska raderas som vanligt.
+    const plan = planClean({
+      events: [
+        {
+          id: 'recEvDelat',
+          fields: {
+            Ort: ORT,
+            Notering: `${CONFIG.marker.noteringSentinel} x`,
+            'Anmälningar (länkat fält)': ['recAnmTunn'],
+          },
+        },
+      ],
+      registrations: [
+        { id: 'recAnmTunn', fields: { 'E-post': FIXTUR_EPOST } },
+        { id: 'recAnmRik', fields: { 'E-post': FIXTUR_EPOST, Person: ['recPersonRik'] } },
+      ],
+      persons: [
+        { id: 'recPersonRik', fields: { 'E-post': FIXTUR_EPOST, 'Anteckningar 2': ['recNote1'] } },
+      ],
+      ort: ORT,
+      pattern: PATTERN,
+      config: CONFIG,
+    });
+    assert.deepEqual(plan.events, ['recEvDelat'], 'eventets ENDA länkade anmälan var raderingsbar');
+    assert.deepEqual(plan.registrations, ['recAnmTunn']);
+  },
+);
+
+t(
+  'KASKAD-GUARD GRÖN SIDA: normalfallet (ingen kvarlämnad person i scope) är HELT oförändrat',
+  () => {
+    const plan = planClean({
+      events: [
+        {
+          id: 'recEv',
+          fields: {
+            Ort: ORT,
+            Notering: `${CONFIG.marker.noteringSentinel} x`,
+            'Anmälningar (länkat fält)': ['recAnm'],
+          },
+        },
+      ],
+      registrations: [{ id: 'recAnm', fields: { 'E-post': FIXTUR_EPOST } }],
+      persons: [{ id: 'recPe', fields: { 'E-post': FIXTUR_EPOST } }],
+      ort: ORT,
+      pattern: PATTERN,
+      config: CONFIG,
+    });
+    assert.deepEqual(plan.events, ['recEv']);
+    assert.deepEqual(plan.registrations, ['recAnm']);
+    assert.deepEqual(plan.persons, ['recPe']);
+  },
+);
+
 process.on('beforeExit', () => {
   if (failed > 0) {
     console.error(`\n${failed} test(er) RÖDA`);

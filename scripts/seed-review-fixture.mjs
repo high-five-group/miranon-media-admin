@@ -1833,7 +1833,26 @@ export function personLinkGuardTrips(record, linkFields) {
   });
 }
 
-/** Klassa listade rader till en clean-plan (raderas / skyddas med orsak). */
+/**
+ * Klassa listade rader till en clean-plan (raderas / skyddas med orsak).
+ *
+ * ORDNINGEN ÄR BÄRANDE sedan RIK-LÄGET (S103): personer → anmälningar →
+ * event, ALDRIG oberoende av varandra. Skälet är KASKAD-GUARDEN: innan
+ * TASK-97-uppföljningen kunde en person lämnas kvar (länk-guard) MEDAN
+ * dess egna anmälningar och event ändå raderades — guarden "skyddade" då
+ * ett tomt skal, och personens Deltaganden blev antingen föräldralösa eller
+ * BRUTNA (deras Anmälan-/Event-länkar rensas tyst av Airtable när den
+ * länkade raden försvinner, vilket i sin tur tystar rollups som RIM ×/
+ * Erfarenhetsbadge — en defekt värre än att bara lämna en rad kvar).
+ *
+ * Fixen: en person som lämnas kvar (oavsett SKÄL — skyddad record-ID,
+ * icke-fixtur-adress eller länk-guard) gör att DESS anmälningar också
+ * lämnas kvar, vilket i sin tur gör att ETT event som fortfarande har en
+ * sådan kvarlämnad anmälan också lämnas kvar. Effekten är lokal: bara
+ * eventet/anmälningarna som hör till just den kvarlämnade personen
+ * påverkas — ett event delat med andra, redan raderingsbara personer
+ * raderas ändå så fort dess SISTA kvarlämnade anmälan är borta.
+ */
 export function planClean({ events, registrations, persons, ort, pattern, config }) {
   const plan = {
     events: [],
@@ -1843,23 +1862,7 @@ export function planClean({ events, registrations, persons, ort, pattern, config
     skippedRegistrations: [],
     skippedPersons: [],
   };
-  for (const rec of events) {
-    if (config.protectedRecordIds.includes(rec.id)) {
-      plan.skippedEvents.push({ id: rec.id, orsak: 'skyddad record-ID' });
-      continue;
-    }
-    if (isFixtureEvent(rec, ort, config.marker)) plan.events.push(rec.id);
-    else plan.skippedEvents.push({ id: rec.id, orsak: 'saknar fixtur-sentinel i Notering' });
-  }
-  for (const rec of registrations) {
-    if (config.protectedRecordIds.includes(rec.id)) {
-      plan.skippedRegistrations.push({ id: rec.id, orsak: 'skyddad record-ID' });
-      continue;
-    }
-    if (isFixtureEmailRecord(rec, pattern)) plan.registrations.push(rec.id);
-    else
-      plan.skippedRegistrations.push({ id: rec.id, orsak: 'e-post matchar inte fixtur-mönstret' });
-  }
+
   for (const rec of persons) {
     if (config.protectedRecordIds.includes(rec.id)) {
       plan.skippedPersons.push({ id: rec.id, orsak: 'skyddad record-ID (permanent fixtur)' });
@@ -1875,6 +1878,62 @@ export function planClean({ events, registrations, persons, ort, pattern, config
       continue;
     }
     plan.persons.push(rec.id);
+  }
+  // KASKAD-GUARDEN del 1: varje person som INTE landade i plan.persons
+  // lämnas kvar — oavsett orsak. Deras anmälningar får inte raderas under
+  // dem (se funktionens huvud).
+  const keptPersonIds = new Set(
+    persons.map((p) => p.id).filter((id) => !plan.persons.includes(id)),
+  );
+
+  for (const rec of registrations) {
+    if (config.protectedRecordIds.includes(rec.id)) {
+      plan.skippedRegistrations.push({ id: rec.id, orsak: 'skyddad record-ID' });
+      continue;
+    }
+    if (!isFixtureEmailRecord(rec, pattern)) {
+      plan.skippedRegistrations.push({ id: rec.id, orsak: 'e-post matchar inte fixtur-mönstret' });
+      continue;
+    }
+    const personLank = rec.fields?.[config.linkFields.anmalanPerson];
+    if (Array.isArray(personLank) && personLank.some((id) => keptPersonIds.has(id))) {
+      plan.skippedRegistrations.push({
+        id: rec.id,
+        orsak: 'hör till en person som lämnas kvar (kaskad-guard, § personDataLinkFields)',
+      });
+      continue;
+    }
+    plan.registrations.push(rec.id);
+  }
+  // KASKAD-GUARDEN del 2: samma resonemang en nivå upp — en anmälan som
+  // lämnas kvar (av VILKEN anledning som helst) gör att dess event också
+  // måste lämnas kvar, annars bryts anmälans egen Event-länk under den.
+  const keptRegistrationIds = new Set(
+    registrations.map((r) => r.id).filter((id) => !plan.registrations.includes(id)),
+  );
+
+  for (const rec of events) {
+    if (config.protectedRecordIds.includes(rec.id)) {
+      plan.skippedEvents.push({ id: rec.id, orsak: 'skyddad record-ID' });
+      continue;
+    }
+    if (!isFixtureEvent(rec, ort, config.marker)) {
+      plan.skippedEvents.push({ id: rec.id, orsak: 'saknar fixtur-sentinel i Notering' });
+      continue;
+    }
+    // Eventets EGET spegelfält (redan på den fetchade posten — ingen extra
+    // läsning): finns där en enda kvarlämnad anmälan krävs eventet ännu.
+    const egnaAnmalningar = rec.fields?.[config.linkFields.eventAnmalningar];
+    const kravsAnnu =
+      Array.isArray(egnaAnmalningar) && egnaAnmalningar.some((id) => keptRegistrationIds.has(id));
+    if (kravsAnnu) {
+      plan.skippedEvents.push({
+        id: rec.id,
+        orsak: 'krävs fortfarande av en anmälan som lämnas kvar (kaskad-guard)',
+      });
+      continue;
+    }
+    plan.events.push(rec.id);
   }
   return plan;
 }
