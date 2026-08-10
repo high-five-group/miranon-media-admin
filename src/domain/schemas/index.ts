@@ -67,5 +67,12 @@ export {
   type SendActionTestEmailResult,
   SendActionTestEmailResultSchema,
 } from './SendActionEmail.schema';
+export {
+  BETALSATT_VARDEN,
+  type Betalsatt,
+  type SendReceiptInput,
+  type SendReceiptResult,
+  SendReceiptResultSchema,
+} from './SendReceipt.schema';
 export type { UpdateEventInput } from './UpdateEvent.schema';
 export { WaitlistEntrySchema } from './WaitlistEntry.schema';

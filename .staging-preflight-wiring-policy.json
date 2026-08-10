@@ -92,6 +92,11 @@
       "sökväg": "scripts/create-bilagor-table.mjs",
       "funktion": "main",
       "skäl": "Bilagor-tabellens schema-skript (schema:bilagor, TASK-146.2). Skriver mot samma delade staging-bas via Metadata-API:t — en lokal körning samtidigt med ett CI-staging-jobb ska stoppas av samma skäl som purge/seed-review."
+    },
+    {
+      "sökväg": "scripts/create-kvitton-table.mjs",
+      "funktion": "main",
+      "skäl": "Kvitton-tabellens schema-skript (schema:kvitton, TASK-147.7, ADR-109). Samma Metadata-API-skrivväg mot samma delade staging-bas som create-bilagor-table.mjs — identisk risk, identisk motivering."
     }
   ],
   "nodeSkriptUpptäckt": {
@@ -118,6 +123,10 @@
       {
         "sökväg": "scripts/test-create-bilagor-table.mjs",
         "skäl": "Hermetisk testsvit (TASK-146.2) — importerar bara de pura funktionerna (validateConfig, planFields, buildCreateTableBody m.fl.), anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, samma mönster som test-seed-review-fixture.mjs/test-purge-staging-sentinels.mjs."
+      },
+      {
+        "sökväg": "scripts/test-create-kvitton-table.mjs",
+        "skäl": "Hermetisk testsvit (TASK-147.7, ADR-109) — importerar bara de pura funktionerna ur create-kvitton-table.mjs, anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, identiskt mönster som test-create-bilagor-table.mjs."
       }
     ]
   }

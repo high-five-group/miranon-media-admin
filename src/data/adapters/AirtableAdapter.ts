@@ -43,6 +43,9 @@ import {
   type SendActionTestEmailInput,
   type SendActionTestEmailResult,
   SendActionTestEmailResultSchema,
+  type SendReceiptInput,
+  type SendReceiptResult,
+  SendReceiptResultSchema,
   type UpdateEventInput,
   WaitlistEntrySchema,
 } from '../../domain/schemas';
@@ -478,6 +481,25 @@ export class AirtableAdapter implements DataSourceAdapter {
       testSend: true,
     });
     return SendActionTestEmailResultSchema.parse(data);
+  }
+
+  /**
+   * Skicka ETT kvitto (TASK-147.7, ADR-109). POST mot send-receipt-email-EF:en,
+   * som löser mottagaren SERVER-SIDE (klienten skickar bara registration-/
+   * event-ID + belopp/betalsätt/betalning), allokerar kvittonumret,
+   * genererar PDF:en och sänder — EN mottagare, EN betalning per anrop.
+   * `.parse()` validerar vid datagränsen (ADR-026).
+   */
+  async sendReceipt(input: SendReceiptInput): Promise<SendReceiptResult> {
+    const data = await postEdgeFunction<unknown>('send-receipt-email', {
+      registrationId: input.registrationId,
+      eventId: input.eventId,
+      betalning: input.betalning,
+      belopp: input.belopp,
+      betalsatt: input.betalsatt,
+      idempotencyKey: input.idempotencyKey,
+    });
+    return SendReceiptResultSchema.parse(data);
   }
 
   /**
