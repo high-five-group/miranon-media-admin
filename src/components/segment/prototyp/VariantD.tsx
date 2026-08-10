@@ -46,6 +46,37 @@
  * VERKSTÄLLER bor på sin egen yta) — här sammanfaller de.
  *
  * ─────────────────────────────────────────────────────────────────────────────
+ * MULTI-SEGMENT (ärvt ur `c`, Marcus godkände uttryckligen att det prövas)
+ *
+ * `resolveSegmentMembers` unionerar redan över flera segment och dedupar på
+ * person-ID (`supabase/functions/_shared/segment-resolution.ts:185-212`); det
+ * är UI:t som begränsar till ett. Markera-läget i listan tar N segment vidare
+ * till utskicksvyn, som speglar EF:ens beteende exakt: en `useQueries` per
+ * valt segment på SAMMA cache-nyckel som listan/detaljen (regelns signatur →
+ * ett redan räknat segment kostar noll extra walks), union på `member.id`.
+ *
+ * TVÅ SAKER GÖR FUNKTIONEN VÄRD ATT HA, och utan dem är den skadlig:
+ *   1. ÖVERLAPPSRADEN. "24 personer" ur två segment om 15 och 12 är ett tal
+ *      Lotta inte kan kontrollräkna; skillnaden mot 27 är exakt den tysta
+ *      feltyp ett utskick inte får bära. Raden säger båda talen och vad de
+ *      betyder ("… finns i flera segment och får ETT mail").
+ *   2. VAKTEN MOT TYST UNDERRÄKNING. Unionen byggs ur N oberoende walks, och
+ *      en som fallerar bidrar med noll medlemmar UTAN att synas. Talet blir
+ *      falskt och bekräftelse-grinden hade låst upp mot det falska talet. Med
+ *      ETT segment är felet självrapporterande (noll mottagare); med flera är
+ *      det tyst. Därför: talet döljs, `MessageBox intent="error"`, sändningen
+ *      låst tills alla walks svarat.
+ *
+ * MED ETT SEGMENT KOSTAR FUNKTIONEN NOLL RADER. Segmentets namn står redan i
+ * utskicksvyns underrubrik; segment-gruppen renderas först vid två eller fler.
+ *
+ * BYPASSAR MARKERA-LÄGET KONTROLLEN? Nej — det FLYTTAR den. Det finns ingen
+ * detaljsida för en union av segment (unionen är inte en entitet), så unionens
+ * publik måste granskas där den uppstår. Utskicksvyn bär `PublikSektion` i
+ * exakt samma form som detaljsidan: hela publiken, visningsfilter, sök. Regeln
+ * "ingen genväg förbi kontrollen" håller alltså i båda vägarna.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
  * REGELFORMEN — predikat, inte uppräkning
  *
  * `SegmentRuleSchema` är i dag en FRUSEN LISTA av `(kurs, modalitet)`-par.
@@ -54,8 +85,22 @@
  * branschverktyg uttrycker i stället segment som PREDIKAT över attribut
  * (`docs/research/dynamiska-segmentregler-branschmonster-2026-08-10.md`).
  *
- * Fem dimensioner (Marcus 2026-08-10): familj · nivå · modalitet · format · år.
- * Familj och nivå FINNS INTE i basen än och simuleras här ur `KURS_KARTA`.
+ * Fem dimensioner beslutades (Marcus 2026-08-10): familj · nivå · modalitet ·
+ * format · år. FYRA ÄR BYGGDA. Familj och nivå FINNS INTE i basen än och
+ * simuleras här ur `KURS_KARTA`.
+ *
+ * ÅR-DIMENSIONEN ÄR RIVEN UR PREDIKAT-UI:T — den kunde inte göra det den såg
+ * ut att göra. Motorns finaste kornighet är PARET `(kurs, modalitet)`:
+ * `AttendanceRow = {personId, kurs, modalitet}` bär ingen tidpunkt
+ * (`segment-membership.ts:18`), källfrågan hämtar bara tre fält
+ * (`segment-resolution.ts:36` — `Person (länk)`, `Kursnamn (lookup)`,
+ * `Event typ`), och `parseSegmentRule` avvisar allt som inte är `Par[]`
+ * (`segment-membership.ts:104-113`). En årsangivelse kunde därför bara smalna
+ * av VILKA KURSER som räknas, inte vilka TILLFÄLLEN — så "alla som gick något
+ * under 2025" gick inte att uttrycka, medan ytan såg ut att erbjuda det. En
+ * halv funktion som ser ut att göra en sak men gör en annan är sämre än ingen
+ * funktion, och det är samma tysta felklass som modalitets-kravet finns för
+ * att avskaffa. Den bor nu som EF-KRAV i stället (se `AR_EF_KRAV`).
  *
  * MODALITET ÄR OBLIGATORISK I VARJE VILLKOR — säkerhetskrav, inte preferens.
  * Marcus: *"det finns material som är direkt olämpligt att skicka till
@@ -98,14 +143,29 @@
  * mottagarkontroll (klienten skulle då bestämma vilka som nås).
  *
  * ─────────────────────────────────────────────────────────────────────────────
+ * SKALPROVET (ärvt ur `b`) — variantens tes går inte att bedöma utan det.
+ *
+ * Detaljvyns hela idé är att publiken är huvudinnehållet, synlig direkt. Men
+ * staging ger 1–2 personer med avstämd närvaro, så chunkningen (25),
+ * visningsfiltret och söket har aldrig setts arbeta — och det är precis det
+ * som ska bedömas. Skalprovet är en AVSTÄNGD-SOM-DEFAULT växel som fyller
+ * publiken till 85 med `@exempel.invalid`-personer.
+ *
+ * `b`s disciplin ärvs oavkortat: skalprovet FYLLER UT en verklig publik, det
+ * SKAPAR ingen (villkoret är `raMedlemmar.length > 0`), och en påhittad publik
+ * som ser äkta ut är värre än ingen publik alls — därför en varningsruta som
+ * inte går att missa, överallt publiken visas. Rivs med prototypen.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
  * READ-ONLY FÖRSTÄRKT: `saveSegment`, `sendEmail` och testmail är no-op-
  * stubbar. Filen når ingen mutation — varken prod eller staging. Läsvägarna
  * (`fetchEvents`, `listSegments`, `computeSegment`) går via `useDataSource()`
  * (ADR-055/057); adapter-gränsen kringgås aldrig.
  */
-import { useQuery } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -119,6 +179,7 @@ import {
   X,
 } from 'lucide-react';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Checkbox } from 'react-aria-components';
 import { DetaljGrupp, EtikettVardeRad } from '@/components/events/detail/DetaljGrupp';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
@@ -204,8 +265,31 @@ const MODALITET_ORD: Record<ModalitetsVal, string> = {
 };
 
 /**
+ * ÅR-DIMENSIONEN SOM EF-KRAV, INTE SOM KONTROLL.
+ *
+ * Texten står i regelverkstaden där dimensionen annars hade suttit. Att skriva
+ * ut vad ytan INTE kan är billigare än att låta någon upptäcka det efter ett
+ * utskick — och kravet ska med i PRD:n, inte lösas i klienten.
+ */
+const AR_EF_KRAV = {
+  rubrik: 'Tidsperiod går inte att välja än',
+  brod:
+    'En regel kan i dag säga VAD någon gått igenom, inte NÄR. Motorn räknar per kurs ' +
+    'och form - den vet inte vilket tillfälle någon var på. "Alla som gick något under 2025" ' +
+    'går därför inte att uttrycka, och en årsknapp här hade i själva verket valt KURSER som ' +
+    'råkade gå det året. Det är en annan fråga, och sannolikt inte den någon ställer.',
+  krav:
+    'Kravet hör hemma i servern: deltagandets datum måste följa med i källfrågan och ' +
+    'regeln bära ett tidsfönster. Då blir tidsperioden en riktig dimension.',
+} as const;
+
+/**
  * ETT VILLKOR = ett predikat över dimensionerna. Tom lista på en dimension
  * betyder "alla värden" — UTOM modaliteten, som aldrig får vara osagd.
+ *
+ * INGEN `ar`-gren: se `AR_EF_KRAV` + filhuvudet. Dimensionen är riven ur
+ * predikatet därför att motorn inte kan bära den, inte därför att den saknar
+ * värde.
  */
 type Villkor = {
   id: string;
@@ -214,7 +298,6 @@ type Villkor = {
   /** OBLIGATORISK. `null` = användaren har inte valt än → villkoret räknas inte. */
   modalitet: ModalitetsVal | null;
   format: string[];
-  ar: number[];
 };
 
 /** Regeln som predikat: en union i `med`, en union i `utan`. */
@@ -229,7 +312,6 @@ function nyttVillkor(): Villkor {
     nivaer: [],
     modalitet: null,
     format: [],
-    ar: [],
   };
 }
 
@@ -244,38 +326,25 @@ type ParInfo = {
   familj: Familj | null;
   niva: Niva | null;
   format: string;
-  ar: number[];
 };
 
 /**
- * Berikar `deriveTaxonomy`-paren med dimensionerna. Åren härleds ur eventens
- * `Startdatum` — ett par kan ha gått flera år, och ett år-villkor smalnar
- * därför av VILKA KURSER som räknas, inte vilka TILLFÄLLEN. Den skillnaden är
- * en genuin begränsning i dagens motor (par är finaste kornighet) och står
- * utskriven i regelverkstaden i stället för att döljas.
+ * Berikar `deriveTaxonomy`-paren med dimensionerna.
+ *
+ * INGET ÅR HÄRLEDS HÄR LÄNGRE. Första formen samlade eventens `Startdatum` per
+ * par — men ett år knutet till ett PAR kan bara svara på "vilka kurser gick
+ * 2025", aldrig på "vem gick något 2025", eftersom motorns rader inte bär
+ * någon tidpunkt alls. Datan fanns; frågan den kunde besvara var fel fråga.
  */
 function byggParInfo(events: Event[]): ParInfo[] {
-  const taxonomi = deriveTaxonomy(events);
-  const arPerPar = new Map<string, Set<number>>();
-  for (const e of events) {
-    if (!e.eventNamn || !e.typ || !e.startdatum) continue;
-    const nyckel = `${e.eventNamn}|${e.typ}`;
-    const ar = Number(e.startdatum.slice(0, 4));
-    if (!Number.isFinite(ar)) continue;
-    const set = arPerPar.get(nyckel) ?? new Set<number>();
-    set.add(ar);
-    arPerPar.set(nyckel, set);
-  }
-  return taxonomi.map((par) => {
-    const nyckel = parKey(par);
+  return deriveTaxonomy(events).map((par) => {
     const kartlagt = KURS_KARTA[par.kurs];
     return {
       par,
-      nyckel,
+      nyckel: parKey(par),
       familj: kartlagt?.familj ?? null,
       niva: kartlagt?.niva ?? null,
       format: FORMAT_FOR_MODALITET[par.modalitet],
-      ar: [...(arPerPar.get(nyckel) ?? [])].sort((a, b) => b - a),
     };
   });
 }
@@ -291,7 +360,6 @@ function matchar(v: Villkor, p: ParInfo): boolean {
   if (v.familjer.length > 0 && (p.familj === null || !v.familjer.includes(p.familj))) return false;
   if (v.nivaer.length > 0 && (p.niva === null || !v.nivaer.includes(p.niva))) return false;
   if (v.format.length > 0 && !v.format.includes(p.format)) return false;
-  if (v.ar.length > 0 && !v.ar.some((a) => p.ar.includes(a))) return false;
   return true;
 }
 
@@ -340,8 +408,7 @@ function villkorKlartext(v: Villkor): string {
   const niva = v.nivaer.length === 0 ? '' : ` på ${listaOrd(v.nivaer.map((n) => NIVA_ETIKETT[n]))}`;
   const modalitet = ` som ${MODALITET_ORD[v.modalitet]}`;
   const format = v.format.length === 0 ? '' : ` i formatet ${listaOrd(v.format)}`;
-  const ar = v.ar.length === 0 ? '' : ` under ${listaOrd(v.ar.map(String))}`;
-  return `Deltagit i ${familj}${niva}${modalitet}${format}${ar}.`;
+  return `Deltagit i ${familj}${niva}${modalitet}${format}.`;
 }
 
 function predikatKlartext(pred: Predikat): string {
@@ -538,48 +605,82 @@ type Medlemssvar = { members: SegmentMember[]; count: number };
  * Nyckeln är REGELNS SIGNATUR, inte segmentets ID: två segment med samma
  * expanderade regel delar då walk, och vägen lista → detalj → tillbaka →
  * utskick kostar EN walk. `compute-segment` går igenom hela `Deltaganden`
- * (~1012 rader) och får aldrig hamras.
+ * (~1012 rader) och får aldrig hamras. Utskicksvyns `useQueries` bygger på
+ * SAMMA fabrik — det är därför ett redan räknat segment kostar noll där.
+ *
+ * TOM REGEL BESVARAS LOKALT, inte med en avstängd fråga. `computeMembership`
+ * ger tom OR ⇒ ingen kvalificerar (`segment-membership.ts:58`), så svaret är
+ * känt utan walk. Skillnaden spelar roll i unionen: en avstängd fråga står
+ * kvar som `isPending` för evigt, och multi-segmentets vakt ("alla walks har
+ * svarat") hade då aldrig kunnat släppa igenom sändningen.
  */
+function medlemsFraga(
+  dataSource: ReturnType<typeof useDataSource>,
+  rule: SegmentRule,
+): { queryKey: unknown[]; queryFn: () => Promise<Medlemssvar>; staleTime: number } {
+  return {
+    queryKey: ['proto-d', 'compute', regelSignatur(rule)],
+    queryFn: () =>
+      rule.include.length === 0
+        ? Promise.resolve({ members: [], count: 0 })
+        : dataSource.computeSegment(rule),
+    staleTime: 5 * 60_000,
+  };
+}
+
 function useMedlemmar(rule: SegmentRule, aktiv: boolean) {
   const dataSource = useDataSource();
-  return useQuery<Medlemssvar>({
-    queryKey: ['proto-d', 'compute', regelSignatur(rule)],
-    queryFn: () => dataSource.computeSegment(rule),
-    enabled: aktiv && rule.include.length > 0,
-    staleTime: 5 * 60_000,
-  });
+  return useQuery<Medlemssvar>({ ...medlemsFraga(dataSource, rule), enabled: aktiv });
 }
 
 /* ================================================================== *
  * LISTAN — HEM
  * ================================================================== */
 
+/**
+ * TVÅ LÄGEN, SAMMA GEOMETRI (`c` ← `Deltagare.tsx § MarkerbartKort`): i
+ * markera-läget ÄR kortet en rå RAC `Checkbox`, med grön KANT som urvals-
+ * bärare — kanten, inte plattan, eftersom plattan mäter 1,05:1 mot vitt och
+ * därmed inte kan bära WCAG 1.4.1 ensam.
+ */
 function SegmentKort({
   entitet,
   definition,
   antal,
   raknar,
+  markeraLage,
+  vald,
   onOppna,
+  onVaxla,
   onRakna,
 }: {
   entitet: SegmentEntitet;
   definition: string;
   antal: number | undefined;
   raknar: boolean;
+  markeraLage: boolean;
+  vald: boolean;
   onOppna: () => void;
+  onVaxla: (vald: boolean) => void;
   onRakna: () => void;
 }) {
-  return (
-    <li className="relative flex flex-col gap-1.5 rounded-2xl border border-transparent bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-border-strong">
-      <button
-        type="button"
-        onClick={onOppna}
-        className={`line-clamp-2 text-left font-semibold text-body after:absolute after:inset-0 ${
-          entitet.skiss ? 'pr-16' : ''
-        }`}
-      >
-        {entitet.namn}
-      </button>
+  const innehall = (
+    <>
+      {markeraLage ? (
+        <span className={`line-clamp-2 font-semibold text-body ${entitet.skiss ? 'pr-16' : ''}`}>
+          {entitet.namn}
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={onOppna}
+          className={`line-clamp-2 text-left font-semibold text-body after:absolute after:inset-0 ${
+            entitet.skiss ? 'pr-16' : ''
+          }`}
+        >
+          {entitet.namn}
+        </button>
+      )}
       <span className="flex items-start gap-1.5 text-small">
         <Filter
           aria-hidden="true"
@@ -601,7 +702,7 @@ function SegmentKort({
                   : `${antal} ${personform(antal)}`}
           </span>
         </span>
-        {antal === undefined && !raknar && (
+        {antal === undefined && !raknar && !markeraLage && (
           // `relative` lyfter knappen över rubrikens `after:inset-0`-överlägg.
           <span className="relative shrink-0 print:hidden">
             <Button intent="ghost" size="sm" onPress={onRakna}>
@@ -610,11 +711,39 @@ function SegmentKort({
           </span>
         )}
       </div>
+      {/* Pillen står SIST i DOM:en: i markera-läget är hela kortet en
+          `Checkbox`, och DOM-ordningen blir dess accessible name — med pillen
+          först läste skärmläsaren "Skiss RIM - alla…", kategorin före
+          identiteten. Placeringen är `absolute`, så flytten kostar inget. */}
       {entitet.skiss && (
         <span className="absolute top-4 right-4 rounded-full border border-transparent bg-surface px-2.5 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
           Skiss
         </span>
       )}
+    </>
+  );
+
+  if (markeraLage) {
+    return (
+      <li className="flex">
+        <Checkbox
+          isSelected={vald}
+          onChange={onVaxla}
+          className={`relative flex w-full cursor-pointer flex-col gap-1.5 rounded-2xl border p-4 motion-safe:transition-colors ${
+            vald
+              ? 'border-(--mm-success) bg-(--mm-success-bg) contrast-more:border-(--mm-success)'
+              : 'border-transparent bg-bg-muted hover:bg-bg-emphasized contrast-more:border-border-strong'
+          }`}
+        >
+          {innehall}
+        </Checkbox>
+      </li>
+    );
+  }
+
+  return (
+    <li className="relative flex flex-col gap-1.5 rounded-2xl border border-transparent bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-border-strong">
+      {innehall}
     </li>
   );
 }
@@ -623,7 +752,10 @@ function SegmentKortMedAntal(props: {
   entitet: SegmentEntitet;
   parInfo: ParInfo[];
   begard: boolean;
+  markeraLage: boolean;
+  vald: boolean;
   onOppna: () => void;
+  onVaxla: (vald: boolean) => void;
   onRakna: () => void;
 }) {
   const rule = regelFor(props.entitet, props.parInfo);
@@ -634,7 +766,10 @@ function SegmentKortMedAntal(props: {
       definition={definitionFor(props.entitet, props.parInfo)}
       antal={data?.count}
       raknar={props.begard && isFetching && data === undefined}
+      markeraLage={props.markeraLage}
+      vald={props.vald}
       onOppna={props.onOppna}
+      onVaxla={props.onVaxla}
       onRakna={props.onRakna}
     />
   );
@@ -654,9 +789,17 @@ function SegmentLista({
   laddar,
   fel,
   begarda,
+  markeraLage,
+  valda,
   onOppna,
   onRakna,
   onNytt,
+  onOppnaMarkering,
+  onStangMarkering,
+  onVaxla,
+  onMarkeraAlla,
+  onRensa,
+  onSkicka,
 }: {
   sparade: SegmentEntitet[];
   skisser: SegmentEntitet[];
@@ -664,12 +807,23 @@ function SegmentLista({
   laddar: boolean;
   fel: Error | null;
   begarda: ReadonlySet<string>;
+  markeraLage: boolean;
+  valda: ReadonlySet<string>;
   onOppna: (id: string) => void;
   onRakna: (id: string) => void;
   onNytt: () => void;
+  onOppnaMarkering: () => void;
+  onStangMarkering: () => void;
+  onVaxla: (id: string, vald: boolean) => void;
+  onMarkeraAlla: () => void;
+  onRensa: () => void;
+  onSkicka: () => void;
 }) {
   const rubrikRef = useRef<HTMLHeadingElement>(null);
   useVyFokus(rubrikRef, !laddar);
+
+  const markerbara = sparade.length + skisser.length;
+  const allaValda = markerbara > 0 && valda.size === markerbara;
 
   const kortLista = (poster: SegmentEntitet[]) => (
     <ul className="flex flex-col gap-3">
@@ -679,7 +833,10 @@ function SegmentLista({
           entitet={e}
           parInfo={parInfo}
           begard={begarda.has(e.id)}
+          markeraLage={markeraLage}
+          vald={valda.has(e.id)}
           onOppna={() => onOppna(e.id)}
+          onVaxla={(v) => onVaxla(e.id, v)}
           onRakna={() => onRakna(e.id)}
         />
       ))}
@@ -694,16 +851,66 @@ function SegmentLista({
         </h1>
         <p className="text-small text-text-muted">
           Grupper av personer du sparar och återanvänder. Öppna ett segment för att se vilka som är
-          i det - och skicka därifrån.
+          i det - och skicka därifrån. Flera segment i ett utskick: markera dem.
         </p>
       </header>
 
       <div className="flex flex-col gap-6 px-4">
-        <div className="flex flex-wrap items-center gap-2 print:hidden">
-          <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
-            <ListPlus aria-hidden="true" size={18} className="shrink-0" />
-            Nytt segment
-          </button>
+        {/* EN RAD, ALLTID NÄRVARANDE (`c` ← `Deltagare.tsx § MarkeringsBatchBar`,
+            `TASK-145.3` AC #1): läget växlas genom en horisontell utvidgning,
+            aldrig en vertikal förskjutning. Läges-knappen är förankrad höger i
+            BÅDA lägena och flyttar sig aldrig — den är ankaret man backar ur
+            läget med; handlingarna växer ut från vänster och tar "Nytt
+            segment"s plats, för mitt i ett urval är att skapa något nytt inte
+            det man håller på med.
+
+            PRIMÄRKNAPPEN VERKSTÄLLER ALDRIG. "Skicka utskick" tar urvalet
+            VIDARE till utskicksvyn — där publiken står som huvudinnehåll,
+            precis som på detaljsidan. Kontrollen hoppas inte över; den utförs
+            på den enda yta där en union av segment finns. */}
+        <div className="flex min-h-10 flex-wrap items-center gap-2 print:hidden">
+          {markeraLage ? (
+            <>
+              <Button intent="primary" size="sm" isDisabled={valda.size === 0} onPress={onSkicka}>
+                Skicka utskick
+              </Button>
+              <Button intent="secondary" size="sm" isDisabled={allaValda} onPress={onMarkeraAlla}>
+                Markera alla
+              </Button>
+              {valda.size > 0 && (
+                <Button intent="ghost" size="sm" onPress={onRensa}>
+                  Rensa
+                </Button>
+              )}
+              {/* Kort räknare av mätt skäl (`c`s fynd: full mening wrapade
+                  raden och fick listan att hoppa). Skärmläsaren får ändå hela
+                  meningen via `aria-atomic` + `sr-only`-tillägget. */}
+              <span
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="text-small text-text-secondary tabular-nums"
+              >
+                {valda.size} av {markerbara}
+                <span className="sr-only"> segment markerade</span>
+              </span>
+            </>
+          ) : (
+            <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
+              <ListPlus aria-hidden="true" size={18} className="shrink-0" />
+              Nytt segment
+            </button>
+          )}
+          {markerbara > 0 && (
+            <button
+              type="button"
+              onClick={markeraLage ? onStangMarkering : onOppnaMarkering}
+              className={`${KAPSEL_KLASS} ml-auto`}
+            >
+              <Check aria-hidden="true" size={18} className="shrink-0" />
+              {markeraLage ? 'Avbryt' : 'Markera'}
+            </button>
+          )}
         </div>
 
         {fel && (
@@ -793,6 +1000,123 @@ function farMailet(m: SegmentMember): boolean {
   return Boolean(m.email) && !m.ejGodkandMail;
 }
 
+/* ── SKALPROVET (ärvt ur `b`) ──────────────────────────────────────────────
+   Staging bär 1–2 personer med avstämd närvaro. Chunkningen, visningsfiltret
+   och söket finns i koden men har aldrig setts arbeta — och att PÅSTÅ att
+   formen skalar utan att kunna visa det vore precis den obelagda sortens
+   anspråk hela passet handlar om att inte göra.
+
+   `b`s disciplin ärvs oavkortat: skalprovet FYLLER UT en verklig publik, det
+   SKAPAR ingen. Det är ett INSTRUMENT, inte data, och det säger det själv. */
+const SKALPROV_MAL = 85;
+const SKALPROV_FORNAMN = [
+  'Anna',
+  'Bengt',
+  'Cecilia',
+  'David',
+  'Elin',
+  'Fredrik',
+  'Gunilla',
+  'Håkan',
+  'Ingrid',
+  'Johan',
+  'Karin',
+  'Lars',
+  'Maria',
+  'Niklas',
+  'Olga',
+  'Per',
+  'Quintus',
+  'Rebecka',
+  'Sven',
+  'Tova',
+  'Ulf',
+  'Vera',
+  'Wilma',
+  'Yvonne',
+  'Zara',
+  'Åsa',
+  'Ärling',
+  'Örjan',
+];
+const SKALPROV_EFTERNAMN = [
+  'Andersson',
+  'Bergström',
+  'Carlsson',
+  'Dahl',
+  'Ek',
+  'Forsberg',
+  'Gustafsson',
+  'Hedlund',
+  'Isaksson',
+  'Jonsson',
+  'Karlsson',
+  'Lind',
+];
+
+/**
+ * Deterministiskt utfyllda exempelpersoner (`b`s form). Var sjunde saknar
+ * e-post och var elfte har tackat nej — så att de undertryckta faktiskt finns
+ * att titta på i listan, i visningsfiltret och i granskningens varningar.
+ */
+function byggSkalprov(befintliga: number): SegmentMember[] {
+  const ut: SegmentMember[] = [];
+  for (let i = befintliga; i < SKALPROV_MAL; i += 1) {
+    const f = SKALPROV_FORNAMN[i % SKALPROV_FORNAMN.length] ?? 'Exempel';
+    const e = SKALPROV_EFTERNAMN[(i * 5) % SKALPROV_EFTERNAMN.length] ?? 'Person';
+    ut.push({
+      id: `skalprov-${i}`,
+      namn: `${f} ${e}`,
+      email: i % 7 === 3 ? null : `${`${f}.${e}`.toLowerCase()}@exempel.invalid`,
+      ejGodkandMail: i % 11 === 5,
+    });
+  }
+  return ut;
+}
+
+/**
+ * FYLLER UT, SKAPAR ALDRIG. En tom publik förblir tom även med skalprovet på —
+ * annars hade instrumentet svarat på en fråga ingen ställt ("hur ser 85 av
+ * ingenting ut?") och samtidigt dolt fälla #34:s tomläge, som är en av de
+ * former som faktiskt ska bedömas.
+ */
+function fyllUt(medlemmar: SegmentMember[], skalprov: boolean): SegmentMember[] {
+  if (!skalprov || medlemmar.length === 0) return medlemmar;
+  return [...medlemmar, ...byggSkalprov(medlemmar.length)];
+}
+
+/** Skalprovets egna, påhittade personer — aldrig underlag för en äkta kontroll. */
+function arPahittad(m: SegmentMember): boolean {
+  return m.id.startsWith('skalprov-');
+}
+
+/**
+ * Instrumentet, i `PrototypRigg`s streckade formspråk: samma visuella klass
+ * säger "detta är riggen, inte ytan" utan att det behöver skrivas.
+ */
+function SkalprovsVaxel({ aktivt, onVaxla }: { aktivt: boolean; onVaxla: (v: boolean) => void }) {
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-border border-dashed p-3 print:hidden">
+      <p className="text-caption text-text-muted">
+        <strong className="font-medium">Prototyp-rigg.</strong> Staging har för lite avstämd närvaro
+        för att visa hur publiken beter sig i den storlek den är byggd för.
+      </p>
+      {/* PÅ/AV MÅSTE VARA OMISSKÄNNLIGT. Första formen lånade `PrototypRigg`s
+          dämpade markering (`bg-bg-emphasized`) — men den fungerar bara i ett
+          treval där något ALLTID är valt och de tre jämförs med varandra. En
+          ensam växel har inget att jämföras med, och skärmdumpen visade det:
+          påslaget läste som avslaget. Här gäller variantens egen chip-grammatik
+          i stället (`ValChip`): vald = `bg-text`, oval = synlig kant på
+          `bg-surface` — kanten, aldrig plattan, är WCAG-bäraren. */}
+      <div className="flex">
+        <ValChip vald={aktivt} onTryck={() => onVaxla(!aktivt)}>
+          Skalprov: fyll publiken till {SKALPROV_MAL} personer
+        </ValChip>
+      </div>
+    </div>
+  );
+}
+
 /**
  * NORMEN ÄR TYST: den som får mailet bär inget märke. Bara avvikelsen märks,
  * och den bärs av TEXT + ikon (`StatusBadge`), aldrig av färg ensam.
@@ -846,7 +1170,15 @@ function PersonRad({
  *
  * Skalan bärs som i `b`: sammanfattningen svarar utan att man läser en rad,
  * visningsfiltret isolerar avvikelserna, söket är vägen till EN person, och
- * listan chunkas (25) så DOM:en är liten — men papperet får hela publiken.
+ * listan chunkas i steg om 25.
+ *
+ * VAD CHUNKEN FAKTISKT GÖR, mätt vid 85 personer (skalprovet, 2026-08-10):
+ * hela publiken ligger i DOM:en och de bortom chunken döljs med `hidden
+ * print:contents` — det är så papperet får alla rader utan en egen kodväg.
+ * Chunken sparar alltså MÅLNING och SIDHÖJD, inte DOM-noder: 3 217 px vid
+ * första chunken mot 7 766 px utfälld. (En tidigare formulering här påstod
+ * "så DOM:en är liten"; det var fel, och det syntes först när skalprovet
+ * gjorde 85 personer möjliga att mäta.)
  */
 function PublikSektion({
   medlemmar,
@@ -854,6 +1186,8 @@ function PublikSektion({
   isError,
   error,
   endastForelasning,
+  skalprov,
+  onSkalprov,
 }: {
   medlemmar: SegmentMember[];
   isPending: boolean;
@@ -861,6 +1195,10 @@ function PublikSektion({
   error: unknown;
   /** Person-ID:n som kvalificerat sig UTAN någon utbildning (granskningsvyn). */
   endastForelasning?: ReadonlySet<string>;
+  /** Skalprovet påslaget — publiken är då delvis påhittad. */
+  skalprov?: boolean;
+  /** Satt = växeln bor på DENNA yta. Utelämnad = bara varningen följer med hit. */
+  onSkalprov?: (v: boolean) => void;
 }) {
   const [vy, setVy] = useState<PublikVy>('alla');
   const [sok, setSok] = useState('');
@@ -906,12 +1244,37 @@ function PublikSektion({
         <h2 id="grupp-publik" className="font-semibold text-lg">
           Publiken
         </h2>
-        {!isPending && medlemmar.length > 0 && (
+        {/* RÄKNAREN SYNS BARA NÄR DEN HAR NÅGOT ATT SÄGA — och den säger
+            "matchar", inte "visar". Skalprovet avslöjade kollisionen: vid 85
+            personer stod "Visar 85 av 85" här samtidigt som chunk-foten sa
+            "25 av 85 visade", två nästan identiska meningar om två helt olika
+            saker (filtrets utfall respektive hur många som är målade). Nu bär
+            den ena ordet "matchar" och den andra "visade", och en ofiltrerad
+            lista upprepar inte ett tal som redan står i sidhuvudet. */}
+        {!isPending && medlemmar.length > 0 && synliga.length !== medlemmar.length && (
           <span className="text-small text-text-secondary">
-            Visar {synliga.length} av {medlemmar.length}
+            {synliga.length} av {medlemmar.length} matchar
           </span>
         )}
       </div>
+
+      {/* Skalprovet får ALDRIG gå obemärkt förbi (`b`s regel) — en påhittad
+          publik som ser äkta ut är värre än ingen publik alls. Rutan följer
+          med till VARJE yta som visar publiken, även den där växeln inte bor. */}
+      {skalprov && (
+        <div className="px-4">
+          <MessageBox intent="warning" title="Skalprov påslaget - publiken är delvis påhittad">
+            <p>
+              Personerna med adressen <code>@exempel.invalid</code> finns inte. Växeln är ett
+              mätinstrument och sitter under publikens filter på segmentets sida.
+            </p>
+            <p>
+              Kontroller som bygger på verklig kurshistorik - fördelningen mellan utbildning och
+              föreläsning - räknar bara de verkliga personerna.
+            </p>
+          </MessageBox>
+        </div>
+      )}
 
       {isPending ? (
         <div role="status" aria-busy="true" className="flex flex-col gap-2 px-4">
@@ -960,6 +1323,10 @@ function PublikSektion({
                 description="Söker i den redan hämtade publiken - kostar inget serveranrop."
               />
             )}
+            {/* VÄXELN BOR DÄR PUBLIKEN BOR, sist bland dess kontroller: den
+                är ett instrument för att bedöma listan, inte ett filter över
+                den. Den syns bara när det FINNS en publik att fylla ut. */}
+            {onSkalprov && <SkalprovsVaxel aktivt={Boolean(skalprov)} onVaxla={onSkalprov} />}
           </div>
 
           {synliga.length === 0 ? (
@@ -1014,12 +1381,16 @@ function PublikSektion({
 function SegmentDetalj({
   entitet,
   parInfo,
+  skalprov,
+  onSkalprov,
   onTillbaka,
   onSkicka,
   onAndra,
 }: {
   entitet: SegmentEntitet;
   parInfo: ParInfo[];
+  skalprov: boolean;
+  onSkalprov: (v: boolean) => void;
   onTillbaka: () => void;
   onSkicka: () => void;
   onAndra: () => void;
@@ -1029,7 +1400,10 @@ function SegmentDetalj({
   const { data, isPending, isError, error } = useMedlemmar(rule, true);
   useVyFokus(rubrikRef, !isPending);
 
-  const medlemmar = data?.members ?? [];
+  // Skalprovet fyller UT den verkliga publiken. Headerns tal räknar den
+  // utfyllda mängden — annars hade rubriken sagt "2 personer" ovanför en lista
+  // med 85, vilket är precis den motsägelse instrumentet inte får skapa.
+  const medlemmar = fyllUt(data?.members ?? [], skalprov);
   const antalFar = medlemmar.filter(farMailet).length;
   const undertryckta = medlemmar.length - antalFar;
   const tomRegel = rule.include.length === 0;
@@ -1085,12 +1459,15 @@ function SegmentDetalj({
         </div>
       </div>
 
-      {/* PUBLIKEN — HUVUDINNEHÅLLET. Direkt, aldrig bakom en fällning. */}
+      {/* PUBLIKEN — HUVUDINNEHÅLLET. Direkt, aldrig bakom en fällning. Och
+          det är HÄR skalprovets växel bor: publikens egen yta. */}
       <PublikSektion
         medlemmar={medlemmar}
         isPending={isPending && !tomRegel}
         isError={isError}
         error={error}
+        skalprov={skalprov}
+        onSkalprov={onSkalprov}
       />
 
       {/* REGELN STÅR SIST, och det är avsiktligt. Den läses sällan (Marcus
@@ -1197,7 +1574,6 @@ function VillkorsKort({
   index,
   parInfo,
   formatIBasen,
-  arIBasen,
   onAndra,
   onTaBort,
 }: {
@@ -1205,14 +1581,13 @@ function VillkorsKort({
   index: number;
   parInfo: ParInfo[];
   formatIBasen: string[];
-  arIBasen: number[];
   onAndra: (v: Villkor) => void;
   onTaBort: () => void;
 }) {
   const [merOppen, setMerOppen] = useState(false);
   const merPanelId = useId();
   const traffade = traffar(villkor, parInfo);
-  const merAktiva = villkor.format.length + villkor.ar.length;
+  const merAktiva = villkor.format.length;
   /** Orört = ingen dimension vald alls. Styr om den saknade modaliteten är röd. */
   const orort =
     villkor.modalitet === null &&
@@ -1302,9 +1677,11 @@ function VillkorsKort({
         )}
       </div>
 
-      {/* ÅR OCH FORMAT ÄR FÄLLDA — de är avgränsningar, inte beslut, och en
+      {/* FORMATET ÄR FÄLLT — det är en avgränsning, inte ett beslut, och en
           ständigt öppen rad per dimension hade gjort kortet dubbelt så högt.
-          Modaliteten fälls ALDRIG in: den är kravet, inte finjusteringen. */}
+          Modaliteten fälls ALDRIG in: den är kravet, inte finjusteringen.
+          Bakom samma fällning står det som INTE går att välja (året) och
+          varför — den som letar efter en tidsperiod letar just här. */}
       <div className="flex flex-col">
         <button
           type="button"
@@ -1339,22 +1716,18 @@ function VillkorsKort({
               </ValChip>
             ))}
           </ChipRad>
-          <ChipRad etikett="År">
-            {arIBasen.map((a) => (
-              <ValChip
-                key={a}
-                vald={villkor.ar.includes(a)}
-                onTryck={() => onAndra({ ...villkor, ar: vaxla(villkor.ar, a) })}
-              >
-                {a}
-              </ValChip>
-            ))}
-          </ChipRad>
           <p className="text-caption text-text-muted">
             Formatet är i dag 1:1 med modaliteten - dimensionen blir meningsfull när fler format
-            tillkommer. Året smalnar av vilka KURSER som räknas, inte vilka tillfällen: dagens motor
-            känner bara kurs och modalitet.
+            tillkommer.
           </p>
+          {/* DET SOM INTE FINNS SÄGS RAKT UT. Alternativet - en årsknapp som
+              i själva verket väljer kurser - är exakt den tysta felklass
+              modalitets-kravet finns för att avskaffa. */}
+          <div className="flex flex-col gap-1 border-border border-t pt-3">
+            <p className="font-medium text-small">{AR_EF_KRAV.rubrik}</p>
+            <p className="text-caption text-text-muted">{AR_EF_KRAV.brod}</p>
+            <p className="text-caption text-text-muted">{AR_EF_KRAV.krav}</p>
+          </div>
         </div>
       </div>
 
@@ -1400,7 +1773,6 @@ function VillkorsLista({
   villkor,
   parInfo,
   formatIBasen,
-  arIBasen,
   onAndra,
   onLaggTill,
   onTaBort,
@@ -1410,7 +1782,6 @@ function VillkorsLista({
   villkor: Villkor[];
   parInfo: ParInfo[];
   formatIBasen: string[];
-  arIBasen: number[];
   onAndra: (id: string, v: Villkor) => void;
   onLaggTill: () => void;
   onTaBort: (id: string) => void;
@@ -1431,7 +1802,6 @@ function VillkorsLista({
               index={i}
               parInfo={parInfo}
               formatIBasen={formatIBasen}
-              arIBasen={arIBasen}
               onAndra={(ny) => onAndra(v.id, ny)}
               onTaBort={() => onTaBort(v.id)}
             />
@@ -1487,10 +1857,6 @@ function RegelVerkstad({
 
   const formatIBasen = useMemo(
     () => [...new Set(parInfo.map((p) => p.format))].sort((a, b) => a.localeCompare(b, 'sv')),
-    [parInfo],
-  );
-  const arIBasen = useMemo(
-    () => [...new Set(parInfo.flatMap((p) => p.ar))].sort((a, b) => b - a),
     [parInfo],
   );
 
@@ -1553,7 +1919,6 @@ function RegelVerkstad({
         villkor={pred.med}
         parInfo={parInfo}
         formatIBasen={formatIBasen}
-        arIBasen={arIBasen}
         onAndra={(id, v) => andra('med', id, v)}
         onLaggTill={() => laggTill('med')}
         onTaBort={(id) => taBort('med', id)}
@@ -1565,7 +1930,6 @@ function RegelVerkstad({
         villkor={pred.utan}
         parInfo={parInfo}
         formatIBasen={formatIBasen}
-        arIBasen={arIBasen}
         onAndra={(id, v) => andra('utan', id, v)}
         onLaggTill={() => laggTill('utan')}
         onTaBort={(id) => taBort('utan', id)}
@@ -1791,6 +2155,13 @@ function PrototypRigg({
  * utbildning i en annan familj är inte "enbart föreläsning" och ska inte
  * flaggas som det.
  *
+ * MULTI-SEGMENT: `kanBlandas` avgörs av UNIONEN av de valda segmentens regler
+ * — en blandning kan uppstå mellan två segment lika gärna som inuti ett.
+ *
+ * SKALPROV: instrumentets påhittade personer hålls UTANFÖR underlaget. De har
+ * ingen kurshistorik, så en kontroll som räknade dem hade svarat på en fråga
+ * om påhittad data — och det säger skalprovets egen varningsruta rakt ut.
+ *
  * KOSTNADEN ÄR EN WALK — EN GÅNG PER SESSION, inte per segment. Regeln är
  * identisk för alla segment, och `useMedlemmar` nycklar på REGELNS SIGNATUR
  * (`b`s signatur-cache-grepp), så andra och tredje segmentet läser samma
@@ -1802,7 +2173,7 @@ function PrototypRigg({
  * kvalificerade sig genom vore fördelningen gratis.
  */
 function useModalitetsFordelning(
-  rule: SegmentRule,
+  kanBlandas: boolean,
   parInfo: ParInfo[],
   mottagare: SegmentMember[],
 ) {
@@ -1814,7 +2185,6 @@ function useModalitetsFordelning(
     [parInfo],
   );
 
-  const kanBlandas = rule.include.some((p) => p.modalitet === 'Föreläsning');
   const harUtbildningar = utbildningsRegel.include.length > 0;
   const fraga = useMedlemmar(utbildningsRegel, kanBlandas && harUtbildningar);
 
@@ -1833,17 +2203,26 @@ function useModalitetsFordelning(
 }
 
 function UtskicksVy({
-  entitet,
+  entiteter,
   parInfo,
+  skalprov,
   onTillbaka,
 }: {
-  entitet: SegmentEntitet;
+  entiteter: SegmentEntitet[];
   parInfo: ParInfo[];
+  skalprov: boolean;
   onTillbaka: () => void;
 }) {
   const rubrikRef = useRef<HTMLHeadingElement>(null);
-  const rule = regelFor(entitet, parInfo);
-  const { data, isPending } = useMedlemmar(rule, true);
+  const dataSource = useDataSource();
+
+  // EN fråga per valt segment, på SAMMA cache-nyckel (regelns signatur) som
+  // listan och detaljen använder → ett redan räknat segment kostar noll här.
+  // Speglar EF:ens `resolveSegmentMembers`: N regler, en union, dedup på person.
+  const svar = useQueries({
+    queries: entiteter.map((e) => medlemsFraga(dataSource, regelFor(e, parInfo))),
+  });
+  const isPending = svar.some((s) => s.isPending);
   useVyFokus(rubrikRef, !isPending);
 
   const [amne, setAmne] = useState('');
@@ -1856,7 +2235,33 @@ function UtskicksVy({
   const [visaBlandade, setVisaBlandade] = useState(false);
   const blandadePanelId = useId();
 
-  const mottagare = data?.members ?? [];
+  /* ETT FALLERAT SEGMENT FÅR ALDRIG KRYMPA UNIONEN TYST (`c`s vakt, ärvd).
+     Unionen byggs ur N oberoende walks, och en som svarar med fel bidrar med
+     noll medlemmar UTAN att synas. Talet i "Utskick till N personer" hade då
+     varit FALSKT — på exakt den yta som finns för att inte ljuga — och
+     skriv-för-att-bekräfta-grinden hade låst upp mot det falska talet.
+
+     Med ETT segment är felet självrapporterande (noll mottagare, inget att
+     skicka). Med flera är det tyst. Därför bor vakten här och inte i
+     detaljvyn, och sändningen blockeras helt tills alla walks svarat: en
+     delmängd som ser komplett ut är farligare än ett stopp. */
+  const misslyckade = svar.filter((s) => s.isError).length;
+
+  // UNIONEN, som EF:en gör den: dedup på person-ID. Förekomsterna bär
+  // överlappet — samma person i två segment får ETT mail.
+  const forekomster = new Map<string, number>();
+  const unionKarta = new Map<string, SegmentMember>();
+  for (const s of svar) {
+    for (const m of s.data?.members ?? []) {
+      unionKarta.set(m.id, m);
+      forekomster.set(m.id, (forekomster.get(m.id) ?? 0) + 1);
+    }
+  }
+  const raMottagare = [...unionKarta.values()];
+  const overlapp = [...forekomster.values()].filter((n) => n > 1).length;
+  const summaPerSegment = svar.reduce((n, s) => n + (s.data?.count ?? 0), 0);
+
+  const mottagare = fyllUt(raMottagare, skalprov);
   const signatur = mottagare.map((m) => m.id).join(',');
   const utanEpost = mottagare.filter((m) => !m.email).length;
   const nekade = mottagare.filter((m) => m.email && m.ejGodkandMail).length;
@@ -1865,7 +2270,13 @@ function UtskicksVy({
   const amneVisning = fyllPlatshallare(amne, forsta);
   const ofyllda = [...new Set([...brodtext.ofyllda, ...amneVisning.ofyllda])];
 
-  const fordelning = useModalitetsFordelning(rule, parInfo, mottagare);
+  // Blandningen kan uppstå INUTI ett segment ("Båda") lika gärna som MELLAN
+  // två — därför avgörs `kanBlandas` av unionen av de valda reglerna.
+  const kanBlandas = entiteter.some((e) =>
+    regelFor(e, parInfo).include.some((p) => p.modalitet === 'Föreläsning'),
+  );
+  const fordelningsUnderlag = mottagare.filter((m) => !arPahittad(m));
+  const fordelning = useModalitetsFordelning(kanBlandas, parInfo, fordelningsUnderlag);
   const blandade = mottagare.filter((m) => fordelning.ids.has(m.id));
 
   /* GRINDEN ÄR HÄRLEDD (T50 lager a): `bekraftelse` mäts mot det AKTUELLA
@@ -1877,14 +2288,24 @@ function UtskicksVy({
      laddas EFTER att knappen tryckts är ingen kontroll — och den här ska
      läsas före ett oåterkalleligt utskick, inte bredvid det. Misslyckas
      hämtningen låser den däremot INTE: antalet är fortfarande sant, bara
-     fördelningen okänd, och det säger rutan i stället. */
+     fördelningen okänd, och det säger rutan i stället.
+
+     `misslyckade === 0` INGÅR I "KÄNT VÄRDE": ett tal byggt ur en ofullständig
+     union är inte ett känt värde, det är en gissning som ser exakt ut. */
   const upplast =
     !isPending &&
+    misslyckade === 0 &&
     fordelning.klar &&
     mottagare.length > 0 &&
     bekraftelse.trim() === String(mottagare.length);
   const kanSkicka = upplast && amne.trim() !== '' && text.trim() !== '';
   const visatUtfall = utfall && utfall.signatur === signatur ? utfall : null;
+
+  /** MED ETT SEGMENT KOSTAR MULTI-STÖDET NOLL RADER: namnet står redan här. */
+  const rubrik =
+    entiteter.length === 1 ? (entiteter[0]?.namn ?? 'Utskick') : `${entiteter.length} segment`;
+  const tillbakaEtikett =
+    entiteter.length === 1 ? 'Tillbaka till segmentet' : 'Tillbaka till segmenten';
 
   function skicka() {
     // T50 lager (c): PESSIMISTISK — ingen optimistisk flip. granska → skickar
@@ -1899,12 +2320,12 @@ function UtskicksVy({
   if (lage === 'resultat' && visatUtfall) {
     const u = visatUtfall;
     return (
-      <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmentet">
+      <SidRam onTillbaka={onTillbaka} tillbakaEtikett={tillbakaEtikett}>
         <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
           <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
             {u.accepterade === 0 ? 'Inget skickades' : 'Skickat'}
           </h1>
-          <p className="text-small text-text-muted">{entitet.namn}</p>
+          <p className="text-small text-text-muted">{rubrik}</p>
         </header>
 
         <div className="flex flex-col gap-4 px-4">
@@ -1936,7 +2357,7 @@ function UtskicksVy({
 
           <div className="flex items-center gap-2">
             <Button intent="primary" onPress={onTillbaka}>
-              Tillbaka till segmentet
+              {tillbakaEtikett}
             </Button>
           </div>
           <PrototypNot />
@@ -1958,23 +2379,76 @@ function UtskicksVy({
   }
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmentet">
+    <SidRam onTillbaka={onTillbaka} tillbakaEtikett={tillbakaEtikett}>
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
         <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
           Utskick
         </h1>
-        <p className="text-small text-text-muted">{entitet.namn}</p>
+        <p className="text-small text-text-muted">{rubrik}</p>
       </header>
 
       {/* KONSEKVENSEN FÖRST OCH STÖRST (T50 lager b): antalet syns före
-          sändning, och serverns ägarskap sägs rakt ut. */}
+          sändning, och serverns ägarskap sägs rakt ut. TALET DÖLJS vid ett
+          fallerat segment — se vakten ovan. */}
       <p className="px-4 text-lg">
         Utskick till{' '}
         <strong className="font-semibold text-xl tabular-nums" aria-live="polite">
-          {isPending ? '…' : mottagare.length}
+          {isPending || misslyckade > 0 ? '…' : mottagare.length}
         </strong>{' '}
         {personform(mottagare.length)}.
       </p>
+
+      {/* FELET STÅR FÖRE ALLT ANNAT: det gör resten av sidan otillförlitlig. */}
+      {misslyckade > 0 && (
+        <div className="px-4">
+          <MessageBox intent="error" title="Alla segment kunde inte räknas">
+            {misslyckade === 1
+              ? 'Ett av segmenten svarade inte, så mottagarlistan är ofullständig.'
+              : `${misslyckade} av segmenten svarade inte, så mottagarlistan är ofullständig.`}{' '}
+            Utskicket är låst tills alla segment är räknade - annars hade du bekräftat ett antal som
+            inte stämmer. Gå tillbaka och försök igen.
+          </MessageBox>
+        </div>
+      )}
+
+      {/* SEGMENTEN — multi-segmentets egen grupp, och unionens enda
+          kontrollräkningsbara yta. Den renderas FÖRST vid två eller fler:
+          med ett segment står namnet redan i underrubriken, så gruppen skulle
+          bara vara i vägen i normalfallet. */}
+      {entiteter.length > 1 && (
+        <DetaljGrupp id="grupp-segment" rubrik="Segment i utskicket">
+          {entiteter.map((e, i) => (
+            <div key={e.id} className="flex items-center justify-between gap-4 py-3">
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-body">{e.namn}</span>
+                <span className="truncate text-caption text-text-muted">
+                  {definitionFor(e, parInfo)}
+                </span>
+              </span>
+              <span className="shrink-0 text-small text-text-secondary tabular-nums">
+                {svar[i]?.isError ? 'fel' : svar[i]?.isPending ? '…' : (svar[i]?.data?.count ?? 0)}
+              </span>
+            </div>
+          ))}
+          {/* ÖVERLAPPSRADEN — funktionens hela existensberättigande i formen.
+              Utan den är unionens tal något Lotta inte kan kontrollräkna, och
+              skillnaden mot summan är exakt den tysta feltyp ett utskick inte
+              får bära. */}
+          <div className="py-3">
+            <p className="text-small text-text-secondary">
+              {misslyckade > 0
+                ? 'Överlappet kan inte räknas förrän alla segment svarat.'
+                : `${summaPerSegment} platser i segmenten, ${raMottagare.length} unika personer. ${
+                    overlapp === 0
+                      ? 'Ingen finns i mer än ett segment.'
+                      : `${overlapp} ${
+                          overlapp === 1 ? 'person finns' : 'personer finns'
+                        } i flera segment och får ETT mail.`
+                  }`}
+            </p>
+          </div>
+        </DetaljGrupp>
+      )}
 
       {/* ── MODALITETSFÖRDELNINGEN ──────────────────────────────────────
           Marcus säkerhetskrav har TVÅ halvor. Den obligatoriska modaliteten
@@ -2005,13 +2479,16 @@ function UtskicksVy({
             </MessageBox>
           ) : blandade.length === 0 ? (
             <p className="text-small text-text-secondary">
-              Kontrollerat: alla {mottagare.length} mottagare har gått minst en utbildning.
+              Kontrollerat: alla {fordelningsUnderlag.length} mottagare har gått minst en
+              utbildning.
             </p>
           ) : (
+            // NÄMNAREN ÄR DE VERKLIGA MOTTAGARNA, inte den utfyllda publiken:
+            // skalprovets personer har ingen kurshistorik att kontrollera.
             <MessageBox intent="warning" title="Publiken är blandad">
               <p>
                 <strong>
-                  {blandade.length} av {mottagare.length}
+                  {blandade.length} av {fordelningsUnderlag.length}
                 </strong>{' '}
                 mottagare har bara gått föreläsning - ingen utbildning.
               </p>
@@ -2078,6 +2555,7 @@ function UtskicksVy({
         isError={false}
         error={undefined}
         endastForelasning={fordelning.ids}
+        skalprov={skalprov}
       />
 
       <DetaljGrupp id="grupp-utskicket" rubrik="Utskicket">
@@ -2203,11 +2681,16 @@ function UtskicksVy({
  * VARIANTEN
  * ================================================================== */
 
+/**
+ * `utskick` bär en LISTA av id:n (multi-segment) plus varifrån man kom.
+ * Returvägen kan inte härledas ur antalet: ETT markerat segment i listan ska
+ * backa till LISTAN, inte till en detaljsida man aldrig var på.
+ */
 type Vy =
   | { namn: 'lista' }
   | { namn: 'detalj'; id: string }
   | { namn: 'regel'; id: string }
-  | { namn: 'utskick'; id: string };
+  | { namn: 'utskick'; ids: string[]; retur: 'lista' | 'detalj' };
 
 /** Ett tomt segment i byggläge — utgången ur "Nytt segment". */
 function nyEntitet(): SegmentEntitet {
@@ -2233,6 +2716,16 @@ export function VariantD() {
    * listan. Ett utkast som avbryts ska försvinna som om det aldrig fanns.
    */
   const [utkastId, setUtkastId] = useState<string | null>(null);
+  /** Markera-läget i listan — multi-segmentets ingång. */
+  const [markeraLage, setMarkeraLage] = useState(false);
+  const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
+  /**
+   * SKALPROVET bor på variant-nivå, inte i detaljvyn. Skälet är att svaret på
+   * "håller formen vid 85?" inte får sluta vid detaljsidans dörr: publiken
+   * följer med till utskicksvyn, där listan, grinden och granskningens rutor
+   * ska klara samma storlek. Växeln bor däremot bara där publiken bor.
+   */
+  const [skalprov, setSkalprov] = useState(false);
 
   const segments = useQuery({
     queryKey: ['proto-d', 'segments'],
@@ -2264,6 +2757,20 @@ export function VariantD() {
   const laddar = segments.isPending || events.isPending;
   const fel = segments.error instanceof Error ? segments.error : null;
 
+  // Esc lämnar markera-läget (`c` ← `Deltagare.tsx § useMarkeringsLage`):
+  // läget äger hela listan och fokus kan stå var som helst när man vill backa.
+  useEffect(() => {
+    if (!markeraLage) return;
+    const vidTangent = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMarkeraLage(false);
+        setValda(new Set());
+      }
+    };
+    document.addEventListener('keydown', vidTangent);
+    return () => document.removeEventListener('keydown', vidTangent);
+  }, [markeraLage]);
+
   const sparaRegel = (id: string, namn: string, pred: Predikat) => {
     setEgna((lista) => {
       const finns = lista.some((e) => e.id === id);
@@ -2291,7 +2798,26 @@ export function VariantD() {
     setVy({ namn: 'detalj', id });
   };
 
-  if (vy.namn === 'detalj' || vy.namn === 'regel' || vy.namn === 'utskick') {
+  if (vy.namn === 'utskick') {
+    const valdaEntiteter = vy.ids
+      .map((id) => hitta(id))
+      .filter((e): e is SegmentEntitet => e !== undefined);
+    const forsta = valdaEntiteter[0];
+    if (forsta) {
+      return (
+        <UtskicksVy
+          entiteter={valdaEntiteter}
+          parInfo={parInfo}
+          skalprov={skalprov}
+          onTillbaka={() =>
+            setVy(vy.retur === 'detalj' ? { namn: 'detalj', id: forsta.id } : { namn: 'lista' })
+          }
+        />
+      );
+    }
+  }
+
+  if (vy.namn === 'detalj' || vy.namn === 'regel') {
     const entitet = hitta(vy.id);
     if (entitet) {
       if (vy.namn === 'regel') {
@@ -2304,21 +2830,14 @@ export function VariantD() {
           />
         );
       }
-      if (vy.namn === 'utskick') {
-        return (
-          <UtskicksVy
-            entitet={entitet}
-            parInfo={parInfo}
-            onTillbaka={() => setVy({ namn: 'detalj', id: entitet.id })}
-          />
-        );
-      }
       return (
         <SegmentDetalj
           entitet={entitet}
           parInfo={parInfo}
+          skalprov={skalprov}
+          onSkalprov={setSkalprov}
           onTillbaka={() => setVy({ namn: 'lista' })}
-          onSkicka={() => setVy({ namn: 'utskick', id: entitet.id })}
+          onSkicka={() => setVy({ namn: 'utskick', ids: [entitet.id], retur: 'detalj' })}
           onAndra={() => setVy({ namn: 'regel', id: entitet.id })}
         />
       );
@@ -2333,6 +2852,8 @@ export function VariantD() {
       laddar={laddar}
       fel={fel}
       begarda={begarda}
+      markeraLage={markeraLage}
+      valda={valda}
       onOppna={(id) => setVy({ namn: 'detalj', id })}
       onRakna={(id) => setBegarda((s) => (s.has(id) ? s : new Set(s).add(id)))}
       onNytt={() => {
@@ -2340,6 +2861,31 @@ export function VariantD() {
         setEgna((lista) => [...lista, entitet]);
         setUtkastId(entitet.id);
         setVy({ namn: 'regel', id: entitet.id });
+      }}
+      onOppnaMarkering={() => setMarkeraLage(true)}
+      onStangMarkering={() => {
+        setMarkeraLage(false);
+        setValda(new Set());
+      }}
+      onVaxla={(id, vald) =>
+        setValda((s) => {
+          const ny = new Set(s);
+          if (vald) ny.add(id);
+          else ny.delete(id);
+          return ny;
+        })
+      }
+      onMarkeraAlla={() => setValda(new Set(alla.map((e) => e.id)))}
+      onRensa={() => setValda(new Set())}
+      onSkicka={() => {
+        // Markerade segment räknas nu på riktigt — och de vars tal redan
+        // hämtats i listan kostar ingen ny walk (delad cache-nyckel).
+        setBegarda((s) => {
+          const ny = new Set(s);
+          for (const id of valda) ny.add(id);
+          return ny;
+        });
+        setVy({ namn: 'utskick', ids: [...valda], retur: 'lista' });
       }}
     />
   );
