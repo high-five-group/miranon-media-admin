@@ -34,21 +34,26 @@ import type { Person } from '@/domain/models/Person';
 import { queryKeys } from '@/queries/keys';
 
 /**
- * [PROTOTYPE] FORKEN i steg k03 — kortytans två kandidater. Byggunderlagets
- * §1.4 rank 1 lämnar valet till Marcus, så BÅDA byggdes och snapshot:ades
- * (k03a-* respektive k03b-*, samt slutlage-*). Flippa konstanten för att se
- * den andra i webbläsaren; ingen URL-parameter (steg adresseras aldrig i
- * URL:en, ADR-074 beslut 1).
+ * [PROTOTYPE] FORKEN i steg k03 är AVGJORD (Marcus, S103 2026-08-10:
+ * *"Skrota Zebra-grejen"*). Kortytan är TONAL — en tonal kortyta för hela
+ * listan med `divide-y`-avdelare mellan raderna (DetaljGrupp.tsx:29-36 +
+ * :63-71, eventsidans facit). Zebra-grenen (varannan rad tintad utan
+ * avdelare, NyaAnmalningarCard.tsx:163-169) är riven; den bor kvar som
+ * historik i `k03b-*` och `slutlage-zebra-*` i bilagemappen.
  *
- *  · 'tonal' — EN tonal kortyta för hela listan med `divide-y`-avdelare
- *    mellan raderna (DetaljGrupp.tsx:29-36 + :63-71 — eventsidans facit).
- *  · 'zebra' — samma kortyta, men raderna tintas varannan utan avdelare
- *    (NyaAnmalningarCard.tsx:163-169 — Hem-kortets K10-facit).
+ * Valet är oberoende belagt två gånger: Marcus öga, och ett research-pass
+ * (`docs/research/personlista-scanlista-branschmonster-2026-08-10.md`) där
+ * fem designsystem bygger en-kolumns scanlistor med avdelare och aldrig
+ * zebra — zebra hör till tabellklassen, vars motiv (horisontell spårning
+ * över kolumner) den här listan saknar. A11y pekade åt samma håll: vår
+ * zebra-variant bar radseparationen enbart i bakgrundstinten, utan
+ * kompensation under `prefers-contrast: more` eller forced-colors.
  *
- * Aldrig 50 fristående kort per person: den formen bär 3–12 poster (EventCard),
+ * Vinnaren behåller sin nyckel (`?variant=a`, ADR-074 beslut 1).
+ *
+ * Aldrig 50 fristående kort per person: den formen bär 3-12 poster (EventCard),
  * inte en scanlista som ska tåla 200 rader (Marcus-lås).
  */
-const KORTYTA: 'tonal' | 'zebra' = 'tonal';
 
 /** Sidstorlek per cursor-sida (ADR-056). EF:n klampar mot Airtables tak (≤100). */
 const PAGE_SIZE = 50;
@@ -163,7 +168,7 @@ function Pill({ ton = 'neutral', children }: { ton?: 'neutral' | 'aktiv'; childr
  * `tasks/sessions/bilagor/s90-personlistan-konvergens/README.md`):
  *
  *   k01 exakt kopia · k02 sid-insetens dubbelkant (i routen) · k03 kortanatomin
- *   (FORK: `KORTYTA`) · k04 metadata-grammatiken · k05 helradslänk + chevron ·
+ *   (FORK: AVGJORD, tonal) · k04 metadata-grammatiken · k05 helradslänk + chevron ·
  *   k06 lugnt laddläge · k07 prefetch på avsikt · k08 sökfältets form ·
  *   k09 räknar-raden som meta · k10 "Ladda fler" som kapsel · k11 tomläget.
  *
@@ -401,13 +406,9 @@ export function PersonsListPrototyp() {
           överleva till skarpt bygge (byggunderlagets R4). */}
           <ul
             aria-label="Personer"
-            className={
-              KORTYTA === 'tonal'
-                ? 'divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong'
-                : 'rounded-2xl border border-transparent bg-bg-muted p-2 contrast-more:border-border-strong'
-            }
+            className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
           >
-            {persons.map((person, i) => {
+            {persons.map((person) => {
               const contact = contactLine(person);
               return (
                 // [PROTOTYPE] STEG 5 (k05) — HELA RADEN ÄR KLICKYTAN.
@@ -421,11 +422,7 @@ export function PersonsListPrototyp() {
                   key={person.id}
                   onMouseEnter={() => varmDetalj(person.id)}
                   onFocusCapture={() => varmDetalj(person.id)}
-                  className={
-                    KORTYTA === 'tonal'
-                      ? 'relative flex items-center gap-3 py-3'
-                      : `relative flex items-center gap-3 px-2 py-2 ${i % 2 === 1 ? 'rounded-lg bg-bg-emphasized' : ''}`
-                  }
+                  className="relative flex items-center gap-3 py-3"
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     {/* [PROTOTYPE] STEG 4 (k04) — METADATA-GRAMMATIKEN.
