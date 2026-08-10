@@ -15,6 +15,40 @@
 // "ZZ-Conformance Person" isolerar exakt dessa 5 (EF:en substring-matchar
 // case-insensitivt mot Namn/E-post/Telefon/Ort).
 //
+// FIXTURENS ANDRA HALVA (S103, 2026-08-10) — VAR OCH EN BÄR EN ANMÄLAN.
+// `get-persons` fick ett konstant BAS_FILTER `{Antal anmälningar (totalt)} > 0`
+// (Marcus-beslut: Personer-vyn visar bara personer med anmälan; Intresserade bor
+// under Mer). De fem hade noll anmälningar och föll därmed UR svaret — sviten
+// mätte 0 träffar mot EXPECTED_NAMES. Fixturen följer kontraktet, inte tvärtom.
+//
+// Därför bär varje person nu exakt EN Anmälan i staging (`tbloOcrppVoyrHbrq`):
+//   Person 01 → recGZHp5dXgvYKxfT    Person 04 → recUDkaoeoAOdQKBF
+//   Person 02 → recl4lPtEnRojL5HA    Person 05 → recUtoXQwnw1So3g4
+//   Person 03 → recqyLZRe7WxTPpNf
+//
+// Formen är MEDVETET naken, och varje utelämning bär ett skäl:
+//   * INGEN Event-länk — en Event-länk hade ändrat det eventets rollups, och
+//     `ZZ-belaggning-fixtur`/`ZZ-arbetsko-fixtur` asserteras på 7 respektive 4
+//     exakta tal. Event-lösa anmälningar är en verklig domänklass (samma form
+//     som ZZ-History Person 01:s två rader), inte ett omöjligt tillstånd.
+//   * INGEN e-post — setup-purgens enda Anmälnings-target matchar `E-post` mot
+//     `create-test+…@staging.test`. Tom e-post gör raden omöjlig att ens
+//     kandidera (.purge-staging-policy.json).
+//   * INGA select-värden (Status/Källa/Flagga) — `get-registrations` zod-parsar
+//     HELA tabellen ofiltrerat; null passerar varje `.nullable()`, ett felstavat
+//     enum-värde hade fällt den sviten.
+//   * INGEN Ort — `Ort` ingår i SEARCH_FIELDS och rullas upp till personen. Ett
+//     värde här hade kunnat förorena sökrymden, och harnessen kräver EXAKT
+//     EXPECTED_NAMES: en sjätte träff fäller lika hårt som en fjärde.
+// Var rad bär sitt skäl även i basen, i fältet `Notering` ("PERMANENT
+// conformance-fixtur — STÄDA INTE"), eftersom en omärkt rad är oskiljbar från
+// en misslyckad testrest och därmed förr eller senare städas.
+//
+// Känd, accepterad kant: utan Event blir `Deadline slutbetalning`,
+// `Dagar kvar till deadline` och `Skicka betalningspåminnelse` `#ERROR` på de
+// fem raderna — samma tillstånd som ZZ-History-raderna redan har. Inget test
+// och ingen EF läser dem.
+//
 // Lokalt skip:as sviten utan TEST_USER-creds (känd gräns, se helpers.ts). Det
 // skarpa beviset körs i CI (STAGING_REQUIRED=1, secrets injicerade).
 //
