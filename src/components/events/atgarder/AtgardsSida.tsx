@@ -154,6 +154,7 @@ import {
   MailCheck,
   Paperclip,
   Plus,
+  Send,
   Upload,
   UserPlus,
 } from 'lucide-react';
@@ -2634,52 +2635,62 @@ function GranskningsSida({
               )}
             </span>
           </div>
-        </DetaljGrupp>
 
-        {/* [TASK-147.10, T53 väg C, ADR-067 D10] TESTMAILET — trygghetstriadens
-          sista länk (förhandsvisning + adresslista + testmail; T53s avgörande
-          drivare var Marcus egen sändrädsla vid T55 steg 1-granskningen,
-          "Lotta kommer känna likadant"): se det FAKTISKA renderade mailet i
-          EGEN inkorg innan handtaget ens dras. MEDVETET UTANFÖR `armerad`-
-          grinden — testmailet är diagnostik, inte den oåterkalleliga
-          handlingen SlideToConfirm skyddar, och provas hur många gånger som
-          helst innan man bestämmer sig. Samma sändväg som `skicka()`
-          (`useSendActionEmail`/`useSendActionTestEmail` delar EF, ADR-067
-          D9/D10), men EGEN mutation och EGET resultat-state — de två
-          anropen ska aldrig dela status. `forsta` styr synligheten: samma
-          villkor som "Förhandsvisningsexempel"-etiketten ovan (utan en
-          första mottagare finns ingen platshållar-källa att testa). */}
-        {forsta && (
-          <div className="flex flex-col items-start gap-1.5 px-4 pb-2">
-            <Button
-              intent="secondary"
-              size="sm"
-              isDisabled={sendActionTestEmail.isPending || lage === 'skickar'}
-              onPress={skickaTest}
-            >
-              {sendActionTestEmail.isPending ? 'Skickar test…' : 'Skicka test till mig'}
-            </Button>
-            {/* LIVE-REGION, INGEN FOKUSFLYTT — samma grammatik som `skickar`-
-              lägets annonsering nedan. Containern är EN `<div>` med ett
-              villkorat `<p>`-barn (aldrig en tom paragraf): vid FÖRSTA
-              render (`testUtfall === null`) är den helt tom och tillför
-              alltså INGEN rad i den facit-låsta ariaSnapshoten förrän Lotta
-              faktiskt klickat. */}
-            <div aria-live="polite" className="min-h-5">
-              {testUtfall?.status === 'sent' && (
-                <p className="text-small text-text-muted">
-                  Testmail skickat till {user?.email ?? 'din adress'}.
-                </p>
-              )}
-              {testUtfall?.status === 'failed' && (
-                <p className="text-error text-small">
-                  Kunde inte skicka testmailet
-                  {testUtfall.reason ? `: ${testUtfall.reason}` : '.'}
-                </p>
-              )}
+          {/* [TASK-147.10, T53 väg C, ADR-067 D10] TESTMAILET — trygghetstriadens
+            sista länk (förhandsvisning + adresslista + testmail; T53s avgörande
+            drivare var Marcus egen sändrädsla vid T55 steg 1-granskningen,
+            "Lotta kommer känna likadant"): se det FAKTISKA renderade mailet i
+            EGEN inkorg innan handtaget ens dras. MEDVETET UTANFÖR `armerad`-
+            grinden — testmailet är diagnostik, inte den oåterkalleliga
+            handlingen SlideToConfirm skyddar, och provas hur många gånger som
+            helst innan man bestämmer sig. Samma sändväg som `skicka()`
+            (`useSendActionEmail`/`useSendActionTestEmail` delar EF, ADR-067
+            D9/D10), men EGEN mutation och EGET resultat-state — de två
+            anropen ska aldrig dela status. `forsta` styr synligheten: samma
+            villkor som "Förhandsvisningsexempel"-etiketten ovan (utan en
+            första mottagare finns ingen platshållar-källa att testa).
+
+            PLATSEN (S102, Marcus form-beslut A): RADEN sitter nu i samma grupp
+            som Ämne/Bilagor, inte längre en fristående knapp under kortet —
+            sammanfattningens rad-grammatik (etikett vänster dämpad, handling/
+            utfall höger). Knappen bytte samtidigt `intent="secondary"` (grå
+            platta) mot `intent="ghost"` (samma lätta textknapps-affordance som
+            `SkrivUtKort`, Atgarder.tsx:238) — Marcus underkände den grå formen
+            som "tråkig och passar inte in". Utfallet ERSÄTTER knappen i samma
+            höger-slot i stället för att stå under den; live-regionen flyttade
+            med (nedan) i stället för att lämnas kvar. */}
+          {forsta && (
+            <div className="flex items-center justify-between gap-4 py-3">
+              <span className="shrink-0 text-small text-text-muted">Testmail</span>
+              {/* LIVE-REGIONEN OMSLUTER HÖGER-SLOTEN (knapp ELLER utfall) —
+                samma `aria-live="polite"`, INGEN FOKUSFLYTT-grammatik som
+                övriga mutations-utfall i filen. `justify-end`, inte
+                `text-right`: samma layoutform som `SkrivUtKort`s wrapper. */}
+              <div aria-live="polite" className="flex justify-end">
+                {testUtfall?.status === 'sent' ? (
+                  <p className="text-small text-text-muted">
+                    Skickat till {user?.email ?? 'din adress'}
+                  </p>
+                ) : testUtfall?.status === 'failed' ? (
+                  <p className="text-error text-small">
+                    Kunde inte skicka testmailet
+                    {testUtfall.reason ? `: ${testUtfall.reason}` : '.'}
+                  </p>
+                ) : (
+                  <Button
+                    intent="ghost"
+                    size="sm"
+                    isDisabled={sendActionTestEmail.isPending || lage === 'skickar'}
+                    onPress={skickaTest}
+                  >
+                    <Send aria-hidden="true" size={12} className="shrink-0" />
+                    {sendActionTestEmail.isPending ? 'Skickar test…' : 'Skicka till min inkorg'}
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </DetaljGrupp>
 
         {/* GRINDEN. VARNINGSRADEN ÖVER DEN ÄR BORTA (Marcus varv 20): "Ett skickat
           utskick går inte att ångra. Mottagare som saknar e-post eller har

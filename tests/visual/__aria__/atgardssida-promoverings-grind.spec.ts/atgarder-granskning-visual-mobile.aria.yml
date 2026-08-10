@@ -16,8 +16,8 @@
   - text: Ämne Din plats är bekräftad
   - paragraph: Förhandsvisningsexempel
   - paragraph: /Hej Anna, Din plats på Utbildning Skövde är bekräftad\. Vi ses \d+ september i Skövde\. Varmt välkommen! Roger och Lotta/
-  - text: Bilagor Inga
-- button "Skicka test till mig"
+  - text: Bilagor Inga Testmail
+  - button "Skicka till min inkorg"
 - switch "Bekräfta utskicket"
 - button "Skicka till 2 personer" [disabled]
 - button "Tillbaka"

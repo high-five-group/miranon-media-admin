@@ -49,7 +49,7 @@ async function oppnaOchGranska(page: import('@playwright/test').Page, atgardsnam
   await page.getByRole('button', { name: 'Granska och skicka' }).click();
 }
 
-test.describe('Skicka test till mig — testmailets sändväg (TASK-147.10 AC #1-#2)', () => {
+test.describe('Skicka till min inkorg — testmailets sändväg (TASK-147.10 AC #1-#2)', () => {
   test('POST med testSend:true + FÖRSTA mottagaren ensam, lyckat testmail annonserar den inloggade adressen', async ({
     page,
     network,
@@ -66,7 +66,7 @@ test.describe('Skicka test till mig — testmailets sändväg (TASK-147.10 AC #1
     await oppnaOchGranska(page, 'Skicka bekräftelsemail');
     await expect(page.getByText(/Skicka bekräftelsemail\s+till\s+2\s+personer/)).toBeVisible();
 
-    await page.getByRole('button', { name: 'Skicka test till mig' }).click();
+    await page.getByRole('button', { name: 'Skicka till min inkorg' }).click();
 
     // Body-kontraktet: EXAKT det EF:ens testgren (TASK-147.10) förväntar sig.
     await expect.poll(() => sentBody).not.toBeNull();
@@ -85,9 +85,12 @@ test.describe('Skicka test till mig — testmailets sändväg (TASK-147.10 AC #1
     );
 
     // Bekräftelsen annonserar den INLOGGADE sessionens egen adress — ALDRIG
-    // Annas eller Björns. `role="status"` (aria-live="polite" + <p>, ingen
-    // MessageBox) — live-regionen bär beskedet utan extra announcer-kod.
-    await expect(page.getByText(`Testmail skickat till ${FIXTUR_EPOST}.`)).toBeVisible();
+    // Annas eller Björns. Ingen `role="status"`-MessageBox (S102-raden är en
+    // ren rad) — `aria-live="polite"`-wrappern (AtgardsSida.tsx § TESTMAILET)
+    // bär beskedet utan extra announcer-kod. Kopian bytte samtidigt form
+    // (S102, Marcus form-beslut A): "Testmail skickat till X." → "Skickat
+    // till X" — etiketten "Testmail" står redan till vänster om raden.
+    await expect(page.getByText(`Skickat till ${FIXTUR_EPOST}`)).toBeVisible();
 
     // FORTFARANDE GRANSKA-LÄGET — testmailet flyttar ingen mottagare och
     // armerar ingen sändning. Huvudknappen är fortfarande i sitt ursprungliga
@@ -115,7 +118,7 @@ test.describe('Skicka test till mig — testmailets sändväg (TASK-147.10 AC #1
 
     await gotoAtgarder(page);
     await oppnaOchGranska(page, 'Skicka bekräftelsemail');
-    await page.getByRole('button', { name: 'Skicka test till mig' }).click();
+    await page.getByRole('button', { name: 'Skicka till min inkorg' }).click();
 
     await expect(
       page.getByText('Kunde inte skicka testmailet: E-postadressen studsade (bounced)'),
@@ -133,7 +136,7 @@ test.describe('Skicka test till mig — testmailets sändväg (TASK-147.10 AC #1
 
     await gotoAtgarder(page);
     await oppnaOchGranska(page, 'Skicka bekräftelsemail');
-    await page.getByRole('button', { name: 'Skicka test till mig' }).click();
+    await page.getByRole('button', { name: 'Skicka till min inkorg' }).click();
 
     await expect(page.getByText(/Kunde inte skicka testmailet/)).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Granska och skicka' })).toBeVisible();
@@ -142,7 +145,7 @@ test.describe('Skicka test till mig — testmailets sändväg (TASK-147.10 AC #1
   test('a11y i granska-läget med testmail-knappen — 0 överträdelser', async ({ page }) => {
     await gotoAtgarder(page);
     await oppnaOchGranska(page, 'Skicka bekräftelsemail');
-    await expect(page.getByRole('button', { name: 'Skicka test till mig' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Skicka till min inkorg' })).toBeVisible();
 
     const resultat = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
