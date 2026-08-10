@@ -1044,7 +1044,7 @@ test.describe('Filtervyn på event-listan + skriv ut (task-17.7)', () => {
     await expect(eventItems(page)).toHaveCount(2);
 
     // Print-huvudet bär kontexten pappret annars tappar (facit k02-print):
-    // "Event — {Period} · {aktiva filter} · {N} event · Utskrivet {långdatum}".
+    // "Event - {Period} · {aktiva filter} · {N} event · Utskrivet {långdatum}".
     // timeZone är INTE valfri här (L264). Utan den byggs strängen i RUNNERNS
     // zon (UTC på CI) medan sidan renderar i configens `timezoneId`
     // Europe/Stockholm — och mellan 22:00 och 24:00 UTC är runnern ett dygn
@@ -1059,7 +1059,7 @@ test.describe('Filtervyn på event-listan + skriv ut (task-17.7)', () => {
       year: 'numeric',
     }).format(new Date());
     await expect(
-      page.getByText(`Event — Kommande · Typ: Retreat · 2 event · Utskrivet ${langdatum}`, {
+      page.getByText(`Event - Kommande · Typ: Retreat · 2 event · Utskrivet ${langdatum}`, {
         exact: true,
       }),
     ).toBeVisible();
