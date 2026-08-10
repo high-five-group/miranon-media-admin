@@ -1644,14 +1644,14 @@ function SegmentLista({
             VIDARE till utskicksvyn — där publiken står som huvudinnehåll,
             precis som på detaljsidan. Kontrollen hoppas inte över; den utförs
             på den enda yta där en union av segment finns. */}
-        {/* RADEN ÄR ZONERAD (Marcus 2026-08-10: Markera satt "skitnära" de
-            andra). Vänster zon SKAPAR (Nytt segment · Dela upp i grupper),
-            höger zon VÄXLAR LÄGE på listan (Täckning · Markera) — två olika
-            slags knappar, och skillnaden ska synas i geometrin, inte bara i
-            beteendet. `pl-6` på högerzonen är den GARANTERADE luften: även
-            när raden är trång står minst en tydlig lucka mellan zonerna, och
-            vid radbrytning flyttar hela högerzonen som en enhet till egen
-            rad, fortsatt högerställd (`ml-auto`). */}
+        {/* RADEN BÄR TRE KNAPPAR, ALDRIG FYRA (Marcus 2026-08-10, två varv).
+            Första formen la Täckning i raden — fyra kapslar ryms inte i
+            innehållsspalten, och varken trängsel (varv 1: Markera "skitnära")
+            eller radbrytning (varv 2: sicksack med en svävande högerzon) går
+            att zonera bort. Skapande-paret bor vänster, Markera behåller sitt
+            etablerade högerankare (`ml-auto`), och Täckning bor på en EGEN
+            lågmäld rad direkt ovanför panelerna den styr — växeln sitter hos
+            det den växlar, inte bland skapandeknapparna. */}
         <div className="flex min-h-10 flex-wrap items-center gap-2 print:hidden">
           {markeraLage ? (
             <>
@@ -1680,7 +1680,7 @@ function SegmentLista({
               </span>
             </>
           ) : (
-            <div className="flex flex-wrap items-center gap-2">
+            <>
               <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
                 <ListPlus aria-hidden="true" size={18} className="shrink-0" />
                 Nytt segment
@@ -1696,37 +1696,40 @@ function SegmentLista({
                 <Group aria-hidden="true" size={18} className="shrink-0" />
                 Dela upp i grupper
               </button>
-            </div>
+            </>
           )}
           {markerbara > 0 && (
-            <div className="ml-auto flex shrink-0 items-center gap-2 pl-6">
-              {/* TÄCKNINGSVYNS INGÅNG (S104 Del 4, task-181, beslut 1: "ett
-                  LÄGE på listan"). Bor i LÄGES-zonen med Markera — båda
-                  växlar hur listan läses. `aria-pressed` (till skillnad från
-                  Markera, som byter etikett) eftersom detta är ett RENT läge
-                  utan eget innehåll att peka på. */}
-              {!markeraLage && (
-                <button
-                  type="button"
-                  aria-pressed={tackningsLage}
-                  onClick={onTackning}
-                  className={KAPSEL_KLASS}
-                >
-                  <Layers aria-hidden="true" size={18} className="shrink-0" />
-                  Täckning
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={markeraLage ? onStangMarkering : onOppnaMarkering}
-                className={KAPSEL_KLASS}
-              >
-                <Check aria-hidden="true" size={18} className="shrink-0" />
-                {markeraLage ? 'Avbryt' : 'Markera'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={markeraLage ? onStangMarkering : onOppnaMarkering}
+              className={`${KAPSEL_KLASS} ml-auto`}
+            >
+              <Check aria-hidden="true" size={18} className="shrink-0" />
+              {markeraLage ? 'Avbryt' : 'Markera'}
+            </button>
           )}
         </div>
+
+        {/* TÄCKNINGSVYNS INGÅNG (S104 Del 4, task-181, beslut 1: "ett LÄGE
+            på listan") — en EGEN lågmäld rad, högerställd, direkt ovanför
+            panelerna den slår på och av. Textknapp som byter etikett
+            (Markera-mönstret), lättare vikt än kapslarna: kontrollen är ett
+            gransknings-läge, inte en daglig handling, och ska inte
+            konkurrera med skapandeknapparna om radplats eller uppmärksamhet. */}
+        {!markeraLage && markerbara > 0 && (
+          <div className="-mt-2 flex justify-end print:hidden">
+            <button
+              type="button"
+              onClick={onTackning}
+              className={`-mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 font-medium text-small motion-safe:transition-colors ${
+                tackningsLage ? 'bg-bg-emphasized' : 'text-text-secondary hover:bg-bg-emphasized'
+              }`}
+            >
+              <Layers aria-hidden="true" size={16} className="shrink-0" />
+              {tackningsLage ? 'Dölj täckning' : 'Visa täckning'}
+            </button>
+          </div>
+        )}
 
         {/* TÄCKNINGSPANELERNA (S104 Del 4, task-181). Läggs ÖVER listan -
             mellan handlingsraden och korten, listan döljs aldrig. Göms i
