@@ -230,6 +230,98 @@ test.describe('update-record — update-person-note (Personer.Anteckningar)', ()
   });
 });
 
+// Tredje registrerade Personer-operationen: update-person-flag → { tableId
+// Personer, allowedFields ['Flagga'] } (S103, Marcus GO 2026-08-10 — Lottas
+// egen fritext-flagga, ersätter den aldrig-satta 'Manuella flagga'). `Flagga`
+// är ett NYTT fält (skapat 2026-08-10) och exponeras ÄNNU INTE av get-person
+// (en parallell agent äger den ändringen i samma S103-svep) — så till skillnad
+// mot update-person-note-blocket ovan finns ingen läs-EF att verifiera mot.
+// Läsningen sker i stället via SAMMA update-record-anrop med `fields: {}`: ett
+// formellt no-op-PATCH (findDisallowedField passerar trivialt på en tom
+// nyckel-mängd; Airtable lämnar fält som inte nämns i `fields` orörda) vars
+// SVAR ändå bär hela radens råa `record.fields` — samma "skriv-bevis ur den
+// råa responsen"-princip create-event-note/create-person-note redan bygger på.
+test.describe('update-record — update-person-flag (Personer.Flagga)', () => {
+  test('deny: fält utanför allowlist → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+
+    // update-person-flag har allowedFields ['Flagga']. `Förnamn` är ett äkta
+    // Personer-fält men UTANFÖR listan → findDisallowedField (steg 4) fäller
+    // före Airtable-anropet.
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${userJwt}` },
+      data: {
+        operationKey: 'update-person-flag',
+        recordId: 'recAAAAAAAAAAAAA',
+        fields: { Förnamn: 'x' },
+      },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/not allowed for operation/);
+  });
+
+  test('allow: Flagga → 200 (muterar + restaurerar)', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+    const authHeaders = { Authorization: `Bearer ${userJwt}` };
+
+    // Läs personens nuvarande Flagga via ett no-op update-record-anrop (fields: {}
+    // — se filhuvudets docblock för varför get-person inte kan användas här).
+    const readFlagga = async (): Promise<string | null> => {
+      const r = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'update-person-flag',
+          recordId: HISTORY_PERSON_ID,
+          fields: {},
+        },
+      });
+      expect(r.status()).toBe(200);
+      const body = (await r.json()) as { record: { fields: Record<string, unknown> } };
+      const v = body.record.fields['Flagga'];
+      return typeof v === 'string' ? v : null;
+    };
+
+    // Ursprungsvärde FÖRE mutation (restaureras i finally oavsett utfall). Fältet
+    // är NYTT 2026-08-10 — live-verifierat TOMT på HISTORY_PERSON_ID samma dag
+    // (describe_table/get_record via Airtable MCP, S103-bygget) INNAN detta test
+    // skrevs, men vi läser dynamiskt i stället för att hårdkoda antagandet.
+    const original = await readFlagga();
+    const SENTINEL = 'ZZ-S103-flagga-sentinel';
+
+    try {
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'update-person-flag',
+          recordId: HISTORY_PERSON_ID,
+          fields: { Flagga: SENTINEL },
+        },
+      });
+      expect(res.status()).toBe(200);
+
+      // Läs-tillbaka: bevisar att mutationen faktiskt satte fältet (ej bara 200).
+      expect(await readFlagga()).toBe(SENTINEL);
+    } finally {
+      // Restore: skriv tillbaka ursprungsvärdet (samma operation — allowlisten
+      // gatar fältet, inte värdet). Var det null → '' (tom singleLineText
+      // round-trippar till null vid läsning; driftar inte fixturen). Körs även
+      // om assertionen ovan kastar.
+      await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'update-person-flag',
+          recordId: HISTORY_PERSON_ID,
+          fields: { Flagga: original ?? '' },
+        },
+      });
+    }
+  });
+});
+
 // Betalnings-vertikalens tre operationer (task-18.8, AC #1 — PRD task-18
 // beslut 9): mark-final-payment-paid → ['Slutbetalning'] ·
 // update-registration-payment-note → de TVÅ additiva per-betalnings-

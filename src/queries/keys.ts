@@ -50,6 +50,11 @@ export const queryKeys = {
     // Persondetalj (Fas 6a L5a): aggregerande get-person per record-ID. Egen
     // gren under 'persons' så detalj-cachen kan invalideras oberoende av listan.
     detail: (id: string) => ['persons', 'detail', id] as const,
+    // Anteckningar per person (S103, T97-bygg-spåret): get-person-notes (samma
+    // additiva Anteckningar-tabell som events.notes, ADR-075 utökad med ett
+    // Person-länkfält). Egen gren så antecknings-strömmen kan invalideras av
+    // useCreatePersonNote oberoende av persondetaljen — speglar events.notes.
+    notes: (personId: string) => ['persons', 'notes', personId] as const,
   },
   waitlist: {
     // Väntelista (Fas 6c Leverabel 3): GLOBAL läs-lista (get-waitlist). STABIL

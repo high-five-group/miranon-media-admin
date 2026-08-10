@@ -107,6 +107,19 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Personer',
     allowedFields: ['Anteckningar'],
   },
+  // Spara Lottas fritext-flagga på en Person (S103, Marcus 2026-08-10 GO —
+  // ordagrant: "det ska vara en flagga som Lotta själv skriver i fritext, som
+  // sedan blir en flaggikon på personen då möjligtvis"). Skrivbart singleLineText
+  // -fält 'Flagga' (staging fldCXSGQJEVlf1Sa7, prod fldsNDwACc8hWDPeA) — NYTT
+  // 2026-08-10, LIVE-VERIFIERAT via describe_table INNAN posten låstes (L294).
+  // Ersätter 'Manuella flagga' (fldNtwQt6tOCIdf4f, singleSelect med choices=[] —
+  // kunde aldrig sättas, data-model.md §Kända fällor 25); det gamla fältet rörs
+  // ALDRIG av denna operation och lämnas kvar tomt (Airtables Meta-API kan varken
+  // ändra fälttyp eller radera fält). Tabell per NAMN (ADR-050 bas-portabilitet).
+  'update-person-flag': {
+    tableId: 'Personer',
+    allowedFields: ['Flagga'],
+  },
   // Skapa en manuell anmälan (Fas 6c Leverabel 4, create-registration-EF; facit-
   // formen kompletterad till SEX fält i task-18.12 — 'Antal platser' + 'Notering').
   // Till skillnad mot update-operationerna ovan bygger EF:en `fields` SERVER-SIDE
@@ -264,6 +277,29 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   'create-event-note': {
     tableId: 'Anteckningar',
     allowedFields: ['Författare', 'Anteckning', 'Event'],
+  },
+  // Skapa en anteckning i PERSONENS ström (S103, T97-bygg-spåret) — ADR-075:s
+  // tabell UTÖKAD med ett Person-länkfält (staging fldXvBRt7OE9tem4o, prod
+  // fldJiWGXe2Hv612H0; NYTT 2026-08-10, LIVE-VERIFIERAT via describe_table).
+  // create-person-note-EF:en speglar create-event-note:s SÄKERHET OCH ATTRIBUTION
+  // exakt (server-side FÖRFATTARE ur JWT:ns user_metadata.display_name — ADR-075,
+  // aldrig klient-buren) mot SAMMA additiva tabell, bara med Person i stället för
+  // Event. INVARIANTEN (kritisk, testad): en Anteckningar-rad bär Event ELLER
+  // Person, ALDRIG båda — denna operation sätter ENDAST Person, aldrig Event.
+  // EXAKT de tre skrivbara fälten: 'Författare' (singleLineText, primär),
+  // 'Anteckning' (multilineText), 'Person' (multipleRecordLinks → Personer).
+  // Tidpunkten sätts av Airtables createdTime (aldrig ett skrivet fält). ⚠️ Den
+  // omvända länken på Personer heter 'Anteckningar 2' — INTE 'Anteckningar' —
+  // eftersom Personer redan bar ett fält med det namnet (fldWGlNr3ujRHo85w, det
+  // gamla odelade fritext-fältet); Airtable döper kollisionen om automatiskt
+  // (staging fldgz1pFKGs0a3np0, prod fldkEnLpYjB9tsAtQ, LIVE-VERIFIERAT). Läses
+  // av get-person-notes (som konsumerar just 'Anteckningar 2'). ⚠️ PROD-fältet
+  // Person finns (skapat 2026-08-10), men PROD-EF-deployen av get-person-notes/
+  // create-person-note är en SEPARAT Marcus-auktoriserad handling (samma ordning
+  // som create-event-note). Tabell per NAMN (ADR-050 bas-portabilitet).
+  'create-person-note': {
+    tableId: 'Anteckningar',
+    allowedFields: ['Författare', 'Anteckning', 'Person'],
   },
   // Skapa en bilage-metadatarad (TASK-146.4, PRD task-146 "Bilage-fundamentet";
   // ADR-057 lager-oberoendet). upload-attachment-EF:en (mönster 1) och

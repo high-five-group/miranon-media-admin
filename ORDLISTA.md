@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-08
+updated: 2026-08-10
 review_by: 2027-01-02
 status: stable
 ---
@@ -67,16 +67,32 @@ driver Insiktskedjan.
 *Undvik:* närvaro (närvaron är statusen på posten, inte posten själv).
 *I koden:* `Attendance`.
 
-**Anteckning** — eventets minne: en tidsstämplad post i eventsidans antecknings-STRÖM
-(composer överst, nyast först) med författare (den inloggade användaren, satt server-side
-ur den verifierade identiteten) och en härledd fas-etikett (Under/Efter eventet; Innan
-omärkt per tysta normen). Skild från *person*-anteckningen (Personers fria
-`Anteckningar`-fält, `update-person-note`) — event-anteckningen bor i en EGEN additiv
-tabell (`Anteckningar`, ADR-075), en post per rad, aldrig en klumpad fritext-yta.
+**Anteckning** — en tidsstämplad post i en antecknings-STRÖM (composer överst, nyast
+först) med författare (den inloggade användaren, satt server-side ur den verifierade
+identiteten). Bärs av EN delad additiv tabell (`Anteckningar`, ADR-075) för BÅDA
+event OCH person — en rad hör till exakt ett av dem (`Event`-länk eller `Person`-länk,
+aldrig båda). Eventets ström har en härledd fas-etikett (Under/Efter eventet; Innan
+omärkt per tysta normen); personens ström saknar motsvarande begrepp (personer har
+ingen eventdags-referens att härleda den ur). Skild från Personers ÄLDRE fria
+`Anteckningar`-fält (`update-person-note`, `PersonNoteEditor`) — de två person-ytorna
+lever BREDVID varandra sedan S103 (T97-bygg-spåret); migrering av fältets innehåll
+till strömmen är en separat, senare handling.
 *Undvik:* kommentar; notering (Eventplaneringens `Notering` är den gamla EN-fältsytan
-som strömmen ersätter, inte utökar).
-*I koden:* `EventNote` (läs-shape), `CreateEventNoteInput` (skriv-shape); basens tabell
-`Anteckningar`.
+strömmen ersätter, inte utökar).
+*I koden:* `EventNote`/`CreateEventNoteInput` (event-sidan), `PersonNote`/
+`CreatePersonNoteInput` (person-sidan, S103); basens tabell `Anteckningar`.
+
+**Flagga** — Lottas egen FRITEXT-flagga på en person (S103, Marcus 2026-08-10,
+ordagrant: "det ska vara en flagga som Lotta själv skriver i fritext, som
+sedan blir en flaggikon på personen då möjligtvis"). Ett fritt textfält, inte
+ett urval ur en lista. Ersätter `Manuella flagga` (den gamla singleSelect:en
+med `choices=[]` som aldrig kunde sättas — se `data-model.md` §Kända fällor
+25); det gamla fältet lämnas kvar tomt (Airtables Meta-API kan varken ändra
+fälttyp eller radera fält). Skild från `AI-flagga` (automatiskt härledd
+klassificerare, oberörd av detta).
+*Undvik:* manuell flagga (namnet på det AVLÖSTA fältet, inte det aktiva).
+*I koden:* Airtable-fältet `Flagga`; skrivs via operationen `update-person-flag`
+(`field-allowlists.ts`), hooken `useUpdatePersonFlag`.
 
 **Väntelisteplats** — en persons plats i kön till ett fullbokat event, sorterad
 på när personen ställde sig.

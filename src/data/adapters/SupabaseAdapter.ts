@@ -4,6 +4,7 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
 import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
+import type { CreatePersonNoteInput, PersonNote } from '../../domain/models/PersonNote';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
@@ -157,6 +158,14 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async createEventNote(_input: CreateEventNoteInput): Promise<EventNote> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchPersonNotes(_personId: string): Promise<PersonNote[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async createPersonNote(_input: CreatePersonNoteInput): Promise<PersonNote> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

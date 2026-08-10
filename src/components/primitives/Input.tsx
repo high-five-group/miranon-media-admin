@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
+import type { Ref } from 'react';
 import {
   Input as AriaInput,
   type TextFieldProps as AriaTextFieldProps,
@@ -43,6 +44,15 @@ export interface InputProps
   errorMessage?: string;
   placeholder?: string;
   className?: string;
+  /**
+   * Ref till det underliggande `<input>`-elementet (React 19-stil, som
+   * `TextArea`/`Button`). Tillagd S103 (T97-bygg-spåret): `TextArea`s eget
+   * docblock hävdade "identisk a11y-kontrakt som `Input`" men bara `TextArea`
+   * bar ref-stödet fokus-retur-mönster (t.ex. `PersonNoteEditor`) kräver — ett
+   * gap mellan syskon-primitiverna, inte en ny funktion. Rent additivt: ingen
+   * befintlig `<Input>`-callsite skickar `ref` idag.
+   */
+  ref?: Ref<HTMLInputElement>;
 }
 
 /**
@@ -81,6 +91,7 @@ export function Input({
   placeholder,
   size,
   className,
+  ref,
   ...props
 }: InputProps) {
   return (
@@ -92,7 +103,7 @@ export function Input({
       {!hideLabel && (
         <Label className="text-(color:--mm-input-label-text) text-small">{label}</Label>
       )}
-      <AriaInput placeholder={placeholder} className={inputVariants({ size })} />
+      <AriaInput ref={ref} placeholder={placeholder} className={inputVariants({ size })} />
       {description && (
         <Text slot="description" className="text-(color:--mm-input-description-text) text-caption">
           {description}
