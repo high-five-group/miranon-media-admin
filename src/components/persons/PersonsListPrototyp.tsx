@@ -540,7 +540,35 @@ export function PersonsListPrototyp() {
                         bör varje person i listan ha en interaktion - men höjden
                         får inte VILA på det antagandet. Datan är den enda som
                         kan svika; geometrin ska inte kunna göra det. */}
-                    <span className="truncate text-caption">
+                    {/* [PROTOTYPE] STEG 15 (k15) — NÄRHET SOM SÄRSKILJARE.
+                        Marcus S103: "vi måste göra något mer med designen på
+                        korten … hur kan vi särskilja den på ett snyggt sätt?"
+
+                        Textblocket bar INGET mellanrum alls (`flex flex-col`
+                        utan `gap`), så namn, e-post och interaktion satt tätt
+                        och lästes som ETT grått block. Det var problemet:
+                        raderna var geometriskt en enhet.
+
+                        4 px (spacing-skalans grundenhet) före interaktionen
+                        delar kortet i TVÅ block i stället för tre rader —
+                        identitet (namn + e-post) mot aktivitet (vad som hänt).
+                        Ren Gestalt-närhet: ögat ser strukturen utan att läsa.
+
+                        VARFÖR INTE BAKGRUND, som var Marcus första idé: appens
+                        neutraler ligger 1.09 isär (T130), vilket mätt räckte
+                        för en 26 px pill men är oprövat för en 16 px textrad —
+                        och en bakgrundstint försvinner HELT i forced-colors.
+                        Det var exakt den invändning som fällde zebra-varianten
+                        i samma session (se filhuvudet). Närhet bär i alla
+                        kontrastlägen och kostar noll färgsteg; färgtrappan är
+                        dessutom redan full på tre steg.
+
+                        PRISET, öppet: raden blir 4 px högre. Filen bokför att
+                        "varje radhöjd kostar scanhöjd på 430 px". Höjdlåset är
+                        opåverkat — raden blir lika mycket högre för ALLA, så
+                        höjden förblir oberoende av datan, vilket är vad låset
+                        skyddar. */}
+                    <span className="mt-1 truncate text-caption">
                       {person.senasteInteraktion ? (
                         <>
                           {person.dagarSedanSenaste != null && (
