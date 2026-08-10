@@ -528,6 +528,69 @@ jobs:
           fi
           exit "${KOD}"
 
+  # Sessionsdok-fönstrets drift-grind (ADR-099, TASK-158.4): fångar att
+  # tasks/sessions/-roten VUXIT FÖRBI det rullande fönstret (TASK-158.1s
+  # regel, TASK-158.2s skript) utan att någon kört arkiverings-skriptet med
+  # --utfor. Hela varför-blocket bor i grindens eget huvud
+  # (scripts/check-sessionsdok-fonster.sh) — kortversionen: grinden anropar
+  # arkivera-sessionsdok.sh i TORRKÖRNING och läser dess rapport i stället för
+  # att implementera en egen klassificering (samma dubbelriktade
+  # över-engineering-vakt de övriga natt-grindarna redan följer — ingen
+  # abstraktion/logik-kopia utan en faktisk andra användare).
+  #
+  # HÖR I NATTEN, ALDRIG I PR-GRINDEN — samma skäl som pausade-sessioner och
+  # backlog-closure ovan: det är en inaktuellt-tillstånd-kontroll (roten VÄXER
+  # mellan sessioner snarare än inom en enskild PR-diff), och att fälla den i
+  # PR-grinden hade ingen naturlig utlösningspunkt.
+  #
+  # fetch-depth: 1 räcker — grinden läser bara det AKTUELLA filträdet
+  # (frontmatter + filnamn) plus `git grep` för länk-förhandsvisningen, ingen
+  # historik krävs (samma motivering som backlog-closure/obesvarade-larm ovan;
+  # skiljer sig från pausade-sessioner, som behöver full historik för sin
+  # egen, git-log-baserade mätning).
+  #
+  # EXIT-KODERNA BÄR TVÅ OLIKA BUDSKAP, samma disciplin som syskongrindarna:
+  # exit 1 = DRIFT (roten har arkiv-kandidater — kör arkiverings-skriptet med
+  # --utfor), exit 2 = ANROPSFEL (skriptet/policyn svarade inte som väntat —
+  # roten är OPRÖVAD, inte grön av brist på bevis).
+  sessionsdok-fonster:
+    name: Sessionsdok-fönstret (natt-grind, ADR-099)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      utfall: ${{ steps.grind.outputs.utfall }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: Sessionsdok-fönstret (exit 1 = drift, exit 2 = anropsfel)
+        id: grind
+        # Exitkoden fångas SEPARAT (KOD=$?-disciplinen) och klassas INNAN
+        # steget faller: en output som skrivs efter `exit` skrivs aldrig.
+        # `okand-…`-grenen är fail-closed åt rätt håll — en exitkod grinden
+        # inte dokumenterar rapporteras som sig själv, aldrig som drift.
+        run: |
+          set -uo pipefail
+          KOD=0
+          bash scripts/check-sessionsdok-fonster.sh || KOD=$?
+          case "${KOD}" in
+            0) utfall="gron" ;;
+            1) utfall="drift" ;;
+            2) utfall="anropsfel" ;;
+            *) utfall="okand-exitkod-${KOD}" ;;
+          esac
+          echo "utfall=${utfall}" >> "${GITHUB_OUTPUT}"
+          if [ "${KOD}" -eq 1 ]; then
+            echo "::error::SESSIONSDOK-FÖNSTER-DRIFT (exit 1): tasks/sessions/-roten har vuxit förbi det rullande fönstret (ADR-099). Åtgärd: kör 'scripts/arkivera-sessionsdok.sh --utfor' och landa flytten + länkomskrivningen — se loggen ovan för vilka dokument."
+          elif [ "${KOD}" -ne 0 ]; then
+            echo "::error::ANROPSFEL i grinden (exit ${KOD}): roten är OPRÖVAD. Åtgärd: laga grinden/skriptet/policyn, inte roten."
+          fi
+          exit "${KOD}"
+
   # Larm-ärende-avstämningen (T119 arbetslista (b), post-merge-vägen, S97):
   # fångar larm som SKAPATS men aldrig besvarats. Hela varför-blocket bor i
   # grindens huvud (scripts/check-obesvarade-larm.sh) — kortversionen:
@@ -621,10 +684,15 @@ jobs:
   # Marcus i en chattfråga — hela poängen med att bygga den är att det inte
   # ska behöva vara vägen.
   #
+  # sessionsdok-fonster (ADR-099, TASK-158.4) ingår av samma L321-skäl: en
+  # rot som vuxit förbi det rullande fönstret utan larm är samma tysta
+  # permanent som de övriga inaktuellt-tillstånd-kontrollerna ovan skyddar
+  # mot — PRD task-158 § användarberättelse 5 begär uttryckligen just detta.
+  #
   # issues:write finns numera på TVÅ jobb (detta + links-arende), inte bara här.
   alarm:
     name: Larm vid röd natt
-    needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt, backlog-closure, pausade-sessioner, obesvarade-larm]
+    needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt, backlog-closure, pausade-sessioner, obesvarade-larm, sessionsdok-fonster]
     if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || inputs.simulate_failure) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -664,6 +732,7 @@ jobs:
           KONTRAKTSVAKT_RESULT: ${{ needs.kontraktsvakt.result }}
           PAUSADE_RESULT: ${{ needs.pausade-sessioner.result }}
           OBESVARADE_RESULT: ${{ needs.obesvarade-larm.result }}
+          SESSIONSDOK_FONSTER_RESULT: ${{ needs.sessionsdok-fonster.result }}
         run: |
           set -euo pipefail
           run_url="${SERVER}/${REPO}/actions/runs/${RUN_ID}"
@@ -682,8 +751,9 @@ jobs:
           # ingen av de sju jobb som FAKTISKT ingår i needs namngavs i
           # ärendet (#681), bara backlog-closure fick en särskild sektion.
           # En cancelled eller skipped post i just DESSA sju jobb hade varit
-          # lika osynlig. Listan nedan täcker alla sju, inte bara det som
-          # råkade utlösa fyndet.
+          # lika osynlig. Listan täckte då alla sju, inte bara det som råkade
+          # utlösa fyndet — sessionsdok-fonster (TASK-158.4) är det åttonde
+          # tillskottet till samma lista, av samma skäl.
           jobbnamn=(
             "Nattlig fullsvit"
             "Bredare sårbarhetsgranskning"
@@ -692,6 +762,7 @@ jobs:
             "Backlog-stängning (natt-grind)"
             "Sannings-avstämning — pausade sessioner (natt-grind)"
             "Sannings-avstämning — obesvarade larm (natt-grind)"
+            "Sessionsdok-fönstret (natt-grind, ADR-099)"
           )
           jobbresultat=(
             "${SUITE_RESULT}"
@@ -701,6 +772,7 @@ jobs:
             "${BACKLOG_RESULT}"
             "${PAUSADE_RESULT}"
             "${OBESVARADE_RESULT}"
+            "${SESSIONSDOK_FONSTER_RESULT}"
           )
           jobb_rader=""
           for i in "${!jobbnamn[@]}"; do

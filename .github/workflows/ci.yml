@@ -892,6 +892,20 @@ jobs:
         # GitHub, ingen nätverkstrafik. 0,46 s LOKALT mätt (macOS,
         # 2026-08-10, `time bash scripts/test-check-nattvakt-dedup.sh`) —
         # CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-check-sessionsdok-fonster.sh (TASK-158.4) hör hit av samma
+        # kadens-skäl: grinden själv kör i NATTEN (nightly.yml, jobbet
+        # sessionsdok-fonster — en inaktuellt-tillstånd-kontroll hör inte i
+        # PR-grinden, se grindens huvud § HÖR I NATTEN), men dess testsvit ska
+        # fälla FÖRE landning när någon försvagar grindens logik. 16 fall,
+        # tvåsidigt bevis: SAMMA fixturrepo klassificeras DRIFT vid N=2 och
+        # GRÖNT vid N=3 (bevisar AC #1 — fönstertalet läses ur policy-konfigen,
+        # inte hårdkodat: en hårdkodad konstant hade inte kunnat flippa
+        # utfallet) plus fyra fail-closed-grenar (saknat skript, saknad/tom
+        # policy, otolkbar rapport, motsägelsefull rapport). Sandboxad i egen
+        # mktemp-katalog med trap-cleanup, ingen nätverkstrafik. 0,66 s LOKALT
+        # mätt (macOS, 2026-08-10, `time bash scripts/test-check-sessionsdok-
+        # fonster.sh`) — CI-tiden är INTE mätt av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -909,6 +923,7 @@ jobs:
           bash scripts/test-check-facit.sh
           node scripts/test-check-langa-streck.mjs
           bash scripts/test-check-nattvakt-dedup.sh
+          bash scripts/test-check-sessionsdok-fonster.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
