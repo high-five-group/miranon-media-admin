@@ -37,7 +37,7 @@ divergensläge.** Numrering vid paus, disk-verifierad: **109/task-190/T141**
 plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103 § PAUSLÄGE + Del 1–4.**
 *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — SEGMENT-PASSETS
+**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — SEGMENT-PASSETS
 DIVERGENS KLAR; SYNTESEN BYGGD, MARCUS FORMVAL ÖPPET.** Fyra varianter på
 `/mer/segment` via `?variant=a|b|c|d` (`#1121`, sex commits): `a`
 regelverkstaden · `b` publiken först · `c` segment som entitet · **`d`
@@ -54,13 +54,16 @@ befintliga exponeras (modalitet, format, år). **PROD-RENSNING utförd:**
 `Segment` + `Bulkutskick` tomma (verifierat: ingen extern mottagare nåddes
 någonsin; backup utanför git). Underlag: research 7 branschledare (alla
 uttrycker regler som predikat; 0/7 hade migrations-precedens) + live
-bas-kartläggning. **NÄSTA (resume S104): diagnosticera `#1121`:s röda
-Lint-jobb** (streck-grinden fälld och fixad lokalt; verifiera i CI) → Marcus
-formval på `d` → konvergens → facit → ADR (förfinar `ADR-062` beslut 3) →
-basstruktur → PRD. **EF-krav till PRD:** `compute-segment` bör bära
-`via: Par[]` per medlem · år kräver deltagandedatum i källfrågan · expansionen
-måste ske server-side. Numrering vid paus: 108/L512+2 fragment/T140/task-182/f47
-(re-derivera). **HANDOFF: sessionsdok S104 § PAUSLÄGE + Del 2.**
+bas-kartläggning. **`#1121` LANDAD** (merge-commit `844fdefc`; streck-grinden
+var orsaken till det röda Lint-jobbet och fixen `59daf2a8` höll — verifierat
+vid resume, ingen omarmering behövdes). **NÄSTA: Marcus formval på `d`**
+(dev-server `:5175`, `/mer/segment?variant=a|b|c|d`) → konvergens → facit →
+ADR (**`ADR-109`**, förfinar `ADR-062` beslut 3) → basstruktur → PRD.
+**EF-krav till PRD:** `compute-segment` bör bära `via: Par[]` per medlem · år
+kräver deltagandedatum i källfrågan · expansionen måste ske server-side.
+Numrering re-deriverad vid resume: **109/L512+2 fragment/T141/task-190/f47**
+(ADR, tråd och kort konsumerade av S102/S103 under pausen).
+**HANDOFF: sessionsdok S104 § Paushistorik + Del 2.**
 *(S103:s kadensrad nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
