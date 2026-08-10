@@ -35,7 +35,28 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — PERSONLISTAN
+**Session 103 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — D-VARIANTEN PÅ
+PERSONDETALJEN BYGGD, MONTERAD MOT RIKTIGT DATALAGER OCH REDO ATT GRANSKAS;
+TRE BAS-DEFEKTER BELAGDA.** AFK-passet (Del 7): Marcus blockordning byggd som
+`?variant=d` (`#1143`), tre parallella bygg-agenter stängde datalagret —
+`get-person` berikad med Touchpoints/Anmälningar som riktiga poster + `flagga`
+(`#1149`), flagg-write + antecknings-ström med författare server-side (`#1151`),
+seed-skriptets `--rik` + en skarp kaskad-guard-bugg i `planClean` (`#1155`) —
+och monteringen band ihop allt (`#1153`). **Basändringar:** `Personer.Flagga`
+(fritext, avlöser den döda `Manuella flagga`-singleSelect) + `Anteckningar.Person`
+i BÅDA baserna (`#1146`). **GRANSKNINGSYTAN: `/personer/recxF88ZKUbP9JUs1?variant=d`
+— Sofia Isaksson.** **Tre bas-defekter belagda, ingen åtgärdad:** §46:s båda
+omätta led är nu mätta (motiverings-flerhet observerad live; `Senaste interaktion
+(text)` konkatenerar UTAN avgränsare — **levande i den promoverade personlistan**),
+och ny §47 (`Antal hämtningar` räknar `Engagemang`, inte hämtningar). **Dagens
+dyraste fångst:** en "snyggare" omdöpning av ett spegelfält bröt en parallell
+agents namn-läsning tyst; fångad i rapport-granskningen, inte av någon grind —
+återställd, lesson-fragment landat. **ÖPPEN SKULD: prod-deploy av tre
+EF-ändringar.** Numrering mot `ac286334`: **109 / task-196 / T141 / L512** + 3
+fragment. **HANDOFF: sessionsdok S103 § PAUSLÄGE + Del 1–7.**
+*(Historik nedan bevarad.)*
+
+**Session 103 (Del 1–6, historik) — PERSONLISTAN
 PROMOVERAD, GODKÄND OCH RIVEN; NÄSTA ARBETE ÄR EN D-VARIANT PÅ PERSONDETALJEN.**
 Dagens kedja efter resumen: **carry 1
 löst** (`BAS_FILTER` kontra cursor-testet — fem PERMANENTA, MÄRKTA
