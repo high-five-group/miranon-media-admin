@@ -1468,29 +1468,23 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                   </li>
                 ))}
               </ul>
-              {person.antalHamtningar !== person.hamtningar.length && (
-                <p className="py-3 text-small text-text-muted tabular-nums">
-                  Räknaren i basen säger {person.antalHamtningar} - listan{' '}
-                  {person.hamtningar.length}. De är två olika rollups.
-                </p>
-              )}
             </>
-          ) : person.antalHamtningar > 0 ? (
-            /* DIVERGENSEN, INTE TOMTILLSTÅNDET. Mätt skarpt 2026-08-10 mot
-               staging: `ZZ-Lead Person 01` har `Antal hämtningar` = 1 medan
-               `Alla hämtningar` är TOM — de är två olika rollups över samma
-               relation och kan säga olika saker (C:s egen not, rad ~1037).
-               Ett rakt "Inga hämtade erbjudanden registrerade" hade varit en
-               tyst osanning här: räknaren säger ju att det finns en. */
-            <p className="py-3 text-small text-text-muted tabular-nums">
-              Räknaren i basen säger {person.antalHamtningar}, men listan är tom - de är två olika
-              rollups och är oense.
-            </p>
           ) : (
             <p className="py-3 text-small text-text-muted">
               Inga hämtade erbjudanden registrerade.
             </p>
           )}
+          {/* RÄKNAR-JÄMFÖRELSEN RIVEN 2026-08-10, efter mätning.
+              Blocket visade tidigare "Räknaren i basen säger N - listan M" när
+              de två gick isär, med motiveringen att en tyst nedtystad räknare
+              vore en osanning. Mätningen visade att JÄMFÖRELSEN var osanningen:
+              `Personer.Antal hämtningar` (fld4UQOdKTvWixZ9F) är
+              `COUNTA({Engagemang})` — den räknar rader i en HELT ANNAN tabell
+              (`Engagemang`, flddG1tVJyaKBxBYv), inte touchpoints. Skarpt
+              belagt på Sofia Isaksson: räknaren 0, tre faktiska hämtningar.
+              Att ställa dem bredvid varandra antyder att de mäter samma sak
+              och sår tvivel om en lista som är korrekt. Räknaren hör hemma där
+              Engagemang hör hemma — inte här. */}
         </div>
       </section>
 
