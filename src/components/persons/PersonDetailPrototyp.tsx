@@ -38,7 +38,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft, ChevronRight, Download, Mail, MapPin, Phone } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Mail, Phone } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -447,11 +447,10 @@ function VariantA({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
 
       {/* STÖDINFORMATIONEN — allt som inte är historik, i facit-grammatik. */}
       <Sektion id="proto-a-kontakt" rubrik="Kontakt">
-        {kontakt.length > 0 || person.ort.length > 0 ? (
+        {kontakt.length > 0 ? (
           <dl className="divide-y divide-border">
             <Rad term="E-post">{person.email}</Rad>
             <Rad term="Telefon">{person.telefon}</Rad>
-            <Rad term="Ort">{person.ort.length > 0 ? person.ort.join(' · ') : null}</Rad>
           </dl>
         ) : (
           <p className="py-3 text-small text-text-muted">Inga kontaktuppgifter registrerade.</p>
@@ -521,7 +520,7 @@ function VariantA({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
 // ═════════════════════════════════════════════════════════════════════════
 
 /**
- * Arrangemanget: personen som KONTAKT. Identitetszonen är tät — namn, ort,
+ * Arrangemanget: personen som KONTAKT. Identitetszonen är tät — namn,
  * badge — och direkt under den ligger handlingarna som RADER (Mejla · Ring) i
  * eventsidans åtgärdsgrammatik (Atgarder.tsx: -mx-2-hover-platta, chevron
  * 18 px eftersom raden leder vidare, §14). Nuläget står som ett tintat kort
@@ -550,12 +549,6 @@ function VariantB({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           {displayName(person)}
         </h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-small text-text-muted">
-          {person.ort.length > 0 && (
-            <span className="flex items-center gap-1.5">
-              <MapPin aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
-              {person.ort.join(' · ')}
-            </span>
-          )}
           {person.erfarenhetsbadge && <span>{person.erfarenhetsbadge}</span>}
         </div>
       </header>

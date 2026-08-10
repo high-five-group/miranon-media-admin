@@ -47,7 +47,6 @@ function RegistrationRow({ reg }: { reg: Registration }) {
       <span className="font-medium">{displayName(reg)}</span>
       <dl className="flex flex-col gap-0.5 text-small">
         <Field term="Status" value={statusText(reg)} />
-        <Field term="Ort" value={reg.ort} />
         <Field term="Antal platser" value={String(reg.antalPlatser)} />
         <Field term="Inskickad" value={inskickadDatum(reg)} />
         <Field term="E-post" value={reg.email} />

@@ -30,9 +30,16 @@ import { expect, test } from './support/acceptance-bas';
  * antal-summa och exakta rader — mot normalläget hade beviset blivit ett kopplat
  * påstående om fixturens datamängd, så handlern överskuggas per test.
  *
- * Täckning: roster-rendering (namn + status-text + ort + antal + inskickad + kontakt),
+ * Täckning: roster-rendering (namn + status-text + antal + inskickad + kontakt),
  * antal-summa, fokus→<h1> + aria-live, tom-state, fel (role=alert), loading aria-busy,
  * namn-fallback ("Namn saknas"), axe 0. LÄS-vy → INGEN markera-betald-knapp.
+ *
+ * Ort visas MEDVETET INTE i rostret (person-kontext-ort-svepet, 2026-08-10):
+ * `reg.ort` är anmälans EGNA `Ort`-fält och är ofta tom för app-skapade
+ * anmälningar (se `AnmalanDetail.tsx` review-fynd F2) — en `Ort`-rad i en
+ * lista över ETT events anmälda läses dessutom som personens ort, och
+ * eventets ort är redundant i den listan. `row()`-fixturen behåller `ort` i
+ * mockdatan (modellen är oförändrad — bara VISNINGEN togs bort).
  */
 
 const EVENT_ID = 'recANMALDA0000001';
@@ -123,7 +130,9 @@ test.describe('Anmälda-vy (Fas 6c L2 — LÄS-vy via get-registrations)', () =>
     await expect(page.getByText('Bo Bengtsson')).toBeVisible();
     await expect(page.getByText('Bekräftad (mail skickat)')).toBeVisible();
     await expect(page.getByText('Obekräftad')).toBeVisible();
-    await expect(page.getByText('Skövde')).toBeVisible();
+    // Ort visas MEDVETET INTE i rostret (se docblock) — ingen positiv
+    // assertion här. En negativ assertion vore skör (samma stad kan
+    // förekomma i annat sammanhang) och läggs inte till i onödan.
     await expect(page.getByText('anna@example.se')).toBeVisible();
     await expect(page.getByText('bo@example.se')).toBeVisible();
     // Inskickad formaterat sv-SE (aldrig rå ISO).
