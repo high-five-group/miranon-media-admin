@@ -13,10 +13,23 @@
  * stegen adresseras ALDRIG i URL:en (ADR-074 beslut 1) — den här filen bär
  * bara det SENASTE steget, historiken bor i PNG:erna.
  *
- * Kastbar från första dagen: prototypkod befordras ALDRIG till skarp
- * implementation (klausul iv). Rivning = `git rm` på denna fil + återställ
- * prototyp-grenen i `src/routes/_authenticated/personer/index.tsx`. Ingen
- * annan fil bär prototyp-kod.
+ * KONTRAKTSBYTE — throwaway → PROMOVERING (`ADR-103` B1, 2026-08-08). Denna
+ * docblock sade tidigare att *"prototypkod befordras ALDRIG till skarp
+ * implementation (klausul iv)"*. Det var throwaway-kontraktet, och `ADR-103`
+ * rev det öppet: den godkända prototypen byggs aldrig om, den PROMOVERAS —
+ * "det skarpa bygget" är avskaffat som begrepp. Formen här ÄR alltså den
+ * skarpa formen; det som rivs i B2 steg 4 är villkor och växlar, aldrig form.
+ *
+ * Rivning (EFTER Marcus godkännande, `ADR-102` B3:s spärr) = ta bort
+ * prototyp-grenen + `PROTO_VARIANTS` + rail-monteringen i
+ * `src/routes/_authenticated/personer/index.tsx`. Ingen annan fil bär
+ * prototyp-kod.
+ *
+ * `data-testid="personer-yta"` sitter på alla tre render-grenarna (pending /
+ * error / listläge) som ANKARE för promoverings-grinden (`ADR-103` B4,
+ * `tests/visual/personer-promoverings-grind.spec.ts`). Ett attribut, ingen ny
+ * DOM-nod — testid:t flippar ingen form, exakt som `register-yta` i
+ * `Deltagare.tsx` (eventsidans precedent).
  *
  * DEV-grindad via routens `import.meta.env.DEV`-gren (ADR-044-mekaniken).
  * Datavägen ÄRVS oförändrad (`useDataSource`, ADR-055/057) — read-only.
@@ -333,7 +346,7 @@ export function PersonsListPrototyp() {
   // (till skillnad från persondetaljens, byggunderlagets R2).
   if (isPending) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4" data-testid="personer-yta">
         {searchField}
         <div role="status" aria-busy="true" className="flex flex-col gap-4">
           <span className="sr-only">Laddar personer…</span>
@@ -365,7 +378,7 @@ export function PersonsListPrototyp() {
 
   if (isError) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4" data-testid="personer-yta">
         {searchField}
         <MessageBox intent="error" title="Kunde inte hämta personer">
           {error instanceof Error ? error.message : 'Okänt fel.'}
@@ -377,7 +390,7 @@ export function PersonsListPrototyp() {
   const total = persons.length;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" data-testid="personer-yta">
       {searchField}
 
       {/* Dold aria-live-region som annonserar antal nya rader vid "Ladda fler". */}
