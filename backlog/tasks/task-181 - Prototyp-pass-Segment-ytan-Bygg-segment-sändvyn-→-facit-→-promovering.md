@@ -4,7 +4,7 @@ title: 'Prototyp-pass: Segment-ytan (Bygg segment + sändvyn) → facit → prom
 status: To Do
 assignee: []
 created_date: '2026-08-10 07:27'
-updated_date: '2026-08-10 07:41'
+updated_date: '2026-08-10 07:46'
 labels:
   - ready-for-human
 dependencies: []
@@ -34,6 +34,8 @@ Sekvens: går i HITL-kön efter T97-passen (personer-listan pågår, persondetal
 
 <!-- SECTION:NOTES:BEGIN -->
 FORM-KRAV (Marcus 2026-08-10, S102 — Lottas trygghetstriad, samma klass som 147.10): segment-redesignen SKA bära (1) förhandsvisning av mailet som mottagaren ser det, (2) synlig lista över alla mottagaradresser, (3) 'Skicka test till mig'-knapp (T53/147.10-mönstret via den reviderade sändvägen). T50-skyddslagren + trygghetstriaden är formens golv.
+
+FUNKTIONSFYND (Marcus 2026-08-10, S102, vid T55 steg 1-granskningen): det går INTE att bygga ett segment med en handplockad individ — segmenten är enbart filterbaserade (compute-segment). 'Välj personer manuellt' (t.ex. ett en-persons-segment för testutskick) är ett upptäckt funktionskrav som passet ska ta ställning till. Instansen bekräftar passets hela poäng: vid design avtäcks funktionerna — därför finns inga byggskivor för ytan förrän facit är låst (byggplan rad 120-ordningen).
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
