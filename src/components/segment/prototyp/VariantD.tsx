@@ -143,6 +143,30 @@
  * mottagarkontroll (klienten skulle då bestämma vilka som nås).
  *
  * ─────────────────────────────────────────────────────────────────────────────
+ * AND-PRIMITIVEN — konjunkt-grupper i `med` (S104 Del 3, resume-bygget)
+ *
+ * De fjorton verkliga Skool-grupperna falsifierade den platta villkorslistan:
+ * "RIM1 + RIM2" betyder *gått båda*, och `med` som ren OR kunde aldrig säga
+ * det — 10 av 14 grupper, 127 av 416 personer, var outtryckbara
+ * (`tasks/sessions/bilagor/s104-segment-divergens/underlag-de-fjorton-skool-grupperna.md`).
+ * `med` är därför en lista av KONJUNKT-GRUPPER (disjunktiv normalform): minst
+ * en grupp ska uppfyllas, och inom gruppen gäller alla villkor samtidigt.
+ * `utan` är kvar platt — exklusiviteten behövde aldrig AND.
+ *
+ * MOTORN KAN BARA OR (`segment-membership.ts` rad 11), så konjunktionen
+ * räknas som SNITT AV MEDLEMSMÄNGDER i webbläsaren: varje villkor är en egen
+ * `compute-segment`-fråga (cachad på sin signatur), gruppen är snittet av
+ * sina villkors svar, `med` unionen av grupperna, `utan` dras bort sist. Se
+ * `byggFrageplan` — ett predikat utan flerledade grupper går exakt dagens väg
+ * (EN walk, samma cache-nyckel som förut), och de fjorton delar FYRA
+ * villkor-frågor totalt: kombinatoriken bor i algebran, inte i walks.
+ *
+ * SAMMA STATUS SOM EXPANSIONEN OVAN (EF-krav 4): skarpt måste AND-stödet in i
+ * `segment-membership.ts` och därmed i BÅDE `compute-segment` och
+ * `send-email` — ett klient-snitt kan mottagarkontrollen aldrig lita på
+ * (T50 lager b). Klient-snittet får inte promoveras.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
  * SKALPROVET (ärvt ur `b`) — variantens tes går inte att bedöma utan det.
  *
  * Detaljvyns hela idé är att publiken är huvudinnehållet, synlig direkt. Men
@@ -299,8 +323,19 @@ type Villkor = {
   format: string[];
 };
 
-/** Regeln som predikat: en union i `med`, en union i `utan`. */
-type Predikat = { med: Villkor[]; utan: Villkor[] };
+/**
+ * EN KONJUNKT-GRUPP: alla villkor i gruppen ska uppfyllas SAMTIDIGT (och).
+ * Fött ur de fjorton Skool-grupperna (S104 Del 3): "RIM1 + RIM2" betyder
+ * *gått båda*, och det kunde en platt villkorslista aldrig uttrycka.
+ */
+type Konjunkt = { id: string; villkor: Villkor[] };
+
+/**
+ * Regeln som predikat i disjunktiv normalform: minst EN grupp i `med` ska
+ * uppfyllas (eller mellan grupperna, och inom dem). `utan` är en platt union
+ * som dras bort sist — exklusiviteten behövde aldrig AND (Del 3).
+ */
+type Predikat = { med: Konjunkt[]; utan: Villkor[] };
 
 let villkorRaknare = 0;
 function nyttVillkor(): Villkor {
@@ -312,6 +347,12 @@ function nyttVillkor(): Villkor {
     modalitet: null,
     format: [],
   };
+}
+
+let konjunktRaknare = 0;
+function nyKonjunkt(villkor: Villkor[] = [nyttVillkor()]): Konjunkt {
+  konjunktRaknare += 1;
+  return { id: `k${konjunktRaknare}`, villkor };
 }
 
 /* ================================================================== *
@@ -366,11 +407,24 @@ function traffar(v: Villkor, parInfo: ParInfo[]): ParInfo[] {
   return villkorGiltigt(v) ? parInfo.filter((p) => matchar(v, p)) : [];
 }
 
+/** En grupp räknas bara när den har villkor och SAMTLIGA är giltiga — ett
+ *  halvbyggt och-krav får aldrig VIDGA gruppen genom att tyst falla bort. */
+function konjunktGiltig(k: Konjunkt): boolean {
+  return k.villkor.length > 0 && k.villkor.every(villkorGiltigt);
+}
+
 /**
- * EXPANSIONEN — predikat → `{include, exclude}` som EF:en faktiskt validerar.
+ * BRUTTO-EXPANSIONEN — vilka kurspar predikatet RÖR, som `{include, exclude}`.
  * Unionen dedupas på par-nyckeln: två villkor som råkar träffa samma kurs ger
  * ett par, inte två (EF:ens `parseSegmentRule` bryr sig inte, men en dubblett
  * i klartexten hade läst som ett fel).
+ *
+ * SEDAN AND-PRIMITIVEN ÄR DETTA INTE ALLTID FRÅGAN. För ett predikat utan
+ * flerledade grupper ÄR bruttot regeln (exakt dagens semantik). Bär predikatet
+ * en flerledad grupp äger `byggFrageplan` frågan i stället — bruttot används
+ * då bara för ytor som frågar "vilka kurser rör regeln" (Motsvarar-raden,
+ * modalitets-vakten, verkstadens expansions-not). Ogiltiga grupper bidrar
+ * med INGENTING — inte heller sina giltiga villkor.
  */
 function expandera(pred: Predikat, parInfo: ParInfo[]): SegmentRule {
   const plocka = (villkor: Villkor[]): Par[] => {
@@ -380,13 +434,106 @@ function expandera(pred: Predikat, parInfo: ParInfo[]): SegmentRule {
     }
     return [...karta.values()];
   };
-  return { include: plocka(pred.med), exclude: plocka(pred.utan) };
+  return {
+    include: plocka(pred.med.filter(konjunktGiltig).flatMap((k) => k.villkor)),
+    exclude: plocka(pred.utan),
+  };
 }
 
 /** Deterministisk signatur → query-nyckel + "har regeln ändrats"-jämförelse. */
 function regelSignatur(rule: SegmentRule): string {
   const nycklar = (pars: Par[]) => pars.map(parKey).sort();
   return JSON.stringify({ include: nycklar(rule.include), exclude: nycklar(rule.exclude) });
+}
+
+/* ================================================================== *
+ * FRÅGEPLANEN — AND som mängdalgebra över per-villkor-frågor
+ * ================================================================== */
+
+/** Ett villkor som EGEN EF-fråga: include = villkorets expansion, inget
+ *  exclude. Villkoret är frågans ATOM — det är OR-uttryckbart mot motorn,
+ *  vilket en konjunkt-grupp inte är. */
+function villkorsRegel(v: Villkor, parInfo: ParInfo[]): SegmentRule {
+  return { include: traffar(v, parInfo).map((p) => p.par), exclude: [] };
+}
+
+/**
+ * TVÅ VÄGAR, MED AVSIKT:
+ *
+ *   enkel      — inga flerledade grupper (eller ärvd uppräknad regel): exakt
+ *                dagens beteende. EN walk, samma cache-nyckel som förut —
+ *                noll regression för allt som fanns före AND.
+ *   sammansatt — minst en flerledad giltig grupp: en fråga PER UNIKT VILLKOR
+ *                (dedupad på signatur), snitt inom grupp, union mellan
+ *                grupper, differens mot utan — allt i `raknaSammansatt`.
+ *                Även `utan` dekomponeras per villkor, så de fjorton
+ *                Skool-grupperna delar FYRA frågor totalt.
+ *
+ * PROTOTYP-GENVÄG (EF-krav 4, filhuvudet § AND-PRIMITIVEN): skarpt måste
+ * snittet ske server-side i `segment-membership.ts`.
+ */
+type Frageplan =
+  | { typ: 'enkel'; regel: SegmentRule }
+  | {
+      typ: 'sammansatt';
+      /** Unika villkor-frågor, dedupade på regel-signatur. */
+      regler: SegmentRule[];
+      /** Per GILTIG med-grupp: index i `regler` för gruppens villkor. */
+      grupper: number[][];
+      /** Index i `regler` för de giltiga utan-villkoren. */
+      utan: number[];
+    };
+
+function byggFrageplan(pred: Predikat, parInfo: ParInfo[]): Frageplan {
+  const flerledad = pred.med.some((k) => konjunktGiltig(k) && k.villkor.length > 1);
+  if (!flerledad) return { typ: 'enkel', regel: expandera(pred, parInfo) };
+
+  const regler: SegmentRule[] = [];
+  const index = new Map<string, number>();
+  const nrFor = (v: Villkor): number => {
+    const regel = villkorsRegel(v, parInfo);
+    const sig = regelSignatur(regel);
+    const finns = index.get(sig);
+    if (finns !== undefined) return finns;
+    regler.push(regel);
+    index.set(sig, regler.length - 1);
+    return regler.length - 1;
+  };
+  return {
+    typ: 'sammansatt',
+    grupper: pred.med.filter(konjunktGiltig).map((k) => k.villkor.map(nrFor)),
+    utan: pred.utan.filter(villkorGiltigt).map(nrFor),
+    regler,
+  };
+}
+
+/**
+ * MÄNGDALGEBRAN. Identiteten är person-id; medlemsobjektet tas ur gruppens
+ * FÖRSTA villkorssvar. Ordningen är deterministisk: grupperna i planordning,
+ * inom gruppen första villkorssvarets ordning, första förekomsten vinner —
+ * samma dedup-princip som EF:ens egen union (`resolveSegmentMembers`).
+ * Ett villkor som träffar noll kurser svarar lokalt med tom mängd
+ * (`medlemsFraga`), så dess grupp blir tom — aldrig ett nätanrop i onödan.
+ */
+function raknaSammansatt(
+  plan: Extract<Frageplan, { typ: 'sammansatt' }>,
+  svar: readonly Medlemssvar[],
+): Medlemssvar {
+  const idMangd = (i: number) => new Set((svar[i]?.members ?? []).map((m) => m.id));
+  const union = new Map<string, SegmentMember>();
+  for (const grupp of plan.grupper) {
+    const [forsta, ...rest] = grupp;
+    if (forsta === undefined) continue;
+    const restMangder = rest.map(idMangd);
+    for (const m of svar[forsta]?.members ?? []) {
+      if (restMangder.every((s) => s.has(m.id)) && !union.has(m.id)) union.set(m.id, m);
+    }
+  }
+  for (const i of plan.utan) {
+    for (const m of svar[i]?.members ?? []) union.delete(m.id);
+  }
+  const members = [...union.values()];
+  return { members, count: members.length };
 }
 
 /* ── Klartext ─────────────────────────────────────────────────────── */
@@ -410,16 +557,34 @@ function villkorKlartext(v: Villkor): string {
   return `Deltagit i ${familj}${niva}${modalitet}${format}.`;
 }
 
+/**
+ * En grupp som svensk mening: villkoren bundna med "och samtidigt" — bindningen
+ * måste höras, för det är exakt skillnaden mot "Eller:" mellan grupperna.
+ * "RIM1 + RIM2" ska läsas *gått båda*, aldrig *den ena eller den andra*.
+ */
+function konjunktKlartext(k: Konjunkt): string {
+  const delar = k.villkor.map((v) => villkorKlartext(v).replace(/\.$/, ''));
+  const [forsta, ...rest] = delar;
+  if (forsta === undefined) return '';
+  return rest.length === 0
+    ? forsta
+    : `${forsta}, och samtidigt ${rest.map((d) => sankInledning(d)).join(', och samtidigt ')}`;
+}
+
+/** "Deltagit i …" → "deltagit i …" när meningen fortsätter efter ett komma. */
+function sankInledning(mening: string): string {
+  return mening.charAt(0).toLowerCase() + mening.slice(1);
+}
+
 function predikatKlartext(pred: Predikat): string {
-  const giltiga = (lista: Villkor[]) => lista.filter(villkorGiltigt);
-  const med = giltiga(pred.med);
-  const utan = giltiga(pred.utan);
+  const med = pred.med.filter(konjunktGiltig);
+  const utan = pred.utan.filter(villkorGiltigt);
   if (med.length === 0) return 'Ingen regel byggd än.';
   // "Med:"-prefixet är borta (Marcus 2026-08-10). Det var en etikett på det
   // enda som stod där i de allra flesta fall - villkoret bär redan sin egen
   // mening ("Deltagit i ..."). "Utan:" står kvar, för den behövs: den vänder
   // betydelsen och får aldrig läsas som en fortsättning på raden före.
-  const medText = `${med.map((v) => villkorKlartext(v).replace(/\.$/, '')).join('. Eller: ')}.`;
+  const medText = `${med.map((k) => konjunktKlartext(k)).join('. Eller: ')}.`;
   if (utan.length === 0) return medText;
   return `${medText} Utan: ${utan.map((v) => villkorKlartext(v).replace(/\.$/, '')).join('. Eller: ')}.`;
 }
@@ -439,14 +604,21 @@ type SegmentEntitet = {
   skiss: boolean;
 };
 
-function regelFor(entitet: SegmentEntitet, parInfo: ParInfo[]): SegmentRule {
+/**
+ * BRUTTO-regeln för en entitet — vilka kurspar den RÖR. Sedan AND-primitiven
+ * är detta INTE frågan för ett predikat med flerledade grupper (frågan äger
+ * `useEntitetsMedlemmar` via frågeplanen); bruttot bär Motsvarar-raden,
+ * modalitets-vakten och tomhets-avgörandet. För ärvda uppräknade regler och
+ * predikat utan flerledade grupper är brutto och fråga samma sak.
+ */
+function bruttoRegelFor(entitet: SegmentEntitet, parInfo: ParInfo[]): SegmentRule {
   if (entitet.predikat) return expandera(entitet.predikat, parInfo);
   return entitet.arvdRegel ?? { include: [], exclude: [] };
 }
 
 function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
   if (entitet.predikat) return predikatKlartext(entitet.predikat);
-  const rule = regelFor(entitet, parInfo);
+  const rule = bruttoRegelFor(entitet, parInfo);
   if (rule.include.length === 0) return 'Uppräknad regel utan inkluderade kurser.';
   const med = `${rule.include.map(labelForPar).join(' ELLER ')}.`;
   return rule.exclude.length > 0
@@ -489,29 +661,35 @@ function byggSkisser(parInfo: ParInfo[]): SegmentEntitet[] {
 
   if (familjerIBasen.has('RIM')) {
     skiss('skiss-rim-alla', 'RIM - alla utbildningsnivåer', {
-      med: [{ ...nyttVillkor(), familjer: ['RIM'], modalitet: 'Utbildning' }],
+      med: [nyKonjunkt([{ ...nyttVillkor(), familjer: ['RIM'], modalitet: 'Utbildning' }])],
       utan: [],
     });
     skiss('skiss-rim-erfarna', 'RIM - erfarna (nivå 2 och 3)', {
-      med: [{ ...nyttVillkor(), familjer: ['RIM'], nivaer: ['2', '3'], modalitet: 'Utbildning' }],
+      med: [
+        nyKonjunkt([
+          { ...nyttVillkor(), familjer: ['RIM'], nivaer: ['2', '3'], modalitet: 'Utbildning' },
+        ]),
+      ],
       utan: [],
     });
   }
   if (familjerIBasen.has('Fjärrskådning')) {
     skiss('skiss-fs-utbildning', 'Fjärrskådning - bara utbildning', {
-      med: [{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Utbildning' }],
+      med: [
+        nyKonjunkt([{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Utbildning' }]),
+      ],
       utan: [],
     });
     // SYSKONET till raden ovan — samma familj, andra avsikten, uttryckt som
     // ett aktivt "Båda". Det är den som utlöser granskningens fördelningsruta.
     skiss('skiss-fs-alla', 'Fjärrskådning - alla, oavsett form', {
-      med: [{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Båda' }],
+      med: [nyKonjunkt([{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Båda' }])],
       utan: [],
     });
   }
   if (familjerIBasen.has('RIM') && familjerIBasen.has('Fjärrskådning')) {
     skiss('skiss-bredd', 'Har gått RIM men aldrig Fjärrskådning', {
-      med: [{ ...nyttVillkor(), familjer: ['RIM'], modalitet: 'Båda' }],
+      med: [nyKonjunkt([{ ...nyttVillkor(), familjer: ['RIM'], modalitet: 'Båda' }])],
       utan: [{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Båda' }],
     });
   }
@@ -640,6 +818,116 @@ function useMedlemmar(rule: SegmentRule, aktiv: boolean) {
   return useQuery<Medlemssvar>({ ...medlemsFraga(dataSource, rule), enabled: aktiv });
 }
 
+/**
+ * MEDLEMSUTFALLET FÖR ETT PREDIKAT — en hook oavsett frågeplanens typ.
+ * `useQueries` bär 1..N frågor på SAMMA fabrik (`medlemsFraga`) och därmed
+ * samma signatur-cache som resten av varianten: ett villkor som redan
+ * ställts — av ett annat segment, en annan vy — kostar noll. Svarsformen är
+ * `useMedlemmar`s, så konsumtionsytorna märker ingen skillnad.
+ */
+function usePredikatMedlemmar(
+  predikat: Predikat | null,
+  arvdRegel: SegmentRule | null,
+  parInfo: ParInfo[],
+  aktiv: boolean,
+) {
+  const dataSource = useDataSource();
+  const plan = useMemo<Frageplan>(
+    () =>
+      predikat
+        ? byggFrageplan(predikat, parInfo)
+        : { typ: 'enkel', regel: arvdRegel ?? { include: [], exclude: [] } },
+    [predikat, arvdRegel, parInfo],
+  );
+  const regler = plan.typ === 'enkel' ? [plan.regel] : plan.regler;
+  const svar = useQueries({
+    queries: regler.map((r) => ({ ...medlemsFraga(dataSource, r), enabled: aktiv })),
+  });
+  const felSvar = svar.find((s) => s.isError);
+  const allaSvarat = svar.every((s) => s.data !== undefined);
+  const data: Medlemssvar | undefined = !allaSvarat
+    ? undefined
+    : plan.typ === 'enkel'
+      ? svar[0]?.data
+      : raknaSammansatt(
+          plan,
+          svar.map((s) => s.data as Medlemssvar),
+        );
+  return {
+    data,
+    isPending: svar.some((s) => s.isPending),
+    isFetching: svar.some((s) => s.isFetching),
+    isError: felSvar !== undefined,
+    error: felSvar?.error ?? null,
+  };
+}
+
+function useEntitetsMedlemmar(entitet: SegmentEntitet, parInfo: ParInfo[]) {
+  return usePredikatMedlemmar(entitet.predikat, entitet.arvdRegel, parInfo, true);
+}
+
+/**
+ * UNIONEN ÖVER FLERA ENTITETER (utskicksvyn). Alla entiteters frågeplaner
+ * plattas till EN uppsättning unika frågor (dedup på signatur ÖVER
+ * entitets-gränserna — två segment som delar ett villkor delar walk), och
+ * varje entitets utfall räknas ur sin del av svaren. Vakten mot tyst
+ * underräkning (filhuvudet § MULTI-SEGMENT) ärvs oförändrad: `misslyckade`
+ * räknar SEGMENT vars någon fråga felat, och unionen byggs bara ur segment
+ * vars samtliga frågor svarat.
+ */
+function useUnionsUtfall(entiteter: SegmentEntitet[], parInfo: ParInfo[]) {
+  const dataSource = useDataSource();
+  const { regler, planer } = useMemo(() => {
+    const regler: SegmentRule[] = [];
+    const index = new Map<string, number>();
+    const nrFor = (regel: SegmentRule): number => {
+      const sig = regelSignatur(regel);
+      const finns = index.get(sig);
+      if (finns !== undefined) return finns;
+      regler.push(regel);
+      index.set(sig, regler.length - 1);
+      return regler.length - 1;
+    };
+    const planer = entiteter.map((e) => {
+      const plan: Frageplan = e.predikat
+        ? byggFrageplan(e.predikat, parInfo)
+        : { typ: 'enkel', regel: e.arvdRegel ?? { include: [], exclude: [] } };
+      return plan.typ === 'enkel'
+        ? { typ: 'enkel' as const, regel: nrFor(plan.regel) }
+        : {
+            typ: 'sammansatt' as const,
+            grupper: plan.grupper.map((g) => g.map((i) => nrFor(plan.regler[i] as SegmentRule))),
+            utan: plan.utan.map((i) => nrFor(plan.regler[i] as SegmentRule)),
+          };
+    });
+    return { regler, planer };
+  }, [entiteter, parInfo]);
+
+  const svar = useQueries({ queries: regler.map((r) => medlemsFraga(dataSource, r)) });
+
+  const perEntitet = planer.map((plan) => {
+    const indexlista = plan.typ === 'enkel' ? [plan.regel] : [...plan.grupper.flat(), ...plan.utan];
+    const vantar = indexlista.some((i) => svar[i]?.data === undefined);
+    const fel = indexlista.some((i) => svar[i]?.isError);
+    const data: Medlemssvar | undefined =
+      vantar || fel
+        ? undefined
+        : plan.typ === 'enkel'
+          ? svar[plan.regel]?.data
+          : raknaSammansatt(
+              { typ: 'sammansatt', regler, grupper: plan.grupper, utan: plan.utan },
+              svar.map((s) => s.data as Medlemssvar),
+            );
+    return { data, vantar, fel };
+  });
+
+  return {
+    perEntitet,
+    isPending: svar.some((s) => s.isPending),
+    misslyckade: perEntitet.filter((p) => p.fel).length,
+  };
+}
+
 /* ================================================================== *
  * LISTAN — HEM
  * ================================================================== */
@@ -765,12 +1053,12 @@ function SegmentKortMedAntal(props: {
   onOppna: () => void;
   onVaxla: (vald: boolean) => void;
 }) {
-  const rule = regelFor(props.entitet, props.parInfo);
-  // ALLTID PÅ (`true`), aldrig bakom ett klick. Kostnaden bärs av frågans
-  // nyckel, inte av en spärr: `medlemsFraga` nycklar på REGELNS SIGNATUR med
-  // 5 min `staleTime`, så N kort med samma regel delar ETT anrop och ett
-  // återbesök kostar noll. Tom regel besvaras lokalt utan nätanrop.
-  const { data, isFetching } = useMedlemmar(rule, true);
+  // ALLTID PÅ, aldrig bakom ett klick. Kostnaden bärs av frågans nyckel,
+  // inte av en spärr: varje fråga i planen nycklar på SIN signatur med 5 min
+  // `staleTime`, så N kort som delar regel — eller bara delar ett VILLKOR,
+  // sedan AND-primitiven — delar walk, och ett återbesök kostar noll. Tom
+  // regel besvaras lokalt utan nätanrop.
+  const { data, isFetching } = useEntitetsMedlemmar(props.entitet, props.parInfo);
   return (
     <SegmentKort
       entitet={props.entitet}
@@ -1445,8 +1733,8 @@ function SegmentDetalj({
   onAndra: () => void;
 }) {
   const rubrikRef = useRef<HTMLHeadingElement>(null);
-  const rule = regelFor(entitet, parInfo);
-  const { data, isPending, isError, error } = useMedlemmar(rule, true);
+  const rule = bruttoRegelFor(entitet, parInfo);
+  const { data, isPending, isError, error } = useEntitetsMedlemmar(entitet, parInfo);
   useVyFokus(rubrikRef, !isPending);
 
   // Skalprovet fyller UT den verkliga publiken. Headerns tal räknar den
@@ -1621,14 +1909,14 @@ function vaxla<T>(lista: T[], varde: T): T[] {
  */
 function VillkorsKort({
   villkor,
-  index,
+  etikett,
   parInfo,
   formatIBasen,
   onAndra,
   onTaBort,
 }: {
   villkor: Villkor;
-  index: number;
+  etikett: string;
   parInfo: ParInfo[];
   formatIBasen: string[];
   onAndra: (v: Villkor) => void;
@@ -1648,13 +1936,13 @@ function VillkorsKort({
     villkor.familjer.length === 0 || villkor.familjer.some((f) => FAMILJER_MED_NIVA.includes(f));
 
   return (
-    <li className="flex flex-col gap-4 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
+    <div className="flex flex-col gap-4 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-medium text-small text-text-secondary">Villkor {index + 1}</span>
+        <span className="font-medium text-small text-text-secondary">{etikett}</span>
         <Button
           intent="ghost"
           size="sm"
-          aria-label={`Ta bort villkor ${index + 1}`}
+          aria-label={`Ta bort ${etikett.toLowerCase()}`}
           onPress={onTaBort}
         >
           <X aria-hidden="true" size={16} className="shrink-0" />
@@ -1795,7 +2083,7 @@ function VillkorsKort({
                   .join(', ')}`}
         </p>
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -1846,15 +2134,16 @@ function VillkorsLista({
       {villkor.length > 0 && (
         <ul className="flex flex-col gap-3 pt-1">
           {villkor.map((v, i) => (
-            <VillkorsKort
-              key={v.id}
-              villkor={v}
-              index={i}
-              parInfo={parInfo}
-              formatIBasen={formatIBasen}
-              onAndra={(ny) => onAndra(v.id, ny)}
-              onTaBort={() => onTaBort(v.id)}
-            />
+            <li key={v.id} className="flex flex-col">
+              <VillkorsKort
+                villkor={v}
+                etikett={`Villkor ${i + 1}`}
+                parInfo={parInfo}
+                formatIBasen={formatIBasen}
+                onAndra={(ny) => onAndra(v.id, ny)}
+                onTaBort={() => onTaBort(v.id)}
+              />
+            </li>
           ))}
         </ul>
       )}
@@ -1862,6 +2151,115 @@ function VillkorsLista({
         <button type="button" onClick={onLaggTill} className={KAPSEL_KLASS}>
           <Plus aria-hidden="true" size={18} className="shrink-0" />
           {villkor.length === 0 ? 'Lägg till villkor' : 'Lägg till ett villkor till'}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * MED-GRENEN SOM KONJUNKT-GRUPPER. En grupp med ETT villkor renderas exakt
+ * som förut — inget ramverk, ingen ny terminologi förrän någon aktivt bett
+ * om ett och-krav. Först vid TVÅ eller fler villkor får gruppen sin ram och
+ * sin egen rubrik, och "och"-bindningen står som text mellan korten —
+ * semantiken bärs av grupprubriken och klartext-meningen, aldrig av enbart
+ * layouten.
+ *
+ * Två tillägg-knappar med olika verb, med avsikt: "och-krav" bor PER GRUPP
+ * (smalnar av gruppen), "ny grupp" bor på sektionen (vidgar regeln). Att ge
+ * dem samma knapp hade återinfört exakt den tvetydighet AND-luckan bestod av.
+ */
+function KonjunktLista({
+  konjunkter,
+  parInfo,
+  formatIBasen,
+  onAndraVillkor,
+  onLaggTillVillkor,
+  onLaggTillGrupp,
+  onTaBortVillkor,
+}: {
+  konjunkter: Konjunkt[];
+  parInfo: ParInfo[];
+  formatIBasen: string[];
+  onAndraVillkor: (konjunktId: string, villkorId: string, v: Villkor) => void;
+  onLaggTillVillkor: (konjunktId: string) => void;
+  onLaggTillGrupp: () => void;
+  onTaBortVillkor: (konjunktId: string, villkorId: string) => void;
+}) {
+  const id = useId();
+  const flera = konjunkter.length > 1;
+  const harFlerledad = konjunkter.some((k) => k.villkor.length > 1);
+  return (
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2 px-4">
+      <h2 id={id} className="font-semibold text-lg">
+        Med - dessa räknas in
+      </h2>
+      <p className="text-small text-text-muted">
+        {harFlerledad || flera
+          ? 'Den som uppfyller minst en av grupperna är med i segmentet. Inom en grupp måste alla villkor uppfyllas samtidigt.'
+          : 'Den som uppfyller minst ett av villkoren är med i segmentet.'}
+      </p>
+      {konjunkter.length > 0 && (
+        <ul className="flex flex-col gap-3 pt-1">
+          {konjunkter.map((k, ki) => {
+            const gruppEtikett = (vi: number) =>
+              flera || harFlerledad ? `Grupp ${ki + 1} · villkor ${vi + 1}` : `Villkor ${vi + 1}`;
+            const kort = (v: Villkor, vi: number) => (
+              <VillkorsKort
+                villkor={v}
+                etikett={gruppEtikett(vi)}
+                parInfo={parInfo}
+                formatIBasen={formatIBasen}
+                onAndra={(ny) => onAndraVillkor(k.id, v.id, ny)}
+                onTaBort={() => onTaBortVillkor(k.id, v.id)}
+              />
+            );
+            return (
+              <li key={k.id} className="flex flex-col gap-3">
+                {ki > 0 && (
+                  <p className="text-center font-medium text-small text-text-secondary">eller</p>
+                )}
+                {k.villkor.length === 1 ? (
+                  k.villkor[0] && kort(k.villkor[0], 0)
+                ) : (
+                  <div className="flex flex-col gap-3 rounded-2xl border border-border p-3">
+                    <p className="font-medium text-small text-text-secondary">
+                      Grupp {ki + 1} - alla villkor nedan måste uppfyllas samtidigt
+                    </p>
+                    {k.villkor.map((v, vi) => (
+                      <div key={v.id} className="flex flex-col gap-3">
+                        {vi > 0 && (
+                          <p
+                            aria-hidden="true"
+                            className="text-center font-medium text-small text-text-secondary"
+                          >
+                            och
+                          </p>
+                        )}
+                        {kort(v, vi)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex">
+                  <button
+                    type="button"
+                    onClick={() => onLaggTillVillkor(k.id)}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-small text-text-secondary hover:bg-bg-emphasized motion-safe:transition-colors"
+                  >
+                    <Plus aria-hidden="true" size={16} className="shrink-0" />
+                    Och-krav: kräv även deltagande i mer
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div className="flex pt-1">
+        <button type="button" onClick={onLaggTillGrupp} className={KAPSEL_KLASS}>
+          <Plus aria-hidden="true" size={18} className="shrink-0" />
+          {konjunkter.length === 0 ? 'Lägg till villkor' : 'Eller: lägg till en alternativ grupp'}
         </button>
       </div>
     </section>
@@ -1890,7 +2288,7 @@ function RegelVerkstad({
 
   const [namn, setNamn] = useState(entitet.namn);
   const [pred, setPred] = useState<Predikat>(
-    () => entitet.predikat ?? { med: [nyttVillkor()], utan: [] },
+    () => entitet.predikat ?? { med: [nyKonjunkt()], utan: [] },
   );
   const [sparNot, setSparNot] = useState(false);
 
@@ -1900,8 +2298,11 @@ function RegelVerkstad({
   );
 
   const rule = expandera(pred, parInfo);
-  const ofullstandiga = [...pred.med, ...pred.utan].filter((v) => !villkorGiltigt(v)).length;
+  const ofullstandiga = [...pred.med.flatMap((k) => k.villkor), ...pred.utan].filter(
+    (v) => !villkorGiltigt(v),
+  ).length;
   const harRegel = rule.include.length > 0;
+  const harFlerledadGrupp = pred.med.some((k) => konjunktGiltig(k) && k.villkor.length > 1);
 
   /* RÄKNINGEN FÖLJER REGELN — ingen begäran, ingen knapp (Marcus 2026-08-10).
      `enabled` är `harRegel`, inte en sparad signatur.
@@ -1915,15 +2316,42 @@ function RegelVerkstad({
      Historiken är värd att minnas: den första formen bar en `boolean` här och
      hamrade en full-walk per chip-tryck. Fixen då blev en klick-spärr. Rätt
      fix var cache-nyckeln — spärren var en behandling av symptomet. */
-  const { data, isFetching, isError, error } = useMedlemmar(rule, harRegel);
+  const { data, isFetching, isError, error } = usePredikatMedlemmar(pred, null, parInfo, harRegel);
   const antal = data?.count;
 
-  const andra = (gren: 'med' | 'utan', id: string, ny: Villkor) =>
-    setPred((p) => ({ ...p, [gren]: p[gren].map((v) => (v.id === id ? ny : v)) }));
-  const laggTill = (gren: 'med' | 'utan') =>
-    setPred((p) => ({ ...p, [gren]: [...p[gren], nyttVillkor()] }));
-  const taBort = (gren: 'med' | 'utan', id: string) =>
-    setPred((p) => ({ ...p, [gren]: p[gren].filter((v) => v.id !== id) }));
+  /* Med-grenen är konjunkt-grupper; utan-grenen är platt. En grupp vars sista
+     villkor tas bort försvinner — en tom grupp är inte "alla", den är inget. */
+  const andraMed = (konjunktId: string, villkorId: string, ny: Villkor) =>
+    setPred((p) => ({
+      ...p,
+      med: p.med.map((k) =>
+        k.id === konjunktId
+          ? { ...k, villkor: k.villkor.map((v) => (v.id === villkorId ? ny : v)) }
+          : k,
+      ),
+    }));
+  const laggTillOchKrav = (konjunktId: string) =>
+    setPred((p) => ({
+      ...p,
+      med: p.med.map((k) =>
+        k.id === konjunktId ? { ...k, villkor: [...k.villkor, nyttVillkor()] } : k,
+      ),
+    }));
+  const laggTillGrupp = () => setPred((p) => ({ ...p, med: [...p.med, nyKonjunkt()] }));
+  const taBortMedVillkor = (konjunktId: string, villkorId: string) =>
+    setPred((p) => ({
+      ...p,
+      med: p.med
+        .map((k) =>
+          k.id === konjunktId ? { ...k, villkor: k.villkor.filter((v) => v.id !== villkorId) } : k,
+        )
+        .filter((k) => k.villkor.length > 0),
+    }));
+  const andraUtan = (id: string, ny: Villkor) =>
+    setPred((p) => ({ ...p, utan: p.utan.map((v) => (v.id === id ? ny : v)) }));
+  const laggTillUtan = () => setPred((p) => ({ ...p, utan: [...p.utan, nyttVillkor()] }));
+  const taBortUtan = (id: string) =>
+    setPred((p) => ({ ...p, utan: p.utan.filter((v) => v.id !== id) }));
 
   return (
     <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmentet">
@@ -1960,15 +2388,14 @@ function RegelVerkstad({
         />
       </div>
 
-      <VillkorsLista
-        rubrik="Med - dessa räknas in"
-        hjalptext="Den som uppfyller minst ett av villkoren är med i segmentet."
-        villkor={pred.med}
+      <KonjunktLista
+        konjunkter={pred.med}
         parInfo={parInfo}
         formatIBasen={formatIBasen}
-        onAndra={(id, v) => andra('med', id, v)}
-        onLaggTill={() => laggTill('med')}
-        onTaBort={(id) => taBort('med', id)}
+        onAndraVillkor={andraMed}
+        onLaggTillVillkor={laggTillOchKrav}
+        onLaggTillGrupp={laggTillGrupp}
+        onTaBortVillkor={taBortMedVillkor}
       />
 
       <VillkorsLista
@@ -1977,9 +2404,9 @@ function RegelVerkstad({
         villkor={pred.utan}
         parInfo={parInfo}
         formatIBasen={formatIBasen}
-        onAndra={(id, v) => andra('utan', id, v)}
-        onLaggTill={() => laggTill('utan')}
-        onTaBort={(id) => taBort('utan', id)}
+        onAndra={andraUtan}
+        onLaggTill={laggTillUtan}
+        onTaBort={taBortUtan}
       />
 
       {/* SAMMANFATTNINGEN: definitionen och resultatet i ett andetag (`a`s
@@ -2050,7 +2477,11 @@ function RegelVerkstad({
                 mekaniken, inte en varning om ytan. */}
             <p className="text-caption text-text-muted">
               Regeln slås upp mot {rule.include.length} av {parInfo.length} kurser i webbläsaren och
-              skickas som en kurslista till servern. Skarpt måste servern äga uppslaget - annars kan
+              skickas som en kurslista till servern.
+              {harFlerledadGrupp &&
+                ' Och-grupperna räknas som snitt av flera frågor i webbläsaren.'}{' '}
+              Skarpt måste servern äga{' '}
+              {harFlerledadGrupp ? 'både uppslaget och snittet' : 'uppslaget'} - annars kan
               mottagarkontrollen inte lita på regeln.
             </p>
           </div>
@@ -2258,15 +2689,13 @@ function UtskicksVy({
   onTillbaka: () => void;
 }) {
   const rubrikRef = useRef<HTMLHeadingElement>(null);
-  const dataSource = useDataSource();
 
-  // EN fråga per valt segment, på SAMMA cache-nyckel (regelns signatur) som
-  // listan och detaljen använder → ett redan räknat segment kostar noll här.
-  // Speglar EF:ens `resolveSegmentMembers`: N regler, en union, dedup på person.
-  const svar = useQueries({
-    queries: entiteter.map((e) => medlemsFraga(dataSource, regelFor(e, parInfo))),
-  });
-  const isPending = svar.some((s) => s.isPending);
+  // Alla valda segments frågeplaner plattas till EN uppsättning unika frågor
+  // på SAMMA cache-nyckel (frågans signatur) som listan och detaljen använder
+  // → ett redan räknat segment kostar noll här, och två segment som delar ett
+  // VILLKOR delar walk. Speglar EF:ens `resolveSegmentMembers`: en union,
+  // dedup på person.
+  const { perEntitet, isPending, misslyckade } = useUnionsUtfall(entiteter, parInfo);
   useVyFokus(rubrikRef, !isPending);
 
   const [amne, setAmne] = useState('');
@@ -2288,22 +2717,22 @@ function UtskicksVy({
      Med ETT segment är felet självrapporterande (noll mottagare, inget att
      skicka). Med flera är det tyst. Därför bor vakten här och inte i
      detaljvyn, och sändningen blockeras helt tills alla walks svarat: en
-     delmängd som ser komplett ut är farligare än ett stopp. */
-  const misslyckade = svar.filter((s) => s.isError).length;
+     delmängd som ser komplett ut är farligare än ett stopp. `misslyckade`
+     räknar SEGMENT vars någon fråga felat (hooken ovan). */
 
   // UNIONEN, som EF:en gör den: dedup på person-ID. Förekomsterna bär
   // överlappet — samma person i två segment får ETT mail.
   const forekomster = new Map<string, number>();
   const unionKarta = new Map<string, SegmentMember>();
-  for (const s of svar) {
-    for (const m of s.data?.members ?? []) {
+  for (const p of perEntitet) {
+    for (const m of p.data?.members ?? []) {
       unionKarta.set(m.id, m);
       forekomster.set(m.id, (forekomster.get(m.id) ?? 0) + 1);
     }
   }
   const raMottagare = [...unionKarta.values()];
   const overlapp = [...forekomster.values()].filter((n) => n > 1).length;
-  const summaPerSegment = svar.reduce((n, s) => n + (s.data?.count ?? 0), 0);
+  const summaPerSegment = perEntitet.reduce((n, p) => n + (p.data?.count ?? 0), 0);
 
   /* UNIONENS MÅL = SUMMAN AV DE INGÅENDES. Ett fast 85 hade fått ett utskick
      till fyra segment att se MINDRE ut än ett av dem, vilket är precis den
@@ -2323,7 +2752,7 @@ function UtskicksVy({
   // Blandningen kan uppstå INUTI ett segment ("Båda") lika gärna som MELLAN
   // två — därför avgörs `kanBlandas` av unionen av de valda reglerna.
   const kanBlandas = entiteter.some((e) =>
-    regelFor(e, parInfo).include.some((p) => p.modalitet === 'Föreläsning'),
+    bruttoRegelFor(e, parInfo).include.some((p) => p.modalitet === 'Föreläsning'),
   );
   const fordelningsUnderlag = mottagare.filter((m) => !arPahittad(m));
   const fordelning = useModalitetsFordelning(kanBlandas, parInfo, fordelningsUnderlag);
@@ -2476,7 +2905,11 @@ function UtskicksVy({
                 </span>
               </span>
               <span className="shrink-0 text-small text-text-secondary tabular-nums">
-                {svar[i]?.isError ? 'fel' : svar[i]?.isPending ? '…' : (svar[i]?.data?.count ?? 0)}
+                {perEntitet[i]?.fel
+                  ? 'fel'
+                  : perEntitet[i]?.vantar
+                    ? '…'
+                    : (perEntitet[i]?.data?.count ?? 0)}
               </span>
             </div>
           ))}
@@ -2747,7 +3180,7 @@ function nyEntitet(): SegmentEntitet {
   return {
     id: `nytt-${Date.now()}`,
     namn: '',
-    predikat: { med: [nyttVillkor()], utan: [] },
+    predikat: { med: [nyKonjunkt()], utan: [] },
     arvdRegel: null,
     skiss: true,
   };
