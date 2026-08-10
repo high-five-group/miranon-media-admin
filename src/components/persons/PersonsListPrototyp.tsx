@@ -178,12 +178,21 @@ function useForberedPersonDetalj(): (personId: string) => void {
  * `bg-surface` (inte `bg-bg-muted`) eftersom pillen sitter INUTI den tonala
  * kortytan — en pill i kortets egen ton hade varit osynlig.
  */
-function Pill({ ton = 'neutral', children }: { ton?: 'neutral' | 'aktiv'; children: string }) {
+function Pill({
+  ton = 'neutral',
+  dold = false,
+  children,
+}: {
+  ton?: 'neutral' | 'aktiv';
+  dold?: boolean;
+  children: string;
+}) {
   return (
     <span
+      aria-hidden={dold || undefined}
       className={`shrink-0 rounded-full px-2 py-0.5 font-medium text-caption ${
         ton === 'aktiv' ? 'bg-primary-tint text-text' : 'bg-surface text-text-secondary'
-      }`}
+      } ${dold ? 'invisible' : ''}`}
     >
       {children}
     </span>
@@ -497,12 +506,6 @@ export function PersonsListPrototyp() {
                       >
                         {namn}
                       </Link>
-                      {/* `harAktivAnmalan` är en formel som ger "Aktiv" ELLER
-                          "Ingen aktiv anmälan" - ALDRIG falsy. Dagens
-                          truthiness-gren (PersonsList.tsx:189) skriver därför ut
-                          icke-statusen ordagrant. Pillen jämför mot STRÄNGVÄRDET
-                          och tiger när ingen aktiv anmälan finns. */}
-                      {person.harAktivAnmalan === 'Aktiv' && <Pill ton="aktiv">Aktiv anmälan</Pill>}
                     </div>
                     {/* HÖJDLÅSET, del 1 (Marcus S103: "varje rad MÅSTE ha låst
                         höjd och får ALDRIG växa eller krympa med innehållet").
@@ -546,6 +549,48 @@ export function PersonsListPrototyp() {
                       )}
                     </span>
                   </div>
+                  {/* [PROTOTYPE] STEG 14 — STATUSEN SOM EGEN KOLUMN.
+                      Marcus S103: "flytta ut 'Aktiv anmälan' pillen till höger
+                      istället. Då sitter den alltid på samma ställe oavsett hur
+                      långt eller kort namnet är." Pillen satt förut inuti
+                      namn-raden och vandrade därmed i sidled med namnlängden -
+                      i en scanlista är det ögat som betalar, eftersom statusen
+                      inte går att fixera med blicken.
+
+                      Pillen bär redan `shrink-0` i sin egen form (Pill, ovan),
+                      så den kläms aldrig av ett långt namn; textblockets
+                      `min-w-0 flex-1` tar smällen med truncate i stället,
+                      vilket är rätt part att låta ge vika.
+
+                      DOM-ORDNINGEN FLYTTAS MED AVSIKT. Pillen läses nu efter
+                      interaktionsraden i stället för direkt efter namnet.
+                      Skärmläsarordningen följer därmed den visuella ordningen,
+                      vilket är kravet - inte tvärtom.
+
+                      `harAktivAnmalan` är en formel som ger "Aktiv" ELLER
+                      "Ingen aktiv anmälan" - ALDRIG falsy. Dagens
+                      truthiness-gren (PersonsList.tsx:189) skriver därför ut
+                      icke-statusen ordagrant. Pillen jämför mot STRÄNGVÄRDET.
+
+                      BREDDLÅSET (Marcus S103: "reservera alltid plats", husets
+                      stående mönster): pillen renderas ALLTID och döljs med
+                      `invisible` när personen saknar aktiv anmälan - aldrig med
+                      villkorad rendering. Annars hade textens brytpunkt
+                      varierat mellan rader med och utan pill, och kolumnen
+                      blivit ojämn i precis den scanlista den ska hjälpa.
+                      Samma teknik som check-in-räknarens breddlås
+                      (CheckinPrototyp.tsx:233-244): osynlig platshållare,
+                      geometrin konstant. `visibility: hidden` tar dessutom bort
+                      elementet ur tillgänglighetsträdet, så skärmläsaren hör
+                      ingen status som inte finns - `aria-hidden` sätts ändå
+                      explicit, samma form som husets övriga platshållare.
+
+                      HÖJDLÅSET är opåverkat: raden är `items-center` och dess
+                      höjd sätts av textblockets tre rader, som alltid renderas.
+                      Pillen är lägre än så. */}
+                  <Pill ton="aktiv" dold={person.harAktivAnmalan !== 'Aktiv'}>
+                    Aktiv anmälan
+                  </Pill>
                   <ChevronRight
                     aria-hidden="true"
                     size={18}
