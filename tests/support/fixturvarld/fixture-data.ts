@@ -332,6 +332,17 @@ export const EVENT_NOTES_RESPONSE = {
   ],
 } as const;
 
+/**
+ * `get-event-attachments`-svaret (TASK-147.5, bilageväljarens verkliga
+ * fundament). TOM som NORMALLÄGE — realistiskt default (de flesta event har
+ * inte fått en bilaga uppladdad/genererad än) och minimalt fotavtryck: inget
+ * nytt synligt innehåll i bilageväljaren för de BEFINTLIGA atgarder-testerna
+ * (de öppnar aldrig väljarens checkbox-lista, bara actionsraderna ovanför
+ * den). Ett test som faktiskt behöver riktiga bilagor att välja mellan
+ * överskuggar med `network.use()`, per filhuvudets egen regel.
+ */
+export const EVENT_ATTACHMENTS_RESPONSE = { attachments: [] } as const;
+
 /** `get-event-formats`-svaret (de två skarpa bas-formaten). */
 export const EVENT_FORMATS_RESPONSE = {
   eventFormats: [

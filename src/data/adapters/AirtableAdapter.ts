@@ -453,6 +453,9 @@ export class AirtableAdapter implements DataSourceAdapter {
       amne: input.amne,
       mailtext: input.mailtext,
       idempotencyKey: input.idempotencyKey,
+      // [TASK-147.5] Alltid skickad, ÄVEN tom — servern grenar automatiskt
+      // (AC #1): tom/frånvarande ⇒ bilage-fri batchgren, oförändrad.
+      attachmentIds: input.attachmentIds ?? [],
     });
     return SendActionEmailResultSchema.parse(data);
   }
@@ -585,5 +588,19 @@ export class AirtableAdapter implements DataSourceAdapter {
       filnamn: input.file.name,
     });
     return AttachmentSchema.parse(data.attachment);
+  }
+
+  /**
+   * Hämta eventets bilagor (TASK-147.5). get-event-attachments-EF:en läser
+   * eventets omvända `Bilagor`-länk och batch-hämtar Bilagor-raderna (SAMMA
+   * record-ID-batch-form som `fetchEventNotes`), mappar till domän-shape
+   * (Lagringsnyckel exkluderad — server-internt fält) och sorterar nyast
+   * först server-side. `.parse()` validerar vid datagränsen (ADR-026).
+   */
+  async fetchEventAttachments(eventId: string): Promise<Attachment[]> {
+    const data = await callEdgeFunction<{ attachments: unknown }>('get-event-attachments', {
+      eventId,
+    });
+    return z.array(AttachmentSchema).parse(data.attachments);
   }
 }

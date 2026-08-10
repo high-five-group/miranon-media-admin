@@ -157,4 +157,8 @@ export class SupabaseAdapter implements DataSourceAdapter {
   async uploadAttachment(_input: UploadAttachmentInput): Promise<Attachment> {
     throw new Error(NOT_IMPLEMENTED);
   }
+
+  async fetchEventAttachments(_eventId: string): Promise<Attachment[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
 }

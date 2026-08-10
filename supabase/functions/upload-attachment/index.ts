@@ -26,6 +26,7 @@ import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-c
 import {
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
+  buildAttachmentLeaf,
   buildAttachmentPath,
   EVENTPLANERING_TABLE,
   formatMB,
@@ -150,6 +151,12 @@ Deno.serve(async (req) => {
       'Storlek (bytes)': bytes.length,
       Skapad: new Date().toISOString(),
       Event: [eventId],
+      // [TASK-147.5] Additivt — den bilage-bärande sändvägen läser detta för
+      // att hämta EXAKT rätt Storage-objekt (se _shared/attachments.ts §
+      // buildAttachmentLeaf för varför Namn ensamt inte räcker). SAMMA
+      // `filnamn` som `path` ovan byggdes med — `sanitizeFilnamn` trimmar
+      // internt, så resultatet är per konstruktion identiskt med path-suffixet.
+      Lagringsnyckel: buildAttachmentLeaf(attachmentId, filnamn),
     };
 
     const disallowed = findDisallowedField(operation, fields);

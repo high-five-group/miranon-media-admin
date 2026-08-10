@@ -1,5 +1,6 @@
 import { HttpResponse, http, type JsonBodyType } from 'msw';
 import {
+  EVENT_ATTACHMENTS_RESPONSE,
   EVENT_DETAIL_RESPONSE,
   EVENT_FORMATS_RESPONSE,
   EVENT_NOTES_RESPONSE,
@@ -90,6 +91,7 @@ export const handlers = [
   http.get(EF('get-event'), () => json(EVENT_DETAIL_RESPONSE)),
   http.get(EF('get-event-notes'), () => json(EVENT_NOTES_RESPONSE)),
   http.get(EF('get-event-formats'), () => json(EVENT_FORMATS_RESPONSE)),
+  http.get(EF('get-event-attachments'), () => json(EVENT_ATTACHMENTS_RESPONSE)),
 
   // Personer: båda är resolvers. Listan speglar EF:ens search/pageSize/cursor
   // (annars vore sök och "Ladda fler" osynliga), detaljen slår upp `?id=` mot

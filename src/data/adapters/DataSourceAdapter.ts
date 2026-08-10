@@ -216,4 +216,18 @@ export interface DataSourceAdapter {
    * kastar med ett fel på Lottas språk, inte i byte (AC #6).
    */
   uploadAttachment(input: UploadAttachmentInput): Promise<Attachment>;
+
+  /**
+   * Hämta eventets bilagor (TASK-147.5, bilageväljarens verkliga fundament).
+   * Läsning via get-event-attachments: eventets omvända `Bilagor`-länk →
+   * batch-hämtade Bilagor-rader, mappade till domän-shape och sorterade
+   * nyast först (server-side). Ren läsning — speglar `fetchEventNotes` exakt.
+   *
+   * Listar BÅDA klass A (uppladdad, TASK-146.4) och klass B (event-mallad,
+   * TASK-146.5) — Bilagor-tabellen bär inget dokumentklass-fält, så alla
+   * rader länkade till eventet är per konstruktion "klass A eller B". Klass
+   * C (kvitto, TASK-147.7) har ingen Bilagor-rad och är alltså strukturellt
+   * frånvarande här, inte filtrerad bort.
+   */
+  fetchEventAttachments(eventId: string): Promise<Attachment[]>;
 }

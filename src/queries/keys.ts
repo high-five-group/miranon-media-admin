@@ -71,6 +71,13 @@ export const queryKeys = {
     // gren), inga klient-filters. Speglar waitlist.all-formen: parameterlös global lista.
     all: ['maillog'] as const,
   },
+  attachments: {
+    // Eventets bilagor (TASK-147.5): get-event-attachments (Bilagor via eventets
+    // omvända länk). Egen gren, PER-EVENT-nyckel (mönster ur events.notes)
+    // — bilageväljaren och granskningsytans "valda bilagor"-summering delar
+    // samma cache-entry, ingen dubbel-fetch när båda monteras kort efter varandra.
+    byEvent: (eventId: string) => ['attachments', eventId] as const,
+  },
   segment: {
     // App-sparade segment (Fas 6g L3, ADR-065): GLOBAL läs-lista (get-segments). STABIL
     // nyckel — `listSegments()` hämtar alla app-sparade segment (legacy Make-rader
