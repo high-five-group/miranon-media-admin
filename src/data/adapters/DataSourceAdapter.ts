@@ -1,3 +1,4 @@
+import type { Attachment, UploadAttachmentInput } from '../../domain/models/Attachment';
 import type { Attendance } from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
@@ -167,4 +168,27 @@ export interface DataSourceAdapter {
    * domän-shape.
    */
   createEventNote(input: CreateEventNoteInput): Promise<EventNote>;
+
+  /**
+   * Ladda upp en bilaga (TASK-146.4, PRD task-146 "Bilage-fundamentet",
+   * ADR-057 klausul a+c). UI-lagret anropar ENDAST denna metod — aldrig
+   * lagrings-SDK:t eller lagrings-API:t direkt (mekaniskt fällt, se
+   * tests/api/attachment-layer-independence.test.ts). Adaptern väljer SJÄLV
+   * mönster:
+   *
+   *   - Mönster 1 (SMÅ filer): bytesen skickas till upload-attachment-EF:en,
+   *     som skriver dem med förhöjd behörighet plus en Bilagor-metadatarad
+   *     i samma operation (AC #3).
+   *   - Mönster 2 (STORA filer): create-attachment-upload-ticket-EF:en
+   *     utfärdar ett tidsbegränsat, path-scopat uppladdningstillstånd;
+   *     adaptern laddar upp direkt mot lagringen och slutför via
+   *     finalize-attachment-upload-EF:en — bytesen passerar aldrig en
+   *     EF (AC #4).
+   *
+   * Auktorisationsbeslutet (vem får ladda upp vad, till vilken path) fattas
+   * SERVER-SIDE i BÅDA mönstren (AC #5) — klienten får bara ett scopat
+   * tillstånd, aldrig en genväg runt adaptern. En misslyckad uppladdning
+   * kastar med ett fel på Lottas språk, inte i byte (AC #6).
+   */
+  uploadAttachment(input: UploadAttachmentInput): Promise<Attachment>;
 }

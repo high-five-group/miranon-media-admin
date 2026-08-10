@@ -1,3 +1,4 @@
+import type { Attachment, UploadAttachmentInput } from '../../domain/models/Attachment';
 import type { Attendance } from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
@@ -138,6 +139,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async createEventNote(_input: CreateEventNoteInput): Promise<EventNote> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async uploadAttachment(_input: UploadAttachmentInput): Promise<Attachment> {
     throw new Error(NOT_IMPLEMENTED);
   }
 }
