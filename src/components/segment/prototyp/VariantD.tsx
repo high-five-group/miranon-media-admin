@@ -759,6 +759,7 @@ function SegmentKort({
 function SegmentKortMedAntal(props: {
   entitet: SegmentEntitet;
   parInfo: ParInfo[];
+  skalprov: boolean;
   markeraLage: boolean;
   vald: boolean;
   onOppna: () => void;
@@ -774,7 +775,7 @@ function SegmentKortMedAntal(props: {
     <SegmentKort
       entitet={props.entitet}
       definition={definitionFor(props.entitet, props.parInfo)}
-      antal={data?.count}
+      antal={visatAntal(data?.count, props.skalprov, props.entitet.id)}
       raknar={isFetching && data === undefined}
       markeraLage={props.markeraLage}
       vald={props.vald}
@@ -801,6 +802,8 @@ function SegmentLista({
   parInfo,
   laddar,
   fel,
+  skalprov,
+  onSkalprov,
   markeraLage,
   valda,
   onOppna,
@@ -816,6 +819,8 @@ function SegmentLista({
   parInfo: ParInfo[];
   laddar: boolean;
   fel: Error | null;
+  skalprov: boolean;
+  onSkalprov: (v: boolean) => void;
   markeraLage: boolean;
   valda: ReadonlySet<string>;
   onOppna: (id: string) => void;
@@ -840,6 +845,7 @@ function SegmentLista({
           key={e.id}
           entitet={e}
           parInfo={parInfo}
+          skalprov={skalprov}
           markeraLage={markeraLage}
           vald={valda.has(e.id)}
           onOppna={() => onOppna(e.id)}
@@ -978,6 +984,10 @@ function SegmentLista({
               kortLista(poster)
             )}
 
+            {/* RIGGEN BOR SIST, under listan den påverkar — samma placering
+                som på publikens yta, och samma streckade formspråk. */}
+            <SkalprovsVaxel aktivt={skalprov} onVaxla={onSkalprov} />
+
             <PrototypNot>
               Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är
               påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad.
@@ -1010,6 +1020,29 @@ function farMailet(m: SegmentMember): boolean {
    `b`s disciplin ärvs oavkortat: skalprovet FYLLER UT en verklig publik, det
    SKAPAR ingen. Det är ett INSTRUMENT, inte data, och det säger det själv. */
 const SKALPROV_MAL = 85;
+
+/**
+ * SKALPROVETS MÅL PER SEGMENT — varierat, deterministiskt, samma överallt.
+ *
+ * Ett FAST mål (85) räckte så länge skalprovet bara bodde på detaljsidan: där
+ * finns ett segment i bild och frågan är "hur beter sig publiken vid 85?".
+ * När riggen når LISTAN blir ett fast tal fel på ett nytt sätt — alla kort
+ * visar samma siffra, och en lista där varje rad säger 85 svarar lika lite på
+ * "hur läser sig listan?" som en där varje rad säger 1.
+ *
+ * Målet härleds därför ur segmentets id: samma segment får alltid samma tal,
+ * listan får spridning, och talet på kortet är detsamma som publiken på
+ * detaljsidan — annars hade riggen motsagt sig själv mellan två vyer och gjort
+ * siffrorna otrovärdiga i stället för illustrativa.
+ *
+ * Spannet 8-137 är valt för att träffa både korta listor och sådana som kräver
+ * chunkning (`CHUNK` = 25), så att listans former faktiskt prövas.
+ */
+function skalprovMal(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i += 1) h = (h * 31 + id.charCodeAt(i)) % 100_000;
+  return 8 + (h % 130);
+}
 const SKALPROV_FORNAMN = [
   'Anna',
   'Bengt',
@@ -1060,9 +1093,9 @@ const SKALPROV_EFTERNAMN = [
  * e-post och var elfte har tackat nej — så att de undertryckta faktiskt finns
  * att titta på i listan, i visningsfiltret och i granskningens varningar.
  */
-function byggSkalprov(befintliga: number): SegmentMember[] {
+function byggSkalprov(befintliga: number, mal: number): SegmentMember[] {
   const ut: SegmentMember[] = [];
-  for (let i = befintliga; i < SKALPROV_MAL; i += 1) {
+  for (let i = befintliga; i < mal; i += 1) {
     const f = SKALPROV_FORNAMN[i % SKALPROV_FORNAMN.length] ?? 'Exempel';
     const e = SKALPROV_EFTERNAMN[(i * 5) % SKALPROV_EFTERNAMN.length] ?? 'Person';
     ut.push({
@@ -1081,9 +1114,23 @@ function byggSkalprov(befintliga: number): SegmentMember[] {
  * ingenting ut?") och samtidigt dolt fälla #34:s tomläge, som är en av de
  * former som faktiskt ska bedömas.
  */
-function fyllUt(medlemmar: SegmentMember[], skalprov: boolean): SegmentMember[] {
+function fyllUt(
+  medlemmar: SegmentMember[],
+  skalprov: boolean,
+  mal: number = SKALPROV_MAL,
+): SegmentMember[] {
   if (!skalprov || medlemmar.length === 0) return medlemmar;
-  return [...medlemmar, ...byggSkalprov(medlemmar.length)];
+  return [...medlemmar, ...byggSkalprov(medlemmar.length, mal)];
+}
+
+/**
+ * KORTETS TAL under skalprovet. Samma invariant som `fyllUt`: en tom publik
+ * förblir tom (fälla #34:s tomläge ska gå att bedöma även med riggen på), och
+ * ett verkligt antal som redan passerar målet sänks aldrig.
+ */
+function visatAntal(antal: number | undefined, skalprov: boolean, id: string): number | undefined {
+  if (antal === undefined || !skalprov || antal === 0) return antal;
+  return Math.max(antal, skalprovMal(id));
 }
 
 /** Skalprovets egna, påhittade personer — aldrig underlag för en äkta kontroll. */
@@ -1404,7 +1451,10 @@ function SegmentDetalj({
   // Skalprovet fyller UT den verkliga publiken. Headerns tal räknar den
   // utfyllda mängden — annars hade rubriken sagt "2 personer" ovanför en lista
   // med 85, vilket är precis den motsägelse instrumentet inte får skapa.
-  const medlemmar = fyllUt(data?.members ?? [], skalprov);
+  // SAMMA MÅL SOM KORTET I LISTAN (`skalprovMal(entitet.id)`) — öppnar man ett
+  // kort som säger 47 ska publiken vara 47, inte 85. Riggen får vara påhittad;
+  // den får inte vara osammanhängande.
+  const medlemmar = fyllUt(data?.members ?? [], skalprov, skalprovMal(entitet.id));
   const antalFar = medlemmar.filter(farMailet).length;
   const undertryckta = medlemmar.length - antalFar;
   const tomRegel = rule.include.length === 0;
@@ -2254,7 +2304,13 @@ function UtskicksVy({
   const overlapp = [...forekomster.values()].filter((n) => n > 1).length;
   const summaPerSegment = svar.reduce((n, s) => n + (s.data?.count ?? 0), 0);
 
-  const mottagare = fyllUt(raMottagare, skalprov);
+  /* UNIONENS MÅL = SUMMAN AV DE INGÅENDES. Ett fast 85 hade fått ett utskick
+     till fyra segment att se MINDRE ut än ett av dem, vilket är precis den
+     sortens motsägelse riggen inte får införa. Summan är ett medvetet TAK, inte
+     en exakt modell: överlappet mellan segment kan inte simuleras, och riktiga
+     personer dedupas ändå av `unionKarta` ovan innan utfyllnaden sker. */
+  const unionsMal = entiteter.reduce((n, e) => n + skalprovMal(e.id), 0);
+  const mottagare = fyllUt(raMottagare, skalprov, unionsMal);
   const signatur = mottagare.map((m) => m.id).join(',');
   const utanEpost = mottagare.filter((m) => !m.email).length;
   const nekade = mottagare.filter((m) => m.email && m.ejGodkandMail).length;
@@ -2858,6 +2914,8 @@ export function VariantD() {
       parInfo={parInfo}
       laddar={laddar}
       fel={fel}
+      skalprov={skalprov}
+      onSkalprov={setSkalprov}
       markeraLage={markeraLage}
       valda={valda}
       onOppna={(id) => setVy({ namn: 'detalj', id })}
