@@ -243,21 +243,38 @@ export function EventDetail({ eventId }: { eventId: string }) {
         )}
       </header>
 
-      {/* Check-in-ingången + åtgärds-ytan (task-18.3; S73-facit K19–K26;
+      {/* Check-in-ingången + genvägar-ytan (task-18.3; S73-facit K19–K26;
           PROMOVERAD TASK-162.2, ADR-103 B2 steg 1): check-in som rubrikfritt
-          kort ÖVER åtgärds-ytan, ytan före datagrupperna. `AtgarderKort`
+          kort ÖVER genvägar-ytan, ytan före datagrupperna. `AtgarderKort`
           ("Gå till åtgärder") + `SkrivUtKort` (fristående "Skriv ut") är
           sedan denna commit den OVILLKORLIGA formen — den gamla rubricerade
           Åtgärder-gruppen (`Atgarder`, tidigare renderad här när
           `variantParam` INTE var satt) är riven; git bevarar den (senast i
-          main före denna commit). Länkmåls- och kopplingsinterimen är öppet
-          bokförda i Atgarder.tsx § AtgarderKort.
+          main före denna commit).
+          [TASK-147.8, NAMNBYTE] MARCUS-BESLUT 2026-08-10 (S102,
+          namnkollisionen — kortets Implementation Notes): två ytor bar
+          namnet "Åtgärder" — DENNA lilla kortkedja (genvägar UT till andra
+          sidor) och den riktiga Åtgärds-sidan
+          (`components/events/atgarder/AtgardsSida.tsx`). Beslutet: sidan
+          behåller "Åtgärder"; denna ytas informella namn (kommentarer,
+          testtitlar — ALDRIG en synlig rubrik, se nästa stycke) är nu
+          "genvägar-ytan". INGEN NY RUBRIK LADES TILL: `AtgarderKort` +
+          `SkrivUtKort` är SYSKON utan gemensamt DOM-skal
+          (eventsida-promoverings-grind.spec.ts's docblock — en ny
+          inneslutande div/rubrik hade varit exakt den formändring
+          regressionslåset finns för att förhindra), så namnbytet syns bara
+          i koden och testerna, aldrig för Lotta.
+          [TASK-147.8, KOPPLAD] `AtgarderKort`s länkmåls-interim är stängt:
+          kortet navigerar nu skarpt till `/event/$eventId/atgarder` (samma
+          `HandlingsLank`-mekanik som `CheckInKort`), därav `eventId`-propen
+          nedan. Se Atgarder.tsx § AtgarderKort för hela historiken —
+          urvalet från registret medförs INTE än (TASK-171.6 AC #1s scope).
           [RIVEN, TASK-145.6] `variantParam`/`isHallplatsVariant`/prototyp-
           railen som stod nedan är rivna (ADR-103 B2 steg 4, efter Marcus
           godkännande) — registret i Deltagare.tsx behåller sin promoverade
           form oförändrad. */}
       <CheckInKort eventId={eventId} />
-      <AtgarderKort />
+      <AtgarderKort eventId={eventId} />
       <SkrivUtKort />
 
       <OmEventet event={event} />

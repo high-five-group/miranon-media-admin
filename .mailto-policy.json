@@ -1,0 +1,38 @@
+{
+  "_readme": [
+    "Config för scripts/check-mailto.mjs (TASK-147.8, AC #1 — 'Noll mailto-",
+    "vägar i utskicksflödena, fälld av mekanisk grind — inte ögonkontroll').",
+    "Skriptets LOGIK är universell (AST-läsning av StringLiteral/JSXText/",
+    "TemplateElement, exkluderar kommentarer och importspecifikationer);",
+    "VÄRDENA här — undantagen — är projekt-specifika, per CLAUDE.md-regeln om",
+    "config-drivna grindvakter (Lesson #6, UNIVERSAL). Samma struktur som",
+    "systerfilen .langa-streck-policy.json (TASK-172).",
+    "",
+    "TVÅ UNDANTAGS-TYPER:",
+    "  'global'     — matchar VARJE sträng/JSX-text/mall vars TRIMMADE",
+    "                 innehåll är EXAKT värdet, oavsett fil.",
+    "  'file-value' — matchar samma normaliserade värde i EN namngiven fil.",
+    "",
+    "VARFÖR EN MAILTO-LÄNK KAN VARA LEGITIM: AC #1 gäller UTSKICKSFLÖDENA —",
+    "bulk-/systemutskicken TASK-147 flyttade till åtgärds-sidans server-väg",
+    "(useSendActionEmail/useSendActionTestEmail). En 1:1-kontaktlänk ('maila",
+    "den här PERSONEN direkt', ingen mutation, inget stämplat utskick) är en",
+    "annan sak strukturellt — samma skillnad som appens 'tel:'-länkar, som",
+    "denna grind inte alls rör. Grinden skiljer INTE de två åt automatiskt:",
+    "den fäller VARJE mailto:, och en genuin kontaktlänk kräver ett explicit,",
+    "källmärkt undantag här — precis så att en NY bulk-mailto (den grinden",
+    "faktiskt finns för att stoppa) aldrig kan gömma sig bakom ett brett",
+    "'kontakt'-undantag.",
+    "",
+    "En ny fil/värde med en mailto:-väg FÄLLS av grinden om den inte står",
+    "här — det är avsett."
+  ],
+  "exceptions": [
+    {
+      "type": "file-value",
+      "file": "src/components/persons/PersonDetailPrototyp.tsx",
+      "match": "mailto:",
+      "rationale": "S90-divergenspass, KASTBAR prototyp (throwaway-kontraktet, DEV-grindad route src/routes/_authenticated/personer/$personId.tsx) för persondetalj-sidans variant B ('kontakt-först'). Länken är en 1:1-kontaktaffordans ('maila DEN HÄR personen', filens egen kommentar rad ~556: \"mailto:/tel: är riktiga länkar (ingen mutation)\") — strukturellt skild från TASK-147s bulk-/systemutskick (bekräftelse, betalningspåminnelse, eventinfo, fritt utskick), som går genom servern sedan TASK-147.2/147.3. Ingen stämpling, inget delutfall, ingen batch — samma klass affordans som en 'tel:'-länk, som grinden inte alls granskar. TASK-147.8, 2026-08-10."
+    }
+  ]
+}

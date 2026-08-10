@@ -98,9 +98,15 @@
  * TASK-147.2 kopplade "Skicka bekräftelsemail"; TASK-147.3 kopplade de tre
  * återstående (påminnelse/eventinfo/fritt) mot SAMMA väg — `simuleraUtfall`
  * (prototyp-grenens minnesbyggda svar) har inga kvarvarande anropare och är
- * riven i samma skiva. `PrototypRigg` (nedan) STÅR ÄNNU KVAR, avsiktligt —
- * dess rivning och referens-specens ommontering mot nätverksmockade utfall
- * är `TASK-147.8`s uttryckliga scope, inte denna skivas.
+ * riven i samma skiva. `PrototypRigg` STOD ÄNNU KVAR till och med TASK-147.3
+ * — RIVEN i TASK-147.8 (se filens nedre del, där riggen bodde): dess knappar
+ * hade sedan TASK-147.3 redan slutat styra något (`skicka()` går alltid den
+ * verkliga vägen), och referens-specen (`tests/visual/atgardssida-
+ * promoverings-grind.spec.ts`) nådde redan de tre utfallslägena via ett
+ * mockat `send-action-email`-nätverkssvar i stället för riggens knappar —
+ * rivningen tar alltså bort en redan-inert widget, ingen formändring på den
+ * RENDERADE ytan (`granskning-yta` exkluderade riggen strukturellt sedan
+ * TASK-171.1, se `GranskningsSida` nedan).
  *
  * BILAGOR ÄR SKARPA SEDAN TASK-147.5: bilageväljaren (`ArbetsYta` §
  * useQuery) läser eventets verkliga Bilagor-rader via
@@ -122,12 +128,17 @@
  * Marcus godkännande. Ytan hade ingen variant-gren att flippa MOT
  * (171.1/171.2:s mätta divergens: `PROTO_VARIANTS` bar en enda post, ingen
  * kod läste `variantParam`) — rivningen är alltså ren
- * byggställningsborttagning, ingen formändring. `PrototypRigg` (nedan) är
- * PRÖVAD mot samma rivning och STÅR KVAR med skäl: referens-specen
- * (`tests/visual/atgardssida-promoverings-grind.spec.ts`, TASK-171.1) når
- * de tre utfallslägena genom riggens knappar, och task-147:s riktiga
- * sändväg finns inte än. Riggen är därför öppet bokförd som DEV-grindad
- * test-/QA-infrastruktur i väntan på 147 — se dess egen docblock nedan.
+ * byggställningsborttagning, ingen formändring. `PrototypRigg` PRÖVADES DÅ
+ * mot samma rivning och stod kvar med skäl (referens-specen nådde de tre
+ * utfallslägena genom riggens knappar, och 147:s riktiga sändväg fanns inte
+ * än) — den PRÖVNINGEN gäller inte längre, se rivnings-noten ovan:
+ * `TASK-147.8` river riggen och dess båda monteringspunkter i sin helhet,
+ * PrototypRigg-funktionen är riven ur filen (git bevarar, `git log -p --
+ * src/components/events/atgarder/AtgardsSida.tsx`), och referens-specen
+ * (`tests/visual/atgardssida-promoverings-grind.spec.ts`) är GRÖN mot detta
+ * utan omtagning — den nådde redan de tre utfallslägena via ett mockat
+ * nätverkssvar (se filens § 4–6 i sitt eget docblock), inte via riggens
+ * knappar.
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -1861,11 +1872,6 @@ type Utfall = {
   fallna: { reg: Registration; skal: string }[];
 };
 
-/** [TASK-147.3] `PrototypRigg`s valda utfallsläge — funktionen som en gång
-    konsumerade den (`simuleraUtfall`) är riven, men riggen SJÄLV kvarstår
-    (filens docblock överst § varför) och behöver fortfarande sin typ. */
-type UtfallsLage = 'allt' | 'delvis' | 'inget';
-
 /** Svenska skäl för serverns skip-koder (`ActionSkipReason`) — samma tre koder
     `_shared/confirm-registrations.ts`s golv-lista redan bär, se `SendActionEmail.
     schema.ts`s docblock för varför enumen ändå är EGEN och inte återanvänd. */
@@ -2046,12 +2052,12 @@ function GranskningsSida({
     status: 'sent' | 'failed';
     reason?: string;
   } | null>(null);
-  /* [TASK-147.3] PROTOTYP-RIGGENS VAL — matar sedan denna skiva INGEN
-     konsument längre (`simuleraUtfall` är riven, `skicka()` läser inte detta
-     state). `PrototypRigg` STÅR ÄNDÅ KVAR, och därmed detta state med den —
-     se filens docblock överst för varför rivningen är TASK-147.8s scope, inte
-     denna skivas. */
-  const [protoLage, setProtoLage] = useState<UtfallsLage>('delvis');
+  /* [RIVEN, TASK-147.8] PROTOTYP-RIGGENS VAL bodde här (`protoLage`,
+     `UtfallsLage`) — matade sedan TASK-147.3 ingen konsument längre
+     (`simuleraUtfall` var redan riven, `skicka()` läste aldrig detta state).
+     `PrototypRigg` självt är riven i denna skiva (filens nedre del); state:et
+     som bar dess val är riven med den. Git bevarar (senast i main före denna
+     commit). */
 
   /* [TASK-147.5] SAMMA cache-nyckel som `ArbetsYta`s bilageväljare — löser
      `granskning.bilagor` (Bilagor-record-ID:n) till namn för "valda
@@ -2132,8 +2138,8 @@ function GranskningsSida({
      kopplade de tre återstående (påminnelse/eventinfo/fritt) mot samma väg.
      `simuleraUtfall` (den tidigare prototyp-grenens minnesbyggda svar) hade
      ingen kvarvarande anropare efter den kopplingen och är riven i samma
-     skiva — se filens docblock överst för vad som INTE rivs samtidigt
-     (`PrototypRigg`, TASK-147.8s scope).
+     skiva — `PrototypRigg`, som en gång drev den, är riven i TASK-147.8
+     (filens nedre del).
 
      Ingen konstgjord fördröjning behövs längre — mutationens FAKTISKA väntan
      bär `skickar`-lägets synlighet i samtliga fyra fall. */
@@ -2212,16 +2218,19 @@ function GranskningsSida({
     return (
       <section className="flex flex-col gap-6 pt-2 lg:pt-10">
         {/* [TASK-171.1] Wrappern bär grindens ariaSnapshot-fäste
-            (`data-testid="granskning-yta"`, ADR-103 B4) och avgränsar
-            MEDVETET bort `PrototypRigg` nedanför — riggens egen docblock
-            säger det rakt ut: "riggen, inte ytan". Referensen ska förbli
-            giltig även efter en framtida rivning av riggens byggställning
-            (TASK-171.5 AC #3: "gröna mot rivna ytan UTAN OMTAGNING"), och en
-            snapshot som råkade fånga debug-knapparna hade fällt just då.
-            `flex flex-col gap-6` speglar sektionens EGEN klass exakt så
-            att ingen synlig spalt ändras — samma testid delas mellan
-            "granska"- och "resultat"-läget (mutuellt uteslutande DOM-träd),
-            precis som `register-yta` delas mellan registrets fyra lägen. */}
+            (`data-testid="granskning-yta"`, ADR-103 B4). Den avgränsade
+            ursprungligen MEDVETET bort `PrototypRigg`, som stod som en syskon-
+            nod utanför denna div — riggens egen docblock sa det rakt ut:
+            "riggen, inte ytan". [TASK-147.8] Den avgränsningens SYFTE är nu
+            infriat: `PrototypRigg` är riven i sin helhet (filens nedre del),
+            och avgränsningen visade sig hålla precis det TASK-171.5 AC #3
+            lovade — "gröna mot rivna ytan UTAN OMTAGNING": ingen referensfil
+            under `tests/visual/__aria__/` behövde röras när riggen försvann,
+            eftersom den aldrig låg innanför denna div. `flex flex-col gap-6`
+            speglar sektionens EGEN klass exakt så att ingen synlig spalt
+            ändras — samma testid delas mellan "granska"- och "resultat"-
+            läget (mutuellt uteslutande DOM-träd), precis som `register-yta`
+            delas mellan registrets fyra lägen. */}
         <div data-testid="granskning-yta" className="flex flex-col gap-6">
           <Sidhuvud
             rubrik={antalLyckade === 0 ? 'Inget skickades' : 'Skickat'}
@@ -2325,32 +2334,15 @@ function GranskningsSida({
             </div>
           </div>
         </div>
-
-        {/* [TASK-147.2] Riggen utelämnas för `bekraftelse` — se dess docblock
-            nedan: "riggens roll ersatt, inte riven" gäller bara den ÅTGÄRD
-            som faktiskt fått en verklig sändväg. Ett DEV-läge som fortsatte
-            visa "Inget skickas - svaret byggs i webbläsaren" bredvid ett
-            resultat som just KOM från ett verkligt server-svar vore en lögn
-            i utvecklarytan, samma klass av fel resten av kortet river. */}
-        {import.meta.env.DEV && granskning.atgard.nyckel !== 'bekraftelse' ? (
-          <PrototypRigg
-            lage={protoLage}
-            onValj={setProtoLage}
-            onAterstall={() => {
-              setUtfall(null);
-              setArmerad(false);
-              setLage('granska');
-            }}
-          />
-        ) : null}
       </section>
     );
   }
 
   return (
     <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      {/* [TASK-171.1] Samma anker + samma avgränsning mot `PrototypRigg` som
-          resultatlägets wrapper ovan — se den docblocken för hela skälet. */}
+      {/* [TASK-171.1] Samma anker som resultatlägets wrapper ovan — se den
+          docblocken för hela skälet till varför denna div bär
+          `data-testid="granskning-yta"` som EGET DOM-skal. */}
       <div data-testid="granskning-yta" className="flex flex-col gap-6">
         <Sidhuvud
           rubrik="Granska och skicka"
@@ -2610,121 +2602,26 @@ function GranskningsSida({
           </div>
         </div>
       </div>
-
-      {/* [TASK-147.2] Samma utelämnande som resultatlägets rigg ovan — se den
-          kommentaren för hela skälet. */}
-      {import.meta.env.DEV && granskning.atgard.nyckel !== 'bekraftelse' ? (
-        <PrototypRigg
-          lage={protoLage}
-          onValj={setProtoLage}
-          onAterstall={
-            armerad
-              ? () => {
-                  setArmerad(false);
-                }
-              : undefined
-          }
-        />
-      ) : null}
     </section>
   );
 }
 
 /* ================================================================== *
- * PROTOTYP-RIGGEN — riggen, inte ytan. Står AVSKILD längst ned med avsikt.
- *
- * Marcus 2026-08-08: han vill se de tre ytorna *"så som de kommer se ut i
- * skarpa versionen sen"*, och en väljare mitt i det som ska bedömas förorenar
- * precis den bilden. Allt OVANFÖR den här rutan är därför den skarpa formen —
- * samma komponenter, samma tokens, samma texter — och riggen är synligt en
- * rigg: streckad kant, egen rubrik, inget av sidans kort-språk.
- *
- * [TASK-147.3] STYR INGENTING LÄNGRE. `simuleraUtfall` — funktionen valet
- * en gång drev — är RIVEN i denna skiva: `GranskningsSida.skicka()` går den
- * VERKLIGA vägen för alla fyra åtgärdstyper (filens docblock överst,
- * `skicka()`s egen kommentar). Riggens knappar sätter fortfarande
- * `protoLage`, men ingen kod läser längre värdet — widgeten är INERT, inte
- * funktionell. Kvarlämnad avsiktligt, se nästa stycke.
- *
- * [TASK-147.2] MONTERAS INTE LÄNGRE FÖR `bekraftelse`: riggens roll för den
- * åtgärden är ERSATT av en verklig sändväg (`useSendActionEmail`,
- * `GranskningsSida.skicka()`), inte riven — se BÅDA monteringspunkternas
- * villkor (`granskning.atgard.nyckel !== 'bekraftelse'`). Att visa
- * "Inget skickas - svaret byggs i webbläsaren" bredvid ett resultat som just
- * kom från ett riktigt server-svar hade varit en lögn i DEV-ytan — samma lögn
- * gäller nu STRUKTURELLT även de tre kvarvarande monteringarna (se stycket
- * ovan), öppet bokfört som TASK-147.8s scope nedan, inte tyst kvarlämnad.
- *
- * [TASK-171.5, ADR-103 B2 steg 4 / TASK-147.8] PRÖVAD MOT RIVNING, STÅR ÄNNU
- * KVAR — nu MEDVETET, per TASK-147.8s uttryckliga ägarskap (kortets
- * Description, `backlog task 147.8 --plain`): *"PrototypRigg i
+ * [RIVEN, TASK-147.8] PROTOTYP-RIGGEN bodde här — riggens knappar simulerade
+ * de tre utfallslägena innan `TASK-147.3` gav `skicka()` en riktig sändväg;
+ * sedan dess styrde riggen ingenting (`protoLage` matade ingen konsument).
+ * TASK-147.8 river den i sin helhet, per kortets uttryckliga ägarskap
+ * (`backlog task 147.8 --plain`, Description: *"PrototypRigg i
  * AtgardsSida.tsx rivs — dess egen docblock väntar på just 147:s riktiga
- * sändväg; referens-specen omriktas mot verkliga utfallslägen."* Den riktiga
- * sändvägen är levererad i och med DENNA skiva (TASK-147.3) — men själva
- * rivningen av riggen, och ommonteringen av referens-specens navigering, är
- * INTE gjord här.
- *
- * REFERENS-SPECEN (`tests/visual/atgardssida-promoverings-grind.spec.ts`,
- * funktionen `valjArmeraSkicka`) NÅR SEDAN DENNA SKIVA de tre utfallslägena
- * genom ett MOCKAT `send-action-email`-nätverkssvar i stället för att klicka
- * riggens knappar — testet måste följa `skicka()`s nya, enda väg (annars
- * hade det anropat en riktig, omockad Edge Function). Riggens knappar rörs
- * alltså inte längre av testet, men de och komponenten lämnas monterade;
- * riggen är därför fortsatt DEV-grindad (`import.meta.env.DEV`) vid båda sina
- * monteringspunkter i stället för riven: öppet bokförd, avsiktligt inert
- * test-/QA-infrastruktur i väntan på TASK-147.8, inte skarp UI Lotta ska möta
- * i produktion.
+ * sändväg; referens-specen omriktas mot verkliga utfallslägen."*).
+ * `tests/visual/atgardssida-promoverings-grind.spec.ts` behövde INGEN
+ * omtagning: den nådde redan de tre utfallslägena via ett mockat
+ * `send-action-email`-nätverkssvar (funktionen `valjArmeraSkicka`), aldrig
+ * via riggens knappar — exakt den garantin `granskning-yta`s avgränsning
+ * (se `GranskningsSida` ovan) fanns för att bevisa. Git bevarar hela
+ * implementationen (senast i main före denna commit,
+ * `git log -p -- src/components/events/atgarder/AtgardsSida.tsx`).
  * ================================================================== */
-function PrototypRigg({
-  lage,
-  onValj,
-  onAterstall,
-}: {
-  lage: UtfallsLage;
-  onValj: (l: UtfallsLage) => void;
-  onAterstall?: () => void;
-}) {
-  const val: { nyckel: UtfallsLage; etikett: string }[] = [
-    { nyckel: 'allt', etikett: 'Allt gick fram' },
-    { nyckel: 'delvis', etikett: 'Delutfall' },
-    { nyckel: 'inget', etikett: 'Inget gick fram' },
-  ];
-
-  return (
-    <div className="mx-4 flex flex-col gap-2 rounded-lg border border-border border-dashed p-3">
-      <p className="text-caption text-text-muted">
-        <strong className="font-medium">Prototyp-rigg.</strong> Välj vilket utfall som ska
-        simuleras. Inget skickas - svaret byggs i webbläsaren.
-      </p>
-      <div className="flex flex-wrap items-center gap-2">
-        {val.map((v) => (
-          <button
-            key={v.nyckel}
-            type="button"
-            onClick={() => onValj(v.nyckel)}
-            aria-pressed={lage === v.nyckel}
-            className={`rounded-full px-3 py-1 text-small ${
-              lage === v.nyckel
-                ? 'bg-bg-emphasized font-medium'
-                : 'text-text-secondary hover:bg-bg-muted'
-            }`}
-          >
-            {v.etikett}
-          </button>
-        ))}
-        {onAterstall && (
-          <button
-            type="button"
-            onClick={onAterstall}
-            className="ml-auto text-small text-text-secondary underline"
-          >
-            Nollställ handtaget
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /* ================================================================== *
  * SIDAN
@@ -2998,30 +2895,51 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
   );
 }
 
-/** Prototyp-not synlig i ytan så Marcus ser vad som ännu inte har datakälla.
-    [TASK-147.2] Texten fick en andra mening: "inget skickas, inget sparas"
-    var sant för HELA sidan fram till denna skiva — nu gäller det bara tre av
-    de fyra åtgärderna. En not som påstod motsatsen av vad "Skicka
-    bekräftelsemail" faktiskt gör hade varit exakt den stämplingslögn PRD
-    task-147 river.
-
-    [TASK-147.5, RÄTTAD] Noten var STALE på TVÅ punkter, upptäckt vid denna
-    skivas eget bygge (ingen ny rivning, en text som glömdes vid tidigare
-    landningar): "de tre övriga åtgärderna simulerar ännu" var redan falskt
-    sedan TASK-147.3 (filens egen docblock, § "ÄNDRAS AV TASK-147.2/147.3,
-    GJORT", säger uttryckligen "ALLA FYRA ÅTGÄRDER SKICKAR VERKLIGT"), och
-    "bilage-fundamentet (TASK-146) är inte byggt" är falskt sedan DENNA
-    skiva. Rättad i samma andetag som bilage-claimet, inte lämnad som en
-    känd men obekväm lögn i produktionsytan — se ~rad 105 (filens docblock)
-    för samma rättelse i sin fulla form. Mallens hårdkodning (ämnesrad/
-    brödtext) är den ENDA kvarvarande, MEDVETNA stubben (PRD § Utanför
-    omfattningen). */
+/**
+ * [TASK-147.8, REVIDERAD — S102-batchens kort ⑤:s fynd, kortets tillägg]
+ * Notens historik: föddes som "Prototyp-not" (Marcus ser vad som ännu inte
+ * har datakälla), fick en RÄTTAD text i TASK-147.5 ("inget skickas, inget
+ * sparas" var redan falskt för tre av fyra åtgärder sedan TASK-147.3 — se
+ * git-historiken, `git log -p -- src/components/events/atgarder/
+ * AtgardsSida.tsx`, för den fulla rättelsen).
+ *
+ * DEN CITERADE GAMLA COPYN ("Inget skickas, inget sparas.") FANNS INTE PÅ
+ * DISK NÄR DENNA SKIVA BÖRJADE — premiss-passet (ADR-086) verifierade det:
+ * TASK-147.5 hade redan bytt ut den mot "allt annat skickar och sparar
+ * verkligt, inklusive bilagor" (commit-par `9742334a`/`1aea42d2`, landad
+ * FÖRE denna skiva). Uppdragets beskrivning av copyn var alltså en
+ * obelagd/förlegad premiss — den prövades, divergensen bokförs här och i
+ * PR-body, och byggs INTE vidare på.
+ *
+ * VAD SOM FAKTISKT REVIDERAS I DENNA SKIVA: sidan är PRODUKTIONSKOD sedan
+ * TASK-171.5 (filens docblock överst), och `PrototypNot` monteras
+ * OVILLKORLIGT (aldrig `import.meta.env.DEV`-grindad) — Lotta ser den
+ * varje gång hon öppnar åtgärds-sidan. Att en produktionssida bär en
+ * synlig etikett "Prototyp." är precis den sortens stale grå-löfte-
+ * liknande text kortets AC #4/tillägg pekar ut, nu när `PrototypRigg` (den
+ * FAKTISKA prototyp-infrastrukturen) är riven i samma skiva. Etiketten och
+ * reassurance-satsen ("allt annat skickar och sparar verkligt") är därför
+ * rivna — det är produktionens normalläge, inget som längre behöver sägas.
+ * KVAR: den ENDA genuina, medvetna begränsningen (PRD § Utanför
+ * omfattningen) — mallens ämnesrad/brödtext är hårdkodade stubbar, ingen
+ * mall-editor är byggd. Det är information Lotta faktiskt behöver (hon ser
+ * den hårdkodade texten i förhandsvisningen), inte en ursäkt för en
+ * ofärdig yta.
+ *
+ * ARIA-DELTA (redovisat i PR-body/kortets notes per uppdraget): `<p>`-noden
+ * i `AtgardsSida`s hub-läge bär nu KORTARE text utan `<strong>Prototyp.</strong>`-
+ * segmentet — en rad-nivå textändring, ingen ny nod, inget nytt landmärke.
+ * Ingen av de sex namngivna ariaSnapshot-referenserna i
+ * `atgardssida-promoverings-grind.spec.ts` täcker hub-lägets FULLA yta
+ * (de scopar till `atgardssida-tomt`/`mottagar-kort`/`granskning-yta`) —
+ * denna nod ligger alltså utanför samtliga facit-lås, verifierat genom
+ * läsning av specfilen innan ändringen gjordes, inte antaget.
+ */
 function PrototypNot() {
   return (
     <p className="px-4 text-small text-text-muted">
-      <strong className="font-medium">Prototyp.</strong> Mallarnas ämnesrad och brödtext är
-      hårdkodade stubbar (ingen mall-editor ännu), allt annat skickar och sparar verkligt, inklusive
-      bilagor.
+      <strong className="font-medium">Mallar.</strong> Ämnesrad och brödtext är hårdkodade stubbar
+      (ingen mall-editor i appen ännu).
     </p>
   );
 }
