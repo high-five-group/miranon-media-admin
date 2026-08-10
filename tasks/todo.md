@@ -15,8 +15,9 @@
 
 ## Aktuellt fokus
 
-**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — PERSONLISTANS
-FORM ÄR AVGJORD; PROMOVERINGEN PÅBÖRJAD.** Dagens kedja efter resumen: **carry 1
+**Session 103 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — PERSONLISTAN
+PROMOVERAD, GODKÄND OCH RIVEN; NÄSTA ARBETE ÄR EN D-VARIANT PÅ PERSONDETALJEN.**
+Dagens kedja efter resumen: **carry 1
 löst** (`BAS_FILTER` kontra cursor-testet — fem PERMANENTA, MÄRKTA
 conformance-anmälningar med ENBART Person-länk; Event-lös anmälan räknas i
 rollupen, mätt · A1/A2 `undeployed` i staging men `deployed` i prod,
@@ -34,14 +35,24 @@ skälet står i ADR:n). PR `#1114`/`#1118`/`#1119` MERGED. **Vid resumen (Del 5)
 `DIRTY` på EN fil (`todo.md`, våra två kadensrader); löst semantiskt (min rad +
 S104:s rad från main), merge `d9a9e3d7`, `check:docs` 14 gröna, omköad. Mekanism-tro
 FALSIFIERAD: armeringen konsumerades INTE av konflikten (`enabledAt` orörd) —
-`#1109`-instansen var en kö-utsparkning, inte DIRTY. **ÖPPET: (1) PROMOVERINGEN
-`ADR-103` B2 — kvitterad ingång, kräver Marcus ögonkast på den SKARPA ytan mitt i;
-substans-flytt (670 rader prototyp → 219 rader skarp), ej flagg-radering.
-(2) Variant C:s ort (`PersonDetailPrototyp.tsx:945`). (3) Rail-badgens steg-drift
-(`personer/index.tsx:31` sa k11 vid k15) — stängs AV rivningen, bokförd så den
-inte tappas. (4) Persondetalj + check-in orörda i divergensläge.** Numrering
-disk-verifierad efter `#1127`: **109/task-190/T141** plus 2 nummerlösa fragment.
-**HANDOFF: sessionsdok S103 § Del 1–5.** *(S104:s kadensrad nedan, bevarad.)*
+`#1109`-instansen var en kö-utsparkning, inte DIRTY. **Del 6 — PROMOVERINGEN
+GENOMFÖRD HELA VÄGEN:** grind + testid-ankare → sex `ariaSnapshot`-referenser
+låsta ur variant-läget FÖRE flippen (ordningen är enkelriktad; efter flippen
+existerar inte FÖRE-läget) → flippen → Marcus godkännande via `!`-kanalen
+(`ADR-104`, kvitto `sha 4ebdcfc8`) → rivningen. Referenserna ORÖRDA genom BÅDA
+operationerna och gröna efteråt (**16 passed**) = beviset att rivningen tog
+villkor och växlar, aldrig form. `PersonsListPrototyp.tsx` → `PersonsList.tsx`
+(git rename). **Två grindar som ljög lagade på vägen:** `TASK-192` (två DÖDA
+facit-markörer, dolda bakom att B3-spärren hoppas över när allt är godkänt +
+markörlistan vaktade FEL yta) och `TASK-194` (hooken jämför RESULTAT i stället
+för DELTA och låser `kallor`-flytten — mintad, oöppnad). **ÖPPET: (1) D-VARIANT
+på persondetaljen, Marcus order — blanda A/B/C, INGET formval på A/B/C görs.
+(2) Variant C:s ort (`PersonDetailPrototyp.tsx:945`). (3) Check-in orörd +
+närvaro-WRITE-forken. (4) Visual-baslinjen förfallen — Marcus avfyrar
+`visual-baselines.yml`. (5) Tio oreproducerbara röda skärmbildstester, n=1,
+omätt.** Numrering disk-verifierad mot `6d1deb92`: **109 / task-195 / T141 /
+L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103 § PAUSLÄGE +
+Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
 **Session 104 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — KONVERGENSEN INLEDD;
 DE 14 SKOOL-GRUPPERNA FALSIFIERAR REGELSPRÅKET.** Fyra varianter på
