@@ -35,8 +35,9 @@ beslut i S102 (kortets Implementation Notes, kvitterat i klartext):
   org-uppgifter. MOMSRADEN UTELÄMNAS — öppen Roger-punkt, momsstatus måste
   bekräftas innan kvitton går skarpt till kunder.
 - **(d)** En ångrad avprickning (Lotta bockar av "Mottagen" igen) efter ett
-  utskickat kvitto: kvittot består med sitt nummer + notering. Kreditrutin
-  + bokförings-export defereras till Roger-feedback senare, EJ v1.
+  utskickat kvitto: kvittot består med sitt nummer och sin notering.
+  Kreditrutin och bokförings-export defereras till Roger-feedback senare,
+  EJ v1.
 
 **Airtable kan inte ge atomisk numrering** — den strukturella grunden för
 hela detta ADR:s § Beslut 2. `docs/reference/airtable-constraints.md` §A:
@@ -69,11 +70,11 @@ alltså inte härledas server-side; se § Öppna punkter.
    avgränsat från Rogers manuella fakturaserie (beslut a/b), och håller
    kvittoserien läsbart skild även om siffror skulle råka kollidera.
 
-2. **Allokeringsprotokollet är läs-högsta + skriv-med-verifikation +
-   deterministisk retry** — `supabase/functions/_shared/receipt-numbering.ts`
+2. **Allokeringsprotokollet är läs-högsta + skriv-med-verifikation + deterministisk
+   retry** — `supabase/functions/_shared/receipt-numbering.ts`
    § `allocateReceiptNumber`. Per försök: (i) läs ALLA ledger-poster för
    året, räkna högsta löpnumret; (ii) skriv en kandidat-post DIREKT (högsta
-   + 1); (iii) läs om samma löpnummer — ensam ⇒ vunnet; (iv) flera poster
+   plus 1); (iii) läs om samma löpnummer — ensam ⇒ vunnet; (iv) flera poster
    med samma nummer ⇒ deterministisk tie-break (lexikografiskt LÄGSTA
    record-ID vinner); (v) förlorare RADERAR sin kandidat-post (`DELETE`,
    `deleteAirtableRecord`, repots FÖRSTA delete-operation) och gör om från
@@ -176,9 +177,9 @@ alltså inte härledas server-side; se § Öppna punkter.
   accepterade konsekvensklass verkliga faktura-/kvittosystem redan lever
   med (en "voided"/aldrig-skickad post hoppas över, återanvänds aldrig) —
   inte en bugg att fixa i denna landning.
-- **Facit-/aria-deltat.** "Skicka kvitto"-knappen är NY DOM i
+- **Facit-/ARIA-deltat.** "Skicka kvitto"-knappen är NY DOM i
   betalningspanelen (`BetalningsSkrivYta`) när en betalning är Mottagen —
-  ett nytt, minimalt aria-delta mot den befintliga, stämpel-väntande
+  ett nytt, minimalt ARIA-delta mot den befintliga, stämpel-väntande
   facit-ytan (`tests/visual/atgardssida-promoverings-grind.spec.ts` +
   `__aria__`-snapshotarna). Deltat är EXAKT REDOVISAT i PR-body/kortets
   notes, inte tyst introducerat — self-godkännande av facit ligger
