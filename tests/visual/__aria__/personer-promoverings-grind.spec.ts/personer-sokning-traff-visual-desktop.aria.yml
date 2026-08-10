@@ -1,0 +1,9 @@
+- searchbox "Sök person": Gunilla
+- button "Rensa sökningen"
+- status
+- status: Visar 1 person för "Gunilla".
+- list "Personer":
+  - listitem:
+    - link "Gunilla Granqvist":
+      - /url: /personer/recVisualPers00007
+    - text: /gunilla\.granqvist@example\.se \d+ dagar sedan · Deltog på RIM 2 i Varberg/

@@ -263,7 +263,7 @@ body {
    annars förlorade mot denna släckare för data-rac-element). Sedan
    släckaren smalnades till role="listbox" matchar den aldrig längre
    `.mm-fokusring-vid-fokus`-element (varken sökrutorna i EventValjare.tsx/
-   PersonsListPrototyp.tsx eller Input-primitivens fält) — den generella
+   PersonsList.tsx eller Input-primitivens fält) — den generella
    `.mm-fokusring-vid-fokus:focus`-regeln ovan vinner nu utan konkurrens,
    så den redundanta varianten vore dött, missvisande kod. */
 [role="listbox"][data-rac]:focus-visible:not([data-focus-visible]),
