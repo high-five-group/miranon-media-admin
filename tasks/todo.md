@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 93 ✅ AVSLUTAD (2026-08-02 → 2026-08-10, `lifecycle: closed` på
+Marcus coverage-kvittens) — EVENTSIDAN SKARP, PROMOVERINGS-APPARATEN BYGGD,
+15-STRECKS-SVEPET FULLBORDAT.** Stängningsdagen: Marcus granskning +
+omgodkännande-stämpel via `!` (`sha: e25efd05`; första stämpelns
+fel-träd-SHA fångad i kvittots granskning → ref-synk + omstämpling,
+mekanism-fix `task-175` mintad + fragment) · `172` **Done** (`#1069`,
+stängnings-commit `0249d573`) · BUILD-LOG § Session 93 · slutskördens två
+fragment i `tasks/lessons.d/`. Nattens facit står i föregående kadensrad
+(kedjan `#1060`–`#1065`, hub `b210ee0`, K93.1–K93.39, plugin 1.33.0).
+**NÄSTA (NY session, N+1 = S102):** Marcus-utpekade spår — `147`-skivningen
+(sändvägen; grillning, ready-for-human) och go-live-inventeringen inför
+Roger/Lotta · plockbara: `task-174` + `task-175` + `146.4`/`158.4` (avblockar
+`169`-resten) · T135-utredningen på prio · **Marcus-moment: app-omstart
+(plugin 1.29.0 → 1.33.0) + Update-klicket i claude.ai.** Numrering efter S93:
+102/108/L512+2 fragment/T140/task-176/f47.
+**Full narrativ: sessionsdok S93 Del 1–18 + BUILD-LOG § Session 93.**
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 93 ⏸️ PAUSAD (2026-08-09, elfte pausen, `lifecycle: paused`) —
 NATTAUTONOMIN FULLBORDAD; ENDAST STÄMPELN + STÄNGNINGEN KVAR.** Nattens
 kedja, samtliga MERGED: `#1060` resume · `#1059` S101-lösningen (Marcus-

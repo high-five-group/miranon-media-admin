@@ -3163,6 +3163,43 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Numrering efter S97:** 98/096/L469/T124/task-142/f47. **`vol-06` måste roteras FÖRE nästa hub-lyft.** *(Lesson-axeln rättad 2026-08-05 i S98: posten skrevs `L461` vid stängningen, före `#754` landade `L461`–`L468`.)*
 - Full narrativ: sessionsdok S97 Del 1–10.
 
+## Session 93 — Appen återupptagen: eventsidan skarp, promoverings-apparaten byggd, 15-strecks-svepet (2026-08-02 → 2026-08-10)
+
+**Mål:** återuppta app-bygget efter mekaniserings-programmet — eventsidans
+form till skarp produktionsyta med Marcus-låst facit.
+
+**Elva pauser, huvudleveranserna i ordning** (full narrativ: sessionsdok S93
+Del 1–18):
+
+- **Promoverings-apparaten:** ADR-102 (prototypen är facit) + ADR-103
+  (promoveringen — flip, granskning, rivning av flaggor aldrig formen) +
+  ADR-104 (godkännande-mekaniken: kanalseparation via `!`-kanalen, hook-spärr,
+  `check-facit`-invarianten) — byggd i `task-167` (+ tuning `168`), skarp
+  första gången på hållplats-facit, andra gången på åtgärds-/granskningssidan
+  (PRD-`171`, mintad→Done på EN dag, riven `54e3ff36` med noll drift).
+- **Eventsidan KLAR** (nionde pausen): `162`-kön + QA + `145.6`-rivningen +
+  `166`-svepet.
+- **15-strecks-svepet (`task-172`):** Marcus-beslutet "ALLA långa bindestreck
+  i användarsynlig text MÅSTE bort" — `#1055` (73 ersatta + AST-grinden
+  `check-langa-streck`) + `#1064` (17 REST-förekomster, datumspann-direktivet
+  rivet öppet, 9 test-konsumenter synkade, policyn tömd till tom-markörens 9
+  KEEP). Marcus omgodkännande-stämpel 2026-08-10 (`sha: e25efd05`;
+  första stämpelns fel-träd-SHA → `task-175` + fragment).
+- **Skörden L480–L511** (`#1065`): 8 fragment + 24 nya poster, två tappade
+  carry-listor återfunna och skördade; hub-lyftet **K93.1–K93.39** (hub
+  `a205132`) + SYSTEMET.md §0-termerna (hub `1ae7e01`) + /prototype-skillens
+  promoveringskontrakt, plugin **1.33.0** (hub `b210ee0`).
+- **CLAUDE.md-rättelser:** hook-ALDRIG → "kan inte förlitas på" (`#1062`).
+
+**Verifiering:** samtliga landningar genom merge-kön med gröna jobb per PR;
+facit-manifestet stämplat av Marcus via `!`-kanalen; ariaSnapshot-låsen 100 %
+orörda genom strecksvepet; acceptance 177/177, api 465/465.
+
+**Teknisk skuld/öppet:** `171.6` väntar `task-147` (osplittad PRD, sändvägen)
+· `169`-resten väntar `146.4`/`158.4` · `task-174` (READ-ONLY-docblocken) +
+`task-175` (stämpel-SHA-härledningen) plockbara · T135-familjen väntar
+utredning · go-live-inventeringen = egen session.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
