@@ -94,16 +94,23 @@ function displayName(person: Person): string {
 }
 
 /**
- * Kontaktrad — e-post, telefon och ORT, det som finns.
+ * Kontaktrad — e-post och ORT. INTE telefon.
  *
- * [PROTOTYPE] STEG 12 (k12) — orten tillkom i S103-grillningen. Raden i ett
- * UPPSLAGSVERK har ett jobb: låta Lotta säga "ja, det är hen". Orten är det
- * starkaste särskiljande draget efter namnet (två "Anna Andersson" skiljs av
- * Skövde/Skara), den ligger redan i modellen, och den är redan sökbar i
- * `get-persons` SEARCH_FIELDS - raden visar därmed det Lotta nyss sökte på.
+ * [PROTOTYPE] STEG 12-13 — orten tillkom i S103-grillningen, telefonen ströks
+ * i samma pass (Marcus: *"telefon spelar ju ingen roll, det ska vi ju inte visa
+ * i personlistan ändå"*). Raden i ett UPPSLAGSVERK har ett jobb: låta Lotta
+ * säga "ja, det är hen". Orten är det starkaste särskiljande draget efter
+ * namnet (två "Anna Andersson" skiljs av Skövde/Skara), den ligger redan i
+ * modellen, och den är redan sökbar i `get-persons` SEARCH_FIELDS - raden visar
+ * därmed det Lotta nyss sökte på. Telefonen särskiljer inte på samma sätt och
+ * kostar bara bredd.
+ *
+ * SAKNAD ORT RÖR ALDRIG LAYOUTEN: den är en del av DENNA rad, så en person utan
+ * ort får en kortare sträng - aldrig en kortare rad. Höjdlåset bor i raden
+ * nedan; detta är bara halva skälet till att det håller.
  */
 function contactLine(person: Person): string | null {
-  const parts = [person.email, person.telefon, ...person.ort].filter(Boolean);
+  const parts = [person.email, ...person.ort].filter(Boolean);
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
@@ -118,6 +125,23 @@ function dagarText(dagar: number): string {
   if (dagar === 0) return 'Idag';
   if (dagar === 1) return 'Igår';
   return `${dagar} dagar sedan`;
+}
+
+/**
+ * [PROTOTYPE] STEG 13 (k13) — initialerna för cirkeln.
+ *
+ * KOPIERAD ur `PersonMiniKort.tsx:6-13`, avsiktligt och tillfälligt: den
+ * komponenten är SKARP kod som `AnmalanDetail` konsumerar, och att bredda den
+ * före Marcus godkännande vore att ändra en skarp yta i strid med ADR-102 B3.
+ * Promoveringen konsoliderar - se radens docblock nedan.
+ */
+function initialer(namn: string): string {
+  return namn
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((d) => d[0]?.toUpperCase() ?? '')
+    .join('');
 }
 
 /**
@@ -421,70 +445,106 @@ export function PersonsListPrototyp() {
           >
             {persons.map((person) => {
               const contact = contactLine(person);
+              const namn = displayName(person);
               return (
-                // [PROTOTYPE] STEG 5 (k05) — HELA RADEN ÄR KLICKYTAN.
-                // `relative` här + `after:absolute after:inset-0` på namnlänken:
-                // EN länk, rent länknamn, hela raden träffbar (EventCard.tsx:186
-                // + :200, NastaEventCard-precedenten; L303). Chevronen sitter
-                // höger och är `aria-hidden` — etiketten bär namnet ensam
-                // (§14-regeln efter rivningen 2026-07-21: chevron BETYDER att
-                // raden leder vidare).
+                // [PROTOTYPE] STEG 13 (k13) — RADEN ÄRVER `PersonMiniKort`s ANATOMI.
+                //
+                // Marcus 2026-08-10: "Vi behöver ju återvinna här, inte uppfinna …
+                // alla dem korten leder ju till persondetaljer, så därför bör det
+                // kortet vara grunden." Rätt princip, och den pekar på
+                // `PersonMiniKort` (registrations/) - INTE på Gruppdynamiks kopia,
+                // vars två avvikelser (ingen chevron, ingen roll-underrad) finns
+                // just för att DET kortet inte leder någonstans (Gruppdynamik.tsx
+                // :118-127). Personlistans rader leder vidare, så de ärver
+                // originalet.
+                //
+                // ÄRVT: initial-cirkel `size-9` i `bg-bg-emphasized` · namnet
+                // `font-medium text-body` · underrads-stapeln · chevron 18 px ·
+                // hela ytan klickbar.
+                //
+                // INTE ÄRVT - `rounded-xl bg-surface` PER RAD. Det är formen för
+                // 3-12 poster; k03:s Marcus-lås säger "aldrig 50 fristående kort
+                // per person … inte en scanlista som ska tåla 200 rader", och
+                // research-passet (docs/research/personlista-scanlista-*) fann
+                // fem designsystem som bygger scanlistor med avdelare. Ytan
+                // förblir därför den tonala listan; det är radens ANATOMI som
+                // återvinns, inte dess inramning.
+                //
+                // KONSOLIDERAS VID PROMOVERING: `PersonMiniKort` bär
+                // "[BIBLIOTEKS-KANDIDAT] … promoveras till primitives/ vid andra
+                // konsumenten". Personlistan ÄR den andra (mätt: AnmalanDetail är
+                // ensam konsument i dag). Här duplicerar prototypen medvetet
+                // hellre än att bredda en skarp komponent före godkännande
+                // (ADR-102 B3).
                 <li
                   key={person.id}
                   onMouseEnter={() => varmDetalj(person.id)}
                   onFocusCapture={() => varmDetalj(person.id)}
-                  className="relative flex items-center gap-3 py-3"
+                  className="relative flex items-center gap-3 py-2.5"
                 >
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    {/* [PROTOTYPE] STEG 4 (k04) — METADATA-GRAMMATIKEN.
-                    `·`-kedjan delas i tre nivåer med egen typografi: namnet
-                    bär raden (`font-semibold text-body`, EventCard.tsx:200),
-                    kontakten är dämpad följdinformation, och statusen bärs av
-                    PILLAR i stället för fältetiketter.
+                  <span
+                    aria-hidden="true"
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
+                  >
+                    {initialer(namn)}
+                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Link
+                        to="/personer/$personId"
+                        params={{ personId: person.id }}
+                        className="min-w-0 truncate font-medium text-body underline-offset-2 after:absolute after:inset-0 hover:underline"
+                      >
+                        {namn}
+                      </Link>
+                      {/* `harAktivAnmalan` är en formel som ger "Aktiv" ELLER
+                          "Ingen aktiv anmälan" - ALDRIG falsy. Dagens
+                          truthiness-gren (PersonsList.tsx:189) skriver därför ut
+                          icke-statusen ordagrant. Pillen jämför mot STRÄNGVÄRDET
+                          och tiger när ingen aktiv anmälan finns. */}
+                      {person.harAktivAnmalan === 'Aktiv' && <Pill ton="aktiv">Aktiv anmälan</Pill>}
+                    </div>
+                    {/* HÖJDLÅSET, del 1 (Marcus S103: "varje rad MÅSTE ha låst
+                        höjd och får ALDRIG växa eller krympa med innehållet").
+                        Raden renderas ALLTID - saknas kontakten bär den ` `
+                        och håller sin rad. Villkorad rendering hade gjort
+                        radhöjden till en funktion av datan, vilket är precis
+                        det förbudet gäller. Samma teknik som check-in-räknarens
+                        breddlås: platshållaren är osynlig, geometrin konstant. */}
+                    <span className="truncate text-caption text-text-muted">{contact ?? ' '}</span>
+                    {/* [PROTOTYPE] STEG 12-13 — SENASTE INTERAKTION, TIDEN SOM RUBRIK.
+                        Marcus: "man vill ju visuellt se att '103 dagar sedan' är
+                        rubriken till interaktionen". Tiden bär därför
+                        `text-text-secondary` + `font-medium`, händelsen följer
+                        dämpad - vikten bär hierarkin, inte en extra rad (varje
+                        radhöjd kostar scanhöjd på 430 px).
 
-                    HÄR SYNS DEFEKT M4: `harAktivAnmalan` är en formel som ger
-                    "Aktiv" ELLER "Ingen aktiv anmälan" — den är ALDRIG falsy.
-                    Dagens truthiness-gren (PersonsList.tsx:189) renderar därför
-                    bokstavligen "Aktiv anmälan: Ingen aktiv anmälan" (syns i
-                    k01–k03). Pillen jämför mot STRÄNGVÄRDET och tiger när det
-                    inte finns någon aktiv anmälan — tystnad är rätt besked. */}
-                    <Link
-                      to="/personer/$personId"
-                      params={{ personId: person.id }}
-                      className="font-semibold text-body underline-offset-2 after:absolute after:inset-0 hover:underline"
-                    >
-                      {displayName(person)}
-                    </Link>
-                    {contact && <span className="text-small text-text-muted">{contact}</span>}
-                    {/* [PROTOTYPE] STEG 12 (k12) — SENASTE INTERAKTION.
-                    Marcus-önskan ur S103-grillningen: "vad var det, och hur
-                    länge sedan". Texten kommer färdigformad ur basen sedan
-                    formeländringen samma dag (`Deltog · RIM 1, Falköping ·
-                    21 mar 2026`) - appen bygger ingen egen sträng och parsar
-                    ingen, så en formeländring i basen slår igenom utan
-                    kodändring (ADR-063: basen levererar det appen behöver).
+                        Texten kommer FÄRDIGFORMAD ur basen ("Anmälde sig · RIM 1,
+                        Rönninge"); appen bygger ingen sträng och parsar ingen, så
+                        formeländringar slår igenom utan kodändring (ADR-063).
+                        Datumet togs ur basformeln 2026-08-10 - tiden stod två
+                        gånger när appen redan bar "N dagar sedan".
 
-                    ERFARENHETSBADGEN OCH "N anmälningar" ÄR BORTA HÄRIFRÅN
-                    (fanns i k04-k11): båda är BEDÖMNING, och radens jobb i ett
-                    uppslagsverk är IDENTIFIERING. De bor kvar i detaljvyn.
-                    Därmed dog också "Ej påbörjat"-forken utan att behöva
-                    avgöras - den frågan förutsatte att badgen var på raden. */}
-                    {person.senasteInteraktion && (
-                      <span className="text-caption text-text-muted">
-                        {person.dagarSedanSenaste != null && (
-                          <span className="tabular-nums">
-                            {dagarText(person.dagarSedanSenaste)}
-                            {' · '}
-                          </span>
-                        )}
-                        {person.senasteInteraktion}
-                      </span>
-                    )}
-                    {person.harAktivAnmalan === 'Aktiv' && (
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <Pill ton="aktiv">Aktiv anmälan</Pill>
-                      </div>
-                    )}
+                        HÖJDLÅSET, del 2: raden renderas ALLTID, med ` ` när
+                        interaktionen saknas. Efter bas-filtret (anmälningar > 0)
+                        bör varje person i listan ha en interaktion - men höjden
+                        får inte VILA på det antagandet. Datan är den enda som
+                        kan svika; geometrin ska inte kunna göra det. */}
+                    <span className="truncate text-caption">
+                      {person.senasteInteraktion ? (
+                        <>
+                          {person.dagarSedanSenaste != null && (
+                            <span className="font-medium text-text-secondary tabular-nums">
+                              {dagarText(person.dagarSedanSenaste)}
+                              {' · '}
+                            </span>
+                          )}
+                          <span className="text-text-muted">{person.senasteInteraktion}</span>
+                        </>
+                      ) : (
+                        ' '
+                      )}
+                    </span>
                   </div>
                   <ChevronRight
                     aria-hidden="true"
