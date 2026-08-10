@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 103 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — PERSONLISTANS FORM
-ÄR AVGJORD; PROMOVERINGEN ÅTERSTÅR.** Dagens kedja efter resumen: **carry 1
+**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — PERSONLISTANS
+FORM ÄR AVGJORD; PROMOVERINGEN PÅBÖRJAD.** Dagens kedja efter resumen: **carry 1
 löst** (`BAS_FILTER` kontra cursor-testet — fem PERMANENTA, MÄRKTA
 conformance-anmälningar med ENBART Person-länk; Event-lös anmälan räknas i
 rollupen, mätt · A1/A2 `undeployed` i staging men `deployed` i prod,
@@ -29,13 +29,19 @@ INGET hemortsfält, formuläret frågar inte — fem person-kontexter rivna, sex
 event-ytor orörda) → **k14–k16** (status som egen kolumn med reserverad plats ·
 4 px närhet · klockan BYGGD OCH BORTTAGEN på Marcus dom *"avståndet räcker"*).
 `ADR-108` mintad (gränsen bas/app — vi avvek MEDVETET från research-passets dom,
-skälet står i ADR:n). PR `#1114`/`#1118`/`#1119` MERGED; **`#1126` armerad i
-kön**. **ÖPPET: (1) PROMOVERINGEN `ADR-103` B2 — resumens första handling,
-kräver Marcus ögonkast på den SKARPA ytan mitt i. (2) Variant C:s ort
-(`PersonDetailPrototyp.tsx:945`). (3) Persondetalj + check-in orörda i
-divergensläge.** Numrering vid paus, disk-verifierad: **109/task-190/T141**
-plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103 § PAUSLÄGE + Del 1–4.**
-*(S104:s kadensrad nedan, bevarad.)*
+skälet står i ADR:n). PR `#1114`/`#1118`/`#1119` MERGED. **Vid resumen (Del 5):**
+`#1126` hade INTE landat — main avancerade av S104:s `#1127` och `#1126` stod
+`DIRTY` på EN fil (`todo.md`, våra två kadensrader); löst semantiskt (min rad +
+S104:s rad från main), merge `d9a9e3d7`, `check:docs` 14 gröna, omköad. Mekanism-tro
+FALSIFIERAD: armeringen konsumerades INTE av konflikten (`enabledAt` orörd) —
+`#1109`-instansen var en kö-utsparkning, inte DIRTY. **ÖPPET: (1) PROMOVERINGEN
+`ADR-103` B2 — kvitterad ingång, kräver Marcus ögonkast på den SKARPA ytan mitt i;
+substans-flytt (670 rader prototyp → 219 rader skarp), ej flagg-radering.
+(2) Variant C:s ort (`PersonDetailPrototyp.tsx:945`). (3) Rail-badgens steg-drift
+(`personer/index.tsx:31` sa k11 vid k15) — stängs AV rivningen, bokförd så den
+inte tappas. (4) Persondetalj + check-in orörda i divergensläge.** Numrering
+disk-verifierad efter `#1127`: **109/task-190/T141** plus 2 nummerlösa fragment.
+**HANDOFF: sessionsdok S103 § Del 1–5.** *(S104:s kadensrad nedan, bevarad.)*
 
 **Session 104 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — SEGMENT-PASSETS
 DIVERGENS KLAR; SYNTESEN BYGGD, MARCUS FORMVAL ÖPPET.** Fyra varianter på
