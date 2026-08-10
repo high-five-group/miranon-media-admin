@@ -1,10 +1,10 @@
 ---
 id: TASK-178
 title: 'T135-diagnos: fastställ orsaken till att post-merge-körningar avbryts'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 06:15'
-updated_date: '2026-08-10 08:14'
+updated_date: '2026-08-10 08:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -71,6 +71,12 @@ T135-tråden uppdaterad fullständigt (lifecycle paused→closed) med tabell,
 källor och samma eskalering. tasks/threads/README.md-raden uppdaterad;
 check-thread-index.sh + check-lifecycle.sh båda gröna.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Diagnos levererad i PR #1087 (7114b1d9, mergad 0cfb0104): rotorsaken är test-stagings eget timeout-minutes: 12 (ci-suite.yml) — inte mutex-eviction; alla tre instanserna mätte 12m15-16s väggklocka, och queue:max kan bara evictera väntande poster. Prosarättelse + tolkningshjälp levererad; timeout-marginal-beslutet eskalerat till Marcus. T135-tråden STÄNGD. AFK-proveniens: S102-batchen kort ①.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
