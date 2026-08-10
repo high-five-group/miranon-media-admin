@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 102 ⏸️ PAUSAD (2026-08-10 kväll, `lifecycle: paused`) —
+GO-LIVE-DAGENS BATCH FULLBORDAD: 15 kort avfyrade, 14 Done, 0 öppna
+ärenden, hela sändvägen skarp och FRAMME-bevisad.** Batchen (Marcus-order
+max-kort 14 + tak-utvidgning `147.8`): hela `147`-kedjan landad —
+bekräftelse/påminnelse/eventinfo/fritt (`147.2`/`147.3`), betalningar
+(`147.4`), bilage-sändvägen FRAMME-bevisad (`147.5`), testmailet
+(`147.10`, A-rad-formen #1147), ingången+rivningen+mailto-grinden
+(`147.8`), kvittot `MM-2026-1001` + **ADR-109** (`147.7`). Tre incidenter
+rotorsakade: ref-förväxlingen prod↔staging (S102 Del 4 — prod städad på
+Marcus GO, morgonsekvensen RÄTTAD i Del 2), `Event`-fältbuggen
+(sändvägens totalblockerare, funnen av FÖRSTA skarpa slutkörningen, fix
+PR `#1134`), Deno-boot-felet (`#1145`, grindlucka → `task-195`). Fynd-kort
+`187`–`195` (utom 192). **NÄSTA (resume/i morgon): Marcus granskar
+åtgärdsytan + STÄMPLAR (`147.10` Done-flipp därefter) · omklicksfrågan
+(#1147) · morgonsekvensen per Del 2 RÄTTAD form · kvittots öppna punkter
+(moms/pris/org, ADR-109) · QA-korten.** Numrering efter S102:
+ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
+(S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
+Del 1–5 + batchrapporten i Del 5.
+
 **Session 103 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — PERSONLISTAN
 PROMOVERAD, GODKÄND OCH RIVEN; NÄSTA ARBETE ÄR EN D-VARIANT PÅ PERSONDETALJEN.**
 Dagens kedja efter resumen: **carry 1

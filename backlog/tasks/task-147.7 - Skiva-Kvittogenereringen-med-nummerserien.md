@@ -1,10 +1,10 @@
 ---
 id: TASK-147.7
 title: 'Skiva: Kvittogenereringen med nummerserien'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-10 07:03'
-updated_date: '2026-08-10 18:57'
+updated_date: '2026-08-10 20:16'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,19 +28,9 @@ Täcker användarberättelser: 20, 21, 22, 23, 24.
 <!-- AC:BEGIN -->
 - [x] #1 Roger-avstämningen bokförd i kortets notes (fem frågorna besvarade, eller Marcus-beslut med efterhandsbekräftelse öppet bokförd)
 - [x] #2 Kvittonummer: unikhet under samtidighet bevisad + ingen retroaktiv omnumrering + server-side-allokering
-- [ ] #3 Kvitto-PDF genereras per mottagare och bevisas FRAMME som bilaga
+- [x] #3 Kvitto-PDF genereras per mottagare och bevisas FRAMME som bilaga
 - [x] #4 ADR för nummerserien mintad
 <!-- AC:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [x] #5 Kvittonummer: unikhet + beständighet + server-side bevisad (PRD DoD 8-arv)
-- [x] #6 Roger-avstämningen bokförd före kvitto-skivan låses (PRD DoD 10-arv)
-<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -78,3 +68,19 @@ DATA-MODEL.MD: Kvitton-tabellens falt-ID:n AR INTE tillagda i data-model.md denn
 
 Modell-identitet: Sonnet 5 (claude-sonnet-5).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Done S102 batch ⑮ (sista kortet): PR #1141 (merge b58e7983) + mikro-fix 3e45e31c (ADR-räknaren+MD004) + boot-fix PR #1145 (0beb4356, NonProdAddressError-importens hemvist — 503 BOOT_ERROR funnen av FRAMME-verifikatet, fixad med Node-ESM-länkningsbevis i båda riktningar). ADR-109 mintad. AC #3 FRAMME-bevisad 2026-08-10: kvitto MM-2026-1001 (första allokeringen), mail 49904b0a-0314-4f96-a1fe-de7dfd706f65, PDF 1281 bytes %PDF-1.7 byte-verifierad; idempotens mail bevisad (1 mail, 2 anrop); numrerings-gap vid retry = ADR-109 § Öppna punkter, empiriskt bekräftat (1002 övergiven); beständighet (beslut d) levande bevisad. Kvitton-tabellen tblk8fZcArXPpRYnX i staging; prod-divergens på task-191-spåret. Öppna Marcus-punkter i ADR-109: momsraden, prisfältet, org-uppgifterna.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Kvittonummer: unikhet + beständighet + server-side bevisad (PRD DoD 8-arv)
+- [x] #6 Roger-avstämningen bokförd före kvitto-skivan låses (PRD DoD 10-arv)
+<!-- DOD:END -->
