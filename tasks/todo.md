@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 103 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — PERSONLISTAN
+**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — PERSONLISTAN
 PROMOVERAD, GODKÄND OCH RIVEN; NÄSTA ARBETE ÄR EN D-VARIANT PÅ PERSONDETALJEN.**
 Dagens kedja efter resumen: **carry 1
 löst** (`BAS_FILTER` kontra cursor-testet — fem PERMANENTA, MÄRKTA
@@ -50,9 +50,11 @@ på persondetaljen, Marcus order — blanda A/B/C, INGET formval på A/B/C görs
 (2) Variant C:s ort (`PersonDetailPrototyp.tsx:945`). (3) Check-in orörd +
 närvaro-WRITE-forken. (4) Visual-baslinjen förfallen — Marcus avfyrar
 `visual-baselines.yml`. (5) Tio oreproducerbara röda skärmbildstester, n=1,
-omätt.** Numrering disk-verifierad mot `6d1deb92`: **109 / task-195 / T141 /
-L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103 § PAUSLÄGE +
-Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
+omätt.** **Vid resumen (2026-08-10):** `#1130` (rivningen) och `#1140`
+(pauslandningen) BÅDA `MERGED` — `main` `4b085251`; inget i luften som tillhör
+S103. Numrering RE-verifierad mot `4b085251` — oförändrad: **109 / task-195 /
+T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
+§ Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
 **Session 104 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — KONVERGENSEN INLEDD;
 DE 14 SKOOL-GRUPPERNA FALSIFIERAR REGELSPRÅKET.** Fyra varianter på
