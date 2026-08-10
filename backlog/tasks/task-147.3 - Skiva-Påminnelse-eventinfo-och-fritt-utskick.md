@@ -1,9 +1,10 @@
 ---
 id: TASK-147.3
 title: 'Skiva: Påminnelse, eventinfo och fritt utskick'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-10 07:00'
+updated_date: '2026-08-10 12:51'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,10 +24,20 @@ Täcker användarberättelser: 4, 5, 6, 19.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Alla fyra åtgärdstyperna sänder verkligt via 147.1-vägen; urvalsfiltren biter per typ (obekräftade/obetalda per ATGARDER-definitionen i AtgardsSida.tsx)
-- [ ] #2 Redigerad text går ut i stället för mallen; platshållare fylls per mottagare
-- [ ] #3 Ytorna fortsatt identiska med facit tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json (aria-referenserna)
+- [x] #1 Alla fyra åtgärdstyperna sänder verkligt via 147.1-vägen; urvalsfiltren biter per typ (obekräftade/obetalda per ATGARDER-definitionen i AtgardsSida.tsx)
+- [x] #2 Redigerad text går ut i stället för mallen; platshållare fylls per mottagare
+- [x] #3 Ytorna fortsatt identiska med facit tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json (aria-referenserna)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TASK-147.8-DIVERGENS (medvetet bokförd, inte tyst): PrototypRigg och PrototypNots copy lamnas ORORDA i denna skiva. TASK-147.8s Description ager uttryckligen bade rivningen av PrototypRigg och revideringen av PrototypNots copy (se dess Implementation Notes-tillagg). Alla fyra atgardstyper gar nu den verkliga sandvagen (skicka() alltid sendActionEmail.mutate), sa PrototypRigg ar funktionellt INERT for paminnelse/eventinfo/fritt men star kvar monterad i DEV-lage (import.meta.env.DEV, granskning.atgard.nyckel !== 'bekraftelse' orort) - forsta rad i AtgardsSida.tsx docblock uppdaterad for att peka pa detta.
+
+FACIT-GRANSKNING (ADR-102 R3) UTFORD: npm run test:visual (PLAYWRIGHT_VISUAL_DEV_SERVER=1 playwright --project=visual-desktop --project=visual-mobile) mot tests/visual/atgardssida-promoverings-grind.spec.ts = 40/40 gront. git status/diff mot tests/visual/__aria__/atgardssida-promoverings-grind.spec.ts/ = tomt, dvs 0 av 12 aria-yml-filer andrade. Uppdragets '40/40 forvantat' matchar exakt matt testantal i den filen - kallmarkt har som mätt, saknade kalla i uppdraget.
+
+E2E-BEVISFORM (pr-ci-bevisformen, per uppdragets hårda regler): tests/e2e/atgarder-paminnelse-eventinfo-fritt.staging.test.ts kunde INTE koras lokalt - port 5173 (E2E_DEV_PORT) upptagen av Marcus levande npm-run-dev-process (PID 50138, lsof -i :5173 verifierat mot huvudkatalogens cwd). Filen ar verifierad via npm run typecheck + npx biome check (bada gröna) och byggd mot exakt samma monster som atgarder-bekraftelsemail.staging.test.ts (TASK-147.2), men SKARP KORNING ar obevisad lokalt - betalas av PR-CI:ns chromium-authenticated-jobb. En medveten avvikelse fran 147.2:s monster: raden som asserterade 'Prototyp-rigg.' toHaveCount(0) ar INTE kopierad till paminnelse-testet, eftersom PrototypRigg fortfarande monteras (villkoret !== 'bekraftelse' orort) - den skulle ha fallt.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
