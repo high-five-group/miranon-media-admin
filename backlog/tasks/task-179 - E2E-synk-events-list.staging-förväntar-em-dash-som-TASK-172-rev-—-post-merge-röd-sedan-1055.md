@@ -3,10 +3,10 @@ id: TASK-179
 title: >-
   E2E-synk: events-list.staging förväntar em-dash som TASK-172 rev — post-merge
   röd sedan #1055
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 06:17'
-updated_date: '2026-08-10 06:36'
+updated_date: '2026-08-10 07:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,7 +28,7 @@ Källa: S102 triage-rapport 2026-08-10.
 <!-- AC:BEGIN -->
 - [x] #1 Förväntad sträng i tests/e2e/events-list.staging.test.ts (rad ~1047 + ~1062) uppdaterad till kort streck i exakt den form EventsList.tsx renderar
 - [x] #2 Svep efter FLER em-dash-förväntningar i tests/e2e/ mot användarsynliga strängar som strecksvepet rev — synka alla träffar i samma commit
-- [ ] #3 Post-merge-/staging-klassen bevisad grön på main efter landning (run-id i notes)
+- [x] #3 Post-merge-/staging-klassen bevisad grön på main efter landning (run-id i notes)
 <!-- AC:END -->
 
 ## Implementation Notes
@@ -40,6 +40,12 @@ AC #2 svep: node scripts/check-langa-streck.mjs --dir tests/e2e (AST-baserad, St
 
 AC #3 ÖPPEN SKULD (per uppdrag — flippas ej av bygg-agenten): lokal körning av npm run test:e2e:staging (chromium-authenticated, testMatch events-list.staging.test.ts) försökt men blockerad — port 5173 (hårdkodad, CORS-låst mot staging, se playwright.config.ts E2E_DEV_PORT-kommentar) upptagen av en annan process (PID 50138, sannolikt en parallell agent-worktrees dev-server) — kan inte kommandera en delad port utan risk för kollision med annat pågående arbete. Bevisform (a) (grep mot källrad) är därför den enda utförda verifieringen av själva stränglikheten. Orkestreraren verifierar AC #3 mot nästa post-merge-/nattnäts-run på main och bokför run-id.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Fix levererad i PR #1078 (d7fa6431, mergad c29b94a0). AC 3-beviset: post-merge-run 31364858043 på main-toppen 644d0412 GRÖN — events-list.staging-e2e:n passerar med kort streck. Rotorsaken (em-dash-förväntan efter TASK-172:s strecksvep) död; svepet fann 0 ytterligare mismatchar.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

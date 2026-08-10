@@ -4,6 +4,7 @@ title: 'Skiva: Mailto-rivningen, grå löftena och namnet'
 status: To Do
 assignee: []
 created_date: '2026-08-10 07:04'
+updated_date: '2026-08-10 07:18'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,6 +31,12 @@ Täcker användarberättelse 14 fullbordad (stämplingslögnen helt stängd).
 - [ ] #3 PrototypRigg riven; referens-specen grön mot verkliga utfallslägen
 - [ ] #4 Namnkollisionen löst per Marcus-beslutet i kortets notes
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MARCUS-BESLUT 2026-08-10 (S102, namnkollisionen): åtgärds-sidan behåller namnet 'Åtgärder'; eventsidans länkgrupp döps om till 'Genvägar'. Kvitterat i klartext i huvudsessionen.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
