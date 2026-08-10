@@ -206,8 +206,10 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     // [ÄNDRAT, TASK-162.2, ADR-103 B2 steg 1] "Åtgärder" är BORTA ur listan —
     // den rubricerade gruppen (`section[aria-labelledby="grupp-atgarder"]`,
     // en h2) är promoverad bort. Ersättarna, `AtgarderKort`+`SkrivUtKort`, är
-    // RUBRIKFRIA kort (se `Åtgärds-ytans promovering`-describen nedan för
-    // rendering) — precis som `CheckInKort`, ingen h2 alls.
+    // RUBRIKFRIA kort (se `Genvägar-ytans promovering`-describen nedan för
+    // rendering — TASK-147.8 döpte om "åtgärds-ytan" till "genvägar-ytan",
+    // Marcus-beslut mot namnkollisionen med den riktiga Åtgärds-sidan) —
+    // precis som `CheckInKort`, ingen h2 alls.
     const rubriker = await page.getByRole('heading', { level: 2 }).allTextContents();
     expect(rubriker).toEqual([
       'Om eventet',
@@ -516,8 +518,8 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
 });
 
 /**
- * TASK-162.2 (ADR-103 B2 steg 1) — åtgärds-ytans promovering: check-in-
- * ingången + åtgärds-ytan (ärver task-18.3, S73-facit K19–K26, K47, K72;
+ * TASK-162.2 (ADR-103 B2 steg 1) — genvägar-ytans promovering: check-in-
+ * ingången + genvägar-ytan (ärver task-18.3, S73-facit K19–K26, K47, K72;
  * amenderad av task-18.15/TASK-145.5, PROMOVERAD av TASK-162.2). `AtgarderKort`
  * ("Gå till åtgärder") + `SkrivUtKort` (fristående "Skriv ut") är sedan denna
  * skiva den OVILLKORLIGA formen på eventsidan — den gamla rubricerade
@@ -529,14 +531,27 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
  *
  * Renderad verifiering (L245/L246): hover-plattans grammatik och
  * måttpariteten check-in ↔ AtgarderKort bevisas via computed-style/
- * DOM-mätning — aldrig klass-tittande. AtgarderKorts hopkoppling mot en
- * riktig åtgärds-sida är INTERIM (eget kort efter S100) och fäller ut en
- * platshållartext i stället för att navigera — samma ärlighet som
- * check-in-ingångens interim-mål (öppet bokfört, `Atgarder.tsx` §
- * `AtgarderKort`).
+ * DOM-mätning — aldrig klass-tittande.
+ *
+ * [TASK-147.8, NAMNBYTE] Ytan hette tidigare "åtgärds-ytan" i denna describes
+ * titel och i kommentarerna nedan. MARCUS-BESLUT 2026-08-10 (S102,
+ * namnkollisionen, kortets Implementation Notes): namnet "Åtgärder" är
+ * reserverat för den RIKTIGA Åtgärds-sidan (`AtgardsSida.tsx`) sedan den blev
+ * skarp — denna lilla kortkedja heter nu "genvägar-ytan" i stället. Ingen
+ * renderad text ändras (ingen h2 fanns att döpa om), bara namnet testerna
+ * och kommentarerna använder för att referera till området.
+ *
+ * [TASK-147.8, KOPPLAD] AtgarderKorts länkmål VAR interimt (eget kort efter
+ * S100) och föll ut en platshållartext i stället för att navigera — samma
+ * ärlighet som check-in-ingångens dåvarande interim-mål. Det interimet är
+ * stängt: kortet är nu en riktig `HandlingsLank` mot `/event/$eventId/
+ * atgarder`, identisk mekanik med check-in-ingången (`Atgarder.tsx` §
+ * `AtgarderKort` bär hela historiken). Testerna nedan är omskrivna i samma
+ * skiva: rollen är `link` i stället för `button`, ingen `aria-expanded`/
+ * disclosure-text kvar, och navigationsmålet bevisas via `href` i stället.
  */
-test.describe('Åtgärds-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
-  test('check-in-ingången: eget rubrikfritt kort ÖVER åtgärds-ytan i exakt åtgärdsradens mått', async ({
+test.describe('Genvägar-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
+  test('check-in-ingången: eget rubrikfritt kort ÖVER genvägar-ytan i exakt åtgärdsradens mått', async ({
     page,
   }) => {
     await mockEvent(page, eventDetail());
@@ -560,7 +575,7 @@ test.describe('Åtgärds-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
     expect(kortStil.radie).toBe('16px');
     expect(await kort.locator('h2').count()).toBe(0);
 
-    // Placeringen: kortet ligger ovanför åtgärds-ytan (K23 — eventdagens
+    // Placeringen: kortet ligger ovanför genvägar-ytan (K23 — eventdagens
     // primärhandling), och raden delar åtgärdsradens mått (K26, DOM-mätt).
     const atgarderKort = page.getByTestId('atgarder-kort');
     const kortBox = await kort.boundingBox();
@@ -569,12 +584,18 @@ test.describe('Åtgärds-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
 
     const checkInHojd = (await checkIn.boundingBox())?.height;
     const atgardsRadHojd = (
-      await atgarderKort.getByRole('button', { name: 'Gå till åtgärder' }).boundingBox()
+      await atgarderKort.getByRole('link', { name: 'Gå till åtgärder' }).boundingBox()
     )?.height;
     expect(checkInHojd).toBe(atgardsRadHojd);
   });
 
-  test('AtgarderKort: "Gå till åtgärder"-knapp med Send-ikon och chevron, fäller ut platshållartext', async ({
+  // [ÄNDRAT, TASK-147.8] Testet hette "…fäller ut platshållartext" och
+  // vaktade DISCLOSURE-beteendet (aria-expanded, dold platshållartext) som
+  // fanns medan länkmålet var interimt. Interimet är stängt (kortets docblock
+  // ovan): kortet navigerar nu skarpt, så testet omskrivs mot NAVIGATIONEN —
+  // href-målet, ingen aria-expanded kvar — i stället för att vakta en
+  // disclosure som inte längre finns.
+  test('AtgarderKort: "Gå till åtgärder"-länk med Send-ikon och chevron, navigerar till åtgärdssidan', async ({
     page,
   }) => {
     await mockEvent(page, eventDetail());
@@ -582,24 +603,25 @@ test.describe('Åtgärds-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     const kort = page.getByTestId('atgarder-kort');
-    const knapp = kort.getByRole('button', { name: 'Gå till åtgärder' });
-    await expect(knapp).toBeVisible();
-    await expect(knapp).toHaveAttribute('aria-expanded', 'false');
+    const lank = kort.getByRole('link', { name: 'Gå till åtgärder' });
+    await expect(lank).toBeVisible();
+    await expect(lank).toHaveAttribute('href', `/event/${EVENT_ID}/atgarder`);
+    // Ingen disclosure kvar — kortet är en riktig länk, inte ett utfällbart
+    // interim (samma grammatik som check-in-ingången, som aldrig hade en
+    // aria-expanded-attribut).
+    await expect(lank).not.toHaveAttribute('aria-expanded', /.+/);
 
-    // Ledande ikon (Send, 16 px) + K25-chevronen (18 px, raden leder vidare —
-    // här ett utfällbart interim, inte en navigation).
-    await expect(knapp.locator('svg.lucide-send')).toHaveCount(1);
-    await expect(knapp.locator('svg.lucide-chevron-right')).toHaveCount(1);
+    // Ledande ikon (Send, 16 px) + K25/K26-chevronen (18 px, raden leder
+    // verkligen vidare nu — samma HandlingsLank-mekanik som check-in-ingången).
+    await expect(lank.locator('svg.lucide-send')).toHaveCount(1);
+    await expect(lank.locator('svg.lucide-chevron-right')).toHaveCount(1);
 
-    // Platshållartexten är DOLD tills knappen klickas (interimet är öppet
-    // bokfört: åtgärds-sidan finns inte ännu, se Atgarder.tsx § AtgarderKort).
-    await expect(kort.getByText(/Åtgärds-sidan - eget prototyp-pass/)).toHaveCount(0);
-    await knapp.click();
-    await expect(knapp).toHaveAttribute('aria-expanded', 'true');
-    await expect(kort.getByText(/Åtgärds-sidan - eget prototyp-pass/)).toBeVisible();
+    // Klicket navigerar skarpt till åtgärdssidan.
+    await lank.click();
+    await expect(page).toHaveURL(`/event/${EVENT_ID}/atgarder`);
   });
 
-  test('hover-plattan (K72): AtgarderKorts knapp bär emphasized-platta med rundade hörn på hover, transparent i vila', async ({
+  test('hover-plattan (K72): AtgarderKorts länk bär emphasized-platta med rundade hörn på hover, transparent i vila', async ({
     page,
   }) => {
     await mockEvent(page, eventDetail());
@@ -607,7 +629,7 @@ test.describe('Åtgärds-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 
     const kort = page.getByTestId('atgarder-kort');
-    const rad = kort.getByRole('button', { name: 'Gå till åtgärder' });
+    const rad = kort.getByRole('link', { name: 'Gå till åtgärder' });
 
     // Vila: transparent bakgrund (plattan finns bara vid hover).
     const bgVila = await rad.evaluate((el) => getComputedStyle(el).backgroundColor);
@@ -627,7 +649,7 @@ test.describe('Åtgärds-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
     await expect(rad).toHaveCSS('background-color', emphasized);
     await expect(rad).toHaveCSS('border-radius', '8px');
 
-    // Plattans -mx-2-geometri (K72): knappen skjuter 8 px UTANFÖR kortets
+    // Plattans -mx-2-geometri (K72): länken skjuter 8 px UTANFÖR kortets
     // 16 px innehålls-inset (kant + padding) — plattan får luft utan att
     // texten flyttas. DOM-mätt mot kortets computed kant/padding-kedja.
     const kortMatt = await kort.evaluate((el) => {
@@ -699,7 +721,7 @@ test.describe('Åtgärds-ytans promovering (TASK-162.2, ADR-103 B2)', () => {
     }
 
     // Ersättarna, OVILLKORLIGT synliga (AC #1 andra hälften) — check-in-
-    // kortets UserCheck-ikon (utanför åtgärds-ytan) är orörd.
+    // kortets UserCheck-ikon (utanför genvägar-ytan) är orörd.
     await expect(page.getByTestId('atgarder-kort')).toBeVisible();
     await expect(page.getByTestId('skriv-ut-kort')).toBeVisible();
     await expect(page.locator('[data-testid="checkin-kort"] svg.lucide-user-check')).toHaveCount(1);

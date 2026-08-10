@@ -1,11 +1,21 @@
 import { Link } from '@tanstack/react-router';
 import { ChevronRight, type LucideIcon, Printer, Send, UserCheck } from 'lucide-react';
-import { useState } from 'react';
 import { Button } from '@/components/primitives/Button';
 
 /**
- * Check-in-ingången + åtgärds-ytan (task-18.3; S73-facit K19–K26, K47, K72;
- * amenderad av task-18.15). Nyskriven mot facit-bilagan (throwaway-kontraktet —
+ * [TASK-147.8, NAMNBYTE] Check-in-ingången + GENVÄGAR-ytan (tidigare kallad
+ * "åtgärds-ytan" i denna fils och sviternas historik — task-18.3; S73-facit
+ * K19–K26, K47, K72; amenderad av task-18.15). MARCUS-BESLUT 2026-08-10 (S102,
+ * namnkollisionen, kortets Implementation Notes): två ytor bar samma namn —
+ * DENNA lilla kortkedja på eventsidan (genvägar UT till andra sidor: check-in,
+ * åtgärdssidan, utskrift) och den RIKTIGA åtgärds-sidan
+ * (`src/components/events/atgarder/AtgardsSida.tsx`, "den enda platsen där
+ * något verkställs"). Beslutet: åtgärds-sidan behåller namnet "Åtgärder";
+ * DENNA ytas informella namn (kommentarer, testtitlar) är nu "genvägar-ytan"
+ * — inget rendera UI ändras (ingen gemensam rubrik fanns att döpa om; se
+ * `EventDetail.tsx`s docblock för varför en NY rubrik hade varit en
+ * obehörig formändring mot det låsta facit, `eventsida-promoverings-
+ * grind.spec.ts`). Nyskriven mot facit-bilagan (throwaway-kontraktet —
  * prototypkod absorberas aldrig); facit-referenserna (K-stegen) pekar på den
  * låsta konvergens-trailen.
  *
@@ -26,7 +36,8 @@ import { Button } from '@/components/primitives/Button';
  * eventsidan (`EventDetail.tsx`) — den gamla grenen fanns bakom
  * `?variant=a`-villkoret, nu riven (git bevarar, senast i main före denna
  * commit; se rivningsnoterna nedan). Radformen ovan (K20/K25/K72) lever kvar
- * i `CheckInKort` och delvis i `AtgarderKort` (samma `RAD_KLASS`).
+ * i `CheckInKort` OCH `AtgarderKort` — båda via samma `HandlingsLank`
+ * (TASK-147.8 kopplade `AtgarderKort`s länkmål skarpt; se dess egen docblock).
  * [RIVEN, TASK-145.6] Variant-villkoret/switcher-monteringen/`?variant`-
  * maskineriet i övrigt (registret, `PrototypeSwitcher`) — ORÖRT av denna
  * skiva — är nu riven i sin helhet (ADR-103 B2 steg 4, efter Marcus
@@ -69,7 +80,8 @@ type Ledande = { nummer: number; ikon?: never } | { ikon: LucideIcon; nummer?: n
  * utskriftsraden i den promoverade formen) är en helt annan radform
  * (`Button`-primitiven, inte `RAD_KLASS`-raden). Git bevarar
  * implementationen (senast i main före denna commit). `HandlingsLank`
- * (nedan) består oförändrad — `CheckInKort`s enda konsument är orörd.
+ * (nedan) består oförändrad — `CheckInKort`s konsumtion är orörd; TASK-147.8
+ * gav den en ANDRA konsument (`AtgarderKort`, nedan) utan att ändra formen.
  */
 
 /** Åtgärdsradens länkform — samma renderade grammatik som knappraden (K26:
@@ -80,7 +92,7 @@ function HandlingsLank({
   children,
   ...ledande
 }: Ledande & {
-  to: '/event/$eventId/ny-anmalan' | '/event/$eventId/narvaro';
+  to: '/event/$eventId/ny-anmalan' | '/event/$eventId/narvaro' | '/event/$eventId/atgarder';
   eventId: string;
   children: string;
 }) {
@@ -105,8 +117,8 @@ function HandlingsLank({
 
 /**
  * Check-in-ingången (K23–K26): eventdagens PRIMÄRHANDLING som eget framhävt
- * kort ÖVER åtgärds-ytan (Eventbrite/Luma-klassen; sedan TASK-162.2
- * `AtgarderKort` + `SkrivUtKort`, tidigare den rubricerade Åtgärds-gruppen),
+ * kort ÖVER genvägar-ytan (Eventbrite/Luma-klassen; sedan TASK-162.2
+ * `AtgarderKort` + `SkrivUtKort`, tidigare den rubricerade Åtgärder-gruppen),
  * aldrig en rad i den. Kortet bär EXAKT åtgärdsradens form i ett eget
  * kort-skal UTAN rubrik (K26) —
  * det speciella bärs av placeringen + ensamheten, inte av avvikande mått.
@@ -131,65 +143,48 @@ export function CheckInKort({ eventId }: { eventId: string }) {
 }
 
 /**
- * [PROTOTYPE] [S93] ITERATIONSVÅG (Marcus 2026-08-05, punkt 4) — Åtgärds-gruppens
- * ERSÄTTARE i variant-läge: "Åtgärdsgruppen högst upp måste in på åtgärdssidan.
- * Vi kanske ska lägga till en likadan 'knapp' som 'Gå till check-in' som heter
- * 'Gå till åtgärder' direkt under."
+ * [TASK-147.8, KOPPLAD] Ingången till åtgärds-sidan (`/event/$eventId/atgarder`)
+ * — riktig router-typad navigation sedan denna skiva, samma `HandlingsLank`-
+ * grammatik som `CheckInKort` ovan (chevron höger = raden leder verkligen
+ * vidare, K26-formen).
  *
- * VAD SOM FLYTTAR, OCH VARFÖR JUST DET: gruppens rader 2–5 (bekräftelsemail ·
- * betalningspåminnelse · markera betalda · eventinfo) är utskick eller
- * bulkmutationer — Del 3 beslut 1 lägger ALLA utskick på åtgärds-sidan, och
- * samtliga fyra är dessutom `aria-disabled` idag (aldrig kopplade). Rad 1
- * (Lägg till manuell anmälan) följer med på Marcus beslut: "tänkte väl kolla
- * hur de blir att lägga in den på åtgärdssidan … vill hon komma snabbt till
- * manuell-anmälan så kommer det senare finnas direkt knapp på hem-vyn."
+ * HISTORIKEN, FÖR SPÅRBARHETEN (git bevarar hela ordalydelsen, `git log -p --
+ * src/components/events/detail/Atgarder.tsx`): kortet föddes som en
+ * [PROTOTYPE]-rad i [S93] ITERATIONSVÅGEN (Marcus 2026-08-05, punkt 4) —
+ * gruppens fyra utskicksrader (bekräftelsemail · betalningspåminnelse ·
+ * markera betalda · eventinfo, samtliga då `aria-disabled`, aldrig kopplade)
+ * flyttade hit som EN gemensam ingång i stället för fyra döda rader; "Lägg
+ * till manuell anmälan" följde med på samma Marcus-beslut. Länkmålet var
+ * DÅ belagt-interim eftersom åtgärds-sidan inte fanns: en chevron hade lovat
+ * en navigation utan mål, så knappen föll ut en platshållartext i stället
+ * (samma ärlighet som check-in-ingångens dåvarande interim-mål). TASK-162.2
+ * (ADR-103 B2 steg 1) promoverade kortet till OVILLKORLIGT — `EventDetail.tsx`
+ * renderar det sedan dess alltid, inte bara bakom `?variant=a`.
  *
- * RAD 6 (Skriv ut) STANNAR, som eget kort — Marcus: "i sidans utskrift kommer
- * ju eventinfo och allt med, det kan väl vara bra att ha två varianter."
- * Registrets EGEN utskrift (den filtrerade listan) är en ANNAN utskrift och
- * bor i filterpanelen, se `ArbetsKo`.
+ * INTERIMET ÄR FÖRBRUKAT. Åtgärds-sidan finns nu (skarp sedan TASK-147.2–
+ * 147.5/TASK-171.5s promovering), och Marcus verifierade 2026-08-10 att ingen
+ * väg dit fanns från eventdetaljen — exakt det TASK-147.8 stänger.
+ * Platshållartexten och `oppen`-disclosuren är RIVNA (aldrig produktionskod,
+ * bara en väntande ärlighet), inte tonade ned: kortet är nu en riktig länk
+ * med `href="/event/$eventId/atgarder"`, identisk mekanik med
+ * `CheckInKort` ovan.
  *
- * LÄNKMÅLET ÄR INTERIM, precis som check-in-ingångens: åtgärds-sidan finns inte
- * ännu (eget divergens-pass, Del 3 beslut 8). En chevron hade lovat en
- * navigation som inte finns, så knappen fäller ut en platshållare i stället —
- * samma ärlighet som batch-barens "Åtgärder"-knapp, och samma text, så Marcus
- * ser att BÅDA ingångarna leder till samma kommande yta.
- *
- * [TASK-162.2, ADR-103 B2 steg 1] PROMOVERAD: rubriken ovan säger
- * "i variant-läge" — det gällde till och med denna skiva. `EventDetail.tsx`
- * renderar sedan denna commit `AtgarderKort` OVILLKORLIGT (`?variant=a` styr
- * inte längre om kortet visas). Innehållet, platshållaren och länkmåls-
- * interimet ovan är ORÖRDA — bara VILLKORET för render är rivet.
+ * DET SOM INTE ÄR KOPPLAT ÄN: det markerade urvalet från eventdetaljens
+ * register följer INTE med över navigationen — det är TASK-171.6 AC #1s
+ * uttryckliga scope ("Eventsidans kort navigerar till åtgärdssidan MED
+ * MARKERAT URVAL MEDFÖRT"), en dep på just detta kort som denna skiva
+ * avblockar men inte utför. Åtgärds-sidan seedar sitt eget urval tills dess
+ * (`AtgardsSida.tsx` § `AtgardsSida`, "obekräftade eller obetalda").
  */
-export function AtgarderKort() {
-  const [oppen, setOppen] = useState(false);
+export function AtgarderKort({ eventId }: { eventId: string }) {
   return (
     <div
       data-testid="atgarder-kort"
       className="rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
     >
-      <div className="flex flex-col py-1.5">
-        <button
-          type="button"
-          onClick={() => setOppen(!oppen)}
-          aria-expanded={oppen}
-          className={RAD_KLASS}
-        >
-          <Send aria-hidden="true" size={16} className="shrink-0" />
-          Gå till åtgärder
-          <ChevronRight
-            aria-hidden="true"
-            size={18}
-            className="ml-auto shrink-0 text-text-secondary"
-          />
-        </button>
-      </div>
-      {oppen && (
-        <p className="pb-3 text-small text-text-secondary">
-          Åtgärds-sidan - eget prototyp-pass. Härifrån går utskicken: bekräftelse,
-          betalningspåminnelse, eventinfo, fritt utskick - och manuell anmälan.
-        </p>
-      )}
+      <HandlingsLank ikon={Send} to="/event/$eventId/atgarder" eventId={eventId}>
+        Gå till åtgärder
+      </HandlingsLank>
     </div>
   );
 }

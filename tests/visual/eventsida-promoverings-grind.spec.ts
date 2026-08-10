@@ -15,13 +15,26 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * godkännande, ADR-103 B2 steg 4) — det fanns inget kvar att jämföra MOT.
  *
  * De SEX incheckade referensfilerna (`tests/visual/__aria__/…/*.aria.yml`)
- * är ORÖRDA — samma facit som alltid, samma `name:`-nycklar. Vad som ändras
- * är BARA vad testerna bevisar: inte längre "variant == skarpt", utan
- * REGRESSION — att den promoverade ytan fortsätter rendera EXAKT den låsta
- * formen, för alla framtida ändringar i `Deltagare.tsx`/`Atgarder.tsx`.
- * Rivningen tar villkor och växlar, ALDRIG form (DoD #5) — därför är det
- * korrekt och avsett att alla sex tester förblir GRÖNA oförändrade rakt
- * igenom denna skiva.
+ * VAR ORÖRDA genom TASK-145.6 — samma facit, samma `name:`-nycklar. Vad som
+ * ändrades DÅ var BARA vad testerna bevisar: inte längre "variant == skarpt",
+ * utan REGRESSION — att den promoverade ytan fortsätter rendera EXAKT den
+ * låsta formen, för alla framtida ändringar i `Deltagare.tsx`/`Atgarder.tsx`.
+ * Rivningen tog villkor och växlar, ALDRIG form (DoD #5) — därför var det
+ * korrekt och avsett att alla sex tester förblev GRÖNA oförändrade rakt
+ * igenom den skivan.
+ *
+ * [TASK-147.8, SANKTIONERAD FACIT-UPPDATERING] `atgarder-kort.aria.yml`
+ * (desktop + mobile) är de FÖRSTA av de sex referenserna som ändrats sedan
+ * födseln — med avsikt, inte drift. `AtgarderKort` (`Atgarder.tsx`) gick
+ * från en disclosure-`button` (interim platshållare, ingen navigation) till
+ * en riktig `Link` mot `/event/$eventId/atgarder`, på Marcus uttryckliga
+ * order ("koppla ingången", TASK-147.8s tilläggsorder) — den formändringen
+ * ÄR skivans jobb, inte en regression grinden ska fånga. Facit regenererat
+ * med `npm run test:visual -- --update-snapshots` mot BÅDA viewporten;
+ * diffen är exakt rollbytet `button "Gå till åtgärder"` →
+ * `link "Gå till åtgärder": /url: /event/$eventId/atgarder` (verifierat med
+ * riktigt event-ID, `VISUAL_EVENT_ID`), inga andra rader. De återstående fem
+ * referenserna (SkrivUtKort + registrets fyra lägen) är alltjämt ORÖRDA.
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (ADR-103 B4): deterministiskt, noll nya
  * beroenden, och det jämför STRUKTUR OCH TILLGÄNGLIGT NAMN — exakt det som
@@ -39,7 +52,13 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * oskyldig datapunkt i ett oberört block hade kunnat fälla grinden för fel
  * skäl).
  *
- *   · Åtgärds-ytan (A1): `AtgarderKort` (`data-testid="atgarder-kort"`) och
+ *   · Genvägar-ytan (A1 i facitkartan; hette "Åtgärds-ytan" till och med
+ *     TASK-147.8 — MARCUS-BESLUT 2026-08-10, S102, namnkollisionen:
+ *     "Åtgärder" är nu reserverat för den riktiga Åtgärds-sidan,
+ *     `AtgardsSida.tsx`. Blockbeteckningen "A1" ur den ursprungliga
+ *     facitkartan, `docs/research/eventsidan-prototyp-mot-skarpa-facitkarta-
+ *     2026-08-07.md`, är ORÖRD — bara det informella namnet bytt):
+ *     `AtgarderKort` (`data-testid="atgarder-kort"`) och
  *     `SkrivUtKort` (`data-testid="skriv-ut-kort"`) är SYSKON i EventDetail.tsx
  *     (React-fragment, inget gemensamt DOM-skal) — därför TVÅ separata
  *     referenser i stället för en. Att linda in dem i en ny gemensam div hade
@@ -75,14 +94,14 @@ async function gotoPromoverad(page: import('@playwright/test').Page) {
 }
 
 test.describe('regressionslåset — ariaSnapshot mot den promoverade ytan (ADR-103 B4, TASK-145.6)', () => {
-  test('åtgärds-ytan — "Gå till åtgärder"-kortet (AtgarderKort)', async ({ page }) => {
+  test('genvägar-ytan — "Gå till åtgärder"-kortet (AtgarderKort)', async ({ page }) => {
     await gotoPromoverad(page);
     await expect(page.getByTestId('atgarder-kort')).toMatchAriaSnapshot({
       name: 'atgarder-kort.aria.yml',
     });
   });
 
-  test('åtgärds-ytan — "Skriv ut"-kortet (SkrivUtKort)', async ({ page }) => {
+  test('genvägar-ytan — "Skriv ut"-kortet (SkrivUtKort)', async ({ page }) => {
     await gotoPromoverad(page);
     await expect(page.getByTestId('skriv-ut-kort')).toMatchAriaSnapshot({
       name: 'skriv-ut-kort.aria.yml',
@@ -207,7 +226,7 @@ test.describe('TASK-162.4 — axe-pass på de promoverade ytorna (ADR-103, härd
     ).toEqual([]);
   }
 
-  test('åtgärds-ytan — AtgarderKort + SkrivUtKort: axe 0 violations', async ({ page }) => {
+  test('genvägar-ytan — AtgarderKort + SkrivUtKort: axe 0 violations', async ({ page }) => {
     await gotoPromoverad(page);
     const resultat = await new AxeBuilder({ page })
       .withTags(WCAG_TAGGAR)
