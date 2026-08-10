@@ -115,3 +115,50 @@ klienter attribueras till token-ägaren) är dokumenterad Airtable-mekanik.
   event-referens) — en rak `event_notes`-tabell utan lappade fält.
 - Läs-EF:en är kopplad till den omvända länkens NAMN (`Anteckningar`) — samma
   namn-koppling som get-attendance (`Närvaro (records)`), accepterad precedent.
+
+## Tillägg (additivt) — 2026-08-10 (S103, T97-bygg-spåret)
+
+Tabellen UTÖKAS med ett andra länkfält: `Person` (multipleRecordLinks →
+Personer; staging `fldXvBRt7OE9tem4o`, prod `fldJiWGXe2Hv612H0` — NYTT, LIVE-
+VERIFIERAT via `describe_table` mot BÅDA baserna). Persondetaljens
+antecknings-ström (`get-person-notes`/`create-person-note`) återanvänder
+SAMMA tabell och SAMMA attributionsmodell som event-strömmen ordagrant —
+ingen ny ADR mintas, eftersom besluten den skulle fatta redan är fattade här
+(tabell-form, attributionsvägvalet). Detta är den formen ADR-BAR-regeln
+föreskriver för en mekanisk utökning av ett redan avgjort mönster.
+
+**Invarianten (kritisk, mekaniskt testad):** en rad bär `Event` ELLER
+`Person`, ALDRIG BÅDA. `create-event-note`/`create-person-note` sätter var och
+en STRUKTURELLT bara sitt eget länkfält — ingen av dem nämner det andra fältet
+i sin `fields`-map, så invarianten går inte att bryta via klient-input.
+`get-event-notes`/`get-person-notes` läser var och en bara record-ID:n ur SIN
+EGEN sidas omvända länk (batch-join, aldrig ett tabell-scan), vilket gör
+läckage strukturellt omöjligt snarare än något som råkar hålla. Bevisat i
+`tests/api/notes-event-person-isolation.staging.test.ts` (skapar en ren
+person-anteckning och verifierar att den inte dyker upp i ett events ström,
+och tvärtom).
+
+**Namn-kollisionen på Personer-sidan, värd att minnas:** Airtable auto-namnger
+en omvänd länk efter käll-tabellen (`Anteckningar`) — men Personer bar REDAN
+ett fält med det namnet (`fldWGlNr3ujRHo85w`, det gamla odelade fritext-fältet
+från Fas 6a). Kollisionen löstes av Airtable genom att döpa den NYA omvända
+länken **`Anteckningar 2`** (staging `fldgz1pFKGs0a3np0`, prod
+`fldkEnLpYjB9tsAtQ`, LIVE-VERIFIERAT). `get-person-notes` läser alltså
+`Anteckningar 2`, inte `Anteckningar` — att anta det senare hade tyst gett en
+tom lista (fel typ, ingen krasch) i stället för ett fel. Samma "anta aldrig
+fält-form"-fälla `data-model.md` varnar för generellt, instansierad här.
+
+**Två ytor lever BREDVID varandra på Personer, medvetet:** det gamla
+`Personer.Anteckningar`-fältet (`update-person-note`, `PersonNoteEditor`) och
+den nya strömmen. Migrering av det gamla fältets innehåll till strömmen är EN
+SEPARAT, senare Marcus-beslutad handling — inte en del av denna utökning.
+
+**Miljöstatus (S103-bygget):** Person-fältet finns i BÅDA baserna (prod
+inkluderat — Marcus GO 2026-08-10 gällde båda). `get-person-notes`/
+`create-person-note` samt den omdeployade `update-record` (nya
+`update-person-flag`-operationen, se `field-allowlists.ts`) är STAGING-
+deployade och conformance-bevisade (`tests/api/get-person-notes.staging.
+test.ts`, `create-person-note.staging.test.ts`,
+`notes-event-person-isolation.staging.test.ts`). PROD-EF-deploy av de två nya
+funktionerna är, precis som event-strömmens ursprungliga våg, en SEPARAT
+Marcus-auktoriserad handling — ingen UI-yta konsumerar dem ännu.

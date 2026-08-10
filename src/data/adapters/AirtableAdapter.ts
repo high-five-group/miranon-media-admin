@@ -5,6 +5,7 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
 import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
+import type { CreatePersonNoteInput, PersonNote } from '../../domain/models/PersonNote';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
@@ -27,6 +28,7 @@ import {
   MailSendResultSchema,
   type PersonDetail,
   PersonDetailSchema,
+  PersonNoteSchema,
   PersonSchema,
   type RegistrationDetail,
   RegistrationDetailSchema,
@@ -529,6 +531,37 @@ export class AirtableAdapter implements DataSourceAdapter {
       text: input.text,
     });
     return EventNoteSchema.parse(data.note);
+  }
+
+  /**
+   * Hämta personens anteckningar (S103, T97-bygg-spåret). get-person-notes-EF:en
+   * läser personens omvända länk (`Anteckningar 2` på Airtable-sidan — namn-
+   * kollision med det gamla fritext-fältet `Anteckningar`, hanteras helt i EF:en)
+   * och batch-hämtar Anteckningar-raderna (samma record-ID-batch-form som
+   * `fetchEventNotes`), mappar till domän-shape och sorterar nyast först server-
+   * side. `.parse()` validerar vid datagränsen (ADR-026; z.array — en LISTA).
+   * 404 (okänt personId) propagerar som `EdgeFunctionError` med `status: 404`.
+   */
+  async fetchPersonNotes(personId: string): Promise<PersonNote[]> {
+    const data = await callEdgeFunction<{ notes: unknown }>('get-person-notes', { personId });
+    return z.array(PersonNoteSchema).parse(data.notes);
+  }
+
+  /**
+   * Skapa en anteckning på en person (S103, T97-bygg-spåret). POST mot
+   * create-person-note-EF, som gatar auth (requireUser), sätter FÖRFATTAREN
+   * server-side ur den verifierade JWT:ns `user_metadata.display_name` (aldrig
+   * klient-buren — spoof-säker attribution, ADR-075) och länkar personen.
+   * EF-svaret bär `note` (ren domän-shape) — `.parse()` validerar vid datagränsen
+   * (ADR-026); det parallella råa `record`-fältet är skriv-bevis för conformance
+   * och konsumeras inte här. Speglar `createEventNote` exakt.
+   */
+  async createPersonNote(input: CreatePersonNoteInput): Promise<PersonNote> {
+    const data = await postEdgeFunction<{ note: unknown }>('create-person-note', {
+      personId: input.personId,
+      text: input.text,
+    });
+    return PersonNoteSchema.parse(data.note);
   }
 
   /**

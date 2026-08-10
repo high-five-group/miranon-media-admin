@@ -4,6 +4,7 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
 import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
+import type { CreatePersonNoteInput, PersonNote } from '../../domain/models/PersonNote';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
@@ -207,6 +208,24 @@ export interface DataSourceAdapter {
    * domän-shape.
    */
   createEventNote(input: CreateEventNoteInput): Promise<EventNote>;
+
+  /**
+   * Hämta personens anteckningar (S103, T97-bygg-spåret). Läsning via
+   * get-person-notes: personens omvända länk (`Anteckningar 2` — se
+   * AirtableAdapter för namn-kollisions-noten) → batch-hämtade Anteckningar-
+   * rader, mappade till domän-shape och sorterade nyast först (server-side).
+   * Speglar `fetchEventNotes` exakt (samma additiva tabell, ADR-075). Ren läsning.
+   */
+  fetchPersonNotes(personId: string): Promise<PersonNote[]>;
+
+  /**
+   * Skapa en anteckning på en person (S103, T97-bygg-spåret). Tar write-shapen
+   * `CreatePersonNoteInput` (personId + text); FÖRFATTAREN sätts server-side ur
+   * den inloggade användarens verifierade identitet (aldrig klient-buren,
+   * ADR-075), och `tidpunkt` ur Airtables createdTime. Returnerar den skapade
+   * anteckningen i domän-shape. Speglar `createEventNote` exakt.
+   */
+  createPersonNote(input: CreatePersonNoteInput): Promise<PersonNote>;
 
   /**
    * Ladda upp en bilaga (TASK-146.4, PRD task-146 "Bilage-fundamentet",

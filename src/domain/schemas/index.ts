@@ -35,6 +35,7 @@ export {
   type PersonHistoryEntry,
   PersonHistoryEntrySchema,
 } from './PersonDetail.schema';
+export { PersonNoteSchema } from './PersonNote.schema';
 export { RegistrationSchema } from './Registration.schema';
 export {
   type RegistrationDetail,

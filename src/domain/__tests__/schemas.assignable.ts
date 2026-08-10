@@ -18,6 +18,7 @@ import type { Event } from '../models/Event';
 import type { EventNote } from '../models/EventNote';
 import type { BulkMail, MailLogEntry, MailPayload, MailSendResult } from '../models/MailPayload';
 import type { Person } from '../models/Person';
+import type { PersonNote } from '../models/PersonNote';
 import type { Registration } from '../models/Registration';
 import type { WaitlistEntry } from '../models/WaitlistEntry';
 
@@ -30,6 +31,7 @@ import type {
   MailLogEntrySchema,
   MailPayloadSchema,
   MailSendResultSchema,
+  PersonNoteSchema,
   PersonSchema,
   RegistrationSchema,
   WaitlistEntrySchema,
@@ -50,6 +52,7 @@ const _mailSendResult: AssertEqual<z.infer<typeof MailSendResultSchema>, MailSen
 const _mailLogEntry: AssertEqual<z.infer<typeof MailLogEntrySchema>, MailLogEntry> = true;
 const _bulkMail: AssertEqual<z.infer<typeof BulkMailSchema>, BulkMail> = true;
 const _person: AssertEqual<z.infer<typeof PersonSchema>, Person> = true;
+const _personNote: AssertEqual<z.infer<typeof PersonNoteSchema>, PersonNote> = true;
 const _registration: AssertEqual<z.infer<typeof RegistrationSchema>, Registration> = true;
 const _waitlistEntry: AssertEqual<z.infer<typeof WaitlistEntrySchema>, WaitlistEntry> = true;
 
@@ -64,6 +67,7 @@ export const _schemaAssignabilityAsserts = {
   _mailLogEntry,
   _bulkMail,
   _person,
+  _personNote,
   _registration,
   _waitlistEntry,
 };
