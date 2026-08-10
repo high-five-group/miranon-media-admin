@@ -143,6 +143,30 @@
  * mottagarkontroll (klienten skulle då bestämma vilka som nås).
  *
  * ─────────────────────────────────────────────────────────────────────────────
+ * AND-PRIMITIVEN — konjunkt-grupper i `med` (S104 Del 3, resume-bygget)
+ *
+ * De fjorton verkliga Skool-grupperna falsifierade den platta villkorslistan:
+ * "RIM1 + RIM2" betyder *gått båda*, och `med` som ren OR kunde aldrig säga
+ * det — 10 av 14 grupper, 127 av 416 personer, var outtryckbara
+ * (`tasks/sessions/bilagor/s104-segment-divergens/underlag-de-fjorton-skool-grupperna.md`).
+ * `med` är därför en lista av KONJUNKT-GRUPPER (disjunktiv normalform): minst
+ * en grupp ska uppfyllas, och inom gruppen gäller alla villkor samtidigt.
+ * `utan` är kvar platt — exklusiviteten behövde aldrig AND.
+ *
+ * MOTORN KAN BARA OR (`segment-membership.ts` rad 11), så konjunktionen
+ * räknas som SNITT AV MEDLEMSMÄNGDER i webbläsaren: varje villkor är en egen
+ * `compute-segment`-fråga (cachad på sin signatur), gruppen är snittet av
+ * sina villkors svar, `med` unionen av grupperna, `utan` dras bort sist. Se
+ * `byggFrageplan` — ett predikat utan flerledade grupper går exakt dagens väg
+ * (EN walk, samma cache-nyckel som förut), och de fjorton delar FYRA
+ * villkor-frågor totalt: kombinatoriken bor i algebran, inte i walks.
+ *
+ * SAMMA STATUS SOM EXPANSIONEN OVAN (EF-krav 4): skarpt måste AND-stödet in i
+ * `segment-membership.ts` och därmed i BÅDE `compute-segment` och
+ * `send-email` — ett klient-snitt kan mottagarkontrollen aldrig lita på
+ * (T50 lager b). Klient-snittet får inte promoveras.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
  * SKALPROVET (ärvt ur `b`) — variantens tes går inte att bedöma utan det.
  *
  * Detaljvyns hela idé är att publiken är huvudinnehållet, synlig direkt. Men
@@ -169,6 +193,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Group,
+  Layers,
   ListPlus,
   MailCheck,
   Pencil,
@@ -299,8 +325,19 @@ type Villkor = {
   format: string[];
 };
 
-/** Regeln som predikat: en union i `med`, en union i `utan`. */
-type Predikat = { med: Villkor[]; utan: Villkor[] };
+/**
+ * EN KONJUNKT-GRUPP: alla villkor i gruppen ska uppfyllas SAMTIDIGT (och).
+ * Fött ur de fjorton Skool-grupperna (S104 Del 3): "RIM1 + RIM2" betyder
+ * *gått båda*, och det kunde en platt villkorslista aldrig uttrycka.
+ */
+type Konjunkt = { id: string; villkor: Villkor[] };
+
+/**
+ * Regeln som predikat i disjunktiv normalform: minst EN grupp i `med` ska
+ * uppfyllas (eller mellan grupperna, och inom dem). `utan` är en platt union
+ * som dras bort sist — exklusiviteten behövde aldrig AND (Del 3).
+ */
+type Predikat = { med: Konjunkt[]; utan: Villkor[] };
 
 let villkorRaknare = 0;
 function nyttVillkor(): Villkor {
@@ -312,6 +349,12 @@ function nyttVillkor(): Villkor {
     modalitet: null,
     format: [],
   };
+}
+
+let konjunktRaknare = 0;
+function nyKonjunkt(villkor: Villkor[] = [nyttVillkor()]): Konjunkt {
+  konjunktRaknare += 1;
+  return { id: `k${konjunktRaknare}`, villkor };
 }
 
 /* ================================================================== *
@@ -366,11 +409,24 @@ function traffar(v: Villkor, parInfo: ParInfo[]): ParInfo[] {
   return villkorGiltigt(v) ? parInfo.filter((p) => matchar(v, p)) : [];
 }
 
+/** En grupp räknas bara när den har villkor och SAMTLIGA är giltiga — ett
+ *  halvbyggt och-krav får aldrig VIDGA gruppen genom att tyst falla bort. */
+function konjunktGiltig(k: Konjunkt): boolean {
+  return k.villkor.length > 0 && k.villkor.every(villkorGiltigt);
+}
+
 /**
- * EXPANSIONEN — predikat → `{include, exclude}` som EF:en faktiskt validerar.
+ * BRUTTO-EXPANSIONEN — vilka kurspar predikatet RÖR, som `{include, exclude}`.
  * Unionen dedupas på par-nyckeln: två villkor som råkar träffa samma kurs ger
  * ett par, inte två (EF:ens `parseSegmentRule` bryr sig inte, men en dubblett
  * i klartexten hade läst som ett fel).
+ *
+ * SEDAN AND-PRIMITIVEN ÄR DETTA INTE ALLTID FRÅGAN. För ett predikat utan
+ * flerledade grupper ÄR bruttot regeln (exakt dagens semantik). Bär predikatet
+ * en flerledad grupp äger `byggFrageplan` frågan i stället — bruttot används
+ * då bara för ytor som frågar "vilka kurser rör regeln" (Motsvarar-raden,
+ * modalitets-vakten, verkstadens expansions-not). Ogiltiga grupper bidrar
+ * med INGENTING — inte heller sina giltiga villkor.
  */
 function expandera(pred: Predikat, parInfo: ParInfo[]): SegmentRule {
   const plocka = (villkor: Villkor[]): Par[] => {
@@ -380,13 +436,106 @@ function expandera(pred: Predikat, parInfo: ParInfo[]): SegmentRule {
     }
     return [...karta.values()];
   };
-  return { include: plocka(pred.med), exclude: plocka(pred.utan) };
+  return {
+    include: plocka(pred.med.filter(konjunktGiltig).flatMap((k) => k.villkor)),
+    exclude: plocka(pred.utan),
+  };
 }
 
 /** Deterministisk signatur → query-nyckel + "har regeln ändrats"-jämförelse. */
 function regelSignatur(rule: SegmentRule): string {
   const nycklar = (pars: Par[]) => pars.map(parKey).sort();
   return JSON.stringify({ include: nycklar(rule.include), exclude: nycklar(rule.exclude) });
+}
+
+/* ================================================================== *
+ * FRÅGEPLANEN — AND som mängdalgebra över per-villkor-frågor
+ * ================================================================== */
+
+/** Ett villkor som EGEN EF-fråga: include = villkorets expansion, inget
+ *  exclude. Villkoret är frågans ATOM — det är OR-uttryckbart mot motorn,
+ *  vilket en konjunkt-grupp inte är. */
+function villkorsRegel(v: Villkor, parInfo: ParInfo[]): SegmentRule {
+  return { include: traffar(v, parInfo).map((p) => p.par), exclude: [] };
+}
+
+/**
+ * TVÅ VÄGAR, MED AVSIKT:
+ *
+ *   enkel      — inga flerledade grupper (eller ärvd uppräknad regel): exakt
+ *                dagens beteende. EN walk, samma cache-nyckel som förut —
+ *                noll regression för allt som fanns före AND.
+ *   sammansatt — minst en flerledad giltig grupp: en fråga PER UNIKT VILLKOR
+ *                (dedupad på signatur), snitt inom grupp, union mellan
+ *                grupper, differens mot utan — allt i `raknaSammansatt`.
+ *                Även `utan` dekomponeras per villkor, så de fjorton
+ *                Skool-grupperna delar FYRA frågor totalt.
+ *
+ * PROTOTYP-GENVÄG (EF-krav 4, filhuvudet § AND-PRIMITIVEN): skarpt måste
+ * snittet ske server-side i `segment-membership.ts`.
+ */
+type Frageplan =
+  | { typ: 'enkel'; regel: SegmentRule }
+  | {
+      typ: 'sammansatt';
+      /** Unika villkor-frågor, dedupade på regel-signatur. */
+      regler: SegmentRule[];
+      /** Per GILTIG med-grupp: index i `regler` för gruppens villkor. */
+      grupper: number[][];
+      /** Index i `regler` för de giltiga utan-villkoren. */
+      utan: number[];
+    };
+
+function byggFrageplan(pred: Predikat, parInfo: ParInfo[]): Frageplan {
+  const flerledad = pred.med.some((k) => konjunktGiltig(k) && k.villkor.length > 1);
+  if (!flerledad) return { typ: 'enkel', regel: expandera(pred, parInfo) };
+
+  const regler: SegmentRule[] = [];
+  const index = new Map<string, number>();
+  const nrFor = (v: Villkor): number => {
+    const regel = villkorsRegel(v, parInfo);
+    const sig = regelSignatur(regel);
+    const finns = index.get(sig);
+    if (finns !== undefined) return finns;
+    regler.push(regel);
+    index.set(sig, regler.length - 1);
+    return regler.length - 1;
+  };
+  return {
+    typ: 'sammansatt',
+    grupper: pred.med.filter(konjunktGiltig).map((k) => k.villkor.map(nrFor)),
+    utan: pred.utan.filter(villkorGiltigt).map(nrFor),
+    regler,
+  };
+}
+
+/**
+ * MÄNGDALGEBRAN. Identiteten är person-id; medlemsobjektet tas ur gruppens
+ * FÖRSTA villkorssvar. Ordningen är deterministisk: grupperna i planordning,
+ * inom gruppen första villkorssvarets ordning, första förekomsten vinner —
+ * samma dedup-princip som EF:ens egen union (`resolveSegmentMembers`).
+ * Ett villkor som träffar noll kurser svarar lokalt med tom mängd
+ * (`medlemsFraga`), så dess grupp blir tom — aldrig ett nätanrop i onödan.
+ */
+function raknaSammansatt(
+  plan: Extract<Frageplan, { typ: 'sammansatt' }>,
+  svar: readonly Medlemssvar[],
+): Medlemssvar {
+  const idMangd = (i: number) => new Set((svar[i]?.members ?? []).map((m) => m.id));
+  const union = new Map<string, SegmentMember>();
+  for (const grupp of plan.grupper) {
+    const [forsta, ...rest] = grupp;
+    if (forsta === undefined) continue;
+    const restMangder = rest.map(idMangd);
+    for (const m of svar[forsta]?.members ?? []) {
+      if (restMangder.every((s) => s.has(m.id)) && !union.has(m.id)) union.set(m.id, m);
+    }
+  }
+  for (const i of plan.utan) {
+    for (const m of svar[i]?.members ?? []) union.delete(m.id);
+  }
+  const members = [...union.values()];
+  return { members, count: members.length };
 }
 
 /* ── Klartext ─────────────────────────────────────────────────────── */
@@ -410,18 +559,41 @@ function villkorKlartext(v: Villkor): string {
   return `Deltagit i ${familj}${niva}${modalitet}${format}.`;
 }
 
+/**
+ * En grupp som svensk mening: villkoren bundna med "och samtidigt" — bindningen
+ * måste höras, för det är exakt skillnaden mot "Eller:" mellan grupperna.
+ * "RIM1 + RIM2" ska läsas *gått båda*, aldrig *den ena eller den andra*.
+ */
+function konjunktKlartext(k: Konjunkt): string {
+  const delar = k.villkor.map((v) => villkorKlartext(v).replace(/\.$/, ''));
+  const [forsta, ...rest] = delar;
+  if (forsta === undefined) return '';
+  return rest.length === 0
+    ? forsta
+    : `${forsta}, och samtidigt ${rest.map((d) => sankInledning(d)).join(', och samtidigt ')}`;
+}
+
+/** "Deltagit i …" → "deltagit i …" när meningen fortsätter efter ett komma. */
+function sankInledning(mening: string): string {
+  return mening.charAt(0).toLowerCase() + mening.slice(1);
+}
+
 function predikatKlartext(pred: Predikat): string {
-  const giltiga = (lista: Villkor[]) => lista.filter(villkorGiltigt);
-  const med = giltiga(pred.med);
-  const utan = giltiga(pred.utan);
+  const med = pred.med.filter(konjunktGiltig);
+  const utan = pred.utan.filter(villkorGiltigt);
   if (med.length === 0) return 'Ingen regel byggd än.';
   // "Med:"-prefixet är borta (Marcus 2026-08-10). Det var en etikett på det
   // enda som stod där i de allra flesta fall - villkoret bär redan sin egen
   // mening ("Deltagit i ..."). "Utan:" står kvar, för den behövs: den vänder
   // betydelsen och får aldrig läsas som en fortsättning på raden före.
-  const medText = `${med.map((v) => villkorKlartext(v).replace(/\.$/, '')).join('. Eller: ')}.`;
+  const medText = `${med.map((k) => konjunktKlartext(k)).join('. Eller: ')}.`;
   if (utan.length === 0) return medText;
-  return `${medText} Utan: ${utan.map((v) => villkorKlartext(v).replace(/\.$/, '')).join('. Eller: ')}.`;
+  // UTESLUTNINGARNA BINDS MED "eller" I LÖPANDE TEXT (Marcus 2026-08-10,
+  // korttext-varvet): "Utan: A. Eller: B." lästes som att B var ett
+  // INKLUSIONS-alternativ till hela regeln — exakt den boolesk-parsning
+  // ingen ska behöva göra. "Utan: A eller B." kan inte missläsas så.
+  // Med-sidans ". Eller: " står kvar: där ÄR grupperna genuina alternativ.
+  return `${medText} Utan: ${utan.map((v) => villkorKlartext(v).replace(/\.$/, '')).join(' eller ')}.`;
 }
 
 /* ================================================================== *
@@ -437,86 +609,266 @@ type SegmentEntitet = {
   arvdRegel: SegmentRule | null;
   /** `true` = finns inte i basen. */
   skiss: boolean;
+  /**
+   * Människo-mening skriven UR AVSIKTEN vid skapandet (`manniskoMening` via
+   * `byggGrupp`) — kortens beskrivning för genererade grupper. Saknas den
+   * faller `definitionFor` till regel-klartexten. Redigeras en genererad
+   * grupp i verkstaden skapas en NY entitet utan beskrivning (`sparaRegel`)
+   * — avsikts-meningen följer med AVSIKTEN, aldrig en regel som kan ha
+   * ändrats bort från den.
+   */
+  beskrivning?: string;
 };
 
-function regelFor(entitet: SegmentEntitet, parInfo: ParInfo[]): SegmentRule {
+/**
+ * BRUTTO-regeln för en entitet — vilka kurspar den RÖR. Sedan AND-primitiven
+ * är detta INTE frågan för ett predikat med flerledade grupper (frågan äger
+ * `useEntitetsMedlemmar` via frågeplanen); bruttot bär Motsvarar-raden,
+ * modalitets-vakten och tomhets-avgörandet. För ärvda uppräknade regler och
+ * predikat utan flerledade grupper är brutto och fråga samma sak.
+ */
+function bruttoRegelFor(entitet: SegmentEntitet, parInfo: ParInfo[]): SegmentRule {
   if (entitet.predikat) return expandera(entitet.predikat, parInfo);
   return entitet.arvdRegel ?? { include: [], exclude: [] };
 }
 
 function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
+  // Avsikts-meningen vinner över regel-klartexten överallt den finns —
+  // kortet, detaljen och utskickets segmentrad läser alla samma beskrivning.
+  // Precisionen (den fulla regeln) bor kvar i regelverkstaden.
+  if (entitet.beskrivning) return entitet.beskrivning;
   if (entitet.predikat) return predikatKlartext(entitet.predikat);
-  const rule = regelFor(entitet, parInfo);
+  const rule = bruttoRegelFor(entitet, parInfo);
   if (rule.include.length === 0) return 'Uppräknad regel utan inkluderade kurser.';
   const med = `${rule.include.map(labelForPar).join(' ELLER ')}.`;
+  // Samma "eller"-språkfix som predikatKlartexts utan-sida (Marcus 2026-08-10).
   return rule.exclude.length > 0
-    ? `${med} Utan: ${rule.exclude.map(labelForPar).join(' ELLER ')}.`
+    ? `${med} Utan: ${rule.exclude.map(labelForPar).join(' eller ')}.`
     : med;
 }
 
 /**
- * SKISS-SEGMENTEN — byggda ur RIKTIG taxonomi, i den NYA formen.
+ * PARTITION-GENERATORN — kärnan bakom "Dela upp i grupper" och de fjorton
+ * förskapade grupperna nedan (S104 Del 3, Marcus-beslut "partition som
+ * GENERATOR, inte som andra sortens segment"). En partition är INGEN
+ * segmenttyp: den är en skapande-handling som tar en uppsättning kurs-atomer
+ * och genererar N vanliga predikat-segment, ett per icke-tom kombination.
  *
- * `Segment`-tabellen i prod är tom sedan 2026-08-10 (Marcus rensade alla
- * testsegment), och staging bär bara CI-fixturer med UUID-namn — som dessutom
- * filtreras bort ur vyn. Utan skisser går formen inte att bedöma.
- *
- * Deras ANTAL räknas på riktigt med samma `compute-segment` som en sparad rad:
- * **posten är påhittad, aldrig siffran.** Den invarianten är hela skälet till
- * att skisserna får finnas, och den gäller även efter att märkningen per kort
- * togs bort (Marcus 2026-08-10) — förbehållet står nu EN gång, i
- * `PrototypNot` under listan, i stället för som en pill på varje rad.
- *
- * Urvalet visar fem saker på en gång: familjeregeln som automatiskt omfattar
- * RIM 4 · nivåurval · en uteslutning · och PARET
- * "Fjärrskådning - bara utbildning" / "Fjärrskådning - alla, oavsett form".
- *
- * Just det paret är passets skarpaste demonstration. Det raderade segmentet
- * "FS-deltagare (fjärrskådning)" BESKREVS som utbildning men körde ett
- * rollup-fält som blandar båda modaliteterna — det gjorde alltså inte vad
- * dess egen beskrivning påstod (S104 Del 2). Här är båda avsikterna
- * uttryckbara, de heter olika, de ger olika publik, och den blandade får en
- * fördelningsruta i granskningen. Skillnaden går inte längre att råka ut för.
+ * ERSÄTTER de fem exempel-skisserna (`byggSkisser`, riven i denna commit —
+ * git-historiken har den kvar om formen ska återställas med en rad). Skälet
+ * är samma som filhuvudets § AND-PRIMITIVEN: verkliga målsegment (de fjorton)
+ * avtäcker vad ytan faktiskt behöver på ett sätt fem egna påhittade exempel
+ * aldrig gjorde (lesson-kandidat 7, Paushistorik 2).
  */
-function byggSkisser(parInfo: ParInfo[]): SegmentEntitet[] {
-  const familjerIBasen = new Set(
-    parInfo.map((p) => p.familj).filter((f): f is Familj => f !== null),
+
+/** En KURS-ATOM: minsta byggkloss i en partition — ett (familj, nivå)-par
+ *  som existerar i basen. FS och Psionautics är nivålösa (`niva: null`). */
+type KursAtom = { familj: Familj; niva: Niva | null; nyckel: string; etikett: string };
+
+/**
+ * Presentationsordning för atom-chips OCH genererade gruppnamn — FS, RIM
+ * (stigande nivå), Psionautics. Matchar bilagans EGEN ordning verbatim
+ * ("Fjärrskådning + RIM1 + RIM2", aldrig omkastad) — en annan ordning hade
+ * gjort listan svår att känna igen mot källan den kom ur. `FAMILJER` (chip-
+ * radens ordning i `VillkorsKort`) har ett annat syfte och rörs inte.
+ */
+const ATOM_FAMILJORDNING: Familj[] = ['Fjärrskådning', 'RIM', 'Psionautics'];
+
+/** Kort nivå-etikett för atom-chippet ("RIM 1", inte "RIM Nivå 1" — `NIVA_ETIKETT`
+ *  är till för villkorskortets löptext, den här är till för en tät chip-rad). */
+const NIVA_KORT: Record<Niva, string> = { intro: 'Intro', '1': '1', '2': '2', '3': '3' };
+
+/**
+ * Härleder kurs-atomerna som FINNS I BASEN för given modalitet, i
+ * `ATOM_FAMILJORDNING`s ordning. `modalitet: 'Båda'` visar en atom om NÅGON
+ * av de två modaliteterna har paret — samma "inget val = allt"-princip som
+ * `matchar` använder för ett vanligt villkor.
+ */
+function harledKursAtomer(parInfo: ParInfo[], modalitet: ModalitetsVal): KursAtom[] {
+  const finns = new Set(
+    parInfo
+      .filter((p) => p.familj !== null && (modalitet === 'Båda' || p.par.modalitet === modalitet))
+      .map((p) => `${p.familj}|${p.niva ?? ''}`),
   );
-  const ut: SegmentEntitet[] = [];
-
-  const skiss = (id: string, namn: string, pred: Predikat) =>
-    ut.push({ id, namn, predikat: pred, arvdRegel: null, skiss: true });
-
-  if (familjerIBasen.has('RIM')) {
-    skiss('skiss-rim-alla', 'RIM - alla utbildningsnivåer', {
-      med: [{ ...nyttVillkor(), familjer: ['RIM'], modalitet: 'Utbildning' }],
-      utan: [],
-    });
-    skiss('skiss-rim-erfarna', 'RIM - erfarna (nivå 2 och 3)', {
-      med: [{ ...nyttVillkor(), familjer: ['RIM'], nivaer: ['2', '3'], modalitet: 'Utbildning' }],
-      utan: [],
-    });
+  const atomer: KursAtom[] = [];
+  for (const familj of ATOM_FAMILJORDNING) {
+    if (FAMILJER_MED_NIVA.includes(familj)) {
+      for (const niva of NIVAER) {
+        const nyckel = `${familj}|${niva}`;
+        if (finns.has(nyckel)) {
+          atomer.push({ familj, niva, nyckel, etikett: `${familj} ${NIVA_KORT[niva]}` });
+        }
+      }
+    } else if (finns.has(`${familj}|`)) {
+      atomer.push({ familj, niva: null, nyckel: `${familj}|`, etikett: familj });
+    }
   }
-  if (familjerIBasen.has('Fjärrskådning')) {
-    skiss('skiss-fs-utbildning', 'Fjärrskådning - bara utbildning', {
-      med: [{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Utbildning' }],
-      utan: [],
-    });
-    // SYSKONET till raden ovan — samma familj, andra avsikten, uttryckt som
-    // ett aktivt "Båda". Det är den som utlöser granskningens fördelningsruta.
-    skiss('skiss-fs-alla', 'Fjärrskådning - alla, oavsett form', {
-      med: [{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Båda' }],
-      utan: [],
-    });
-  }
-  if (familjerIBasen.has('RIM') && familjerIBasen.has('Fjärrskådning')) {
-    skiss('skiss-bredd', 'Har gått RIM men aldrig Fjärrskådning', {
-      med: [{ ...nyttVillkor(), familjer: ['RIM'], modalitet: 'Båda' }],
-      utan: [{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Båda' }],
-    });
-  }
-  return ut;
+  return atomer;
 }
+
+/** Villkoret EN kurs-atom motsvarar, med given modalitet. Delad av både
+ *  förhandsvisningens per-atom-frågor och `byggGrupp`s slutliga predikat —
+ *  SAMMA kodväg, så en atom betyder exakt samma sak i förhandsvisningen som
+ *  i den skapade gruppen. */
+function villkorForAtom(a: KursAtom, modalitet: ModalitetsVal): Villkor {
+  return { ...nyttVillkor(), familjer: [a.familj], nivaer: a.niva ? [a.niva] : [], modalitet };
+}
+
+/**
+ * PARTITION-GENERATORNS KÄRNA — EXAKT-KOMBINATION-SEMANTIK
+ * (`underlag-de-fjorton-skool-grupperna.md` § Semantiken). Given alla atomer
+ * och en delmängd S av dem: `med` blir EN konjunkt-grupp av S (alla samtidigt),
+ * `utan` blir ATOMERNA UTANFÖR S — så "RIM1" aldrig läcker in någon som också
+ * gått RIM2. Samma funktion bygger BÅDE den interaktiva generatorns
+ * "Skapa N segment" och de fjorton förskapade grupperna nedan.
+ */
+const ANTALSORD: Record<number, string> = {
+  2: 'två',
+  3: 'tre',
+  4: 'fyra',
+  5: 'fem',
+  6: 'sex',
+  7: 'sju',
+  8: 'åtta',
+  9: 'nio',
+  10: 'tio',
+};
+
+/**
+ * MÄNNISKO-MENINGEN — beskrivningen genererad UR AVSIKTEN (exakt
+ * kombination), aldrig ur regelns booleska struktur. Marcus dömde ut
+ * regeldumpen på korten ("fullständigt obegriplig", 2026-08-10): "Utan: A.
+ * Eller: B" tvingade Lotta att parsa boolesk logik. Generatorn VET att
+ * gruppen betyder "exakt de här, inget mer" — då kan den skriva det som en
+ * människa.
+ *
+ * ROGER SÄGER UTBILDNING, INTE KURS (Marcus 2026-08-10) — därför
+ * "utbildningarna" när modaliteten ÄR Utbildning. För föreläsning/"båda"
+ * vore ordet fel; där bär en egen slutmening modaliteten i stället.
+ * (Koden behåller domäntermen kurs/KursAtom — ORDLISTA.md: kursen är
+ * taxonomi-axeln; detta är Rogers PRESENTATIONSSPRÅK, inte en typomdöpning.)
+ *
+ * Formeln är mekanisk och skalar till varje generator-körning:
+ *   alla valda        → "Har gått alla fyra utbildningarna."
+ *   en vald           → "Har bara gått RIM 1 - ingen av de andra tre
+ *                        utbildningarna."
+ *   två valda         → "Har gått både RIM 1 och RIM 2 - men ingen av de
+ *                        andra två utbildningarna."
+ *   en enda utesluten → "... - men inte Psionautics." (nämns vid namn)
+ */
+function manniskoMening(ivalda: KursAtom[], utanfor: KursAtom[], modalitet: ModalitetsVal): string {
+  const antalOrd = (n: number) => ANTALSORD[n] ?? String(n);
+  const etiketter = ivalda.map((a) => a.etikett);
+  const utbildningsord = modalitet === 'Utbildning';
+
+  const uteslutning =
+    utanfor.length === 1
+      ? `inte ${utanfor[0]?.etikett ?? ''}`
+      : `ingen av de andra${utbildningsord ? ` ${antalOrd(utanfor.length)} utbildningarna` : ''}`;
+
+  let mening: string;
+  if (utanfor.length === 0) {
+    mening = `Har gått alla ${antalOrd(ivalda.length)}${utbildningsord ? ' utbildningarna' : ''}.`;
+  } else if (ivalda.length === 1) {
+    mening = `Har bara gått ${etiketter[0] ?? ''} - ${uteslutning}.`;
+  } else {
+    mening = `Har gått ${ivalda.length === 2 ? 'både ' : ''}${listaOrd(etiketter, 'och')} - men ${uteslutning}.`;
+  }
+  if (modalitet === 'Föreläsning') return `${mening} Räknat som föreläsning.`;
+  if (modalitet === 'Båda') return `${mening} Räknat som utbildning eller föreläsning.`;
+  return mening;
+}
+
+function byggGrupp(
+  allaAtomer: KursAtom[],
+  ivalda: KursAtom[],
+  modalitet: ModalitetsVal,
+  namn: string,
+  id: string,
+): SegmentEntitet {
+  const ivaldaNycklar = new Set(ivalda.map((a) => a.nyckel));
+  const utanfor = allaAtomer.filter((a) => !ivaldaNycklar.has(a.nyckel));
+  return {
+    id,
+    namn,
+    predikat: {
+      med: [nyKonjunkt(ivalda.map((a) => villkorForAtom(a, modalitet)))],
+      utan: utanfor.map((a) => villkorForAtom(a, modalitet)),
+    },
+    arvdRegel: null,
+    skiss: true,
+    beskrivning: manniskoMening(ivalda, utanfor, modalitet),
+  };
+}
+
+/**
+ * DE FJORTON FÖRSKAPADE GRUPPERNA. Marcus lathund till Roger/Lotta inför
+ * Skool-inbjudan (juli 2026) delade 416 personer i 14 disjunkta grupper efter
+ * EXAKT vilken kombination av kurser de gått. Atomerna här är FASTA — inte
+ * härledda ur `parInfo` som generatorns egna — så de fjorton finns oavsett
+ * vad staging råkar innehålla just nu (staging kan dessutom omöjligt befolka
+ * och-kombinationerna på riktigt, se `FACIT_KARTA` + `skalprovMal`).
+ */
+const DE_FJORTON_ATOMER: KursAtom[] = [
+  { familj: 'Fjärrskådning', niva: null, nyckel: 'Fjärrskådning|', etikett: 'Fjärrskådning' },
+  { familj: 'RIM', niva: '1', nyckel: 'RIM|1', etikett: 'RIM 1' },
+  { familj: 'RIM', niva: '2', nyckel: 'RIM|2', etikett: 'RIM 2' },
+  { familj: 'Psionautics', niva: null, nyckel: 'Psionautics|', etikett: 'Psionautics' },
+];
+
+type FjortonRad = { gruppnummer: number; facit: number; atomNycklar: string[] };
+
+/**
+ * Grupptabellen VERBATIM ur bilagan
+ * (`underlag-de-fjorton-skool-grupperna.md` § Grupptabellen), juli 2026.
+ * Σ facit = 416, samma summa som bilagans egen ("416 inbjudningar går ut").
+ * Den femtonde icke-tomma delmängden (Fjärrskådning + RIM2 + Psionautics) är
+ * obefolkad och FÖRSKAPAS INTE — bilagan listar bara 14 av de 15 möjliga.
+ */
+const DE_FJORTON_DATA: FjortonRad[] = [
+  { gruppnummer: 1, facit: 188, atomNycklar: ['RIM|1'] },
+  { gruppnummer: 2, facit: 59, atomNycklar: ['Fjärrskådning|'] },
+  { gruppnummer: 3, facit: 39, atomNycklar: ['Psionautics|'] },
+  { gruppnummer: 4, facit: 34, atomNycklar: ['RIM|1', 'RIM|2'] },
+  { gruppnummer: 5, facit: 30, atomNycklar: ['Fjärrskådning|', 'RIM|1'] },
+  { gruppnummer: 6, facit: 24, atomNycklar: ['Fjärrskådning|', 'RIM|1', 'RIM|2'] },
+  { gruppnummer: 7, facit: 14, atomNycklar: ['Fjärrskådning|', 'RIM|1', 'RIM|2', 'Psionautics|'] },
+  { gruppnummer: 8, facit: 9, atomNycklar: ['RIM|1', 'Psionautics|'] },
+  { gruppnummer: 9, facit: 8, atomNycklar: ['RIM|1', 'RIM|2', 'Psionautics|'] },
+  { gruppnummer: 10, facit: 3, atomNycklar: ['Fjärrskådning|', 'RIM|1', 'Psionautics|'] },
+  { gruppnummer: 11, facit: 3, atomNycklar: ['Fjärrskådning|', 'Psionautics|'] },
+  { gruppnummer: 12, facit: 3, atomNycklar: ['RIM|2'] },
+  { gruppnummer: 13, facit: 1, atomNycklar: ['RIM|2', 'Psionautics|'] },
+  { gruppnummer: 14, facit: 1, atomNycklar: ['Fjärrskådning|', 'RIM|2'] },
+];
+
+/** Bygger de fjorton entiteterna vid mount, via SAMMA `byggGrupp` som
+ *  generatorns "Skapa N segment". Modaliteten är fast Utbildning — bilagan
+ *  utelämnar föreläsning helt (Del 3 § Modalitets-frågan). */
+function byggDeFjorton(): SegmentEntitet[] {
+  return DE_FJORTON_DATA.map((rad) => {
+    const ivalda = DE_FJORTON_ATOMER.filter((a) => rad.atomNycklar.includes(a.nyckel));
+    const namn = ivalda.map((a) => a.etikett).join(' + ');
+    return byggGrupp(
+      DE_FJORTON_ATOMER,
+      ivalda,
+      'Utbildning',
+      namn,
+      `de-fjorton-${rad.gruppnummer}`,
+    );
+  });
+}
+
+/**
+ * Facit-antalet per förskapad grupp — en SEPARAT karta i stället för ett
+ * fält på `SegmentEntitet` (beslut 6, minsta yta): bara `skalprovMal` och
+ * invariant-undantaget i `fyllUt`/`visatAntal` behöver slå upp den, och
+ * ingen annan entitet (sparad, egen, generator-skapad) bär ett fält den
+ * aldrig sätter.
+ */
+const FACIT_KARTA: Record<string, number> = Object.fromEntries(
+  DE_FJORTON_DATA.map((rad) => [`de-fjorton-${rad.gruppnummer}`, rad.facit]),
+);
 
 /* ================================================================== *
  * DELAD GRAMMATIK — klassrader ärvda ur Event-familjen (G2)
@@ -640,6 +992,396 @@ function useMedlemmar(rule: SegmentRule, aktiv: boolean) {
   return useQuery<Medlemssvar>({ ...medlemsFraga(dataSource, rule), enabled: aktiv });
 }
 
+/**
+ * MEDLEMSUTFALLET FÖR ETT PREDIKAT — en hook oavsett frågeplanens typ.
+ * `useQueries` bär 1..N frågor på SAMMA fabrik (`medlemsFraga`) och därmed
+ * samma signatur-cache som resten av varianten: ett villkor som redan
+ * ställts — av ett annat segment, en annan vy — kostar noll. Svarsformen är
+ * `useMedlemmar`s, så konsumtionsytorna märker ingen skillnad.
+ */
+function usePredikatMedlemmar(
+  predikat: Predikat | null,
+  arvdRegel: SegmentRule | null,
+  parInfo: ParInfo[],
+  aktiv: boolean,
+) {
+  const dataSource = useDataSource();
+  const plan = useMemo<Frageplan>(
+    () =>
+      predikat
+        ? byggFrageplan(predikat, parInfo)
+        : { typ: 'enkel', regel: arvdRegel ?? { include: [], exclude: [] } },
+    [predikat, arvdRegel, parInfo],
+  );
+  const regler = plan.typ === 'enkel' ? [plan.regel] : plan.regler;
+  const svar = useQueries({
+    queries: regler.map((r) => ({ ...medlemsFraga(dataSource, r), enabled: aktiv })),
+  });
+  const felSvar = svar.find((s) => s.isError);
+  const allaSvarat = svar.every((s) => s.data !== undefined);
+  const data: Medlemssvar | undefined = !allaSvarat
+    ? undefined
+    : plan.typ === 'enkel'
+      ? svar[0]?.data
+      : raknaSammansatt(
+          plan,
+          svar.map((s) => s.data as Medlemssvar),
+        );
+  return {
+    data,
+    isPending: svar.some((s) => s.isPending),
+    isFetching: svar.some((s) => s.isFetching),
+    isError: felSvar !== undefined,
+    error: felSvar?.error ?? null,
+  };
+}
+
+function useEntitetsMedlemmar(entitet: SegmentEntitet, parInfo: ParInfo[]) {
+  return usePredikatMedlemmar(entitet.predikat, entitet.arvdRegel, parInfo, true);
+}
+
+/**
+ * UNIONEN ÖVER FLERA ENTITETER (utskicksvyn). Alla entiteters frågeplaner
+ * plattas till EN uppsättning unika frågor (dedup på signatur ÖVER
+ * entitets-gränserna — två segment som delar ett villkor delar walk), och
+ * varje entitets utfall räknas ur sin del av svaren. Vakten mot tyst
+ * underräkning (filhuvudet § MULTI-SEGMENT) ärvs oförändrad: `misslyckade`
+ * räknar SEGMENT vars någon fråga felat, och unionen byggs bara ur segment
+ * vars samtliga frågor svarat.
+ */
+function useUnionsUtfall(entiteter: SegmentEntitet[], parInfo: ParInfo[]) {
+  const dataSource = useDataSource();
+  const { regler, planer } = useMemo(() => {
+    const regler: SegmentRule[] = [];
+    const index = new Map<string, number>();
+    const nrFor = (regel: SegmentRule): number => {
+      const sig = regelSignatur(regel);
+      const finns = index.get(sig);
+      if (finns !== undefined) return finns;
+      regler.push(regel);
+      index.set(sig, regler.length - 1);
+      return regler.length - 1;
+    };
+    const planer = entiteter.map((e) => {
+      const plan: Frageplan = e.predikat
+        ? byggFrageplan(e.predikat, parInfo)
+        : { typ: 'enkel', regel: e.arvdRegel ?? { include: [], exclude: [] } };
+      return plan.typ === 'enkel'
+        ? { typ: 'enkel' as const, regel: nrFor(plan.regel) }
+        : {
+            typ: 'sammansatt' as const,
+            grupper: plan.grupper.map((g) => g.map((i) => nrFor(plan.regler[i] as SegmentRule))),
+            utan: plan.utan.map((i) => nrFor(plan.regler[i] as SegmentRule)),
+          };
+    });
+    return { regler, planer };
+  }, [entiteter, parInfo]);
+
+  const svar = useQueries({ queries: regler.map((r) => medlemsFraga(dataSource, r)) });
+
+  const perEntitet = planer.map((plan) => {
+    const indexlista = plan.typ === 'enkel' ? [plan.regel] : [...plan.grupper.flat(), ...plan.utan];
+    const vantar = indexlista.some((i) => svar[i]?.data === undefined);
+    const fel = indexlista.some((i) => svar[i]?.isError);
+    const data: Medlemssvar | undefined =
+      vantar || fel
+        ? undefined
+        : plan.typ === 'enkel'
+          ? svar[plan.regel]?.data
+          : raknaSammansatt(
+              { typ: 'sammansatt', regler, grupper: plan.grupper, utan: plan.utan },
+              svar.map((s) => s.data as Medlemssvar),
+            );
+    return { data, vantar, fel };
+  });
+
+  return {
+    perEntitet,
+    isPending: svar.some((s) => s.isPending),
+    misslyckade: perEntitet.filter((p) => p.fel).length,
+  };
+}
+
+/* ================================================================== *
+ * TÄCKNINGSVYN — ett LÄGE på listan, ingen ny objekttyp
+ * (S104 Del 3 "partition som GENERATOR" + Del 4 konvergens, task-181)
+ * ================================================================== */
+
+/**
+ * Visar en genererad grupp-UPPSÄTTNING som HELHET: de fjorton förskapade
+ * grupperna, eller en enskild körning av "Dela upp i grupper" — aldrig en
+ * enstaka grupp (den frågan besvarar redan kortets eget antal).
+ *
+ * SVARAR PÅ TRE TAL, INGET ANNAT (Del 3: "det var den egenskapen som gjorde
+ * Skool-uppladdningen trygg"): hur många är i EXAKT en grupp, hur många i
+ * MER ÄN EN (ska vara noll per konstruktion — `byggGrupp`s `utan`-hälft
+ * utesluter grannarna, se PARTITION-GENERATORNS KÄRNA ovan — men kan bli
+ * >0 om någon redigerar en genererad grupps regel i efterhand), och hur
+ * många med genomförd närvaro i uppsättningens modalitet är i INGEN grupp
+ * alls. Den sista är den som gör RIM 4-rötan (filhuvudet § REGELFORMEN)
+ * synlig i stället för tyst: en ny kurs ger folk `harledKursAtomer` inte
+ * känner till, de hamnar i ingen atom och därmed i ingen grupp — täckningen
+ * visar dem, i stället för att uppsättningen tyst blir ofullständig.
+ *
+ * UPPSÄTTNINGS-IDENTITETEN HÄRLEDS UR ID-PREFIXET, INGEN FJÄRDE BOKFÖRING
+ * (minsta yta): `byggDeFjorton` ger alla sina entiteter prefixet
+ * `de-fjorton-`, en generator-körning ger alla sina samma `gen-<ts>-`
+ * (samma `Date.now()`-anrop, se `DelaUppIGrupper.skapa`). En entitet
+ * UTANFÖR de två familjerna (sparat Airtable-segment, ett obesparat "Nytt
+ * segment") hör inte till någon uppsättning — täckning är en fråga bara en
+ * GENERERAD partition kan svara på, för bara den lovar att ha delat upp
+ * ALLA atomer den byggdes ur.
+ *
+ * MODALITETEN LÄSES UR PREDIKATET, INTE UR EN EGEN KARTA (`harledModalitet`):
+ * `byggGrupp` sätter SAMMA modalitet-parameter på varje villkor den skapar
+ * — `med` OCH `utan` — så det räcker att läsa det FÖRSTA. En parallell
+ * karta (`FACIT_KARTA`s form) hade kunnat glida isär från predikatet den
+ * beskriver; att läsa modaliteten ur samma data som redan bär den kan det
+ * aldrig göra.
+ *
+ * FLERA UPPSÄTTNINGAR SAMTIDIGT (de fjorton finns alltid från mount, plus
+ * noll eller fler generator-körningar): den enklaste ÄRLIGA lösningen är
+ * täckning PER uppsättning, alla synliga samtidigt när läget är på — inte
+ * en väljare som pekar ut en. En väljare hade krävt ett default-val och en
+ * extra stat för en yta som i praktiken visar 1–2 uppsättningar samtidigt;
+ * att lista dem alla är varken dyrare att räkna (varje panel kör sin egen
+ * fråga oavsett vald/ej vald) eller svårare att läsa.
+ */
+type Uppsattning = {
+  nyckel: string;
+  namn: string;
+  entiteter: SegmentEntitet[];
+  modalitet: ModalitetsVal;
+};
+
+/** Modaliteten `byggGrupp` skrev in i varje villkor — se docblocket ovan. */
+function harledModalitet(entitet: SegmentEntitet): ModalitetsVal | null {
+  return (
+    entitet.predikat?.med[0]?.villkor[0]?.modalitet ?? entitet.predikat?.utan[0]?.modalitet ?? null
+  );
+}
+
+/** Grupperar posterna på id-prefix. Entiteter utanför `de-fjorton-`/`gen-<ts>-`
+ *  hör inte till någon uppsättning och bidrar inte till täckningsvyn. */
+function harledUppsattningar(poster: SegmentEntitet[]): Uppsattning[] {
+  const grupper = new Map<string, SegmentEntitet[]>();
+  const namn = new Map<string, string>();
+  for (const e of poster) {
+    let nyckel: string | null = null;
+    if (e.id.startsWith('de-fjorton-')) {
+      nyckel = 'de-fjorton';
+      namn.set(nyckel, 'De fjorton');
+    } else {
+      const traff = /^gen-(\d+)-/.exec(e.id);
+      if (traff?.[1]) {
+        nyckel = `gen-${traff[1]}`;
+        if (!namn.has(nyckel)) {
+          const tid = new Date(Number(traff[1])).toLocaleTimeString('sv-SE', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+          namn.set(nyckel, `Uppdelning kl. ${tid}`);
+        }
+      }
+    }
+    if (nyckel === null) continue;
+    const lista = grupper.get(nyckel);
+    if (lista) lista.push(e);
+    else grupper.set(nyckel, [e]);
+  }
+  const uppsattningar: Uppsattning[] = [];
+  for (const [nyckel, entiteter] of grupper) {
+    const modalitet = entiteter.map(harledModalitet).find((m): m is ModalitetsVal => m !== null);
+    // Kan i praktiken inte inträffa (`villkorForAtom` sätter alltid en konkret
+    // modalitet), men en uppsättning utan känd modalitet kan inte besvara
+    // populationsfrågan och utelämnas därför hellre än att gissa.
+    if (modalitet === undefined) continue;
+    uppsattningar.push({ nyckel, namn: namn.get(nyckel) ?? nyckel, entiteter, modalitet });
+  }
+  return uppsattningar;
+}
+
+type TackningsUtfall =
+  | { status: 'raknar' }
+  | { status: 'fel' }
+  | { status: 'klar'; tackta: number; dubbla: number; utanfor: SegmentMember[] };
+
+/**
+ * TÄCKNINGENS RÄKNING. `useUnionsUtfall` ger gruppernas medlemsmängder på
+ * SAMMA frågefabrik som listans egna kort (`medlemsFraga`s signatur-cache)
+ * — ett redan räknat kort kostar noll här. Den enda NYA frågan är
+ * populationsregeln: alla taxonomins par för uppsättningens modalitet,
+ * byggd exakt som `useModalitetsFordelning`s `utbildningsRegel` för
+ * Utbildning — samma innehåll ⇒ samma `regelSignatur` ⇒ samma cache-post om
+ * den hooken råkar vara monterad någon annanstans (frågeekonomin, beslut 5).
+ *
+ * RÄKNAS ALLTID PÅ VERKLIGA MÄNGDER (beslut 4): varken `perEntitet` eller
+ * `population` går via `fyllUt`/skalprovet — de är `compute-segment`s
+ * obehandlade svar. Skalprovs-växeln kan stå i vilket läge som helst utan
+ * att en enda siffra här ändras; det är en EGENSKAP av att koden aldrig rör
+ * skalprovet, inte ett villkor som kollas.
+ */
+function useTackning(uppsattning: Uppsattning, parInfo: ParInfo[]): TackningsUtfall {
+  const {
+    perEntitet,
+    isPending: grupperVantar,
+    misslyckade,
+  } = useUnionsUtfall(uppsattning.entiteter, parInfo);
+
+  const populationRegel = useMemo<SegmentRule>(
+    () => ({
+      include: parInfo
+        .filter(
+          (p) => uppsattning.modalitet === 'Båda' || p.par.modalitet === uppsattning.modalitet,
+        )
+        .map((p) => p.par),
+      exclude: [],
+    }),
+    [parInfo, uppsattning.modalitet],
+  );
+  const population = useMedlemmar(populationRegel, true);
+
+  if (misslyckade > 0 || population.isError) return { status: 'fel' };
+  if (grupperVantar || population.data === undefined) return { status: 'raknar' };
+
+  const forekomster = new Map<string, number>();
+  for (const p of perEntitet) {
+    for (const m of p.data?.members ?? []) {
+      forekomster.set(m.id, (forekomster.get(m.id) ?? 0) + 1);
+    }
+  }
+  const dubbla = [...forekomster.values()].filter((n) => n >= 2).length;
+  const tackta = forekomster.size - dubbla;
+  const { data: populationSvar } = population;
+  const utanfor = populationSvar.members.filter((m) => !forekomster.has(m.id));
+
+  return { status: 'klar', tackta, dubbla, utanfor };
+}
+
+/**
+ * Publiken i Rogers ord (Marcus 2026-08-10: "genomförd närvaro" är
+ * systemspråk, och "modalitet" ska aldrig stå i UI-text). Verbfrasen bär
+ * BÅDE vilka som räknas och vilken modalitet uppsättningen gäller.
+ */
+function publikOrd(modalitet: ModalitetsVal): string {
+  if (modalitet === 'Föreläsning') return 'har varit på någon föreläsning';
+  if (modalitet === 'Båda') return 'har gått någon utbildning eller varit på någon föreläsning';
+  return 'har gått någon utbildning';
+}
+
+/**
+ * EN UPPSÄTTNING, ETT PANEL. Panelerna läggs ÖVER listan (mellan handlings-
+ * raden och korten) — listan döljs aldrig, täckningen är ett TILLÄGG, inte
+ * en ersättning. `role="status"` + `aria-live="polite"` på summeringen
+ * (kvalitetsribban): talen uppdateras när frågorna svarar, och det ska höras
+ * utan att man letar upp raden själv — samma mönster som
+ * fördelnings-kontrollen i `UtskicksVy`. Dubbeltäckningen bärs av
+ * `StatusBadge` (TEXT + ikon), aldrig av färg ensam.
+ *
+ * "Visa vilka"-listan speglar `UtskicksVy`s blandade-mottagare-mönster:
+ * antal ≤ `CHUNK` visas hel, annars de första `CHUNK` + ett rest-antal.
+ */
+function TackningsPanel({
+  uppsattning,
+  parInfo,
+}: {
+  uppsattning: Uppsattning;
+  parInfo: ParInfo[];
+}) {
+  const utfall = useTackning(uppsattning, parInfo);
+  const [visaUtanfor, setVisaUtanfor] = useState(false);
+  const utanforPanelId = useId();
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+      <h2 className="font-semibold text-body">Täckning: {uppsattning.namn}</h2>
+
+      {utfall.status === 'raknar' && (
+        <p aria-live="polite" className="text-small text-text-muted">
+          Räknar täckningen…
+        </p>
+      )}
+
+      {utfall.status === 'fel' && (
+        <MessageBox intent="error" title="Täckningen kunde inte räknas">
+          Något av delsvaren gick inte att hämta. Försök igen om en stund.
+        </MessageBox>
+      )}
+
+      {utfall.status === 'klar' && (
+        <div role="status" aria-live="polite" aria-atomic="true" className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {utfall.dubbla === 0 ? (
+              <StatusBadge ton="success" storlek="sm">
+                Varje person i exakt en grupp
+              </StatusBadge>
+            ) : (
+              // `StatusBadge.children` är typad `string` (samma disciplin som
+              // resten av filens `StatusBadge`-anrop) - en mall-sträng, inte
+              // flera barn-noder.
+              <StatusBadge ton="warning" storlek="sm">
+                {`${utfall.dubbla} ${personform(utfall.dubbla)} i mer än en grupp`}
+              </StatusBadge>
+            )}
+          </div>
+
+          <p className="text-small text-text-secondary">
+            {utfall.tackta} {personform(utfall.tackta)} täckta - i exakt en av grupperna.
+          </p>
+
+          {utfall.utanfor.length === 0 ? (
+            <p className="text-small text-text-secondary">
+              Kontrollerat: ingen står utanför - alla som {publikOrd(uppsattning.modalitet)} hör
+              hemma i någon av grupperna.
+            </p>
+          ) : (
+            <MessageBox
+              intent="warning"
+              title={`${utfall.utanfor.length} ${personform(utfall.utanfor.length)} i ingen grupp`}
+            >
+              <p>
+                De {publikOrd(uppsattning.modalitet)} men är inte med i någon av grupperna - de nås
+                inte om du skickar till hela uppsättningen.
+              </p>
+              <button
+                type="button"
+                aria-expanded={visaUtanfor}
+                aria-controls={utanforPanelId}
+                onClick={() => setVisaUtanfor((v) => !v)}
+                className="flex items-center gap-1.5 self-start font-medium text-small underline hover:no-underline"
+              >
+                {visaUtanfor
+                  ? 'Dölj vilka'
+                  : `Visa vilka (${Math.min(utfall.utanfor.length, CHUNK)})`}
+                <ChevronDown
+                  aria-hidden="true"
+                  size={16}
+                  className={`shrink-0 motion-safe:transition-transform ${
+                    visaUtanfor ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              <ul id={utanforPanelId} hidden={!visaUtanfor} className="flex flex-col gap-0.5 pt-1">
+                {utfall.utanfor.slice(0, CHUNK).map((m) => (
+                  <li key={m.id} className="text-small">
+                    {visatNamn(m)}
+                    <span className="text-text-muted"> · {m.email ?? 'ingen e-postadress'}</span>
+                  </li>
+                ))}
+                {utfall.utanfor.length > CHUNK && (
+                  <li className="text-small text-text-muted">
+                    + {utfall.utanfor.length - CHUNK} till
+                  </li>
+                )}
+              </ul>
+            </MessageBox>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ================================================================== *
  * LISTAN — HEM
  * ================================================================== */
@@ -673,13 +1415,20 @@ function SegmentKort({
     <>
       {/* `pr-16` är borta med pillen — den fanns bara för att hålla undan
           rubriken från den absolut placerade etiketten uppe till höger. */}
+      {/* LÅST KORTHÖJD — GLOBAL REGEL (Marcus 2026-08-10): varje kort
+          reserverar höjden för sitt MAXINNEHÅLL (2 rader namn + 2 rader
+          beskrivning + antal-radens min-h-8) och får ALDRIG växa eller
+          krympa med innehållet. `min-h-[2lh]` reserverar två radhöjder i
+          elementets egen typografi — samma grepp som personlistans låsta
+          radhöjd (S103) och antal-radens min-h-8 nedan: geometrin ligger
+          fast när data landar, när skalprovet växlas, när namnet är kort. */}
       {markeraLage ? (
-        <span className="line-clamp-2 font-semibold text-body">{entitet.namn}</span>
+        <span className="line-clamp-2 min-h-[2lh] font-semibold text-body">{entitet.namn}</span>
       ) : (
         <button
           type="button"
           onClick={onOppna}
-          className="line-clamp-2 text-left font-semibold text-body after:absolute after:inset-0"
+          className="line-clamp-2 min-h-[2lh] text-left font-semibold text-body after:absolute after:inset-0"
         >
           {entitet.namn}
         </button>
@@ -688,7 +1437,7 @@ function SegmentKort({
           den bar ingen information för skärmläsaren - och för seende sa den
           bara "detta är ett filter" om en rad som redan börjar "Deltagit i".
           Med ikonen borta behövs varken flex-raden eller `mt-1`-justeringen. */}
-      <span className="line-clamp-2 text-small text-text-secondary">{definition}</span>
+      <span className="line-clamp-2 min-h-[2lh] text-small text-text-secondary">{definition}</span>
       {/* ANTALET KOMMER AV SIG SJÄLVT — Räkna-knappen är RIVEN (Marcus
           2026-08-10). `b` mätte att en löpande räknad publik kostar ETT
           `compute-segment`-anrop per UNIK regel (frågan nycklas på regelns
@@ -715,9 +1464,7 @@ function SegmentKort({
           ) : antal === undefined ? null : (
             <>
               <Users aria-hidden="true" size={14} className="shrink-0" />
-              {antal === 0
-                ? '0 personer - inga med genomförd närvaro ännu'
-                : `${antal} ${personform(antal)}`}
+              {antal === 0 ? '0 personer ännu' : `${antal} ${personform(antal)}`}
             </>
           )}
         </span>
@@ -765,17 +1512,22 @@ function SegmentKortMedAntal(props: {
   onOppna: () => void;
   onVaxla: (vald: boolean) => void;
 }) {
-  const rule = regelFor(props.entitet, props.parInfo);
-  // ALLTID PÅ (`true`), aldrig bakom ett klick. Kostnaden bärs av frågans
-  // nyckel, inte av en spärr: `medlemsFraga` nycklar på REGELNS SIGNATUR med
-  // 5 min `staleTime`, så N kort med samma regel delar ETT anrop och ett
-  // återbesök kostar noll. Tom regel besvaras lokalt utan nätanrop.
-  const { data, isFetching } = useMedlemmar(rule, true);
+  // ALLTID PÅ, aldrig bakom ett klick. Kostnaden bärs av frågans nyckel,
+  // inte av en spärr: varje fråga i planen nycklar på SIN signatur med 5 min
+  // `staleTime`, så N kort som delar regel — eller bara delar ett VILLKOR,
+  // sedan AND-primitiven — delar walk, och ett återbesök kostar noll. Tom
+  // regel besvaras lokalt utan nätanrop.
+  const { data, isFetching } = useEntitetsMedlemmar(props.entitet, props.parInfo);
   return (
     <SegmentKort
       entitet={props.entitet}
       definition={definitionFor(props.entitet, props.parInfo)}
-      antal={visatAntal(data?.count, props.skalprov, props.entitet.id)}
+      antal={visatAntal(
+        data?.count,
+        props.skalprov,
+        props.entitet.id,
+        props.entitet.id in FACIT_KARTA,
+      )}
       raknar={isFetching && data === undefined}
       markeraLage={props.markeraLage}
       vald={props.vald}
@@ -808,12 +1560,15 @@ function SegmentLista({
   valda,
   onOppna,
   onNytt,
+  onDelaUpp,
   onOppnaMarkering,
   onStangMarkering,
   onVaxla,
   onMarkeraAlla,
   onRensa,
   onSkicka,
+  tackningsLage,
+  onTackning,
 }: {
   poster: SegmentEntitet[];
   parInfo: ParInfo[];
@@ -825,15 +1580,20 @@ function SegmentLista({
   valda: ReadonlySet<string>;
   onOppna: (id: string) => void;
   onNytt: () => void;
+  onDelaUpp: () => void;
   onOppnaMarkering: () => void;
   onStangMarkering: () => void;
   onVaxla: (id: string, vald: boolean) => void;
   onMarkeraAlla: () => void;
   onRensa: () => void;
   onSkicka: () => void;
+  /** Täckningsvyns läge (S104 Del 4, task-181) — se docblocket ovan `TackningsPanel`. */
+  tackningsLage: boolean;
+  onTackning: () => void;
 }) {
   const rubrikRef = useRef<HTMLHeadingElement>(null);
   useVyFokus(rubrikRef, !laddar);
+  const uppsattningar = useMemo(() => harledUppsattningar(poster), [poster]);
 
   const markerbara = poster.length;
   const allaValda = markerbara > 0 && valda.size === markerbara;
@@ -861,10 +1621,13 @@ function SegmentLista({
         <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
           Segment
         </h1>
+        {/* Marcus text verbatim (2026-08-10, resume-varvet). Den tidigare
+            tredje meningen ("Flera grupper i samma utskick: markera dem")
+            ströks i och med bytet — markera-funktionen får bära sig själv. */}
         <p className="text-small text-text-muted">
-          Grupper av personer du kan skicka riktade mail till. Spara en grupp och återanvänd den -
-          antalet räknas om varje gång, så det stämmer även när fler har gått en kurs. Flera grupper
-          i samma utskick: markera dem.
+          Grupper av personer som du kan skicka riktade mail till. Spara en grupp och återanvänd den
+          - antalet räknas upp automatiskt, så antalet stämmer även när fler personer tillfaller
+          segmentet.
         </p>
       </header>
 
@@ -881,6 +1644,14 @@ function SegmentLista({
             VIDARE till utskicksvyn — där publiken står som huvudinnehåll,
             precis som på detaljsidan. Kontrollen hoppas inte över; den utförs
             på den enda yta där en union av segment finns. */}
+        {/* RADEN BÄR TRE KNAPPAR, ALDRIG FYRA (Marcus 2026-08-10, två varv).
+            Första formen la Täckning i raden — fyra kapslar ryms inte i
+            innehållsspalten, och varken trängsel (varv 1: Markera "skitnära")
+            eller radbrytning (varv 2: sicksack med en svävande högerzon) går
+            att zonera bort. Skapande-paret bor vänster, Markera behåller sitt
+            etablerade högerankare (`ml-auto`), och Täckning bor på en EGEN
+            lågmäld rad direkt ovanför panelerna den styr — växeln sitter hos
+            det den växlar, inte bland skapandeknapparna. */}
         <div className="flex min-h-10 flex-wrap items-center gap-2 print:hidden">
           {markeraLage ? (
             <>
@@ -909,10 +1680,23 @@ function SegmentLista({
               </span>
             </>
           ) : (
-            <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
-              <ListPlus aria-hidden="true" size={18} className="shrink-0" />
-              Nytt segment
-            </button>
+            <>
+              <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
+                <ListPlus aria-hidden="true" size={18} className="shrink-0" />
+                Nytt segment
+              </button>
+              {/* PARTITION-GENERATORNS INGÅNG (S104 Del 3 konvergens, beslut
+                  "partition som generator"). Egen kapsel bredvid "Nytt
+                  segment" — samma nivå, för handlingen ÄR i samma familj:
+                  båda producerar segment, den ena en åt gången, den andra N
+                  på en gång. Göms i markera-läget av samma skäl som
+                  "Nytt segment": mitt i ett urval är att skapa nytt inte det
+                  man håller på med. */}
+              <button type="button" onClick={onDelaUpp} className={KAPSEL_KLASS}>
+                <Group aria-hidden="true" size={18} className="shrink-0" />
+                Dela upp i grupper
+              </button>
+            </>
           )}
           {markerbara > 0 && (
             <button
@@ -925,6 +1709,58 @@ function SegmentLista({
             </button>
           )}
         </div>
+
+        {/* TÄCKNINGSVYNS INGÅNG (S104 Del 4, task-181, beslut 1: "ett LÄGE
+            på listan") — en EGEN lågmäld rad, högerställd, direkt ovanför
+            panelerna den slår på och av. Textknapp som byter etikett
+            (Markera-mönstret), lättare vikt än kapslarna: kontrollen är ett
+            gransknings-läge, inte en daglig handling, och ska inte
+            konkurrera med skapandeknapparna om radplats eller uppmärksamhet. */}
+        {!markeraLage && markerbara > 0 && (
+          <div className="-mt-2 flex justify-end print:hidden">
+            <button
+              type="button"
+              onClick={onTackning}
+              className={`-mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 font-medium text-small motion-safe:transition-colors ${
+                tackningsLage ? 'bg-bg-emphasized' : 'text-text-secondary hover:bg-bg-emphasized'
+              }`}
+            >
+              <Layers aria-hidden="true" size={16} className="shrink-0" />
+              {tackningsLage ? 'Dölj täckning' : 'Visa täckning'}
+            </button>
+          </div>
+        )}
+
+        {/* TÄCKNINGSPANELERNA (S104 Del 4, task-181). Läggs ÖVER listan -
+            mellan handlingsraden och korten, listan döljs aldrig. Göms i
+            markera-läget: de två lägena löser olika ärenden och har inget
+            gemensamt att visa samtidigt (samma princip som "Nytt
+            segment"/"Dela upp i grupper" göms där). En uppsättning per
+            panel (flera-uppsättningar-beslutet i docblocket ovan
+            `TackningsPanel`) - de fjorton finns från mount, så listan är
+            aldrig tom när läget slås på.
+
+            `!laddar` GRINDAR ÄVEN HÄR (till skillnad från handlingsraden
+            ovan, som redan visas under laddning): innan `events` svarat är
+            `parInfo` tom, och en panel som räknar mot en tom taxonomi hade
+            kunnat visa "0 utanför" en bråkdel av en sekund innan det rätta
+            talet landar. Ett kort missvisande nollresultat är precis den
+            tysta felklass täckningsvyn finns för att avslöja - den ska
+            därför aldrig själv producera en. */}
+        {tackningsLage && !markeraLage && !laddar && (
+          <div className="flex flex-col gap-4">
+            {uppsattningar.length === 0 ? (
+              <p className="text-small text-text-muted">
+                Ingen genererad grupp-uppsättning att visa täckning för än. Täckning gäller de
+                fjorton förskapade grupperna eller en körning av "Dela upp i grupper".
+              </p>
+            ) : (
+              uppsattningar.map((u) => (
+                <TackningsPanel key={u.nyckel} uppsattning={u} parInfo={parInfo} />
+              ))
+            )}
+          </div>
+        )}
 
         {fel && (
           <MessageBox intent="error" title="Kunde inte hämta sparade segment">
@@ -991,7 +1827,10 @@ function SegmentLista({
 
             <PrototypNot>
               Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är
-              påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad.
+              påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad. De
+              fjorton förskapade grupperna bär dessutom sitt eget facit - se skalprovs-växeln för
+              vad det betyder. Täckningsknappen visar om gruppernas uppsättning täcker alla som
+              borde vara med - alltid på riktiga tal, oavsett skalprovets läge.
             </PrototypNot>
           </>
         )}
@@ -1038,8 +1877,15 @@ const SKALPROV_MAL = 85;
  *
  * Spannet 8-137 är valt för att träffa både korta listor och sådana som kräver
  * chunkning (`CHUNK` = 25), så att listans former faktiskt prövas.
+ *
+ * DE FJORTON FÖRSKAPADE GRUPPERNA SLÅR UPP `FACIT_KARTA` FÖRST (S104 Del 3
+ * konvergens). Deras mål är inte påhittat — det är juli 2026 års uppmätta
+ * antal ur Skool-underlaget (1–188). Alla andra id:n faller till hash-vägen
+ * oförändrad.
  */
 function skalprovMal(id: string): number {
+  const facit = FACIT_KARTA[id];
+  if (facit !== undefined) return facit;
   let h = 0;
   for (let i = 0; i < id.length; i += 1) h = (h * 31 + id.charCodeAt(i)) % 100_000;
   return 8 + (h % 130);
@@ -1110,27 +1956,42 @@ function byggSkalprov(befintliga: number, mal: number): SegmentMember[] {
 }
 
 /**
- * FYLLER UT, SKAPAR ALDRIG. En tom publik förblir tom även med skalprovet på —
- * annars hade instrumentet svarat på en fråga ingen ställt ("hur ser 85 av
- * ingenting ut?") och samtidigt dolt fälla #34:s tomläge, som är en av de
- * former som faktiskt ska bedömas.
+ * FYLLER UT, SKAPAR ALDRIG — för alla ICKE-förskapade segment. En tom publik
+ * förblir tom även med skalprovet på, annars hade instrumentet svarat på en
+ * fråga ingen ställt ("hur ser 85 av ingenting ut?") och samtidigt dolt
+ * fälla #34:s tomläge, som är en av de former som faktiskt ska bedömas.
+ *
+ * INVARIANT-JUSTERING FÖR DE FJORTON (S104 Del 3 konvergens, bokförd med
+ * avsikt): `tillatFranTomt` släpper igenom fyllning ur en tom VERKLIG publik.
+ * Anropas bara med `true` för en förskapad grupp (`id in FACIT_KARTA`) —
+ * talen är dokumenterade juli 2026-tal ur bilagan, inte påhitt, och staging
+ * kan omöjligt befolka och-kombinationerna (grupp 4–11, 13, 14). Alla ANDRA
+ * segment behåller invarianten oförändrad.
  */
 function fyllUt(
   medlemmar: SegmentMember[],
   skalprov: boolean,
   mal: number = SKALPROV_MAL,
+  tillatFranTomt = false,
 ): SegmentMember[] {
-  if (!skalprov || medlemmar.length === 0) return medlemmar;
+  if (!skalprov) return medlemmar;
+  if (medlemmar.length === 0 && !tillatFranTomt) return medlemmar;
   return [...medlemmar, ...byggSkalprov(medlemmar.length, mal)];
 }
 
 /**
- * KORTETS TAL under skalprovet. Samma invariant som `fyllUt`: en tom publik
- * förblir tom (fälla #34:s tomläge ska gå att bedöma även med riggen på), och
- * ett verkligt antal som redan passerar målet sänks aldrig.
+ * KORTETS TAL under skalprovet. Samma invariant som `fyllUt`, inklusive
+ * samma `tillatFranTomt`-undantag för de fjorton: grupp 13/14 ska visa 1 —
+ * `Math.max(0, skalprovMal(id))` med `mal = 1` ger exakt det, aldrig mer.
  */
-function visatAntal(antal: number | undefined, skalprov: boolean, id: string): number | undefined {
-  if (antal === undefined || !skalprov || antal === 0) return antal;
+function visatAntal(
+  antal: number | undefined,
+  skalprov: boolean,
+  id: string,
+  tillatFranTomt = false,
+): number | undefined {
+  if (antal === undefined || !skalprov) return antal;
+  if (antal === 0 && !tillatFranTomt) return antal;
   return Math.max(antal, skalprovMal(id));
 }
 
@@ -1149,6 +2010,15 @@ function SkalprovsVaxel({ aktivt, onVaxla }: { aktivt: boolean; onVaxla: (v: boo
       <p className="text-caption text-text-muted">
         <strong className="font-medium">Prototyp-rigg.</strong> Staging har för lite avstämd närvaro
         för att visa hur publiken beter sig i den storlek den är byggd för.
+      </p>
+      {/* INSTRUMENTET DEKLARERAR SIG SJÄLVT (S104 Del 3 konvergens): de
+          fjorton förskapade grupperna fylls annorlunda än alla andra segment,
+          och den skillnaden ska synas här — inte upptäckas som en avvikelse. */}
+      <p className="text-caption text-text-muted">
+        De fjorton förskapade grupperna är undantaget: deras mål är det uppmätta antalet från juli
+        2026 (1 till 188), inte ett påhittat tal - och de får fyllas även från en tom verklig
+        publik, eftersom och-kombinationer inte går att befolka i staging ännu. Övriga segment fylls
+        aldrig ur en tom publik.
       </p>
       {/* PÅ/AV MÅSTE VARA OMISSKÄNNLIGT. Första formen lånade `PrototypRigg`s
           dämpade markering (`bg-bg-emphasized`) — men den fungerar bara i ett
@@ -1342,10 +2212,10 @@ function PublikSektion({
         // FÄLLA #34: noll träffar är NEUTRALT, aldrig ett fel. Golvet
         // (Närvaropoäng=1) lättas medvetet inte (ADR-064 beslut 4a).
         <div className="flex flex-col items-center gap-1 px-4 py-10 text-center">
-          <p className="font-medium text-body">0 personer matchar</p>
+          <p className="font-medium text-body">0 personer ännu</p>
           <p className="max-w-prose text-small text-text-muted">
-            Inga med genomförd närvaro ännu. Närvaron för de kurser regeln träffar är inte avstämd i
-            basen - publiken fylls av sig själv när den blir det.
+            Närvaron för de utbildningar regeln träffar är inte avstämd i basen - publiken fylls av
+            sig själv när den blir det.
           </p>
         </div>
       ) : (
@@ -1445,8 +2315,8 @@ function SegmentDetalj({
   onAndra: () => void;
 }) {
   const rubrikRef = useRef<HTMLHeadingElement>(null);
-  const rule = regelFor(entitet, parInfo);
-  const { data, isPending, isError, error } = useMedlemmar(rule, true);
+  const rule = bruttoRegelFor(entitet, parInfo);
+  const { data, isPending, isError, error } = useEntitetsMedlemmar(entitet, parInfo);
   useVyFokus(rubrikRef, !isPending);
 
   // Skalprovet fyller UT den verkliga publiken. Headerns tal räknar den
@@ -1455,7 +2325,12 @@ function SegmentDetalj({
   // SAMMA MÅL SOM KORTET I LISTAN (`skalprovMal(entitet.id)`) — öppnar man ett
   // kort som säger 47 ska publiken vara 47, inte 85. Riggen får vara påhittad;
   // den får inte vara osammanhängande.
-  const medlemmar = fyllUt(data?.members ?? [], skalprov, skalprovMal(entitet.id));
+  const medlemmar = fyllUt(
+    data?.members ?? [],
+    skalprov,
+    skalprovMal(entitet.id),
+    entitet.id in FACIT_KARTA,
+  );
   const antalFar = medlemmar.filter(farMailet).length;
   const undertryckta = medlemmar.length - antalFar;
   const tomRegel = rule.include.length === 0;
@@ -1481,7 +2356,7 @@ function SegmentDetalj({
               : isError
                 ? 'Antalet kunde inte räknas'
                 : medlemmar.length === 0
-                  ? '0 personer matchar - inga med genomförd närvaro ännu'
+                  ? '0 personer ännu'
                   : `${medlemmar.length} ${personform(medlemmar.length)} · ${antalFar} får mailet · ${undertryckta} undertrycks`}
         </p>
       </header>
@@ -1621,14 +2496,14 @@ function vaxla<T>(lista: T[], varde: T): T[] {
  */
 function VillkorsKort({
   villkor,
-  index,
+  etikett,
   parInfo,
   formatIBasen,
   onAndra,
   onTaBort,
 }: {
   villkor: Villkor;
-  index: number;
+  etikett: string;
   parInfo: ParInfo[];
   formatIBasen: string[];
   onAndra: (v: Villkor) => void;
@@ -1648,13 +2523,13 @@ function VillkorsKort({
     villkor.familjer.length === 0 || villkor.familjer.some((f) => FAMILJER_MED_NIVA.includes(f));
 
   return (
-    <li className="flex flex-col gap-4 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
+    <div className="flex flex-col gap-4 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-medium text-small text-text-secondary">Villkor {index + 1}</span>
+        <span className="font-medium text-small text-text-secondary">{etikett}</span>
         <Button
           intent="ghost"
           size="sm"
-          aria-label={`Ta bort villkor ${index + 1}`}
+          aria-label={`Ta bort ${etikett.toLowerCase()}`}
           onPress={onTaBort}
         >
           <X aria-hidden="true" size={16} className="shrink-0" />
@@ -1795,7 +2670,7 @@ function VillkorsKort({
                   .join(', ')}`}
         </p>
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -1846,15 +2721,16 @@ function VillkorsLista({
       {villkor.length > 0 && (
         <ul className="flex flex-col gap-3 pt-1">
           {villkor.map((v, i) => (
-            <VillkorsKort
-              key={v.id}
-              villkor={v}
-              index={i}
-              parInfo={parInfo}
-              formatIBasen={formatIBasen}
-              onAndra={(ny) => onAndra(v.id, ny)}
-              onTaBort={() => onTaBort(v.id)}
-            />
+            <li key={v.id} className="flex flex-col">
+              <VillkorsKort
+                villkor={v}
+                etikett={`Villkor ${i + 1}`}
+                parInfo={parInfo}
+                formatIBasen={formatIBasen}
+                onAndra={(ny) => onAndra(v.id, ny)}
+                onTaBort={() => onTaBort(v.id)}
+              />
+            </li>
           ))}
         </ul>
       )}
@@ -1862,6 +2738,115 @@ function VillkorsLista({
         <button type="button" onClick={onLaggTill} className={KAPSEL_KLASS}>
           <Plus aria-hidden="true" size={18} className="shrink-0" />
           {villkor.length === 0 ? 'Lägg till villkor' : 'Lägg till ett villkor till'}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * MED-GRENEN SOM KONJUNKT-GRUPPER. En grupp med ETT villkor renderas exakt
+ * som förut — inget ramverk, ingen ny terminologi förrän någon aktivt bett
+ * om ett och-krav. Först vid TVÅ eller fler villkor får gruppen sin ram och
+ * sin egen rubrik, och "och"-bindningen står som text mellan korten —
+ * semantiken bärs av grupprubriken och klartext-meningen, aldrig av enbart
+ * layouten.
+ *
+ * Två tillägg-knappar med olika verb, med avsikt: "och-krav" bor PER GRUPP
+ * (smalnar av gruppen), "ny grupp" bor på sektionen (vidgar regeln). Att ge
+ * dem samma knapp hade återinfört exakt den tvetydighet AND-luckan bestod av.
+ */
+function KonjunktLista({
+  konjunkter,
+  parInfo,
+  formatIBasen,
+  onAndraVillkor,
+  onLaggTillVillkor,
+  onLaggTillGrupp,
+  onTaBortVillkor,
+}: {
+  konjunkter: Konjunkt[];
+  parInfo: ParInfo[];
+  formatIBasen: string[];
+  onAndraVillkor: (konjunktId: string, villkorId: string, v: Villkor) => void;
+  onLaggTillVillkor: (konjunktId: string) => void;
+  onLaggTillGrupp: () => void;
+  onTaBortVillkor: (konjunktId: string, villkorId: string) => void;
+}) {
+  const id = useId();
+  const flera = konjunkter.length > 1;
+  const harFlerledad = konjunkter.some((k) => k.villkor.length > 1);
+  return (
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2 px-4">
+      <h2 id={id} className="font-semibold text-lg">
+        Med - dessa räknas in
+      </h2>
+      <p className="text-small text-text-muted">
+        {harFlerledad || flera
+          ? 'Den som uppfyller minst en av grupperna är med i segmentet. Inom en grupp måste alla villkor uppfyllas samtidigt.'
+          : 'Den som uppfyller minst ett av villkoren är med i segmentet.'}
+      </p>
+      {konjunkter.length > 0 && (
+        <ul className="flex flex-col gap-3 pt-1">
+          {konjunkter.map((k, ki) => {
+            const gruppEtikett = (vi: number) =>
+              flera || harFlerledad ? `Grupp ${ki + 1} · villkor ${vi + 1}` : `Villkor ${vi + 1}`;
+            const kort = (v: Villkor, vi: number) => (
+              <VillkorsKort
+                villkor={v}
+                etikett={gruppEtikett(vi)}
+                parInfo={parInfo}
+                formatIBasen={formatIBasen}
+                onAndra={(ny) => onAndraVillkor(k.id, v.id, ny)}
+                onTaBort={() => onTaBortVillkor(k.id, v.id)}
+              />
+            );
+            return (
+              <li key={k.id} className="flex flex-col gap-3">
+                {ki > 0 && (
+                  <p className="text-center font-medium text-small text-text-secondary">eller</p>
+                )}
+                {k.villkor.length === 1 ? (
+                  k.villkor[0] && kort(k.villkor[0], 0)
+                ) : (
+                  <div className="flex flex-col gap-3 rounded-2xl border border-border p-3">
+                    <p className="font-medium text-small text-text-secondary">
+                      Grupp {ki + 1} - alla villkor nedan måste uppfyllas samtidigt
+                    </p>
+                    {k.villkor.map((v, vi) => (
+                      <div key={v.id} className="flex flex-col gap-3">
+                        {vi > 0 && (
+                          <p
+                            aria-hidden="true"
+                            className="text-center font-medium text-small text-text-secondary"
+                          >
+                            och
+                          </p>
+                        )}
+                        {kort(v, vi)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex">
+                  <button
+                    type="button"
+                    onClick={() => onLaggTillVillkor(k.id)}
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-small text-text-secondary hover:bg-bg-emphasized motion-safe:transition-colors"
+                  >
+                    <Plus aria-hidden="true" size={16} className="shrink-0" />
+                    Och-krav: kräv även deltagande i mer
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div className="flex pt-1">
+        <button type="button" onClick={onLaggTillGrupp} className={KAPSEL_KLASS}>
+          <Plus aria-hidden="true" size={18} className="shrink-0" />
+          {konjunkter.length === 0 ? 'Lägg till villkor' : 'Eller: lägg till en alternativ grupp'}
         </button>
       </div>
     </section>
@@ -1890,7 +2875,7 @@ function RegelVerkstad({
 
   const [namn, setNamn] = useState(entitet.namn);
   const [pred, setPred] = useState<Predikat>(
-    () => entitet.predikat ?? { med: [nyttVillkor()], utan: [] },
+    () => entitet.predikat ?? { med: [nyKonjunkt()], utan: [] },
   );
   const [sparNot, setSparNot] = useState(false);
 
@@ -1900,8 +2885,11 @@ function RegelVerkstad({
   );
 
   const rule = expandera(pred, parInfo);
-  const ofullstandiga = [...pred.med, ...pred.utan].filter((v) => !villkorGiltigt(v)).length;
+  const ofullstandiga = [...pred.med.flatMap((k) => k.villkor), ...pred.utan].filter(
+    (v) => !villkorGiltigt(v),
+  ).length;
   const harRegel = rule.include.length > 0;
+  const harFlerledadGrupp = pred.med.some((k) => konjunktGiltig(k) && k.villkor.length > 1);
 
   /* RÄKNINGEN FÖLJER REGELN — ingen begäran, ingen knapp (Marcus 2026-08-10).
      `enabled` är `harRegel`, inte en sparad signatur.
@@ -1915,15 +2903,42 @@ function RegelVerkstad({
      Historiken är värd att minnas: den första formen bar en `boolean` här och
      hamrade en full-walk per chip-tryck. Fixen då blev en klick-spärr. Rätt
      fix var cache-nyckeln — spärren var en behandling av symptomet. */
-  const { data, isFetching, isError, error } = useMedlemmar(rule, harRegel);
+  const { data, isFetching, isError, error } = usePredikatMedlemmar(pred, null, parInfo, harRegel);
   const antal = data?.count;
 
-  const andra = (gren: 'med' | 'utan', id: string, ny: Villkor) =>
-    setPred((p) => ({ ...p, [gren]: p[gren].map((v) => (v.id === id ? ny : v)) }));
-  const laggTill = (gren: 'med' | 'utan') =>
-    setPred((p) => ({ ...p, [gren]: [...p[gren], nyttVillkor()] }));
-  const taBort = (gren: 'med' | 'utan', id: string) =>
-    setPred((p) => ({ ...p, [gren]: p[gren].filter((v) => v.id !== id) }));
+  /* Med-grenen är konjunkt-grupper; utan-grenen är platt. En grupp vars sista
+     villkor tas bort försvinner — en tom grupp är inte "alla", den är inget. */
+  const andraMed = (konjunktId: string, villkorId: string, ny: Villkor) =>
+    setPred((p) => ({
+      ...p,
+      med: p.med.map((k) =>
+        k.id === konjunktId
+          ? { ...k, villkor: k.villkor.map((v) => (v.id === villkorId ? ny : v)) }
+          : k,
+      ),
+    }));
+  const laggTillOchKrav = (konjunktId: string) =>
+    setPred((p) => ({
+      ...p,
+      med: p.med.map((k) =>
+        k.id === konjunktId ? { ...k, villkor: [...k.villkor, nyttVillkor()] } : k,
+      ),
+    }));
+  const laggTillGrupp = () => setPred((p) => ({ ...p, med: [...p.med, nyKonjunkt()] }));
+  const taBortMedVillkor = (konjunktId: string, villkorId: string) =>
+    setPred((p) => ({
+      ...p,
+      med: p.med
+        .map((k) =>
+          k.id === konjunktId ? { ...k, villkor: k.villkor.filter((v) => v.id !== villkorId) } : k,
+        )
+        .filter((k) => k.villkor.length > 0),
+    }));
+  const andraUtan = (id: string, ny: Villkor) =>
+    setPred((p) => ({ ...p, utan: p.utan.map((v) => (v.id === id ? ny : v)) }));
+  const laggTillUtan = () => setPred((p) => ({ ...p, utan: [...p.utan, nyttVillkor()] }));
+  const taBortUtan = (id: string) =>
+    setPred((p) => ({ ...p, utan: p.utan.filter((v) => v.id !== id) }));
 
   return (
     <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmentet">
@@ -1960,15 +2975,14 @@ function RegelVerkstad({
         />
       </div>
 
-      <VillkorsLista
-        rubrik="Med - dessa räknas in"
-        hjalptext="Den som uppfyller minst ett av villkoren är med i segmentet."
-        villkor={pred.med}
+      <KonjunktLista
+        konjunkter={pred.med}
         parInfo={parInfo}
         formatIBasen={formatIBasen}
-        onAndra={(id, v) => andra('med', id, v)}
-        onLaggTill={() => laggTill('med')}
-        onTaBort={(id) => taBort('med', id)}
+        onAndraVillkor={andraMed}
+        onLaggTillVillkor={laggTillOchKrav}
+        onLaggTillGrupp={laggTillGrupp}
+        onTaBortVillkor={taBortMedVillkor}
       />
 
       <VillkorsLista
@@ -1977,9 +2991,9 @@ function RegelVerkstad({
         villkor={pred.utan}
         parInfo={parInfo}
         formatIBasen={formatIBasen}
-        onAndra={(id, v) => andra('utan', id, v)}
-        onLaggTill={() => laggTill('utan')}
-        onTaBort={(id) => taBort('utan', id)}
+        onAndra={andraUtan}
+        onLaggTill={laggTillUtan}
+        onTaBort={taBortUtan}
       />
 
       {/* SAMMANFATTNINGEN: definitionen och resultatet i ett andetag (`a`s
@@ -2023,8 +3037,7 @@ function RegelVerkstad({
               ) : antal === 0 ? (
                 // Fälla #34: neutralt, aldrig som fel.
                 <p className="text-lg">
-                  <strong className="font-semibold text-3xl tabular-nums">0</strong> personer
-                  matchar - inga med genomförd närvaro ännu.
+                  <strong className="font-semibold text-3xl tabular-nums">0</strong> personer ännu.
                 </p>
               ) : (
                 <p className="text-lg">
@@ -2050,7 +3063,11 @@ function RegelVerkstad({
                 mekaniken, inte en varning om ytan. */}
             <p className="text-caption text-text-muted">
               Regeln slås upp mot {rule.include.length} av {parInfo.length} kurser i webbläsaren och
-              skickas som en kurslista till servern. Skarpt måste servern äga uppslaget - annars kan
+              skickas som en kurslista till servern.
+              {harFlerledadGrupp &&
+                ' Och-grupperna räknas som snitt av flera frågor i webbläsaren.'}{' '}
+              Skarpt måste servern äga{' '}
+              {harFlerledadGrupp ? 'både uppslaget och snittet' : 'uppslaget'} - annars kan
               mottagarkontrollen inte lita på regeln.
             </p>
           </div>
@@ -2094,6 +3111,285 @@ function RegelVerkstad({
           </MessageBox>
         )}
         <PrototypNot />
+      </div>
+    </SidRam>
+  );
+}
+
+/* ================================================================== *
+ * "DELA UPP I GRUPPER" — partition-generatorns egna yta
+ * ================================================================== */
+
+/**
+ * Ett tal per icke-tom delmängd av de valda kurserna. Räknat lokalt ur K
+ * medlemssvar (ett per vald kurs-atom) via en bitmask per person: `bit i` =
+ * "gick kurs i". Två personer med SAMMA bitmask hör till SAMMA exakta grupp,
+ * så en grupps storlek är helt enkelt antalet personer med den gruppens
+ * bitmask — `K` frågor räcker för `2^K - 1` kombinationer, ingen fråga per
+ * kombination. Samma exakt-kombination-semantik som `byggGrupp`, bara räknad
+ * i stället för byggd till ett predikat.
+ */
+function raknaKombinationer(
+  atomer: KursAtom[],
+  svar: readonly (Medlemssvar | undefined)[],
+): { mask: number; namn: string; antal: number }[] {
+  const bitmaskPerPerson = new Map<string, number>();
+  atomer.forEach((_, i) => {
+    for (const m of svar[i]?.members ?? []) {
+      bitmaskPerPerson.set(m.id, (bitmaskPerPerson.get(m.id) ?? 0) | (1 << i));
+    }
+  });
+  const antalPerMask = new Map<number, number>();
+  for (const mask of bitmaskPerPerson.values()) {
+    antalPerMask.set(mask, (antalPerMask.get(mask) ?? 0) + 1);
+  }
+  const rader: { mask: number; namn: string; antal: number }[] = [];
+  for (let mask = 1; mask < 1 << atomer.length; mask += 1) {
+    const namn = atomer
+      .filter((_, i) => (mask & (1 << i)) !== 0)
+      .map((a) => a.etikett)
+      .join(' + ');
+    rader.push({ mask, namn, antal: antalPerMask.get(mask) ?? 0 });
+  }
+  // Största gruppen (flest kurser i kombinationen) sist, ren för att den mest
+  // sammansatta - och sannolikt minsta - gruppen inte ska konkurrera om
+  // uppmärksamheten med de enkla korten längst upp.
+  return rader.sort(
+    (a, b) => popcount(a.mask) - popcount(b.mask) || a.namn.localeCompare(b.namn, 'sv'),
+  );
+}
+
+function popcount(mask: number): number {
+  let n = 0;
+  let m = mask;
+  while (m > 0) {
+    n += m & 1;
+    m >>= 1;
+  }
+  return n;
+}
+
+/**
+ * PARTITION-GENERATORN SOM EGEN YTA (S104 Del 3, beslut "partition som
+ * generator"). Samma verkstads-princip som `RegelVerkstad`: den kostar klick
+ * och tar plats, men bor inte på samma skärm som listan.
+ *
+ * ORDNINGEN ÄR AVSIKTLIG: modaliteten väljs FÖRST, kurserna härleds sedan ur
+ * den (`harledKursAtomer`) — så en atom-chip betyder alltid "den här kursen,
+ * räknad som den modalitet du redan valt", aldrig en tyst gissning.
+ */
+function DelaUppIGrupper({
+  parInfo,
+  onTillbaka,
+  onSkapa,
+}: {
+  parInfo: ParInfo[];
+  onTillbaka: () => void;
+  onSkapa: (entiteter: SegmentEntitet[]) => void;
+}) {
+  const rubrikRef = useRef<HTMLHeadingElement>(null);
+  useVyFokus(rubrikRef, true);
+  const dataSource = useDataSource();
+  const forhandsvisningRubrikId = useId();
+
+  const [modalitet, setModalitet] = useState<ModalitetsVal | null>(null);
+  const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
+
+  const atomer = useMemo(
+    () => (modalitet === null ? [] : harledKursAtomer(parInfo, modalitet)),
+    [parInfo, modalitet],
+  );
+  // En atom som försvinner (modaliteten byttes) kan inte förbli vald - annars
+  // hade en osynlig kurs kunnat räknas in i förhandsvisningen utan att synas
+  // i chip-raden.
+  useEffect(() => {
+    setValda((s) => {
+      const kvar = new Set([...s].filter((k) => atomer.some((a) => a.nyckel === k)));
+      return kvar.size === s.size ? s : kvar;
+    });
+  }, [atomer]);
+
+  const valdaAtomer = useMemo(() => atomer.filter((a) => valda.has(a.nyckel)), [atomer, valda]);
+  const visaForhandsvisning = modalitet !== null && valdaAtomer.length >= 2;
+
+  // K FRÅGOR, EN PER VALD ATOM — samma cache-fabrik (`medlemsFraga`) och
+  // därmed samma signatur-cache som resten av varianten: ett villkor som
+  // redan ställts av ett sparat segment eller en annan vy kostar noll här.
+  // Regellistan är MINNAD (`usePredikatMedlemmar`s mönster) - annars räknar
+  // `nyttVillkor()`s globala id-räknare om sig på varenda oberoende render.
+  const regler = useMemo(
+    () =>
+      modalitet === null
+        ? []
+        : valdaAtomer.map((a) => villkorsRegel(villkorForAtom(a, modalitet), parInfo)),
+    [valdaAtomer, modalitet, parInfo],
+  );
+  const svar = useQueries({
+    queries: regler.map((r) => ({ ...medlemsFraga(dataSource, r), enabled: visaForhandsvisning })),
+  });
+  const allaSvarat = svar.every((s) => s.data !== undefined);
+  const nagotFel = svar.some((s) => s.isError);
+
+  // INGEN `useMemo` HÄR MED FLIT: `svar` (useQueries) är en ny array varje
+  // render, så en minnesfunktion hade antingen räknat om varje gång ändå
+  // (deps = `svar`) eller riskerat ett inaktuellt resultat (deps utan
+  // `svar`). Beräkningen är billig - bitmaskräkning över K korta
+  // medlemslistor, inte en walk - så priset för att alltid räkna om är noll.
+  const kombinationer =
+    visaForhandsvisning && allaSvarat
+      ? raknaKombinationer(
+          valdaAtomer,
+          svar.map((s) => s.data),
+        )
+      : [];
+  const befolkade = kombinationer.filter((k) => k.antal > 0);
+  const kanSkapa = visaForhandsvisning && allaSvarat && !nagotFel && befolkade.length > 0;
+
+  function skapa() {
+    if (!kanSkapa || modalitet === null) return;
+    const nu = Date.now();
+    const entiteter = befolkade.map((k) => {
+      const ivaldaIGrupp = valdaAtomer.filter((_, i) => (k.mask & (1 << i)) !== 0);
+      return byggGrupp(valdaAtomer, ivaldaIGrupp, modalitet, k.namn, `gen-${nu}-${k.mask}`);
+    });
+    onSkapa(entiteter);
+  }
+
+  return (
+    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+      <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
+        <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
+          Dela upp i grupper
+        </h1>
+        <p className="text-small text-text-muted">
+          Välj de kurser du vill dela upp mellan. Varje person hamnar i EXAKT en grupp - den som
+          motsvarar precis hens egen kombination av kurser, aldrig fler.
+        </p>
+      </header>
+
+      <div className="flex flex-col gap-6 px-4">
+        {/* SAMMA FORM + SÄKERHETSMOTIVERING SOM `VillkorsKort`. Ingen
+            röd/ogiltig-styling här: till skillnad från ett villkor mitt i
+            byggnad finns det inget FÖRE modaliteten att röra vid - så det
+            "orörda" läget varar hela tiden fram till första valet, och en röd
+            ram hade skällt på någon som ännu inte gjort något. */}
+        <div className="flex flex-col gap-1.5">
+          <RadioGroup
+            label="Räknas som"
+            orientation="horizontal"
+            value={modalitet}
+            onChange={(v) => setModalitet(v as ModalitetsVal)}
+          >
+            <Radio value="Utbildning">Utbildning</Radio>
+            <Radio value="Föreläsning">Föreläsning</Radio>
+            <Radio value="Båda">Båda</Radio>
+          </RadioGroup>
+          {modalitet === null && (
+            <p className="text-caption text-text-muted">
+              Det finns material som är direkt olämpligt att skicka till någon som bara gått en
+              föreläsning. Välj därför vad grupperna ska räknas som innan du väljer kurser.
+            </p>
+          )}
+        </div>
+
+        {modalitet !== null && (
+          <ChipRad etikett="Kurser">
+            {atomer.length === 0 ? (
+              <p className="text-small text-text-muted">Inga kurser i basen matchar det valet.</p>
+            ) : (
+              atomer.map((a) => (
+                <ValChip
+                  key={a.nyckel}
+                  vald={valda.has(a.nyckel)}
+                  onTryck={() =>
+                    setValda((s) => {
+                      const ny = new Set(s);
+                      if (ny.has(a.nyckel)) ny.delete(a.nyckel);
+                      else ny.add(a.nyckel);
+                      return ny;
+                    })
+                  }
+                >
+                  {a.etikett}
+                </ValChip>
+              ))
+            )}
+          </ChipRad>
+        )}
+
+        {modalitet !== null && valdaAtomer.length === 1 && (
+          <p className="text-small text-text-muted">
+            Välj minst två kurser för att dela upp - en ensam kurs är redan sin egen grupp.
+          </p>
+        )}
+
+        {visaForhandsvisning && (
+          <section aria-labelledby={forhandsvisningRubrikId} className="flex flex-col gap-3">
+            <h2 id={forhandsvisningRubrikId} className="font-semibold text-lg">
+              Förhandsvisning
+            </h2>
+            {nagotFel ? (
+              <MessageBox intent="error" title="Kunde inte räkna grupperna">
+                Försök igen, eller välj färre kurser.
+              </MessageBox>
+            ) : !allaSvarat ? (
+              <div role="status" aria-busy="true" className="flex flex-col gap-2">
+                <span className="sr-only">Räknar grupperna…</span>
+                {['a', 'b', 'c'].map((k) => (
+                  <Skeleton key={k} variant="text" className="w-2/3 text-body" />
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* TALET SOM ARIA-LIVE (kvalitetsribba 11): antalet befolkade
+                    kombinationer ändras varje gång en kurs väljs om, och det
+                    ska höras utan att man letar upp raden själv. */}
+                <p aria-live="polite" className="text-small text-text-muted">
+                  {befolkade.length} av {kombinationer.length}{' '}
+                  {kombinationer.length === 1 ? 'kombination har' : 'kombinationer har'} personer -{' '}
+                  {kombinationer.length - befolkade.length === 0
+                    ? 'ingen utelämnas'
+                    : `${kombinationer.length - befolkade.length} utelämnas`}
+                  .
+                </p>
+                <ul className="flex flex-col gap-2">
+                  {kombinationer.map((k) => (
+                    <li
+                      key={k.mask}
+                      className={`flex items-center justify-between gap-3 rounded-xl px-4 py-2 ${
+                        k.antal === 0 ? 'text-text-muted' : 'bg-bg-muted'
+                      }`}
+                    >
+                      <span className="font-medium text-body">{k.namn}</span>
+                      <span className="text-small tabular-nums">
+                        {k.antal === 0
+                          ? 'utelämnas (0 personer)'
+                          : `${k.antal} ${personform(k.antal)}`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-3 px-4 pb-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button intent="primary" isDisabled={!kanSkapa} onPress={skapa}>
+            Skapa {befolkade.length} segment
+          </Button>
+          {visaForhandsvisning && allaSvarat && !nagotFel && befolkade.length === 0 && (
+            <span className="text-small text-text-muted">
+              Ingen av kombinationerna har några personer än.
+            </span>
+          )}
+          <Button intent="secondary" onPress={onTillbaka}>
+            Avbryt
+          </Button>
+        </div>
+        <PrototypNot>Grupperna läggs till i listan. Inget sparas i basen.</PrototypNot>
       </div>
     </SidRam>
   );
@@ -2258,15 +3554,13 @@ function UtskicksVy({
   onTillbaka: () => void;
 }) {
   const rubrikRef = useRef<HTMLHeadingElement>(null);
-  const dataSource = useDataSource();
 
-  // EN fråga per valt segment, på SAMMA cache-nyckel (regelns signatur) som
-  // listan och detaljen använder → ett redan räknat segment kostar noll här.
-  // Speglar EF:ens `resolveSegmentMembers`: N regler, en union, dedup på person.
-  const svar = useQueries({
-    queries: entiteter.map((e) => medlemsFraga(dataSource, regelFor(e, parInfo))),
-  });
-  const isPending = svar.some((s) => s.isPending);
+  // Alla valda segments frågeplaner plattas till EN uppsättning unika frågor
+  // på SAMMA cache-nyckel (frågans signatur) som listan och detaljen använder
+  // → ett redan räknat segment kostar noll här, och två segment som delar ett
+  // VILLKOR delar walk. Speglar EF:ens `resolveSegmentMembers`: en union,
+  // dedup på person.
+  const { perEntitet, isPending, misslyckade } = useUnionsUtfall(entiteter, parInfo);
   useVyFokus(rubrikRef, !isPending);
 
   const [amne, setAmne] = useState('');
@@ -2288,22 +3582,22 @@ function UtskicksVy({
      Med ETT segment är felet självrapporterande (noll mottagare, inget att
      skicka). Med flera är det tyst. Därför bor vakten här och inte i
      detaljvyn, och sändningen blockeras helt tills alla walks svarat: en
-     delmängd som ser komplett ut är farligare än ett stopp. */
-  const misslyckade = svar.filter((s) => s.isError).length;
+     delmängd som ser komplett ut är farligare än ett stopp. `misslyckade`
+     räknar SEGMENT vars någon fråga felat (hooken ovan). */
 
   // UNIONEN, som EF:en gör den: dedup på person-ID. Förekomsterna bär
   // överlappet — samma person i två segment får ETT mail.
   const forekomster = new Map<string, number>();
   const unionKarta = new Map<string, SegmentMember>();
-  for (const s of svar) {
-    for (const m of s.data?.members ?? []) {
+  for (const p of perEntitet) {
+    for (const m of p.data?.members ?? []) {
       unionKarta.set(m.id, m);
       forekomster.set(m.id, (forekomster.get(m.id) ?? 0) + 1);
     }
   }
   const raMottagare = [...unionKarta.values()];
   const overlapp = [...forekomster.values()].filter((n) => n > 1).length;
-  const summaPerSegment = svar.reduce((n, s) => n + (s.data?.count ?? 0), 0);
+  const summaPerSegment = perEntitet.reduce((n, p) => n + (p.data?.count ?? 0), 0);
 
   /* UNIONENS MÅL = SUMMAN AV DE INGÅENDES. Ett fast 85 hade fått ett utskick
      till fyra segment att se MINDRE ut än ett av dem, vilket är precis den
@@ -2311,7 +3605,13 @@ function UtskicksVy({
      en exakt modell: överlappet mellan segment kan inte simuleras, och riktiga
      personer dedupas ändå av `unionKarta` ovan innan utfyllnaden sker. */
   const unionsMal = entiteter.reduce((n, e) => n + skalprovMal(e.id), 0);
-  const mottagare = fyllUt(raMottagare, skalprov, unionsMal);
+  // TESTUTSKICKS-FALLET (PAUSLÄGE punkt 5): är HELA urvalet förskapade grupper
+  // (normalfallet är ETT segment — grupp 13/14 öppnade från detaljsidan) får
+  // unionen fyllas ur en tom verklig publik, av samma skäl som `fyllUt`s
+  // invariant-undantag ovan. Ett urval som blandar in ett icke-förskapat
+  // segment faller tillbaka till den vanliga, strikta invarianten.
+  const allaForskapade = entiteter.every((e) => e.id in FACIT_KARTA);
+  const mottagare = fyllUt(raMottagare, skalprov, unionsMal, allaForskapade);
   const signatur = mottagare.map((m) => m.id).join(',');
   const utanEpost = mottagare.filter((m) => !m.email).length;
   const nekade = mottagare.filter((m) => m.email && m.ejGodkandMail).length;
@@ -2323,7 +3623,7 @@ function UtskicksVy({
   // Blandningen kan uppstå INUTI ett segment ("Båda") lika gärna som MELLAN
   // två — därför avgörs `kanBlandas` av unionen av de valda reglerna.
   const kanBlandas = entiteter.some((e) =>
-    regelFor(e, parInfo).include.some((p) => p.modalitet === 'Föreläsning'),
+    bruttoRegelFor(e, parInfo).include.some((p) => p.modalitet === 'Föreläsning'),
   );
   const fordelningsUnderlag = mottagare.filter((m) => !arPahittad(m));
   const fordelning = useModalitetsFordelning(kanBlandas, parInfo, fordelningsUnderlag);
@@ -2476,7 +3776,11 @@ function UtskicksVy({
                 </span>
               </span>
               <span className="shrink-0 text-small text-text-secondary tabular-nums">
-                {svar[i]?.isError ? 'fel' : svar[i]?.isPending ? '…' : (svar[i]?.data?.count ?? 0)}
+                {perEntitet[i]?.fel
+                  ? 'fel'
+                  : perEntitet[i]?.vantar
+                    ? '…'
+                    : (perEntitet[i]?.data?.count ?? 0)}
               </span>
             </div>
           ))}
@@ -2740,6 +4044,7 @@ type Vy =
   | { namn: 'lista' }
   | { namn: 'detalj'; id: string }
   | { namn: 'regel'; id: string }
+  | { namn: 'generator' }
   | { namn: 'utskick'; ids: string[]; retur: 'lista' | 'detalj' };
 
 /** Ett tomt segment i byggläge — utgången ur "Nytt segment". */
@@ -2747,7 +4052,7 @@ function nyEntitet(): SegmentEntitet {
   return {
     id: `nytt-${Date.now()}`,
     namn: '',
-    predikat: { med: [nyttVillkor()], utan: [] },
+    predikat: { med: [nyKonjunkt()], utan: [] },
     arvdRegel: null,
     skiss: true,
   };
@@ -2756,8 +4061,15 @@ function nyEntitet(): SegmentEntitet {
 export function VariantD() {
   const dataSource = useDataSource();
   const [vy, setVy] = useState<Vy>({ namn: 'lista' });
-  /** Segment skapade/ändrade i sidan (no-op-stubb: lever bara i minnet). */
-  const [egna, setEgna] = useState<SegmentEntitet[]>([]);
+  /**
+   * Segment skapade/ändrade i sidan (no-op-stubb: lever bara i minnet).
+   * FÖRPOPULERAD MED DE FJORTON (S104 Del 3 konvergens, PAUSLÄGE punkt 5):
+   * lazy initializer, körs EN gång vid mount. Atomerna är fasta konstanter
+   * (`DE_FJORTON_ATOMER`), inte härledda ur laddad data, så de fjorton finns
+   * omedelbart - Marcus ville att de "förskapas åt Roger och Lotta och finns
+   * från start".
+   */
+  const [egna, setEgna] = useState<SegmentEntitet[]>(() => byggDeFjorton());
   /**
    * Det ÄNNU OSPARADE utkastet ur "Nytt segment". Utan det landade Avbryt på
    * en detaljsida för ett namnlöst segment utan regel — en yta som varken
@@ -2775,6 +4087,10 @@ export function VariantD() {
    * ska klara samma storlek. Växeln bor däremot bara där publiken bor.
    */
   const [skalprov, setSkalprov] = useState(false);
+  /** Täckningsvyns läge (S104 Del 4, task-181) — bor på variant-nivå av samma
+   *  skäl som `skalprov`: läget hör till LISTAN, inte till en enskild
+   *  post, och listan är den enda ytan som renderar `SegmentLista`. */
+  const [tackningsLage, setTackningsLage] = useState(false);
 
   const segments = useQuery({
     queryKey: ['proto-d', 'segments'],
@@ -2815,8 +4131,10 @@ export function VariantD() {
     [segments.data],
   );
 
-  const skisser = useMemo(() => [...byggSkisser(parInfo), ...egna], [parInfo, egna]);
-  const alla = useMemo(() => [...sparade, ...skisser], [sparade, skisser]);
+  // `byggSkisser` (de fem påhittade exemplen) är riven — `egna` bär redan de
+  // fjorton förskapade grupperna från mount, plus vad "Nytt segment" och
+  // "Dela upp i grupper" lägger till under sessionen.
+  const alla = useMemo(() => [...sparade, ...egna], [sparade, egna]);
   const hitta = (id: string) => alla.find((e) => e.id === id);
 
   const laddar = segments.isPending || events.isPending;
@@ -2862,6 +4180,21 @@ export function VariantD() {
     }
     setVy({ namn: 'detalj', id });
   };
+
+  if (vy.namn === 'generator') {
+    return (
+      <DelaUppIGrupper
+        parInfo={parInfo}
+        onTillbaka={() => setVy({ namn: 'lista' })}
+        onSkapa={(entiteter) => {
+          // READ-ONLY-KONTRAKTET (filhuvudet): de nya grupperna läggs bara i
+          // `egna`-state, precis som "Nytt segment" — ingen `saveSegment`.
+          setEgna((lista) => [...lista, ...entiteter]);
+          setVy({ namn: 'lista' });
+        }}
+      />
+    );
+  }
 
   if (vy.namn === 'utskick') {
     const valdaEntiteter = vy.ids
@@ -2926,6 +4259,7 @@ export function VariantD() {
         setUtkastId(entitet.id);
         setVy({ namn: 'regel', id: entitet.id });
       }}
+      onDelaUpp={() => setVy({ namn: 'generator' })}
       onOppnaMarkering={() => setMarkeraLage(true)}
       onStangMarkering={() => {
         setMarkeraLage(false);
@@ -2947,6 +4281,8 @@ export function VariantD() {
         // när utskicksvyn öppnas. Vägen lista → utskick kostar noll walks.
         setVy({ namn: 'utskick', ids: [...valda], retur: 'lista' });
       }}
+      tackningsLage={tackningsLage}
+      onTackning={() => setTackningsLage((v) => !v)}
     />
   );
 }
