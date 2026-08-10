@@ -1,10 +1,10 @@
 ---
 id: TASK-158.4
 title: 'Skiva: drift-grinden i nattnätet — fönsterregeln bevakad'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 12:30'
-updated_date: '2026-08-10 11:22'
+updated_date: '2026-08-10 14:12'
 labels:
   - ready-for-agent
 dependencies:
@@ -42,11 +42,17 @@ Sekundart fynd (registrerat, EJ atgardat i detta kort - utanfor scope): scripts/
 Lokala grindar (exitkoder matta separat, aldrig via pipe): shellcheck-strict 0/0/0/0, actionlint (CIs exakta -ignore-flagga) exit 0, yamllint .github/ exit 0, typecheck exit 0, biome check exit 0, build exit 0, fetch-depth-invariant exit 0 (nightly.yml ligger utanfor dess barar-mangd), egen testsvit 16/16 OK, fulla Test gatekeeper script suites-blocket (16 sviter) gront i sin helhet.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Done S102 batch våg 1(+): PR #1106, merge 10430913, CI grön per jobb på PR:en. Post-merge-runnen för 10430913 föll på ORELATERAD klass (event-bekraftelse scroll-mätningen, task-188) — 158.4:s egen yta (nightly-grinden) opåverkad, rött-först+grönt-bevis med run-länkar på kortet.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Ordningen ADR → migration → grind är bindande: ADR-099 landad före migrations- och grind-skivorna exekveras
 <!-- DOD:END -->
