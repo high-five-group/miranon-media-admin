@@ -15,6 +15,14 @@
 
 ## Aktuellt fokus
 
+**Session 102 🔄 PÅGÅR (2026-08-10, `lifecycle: active`) — GO-LIVE-DAGEN:
+batch-orkestrering.** Läge vid kontrollerad kompaktering ~13:50: batchen
+(Marcus-order max-kort 14) 10/14 avfyrade, 8 Done, ⑩ (147.2) bygger,
+kvar 147.3/147.10/147.5/147.7. Parallellt: S103 (person-passet, pausad
+efter leverans) + S104 (segment-passet). Full narrativ + Marcus-hög:
+sessionsdok S102 Del 1–3. Morgonsekvensen (Grind F + T51 via
+åtgärdssidan): Del 2. *(S93:s stängda kadensrad nedan, bevarad.)*
+
 **Session 93 ✅ AVSLUTAD (2026-08-02 → 2026-08-10, `lifecycle: closed` på
 Marcus coverage-kvittens) — EVENTSIDAN SKARP, PROMOVERINGS-APPARATEN BYGGD,
 15-STRECKS-SVEPET FULLBORDAT.** Stängningsdagen: Marcus granskning +
