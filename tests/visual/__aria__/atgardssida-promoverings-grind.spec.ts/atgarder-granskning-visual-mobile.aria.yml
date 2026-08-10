@@ -17,6 +17,7 @@
   - paragraph: Förhandsvisningsexempel
   - paragraph: /Hej Anna, Din plats på Utbildning Skövde är bekräftad\. Vi ses \d+ september i Skövde\. Varmt välkommen! Roger och Lotta/
   - text: Bilagor Inga
+- button "Skicka test till mig"
 - switch "Bekräfta utskicket"
 - button "Skicka till 2 personer" [disabled]
 - button "Tillbaka"

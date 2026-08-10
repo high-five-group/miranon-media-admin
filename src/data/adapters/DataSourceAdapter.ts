@@ -21,6 +21,8 @@ import type {
   SegmentRule,
   SendActionEmailInput,
   SendActionEmailResult,
+  SendActionTestEmailInput,
+  SendActionTestEmailResult,
   UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -165,6 +167,16 @@ export interface DataSourceAdapter {
    * `failed` per mottagare, aldrig en aggregerad framgång/misslyckande.
    */
   sendActionEmail(input: SendActionEmailInput): Promise<SendActionEmailResult>;
+
+  /**
+   * "Skicka test till mig" (TASK-147.10, ADR-067 D10/T53 väg C). SAMMA EF
+   * (`send-action-email`) med `testSend: true` — servern löser upp den FÖRSTA
+   * (och enda) mottagaren i `registrationIds` ENDAST för platshållar-data;
+   * mailet går alltid till den inloggade användarens egen adress
+   * (server-side, `requireUser`), aldrig till registrationens. Ingen anmälan
+   * i urvalet berörs — inget fält skrivs, oavsett utfall.
+   */
+  sendActionTestEmail(input: SendActionTestEmailInput): Promise<SendActionTestEmailResult>;
 
   /**
    * Hämta eventets anteckningar (task-18.11, ADR-075). Läsning via get-event-notes:

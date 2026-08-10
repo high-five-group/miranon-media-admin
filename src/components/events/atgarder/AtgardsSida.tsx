@@ -143,6 +143,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
+import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -150,7 +151,7 @@ import { Skeleton } from '@/components/primitives/Skeleton';
 import { SlideToConfirm } from '@/components/primitives/SlideToConfirm';
 import { TextArea } from '@/components/primitives/TextArea';
 import { displayName } from '@/components/registrations/registration-display';
-import { useSendActionEmail } from '@/data/mutations/actionEmail';
+import { useSendActionEmail, useSendActionTestEmail } from '@/data/mutations/actionEmail';
 /* VARV 13 REV VARV 12:s MONTERING AV `BetalningsDetaljer`.
    Den var rätt ambition och fel mekanism: eventdetaljens arbetsyta KAN inte
    skriva, och det är dess uttalade DoD-krav sedan `TASK-145.4` — se
@@ -1990,6 +1991,19 @@ function GranskningsSida({
      m.fl.): hooken kostar inget att montera, och `GranskningsSida` remountar
      per öppnad granskning (state läcker aldrig mellan två åtgärder). */
   const sendActionEmail = useSendActionEmail(eventId);
+  /* [TASK-147.10, T53 väg C] Testmailets EGNA mutation + resultat-state —
+     medvetet SKILT från `sendActionEmail`/`utfall` ovan: ett testmail är
+     diagnostik, inte den handling `armerad`/`lage` styr, och de två
+     nätverksanropen ska kunna ske oberoende av varandra utan att dela status.
+     `useAuth().user?.email` är den ENDA adress-källan i UI:t (ren visning —
+     servern läser den EGNA gången ur `requireUser`, aldrig den klient-visade
+     strängen). */
+  const { user } = useAuth();
+  const sendActionTestEmail = useSendActionTestEmail(eventId);
+  const [testUtfall, setTestUtfall] = useState<{
+    status: 'sent' | 'failed';
+    reason?: string;
+  } | null>(null);
   /* [TASK-147.3] PROTOTYP-RIGGENS VAL — matar sedan denna skiva INGEN
      konsument längre (`simuleraUtfall` är riven, `skicka()` läser inte detta
      state). `PrototypRigg` STÅR ÄNDÅ KVAR, och därmed detta state med den —
@@ -2094,6 +2108,34 @@ function GranskningsSida({
           setArmerad(false);
           setLage('granska');
         },
+      },
+    );
+  }
+
+  /* [TASK-147.10, T53 väg C] Testmailet — urval på LÄNGD 1 (ADR-067 D10),
+     alltid `forsta.id` (samma person förhandsvisningen ovan redan visar).
+     Adressen mailet FAKTISKT går till bestäms server-side (den inloggade
+     användarens egen, `requireUser`) — `forsta.id` läses av EF:en ENDAST för
+     platshållar-data, aldrig för adressen. Ingen `onVaxla`/`setLage`-rörning:
+     ett testmail flyttar ingen mottagare mellan lyckad/fallen och byter
+     aldrig läge — det är helt vid sidan av den verkliga sändningens tillstånd. */
+  function skickaTest() {
+    if (!forsta) return;
+    setTestUtfall(null);
+    sendActionTestEmail.mutate(
+      {
+        actionType: granskning.atgard.nyckel,
+        registrationIds: [forsta.id],
+        amne: granskning.amne,
+        mailtext: granskning.text,
+      },
+      {
+        onSuccess: (result) => setTestUtfall(result),
+        onError: (error) =>
+          setTestUtfall({
+            status: 'failed',
+            reason: error instanceof Error ? error.message : 'Okänt fel.',
+          }),
       },
     );
   }
@@ -2380,6 +2422,51 @@ function GranskningsSida({
             </span>
           </div>
         </DetaljGrupp>
+
+        {/* [TASK-147.10, T53 väg C, ADR-067 D10] TESTMAILET — trygghetstriadens
+          sista länk (förhandsvisning + adresslista + testmail; T53s avgörande
+          drivare var Marcus egen sändrädsla vid T55 steg 1-granskningen,
+          "Lotta kommer känna likadant"): se det FAKTISKA renderade mailet i
+          EGEN inkorg innan handtaget ens dras. MEDVETET UTANFÖR `armerad`-
+          grinden — testmailet är diagnostik, inte den oåterkalleliga
+          handlingen SlideToConfirm skyddar, och provas hur många gånger som
+          helst innan man bestämmer sig. Samma sändväg som `skicka()`
+          (`useSendActionEmail`/`useSendActionTestEmail` delar EF, ADR-067
+          D9/D10), men EGEN mutation och EGET resultat-state — de två
+          anropen ska aldrig dela status. `forsta` styr synligheten: samma
+          villkor som "Förhandsvisningsexempel"-etiketten ovan (utan en
+          första mottagare finns ingen platshållar-källa att testa). */}
+        {forsta && (
+          <div className="flex flex-col items-start gap-1.5 px-4 pb-2">
+            <Button
+              intent="secondary"
+              size="sm"
+              isDisabled={sendActionTestEmail.isPending || lage === 'skickar'}
+              onPress={skickaTest}
+            >
+              {sendActionTestEmail.isPending ? 'Skickar test…' : 'Skicka test till mig'}
+            </Button>
+            {/* LIVE-REGION, INGEN FOKUSFLYTT — samma grammatik som `skickar`-
+              lägets annonsering nedan. Containern är EN `<div>` med ett
+              villkorat `<p>`-barn (aldrig en tom paragraf): vid FÖRSTA
+              render (`testUtfall === null`) är den helt tom och tillför
+              alltså INGEN rad i den facit-låsta ariaSnapshoten förrän Lotta
+              faktiskt klickat. */}
+            <div aria-live="polite" className="min-h-5">
+              {testUtfall?.status === 'sent' && (
+                <p className="text-small text-text-muted">
+                  Testmail skickat till {user?.email ?? 'din adress'}.
+                </p>
+              )}
+              {testUtfall?.status === 'failed' && (
+                <p className="text-error text-small">
+                  Kunde inte skicka testmailet
+                  {testUtfall.reason ? `: ${testUtfall.reason}` : '.'}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* GRINDEN. VARNINGSRADEN ÖVER DEN ÄR BORTA (Marcus varv 20): "Ett skickat
           utskick går inte att ångra. Mottagare som saknar e-post eller har

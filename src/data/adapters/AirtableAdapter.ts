@@ -40,6 +40,9 @@ import {
   type SendActionEmailInput,
   type SendActionEmailResult,
   SendActionEmailResultSchema,
+  type SendActionTestEmailInput,
+  type SendActionTestEmailResult,
+  SendActionTestEmailResultSchema,
   type UpdateEventInput,
   WaitlistEntrySchema,
 } from '../../domain/schemas';
@@ -452,6 +455,26 @@ export class AirtableAdapter implements DataSourceAdapter {
       idempotencyKey: input.idempotencyKey,
     });
     return SendActionEmailResultSchema.parse(data);
+  }
+
+  /**
+   * "Skicka test till mig" (TASK-147.2s EF, TASK-147.10s testgren). SAMMA
+   * POST mot `send-action-email`, plus `testSend: true` — EF:en löser upp
+   * ENDAST det ENA registrationId:t för platshållar-data och skriver ALLTID
+   * över adressen med den inloggade användarens egen (server-side). `.parse()`
+   * validerar vid datagränsen (ADR-026).
+   */
+  async sendActionTestEmail(input: SendActionTestEmailInput): Promise<SendActionTestEmailResult> {
+    const data = await postEdgeFunction<unknown>('send-action-email', {
+      actionType: input.actionType,
+      eventId: input.eventId,
+      registrationIds: input.registrationIds,
+      amne: input.amne,
+      mailtext: input.mailtext,
+      idempotencyKey: input.idempotencyKey,
+      testSend: true,
+    });
+    return SendActionTestEmailResultSchema.parse(data);
   }
 
   /**
