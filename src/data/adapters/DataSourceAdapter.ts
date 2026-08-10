@@ -19,6 +19,8 @@ import type {
   SaveSegmentInput,
   SegmentResult,
   SegmentRule,
+  SendActionEmailInput,
+  SendActionEmailResult,
   UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -152,6 +154,17 @@ export interface DataSourceAdapter {
    * och Bekräfta alla (N ID:n); svaret är aldrig binärt.
    */
   confirmRegistrations(input: ConfirmRegistrationsInput): Promise<ConfirmRegistrationsResult>;
+
+  /**
+   * Skicka ett åtgärdsutskick (TASK-147.2, ADR-067-revisionen): SERVERN skickar
+   * mailet OCH skriver åtgärdens stämpel-fält (per typ — `_shared/send-action-
+   * email.ts` § `stampFieldsFor`) i samma operation, den bilage-fria batchgrenen
+   * (TASK-147.1). Klienten skickar ENDAST åtgärdstyp + eventId + record-ID:n +
+   * den redigerade ämnesraden/brödtexten — mottagaren löses server-side, precis
+   * som `confirmRegistrations`. Svaret är aldrig binärt: `completed`/`skipped`/
+   * `failed` per mottagare, aldrig en aggregerad framgång/misslyckande.
+   */
+  sendActionEmail(input: SendActionEmailInput): Promise<SendActionEmailResult>;
 
   /**
    * Hämta eventets anteckningar (task-18.11, ADR-075). Läsning via get-event-notes:

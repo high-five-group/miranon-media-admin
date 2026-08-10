@@ -37,6 +37,9 @@ import {
   type SegmentResult,
   SegmentResultSchema,
   type SegmentRule,
+  type SendActionEmailInput,
+  type SendActionEmailResult,
+  SendActionEmailResultSchema,
   type UpdateEventInput,
   WaitlistEntrySchema,
 } from '../../domain/schemas';
@@ -428,6 +431,27 @@ export class AirtableAdapter implements DataSourceAdapter {
       idempotencyKey: input.idempotencyKey,
     });
     return ConfirmRegistrationsResultSchema.parse(data);
+  }
+
+  /**
+   * Skicka ett åtgärdsutskick (TASK-147.2). POST mot send-action-email-EF:en
+   * (TASK-147.1), som löser mottagarna SERVER-SIDE (klienten skickar bara
+   * record-ID:n + eventId), sänder via den bilage-fria batchgrenen och
+   * skriver åtgärdens stämpel-fält för de accepterade. `idempotencyKey`
+   * skickas i body (EF:en läser header ELLER body — confirmRegistrations-
+   * mönstret). `.parse()` validerar vid datagränsen (ADR-026); svaret är
+   * aldrig binärt.
+   */
+  async sendActionEmail(input: SendActionEmailInput): Promise<SendActionEmailResult> {
+    const data = await postEdgeFunction<unknown>('send-action-email', {
+      actionType: input.actionType,
+      eventId: input.eventId,
+      registrationIds: input.registrationIds,
+      amne: input.amne,
+      mailtext: input.mailtext,
+      idempotencyKey: input.idempotencyKey,
+    });
+    return SendActionEmailResultSchema.parse(data);
   }
 
   /**

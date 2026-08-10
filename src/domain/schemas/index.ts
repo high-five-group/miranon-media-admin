@@ -57,5 +57,12 @@ export {
   type SegmentRule,
   SegmentRuleSchema,
 } from './Segment.schema';
+export {
+  type ActionSkipReason,
+  ActionSkipReasonSchema,
+  type SendActionEmailInput,
+  type SendActionEmailResult,
+  SendActionEmailResultSchema,
+} from './SendActionEmail.schema';
 export type { UpdateEventInput } from './UpdateEvent.schema';
 export { WaitlistEntrySchema } from './WaitlistEntry.schema';
