@@ -172,12 +172,10 @@ export function PersonDetail({ personId }: { personId: string }) {
         {/* <dl> renderas ENBART när minst en rad finns — ett tomt <dl>, eller en
             empty-state-<p> som direkt dl-barn, bryter definition-list-strukturen
             (axe `only-dlitems`). Empty-state blir syskon utanför <dl>. */}
-        {contact.length > 0 || person.ort.length > 0 ? (
+        {contact.length > 0 ? (
           <dl className="flex flex-col gap-1">
             <DescRow term="E-post">{person.email}</DescRow>
             <DescRow term="Telefon">{person.telefon}</DescRow>
-            {/* ort är string[] (fler-värt) → alla orter visas, ingen tappas. */}
-            <DescRow term="Ort">{person.ort.length > 0 ? person.ort.join(' · ') : null}</DescRow>
           </dl>
         ) : (
           <p className="text-small text-text-muted">Inga kontaktuppgifter registrerade.</p>

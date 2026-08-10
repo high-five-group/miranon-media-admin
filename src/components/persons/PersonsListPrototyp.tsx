@@ -94,24 +94,31 @@ function displayName(person: Person): string {
 }
 
 /**
- * Kontaktrad — e-post och ORT. INTE telefon.
+ * Kontaktrad — ENBART e-post. INTE ort, INTE telefon.
  *
- * [PROTOTYPE] STEG 12-13 — orten tillkom i S103-grillningen, telefonen ströks
- * i samma pass (Marcus: *"telefon spelar ju ingen roll, det ska vi ju inte visa
- * i personlistan ändå"*). Raden i ett UPPSLAGSVERK har ett jobb: låta Lotta
- * säga "ja, det är hen". Orten är det starkaste särskiljande draget efter
- * namnet (två "Anna Andersson" skiljs av Skövde/Skara), den ligger redan i
- * modellen, och den är redan sökbar i `get-persons` SEARCH_FIELDS - raden visar
- * därmed det Lotta nyss sökte på. Telefonen särskiljer inte på samma sätt och
- * kostar bara bredd.
+ * [PROTOTYPE] STEG 12-13 (S103) lade orten till raden. Riven S103 senare pass
+ * (Marcus 2026-08-10, ordagrant): *"vi frågar inte efter ort i
+ * anmälningsformuläret... Ja då måste ju ort bort helt och hållet i de
+ * sammanhang där det ser ut att visa var personen bor."*
  *
- * SAKNAD ORT RÖR ALDRIG LAYOUTEN: den är en del av DENNA rad, så en person utan
- * ort får en kortare sträng - aldrig en kortare rad. Höjdlåset bor i raden
- * nedan; detta är bara halva skälet till att det håller.
+ * `Personer.ort` är INTE personens hemort — det är en ROLLUP över personens
+ * ANMÄLNINGAR av `Anmälningar.Ort` (en post per anmälan, inklusive tomma).
+ * Mätt i prod-basen 2026-08-10: 27 personer har två eller fler olika orter
+ * (t.ex. Roger Mukka: Falköping, Rönninge, Varberg). En rad som visar orten
+ * bredvid namnet läses som "var hen bor" och är i så fall ofta fel eller
+ * inkonsekvent — den tidigare motiveringen ("orten är det starkaste
+ * särskiljande draget efter namnet") är därmed falsifierad. Fältet är
+ * fortsatt legitimt för SÖKNING (`get-persons` SEARCH_FIELDS) — det är
+ * VISNINGEN som ljög, inte datat. Telefonen ströks redan i samma S103-pass
+ * (Marcus: *"telefon spelar ju ingen roll, det ska vi ju inte visa i
+ * personlistan ändå"*) och återinförs inte här.
+ *
+ * SAKNAD E-POST RÖR ALDRIG LAYOUTEN: en person utan e-post får `contactLine`
+ * = null, aldrig en kortare rad. Höjdlåset bor i raden nedan; detta är bara
+ * halva skälet till att det håller.
  */
 function contactLine(person: Person): string | null {
-  const parts = [person.email, ...person.ort].filter(Boolean);
-  return parts.length > 0 ? parts.join(' · ') : null;
+  return person.email ?? null;
 }
 
 /**
