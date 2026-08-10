@@ -70,6 +70,11 @@ function personDetail(anteckningar: string | null): PersonDetailMock {
     antalHamtningar: 0,
     allaHamtningar: [],
     motivering: [],
+    // S103 steg 2: bredvid allaHamtningar/motivering ovan — tomt precis som de,
+    // eftersom detta fixturet inte övar hämtnings-/motiverings-ytorna.
+    hamtningar: [],
+    motiveringar: [],
+    flagga: null,
     inbjudenCommunity: false,
     skapatKontoCommunity: false,
     historik: [],

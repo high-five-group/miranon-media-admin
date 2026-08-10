@@ -76,6 +76,25 @@ function personDetail(overrides: Partial<PersonDetailMock> = {}): PersonDetailMo
     antalHamtningar: 1,
     allaHamtningar: ['Gratis meditation'],
     motivering: ['Vill utvecklas vidare.'],
+    // S103 steg 2: samma innehåll som allaHamtningar/motivering ovan, nu som
+    // strukturerade poster (id + datum + erbjudande/event) bredvid.
+    hamtningar: [
+      {
+        id: 'recTP0000000001',
+        erbjudande: 'Gratis meditation',
+        typ: 'Angett e-post för att ta del av ett erbjudande',
+        datum: '2026-01-20',
+      },
+    ],
+    motiveringar: [
+      {
+        id: 'recANM0000000001',
+        motivering: 'Vill utvecklas vidare.',
+        event: 'Resor i medvetandet 2',
+        datum: '2026-02-20T09:00:00.000Z',
+      },
+    ],
+    flagga: null,
     inbjudenCommunity: true,
     skapatKontoCommunity: false,
     historik: [

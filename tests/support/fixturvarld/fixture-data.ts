@@ -982,7 +982,8 @@ export function resolvePersonsResponse(url: URL) {
 
 /**
  * Detaljfälten för DEN RIKA personen (PersonDetailSchema minus list-delmängden
- * — de tio fält `Person.schema.ts` inte bär).
+ * — de tretton fält `Person.schema.ts` inte bär; `hamtningar`/`motiveringar`/
+ * `flagga` tillkom S103 steg 2, se dedikerad not där de sätts nedan).
  *
  * Två saker att veta innan de läses som sanning:
  *
@@ -1026,6 +1027,40 @@ const RIK_DETALJ = {
   motivering: [
     'Jag har haft egna upplevelser och läst många böcker som gjort mig förvissad om att vi alla är del av samma medvetande. Nu vill jag lära mig metoder för att ta mig till andra nivåer — och den här gången vill jag ta med mig två vänner som är nyfikna men försiktiga.',
   ],
+  // S103 steg 2: RIKTIGA poster bredvid `allaHamtningar`/`motivering` ovan —
+  // samma tre hämtningar (samma datum/erbjudande, nu strukturerade i stället
+  // för regex-plockade ur en rollup-sträng) + motiveringen kopplad till den
+  // KOMMANDE anmälan (RIM 3, samma event som `historik`s första/kommande post).
+  hamtningar: [
+    {
+      id: 'recVisualTP00001',
+      erbjudande: 'Pyramidernas Vajrar',
+      typ: 'Angett e-post för att ta del av ett erbjudande',
+      datum: '2026-06-09',
+    },
+    {
+      id: 'recVisualTP00002',
+      erbjudande: 'Guidad meditation – Första resan',
+      typ: 'Angett e-post för att ta del av ett erbjudande',
+      datum: '2025-11-25',
+    },
+    {
+      id: 'recVisualTP00003',
+      erbjudande: 'Pyramidernas Vajrar',
+      typ: 'Angett e-post för att ta del av ett erbjudande',
+      datum: '2024-10-02',
+    },
+  ],
+  motiveringar: [
+    {
+      id: 'recVisualAnm00001',
+      motivering:
+        'Jag har haft egna upplevelser och läst många böcker som gjort mig förvissad om att vi alla är del av samma medvetande. Nu vill jag lära mig metoder för att ta mig till andra nivåer — och den här gången vill jag ta med mig två vänner som är nyfikna men försiktiga.',
+      event: 'Resor i medvetandet 3',
+      datum: '2026-08-01T09:00:00.000Z',
+    },
+  ],
+  flagga: 'Ring innan nästa event',
   inbjudenCommunity: true,
   skapatKontoCommunity: true,
   // Tio deltaganden = fem event × Dag 1/Dag 2, sorterade datum DESC precis som
@@ -1163,6 +1198,9 @@ const TUNN_DETALJ = {
   antalHamtningar: 0,
   allaHamtningar: [],
   motivering: [],
+  hamtningar: [],
+  motiveringar: [],
+  flagga: null,
   inbjudenCommunity: false,
   skapatKontoCommunity: false,
   historik: [],
@@ -1186,6 +1224,9 @@ const HARLEDD_DETALJ_STOMME = {
   antalHamtningar: 0,
   allaHamtningar: [],
   motivering: [],
+  hamtningar: [],
+  motiveringar: [],
+  flagga: null,
   inbjudenCommunity: false,
   skapatKontoCommunity: false,
   historik: [],
