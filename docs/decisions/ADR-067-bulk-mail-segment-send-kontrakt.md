@@ -137,3 +137,118 @@ Per [ADR-053](ADR-053-trad-arkitektur-forensisk-lasbarhet-triage.md)-ledstjärna
   ärligt icke-success-utfall + suppression-breakdown (aldrig grön "skickades").
 - Invarianten (D3) `requested == suppressedConsent + suppressedNoEmail + deduped + attempted`
   är **oförändrad** och fortsatt api-pure-bevisad.
+
+## Tillägg (additivt) — 2026-08-10 (TASK-147.1, Sändvägs-EF:n bilage-fri gren)
+
+> Additiv revision. Besluts-texten (D1–D8) och det första tillägget (2026-06-28)
+> är OFÖRÄNDRADE/immutabla; detta tillägg reviderar ADR-067 enligt task-147.1:s
+> AC #4–#5: greningen av sändvägen i två, den tysta bilage-bristen som skäl,
+> avvisade alternativ, samt test-sändvägen (T53 väg C). Grund: `task-147` §
+> Implementationsbeslut ("SÄNDVÄGEN MÅSTE GRENAS I TVÅ… Detta är kortets
+> farligaste detalj") + grillad samsyn S93 beslut 4 + `T53`s avgörande
+> 2026-08-10 (`tasks/threads/T53-test-till-sig-sjalv-skicka.md`).
+
+### D9 — Sändvägen grenas i två: bilage-fri batch + bilage-bärande singelsändning
+
+Research-passet bakom `task-147` fällde att Resends `/emails/batch`-ändpunkt (D2
+ovan) **inte stödjer bilagor** — och bristen är **TYST**: en bilaga i payloaden
+försvinner utan felmeddelande, mailet går fram, svaret ser accepterat ut. Ett
+utskick med valbar bilaga (task-147 § berättelse 7–8, 25) kan därför **inte** gå
+genom D2:s enda sändväg utan risken att skicka ett mail som SER lyckat ut och
+SAKNAR bilagan — exakt den klass av stämplingslögn D1 river för mailto-eran.
+
+Sändvägen delas därför i **TVÅ grenar**, båda Resend, samma autentisering, samma
+icke-prod-spärr (GOLV, oförändrad), samma Idempotency-Key-mönster — skillnaden är
+uteslutande ANROPSFORMEN (batch vs. loop) och vad den bär:
+
+- **Bilage-fri gren** (D2 OFÖRÄNDRAD): `/emails/batch`, en batch per ≤100
+  mottagare, permissive-validering, rad-exakt utfallsparsning. Byggd i
+  `TASK-147.1` som en NY Edge Function `send-action-email` (åtgärdsutskick:
+  bekräftelse/påminnelse/eventinfo/fritt) — repots SJUNDE write-vertikal, TREDJE
+  mail-vertikal (`_shared/send-action-email.ts` + `_shared/action-mail-template.ts`).
+  Den GENERALISERAR mönstret `send-registration-confirmation` (task-18.6) redan
+  bevisade för EN åtgärdstyp (bekräftelse) till FYRA, på ett **event-bundet
+  registration-ID-urval** — INTE `segmentIds` som D2:s ursprungliga `send-email`.
+  Mottagar-upplösning är fortsatt server-side (klienten skickar bara record-ID:n
+  samt eventId; adress/namn/status/betalningsläge läses ur Airtable), men skarven
+  mot D2 är medveten: åtgärdssidans urval är alltid event-bundna anmälningar
+  (`task-147` § Implementationsbeslut, SCOPE-KÄRNAN), inte ett beräknat segment.
+  Server-side platshållar-rendering ({förnamn}/{event}/{ort}/{datum}/{deadline})
+  speglar UI:ts `AtgardsSida.tsx` § `fyllPlatshallare` EXAKT (mirror-disciplinen
+  redan etablerad av D6:s `normalizeEmail`) — granskningen Lotta ser och mailet
+  som faktiskt går ut renderar med SAMMA algoritm.
+- **Bilage-bärande gren** (NY, `TASK-147.5`, **ej byggd av denna revision**):
+  loopad singelsändning — ETT `/emails`-anrop per mottagare, med bilagan
+  bifogad på det anropet. Ärver D4:s idempotens-mönster (deterministisk nyckel
+  per mottagare i stället för per batch), D5/D6-hygienen och icke-prod-golvet
+  från samma `_shared/send-bulk.ts`-primitiv den bilage-fria grenen redan
+  bygger på — INGEN omdesign, per kortets uppdrag.
+
+### D10 — Test-sändvägen (T53 väg C) är en del av detta kontrakt, inte ett undantag
+
+`T53` (`tasks/threads/T53-test-till-sig-sjalv-skicka.md`) avgjordes 2026-08-10
+(S102) till **väg C**: en net-new enkel-mottagar-mekanik, uttryckligen
+legitimerad AV att ADR-067 ändå revideras här. Beslutet var tidigare blockerat
+av att D2:s ursprungliga sändväg var **segmentIds-only** — mottagar-upplösning
+skedde ALLTID server-side ur ett sparat segment, med noll klient-styrd
+enkel-mottagare-väg (T53:s ursprungliga options-rymd A/B/C).
+
+D9:s generalisering löser detta **automatiskt**, inte som ett sidoprojekt:
+`send-action-email` tar redan ett EXPLICIT registration-ID-urval (inte ett
+segment), vilket per konstruktion tillåter ett urval på LÄNGD 1 — inklusive en
+anmälan på Lottas egen adress. Ett riktigt "testmail till mig"-flöde
+(`TASK-147.10`, **ej byggt av denna revision**) behöver alltså **ingen egen
+EF-gren**: det är exakt samma sändväg med ett urval på längd 1, riktat mot en
+avsedd test-mottagare i stället för verkliga deltagare. Trygghetstriaden
+(förhandsvisning + adresslista + testmail — Marcus' sändrädsla var T53:s
+avgörande drivare) är därför ett UI-lager (147.10) ovanpå ett redan generellt
+server-kontrakt, inte en ny sändväg att bygga och underhålla parallellt.
+
+### Avvisade alternativ (D9/D10)
+
+- **Alla sändningar i singel-loop.** Avvisat (`task-147` § Implementationsbeslut):
+  ger upp D2:s batch-genomströmningsfördel för utskick som ALDRIG bär en bilaga
+  (bekräftelse/påminnelse/eventinfo/fritt-massutskick) — ingen anledning att
+  betala N HTTP-anrop när ett batch-anrop räcker.
+- **Vänta på leverantörsstöd för bilagor i `/emails/batch`.** Avvisat: inget
+  datum eller åtagande fanns i Resends dokumentation/changelog vid research-
+  passets datum; att bygga mot en ohärledd framtida API-yta är precis vad
+  över-engineering-vakten (`~/.claude/CLAUDE.md` § Instruktioner) avvisar.
+- **Lägga en bilage-parameter på D2:s befintliga batch-kod utan ny gren.**
+  Avvisat: ger ett utskick som SER lyckat ut och SAKNAR bilagan — den TYSTA
+  bristen D9 finns för att förhindra, inte reproducera i ny form.
+- **Egen net-new EF enbart för testmailet** (T53 alternativ C i sin
+  ursprungliga, fristående form). Avvisat i den formen: onödig duplicering nu
+  när D9:s generalisering redan ger enkel-mottagar-mekaniken som en NATURLIG
+  delmängd av kontraktet (D10) — en andra sändväg hade underhållits parallellt
+  utan att lösa något D9 inte redan löser.
+- **Personers `Ej godkänd för mailutskick`-consent-gate (D5) för den nya
+  `send-action-email`-operationen.** ÖPPEN PUNKT, **inte avvisad** — bokförd
+  öppet i stället för tyst utelämnad. D5:s consent-gate implementerades INTE i
+  147.1:s registration-scopade sändväg. Skälet är precedent, inte förbiseende:
+  den redan byggda `send-registration-confirmation` (task-18.6) — strukturellt
+  den närmaste analogen (registration-ID-baserad, personaliserat mail per
+  mottagare, mail+fält-skrivning som EN atomisk operation) — implementerar
+  inte heller D5:s Personer-länkade consent-gate. D5 skrevs för D2:s
+  SEGMENT-scopade utskick (`ejGodkandMail` läst ur `Personer` via segmentets
+  medlemskaps-upplösning, `_shared/segment-resolution.ts`); ett
+  registration-scopat åtgärdsutskick riktat mot en redan existerande anmälan
+  är en annan relations-klass. Kvarstår i `send-action-email`: icke-prod-
+  spärren (GOLV, D-klassen, ALDRIG kringgången), e-post-hygienen och det
+  delade inaktiv-status-golvet (avbokad/inställt) — men INTE D5:s
+  marknadssamtycke. Öppet för Marcus: ska de fyra åtgärdstyperna (särskilt
+  påminnelse/eventinfo/fritt, som ligger närmare segmentets marknads-karaktär
+  än bekräftelsens transaktionella) också consent-gata via `Person (länk)` →
+  `Personer.Ej godkänd för mailutskick`?
+
+### Bevis-läge (denna revision, TASK-147.1)
+
+`send-action-email` är byggd och api-pure-kontraktstestad (29 tester,
+`tests/api/send-action-email.test.ts` + `tests/api/action-mail-template.test.ts`)
+och allowlist-registrerad (`_shared/field-allowlists.ts`), men **ej deployad
+till staging** — samma "ingen deploy denna landning"-gräns `send-email`
+(`tests/api/send-bulk.test.ts` § header) och `send-registration-confirmation`
+bar innan sina egna staging-test-landningar. HTTP-kontraktet (401/405/
+input-400/eventId-mismatch-400) och ett skarpt icke-prod-spärr-bevis mot
+staging är öppen skuld till en FÖLJANDE landning (`TASK-147.2`/`TASK-147.3`,
+som ändå måste koppla UI mot en deployad EF för att fungera).

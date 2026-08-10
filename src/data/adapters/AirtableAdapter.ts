@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Attachment, UploadAttachmentInput } from '../../domain/models/Attachment';
 import type { Attendance } from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
@@ -7,6 +8,8 @@ import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/mod
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
+  AttachmentSchema,
+  AttachmentUploadTicketSchema,
   AttendanceSchema,
   type ConfirmRegistrationsInput,
   type ConfirmRegistrationsResult,
@@ -43,7 +46,13 @@ import type {
   WaitlistFilters,
 } from '../../domain/types/Filters';
 import type { ListParams, PersonsPage } from '../../domain/types/Pagination';
-import { callEdgeFunction, postEdgeFunction } from '../config/supabase-client';
+import { callEdgeFunction, postEdgeFunction, supabase } from '../config/supabase-client';
+import {
+  BILAGOR_BUCKET_ID,
+  fileToBase64,
+  formatMB,
+  SMALL_UPLOAD_MAX_BYTES,
+} from './attachmentUpload';
 import type { DataSourceAdapter } from './DataSourceAdapter';
 
 // Airtable tabell-ID:n (från docs/schema_reference.md). Behålls som
@@ -448,5 +457,86 @@ export class AirtableAdapter implements DataSourceAdapter {
       text: input.text,
     });
     return EventNoteSchema.parse(data.note);
+  }
+
+  /**
+   * Ladda upp en bilaga (TASK-146.4). Väljer mönster ur `file.size` mot
+   * `SMALL_UPLOAD_MAX_BYTES` — se `DataSourceAdapter.uploadAttachment` för
+   * det fulla kontraktet och `attachmentUpload.ts` för gränsens motivering.
+   */
+  async uploadAttachment(input: UploadAttachmentInput): Promise<Attachment> {
+    if (input.file.size <= SMALL_UPLOAD_MAX_BYTES) {
+      return this.uploadAttachmentSmall(input);
+    }
+    return this.uploadAttachmentLarge(input);
+  }
+
+  /**
+   * Mönster 1 (AC #3): bytesen base64-kodas och skickas i EF:ens request-body.
+   * upload-attachment-EF:en skriver dem till lagringen med förhöjd behörighet
+   * (service-role) OCH en Bilagor-metadatarad i SAMMA operation — klienten ser
+   * aldrig en mellantillstånd där filen finns men metadatat inte gör det.
+   */
+  private async uploadAttachmentSmall(input: UploadAttachmentInput): Promise<Attachment> {
+    const bytesBase64 = await fileToBase64(input.file);
+    const data = await postEdgeFunction<{ attachment: unknown }>('upload-attachment', {
+      eventId: input.eventId,
+      filnamn: input.file.name,
+      contentType: input.file.type || 'application/pdf',
+      bytesBase64,
+    });
+    return AttachmentSchema.parse(data.attachment);
+  }
+
+  /**
+   * Mönster 2 (AC #4/#5): tre steg, ALDRIG bytesen genom en EF.
+   *
+   *   1. create-attachment-upload-ticket-EF:en fattar AUKTORISATIONSBESLUTET
+   *      server-side (eventet finns, storleken ryms i bucketens faktiska
+   *      gräns) och utfärdar ett tidsbegränsat (2h, empiriskt verifierat —
+   *      se AttachmentUploadTicketSchema), path-scopat tillstånd. Path och
+   *      attachmentId är SERVER-DERIVERADE — klienten väljer ingetdera.
+   *   2. Adaptern laddar upp bytesen DIREKT mot lagringen med det tillståndet
+   *      (`uploadToSignedUrl`). Detta är den enda platsen i HELA UI-lagret
+   *      (inkl. adaptern) som rör lagrings-SDK:t — mekaniskt fällt att den
+   *      inte sker någon annanstans, se
+   *      tests/api/attachment-layer-independence.test.ts. Den återanvänder
+   *      `supabase`-singleton-klienten (samma instans som redan bär
+   *      auth-sessionen, `../config/supabase-client.ts`) — ingen ny
+   *      SDK-import.
+   *   3. finalize-attachment-upload-EF:en verifierar SERVER-SIDE att objektet
+   *      faktiskt landade på den path servern själv deriverade (klienten kan
+   *      inte peka finalize mot ett annat events fil — path är aldrig
+   *      klient-buren) och skriver Bilagor-metadataraden med den FAKTISKA
+   *      storleken lagringen rapporterar, inte ett klient-påstått tal.
+   */
+  private async uploadAttachmentLarge(input: UploadAttachmentInput): Promise<Attachment> {
+    const contentType = input.file.type || 'application/pdf';
+    const ticketData = await postEdgeFunction<{ ticket: unknown }>(
+      'create-attachment-upload-ticket',
+      {
+        eventId: input.eventId,
+        filnamn: input.file.name,
+        contentType,
+        sizeBytes: input.file.size,
+      },
+    );
+    const ticket = AttachmentUploadTicketSchema.parse(ticketData.ticket);
+
+    const { error: uploadError } = await supabase.storage
+      .from(BILAGOR_BUCKET_ID)
+      .uploadToSignedUrl(ticket.path, ticket.token, input.file, { contentType });
+    if (uploadError) {
+      throw new Error(
+        `Uppladdningen av "${input.file.name}" (${formatMB(input.file.size)}) misslyckades: ${uploadError.message}`,
+      );
+    }
+
+    const data = await postEdgeFunction<{ attachment: unknown }>('finalize-attachment-upload', {
+      eventId: input.eventId,
+      attachmentId: ticket.attachmentId,
+      filnamn: input.file.name,
+    });
+    return AttachmentSchema.parse(data.attachment);
   }
 }

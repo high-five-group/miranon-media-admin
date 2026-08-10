@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-08
+updated: 2026-08-10
 review_by: 2027-02-08
 status: stable
 ---
@@ -90,10 +90,14 @@ seed-ankaret är dokumenterat i `docs/BUILD-LOG.md`, sök på variabelnamnet).
 Skilj symptomen åt innan felklassning.
 
 **Sentinel-städning (ADR-060, wirad via TASK-16):** create-conformance-
-testerna lämnar markör-märkta rader i staging-basen. Markörerna är fyra:
+testerna lämnar markör-märkta rader i staging-basen. Markörerna är sex:
 `create-test+` … `@staging.test` i Anmälningars e-postfält,
 `ZZ-create-event-test` i Eventplaneringens `Ort`, `ZZ-note-test+` …
-`@sentinel` i Anteckningar, och `app-segment-test+` i Segment.
+`@sentinel` i Anteckningar, `app-segment-test+` i Segment,
+`ZZ-attachment-test-` i Bilagors `Namn` (TASK-146.4), och `Deltagarinformation –`
+tillsammans med `ZZ-belaggning-fixtur` i Bilagors `Namn` (TASK-146.5 — attach-målet
+är den PERMANENTA beläggningsfixturen, se `tests/api/fixtures.ts`, inte en egen
+engångsfixtur).
 Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
 `scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med
 två av fyra tills den grinden byggdes. CI städar dem automatiskt i jobbet **Staging sentinel
@@ -914,8 +918,13 @@ oobserverat. Samma mönster som Prometheus Watchdog, och samma linjal som
 Google SRE:s checklista för nya larmregler: *does this rule detect an
 otherwise undetected condition?*
 
-Vakten kontrollerar öppna `ci-natt`-ärenden före den skapar ett nytt, så du
-aldrig får dubbla ärenden om samma natt.
+Vakten kontrollerar öppna `ci-natt`-ärenden — ELLER ärenden STÄNGDA inom ett
+fönster med en skriven motivering (kommentar) — före den skapar ett nytt, så
+du aldrig får dubbla ärenden om samma natt. Den senare halvan är `TASK-180`
+(2026-08-10, issue `#1042`): en tidigare version frågade bara efter ÖPPNA
+ärenden, missade ett larm som redan fanns och nyss stängts med en
+rotorsaksmotivering, och larmade själv — ett falsklarm. Beslutet bor i
+`scripts/check-nattvakt-dedup.sh` (config: `.nattvakt-dedup-policy.conf`).
 
 **Bevis-läge:** kör vakten via `workflow_dispatch` med `simulate_missing:
 true` för att avfyra larmkedjan utan att invänta en äkta incident. En

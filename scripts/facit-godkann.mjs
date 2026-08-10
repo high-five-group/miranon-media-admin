@@ -51,11 +51,15 @@
 //     eller ett tomt yta-/skäl-värde
 //   - manifestet går inte att tolka som JSON, eller är inte ett objekt
 //
-// SHA: skriptet kör `git rev-parse main` i repo-roten — Marcus kör detta
-// från sitt eget checkout, normalt på main efter en landning
-// (kanalseparationens hela premiss: han granskar den LANDADE ytan). Faller
-// tillbaka till `git rev-parse HEAD` om en lokal main-referens saknas
-// (t.ex. ett annat grennamn) — se resolveMainSha().
+// SHA: skriptet härleder ur FÄRSK origin/main (TASK-175, 2026-08-10) — en
+// `git fetch origin main` följt av `git rev-parse origin/main` i repo-roten.
+// Kvittots hela poäng är att dokumentera VAD som granskades (ADR-104 §
+// Beslut 4: "SHA dokumenterar"); en lokal main-ref i en orkestrerar-
+// checkout kan stå stilla i dagar utan att någon fast-forwardar den, vilket
+// stämplade fel träd i S93-stängningen (2026-08-10, se
+// tasks/lessons.d/stampel-sha-harleds-ur-ref-som-star-stilla.md). Saknas ett
+// origin-remote (t.ex. ett repo utan fjärr) faller härledningen tillbaka
+// till lokal `main`, sedan `HEAD` — se resolveMainSha().
 //
 // CONFIG: .facit-policy.conf (FACIT_BILAGE_ROT, FACIT_MANIFEST_NAMN) — SAMMA
 // fil scripts/check-facit.sh redan läser. Ingen ny config-fil: Lesson #6
@@ -226,13 +230,46 @@ function listaKandaPass(policy, repoRoot) {
     .sort();
 }
 
-function resolveMainSha(repoRoot) {
-  const kor = (ref) =>
-    execFileSync('git', ['rev-parse', ref], { cwd: repoRoot, encoding: 'utf8' }).trim();
+// resolveMainSha — TASK-175: härled ur FÄRSK origin/main, inte en lokal
+// main-ref som kan stå stilla i dagar i en orkestrerar-checkout (se §
+// SHA i filens huvud för hela bakgrunden). Ett konfigurerat origin-remote
+// fetchas alltid före läsning; misslyckas fetchen fälls ett TYDLIGT fel
+// (ingen tyst stale-SHA). Saknas origin helt (t.ex. ett repo utan fjärr,
+// vår egna testsvits sandlådor) faller härledningen tillbaka till lokal
+// `main`, sedan `HEAD` — oförändrat beteende för det läget.
+export function resolveMainSha(repoRoot) {
+  // stdio: 'pipe' explicit på ALLA tre kanaler — execFileSync ärver annars
+  // barnprocessens stderr direkt till terminalen (t.ex. "fatal: not a git
+  // repository") ÄVEN när felet fångas i try/catch här, vilket gjorde
+  // FALLBACK-vägen (inget origin konfigurerat — den normala testsandlåde-
+  // situationen) missvisande högljudd. Felet finns ändå kvar i err.stderr
+  // för den tydliga felväg som FAKTISKT ska synas (§ misslyckad fetch nedan).
+  const kor = (args) =>
+    execFileSync('git', args, { cwd: repoRoot, encoding: 'utf8', stdio: 'pipe' }).trim();
+
+  let harOrigin = true;
   try {
-    return kor('main');
+    kor(['remote', 'get-url', 'origin']);
   } catch {
-    return kor('HEAD');
+    harOrigin = false;
+  }
+
+  if (harOrigin) {
+    try {
+      kor(['fetch', 'origin', 'main', '--quiet']);
+    } catch (err) {
+      const detalj = err.stderr ? err.stderr.toString('utf8').trim() : err.message;
+      throw new Error(
+        `kunde inte hämta färsk origin/main (${detalj}) — kör "git fetch" och försök igen.`,
+      );
+    }
+    return kor(['rev-parse', 'origin/main']);
+  }
+
+  try {
+    return kor(['rev-parse', 'main']);
+  } catch {
+    return kor(['rev-parse', 'HEAD']);
   }
 }
 

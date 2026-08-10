@@ -34,10 +34,18 @@ godkänd av Marcus — promovering väntar. (3) Persondetalj + check-in orörda.
 Numrering vid paus: 108/task-185/L512+2 fragment/T140/f47.
 **HANDOFF: sessionsdok S103 § Paushistorik + Del 1–3.** Numrering RE-VERIFIERAD
 mot disk vid resume — oförändrad. Paus-landningen ligger i PR `#1109` (armerad,
-Acceptance kör).
-*(Föregående kadensrad nedan, bevarad.)*
+Acceptance kör). Parallellt aktiv: S102 (kadensrad nedan) — dess parentes
+"S103 … pausad efter leverans" beskriver läget före denna resume.
+*(Föregående kadensrader nedan, bevarade.)*
 
 <!-- Föregående kadensrad, bevarad: -->
+**Session 102 🔄 PÅGÅR (2026-08-10, `lifecycle: active`) — GO-LIVE-DAGEN:
+batch-orkestrering.** Läge vid kontrollerad kompaktering ~13:50: batchen
+(Marcus-order max-kort 14) 10/14 avfyrade, 8 Done, ⑩ (147.2) bygger,
+kvar 147.3/147.10/147.5/147.7. Parallellt: S103 (person-passet, pausad
+efter leverans) + S104 (segment-passet). Full narrativ + Marcus-hög:
+sessionsdok S102 Del 1–3. Morgonsekvensen (Grind F + T51 via
+åtgärdssidan): Del 2. *(S93:s stängda kadensrad nedan, bevarad.)*
 
 **Session 93 ✅ AVSLUTAD (2026-08-02 → 2026-08-10, `lifecycle: closed` på
 Marcus coverage-kvittens) — EVENTSIDAN SKARP, PROMOVERINGS-APPARATEN BYGGD,

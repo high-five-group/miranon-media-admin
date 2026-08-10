@@ -879,6 +879,33 @@ jobs:
         # strukturell exkludering (import-modulspecifikation). Sandboxad i
         # egen mktemp-katalog, ingen nätverkstrafik. ~0,3 s LOKALT mätt
         # (macOS, 2026-08-09) — CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-check-nattvakt-dedup.sh (TASK-180) hör hit av samma kadens-
+        # skäl: prövar dedup-beslutet nightly-watchdog.yml:s "Kom natten
+        # igång?"-jobb anropar (scripts/check-nattvakt-dedup.sh). 13 fall,
+        # tvåsidigt bevis — SIDA 1: tom mängd, stängt UTAN kommentar och
+        # stängt MED kommentar men UTANFÖR fönstret larmar fortfarande;
+        # SIDA 2: öppet ärende och #1042-scenariot ordagrant (stängt MED
+        # rotorsaksmotivering inom fönstret) dedupar korrekt — plus
+        # fail-closed-grenar (saknad/otolkbar fake-JSON, trasig policy).
+        # Riggen läser NATTVAKT_DEDUP_FAKE_JSON i stället för att fråga
+        # GitHub, ingen nätverkstrafik. 0,46 s LOKALT mätt (macOS,
+        # 2026-08-10, `time bash scripts/test-check-nattvakt-dedup.sh`) —
+        # CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-check-sessionsdok-fonster.sh (TASK-158.4) hör hit av samma
+        # kadens-skäl: grinden själv kör i NATTEN (nightly.yml, jobbet
+        # sessionsdok-fonster — en inaktuellt-tillstånd-kontroll hör inte i
+        # PR-grinden, se grindens huvud § HÖR I NATTEN), men dess testsvit ska
+        # fälla FÖRE landning när någon försvagar grindens logik. 16 fall,
+        # tvåsidigt bevis: SAMMA fixturrepo klassificeras DRIFT vid N=2 och
+        # GRÖNT vid N=3 (bevisar AC #1 — fönstertalet läses ur policy-konfigen,
+        # inte hårdkodat: en hårdkodad konstant hade inte kunnat flippa
+        # utfallet) plus fyra fail-closed-grenar (saknat skript, saknad/tom
+        # policy, otolkbar rapport, motsägelsefull rapport). Sandboxad i egen
+        # mktemp-katalog med trap-cleanup, ingen nätverkstrafik. 0,66 s LOKALT
+        # mätt (macOS, 2026-08-10, `time bash scripts/test-check-sessionsdok-
+        # fonster.sh`) — CI-tiden är INTE mätt av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -895,6 +922,8 @@ jobs:
           bash scripts/test-stop-vakt.sh
           bash scripts/test-check-facit.sh
           node scripts/test-check-langa-streck.mjs
+          bash scripts/test-check-nattvakt-dedup.sh
+          bash scripts/test-check-sessionsdok-fonster.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
@@ -1164,7 +1193,10 @@ jobs:
         # .arkivera-sessionsdok-policy.conf, tillagd i TASK-158.2-wiringen
         # (ADR-099 rullande fönster — scripts/arkivera-sessionsdok.sh) +
         # .precompact-policy.conf, tillagd i TASK-160.2-wiringen (ADR-101
-        # § Beslut 5, PreCompact-grinden mot okontrollerad kompaktering) —
+        # § Beslut 5, PreCompact-grinden mot okontrollerad kompaktering) +
+        # .nattvakt-dedup-policy.conf, tillagd i TASK-180-wiringen
+        # (scripts/check-nattvakt-dedup.sh — nightly-watchdog.yml:s
+        # dedup-beslut, öppet ELLER stängt-med-motivering) —
         # en sourced conf utanför scopet är samma lucka som de övriga redan
         # stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
@@ -1175,7 +1207,8 @@ jobs:
         # T119(d) item 5-wiringen, till femton i T119(d) item 4-wiringen,
         # till sjutton i TASK-139, till arton i TASK-148.2, till nitton i
         # TASK-152, till tjugo i TASK-149.3, till tjugoett i TASK-158.2,
-        # till tjugotvå i TASK-160.2 och till tjugotre i ADR-102-wiringen
+        # till tjugotvå i TASK-160.2, till tjugotre i ADR-102-wiringen och
+        # till tjugofyra i TASK-180-wiringen
         # (.facit-policy.conf — agenten som byggde grinden lade till conf-filen
         # men wirade den inte in hit; luckan fångades av att shellcheck-strict
         # fällde på skriptet, inte av att någon läste listan).
@@ -1208,7 +1241,8 @@ jobs:
             .arbetsform-push-policy.conf \
             .arkivera-sessionsdok-policy.conf \
             .precompact-policy.conf \
-            .facit-policy.conf
+            .facit-policy.conf \
+            .nattvakt-dedup-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på

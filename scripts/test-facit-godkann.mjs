@@ -34,6 +34,7 @@ import {
   main,
   parseArgs,
   renderHelp,
+  resolveMainSha,
   tillampaGodkannande,
 } from './facit-godkann.mjs';
 
@@ -361,6 +362,151 @@ t('biomeFormatera: repoRoot utan biome-binär ger { ok:false } — ICKE fatalt, 
 });
 
 rmSync(BIOME_UNIT_SANDBOX, { recursive: true, force: true });
+
+// ===========================================================================
+// resolveMainSha — TASK-175 (2026-08-10). Regression för S93-stängningens
+// mätta bugg: en lokal `main`-ref i en orkestrerar-checkout stod stilla
+// medan origin rörde sig, och kvittot stämplade det FÖRLEGADE trädet
+// (tasks/lessons.d/stampel-sha-harleds-ur-ref-som-star-stilla.md).
+// TVÅSIDIGT bevis: samma fixtur bevisar BÅDE att den gamla härledningen
+// (lokal `main`, ingen fetch) ger den stillastående SHA:n OCH att den nya
+// härledningen (resolveMainSha, färsk origin/main) ger den färska.
+// ===========================================================================
+
+// TASK-175 (CI-fällning, run 31380377469): `git init -q` UTAN uttryckligt
+// grennamn ärver `init.defaultbranch` — "main" lokalt (Apple Gits egen
+// vendor-config, se rapporten nedan), "master" på CI-runnern (stock git,
+// ingen sådan config). Testerna nedan behöver ett FÖRUTSÄGBART grennamn
+// ("main") oavsett miljö, eftersom de antingen läser den lokala main-refen
+// direkt (för jämförelse) eller explicit tar bort den — `-b main` gör
+// grennamnet en del av KOMMANDOT, inte av omgivningens config.
+function nyttGitRepo(prefix) {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: dir });
+  execFileSync('git', ['config', 'user.email', 'test@test.invalid'], { cwd: dir });
+  execFileSync('git', ['config', 'user.name', 'test'], { cwd: dir });
+  return dir;
+}
+
+t(
+  'resolveMainSha: härleder ur FÄRSK origin/main, inte en stillastående lokal main-ref (TASK-175, S93-regression)',
+  () => {
+    // "origin" — ett bart repo som senare rör sig UTAN att klonen nedan
+    // någonsin fast-forwardas. Detta ÄR den mätta bugg-situationen.
+    const origin = mkdtempSync(join(tmpdir(), 'facit-godkann-t175-origin-'));
+    execFileSync('git', ['init', '-q', '--bare', '--initial-branch=main'], { cwd: origin });
+
+    // Klonen vars LOKALA main-ref ska stå stilla — motsvarar en
+    // orkestrerar-checkout som inte manuellt fast-forwardats.
+    const klon = mkdtempSync(join(tmpdir(), 'facit-godkann-t175-klon-'));
+    execFileSync('git', ['clone', '-q', origin, klon]);
+    execFileSync('git', ['config', 'user.email', 'test@test.invalid'], { cwd: klon });
+    execFileSync('git', ['config', 'user.name', 'test'], { cwd: klon });
+    execFileSync('git', ['commit', '--allow-empty', '-q', '-m', 'första landningen'], {
+      cwd: klon,
+    });
+    execFileSync('git', ['push', '-q', 'origin', 'HEAD:main'], { cwd: klon });
+    const stillaSha = execFileSync('git', ['rev-parse', 'main'], {
+      cwd: klon,
+      encoding: 'utf8',
+    }).trim();
+
+    // Ett ANNAT ombud (t.ex. merge-kön) pushar vidare på origin — klonens
+    // lokala main-ref rörs aldrig.
+    const annanKlon = mkdtempSync(join(tmpdir(), 'facit-godkann-t175-annanklon-'));
+    execFileSync('git', ['clone', '-q', origin, annanKlon]);
+    execFileSync('git', ['config', 'user.email', 'test@test.invalid'], { cwd: annanKlon });
+    execFileSync('git', ['config', 'user.name', 'test'], { cwd: annanKlon });
+    execFileSync('git', ['commit', '--allow-empty', '-q', '-m', 'landning efter S93'], {
+      cwd: annanKlon,
+    });
+    execFileSync('git', ['push', '-q', 'origin', 'HEAD:main'], { cwd: annanKlon });
+    const farskSha = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: annanKlon,
+      encoding: 'utf8',
+    }).trim();
+
+    assert.notEqual(stillaSha, farskSha, 'testets premiss: origin måste faktiskt ha rört sig');
+
+    // BEVIS SIDA 1 (den gamla buggen): klonens lokala main-ref, läst UTAN
+    // fetch — exakt vad den gamla `kor('main')`-härledningen gjorde — är
+    // fortfarande den STILLASTÅENDE SHA:n.
+    const lokalMainUtanFetch = execFileSync('git', ['rev-parse', 'main'], {
+      cwd: klon,
+      encoding: 'utf8',
+    }).trim();
+    assert.equal(
+      lokalMainUtanFetch,
+      stillaSha,
+      'den gamla härledningen (lokal main, ingen fetch) ger det STILLASTÅENDE trädet — detta är buggen S93 mätte',
+    );
+
+    // BEVIS SIDA 2 (fixen): resolveMainSha() fetchar färskt och läser
+    // origin/main — den FÄRSKA SHA:n, trots att klonens lokala main-ref
+    // aldrig fast-forwardats.
+    const resultat = resolveMainSha(klon);
+    assert.equal(
+      resultat,
+      farskSha,
+      'resolveMainSha ska härleda ur FÄRSK origin/main, inte den stillastående lokala main-refen',
+    );
+    assert.notEqual(
+      resultat,
+      stillaSha,
+      'resultatet får ALDRIG vara den förlegade SHA:n den gamla buggen stämplade',
+    );
+
+    rmSync(origin, { recursive: true, force: true });
+    rmSync(klon, { recursive: true, force: true });
+    rmSync(annanKlon, { recursive: true, force: true });
+  },
+);
+
+t(
+  'resolveMainSha: utan origin-remote faller tillbaka till lokal main (oförändrat beteende)',
+  () => {
+    const repo = nyttGitRepo('facit-godkann-t175-utanorigin-');
+    execFileSync('git', ['commit', '--allow-empty', '-q', '-m', 'init'], { cwd: repo });
+    const lokalSha = execFileSync('git', ['rev-parse', 'main'], {
+      cwd: repo,
+      encoding: 'utf8',
+    }).trim();
+    assert.equal(resolveMainSha(repo), lokalSha);
+    rmSync(repo, { recursive: true, force: true });
+  },
+);
+
+t(
+  'resolveMainSha: utan origin OCH utan main-ref (helt tom historik) faller tillbaka till HEAD',
+  () => {
+    const repo = nyttGitRepo('facit-godkann-t175-tomhistorik-');
+    // Ingen commit alls — varken "main" eller "HEAD" pekar på något ännu i
+    // ett splitternytt repo, så vi lägger en commit på en ANNAN gren-form
+    // (detached) för att simulera "lokal main saknas men HEAD finns".
+    execFileSync('git', ['commit', '--allow-empty', '-q', '-m', 'init'], { cwd: repo });
+    execFileSync('git', ['checkout', '-q', '-b', 'annan-gren'], { cwd: repo });
+    execFileSync('git', ['branch', '-q', '-D', 'main'], { cwd: repo });
+    const headSha = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: repo,
+      encoding: 'utf8',
+    }).trim();
+    assert.equal(resolveMainSha(repo), headSha);
+    rmSync(repo, { recursive: true, force: true });
+  },
+);
+
+t(
+  'resolveMainSha: origin konfigurerad men ohämtbar -> kastar TYDLIGT fel (ingen tyst stale-SHA)',
+  () => {
+    const repo = nyttGitRepo('facit-godkann-t175-brutenorigin-');
+    execFileSync('git', ['commit', '--allow-empty', '-q', '-m', 'init'], { cwd: repo });
+    execFileSync('git', ['remote', 'add', 'origin', '/finns/garanterat/inte/nagonstans-t175'], {
+      cwd: repo,
+    });
+    assert.throws(() => resolveMainSha(repo), /kunde inte hämta färsk origin\/main/);
+    rmSync(repo, { recursive: true, force: true });
+  },
+);
 
 // ===========================================================================
 // main() — end-to-end mot en hermetisk /tmp-sandlåda, ETT äkta git-repo

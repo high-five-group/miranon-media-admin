@@ -1,10 +1,10 @@
 ---
 id: TASK-147.1
 title: 'Skiva: Sändvägs-EF:n bilage-fri gren + ADR-067-revisionen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 06:58'
-updated_date: '2026-08-10 07:40'
+updated_date: '2026-08-10 11:42'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,14 +23,18 @@ Täcker användarberättelser: 10, 13, 27 (serversidan).
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 EF-operationen tar åtgärdstyp + mottagarurval + redigerad ämnesrad/brödtext och sänder via bilage-fria batchgrenen; per-mottagare-utfall i svaret
-- [ ] #2 Idempotens bevisad genom omkörning: samma körning två gånger ger ett mail, inte två
-- [ ] #3 Delutfall testat som delutfall: scenario där några mottagare faller ger svar som säger just det
-- [ ] #4 ADR-067-revisionen mintad med gren-arkitekturen + tyst-bilage-brist-skälet + avvisade alternativ
-- [ ] #5 ADR-067-revisionen rymmer uttryckligen test-sändvägen (enkel-mottagare till inloggad användare, T53 väg C) som del av det nya kontraktet
+- [x] #1 EF-operationen tar åtgärdstyp + mottagarurval + redigerad ämnesrad/brödtext och sänder via bilage-fria batchgrenen; per-mottagare-utfall i svaret
+- [x] #2 Idempotens bevisad genom omkörning: samma körning två gånger ger ett mail, inte två
+- [x] #3 Delutfall testat som delutfall: scenario där några mottagare faller ger svar som säger just det
+- [x] #4 ADR-067-revisionen mintad med gren-arkitekturen + tyst-bilage-brist-skälet + avvisade alternativ
+- [x] #5 ADR-067-revisionen rymmer uttryckligen test-sändvägen (enkel-mottagare till inloggad användare, T53 väg C) som del av det nya kontraktet
 <!-- AC:END -->
 
+## Final Summary
 
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1093 (44233e22, mergad 8450808c): send-action-email-EF:n (fyra åtgärdstyper, per-mottagare-utfall, idempotens via jobId/typ-nyckel, icke-prod-spärren ärvd som golv, atomicitet mail↔stämpel) + ADR-067-revisionen D9 (greningen) + D10 (test-sändvägen, T53 väg C). 311/311 api-pure. Kontraktsytan för 147.5/147.10 bokförd på kortet. Konsent-gaten öppen punkt till Marcus. EF deployad till staging av orkestratorn. AFK-proveniens: S102-batchen kort ④.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

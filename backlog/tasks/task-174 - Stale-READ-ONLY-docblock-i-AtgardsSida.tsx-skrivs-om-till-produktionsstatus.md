@@ -1,9 +1,10 @@
 ---
 id: TASK-174
 title: Stale READ-ONLY-docblock i AtgardsSida.tsx skrivs om till produktionsstatus
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 18:26'
+updated_date: '2026-08-10 11:42'
 labels:
   - ready-for-agent
 dependencies: []
@@ -18,9 +19,15 @@ Fynd flaggat i task-171.5:s final summary ("Flaggat i notes för framtida triage
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Docblocken i AtgardsSida.tsx beskriver ytans faktiska produktionsstatus — ingen stale READ-ONLY-/prototyp-era-referens kvar i filen
-- [ ] #2 Omskrivningen är ren kommentar-ändring: noll beteende-diff (typecheck, biome, build, test:api gröna)
+- [x] #1 Docblocken i AtgardsSida.tsx beskriver ytans faktiska produktionsstatus — ingen stale READ-ONLY-/prototyp-era-referens kvar i filen
+- [x] #2 Omskrivningen är ren kommentar-ändring: noll beteende-diff (typecheck, biome, build, test:api gröna)
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1097 (d7c4eb91, mergad cce525c1): docblocken säger dagsläget per del (betalningar skarpa · utskick väntar 147.2 · bilagor väntar 147.5) med ÄNDRAS AV-taggar per kommande skiva; orphant varv-12-stycke om riven montering rättat (öppet utökat inom AC:ts filbreda krav). AFK-proveniens: S102-batchen kort ⑥.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

@@ -265,6 +265,55 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anteckningar',
     allowedFields: ['Författare', 'Anteckning', 'Event'],
   },
+  // Skapa en bilage-metadatarad (TASK-146.4, PRD task-146 "Bilage-fundamentet";
+  // ADR-057 lager-oberoendet). upload-attachment-EF:en (mönster 1) och
+  // finalize-attachment-upload-EF:en (mönster 2) bygger BÅDA `fields`
+  // SERVER-SIDE ur bytes/lagringens FAKTISKA tillstånd (Namn/'Storlek (bytes)'
+  // ur den verifierade filen, ALDRIG ett klient-påstått tal; Skapad ur
+  // `new Date().toISOString()`; Event ur det redan event-existens-verifierade
+  // `eventId`) — listan är därför en SSOT-grind mot framtida kod-drift, ej en
+  // klient-nåbar deny-yta. EXAKT de fyra fälten i den ADDITIVA Bilagor-tabellen
+  // (staging tblFamrna53MVf1nG, skapad additivt av
+  // scripts/create-bilagor-table.mjs, TASK-146.2 #855; skrivbarheten är
+  // konstruktions-given — tabellen skapades FÖR denna skrivning, ingen
+  // separat live-verifiering behövdes): 'Namn' (singleLineText, primär),
+  // 'Storlek (bytes)' (number), 'Skapad' (dateTime — manuellt satt, INTE
+  // Airtables createdTime, se scripts/create-bilagor-table.mjs § "Skapad"),
+  // 'Event' (multipleRecordLinks → Eventplanering). ⚠️ PROD-tabellen är INTE
+  // skapad — hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö;
+  // ADR-050/ADR-063, samma mönster som create-event-note). Tabell per NAMN
+  // (ADR-050 bas-portabilitet).
+  'create-attachment': {
+    tableId: 'Bilagor',
+    allowedFields: ['Namn', 'Storlek (bytes)', 'Skapad', 'Event'],
+  },
+  // Åtgärdsutskickens sändväg (TASK-147.1, ADR-067-revisionen — repots sjunde
+  // write-vertikal, tredje mail-vertikal). send-action-email-EF:en bygger `fields`
+  // SERVER-SIDE ur den UPPLÄSTA anmälan + den fasta per-åtgärdstyp-mappningen i
+  // _shared/send-action-email.ts:s `stampFieldsFor` (klienten skickar bara
+  // registration-ID:n) — listan är därför en SSOT-grind mot framtida kod-drift, ej
+  // en klient-nåbar deny-yta. UNIONEN av allt de FYRA åtgärdstyperna kan skriva:
+  // 'Status' + 'Bekräftelse skickad' (bekräftelse — EXAKT send-registration-
+  // confirmations par, ORDLISTA: Bekräftad ⟺ bekräftelsen skickad), 'Deltagarinfo
+  // skickad' (eventinfo, fld3WBS0QQrqLpYtK — samma fält AtgardsSida.tsx redan
+  // LÄSER som `reg.deltagarinfoSkickad`), 'Påminnelse anmälningsavgift skickad' +
+  // 'Påminnelse slutbetalning skickad' (paminnelse — de TVÅ additiva fälten
+  // task-18.8 skapade; src/data/mutations/registrationPayments.ts:s
+  // `useLogPaymentReminder`-docblock pekar UTTRYCKLIGEN ut dem som målet för "ett
+  // framtida server-side-utskick" — detta ÄR den ersättningen, mailto-vägen rörs
+  // inte här). 'fritt' skriver INGET fält (mailet ensamt är hela handlingen).
+  // Gamla odelade 'Betalningspåminnelse skickad' rörs MEDVETET aldrig (samma
+  // T16-avgränsning som log-payment-reminder ovan). Tabell per NAMN (ADR-050).
+  'send-action-email': {
+    tableId: 'Anmälningar',
+    allowedFields: [
+      'Status',
+      'Bekräftelse skickad',
+      'Deltagarinfo skickad',
+      'Påminnelse anmälningsavgift skickad',
+      'Påminnelse slutbetalning skickad',
+    ],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.

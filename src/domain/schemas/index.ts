@@ -4,6 +4,7 @@
  * Scheman används för att validera Airtable/Edge-Function-svar
  * vid systemgränsen. Interface-typerna ligger i `../models/`.
  */
+export { AttachmentSchema, AttachmentUploadTicketSchema } from './Attachment.schema';
 export { AttendanceSchema } from './Attendance.schema';
 export {
   type ConfirmRegistrationsInput,

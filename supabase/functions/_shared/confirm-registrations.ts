@@ -19,8 +19,14 @@ import { NonProdAddressError, RESEND_TEST_ADDRESSES, renderHtml } from './send-b
 /** Basens Status-ord (data-model.md §Status-värden — Anmälningar). */
 const STATUS_OBEKRAFTAD = 'Obekräftad';
 export const STATUS_BEKRAFTAD = 'Bekräftad (mail skickat)';
-/** Statusar där en bekräftelse ALDRIG får gå ut (avbokad person / inställt event). */
-const INAKTIVA_STATUSAR = ['Avbokad/Ombokad', 'Inställt'];
+/**
+ * Statusar där en bekräftelse ALDRIG får gå ut (avbokad person / inställt event).
+ * EXPORTERAD (TASK-147.1): send-action-email.ts återanvänder samma defensiva golv
+ * för ALLA fyra åtgärdstyperna (bekräftelse/påminnelse/eventinfo/fritt) — ingen
+ * åtgärd ska gå till en avbokad/inställd anmälan. En delad konstant, inte en
+ * andra hårdkodad kopia som kan glida.
+ */
+export const INAKTIVA_STATUSAR = ['Avbokad/Ombokad', 'Inställt'];
 
 /** Airtable-fältnamnen operationen skriver (allowlist-SSOT: field-allowlists.ts). */
 export const FALT_STATUS = 'Status';
