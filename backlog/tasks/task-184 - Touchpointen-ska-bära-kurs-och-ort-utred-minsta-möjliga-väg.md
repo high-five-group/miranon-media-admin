@@ -4,7 +4,7 @@ title: Touchpointen ska bära kurs och ort - utred minsta möjliga väg
 status: To Do
 assignee: []
 created_date: '2026-08-10 09:16'
-updated_date: '2026-08-10 09:30'
+updated_date: '2026-08-10 10:16'
 labels:
   - bas-maximering
   - utredning
@@ -20,23 +20,27 @@ Senaste interaktion-texten på Personer ska kunna säga 'Anmälde sig till RIM 1
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Utredningen redovisar minsta möjliga väg med belägg per steg,Backfill-behovet är avgjort mot faktisk data och inte antaget,Vägen är prövad i staging innan prod,Båda basernas paritet är verifierad och inte antagen
+- [x] #1 Utredningen redovisar minsta möjliga väg med belägg per steg,Backfill-behovet är avgjort mot faktisk data och inte antaget,Vägen är prövad i staging innan prod,Båda basernas paritet är verifierad och inte antagen
 <!-- AC:END -->
+
+
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-UTREDNING KLAR 2026-08-10 (read-only, inget ändrat i någon bas). Full text: docs/research/touchpoint-kurs-och-ort-2026-08-10.md (ocommittad i worktree s103-t97-personvyerna).
+BYGGT OCH VERIFIERAT 2026-08-10 i BÅDA baserna (prod app8uGPrVCVOm6LfD, staging apphjj8Q7lkXCMsL4). Anmälningsgrenen i Personer.Senaste interaktion (text) bär nu kurs och ort: 'Anmälde sig · 19 apr 2026' -> 'Anmälde sig · RIM 1, Rönninge · 19 apr 2026'. Noll backfill, ingen automationsändring, inget nytt länkfält.
 
-SVAR: Ingen backfill krävs - men inte av det skäl invändningen antog. (1) Touchpointen kan INTE bära kurs/ort utan nytt länkfält, och ett länkfält kan inte fyllas av formel (Airtable-förstapart: 'Lookup fields can only pull data from tables that are already connected via a linked record field' + 'no built-in way to have a linked record field computed automatically by a formula'). Den vägen kräver backfill. (2) Men den vägen behövs inte: anmälnings-grenen läses direkt ur Anmälningar via den REDAN FYLLDA länken Personer.Anmälningar (fld8pOivka8YdiywK) - 7 anmälningar i hela prod saknar person-länk. Lookups/formler/rollups är beräknade och får värde på alla gamla rader direkt.
+ÅTTA NYA FÄLT (alla beräknade -> fick värde på alla befintliga rader direkt). Anmälningar: Ort (from Event) prod fld5560T3pQZSUBaJ / stg fldUhHceqBud4BHvf; Kurs (from Event) prod fldfqU6MfBQdaeLUk / stg fldcTDSzGBG0bHjl3; Anmälan datetimekey prod fldfQqBjqGHLSazAs / stg fldDdlU7w1aItf8XA; Person - senaste anmälan datetimekey prod fldoSStIK36rdxKtj / stg fldBtpOlRnWXspbip; Senaste anmälan (sammanfattning) prod fldEos4UvVBpk2reB / stg fldwgo1fJirUwUiOC. Personer: Senaste anmälan datum prod fldmx8O7LQPdopD6T / stg fldEEdTZA9sUpVQaI; Senaste anmälan datetimekey prod fldj5IxwmjJ3giZhT / stg fldeiyO7B8xDzBB2D; Senaste anmälan (text) prod fldmNo7XJBdfs8heT / stg fldIvGODBIoW9TZbn. Två ändrade formler: fldRnujWHT3ADToC1 + fldXZyVlSKg5mX8rP (originalen verbatim i data-model.md-noten och i slutrapporten).
 
-HÄRLEDNING FÖLL PÅ MÄTNING: 12 personer med >=4 anmälningar i prod - TP-antal lika med anmälnings-antal i 4 fall, LÄGRE i 5, HÖGRE i 3. Ej 1:1 åt något håll. Mekanism läst live ur A2 (wflRPMp5QNGEa7wH1): grenen 'Om person utan namn hittades' skapar ingen touchpoint alls.
+GRINDEN I STÄLLET FÖR RADORDNING: sammanfattningen fylls bara på personens senaste anmälan (radens datetimekey == personens max), så rollupen får exakt ett värde. Nödvändigt, inte omväg: MÄTT att länkcellens ordning är STIGANDE (recPyHkKMh7kJyZJ4) medan de befintliga rollupparnas utdata är FALLANDE -> ordningen kommer från en vy-/filterinställning som API:t varken visar eller kan sätta. En API-byggd rollup hade tagit ÄLDSTA raden.
 
-ÖVRIGT MÄTT: Metadata tomt i 100% av Touchpoints (kontrollmätt), Kanal likaså. Kontaktlogg har ingen väg till Anmälningar/Eventplanering. Anmälningar.Inskickad är patchig - använd Rad skapad. Backfill-anmälningar har tom egen Ort/Vill anmäla sig till, så kurs+ort måste hämtas från Eventplanering via Event-länken (2 nya lookups).
+TIE-BREAK: anmälan slår touchpoint så länge touchpointen inte ligger på en SENARE DAG, jämfört på heltalsnycklar (rollupens datumvärde exponeras som datum-typ, så tidsprecision får ej vara bärande). A2:s lagg mätt 3,6-6,7 s. SKARPT BEVIS prod: 6 verkliga personer flippade från fattig till rik sträng (rec0C4Rdo8Wg5esRH 'Anmälde sig · 19 apr 2026' -> 'Anmälde sig · RIM 1, Rönninge · 19 apr 2026'). Regression: recPyHkKMh7kJyZJ4 (deltagande 1 maj > anmälan 19 apr) oförändrad; personer utan anmälan oförändrade; touchpoint senare dag vinner fortfarande (rec1qhf7bahzX8vr0). Negativt kontrolltest i staging med temporär touchpoint-fixtur (skapad, flyttad ett dygn, raderad).
 
-MINSTA VÄG (7 steg): lookups Ort+Event(text) från Event på Anmälningar -> formelfält Anmälan (sammanfattning) -> rollup på Personer -> rollup MAX(Rad skapad) -> utvidga Senaste interaktion (text)/(datum) till trevägsval med explicit tie-break -> staging före prod (nya fält får olika ID per bas) -> bokför i data-model.md + ny post i airtable-constraints.md.
+OMÄTT/ÖPPET: 3 prod-personer visar fortfarande fattig sträng - samtliga har 0 anmälningar (föräldralös anmälnings-touchpoint, känd klass F.1/fälla 12). Tre systerfält (fldT1yVpCFa5Zyrji, fld6wQp5K9VAcFskd, fld9wrmfhSParaxOz) räknar fortfarande senaste interaktion utan anmälningskandidaten - läses INTE av appen, lämnade utanför scope, bokförd som öppen skuld i data-model.md. Midnattskanten dokumenterad.
 
-OMÄTT: rollupens aggregeringsfunktion (API exponerar den inte - måste läsas i UI); staging-automationerna (connectorn nekar staging, P24 blockar PAT-servern); överskotts-touchpointerna saknar läst mekanism; målsträngens datumval (eventdatum vs interaktionsdatum) och kortformen 'RIM 1' finns inte i data - kräver Marcus-beslut.
+NYTT MÄTT FAKTUM (stänger kortets omätt-punkt): staging BÄR samma automationer A1-A11 inkl. A2 wflRPMp5QNGEa7wH1 (samma ID som prod, samma nodstruktur) men samtliga är deploymentStatus undeployed.
+
+DOCS: data-model.md ny sektion 'Fält tillagda i augusti 2026'; airtable-constraints.md ny post P30 (formler når bara länkade tabeller; länkfält kan ej beräknas) + ändringslogg; CLAUDE.md 29->30 poster. markdownlint + vale + npm run check:docs (14/14) gröna. Ocommittat i worktree s103-t97-personvyerna.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done

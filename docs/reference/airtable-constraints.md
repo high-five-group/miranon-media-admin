@@ -1,13 +1,13 @@
 ---
 owner: marcus803
-updated: 2026-08-08
+updated: 2026-08-10
 review_by: 2027-02-07
 status: stable
 ---
 
 # Airtable — strukturella begränsningar (plattform)
 
-> **Äger:** Airtable-plattformens strukturella väggar (P1–P29), varje posts
+> **Äger:** Airtable-plattformens strukturella väggar (P1–P30), varje posts
 > v1-kompensation och Fas E-migrationskrav. **Kartlägger:**
 > `docs/reference/data-model.md` §Kända fällor (avgränsning: fält-specifika
 > fällor bor där, plattforms-generella väggar bor här — se avgränsningsraden
@@ -191,6 +191,35 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
   rå record-ID:n exponeras aldrig i vyn).
 - **Fas E-krav.** Supabase-adaptern MÅSTE `JOIN` mot persontabellen och projicera namnet direkt;
   ID→namn-berikningssteget försvinner.
+
+#### P30 · Formler når bara länkade tabeller — och länkfältet kan inte fyllas av en formel
+
+- **Begränsning.** En formel kan bara läsa fält i sin EGEN rad; för att nå en annan tabell krävs ett
+  länkfält, och lookup/rollup kan bara gå via ett sådant. Airtables egen dokumentation säger det rakt
+  ut: *"Lookup fields can only pull data from tables that are already connected via a linked record
+  field"* (`support.airtable.com/v1/docs/lookup-field-overview`, hämtad 2026-08-10). Länkfältet i sin
+  tur går inte att beräkna: *"There is no built-in way to have a linked record field computed
+  automatically by a formula"* (`support.airtable.com/v1/docs/linked-record-field`, samma datum).
+  Paret gör relationen till ett **skrivet** faktum: den kan bara fyllas av en människa, en automation
+  eller en API-skrivning — aldrig härledas.
+- **Kostnad/manifestation.** `TASK-184` skulle ge `Personer.Senaste interaktion (text)` kurs och ort
+  för anmälningsgrenen. `Touchpoints` har bara två länkfält (`Person (länkat fält)`
+  `fldLiC0ZiUAdxXu9u`, `Mail logg (rådata)` `fldcSJPi1Vweh7Gyc`) och ingen väg till `Anmälningar`
+  eller `Eventplanering`, så touchpointen kan strukturellt inte bära uppgiften. Ett nytt länkfält
+  hade fötts tomt på samtliga befintliga rader och krävt backfill — och backfillen var dessutom inte
+  härledbar: kardinaliteten anmälningar↔touchpointer är inte 1:1 (12 mätta prod-personer med ≥4
+  anmälningar: 4 lika, 5 färre, 3 fler). Källa:
+  [`touchpoint-kurs-och-ort-2026-08-10.md`](../research/touchpoint-kurs-och-ort-2026-08-10.md)
+  §Vägarna som prövades 1 + 5.
+- **v1-kompensation.** Läs grenen från den tabell som REDAN har relationen i stället för att bygga en
+  ny. `TASK-184` löste hela behovet över den befintliga länken `Personer.Anmälningar (länkat fält)`
+  (`fld8pOivka8YdiywK`) med enbart beräknade fält — lookup, formel, rollup — som får värde på alla
+  befintliga rader i samma ögonblick de skapas. Noll backfill. Kostnaden är att grenen läses från
+  anmälan i stället för från touchpointen; touchpointen behåller sin roll som logg.
+- **Fas E-krav.** Supabase-adaptern MÅSTE kunna `JOIN`:a över godtyckliga nycklar utan att relationen
+  först materialiseras som en lagrad länk — en främmande nyckel räcker, och en vy kan härleda den ur
+  data som redan finns. Hela klassen "relationen måste skrivas innan den kan läsas" försvinner, och
+  därmed också backfill-kravet vid varje ny relation.
 
 #### P19 · `filterByFormula` kräver applikations-side escaping
 
@@ -583,3 +612,4 @@ detalj, åtgärds-rekommendation och live-stickprov.
 | 2026-07-27 | **Session 91 — sektion F, testbarhet och miljö-isolering** (Marcus order: dokumentet ska bära ALLA Airtable-tvingade kompromisser). Två nya plattform-poster: **P26** (ingen bas-duplicering via API — per-körning-isolering strukturellt omöjlig; två oberoende spärrar) och **P27** (icke-självhostbar — efemär backend otillgänglig; precedent-rymden tom). **P4 utvidgad** med två manifestationer: att 5 req/s-taket är DELAT och därmed gör test-shardning verkningslös även med perfekt isolering, samt en ⚠️ **öppen avvikelse** — klienten väntar 1 s efter 429 där dokumentationen kräver 30 s (tre ställen i `airtable-client.ts`; ej åtgärdad, ej trådförd). Beläggen fanns sedan 2026-07-26 i tre research-pass men saknade katalogpost; gränsdragningen tvång kontra eget val bor i [ADR-063 § S91-not](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md). Plattform-poster nu 27, grupperade A–F. |
 | 2026-07-31 | **`TASK-53` (commit `123dbca`) — P4:s öppna avvikelse STÄNGD.** 1 s-backoffen efter 429 ersatt av Airtable-konform väntan i en egen mekanism ([`_shared/airtable-retry.ts`](../../supabase/functions/_shared/airtable-retry.ts)), delad av alla tre call-sites: exponentiellt från 30 s med additiv jitter och tak på 2 omförsök (härlett ur Supabase Edge Functions 150 s idle timeout — ett tredje omförsök hade gett 504). Verifierad med mockat 429-enhetstest som mäter faktisk väntetid; skarp framkallning valdes bort eftersom kvoten är delad (P26). Posten är därmed den första i katalogen som gått från öppen avvikelse till åtgärdad — noten behålls som historik, inte som skuld. |
 | 2026-08-07 | **`TASK-146.1` — sektion G, bilagor och filhantering.** Två nya plattform-poster landade från kandidaterna forskningspasset [`utskicks-bilage-arkitektur-2026-08-03.md`](../research/utskicks-bilage-arkitektur-2026-08-03.md) § Delfråga 4 medvetet lämnade olandade: **P28** (attachment-URL:er utgår efter 2 timmar, sedan 2022-11-08 — v1-kompensation ej tillämplig, `Bilagor`-tabellen håller bara metadata) och **P29** (Upload Attachment-API kapat till 5 MB direkt-byte-uppladdning — v1-kompensation ej tillämplig, samma skäl). Båda är FRAMÅTRIKTADE: grönfält i denna kodbas, ingen manifestation ännu — de är skälet TASK-146 valde delad hemvist (bytes i Supabase Storage) i stället för Airtable-native attachment-fält, inte en åtgärdad brist. Plattform-poster nu 29, grupperade A–G. |
+| 2026-08-10 | **`TASK-184` — P30, formlernas räckvidd över tabellgränsen.** En post som saknades i katalogen trots att den är en av de mest styrande väggarna: en formel når bara sin egen rad, lookup kräver ett befintligt länkfält, och länkfältet kan inte beräknas. Två förstapartscitat (`lookup-field-overview` + `linked-record-field`, båda hämtade 2026-08-10). Väggen upptäcktes när `TASK-184` skulle ge anmälningsgrenen i `Senaste interaktion (text)` kurs och ort: touchpointen kan strukturellt inte bära uppgiften, och ett nytt länkfält hade krävt en backfill som dessutom inte var härledbar. v1-kompensationen blev att läsa grenen över den relation som redan finns (`Personer.Anmälningar`), med enbart beräknade fält och noll backfill. Närliggande men skild från **P9** (som handlar om vad en lookup RETURNERAR, inte om vad den kan NÅ). Plattform-poster nu 30, grupperade A–G. |
