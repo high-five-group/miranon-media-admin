@@ -4,6 +4,7 @@ title: 'Skiva: Kvittogenereringen med nummerserien'
 status: To Do
 assignee: []
 created_date: '2026-08-10 07:03'
+updated_date: '2026-08-10 07:21'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,6 +31,19 @@ Täcker användarberättelser: 20, 21, 22, 23, 24.
 - [ ] #3 Kvitto-PDF genereras per mottagare och bevisas FRAMME som bilaga
 - [ ] #4 ADR för nummerserien mintad
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MARCUS-BESLUT 2026-08-10 (S102, kvittogränsen — Roger-feedback i efterhand, öppet bokfört per PRD DoD 10):
+
+(a) Appens kvittoserie ERSÄTTER Rogers manuella kvittogenerering i fakturasystemet. Allt som prickas av i appen (Swish/bankgiro/plusgiro) kan få app-kvitto. Kvittot är en AKTIV handling (Lotta skickar) — aldrig automatik. Sällsynta faktura-fall (vid förfrågan, Rogers system) prickas av UTAN app-kvitto — en betalning kvitteras i exakt ett system.
+(b) Format: MM-<år>-<löpnummer>, start 1001 (MM-2026-1001) — synligt avgränsad från Rogers serie.
+(c) Kvittoinnehåll: datum, belopp, betalsätt, event, kundnamn, Miranons org-uppgifter. MOMSRADEN ÖPPEN PUNKT: Rogers bekräftelse av momsstatus krävs innan kvitton går skarpt till kunder — skattefakta gissas aldrig.
+(d) Ångrad avprickning efter utskickat kvitto: kvittot består med sitt nummer + notering. Kreditrutin + bokförings-export = Roger-feedback senare, ej v1.
+
+Kvitterat i klartext av Marcus i huvudsessionen (S102). AC 1 därmed uppfylld i formen 'Marcus-beslut med efterhandsbekräftelse öppet bokförd'.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

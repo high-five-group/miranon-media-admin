@@ -3,10 +3,10 @@ id: TASK-52
 title: >-
   Fynd: persondetaljen faller för varje person med motivering — get-person
   returnerar array, schemat kräver sträng
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-25 23:43'
-updated_date: '2026-08-10 06:39'
+updated_date: '2026-08-10 07:22'
 labels:
   - ready-for-human
 dependencies: []
@@ -45,11 +45,9 @@ BEVIS-KRAV: fixturvärlden och e2e MÅSTE få ett fall med array-form, annars å
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
-
-
 
 ## Implementation Notes
 
@@ -100,3 +98,9 @@ KASKAD (samma commit): PersonDetail.tsx (DescRow .join, empty-state-guard) - Per
 
 VIKTIG DRIFT-KONSEKVENS: 3 av 8 get-person.staging.test.ts-fall failar LOKALT (ZodError: motivering expected array, received null) - EXPECTED deploy-lag, INTE en regression. Differentialbevisat: samma 8 test 8/8 grona pa oror main, 5/8 grona + 3 ZodError efter fixen (git stash/pop). Orsak: EF-deploy ar MANUELL (ADR-050: Ingen deploy-automatik, Fas 7-skuld), staging kor dessutom POST-MERGE (ci.yml skickar run_staging:false ovillkorligt till ci-suite.yml, bekraftat i .github/workflows/ci.yml + post-merge.yml), sa PR-grinden (test-fast/api-pure) paverkas INTE - test:api:pure 275/275 gront. Post-merge-jobbet KOMMER dock falla pa get-person tills funktionen redeployas manuellt till staging - och motsvarande i PROD tills prod-deploy kors. Utanfor denna skivas rackvidd (ingen deploy-behorighet i denna korning) men bokfort sa ingen tolkar en post-merge-rod get-person.staging.test.ts som en ny regression.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1079 (14a2479e, mergad ddd0bd82): coercion i EF + schema + två syskonfält defensivt; tvåsidigt bevis (coerce.test.ts rött mot pre-fix, grönt efter). EF deployad till staging + prod 2026-08-10 (refs disk-verifierade ur .env-modefilerna). DoD 3-beviset: post-merge-run 31364858043 (main 644d0412) GRÖN inkl. get-person.staging.test.ts. Persondetalj-sidan felar inte längre för personer med motivering.
+<!-- SECTION:FINAL_SUMMARY:END -->
