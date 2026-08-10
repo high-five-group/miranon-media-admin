@@ -522,11 +522,11 @@ export function PersonsListPrototyp() {
                         dämpad - vikten bär hierarkin, inte en extra rad (varje
                         radhöjd kostar scanhöjd på 430 px).
 
-                        Texten kommer FÄRDIGFORMAD ur basen ("Anmälde sig · RIM 1,
-                        Rönninge"); appen bygger ingen sträng och parsar ingen, så
-                        formeländringar slår igenom utan kodändring (ADR-063).
-                        Datumet togs ur basformeln 2026-08-10 - tiden stod två
-                        gånger när appen redan bar "N dagar sedan".
+                        Texten kommer FÄRDIGFORMAD ur basen ("Anmälde sig till RIM 1
+                        i Rönninge"); appen bygger ingen sträng och parsar ingen, så
+                        formeländringar slår igenom utan kodändring (ADR-063,
+                        ADR-108). Datumet togs ur basformeln 2026-08-10 - tiden stod
+                        två gånger när appen redan bar "N dagar sedan".
 
                         HÖJDLÅSET, del 2: raden renderas ALLTID, med ` ` när
                         interaktionen saknas. Efter bas-filtret (anmälningar > 0)

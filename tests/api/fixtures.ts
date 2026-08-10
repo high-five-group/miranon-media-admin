@@ -73,6 +73,18 @@ export const BELAGGNING_EXPECTED = {
  * det) och 17.5:s härledda antal (1 av 4) har därmed ett känt facit.
  */
 export const ARBETSKO_EVENT_ID = 'recZyRIzbqWSifAQO';
+
+/**
+ * `ZZ-Arbetsko Person 01` — samma permanenta person som bär
+ * `ARBETSKO_EXPECTED.erfarenhetsbadge`/`kurshistorik*` ovan, nu ÄVEN
+ * konsumerad direkt (inte bara via `ARBETSKO_EVENT_ID`s deltagande) av
+ * `senaste-interaktion-grammatik.staging.test.ts` (ADR-108) som den ena av
+ * två permanenta pin-fixturer för `Personer.Senaste interaktion (text)`.
+ * Live-verifierat värde 2026-08-10: "Anmälde sig till Fjärrskådning i
+ * ZZ-arbetsko-fixtur" (kurs+ort-kombinationen). STÄDA INTE.
+ */
+export const ARBETSKO_PERSON_ID = 'rec7F8jYc7rczwwkM';
+
 export const ARBETSKO_EXPECTED = {
   /** Anmälan med BÅDA skickad-tidsstämplarna + Person-länk (Källa tom). */
   bekraftadId: 'rec2OjLD2qiKzZCA0',
