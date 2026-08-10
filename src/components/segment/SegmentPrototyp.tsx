@@ -47,8 +47,9 @@
 import { VariantA } from './prototyp/VariantA';
 import { VariantB } from './prototyp/VariantB';
 import { VariantC } from './prototyp/VariantC';
+import { VariantD } from './prototyp/VariantD';
 
-export type SegmentVariant = 'a' | 'b' | 'c';
+export type SegmentVariant = 'a' | 'b' | 'c' | 'd';
 
 export function SegmentPrototyp({ variant }: { variant: SegmentVariant }) {
   return (
@@ -56,6 +57,7 @@ export function SegmentPrototyp({ variant }: { variant: SegmentVariant }) {
       {variant === 'a' && <VariantA />}
       {variant === 'b' && <VariantB />}
       {variant === 'c' && <VariantC />}
+      {variant === 'd' && <VariantD />}
     </>
   );
 }

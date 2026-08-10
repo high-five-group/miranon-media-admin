@@ -30,9 +30,10 @@ const PROTO_VARIANTS = [
   { key: 'a', label: 'A - Regelverkstaden', steg: 1, stegLabel: 'Divergens' },
   { key: 'b', label: 'B - Publiken först', steg: 1, stegLabel: 'Divergens' },
   { key: 'c', label: 'C - Segment som entitet', steg: 1, stegLabel: 'Divergens' },
+  { key: 'd', label: 'D - Syntesen', steg: 1, stegLabel: 'Divergens' },
 ];
 
-const PROTO_NYCKLAR: readonly string[] = ['a', 'b', 'c'];
+const PROTO_NYCKLAR: readonly string[] = ['a', 'b', 'c', 'd'];
 
 function arProtoVariant(v: string | null): v is SegmentVariant {
   return v != null && PROTO_NYCKLAR.includes(v);
