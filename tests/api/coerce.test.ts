@@ -191,11 +191,93 @@ test.describe('schema-parity — ort/allaHamtningar är string[] (SAKNAD-bug st�
       senasteDeltagandeDatum: null,
       antalHamtningar: 2,
       allaHamtningar: ['Kraftfältet', 'Andetag'],
-      motivering: null,
+      motivering: [],
       inbjudenCommunity: false,
       skapatKontoCommunity: false,
       historik: [],
     });
     expect(parsed.allaHamtningar).toEqual(['Kraftfältet', 'Andetag']);
+  });
+});
+
+test.describe('schema-parity — motivering är string[] (TASK-52-bug stängd)', () => {
+  function validPersonDetail(overrides: Record<string, unknown> = {}) {
+    return {
+      id: 'recX',
+      namn: 'A',
+      fornamn: null,
+      efternamn: null,
+      email: null,
+      telefon: null,
+      ort: [],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: null,
+      antalAnmalningar: 0,
+      antalDeltaganden: 0,
+      erfarenhetsniva: null,
+      erfarenhetsbadge: null,
+      senasteInteraktion: null,
+      senasteInteraktionDatum: null,
+      dagarSedanSenaste: null,
+      harAktivAnmalan: null,
+      ejGodkandMail: false,
+      radSkapad: null,
+      anmalningIds: [],
+      deltagandeIds: [],
+      aterkommande: null,
+      nastaEvent: null,
+      antalGenomfordaEvent: 0,
+      senasteDeltagandeDatum: null,
+      antalHamtningar: 0,
+      allaHamtningar: [],
+      motivering: [],
+      inbjudenCommunity: false,
+      skapatKontoCommunity: false,
+      historik: [],
+      ...overrides,
+    };
+  }
+
+  // RÖTT-FÖRST, FAKTISKT KÖRT (inte bara påstått): mot den GAMLA
+  // schemadeklarationen (`z.string().nullable()`, git-stashad tillfälligt och
+  // körd separat) fäller alla fyra tester i denna describe med ZodError
+  // `expected string, received array` på `motivering` — ordagrant TASK-52:s
+  // live-verifierade fel. Efter `git stash pop` (denna fix) är alla fyra
+  // gröna. Se PR-beskrivning/slutrapport för körningen.
+  test('PersonDetailSchema accepterar motivering som array (TASK-52, live-verifierad form)', () => {
+    const parsed = PersonDetailSchema.parse(
+      validPersonDetail({
+        motivering: ['Jag har länge varit nyfiken på medvetandeutveckling.'],
+      }),
+    );
+    expect(parsed.motivering).toEqual(['Jag har länge varit nyfiken på medvetandeutveckling.']);
+  });
+
+  test('PersonDetailSchema bevarar FLERHET — ingen tyst första-element-reduktion', () => {
+    // Flera Anmälningar kan var och en bära en motivering (kortets egen
+    // rekommendation, § ATT AVGÖRA I SKIVAN (b)). Ingen live-post visar >1
+    // element ännu (TASK-89: "flerhet är inte observerad") — detta bevisar att
+    // KONTRAKTET bär flerhet, inte att verkligheten gör det idag.
+    const parsed = PersonDetailSchema.parse(
+      validPersonDetail({ motivering: ['Motivering från anmälan A', 'Motivering från anmälan B'] }),
+    );
+    expect(parsed.motivering).toEqual(['Motivering från anmälan A', 'Motivering från anmälan B']);
+  });
+
+  test('PersonDetailSchema: tom lista är giltig (ingen motivering registrerad)', () => {
+    const parsed = PersonDetailSchema.parse(validPersonDetail({ motivering: [] }));
+    expect(parsed.motivering).toEqual([]);
+  });
+
+  test('PersonDetailSchema AVVISAR gammal skalär-sträng-form (regressionsvakt)', () => {
+    // Den GAMLA (buggiga) schemaformen (`z.string().nullable()`) väntade sig en
+    // sträng eller null. Skulle get-person någonsin sluta coerca med
+    // stringArray och gå tillbaka till en rå skalär (eller null) ska schemat
+    // fälla — inte tyst acceptera regressionen.
+    expect(() =>
+      PersonDetailSchema.parse(validPersonDetail({ motivering: 'En sträng, ingen array' })),
+    ).toThrow();
+    expect(() => PersonDetailSchema.parse(validPersonDetail({ motivering: null }))).toThrow();
   });
 });

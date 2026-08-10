@@ -75,7 +75,7 @@ function personDetail(overrides: Partial<PersonDetailMock> = {}): PersonDetailMo
     senasteDeltagandeDatum: '2026-03-01',
     antalHamtningar: 1,
     allaHamtningar: ['Gratis meditation'],
-    motivering: 'Vill utvecklas vidare.',
+    motivering: ['Vill utvecklas vidare.'],
     inbjudenCommunity: true,
     skapatKontoCommunity: false,
     historik: [
@@ -240,7 +240,7 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
         ort: [],
         antalHamtningar: 0,
         allaHamtningar: [],
-        motivering: null,
+        motivering: [],
       }),
     );
     await page.goto(`/personer/${PERSON_ID}`);

@@ -226,13 +226,18 @@ export function PersonDetail({ personId }: { personId: string }) {
           <DescRow term="Hämtade erbjudanden">
             {person.allaHamtningar.length > 0 ? person.allaHamtningar.join(' · ') : null}
           </DescRow>
-          <DescRow term="Motivering">{person.motivering}</DescRow>
+          {/* motivering är string[] (fler-värt, TASK-52) → samma .join-mönster
+              som allaHamtningar ovan; flera anmälningar kan var och en bära en
+              motivering. */}
+          <DescRow term="Motivering">
+            {person.motivering.length > 0 ? person.motivering.join(' · ') : null}
+          </DescRow>
         </dl>
         {/* empty-state som syskon UTANFÖR <dl> (a11y: dl får bara dt/dd/div).
             dl:n är aldrig tom — "Antal hämtningar" (number) renderar alltid. */}
         {person.antalHamtningar === 0 &&
           person.allaHamtningar.length === 0 &&
-          !person.motivering && (
+          person.motivering.length === 0 && (
             <p className="text-small text-text-muted">Inga lead-magnet-hämtningar registrerade.</p>
           )}
       </section>

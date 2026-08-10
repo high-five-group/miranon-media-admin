@@ -957,12 +957,16 @@ export function resolvePersonsResponse(url: URL) {
  *
  * Två saker att veta innan de läses som sanning:
  *
- *  1. `motivering` är en STRÄNG här därför att `PersonDetail.schema.ts:44`
- *     kräver `z.string().nullable()`. I prod är fältet en ARRAY
- *     (live-verifierat: `["Det är dags", null]`) och get-person skickar det rått
- *     → ZodError i AirtableAdapter → "Kunde inte hämta persondetaljer". Det är
- *     byggunderlagets R1 och är INTE fixat här; fixturen är medvetet
- *     schema-trogen så vyn går att rita.
+ *  1. `motivering` är `string[]` här (TASK-52, stängd) — schemat kräver det
+ *     (`PersonDetail.schema.ts`) sedan get-person coercar fältet med
+ *     `stringArray`. I prod är `Motivering (text)` en rollup-baserad FORMEL
+ *     vars ELSE-gren returnerar sin rollup ORÖRD (live-verifierat:
+ *     `["Det är dags", null]`) trots att fältet deklarerar `singleLineText`
+ *     (data-model.md §Kända fällor #46) — det bas-sidiga typ-löftesbrottet
+ *     kvarstår som öppen T16-maximeringskandidat, men konsekvensen ("Kunde
+ *     inte hämta persondetaljer" för varje person med motivering) är stängd
+ *     på app-sidan. Fixturen speglar nu den KORREKTA kontraktsformen, inte
+ *     bas-avvikelsen.
  *  2. `nastaEvent` är MEDVETEN FIKTION — det enda fältet nedan som prod i
  *     praktiken aldrig producerar. EF:en läser `Nästa event (text)`, men basen
  *     bär fältet `Nästa event (rad)`; en live-kontrollerad person MED kommande
@@ -984,8 +988,15 @@ const RIK_DETALJ = {
     'Guidad meditation – Första resan (2025-11-25)',
     'Pyramidernas Vajrar (2024-10-02)',
   ],
-  motivering:
+  // Ettelements-array — den enda multipliciteten LIVE-verifierad hittills
+  // (TASK-89: båda observerade staging-personerna hade exakt 1 motivering).
+  // Flerhet (>1 element) är oprövad i verklig data; se
+  // `tests/api/coerce.test.ts` § schema-parity — motivering för det
+  // schema-nivå-beviset att kontraktet BÄR flerhet även om ingen live-post
+  // ännu visar den.
+  motivering: [
     'Jag har haft egna upplevelser och läst många böcker som gjort mig förvissad om att vi alla är del av samma medvetande. Nu vill jag lära mig metoder för att ta mig till andra nivåer — och den här gången vill jag ta med mig två vänner som är nyfikna men försiktiga.',
+  ],
   inbjudenCommunity: true,
   skapatKontoCommunity: true,
   // Tio deltaganden = fem event × Dag 1/Dag 2, sorterade datum DESC precis som
@@ -1122,7 +1133,7 @@ const TUNN_DETALJ = {
   senasteDeltagandeDatum: null,
   antalHamtningar: 0,
   allaHamtningar: [],
-  motivering: null,
+  motivering: [],
   inbjudenCommunity: false,
   skapatKontoCommunity: false,
   historik: [],
@@ -1145,7 +1156,7 @@ const HARLEDD_DETALJ_STOMME = {
   senasteDeltagandeDatum: null,
   antalHamtningar: 0,
   allaHamtningar: [],
-  motivering: null,
+  motivering: [],
   inbjudenCommunity: false,
   skapatKontoCommunity: false,
   historik: [],
