@@ -1,10 +1,10 @@
 ---
 id: TASK-147.1
 title: 'Skiva: Sändvägs-EF:n bilage-fri gren + ADR-067-revisionen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 06:58'
-updated_date: '2026-08-10 10:01'
+updated_date: '2026-08-10 11:42'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,9 +30,11 @@ Täcker användarberättelser: 10, 13, 27 (serversidan).
 - [x] #5 ADR-067-revisionen rymmer uttryckligen test-sändvägen (enkel-mottagare till inloggad användare, T53 väg C) som del av det nya kontraktet
 <!-- AC:END -->
 
+## Final Summary
 
-
-
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1093 (44233e22, mergad 8450808c): send-action-email-EF:n (fyra åtgärdstyper, per-mottagare-utfall, idempotens via jobId/typ-nyckel, icke-prod-spärren ärvd som golv, atomicitet mail↔stämpel) + ADR-067-revisionen D9 (greningen) + D10 (test-sändvägen, T53 väg C). 311/311 api-pure. Kontraktsytan för 147.5/147.10 bokförd på kortet. Konsent-gaten öppen punkt till Marcus. EF deployad till staging av orkestratorn. AFK-proveniens: S102-batchen kort ④.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

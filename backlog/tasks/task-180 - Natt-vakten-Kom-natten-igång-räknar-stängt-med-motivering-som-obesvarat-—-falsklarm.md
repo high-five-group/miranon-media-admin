@@ -3,10 +3,10 @@ id: TASK-180
 title: >-
   Natt-vakten 'Kom natten igång?' räknar stängt-med-motivering som obesvarat —
   falsklarm
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 06:18'
-updated_date: '2026-08-10 11:01'
+updated_date: '2026-08-10 11:42'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,6 +27,12 @@ Källa: S102 triage-rapport 2026-08-10 + issue #1028/#1042.
 - [x] #1 Vakt-logiken räknar ärende stängt med kommentar/motivering som besvarat (form: t.ex. även stängda ärenden inom fönstret räknas)
 - [x] #2 Tvåsidigt bevis: simulerat obesvarat-fall larmar fortfarande; #1042-scenariot larmar inte
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1100 (f0f49f24, mergad c62df4b7): check-nattvakt-dedup.sh räknar stängt-inom-26h-med-kommentar som besvarat; 13/13 tvåsidiga tester + skarp verifiering mot verklig GitHub-data; inwirad i watchdog + ci.yml gatekeepers. Falsklarms-instanserna #1042/#1102 var klassens bevis. AFK-proveniens: S102-batchen kort ⑧.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

@@ -4,7 +4,7 @@ title: 'Skiva: Mailto-rivningen, grå löftena och namnet'
 status: To Do
 assignee: []
 created_date: '2026-08-10 07:04'
-updated_date: '2026-08-10 07:18'
+updated_date: '2026-08-10 11:43'
 labels:
   - ready-for-agent
 dependencies:
@@ -36,6 +36,8 @@ Täcker användarberättelse 14 fullbordad (stämplingslögnen helt stängd).
 
 <!-- SECTION:NOTES:BEGIN -->
 MARCUS-BESLUT 2026-08-10 (S102, namnkollisionen): åtgärds-sidan behåller namnet 'Åtgärder'; eventsidans länkgrupp döps om till 'Genvägar'. Kvitterat i klartext i huvudsessionen.
+
+TILLÄGG (S102-batchen kort ⑤:s fynd): PrototypNot-komponentens användarsynliga copy ('Inget skickas, inget sparas.') är delvis osann sedan betalningsskrivningen blev skarp — den rivs/revideras naturligt i DENNA skiva när sändvägen också är skarp och riggen rivs. Facit-låst copy: ändringen ingår i omstämplingsytan.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
