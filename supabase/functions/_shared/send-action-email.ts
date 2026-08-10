@@ -34,6 +34,7 @@
 // faktiskt går ut måste vara SAMMA algoritm, annars är granskningen en lögn.
 
 import { dagManad, deadlineDatum, fillPlaceholders, type TemplateVars } from './action-mail-template.ts';
+import { scalarString, selectName } from './coerce.ts';
 import {
   type ConfirmSendOutcome,
   type ConfirmSpec,
@@ -82,6 +83,43 @@ export type ActionTarget = {
   anmalningsavgift: string | null;
   slutbetalning: string | null;
 };
+
+/**
+ * [TASK-147-fix, S102] REN fält-mappning: rå Airtable `fields` (Anmälningar-
+ * tabellen) → `ActionTarget` + dess Event-länk-ID:n. Extraherad ur
+ * `send-action-email/index.ts`:s `readRegistration` OFÖRÄNDRAD i beteende —
+ * flytten görs INTE för sin egen skull utan för att göra fältnamnen
+ * Node-testbara: `index.ts` är en Deno-EF (esm.sh-imports, `@ts-nocheck`) och
+ * kan inte importeras av ett Playwright/Node-test, men DENNA fil är redan
+ * dual-importable (se filhuvudet) — samma mönster som
+ * `_shared/registration-read.ts`:s `mapRegistration` följer för sin vertikal.
+ *
+ * Länkfältet heter `Event` (Anmälningar, `fldi3enUaMdbuGSlm` — data-model.md
+ * §Kritiska länkfält, live-verifierat `describe_table` mot staging
+ * `apphjj8Q7lkXCMsL4`/`tbloOcrppVoyrHbrq`) — INTE `Event (länk)` (den strängen
+ * förekommer bara som en beskrivande "Syfte"-etikett i data-model.md:s Schema
+ * cheat sheet, aldrig som ett faktiskt fältnamn i basen).
+ */
+export function mapRegistrationFields(
+  id: string,
+  fields: Record<string, unknown>,
+): { target: ActionTarget; eventIds: string[] } {
+  const eventLink = fields['Event'];
+  const eventIds = Array.isArray(eventLink)
+    ? eventLink.filter((v): v is string => typeof v === 'string')
+    : [];
+  return {
+    target: {
+      id,
+      email: scalarString(fields['E-post']),
+      fornamn: scalarString(fields['Förnamn']),
+      status: selectName(fields['Status'] ?? null),
+      anmalningsavgift: selectName(fields['Anmälningsavgift'] ?? null),
+      slutbetalning: selectName(fields['Slutbetalning'] ?? null),
+    },
+    eventIds,
+  };
+}
 
 /** Eventet mottagarurvalet är bundet till — bär de fyra ÖVRIGA platshållarna. */
 export type EventContext = {
