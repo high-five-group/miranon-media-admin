@@ -1459,7 +1459,7 @@ function BilageValjare({
         <p className="px-3 py-2.5 text-small text-text-muted">Hämtar bilagor …</p>
       ) : fel ? (
         <MessageBox intent="warning" title="Bilagorna kunde inte hämtas">
-          Prova att öppna åtgärden igen. Går det inte skickas mailet ändå — utan bilaga.
+          Prova att öppna åtgärden igen. Går det inte skickas mailet ändå, utan bilaga.
         </MessageBox>
       ) : attachments.length === 0 ? (
         <p className="px-3 py-2.5 text-small text-text-muted">
@@ -3020,8 +3020,8 @@ function PrototypNot() {
   return (
     <p className="px-4 text-small text-text-muted">
       <strong className="font-medium">Prototyp.</strong> Mallarnas ämnesrad och brödtext är
-      hårdkodade stubbar (ingen mall-editor ännu) — allt annat skickar och sparar verkligt,
-      inklusive bilagor.
+      hårdkodade stubbar (ingen mall-editor ännu), allt annat skickar och sparar verkligt, inklusive
+      bilagor.
     </p>
   );
 }
