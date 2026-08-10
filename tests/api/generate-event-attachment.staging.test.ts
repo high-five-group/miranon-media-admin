@@ -4,8 +4,11 @@
 // generate-event-attachment SKRIVER (POST → riktig PDF i privat Storage +
 // ny Bilagor-rad). Bevisar mot SKARP staging-data:
 //   1. AC #1 (landar som en bilaga med samma metadata som en uppladdad):
-//      201 + SKRIV-BEVIS ur råa record.fields — EXAKT de fyra fälten
-//      Bilagor-tabellen bär (Namn/'Storlek (bytes)'/Skapad/Event), inga fler.
+//      201 + SKRIV-BEVIS ur råa record.fields — EXAKT de fem fälten
+//      Bilagor-tabellen bär (Namn/'Storlek (bytes)'/Skapad/Event/
+//      Lagringsnyckel), inga fler. Lagringsnyckel tillkom additivt i
+//      TASK-147.5 (merge c55e8fb2) — se § "fem fält" nedan för fyndet som
+//      gjorde det gamla fyra-fälts-antagandet falskt.
 //   2. AC #4 (de tre dokumentklasserna oskiljbara i metadatat): record.fields
 //      NYCKLARNA (inte bara värdena) matchar exakt samma set som create-event-note/
 //      create-registration:s skrivningar skulle producera för samma tabell — inget
@@ -131,7 +134,7 @@ function postGenerate(
 }
 
 test.describe('generate-event-attachment — skarp conformance (TASK-146.5)', () => {
-  test('allow: giltig generering → 201 + skriv-bevis (fyra fält, exakt) + svensk PDF-text', async ({
+  test('allow: giltig generering → 201 + skriv-bevis (fem fält, exakt) + svensk PDF-text', async ({
     request,
   }) => {
     const config = getApiConfig();
@@ -155,14 +158,24 @@ test.describe('generate-event-attachment — skarp conformance (TASK-146.5)', ()
     expect(Number.isNaN(Date.parse(body.record.fields['Skapad'] as string))).toBe(false);
 
     // AC #4 — de tre dokumentklasserna oskiljbara i metadatat: NYCKELMÄNGDEN
-    // är exakt {Namn, 'Storlek (bytes)', Skapad, Event} — inget extra
-    // "Klass"/"Källa"-fält som avslöjar att raden genererades i stället för
-    // laddades upp. Detta är den mekaniska delen av AC #4 (fältformen);
-    // fälten skapades via SAMMA field-allowlist-operation
+    // är exakt {Namn, 'Storlek (bytes)', Skapad, Event, Lagringsnyckel} —
+    // inget extra "Klass"/"Källa"-fält som avslöjar att raden genererades i
+    // stället för laddades upp. Detta är den mekaniska delen av AC #4
+    // (fältformen); fälten skapades via SAMMA field-allowlist-operation
     // ('create-attachment') som en framtida klass A-uppladdning använder
     // (se index.ts § SAMTIDIGHETS-NOT).
+    //
+    // FEM FÄLT, inte längre fyra (rättat 2026-08-10): TASK-147.5 (merge
+    // c55e8fb2) gjorde EF:en additiv — den skriver numera även
+    // `Lagringsnyckel` (_shared/attachments.ts § buildAttachmentLeaf), och
+    // field-allowlists.ts:s 'create-attachment'-post tillåter fältet. Det
+    // gamla fyra-fälts-antagandet härifrån blev därmed falskt och fällde
+    // skarpt mot staging (rad ~164, Set saknade 'Lagringsnyckel' i det
+    // MOTTAGNA svaret — se PR-beskrivningen för de två oberoende
+    // fyndrapporterna). Mängden är fortfarande EXAKT, inte "minst dessa":
+    // testet ska fortsatt fälla på en OVÄNTAD sjätte skrivning.
     expect(new Set(Object.keys(body.record.fields))).toEqual(
-      new Set(['Namn', 'Storlek (bytes)', 'Skapad', 'Event']),
+      new Set(['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Lagringsnyckel']),
     );
 
     // Domän-envelope (attachment) — samma fyra sakuppgifter i klientvänlig form.
