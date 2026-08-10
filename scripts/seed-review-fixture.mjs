@@ -11,15 +11,100 @@
 //
 // Kör:
 //   npm run seed:review                       # default-fixtur, 8 + 8
-//   npm run seed:review -- --ort ZZ-X --dagar 5 --bekraftade 4 --obekraftade 12
+//   npm run seed:review -- --ort Falköping --dagar 5 --bekraftade 4 --obekraftade 12
 //   npm run seed:review -- --dry-run          # planera, skriv inget
 //   npm run seed:review -- --livstid 30       # längre granskningsfönster
 //   npm run seed:review:clean                 # radera default-fixturen
-//   npm run seed:review:clean -- --ort ZZ-X --dry-run
+//   npm run seed:review:clean -- --ort Falköping --dry-run
 //   npm run seed:review -- --sweep            # ENDAST förfallo-svepet
 //   npm run seed:review -- --sweep --dry-run  # visa vad svepet skulle ta
 //   npm run seed:review -- --legacy <namn>              # dry-run, alltid
 //   npm run seed:review -- --legacy <namn> --bekrafta   # radera på riktigt
+//
+// DATAN SKA LIKNA VERKLIGHETEN (TASK-97, Marcus 2026-08-10: "riktiga namn,
+// riktiga e-postadresser, riktiga orter … det ska vara fiktiva namn och
+// adresser, men det ska likna verkligheten, inte massa ZZ-skit överallt").
+// Fixturen granskas i personvyerna, och en lista full av
+// `seed-review+zz-granskning-s103-01@granskning.test` går inte att designa mot.
+// Bytena, vart och ett med sin grund:
+//
+//   E-POST: `fornamn.efternamn@example.com`, roterat över `.com`/`.org`/`.net`.
+//     RFC 2606 § 3 reserverar de tre domänerna PERMANENT för dokumentation och
+//     exempel — de är registrerade av IANA och kan aldrig tilldelas någon.
+//     Adressen ser alltså äkta ut för ett mänskligt öga och kan bevisbart
+//     aldrig tillhöra en verklig deltagare. (Att sändningsrisken dessutom är
+//     noll i staging är en ANNAN spärr, oberoende av denna: icke-prod släpper
+//     igenom exakt fyra allowlistade adresser och 422:ar allt annat,
+//     supabase/functions/_shared/send-bulk.ts.)
+//
+//   ORT: en riktig svensk stad i stället för `ZZ-GRANSKNING-NN`. Orterna som
+//     faktiskt förekommer i basen, MÄTTA read-only mot prod 2026-08-10
+//     (`Anmälningar.Ort`, n = 400): Rönninge, Varberg, Ödeshög, Falköping,
+//     Arboga, Bredaryd, Gotland, Östersund — plus Skövde ur legacy-registret.
+//     Default är `Varberg`; `Skövde` undviks med flit eftersom
+//     CONFIG.legacy[Skovde-S75] ankrar på just den orten och en fixtur där
+//     hade fått `--legacy`-guarden att larma om "ny data på gammalt ankare".
+//
+//   ANMÄLNINGENS ORT = EVENTETS ORT, på ~82 % av raderna. Personens `Ort`
+//     (fldBd946g2waLT7NG) är en ROLLUP över `Anmälningar.Ort`
+//     (fldP1LSzbyOJxrOGP, singleLineText, skrivbar — båda live-verifierade mot
+//     staging-schemat 2026-08-10), vilket är exakt varför varje seedad person
+//     hittills visat tom Ort: personen HAR en anmälan, men anmälans egna Ort
+//     var aldrig satt. Att i stället ge varje rad en EGEN stad ur en pool hade
+//     gett en varierad personlista — och samtidigt en anmälan vars Ort
+//     motsäger eventets, vilket `registration-read.ts` (`ort`) och
+//     `get-registration` (`eventOrt`-fallbacken) visar rakt upp i
+//     deltagarkortet. En fixtur som SER ut som en bugg i granskningsvyn är
+//     värre än en enfärgad kolumn. Vill man ha flera orter i listan seedar man
+//     flera fixturer (`--ort Varberg`, `--ort Falköping`) — det är säkert
+//     numera, se IDENTIFIERINGEN nedan.
+//
+//   TELEFON SEEDAS INTE. Prod har den på ~58 % av färska personer, men Marcus
+//     avgjorde 2026-08-10: "telefon spelar ju ingen roll, det ska vi ju inte
+//     visa i personlistan ändå". `Personer.Telefon` lämnas alltså orörd.
+//     Anmälans `Mobilnummer` sätts som förut — det är ett annat fält, i en
+//     annan vy, och rörs inte av beslutet.
+//
+//   LUCKORNA ÄR PRODS, INTE PERFEKT UNIFORMITET. Mätt 2026-08-10: 660 av 662
+//     prod-personer har e-post, medan Ort saknas på nästan var femte färsk
+//     rad. Ett staging där varje kort bär exakt samma fält är alltså MER
+//     enhetligt än verkligheten, och då designar man aldrig mot det tomma
+//     fältet. Fördelningen är deterministisk (index-baserad, aldrig slumpad):
+//     samma flaggor ger alltid samma fixtur, så en granskning går att
+//     återskapa exakt och snapshots är stabila.
+//
+// IDENTIFIERINGEN — VAD `--clean` OCH SVEPET FÖLJER (TASK-97):
+//
+//   Fram till TASK-97 hittade clean sina anmälningar och personer genom att
+//   söka på e-postmönstret `seed-review+<ort-slug>-NN@granskning.test`. Det
+//   mönstret bar TVÅ jobb samtidigt: "detta är en fixturrad" OCH "den tillhör
+//   ORTEN X". Realistiska adresser kan inte bära det andra jobbet — och ska
+//   inte: två samtidiga fixturer hade då städat varandras rader.
+//
+//   Nu går clean via LÄNKGRAFEN, som redan finns i basen:
+//
+//     event (Ort + notering-sentinel, planClean avgör)
+//       → eventets `Anmälningar (länkat fält)`
+//         → varje anmälans `Person`-länk (läst FÖRE anmälan raderas)
+//
+//   Grafen startar i EXAKT den event-mängd planClean godkänt för radering —
+//   samma anrop, inte ett andra uttryck av samma regel — så ett verkligt
+//   Varberg-event utan sentinel bidrar med noll anmälningar och noll personer.
+//   Ort grovsorterar, sentineln avgör; oförändrat sedan innan.
+//
+//   E-POSTMÖNSTRET FINNS KVAR SOM ANDRA SPÄRR, aldrig som bärande
+//   identifiering: en rad grafen pekar ut men vars adress inte matchar
+//   fixtur-formen raderas ALDRIG, den rapporteras. Mönstret känner igen de två
+//   former skriptet någonsin skrivit — `@example.com|org|net`-formen ovan och
+//   den pre-TASK-97:a `seed-review+…@granskning.test` — så fixturer som redan
+//   ligger i basen förblir städbara med den nya koden.
+//
+//   FÖRÄLDRALÖSA PERSONER har en egen, smal väg. Avbryts en clean mellan
+//   anmälnings- och person-steget blir personerna oåtkomliga för grafen (deras
+//   enda väg in gick via anmälan). Clean listar därför också personer som bär
+//   fixtur-adress OCH har NOLL anmälningslänkar. En person som tillhör en
+//   annan LEVANDE fixtur har alltid minst en anmälan och kan därför aldrig
+//   fångas av den vägen.
 //
 // LIVSTIDEN (TASK-95 del A): create stämplar ett utgångsdatum i eventets
 // Notering. Förfallo-svepet läser stämpeln och städar det som passerat — det
@@ -54,7 +139,7 @@
 // ALDRIG: ett ogiltigt select-värde ska ge hårt 422, aldrig tyst föda en ny
 // option i basen.
 //
-// Fyra skyddsräcken (alla hårda, i denna ordning):
+// Sju skyddsräcken (alla hårda, i denna ordning):
 //   1. Bas-guard: CONFIG.expectedBaseId måste vara app-formad och får inte
 //      finnas i forbiddenBaseIds (PROD app8uGPrVCVOm6LfD hårt blockerad —
 //      staging och prod delar tabell-/fält-ID:n för duplicerade fält
@@ -63,6 +148,12 @@
 //      SKARPA .purge-staging-policy.json och avvisas om de skulle kunna
 //      matchas av setup-purgen. Policyn LÄSES — mönstren dupliceras aldrig
 //      hit, så vakten kan inte drifta ifrån den purge som faktiskt körs.
+//      Vakten ser numera ALLA markörbärande värden fixturen skriver: eventets
+//      Ort, anmälningarnas Ort och varje e-postadress. Att orten blev en
+//      riktig stad gör ingen skillnad för den — purgens enda ort-target
+//      exakt-matchar `^ZZ-create-event-test$`, och korsläsningen bevisar det
+//      mekaniskt vid varje körning i stället för att lita på att den som läser
+//      policyn kommer ihåg det.
 //   3. Skyddade record-ID:n (fälla 2): de permanenta assertion-fixturerna
 //      (personerna ZZ-Arbetsko / ZZ-History + eventen ZZ-belaggning-fixtur /
 //      ZZ-arbetsko-fixtur, TASK-114) står i CONFIG.protectedRecordIds och kan
@@ -150,15 +241,47 @@ export const CONFIG = {
    * Fixtur-markörerna. Medvetet VID SIDAN AV purge-mönstren (fälla 1):
    * setup-purgen jagar `Ort = 'ZZ-create-event-test'` och
    * `create-test+<uuid>@staging.test`. En granskningsfixtur som matchade dem
-   * hade raderats mitt under granskningen av nästa CI-körning. Egen
-   * e-postdomän `@granskning.test` (purgen tittar bara på `@staging.test`)
-   * och en notering-sentinel som purgen aldrig läser. Vakten verifierar det
-   * mekaniskt mot den skarpa policyn — se purgeCollisions.
+   * hade raderats mitt under granskningen av nästa CI-körning. Notering-
+   * sentineln är ett fält purgen aldrig läser, och e-postdomänerna ligger
+   * utanför dess `@staging.test`. Vakten verifierar det mekaniskt mot den
+   * skarpa policyn — se purgeCollisions.
+   *
+   * SENTINELN ÄR BESLUTAREN, inte adressen (TASK-97). Adressen är andra
+   * spärren; identifieringen går via länkgrafen. Se § IDENTIFIERINGEN överst.
    */
   marker: {
     noteringSentinel: '[SEED-REVIEW-FIXTUR]',
-    emailPrefix: 'seed-review+',
-    emailDomain: '@granskning.test',
+    /**
+     * RFC 2606 § 3-reserverade domäner, roterade så listan inte ser
+     * maskinstansad ut. Reservationen är permanent och registrerad av IANA:
+     * adressen kan aldrig tillhöra en verklig deltagare, hur äkta den än ser
+     * ut. validateConfig vägrar allt utanför de tre — en domän som INTE är
+     * reserverad kan tilldelas någon, och då är realismen inte längre gratis.
+     */
+    emailDomains: ['example.com', 'example.org', 'example.net'],
+    /**
+     * Formen skriptet skrev FÖRE TASK-97. Behålls som IGENKÄND fixtur-form i
+     * andra spärren — inte som något skriptet skriver — så fixturer som redan
+     * ligger i staging kan städas med den nya koden. Utan den hade varje
+     * befintlig granskningsfixtur blivit ostädbar i samma commit som gjorde
+     * den fula adressen snygg.
+     */
+    tidigareEmailPrefix: 'seed-review+',
+    tidigareEmailDomain: '@granskning.test',
+  },
+
+  /**
+   * Länkfälten grafen går genom (TASK-97). Namnen är basens, och de bär
+   * identifieringen sedan e-posten slutade göra det — därför står de i CONFIG
+   * i stället för strödda som strängliteraler i tre funktioner.
+   */
+  linkFields: {
+    /** Eventplanering → Anmälningar. Samma fält korCreate efter-verifierar mot. */
+    eventAnmalningar: 'Anmälningar (länkat fält)',
+    /** Anmälningar → Personer. Sätts av skriptet självt vid create. */
+    anmalanPerson: 'Person',
+    /** Personer → Anmälningar. Tom lista ⇒ föräldralös fixturperson. */
+    personAnmalningar: 'Anmälningar (länkat fält)',
   },
 
   /**
@@ -191,7 +314,12 @@ export const CONFIG = {
   belaggning: { maxKvot: 0.6, minPlatser: 20 },
 
   defaults: {
-    ort: 'ZZ-GRANSKNING-FIXTUR',
+    /**
+     * En RIKTIG svensk stad, mätt ur prod (se § DATAN SKA LIKNA VERKLIGHETEN).
+     * `Skövde` undviks med flit — CONFIG.legacy[Skovde-S75] ankrar på den
+     * orten och en fixtur där hade fått den avslutade postens guard att larma.
+     */
+    ort: 'Varberg',
     bekraftade: 8,
     obekraftade: 8,
     /**
@@ -338,11 +466,36 @@ export const CONFIG = {
   /** Inskickad-spridning bakåt i tiden (kön sorteras äldst först). */
   inskickadSpann: { aldstDagar: 35, senasteDagar: 2 },
 
+  /**
+   * PRODS OJÄMNHET, INTE PERFEKT UNIFORMITET (TASK-97).
+   *
+   * `ortKvot` är andelen anmälningar som bär `Ort`. Talet är MÄTT read-only
+   * mot prod 2026-08-10: 53 av 65 personer i kohorten skapad efter 2026-06-01
+   * hade Ort ifylld (82 %). E-post lämnas på 100 % — där är prod nästan
+   * universell (660 av 662).
+   *
+   * VARFÖR INTE 100 % ÄVEN HÄR: ett staging där varje kort bär exakt samma
+   * fält är MER enhetligt än verkligheten, och då ser man aldrig hur vyn
+   * beter sig när fältet är tomt förrän i prod. Luckan är en del av facit.
+   *
+   * Fördelningen är deterministisk och index-baserad (aldrig slumpad) — se
+   * harOrt. Samma flaggor ger alltid identisk fixtur, annars går varken en
+   * granskning eller ett snapshot att återskapa.
+   */
+  realism: { ortKvot: 0.82 },
+
   batchSize: 10,
   requestThrottleMs: 250,
   appBaseUrl: 'http://localhost:5173',
 
-  /** Namnpool. Index-rotationen ger unika par för väl över maxAnmalningar. */
+  /**
+   * Namnpool. Index-rotationen ger unika par för väl över maxAnmalningar.
+   *
+   * Namnen bär numera OCKSÅ e-postadressen (`fornamn.efternamn@example.com`),
+   * så varje namn måste reduceras till rena `[a-z]`-tecken av slugify —
+   * annars matchar adressen inte det ankrade mönster clean litar på.
+   * validateConfig prövar det mekaniskt, för hela poolen, vid varje körning.
+   */
   fornamn: [
     'Astrid',
     'Bengt',
@@ -408,6 +561,12 @@ const BASE_ID_PATTERN = /^app[A-Za-z0-9]{14}$/;
 const REC_ID_PATTERN = /^rec[A-Za-z0-9]{14}$/;
 /** Ort används i filterByFormula — citattecken och backslash är bannlysta. */
 const ORT_PATTERN = /^[A-Za-z0-9ÅÄÖåäöÉé _.:-]{3,60}$/;
+/**
+ * RFC 2606 § 3 — permanent reserverade av IANA för dokumentation och exempel.
+ * Listan är sluten och kan inte utökas från kommandoraden: den är hela grunden
+ * för att en realistisk fixtur-adress bevisbart aldrig kan vara en kunds.
+ */
+const RESERVERADE_EMAILDOMANER = ['example.com', 'example.org', 'example.net'];
 
 // ---------------------------------------------------------------------------
 // Pura funktioner (exporterade för scripts/test-seed-review-fixture.mjs)
@@ -484,6 +643,51 @@ export function validateConfig(config) {
   }
   if (!(config.belaggning?.maxKvot > 0) || config.belaggning.maxKvot >= 1) {
     throw new Error('belaggning.maxKvot måste ligga i (0, 1) — A6 larmar vid 100 %');
+  }
+  // TASK-97: realismen vilar HELT på att domänen är RFC 2606 § 3-reserverad.
+  // En adress på example.com/.org/.net kan aldrig tilldelas någon; en adress
+  // på vilken annan domän som helst kan det, och då är "ser äkta ut" inte
+  // längre gratis utan en risk. Guarden är därför en allowlist, inte en
+  // formkontroll.
+  const { emailDomains } = config.marker ?? {};
+  if (!Array.isArray(emailDomains) || emailDomains.length === 0) {
+    throw new Error('marker.emailDomains saknas — fixtur-adresserna måste ha en domän');
+  }
+  for (const doman of emailDomains) {
+    if (!RESERVERADE_EMAILDOMANER.includes(doman)) {
+      throw new Error(
+        `marker.emailDomains: "${doman}" är inte RFC 2606 § 3-reserverad (${RESERVERADE_EMAILDOMANER.join(', ')}) — ` +
+          'en icke-reserverad domän kan tilldelas en verklig mottagare',
+      );
+    }
+  }
+  // Namnen bär e-postadressens local-part sedan TASK-97. Reduceras ett namn
+  // inte till rena [a-z] matchar adressen inte det ankrade mönstret, och clean
+  // hade lämnat kvar sin egen rad med orsaken "e-post matchar inte
+  // fixtur-mönstret" — tyst, och först vid städningen.
+  for (const nyckel of ['fornamn', 'efternamn']) {
+    const pool = config[nyckel];
+    if (!Array.isArray(pool) || pool.length === 0) {
+      throw new Error(`${nyckel} saknas — namnpoolen bär både namnet och e-postadressen`);
+    }
+    for (const namn of pool) {
+      if (!/^[a-z]+$/.test(slugify(String(namn)))) {
+        throw new Error(
+          `${nyckel}: "${namn}" reduceras till "${slugify(String(namn))}" — e-postadressens ` +
+            'local-part måste bli rena [a-z] (annars matchar cleanens ankrade mönster inte)',
+        );
+      }
+    }
+  }
+  if (!(config.realism?.ortKvot > 0) || config.realism.ortKvot > 1) {
+    throw new Error('realism.ortKvot måste ligga i (0, 1] — den är andelen rader som bär Ort');
+  }
+  for (const nyckel of ['eventAnmalningar', 'anmalanPerson', 'personAnmalningar']) {
+    if (typeof config.linkFields?.[nyckel] !== 'string' || config.linkFields[nyckel].length === 0) {
+      throw new Error(
+        `linkFields.${nyckel} saknas — länkgrafen är cleanens bärande identifiering (TASK-97)`,
+      );
+    }
   }
   const { dagarDefault, maxDagar, stampelPrefix } = config.livstid ?? {};
   if (!Number.isInteger(dagarDefault) || dagarDefault < 1 || dagarDefault > (maxDagar ?? 0)) {
@@ -663,9 +867,16 @@ export function parseArgs(argv, config) {
   return args;
 }
 
-/** Ort → markör-slug. Endast [a-z0-9-], så den är formel- och e-post-säker. */
-export function slugify(ort) {
-  return ort
+/**
+ * Namn eller ort → slug. Endast [a-z0-9-], så den är formel- och
+ * e-post-säker: `Skövde` → `skovde`, `Törnqvist` → `tornqvist`.
+ *
+ * Sedan TASK-97 bär den också e-postadressens local-part. validateConfig
+ * prövar hela namnpoolen mot `^[a-z]+$` — ett namn som skulle ge bindestreck
+ * eller siffra avvisas där, inte tyst här.
+ */
+export function slugify(text) {
+  return text
     .toLowerCase()
     .replace(/[åä]/g, 'a')
     .replace(/ö/g, 'o')
@@ -674,20 +885,69 @@ export function slugify(ort) {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Fixturens e-postadress för anmälan nr `index` (0-indexerat). */
-export function fixtureEmail(slug, index, marker) {
-  return `${marker.emailPrefix}${slug}-${String(index + 1).padStart(2, '0')}${marker.emailDomain}`;
+/**
+ * Fixturens e-postadress: `fornamn.efternamn@example.com`.
+ *
+ * Domänen roteras över de RFC 2606-reserverade så listan inte ser
+ * maskinstansad ut. INGET löpnummer, och det är ett val: namnparen är unika
+ * över hela `limits.maxAnmalningar` (index-rotationen har period 120), och
+ * testsviten prövar unikheten mot taket. Ett kollisions-suffix hade varit en
+ * mekanism utan fall — och en siffra mitt i en adress som ska se äkta ut.
+ */
+export function fixtureEmail(fornamn, efternamn, index, marker) {
+  const doman = marker.emailDomains[index % marker.emailDomains.length];
+  return `${slugify(fornamn)}.${slugify(efternamn)}@${doman}`;
 }
 
-/** Exakt regex för fixturens e-postadresser — clean matchar aldrig bredare. */
-export function fixtureEmailPattern(slug, marker) {
+/**
+ * ANDRA SPÄRREN (TASK-97), aldrig den bärande identifieringen — den går via
+ * länkgrafen, se § IDENTIFIERINGEN överst.
+ *
+ * Mönstret känner igen de TVÅ former skriptet någonsin skrivit:
+ *   1. `fornamn.efternamn@example.(com|org|net)` — nuvarande
+ *   2. `seed-review+<ort-slug>-NN@granskning.test` — pre-TASK-97
+ *
+ * Form 2 står kvar för att fixturer som redan ligger i staging ska förbli
+ * städbara: hade mönstret bara känt igen den nya formen vore varje befintlig
+ * granskningsfixtur ostädbar från och med den commit som gjorde adressen
+ * snygg. Det är strikt en igenkänning — skriptet skriver aldrig form 2.
+ *
+ * Båda är ankrade i BÅDA ändar. `granskning-review@example.com` (legacy-
+ * registrets Skövde-fixtur) matchar INTE form 1: den saknar punkten mellan
+ * två rena bokstavsled.
+ */
+export function fixtureEmailPattern(marker) {
   const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`^${esc(marker.emailPrefix)}${esc(slug)}-\\d{2,3}${esc(marker.emailDomain)}$`);
+  const nyForm = `[a-z]+\\.[a-z]+@(?:${marker.emailDomains.map(esc).join('|')})`;
+  const tidigareForm = `${esc(marker.tidigareEmailPrefix)}[a-z0-9-]+-\\d{2,3}${esc(marker.tidigareEmailDomain)}`;
+  return new RegExp(`^(?:${nyForm}|${tidigareForm})$`);
 }
 
-/** filterByFormula som grovsorterar fixtur-rader server-side. */
-export function fixtureEmailFormula(slug, marker) {
-  return `AND(FIND('${marker.emailPrefix}${slug}-', {E-post}) = 1, FIND('${marker.emailDomain}', {E-post}) > 0)`;
+/**
+ * filterByFormula som grovsorterar KANDIDATER för föräldralös-vägen
+ * server-side (TASK-97). Den är INTE längre cleanens ingång — grafen är det —
+ * och den kan därför inte längre koda orten. Finfiltret är
+ * fixtureEmailPattern, och föräldralösheten avgörs i arForaldralosFixturperson.
+ */
+export function fixtureEmailFormula(marker) {
+  const villkor = [
+    ...marker.emailDomains.map((d) => `FIND('@${d}', {E-post}) > 0`),
+    `FIND('${marker.tidigareEmailDomain}', {E-post}) > 0`,
+  ];
+  return `OR(${villkor.join(', ')})`;
+}
+
+/**
+ * Bär rad `index` en `Ort`? Prods ojämnhet, deterministiskt återskapad.
+ *
+ * Formen är Bresenhams: luckorna sprids JÄMNT i stället för att klumpa ihop
+ * sig i slutet, antalet blir exakt `floor(n × (1 − kvot))` över n rader, och
+ * rad 0 bär alltid Ort — listans första rad ska inte se trasig ut. Ingen
+ * slump: samma index ger samma svar i varje körning, i varje process.
+ */
+export function harOrt(index, kvot) {
+  const luckKvot = 1 - kvot;
+  return Math.floor(index * luckKvot) === Math.floor((index + 1) * luckKvot);
 }
 
 /**
@@ -985,9 +1245,14 @@ export function betalstatusFor(index, arBekraftad, select) {
  * `Inskickad` sprids linjärt bakåt så kön får en äkta äldst-först-ordning,
  * betalstatus varieras i båda grupperna, och de bekräftade bär
  * `Bekräftelse skickad` så meta-raden syns på deltagarkortet.
+ *
+ * TASK-97: adressen är `fornamn.efternamn@example.com` (roterad domän), och
+ * ~82 % av raderna bär `Ort` = eventets ort — det är den enda vägen till
+ * personens Ort, som är en ROLLUP över just detta fält. Personen får ALDRIG
+ * `Telefon` (Marcus-beslut: den visas inte i personlistan); anmälans
+ * `Mobilnummer` är ett annat fält och sätts som förut.
  */
 export function buildRegistrations({ ort, bekraftade, obekraftade, nu, config }) {
-  const slug = slugify(ort);
   const totalt = bekraftade + obekraftade;
   const { aldstDagar, senasteDagar } = config.inskickadSpann;
   const rader = [];
@@ -996,7 +1261,7 @@ export function buildRegistrations({ ort, bekraftade, obekraftade, nu, config })
     const arBekraftad = i < bekraftade;
     const fornamn = config.fornamn[i % config.fornamn.length];
     const efternamn = config.efternamn[(i * 11) % config.efternamn.length];
-    const epost = fixtureEmail(slug, i, config.marker);
+    const epost = fixtureEmail(fornamn, efternamn, i, config.marker);
 
     // Äldst först: index 0 längst bak i tiden, sista närmast nu.
     const andel = totalt === 1 ? 0 : i / (totalt - 1);
@@ -1017,6 +1282,10 @@ export function buildRegistrations({ ort, bekraftade, obekraftade, nu, config })
     // Tom Källa = formuläranmälan. Fältet UTELÄMNAS — tomsträng vore en
     // ogiltig select-option och hade gett 422 (ingen typecast).
     if (i % 2 === 0) anmalan.Källa = config.select.regKallaManuell;
+    // Ort UTELÄMNAS på luckraderna av samma skäl som Källa: frånvaro är
+    // sanningen. En tomsträng hade gett personens rollup ett tomt element i
+    // stället för ingen post alls — en annan sak i vyn.
+    if (harOrt(i, config.realism.ortKvot)) anmalan.Ort = ort;
     // Bekräftelsen gick ut dagen efter anmälan, aldrig i framtiden.
     if (arBekraftad) anmalan['Bekräftelse skickad'] = isoTidBakat(nu, Math.max(dagarBak - 1, 1), i);
 
@@ -1036,10 +1305,46 @@ export function isFixtureEvent(record, ort, marker) {
   return typeof notering === 'string' && notering.startsWith(marker.noteringSentinel);
 }
 
-/** Exakt fixtur-match på anmälan/person: e-posten matchar slug-mönstret. */
+/** Exakt fixtur-match på anmälan/person: e-posten matchar fixtur-mönstret. */
 export function isFixtureEmailRecord(record, pattern) {
   const epost = record.fields?.['E-post'];
   return typeof epost === 'string' && pattern.test(epost);
+}
+
+/**
+ * Länkgrafens ett steg: alla record-ID:n `faltnamn` pekar på, i ordning och
+ * utan dubbletter (TASK-97).
+ *
+ * Ordningen bevaras med flit — den gör planer och loggar läsbara och
+ * jämförbara mellan körningar. Ett saknat eller tomt länkfält ger tom lista,
+ * aldrig ett kast: ett event utan anmälningar är ett giltigt tillstånd.
+ */
+export function lankadeIdn(records, faltnamn) {
+  const ut = [];
+  for (const rec of records) {
+    const varde = rec.fields?.[faltnamn];
+    if (!Array.isArray(varde)) continue;
+    for (const id of varde) if (!ut.includes(id)) ut.push(id);
+  }
+  return ut;
+}
+
+/**
+ * Är detta en FÖRÄLDRALÖS fixturperson (TASK-97)?
+ *
+ * Två villkor, båda nödvändiga: adressen matchar fixtur-formen OCH personen
+ * har noll anmälningslänkar. Det andra villkoret är hela skyddet — en person
+ * som tillhör en annan LEVANDE fixtur har alltid minst en anmälan och kan
+ * därför aldrig fångas här, hur lika adresserna än ser ut.
+ *
+ * Vägen finns för ett verkligt felläge: avbryts en clean mellan anmälnings-
+ * och person-steget blir personerna oåtkomliga för grafen, eftersom deras enda
+ * väg in gick via anmälan. Utan denna väg vore de kvar för alltid.
+ */
+export function arForaldralosFixturperson(record, pattern, faltnamn) {
+  if (!isFixtureEmailRecord(record, pattern)) return false;
+  const anmalningar = record.fields?.[faltnamn];
+  return !Array.isArray(anmalningar) || anmalningar.length === 0;
 }
 
 /**
@@ -1200,7 +1505,6 @@ async function pollEventKey(baseId, tableId, recordId, token, throttleMs) {
 
 async function korCreate({ args, config, token, purgePolicy }) {
   const { expectedBaseId, tables, requestThrottleMs, batchSize } = config;
-  const slug = slugify(args.ort);
   const totalt = args.bekraftade + args.obekraftade;
   const nu = new Date();
 
@@ -1212,9 +1516,20 @@ async function korCreate({ args, config, token, purgePolicy }) {
     config,
   });
 
-  // Skyddsräcke 2: markörerna får aldrig kunna fångas av setup-purgen.
+  // Skyddsräcke 2: markörerna får aldrig kunna fångas av setup-purgen. Sedan
+  // TASK-97 korsläses ALLA värden fixturen skriver som skulle kunna vara en
+  // purge-markör — eventets Ort, anmälningarnas Ort och varje adress. Att
+  // orten numera är en riktig stad ändrar inget för vakten; den prövar mot den
+  // skarpa policyn i stället för mot ett antagande om vad den innehåller.
   const samples = [
     { table: tables.eventplanering.purgeName, field: 'Ort', value: args.ort },
+    ...rader
+      .filter((r) => typeof r.anmalan.Ort === 'string')
+      .map((r) => ({
+        table: tables.anmalningar.purgeName,
+        field: 'Ort',
+        value: r.anmalan.Ort,
+      })),
     ...rader.map((r) => ({
       table: tables.anmalningar.purgeName,
       field: 'E-post',
@@ -1253,8 +1568,15 @@ async function korCreate({ args, config, token, purgePolicy }) {
     `▸ Anmälningar: ${args.bekraftade} bekräftade + ${args.obekraftade} obekräftade = ${totalt}` +
       ` · ${rader.filter((r) => r.anmalan.Källa).length} manuella, ${rader.filter((r) => !r.anmalan.Källa).length} via formulär`,
   );
+  const medOrt = rader.filter((r) => typeof r.anmalan.Ort === 'string').length;
   console.log(
-    `▸ Markör: Ort "${args.ort}" + Notering-sentinel + ${fixtureEmail(slug, 0, config.marker)} …`,
+    `▸ Realism: e-post på ${totalt}/${totalt}, Ort på ${medOrt}/${totalt} ` +
+      `(${Math.round((medOrt / totalt) * 100)} % — mål ${Math.round(config.realism.ortKvot * 100)} %, ` +
+      'prods andel; små tal rundar) · Telefon seedas aldrig',
+  );
+  console.log(
+    `▸ Markör: Ort "${args.ort}" + Notering-sentinel · adresser som ${rader[0].anmalan['E-post']} ` +
+      '(RFC 2606-reserverade, kan aldrig nå en verklig mottagare)',
   );
   console.log('▸ Purge-kollisionsvakt: ren mot .purge-staging-policy.json');
   console.log(
@@ -1349,7 +1671,7 @@ async function korCreate({ args, config, token, purgePolicy }) {
       token,
       requestThrottleMs,
     );
-    raknat = (rec.fields?.['Anmälningar (länkat fält)'] ?? []).length;
+    raknat = (rec.fields?.[config.linkFields.eventAnmalningar] ?? []).length;
     if (raknat === totalt) break;
     await sleep(500);
   }
@@ -1376,6 +1698,91 @@ async function korCreate({ args, config, token, purgePolicy }) {
 }
 
 /**
+ * Hämta records vid EXAKTA record-ID:n (TASK-97). Länkgrafens hämtsteg.
+ *
+ * `RECORD_ID()` i en filterByFormula ger en enda begäran per 50 ID:n i stället
+ * för ett anrop per rad — 5 req/s per bas är en delad budget. ID:na kommer ur
+ * Airtables egna länkfält, men de går in i en formel och prövas därför mot
+ * rec-formen ändå: ett oväntat värde ska stoppa körningen, inte tolkas.
+ */
+async function hamtaPerRecordId(baseId, tableId, ids, token, throttleMs) {
+  const unika = [...new Set(ids)];
+  for (const id of unika) {
+    if (!REC_ID_PATTERN.test(id)) {
+      throw new ApiError(`länkfältet bar ett oväntat record-ID "${id}" — avbryter utan att radera`);
+    }
+  }
+  const records = [];
+  for (const batch of chunk(unika, 50)) {
+    const formula = `OR(${batch.map((id) => `RECORD_ID() = '${id}'`).join(', ')})`;
+    records.push(...(await listRecords(baseId, tableId, formula, token, throttleMs)));
+  }
+  return records;
+}
+
+/**
+ * LÄNKGRAFEN (TASK-97) — cleanens bärande identifiering.
+ *
+ * Grafen startar i EXAKT den event-mängd planClean godkänner för radering.
+ * Att den mängden hämtas genom att ANROPA planClean, i stället för att skriva
+ * om dess villkor här, är hela poängen: två uttryck av samma regel kan drifta
+ * isär, ett anrop kan det inte. Ett verkligt event på samma Ort utan
+ * notering-sentinel bidrar därmed med noll anmälningar och noll personer —
+ * dess rader listas aldrig ens.
+ *
+ * Person-länkarna läses FÖRE något raderas. Efter att anmälan är borta finns
+ * ingen väg kvar till personen.
+ */
+async function samlaFixturgraf({ ort, config, token, pattern }) {
+  const { expectedBaseId, tables, requestThrottleMs, linkFields } = config;
+
+  // Sekventiellt, inte parallellt: throttlen räknar per anrop och 5 req/s
+  // per bas är en delad budget.
+  const events = await listRecords(
+    expectedBaseId,
+    tables.eventplanering.id,
+    `{Ort} = '${ort}'`,
+    token,
+    requestThrottleMs,
+  );
+  const eventPlan = planClean({ events, registrations: [], persons: [], ort, pattern, config });
+  const fixturEvents = events.filter((rec) => eventPlan.events.includes(rec.id));
+
+  const registrations = await hamtaPerRecordId(
+    expectedBaseId,
+    tables.anmalningar.id,
+    lankadeIdn(fixturEvents, linkFields.eventAnmalningar),
+    token,
+    requestThrottleMs,
+  );
+  const lankadePersoner = await hamtaPerRecordId(
+    expectedBaseId,
+    tables.personer.id,
+    lankadeIdn(registrations, linkFields.anmalanPerson),
+    token,
+    requestThrottleMs,
+  );
+
+  // Föräldralösa: fixtur-adress + NOLL anmälningslänkar. Grovfiltret hämtar
+  // kandidater server-side; arForaldralosFixturperson avgör.
+  const kandidater = await listRecords(
+    expectedBaseId,
+    tables.personer.id,
+    fixtureEmailFormula(config.marker),
+    token,
+    requestThrottleMs,
+  );
+  const foraldralosa = kandidater.filter((rec) =>
+    arForaldralosFixturperson(rec, pattern, linkFields.personAnmalningar),
+  );
+
+  const sedda = new Set(lankadePersoner.map((r) => r.id));
+  const tillagdaForaldralosa = foraldralosa.filter((r) => !sedda.has(r.id));
+  const persons = [...lankadePersoner, ...tillagdaForaldralosa];
+  return { events, fixturEvents, registrations, persons, lankadePersoner, tillagdaForaldralosa };
+}
+
+/**
  * Städa EN fixtur-ort via skriptets egna markörer.
  *
  * Delad av `--clean` och förfallo-svepet. Att svepet går genom EXAKT denna
@@ -1387,41 +1794,31 @@ async function korCreate({ args, config, token, purgePolicy }) {
 async function stadaOrt({ ort, config, token, dryRun }) {
   const { expectedBaseId, tables, requestThrottleMs, batchSize } = config;
   const args = { ort, dryRun };
-  const slug = slugify(args.ort);
-  const pattern = fixtureEmailPattern(slug, config.marker);
-  const emailFormula = fixtureEmailFormula(slug, config.marker);
+  const pattern = fixtureEmailPattern(config.marker);
 
-  // Sekventiellt, inte parallellt: throttlen räknar per anrop och 5 req/s
-  // per bas är en delad budget.
-  const events = await listRecords(
-    expectedBaseId,
-    tables.eventplanering.id,
-    `{Ort} = '${args.ort}'`,
-    token,
-    requestThrottleMs,
-  );
-  const registrations = await listRecords(
-    expectedBaseId,
-    tables.anmalningar.id,
-    emailFormula,
-    token,
-    requestThrottleMs,
-  );
-  const persons = await listRecords(
-    expectedBaseId,
-    tables.personer.id,
-    emailFormula,
-    token,
-    requestThrottleMs,
-  );
+  const graf = await samlaFixturgraf({ ort: args.ort, config, token, pattern });
+  const { events, registrations, persons } = graf;
 
   const plan = planClean({ events, registrations, persons, ort: args.ort, pattern, config });
   console.log(
-    `▸ Träffar: ${events.length} event, ${registrations.length} anmälningar, ${persons.length} personer`,
+    `▸ Länkgraf: ${graf.fixturEvents.length} av ${events.length} event bär sentineln ` +
+      `→ ${registrations.length} anmälningar → ${graf.lankadePersoner.length} personer` +
+      `${graf.tillagdaForaldralosa.length > 0 ? ` (+ ${graf.tillagdaForaldralosa.length} föräldralösa)` : ''}`,
   );
   console.log(
     `▸ Raderas: ${plan.registrations.length} anmälningar, ${plan.persons.length} personer, ${plan.events.length} event`,
   );
+  // En föräldralös rad pekas INTE ut av grafen — den kommer in via adressen
+  // plus frånvaron av anmälningar, och kan lika gärna vara en annan orts
+  // avbrutna städning. Den redovisas därför en och en, aldrig som en siffra i
+  // en summa: en radering ingen kan se är en radering ingen kan granska.
+  for (const rec of graf.tillagdaForaldralosa) {
+    if (!plan.persons.includes(rec.id)) continue;
+    console.log(
+      `   ↯ ${rec.id} (${rec.fields?.['E-post']}) raderas som FÖRÄLDRALÖS — ` +
+        'fixtur-adress utan anmälningar, alltså rest efter en avbruten städning',
+    );
+  }
   for (const s of [...plan.skippedEvents, ...plan.skippedRegistrations, ...plan.skippedPersons]) {
     console.log(`   ⚠️  ${s.id} lämnas kvar — ${s.orsak}`);
   }
@@ -1465,29 +1862,15 @@ async function stadaOrt({ ort, config, token, dryRun }) {
   );
   console.log(`   🗑  ${rEv}/${plan.events.length} event raderade`);
 
-  // Efter-verifiering (purge-skriptets form): inget radera-bart kvar.
+  // Efter-verifiering (purge-skriptets form): inget radera-bart kvar. Samma
+  // graf-väg som planeringen, av samma anti-drift-skäl — och den fångar båda
+  // felen: ett kvarstående fixtur-event drar med sig sina anmälningar och
+  // personer, och en person vars radering föll bort dyker upp som föräldralös.
+  const kvarGraf = await samlaFixturgraf({ ort: args.ort, config, token, pattern });
   const kvar = planClean({
-    events: await listRecords(
-      expectedBaseId,
-      tables.eventplanering.id,
-      `{Ort} = '${args.ort}'`,
-      token,
-      requestThrottleMs,
-    ),
-    registrations: await listRecords(
-      expectedBaseId,
-      tables.anmalningar.id,
-      emailFormula,
-      token,
-      requestThrottleMs,
-    ),
-    persons: await listRecords(
-      expectedBaseId,
-      tables.personer.id,
-      emailFormula,
-      token,
-      requestThrottleMs,
-    ),
+    events: kvarGraf.events,
+    registrations: kvarGraf.registrations,
+    persons: kvarGraf.persons,
     ort: args.ort,
     pattern,
     config,
