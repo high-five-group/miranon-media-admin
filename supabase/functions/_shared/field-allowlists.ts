@@ -287,6 +287,33 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Bilagor',
     allowedFields: ['Namn', 'Storlek (bytes)', 'Skapad', 'Event'],
   },
+  // Åtgärdsutskickens sändväg (TASK-147.1, ADR-067-revisionen — repots sjunde
+  // write-vertikal, tredje mail-vertikal). send-action-email-EF:en bygger `fields`
+  // SERVER-SIDE ur den UPPLÄSTA anmälan + den fasta per-åtgärdstyp-mappningen i
+  // _shared/send-action-email.ts:s `stampFieldsFor` (klienten skickar bara
+  // registration-ID:n) — listan är därför en SSOT-grind mot framtida kod-drift, ej
+  // en klient-nåbar deny-yta. UNIONEN av allt de FYRA åtgärdstyperna kan skriva:
+  // 'Status' + 'Bekräftelse skickad' (bekräftelse — EXAKT send-registration-
+  // confirmations par, ORDLISTA: Bekräftad ⟺ bekräftelsen skickad), 'Deltagarinfo
+  // skickad' (eventinfo, fld3WBS0QQrqLpYtK — samma fält AtgardsSida.tsx redan
+  // LÄSER som `reg.deltagarinfoSkickad`), 'Påminnelse anmälningsavgift skickad' +
+  // 'Påminnelse slutbetalning skickad' (paminnelse — de TVÅ additiva fälten
+  // task-18.8 skapade; src/data/mutations/registrationPayments.ts:s
+  // `useLogPaymentReminder`-docblock pekar UTTRYCKLIGEN ut dem som målet för "ett
+  // framtida server-side-utskick" — detta ÄR den ersättningen, mailto-vägen rörs
+  // inte här). 'fritt' skriver INGET fält (mailet ensamt är hela handlingen).
+  // Gamla odelade 'Betalningspåminnelse skickad' rörs MEDVETET aldrig (samma
+  // T16-avgränsning som log-payment-reminder ovan). Tabell per NAMN (ADR-050).
+  'send-action-email': {
+    tableId: 'Anmälningar',
+    allowedFields: [
+      'Status',
+      'Bekräftelse skickad',
+      'Deltagarinfo skickad',
+      'Påminnelse anmälningsavgift skickad',
+      'Påminnelse slutbetalning skickad',
+    ],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.
