@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 103 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — PERSONER-LISTANS
+**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — PERSONER-LISTANS
 FORM ÄR KLAR MEN EJ GODKÄND; BASEN LEVERERAR NU TEXTEN.** Grillad samsyn:
 listan är ett **uppslagsverk** (gruppfrågor bor i Segment) → filterpanelen DOG
 med skäl · kortytan **tonal** (zebra riven, belagt av Marcus öga + research-pass
@@ -32,7 +32,9 @@ LÄNKGRAFEN i stället för e-postmönstret. **PR `#1096` MERGED.**
 staging, koden intakt i `42655f3f`; resumens första punkt. (2) Formen är EJ
 godkänd av Marcus — promovering väntar. (3) Persondetalj + check-in orörda.**
 Numrering vid paus: 108/task-185/L512+2 fragment/T140/f47.
-**HANDOFF: sessionsdok S103 § PAUSLÄGE + Del 1–3.**
+**HANDOFF: sessionsdok S103 § Paushistorik + Del 1–3.** Numrering RE-VERIFIERAD
+mot disk vid resume — oförändrad. Paus-landningen ligger i PR `#1109` (armerad,
+Acceptance kör).
 *(Föregående kadensrad nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
