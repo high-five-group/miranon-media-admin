@@ -89,15 +89,18 @@
  * `TASK-147.4`. Ingen prototyp-flagga skyddar längre kryssen — se
  * `BetalningsSkrivYta`s egen docblock för hela historien.
  *
- * [ÄNDRAS AV TASK-147.2, GJORT] ÅTGÄRD 1 SKICKAR VERKLIGT sedan denna skiva:
- * "Skicka bekräftelsemail" går genom `useSendActionEmail`
+ * [ÄNDRAS AV TASK-147.2/147.3, GJORT] ALLA FYRA ÅTGÄRDER SKICKAR VERKLIGT:
+ * varje rad i `ATGARDER` går genom `useSendActionEmail`
  * (`data/mutations/actionEmail.ts`) mot `TASK-147.1`s server-EF
  * (`send-action-email`, den bilage-fria batchgrenen) — servern löser
- * mottagarna, skickar och skriver Status→Bekräftad + `Bekräftelse skickad`
- * i EN operation; se `GranskningsSida` § `skicka()` för växeln. ÅTGÄRD 2–4
- * (påminnelse/eventinfo/fritt) är ÄNNU PROTOTYP-LOKALA: `simuleraUtfall`
- * bygger deras svar i minnet, ingen sändväg lämnar webbläsaren för dem (se
- * dess docblock) — TASK-147.3 kopplar dem mot SAMMA EF, samma väg.
+ * mottagarna, skickar, och (för bekräftelse/eventinfo/påminnelse) skriver
+ * sitt eget stämpel-fält i EN operation; se `GranskningsSida` § `skicka()`.
+ * TASK-147.2 kopplade "Skicka bekräftelsemail"; TASK-147.3 kopplade de tre
+ * återstående (påminnelse/eventinfo/fritt) mot SAMMA väg — `simuleraUtfall`
+ * (prototyp-grenens minnesbyggda svar) har inga kvarvarande anropare och är
+ * riven i samma skiva. `PrototypRigg` (nedan) STÅR ÄNNU KVAR, avsiktligt —
+ * dess rivning och referens-specens ommontering mot nätverksmockade utfall
+ * är `TASK-147.8`s uttryckliga scope, inte denna skivas.
  *
  * MALLAR OCH BILAGOR ÄR BÅDA STUBBAR, av OLIKA skäl. Bilage-fundamentet
  * (`TASK-146`) ÄR byggt (146.4 uppladdning + 146.5 event-mallad
@@ -165,7 +168,11 @@ import {
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
-import type { ActionSkipReason, SendActionEmailResult } from '@/domain/schemas';
+import type {
+  ActionSkipReason,
+  SendActionEmailInput,
+  SendActionEmailResult,
+} from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
 import { AndraRad, DetaljGrupp } from '../detail/DetaljGrupp';
@@ -352,7 +359,10 @@ function namnPreview(namn: string[]): { pillar: string[]; rest: number; mening: 
  * ------------------------------------------------------------------ */
 type AtgardsTyp = {
   nr: number;
-  nyckel: string;
+  /** [TASK-147.3] Typad mot EF-kontraktets `actionType` — samma union, inte
+      en fri sträng — så `GranskningsSida.skicka()` kan skicka `nyckel` rakt
+      in i `SendActionEmailInput` utan en runtime-check av fyra literaler. */
+  nyckel: SendActionEmailInput['actionType'];
   namn: string;
   /** Prototyp-stubb: mallens ämnesrad. Ingen mall-datakälla finns ännu. */
   amne: string;
@@ -1796,15 +1806,11 @@ const TILLBAKA_KLASS =
  *
  * DE FYRA KLASSERNA ÄR SERVERNS, INTE VÅRA (`ADR-067` D3, ORDLISTA §
  * Delutfall): `sent` alla gick fram · `partial` delutfallet · `failed` ingen
- * gick fram · `skipped` ingen fanns kvar efter serverns filter. Simuleringen
- * nedan härleder klassen ur samma regler servern använder, så formen prövas
- * mot verkliga tillstånd och inte mot påhittade.
+ * gick fram · `skipped` ingen fanns kvar efter serverns filter. Sedan
+ * TASK-147.3 (alla fyra åtgärdstyper skickar verkligt) är servern den ENDA
+ * källan till klassen — se `verkligtUtfallTillUtfall` nedan.
  * ================================================================== */
-type UtfallsLage = 'allt' | 'delvis' | 'inget';
-
 const SKAL_INGEN_EPOST = 'Saknar e-postadress';
-const SKAL_TACKAT_NEJ = 'Har tackat nej till utskick';
-const SKAL_EJ_LEVERERAD = 'Kunde inte levereras';
 
 type Utfall = {
   status: 'sent' | 'partial' | 'failed' | 'skipped';
@@ -1812,70 +1818,10 @@ type Utfall = {
   fallna: { reg: Registration; skal: string }[];
 };
 
-/**
- * [PROTOTYPE, ÅTGÄRD 2–4 ENDAST sedan TASK-147.2] Simulerat utfall — INGET
- * SKICKAS, ingenting lämnar webbläsaren FÖR DENNA FUNKTION.
- *
- * Marcus 2026-08-08, ordagrant: *"VIKTIGT att inga riktiga mail för skickas,
- * inte under några omständigheter!!"* Funktionen bygger ett svar i minnet ur
- * mottagarlistan som redan finns renderad — den anropar `sendEmail`,
- * `MailPayload`, `resend` ELLER `useSendActionEmail` ingenstans i sin egen
- * kropp, så det finns ingen kod HÄR att råka anropa.
- *
- * ÅTGÄRD 1 ("Skicka bekräftelsemail") RÖRDE SIG UR DENNA FUNKTION vid
- * TASK-147.2: `GranskningsSida.skicka()` grenar på `granskning.atgard.nyckel`
- * och kallar `useSendActionEmail` i stället för `simuleraUtfall` för
- * `bekraftelse`. Filen som helhet har alltså EN verklig sändväg sedan denna
- * skiva (se filens egen docblock överst) — den bara går INTE genom denna
- * funktion. `simuleraUtfall` kvarstår oförändrad för påminnelse/eventinfo/
- * fritt tills `TASK-147.3` kopplar dem mot samma EF.
- *
- * SAKNAD E-POST FALLER ALLTID, i alla tre lägena. Det är inte en simulerings-
- * detalj utan den enda utfallsdel klienten FAKTISKT vet före skick: adressen
- * saknas i datan vi redan läst. Att låta "allt gick fram" visa en person utan
- * adress som lyckad hade gjort riggen falsk på precis den punkt ytan finns
- * för att vara sann.
- */
-function simuleraUtfall(mottagare: Registration[], lage: UtfallsLage): Utfall {
-  const utanEpost = mottagare.filter((r) => !r.email);
-  const medEpost = mottagare.filter((r) => r.email);
-
-  const fallna: { reg: Registration; skal: string }[] = utanEpost.map((reg) => ({
-    reg,
-    skal: SKAL_INGEN_EPOST,
-  }));
-  let lyckade: Registration[] = [];
-
-  if (lage === 'allt') {
-    lyckade = medEpost;
-  } else if (lage === 'inget') {
-    for (const reg of medEpost) fallna.push({ reg, skal: SKAL_EJ_LEVERERAD });
-  } else {
-    // Delutfallet: ungefär två tredjedelar går fram. Skälen VÄXLAR med avsikt
-    // — en yta som bara visar ett skäl prövar inte om flera skäl går att läsa.
-    const gransen = Math.ceil(medEpost.length * (2 / 3));
-    lyckade = medEpost.slice(0, gransen);
-    medEpost.slice(gransen).forEach((reg, i) => {
-      fallna.push({ reg, skal: i % 2 === 0 ? SKAL_TACKAT_NEJ : SKAL_EJ_LEVERERAD });
-    });
-  }
-
-  /* KLASSEN HÄRLEDS, den väljs inte — samma regler som `ADR-067` D3.
-     `skipped` skiljs från `failed` på om NÅGOT ens försöktes: föll allt på
-     serverns egna filter (ingen adress, tackat nej) fanns det ingen att
-     skicka till; föll det på leverans gjordes ett försök som misslyckades. */
-  const forsoktes = fallna.some((f) => f.skal === SKAL_EJ_LEVERERAD);
-  const status: Utfall['status'] =
-    lyckade.length > 0 && fallna.length === 0
-      ? 'sent'
-      : lyckade.length > 0
-        ? 'partial'
-        : forsoktes
-          ? 'failed'
-          : 'skipped';
-
-  return { status, lyckade, fallna };
-}
+/** [TASK-147.3] `PrototypRigg`s valda utfallsläge — funktionen som en gång
+    konsumerade den (`simuleraUtfall`) är riven, men riggen SJÄLV kvarstår
+    (filens docblock överst § varför) och behöver fortfarande sin typ. */
+type UtfallsLage = 'allt' | 'delvis' | 'inget';
 
 /** Svenska skäl för serverns skip-koder (`ActionSkipReason`) — samma tre koder
     `_shared/confirm-registrations.ts`s golv-lista redan bär, se `SendActionEmail.
@@ -1899,9 +1845,10 @@ function skalForSkip(reason: ActionSkipReason): string {
 }
 
 /**
- * [TASK-147.2] VERKLIGT utfall → samma `Utfall`-form som `simuleraUtfall`
- * bygger — resultatlägets rendering (`UtfallsKort`, `MessageBox`-sammanfatt-
- * ningen) är DÄRMED OFÖRÄNDRAD oavsett källa, bara datan skiljer.
+ * [TASK-147.2/147.3] VERKLIGT utfall → samma `Utfall`-form den nu rivna
+ * `simuleraUtfall` en gång byggde — resultatlägets rendering (`UtfallsKort`,
+ * `MessageBox`-sammanfattningen) är DÄRMED OFÖRÄNDRAD sedan prototyp-eran,
+ * bara källan bytt (server i stället för minne).
  *
  * Servern svarar med registration-ID:n (`completed`/`skipped`/`failed`), inte
  * `Registration`-objekt (SCOPE-KÄRNAN: mottagaren löses server-side och
@@ -2038,16 +1985,16 @@ function GranskningsSida({
      densamma hela vägen. */
   const [lage, setLage] = useState<'granska' | 'skickar' | 'resultat'>('granska');
   const [utfall, setUtfall] = useState<Utfall | null>(null);
-  /* [TASK-147.2] Åtgärd 1:s verkliga sändväg — se `skicka()` nedan för
-     växeln mot `simuleraUtfall`. Instansierad ovillkorat (samma mönster som
-     `useSetPaymentStatus` m.fl.): hooken kostar inget att montera, och
-     `GranskningsSida` remountar per öppnad granskning (state läcker aldrig
-     mellan två åtgärder). */
+  /* [TASK-147.2/147.3] Samtliga fyra åtgärders enda sändväg — se `skicka()`
+     nedan. Instansierad ovillkorat (samma mönster som `useSetPaymentStatus`
+     m.fl.): hooken kostar inget att montera, och `GranskningsSida` remountar
+     per öppnad granskning (state läcker aldrig mellan två åtgärder). */
   const sendActionEmail = useSendActionEmail(eventId);
-  /* PROTOTYP-RIGGENS VAL — vilket utfall simuleringen ska ge. Lever avskilt
-     längst ned i ytan, inte i innehållet: Marcus 2026-08-08 vill se de tre
-     ytorna "så som de kommer se ut i skarpa versionen", och en väljare mitt i
-     det som bedöms förorenar just den bilden. */
+  /* [TASK-147.3] PROTOTYP-RIGGENS VAL — matar sedan denna skiva INGEN
+     konsument längre (`simuleraUtfall` är riven, `skicka()` läser inte detta
+     state). `PrototypRigg` STÅR ÄNDÅ KVAR, och därmed detta state med den —
+     se filens docblock överst för varför rivningen är TASK-147.8s scope, inte
+     denna skivas. */
   const [protoLage, setProtoLage] = useState<UtfallsLage>('delvis');
 
   /* NY VY BÖRJAR HÖGST UPP (Marcus varv 22): "jag kommer inte in högst upp på
@@ -2108,57 +2055,47 @@ function GranskningsSida({
      redan ÄR omkörnings-urvalet: går Lotta tillbaka till hubben står de sex
      kvar markerade och de fjorton är borta.
 
-     [TASK-147.2] TVÅ VÄGAR GENOM SAMMA `skicka()` — inte två funktioner,
-     eftersom BÅDA måste sluta i exakt samma `Utfall`-form och exakt samma
-     avmarkerings-regel (`onVaxla(reg.id, false)` för varje lyckad). Åtgärd 1
-     ("bekraftelse") går den VERKLIGA vägen: `useSendActionEmail` mot
-     TASK-147.1s EF, serverns svar mappat via `verkligtUtfallTillUtfall`.
-     Åtgärd 2–4 kör ännu `simuleraUtfall` bakom `PrototypRigg`s val — se
-     filens egen docblock och `simuleraUtfall`s för varför den grenen
-     kvarstår (TASK-147.3-scope).
+     [TASK-147.2/147.3] EN ENDA VÄG genom `skicka()` sedan denna skiva — alla
+     fyra åtgärdstyper (`AtgardsTyp.nyckel`, typad mot EF-kontraktet) går
+     genom `useSendActionEmail` mot TASK-147.1s EF, serverns svar mappat via
+     `verkligtUtfallTillUtfall`. TASK-147.2 kopplade "bekraftelse"; TASK-147.3
+     kopplade de tre återstående (påminnelse/eventinfo/fritt) mot samma väg.
+     `simuleraUtfall` (den tidigare prototyp-grenens minnesbyggda svar) hade
+     ingen kvarvarande anropare efter den kopplingen och är riven i samma
+     skiva — se filens docblock överst för vad som INTE rivs samtidigt
+     (`PrototypRigg`, TASK-147.8s scope).
 
-     Fördröjningen i den simulerade grenen finns för att `skickar`-läget ska
-     gå att SE. Den är riggens, inte formens — i den verkliga grenen är det
-     mutationens FAKTISKA väntan, ingen konstgjord fördröjning behövs. */
+     Ingen konstgjord fördröjning behövs längre — mutationens FAKTISKA väntan
+     bär `skickar`-lägets synlighet i samtliga fyra fall. */
   function skicka() {
     setLage('skickar');
 
-    if (granskning.atgard.nyckel === 'bekraftelse') {
-      sendActionEmail.mutate(
-        {
-          actionType: 'bekraftelse',
-          registrationIds: mottagare.map((r) => r.id),
-          amne: granskning.amne,
-          mailtext: granskning.text,
+    sendActionEmail.mutate(
+      {
+        actionType: granskning.atgard.nyckel,
+        registrationIds: mottagare.map((r) => r.id),
+        amne: granskning.amne,
+        mailtext: granskning.text,
+      },
+      {
+        onSuccess: (result) => {
+          const nytt = verkligtUtfallTillUtfall(result, mottagare);
+          setUtfall(nytt);
+          for (const reg of nytt.lyckade) onVaxla(reg.id, false);
+          setLage('resultat');
         },
-        {
-          onSuccess: (result) => {
-            const nytt = verkligtUtfallTillUtfall(result, mottagare);
-            setUtfall(nytt);
-            for (const reg of nytt.lyckade) onVaxla(reg.id, false);
-            setLage('resultat');
-          },
-          // Mutationens EGET fel (nätverk, 4xx/5xx-avvisning, icke-prod-
-          // spärren) — SKILT från ett per-mottagare-delutfall (200 med
-          // failed/skipped), som alltid går till onSuccess ovan. Ingen
-          // Utfall-yta finns att visa: tillbaka till granska med felet synligt
-          // (MessageBox nedan) och handtaget nollställt — samma "dra igen för
-          // att försöka igen"-grammatik som ett oavsiktligt klick skyddas av.
-          onError: () => {
-            setArmerad(false);
-            setLage('granska');
-          },
+        // Mutationens EGET fel (nätverk, 4xx/5xx-avvisning, icke-prod-
+        // spärren) — SKILT från ett per-mottagare-delutfall (200 med
+        // failed/skipped), som alltid går till onSuccess ovan. Ingen
+        // Utfall-yta finns att visa: tillbaka till granska med felet synligt
+        // (MessageBox nedan) och handtaget nollställt — samma "dra igen för
+        // att försöka igen"-grammatik som ett oavsiktligt klick skyddas av.
+        onError: () => {
+          setArmerad(false);
+          setLage('granska');
         },
-      );
-      return;
-    }
-
-    window.setTimeout(() => {
-      const nytt = simuleraUtfall(mottagare, protoLage);
-      setUtfall(nytt);
-      for (const reg of nytt.lyckade) onVaxla(reg.id, false);
-      setLage('resultat');
-    }, 1400);
+      },
+    );
   }
 
   /* RESULTATLÄGET RENDERAS FÖR SIG — det är en annan yta med samma sidhuvud,
@@ -2555,26 +2492,40 @@ function GranskningsSida({
  * samma komponenter, samma tokens, samma texter — och riggen är synligt en
  * rigg: streckad kant, egen rubrik, inget av sidans kort-språk.
  *
- * DEN SKICKAR INGENTING — FÖR DE ÅTGÄRDER DEN FORTFARANDE STYR. Valet styr
- * vilket svar `simuleraUtfall` bygger i minnet för påminnelse/eventinfo/fritt
- * (147.3-scope, ännu ohanterat).
+ * [TASK-147.3] STYR INGENTING LÄNGRE. `simuleraUtfall` — funktionen valet
+ * en gång drev — är RIVEN i denna skiva: `GranskningsSida.skicka()` går den
+ * VERKLIGA vägen för alla fyra åtgärdstyper (filens docblock överst,
+ * `skicka()`s egen kommentar). Riggens knappar sätter fortfarande
+ * `protoLage`, men ingen kod läser längre värdet — widgeten är INERT, inte
+ * funktionell. Kvarlämnad avsiktligt, se nästa stycke.
  *
  * [TASK-147.2] MONTERAS INTE LÄNGRE FÖR `bekraftelse`: riggens roll för den
  * åtgärden är ERSATT av en verklig sändväg (`useSendActionEmail`,
  * `GranskningsSida.skicka()`), inte riven — se BÅDA monteringspunkternas
  * villkor (`granskning.atgard.nyckel !== 'bekraftelse'`). Att visa
  * "Inget skickas - svaret byggs i webbläsaren" bredvid ett resultat som just
- * kom från ett riktigt server-svar hade varit en lögn i DEV-ytan.
+ * kom från ett riktigt server-svar hade varit en lögn i DEV-ytan — samma lögn
+ * gäller nu STRUKTURELLT även de tre kvarvarande monteringarna (se stycket
+ * ovan), öppet bokfört som TASK-147.8s scope nedan, inte tyst kvarlämnad.
  *
- * [TASK-171.5, ADR-103 B2 steg 4] PRÖVAD MOT RIVNING, STÅR KVAR:
- * referens-specen (`tests/visual/atgardssida-promoverings-grind.spec.ts`,
- * funktionen `valjArmeraSkicka`) klickar riggens knappar för att nå de tre
- * utfallslägena via `paminnelse` (INTE `bekraftelse` — dessa referenser rörs
- * alltså inte av 147.2:s gating ovan) — rivs riggen helt kan varken testerna
- * eller framtida QA nå dem innan task-147.3 levererar den riktiga sändvägen
- * för de tre kvarvarande typerna. Riggen är därför DEV-grindad
- * (`import.meta.env.DEV`) vid båda sina monteringspunkter i stället för
- * riven: öppet bokförd test-/QA-infrastruktur, inte skarp UI Lotta ska möta
+ * [TASK-171.5, ADR-103 B2 steg 4 / TASK-147.8] PRÖVAD MOT RIVNING, STÅR ÄNNU
+ * KVAR — nu MEDVETET, per TASK-147.8s uttryckliga ägarskap (kortets
+ * Description, `backlog task 147.8 --plain`): *"PrototypRigg i
+ * AtgardsSida.tsx rivs — dess egen docblock väntar på just 147:s riktiga
+ * sändväg; referens-specen omriktas mot verkliga utfallslägen."* Den riktiga
+ * sändvägen är levererad i och med DENNA skiva (TASK-147.3) — men själva
+ * rivningen av riggen, och ommonteringen av referens-specens navigering, är
+ * INTE gjord här.
+ *
+ * REFERENS-SPECEN (`tests/visual/atgardssida-promoverings-grind.spec.ts`,
+ * funktionen `valjArmeraSkicka`) NÅR SEDAN DENNA SKIVA de tre utfallslägena
+ * genom ett MOCKAT `send-action-email`-nätverkssvar i stället för att klicka
+ * riggens knappar — testet måste följa `skicka()`s nya, enda väg (annars
+ * hade det anropat en riktig, omockad Edge Function). Riggens knappar rörs
+ * alltså inte längre av testet, men de och komponenten lämnas monterade;
+ * riggen är därför fortsatt DEV-grindad (`import.meta.env.DEV`) vid båda sina
+ * monteringspunkter i stället för riven: öppet bokförd, avsiktligt inert
+ * test-/QA-infrastruktur i väntan på TASK-147.8, inte skarp UI Lotta ska möta
  * i produktion.
  * ================================================================== */
 function PrototypRigg({

@@ -1,5 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
+import { http } from 'msw';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
+import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from '../support/fixturvarld/hermetic';
 
 /**
@@ -58,25 +60,35 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  *      mottagaren — noll ofyllda platshållare, verifierat mot fixturen.
  *   4–6. De tre utfallslägena — åtgärden "Skicka betalningspåminnelse"
  *      (`urvalsfilter: obetald`, matchar alla fyra markerade — bredare
- *      urval ger en tydligare 3/1-delning i "delvis") körs igenom
- *      `PrototypRigg`s tre val. Samtliga fyra mottagare har e-post i
- *      fixturen, så utfallet är helt deterministiskt (`simuleraUtfall`,
- *      `AtgardsSida.tsx`): "allt" → 4 lyckade/0 fallna, "delvis" → 3
- *      lyckade/1 fallen (tackat nej), "inget" → 0 lyckade/4 fallna (ej
- *      levererat).
+ *      urval ger en tydligare 3/1-delning i "delvis") skickas verkligt
+ *      (TASK-147.3: alla fyra åtgärdstyper går genom `useSendActionEmail`,
+ *      `AtgardsSida.tsx` § `GranskningsSida.skicka()`) mot ett MOCKAT
+ *      `send-action-email`-nätverkssvar (`valjArmeraSkicka` nedan), format
+ *      efter det som TIDIGARE var `simuleraUtfall`s tre deterministiska
+ *      lägen — SAMMA mottagar-ID:n, SAMMA ordning, SAMMA skäl-text, så
+ *      `verkligtUtfallTillUtfall` (`AtgardsSida.tsx`) mappar det mockade
+ *      svaret till exakt det `Utfall` prototypen en gång byggde i minnet:
+ *      "allt" → 4 lyckade/0 fallna, "delvis" → 3 lyckade/1 fallen (tackat
+ *      nej), "inget" → 0 lyckade/4 fallna (ej levererat). Facit-låsningen
+ *      (kortets AC #1) gäller den RENDERADE ytan, inte navigeringsvägen dit
+ *      — se `TASK-147.3`s rapport för den fulla motiveringen.
  *
  * VARFÖR `granskning-yta` EXKLUDERAR `PrototypRigg` (se anker-kommentaren i
  * `AtgardsSida.tsx`): riggen är simulerings-byggställning, inte formen —
  * dess egen docblock säger det rakt ut ("riggen, inte ytan"). En referens
  * som fångat debug-knapparna hade blivit ogiltig i onödan den dag riggen
- * byts mot en riktig sändväg (task-147) eller rivs.
+ * rivs (`TASK-147.8`s uttryckliga scope) — riggens knappar klickas inte
+ * längre av testerna nedan (se § 4–6 ovan) men komponenten står ännu kvar,
+ * DEV-grindad och nu funktionellt inert (`AtgardsSida.tsx`s egen docblock).
  *
- * INGEN DATA-MUTATION: prototypens skrivytor (betalningsblocket) rörs
- * ALDRIG av dessa tester — samtliga sex körningar stannar i mottagar-ytan/
- * åtgärdsmenyn/granskningen, som är helt läsande och simulerande
- * (`simuleraUtfall` skickar noll nätverksanrop, se dess egen docblock).
- * Fixturvärlden är dessutom hermetisk: alla nätverksanrop mockas av
- * `tests/support/fixturvarld/handlers.ts`, och ett anrop som slinker förbi
+ * INGEN OMOCKAD DATA-MUTATION: prototypens skrivytor (betalningsblocket)
+ * rörs ALDRIG av dessa tester. De fyra första körningarna (tomt läge,
+ * mottagarurval, granskning, bekräftelsemail-förhandsvisningen) är helt
+ * läsande. De tre utfallslägena GÖR ett nätverksanrop — mot `send-action-
+ * email` — men det anropet är mockat av testet självt (§ 4–6 ovan), aldrig
+ * verkligt. Fixturvärlden är hermetisk: alla nätverksanrop mockas av
+ * `tests/support/fixturvarld/handlers.ts` eller av testets egen
+ * `network.use()`-överskuggning, och ett anrop som slinker förbi bådadera
  * fäller testet via hermetik-vakten.
  */
 
@@ -91,9 +103,70 @@ async function oppnaOchGranska(page: import('@playwright/test').Page, atgardsnam
   await page.getByRole('button', { name: 'Granska och skicka' }).click();
 }
 
-/** Väljer utfallsläget i prototyp-riggen, armerar och skickar; väntar in resultatet. */
-async function valjArmeraSkicka(page: import('@playwright/test').Page, utfallsEtikett: string) {
-  await page.getByRole('button', { name: utfallsEtikett }).click();
+/**
+ * De fyra Skövde-mottagarna som "Skicka betalningspåminnelse" (`urvalsfilter:
+ * obetald`) väljer ut, i FIXTURENS registrerings-ordning (`REGISTRATIONS_
+ * RESPONSE`, `fixture-data.ts`) — Cecilia är #3, Filip är #6 (David, #4, är
+ * varken obekräftad eller obetald och alltså aldrig med), inte #1–4 i rad.
+ * Verifierat mot fixturen, inte antaget.
+ */
+const ANNA = 'recVisualReg000001';
+const BJORN = 'recVisualReg000002';
+const CECILIA = 'recVisualReg000003';
+const FILIP = 'recVisualReg000006';
+
+/**
+ * [TASK-147.3] De tre utfallslägena — TIDIGARE `simuleraUtfall`s tre
+ * deterministiska grenar (`AtgardsSida.tsx`, riven i denna skiva), nu ett
+ * mockat `send-action-email`-serversvar med IDENTISK avsikt: samma
+ * mottagar-ID:n i samma ordning, samma fri-text-skäl för de fallna.
+ * `verkligtUtfallTillUtfall` mappar detta till exakt det `Utfall` prototypen
+ * en gång byggde i minnet — facit (aria-referenserna) rörs alltså inte.
+ */
+const PAMINNELSE_UTFALL = {
+  allt: {
+    status: 'sent',
+    requested: 4,
+    attempted: 4,
+    completed: [ANNA, BJORN, CECILIA, FILIP],
+    skipped: [],
+    failed: [],
+  },
+  delvis: {
+    status: 'partial',
+    requested: 4,
+    attempted: 4,
+    completed: [ANNA, BJORN, CECILIA],
+    skipped: [],
+    failed: [{ registrationId: FILIP, reason: 'Har tackat nej till utskick' }],
+  },
+  inget: {
+    status: 'failed',
+    requested: 4,
+    attempted: 4,
+    completed: [],
+    skipped: [],
+    failed: [ANNA, BJORN, CECILIA, FILIP].map((registrationId) => ({
+      registrationId,
+      reason: 'Kunde inte levereras',
+    })),
+  },
+} as const;
+
+/**
+ * Mockar `send-action-email` med ett av de tre deterministiska utfallen,
+ * armerar och skickar; väntar in resultatet. Ersätter (TASK-147.3) den
+ * tidigare klick-i-`PrototypRigg`-mekaniken: `skicka()` (`AtgardsSida.tsx`)
+ * går sedan denna skiva ALLTID den verkliga vägen, oavsett åtgärdstyp — ett
+ * klick på riggens knappar skulle inte längre påverka utfallet (se dess
+ * uppdaterade docblock), så testet mockar nätverket i stället.
+ */
+async function valjArmeraSkicka(
+  page: import('@playwright/test').Page,
+  network: import('@msw/playwright').NetworkFixture,
+  lage: keyof typeof PAMINNELSE_UTFALL,
+) {
+  network.use(http.post(EF('send-action-email'), () => json(PAMINNELSE_UTFALL[lage])));
 
   const vaxel = page.getByRole('switch', { name: 'Bekräfta utskicket' });
   await vaxel.focus();
@@ -130,28 +203,28 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för åtgärds-/
     });
   });
 
-  test('utfallsläge — allt gick fram', async ({ page }) => {
+  test('utfallsläge — allt gick fram', async ({ page, network }) => {
     await gotoAtgarder(page);
     await oppnaOchGranska(page, 'Skicka betalningspåminnelse');
-    await valjArmeraSkicka(page, 'Allt gick fram');
+    await valjArmeraSkicka(page, network, 'allt');
     await expect(page.getByTestId('granskning-yta')).toMatchAriaSnapshot({
       name: 'atgarder-utfall-allt.aria.yml',
     });
   });
 
-  test('utfallsläge — delutfall', async ({ page }) => {
+  test('utfallsläge — delutfall', async ({ page, network }) => {
     await gotoAtgarder(page);
     await oppnaOchGranska(page, 'Skicka betalningspåminnelse');
-    await valjArmeraSkicka(page, 'Delutfall');
+    await valjArmeraSkicka(page, network, 'delvis');
     await expect(page.getByTestId('granskning-yta')).toMatchAriaSnapshot({
       name: 'atgarder-utfall-delvis.aria.yml',
     });
   });
 
-  test('utfallsläge — inget gick fram', async ({ page }) => {
+  test('utfallsläge — inget gick fram', async ({ page, network }) => {
     await gotoAtgarder(page);
     await oppnaOchGranska(page, 'Skicka betalningspåminnelse');
-    await valjArmeraSkicka(page, 'Inget gick fram');
+    await valjArmeraSkicka(page, network, 'inget');
     await expect(page.getByTestId('granskning-yta')).toMatchAriaSnapshot({
       name: 'atgarder-utfall-inget.aria.yml',
     });
@@ -286,24 +359,24 @@ test.describe('TASK-171.3 — axe-pass på den promoverade åtgärds-/granskning
     await axeNoll(page);
   });
 
-  test('utfallsläge — allt gick fram: axe 0', async ({ page }) => {
+  test('utfallsläge — allt gick fram: axe 0', async ({ page, network }) => {
     await gotoAtgarder(page);
     await oppnaOchGranska(page, 'Skicka betalningspåminnelse');
-    await valjArmeraSkicka(page, 'Allt gick fram');
+    await valjArmeraSkicka(page, network, 'allt');
     await axeNoll(page);
   });
 
-  test('utfallsläge — delutfall: axe 0', async ({ page }) => {
+  test('utfallsläge — delutfall: axe 0', async ({ page, network }) => {
     await gotoAtgarder(page);
     await oppnaOchGranska(page, 'Skicka betalningspåminnelse');
-    await valjArmeraSkicka(page, 'Delutfall');
+    await valjArmeraSkicka(page, network, 'delvis');
     await axeNoll(page);
   });
 
-  test('utfallsläge — inget gick fram: axe 0', async ({ page }) => {
+  test('utfallsläge — inget gick fram: axe 0', async ({ page, network }) => {
     await gotoAtgarder(page);
     await oppnaOchGranska(page, 'Skicka betalningspåminnelse');
-    await valjArmeraSkicka(page, 'Inget gick fram');
+    await valjArmeraSkicka(page, network, 'inget');
     await axeNoll(page);
   });
 
