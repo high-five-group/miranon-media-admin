@@ -43,8 +43,8 @@ inte tappas. (4) Persondetalj + check-in orörda i divergensläge.** Numrering
 disk-verifierad efter `#1127`: **109/task-190/T141** plus 2 nummerlösa fragment.
 **HANDOFF: sessionsdok S103 § Del 1–5.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — SEGMENT-PASSETS
-DIVERGENS KLAR; SYNTESEN BYGGD, MARCUS FORMVAL ÖPPET.** Fyra varianter på
+**Session 104 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — KONVERGENSEN INLEDD;
+DE 14 SKOOL-GRUPPERNA FALSIFIERAR REGELSPRÅKET.** Fyra varianter på
 `/mer/segment` via `?variant=a|b|c|d` (`#1121`, sex commits): `a`
 regelverkstaden · `b` publiken först · `c` segment som entitet · **`d`
 syntesen** (Marcus: *"jag gillar alla tre"* → de är tre ÄRENDEN, inte tre svar;
@@ -60,16 +60,33 @@ befintliga exponeras (modalitet, format, år). **PROD-RENSNING utförd:**
 `Segment` + `Bulkutskick` tomma (verifierat: ingen extern mottagare nåddes
 någonsin; backup utanför git). Underlag: research 7 branschledare (alla
 uttrycker regler som predikat; 0/7 hade migrations-precedens) + live
-bas-kartläggning. **`#1121` LANDAD** (merge-commit `844fdefc`; streck-grinden
-var orsaken till det röda Lint-jobbet och fixen `59daf2a8` höll — verifierat
-vid resume, ingen omarmering behövdes). **NÄSTA: Marcus formval på `d`**
-(dev-server `:5175`, `/mer/segment?variant=a|b|c|d`) → konvergens → facit →
-ADR (**`ADR-109`**, förfinar `ADR-062` beslut 3) → basstruktur → PRD.
-**EF-krav till PRD:** `compute-segment` bör bära `via: Par[]` per medlem · år
-kräver deltagandedatum i källfrågan · expansionen måste ske server-side.
-Numrering re-deriverad vid resume: **109/L512+2 fragment/T141/task-190/f47**
-(ADR, tråd och kort konsumerade av S102/S103 under pausen).
-**HANDOFF: sessionsdok S104 § Paushistorik + Del 2.**
+bas-kartläggning. `#1121` + `#1127` LANDADE. **KONVERGENS-VARV EFTER MARCUS
+GRANSKNING (`#1132`, armerad vid paus):** CI-skräpet under "Sparade i basen"
+bortfiltrerat (sex `app-segment-test`-fixturer ur acceptance-sviten) ·
+grupperingen riven → EN lista · **Räkna-knappen riven** (var en regression från
+`b`; hamrings-skyddet ligger i cache-nyckeln, ej i ett klick) · skalprovet når
+listan med **mål per segment** (staging bar 4 `Närvarande`-rader på 2 personer
+→ alla segment visade 1) · underrubriken säger nu att ytan handlar om MAIL ·
+`"Med:"` + filter-ikonen rivna. **ARKITEKTURFYNDET:** de 14 Skool-grupperna
+(`~/Downloads/Inbjudningar-till-communityt.docx`, 416 inbjudningar) FALSIFIERAR
+regelspråket — `segment-membership.ts` rad 11: `include` är **OR, inget AND**;
+**10 av 14 grupper kräver AND ⇒ 127 av 416 personer ej uttryckbara**. Luckan
+sitter i EF-lagret (`resolveRuleMembers` delas med `send-email`) och syntes
+ALDRIG mot prototypens fem egna skisser. **Marcus-beslut:** partition blir en
+**GENERATOR** (skapar N vanliga predikat-segment) + en **täckningsvy** som
+listläge — aldrig en andra sorts segment (toggeln avvisad: två objekttyper
+hade tvingat omgranskning av T50:s tre lager). **Föreläsning:** formen gratis i
+dagens grammatik, men prod har **noll** föreläsnings-deltaganden `Närvarande`
+(alla "Ej avstämt", fälla #1) → bygg formen, förskapa segmentet när Lotta/Roger
+registrerat närvaron. **NÄSTA (resume S104): verifiera `#1132` → bygg
+AND-primitiven → snittberäkning klient-sidan → partition-generator →
+täckningsvy → de 14 som ytans innehåll → Marcus godkänner → facit → `ADR-109`
+(tre beslut) → basstruktur → PRD.** **EF-krav till PRD: FYRA** — `via: Par[]`
+per medlem · år kräver deltagandedatum · expansionen server-side · **AND-stödet
+in i `segment-membership.ts`** (klient-snittet är en prototyp-genväg som inte
+får promoveras). Numrering vid paus: **109/L512+2 fragment/T141/f47**; kort
+disk säger 190 MEN S102 har 190/191 i öppna `#1131` ⇒ **räkna med 192, verifiera
+vid mint**. **HANDOFF: sessionsdok S104 § PAUSLÄGE + Del 3.**
 *(S103:s kadensrad nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
