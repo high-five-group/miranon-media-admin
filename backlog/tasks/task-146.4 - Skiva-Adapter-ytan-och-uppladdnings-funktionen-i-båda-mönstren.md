@@ -1,10 +1,10 @@
 ---
 id: TASK-146.4
 title: 'Skiva: Adapter-ytan och uppladdnings-funktionen i båda mönstren'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 09:06'
-updated_date: '2026-08-10 08:53'
+updated_date: '2026-08-10 10:04'
 labels:
   - ready-for-agent
 dependencies:
@@ -57,6 +57,12 @@ FYND (rapporteras, registreras ej av mig): (1) Write-tool-artefakt upptäckt und
 
 DoD #7 (bas-additiviteten): CHECKAD — inga Airtable-SCHEMA-ändringar gjorda alls i denna skiva (bara record-skrivningar via redan skapade Bilagor-tabellen), additiviteten trivialt bevarad. DoD #5 (PDF-runtime): CHECKAD som globalt sant faktum, bevisat av TASK-146.1 (Done), ej denna skivas arbete. DoD #8 (väggkatalogen): CHECKAD — verifierat INTAKT (P28/P29, docs/reference/airtable-constraints.md § G rad ~585), inget nytt landat här.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1090 (0309c5e7 + listparitet-fixen 3a61b42b, mergad 63e61d2c): adapter-kontraktet uploadAttachment i båda mönstren + tre EF:er + mekanisk lager-oberoende-grind. Premisser live-verifierade (tabell, bucket, TTL empiriskt 7200s). Tvåsidiga bevis: port-paritet TS2420-fälld, grinden fångade verklig träff under bygget. Fynd 182 (bilage-ADR) + 183 (finalize-idempotens) registrerade. AFK-proveniens: S102-batchen kort ②.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

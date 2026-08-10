@@ -1,10 +1,10 @@
 ---
 id: TASK-146.5
 title: 'Skiva: Klass B — event-mallad generering ur systemmall'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-07 09:08'
-updated_date: '2026-08-10 09:32'
+updated_date: '2026-08-10 10:04'
 labels:
   - ready-for-agent
 dependencies:
@@ -147,6 +147,12 @@ AVGRÄNSNING MOT KORTETS TEXT: ingen mall-editor byggd (AC #2 kräver motsatsen)
 Ingen UI-koppling (DokumentYta.tsx är uttryckligen KASTBAR prototyp, klausul iv —
 rördes INTE). Klass C (kvitto) rörs inte (TASK-147, kortets egen text).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1092 (2923cc9d, mergad 3d226bb7): generate-event-attachment-EF:n — klass B event-mallad generering ur hårdkodad systemmall, skarp staging-conformance (201, exakta Bilagor-fält), svenska tecken dubbelbevisade (pdftotext + WinAnsi-hex). Ombyggd rent ovanpå landade 146.4 utan duplicering; 506/506 gröna. AFK-proveniens: S102-batchen kort ③.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
