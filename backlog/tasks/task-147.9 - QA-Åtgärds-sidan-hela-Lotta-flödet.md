@@ -4,17 +4,11 @@ title: 'QA: Åtgärds-sidan hela Lotta-flödet'
 status: To Do
 assignee: []
 created_date: '2026-08-10 07:05'
+updated_date: '2026-08-10 07:41'
 labels:
   - ready-for-human
 dependencies:
-  - TASK-147.1
-  - TASK-147.2
-  - TASK-147.3
-  - TASK-147.4
-  - TASK-147.5
-  - TASK-147.6
-  - TASK-147.7
-  - TASK-147.8
+  - TASK-147.10
 parent_task_id: TASK-147
 priority: high
 ordinal: 346000

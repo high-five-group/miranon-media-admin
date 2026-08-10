@@ -4,6 +4,7 @@ title: 'Skiva: Sändvägs-EF:n bilage-fri gren + ADR-067-revisionen'
 status: To Do
 assignee: []
 created_date: '2026-08-10 06:58'
+updated_date: '2026-08-10 07:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,7 +27,10 @@ Täcker användarberättelser: 10, 13, 27 (serversidan).
 - [ ] #2 Idempotens bevisad genom omkörning: samma körning två gånger ger ett mail, inte två
 - [ ] #3 Delutfall testat som delutfall: scenario där några mottagare faller ger svar som säger just det
 - [ ] #4 ADR-067-revisionen mintad med gren-arkitekturen + tyst-bilage-brist-skälet + avvisade alternativ
+- [ ] #5 ADR-067-revisionen rymmer uttryckligen test-sändvägen (enkel-mottagare till inloggad användare, T53 väg C) som del av det nya kontraktet
 <!-- AC:END -->
+
+
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
