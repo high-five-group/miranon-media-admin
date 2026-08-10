@@ -3,10 +3,10 @@ id: TASK-172
 title: >-
   Bindestrecks-svepet scope A: långa streck ersätts med korta i UI-strängar i
   src/ + mekanisk grind
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 08:08'
-updated_date: '2026-08-09 18:31'
+updated_date: '2026-08-10 04:13'
 labels:
   - ready-for-agent
 dependencies: []
@@ -87,10 +87,16 @@ GRINDAR (samtliga korda i FORGRUNDEN i denna session, exitkod last separat fran 
 PREMISS-DIVERGENS #2: uppdragets exakta verifieringskommando "npx playwright test --project=acceptance" (utan PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1) misslyckas hart - webServer-konfigurationen faller da tillbaka pa E2E_DEV_PORT (5173, portlast for staging-CORS), inte den dedikerade acceptance-porten, och gav "port already in use". package.json:s egen test:acceptance-script bar env-flaggan; anvande den korrekta formen i stallet (PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1 npx playwright test --project=acceptance), vilket motsvarar npm run test:acceptance.
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Fullbordad i två leveranser: forsta passet PR #1055 (73 ersatta + AST-grinden check-langa-streck + policy + tvasidig testsvit 16/16) och 15-strecks-rundan PR #1064 (merge 90ce4477): alla 17 kvarvarande REST-forekomster till korta streck, datumSpann-direktivet rivet oppet, 9 assertion-konsumenter synkade over acceptance+e2e, policyn tomd till tom-markorens globala undantag (9 KEEP). Marcus omgodkannande-stampling via !-kanalen 2026-08-10: av/datum/citat/sha i manifestet, sha e25efd05 = granskade tradet (forsta stampeln bar fel trad f7360100 — resolveMainSha laser lokala main-refen; omstamplad efter ref-synk, lesson-kandidat bokford). AC #1-#4 betalda; DoD #2 agentens grindtabell (typecheck/biome/build/test:api 465/acceptance 177/visual 148+12 darwin-artefakt/check-langa-streck 0), #3 kon + grona jobb pa 90ce4477, #4 diffen = 11 REST-filer + 5 testfiler + policy + kortet.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
