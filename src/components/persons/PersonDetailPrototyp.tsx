@@ -39,10 +39,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronLeft, ChevronRight, Download, Mail, Phone } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
+import { TextArea } from '@/components/primitives/TextArea';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail as PersonDetailType, PersonHistoryEntry } from '@/domain/schemas';
@@ -1067,10 +1068,529 @@ function VariantC({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
 }
 
 // ═════════════════════════════════════════════════════════════════════════
+// VARIANT D — SYNTESEN · Marcus blockordning (S103, konvergens-steg 1)
+// ═════════════════════════════════════════════════════════════════════════
+
+/**
+ * [PROTOTYPE] D är INTE ett fjärde divergens-förslag — det är Marcus egen
+ * blockordning, dikterad vid S103:s resume: *"blanda och mixa lite av
+ * varianterna och skapa en ny variant, en d-variant"*. Inget formval på a/b/c
+ * gjordes; D ÄR valet, och a/b/c står kvar enbart som jämförelseytor.
+ *
+ * ORDNINGEN, som den gavs (åtta punkter, här B1–B8):
+ *
+ *   B1  tomt under namnet            B5  hämtade erbjudanden, med datum
+ *   B2  kontakt (b:s form) + telefon B6  motiveringar, alla, per event
+ *   B3  interaktioner (c:s tidslinje) B7  anteckningar som eventdetaljens
+ *   B4  eventhistorik, senast överst  B8  "just nu", under kontakt
+ *
+ * DUBBLERINGEN ÄR VALD, INTE MISSAD (Marcus svar (a) på beslut 1, 2026-08-10):
+ * tidslinjen behåller HELA sin ström — event OCH hämtningar — och B4/B5 ligger
+ * under den som fördjupningar. Det är CRM-mönstret (aktivitetsström överst,
+ * strukturerade objektlistor under), inte en oavsiktlig upprepning.
+ *
+ * TRE BLOCK STÅR MEDVETET TUNNA I DETTA STEG, och är märkta i koden nedan:
+ * B5:s datum plockas ur strängen (anti-mönstret, se HAMTNING_DATUM), B6 saknar
+ * både ordning och event-koppling, B7 har ingen författare och ingen tidpunkt.
+ * Alla tre stängs av SAMMA EF-utökning (Touchpoints + Anmälningar som batch-
+ * hämtade poster, spegel av Deltaganden-batchen i get-person) plus — för B7 —
+ * en Person-länk på Anteckningar-tabellen. Formen byggs först så dataarbetet
+ * får ett krav att fylla, i stället för tvärtom.
+ */
+
+/**
+ * D:s flaggor — DELAD härledning kan inte användas: `flaggor()` drar in
+ * AI-flaggan, som Marcus explicit lyfte UT ur persondetaljen 2026-08-10
+ * (*"AI flagga avvaktar vi med, den borde egentligen in i anmälningsdetalj-
+ * sidan, inte här"*). Manuella flaggan hanteras separat nedan — den är en
+ * skrivyta i D, inte en läsrad.
+ */
+function flaggorD(person: PersonDetailType): string[] {
+  return [
+    person.ejGodkandMail ? 'Ej godkänd för mailutskick' : null,
+    person.inbjudenCommunity ? 'Inbjuden till community' : null,
+    person.skapatKontoCommunity ? 'Konto i community' : null,
+  ].filter((v): v is string => v !== null);
+}
+
+/**
+ * [PROTOTYPE] B7:s composer — eventsidans form (`Anteckningar.tsx:92-157`)
+ * med skrivningen bortkopplad. Auto-grow-rutan, "Rensa" som visas först vid
+ * innehåll, fokusretur till rutan. Samma read-only-förstärkning som
+ * `AnteckningLas`: en prototyp skriver aldrig, varken mot prod eller staging.
+ */
+function AnteckningComposerStub() {
+  const [text, setText] = useState('');
+  const rutaRef = useRef<HTMLTextAreaElement>(null);
+
+  return (
+    <div className="flex flex-col gap-2 pt-4 pb-3">
+      <TextArea
+        ref={rutaRef}
+        label="Ny anteckning"
+        hideLabel
+        size="md"
+        rows={4}
+        autoGrow
+        placeholder="Skriv en anteckning …"
+        value={text}
+        onChange={setText}
+      />
+      <div className="flex items-center justify-end gap-2">
+        {text.length > 0 && (
+          <Button
+            intent="ghost"
+            size="sm"
+            onPress={() => {
+              setText('');
+              rutaRef.current?.focus();
+            }}
+          >
+            Rensa
+          </Button>
+        )}
+        <Button
+          size="sm"
+          isDisabled={text.trim().length === 0}
+          onPress={() => {
+            // [PROTOTYPE] No-op — se AnteckningLas-noten.
+          }}
+        >
+          Spara
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** En hämtning uppdelad i namn + datum (B5). Datumlösa poster tappas ALDRIG. */
+type Hamtning = { id: string; namn: string; datum: string | null };
+
+/**
+ * B5:s uppdelning. Använder samma `HAMTNING_DATUM` som C:s ström — och ärver
+ * därmed dess anti-mönster-not i sin helhet: i PROD är `Alla hämtningar` en
+ * ARRAYJOIN-klump i ETT element, så listan blir en enda rad där. Det är exakt
+ * vad EF-utökningen stänger (`Touchpoints` är en ÄKTA länk, live-verifierad
+ * 2026-08-10: `fldnuqNqlVzt47AAN` → `tbl22SCvlHrgcAiZi`) — hämtningarna kan
+ * batch-hämtas som riktiga poster med riktiga datum, precis som Deltaganden.
+ */
+function delaHamtningar(allaHamtningar: string[]): Hamtning[] {
+  return allaHamtningar
+    .map((rad) => {
+      const traff = HAMTNING_DATUM.exec(rad);
+      return {
+        id: rad,
+        namn: traff ? rad.replace(HAMTNING_DATUM, '').trim() : rad,
+        datum: traff ? traff[1] : null,
+      };
+    })
+    .sort((a, b) => {
+      // Fallande, datumlösa sist — samma ordningsregel som get-persons historik.
+      if (a.datum === b.datum) return 0;
+      if (a.datum === null) return 1;
+      if (b.datum === null) return -1;
+      return a.datum < b.datum ? 1 : -1;
+    });
+}
+
+function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) {
+  const { poster, oplacerade } = byggStrom(person, nuMs);
+  const kommande = poster.filter((p) => p.kommande);
+  const historiska = poster.filter((p) => !p.kommande);
+  const grupper = grupperaPerEvent(person.historik);
+  const hamtningar = delaHamtningar(person.allaHamtningar);
+  const flag = flaggorD(person);
+  const aktiv = person.harAktivAnmalan === 'Aktiv';
+
+  const arGrupper: { ar: number; poster: StromPost[] }[] = [];
+  for (const post of historiska) {
+    const sista = arGrupper.at(-1);
+    if (sista && sista.ar === post.ar) sista.poster.push(post);
+    else arGrupper.push({ ar: post.ar, poster: [post] });
+  }
+
+  const kortKlass =
+    'rounded-2xl border border-transparent bg-bg-muted px-4 py-4 contrast-more:border-border-strong';
+  const radKlass =
+    '-mx-2 flex w-auto items-center gap-3 rounded-lg px-2 py-3 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
+
+  return (
+    <>
+      {/* B1 — IDENTITETEN: namnet ensamt. Marcus: "Direkt under namnet så
+          behöver vi inte ha någonting, kan vara tomt." Badge, ort och
+          kontaktremsa ligger i sina egna block längre ned. */}
+      <header className="flex flex-col gap-2 px-4">
+        <h1 className="font-semibold text-3xl" tabIndex={-1} data-proto-h1>
+          {displayName(person)}
+        </h1>
+      </header>
+
+      {/* B2 — KONTAKTEN: b:s radform oförändrad. `mailto:`/`tel:` är riktiga
+          länkar (ingen mutation); chevron 18 px eftersom raden leder ut ur
+          appen. ⚠️ PROMOVERINGSKRAV: `mailto:` fälls av check-mailto.mjs och
+          undantaget i `.mailto-policy.json` är fil-scopat till DENNA fil — en
+          promovering till PersonDetail.tsx kräver ett nytt, källmärkt undantag
+          där, annars blir landningen röd. */}
+      <section aria-labelledby="proto-d-kontakt" className="flex min-w-0 flex-col gap-2">
+        <h2 id="proto-d-kontakt" className="px-4 font-semibold text-lg">
+          Kontakt
+        </h2>
+        <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+          {person.email || person.telefon ? (
+            <div className="flex flex-col py-1.5">
+              {person.email && (
+                <a href={`mailto:${person.email}`} className={radKlass}>
+                  <Mail aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate">{person.email}</span>
+                    <span className="font-normal text-small text-text-muted">Skicka mail</span>
+                  </span>
+                  <ChevronRight
+                    aria-hidden="true"
+                    size={18}
+                    className="shrink-0 text-text-secondary"
+                  />
+                </a>
+              )}
+              {person.telefon && (
+                <a href={`tel:${person.telefon.replace(/\s/g, '')}`} className={radKlass}>
+                  <Phone aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate">{person.telefon}</span>
+                    <span className="font-normal text-small text-text-muted">Ring</span>
+                  </span>
+                  <ChevronRight
+                    aria-hidden="true"
+                    size={18}
+                    className="shrink-0 text-text-secondary"
+                  />
+                </a>
+              )}
+            </div>
+          ) : (
+            <p className="py-3 text-small text-text-muted">Inga kontaktuppgifter registrerade.</p>
+          )}
+          {person.ejGodkandMail && (
+            <p className="py-3 text-small text-text-muted">
+              Personen har tackat nej till mailutskick - mejla bara personligt.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* B8 — JUST NU, under kontakten. Marcus: "det kan se ut som det i proto-b
+          fast mycket snyggare". Substansen är problemet i b, inte formen:
+          `nastaEvent` är i praktiken ALLTID null i drift, så b:s kort bär i
+          praktiken en enda rad. D fyller det i stället med det som FAKTISKT
+          finns — erfarenhetsbadgen, orterna, flaggorna och manuella flaggans
+          skrivyta — och håller tintningen som säger "detta gäller nu". */}
+      <section aria-labelledby="proto-d-nulage" className="flex min-w-0 flex-col gap-2">
+        <h2 id="proto-d-nulage" className="px-4 font-semibold text-lg">
+          Just nu
+        </h2>
+        <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-primary-tint px-4 py-4 contrast-more:border-border-strong">
+          <div className="flex flex-wrap items-center gap-2">
+            {aktiv ? <Pill ton="aktiv">Aktiv anmälan</Pill> : <Pill>Ingen aktiv anmälan</Pill>}
+            {person.erfarenhetsbadge && <Pill>{person.erfarenhetsbadge}</Pill>}
+            {flag.map((f) => (
+              <Pill key={f}>{f}</Pill>
+            ))}
+          </div>
+
+          {person.nastaEvent && (
+            <p className="text-body">
+              <span className="text-text-muted">Nästa event: </span>
+              {person.nastaEvent}
+            </p>
+          )}
+
+          {person.senasteInteraktion && (
+            <p className="text-small text-text-secondary">
+              Senaste kontakt
+              {person.dagarSedanSenaste != null
+                ? person.dagarSedanSenaste === 0
+                  ? ' i dag'
+                  : ` för ${person.dagarSedanSenaste} ${person.dagarSedanSenaste === 1 ? 'dag' : 'dagar'} sedan`
+                : ''}
+              : {person.senasteInteraktion}
+            </p>
+          )}
+
+          {/* MANUELLA FLAGGAN — Marcus 2026-08-10: *"Manuell flagga är ju bra
+              att kunna skapa här, så den sedan kan 'fästas' på personen typ i
+              check-in vyn"*.
+
+              ⚠️ BLOCKERAD I BASEN, INTE I APPEN. `Manuella flagga`
+              (`fldNtwQt6tOCIdf4f`) är en singleSelect med `choices: []` —
+              LIVE-MÄTT mot prod-basen `app8uGPrVCVOm6LfD` 2026-08-10 via
+              `get_table_schema`, och därmed fortfarande exakt vad data-model.md
+              §Kända fällor 25 beskriver: "UI låter användaren välja från tom
+              lista → fältet kan inte sättas". En rullgardin här hade varit tom.
+
+              Formen byggs ändå — knappen är en no-op-stub (samma mönster som
+              AnteckningLas) så placeringen och vikten kan dömas nu. Skrivytan
+              kopplas in när options finns i basen (staging + prod), och VILKA
+              flaggor som ska finnas är Marcus/Lottas domänbeslut. */}
+          <div className="flex flex-wrap items-center gap-2 border-border/60 border-t pt-3">
+            {person.manuellFlagga ? (
+              <Pill ton="aktiv">{person.manuellFlagga}</Pill>
+            ) : (
+              <span className="text-small text-text-muted">Ingen flagga satt</span>
+            )}
+            <Button
+              intent="secondary"
+              size="sm"
+              onPress={() => {
+                // [PROTOTYPE] No-op. Fältet saknar valslag i basen — se noten ovan.
+              }}
+            >
+              Sätt flagga
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* B3 — INTERAKTIONER: c:s tidslinje, formen oförändrad (Marcus: "exakt
+          som proto-c, det var jättesnyggt och tydligt"). Rubriken är hans ord.
+          Strömmen behåller HELA sitt innehåll per beslut (a) — eventen och
+          hämtningarna finns alltså både här och i sina egna block nedan. */}
+      <section aria-labelledby="proto-d-strom" className="flex min-w-0 flex-col gap-2">
+        <h2 id="proto-d-strom" className="px-4 font-semibold text-lg">
+          Interaktioner
+        </h2>
+        {poster.length > 0 ? (
+          <div className={`flex flex-col gap-4 ${kortKlass}`}>
+            {kommande.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <h3 className="font-semibold text-small text-text-secondary">Kommande</h3>
+                <ol className="flex flex-col">
+                  {kommande.map((post, i) => (
+                    <StromRad key={post.id} post={post} sist={i === kommande.length - 1} />
+                  ))}
+                </ol>
+              </div>
+            )}
+            {arGrupper.map((grupp) => (
+              <div key={grupp.ar} className="flex flex-col gap-2">
+                <h3 className="font-semibold text-small text-text-secondary tabular-nums">
+                  {grupp.ar}
+                </h3>
+                <ol className="flex flex-col">
+                  {grupp.poster.map((post, i) => (
+                    <StromRad key={post.id} post={post} sist={i === grupp.poster.length - 1} />
+                  ))}
+                </ol>
+              </div>
+            ))}
+            {oplacerade.length > 0 && (
+              <ul className="flex flex-col gap-1 border-border border-t pt-3">
+                {oplacerade.map((post) => (
+                  <li key={post} className="text-small text-text-muted">
+                    {post} - saknar datum, kan inte placeras
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <div className={`flex flex-col items-center gap-1 py-12 text-center ${kortKlass}`}>
+            <p className="font-medium text-body">Inget har hänt ännu</p>
+            <p className="text-small text-text-muted">
+              Strömmen fylls när personen anmäler sig, deltar eller hämtar ett erbjudande.
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* B4 — EVENTHISTORIKEN: a:s kurshistorik-form, som redan är grupperad
+          per event (ett tvådagars-event är EN post, inte två) och sorterad
+          senast-överst server-side (get-person/index.ts:230). Marcus: "listar
+          alla event personen deltagit på med senast högst upp" — den ordningen
+          kostar alltså ingenting, den finns redan i svaret. */}
+      <section aria-labelledby="proto-d-eventhistorik" className="flex min-w-0 flex-col gap-2">
+        <h2 id="proto-d-eventhistorik" className="px-4 font-semibold text-lg">
+          Eventhistorik
+        </h2>
+        {grupper.length > 0 ? (
+          <ul
+            aria-label="Eventhistorik, senaste först"
+            className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+          >
+            {grupper.map((grupp) => {
+              const farg = kursfargForKurs(grupp.kursnamn);
+              const meta = [langtDatum(grupp.datum), grupp.ort, grupp.typ]
+                .filter(Boolean)
+                .join(' · ');
+              return (
+                <li key={grupp.nyckel} className="flex gap-3 py-3">
+                  <span
+                    aria-hidden="true"
+                    className={`w-1 shrink-0 self-stretch rounded-full ${farg.bgClass}`}
+                  />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="font-semibold text-body">{grupp.rubrik}</span>
+                    {meta && <span className="text-small text-text-muted">{meta}</span>}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {grupp.poster.map((entry) => {
+                        const lage = narvarolage(entry, nuMs);
+                        return (
+                          <Pill key={entry.id} ton={lage === 'kommande' ? 'kommande' : 'neutral'}>
+                            {sessionsEtikett(entry, lage)}
+                          </Pill>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <div className="flex flex-col items-center gap-1 rounded-2xl border border-transparent bg-bg-muted px-4 py-12 text-center contrast-more:border-border-strong">
+            <p className="font-medium text-body">Ingen eventhistorik ännu</p>
+            <p className="text-small text-text-muted">
+              Historiken fylls när ett deltagande registreras.
+            </p>
+          </div>
+        )}
+      </section>
+
+      {/* B5 — HÄMTADE ERBJUDANDEN, med datum. Marcus: "med alla hämtade
+          erbjudanden med datum och sånt så klart".
+
+          ⚠️ TUNN I DETTA STEG: datumet finns inte som fält utan plockas ur
+          strängen (se delaHamtningar + HAMTNING_DATUM). Fixturen ger tre
+          separata element och listan ser rätt ut; i PROD är samma rollup en
+          ARRAYJOIN-klump i ETT element, så listan blir EN rad där. Räknaren
+          (`antalHamtningar`) och listan är dessutom två olika rollups som kan
+          säga olika saker — båda visas hellre än att en tyst väljs bort. */}
+      <section aria-labelledby="proto-d-hamtningar" className="flex min-w-0 flex-col gap-2">
+        <h2 id="proto-d-hamtningar" className="px-4 font-semibold text-lg">
+          Hämtade erbjudanden
+        </h2>
+        <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+          {hamtningar.length > 0 ? (
+            <>
+              <ul className="flex flex-col divide-y divide-border">
+                {hamtningar.map((h) => (
+                  <li key={h.id} className="flex items-start gap-3 py-3">
+                    <Download
+                      aria-hidden="true"
+                      size={18}
+                      className="mt-0.5 shrink-0 text-text-secondary"
+                    />
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="text-body">{h.namn}</span>
+                      <span className="text-small text-text-muted">
+                        {h.datum ? langtDatum(h.datum) : 'Datum saknas'}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {person.antalHamtningar !== hamtningar.length && (
+                <p className="py-3 text-small text-text-muted tabular-nums">
+                  Räknaren i basen säger {person.antalHamtningar} - listan {hamtningar.length}. De
+                  är två olika rollups.
+                </p>
+              )}
+            </>
+          ) : person.antalHamtningar > 0 ? (
+            /* DIVERGENSEN, INTE TOMTILLSTÅNDET. Mätt skarpt 2026-08-10 mot
+               staging: `ZZ-Lead Person 01` har `Antal hämtningar` = 1 medan
+               `Alla hämtningar` är TOM — de är två olika rollups över samma
+               relation och kan säga olika saker (C:s egen not, rad ~1037).
+               Ett rakt "Inga hämtade erbjudanden registrerade" hade varit en
+               tyst osanning här: räknaren säger ju att det finns en. */
+            <p className="py-3 text-small text-text-muted tabular-nums">
+              Räknaren i basen säger {person.antalHamtningar}, men listan är tom - de är två olika
+              rollups och är oense.
+            </p>
+          ) : (
+            <p className="py-3 text-small text-text-muted">
+              Inga hämtade erbjudanden registrerade.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* B6 — MOTIVERINGARNA. Marcus: "listar ALLA personens motiveringar i
+          fallande ordning också, och till vilket event motiveringen hör".
+
+          ⚠️ TUNNAST AV ALLA I DETTA STEG — och det syns i formen med avsikt.
+          `motivering` är en platt `string[]` ur en rollup-formel över personens
+          Anmälningar (`Motivering (text)`, fld4ENxbma679wvcC): den bär VARKEN
+          datum ELLER event-koppling. "Fallande ordning" och "till vilket event"
+          är alltså inte svåra här — de är STRUKTURELLT omöjliga tills
+          Anmälningarna batch-hämtas som poster. Motiveringen bor på
+          anmälnings-raden (`Motiveringar (lista)` rullar upp fldrMT8cWP3NmBc9T
+          via länken fld8pOivka8YdiywK, live-verifierat 2026-08-10), så samma
+          EF-utökning som ger B5 sina datum ger B6 både ordning och event. */}
+      <section aria-labelledby="proto-d-motiveringar" className="flex min-w-0 flex-col gap-2">
+        <h2 id="proto-d-motiveringar" className="px-4 font-semibold text-lg">
+          Motiveringar
+        </h2>
+        <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+          {person.motivering.length > 0 ? (
+            <>
+              <ul className="flex flex-col divide-y divide-border">
+                {person.motivering.map((text) => (
+                  <li key={text} className="flex flex-col gap-1 py-3">
+                    <span className="text-small text-text-muted">
+                      Okänt event - anmälan saknar koppling i svaret
+                    </span>
+                    <p className="whitespace-pre-line text-body">{text}</p>
+                  </li>
+                ))}
+              </ul>
+              <p className="py-3 text-small text-text-muted">
+                Ordningen och eventet saknas: motiveringarna kommer som en samlad lista utan datum.
+              </p>
+            </>
+          ) : (
+            <p className="py-3 text-small text-text-muted">Inga motiveringar registrerade.</p>
+          )}
+        </div>
+      </section>
+
+      {/* B7 — ANTECKNINGARNA, i eventdetaljens form. Marcus: "exakt samma
+          liksom som vi har på eventdetalj-sidan. samma utseende och funktion
+          med författar-attribut och de".
+
+          ⚠️ FORMEN ÄR EVENTSIDANS, DATAT ÄR DET INTE. Eventsidan läser en egen
+          TABELL (`Anteckningar`, tblaUhH1KF9k9imul) där varje rad bär
+          Författare + tidpunkt och skrivs via create-event-note med författaren
+          satt SERVER-SIDE (ADR-075). Personens anteckning är i stället ETT
+          multilineText-fält (`fldWGlNr3ujRHo85w`) — odelat, utan författare,
+          utan tidpunkt (task-43-klassen). Tabellen har en Event-länk men INGEN
+          Person-länk, så strömmen kräver en basändring plus två EF:er innan
+          den kan bli verklig. Här visas därför composern (stub) över fältets
+          enda "post", märkt för vad den är. */}
+      <Sektion id="proto-d-anteckningar" rubrik="Anteckningar">
+        <AnteckningComposerStub />
+        <div className="pt-3 pb-4">
+          {person.anteckningar ? (
+            <article className="flex flex-col gap-1.5 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="font-semibold text-body text-text-muted">Okänd författare</span>
+                <span className="shrink-0 text-caption text-text-muted">Ingen tidpunkt</span>
+              </div>
+              <p className="whitespace-pre-line text-body">{person.anteckningar}</p>
+            </article>
+          ) : (
+            <p className="text-caption text-text-muted">Inga anteckningar ännu</p>
+          )}
+        </div>
+      </Sektion>
+    </>
+  );
+}
+
+// ═════════════════════════════════════════════════════════════════════════
 // VÄRDEN — datahämtning + sid-skal (delat: det är app-krom, inte arrangemang)
 // ═════════════════════════════════════════════════════════════════════════
 
-export type PersonDetailVariant = 'a' | 'b' | 'c';
+export type PersonDetailVariant = 'a' | 'b' | 'c' | 'd';
 
 /**
  * [PROTOTYPE] Persondetaljens divergens-pass.
@@ -1169,6 +1689,7 @@ export function PersonDetailPrototyp({
       {variant === 'a' && <VariantA person={person} nuMs={nuMs} />}
       {variant === 'b' && <VariantB person={person} nuMs={nuMs} />}
       {variant === 'c' && <VariantC person={person} nuMs={nuMs} />}
+      {variant === 'd' && <VariantD person={person} nuMs={nuMs} />}
     </>,
   );
 }
