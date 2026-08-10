@@ -57,3 +57,13 @@ ADR-067:s avsiktliga design. Beslutet revs ÖPPET, med kvittens (ej tyst rivning
 
 **Ingång (fullständig, ursprunglig):**
 [T53-test-till-sig-sjalv-skicka.md](T53-test-till-sig-sjalv-skicka.md) — uppstod Session 45 (T50-scope-precisering); REVIDERAR Session 44:s "BESLUTAT: med" mot disk-evidens (send-email segmentIds-only, ADR-067 consent-GOLV); options-rymd (A) ingen test-väg · (B) test-segment med Resend-test-adresser (ingen EF-ändring, endast icke-prod) · (C) net-new EF-kontrakt + ADR
+
+## Avgörande 2026-08-10 (S102)
+
+Options-rymden avgjord: **väg C**, legitimerad av att ADR-067 ändå revideras i
+`task-147.1` (sändvägens grening — singelsändnings-grenen ger enkel-mottagar-
+mekaniken som kontraktsdel, inte som undantag). Bygget bor i `task-147.10`
+("Testmail till mig", åtgärdssidan) + som form-krav i `task-181`
+(segment-redesignen). Drivare: Marcus egen sändrädsla vid T55 steg 1-granskningen
+— "Lotta kommer känna likadant" — trygghetstriaden preview + adresslista +
+testmail är formens golv. Tråden stängs när 147.10 landar (dess AC 4).

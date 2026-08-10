@@ -4,6 +4,7 @@ title: 'Prototyp-pass: Segment-ytan (Bygg segment + sändvyn) → facit → prom
 status: To Do
 assignee: []
 created_date: '2026-08-10 07:27'
+updated_date: '2026-08-10 07:41'
 labels:
   - ready-for-human
 dependencies: []
@@ -28,6 +29,12 @@ Sekvens: går i HITL-kön efter T97-passen (personer-listan pågår, persondetal
 - [ ] #3 T50-skyddslagren intakta i den nya formen (arch-audit-klassens verifikat)
 - [ ] #4 PRD + skivor mintade ur facit (promoveringskontraktet)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FORM-KRAV (Marcus 2026-08-10, S102 — Lottas trygghetstriad, samma klass som 147.10): segment-redesignen SKA bära (1) förhandsvisning av mailet som mottagaren ser det, (2) synlig lista över alla mottagaradresser, (3) 'Skicka test till mig'-knapp (T53/147.10-mönstret via den reviderade sändvägen). T50-skyddslagren + trygghetstriaden är formens golv.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
