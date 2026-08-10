@@ -155,11 +155,29 @@ on:
 # Least-privilege default (ADR-029 §4); jobben höjer själva där de måste.
 permissions: {}
 
-# Per-SHA-grupp, cancel-in-progress OSATT: en post-merge-körning avbryts
-# ALDRIG. En serialiserande grupp (som nightly.yml:s `nightly`) vore FEL här —
-# GitHubs default-concurrency håller bara EN väntande körning, så en tredje
-# landning hade avbrutit den andras väntande körning och tyst tappat dess
-# täckning. Per-SHA ger en körning per landat träd, alltid.
+# Per-SHA-grupp, cancel-in-progress OSATT: DENNA GRUPP avbryter aldrig en
+# post-merge-körning genom att en annan tränger undan den. En serialiserande
+# grupp (som nightly.yml:s `nightly`) vore FEL här — GitHubs default-
+# concurrency håller bara EN väntande körning, så en tredje landning hade
+# avbrutit den andras väntande körning och tyst tappat dess täckning. Per-SHA
+# ger en körning per landat träd, alltid.
+#
+# RÄTTAT (T135, 2026-08-10 — TASK-178). Raden stod tidigare "en post-merge-
+# körning avbryts ALDRIG" utan kvalificering. FALSIFIERAT: den här GRUPPEN
+# skyddar bara mot grupp-nivå-eviction (dess enda jurisdiktion) — den skyddar
+# INTE mot att `suite`-jobbets EGET tak (ci-suite.yml, jobbet `test-staging`,
+# `timeout-minutes: 12`) slår till. Ett sådant timeout ger IDENTISK signatur
+# i API:t — `conclusion: cancelled`, loggraden "The operation was canceled."
+# — som en grupp-eviction, eftersom GitHub sedan en plattformsändring inte
+# längre skriver ut VILKEN mekanism som avbröt körningen (community-
+# diskussion github.com/orgs/community/discussions/40582). Tre reproducerade
+# instanser (körning 31196593426/31197915169/31198327068, 2026-08-07) mätte
+# jobbets väggklocka (started_at → completed_at) till 12m15–12m16s — exakt
+# `timeout-minutes: 12`, inte en mutex-krock (`staging-tests`-gruppens
+# `queue: max` kan per GitHubs dokumentation bara evictera VÄNTANDE poster,
+# aldrig en redan PÅGÅENDE — och alla tre hade redan klarat API-steget när
+# E2E-steget avbröts). Full diagnos, källor och den öppna eskaleringen:
+# tasks/threads/T135-post-merge-korningen-avbryts-trots-att-filen-sager-aldrig.md.
 concurrency:
   group: post-merge-${{ github.sha }}
   cancel-in-progress: false
@@ -484,7 +502,8 @@ jobs:
 
           - **Är \`Acceptance (hermetisk)\` det enda röda jobbet?** Sviten har en mätt flake-historia (\`TASK-64\` + \`TASK-74\`, båda Done sedan 2026-07-29 med belägg — klass A:s fix mätt 3/8 → 0/8 fällningar, klass B:s rest kartlagd i \`TASK-74\`). En första omkörning är därför ett rimligt steg. Men fäller körningen igen: det är INTE längre täckt av känd flake — behandla upprepad fällning som en möjlig äkta regression och gå revert-vägen.
           - **Är \`Exponeringsfönster (merge → svar)\` det enda röda jobbet?** Då är det MÄTNINGEN som gått sönder, inte \`main\`. Reverta ingenting; laga mät-steget i \`post-merge.yml\`.
-          - **Är staging, bygget, acceptance-självtestet eller a11y rött?** Ingen av brasklapparna ovan gäller — behandla det som en äkta regression.
+          - **Är \`Staging (API + E2E)\` \`cancelled\` (INTE \`failure\`)?** Jobbet bär ett eget \`timeout-minutes: 12\`-tak (ci-suite.yml) — en HELT ANNAN avbrottskälla än concurrency-gruppen ovan. GitHub skriver samma generiska "The operation was canceled" för båda, utan att skilja dem (github.com/orgs/community/discussions/40582). Läs jobbets väggklocka: \`gh api repos/${REPO}/actions/jobs/<id> --jq '{started_at,completed_at}'\`. Ligger den på ~12 min är det ett SJÄLVPÅFÖRT timeout — inte en mutex-krock och inte nödvändigtvis en kodregression. Tre verifierade instanser (T135, 2026-08-10): tasks/threads/T135-post-merge-korningen-avbryts-trots-att-filen-sager-aldrig.md. Reverta inte reflexmässigt; en omkörning är rimlig först.
+          - **Är staging, bygget, acceptance-självtestet eller a11y RÖTT (\`failure\`, inte \`cancelled\`)?** Ingen av brasklapparna ovan gäller — behandla det som en äkta regression.
           EOF
 
           if [ -n "${befintligt}" ]; then

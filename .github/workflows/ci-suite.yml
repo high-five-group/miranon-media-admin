@@ -514,6 +514,20 @@ jobs:
     # kör ändå i sina egna jobb). Internt villkor, aldrig path-filter (AC#5).
     if: ${{ !cancelled() && inputs.run_staging && github.actor != 'dependabot[bot]' && (needs.purge.result == 'success' || needs.purge.result == 'skipped') }}
     runs-on: ubuntu-latest
+    # DETTA TAK ÄR POST-MERGE.YML:S FRÄMSTA AVBROTTSKÄLLA (T135, 2026-08-10 —
+    # TASK-178), inte concurrency-gruppen nedan. Normal väggklocka ligger på
+    # ~6–7 min (TASK-59.7 mätte 393 s median 2026-07-28; tre färska gröna
+    # körningar 2026-08-10 låg 5m48s–6m48s). Tre instanser 2026-08-07 (körning
+    # 31196593426/31197915169/31198327068) mätte i stället 12m15–12m16s —
+    # jobbet slog i TAKET, inte i mutexen: `queue: max` nedan kan bara
+    # evictera VÄNTANDE poster, aldrig en redan pågående (GitHub-dokumentation,
+    # verifierad TASK-178), och alla tre hade redan passerat API-steget. En
+    # burst av flakiga/timeoutande E2E-tester (playwright.config.ts:
+    # `retries: process.env.CI ? 2 : 0`) räcker för att äta hela marginalen —
+    # varje missad test kostar upp till tre gånger sin egen körtid. Höj
+    # ALDRIG detta tak reflexmässigt vid nästa post-merge-cancellation: den
+    # bakomliggande flake-orsaken är INTE fastställd av T135, bara
+    # avbrottsMEKANISMEN. Se tråden för den öppna eskaleringen.
     timeout-minutes: 12
     permissions:
       contents: read
