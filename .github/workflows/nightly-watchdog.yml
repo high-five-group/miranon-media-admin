@@ -21,9 +21,16 @@ name: Nattvakt
 # Watchdog: ett larm som bevakar kanalen och ligger BREDVID vanliga larm.
 # Precedent i GitHub Actions: armbian/os watchdog.yml.
 #
-# DEDUP: en enda kontroll av öppna ci-natt-ärenden före skapande. Motsvarar
+# DEDUP: en kontroll av ÖPPNA ci-natt-ärenden, ELLER ärenden STÄNGDA inom ett
+# fönster MED en skriven motivering (kommentar), före skapande. Motsvarar
 # Alertmanagers inhibition och besvarar SRE-checklistans fråga 5 ("are other
 # people getting paged for this issue…"). Utan den vore detta alternativ B.
+# Den stängda-med-motivering-halvan är TASK-180 (2026-08-10, issue #1042):
+# en tidigare version frågade bara efter ÖPPNA ärenden, missade ett larm som
+# redan fanns och nyss stängts med en rotorsaksmotivering, och larmade själv
+# — ett falsklarm. Beslutslogiken bor i scripts/check-nattvakt-dedup.sh
+# (config: .nattvakt-dedup-policy.conf), testad tvåsidigt i
+# scripts/test-check-nattvakt-dedup.sh.
 #
 # ÖPPET BOKFÖRD BEGRÄNSNING — REKURSIONEN: vakten är själv en GitHub
 # Actions-cron och ärver därmed exakt den defekt den ska täcka. Den fångar det
@@ -69,6 +76,16 @@ jobs:
       actions: read
       issues: write
     steps:
+      - name: Checka ut repot
+        # Krävs sedan TASK-180 (2026-08-10): dedup-beslutet nedan anropar
+        # scripts/check-nattvakt-dedup.sh (+ .nattvakt-dedup-policy.conf),
+        # som annars inte finns på runnern — jobbet var innan dess rent
+        # gh-API-baserat utan lokala filer. Grunt (fetch-depth 1) räcker:
+        # skriptet läser bara sin egen källa vid HEAD, ingen git-historik.
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
       - name: Kontrollera senaste schemalagda nattkörning
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -172,14 +189,27 @@ jobs:
             exit 0
           fi
 
-          # DEDUP före skapande: vakten dubblerar aldrig ett larm som
-          # nightly.yml redan lagt. I bevis-läge kringgås dedupen med avsikt,
-          # annars kan kedjan inte bevisas medan ett äkta ärende är öppet.
-          open_count=$(gh issue list --repo "${REPO}" --label ci-natt \
-            --state open --json number --jq 'length')
-          if [ "${open_count}" -gt 0 ] && [ "${SIMULATE}" != "true" ]; then
-            echo "Avvikelse funnen (${rubrik}), men ${open_count} öppet ci-natt-ärende finns redan — larmar inte (dedup)."
-            exit 0
+          # DEDUP före skapande: vakten dubblerar aldrig ett larm som redan är
+          # TÄCKT — öppet, ELLER stängt inom fönstret med skriven motivering.
+          # TASK-180 / issue #1042 (2026-08-10): den tidigare formen frågade
+          # bara efter ÖPPNA ärenden, missade #1028 (redan stängt 07:19 med
+          # rotorsaksmotivering) och larmade ändå — ett falsklarm. Beslutet
+          # bor nu i scripts/check-nattvakt-dedup.sh (config:
+          # .nattvakt-dedup-policy.conf). I bevis-läge kringgås dedupen med
+          # avsikt, annars kan kedjan inte bevisas medan ett äkta ärende är
+          # öppet.
+          #
+          # FAIL-CLOSED: kan täckningen inte avgöras (skriptets exit 2)
+          # larmar vakten ändå — "vet inte" tystas aldrig, samma hållning
+          # som alarm_barande_rott ovan.
+          if [ "${SIMULATE}" != "true" ]; then
+            dedup_kod=0
+            dedup_ut=$(REPO="${REPO}" bash scripts/check-nattvakt-dedup.sh 2>&1) || dedup_kod=$?
+            echo "${dedup_ut}"
+            if [ "${dedup_kod}" -eq 0 ]; then
+              echo "Avvikelse funnen (${rubrik}), men täckningen ovan visar att den redan är hanterad — larmar inte (dedup)."
+              exit 0
+            fi
           fi
 
           note=""

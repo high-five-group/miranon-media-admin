@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-10 06:18'
+updated_date: '2026-08-10 11:01'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,14 +24,14 @@ Källa: S102 triage-rapport 2026-08-10 + issue #1028/#1042.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Vakt-logiken räknar ärende stängt med kommentar/motivering som besvarat (form: t.ex. även stängda ärenden inom fönstret räknas)
-- [ ] #2 Tvåsidigt bevis: simulerat obesvarat-fall larmar fortfarande; #1042-scenariot larmar inte
+- [x] #1 Vakt-logiken räknar ärende stängt med kommentar/motivering som besvarat (form: t.ex. även stängda ärenden inom fönstret räknas)
+- [x] #2 Tvåsidigt bevis: simulerat obesvarat-fall larmar fortfarande; #1042-scenariot larmar inte
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

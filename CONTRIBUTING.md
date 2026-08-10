@@ -918,8 +918,13 @@ oobserverat. Samma mönster som Prometheus Watchdog, och samma linjal som
 Google SRE:s checklista för nya larmregler: *does this rule detect an
 otherwise undetected condition?*
 
-Vakten kontrollerar öppna `ci-natt`-ärenden före den skapar ett nytt, så du
-aldrig får dubbla ärenden om samma natt.
+Vakten kontrollerar öppna `ci-natt`-ärenden — ELLER ärenden STÄNGDA inom ett
+fönster med en skriven motivering (kommentar) — före den skapar ett nytt, så
+du aldrig får dubbla ärenden om samma natt. Den senare halvan är `TASK-180`
+(2026-08-10, issue `#1042`): en tidigare version frågade bara efter ÖPPNA
+ärenden, missade ett larm som redan fanns och nyss stängts med en
+rotorsaksmotivering, och larmade själv — ett falsklarm. Beslutet bor i
+`scripts/check-nattvakt-dedup.sh` (config: `.nattvakt-dedup-policy.conf`).
 
 **Bevis-läge:** kör vakten via `workflow_dispatch` med `simulate_missing:
 true` för att avfyra larmkedjan utan att invänta en äkta incident. En
