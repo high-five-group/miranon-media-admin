@@ -15,6 +15,28 @@
 
 ## Aktuellt fokus
 
+**Session 103 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — PERSONER-LISTANS
+FORM ÄR KLAR MEN EJ GODKÄND; BASEN LEVERERAR NU TEXTEN.** Grillad samsyn:
+listan är ett **uppslagsverk** (gruppfrågor bor i Segment) → filterpanelen DOG
+med skäl · kortytan **tonal** (zebra riven, belagt av Marcus öga + research-pass
+med fem designsystem) · radens jobb är **identifiering** (ort in, senaste
+interaktion in, erfarenhetsbadge + "N anmälningar" ut) — varmed
+`"Ej påbörjat"`-forken dog utan att behöva avgöras. Raden ärver
+`PersonMiniKort`s anatomi i tonal listyta, med **låst höjd** (bevisad mot rader
+utan ort). **Airtable LIVE i båda baserna:** fyra formler + åtta nya fält —
+`Deltog · RIM 1, Falköping` ersätter `Rönninge – Utbildning – …`; ingen backfill
+behövdes (`P30` mintad). Seedfixturen ombyggd: `@example.com` (RFC 2606),
+riktiga orter, luckor i **prods** proportioner, och `--clean` följer nu
+LÄNKGRAFEN i stället för e-postmönstret. **PR `#1096` MERGED.**
+**ÖPPET VID PAUS: (1) `BAS_FILTER` fällde cursor-testet — EF rullad tillbaka i
+staging, koden intakt i `42655f3f`; resumens första punkt. (2) Formen är EJ
+godkänd av Marcus — promovering väntar. (3) Persondetalj + check-in orörda.**
+Numrering vid paus: 108/task-185/L512+2 fragment/T140/f47.
+**HANDOFF: sessionsdok S103 § PAUSLÄGE + Del 1–3.**
+*(Föregående kadensrad nedan, bevarad.)*
+
+<!-- Föregående kadensrad, bevarad: -->
+
 **Session 93 ✅ AVSLUTAD (2026-08-02 → 2026-08-10, `lifecycle: closed` på
 Marcus coverage-kvittens) — EVENTSIDAN SKARP, PROMOVERINGS-APPARATEN BYGGD,
 15-STRECKS-SVEPET FULLBORDAT.** Stängningsdagen: Marcus granskning +
