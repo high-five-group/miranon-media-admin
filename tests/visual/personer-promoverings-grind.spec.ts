@@ -19,12 +19,19 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * efterhand — inte ens genom att läsa gamla PNG:er, eftersom de inte bär
  * roll/namn-strukturen som `ariaSnapshot` jämför.
  *
- * ROLLBYTET som väntar: när Marcus godkänt och rivningen (B2 steg 4) tagit
- * `PROTO_VARIANTS` och prototyp-filen, slutar denna fil bevisa
- * "variant == promoverad" och blir REGRESSIONSLÅS — att ytan fortsätter
- * rendera exakt den låsta formen. Samma rollbyte som
- * `eventsida-promoverings-grind.spec.ts` bokför i sitt eget huvud. Filerna
- * under `__aria__/` ändras inte av det: samma facit, ny innebörd.
+ * ROLLBYTET ÄR GJORT (2026-08-10). Marcus godkände formen och rivningen
+ * (B2 steg 4) tog `PROTO_VARIANTS`, rail-monteringen och `?variant=`-
+ * villkoret; prototyp-filen bytte namn till `PersonsList.tsx`. Denna fil
+ * bevisar därför inte längre "variant == promoverad" — den är
+ * REGRESSIONSLÅS: att ytan fortsätter rendera exakt den låsta formen, för
+ * alla framtida ändringar i `PersonsList.tsx`. Samma rollbyte som
+ * `eventsida-promoverings-grind.spec.ts` bokför i sitt eget huvud.
+ *
+ * De sex referenserna under `__aria__/` är ORÖRDA genom både flippen och
+ * rivningen — samma facit, ny innebörd. Att de fortfarande är gröna efter att
+ * substansen flyttat fil är det mekaniska beviset för att rivningen tog
+ * villkor och växlar, ALDRIG form. Hade filflytten ändrat en enda nod i
+ * trädet hade grinden fällt.
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (`ADR-103` B4): deterministiskt, noll
  * nya beroenden, och det jämför STRUKTUR + TILLGÄNGLIGT NAMN. Pixel-diff
@@ -55,7 +62,7 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * `personer.spec.ts` redan asserterar på) och `zzz` ger noll träffar.
  */
 
-/** Sökfältets tillgängliga namn — `aria-label="Sök person"` (PersonsListPrototyp). */
+/** Sökfältets tillgängliga namn — `aria-label="Sök person"` (PersonsList). */
 const SOKFALT = 'Sök person';
 
 /**
@@ -102,6 +109,38 @@ test.describe('promoverings-grinden — ariaSnapshot mot den promoverade ytan (A
     await expect(page.getByText('Inga träffar')).toBeVisible();
     await expect(page.getByTestId('personer-yta')).toMatchAriaSnapshot({
       name: 'personer-tomlage.aria.yml',
+    });
+  });
+});
+
+/**
+ * STALE `?variant=`-URL — degraderar till den enda formen utan krasch och utan
+ * halvbyggd yta. Före rivningen villkorade `?variant=a` vilken form routen
+ * renderade; en länk som fortfarande bär den gamla queryn (bokmärke, delad
+ * URL, öppen flik) träffar nu en app där INGEN fil läser parametern.
+ *
+ * Samma referens som regressionslåset ovan bevisar det MEKANISKT, inte bara
+ * "sidan kraschar inte": en stale URL måste rendera byte för byte samma träd
+ * som ingen query alls — inte en tom yta, inte ett kvarvarande
+ * prototyp-fragment. Samma AC-form som `eventsida-promoverings-grind.spec.ts`
+ * § TASK-145.6 AC #4.
+ */
+test.describe('stale ?variant=-URL degraderar till den enda formen', () => {
+  test('?variant=a renderar identiskt med ingen query alls', async ({ page }) => {
+    await page.goto('/personer?variant=a');
+    await expect(page.getByTestId('personer-yta')).toBeVisible();
+    await expect(page.getByText('Gunilla Granqvist').first()).toBeVisible();
+    await expect(page.getByTestId('personer-yta')).toMatchAriaSnapshot({
+      name: 'personer-listlage.aria.yml',
+    });
+  });
+
+  test('okänd ?variant=z degraderar likaså', async ({ page }) => {
+    await page.goto('/personer?variant=z');
+    await expect(page.getByTestId('personer-yta')).toBeVisible();
+    await expect(page.getByText('Gunilla Granqvist').first()).toBeVisible();
+    await expect(page.getByTestId('personer-yta')).toMatchAriaSnapshot({
+      name: 'personer-listlage.aria.yml',
     });
   });
 });

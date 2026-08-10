@@ -815,8 +815,9 @@ function byggStrom(
   //    ("Anmälde sig till RIM 1 i Rönninge", ADR-108). Fram till 2026-08-10
   //    bar strängen sitt EGET datum inbakat ("2026-09-12 18:04 – Inskickad
   //    anmälan"), vilket dubblerade mot rälsens etikett — därför togs det
-  //    bort ur basformeln samma dag (samma ändring som
-  //    PersonsListPrototyp.tsx:522-526 dokumenterar). `senasteInteraktionDatum`
+  //    bort ur basformeln samma dag (samma ändring som PersonsList.tsx
+  //    dokumenterar — filen hette PersonsListPrototyp.tsx innan
+  //    promoveringen, ADR-103 B2 steg 4). `senasteInteraktionDatum`
   //    är sedan dess ENDA datumkällan; `tidMs` nedan läser den, aldrig strängen.
   const tpTid = person.senasteInteraktionDatum
     ? Date.parse(person.senasteInteraktionDatum)

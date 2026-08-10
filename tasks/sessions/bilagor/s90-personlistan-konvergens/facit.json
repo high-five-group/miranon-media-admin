@@ -2,14 +2,19 @@
   "prototyp": "s90-personlistan-konvergens",
   "last": "2026-08-10",
   "lasning": "Denna personvy kan vi låsa nu. Klockan kan tas bort, avståndet räcker.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-10",
+    "citat": "Ser bra ut, godkänner",
+    "sha": "4ebdcfc85a78df14c47cff058472d1b4da0d8adf"
+  },
   "ytor": [
     {
       "yta": "personlistan",
       "bilder": ["slutlage-tonal-desktop.png", "slutlage-tonal-mobil.png"],
       "kallor": [
         "src/routes/_authenticated/personer/index.tsx",
-        "src/components/persons/PersonsListPrototyp.tsx"
+        "src/components/persons/PersonsList.tsx"
       ],
       "not": "Formen som låstes (Marcus, S103 2026-08-10): tonal kortyta med divide-y-avdelare · låst radhöjd · status ('Aktiv anmälan') som EGEN kolumn med reserverad plats (k14) · e-post ensam på kontaktraden · interaktionsraden avskild med 4 px, UTAN ikon (k15). k16 byggdes och revs samma pass på Marcus dom: 'Klockan kan tas bort, avståndet räcker.' VILKA BILDER SOM ÄR FACIT, OCH VILKA SOM INTE ÄR DET: katalogen bär 28 PNG:er, och två av dem är en FÖRKASTAD fork — slutlage-zebra-desktop.png och slutlage-zebra-mobil.png. Zebran skrotades av Marcus ('Skrota Zebra-grejen') och är oberoende belagd som fel form: ett research-pass (docs/research/personlista-scanlista-branschmonster-2026-08-10.md) fann att fem designsystem bygger en-kolumns scanlistor med avdelare och aldrig zebra, och vår zebra-variant bar radseparationen enbart i bakgrundstinten utan kompensation under prefers-contrast: more eller forced-colors. De ligger kvar som HISTORIK, inte som alternativ — och det är exakt den R4-fälla (ADR-102) detta manifest finns för att stänga: den som läser katalogen ska inte behöva gissa vilken slutlage-bild som gäller. Övriga k01–k11-bilder är iterationssteg, inte facit. DET MEKANISKA FACIT är inte bilderna utan ariaSnapshot-referenserna under tests/visual/__aria__/personer-promoverings-grind.spec.ts/ (personer-listlage/-sokning-traff/-tomlage × visual-desktop/-mobile), fångade ur variant-läget FÖRE flippen och gröna mot den promoverade ytan efteråt (ADR-103 B4). Bilderna är regressionsstöd för granskningen, inte spec (ADR-103 B2 steg 2)."
     }
