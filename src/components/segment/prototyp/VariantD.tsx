@@ -193,6 +193,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Group,
   ListPlus,
   MailCheck,
   Pencil,
@@ -627,74 +628,169 @@ function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
 }
 
 /**
- * SKISS-SEGMENTEN — byggda ur RIKTIG taxonomi, i den NYA formen.
+ * PARTITION-GENERATORN — kärnan bakom "Dela upp i grupper" och de fjorton
+ * förskapade grupperna nedan (S104 Del 3, Marcus-beslut "partition som
+ * GENERATOR, inte som andra sortens segment"). En partition är INGEN
+ * segmenttyp: den är en skapande-handling som tar en uppsättning kurs-atomer
+ * och genererar N vanliga predikat-segment, ett per icke-tom kombination.
  *
- * `Segment`-tabellen i prod är tom sedan 2026-08-10 (Marcus rensade alla
- * testsegment), och staging bär bara CI-fixturer med UUID-namn — som dessutom
- * filtreras bort ur vyn. Utan skisser går formen inte att bedöma.
- *
- * Deras ANTAL räknas på riktigt med samma `compute-segment` som en sparad rad:
- * **posten är påhittad, aldrig siffran.** Den invarianten är hela skälet till
- * att skisserna får finnas, och den gäller även efter att märkningen per kort
- * togs bort (Marcus 2026-08-10) — förbehållet står nu EN gång, i
- * `PrototypNot` under listan, i stället för som en pill på varje rad.
- *
- * Urvalet visar fem saker på en gång: familjeregeln som automatiskt omfattar
- * RIM 4 · nivåurval · en uteslutning · och PARET
- * "Fjärrskådning - bara utbildning" / "Fjärrskådning - alla, oavsett form".
- *
- * Just det paret är passets skarpaste demonstration. Det raderade segmentet
- * "FS-deltagare (fjärrskådning)" BESKREVS som utbildning men körde ett
- * rollup-fält som blandar båda modaliteterna — det gjorde alltså inte vad
- * dess egen beskrivning påstod (S104 Del 2). Här är båda avsikterna
- * uttryckbara, de heter olika, de ger olika publik, och den blandade får en
- * fördelningsruta i granskningen. Skillnaden går inte längre att råka ut för.
+ * ERSÄTTER de fem exempel-skisserna (`byggSkisser`, riven i denna commit —
+ * git-historiken har den kvar om formen ska återställas med en rad). Skälet
+ * är samma som filhuvudets § AND-PRIMITIVEN: verkliga målsegment (de fjorton)
+ * avtäcker vad ytan faktiskt behöver på ett sätt fem egna påhittade exempel
+ * aldrig gjorde (lesson-kandidat 7, Paushistorik 2).
  */
-function byggSkisser(parInfo: ParInfo[]): SegmentEntitet[] {
-  const familjerIBasen = new Set(
-    parInfo.map((p) => p.familj).filter((f): f is Familj => f !== null),
+
+/** En KURS-ATOM: minsta byggkloss i en partition — ett (familj, nivå)-par
+ *  som existerar i basen. FS och Psionautics är nivålösa (`niva: null`). */
+type KursAtom = { familj: Familj; niva: Niva | null; nyckel: string; etikett: string };
+
+/**
+ * Presentationsordning för atom-chips OCH genererade gruppnamn — FS, RIM
+ * (stigande nivå), Psionautics. Matchar bilagans EGEN ordning verbatim
+ * ("Fjärrskådning + RIM1 + RIM2", aldrig omkastad) — en annan ordning hade
+ * gjort listan svår att känna igen mot källan den kom ur. `FAMILJER` (chip-
+ * radens ordning i `VillkorsKort`) har ett annat syfte och rörs inte.
+ */
+const ATOM_FAMILJORDNING: Familj[] = ['Fjärrskådning', 'RIM', 'Psionautics'];
+
+/** Kort nivå-etikett för atom-chippet ("RIM 1", inte "RIM Nivå 1" — `NIVA_ETIKETT`
+ *  är till för villkorskortets löptext, den här är till för en tät chip-rad). */
+const NIVA_KORT: Record<Niva, string> = { intro: 'Intro', '1': '1', '2': '2', '3': '3' };
+
+/**
+ * Härleder kurs-atomerna som FINNS I BASEN för given modalitet, i
+ * `ATOM_FAMILJORDNING`s ordning. `modalitet: 'Båda'` visar en atom om NÅGON
+ * av de två modaliteterna har paret — samma "inget val = allt"-princip som
+ * `matchar` använder för ett vanligt villkor.
+ */
+function harledKursAtomer(parInfo: ParInfo[], modalitet: ModalitetsVal): KursAtom[] {
+  const finns = new Set(
+    parInfo
+      .filter((p) => p.familj !== null && (modalitet === 'Båda' || p.par.modalitet === modalitet))
+      .map((p) => `${p.familj}|${p.niva ?? ''}`),
   );
-  const ut: SegmentEntitet[] = [];
-
-  const skiss = (id: string, namn: string, pred: Predikat) =>
-    ut.push({ id, namn, predikat: pred, arvdRegel: null, skiss: true });
-
-  if (familjerIBasen.has('RIM')) {
-    skiss('skiss-rim-alla', 'RIM - alla utbildningsnivåer', {
-      med: [nyKonjunkt([{ ...nyttVillkor(), familjer: ['RIM'], modalitet: 'Utbildning' }])],
-      utan: [],
-    });
-    skiss('skiss-rim-erfarna', 'RIM - erfarna (nivå 2 och 3)', {
-      med: [
-        nyKonjunkt([
-          { ...nyttVillkor(), familjer: ['RIM'], nivaer: ['2', '3'], modalitet: 'Utbildning' },
-        ]),
-      ],
-      utan: [],
-    });
+  const atomer: KursAtom[] = [];
+  for (const familj of ATOM_FAMILJORDNING) {
+    if (FAMILJER_MED_NIVA.includes(familj)) {
+      for (const niva of NIVAER) {
+        const nyckel = `${familj}|${niva}`;
+        if (finns.has(nyckel)) {
+          atomer.push({ familj, niva, nyckel, etikett: `${familj} ${NIVA_KORT[niva]}` });
+        }
+      }
+    } else if (finns.has(`${familj}|`)) {
+      atomer.push({ familj, niva: null, nyckel: `${familj}|`, etikett: familj });
+    }
   }
-  if (familjerIBasen.has('Fjärrskådning')) {
-    skiss('skiss-fs-utbildning', 'Fjärrskådning - bara utbildning', {
-      med: [
-        nyKonjunkt([{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Utbildning' }]),
-      ],
-      utan: [],
-    });
-    // SYSKONET till raden ovan — samma familj, andra avsikten, uttryckt som
-    // ett aktivt "Båda". Det är den som utlöser granskningens fördelningsruta.
-    skiss('skiss-fs-alla', 'Fjärrskådning - alla, oavsett form', {
-      med: [nyKonjunkt([{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Båda' }])],
-      utan: [],
-    });
-  }
-  if (familjerIBasen.has('RIM') && familjerIBasen.has('Fjärrskådning')) {
-    skiss('skiss-bredd', 'Har gått RIM men aldrig Fjärrskådning', {
-      med: [nyKonjunkt([{ ...nyttVillkor(), familjer: ['RIM'], modalitet: 'Båda' }])],
-      utan: [{ ...nyttVillkor(), familjer: ['Fjärrskådning'], modalitet: 'Båda' }],
-    });
-  }
-  return ut;
+  return atomer;
 }
+
+/** Villkoret EN kurs-atom motsvarar, med given modalitet. Delad av både
+ *  förhandsvisningens per-atom-frågor och `byggGrupp`s slutliga predikat —
+ *  SAMMA kodväg, så en atom betyder exakt samma sak i förhandsvisningen som
+ *  i den skapade gruppen. */
+function villkorForAtom(a: KursAtom, modalitet: ModalitetsVal): Villkor {
+  return { ...nyttVillkor(), familjer: [a.familj], nivaer: a.niva ? [a.niva] : [], modalitet };
+}
+
+/**
+ * PARTITION-GENERATORNS KÄRNA — EXAKT-KOMBINATION-SEMANTIK
+ * (`underlag-de-fjorton-skool-grupperna.md` § Semantiken). Given alla atomer
+ * och en delmängd S av dem: `med` blir EN konjunkt-grupp av S (alla samtidigt),
+ * `utan` blir ATOMERNA UTANFÖR S — så "RIM1" aldrig läcker in någon som också
+ * gått RIM2. Samma funktion bygger BÅDE den interaktiva generatorns
+ * "Skapa N segment" och de fjorton förskapade grupperna nedan.
+ */
+function byggGrupp(
+  allaAtomer: KursAtom[],
+  ivalda: KursAtom[],
+  modalitet: ModalitetsVal,
+  namn: string,
+  id: string,
+): SegmentEntitet {
+  const ivaldaNycklar = new Set(ivalda.map((a) => a.nyckel));
+  const utanfor = allaAtomer.filter((a) => !ivaldaNycklar.has(a.nyckel));
+  return {
+    id,
+    namn,
+    predikat: {
+      med: [nyKonjunkt(ivalda.map((a) => villkorForAtom(a, modalitet)))],
+      utan: utanfor.map((a) => villkorForAtom(a, modalitet)),
+    },
+    arvdRegel: null,
+    skiss: true,
+  };
+}
+
+/**
+ * DE FJORTON FÖRSKAPADE GRUPPERNA. Marcus lathund till Roger/Lotta inför
+ * Skool-inbjudan (juli 2026) delade 416 personer i 14 disjunkta grupper efter
+ * EXAKT vilken kombination av kurser de gått. Atomerna här är FASTA — inte
+ * härledda ur `parInfo` som generatorns egna — så de fjorton finns oavsett
+ * vad staging råkar innehålla just nu (staging kan dessutom omöjligt befolka
+ * och-kombinationerna på riktigt, se `FACIT_KARTA` + `skalprovMal`).
+ */
+const DE_FJORTON_ATOMER: KursAtom[] = [
+  { familj: 'Fjärrskådning', niva: null, nyckel: 'Fjärrskådning|', etikett: 'Fjärrskådning' },
+  { familj: 'RIM', niva: '1', nyckel: 'RIM|1', etikett: 'RIM 1' },
+  { familj: 'RIM', niva: '2', nyckel: 'RIM|2', etikett: 'RIM 2' },
+  { familj: 'Psionautics', niva: null, nyckel: 'Psionautics|', etikett: 'Psionautics' },
+];
+
+type FjortonRad = { gruppnummer: number; facit: number; atomNycklar: string[] };
+
+/**
+ * Grupptabellen VERBATIM ur bilagan
+ * (`underlag-de-fjorton-skool-grupperna.md` § Grupptabellen), juli 2026.
+ * Σ facit = 416, samma summa som bilagans egen ("416 inbjudningar går ut").
+ * Den femtonde icke-tomma delmängden (Fjärrskådning + RIM2 + Psionautics) är
+ * obefolkad och FÖRSKAPAS INTE — bilagan listar bara 14 av de 15 möjliga.
+ */
+const DE_FJORTON_DATA: FjortonRad[] = [
+  { gruppnummer: 1, facit: 188, atomNycklar: ['RIM|1'] },
+  { gruppnummer: 2, facit: 59, atomNycklar: ['Fjärrskådning|'] },
+  { gruppnummer: 3, facit: 39, atomNycklar: ['Psionautics|'] },
+  { gruppnummer: 4, facit: 34, atomNycklar: ['RIM|1', 'RIM|2'] },
+  { gruppnummer: 5, facit: 30, atomNycklar: ['Fjärrskådning|', 'RIM|1'] },
+  { gruppnummer: 6, facit: 24, atomNycklar: ['Fjärrskådning|', 'RIM|1', 'RIM|2'] },
+  { gruppnummer: 7, facit: 14, atomNycklar: ['Fjärrskådning|', 'RIM|1', 'RIM|2', 'Psionautics|'] },
+  { gruppnummer: 8, facit: 9, atomNycklar: ['RIM|1', 'Psionautics|'] },
+  { gruppnummer: 9, facit: 8, atomNycklar: ['RIM|1', 'RIM|2', 'Psionautics|'] },
+  { gruppnummer: 10, facit: 3, atomNycklar: ['Fjärrskådning|', 'RIM|1', 'Psionautics|'] },
+  { gruppnummer: 11, facit: 3, atomNycklar: ['Fjärrskådning|', 'Psionautics|'] },
+  { gruppnummer: 12, facit: 3, atomNycklar: ['RIM|2'] },
+  { gruppnummer: 13, facit: 1, atomNycklar: ['RIM|2', 'Psionautics|'] },
+  { gruppnummer: 14, facit: 1, atomNycklar: ['Fjärrskådning|', 'RIM|2'] },
+];
+
+/** Bygger de fjorton entiteterna vid mount, via SAMMA `byggGrupp` som
+ *  generatorns "Skapa N segment". Modaliteten är fast Utbildning — bilagan
+ *  utelämnar föreläsning helt (Del 3 § Modalitets-frågan). */
+function byggDeFjorton(): SegmentEntitet[] {
+  return DE_FJORTON_DATA.map((rad) => {
+    const ivalda = DE_FJORTON_ATOMER.filter((a) => rad.atomNycklar.includes(a.nyckel));
+    const namn = ivalda.map((a) => a.etikett).join(' + ');
+    return byggGrupp(
+      DE_FJORTON_ATOMER,
+      ivalda,
+      'Utbildning',
+      namn,
+      `de-fjorton-${rad.gruppnummer}`,
+    );
+  });
+}
+
+/**
+ * Facit-antalet per förskapad grupp — en SEPARAT karta i stället för ett
+ * fält på `SegmentEntitet` (beslut 6, minsta yta): bara `skalprovMal` och
+ * invariant-undantaget i `fyllUt`/`visatAntal` behöver slå upp den, och
+ * ingen annan entitet (sparad, egen, generator-skapad) bär ett fält den
+ * aldrig sätter.
+ */
+const FACIT_KARTA: Record<string, number> = Object.fromEntries(
+  DE_FJORTON_DATA.map((rad) => [`de-fjorton-${rad.gruppnummer}`, rad.facit]),
+);
 
 /* ================================================================== *
  * DELAD GRAMMATIK — klassrader ärvda ur Event-familjen (G2)
@@ -1063,7 +1159,12 @@ function SegmentKortMedAntal(props: {
     <SegmentKort
       entitet={props.entitet}
       definition={definitionFor(props.entitet, props.parInfo)}
-      antal={visatAntal(data?.count, props.skalprov, props.entitet.id)}
+      antal={visatAntal(
+        data?.count,
+        props.skalprov,
+        props.entitet.id,
+        props.entitet.id in FACIT_KARTA,
+      )}
       raknar={isFetching && data === undefined}
       markeraLage={props.markeraLage}
       vald={props.vald}
@@ -1096,6 +1197,7 @@ function SegmentLista({
   valda,
   onOppna,
   onNytt,
+  onDelaUpp,
   onOppnaMarkering,
   onStangMarkering,
   onVaxla,
@@ -1113,6 +1215,7 @@ function SegmentLista({
   valda: ReadonlySet<string>;
   onOppna: (id: string) => void;
   onNytt: () => void;
+  onDelaUpp: () => void;
   onOppnaMarkering: () => void;
   onStangMarkering: () => void;
   onVaxla: (id: string, vald: boolean) => void;
@@ -1197,10 +1300,23 @@ function SegmentLista({
               </span>
             </>
           ) : (
-            <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
-              <ListPlus aria-hidden="true" size={18} className="shrink-0" />
-              Nytt segment
-            </button>
+            <>
+              <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
+                <ListPlus aria-hidden="true" size={18} className="shrink-0" />
+                Nytt segment
+              </button>
+              {/* PARTITION-GENERATORNS INGÅNG (S104 Del 3 konvergens, beslut
+                  "partition som generator"). Egen kapsel bredvid "Nytt
+                  segment" — samma nivå, för handlingen ÄR i samma familj:
+                  båda producerar segment, den ena en åt gången, den andra N
+                  på en gång. Göms i markera-läget av samma skäl som
+                  "Nytt segment": mitt i ett urval är att skapa nytt inte det
+                  man håller på med. */}
+              <button type="button" onClick={onDelaUpp} className={KAPSEL_KLASS}>
+                <Group aria-hidden="true" size={18} className="shrink-0" />
+                Dela upp i grupper
+              </button>
+            </>
           )}
           {markerbara > 0 && (
             <button
@@ -1279,7 +1395,9 @@ function SegmentLista({
 
             <PrototypNot>
               Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är
-              påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad.
+              påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad. De
+              fjorton förskapade grupperna bär dessutom sitt eget facit - se skalprovs-växeln för
+              vad det betyder.
             </PrototypNot>
           </>
         )}
@@ -1326,8 +1444,15 @@ const SKALPROV_MAL = 85;
  *
  * Spannet 8-137 är valt för att träffa både korta listor och sådana som kräver
  * chunkning (`CHUNK` = 25), så att listans former faktiskt prövas.
+ *
+ * DE FJORTON FÖRSKAPADE GRUPPERNA SLÅR UPP `FACIT_KARTA` FÖRST (S104 Del 3
+ * konvergens). Deras mål är inte påhittat — det är juli 2026 års uppmätta
+ * antal ur Skool-underlaget (1–188). Alla andra id:n faller till hash-vägen
+ * oförändrad.
  */
 function skalprovMal(id: string): number {
+  const facit = FACIT_KARTA[id];
+  if (facit !== undefined) return facit;
   let h = 0;
   for (let i = 0; i < id.length; i += 1) h = (h * 31 + id.charCodeAt(i)) % 100_000;
   return 8 + (h % 130);
@@ -1398,27 +1523,42 @@ function byggSkalprov(befintliga: number, mal: number): SegmentMember[] {
 }
 
 /**
- * FYLLER UT, SKAPAR ALDRIG. En tom publik förblir tom även med skalprovet på —
- * annars hade instrumentet svarat på en fråga ingen ställt ("hur ser 85 av
- * ingenting ut?") och samtidigt dolt fälla #34:s tomläge, som är en av de
- * former som faktiskt ska bedömas.
+ * FYLLER UT, SKAPAR ALDRIG — för alla ICKE-förskapade segment. En tom publik
+ * förblir tom även med skalprovet på, annars hade instrumentet svarat på en
+ * fråga ingen ställt ("hur ser 85 av ingenting ut?") och samtidigt dolt
+ * fälla #34:s tomläge, som är en av de former som faktiskt ska bedömas.
+ *
+ * INVARIANT-JUSTERING FÖR DE FJORTON (S104 Del 3 konvergens, bokförd med
+ * avsikt): `tillatFranTomt` släpper igenom fyllning ur en tom VERKLIG publik.
+ * Anropas bara med `true` för en förskapad grupp (`id in FACIT_KARTA`) —
+ * talen är dokumenterade juli 2026-tal ur bilagan, inte påhitt, och staging
+ * kan omöjligt befolka och-kombinationerna (grupp 4–11, 13, 14). Alla ANDRA
+ * segment behåller invarianten oförändrad.
  */
 function fyllUt(
   medlemmar: SegmentMember[],
   skalprov: boolean,
   mal: number = SKALPROV_MAL,
+  tillatFranTomt = false,
 ): SegmentMember[] {
-  if (!skalprov || medlemmar.length === 0) return medlemmar;
+  if (!skalprov) return medlemmar;
+  if (medlemmar.length === 0 && !tillatFranTomt) return medlemmar;
   return [...medlemmar, ...byggSkalprov(medlemmar.length, mal)];
 }
 
 /**
- * KORTETS TAL under skalprovet. Samma invariant som `fyllUt`: en tom publik
- * förblir tom (fälla #34:s tomläge ska gå att bedöma även med riggen på), och
- * ett verkligt antal som redan passerar målet sänks aldrig.
+ * KORTETS TAL under skalprovet. Samma invariant som `fyllUt`, inklusive
+ * samma `tillatFranTomt`-undantag för de fjorton: grupp 13/14 ska visa 1 —
+ * `Math.max(0, skalprovMal(id))` med `mal = 1` ger exakt det, aldrig mer.
  */
-function visatAntal(antal: number | undefined, skalprov: boolean, id: string): number | undefined {
-  if (antal === undefined || !skalprov || antal === 0) return antal;
+function visatAntal(
+  antal: number | undefined,
+  skalprov: boolean,
+  id: string,
+  tillatFranTomt = false,
+): number | undefined {
+  if (antal === undefined || !skalprov) return antal;
+  if (antal === 0 && !tillatFranTomt) return antal;
   return Math.max(antal, skalprovMal(id));
 }
 
@@ -1437,6 +1577,15 @@ function SkalprovsVaxel({ aktivt, onVaxla }: { aktivt: boolean; onVaxla: (v: boo
       <p className="text-caption text-text-muted">
         <strong className="font-medium">Prototyp-rigg.</strong> Staging har för lite avstämd närvaro
         för att visa hur publiken beter sig i den storlek den är byggd för.
+      </p>
+      {/* INSTRUMENTET DEKLARERAR SIG SJÄLVT (S104 Del 3 konvergens): de
+          fjorton förskapade grupperna fylls annorlunda än alla andra segment,
+          och den skillnaden ska synas här — inte upptäckas som en avvikelse. */}
+      <p className="text-caption text-text-muted">
+        De fjorton förskapade grupperna är undantaget: deras mål är det uppmätta antalet från juli
+        2026 (1–188), inte ett påhittat tal - och de får fyllas även från en tom verklig publik,
+        eftersom och-kombinationer inte går att befolka i staging ännu. Övriga segment fylls aldrig
+        ur en tom publik.
       </p>
       {/* PÅ/AV MÅSTE VARA OMISSKÄNNLIGT. Första formen lånade `PrototypRigg`s
           dämpade markering (`bg-bg-emphasized`) — men den fungerar bara i ett
@@ -1743,7 +1892,12 @@ function SegmentDetalj({
   // SAMMA MÅL SOM KORTET I LISTAN (`skalprovMal(entitet.id)`) — öppnar man ett
   // kort som säger 47 ska publiken vara 47, inte 85. Riggen får vara påhittad;
   // den får inte vara osammanhängande.
-  const medlemmar = fyllUt(data?.members ?? [], skalprov, skalprovMal(entitet.id));
+  const medlemmar = fyllUt(
+    data?.members ?? [],
+    skalprov,
+    skalprovMal(entitet.id),
+    entitet.id in FACIT_KARTA,
+  );
   const antalFar = medlemmar.filter(farMailet).length;
   const undertryckta = medlemmar.length - antalFar;
   const tomRegel = rule.include.length === 0;
@@ -2531,6 +2685,285 @@ function RegelVerkstad({
 }
 
 /* ================================================================== *
+ * "DELA UPP I GRUPPER" — partition-generatorns egna yta
+ * ================================================================== */
+
+/**
+ * Ett tal per icke-tom delmängd av de valda kurserna. Räknat lokalt ur K
+ * medlemssvar (ett per vald kurs-atom) via en bitmask per person: `bit i` =
+ * "gick kurs i". Två personer med SAMMA bitmask hör till SAMMA exakta grupp,
+ * så en grupps storlek är helt enkelt antalet personer med den gruppens
+ * bitmask — `K` frågor räcker för `2^K - 1` kombinationer, ingen fråga per
+ * kombination. Samma exakt-kombination-semantik som `byggGrupp`, bara räknad
+ * i stället för byggd till ett predikat.
+ */
+function raknaKombinationer(
+  atomer: KursAtom[],
+  svar: readonly (Medlemssvar | undefined)[],
+): { mask: number; namn: string; antal: number }[] {
+  const bitmaskPerPerson = new Map<string, number>();
+  atomer.forEach((_, i) => {
+    for (const m of svar[i]?.members ?? []) {
+      bitmaskPerPerson.set(m.id, (bitmaskPerPerson.get(m.id) ?? 0) | (1 << i));
+    }
+  });
+  const antalPerMask = new Map<number, number>();
+  for (const mask of bitmaskPerPerson.values()) {
+    antalPerMask.set(mask, (antalPerMask.get(mask) ?? 0) + 1);
+  }
+  const rader: { mask: number; namn: string; antal: number }[] = [];
+  for (let mask = 1; mask < 1 << atomer.length; mask += 1) {
+    const namn = atomer
+      .filter((_, i) => (mask & (1 << i)) !== 0)
+      .map((a) => a.etikett)
+      .join(' + ');
+    rader.push({ mask, namn, antal: antalPerMask.get(mask) ?? 0 });
+  }
+  // Största gruppen (flest kurser i kombinationen) sist, ren för att den mest
+  // sammansatta - och sannolikt minsta - gruppen inte ska konkurrera om
+  // uppmärksamheten med de enkla korten längst upp.
+  return rader.sort(
+    (a, b) => popcount(a.mask) - popcount(b.mask) || a.namn.localeCompare(b.namn, 'sv'),
+  );
+}
+
+function popcount(mask: number): number {
+  let n = 0;
+  let m = mask;
+  while (m > 0) {
+    n += m & 1;
+    m >>= 1;
+  }
+  return n;
+}
+
+/**
+ * PARTITION-GENERATORN SOM EGEN YTA (S104 Del 3, beslut "partition som
+ * generator"). Samma verkstads-princip som `RegelVerkstad`: den kostar klick
+ * och tar plats, men bor inte på samma skärm som listan.
+ *
+ * ORDNINGEN ÄR AVSIKTLIG: modaliteten väljs FÖRST, kurserna härleds sedan ur
+ * den (`harledKursAtomer`) — så en atom-chip betyder alltid "den här kursen,
+ * räknad som den modalitet du redan valt", aldrig en tyst gissning.
+ */
+function DelaUppIGrupper({
+  parInfo,
+  onTillbaka,
+  onSkapa,
+}: {
+  parInfo: ParInfo[];
+  onTillbaka: () => void;
+  onSkapa: (entiteter: SegmentEntitet[]) => void;
+}) {
+  const rubrikRef = useRef<HTMLHeadingElement>(null);
+  useVyFokus(rubrikRef, true);
+  const dataSource = useDataSource();
+  const forhandsvisningRubrikId = useId();
+
+  const [modalitet, setModalitet] = useState<ModalitetsVal | null>(null);
+  const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
+
+  const atomer = useMemo(
+    () => (modalitet === null ? [] : harledKursAtomer(parInfo, modalitet)),
+    [parInfo, modalitet],
+  );
+  // En atom som försvinner (modaliteten byttes) kan inte förbli vald - annars
+  // hade en osynlig kurs kunnat räknas in i förhandsvisningen utan att synas
+  // i chip-raden.
+  useEffect(() => {
+    setValda((s) => {
+      const kvar = new Set([...s].filter((k) => atomer.some((a) => a.nyckel === k)));
+      return kvar.size === s.size ? s : kvar;
+    });
+  }, [atomer]);
+
+  const valdaAtomer = useMemo(() => atomer.filter((a) => valda.has(a.nyckel)), [atomer, valda]);
+  const visaForhandsvisning = modalitet !== null && valdaAtomer.length >= 2;
+
+  // K FRÅGOR, EN PER VALD ATOM — samma cache-fabrik (`medlemsFraga`) och
+  // därmed samma signatur-cache som resten av varianten: ett villkor som
+  // redan ställts av ett sparat segment eller en annan vy kostar noll här.
+  // Regellistan är MINNAD (`usePredikatMedlemmar`s mönster) - annars räknar
+  // `nyttVillkor()`s globala id-räknare om sig på varenda oberoende render.
+  const regler = useMemo(
+    () =>
+      modalitet === null
+        ? []
+        : valdaAtomer.map((a) => villkorsRegel(villkorForAtom(a, modalitet), parInfo)),
+    [valdaAtomer, modalitet, parInfo],
+  );
+  const svar = useQueries({
+    queries: regler.map((r) => ({ ...medlemsFraga(dataSource, r), enabled: visaForhandsvisning })),
+  });
+  const allaSvarat = svar.every((s) => s.data !== undefined);
+  const nagotFel = svar.some((s) => s.isError);
+
+  // INGEN `useMemo` HÄR MED FLIT: `svar` (useQueries) är en ny array varje
+  // render, så en minnesfunktion hade antingen räknat om varje gång ändå
+  // (deps = `svar`) eller riskerat ett inaktuellt resultat (deps utan
+  // `svar`). Beräkningen är billig - bitmaskräkning över K korta
+  // medlemslistor, inte en walk - så priset för att alltid räkna om är noll.
+  const kombinationer =
+    visaForhandsvisning && allaSvarat
+      ? raknaKombinationer(
+          valdaAtomer,
+          svar.map((s) => s.data),
+        )
+      : [];
+  const befolkade = kombinationer.filter((k) => k.antal > 0);
+  const kanSkapa = visaForhandsvisning && allaSvarat && !nagotFel && befolkade.length > 0;
+
+  function skapa() {
+    if (!kanSkapa || modalitet === null) return;
+    const nu = Date.now();
+    const entiteter = befolkade.map((k) => {
+      const ivaldaIGrupp = valdaAtomer.filter((_, i) => (k.mask & (1 << i)) !== 0);
+      return byggGrupp(valdaAtomer, ivaldaIGrupp, modalitet, k.namn, `gen-${nu}-${k.mask}`);
+    });
+    onSkapa(entiteter);
+  }
+
+  return (
+    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+      <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
+        <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
+          Dela upp i grupper
+        </h1>
+        <p className="text-small text-text-muted">
+          Välj de kurser du vill dela upp mellan. Varje person hamnar i EXAKT en grupp - den som
+          motsvarar precis hens egen kombination av kurser, aldrig fler.
+        </p>
+      </header>
+
+      <div className="flex flex-col gap-6 px-4">
+        {/* SAMMA FORM + SÄKERHETSMOTIVERING SOM `VillkorsKort`. Ingen
+            röd/ogiltig-styling här: till skillnad från ett villkor mitt i
+            byggnad finns det inget FÖRE modaliteten att röra vid - så det
+            "orörda" läget varar hela tiden fram till första valet, och en röd
+            ram hade skällt på någon som ännu inte gjort något. */}
+        <div className="flex flex-col gap-1.5">
+          <RadioGroup
+            label="Räknas som"
+            orientation="horizontal"
+            value={modalitet}
+            onChange={(v) => setModalitet(v as ModalitetsVal)}
+          >
+            <Radio value="Utbildning">Utbildning</Radio>
+            <Radio value="Föreläsning">Föreläsning</Radio>
+            <Radio value="Båda">Båda</Radio>
+          </RadioGroup>
+          {modalitet === null && (
+            <p className="text-caption text-text-muted">
+              Det finns material som är direkt olämpligt att skicka till någon som bara gått en
+              föreläsning. Välj därför vad grupperna ska räknas som innan du väljer kurser.
+            </p>
+          )}
+        </div>
+
+        {modalitet !== null && (
+          <ChipRad etikett="Kurser">
+            {atomer.length === 0 ? (
+              <p className="text-small text-text-muted">Inga kurser i basen matchar det valet.</p>
+            ) : (
+              atomer.map((a) => (
+                <ValChip
+                  key={a.nyckel}
+                  vald={valda.has(a.nyckel)}
+                  onTryck={() =>
+                    setValda((s) => {
+                      const ny = new Set(s);
+                      if (ny.has(a.nyckel)) ny.delete(a.nyckel);
+                      else ny.add(a.nyckel);
+                      return ny;
+                    })
+                  }
+                >
+                  {a.etikett}
+                </ValChip>
+              ))
+            )}
+          </ChipRad>
+        )}
+
+        {modalitet !== null && valdaAtomer.length === 1 && (
+          <p className="text-small text-text-muted">
+            Välj minst två kurser för att dela upp - en ensam kurs är redan sin egen grupp.
+          </p>
+        )}
+
+        {visaForhandsvisning && (
+          <section aria-labelledby={forhandsvisningRubrikId} className="flex flex-col gap-3">
+            <h2 id={forhandsvisningRubrikId} className="font-semibold text-lg">
+              Förhandsvisning
+            </h2>
+            {nagotFel ? (
+              <MessageBox intent="error" title="Kunde inte räkna grupperna">
+                Försök igen, eller välj färre kurser.
+              </MessageBox>
+            ) : !allaSvarat ? (
+              <div role="status" aria-busy="true" className="flex flex-col gap-2">
+                <span className="sr-only">Räknar grupperna…</span>
+                {['a', 'b', 'c'].map((k) => (
+                  <Skeleton key={k} variant="text" className="w-2/3 text-body" />
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* TALET SOM ARIA-LIVE (kvalitetsribba 11): antalet befolkade
+                    kombinationer ändras varje gång en kurs väljs om, och det
+                    ska höras utan att man letar upp raden själv. */}
+                <p aria-live="polite" className="text-small text-text-muted">
+                  {befolkade.length} av {kombinationer.length}{' '}
+                  {kombinationer.length === 1 ? 'kombination har' : 'kombinationer har'} personer -{' '}
+                  {kombinationer.length - befolkade.length === 0
+                    ? 'ingen utelämnas'
+                    : `${kombinationer.length - befolkade.length} utelämnas`}
+                  .
+                </p>
+                <ul className="flex flex-col gap-2">
+                  {kombinationer.map((k) => (
+                    <li
+                      key={k.mask}
+                      className={`flex items-center justify-between gap-3 rounded-xl px-4 py-2 ${
+                        k.antal === 0 ? 'text-text-muted' : 'bg-bg-muted'
+                      }`}
+                    >
+                      <span className="font-medium text-body">{k.namn}</span>
+                      <span className="text-small tabular-nums">
+                        {k.antal === 0
+                          ? 'utelämnas (0 personer)'
+                          : `${k.antal} ${personform(k.antal)}`}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-3 px-4 pb-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button intent="primary" isDisabled={!kanSkapa} onPress={skapa}>
+            Skapa {befolkade.length} segment
+          </Button>
+          {visaForhandsvisning && allaSvarat && !nagotFel && befolkade.length === 0 && (
+            <span className="text-small text-text-muted">
+              Ingen av kombinationerna har några personer än.
+            </span>
+          )}
+          <Button intent="secondary" onPress={onTillbaka}>
+            Avbryt
+          </Button>
+        </div>
+        <PrototypNot>Grupperna läggs till i listan. Inget sparas i basen.</PrototypNot>
+      </div>
+    </SidRam>
+  );
+}
+
+/* ================================================================== *
  * UTSKICKET — eget steg, `a`s inline-grammatik
  * ================================================================== */
 
@@ -2740,7 +3173,13 @@ function UtskicksVy({
      en exakt modell: överlappet mellan segment kan inte simuleras, och riktiga
      personer dedupas ändå av `unionKarta` ovan innan utfyllnaden sker. */
   const unionsMal = entiteter.reduce((n, e) => n + skalprovMal(e.id), 0);
-  const mottagare = fyllUt(raMottagare, skalprov, unionsMal);
+  // TESTUTSKICKS-FALLET (PAUSLÄGE punkt 5): är HELA urvalet förskapade grupper
+  // (normalfallet är ETT segment — grupp 13/14 öppnade från detaljsidan) får
+  // unionen fyllas ur en tom verklig publik, av samma skäl som `fyllUt`s
+  // invariant-undantag ovan. Ett urval som blandar in ett icke-förskapat
+  // segment faller tillbaka till den vanliga, strikta invarianten.
+  const allaForskapade = entiteter.every((e) => e.id in FACIT_KARTA);
+  const mottagare = fyllUt(raMottagare, skalprov, unionsMal, allaForskapade);
   const signatur = mottagare.map((m) => m.id).join(',');
   const utanEpost = mottagare.filter((m) => !m.email).length;
   const nekade = mottagare.filter((m) => m.email && m.ejGodkandMail).length;
@@ -3173,6 +3612,7 @@ type Vy =
   | { namn: 'lista' }
   | { namn: 'detalj'; id: string }
   | { namn: 'regel'; id: string }
+  | { namn: 'generator' }
   | { namn: 'utskick'; ids: string[]; retur: 'lista' | 'detalj' };
 
 /** Ett tomt segment i byggläge — utgången ur "Nytt segment". */
@@ -3189,8 +3629,15 @@ function nyEntitet(): SegmentEntitet {
 export function VariantD() {
   const dataSource = useDataSource();
   const [vy, setVy] = useState<Vy>({ namn: 'lista' });
-  /** Segment skapade/ändrade i sidan (no-op-stubb: lever bara i minnet). */
-  const [egna, setEgna] = useState<SegmentEntitet[]>([]);
+  /**
+   * Segment skapade/ändrade i sidan (no-op-stubb: lever bara i minnet).
+   * FÖRPOPULERAD MED DE FJORTON (S104 Del 3 konvergens, PAUSLÄGE punkt 5):
+   * lazy initializer, körs EN gång vid mount. Atomerna är fasta konstanter
+   * (`DE_FJORTON_ATOMER`), inte härledda ur laddad data, så de fjorton finns
+   * omedelbart - Marcus ville att de "förskapas åt Roger och Lotta och finns
+   * från start".
+   */
+  const [egna, setEgna] = useState<SegmentEntitet[]>(() => byggDeFjorton());
   /**
    * Det ÄNNU OSPARADE utkastet ur "Nytt segment". Utan det landade Avbryt på
    * en detaljsida för ett namnlöst segment utan regel — en yta som varken
@@ -3248,8 +3695,10 @@ export function VariantD() {
     [segments.data],
   );
 
-  const skisser = useMemo(() => [...byggSkisser(parInfo), ...egna], [parInfo, egna]);
-  const alla = useMemo(() => [...sparade, ...skisser], [sparade, skisser]);
+  // `byggSkisser` (de fem påhittade exemplen) är riven — `egna` bär redan de
+  // fjorton förskapade grupperna från mount, plus vad "Nytt segment" och
+  // "Dela upp i grupper" lägger till under sessionen.
+  const alla = useMemo(() => [...sparade, ...egna], [sparade, egna]);
   const hitta = (id: string) => alla.find((e) => e.id === id);
 
   const laddar = segments.isPending || events.isPending;
@@ -3295,6 +3744,21 @@ export function VariantD() {
     }
     setVy({ namn: 'detalj', id });
   };
+
+  if (vy.namn === 'generator') {
+    return (
+      <DelaUppIGrupper
+        parInfo={parInfo}
+        onTillbaka={() => setVy({ namn: 'lista' })}
+        onSkapa={(entiteter) => {
+          // READ-ONLY-KONTRAKTET (filhuvudet): de nya grupperna läggs bara i
+          // `egna`-state, precis som "Nytt segment" — ingen `saveSegment`.
+          setEgna((lista) => [...lista, ...entiteter]);
+          setVy({ namn: 'lista' });
+        }}
+      />
+    );
+  }
 
   if (vy.namn === 'utskick') {
     const valdaEntiteter = vy.ids
@@ -3359,6 +3823,7 @@ export function VariantD() {
         setUtkastId(entitet.id);
         setVy({ namn: 'regel', id: entitet.id });
       }}
+      onDelaUpp={() => setVy({ namn: 'generator' })}
       onOppnaMarkering={() => setMarkeraLage(true)}
       onStangMarkering={() => {
         setMarkeraLage(false);
