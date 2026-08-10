@@ -43,7 +43,7 @@ inte tappas. (4) Persondetalj + check-in orörda i divergensläge.** Numrering
 disk-verifierad efter `#1127`: **109/task-190/T141** plus 2 nummerlösa fragment.
 **HANDOFF: sessionsdok S103 § Del 1–5.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — KONVERGENSEN INLEDD;
+**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-10, `lifecycle: active`) — KONVERGENSEN INLEDD;
 DE 14 SKOOL-GRUPPERNA FALSIFIERAR REGELSPRÅKET.** Fyra varianter på
 `/mer/segment` via `?variant=a|b|c|d` (`#1121`, sex commits): `a`
 regelverkstaden · `b` publiken först · `c` segment som entitet · **`d`
@@ -86,7 +86,12 @@ per medlem · år kräver deltagandedatum · expansionen server-side · **AND-st
 in i `segment-membership.ts`** (klient-snittet är en prototyp-genväg som inte
 får promoveras). Numrering vid paus: **109/L512+2 fragment/T141/f47**; kort
 disk säger 190 MEN S102 har 190/191 i öppna `#1131` ⇒ **räkna med 192, verifiera
-vid mint**. **HANDOFF: sessionsdok S104 § PAUSLÄGE + Del 3.**
+vid mint**. **HANDOFF: sessionsdok S104 § Paushistorik 2 + Del 3.**
+Numrering RE-VERIFIERAD mot disk vid resume: 109/L512+2 fragment/T141/f47
+oförändrade; kort-prognosen BEKRÄFTAD — `#1131` MERGED, main bär task-190/191 ⇒
+nästa 192. `#1132` verifierad i merge-kön (`isInMergeQueue: true`, CLEAN,
+rollup SUCCESS) — armeringen överlevde pausen; paus-commiten `e65015eb` pushas
+när kön släppt grenen (GH006-låset). Dev-servern :5175 levde kvar.
 *(S103:s kadensrad nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
