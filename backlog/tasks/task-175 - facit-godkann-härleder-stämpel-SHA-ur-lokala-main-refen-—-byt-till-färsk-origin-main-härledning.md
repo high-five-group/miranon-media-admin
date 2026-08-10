@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-10 04:15'
+updated_date: '2026-08-10 10:41'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,14 +21,14 @@ Mätt skarpt 2026-08-10 (S93 stängningen): Marcus första omgodkännande-stämp
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Stämpel-SHA:t härleds ur färsk origin/main (eller fäller tydligt vid divergens mot lokala main) — tvåsidigt bevisat i testsviten
-- [ ] #2 Befintliga testfall gröna — ingen försvagning av valideringen
+- [x] #1 Stämpel-SHA:t härleds ur färsk origin/main (eller fäller tydligt vid divergens mot lokala main) — tvåsidigt bevisat i testsviten
+- [x] #2 Befintliga testfall gröna — ingen försvagning av valideringen
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
