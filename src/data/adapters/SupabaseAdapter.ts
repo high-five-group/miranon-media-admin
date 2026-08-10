@@ -19,6 +19,8 @@ import type {
   SaveSegmentInput,
   SegmentResult,
   SegmentRule,
+  SendActionEmailInput,
+  SendActionEmailResult,
   UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -131,6 +133,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   async confirmRegistrations(
     _input: ConfirmRegistrationsInput,
   ): Promise<ConfirmRegistrationsResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async sendActionEmail(_input: SendActionEmailInput): Promise<SendActionEmailResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

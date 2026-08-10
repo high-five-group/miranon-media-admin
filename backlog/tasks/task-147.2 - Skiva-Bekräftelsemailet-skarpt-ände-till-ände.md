@@ -4,6 +4,7 @@ title: 'Skiva: Bekräftelsemailet skarpt ände-till-ände'
 status: To Do
 assignee: []
 created_date: '2026-08-10 06:59'
+updated_date: '2026-08-10 12:01'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,18 +24,18 @@ Täcker användarberättelser: 1, 2, 3, 9, 11, 12, 14, 26.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Åtgärd 1 sänder verkligt server-utskick via 147.1-vägen mot staging; mottagare avmarkeringsbara in i det sista
-- [ ] #2 Granskningsytan och utfallslägena är identiska med facit tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json ytan atgarder-granskning (aria-referenserna atgarder-granskning-*.aria.yml + atgarder-utfall-*.aria.yml)
-- [ ] #3 Fallna mottagare kvar markerade efter delutfall; omkörning träffar bara dem
-- [ ] #4 Skärmläsare: körningens förlopp och resultat annonseras
+- [x] #1 Åtgärd 1 sänder verkligt server-utskick via 147.1-vägen mot staging; mottagare avmarkeringsbara in i det sista
+- [x] #2 Granskningsytan och utfallslägena är identiska med facit tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json ytan atgarder-granskning (aria-referenserna atgarder-granskning-*.aria.yml + atgarder-utfall-*.aria.yml)
+- [x] #3 Fallna mottagare kvar markerade efter delutfall; omkörning träffar bara dem
+- [x] #4 Skärmläsare: körningens förlopp och resultat annonseras
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-granskning mot tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json utförd (ADR-102 R3)
-- [ ] #6 Delutfallet prövat som delutfall (PRD DoD 7-arv)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Facit-granskning mot tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json utförd (ADR-102 R3)
+- [x] #6 Delutfallet prövat som delutfall (PRD DoD 7-arv)
 <!-- DOD:END -->
