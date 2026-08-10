@@ -112,7 +112,7 @@ olika ID i staging och prod).
 
 | Yta | Prod-ID | Typ | Skiva |
 |---|---|---|---|
-| **Anteckningar** (ny tabell) | `tblaUhH1KF9k9imul` | Författare + Anteckning + Event-länk | 18.11 / ADR-075 |
+| **Anteckningar** (ny tabell) | `tblaUhH1KF9k9imul` | Författare + Anteckning + Event-länk + **Person-länk** (prod `fldJiWGXe2Hv612H0` · staging `fldXvBRt7OE9tem4o`, NY 2026-08-10 / S103) | 18.11 / ADR-075 |
 | Eventplanering → `Anteckningar` | `fldBhALs9OxAfj2Kv` | auto-fött spegelfält till tabellen ovan | 18.11 |
 | Anmälningar → `Bor över` | `fld4Flif4NoFnNsxS` | checkbox | 18.7 |
 | Anmälningar → `Notering anmälningsavgift` | `fldf60miCtMuP45WO` | multilineText | 18.8 |
@@ -351,7 +351,8 @@ De skrivbara fält som [ADR-066](../decisions/ADR-066-skapa-event-write-vertikal
 | E-post | `fldcd5HnYooVZY4Ts` | multilineText | (typ-skuld — borde vara `email`. Se §Kända fällor.) |
 | E-post (manuell inmatning) | `fldhp3qXp2E6ekW5D` | email | Validerad fält-typ |
 | Telefon | `fldmMYIUhIc1HMnZi` | multilineText | – |
-| Manuella flagga | `fldNtwQt6tOCIdf4f` | singleSelect | **choices=[]** — tomt valslag, kan inte sättas. Se §Kända fällor. |
+| Manuella flagga | `fldNtwQt6tOCIdf4f` | singleSelect | **choices=[]** — tomt valslag, kan inte sättas. **AVLÖST 2026-08-10 av `Flagga` nedan**; se §Kända fällor 25. |
+| Flagga | prod `fldsNDwACc8hWDPeA` · staging `fldCXSGQJEVlf1Sa7` | singleLineText | **NY 2026-08-10 (S103).** Lottas egen FRITEXT-flagga. Ersätter `Manuella flagga` — Marcus beslut: *"det ska vara en flagga som Lotta själv skriver i fritext"*. Skrivbar. |
 | AI-flagga | `fldgB9iHDTAqd30Uf` | singleSelect | Särskilt stödbehov, Nybörjare, Stabil och mottaglig, Erfaren |
 | Anteckningar | `fldWGlNr3ujRHo85w` | multilineText | Använt 2026-04-26 för spårbarhet av Avvikelse-fall |
 | Ej godkänd för mailutskick | `fldbQB9BGJgB1HCg7` | checkbox | Filterflagga för bulkutskick |
@@ -1230,6 +1231,8 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
     **Åtgärd-rekommendation:** Konsolidera till en option per kursnamn i Airtable (radera dubletter, byt till kanonisk). Verifiera att inga records pekar på dubblett-options före radering.
 
 25. **Tomma singleSelects: `Manuella flagga` (Personer) + `Systemkälla` (Touchpoints) har choices=[].** Båda fält är singleSelect-typ men har inga options definierade. UI låter användaren välja från tom lista → fältet kan inte sättas.
+
+    **`Manuella flagga`-halvan är LÖST 2026-08-10 (S103) — men genom AVLÖSNING, inte reparation.** Live-ombekräftad samma dag (`get_table_schema` mot prod `app8uGPrVCVOm6LfD`: `{"type":"singleSelect","config":{"choices":[]}}`), och **noll poster i prod OCH staging bar ett värde** — vilket följer av att fältet aldrig kunnat sättas. Marcus beslut: flaggan ska vara FRITEXT som Lotta skriver själv, inte ett val ur en lista. Ett nytt `Flagga`-fält (singleLineText) skapades därför i båda baserna, och `Manuella flagga` lämnades **kvar och tomt**. Två skäl till att det inte bara konverterades: (a) Airtables Meta-API kan ändra ett fälts `name`/`description` men **INTE dess `type`** — en konvertering hade krävt handgrepp i Airtable-UI:t, och (b) API:t stöder inte heller fältradering, så det gamla fältet kan bara tas bort manuellt. **Kvarstår som städ-post:** `Manuella flagga` bör strykas i UI:t när ingen kod läser det längre (`get-person`/`get-persons`/`get-leads` läser det fortfarande som `manuellFlagga`). `Systemkälla`-halvan är ORÖRD och kvarstår öppen.
 
     **Sannolik orsak:** Antingen designade men ingen option lagts till än, eller alla options togs bort utan att fältet ströks.
 
