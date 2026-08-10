@@ -2016,9 +2016,9 @@ function SkalprovsVaxel({ aktivt, onVaxla }: { aktivt: boolean; onVaxla: (v: boo
           och den skillnaden ska synas här — inte upptäckas som en avvikelse. */}
       <p className="text-caption text-text-muted">
         De fjorton förskapade grupperna är undantaget: deras mål är det uppmätta antalet från juli
-        2026 (1–188), inte ett påhittat tal - och de får fyllas även från en tom verklig publik,
-        eftersom och-kombinationer inte går att befolka i staging ännu. Övriga segment fylls aldrig
-        ur en tom publik.
+        2026 (1 till 188), inte ett påhittat tal - och de får fyllas även från en tom verklig
+        publik, eftersom och-kombinationer inte går att befolka i staging ännu. Övriga segment fylls
+        aldrig ur en tom publik.
       </p>
       {/* PÅ/AV MÅSTE VARA OMISSKÄNNLIGT. Första formen lånade `PrototypRigg`s
           dämpade markering (`bg-bg-emphasized`) — men den fungerar bara i ett
