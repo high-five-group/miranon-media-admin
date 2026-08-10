@@ -169,7 +169,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Filter,
   ListPlus,
   MailCheck,
   Pencil,
@@ -416,7 +415,11 @@ function predikatKlartext(pred: Predikat): string {
   const med = giltiga(pred.med);
   const utan = giltiga(pred.utan);
   if (med.length === 0) return 'Ingen regel byggd än.';
-  const medText = `Med: ${med.map((v) => villkorKlartext(v).replace(/\.$/, '')).join('. Eller: ')}.`;
+  // "Med:"-prefixet är borta (Marcus 2026-08-10). Det var en etikett på det
+  // enda som stod där i de allra flesta fall - villkoret bär redan sin egen
+  // mening ("Deltagit i ..."). "Utan:" står kvar, för den behövs: den vänder
+  // betydelsen och får aldrig läsas som en fortsättning på raden före.
+  const medText = `${med.map((v) => villkorKlartext(v).replace(/\.$/, '')).join('. Eller: ')}.`;
   if (utan.length === 0) return medText;
   return `${medText} Utan: ${utan.map((v) => villkorKlartext(v).replace(/\.$/, '')).join('. Eller: ')}.`;
 }
@@ -445,7 +448,7 @@ function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
   if (entitet.predikat) return predikatKlartext(entitet.predikat);
   const rule = regelFor(entitet, parInfo);
   if (rule.include.length === 0) return 'Uppräknad regel utan inkluderade kurser.';
-  const med = `Med: ${rule.include.map(labelForPar).join(' ELLER ')}.`;
+  const med = `${rule.include.map(labelForPar).join(' ELLER ')}.`;
   return rule.exclude.length > 0
     ? `${med} Utan: ${rule.exclude.map(labelForPar).join(' ELLER ')}.`
     : med;
@@ -681,14 +684,11 @@ function SegmentKort({
           {entitet.namn}
         </button>
       )}
-      <span className="flex items-start gap-1.5 text-small">
-        <Filter
-          aria-hidden="true"
-          size={14}
-          className="mt-1 shrink-0 text-text-secondary print:hidden"
-        />
-        <span className="line-clamp-2 text-text-secondary">{definition}</span>
-      </span>
+      {/* Filter-ikonen är riven (Marcus 2026-08-10). Den var `aria-hidden`, så
+          den bar ingen information för skärmläsaren - och för seende sa den
+          bara "detta är ett filter" om en rad som redan börjar "Deltagit i".
+          Med ikonen borta behövs varken flex-raden eller `mt-1`-justeringen. */}
+      <span className="line-clamp-2 text-small text-text-secondary">{definition}</span>
       {/* ANTALET KOMMER AV SIG SJÄLVT — Räkna-knappen är RIVEN (Marcus
           2026-08-10). `b` mätte att en löpande räknad publik kostar ETT
           `compute-segment`-anrop per UNIK regel (frågan nycklas på regelns
@@ -862,8 +862,9 @@ function SegmentLista({
           Segment
         </h1>
         <p className="text-small text-text-muted">
-          Grupper av personer du sparar och återanvänder. Öppna ett segment för att se vilka som är
-          i det - och skicka därifrån. Flera segment i ett utskick: markera dem.
+          Grupper av personer du kan skicka riktade mail till. Spara en grupp och återanvänd den -
+          antalet räknas om varje gång, så det stämmer även när fler har gått en kurs. Flera grupper
+          i samma utskick: markera dem.
         </p>
       </header>
 
