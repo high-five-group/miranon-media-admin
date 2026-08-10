@@ -63,6 +63,9 @@ export {
   type SendActionEmailInput,
   type SendActionEmailResult,
   SendActionEmailResultSchema,
+  type SendActionTestEmailInput,
+  type SendActionTestEmailResult,
+  SendActionTestEmailResultSchema,
 } from './SendActionEmail.schema';
 export type { UpdateEventInput } from './UpdateEvent.schema';
 export { WaitlistEntrySchema } from './WaitlistEntry.schema';

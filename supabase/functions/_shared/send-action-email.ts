@@ -143,6 +143,88 @@ export type ActionSendInput = {
 export type ActionSendDeps = { sender: ActionSender; writeFields: ActionFieldWriter };
 
 /**
+ * [TASK-147.10, ADR-067 D10/T53 väg C] Testmail-till-mig — SAMMA sändväg
+ * (`renderFor`, samma icke-prod-GOLV, samma `ActionSender`), men EN mottagare
+ * och INGEN fält-skrivning. `target` är alltid den FÖRSTA mottagaren i
+ * granskningens urval (källan till platshållar-data ENDAST) — mailet går
+ * ALDRIG till `target.email`. Adressen är alltid `testRecipientEmail`, som
+ * EF:en (`send-action-email/index.ts`) sätter till den AUTENTISERADE
+ * anropar-identitetens egen e-post (`requireUser`), aldrig klient-buren —
+ * samma "mottagaren kan aldrig komma från klienten"-princip som resten av
+ * filen, fast i motsatt riktning: här är det den KÄNDA anroparen, inte en
+ * anmälan, som är destinationen.
+ *
+ * INGEN `ActionFieldWriter` I DEPS — strukturellt omöjligt att stämpla ett
+ * fält härifrån (jfr `runActionSend` steg 4). Ett testmail är diagnostik, inte
+ * en åtgärd: urvalets anmälan lämnas ORÖRD oavsett utfall (AC #2).
+ */
+export type ActionTestSendInput = {
+  /** Den FÖRSTA mottagaren i urvalet — endast platshållar-data (fornamn m.fl.) läses. */
+  target: ActionTarget;
+  event: EventContext;
+  /** Redigerad ämnesrad-MALL — TEST-prefixas innan sändning (AC #1). */
+  amne: string;
+  mailtext: string;
+  /** Den inloggade anroparens egen adress (`requireUser`-resultatet), ALDRIG klient-buren. */
+  testRecipientEmail: string;
+  /** Klientens Idempotency-Key (UUID v4) — testnyckeln härleds `<jobId>/test`. */
+  jobId: string;
+  /** ENVIRONMENT === 'production'. Fail-closed: allt annat → false (EF:ens ansvar). */
+  isProd: boolean;
+};
+
+export type ActionTestSendResult = {
+  status: 'sent' | 'failed';
+  /** Endast satt vid `failed` — Resends radavvisnings-skäl, fri text (passthrough). */
+  reason?: string;
+};
+
+/**
+ * Kör ETT testmail (längd 1, `ActionTestSendInput.target`). Ordning speglar
+ * `runActionSend` minus partitionerings- och fält-skrivningsstegen (irrelevanta
+ * för diagnostik):
+ *  1. Rendera mailet ur `target`s platshållar-data (SAMMA `renderFor` som den
+ *     verkliga sändvägen — granskningen Lotta ser och testmailet hon FÅR är
+ *     samma algoritm).
+ *  2. TEST-prefixa ämnesraden (AC #1: "tydligt TEST-märkt ämnesrad").
+ *  3. ICKE-PROD-SPÄRR (GOLV, ÅTERANVÄND — ALDRIG kringgången): i icke-prod
+ *     måste `testRecipientEmail` SJÄLV vara en Resend-test-adress, annars
+ *     `NonProdAddressError` (noll skickat). E2E/acceptance-mönstret för detta:
+ *     en testadress-inloggad staging-user, eller mockad EF-rand.
+ *  4. Sänd EN gång med idempotens-nyckeln `<jobId>/test` (namnrymds-separerad
+ *     från `runActionSend`s `<jobId>/<actionType>` — samma jobId kan alltså
+ *     bära BÅDE ett testmail och ett verkligt utskick utan nyckel-krock).
+ *  5. Status: accepterad ⇒ 'sent'; avvisad ⇒ 'failed' + Resends skäl.
+ */
+export async function runActionTestSend(
+  input: ActionTestSendInput,
+  deps: { sender: ActionSender },
+): Promise<ActionTestSendResult> {
+  const mail = renderFor(input.amne, input.mailtext, input.target, input.event);
+  const email = input.testRecipientEmail.trim();
+
+  if (!input.isProd && !RESEND_TEST_ADDRESSES.includes(email)) {
+    throw new NonProdAddressError([email]);
+  }
+
+  const spec: ActionSpec = {
+    registrationId: input.target.id,
+    email,
+    subject: `TEST: ${mail.subject}`,
+    text: mail.text,
+    html: mail.html,
+  };
+
+  const outcome = await deps.sender([spec], { idempotencyKey: `${input.jobId}/test` });
+
+  if (outcome.accepted.some((a) => a.registrationId === spec.registrationId)) {
+    return { status: 'sent' };
+  }
+  const rejection = outcome.rejected.find((r) => r.registrationId === spec.registrationId);
+  return { status: 'failed', reason: rejection?.reason ?? 'Okänt fel — mailet avvisades.' };
+}
+
+/**
  * Vilka fält som stämplas för EN accepterad mottagare, per åtgärdstyp — `null`
  * = inget att skriva (mailet ensamt är hela handlingen).
  *
