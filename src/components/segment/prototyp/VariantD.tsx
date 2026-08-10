@@ -1259,6 +1259,17 @@ function useTackning(uppsattning: Uppsattning, parInfo: ParInfo[]): TackningsUtf
 }
 
 /**
+ * Publiken i Rogers ord (Marcus 2026-08-10: "genomförd närvaro" är
+ * systemspråk, och "modalitet" ska aldrig stå i UI-text). Verbfrasen bär
+ * BÅDE vilka som räknas och vilken modalitet uppsättningen gäller.
+ */
+function publikOrd(modalitet: ModalitetsVal): string {
+  if (modalitet === 'Föreläsning') return 'har varit på någon föreläsning';
+  if (modalitet === 'Båda') return 'har gått någon utbildning eller varit på någon föreläsning';
+  return 'har gått någon utbildning';
+}
+
+/**
  * EN UPPSÄTTNING, ETT PANEL. Panelerna läggs ÖVER listan (mellan handlings-
  * raden och korten) — listan döljs aldrig, täckningen är ett TILLÄGG, inte
  * en ersättning. `role="status"` + `aria-live="polite"` på summeringen
@@ -1320,8 +1331,8 @@ function TackningsPanel({
 
           {utfall.utanfor.length === 0 ? (
             <p className="text-small text-text-secondary">
-              Kontrollerat: ingen är i ingen grupp - alla med genomförd närvaro i den här
-              modaliteten hör hemma i någon av grupperna.
+              Kontrollerat: ingen står utanför - alla som {publikOrd(uppsattning.modalitet)} hör
+              hemma i någon av grupperna.
             </p>
           ) : (
             <MessageBox
@@ -1329,7 +1340,7 @@ function TackningsPanel({
               title={`${utfall.utanfor.length} ${personform(utfall.utanfor.length)} i ingen grupp`}
             >
               <p>
-                De har genomförd närvaro men är inte med i någon av uppsättningens grupper - de nås
+                De {publikOrd(uppsattning.modalitet)} men är inte med i någon av grupperna - de nås
                 inte om du skickar till hela uppsättningen.
               </p>
               <button
@@ -1404,13 +1415,20 @@ function SegmentKort({
     <>
       {/* `pr-16` är borta med pillen — den fanns bara för att hålla undan
           rubriken från den absolut placerade etiketten uppe till höger. */}
+      {/* LÅST KORTHÖJD — GLOBAL REGEL (Marcus 2026-08-10): varje kort
+          reserverar höjden för sitt MAXINNEHÅLL (2 rader namn + 2 rader
+          beskrivning + antal-radens min-h-8) och får ALDRIG växa eller
+          krympa med innehållet. `min-h-[2lh]` reserverar två radhöjder i
+          elementets egen typografi — samma grepp som personlistans låsta
+          radhöjd (S103) och antal-radens min-h-8 nedan: geometrin ligger
+          fast när data landar, när skalprovet växlas, när namnet är kort. */}
       {markeraLage ? (
-        <span className="line-clamp-2 font-semibold text-body">{entitet.namn}</span>
+        <span className="line-clamp-2 min-h-[2lh] font-semibold text-body">{entitet.namn}</span>
       ) : (
         <button
           type="button"
           onClick={onOppna}
-          className="line-clamp-2 text-left font-semibold text-body after:absolute after:inset-0"
+          className="line-clamp-2 min-h-[2lh] text-left font-semibold text-body after:absolute after:inset-0"
         >
           {entitet.namn}
         </button>
@@ -1419,7 +1437,7 @@ function SegmentKort({
           den bar ingen information för skärmläsaren - och för seende sa den
           bara "detta är ett filter" om en rad som redan börjar "Deltagit i".
           Med ikonen borta behövs varken flex-raden eller `mt-1`-justeringen. */}
-      <span className="line-clamp-2 text-small text-text-secondary">{definition}</span>
+      <span className="line-clamp-2 min-h-[2lh] text-small text-text-secondary">{definition}</span>
       {/* ANTALET KOMMER AV SIG SJÄLVT — Räkna-knappen är RIVEN (Marcus
           2026-08-10). `b` mätte att en löpande räknad publik kostar ETT
           `compute-segment`-anrop per UNIK regel (frågan nycklas på regelns
@@ -1446,9 +1464,7 @@ function SegmentKort({
           ) : antal === undefined ? null : (
             <>
               <Users aria-hidden="true" size={14} className="shrink-0" />
-              {antal === 0
-                ? '0 personer - inga med genomförd närvaro ännu'
-                : `${antal} ${personform(antal)}`}
+              {antal === 0 ? '0 personer ännu' : `${antal} ${personform(antal)}`}
             </>
           )}
         </span>
@@ -1628,6 +1644,14 @@ function SegmentLista({
             VIDARE till utskicksvyn — där publiken står som huvudinnehåll,
             precis som på detaljsidan. Kontrollen hoppas inte över; den utförs
             på den enda yta där en union av segment finns. */}
+        {/* RADEN ÄR ZONERAD (Marcus 2026-08-10: Markera satt "skitnära" de
+            andra). Vänster zon SKAPAR (Nytt segment · Dela upp i grupper),
+            höger zon VÄXLAR LÄGE på listan (Täckning · Markera) — två olika
+            slags knappar, och skillnaden ska synas i geometrin, inte bara i
+            beteendet. `pl-6` på högerzonen är den GARANTERADE luften: även
+            när raden är trång står minst en tydlig lucka mellan zonerna, och
+            vid radbrytning flyttar hela högerzonen som en enhet till egen
+            rad, fortsatt högerställd (`ml-auto`). */}
         <div className="flex min-h-10 flex-wrap items-center gap-2 print:hidden">
           {markeraLage ? (
             <>
@@ -1656,7 +1680,7 @@ function SegmentLista({
               </span>
             </>
           ) : (
-            <>
+            <div className="flex flex-wrap items-center gap-2">
               <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
                 <ListPlus aria-hidden="true" size={18} className="shrink-0" />
                 Nytt segment
@@ -1672,34 +1696,35 @@ function SegmentLista({
                 <Group aria-hidden="true" size={18} className="shrink-0" />
                 Dela upp i grupper
               </button>
-              {/* TÄCKNINGSVYNS INGÅNG (S104 Del 4 konvergens, task-181,
-                  uppdragets beslut 1: "ett LÄGE på listan, ALDRIG en ny
-                  objekttyp"). Tredje kapseln i samma familj som de två ovan
-                  - alla tre handlar om GRUPP-UPPSÄTTNINGEN som helhet, inte
-                  om ett enskilt segment. `aria-pressed` (till skillnad från
-                  "Markera"-knappen till höger, som byter etikett i stället)
-                  eftersom detta är ett RENT läge utan eget innehåll att peka
-                  på - trycket ÄR hela tillståndet (kvalitetsribban). */}
-              <button
-                type="button"
-                aria-pressed={tackningsLage}
-                onClick={onTackning}
-                className={KAPSEL_KLASS}
-              >
-                <Layers aria-hidden="true" size={18} className="shrink-0" />
-                Täckning
-              </button>
-            </>
+            </div>
           )}
           {markerbara > 0 && (
-            <button
-              type="button"
-              onClick={markeraLage ? onStangMarkering : onOppnaMarkering}
-              className={`${KAPSEL_KLASS} ml-auto`}
-            >
-              <Check aria-hidden="true" size={18} className="shrink-0" />
-              {markeraLage ? 'Avbryt' : 'Markera'}
-            </button>
+            <div className="ml-auto flex shrink-0 items-center gap-2 pl-6">
+              {/* TÄCKNINGSVYNS INGÅNG (S104 Del 4, task-181, beslut 1: "ett
+                  LÄGE på listan"). Bor i LÄGES-zonen med Markera — båda
+                  växlar hur listan läses. `aria-pressed` (till skillnad från
+                  Markera, som byter etikett) eftersom detta är ett RENT läge
+                  utan eget innehåll att peka på. */}
+              {!markeraLage && (
+                <button
+                  type="button"
+                  aria-pressed={tackningsLage}
+                  onClick={onTackning}
+                  className={KAPSEL_KLASS}
+                >
+                  <Layers aria-hidden="true" size={18} className="shrink-0" />
+                  Täckning
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={markeraLage ? onStangMarkering : onOppnaMarkering}
+                className={KAPSEL_KLASS}
+              >
+                <Check aria-hidden="true" size={18} className="shrink-0" />
+                {markeraLage ? 'Avbryt' : 'Markera'}
+              </button>
+            </div>
           )}
         </div>
 
@@ -1801,9 +1826,8 @@ function SegmentLista({
               Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är
               påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad. De
               fjorton förskapade grupperna bär dessutom sitt eget facit - se skalprovs-växeln för
-              vad det betyder. Täckningsknappen visar hur en hel grupp-uppsättnings grupper täcker
-              alla med genomförd närvaro i sin modalitet - alltid på riktiga tal, oavsett
-              skalprovets läge.
+              vad det betyder. Täckningsknappen visar om gruppernas uppsättning täcker alla som
+              borde vara med - alltid på riktiga tal, oavsett skalprovets läge.
             </PrototypNot>
           </>
         )}
@@ -2185,10 +2209,10 @@ function PublikSektion({
         // FÄLLA #34: noll träffar är NEUTRALT, aldrig ett fel. Golvet
         // (Närvaropoäng=1) lättas medvetet inte (ADR-064 beslut 4a).
         <div className="flex flex-col items-center gap-1 px-4 py-10 text-center">
-          <p className="font-medium text-body">0 personer matchar</p>
+          <p className="font-medium text-body">0 personer ännu</p>
           <p className="max-w-prose text-small text-text-muted">
-            Inga med genomförd närvaro ännu. Närvaron för de kurser regeln träffar är inte avstämd i
-            basen - publiken fylls av sig själv när den blir det.
+            Närvaron för de utbildningar regeln träffar är inte avstämd i basen - publiken fylls av
+            sig själv när den blir det.
           </p>
         </div>
       ) : (
@@ -2329,7 +2353,7 @@ function SegmentDetalj({
               : isError
                 ? 'Antalet kunde inte räknas'
                 : medlemmar.length === 0
-                  ? '0 personer matchar - inga med genomförd närvaro ännu'
+                  ? '0 personer ännu'
                   : `${medlemmar.length} ${personform(medlemmar.length)} · ${antalFar} får mailet · ${undertryckta} undertrycks`}
         </p>
       </header>
@@ -3010,8 +3034,7 @@ function RegelVerkstad({
               ) : antal === 0 ? (
                 // Fälla #34: neutralt, aldrig som fel.
                 <p className="text-lg">
-                  <strong className="font-semibold text-3xl tabular-nums">0</strong> personer
-                  matchar - inga med genomförd närvaro ännu.
+                  <strong className="font-semibold text-3xl tabular-nums">0</strong> personer ännu.
                 </p>
               ) : (
                 <p className="text-lg">
