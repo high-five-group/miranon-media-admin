@@ -351,3 +351,41 @@ export async function upsertAirtableRecord(
   const created = Array.isArray(data.createdRecords) && data.createdRecords.includes(record.id);
   return { record, created };
 }
+
+/**
+ * Tar bort EN record (Airtable DELETE /{table}/{recordId}) — repots FÖRSTA
+ * delete-operation (TASK-147.7, `_shared/receipt-numbering.ts` §
+ * `LedgerRemover`). Radera en FÖRLORAD kvittonummer-allokerings-kandidat
+ * (samtidighets-racet, aldrig ett utfärdat kvitto — se receipt-numbering.ts
+ * filhuvud) är den ENDA konsumenten i dag; ingen annan skrivvertikal raderar
+ * poster. Speglar de övriga funktionernas form: env-fail-fast (ingen
+ * prod-fallback, ADR-050), bas-ID ur env, table-namn url-encodas.
+ * Idempotent mot en redan borttagen rad (404 tolkas som "borta, målet nått" —
+ * INTE ett fel, samma "get som redan är null"-linje `fetchAirtableRecord`
+ * drar, eftersom `allocateReceiptNumber`s retry-loop i teorin skulle kunna
+ * anropa remove för samma id två gånger under ovanlig omschemaläggning).
+ */
+export async function deleteAirtableRecord(
+  tableIdOrName: string,
+  recordId: string,
+): Promise<void> {
+  const token = Deno.env.get('AIRTABLE_TOKEN');
+  if (!token) {
+    throw new Error('AIRTABLE_TOKEN not set');
+  }
+  const baseId = getAirtableBaseId();
+
+  const url = `${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}/${recordId}`;
+
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (res.status === 404) return;
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Airtable DELETE ${res.status}: ${body}`);
+  }
+}

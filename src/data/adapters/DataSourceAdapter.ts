@@ -23,6 +23,8 @@ import type {
   SendActionEmailResult,
   SendActionTestEmailInput,
   SendActionTestEmailResult,
+  SendReceiptInput,
+  SendReceiptResult,
   UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -177,6 +179,18 @@ export interface DataSourceAdapter {
    * i urvalet berörs — inget fält skrivs, oavsett utfall.
    */
   sendActionTestEmail(input: SendActionTestEmailInput): Promise<SendActionTestEmailResult>;
+
+  /**
+   * Skicka ETT kvitto (TASK-147.7, ADR-109) — klass C-bilagan, genererad
+   * PER MOTTAGARE vid sändtillfället (skild från klass A/B:s förberedda
+   * Bilagor-rader, se AtgardsSida.tsx § BILAGEVÄLJAREN-docblock). Servern
+   * allokerar kvittonumret (samtidighetssäkert, server-side), bygger PDF:en
+   * och sänder — klienten skickar ENDAST registration-/event-ID + belopp/
+   * betalsätt (basen saknar ett prisfält, `send-receipt-email/index.ts`
+   * filhuvud) + en idempotensnyckel. EN mottagare, EN betalning per anrop
+   * (strukturellt annorlunda än `sendActionEmail`s bulk-urval).
+   */
+  sendReceipt(input: SendReceiptInput): Promise<SendReceiptResult>;
 
   /**
    * Hämta eventets anteckningar (task-18.11, ADR-075). Läsning via get-event-notes:

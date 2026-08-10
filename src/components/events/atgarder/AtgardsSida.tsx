@@ -161,14 +161,18 @@ import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/primitives/Button';
+import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Modal } from '@/components/primitives/Modal';
+import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { SlideToConfirm } from '@/components/primitives/SlideToConfirm';
 import { TextArea } from '@/components/primitives/TextArea';
 import { displayName } from '@/components/registrations/registration-display';
 import { formatMB } from '@/data/adapters/attachmentUpload';
 import { useSendActionEmail, useSendActionTestEmail } from '@/data/mutations/actionEmail';
+import { useSendReceipt } from '@/data/mutations/receipts';
 /* VARV 13 REV VARV 12:s MONTERING AV `BetalningsDetaljer`.
    Den var rätt ambition och fel mekanism: eventdetaljens arbetsyta KAN inte
    skriva, och det är dess uttalade DoD-krav sedan `TASK-145.4` — se
@@ -187,12 +191,15 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
-import type {
-  ActionSkipReason,
-  SendActionEmailInput,
-  SendActionEmailResult,
+import {
+  type ActionSkipReason,
+  BETALSATT_VARDEN,
+  type Betalsatt,
+  type SendActionEmailInput,
+  type SendActionEmailResult,
 } from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
+import { alertScreenReader } from '@/lib/alert-screen-reader';
 import { queryKeys } from '@/queries/keys';
 import { AndraRad, DetaljGrupp } from '../detail/DetaljGrupp';
 import { EventValjare } from '../EventValjare';
@@ -1256,10 +1263,154 @@ function SkrivKryss({
   );
 }
 
+/**
+ * [TASK-147.7, ADR-109] "Skicka kvitto" — kvittoseriens ENDA UI-ingång.
+ * Synlig ENDAST när betalningen redan är markerad Mottagen (`SkrivRad`s
+ * `vald`-villkor nedan) — kvittot är en AKTIV handling Lotta väljer EFTER
+ * avprickningen, ALDRIG automatik som följer på krysset (Marcus-beslut a).
+ *
+ * BELOPP + BETALSÄTT ÄR LOTTA-INMATADE, MEDVETET: basen har inget prisfält
+ * (varken Anmälningar eller Eventplanering — verifierat mot data-model.md,
+ * ADR-086 premiss-pass 2026-08-10, se ADR-109 § Öppna punkter). Formuläret
+ * validerar ETT positivt belopp + ETT av de tre betalsätten innan "Skicka"
+ * aktiveras — samma "aktiv handling, ingen gissning"-linje.
+ *
+ * PESSIMISTISK, ingen optimistisk state: dialogen stannar öppen och visar
+ * SERVERNS svar (kvittonummer vid 'sent', skälet vid 'failed') — precis som
+ * `GranskningsSida` gör för åtgärdsutskicken, i miniatyr för en enda
+ * mottagare.
+ */
+function SkickaKvittoKnapp({
+  registration,
+  eventId,
+  betalning,
+}: {
+  registration: Registration;
+  eventId: string;
+  betalning: Betalning;
+}) {
+  const namn = displayName(registration);
+  const label = BETALNING_LABEL[betalning];
+  const skicka = useSendReceipt();
+  const [belopp, setBelopp] = useState('');
+  const [betalsatt, setBetalsatt] = useState<Betalsatt | null>(null);
+
+  const beloppTal = Number(belopp.replace(',', '.'));
+  const beloppGiltigt = belopp.trim() !== '' && Number.isFinite(beloppTal) && beloppTal > 0;
+  const kanSkicka = beloppGiltigt && betalsatt !== null;
+
+  const skickaKvitto = () => {
+    if (!kanSkicka || !betalsatt) return;
+    skicka.mutate(
+      { registrationId: registration.id, eventId, betalning, belopp: beloppTal, betalsatt },
+      {
+        onSuccess: (result) => {
+          if (result.status === 'sent' && result.kvittonummer) {
+            alertScreenReader(`Kvitto ${result.kvittonummer} skickat till ${namn}`);
+          } else {
+            alertScreenReader(`Kvittot kunde inte skickas till ${namn}`);
+          }
+        },
+      },
+    );
+  };
+
+  return (
+    <DialogTrigger
+      onOpenChange={(open) => {
+        if (!open) {
+          skicka.reset();
+          setBelopp('');
+          setBetalsatt(null);
+        }
+      }}
+    >
+      <Button
+        intent="success"
+        emphasis="outline"
+        size="sm"
+        aria-label={`Skicka kvitto - ${label} för ${namn}`}
+      >
+        Skicka kvitto
+      </Button>
+      <Modal isDismissable>
+        <Dialog
+          title={`Skicka kvitto - ${label}`}
+          actions={({ close }) =>
+            skicka.isSuccess ? (
+              <Button intent="secondary" onPress={close}>
+                Stäng
+              </Button>
+            ) : (
+              <>
+                <Button intent="ghost" onPress={close} isDisabled={skicka.isPending}>
+                  Avbryt
+                </Button>
+                <Button
+                  intent="success"
+                  onPress={skickaKvitto}
+                  isDisabled={!kanSkicka || skicka.isPending}
+                >
+                  {skicka.isPending ? 'Skickar …' : 'Skicka'}
+                </Button>
+              </>
+            )
+          }
+        >
+          {skicka.isSuccess ? (
+            skicka.data.status === 'sent' ? (
+              <MessageBox intent="success" title="Kvitto skickat">
+                {skicka.data.kvittonummer} skickat till {namn}.
+              </MessageBox>
+            ) : (
+              <MessageBox intent="error" title="Kvittot kunde inte skickas">
+                {skicka.data.reason ?? 'Okänt fel. Försök igen.'}
+              </MessageBox>
+            )
+          ) : (
+            <div className="flex flex-col gap-3">
+              <p className="text-small text-text-secondary">
+                Kvittot går till {namn} för {label.toLowerCase()}.
+              </p>
+              <Input
+                label="Belopp (kr)"
+                placeholder="1250"
+                value={belopp}
+                onChange={setBelopp}
+                isRequired
+                inputMode="decimal"
+              />
+              <Select
+                label="Betalsätt"
+                placeholder="Välj betalsätt"
+                selectedKey={betalsatt}
+                onSelectionChange={(key) => setBetalsatt(key as Betalsatt)}
+                isRequired
+              >
+                {BETALSATT_VARDEN.map((v) => (
+                  <SelectItem key={v} id={v}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </Select>
+              {skicka.isError && (
+                <MessageBox intent="error" title="Kunde inte skicka kvittot">
+                  Försök igen.
+                </MessageBox>
+              )}
+            </div>
+          )}
+        </Dialog>
+      </Modal>
+    </DialogTrigger>
+  );
+}
+
 /** En betalning: levande kryss + levande notering. Noteringen commitas vid
     blur (Stripe-klassens per-betalnings-memo, förlagans commit-punkt). */
 function SkrivRad({
   registration,
+  eventId,
   betalning,
   vald,
   notering,
@@ -1267,6 +1418,7 @@ function SkrivRad({
   onNotering,
 }: {
   registration: Registration;
+  eventId: string;
   betalning: Betalning;
   vald: boolean;
   notering: string | null;
@@ -1288,7 +1440,14 @@ function SkrivRad({
 
   return (
     <div className="flex flex-col gap-2 py-3">
-      <SkrivKryss text={label} namn={namn} vald={vald} onChange={onStatus} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <SkrivKryss text={label} namn={namn} vald={vald} onChange={onStatus} />
+        {/* [TASK-147.7] Synlig ENDAST när betalningen redan är Mottagen — se
+            SkickaKvittoKnapp-docblocken för varför (Marcus-beslut a). */}
+        {vald && (
+          <SkickaKvittoKnapp registration={registration} eventId={eventId} betalning={betalning} />
+        )}
+      </div>
       {/* NOTERINGEN TAR PLATTANS FULLA BREDD sedan varv 17 (Marcus: "Kan vi dra
           ut noteringsrutan hela vägen ut till kanten på checkboxen så dem tar
           hela bredden typ på den plattan de sitter på?").
@@ -1345,6 +1504,7 @@ function BetalningsSkrivYta({
           <div className="divide-y divide-border rounded-2xl border border-transparent bg-surface px-4 contrast-more:border-border-strong">
             <SkrivRad
               registration={r}
+              eventId={eventId}
               betalning="avgift"
               vald={r.anmalningsavgift === PaymentStatus.MOTTAGEN}
               notering={r.noteringAnmalningsavgift ?? null}
@@ -1370,6 +1530,7 @@ function BetalningsSkrivYta({
             ) : (
               <SkrivRad
                 registration={r}
+                eventId={eventId}
                 betalning="slut"
                 vald={r.slutbetalning === PaymentStatus.MOTTAGEN}
                 notering={r.noteringSlutbetalning ?? null}

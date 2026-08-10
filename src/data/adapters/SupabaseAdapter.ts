@@ -23,6 +23,8 @@ import type {
   SendActionEmailResult,
   SendActionTestEmailInput,
   SendActionTestEmailResult,
+  SendReceiptInput,
+  SendReceiptResult,
   UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -143,6 +145,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async sendActionTestEmail(_input: SendActionTestEmailInput): Promise<SendActionTestEmailResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async sendReceipt(_input: SendReceiptInput): Promise<SendReceiptResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

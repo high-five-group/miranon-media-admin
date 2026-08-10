@@ -320,6 +320,39 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Påminnelse slutbetalning skickad',
     ],
   },
+  // Kvittoserien (TASK-147.7, ADR-109) — send-receipt-email-EF:en bygger `fields`
+  // SERVER-SIDE i TVÅ steg mot SAMMA rad, båda gated av DENNA operation
+  // (samma "en operation, unionen av vad den kan skriva över sin livscykel"-
+  // form som 'send-action-email' ovan): (1) reservationen
+  // (`_shared/receipt-numbering.ts` § allocateReceiptNumber, ENDAST
+  // 'Kvittonummer'/'Löpnummer'/'År' — allokeringen känner ännu inte till
+  // mottagaren), (2) finaliseringen EFTER accepterad sändning
+  // (`_shared/send-receipt.ts` § ReceiptFinalizer, resten av unionen). En
+  // FÖRLORAD allokerings-kandidat (samtidighets-racet) och en AVVISAD
+  // sändning lämnar BÅDA en rad med ENDAST steg 1:s tre fält satta — det är
+  // den öppet accepterade konsekvensen (ADR-109 § Öppna punkter), inte ett
+  // fel. Additiv tabell (staging tblk8fZcArXPpRYnX, skapad additivt via
+  // Airtable MCP 2026-08-10, deklarativ hemvist
+  // scripts/create-kvitton-table.mjs — samma mönster som
+  // scripts/create-bilagor-table.mjs). ⚠️ PROD-tabellen är INTE skapad —
+  // hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö; ADR-050/
+  // ADR-063). Tabell per NAMN (ADR-050 bas-portabilitet).
+  'create-receipt': {
+    tableId: 'Kvitton',
+    allowedFields: [
+      'Kvittonummer',
+      'Löpnummer',
+      'År',
+      'Anmälan',
+      'Betalning',
+      'Belopp',
+      'Betalsätt',
+      'Kundnamn',
+      'Event',
+      'Skickad',
+      'Lagringsnyckel',
+    ],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.
