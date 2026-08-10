@@ -20,11 +20,11 @@ import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 import { kvittoRader } from '../_shared/receipt-content.ts';
 import type { KvittoLedgerEntry, ReceiptAllocationDeps } from '../_shared/receipt-numbering.ts';
+import { NonProdAddressError } from '../_shared/send-bulk.ts';
 import {
   BETALSATT_VARDEN,
   type Betalning,
   type Betalsatt,
-  NonProdAddressError,
   type ReceiptFinalizer,
   type ReceiptPdfBuilder,
   type ReceiptSender,
