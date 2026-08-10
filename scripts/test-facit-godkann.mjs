@@ -373,9 +373,16 @@ rmSync(BIOME_UNIT_SANDBOX, { recursive: true, force: true });
 // härledningen (resolveMainSha, färsk origin/main) ger den färska.
 // ===========================================================================
 
+// TASK-175 (CI-fällning, run 31380377469): `git init -q` UTAN uttryckligt
+// grennamn ärver `init.defaultbranch` — "main" lokalt (Apple Gits egen
+// vendor-config, se rapporten nedan), "master" på CI-runnern (stock git,
+// ingen sådan config). Testerna nedan behöver ett FÖRUTSÄGBART grennamn
+// ("main") oavsett miljö, eftersom de antingen läser den lokala main-refen
+// direkt (för jämförelse) eller explicit tar bort den — `-b main` gör
+// grennamnet en del av KOMMANDOT, inte av omgivningens config.
 function nyttGitRepo(prefix) {
   const dir = mkdtempSync(join(tmpdir(), prefix));
-  execFileSync('git', ['init', '-q'], { cwd: dir });
+  execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: dir });
   execFileSync('git', ['config', 'user.email', 'test@test.invalid'], { cwd: dir });
   execFileSync('git', ['config', 'user.name', 'test'], { cwd: dir });
   return dir;
