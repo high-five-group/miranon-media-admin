@@ -485,6 +485,106 @@ Konsoliderad lista över schema-ändringar i basen sedan 2026-04-15. Alla bekrä
 
 ---
 
+## Fält tillagda i augusti 2026 — anmälningsgrenen i `Senaste interaktion`
+
+`TASK-184`, 2026-08-10. Åtta nya fält i BÅDA baserna plus två ändrade formler.
+Alla nya fält är **beräknade** (lookup / formel / rollup) — de fick därmed värde
+på samtliga befintliga rader i samma ögonblick de skapades. **Ingen backfill,
+ingen automationsändring, inget nytt länkfält.** Den styrande utredningen:
+[`touchpoint-kurs-och-ort-2026-08-10.md`](../research/touchpoint-kurs-och-ort-2026-08-10.md).
+Väggen som stängde touchpoint-vägen står som **P30** i
+[`airtable-constraints.md`](./airtable-constraints.md).
+
+**Vad som ändrades för Lotta:** `Personer.Senaste interaktion (text)` sade för
+anmälningsgrenen `Anmälde sig · 19 apr 2026`. Den säger nu
+`Anmälde sig · RIM 1, Rönninge · 19 apr 2026`. Formen matchar de två grenar som
+redan fanns (`Touchpoints.TP sammanfattning` `fldO3G3hY0iFLKopR`,
+`Deltaganden.Deltog sammanfattning` `fldKaxHf6UzcHN94v`) — de rördes inte.
+
+**Fält-ID:n skiljer sig mellan baserna** (nya fält får eget ID per bas, till
+skillnad från de klonade — se ID-topologi-noten i §Snabbreferens).
+
+### Anmälningar (`tbloOcrppVoyrHbrq`)
+
+| Fält | ID prod | ID staging | Typ | Syfte |
+|---|---|---|---|---|
+| Ort (from Event) | `fld5560T3pQZSUBaJ` | `fldUhHceqBud4BHvf` | lookup via `fldi3enUaMdbuGSlm` av `fldRvwXnDsgjwva2L` | Eventets ort. Anmälans EGNA `Ort` duger inte — backfill-anmälningar har den tom. |
+| Kurs (from Event) | `fldfqU6MfBQdaeLUk` | `fldcTDSzGBG0bHjl3` | lookup via `fldi3enUaMdbuGSlm` av `fldNIc8I2ynUoLkNn` | Eventets kursnamn. Anmälans EGNA `Vill anmäla sig till` duger inte — samma skäl. |
+| Anmälan datetimekey | `fldfQqBjqGHLSazAs` | `fldDdlU7w1aItf8XA` | formula (number) | `YYYYMMDDHHmmss` ur `Rad skapad` i Europe/Stockholm. Samma idiom som `Deltaganden.Genomfört event datekey`. |
+| Person - senaste anmälan datetimekey | `fldoSStIK36rdxKtj` | `fldBtpOlRnWXspbip` | lookup via `fldQekqRlLfup8x5K` | Personens högsta anmälningsnyckel, hämtad tillbaka. Samma idiom som `Deltaganden.Person - senast genomfört datekey`. |
+| Senaste anmälan (sammanfattning) | `fldEos4UvVBpk2reB` | `fldwgo1fJirUwUiOC` | formula | Den färdiga meningen. Fylls ENDAST på personens senaste anmälan (se Grinden nedan). |
+
+### Personer (`tbl6ZyCm3V026iFTU`)
+
+| Fält | ID prod | ID staging | Typ | Syfte |
+|---|---|---|---|---|
+| Senaste anmälan datum | `fldmx8O7LQPdopD6T` | `fldEEdTZA9sUpVQaI` | rollup `MAX(values)` av `fldet9MU1rJBSpo3y` via `fld8pOivka8YdiywK` | Datum-kandidat för grenen. `Rad skapad` valdes framför `Inskickad` — `Inskickad` (`fldNtSHQivkL26B6L`) är ojämnt ifylld. |
+| Senaste anmälan datetimekey | `fldj5IxwmjJ3giZhT` | `fldeiyO7B8xDzBB2D` | rollup `MAX(values)` av anmälningsnyckeln | **Sekundupplöst** (`YYYYMMDDHHmmss`) — syskonfälten `Senaste touchpoint/deltagande datetimekey` är minutupplösta. Dividera med 100 vid jämförelse. |
+| Senaste anmälan (text) | `fldmNo7XJBdfs8heT` | `fldIvGODBIoW9TZbn` | rollup `ARRAYJOIN(ARRAYUNIQUE(values), "")` | Text-kandidat för grenen. |
+
+### Grinden — varför formeln är tom på alla utom EN anmälan
+
+`Senaste anmälan (sammanfattning)` skriver bara ut sin mening när radens egen
+`Anmälan datetimekey` är lika med `Person - senaste anmälan datetimekey`. Rollupen
+på `Personer` får därför exakt ett värde, **utan att bero på radordning**.
+
+Det är avsiktligt och inte en omväg. De befintliga syskonrollupparna
+(`TP sammanfattning (rollup)` `fldgzFXqDGTdKEf60`, `Senast deltagande (rad)`
+`fldvAQbWMNoj3oPqm`) levererar i stället en radbruten lista i **fallande**
+datumordning, och `Senast touchpoint (text)` / `Senast deltagande (text)` plockar
+första raden. **Den ordningen går inte att återskapa via API:t.** Mätt 2026-08-10:
+länkcellens ordning är STIGANDE (person `recPyHkKMh7kJyZJ4`, touchpoints
+23 mar → 19 apr 20:56) medan rollupens utdata är FALLANDE — ordningen kommer
+alltså från en vy-/filterinställning på fältet som metadata-API:t varken visar
+eller kan sätta (jämför **P24**). En ny rollup byggd via API:t hade fått
+länkcellens ordning och tagit ÄLDSTA raden. Grinden gör frågan irrelevant.
+
+### Tie-break — anmälan slår touchpoint samma dygn
+
+A2 stämplar sin touchpoint med automationens KÖRTID, alltså några sekunder EFTER
+anmälan (mätt spann 2026-08-10: **3,6–6,7 s** över fyra anmälningar). Utan en
+explicit regel vinner touchpointen på datum varje gång, och den fattiga strängen
+visas trots att den rika finns.
+
+Regeln i `Senaste interaktion (text)` / `(datum)`: **anmälningskandidaten slår
+touchpoint-kandidaten så länge touchpointen inte ligger på en SENARE DAG.**
+Jämförelsen görs på heltalsnycklar (`FLOOR(tp/10000) <= FLOOR(anm/1000000)`),
+inte på datumvärden — rollupens datumvärde exponeras som datum-typ och
+tidsprecisionen får därför inte vara bärande. Deltagandegrenen jämförs oförändrat
+mot originalets uttryck.
+
+Två kända, medvetet accepterade kanter:
+
+1. **Midnatt.** Anmälan 23:59:58 och touchpoint 00:00:03 nästa dygn hamnar på
+   olika dagar → touchpointen vinner och den fattiga strängen visas. Kräver att
+   A2:s körning korsar dygnsgränsen.
+2. **Annan interaktion samma dag.** Anmäler sig kl. 09 och hämtar ett erbjudande
+   kl. 18 samma dag → anmälan visas, inte hämtningen. Regeln flyttar aldrig ett
+   datum och tappar aldrig en interaktion; den väljer bara vilken av dagens
+   händelser som får meningen.
+
+### Kvarvarande fattig sträng — 3 personer, redan känd klass
+
+Efter ändringen visar 3 prod-personer fortfarande `Anmälde sig · <datum>` utan
+kurs och ort. Samtliga har `Antal anmälningar (totalt) = 0`: de bär en
+`Inskickad anmälan`-touchpoint utan någon länkad anmälan alls. Det är den
+föräldralösa klassen A2:s grenordning skapar (§Reverse-flow F.1, §Kända fällor 12)
+— inte en brist i denna ändring. Grenen faller tillbaka på originaluttrycket i
+stället för att tappa interaktionen.
+
+### Öppen skuld — tre systerfält som inte utvidgades
+
+`Senaste interaktion datetimekey` (`fldT1yVpCFa5Zyrji`),
+`Dagar sedan senaste interaktion` (`fld6wQp5K9VAcFskd`) och `Min av de två`
+(`fld9wrmfhSParaxOz`) räknar fortfarande "senaste interaktion" som MAX av
+**touchpoint och deltagande**, utan anmälningskandidaten. De divergerar därmed
+från fälten de är namngivna efter. **Ingen av dem läses av appen** (verifierat med
+sökning över `src/`, `supabase/`, `tests/` 2026-08-10) — därför lämnades de
+utanför `TASK-184`:s scope i stället för att utvidgas oombedd. Skulden är öppen,
+inte löst.
+
+---
+
 ## Den kritiska distinktionen — två datakällor, två konsekvenser
 
 **Det här är den viktigaste insikten i hela modellen.** Rollup-fälten på Personer kommer från två olika tabeller, och det avgör helt vad datan faktiskt betyder.

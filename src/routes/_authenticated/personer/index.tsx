@@ -16,10 +16,12 @@ export const Route = createFileRoute('/_authenticated/personer/')({
  * som resten av appen efter facit-vågen?" Fullständig märkning + steg-logg:
  * `src/components/persons/PersonsListPrototyp.tsx`.
  *
- * EN variant (`?variant=a`) — `label`/`stegLabel` renderas ingenstans efter
- * ADR-074 Amendering 5 men är obligatoriska i typen; de skrivs som
- * dokumentation. `steg` är enda stället steget syns i UI:t (rail-badgen) och
- * bumpas per fryst steg.
+ * EN variant (`?variant=a`) — kortyte-forken är AVGJORD (Marcus, S103
+ * 2026-08-10: tonal vann, zebra skrotad). Vinnaren behöll sin nyckel enligt
+ * ADR-074 beslut 1, så adressen är oförändrad genom hela konvergensen.
+ * `label`/`stegLabel` renderas ingenstans efter ADR-074 Amendering 5 men är
+ * obligatoriska i typen; de skrivs som dokumentation. `steg` är enda stället
+ * steget syns i UI:t (rail-badgen) och bumpas per fryst steg.
  *
  * RIVNING: ta bort denna kommentar + `PROTO_VARIANTS` + `proto`-grenarna +
  * rail-monteringen, och `git rm` prototyp-komponenten. Skarpa grenen nedan är
