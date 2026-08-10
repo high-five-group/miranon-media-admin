@@ -45,6 +45,14 @@
       "exactMatchField": "Namn",
       "exactMatchPattern": "^ZZ-attachment-test-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf$",
       "linkGuard": false
+    },
+    {
+      "name": "generate-event-attachment-sentineler",
+      "table": "Bilagor",
+      "filterByFormula": "AND(FIND('Deltagarinformation –', {Namn}) = 1, FIND('ZZ-belaggning-fixtur', {Namn}) > 0)",
+      "exactMatchField": "Namn",
+      "exactMatchPattern": "^Deltagarinformation – ZZ-belaggning-fixtur.*\\.pdf$",
+      "linkGuard": false
     }
   ]
 }
