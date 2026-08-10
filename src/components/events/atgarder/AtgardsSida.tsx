@@ -1168,11 +1168,21 @@ function MottagarYta({
  *      av-bock hade skrivit "Ej mottagen" och rivit basens semantik. Samma
  *      lösning som läsytan: `pl-7` (kryssets 20 px + gap-2:s 8 px) så ordet
  *      står på grannradernas vänsterlinje trots att rutan saknas.
- *  (2) Basens takt tål inte obegränsad parallellitet. Det gäller BATCH-
- *      avprickning, som inte finns här — denna yta skriver en betalning i
- *      taget, per klick. Vakten är alltså inte kodad utan OTILLÄMPLIG i detta
- *      steg, och det noteras hellre än glöms: bygger någon "markera alla"
- *      (Marcus varv 6-idé) är den det första som måste lösas.
+ *  (2) [TASK-147.4] Basens takt tål inte obegränsad parallellitet. Ytan har
+ *      fortfarande ingen dedikerad "markera alla"-knapp (Marcus varv 6-idé,
+ *      parkerad — en sådan är en FORM-ändring och kräver Marcus, inte den
+ *      här skivan) — men "batch" är här flera avprickningar i snabb följd,
+ *      inte nödvändigtvis en egen massknapp, och DEN vägen finns redan: ett
+ *      klick per rad, i tät följd. Vakten sitter därför i MUTATIONSLAGRET,
+ *      inte i denna yta — `useSetPaymentStatus` (`registrationPayments.ts`
+ *      § `TAKTVAKT_SCOPE`) ger alla avprickningar samma TanStack Query
+ *      `scope.id`, vilket serialiserar dem (bibliotekets egna mekanism för
+ *      seriella mutationer) oavsett hur många kryss Lotta hinner klicka
+ *      innan det första svaret kommit. Mätt: `tests/e2e/atgarder-betalningar
+ *      .staging.test.ts` § Taktvakten (tre klick i snabb följd, aldrig mer
+ *      än 1 samtidig `update-record`). Bygger någon en dedikerad
+ *      massknapp senare återanvänder den samma hook och ärver alltså
+ *      samma vakt utan eget arbete.
  *
  * MUTATIONS-INSTANSERNA ÄR DELADE, en per operation, skapade här och skickade
  * ned — exakt förlagans motiv: den optimistiska uppdateringen kan avmontera en

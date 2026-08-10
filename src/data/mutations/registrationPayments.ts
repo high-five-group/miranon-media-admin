@@ -73,8 +73,32 @@ function patchRegistration(
 /**
  * Kryssets mutation: sätt en betalning till Mottagen/Ej mottagen (toggle —
  * allowlisten gatar fältet, inte värdet). 'Ej relevant' skrivs ALDRIG av
- * UI:t (föreläsnings-semantiken ägs av basen; linjen renderas då utan kryss).
+ * UI:t (föreläsnings-semantiken ägs av basen; linjen renderas då utan kryss —
+ * `AtgardsSida.tsx` § `BetalningsSkrivYta` VAKT 1: ingen kryssruta finns att
+ * klicka för den raden, så en "skriv-över" strukturellt inte kan avfyras
+ * härifrån).
+ *
+ * TAKTVAKTEN (TASK-147.4, PRD task-147 § Implementationsbeslut: "basens takt
+ * tål inte obegränsad parallellitet vid en batch-avprickning") — `scope.id`
+ * SERIALISERAR alla avprickningar av denna typ: klickar Lotta igenom flera
+ * kryss i snabb följd (en "batch" i betydelsen flera klick i följd, inte en
+ * dedikerad massknapp — ytan har ingen, se `AtgardsSida.tsx` rad ~1171–1175)
+ * exekveras varje `mutate()`-anrop EFTER att föregående med samma scope helt
+ * avslutats, aldrig samtidigt. Detta är TanStack Querys EGNA, dokumenterade
+ * mekanism för seriella mutationer ("Mutations with the same scope.id will
+ * be queued and automatically resume once any preceding mutation within that
+ * scope has completed" — `docs/framework/react/guides/mutations.md`,
+ * `@tanstack/query-core` `mutationCache.ts#canRun`); ingen egen semafor
+ * uppfanns. Skälet 5 req/s är basens hela budget, DELAD mellan alla klienter
+ * (`docs/reference/airtable-constraints.md` § P4) — ett obegränsat antal
+ * samtidiga kryss-klick hade kunnat trigga 429-låsningen (30 s, delad av
+ * ALLA sessioner) för en operation som i sig är billig och sällan brådskar.
+ * Scope-id:t är MEDVETET inte event-scopat: rate-limiten är bas-bred, inte
+ * per event, så serialiseringen ska hålla även om Lotta har två event-flikar
+ * öppna samtidigt.
  */
+const TAKTVAKT_SCOPE = { id: 'atgardssida-betalningsstatus' };
+
 export function useSetPaymentStatus(eventId: string) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
@@ -86,6 +110,7 @@ export function useSetPaymentStatus(eventId: string) {
     { registration: Registration; betalning: Betalning; value: PaymentStatusValue },
     PaymentContext
   >({
+    scope: TAKTVAKT_SCOPE,
     mutationFn: ({ registration, betalning, value }) =>
       dataSource.updateRecord(STATUS_OPERATION[betalning], registration.id, {
         [STATUS_FALT[betalning]]: value,
