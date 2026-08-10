@@ -588,7 +588,12 @@ function predikatKlartext(pred: Predikat): string {
   // betydelsen och får aldrig läsas som en fortsättning på raden före.
   const medText = `${med.map((k) => konjunktKlartext(k)).join('. Eller: ')}.`;
   if (utan.length === 0) return medText;
-  return `${medText} Utan: ${utan.map((v) => villkorKlartext(v).replace(/\.$/, '')).join('. Eller: ')}.`;
+  // UTESLUTNINGARNA BINDS MED "eller" I LÖPANDE TEXT (Marcus 2026-08-10,
+  // korttext-varvet): "Utan: A. Eller: B." lästes som att B var ett
+  // INKLUSIONS-alternativ till hela regeln — exakt den boolesk-parsning
+  // ingen ska behöva göra. "Utan: A eller B." kan inte missläsas så.
+  // Med-sidans ". Eller: " står kvar: där ÄR grupperna genuina alternativ.
+  return `${medText} Utan: ${utan.map((v) => villkorKlartext(v).replace(/\.$/, '')).join(' eller ')}.`;
 }
 
 /* ================================================================== *
@@ -604,6 +609,15 @@ type SegmentEntitet = {
   arvdRegel: SegmentRule | null;
   /** `true` = finns inte i basen. */
   skiss: boolean;
+  /**
+   * Människo-mening skriven UR AVSIKTEN vid skapandet (`manniskoMening` via
+   * `byggGrupp`) — kortens beskrivning för genererade grupper. Saknas den
+   * faller `definitionFor` till regel-klartexten. Redigeras en genererad
+   * grupp i verkstaden skapas en NY entitet utan beskrivning (`sparaRegel`)
+   * — avsikts-meningen följer med AVSIKTEN, aldrig en regel som kan ha
+   * ändrats bort från den.
+   */
+  beskrivning?: string;
 };
 
 /**
@@ -619,12 +633,17 @@ function bruttoRegelFor(entitet: SegmentEntitet, parInfo: ParInfo[]): SegmentRul
 }
 
 function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
+  // Avsikts-meningen vinner över regel-klartexten överallt den finns —
+  // kortet, detaljen och utskickets segmentrad läser alla samma beskrivning.
+  // Precisionen (den fulla regeln) bor kvar i regelverkstaden.
+  if (entitet.beskrivning) return entitet.beskrivning;
   if (entitet.predikat) return predikatKlartext(entitet.predikat);
   const rule = bruttoRegelFor(entitet, parInfo);
   if (rule.include.length === 0) return 'Uppräknad regel utan inkluderade kurser.';
   const med = `${rule.include.map(labelForPar).join(' ELLER ')}.`;
+  // Samma "eller"-språkfix som predikatKlartexts utan-sida (Marcus 2026-08-10).
   return rule.exclude.length > 0
-    ? `${med} Utan: ${rule.exclude.map(labelForPar).join(' ELLER ')}.`
+    ? `${med} Utan: ${rule.exclude.map(labelForPar).join(' eller ')}.`
     : med;
 }
 
@@ -703,6 +722,63 @@ function villkorForAtom(a: KursAtom, modalitet: ModalitetsVal): Villkor {
  * gått RIM2. Samma funktion bygger BÅDE den interaktiva generatorns
  * "Skapa N segment" och de fjorton förskapade grupperna nedan.
  */
+const ANTALSORD: Record<number, string> = {
+  2: 'två',
+  3: 'tre',
+  4: 'fyra',
+  5: 'fem',
+  6: 'sex',
+  7: 'sju',
+  8: 'åtta',
+  9: 'nio',
+  10: 'tio',
+};
+
+/**
+ * MÄNNISKO-MENINGEN — beskrivningen genererad UR AVSIKTEN (exakt
+ * kombination), aldrig ur regelns booleska struktur. Marcus dömde ut
+ * regeldumpen på korten ("fullständigt obegriplig", 2026-08-10): "Utan: A.
+ * Eller: B" tvingade Lotta att parsa boolesk logik. Generatorn VET att
+ * gruppen betyder "exakt de här, inget mer" — då kan den skriva det som en
+ * människa.
+ *
+ * ROGER SÄGER UTBILDNING, INTE KURS (Marcus 2026-08-10) — därför
+ * "utbildningarna" när modaliteten ÄR Utbildning. För föreläsning/"båda"
+ * vore ordet fel; där bär en egen slutmening modaliteten i stället.
+ * (Koden behåller domäntermen kurs/KursAtom — ORDLISTA.md: kursen är
+ * taxonomi-axeln; detta är Rogers PRESENTATIONSSPRÅK, inte en typomdöpning.)
+ *
+ * Formeln är mekanisk och skalar till varje generator-körning:
+ *   alla valda        → "Har gått alla fyra utbildningarna."
+ *   en vald           → "Har bara gått RIM 1 - ingen av de andra tre
+ *                        utbildningarna."
+ *   två valda         → "Har gått både RIM 1 och RIM 2 - men ingen av de
+ *                        andra två utbildningarna."
+ *   en enda utesluten → "... - men inte Psionautics." (nämns vid namn)
+ */
+function manniskoMening(ivalda: KursAtom[], utanfor: KursAtom[], modalitet: ModalitetsVal): string {
+  const antalOrd = (n: number) => ANTALSORD[n] ?? String(n);
+  const etiketter = ivalda.map((a) => a.etikett);
+  const utbildningsord = modalitet === 'Utbildning';
+
+  const uteslutning =
+    utanfor.length === 1
+      ? `inte ${utanfor[0]?.etikett ?? ''}`
+      : `ingen av de andra${utbildningsord ? ` ${antalOrd(utanfor.length)} utbildningarna` : ''}`;
+
+  let mening: string;
+  if (utanfor.length === 0) {
+    mening = `Har gått alla ${antalOrd(ivalda.length)}${utbildningsord ? ' utbildningarna' : ''}.`;
+  } else if (ivalda.length === 1) {
+    mening = `Har bara gått ${etiketter[0] ?? ''} - ${uteslutning}.`;
+  } else {
+    mening = `Har gått ${ivalda.length === 2 ? 'både ' : ''}${listaOrd(etiketter, 'och')} - men ${uteslutning}.`;
+  }
+  if (modalitet === 'Föreläsning') return `${mening} Räknat som föreläsning.`;
+  if (modalitet === 'Båda') return `${mening} Räknat som utbildning eller föreläsning.`;
+  return mening;
+}
+
 function byggGrupp(
   allaAtomer: KursAtom[],
   ivalda: KursAtom[],
@@ -721,6 +797,7 @@ function byggGrupp(
     },
     arvdRegel: null,
     skiss: true,
+    beskrivning: manniskoMening(ivalda, utanfor, modalitet),
   };
 }
 
