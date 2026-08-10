@@ -81,6 +81,19 @@
 > §5 (spärrarna) · [`staging-svitens-tidsbudget-2026-07-26.md`](../research/staging-svitens-tidsbudget-2026-07-26.md)
 > (fördelningen) · [`hermetisk-vs-skarp-e2e-branschpraxis-2026-07-26.md`](../research/hermetisk-vs-skarp-e2e-branschpraxis-2026-07-26.md)
 > (rankningarna + Ghost-precedenten).
+>
+> **S103-not (2026-08-10, additiv — ursprungstexten orörd): Beslut 2:s
+> räckvidd är DATA-defekter, inte GRAMMATIK.** Beslut 2 ("Resolution sker
+> I BASEN") skrevs för avtäckta data-brister (saknade relationer,
+> felaktiga aggregat) — det tar aldrig uttryckligen ställning till SPRÅKLIG
+> komposition (ordval, preposition, ordföljd) av redan korrekt data som en
+> egen underkategori. [`ADR-108`](ADR-108-presentationsmeningen-stannar-i-basen.md)
+> gör den gränsen explicit: DATA/aggregering hör i basen (denna punkt
+> orörd), UI-formatering av redan korrekt data hör i princip i appen — med
+> ETT namngivet, motiverat undantag (Airtables Interface-sida som andra
+> konsument) för just `Senaste interaktion (text)`-familjens meningar, och
+> en explicit trigger för när undantaget ska omprövas. Ingen rivning av
+> denna ADR — en skärpning av vad "resolution i basen" faktiskt omfattade.
 
 ## Kontext
 

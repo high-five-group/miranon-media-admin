@@ -364,10 +364,20 @@ export const EVENT_FORMATS_RESPONSE = {
 //  · `manuellFlagga` ("Manuella flagga") är en singleSelect med choices=[] i
 //    basen → ALLTID null (data-model.md §Kända fällor 25). Död yta. Den gamla
 //    fixturens "Följ upp betalning" gick inte att få fram i verkligheten.
-//  · `senasteInteraktion` har TVÅ former i prod: touchpoint-raden
-//    "2026-09-13 09:41 – Inskickad anmälan" och event-raden
-//    "Varberg – Utbildning – Resor i medvetandet 2 – 2026-08-22". Båda finns
-//    nedan; de är olika långa och det är precis det en radgrammatik ska tåla.
+//  · `senasteInteraktion` har TRE grenar, formen ändrad 2026-08-10 (ADR-108):
+//      anmälan   "Anmälde sig" + valfritt " till <Kurs>" + valfritt " i <Ort>"
+//      deltagande "Deltog på <Kurs> i <Ort>" ELLER fallback "Deltog · <Event
+//                 sammanfattning>" när Kursnamn-lookupen är tom (BEVARAD
+//                 prickform, med avsikt — se ADR-108)
+//      touchpoint "Hämtade <erbjudande>" (oförändrad; andra Typ-val ger andra
+//                 verb, t.ex. "Anmälde sig" vid en touchpoint som förlorar
+//                 tie-break mot en riktig anmälan)
+//    Live-verifierat mot staging (`apphjj8Q7lkXCMsL4`) 2026-08-10 via
+//    `describe_table` + `list_records`. Datumet som tidigare stod FÖRST i
+//    strängen ("2026-09-13 09:41 – …") togs bort samma dag — det dubblerade
+//    `senasteInteraktionDatum`, som redan är ett eget fält. Nedan täcker
+//    samtliga fyra anmälnings-kombinationer, deltagandes båda former och
+//    touchpoints huvudform — en radgrammatik ska tåla alla.
 //  · `namn` är formeln IF(båda namnfälten tomma, "Ej tillgängligt", …) → en
 //    namnlös lead bär STRÄNGEN "Ej tillgängligt", inte null (fälla 43).
 //  · `radSkapad` / `senasteInteraktionDatum` är ISO-datetime i prod, inte
@@ -409,7 +419,7 @@ const PERSON_RIK = {
   antalDeltaganden: 3,
   erfarenhetsniva: 'Genomfört RIM steg 1–2 (upprepat)',
   erfarenhetsbadge: 'Resenär steg 1–2 (upprepat)',
-  senasteInteraktion: '2026-09-12 18:04 – Inskickad anmälan',
+  senasteInteraktion: 'Anmälde sig till RIM 2 i Rönninge',
   senasteInteraktionDatum: '2026-09-12T18:04:11.482Z',
   dagarSedanSenaste: 3,
   harAktivAnmalan: 'Aktiv',
@@ -464,7 +474,7 @@ const PERSON_TUNN = {
   antalDeltaganden: 0,
   erfarenhetsniva: 'Ej påbörjat',
   erfarenhetsbadge: 'Ej påbörjat',
-  senasteInteraktion: '2026-09-14 08:12 – Angett e-post för att ta del av ett erbjudande',
+  senasteInteraktion: 'Hämtade Meditationen Kraftfältet',
   senasteInteraktionDatum: '2026-09-14T08:12:03.117Z',
   dagarSedanSenaste: 1,
   harAktivAnmalan: 'Ingen aktiv anmälan',
@@ -498,7 +508,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 0,
       erfarenhetsniva: 'Ej påbörjat',
       erfarenhetsbadge: 'Ej påbörjat',
-      senasteInteraktion: '2026-09-13 09:41 – Inskickad anmälan',
+      senasteInteraktion: 'Anmälde sig till RIM 1 i Skövde',
       senasteInteraktionDatum: '2026-09-13T09:41:22.184Z',
       dagarSedanSenaste: 2,
       harAktivAnmalan: 'Aktiv',
@@ -522,7 +532,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 1,
       erfarenhetsniva: 'RIM steg 1',
       erfarenhetsbadge: 'Resenär steg 1',
-      senasteInteraktion: '2026-09-14 18:07 – Inskickad anmälan',
+      senasteInteraktion: 'Anmälde sig till RIM 2 i Varberg',
       senasteInteraktionDatum: '2026-09-14T18:07:55.903Z',
       dagarSedanSenaste: 1,
       harAktivAnmalan: 'Aktiv',
@@ -546,7 +556,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 1,
       erfarenhetsniva: 'RIM steg 1',
       erfarenhetsbadge: 'Resenär steg 1',
-      senasteInteraktion: 'Varberg – Utbildning – Resor i medvetandet 1 – 2026-08-22',
+      senasteInteraktion: 'Deltog på RIM 1 i Varberg',
       senasteInteraktionDatum: '2026-08-22T00:00:00.000Z',
       dagarSedanSenaste: 24,
       harAktivAnmalan: 'Aktiv',
@@ -570,7 +580,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 0,
       erfarenhetsniva: 'Ej påbörjat',
       erfarenhetsbadge: 'Ej påbörjat',
-      senasteInteraktion: '2026-09-01 16:20 – Inskickad anmälan',
+      senasteInteraktion: 'Anmälde sig till Fjärrskådning i Skövde',
       senasteInteraktionDatum: '2026-09-01T16:20:39.472Z',
       dagarSedanSenaste: 14,
       harAktivAnmalan: 'Aktiv',
@@ -597,7 +607,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 2,
       erfarenhetsniva: 'Genomfört RIM steg 1–2',
       erfarenhetsbadge: 'Resenär steg 1–2',
-      senasteInteraktion: '2026-09-05 12:33 – Inskickad anmälan',
+      senasteInteraktion: 'Anmälde sig till RIM 3 i Göteborg',
       senasteInteraktionDatum: '2026-09-05T12:33:07.611Z',
       dagarSedanSenaste: 10,
       harAktivAnmalan: 'Aktiv',
@@ -622,7 +632,9 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 0,
       erfarenhetsniva: 'Ej påbörjat',
       erfarenhetsbadge: 'Ej påbörjat',
-      senasteInteraktion: '2026-09-10 08:15 – Inskickad anmälan',
+      // Ort men ingen kurs — samma kombination som live-verifierats mot
+      // `ZZ-History Person 01` 2026-08-10 (ADR-108).
+      senasteInteraktion: 'Anmälde sig i Skövde',
       senasteInteraktionDatum: '2026-09-10T08:15:44.021Z',
       dagarSedanSenaste: 5,
       harAktivAnmalan: 'Aktiv',
@@ -646,7 +658,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 3,
       erfarenhetsniva: 'Genomfört RIM steg 1–2 (upprepat)',
       erfarenhetsbadge: 'Resenär steg 1–2 (upprepat)',
-      senasteInteraktion: 'Varberg – Utbildning – Resor i medvetandet 2 – 2026-08-22',
+      senasteInteraktion: 'Deltog på RIM 2 i Varberg',
       senasteInteraktionDatum: '2026-08-22T00:00:00.000Z',
       dagarSedanSenaste: 24,
       harAktivAnmalan: 'Ingen aktiv anmälan',
@@ -670,7 +682,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 0,
       erfarenhetsniva: 'Ej påbörjat',
       erfarenhetsbadge: 'Ej påbörjat',
-      senasteInteraktion: '2026-07-30 21:04 – Angett e-post för att ta del av ett erbjudande',
+      senasteInteraktion: 'Hämtade Pyramidernas Vajrar',
       senasteInteraktionDatum: '2026-07-30T21:04:18.220Z',
       dagarSedanSenaste: 47,
       harAktivAnmalan: 'Ingen aktiv anmälan',
@@ -696,7 +708,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 0,
       erfarenhetsniva: 'Ej påbörjat',
       erfarenhetsbadge: 'Ej påbörjat',
-      senasteInteraktion: '2026-09-11 13:52 – Inskickad anmälan',
+      senasteInteraktion: 'Anmälde sig till RIM 1 i Ulvåker',
       senasteInteraktionDatum: '2026-09-11T13:52:10.664Z',
       dagarSedanSenaste: 4,
       harAktivAnmalan: 'Aktiv',
@@ -720,7 +732,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 2,
       erfarenhetsniva: 'Genomfört RIM steg 1–2',
       erfarenhetsbadge: 'Resenär steg 1–2',
-      senasteInteraktion: 'Göteborg – Utbildning – Resor i medvetandet 2 – 2026-06-13',
+      senasteInteraktion: 'Deltog på RIM 2 i Göteborg',
       senasteInteraktionDatum: '2026-06-13T00:00:00.000Z',
       dagarSedanSenaste: 94,
       harAktivAnmalan: 'Ingen aktiv anmälan',
@@ -750,7 +762,8 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 1,
       erfarenhetsniva: 'Fjärrskådning',
       erfarenhetsbadge: 'Fjärrskådare',
-      senasteInteraktion: '2026-09-09 20:11 – Angett e-post för att ta del av ett erbjudande',
+      // Erbjudande-fältet tomt i formeln → fallback "ett erbjudande".
+      senasteInteraktion: 'Hämtade ett erbjudande',
       senasteInteraktionDatum: '2026-09-09T20:11:38.905Z',
       dagarSedanSenaste: 6,
       harAktivAnmalan: 'Aktiv',
@@ -774,7 +787,8 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 0,
       erfarenhetsniva: 'Ej påbörjat',
       erfarenhetsbadge: 'Ej påbörjat',
-      senasteInteraktion: '2026-08-19 07:48 – Inskickad anmälan',
+      // Kurs men ingen ort — anmälans egen Ort tom, eventet saknar lookup-träff.
+      senasteInteraktion: 'Anmälde sig till RIM 1',
       senasteInteraktionDatum: '2026-08-19T07:48:52.310Z',
       dagarSedanSenaste: 27,
       harAktivAnmalan: 'Aktiv',
@@ -800,7 +814,9 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 3,
       erfarenhetsniva: 'Genomfört RIM steg 1–2 (upprepat)',
       erfarenhetsbadge: 'Resenär steg 1–2 (upprepat)',
-      senasteInteraktion: 'Stockholm – Utbildning – Fjärrskådning – 2026-04-11',
+      // Deltagandegrenens FALLBACK: Kursnamn-lookupen tom → hela Event
+      // sammanfattning, prickformen bevarad med avsikt (ADR-108).
+      senasteInteraktion: 'Deltog · Stockholm – Utbildning – Fjärrskådning – 2026-04-11',
       senasteInteraktionDatum: '2026-04-11T00:00:00.000Z',
       dagarSedanSenaste: 157,
       harAktivAnmalan: 'Ingen aktiv anmälan',
@@ -838,7 +854,9 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 0,
       erfarenhetsniva: 'Ej påbörjat',
       erfarenhetsbadge: 'Ej påbörjat',
-      senasteInteraktion: '2026-04-19 17:15 – Inskickad anmälan',
+      // Varken kurs eller ort — samma kombination som live-verifierats mot
+      // `ZZ-Conformance Person 01-05` 2026-08-10 (ADR-108).
+      senasteInteraktion: 'Anmälde sig',
       senasteInteraktionDatum: '2026-04-19T17:15:02.883Z',
       dagarSedanSenaste: 149,
       harAktivAnmalan: 'Ingen aktiv anmälan',
@@ -862,7 +880,7 @@ export const PERSONS_RESPONSE = {
       antalDeltaganden: 1,
       erfarenhetsniva: 'RIM steg 1 – upprepat',
       erfarenhetsbadge: 'Resenär steg 1 (upprepat)',
-      senasteInteraktion: '2026-09-08 11:26 – Inskickad anmälan',
+      senasteInteraktion: 'Anmälde sig till RIM 2 i Stockholm',
       senasteInteraktionDatum: '2026-09-08T11:26:44.512Z',
       dagarSedanSenaste: 7,
       harAktivAnmalan: 'Aktiv',
