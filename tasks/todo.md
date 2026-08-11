@@ -15,9 +15,9 @@
 
 ## Aktuellt fokus
 
-**Session 102 ⏸️ PAUSAD (2026-08-10 kväll, `lifecycle: paused`) —
-GO-LIVE-DAGENS BATCH FULLBORDAD: 15 kort avfyrade, 14 Done, 0 öppna
-ärenden, hela sändvägen skarp och FRAMME-bevisad.** Batchen (Marcus-order
+**Session 102 🔄 ÅTERUPPTAGEN (2026-08-11, `lifecycle: active`) —
+GO-LIVE-DAGENS BATCH FULLBORDAD: 15 kort avfyrade, 14 Done, hela
+sändvägen skarp och FRAMME-bevisad; resume-ingången är Marcus-högen.** Batchen (Marcus-order
 max-kort 14 + tak-utvidgning `147.8`): hela `147`-kedjan landad —
 bekräftelse/påminnelse/eventinfo/fritt (`147.2`/`147.3`), betalningar
 (`147.4`), bilage-sändvägen FRAMME-bevisad (`147.5`), testmailet
