@@ -67,12 +67,81 @@
 #   vilket är den värre av de två ("ett mätinstrument som går sönder ljudlöst
 #   är värre än inget").
 #
+# ═══ NÅBARHET ≠ KRONOLOGI (TASK-197, 2026-08-11) ═══
+#
+#   `git log <paus>..HEAD` svarar på "är detta commit-DAG-icke-nåbart från
+#   paus-commiten" — INTE på "landade det i tid efter pausen". De två
+#   sammanfaller normalt (historiken växer framåt), men inte när två grenar
+#   förgrenas från samma bas innan endera mergats in: då är de per
+#   konstruktion icke-nåbara från varandra oavsett i vilken ORDNING de sedan
+#   landar på main.
+#
+#   BELÄGGET: S103 (run 31454392944, job 93665096969). Grinden flaggade
+#   fa41a1be (22:21:14+02) och 0507c77c (22:34:10+02) som "arbete efter
+#   pausen" — men paus-commiten 9af3c004 är 23:02:29+02, alltså 28–41 min
+#   SENARE, inte tidigare. `git merge-base --is-ancestor fa41a1be 9af3c004`
+#   svarar NEJ: inte för att arbetet kom efter, utan för att
+#   feat/s103-rik-granskningsperson (PR #1155) och docs/s103-del7-och-basfynd
+#   (PR #1157, bär paus-commiten) förgrenades från samma main-punkt innan
+#   PR #1155 mergades — sedan mergades #1155 FÖRE #1157, vilket gör dess
+#   commits synliga i `..`-intervallet trots att de landade kronologiskt
+#   före pausen.
+#
+#   ÅTGÄRD, SKOPAD TILL DEN SMALA KLASSEN DEN GÄLLER: för varje kandidat
+#   prövas FÖRST om paus-commiten är en FÖRFADER till kandidaten (den vanliga
+#   formen — nästa commit rakt på samma gren). Är den det litar grinden
+#   fortsatt ENBART på nåbarhetstestet, precis som innan TASK-197: en
+#   ättling-commit kan per definition inte ha SKAPATS före sin egen förälder
+#   — commit-objektets hash inbäddar förälderns hash, så den kronologiska
+#   ordningen är garanterad av git:s objektmodell, oavsett vad
+#   committer-tid-METADATA råkar påstå. Först när paus-commiten INTE är en
+#   förfader till kandidaten (de är DAG-syskon, S103:s form) prövas
+#   committer-tiden: `ct < PAUS_CT` ⇒ kandidaten föregick pausen och
+#   exkluderas.
+#
+#   FÖRSTA UTKASTET AV DENNA FIX prövade tiden OVILLKORAT för alla
+#   kandidater. Den mätningen FÖLL mot den BEFINTLIGA testsviten (SIDA 1–4):
+#   git:s committer-tid har 1-sekunds-upplösning, och flera riggar där
+#   commitar en pausdoc och nästa arbete i snabb följd — ibland inom samma
+#   sekund. Karens-riggen är värre: den backdaterar arbets-commiten 6 h för
+#   att simulera "gammalt arbete" förbi karensen, utan att någon tänkt på
+#   dess relation till paus-commitens EGEN (då färska) tid — så en ovillkorad
+#   tidsjämförelse exkluderade en ÄKTA, redan bevisad positiv. Den skopade
+#   formen ovan berör aldrig dessa fall (paus-commiten ÄR deras förfader) och
+#   höll alla fyra sidor gröna.
+#
+#   COMMITTER-TID, INTE FÖRFATTAR-TID (för DAG-syskon-fallet): en rebase
+#   eller cherry-pick sätter en NY committer-tid vid ompspelningen men
+#   behåller den GAMLA författar-tiden. Frågan grinden ställer är "landade
+#   det i historiken efter pausen", inte "skrevs det efter pausen" —
+#   committer-tid är rätt axel för den frågan.
+#
+#   KLOCKSKEV MELLAN MASKINER: prövat och medvetet lämnat UTAN tolerans-
+#   fönster. Alla commits i jämförelsen skapas av samma betrodda maskinpark
+#   (Code-agenter och Marcus, ingen extern bidragsgivare), och S103-
+#   incidentens marginal var 28–41 min — långt utanför rimlig NTP-drift. Ett
+#   tolerans-fönster utan en mätt felklass det adresserar är spekulativ
+#   komplexitet (dubbelriktad över-engineering-vakt, `~/.claude/CLAUDE.md`
+#   § Instruktioner) — läggs till den dag en verklig instans av klockskev
+#   mäts, inte i förväg.
+#
+#   FÖRSTA-FÖRÄLDER-ALTERNATIVET (kortets kandidat (b)) övervägdes och
+#   FÖRKASTADES, mätt: detta repo mergar PR:er som ÄKTA merge-commits (inte
+#   squash) — ett stickprov på 200 first-parent-commits ur historiken gav
+#   NOLL som inte är "Merge pull request …"-subjects. [S<N>]-taggade
+#   arbetscommits lever alltså uteslutande som ANDRA-förälder-commits inuti
+#   sina PR-grenar, aldrig på main-linjens första-förälder-kedja. `git log
+#   --first-parent <paus>..HEAD` skulle därför filtrera bort VARJE taggat
+#   arbete — äkta som falskt — och göra grinden blind, inte precis.
+#
 # ANVÄNDNING:
 #   bash scripts/check-pausade-sessioner.sh            # prövar repots dok
 #   PAUS_POLICY=<fil> bash scripts/...                 # egen policy (testrigg)
 #
 # Testsvit: scripts/test-check-pausade-sessioner.sh (tvåsidigt bevis, inkl. en
-#   rigg som återskapar S96-felet och en som återskapar S92:s legitima svans).
+#   rigg som återskapar S96-felet, en som återskapar S92:s legitima svans, och
+#   (TASK-197) två "parallell-PR"-riggar som planterar S103:s topologi
+#   hermetiskt — två grenar ur samma bas, den ena mergad in före den andra).
 #
 # Källa: T119 arbetslista (b) · S96 Del 8 · ADR-051/ADR-052 (lifecycle-fältets
 #        semantik) · docs/research/processregler-mekanisering-branschpraxis-2026-08-04.md
@@ -150,8 +219,12 @@ for fil in "${DOK[@]}"; do
 
     PROVADE=$(( PROVADE + 1 ))
 
-    # Paus-punkten: senaste commit som rörde själva dokumentet.
-    PAUS_SHA="$(git log -1 --format='%H' -- "${fil}" 2>/dev/null)"
+    # Paus-punkten: senaste commit som rörde själva dokumentet, plus dess
+    # committer-tid (TASK-197 — se § NÅBARHET ≠ KRONOLOGI ovan för varför
+    # tiden behövs utöver SHA:n).
+    PAUS_RAD="$(git log -1 --format='%H %ct' -- "${fil}" 2>/dev/null)"
+    PAUS_SHA="${PAUS_RAD%% *}"
+    PAUS_CT="${PAUS_RAD##* }"
     if [[ -z "${PAUS_SHA}" ]]; then
         # Ett dok som aldrig committats kan inte prövas mot historik.
         printf '::warning::%s står lifecycle: paused men har ingen commit-historik — hoppas över (oprövad).\n' "${fil}"
@@ -202,6 +275,21 @@ for fil in "${DOK[@]}"; do
 
     while read -r sha ct; do
         [[ -n "${sha}" ]] || continue
+
+        # KRONOLOGI-GRINDEN (TASK-197), SKOPAD TILL DAG-SYSKON — se
+        # § NÅBARHET ≠ KRONOLOGI i huvudet för varför skopningen finns.
+        # Är paus-commiten en FÖRFADER till kandidaten (normalfallet) är
+        # DAG-ordningen redan en garanti — commit-hashen inbäddar förälderns
+        # hash, så kandidaten kan omöjligt ha skapats före sin egen förälder.
+        # Bara när de är DAG-syskon (ingen är förfader till den andra, S103:s
+        # form) säger nåbarhetstestet ingenting om ORDNING, och committer-
+        # tiden avgör.
+        if ! git merge-base --is-ancestor "${PAUS_SHA}" "${sha}" 2>/dev/null; then
+            if (( ct < PAUS_CT )); then
+                continue
+            fi
+        fi
+
         # Karens mot en landning som pågår just nu.
         if (( KARENS_SEK > 0 && NU_EPOCH - ct < KARENS_SEK )); then
             continue
