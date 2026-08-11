@@ -1,9 +1,10 @@
 ---
 id: TASK-177
 title: 'T51: Marcus självtest av mail-vägen — Reply-To, leverans, loggrad'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 06:15'
+updated_date: '2026-08-11 19:29'
 labels:
   - ready-for-human
 dependencies:
@@ -28,6 +29,12 @@ Go-live-blockerare på Lotta-kan-jobba-baren (Marcus-beslut 2026-08-10, sessions
 - [ ] #2 Loggraden för utskicket skriven och verifierad
 - [ ] #3 Marcus kvitterar utfallet i klartext; T51-tråden uppdaterad
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+T51-självtestet genomfört 2026-08-11: Marcus skapade testevent (Event-58 Fjärrskådning/Test) + manuell anmälan i prod-appen, skickade bekräftelsen via åtgärdssidan, mailet mottaget i inkorgen. Send-side-verifikat (Resend f4045fde): delivered · To ENBART marcus@h5gruppen.se · Reply-To lotta@outsidereality.se · From 'Lotta Gotthardsson - Miranon Media'. Loggrad: anmälan recD6TBB54yqMjzmh bär Bekräftelse skickad 19:17:21 (sekundexakt mot sändningen) + Status 'Bekräftad (mail skickat)'. T51 STÄNGD.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

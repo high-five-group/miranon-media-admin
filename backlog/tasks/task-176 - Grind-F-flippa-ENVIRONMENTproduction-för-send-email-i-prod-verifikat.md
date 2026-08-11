@@ -1,9 +1,10 @@
 ---
 id: TASK-176
 title: 'Grind F: flippa ENVIRONMENT=production för send-email i prod + verifikat'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 06:14'
+updated_date: '2026-08-11 19:29'
 labels:
   - ready-for-human
 dependencies: []
@@ -27,6 +28,12 @@ Go-live-blockerare på Lotta-kan-jobba-baren (Marcus-beslut 2026-08-10, sessions
 - [ ] #2 Code-verifikat efter flipp: miljö-grinden avvisar inte längre (422-klassen borta) via icke-muterande verifikatform per T55
 - [ ] #3 T55-tråden uppdaterad med utfallet
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Grind F genomförd 2026-08-11 (S102): Marcus skapade ENVIRONMENT=production på lvjsfnphlauldxqlncpl (dashboard). Full-paritetsdeployen (33 EF:er, PR #1165) + deny-probes 8/8 → 401. Skarpt verifikat: bekräftelsemail genom prod-vägen levererat (Resend f4045fde, delivered 19:17:21Z) — vakten är AV i prod och sändvägen fungerar ände-till-ände.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
