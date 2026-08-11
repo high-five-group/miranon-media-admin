@@ -107,7 +107,7 @@
 # gh-binären kan överstyras med GH_BIN (testsvitens stub-väg), policy-filen
 # med CI_WAIT_POLICY (samma syfte: testbarhet utan att röra repo-roten).
 #
-# Källa: tasks/sessions/2026-07-25-session-86.md Del 4 (tidsforensiken)
+# Källa: tasks/sessions/archive/2026-07/2026-07-25-session-86.md Del 4 (tidsforensiken)
 #        tasks/lessons.md L340 (amenderad) · L322 (skippbar check är fail-open)
 # Etablerad: Session 87 städ-vågen
 

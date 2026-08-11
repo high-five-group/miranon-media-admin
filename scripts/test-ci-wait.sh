@@ -45,7 +45,7 @@
 # Användning: bash scripts/test-ci-wait.sh
 # Exit 0 om alla testfall passerar. Exit 1 om någon failar.
 #
-# Källa: tasks/sessions/2026-07-25-session-86.md Del 4 (tidsforensiken)
+# Källa: tasks/sessions/archive/2026-07/2026-07-25-session-86.md Del 4 (tidsforensiken)
 #        tasks/sessions/2026-07-26-session-91.md (superseddad-klassen)
 # Etablerad: Session 87 städ-vågen; T12 tillagd Session 91
 
