@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-10 06:17'
-updated_date: '2026-08-10 07:22'
+updated_date: '2026-08-11 19:46'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,6 +31,14 @@ Källa: S102 triage-rapport 2026-08-10.
 - [x] #3 Post-merge-/staging-klassen bevisad grön på main efter landning (run-id i notes)
 <!-- AC:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -39,6 +47,8 @@ AC #1: rad 1047 (kommentar) + 1062 (locator) i tests/e2e/events-list.staging.tes
 AC #2 svep: node scripts/check-langa-streck.mjs --dir tests/e2e (AST-baserad, StringLiteral/JSXText/TemplateElement, kommentarer exkluderas strukturellt) gav 85 träffar. Klassificerat samtliga mot context: ingen ny bugg utöver rad 1047/1062. Fördelning: ~75 är test()/test.describe()-beskrivningssträngar (dokumentation, aldrig assertion — precedent 7b7f5a82), 1 är en expect()-failure-message (event-bor-over:331, developer-facing, inte app-text), ~2 är test.skip-anledningstexter (persist-cache/pwa-offline, developer-facing), resten är fixture/mock-data (eventlabel/namn/erfarenhetsbadge-fält, självkonsistent mellan mock-input och assertion, ej genererad av strecksvepets src/-strängar). Samma AST-svep kört mot tests/acceptance/ (91 träffar) och tests/visual/ (53 träffar) som friskrivningskontroll av 7b7f5a82/c39d7c9a — inga nya mismatchar funna (person-detail.acceptance.test.ts:161/162/170 är fixture-eventLabel/anteckningar-fält, samma självkonsistens-mönster). ariaSnapshot-låsen (tests/visual/__aria__/**/*.aria.yml) grep-verifierade: 0 em-dash-förekomster — orörda per kortets instruktion.
 
 AC #3 ÖPPEN SKULD (per uppdrag — flippas ej av bygg-agenten): lokal körning av npm run test:e2e:staging (chromium-authenticated, testMatch events-list.staging.test.ts) försökt men blockerad — port 5173 (hårdkodad, CORS-låst mot staging, se playwright.config.ts E2E_DEV_PORT-kommentar) upptagen av en annan process (PID 50138, sannolikt en parallell agent-worktrees dev-server) — kan inte kommandera en delad port utan risk för kollision med annat pågående arbete. Bevisform (a) (grep mot källrad) är därför den enda utförda verifieringen av själva stränglikheten. Orkestreraren verifierar AC #3 mot nästa post-merge-/nattnäts-run på main och bokför run-id.
+
+[TASK-169, backlog-städet uppföljning, 2026-08-11] DoD 1-4 bockade mot belägg (samtliga lämnades okryssade vid stängningen trots full leverans, genuint förbiseende). Källa: PR #1078 (merge c29b94a0, verifierat ancestor av origin/main). #1: samtliga 3 AC redan avbockade — inklusive AC#3 vars ursprungliga öppna skuld (lokal port-kollision) uttryckligen stängdes i Final Summary via post-merge-run 31364858043 på main-toppen 644d0412, GRÖN. #2: rörd fil-klass (tests/e2e/) lokala grindar gröna — bevisat starkare än lokalt: FAKTISK e2e-körning på main (post-merge-run 31364858043) grön, inte bara en lokal proxy. #3: samtliga required CI-jobb SUCCESS på PR:en (Lint+Audit+TypeCheck, Test suite/Pure+Build, Acceptance, Webblasarbeteende, Docs link check, CodeQL) + bekräftat på main via post-merge-runnen. #4: PR-diffen path-scopad (2 filer: backlog-kortet + tests/e2e/events-list.staging.test.ts — exakt filen kortet pekar ut). Källa: gh pr view 1078 --json statusCheckRollup,files + kortets egen Final Summary (run-id 31364858043).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -46,11 +56,3 @@ AC #3 ÖPPEN SKULD (per uppdrag — flippas ej av bygg-agenten): lokal körning 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Fix levererad i PR #1078 (d7fa6431, mergad c29b94a0). AC 3-beviset: post-merge-run 31364858043 på main-toppen 644d0412 GRÖN — events-list.staging-e2e:n passerar med kort streck. Rotorsaken (em-dash-förväntan efter TASK-172:s strecksvep) död; svepet fann 0 ytterligare mismatchar.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->

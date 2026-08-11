@@ -4,7 +4,7 @@ title: 'Skiva: Runtime-beviset — PDF-generering i den skarpa edge-runtimen'
 status: Done
 assignee: []
 created_date: '2026-08-07 09:04'
-updated_date: '2026-08-09 08:10'
+updated_date: '2026-08-11 19:26'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,6 +29,18 @@ Täcker användarberättelser: 9
 - [x] #3 Minnesåtgång, CPU-tid och kallstart mätta och bokförda mot plattformens tak
 - [x] #4 Utfallet bokfört som BEVIS eller som FALSIFIERING — faller det, stoppas kortets övriga arkitektur och alternativet omprövas
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
+- [x] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
+- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
+- [x] #8 Väggkatalogens två attachment-poster landade
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -82,16 +94,6 @@ DoD #3 (CI grön per jobb) lämnas okryssad — orkestrerarens ansvar efter push
 per uppdragets instruktion.
 
 [TASK-169, backlog-städet, 2026-08-09] DoD#7 (bas-additiviteten) bockad — samma krav bevisas av TASK-146.2 (schemadiff, ett auto-mirror-fält, dokumenterat), som är Done med sitt eget DoD för samma bas-additivitet checkad. DoD#6 (lager-oberoendet: noll direkta lagrings-anrop i UI-lagret + PORT-PARITET I BÅDA ADAPTRARNA) lämnas GENUINT OBOCKAD: Marcus egen stängnings-commit bbdb6971 (verbatim) säger '146.1 rör varken UI-lagret, adapter-kontraktet eller basen' — så halva kravet (UI-lagret) är vakuöst sant för denna skivas diff, men den andra halvan (port-paritet i BÅDA adaptrarna) kan inte prövas: TASK-146.4 (adaptern) är fortfarande status To Do, adaptrarna existerar inte än. Flippar INTE status — Marcus fattade detta beslut explicit och medvetet ('Ej tyst avbockade') vid stängningen. Se task-169s slutrapport för fullständig motivering av varför denna klass (Done-med-dokumenterat-undantag, blockerad på syskonkort) inte löses av mig ensidigt. Kortet fortsätter trigga check-backlog-closure.sh invariant 2 tills 146.4 landar eller ett policybeslut fattas.
-<!-- SECTION:NOTES:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [x] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
-- [ ] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
-- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
-- [x] #8 Väggkatalogens två attachment-poster landade
-<!-- DOD:END -->
+[TASK-169 uppföljning, 2026-08-11] DoD#6 bockad mot belägg: TASK-146.4 (Done) landade lager-oberoende-grinden tests/api/attachment-layer-independence.test.ts i PR #1090 (merge 63e61d2c, verifierat ancestor av origin/main via git merge-base --is-ancestor). Grinden bevisar bidirektionellt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna (TS2420-fällning vid borttagen metod). 146.1s egen diff rör varken UI-lagret eller adapterkontraktet (Marcus stängnings-commit bbdb6971) — kravet SOM HELHET är nu globalt sant, samma resonemang 146.5s eget DoD#6 redan använde för identisk situation. Källa: backlog/tasks/task-146.4 Final Summary + gh pr view 1090.
+<!-- SECTION:NOTES:END -->

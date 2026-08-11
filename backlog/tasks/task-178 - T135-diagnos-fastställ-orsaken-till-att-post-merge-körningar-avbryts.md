@@ -4,7 +4,7 @@ title: 'T135-diagnos: fastställ orsaken till att post-merge-körningar avbryts'
 status: Done
 assignee: []
 created_date: '2026-08-10 06:15'
-updated_date: '2026-08-10 08:59'
+updated_date: '2026-08-11 19:45'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,6 +29,14 @@ Diagnos först (rotorsak, ej lappning). Åtgärd som kräver arkitektur-/policyb
 - [x] #3 Om fixen är trivial och riskfri: levererad med tvåsidigt bevis; annars öppet eskalerad
 - [x] #4 T135-tråden uppdaterad med diagnosen
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -70,6 +78,8 @@ ESKALERAT TILL MARCUS (policybeslut, ej byggt):
 T135-tråden uppdaterad fullständigt (lifecycle paused→closed) med tabell,
 källor och samma eskalering. tasks/threads/README.md-raden uppdaterad;
 check-thread-index.sh + check-lifecycle.sh båda gröna.
+
+[TASK-169, backlog-städet uppföljning, 2026-08-11] DoD 1-4 bockade mot belägg (samtliga lämnades okryssade vid stängningen trots full leverans, genuint förbiseende). Källa: PR #1087 (merge 0cfb0104, verifierat ancestor av origin/main). #1: samtliga 4 AC redan avbockade. #2: notes bekräftar actionlint (CI:s exakta -ignore-flagga) + yamllint .github/ båda gröna (prosa/kommentar-only-ändring, rätt filklass-grindar för .github/workflows/**). #3: samtliga required CI-jobb SUCCESS (Lint+Audit+TypeCheck, Docs link check, CodeQL, CI Passed or Skipped). #4: PR-diffen path-scopad (5 filer: backlog-kortet, tasks/threads/README.md, tasks/threads/T135-....md, .github/workflows/ci-suite.yml, .github/workflows/post-merge.yml — samtliga direkt relaterade till T135-diagnosen och dess prosarättelser, inget orelaterat). Källa: gh pr view 1087 --json statusCheckRollup,files.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -77,11 +87,3 @@ check-thread-index.sh + check-lifecycle.sh båda gröna.
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Diagnos levererad i PR #1087 (7114b1d9, mergad 0cfb0104): rotorsaken är test-stagings eget timeout-minutes: 12 (ci-suite.yml) — inte mutex-eviction; alla tre instanserna mätte 12m15-16s väggklocka, och queue:max kan bara evictera väntande poster. Prosarättelse + tolkningshjälp levererad; timeout-marginal-beslutet eskalerat till Marcus. T135-tråden STÄNGD. AFK-proveniens: S102-batchen kort ①.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
