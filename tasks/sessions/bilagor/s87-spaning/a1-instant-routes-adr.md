@@ -71,7 +71,7 @@ Punkt 2: ett grillnings-pass i egen session (Marcus startar), plus ADR-skrivning
 - docs/decisions/ADR-079-*.md — SKRIVS ENDAST om Marcus väljer ADR-vägen (nästa lediga nummer 079 per S86-dokets numreringsrad; verifiera mot disk omedelbart före skrivning, inte vid start — S83:s numrerings-kollision med S84 är precedenten).
 - docs/decisions/README.md — SKRIVS endast vid ADR (index-rad).
 - backlog/tasks/ — nytt kort skapas för spec-sektionen (nästa lediga är task-49; task-48 är högsta på disk). Via backlog-CLI, aldrig direktredigering.
-- tasks/sessions/2026-07-25-session-86.md — Del-rad vid landning (dokets lifecycle är active).
+- tasks/sessions/archive/2026-07/2026-07-25-session-86.md — Del-rad vid landning (dokets lifecycle är active).
 - SKRIVER INTE i: src/ (ingen kodändring föreslås), task-18.18/18.19-korten (deras facit står — spec-sektionen refererar dem, ändrar dem inte), ADR-078.
 
 ## MARCUS-BESLUT

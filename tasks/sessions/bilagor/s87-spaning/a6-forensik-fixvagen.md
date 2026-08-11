@@ -43,7 +43,7 @@ Körningen var exakt 71 min 14 s (08:51:07Z → 10:02:21Z). Nedbrytningen är en
 ## LUCKOR
 - Modellgenereringens 29,04 min kan jag inte bryta ner per tanke — transcriptets thinking-block är redigerade till tomma strängar (`THINK:` utan innehåll i idx 291/296/300/304/308). Jag kan mäta NÄR modellen tänkte och hur länge, men inte VAD den vägde. De längsta tänkpauserna låg i orienteringen: 88 s (idx 32→36), 181 s (idx 54→57), 88 s (idx 95→99).
 - Jag kan inte mäta hur mycket av CI-cykel 1:s 8,2 min som var genuint parallellt sidoarbete. Agenten gjorde produktiva Edits under väntan (idx 262–279, ca 09:15:24–09:16:54Z), men bara ~1,5 min av de 8. Resten var passiv.
-- Jag har INTE hittat något sessionsdok- eller BUILD-LOG-avsnitt som bokför fix-vågens tidsåtgång. `grep -n "granskningsvåg|fix-våg|1h 11" tasks/sessions/2026-07-25-session-86.md` ger bara två träffar (rad 59, 63) om morgongranskningen som planerad aktivitet — ingen efterhandsanalys. Det är alltså denna forensik som är den första bokföringen.
+- Jag har INTE hittat något sessionsdok- eller BUILD-LOG-avsnitt som bokför fix-vågens tidsåtgång. `grep -n "granskningsvåg|fix-våg|1h 11" tasks/sessions/archive/2026-07/2026-07-25-session-86.md` ger bara två träffar (rad 59, 63) om morgongranskningen som planerad aktivitet — ingen efterhandsanalys. Det är alltså denna forensik som är den första bokföringen.
 - Om orkestratorn hade en explicit deadline eller tidsbudget för fix-våg-agenten kan jag inte se — agent-prompten (8447f7dc-...jsonl rad 667) innehåller inget tidskrav. Jag läste hela prompten och hittade ingen.
 - Jag har inte verifierat om `gh run watch` mot en redan avslutad run alltid returnerar omedelbart, eller om agenten kunde ha vetat det i förväg. Vaktloggens första rad ("has already completed") bevisar utfallet i just detta fall, men jag har inte testat gh-beteendet generellt (det hade krävt en skrivande körning, utanför mandatet).
 
@@ -69,7 +69,7 @@ ci-wait.sh + testskript + L340-amendering: 45–90 minuter (ett kort pass). Skri
 - /Users/marcus/Repon/miranon-media-admin/tasks/lessons.md (L340-amendering — HÖG KROCKRISK: filen är 517 kB och rörs av nästan varje parallellt spår)
 - /Users/marcus/Repon/miranon-media-admin/docs/decisions/ADR-071-afk-batch-kontraktet.md (BYGG/SVANS-amendering)
 - /Users/marcus/Repon/miranon-media-admin/package.json (nytt test:e2e:local-script) + playwright.config.ts (preview-projekt) — MÅTTLIG KROCKRISK mot andra bygg-spår
-- /Users/marcus/Repon/miranon-media-admin/tasks/sessions/2026-07-25-session-86.md (bokföring av tidsbudgeten) — HÖG KROCKRISK: nio agenter arbetar mot samma sessionsdok
+- /Users/marcus/Repon/miranon-media-admin/tasks/sessions/archive/2026-07/2026-07-25-session-86.md (bokföring av tidsbudgeten) — HÖG KROCKRISK: nio agenter arbetar mot samma sessionsdok
 - ~/Repon/marcus-system (hub-lyft av den amenderade L340 + work-batch-skillen) — separat repo, ingen krock med detta repos spår
 
 ## MARCUS-BESLUT

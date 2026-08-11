@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-10 11:43'
+updated_date: '2026-08-11 18:38'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,9 +22,15 @@ Fynd ur S102-batchen (kort ⑨, 158.4): grinden check-sessionsdok-fonster.sh fan
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Svepet kört; check-sessionsdok-fonster.sh exit 0 mot orörd policy
-- [ ] #2 Länk-omskrivningen verifierad (inga brutna inlänkar, lychee/docs-grindarna gröna)
+- [x] #1 Svepet kört; check-sessionsdok-fonster.sh exit 0 mot orörd policy
+- [x] #2 Länk-omskrivningen verifierad (inga brutna inlänkar, lychee/docs-grindarna gröna)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #1: svepet kört 2026-08-11 (S102) — 2 arkiverade (s85+s86 → archive/2026-07/), 9 länkomskrivningar Pass A, policy orörd; check-sessionsdok-fonster.sh exit 0 GRÖNT. AC #2: check:docs 14/14 gröna lokalt (inkl länk-grindarna); shellcheck OK på rörda ci-wait.sh/test-ci-wait.sh. Flaggade (fail-closed) 3 dok orörda by design.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

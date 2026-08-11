@@ -42,7 +42,7 @@ Doket är 621 rader / 85 931 byte, daterat 21 juli 2026 i sin egen header (fil-m
 - **NocoDB nämns i repot enbart som research-stickprov i den arkiverade datamodell-researchen (Airtable-klon som referens), aldrig som ett planerat Miranon-lager. Metabase har noll träffar.**
   BEVIS: docs/research/datamodell-research/04-research.md:241 ("#### NocoDB ... modellerar Airtable-liknande metadata som data"); grep -rniI "Metabase" --include="*.md" . → 0 träffar
 - **Nästa lediga tråd-ID är T92. S86-doket skrev "nästa tråd T91", men T91 föddes under S86:s nattbygge och står nu i registret.**
-  BEVIS: tasks/threads/README.md:121 (`T91`, born S86 nattbygget, task-18.16 review-pilot); tasks/sessions/2026-07-25-session-86.md:78 "nästa tråd **T91** (T90 högsta i registret)"
+  BEVIS: tasks/threads/README.md:121 (`T91`, born S86 nattbygget, task-18.16 review-pilot); tasks/sessions/archive/2026-07/2026-07-25-session-86.md:78 "nästa tråd **T91** (T90 högsta i registret)"
 - **AI SDK v6 Crash Course-materialet finns ännu inte på disk — varken i Downloads eller repot. Det blir en framtida, separat korpus-landning.**
   BEVIS: ls -lat ~/Downloads/*.md → senaste .md är miranon-arkitektur-konversation.md (22 juli); ingen träff på "ai.?sdk|crash.?course" i Downloads-listningen
 
