@@ -4,6 +4,7 @@ title: 'Skiva: Instrumentering — resterande mutationer'
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:23'
+updated_date: '2026-08-11 20:32'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,6 +27,12 @@ Täcker användarberättelser: 1, 9, 10
 - [ ] #2 Antecknings-poster loggar ATT något antecknades — sammanfattningen innehåller ALDRIG anteckningsinnehåll (api-test bevisar)
 - [ ] #3 e2e-staging-stickprov på minst två av de nya typerna (rad med rätt aktör, typ, svensk sammanfattning)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ABSOLUT MAILFÖRBUD — samma order och form som 201.3:s notes: e2e-stickprov som rör mail-typer använder ENDAST den etablerade @example.com-fixturformen; inga befintliga staging-personer som mottagare. Vid osäkerhet: STOPPA.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

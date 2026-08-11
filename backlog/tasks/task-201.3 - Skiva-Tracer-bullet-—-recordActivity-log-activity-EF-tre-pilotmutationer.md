@@ -4,6 +4,7 @@ title: 'Skiva: Tracer bullet — recordActivity, log-activity-EF, tre pilotmutat
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:22'
+updated_date: '2026-08-11 20:32'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,6 +29,12 @@ Täcker användarberättelser: 1, 13
 - [ ] #4 Tre pilotmutationer instrumenterade via onSuccess: markera betalning, bekräfta anmälan, mail-åtgärd; e2e-staging-test utför en åtgärd och verifierar rad med rätt aktör, typ och tid
 - [ ] #5 Sammanfattningar på Lotta-språket (Gunilla-principen), formen "Lotta markerade betalning — Anna Andersson (Fjärrskådning 2)"; IRI-verb under huven
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ABSOLUT MAILFÖRBUD (Marcus-order 2026-08-11, verbatim: "det enda som du eller agenterna ABSOLUT INTE får råka göra är ju att skicka mail till riktiga människor. Aldrig under några som helst omständigheter."): appen är i skarp drift. Mail-pilotens e2e följer EXAKT den etablerade formen i tests/e2e/atgarder-*.staging.test.ts — egna fixtur-personer med @example.com-adresser (RFC-reserverat, onåbart), aldrig befintliga staging-personer som mottagare, aldrig påhittade riktiga adresser. Vid MINSTA osäkerhet om en sändvägs mottagare: STOPPA och bokför i stället för att köra.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

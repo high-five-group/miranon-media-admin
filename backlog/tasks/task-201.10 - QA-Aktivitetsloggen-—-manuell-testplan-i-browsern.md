@@ -4,6 +4,7 @@ title: 'QA: Aktivitetsloggen — manuell testplan i browsern'
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:28'
+updated_date: '2026-08-11 20:32'
 labels:
   - ready-for-human
 dependencies:
@@ -42,3 +43,9 @@ Manuell testplan (Marcus, i browsern — staging först, prod efter 201.9):
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Vid punkt 2 (händelsetäckningen): mail-typerna testas mot fixtur-personer med @example.com-adresser eller testmail-vägen (testSend) — aldrig riktiga mottagare; appen är i skarp drift.
+<!-- SECTION:NOTES:END -->
