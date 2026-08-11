@@ -4,8 +4,9 @@ title: 'Skiva: Grunden 2 — activity_log född i staging med RLS-bevis'
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:21'
+updated_date: '2026-08-11 22:13'
 labels:
-  - ready-for-agent
+  - ready-for-human
 dependencies:
   - TASK-201.1
 parent_task_id: TASK-201
@@ -35,3 +36,11 @@ Täcker användarberättelser: 14
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Zod-schemat validerar varje statement runtime — ogiltigt statement når aldrig activity_log
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+STOPPAD per kortets egen access-risk-instruktion (2026-08-12). Premiss-pass mätte agentens Supabase db-access och den är NEGATIV, inte bara omätt: ingen SUPABASE_ACCESS_TOKEN i miljön, ingen ~/.supabase/access-token, ingen SERVICE_ROLE/DATABASE_URL i .env*-filerna, ingen CI-secret-wiring för `supabase link`/`db push`. `supabase db push --linked` (ej länkad) gav snabbt rent fel; `supabase link --project-ref pqtshyierkdgwdnxuirz` (staging) hängde oändligt (interaktivt login-flöde utan TTY) — kontrollprov med ett (ogiltigt) token visar att CLI:t annars svarar snabbt, så det är frånvaron av token som är boven, inte nätverk/CLI-bugg.
+
+Ingen kringgående väg försökt (kortets egen instruktion). Fynd-kort mintat: TASK-201.11 (full mätning + exakta felutskrifter). Migrationsfilen (`supabase/migrations/20260811211759_create_activity_log.sql`) och ADR-110/ADR-111 är oförändrade — endast lästa, inte applicerade. Ingen kod- eller migrationsändring gjord av denna agent. Appliceringen är nu ett Marcus-moment; denna skiva omklassad ready-for-human tills db-access finns.
+<!-- SECTION:NOTES:END -->
