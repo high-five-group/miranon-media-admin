@@ -1,12 +1,12 @@
 ---
 id: TASK-188
 title: >-
-  event-bekraftelse scroll-mätningen (rad ~437) flakar i post-merge-staging —
-  döms med flake-riggen
+  event-bekraftelse scroll-mätningen (rad ~437): deterministisk 57
+  px-förskjutning i post-merge-staging — INTE flake
 status: To Do
 assignee: []
 created_date: '2026-08-10 14:12'
-updated_date: '2026-08-10 18:16'
+updated_date: '2026-08-11 18:31'
 labels: []
 dependencies: []
 ordinal: 354000
@@ -30,4 +30,6 @@ SYMPTOM (mätt, 3 instanser 2026-08-10): toBeLessThanOrEqual-mätningen i tests/
 
 <!-- SECTION:NOTES:BEGIN -->
 TREDJE instansen 2026-08-10: post-merge-run för 0debb7cb (#1129, stängd mot detta kort) föll 3/3 på rad ~437 + ~445 (nu TVÅ mätpunkter i samma test). Instanser i dag totalt: 10430913 (hard 3/3), ecfc3596 (retry-pass), 0debb7cb (hard 3/3). Prioriteten stiger — varje kodlandnings post-merge riskerar rödmålning.
+
+PREMISS-KORRIGERING 2026-08-11 (rödklassningen, S102): kortet föddes som flake-hypotes med flake-riggen som metod. Loggarna falsifierar det: Received: 57 — SAMMA tal i fyra körningar (runs 31424324711, 31429376628, 31433516144, 31454392944), hard fail 3/3 retries varje gång. Det är en deterministisk 57 px-förskjutning i markera-läget, inte flake. metrics:flake är därmed fel instrument — felsök som layoutförskjutning (vad tar 57 px i aktivt läge?). Stängde issues #1144 + #1159 (+ #1154 delvis) mot detta kort.
 <!-- SECTION:NOTES:END -->
