@@ -538,3 +538,21 @@
 # Påverkar
 # docs/research/testklass-namn-och-support-kataloger-2026-08-02.md (r363).
 ^https://agilealliance\.org/glossary/acceptance/$
+
+# HubSpot Community — 403 anti-bot mot Chrome-UA:n nightly.yml alltid
+# skickar (samma UA/fingerprint-klass som agilealliance.org ovan).
+# Mätt i nattkontrollen 2026-08-11 (run 31454392944, 4 unika fel):
+# 403 på båda trådarna; icke-community-ytan knowledge.hubspot.com
+# svarar 200 och lämnas bevakad. Path-scopad, inte domän-bred.
+# Påverkar docs/research/dynamiska-segmentregler-branschmonster-2026-08-10.md.
+^https://community\.hubspot\.com/t5/CRM/Merging-Lists-Not-really-static-is-it/m-p/438770$
+^https://community\.hubspot\.com/t5/Tips-Tricks-Best-Practices/Converting-Static-List-to-Active-List-Filter-Issues/m-p/1138500$
+
+# Cazoomi (Zendesk-hostad support) — 403 anti-bot, samma klass som
+# HubSpot-posterna ovan. Mätt 2026-08-11 (run 31454392944).
+# Påverkar docs/research/dynamiska-segmentregler-branschmonster-2026-08-10.md.
+^https://support\.cazoomi\.com/hc/en-us/articles/360012866132-Mailchimp-s-Static-Segment-Feature-Is-Now-Changed-To-Mailchimp-Tags$
+# Contentful — 429 ratelimit (transient per definition), mätt 2026-08-11
+# (run 31454392944). Påverkar
+# docs/research/presentationsmening-bas-eller-app-2026-08-10.md.
+^https://www\.contentful\.com/headless-cms/$
