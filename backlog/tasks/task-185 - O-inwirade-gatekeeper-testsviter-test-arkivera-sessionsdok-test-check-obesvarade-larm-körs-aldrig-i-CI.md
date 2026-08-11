@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-10 11:43'
+updated_date: '2026-08-11 19:19'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,6 +25,12 @@ Fynd ur S102-batchen (kort ⑧ + ⑨, oberoende av varandra): två testsviter fi
 - [ ] #1 Båda sviterna inwirade i gatekeeper-blocket och gröna i CI-körning
 - [ ] #2 Svep: inga YTTERLIGARE test-*.sh i scripts/ som saknar inwirning (lista utfallet)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TREDJE INSTANSEN (2026-08-11, task-197-passet): scripts/test-check-pausade-sessioner.sh (nu 19 fall efter SIDA 5-utbyggnaden) körs inte heller av ci.yml:s 'Test gatekeeper script suites'-steg — samma klass som de två ursprungliga. Vid fix: svep HELA scripts/test-*-beståndet mot ci.yml-steget i stället för att lägga till en i taget.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
