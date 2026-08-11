@@ -4,6 +4,17 @@
  * Scheman används för att validera Airtable/Edge-Function-svar
  * vid systemgränsen. Interface-typerna ligger i `../models/`.
  */
+export {
+  type ActivityActor,
+  type ActivityContext,
+  type ActivityObject,
+  type ActivityObjectDefinition,
+  type ActivityStatement,
+  ActivityStatementSchema,
+  type ActivityVerb,
+  REQUEST_ID_EXTENSION_IRI,
+  XAPI_IRI_BASE,
+} from './ActivityStatement.schema';
 export { AttachmentSchema, AttachmentUploadTicketSchema } from './Attachment.schema';
 export { AttendanceSchema } from './Attendance.schema';
 export {

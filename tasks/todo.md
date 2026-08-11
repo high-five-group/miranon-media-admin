@@ -35,9 +35,21 @@ migrationen (201.11 § sekvensen) → `session-resume` S105 → kedjan
 S105-natten: ADR 112 · L512+3 fragment · T141 · task-202 · f47 —
 re-derivera ALLTID. Full narrativ: sessionsdok S105 Del 1–3 + PAUSLÄGE.
 
-**Session 102 🔄 ÅTERUPPTAGEN (2026-08-11, `lifecycle: active`) —
-GO-LIVE-DAGENS BATCH FULLBORDAD: 15 kort avfyrade, 14 Done, hela
-sändvägen skarp och FRAMME-bevisad; resume-ingången är Marcus-högen.** Batchen (Marcus-order
+**Session 102 ⏸️ PAUSAD IGEN (2026-08-11 kväll, `lifecycle: paused`) —
+RESUME-DAGEN LEVERERADE GO-LIVE-KÄRNAN: prod-mailvägen SKARP (`176`+`177`
+Done, skarpt mail delivered + Reply-To + loggrad), basen synkad
+(`Bilagor`+`Kvitton` skapade i prod på GO), 147-kedjan STÄNGD
+(Marcus-stämpel `efc4091a`), full-paritetsdeploy 33 EF:er + sju
+metod-vakter, rödklassningen stängde 10 ärenden med rotorsak,
+`186`+`197` fixade, `169` 14/14 bockade (AC #3 väntar grön natt),
+go-live-planen säkrad i `tasks/go-live-plan.md`. Fynd: `196`/`198`/
+`199` (stale prod-front, HIGH)/`200`. S105 (aktivitetsloggen, dag
+1-krav) STARTAD parallellt — dess PR #1180 stod RÖD vid paus, ägs av
+S105.** RESUME-INGÅNG: Marcus muntliga justeringslista FÖRST →
+`147.9`-vandringen → `127.10` → `169`-stängning efter grön natt.
+Numrering: ADR 110 · L512+3 fragment · T141 · task-202 · f47 —
+re-derivera mot disk. Full narrativ: sessionsdok S102 Del 6 +
+PAUSLÄGE. Batchen (Marcus-order
 max-kort 14 + tak-utvidgning `147.8`): hela `147`-kedjan landad —
 bekräftelse/påminnelse/eventinfo/fritt (`147.2`/`147.3`), betalningar
 (`147.4`), bilage-sändvägen FRAMME-bevisad (`147.5`), testmailet

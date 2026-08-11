@@ -65,6 +65,87 @@ EOF
     git -C "${repo}" commit -q -m "docs(session): [S${n}] PAUSLÄGE — pausad"
 }
 
+# epoch_iso <epoch-sekunder> → ISO8601 UTC på stdout, för GIT_*_DATE.
+# BSD (macOS, `date -r`) och GNU (`date -d @epoch`) i fallback-ordning —
+# samma mönster som SIDA 4:s GAMMALT-uträkning nedan, faktoriserat ut för
+# TASK-197:s två nya riggar.
+epoch_iso() {
+    date -u -r "$1" +%Y-%m-%dT%H:%M:%S 2>/dev/null \
+        || date -u -d "@$1" +%Y-%m-%dT%H:%M:%S
+}
+
+# skriv_pausat_dok_vid <repo> <N> <iso-datum>
+# Som skriv_pausat_dok, men paus-commitens committer-tid sätts EXPLICIT i
+# stället för "nu" — TASK-197:s riggar behöver kontrollera ordningen mellan
+# paus-tiden och en parallell grens arbets-tid oberoende av verklig klocka.
+skriv_pausat_dok_vid() {
+    local repo="$1" n="$2" datum="$3"
+    cat > "${repo}/tasks/sessions/2026-08-04-session-${n}.md" <<EOF
+---
+lifecycle: paused
+---
+
+# Session ${n}
+
+## PAUSLÄGE — Session ${n} pausad (2026-08-04)
+EOF
+    git -C "${repo}" add -A
+    GIT_AUTHOR_DATE="${datum}" GIT_COMMITTER_DATE="${datum}" \
+        git -C "${repo}" commit -q -m "docs(session): [S${n}] PAUSLÄGE — pausad"
+}
+
+# bygg_parallell_topologi <namn> <N> <arbete_offset_sek> <paus_offset_sek>
+#
+# Planterar S103:s EXAKTA topologi hermetiskt (TASK-197): en gren
+# "gren-arbete" och en gren "gren-paus" förgrenas från SAMMA bas-commit —
+# ingen av dem har någonsin sett den andra — och mergas sedan in i main med
+# ÄKTA merge-commits (--no-ff, "Merge pull request #…"-subject, matchar
+# repots faktiska landningsform) i ordningen arbete FÖRST, paus SEDAN. Det är
+# bokstavligen PR #1155 (feat/s103-rik-granskningsperson, mergad först) och
+# PR #1157 (docs/s103-del7-och-basfynd, bär paus-commiten, mergad sedan).
+#
+# Offsets är sekunder FÖRE "nu" (större offset = längre bak i tiden). Genom
+# att ge arbete- och paus-offset olika värden kan anroparen välja om arbetet
+# hände FÖRE eller EFTER pausen i VERKLIG tid — oberoende av DAG-ordningen
+# ovan, som alltid är "arbete mergas in före paus" och alltså alltid gör
+# arbets-commiten icke-nåbar från paus-SHA:n.
+#
+# Skriver "repo arbets-SHA paus-SHA" på EN rad, blankstegs-separerat, på
+# stdout — läs med `read -r repo asha psha <<< "$(...)"`. MEDVETET en enda
+# rad, inte tre: `read` konsumerar bara EN newline-terminerad rad per anrop
+# oavsett hur många variabelnamn den ges — IFS avgör hur DEN raden delas i
+# ord, den får inte `read` att fortsätta läsa över radbrytningar. Tre rader
+# hade gett R hela första raden och lämnat resten tomma (mätt: TASK-197:s
+# första utkast gjorde precis det misstaget).
+bygg_parallell_topologi() {
+    local namn="$1" n="$2" arbete_offset="$3" paus_offset="$4"
+    local repo nu arbete_dat paus_dat bas arbete_sha paus_sha
+    repo="$(bygg_rigg "${namn}")"
+    nu="$(date +%s)"
+    arbete_dat="$(epoch_iso "$(( nu - arbete_offset ))")"
+    paus_dat="$(epoch_iso "$(( nu - paus_offset ))")"
+    bas="$(git -C "${repo}" rev-parse HEAD)"
+
+    git -C "${repo}" switch -q -c gren-arbete "${bas}"
+    printf 'ny kod pa parallell gren\n' >> "${repo}/src/app.ts"
+    git -C "${repo}" add -A
+    GIT_AUTHOR_DATE="${arbete_dat}" GIT_COMMITTER_DATE="${arbete_dat}" \
+        git -C "${repo}" commit -q -m "feat(dev): [S${n}] arbete pa parallell gren"
+    arbete_sha="$(git -C "${repo}" rev-parse HEAD)"
+
+    git -C "${repo}" switch -q -c gren-paus "${bas}"
+    skriv_pausat_dok_vid "${repo}" "${n}" "${paus_dat}"
+    paus_sha="$(git -C "${repo}" rev-parse HEAD)"
+
+    git -C "${repo}" switch -q main
+    git -C "${repo}" merge -q --no-ff gren-arbete \
+        -m "Merge pull request #501 from high-five-group/feat/s${n}-parallell-arbete" 2>/dev/null
+    git -C "${repo}" merge -q --no-ff gren-paus \
+        -m "Merge pull request #502 from high-five-group/docs/s${n}-paus" 2>/dev/null
+
+    printf '%s %s %s' "${repo}" "${arbete_sha}" "${paus_sha}"
+}
+
 # kor <repo> → skriver utfallet (GRON|DRIFT|ANROPSFEL) på stdout
 kor() {
     local repo="$1" kod=0
@@ -264,6 +345,62 @@ GIT_AUTHOR_DATE="${GAMMALT}" GIT_COMMITTER_DATE="${GAMMALT}" \
     git -C "${R}" commit -q -m "feat(dev): [S96] arbete for sex timmar sedan"
 printf '\nPAUS_KARENS_TIMMAR=2\n' >> "${R}/.sanningsavstamning-policy.conf"
 forvanta DRIFT "landning ÄLDRE än karensen fäller" "${R}"
+
+# ── SIDA 5: nåbarhet ≠ kronologi (TASK-197) ──────────────────────────────
+echo
+echo "SIDA 5 — nåbarhet ≠ kronologi: S103:s parallell-PR-topologi"
+
+# Fall A — FALSKLARMET. Arbetet mergas in FÖRE pausen (DAG-ordning, som
+# alltid i denna rigg) OCH hände FÖRE pausen i VERKLIG tid (arbete_offset
+# 10000s > paus_offset 6000s ⇒ arbetet är ~1,1 h äldre). Nåbarhetstestet
+# (`PAUS_SHA..HEAD`) ser fortfarande icke-nåbarhet — grenarna delar bas men
+# har aldrig sett varandra — och skulle utan TASK-197-fixen ha flaggat detta
+# som "arbete efter pausen". Detta är bokstavligen S103: fa41a1be (22:21) och
+# 0507c77c (22:34) FÖRE paus-commiten 9af3c004 (23:02), ändå icke-nåbara från
+# den.
+# shellcheck disable=SC2312
+# AVSIKTLIGT: bygg_parallell_topologi() opererar på fixerad, precis skapad
+# lokal riggdata (inget yttre tillstånd som kan fela oväntat mitt i), och dess
+# stdout konsumeras direkt av forvanta()/de manuella nåbarhets-kontrollerna
+# nedan — ett tomt/trasigt värde upptäcks där, inte via den maskerade koden.
+read -r R ARBETE_SHA PAUS_SHA_A <<< "$(bygg_parallell_topologi falsklarm-parallell-pr 197 10000 6000)"
+
+# Bevisa att riggen VERKLIGEN reproducerar nåbarhets-mekanismen innan den
+# räknas som bevis för fixen — annars är den inte representativ för felet.
+ANTAL=$((ANTAL + 1))
+if git -C "${R}" merge-base --is-ancestor "${ARBETE_SHA}" "${PAUS_SHA_A}" 2>/dev/null; then
+    printf '  ❌ %-56s [riggen fel: grenarna ÄR nåbara från varandra]\n' \
+        "riggen konstruerar S103:s icke-nåbarhet"
+    FEL=$((FEL + 1))
+else
+    RAA_NABARHETSTRAFF="$(git -C "${R}" log "${PAUS_SHA_A}..HEAD" --no-merges --format='%H %s' \
+        | grep -F -- "[S197]" || true)"
+    if [[ -n "${RAA_NABARHETSTRAFF}" ]]; then
+        printf '  ✅ %-56s [RAA-NABARHET]\n' \
+            "riggen konstruerar S103:s icke-nåbarhet (gamla logiken skulle fälla)"
+    else
+        printf '  ❌ %-56s [den rå nåbarhetsträffen uteblev — riggen bevisar ingenting]\n' \
+            "riggen konstruerar S103:s icke-nåbarhet"
+        FEL=$((FEL + 1))
+    fi
+fi
+
+forvanta GRON "TASK-197: parallell-PR-arbete FÖRE pausen flaggas INTE" "${R}"
+
+# Fall B — SANNA POSITIVEN BEVARAS. Identisk topologi (arbetet är fortfarande
+# DAG-icke-nåbart från paus-SHA:n — samma grenkonstruktion), men tiderna är
+# vända: arbetet hände EFTER pausen i verklig tid (arbete_offset 3000s <
+# paus_offset 9000s ⇒ arbetet är ~1,7 h YNGRE). Detta SKA fortfarande fälla —
+# annars har TASK-197-fixen överkorrigerat och gjort grinden blind för äkta
+# paus-drift så fort den råkar ha den här grenformen, vilket vore ett värre
+# fel än det den lagar.
+# SHA:erna behövs inte i detta fall (bara utfallet prövas) — men
+# read-formen måste matcha bygg_parallell_topologis tre stdout-rader.
+# shellcheck disable=SC2034
+# Samma SC2312-skäl som fall A ovan.
+# shellcheck disable=SC2312
+read -r R2 ARBETE_SHA2 PAUS_SHA_B <<< "$(bygg_parallell_topologi sann-positiv-parallell-pr 198 3000 9000)"
+forvanta DRIFT "TASK-197: parallell-PR-arbete EFTER pausen fäller fortfarande" "${R2}"
 
 echo
 if [[ "${FEL}" -eq 0 ]]; then

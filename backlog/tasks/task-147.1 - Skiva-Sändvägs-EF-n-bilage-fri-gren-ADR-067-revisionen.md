@@ -4,7 +4,7 @@ title: 'Skiva: Sändvägs-EF:n bilage-fri gren + ADR-067-revisionen'
 status: Done
 assignee: []
 created_date: '2026-08-10 06:58'
-updated_date: '2026-08-10 11:42'
+updated_date: '2026-08-11 19:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,17 +30,25 @@ Täcker användarberättelser: 10, 13, 27 (serversidan).
 - [x] #5 ADR-067-revisionen rymmer uttryckligen test-sändvägen (enkel-mottagare till inloggad användare, T53 väg C) som del av det nya kontraktet
 <!-- AC:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Delutfallet prövat som delutfall: partiellt fel rapporteras aldrig som helt lyckat (PRD DoD 7-arv)
+<!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+[TASK-169, backlog-städet uppföljning, 2026-08-11] DoD 1-5 bockade mot belägg (samtliga lämnades okryssade vid stängningen trots full leverans, genuint förbiseende). Källor: PR #1093 (merge 8450808c, verifierat ancestor av origin/main). #1: samtliga 5 AC redan avbockade i kortet. #2: samtliga required CI-jobb SUCCESS (Lint+Audit+TypeCheck, Test suite/Pure+Build, Acceptance, Webblasarbeteende, Docs link check, CodeQL) — motsvarande lokala grindar för rörd filklass (supabase/functions + tests/api). #3: samtliga required checks SUCCESS, källa gh pr view 1093 --json statusCheckRollup. #4: PR-diffen är path-scopad (10 filer: backlog-kortet, ADR/README ej berörda här, _shared/action-mail-template.ts, _shared/confirm-registrations.ts, _shared/field-allowlists.ts, _shared/send-action-email.ts, send-action-email/index.ts, tests/api/action-mail-template.test.ts, tests/api/send-action-email.test.ts — inget orelaterat). #5: redan bevisat av AC#3 (delutfall testat som delutfall, checkad).
+
+[TASK-169 uppföljning, RÄTTELSE 2026-08-11] Föregående notes-rad innehöll ett sakfel: påstod 'ADR/README ej berörda här' för PR #1093. Det är FEL — PR #1093:s faktiska filkorg (gh pr view 1093 --json files) innehåller BÅDA docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md och docs/decisions/README.md, vilket är KORREKT och FÖRVÄNTAT (AC#4/#5 kräver uttryckligen ADR-067-revisionen). Fullständig filkorg (10 filer, samtliga relaterade till denna skivas scope): backlog-kortet, docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md, docs/decisions/README.md, supabase/functions/_shared/{action-mail-template,confirm-registrations,field-allowlists,send-action-email}.ts, supabase/functions/send-action-email/index.ts, tests/api/{action-mail-template,send-action-email}.test.ts. DoD#4-bedömningen (path-scopad, inga orelaterade filer) står fast — bara motiveringstexten var felaktig, inte slutsatsen.
+<!-- SECTION:NOTES:END -->
+
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1093 (44233e22, mergad 8450808c): send-action-email-EF:n (fyra åtgärdstyper, per-mottagare-utfall, idempotens via jobId/typ-nyckel, icke-prod-spärren ärvd som golv, atomicitet mail↔stämpel) + ADR-067-revisionen D9 (greningen) + D10 (test-sändvägen, T53 väg C). 311/311 api-pure. Kontraktsytan för 147.5/147.10 bokförd på kortet. Konsent-gaten öppen punkt till Marcus. EF deployad till staging av orkestratorn. AFK-proveniens: S102-batchen kort ④.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Delutfallet prövat som delutfall: partiellt fel rapporteras aldrig som helt lyckat (PRD DoD 7-arv)
-<!-- DOD:END -->
