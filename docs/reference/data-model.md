@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-10
+updated: 2026-08-11
 review_by: 2026-11-15
 status: stable
 ---
@@ -123,16 +123,33 @@ olika ID i staging och prod).
 | Eventplanering → `Deltagarinfo schemalagd` | `flddBo4RPJvluWuQw` | date (ISO) | 18.6 |
 | Eventplanering → `Deltagarinfo auto-utskick avstängt` | `fldoIwNdetKHkIeaL` | checkbox | 18.6 |
 
-**KVARSTÅENDE DIVERGENS — `Väntelista (länkat fält)` speglades MEDVETET INTE.**
-Staging bär den som auto-fött inverse till `Väntelista.Event (länk)`. I PROD är
-`Väntelista.Event` (`fldC01Nf3lVWrOgdw`) fortfarande **singleLineText** — att
-skapa länken i prod hade antingen lagt ett andra Event-fält bredvid textfältet
-eller krävt en TYPKONVERTERING av ett fält med skarp data, vilket inte är en
-additiv operation. Divergensen är alltså inte en glömska utan en gräns:
-staging-basen har konverterat fältet, prod har inte. Får konsekvensen att
-get-event-EF:ens Väntelista-räkning inte kan läsa prod förrän fältet
-harmoniserats — egen Marcus-auktoriserad operation, kandidat för
-bas-maximeringen (T16).
+**KVARSTÅENDE DIVERGENS — `Väntelista.Event (länk)` speglades MEDVETET INTE.**
+Motiveringen ovan löd tidigare att *"staging-basen har konverterat fältet, prod
+har inte"* — **falsifierat vid bas-diffen 2026-08-11**
+(`docs/research/prodbas-synk-staging-till-prod-2026-08-11.md` § Delfråga 3):
+`Väntelista.Event` är `singleLineText` i BÅDA baserna med identiskt fält-ID
+`fldC01Nf3lVWrOgdw` — staging konverterade aldrig, den la ett länkfält
+`Event (länk)` BREDVID, vilket är additivt. Uppskjutandet står ändå kvar, på
+starkare grund: ingen EF och ingen klientkod skriver till `Väntelista`, så
+fältet i prod vore permanent tomt — ett synligt strukturellt gap blev ett
+osynligt tomt fält. Harmonisering + backfill är egen Marcus-auktoriserad
+operation, kandidat för bas-maximeringen (T16).
+
+#### Prod-basens additiva tillskott 2026-08-11 (S102 bas-applyn)
+
+Bas-diffens apply-fas (Marcus GO "GO bas-apply" i klartext; diff + plan i
+`docs/research/prodbas-synk-staging-till-prod-2026-08-11.md`). Utfört via
+Airtable-MCP:n per apply-planens exakta fältspec — enbart additivt, spegel-
+fältens auto-födda namn LÄSTA efter skapelsen (aldrig antagna), alla tre
+matchar stagings namn utan kollisions-suffix.
+
+| Yta | Prod-ID | Typ | Skiva |
+|---|---|---|---|
+| **Bilagor** (ny tabell, 5 fält) | `tblevR1B54wFjp7QC` (staging `tblFamrna53MVf1nG` — namn är kontraktet, ID:n skiljer per bas) | Namn (primär) + Storlek (bytes) + Skapad (dateTime) + Event-länk + Lagringsnyckel | 146.2 / 147.5 |
+| **Kvitton** (ny tabell, 12 fält) | `tblZC6jBQIHiuS24a` (staging `tblk8fZcArXPpRYnX`) | Kvittonummer (primär) + Löpnummer + År + Anmälan-länk + Betalning + Belopp + Betalsätt + Kundnamn + Event-länk + Skickad + Lagringsnyckel + Notering | 147.7 / ADR-109 |
+| Eventplanering → `Bilagor` | `fldzc8H388p0hYVkY` | auto-fött spegelfält | 146.2 |
+| Eventplanering → `Kvitton` | `fldFtNX64k3QIEUe3` | auto-fött spegelfält | 147.7 |
+| Anmälningar → `Kvitton` | `fld16sYUYDqN1AUeT` | auto-fött spegelfält | 147.7 |
 
 Fält som INTE behövde speglas (fanns redan i prod): `Antal platser`,
 `Notering` (Anmälningar) och `Närvaropoäng` (Deltaganden, `fldwuo94BY46VUOm4`
