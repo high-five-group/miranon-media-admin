@@ -4,7 +4,7 @@ title: 'Skiva: Klass B — event-mallad generering ur systemmall'
 status: Done
 assignee: []
 created_date: '2026-08-07 09:08'
-updated_date: '2026-08-10 10:04'
+updated_date: '2026-08-11 19:32'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,6 +31,18 @@ Täcker användarberättelser: 7
 - [x] #3 Svenska tecken korrekta i den genererade filen
 - [x] #4 De tre dokumentklasserna är oskiljbara i metadatat: klass A, B och C landar som samma sorts bilaga oavsett hur de uppstod
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
+- [x] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
+- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
+- [x] #8 Väggkatalogens två attachment-poster landade
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -146,6 +158,8 @@ DoD-STATUS PER POST:
 AVGRÄNSNING MOT KORTETS TEXT: ingen mall-editor byggd (AC #2 kräver motsatsen).
 Ingen UI-koppling (DokumentYta.tsx är uttryckligen KASTBAR prototyp, klausul iv —
 rördes INTE). Klass C (kvitto) rörs inte (TASK-147, kortets egen text).
+
+[TASK-169 uppföljning, 2026-08-11] DoD#3 bockad mot belägg: PR #1092 (merge 3d226bb7, verifierat ancestor av origin/main via git merge-base --is-ancestor) — samtliga required checks SUCCESS: Lint + Audit + TypeCheck, Test suite/Pure+Build, Test suite/Acceptance (hermetisk), Test suite/Webblasarbeteende, Docs link check, CodeQL, CI Passed or Skipped. Källa: gh pr view 1092 --json statusCheckRollup.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -153,15 +167,3 @@ rördes INTE). Klass C (kvitto) rörs inte (TASK-147, kortets egen text).
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1092 (2923cc9d, mergad 3d226bb7): generate-event-attachment-EF:n — klass B event-mallad generering ur hårdkodad systemmall, skarp staging-conformance (201, exakta Bilagor-fält), svenska tecken dubbelbevisade (pdftotext + WinAnsi-hex). Ombyggd rent ovanpå landade 146.4 utan duplicering; 506/506 gröna. AFK-proveniens: S102-batchen kort ③.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
-- [x] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
-- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
-- [x] #8 Väggkatalogens två attachment-poster landade
-<!-- DOD:END -->

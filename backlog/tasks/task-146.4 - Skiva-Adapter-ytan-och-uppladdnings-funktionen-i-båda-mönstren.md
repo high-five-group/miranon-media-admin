@@ -4,7 +4,7 @@ title: 'Skiva: Adapter-ytan och uppladdnings-funktionen i båda mönstren'
 status: Done
 assignee: []
 created_date: '2026-08-07 09:06'
-updated_date: '2026-08-10 10:04'
+updated_date: '2026-08-11 19:31'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,6 +34,18 @@ Täcker användarberättelser: 1, 2, 10, 11, 14, 15, 16, 18
 - [x] #6 En misslyckad uppladdning ger ett fel som säger vad som gick fel, på Lottas språk och inte i byte
 <!-- AC:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
+- [x] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
+- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
+- [x] #8 Väggkatalogens två attachment-poster landade
+<!-- DOD:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -56,6 +68,8 @@ AVGRÄNSNING, ÖPPET BOKFÖRD: Mönster 2 v1 använder Supabases STANDARD create
 FYND (rapporteras, registreras ej av mig): (1) Write-tool-artefakt upptäckt under bygget — bokstavliga hex-escape-sekvenser (\x00/\x1f/\x7f) i en regex-teckenklass skrevs som RÅA kontrollbyte i källfilen i stället för literal fyrtecken-sekvens; å/ä/ö-diakritiker påverkades INTE (samma filer kom tillbaka "CLEAN" efter byte-nivå-inspektion). Löst genom kodpunkt-baserad filtrering (Array.from + codePointAt) i stället för regex-teckenklasser med inbäddade hex-escapes. (2) DokumentYta.tsx (PROTOTYP, S100/T131) bekräftar att adapterns EN-metod-design (uploadAttachment döljer båda mönstren) matchar den redan Marcus-godkända UI-formen ("Ladda upp en fil"-knappen i klass A-gruppen) — inget UI-arbete gjort här, bara bekräftat att formen passar. (3) Ingen ADR för bilage-hemvisten hittades i docs/decisions/ (senaste är ADR-107) trots att PRD:t (TASK-146) uttryckligen kräver en ("ADR KRÄVS... mintas separat") — varken 146.1, 146.2 eller 146.3 mintade den. Bokfört som öppen skuld, inte min att lösa i detta kort.
 
 DoD #7 (bas-additiviteten): CHECKAD — inga Airtable-SCHEMA-ändringar gjorda alls i denna skiva (bara record-skrivningar via redan skapade Bilagor-tabellen), additiviteten trivialt bevarad. DoD #5 (PDF-runtime): CHECKAD som globalt sant faktum, bevisat av TASK-146.1 (Done), ej denna skivas arbete. DoD #8 (väggkatalogen): CHECKAD — verifierat INTAKT (P28/P29, docs/reference/airtable-constraints.md § G rad ~585), inget nytt landat här.
+
+[TASK-169 uppföljning, 2026-08-11] DoD#3 bockad mot belägg: PR #1090 (merge 63e61d2c, verifierat ancestor av origin/main via git merge-base --is-ancestor) — samtliga required checks SUCCESS: Lint + Audit + TypeCheck, Test suite/Pure+Build, Test suite/Acceptance (hermetisk), Test suite/Webblasarbeteende, Docs link check, CodeQL, CI Passed or Skipped. Källa: gh pr view 1090 --json statusCheckRollup.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -63,15 +77,3 @@ DoD #7 (bas-additiviteten): CHECKAD — inga Airtable-SCHEMA-ändringar gjorda a
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1090 (0309c5e7 + listparitet-fixen 3a61b42b, mergad 63e61d2c): adapter-kontraktet uploadAttachment i båda mönstren + tre EF:er + mekanisk lager-oberoende-grind. Premisser live-verifierade (tabell, bucket, TTL empiriskt 7200s). Tvåsidiga bevis: port-paritet TS2420-fälld, grinden fångade verklig träff under bygget. Fynd 182 (bilage-ADR) + 183 (finalize-idempotens) registrerade. AFK-proveniens: S102-batchen kort ②.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
-- [x] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
-- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
-- [x] #8 Väggkatalogens två attachment-poster landade
-<!-- DOD:END -->

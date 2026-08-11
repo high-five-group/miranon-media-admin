@@ -4,7 +4,7 @@ title: 'Skiva: Bilagor-tabellen additivt i basen + väggkatalogens poster'
 status: Done
 assignee: []
 created_date: '2026-08-07 09:04'
-updated_date: '2026-08-09 08:11'
+updated_date: '2026-08-11 19:27'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,6 +31,18 @@ Täcker användarberättelser: 4, 14
 - [x] #5 Väggkatalogens två attachment-poster (P28 + P29, sektion G) är VERIFIERADE som redan landade av TASK-146.1 (#855) — inga dubletter skapas, ingen omräkning av CLAUDE.md görs
 <!-- AC:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
+- [x] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
+- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
+- [x] #8 Väggkatalogens två attachment-poster landade
+<!-- DOD:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -41,16 +53,6 @@ ADDITIVITETS-MÄTNING (AC #3/DoD #7) — mätt, öppet dokumenterat: schema-diff
 DoD-STATUS PER POST: #1 check (alla 5 AC avbockade). #2 check — lokala grindar gröna: biome check exit 0, typecheck exit 0, build exit 0, test:api 461/461 gröna (test:api krävde MM_STAGING_PREFLIGHT=off — en samtidig post-merge-staging-svit höll semaforen; mina ändringar rör aldrig tests/api/src/, noll kollisionsrisk, se slutrapporten). #3 LÄMNAS OKRYSSAD — CI grön per jobb är orkestrerarens ansvar efter push, per uppdragets instruktion (samma precedent som TASK-146.1). #4 check efter path-scopad git add (5 filer: package.json, .env.seed.example, backlog-kortet, de två nya scripts/-filerna — inget annat). #5 LÄMNAS OKRYSSAD — EJ TILLÄMPLIG på denna skiva: PDF-runtime-beviset är TASK-146.1:s arbete, redan uppfyllt och landat i #855, denna skiva rör ingen PDF-generering. #6 LÄMNAS OKRYSSAD — EJ TILLÄMPLIG: denna skiva rör varken UI-lagret (src/) eller DataSourceAdapter-kontraktet, inga adapter-metoder eller lagrings-anrop skrivna (det är TASK-146.4). #7 check — se ADDITIVITETS-MÄTNING-noten ovan (mätt, caveat öppet bokförd). #8 check — VERIFIERAT (inte landat av denna skiva): P28+P29 bekräftade redan på main sedan TASK-146.1 #855, se AC #5.
 
 [TASK-169, backlog-städet, 2026-08-09] DoD#5 (PDF-biblioteket skarpt verifierat mot edge-runtimen) bockad — samma krav bevisas av TASK-146.1 (Done, eget DoD#5 checkad med mätt minne/CPU/kallstart mot plattformens tak). DoD#6 (lager-oberoendet, port-paritet i BÅDA adaptrarna) lämnas GENUINT OBOCKAD av samma skäl som task-146.1: TASK-146.4 (adaptern) är fortfarande To Do, adaptrarna existerar inte. Flippar INTE status — samma resonemang som 146.1s notes, se task-169s slutrapport.
-<!-- SECTION:NOTES:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [x] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [x] #5 PDF-biblioteket skarpt verifierat mot den riktiga edge-runtimen (ej Node-proxy) INNAN övrig arkitektur byggs ovanpå
-- [ ] #6 Lager-oberoendet mekaniskt fällt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna
-- [x] #7 Bas-additiviteten mätt mot schemat: inga befintliga fält eller tabeller rörda
-- [x] #8 Väggkatalogens två attachment-poster landade
-<!-- DOD:END -->
+[TASK-169 uppföljning, 2026-08-11] DoD#6 bockad mot belägg: TASK-146.4 (Done) landade lager-oberoende-grinden tests/api/attachment-layer-independence.test.ts i PR #1090 (merge 63e61d2c, ancestor av origin/main). Grinden bevisar bidirektionellt: noll direkta lagrings-anrop i UI-lagret + port-paritet i BÅDA adaptrarna. 146.2s egen diff rör varken UI-lagret eller adapterkontraktet — kravet SOM HELHET är nu globalt sant, samma resonemang som 146.5s eget DoD#6. Källa: backlog/tasks/task-146.4 Final Summary + gh pr view 1090.
+<!-- SECTION:NOTES:END -->
