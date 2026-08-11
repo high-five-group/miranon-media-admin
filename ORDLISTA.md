@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-10
+updated: 2026-08-11
 review_by: 2027-01-02
 status: stable
 ---
@@ -148,6 +148,20 @@ redigerbar meddelandetext, bilageväljare och skick med förhandsvisning.
 Ersätter batch-barens direktutskick och Åtgärds-radernas grå löften; alla
 utskick är riktiga server-utskick (grillad samsyn S93, fråga 4–5).
 *Undvik:* utskickssida, mailsida, compose (engelska).
+
+**Aktivitetslogg** — systemets append-only-register över allt som förändrar
+data: varje mutation skriver ett xAPI-statement med aktör, händelse och
+objekt (S105-grillningen; lagras i Supabase `activity_log`, inte i basen —
+ADR mintas vid bygget). Loggar ATT något hände — aldrig anteckningsinnehåll.
+Principen: allt som förändrar data, inget som bara visar.
+*Undvik:* logg (ensamt), audit log, händelselogg.
+*I koden:* `activityLog`.
+
+**Aktivitetshistorik** — Lottas VY över aktivitetsloggen: hem-vyns högerspalt
+(k10-facit) och den fulla historikvyn med filterrad; poster i naturligt språk
+("Lotta markerade betalning — …"). Distinktionen: loggen är datan,
+historiken är det Lotta ser (S105-grillningen).
+*Undvik:* logg (i UI-text), aktivitetsström.
 
 ## Flöden och distinktioner
 
