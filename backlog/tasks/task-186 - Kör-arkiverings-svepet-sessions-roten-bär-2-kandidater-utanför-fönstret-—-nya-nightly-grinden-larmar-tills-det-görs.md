@@ -3,10 +3,10 @@ id: TASK-186
 title: >-
   Kör arkiverings-svepet: sessions-roten bär 2 kandidater utanför fönstret — nya
   nightly-grinden larmar tills det görs
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 11:43'
-updated_date: '2026-08-11 18:38'
+updated_date: '2026-08-11 19:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,6 +31,12 @@ Fynd ur S102-batchen (kort ⑨, 158.4): grinden check-sessionsdok-fonster.sh fan
 <!-- SECTION:NOTES:BEGIN -->
 AC #1: svepet kört 2026-08-11 (S102) — 2 arkiverade (s85+s86 → archive/2026-07/), 9 länkomskrivningar Pass A, policy orörd; check-sessionsdok-fonster.sh exit 0 GRÖNT. AC #2: check:docs 14/14 gröna lokalt (inkl länk-grindarna); shellcheck OK på rörda ci-wait.sh/test-ci-wait.sh. Flaggade (fail-closed) 3 dok orörda by design.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Svepet kört 2026-08-11 (S102-resume): s85+s86 → archive/2026-07/, 9 länkomskrivningar, policy orörd. Fönster-grinden exit 0, check:docs 14/14, shellcheck OK. Landat via PR #1164 (merge f5be8d1c), kön grön. Natt-larmet Sessionsdok-fönstret tystnar från och med i natt.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
