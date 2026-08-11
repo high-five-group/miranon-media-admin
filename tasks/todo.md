@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 105 ⏸️ PAUSAD (2026-08-12 natt, `lifecycle: paused`) — FAS 6.5
+AKTIVITETSLOGGEN: GRILLAD SAMSYN → PRD → TIO SKIVOR → MAIL-LÅSET BEVISAT →
+201.1 LANDAD; KEDJAN BLOCKERAD PÅ DB-ACCESS (MARCUS-MOMENT).** Grillningen
+(fem kvitterade beslut, Del 2): B-målet skivat kärnvy→filterrad · alla
+~11 mutationstyper loggas · **Supabase `activity_log`, inte Airtable**
+(`ADR-110`) · requestId enda korrelations-ID (`ADR-111`) · xAPI-konformans
+= Passionslyfts-förberedelsen. PRD **TASK-201** + skivorna 201.1–201.10;
+retroaktivt facit-manifest för s55-hem-konvergens (facit-grinden fällde
+två gånger → lagat, grinden fungerar). **Mail-låset utvidgat till egna
+send-*-EF:er och SUBAGENT-BEVISAT** (Marcus-order "absolut mekaniskt
+stopp"; S102 service-ff:ade huvudkatalogen på SendMessage-bön —
+`CLAUDE_PROJECT_DIR`-fyndet är lesson-kandidat 1). **201.1 Done-klass**
+(ADR-paret + xAPI-schema + migrationsfil, PR `#1185`); **201.2 STOPPAD
+korrekt** — agent-miljön saknar Supabase db-access (fynd **TASK-201.11**,
+ready-for-human, PR `#1187`). **NÄSTA (resume): Marcus applicerar
+migrationen (201.11 § sekvensen) → `session-resume` S105 → kedjan
+201.2→201.8 → 201.9 prod + 201.10 QA + facit-stämpling.** Numrering efter
+S105-natten: ADR 112 · L512+3 fragment · T141 · task-202 · f47 —
+re-derivera ALLTID. Full narrativ: sessionsdok S105 Del 1–3 + PAUSLÄGE.
+
 **Session 102 🔄 ÅTERUPPTAGEN (2026-08-11, `lifecycle: active`) —
 GO-LIVE-DAGENS BATCH FULLBORDAD: 15 kort avfyrade, 14 Done, hela
 sändvägen skarp och FRAMME-bevisad; resume-ingången är Marcus-högen.** Batchen (Marcus-order
