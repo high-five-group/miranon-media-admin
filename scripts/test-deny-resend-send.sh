@@ -186,6 +186,18 @@ EXPECT_OUT="är sänd-klassat"
 run_case "D11 MCP: mcp__plugin_resend_resend__send-broadcast (plugin-form) NEKAS" 2 "${JSON}"
 
 # ============================================================
+# D12–D13 — S105-utvidgningen: egna mail-EF:er är sänd-vägar (se
+# .mail-lock-policy.conf § S105-utvidgningen).
+echo ""
+JSON="$(bash_json 'curl -s https://abc123.supabase.co/functions/v1/send-receipt-email -d @payload.json')"
+EXPECT_OUT="sänd-endpoint"
+run_case "D12 Bash: curl mot functions/v1/send-receipt-email NEKAS (S105)" 2 "${JSON}"
+
+JSON="$(bash_json 'supabase functions invoke send-registration-confirmation --body {}')"
+EXPECT_OUT="sänd-endpoint"
+run_case "D13 Bash: supabase functions invoke send-* NEKAS (S105)" 2 "${JSON}"
+
+# ============================================================
 # A1–A3 — Bash-vägen, legitima kommandon SLÄPPS.
 echo ""
 JSON="$(bash_json 'curl -s https://api.github.com/repos/high-five-group/miranon-media-admin')"
@@ -226,6 +238,18 @@ run_case "A8  MCP: mcp__resend__create-broadcast SLÄPPS (utkast, ingen dispatch
 NOT_EXPECT_OUT="MAIL-LÅS"
 run_case "A9  MCP: helt orelaterat tool_name (Read) SLÄPPS" 0 \
     '{"tool_name":"Read","tool_input":{"file_path":"/tmp/x"}}'
+
+# ============================================================
+# A10–A11 — S105-utvidgningen, andra riktningen: legitima EF-/testformer
+# får INTE fällas av de nya mönstren.
+echo ""
+JSON="$(bash_json 'supabase functions deploy send-registration-confirmation --project-ref abc123')"
+NOT_EXPECT_OUT="MAIL-LÅS"
+run_case "A10 Bash: supabase functions deploy send-* SLÄPPS (deploy skickar inget)" 0 "${JSON}"
+
+JSON="$(bash_json 'npx playwright test atgarder-bekraftelsemail.staging.test.ts')"
+NOT_EXPECT_OUT="MAIL-LÅS"
+run_case "A11 Bash: playwright-test med mail-namn i filnamnet SLÄPPS" 0 "${JSON}"
 
 # ============================================================
 # F1–F5 — FAIL-CLOSED. Varje internt fel NEKAR (exit 2), aldrig fail-open.
