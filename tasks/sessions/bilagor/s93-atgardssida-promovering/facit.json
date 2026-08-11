@@ -4,9 +4,9 @@
   "lasning": "Du får göra bedömningen om granulariteten och beroendena. Och inget borde väl blockera nu, jag låser Åtgärdssidan och Granskningsidan (och granskningssidans olika ytor/lägen) som facit. Det är okej för v1, jag vill att de blir 'skarpa' sidor i appen nu.",
   "godkand": {
     "av": "marcus",
-    "datum": "2026-08-09",
-    "citat": "Ser bra ut, godkänner",
-    "sha": "cfc62f9f4007b049dfd71bf98b539aa6505ca2f3"
+    "datum": "2026-08-11",
+    "citat": "ser okej ut",
+    "sha": "efc4091aa4284d29246aa5a53bcd8f10d2250a04"
   },
   "ytor": [
     {
