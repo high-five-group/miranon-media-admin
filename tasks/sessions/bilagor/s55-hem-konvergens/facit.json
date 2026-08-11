@@ -1,0 +1,32 @@
+{
+  "prototyp": "s55-hem-konvergens",
+  "last": "2026-07-07",
+  "lasning": "avslutar detta prototypande … låser K10 som FACIT för hem-vyn. Prod-vyn ska se EXAKT likadan ut.",
+  "godkand": null,
+  "manifest_mintat": {
+    "datum": "2026-08-11",
+    "session": "S105",
+    "skal": "Retroaktiv mintning: katalogen bar facit-bilder utan manifest — exakt ADR-102:s R4/R5-tillstånd (facit oadresserbart, iterationssteg förväxlingsbara med facit). Mintat vid Fas 6.5-PRD:n som konsumerar hem-historikspaltens facit; låsning och FACIT-spec hämtade verbatim ur S55-sessionsdokets Del 12 (tasks/sessions/archive/2026-07/2026-07-06-session-55.md)."
+  },
+  "ytor": [
+    {
+      "yta": "hem-vyn i helhet",
+      "bilder": ["k10-facit-desktop.png", "k10-facit-mobil.png"],
+      "kallor": [
+        "src/components/hem/Hem.tsx",
+        "src/components/hem/Greeting.tsx",
+        "src/components/hem/NastaEventCard.tsx",
+        "src/components/hem/ObetaldaCard.tsx",
+        "src/components/hem/NyaAnmalningarCard.tsx",
+        "src/components/hem/CTA.tsx"
+      ],
+      "not": "BYGGD och i drift sedan S55-eran — ingår INTE i Fas 6.5-arbetsenheten. FACIT-specen i S55 Del 12: 600 px-kolumn utan topp-header, hälsningskortet 'Hej {namn}' utan utropstecken, kortrubriker inne i korten, Nästa event med primär-tint + dagar-kvar-pill, Obetalda som ensamt antal, Nya anmälningar med koppar-kontur + zebra + inline-scroll, CTA helbredd. VILKA BILDER SOM ÄR FACIT: k10-facit-desktop.png + k10-facit-mobil.png (utan prototyp-chrome). steg-k1.png–steg-k10.png + steg-k9-blur.png är ITERATIONSRESAN (K1–K10), inte facit — R4-fällan detta manifest stänger."
+    },
+    {
+      "yta": "hem-historikspalten (Senaste aktivitet)",
+      "bilder": ["k10-facit-desktop.png"],
+      "kallor": ["src/components/hem/Hem.tsx"],
+      "not": "OBYGGD — Fas 6.5-PRD:ns facit-yta. Kallor pekar på VÄRDFILEN (hem-layouten som äger platsen spalten monteras i); spaltens egna källfiler läggs till när bygg-skivan landar. FACIT-SPEC ur S55 Del 12, verbatim-nära: bottenlinjerad EXAKT med anmälningskortet, långt till höger; bg-subtle KANTLÖS (svag brytning); INGEN rubrik — aria-label bär namnet; rader: relativ tid (12 muted) → aktör i medium + händelse (12); avslutas med 'Se all aktivitetshistorik ›'-länk; INGA ikoner (FEATURE-dokens kategori-ikonidé viker för facit, ADR-102 B1). Synlighet: endast ≥xl per Del 12; mobil/platta når historiken ENDAST via Mer (byggkrav B7, som säger '< lg' — gapet lg↔xl är ODEFINIERAT i S55-prosan och avgörs mot facit-bilderna/Marcus när skivan byggs, bokfört öppet här i stället för tyst löst). Innehåll: Fas 6.5:s xAPI-typer med aktör (Lotta/Roger/Marcus). ÅTERUPPLIVNINGSVÄG: K10-prototypkoden fanns som src/components/hem/prototype/K10.tsx i commit bb31a12 — hämtbar för design-jämförelse vid bygget. MEKANISKT FACIT: saknas ännu (spalten obyggd) — ariaSnapshot-referenser skapas av bygg-skivan per ADR-103-mönstret; k10-facit-mobil.png ingår inte i denna ytas bilder eftersom spalten inte visas på mobil."
+    }
+  ]
+}
