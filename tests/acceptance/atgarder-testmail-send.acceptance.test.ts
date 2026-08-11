@@ -49,6 +49,24 @@ async function oppnaOchGranska(page: import('@playwright/test').Page, atgardsnam
   await page.getByRole('button', { name: 'Granska och skicka' }).click();
 }
 
+/** Löser en CSS-custom-property till computed färg via en DOM-probe (samma
+    per-fil-lokala mönster som `tests/a11y/NavCard.spec.ts`/
+    `ToggleButtonGroup.spec.ts` m.fl. redan bär). */
+async function resolvedTokenColor(
+  page: import('@playwright/test').Page,
+  tokenNamn: string,
+): Promise<string> {
+  return page.evaluate((namn) => {
+    const probe = document.createElement('span');
+    probe.style.cssText = 'position:absolute;top:0;left:0;visibility:hidden;pointer-events:none';
+    probe.style.color = `var(${namn})`;
+    document.body.appendChild(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  }, tokenNamn);
+}
+
 test.describe('Skicka till min inkorg — testmailets sändväg (TASK-147.10 AC #1-#2)', () => {
   test('POST med testSend:true + FÖRSTA mottagaren ensam, lyckat testmail annonserar den inloggade adressen', async ({
     page,
@@ -106,7 +124,7 @@ test.describe('Skicka till min inkorg — testmailets sändväg (TASK-147.10 AC 
     expect(body.registrationIds).not.toContain(BJORN);
   });
 
-  test('avvisat testmail — ärligt felbesked med serverns skäl, granska-läget orört', async ({
+  test('avvisat testmail — ärligt felbesked med serverns skäl, granska-läget orört, knappen kvarstår', async ({
     page,
     network,
   }) => {
@@ -124,9 +142,16 @@ test.describe('Skicka till min inkorg — testmailets sändväg (TASK-147.10 AC 
       page.getByText('Kunde inte skicka testmailet: E-postadressen studsade (bounced)'),
     ).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Granska och skicka' })).toBeVisible();
+
+    // OMKLICKSBESLUTET (S102-iterationen, Marcus 2026-08-11: "Kör på din
+    // rekommendation, knappen står kvar, retry-möjlighet."): ett fel-utfall
+    // ERSÄTTER inte längre knappen — den ska stå kvar BREDVID/UNDER felraden,
+    // aktiverad, redo för ett nytt klick. Full omklicks-cykel (fel → lyckat)
+    // bevisas separat nedan.
+    await expect(page.getByRole('button', { name: 'Skicka till min inkorg' })).toBeEnabled();
   });
 
-  test('mutationens eget fel (nätverk/EF-avvisning) — felbesked med felmeddelandet, ingen krasch', async ({
+  test('mutationens eget fel (nätverk/EF-avvisning) — felbesked med felmeddelandet, ingen krasch, knappen kvarstår', async ({
     page,
     network,
   }) => {
@@ -140,6 +165,74 @@ test.describe('Skicka till min inkorg — testmailets sändväg (TASK-147.10 AC 
 
     await expect(page.getByText(/Kunde inte skicka testmailet/)).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Granska och skicka' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Skicka till min inkorg' })).toBeEnabled();
+  });
+
+  test('omklick/retry: ett andra klick efter fel går genom samma handtag och lyckas', async ({
+    page,
+    network,
+  }) => {
+    // Räknaren ÄR testets poäng här (till skillnad från klassens vanliga
+    // regel att aldrig testa "anropades N gånger" — se acceptance-bas.ts §
+    // VAD KLASSEN BEVISAR): omklicksbeslutet bevisar sig SJÄLVT bara genom
+    // att ett ANDRA anrop går ut och lyckas efter att det första fallerat.
+    let antalAnrop = 0;
+    network.use(
+      http.post(EF('send-action-email'), () => {
+        antalAnrop += 1;
+        return antalAnrop === 1
+          ? json({ status: 'failed', reason: 'E-postadressen studsade (bounced)' })
+          : json({ status: 'sent' });
+      }),
+    );
+
+    await gotoAtgarder(page);
+    await oppnaOchGranska(page, 'Skicka bekräftelsemail');
+    const knapp = page.getByRole('button', { name: 'Skicka till min inkorg' });
+
+    await knapp.click();
+    await expect(
+      page.getByText('Kunde inte skicka testmailet: E-postadressen studsade (bounced)'),
+    ).toBeVisible();
+
+    // SAMMA knapp, SAMMA `skickaTest`-handtag — ingen särskild retry-väg.
+    await knapp.click();
+    await expect(page.getByText(`Skickat till ${FIXTUR_EPOST}`)).toBeVisible();
+    // Felraden försvinner när retry lyckas — bara ETT utfall visas åt gången.
+    await expect(page.getByText(/Kunde inte skicka testmailet/)).toHaveCount(0);
+    expect(antalAnrop).toBe(2);
+  });
+
+  test('hover-plattan syns mot den mutade panelen (S102, Marcus 2026-08-11: "ingen hover")', async ({
+    page,
+  }) => {
+    // NEGATIV KONTROLL inbyggd i själva jämförelsen: `DetaljGrupp`s kortyta
+    // ÄR `--mm-bg-muted` (`DetaljGrupp.tsx` rad 31), och ghost-knappens
+    // DEFAULT-hover (`--mm-button-ghost-bg-hover`) är SAMMA token — utan
+    // `data-[hovered]:bg-bg-emphasized`-overriden (`AtgardsSida.tsx` §
+    // TESTMAILET) skulle hover-färgen vara IDENTISK med panelen, och detta
+    // test skulle falla. Samma mätta fälla som
+    // `DeltagareHallplatsPrototyp.tsx` § "HOVERN VAR OSYNLIG" dokumenterar.
+    await gotoAtgarder(page);
+    await oppnaOchGranska(page, 'Skicka bekräftelsemail');
+    const knapp = page.getByRole('button', { name: 'Skicka till min inkorg' });
+    const panel = page.locator('[data-testid="grupp-kort"]').filter({ has: knapp });
+
+    // Token-värdena FÖRE hovern (samma ordning som ToggleButtonGroup.spec.ts
+    // § hovraOchMat — en DOM-probe kan slå bort en redan placerad pekare).
+    const emphasized = await resolvedTokenColor(page, '--mm-bg-emphasized');
+    const panelBg = await panel.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const vilaBg = await knapp.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(vilaBg).toBe('rgba(0, 0, 0, 0)'); // ghost = transparent i vila
+    expect(emphasized).not.toBe(panelBg); // token-parets egen negativa kontroll
+
+    await knapp.hover();
+    await expect(knapp).toHaveAttribute('data-hovered', 'true', { timeout: 2_000 });
+    // `transition-colors` animerar bytet — `toHaveCSS` retry:ar (auto-waiting)
+    // tills övergången är klar, samma mönster som `hovraTills` i
+    // ToggleButtonGroup.spec.ts. Ett synkront `getComputedStyle` direkt efter
+    // `.hover()` mätte transparent HÄR (mitt i övergången) innan denna fix.
+    await expect(knapp).toHaveCSS('background-color', emphasized, { timeout: 2_000 });
   });
 
   test('a11y i granska-läget med testmail-knappen — 0 överträdelser', async ({ page }) => {

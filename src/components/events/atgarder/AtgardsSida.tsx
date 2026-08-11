@@ -2656,36 +2656,69 @@ function GranskningsSida({
             utfall höger). Knappen bytte samtidigt `intent="secondary"` (grå
             platta) mot `intent="ghost"` (samma lätta textknapps-affordance som
             `SkrivUtKort`, Atgarder.tsx:238) — Marcus underkände den grå formen
-            som "tråkig och passar inte in". Utfallet ERSÄTTER knappen i samma
-            höger-slot i stället för att stå under den; live-regionen flyttade
-            med (nedan) i stället för att lämnas kvar. */}
+            som "tråkig och passar inte in".
+
+            HOVERN VAR OSYNLIG (S102-iterationen, Marcus 2026-08-11: "Jag är
+            inte nöjd med knappen, den har ingen hover."). DEN FANNS — den gick
+            bara inte att se, exakt samma mätta fällan som
+            `DeltagareHallplatsPrototyp.tsx` § "HOVERN VAR OSYNLIG" dokumenterar
+            för sin egen Skriv ut-knapp: `intent="ghost"` hovrar till
+            `--mm-button-ghost-bg-hover` = `--mm-bg-muted`, och raden ligger i
+            EXAKT den ytan — `DetaljGrupp`s egen kortbakgrund är `bg-bg-muted`
+            (`DetaljGrupp.tsx` rad 31). Identiska toner, hovern försvinner in i
+            panelen den ligger på. Samma fix, samma repo-egna färg:
+            `data-[hovered]:bg-bg-emphasized` — INTE `hover:`, av samma skäl
+            syskonfilen mätte fram: en `hover:`-klass är en ANNAN
+            tailwind-merge-modifierare än primitivens egen
+            `data-[hovered]:`-bas och vinner aldrig mot den. Ingen ny token,
+            samma mönster som `EventsList.tsx`/`EventValjare`/
+            `ManuellAnmalanForm`s fot-knappar redan bär.
+
+            OMKLICKSBESLUTET (S102-iterationen, öppen tolkning ur PR #1147
+            avgjord av Marcus 2026-08-11: "Kör på din rekommendation, knappen
+            står kvar, retry-möjlighet."): ett FEL-utfall ERSÄTTER inte längre
+            knappen — den står kvar UNDER felraden så ett nytt klick (samma
+            `skickaTest`, ingen särskild retry-väg) alltid är möjligt utan att
+            först behöva en sidladdning. Ett LYCKAT utfall ersätter fortfarande
+            knappen i samma höger-slot (oförändrat — Marcus beslut gällde
+            uttryckligen fel-vägen, inte den lyckade), och grundläget (ingen
+            `testUtfall` än) visar bara knappen — i båda de fallen är
+            höger-sloten fortfarande EN rad, så `items-center`/`flex justify-end`
+            hade räckt. Den växer bara i fel-fallet, därför `items-start` på
+            YTTRE raden (samma grammatik som Bilagor-raden ovan, som redan bär
+            `items-start` av samma skäl — flera rader i höger-sloten) och
+            `flex-col items-end gap-1` på live-regionen i stället för
+            `justify-end`; en ensam rad ser identisk ut i båda formerna. */}
           {forsta && (
-            <div className="flex items-center justify-between gap-4 py-3">
+            <div className="flex items-start justify-between gap-4 py-3">
               <span className="shrink-0 text-small text-text-muted">Testmail</span>
-              {/* LIVE-REGIONEN OMSLUTER HÖGER-SLOTEN (knapp ELLER utfall) —
-                samma `aria-live="polite"`, INGEN FOKUSFLYTT-grammatik som
-                övriga mutations-utfall i filen. `justify-end`, inte
-                `text-right`: samma layoutform som `SkrivUtKort`s wrapper. */}
-              <div aria-live="polite" className="flex justify-end">
+              {/* LIVE-REGIONEN OMSLUTER HÖGER-SLOTEN (knapp, knapp+fel, eller
+                utfall) — samma `aria-live="polite"`, INGEN FOKUSFLYTT-grammatik
+                som övriga mutations-utfall i filen. */}
+              <div aria-live="polite" className="flex flex-col items-end gap-1">
                 {testUtfall?.status === 'sent' ? (
                   <p className="text-small text-text-muted">
                     Skickat till {user?.email ?? 'din adress'}
                   </p>
-                ) : testUtfall?.status === 'failed' ? (
-                  <p className="text-error text-small">
-                    Kunde inte skicka testmailet
-                    {testUtfall.reason ? `: ${testUtfall.reason}` : '.'}
-                  </p>
                 ) : (
-                  <Button
-                    intent="ghost"
-                    size="sm"
-                    isDisabled={sendActionTestEmail.isPending || lage === 'skickar'}
-                    onPress={skickaTest}
-                  >
-                    <Send aria-hidden="true" size={12} className="shrink-0" />
-                    {sendActionTestEmail.isPending ? 'Skickar test…' : 'Skicka till min inkorg'}
-                  </Button>
+                  <>
+                    <Button
+                      intent="ghost"
+                      size="sm"
+                      className="data-[hovered]:bg-bg-emphasized"
+                      isDisabled={sendActionTestEmail.isPending || lage === 'skickar'}
+                      onPress={skickaTest}
+                    >
+                      <Send aria-hidden="true" size={12} className="shrink-0" />
+                      {sendActionTestEmail.isPending ? 'Skickar test…' : 'Skicka till min inkorg'}
+                    </Button>
+                    {testUtfall?.status === 'failed' && (
+                      <p className="text-error text-small">
+                        Kunde inte skicka testmailet
+                        {testUtfall.reason ? `: ${testUtfall.reason}` : '.'}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </div>

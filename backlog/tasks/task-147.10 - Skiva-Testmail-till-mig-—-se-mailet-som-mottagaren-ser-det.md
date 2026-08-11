@@ -4,7 +4,7 @@ title: 'Skiva: Testmail till mig — se mailet som mottagaren ser det'
 status: In Progress
 assignee: []
 created_date: '2026-08-10 07:40'
-updated_date: '2026-08-10 19:52'
+updated_date: '2026-08-11 18:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -63,4 +63,60 @@ Testsynk: tests/acceptance/atgarder-testmail-send.acceptance.test.ts (4/4 grön,
 ARIA-DELTA (facit uppdaterat via playwright test --update-snapshots, granskat rad-för-rad): samma delta i BÅDA atgarder-granskning-visual-desktop.aria.yml och atgarder-granskning-visual-mobile.aria.yml. Från: text-rad "Bilagor Inga" följt av button "Skicka test till mig" (utanför region "Utskicket"). Till: text-rad "Bilagor Inga Testmail" (etiketten smälte samman med Bilagor-radens text) följt av button "Skicka till min inkorg" (nu INNANFÖR region "Utskicket"). Oförändrat radantal (2 rader). Noll aria-diff utanför granskningsvyn, git status verifierat mot hela __aria__-katalogen, endast dessa två filer rörda.
 
 Grindar (mätta, exitkoder separat lästa): node scripts/check-langa-streck.mjs exit 0. node scripts/check-mailto.mjs exit 0. npx @biomejs/biome check --write . (inga fixar, redan rent). npm run typecheck exit 0. npx @biomejs/biome check . exit 0 (endast förbefintliga varningar/infos i base.css/test-bas.ts, ovidrörda). npm run build exit 0. npm run test:api 596 passed. tests/acceptance/atgarder-testmail-send.acceptance.test.ts 4/4. Regressionskörning atgarder-bekraftelsemail-send + atgarder-paminnelse-eventinfo-fritt-send 6/6. tests/visual/atgardssida-promoverings-grind.spec.ts 40/40 (visual-desktop + visual-mobile, inklusive axe 0 överträdelser på granskningsläget).
+
+---
+S102-ITERATIONEN, VARV 2 (2026-08-11, Marcus två chatt-beslut i klartext efter
+sin granskning av S102-formen): (1) hover saknades på testmail-knappen, (2)
+omklicksfrågan (PR #1147, öppen tolkning: "fel-utfall ersätter testmail-
+knappen — ska knappen stå kvar för omklick?") avgjord — "Kör på din
+rekommendation, knappen står kvar, retry-möjlighet."
+
+HOVERN: `intent="ghost"` hovrar till `--mm-button-ghost-bg-hover` =
+`--mm-bg-muted`, och raden ligger i `DetaljGrupp`s egen kortyta som ÄR
+`--mm-bg-muted` (`DetaljGrupp.tsx` rad 31) — identiska toner, hovern
+försvann in i panelen. EXAKT samma mätta fälla som
+`DeltagareHallplatsPrototyp.tsx` § "HOVERN VAR OSYNLIG" (Marcus 2026-08-06)
+redan dokumenterar och fixade för sin egen Skriv ut-knapp. Samma fix
+återanvänd, ingen ny token: `className="data-[hovered]:bg-bg-emphasized"`
+på `Button` (MÅSTE vara `data-[hovered]:`, inte `hover:` — en `hover:`-klass
+är en annan tailwind-merge-modifierare än primitivens egen bas och vinner
+aldrig mot den, samma mätning syskonfilen redan gjorde).
+
+OMKLICKSBESLUTET: knappen ersätts inte längre av fel-utfallet. Höger-sloten
+gick från `flex justify-end` (en rad) till `flex flex-col items-end gap-1`
+(knapp + valfri felrad UNDER), och den YTTRE radens `items-center` blev
+`items-start` (samma grammatik Bilagor-raden ovan redan bär, av samma skäl:
+höger-sloten kan bli fler än en rad). Lyckat-utfallet ERSÄTTER fortfarande
+knappen — Marcus beslut gällde uttryckligen fel-vägen.
+
+TESTER (tests/acceptance/atgarder-testmail-send.acceptance.test.ts): två
+befintliga fel-tester fick en rad som bevisar knappen kvarstår + enabled.
+Två NYA tester: (1) full omklicks-cykel — fel → samma knapp klickas igen →
+lyckas, räknat via en anrops-räknare i MSW-handlern (2 POST); (2)
+hover-kontrast — `resolvedTokenColor` mot `--mm-bg-emphasized`, `toHaveCSS`
+(auto-retry genom `transition-colors`), med panelens egen bg som negativ
+kontroll. BÅDA nya testerna NEGATIV-KONTROLLERADE skarpt: reverterade fixen
+temporärt → alla tre berörda tester (2 nya + de 2 utökade) föll med rätt
+felbild → återställde → alla gröna igen. ARIA-facit ORÖRDA (default
+granska-läge renderar identisk DOM som innan — konditionerna är no-ops i
+grundläget) — verifierat: hela `atgardssida-promoverings-grind.spec.ts`,
+40/40 (visual-desktop + visual-mobile), `git status` visar noll ARIA-diff.
+
+Grindar (mätta, exitkoder separat lästa): npm run typecheck exit 0 · npx
+@biomejs/biome check . exit 0 (endast förbefintliga varningar i
+base.css/test-bas.ts, noll i de två rörda filerna) · npm run build exit 0 ·
+tests/acceptance/atgarder-testmail-send.acceptance.test.ts 6/6 (2 nya) ·
+regressionskörning atgarder-bekraftelsemail-send +
+atgarder-paminnelse-eventinfo-fritt-send 6/6 · visual-grind 40/40. npm run
+test:api: 622 passed, 1 föll
+(tests/api/attachment-upload-large.staging.test.ts, TASK-146.4-sviten,
+attachment-uppladdning — INGEN rörd fil i denna skiva). Differential-mätt:
+samma test föll IDENTISKT på `dd8ae755` (basen, INNAN denna skivas
+ändringar, via `git stash` + omkörning) och passerade grönt i ISOLERAD
+körning (`--project=api-staging` mot bara den filen, 15/15). Pre-existing
+flake, ovidrörd av denna skiva — ingen kod i attachment-uppladdningsvägen
+rörd.
+
+AC #3 (Marcus-omstämpling, ADR-104-kanalen) KVARSTÅR ÖPPEN — formen ändrades
+igen i detta varv, så en ny stämpel krävs. Kortet lämnas In Progress.
 <!-- SECTION:NOTES:END -->
