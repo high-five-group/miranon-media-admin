@@ -76,14 +76,39 @@ function dagsStart(ms: number): number {
  * `ACTIVITY_OBJECT_TYPES`s fulla IRI:er (samma IRI som `get-activity-log`-
  * EF:ens `object_type`-equality-filter jämför mot, se dess filhuvud).
  * `Record<KategoriKey, string>` nedan tvingar TS att fälla om ett nytt värde
- * läggs till i `ACTIVITY_OBJECT_TYPES` utan en motsvarande svensk etikett.
+ * läggs till i `ACTIVITY_OBJECT_TYPES` utan en motsvarande svensk etikett —
+ * FÅNGADE FAKTISKT DRIFT (merge mot main, TASK-201.8s egen byggsession):
+ * `ACTIVITY_OBJECT_TYPES` växte från TRE kategorier (pilotens
+ * betalning/bekraftelse/mail, giltiga vid denna skivas branch-punkt) till
+ * NIO under TASK-201.4 (landat på main under samma tidsfönster) — PRD
+ * TASK-201s användarberättelse 9 ordagrant: "betalningar, bekräftelser,
+ * anmälningar, boende, mail, kvitton, event-ändringar, flaggor och
+ * anteckningar". Ordningen nedan följer den uppräkningen. `KATEGORI_VALUES`
+ * själv (en vanlig array, ingen fullständighetskontroll) hade INTE fångat
+ * detta ensam — det var `Record`-typen som fällde typecheck.
  */
 type KategoriKey = keyof typeof ACTIVITY_OBJECT_TYPES;
-const KATEGORI_VALUES: KategoriKey[] = ['betalning', 'bekraftelse', 'mail'];
+const KATEGORI_VALUES: KategoriKey[] = [
+  'betalning',
+  'bekraftelse',
+  'anmalan',
+  'boende',
+  'mail',
+  'kvitto',
+  'event',
+  'flagga',
+  'anteckning',
+];
 const KATEGORI_LABEL: Record<KategoriKey, string> = {
   betalning: 'Betalning',
   bekraftelse: 'Bekräftelse',
+  anmalan: 'Anmälan',
+  boende: 'Boende',
   mail: 'Mail',
+  kvitto: 'Kvitto',
+  event: 'Eventändring',
+  flagga: 'Flagga',
+  anteckning: 'Anteckning',
 };
 
 /** Filterradens TIDSPERIOD-axel (TASK-201.8) — ToggleButtonGroup, alltid ETT val. */
