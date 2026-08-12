@@ -103,158 +103,159 @@ function personDetail(anteckningar: string | null): PersonDetailMock {
  * DEN FJÄRDE TESTEN I FILEN (axe på read-vyn) står kvar aktiv — den prövar
  * `PersonDetail`-komponenten direkt och är oberoende av routens montering.
  */
-test.describe.skip('Persondetalj — edit-in-place Anteckningar (Fas 6a L6c)', () => {
-  test('optimistisk flip: Spara → read-vyn visar nya noten utan network-wait', async ({
-    page,
-    network,
-  }) => {
-    let serverNote = 'Ursprunglig not';
-    let releaseUpdate: () => void = () => {};
-    const updateGate = new Promise<void>((resolve) => {
-      releaseUpdate = resolve;
-    });
+test.describe
+  .skip('Persondetalj — edit-in-place Anteckningar (Fas 6a L6c)', () => {
+    test('optimistisk flip: Spara → read-vyn visar nya noten utan network-wait', async ({
+      page,
+      network,
+    }) => {
+      let serverNote = 'Ursprunglig not';
+      let releaseUpdate: () => void = () => {};
+      const updateGate = new Promise<void>((resolve) => {
+        releaseUpdate = resolve;
+      });
 
-    network.use(
-      // Resolvern läser `serverNote` VID anropet → onSettled-refetchen ser
-      // server-sanningen efter mutationen, precis som den uppskjutna
-      // page.route-formen gjorde.
-      http.get(EF('get-person'), () => json({ person: personDetail(serverNote) })),
-      http.post(EF('update-record'), async () => {
-        await updateGate; // hålls → flippen måste ske utan att vänta på svaret
-        serverNote = 'Ny anteckning'; // server-sanning efter mutationen (onSettled-refetch)
-        return json({});
-      }),
-    );
-
-    await page.goto(`/personer/${PERSON_ID}`);
-    await expect(page.getByText('Ursprunglig not')).toBeVisible();
-
-    await page.getByRole('button', { name: 'Redigera' }).click();
-    const textarea = page.getByRole('textbox', { name: 'Anteckning' });
-    await expect(textarea).toBeFocused(); // fokus → textarea vid edit-start
-    await textarea.fill('Ny anteckning');
-    await page.getByRole('button', { name: 'Spara' }).click();
-
-    // Optimistisk flip MEDAN update-record-svaret hålls av gaten → ingen
-    // network-wait. Read-vyn (cache-värdet) visar nya noten, textarean borta.
-    await expect(page.getByText('Ny anteckning')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Anteckning' })).toHaveCount(0);
-
-    releaseUpdate();
-
-    // aria-live: den lyckade sparningen annonseras.
-    await expect(page.locator('[data-mm-announcer]')).toContainText('Anteckning sparad');
-    // onSettled invaliderar → refetch (server säger nu 'Ny anteckning') → kvarstår.
-    await expect(page.getByText('Ny anteckning')).toBeVisible();
-    // Fokus-retur (WCAG) → "Redigera"-knappen.
-    await expect(page.getByRole('button', { name: 'Redigera' })).toBeFocused();
-  });
-
-  test('rollback: 5xx → noten återgår + MessageBox role=alert + edit-läget kvar med input', async ({
-    page,
-    network,
-  }) => {
-    const serverNote = 'Ursprunglig not';
-    let releaseUpdate: () => void = () => {};
-    const updateGate = new Promise<void>((resolve) => {
-      releaseUpdate = resolve;
-    });
-
-    network.use(
-      http.get(EF('get-person'), () => json({ person: personDetail(serverNote) })),
-      http.post(EF('update-record'), async () => {
-        await updateGate;
-        return json({ error: 'Internal error', requestId: 'req-note-xyz789' }, 500);
-      }),
-    );
-
-    await page.goto(`/personer/${PERSON_ID}`);
-    await page.getByRole('button', { name: 'Redigera' }).click();
-    await page.getByRole('textbox', { name: 'Anteckning' }).fill('Misslyckad ändring');
-    await page.getByRole('button', { name: 'Spara' }).click();
-
-    // Optimistisk flip medan svaret hålls.
-    await expect(page.getByText('Misslyckad ändring')).toBeVisible();
-
-    releaseUpdate();
-
-    // Fel → edit-läget kvar med användarens text bevarad (ingen input tappad).
-    const textarea = page.getByRole('textbox', { name: 'Anteckning' });
-    await expect(textarea).toHaveValue('Misslyckad ändring');
-    // Fel-yta som role=alert med Fel-ID (support-referens).
-    // TIMEOUTEN: default (5 s) RÄCKER OCH ÄR RÄKNAD (TASK-65 AC 2-svepet).
-    // Mutationer ärver INTE QueryClientens `retry: 3` — router.ts sätter bara
-    // `networkMode` för `mutations`, och TanStacks default är `retry: 0`. Kvar
-    // blir därför bara lager 1: `fetchWithRetry` 4 försök = 1400–1700 ms sömn.
-    // Mätt lokalt (darwin, 3 körningar, från `releaseUpdate()` till alerten):
-    // 1815 · 1819 · 1824 ms — 2,7× under default-timeouten. Blir detta en
-    // QUERY-felyta i stället multipliceras kedjan med fyra och raden behöver en
-    // räknad timeout (se `event-anteckningar` rad 248 / `persons-list` rad 199).
-    const alert = page.getByRole('alert').filter({ hasText: 'Kunde inte spara anteckningen' });
-    await expect(alert).toBeVisible();
-    await expect(alert).toContainText('req-note-xyz789');
-    // textarean är kopplad till fel-ytan + markerad ogiltig.
-    await expect(textarea).toHaveAttribute('aria-invalid', 'true');
-
-    // Avbryt → rollback bevisad: read-vyn visar ORIGINALET (ej den misslyckade).
-    await page.getByRole('button', { name: 'Avbryt' }).click();
-    await expect(page.getByText('Ursprunglig not')).toBeVisible();
-    await expect(page.getByText('Misslyckad ändring')).toHaveCount(0);
-  });
-
-  test('avbryt (Esc): ingen mutation, originalet kvar', async ({ page, network }) => {
-    // Flaggan mäter APPENS beteende — att Esc INTE utlöser en skrivning — inte
-    // att en handler anropades; klassen testar aldrig fixturen. Den är nödvändig
-    // här eftersom en utebliven mutation saknar varje annan observerbar effekt:
-    // vyn ser likadan ut vare sig writen gick iväg eller ej.
-    let updateCalled = false;
-
-    network.use(
-      http.get(EF('get-person'), () => json({ person: personDetail('Ursprunglig not') })),
-      medvetetOanvand(
-        http.post(EF('update-record'), () => {
-          updateCalled = true;
+      network.use(
+        // Resolvern läser `serverNote` VID anropet → onSettled-refetchen ser
+        // server-sanningen efter mutationen, precis som den uppskjutna
+        // page.route-formen gjorde.
+        http.get(EF('get-person'), () => json({ person: personDetail(serverNote) })),
+        http.post(EF('update-record'), async () => {
+          await updateGate; // hålls → flippen måste ske utan att vänta på svaret
+          serverNote = 'Ny anteckning'; // server-sanning efter mutationen (onSettled-refetch)
           return json({});
         }),
-        'Negativ sensor: att update-record ALDRIG anropas är testets resultat, så handlern ska förbli oanvänd. Matchar den fälls testet på inaktuell märkning — vilket är rätt, för då har Esc börjat skriva.',
-      ),
-    );
+      );
 
-    await page.goto(`/personer/${PERSON_ID}`);
-    await page.getByRole('button', { name: 'Redigera' }).click();
-    const textarea = page.getByRole('textbox', { name: 'Anteckning' });
-    await textarea.fill('Ändring som ångras');
-    await textarea.press('Escape');
+      await page.goto(`/personer/${PERSON_ID}`);
+      await expect(page.getByText('Ursprunglig not')).toBeVisible();
 
-    // Tillbaka i read-vyn med originalet; ingen write skickad; fokus → knappen.
-    await expect(page.getByText('Ursprunglig not')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Anteckning' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Redigera' })).toBeFocused();
-    expect(updateCalled).toBe(false);
+      await page.getByRole('button', { name: 'Redigera' }).click();
+      const textarea = page.getByRole('textbox', { name: 'Anteckning' });
+      await expect(textarea).toBeFocused(); // fokus → textarea vid edit-start
+      await textarea.fill('Ny anteckning');
+      await page.getByRole('button', { name: 'Spara' }).click();
+
+      // Optimistisk flip MEDAN update-record-svaret hålls av gaten → ingen
+      // network-wait. Read-vyn (cache-värdet) visar nya noten, textarean borta.
+      await expect(page.getByText('Ny anteckning')).toBeVisible();
+      await expect(page.getByRole('textbox', { name: 'Anteckning' })).toHaveCount(0);
+
+      releaseUpdate();
+
+      // aria-live: den lyckade sparningen annonseras.
+      await expect(page.locator('[data-mm-announcer]')).toContainText('Anteckning sparad');
+      // onSettled invaliderar → refetch (server säger nu 'Ny anteckning') → kvarstår.
+      await expect(page.getByText('Ny anteckning')).toBeVisible();
+      // Fokus-retur (WCAG) → "Redigera"-knappen.
+      await expect(page.getByRole('button', { name: 'Redigera' })).toBeFocused();
+    });
+
+    test('rollback: 5xx → noten återgår + MessageBox role=alert + edit-läget kvar med input', async ({
+      page,
+      network,
+    }) => {
+      const serverNote = 'Ursprunglig not';
+      let releaseUpdate: () => void = () => {};
+      const updateGate = new Promise<void>((resolve) => {
+        releaseUpdate = resolve;
+      });
+
+      network.use(
+        http.get(EF('get-person'), () => json({ person: personDetail(serverNote) })),
+        http.post(EF('update-record'), async () => {
+          await updateGate;
+          return json({ error: 'Internal error', requestId: 'req-note-xyz789' }, 500);
+        }),
+      );
+
+      await page.goto(`/personer/${PERSON_ID}`);
+      await page.getByRole('button', { name: 'Redigera' }).click();
+      await page.getByRole('textbox', { name: 'Anteckning' }).fill('Misslyckad ändring');
+      await page.getByRole('button', { name: 'Spara' }).click();
+
+      // Optimistisk flip medan svaret hålls.
+      await expect(page.getByText('Misslyckad ändring')).toBeVisible();
+
+      releaseUpdate();
+
+      // Fel → edit-läget kvar med användarens text bevarad (ingen input tappad).
+      const textarea = page.getByRole('textbox', { name: 'Anteckning' });
+      await expect(textarea).toHaveValue('Misslyckad ändring');
+      // Fel-yta som role=alert med Fel-ID (support-referens).
+      // TIMEOUTEN: default (5 s) RÄCKER OCH ÄR RÄKNAD (TASK-65 AC 2-svepet).
+      // Mutationer ärver INTE QueryClientens `retry: 3` — router.ts sätter bara
+      // `networkMode` för `mutations`, och TanStacks default är `retry: 0`. Kvar
+      // blir därför bara lager 1: `fetchWithRetry` 4 försök = 1400–1700 ms sömn.
+      // Mätt lokalt (darwin, 3 körningar, från `releaseUpdate()` till alerten):
+      // 1815 · 1819 · 1824 ms — 2,7× under default-timeouten. Blir detta en
+      // QUERY-felyta i stället multipliceras kedjan med fyra och raden behöver en
+      // räknad timeout (se `event-anteckningar` rad 248 / `persons-list` rad 199).
+      const alert = page.getByRole('alert').filter({ hasText: 'Kunde inte spara anteckningen' });
+      await expect(alert).toBeVisible();
+      await expect(alert).toContainText('req-note-xyz789');
+      // textarean är kopplad till fel-ytan + markerad ogiltig.
+      await expect(textarea).toHaveAttribute('aria-invalid', 'true');
+
+      // Avbryt → rollback bevisad: read-vyn visar ORIGINALET (ej den misslyckade).
+      await page.getByRole('button', { name: 'Avbryt' }).click();
+      await expect(page.getByText('Ursprunglig not')).toBeVisible();
+      await expect(page.getByText('Misslyckad ändring')).toHaveCount(0);
+    });
+
+    test('avbryt (Esc): ingen mutation, originalet kvar', async ({ page, network }) => {
+      // Flaggan mäter APPENS beteende — att Esc INTE utlöser en skrivning — inte
+      // att en handler anropades; klassen testar aldrig fixturen. Den är nödvändig
+      // här eftersom en utebliven mutation saknar varje annan observerbar effekt:
+      // vyn ser likadan ut vare sig writen gick iväg eller ej.
+      let updateCalled = false;
+
+      network.use(
+        http.get(EF('get-person'), () => json({ person: personDetail('Ursprunglig not') })),
+        medvetetOanvand(
+          http.post(EF('update-record'), () => {
+            updateCalled = true;
+            return json({});
+          }),
+          'Negativ sensor: att update-record ALDRIG anropas är testets resultat, så handlern ska förbli oanvänd. Matchar den fälls testet på inaktuell märkning — vilket är rätt, för då har Esc börjat skriva.',
+        ),
+      );
+
+      await page.goto(`/personer/${PERSON_ID}`);
+      await page.getByRole('button', { name: 'Redigera' }).click();
+      const textarea = page.getByRole('textbox', { name: 'Anteckning' });
+      await textarea.fill('Ändring som ångras');
+      await textarea.press('Escape');
+
+      // Tillbaka i read-vyn med originalet; ingen write skickad; fokus → knappen.
+      await expect(page.getByText('Ursprunglig not')).toBeVisible();
+      await expect(page.getByRole('textbox', { name: 'Anteckning' })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Redigera' })).toBeFocused();
+      expect(updateCalled).toBe(false);
+    });
+
+    test('axe 0 violations — read-läge OCH edit-läge', async ({ page, network }) => {
+      // Ingen update-record-överskuggning: testet sparar aldrig. Skulle det börja
+      // göra det fälls det av hermetik-vakten i stället för att tyst lyckas.
+      network.use(
+        http.get(EF('get-person'), () => json({ person: personDetail('Ursprunglig not') })),
+      );
+
+      await page.goto(`/personer/${PERSON_ID}`);
+      await expect(page.getByText('Ursprunglig not')).toBeVisible();
+
+      const readResults = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(readResults.violations).toEqual([]);
+
+      // Edit-läget: textarea + Spara/Avbryt + label.
+      await page.getByRole('button', { name: 'Redigera' }).click();
+      await expect(page.getByRole('textbox', { name: 'Anteckning' })).toBeVisible();
+
+      const editResults = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(editResults.violations).toEqual([]);
+    });
   });
-
-  test('axe 0 violations — read-läge OCH edit-läge', async ({ page, network }) => {
-    // Ingen update-record-överskuggning: testet sparar aldrig. Skulle det börja
-    // göra det fälls det av hermetik-vakten i stället för att tyst lyckas.
-    network.use(
-      http.get(EF('get-person'), () => json({ person: personDetail('Ursprunglig not') })),
-    );
-
-    await page.goto(`/personer/${PERSON_ID}`);
-    await expect(page.getByText('Ursprunglig not')).toBeVisible();
-
-    const readResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze();
-    expect(readResults.violations).toEqual([]);
-
-    // Edit-läget: textarea + Spara/Avbryt + label.
-    await page.getByRole('button', { name: 'Redigera' }).click();
-    await expect(page.getByRole('textbox', { name: 'Anteckning' })).toBeVisible();
-
-    const editResults = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze();
-    expect(editResults.violations).toEqual([]);
-  });
-});

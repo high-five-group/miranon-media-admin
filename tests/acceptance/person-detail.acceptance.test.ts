@@ -191,9 +191,7 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     // `.first()` nedan.
     const history = page.getByRole('list', { name: /Eventhistorik/ });
     await expect(history.getByRole('listitem')).toHaveCount(2);
-    await expect(history.getByRole('listitem').first()).toContainText(
-      'Resor i medvetandet 2',
-    );
+    await expect(history.getByRole('listitem').first()).toContainText('Resor i medvetandet 2');
     await expect(history.getByRole('listitem').last()).toContainText('Resor i medvetandet 1');
 
     // Kontakt + leads. Hämtningen SCOPAS till sitt eget block: D visar den
