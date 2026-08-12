@@ -4,6 +4,7 @@ title: 'Skiva: Filterraden (B-målet)'
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:27'
+updated_date: '2026-08-12 21:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -22,16 +23,26 @@ Täcker användarberättelser: 7
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Filterrad ovanför kärnvyns lista: kategori-dropdown + event-dropdown (Select-primitiven) + tidsperiod (ToggleButtonGroup: Idag / 7 dagar / 30 dagar / Allt); klientfiltrering över hämtad lista
-- [ ] #2 Tomläge för "inga träffar med detta filter" — skilt från första-gången-tomläget
-- [ ] #3 A11y: labels på alla kontroller, full tangentbordsväg, axe grönt
-- [ ] #4 Filtervalens URL-state-hantering prövas mot URL-STATE-SPEC:s mönster vid bygget (mät mot specen, anta inte) och utfallet bokförs i notes
+- [x] #1 Filterrad ovanför kärnvyns lista: kategori-dropdown + event-dropdown (Select-primitiven) + tidsperiod (ToggleButtonGroup: Idag / 7 dagar / 30 dagar / Allt); klientfiltrering över hämtad lista
+- [x] #2 Tomläge för "inga träffar med detta filter" — skilt från första-gången-tomläget
+- [x] #3 A11y: labels på alla kontroller, full tangentbordsväg, axe grönt
+- [x] #4 Filtervalens URL-state-hantering prövas mot URL-STATE-SPEC:s mönster vid bygget (mät mot specen, anta inte) och utfallet bokförs i notes
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #1 – ÖPPET BOKFÖRD AVVIKELSE mot AC-ordalydelsen 'klientfiltrering över hämtad lista': faktisk kod (TASK-201.5) säger raka motsatsen på TVÅ ställen — ActivityLogFilters filhuvud (src/domain/types/Filters.ts): 'Server-side (get-activity-log-EF), inte klient-side', och queryKeys.activityLog.history filhuvud (src/queries/keys.ts): 'Nyckeln bär FILTERPARAMETRARNA ... de ändrar VILKEN datamängd get-activity-log-EF:en hämtar server-side'. get-activity-log-EF:en har redan fullt category/eventId/from/to-stöd (dess eget filhuvud). Byggt därför som SERVER-SIDE filtrering via de redan existerande EF-parametrarna, inte som ett array-filter över den delvis laddade sidan — ett äkta klientfilter hade varit trasigt mot en keyset-paginerad, ännu-inte-fullt-laddad lista (exakt den pagineringsbugg uppdraget varnade för). Kortets egen beskrivningstext ('EF-kontraktet från 201.5 bär redan parametrarna så ingen serverändring ingår') stämmer och pekar mot samma slutsats. Full källmärkning i AktivitetsHistorik.tsx:s filhuvud.
+
+AC #4 – URL-STATE-SPEC-avstämning (mätt, inte antaget): specens /event-avsnitt är den exakta precedenten (nuqs, parseAsString för fria dropdown-värden, parseAsStringEnum för begränsade, history:'push' för filter/flikar). Denna vy speglar formen 1:1 — ?kategori (parseAsStringEnum, nollbar), ?event (parseAsString, nollbar — eventId-mängden är datadriven precis som ?typ/?ort), ?tidsperiod (parseAsStringEnum().withDefault('allt') — clearOnDefault ger ren URL vid 'Allt'). Verifierat i acceptance-test (AC #4-testet): URL uppdateras vid filterval, Back-knappen återställer föregående filterläge. Utfall: specens etablerade mönster bar filtret rakt av, inget nytt URL-idiom behövdes.
+
+Filterbyte mitt i paginering: useActivityLogHistory(filters) inkluderar redan filters i queryKey (TASK-201.5-design) — ett filterbyte är därför en NY React Query-cache-post, och useInfiniteQuery startar automatiskt om vid pageParam=null för den nya nyckeln (ingen manuell cursor-reset skriven). Bevisat i acceptance-test 'filterbyte mitt i paginering': efter Ladda fler (sida 2 hämtad) och ett filterbyte bär det NYA anropet ingen cursor, och de gamla sidorna försvinner ur listan. placeholderData: keepPreviousData lades till i useActivityLogHistory (src/data/queries/useActivityLog.ts) så filterraden aldrig unmountas under ett filterbyte (annars hade isPending blivit sant och slagit om till den bara laddningsgrenen utan filterrad — fokus-tapp, AC #3). Negativ-kontroll körd: med placeholderData borttaget fäller testet exakt på assertionen 'filterraden är kvar mitt i flödet' (400ms-fördröjd mock-respons); återställt och grönt igen.
+<!-- SECTION:NOTES:END -->

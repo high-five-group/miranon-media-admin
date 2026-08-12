@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useDataSource } from '@/data/useDataSource';
 import type { ActivityLogFilters } from '@/domain/types/Filters';
 import { queryKeys } from '@/queries/keys';
@@ -35,7 +35,23 @@ const LATEST_DEFAULT_LIMIT = 5;
  * `initialPageParam`/`getNextPageParam`-form). `filters` (kategori/eventId/
  * tidsintervall, TASK-201.8s filterrad) ingår i `queryKey` — en ändrad
  * filterkombination är server-side en ANNAN datamängd, inte en klient-side-
- * omfiltrering av samma sida.
+ * omfiltrering av samma sida. En ny filterkombination har därför sin EGEN
+ * cursor-historik (`initialPageParam` startar om vid `null`) — React Query
+ * håller varje `queryKey` isolerad, så ett filterbyte kan aldrig blanda en
+ * gammal sidas markör med en ny filtermängd (TASK-201.8 § "filterbyte mitt i
+ * paginering").
+ *
+ * `placeholderData: keepPreviousData` (samma mekanism som
+ * `useDashboardData.ts`s `DASHBOARD_POLLING`, samma motiv: "tidigare data
+ * renderas orörd under tyst omhämtning"): UTAN den skulle varje filterbyte
+ * slå om `status` till `'pending'` mitt i sessionen — konsumenten
+ * (`AktivitetsHistorik.tsx`) grenar då till sin bara laddnings-vy och
+ * FILTERRADEN (TASK-201.8) hade unmountats under egna fötterna på den
+ * kontroll användaren just interagerade med (fokus-tapp, AC #3s
+ * tangentbordsväg). Ett ÄKTA första besök (ingen tidigare data i NÅGON
+ * queryKey) är opåverkat — där finns inget att falla tillbaka på, så
+ * `isPending` förblir sant precis som innan denna rad fanns (TASK-201.6:s
+ * ursprungliga laddningsgren är alltså orörd).
  */
 export function useActivityLogHistory(filters: ActivityLogFilters = {}) {
   const dataSource = useDataSource();
@@ -49,6 +65,7 @@ export function useActivityLogHistory(filters: ActivityLogFilters = {}) {
       }),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor,
+    placeholderData: keepPreviousData,
   });
 }
 
