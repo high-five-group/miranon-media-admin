@@ -15,9 +15,11 @@
 
 ## Aktuellt fokus
 
-**Session 105 ⏸️ PAUSAD IGEN (2026-08-12 förmiddag, `lifecycle: paused`) — FAS 6.5
+**Session 105 ▶️ ÅTERUPPTAGEN (2026-08-12 eftermiddag, `lifecycle: active`) — FAS 6.5
 AKTIVITETSLOGGEN: GRILLAD SAMSYN → PRD → TIO SKIVOR → MAIL-LÅSET BEVISAT →
-201.1 LANDAD; KEDJAN BLOCKERAD PÅ DB-ACCESS (MARCUS-MOMENT).** Grillningen
+201.1 STÄNGD; KEDJAN VÄNTAR PÅ ACCESS-TOKEN (MARCUS-MOMENT ÖPPET —
+env-verifikat vid resume: `SUPABASE_ACCESS_TOKEN` fortfarande SAKNAS,
+ingen nyckelringspost, ingen zshrc-rad).** Grillningen
 (fem kvitterade beslut, Del 2): B-målet skivat kärnvy→filterrad · alla
 ~11 mutationstyper loggas · **Supabase `activity_log`, inte Airtable**
 (`ADR-110`) · requestId enda korrelations-ID (`ADR-111`) · xAPI-konformans
@@ -42,9 +44,11 @@ Token-utredningen: `SUPABASE_ACCESS_TOKEN` saknas genuint (mätt 4 ytor);
 nyckelringsinstruktion levererad; Marcus fixar i eftermiddag. **NÄSTA
 (resume): Marcus token-momentet → Code applicerar migrationen själv +
 deployar 196-fixen → kedjan 201.2→201.8 → 201.9 prod + 201.10 QA +
-facit-stämpling. Öppet beslut: prod-skydds-kortet.** Numrering efter
-S105-natten: ADR 112 · L512+3 fragment · T141 · task-202 · f47 —
-re-derivera ALLTID. Full narrativ: sessionsdok S105 Del 1–3 + PAUSLÄGE.
+facit-stämpling. Öppet beslut: prod-skydds-kortet.** Numrering
+disk-re-verifierad vid resume 2026-08-12 em: ADR 112 · L512+3 fragment ·
+T141 · task-202 · **f48** (raden bar tidigare stale `f47`; fälla 47 finns
+på disk sedan S103) — re-derivera ALLTID. Full narrativ: sessionsdok S105
+Del 1–4 + Paushistorik ×2.
 
 **Session 102 ⏸️ PAUSAD IGEN (2026-08-11 kväll, `lifecycle: paused`) —
 RESUME-DAGEN LEVERERADE GO-LIVE-KÄRNAN: prod-mailvägen SKARP (`176`+`177`
