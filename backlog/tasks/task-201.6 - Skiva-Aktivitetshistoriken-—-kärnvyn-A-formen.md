@@ -1,10 +1,10 @@
 ---
 id: TASK-201.6
 title: 'Skiva: Aktivitetshistoriken — kärnvyn (A-formen)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 20:25'
-updated_date: '2026-08-12 19:56'
+updated_date: '2026-08-12 22:04'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,7 +34,7 @@ Täcker användarberättelser: 3, 4, 5, 6, 8, 11, 12
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -45,3 +45,9 @@ AC #1s navigering ("post-klick navigerar till personen eller eventet") — KOORD
 
 CI-FÄLLNING RÄTTAD (2026-08-12, samma kväll som landningen): Acceptance-jobbet fällde deterministiskt 3/3 (original + två retries, ingen flake) — run 31633396902, job 94239278496, rad 191 ('14:30' hittades inte). Klassad av orkestreraren som TASK-27 ('tidszons-klassen i e2e-sviten — Node new Date() mot browser-renderat datum'): tests/acceptance/mer-aktivitetshistorik.acceptance.test.ts:s lokalTid()-hjälpare byggde tidpunkten med Date.setDate/setHours, som tolkas i NODE-PROCESSENS tidszon — på min Mac (TZ=Europe/Stockholm) sammanföll den råkat med webbläsarens pinnade Europe/Stockholm (playwright.config.ts), men CI kör Node i UTC, så setHours(14,30) blev 14:30 UTC = 16:30 CEST i webbläsaren. Lokal grönhet var alltså fel MILJÖ, inte fel mätning. FIX: lokalTid() bygger nu ISO-strängen med explicit +02:00-offset via ren UTC-aritmetik (Date.UTC/getUTCDate) — noll lokala Date-metoder, noll TZ-beroende. Samtidigt togs en tautologi-risk bort: den härledda grupprubriken (LANGDATUM.format(...), samma formatterare som komponenten) ersattes med en oberoende hårdkodad literal ('9 september 2026'). Bevisat i båda riktningar: (1) gamla koden reproducerad röd under TZ=UTC lokalt (identisk fällning som CI, rad 191), (2) nya koden grön under BÅDE TZ=UTC (7/7, 41.5s) och TZ=Europe/Stockholm (7/7, 35.9s).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd som ren bokföring (kod redan landad, kortet stod kvar på To Do). Landat via PR #1231, merge-SHA 430a8156 (main, 2026-08-12T20:21:07Z). AC #1-4 och DoD #1-2/4 var redan avbockade av byggaren (inkl. en post-armering TZ-bugg i acceptance-testet, rättad och omkörd grön i samma landning). DoD #3 (CI grön per jobb) verifierad här: gh pr checks 1231 — samtliga required-jobb pass (Docs link check, Test suite/Acceptance (hermetisk), Test suite/Pure+Build, Test suite/Webblasarbeteende, Analyze x2, CodeQL, Detect changed files, Lint+Audit+TypeCheck, CI Passed or Skipped, Vercel); Staging/A11y/Staging sentinel purge skipping (diff-gated, ingen fällning). Post-merge-sviten (post-merge.yml, run 31637201893) HELT GRÖN — verifierat gh run view, conclusion success. Inga orelaterade filer i PR-diffen (6 filer: kortfil, AktivitetsHistorik.tsx + index.ts, route-filer mer/aktivitetshistorik.tsx + mer/index.tsx, acceptance-test + e2e-test). Inga divergenser mot uppdragets premisser vid denna stängning.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-201.8
 title: 'Skiva: Filterraden (B-målet)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 20:27'
-updated_date: '2026-08-12 21:13'
+updated_date: '2026-08-12 22:06'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,7 +33,7 @@ Täcker användarberättelser: 7
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -48,3 +48,9 @@ Filterbyte mitt i paginering: useActivityLogHistory(filters) inkluderar redan fi
 
 MERGE-KONFLIKT + FAKTAGRUNDS-DRIFT (post-armering, egen byggsession): PR:ens ursprungliga bas (430a8156) hann bli 8 commits bakom main innan armering — mergeStateStatus=CONFLICTING vid första gh pr merge --auto. TASK-201.12 (personId-navigering, landad PR #1233) ändrade AktivitetsHistorik.tsx i samma sektion (Navigeringsmålet/AktivitetsRad) som denna skiva rör indirekt (importblocket) — löst med git merge origin/main, en enda konfliktrad (importblocket), verifierad manuellt. STÖRRE FYND: TASK-201.4 (resterande mutationer, landad samtidigt) VÄXTE ACTIVITY_OBJECT_TYPES från de TRE piloterna (betalning/bekraftelse/mail — vad som fanns vid denna skivas branch-punkt och vad förstudien verifierade) till NIO kategorier (+ anmalan/boende/kvitto/event/flagga/anteckning, PRD användarberättelse 9 ordagrant). Fångades MEKANISKT av typecheck (Record<KategoriKey,string> är komplett, inte KATEGORI_VALUES-arrayen ensam) omedelbart efter merget — inte av manuell granskning. KATEGORI_VALUES/KATEGORI_LABEL uppdaterade till alla nio, PRD-ordningen. Samtliga grindar omkörda GRÖNA efter fixen (typecheck/biome/build/test:api 711 passed/acceptance 17 passed). Detta är ett konkret exempel på ADR-086: 'din worktree skapas ur ett ögonblicks-main och kan vara bakom' — verifierat rätt VID DESIGNTILLFÄLLET, förlegat vid ARMERINGSTILLFÄLLET, upptäckt av en grind byggd just för att fånga den klassen fel.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd som ren bokföring (kod redan landad, kortet stod kvar på To Do). Landat via PR #1237, merge-SHA 417537f5 (main, 2026-08-12T21:49:00Z). AC #1-4 och DoD #1-2/4 var redan avbockade av byggaren, inkl. öppet bokförda avvikelser (AC #1 server-side i stället för klient-side filtrering, källmärkt mot faktisk EF-kontrakt-kod) och en merge-konflikt-lösning mot main under armering. DoD #3 (CI grön per jobb) verifierad här: gh pr checks 1237 — samtliga required-jobb pass (Docs link check, Test suite/Acceptance (hermetisk), Test suite/Pure+Build, Test suite/Webblasarbeteende, Analyze x2, CodeQL, Detect changed files, Lint+Audit+TypeCheck, CI Passed or Skipped, Vercel); Staging/A11y/Staging sentinel purge skipping (diff-gated, ingen fällning). Post-merge-sviten (post-merge.yml, run 31644238298, väntades ut i förgrunden till completed/failure) föll på SAMMA test som TASK-201.4: tests/e2e/event-bekraftelse.staging.test.ts:409 (markera-läget förskjuter inte sidans innehåll vertikalt) — verifierat via gh pr diff 1237 --name-only att filen INTE ingår i PR:ens diff (diffen bär kortfil, AktivitetsHistorik.tsx, useActivityLog.ts, mer-aktivitetshistorik-filter.acceptance.test.ts). Strukturellt icke-blockerande; bokförs öppet som transient/orelaterat och refereras till TASK-205, ingen åtgärd tagen. Inga orelaterade filer i PR-diffen. Inga divergenser mot uppdragets premisser vid denna stängning.
+<!-- SECTION:FINAL_SUMMARY:END -->

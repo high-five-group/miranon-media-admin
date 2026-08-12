@@ -1,10 +1,10 @@
 ---
 id: TASK-201.4
 title: 'Skiva: Instrumentering — resterande mutationer'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 20:23'
-updated_date: '2026-08-12 19:28'
+updated_date: '2026-08-12 22:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,7 +32,7 @@ Täcker användarberättelser: 1, 9, 10
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Zod-schemat validerar varje statement runtime — ogiltigt statement når aldrig activity_log
 - [x] #6 requestId propageras klient → EF → activity_log-rad, läsbar i devtools (byggplanens DoD 3–4)
@@ -204,3 +204,9 @@ persons/PersonNoteEditor}.tsx, tests/api/{record-activity,
 activity-log-resterande-statements(ny)}.test.ts, tests/e2e/
 {atgarder-kvitto,event-bor-over}.staging.test.ts.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd som ren bokföring (kod redan landad, kortet stod kvar på To Do). Landat via PR #1230, merge-SHA 7e74c94b (main, 2026-08-12T19:50:19Z). AC #1-3 och DoD #1-2/4-6 var redan avbockade av byggaren; DoD #3 (CI grön per jobb) verifierad här: gh pr checks 1230 — samtliga required-jobb pass (Docs link check, Test suite/Acceptance (hermetisk), Test suite/Pure+Build, Test suite/Webblasarbeteende, Analyze x2, CodeQL, Detect changed files, Lint+Audit+TypeCheck, CI Passed or Skipped, Vercel); Staging/A11y/Staging sentinel purge skipping (diff-gated, ingen fällning). Post-merge-sviten (post-merge.yml, run 31634625681) föll på tests/e2e/event-bekraftelse.staging.test.ts:409 (markera-läget förskjuter inte sidans innehåll vertikalt) — verifierat via gh pr diff 1230 --name-only att filen INTE ingår i PR:ens diff (diffen bär atgarder-kvitto.staging.test.ts + event-bor-over.staging.test.ts, andra filer). Strukturellt icke-blockerande enligt post-merge.yml/main-skydd-rulesetet; bokförs öppet som transient/orelaterat och refereras till TASK-205 (öppen fynd-kort om samma test), ingen åtgärd tagen. Inga orelaterade filer i PR-diffen (24 filer, samtliga direkt kopplade till instrumenteringen). Inga divergenser mot uppdragets premisser vid denna stängning.
+<!-- SECTION:FINAL_SUMMARY:END -->
