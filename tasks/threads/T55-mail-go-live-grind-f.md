@@ -1,7 +1,15 @@
 # T55 — Mail-go-live: Grind F (öppna prod-ENVIRONMENT-spärren)
 
-- **Tillstånd:** `paused`
+- **Tillstånd:** `closed`
 - **Uppstod:** Session 46 (pivot till UI-spår)
+- **Stängd:** 2026-08-12 (S105) — hela stegsekvensen genomförd och belagd i
+  S102 Del 6 (2026-08-11): Grind F satt (`ENVIRONMENT=production`,
+  namn/värde verifierade mot vaktkoden före), full-paritetsdeploy 33 EF:er
+  med deny-probes 8/8 → 401 (PR #1165/#1175), T51-självtestet levererat
+  (delivered enbart till Marcus, Reply-To `lotta@outsidereality.se`,
+  loggrad sekundexakt 19:17:21), prod-smoke via skarpt ände-till-ände-flöde
+  i prod-appen. Kort `TASK-176`/`TASK-177` Done. Efter detta kan Lotta
+  sända skarpt — trådens scope är uppfyllt.
 - **Commit-tagg:** `git log --grep "\[T55\]"`
 
 ## Scope

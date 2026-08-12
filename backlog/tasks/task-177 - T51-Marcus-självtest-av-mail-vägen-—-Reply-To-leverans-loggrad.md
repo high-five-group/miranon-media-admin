@@ -4,7 +4,7 @@ title: 'T51: Marcus självtest av mail-vägen — Reply-To, leverans, loggrad'
 status: Done
 assignee: []
 created_date: '2026-08-10 06:15'
-updated_date: '2026-08-12 04:10'
+updated_date: '2026-08-12 06:10'
 labels:
   - ready-for-human
 dependencies:
@@ -27,7 +27,7 @@ Go-live-blockerare på Lotta-kan-jobba-baren (Marcus-beslut 2026-08-10, sessions
 <!-- AC:BEGIN -->
 - [x] #1 Mottaget testmail hos Marcus visar korrekt avsändare + Reply-To per T51:s gold standard
 - [x] #2 Loggraden för utskicket skriven och verifierad
-- [ ] #3 Marcus kvitterar utfallet i klartext; T51-tråden uppdaterad
+- [x] #3 Marcus kvitterar utfallet i klartext; T51-tråden uppdaterad
 <!-- AC:END -->
 
 ## Definition of Done
