@@ -133,3 +133,86 @@ INSERT → `201`; en efterföljande PATCH/DELETE mot samma rad → båda `403`;
 raden lästes tillbaka via `service_role` (bekräftar synlighet), var
 osynlig för anon/authenticated trots att den existerade, och städades sist
 via `db query --linked` (postgres-rollen, inte `service_role`).
+
+### get-activity-log — läsvägens paginerings-/filterbevis (TASK-201.5, 2026-08-12)
+
+**AVVIKELSE mot mönstret ovan, källmärkt:** `npx supabase projects api-keys`
+är sedan 2026-08-12 explicit FÖRBJUDET för agenter (skrev en `service_role`-
+nyckel i klartext i ett agent-transkript samma dag) — en mekanisk spärr var
+under uppbyggnad vid denna skivas bygge. `get-activity-log` behöver ingen
+`service_role`-nyckel för sitt EGET arbete (den är auto-injicerad i den
+deployade Edge Function-runtimen, samma väg `test-attachments-storage`s
+filhuvud redan beskriver), men SEEDNING av testrader för att bevisa
+paginerings-/filter-mekaniken mot verkliga rader kräver skrivbehörighet
+`service_role` saknar för DELETE (append-only-grantet, se ovan). I stället
+för den nu förbjudna nyckel-vägen seedades och städades raderna som
+`postgres`-rollen via `db query --linked` (samma kommando som RLS-beviset
+ovan redan använder för cleanup — `postgres` har full behörighet, `service_role`
+behövs inte alls för detta ändamål).
+
+**Vad som INTE är CI-committat, och varför:** `tests/api/get-activity-log.
+staging.test.ts` är CI-committat och bevisar KONTRAKTET (auth-gate, svarsform,
+alla fyra filterparametrar accepteras, 400 på felformad `cursor`/`from`/`to`,
+`pageSize`-klampning, best-effort-ordning) mot tabellens FAKTISKA innehåll vid
+körningstillfället — samma "kontrakt-mot-tom, ingen seedad fixtur"-disciplin
+som `get-mail-log.staging.test.ts` redan etablerat, av samma tre skäl (tabellen
+var tom vid denna skivas start; ingen CI-secret ger skrivbehörighet; syntetiska
+statements vore falsk aktivitetshistorik i en logg som ska spegla VERKLIGA
+åtgärder). Den mekaniska CORREKTHETEN (håller sidbrytningen exakt vid en känd
+radmängd? filtrerar `category`/`eventId`/`from`/`to` EXAKT rätt delmängd?) är
+därför verifierad MANUELLT, en gång, mot fyra seedade rader + en femte
+requestId-fokuserad rad:
+
+```bash
+npx supabase db query --linked -f <seed.sql>   # 4 rader, spridda occurred_at, en bär eventId-extension
+# ... HTTP-anrop mot https://pqtshyierkdgwdnxuirz.supabase.co/functions/v1/get-activity-log
+#     med en riktig user-JWT (playwright/.auth/api-tokens.json)
+npx supabase db query --linked "delete from public.activity_log where actor_name = 'ZZ-TASK-201.5 Probe'"
+```
+
+Utfall, samtliga mot LIVE staging (inte antaget ur exit 0):
+
+1. **Senaste-först:** 4 seedade rader (occurred_at 1–4 dagar bak) kom tillbaka
+   i EXAKT omvänd insättningsordning.
+2. **Keyset-paginering:** `pageSize=2` gav sida 1 = de två NYASTE raderna i
+   HELA tabellen vid tillfället (två RIKTIGA rader skrivna av `TASK-201.3`s
+   parallella landning under samma tidsfönster — se § Öppen observation
+   nedan), `nextCursor` satt; sida 2 (via cursorn) gav exakt de två därpå
+   äldsta raderna (probe 1+2), `nextCursor: null` på sista sidan. Ingen
+   dubblett, inget hopp.
+3. **`category`-filtret** (equality mot `object_type`): isolerade EXAKT de
+   två probe-raderna med matchande typ, uteslöt de två med annan typ OCH de
+   två samtida `TASK-201.3`-raderna (annan `object_type`).
+4. **`eventId`-filtret** (`.contains()` mot `context.extensions`): isolerade
+   EXAKT den enda probe-raden som bar den nyckeln — den högsta-risk-designen
+   i denna skiva (PostgREST jsonb-`cs`-operatorn mot en URI-nyckel), nu
+   EMPIRISKT bevisad, inte bara research-underbyggd.
+5. **`from`/`to`-intervallet:** inneslöt exakt de tre probe-rader vars
+   `occurred_at` föll i fönstret, uteslöt den fjärde (utanför) — och uteslöt
+   samtidigt `TASK-201.3`-raderna (för sena, utanför `to`).
+6. **`requestId`-propagering** (byggplanens DoD 3–4): en femte, separat
+   seedad rad med `request_id = '12345678-90ab-4cde-8f12-34567890abcd'` kom
+   tillbaka med EXAKT samma värde i
+   `statement.context.extensions['…/extensions/requestId']` — klient → EF →
+   rad → läsning är en obruten kedja.
+
+Samtliga fem seedade rader (`ZZ-TASK-201.5 Probe` ×4, `ZZ-TASK-201.5
+RequestId Probe` ×1) städade omedelbart efter mätningen; `select count(*)
+where actor_name like 'ZZ-TASK-201.5%'` → `0` bekräftat efteråt.
+
+**Öppen observation (ej denna skivas att lösa, bokförd öppet):** under
+seed-passet dök två RIKTIGA rader upp i `activity_log` (`actor_name: 'Lotta'`,
+`object_type: '…/activity-types/api-kontroll'`, skrivna ~16:13–16:14 UTC
+2026-08-12) — `TASK-201.3`s parallella landning (tracer bullet-skivan) hade
+alltså redan börjat skriva mot SAMMA staging-tabell. De rördes inte (utanför
+denna skivas yta) och kvarstår i tabellen.
+
+**Öppen koordinerings-skuld (`eventId`-nyckeln):** `get-activity-log`s
+`eventId`-filter matchar `context.extensions['https://admin.miranon.dev/
+xapi/extensions/eventId']` (`EVENT_ID_EXTENSION_IRI`,
+`src/domain/schemas/ActivityStatement.schema.ts`) — ett kontrakt DENNA skiva
+definierar för läsvägen. Skrivvägen (`TASK-201.3`/`TASK-201.4`) emitterar
+ÄNNU INGEN sådan nyckel (bekräftat ovan: de två riktiga raderna som redan
+finns bär den INTE). Filtret returnerar alltså `[]` mot riktiga rader tills
+skrivvägen antar samma nyckel — verifierat KORREKT som mekanism, inte ännu
+verifierat som fullbordad ände-till-ände-funktion.

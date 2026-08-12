@@ -40,6 +40,23 @@ export const XAPI_IRI_BASE = 'https://admin.miranon.dev/xapi' as const;
 export const REQUEST_ID_EXTENSION_IRI = `${XAPI_IRI_BASE}/extensions/requestId` as const;
 
 /**
+ * IRI-nyckeln för en OPTIONELL event-referens i `context.extensions`
+ * (`TASK-201.5`s läskontrakt, AC #1: eventId ingår i filterparametrarna).
+ * `ActivityContextExtensionsSchema`s `.catchall(z.unknown())` (nedan) tillåter
+ * redan denna nyckel utan schemaändring — konstanten finns bara så BÅDA
+ * sidor (en framtida skrivväg som väljer att bära ett eventId, och
+ * `get-activity-log`-EF:ens `eventId`-filter) refererar SAMMA sträng i
+ * stället för att varje sida gissar sin egen. INTE alla statements bär
+ * denna nyckel (t.ex. `object`et ÄR redan eventet för en event-ändring) —
+ * `get-activity-log` filtrerar via `statement`-kolumnens `cs` (contains)
+ * mot `{ context: { extensions: { [EVENT_ID_EXTENSION_IRI]: eventId } } }`,
+ * se EF:ens filhuvud för fullt resonemang och den öppna
+ * koordinerings-skulden mot `TASK-201.3`/`TASK-201.4` (skrivvägen, som
+ * ännu inte emitterar denna nyckel — byggs parallellt, ej denna skivas yta).
+ */
+export const EVENT_ID_EXTENSION_IRI = `${XAPI_IRI_BASE}/extensions/eventId` as const;
+
+/**
  * xAPI Language Map — BCP 47-taggade strängar (`sv-SE`, `en-US`, eller `und`
  * för odeterminerat språk) mappade till text. Vi EMITTERAR alltid endast
  * `sv-SE` (Gunilla-principen), men VALIDERAR generiskt mot spec-formen —

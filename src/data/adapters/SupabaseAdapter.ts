@@ -33,7 +33,12 @@ import type {
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
-import type { ListParams, PersonsPage } from '../../domain/types/Pagination';
+import type {
+  ActivityLogPage,
+  ActivityLogParams,
+  ListParams,
+  PersonsPage,
+} from '../../domain/types/Pagination';
 import type { DataSourceAdapter } from './DataSourceAdapter';
 
 const NOT_IMPLEMENTED = 'SupabaseAdapter: Not implemented - migrate Edge Functions first';
@@ -174,6 +179,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async fetchEventAttachments(_eventId: string): Promise<Attachment[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchActivityLog(_params?: ActivityLogParams): Promise<ActivityLogPage> {
     throw new Error(NOT_IMPLEMENTED);
   }
 }
