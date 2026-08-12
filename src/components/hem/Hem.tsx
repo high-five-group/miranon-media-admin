@@ -3,6 +3,7 @@ import { Greeting } from './Greeting';
 import { NastaEventCard } from './NastaEventCard';
 import { NyaAnmalningarCard } from './NyaAnmalningarCard';
 import { ObetaldaCard } from './ObetaldaCard';
+import { SenasteAktivitet } from './SenasteAktivitet';
 
 /**
  * Hem — K10-facit-strukturen (task-4.2; designen låst S55 Del 12, referens
@@ -14,6 +15,12 @@ import { ObetaldaCard } from './ObetaldaCard';
  * generös hörnradie. Data mot BEFINTLIGA read-EF via router-context-DI
  * (ADR-055); poll-lagret (ADR-017 + erratum) bär färskheten ENSAMT — den
  * manuella uppdatera-kontrollen utgick med B5 (ADR-017 Updates-noten).
+ *
+ * Facitets sista sektion är aktivitetsspalten "Senaste aktivitet"
+ * (TASK-201.7, `SenasteAktivitet.tsx`) — bottenlinjerad med anmälningskortet,
+ * ENDAST ≥xl, utan visuell rubrik och utan ikoner. Den ligger i skalets 600
+ * px-flöde men UTANFÖR kolumnen (`absolute left-full`), så kolumnens
+ * skärm-centrering är orörd.
  *
  * Geometrin mot K10-facitets kolumn (`p-4 pt-6 pb-24 lg:pt-14` på 600-boxen):
  * skalets main bär px-4 + pt-4 + pb-24 → sektionen adderar pt-2 (mobil,
@@ -53,7 +60,15 @@ export function Hem() {
         <ObetaldaCard />
       </div>
 
-      <NyaAnmalningarCard />
+      {/* Aktivitetsspalten bottenlinjerar med anmälningskortet (K10-facit,
+          `bb31a12`: `<div className="relative">` runt kortet + spaltens
+          `absolute bottom-0 left-full`). Wrappern är spaltens positionerings-
+          kontext och ENDAST det — kortet renderar oförändrat. Spalten är
+          osynlig under xl; se SenasteAktivitet.tsx § Synlighet. */}
+      <div className="relative">
+        <NyaAnmalningarCard />
+        <SenasteAktivitet />
+      </div>
 
       <CTA />
 
