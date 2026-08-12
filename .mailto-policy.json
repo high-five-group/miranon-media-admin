@@ -30,9 +30,9 @@
   "exceptions": [
     {
       "type": "file-value",
-      "file": "src/components/persons/PersonDetailPrototyp.tsx",
+      "file": "src/components/persons/PersonDetail.tsx",
       "match": "mailto:",
-      "rationale": "S90-divergenspass, KASTBAR prototyp (throwaway-kontraktet, DEV-grindad route src/routes/_authenticated/personer/$personId.tsx) för persondetalj-sidans variant B ('kontakt-först'). Länken är en 1:1-kontaktaffordans ('maila DEN HÄR personen', filens egen kommentar rad ~556: \"mailto:/tel: är riktiga länkar (ingen mutation)\") — strukturellt skild från TASK-147s bulk-/systemutskick (bekräftelse, betalningspåminnelse, eventinfo, fritt utskick), som går genom servern sedan TASK-147.2/147.3. Ingen stämpling, inget delutfall, ingen batch — samma klass affordans som en 'tel:'-länk, som grinden inte alls granskar. TASK-147.8, 2026-08-10."
+      "rationale": "Persondetaljens kontaktrad. Länken är en 1:1-kontaktaffordans ('maila DEN HÄR personen'; komponentens egen kommentar: \"mailto:/tel: är riktiga länkar (ingen mutation)\") — strukturellt skild från TASK-147s bulk-/systemutskick (bekräftelse, betalningspåminnelse, eventinfo, fritt utskick), som går genom servern sedan TASK-147.2/147.3. Ingen stämpling, inget delutfall, ingen batch — samma klass affordans som en 'tel:'-länk, som grinden inte alls granskar. TASK-147.8, 2026-08-10. FIL-SÖKVÄGEN FLYTTAD 2026-08-12 (S103): undantaget skrevs för PersonDetailPrototyp.tsx, som vid promoveringens rivning (ADR-103 B2 steg 4) bytte namn till PersonDetail.tsx via git mv. Undantaget är alltså INTE utvidgat till en ny yta — det följer samma kod till dess nya filnamn, och SKÄLET är oförändrat: raden är fortfarande persondetaljens 1:1-kontaktlänk. Att posten var fil-scopad var med avsikt och fångade renamet: CI fällde på PersonDetail.tsx:1069 i samma landning som namnbytet."
     }
   ]
 }

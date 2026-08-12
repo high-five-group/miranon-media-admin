@@ -1,0 +1,81 @@
+- link "Tillbaka till personer":
+  - /url: /personer
+- status: Persondetaljer för Ingrid Isaksson laddade.
+- heading "Ingrid Isaksson" [level=1]
+- region "Kontakt":
+  - heading "Kontakt" [level=2]
+  - list:
+    - listitem:
+      - link "ingrid.isaksson@example.se":
+        - /url: mailto:ingrid.isaksson@example.se
+    - listitem:
+      - link "0705558812":
+        - /url: tel:0705558812
+  - text: Inbjuden till community Konto i community
+- region "Just nu":
+  - heading "Just nu" [level=2]
+  - paragraph: 1 aktiv anmälan
+  - list:
+    - listitem: Resor i medvetandet 3 26 september 2026 · Skövde
+- region "Flagga":
+  - heading "Flagga" [level=2]
+  - paragraph: Ring innan nästa event
+  - button "Redigera flagga": Redigera
+- region "Interaktioner":
+  - heading "Interaktioner" [level=2]
+  - heading "Kommande" [level=3]
+  - list:
+    - listitem: RIM 3 i Skövde 26 sep.
+  - heading "2026" [level=3]
+  - list:
+    - listitem:
+      - link "Anmälde sig till RIM 3 i Skövde 26 september 1 aug.":
+        - /url: /event/recVisualEvent001/anmalan/recVisualAnm00001
+    - listitem: Hämtade ett erbjudande Pyramidernas Vajrar 9 juni
+    - listitem: Deltog på Psionautics i Ödeshög 1 maj Dag 1 · Närvarande Dag 2 · Deltog online
+    - listitem: Deltog på FS i Varberg 7 feb. Dag 1 · Närvarande Dag 2 · Frånvarande
+  - heading "2025" [level=3]
+  - list:
+    - listitem: Hämtade ett erbjudande Guidad meditation – Första resan 25 nov.
+    - listitem: Deltog på RIM 2 i Rönninge 18 okt. Dag 1 · Närvarande Dag 2 · Närvarande
+  - heading "2024" [level=3]
+  - list:
+    - listitem: Deltog på RIM 1 i Rönninge 17 nov. Dag 1 · Försenad Dag 2 · Avbröt
+    - listitem: Hämtade ett erbjudande Pyramidernas Vajrar 2 okt.
+  - list:
+    - listitem: Kom in i registret 14 aug.
+- region "Eventhistorik":
+  - heading "Eventhistorik" [level=2]
+  - list "Eventhistorik, senaste först":
+    - listitem: Psionautics 1 maj 2026 · Ödeshög · Utbildning Dag 1 · Närvarande Dag 2 · Deltog online
+    - listitem: Fjärrskådning 7 februari 2026 · Varberg · Utbildning Dag 1 · Närvarande Dag 2 · Frånvarande
+    - listitem: Resor i medvetandet 2 18 oktober 2025 · Rönninge · Utbildning Dag 1 · Närvarande Dag 2 · Närvarande
+    - listitem: Resor i medvetandet 1 17 november 2024 · Rönninge · Utbildning Dag 1 · Försenad Dag 2 · Avbröt
+- region "Hämtade erbjudanden":
+  - heading "Hämtade erbjudanden" [level=2]
+  - list:
+    - listitem: Pyramidernas Vajrar 9 juni 2026
+    - listitem: Guidad meditation – Första resan 25 november 2025
+    - listitem: Pyramidernas Vajrar 2 oktober 2024
+- region "Motiveringar":
+  - heading "Motiveringar" [level=2]
+  - list:
+    - listitem:
+      - text: Resor i medvetandet 3 26 september 2026 Skövde
+      - paragraph: Jag har haft egna upplevelser och läst många böcker som gjort mig förvissad om att vi alla är del av samma medvetande. Nu vill jag lära mig metoder för att ta mig till andra nivåer — och den här gången vill jag ta med mig två vänner som är nyfikna men försiktiga.
+- region "Anteckningar":
+  - heading "Anteckningar" [level=2]
+  - textbox "Ny anteckning":
+    - /placeholder: Skriv en anteckning …
+  - button "Spara" [disabled]
+  - list:
+    - listitem:
+      - article:
+        - text: Lotta 14 juni 2026 11:20
+        - paragraph: Ringde och undrade om det gick att dela upp betalningen — löste det med två delbetalningar.
+    - listitem:
+      - article:
+        - text: Roger 2 maj 2026 18:45
+        - paragraph: "Frågade om allergier inför övernattningen. Noterat: laktosintolerant."
+  - text: Äldre anteckning - odaterad, ingen författare
+  - paragraph: Ringde själv inför Skövde-eventet och erbjöd sig att hjälpa till med incheckningen. Har med sig två vänner som inte anmält sig ännu — stäm av platsantalet med Roger innan bekräftelsen går ut.

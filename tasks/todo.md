@@ -108,11 +108,31 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-12 kväll, `lifecycle: active`) —
-MARCUS GRANSKNINGSVARV PÅ D FORTSÄTTER; `#1214` LANDAD (`23eca3b1`).**
-Resumen re-verifierade numreringen mot `origin/main`: **ADR 112 · kort 205**
-(avvikelse mot handoffens 204 — `task-204` mintad av annan session under
-pausen) **· T142 · L512** + 4 fragment. Föregående pass, Del 8:
+**Session 103 ⏸️ PAUSAD (2026-08-12 sen kväll, `lifecycle: paused`) — DEL 9:
+PERSONDETALJEN ÄR PROMOVERAD OCH LÅST. ADR-103:s FYRA STEG KLARA, MARCUS
+STÄMPEL SATT (`av: marcus, sha: 4648823a`), PROTOTYP-MASKINERIET RIVET.**
+`PersonDetailPrototyp.tsx` finns inte längre — den ÄR `PersonDetail.tsx`
+(`git mv`, historiken följer FORMEN). Fem granskningsfynd först:
+kommande-posten och Just nu-raden klickbara (krävde EF-utökning —
+`Deltaganden.Anmälan`/`Event`
+fanns i basen, `get-person` exponerade dem inte) · hover-plattan till
+eventdetalj-familjens form (mätt: 566 px kant-i-kant → 550 px, radius 0 → 8) ·
+motiveringsreferensen särskild med kursfärgs-prick + `·` (INGEN ny form mintad —
+repot saknar pill för kursnamn) · pillen först förtydligad, sedan RIVEN HELT på
+Marcus omprövning (*"hjälper inte Lotta"*) · aktiv-raden fylld i vila.
+**B4-BEVISET: promoverings-grinden 4/4 grön mot ORÖRDA referenser** både efter
+flippen och efter renamet. Grinden fällde först — ett **differentialtest mot
+FÖRE-läget fällde IDENTISKT**, alltså Playwrights regex-generalisering, inte en
+formskillnad; referenserna togs om bokstavligt ur variant-läget med flippen
+stashad. **MISSAT CARRY, fångat av CI:** `mailto`-undantaget var fil-scopat till
+prototypfilnamnet och dog med renamet — kravet stod i komponentens egen docblock
+hela passet. Grinden fångade det, inte självgranskningen.
+**NÄSTA: CHECK-IN — förberedelsen är gjord i handoffen** (route
+`event/$eventId/narvaro.tsx` · `CheckinPrototyp.tsx` 1087 rader · DIVERGENS med
+`?variant=a|b|c`, inget formval gjort · **närvaro-WRITE saknas HELT**, verifierat
+0 träffar på `Deltaganden` i `field-allowlists.ts` — det är ett skrivlager att
+bygga, inte bara ett designpass). **HANDOFF: sessionsdok S103 § PAUSLÄGE
+(2026-08-12 sen kväll) + Del 9.** Föregående pass, Del 8:
 **MARCUS GRANSKNINGSVARV PÅ D: SEXTON FEL ÅTGÄRDADE ÖVER FYRA PR:er, TIDSLINJEN
 OMBYGGD TILL APPENS LÅSTA `Tidslinje`-FORM.** Del 8: `#1200` (resume,
 `011b83bb`) fann att carry 2 var betald av S102 → `#1204` (elva fel,
