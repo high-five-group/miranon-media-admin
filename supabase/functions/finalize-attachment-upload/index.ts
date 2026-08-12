@@ -14,7 +14,8 @@
 // den fick/uppgav vid ticket-utfärdandet — och denna funktion DERIVERAR
 // samma path SERVER-SIDE med samma formel
 // (_shared/attachments.ts buildAttachmentPath). Sedan verifieras att ett
-// objekt FAKTISKT finns där (storage.list) INNAN någon metadatarad skrivs.
+// objekt FAKTISKT finns där (storage.info — se § EXISTENSKONTROLLEN nedan
+// för varför INTE storage.list, TASK-196) INNAN någon metadatarad skrivs.
 // Det stänger den uppenbara attacken ("peka finalize mot en annan händelses
 // fil"): eftersom attachmentId alltid är server-genererat vid ticket-
 // utfärdandet och aldrig återanvänds mellan event, kan en klient bara
@@ -103,28 +104,53 @@ Deno.serve(async (req) => {
     const expectedFilename = buildAttachmentLeaf(attachmentId, filnamn);
     const path = buildAttachmentPath(eventId, attachmentId, filnamn);
 
-    const { data: listing, error: listError } = await supabaseAdmin.storage
+    // EXISTENSKONTROLLEN läser OBJEKTET DIREKT via dess kända, deriverade
+    // `path` (`storage.info`, GET /object/info/{path}) — INTE via
+    // `storage.list(eventId)` + en manuell namn-sökning i svaret (TASK-196,
+    // 2026-08-12). `.list()` är en FOLDER-listning med bibliotekets defaults
+    // `limit:100, offset:0, sortBy:{name,asc}` (verifierat mot den
+    // installerade @supabase/storage-js-källkoden, `StorageFileApi.ts`) — den
+    // paginerar, och BELAGGNING_EVENT_ID-mappen växer UTAN GRÄNS över tid
+    // (storage-bytes städas aldrig, se testfilens egen header +
+    // .purge-staging-policy.json som bara purgar Airtable-raden). En nyss
+    // uppladdad fil vars slumpmässiga UUID-prefix sorterar utanför sidans
+    // fönster missas då AV `.list()` PERMANENT — inte tillfälligt.
+    // Rött-först-belägg (2026-08-12, TASK-196): en riktig ticket→PUT→finalize
+    // mot skarp staging föll DETERMINISTISKT även efter 16 sekunders väntan
+    // före finalize — alltså INTE "eventual consistency" (den hypotesen är
+    // falsifierad: en genuin läs-efter-skriv-fördröjning hade läkt inom
+    // millisekunder-till-sekunder, inte förblivit fel i 16s rakt igenom).
+    // `.info(path)` är en ENSKILD resurs-URL (inte en lista) och är därför
+    // strukturellt IMMUN mot mappstorleken, oavsett hur många syskonobjekt
+    // som finns i samma event-mapp.
+    const { data: info, error: infoError } = await supabaseAdmin.storage
       .from(BILAGOR_BUCKET_ID)
-      .list(eventId);
-    if (listError) {
+      .info(path);
+    if (infoError) {
+      // Storage svarar ALLTID med HTTP 400 och en inbäddad `statusCode`-sträng
+      // för "hittades inte" (`{"statusCode":"404","error":"not_found",...}`,
+      // empiriskt verifierat mot skarp staging TASK-196 2026-08-12) —
+      // `@supabase/storage-js`s felhantering (`lib/common/fetch.ts`
+      // `handleError`) lyfter DEN strängen till `error.statusCode`, medan
+      // `error.status` alltid blir den råa HTTP-koden (400). Kontrollera
+      // därför `statusCode`, aldrig `status`, för att skilja "hittades inte"
+      // (400, väntat) från ett faktiskt lagringsfel (502, oväntat).
+      if (infoError.statusCode === '404') {
+        return badRequest(
+          'Uppladdningen verkar inte ha slutförts — filen hittades inte i lagringen. ' +
+            'Prova att ladda upp igen.',
+          corsHeaders,
+        );
+      }
       throw new HttpError(
         502,
-        `Lagringen kunde inte kontrolleras just nu: ${listError.message}. Prova igen.`,
-      );
-    }
-
-    const found = (listing ?? []).find((entry) => entry.name === expectedFilename);
-    if (!found) {
-      return badRequest(
-        'Uppladdningen verkar inte ha slutförts — filen hittades inte i lagringen. ' +
-          'Prova att ladda upp igen.',
-        corsHeaders,
+        `Lagringen kunde inte kontrolleras just nu: ${infoError.message}. Prova igen.`,
       );
     }
 
     // Storleken kommer från LAGRINGENS FAKTISKA objekt-metadata — aldrig ett
     // klient-påstått tal (AC #5, server-side auktorisationsbeslut).
-    const actualSizeBytes = found.metadata?.size;
+    const actualSizeBytes = info?.size;
     if (typeof actualSizeBytes !== 'number') {
       throw new HttpError(502, 'Filens storlek kunde inte läsas från lagringen. Prova igen.');
     }
