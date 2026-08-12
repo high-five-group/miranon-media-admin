@@ -193,6 +193,31 @@ test.describe('get-activity-log — kontrakt-conformance (TASK-201.5, tom-eller-
       expect(status).toBe(400);
     });
 
+    test('cursor vars occurredAt-del PASSERAR Date.parse men bär PostgREST-metatecken → 400 (isolerar regex-lagret)', async ({
+      request,
+    }) => {
+      // Detta ISOLERAR den andra försvarslinjen (`/[,()]/.test(occurredAt)`,
+      // se EF:ens § parseCursorToken): `Date.parse('Wed Jan 01 2020
+      // 00:00:00 GMT+0000 (extra)')` returnerar ett GILTIGT tal (V8 tolererar
+      // den avslutande parentesen som en tidszons-kommentar) — till skillnad
+      // från testet ovan skulle DENNA sträng ha PASSERAT om bara
+      // `Number.isNaN(Date.parse(...))`-kontrollen fanns. Empiriskt verifierat
+      // (node -e) innan detta test skrevs: Date.parse(...) → giltigt tal,
+      // isNaN → false, regex → true. Fäller alltså SPECIFIKT regex-raden,
+      // inte bara Date.parse-raden — ett bevis i den riktning mission-
+      // uppdraget efterfrågar ("fäller när den ska"), inte bara att den är
+      // grön.
+      const config = getApiConfig();
+      const jwt = await getValidUserJWT(request, config);
+      const forged = Buffer.from(
+        JSON.stringify({
+          o: 'Wed Jan 01 2020 00:00:00 GMT+0000 (extra)|00000000-0000-0000-0000-000000000000',
+        }),
+      ).toString('base64');
+      const { status } = await callGetActivityLog(request, config, jwt, { cursor: forged });
+      expect(status).toBe(400);
+    });
+
     test('ogiltigt "from" → 400', async ({ request }) => {
       const config = getApiConfig();
       const jwt = await getValidUserJWT(request, config);
