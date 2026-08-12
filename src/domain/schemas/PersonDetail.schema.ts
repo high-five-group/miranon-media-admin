@@ -45,17 +45,36 @@ export const PersonTouchpointEntrySchema = z.object({
  * kursnamn (`Kurs (from Event)`-lookupen) och faller tillbaka på anmälans
  * egna `Vill anmäla sig till` när eventlänken saknas (backfill-anmälningar
  * utan Event-länk) — samma idiom som basens egen `Senaste anmälan
- * (sammanfattning)`-formel (TASK-184). `datum` är `Rad skapad` (createdTime)
- * — INTE `Inskickad`, som är ojämnt ifylld (data-model.md § "Senaste
- * anmälan datum": samma val som basens egen rollup för personens
- * senaste-anmälan-datum). Ersätter INTE `motivering` (plattat rollup-format,
- * kvar orört nedan).
+ * (sammanfattning)`-formel (TASK-184).
+ *
+ * `datum` = NÄR PERSONEN ANMÄLDE SIG: `Inskickad` när det finns, annars
+ * `Rad skapad` (createdTime). Fältet bar fram till 2026-08-12 ENBART `Rad
+ * skapad`, med motiveringen att `Inskickad` är ojämnt ifylld (data-model.md
+ * § "Senaste anmälan datum"). Den motiveringen håller för ett val mellan
+ * ETT av två fält — den håller inte mot en fallback-kedja, och priset var
+ * mätbart: på seedad data är `Rad skapad` seedningsögonblicket, så SAMTLIGA
+ * anmälningar fick identiskt datum (Sofia Isaksson 2026-08-12: fyra
+ * anmälningar, alla "10 augusti 2026", medan `Inskickad` bar 2026-05-21,
+ * 2026-08-07 och två till). Den "fallande ordning" B6 lovar var alltså
+ * ordningslös, och strömmens anmälnings-poster klumpades på en enda dag.
+ *
+ * `eventDatum` = EVENTETS startdatum (`Startdatum`, lookup via Event-länken).
+ * Utan det går två anmälningar till samma KURS men olika TILLFÄLLEN inte att
+ * skilja åt — samma person renderade två identiska rader "Anmäld till
+ * Fjärrskådning" (tillfällena 2026-06-11 och 2026-08-18).
+ *
+ * BÅDA fälten är `.default(null)`: en EF som ännu inte deployats med
+ * utökningen utelämnar dem, och vyn ska då falla tillbaka på sitt tidigare
+ * beteende i stället för att fälla schemat.
+ *
+ * Ersätter INTE `motivering` (plattat rollup-format, kvar orört nedan).
  */
 export const PersonMotiveringEntrySchema = z.object({
   id: z.string(),
   motivering: z.string().nullable(),
   event: z.string().nullable(),
   datum: z.string().nullable(),
+  eventDatum: z.string().nullable().default(null),
 });
 
 /**

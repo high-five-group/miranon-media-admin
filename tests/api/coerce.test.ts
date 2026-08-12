@@ -392,8 +392,9 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
             motivering: 'Jag vill lära mig mer.',
             event: 'Resor i medvetandet 1',
             datum: '2026-02-01T09:00:00.000Z',
+            eventDatum: '2026-03-15',
           },
-          { id: 'recANM002', motivering: null, event: null, datum: null },
+          { id: 'recANM002', motivering: null, event: null, datum: null, eventDatum: null },
         ],
       }),
     );
@@ -403,13 +404,37 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
       motivering: 'Jag vill lära mig mer.',
       event: 'Resor i medvetandet 1',
       datum: '2026-02-01T09:00:00.000Z',
+      eventDatum: '2026-03-15',
     });
     expect(parsed.motiveringar[1]).toEqual({
       id: 'recANM002',
       motivering: null,
       event: null,
       datum: null,
+      eventDatum: null,
     });
+  });
+
+  // BAKÅTKOMPATIBILITETEN ÄR EN EGENSKAP VYN VILAR PÅ, alltså bevisas den.
+  // `eventDatum` kom in i schemat 2026-08-12 men EF-utökningen som levererar
+  // det kräver en deploy som ännu inte gjorts (Marcus token-moment). Under
+  // tiden svarar den deployade get-person UTAN fältet — och vyn ska då falla
+  // tillbaka på sitt tidigare beteende, inte fälla hela persondetaljen på ett
+  // valideringsfel. `.default(null)` är mekanismen; detta är dess kontrakt.
+  test('PersonDetailSchema: motivering UTAN eventDatum parsar och får null (odeployad EF)', () => {
+    const parsed = PersonDetailSchema.parse(
+      validPersonDetail({
+        motiveringar: [
+          {
+            id: 'recANM003',
+            motivering: 'Svar från en EF utan S103-utökningen.',
+            event: 'Fjärrskådning',
+            datum: '2026-05-21T09:14:00.000Z',
+          },
+        ],
+      }),
+    );
+    expect(parsed.motiveringar[0]?.eventDatum).toBeNull();
   });
 
   test('PersonDetailSchema: motiveringar tom lista är giltig (inga anmälningar länkade)', () => {
