@@ -15,7 +15,11 @@
 import { expect, test } from '@playwright/test';
 import { recordActivity } from '../../src/data/activityLog/recordActivity';
 import type { DataSourceAdapter } from '../../src/data/adapters/DataSourceAdapter';
-import { REQUEST_ID_EXTENSION_IRI } from '../../src/domain/schemas/ActivityStatement.schema';
+import {
+  EVENT_ID_EXTENSION_IRI,
+  PERSON_ID_EXTENSION_IRI,
+  REQUEST_ID_EXTENSION_IRI,
+} from '../../src/domain/schemas/ActivityStatement.schema';
 
 /** Minimal `DataSourceAdapter`-stub — bara `recordActivity` behöver ett
  * konkret beteende, resten är oanvänd av testet (aldrig anropad). */
@@ -97,5 +101,99 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
 
     const stmt = mottagetStatement as { actor: { name: string } } | undefined;
     expect(stmt?.actor.name).toBe('Okänd användare');
+  });
+
+  // TASK-201.4: betalar 201.3s deferrade EVENT_ID_EXTENSION_IRI-skuld — se
+  // recordActivity.ts's `eventId`-fält. BÅDA riktningarna, samma disciplin
+  // som fire-and-forget-testerna ovan.
+  test('EVENT_ID_EXTENSION_IRI riktning 1/2: eventId angivet → buret i context.extensions under RÄTT nyckel', async () => {
+    let mottagetStatement: unknown;
+    const dataSource = stubAdapter(async (statement) => {
+      mottagetStatement = statement;
+      return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
+    });
+
+    await recordActivity({ dataSource, ...VALID_INPUT, eventId: 'recEVENT00000001' });
+
+    const stmt = mottagetStatement as {
+      context: { extensions: Record<string, string> };
+    };
+    expect(stmt.context.extensions[EVENT_ID_EXTENSION_IRI]).toBe('recEVENT00000001');
+    // RAK STRÄNG, inte en URL-inpackad form — matchar `get-activity-log`s
+    // `.contains()`-filter EXAKT (`supabase/functions/get-activity-log/
+    // index.ts`: `context: { extensions: { [EVENT_ID_EXTENSION_IRI]: eventId } }`,
+    // rätt om värdet vore omskrivet till en IRI hade filtret aldrig matchat).
+  });
+
+  test('EVENT_ID_EXTENSION_IRI riktning 2/2: eventId UTELÄMNAT → nyckeln saknas helt (aldrig en tom sträng eller undefined-VÄRDE)', async () => {
+    let mottagetStatement: unknown;
+    const dataSource = stubAdapter(async (statement) => {
+      mottagetStatement = statement;
+      return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
+    });
+
+    await recordActivity({ dataSource, ...VALID_INPUT });
+
+    const stmt = mottagetStatement as {
+      context: { extensions: Record<string, string> };
+    };
+    expect(Object.hasOwn(stmt.context.extensions, EVENT_ID_EXTENSION_IRI)).toBe(false);
+  });
+
+  // TASK-201.12: stänger 201.6s öppna personnavigerings-gap — se
+  // recordActivity.ts's `personId`-fält. EXAKT samma bevis-form som
+  // EVENT_ID_EXTENSION_IRI-testerna ovan (BÅDA riktningarna).
+  test('PERSON_ID_EXTENSION_IRI riktning 1/2: personId angivet → buret i context.extensions under RÄTT nyckel', async () => {
+    let mottagetStatement: unknown;
+    const dataSource = stubAdapter(async (statement) => {
+      mottagetStatement = statement;
+      return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
+    });
+
+    await recordActivity({ dataSource, ...VALID_INPUT, personId: 'recPER0000000001' });
+
+    const stmt = mottagetStatement as {
+      context: { extensions: Record<string, string> };
+    };
+    expect(stmt.context.extensions[PERSON_ID_EXTENSION_IRI]).toBe('recPER0000000001');
+    // RAK STRÄNG, inte en URL-inpackad form — samma disciplin som
+    // EVENT_ID_EXTENSION_IRI-testet ovan förklarar (matchar en framtida
+    // `.contains()`-filter EXAKT om läsvägen någon gång bygger ett).
+  });
+
+  test('PERSON_ID_EXTENSION_IRI riktning 2/2: personId UTELÄMNAT → nyckeln saknas helt (aldrig en tom sträng eller undefined-VÄRDE)', async () => {
+    let mottagetStatement: unknown;
+    const dataSource = stubAdapter(async (statement) => {
+      mottagetStatement = statement;
+      return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
+    });
+
+    await recordActivity({ dataSource, ...VALID_INPUT });
+
+    const stmt = mottagetStatement as {
+      context: { extensions: Record<string, string> };
+    };
+    expect(Object.hasOwn(stmt.context.extensions, PERSON_ID_EXTENSION_IRI)).toBe(false);
+  });
+
+  test('PERSON_ID_EXTENSION_IRI och EVENT_ID_EXTENSION_IRI samexisterar oberoende — vardera buren eller utelämnad efter sitt eget fält', async () => {
+    let mottagetStatement: unknown;
+    const dataSource = stubAdapter(async (statement) => {
+      mottagetStatement = statement;
+      return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
+    });
+
+    await recordActivity({
+      dataSource,
+      ...VALID_INPUT,
+      eventId: 'recEVENT00000001',
+      personId: 'recPER0000000001',
+    });
+
+    const stmt = mottagetStatement as {
+      context: { extensions: Record<string, string> };
+    };
+    expect(stmt.context.extensions[EVENT_ID_EXTENSION_IRI]).toBe('recEVENT00000001');
+    expect(stmt.context.extensions[PERSON_ID_EXTENSION_IRI]).toBe('recPER0000000001');
   });
 });

@@ -12,7 +12,11 @@ import { ACTIVITY_OBJECT_TYPES } from '@/data/activityLog/activityTypes';
 import { useActivityLogHistory } from '@/data/queries/useActivityLog';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
-import { type ActivityStatement, EVENT_ID_EXTENSION_IRI } from '@/domain/schemas';
+import {
+  type ActivityStatement,
+  EVENT_ID_EXTENSION_IRI,
+  PERSON_ID_EXTENSION_IRI,
+} from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
 
 /**
@@ -179,30 +183,43 @@ function sprakText(map: Record<string, string>): string {
 
 /**
  * Navigeringsmålet — PRD användarberättelse 8: "klicka på en post och komma
- * till personen eller eventet det gällde". ÖPPEN KOORDINERINGS-SKULD (samma
- * skuld `src/domain/types/Filters.ts`s `ActivityLogFilters.eventId` redan
- * dokumenterar, TASK-201.4 § Implementation Notes punkt 1): skrivvägen
- * (TASK-201.3, landad) emitterar ÄNNU INTE `EVENT_ID_EXTENSION_IRI` i
- * `context.extensions` — TASK-201.4 äger den emissionen, återanvänder samma
- * konstant. Object-IRI:t (`objects/registrations/{id}`) bär i dag INGEN
- * separat person-/event-identitet att parsa fram (`activityTypes.ts`s
- * `registrationObjectId`) — en registrering saknar egen detaljsida
- * (`/event/$eventId/anmalan/$registrationId` kräver BÅDA parametrarna).
+ * till personen eller eventet det gällde". Object-IRI:t
+ * (`objects/registrations/{id}`) bär i sig INGEN separat person-/
+ * event-identitet att parsa fram (`activityTypes.ts`s `registrationObjectId`)
+ * — en registrering saknar egen detaljsida (`/event/$eventId/anmalan/
+ * $registrationId` kräver BÅDA parametrarna) — navigeringsmålet läses därför
+ * ALLTID ur `context.extensions`, aldrig ur `object.id`.
  *
- * Denna funktion läser DÄRFÖR extensionen defensivt: finns den (efter
- * TASK-201.4, eller i en framtida statement-typ) blir raden en riktig länk
- * till EVENTET — precis som `NyaAnmalningarCard`s etablerade "registrering →
- * händelsens event"-precedent. Saknas den (samtliga statements idag) renderas
- * raden olänkad, ärligt — INGEN gissning via namnmatchning mot en cachad
- * personlista (Gunilla-fientligt vid namnkollision). Mekanismen aktiveras
- * alltså automatiskt den dag TASK-201.4 landar, utan att denna vy rörs.
- *
- * Person-navigering är INTE byggd: ingen mutation/statement-typ sätter någon
- * person-identifierande extension i dag (ingen spekulativ IRI-konvention
- * uppfinns för en konsument som inte finns, över-engineering-vakten).
+ * Denna funktion läser extensionen defensivt: finns den (skrivvägen,
+ * `TASK-201.4`, landad) blir raden en riktig länk till EVENTET — precis som
+ * `NyaAnmalningarCard`s etablerade "registrering → händelsens event"-
+ * precedent. Saknas den renderas raden olänkad för den delen, ärligt — INGEN
+ * gissning via namnmatchning mot en cachad personlista (Gunilla-fientligt vid
+ * namnkollision).
  */
 export function aktivitetensEventId(statement: ActivityStatement): string | null {
   const raw = statement.context.extensions[EVENT_ID_EXTENSION_IRI];
+  return typeof raw === 'string' && raw.trim() !== '' ? raw : null;
+}
+
+/**
+ * Person-halvan av samma navigeringsmål (`TASK-201.12`, stänger det gap
+ * denna funktions systerfunktion `aktivitetensEventId` ovan tidigare
+ * dokumenterade som obyggt: "ingen mutation/statement-typ sätter någon
+ * person-identifierande extension i dag"). EXAKT samma läsdisciplin —
+ * defensiv, `.trim() !== ''`, aldrig en gissning.
+ *
+ * PRIORITETSORDNING i `AktivitetsRad` nedan: eventId FÖRE personId när båda
+ * finns (t.ex. en betalningsrad för en registrering i ett event bär BÅDA
+ * efter `TASK-201.12`) — bevarar `NyaAnmalningarCard`-precedentets
+ * "registrering → händelsens event"-mål oförändrat för de statement-typer
+ * som redan länkade dit. personId är alltså ett TILLÄGG som aktiverar
+ * navigering för de statement-typer som ALDRIG hade ett eventId att länka
+ * mot (person-flagga, person-anteckning skapa/uppdatera — objektet ÄR redan
+ * personen) snarare än en omprioritering av redan fungerande rader.
+ */
+export function aktivitetensPersonId(statement: ActivityStatement): string | null {
+  const raw = statement.context.extensions[PERSON_ID_EXTENSION_IRI];
   return typeof raw === 'string' && raw.trim() !== '' ? raw : null;
 }
 
@@ -230,6 +247,9 @@ function AktivitetsRad({
   nuMs: number;
 }) {
   const eventId = aktivitetensEventId(statement);
+  // Läses bara när eventId saknas — se aktivitetensPersonId's
+  // prioritetskommentar (eventId vinner när båda finns).
+  const personId = eventId ? null : aktivitetensPersonId(statement);
   const tid = radensTid(statement.timestamp, grupp, nuMs);
   const handelse = sprakText(statement.verb.display);
   const objekt = sprakText(statement.object.definition.name);
@@ -251,6 +271,15 @@ function AktivitetsRad({
         <Link
           to="/event/$eventId"
           params={{ eventId }}
+          className="group flex items-center justify-between gap-3 px-2 py-3 hover:bg-bg-emphasized"
+        >
+          {innehall}
+          <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
+        </Link>
+      ) : personId ? (
+        <Link
+          to="/personer/$personId"
+          params={{ personId }}
           className="group flex items-center justify-between gap-3 px-2 py-3 hover:bg-bg-emphasized"
         >
           {innehall}

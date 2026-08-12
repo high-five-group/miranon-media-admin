@@ -1,4 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/auth/useAuth';
+import {
+  ACTIVITY_OBJECT_TYPES,
+  ANTECKNADE_VERB,
+  personActivityName,
+  personObjectId,
+} from '@/data/activityLog/activityTypes';
+import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonNote } from '@/domain/models/PersonNote';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
@@ -15,10 +23,14 @@ import { queryKeys } from '@/queries/keys';
  * `forfattare` skickas ALDRIG från klienten — EF:en sätter den server-side ur
  * den inloggade användarens verifierade identitet (ADR-075). Hooken skickar
  * bara `text`; `personId` binds vid hook-anropet (samma id för write + cache-nyckel).
+ *
+ * `personNamn` (TASK-201.4, AKTIVITETSLOGGEN): hook-bundet som `personId`,
+ * samma motiv som `useUpdatePersonFlag`s docblock.
  */
-export function useCreatePersonNote(personId: string) {
+export function useCreatePersonNote(personId: string, personNamn: string | null) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
   const key = queryKeys.persons.notes(personId);
 
   return useMutation<PersonNote, Error, string>({
@@ -30,8 +42,33 @@ export function useCreatePersonNote(personId: string) {
 
     // aria-live för den lyckade skapelsen (ingen annan SR-signal för create-flippen);
     // strömmen synkas av onSettled-invalideringen nedan.
+    //
+    // AKTIVITETSLOGGEN (TASK-201.4, AC #2): loggar ATT — object.name är
+    // `personActivityName(personNamn)` (hook-bundet), `onSuccess`
+    // destrukturerar MEDVETET inte den skapade `PersonNote` (som bär `text`)
+    // eller mutationens `text`-variabel, samma disciplin som
+    // `useUpdatePersonNote`.
     onSuccess: () => {
       alertScreenReader('Anteckningen har lagts till');
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: ANTECKNADE_VERB,
+        object: {
+          id: personObjectId(personId),
+          type: ACTIVITY_OBJECT_TYPES.anteckning,
+          name: personActivityName(personNamn),
+        },
+        // TASK-201.12: personId är hook-bundet och ALLTID satt (till
+        // skillnad mot registration-scopade mutationer, där personId kan
+        // vara null) — objektet ÄR redan personen, men extensionen emitteras
+        // ändå, EXAKT samma uniforma mönster som event-objekt-statements
+        // (`useUpdateEvent`/`useCreateEventNote`) emitterar eventId trots
+        // att object.id redan är eventObjectId(eventId). Vyns navigering
+        // läser då EN uniform mekanism (context.extensions) oavsett
+        // statement-typ, i stället för att parsa object.id:ns IRI-namnrymd.
+        personId,
+      });
     },
 
     // Synka mot servern oavsett utfall (ADR-016 komponent E) → strömmen refetchar.

@@ -1,0 +1,86 @@
+import { expect, test } from '../support/fixturvarld/hermetic';
+
+/**
+ * PROMOVERINGS-GRINDEN för persondetaljen (`ADR-103` B4).
+ *
+ * [FÖRE-HALVAN LÅST — 2026-08-12] Referenserna under `__aria__/` fångas ur
+ * prototyp-formen (`?variant=d`) INNAN villkoret flippas, och är därefter
+ * ORÖRDA. Efter flippen pekar samma lokatorer och samma `name:`-nycklar mot
+ * den promoverade, ovillkorliga ytan (`gotoPromoverad`). En grön körning
+ * betyder därför EN sak: trädet är byte-identiskt före och efter
+ * promoveringen — formen följde med, ingenting annat smög in.
+ *
+ * ORDNINGEN ÄR ENKELRIKTAD, och det är skälet FÖRE-halvan låses i en EGEN
+ * commit före flippen: variant-grenen renderas bara under
+ * `import.meta.env.DEV && variant === 'd'`. Flippas villkoret först upphör
+ * FÖRE-läget att existera och paret kan aldrig konstrueras i efterhand — inte
+ * ens genom att läsa bilagans PNG:er, eftersom de inte bär den roll/namn-
+ * struktur `ariaSnapshot` jämför. Samma enkelriktning som
+ * `personer-promoverings-grind.spec.ts` bokför i sitt huvud.
+ *
+ * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (`ADR-103` B4): deterministiskt, noll
+ * nya beroenden, och det jämför STRUKTUR + TILLGÄNGLIGT NAMN. Pixel-diff är
+ * den bokförda eskaleringsvägen OM `ariaSnapshot` empiriskt missar en
+ * formskillnad — inte default.
+ *
+ * SCOPE — TVÅ LÄGEN, valda mot var formbesluten faktiskt sitter:
+ *
+ *   1. **Den RIKA personen** (`recVisualPers00009`) — bär alla sju block med
+ *      innehåll: kontaktraderna, "Just nu" med aktiv anmälan, flaggan,
+ *      interaktionsströmmen med sina tre posttyper, eventhistoriken,
+ *      hämtningarna och motiveringarna. Merparten av D:s form sitter här.
+ *   2. **Den TUNNA personen** (`recVisualPers00017`) — tomlägena. Varje
+ *      blocks frånvaro-form är ett eget formbeslut ("Inga aktiva
+ *      anmälningar.", "Inga motiveringar registrerade." m.fl.) och kan
+ *      regressera oberoende av det rika läget. Carry 3:s granskningsmetod i
+ *      mekanisk form: en varianta svaghet är osynlig på fel person.
+ *
+ * MEDVETET UTANFÖR: laddningsläget (`isPending`, skeleton-raderna) — samma
+ * skäl som personlistans grind anger, det är tidsberoende och `ADR-103` B4:s
+ * syfte är att fälla FORMSKILLNADER. Ankaret sitter ändå på sidramen, så
+ * läget kan låsas senare utan strukturändring.
+ *
+ * FIXTURVÄRLDEN, verifierade fakta
+ * (`tests/support/fixturvarld/fixture-data.ts`): `PERSON_DETAIL_RESPONSE` bär
+ * exakt två kuraterade ID:n — `VISUAL_PERSON_RIK_ID` (`recVisualPers00009`)
+ * och `VISUAL_PERSON_TUNN_ID` (`recVisualPers00017`). `get-person`-mocken är
+ * en resolver som slår upp dem; ett ID utanför fixturvärlden ger `undefined`,
+ * vilket `hermetic.ts` besvarar med 501 i klartext.
+ */
+
+const RIK_ID = 'recVisualPers00009';
+const TUNN_ID = 'recVisualPers00017';
+
+/**
+ * EFTER-läget: den PROMOVERADE, ovillkorliga ytan.
+ *
+ * `?variant=d` saknas i adressen med avsikt — efter flippen (`ADR-103` B2
+ * steg 1) renderar routen formen ovillkorligt. Denna funktion är den ENDA
+ * som ska ändras när flippen sker (queryn faller bort); referenserna förblir
+ * orörda, och det är precis därför en grön körning BEVISAR att promoveringen
+ * tog formen och ingenting annat.
+ */
+async function gotoPromoverad(page: import('@playwright/test').Page, id: string) {
+  await page.goto(`/personer/${id}`);
+  // Ankaret finns på alla render-grenar; att vänta ut det sr-only
+  // laddbeskedet säkrar att fixturvärlden svarat och att vi INTE står i
+  // skeleton-läget som medvetet ligger utanför referensen.
+  await expect(page.getByTestId('persondetalj-yta')).toBeVisible();
+  await expect(page.getByText('Laddar persondetaljer…')).toHaveCount(0);
+}
+
+test.describe('promoverings-grinden — ariaSnapshot mot persondetaljens form (ADR-103 B4)', () => {
+  test('rik person — alla sju block med innehåll', async ({ page }) => {
+    await gotoPromoverad(page, RIK_ID);
+    await expect(page.getByTestId('persondetalj-yta')).toMatchAriaSnapshot({
+      name: 'persondetalj-rik.aria.yml',
+    });
+  });
+
+  test('tunn person — blockens tomlägen', async ({ page }) => {
+    await gotoPromoverad(page, TUNN_ID);
+    await expect(page.getByTestId('persondetalj-yta')).toMatchAriaSnapshot({
+      name: 'persondetalj-tunn.aria.yml',
+    });
+  });
+});

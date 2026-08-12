@@ -89,10 +89,10 @@ function AnteckningsKort({ note, event }: { note: EventNote; event: Event }) {
  * `Deltagare.tsx`/`Betalningar.tsx` för motsvarande rivning. Skarpa vyn
  * (denna funktion) var alltid skrivbar; ingen gren rörs.
  */
-function Composer({ eventId }: { eventId: string }) {
+function Composer({ eventId, eventNamn }: { eventId: string; eventNamn: string | null }) {
   const [text, setText] = useState('');
   const rutaRef = useRef<HTMLTextAreaElement>(null);
-  const mutation = useCreateEventNote(eventId);
+  const mutation = useCreateEventNote(eventId, eventNamn);
   const kanSpara = text.trim().length > 0 && !mutation.isPending;
 
   const spara = () => {
@@ -217,7 +217,7 @@ function Strommen({ event }: { event: Event }) {
 export function Anteckningar({ event }: { event: Event }) {
   return (
     <DetaljGrupp id="grupp-anteckningar" rubrik="Anteckningar">
-      <Composer eventId={event.id} />
+      <Composer eventId={event.id} eventNamn={event.eventNamn} />
       <div className="pt-3 pb-4">
         <Strommen event={event} />
       </div>

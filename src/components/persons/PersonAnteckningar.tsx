@@ -61,10 +61,10 @@ function AnteckningsKort({ note }: { note: PersonNote }) {
  * pending→bekräftat, strömmen refetchar vid settle. Författaren skickas
  * ALDRIG — EF:en sätter den server-side (ADR-075).
  */
-function Composer({ personId }: { personId: string }) {
+function Composer({ personId, personNamn }: { personId: string; personNamn: string | null }) {
   const [text, setText] = useState('');
   const rutaRef = useRef<HTMLTextAreaElement>(null);
-  const mutation = useCreatePersonNote(personId);
+  const mutation = useCreatePersonNote(personId, personNamn);
   const kanSpara = text.trim().length > 0 && !mutation.isPending;
 
   const spara = () => {
@@ -170,11 +170,21 @@ function Strommen({ personId }: { personId: string }) {
  * (`src/components/events/detail/DetaljGrupp.tsx`), inte en delad primitiv —
  * konsumenten (persondetaljens D-variant) väljer sitt eget kort-/sektions-skal
  * runt denna komponent.
+ *
+ * `personNamn` (TASK-201.4, AKTIVITETSLOGGEN): trådas vidare till `Composer`
+ * — se `useCreatePersonNote`s docblock för varför den behövs här och inte
+ * kan härledas ur EF-svaret.
  */
-export function PersonAnteckningar({ personId }: { personId: string }) {
+export function PersonAnteckningar({
+  personId,
+  personNamn,
+}: {
+  personId: string;
+  personNamn: string | null;
+}) {
   return (
     <div className="flex flex-col divide-y divide-border">
-      <Composer personId={personId} />
+      <Composer personId={personId} personNamn={personNamn} />
       <div className="pt-3 pb-4">
         <Strommen personId={personId} />
       </div>

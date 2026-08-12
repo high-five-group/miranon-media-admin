@@ -146,6 +146,12 @@ export function useSendConfirmationFromDetail(eventId: string, registrationId: s
             type: ACTIVITY_OBJECT_TYPES.bekraftelse,
             name: `${displayName(registration)} (${registration.eventNamn ?? 'okänt event'})`,
           },
+          // TASK-201.4: betalar 201.3s deferrade EVENT_ID_EXTENSION_IRI-skuld
+          // — eventId var redan hook-bundet (`useSendConfirmationFromDetail`).
+          eventId,
+          // TASK-201.12: registration.personId är NULLABLE — se
+          // registrationPayments.ts's motsvarande kommentar.
+          personId: registration.personId ?? undefined,
         });
       }
     },

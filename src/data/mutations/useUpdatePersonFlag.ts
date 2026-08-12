@@ -1,4 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/auth/useAuth';
+import {
+  ACTIVITY_OBJECT_TYPES,
+  personActivityName,
+  personObjectId,
+  UPPDATERADE_FLAGGA_VERB,
+} from '@/data/activityLog/activityTypes';
+import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail } from '@/domain/schemas';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
@@ -35,10 +43,18 @@ interface UpdateFlagContext {
  *
  * Anropas med den nya flagg-strängen; `personId` binds vid hook-anropet (samma
  * id används för både write och cache-nyckel).
+ *
+ * `personNamn` (TASK-201.4, AKTIVITETSLOGGEN): hook-bundet precis som
+ * `personId` — mutationens variabel-typ är redan `string` (bara flaggan), så
+ * en TVariables-omskrivning (`mottagare`-mönstret) hade tvingat fram en
+ * bredare ändring av `.mutate()`-anropen än att bara utöka hook-anropet.
+ * Personens namn finns aldrig i EF-svaret (`void`) — måste komma från
+ * anroparen, som redan har `PersonDetail` laddad.
  */
-export function useUpdatePersonFlag(personId: string) {
+export function useUpdatePersonFlag(personId: string, personNamn: string | null) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
   const key = queryKeys.persons.detail(personId);
 
   return useMutation<void, Error, string, UpdateFlagContext>({
@@ -73,8 +89,25 @@ export function useUpdatePersonFlag(personId: string) {
 
     // F. aria-live för den lyckade sparningen — ingen annan SR-signal finns för
     // att flaggan persisterats.
+    //
+    // AKTIVITETSLOGGEN (TASK-201.4): fire-and-forget EFTER skrivningen redan
+    // lyckats. INGET eventId — en person är inte scopad till ett event.
     onSuccess: () => {
       alertScreenReader('Flagga sparad');
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: UPPDATERADE_FLAGGA_VERB,
+        object: {
+          id: personObjectId(personId),
+          type: ACTIVITY_OBJECT_TYPES.flagga,
+          name: personActivityName(personNamn),
+        },
+        // TASK-201.12: personId hook-bundet, alltid satt — samma uniforma
+        // emissions-mönster som `useCreatePersonNote`s motsvarande kommentar
+        // förklarar (object.id är redan personen, extensionen emitteras ändå).
+        personId,
+      });
     },
   });
 }

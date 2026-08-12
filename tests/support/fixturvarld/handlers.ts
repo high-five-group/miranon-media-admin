@@ -6,6 +6,7 @@ import {
   EVENT_NOTES_RESPONSE,
   EVENTS_RESPONSE,
   REGISTRATIONS_RESPONSE,
+  resolvePersonNotesResponse,
   resolvePersonResponse,
   resolvePersonsResponse,
 } from './fixture-data';
@@ -99,6 +100,12 @@ export const handlers = [
   // Se fixture-data.ts § Personer-världen.
   http.get(EF('get-persons'), ({ request }) => json(resolvePersonsResponse(new URL(request.url)))),
   http.get(EF('get-person'), ({ request }) => json(resolvePersonResponse(new URL(request.url)))),
+  // Persondetaljens anteckningsblock (B7) anropar denna ovillkorligt — utan
+  // handlern fäller hermetik-vakten hela vyn (mätt S103 2026-08-12, grindens
+  // första körning). Se fixture-data.ts § PERSON_NOTES_RESPONSE.
+  http.get(EF('get-person-notes'), ({ request }) =>
+    json(resolvePersonNotesResponse(new URL(request.url))),
+  ),
 
   // Aktivitetsloggens skrivväg (TASK-201.3, ADR-110/ADR-111) — HÄR, i
   // normalläget, INTE per test. `recordActivity` fire-and-forget:ar EFTER

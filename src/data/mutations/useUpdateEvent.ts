@@ -1,4 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/auth/useAuth';
+import {
+  ACTIVITY_OBJECT_TYPES,
+  eventActivityName,
+  eventObjectId,
+  UPPDATERADE_EVENT_VERB,
+} from '@/data/activityLog/activityTypes';
+import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { UpdateEventInput } from '@/domain/schemas';
@@ -24,6 +32,7 @@ export type UpdateEventFormValues = Omit<UpdateEventInput, 'eventId'>;
 export function useUpdateEvent(eventId: string) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
 
   return useMutation<Event, Error, UpdateEventFormValues>({
     // mutationKey scopar mutationen per event (dedup av samtidiga submits);
@@ -38,11 +47,30 @@ export function useUpdateEvent(eventId: string) {
     // endast get-event aggregerar; optional-nycklar är FRÅNVARANDE i det parse:ade
     // svaret och skriver därför inte över) — utan mergen skulle raderna blinka
     // bort ur Beläggningskortet tills onSettled-refetchen landat (lugnt laddläge).
+    // AKTIVITETSLOGGEN (TASK-201.4): fire-and-forget EFTER den riktiga
+    // skrivningen redan lyckats. `updated` är EF-svarets fulla Event —
+    // objektet ÄR eventet, inte en anmälan (`eventObjectId`, till skillnad
+    // mot pilotens tre registration-scopade verb).
     onSuccess: (updated) => {
       queryClient.setQueryData<Event>(queryKeys.events.detail(eventId), (prev) =>
         prev ? { ...prev, ...updated } : updated,
       );
       alertScreenReader('Ändringarna sparade.');
+      // TASK-201.12: INGEN personId — eventet självt är objektet, ingen
+      // genuin person i sammanhanget (medvetet utelämnad, se
+      // ActivityStatement.schema.ts's PERSON_ID_EXTENSION_IRI-kommentar:
+      // "aldrig ett tomt/påhittat värde").
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: UPPDATERADE_EVENT_VERB,
+        object: {
+          id: eventObjectId(eventId),
+          type: ACTIVITY_OBJECT_TYPES.event,
+          name: eventActivityName(updated.eventNamn),
+        },
+        eventId,
+      });
     },
 
     // Synka mot servern oavsett utfall (ADR-016 komponent E).

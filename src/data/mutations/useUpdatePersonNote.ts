@@ -1,4 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/auth/useAuth';
+import {
+  ACTIVITY_OBJECT_TYPES,
+  personActivityName,
+  personObjectId,
+  UPPDATERADE_ANTECKNING_VERB,
+} from '@/data/activityLog/activityTypes';
+import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail } from '@/domain/schemas';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
@@ -21,10 +29,14 @@ interface UpdateNoteContext {
  *
  * Anropas med den nya note-strängen; `personId` binds vid hook-anropet (samma
  * id används för både write och cache-nyckel).
+ *
+ * `personNamn` (TASK-201.4, AKTIVITETSLOGGEN): hook-bundet som `personId`,
+ * samma motiv som `useUpdatePersonFlag`s docblock.
  */
-export function useUpdatePersonNote(personId: string) {
+export function useUpdatePersonNote(personId: string, personNamn: string | null) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
   const key = queryKeys.persons.detail(personId);
 
   return useMutation<void, Error, string, UpdateNoteContext>({
@@ -59,8 +71,29 @@ export function useUpdatePersonNote(personId: string) {
 
     // F. aria-live för den lyckade sparningen (DoD 8) — ingen annan SR-signal
     // finns för att noten persisterats.
+    //
+    // AKTIVITETSLOGGEN (TASK-201.4, AC #2): loggar ATT en anteckning
+    // uppdaterades — object.name är `personActivityName(personNamn)`
+    // (hook-bundet). `onSuccess` nedan destrukturerar MEDVETET inte den
+    // andra parametern (mutationens `note`-variabel, se `<void, Error,
+    // string, ...>` ovan) — den finns då inte i scope att av misstag
+    // interpolera in i statementet.
     onSuccess: () => {
       alertScreenReader('Anteckning sparad');
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: UPPDATERADE_ANTECKNING_VERB,
+        object: {
+          id: personObjectId(personId),
+          type: ACTIVITY_OBJECT_TYPES.anteckning,
+          name: personActivityName(personNamn),
+        },
+        // TASK-201.12: personId hook-bundet, alltid satt — samma uniforma
+        // emissions-mönster som `useCreatePersonNote`s motsvarande kommentar
+        // förklarar (object.id är redan personen, extensionen emitteras ändå).
+        personId,
+      });
     },
   });
 }
