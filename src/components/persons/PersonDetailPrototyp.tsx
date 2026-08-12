@@ -1726,10 +1726,30 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
 
   const kortKlass =
     'rounded-2xl border border-transparent bg-bg-muted px-4 py-4 contrast-more:border-border-strong';
-  // Hover-ytan går kant-i-kant med kortet (`-mx-4 px-4`); avdelaren sitter på
-  // `<li>` ovanför och behåller därför samma indrag som övriga block.
+  // HOVER-PLATTANS FORM ÄR APPENS, INTE EGEN (Marcus 2026-08-12: *"Hover på
+  // kontakt-blocket och just nu-blocket ser ju skitfult ut, tar ju hela ytan
+  // typ, bygg exakt som på andra block i appen, typ som på eventdetalj-
+  // sidan"*).
+  //
+  // Formen är eventdetalj-familjens, oförändrad: `-mx-2 … rounded-lg px-2
+  // py-1.5` — samma sträng som `Atgarder.tsx` (48), `Gruppdynamik.tsx` (232),
+  // `Deltagare.tsx` (292) och `DeltagareHallplatsPrototyp.tsx` (167). Ingen ny
+  // form mintas.
+  //
+  // VAD SOM VAR FEL, mätt före ändringen: `-mx-4 px-4` gav en hover-platta på
+  // 566 px i ett 568 px brett kort — kant-i-kant — med `border-radius: 0` i
+  // ett kort som självt är `rounded-2xl`. `Betalningar.tsx` (100) hade redan
+  // diagnosen nedskriven: *"hade den suttit på wrappern med py-3 blivit en
+  // kant-till-kant-platta utan rundning, vilket är fel form i ett kort med
+  // rundade hörn."* Den noten gällde en knapp i eventfamiljen; persondetaljen
+  // gjorde exakt samma fel utan att ha läst den.
+  //
+  // GEOMETRIN BEVARAS via samma delning som `Betalningar.tsx` gjorde:
+  // radens 14 px (`py-3.5`) flyttas till 8 px på `<li>` + 6 px (`py-1.5`) på
+  // länken = 14 px, så radhöjden 52 px är oförändrad. `divide-y` sitter kvar
+  // på `<ul>` och rörs inte.
   const kontaktRadKlass =
-    '-mx-4 flex items-center gap-3 px-4 py-3.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
+    '-mx-2 flex w-auto items-center gap-3 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
 
   return (
     <>
@@ -1768,7 +1788,7 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
             // leder ut ur appen).
             <ul className="flex flex-col divide-y divide-border">
               {person.email && (
-                <li>
+                <li className="py-2">
                   <a href={`mailto:${person.email}`} className={kontaktRadKlass}>
                     <span className="min-w-0 flex-1 truncate">{person.email}</span>
                     <ChevronRight
@@ -1780,7 +1800,7 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                 </li>
               )}
               {person.telefon && (
-                <li>
+                <li className="py-2">
                   <a href={telHref(person.telefon)} className={kontaktRadKlass}>
                     <span className="min-w-0 flex-1 truncate">{person.telefon}</span>
                     <ChevronRight
@@ -1872,23 +1892,29 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                   );
                   // KLICKBAR till anmälningsdetaljen (Marcus 2026-08-12: *"även
                   // den aktiva anmälan i just nu-blocket borde också vara en
-                  // knapp"*). Hover-ytan går kant-i-kant med det tintade kortet
-                  // (`-mx-4 px-4` mot kortets `px-4`), samma idiom som
-                  // kontaktraderna; `py-3 first:pt-0` behålls så avdelarna och
-                  // radhöjden är oförändrade mot den oklickbara formen.
-                  const radKlass = 'flex items-center gap-3 py-3 first:pt-0';
+                  // knapp"*), i eventdetalj-familjens hover-form — se
+                  // `kontaktRadKlass` ovan för varför kant-i-kant-plattan var
+                  // fel och var formen kommer ifrån.
+                  //
+                  // Radens 12 px (`py-3`) delas 6+6 mellan `<li>` och länken,
+                  // så radhöjden är oförändrad mot den oklickbara formen.
+                  // `first:pt-0` sitter på `<li>` — den hörde alltid dit;
+                  // `first:` läser elementets egen syskonposition, och på
+                  // länken (enda barnet i sin `<li>`) hade den träffat VARJE
+                  // rad i stället för den första.
+                  const radKlass = 'flex items-center gap-3';
                   return (
-                    <li key={grupp.nyckel} className="flex flex-col">
+                    <li key={grupp.nyckel} className="flex flex-col py-1.5 first:pt-0">
                       {href ? (
                         <Link
                           to={href.to}
                           params={href.params}
-                          className={`${radKlass} -mx-4 px-4 hover:bg-bg-emphasized motion-safe:transition-colors`}
+                          className={`${radKlass} -mx-2 w-auto rounded-lg px-2 py-1.5 hover:bg-bg-emphasized motion-safe:transition-colors`}
                         >
                           {innehall}
                         </Link>
                       ) : (
-                        <span className={radKlass}>{innehall}</span>
+                        <span className={`${radKlass} py-1.5`}>{innehall}</span>
                       )}
                     </li>
                   );
