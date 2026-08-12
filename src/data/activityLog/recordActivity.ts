@@ -79,6 +79,6 @@ export async function recordActivity(input: RecordActivityInput): Promise<void> 
     await input.dataSource.recordActivity(parsed);
   } catch (error) {
     // Strukturerad, men ALDRIG kastad vidare — se filhuvudets kontrakt.
-    console.error('[recordActivity] loggning misslyckades — mutationen påverkas inte', error);
+    console.error('[recordActivity] loggning misslyckades - mutationen påverkas inte', error);
   }
 }
