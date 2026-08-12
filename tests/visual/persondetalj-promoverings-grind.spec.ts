@@ -61,7 +61,7 @@ const TUNN_ID = 'recVisualPers00017';
  * tog formen och ingenting annat.
  */
 async function gotoPromoverad(page: import('@playwright/test').Page, id: string) {
-  await page.goto(`/personer/${id}?variant=d`);
+  await page.goto(`/personer/${id}`);
   // Ankaret finns på alla render-grenar; att vänta ut det sr-only
   // laddbeskedet säkrar att fixturvärlden svarat och att vi INTE står i
   // skeleton-läget som medvetet ligger utanför referensen.
