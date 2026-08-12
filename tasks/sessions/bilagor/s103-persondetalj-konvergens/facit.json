@@ -1,0 +1,17 @@
+{
+  "prototyp": "s103-persondetalj-konvergens",
+  "last": "2026-08-12",
+  "lasning": "D är den som gäller exakt som den ser ut och ska funka just nu.",
+  "godkand": null,
+  "ytor": [
+    {
+      "yta": "persondetaljen",
+      "bilder": [],
+      "kallor": [
+        "src/routes/_authenticated/personer/$personId.tsx",
+        "src/components/persons/PersonDetailPrototyp.tsx"
+      ],
+      "not": "Formen som promoverades (Marcus, S103 2026-08-12): variant D — sju block i hans egen ordning. B1 namnet ensamt · B2 kontaktraderna med chevron, utan ikoner · B3 'Just nu' med ENBART aktiva anmälningar, raden FYLLD i vila (bg-emphasized) och klickbar till anmälan, ingen dagar-kvar-pill · B4 flaggan som egen skrivyta · B5 interaktionsströmmen i Tidslinje-formen med klickbara anmälningar och kommande-posten länkad · B6 eventhistoriken · B7 hämtningarna · B8 motiveringarna med metarubriken '(kursfargsprick) Kurs · Datum · Ort'. VILKA BILDER SOM ÄR FACIT: INGA — bildlistan är tom med avsikt, en deklarerad frånvaro (check-facit invariant b). Bilagan s90-persondetalj-divergens bär divergens-passets a/b/c-bilder, och de är HISTORIK över förkastade alternativ, inte facit för denna form. DET MEKANISKA FACIT är ariaSnapshot-referenserna under tests/visual/__aria__/persondetalj-promoverings-grind.spec.ts/ (persondetalj-rik/-tunn x visual-desktop/-mobile), fångade UR variant-läget FÖRE flippen och gröna mot den promoverade ytan efteråt (ADR-103 B4). Referenserna togs om en gång innan de låstes: Playwrights --update-snapshots hade generaliserat siffror till regexar som inte matchade tillbaka, vilket ett differentialtest mot FÖRE-laget belade som verktygsbeteende och inte formskillnad. RIVNINGEN (B2 steg 4) tar PROTO_VARIANTS + rail-monteringen i routen, samt PersonDetail.tsx, PersonNoteEditor.tsx och det parkerade person-note-edit.acceptance.test.ts — och markoren 'Persondetaljen - promoverad' ur .facit-policy.conf i SAMMA landning. Prototypfilen byter namn till PersonDetail.tsx via git mv sa historiken foljer FORMEN (personlistans precedent, 4aad0111)."
+    }
+  ]
+}
