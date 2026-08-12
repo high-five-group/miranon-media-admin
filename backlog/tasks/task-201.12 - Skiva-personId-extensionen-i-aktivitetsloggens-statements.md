@@ -4,7 +4,7 @@ title: 'Skiva: personId-extensionen i aktivitetsloggens statements'
 status: To Do
 assignee: []
 created_date: '2026-08-12 20:11'
-updated_date: '2026-08-12 20:27'
+updated_date: '2026-08-12 20:36'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,12 +31,12 @@ KÄND DIVERGENS VID BYGGSTART (premiss-pass, källmärkt): TASK-201.6 (PR #1231)
 - [x] #2 recordActivity() bär personId villkorligt i context.extensions under rätt IRI-nyckel — bevisat i BÅDA riktningar (personId satt → buret; personId utelämnat → nyckeln saknas helt, aldrig tom sträng/undefined-värde)
 - [x] #3 Mutationskatalogen VERIFIERAD mot faktisk kod (ADR-086: mät, anta inte) — varje mutation med en genuin person i sammanhanget emitterar personId, varje mutation utan person emitterar den INTE (ingen fabricerad IRI för en obefintlig konsument); utfallet per mutation redovisas explicit i implementation notes
 - [x] #4 get-activity-log-EF:en verifierad att returnera extensionen oförändrad i statement-blobben — ändring görs ENDAST om mätning visar att den behövs, annars redovisas verifieringen öppet
-- [ ] #5 AktivitetsHistorik.tsx (TASK-201.6) kopplas till personId-navigeringen OM 201.6 landat på main innan denna skiva slutförs; annars bokförs kopplingen öppet som blockerad extern-beroende skuld (PR #1231), aldrig tyst bortglömd
+- [x] #5 AktivitetsHistorik.tsx (TASK-201.6) kopplas till personId-navigeringen OM 201.6 landat på main innan denna skiva slutförs; annars bokförs kopplingen öppet som blockerad extern-beroende skuld (PR #1231), aldrig tyst bortglömd
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
@@ -114,4 +114,34 @@ personens sida. Ingen ny mekanism — samma mönster, en ny nyckel.
 
 Detta bokförs INTE tyst: orkestreraren äger uppföljningen (antingen ett nytt
 litet kort, eller en direkt komplettering av 201.6-PR:en före den landar).
+
+UPPFÖLJNING (AC #5) — 201.6 LANDADE UNDER BYGGET:
+
+TASK-201.6 (PR #1231) mergade till main (430a8156, 2026-08-12T20:21:07Z)
+medan denna skiva byggdes. Branchen rebasad mot uppdaterad origin/main;
+AktivitetsHistorik.tsx fanns nu tillgänglig. AC #5 GENOMFÖRD:
+
+- aktivitetensPersonId(statement) mintad i AktivitetsHistorik.tsx, EXAKT
+  samma läsdisciplin som aktivitetensEventId (defensiv, .trim() !== "",
+  aldrig en gissning).
+- AktivitetsRad utökad med PRIORITETSORDNING: eventId FÖRE personId när
+  båda finns på samma statement (t.ex. en betalningsrad efter denna PR
+  bär båda) — bevarar NyaAnmalningarCard-precedentets "registrering →
+  händelsens event"-mål OFÖRÄNDRAT för statement-typer som redan
+  länkade dit. personId aktiverar navigering ENDAST för de tre
+  statement-typer som aldrig hade ett eventId (person-flagga,
+  person-anteckning skapa/uppdatera) — tidigare strukturellt olänkade,
+  nu klickbara till /personer/$personId.
+- aktivitetensEventId-docblocken uppdaterad (den gamla "person-navigering
+  är INTE byggd"-satsen är nu falsk och borttagen).
+- Test: tests/acceptance/mer-aktivitetshistorik.acceptance.test.ts fick
+  statement()-helperns personId-parameter (samma opt-in-form som eventId)
+  och ett nytt test som bevisar BÅDA riktningarna — personId-länk när
+  eventId saknas, OCH att eventId vinner prioritetsordningen när båda
+  finns (annars hade prioritets-assertionen fällt). 8/8 tester gröna
+  lokalt (35.7s).
+
+Kortets ursprungliga källmärkta divergens (201.6 ej landad vid byggstart)
+kvarstår som ett FAKTUM i historiken ovan, men löstes UNDER samma
+byggsession — AC #5 är därmed uppfylld i denna PR, inte uppskjuten.
 <!-- SECTION:NOTES:END -->
