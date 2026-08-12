@@ -8,6 +8,7 @@ import type { CreatePersonNoteInput, PersonNote } from '../../domain/models/Pers
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
+  ActivityStatement,
   ConfirmRegistrationsInput,
   ConfirmRegistrationsResult,
   CreatedEvent,
@@ -15,6 +16,7 @@ import type {
   EventFormat,
   Intresserad,
   PersonDetail,
+  RecordActivityResult,
   RegistrationDetail,
   SavedSegment,
   SaveSegmentInput,
@@ -197,6 +199,23 @@ export interface DataSourceAdapter {
    * (strukturellt annorlunda än `sendActionEmail`s bulk-urval).
    */
   sendReceipt(input: SendReceiptInput): Promise<SendReceiptResult>;
+
+  /**
+   * Aktivitetsloggens skrivväg (TASK-201.3, ADR-110/ADR-111). POST mot
+   * `log-activity`-EF:en, som validerar statementet med SAMMA Zod-schema
+   * server-side och skriver via `service_role` till Supabase `activity_log`
+   * — HELT UTANFÖR Airtable, oavsett vilken `DataSourceAdapter` som är live
+   * (aktivitetsloggen migrerade aldrig UR Airtable, den har ALDRIG legat
+   * där). Därför implementerar BÅDA `AirtableAdapter` och `SupabaseAdapter`
+   * denna metod identiskt — till skillnad från adapterns övriga metoder är
+   * den inte en del av Fas E-migrationens swap-yta.
+   *
+   * FIRE-AND-FORGET ÄGS AV ANROPAREN (`recordActivity`, `src/data/
+   * activityLog/recordActivity.ts`) — denna metod själv kastar vid fel
+   * (samma disciplin som `sendReceipt`/`sendActionEmail`); det är
+   * `recordActivity`s try/catch som gör hela kedjan fire-and-forget.
+   */
+  recordActivity(statement: ActivityStatement): Promise<RecordActivityResult>;
 
   /**
    * Hämta eventets anteckningar (task-18.11, ADR-075). Läsning via get-event-notes:

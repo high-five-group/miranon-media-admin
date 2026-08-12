@@ -159,3 +159,19 @@ export type ActivityVerb = z.infer<typeof ActivityVerbSchema>;
 export type ActivityObject = z.infer<typeof ActivityObjectSchema>;
 export type ActivityObjectDefinition = z.infer<typeof ActivityObjectDefinitionSchema>;
 export type ActivityContext = z.infer<typeof ActivityContextSchema>;
+
+/**
+ * `log-activity`-EF:ns svar vid en lyckad write (TASK-201.3). Ekar tillbaka
+ * `id`/`requestId`/`occurredAt` för det som faktiskt skrevs — den ENDA
+ * läsvägen recordActivity/api-staging-testet har för att bevisa
+ * requestId-round-trippen (klient → EF → activity_log-rad, ADR-111): RLS
+ * nekar anon/authenticated direkt tabell-läsning helt (`tests/api/
+ * activity-log-rls.staging.test.ts`), och `get-activity-log` (TASK-201.5)
+ * byggs parallellt, utanför denna skivas scope.
+ */
+export const RecordActivityResultSchema = z.object({
+  id: z.string().uuid(),
+  requestId: z.string().uuid(),
+  occurredAt: z.string().datetime({ offset: true }),
+});
+export type RecordActivityResult = z.infer<typeof RecordActivityResultSchema>;

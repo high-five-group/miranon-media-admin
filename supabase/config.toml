@@ -200,6 +200,15 @@ verify_jwt = true
 [functions.send-receipt-email]
 verify_jwt = true
 
+# log-activity — aktivitetsloggens skrivväg (TASK-201.3, ADR-110/ADR-111).
+# requireUser grindar anropet (samma nivå som send-receipt-email); skriver
+# via service_role till Supabase Postgres `activity_log`, HELT UTANFÖR
+# Airtable (aktivitetsloggen har aldrig legat där — ADR-110). Deploy: BARA
+# denna funktion (`supabase functions deploy log-activity`), aldrig en full
+# allowlist-deploy medan andra agenter kan arbeta mot samma projekt.
+[functions.log-activity]
+verify_jwt = true
+
 # get-activity-log — Aktivitetsloggens läsväg (TASK-201.5, PRD TASK-201,
 # ADR-110/ADR-111). LÄSER bara, direkt ur Postgres-tabellen `activity_log`
 # (INGEN Airtable-interaktion) via `service_role` — samma gateway-första-

@@ -244,8 +244,13 @@ function mocka(
     listor = [],
     manualRelease = false,
   }: { detaljer: DetaljRow[]; listor?: ListRow[]; manualRelease?: boolean },
-): { confirmCalls: Json[]; release: () => void } {
+): { confirmCalls: Json[]; aktivitetsloggar: Json[]; release: () => void } {
   const confirmCalls: Json[] = [];
+  // [TASK-201.3, AC #4 pilot 2/3] Fångar samma svar som normalläget i
+  // handlers.ts (samma statuskod/form) — en LOKAL override, inte en ny
+  // mock, enbart för att kunna assertera ANROPET (normalläget svarar redan
+  // rätt, men exponerar inget att läsa av här).
+  const aktivitetsloggar: Json[] = [];
   const perId = new Map(detaljer.map((d) => [d.id, d]));
 
   let release = () => {};
@@ -281,8 +286,21 @@ function mocka(
         bekraftelseSkickad: nu,
       });
     }),
+    http.post(EF('log-activity'), async ({ request }) => {
+      const body = (await request.json()) as Json;
+      aktivitetsloggar.push(body);
+      const b = body as unknown as { id: string; context: { extensions: Record<string, string> } };
+      return json(
+        {
+          id: b.id,
+          requestId: Object.values(b.context.extensions)[0],
+          occurredAt: '2026-07-25T08:00:00.000Z',
+        },
+        201,
+      );
+    }),
   );
-  return { confirmCalls, release };
+  return { confirmCalls, aktivitetsloggar, release };
 }
 
 /** Resolva en tokens computed-färg (probe-mönstret — token-kedjan, ej hårdkod). */
@@ -447,7 +465,7 @@ test.describe('Per-anmälan-detaljvyn (task-18.17)', () => {
     page,
     network,
   }, testInfo) => {
-    const { confirmCalls } = mocka(network, { detaljer: [detaljObekraftad()] });
+    const { confirmCalls, aktivitetsloggar } = mocka(network, { detaljer: [detaljObekraftad()] });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/event/${EVENT_ID}/anmalan/recBjorn`);
 
@@ -501,6 +519,49 @@ test.describe('Per-anmälan-detaljvyn (task-18.17)', () => {
     await expect(handelser.nth(0)).toContainText('Bekräftelsemail skickat');
     expect(confirmCalls).toHaveLength(1);
     expect(confirmCalls[0].registrationIds).toEqual(['recBjorn']);
+
+    // AKTIVITETSLOGGEN (TASK-201.3 AC #4, pilot 2/3 — "bekräfta anmälan").
+    // Denna sammansatta vy är den enda plats i repot där
+    // `useSendConfirmationFromDetail`s onSuccess-koppling faktiskt körs och
+    // observeras (se PR-uppdragets källmärkta gap: pilotens egen e2e-svit
+    // saknades — stängd här i stället).
+    await expect.poll(() => aktivitetsloggar.length).toBe(1);
+    const logg = aktivitetsloggar[0] as unknown as {
+      actor: { name: string; account: { name: string } };
+      verb: { display: Record<string, string> };
+      object: { definition: { name: Record<string, string>; type: string } };
+    };
+    expect(logg.actor.name.length).toBeGreaterThan(0);
+    expect(logg.actor.account.name.length).toBeGreaterThan(0);
+    expect(logg.verb.display['sv-SE']).toBe('bekräftade anmälan');
+    expect(logg.object.definition.type).toContain('/activity-types/bekraftelse');
+  });
+
+  test('AKTIVITETSLOGGEN (TASK-201.3 AC #1): log-activity 500 FÄLLER ALDRIG bekräftelsen — fire-and-forget bevisat i den sammansatta vyn', async ({
+    page,
+    network,
+  }) => {
+    mocka(network, { detaljer: [detaljObekraftad()] });
+    // Lokal override EFTER mocka(): MSW prövar senast-registrerade handler
+    // först, så denna vinner över mocka()s egen log-activity-handler för
+    // just detta test.
+    network.use(
+      http.post(EF('log-activity'), () =>
+        json({ error: 'Internal error', requestId: 'req-test-log-activity-fail' }, 500),
+      ),
+    );
+    await page.goto(`/event/${EVENT_ID}/anmalan/recBjorn`);
+
+    const knapp = page.getByRole('button', { name: 'Skicka bekräftelse' });
+    await knapp.click();
+
+    // Bekräftelsen går igenom IDENTISKT trots att log-activity avvisar —
+    // `recordActivity` fångar felet internt (enhetsnivå-bevis: `tests/api/
+    // record-activity.test.ts`; detta är samma egenskap i den sammansatta
+    // vyn).
+    await expect(page.getByText('Bekräftad', { exact: true })).toBeVisible();
+    await expect(page.getByText('Skicka bekräftelse')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
   test('avvikande status (Avbokad/Ombokad): RÅ statusen i neutral pill — aldrig falsk grön, aldrig skicka-knapp', async ({

@@ -3,7 +3,19 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tests.tsbuildinfo",
     "types": ["node"],
-    "lib": ["ES2023", "DOM"]
+    "lib": ["ES2023", "DOM"],
+    // TASK-201.3: `tests/api/activity-log-pilot-statements.test.ts` importerar
+    // `src/data/activityLog/activityTypes.ts` via relativ sökväg (samma
+    // "test importerar produktionskod direkt"-mönster som `tests/api/
+    // activity-statement-schema.test.ts`, TASK-201.1) — den filen använder,
+    // till skillnad från 201.1s schemafil, `@/`-aliaset INTERNT för sina egna
+    // imports. Utan denna mapping typkontrollerar tsc -b den transitivt
+    // inkluderade filen under TESTS-projektets tsconfig (som saknade aliaset)
+    // och fäller `TS2307: Cannot find module '@/...'`. Samma alias som
+    // `tsconfig.app.json` — src/ är den enda katalogen `@/` någonsin pekar in i.
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["tests/**/*.ts"]
 }

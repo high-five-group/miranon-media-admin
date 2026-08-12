@@ -1,5 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/auth/useAuth';
 import { displayName } from '@/components/registrations/registration-display';
+import {
+  ACTIVITY_OBJECT_TYPES,
+  BEKRAFTADE_ANMALAN_VERB,
+  registrationObjectId,
+} from '@/data/activityLog/activityTypes';
+import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
 import type { ConfirmRegistrationsResult, RegistrationDetail } from '@/domain/schemas';
@@ -74,6 +81,7 @@ export function bekraftelseUtfall(result: ConfirmRegistrationsResult): string {
 export function useSendConfirmationFromDetail(eventId: string, registrationId: string) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
   const detailKey = queryKeys.registrations.detail(registrationId);
 
   return useMutation<
@@ -117,12 +125,29 @@ export function useSendConfirmationFromDetail(eventId: string, registrationId: s
       );
     },
 
+    // AKTIVITETSLOGGEN (TASK-201.3, pilot 2/3): fire-and-forget, ENDAST när
+    // servern faktiskt bekräftade DENNA anmälan (`result.confirmed` — "servern
+    // är facit", samma disciplin som `bekraftelseUtfall` ovan; ett `sent`-
+    // eller `partial`-svar som inte nämner detta ID loggas inte som om det
+    // hänt).
     onSuccess: (result, { registration }) => {
       alertScreenReader(
         result.confirmed.length > 0
           ? `Bekräftelse skickad till ${displayName(registration)}.`
           : bekraftelseUtfall(result),
       );
+      if (result.confirmed.includes(registration.id)) {
+        void recordActivity({
+          dataSource,
+          actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+          verb: BEKRAFTADE_ANMALAN_VERB,
+          object: {
+            id: registrationObjectId(registration.id),
+            type: ACTIVITY_OBJECT_TYPES.bekraftelse,
+            name: `${displayName(registration)} (${registration.eventNamn ?? 'okänt event'})`,
+          },
+        });
+      }
     },
 
     onSettled: () => {

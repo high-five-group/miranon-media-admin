@@ -9,6 +9,7 @@ import type { CreatePersonNoteInput, PersonNote } from '../../domain/models/Pers
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
+  type ActivityStatement,
   ActivityStatementSchema,
   AttachmentSchema,
   AttachmentUploadTicketSchema,
@@ -31,6 +32,8 @@ import {
   PersonDetailSchema,
   PersonNoteSchema,
   PersonSchema,
+  type RecordActivityResult,
+  RecordActivityResultSchema,
   type RegistrationDetail,
   RegistrationDetailSchema,
   RegistrationSchema,
@@ -508,6 +511,24 @@ export class AirtableAdapter implements DataSourceAdapter {
       idempotencyKey: input.idempotencyKey,
     });
     return SendReceiptResultSchema.parse(data);
+  }
+
+  /**
+   * Aktivitetsloggens skrivväg (TASK-201.3, ADR-110/ADR-111). POST mot
+   * `log-activity`-EF:en med det HELA (redan klient-validerade) statementet
+   * som body — EF:en validerar OM med samma Zod-schema server-side (AC #2)
+   * och skriver via `service_role` till Supabase `activity_log`, helt
+   * utanför Airtable (se `DataSourceAdapter.recordActivity` för varför
+   * denna metod är identisk i `SupabaseAdapter`). `.parse()` validerar vid
+   * datagränsen (ADR-026), som alla andra write-metoder i denna fil.
+   */
+  async recordActivity(statement: ActivityStatement): Promise<RecordActivityResult> {
+    // Spread → fräsch objekt-literal: `ActivityStatement` bär inget index-
+    // signatur, `postEdgeFunction` tar `Record<string, unknown>` (samma
+    // spread-mönster som andra write-metoder i denna fil när hela
+    // domän-objektet, inte utvalda fält, är bodyn).
+    const data = await postEdgeFunction<unknown>('log-activity', { ...statement });
+    return RecordActivityResultSchema.parse(data);
   }
 
   /**

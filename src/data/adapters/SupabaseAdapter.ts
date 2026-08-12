@@ -7,26 +7,29 @@ import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/mod
 import type { CreatePersonNoteInput, PersonNote } from '../../domain/models/PersonNote';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
-import type {
-  ConfirmRegistrationsInput,
-  ConfirmRegistrationsResult,
-  CreatedEvent,
-  CreateEventInput,
-  EventFormat,
-  Intresserad,
-  PersonDetail,
-  RegistrationDetail,
-  SavedSegment,
-  SaveSegmentInput,
-  SegmentResult,
-  SegmentRule,
-  SendActionEmailInput,
-  SendActionEmailResult,
-  SendActionTestEmailInput,
-  SendActionTestEmailResult,
-  SendReceiptInput,
-  SendReceiptResult,
-  UpdateEventInput,
+import {
+  type ActivityStatement,
+  type ConfirmRegistrationsInput,
+  type ConfirmRegistrationsResult,
+  type CreatedEvent,
+  type CreateEventInput,
+  type EventFormat,
+  type Intresserad,
+  type PersonDetail,
+  type RecordActivityResult,
+  RecordActivityResultSchema,
+  type RegistrationDetail,
+  type SavedSegment,
+  type SaveSegmentInput,
+  type SegmentResult,
+  type SegmentRule,
+  type SendActionEmailInput,
+  type SendActionEmailResult,
+  type SendActionTestEmailInput,
+  type SendActionTestEmailResult,
+  type SendReceiptInput,
+  type SendReceiptResult,
+  type UpdateEventInput,
 } from '../../domain/schemas';
 import type {
   AttendanceFilters,
@@ -39,6 +42,7 @@ import type {
   ListParams,
   PersonsPage,
 } from '../../domain/types/Pagination';
+import { postEdgeFunction } from '../config/supabase-client';
 import type { DataSourceAdapter } from './DataSourceAdapter';
 
 const NOT_IMPLEMENTED = 'SupabaseAdapter: Not implemented - migrate Edge Functions first';
@@ -156,6 +160,19 @@ export class SupabaseAdapter implements DataSourceAdapter {
 
   async sendReceipt(_input: SendReceiptInput): Promise<SendReceiptResult> {
     throw new Error(NOT_IMPLEMENTED);
+  }
+
+  /**
+   * Aktivitetsloggens skrivväg (TASK-201.3, ADR-110/ADR-111) — FUNKTIONELL
+   * här, till skillnad från alla andra metoder i denna Fas E-stub-klass.
+   * `activity_log` har ALDRIG legat i Airtable (se `DataSourceAdapter.
+   * recordActivity`s docblock för hela resonemanget) — `log-activity`-EF:en
+   * skriver redan mot Supabase oavsett vilken adapter som är "live", så
+   * denna metod behöver ingen migration för att fungera i Fas E.
+   */
+  async recordActivity(statement: ActivityStatement): Promise<RecordActivityResult> {
+    const data = await postEdgeFunction<unknown>('log-activity', { ...statement });
+    return RecordActivityResultSchema.parse(data);
   }
 
   async fetchEventNotes(_eventId: string): Promise<EventNote[]> {

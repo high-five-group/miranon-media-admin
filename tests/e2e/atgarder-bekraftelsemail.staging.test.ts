@@ -38,9 +38,18 @@ import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const SEND_ACTION_EMAIL = '**/functions/v1/send-action-email';
+const LOG_ACTIVITY = '**/functions/v1/log-activity';
 const EVENT_ID = 'recATGBEKRAFTELSE1';
 
 type Json = Record<string, unknown>;
+
+/** Statementet log-activity tagit emot (TASK-201.3 AC #4, pilot 3/3 —
+ * mail-åtgärd) — bara de fält testet faktiskt behöver bevisa. */
+type Aktivitetslogg = {
+  actor: { name: string; account: { name: string } };
+  verb: { display: Record<string, string> };
+  object: { definition: { name: Record<string, string>; type: string } };
+};
 
 /** Komplett Registration som passerar RegistrationSchema (`mark-paid.staging.
     test.ts` § `reg()`-formen, återanvänd ur `atgarder-betalningar.staging.
@@ -80,12 +89,15 @@ const FACIT: Json[] = [
   reg('recBekJohan000002', 'Johan Berg'),
 ];
 
-async function mocka(page: Page): Promise<{ sentBody: () => Json | null }> {
+async function mocka(
+  page: Page,
+): Promise<{ sentBody: () => Json | null; aktivitetsloggar: Aktivitetslogg[] }> {
   await mockValjarLista(page, [
     valjarRad({ id: EVENT_ID, namn: 'Bekräftelseprövning', startdatum: '2099-06-01' }),
   ]);
 
   let sentBody: Json | null = null;
+  const aktivitetsloggar: Aktivitetslogg[] = [];
 
   await page.route(GET_REGISTRATIONS, async (route: Route) => {
     await route.fulfill({
@@ -111,7 +123,27 @@ async function mocka(page: Page): Promise<{ sentBody: () => Json | null }> {
     });
   });
 
-  return { sentBody: () => sentBody };
+  // [TASK-201.3, AC #4] recordActivity fire-and-forget:ar EN post PER
+  // FAKTISKT skickad mottagare (`useSendActionEmail`s onSuccess,
+  // `actionEmail.ts`) — Eva (completed) ska logga, Johan (skipped) ska INTE.
+  await page.route(LOG_ACTIVITY, async (route: Route) => {
+    const body = route.request().postDataJSON() as Aktivitetslogg & {
+      id: string;
+      context: { extensions: Record<string, string> };
+    };
+    aktivitetsloggar.push(body);
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: body.id,
+        requestId: Object.values(body.context.extensions)[0],
+        occurredAt: new Date().toISOString(),
+      }),
+    });
+  });
+
+  return { sentBody: () => sentBody, aktivitetsloggar };
 }
 
 async function oppnaSidan(page: Page): Promise<void> {
@@ -123,7 +155,7 @@ test.describe('Skicka bekräftelsemail — verklig sändväg mot send-action-ema
   test('POST med rätt kontrakt, ärligt delutfall, fallna kvar markerade efter "Tillbaka till åtgärderna"', async ({
     page,
   }) => {
-    const { sentBody } = await mocka(page);
+    const { sentBody, aktivitetsloggar } = await mocka(page);
     await oppnaSidan(page);
 
     await page.getByRole('button', { name: /deltagare markerade/ }).click();
@@ -163,6 +195,16 @@ test.describe('Skicka bekräftelsemail — verklig sändväg mot send-action-ema
     expect(String(body.idempotencyKey)).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
+
+    // [TASK-201.3 AC #4] AKTIVITETSLOGGEN: EN post — Eva (completed), ALDRIG
+    // Johan (skipped, "redan bekräftad") — servern är facit, inte urvalet.
+    await expect.poll(() => aktivitetsloggar.length).toBe(1);
+    const [logg] = aktivitetsloggar;
+    expect(logg.actor.name.length).toBeGreaterThan(0);
+    expect(logg.actor.account.name.length).toBeGreaterThan(0);
+    expect(logg.verb.display['sv-SE']).toBe('skickade bekräftelsemail');
+    expect(logg.object.definition.name['sv-SE']).toBe('Eva Lindqvist (Bekräftelseprövning)');
+    expect(logg.object.definition.type).toContain('/activity-types/mail');
 
     // Skärmläsar-annonseringen (berättelse 26): role=status (partial → intent
     // 'info'), inte en egen announcer-rad.
