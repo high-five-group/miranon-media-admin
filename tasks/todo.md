@@ -59,15 +59,22 @@ eventual-consistency FALSIFIERAD rött-först; verklig rot =
 drift-korten 147.10/184/186 rättade (`#1196`) · T51/T55 STÄNGDA mot S102
 Del 6-belägg → 176/177 AC 3 bockat, stängnings-grinden grön (`#1197`).
 Token-utredningen: `SUPABASE_ACCESS_TOKEN` saknas genuint (mätt 4 ytor) —
-**FALSIFIERAT samma kväll, se Del 5.** **NÄSTA (resume): verifiera `#1216`
-och `#1223` per jobb och armera om vid utsparkning → `201.6` kärnvyn (fri
-när `#1216` landat) → `201.7` hem-spalten, MEN först Marcus dash-beslut.
-Öppna Marcus-beslut: tankestrecket (blockerar 201.7) · nyckelmigreringen
-`TASK-204` · `~/Downloads`-provet (kräver omstart).** Numrering
-disk-re-verifierad vid paus 2026-08-12 kväll mot `177d17a4`: ADR **112** ·
-L**512** + **4 fragment** · tråd **T143** · nästa toppnivå-kort **task-205** ·
-fälla **48** — re-derivera ALLTID. Full narrativ: sessionsdok S105 Del 1–5 +
-Paushistorik ×2 + PAUSLÄGE.
+**FALSIFIERAT samma kväll, se Del 5.** **RESUME 3 (2026-08-12 kväll,
+Marcus-order "Jag vill få detta klart nu och live i appen"):** `#1216` +
+`#1223` verifierade LANDADE (`e4a110bc` / `cf56417b`); paus-landningen
+`#1225` var RÖD på `T142`-klassens actionlint-503 (åttonde instansen) →
+`gh run rerun --failed` efter `headRefOid`-match → grön → landad
+`b5534199`. **Marcus-besluten tagna:** tankestrecket → **mittpunkt `·`**,
+inga långa bindestreck i användarsynlig text (facit-grindens larm på just
+den skillnaden accepterat) · nyckelmigreringen `TASK-204` = eget pass EFTER
+hem-spalten · `~/Downloads`-provet senare. **NÄSTA:** bygg-agenter ute på
+`201.4` + `201.6` (båda fria, dep `201.3` landad) + stängning av
+`201.2`/`201.3`/`201.5` (landad kod, kort stod kvar `To Do`) → `201.7`
+hem-spalten ∥ `201.8` filterraden → `201.9` prod (HITL per beslut A) +
+`201.10` QA. Numrering disk-re-verifierad vid resume 3 mot `b5534199`,
+noll divergens: ADR **112** · L**512** + **4 fragment** · tråd **T143** ·
+nästa toppnivå-kort **task-205** · fälla **48** — re-derivera ALLTID. Full
+narrativ: sessionsdok S105 Del 1–5 + Paushistorik ×3.
 
 **Session 102 ⏸️ PAUSAD IGEN (2026-08-11 kväll, `lifecycle: paused`) —
 RESUME-DAGEN LEVERERADE GO-LIVE-KÄRNAN: prod-mailvägen SKARP (`176`+`177`
