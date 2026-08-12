@@ -272,36 +272,6 @@ function erbjudandeNamn(erbjudande: string | null): string | null {
   return erbjudande && erbjudande !== 'Annat' ? erbjudande : null;
 }
 
-/**
- * Dagar-kvar-pillens tre former. `Math.round` absorberar tidszons-offseten
- * mellan datumsträngens UTC-midnatt och lokal midnatt (|offset| < 12 h).
- *
- * Medvetet KOPIERAD, inte importerad: de två befintliga bärarna duplicerar
- * redan varandra, och att lyfta ut en delad hjälpare ur en PROTOTYP vore att
- * låta prototypen diktera bibliotekskodens form. Konsolideringen hör till
- * promoveringen (ADR-103), inte hit.
- *
- * ⚠️ DIVERGERAR SEDAN 2026-08-12 från `EventCard.tsx:102` och
- * `NastaEventCard.tsx:34`, som båda säger "N dagar kvar" rakt av. Marcus
- * samma dag: *"pillen '6 dagar kvar' vill jag ska säga '6 dagar kvar till
- * eventet' tror jag"* — sagt om DENNA yta, där pillen sitter i ett block som
- * också rymmer anmälningar och hämtningar och därför inte självklart handlar
- * om ett event. På Hem-kortet och eventkortet ÄR eventet hela kontexten, så
- * tillägget vore brus där.
- *
- * Att ändra de två andra bärarna är ett eget beslut om två andra vyer — samma
- * klass som FS-förkortningen i `kursfarg.ts` (S103 carry 5) — och tas inte
- * här. "Idag" lämnas orört: den är redan entydig och ett "Eventet är idag"
- * vore en tredje formulering ingen bett om.
- */
-function dagarKvarText(startMs: number, nuMs: number): string {
-  const idag = new Date(nuMs);
-  idag.setHours(0, 0, 0, 0);
-  const dagar = Math.round((startMs - idag.getTime()) / 86_400_000);
-  if (dagar <= 0) return 'Idag';
-  return dagar === 1 ? '1 dag kvar till eventet' : `${dagar} dagar kvar till eventet`;
-}
-
 /*
  * `dagarMellan` RIVEN 2026-08-12. Den räknade kalenderdagar BAKÅT för raden
  * "Senast för N dagar sedan: …" i "Just nu" — en rad som försvann samma dag
@@ -1958,15 +1928,20 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                           {[langtDatum(grupp.datum), grupp.ort].filter(Boolean).join(' · ')}
                         </span>
                       </div>
-                      {/* Dagar-kvar PER EVENTRAD (Marcus: *"hur många dagar det
-                          är kvar-pillen ska vara på eventraden också"*).
+                      {/* INGEN DAGAR-KVAR-PILL. Den fanns här från 2026-08-12
+                          ("hur många dagar det är kvar-pillen ska vara på
+                          eventraden också") och togs bort samma dag på Marcus
+                          egen omprövning: *"Jag vill ta bort pillen helt
+                          istället. Blir mer clean utan och den hjälper inte
+                          Lotta kom jag på."*
 
-                          `neutral` PÅ KORTYTA = vit utan kontur (Marcus
-                          2026-08-12: *"pillen blir vit utan kontur"*). Tonen
-                          fanns redan i komponenten — `kommande`-tonens kontur
-                          behövdes när raden var transparent, men mot den
-                          fyllda raden bär den vita ytan skillnaden själv. */}
-                      <Pill ton="neutral">{dagarKvarText(grupp.tidMs, nuMs)}</Pill>
+                          Skälet är ett ANVÄNDNINGS-skäl, inte ett formskäl:
+                          raden bär redan eventets datum, och nedräkningen
+                          besvarade ingen fråga Lotta faktiskt ställer i
+                          persondetaljen. `dagarKvarText` är därmed oanvänd i
+                          denna fil och riven med pillen — `EventCard.tsx:102`
+                          och `NastaEventCard.tsx:34` bär sina egna kopior och
+                          är ORÖRDA (där ÄR nedräkningen kortets poäng). */}
                     </>
                   );
                   // KLICKBAR till anmälningsdetaljen (Marcus 2026-08-12: *"även
