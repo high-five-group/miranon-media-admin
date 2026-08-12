@@ -99,6 +99,28 @@
             "statusMessage": "FACIT-GODKÄNNANDETS KANALSEPARATION (ADR-104) — agent-skrivning mot \"godkand\"-fältet nekas"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-hemlighet-utskrift.sh\"",
+            "timeout": 10,
+            "statusMessage": "HEMLIGHETS-LÅSET — kommandon som skriver ut ett hemligt värde nekas (TASK-203, Marcus-order 2026-08-12)"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-prod-ref.sh\"",
+            "timeout": 10,
+            "statusMessage": "PROD-REF-LÅSET — agent-kommandon mot produktions-Supabase-projektet nekas (TASK-203)"
+          }
+        ]
       }
     ],
     "PreCompact": [
