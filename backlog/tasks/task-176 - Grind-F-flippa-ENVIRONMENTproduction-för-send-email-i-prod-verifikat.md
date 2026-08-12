@@ -4,7 +4,7 @@ title: 'Grind F: flippa ENVIRONMENT=production för send-email i prod + verifika
 status: Done
 assignee: []
 created_date: '2026-08-10 06:14'
-updated_date: '2026-08-12 04:08'
+updated_date: '2026-08-12 06:10'
 labels:
   - ready-for-human
 dependencies: []
@@ -26,7 +26,7 @@ Go-live-blockerare på Lotta-kan-jobba-baren (Marcus-beslut 2026-08-10, sessions
 <!-- AC:BEGIN -->
 - [x] #1 ENVIRONMENT=production satt i prod för send-email — Marcus handgrepp, bokfört med tidsstämpel i kortets notes
 - [x] #2 Code-verifikat efter flipp: miljö-grinden avvisar inte längre (422-klassen borta) via icke-muterande verifikatform per T55
-- [ ] #3 T55-tråden uppdaterad med utfallet
+- [x] #3 T55-tråden uppdaterad med utfallet
 <!-- AC:END -->
 
 ## Definition of Done
