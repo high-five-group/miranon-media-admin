@@ -2318,6 +2318,10 @@ function GranskningsSida({
         // lista (normalfallet) ⇒ bilage-fri batchgren, oförändrad. Klienten
         // skickar bara VILKA — mekanismen bor i _shared/send-action-email.ts.
         attachmentIds: granskning.bilagor,
+        // [TASK-201.3] Klient-lokalt underlag för aktivitetsloggens
+        // objekt-namn — se `useSendActionEmail`s docblock. Skickas ALDRIG
+        // till servern.
+        mottagare,
       },
       {
         onSuccess: (result) => {

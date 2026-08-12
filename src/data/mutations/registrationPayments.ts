@@ -1,5 +1,12 @@
 import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/auth/useAuth';
 import { displayName } from '@/components/registrations/registration-display';
+import {
+  ACTIVITY_OBJECT_TYPES,
+  betalningVerb,
+  registrationObjectId,
+} from '@/data/activityLog/activityTypes';
+import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
 import type { PaymentStatusValue } from '@/domain/types/Status';
@@ -102,6 +109,7 @@ const TAKTVAKT_SCOPE = { id: 'atgardssida-betalningsstatus' };
 export function useSetPaymentStatus(eventId: string) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
   const key = queryKeys.registrations.byEvent(eventId);
 
   return useMutation<
@@ -136,11 +144,26 @@ export function useSetPaymentStatus(eventId: string) {
 
     // aria-live för den lyckade flippen — ingen annan SR-signal finns
     // (kryssets visuella tillstånd är flippens enda uttryck).
+    //
+    // AKTIVITETSLOGGEN (TASK-201.3, pilot 1/3): fire-and-forget EFTER den
+    // riktiga skrivningen redan lyckats — se `recordActivity`s filhuvud för
+    // varför den aldrig kan fälla denna mutation. Loggar BÅDA riktningarna
+    // (mottagen/ej mottagen) — `betalningVerb` väljer verb-texten.
     onSuccess: (_data, { registration, betalning, value }) => {
       const utfall = value === PaymentStatus.MOTTAGEN ? 'mottagen' : 'ej mottagen';
       alertScreenReader(
         `${BETALNING_LABEL[betalning]} markerad som ${utfall} för ${displayName(registration)}`,
       );
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: betalningVerb(value),
+        object: {
+          id: registrationObjectId(registration.id),
+          type: ACTIVITY_OBJECT_TYPES.betalning,
+          name: `${displayName(registration)} (${registration.eventNamn ?? 'okänt event'})`,
+        },
+      });
     },
 
     onSettled: () => {

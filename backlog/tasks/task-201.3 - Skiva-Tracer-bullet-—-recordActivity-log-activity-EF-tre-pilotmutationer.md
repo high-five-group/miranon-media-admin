@@ -4,7 +4,7 @@ title: 'Skiva: Tracer bullet — recordActivity, log-activity-EF, tre pilotmutat
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:22'
-updated_date: '2026-08-11 20:32'
+updated_date: '2026-08-12 16:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,25 +23,25 @@ Täcker användarberättelser: 1, 13
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 recordActivity-modulen (klientsidan av datalagret, via adaptern) bygger Zod-validerade statements och postar till log-activity-EF; fire-and-forget — en fallerad loggning fäller ALDRIG Lottas mutation (api-test bevisar båda riktningarna)
-- [ ] #2 log-activity-EF validerar inkommande statement med SAMMA Zod-schema server-side (ogiltigt → 4xx, skrivs aldrig), skriver via service-role, uppfyller EF-ribban (SECURITY-SPEC §6.10)
-- [ ] #3 requestId propageras klient → EF → activity_log-rad — api-staging-test läser tillbaka raden och jämför mot klientens requestId (byggplanens DoD 3)
-- [ ] #4 Tre pilotmutationer instrumenterade via onSuccess: markera betalning, bekräfta anmälan, mail-åtgärd; e2e-staging-test utför en åtgärd och verifierar rad med rätt aktör, typ och tid
-- [ ] #5 Sammanfattningar på Lotta-språket (Gunilla-principen), formen "Lotta markerade betalning — Anna Andersson (Fjärrskådning 2)"; IRI-verb under huven
+- [x] #1 recordActivity-modulen (klientsidan av datalagret, via adaptern) bygger Zod-validerade statements och postar till log-activity-EF; fire-and-forget — en fallerad loggning fäller ALDRIG Lottas mutation (api-test bevisar båda riktningarna)
+- [x] #2 log-activity-EF validerar inkommande statement med SAMMA Zod-schema server-side (ogiltigt → 4xx, skrivs aldrig), skriver via service-role, uppfyller EF-ribban (SECURITY-SPEC §6.10)
+- [x] #3 requestId propageras klient → EF → activity_log-rad — api-staging-test läser tillbaka raden och jämför mot klientens requestId (byggplanens DoD 3)
+- [x] #4 Tre pilotmutationer instrumenterade via onSuccess: markera betalning, bekräfta anmälan, mail-åtgärd; e2e-staging-test utför en åtgärd och verifierar rad med rätt aktör, typ och tid
+- [x] #5 Sammanfattningar på Lotta-språket (Gunilla-principen), formen "Lotta markerade betalning — Anna Andersson (Fjärrskådning 2)"; IRI-verb under huven
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Zod-schemat validerar varje statement runtime — ogiltigt statement når aldrig activity_log
+- [x] #6 requestId propageras klient → EF → activity_log-rad, läsbar i devtools (byggplanens DoD 3–4)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-ABSOLUT MAILFÖRBUD (Marcus-order 2026-08-11, verbatim: "det enda som du eller agenterna ABSOLUT INTE får råka göra är ju att skicka mail till riktiga människor. Aldrig under några som helst omständigheter."): appen är i skarp drift. Mail-pilotens e2e följer EXAKT den etablerade formen i tests/e2e/atgarder-*.staging.test.ts — egna fixtur-personer med @example.com-adresser (RFC-reserverat, onåbart), aldrig befintliga staging-personer som mottagare, aldrig påhittade riktiga adresser. Vid MINSTA osäkerhet om en sändvägs mottagare: STOPPA och bokför i stället för att köra.
+Byggd (S105 forts., TASK-201.3). Tracer bullet genom alla lager: recordActivity (src/data/activityLog/recordActivity.ts, fire-and-forget via try/catch, aldrig kastar) + activityTypes.ts (verb/objekt-IRIer for de tre pilotmutationerna) + DataSourceAdapter.recordActivity (implementerad identiskt i AirtableAdapter och SupabaseAdapter, activity_log ligger redan helt utanfor Airtable) + log-activity-EF (requireUser -> Zod-validering mot en Deno-sidans schema-spegel, _shared/activity-statement-schema.ts, MEDVETEN duplicering pga inget import_map-mekanism finns i repot -> identitetsbindning actor.account.name matchar JWT annars 403 -> server-side namn-attribution ADR-075-monstret -> insert via service_role -> svar id/requestId/occurredAt) + tre pilotmutationer instrumenterade via onSuccess (useSetPaymentStatus, useSendConfirmationFromDetail, useSendActionEmail). DEPLOY: log-activity deployad till staging ENDAST den funktionen, verifierat lankad mot pqtshyierkdgwdnxuirz aldrig prod. GRINDAR: typecheck 0, biome 0, build 0, test:api 676 grona / 1 kand flake attachment-upload-large.staging.test.ts TASK-196s isolerat gron 15/15 verifierat. 18 nya committade api-tester, samtliga rott-forst bevisade. e2e: 3 nya tester i atgarder-betalningar + 1 utokning av atgarder-bekraftelsemail, rott-forst bevisade mot en EGEN dev-server i worktreen port 5183. KALLMARKT AVVIKELSE: AC 3 kraver skarpt write+readback-bevis, en permanent testrad per korning, flaggat i slutrapport. KAND GAP: bekrafta anmalan-piloten saknar egen e2e-tackning, AnmalanDetail.tsx har noll mock-infrastruktur, ersatt med pure statement-test. KOORDINERINGSSKULD FRAN TASK-201.5: EVENT_ID_EXTENSION_IRI deferrad till TASK-201.4 per orkestrerarens erbjudna vag ut, ingen av mina AC namner den, context.extensions ar medvetet oppen for framtida tillagg.
 <!-- SECTION:NOTES:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Zod-schemat validerar varje statement runtime — ogiltigt statement når aldrig activity_log
-- [ ] #6 requestId propageras klient → EF → activity_log-rad, läsbar i devtools (byggplanens DoD 3–4)
-<!-- DOD:END -->

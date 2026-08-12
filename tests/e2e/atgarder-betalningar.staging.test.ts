@@ -42,12 +42,21 @@ import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const UPDATE_RECORD = '**/functions/v1/update-record';
+const LOG_ACTIVITY = '**/functions/v1/log-activity';
 const EVENT_ID = 'recATGBETALNING1';
 
 type Json = Record<string, unknown>;
 
 /** Skrivningen update-record tagit emot (payload-beviset, `event-bor-over`-mönstret). */
 type Skrivning = { operationKey: string; recordId: string; fields: Record<string, unknown> };
+
+/** Statementet log-activity tagit emot (TASK-201.3 AC #4) — bara de fält
+ * testerna faktiskt behöver bevisa, inte hela xAPI-formen. */
+type Aktivitetslogg = {
+  actor: { name: string; account: { name: string } };
+  verb: { display: Record<string, string> };
+  object: { definition: { name: Record<string, string>; type: string } };
+};
 
 /** Komplett Registration som passerar RegistrationSchema (samma facit-form
     som `mark-paid.staging.test.ts` § `reg()`). */
@@ -98,21 +107,60 @@ type MockOptioner = {
   updateDelayMs?: number;
   /** Svara 500 för denna EXAKTA recordId — fel-vägen. */
   failForRecordId?: string;
+  /** [TASK-201.3, AC #1] Svara 500 för VARJE log-activity-anrop — bevisar att
+   * en fallerad loggning ALDRIG fäller den riktiga mutationen (recordActivity
+   * fire-and-forget:ar, se `recordActivity.ts` filhuvud). */
+  failLogActivity?: boolean;
 };
 
 async function mocka(
   page: Page,
   registrations: Json[],
   optioner: MockOptioner = {},
-): Promise<{ skrivningar: Skrivning[]; maxSamtidiga: () => number }> {
+): Promise<{
+  skrivningar: Skrivning[];
+  maxSamtidiga: () => number;
+  aktivitetsloggar: Aktivitetslogg[];
+}> {
   await mockValjarLista(page, [
     valjarRad({ id: EVENT_ID, namn: 'Betalprövning', startdatum: '2099-06-01' }),
   ]);
 
   const rader = registrations.map((r) => ({ ...r }));
   const skrivningar: Skrivning[] = [];
+  const aktivitetsloggar: Aktivitetslogg[] = [];
   let samtidiga = 0;
   let maxSamtidiga = 0;
+
+  // [TASK-201.3, AC #4] recordActivity fire-and-forget:ar EFTER update-record
+  // redan lyckats — mocken svarar alltid 201 (formen `log-activity/index.ts`
+  // faktiskt returnerar) så klientens statement-byggande går att observera
+  // utan att skriva någon rad i skarp staging (denna svit muterar ALDRIG
+  // delad staging-data, se filhuvudets "Deterministisk"-stycke).
+  await page.route(LOG_ACTIVITY, async (route) => {
+    const body = route.request().postDataJSON() as Aktivitetslogg & {
+      id: string;
+      context: { extensions: Record<string, string> };
+    };
+    aktivitetsloggar.push(body);
+    if (optioner.failLogActivity) {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Internal error', requestId: 'req-test-log-activity-fail' }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: body.id,
+        requestId: Object.values(body.context.extensions)[0],
+        occurredAt: new Date().toISOString(),
+      }),
+    });
+  });
 
   await page.route(GET_REGISTRATIONS, async (route) => {
     await route.fulfill({
@@ -157,7 +205,7 @@ async function mocka(
     });
   });
 
-  return { skrivningar, maxSamtidiga: () => maxSamtidiga };
+  return { skrivningar, maxSamtidiga: () => maxSamtidiga, aktivitetsloggar };
 }
 
 /** Betalningsblocket — egen sektion, se `AtgardsSida.tsx` `grupp-betalningar`. */
@@ -286,6 +334,73 @@ test.describe('Betalningarnas skrivvertikal på Åtgärds-sidan — avprickning 
       recordId: 'recJohan00000002',
       fields: { Anmälningsavgift: 'Ej mottagen' },
     });
+  });
+
+  test('AKTIVITETSLOGGEN (TASK-201.3 AC #4): en avprickning postar log-activity med rätt aktör, verb och objekt-namn', async ({
+    page,
+  }) => {
+    const { skrivningar, aktivitetsloggar } = await mocka(page, FACIT);
+    await oppnaSidanOchBetalningar(page);
+
+    await klicka(avgiftKryss(page, 'Eva Lindqvist'));
+    await expect.poll(() => skrivningar.length).toBe(1);
+    await expect.poll(() => aktivitetsloggar.length).toBe(1);
+
+    const [logg] = aktivitetsloggar;
+    // AKTÖR: ett giltigt (icke-tomt) namn skickas klient-sidan — den
+    // AUKTORITATIVA identiteten härleds server-side (EF-kontraktet,
+    // tests/api/log-activity.staging.test.ts), så denna e2e-svit bevisar
+    // FORMEN, inte det slutliga namnet.
+    expect(logg.actor.name.length).toBeGreaterThan(0);
+    expect(logg.actor.account.name.length).toBeGreaterThan(0);
+    // VERB: "markerade betalning" (mottagen-riktningen — Eva startar Ej
+    // mottagen i FACIT).
+    expect(logg.verb.display['sv-SE']).toBe('markerade betalning');
+    // OBJEKT: Gunilla-formen "Namn (Event)" — samma exempel som PRD § Lösning.
+    expect(logg.object.definition.name['sv-SE']).toBe('Eva Lindqvist (Betalprövning)');
+    expect(logg.object.definition.type).toContain('/activity-types/betalning');
+  });
+
+  test('AKTIVITETSLOGGEN (TASK-201.3 AC #4): AVMARKERING loggar den motsatta riktningen ("avmarkerade betalning")', async ({
+    page,
+  }) => {
+    const { aktivitetsloggar } = await mocka(page, FACIT);
+    await oppnaSidanOchBetalningar(page);
+
+    // Johan startar Mottagen (FACIT) — klick avmarkerar.
+    await klicka(avgiftKryss(page, 'Johan Berg'));
+    await expect.poll(() => aktivitetsloggar.length).toBe(1);
+
+    expect(aktivitetsloggar[0].verb.display['sv-SE']).toBe('avmarkerade betalning');
+  });
+
+  test('AKTIVITETSLOGGEN (TASK-201.3 AC #1): log-activity 500 FÄLLER ALDRIG den riktiga mutationen — fire-and-forget bevisat i BÅDA riktningarna (framgång ovan, fel här)', async ({
+    page,
+  }) => {
+    const { skrivningar, aktivitetsloggar } = await mocka(page, FACIT, { failLogActivity: true });
+    await oppnaSidanOchBetalningar(page);
+
+    const kryss = avgiftKryss(page, 'Eva Lindqvist');
+    await expect(kryss).not.toBeChecked();
+    await klicka(kryss);
+
+    // DEN RIKTIGA MUTATIONEN lyckas identiskt — update-record ser aldrig att
+    // log-activity fallerade (separata, oberoende request-strömmar).
+    await expect(kryss).toBeChecked();
+    await expect.poll(() => skrivningar.length).toBe(1);
+    expect(skrivningar[0]).toEqual({
+      operationKey: 'mark-registration-fee-paid',
+      recordId: 'recEva0000000001',
+      fields: { Anmälningsavgift: 'Mottagen' },
+    });
+    // Ingen "Kunde inte spara"-larmruta — mutationen VET INGET om att
+    // loggningen misslyckades (recordActivity fångar felet internt, `void`-
+    // anropat, aldrig awaitat av mutationens egen kedja).
+    await expect(page.getByRole('alert')).toHaveCount(0);
+
+    // log-activity ANROPADES (mocken svarade 500, men anropet skedde) — detta
+    // skiljer "loggningen fallerade tyst" från "loggningen anropades aldrig".
+    await expect.poll(() => aktivitetsloggar.length).toBe(1);
   });
 
   test('notering: skriver update-registration-payment-note vid blur — EXAKT det egna additiva fältet, aldrig gamla odelade Notering', async ({

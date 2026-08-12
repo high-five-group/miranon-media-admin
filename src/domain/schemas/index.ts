@@ -13,6 +13,8 @@ export {
   ActivityStatementSchema,
   type ActivityVerb,
   REQUEST_ID_EXTENSION_IRI,
+  type RecordActivityResult,
+  RecordActivityResultSchema,
   XAPI_IRI_BASE,
 } from './ActivityStatement.schema';
 export { AttachmentSchema, AttachmentUploadTicketSchema } from './Attachment.schema';
