@@ -1,10 +1,10 @@
 ---
 id: TASK-201.2
 title: 'Skiva: Grunden 2 — activity_log född i staging med RLS-bevis'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 20:21'
-updated_date: '2026-08-12 14:46'
+updated_date: '2026-08-12 18:52'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,7 +32,7 @@ Täcker användarberättelser: 14
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Zod-schemat validerar varje statement runtime — ogiltigt statement når aldrig activity_log
 <!-- DOD:END -->
@@ -65,3 +65,9 @@ Grindar (denna session): typecheck exit 0, biome check exit 0 (mitt nya testfils
 
 Label omklassad ready-for-human → ready-for-agent (denna korrigering). TASK-201.11 (fyndkortet "ingen Supabase db-access") är FALSIFIERAT av samma rotorsak — bör stängas av orkestreraren, rörs inte här (utanför denna skivas avgränsade yta per uppdrag).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat via PR #1202 (mergad main 50afc936, 2026-08-12T15:08:05Z). Levererade: migrationen 20260811211759_create_activity_log.sql applicerad mot staging (pqtshyierkdgwdnxuirz), ny migration 20260812143131_grant_service_role_activity_log.sql (grant select,insert till service_role — genuint fynd: BYPASSRLS räcker inte, saknad GRANT gav 403 tills fixad; medveten UTAN update/delete, gör append-only strukturellt sant), tests/api/activity-log-rls.staging.test.ts (4 fall, RLS-bevis tvåsidigt: anon/authenticated GET+POST → 401/403, rött-först bevisat), supabase/migrations/README.md (ny, dokumenterar appliceringsvägen + GRANT-fyndet). AC 1-3 bekräftade mot LEVANDE staging (migration list local===remote, table-stats, live PostgREST-anrop), inte antagna ur exit 0. Stängningsverifiering (denna agent, 2026-08-12): CI per jobb på PR #1202 via 'gh pr checks 1202' — samtliga jobb pass (Analyze x2, CI Passed or Skipped, CodeQL, Detect changed files, Docs link check, Lint+Audit+TypeCheck, Test suite/Acceptance, Test suite/Pure+Build, Test suite/Webblasarbeteende, Vercel), A11y/Staging/Staging-sentinel-purge skipping (normalt, D0-klassning), noll fail. DIVERGENS, öppet bokförd: den separata, icke-blockerande Post-merge-sviten (post-merge.yml, dokumenterat 'kan strukturellt inte blockera en landning', INTE en required check i main-skydd-rulesetet) gav rött på merge-SHA 50afc936 (run 31610637080) — men det enda fällda testet var tests/api/update-record.staging.test.ts (503 i stället för väntat 400), en fil som INTE ingår i PR #1202:s diff (verifierat via gh pr diff --name-only). activity-log-rls.staging.test.ts (denna skivas eget test) var grönt i samma körning. Bedömning: transient staging-503, ej en regression från denna diff. DoD #3 bockad på grund av CI (ci.yml/ci-suite.yml, den faktiska merge-gaten) — Post-merge-fyndet rapporteras här för spårbarhet, inte som ett olöst krav. Diff-scope 50afc936: 4 filer (kortfil, migration, README, testfil) — inga orelaterade.
+<!-- SECTION:FINAL_SUMMARY:END -->

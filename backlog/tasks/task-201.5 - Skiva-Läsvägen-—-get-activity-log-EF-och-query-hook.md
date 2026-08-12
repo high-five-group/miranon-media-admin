@@ -1,10 +1,10 @@
 ---
 id: TASK-201.5
 title: 'Skiva: Läsvägen — get-activity-log-EF och query-hook'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 20:24'
-updated_date: '2026-08-12 16:48'
+updated_date: '2026-08-12 18:55'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,7 +32,7 @@ Täcker användarberättelser: 13
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 requestId propageras klient → EF → activity_log-rad, läsbar i devtools (byggplanens DoD 3–4)
 <!-- DOD:END -->
@@ -66,3 +66,9 @@ Rörda filer: `supabase/functions/get-activity-log/index.ts` (ny EF), `supabase/
 
 EFTERHANDS-HÄRDNING (samma session, innan PR-armering): det första injektionsprovet i tests/api/get-activity-log.staging.test.ts fångades redan av Date.parse ensamt (verifierat med node -e) och bevisade därför inte regex-radens (/[,()]/.test(occurredAt)) EGNA värde. Hittade och lade till ett andra prov vars occurredAt-del PASSERAR Date.parse (V8 tolererar 'Wed Jan 01 2020 00:00:00 GMT+0000 (extra)' som giltigt datum) men fångas av regexen — empiriskt verifierat både isolerat (node -e) och live mot deployad EF (400) FÖRE testet skrevs. 15/15 gröna efter tillägget (både isolerat och i denna nya körning). Commit 18536191, PR #1215 headRefOid uppdaterad, auto-merge fortsatt armerad (armerades INNAN denna push — GitHub väntar in de nya checkarna på samma armering, ingen ny gh pr merge behövdes).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat via PR #1215 (mergad main 71eba715, 2026-08-12T17:35:43Z; efterhands-härdning commit 18536191 samma armering). Levererade: get-activity-log-EF (supabase/functions/get-activity-log/index.ts, senaste-först + keyset-paginering + kategori/eventId/tid-filter), useActivityLogHistory + useLatestActivity (src/data/queries/useActivityLog.ts) via adapterkedjan (DataSourceAdapter→AirtableAdapter→SupabaseAdapter-stub), EVENT_ID_EXTENSION_IRI (additiv schema-konstant). AC 1-3 verifierade: kontraktet mot 14 committade api-staging-test (auth/CORS/filter/validering/paginering) + manuell live-verifiering mot 5 seedade rader (paginering, alla tre filter, requestId-propagering) eftersom CI strukturellt saknar SUPABASE_SERVICE_ROLE_KEY för seed (samma precedent-mönster som get-mail-log.staging.test.ts). Devtools-läsbarhet empiriskt visad (query-nycklar synliga i React Query Devtools). Stängningsverifiering (denna agent, 2026-08-12): CI per jobb på PR #1215 via 'gh pr checks 1215' — samtliga jobb pass (Analyze x2, CI Passed or Skipped, CodeQL, Detect changed files, Docs link check, Lint+Audit+TypeCheck, Test suite/Acceptance, Test suite/Pure+Build, Test suite/Webblasarbeteende, Vercel), A11y/Staging/Staging-sentinel-purge skipping (normalt), noll fail. DIVERGENS, öppet bokförd: Post-merge-sviten (icke-blockerande safety-net, ej required check i main-skydd-rulesetet) på merge-SHA 71eba715 (run 31623411127) gav rött — 2 fällda: attachment-upload-large.staging.test.ts (redan KÄND flake, ägs av TASK-196, ej i PR #1215:s diff) och airtable-filter.staging.test.ts (502 mot get-registrations status-filter, ej i PR #1215:s diff); 3 ytterligare flakade men gick gröna på retry (samma airtable-filter-fil). Samtliga 15 get-activity-log.staging.test.ts-fall (denna skivas eget test) var gröna i samma körning. Verifierat via 'gh pr diff 1215 --name-only' att ingen av de fällda filerna ingår i diffen. Bedömning: transient staging-502/503-brus i orelaterade tester, ej en regression från denna diff. DoD #3 bockad på grund av CI (ci.yml/ci-suite.yml, den faktiska merge-gaten). ÖPPEN KOORDINERINGS-SKULD kvarstår obeslutad (ej löst av denna stängning): EVENT_ID_EXTENSION_IRI-filtret returnerar tom lista mot riktiga rader tills skrivvägen (201.3/201.4) antar samma nyckelsträng — flaggas vidare till orkestreraren. Diff-scope 71eba715: 13 filer, samtliga hör till läsvägen — inga orelaterade.
+<!-- SECTION:FINAL_SUMMARY:END -->
