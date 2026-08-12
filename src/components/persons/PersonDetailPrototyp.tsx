@@ -1315,6 +1315,18 @@ function StromRad({ post, sist }: { post: StromPost; sist: boolean }) {
  */
 function StromRadD({ post, sist }: { post: StromPost; sist: boolean }) {
   const Ikon = post.ikon;
+
+  // SLOT-MODELLEN (Marcus 2026-08-12: *"Se till att det är exakt samma avstånd
+  // mellan varje händelse!!! Varje händelse i linjen ska låsa en fast höjd
+  // efter den med högst höjd."*). Samma disciplin som `EventCard.tsx` redan
+  // bär: *"korten är alltid likformiga … alla metarader renderas ALLTID med
+  // platshållare"*. Före ändringen mättes FYRA olika posthöjder i 390 px —
+  // 64 / 84 / 112 / 140 — beroende på om posten hade underrad och pillar.
+  //
+  // Alla tre textraderna renderas därför alltid: saknas underrad eller pillar
+  // står slotten TOM men tar sin plats. Höjden blir därmed konstant utan en
+  // hårdkodad `min-h` som spricker vid längre innehåll — reservationen är
+  // strukturell, inte ett magiskt tal.
   const innehall = (
     <>
       <span
@@ -1330,37 +1342,55 @@ function StromRadD({ post, sist }: { post: StromPost; sist: boolean }) {
         )}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5 pt-1">
-        <span className="font-semibold text-body">{post.rubrik}</span>
-        {post.meta && <span className="text-caption text-text-secondary">{post.meta}</span>}
+        <span className="truncate font-semibold text-body">{post.rubrik}</span>
+        {/* Underrads-slotten — alltid renderad, `&nbsp;` håller höjden när
+            posten saknar plats/tillfälle (hämtningar, registret). */}
+        <span className="truncate text-caption text-text-secondary">{post.meta ?? ' '}</span>
         <span className="text-caption text-text-muted tabular-nums">{post.datumText}</span>
-        {post.pillar.length > 0 && (
-          <span className="mt-1 flex flex-wrap items-center gap-1.5">
-            {post.pillar.map((p) => (
-              <Pill key={p.id} ton={p.ton} paKortyta={false}>
-                {p.text}
-              </Pill>
-            ))}
-          </span>
-        )}
+        {/* Pill-slotten — samma princip, men med EXAKT pillens höjd, inte en
+            ungefärlig. `h-[22px]` är härlett, inte magiskt: `Pill` är
+            `text-caption` (12 px/18 px line-height) + `py-0.5` (2 px × 2) =
+            22 px, uppmätt i renderad DOM. Ett första försök med `min-h-5`
+            (20 px) gav 110 px för tomma poster och 112 för fyllda — två
+            pixlar, men Marcus krav är EXAKT samma höjd, och en slot som är
+            lägre än sitt innehåll är inte en slot.
+            `flex-nowrap`: två sessions-pillar ryms på raden i 390 px (mätt),
+            och en wrap hade återinfört just den höjdvariation slotten tar
+            bort. */}
+        <span className="mt-1 flex h-[22px] flex-nowrap items-center gap-1.5 overflow-hidden">
+          {post.pillar.map((p) => (
+            <Pill key={p.id} ton={p.ton}>
+              {p.text}
+            </Pill>
+          ))}
+        </span>
       </span>
     </>
   );
 
+  // SAMMA HORISONTELLA INSET PÅ BÅDA GRENARNA. Fram till 2026-08-12 bar bara
+  // `<Link>`-grenen `-mx-2 px-2`, så ikonens mittpunkt låg på x=16 i länkade
+  // rader och x=24 i olänkade — medan linjen stod fast på `left-[15px]`.
+  // Mätt: strecket satt 9 px fel på varannan post ("strecken sitter helt snett
+  // och helt fel mot ikonerna"). Insetet hör till RADEN, inte till om den råkar
+  // vara klickbar.
+  const radKlasser = '-mx-2 flex items-start gap-3 rounded-lg px-2 py-2';
+
   return (
     <li className="relative flex flex-col">
       {!sist && (
-        <span aria-hidden="true" className="absolute top-8 bottom-0 left-[15px] w-px bg-border" />
+        <span aria-hidden="true" className="absolute top-10 bottom-0 left-[15px] w-px bg-border" />
       )}
       {post.href ? (
         <Link
           to={post.href.to}
           params={post.href.params}
-          className="-mx-2 flex items-start gap-3 rounded-lg px-2 py-2 hover:bg-bg-emphasized motion-safe:transition-colors"
+          className={`${radKlasser} hover:bg-bg-emphasized motion-safe:transition-colors`}
         >
           {innehall}
         </Link>
       ) : (
-        <span className="flex items-start gap-3 px-2 py-2">{innehall}</span>
+        <span className={radKlasser}>{innehall}</span>
       )}
     </li>
   );
@@ -1850,18 +1880,31 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                 </ol>
               </div>
             )}
-            {arGrupper.map((grupp) => (
-              <div key={grupp.ar} className="flex flex-col gap-2">
-                <h3 className="font-semibold text-small text-text-secondary tabular-nums">
-                  {grupp.ar}
-                </h3>
-                <ol className="flex flex-col">
-                  {grupp.poster.map((post, i) => (
-                    <StromRadD key={post.id} post={post} sist={i === grupp.poster.length - 1} />
-                  ))}
-                </ol>
-              </div>
-            ))}
+            {arGrupper.map((grupp, gi) => {
+              // `sist` styr om posten ritar linjen NEDÅT. Sista posten i sista
+              // år-gruppen ska ändå göra det när registret följer under —
+              // annars bröts rälsen och "Kom in i registret" hängde löst
+              // (mätt 2026-08-12: 128 px utan linje mellan dem).
+              const sistaGruppen = gi === arGrupper.length - 1;
+              return (
+                <div key={grupp.ar} className="flex flex-col gap-2">
+                  <h3 className="font-semibold text-small text-text-secondary tabular-nums">
+                    {grupp.ar}
+                  </h3>
+                  <ol className="flex flex-col">
+                    {grupp.poster.map((post, i) => (
+                      <StromRadD
+                        key={post.id}
+                        post={post}
+                        sist={
+                          i === grupp.poster.length - 1 && !(sistaGruppen && registrerad !== null)
+                        }
+                      />
+                    ))}
+                  </ol>
+                </div>
+              );
+            })}
             {/* STRÖMMENS SISTA RAD — alltid, oavsett datum. Se byggStrom
                 steg 4 för varför posten står utanför år-grupperingen:
                 `Rad skapad` är radens födelse i Airtable, inte personens
