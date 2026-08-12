@@ -393,8 +393,16 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
             event: 'Resor i medvetandet 1',
             datum: '2026-02-01T09:00:00.000Z',
             eventDatum: '2026-03-15',
+            ort: 'Rönninge',
           },
-          { id: 'recANM002', motivering: null, event: null, datum: null, eventDatum: null },
+          {
+            id: 'recANM002',
+            motivering: null,
+            event: null,
+            datum: null,
+            eventDatum: null,
+            ort: null,
+          },
         ],
       }),
     );
@@ -405,6 +413,7 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
       event: 'Resor i medvetandet 1',
       datum: '2026-02-01T09:00:00.000Z',
       eventDatum: '2026-03-15',
+      ort: 'Rönninge',
     });
     expect(parsed.motiveringar[1]).toEqual({
       id: 'recANM002',
@@ -412,6 +421,7 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
       event: null,
       datum: null,
       eventDatum: null,
+      ort: null,
     });
   });
 
@@ -421,7 +431,7 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
   // tiden svarar den deployade get-person UTAN fältet — och vyn ska då falla
   // tillbaka på sitt tidigare beteende, inte fälla hela persondetaljen på ett
   // valideringsfel. `.default(null)` är mekanismen; detta är dess kontrakt.
-  test('PersonDetailSchema: motivering UTAN eventDatum parsar och får null (odeployad EF)', () => {
+  test('PersonDetailSchema: motivering UTAN eventDatum/ort parsar och får null (odeployad EF)', () => {
     const parsed = PersonDetailSchema.parse(
       validPersonDetail({
         motiveringar: [
@@ -435,6 +445,7 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
       }),
     );
     expect(parsed.motiveringar[0]?.eventDatum).toBeNull();
+    expect(parsed.motiveringar[0]?.ort).toBeNull();
   });
 
   test('PersonDetailSchema: motiveringar tom lista är giltig (inga anmälningar länkade)', () => {

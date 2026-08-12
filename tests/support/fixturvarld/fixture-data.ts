@@ -1059,6 +1059,7 @@ const RIK_DETALJ = {
       event: 'Resor i medvetandet 3',
       datum: '2026-08-01T09:00:00.000Z',
       eventDatum: '2026-09-26',
+      ort: 'Skövde',
     },
   ],
   flagga: 'Ring innan nästa event',

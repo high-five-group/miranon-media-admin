@@ -63,9 +63,15 @@ export const PersonTouchpointEntrySchema = z.object({
  * skilja åt — samma person renderade två identiska rader "Anmäld till
  * Fjärrskådning" (tillfällena 2026-06-11 och 2026-08-18).
  *
- * BÅDA fälten är `.default(null)`: en EF som ännu inte deployats med
- * utökningen utelämnar dem, och vyn ska då falla tillbaka på sitt tidigare
- * beteende i stället för att fälla schemat.
+ * `ort` = EVENTETS ort (`Ort (from Event)`, lookup). Anmälans EGNA `Ort` duger
+ * inte — tom på backfill-anmälningar. Tillsammans med `event` och `eventDatum`
+ * är detta atomerna tidslinjens mening komponeras av ("Anmälde sig till
+ * <kurs> i <ort> <datum>", Marcus 2026-08-12); appen bygger meningen, basen
+ * levererar delarna (ADR-108 beslut 1).
+ *
+ * ALLA TRE är `.default(null)`: en EF som ännu inte deployats med utökningen
+ * utelämnar dem, och vyn ska då falla tillbaka på sitt tidigare beteende i
+ * stället för att fälla schemat.
  *
  * Ersätter INTE `motivering` (plattat rollup-format, kvar orört nedan).
  */
@@ -75,6 +81,7 @@ export const PersonMotiveringEntrySchema = z.object({
   event: z.string().nullable(),
   datum: z.string().nullable(),
   eventDatum: z.string().nullable().default(null),
+  ort: z.string().nullable().default(null),
 });
 
 /**

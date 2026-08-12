@@ -118,6 +118,7 @@ test.describe('get-person — skarp conformance (ADR-056 detalj, Fas 6a L5b)', (
         event: null,
         datum: '2026-06-19T07:35:48.000Z',
         eventDatum: null,
+        ort: null,
       },
       {
         id: 'rec0wC9rEGKUIHC2W',
@@ -125,6 +126,7 @@ test.describe('get-person — skarp conformance (ADR-056 detalj, Fas 6a L5b)', (
         event: null,
         datum: '2026-06-19T07:35:41.000Z',
         eventDatum: null,
+        ort: null,
       },
     ]);
 

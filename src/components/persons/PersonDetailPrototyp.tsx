@@ -88,6 +88,72 @@ function telHref(nummer: string): string {
   return `tel:${ledandePlus ? '+' : ''}${nummer.replace(/\D/g, '')}`;
 }
 
+const DATUM_DAG_MANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
+
+/**
+ * Kursens VISNINGSNAMN — "RIM 2", inte "Resor i medvetandet 2".
+ *
+ * Mappningen finns redan: `kursfargForKurs().etikett` är legendens korta
+ * copy (K13), och den är samma förkortning basens `SWITCH` i
+ * `Senaste anmälan (sammanfattning)` gör (ADR-108 § Kontext). Ingen ny
+ * uppslagstabell byggs här — en andra kopia hade garanterat glidit isär.
+ *
+ * `annat`-klassen är uppsamlingen; där är etiketten bokstavligen "Annat",
+ * så kursens EGET namn används i stället. Samma idiom som `kursmix()`.
+ */
+function kursEtikett(kursnamn: string | null): string | null {
+  if (!kursnamn) return null;
+  const farg = kursfargForKurs(kursnamn);
+  return farg.klass === 'annat' ? kursnamn : farg.etikett;
+}
+
+/**
+ * TIDSLINJENS MENINGAR — en per radtyp, komponerade i APPEN.
+ *
+ * Marcus 2026-08-12, de tre exakta formerna:
+ *
+ *   Anmälde sig till Fjärrskådning i Varberg 6 september
+ *   Deltog på RIM 2 i Kalmar
+ *   Hämtade Pyramidernas vajrar
+ *
+ * REGELN BAKOM ATT BARA ANMÄLAN BÄR DATUM (*"Nu är det datum och text som
+ * skrivs ut olika huller om buller"*): radens VÄNSTERKOLUMN säger redan när
+ * raden hände. Deltagandet ÄR eventdagen och hämtningen ÄR hämtningsdagen —
+ * ett datum i meningen hade upprepat kolumnen. Anmälan är det enda undantaget:
+ * den hände en dag och pekar på ett event en ANNAN dag, och utan det datumet
+ * går två anmälningar till samma kurs inte att skilja åt.
+ *
+ * INGEN AV DEM BÄR UNDERRUBRIK. Ort, typ, "skrev en motivering" och
+ * hämtningens förklaringsrad är borta — allt som ska sägas ryms i meningen.
+ *
+ * VARFÖR APPEN OCH INTE BASEN, trots ADR-108: beslut 2:s undantag gäller tre
+ * NAMNGIVNA fält (`Senaste interaktion (text)` / `Senaste anmälan
+ * (sammanfattning)` / `Deltog sammanfattning`) och motiveras av att Airtables
+ * Interface-sida läser dem. Tidslinjens per-rad-mening är inget av dem och
+ * har ingen Interface-konsument, så beslut 1 gäller: ordval och ordföljd på
+ * en redan avgjord fakta-mängd hör i appen. Dessutom KAN basens mening inte
+ * återanvändas här — `Senaste anmälan (sammanfattning)` fylls med avsikt
+ * ENDAST på personens senaste anmälan (data-model.md § Grinden), så tre av
+ * Sofia Isakssons fyra anmälningar har fältet tomt.
+ */
+function anmalningsMening(
+  kurs: string | null,
+  ort: string | null,
+  eventDatum: string | null,
+): string {
+  const kursnamn = kursEtikett(kurs);
+  if (!kursnamn) return 'Anmälde sig';
+  const tid = eventDatum ? new Date(eventDatum) : null;
+  const datum = tid && !Number.isNaN(tid.getTime()) ? DATUM_DAG_MANAD.format(tid) : null;
+  return `Anmälde sig till ${kursnamn}${ort ? ` i ${ort}` : ''}${datum ? ` ${datum}` : ''}`;
+}
+
+function deltagandeMening(kurs: string | null, ort: string | null): string {
+  const kursnamn = kursEtikett(kurs);
+  if (!kursnamn) return 'Deltog';
+  return `Deltog på ${kursnamn}${ort ? ` i ${ort}` : ''}`;
+}
+
 /**
  * Erbjudandets NAMN, eller null när det inte finns något.
  *
@@ -905,8 +971,15 @@ function byggStrom(
       tidMs: grupp.tidMs,
       slag: 'event',
       kommande,
-      rubrik: grupp.rubrik,
-      meta: [grupp.ort, grupp.typ].filter(Boolean).join(' · ') || null,
+      // MENINGEN, inte eventnamnet. Ett KOMMANDE event är inget personen
+      // deltagit på — där står kursen och orten som en ren beskrivning
+      // ("Fjärrskådning i Falköping"), inte "Deltog på".
+      rubrik: kommande
+        ? [kursEtikett(grupp.kursnamn) ?? grupp.rubrik, grupp.ort].filter(Boolean).join(' i ')
+        : deltagandeMening(grupp.kursnamn, grupp.ort),
+      // Ingen underrubrik. Orten bor i meningen; `typ` ("Utbildning") tillförde
+      // inget en läsare av raden behöver.
+      meta: null,
       prickKlass: farg.bgClass,
       // KOMMANDE POSTER BÄR INGA SESSIONS-PILLAR. "Dag 1 · Kommande" på ett
       // event som inte hänt säger ingenting utöver vad rubriken "Kommande"
@@ -955,7 +1028,7 @@ function byggStrom(
   if (hamtningskalla === 'poster') {
     for (const anmalan of person.motiveringar) {
       const tid = anmalan.datum ? Date.parse(anmalan.datum) : Number.NaN;
-      const rubrik = anmalan.event ? `Anmäld till ${anmalan.event}` : 'Anmäld';
+      const rubrik = anmalningsMening(anmalan.event, anmalan.ort, anmalan.eventDatum);
       if (!Number.isFinite(tid)) {
         oplacerade.push(rubrik);
         continue;
@@ -966,18 +1039,13 @@ function byggStrom(
         slag: 'anmalan',
         kommande: false,
         rubrik,
-        // Eventets datum SKILJER TILLFÄLLEN ÅT — två anmälningar till samma
-        // kurs ger annars två identiska rader. Motiveringen kopplar posten
-        // till B6 utan att upprepa texten. `eventDatum` är null tills EF:ens
-        // utökning är deployad; raden faller då tillbaka på enbart
-        // motiverings-noten, precis som före ändringen.
-        meta:
-          [
-            anmalan.eventDatum ? langtDatum(anmalan.eventDatum) : null,
-            anmalan.motivering ? 'skrev en motivering' : null,
-          ]
-            .filter(Boolean)
-            .join(' · ') || null,
+        // INGEN UNDERRUBRIK. "skrev en motivering" är borta (Marcus
+        // 2026-08-12: *"En motivering är valfritt för människor att göra i
+        // anmälningsformuläret, det är alltså INTE en händelse, anmälan är
+        // händelsen"*) — raden gjorde ett frivilligt formulärfält till en
+        // egen punkt på tidslinjen. Motiveringarna har sitt eget block (B6).
+        // Eventdatumet flyttade in i meningen.
+        meta: null,
         prickKlass: 'bg-text-secondary',
         pillar: [],
       });
@@ -1012,10 +1080,11 @@ function byggStrom(
     // hamnar bland de oplacerade i stället för att tappas.
     for (const h of person.hamtningar) {
       const tid = h.datum ? Date.parse(h.datum) : Number.NaN;
-      // Namnlöst erbjudande (`null` eller catch-allen "Annat") får handlingen
-      // som rubrik i stället för ett påhittat namn — se `erbjudandeNamn`.
+      // MENINGEN: "Hämtade Pyramidernas Vajrar". Namnlöst erbjudande (`null`
+      // eller catch-allen "Annat") faller till den generiska formen i stället
+      // för ett påhittat namn — se `erbjudandeNamn`.
       const namn = erbjudandeNamn(h.erbjudande);
-      const rubrik = namn ?? 'Hämtade ett erbjudande';
+      const rubrik = namn ? `Hämtade ${namn}` : 'Hämtade ett erbjudande';
       if (!Number.isFinite(tid)) {
         oplacerade.push(rubrik);
         continue;
@@ -1026,9 +1095,9 @@ function byggStrom(
         slag: 'hamtning',
         kommande: false,
         rubrik,
-        // Meta upprepar inte rubriken: bara den namngivna posten behöver
-        // förklaras med vad som faktiskt hände.
-        meta: namn ? 'Hämtade ett erbjudande' : null,
+        // Ingen underrubrik — meningen säger allt, och datumet står i
+        // vänsterkolumnen.
+        meta: null,
         prickKlass: 'bg-text-muted',
         pillar: [],
       });
@@ -1434,11 +1503,16 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
             // hover-ytan tar `-mx-4 px-4` och går kant-i-kant med kortet.
             // Underrubrikerna "Skicka mail"/"Ring" är borta: ikonen och
             // värdet säger redan vad raden gör.
+            // IKONERNA BORTTAGNA 2026-08-12 (Marcus: *"Ta bort eventikonen
+            // och telefonikonen, ser oproffsigt ut"*). En e-postadress och ett
+            // telefonnummer är självförklarande av sin egen form; ikonen
+            // tillförde bara grafiskt brus. Chevronen står kvar — den är
+            // ingen dekoration utan radens affordance (den säger att raden
+            // leder ut ur appen).
             <ul className="flex flex-col divide-y divide-border">
               {person.email && (
                 <li>
                   <a href={`mailto:${person.email}`} className={kontaktRadKlass}>
-                    <Mail aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
                     <span className="min-w-0 flex-1 truncate">{person.email}</span>
                     <ChevronRight
                       aria-hidden="true"
@@ -1451,7 +1525,6 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
               {person.telefon && (
                 <li>
                   <a href={telHref(person.telefon)} className={kontaktRadKlass}>
-                    <Phone aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
                     <span className="min-w-0 flex-1 truncate">{person.telefon}</span>
                     <ChevronRight
                       aria-hidden="true"

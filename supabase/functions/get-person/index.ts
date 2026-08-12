@@ -59,10 +59,15 @@ const TOUCHPOINT_FIELDS = ['Erbjudande', 'Typ', 'Datum'];
 // `Startdatum` (lookup via Event-länken) skiljer TILLFÄLLEN åt: två anmälningar
 // till samma kurs men olika event gav annars två identiska rader ("Anmäld till
 // Fjärrskådning" ×2 — tillfällena 2026-06-11 och 2026-08-18).
+// `Ort (from Event)` (lookup) bär eventets ort — anmälans EGNA `Ort` duger
+// inte, den är tom på backfill-anmälningar (data-model.md § Fält tillagda i
+// augusti 2026). Behövs för tidslinjens mening "Anmälde sig till <kurs> i
+// <ort> <datum>" (Marcus 2026-08-12).
 const ANMALNINGAR_MOTIVERING_FIELDS = [
   'Varför vill du gå den här utbildningen?',
   'Kurs (from Event)',
   'Vill anmäla sig till',
+  'Ort (from Event)',
   'Inskickad',
   'Rad skapad',
   'Startdatum',
@@ -171,6 +176,9 @@ function mapMotiveringEntry(record: { id: string; fields: Fields }) {
     // Eventets startdatum (lookup) — skiljer två anmälningar till samma kurs
     // men olika tillfällen åt. Null när Event-länken saknas (backfill).
     eventDatum: scalarString(f['Startdatum']),
+    // Eventets ort (lookup) — meningens "i <ort>"-led. Null vid saknad
+    // Event-länk; meningen utelämnar då ledet i stället för att gissa.
+    ort: scalarString(f['Ort (from Event)']),
   };
 }
 
