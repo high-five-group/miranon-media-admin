@@ -182,10 +182,16 @@ function platsOchTillfalle(ort: string | null, eventDatum: string | null): strin
 }
 
 /**
- * Motiveringsblockets metarubrik: "Anmälan till ● Fjärrskådning ·
- * 18 augusti 2026 · Varberg" (Marcus 2026-08-12 — *"det är just vad det är en
- * motivering FÖR"*, förkortat samma dag: *"det räcker nog med att skriva
- * 'Anmälan till' istället för 'För anmälan till'"*).
+ * Motiveringsblockets metarubrik: "● Fjärrskådning · 18 augusti 2026 ·
+ * Varberg" (Marcus 2026-08-12 — *"det är just vad det är en motivering FÖR"*,
+ * förkortat i två steg samma dag: *"det räcker nog med att skriva 'Anmälan
+ * till' istället för 'För anmälan till'"*, och därefter *"om vi tar bort
+ * 'Anmälan till' så blir det nog jättebra, då börjar rubriken med
+ * färgpricken"*).
+ *
+ * Ledtexten bar ingen information blockets egen rubrik ("Motiveringar") inte
+ * redan gav — raden under den kan bara vara vad motiveringen avser. Kvar står
+ * referensen själv, och färgpricken blir radens ingång.
  *
  * FULLT kursnamn och FULLT datum med årtal, till skillnad från tidslinjens
  * "FS · 18 augusti". Det är avsiktligt: tidslinjen är en ström man skannar
@@ -233,7 +239,6 @@ function MotiveringsReferens({
   const efterled = [eventDatum ? langtDatum(eventDatum) : null, ort].filter(Boolean) as string[];
   return (
     <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-small text-text-muted">
-      <span>Anmälan till</span>
       {kurs && (
         <>
           <span aria-hidden="true" className={`size-2.5 shrink-0 rounded-full ${farg.bgClass}`} />
@@ -1955,8 +1960,13 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                       </div>
                       {/* Dagar-kvar PER EVENTRAD (Marcus: *"hur många dagar det
                           är kvar-pillen ska vara på eventraden också"*).
-                          Formen är EventCard/NastaEventCard-facitets. */}
-                      <Pill ton="kommande">{dagarKvarText(grupp.tidMs, nuMs)}</Pill>
+
+                          `neutral` PÅ KORTYTA = vit utan kontur (Marcus
+                          2026-08-12: *"pillen blir vit utan kontur"*). Tonen
+                          fanns redan i komponenten — `kommande`-tonens kontur
+                          behövdes när raden var transparent, men mot den
+                          fyllda raden bär den vita ytan skillnaden själv. */}
+                      <Pill ton="neutral">{dagarKvarText(grupp.tidMs, nuMs)}</Pill>
                     </>
                   );
                   // KLICKBAR till anmälningsdetaljen (Marcus 2026-08-12: *"även
@@ -1971,6 +1981,30 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                   // `first:` läser elementets egen syskonposition, och på
                   // länken (enda barnet i sin `<li>`) hade den träffat VARJE
                   // rad i stället för den första.
+                  // RADEN ÄR FYLLD I VILA (Marcus 2026-08-12: *"jag skulle nog
+                  // vilja att aktiva anmälan raden/knappen ser ut som den gör
+                  // vid Hover i normalt tillstånd"*). Den är sidans viktigaste
+                  // rad — nästa event personen ska gå på — och bär nu den
+                  // vikten utan att man måste peka på den.
+                  //
+                  // HOVERN MÅSTE DÅ FLYTTA SIG, annars slutar knappen svara:
+                  // är vilan `bg-bg-emphasized` finns ingen förändring kvar att
+                  // göra med samma token.
+                  //
+                  // FÖRSTA FÖRSÖKET LJUSNADE till `bg-surface` och MÄTTES: raden
+                  // blev `rgb(255,255,255)` — exakt pillens vita — så pillen
+                  // FÖRSVANN vid hover. Det är samma fälla `Pill`s docblock
+                  // redan beskriver ("en pill i kortets egen ton vore
+                  // osynlig"), bara med hover-tillståndet som yta.
+                  //
+                  // Nu MÖRKAS den i stället, med appens eget 6 %-steg:
+                  // `--mm-state-hover` är `color-mix(in srgb, var(--mm-text) 6%,
+                  // transparent)` (semantic.css 46) och används som skrim av
+                  // `ToggleButtonGroup.tsx:73`. Den token kan inte användas rakt
+                  // av här — den ERSÄTTER bakgrunden, så skrimmet hade lagt sig
+                  // mot kortets guld-tint i stället för mot den grå raden och
+                  // ljusnat igen. Samma 6 % blandas därför direkt in i
+                  // `bg-emphasized`. Steget är appens, ytan är radens.
                   const radKlass = 'flex items-center gap-3';
                   return (
                     <li key={grupp.nyckel} className="flex flex-col py-1.5 first:pt-0">
@@ -1978,12 +2012,16 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                         <Link
                           to={href.to}
                           params={href.params}
-                          className={`${radKlass} -mx-2 w-auto rounded-lg px-2 py-1.5 hover:bg-bg-emphasized motion-safe:transition-colors`}
+                          className={`${radKlass} -mx-2 w-auto rounded-lg bg-bg-emphasized px-2 py-1.5 hover:bg-[color-mix(in_srgb,var(--mm-text)_6%,var(--mm-bg-emphasized))] motion-safe:transition-colors`}
                         >
                           {innehall}
                         </Link>
                       ) : (
-                        <span className={`${radKlass} py-1.5`}>{innehall}</span>
+                        <span
+                          className={`${radKlass} -mx-2 w-auto rounded-lg bg-bg-emphasized px-2 py-1.5`}
+                        >
+                          {innehall}
+                        </span>
                       )}
                     </li>
                   );
