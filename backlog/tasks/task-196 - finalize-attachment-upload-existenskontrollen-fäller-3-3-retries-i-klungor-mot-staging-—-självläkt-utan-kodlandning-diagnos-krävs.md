@@ -3,10 +3,10 @@ id: TASK-196
 title: >-
   finalize-attachment-upload: existenskontrollen fäller 3/3 retries i klungor
   mot staging — självläkt utan kodlandning, diagnos krävs
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-11 18:30'
-updated_date: '2026-08-12 04:16'
+updated_date: '2026-08-12 17:51'
 labels: []
 dependencies: []
 priority: medium
@@ -49,4 +49,33 @@ VERIFIKATIONSGRÄNS (öppet bokförd, ej min att stänga): Edge Functions deploy
 LOKALA GRINDAR: typecheck 0 (exit 0), `npx @biomejs/biome check .` exit 0 (0 nya fynd i diffen — `supabase/functions` är exkluderat ur biome.json, "!supabase/functions", förväntat), build exit 0, `npm run test:api` 656/656 exit 0 (1m).
 
 RELATION till task-183 (idempotensnyckel): oförändrad — diagnosen implicerar INTE idempotens-mekaniken, ett separat bekymmer.
+
+STAGING-KVITTOT TAGET — ÖPPEN SKULD BETALD (orkestreraren, S105, 2026-08-12 kväll).
+
+Fixen var landad som kod (commit d4328f01) men EF:en var ALDRIG DEPLOYAD — bokförd som öppen skuld sedan i morse, blockerad på en Supabase-access som visade sig finnas hela tiden (se TASK-201.11, stängt som falsifierat).
+
+DEPLOY: npx supabase functions deploy finalize-attachment-upload --project-ref pqtshyierkdgwdnxuirz
+  -> {"project_ref":"pqtshyierkdgwdnxuirz","functions":["finalize-attachment-upload"],"message":"Deployed Functions."}
+Länkat projekt verifierat FÖRE deployen: staging linked=true, prod lvjsfnphlauldxqlncpl linked=false.
+
+FÖRE/EFTER, matchat n=3 mot samma testfil:
+
+FÖRE deployen (mätt av 201.3-agenten samma kväll, bokfört i dess slutrapport):
+  3/3 RÖDA — full svit + två isolerade omkörningar. Symptomet hade dessutom
+  SKIFTAT från 404 till 400 ("filen hittades inte i lagringen"), och testets
+  tidigare dokumenterade egenskap "grön isolerat" höll INTE längre. Det är
+  precis vad man väntar sig av rotorsaken: storage.list()-defaulten limit:100
+  mot en obegränsat växande mapp blir deterministisk när mappen passerat 100.
+
+EFTER deployen (mätt av orkestreraren):
+  3/3 GRÖNA — PLAYWRIGHT_NO_WEB_SERVER=1 npx playwright test --project=api-staging
+  tests/api/attachment-upload-large.staging.test.ts
+  15 passed (18,5 s) / 15 passed (16,9 s) / 15 passed (20,3 s)
+
+Rotorsaken (storage.list limit:100 + växande mapp, eventual-consistency-hypotesen
+falsifierad rött-först) står oförändrad i diagnosen ovan. Det enda som saknades
+var att koden faktiskt kom ut i miljön.
+
+KVARSTÅR EJ I DENNA SKIVA: prod-deploy av samma fix. Prod-ref-låset (TASK-203)
+gör det till ett Marcus-moment per beslut A (se TASK-201.9). Bokförs där, inte här.
 <!-- SECTION:NOTES:END -->
