@@ -34,6 +34,7 @@ import { mockValjarLista } from './helpers/valjar-lista';
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const UPDATE_RECORD = '**/functions/v1/update-record';
+const LOG_ACTIVITY = '**/functions/v1/log-activity';
 const EVENT_ID = 'recBOROVER000001';
 
 function omDagar(n: number): string {
@@ -147,9 +148,20 @@ const DELTAGARE: Json[] = [
 /** Skrivningar update-record tagit emot under testet (payload-beviset). */
 type Skrivning = { operationKey: string; recordId: string; fields: Record<string, unknown> };
 
-async function mocka(page: Page): Promise<Skrivning[]> {
+/** Statementet log-activity tagit emot (TASK-201.4 AC #3) — samma minimala
+ * form som `atgarder-betalningar.staging.test.ts` § `Aktivitetslogg`. */
+type Aktivitetslogg = {
+  actor: { name: string; account: { name: string } };
+  verb: { display: Record<string, string> };
+  object: { definition: { name: Record<string, string>; type: string } };
+};
+
+async function mocka(
+  page: Page,
+): Promise<{ skrivningar: Skrivning[]; aktivitetsloggar: Aktivitetslogg[] }> {
   await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   const skrivningar: Skrivning[] = [];
+  const aktivitetsloggar: Aktivitetslogg[] = [];
   // Serverns rader muteras av skrivningarna så en refetch (mutationens
   // onSettled-invalidering) inte "ångrar" den optimistiska flippen.
   const rader = DELTAGARE.map((r) => ({ ...r }));
@@ -179,7 +191,26 @@ async function mocka(page: Page): Promise<Skrivning[]> {
       body: JSON.stringify({ ok: true }),
     });
   });
-  return skrivningar;
+  // [TASK-201.4, AC #3] recordActivity fire-and-forget:ar EFTER update-record
+  // redan lyckats (samma mönster som `atgarder-betalningar.staging.test.ts`)
+  // — mocken svarar alltid 201 med EF:ens faktiska form.
+  await page.route(LOG_ACTIVITY, async (route) => {
+    const body = route.request().postDataJSON() as Aktivitetslogg & {
+      id: string;
+      context: { extensions: Record<string, string> };
+    };
+    aktivitetsloggar.push(body);
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: body.id,
+        requestId: Object.values(body.context.extensions)[0],
+        occurredAt: new Date().toISOString(),
+      }),
+    });
+  });
+  return { skrivningar, aktivitetsloggar };
 }
 
 function gruppen(page: Page) {
@@ -346,7 +377,7 @@ test.describe('Bor över — raden + kryss-läget (task-18.7)', () => {
   test('krysset skriver via set-registration-lodging och live-räknaren tickar', async ({
     page,
   }) => {
-    const skrivningar = await mocka(page);
+    const { skrivningar } = await mocka(page);
     await oppnaEventsidan(page);
     await borOverRaden(page).click();
 
@@ -374,6 +405,35 @@ test.describe('Bor över — raden + kryss-läget (task-18.7)', () => {
         fields: { 'Bor över': false },
       },
     ]);
+  });
+
+  test('AKTIVITETSLOGGEN (TASK-201.4 AC #3): ett Bor över-kryss postar log-activity med rätt aktör, verb och objekt-namn — BÅDA riktningarna', async ({
+    page,
+  }) => {
+    const { aktivitetsloggar } = await mocka(page);
+    await oppnaEventsidan(page);
+    await borOverRaden(page).click();
+
+    await klickaKryss(page, 'Anna Ek').click();
+    await expect.poll(() => aktivitetsloggar.length).toBe(1);
+
+    const [markerad] = aktivitetsloggar;
+    // AKTÖR: ett giltigt (icke-tomt) namn skickas klient-sidan — samma
+    // form-bevis som `atgarder-betalningar.staging.test.ts`, den
+    // AUKTORITATIVA identiteten härleds server-side.
+    expect(markerad.actor.name.length).toBeGreaterThan(0);
+    expect(markerad.actor.account.name.length).toBeGreaterThan(0);
+    expect(markerad.verb.display['sv-SE']).toBe('markerade bor över');
+    expect(markerad.object.definition.name['sv-SE']).toBe('Anna Ek (Resor i medvetandet 1)');
+    expect(markerad.object.definition.type).toContain('/activity-types/boende');
+
+    // Av-bock (David) loggar den MOTSATTA riktningen.
+    await klickaKryss(page, 'David Nord').click();
+    await expect.poll(() => aktivitetsloggar.length).toBe(2);
+    expect(aktivitetsloggar[1].verb.display['sv-SE']).toBe('avmarkerade bor över');
+    expect(aktivitetsloggar[1].object.definition.name['sv-SE']).toBe(
+      'David Nord (Resor i medvetandet 1)',
+    );
   });
 
   test('ordningen är STABIL under markeringen — nykryssad rad hoppar inte under fingret', async ({

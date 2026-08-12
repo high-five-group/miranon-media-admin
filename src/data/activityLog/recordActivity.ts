@@ -1,6 +1,11 @@
 import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
 import type { ActivityStatement, ActivityVerb } from '@/domain/schemas';
-import { ActivityStatementSchema, REQUEST_ID_EXTENSION_IRI, XAPI_IRI_BASE } from '@/domain/schemas';
+import {
+  ActivityStatementSchema,
+  EVENT_ID_EXTENSION_IRI,
+  REQUEST_ID_EXTENSION_IRI,
+  XAPI_IRI_BASE,
+} from '@/domain/schemas';
 
 /**
  * Aktivitetsloggens skrivväg — klientsidan av datalagret, VIA ADAPTERN
@@ -46,6 +51,18 @@ export interface RecordActivityInput {
   actor: ActivityActorInput;
   verb: ActivityVerb;
   object: ActivityObjectInput;
+  /**
+   * Eventets record-ID, när statementet hör till ett specifikt event
+   * (TASK-201.4, betalar 201.3s deferrade skuld) — buret i
+   * `context.extensions` under `EVENT_ID_EXTENSION_IRI`, ÅTERANVÄND från
+   * TASK-201.5s läsvägs-konstant (aldrig omdefinierad här). Möjliggör
+   * `get-activity-log`s eventId-filter (`.contains()` mot exakt denna
+   * nyckel, se den EF:ens filhuvud). Utelämnas (`undefined`) för statements
+   * utan naturlig event-koppling (person-flagga, person-anteckning) — då
+   * saknar `context.extensions` nyckeln helt, `.catchall(z.unknown())`
+   * tillåter det utan schemaändring.
+   */
+  eventId?: string;
 }
 
 /** Icke-tom sträng-grind — schemat kräver `.min(1)`, men `displayName` kan vara `null`. */
@@ -69,7 +86,12 @@ export async function recordActivity(input: RecordActivityInput): Promise<void> 
         id: input.object.id,
         definition: { name: { 'sv-SE': input.object.name }, type: input.object.type },
       },
-      context: { extensions: { [REQUEST_ID_EXTENSION_IRI]: requestId } },
+      context: {
+        extensions: {
+          [REQUEST_ID_EXTENSION_IRI]: requestId,
+          ...(input.eventId ? { [EVENT_ID_EXTENSION_IRI]: input.eventId } : {}),
+        },
+      },
       timestamp: new Date().toISOString(),
     };
     // Klient-sidans validering (defensiv — samma schema som EF:en, se

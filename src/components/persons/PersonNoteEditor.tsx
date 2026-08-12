@@ -9,6 +9,9 @@ interface PersonNoteEditorProps {
   personId: string;
   /** Nuvarande anteckning ur detalj-cachen (`null` = ingen). */
   note: string | null;
+  /** Personens visningsnamn (TASK-201.4, AKTIVITETSLOGGEN) — klient-lokalt
+   * underlag för `recordActivity`s objekt-namn, aldrig skickat till servern. */
+  personNamn: string | null;
 }
 
 /**
@@ -30,8 +33,8 @@ interface PersonNoteEditorProps {
  *   `alertScreenReader` på fel-grenen — role=alert annonserar redan.
  * - Fokus-retur (WCAG): edit-start → textarea; spara/avbryt → "Redigera"-knappen.
  */
-export function PersonNoteEditor({ personId, note }: PersonNoteEditorProps) {
-  const mutation = useUpdatePersonNote(personId);
+export function PersonNoteEditor({ personId, note, personNamn }: PersonNoteEditorProps) {
+  const mutation = useUpdatePersonNote(personId, personNamn);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState('');
 

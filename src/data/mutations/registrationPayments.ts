@@ -163,6 +163,9 @@ export function useSetPaymentStatus(eventId: string) {
           type: ACTIVITY_OBJECT_TYPES.betalning,
           name: `${displayName(registration)} (${registration.eventNamn ?? 'okänt event'})`,
         },
+        // TASK-201.4: betalar 201.3s deferrade EVENT_ID_EXTENSION_IRI-skuld —
+        // eventId var redan hook-bundet (`useSetPaymentStatus(eventId)`).
+        eventId,
       });
     },
 

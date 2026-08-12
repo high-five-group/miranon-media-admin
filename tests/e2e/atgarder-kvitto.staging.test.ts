@@ -23,8 +23,17 @@ import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const SEND_RECEIPT_EMAIL = '**/functions/v1/send-receipt-email';
+const LOG_ACTIVITY = '**/functions/v1/log-activity';
 const EVENT_ID = 'recATGKVITTO00001';
 const REG_ID = 'recAtgKvittoAnna1';
+
+/** Statementet log-activity tagit emot (TASK-201.4 AC #3) — samma minimala
+ * form som `atgarder-betalningar.staging.test.ts` § `Aktivitetslogg`. */
+type Aktivitetslogg = {
+  actor: { name: string; account: { name: string } };
+  verb: { display: Record<string, string> };
+  object: { definition: { name: Record<string, string>; type: string } };
+};
 
 type Json = Record<string, unknown>;
 
@@ -61,12 +70,15 @@ function reg(id: string, namn: string, overrides: Json = {}): Json {
 
 const FACIT: Json[] = [reg(REG_ID, 'Anna Andersson')];
 
-async function mocka(page: Page): Promise<{ sentBody: () => Json | null }> {
+async function mocka(
+  page: Page,
+): Promise<{ sentBody: () => Json | null; aktivitetsloggar: Aktivitetslogg[] }> {
   await mockValjarLista(page, [
     valjarRad({ id: EVENT_ID, namn: 'Kvittoprövning', startdatum: '2099-06-01' }),
   ]);
 
   let sentBody: Json | null = null;
+  const aktivitetsloggar: Aktivitetslogg[] = [];
 
   await page.route(GET_REGISTRATIONS, async (route: Route) => {
     await route.fulfill({
@@ -90,7 +102,28 @@ async function mocka(page: Page): Promise<{ sentBody: () => Json | null }> {
     });
   });
 
-  return { sentBody: () => sentBody };
+  // [TASK-201.4, AC #3] recordActivity fire-and-forget:ar EFTER
+  // send-receipt-email redan lyckats (samma mönster som
+  // `atgarder-betalningar.staging.test.ts`) — mocken svarar alltid 201 med
+  // EF:ens faktiska form.
+  await page.route(LOG_ACTIVITY, async (route: Route) => {
+    const body = route.request().postDataJSON() as Aktivitetslogg & {
+      id: string;
+      context: { extensions: Record<string, string> };
+    };
+    aktivitetsloggar.push(body);
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: body.id,
+        requestId: Object.values(body.context.extensions)[0],
+        occurredAt: new Date().toISOString(),
+      }),
+    });
+  });
+
+  return { sentBody: () => sentBody, aktivitetsloggar };
 }
 
 async function oppnaSidanOchBetalningar(page: Page): Promise<void> {
@@ -130,5 +163,35 @@ test.describe('Skicka kvitto — verklig sändväg mot send-receipt-email (TASK-
     expect(String(body.idempotencyKey)).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
+  });
+
+  test('AKTIVITETSLOGGEN (TASK-201.4 AC #3): ett skickat kvitto postar log-activity med rätt aktör, verb och objekt-namn', async ({
+    page,
+  }) => {
+    const { aktivitetsloggar } = await mocka(page);
+    await oppnaSidanOchBetalningar(page);
+
+    const panel = page.locator('section[aria-labelledby="grupp-betalningar"]');
+    await panel
+      .getByRole('button', { name: 'Skicka kvitto - Anmälningsavgift för Anna Andersson' })
+      .click();
+
+    const dialog = page.getByRole('dialog', { name: 'Skicka kvitto - Anmälningsavgift' });
+    await dialog.getByRole('textbox', { name: 'Belopp (kr)' }).fill('1250');
+    await dialog.getByRole('button', { name: 'Betalsätt' }).click();
+    await page.getByRole('option', { name: 'Swish' }).click();
+    await dialog.getByRole('button', { name: 'Skicka' }).click();
+    await expect(dialog.getByText('MM-2026-1001 skickat till Anna Andersson.')).toBeVisible();
+
+    await expect.poll(() => aktivitetsloggar.length).toBe(1);
+    const [logg] = aktivitetsloggar;
+    // AKTÖR: ett giltigt (icke-tomt) namn skickas klient-sidan — samma
+    // form-bevis som `atgarder-betalningar.staging.test.ts`, den
+    // AUKTORITATIVA identiteten härleds server-side.
+    expect(logg.actor.name.length).toBeGreaterThan(0);
+    expect(logg.actor.account.name.length).toBeGreaterThan(0);
+    expect(logg.verb.display['sv-SE']).toBe('skickade kvitto');
+    expect(logg.object.definition.name['sv-SE']).toBe('Anna Andersson (Kvittoprövning)');
+    expect(logg.object.definition.type).toContain('/activity-types/kvitto');
   });
 });

@@ -1,5 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/auth/useAuth';
 import { displayName } from '@/components/registrations/registration-display';
+import {
+  ACTIVITY_OBJECT_TYPES,
+  boendeVerb,
+  registrationObjectId,
+} from '@/data/activityLog/activityTypes';
+import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
@@ -22,6 +29,7 @@ import { queryKeys } from '@/queries/keys';
 export function useSetBorOver(eventId: string) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
   const key = queryKeys.registrations.byEvent(eventId);
 
   return useMutation<
@@ -52,12 +60,27 @@ export function useSetBorOver(eventId: string) {
 
     // aria-live: kryssets visuella tillstånd är flippens enda uttryck
     // (mark-paid-precedentens F-komponent).
+    //
+    // AKTIVITETSLOGGEN (TASK-201.4): fire-and-forget EFTER den riktiga
+    // skrivningen redan lyckats — samma mönster som `useSetPaymentStatus`
+    // (`registrationPayments.ts`), loggar BÅDA riktningarna.
     onSuccess: (_data, { registration, borOver }) => {
       alertScreenReader(
         borOver
           ? `${displayName(registration)} markerad som bor över`
           : `${displayName(registration)} markerad som bor inte över`,
       );
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: boendeVerb(borOver),
+        object: {
+          id: registrationObjectId(registration.id),
+          type: ACTIVITY_OBJECT_TYPES.boende,
+          name: `${displayName(registration)} (${registration.eventNamn ?? 'okänt event'})`,
+        },
+        eventId,
+      });
     },
 
     onSettled: () => {

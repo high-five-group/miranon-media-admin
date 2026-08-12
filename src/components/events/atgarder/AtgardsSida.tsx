@@ -1303,7 +1303,16 @@ function SkickaKvittoKnapp({
   const skickaKvitto = () => {
     if (!kanSkicka || !betalsatt) return;
     skicka.mutate(
-      { registrationId: registration.id, eventId, betalning, belopp: beloppTal, betalsatt },
+      {
+        registrationId: registration.id,
+        eventId,
+        betalning,
+        belopp: beloppTal,
+        betalsatt,
+        // TASK-201.4 AKTIVITETSLOGGEN: klient-lokalt namn-underlag, se
+        // `useSendReceipt`s docblock — skickas ALDRIG till servern.
+        registration,
+      },
       {
         onSuccess: (result) => {
           if (result.status === 'sent' && result.kvittonummer) {

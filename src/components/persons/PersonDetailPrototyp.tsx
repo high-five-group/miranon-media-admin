@@ -2015,7 +2015,11 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           `manuellFlagga` finns kvar i shapen men läses inte här. */}
       <Sektion id="proto-d-flagga" rubrik="Flagga">
         <div className="py-3">
-          <PersonFlagEditor personId={person.id} flagga={person.flagga} />
+          <PersonFlagEditor
+            personId={person.id}
+            flagga={person.flagga}
+            personNamn={displayName(person)}
+          />
         </div>
       </Sektion>
 
@@ -2292,7 +2296,7 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           egen, märkt yta tills någon medvetet migrerar innehållet in i
           strömmen; den migreringen är INTE gjord här. */}
       <Sektion id="proto-d-anteckningar" rubrik="Anteckningar">
-        <PersonAnteckningar personId={person.id} />
+        <PersonAnteckningar personId={person.id} personNamn={displayName(person)} />
         {person.anteckningar && (
           <div className="flex flex-col gap-1.5 py-3">
             <span className="text-caption text-text-muted">
