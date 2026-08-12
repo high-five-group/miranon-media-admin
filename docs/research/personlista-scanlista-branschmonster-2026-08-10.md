@@ -397,7 +397,7 @@ statusarna. Det är en avvägning Marcus bör göra med öppna ögon snarare
   <https://atlassian.design/components/lozenge>
 - Apple Human Interface Guidelines, Lists and tables (kunde inte hämtas
   i fulltext, se § Vad precedenten INTE svarar på):
-  <https://developer.apple.com/design/human-interface-guidelines/components/layout-and-organization/lists-and-tables/>
+  <https://developer.apple.com/design/human-interface-guidelines/lists-and-tables>
 
 ### Forskning och etablerad tredjepart
 
