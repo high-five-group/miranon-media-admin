@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 105 ▶️ ÅTERUPPTAGEN (2026-08-12 morgon, `lifecycle: active`) — FAS 6.5
+**Session 105 ⏸️ PAUSAD IGEN (2026-08-12 förmiddag, `lifecycle: paused`) — FAS 6.5
 AKTIVITETSLOGGEN: GRILLAD SAMSYN → PRD → TIO SKIVOR → MAIL-LÅSET BEVISAT →
 201.1 LANDAD; KEDJAN BLOCKERAD PÅ DB-ACCESS (MARCUS-MOMENT).** Grillningen
 (fem kvitterade beslut, Del 2): B-målet skivat kärnvy→filterrad · alla
@@ -29,10 +29,20 @@ stopp"; S102 service-ff:ade huvudkatalogen på SendMessage-bön —
 `CLAUDE_PROJECT_DIR`-fyndet är lesson-kandidat 1). **201.1 Done-klass**
 (ADR-paret + xAPI-schema + migrationsfil, PR `#1185`); **201.2 STOPPAD
 korrekt** — agent-miljön saknar Supabase db-access (fynd **TASK-201.11**,
-ready-for-human, PR `#1187`). **NÄSTA: Marcus applicerar migrationen
-(201.11 § sekvensen) i sessionens terminal → kedjan 201.2→201.8 avfyras
-i beroendeordning → 201.9 prod + 201.10 QA + facit-stämpling. 201.1:s
-kort-stängning är resumens första arbetspunkt.** Numrering efter
+ready-for-human, PR `#1187`). **RESUME-DAGEN (2026-08-12 förmiddag)
+LANDADE ALLT ÖPPET: nattens Nightly-röda rotorsakad och löst via fyra
+parallella bygg-agenter** — 201.1 STÄNGD mot belägg (`#1192`) ·
+länk-rötan lagad, 4 äkta/5 transienter (`#1193`) · **TASK-196 ROTORSAKAD:
+eventual-consistency FALSIFIERAD rött-först; verklig rot =
+`storage.list()`-default `limit:100` + obegränsat växande mapp →
+`storage.info()`-fix** (`#1194`; EF EJ deployad, väntar token) ·
+drift-korten 147.10/184/186 rättade (`#1196`) · T51/T55 STÄNGDA mot S102
+Del 6-belägg → 176/177 AC 3 bockat, stängnings-grinden grön (`#1197`).
+Token-utredningen: `SUPABASE_ACCESS_TOKEN` saknas genuint (mätt 4 ytor);
+nyckelringsinstruktion levererad; Marcus fixar i eftermiddag. **NÄSTA
+(resume): Marcus token-momentet → Code applicerar migrationen själv +
+deployar 196-fixen → kedjan 201.2→201.8 → 201.9 prod + 201.10 QA +
+facit-stämpling. Öppet beslut: prod-skydds-kortet.** Numrering efter
 S105-natten: ADR 112 · L512+3 fragment · T141 · task-202 · f47 —
 re-derivera ALLTID. Full narrativ: sessionsdok S105 Del 1–3 + PAUSLÄGE.
 
