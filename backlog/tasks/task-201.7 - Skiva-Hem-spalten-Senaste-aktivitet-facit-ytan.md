@@ -4,6 +4,7 @@ title: 'Skiva: Hem-spalten Senaste aktivitet (facit-ytan)'
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:26'
+updated_date: '2026-08-12 18:40'
 labels:
   - ready-for-agent
 dependencies:
@@ -39,3 +40,15 @@ Täcker användarberättelser: 2, 3, 5, 6
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Hem-spalten identisk mot facit-manifestets k10-bild (ADR-102 B5) — Marcus-granskad; manifestet: tasks/sessions/bilagor/s55-hem-konvergens/facit.json
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MARCUS-BESLUT 2026-08-12 (S105 resume 3) — separatorn i hem-spaltens aktivitetsrader: MITTPUNKT `·`, inte långt tankestreck.
+
+Kollisionen som blockerade skivan: facit-bilden `tasks/sessions/bilagor/s55-hem-konvergens/k10-facit-desktop.png` visar långt tankestreck (—) som separator i alla fyra aktivitetsrader, medan grinden `check-langa-streck` förbjuder det och policyns `_readme` citerar Marcus 2026-08-09: 'ALLA 15 långa bindestreck i användarsynlig text MÅSTE bort' (undantagslistan tömdes då). Två Marcus-beslut stod mot varandra.
+
+Marcus avgjorde i klartext 2026-08-12: 'Inga långa bindestreck får användas, larmar det bara på det så är det ok.' Undantagsvägen i policyn är därmed utesluten, och facit-grindens larm på just denna skillnad är ACCEPTERAT — facit följs inte på den punkten. Valet mellan kort bindestreck och mittpunkt föll på mittpunkt `·`, eftersom den redan är appens separator i samma vy (orkestrerarens rekommendation, ej överprövad).
+
+Skivan är därmed AVBLOCKERAD. Beroendet TASK-201.6 (kärnvyn) kvarstår.
+<!-- SECTION:NOTES:END -->
