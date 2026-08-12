@@ -1,0 +1,291 @@
+# Åtkomst- och nyckelregister
+
+> Syfte: EN plats som svarar på "har vi redan åtkomst till X?" och "varför kan
+> agenten inte läsa filen jag lade i Y?" — innan frågan går till Marcus som en
+> ny begäran om något som redan finns. Byggd efter att Marcus två gånger blivit
+> ombedd att skapa åtkomster han redan hade (§ Bakgrund).
+
+**REGEL — läs detta innan du deklarerar att en åtkomst saknas: kör
+BEVIS-KOMMANDOT för den åtkomsten (tabellen nedan) innan du säger "vi saknar
+X". Att mäta OMGIVNINGEN — miljövariabler, konfigkataloger, CI-workflow-filer
+— är INTE att mäta ÅTKOMSTEN. Omgivningen kan vara tom av rätt skäl (nyckeln
+lagras någon annanstans) lika gärna som fel skäl (nyckeln saknas).**
+
+Detta dokument bär inga hemliga värden — bara namn, plats, klass och det
+kommando som avgör frågan. Mekaniserad självdiagnos:
+[`scripts/atkomst-diagnos.sh`](../../scripts/atkomst-diagnos.sh)
+(`npm run atkomst:diagnos`).
+
+## Bakgrund — varför registret finns (källmärkt)
+
+Två separata rotorsaker låg bakom att Marcus fick frågan "får jag skapa X åt
+dig?" om åtkomster som redan fanns, plus en återkommande "ibland kan agenten
+läsa `~/Downloads`, ibland inte"-upplevelse. Källa för hela avsnittet:
+uppdragstext till bygg-agenten, session S105, 2026-08-12 (orkestrerarens egna
+mätningar samma dag) — verifierad av bygg-agenten där verifiering var möjlig,
+se noter.
+
+### Rotorsak 1 — omgivningen mättes, inte åtkomsten
+
+En tidigare "token-utredning" (`tasks/sessions/2026-08-11-session-105.md`
+Del 4, rad ~325–331) mätte fyra ytor — `printenv`, `~/.supabase/`,
+CI-workflow-filer, `.env`-filnamn — och drog slutsatsen att
+`SUPABASE_ACCESS_TOKEN` "saknas genuint". Slutsatsen var **fel**. Supabase
+CLI hade en giltig inloggning i macOS nyckelring sedan **2026-03-30**
+(verifierat av bygg-agenten 2026-08-12 via
+`security dump-keychain`: tjänst `Supabase CLI`, konto `supabase`, `cdat`
+[skapad-attribut] `20260330064650Z`).
+
+Det starkaste beviset vändes upp och ner. Supabase egen CLI-dokumentation
+([`supabase.com/docs/reference/cli/introduction`](https://supabase.com/docs/reference/cli/introduction),
+läst av bygg-agenten 2026-08-12) säger ordagrant: *"Your access token is
+stored securely in native credentials storage. If native credentials storage
+is unavailable, it will be written to a plain text file at
+`~/.supabase/access-token`."* En tom `~/.supabase/access-token` är alltså
+bevis för att inloggningen ligger **rätt** (i nyckelringen), inte bevis för
+att den saknas. Bygg-agenten verifierade 2026-08-12: `~/.supabase/` som
+katalog finns (`telemetry.json` + `traces/`) men `~/.supabase/access-token`
+saknas — konsekvent med att CLI:t använder nyckelringen, inte filen.
+
+**Bevis-kommandot som borde ha körts:** `npx supabase projects list` — svarar
+direkt (inget interaktivt inloggningsflöde) och listar båda projekten om
+inloggningen är giltig. Bygg-agenten körde det 2026-08-12: båda projekten
+listades (staging `pqtshyierkdgwdnxuirz`, prod `lvjsfnphlauldxqlncpl`), inget
+`SUPABASE_ACCESS_TOKEN` eller lösenord behövdes.
+
+**En hängning är inte ett felmeddelande — den andra bottnen i samma
+rotorsak.** `TASK-201.2`:s Implementation Notes (verifierat ordagrant av
+bygg-agenten mot `npx backlog task 201.2 --plain`, 2026-08-12) bokför:
+*"`supabase link --project-ref pqtshyierkdgwdnxuirz` (staging) hängde
+oändligt (interaktivt login-flöde utan TTY)"* — och drog slutsatsen att CLI:t
+saknade autentisering. Fel igen: CLI:t var redan inloggat. Hängningen var
+prompten för **databas-lösenordet**, som `supabase link` ställer och väntar
+på stdin för, inte ett login-flöde. Kontrollprovet som såg ut att bekräfta
+hypotesen (ett ogiltigt token gav snabbt svar) bekräftade den inte — ett
+ogiltigt token får `link` att fela FÖRE lösenordsprompten, ett annat skäl än
+det antagna. Orkestreraren körde om 2026-08-12 med styrd stdin:
+`echo "" | npx supabase link --project-ref pqtshyierkdgwdnxuirz` → svarade
+omedelbart. **Regeln:** ett headless-kommando som hänger har inte sagt VARFÖR
+det hänger — kör om med tom eller styrd stdin innan orsaken antas.
+
+### Rotorsak 2 — hypotesen om TCC per VÄRDAPP, FALSIFIERAD 2026-08-12
+
+macOS Filer och mappar-behörighet (TCC, "Transparency, Consent and Control")
+sätts i grunden per **app-bundle**, inte per kommandoradsverktyg — det är en
+dokumenterad, allmän macOS-mekanism och den delen står fast. Uppdraget till
+bygg-agenten (S105, 2026-08-12) drog ursprungligen slutsatsen att just DEN
+mekanismen — konkret: `com.microsoft.VSCode` / `kTCCServiceSystemPolicy
+DownloadsFolder` = `0` — var VARFÖR `~/Downloads` nekas i dagens session.
+
+**Den slutsatsen visade sig fel, samma dag, innan detta dokument hann
+publiceras.** Orkestreraren stoppade och rev förklaringen öppet (källa: S105
+2026-08-12, rättelse mitt i detta korts uppdrag) sedan en tidigare sessions
+transkript visade att exakt samma TCC-rad — oförändrad sedan 2026-01-03 —
+inte hindrade en lyckad läsning av `~/Downloads` två dagar tidigare. Se
+§ Aktuellt öppet läge (2026-08-12) för hela falsifieringen och vad som
+faktiskt är känt. TCC-tabellen i § Fil-åtkomstmatris är kvar som verifierad
+MÄTNING — läs den som en datapunkt, inte som en förklaring.
+
+## Två nyckelklasser som lätt förväxlas (Supabase)
+
+Gunilla-förklaring: tänk på skillnaden som **husnyckeln** kontra
+**enskilda rumsnycklar**. Kontonyckeln öppnar hela huset (alla dina Supabase-
+projekt, kan skapa/radera projekt); en projektnyckel öppnar bara ETT rum (ett
+enda projekts data, med en specifik behörighetsnivå för det rummet).
+
+| | Supabase PAT (kontonyckel) | Projektnyckel |
+|---|---|---|
+| **Prefix** | `sbp_…` | `sb_publishable_…` / `sb_secret_…` (nya formatet); `eyJ…` (JWT, äldre `anon`/`service_role`) |
+| **Vad den öppnar** | Hela kontot — Management API, CLI-inloggning (`supabase login`), kan lista/skapa/radera projekt | Ett enda projekts data-API, inom den nyckelns behörighetsnivå |
+| **Exempel** | CLI:ts nyckelrings-token (`Supabase CLI`-posten, se register nedan) | `TEST_SUPABASE_ANON_KEY` (repo-secret), `.env.staging`/`.env.production`s `VITE_SUPABASE_ANON_KEY` |
+| **Källa** | [`supabase.com/docs/reference/api/introduction`](https://supabase.com/docs/reference/api/introduction): *"Authorization: Bearer sbp_bdd0••••4f23"* — PAT-exempel | [`supabase.com/docs/guides/api/api-keys`](https://supabase.com/docs/guides/api/api-keys): `sb_publishable_` = "safe to expose"; `sb_secret_` = backend-only; ersätter `anon`/`service_role` (JWT), utfasas "by end of 2026" |
+
+Båda lästa av bygg-agenten via WebFetch 2026-08-12; citaten ovan är verbatim
+ur sidorna.
+
+## Register — åtkomst per rad
+
+Alla "Senast verifierad"-datum där källan är bygg-agentens egen körning är
+märkta så; övriga är källmärkta till uppdragets orkestrerar-mätning.
+
+| Namn | Var den bor | Klass | Vad den öppnar | Bevis-kommando | Senast verifierad |
+|---|---|---|---|---|---|
+| Supabase CLI-inloggning | macOS nyckelring, tjänst `Supabase CLI`, konto `supabase` | Kontonyckel (PAT, `sbp_…`) | `supabase`-CLI:ts Management API + `db push`/`migration list`/`link` mot valfritt av kontots projekt | `npx supabase projects list` (svarar direkt, hänger aldrig — se § Bevis-kommandon som INTE får hänga) | 2026-08-12, bygg-agentens egen körning: båda projekten listade |
+| GitHub personal access token | macOS nyckelring, tjänst `github-pat`; laddas till `GITHUB_PERSONAL_ACCESS_TOKEN` av `~/.zshrc` rad 7–9 | Kontonyckel (PAT) | `gh`-CLI:t, GitHub MCP-servern | `gh auth status` | 2026-08-12, bygg-agentens egen körning: inloggad som `marcus803`, scopes `repo`/`workflow`/m.fl. |
+| `gh` CLI-inloggning (separat från ovan) | macOS nyckelring, tjänst `gh:github.com` | Kontonyckel | Samma som ovan — `gh` föredrar sin egen keyring-post | `gh auth status` | 2026-08-12 |
+| OpenAI API-nyckel | macOS nyckelring, tjänst `openai-api-key`; laddas till `OPENAI_API_KEY` av `~/.zshrc` rad 15–17 | Projekt-/tjänstenyckel | OpenAI API-anrop | `env \| grep -c '^OPENAI_API_KEY='` (kontrollerar ATT den är satt, aldrig värdet) | 2026-08-12, bygg-agentens egen körning: satt |
+| Resend SMTP-lösenord (staging) | macOS nyckelring, tjänst `RESEND_SMTP_PASS` | Tjänstenyckel | Utgående mail via Resend, staging-miljö | `security find-generic-password -s RESEND_SMTP_PASS -w` (skriver ALDRIG ut resultatet i loggar — se skriptets attributs-only-princip) | Poster bekräftat FINNS i nyckelring 2026-08-12 (bygg-agenten, attribut-nivå — värdet aldrig läst) |
+| Resend SMTP-lösenord (prod) | macOS nyckelring, tjänst `RESEND_SMTP_PASS_PROD` | Tjänstenyckel | Utgående mail via Resend, produktionsmiljö | Samma form som ovan | Poster bekräftat FINNS 2026-08-12 |
+| GitHub repo-secrets | `gh secret list` (GitHub, inte lokal maskin) | Repo-scopade CI-secrets | Testkonton + Airtable-token för CI-körningar | `gh secret list` | 2026-08-12, bygg-agentens egen körning: `STAGING_AIRTABLE_TOKEN`, `TEST_ADMIN_EMAIL`, `TEST_ADMIN_PASSWORD`, `TEST_REGISTRATION_RECORD_ID`, `TEST_SUPABASE_ANON_KEY`, `TEST_SUPABASE_URL`, `TEST_USER_EMAIL`, `TEST_USER_PASSWORD` |
+| Lokala `.env`-filer | Repo-roten, 9 filer (`.env.local`, `.env.development`, `.env.staging`, `.env.production`, `.env.test`, `.env.seed` + tre `.example`-mallar) | Projektnycklar (bl.a. `VITE_SUPABASE_ANON_KEY` per miljö) | Lokal dev/build/test mot rätt Supabase-projekt | `ls -1 .env* \| wc -l` (ska vara 9 i repo-roten) | 2026-08-12, bygg-agentens egen körning: exakt 9 filer |
+
+**Bevis-kommandon som INTE får hänga:** `npx supabase projects list` svarar
+direkt och duger som bevis-kommando. `supabase link` (utan styrd stdin) duger
+**inte** — den ställer en databas-lösenordsprompt och väntar på stdin, vilket
+läses som en hängning i en headless-miljö (se § Rotorsak 1 ovan). Behövs
+`link` ändå: styr stdin explicit, t.ex. `echo "" | npx supabase link
+--project-ref <ref>`.
+
+## Fil-åtkomstmatris per värdapp — MÄTNING, inte förklaring
+
+TCC-behörighet (macOS "Integritet och säkerhet → Filer och mappar") sätts
+per app-bundle, inte per verktyg — det är en dokumenterad, allmän
+macOS-mekanism. Tabellen nedan är en verifierad ordagrann avläsning av
+databasen. **Den är inte längre bevisad förklara varför en specifik
+läsning nekas eller tillåts** — se § Aktuellt öppet läge nedan. `auth_value`
+i `TCC.db`: **2 = tillåten, 0 = nekad.**
+
+Källa för raderna: användarens `TCC.db`
+(`~/Library/Application Support/com.apple.TCC/TCC.db`), verifierad ORDAGRANT
+av bygg-agenten 2026-08-12 via `sqlite3` mot databasen:
+
+| Värdapp | Downloads | Desktop | Documents |
+|---|---|---|---|
+| `com.microsoft.VSCode` | 0 (nekad) | 2 (tillåten) | 2 (tillåten) |
+| `com.apple.Terminal` | 2 (tillåten) | 2 (tillåten) | 0 (nekad) |
+| `com.openai.codex` | 2 (tillåten) | — | — |
+| `com.google.antigravity` | 2 (tillåten) | — | — |
+
+Faktisk läsning uppmätt FRÅN en Claude Code-session startad i VS Code,
+processkedja `bash → zsh → Claude → zsh → Code Helper → Visual Studio
+Code.app` (orkestrerarens egen direkta session, 2026-08-12):
+
+- `~/Downloads` → NEKAD: `ls: /Users/marcus/Downloads: Operation not permitted`
+- `~/Desktop` → OK (185 poster)
+- `~/Documents` → NEKAD
+
+Bygg-agentens EGEN session (denna, samma dag, worktree-isolerad subagent
+spawnad av samma orkestrerar-session) mätte **inte ett stabilt tredje
+mönster, utan ett INTERMITTENT förlopp inom en och samma session** —
+ordnat efter faktisk körordning:
+
+1. Vid sessionens start: samtliga tre kataloger — Downloads, Desktop OCH
+   Documents — nekades, både med och utan verktygets egen
+   sandbox-lägesflagga (samma utfall båda gångerna).
+2. Senare i SAMMA session, utan att något medvetet åtgärdats: en körning av
+   `scripts/atkomst-diagnos.sh` visade `Desktop: OK`, `Downloads: NEKAD`,
+   `Documents: NEKAD` — alltså identiskt med orkestrerarens mönster ovan.
+3. Ett omedelbart uppföljande, fristående `ls ~/Desktop`-anrop bekräftade
+   OK igen; `~/Downloads` och `~/Documents` förblev NEKAD.
+
+Desktop gick alltså från NEKAD till OK inom samma session utan någon känd
+utlösande händelse. Detta är INTE en gissning om orsak — det är en
+tidsordnad observation som stärker bilden i § Aktuellt öppet läge: symptomet
+är intermittent på ett sätt ingen mekanism här förklarar, inte ett statiskt
+läge kopplat till en viss process eller ett visst verktygsanrop. Rotorsaken
+till intermittensen är omätt.
+
+## Aktuellt öppet läge (2026-08-12) — TCC-förklaringen falsifierad
+
+**Vad som en gång stod här:** att `~/Downloads` är onåbart från
+VS Code-startade sessioner FÖR ATT TCC-raden ovan säger `0`, och att fixen
+är att slå på behörigheten i Systeminställningar. **Det påståendet är
+falsifierat**, källmärkt till S105 2026-08-12 (orkestrerarens rättelse mitt
+i detta korts uppdrag, byggd på ett tidigare sessions transkript):
+
+- **TCC-raden är oförändrad sedan 2026-01-03 18:35:41** (`last_modified` i
+  användarens `TCC.db`). Ändå läste en tidigare session filen
+  `~/Downloads/Inbjudningar-till-communityt.docx` med `textutil`
+  **framgångsrikt** den 2026-08-10 (session S104) — belagt i sessionens
+  eget transkript
+  (`~/.claude/projects/-Users-marcus-Repon-miranon-media-admin--claude-worktrees-s104-segment-passet/a02154a9-654a-4f95-9120-0e8b18398ffc.jsonl`,
+  kommandots faktiska utdata finns i filen). Hade TCC-raden varit den
+  verksamma mekanismen hade den körningen fallit också.
+- Marcus har bekräftat i klartext att han **alltid** kör i VS Code, utan
+  undantag — värdappen är alltså konstant och kan inte vara skillnaden
+  mellan de två sessionerna.
+- S104 kördes också worktree-isolerat, precis som denna bygg-agent-session
+  — isoleringsläget skiljer inte heller.
+- **Starkaste kända ledtråd, uttryckligen märkt KORRELATION, INTE ORSAK:**
+  Claude Code-versionen skiljer sig mellan de två sessionerna (lästa ur
+  `"version"`-fältet i respektive sessions transkript, och ur den
+  installerade paketets `package.json`): S104 (läsningen lyckades) körde
+  `2.1.226`. Orkestrerarens session denna dag (läsningen nekas) kör
+  `2.1.227`. På disk ligger nu `2.1.228` (installerad 2026-08-12 16:17,
+  ännu OPRÖVAD i en levande session — se § Nästa mätning nedan).
+  Mekanismen inuti `2.1.227` som eventuellt orsakar detta är **okänd** —
+  ingen förklaring till DEN hör hemma i det här dokumentet förrän den är
+  mätt.
+- Felet visar sig i **två oberoende kodvägar** samma dag: `Operation not
+  permitted` (Bash-verktyget) och `EPERM` (Read-verktyget) — alltså inte en
+  enskild verktygs-sandlåda.
+- `dangerouslyDisableSandbox: true` ändrar ingenting.
+- Harnessets egna rättighetslager är uteslutet som förklaring:
+  `~/.claude/settings.json` har `defaultMode: bypassPermissions` och ingen
+  sökvägs-deny.
+- Filen finns kvar på disk — felet är ett RÄTTIGHETSFEL, inte "hittades
+  inte".
+- `stat ~/Downloads` fungerar; `ls`, `find`, `open` och `textutil` mot
+  innehållet gör det inte.
+- `~/Desktop` är läsbart i orkestrerarens session, `~/Documents` är det
+  inte — trots att TCC-tabellen ger `2` (tillåten) för båda, för VS Code.
+  Även detta talar emot TCC-tabellen som fullständig förklaring.
+- Bygg-agentens EGEN session (denna) uppvisade dessutom **intermittens
+  inom en och samma session** — Desktop gick från NEKAD (sessionens start)
+  till OK (senare, upprepat) utan känd utlösande händelse, medan Downloads
+  och Documents förblev NEKAD hela tiden (fullständig tidsordning i
+  § Fil-åtkomstmatris ovan). Detta talar emot att förklaringen är ett
+  STATISKT läge alls, TCC-baserat eller ej. Vilken Claude Code-version
+  bygg-agentens subagent-process kör under är **omätt** — det finns ingen
+  enkel väg att läsa det ur subagent-kontext utan tillgång till sessionens
+  eget transkript. Bokförs som öppen fråga, ingen gissning görs.
+
+**Lärdomen, explicit (tas även med i lesson-fragmentet):** en TCC-rad som
+PASSADE symptomet (Downloads nekad, TCC säger nekad) var sann men
+irrelevant — sökningen stannade vid den första förklaring som stämde,
+utan att pröva om den också förklarade fallen där symptomet UTEBLEV
+(S104:s lyckade läsning, samma TCC-rad). En förklaring är inte verifierad
+förrän den klarar båda riktningarna.
+
+### Nästa mätning — billig, gör den vid nästa sessionsstart
+
+1. Starta om Claude Code-sessionen (2.1.228 är redan installerad — en
+   redan pågående session byter inte version retroaktivt bara för att en
+   nyare version landat på disk).
+2. Kör `claude --version` i den nya sessionen och bekräfta att den
+   faktiskt kör `2.1.228` (anta aldrig — mät).
+3. Kör `ls ~/Downloads` rått (ingen pipe, ingen `&&`/`||`-kedja) och läs
+   exitkoden separat.
+4. Kör `textutil -convert txt -stdout ~/Downloads/<en befintlig fil>` för
+   att pröva både listning och innehålls-läsning.
+5. Jämför utfallet mot de två kända punkterna: `2.1.226` (fungerade,
+   S104) och `2.1.227` (fungerade inte, denna session).
+6. **Bokför utfallet här i registret** (eller i ett nytt lesson-fragment)
+   — inte bara i chatt-historik, som är hur den ursprungliga TCC-hypotesen
+   fick stå oprövad i över en session.
+
+## Möjlig åtgärd — OPRÖVAD, ingen bekräftad fix
+
+Ursprungligen dokumenterades "slå på Hämtade filer i Systeminställningar"
+här som DEN fixen. Det påståendet vilade på TCC-förklaringen, som är
+falsifierad ovan — S104:s framgångsrika läsning 2026-08-10 skedde UTAN att
+någon rört den inställningen, med exakt samma TCC-rad som gäller i dag.
+Instruktionen nedan är därför nedgraderad till en **oprövad möjlig
+åtgärd**, inte en bekräftad fix:
+
+**Systeminställningar → Integritet och säkerhet → Filer och mappar →
+Visual Studio Code → slå på "Hämtade filer" → starta om VS Code.**
+
+Provas den och löser problemet: uppdatera denna rad till "bekräftad fix"
+med datum och källa. Provas den och löser INTE problemet: stryk raden och
+bokför det negativa resultatet — ett oprövat påstående som aldrig
+kontrolleras är precis den fälla det här dokumentet finns för att
+förhindra.
+
+Det generella skälet toggeln ändå är rimlig att pröva, utan att vara
+bevisad relevant för DETTA symptom: en TCC-driven vägg kan strukturellt
+inte hävas av ett verktyg utan ett mänskligt klick i Systeminställningar —
+TCC:s hela existensberättigande är att kräva just det klicket. Ett
+verktyg som kunde slå på behörigheten åt sig själv vore per definition den
+sårbarhet TCC finns för att förhindra, oavsett om toggeln råkar vara boven
+i det aktuella fallet eller inte.
+
+## Relaterat
+
+- [`scripts/atkomst-diagnos.sh`](../../scripts/atkomst-diagnos.sh) —
+  mekaniserad självdiagnos (`npm run atkomst:diagnos`) som kör bevis-
+  kommandona ovan och skriver ett verdikt per rad.
+- `tasks/lessons.d/` — lesson-fragmentet om att mäta åtkomsten, inte
+  omgivningen (nummerlöst tills konsolidering, ADR-081).
+- [ADR-086](../decisions/ADR-086-uppdragets-premisser-provas-av-mottagaren.md)
+  — varför varje faktapåstående i det här dokumentet bär en källa.
