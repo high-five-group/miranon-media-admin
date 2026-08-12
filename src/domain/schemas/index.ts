@@ -12,6 +12,7 @@ export {
   type ActivityStatement,
   ActivityStatementSchema,
   type ActivityVerb,
+  EVENT_ID_EXTENSION_IRI,
   REQUEST_ID_EXTENSION_IRI,
   XAPI_IRI_BASE,
 } from './ActivityStatement.schema';

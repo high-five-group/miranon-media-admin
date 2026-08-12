@@ -94,6 +94,22 @@ export const queryKeys = {
     // av samma segment inte re-walkar källan; ett annat segment → egen fetch.
     sendRecipients: (segmentId: string) => ['segment', 'sendRecipients', segmentId] as const,
   },
+  activityLog: {
+    // Aktivitetshistoriken (TASK-201.6, kärnvyn): cursor-paginerad via
+    // `useInfiniteQuery` (ADR-056-mönstret, `persons.search`-precedenten).
+    // Nyckeln bär FILTERPARAMETRARNA (kategori/eventId/tidsintervall) —
+    // de ändrar VILKEN datamängd get-activity-log-EF:en hämtar server-side,
+    // så olika filter måste ge olika cache-poster (speglar `persons.search`s
+    // `q`-resonemang). Cursorn skickas som `pageParam`, ALDRIG i nyckeln —
+    // alla sidor för samma filterkombination ackumuleras i samma cache-entry.
+    history: (filters: { category?: string; eventId?: string; from?: string; to?: string }) =>
+      ['activityLog', 'history', filters] as const,
+    // Hem-spaltens "Senaste aktivitet" (TASK-201.7): EN liten, opaginerad
+    // sida. Egen gren (parametrerad bara med `limit`) så spaltens cache
+    // aldrig krockar med historikvyns ackumulerade sidor — speglar
+    // `dashboard`s "egna nycklar gör scopet exakt"-resonemang.
+    latest: (limit: number) => ['activityLog', 'latest', limit] as const,
+  },
   dashboard: {
     // Hem-aggregering (Fas 6d). EGNA nycklar, MEDVETET skilda från events.list /
     // registrations.byEvent: Hem-vyns cards hämtar GLOBALA listor (alla event,
