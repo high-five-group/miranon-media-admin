@@ -1080,11 +1080,23 @@ function byggStrom(
     // hamnar bland de oplacerade i stället för att tappas.
     for (const h of person.hamtningar) {
       const tid = h.datum ? Date.parse(h.datum) : Number.NaN;
-      // MENINGEN: "Hämtade Pyramidernas Vajrar". Namnlöst erbjudande (`null`
-      // eller catch-allen "Annat") faller till den generiska formen i stället
-      // för ett påhittat namn — se `erbjudandeNamn`.
+      // MENINGEN: "Hämtade Pyramidernas Vajrar" — och INGEN annan form.
+      //
+      // En touchpoint utan erbjudandenamn (`null`, eller catch-allen "Annat",
+      // se `erbjudandeNamn`) RENDERAS INTE ALLS. Marcus 2026-08-12: *"Nu har
+      // du fortfarande en händelse som heter 'Hämtade ett erbjudande' bara,
+      // BORT med den. INGET sånt, det ska ju stå 'Hämtade (namnet på
+      // erbjudandet)'."*
+      //
+      // Konsekvensen är medveten och värd att skriva ut: posten FINNS i basen
+      // men syns inte i vyn. En rad som bara säger att något hämtades, utan
+      // vad, bär ingen information Lotta kan handla på — och den generiska
+      // formen var det brus som gjorde tidslinjen ojämn. Den dag `Erbjudande`
+      // katalogiserar det som i dag hamnar under "Annat" (T16-kandidat) dyker
+      // raden upp av sig själv, utan kodändring.
       const namn = erbjudandeNamn(h.erbjudande);
-      const rubrik = namn ? `Hämtade ${namn}` : 'Hämtade ett erbjudande';
+      if (!namn) continue;
+      const rubrik = `Hämtade ${namn}`;
       if (!Number.isFinite(tid)) {
         oplacerade.push(rubrik);
         continue;
@@ -1458,6 +1470,13 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
   const historikGrupper = grupper.filter((g) => !g.tidMs || g.tidMs <= nuMs);
   // Anmälningar utan motiveringstext bär ingenting att visa — se B6-noten.
   const motiveringar = person.motiveringar.filter((m) => m.motivering);
+  // Hämtningar UTAN erbjudandenamn visas inte — se B5-noten. Namnet härleds
+  // en gång här i stället för två gånger i renderingen.
+  const namngivnaHamtningar = person.hamtningar
+    .map((post) => ({ post, namn: erbjudandeNamn(post.erbjudande) }))
+    .filter(
+      (h): h is { post: (typeof person.hamtningar)[number]; namn: string } => h.namn !== null,
+    );
   const flag = flaggorD(person);
 
   const arGrupper: { ar: number; poster: StromPost[] }[] = [];
@@ -1720,18 +1739,17 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           "kostar ingenting, den finns redan i svaret" — den finns i svaret,
           men en aria-label som lovar "senaste först" ska inte vila på en
           annan tjänsts sorteringsval). */}
+      {/* ERFARENHETSBADGEN ("Resenär steg 1–2") ÄR BORTA HELT sedan
+          2026-08-12 (Marcus: *"Ta bort badgen 'Resenär steg 1-2'"*). Den bodde
+          i "Just nu", flyttades hit vid ombyggnaden samma dag som en
+          sammanfattning av listan under, och ströks i nästa granskningsvarv:
+          listan säger redan vilka steg personen gått, badgen upprepade det i
+          kortform. `person.erfarenhetsbadge` läses inte längre i variant D —
+          fältet finns kvar i shapen och i a/b/c. */}
       <section aria-labelledby="proto-d-eventhistorik" className="flex min-w-0 flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2 px-4">
-          <h2 id="proto-d-eventhistorik" className="font-semibold text-lg">
-            Eventhistorik
-          </h2>
-          {/* ERFARENHETSBADGEN bodde i "Just nu" fram till ombyggnaden
-              2026-08-12. Den är en SAMMANFATTNING av just den här listan
-              ("Resenär steg 1–2" = genomförda RIM-steg) — alltså historik,
-              vilket är precis varför den inte hörde hemma under en rubrik som
-              lovar nuläge. */}
-          {person.erfarenhetsbadge && <Pill paKortyta={false}>{person.erfarenhetsbadge}</Pill>}
-        </div>
+        <h2 id="proto-d-eventhistorik" className="px-4 font-semibold text-lg">
+          Eventhistorik
+        </h2>
         {historikGrupper.length > 0 ? (
           <ul
             aria-label="Eventhistorik, senaste först"
@@ -1785,17 +1803,18 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           riven — och därmed också ARRAYJOIN-klumpen som hade gjort listan till
           EN rad i prod.
 
-          Räknaren (`antalHamtningar`) och listan är fortfarande två olika
-          rollups som kan säga olika saker; båda visas hellre än att en tyst
-          väljs bort. */}
+          NAMNLÖSA HÄMTNINGAR VISAS INTE, samma regel som strömmen (Marcus
+          2026-08-12, se byggStroms hämtnings-gren). Blocket heter "Hämtade
+          erbjudanden" — en rad utan erbjudandenamn hör per definition inte
+          hit. Posten finns kvar i basen; den syns bara inte. */}
       <section aria-labelledby="proto-d-hamtningar" className="flex min-w-0 flex-col gap-2">
         <h2 id="proto-d-hamtningar" className="px-4 font-semibold text-lg">
           Hämtade erbjudanden
         </h2>
         <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
-          {person.hamtningar.length > 0 ? (
+          {namngivnaHamtningar.length > 0 ? (
             <ul className="flex flex-col divide-y divide-border">
-              {person.hamtningar.map((h) => (
+              {namngivnaHamtningar.map(({ post: h, namn }) => (
                 <li key={h.id} className="flex items-start gap-3 py-3">
                   <Download
                     aria-hidden="true"
@@ -1803,17 +1822,7 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                     className="mt-0.5 shrink-0 text-text-secondary"
                   />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    {/* Namnlöst erbjudande — `null`, eller catch-allen "Annat"
-                        som INTE är ett namn (se `erbjudandeNamn`; Marcus
-                        2026-08-12: *"Ta bort 'Annat' - vi har inget som heter
-                        Annat"*). Raden säger då rakt ut att namnet saknas i
-                        stället för att hitta på ett. `typ` som fallback-rubrik
-                        är också borta: "Angett e-post för att ta del av ett
-                        erbjudande" är en handling, inte ett erbjudandenamn,
-                        och blocket heter "Hämtade erbjudanden". */}
-                    <span className="text-body">
-                      {erbjudandeNamn(h.erbjudande) ?? 'Erbjudande ej angivet'}
-                    </span>
+                    <span className="text-body">{namn}</span>
                     <span className="text-small text-text-muted">
                       {h.datum ? langtDatum(h.datum) : 'Datum saknas'}
                     </span>
