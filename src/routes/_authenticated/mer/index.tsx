@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import {
   ClipboardList,
   Filter,
+  History,
   Hourglass,
   LogOut,
   Mail,
@@ -86,6 +87,15 @@ function MerPage() {
           </li>
           <li>
             <NavCard to="/mer/maillogg" icon={Mail} label="Maillogg" />
+          </li>
+          {/* Aktivitetshistoriken (TASK-201.6, AC #2): mobil-/platta-ingången
+              (S55 byggkrav B7 — desktop nås via hem-spaltens "Se all
+              aktivitetshistorik ›", TASK-201.7, OBYGGD). History-ikonen
+              (domänbegrepps-mappad, samma disciplin som M6:s ikonval): en
+              historik är en tidslinje bakåt, skilt från Maillogg-radens
+              Mail-ikon ovan. Sist i listorna-gruppen — nyaste tillskottet. */}
+          <li>
+            <NavCard to="/mer/aktivitetshistorik" icon={History} label="Aktivitetshistorik" />
           </li>
         </ul>
         <ul className="flex flex-col gap-2.5">

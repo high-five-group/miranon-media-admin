@@ -36,6 +36,9 @@ import { expect, test } from '../support/test-bas';
  * (Inställningar-hemvisten) höjer raderna till SEX i TRE grupper. Testet
  * "INGEN Inställningar-post" nedan gäller ORÖRT — "Installera appen"
  * innehåller aldrig substrängen "inställning".
+ *
+ * AKTIVITETSHISTORIK TILLKOM TASK-201.6 (AC #2 — Mer-menyns mobil-/platta-
+ * ingång): SJUNDE raden, sist i grupp 1 (listorna). Höjer raderna till SJU.
  */
 
 test.describe('Mer-landningen (Fas 6e L2 — statiskt skal + logout-golv)', () => {
@@ -139,16 +142,18 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     // Inställningar — exakt ordning. Skapa nytt event-raden RIVEN
     // (task-19.2 — se rivnings-bokföringen i fil-huvudet); grupp 2 bär
     // numera enbart Bygg segment, grupp 3 (task-126.3) enbart
-    // Installera appen.
+    // Installera appen. Aktivitetshistorik (TASK-201.6, AC #2) tillkom sist
+    // i grupp 1 — höjer SEX rader till SJU.
     await expect(grupper.nth(0).getByRole('link')).toHaveText([
       'Anmälningar',
       'Väntelista',
       'Intresserade',
       'Maillogg',
+      'Aktivitetshistorik',
     ]);
     await expect(grupper.nth(1).getByRole('link')).toHaveText(['Bygg segment']);
     await expect(grupper.nth(2).getByRole('link')).toHaveText(['Installera appen']);
-    await expect(nav.getByRole('link')).toHaveCount(6);
+    await expect(nav.getByRole('link')).toHaveCount(7);
 
     // Varje rad bär EXAKT två dekorativa svg (radikon + chevron, båda
     // aria-hidden) — etiketten ensam bär länknamnet (redan assertat via
@@ -166,7 +171,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     // (S73 K25-prövningens Marcus-kvitterade konsekvens, PRD task-18
     // beslut 15) — chevron betyder att raden leder vidare, och Mer-menyns
     // rader bär den för app-koherens med eventsidans åtgärdsrader.
-    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(6);
+    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(7);
   });
 
   test('Skapa nytt event är RIVEN ur Mer (task-19.2) — ingången bor på event-listan', async ({

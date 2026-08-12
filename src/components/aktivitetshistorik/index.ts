@@ -1,0 +1,1 @@
+export { AktivitetsHistorik } from './AktivitetsHistorik';
