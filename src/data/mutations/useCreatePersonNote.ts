@@ -59,6 +59,15 @@ export function useCreatePersonNote(personId: string, personNamn: string | null)
           type: ACTIVITY_OBJECT_TYPES.anteckning,
           name: personActivityName(personNamn),
         },
+        // TASK-201.12: personId är hook-bundet och ALLTID satt (till
+        // skillnad mot registration-scopade mutationer, där personId kan
+        // vara null) — objektet ÄR redan personen, men extensionen emitteras
+        // ändå, EXAKT samma uniforma mönster som event-objekt-statements
+        // (`useUpdateEvent`/`useCreateEventNote`) emitterar eventId trots
+        // att object.id redan är eventObjectId(eventId). Vyns navigering
+        // läser då EN uniform mekanism (context.extensions) oavsett
+        // statement-typ, i stället för att parsa object.id:ns IRI-namnrymd.
+        personId,
       });
     },
 

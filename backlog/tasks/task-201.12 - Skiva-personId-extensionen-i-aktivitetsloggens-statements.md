@@ -4,7 +4,7 @@ title: 'Skiva: personId-extensionen i aktivitetsloggens statements'
 status: To Do
 assignee: []
 created_date: '2026-08-12 20:11'
-updated_date: '2026-08-12 20:13'
+updated_date: '2026-08-12 20:27'
 labels:
   - ready-for-agent
 dependencies:
@@ -27,17 +27,91 @@ KÄND DIVERGENS VID BYGGSTART (premiss-pass, källmärkt): TASK-201.6 (PR #1231)
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 PERSON_ID_EXTENSION_IRI definierad i src/domain/schemas/ActivityStatement.schema.ts, analog konstruktion med EVENT_ID_EXTENSION_IRI (TASK-201.4/201.5-mönstret), exporterad via index.ts-barreln
-- [ ] #2 recordActivity() bär personId villkorligt i context.extensions under rätt IRI-nyckel — bevisat i BÅDA riktningar (personId satt → buret; personId utelämnat → nyckeln saknas helt, aldrig tom sträng/undefined-värde)
-- [ ] #3 Mutationskatalogen VERIFIERAD mot faktisk kod (ADR-086: mät, anta inte) — varje mutation med en genuin person i sammanhanget emitterar personId, varje mutation utan person emitterar den INTE (ingen fabricerad IRI för en obefintlig konsument); utfallet per mutation redovisas explicit i implementation notes
-- [ ] #4 get-activity-log-EF:en verifierad att returnera extensionen oförändrad i statement-blobben — ändring görs ENDAST om mätning visar att den behövs, annars redovisas verifieringen öppet
+- [x] #1 PERSON_ID_EXTENSION_IRI definierad i src/domain/schemas/ActivityStatement.schema.ts, analog konstruktion med EVENT_ID_EXTENSION_IRI (TASK-201.4/201.5-mönstret), exporterad via index.ts-barreln
+- [x] #2 recordActivity() bär personId villkorligt i context.extensions under rätt IRI-nyckel — bevisat i BÅDA riktningar (personId satt → buret; personId utelämnat → nyckeln saknas helt, aldrig tom sträng/undefined-värde)
+- [x] #3 Mutationskatalogen VERIFIERAD mot faktisk kod (ADR-086: mät, anta inte) — varje mutation med en genuin person i sammanhanget emitterar personId, varje mutation utan person emitterar den INTE (ingen fabricerad IRI för en obefintlig konsument); utfallet per mutation redovisas explicit i implementation notes
+- [x] #4 get-activity-log-EF:en verifierad att returnera extensionen oförändrad i statement-blobben — ändring görs ENDAST om mätning visar att den behövs, annars redovisas verifieringen öppet
 - [ ] #5 AktivitetsHistorik.tsx (TASK-201.6) kopplas till personId-navigeringen OM 201.6 landat på main innan denna skiva slutförs; annars bokförs kopplingen öppet som blockerad extern-beroende skuld (PR #1231), aldrig tyst bortglömd
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+GENOMFÖRT (AC #1-4):
+
+1. PERSON_ID_EXTENSION_IRI mintad i ActivityStatement.schema.ts, exakt samma
+   konstruktion som EVENT_ID_EXTENSION_IRI (${XAPI_IRI_BASE}/extensions/personId),
+   exporterad via index.ts-barreln.
+
+2. recordActivity.ts fick ett nytt optionellt personId?: string-fält på
+   RecordActivityInput, spreadat villkorligt i context.extensions — samma
+   mönster som eventId. Bevisat i BÅDA riktningar + ett tredje
+   samexistens-test (eventId+personId oberoende) i
+   tests/api/record-activity.test.ts.
+
+3. Mutationskatalogen (TASK-201.4s 11 filer, VERIFIERAD mot faktisk kod, inte
+   antagen) gav 11 recordActivity-anropsplatser totalt. Uppdelning:
+
+   EMITTERAR personId (9 anropsplatser):
+   - registrationPayments.ts (useSetPaymentStatus): registration.personId ?? undefined
+   - registrationConfirmation.ts (useSendConfirmationFromDetail): registration.personId ?? undefined
+   - actionEmail.ts (useSendActionEmail): reg.personId ?? undefined (per mottagare i loopen)
+   - receipts.ts (useSendReceipt): registration.personId ?? undefined
+   - registrationLodging.ts (useSetBorOver): registration.personId ?? undefined
+   - useCreateRegistration.ts: created.personId ?? undefined (EF-svarets Person-länk)
+   - useCreatePersonNote.ts: personId (hook-param, alltid satt — objektet ÄR redan
+     personen, extensionen emitteras ändå för UNIFORM vy-navigering, samma princip
+     som event-objekt-statements redan använder för eventId)
+   - useUpdatePersonFlag.ts: personId (hook-param, alltid satt, samma motiv)
+   - useUpdatePersonNote.ts: personId (hook-param, alltid satt, samma motiv)
+
+   EMITTERAR INTE personId (2 anropsplatser, explicit kommenterade i koden):
+   - useCreateEventNote.ts: eventet är objektet, ingen genuin person
+   - useUpdateEvent.ts: eventet är objektet, ingen genuin person
+
+   Registration.personId är NULLABLE (domain/models/Registration.ts:56 —
+   "personId: string | null", en anmälan kan sakna Person-länk). Samtliga
+   sex registration-scopade anropsplatser använder ?? undefined — ingen
+   fabricerad IRI när länken saknas, precis som AC kräver.
+
+   useUpdatePaymentNote/useLogPaymentReminder (registrationPayments.ts) och
+   useSendActionTestEmail (actionEmail.ts) anropar recordActivity ALDRIG
+   alls (redan sant före denna skiva, oförändrat av den) — de ingår inte i
+   PRDs nio loggade kategorier och rörs inte här.
+
+4. get-activity-log/index.ts VERIFIERAD, INGEN ändring gjord: EF:en
+   returnerar row.statement (hela JSONB-blobben, rad 248: statements:
+   page.map((row) => row.statement)) OFÖRÄNDRAD per rad — context.extensions
+   passerar därmed automatiskt igenom oavsett vilka nycklar den bär. Ingen
+   personId-FILTER-parameter läggs till (ej efterfrågat av kortets AC,
+   över-engineering-vakten: ingen konsument efterfrågar den ännu).
+
+INTE GENOMFÖRT (AC #5) — KÄLLMÄRKT DIVERGENS, INTE TYST:
+
+TASK-201.6 (PR #1231) hade INTE landat på origin/main vid varken byggstart
+ELLER byggslut (verifierat två gånger: gh pr view 1231 visar state OPEN,
+mergedAt null; git ls-remote origin main oförändrat på 7e74c94b).
+AktivitetsHistorik.tsx existerar därmed INTE på denna gren — det finns ingen
+vy-fil att koppla personId-navigeringen till.
+
+Detta är samma koordinerings-skuld-form som EVENT_ID_EXTENSION_IRI själv
+bar mellan TASK-201.3/201.5 och TASK-201.4 (läsväg/vy byggda före
+skrivvägens emission) — bara i omvänd ordning (emission byggd före vyn).
+Extensionen är nu LIVE i skarpa mutationer och kommer synas i riktiga
+statements från och med denna PRs landning; den dag TASK-201.6 landar
+behöver AktivitetsHistorik.tsx en liten, avgränsad uppföljning: en
+aktivitetensPersonId()-motsvarighet till dess redan byggda
+aktivitetensEventId(), som läser PERSON_ID_EXTENSION_IRI och länkar till
+personens sida. Ingen ny mekanism — samma mönster, en ny nyckel.
+
+Detta bokförs INTE tyst: orkestreraren äger uppföljningen (antingen ett nytt
+litet kort, eller en direkt komplettering av 201.6-PR:en före den landar).
+<!-- SECTION:NOTES:END -->

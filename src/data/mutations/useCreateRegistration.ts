@@ -93,6 +93,10 @@ export function useCreateRegistration(eventId: string) {
           name: `${displayName(created)} (${created.eventNamn ?? 'okänt event'})`,
         },
         eventId,
+        // TASK-201.12: created.personId är NULLABLE (EF-svarets Person-länk
+        // kan sakna motsvarighet i vissa fel-/gränsfall) — se
+        // registrationPayments.ts's motsvarande kommentar.
+        personId: created.personId ?? undefined,
       });
     },
 

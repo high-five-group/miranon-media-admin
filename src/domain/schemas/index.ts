@@ -13,6 +13,7 @@ export {
   ActivityStatementSchema,
   type ActivityVerb,
   EVENT_ID_EXTENSION_IRI,
+  PERSON_ID_EXTENSION_IRI,
   REQUEST_ID_EXTENSION_IRI,
   type RecordActivityResult,
   RecordActivityResultSchema,

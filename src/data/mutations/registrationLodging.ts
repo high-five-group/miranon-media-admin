@@ -80,6 +80,9 @@ export function useSetBorOver(eventId: string) {
           name: `${displayName(registration)} (${registration.eventNamn ?? 'okänt event'})`,
         },
         eventId,
+        // TASK-201.12: registration.personId är NULLABLE — se
+        // registrationPayments.ts's motsvarande kommentar.
+        personId: registration.personId ?? undefined,
       });
     },
 

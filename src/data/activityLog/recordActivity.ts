@@ -3,6 +3,7 @@ import type { ActivityStatement, ActivityVerb } from '@/domain/schemas';
 import {
   ActivityStatementSchema,
   EVENT_ID_EXTENSION_IRI,
+  PERSON_ID_EXTENSION_IRI,
   REQUEST_ID_EXTENSION_IRI,
   XAPI_IRI_BASE,
 } from '@/domain/schemas';
@@ -63,6 +64,18 @@ export interface RecordActivityInput {
    * tillåter det utan schemaändring.
    */
   eventId?: string;
+  /**
+   * Personens record-ID, när statementet hör till en GENUIN person i sitt
+   * sammanhang (`TASK-201.12`, stänger `TASK-201.6`s öppna
+   * personnavigerings-gap) — buret i `context.extensions` under
+   * `PERSON_ID_EXTENSION_IRI`, EXAKT samma mönster som `eventId` ovan.
+   * Utelämnas (`undefined`) för statements utan en verklig person i
+   * sammanhanget (t.ex. en event-uppdatering eller event-anteckning) — en
+   * mutation vars registration/person-länk kan vara `null` (t.ex.
+   * `Registration.personId` när anmälan saknar Person-länk) skickar
+   * `undefined` i det läget, ALDRIG ett påhittat ID.
+   */
+  personId?: string;
 }
 
 /** Icke-tom sträng-grind — schemat kräver `.min(1)`, men `displayName` kan vara `null`. */
@@ -90,6 +103,7 @@ export async function recordActivity(input: RecordActivityInput): Promise<void> 
         extensions: {
           [REQUEST_ID_EXTENSION_IRI]: requestId,
           ...(input.eventId ? { [EVENT_ID_EXTENSION_IRI]: input.eventId } : {}),
+          ...(input.personId ? { [PERSON_ID_EXTENSION_IRI]: input.personId } : {}),
         },
       },
       timestamp: new Date().toISOString(),
