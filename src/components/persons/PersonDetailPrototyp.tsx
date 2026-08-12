@@ -38,8 +38,16 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft, ChevronRight, Download, Mail, Phone } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import {
+  CalendarCheck,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Mail,
+  Phone,
+  UserPlus,
+} from 'lucide-react';
+import { type ComponentType, useEffect, useRef } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
@@ -47,7 +55,7 @@ import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail as PersonDetailType, PersonHistoryEntry } from '@/domain/schemas';
 import { arGenomford } from '@/lib/genomford';
-import { kursfargForKurs } from '@/lib/kursfarg';
+import { type KursfargKlass, kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
 // D-variantens SKARPA ytor (`#1151`). a/b/c rör dem aldrig — de behåller sina
 // no-op-stubbar, eftersom en prototyp aldrig skriver. D är undantaget med
@@ -91,20 +99,37 @@ function telHref(nummer: string): string {
 const DATUM_DAG_MANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
 
 /**
- * Kursens VISNINGSNAMN — "RIM 2", inte "Resor i medvetandet 2".
+ * Kursens KORTNAMN i tidslinjen — "FS", "RIM 2".
  *
- * Mappningen finns redan: `kursfargForKurs().etikett` är legendens korta
- * copy (K13), och den är samma förkortning basens `SWITCH` i
- * `Senaste anmälan (sammanfattning)` gör (ADR-108 § Kontext). Ingen ny
- * uppslagstabell byggs här — en andra kopia hade garanterat glidit isär.
+ * Nyckeln är KLASSEN, inte kursnamnet: kurs→klass-mappningen bor kvar på sitt
+ * enda ställe (`kursfargForKurs`, ADR-064) och det här är en andra VY på samma
+ * klassificering, inte en andra tabell som kan glida isär.
  *
- * `annat`-klassen är uppsamlingen; där är etiketten bokstavligen "Annat",
- * så kursens EGET namn används i stället. Samma idiom som `kursmix()`.
+ * VARFÖR INTE `farg.etikett` RAKT AV (Marcus 2026-08-12: *"Fjärrskådning kan
+ * vi förkorta också till FS så vi är konsekventa där"*): `etikett` renderas i
+ * TVÅ skarpa vyer utanför persondetaljen — kalenderns dagplattor och legend
+ * (`EventsCalendar.tsx:237,352`) och gruppdynamikens kursmix
+ * (`Gruppdynamik.tsx:175`). Att byta `Fjärrskådning` → `FS` där hade ändrat
+ * båda utan att någon bett om det, och i en LEGEND som förklarar färgkoder är
+ * "FS" kryptiskt på ett sätt "RIM 1" inte är (den förkortningen är etablerad
+ * i basens egen formel, ADR-108 § Kontext; "FS" är ny i dag).
+ *
+ * Vill vi ha FS överallt är det ETT ord i `kursfarg.ts` — men det är ett eget
+ * beslut om två andra vyer, inte en bieffekt av persondetaljen.
+ *
+ * `annat`-klassen är uppsamlingen: där finns inget kortnamn, så kursens EGET
+ * namn används. Samma idiom som `kursmix()`.
  */
+const KURS_KORTNAMN: Readonly<Partial<Record<KursfargKlass, string>>> = {
+  fjarrskadning: 'FS',
+  rim1: 'RIM 1',
+  rim2: 'RIM 2',
+  rim3: 'RIM 3',
+};
+
 function kursEtikett(kursnamn: string | null): string | null {
   if (!kursnamn) return null;
-  const farg = kursfargForKurs(kursnamn);
-  return farg.klass === 'annat' ? kursnamn : farg.etikett;
+  return KURS_KORTNAMN[kursfargForKurs(kursnamn).klass] ?? kursnamn;
 }
 
 /**
@@ -136,22 +161,46 @@ function kursEtikett(kursnamn: string | null): string | null {
  * ENDAST på personens senaste anmälan (data-model.md § Grinden), så tre av
  * Sofia Isakssons fyra anmälningar har fältet tomt.
  */
-function anmalningsMening(
-  kurs: string | null,
-  ort: string | null,
-  eventDatum: string | null,
-): string {
+function anmalningsRubrik(kurs: string | null): string {
   const kursnamn = kursEtikett(kurs);
-  if (!kursnamn) return 'Anmälde sig';
-  const tid = eventDatum ? new Date(eventDatum) : null;
-  const datum = tid && !Number.isNaN(tid.getTime()) ? DATUM_DAG_MANAD.format(tid) : null;
-  return `Anmälde sig till ${kursnamn}${ort ? ` i ${ort}` : ''}${datum ? ` ${datum}` : ''}`;
+  return kursnamn ? `Anmälde sig till ${kursnamn}` : 'Anmälde sig';
 }
 
-function deltagandeMening(kurs: string | null, ort: string | null): string {
+function deltagandeRubrik(kurs: string | null): string {
   const kursnamn = kursEtikett(kurs);
-  if (!kursnamn) return 'Deltog';
-  return `Deltog på ${kursnamn}${ort ? ` i ${ort}` : ''}`;
+  return kursnamn ? `Deltog på ${kursnamn}` : 'Deltog';
+}
+
+/**
+ * Underraden: "i Falköping 18 augusti" — VAR och VILKET TILLFÄLLE, aldrig
+ * radens eget datum (det bor i högerkolumnen).
+ */
+function platsOchTillfalle(ort: string | null, eventDatum: string | null): string | null {
+  const tid = eventDatum ? new Date(eventDatum) : null;
+  const datum = tid && !Number.isNaN(tid.getTime()) ? DATUM_DAG_MANAD.format(tid) : null;
+  return [ort ? `i ${ort}` : null, datum].filter(Boolean).join(' ') || null;
+}
+
+/**
+ * Motiveringsblockets metarubrik: "För anmälan till Fjärrskådning
+ * 18 augusti 2026 i Varberg" (Marcus 2026-08-12 — *"det är just vad det är en
+ * motivering FÖR"*).
+ *
+ * FULLT kursnamn och FULLT datum med årtal, till skillnad från tidslinjens
+ * "FS · 18 augusti". Det är avsiktligt: tidslinjen är en ström man skannar
+ * där utrymmet är trångt och året framgår av år-rubriken; den här raden är en
+ * REFERENS som ska gå att läsa lösryckt ur sitt sammanhang. Ordningen är
+ * Marcus egen (kurs → datum → ort), inte tidslinjens (kurs → ort → datum).
+ */
+function motiveringsReferens(
+  kurs: string | null,
+  eventDatum: string | null,
+  ort: string | null,
+): string {
+  const led = [kurs, eventDatum ? langtDatum(eventDatum) : null, ort ? `i ${ort}` : null]
+    .filter(Boolean)
+    .join(' ');
+  return led ? `För anmälan till ${led}` : 'För en anmälan utan känt event';
 }
 
 /**
@@ -900,6 +949,10 @@ type StromPost = {
   rubrik: string;
   meta: string | null;
   prickKlass: string;
+  /** Ikonen i nodcirkeln (variant D:s form; C ritar prickar och läser den inte). */
+  ikon?: ComponentType<{ size?: number; 'aria-hidden'?: boolean; className?: string }>;
+  /** Länkmål när raden leder någonstans — anmälningar → AnmalanDetail. */
+  href?: { to: string; params: Record<string, string> };
   pillar: { id: string; text: string; ton: PillTon }[];
 };
 
@@ -971,16 +1024,16 @@ function byggStrom(
       tidMs: grupp.tidMs,
       slag: 'event',
       kommande,
-      // MENINGEN, inte eventnamnet. Ett KOMMANDE event är inget personen
-      // deltagit på — där står kursen och orten som en ren beskrivning
-      // ("Fjärrskådning i Falköping"), inte "Deltog på".
+      // RUBRIK bär handlingen, UNDERRAD bär platsen. Ett KOMMANDE event är
+      // inget personen deltagit på — där står kursen ensam, inte "Deltog på".
       rubrik: kommande
-        ? [kursEtikett(grupp.kursnamn) ?? grupp.rubrik, grupp.ort].filter(Boolean).join(' i ')
-        : deltagandeMening(grupp.kursnamn, grupp.ort),
-      // Ingen underrubrik. Orten bor i meningen; `typ` ("Utbildning") tillförde
-      // inget en läsare av raden behöver.
-      meta: null,
+        ? (kursEtikett(grupp.kursnamn) ?? grupp.rubrik)
+        : deltagandeRubrik(grupp.kursnamn),
+      // Deltagandet ÄR eventdagen → inget eventdatum i underraden, bara orten.
+      // Radens datum står i högerkolumnen.
+      meta: grupp.ort ? `i ${grupp.ort}` : null,
       prickKlass: farg.bgClass,
+      ikon: CalendarCheck,
       // KOMMANDE POSTER BÄR INGA SESSIONS-PILLAR. "Dag 1 · Kommande" på ett
       // event som inte hänt säger ingenting utöver vad rubriken "Kommande"
       // och datumet redan sagt — närvaron är inte ett utfall än, den är en
@@ -1028,7 +1081,7 @@ function byggStrom(
   if (hamtningskalla === 'poster') {
     for (const anmalan of person.motiveringar) {
       const tid = anmalan.datum ? Date.parse(anmalan.datum) : Number.NaN;
-      const rubrik = anmalningsMening(anmalan.event, anmalan.ort, anmalan.eventDatum);
+      const rubrik = anmalningsRubrik(anmalan.event);
       if (!Number.isFinite(tid)) {
         oplacerade.push(rubrik);
         continue;
@@ -1039,14 +1092,24 @@ function byggStrom(
         slag: 'anmalan',
         kommande: false,
         rubrik,
-        // INGEN UNDERRUBRIK. "skrev en motivering" är borta (Marcus
-        // 2026-08-12: *"En motivering är valfritt för människor att göra i
-        // anmälningsformuläret, det är alltså INTE en händelse, anmälan är
-        // händelsen"*) — raden gjorde ett frivilligt formulärfält till en
-        // egen punkt på tidslinjen. Motiveringarna har sitt eget block (B6).
-        // Eventdatumet flyttade in i meningen.
-        meta: null,
+        // UNDERRADEN bär eventets plats OCH datum — anmälan är enda radtypen
+        // som pekar på ett annat tillfälle än sitt eget. "skrev en motivering"
+        // är borta (Marcus 2026-08-12: *"En motivering är valfritt … det är
+        // alltså INTE en händelse, anmälan är händelsen"*); motiveringarna har
+        // sitt eget block (B6).
+        meta: platsOchTillfalle(anmalan.ort, anmalan.eventDatum),
         prickKlass: 'bg-text-secondary',
+        ikon: UserPlus,
+        // KLICKBAR till anmälningsdetaljen (Marcus: *"Man måste också kunna
+        // trycka på ALLA aktiva och historiska anmälningar och KOMMA TILL den
+        // specifika anmälan"*). Routen kräver BÅDA ID:na; saknas event-länken
+        // (backfill) renderas raden oklickbar i stället för att länka fel.
+        href: anmalan.eventId
+          ? {
+              to: '/event/$eventId/anmalan/$registrationId',
+              params: { eventId: anmalan.eventId, registrationId: anmalan.id },
+            }
+          : undefined,
         pillar: [],
       });
     }
@@ -1096,9 +1159,8 @@ function byggStrom(
       // raden upp av sig själv, utan kodändring.
       const namn = erbjudandeNamn(h.erbjudande);
       if (!namn) continue;
-      const rubrik = `Hämtade ${namn}`;
       if (!Number.isFinite(tid)) {
-        oplacerade.push(rubrik);
+        oplacerade.push(`Hämtade ${namn}`);
         continue;
       }
       lagg({
@@ -1106,11 +1168,19 @@ function byggStrom(
         tidMs: tid,
         slag: 'hamtning',
         kommande: false,
-        rubrik,
-        // Ingen underrubrik — meningen säger allt, och datumet står i
-        // vänsterkolumnen.
-        meta: null,
+        // HANDLINGEN på rad 1, ERBJUDANDET på rad 2 (Marcus 2026-08-12:
+        // *"Blir ju tomt under alla erbjudande-händelser nu eftersom de inte
+        // har en rad 2, så skriv 'Hämtade ett erbjudande' på rad 1, 'Namnet på
+        // erbjudandet' på rad 2"*). Formen var "Hämtade <namn>" på en rad,
+        // vilket lämnade underrads-slotten tom — och slot-modellen reserverar
+        // den ändå, så posten fick ett hål i sig.
+        //
+        // Bonus: alla tre posttyperna blir nu strukturellt lika — rad 1 är
+        // HANDLINGEN, rad 2 är dess detalj, rad 3 är datumet.
+        rubrik: 'Hämtade ett erbjudande',
+        meta: namn,
         prickKlass: 'bg-text-muted',
+        ikon: Download,
         pillar: [],
       });
     }
@@ -1201,6 +1271,133 @@ function StromRad({ post, sist }: { post: StromPost; sist: boolean }) {
           </div>
         )}
       </div>
+    </li>
+  );
+}
+
+/**
+ * [PROTOTYPE] Variant D:s strömrad — `Tidslinje.tsx`-FORMEN, medvetet kopierad.
+ *
+ * Marcus 2026-08-12: *"Tidslinjen är VÄLDIGT svår att läsa."* Rotorsaken var
+ * att `StromRad` (C:s form, ovan) lägger fyra nivåer i fel ordning: litet
+ * dämpat datum ÖVERST, sedan rubrik, sedan meta, sedan pillar — läsningen
+ * börjar med det minst viktiga. Branschpraxis säger max två–tre nivåer med
+ * titeln överst och tidsstämpeln sekundär (eleken.co/blog-posts/
+ * timeline-ui-design), och appen har REDAN den formen låst:
+ * `src/components/registrations/Tidslinje.tsx` (task-18.17, S83-facit,
+ * Marcus "Lås den") — *"genomgående linje, ikon-noder i cirklar; texten bär,
+ * tiden mutad under"*, byggd mot Shopify/Stripe activity.
+ *
+ * VARFÖR EN KOPIA OCH INTE DEN KOMPONENTEN (Marcus fråga, svar 2026-08-12):
+ * `Tidslinje` är låst facit för en GODKÄND skarp yta, och dess eget kontrakt
+ * säger att den promoveras till `primitives/` vid ANDRA konsumenten. En
+ * prototyp som fortfarande itereras är inte en konsument — att utöka den nu
+ * med pillar och länkar vore att låsa en form innan Marcus valt den, och att
+ * destabilisera anmälningsdetaljen för en variant som kanske inte blir.
+ * Klasserna nedan är därför MEKANISKT identiska (size-8-cirkel, border,
+ * bg-surface, `left-[15px]`-linje, text-body/text-caption) så konsolideringen
+ * vid promovering blir en radering — inte en omskrivning. Glider de isär har
+ * jag byggt exakt den andra tidslinjeform jag argumenterade emot.
+ *
+ * DATUMET STÅR PÅ EGEN RAD, INTE I HÖGERKOLUMN — och det var en mätning som
+ * avgjorde, inte en smakfråga. Marcus förstahandsval var en högerställd
+ * kolumn (*"Jag tror på högerställt i en egen kolumn typ"*) med fallbacken
+ * *"Om det inte blir snyggt med egen kolumn så tar vi en tredje rad då."*
+ * Kolumnvarianten byggdes och mättes i 390 px: kortets inre bredd 358 −
+ * cirkel/gap 44 − datum/gap 61 = 253 px för rubriken, mot 249 px för den
+ * bredaste faktiska. Fyra pixlars marginal höll inte i skarp rendering —
+ * TVÅ av tolv rubriker wrappade ("Hämtade Meditationen Kraftfältet",
+ * "Hämtade Pyramidernas Vajrar"), och just de saknar underrad, så de blev
+ * ojämna mot resten. Fallbacken gäller därmed.
+ *
+ * Bonusen är att tredje-rads-formen ÄR `Tidslinje.tsx`-originalet (text bär,
+ * tid under) — kolumnen hade varit den enda avvikelsen från den låsta formen.
+ * Radordningen är alltid rubrik → underrad (var/vilket tillfälle) → radens
+ * eget datum, så sista raden betyder samma sak i varje posttyp.
+ *
+ * LÄNKBAR RAD när `href` finns (anmälningar → AnmalanDetail). Affordansen är
+ * hover-ytan, inte en chevron: en chevron på var fjärde rad hade gjort
+ * strömmen ojämn igen.
+ */
+function StromRadD({ post, sist }: { post: StromPost; sist: boolean }) {
+  const Ikon = post.ikon;
+
+  // SLOT-MODELLEN (Marcus 2026-08-12: *"Se till att det är exakt samma avstånd
+  // mellan varje händelse!!! Varje händelse i linjen ska låsa en fast höjd
+  // efter den med högst höjd."*). Samma disciplin som `EventCard.tsx` redan
+  // bär: *"korten är alltid likformiga … alla metarader renderas ALLTID med
+  // platshållare"*. Före ändringen mättes FYRA olika posthöjder i 390 px —
+  // 64 / 84 / 112 / 140 — beroende på om posten hade underrad och pillar.
+  //
+  // Alla tre textraderna renderas därför alltid: saknas underrad eller pillar
+  // står slotten TOM men tar sin plats. Höjden blir därmed konstant utan en
+  // hårdkodad `min-h` som spricker vid längre innehåll — reservationen är
+  // strukturell, inte ett magiskt tal.
+  const innehall = (
+    <>
+      <span
+        aria-hidden="true"
+        className={`z-10 flex size-8 shrink-0 items-center justify-center rounded-full border bg-surface ${
+          post.kommande ? 'border-border-strong' : 'border-border'
+        }`}
+      >
+        {Ikon ? (
+          <Ikon aria-hidden size={14} className="text-text-secondary" />
+        ) : (
+          <span className={`size-2 rounded-full ${post.prickKlass}`} />
+        )}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5 pt-1">
+        <span className="truncate font-semibold text-body">{post.rubrik}</span>
+        {/* Underrads-slotten — alltid renderad, `&nbsp;` håller höjden när
+            posten saknar plats/tillfälle (hämtningar, registret). */}
+        <span className="truncate text-caption text-text-secondary">{post.meta ?? ' '}</span>
+        <span className="text-caption text-text-muted tabular-nums">{post.datumText}</span>
+        {/* Pill-slotten — samma princip, men med EXAKT pillens höjd, inte en
+            ungefärlig. `h-[22px]` är härlett, inte magiskt: `Pill` är
+            `text-caption` (12 px/18 px line-height) + `py-0.5` (2 px × 2) =
+            22 px, uppmätt i renderad DOM. Ett första försök med `min-h-5`
+            (20 px) gav 110 px för tomma poster och 112 för fyllda — två
+            pixlar, men Marcus krav är EXAKT samma höjd, och en slot som är
+            lägre än sitt innehåll är inte en slot.
+            `flex-nowrap`: två sessions-pillar ryms på raden i 390 px (mätt),
+            och en wrap hade återinfört just den höjdvariation slotten tar
+            bort. */}
+        <span className="mt-1 flex h-[22px] flex-nowrap items-center gap-1.5 overflow-hidden">
+          {post.pillar.map((p) => (
+            <Pill key={p.id} ton={p.ton}>
+              {p.text}
+            </Pill>
+          ))}
+        </span>
+      </span>
+    </>
+  );
+
+  // SAMMA HORISONTELLA INSET PÅ BÅDA GRENARNA. Fram till 2026-08-12 bar bara
+  // `<Link>`-grenen `-mx-2 px-2`, så ikonens mittpunkt låg på x=16 i länkade
+  // rader och x=24 i olänkade — medan linjen stod fast på `left-[15px]`.
+  // Mätt: strecket satt 9 px fel på varannan post ("strecken sitter helt snett
+  // och helt fel mot ikonerna"). Insetet hör till RADEN, inte till om den råkar
+  // vara klickbar.
+  const radKlasser = '-mx-2 flex items-start gap-3 rounded-lg px-2 py-2';
+
+  return (
+    <li className="relative flex flex-col">
+      {!sist && (
+        <span aria-hidden="true" className="absolute top-10 bottom-0 left-[15px] w-px bg-border" />
+      )}
+      {post.href ? (
+        <Link
+          to={post.href.to}
+          params={post.href.params}
+          className={`${radKlasser} hover:bg-bg-emphasized motion-safe:transition-colors`}
+        >
+          {innehall}
+        </Link>
+      ) : (
+        <span className={radKlasser}>{innehall}</span>
+      )}
     </li>
   );
 }
@@ -1684,31 +1881,54 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                 <h3 className="font-semibold text-small text-text-secondary">Kommande</h3>
                 <ol className="flex flex-col">
                   {kommande.map((post, i) => (
-                    <StromRad key={post.id} post={post} sist={i === kommande.length - 1} />
+                    <StromRadD key={post.id} post={post} sist={i === kommande.length - 1} />
                   ))}
                 </ol>
               </div>
             )}
-            {arGrupper.map((grupp) => (
-              <div key={grupp.ar} className="flex flex-col gap-2">
-                <h3 className="font-semibold text-small text-text-secondary tabular-nums">
-                  {grupp.ar}
-                </h3>
-                <ol className="flex flex-col">
-                  {grupp.poster.map((post, i) => (
-                    <StromRad key={post.id} post={post} sist={i === grupp.poster.length - 1} />
-                  ))}
-                </ol>
-              </div>
-            ))}
+            {arGrupper.map((grupp, gi) => {
+              // `sist` styr om posten ritar linjen NEDÅT. Sista posten i sista
+              // år-gruppen ska ändå göra det när registret följer under —
+              // annars bröts rälsen och "Kom in i registret" hängde löst
+              // (mätt 2026-08-12: 128 px utan linje mellan dem).
+              const sistaGruppen = gi === arGrupper.length - 1;
+              return (
+                <div key={grupp.ar} className="flex flex-col gap-2">
+                  <h3 className="font-semibold text-small text-text-secondary tabular-nums">
+                    {grupp.ar}
+                  </h3>
+                  <ol className="flex flex-col">
+                    {grupp.poster.map((post, i) => (
+                      <StromRadD
+                        key={post.id}
+                        post={post}
+                        sist={
+                          i === grupp.poster.length - 1 && !(sistaGruppen && registrerad !== null)
+                        }
+                      />
+                    ))}
+                  </ol>
+                </div>
+              );
+            })}
             {/* STRÖMMENS SISTA RAD — alltid, oavsett datum. Se byggStrom
                 steg 4 för varför posten står utanför år-grupperingen:
                 `Rad skapad` är radens födelse i Airtable, inte personens
                 första kontakt, och sorterad på sitt eget datum hamnade
-                "Kom in i registret" mitt i strömmen. */}
+                "Kom in i registret" mitt i strömmen.
+
+                `-mt-4` NEUTRALISERAR containerns `gap-4`. Posten är ett
+                syskon till år-grupperna och fick därför gruppernas mellanrum
+                ovanpå sitt eget radavstånd — mätt 2026-08-12: 128 px till
+                posten över, mot 112 överallt annars (Marcus: *"'kom in i
+                registret' har ett större mellanrum till händelsen över än
+                övriga mellanrum"*). Gapet hör till GRUPPER; den här raden är
+                ingen grupp, den är strömmens sista post. Att i stället lägga
+                den inuti sista år-gruppens `<ol>` hade tagit bort gapet lika
+                bra men ställt en 2026-post under rubriken "2025". */}
             {registrerad && (
-              <ol className="flex flex-col">
-                <StromRad post={registrerad} sist />
+              <ol className="-mt-4 flex flex-col">
+                <StromRadD post={registrerad} sist />
               </ol>
             )}
             {oplacerade.length > 0 && (
@@ -1869,21 +2089,24 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
             <ul className="flex flex-col divide-y divide-border">
               {motiveringar.map((m) => (
                 <li key={m.id} className="flex flex-col gap-1 py-3">
-                  {/* TVÅ DATUM, BÅDA ETIKETTERADE. `m.datum` är när personen
-                      ANMÄLDE sig, `m.eventDatum` när eventet GÅR — naket
-                      bredvid eventnamnet lästes det förra som det senare.
-                      Mätt på Sofia Isaksson 2026-08-12: raden stod "Resor i
-                      medvetandet 1 · 10 augusti 2026" medan RIM 1 gick
-                      10 augusti 2025. `eventDatum` är null tills EF-utökningen
-                      är deployad; då visas bara anmälningsdatumet. */}
+                  {/* METARUBRIKEN SÄGER VAD MOTIVERINGEN ÄR FÖR (Marcus
+                      2026-08-12: *"Det ska stå i metarubriken 'För anmälan
+                      till Fjärrskådning 18 augusti 2026 i Varberg', för det är
+                      just vad det är en motivering FÖR"*).
+
+                      FULLT kursnamn och FULLT datum med årtal — till skillnad
+                      från tidslinjens "FS" och "18 augusti". Avsiktligt: den
+                      här raden är en REFERENS som ska gå att läsa lösryckt,
+                      tidslinjen är en ström där året framgår av år-rubriken
+                      och utrymmet är mätt i pixlar.
+
+                      Anmälningsdatumet står INTE här längre. Det besvarade en
+                      fråga ingen ställer i det här blocket ("när skrevs
+                      motiveringen") och konkurrerade med eventdatumet om
+                      samma rad — vilket var precis den huller-om-buller-känsla
+                      Marcus pekade på i tidslinjen. */}
                   <span className="text-small text-text-muted">
-                    {[
-                      m.event ?? 'Okänt event',
-                      m.eventDatum ? langtDatum(m.eventDatum) : null,
-                      m.datum ? `anmäld ${langtDatum(m.datum)}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ')}
+                    {motiveringsReferens(m.event, m.eventDatum, m.ort)}
                   </span>
                   <p className="whitespace-pre-line text-body">{m.motivering}</p>
                 </li>

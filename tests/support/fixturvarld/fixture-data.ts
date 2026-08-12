@@ -1060,6 +1060,7 @@ const RIK_DETALJ = {
       datum: '2026-08-01T09:00:00.000Z',
       eventDatum: '2026-09-26',
       ort: 'Skövde',
+      eventId: 'recVisualEvent001',
     },
   ],
   flagga: 'Ring innan nästa event',

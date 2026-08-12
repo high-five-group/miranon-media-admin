@@ -82,6 +82,13 @@ export const PersonMotiveringEntrySchema = z.object({
   datum: z.string().nullable(),
   eventDatum: z.string().nullable().default(null),
   ort: z.string().nullable().default(null),
+  /**
+   * Event-länkens record-ID — andra halvan av länkmålet
+   * `/event/$eventId/anmalan/$registrationId`. Null vid saknad Event-länk
+   * (backfill); raden renderas då oklickbar i stället för att länka till en
+   * route som inte kan lösas.
+   */
+  eventId: z.string().nullable().default(null),
 });
 
 /**

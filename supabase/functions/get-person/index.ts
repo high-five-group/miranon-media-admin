@@ -63,11 +63,16 @@ const TOUCHPOINT_FIELDS = ['Erbjudande', 'Typ', 'Datum'];
 // inte, den är tom på backfill-anmälningar (data-model.md § Fält tillagda i
 // augusti 2026). Behövs för tidslinjens mening "Anmälde sig till <kurs> i
 // <ort> <datum>" (Marcus 2026-08-12).
+// `Event` (multipleRecordLinks) ger anmälans EVENT-record-ID. Persondetaljens
+// anmälningsrader länkar till `/event/$eventId/anmalan/$registrationId`
+// (AnmalanDetail, task-18.17) och routen kräver BÅDA ID:na — anmälnings-ID:t
+// är radens eget, event-ID:t finns bara här.
 const ANMALNINGAR_MOTIVERING_FIELDS = [
   'Varför vill du gå den här utbildningen?',
   'Kurs (from Event)',
   'Vill anmäla sig till',
   'Ort (from Event)',
+  'Event',
   'Inskickad',
   'Rad skapad',
   'Startdatum',
@@ -179,6 +184,12 @@ function mapMotiveringEntry(record: { id: string; fields: Fields }) {
     // Eventets ort (lookup) — meningens "i <ort>"-led. Null vid saknad
     // Event-länk; meningen utelämnar då ledet i stället för att gissa.
     ort: scalarString(f['Ort (from Event)']),
+    // Event-länkens record-ID — länkmålets andra halva. FÖRSTA elementet:
+    // fältet är en multipleRecordLinks men bär i praktiken ETT event per
+    // anmälan (`prefersSingleRecordLink`). Null när länken saknas
+    // (backfill-anmälningar) → raden renderas oklickbar i stället för att
+    // länka till en trasig route.
+    eventId: Array.isArray(f['Event']) && typeof f['Event'][0] === 'string' ? f['Event'][0] : null,
   };
 }
 
