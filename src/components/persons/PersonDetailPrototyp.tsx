@@ -1159,9 +1159,8 @@ function byggStrom(
       // raden upp av sig själv, utan kodändring.
       const namn = erbjudandeNamn(h.erbjudande);
       if (!namn) continue;
-      const rubrik = `Hämtade ${namn}`;
       if (!Number.isFinite(tid)) {
-        oplacerade.push(rubrik);
+        oplacerade.push(`Hämtade ${namn}`);
         continue;
       }
       lagg({
@@ -1169,10 +1168,17 @@ function byggStrom(
         tidMs: tid,
         slag: 'hamtning',
         kommande: false,
-        rubrik,
-        // Hämtningen ÄR sin egen dag → ingen underrad; datumet står i
-        // högerkolumnen.
-        meta: null,
+        // HANDLINGEN på rad 1, ERBJUDANDET på rad 2 (Marcus 2026-08-12:
+        // *"Blir ju tomt under alla erbjudande-händelser nu eftersom de inte
+        // har en rad 2, så skriv 'Hämtade ett erbjudande' på rad 1, 'Namnet på
+        // erbjudandet' på rad 2"*). Formen var "Hämtade <namn>" på en rad,
+        // vilket lämnade underrads-slotten tom — och slot-modellen reserverar
+        // den ändå, så posten fick ett hål i sig.
+        //
+        // Bonus: alla tre posttyperna blir nu strukturellt lika — rad 1 är
+        // HANDLINGEN, rad 2 är dess detalj, rad 3 är datumet.
+        rubrik: 'Hämtade ett erbjudande',
+        meta: namn,
         prickKlass: 'bg-text-muted',
         ikon: Download,
         pillar: [],
@@ -1909,9 +1915,19 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                 steg 4 för varför posten står utanför år-grupperingen:
                 `Rad skapad` är radens födelse i Airtable, inte personens
                 första kontakt, och sorterad på sitt eget datum hamnade
-                "Kom in i registret" mitt i strömmen. */}
+                "Kom in i registret" mitt i strömmen.
+
+                `-mt-4` NEUTRALISERAR containerns `gap-4`. Posten är ett
+                syskon till år-grupperna och fick därför gruppernas mellanrum
+                ovanpå sitt eget radavstånd — mätt 2026-08-12: 128 px till
+                posten över, mot 112 överallt annars (Marcus: *"'kom in i
+                registret' har ett större mellanrum till händelsen över än
+                övriga mellanrum"*). Gapet hör till GRUPPER; den här raden är
+                ingen grupp, den är strömmens sista post. Att i stället lägga
+                den inuti sista år-gruppens `<ol>` hade tagit bort gapet lika
+                bra men ställt en 2026-post under rubriken "2025". */}
             {registrerad && (
-              <ol className="flex flex-col">
+              <ol className="-mt-4 flex flex-col">
                 <StromRadD post={registrerad} sist />
               </ol>
             )}
