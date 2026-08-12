@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-12 20:48'
-updated_date: '2026-08-12 21:16'
+updated_date: '2026-08-12 22:14'
 labels: []
 dependencies: []
 priority: high
@@ -77,4 +77,39 @@ Det styrker att post-merge-rödhet mot staging var UTBREDD denna kväll och inte
 Men det BEVISAR inte att denna fällning är samma fenomen. Signaturerna skiljer sig: de ovan är HTTP-fel (502/503) från Airtable-ytan, medan detta kort gäller en layout-assertion på dokumenthöjd som inte går via något API-svar. Behandla det som kontext om kvällens miljötillstånd, inte som en förklaring.
 
 Fyrstegsplanen ovan gäller oförändrad — den är fortfarande det som avgör frågan.
+
+AVGÖRANDE MÄTNING 2026-08-12 sent (orkestreraren, gh run list mot main, samtliga Post-merge-körningar i fönstret):
+
+Post-merge-utfall per merge-SHA, kronologiskt:
+
+  18:17  e4a110bc  gron
+  18:21  6c2f2425  ROD
+  18:26  b5534199  gron
+  18:43  90b3461d  gron
+  18:46  4648823a  gron
+  19:50  7e74c94b  ROD   (PR #1230, TASK-201.4)
+  20:21  430a8156  gron  (PR #1231, TASK-201.6)
+  20:27  8b4832c7  ROD   (PR #1229, S103 — kortets ursprungliga misstankte)
+  20:59  9eaf18f8  gron
+  21:04  52856e2f  gron
+  21:17  b8abfb3c  gron
+  21:26  77e18532  gron
+  21:42  675fed40  gron
+  21:49  417537f5  ROD   (PR #1237, TASK-201.8)
+
+FYRA fallningar, INTERFOLIERADE med gronare korningar. Minst TRE av dem pa exakt samma test (event-bekraftelse.staging.test.ts:409) — verifierat: 8b4832c7 av orkestreraren, 7e74c94b och 417537f5 av stangningsagenten i PR #1241, som i bada fallen bekraftade med gh pr diff --name-only att testet ligger UTANFOR respektive PR:s diff.
+
+VAD DETTA AVGOR:
+
+Forklaring (a), kodregression i #1229, ar FALSIFIERAD. En kodregression ar rod fran den inforande commiten och framat. Monstret gron -> rod -> gron -> rod -> gron ar oforenligt med det. Kortets ursprungliga bisekt-linje (gron pa 430a8156, rod pa 8b4832c7) var en sammantraffande grans, exakt det kortet sjalvt varnade for.
+
+Forklaring (b) star kvar och ar nu den enda som passar: testet mater DOKUMENTHOJD pa en staging-sida vars hojd beror pa hur manga rader eventet faktiskt bar, och staging muterades av flera parallella arbeten hela kvallen.
+
+VARFOR 3/3 SAG DETERMINISTISKT UT: retries kor om samma test i SAMMA korning mot SAMMA datatillstand. Determinism INOM en korning ar helt forenlig med variation MELLAN korningar. Detta ar den exakta fallan — retry-rakningen mater fel axel.
+
+REVIDERAD NASTA-STEG (ersatter fyrstegsplanen ovan):
+1. Bisekta INTE. Det ar inte en regression.
+2. Behandla det som en datakänslig invariant. Las testet vid rad 409-445 och avgor om dokumenthojd ar ratt matt over huvud taget, eller om assertionen bor mata den yta markera-laget faktiskt ror i stallet for hela dokumentet.
+3. Vill man ha ett tal pa raten: kor riggen npm run metrics:flake i stallet for att bygga en egen matserie. Las ut n innan ett nollresultat tolkas.
+4. Notera att fyra av fjorton post-merge-korningar foll — det ar en hog rat for en icke-blockerande grind, och det urholkar signalvardet i post-merge som helhet.
 <!-- SECTION:NOTES:END -->
