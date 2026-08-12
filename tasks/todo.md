@@ -82,8 +82,12 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ⏸️ PAUSAD IGEN (2026-08-12 kväll, `lifecycle: paused`) —
-MARCUS GRANSKNINGSVARV PÅ D: SEXTON FEL ÅTGÄRDADE ÖVER FYRA PR:er, TIDSLINJEN
+**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-12 kväll, `lifecycle: active`) —
+MARCUS GRANSKNINGSVARV PÅ D FORTSÄTTER; `#1214` LANDAD (`23eca3b1`).**
+Resumen re-verifierade numreringen mot `origin/main`: **ADR 112 · kort 205**
+(avvikelse mot handoffens 204 — `task-204` mintad av annan session under
+pausen) **· T142 · L512** + 4 fragment. Föregående pass, Del 8:
+**MARCUS GRANSKNINGSVARV PÅ D: SEXTON FEL ÅTGÄRDADE ÖVER FYRA PR:er, TIDSLINJEN
 OMBYGGD TILL APPENS LÅSTA `Tidslinje`-FORM.** Del 8: `#1200` (resume,
 `011b83bb`) fann att carry 2 var betald av S102 → `#1204` (elva fel,
 `f42da6e7` — §46-strängen renderades RÅTT på två ställen; "Nästa event"
