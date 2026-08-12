@@ -3,12 +3,12 @@ id: TASK-201.11
 title: >-
   Fynd: TASK-201.2 blockerad — ingen Supabase db-access i agent-miljön (supabase
   link/db push kräver credentials som inte finns)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 22:11'
-updated_date: '2026-08-11 22:13'
+updated_date: '2026-08-12 15:48'
 labels:
-  - ready-for-human
+  - falsifierat
 dependencies: []
 parent_task_id: TASK-201
 priority: high
@@ -39,3 +39,26 @@ PÅVERKAN: TASK-201.3 (och sannolikt hela resten av 201.4–201.10-kedjan) har `
 
 FÖRVÄNTAT ÅTGÄRD: Marcus-moment — antingen (a) applicera migrationen manuellt/via en session med riktig `supabase login`-auth och lämna TASK-201.2 för agent-fortsättning av AC #2+#3 därefter, eller (b) förse en framtida agent-session med SUPABASE_ACCESS_TOKEN (och ev. SERVICE_ROLE-nyckel för RLS-write-beviset) via miljö/secret, så hela skivan kan köras end-to-end.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FALSIFIERAT 2026-08-12 av orkestreraren (S105). Kortets slutsats — att agent-miljön saknar Supabase db-access — var FEL. Åtkomsten fanns hela tiden.
+
+ROTORSAK TILL FELSLUTET: Supabase CLI lagrar sin inloggning i macOS-nyckelringen (post "Supabase CLI", konto "supabase", skapad 2026-03-30 — verifierad med security find-generic-password). Supabase egen dokumentation (https://supabase.com/docs/reference/cli/introduction) säger att tokenen lagras i "native credentials storage" och att ~/.supabase/access-token bara är RESERVPLATSEN när nyckelringen saknas. Kortets mätpunkt 2 — tom ~/.supabase/ — var alltså bevis för att tokenen låg RÄTT, och lästes som frånvaro.
+
+MÄTPUNKT 6 FELTOLKAD: hänget i "supabase link" var inte ett interaktivt login-flöde utan prompten för DATABAS-LÖSENORDET, som väntar på stdin. Med styrd stdin svarar samma kommando omedelbart:
+  echo "" | npx supabase link --project-ref pqtshyierkdgwdnxuirz
+  -> {"project_ref":"pqtshyierkdgwdnxuirz","message":""}
+Kontrollprovet i mätpunkt 7 (ogiltigt token -> snabbt fel) pekade rätt av fel anledning: ett ogiltigt token felar FORE lösenordsprompten, så de två fallen skiljer sig av ett annat skäl än det antagna.
+
+BELÄGG ATT ÅTKOMSTEN FUNGERAR (kört 2026-08-12):
+  npx supabase projects list        -> båda projekten listade, ingen env-var, ingen prompt
+  npx supabase db push              -> Applying migration 20260811211759_create_activity_log.sql
+  npx supabase migration list       -> local 20260811211759 == remote 20260811211759
+  npx supabase inspect db table-stats --linked -> public.activity_log med tre index
+
+FÖLJD: TASK-201.2 fullföljdes samma dag (PR #1202, merge-SHA 50afc936) inklusive RLS-bevis och en service_role-grant-fix som premiss-passet inte hade sett. Ingen del av kedjan 201.3-201.10 var någonsin blockerad av access. Inget Marcus-moment krävdes.
+
+Kortet stängs som falsifierat, inte som löst — det fanns inget att lösa. Metodlärdomen ägs av TASK-202 (lesson-fragmentet) och tråden T141: att mäta omgivningen är inte att mäta åtkomsten, och en hängning är inte ett felmeddelande.
+<!-- SECTION:NOTES:END -->
