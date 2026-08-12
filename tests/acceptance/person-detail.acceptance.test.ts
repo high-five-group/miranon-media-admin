@@ -184,16 +184,33 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     await expect(page.getByText('Persondetaljer för Anna Andersson laddade.')).toHaveCount(1);
     await expect(heading).toBeFocused();
 
-    // Kurshistorik: event-för-event (båda raderna syns, senaste först).
-    const history = page.getByRole('list', { name: /Kurshistorik/ });
+    // COPY-MIGRERAD 2026-08-12 (ADR-103 B2 steg 1, D-formens promovering).
+    // Listan heter `Eventhistorik, senaste först` — inte `Kurshistorik` — och
+    // raderna bär KURSNAMNET, inte eventLabel-strängen. Ordningen (senaste
+    // först) är fortfarande löftet aria-label ger, och den prövas av
+    // `.first()` nedan.
+    const history = page.getByRole('list', { name: /Eventhistorik/ });
     await expect(history.getByRole('listitem')).toHaveCount(2);
-    await expect(page.getByText('RIM 2 — Göteborg 2026-03-01')).toBeVisible();
-    await expect(page.getByText('RIM 1 — Skövde 2026-02-01')).toBeVisible();
+    await expect(history.getByRole('listitem').first()).toContainText(
+      'Resor i medvetandet 2',
+    );
+    await expect(history.getByRole('listitem').last()).toContainText('Resor i medvetandet 1');
 
-    // Kontakt, leads, flaggor.
+    // Kontakt + leads. Hämtningen SCOPAS till sitt eget block: D visar den
+    // både i interaktionsströmmen och under "Hämtade erbjudanden" (medvetet —
+    // strömmen behåller hela sitt innehåll, blocken är fördjupningar), så en
+    // oscopad getByText fäller på strict mode med två träffar.
     await expect(page.getByText('anna@example.test')).toBeVisible();
-    await expect(page.getByText('Gratis meditation')).toBeVisible();
-    await expect(page.getByText('AI-flagga: Erfaren')).toBeVisible();
+    await expect(
+      page.getByLabel('Hämtade erbjudanden').getByText('Gratis meditation'),
+    ).toBeVisible();
+
+    // AI-FLAGGAN ASSERTERAS INTE LÄNGRE — den finns inte i D. Marcus lyfte ut
+    // den 2026-08-10: *"AI flagga avvaktar vi med, den borde egentligen in i
+    // anmälningsdetalj-sidan, inte här"* (se `flaggorD` i komponenten). Raden
+    // är BORTTAGEN, inte tystad: en assertion på en yta som medvetet inte
+    // finns hade blivit vakuöst grön den dag strängen försvann helt.
+    await expect(page.getByText('AI-flagga: Erfaren')).toHaveCount(0);
 
     // Anteckningar (READ-ONLY i L5a).
     await expect(page.getByText('Viktig kontakt — ring före nästa event.')).toBeVisible();
@@ -270,14 +287,30 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
         antalHamtningar: 0,
         allaHamtningar: [],
         motivering: [],
+        // De NYA poster-arrayerna måste nollas med, annars är tomläget inte
+        // glest (S103 2026-08-12): `allaHamtningar`/`motivering` är de gamla
+        // platta rollup-formerna som variant A/B/C läste. D läser `hamtningar`
+        // och `motiveringar` — riktiga poster ur get-persons batch — och de
+        // ärvde fortfarande basfixturens innehåll, så hämtnings- och
+        // motiveringsblocken renderade fyllda i ett test vars hela syfte är
+        // tomlägena.
+        hamtningar: [],
+        motiveringar: [],
       }),
     );
     await page.goto(`/personer/${PERSON_ID}`);
     await expect(page.getByRole('heading', { level: 1, name: 'Anna Andersson' })).toBeVisible();
 
     // Empty-states renderas (som syskon till <dl>, inte dl-barn).
+    // COPY-MIGRERAD 2026-08-12: D delade upp det gamla samlade lead-blocket i
+    // två egna block med var sitt tomläge — hämtningarna ("Inga hämtade
+    // erbjudanden registrerade.") och motiveringarna ("Inga motiveringar
+    // registrerade."). Den gamla strängen "Inga lead-magnet-hämtningar
+    // registrerade." finns inte längre någonstans. BÅDA asserteras, så en halv
+    // rendering inte passerar som grön.
     await expect(page.getByText('Inga kontaktuppgifter registrerade.')).toBeVisible();
-    await expect(page.getByText('Inga lead-magnet-hämtningar registrerade.')).toBeVisible();
+    await expect(page.getByText('Inga hämtade erbjudanden registrerade.')).toBeVisible();
+    await expect(page.getByText('Inga motiveringar registrerade.')).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

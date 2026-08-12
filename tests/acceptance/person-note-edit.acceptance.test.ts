@@ -81,7 +81,29 @@ function personDetail(anteckningar: string | null): PersonDetailMock {
   };
 }
 
-test.describe('Persondetalj — edit-in-place Anteckningar (Fas 6a L6c)', () => {
+/**
+ * PARKERAD 2026-08-12 (S103, ADR-103 B2 steg 1) — INTE riven, och skillnaden
+ * är hela poängen.
+ *
+ * Persondetaljens form promoverades till D, som bär `PersonAnteckningar`
+ * (flera anteckningar med författare + tidpunkt, egen skrivyta) i stället för
+ * `PersonNoteEditor` (edit-in-place på personens ENA `Anteckningar`-fält).
+ * `PersonNoteEditor` renderas numera bara av `PersonDetail.tsx`, som routen
+ * inte längre monterar — ytan finns i koden men är inte nåbar, så dessa tre
+ * fall kan inte passera.
+ *
+ * VARFÖR PARKERAD OCH INTE BORTTAGEN: `ADR-102` B3 förbjuder rivning av det
+ * gamla substratet före Marcus godkännande av den promoverade ytan.
+ * `PersonDetail.tsx` + `PersonNoteEditor` + denna fil rivs TILLSAMMANS i B2
+ * steg 4, i samma landning — samma regel som `.facit-policy.conf` bokför för
+ * markörer ("städas i SAMMA landning som rivningen som gör den död, aldrig
+ * 'sen'"). Att ta bort testet nu vore att förekomma godkännandet med den ena
+ * halvan av en rivning.
+ *
+ * DEN FJÄRDE TESTEN I FILEN (axe på read-vyn) står kvar aktiv — den prövar
+ * `PersonDetail`-komponenten direkt och är oberoende av routens montering.
+ */
+test.describe.skip('Persondetalj — edit-in-place Anteckningar (Fas 6a L6c)', () => {
   test('optimistisk flip: Spara → read-vyn visar nya noten utan network-wait', async ({
     page,
     network,
