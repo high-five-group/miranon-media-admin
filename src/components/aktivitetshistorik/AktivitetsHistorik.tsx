@@ -1,21 +1,29 @@
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
+import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
+import { ACTIVITY_OBJECT_TYPES } from '@/data/activityLog/activityTypes';
 import { useActivityLogHistory } from '@/data/queries/useActivityLog';
+import { useDataSource } from '@/data/useDataSource';
+import type { Event } from '@/domain/models/Event';
 import {
   type ActivityStatement,
   EVENT_ID_EXTENSION_IRI,
   PERSON_ID_EXTENSION_IRI,
 } from '@/domain/schemas';
+import { queryKeys } from '@/queries/keys';
 
 /**
- * Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen). En HEL yta utan
- * filterrad (filterraden är TASK-201.8, additiv skiva; S105 Del 2 beslut 1
- * — "en hel mellanstation" om dag 1-klockan tar slut). Data via
- * `useActivityLogHistory()` (TASK-201.5, cursor-paginerad `useInfiniteQuery`,
+ * Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen) + filterraden
+ * (TASK-201.8, B-målet, additiv: A-formen förblir en HEL yta även utan
+ * filtrering, S105 Del 2 beslut 1). Data via `useActivityLogHistory(filters)`
+ * (TASK-201.5, cursor-paginerad `useInfiniteQuery`,
  * `src/data/queries/useActivityLog.ts`) → `fetchActivityLog` (adaptern) →
  * `get-activity-log`-EF:en, samma åtkomstprecedens som `PersonsList`/`MailLog`.
  *
@@ -23,6 +31,25 @@ import {
  * `activity_log`), "Aktivitetshistorik" är Lottas VY över den — hem-spaltens
  * högerspalt (K10-facit, TASK-201.7, OBYGGD) och DENNA fulla historikvy.
  * Undvik "logg" i UI-text.
+ *
+ * FILTRERING (TASK-201.8) — ÖPPET BOKFÖRD AVVIKELSE mot kortets AC #1-
+ * ORDALYDELSE ("klientfiltrering över hämtad lista"): faktisk kod byggd i
+ * TASK-201.5 säger raka motsatsen på TVÅ ställen — `ActivityLogFilters`s eget
+ * filhuvud ("Server-side (get-activity-log-EF), inte klient-side",
+ * `src/domain/types/Filters.ts`) och `queryKeys.activityLog.history`s eget
+ * filhuvud ("Nyckeln bär FILTERPARAMETRARNA ... de ändrar VILKEN datamängd
+ * get-activity-log-EF:en hämtar server-side", `src/queries/keys.ts`).
+ * `get-activity-log`-EF:en har DESSUTOM redan fullt category/eventId/from/to-
+ * stöd (dess eget filhuvud, § FILTER) — kortets egen beskrivningstext
+ * ("EF-kontraktet från 201.5 bär redan parametrarna så ingen serverändring
+ * ingår") stämmer, men bara om filtret ÄR server-side. Byggd därför som
+ * SERVER-SIDE filtrering via redan existerande EF-parametrar (`category`/
+ * `eventId`/`from`), inte som ett naivt array-filter över den redan hämtade
+ * (delvis laddade) sidan — ett äkta klient-array-filter hade varit trasigt
+ * mot en keyset-paginerad, ännu-inte-helt-laddad lista (precis den
+ * pagineringsbugg uppdraget varnade för). Se § "filterbyte mitt i paginering"
+ * i `useActivityLogHistory`s docstring för hur markören hanteras vid ett
+ * filterbyte.
  */
 
 /** Klockslag "14:22" — raden i grupper ÄLDRE än idag (dagen är redan sagd av gruppens h2). */
@@ -42,6 +69,83 @@ function dagsStart(ms: number): number {
   const d = new Date(ms);
   d.setHours(0, 0, 0, 0);
   return d.getTime();
+}
+
+/**
+ * Filterradens KATEGORI-axel (TASK-201.8) — korta URL-nycklar som mappar mot
+ * `ACTIVITY_OBJECT_TYPES`s fulla IRI:er (samma IRI som `get-activity-log`-
+ * EF:ens `object_type`-equality-filter jämför mot, se dess filhuvud).
+ * `Record<KategoriKey, string>` nedan tvingar TS att fälla om ett nytt värde
+ * läggs till i `ACTIVITY_OBJECT_TYPES` utan en motsvarande svensk etikett —
+ * FÅNGADE FAKTISKT DRIFT (merge mot main, TASK-201.8s egen byggsession):
+ * `ACTIVITY_OBJECT_TYPES` växte från TRE kategorier (pilotens
+ * betalning/bekraftelse/mail, giltiga vid denna skivas branch-punkt) till
+ * NIO under TASK-201.4 (landat på main under samma tidsfönster) — PRD
+ * TASK-201s användarberättelse 9 ordagrant: "betalningar, bekräftelser,
+ * anmälningar, boende, mail, kvitton, event-ändringar, flaggor och
+ * anteckningar". Ordningen nedan följer den uppräkningen. `KATEGORI_VALUES`
+ * själv (en vanlig array, ingen fullständighetskontroll) hade INTE fångat
+ * detta ensam — det var `Record`-typen som fällde typecheck.
+ */
+type KategoriKey = keyof typeof ACTIVITY_OBJECT_TYPES;
+const KATEGORI_VALUES: KategoriKey[] = [
+  'betalning',
+  'bekraftelse',
+  'anmalan',
+  'boende',
+  'mail',
+  'kvitto',
+  'event',
+  'flagga',
+  'anteckning',
+];
+const KATEGORI_LABEL: Record<KategoriKey, string> = {
+  betalning: 'Betalning',
+  bekraftelse: 'Bekräftelse',
+  anmalan: 'Anmälan',
+  boende: 'Boende',
+  mail: 'Mail',
+  kvitto: 'Kvitto',
+  event: 'Eventändring',
+  flagga: 'Flagga',
+  anteckning: 'Anteckning',
+};
+
+/** Filterradens TIDSPERIOD-axel (TASK-201.8) — ToggleButtonGroup, alltid ETT val. */
+type Tidsperiod = 'idag' | '7dagar' | '30dagar' | 'allt';
+const TIDSPERIOD_VALUES: Tidsperiod[] = ['idag', '7dagar', '30dagar', 'allt'];
+const TIDSPERIOD_LABEL: Record<Tidsperiod, string> = {
+  idag: 'Idag',
+  '7dagar': '7 dagar',
+  '30dagar': '30 dagar',
+  allt: 'Allt',
+};
+
+/**
+ * `from`-gränsen (ISO 8601, `get-activity-log`-EF:ens `from`-param) för vald
+ * tidsperiod, relativt `nuMs`. `'allt'` = inget tidsfilter (`undefined` —
+ * EF:en utelämnar då `gte`-villkoret helt, samma "parametern BORTA = inget
+ * filter"-idiom som `/event`s `?typ`/`?ort` — URL-STATE-SPEC §Event).
+ * "Idag" är KALENDERDAG (lokal midnatt, `dagsStart` — samma referenspunkt
+ * radernas egen dagsgruppering använder); "7 dagar"/"30 dagar" är rullande
+ * 24h-fönster (ingen kalendersemantik behövs för dem).
+ */
+function tidsperiodFran(tidsperiod: Tidsperiod, nuMs: number): string | undefined {
+  if (tidsperiod === 'allt') return undefined;
+  if (tidsperiod === 'idag') return new Date(dagsStart(nuMs)).toISOString();
+  const dagar = tidsperiod === '7dagar' ? 7 : 30;
+  return new Date(nuMs - dagar * 86_400_000).toISOString();
+}
+
+/** Nolläges-nyckeln i filterradens Select-dropdowns ("Alla …") — sentinel
+ * skild från datavärden (speglar EventsList.tsx:s `ALLA`-konstant EXAKT). */
+const ALLA = '__alla';
+
+/** Visat eventnamn — lokal kopia (medvetet INTE en cross-feature-import av
+ * `components/events/EventCard.tsx`s `eventName`; samma isolering som
+ * `NastaEventCard.tsx` redan valde för identisk logik, `components/hem/`). */
+function eventVisningsNamn(e: Event): string {
+  return e.eventNamn ?? e.eventlabel ?? 'Namnlöst event';
 }
 
 /** Dagsgruppens etikett: "Idag" / "Igår" / långdatum. Kalenderdags-diff, inte 24h-fönster
@@ -234,14 +338,120 @@ function LaddLage() {
 }
 
 /**
- * Aktivitetshistoriken (TASK-201.6) — GLOBAL, cursor-paginerad LÄS-vy.
+ * Filterraden (TASK-201.8, B-målet) — kategori + event (Select-primitiven,
+ * ADR-044) + tidsperiod (ToggleButtonGroup-primitiven). "Ovanför kärnvyns
+ * lista" (AC #1) — monterad i den LADDADE grenen tillsammans med `<h1>`
+ * (aldrig i den bara isPending/isError-grenen, se
+ * `AktivitetsHistorik`-komponentens egen kommentar) och stannar därför
+ * monterad genom varje filterbyte (`keepPreviousData`,
+ * `useActivityLog.ts`) — ett val i en dropdown tappar aldrig fokus under
+ * sig själv (AC #3, tangentbordsvägen).
+ *
+ * Event-dropdownens data delar queryKey med `EventValjare`/`EventsList`
+ * (`queryKeys.events.list`) — varm cache vid navigering från Event, kall
+ * hämtning vid djuplänk hit; `isDisabled` under tiden (samma golv som
+ * EventsList.tsx:s panel-Select under `isPending`).
+ */
+function FilterRad({
+  kategori,
+  onKategoriChange,
+  eventId,
+  eventOptions,
+  eventerLaddar,
+  onEventChange,
+  tidsperiod,
+  onTidsperiodChange,
+}: {
+  kategori: KategoriKey | null;
+  onKategoriChange: (varde: KategoriKey | null) => void;
+  eventId: string | null;
+  eventOptions: Event[];
+  eventerLaddar: boolean;
+  onEventChange: (varde: string | null) => void;
+  tidsperiod: Tidsperiod;
+  onTidsperiodChange: (varde: Tidsperiod) => void;
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-3" data-testid="aktivitetshistorik-filterrad">
+      <Select
+        label="Kategori"
+        size="sm"
+        selectedKey={kategori ?? ALLA}
+        onSelectionChange={(k) => {
+          const varde = k == null || String(k) === ALLA ? null : (String(k) as KategoriKey);
+          onKategoriChange(varde);
+        }}
+      >
+        <SelectItem id={ALLA}>Alla kategorier</SelectItem>
+        {KATEGORI_VALUES.map((k) => (
+          <SelectItem key={k} id={k}>
+            {KATEGORI_LABEL[k]}
+          </SelectItem>
+        ))}
+      </Select>
+
+      <Select
+        label="Event"
+        size="sm"
+        isDisabled={eventerLaddar}
+        selectedKey={eventId ?? ALLA}
+        onSelectionChange={(k) => {
+          const varde = k == null || String(k) === ALLA ? null : String(k);
+          onEventChange(varde);
+        }}
+      >
+        <SelectItem id={ALLA}>Alla event</SelectItem>
+        {eventOptions.map((e) => (
+          <SelectItem key={e.id} id={e.id}>
+            {eventVisningsNamn(e)}
+          </SelectItem>
+        ))}
+      </Select>
+
+      <ToggleButtonGroup<Tidsperiod>
+        label="Tidsperiod"
+        spread
+        selectedKey={tidsperiod}
+        onSelectionChange={onTidsperiodChange}
+      >
+        {TIDSPERIOD_VALUES.map((t) => (
+          <ToggleButton key={t} id={t} size="sm">
+            {TIDSPERIOD_LABEL[t]}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+    </div>
+  );
+}
+
+/**
+ * Aktivitetshistoriken (TASK-201.6) — GLOBAL, cursor-paginerad LÄS-vy, med
+ * filterraden (TASK-201.8, B-målet — kategori/event/tidsperiod).
  * Nås via Mer (mobil/platta, AC #2 — `/mer/`-index) och via länk/route på
  * desktop (hem-spaltens "Se all aktivitetshistorik", TASK-201.7, OBYGGD —
  * routen är redan reachable oavsett, `/mer/aktivitetshistorik`).
  *
+ * FILTRENS URL-STATE (TASK-201.8 AC #4 — prövat mot URL-STATE-SPEC:s mönster,
+ * inte antaget): specens `/event`-avsnitt är den EXAKTA precedenten — fria
+ * dropdown-värden (`typ`/`ort`) som `parseAsString`, en enum-begränsad
+ * dropdown (`status`) som `parseAsStringEnum`, en ToggleButtonGroup
+ * (`period`) som `parseAsStringEnum().withDefault(...)`, samtliga
+ * `history: 'push'` (delbart + back-bart). Denna vy speglar formen 1:1:
+ * `?kategori` (enum, nollbar), `?event` (fri sträng, nollbar — eventId-
+ * mängden är datadriven precis som `?typ`/`?ort`), `?tidsperiod` (enum,
+ * `.withDefault('allt')` — "Allt" ger en REN URL, `clearOnDefault`-
+ * beteendet). UTFALL: specens mönster bar filtret rakt av, inget nytt
+ * URL-idiom behövdes.
+ *
  * A11y (11/10, speglar MailLog/PersonsList):
  * - `<h1>` = "Aktivitetshistorik"; fokus dit när data anlänt ([] är giltigt
- *   laddat → fokus ändå, AC #3).
+ *   laddat → fokus ändå, AC #3). ENDAST vid FÖRSTA lyckade hämtningen
+ *   (`announceRef`-spärren) — ett filterbyte flyttar ALDRIG fokus bort från
+ *   kontrollen Lotta just använde.
+ * - Filterraden (kategori/event-Select + tidsperiod-ToggleButtonGroup) är
+ *   fullt tangentbordsnavigerbar via primitivernas egen React Aria-mekanik
+ *   (piltangenter/Enter/Escape i Select; piltangenter/Enter/Space i
+ *   ToggleButtonGroup) — se primitivernas egna a11y-stycken.
  * - Dagsgrupper som RIKTIGA `<h2>`-rubriker (rubrikstruktur, AC #4) —
  *   speglar `EventsList.tsx`s månadsgruppering.
  * - Landmärket är skalets `<main>` (AppShell) — ingen egen inre landmark
@@ -254,8 +464,59 @@ export function AktivitetsHistorik() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const announceRef = useRef(false);
 
+  // Filtervalen (TASK-201.8, URL-STATE-SPEC §Event-mönstret — se
+  // komponentens egen kommentar ovan för avstämningen mot specen).
+  const [kategori, setKategori] = useQueryState(
+    'kategori',
+    parseAsStringEnum(KATEGORI_VALUES).withOptions({ history: 'push' }),
+  );
+  const [eventId, setEventId] = useQueryState(
+    'event',
+    parseAsString.withOptions({ history: 'push' }),
+  );
+  const [tidsperiod, setTidsperiod] = useQueryState(
+    'tidsperiod',
+    parseAsStringEnum(TIDSPERIOD_VALUES).withDefault('allt').withOptions({ history: 'push' }),
+  );
+
+  // `from` beräknas ENDAST om `tidsperiod` faktiskt ändras (useMemo keyad på
+  // den ensam) — INTE varje render. `Date.now()` inline i queryKeyen hade
+  // gett en NY sträng (och därmed ny cache-post/refetch) varje render;
+  // samma disciplin som `EventsList.tsx`/`EventValjare.tsx`s `idagStart`.
+  const from = useMemo(() => tidsperiodFran(tidsperiod, Date.now()), [tidsperiod]);
+  const kategoriIri = kategori ? ACTIVITY_OBJECT_TYPES[kategori] : undefined;
+
   const { data, isPending, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useActivityLogHistory();
+    useActivityLogHistory({ category: kategoriIri, eventId: eventId ?? undefined, from });
+
+  // Event-dropdownens alternativ — delar queryKey med EventValjare/EventsList
+  // (varm cache vid navigering från Event; se FilterRad-komponentens huvud).
+  const dataSource = useDataSource();
+  const { data: eventsData, isPending: eventerLaddar } = useQuery({
+    queryKey: queryKeys.events.list,
+    queryFn: () => dataSource.fetchEvents(),
+  });
+  const eventOptions = useMemo(
+    () =>
+      [...(eventsData ?? [])].sort((a, b) =>
+        eventVisningsNamn(a).localeCompare(eventVisningsNamn(b), 'sv'),
+      ),
+    [eventsData],
+  );
+
+  const filterAktiv = kategori != null || eventId != null || tidsperiod !== 'allt';
+  const rensaFilter = () => {
+    setKategori(null);
+    setEventId(null);
+    setTidsperiod(null);
+    // Filterraden stannar monterad (keepPreviousData), men RESULTATLISTAN
+    // byts ut under fötterna på "Rensa filter"-knappen (den unmountas med
+    // tomläget) — flytta fokus till den stabila h1:an i stället för att
+    // låta det falla till <body> (samma stabila-ankare-princip som
+    // EventsList.tsx:s `filterKnappRef`, fast anpassad: den raden HAR ingen
+    // egen tratt-knapp — filterraden är alltid synlig, AC #1).
+    headingRef.current?.focus();
+  };
 
   const statements = data?.pages.flatMap((page) => page.statements) ?? [];
 
@@ -337,23 +598,59 @@ export function AktivitetsHistorik() {
         </h1>
       </header>
 
+      {/* Filterraden (AC #1) — OVANFÖR listan, alltid synlig (ingen
+          disclosure/tratt-panel; alla tre kontroller är redan i sikte). */}
+      <FilterRad
+        kategori={kategori}
+        onKategoriChange={setKategori}
+        eventId={eventId}
+        eventOptions={eventOptions}
+        eventerLaddar={eventerLaddar}
+        onEventChange={setEventId}
+        tidsperiod={tidsperiod}
+        onTidsperiodChange={setTidsperiod}
+      />
+
       {total === 0 ? (
-        // AC #3 — TOMLÄGE FÖRSTA GÅNGEN: vänligt, på Lotta-språket (Gunilla-
-        // principen). Systemet är nytt, inte trasigt (speglar MailLog/
-        // PersonsList k11). Ett kolon ersätter det illustrativa långa
-        // tankstrecket i den ursprungliga FEATURE-ACTIVITY-LOG.md-copyn —
-        // samma check-langa-streck-skäl som radens "·"-separator ovan.
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex flex-col items-center gap-1 py-12 text-center"
-        >
-          <p className="font-medium text-body">Ingen aktivitet ännu</p>
-          <p className="max-w-md text-small text-text-muted">
-            Här kommer du snart se allt du gör i appen: betalningar, bekräftelser, mail och mer.
-            Allt sparas automatiskt, så du aldrig behöver undra vad som hände.
-          </p>
-        </div>
+        filterAktiv ? (
+          // AC #2 — TOMLÄGE FÖR FILTRERAT NOLLRESULTAT: SKILT från
+          // första-gången-tomläget nedan (annan text, annan handling —
+          // "Rensa filter" i stället för det lugna välkomstbudskapet).
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex flex-col items-center gap-2 py-12 text-center"
+          >
+            <p className="font-medium text-body">Inga träffar med det filtret</p>
+            <p className="max-w-md text-small text-text-muted">
+              Prova ett annat filter, eller rensa för att se allt.
+            </p>
+            <AriaButton
+              onPress={rensaFilter}
+              className="rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+            >
+              Rensa filter
+            </AriaButton>
+          </div>
+        ) : (
+          // AC #3 (TASK-201.6) — TOMLÄGE FÖRSTA GÅNGEN: vänligt, på Lotta-
+          // språket (Gunilla-principen). Systemet är nytt, inte trasigt
+          // (speglar MailLog/PersonsList k11). Ett kolon ersätter det
+          // illustrativa långa tankstrecket i den ursprungliga
+          // FEATURE-ACTIVITY-LOG.md-copyn — samma check-langa-streck-skäl
+          // som radens "·"-separator ovan.
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex flex-col items-center gap-1 py-12 text-center"
+          >
+            <p className="font-medium text-body">Ingen aktivitet ännu</p>
+            <p className="max-w-md text-small text-text-muted">
+              Här kommer du snart se allt du gör i appen: betalningar, bekräftelser, mail och mer.
+              Allt sparas automatiskt, så du aldrig behöver undra vad som hände.
+            </p>
+          </div>
+        )
       ) : (
         <>
           <p
