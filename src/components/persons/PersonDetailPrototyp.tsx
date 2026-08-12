@@ -89,21 +89,48 @@ function telHref(nummer: string): string {
 }
 
 /**
- * Hela KALENDERDAGAR mellan två tidpunkter — inte 24-timmarsblock.
+ * Erbjudandets NAMN, eller null när det inte finns något.
  *
- * "för 2 dagar sedan" ska betyda "i förrgår", inte "för minst 48 timmar
- * sedan": en händelse i går kväll och en i går morse är båda "i går" för
- * Lotta. Samma räkning som basens `Dagar sedan senaste interaktion` gör,
- * men här räknad mot den händelse vyn FAKTISKT visar (se `senasteHandelse`
- * i variant D) i stället för mot ett fält som kan peka på en annan.
+ * `Touchpoints.Erbjudande` är en singleSelect vars tredje val är den generiska
+ * catch-allen `"Annat"` (live-verifierat mot schemat 2026-08-12: choices är
+ * `Meditationen Kraftfältet`, `Pyramidernas Vajrar`, `Annat`). Marcus
+ * 2026-08-12: *"Ta bort 'Annat' - vi har inget som heter Annat."* Värdet är
+ * inte ett erbjudandes namn utan frånvaron av ett, och behandlas därför som
+ * saknat — precis som `null`.
+ *
+ * Basens egen `TP sammanfattning`-formel gör samma sak fel ("Hämtade Annat")
+ * och är en T16-maximeringskandidat; den lappas INTE härifrån.
  */
-function dagarMellan(franMs: number, tillMs: number): number {
-  const fran = new Date(franMs);
-  const till = new Date(tillMs);
-  fran.setHours(0, 0, 0, 0);
-  till.setHours(0, 0, 0, 0);
-  return Math.round((till.getTime() - fran.getTime()) / 86_400_000);
+function erbjudandeNamn(erbjudande: string | null): string | null {
+  return erbjudande && erbjudande !== 'Annat' ? erbjudande : null;
 }
+
+/**
+ * Dagar-kvar-pillens tre exakta former — IDENTISKA med `EventCard.tsx:102`
+ * och `NastaEventCard.tsx:34` (Hem-kortets K10-facit): "Idag" / "1 dag kvar" /
+ * "N dagar kvar". `Math.round` absorberar tidszons-offseten mellan
+ * datumsträngens UTC-midnatt och lokal midnatt (|offset| < 12 h).
+ *
+ * Medvetet KOPIERAD, inte importerad: de två befintliga bärarna duplicerar
+ * redan varandra, och att lyfta ut en delad hjälpare ur en PROTOTYP vore att
+ * låta prototypen diktera bibliotekskodens form. Konsolideringen hör till
+ * promoveringen (ADR-103), inte hit.
+ */
+function dagarKvarText(startMs: number, nuMs: number): string {
+  const idag = new Date(nuMs);
+  idag.setHours(0, 0, 0, 0);
+  const dagar = Math.round((startMs - idag.getTime()) / 86_400_000);
+  if (dagar <= 0) return 'Idag';
+  return dagar === 1 ? '1 dag kvar' : `${dagar} dagar kvar`;
+}
+
+/*
+ * `dagarMellan` RIVEN 2026-08-12. Den räknade kalenderdagar BAKÅT för raden
+ * "Senast för N dagar sedan: …" i "Just nu" — en rad som försvann samma dag
+ * när blocket byggdes om till att bära bara aktiva anmälningar (Marcus:
+ * *"Du blandar historik och aktuellt"*). Ingen annan konsument fanns; en
+ * hjälpare utan anrop är död kod, inte en tillgång i beredskap.
+ */
 
 /**
  * Sammansatt visningsnamn — IDENTISK med skarpa vyns (PersonDetail.tsx:16-23).
@@ -851,6 +878,7 @@ function byggStrom(
 ): {
   poster: StromPost[];
   oplacerade: string[];
+  registrerad: StromPost | null;
 } {
   const poster: StromPost[] = [];
   const oplacerade: string[] = [];
@@ -880,14 +908,22 @@ function byggStrom(
       rubrik: grupp.rubrik,
       meta: [grupp.ort, grupp.typ].filter(Boolean).join(' · ') || null,
       prickKlass: farg.bgClass,
-      pillar: grupp.poster.map((entry) => {
-        const lage = narvarolage(entry, nuMs);
-        return {
-          id: entry.id,
-          text: sessionsEtikett(entry, lage),
-          ton: (lage === 'kommande' ? 'kommande' : 'neutral') as PillTon,
-        };
-      }),
+      // KOMMANDE POSTER BÄR INGA SESSIONS-PILLAR. "Dag 1 · Kommande" på ett
+      // event som inte hänt säger ingenting utöver vad rubriken "Kommande"
+      // och datumet redan sagt — närvaron är inte ett utfall än, den är en
+      // tom platshållare (Marcus 2026-08-12: *"Ingen 'Dag 1 - kommande' pill
+      // på kommande-händelsen, så ologiskt och fult"*). Historiska poster
+      // behåller sina pillar: där ÄR närvaron ett utfall.
+      pillar: kommande
+        ? []
+        : grupp.poster.map((entry) => {
+            const lage = narvarolage(entry, nuMs);
+            return {
+              id: entry.id,
+              text: sessionsEtikett(entry, lage),
+              ton: (lage === 'kommande' ? 'kommande' : 'neutral') as PillTon,
+            };
+          }),
     });
   }
 
@@ -976,7 +1012,10 @@ function byggStrom(
     // hamnar bland de oplacerade i stället för att tappas.
     for (const h of person.hamtningar) {
       const tid = h.datum ? Date.parse(h.datum) : Number.NaN;
-      const rubrik = h.erbjudande ?? h.typ ?? 'Okänd hämtning';
+      // Namnlöst erbjudande (`null` eller catch-allen "Annat") får handlingen
+      // som rubrik i stället för ett påhittat namn — se `erbjudandeNamn`.
+      const namn = erbjudandeNamn(h.erbjudande);
+      const rubrik = namn ?? 'Hämtade ett erbjudande';
       if (!Number.isFinite(tid)) {
         oplacerade.push(rubrik);
         continue;
@@ -987,9 +1026,9 @@ function byggStrom(
         slag: 'hamtning',
         kommande: false,
         rubrik,
-        // `typ` förklarar en post vars `erbjudande` är null (alla touchpoints
-        // är inte hämtningar) — visas bara när den tillför något.
-        meta: h.erbjudande && h.typ ? h.typ : 'Hämtade ett erbjudande',
+        // Meta upprepar inte rubriken: bara den namngivna posten behöver
+        // förklaras med vad som faktiskt hände.
+        meta: namn ? 'Hämtade ett erbjudande' : null,
         prickKlass: 'bg-text-muted',
         pillar: [],
       });
@@ -1015,23 +1054,43 @@ function byggStrom(
     }
   }
 
-  // 4. Strömmens början.
+  // 4. STRÖMMENS BÖRJAN — returneras SEPARAT, inte som en post bland andra.
+  //
+  // "Kom in i registret" är per definition det FÖRSTA som hänt personen, och
+  // ska stå längst ned i en nyast-överst-ström (Marcus 2026-08-12: *"'Kom in
+  // i registret' måste ju för guds skull vara den absolut första
+  // händelsen!!"*). Sorterad på sitt eget datum hamnade den mitt i strömmen:
+  // `Personer.Rad skapad` är radens födelse i AIRTABLE, inte personens första
+  // kontakt, och på backfillad/seedad data är det ofta senare än händelserna
+  // raden beskriver. Mätt på Sofia Isaksson 2026-08-12: `radSkapad`
+  // 2026-08-10 medan hennes första anmälan är från 2025-07-20 — registret
+  // hamnade näst överst, före allt hon faktiskt gjort.
+  //
+  // Att i stället FLYTTA tidsstämpeln till den äldsta händelsen vore att
+  // hitta på ett datum. Posten behåller därför sitt riktiga datum men lämnar
+  // den kronologiska sorteringen och år-grupperingen helt: den renderas som
+  // strömmens avslutande rad, vilket är sant både när `radSkapad` är korrekt
+  // och när den är en artefakt.
   const skapadTid = person.radSkapad ? Date.parse(person.radSkapad) : Number.NaN;
+  let registrerad: StromPost | null = null;
   if (Number.isFinite(skapadTid)) {
-    lagg({
+    const d = new Date(skapadTid);
+    registrerad = {
       id: 'registrerad',
       tidMs: skapadTid,
+      ar: d.getFullYear(),
+      datumText: DATUM_KORT.format(d),
       slag: 'registrerad',
       kommande: false,
       rubrik: 'Kom in i registret',
       meta: null,
       prickKlass: 'bg-border-strong',
       pillar: [],
-    });
+    };
   }
 
   poster.sort((a, b) => b.tidMs - a.tidMs);
-  return { poster, oplacerade };
+  return { poster, oplacerade, registrerad };
 }
 
 /** En post i strömmen — rälsen ritas med absolut linje + prick per post. */
@@ -1080,9 +1139,16 @@ function StromRad({ post, sist }: { post: StromPost; sist: boolean }) {
  */
 function VariantC({ person, nuMs }: { person: PersonDetailType; nuMs: number }) {
   // 'rollup' MED AVSIKT — C:s hela poäng är att visa vad EF:en INTE levererade.
-  const { poster, oplacerade } = byggStrom(person, nuMs, 'rollup');
+  const { poster, oplacerade, registrerad } = byggStrom(person, nuMs, 'rollup');
+  // C SORTERAR IN registreringsposten som förr. `byggStrom` returnerar den
+  // separat sedan 2026-08-12 (D renderar den som avslutande rad, se steg 4),
+  // men C är en jämförelseyta som ska förbli ORÖRD — att tyst tappa en post
+  // här vore en regression i det underlag D jämförs mot.
   const kommande = poster.filter((p) => p.kommande);
-  const historiska = poster.filter((p) => !p.kommande);
+  const historiska = [
+    ...poster.filter((p) => !p.kommande),
+    ...(registrerad ? [registrerad] : []),
+  ].sort((a, b) => b.tidMs - a.tidMs);
   const flag = flaggor(person);
 
   // År-grupperna över de historiska posterna (strömmen är redan sorterad).
@@ -1296,7 +1362,7 @@ function flaggorD(person: PersonDetailType): string[] {
 function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) {
   // 'poster' — D konsumerar EF-utökningens riktiga Touchpoint- och
   // Anmälnings-poster (`#1149`), aldrig rollup-strängarna.
-  const { poster, oplacerade } = byggStrom(person, nuMs, 'poster');
+  const { poster, oplacerade, registrerad } = byggStrom(person, nuMs, 'poster');
   // KOMMANDE SORTERAS STIGANDE — närmast i tiden först. `poster` är datum-DESC,
   // vilket är rätt för historik och FEL för framtid: med tre kommande event
   // hade det som ligger längst bort hamnat överst under rubriken "Kommande".
@@ -1305,6 +1371,15 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
   const kommande = poster.filter((p) => p.kommande).sort((a, b) => a.tidMs - b.tidMs);
   const historiska = poster.filter((p) => !p.kommande);
   const grupper = grupperaPerEvent(person.historik);
+  // AKTIVA ANMÄLNINGAR — "Just nu"-blockets hela innehåll (Marcus 2026-08-12).
+  // Aktiv = anmäld till ett event som INTE hänt än. Basens `Antal anmälningar
+  // (aktiva)` duger inte: den räknar allt som inte avbokats, inklusive
+  // genomförda event (4 för Sofia Isaksson, varav tre är historik) — och att
+  // lista dem under "Just nu" vore precis den historik/nu-blandning blocket
+  // byggdes om för att bli av med. Stigande: närmast först.
+  const aktivaAnmalningar = grupper
+    .filter((g) => g.tidMs && g.tidMs > nuMs)
+    .sort((a, b) => a.tidMs - b.tidMs);
   // B4 ÄR HISTORIK. Ett kommande event hör i strömmens "Kommande"-sektion —
   // under rubriken "Eventhistorik" (aria-label "senaste först") påstod det att
   // personen deltagit på något som inte hänt. Mätt på Sofia Isaksson
@@ -1312,35 +1387,9 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
   // ÖVERST i listan. Datumlösa grupper (`tidMs` 0) behålls — de kan inte
   // klassas som framtid, och att tappa dem vore data-förlust.
   const historikGrupper = grupper.filter((g) => !g.tidMs || g.tidMs <= nuMs);
-  // NÄSTA EVENT härleds ur strömmen, INTE ur `person.nastaEvent`. Det fältet
-  // (`Nästa event (text)`) är null i varje mätning — även för en person som
-  // bevisligen HAR ett kommande event (Sofia Isaksson 2026-08-12: EF-svaret
-  // ger `nastaEvent: null` medan Fjärrskådning 2026-08-18 ligger i historiken).
-  // Blocket stod därför tomt på sin viktigaste uppgift. Samma klass som
-  // `Antal hämtningar`: ett fält vars namn lovar mer än fältet håller.
-  const nastaEvent = kommande.find((p) => p.slag === 'event') ?? null;
-  // SENASTE HÄNDELSE — strömmens färskaste historiska post. Ersätter
-  // `senasteInteraktion`-strängen (§46-klumpen, se byggStrom steg 2).
-  // Tidsordet räknas mot den post vyn FAKTISKT visar, inte mot basens
-  // `Dagar sedan senaste interaktion`: de två kan peka på olika händelser,
-  // och "för 2 dagar sedan: <något som hände i går>" är värre än inget tal.
-  //
-  // `registrerad` EXKLUDERAS. Raden svarar på "vad gjorde personen senast",
-  // och att en rad föddes i Airtable är ingen handling personen utfört. Felet
-  // var osynligt fram till EF-deployen 2026-08-12: så länge anmälningarna bar
-  // `Rad skapad` låg de på samma sekund som registreringen och vann på
-  // sorteringens stabilitet. Med riktiga `Inskickad`-datum flyttade de bakåt i
-  // tiden och blottade posten under — "Senast för 2 dagar sedan: Kom in i
-  // registret", medan personen faktiskt anmälde sig till Fjärrskådning
-  // 7 augusti. En fix som avslöjar nästa fel har gjort sitt jobb.
-  const senasteHandelse = historiska.find((p) => p.slag !== 'registrerad') ?? null;
-  const senastDagar = senasteHandelse ? dagarMellan(senasteHandelse.tidMs, nuMs) : 0;
-  const senastNar =
-    senastDagar <= 0 ? 'i dag' : senastDagar === 1 ? 'i går' : `för ${senastDagar} dagar sedan`;
   // Anmälningar utan motiveringstext bär ingenting att visa — se B6-noten.
   const motiveringar = person.motiveringar.filter((m) => m.motivering);
   const flag = flaggorD(person);
-  const aktiv = person.harAktivAnmalan === 'Aktiv';
 
   const arGrupper: { ar: number; poster: StromPost[] }[] = [];
   for (const post of historiska) {
@@ -1351,8 +1400,10 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
 
   const kortKlass =
     'rounded-2xl border border-transparent bg-bg-muted px-4 py-4 contrast-more:border-border-strong';
-  const radKlass =
-    '-mx-2 flex w-auto items-center gap-3 rounded-lg px-2 py-3 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
+  // Hover-ytan går kant-i-kant med kortet (`-mx-4 px-4`); avdelaren sitter på
+  // `<li>` ovanför och behåller därför samma indrag som övriga block.
+  const kontaktRadKlass =
+    '-mx-4 flex items-center gap-3 px-4 py-3.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
 
   return (
     <>
@@ -1377,36 +1428,40 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
         </h2>
         <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
           {person.email || person.telefon ? (
-            <div className="flex flex-col py-1.5">
+            // AVDELARE MELLAN RADERNA, som alla andra block i appen (Marcus
+            // 2026-08-12). `divide-y` sitter på LISTAN, så linjen får samma
+            // indrag som eventhistorikens och motiveringarnas — medan
+            // hover-ytan tar `-mx-4 px-4` och går kant-i-kant med kortet.
+            // Underrubrikerna "Skicka mail"/"Ring" är borta: ikonen och
+            // värdet säger redan vad raden gör.
+            <ul className="flex flex-col divide-y divide-border">
               {person.email && (
-                <a href={`mailto:${person.email}`} className={radKlass}>
-                  <Mail aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate">{person.email}</span>
-                    <span className="font-normal text-small text-text-muted">Skicka mail</span>
-                  </span>
-                  <ChevronRight
-                    aria-hidden="true"
-                    size={18}
-                    className="shrink-0 text-text-secondary"
-                  />
-                </a>
+                <li>
+                  <a href={`mailto:${person.email}`} className={kontaktRadKlass}>
+                    <Mail aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
+                    <span className="min-w-0 flex-1 truncate">{person.email}</span>
+                    <ChevronRight
+                      aria-hidden="true"
+                      size={18}
+                      className="shrink-0 text-text-secondary"
+                    />
+                  </a>
+                </li>
               )}
               {person.telefon && (
-                <a href={telHref(person.telefon)} className={radKlass}>
-                  <Phone aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate">{person.telefon}</span>
-                    <span className="font-normal text-small text-text-muted">Ring</span>
-                  </span>
-                  <ChevronRight
-                    aria-hidden="true"
-                    size={18}
-                    className="shrink-0 text-text-secondary"
-                  />
-                </a>
+                <li>
+                  <a href={telHref(person.telefon)} className={kontaktRadKlass}>
+                    <Phone aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
+                    <span className="min-w-0 flex-1 truncate">{person.telefon}</span>
+                    <ChevronRight
+                      aria-hidden="true"
+                      size={18}
+                      className="shrink-0 text-text-secondary"
+                    />
+                  </a>
+                </li>
               )}
-            </div>
+            </ul>
           ) : (
             <p className="py-3 text-small text-text-muted">Inga kontaktuppgifter registrerade.</p>
           )}
@@ -1415,81 +1470,106 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
               Personen har tackat nej till mailutskick - mejla bara personligt.
             </p>
           )}
+          {/* COMMUNITY-STATUSARNA bodde i "Just nu" fram till ombyggnaden
+              2026-08-12. De är varken historik eller nuläge utan en KANAL —
+              samma klass som mail och telefon — och hör därför hemma här.
+              Utan flytten hade de tappats tyst när blocket rensades, vilket
+              är en sämre sorts förenkling än den Marcus bad om. */}
+          {flag.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 py-3">
+              {flag.map((f) => (
+                <Pill key={f} paKortyta={false}>
+                  {f}
+                </Pill>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* B8 — JUST NU, under kontakten. Marcus: "det kan se ut som det i proto-b
-          fast mycket snyggare". Substansen är problemet i b, inte formen:
-          basfältet `nastaEvent` är ALLTID null i drift, så b:s kort bär i
-          praktiken en enda rad. D fyller det med det som FAKTISKT finns —
-          erfarenhetsbadgen, flaggorna, engagemanget i tal, och nästa event
-          HÄRLETT ur strömmen i stället för ur det döda fältet (se
-          `nastaEvent`-härledningen ovan) — och håller tintningen som säger
-          "detta gäller nu".
+      {/* B8 — JUST NU. OMBYGGT FRÅN GRUNDEN 2026-08-12 på Marcus dom: *"Just
+          nu blocket fattar man ingenting av… ologiskt på så många sätt… Du
+          blandar historik och aktuellt."* Han hade rätt — blocket bar
+          erfarenhetsbadge, totalt antal anmälningar, antal genomförda event
+          och "senast för N dagar sedan". Fyra av fem rader var HISTORIK, i
+          ett block vars rubrik lovar nuläge.
 
-          ORTEN står medvetet INTE här, till skillnad från vad denna rad
-          påstod fram till 2026-08-12: `Personer.Ort` är en rollup över
-          personens ANMÄLNINGAR, inte en hemort ("man kan väl inte bo på mer
-          än en plats?", Marcus 2026-08-10 — premissen revs i Del 4). */}
+          KVAR STÅR EXAKT DET HAN BAD OM: antalet aktiva anmälningar, och de
+          eventen listade med dagar-kvar-pill per rad.
+
+          "Aktiv" = anmäld till ett event som INTE hänt än (se
+          `aktivaAnmalningar`). Basens `Antal anmälningar (aktiva)` räknar allt
+          som inte avbokats, genomförda event inkluderade — att lista dem här
+          vore samma blandning om igen.
+
+          FLYTTAT, INTE BORTTAGET: flaggan bor i eget block nedanför (den är
+          en anteckning om personen, varken historik eller nuläge), och
+          erfarenhetsbadgen står nu vid Eventhistoriken — den SAMMANFATTAR
+          just den historiken ("Resenär steg 1–2" = genomförda RIM-steg). */}
       <section aria-labelledby="proto-d-nulage" className="flex min-w-0 flex-col gap-2">
         <h2 id="proto-d-nulage" className="px-4 font-semibold text-lg">
           Just nu
         </h2>
         <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-primary-tint px-4 py-4 contrast-more:border-border-strong">
-          <div className="flex flex-wrap items-center gap-2">
-            {aktiv ? <Pill ton="aktiv">Aktiv anmälan</Pill> : <Pill>Ingen aktiv anmälan</Pill>}
-            {person.erfarenhetsbadge && <Pill>{person.erfarenhetsbadge}</Pill>}
-            {flag.map((f) => (
-              <Pill key={f}>{f}</Pill>
-            ))}
-          </div>
-
-          {/* ENGAGEMANGET I TAL. B6 filtrerar bort anmälningar utan motivering
-              och motiverar det med att "antalet anmälningar står i Just nu" —
-              vilket det inte gjorde förrän nu. Utan talet är filtret
-              omotiverat och en person med sex anmälningar och en motivering
-              ser ut att ha anmält sig en gång. */}
-          <p className="text-small text-text-secondary tabular-nums">
-            {[
-              `${person.antalAnmalningar} ${person.antalAnmalningar === 1 ? 'anmälan' : 'anmälningar'}`,
-              `${person.antalGenomfordaEvent} ${person.antalGenomfordaEvent === 1 ? 'genomfört event' : 'genomförda event'}`,
-            ].join(' · ')}
-          </p>
-
-          {nastaEvent && (
-            <p className="text-body">
-              <span className="text-text-muted">Nästa: </span>
-              {nastaEvent.rubrik}
-              <span className="text-text-muted">
-                {' · '}
-                {langtDatum(new Date(nastaEvent.tidMs).toISOString())}
-              </span>
-            </p>
+          {aktivaAnmalningar.length > 0 ? (
+            <>
+              <p className="font-semibold text-body">
+                {aktivaAnmalningar.length === 1
+                  ? '1 aktiv anmälan'
+                  : `${aktivaAnmalningar.length} aktiva anmälningar`}
+              </p>
+              <ul className="flex flex-col divide-y divide-border/60">
+                {aktivaAnmalningar.map((grupp) => {
+                  const farg = kursfargForKurs(grupp.kursnamn);
+                  return (
+                    <li key={grupp.nyckel} className="flex items-center gap-3 py-3 first:pt-0">
+                      <span
+                        aria-hidden="true"
+                        className={`w-1 shrink-0 self-stretch rounded-full ${farg.bgClass}`}
+                      />
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="truncate font-semibold text-body">{grupp.rubrik}</span>
+                        <span className="text-small text-text-muted">
+                          {[langtDatum(grupp.datum), grupp.ort].filter(Boolean).join(' · ')}
+                        </span>
+                      </div>
+                      {/* Dagar-kvar PER EVENTRAD (Marcus: *"hur många dagar det
+                          är kvar-pillen ska vara på eventraden också"*).
+                          Formen är EventCard/NastaEventCard-facitets. */}
+                      <Pill ton="kommande">{dagarKvarText(grupp.tidMs, nuMs)}</Pill>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          ) : (
+            <p className="text-body">Inga aktiva anmälningar.</p>
           )}
-
-          {senasteHandelse && (
-            <p className="text-small text-text-secondary">
-              Senast {senastNar}: {senasteHandelse.rubrik}
-            </p>
-          )}
-
-          {/* FLAGGAN — Marcus 2026-08-10: *"Manuell flagga är ju bra att kunna
-              skapa här, så den sedan kan 'fästas' på personen typ i check-in
-              vyn"*, förtydligat samma kväll: *"det ska vara en flagga som Lotta
-              själv skriver i fritext … Choice-fältet i basen kan vi skrota."*
-
-              ✅ SKARP SKRIVYTA (`#1151`). Vägen dit gick INTE via en fix av det
-              gamla fältet: `Manuella flagga` (`fldNtwQt6tOCIdf4f`) är en
-              singleSelect med `choices: []` och kunde aldrig sättas
-              (data-model.md §Kända fällor 25, live-ombekräftad). Airtables
-              Meta-API kan varken ändra ett fälts typ eller radera det, så
-              fältet AVLÖSTES av ett nytt `Flagga` (singleLineText) i båda
-              baserna. `manuellFlagga` finns kvar i shapen men läses inte här. */}
-          <div className="border-border/60 border-t pt-3">
-            <PersonFlagEditor personId={person.id} flagga={person.flagga} />
-          </div>
         </div>
       </section>
+
+      {/* FLAGGAN — eget block sedan 2026-08-12. Marcus 2026-08-10: *"Manuell
+          flagga är ju bra att kunna skapa här, så den sedan kan 'fästas' på
+          personen typ i check-in vyn"*, förtydligat samma kväll: *"det ska
+          vara en flagga som Lotta själv skriver i fritext … Choice-fältet i
+          basen kan vi skrota."*
+
+          Den låg i "Just nu" fram till ombyggnaden. Den flyttade INTE för att
+          den var fel — den är varken historik eller nuläge utan en anteckning
+          om personen, och "Just nu" bär nu bara de aktiva anmälningarna.
+
+          ✅ SKARP SKRIVYTA (`#1151`). Vägen dit gick INTE via en fix av det
+          gamla fältet: `Manuella flagga` (`fldNtwQt6tOCIdf4f`) är en
+          singleSelect med `choices: []` och kunde aldrig sättas
+          (data-model.md §Kända fällor 25, live-ombekräftad). Airtables
+          Meta-API kan varken ändra ett fälts typ eller radera det, så fältet
+          AVLÖSTES av ett nytt `Flagga` (singleLineText) i båda baserna.
+          `manuellFlagga` finns kvar i shapen men läses inte här. */}
+      <Sektion id="proto-d-flagga" rubrik="Flagga">
+        <div className="py-3">
+          <PersonFlagEditor personId={person.id} flagga={person.flagga} />
+        </div>
+      </Sektion>
 
       {/* B3 — INTERAKTIONER: c:s tidslinje, formen oförändrad (Marcus: "exakt
           som proto-c, det var jättesnyggt och tydligt"). Rubriken är hans ord.
@@ -1502,7 +1582,10 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
         <h2 id="proto-d-strom" className="px-4 font-semibold text-lg">
           Interaktioner
         </h2>
-        {poster.length > 0 ? (
+        {/* `|| registrerad` — en person utan en enda interaktion har ändå
+            kommit in i registret; tomtillståndet nedan gäller bara den som
+            saknar BÅDA. */}
+        {poster.length > 0 || registrerad ? (
           <div className={`flex flex-col gap-4 ${kortKlass}`}>
             {kommande.length > 0 && (
               <div className="flex flex-col gap-2">
@@ -1526,6 +1609,16 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                 </ol>
               </div>
             ))}
+            {/* STRÖMMENS SISTA RAD — alltid, oavsett datum. Se byggStrom
+                steg 4 för varför posten står utanför år-grupperingen:
+                `Rad skapad` är radens födelse i Airtable, inte personens
+                första kontakt, och sorterad på sitt eget datum hamnade
+                "Kom in i registret" mitt i strömmen. */}
+            {registrerad && (
+              <ol className="flex flex-col">
+                <StromRad post={registrerad} sist />
+              </ol>
+            )}
             {oplacerade.length > 0 && (
               <ul className="flex flex-col gap-1 border-border border-t pt-3">
                 {oplacerade.map((post) => (
@@ -1555,9 +1648,17 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           men en aria-label som lovar "senaste först" ska inte vila på en
           annan tjänsts sorteringsval). */}
       <section aria-labelledby="proto-d-eventhistorik" className="flex min-w-0 flex-col gap-2">
-        <h2 id="proto-d-eventhistorik" className="px-4 font-semibold text-lg">
-          Eventhistorik
-        </h2>
+        <div className="flex flex-wrap items-center gap-2 px-4">
+          <h2 id="proto-d-eventhistorik" className="font-semibold text-lg">
+            Eventhistorik
+          </h2>
+          {/* ERFARENHETSBADGEN bodde i "Just nu" fram till ombyggnaden
+              2026-08-12. Den är en SAMMANFATTNING av just den här listan
+              ("Resenär steg 1–2" = genomförda RIM-steg) — alltså historik,
+              vilket är precis varför den inte hörde hemma under en rubrik som
+              lovar nuläge. */}
+          {person.erfarenhetsbadge && <Pill paKortyta={false}>{person.erfarenhetsbadge}</Pill>}
+        </div>
         {historikGrupper.length > 0 ? (
           <ul
             aria-label="Eventhistorik, senaste först"
@@ -1629,14 +1730,19 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                     className="mt-0.5 shrink-0 text-text-secondary"
                   />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    {/* `erbjudande` kan vara null — alla touchpoints är inte
-                          hämtningar. Då bär `typ` raden i stället för att den
-                          renderas namnlös. */}
-                    <span className="text-body">{h.erbjudande ?? h.typ ?? 'Okänd hämtning'}</span>
+                    {/* Namnlöst erbjudande — `null`, eller catch-allen "Annat"
+                        som INTE är ett namn (se `erbjudandeNamn`; Marcus
+                        2026-08-12: *"Ta bort 'Annat' - vi har inget som heter
+                        Annat"*). Raden säger då rakt ut att namnet saknas i
+                        stället för att hitta på ett. `typ` som fallback-rubrik
+                        är också borta: "Angett e-post för att ta del av ett
+                        erbjudande" är en handling, inte ett erbjudandenamn,
+                        och blocket heter "Hämtade erbjudanden". */}
+                    <span className="text-body">
+                      {erbjudandeNamn(h.erbjudande) ?? 'Erbjudande ej angivet'}
+                    </span>
                     <span className="text-small text-text-muted">
-                      {[h.datum ? langtDatum(h.datum) : 'Datum saknas', h.erbjudande && h.typ]
-                        .filter(Boolean)
-                        .join(' · ')}
+                      {h.datum ? langtDatum(h.datum) : 'Datum saknas'}
                     </span>
                   </div>
                 </li>

@@ -101,12 +101,13 @@ export function PersonFlagEditor({ personId, flagga }: PersonFlagEditorProps) {
   if (!isEditing) {
     return (
       <div className="flex flex-col gap-2">
-        {/* ETIKETTEN SAKNADES i läsläget fram till 2026-08-12 — "Flagga" fanns
-            bara på `Input` i edit-läget. En satt flagga renderades därför som
-            en naken textmassa med en "Redigera"-knapp under: mätt på Sofia
-            Isaksson stod "Återkommande deltagare, mycket engagerad …" i
-            "Just nu"-kortet utan något som sade VAD texten var. */}
-        <span className="text-caption text-text-muted">Flagga</span>
+        {/* INGEN EGEN ETIKETT HÄR. Läsläget saknade en fram till 2026-08-12
+            (en satt flagga renderades som naken textmassa med en
+            "Redigera"-knapp under, mitt i "Just nu"-kortet) och fick en
+            samma dag — men vid ombyggnaden senare samma dag flyttade
+            komponenten till ett EGET block vars `<h2>Flagga</h2>` bär
+            etiketten. Två skulle vara en dubblett. Flyttas komponenten
+            tillbaka in i ett delat kort måste etiketten återinföras. */}
         {flagga ? (
           <p className="text-small">{flagga}</p>
         ) : (
