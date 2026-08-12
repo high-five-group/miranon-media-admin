@@ -14,11 +14,11 @@
 - region "Flagga":
   - heading "Flagga" [level=2]
   - paragraph: Ingen flagga.
-  - button "Redigera flagga"
+  - button "Redigera flagga": Redigera
 - region "Interaktioner":
   - heading "Interaktioner" [level=2]
   - list:
-    - listitem: /Kom in i registret \d+ sep\./
+    - listitem: Kom in i registret 14 sep.
 - region "Eventhistorik":
   - heading "Eventhistorik" [level=2]
   - paragraph: Ingen eventhistorik ännu
