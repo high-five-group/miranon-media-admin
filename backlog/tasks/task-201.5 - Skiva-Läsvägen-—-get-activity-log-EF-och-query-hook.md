@@ -4,7 +4,7 @@ title: 'Skiva: Läsvägen — get-activity-log-EF och query-hook'
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:24'
-updated_date: '2026-08-12 16:39'
+updated_date: '2026-08-12 16:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -63,4 +63,6 @@ Grindar (denna session, samtliga naket körda, exitkod läst separat från fil):
 Deploy: `supabase functions deploy get-activity-log` mot staging (`pqtshyierkdgwdnxuirz`, verifierat länkat FÖRE varje skarpt anrop). Prod RÖRDES INTE — `.prod-functions-allowlist.conf` orörd (TASK-201.9 äger prod-driftsättningen).
 
 Rörda filer: `supabase/functions/get-activity-log/index.ts` (ny EF), `supabase/config.toml` (verify_jwt-post), `src/domain/schemas/ActivityStatement.schema.ts` + `index.ts` (EVENT_ID_EXTENSION_IRI), `src/domain/types/Filters.ts` + `Pagination.ts` (nya typer), `src/data/adapters/DataSourceAdapter.ts`/`AirtableAdapter.ts`/`SupabaseAdapter.ts` (ny metod), `src/queries/keys.ts` (nya nycklar), `src/data/queries/useActivityLog.ts` (ny hook-fil, ny mapp), `tests/api/get-activity-log.staging.test.ts` (nytt committat test), `supabase/migrations/README.md` (manuell verifieringslogg).
+
+EFTERHANDS-HÄRDNING (samma session, innan PR-armering): det första injektionsprovet i tests/api/get-activity-log.staging.test.ts fångades redan av Date.parse ensamt (verifierat med node -e) och bevisade därför inte regex-radens (/[,()]/.test(occurredAt)) EGNA värde. Hittade och lade till ett andra prov vars occurredAt-del PASSERAR Date.parse (V8 tolererar 'Wed Jan 01 2020 00:00:00 GMT+0000 (extra)' som giltigt datum) men fångas av regexen — empiriskt verifierat både isolerat (node -e) och live mot deployad EF (400) FÖRE testet skrevs. 15/15 gröna efter tillägget (både isolerat och i denna nya körning). Commit 18536191, PR #1215 headRefOid uppdaterad, auto-merge fortsatt armerad (armerades INNAN denna push — GitHub väntar in de nya checkarna på samma armering, ingen ny gh pr merge behövdes).
 <!-- SECTION:NOTES:END -->
