@@ -84,7 +84,75 @@ Från samma session, samma ögonblick:
 igenom. Ingen prövad hypotes förklarar mönstret. Orsaken är **OMÄTT** —
 lämnas öppen med avsikt hellre än att fyllas med en gissning.
 
-## Nästa steg (billigt, kräver bara en omstart)
+> **Uppdaterad senare samma dag:** `~/Desktop`-cellen är nu förklarad — se
+> § ORSAKEN FUNNEN nedan. TCC-kolumnen är dessutom irrelevant, eftersom VS
+> Code bär Full Disk Access. `~/Documents` förblir oförklarad.
+
+## RÖTT SPÅR STÄNGT: macOS TCC är inte mekanismen
+
+`com.microsoft.VSCode` har **Full Disk Access** i systemets TCC-databas
+(`/Library/Application Support/com.apple.TCC/TCC.db`):
+`kTCCServiceSystemPolicyAllFiles = 2`, beviljad `2026-03-19 11:46:36`.
+
+FDA går före per-mapp-behörigheter. **Med den beviljad kan TCC inte vara det
+som nekar dessa kataloger.** Hela TCC-spåret är därmed dött, inte försvagat —
+tabellen ovan är en sann mätning av en mekanism som aldrig var i spel.
+
+Fyndet gjordes av TASK-202-agenten. Orkestrerarens tidigare påstående att
+ingen VS Code-post fanns i system-databasen byggde på en fråga som
+**avkortades med `head -20`** — raden låg utanför de tjugo. Mätfel, inte
+tolkningsfel.
+
+## ORSAKEN FUNNEN: `/add-dir` krymper åtkomsten i stället för att vidga den
+
+Mätt 2026-08-12 med en A→B→A-cykel där båda övergångarna är knutna till en
+workspace-ändring. Prov var 20:e sekund, 30 prov
+(rådata: sessionens scratchpad, `flapp-resultat.txt`).
+
+| Tid | Händelse | `~/Downloads` | `~/Desktop` | `~/Documents` | `~/.zshrc` |
+|---|---|---|---|---|---|
+| före 16:48 | utgångsläge | NEKAD | **OK** (185 poster) | NEKAD | OK |
+| 16:48:37 | **`/add-dir ~/Downloads`** | NEKAD | **NEKAD** | NEKAD | OK |
+| 16:55:14–16:55:34 | prov 1–2 | NEKAD | NEKAD | NEKAD | OK |
+| ~16:55:45 | **`/permissions` — Downloads bort ur workspace** | | | | |
+| 16:55:54–17:04:56 | prov 3–30 (28 st i rad) | NEKAD | **OK** | NEKAD | OK |
+| efter serien | kontrollmätning | NEKAD | **OK** (185 poster) | NEKAD | OK |
+
+Tre slutsatser, var och en direkt ur tabellen:
+
+1. **Att lägga till en katalog i workspace BRÖT åtkomsten till en annan
+   skyddad katalog.** `~/Desktop` gick från läsbar till nekad vid
+   `/add-dir`, och tillbaka till läsbar när posten togs bort — samma
+   poster-antal (185) före och efter.
+2. **`/add-dir` gav ingen åtkomst till katalogen den lade till.**
+   `~/Downloads` var NEKAD i samtliga 30 prov, inklusive hela perioden den
+   låg i workspace. Kommandot tog alltså bara ifrån — det gav ingenting.
+3. **Kontrollytan var stabil.** `~/.zshrc` läsbar i alla 30 prov, så det är
+   inte en generell filsystems-störning utan träffar specifikt de
+   macOS-skyddade katalogerna.
+
+`~/Documents` var nekad i varje läge och är fortfarande **oförklarad**.
+
+### Fällan är kvar och åter-armeras vid nästa sessionsstart
+
+`/permissions` tog bort katalogen ur den LÖPANDE sessionens workspace men
+**skrev inte om filen**: `/Users/marcus/Repon/miranon-media-admin/.claude/settings.local.json`
+bär fortfarande `additionalDirectories: ["/Users/marcus/Downloads"]`, mtime
+oförändrad `16:48:37`. Posten läses sannolikt in igen vid nästa
+sessionsstart och bryter då Desktop på nytt. **Filen behöver redigeras för
+hand** — en worktree-isolerad agent nekas skriva där
+(`Edit the worktree copy of this file instead of the shared-checkout path`),
+vilket också bekräftar att `CLAUDE.md`:s worktree-matris är ofullständig:
+den bokför bara Bash-git som spärrat, men Edit spärras också.
+
+Noterbart: filen ligger i HUVUDKATALOGEN, inte i sessionens worktree — den
+är därmed delad mellan alla sessioner och agenter i repot. En sessions
+`/add-dir` kan alltså ändra en annan sessions filsystems-räckvidd. TASK-202-
+agenten rapporterade oberoende att `~/Desktop` växlade tillstånd i DESS
+session utan känd utlösare under samma tidsfönster; det är förenligt med
+delad-fil-hypotesen men inte bevisat.
+
+## Kvar att pröva (billigt, kräver en omstart)
 
 `2.1.228` installerades 2026-08-12 16:17 (paketets mtime +
 `package.json`). S105 startade 15:59 och kör därför kvar på `2.1.227`; en
