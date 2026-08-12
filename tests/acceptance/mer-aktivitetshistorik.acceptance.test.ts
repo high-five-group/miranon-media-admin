@@ -41,33 +41,48 @@ function testUuid(): string {
 }
 
 /**
- * Lokal tid N dagar bakåt, på angiven timme — relativt fixturvärldens FRUSNA
- * klocka (`hermetic.ts` § `page.clock.setFixedTime(FROZEN_NOW)`), INTE
- * verklig väggklocka. Komponentens `Date.now()` körs i BROWSERN, som fixerats
- * vid FROZEN_NOW innan testet startar — samma "nu" som
- * `events-list-kalender.acceptance.test.ts` etablerar. Ingen egen
- * `setFixedTime` behövs här.
+ * Lokal tid N dagar bakåt (Stockholm-kalenderdag), på angiven svensk
+ * klocktimme — relativt fixturvärldens FRUSNA klocka (`hermetic.ts` §
+ * `page.clock.setFixedTime(FROZEN_NOW)`), INTE verklig väggklocka.
+ * Komponentens `Date.now()` körs i BROWSERN, som fixerats vid FROZEN_NOW
+ * OCH pinnats till `timezoneId: 'Europe/Stockholm'` (playwright.config.ts)
+ * innan testet startar.
+ *
+ * TASK-27-KLASSEN (fälld skarpt i CI, run 31633396902/job 94239278496,
+ * 3/3 — original + två retries, ingen flake): en tidigare version byggde
+ * detta med `new Date(FROZEN_NOW); d.setDate(...); d.setHours(timme, minut)`
+ * — `setDate`/`setHours` tolkas i TEST-PROCESSENS (Node) lokala tidszon, INTE
+ * webbläsarens. På en Mac med `TZ=Europe/Stockholm` som systemdefault
+ * sammanföll de två av en slump (lokal grönhet, fel MILJÖ — inte fel
+ * mätning). I CI kör Node i UTC: `setHours(14, 30)` gav 14:30 UTC = 16:30
+ * CEST i webbläsaren, och `getByText('14:30')` hittade aldrig strängen.
+ *
+ * FIXEN: bygg ISO-strängen med en EXPLICIT `+02:00`-offset via ren
+ * UTC-aritmetik (Date.UTC/getUTCFullYear/getUTCDate) — noll lokala
+ * Date-metoder, alltså noll beroende av VILKEN tidszon Node råkar köra i.
+ * `+02:00` är ärligt för hela fixturvärlden: FROZEN_NOW och samtliga
+ * `dagarBak`-värden denna fil använder (1, 6) ligger i september
+ * (2026-09-09–2026-09-15) — långt före CEST→CET-skiftet i slutet av
+ * oktober, så offset är konstant `+02:00` i hela intervallet.
  */
 function lokalTid(dagarBak: number, timme: number, minut = 0): string {
-  const d = new Date(FROZEN_NOW);
-  d.setDate(d.getDate() - dagarBak);
-  d.setHours(timme, minut, 0, 0);
-  return d.toISOString();
+  const bas = new Date(
+    Date.UTC(FROZEN_NOW.getUTCFullYear(), FROZEN_NOW.getUTCMonth(), FROZEN_NOW.getUTCDate()),
+  );
+  bas.setUTCDate(bas.getUTCDate() - dagarBak);
+  const datum = bas.toISOString().slice(0, 10); // "YYYY-MM-DD", TZ-oberoende
+  const hh = String(timme).padStart(2, '0');
+  const mm = String(minut).padStart(2, '0');
+  return `${datum}T${hh}:${mm}:00+02:00`;
 }
 
-/** N minuter sedan — "Idag"-radens relativa tid, relativt FROZEN_NOW. */
+/** N minuter sedan — "Idag"-radens relativa tid, relativt FROZEN_NOW.
+ * REDAN TZ-säker (ospårad av TASK-27-klassen, samma CI-körning): `getTime()`
+ * är en absolut epok och `.toISOString()` skriver alltid UTC — ingen lokal
+ * Date-metod inblandad. */
 function minuterSedan(n: number): string {
   return new Date(FROZEN_NOW.getTime() - n * 60_000).toISOString();
 }
-
-/** Samma formatterings-options som AktivitetsHistorik.tsx:s LANGDATUM — så
- * testets förväntade grupprubrik alltid matchar komponentens, oavsett vilket
- * kalenderdatum CI faktiskt kör på. */
-const LANGDATUM = new Intl.DateTimeFormat('sv-SE', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
 
 /** Ett komplett xAPI-statement som passerar ActivityStatementSchema. */
 function statement({
@@ -152,7 +167,12 @@ test.describe('Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen)', () => 
     const idagIso = minuterSedan(12);
     const igarIso = lokalTid(1, 14, 30);
     const aldreIso = lokalTid(6, 9, 15);
-    const aldreLabel = LANGDATUM.format(new Date(aldreIso));
+    // Literal, INTE härledd ur AktivitetsHistorik.tsx:s LANGDATUM-formatterare
+    // (tautologi-fällan — en delad formatterare hade fått testet att passera
+    // oavsett vad komponentens kod faktiskt gör). FROZEN_NOW är 2026-09-15;
+    // 6 dagar bakåt (kalenderdag, TZ-oberoende UTC-aritmetik) är 2026-09-09 —
+    // verifierat separat via `node -e "…"` innan denna sträng skrevs in.
+    const aldreLabel = '9 september 2026';
 
     mockActivityLog(network, () => ({
       statements: [
