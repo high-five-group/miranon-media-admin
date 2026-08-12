@@ -23,6 +23,14 @@ const HISTORY_FIELDS = [
   'Närvaropoäng',
   'Event ort',
   'Event typ',
+  // De två länkfälten (S103 2026-08-12) — `/event/$eventId/anmalan/
+  // $registrationId` kräver BÅDA, och persondetaljens kommande-post +
+  // "Just nu"-rader byggs ur historiken, inte ur motiveringarna.
+  // Live-verifierade namn mot staging-schemat samma dag (describe_table
+  // tbldWHH6sSHWoQPHH): `Anmälan` = fldwQdDpRK8vByNhb, `Event` =
+  // fldaj5mbpU3yPw2np. Båda multipleRecordLinks.
+  'Anmälan',
+  'Event',
 ];
 
 // Fält att hämta ur Touchpoints för hämtningarna (S103 steg 2). Live-schema
@@ -126,6 +134,19 @@ function asNumber(val: unknown): number {
   return typeof val === 'number' ? val : 0;
 }
 
+/**
+ * FÖRSTA record-ID:t ur ett multipleRecordLinks-fält, annars null.
+ *
+ * Fälten den läser (`Deltaganden.Event`/`Anmälan`, `Anmälningar.Event`) är
+ * alla multipleRecordLinks i schemat men bär i praktiken ETT mål per rad
+ * (`prefersSingleRecordLink`). Airtable UTELÄMNAR tomma länkfält helt ur
+ * API-svaret — därav `Array.isArray`-grinden före indexeringen; en saknad
+ * länk får aldrig bli `undefined` i svaret (schemat kräver `string | null`).
+ */
+function firstLinkId(val: unknown): string | null {
+  return Array.isArray(val) && typeof val[0] === 'string' ? val[0] : null;
+}
+
 /** Mappar en Deltaganden-rad → en kurshistorik-post (PersonHistoryEntry-form). */
 function mapHistoryEntry(record: { id: string; fields: Fields }) {
   const f = record.fields;
@@ -143,6 +164,15 @@ function mapHistoryEntry(record: { id: string; fields: Fields }) {
     narvaro: f['Närvaropoäng'] === 1,
     ort: scalarString(f['Event ort']),
     typ: scalarString(f['Event typ']),
+    // De TVÅ länkmåls-halvorna. Samma FÖRSTA-elementet-idiom som
+    // mapMotiveringEntry's `eventId` nedan: fälten är multipleRecordLinks men
+    // bär i praktiken ETT event resp. EN anmälan per Deltagande-rad
+    // (Deltaganden = "en rad per Anmälan × Session", data-model.md §86).
+    // Null när länken saknas → vyn renderar raden oklickbar i stället för att
+    // bygga en halv route. Mätt i staging 2026-08-12: conformance-fixturen
+    // ZZ-History Person 01 saknar `Anmälan` helt och träffar därför den grenen.
+    eventId: firstLinkId(f['Event']),
+    registrationId: firstLinkId(f['Anmälan']),
   };
 }
 
@@ -189,7 +219,7 @@ function mapMotiveringEntry(record: { id: string; fields: Fields }) {
     // anmälan (`prefersSingleRecordLink`). Null när länken saknas
     // (backfill-anmälningar) → raden renderas oklickbar i stället för att
     // länka till en trasig route.
-    eventId: Array.isArray(f['Event']) && typeof f['Event'][0] === 'string' ? f['Event'][0] : null,
+    eventId: firstLinkId(f['Event']),
   };
 }
 

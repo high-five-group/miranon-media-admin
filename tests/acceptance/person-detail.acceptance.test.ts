@@ -111,6 +111,11 @@ function personDetail(overrides: Partial<PersonDetailMock> = {}): PersonDetailMo
         narvaro: false,
         ort: 'Göteborg',
         typ: 'Utbildning',
+        // Länkmålets halvor (S103 2026-08-12) — null: båda posterna är
+        // HISTORISKA, och historiska event-poster länkas med avsikt inte
+        // (deras anmälan nås via strömmens egen anmälnings-post).
+        eventId: null,
+        registrationId: null,
       },
       {
         id: 'recDLT0000000001',
@@ -122,6 +127,8 @@ function personDetail(overrides: Partial<PersonDetailMock> = {}): PersonDetailMo
         narvaro: true,
         ort: 'Skövde',
         typ: 'Utbildning',
+        eventId: null,
+        registrationId: null,
       },
     ],
     ...overrides,
