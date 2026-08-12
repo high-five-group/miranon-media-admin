@@ -182,25 +182,72 @@ function platsOchTillfalle(ort: string | null, eventDatum: string | null): strin
 }
 
 /**
- * Motiveringsblockets metarubrik: "För anmälan till Fjärrskådning
- * 18 augusti 2026 i Varberg" (Marcus 2026-08-12 — *"det är just vad det är en
- * motivering FÖR"*).
+ * Motiveringsblockets metarubrik: "Anmälan till ● Fjärrskådning ·
+ * 18 augusti 2026 · Varberg" (Marcus 2026-08-12 — *"det är just vad det är en
+ * motivering FÖR"*, förkortat samma dag: *"det räcker nog med att skriva
+ * 'Anmälan till' istället för 'För anmälan till'"*).
  *
  * FULLT kursnamn och FULLT datum med årtal, till skillnad från tidslinjens
  * "FS · 18 augusti". Det är avsiktligt: tidslinjen är en ström man skannar
  * där utrymmet är trångt och året framgår av år-rubriken; den här raden är en
  * REFERENS som ska gå att läsa lösryckt ur sitt sammanhang. Ordningen är
  * Marcus egen (kurs → datum → ort), inte tidslinjens (kurs → ort → datum).
+ *
+ * VARFÖR DEN INTE LÄNGRE ÄR EN REN STRÄNG (Marcus 2026-08-12: *"vi kan inte
+ * bara skriva ut den så rakt av … nu krockar siffrorna i textraden när datum
+ * kommer direkt efter Resor i medvetandet 2 till exempel"*). Mellanslag-
+ * sammanfogningen gav "Resor i medvetandet 2 11 februari 2026" — två siffror
+ * i rad utan gräns, där kursens stegsiffra läses ihop med datumets dag.
+ *
+ * FORMEN ÄR APPENS, INGEN NY MINTAD. Marcus föreslog en pill runt kursnamnet;
+ * repot har ingen sådan (sökt igenom `kursfargForKurs`-konsumenterna), och de
+ * TVÅ mönster som FINNS för exakt den här särskiljningen räcker och används
+ * båda här:
+ *
+ *  · **Kursfärgs-prick + namn** — `AnmalanDetail.tsx:397` (Avser-blockets
+ *    kontextrad, `size-2.5 rounded-full`) och `Gruppdynamik.tsx:183`
+ *    (`h-3.5 w-1`). Pricken är gränsen som saknades, och bär dessutom kursens
+ *    identitet utan ett ord.
+ *  · **` · `-separator** — `AnmalningarList.tsx:136`
+ *    (`[eventNamn, datum].join(' · ')`), samt D:s egna Eventhistorik- och
+ *    Just nu-rader. Samma vy använde alltså redan separatorn på två andra
+ *    ställen; motiveringsraden var undantaget.
+ *
+ * Separatorerna är `aria-hidden` — de är en visuell gräns, inte innehåll, och
+ * en skärmläsare som läser "punkt" mellan varje led vinner ingenting.
  */
-function motiveringsReferens(
-  kurs: string | null,
-  eventDatum: string | null,
-  ort: string | null,
-): string {
-  const led = [kurs, eventDatum ? langtDatum(eventDatum) : null, ort ? `i ${ort}` : null]
-    .filter(Boolean)
-    .join(' ');
-  return led ? `För anmälan till ${led}` : 'För en anmälan utan känt event';
+function MotiveringsReferens({
+  kurs,
+  eventDatum,
+  ort,
+}: {
+  kurs: string | null;
+  eventDatum: string | null;
+  ort: string | null;
+}) {
+  if (!kurs && !eventDatum && !ort) {
+    return <span className="text-small text-text-muted">Anmälan utan känt event</span>;
+  }
+  const farg = kursfargForKurs(kurs);
+  // Leden efter kursnamnet, i Marcus ordning (datum → ort).
+  const efterled = [eventDatum ? langtDatum(eventDatum) : null, ort].filter(Boolean) as string[];
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-small text-text-muted">
+      <span>Anmälan till</span>
+      {kurs && (
+        <>
+          <span aria-hidden="true" className={`size-2.5 shrink-0 rounded-full ${farg.bgClass}`} />
+          <span className="font-medium text-text-secondary">{kurs}</span>
+        </>
+      )}
+      {efterled.map((led) => (
+        <span key={led} className="flex items-center gap-x-1.5">
+          <span aria-hidden="true">·</span>
+          {led}
+        </span>
+      ))}
+    </span>
+  );
 }
 
 /**
@@ -221,22 +268,33 @@ function erbjudandeNamn(erbjudande: string | null): string | null {
 }
 
 /**
- * Dagar-kvar-pillens tre exakta former — IDENTISKA med `EventCard.tsx:102`
- * och `NastaEventCard.tsx:34` (Hem-kortets K10-facit): "Idag" / "1 dag kvar" /
- * "N dagar kvar". `Math.round` absorberar tidszons-offseten mellan
- * datumsträngens UTC-midnatt och lokal midnatt (|offset| < 12 h).
+ * Dagar-kvar-pillens tre former. `Math.round` absorberar tidszons-offseten
+ * mellan datumsträngens UTC-midnatt och lokal midnatt (|offset| < 12 h).
  *
  * Medvetet KOPIERAD, inte importerad: de två befintliga bärarna duplicerar
  * redan varandra, och att lyfta ut en delad hjälpare ur en PROTOTYP vore att
  * låta prototypen diktera bibliotekskodens form. Konsolideringen hör till
  * promoveringen (ADR-103), inte hit.
+ *
+ * ⚠️ DIVERGERAR SEDAN 2026-08-12 från `EventCard.tsx:102` och
+ * `NastaEventCard.tsx:34`, som båda säger "N dagar kvar" rakt av. Marcus
+ * samma dag: *"pillen '6 dagar kvar' vill jag ska säga '6 dagar kvar till
+ * eventet' tror jag"* — sagt om DENNA yta, där pillen sitter i ett block som
+ * också rymmer anmälningar och hämtningar och därför inte självklart handlar
+ * om ett event. På Hem-kortet och eventkortet ÄR eventet hela kontexten, så
+ * tillägget vore brus där.
+ *
+ * Att ändra de två andra bärarna är ett eget beslut om två andra vyer — samma
+ * klass som FS-förkortningen i `kursfarg.ts` (S103 carry 5) — och tas inte
+ * här. "Idag" lämnas orört: den är redan entydig och ett "Eventet är idag"
+ * vore en tredje formulering ingen bett om.
  */
 function dagarKvarText(startMs: number, nuMs: number): string {
   const idag = new Date(nuMs);
   idag.setHours(0, 0, 0, 0);
   const dagar = Math.round((startMs - idag.getTime()) / 86_400_000);
   if (dagar <= 0) return 'Idag';
-  return dagar === 1 ? '1 dag kvar' : `${dagar} dagar kvar`;
+  return dagar === 1 ? '1 dag kvar till eventet' : `${dagar} dagar kvar till eventet`;
 }
 
 /*
@@ -270,6 +328,17 @@ type PillTon = 'neutral' | 'aktiv' | 'kommande';
  * Pill-formen ur `Gruppdynamik.tsx:106-112`. `bg-surface` när pillen sitter
  * INUTI en tonal kortyta (en pill i kortets egen ton vore osynlig);
  * `bg-bg-muted` på ren bakgrund.
+ *
+ * `kommande`-tonens KONTUR FÖLJER TEXTEN (Marcus 2026-08-12: *"pillens kontur
+ * är inte samma som pill-texten"*). Den bar `border-border-strong` mot
+ * `text-text-secondary` — två skilda gråtoner, mätt i browsern till kontur
+ * `rgb(196,196,194)` (`--p-neutral-300`) mot text `rgb(82,81,81)`
+ * (`--p-neutral-600`). Kombinationen var inte ett designval utan två
+ * oberoende token-val som aldrig jämfördes.
+ *
+ * `border-current` binder konturen till `color` i stället för att upprepa
+ * tokenet, så de kan aldrig glida isär igen — byts textfärgen följer konturen
+ * med.
  */
 function Pill({
   ton = 'neutral',
@@ -284,7 +353,7 @@ function Pill({
     ton === 'aktiv'
       ? 'bg-primary-tint text-text'
       : ton === 'kommande'
-        ? 'border border-border-strong text-text-secondary'
+        ? 'border border-current text-text-secondary'
         : paKortyta
           ? 'bg-surface text-text-secondary'
           : 'bg-bg-muted text-text-secondary';
@@ -1726,10 +1795,30 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
 
   const kortKlass =
     'rounded-2xl border border-transparent bg-bg-muted px-4 py-4 contrast-more:border-border-strong';
-  // Hover-ytan går kant-i-kant med kortet (`-mx-4 px-4`); avdelaren sitter på
-  // `<li>` ovanför och behåller därför samma indrag som övriga block.
+  // HOVER-PLATTANS FORM ÄR APPENS, INTE EGEN (Marcus 2026-08-12: *"Hover på
+  // kontakt-blocket och just nu-blocket ser ju skitfult ut, tar ju hela ytan
+  // typ, bygg exakt som på andra block i appen, typ som på eventdetalj-
+  // sidan"*).
+  //
+  // Formen är eventdetalj-familjens, oförändrad: `-mx-2 … rounded-lg px-2
+  // py-1.5` — samma sträng som `Atgarder.tsx` (48), `Gruppdynamik.tsx` (232),
+  // `Deltagare.tsx` (292) och `DeltagareHallplatsPrototyp.tsx` (167). Ingen ny
+  // form mintas.
+  //
+  // VAD SOM VAR FEL, mätt före ändringen: `-mx-4 px-4` gav en hover-platta på
+  // 566 px i ett 568 px brett kort — kant-i-kant — med `border-radius: 0` i
+  // ett kort som självt är `rounded-2xl`. `Betalningar.tsx` (100) hade redan
+  // diagnosen nedskriven: *"hade den suttit på wrappern med py-3 blivit en
+  // kant-till-kant-platta utan rundning, vilket är fel form i ett kort med
+  // rundade hörn."* Den noten gällde en knapp i eventfamiljen; persondetaljen
+  // gjorde exakt samma fel utan att ha läst den.
+  //
+  // GEOMETRIN BEVARAS via samma delning som `Betalningar.tsx` gjorde:
+  // radens 14 px (`py-3.5`) flyttas till 8 px på `<li>` + 6 px (`py-1.5`) på
+  // länken = 14 px, så radhöjden 52 px är oförändrad. `divide-y` sitter kvar
+  // på `<ul>` och rörs inte.
   const kontaktRadKlass =
-    '-mx-4 flex items-center gap-3 px-4 py-3.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
+    '-mx-2 flex w-auto items-center gap-3 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
 
   return (
     <>
@@ -1768,7 +1857,7 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
             // leder ut ur appen).
             <ul className="flex flex-col divide-y divide-border">
               {person.email && (
-                <li>
+                <li className="py-2">
                   <a href={`mailto:${person.email}`} className={kontaktRadKlass}>
                     <span className="min-w-0 flex-1 truncate">{person.email}</span>
                     <ChevronRight
@@ -1780,7 +1869,7 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                 </li>
               )}
               {person.telefon && (
-                <li>
+                <li className="py-2">
                   <a href={telHref(person.telefon)} className={kontaktRadKlass}>
                     <span className="min-w-0 flex-1 truncate">{person.telefon}</span>
                     <ChevronRight
@@ -1872,23 +1961,29 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                   );
                   // KLICKBAR till anmälningsdetaljen (Marcus 2026-08-12: *"även
                   // den aktiva anmälan i just nu-blocket borde också vara en
-                  // knapp"*). Hover-ytan går kant-i-kant med det tintade kortet
-                  // (`-mx-4 px-4` mot kortets `px-4`), samma idiom som
-                  // kontaktraderna; `py-3 first:pt-0` behålls så avdelarna och
-                  // radhöjden är oförändrade mot den oklickbara formen.
-                  const radKlass = 'flex items-center gap-3 py-3 first:pt-0';
+                  // knapp"*), i eventdetalj-familjens hover-form — se
+                  // `kontaktRadKlass` ovan för varför kant-i-kant-plattan var
+                  // fel och var formen kommer ifrån.
+                  //
+                  // Radens 12 px (`py-3`) delas 6+6 mellan `<li>` och länken,
+                  // så radhöjden är oförändrad mot den oklickbara formen.
+                  // `first:pt-0` sitter på `<li>` — den hörde alltid dit;
+                  // `first:` läser elementets egen syskonposition, och på
+                  // länken (enda barnet i sin `<li>`) hade den träffat VARJE
+                  // rad i stället för den första.
+                  const radKlass = 'flex items-center gap-3';
                   return (
-                    <li key={grupp.nyckel} className="flex flex-col">
+                    <li key={grupp.nyckel} className="flex flex-col py-1.5 first:pt-0">
                       {href ? (
                         <Link
                           to={href.to}
                           params={href.params}
-                          className={`${radKlass} -mx-4 px-4 hover:bg-bg-emphasized motion-safe:transition-colors`}
+                          className={`${radKlass} -mx-2 w-auto rounded-lg px-2 py-1.5 hover:bg-bg-emphasized motion-safe:transition-colors`}
                         >
                           {innehall}
                         </Link>
                       ) : (
-                        <span className={radKlass}>{innehall}</span>
+                        <span className={`${radKlass} py-1.5`}>{innehall}</span>
                       )}
                     </li>
                   );
@@ -2169,9 +2264,7 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                       motiveringen") och konkurrerade med eventdatumet om
                       samma rad — vilket var precis den huller-om-buller-känsla
                       Marcus pekade på i tidslinjen. */}
-                  <span className="text-small text-text-muted">
-                    {motiveringsReferens(m.event, m.eventDatum, m.ort)}
-                  </span>
+                  <MotiveringsReferens kurs={m.event} eventDatum={m.eventDatum} ort={m.ort} />
                   <p className="whitespace-pre-line text-body">{m.motivering}</p>
                 </li>
               ))}
