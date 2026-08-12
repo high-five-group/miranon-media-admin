@@ -1324,7 +1324,16 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
   // Tidsordet räknas mot den post vyn FAKTISKT visar, inte mot basens
   // `Dagar sedan senaste interaktion`: de två kan peka på olika händelser,
   // och "för 2 dagar sedan: <något som hände i går>" är värre än inget tal.
-  const senasteHandelse = historiska[0] ?? null;
+  //
+  // `registrerad` EXKLUDERAS. Raden svarar på "vad gjorde personen senast",
+  // och att en rad föddes i Airtable är ingen handling personen utfört. Felet
+  // var osynligt fram till EF-deployen 2026-08-12: så länge anmälningarna bar
+  // `Rad skapad` låg de på samma sekund som registreringen och vann på
+  // sorteringens stabilitet. Med riktiga `Inskickad`-datum flyttade de bakåt i
+  // tiden och blottade posten under — "Senast för 2 dagar sedan: Kom in i
+  // registret", medan personen faktiskt anmälde sig till Fjärrskådning
+  // 7 augusti. En fix som avslöjar nästa fel har gjort sitt jobb.
+  const senasteHandelse = historiska.find((p) => p.slag !== 'registrerad') ?? null;
   const senastDagar = senasteHandelse ? dagarMellan(senasteHandelse.tidMs, nuMs) : 0;
   const senastNar =
     senastDagar <= 0 ? 'i dag' : senastDagar === 1 ? 'i går' : `för ${senastDagar} dagar sedan`;
