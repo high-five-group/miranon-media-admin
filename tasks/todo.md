@@ -15,11 +15,29 @@
 
 ## Aktuellt fokus
 
-**Session 105 ▶️ ÅTERUPPTAGEN (2026-08-12 eftermiddag, `lifecycle: active`) — FAS 6.5
-AKTIVITETSLOGGEN: GRILLAD SAMSYN → PRD → TIO SKIVOR → MAIL-LÅSET BEVISAT →
-201.1 STÄNGD; KEDJAN VÄNTAR PÅ ACCESS-TOKEN (MARCUS-MOMENT ÖPPET —
-env-verifikat vid resume: `SUPABASE_ACCESS_TOKEN` fortfarande SAKNAS,
-ingen nyckelringspost, ingen zshrc-rad).** Grillningen
+**Session 105 ⏸️ PAUSAD IGEN (2026-08-12 kväll, `lifecycle: paused`) — FAS 6.5
+AKTIVITETSLOGGEN: BLOCKERINGEN FANNS ALDRIG — KEDJAN ÖPPNAD, HEM-SPALTEN TRE
+SKIVOR BORT.** **Access-"blockeringen" FALSIFIERAD på Marcus invändning:**
+Supabase CLI var inloggat via macOS-nyckelringen sedan 2026-03-30 hela tiden
+(tom `~/.supabase/` var bevis för RÄTT lagring, läst som frånvaro; nattens
+`link`-hängning var lösenordsprompten, inte login). Migrationen applicerad,
+`activity_log` live i staging, **`TASK-201.11` stängd som falsifierad**.
+**201.2 landad** (`#1202`, `service_role` saknade GRANT trots BYPASSRLS →
+append-only nu strukturellt sant) · **201.5 landad** (`#1215`, läsvägen +
+hookarna) · **201.3 i luften** (`#1216`, hermetik-vakten löst centralt,
+acceptance 189/7 → 197/0). **TASK-196 STÄNGD** — EF:en var aldrig deployad;
+deployad nu, 3/3 röda före → 3/3 gröna efter. **SÄKERHET:** `service_role`-JWT
+exponerad i agent-transkript av `supabase projects api-keys` UTAN `--reveal`;
+research fann att **legacy-nycklar inte längre GÅR att rotera** (Supabase
+verbatim) → migrering är GOLV, kort **TASK-204**. **TASK-203** landade
+deny-hook + prod-ref-lås (45 tvåsidiga fall); **Marcus beslut A** — låset
+brett, `201.9` förblir HITL. **TASK-202** landade åtkomstregistret +
+`npm run atkomst:diagnos`. **Trådar `T141`** (`/add-dir` KRYMPER filåtkomsten,
+A→B→A-mätt) **och `T142`** (CI hämtar grindverktyg från nätet — sju
+fällningar på en eftermiddag, tre i merge_group med tyst konsumerad
+armering). **ÖPPEN DESIGNKOLLISION:** facit visar långt tankestreck i
+aktivitetsraderna, `check-langa-streck` förbjuder det — två Marcus-beslut
+kolliderar, MÅSTE avgöras före 201.7. Grillningen
 (fem kvitterade beslut, Del 2): B-målet skivat kärnvy→filterrad · alla
 ~11 mutationstyper loggas · **Supabase `activity_log`, inte Airtable**
 (`ADR-110`) · requestId enda korrelations-ID (`ADR-111`) · xAPI-konformans
@@ -40,15 +58,16 @@ eventual-consistency FALSIFIERAD rött-först; verklig rot =
 `storage.info()`-fix** (`#1194`; EF EJ deployad, väntar token) ·
 drift-korten 147.10/184/186 rättade (`#1196`) · T51/T55 STÄNGDA mot S102
 Del 6-belägg → 176/177 AC 3 bockat, stängnings-grinden grön (`#1197`).
-Token-utredningen: `SUPABASE_ACCESS_TOKEN` saknas genuint (mätt 4 ytor);
-nyckelringsinstruktion levererad; Marcus fixar i eftermiddag. **NÄSTA
-(resume): Marcus token-momentet → Code applicerar migrationen själv +
-deployar 196-fixen → kedjan 201.2→201.8 → 201.9 prod + 201.10 QA +
-facit-stämpling. Öppet beslut: prod-skydds-kortet.** Numrering
-disk-re-verifierad vid resume 2026-08-12 em: ADR 112 · L512+3 fragment ·
-T141 · task-202 · **f48** (raden bar tidigare stale `f47`; fälla 47 finns
-på disk sedan S103) — re-derivera ALLTID. Full narrativ: sessionsdok S105
-Del 1–4 + Paushistorik ×2.
+Token-utredningen: `SUPABASE_ACCESS_TOKEN` saknas genuint (mätt 4 ytor) —
+**FALSIFIERAT samma kväll, se Del 5.** **NÄSTA (resume): verifiera `#1216`
+och `#1223` per jobb och armera om vid utsparkning → `201.6` kärnvyn (fri
+när `#1216` landat) → `201.7` hem-spalten, MEN först Marcus dash-beslut.
+Öppna Marcus-beslut: tankestrecket (blockerar 201.7) · nyckelmigreringen
+`TASK-204` · `~/Downloads`-provet (kräver omstart).** Numrering
+disk-re-verifierad vid paus 2026-08-12 kväll mot `177d17a4`: ADR **112** ·
+L**512** + **4 fragment** · tråd **T143** · nästa toppnivå-kort **task-205** ·
+fälla **48** — re-derivera ALLTID. Full narrativ: sessionsdok S105 Del 1–5 +
+Paushistorik ×2 + PAUSLÄGE.
 
 **Session 102 ⏸️ PAUSAD IGEN (2026-08-11 kväll, `lifecycle: paused`) —
 RESUME-DAGEN LEVERERADE GO-LIVE-KÄRNAN: prod-mailvägen SKARP (`176`+`177`
