@@ -6,6 +6,7 @@ import {
   EVENT_NOTES_RESPONSE,
   EVENTS_RESPONSE,
   REGISTRATIONS_RESPONSE,
+  resolveActivityLogResponse,
   resolvePersonNotesResponse,
   resolvePersonResponse,
   resolvePersonsResponse,
@@ -105,6 +106,25 @@ export const handlers = [
   // första körning). Se fixture-data.ts § PERSON_NOTES_RESPONSE.
   http.get(EF('get-person-notes'), ({ request }) =>
     json(resolvePersonNotesResponse(new URL(request.url))),
+  ),
+
+  // Aktivitetsloggens LÄSVÄG (TASK-201.5:s `get-activity-log`) — HÄR i
+  // normalläget sedan TASK-201.7, av samma slag av skäl som skrivvägen nedan
+  // men med en ANNAN utlösare: hem-spalten "Senaste aktivitet" hämtar loggen
+  // vid VARJE hem-rendering på ≥xl, och både acceptance-projektet (1280×720)
+  // och visual-desktop (1440×900) ligger över den brytpunkten. Låg mocken kvar
+  // per test hade varenda befintligt hem-test fällts av hermetik-vakten på ett
+  // anrop som inte hörde till det testets ärende.
+  //
+  // Resolver, inte fruset objekt: `pageSize` speglas så spaltens
+  // fyra-raders-form faktiskt går att mäta i fixturvärlden. Se
+  // fixture-data.ts § Aktivitetsloggen.
+  //
+  // Historikvyns egna tester (`mer-aktivitetshistorik.acceptance.test.ts`)
+  // överskuggar fortsatt lokalt med `network.use(...)` — de äger sina
+  // datamängder (tomläge, cursor-round-trip, 500) och ska inte se den här.
+  http.get(EF('get-activity-log'), ({ request }) =>
+    json(resolveActivityLogResponse(new URL(request.url))),
   ),
 
   // Aktivitetsloggens skrivväg (TASK-201.3, ADR-110/ADR-111) — HÄR, i

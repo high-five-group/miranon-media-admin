@@ -6,6 +6,7 @@ import { displayName, inskickadTid } from '@/components/registrations/registrati
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { DashboardCard } from './DashboardCard';
+import { relativTid } from './relativ-tid';
 import { useDashboardEvents, useDashboardRegistrations } from './useDashboardData';
 
 /** Hur många senaste anmälningar översikten visar (K10-facit: ~25 i rullbar lista). */
@@ -17,34 +18,6 @@ function kortDatum(iso: string | null): string | null {
   if (!iso) return null;
   const t = Date.parse(iso);
   return Number.isNaN(t) ? null : KORTDATUM.format(t).replace(/\.$/, '');
-}
-
-/** Klockslag "14:02" — igår-formens tidsdel. */
-const KLOCKSLAG = new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit' });
-
-/** Lokal dagsstart (midnatt) — kalenderdags-diffens referenspunkt. */
-function dagsStart(ms: number): number {
-  const d = new Date(ms);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-
-/**
- * Relativ inskickad-tid per K10-facitets former: "för N min sedan" →
- * "för N tim sedan" (samma kalenderdag) → "igår HH:MM" (gårdagens
- * kalenderdag) → "för N dagar sedan" (kalenderdiff — Math.round absorberar
- * DST-skiftenas 23/25-timmarsdygn). Under minuten: "nyss" (facit-exemplen
- * börjar vid 10 min; ev. framtida klockskev clampas hit — aldrig negativt).
- * "för 1 dagar sedan" kan inte uppstå: dagsdiff 1 är alltid igår-formen.
- */
-function relativTid(inskickadMs: number, nuMs: number): string {
-  const minuter = Math.floor((nuMs - inskickadMs) / 60_000);
-  if (minuter < 1) return 'nyss';
-  if (minuter < 60) return `för ${minuter} min sedan`;
-  const dagar = Math.round((dagsStart(nuMs) - dagsStart(inskickadMs)) / 86_400_000);
-  if (dagar === 0) return `för ${Math.floor(minuter / 60)} tim sedan`;
-  if (dagar === 1) return `igår ${KLOCKSLAG.format(inskickadMs)}`;
-  return `för ${dagar} dagar sedan`;
 }
 
 /**

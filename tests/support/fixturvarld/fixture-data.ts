@@ -1312,3 +1312,120 @@ export function resolvePersonResponse(url: URL) {
   if (!listrad) return undefined;
   return { person: { ...listrad, ...HARLEDD_DETALJ_STOMME } };
 }
+
+// ── Aktivitetsloggen (TASK-201.7) ────────────────────────────────────────
+//
+// `get-activity-log`-svaret. LIGGER I NORMALLÄGET, inte per test — och det är
+// en följd av hem-vyn, inte en smak: hem-spalten "Senaste aktivitet"
+// (`SenasteAktivitet.tsx`) hämtar loggen vid VARJE hem-rendering på ≥xl, och
+// acceptance-projektet kör 1280×720 (playwright.config.ts § acceptance) medan
+// visual-desktop kör 1440×900. Ett omockat `get-activity-log` hade därmed
+// fällt varje befintligt hem-test via hermetik-vakten. Samma resonemang som
+// `log-activity` redan bär i `handlers.ts`: anropet är lika mycket en del av
+// normalläget som `get-events`/`get-registrations`.
+//
+// Innehållet speglar K10-facitets fyra rader (aktör + händelse + objekt) och
+// är daterat relativt FROZEN_NOW (2026-09-15T10:00+02:00) så spaltens
+// relativa tider är stabila: "för 2 tim sedan", "för 5 tim sedan",
+// "igår 16:42", "igår 09:15". En FEMTE post ligger med, längre bak, så
+// `pageSize`-avkortningen faktiskt går att mäta (fyra rader ur fem).
+//
+// Personerna är FIKTIVA (samma regel som resten av världen). Aktörsnamnen är
+// däremot husets tre verkliga förnamn — de kommer ur `AuthUser.displayName`
+// och är inte deltagardata.
+const XAPI_BAS = 'https://admin.miranon.dev/xapi';
+const REQUEST_ID_IRI = `${XAPI_BAS}/extensions/requestId`;
+
+/** Ett statement i EF-svarets egen form (`ActivityStatementSchema`), aldrig Airtables. */
+function aktivitet(
+  id: string,
+  aktor: string,
+  aktorId: string,
+  verbSlug: string,
+  handelse: string,
+  objekt: string,
+  timestamp: string,
+) {
+  return {
+    id,
+    actor: {
+      objectType: 'Agent',
+      name: aktor,
+      account: { homePage: XAPI_BAS, name: aktorId },
+    },
+    verb: { id: `${XAPI_BAS}/verbs/${verbSlug}`, display: { 'sv-SE': handelse } },
+    object: {
+      objectType: 'Activity',
+      id: `${XAPI_BAS}/objects/registrations/${id}`,
+      definition: {
+        name: { 'sv-SE': objekt },
+        type: `${XAPI_BAS}/activity-types/anmalan`,
+      },
+    },
+    context: { extensions: { [REQUEST_ID_IRI]: `00000000-0000-4000-9000-${id.slice(-12)}` } },
+    timestamp,
+  };
+}
+
+/** Fallande `timestamp` — EF:ens egen sorteringsordning (`occurred_at` desc). */
+export const ACTIVITY_LOG_STATEMENTS = [
+  aktivitet(
+    '00000000-0000-4000-8000-000000000101',
+    'Lotta',
+    '00000000-0000-4000-8000-000000000001',
+    'markerade-betalning',
+    'markerade betalning',
+    'Alva Ekström (Utbildning Skövde)',
+    '2026-09-15T08:00:00+02:00',
+  ),
+  aktivitet(
+    '00000000-0000-4000-8000-000000000102',
+    'Roger',
+    '00000000-0000-4000-8000-000000000002',
+    'bekraftade-anmalan',
+    'bekräftade anmälan',
+    'Bosse Frisk (Utbildning Skövde)',
+    '2026-09-15T05:00:00+02:00',
+  ),
+  aktivitet(
+    '00000000-0000-4000-8000-000000000103',
+    'Marcus',
+    '00000000-0000-4000-8000-000000000003',
+    'lade-till-person',
+    'lade till person',
+    'Cilla Grahn',
+    '2026-09-14T16:42:00+02:00',
+  ),
+  aktivitet(
+    '00000000-0000-4000-8000-000000000104',
+    'Lotta',
+    '00000000-0000-4000-8000-000000000001',
+    'markerade-betalning',
+    'markerade betalning',
+    'Doris Hallin (Föreläsning Göteborg)',
+    '2026-09-14T09:15:00+02:00',
+  ),
+  aktivitet(
+    '00000000-0000-4000-8000-000000000105',
+    'Roger',
+    '00000000-0000-4000-8000-000000000002',
+    'skickade-bekraftelsemail',
+    'skickade bekräftelsemail',
+    'Egon Ivarsson (Utbildning Varberg)',
+    '2026-09-13T11:05:00+02:00',
+  ),
+];
+
+/**
+ * `get-activity-log`-mocken. Speglar EF:ens `pageSize` — utan det vore
+ * spaltens fyra-raders-form (`useLatestActivity(4)`) osynlig i fixturvärlden
+ * och en ändring av radantalet omätbar. `cursor` besvaras med en tom sida:
+ * fixturvärlden bär EN sida, och en klient som ändå frågar efter nästa ska få
+ * ett ärligt slut, inte samma sida igen.
+ */
+export function resolveActivityLogResponse(url: URL) {
+  if (url.searchParams.get('cursor')) return { statements: [], nextCursor: null };
+  const begart = Number(url.searchParams.get('pageSize') ?? '20');
+  const antal = Number.isFinite(begart) && begart > 0 ? begart : 20;
+  return { statements: ACTIVITY_LOG_STATEMENTS.slice(0, antal), nextCursor: null };
+}

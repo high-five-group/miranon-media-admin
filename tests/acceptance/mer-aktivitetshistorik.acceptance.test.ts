@@ -16,9 +16,16 @@ import { expect, test } from './support/acceptance-bas';
 /**
  * TASK-201.6 — Aktivitetshistoriken, kärnvyn (A-formen): /mer/aktivitetshistorik.
  *
- * `get-activity-log` LIGGER INTE I NORMALLÄGET (samma skäl som `get-mail-log`,
- * se mer-maillogg.acceptance.test.ts:s filhuvud) — varje test här överskuggar
- * med `network.use(http.get(EF('get-activity-log'), …))`.
+ * `get-activity-log` LIGGER I NORMALLÄGET SEDAN TASK-201.7 (hem-spalten
+ * "Senaste aktivitet" hämtar loggen vid varje hem-rendering på ≥xl, och
+ * acceptance-projektet kör 1280×720 — se `handlers.ts` § Aktivitetsloggens
+ * LÄSVÄG). Fram till dess låg den utanför, som `get-mail-log` fortfarande gör.
+ * FÖR DENNA FIL ÄNDRAR DET INGENTING I PRAKTIKEN: varje test här överskuggar
+ * ändå med `network.use(http.get(EF('get-activity-log'), …))` eftersom det
+ * äger sin egen datamängd (tomläge, cursor-round-trip, 500). Men skyddsnätet
+ * är svagare än förr — ett test som GLÖMMER sin överskuggning fälls inte
+ * längre av hermetik-vakten, det ser normallägets fem statements i stället.
+ * Överskuggningen är därför inte längre valfri stil här, den är kravet.
  *
  * Täckning: AC #1 (route + vy, dagsgruppering Idag/Igår/långdatum, postform:
  * relativ tid vs klockslag, aktör i medium, händelse i naturligt språk med

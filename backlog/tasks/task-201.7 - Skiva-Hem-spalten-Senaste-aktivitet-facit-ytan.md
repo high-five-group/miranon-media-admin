@@ -4,7 +4,7 @@ title: 'Skiva: Hem-spalten Senaste aktivitet (facit-ytan)'
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:26'
-updated_date: '2026-08-12 18:40'
+updated_date: '2026-08-12 20:57'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,19 +25,19 @@ Täcker användarberättelser: 2, 3, 5, 6
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Hem-spalten är identisk med facit tasks/sessions/bilagor/s55-hem-konvergens/facit.json ytan "hem-historikspalten (Senaste aktivitet)" — bilden k10-facit-desktop.png (ADR-102 B5)
-- [ ] #2 Spalten renderas ENDAST ≥xl; under xl ingen spalt (historiken nås via Mer per B7); brytpunktsgapet lg↔xl avgörs mot facit-bilden och utfallet bokförs i skivans notes (öppet i manifestet)
-- [ ] #3 Länken "Se all aktivitetshistorik ›" navigerar till kärnvyn (201.6)
-- [ ] #4 ariaSnapshot-referenser skapade för spalten (ADR-103-mönstret) OCH manifestets kallor för spaltytan uppdaterade med de nya källfilerna i samma landning
-- [ ] #5 aria-label bär sektionsnamnet (ingen visuell rubrik); INGA ikoner i posterna
+- [x] #1 Hem-spalten är identisk med facit tasks/sessions/bilagor/s55-hem-konvergens/facit.json ytan "hem-historikspalten (Senaste aktivitet)" — bilden k10-facit-desktop.png (ADR-102 B5)
+- [x] #2 Spalten renderas ENDAST ≥xl; under xl ingen spalt (historiken nås via Mer per B7); brytpunktsgapet lg↔xl avgörs mot facit-bilden och utfallet bokförs i skivans notes (öppet i manifestet)
+- [x] #3 Länken "Se all aktivitetshistorik ›" navigerar till kärnvyn (201.6)
+- [x] #4 ariaSnapshot-referenser skapade för spalten (ADR-103-mönstret) OCH manifestets kallor för spaltytan uppdaterade med de nya källfilerna i samma landning
+- [x] #5 aria-label bär sektionsnamnet (ingen visuell rubrik); INGA ikoner i posterna
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Hem-spalten identisk mot facit-manifestets k10-bild (ADR-102 B5) — Marcus-granskad; manifestet: tasks/sessions/bilagor/s55-hem-konvergens/facit.json
 <!-- DOD:END -->
 
@@ -51,4 +51,23 @@ Kollisionen som blockerade skivan: facit-bilden `tasks/sessions/bilagor/s55-hem-
 Marcus avgjorde i klartext 2026-08-12: 'Inga långa bindestreck får användas, larmar det bara på det så är det ok.' Undantagsvägen i policyn är därmed utesluten, och facit-grindens larm på just denna skillnad är ACCEPTERAT — facit följs inte på den punkten. Valet mellan kort bindestreck och mittpunkt föll på mittpunkt `·`, eftersom den redan är appens separator i samma vy (orkestrerarens rekommendation, ej överprövad).
 
 Skivan är därmed AVBLOCKERAD. Beroendet TASK-201.6 (kärnvyn) kvarstår.
+
+UTFÖRT 2026-08-12 (TASK-201.7). Spalten PROMOVERAD ur K10-prototypen (AktivitetK10 i src/components/hem/prototype/K10.tsx, commit bb31a12) enligt ADR-103 B1/B2 — klasser, element och ordning verbatim; endast datakällan bytt, till useLatestActivity(4) (TASK-201.5).
+
+AC #2 — BRYTPUNKTSGAPET lg-till-xl ÄR AVGJORT: ingen spalt i gapet. Grund: facit-prototypens EGET villkor är "hidden ... xl:flex", och xl är den enda brytpunkt som finns nedskriven i låst form; en spalt som ryms i gapet är inte en spalt facit visar. Gapet är ändå ingen lucka — TabBar (src/components/AppShell/TabBar.tsx rad 55) bär inga brytpunktsvillkor alls (endast print:hidden), så Mer, och därmed /mer/aktivitetshistorik via NavCard i src/routes/_authenticated/mer/index.tsx rad 98, är nåbart på VARJE bredd. Byggkrav B7:s "under lg"-formulering täcker alltså hela gapet i praktiken. Bevisat mekaniskt vid 1279 px och 1024 px i tests/acceptance/hem-senaste-aktivitet.acceptance.test.ts.
+
+ANTAL RADER: fyra, som facit-bilden visar. TASK-201.5 delegerade uttryckligen talet hit (hookens filhuvud).
+
+TRE AVVIKELSER FRÅN FACIT-BILDEN, samtliga öppet bokförda i facit.json:
+1. Separatorn är mittpunkt — den planerade, i förväg accepterade avvikelsen (Marcus-order ovan).
+2. Länkens chevron bärs av ett aria-hidden-span (CTA-precedenten i samma vy): visuellt identiskt, tillgängligt namn utan skiljetecken.
+3. Transparent kantlinje tillagd för prefers-contrast: more och print (app-regeln för tonala ytor, Hem.tsx § A11y). Osynlig i normalläget, layoutstabil.
+
+FYND, EJ ÅTGÄRDAT (utanför skivans mandat): AC #4:s ariaSnapshot-referenser fungerar bara i tests/visual. Acceptance-projektets egen expect ERSÄTTER (mergar inte) top-nivåns expect, så toMatchAriaSnapshot.pathTemplate gäller inte där — mekanismen står utskriven i playwright.config.ts rad cirka 47-50. Mätt: en körning lade referensen i tests/acceptance/__screenshots__/ som en acceptance-darwin.aria.yml, alltså via snapshotPathTemplate med platform-segmentet, en darwin-artefakt CI (linux) aldrig hade hittat. Artefakten är borttagen igen. Dessutom körs tests/visual INTE av blockerande CI (enda träffen på test:visual i .github/workflows/ är visual-baselines.yml, workflow_dispatch med update-snapshots). Det blockerande skyddet för spalten är därför acceptance-filens struktur-assertioner: landmärke plus namn, radantal, ikon-frånvaro, separator, brytpunkt.
+
+FIXTURVÄRLDEN: get-activity-log flyttad till NORMALLÄGET (tests/support/fixturvarld/handlers.ts). Nödvändigt, inte valfritt: spalten hämtar vid varje hem-rendering från xl och uppåt, och acceptance-projektet kör 1280x720, så ett omockat anrop hade fällt varje befintligt hem-test via hermetik-vakten. Filhuvudet i mer-aktivitetshistorik.acceptance.test.ts rättat i samma landning, eftersom dess påstående om normalläget blev falskt.
+
+VISUELL BASLINJE: tests/visual/__screenshots__/hem.spec.ts är nu inaktuell — hem-ytan har fått en sektion. Den tas om FÖRST efter Marcus godkännande, per ADR-103 B4. Inte i denna landning.
+
+GODKÄNNANDE: facit.json-fältet godkand är ORÖRT (null). Identiteten mot k10-facit-desktop.png är Marcus eget moment (ADR-104); stämplingskanalen har inte anropats av agenten.
 <!-- SECTION:NOTES:END -->
