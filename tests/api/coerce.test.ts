@@ -394,6 +394,7 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
             datum: '2026-02-01T09:00:00.000Z',
             eventDatum: '2026-03-15',
             ort: 'Rönninge',
+            eventId: 'recEVT001',
           },
           {
             id: 'recANM002',
@@ -402,6 +403,7 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
             datum: null,
             eventDatum: null,
             ort: null,
+            eventId: null,
           },
         ],
       }),
@@ -414,6 +416,7 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
       datum: '2026-02-01T09:00:00.000Z',
       eventDatum: '2026-03-15',
       ort: 'Rönninge',
+      eventId: 'recEVT001',
     });
     expect(parsed.motiveringar[1]).toEqual({
       id: 'recANM002',
@@ -422,6 +425,7 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
       datum: null,
       eventDatum: null,
       ort: null,
+      eventId: null,
     });
   });
 
@@ -446,6 +450,7 @@ test.describe('schema-parity — hamtningar/motiveringar/flagga (S103 steg 2, ge
     );
     expect(parsed.motiveringar[0]?.eventDatum).toBeNull();
     expect(parsed.motiveringar[0]?.ort).toBeNull();
+    expect(parsed.motiveringar[0]?.eventId).toBeNull();
   });
 
   test('PersonDetailSchema: motiveringar tom lista är giltig (inga anmälningar länkade)', () => {

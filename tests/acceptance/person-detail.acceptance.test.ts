@@ -94,6 +94,7 @@ function personDetail(overrides: Partial<PersonDetailMock> = {}): PersonDetailMo
         datum: '2026-02-20T09:00:00.000Z',
         eventDatum: '2026-03-14',
         ort: 'Skövde',
+        eventId: 'recEVT0000000001',
       },
     ],
     flagga: null,
