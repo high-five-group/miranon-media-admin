@@ -556,3 +556,36 @@
 # (run 31454392944). Påverkar
 # docs/research/presentationsmening-bas-eller-app-2026-08-10.md.
 ^https://www\.contentful\.com/headless-cms/$
+
+# ═══════════════════════════════════════════════════════════════════════
+# Nattkörning 31560003797 (2026-08-12, issue #1189) — 9 fel, av vilka 7
+# klassades TRANSIENT (runner-nätvägen, inte länkröta). De två genuina
+# 404:orna i samma körning fixades i dokumenten i stället för här
+# (arxiv.org/abs/-formen resp. Apples flata HIG-path).
+# ═══════════════════════════════════════════════════════════════════════
+
+# kubernetes.io — "Connection failed. Check network connectivity and
+# firewall settings" i CI, samma felsignatur som danger.systems/vite.dev
+# ovan (runner-IP-klassen, inte UA/fingerprint). FYRA träffar i SAMMA
+# körning över två filer: 298:2 + 547:3 i
+# docs/research/processregler-mekanisering-branschpraxis-2026-08-04.md,
+# 309:2 + 524:3 i
+# docs/research/orkestrerar-vackning-polling-vs-event-driven-2026-08-02.md
+# (första träffen i varje fil gav "Connection failed", resten "Error
+# (cached)" — lychees vanliga cache-per-URL-mönster). Klassbevis, mätt
+# lokalt 2026-08-12: HTTP 200 (både plain- och Chrome-UA-header).
+# EN-INSTANS-POST (fyra platser, en händelse), öppet bokförd per
+# wirfs-brock.com/cs.umd.edu-precedenten ovan.
+^https://kubernetes\.io/docs/concepts/architecture/controller/$
+
+# openpolicyagent.org — samma felsignatur och klass som kubernetes.io-
+# posten ovan ("Connection failed. Check network connectivity and
+# firewall settings"), samma körning 31560003797. EN träff flaggad som
+# fel (147:19 i
+# docs/research/processregler-mekanisering-branschpraxis-2026-08-04.md);
+# SAMMA URL på rad 541 i samma fil klarade sig i samma körning — starkare
+# bevis för ren nätverksflakighet än de flesta EN-instans-posterna ovan,
+# eftersom två konkurrerande hämtningar av identisk URL gav olika utfall
+# inom loppet av någon sekund. Klassbevis, mätt lokalt 2026-08-12: HTTP
+# 200 (både plain- och Chrome-UA-header).
+^https://www\.openpolicyagent\.org/docs/cicd$

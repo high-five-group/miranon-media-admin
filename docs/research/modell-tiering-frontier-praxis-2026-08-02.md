@@ -162,7 +162,7 @@ eskaleras till en starkare modell. Se t.ex. "Is Escalation Worth It? A
 Decision-Theoretic Characterization of LLM Cascades" ([arxiv
 2605.06350](https://arxiv.org/pdf/2605.06350)). Mest relevant för denna
 frågas domän är **CodeRescue: Budget-Calibrated Recovery Routing for Coding
-Agents** ([arxiv 2607.19338](https://arxiv.org/html/2607.19338)) — se
+Agents** ([arxiv 2607.19338](https://arxiv.org/abs/2607.19338)) — se
 delfråga 2 för detaljerna, eftersom den artikeln är specifikt om
 kodningsagenters post-fel-routing.
 
@@ -218,7 +218,7 @@ en dyrare. Uppdelningen av felfallen är inte monoton: 45 % är
 recovery, 27 % har komplementära lösningar — svårighetsgraden avgör
 fördelningen (BigCodeBench mest billig-löst, svårare TACO-problem mest
 eskalations-beroende).
-Källa: [arxiv.org/html/2607.19338](https://arxiv.org/html/2607.19338).
+Källa: [arxiv.org/abs/2607.19338](https://arxiv.org/abs/2607.19338).
 
 **Deklarerat öppet:** ingen av de tre stora namngivna produkterna (Cognition,
 Factory, GitHub Copilot) publicerar sin exakta numeriska tröskel för när
@@ -468,5 +468,5 @@ för mindre team.
 
 **Akademiska källor:**
 
-- [arxiv.org/html/2607.19338](https://arxiv.org/html/2607.19338) — CodeRescue: Budget-Calibrated Recovery Routing for Coding Agents
+- [arxiv.org/abs/2607.19338](https://arxiv.org/abs/2607.19338) — CodeRescue: Budget-Calibrated Recovery Routing for Coding Agents
 - [arxiv.org/pdf/2605.06350](https://arxiv.org/pdf/2605.06350) — Is Escalation Worth It? A Decision-Theoretic Characterization of LLM Cascades
