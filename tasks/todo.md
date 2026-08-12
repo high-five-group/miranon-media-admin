@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 105 ⏸️ PAUSAD (2026-08-12 natt, `lifecycle: paused`) — FAS 6.5
+**Session 105 ▶️ ÅTERUPPTAGEN (2026-08-12 morgon, `lifecycle: active`) — FAS 6.5
 AKTIVITETSLOGGEN: GRILLAD SAMSYN → PRD → TIO SKIVOR → MAIL-LÅSET BEVISAT →
 201.1 LANDAD; KEDJAN BLOCKERAD PÅ DB-ACCESS (MARCUS-MOMENT).** Grillningen
 (fem kvitterade beslut, Del 2): B-målet skivat kärnvy→filterrad · alla
@@ -29,9 +29,10 @@ stopp"; S102 service-ff:ade huvudkatalogen på SendMessage-bön —
 `CLAUDE_PROJECT_DIR`-fyndet är lesson-kandidat 1). **201.1 Done-klass**
 (ADR-paret + xAPI-schema + migrationsfil, PR `#1185`); **201.2 STOPPAD
 korrekt** — agent-miljön saknar Supabase db-access (fynd **TASK-201.11**,
-ready-for-human, PR `#1187`). **NÄSTA (resume): Marcus applicerar
-migrationen (201.11 § sekvensen) → `session-resume` S105 → kedjan
-201.2→201.8 → 201.9 prod + 201.10 QA + facit-stämpling.** Numrering efter
+ready-for-human, PR `#1187`). **NÄSTA: Marcus applicerar migrationen
+(201.11 § sekvensen) i sessionens terminal → kedjan 201.2→201.8 avfyras
+i beroendeordning → 201.9 prod + 201.10 QA + facit-stämpling. 201.1:s
+kort-stängning är resumens första arbetspunkt.** Numrering efter
 S105-natten: ADR 112 · L512+3 fragment · T141 · task-202 · f47 —
 re-derivera ALLTID. Full narrativ: sessionsdok S105 Del 1–3 + PAUSLÄGE.
 
