@@ -82,9 +82,9 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ⏸️ PAUSAD (2026-08-10, `lifecycle: paused`) — D-VARIANTEN PÅ
-PERSONDETALJEN BYGGD, MONTERAD MOT RIKTIGT DATALAGER OCH REDO ATT GRANSKAS;
-TRE BAS-DEFEKTER BELAGDA.** AFK-passet (Del 7): Marcus blockordning byggd som
+**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-12 eftermiddag, `lifecycle: active`) —
+D-VARIANTEN PÅ PERSONDETALJEN BYGGD, MONTERAD MOT RIKTIGT DATALAGER OCH REDO
+ATT GRANSKAS; TRE BAS-DEFEKTER BELAGDA.** AFK-passet (Del 7): Marcus blockordning byggd som
 `?variant=d` (`#1143`), tre parallella bygg-agenter stängde datalagret —
 `get-person` berikad med Touchpoints/Anmälningar som riktiga poster + `flagga`
 (`#1149`), flagg-write + antecknings-ström med författare server-side (`#1151`),
@@ -98,9 +98,17 @@ omätta led är nu mätta (motiverings-flerhet observerad live; `Senaste interak
 och ny §47 (`Antal hämtningar` räknar `Engagemang`, inte hämtningar). **Dagens
 dyraste fångst:** en "snyggare" omdöpning av ett spegelfält bröt en parallell
 agents namn-läsning tyst; fångad i rapport-granskningen, inte av någon grind —
-återställd, lesson-fragment landat. **ÖPPEN SKULD: prod-deploy av tre
-EF-ändringar.** Numrering mot `ac286334`: **109 / task-196 / T141 / L512** + 3
-fragment. **HANDOFF: sessionsdok S103 § PAUSLÄGE + Del 1–7.**
+återställd, lesson-fragment landat. **CARRY 2 (prod-deployen av de tre
+EF-ändringarna) ÄR BETALD AV S102** — morgonsekvensen 2026-08-11
+full-paritetsdeployade 33 EF:er till prod (S102 Del 6); `get-person-notes`,
+`create-person-note` och `update-record` står i `.prod-functions-allowlist.conf`
+(`c6c96a52`) och `update-person-flag` finns i `field-allowlists.ts:119`.
+**RESUME-INGÅNG (2026-08-12): Marcus granskar D på Sofia Isaksson
+(`/personer/recxF88ZKUbP9JUs1?variant=d`) → formbeslut (iterera eller
+promovera) → check-in med närvaro-WRITE-forken.** Numrering disk-re-verifierad
+mot `main` `d20e0a0d`: ADR **112** (110/111 mintade av S105) · task **202** ·
+**T141** · **L512** + 3 fragment · **f48**. **HANDOFF: sessionsdok S103
+§ Paushistorik (efter Del 7) + Del 1–7.**
 *(Historik nedan bevarad.)*
 
 **Session 103 (Del 1–6, historik) — PERSONLISTAN
