@@ -1,10 +1,10 @@
 ---
 id: TASK-201.12
 title: 'Skiva: personId-extensionen i aktivitetsloggens statements'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-12 20:11'
-updated_date: '2026-08-12 20:36'
+updated_date: '2026-08-12 22:07'
 labels:
   - ready-for-agent
 dependencies:
@@ -38,7 +38,7 @@ KÄND DIVERGENS VID BYGGSTART (premiss-pass, källmärkt): TASK-201.6 (PR #1231)
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -145,3 +145,9 @@ Kortets ursprungliga källmärkta divergens (201.6 ej landad vid byggstart)
 kvarstår som ett FAKTUM i historiken ovan, men löstes UNDER samma
 byggsession — AC #5 är därmed uppfylld i denna PR, inte uppskjuten.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd som ren bokföring (kod redan landad, kortet stod kvar på To Do). Landat via PR #1233, merge-SHA 9eaf18f8 (main, 2026-08-12T20:59:34Z). AC #1-5 och DoD #1-2/4 var redan avbockade av byggaren (inkl. AC #5, vy-kopplingen till TASK-201.6, genomförd i samma byggsession efter att 201.6 hann landa). DoD #3 (CI grön per jobb) verifierad här: gh pr checks 1233 — samtliga required-jobb pass (Docs link check, Test suite/Acceptance (hermetisk), Test suite/Pure+Build, Test suite/Webblasarbeteende, Analyze x2, CodeQL, Detect changed files, Lint+Audit+TypeCheck, CI Passed or Skipped, Vercel); Staging/A11y/Staging sentinel purge skipping (diff-gated, ingen fällning). Post-merge-sviten (post-merge.yml, run 31640385114) HELT GRÖN — verifierat gh run view, conclusion success. Inga orelaterade filer i PR-diffen (17 filer: kortfil, AktivitetsHistorik.tsx, recordActivity.ts, 8 mutationsfiler, ActivityStatement.schema.ts + index.ts, acceptance-test + api-test). Inga divergenser mot uppdragets premisser vid denna stängning.
+<!-- SECTION:FINAL_SUMMARY:END -->
