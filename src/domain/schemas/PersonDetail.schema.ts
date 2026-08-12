@@ -17,6 +17,32 @@ export const PersonHistoryEntrySchema = z.object({
   narvaro: z.boolean(),
   ort: z.string().nullable(),
   typ: z.string().nullable(),
+  /**
+   * Event-länkens record-ID (`Deltaganden.Event`, `fldaj5mbpU3yPw2np`) och
+   * anmälnings-länkens (`Deltaganden.Anmälan`, `fldwQdDpRK8vByNhb`) — de TVÅ
+   * halvorna av `/event/$eventId/anmalan/$registrationId`.
+   *
+   * Varför de finns här: persondetaljens kommande-post i strömmen och "Just
+   * nu"-blockets aktiva anmälningar byggs BÅDA ur `historik`, inte ur
+   * `motiveringar`. De kunde därför inte länkas alls medan bara
+   * `PersonMotiveringEntry` bar sina ID:n (Marcus 2026-08-12: *"Kommande
+   * händelsen borde ju också vara en knapp med länk till anmälan som de
+   * andra … även den aktiva anmälan i just nu-blocket"*). Vägen fanns hela
+   * tiden i basen — Deltaganden är "en rad per Anmälan × Session"
+   * (data-model.md §86) — den exponerades bara inte av `get-person`.
+   *
+   * BÅDA `.default(null)`, samma skäl som `PersonMotiveringEntry`s trio: en
+   * EF som ännu inte deployats med utökningen utelämnar dem, och vyn ska då
+   * falla tillbaka på oklickbara rader i stället för att fälla schemat.
+   *
+   * Saknas endera renderas raden OKLICKBAR — aldrig en halv route. Mätt i
+   * staging 2026-08-12: Sofia Isakssons fem deltaganden bär båda, medan
+   * conformance-fixturen ZZ-History Person 01 bär `Event` men saknar
+   * `Anmälan` helt (seedad utan den länken) — de två fallen täcker alltså
+   * var sin gren.
+   */
+  eventId: z.string().nullable().default(null),
+  registrationId: z.string().nullable().default(null),
 });
 
 /**

@@ -173,6 +173,10 @@ function detalj(overrides: Partial<DetaljRow> = {}): DetaljRow {
           narvaro: true,
           ort: 'Skövde',
           typ: 'Utbildning',
+          // Länkmålets halvor (S103 2026-08-12) — null här: fixturen prövar
+          // anmälningsdetaljens egen yta, inte persondetaljens länkning.
+          eventId: null,
+          registrationId: null,
         },
       ],
       erfarenhetsbadge: 'Resenär steg 1',

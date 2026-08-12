@@ -408,8 +408,36 @@ type EventGrupp = {
   tidMs: number;
   ort: string | null;
   typ: string | null;
+  /**
+   * Länkmålets två halvor, lyfta ur gruppens FÖRSTA post. Ett tvådagars-event
+   * ger två Deltagande-rader som delar både Event- och Anmälnings-länk
+   * (live-verifierat på Sofia Isakssons RIM 2 2026-08-12: `recEH7NvNcpmMDv3R`
+   * och `recDDWmkD39PYvlYs` bär båda anmälan `recEgSKAjvUeVeVPA`) — den
+   * första posten är därför representativ för hela gruppen.
+   */
+  eventId: string | null;
+  registrationId: string | null;
   poster: PersonHistoryEntry[];
 };
+
+/**
+ * Länkmål till anmälningsdetaljen — bara när BÅDA halvorna finns.
+ *
+ * Routen `/event/$eventId/anmalan/$registrationId` kan inte lösas av en halv
+ * uppsättning, så en grupp som saknar endera renderas oklickbar i stället för
+ * att länka fel. Samma regel som anmälnings-posterna redan följer för sitt
+ * `eventId` (byggStrom steg 2).
+ */
+function anmalanHref(
+  eventId: string | null,
+  registrationId: string | null,
+): { to: string; params: Record<string, string> } | undefined {
+  if (!eventId || !registrationId) return undefined;
+  return {
+    to: '/event/$eventId/anmalan/$registrationId',
+    params: { eventId, registrationId },
+  };
+}
 
 /**
  * Grupperar historikens SESSIONS-rader per EVENT.
@@ -450,6 +478,8 @@ function grupperaPerEvent(historik: PersonHistoryEntry[]): EventGrupp[] {
       tidMs: Number.isFinite(tid) ? tid : 0,
       ort: entry.ort,
       typ: entry.typ,
+      eventId: entry.eventId,
+      registrationId: entry.registrationId,
       poster: [entry],
     });
   }
@@ -1034,6 +1064,17 @@ function byggStrom(
       meta: grupp.ort ? `i ${grupp.ort}` : null,
       prickKlass: farg.bgClass,
       ikon: CalendarCheck,
+      // KLICKBAR ENDAST NÄR POSTEN ÄR KOMMANDE (Marcus 2026-08-12: *"Kommande
+      // händelsen borde ju också vara en knapp med länk till anmälan som de
+      // andra"*). Snittet är avsiktligt och inte en halvmesyr:
+      //
+      // Anmälnings-posterna (steg 2) bär ALLTID `kommande: false` och hamnar
+      // därför på sitt ANMÄLNINGSDATUM i historiken. Under rubriken "Kommande"
+      // finns alltså BARA event-posten — utan denna href vore anmälan
+      // onåbar därifrån. En HISTORISK event-post har däremot redan sin egen
+      // klickbara anmälnings-post i samma ström; att länka båda hade gett två
+      // rader till samma anmälan.
+      href: kommande ? anmalanHref(grupp.eventId, grupp.registrationId) : undefined,
       // KOMMANDE POSTER BÄR INGA SESSIONS-PILLAR. "Dag 1 · Kommande" på ett
       // event som inte hänt säger ingenting utöver vad rubriken "Kommande"
       // och datumet redan sagt — närvaron är inte ett utfall än, den är en
@@ -1810,8 +1851,9 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
               <ul className="flex flex-col divide-y divide-border/60">
                 {aktivaAnmalningar.map((grupp) => {
                   const farg = kursfargForKurs(grupp.kursnamn);
-                  return (
-                    <li key={grupp.nyckel} className="flex items-center gap-3 py-3 first:pt-0">
+                  const href = anmalanHref(grupp.eventId, grupp.registrationId);
+                  const innehall = (
+                    <>
                       <span
                         aria-hidden="true"
                         className={`w-1 shrink-0 self-stretch rounded-full ${farg.bgClass}`}
@@ -1826,6 +1868,28 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                           är kvar-pillen ska vara på eventraden också"*).
                           Formen är EventCard/NastaEventCard-facitets. */}
                       <Pill ton="kommande">{dagarKvarText(grupp.tidMs, nuMs)}</Pill>
+                    </>
+                  );
+                  // KLICKBAR till anmälningsdetaljen (Marcus 2026-08-12: *"även
+                  // den aktiva anmälan i just nu-blocket borde också vara en
+                  // knapp"*). Hover-ytan går kant-i-kant med det tintade kortet
+                  // (`-mx-4 px-4` mot kortets `px-4`), samma idiom som
+                  // kontaktraderna; `py-3 first:pt-0` behålls så avdelarna och
+                  // radhöjden är oförändrade mot den oklickbara formen.
+                  const radKlass = 'flex items-center gap-3 py-3 first:pt-0';
+                  return (
+                    <li key={grupp.nyckel} className="flex flex-col">
+                      {href ? (
+                        <Link
+                          to={href.to}
+                          params={href.params}
+                          className={`${radKlass} -mx-4 px-4 hover:bg-bg-emphasized motion-safe:transition-colors`}
+                        >
+                          {innehall}
+                        </Link>
+                      ) : (
+                        <span className={radKlass}>{innehall}</span>
+                      )}
                     </li>
                   );
                 })}

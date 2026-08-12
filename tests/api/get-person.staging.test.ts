@@ -80,6 +80,42 @@ test.describe('get-person — skarp conformance (ADR-056 detalj, Fas 6a L5b)', (
     expect(person.historik.every((h) => h.narvaro)).toBe(true);
   });
 
+  test('S103 2026-08-12: historiken bär länkmålets BÅDA halvor — eventId satt, registrationId null', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await callGetPerson(request, config, jwt, HISTORY_PERSON_ID);
+    expect(res.status()).toBe(200);
+
+    const body = (await res.json()) as { person: unknown };
+    const person = PersonDetailSchema.parse(body.person);
+
+    // `eventId` — SATT för alla tre. Live-verifierat i staging 2026-08-12
+    // (list_records mot tbldWHH6sSHWoQPHH): fixturens tre Deltaganden bär var
+    // sin `Event`-länk, i datum-desc-ordningen ovan (RIM 3 / RIM 2 / RIM 1).
+    expect(person.historik.map((h) => h.eventId)).toEqual([
+      'recfnotr1i2nQLBJd',
+      'recxe1oTDwA4qbVk7',
+      'reci2UQEPBMl3ebNl',
+    ]);
+
+    // `registrationId` — NULL för alla tre. Fixturen seedades UTAN
+    // `Anmälan`-länk (fältet saknas helt i API-svaret, live-verifierat samma
+    // dag), trots att personen bär två Anmälningar. Det gör den till skarpt
+    // bevis för NULL-grenen: vyn ska rendera raden oklickbar, aldrig bygga en
+    // halv route av ett satt eventId och ett saknat registrationId.
+    expect(person.historik.map((h) => h.registrationId)).toEqual([null, null, null]);
+
+    // ÄRLIG LUCKA, medvetet ej täckt här: den SATTA `registrationId`-grenen.
+    // Att seeda in en `Anmälan`-länk i denna fixtur vore att röra en permanent
+    // conformance-fixtur (CLAUDE.md § Granskningsdata) för att bevisa en rad
+    // som delar kodväg — samma `firstLinkId`-hjälpare, samma radform — med
+    // `eventId` ovan. Den grenen bevisas i stället mot Sofia Isaksson
+    // (recxF88ZKUbP9JUs1), vars fem deltaganden bär BÅDA länkarna
+    // (live-verifierat 2026-08-12), vid granskning i browsern.
+  });
+
   test('S103 steg 2: hamtningar/motiveringar/flagga är RIKTIGA poster, inte platta strängar', async ({
     request,
   }) => {
