@@ -264,7 +264,11 @@ export function PersonDetail({ personId }: { personId: string }) {
         {/* Edit-in-place (Fas 6a L6c) — read-by-default, optimistisk write av
             `Personer.Anteckningar`. Mutation + fel-yta inkapslas i komponenten
             (MarkPaidButton-precedensen); detaljvyn renderar bara affordansen. */}
-        <PersonNoteEditor personId={personId} note={person.anteckningar} />
+        <PersonNoteEditor
+          personId={personId}
+          note={person.anteckningar}
+          personNamn={displayName(person)}
+        />
       </section>
     </section>
   );

@@ -9,6 +9,9 @@ interface PersonFlagEditorProps {
   personId: string;
   /** Nuvarande flagga ur detalj-cachen (`null` = ingen satt). */
   flagga: string | null;
+  /** Personens visningsnamn (TASK-201.4, AKTIVITETSLOGGEN) — klient-lokalt
+   * underlag för `recordActivity`s objekt-namn, aldrig skickat till servern. */
+  personNamn: string | null;
 }
 
 /**
@@ -38,8 +41,8 @@ interface PersonFlagEditorProps {
  *   fel → "Redigera"-knappen respektive fältet igen (via `ref`, S103-tillägget
  *   till `Input`-primitiven).
  */
-export function PersonFlagEditor({ personId, flagga }: PersonFlagEditorProps) {
-  const mutation = useUpdatePersonFlag(personId);
+export function PersonFlagEditor({ personId, flagga, personNamn }: PersonFlagEditorProps) {
+  const mutation = useUpdatePersonFlag(personId, personNamn);
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState('');
 

@@ -1,4 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/auth/useAuth';
+import { displayName } from '@/components/registrations/registration-display';
+import {
+  ACTIVITY_OBJECT_TYPES,
+  registrationObjectId,
+  SKAPADE_ANMALAN_VERB,
+} from '@/data/activityLog/activityTypes';
+import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
 import type { CreateRegistrationInput, Registration } from '@/domain/models/Registration';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
@@ -39,6 +47,7 @@ export interface CreateRegistrationFormValues {
 export function useCreateRegistration(eventId: string) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
   const key = queryKeys.registrations.byEvent(eventId);
 
   return useMutation<Registration, Error, CreateRegistrationFormValues>({
@@ -62,11 +71,29 @@ export function useCreateRegistration(eventId: string) {
 
     // aria-live för den lyckade skapelsen (ingen annan SR-signal för create-flippen);
     // rostern synkas av onSettled-invalideringen nedan.
+    //
+    // AKTIVITETSLOGGEN (TASK-201.4): fire-and-forget EFTER den riktiga
+    // skrivningen redan lyckats. `created` är EF-svarets fulla Registration
+    // (samma disciplin som `useUpdateEvent`) — inget extra behövs för
+    // namn/eventNamn. "Lade till person" ingår HÄR (PRD § Implementations-
+    // beslut) — inget separat statement när skapandet implicit skapade en ny
+    // Person-rad.
     onSuccess: (created) => {
       const namn =
         created.namn ??
         ([created.fornamn, created.efternamn].filter(Boolean).join(' ') || 'anmälan');
       alertScreenReader(`Anmälan skapad för ${namn}`);
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: SKAPADE_ANMALAN_VERB,
+        object: {
+          id: registrationObjectId(created.id),
+          type: ACTIVITY_OBJECT_TYPES.anmalan,
+          name: `${displayName(created)} (${created.eventNamn ?? 'okänt event'})`,
+        },
+        eventId,
+      });
     },
 
     // Synka mot servern oavsett utfall (ADR-016 komponent E) → rostern refetchar.

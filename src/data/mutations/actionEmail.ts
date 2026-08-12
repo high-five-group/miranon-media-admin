@@ -88,6 +88,9 @@ export function useSendActionEmail(eventId: string) {
             type: ACTIVITY_OBJECT_TYPES.mail,
             name: `${displayName(reg)} (${reg.eventNamn ?? 'okänt event'})`,
           },
+          // TASK-201.4: betalar 201.3s deferrade EVENT_ID_EXTENSION_IRI-skuld
+          // — eventId var redan hook-bundet (`useSendActionEmail(eventId)`).
+          eventId,
         });
       }
     },
