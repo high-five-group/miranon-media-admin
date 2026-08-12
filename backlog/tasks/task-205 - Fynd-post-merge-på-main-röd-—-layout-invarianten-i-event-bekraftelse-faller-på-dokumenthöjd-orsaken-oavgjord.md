@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-12 20:48'
+updated_date: '2026-08-12 21:16'
 labels: []
 dependencies: []
 priority: high
@@ -57,3 +58,23 @@ ATTRIBUTIONSVARNING: fyndet rapporterades först till orkestreraren som orsakat 
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+KORROBORERANDE BELÄGG, tillagt 2026-08-12 sent (källa: stängningsagentens loggrävning i PR #1238, verifierad mot gh pr diff --name-only):
+
+Post-merge-sviten var röd på FLER merge-SHA:n än 8b4832c7 under samma kväll, och i samtliga fall låg det fällda testet UTANFÖR respektive PR:s diff:
+
+- PR #1202 (TASK-201.2), merge-SHA 50afc936 — fällt: tests/api/update-record.staging.test.ts (fick 503 i stället för 400). Ej i PR:ens diff.
+- PR #1215 (TASK-201.5), merge-SHA 71eba715 — fällt: airtable-filter.staging.test.ts (502) samt attachment-upload-large.staging.test.ts (känd flake, TASK-196). Ingen av dem i PR:ens diff.
+- Kortens EGNA committade staging-tester (activity-log-rls.staging.test.ts, get-activity-log.staging.test.ts) var GRÖNA i samma körningar.
+
+VAD DETTA BETYDER, OCH VAD DET INTE BETYDER:
+
+Det styrker att post-merge-rödhet mot staging var UTBREDD denna kväll och inte knuten till någon enskild PR:s diff — vilket ytterligare försvagar varje enkel bisekt-attribution, inklusive den mot #1229 som detta kort redan varnar för.
+
+Men det BEVISAR inte att denna fällning är samma fenomen. Signaturerna skiljer sig: de ovan är HTTP-fel (502/503) från Airtable-ytan, medan detta kort gäller en layout-assertion på dokumenthöjd som inte går via något API-svar. Behandla det som kontext om kvällens miljötillstånd, inte som en förklaring.
+
+Fyrstegsplanen ovan gäller oförändrad — den är fortfarande det som avgör frågan.
+<!-- SECTION:NOTES:END -->
