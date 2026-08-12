@@ -71,10 +71,28 @@ hem-spalten · `~/Downloads`-provet senare. **NÄSTA:** bygg-agenter ute på
 `201.4` + `201.6` (båda fria, dep `201.3` landad) + stängning av
 `201.2`/`201.3`/`201.5` (landad kod, kort stod kvar `To Do`) → `201.7`
 hem-spalten ∥ `201.8` filterraden → `201.9` prod (HITL per beslut A) +
-`201.10` QA. Numrering disk-re-verifierad vid resume 3 mot `b5534199`,
-noll divergens: ADR **112** · L**512** + **4 fragment** · tråd **T143** ·
-nästa toppnivå-kort **task-205** · fälla **48** — re-derivera ALLTID. Full
-narrativ: sessionsdok S105 Del 1–5 + Paushistorik ×3.
+`201.10` QA. **NATTEN LEVERERAD (2026-08-13, AFK-mandat):** hela
+vy-kedjan byggd och landad över NIO PR:er — `201.4` (`7e74c94b`) · `201.6`
+(`430a8156`) · `201.12` person-navigeringen (`9eaf18f8`) · `201.7`
+hem-spalten (`675fed40`) · `201.8` filterraden (`417537f5`) · stängningarna
+av `201.2`/`.3`/`.5` (`b8abfb3c`) och av `201.4`/`.6`/`.8`/`.12`
+(`7b9441b3`). Sju agenter; `201.7` på Opus per Marcus modell-medskick.
+**TVÅ FYND MINTADE:** `TASK-205` (post-merge-rödhet — bisekt-attributionen
+FALSIFIERAD av fjorton-körningars mätning, fyra röda interfolierade med
+gröna; metodfyndet är att retry-räkningen mäter fel axel) och `TASK-206`
+(`check-backlog-closure.sh` ofullbordbar under fleet-last, fyra mätta
+instanser; grinden är NATTLIG, ej PR-gate — disk-verifierat).
+`T142` nådde ELVA instanser på ett dygn, och `ci.yml`:s egen `ADR-082`-prosa
+falsifierades (länkkontrollen är offline, men verktyget hämtas över nätet).
+**NÄSTA (Marcus, i ordning): (1) granska hem-spalten + facit-stämplingen —
+`201.7` medvetet ÖPPEN, separatorn är mittpunkt `·` som MEDVETEN
+facit-avvikelse · (2) `201.9` prod, HITL per ditt beslut A, det är vad som
+återstår för "live i appen" · (3) `201.10` QA · (4) `TASK-204`
+nyckelmigreringen · (5) `~/Downloads`-provet (`T141`) · (6) diagnos-pass för
+`TASK-205`/`TASK-206`.** Numrering disk-re-verifierad vid paus mot
+`7b9441b3`: ADR **112** · L**512** + **4 fragment** · tråd **T143** · nästa
+toppnivå-kort **task-207** · fälla **48** — re-derivera ALLTID. Full
+narrativ: sessionsdok S105 Del 1–6 + Paushistorik ×3 + PAUSLÄGE.
 
 **Session 102 ⏸️ PAUSAD IGEN (2026-08-11 kväll, `lifecycle: paused`) —
 RESUME-DAGEN LEVERERADE GO-LIVE-KÄRNAN: prod-mailvägen SKARP (`176`+`177`
