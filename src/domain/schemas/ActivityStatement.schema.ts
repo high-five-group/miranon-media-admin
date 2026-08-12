@@ -57,6 +57,25 @@ export const REQUEST_ID_EXTENSION_IRI = `${XAPI_IRI_BASE}/extensions/requestId` 
 export const EVENT_ID_EXTENSION_IRI = `${XAPI_IRI_BASE}/extensions/eventId` as const;
 
 /**
+ * IRI-nyckeln för en OPTIONELL person-referens i `context.extensions`
+ * (`TASK-201.12` — stänger `TASK-201.6`s öppna navigerings-gap: "klicka en
+ * aktivitetspost → gå till personen eller eventet" hade ingen person-halva
+ * att aktivera mot). EXAKT samma konstruktion som `EVENT_ID_EXTENSION_IRI`
+ * ovan, av samma skäl: definieras EN gång, delad av skrivvägen
+ * (`recordActivity`s `personId`-fält) och en framtida läsväg/vy-konsument.
+ * `ActivityContextExtensionsSchema`s `.catchall(z.unknown())` (nedan)
+ * tillåter redan denna nyckel utan schemaändring.
+ *
+ * INTE alla statements bär denna nyckel — en mutation utan en GENUIN person
+ * i sitt sammanhang (t.ex. en event-uppdatering eller event-anteckning)
+ * UTELÄMNAR den helt, aldrig ett tomt/påhittat värde (samma disciplin som
+ * `EVENT_ID_EXTENSION_IRI`s egen kommentar beskriver för event-lösa
+ * statements). Se `recordActivity.ts`s `RecordActivityInput.personId`-fält
+ * för den fullständiga per-mutation-bedömningen.
+ */
+export const PERSON_ID_EXTENSION_IRI = `${XAPI_IRI_BASE}/extensions/personId` as const;
+
+/**
  * xAPI Language Map — BCP 47-taggade strängar (`sv-SE`, `en-US`, eller `und`
  * för odeterminerat språk) mappade till text. Vi EMITTERAR alltid endast
  * `sv-SE` (Gunilla-principen), men VALIDERAR generiskt mot spec-formen —

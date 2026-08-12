@@ -91,6 +91,9 @@ export function useSendActionEmail(eventId: string) {
           // TASK-201.4: betalar 201.3s deferrade EVENT_ID_EXTENSION_IRI-skuld
           // — eventId var redan hook-bundet (`useSendActionEmail(eventId)`).
           eventId,
+          // TASK-201.12: reg.personId är NULLABLE per mottagare — se
+          // registrationPayments.ts's motsvarande kommentar.
+          personId: reg.personId ?? undefined,
         });
       }
     },

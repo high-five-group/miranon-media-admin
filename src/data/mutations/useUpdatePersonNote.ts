@@ -89,6 +89,10 @@ export function useUpdatePersonNote(personId: string, personNamn: string | null)
           type: ACTIVITY_OBJECT_TYPES.anteckning,
           name: personActivityName(personNamn),
         },
+        // TASK-201.12: personId hook-bundet, alltid satt — samma uniforma
+        // emissions-mönster som `useCreatePersonNote`s motsvarande kommentar
+        // förklarar (object.id är redan personen, extensionen emitteras ändå).
+        personId,
       });
     },
   });

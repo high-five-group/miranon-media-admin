@@ -56,6 +56,10 @@ export function useUpdateEvent(eventId: string) {
         prev ? { ...prev, ...updated } : updated,
       );
       alertScreenReader('Ändringarna sparade.');
+      // TASK-201.12: INGEN personId — eventet självt är objektet, ingen
+      // genuin person i sammanhanget (medvetet utelämnad, se
+      // ActivityStatement.schema.ts's PERSON_ID_EXTENSION_IRI-kommentar:
+      // "aldrig ett tomt/påhittat värde").
       void recordActivity({
         dataSource,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },

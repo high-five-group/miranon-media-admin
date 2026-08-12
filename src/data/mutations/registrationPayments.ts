@@ -166,6 +166,10 @@ export function useSetPaymentStatus(eventId: string) {
         // TASK-201.4: betalar 201.3s deferrade EVENT_ID_EXTENSION_IRI-skuld —
         // eventId var redan hook-bundet (`useSetPaymentStatus(eventId)`).
         eventId,
+        // TASK-201.12: registration.personId är NULLABLE (anmälan kan sakna
+        // Person-länk) — ?? undefined utelämnar nyckeln helt i det läget,
+        // aldrig ett påhittat person-ID.
+        personId: registration.personId ?? undefined,
       });
     },
 

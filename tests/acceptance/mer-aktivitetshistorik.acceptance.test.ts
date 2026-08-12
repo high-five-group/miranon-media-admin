@@ -5,6 +5,7 @@ import type { z } from 'zod';
 import {
   type ActivityStatementSchema,
   EVENT_ID_EXTENSION_IRI,
+  PERSON_ID_EXTENSION_IRI,
   REQUEST_ID_EXTENSION_IRI,
   XAPI_IRI_BASE,
 } from '../../src/domain/schemas';
@@ -91,12 +92,15 @@ function statement({
   objectName = 'Anna Andersson (Fjärrskådning 2)',
   timestamp,
   eventId,
+  personId,
 }: {
   actorName?: string;
   verbDisplay?: string;
   objectName?: string;
   timestamp: string;
   eventId?: string;
+  /** TASK-201.12 — personId-extensionen, samma valfria opt-in-form som eventId. */
+  personId?: string;
 }): Statement {
   return {
     id: testUuid(),
@@ -115,9 +119,11 @@ function statement({
       },
     },
     context: {
-      extensions: eventId
-        ? { [REQUEST_ID_EXTENSION_IRI]: testUuid(), [EVENT_ID_EXTENSION_IRI]: eventId }
-        : { [REQUEST_ID_EXTENSION_IRI]: testUuid() },
+      extensions: {
+        [REQUEST_ID_EXTENSION_IRI]: testUuid(),
+        ...(eventId ? { [EVENT_ID_EXTENSION_IRI]: eventId } : {}),
+        ...(personId ? { [PERSON_ID_EXTENSION_IRI]: personId } : {}),
+      },
     },
     timestamp,
   } satisfies Statement;
@@ -265,6 +271,47 @@ test.describe('Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen)', () => 
     // aldrig så långt att detaljsidan hämtar något).
     await page.getByRole('link', { name: /Länkad Person/ }).click();
     await expect(page).toHaveURL(/\/event\/recEventTest123$/);
+  });
+
+  test('AC #1 (TASK-201.12) — post-klick navigerar till PERSONEN när endast personId-extensionen finns; eventId vinner prioritetsordningen när båda finns', async ({
+    page,
+    network,
+  }) => {
+    mockActivityLog(network, () => ({
+      statements: [
+        // Endast personId (person-flagga/anteckning-formen) — INGET eventId.
+        statement({
+          verbDisplay: 'uppdaterade flagga',
+          objectName: 'Enbart Person (flagga)',
+          timestamp: minuterSedan(2),
+          personId: 'recPersonTest456',
+        }),
+        // BÅDA — eventId ska vinna (oförändrat mål för redan fungerande rader,
+        // se AktivitetsHistorik.tsx:s aktivitetensPersonId-prioritetskommentar).
+        statement({
+          verbDisplay: 'markerade betalning',
+          objectName: 'Bada Extensioner (Test-event)',
+          timestamp: minuterSedan(3),
+          eventId: 'recEventBada789',
+          personId: 'recPersonBada789',
+        }),
+      ],
+      nextCursor: null,
+    }));
+
+    await page.goto('/mer/aktivitetshistorik');
+    await expect(page.getByRole('heading', { level: 1, name: 'Aktivitetshistorik' })).toBeVisible();
+
+    await page.getByRole('link', { name: /Enbart Person/ }).click();
+    await expect(page).toHaveURL(/\/personer\/recPersonTest456$/);
+
+    await page.goBack();
+    await expect(page.getByRole('heading', { level: 1, name: 'Aktivitetshistorik' })).toBeVisible();
+
+    // Prioritetsbeviset: raden bär BÅDA extensionerna men länken går till
+    // EVENTET, aldrig personen — annars hade denna assertion fällt.
+    await page.getByRole('link', { name: /Bada Extensioner/ }).click();
+    await expect(page).toHaveURL(/\/event\/recEventBada789$/);
   });
 
   test('cursor-round-trip via "Ladda fler" (TASK-201.5:s useInfiniteQuery)', async ({
