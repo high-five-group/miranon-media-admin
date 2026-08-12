@@ -1,0 +1,81 @@
+- link "Tillbaka till personer":
+  - /url: /personer
+- status: Persondetaljer för Ingrid Isaksson laddade.
+- heading "Ingrid Isaksson" [level=1]
+- region "Kontakt":
+  - heading "Kontakt" [level=2]
+  - list:
+    - listitem:
+      - link "ingrid.isaksson@example.se":
+        - /url: mailto:ingrid.isaksson@example.se
+    - listitem:
+      - link /\d+/:
+        - /url: tel:0705558812
+  - text: Inbjuden till community Konto i community
+- region "Just nu":
+  - heading "Just nu" [level=2]
+  - paragraph: 1 aktiv anmälan
+  - list:
+    - listitem: /Resor i medvetandet 3 \d+ september \d+ · Skövde/
+- region "Flagga":
+  - heading "Flagga" [level=2]
+  - paragraph: Ring innan nästa event
+  - button "Redigera flagga"
+- region "Interaktioner":
+  - heading "Interaktioner" [level=2]
+  - heading "Kommande" [level=3]
+  - list:
+    - listitem: /RIM 3 i Skövde \d+ sep\./
+  - heading /\d+/ [level=3]
+  - list:
+    - listitem:
+      - link /Anmälde sig till RIM 3 i Skövde \d+ september 1 aug\./:
+        - /url: /event/recVisualEvent001/anmalan/recVisualAnm00001
+    - listitem: Hämtade ett erbjudande Pyramidernas Vajrar 9 juni
+    - listitem: Deltog på Psionautics i Ödeshög 1 maj Dag 1 · Närvarande Dag 2 · Deltog online
+    - listitem: Deltog på FS i Varberg 7 feb. Dag 1 · Närvarande Dag 2 · Frånvarande
+  - heading /\d+/ [level=3]
+  - list:
+    - listitem: /Hämtade ett erbjudande Guidad meditation – Första resan \d+ nov\./
+    - listitem: /Deltog på RIM 2 i Rönninge \d+ okt\. Dag 1 · Närvarande Dag 2 · Närvarande/
+  - heading /\d+/ [level=3]
+  - list:
+    - listitem: /Deltog på RIM 1 i Rönninge \d+ nov\. Dag 1 · Försenad Dag 2 · Avbröt/
+    - listitem: Hämtade ett erbjudande Pyramidernas Vajrar 2 okt.
+  - list:
+    - listitem: /Kom in i registret \d+ aug\./
+- region "Eventhistorik":
+  - heading "Eventhistorik" [level=2]
+  - list "Eventhistorik, senaste först":
+    - listitem: /Psionautics 1 maj \d+ · Ödeshög · Utbildning Dag 1 · Närvarande Dag 2 · Deltog online/
+    - listitem: /Fjärrskådning 7 februari \d+ · Varberg · Utbildning Dag 1 · Närvarande Dag 2 · Frånvarande/
+    - listitem: /Resor i medvetandet 2 \d+ oktober \d+ · Rönninge · Utbildning Dag 1 · Närvarande Dag 2 · Närvarande/
+    - listitem: /Resor i medvetandet 1 \d+ november \d+ · Rönninge · Utbildning Dag 1 · Försenad Dag 2 · Avbröt/
+- region "Hämtade erbjudanden":
+  - heading "Hämtade erbjudanden" [level=2]
+  - list:
+    - listitem: /Pyramidernas Vajrar 9 juni \d+/
+    - listitem: /Guidad meditation – Första resan \d+ november \d+/
+    - listitem: /Pyramidernas Vajrar 2 oktober \d+/
+- region "Motiveringar":
+  - heading "Motiveringar" [level=2]
+  - list:
+    - listitem:
+      - text: /Resor i medvetandet 3 \d+ september \d+ Skövde/
+      - paragraph: Jag har haft egna upplevelser och läst många böcker som gjort mig förvissad om att vi alla är del av samma medvetande. Nu vill jag lära mig metoder för att ta mig till andra nivåer — och den här gången vill jag ta med mig två vänner som är nyfikna men försiktiga.
+- region "Anteckningar":
+  - heading "Anteckningar" [level=2]
+  - textbox "Ny anteckning":
+    - /placeholder: Skriv en anteckning …
+  - button "Spara" [disabled]
+  - list:
+    - listitem:
+      - article:
+        - text: /Lotta \d+ juni \d+ \d+:\d+/
+        - paragraph: Ringde och undrade om det gick att dela upp betalningen — löste det med två delbetalningar.
+    - listitem:
+      - article:
+        - text: /Roger 2 maj \d+ \d+:\d+/
+        - paragraph: "Frågade om allergier inför övernattningen. Noterat: laktosintolerant."
+  - text: Äldre anteckning - odaterad, ingen författare
+  - paragraph: Ringde själv inför Skövde-eventet och erbjöd sig att hjälpa till med incheckningen. Har med sig två vänner som inte anmält sig ännu — stäm av platsantalet med Roger innan bekräftelsen går ut.

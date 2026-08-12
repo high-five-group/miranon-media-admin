@@ -1242,6 +1242,59 @@ export const PERSON_DETAIL_RESPONSE = {
 };
 
 /**
+ * `get-person-notes`-svaret (S103 2026-08-12, persondetaljens promoverings-
+ * grind). Formen är `PersonNoteSchema`s — syskon till `EVENT_NOTES_RESPONSE`
+ * ovan, med `personId` i stället för `eventId`.
+ *
+ * VARFÖR DEN BEHÖVDES: persondetaljens anteckningsblock (B7) anropar EF:en
+ * ovillkorligt, och hermetik-vakten fällde grindens första körning på exakt
+ * det omockade anropet (`GET .../get-person-notes?personId=recVisualPers00009`).
+ * Vakten gjorde sitt jobb — den tysta alternativa vägen vore ett tomt block
+ * som såg ut som ett legitimt tomläge.
+ *
+ * PER PERSON, inte globalt: den RIKA personen bär två anteckningar (blockets
+ * fyllda form med författare + tidpunkt), den TUNNA noll (tomlägets form).
+ * Grindens två lägen prövar därmed båda formerna, samma delning som resten av
+ * fixturvärldens rik/tunn-par.
+ */
+export const PERSON_NOTES_RESPONSE = {
+  [VISUAL_PERSON_RIK_ID]: {
+    notes: [
+      {
+        id: 'recVisualPNote0001',
+        forfattare: 'Lotta',
+        text: 'Ringde och undrade om det gick att dela upp betalningen — löste det med två delbetalningar.',
+        tidpunkt: '2026-06-14T09:20:00.000Z',
+        personId: VISUAL_PERSON_RIK_ID,
+      },
+      {
+        id: 'recVisualPNote0002',
+        forfattare: 'Roger',
+        text: 'Frågade om allergier inför övernattningen. Noterat: laktosintolerant.',
+        tidpunkt: '2026-05-02T16:45:00.000Z',
+        personId: VISUAL_PERSON_RIK_ID,
+      },
+    ],
+  },
+  [VISUAL_PERSON_TUNN_ID]: { notes: [] },
+} as const;
+
+/**
+ * `get-person-notes`-mocken. Samma resolver-form som `resolvePersonResponse`:
+ * kuraterat svar för de två fixturpersonerna, TOMT för alla andra ID:n.
+ *
+ * Tomt — inte `undefined` — för okända ID:n med avsikt: en person utan
+ * anteckningar är ett legitimt läge i den här EF:en (till skillnad från
+ * `get-person`, där ett okänt ID betyder att personen inte finns), och en 501
+ * hade fällt varje framtida test som råkar öppna en annan fixturperson.
+ */
+export function resolvePersonNotesResponse(url: URL) {
+  const id = url.searchParams.get('personId');
+  if (!id) return { notes: [] };
+  return PERSON_NOTES_RESPONSE[id as keyof typeof PERSON_NOTES_RESPONSE] ?? { notes: [] };
+}
+
+/**
  * `get-person`-mocken. Kuraterad detalj om ID:t är en av de två; annars en
  * härledd stomme ur listraden. ID utanför fixturvärlden → `undefined`, vilket
  * hermetic.ts besvarar med 501 i klartext (synligt fel, aldrig tyst tom vy).
