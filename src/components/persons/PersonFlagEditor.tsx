@@ -101,13 +101,29 @@ export function PersonFlagEditor({ personId, flagga }: PersonFlagEditorProps) {
   if (!isEditing) {
     return (
       <div className="flex flex-col gap-2">
+        {/* INGEN EGEN ETIKETT HÄR. Läsläget saknade en fram till 2026-08-12
+            (en satt flagga renderades som naken textmassa med en
+            "Redigera"-knapp under, mitt i "Just nu"-kortet) och fick en
+            samma dag — men vid ombyggnaden senare samma dag flyttade
+            komponenten till ett EGET block vars `<h2>Flagga</h2>` bär
+            etiketten. Två skulle vara en dubblett. Flyttas komponenten
+            tillbaka in i ett delat kort måste etiketten återinföras. */}
         {flagga ? (
           <p className="text-small">{flagga}</p>
         ) : (
           <p className="text-small text-text-muted">Ingen flagga.</p>
         )}
         <div>
-          <Button ref={editButtonRef} intent="secondary" size="sm" onPress={startEdit}>
+          {/* `aria-label` bär den fulla handlingen (WCAG 2.5.3: den synliga
+              texten "Redigera" ingår i namnet) — en skärmläsare som listar
+              sidans knappar får annars ett ensamt "Redigera" utan objekt. */}
+          <Button
+            ref={editButtonRef}
+            intent="secondary"
+            size="sm"
+            aria-label="Redigera flagga"
+            onPress={startEdit}
+          >
             Redigera
           </Button>
         </div>

@@ -36,7 +36,12 @@ import type {
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
-import type { ListParams, PersonsPage } from '../../domain/types/Pagination';
+import type {
+  ActivityLogPage,
+  ActivityLogParams,
+  ListParams,
+  PersonsPage,
+} from '../../domain/types/Pagination';
 import { postEdgeFunction } from '../config/supabase-client';
 import type { DataSourceAdapter } from './DataSourceAdapter';
 
@@ -191,6 +196,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async fetchEventAttachments(_eventId: string): Promise<Attachment[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchActivityLog(_params?: ActivityLogParams): Promise<ActivityLogPage> {
     throw new Error(NOT_IMPLEMENTED);
   }
 }

@@ -35,7 +35,12 @@ import type {
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
-import type { ListParams, PersonsPage } from '../../domain/types/Pagination';
+import type {
+  ActivityLogPage,
+  ActivityLogParams,
+  ListParams,
+  PersonsPage,
+} from '../../domain/types/Pagination';
 
 export interface DataSourceAdapter {
   // === Befintliga (oförändrade) ===
@@ -282,4 +287,17 @@ export interface DataSourceAdapter {
    * frånvarande här, inte filtrerad bort.
    */
   fetchEventAttachments(eventId: string): Promise<Attachment[]>;
+
+  /**
+   * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5, PRD
+   * TASK-201). Läsning via get-activity-log: DIREKT ur Postgres-tabellen
+   * `activity_log` (ADR-110) — ingen Airtable-interaktion, till skillnad
+   * mot övriga metoder på denna adapter. Keyset-paginerad (`occurred_at
+   * DESC, id DESC`), inte offset — speglar `listPersons`s cursor-kontrakt
+   * (ADR-056) men med filterparametrarna (kategori/eventId/tidsintervall,
+   * AC #1) inlinead i `ActivityLogParams` i stället för separata argument.
+   * `statements` är exakt `ActivityStatement[]` — ingen parallell "flat"-typ
+   * (se get-activity-log-EF:ens filhuvud för den fulla motiveringen).
+   */
+  fetchActivityLog(params?: ActivityLogParams): Promise<ActivityLogPage>;
 }

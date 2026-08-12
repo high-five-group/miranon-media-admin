@@ -98,12 +98,38 @@ test.describe('get-person — skarp conformance (ADR-056 detalj, Fas 6a L5b)', (
 
     // Personen bär 2 Anmälningar (samma 2 som ger de 2 orterna ovan), ingendera
     // med `Event`-länk eller ifylld motiveringstext (live-verifierat via
-    // get_record 2026-08-10) → motivering=null, event=null för båda. `Rad
-    // skapad` skiljer dem: recO8TSK2A0b0a5YF (07:35:48) är YNGRE än
+    // get_record 2026-08-10) → motivering=null, event=null för båda.
+    //
+    // DESSA TVÅ RADER ÄR OCKSÅ BACKFILL-VÄGENS ENDA SKARPA BEVIS (S103,
+    // 2026-08-12). EF:en läser sedan dess `Inskickad ?? Rad skapad` för
+    // `datum` och `Startdatum` för `eventDatum` — båda tomma här, live-
+    // ombekräftat via get_record samma dag: recO8TSK2A0b0a5YF har varken
+    // `Inskickad`, `Event`-länk eller `Startdatum`. Fallbacken ger därför
+    // OFÖRÄNDRADE `Rad skapad`-datum, och `eventDatum` blir null. Går den
+    // här assertionen sönder av en framtida ändring är det fallback-kedjan
+    // som brustit, inte fixturen.
+    //
+    // `Rad skapad` skiljer dem: recO8TSK2A0b0a5YF (07:35:48) är YNGRE än
     // rec0wC9rEGKUIHC2W (07:35:41) → sorterad FÖRST (datum desc).
     expect(person.motiveringar).toEqual([
-      { id: 'recO8TSK2A0b0a5YF', motivering: null, event: null, datum: '2026-06-19T07:35:48.000Z' },
-      { id: 'rec0wC9rEGKUIHC2W', motivering: null, event: null, datum: '2026-06-19T07:35:41.000Z' },
+      {
+        id: 'recO8TSK2A0b0a5YF',
+        motivering: null,
+        event: null,
+        datum: '2026-06-19T07:35:48.000Z',
+        eventDatum: null,
+        ort: null,
+        eventId: null,
+      },
+      {
+        id: 'rec0wC9rEGKUIHC2W',
+        motivering: null,
+        event: null,
+        datum: '2026-06-19T07:35:41.000Z',
+        eventDatum: null,
+        ort: null,
+        eventId: null,
+      },
     ]);
 
     // Personen bär inget `Flagga`-värde (live-verifierat 2026-08-10) → null,

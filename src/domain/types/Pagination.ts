@@ -1,4 +1,6 @@
 import type { Person } from '../models/Person';
+import type { ActivityStatement } from '../schemas/ActivityStatement.schema';
+import type { ActivityLogFilters } from './Filters';
 
 /**
  * Parametrar för cursor-paginerade list-portar (ADR-056). Källa-agnostisk:
@@ -21,5 +23,29 @@ export interface ListParams {
  */
 export interface PersonsPage {
   persons: Person[];
+  nextCursor: string | null;
+}
+
+/**
+ * Parametrar för aktivitetsloggens paginerade läsning (TASK-201.5). Flat form
+ * (filterfälten upprepade, inte `ActivityLogFilters & {...}`) — speglar
+ * `ListParams` medvetet: den kombinerar redan `search`/`cursor`/`pageSize`
+ * inline i stället för att komponera en separat `PersonFilters`.
+ */
+export interface ActivityLogParams extends ActivityLogFilters {
+  /** Opak framåt-cursor (keyset `occurred_at|id`, se get-activity-log-EF:en). */
+  cursor?: string;
+  /** Önskat antal rader/sida. EF:en klampar mot sitt tak (100). */
+  pageSize?: number;
+}
+
+/**
+ * En cursor-paginerad sida med xAPI-statements (TASK-201.5). `statements`
+ * ÄTERANVÄNDER `ActivityStatement` rakt av — ingen parallell "flat"-typ
+ * (samma disciplin som EF:ens svarsform, se dess filhuvud). `nextCursor ===
+ * null` betyder sista sidan, opak precis som `PersonsPage`.
+ */
+export interface ActivityLogPage {
+  statements: ActivityStatement[];
   nextCursor: string | null;
 }

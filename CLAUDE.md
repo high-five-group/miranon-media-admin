@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-10
+updated: 2026-08-12
 review_by: 2026-11-15
 status: stable
 ---
@@ -547,6 +547,21 @@ Praktiskt, i den ordningen:
 som ska minta ett kort läser inte en ADR först. `ADR-081` påstod i tre månader att
 kortnumren *"redan är lösta"* — det var falskt hela tiden, och kostade en skarp
 kollision 2026-07-30 innan någon mätte efter. Rättelsen: `ADR-081` § Updates.
+
+---
+
+## Verktygsfakta som lätt gissas fel
+
+Inte regler — fakta som kostat tid när de antagits. Slå upp, gissa aldrig.
+
+- **Åtkomster och nycklar (Supabase PAT vs projektnyckel, macOS TCC per
+  värdapp, nyckelringsposter) har ett eget register:**
+  [`docs/reference/atkomst-och-nycklar.md`](docs/reference/atkomst-och-nycklar.md).
+  Mät ÅTKOMSTEN, aldrig omgivningen — kör bevis-kommandot innan du
+  deklarerar att något saknas. Mekaniserad självdiagnos:
+  `npm run atkomst:diagnos` (`scripts/atkomst-diagnos.sh`). Etablerat
+  TASK-202 efter att Marcus två gånger blivit ombedd att skapa åtkomster
+  han redan hade.
 
 ---
 

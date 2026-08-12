@@ -10,6 +10,7 @@ import type { CreateRegistrationInput, Registration } from '../../domain/models/
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
   type ActivityStatement,
+  ActivityStatementSchema,
   AttachmentSchema,
   AttachmentUploadTicketSchema,
   AttendanceSchema,
@@ -59,7 +60,12 @@ import type {
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
-import type { ListParams, PersonsPage } from '../../domain/types/Pagination';
+import type {
+  ActivityLogPage,
+  ActivityLogParams,
+  ListParams,
+  PersonsPage,
+} from '../../domain/types/Pagination';
 import { callEdgeFunction, postEdgeFunction, supabase } from '../config/supabase-client';
 import {
   BILAGOR_BUCKET_ID,
@@ -678,5 +684,37 @@ export class AirtableAdapter implements DataSourceAdapter {
       eventId,
     });
     return z.array(AttachmentSchema).parse(data.attachments);
+  }
+
+  /**
+   * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5). Läsning
+   * via get-activity-log: DIREKT ur Postgres-tabellen `activity_log`
+   * (ADR-110) — ingen Airtable-tabell inblandad, till skillnad mot övriga
+   * metoder på denna adapter (samma "AirtableAdapter är den LEVANDE
+   * produktions-adaptern, inte bokstavligen bara Airtable"-precedent som
+   * `getAuthHeader()`s Supabase-session redan etablerar). Query-params
+   * byggs på SAMMA sätt som `listPersons` (bara satta nycklar tas med).
+   * `.parse()` validerar varje statement vid datagränsen (ADR-026) — och
+   * bevisar därmed, precis som `fetchMailLog`/`fetchEvents` m.fl., att
+   * `ActivityStatementSchema` gäller läsvägen lika strikt som skrivvägen
+   * (TASK-201.1 DoD #6), utan att EF:en själv Zod-validerar server-side.
+   */
+  async fetchActivityLog(params?: ActivityLogParams): Promise<ActivityLogPage> {
+    const query: Record<string, string> = {};
+    if (params?.category) query.category = params.category;
+    if (params?.eventId) query.eventId = params.eventId;
+    if (params?.from) query.from = params.from;
+    if (params?.to) query.to = params.to;
+    if (params?.cursor) query.cursor = params.cursor;
+    if (params?.pageSize) query.pageSize = String(params.pageSize);
+
+    const data = await callEdgeFunction<{ statements: unknown; nextCursor: string | null }>(
+      'get-activity-log',
+      Object.keys(query).length > 0 ? query : undefined,
+    );
+    return {
+      statements: z.array(ActivityStatementSchema).parse(data.statements),
+      nextCursor: data.nextCursor ?? null,
+    };
   }
 }

@@ -1238,7 +1238,15 @@ jobs:
         # § Beslut 5, PreCompact-grinden mot okontrollerad kompaktering) +
         # .nattvakt-dedup-policy.conf, tillagd i TASK-180-wiringen
         # (scripts/check-nattvakt-dedup.sh — nightly-watchdog.yml:s
-        # dedup-beslut, öppet ELLER stängt-med-motivering) —
+        # dedup-beslut, öppet ELLER stängt-med-motivering) +
+        # .atkomst-diagnos-policy.conf, tillagd i TASK-202-wiringen
+        # (scripts/atkomst-diagnos.sh — mekaniserad självdiagnos för
+        # åtkomst och nycklar, docs/reference/atkomst-och-nycklar.md) +
+        # .hemlighet-utskrift-policy.conf + .prod-ref-policy.conf, tillagda
+        # i TASK-203-wiringen (scripts/deny-hemlighet-utskrift.sh +
+        # scripts/deny-prod-ref.sh — mekaniska PreToolUse-lås mot kommandon
+        # som skriver ut hemligheters värde resp. agent-kommandon riktade
+        # mot produktions-Supabase-projektet, Marcus-order 2026-08-12) —
         # en sourced conf utanför scopet är samma lucka som de övriga redan
         # stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
@@ -1249,8 +1257,9 @@ jobs:
         # T119(d) item 5-wiringen, till femton i T119(d) item 4-wiringen,
         # till sjutton i TASK-139, till arton i TASK-148.2, till nitton i
         # TASK-152, till tjugo i TASK-149.3, till tjugoett i TASK-158.2,
-        # till tjugotvå i TASK-160.2, till tjugotre i ADR-102-wiringen och
-        # till tjugofyra i TASK-180-wiringen
+        # till tjugotvå i TASK-160.2, till tjugotre i ADR-102-wiringen,
+        # till tjugofyra i TASK-180-wiringen, till tjugofem i
+        # TASK-202-wiringen och till tjugosju i TASK-203-wiringen
         # (.facit-policy.conf — agenten som byggde grinden lade till conf-filen
         # men wirade den inte in hit; luckan fångades av att shellcheck-strict
         # fällde på skriptet, inte av att någon läste listan).
@@ -1284,7 +1293,10 @@ jobs:
             .arkivera-sessionsdok-policy.conf \
             .precompact-policy.conf \
             .facit-policy.conf \
-            .nattvakt-dedup-policy.conf
+            .nattvakt-dedup-policy.conf \
+            .atkomst-diagnos-policy.conf \
+            .hemlighet-utskrift-policy.conf \
+            .prod-ref-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på

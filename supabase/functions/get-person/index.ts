@@ -43,14 +43,39 @@ const TOUCHPOINT_FIELDS = ['Erbjudande', 'Typ', 'Datum'];
 // `datum` nedan levererar separat), `Kurs (from Event)` (lookup via
 // Event-länken, eventets kanoniska kursnamn) + `Vill anmäla sig till`
 // (multipleSelects, fallback när Event-länken saknas — backfill-anmälningar)
-// för `event`, och `Rad skapad` (createdTime) för `datum` — INTE `Inskickad`
-// (data-model.md § "Senaste anmälan datum": ojämnt ifylld, samma val basens
-// egen rollup gör).
+// för `event`.
+//
+// DATUMET: `Inskickad` FÖRST, `Rad skapad` (createdTime) som fallback — inte
+// `Rad skapad` ensamt, som fram till 2026-08-12. Det gamla valet motiverades
+// med att `Inskickad` är ojämnt ifylld (data-model.md § "Senaste anmälan
+// datum"), vilket är rätt skäl att inte lita på fältet ENSAMT och fel skäl att
+// inte läsa det alls: `Rad skapad` är radens födelse i Airtable, inte
+// personens handling. På seedad data sammanfaller alla `Rad skapad` med
+// seedningsögonblicket, så samtliga anmälningar fick IDENTISKT datum (Sofia
+// Isaksson 2026-08-12, mätt: fyra anmälningar alla "10 augusti 2026" medan
+// `Inskickad` bar 2026-05-21 respektive 2026-08-07). Fallback-kedjan är samma
+// idiom som `event`-raden nedan redan använder.
+//
+// `Startdatum` (lookup via Event-länken) skiljer TILLFÄLLEN åt: två anmälningar
+// till samma kurs men olika event gav annars två identiska rader ("Anmäld till
+// Fjärrskådning" ×2 — tillfällena 2026-06-11 och 2026-08-18).
+// `Ort (from Event)` (lookup) bär eventets ort — anmälans EGNA `Ort` duger
+// inte, den är tom på backfill-anmälningar (data-model.md § Fält tillagda i
+// augusti 2026). Behövs för tidslinjens mening "Anmälde sig till <kurs> i
+// <ort> <datum>" (Marcus 2026-08-12).
+// `Event` (multipleRecordLinks) ger anmälans EVENT-record-ID. Persondetaljens
+// anmälningsrader länkar till `/event/$eventId/anmalan/$registrationId`
+// (AnmalanDetail, task-18.17) och routen kräver BÅDA ID:na — anmälnings-ID:t
+// är radens eget, event-ID:t finns bara här.
 const ANMALNINGAR_MOTIVERING_FIELDS = [
   'Varför vill du gå den här utbildningen?',
   'Kurs (from Event)',
   'Vill anmäla sig till',
+  'Ort (from Event)',
+  'Event',
+  'Inskickad',
   'Rad skapad',
+  'Startdatum',
 ];
 
 // Max record-ID:n per batch-anrop (Deltaganden/Touchpoints/Anmälningar delar
@@ -150,8 +175,21 @@ function mapMotiveringEntry(record: { id: string; fields: Fields }) {
     // anmäla sig till` när eventlänken saknas (backfill-anmälningar utan
     // Event-länk) — samma idiom som den formeln, ingen egen uppfinning.
     event: scalarString(f['Kurs (from Event)']) ?? scalarString(f['Vill anmäla sig till']),
-    // `Rad skapad` (createdTime), INTE `Inskickad` — se ANMALNINGAR_MOTIVERING_FIELDS-kommentaren.
-    datum: scalarString(f['Rad skapad']),
+    // `Inskickad` först, `Rad skapad` som fallback — se
+    // ANMALNINGAR_MOTIVERING_FIELDS-kommentaren för varför ordningen är den.
+    datum: scalarString(f['Inskickad']) ?? scalarString(f['Rad skapad']),
+    // Eventets startdatum (lookup) — skiljer två anmälningar till samma kurs
+    // men olika tillfällen åt. Null när Event-länken saknas (backfill).
+    eventDatum: scalarString(f['Startdatum']),
+    // Eventets ort (lookup) — meningens "i <ort>"-led. Null vid saknad
+    // Event-länk; meningen utelämnar då ledet i stället för att gissa.
+    ort: scalarString(f['Ort (from Event)']),
+    // Event-länkens record-ID — länkmålets andra halva. FÖRSTA elementet:
+    // fältet är en multipleRecordLinks men bär i praktiken ETT event per
+    // anmälan (`prefersSingleRecordLink`). Null när länken saknas
+    // (backfill-anmälningar) → raden renderas oklickbar i stället för att
+    // länka till en trasig route.
+    eventId: Array.isArray(f['Event']) && typeof f['Event'][0] === 'string' ? f['Event'][0] : null,
   };
 }
 
