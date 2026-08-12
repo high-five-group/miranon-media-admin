@@ -99,6 +99,39 @@ export const handlers = [
   // Se fixture-data.ts § Personer-världen.
   http.get(EF('get-persons'), ({ request }) => json(resolvePersonsResponse(new URL(request.url)))),
   http.get(EF('get-person'), ({ request }) => json(resolvePersonResponse(new URL(request.url)))),
+
+  // Aktivitetsloggens skrivväg (TASK-201.3, ADR-110/ADR-111) — HÄR, i
+  // normalläget, INTE per test. `recordActivity` fire-and-forget:ar EFTER
+  // varenda instrumenterad mutation (markera betalning, bekräfta anmälan,
+  // mail-åtgärd, och fler i TASK-201.4), så anropet är EXAKT lika mycket en
+  // del av normalläget som `get-events`/`get-registrations` — ett svar
+  // varje test i klassen behöver utan att säga något, inte ett svar en
+  // enskild test-scenario äger. Skulle mocken bott per test hade varenda
+  // svit som rör en instrumenterad mutation behövt upprepa den (OMOCKAD-
+  // anropet är annars deterministiskt, inte flakigt — se hermetik-vaktens
+  // egen `OmockadRequestError`).
+  //
+  // Svaret speglar EXAKT `log-activity`-EF:ens kontrakt vid framgång
+  // (`supabase/functions/log-activity/index.ts`, `RecordActivityResultSchema`
+  // i `src/domain/schemas/ActivityStatement.schema.ts`): `{id, requestId,
+  // occurredAt}`, ekar tillbaka det klienten skickade — samma form som
+  // `tests/e2e/atgarder-betalningar.staging.test.ts` § `mocka()` redan
+  // etablerar för samma EF, i en annan testklass.
+  http.post(EF('log-activity'), async ({ request }) => {
+    const body = (await request.json()) as {
+      id: string;
+      timestamp: string;
+      context: { extensions: Record<string, string> };
+    };
+    return json(
+      {
+        id: body.id,
+        requestId: Object.values(body.context.extensions)[0],
+        occurredAt: body.timestamp,
+      },
+      201,
+    );
+  }),
 ];
 
 /**
