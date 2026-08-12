@@ -4,7 +4,7 @@ title: 'Grind F: flippa ENVIRONMENT=production för send-email i prod + verifika
 status: Done
 assignee: []
 created_date: '2026-08-10 06:14'
-updated_date: '2026-08-11 19:29'
+updated_date: '2026-08-12 04:08'
 labels:
   - ready-for-human
 dependencies: []
@@ -24,16 +24,10 @@ Go-live-blockerare på Lotta-kan-jobba-baren (Marcus-beslut 2026-08-10, sessions
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ENVIRONMENT=production satt i prod för send-email — Marcus handgrepp, bokfört med tidsstämpel i kortets notes
-- [ ] #2 Code-verifikat efter flipp: miljö-grinden avvisar inte längre (422-klassen borta) via icke-muterande verifikatform per T55
+- [x] #1 ENVIRONMENT=production satt i prod för send-email — Marcus handgrepp, bokfört med tidsstämpel i kortets notes
+- [x] #2 Code-verifikat efter flipp: miljö-grinden avvisar inte längre (422-klassen borta) via icke-muterande verifikatform per T55
 - [ ] #3 T55-tråden uppdaterad med utfallet
 <!-- AC:END -->
-
-## Final Summary
-
-<!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Grind F genomförd 2026-08-11 (S102): Marcus skapade ENVIRONMENT=production på lvjsfnphlauldxqlncpl (dashboard). Full-paritetsdeployen (33 EF:er, PR #1165) + deny-probes 8/8 → 401. Skarpt verifikat: bekräftelsemail genom prod-vägen levererat (Resend f4045fde, delivered 19:17:21Z) — vakten är AV i prod och sändvägen fungerar ände-till-ände.
-<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
@@ -42,3 +36,15 @@ Grind F genomförd 2026-08-11 (S102): Marcus skapade ENVIRONMENT=production på 
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BOKFÖRINGS-RÄTTELSE 2026-08-12 (nightly-grind-drift, run 31560003797): AC #1 och #2 bockade mot belägg — sessionsdok S102 Del 6 (tasks/sessions/2026-08-10-session-102.md rad ~315-329): Marcus skapade ENVIRONMENT=production, full-paritetsdeploy #1165 (33 EF:er, deny-probes 8/8 -> 401), skarpt bevis bekräftelsemail levererat i prod (Resend f4045fde, delivered 19:17:21Z) - 422-klassen bevisat borta. AC #3 LÄMNAD OBOCKAD MED FLIT: tasks/threads/T55-mail-go-live-grind-f.md bär fortfarande Tillstånd: paused (verifierat i git log + tasks/threads/README.md-registret) - tråden är aldrig uppdaterad med utfallet trots att arbetet är gjort och dokumenterat på andra ställen (Final Summary, sessionsdok). Utanför denna rättelses mandat (ren kort-bokföring, ej trådredigering) - flaggat till orkestrerare/Marcus i stället för gissat bockad.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Grind F genomförd 2026-08-11 (S102): Marcus skapade ENVIRONMENT=production på lvjsfnphlauldxqlncpl (dashboard). Full-paritetsdeployen (33 EF:er, PR #1165) + deny-probes 8/8 → 401. Skarpt verifikat: bekräftelsemail genom prod-vägen levererat (Resend f4045fde, delivered 19:17:21Z) — vakten är AV i prod och sändvägen fungerar ände-till-ände.
+<!-- SECTION:FINAL_SUMMARY:END -->

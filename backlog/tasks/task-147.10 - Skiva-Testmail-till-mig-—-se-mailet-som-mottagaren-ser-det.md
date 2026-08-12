@@ -4,7 +4,7 @@ title: 'Skiva: Testmail till mig — se mailet som mottagaren ser det'
 status: Done
 assignee: []
 created_date: '2026-08-10 07:40'
-updated_date: '2026-08-11 19:21'
+updated_date: '2026-08-12 04:05'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,6 +33,14 @@ Täcker: förlängning av användarberättelse 9; T53.
 - [x] #3 Granskningsytans utökade form Marcus-omstämplad (ADR-104-kanalen)
 - [x] #4 T53-tråden stängd med pekare hit
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -118,11 +126,3 @@ igen i detta varv, så en ny stämpel krävs. Kortet lämnas In Progress.
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Testmail-raden A-formen levererad genom tre varv: grundformen (#1124), A-rad-iterationen (#1147), hover+omklick (#1166 — ghost-hovern osynlig mot panelbakgrund fixad, knappen kvarstår vid fel för retry per Marcus beslut). Marcus facit-stämpel 2026-08-11: 'ser okej ut' (--ersatt, sha efc4091a) efter granskning av omladdad yta. FRAMME-kedjan bevisad i 147-batchen.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->

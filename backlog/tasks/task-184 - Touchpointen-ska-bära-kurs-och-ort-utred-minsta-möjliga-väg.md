@@ -1,10 +1,10 @@
 ---
 id: TASK-184
 title: Touchpointen ska bära kurs och ort - utred minsta möjliga väg
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 09:16'
-updated_date: '2026-08-10 10:16'
+updated_date: '2026-08-12 04:06'
 labels:
   - bas-maximering
   - utredning
@@ -23,7 +23,13 @@ Senaste interaktion-texten på Personer ska kunna säga 'Anmälde sig till RIM 1
 - [x] #1 Utredningen redovisar minsta möjliga väg med belägg per steg,Backfill-behovet är avgjort mot faktisk data och inte antaget,Vägen är prövad i staging innan prod,Båda basernas paritet är verifierad och inte antagen
 <!-- AC:END -->
 
-
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -43,10 +49,8 @@ NYTT MÄTT FAKTUM (stänger kortets omätt-punkt): staging BÄR samma automation
 DOCS: data-model.md ny sektion 'Fält tillagda i augusti 2026'; airtable-constraints.md ny post P30 (formler når bara länkade tabeller; länkfält kan ej beräknas) + ändringslogg; CLAUDE.md 29->30 poster. markdownlint + vale + npm run check:docs (14/14) gröna. Ocommittat i worktree s103-t97-personvyerna.
 <!-- SECTION:NOTES:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Utredningen levererade byggd och verifierad lösning (inte bara utredning): 8 nya beräknade fält i BÅDA baserna (prod app8uGPrVCVOm6LfD + staging apphjj8Q7lkXCMsL4), noll backfill, ingen automationsändring, inget nytt länkfält — vägen gick via den redan fyllda Personer.Anmälningar-länken. Skarpt bevis: 6 verkliga prod-personer flippade till rik sträng, negativ kontroll körd i staging. Landat och dokumenterat i commit aaccaaf3 (PR #1096, alla CI-jobb SUCCESS/SKIPPED, mergad 2026-08-10): data-model.md ny sektion, airtable-constraints.md P30, CLAUDE.md 29->30. Rättat av backlog-stängningsgrinden [TASK-201.x-bokforingsstadning]: status var kvar To Do trots att AC var bockad och arbetet landat på main.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-10 11:43'
-updated_date: '2026-08-11 19:00'
+updated_date: '2026-08-12 04:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,6 +26,14 @@ Fynd ur S102-batchen (kort ⑨, 158.4): grinden check-sessionsdok-fonster.sh fan
 - [x] #2 Länk-omskrivningen verifierad (inga brutna inlänkar, lychee/docs-grindarna gröna)
 <!-- AC:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -37,11 +45,3 @@ AC #1: svepet kört 2026-08-11 (S102) — 2 arkiverade (s85+s86 → archive/2026
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Svepet kört 2026-08-11 (S102-resume): s85+s86 → archive/2026-07/, 9 länkomskrivningar, policy orörd. Fönster-grinden exit 0, check:docs 14/14, shellcheck OK. Landat via PR #1164 (merge f5be8d1c), kön grön. Natt-larmet Sessionsdok-fönstret tystnar från och med i natt.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
