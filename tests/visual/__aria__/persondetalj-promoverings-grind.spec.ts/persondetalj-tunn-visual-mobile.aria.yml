@@ -1,0 +1,37 @@
+- link "Tillbaka till personer":
+  - /url: /personer
+- status: Persondetaljer för Ej tillgängligt laddade.
+- heading "Ej tillgängligt" [level=1]
+- region "Kontakt":
+  - heading "Kontakt" [level=2]
+  - list:
+    - listitem:
+      - link "p.lindqvist@example.se":
+        - /url: mailto:p.lindqvist@example.se
+- region "Just nu":
+  - heading "Just nu" [level=2]
+  - paragraph: Inga aktiva anmälningar.
+- region "Flagga":
+  - heading "Flagga" [level=2]
+  - paragraph: Ingen flagga.
+  - button "Redigera flagga"
+- region "Interaktioner":
+  - heading "Interaktioner" [level=2]
+  - list:
+    - listitem: /Kom in i registret \d+ sep\./
+- region "Eventhistorik":
+  - heading "Eventhistorik" [level=2]
+  - paragraph: Ingen eventhistorik ännu
+  - paragraph: Historiken fylls när ett deltagande registreras.
+- region "Hämtade erbjudanden":
+  - heading "Hämtade erbjudanden" [level=2]
+  - paragraph: Inga hämtade erbjudanden registrerade.
+- region "Motiveringar":
+  - heading "Motiveringar" [level=2]
+  - paragraph: Inga motiveringar registrerade.
+- region "Anteckningar":
+  - heading "Anteckningar" [level=2]
+  - textbox "Ny anteckning":
+    - /placeholder: Skriv en anteckning …
+  - button "Spara" [disabled]
+  - paragraph: Inga anteckningar ännu

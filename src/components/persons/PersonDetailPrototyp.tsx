@@ -2368,8 +2368,18 @@ export function PersonDetailPrototyp({
 
   const notFound = error instanceof EdgeFunctionError && error.status === 404;
 
+  // `data-testid` sitter på sidramen och därmed på ALLA render-grenar
+  // (pending / error / innehåll) — samma placering som `personer-yta` i
+  // `PersonsList.tsx`, och av samma skäl: promoverings-grinden (ADR-103 B4)
+  // behöver ETT ankare som överlever både flippen och rivningen. Rent
+  // attribut, ingen layout-effekt: fragmentet varianterna returnerar har
+  // inget eget rot-element att hänga det på.
   const sidRam = (innehall: React.ReactNode) => (
-    <section ref={headingRef} className="flex flex-col gap-6 pt-2 lg:pt-10">
+    <section
+      ref={headingRef}
+      data-testid="persondetalj-yta"
+      className="flex flex-col gap-6 pt-2 lg:pt-10"
+    >
       <Link
         to="/personer"
         aria-label="Tillbaka till personer"
