@@ -136,7 +136,30 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ⏸️ PAUSAD (2026-08-12 sen kväll, `lifecycle: paused`) — DEL 9:
+**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-13 em, `lifecycle: active`) — RESUME MOT
+DISK: PAUS-LÄGETS FEM PÅSTÅENDEN HÖLL, EN DIVERGENS.** `#1229` **MERGED**
+(`8b4832c7`, 2026-08-12T20:27:57Z) · `CheckinPrototyp.tsx` **1087 rader** ·
+`CHECKIN_PROTO_VARIANTS` rad 1083, routen DEV-grindad `?variant=a|b|c`,
+**inget formval gjort** · närvaro-WRITE fortfarande **0 träffar** på
+`Deltaganden` i `field-allowlists.ts` · inget arbetsform-läge att återskapa.
+**DIVERGENS — carry 9 är förbrukad:** visual-baslinjen är **avfyrad**
+(`workflow_dispatch` run `31714504314`, 2026-08-13T15:16:20Z mot `91601d8b`,
+success) → **PR `#1249`**, 7 bilder, OPEN/ej draft/`BLOCKED`/oarmerad.
+**Utlösaren är S105:s** — `d3f29523` säger i sin body *"Laser upp ADR-103 B4
+(visual-baslinjen tas om)"*; carry 9 betalades av en parallell session.
+**Rörs INTE av S103** — granskningsbar baslinje-PR som väntar Marcus öga och
+ägs av S105; bokförd som fynd, ägaren armerar eller draftar. Numrering RE-VERIFIERAD mot
+`91601d8b`: **ADR 112 · L512 + 4 fragment** (båda oförändrade) ·
+**T143 · task-208** (båda flyttade sedan pausen, precis som paus-doket
+varnade). Arbetsträd `.claude/worktrees/s103-resume-persondetalj-d`, gren
+`docs/s103-resume-checkin` ur `origin/main` — huvudkatalogen ägs av levande
+S105 (ADR-090 beslut 2). **NÄSTA: check-in-passet — divergens-granskning
+(`/event/<id>/narvaro?variant=a|b|c`, Marcus väljer form) + närvaro-WRITE-forken
+som eget enabling-bygge FÖRE eller parallellt med formvalet.**
+**HANDOFF: sessionsdok S103 Del 10 + § Paushistorik (2026-08-12 sen kväll).**
+*(Paus-blocket nedan bevarat.)*
+
+**Session 103 (Del 9, historik) —
 PERSONDETALJEN ÄR PROMOVERAD OCH LÅST. ADR-103:s FYRA STEG KLARA, MARCUS
 STÄMPEL SATT (`av: marcus, sha: 4648823a`), PROTOTYP-MASKINERIET RIVET.**
 `PersonDetailPrototyp.tsx` finns inte längre — den ÄR `PersonDetail.tsx`
