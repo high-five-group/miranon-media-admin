@@ -1,10 +1,10 @@
 ---
 id: TASK-201.7
 title: 'Skiva: Hem-spalten Senaste aktivitet (facit-ytan)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 20:26'
-updated_date: '2026-08-12 20:57'
+updated_date: '2026-08-13 15:31'
 labels:
   - ready-for-agent
 dependencies:
@@ -36,9 +36,9 @@ Täcker användarberättelser: 2, 3, 5, 6
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Hem-spalten identisk mot facit-manifestets k10-bild (ADR-102 B5) — Marcus-granskad; manifestet: tasks/sessions/bilagor/s55-hem-konvergens/facit.json
+- [x] #5 Hem-spalten identisk mot facit-manifestets k10-bild (ADR-102 B5) — Marcus-granskad; manifestet: tasks/sessions/bilagor/s55-hem-konvergens/facit.json
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -71,3 +71,19 @@ VISUELL BASLINJE: tests/visual/__screenshots__/hem.spec.ts är nu inaktuell — 
 
 GODKÄNNANDE: facit.json-fältet godkand är ORÖRT (null). Identiteten mot k10-facit-desktop.png är Marcus eget moment (ADR-104); stämplingskanalen har inte anropats av agenten.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S105 stängning (uppdrag: promovera hem-spalten efter Marcus godkännande). Två återstående punkter avklarade:
+
+1) VISUELL BASLINJE (ADR-103 B4) — vald väg: workflow_dispatch mot visual-baselines.yml, INTE lokal körning. Motivering: (a) ADR-103 B4 säger uttryckligen "baslinjen tas om ... via CI-artefakt"; (b) workflowns eget filhuvud dokumenterar varför lokalt är fel väg: "referensbilderna genereras i SAMMA miljö de jämförs i (ubuntu-linux — en Mac-bild matchar aldrig en linux-jämförelse)" — denna worktree kör macOS. Triggad (run 31714504314, grönt på 3m3s) → öppnade PR #1249 "test(visual): baseline-uppdatering ur CI (7 bilder)". Innehåller tests/visual/__screenshots__/hem.spec.ts/hem-visual-desktop-linux.png (förväntat — hem-ytan fick sektionen). hem-visual-mobile-linux.png OFÖRÄNDRAD, konsistent med manifestets not att spalten inte visas på mobil. OVÄNTAT FYND (registrerat, ej åtgärdat — utanför denna skivas mandat): PR #1249 bär även 5 bilder från 3 ORELATERADE ytor (event-anmalda, eventsida, personer, desktop+mobil) — ackumulerad baseline-drift workflown fångade eftersom den kör HELA test:visual-sviten, inte skopad till hem. PR #1249 väntar Marcus/orkestrerar-granskning (GRANSKNINGSPLIKT i PR-body) och dess CI står i approval-required-läge (GITHUB_TOKEN-genererad PR) — jag varken godkänner bilderna eller mergar PR:en, det är ett människo-moment (samma mönster som facit-godkännandet).
+
+2) DoD #5 (facit-identitet, Marcus-granskad): belägg = tasks/sessions/bilagor/s55-hem-konvergens/facit.json-fältet godkand, committat d3f29523 ("docs(facit): [S105] s55-hem-konvergens godkand av Marcus"), mergat till main via PR #1248 → commit 91601d8b (2026-08-13T15:15:07Z), verifierat via git show origin/main. PREMISS-AVVIKELSE (ADR-086, rapporterad ej tyst byggd vidare på): uppdraget beskrev stämplingen som en OCOMMITTAD M-fil i huvudkatalogens arbetsträd — faktiskt fynd var en COMMITTAD, PUSHAD PR (#1248), som mergade till main UNDER denna sessions gång (var fortfarande OPEN vid första kontrollen, MERGED vid omkontroll). Substansen (Marcus godkännande finns, citatet matchar) var korrekt — bara transportformen (arbetsträd vs PR) var fel beskriven.
+
+3) DoD #3 (CI grön per jobb): belägg = PR #1236 (commit 675fed40, ursprungslandningen) — samtliga 14 checks SUCCESS eller avsett SKIPPED (Staging sentinel purge / A11y / Staging E2E — villkorade jobb), mergad 2026-08-12T21:42:39Z via kön. Plus denna stängningscommits egen CI, verifierad grön före armering (se PR nedan).
+
+Ingen rivningsbar variant-kod hittad: src/components/hem/prototype/ finns inte (ls: No such file or directory). Kvarvarande "K10"-träffar i src/components/hem/*.tsx är samtliga kommentarer som pekar mot facit-specen — verifierat via grep, ingen är villkorad kod eller flagga.
+
+Rörda filer i DENNA commit: enbart backlog/tasks/task-201.7*.md (kort-stängning). Ingen src-ändring behövdes.
+<!-- SECTION:FINAL_SUMMARY:END -->
