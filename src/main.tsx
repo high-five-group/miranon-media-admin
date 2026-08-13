@@ -1,4 +1,3 @@
-import { registerSW } from 'virtual:pwa-register';
 import * as Sentry from '@sentry/react';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { RouterProvider } from '@tanstack/react-router';
@@ -14,6 +13,7 @@ import './styles/tailwind.css';
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/useAuth';
 import { AppErrorBoundary } from './components/ErrorBoundary';
+import { registreraAppUppdatering } from './lib/app-uppdatering';
 import { reportWebVitals } from './lib/report-web-vitals';
 import { initSentry } from './observability/sentry';
 import { persistOptions } from './queries/persist';
@@ -111,10 +111,13 @@ createRoot(rootEl, {
   </StrictMode>,
 );
 
-// Registrera Workbox-SW:n (Fas 5, ADR-047) via vite-plugin-pwa.
-// registerSW är no-op i dev (devOptions.enabled: false) och guardar själv
-// mot miljöer utan serviceWorker-stöd.
-registerSW();
+// Registrera Workbox-SW:n (Fas 5, ADR-047) via vite-plugin-pwa OCH koppla upp
+// uppdateringsvägen (ADR-047 § Amendering 2026-08-13). Anropet var tidigare ett
+// naket registerSW() utan optioner — vilket betydde att appen saknade varje väg
+// från "ny deploy" till "Lotta ser ny kod" (mätt i research task-199 § 3).
+// Registreringen är fortfarande no-op i dev (devOptions.enabled: false) och
+// guardar själv mot miljöer utan serviceWorker-stöd.
+registreraAppUppdatering();
 
 // [GA] Rapportera Core Web Vitals
 reportWebVitals();

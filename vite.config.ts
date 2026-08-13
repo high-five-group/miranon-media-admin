@@ -42,6 +42,28 @@ export default defineConfig(({ mode }) => {
         srcDir: 'src',
         filename: 'sw.ts',
         injectRegister: false,
+        // ADR-047 § Amendering 2026-08-13 (TASK-199-uppföljning). Utan detta
+        // fält låg pluginet i sitt default 'prompt'-läge, vars hela
+        // omladdningsväg hänger på workbox-windows `waiting`-event — som
+        // ALDRIG kan fyra hos oss, eftersom src/sw.ts anropar skipWaiting()
+        // i sin install-handler. Följden var att appen kunde köra gammal kod
+        // obegränsat länge (research task-199 § 3.2).
+        //
+        // 'autoUpdate' byter KLIENTGREN i vite-plugin-pwas register.js från
+        // `waiting` till `activated` — händelsen vår skipWaiting() garanterar.
+        // Mätt: fältet rör INTE vår handskrivna sw.ts. registerType används på
+        // exakt tre ställen i node_modules/vite-plugin-pwa/dist/index.js: rad
+        // 800 (default), rad 169 (ersätter __SW_AUTO_UPDATE__ i klientkoden —
+        // den enda som gäller oss) och rad 874, som sätter workbox.skipWaiting
+        // men bara när injectRegister är 'auto'/null; vi har false, och
+        // workbox.* gäller ändå bara generateSW-strategin, inte injectManifest.
+        //
+        // Omladdningen sker INTE automatiskt: src/lib/app-uppdatering.ts
+        // skickar en egen onNeedReload som överstyr pluginets default
+        // window.location.reload(). Beslutet ligger hos användaren (Marcus,
+        // S105) — en tvångsomladdning kan slänga bort inmatning mitt i ett
+        // formulär.
+        registerType: 'autoUpdate',
         injectManifest: {
           // offline.html måste in i precache — förutsättning för ADR-047 B2.
           // webp tillagt 2026-08-03 (S96): login-vyns porträttbild ligger i det

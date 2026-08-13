@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-11 19:12'
-updated_date: '2026-08-13 15:46'
+updated_date: '2026-08-13 18:26'
 labels: []
 dependencies: []
 priority: high
@@ -49,4 +49,20 @@ AC #3-INSTRUMENT (TASK-201.9), skarpt testat båda riktningarna: två ändar —
 CI-GRIND: NEJ. Analogin mot task-37 håller inte — EF deployas manuellt, fronten är händelsedriven och FUNGERADE (25/25). En grind som diffar deployad bundle mot HEAD kapplöper med sig själv (merges 2-5 min, byggen 7-10 min) och blir TASK-128s falsklarm om igen (sju på en natt). Den fångar inte heller felet som finns — klientens precache. Golvet behålls som on-demand-verifiering vid go-live (§ 4), inte kontinuerlig grind.
 
 EJ FASTSTÄLLT: Vercels alias-historik. Ingen vercel-CLI, ingen .vercel/, VERCEL_OIDC_TOKEN i .env.local utgången 2026-08-06, noll vercel-poster i docs/reference/atkomst-och-nycklar.md. Kvarstår oförklarat: kortets curl-observation 2026-08-11 morgon mot att senaste Production-deploy (ca9832d7) var success och dess träd bar routen — curl går förbi varje SW, så B förklarar inte den. Data som avgör: vercel ls --prod eller GET /v6/deployments. REKOMMENDATION: lägg in Vercel-åtkomst i atkomst-och-nycklar.md före go-live.
+
+ÅTGÄRD PÅ FRÅGA B BYGGD (S105, 2026-08-13) — Marcus beslut: research § 7 rad 2 + rad 3 tillsammans (autoUpdate med egen onNeedReload PLUS periodisk registration.update()). Omladdningsbeslutet ligger hos användaren; tvångsomladdning avvisad då den kan slänga bort inmatning mitt i ett formulär.
+
+MÄTT, EJ ANTAGET — hur autoUpdate interagerar med vår handskrivna skipWaiting(): registerType används på exakt tre ställen i node_modules/vite-plugin-pwa/dist/index.js — rad 800 (default), rad 169 (ersätter __SW_AUTO_UPDATE__ i klientkoden, den ENDA som gäller oss) och rad 874, som sätter workbox.skipWaiting men BARA när injectRegister är 'auto'/null; vi har false, och workbox.* gäller ändå bara generateSW, inte vår injectManifest. autoUpdate byter alltså KLIENTGREN i register.js från 'waiting' (fyrar aldrig hos oss) till 'activated' (händelsen skipWaiting GARANTERAR). src/sw.ts lämnas ORÖRD — skipWaiting gick från buggens orsak till mekanismens förutsättning.
+
+Ytterligare mätt fälla: i autoUpdate-läge är pluginets updateServiceWorker() en NO-OP (kroppen är 'if (!auto) sendSkipWaitingMessage?.()'), och useRegisterSW-hookens needRefresh-state förblir alltid false (bara onNeedRefresh sätter den, och den anropas aldrig i auto-grenen). Bannern anropar därför window.location.reload() själv och bär egen state.
+
+Intervall 1 h (60*60*1000) — förstapartsrekommendation i BÅDA styrande källor: web.dev SW lifecycle ('call update() on an interval (such as hourly)') och vite-plugin-pwa Periodic SW updates. Formen är förstapartens edge-case-variant med tre guarder (installing, navigator.onLine, fetch(swUrl)+status 200). En visibilityState-guard PRÖVADES mot källorna och byggdes INTE: ingen förstapartskälla nämner dolda flikar.
+
+DIVERGENS mot uppdragstexten (bokförd): uppdraget angav att det blockerande skyddet måste ligga i acceptance-lagret. Fel klass för denna yta — bannern har noll databeteende, och scripts/hermetik-sjalvtest.mjs fäller sådana tester i acceptance (TASK-131-precedenten: InstallPrompts 11 tester). Testet ligger i tests/webblasarbeteende/, som ÄR blockerande på PR (ci-suite.yml jobb webblasarbeteende, instansierat av ci.yml jobb suite, i needs för required-checken ci-passed). Uppdragets REGEL (blockerande skydd) följd; dess utpekade katalog rättad mot disk.
+
+Tvåsidigt bevis: 6/6 gröna med komponenten monterad (exit 0), 6/6 röda utan (exit 1).
+
+Rörda filer: vite.config.ts (registerType), src/lib/app-uppdatering.ts (ny, mekanism), src/components/AppShell/AppUpdateBanner.tsx (ny, UI), src/components/AppShell/index.ts, src/routes/__root.tsx (montering), src/main.tsx (anropsbyte), tests/webblasarbeteende/app-update-banner.test.ts (ny), docs/decisions/ADR-047-pwa-arkitektur-fas-5.md (Updates-amendering).
+
+KVARSTÅENDE RISK, öppet bokförd i ADR-047 § Updates: MIME-kraschfönstret (§ 3.4) krymper från obegränsat till 'tills användaren klickar', men elimineras inte. Att stänga det helt kräver vite:preloadError eller Vercel Skew Protection — ej beslutat.
 <!-- SECTION:NOTES:END -->
