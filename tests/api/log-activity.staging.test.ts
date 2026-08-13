@@ -25,7 +25,10 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
+import { z } from 'zod';
 import {
+  type ActivityStatement,
+  ActivityStatementSchema,
   REQUEST_ID_EXTENSION_IRI,
   XAPI_IRI_BASE,
 } from '../../src/domain/schemas/ActivityStatement.schema';
@@ -77,6 +80,27 @@ function validStatement(actorId: string, overrides: Record<string, unknown> = {}
     timestamp: new Date().toISOString(),
     ...overrides,
   };
+}
+
+/**
+ * Läser aktivitetsloggen via `get-activity-log` (TASK-201.5) — egen lokal
+ * kopia av `get-activity-log.staging.test.ts`s hjälpare av samma skäl som
+ * `validStatement` ovan är en kopia: den filen är läs-EF-fokuserad, denna
+ * skriv-EF-fokuserad. `.parse()` på klienten bevisar samtidigt att det
+ * TILLBAKALÄSTA statementet fortfarande är schema-konformt efter en
+ * tur-och-retur genom Postgres jsonb-kolumnen.
+ */
+async function fetchActivityLog(
+  request: APIRequestContext,
+  config: ApiConfig,
+  jwt: string,
+): Promise<ActivityStatement[]> {
+  const res = await request.get(`${config.baseUrl}/functions/v1/get-activity-log`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  expect(res.status(), 'get-activity-log ska svara 200').toBe(200);
+  const body = (await res.json()) as { statements: unknown };
+  return z.array(ActivityStatementSchema).parse(body.statements);
 }
 
 function post(
@@ -189,5 +213,29 @@ test.describe('log-activity — requestId round-trip (AC #3, byggplanens DoD 3)'
     expect(responseBody.id).toBe(stmt.id);
     expect(responseBody.requestId).toBe(sentRequestId);
     expect(responseBody.occurredAt).toBe(stmt.timestamp);
+
+    // ÄNDE-TILL-ÄNDE-HALVAN (S105 kritiska kontroller, 2026-08-13).
+    //
+    // Filhuvudet ovan säger att EF:ens EGET svar är "den ENDA läsväg denna
+    // svit har". Det var sant när TASK-201.3 skrevs — men `get-activity-log`
+    // (TASK-201.5) landade EFTER den, och ÄR en läsväg för en autentiserad
+    // anropare. Premissen är alltså föråldrad, och beviset var därför
+    // svagare än det behövde vara: ett eko i ett HTTP-svar visar att EF:en
+    // MOTTOG requestId, inte att den PERSISTERADE det. Skulle insert-vägen
+    // tappa `request_id` (eller skriva fel kolumn) hade testet förblivit
+    // grönt, och byggplanens DoD 3–4 ("requestId propageras klient → EF →
+    // activity_log-rad") vore obevisad i sin sista led.
+    //
+    // Ingen EXTRA skarp skrivning: samma rad som just skrevs läses tillbaka.
+    // Volym-argumentet i filhuvudet är därmed orört.
+    const statements = await fetchActivityLog(request, config, jwt);
+    const raden = statements.find((s) => s.id === stmt.id);
+    expect(
+      raden,
+      `den nyss skrivna raden (${stmt.id}) ska gå att läsa tillbaka via get-activity-log`,
+    ).toBeDefined();
+    // KÄRNAN: requestId överlevde hela vägen ner i activity_log-raden och ut
+    // igen — samma värde klienten genererade, oförändrat.
+    expect(raden?.context.extensions[REQUEST_ID_EXTENSION_IRI]).toBe(sentRequestId);
   });
 });

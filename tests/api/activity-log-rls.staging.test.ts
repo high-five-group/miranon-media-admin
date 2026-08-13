@@ -130,4 +130,42 @@ test.describe('activity_log RLS — deny-halva (anon + authenticated)', () => {
     });
     await assertPermissionDenied(res, 403);
   });
+
+  // RADERINGS-HALVAN (S105 kritiska kontroller, 2026-08-13). Filen bevisade
+  // ursprungligen bara LÄS + SKRIV för anon/authenticated. Append-only-kravet
+  // (PRD TASK-201: "ingen radering") vilar dock lika mycket på att DELETE är
+  // stängd — och den vägen var OMÄTT: att den nekas följde bara som en
+  // HÄRLEDNING ur att SELECT/INSERT nekas av samma GRANT-lager. En härledning
+  // är inget bevis, och det är exakt den klass av antagande ADR-086 finns för.
+  //
+  // FILTRET `?id=eq.<slumpat uuid>` är en SÄKERHETSSPÄRR, inte kosmetika:
+  // skulle permission-lagret oväntat SLÄPPA IGENOM, träffar satsen noll rader
+  // i stället för att tömma en append-only-tabell som ingen service_role-nyckel
+  // kan återställa (grant-migrationen ger bara SELECT+INSERT — en radering
+  // kräver `postgres`-rollen). Ett ofiltrerat DELETE hade gjort testet självt
+  // till den värsta tänkbara regressionen.
+  test('anon: radering nekas (401) — append-only', async ({
+    request,
+  }: {
+    request: APIRequestContext;
+  }) => {
+    const config = getApiConfig();
+    const res = await request.delete(restUrl(config, `?id=eq.${randomUUID()}`), {
+      headers: { apikey: config.anonKey },
+    });
+    await assertPermissionDenied(res, 401);
+  });
+
+  test('authenticated: radering nekas (403) — append-only', async ({
+    request,
+  }: {
+    request: APIRequestContext;
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await request.delete(restUrl(config, `?id=eq.${randomUUID()}`), {
+      headers: { apikey: config.anonKey, Authorization: `Bearer ${jwt}` },
+    });
+    await assertPermissionDenied(res, 403);
+  });
 });

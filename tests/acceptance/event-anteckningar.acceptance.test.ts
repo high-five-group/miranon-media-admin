@@ -245,6 +245,97 @@ test.describe('Anteckningar — strömmen + faserna (task-18.11)', () => {
     expect(captured()).toEqual({ eventId: EVENT_ID, text: 'Ny testanteckning från composern' });
   });
 
+  /**
+   * INTEGRITETS-VAKTEN (S105 kritiska kontroller, 2026-08-13) — PRD TASK-201
+   * användarberättelse 10 + TASK-201.4 AC #2: en antecknings-post bär ATT något
+   * antecknades, ALDRIG innehållet.
+   *
+   * VARFÖR DETTA TEST BEHÖVS TROTS ATT AC #2 REDAN ÄR AVBOCKAT: det befintliga
+   * beviset (`tests/api/activity-log-resterande-statements.test.ts` § "AC #2 —
+   * REGRESSIONSVAKT") bygger EGNA LOKALA KOPIOR av statementen och visar att
+   * `eventActivityName()` ignorerar en tänkt anteckningstext. Det bevisar
+   * hjälpfunktionen — inte att den VERKLIGA mutationskedjan (composern →
+   * `useCreateEventNote.onSuccess` → `recordActivity` → `log-activity`)
+   * avstår från texten. Skulle någon framtida ändring interpolera in
+   * `text`-variabeln i `object.name` hade det gamla testet förblivit grönt.
+   * Denna vakt läser den FAKTISKA utgående payloaden och kan därför fälla.
+   *
+   * Loggen är APPEND-ONLY (`service_role` har bara SELECT+INSERT — se
+   * `supabase/migrations/20260812143131_grant_service_role_activity_log.sql`),
+   * så en läckt anteckningstext i prod går strukturellt INTE att städa bort.
+   * Det är skälet till att vakten sitter i den hermetiska klassen, där den
+   * körs på varje PR, och inte som ett manuellt QA-steg.
+   *
+   * Söker i HELA serialiserade payloaden, inte bara `object.definition.name`:
+   * en läcka kan lika gärna hamna i en extension, ett verb-display eller ett
+   * framtida fält, och en assertion som bara tittar på det fält vi råkar
+   * misstänka idag skyddar inte mot morgondagens form.
+   */
+  test('INTEGRITET (AC #2, användarberättelse 10): anteckningens TEXT når ALDRIG log-activity-payloaden — bara ATT något antecknades', async ({
+    page,
+    network,
+  }) => {
+    mockSidan(network);
+
+    // Distinkt, omisskännlig sträng: träffar den i payloaden är det ett
+    // äkta läckage, aldrig en slump i en fixtur eller ett eventnamn.
+    const HEMLIG_TEXT = 'KANSLIG-ANTECKNING-Deltagaren har en pagaende konflikt med sin bror';
+
+    let aktivitetsPayload: string | null = null;
+    // Lokal override EFTER mockSidan(): MSW prövar senast-registrerade handler
+    // först (samma mönster som `anmalan-detalj.acceptance.test.ts` § fire-and-
+    // forget-testet), så denna vinner över normallägets log-activity-handler.
+    network.use(
+      http.post(EF('log-activity'), async ({ request }) => {
+        const body = (await request.json()) as {
+          id: string;
+          timestamp: string;
+          context: { extensions: Record<string, string> };
+        };
+        aktivitetsPayload = JSON.stringify(body);
+        return json(
+          {
+            id: body.id,
+            requestId: Object.values(body.context.extensions)[0],
+            occurredAt: body.timestamp,
+          },
+          201,
+        );
+      }),
+    );
+
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = gruppen(page);
+    await grupp.getByRole('textbox', { name: 'Ny anteckning' }).fill(HEMLIG_TEXT);
+    await grupp.getByRole('button', { name: 'Spara', exact: true }).click();
+
+    // Anteckningen sparades PÅ RIKTIGT (texten renderas i strömmen) — utan
+    // detta steg vore frånvaro-assertionen nedan sann på ett tomt flöde och
+    // kunde aldrig fälla (samma ordningsberoende som strömtestets
+    // FRÅNVARO-ASSERTION ovan beskriver).
+    await expect(grupp.getByText(HEMLIG_TEXT)).toBeVisible();
+
+    // Loggningen skedde (fire-and-forget → vänta in anropet).
+    await expect.poll(() => aktivitetsPayload).not.toBeNull();
+
+    const payload = aktivitetsPayload as unknown as string;
+    // KÄRNAN: hela statementet är fritt från anteckningens innehåll.
+    expect(payload).not.toContain(HEMLIG_TEXT);
+    expect(payload).not.toContain('KANSLIG-ANTECKNING');
+    expect(payload).not.toContain('konflikt');
+
+    // Och posten bär ändå ATT något hände: verbet + eventets namn, inget mer.
+    const statement = JSON.parse(payload) as {
+      verb: { display: Record<string, string> };
+      object: { definition: { name: Record<string, string>; type: string } };
+    };
+    expect(statement.verb.display['sv-SE']).toBe('antecknade');
+    expect(statement.object.definition.type).toContain('/activity-types/anteckning');
+    expect(statement.object.definition.name['sv-SE']).toBe('Resor i medvetandet 1');
+  });
+
   test('composern är auto-grow: field-sizing content + resize avstängd (facit-formen)', async ({
     page,
     network,
