@@ -67,7 +67,16 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { BedDouble, Check, CheckCheck, Circle, RotateCcw, Search, X } from 'lucide-react';
+import {
+  BedDouble,
+  Check,
+  CheckCheck,
+  ChevronDown,
+  Circle,
+  RotateCcw,
+  Search,
+  X,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button as AriaButton,
@@ -1124,37 +1133,59 @@ function useDorrLageD() {
 }
 
 /**
- * FRAMSTEGSKORTET — dörrens navigationsinstrument.
+ * FRAMSTEGSKORTET — dörrens navigationsinstrument OCH dess kvitto.
  *
  * Formen är Hem-facitets primär-tintade kort (`DashboardCard tone="primary"`,
- * `k10-facit-desktop.png`): `bg-primary-tint` med `bg-surface`-spår och
- * `bg-primary-muted` fyllnad (`NastaEventCard.tsx:166-168`). Natt-chefens
- * granskningsnot 2 slog fast att B:s stapel + "N kvar" läses på ett ögonkast
- * medan C:s torra radräknare inte gör det — den bedömningen bärs hit.
+ * `k10-facit-desktop.png`): `bg-primary-tint`, vit pill uppe till höger
+ * (`NastaEventCard.tsx:131-134`), `bg-surface`-spår med `bg-primary-muted`
+ * fyllnad längst ned (`NastaEventCard.tsx:166-171`).
+ *
+ * VARV 1 (S105 iterering) rättade TRE mätta avvikelser mot den formen:
+ *
+ * 1. RUBRIKEN BÄR DET ÅTERSTÅENDE, inte det gjorda. Kortet sade
+ *    "0 av 16 incheckade" med pillen "16 kvar" — samma faktum två gånger,
+ *    och det som lästes störst var arbetet som redan var gjort. Vid en dörr
+ *    är den intressanta siffran den som räknar ned. Hem-facitets båda kort
+ *    gör samma sak: `NastaEventCard` leder med "70 dagar kvar", inte med
+ *    "70 dagar har gått".
+ * 2. PILLEN BÄR NU ANNAN INFORMATION än rubriken (facitets pill "70 dagar
+ *    kvar" kompletterar titeln "Nästa event"; den upprepar den inte).
+ * 3. KVITTOT BOR HÄR, inte i en panel. Se `VariantD` § KVITTOT.
  *
  * Räknaren behåller A/B/C:s BREDDLÅS (osynlig platshållare i maxform +
  * `tabular-nums`) så siffran aldrig flyttar sig under fingret.
  */
-function FramstegskortD({ klara, totalt }: { klara: number; totalt: number }) {
+function FramstegskortD({
+  klara,
+  totalt,
+  kvitto,
+  klass,
+}: {
+  klara: number;
+  totalt: number;
+  kvitto: React.ReactNode;
+  /** Yttre luft — sätts av anroparen, se `VariantD` § LUFTEN. */
+  klass?: string;
+}) {
   const kvar = Math.max(0, totalt - klara);
   const andel = totalt === 0 ? 0 : Math.round((100 * klara) / totalt);
   return (
     <section
       aria-label="Framsteg"
-      className="flex flex-col gap-2 rounded-2xl border border-transparent bg-primary-tint p-4 contrast-more:border-border-strong print:border-border-strong"
+      className={`flex flex-col gap-2 rounded-2xl border border-transparent bg-primary-tint p-4 contrast-more:border-border-strong print:border-border-strong ${klass ?? ''}`}
     >
       <div className="flex items-baseline justify-between gap-3">
         {/* Breddlåset: osynlig maxform i samma grid-cell som det verkliga talet. */}
         <span className="grid font-semibold text-xl">
           <span aria-hidden="true" className="invisible col-start-1 row-start-1 whitespace-nowrap">
-            99 av 99 incheckade
+            99 kvar att checka in
           </span>
           <span className="col-start-1 row-start-1 whitespace-nowrap tabular-nums">
-            {`${klara} av ${totalt} incheckade`}
+            {kvar === 0 ? 'Alla är incheckade' : `${kvar} kvar att checka in`}
           </span>
         </span>
-        <span className="shrink-0 rounded-full bg-surface px-2.5 py-0.5 font-medium text-small tabular-nums">
-          {`${kvar} kvar`}
+        <span className="shrink-0 rounded-full bg-surface px-2.5 py-0.5 font-medium text-caption tabular-nums">
+          {`${klara} av ${totalt}`}
         </span>
       </div>
       <div aria-hidden="true" className="h-1.5 rounded-full bg-surface">
@@ -1163,6 +1194,7 @@ function FramstegskortD({ klara, totalt }: { klara: number; totalt: number }) {
           style={{ width: `${andel}%` }}
         />
       </div>
+      {kvitto}
     </section>
   );
 }
@@ -1207,14 +1239,24 @@ function DorrRadD({
 }) {
   return (
     <li data-dorr-rad className="flex min-h-16 items-center gap-3 py-2.5">
-      {/* Identitetsmarkören byter roll med tillståndet: initialer när personen
-          återstår, bock när hen är inne. Bocken bär BÅDE glyf och den text
-          som pillen visar — färgen är aldrig ensam bärare (WCAG 1.4.1). */}
+      {/* Identitetsmarkören byter GLYF med tillståndet, inte FÄRG: initialer
+          när personen återstår, bock när hen är inne. Formen är personlistans
+          `size-9`-cirkel i `bg-bg-emphasized` (`PersonsList.tsx:518-523`).
+
+          VARV 1 (S105) TOG BORT GULDET, och det är den enskilt viktigaste
+          färgrättelsen i passet. Bocken var `bg-primary-muted` (= `gold-400`,
+          `semantic.css:7`) — husets UPPMÄRKSAMHETSfärg. Mätt i eget skott
+          (v0-efter5-mobil-veck.png): fem fyllda guldcirklar var det starkaste
+          på hela skärmen, och de satt på rader Lotta var KLAR med. I de
+          stämplade ytorna betyder guld motsatsen: `Aktiv anmälan`-pillen i
+          personlistan och `Nästa event`-kortets tint pekar på det som KRÄVER
+          något. D lät alltså husets "titta hit" betyda "sluta titta här" —
+          en semantisk invertering av designsystemets eget färgspråk.
+          Tillståndet bärs nu av glyfen plus underradens "Incheckad HH:MM",
+          aldrig av färg ensam (WCAG 1.4.1) — samma golv som förut. */}
       <span
         aria-hidden="true"
-        className={`flex size-9 shrink-0 items-center justify-center rounded-full font-semibold text-small ${
-          incheckad ? 'bg-primary-muted text-text' : 'bg-bg-emphasized text-text-secondary'
-        }`}
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
       >
         {incheckad ? <Check size={18} /> : initialerD(rad.namn)}
       </span>
@@ -1267,10 +1309,43 @@ function DorrRadD({
           och eget tillgängligt namn — och den är den SEKUNDÄRA handlingen på
           en redan klar rad, medan primärhandlingen "Checka in" behåller sin
           synliga kant. */}
+      {/* STORLEKEN ÄR `sm`, TRÄFFYTAN OFÖRÄNDRAD 44 px (varv 2, S105).
+          `md` gav en 140 px bred knapp i `text-body`, och när arbetslistan
+          bara innehåller det som återstår blir VARJE synlig rad en sådan
+          knapp: fem identiska ramade rektanglar var det tyngsta på skärmen
+          (mätt i eget skott, v1-efter5-mobil-veck.png). I facitets rader är
+          högerkolumnen en 18 px chevron plus en tonal pill — allt utom namnet
+          träder tillbaka. `sm` (text-small, px-3) tar knappen till ~104 px
+          och lämnar 36 px till namnkolumnen, utan att röra `min-h-11`:
+          WCAG 2.5.5 och Apple HIG mäter TRÄFFYTAN, inte typografgrad.
+
+          EMPHASIS FÖRBLIR `outline` — men det är nu ett MÄTT val, inte ett
+          ärvt. §19:s ytklasstabell tillåter uttryckligen BÅDA för "Kort och
+          listrader" (*"`outline` eller `subtle` - intent-färgen bärs av
+          text + kant, ALDRIG solid fyllnad inuti kort"*; förbudet gäller
+          SOLID), och §19 har ett levande `primary`/`subtle` `sm`-prejudikat i
+          Markera-knappen på grupp-rubrikraden. D:s docblock läste tabellen som
+          om bara `outline` fanns, vilket var fel.
+          `subtle` PRÖVADES SKARPT I VARV 3 OCH BLEV SÄMRE
+          (v3-efter5-mobil-veck.png mot v2-efter5-mobil-veck.png):
+          `--mm-button-primary-subtle-bg` är `color-mix(--mm-btn-primary-bg
+          10%, transparent)` över en neutral bas, alltså en DÖD GRÅ platta.
+          Sex fyllda gråblock läser tyngre som massa än sex hårfina kanter,
+          och de läser dessutom som inaktiverade kontroller. Kanten är kvar.
+
+          KVARSTÅENDE, ÖPPET FÖR MARCUS: `outline`-kanten löses till
+          `--mm-btn-primary-bg` = `--p-neutral-800`, en nästan svart kant, och
+          sex av dem i kolumn är fortfarande sidans tyngsta grafik. Facitets
+          högerkolumn är en 18 px chevron plus en tonal pill. Att skala ned
+          kontrollen ytterligare (ikonknapp utan etikett) skulle stänga det
+          gapet men river den synliga etiketten - vilket går rakt emot domen
+          som fällde A/B/C ("den viktigaste kontrollen är en naken textlänk").
+          Den växlingen är Marcus, inte min: kontrollen behåller sin etikett
+          tills han säger annat. Ångra behåller `ghost`. */}
       <Button
         intent={incheckad ? 'ghost' : 'primary'}
         emphasis={incheckad ? undefined : 'outline'}
-        size="md"
+        size="sm"
         className="min-h-11 shrink-0"
         aria-label={incheckad ? `Ångra incheckningen av ${rad.namn}` : `Checka in ${rad.namn}`}
         onPress={onToggle}
@@ -1278,6 +1353,67 @@ function DorrRadD({
         {incheckad ? 'Ångra' : 'Checka in'}
       </Button>
     </li>
+  );
+}
+
+/**
+ * SESSIONSVALET I VARIANT D — samma krav, en tredjedel av höjden.
+ *
+ * Kravet är att härledningen ALDRIG är tyst (basen har inget fält som binder
+ * Session till datum, och fel session ger fel `Närvaropoäng`-historik utan
+ * att någon ser det). Kravet säger däremot ingenting om att den ska ta tre
+ * block. D bar den som "Checkar in"-rad + datum-rad + toggle + en egen
+ * två-radersnot: fyra element, ~100 px på 390 px, ovanför varje människa i
+ * listan. Mätt i eget skott (v0): topp-materialet sköt första ÅTGÄRDBARA
+ * raden till 427 px, 50,6 % av en 844 px-skärm.
+ *
+ * Här bär EN caption-rad hela härledningen: ordet "Härledd", datumet och
+ * uppmaningen att kontrollera. Sessionen syns i toggeln när det finns flera,
+ * och i klartext när det bara finns en. Inget av kravet är borta; bara
+ * upprepningen är det.
+ */
+function SessionsRadD({
+  sessioner,
+  vald,
+  onValj,
+}: {
+  sessioner: readonly AttendanceSessionValue[];
+  vald: AttendanceSessionValue;
+  onValj: (s: AttendanceSessionValue) => void;
+}) {
+  const harledning = (
+    <p className="text-caption text-text-muted">
+      <strong className="font-medium text-text-secondary">Härledd</strong>
+      {sessioner.length <= 1
+        ? ` session: ${vald}. Kontrollera att den stämmer.`
+        : ' ur eventets datum. Kontrollera att rätt dag är vald.'}
+    </p>
+  );
+  if (sessioner.length <= 1) return <div className="mt-1">{harledning}</div>;
+  return (
+    <div className="mt-1 flex flex-col gap-1.5">
+      <ToggleButtonGroup
+        label="Vilken session checkar du in?"
+        spread
+        selectedKey={vald}
+        onSelectionChange={(key: AttendanceSessionValue) => onValj(key)}
+      >
+        {/* `min-h-11` PÅ VARJE FLIK (varv 4, S105): `size="sm"` ensamt gav
+            37 px, mätt i eget skott (a11y-passet), under 44 px-golvet. Fel
+            dag vald är dessutom den dyraste felhandlingen på hela ytan -
+            `Närvaropoäng` räknar Dag 1 och Föreläsning mot kurshistoriken men
+            INTE Dag 2, så en feltryckning ger fel historik utan att någon ser
+            det. Kontrollen ska vara svår att missa.
+            ÄNDRINGEN ÄR D-LOKAL: den bor i `SessionsRadD`, inte i den delade
+            `SessionsRad`, så variant B och C är orörda. */}
+        {sessioner.map((s) => (
+          <ToggleButton key={s} id={s} size="sm" className="min-h-11">
+            {s}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+      {harledning}
+    </div>
   );
 }
 
@@ -1330,6 +1466,7 @@ function VariantD({
   const { sessioner, session, setSession, datumtext } = useSessionsval(event, alla);
   const lage = useDorrLageD();
   const [fraga, setFraga] = useState('');
+  const [visaKlara, setVisaKlara] = useState(false);
 
   // Anmälningarna är variant D:s källa (se `byggRaderD`). De ligger redan i
   // cachen under samma nyckel som `useDorrData` använder — inget nytt anrop.
@@ -1347,7 +1484,7 @@ function VariantD({
     [registrations.data, attendance.data, session],
   );
 
-  const klara = rader.filter((r) => lage.status(r) === AttendanceStatus.NARVARANDE).length;
+  const antalKlara = rader.filter((r) => lage.status(r) === AttendanceStatus.NARVARANDE).length;
 
   const traffar = useMemo(() => {
     const q = fraga.trim().toLowerCase();
@@ -1357,14 +1494,66 @@ function VariantD({
     );
   }, [rader, fraga]);
 
-  // Historiken bär ANMÄLAN×SESSION-nycklar (`lageNyckel`), så panelen visar
-  // bara det som checkats in i den session man står i — byter Lotta dag
-  // följer kvittot med. Samma dimension som datat, hela vägen.
-  const senaste = lage.historik
-    .map((nyckel) => rader.find((r) => `${r.anmalanId}::${r.session}` === nyckel))
-    .filter((r): r is DorradD => r != null)
-    .slice(0, 3)
-    .map((r) => ({ rad: r, tid: lage.tid(r) }));
+  /**
+   * VECKET — den defekt som fällde variant B, återinförd i annan form.
+   *
+   * MÄTT I EGET SKOTT (v0, 390x844, granskningsfixturen `reckgn7arcyW367qT`):
+   * med noll incheckade låg första ÅTGÄRDBARA raden på 427 px. Efter fem
+   * incheckningar låg den på 752 px med underkant 817 px, medan tabbaren
+   * börjar på 768 px: raden var KLIPPT, 16 av sina 65 px synliga. Ju längre
+   * kvällen gick, desto längre skrollade Lotta förbi färdiga rader.
+   *
+   * ORSAKEN VAR INTE DEN ANTAGNA. Uppdraget bokförde "incheckade sorteras
+   * överst"; det gör de inte. `byggRaderD` sorterar rent alfabetiskt
+   * (`namn.localeCompare`, en rad ovan) och ingenting flyttar sig alls.
+   * Just DÄRFÖR uppstår defekten: Lotta arbetar uppifrån och ned, de klara
+   * raderna ligger kvar exakt där de var, och nästa åtgärdbara rad vandrar
+   * en radhöjd (65 px) nedåt per incheckning tills den passerar vecket.
+   * En sortering hade åtminstone varit en mekanism; här fanns ingen.
+   *
+   * LÖSNINGEN: arbetslistan innehåller BARA det som återstår. Det klara
+   * flyttas till en kollapsad grupp längst ned, utanför skrollvägen till
+   * nästa människa. Följden är att första åtgärdbara raden inte längre är
+   * en funktion av hur långt kvällen gått - den står still.
+   *
+   * VALET MOT ALTERNATIVEN. "5 incheckade ⌄" ÖVERST (uppdragets
+   * rekommendation) löser drivandet men kostar ~50 px permanent ovanför
+   * varje människa, i den yta som redan var defektens halva orsak. "Inga
+   * klara rader alls" river ångra-vägen för allt utom den senaste. Klara
+   * LÄNGST NED kostar noll ovanför vecket och behåller full ångra-väg -
+   * priset är en skrollning för ett sällsynt fall, vilket är rätt växling
+   * vid en dörr där nästa person är det frekventa fallet.
+   *
+   * Sökningen filtrerar BÅDA grupperna: en felincheckad person ska gå att
+   * söka fram och ångra utan att först fälla ut gruppen.
+   */
+  const attGora = traffar.filter((r) => lage.status(r) !== AttendanceStatus.NARVARANDE);
+  const klaraTraffar = traffar.filter((r) => lage.status(r) === AttendanceStatus.NARVARANDE);
+
+  /**
+   * KVITTOT — en rad i framstegskortet, inte en panel.
+   *
+   * Den ersätter BÅDA "Senast incheckade"-panelerna (desktop-marginalen och
+   * mobilens sektion i nederkanten). Skälet är mätt, inte principiellt: på
+   * desktop (v0-efter5-desktop.png) visade panelen Elin, David och Cecilia -
+   * exakt de tre rader som samtidigt syntes ~100 px till vänster, var och en
+   * med sin egen Ångra. Den duplicerade sin granne. Värre: panelens knappar
+   * var `emphasis="subtle"` (fylld platta) medan radens egen Ångra var
+   * `ghost`, så den SEKUNDÄRA vägen tillbaka vägde tyngre än den primära.
+   * Och den fanns bara över 1280 px, alltså minst sannolikt där Lotta står.
+   *
+   * Nu bär raden det panelen faktiskt tillförde ("hann jag rätt person?") på
+   * en rad som alltid ligger ovanför vecket, i samma kort som räknaren.
+   * Djupare ångra-behov bärs av den kollapsade gruppen längst ned.
+   *
+   * Historiken bär ANMÄLAN×SESSION-nycklar (`lageNyckel`), så kvittot visar
+   * bara det som checkats in i den session man står i - byter Lotta dag
+   * följer kvittot med. Samma dimension som datat, hela vägen.
+   */
+  const senasteNyckel = lage.historik[0] ?? null;
+  const senaste = senasteNyckel
+    ? (rader.find((r) => lageNyckel(r) === senasteNyckel) ?? null)
+    : null;
 
   const vaxla = (rad: DorradD) => {
     const nu = lage.status(rad) === AttendanceStatus.NARVARANDE;
@@ -1372,39 +1561,66 @@ function VariantD({
     alertScreenReader(
       nu
         ? `Incheckningen av ${rad.namn} är ångrad.`
-        : `${rad.namn} är incheckad. ${klara + 1} av ${rader.length} incheckade.`,
+        : `${rad.namn} är incheckad. ${antalKlara + 1} av ${rader.length} incheckade.`,
     );
   };
 
   return (
-    <section className="flex flex-col gap-3">
+    // LUFTEN ÄR DIFFERENTIERAD, inte likformig (varv 2, S105). D bar `gap-3`
+    // mellan ALLA sju topp-block, vilket gör att ingenting grupperar sig och
+    // allt väger lika: rubrik, kort, sessionsval, sök och meta-rad lästes som
+    // en enda hög. Personlistans facit har tre nivåer med tydligt olika luft
+    // (rubrik → stort → sök → litet → meta → lista). Basen är därför `gap-2`
+    // med `mt-1` bara där ett nytt stycke faktiskt börjar.
+    <section className="flex flex-col gap-2">
       <TillbakaLank eventId={eventId} />
 
+      {/* EVENTNAMN OCH DATUM PÅ SAMMA RAD (varv 2): datumet bodde tidigare i
+          sessionsblocket och tvingade härlednings-noten till två rader på
+          390 px. Här är det gratis - underrubriken fanns redan. */}
       <div className="flex flex-col gap-0.5">
         <h1 className="font-semibold text-2xl">Check-in</h1>
         <p className="text-small text-text-secondary">
           {event.eventNamn ?? event.eventlabel ?? 'Eventet'}
+          {datumtext && <span className="text-text-muted">{` · ${datumtext}`}</span>}
         </p>
       </div>
 
-      <FramstegskortD klara={klara} totalt={rader.length} />
+      <FramstegskortD
+        klara={antalKlara}
+        totalt={rader.length}
+        klass="mt-1"
+        kvitto={
+          senaste && (
+            <div className="-mb-1 flex min-h-9 items-center gap-2 pt-1">
+              <Check aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
+              <span className="min-w-0 flex-1 truncate text-caption text-text-secondary">
+                <span className="font-medium text-text">{senaste.namn}</span>
+                {(() => {
+                  const t = lage.tid(senaste);
+                  return t ? ` incheckad ${t}` : ' incheckad';
+                })()}
+              </span>
+              {/* `min-h-11` OCH `size="sm"`: `sm` ensamt ger `min-h-8` = 32 px,
+                  mätt i eget skott (a11y-passet) och under WCAG 2.5.5-golvet.
+                  Tillgänglighet är alltid 11 i det här huset - kontrollen får
+                  bära åtta pixel mer kort­höjd. */}
+              <Button
+                intent="ghost"
+                size="sm"
+                className="min-h-11 shrink-0"
+                aria-label={`Ångra incheckningen av ${senaste.namn}`}
+                onPress={() => vaxla(senaste)}
+              >
+                <RotateCcw aria-hidden="true" size={14} className="shrink-0" />
+                Ångra
+              </Button>
+            </div>
+          )
+        }
+      />
 
-      <SessionsRad sessioner={sessioner} vald={session} onValj={setSession} datumtext={datumtext} />
-
-      {/* Sessionens härledning får ALDRIG vara tyst (docblockets krav): basen
-          har inget fält som binder Session till datum, så valet är en
-          kvalificerad gissning, och fel session ger fel `Närvaropoäng`-
-          historik utan att någon ser det.
-          KOMPAKT FORM, av mätt skäl: som två egna stycken sköt den (med resten
-          av topp-materialet) ned första raden till 491 px på 390 px — 58 % av
-          skärmen, exakt den defekt Marcus fällde variant B på. Efter
-          sammanslagningen: 381 px. Kravet är att gissningen är SYNLIG, inte
-          att den är lång. `SessionsRad` bär själva VALET när eventet har
-          flera sessioner; denna rad bär härledningens förbehåll. */}
-      <p className="text-caption text-text-muted">
-        <strong className="font-medium text-text-secondary">Härledd</strong> session. Kontrollera
-        att den stämmer innan du börjar.
-      </p>
+      <SessionsRadD sessioner={sessioner} vald={session} onValj={setSession} />
 
       {/* Sökfältets form är personlistans (steg k08) — samma input-tokens,
           samma clear-knapp, ingen autofokus. */}
@@ -1429,67 +1645,94 @@ function VariantD({
       </SearchField>
 
       {/* Meta-raden i personlistans form (steg k09): kortets inner-inset,
-          dämpad, och den bär BÅDA bortfallen explicit — aldrig tyst. */}
+          dämpad, och den bär BÅDA bortfallen explicit — aldrig tyst.
+          Den räknar nu ARBETSLISTAN, inte hela registret: det är den siffra
+          som svarar mot vad man ser under den. */}
       <p role="status" aria-live="polite" className="px-4 text-small text-text-muted">
-        {`Visar ${traffar.length} av ${rader.length} anmälda${fraga ? ` för "${fraga}"` : ''}.`}
+        {fraga
+          ? `Visar ${traffar.length} av ${rader.length} anmälda för "${fraga}".`
+          : `${attGora.length} av ${rader.length} anmälda återstår.`}
         {avbokade > 0 && ` ${avbokade} avbokade visas inte.`}
       </p>
 
-      {/* Listan + ångra-panelen. Wrappern är spaltens positioneringskontext
-          (Hem-facitets teknik, `Hem.tsx:68-71`): panelen läggs UTANFÖR
-          600 px-kolumnen på ≥xl så skärmens bredd används utan att kolumnens
-          centrering rubbas. Under xl bor samma panel i flödet, i tumzonen. */}
-      <div className="relative">
-        {traffar.length === 0 ? (
-          <div
-            role="status"
-            aria-live="polite"
-            className="flex flex-col items-center gap-1 py-12 text-center"
-          >
-            <p className="font-medium text-body">Inga träffar</p>
-            <p className="text-small text-text-muted">{`Ingen anmäld matchar "${fraga}".`}</p>
-          </div>
-        ) : (
-          <ul
-            aria-label="Anmälda att checka in"
-            className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
-          >
-            {traffar.map((rad) => (
-              <DorrRadD
-                key={rad.anmalanId}
-                rad={rad}
-                incheckad={lage.status(rad) === AttendanceStatus.NARVARANDE}
-                tid={lage.tid(rad)}
-                onToggle={() => vaxla(rad)}
-              />
-            ))}
-          </ul>
-        )}
+      {/* ARBETSLISTAN — bara det som återstår (se VECKET ovan). */}
+      {attGora.length === 0 ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex flex-col items-center gap-1 py-12 text-center"
+        >
+          <p className="font-medium text-body">
+            {fraga
+              ? 'Ingen kvar att checka in bland träffarna'
+              : `Alla ${rader.length} är incheckade`}
+          </p>
+          <p className="text-small text-text-muted">
+            {fraga
+              ? `Ingen anmäld som matchar "${fraga}" väntar på incheckning.`
+              : 'Ingen väntar på incheckning.'}
+          </p>
+        </div>
+      ) : (
+        <ul
+          aria-label="Anmälda att checka in"
+          className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+        >
+          {attGora.map((rad) => (
+            <DorrRadD
+              key={rad.anmalanId}
+              rad={rad}
+              incheckad={false}
+              tid={null}
+              onToggle={() => vaxla(rad)}
+            />
+          ))}
+        </ul>
+      )}
 
-        {senaste.length > 0 && (
-          <aside
-            aria-label="Senast incheckade"
-            className="absolute top-0 left-full ml-5 hidden w-64 flex-col gap-1 rounded-xl border border-transparent bg-bg-subtle p-3 contrast-more:border-border-strong xl:flex"
+      {/* DE KLARA — kollapsade längst ned, utanför skrollvägen till nästa
+          människa. `aria-expanded` + ett stabilt `id` på listan gör
+          fällningen läsbar för skärmläsare; knappen bär hela träffytan
+          (`min-h-11`). Ingen `<details>`: den bär eget öppna/stäng-beteende
+          som inte går att styra från tillståndet, och husets egna fällbara
+          ytor är knapp + villkorad rendering. */}
+      {klaraTraffar.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <Button
+            data-klargrupp
+            intent="ghost"
+            size="sm"
+            className="min-h-11 self-start"
+            aria-expanded={visaKlara}
+            aria-controls="checkin-klara-lista"
+            onPress={() => setVisaKlara((v) => !v)}
           >
-            <h2 className="font-semibold text-caption text-text-secondary uppercase tracking-wide">
-              Senast incheckade
-            </h2>
-            <ul className="flex flex-col gap-1">
-              {senaste.map(({ rad, tid }) => (
-                <li key={rad.anmalanId} className="flex items-center gap-2">
-                  <span className="min-w-0 flex-1 truncate text-small">
-                    {rad.namn}
-                    {tid && <span className="text-text-muted">{` ${tid}`}</span>}
-                  </span>
-                  <Button intent="primary" emphasis="subtle" size="sm" onPress={() => vaxla(rad)}>
-                    Ångra
-                  </Button>
-                </li>
+            <ChevronDown
+              aria-hidden="true"
+              size={16}
+              className={`shrink-0 motion-safe:transition-transform ${visaKlara ? 'rotate-180' : ''}`}
+            />
+            {`${klaraTraffar.length} incheckade`}
+          </Button>
+          {visaKlara && (
+            <ul
+              id="checkin-klara-lista"
+              aria-label="Incheckade"
+              className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+            >
+              {klaraTraffar.map((rad) => (
+                <DorrRadD
+                  key={rad.anmalanId}
+                  rad={rad}
+                  incheckad={true}
+                  tid={lage.tid(rad)}
+                  onToggle={() => vaxla(rad)}
+                />
               ))}
             </ul>
-          </aside>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* DATA-FÖRBEHÅLLET står EFTER listan, inte före: det är ett faktum om
           basen som den skarpa skivan måste lösa, inte något Lotta handlar på
@@ -1499,38 +1742,6 @@ function VariantD({
         <p className="px-4 text-caption text-text-muted">
           {`${utanDeltagande} av ${rader.length} saknar deltaganderad för ${session} i basen. Dörren visar dem ändå: den skarpa skivan måste skapa raden vid incheckning, inte dölja personen.`}
         </p>
-      )}
-
-      {/* Samma panel som KVITTO under xl — medvetet INTE klistrad.
-          Variant C behövde en sticky panel därför att dess sökning nollställdes
-          och posten lämnade skärmen; D:s rad står kvar och bär sin EGEN
-          Ångra-knapp intill personen, vilket är den primära vägen tillbaka.
-          En klistrad panel hade kostat ~120 px permanent mobilhöjd för en
-          andra väg till samma sak. Panelen svarar därför på "vad hann jag
-          göra?", inte på "hur ångrar jag?". */}
-      {senaste.length > 0 && (
-        <div className="xl:hidden">
-          <SenastListan
-            poster={senaste.map(({ rad, tid }) => ({
-              rad: {
-                id: rad.anmalanId,
-                namn: rad.namn,
-                email: rad.email,
-                session,
-                basStatus: rad.basStatus,
-                avstamt: rad.avstamt,
-                avbokad: false,
-                medfoljande: rad.medfoljande,
-                borOver: rad.borOver,
-              },
-              tid,
-            }))}
-            onAngra={(r) => {
-              const traff = rader.find((x) => x.anmalanId === r.id);
-              if (traff) vaxla(traff);
-            }}
-          />
-        </div>
       )}
     </section>
   );
