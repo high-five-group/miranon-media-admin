@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-12 20:48'
-updated_date: '2026-08-12 22:14'
+updated_date: '2026-08-13 14:27'
 labels: []
 dependencies: []
 priority: high
@@ -112,4 +112,19 @@ REVIDERAD NASTA-STEG (ersatter fyrstegsplanen ovan):
 2. Behandla det som en datakänslig invariant. Las testet vid rad 409-445 och avgor om dokumenthojd ar ratt matt over huvud taget, eller om assertionen bor mata den yta markera-laget faktiskt ror i stallet for hela dokumentet.
 3. Vill man ha ett tal pa raten: kor riggen npm run metrics:flake i stallet for att bygga en egen matserie. Las ut n innan ett nollresultat tolkas.
 4. Notera att fyra av fjorton post-merge-korningar foll — det ar en hog rat for en icke-blockerande grind, och det urholkar signalvardet i post-merge som helhet.
+
+TILLÄGG TILL MÄTSERIEN (S105 D3-B, 2026-08-13) — TVÅ NYA RÖDA DATAPUNKTER, UTANFÖR DET URSPRUNGLIGA 14-KÖRNINGARS FÖNSTRET (18:17–21:49):
+
+Två av tre obesvarade ci-post-merge-larm som fällde Nightlys "Sannings-avstämning"-grind tre nätter i rad hörde till DENNA klass. Verbatim ur respektive job-logg (gh run view --log-failed):
+
+- Issue #1174 (träd d18583e5bc4c, merge 19:04Z, körning 19:14–19:22Z, run 31526844868, PR #1166/TASK-147.10): fällt på rad 445 (medUrval.dok vs vilande.dok), Received: 57 (tröskel 1). PR:ens diff (AtgardsSida.tsx + testmail-acceptance-test) rör inte event-bekraftelse.staging.test.ts eller layoutkod — verifierat med gh pr diff 1166 --name-only.
+- Issue #1186 (träd 5663b4568c4e, merge 21:48Z, körning 21:58–22:06Z, run 31540350470, PR #1185/TASK-201.1): fällt på rad 437 (aktivt.dok vs vilande.dok), Received: 57 (tröskel 1). PR:ens diff (ADR:er, xAPI-schema, migrationsfil) rör inte event-bekraftelse.staging.test.ts eller layoutkod — verifierat med gh pr diff 1185 --name-only.
+
+Båda ligger UTANFÖR det tidigare mätta fönstret (18:17–21:49) — d18583e5bc4c kl 19:14 föll i en lucka i listan (18:46→19:50), och 5663b4568c4e kl 21:58 låg efter listans sista post (21:49). Detta är alltså inte dubbelräkning av redan kända körningar utan TVÅ GENUINT NYA datapunkter.
+
+REVIDERAD RÄKNING: 16 körningar samplade denna kväll (2026-08-11), 6 röda — samtliga på samma test/invariant (dokumenthöjd), samtliga interfolierade med gröna körningar, samtliga utanför sin respektive PR:s diff. Höjer den redan höga raten (tidigare 4/14 ≈ 29%) till 6/16 = 37,5%. Förstärker ytterligare slutsatsen i REVIDERAD NÄSTA-STEG punkt 4: post-merge-grindens signalvärde för detta test är kraftigt urholkat.
+
+Bägge GitHub-ärendena (#1174, #1186) stängda 2026-08-13 med hänvisning till detta kort (durabelt register). Det tredje larmet i samma Nightly-fällning (#1184, träd d532adbb6ab4) hör INTE till denna klass — det är TASK-196:s redan diagnostiserade och fixade attachment-upload-flake (storage.list limit:100), fixen deployad till staging 2026-08-12 kväll, dvs EFTER denna körnings tidpunkt (2026-08-11 21:03). Stängt med hänvisning till TASK-196 i stället.
+
+Källa: gh run view 31526844868 --log-failed, gh run view 31540350470 --log-failed, gh pr diff 1166/1185 --name-only, samtliga körda 2026-08-13.
 <!-- SECTION:NOTES:END -->
