@@ -130,6 +130,10 @@ export function useSendActionEmail(eventId: string) {
  * bara `{status, reason}` — namnet måste komma från anroparen.
  */
 export function useSendActionTestEmail(eventId: string, eventNamn: string | null) {
+  // `queryClient` hämtas ENBART för `recordActivity`s invalidering av
+  // aktivitetsloggen (TASK-210) — testmailet rör ingen annan cache, precis
+  // som `useSendReceipt`. Mutationen invaliderar fortfarande ingenting själv.
+  const queryClient = useQueryClient();
   const dataSource = useDataSource();
   const { user } = useAuth();
 
@@ -154,6 +158,7 @@ export function useSendActionTestEmail(eventId: string, eventNamn: string | null
       if (result.status !== 'sent') return;
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: SKICKADE_TESTMAIL_VERB,
         object: {

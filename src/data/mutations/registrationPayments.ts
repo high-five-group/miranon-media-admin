@@ -249,6 +249,7 @@ export function useUpdatePaymentNote(eventId: string) {
       );
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: betalningsnoteringVerb(betalning),
         object: {
@@ -325,6 +326,7 @@ export function useLogPaymentReminder(eventId: string) {
       );
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: betalningspaminnelseVerb(betalning),
         object: {
