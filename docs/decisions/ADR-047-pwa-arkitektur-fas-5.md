@@ -170,3 +170,123 @@ research § 5 punkt 3) och är inte beslutat här.
 bevis: `tests/webblasarbeteende/app-update-banner.test.ts` — klassvalet är
 motiverat i testfilens huvud (noll databeteende ⇒ acceptance-klassens
 hermetik-självtest hade fällt det, `TASK-131`-precedenten).
+
+### 2026-08-13 (2) (S105) — kraschfönstret stängs mot användaren via `vite:preloadError`
+
+Beslutet ovan är oförändrat. Denna post stänger den lucka posten ovan
+bokförde öppet under **Kvarstående risk**, och avgör den options-rymd den
+lämnade obeslutad (`vite:preloadError` kontra Vercel Skew Protection).
+Marcus order 2026-08-13: *"Noll luckor!"*
+
+**Vad som byggdes: `vite:preloadError`, utan `preventDefault()`.**
+
+Vites egen händelse för en misslyckad dynamisk import. Mätt i vår
+installerade Vite 8.2.0, `node_modules/vite/dist/node/chunks/node.js`
+(preload-helpern som `buildImportAnalysisPlugin` injicerar runt varje dynamisk
+import i bygget), verbatim:
+
+```js
+function handlePreloadError(err) {
+  const e = new Event("vite:preloadError", { cancelable: true });
+  e.payload = err;
+  window.dispatchEvent(e);
+  if (!e.defaultPrevented) throw err;
+}
+return promise.then((res) => {
+  for (const item of res || []) {
+    if (item.status !== "rejected") continue;
+    handlePreloadError(item.reason);
+  }
+  return baseModule().catch(handlePreloadError);
+});
+```
+
+**Vad den fångar:** den avvisade dynamiska importen (vilket ÄR MIME-felet i
+§ 3.4) och en CSS-dep vars `<link>` fyrar `error`. **Vad den inte fångar:**
+statiska importer i entry-chunken, egna `fetch()`, bilder, web workers, och
+misslyckade `modulepreload`-länkar för JS-deps (helpern skapar bara en Promise
+när `isCss` är sant). Den sista saknar praktisk betydelse: när dep:en saknas
+avvisas `baseModule()` ändå. **Inte i dev:** helpern injiceras bara i bygget,
+vilket pluginets egen källkommentar säger (`"Build only"`).
+
+`preventDefault()` anropas INTE, och det är beslutets kärna. Vites
+dokumentation ([Build Options, § Load Error
+Handling](https://vite.dev/guide/build.html)) visar exemplet
+`window.addEventListener('vite:preloadError', () => window.location.reload())`
+och noterar att *"If you call `event.preventDefault()`, the error will not be
+thrown."* Läst mot källan ovan betyder det mer än det låter: `handlePreloadError`
+är `.catch()`-handlern för `baseModule()`, så ett svalt fel gör att
+`__vitePreload` **resolvar med `undefined`** i stället för modulen. Anroparen
+kraschar då en rad senare med ett meddelande som inte har med saken att göra.
+Vites exempel är därför bara säkert i kombination med en OMEDELBAR omladdning
+— exakt det posten ovan förbjöd, av hänsyn till Lottas osparade inmatning.
+
+Felet får därför kastas vidare. Det landar i routerns `defaultErrorComponent`
+(`SectionError`, `src/router.ts`), som renderar i Outlet-positionen med skalet
+kvar — **ingen vit skärm** — och Sentry får rapporten via `createRoot`s
+`onCaughtError`. Vad `SectionError` ensam inte kan är att förklara felet eller
+läka det: dess "Försök igen" kör om samma import mot samma saknade chunk och
+kan strukturellt aldrig lyckas. Den delen bär den nya bannern.
+
+**Varför en synlig, assertiv uppmaning är rätt här.** Hos oss kan eventet bara
+fyra vid en navigering Lotta själv har utlöst, aldrig spontant medan hon
+skriver: `src/router.ts` sätter inte `defaultPreload`, och
+`@tanstack/router-core` sätter ingen default för fältet (mätt: `dist/esm/router.js`
+sätter `defaultPreloadDelay: 50` men aldrig `defaultPreload`), så varje
+preload-gren i `link.js` jämför `undefined` mot `"intent"`/`"render"`/`"viewport"`
+och är falsk. Ingen route hämtas på hover. Meddelandet får därför
+`role="alert"` (WCAG 2.2 SC 3.3.1) medan den befintliga uppdaterings-bannern
+behåller `role="status"` — samma mappning som `MessageBox` redan gör i hela
+appen. Det brådskande läget ersätter det artiga; två samtidiga uppmaningar att
+ladda om vore två frågor där det bara finns en.
+
+**En mätt kurskorrigering under bygget.** Första utkastet monterade
+alert-regionen ALLTID och tom, i analogi med `role="status"`. Analogin höll
+inte: MDN (ARIA: alert role) är uttrycklig om att rollen annonseras *"when the
+alert role is added to an element, or such an element becomes visible"*, och
+den alltid monterade formen lade en andra alert-region i varje vy. Det fällde
+tre orelaterade tester i `webblasarbeteende`-klassen med
+`strict mode violation: getByRole('alert') resolved to 2 elements`. Regionen
+monteras nu villkorat, som `MessageBox` alltid gjort, med en regressionsvakt i
+testfilen.
+
+**Vercel Skew Protection: avgjord som EJ tillgänglig utan arbete och ett
+kontobeslut. Marcus äger frågan.**
+
+Läst mot förstapartskällan ([Vercel, Skew
+Protection](https://vercel.com/docs/skew-protection), hämtad 2026-08-13) håller
+inte antagandet att den är en kryssruta för oss:
+
+| Fråga | Vad källan säger | Vad det betyder för oss |
+|---|---|---|
+| Plan | *"available for all deployment environments for Pro and Enterprise teams"* | **Kan inte fastställas här** — ingen Vercel-åtkomst finns |
+| Ramverk | Zero-config för Next.js, SvelteKit, Qwik, Astro, Nuxt | Vår `vercel.json` har `"framework": "vite"`. **Inte i listan** |
+| Andra ramverk | *"Other frameworks can implement Skew Protection by checking if `VERCEL_SKEW_PROTECTION_ENABLED` has value `1` and then appending the value of `VERCEL_DEPLOYMENT_ID` to each request"* via `?dpl=`, `x-deployment-id` eller `__vdpl` | Egen implementation krävs: varje asset-URL i bygget måste bära `?dpl=`, vilket i Vite betyder `experimental.renderBuiltUrl` och en outredd interaktion med precache-manifestet |
+| På som default | Projekt skapade efter 2024-11-19 **med ett stött ramverk** | Gäller inte oss |
+| Kostnad | Källan anger ingen separat avgift, bara plankravet | Kostnaden är plan-nivån, inte en post per användning |
+| Maxålder | Default ett dygn, konfigurerbar upp till projektets retention | En flik som stått öppen längre än så skyddas inte ändå |
+
+Research § 5 punkt 3 noterade noll `dpl_`-spår i serverad `index.html` som en
+indikation på att funktionen är av. Den indikationen är **svagare än den såg
+ut**: för ett icke-stött ramverk hade spåren saknats även med funktionen
+påslagen, eftersom det är ramverket som fäster deployment-ID:t.
+
+**Vad Marcus ska avgöra (och det är inte brådskande efter denna post):** om
+Vercel-planen är Pro eller Enterprise, och i så fall om det är värt att bygga
+`?dpl=`-pinningen för en Vite-SPA. Vinsten vore att felet **sällan uppstår**;
+denna post gör att det **aldrig blir obegripligt när det uppstår**. De två
+utesluter inte varandra, men bara den ena kan byggas utan ett kontobeslut, och
+den är byggd. Förutsättningen för att ens kunna svara är den Vercel-åtkomst
+research § 5 redan rekommenderade före go-live.
+
+**Är fönstret stängt?** Mot **användaren**, ja: det finns inte längre något
+läge där Lotta möter en trasig sida utan förklaring och utan väg vidare. Mot
+**nätverket**, nej: en chunk som inte finns kommer fortfarande inte att finnas,
+och rutten hon klickade på visas först efter omladdningen. Det är den
+skillnaden Skew Protection skulle stänga, och den ligger hos Marcus.
+
+**Tillhörande yta.** Mekanism: `src/lib/chunk-laddningsfel.ts`. UI: samma
+`src/components/AppShell/AppUpdateBanner.tsx` som posten ovan, nu med två
+lägen. Blockerande bevis:
+`tests/webblasarbeteende/app-chunk-laddningsfel.test.ts` (8 tester;
+tvåsidigt bevisat: 8 fällde utan mekanismen, 8 passerade med den).
