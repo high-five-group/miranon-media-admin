@@ -139,6 +139,7 @@ export function useSendConfirmationFromDetail(eventId: string, registrationId: s
       if (result.confirmed.includes(registration.id)) {
         void recordActivity({
           dataSource,
+          queryClient,
           actor: { id: user?.id ?? '', name: user?.displayName ?? null },
           verb: BEKRAFTADE_ANMALAN_VERB,
           object: {
@@ -255,6 +256,7 @@ export function useConfirmAll(eventId: string) {
         const reg = byId.get(id);
         void recordActivity({
           dataSource,
+          queryClient,
           actor: { id: user?.id ?? '', name: user?.displayName ?? null },
           verb: BEKRAFTADE_ANMALAN_VERB,
           object: {

@@ -21,6 +21,7 @@
 // payload på det sättet.
 
 import { expect, test } from '@playwright/test';
+import type { QueryClient } from '@tanstack/react-query';
 import {
   ACTIVITY_OBJECT_TYPES,
   BEKRAFTADE_ANMALAN_VERB,
@@ -179,6 +180,11 @@ test.describe('§ 2 — INTEGRITETSVAKTEN: betalningsnoteringens fritext lämnar
   function noteringsInput(dataSource: DataSourceAdapter, _notering: string) {
     return {
       dataSource,
+      // TASK-210: `recordActivity` invaliderar aktivitetsloggens cache efter
+      // en lyckad loggning. Denna fil mäter PAYLOADEN, inte invalideringen —
+      // en no-op räcker (invalideringens eget tvåsidiga bevis bor i
+      // `record-activity.test.ts`).
+      queryClient: { invalidateQueries: () => {} } as unknown as QueryClient,
       actor: { id: 'a1b2c3d4-0000-4000-8000-000000000001', name: 'Lotta' },
       verb: betalningsnoteringVerb('avgift'),
       object: {

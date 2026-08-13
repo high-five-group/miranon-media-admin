@@ -21,9 +21,20 @@ import { queryKeys } from '@/queries/keys';
  * åtkomstprecedens som `useDashboardEvents`/`PersonsList`.
  *
  * Ingen polling här (skiljer sig medvetet från `useDashboardData.ts`s
- * `DASHBOARD_POLLING`): om hem-spalten (TASK-201.7) vill polla är det den
- * skivans beslut, inte förskott av denna — global `staleTime`/
- * `refetchOnWindowFocus` (`router.ts`) gäller tills dess.
+ * `DASHBOARD_POLLING`) — och färskheten är AVGJORD sedan TASK-210, inte
+ * längre uppskjuten. Den globala `staleTime`/`refetchOnWindowFocus`
+ * (`src/router.ts`) gäller alltjämt och är MEDVETET orörd, men den är inte
+ * längre det enda som styr: `recordActivity` invaliderar
+ * `queryKeys.activityLog.all` när ett statement faktiskt skrivits, så en
+ * loggad handling gör loggen inaktuell i samma ögonblick den sker.
+ *
+ * Det är därför varken polling eller en egen `staleTime` behövs här.
+ * Polling hade frågat servern om och om igen i blindo; en lokal `staleTime: 0`
+ * hade gjort VARJE fönsterfokus till en omhämtning, även när ingenting hänt.
+ * Invalideringen är i stället händelsestyrd — noll anrop när Lotta inte gjort
+ * något, omedelbar färskhet när hon gjort något. Bakgrund (Marcus-order
+ * 2026-08-13 "Lös det!"): spalten visade i upp till fem minuter inte den
+ * anteckning som just skrivits, medan historikvyn gjorde det.
  */
 
 const HISTORY_PAGE_SIZE = 20;

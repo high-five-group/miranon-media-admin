@@ -52,6 +52,7 @@ export function useCreatePersonNote(personId: string, personNamn: string | null)
       alertScreenReader('Anteckningen har lagts till');
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: ANTECKNADE_VERB,
         object: {

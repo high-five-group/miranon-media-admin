@@ -13,6 +13,7 @@
 // funktion i onSuccess, aldrig awaitar den).
 
 import { expect, test } from '@playwright/test';
+import type { QueryClient } from '@tanstack/react-query';
 import { recordActivity } from '../../src/data/activityLog/recordActivity';
 import type { DataSourceAdapter } from '../../src/data/adapters/DataSourceAdapter';
 import {
@@ -20,6 +21,7 @@ import {
   PERSON_ID_EXTENSION_IRI,
   REQUEST_ID_EXTENSION_IRI,
 } from '../../src/domain/schemas/ActivityStatement.schema';
+import { queryKeys } from '../../src/queries/keys';
 
 /** Minimal `DataSourceAdapter`-stub — bara `recordActivity` behöver ett
  * konkret beteende, resten är oanvänd av testet (aldrig anropad). */
@@ -27,6 +29,35 @@ function stubAdapter(recordActivityImpl: DataSourceAdapter['recordActivity']): D
   return {
     recordActivity: recordActivityImpl,
   } as DataSourceAdapter;
+}
+
+/**
+ * No-op-`QueryClient` för de tester som inte prövar invalideringen (TASK-210).
+ * Samma injektionsmönster som `stubAdapter` ovan — bara den metod funktionen
+ * faktiskt rör behöver ett beteende.
+ */
+function stubQueryClient(): QueryClient {
+  return { invalidateQueries: () => {} } as unknown as QueryClient;
+}
+
+/**
+ * Spion-`QueryClient` (TASK-210): fångar VARJE `invalidateQueries`-anrops
+ * filter-argument i anropsordning, så både ATT den kallas och MED VAD kan
+ * mätas — och lika viktigt: att den INTE kallas när loggningen fallerade.
+ * `impl` låter ett test byta ut beteendet (kasta, eller aldrig resolva).
+ */
+function spionQueryClient(impl?: () => unknown): {
+  queryClient: QueryClient;
+  anrop: unknown[];
+} {
+  const anrop: unknown[] = [];
+  const queryClient = {
+    invalidateQueries: (filters: unknown) => {
+      anrop.push(filters);
+      return impl ? impl() : undefined;
+    },
+  } as unknown as QueryClient;
+  return { queryClient, anrop };
 }
 
 const VALID_INPUT = {
@@ -50,7 +81,9 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
       return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
     });
 
-    await expect(recordActivity({ dataSource, ...VALID_INPUT })).resolves.toBeUndefined();
+    await expect(
+      recordActivity({ dataSource, queryClient: stubQueryClient(), ...VALID_INPUT }),
+    ).resolves.toBeUndefined();
 
     expect(mottagetStatement).toBeDefined();
     const stmt = mottagetStatement as {
@@ -77,13 +110,17 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
     // någonsin lät felet propagera skulle detta test fälla — och en
     // anropande mutations `void recordActivity(...)` skulle bli ett
     // unhandled promise rejection i produktion.
-    await expect(recordActivity({ dataSource, ...VALID_INPUT })).resolves.toBeUndefined();
+    await expect(
+      recordActivity({ dataSource, queryClient: stubQueryClient(), ...VALID_INPUT }),
+    ).resolves.toBeUndefined();
   });
 
   test('riktning 2/2b: dataSource.recordActivity avvisar (rejected promise, inte throw) → samma garanti', async () => {
     const dataSource = stubAdapter(() => Promise.reject(new Error('EF avvisade: 500')));
 
-    await expect(recordActivity({ dataSource, ...VALID_INPUT })).resolves.toBeUndefined();
+    await expect(
+      recordActivity({ dataSource, queryClient: stubQueryClient(), ...VALID_INPUT }),
+    ).resolves.toBeUndefined();
   });
 
   test('försvar: ett ogiltigt actor-namn (tom sträng) faller tillbaka till en icke-tom platshållare — statementet är fortfarande giltigt', async () => {
@@ -95,6 +132,7 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
 
     await recordActivity({
       dataSource,
+      queryClient: stubQueryClient(),
       ...VALID_INPUT,
       actor: { id: VALID_INPUT.actor.id, name: null },
     });
@@ -113,7 +151,12 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
       return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
     });
 
-    await recordActivity({ dataSource, ...VALID_INPUT, eventId: 'recEVENT00000001' });
+    await recordActivity({
+      dataSource,
+      queryClient: stubQueryClient(),
+      ...VALID_INPUT,
+      eventId: 'recEVENT00000001',
+    });
 
     const stmt = mottagetStatement as {
       context: { extensions: Record<string, string> };
@@ -132,7 +175,7 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
       return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
     });
 
-    await recordActivity({ dataSource, ...VALID_INPUT });
+    await recordActivity({ dataSource, queryClient: stubQueryClient(), ...VALID_INPUT });
 
     const stmt = mottagetStatement as {
       context: { extensions: Record<string, string> };
@@ -150,7 +193,12 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
       return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
     });
 
-    await recordActivity({ dataSource, ...VALID_INPUT, personId: 'recPER0000000001' });
+    await recordActivity({
+      dataSource,
+      queryClient: stubQueryClient(),
+      ...VALID_INPUT,
+      personId: 'recPER0000000001',
+    });
 
     const stmt = mottagetStatement as {
       context: { extensions: Record<string, string> };
@@ -168,7 +216,7 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
       return { id: statement.id, requestId: 'test-request-id', occurredAt: statement.timestamp };
     });
 
-    await recordActivity({ dataSource, ...VALID_INPUT });
+    await recordActivity({ dataSource, queryClient: stubQueryClient(), ...VALID_INPUT });
 
     const stmt = mottagetStatement as {
       context: { extensions: Record<string, string> };
@@ -185,6 +233,7 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
 
     await recordActivity({
       dataSource,
+      queryClient: stubQueryClient(),
       ...VALID_INPUT,
       eventId: 'recEVENT00000001',
       personId: 'recPER0000000001',
@@ -195,5 +244,83 @@ test.describe('recordActivity — fire-and-forget (TASK-201.3 AC #1)', () => {
     };
     expect(stmt.context.extensions[EVENT_ID_EXTENSION_IRI]).toBe('recEVENT00000001');
     expect(stmt.context.extensions[PERSON_ID_EXTENSION_IRI]).toBe('recPER0000000001');
+  });
+
+  // TASK-210 (Marcus-order 2026-08-13 "Lös det!"): hem-spalten serverade
+  // cachad data i upp till fem minuter efter en loggad handling. BÅDA
+  // riktningarna, samma disciplin som fire-and-forget-testerna ovan — plus
+  // två tester som skyddar själva kontraktet mot den nya raden.
+  test('invalidering riktning 1/2: loggningen LYCKAS → aktivitetsloggens gren invalideras EXAKT en gång, på PREFIXET', async () => {
+    const { queryClient, anrop } = spionQueryClient();
+    const dataSource = stubAdapter(async (statement) => ({
+      id: statement.id,
+      requestId: 'test-request-id',
+      occurredAt: statement.timestamp,
+    }));
+
+    await recordActivity({ dataSource, queryClient, ...VALID_INPUT });
+
+    // EXAKT en gång — ingen kaskad.
+    expect(anrop).toHaveLength(1);
+    // PREFIXET, inte `latest`-nyckeln ensam: en ny post gör HELA loggen
+    // inaktuell, och hem-spalten (`latest`) respektive historikvyn
+    // (`history`) delar bara detta prefix. Literal, inte härledd via
+    // spread — hade testet skrivit `queryKeys.activityLog.all` på båda
+    // sidor vore det en tautologi.
+    expect(anrop[0]).toEqual({ queryKey: ['activityLog'] });
+    // ... och nyckelmodulen bär faktiskt den formen (bindningen prövad separat).
+    expect(queryKeys.activityLog.all).toEqual(['activityLog']);
+  });
+
+  test('invalidering riktning 2/2: loggningen KASTAR → INGEN invalidering (ingen omhämtning för en post som aldrig skrevs)', async () => {
+    const { queryClient, anrop } = spionQueryClient();
+    const dataSource = stubAdapter(async () => {
+      throw new Error('Simulerat nätverksfel — log-activity-EF nere');
+    });
+
+    // Kontraktet håller alltjämt: resolvar trots felet.
+    await expect(
+      recordActivity({ dataSource, queryClient, ...VALID_INPUT }),
+    ).resolves.toBeUndefined();
+
+    // DEN KRITISKA ASSERTIONEN: noll anrop. Invalideringen ligger EFTER
+    // `await`:en i try-blocket, så en fallerad skrivning kan aldrig utlösa
+    // ett nätverksanrop för data som inte förändrats.
+    expect(anrop).toHaveLength(0);
+  });
+
+  test('kontraktet överlever en TRASIG cache-yta: invalidateQueries kastar → recordActivity resolvar ändå', async () => {
+    const { queryClient } = spionQueryClient(() => {
+      throw new Error('Simulerat fel inuti invalidateQueries');
+    });
+    const dataSource = stubAdapter(async (statement) => ({
+      id: statement.id,
+      requestId: 'x',
+      occurredAt: statement.timestamp,
+    }));
+
+    // Invalideringen ligger INNE i try-blocket → dess fel fångas som allt
+    // annat och når aldrig den anropande mutationen.
+    await expect(
+      recordActivity({ dataSource, queryClient, ...VALID_INPUT }),
+    ).resolves.toBeUndefined();
+  });
+
+  test('invalideringen BLOCKERAR INTE: en aldrig-resolvande invalidateQueries fördröjer inte recordActivity', async () => {
+    // Ett promise som ALDRIG resolvar. Hade raden `await`:ats skulle
+    // recordActivity hänga för evigt och testet falla på timeout — detta är
+    // det mekaniska beviset för att fire-and-forget-kontraktet står orört.
+    const { queryClient, anrop } = spionQueryClient(() => new Promise<void>(() => {}));
+    const dataSource = stubAdapter(async (statement) => ({
+      id: statement.id,
+      requestId: 'x',
+      occurredAt: statement.timestamp,
+    }));
+
+    await expect(
+      recordActivity({ dataSource, queryClient, ...VALID_INPUT }),
+    ).resolves.toBeUndefined();
+    // Den anropades faktiskt — testet passerar inte av att raden hoppades över.
+    expect(anrop).toHaveLength(1);
   });
 });

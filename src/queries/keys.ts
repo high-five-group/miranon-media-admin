@@ -95,6 +95,17 @@ export const queryKeys = {
     sendRecipients: (segmentId: string) => ['segment', 'sendRecipients', segmentId] as const,
   },
   activityLog: {
+    // ROT-nyckeln (TASK-210) — prefixet BÅDA grenarna nedan delar. Enda
+    // konsument: `recordActivity`s invalidering efter en lyckad loggning.
+    // Prefix, inte `latest`-nyckeln ensam, MEDVETET: en ny post gör hela
+    // loggen inaktuell, och VILKEN filterkombination i `history` den råkar
+    // matcha vet bara servern — att gissa det klient-side vore fel. Kostnaden
+    // är noll extra nätverksanrop: `invalidateQueries` refetchar bara AKTIVA
+    // (monterade) queries, och spalten (`/hem`) och historikvyn
+    // (`/mer/aktivitetshistorik`) kan aldrig vara monterade samtidigt.
+    // Inaktiva filterkombinationer markeras bara stale och hämtas om först
+    // om de återbesöks.
+    all: ['activityLog'] as const,
     // Aktivitetshistoriken (TASK-201.6, kärnvyn): cursor-paginerad via
     // `useInfiniteQuery` (ADR-056-mönstret, `persons.search`-precedenten).
     // Nyckeln bär FILTERPARAMETRARNA (kategori/eventId/tidsintervall) —

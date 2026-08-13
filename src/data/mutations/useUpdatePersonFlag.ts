@@ -96,6 +96,7 @@ export function useUpdatePersonFlag(personId: string, personNamn: string | null)
       alertScreenReader('Flagga sparad');
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: UPPDATERADE_FLAGGA_VERB,
         object: {

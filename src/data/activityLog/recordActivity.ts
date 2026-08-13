@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
 import type { ActivityStatement, ActivityVerb } from '@/domain/schemas';
 import {
@@ -7,6 +8,7 @@ import {
   REQUEST_ID_EXTENSION_IRI,
   XAPI_IRI_BASE,
 } from '@/domain/schemas';
+import { queryKeys } from '@/queries/keys';
 
 /**
  * Aktivitetsloggens skrivväg — klientsidan av datalagret, VIA ADAPTERN
@@ -20,6 +22,27 @@ import {
  * `onSuccess` (EFTER att den riktiga skrivningen redan lyckats), aldrig från
  * `mutationFn` — då hade ett loggningsfel kunnat kopplas in i samma
  * Promise-kedja som den riktiga skrivningen.
+ *
+ * CACHE-INVALIDERINGEN BOR HÄR, INTE HOS ANROPARNA (TASK-210, Marcus-order
+ * 2026-08-13 "Lös det!"): hem-spalten "Senaste aktivitet" serverade cachad
+ * data i upp till fem minuter efter en nyss loggad handling — appens globala
+ * `staleTime` är 5 min (`src/router.ts`), och `refetchOnWindowFocus` hjälper
+ * inte eftersom den bara hämtar om när datan redan är STALE. Den globala
+ * ribban är MEDVETET orörd (rimlig för resten av appen); det är
+ * aktivitetsloggens yta som behöver vara omedelbar.
+ *
+ * Varför här och inte per mutation: detta är den ENDA punkt varje loggning
+ * passerar, och den vet EXAKT när skrivningen lyckades. En invalidering
+ * utspridd över de elva anroparna hade varit elva chanser att glömma den —
+ * och varje framtida anropare en tolfte. Ingen kaskad uppstår: `activityLog`
+ * är ingen mutations egen nyckel, så den invalideras aldrig två gånger.
+ *
+ * KONTRAKTET ÖVERLEVER: invalideringen ligger INNE i try-blocket (ett
+ * synkront kast fångas som allt annat) men `await`:as ALDRIG — `recordActivity`s
+ * Promise resolvar utan att vänta in refetchen, precis som förut. En misslyckad
+ * omhämtning landar i queryns egen error-state, som spalten redan renderar
+ * ärligt; den kan aldrig nå mutationen. Ligger den efter `await`:en körs den
+ * dessutom BARA när servern faktiskt tog emot statementet.
  */
 
 export interface ActivityActorInput {
@@ -49,6 +72,16 @@ export interface ActivityObjectInput {
 
 export interface RecordActivityInput {
   dataSource: DataSourceAdapter;
+  /**
+   * Anroparens `useQueryClient()` (TASK-210). OBLIGATORISK med avsikt: en
+   * valfri parameter hade gjort invalideringen till en artighet var och en
+   * kan glömma, medan en obligatorisk gör typkontrollen till grinden — varje
+   * ny anropare TVINGAS förse loggningen med den, precis som med `dataSource`.
+   * Skickas in i stället för att direkt-importeras som modul-singleton: det
+   * senare är det DI-idiom [ADR-055](../../../docs/decisions/ADR-055-datakalla-atkomst-router-context-di.md)
+   * uttryckligen avvisade ("blandar DI-idiom ... per-test-mock-friktion").
+   */
+  queryClient: QueryClient;
   actor: ActivityActorInput;
   verb: ActivityVerb;
   object: ActivityObjectInput;
@@ -113,6 +146,11 @@ export async function recordActivity(input: RecordActivityInput): Promise<void> 
     // trasigt statement ska aldrig fälla mutationen, bara loggas bort.
     const parsed = ActivityStatementSchema.parse(statement);
     await input.dataSource.recordActivity(parsed);
+    // Loggen är nu inaktuell — se filhuvudets § CACHE-INVALIDERINGEN.
+    // Samma bara-anropa-form som mutationernas egna `onSettled`-invalideringar
+    // (t.ex. `useCreatePersonNote`): INGEN `await`, så fire-and-forget-
+    // kontraktet står orört.
+    input.queryClient.invalidateQueries({ queryKey: queryKeys.activityLog.all });
   } catch (error) {
     // Strukturerad, men ALDRIG kastad vidare — se filhuvudets kontrakt.
     console.error('[recordActivity] loggning misslyckades - mutationen påverkas inte', error);
