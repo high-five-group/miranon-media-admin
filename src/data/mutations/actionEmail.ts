@@ -81,22 +81,50 @@ export function useSendActionEmail(eventId: string) {
       const byId = new Map(mottagare.map((r) => [r.id, r] as const));
       for (const id of result.completed) {
         const reg = byId.get(id);
-        if (!reg) continue;
         void recordActivity({
           dataSource,
           actor: { id: user?.id ?? '', name: user?.displayName ?? null },
           verb: mailVerb(actionType),
           object: {
-            id: registrationObjectId(reg.id),
+            id: registrationObjectId(id),
             type: ACTIVITY_OBJECT_TYPES.mail,
-            name: `${displayName(reg)} (${reg.eventNamn ?? 'okänt event'})`,
+            // MEDVETET INGET `continue` när uppslaget missar (TASK-201.14) —
+            // raden löd tidigare `if (!reg) continue` och SLÄPPTE då posten
+            // tyst. `result.completed` är serverns egen lista över mottagare
+            // som fick BÅDE mail och (om åtgärden har en) fält-skrivning
+            // (`SendActionEmailResultSchema`s docblock; `_shared/send-action-
+            // email.ts` § `runActionSendBatch` steg 4 — även grenen där
+            // `stampFieldsFor` ger `null` betyder "mailet ENSAMT är hela
+            // handlingen"). Varje ID här är alltså ett mail som FAKTISKT
+            // lämnade systemet: det finns inget läge i `completed` där ingen
+            // handling skedde, och därmed inget läge där `continue` vore
+            // rätt. Ett tomt klient-uppslag är ett KLIENT-tillstånd och får
+            // aldrig radera en sann händelse ur loggen.
+            //
+            // SAMMA FALLBACK-FORM SOM `useConfirmAll`
+            // (`registrationConfirmation.ts`, TASK-201.13): entiteten är i
+            // båda fallen en ANMÄLAN (`registrationObjectId`) — `mail` är
+            // objektets KATEGORI, inte dess identitet — så platshållaren är
+            // ordagrant densamma. Två bulk-vägar med olika platshållare hade
+            // gjort historiken oläsbar.
+            name: reg ? `${displayName(reg)} (${reg.eventNamn ?? 'okänt event'})` : 'Okänd anmälan',
           },
           // TASK-201.4: betalar 201.3s deferrade EVENT_ID_EXTENSION_IRI-skuld
           // — eventId var redan hook-bundet (`useSendActionEmail(eventId)`).
           eventId,
           // TASK-201.12: reg.personId är NULLABLE per mottagare — se
           // registrationPayments.ts's motsvarande kommentar.
-          personId: reg.personId ?? undefined,
+          //
+          // PERSON-KOPPLINGEN GÅR FÖRLORAD NÄR UPPSLAGET MISSAR, ÖPPET SAGT
+          // (TASK-201.14): `mottagare` är hookens ENDA källa till `personId`
+          // — saknas raden finns ingen annan väg till den, och `undefined`
+          // utelämnar `PERSON_ID_EXTENSION_IRI` HELT ur `context.extensions`
+          // (`recordActivity.ts`) i stället för att skriva ett gissat ID.
+          // Följden är ärlig men verklig: posten syns i eventets historik,
+          // INTE på personens tidslinje. Ett påhittat person-ID hade varit
+          // värre än ett saknat — då hade en annan persons historik fått en
+          // främmande rad.
+          personId: reg?.personId ?? undefined,
         });
       }
     },
