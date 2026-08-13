@@ -1402,7 +1402,7 @@ function VariantD({
           att den är lång. `SessionsRad` bär själva VALET när eventet har
           flera sessioner; denna rad bär härledningens förbehåll. */}
       <p className="text-caption text-text-muted">
-        <strong className="font-medium text-text-secondary">Härledd</strong> session — kontrollera
+        <strong className="font-medium text-text-secondary">Härledd</strong> session. Kontrollera
         att den stämmer innan du börjar.
       </p>
 
@@ -1497,7 +1497,7 @@ function VariantD({
           behövde bättre (se sessionsnoten ovan). Tyst får det aldrig vara. */}
       {utanDeltagande > 0 && (
         <p className="px-4 text-caption text-text-muted">
-          {`${utanDeltagande} av ${rader.length} saknar deltaganderad för ${session} i basen. Dörren visar dem ändå — den skarpa skivan måste skapa raden vid incheckning, inte dölja personen.`}
+          {`${utanDeltagande} av ${rader.length} saknar deltaganderad för ${session} i basen. Dörren visar dem ändå: den skarpa skivan måste skapa raden vid incheckning, inte dölja personen.`}
         </p>
       )}
 
