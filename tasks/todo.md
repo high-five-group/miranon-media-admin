@@ -149,7 +149,40 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-13 em, `lifecycle: active`) — RESUME MOT
+**Session 103 ⏸️ PAUSAD (2026-08-13 kväll, `lifecycle: paused`) — DEL 11:
+CHECK-IN-PASSET. GRANSKNINGSFIXTUR + D-VARIANT BYGGD OCH ITERERAD; TVÅ AV
+ORKESTRERARENS EGNA PÅSTÅENDEN FALSIFIERADE AV AGENT.** **Kvällens viktigaste
+fynd är processuellt:** jag bedömde check-in-varianterna på LÄST KOD utan att ha
+sett dem renderade. Marcus fångade det (*"har du ens tittat på hur det ser
+ut?"*) och pekade på facit-sidorna som mått. **För en UI-yta är den renderade
+bilden källan, inte koden.** **LANDAT:** `#1257` granskningsfixturen
+(`d351491c`, `TASK-208` — staging hade NIO `Deltaganden`-rader totalt; nu ett
+event `reckgn7arcyW367qT` med 16 personer × 2 sessioner = 32 rader, verifierade
+av mig i basen) · `#1259` D-varianten (`453d44ac`, `TASK-209`) · `a4c0a641`
+streck-rättelsen. **`#1266` (itereringsvarvet) I LUFTEN vid paus** — armerad
+`20:03:47Z`, alla grindar gröna utom `Acceptance` som kör. **CI-fångst:**
+`check-langa-streck` fällde `#1259` — grinden bor i jobbet "Lint + Audit +
+TypeCheck" och körs INTE av `check:docs`, därför osynlig i agentens lokala svep.
+Rättat med OMFORMULERING, inget undantag mintat, så Marcus öppna
+tankestrecks-kollision står orörd. **TVÅ ORKESTRERAR-PÅSTÅENDEN FALSIFIERADE:**
+"incheckade sorteras överst" var falskt (`byggRaderD` sorterar rent alfabetiskt,
+verifierat i `453d44ac`) — defekten verklig men med annan mekanism: nästa
+åtgärdbara rad vandrar 65 px per incheckning; och "ingen stämplad sida använder
+ytan utanför 600-spalten" var falskt (Hem-facitet gör exakt det). **Mätt
+förbättring, mobil, första ÅTGÄRDBARA raden:** 0 incheckade 427 → **367 px**, 5
+incheckade 752 (klippt) → **419 px** konstant. **NYTT CARRY 11:** fjärde
+bas-defekten — `Personer."Kommande event"` saknar sessions-dedup, dubbelräknar
+tvådagars-event, **gäller i prod**; hemvist är Marcus beslut, EJ registrerad.
+**FORMVALET ÄR INTE GJORT** — D är landad men inte vald; kvällens arbete gjorde
+kandidaten värd att välja, inte valet. **NÄSTA: Marcus tittar på D
+(`/event/reckgn7arcyW367qT/narvaro?variant=d`) → formvalet → konvergens →
+stämpel → promovering. Närvaro-WRITE fortfarande 0 träffar, eget bygge.**
+Numrering vid paus mot `015b4a02`: ADR **112** · L**512** + 4 fragment ·
+T**143** · task-**211** (kort-serien rörde sig tre steg under kvällen — räkna
+OM). **HANDOFF: sessionsdok S103 § PAUSLÄGE (2026-08-13 kväll) + Del 11.**
+*(Resume-blocket nedan bevarat.)*
+
+**Session 103 (Del 10, historik) — RESUME MOT
 DISK: PAUS-LÄGETS FEM PÅSTÅENDEN HÖLL, EN DIVERGENS.** `#1229` **MERGED**
 (`8b4832c7`, 2026-08-12T20:27:57Z) · `CheckinPrototyp.tsx` **1087 rader** ·
 `CHECKIN_PROTO_VARIANTS` rad 1083, routen DEV-grindad `?variant=a|b|c`,
