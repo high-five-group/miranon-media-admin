@@ -5,7 +5,7 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { Suspense } from 'react';
 import type { AuthContextValue } from '@/auth/AuthProvider';
-import { RouteAnnouncer } from '@/components/AppShell';
+import { AppUpdateBanner, RouteAnnouncer } from '@/components/AppShell';
 import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
 
 interface RouterContext {
@@ -28,6 +28,13 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootLayout() {
   return (
     <>
+      {/* Uppdaterings-bannern ligger HÄR och inte i AppShell, av exakt samma
+          skäl som RouteAnnouncer nedan: en ny appversion rör alla grenar
+          (login/dev/inloggat), inte bara det inloggade skalet. Live-regionen
+          är alltid monterad och tom tills en uppdatering finns — den syns
+          därför inte förrän den har något att säga (ADR-047 § Amendering
+          2026-08-13). */}
+      <AppUpdateBanner />
       <Suspense
         fallback={
           <div role="status" aria-live="polite" className="p-4">

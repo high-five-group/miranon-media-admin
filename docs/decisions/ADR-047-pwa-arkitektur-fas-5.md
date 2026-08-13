@@ -87,3 +87,86 @@ verktyg som proxy-mätare strider mot verifiera-mot-verklighet-disciplinen.
 
 - Ikon-assets blir nytt arbete (K2).
 - DoD-ändring i låst byggplan. Mitigation: detta ADR är beslutsspåret.
+
+## Updates
+
+### 2026-08-13 (S105) — appen får en uppdateringsväg; `skipWaiting()` behålls
+
+Beslutet ovan är oförändrat. Denna post TILLFÖR den uppdateringsväg B1/B2
+aldrig gav appen, och preciserar B2:s sista mening.
+
+**Vad som var trasigt, mätt.** `TASK-199`s utredningspass
+([`task-199-frontend-deployvagen-och-sw-precachen-2026-08-13.md`](../research/task-199-frontend-deployvagen-och-sw-precachen-2026-08-13.md)
+§ 3) visade att en installerad app kunde köra **gammal kod obegränsat länge**.
+Tre fakta grep in i varandra:
+
+| Fil | Vad som stod där | Följd |
+|---|---|---|
+| `src/sw.ts` install-handler | `self.skipWaiting()` | workern passerar aldrig `waiting` |
+| `vite.config.ts` | `registerType` ej satt, default `'prompt'` | prompt-grenens hela omladdningsväg hänger på `waiting` |
+| `src/main.tsx` | `registerSW()` utan optioner | `onNeedRefresh` odefinierad, prompten en no-op |
+
+Workbox-window schemalägger `waiting` med 200 ms fördröjning och **avbryter**
+det när workern går till `activating`. Vår `skipWaiting()` hann alltid först,
+så `waiting` fyrade aldrig, ingen `controlling`-lyssnare registrerades, och
+ingen omladdning skedde. En SPA-ruttändring är dessutom `history.pushState`,
+inte en navigation, och triggar därför ingen uppdateringskontroll alls.
+
+**Beslut (Marcus, S105).** Research § 7 lade tre vägar på bordet. Vald:
+**`autoUpdate` med egen `onNeedReload` PLUS periodisk `registration.update()`**.
+Ren `autoUpdate` (rad 1) avvisades därför att en tvångsomladdning kan slänga
+bort Lottas inmatning mitt i ett formulär; enbart periodisk `update()` (rad 3)
+avvisades därför att den bara löser detektionen och inte ger någon väg fram
+till ny kod. Kombinationen ger **bunden upptäcktstid** och ett
+**omladdningsbeslut som ligger hos användaren**.
+
+**`skipWaiting()` behålls, och det är inte en kompromiss.** Mätt i
+`node_modules/vite-plugin-pwa/dist/client/build/register.js`: `autoUpdate`
+byter klientgren från `waiting` till **`activated`** — händelsen vår
+`skipWaiting()` garanterar. De två hör alltså ihop; `autoUpdate` utan
+`skipWaiting()` hade inte fungerat. `skipWaiting()` går från att vara buggens
+orsak till att vara mekanismens förutsättning, och `src/sw.ts` lämnas
+**orörd**.
+
+`registerType` rör heller inte vår handskrivna SW. Fältet används på exakt tre
+ställen i `node_modules/vite-plugin-pwa/dist/index.js`: rad 800 (default), rad
+169 (ersätter `__SW_AUTO_UPDATE__` i klientkoden, den enda som gäller oss) och
+rad 874, som sätter `workbox.skipWaiting` men bara när `injectRegister` är
+`'auto'`/`null` — vi har `false`, och `workbox.*` gäller ändå bara
+`generateSW`-strategin, inte vår `injectManifest`.
+
+**Intervallet: en timme.** Förstapartsrekommendation i båda styrande källor:
+web.dev *The service worker lifecycle* (*"you may want to call `update()` on
+an interval (such as hourly)"*) och `vite-plugin-pwa` *Periodic SW updates*
+(`const intervalMS = 60 * 60 * 1000`). Formen är förstapartens
+**edge-case-variant** med tre guarder (`installing`, `navigator.onLine`,
+`fetch(swUrl)` med statuskontroll). Den sista är extra viktig hos oss: vår
+SPA-rewrite svarar `200 text/html` på allt som saknas, så en naken `update()`
+mot ett trasigt origin är inte en no-op.
+
+En guard mot `document.visibilityState === 'hidden'` **prövades och byggdes
+inte** — ingen av förstapartskällorna nämner dolda flikar, och med ett
+timintervall är webbläsarens egen bakgrundsthrottling utan praktisk betydelse.
+
+**B2-precisering.** B2 sade att SW-registreringen *"flyttas från manuell kod i
+`main.tsx` till pluginets registrerings-mekanism"*. Den ligger fortfarande i
+`main.tsx`, men anropet går nu via `src/lib/app-uppdatering.ts`, som bär
+optionerna. `injectRegister: false` är oförändrat: pluginet injicerar ingen
+registrering, vi gör den explicit.
+
+**Kvarstående risk, öppet bokförd.** Research § 3.4 mätte att en gammal
+lazy-chunk svarar `200 text/html` (4410 B) i stället för `404`, vilket kan ge
+ett MIME-fel (`Failed to fetch dynamically imported module`) om ett ruttbyte
+sker efter att den nya workern tagit kontroll men innan användaren laddat om.
+Detta beslut **krymper** det fönstret från obegränsat till "tills Lotta
+klickar", men eliminerar det inte — priset för att låta beslutet ligga hos
+användaren. Att stänga det helt kräver en annan mekanism (Vites
+`vite:preloadError`, eller Vercel Skew Protection vars status är oavgjord,
+research § 5 punkt 3) och är inte beslutat här.
+
+**Tillhörande yta.** Mekanism: `src/lib/app-uppdatering.ts`. UI:
+`src/components/AppShell/AppUpdateBanner.tsx`, monterad i
+`src/routes/__root.tsx` (alla grenar, som `RouteAnnouncer`). Blockerande
+bevis: `tests/webblasarbeteende/app-update-banner.test.ts` — klassvalet är
+motiverat i testfilens huvud (noll databeteende ⇒ acceptance-klassens
+hermetik-självtest hade fällt det, `TASK-131`-precedenten).
