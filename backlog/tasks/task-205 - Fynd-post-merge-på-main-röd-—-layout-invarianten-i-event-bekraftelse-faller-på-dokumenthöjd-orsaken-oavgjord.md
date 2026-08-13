@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-12 20:48'
-updated_date: '2026-08-13 14:27'
+updated_date: '2026-08-13 14:59'
 labels: []
 dependencies: []
 priority: high
@@ -127,4 +127,26 @@ REVIDERAD RÄKNING: 16 körningar samplade denna kväll (2026-08-11), 6 röda �
 Bägge GitHub-ärendena (#1174, #1186) stängda 2026-08-13 med hänvisning till detta kort (durabelt register). Det tredje larmet i samma Nightly-fällning (#1184, träd d532adbb6ab4) hör INTE till denna klass — det är TASK-196:s redan diagnostiserade och fixade attachment-upload-flake (storage.list limit:100), fixen deployad till staging 2026-08-12 kväll, dvs EFTER denna körnings tidpunkt (2026-08-11 21:03). Stängt med hänvisning till TASK-196 i stället.
 
 Källa: gh run view 31526844868 --log-failed, gh run view 31540350470 --log-failed, gh pr diff 1166/1185 --name-only, samtliga körda 2026-08-13.
+
+TILLÄGG (S105 D3-C, 2026-08-13) — triage av de tio kvarvarande post-merge-ärendena, EN ny datapunkt + en DATUMRÄTTELSE + en KORSREFERENS som inte bör beslutas här.
+
+EN NY RÖD DATAPUNKT, UTANFÖR BÅDE 14-KÖRNINGSTABELLEN OCH D3-B:S TVÅ TILLÄGG:
+
+Issue #1195 (träd 193d461c5330, merge PR #1194/TASK-196-fixen själv, run 31563875338, körning 2026-08-12T04:46:27Z): fällt på rad 445 (medUrval.dok vs vilande.dok), Received: 57 (tröskel 1), 3/3 identiskt. PR:ens NETTO-diff (git diff 193d461c5330^1 193d461c5330 --stat) rör enbart supabase/functions/finalize-attachment-upload/index.ts + TASK-196-kortfilen — noll koppling till event-bekraftelse.staging.test.ts eller layoutkod. Denna körning ligger TIDSMÄSSIGT FÖRE hela det tidigare mätta fönstret (04:46Z, natten mot 2026-08-12, medan tabellen nedan börjar 18:17Z samma dag) — en genuint ny, tidigare osamplad instans.
+
+REVIDERAD RÄKNING: 17 körningar samplade (16 tidigare + denna), 7 röda (6 tidigare + denna) = 7/17 ≈ 41,2 %.
+
+Övriga sex av de tio triagerade GH-ärendena som visade samma test/rad (#1227→6c2f2425, #1232→7e74c94b, #1234→8b4832c7, #1240→417537f5) är INTE nya datapunkter — de är GitHub-notifikationsärenden för SAMMA fyra merge-SHA:n som redan står i 14-körningstabellen nedan (verifierat via run-ID/tidsstämpel-matchning). Stängda mot detta kort utan att räknas två gånger. (De återstående fyra av de tio — #1207, #1208, #1209, #1220, #1222 — hör INTE till denna klass; se TASK-207 och stängningskommentarerna på respektive issue.)
+
+DATUMRÄTTELSE (källbelagd, git log commit-datum (ISO)): D3-Bs tillägg ovan skriver "REVIDERAD RÄKNING: 16 körningar samplade denna kväll (2026-08-11)". Det stämmer för D3-Bs EGNA två tillägg (#1174→d18583e5, 2026-08-11T19:04:07Z; #1186→5663b456, 2026-08-11T21:48:19Z — bekräftat), men INTE för 14-körningstabellen i AVGÖRANDE MÄTNING-avsnittet ovan: dess merge-SHA:n är verifierat 2026-08-12, inte 2026-08-11 (git log commit-datum (ISO) -1 <sha>: 6c2f2425→2026-08-12T18:11:06Z, 430a8156→2026-08-12T20:10:27Z, 8b4832c7→2026-08-12T20:17:44Z, 417537f5→2026-08-12T21:37:49Z). De "16 körningarna" spänner alltså TVÅ separata nätter (14 st 2026-08-12 kväll + 2 st 2026-08-11 kväll), inte en enda kväll som formuleringen antyder. Påverkar inte klassificeringen eller kvoten — bara den narrativa tidsangivelsen. Noteras här som append, D3-Bs text lämnad orörd.
+
+KORSREFERENS SOM INTE AVGÖRS HÄR — flaggas för Marcus/orkestrerarens bedömning:
+
+TASK-188 ("event-bekraftelse scroll-mätningen (rad ~437): deterministisk 57 px-förskjutning i post-merge-staging — INTE flake", öppen sedan 2026-08-10, uppdaterad 2026-08-11, EJ refererad från detta kort och detta kort EJ refererat därifrån — verifierat med grep 2026-08-13) diagnosticerade REDAN 2026-08-11 att "Received: 57" var IDENTISKT i fyra oberoende körningar den dagen och drog slutsatsen att det är en DETERMINISTISK layoutförskjutning, inte datatillstånds-flake — rakt emot detta korts kvarstående "Förklaring (b)" (datatillstånd/antal rader).
+
+Detta korts EGEN mätserie (nu 17 körningar över tre dagar: 2026-08-10 via TASK-188, 2026-08-11 och 2026-08-12 här) visar SAMMA sak TASK-188 redan såg: samtliga verbatim "Received"-värden som lästs — i BÅDA korten, över ALLA dagar, ALLA merge-SHA:n, HELT olika kodträd — är exakt 57. Om förklaring (b) (datatillstånd/radantal) vore korrekt borde värdet variera med hur många rader respektive events data faktiskt bär vid mättillfället; det gör det aldrig i något känt belägg. Detta talar EMOT förklaring (b) och FÖR TASK-188:s deterministisk-layoutförskjutning-hypotes.
+
+Jag löser INTE denna motsägelse här — det är ett arkitektur-/prioriterings-beslut (vilket kort äger frågan, om de ska slås samman, vilken förklaring som är rätt) som inte är mitt att ta på eget bevåg. Bokfört öppet för Marcus/orkestrerarens ställningstagande.
+
+Källor: gh run view 31563875338 --log-failed; git diff 193d461c5330^1 193d461c5330 --stat; git log commit-datum (ISO) -1 <sha> för samtliga sex nämnda SHA:n; gh issue view 1174/1186 --json createdAt; grep -n 188/205 på respektive kortfil (noll träffar i båda riktningarna). Samtliga körda 2026-08-13.
 <!-- SECTION:NOTES:END -->
