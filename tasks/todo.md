@@ -15,9 +15,22 @@
 
 ## Aktuellt fokus
 
-**Session 105 ▶️ ÅTERUPPTAGEN (2026-08-13 em, `lifecycle: active`) — FAS 6.5
-AKTIVITETSLOGGEN: HELA VY-KEDJAN LANDAD, ALLT AGENT-GÖRBART I `TASK-201`
-KLART — KEDJAN VÄNTAR PÅ MARCUS-SEKVENSEN.** **Access-"blockeringen" FALSIFIERAD på Marcus invändning:**
+**Session 105 ⏸️ PAUSAD (2026-08-13 kväll, `lifecycle: paused`) — FAS 6.5
+AKTIVITETSLOGGEN ÄR LIVE I PROD.** Marcus körde runbooken själv, guidad
+kommando för kommando (prod-låset kringgicks ALDRIG); `activity_log` +
+`log-activity` + `get-activity-log` skarpa sedan ~18:30, rök-testet
+bevisade kedjan klient→EF→tabell→läsväg. **NOLL LUCKOR på Marcus order:**
+15 mutationshooks / 15 loggar (före 15/11/4), uppdateringsbanner +
+kraschfönster-fångare byggda, hem-spaltens 5-min-fördröjning lagad.
+**Två fel som rök-testet avslöjade och ingen testplan hade fångat:**
+SW-precachen fångad LIVE (Marcus browser körde gammal kod) och
+hem-spaltens cache. **KVAR FÖR MARCUS:** `#1249` sex ogranskade
+baslinjebilder · riva död kod (`useConfirmAll`/`useLogPaymentReminder`,
+noll konsumenter) · Vercel Skew Protection (kontobeslut) · Vercel-åtkomst
+till registret · rotera `VERCEL_OIDC_TOKEN` · `TASK-196`-fixen till prod
+(bilageuppladdningen bär fortfarande buggen där) · `TASK-188`/`205`
+motsäger varandra om samma test. Full narrativ: sessionsdok S105 Del 1–8,
+Paushistorik ×3, PAUSLÄGE. **Access-"blockeringen" FALSIFIERAD på Marcus invändning:**
 Supabase CLI var inloggat via macOS-nyckelringen sedan 2026-03-30 hela tiden
 (tom `~/.supabase/` var bevis för RÄTT lagring, läst som frånvaro; nattens
 `link`-hängning var lösenordsprompten, inte login). Migrationen applicerad,
