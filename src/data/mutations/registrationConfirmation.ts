@@ -267,9 +267,7 @@ export function useConfirmAll(eventId: string) {
             // loggen. Namnet faller tillbaka på en tydlig platshållare —
             // samma "aldrig tomt namn"-disciplin som `actorName` och
             // `eventActivityName`.
-            name: reg
-              ? `${displayName(reg)} (${reg.eventNamn ?? 'okänt event'})`
-              : 'Okänd anmälan',
+            name: reg ? `${displayName(reg)} (${reg.eventNamn ?? 'okänt event'})` : 'Okänd anmälan',
           },
           eventId,
           personId: reg?.personId ?? undefined,

@@ -71,7 +71,10 @@ test.describe('Betalningsnoteringens aktivitetslogg (TASK-201.13)', () => {
       http.post(EF('log-activity'), async ({ request }) => {
         const body = (await request.json()) as Kropp;
         loggar.push(body);
-        const b = body as unknown as { id: string; context: { extensions: Record<string, string> } };
+        const b = body as unknown as {
+          id: string;
+          context: { extensions: Record<string, string> };
+        };
         return json(
           {
             id: b.id,
@@ -106,9 +109,10 @@ test.describe('Betalningsnoteringens aktivitetslogg (TASK-201.13)', () => {
     const payload = JSON.stringify(loggar[0]);
     expect(payload, 'HELA noteringen läckte in i aktivitetsposten').not.toContain(HEMLIG_NOTERING);
     for (const fragment of FRAGMENT) {
-      expect(payload, `fritext-fragmentet "${fragment}" läckte in i aktivitetsposten`).not.toContain(
-        fragment,
-      );
+      expect(
+        payload,
+        `fritext-fragmentet "${fragment}" läckte in i aktivitetsposten`,
+      ).not.toContain(fragment);
     }
 
     const logg = loggar[0] as unknown as {
