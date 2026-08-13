@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-11 18:30'
-updated_date: '2026-08-12 17:51'
+updated_date: '2026-08-13 14:29'
 labels: []
 dependencies: []
 priority: medium
@@ -21,10 +21,10 @@ Belägg (rödklassningen 2026-08-11): tests/api/attachment-upload-large.staging.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -78,4 +78,6 @@ var att koden faktiskt kom ut i miljön.
 
 KVARSTÅR EJ I DENNA SKIVA: prod-deploy av samma fix. Prod-ref-låset (TASK-203)
 gör det till ett Marcus-moment per beslut A (se TASK-201.9). Bokförs där, inte här.
+
+[S105 D3-A, 2026-08-13] DoD-STATUS PER POST (nightly-drift-rättelse, run 31664046792 — 0 AC obockade, 4 DoD obockade): #1 CHECK, VAKUÖST SANT — kortet har "No acceptance criteria defined" (npx backlog task 196 --plain verifierat, ingen AC-sektion existerar). Kravet "alla acceptanskriterier avbockade" har noll poster att pröva mot, så det håller trivialt (tomma mängden — ingen AC står obockad). #2 CHECK — kortets EGNA Implementation Notes (skrivna vid fix-landningen) dokumenterar redan: "LOKALA GRINDAR: typecheck 0 (exit 0), npx @biomejs/biome check . exit 0 (0 nya fynd i diffen — supabase/functions är exkluderat ur biome.json, förväntat), build exit 0, npm run test:api 656/656 exit 0 (1m)". Självständigt omprövat i denna session mot aktuellt main-läge (samma träd, fixen redan mergad): npm run typecheck exit 0, npx @biomejs/biome check . exit 0 — ingen drift sedan landningen. #3 CHECK — gh pr view 1194 --json statusCheckRollup (PR "fix/task-196-finalize-attachment-existenskontroll-info-inte-list", merge 193d461c53301c192d1340a4a9b05905b4d59dd1, ancestor av origin/main verifierat via git merge-base --is-ancestor): samtliga körda jobb SUCCESS (Lint+Audit+TypeCheck, Test suite/Pure+Build, Test suite/Acceptance (hermetisk), Test suite/Webblasarbeteende, Docs link check, CI Passed or Skipped, CodeQL, Vercel) — Staging (API+E2E)/A11y/Staging sentinel purge SKIPPED (korrekt D0-klassning, diffen rör ingen staging-specifik yta). Ingen röd check. #4 CHECK — PR #1194 rörde exakt 2 filer: backlog/tasks/task-196-....md + supabase/functions/finalize-attachment-upload/index.ts. Inga orelaterade filer. (Uppföljningscommiten 0830b0c7 som bokför staging-deployen är en separat, senare docs-only bokförings-commit på main — rör samma kortfil, inte kod.)
 <!-- SECTION:NOTES:END -->
