@@ -194,3 +194,83 @@ export const UPPDATERADE_ANTECKNING_VERB: ActivityVerb = {
   id: `${XAPI_IRI_BASE}/verbs/uppdaterade-anteckning`,
   display: { 'sv-SE': 'uppdaterade anteckning' },
 };
+
+/**
+ * TASK-201.13 — de FYRA sista luckornas verb (Marcus-order 2026-08-13: "Jag
+ * vill inte ha en enda lucka"). Upphäver TASK-201.4s bokförda avgränsning,
+ * som vilade på ett RÄKNINGS-argument (PRD:ns "~11" räknade inte in dem) —
+ * PRD TASK-201s användarberättelse 9 (Lotta ska aldrig behöva tvivla på att
+ * appen minns) är ett FÖRTROENDE-argument, och det slår räkningen.
+ *
+ * INGEN NY OBJEKT-KATEGORI mintas: betalningsnotering och påminnelse är
+ * `ACTIVITY_OBJECT_TYPES.betalning` (de HANDLAR om en betalning), testmailet
+ * är `ACTIVITY_OBJECT_TYPES.mail` (det ÄR ett mail). Verbkatalogen bar redan
+ * rätt kategori-axel — bara verben saknades.
+ */
+
+/**
+ * Betalningens identitet i verb-texten — strukturellt identisk med
+ * `Betalning` (`registrationPayments.ts`), MEDVETET återdeklarerad här i
+ * stället för importerad: filhuvudets regel förbjuder import från
+ * `data/mutations/*` (mutationsfilerna importerar HÄRIFRÅN — en import åt
+ * andra hållet stänger en cirkulär kedja). TypeScripts strukturella typning
+ * gör att mutationens egen `Betalning` passar rakt in utan konvertering.
+ */
+type BetalningsSlag = 'avgift' | 'slut';
+
+/** Bestämd form för verb-texten ("noteringen för anmälningsavgiften") —
+ * skild från `BETALNING_LABEL`s obestämda rubrikform i mutationsfilen. */
+const BETALNINGS_ORD: Record<BetalningsSlag, string> = {
+  avgift: 'anmälningsavgiften',
+  slut: 'slutbetalningen',
+};
+
+/**
+ * Betalningsnoteringens verb — `registrationPayments.ts` §
+ * `useUpdatePaymentNote`. TVÅ varianter (avgift/slut), samma suffixade-IRI-
+ * form som `mailVerb` redan etablerar för en fler-värd axel.
+ *
+ * INTEGRITETEN ÄR STRUKTURELL, INTE EN KONVENTION: funktionen tar ENDAST
+ * betalningens identitet — noteringens FRITEXT har ingen parameter att komma
+ * in genom, exakt samma garanti som `ANTECKNADE_VERB` bär för anteckningar
+ * (S105 Del 2 beslut 2: loggen bär ATT en notering ändrades, ALDRIG vad den
+ * säger). Payload-nivå-beviset: `tests/api/activity-log-luckor-statements.ts`
+ * § INTEGRITETSVAKTEN, som läser den faktiska utgående kroppen.
+ */
+export function betalningsnoteringVerb(betalning: BetalningsSlag): ActivityVerb {
+  return {
+    id: `${XAPI_IRI_BASE}/verbs/uppdaterade-betalningsnotering/${betalning}`,
+    display: { 'sv-SE': `uppdaterade noteringen för ${BETALNINGS_ORD[betalning]}` },
+  };
+}
+
+/**
+ * Påminnelse-loggens verb — `registrationPayments.ts` §
+ * `useLogPaymentReminder`. "antecknade", inte "skickade": mutationen skriver
+ * en TIDSSTÄMPEL och öppnar Lottas mailklient (mailto) — appen kan aldrig
+ * observera att mailet faktiskt lämnade datorn, och ett "skickade" hade varit
+ * exakt den stämplingslögn `useLogPaymentReminder`s eget docblock och
+ * `AtgardsSida.tsx` § "mailto-eran" river. MEDVETET skilt från
+ * `mailVerb('paminnelse')` ("skickade betalningspåminnelse"), som gäller den
+ * SERVER-SIDA sändvägen där sändningen faktiskt är observerad.
+ */
+export function betalningspaminnelseVerb(betalning: BetalningsSlag): ActivityVerb {
+  return {
+    id: `${XAPI_IRI_BASE}/verbs/antecknade-betalningspaminnelse/${betalning}`,
+    display: { 'sv-SE': `antecknade påminnelse om ${BETALNINGS_ORD[betalning]}` },
+  };
+}
+
+/**
+ * Testmailets verb — `actionEmail.ts` § `useSendActionTestEmail`. Objektet är
+ * EVENTET (`eventObjectId`), inte en anmälan: testgrenen skriver strukturellt
+ * inget fält på någon anmälan (`_shared/send-action-email.ts` §
+ * `runActionTestSend`), och mailet går till Lottas EGEN inkorg — att peka
+ * statementet på mottagar-platshållarens anmälan hade påstått att en
+ * anmälan berördes. "till sig själv" i klartext så historiken aldrig kan
+ * förväxlas med ett skarpt utskick till en deltagare.
+ */
+export const SKICKADE_TESTMAIL_VERB: ActivityVerb = {
+  id: `${XAPI_IRI_BASE}/verbs/skickade-testmail`,
+  display: { 'sv-SE': 'skickade testmail till sig själv' },
+};

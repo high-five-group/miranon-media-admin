@@ -3,8 +3,11 @@ import { useAuth } from '@/auth/useAuth';
 import { displayName } from '@/components/registrations/registration-display';
 import {
   ACTIVITY_OBJECT_TYPES,
+  eventActivityName,
+  eventObjectId,
   mailVerb,
   registrationObjectId,
+  SKICKADE_TESTMAIL_VERB,
 } from '@/data/activityLog/activityTypes';
 import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
@@ -112,9 +115,22 @@ export function useSendActionEmail(eventId: string) {
  * skriver strukturellt aldrig ett fält (`_shared/send-action-email.ts` §
  * `runActionTestSend` tar ingen `ActionFieldWriter`-deps) — ingen anmälan i
  * urvalet berörs, alltså finns inget cache-läge att synka om (AC #2).
+ *
+ * AKTIVITETSLOGGAD ÄNDÅ (TASK-201.13, Marcus-order "inte en enda lucka").
+ * TASK-201.4 uteslöt denna hook med motiveringen "skriver strukturellt inget
+ * fält" — sant om BASEN, men fel fråga: aktivitetsloggen är en logg över vad
+ * LOTTA GJORDE, inte över vilka fält som ändrades. Ett mail lämnade systemet
+ * på hennes kommando, och `activity_log` är enda stället det syns (testgrenen
+ * skriver medvetet ingen `Maillogg`-rad heller). Utan posten är svaret på
+ * "skickade jag ett testmail innan jag skickade skarpt?" omöjligt att få.
+ *
+ * `eventNamn` hook-bundet, EXAKT samma form och motiv som
+ * `useCreateEventNote(eventId, eventNamn)`: `SendActionTestEmailResult` bär
+ * bara `{status, reason}` — namnet måste komma från anroparen.
  */
-export function useSendActionTestEmail(eventId: string) {
+export function useSendActionTestEmail(eventId: string, eventNamn: string | null) {
   const dataSource = useDataSource();
+  const { user } = useAuth();
 
   return useMutation<
     SendActionTestEmailResult,
@@ -127,5 +143,31 @@ export function useSendActionTestEmail(eventId: string) {
         eventId,
         idempotencyKey: crypto.randomUUID(),
       }),
+
+    // SERVERN ÄR FACIT — samma disciplin som `bekraftelseUtfall`/
+    // `result.completed`: EF:en svarar 200 även när sändningen FÖLL
+    // (`SendActionTestEmailResultSchema`: `status: 'sent' | 'failed'`), så en
+    // lyckad mutation räcker inte. Endast `status === 'sent'` loggas —
+    // annars hade loggen påstått ett utskick som aldrig skedde.
+    onSuccess: (result, { actionType }) => {
+      if (result.status !== 'sent') return;
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: SKICKADE_TESTMAIL_VERB,
+        object: {
+          id: eventObjectId(eventId),
+          type: ACTIVITY_OBJECT_TYPES.mail,
+          // Åtgärdstypen i namnet: ett testmail av en bekräftelse och ett av
+          // en påminnelse är olika handlingar för Lotta, och verbet självt
+          // är medvetet EN konstant (ingen IRI-explosion per typ).
+          name: `${eventActivityName(eventNamn)} (test: ${actionType})`,
+        },
+        eventId,
+        // INGEN personId: mailet gick till Lotta själv, ingen deltagare
+        // berördes. Samma regel som `useUpdateEvent` — aldrig ett påhittat
+        // person-ID för att fylla ett fält.
+      });
+    },
   });
 }
