@@ -26,14 +26,15 @@ function EventAttendancePage() {
 /**
  * [PROTOTYPE] S90 divergens-passet för CHECK-IN-sidan (prototyp-skillens
  * underform A: befintlig route, befintlig auth och datahämtning behålls —
- * bara det renderade underträdet byts). `?variant=a|b|c` väljer variant;
+ * bara det renderade underträdet byts). `?variant=a|b|c|d` väljer variant;
  * utan parametern renderas den SKARPA vyn oförändrad. Hela grenen är
  * DEV-grindad (ADR-044-mekaniken) — en råkad merge kan aldrig nå Lotta.
  */
 function NarvaroYta({ eventId }: { eventId: string }) {
   const [variantParam] = useQueryState('variant');
   const variant: CheckinProtoVariant | null =
-    import.meta.env.DEV && (variantParam === 'a' || variantParam === 'b' || variantParam === 'c')
+    import.meta.env.DEV &&
+    (variantParam === 'a' || variantParam === 'b' || variantParam === 'c' || variantParam === 'd')
       ? variantParam
       : null;
 
