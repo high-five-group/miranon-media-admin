@@ -59,6 +59,7 @@ export function useCreateEventNote(eventId: string, eventNamn: string | null) {
       // "aldrig ett tomt/påhittat värde").
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: ANTECKNADE_VERB,
         object: {

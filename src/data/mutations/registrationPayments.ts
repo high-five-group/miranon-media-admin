@@ -158,6 +158,7 @@ export function useSetPaymentStatus(eventId: string) {
       );
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: betalningVerb(value),
         object: {

@@ -62,6 +62,7 @@ export function useUpdateEvent(eventId: string) {
       // "aldrig ett tomt/påhittat värde").
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: UPPDATERADE_EVENT_VERB,
         object: {

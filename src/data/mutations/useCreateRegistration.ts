@@ -85,6 +85,7 @@ export function useCreateRegistration(eventId: string) {
       alertScreenReader(`Anmälan skapad för ${namn}`);
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: SKAPADE_ANMALAN_VERB,
         object: {

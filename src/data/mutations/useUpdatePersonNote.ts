@@ -82,6 +82,7 @@ export function useUpdatePersonNote(personId: string, personNamn: string | null)
       alertScreenReader('Anteckning sparad');
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: UPPDATERADE_ANTECKNING_VERB,
         object: {

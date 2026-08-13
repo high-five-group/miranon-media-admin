@@ -72,6 +72,7 @@ export function useSetBorOver(eventId: string) {
       );
       void recordActivity({
         dataSource,
+        queryClient,
         actor: { id: user?.id ?? '', name: user?.displayName ?? null },
         verb: boendeVerb(borOver),
         object: {

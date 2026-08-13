@@ -84,6 +84,7 @@ export function useSendActionEmail(eventId: string) {
         if (!reg) continue;
         void recordActivity({
           dataSource,
+          queryClient,
           actor: { id: user?.id ?? '', name: user?.displayName ?? null },
           verb: mailVerb(actionType),
           object: {
