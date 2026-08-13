@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-11 19:12'
-updated_date: '2026-08-13 18:26'
+updated_date: '2026-08-13 19:13'
 labels: []
 dependencies: []
 priority: high
@@ -65,4 +65,20 @@ Tvåsidigt bevis: 6/6 gröna med komponenten monterad (exit 0), 6/6 röda utan (
 Rörda filer: vite.config.ts (registerType), src/lib/app-uppdatering.ts (ny, mekanism), src/components/AppShell/AppUpdateBanner.tsx (ny, UI), src/components/AppShell/index.ts, src/routes/__root.tsx (montering), src/main.tsx (anropsbyte), tests/webblasarbeteende/app-update-banner.test.ts (ny), docs/decisions/ADR-047-pwa-arkitektur-fas-5.md (Updates-amendering).
 
 KVARSTÅENDE RISK, öppet bokförd i ADR-047 § Updates: MIME-kraschfönstret (§ 3.4) krymper från obegränsat till 'tills användaren klickar', men elimineras inte. Att stänga det helt kräver vite:preloadError eller Vercel Skew Protection — ej beslutat.
+
+KRASCHFÖNSTRET STÄNGT MOT ANVÄNDAREN (S105, 2026-08-13, Marcus order "Noll luckor!"). Uppföljning på åtgärden ovan: bannern gjorde fönstret ändligt men inte noll. Byggt: src/lib/chunk-laddningsfel.ts lyssnar på Vites vite:preloadError och tänder ett andra, ASSERTIVT läge i AppUpdateBanner (role=alert, warning-tokens) med begriplig svensk text (orsak, följd, åtgärd) plus Ladda om-knapp. Ingen automatisk omladdning; det brådskande läget ersätter det artiga.
+
+MÄTT, EJ ANTAGET — preventDefault() anropas INTE. Vite 8.2.0, node_modules/vite/dist/node/chunks/node.js: handlePreloadError gör "window.dispatchEvent(e); if (!e.defaultPrevented) throw err;" och ÄR .catch()-handlern för baseModule(). Ett svalt fel får därför __vitePreload att RESOLVA med undefined i stället för modulen, så anroparen kraschar en rad senare med ett orelaterat meddelande. Vites eget doc-exempel är bara säkert i kombination med omedelbar reload — precis det Marcus-beslutet ovan förbjuder. Felet kastas därför vidare till routerns defaultErrorComponent (SectionError), som renderar med skalet kvar (ingen vit skärm) och går till Sentry via onCaughtError. Vad SectionError ensam INTE kan: förklara eller läka — dess "Försök igen" kör om samma import mot samma saknade chunk och kan strukturellt aldrig lyckas.
+
+MÄTT — eventet kan bara fyra vid en navigering Lotta själv utlöst, aldrig på hover: src/router.ts sätter inte defaultPreload och @tanstack/router-core sätter ingen default för fältet (dist/esm/router.js sätter defaultPreloadDelay: 50 men aldrig defaultPreload), så varje preload-gren i react-routers link.js jämför undefined mot intent/render/viewport och är falsk. Det är skälet till att en synlig, assertiv uppmaning är rätt form här i stället för en tyst.
+
+VAD vite:preloadError INTE FÅNGAR (mätt i samma helper): statiska importer i entry-chunken, egna fetch(), bilder, web workers, och misslyckade modulepreload-länkar för JS-deps (helpern skapar bara en Promise när isCss är sant). Den sista saknar praktisk betydelse — när dep:en saknas avvisas baseModule() ändå. INTE I DEV: helpern injiceras bara i bygget ("Build only" enligt pluginets egen källkommentar), vilket är skälet till att testet dispatchar eventet syntetiskt i stället för att blockera en chunk.
+
+KURSKORRIGERING UNDER BYGGET (mätt): första utkastet monterade alert-regionen alltid och tom, i analogi med role=status. Analogin höll inte — MDN ARIA alert role annonserar när elementet LÄGGS TILL, och den alltid monterade formen lade en andra alert-region i varje vy. Fällde tre orelaterade tester i webblasarbeteende-klassen (glomt-losenord, nytt-losenord, valkommen) med "strict mode violation: getByRole(alert) resolved to 2 elements". Regionen monteras nu villkorat, som MessageBox alltid gjort, med regressionsvakt i testfilen.
+
+VERCEL SKEW PROTECTION — AVGJORD SOM EJ TILLGÄNGLIG UTAN ARBETE OCH ETT KONTOBESLUT. Förstapartskällan (vercel.com/docs/skew-protection, hämtad 2026-08-13): tillgängligheten är Pro/Enterprise-bunden, och zero-config gäller endast Next.js, SvelteKit, Qwik, Astro, Nuxt. Vår vercel.json har framework: vite — INTE i listan. Andra ramverk måste implementera den själva genom att läsa VERCEL_SKEW_PROTECTION_ENABLED och hänga VERCEL_DEPLOYMENT_ID på varje request (dpl-query, x-deployment-id-header eller __vdpl-cookie), vilket för en Vite-SPA betyder experimental.renderBuiltUrl plus en outredd interaktion med precache-manifestet. Default maxålder ett dygn. EJ FASTSTÄLLBART HÄRIFRÅN: vilken plan teamet har (ingen vercel-CLI: which vercel exit 1; ingen .vercel/; VERCEL_OIDC_TOKEN utgången 2026-08-06). RÄTTELSE till research § 5 punkt 3: noll dpl_-spår i serverad index.html är en SVAGARE indikation än den såg ut — för ett icke-stött ramverk hade spåren saknats även med funktionen påslagen. MARCUS-BESLUT KVARSTÅR: plan-nivån, och om dpl-pinningen är värd att bygga.
+
+ÄR FÖNSTRET STÄNGT? Mot ANVÄNDAREN ja — det finns inte längre ett läge där Lotta möter en trasig sida utan förklaring och utan väg vidare. Mot NÄTVERKET nej — en chunk som inte finns kommer fortfarande inte att finnas, och rutten hon klickade på visas först efter omladdningen. Den skillnaden är vad Skew Protection skulle stänga.
+
+Rörda filer (denna uppföljning): src/lib/chunk-laddningsfel.ts (ny, mekanism), src/components/AppShell/AppUpdateBanner.tsx (andra läget), tests/webblasarbeteende/app-chunk-laddningsfel.test.ts (ny), docs/decisions/ADR-047-pwa-arkitektur-fas-5.md (andra Updates-posten). Tvåsidigt bevis: 8/8 röda utan mekanismen (exit 1), 8/8 gröna med (exit 0); hela klassen 58/58 grön (exit 0). Grindar: typecheck 0, biome 0, build 0, check:docs 14 gröna exit 0, check-langa-streck 0, api-pure 439 passed exit 0. test:api gav exit 1 av staging-preflighten (TASK-77: CI höll staging, post-merge.yml körning 31733210788 in_progress) — inte av diffen, som inte rör någon API-yta.
 <!-- SECTION:NOTES:END -->
