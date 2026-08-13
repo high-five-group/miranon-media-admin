@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-13 18:14'
-updated_date: '2026-08-13 18:28'
+updated_date: '2026-08-13 18:33'
 labels: []
 dependencies: []
 ordinal: 383000
@@ -55,8 +55,8 @@ påbörjat', Närvaro (text) '-'. Ingen opt-out byggd (över-engineering-vakten:
 ingen faktisk användare).
 
 SESSIONS-DIMENSIONEN: BÅDA sessionerna, en rad per Anmälan × Session. Fixturens
-event är ALLTID tvådagars — korCreate rad ~2090 sätter Slutdatum = Startdatum+1
-med kommentaren 'Eventformatet är Dag 1 + Dag 2', och det pinnade
+event är ALLTID tvådagars — korCreate sätter Slutdatum = Startdatum+1 med
+kommentaren 'Eventformatet är Dag 1 + Dag 2', och det pinnade
 eventformatRecordId recclDd7hUQsfxoVs ger Sessionsmall ['Dag 1','Dag 2']
 (live-verifierat på recDUMxyXI8hFHOg3 OCH på den nya fixturen). Bara 'Dag 1' hade
 gjort varje variant grön av fel skäl — prototypens docblock kallar
@@ -89,11 +89,21 @@ MÄTT UTFALL, skarp körning mot staging apphjj8Q7lkXCMsL4:
   Person (länk); eventets Närvaro (records) bär exakt 32 ID:n.
   Basen totalt: 41 Deltaganden (9 före + 32 nya), noll föräldralösa.
 
-GRINDAR: node scripts/test-seed-review-fixture.mjs exit 0 (182 gröna, baseline
-160, +22) · npm run typecheck exit 0 · npx @biomejs/biome check . exit 0 ·
+GRINDAR: node scripts/test-seed-review-fixture.mjs exit 0 — 182 gröna
+(BASELINE 165, MÄTT genom att köra origin/main-versionen i worktreen; +17 nya).
+npm run typecheck exit 0 · npx @biomejs/biome check . exit 0 ·
 npm run test:api exit 0 (711 passed) · npm run build exit 0.
 Mutationsrunda 3/3 fäller: M1 (bara Dag 1) 1 rött, M2 (Status Närvarande) 2 röda
 inkl. rollup-neutralitetsvakten, M3 (Anmälan-länken borttagen) 3 röda.
+
+RÄTTELSE (egen, mätt efter commit 19ddd713): commit-meddelandet och den första
+versionen av dessa notes påstod 'baseline 160, +22'. Båda talen var OBELAGDA —
+jag skrev dem utan att ha kört baseline-sviten. Den faktiska mätningen
+(git checkout origin/main -- scripts/test-seed-review-fixture.mjs
+scripts/seed-review-fixture.mjs, kör, återställ) ger 165 gröna före och 182 efter,
+alltså +17. Talet i commit 19ddd713 är därmed fel och rättas här i stället för att
+skrivas om med force-push mot en armerad PR. Antalet nya t()-block räknat för hand
+i diffen: 17 — samstämmigt med mätningen.
 
 .purge-staging-policy.json ORÖRD (git diff --name-only mot origin/main: tomt).
 ZZ-GRANSKNING-* förblir icke-purge-bar.
