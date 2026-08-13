@@ -93,6 +93,24 @@ test.describe('Betalningsnoteringens aktivitetslogg (TASK-201.13)', () => {
 
     // Aktivitetsposten skapas — EN post för EN sparad notering.
     await expect.poll(() => loggar.length).toBe(1);
+
+    // INTEGRITETEN FÖRST, mätt på HELA den utgående kroppen — inte på de fält
+    // vi råkade tänka på. Detta är assertionen som fälls om någon framtida
+    // ändring trär noteringen genom `useUpdatePaymentNote`s onSuccess.
+    //
+    // ORDNINGEN ÄR MEDVETEN: form-assertionerna nedan (verb, objektnamn) fälls
+    // OCKSÅ av en läcka som byggs in i namnet, och skulle då skugga integritets-
+    // assertionen så att fällningen såg ut att handla om en formulering.
+    // Verifierat 2026-08-13 genom att skarpt injicera `: ${notering}` i hookens
+    // object.name: med denna ordning namnger fällningen fritext-fragmentet.
+    const payload = JSON.stringify(loggar[0]);
+    expect(payload, 'HELA noteringen läckte in i aktivitetsposten').not.toContain(HEMLIG_NOTERING);
+    for (const fragment of FRAGMENT) {
+      expect(payload, `fritext-fragmentet "${fragment}" läckte in i aktivitetsposten`).not.toContain(
+        fragment,
+      );
+    }
+
     const logg = loggar[0] as unknown as {
       verb: { display: Record<string, string> };
       object: { id: string; definition: { name: Record<string, string>; type: string } };
@@ -100,17 +118,6 @@ test.describe('Betalningsnoteringens aktivitetslogg (TASK-201.13)', () => {
     expect(logg.verb.display['sv-SE']).toBe('uppdaterade noteringen för anmälningsavgiften');
     expect(logg.object.definition.name['sv-SE']).toBe('Anna Andersson (Utbildning Skövde)');
     expect(logg.object.id).toContain('recVisualReg000001');
-
-    // INTEGRITETEN, mätt på HELA den utgående kroppen — inte på de fält vi
-    // råkade tänka på. Detta är assertionen som fälls om någon framtida
-    // ändring trär noteringen genom `useUpdatePaymentNote`s onSuccess.
-    const payload = JSON.stringify(loggar[0]);
-    expect(payload).not.toContain(HEMLIG_NOTERING);
-    for (const fragment of FRAGMENT) {
-      expect(payload, `fritext-fragmentet "${fragment}" läckte in i aktivitetsposten`).not.toContain(
-        fragment,
-      );
-    }
   });
 
   test('RIKTNING 2/2 — skrivningen MISSLYCKAS: ingen aktivitetspost skapas alls', async ({
