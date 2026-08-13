@@ -24,6 +24,7 @@ import {
   arIsoDatum,
   avslutningsOrsak,
   betalstatusFor,
+  buildDeltaganden,
   buildEvent,
   buildRegistrations,
   buildRikAnteckningar,
@@ -2064,6 +2065,245 @@ t(
     assert.deepEqual(plan.persons, ['recPe']);
   },
 );
+
+// --- NÄRVARON (TASK-208): Deltaganden för fixturens anmälda ---
+//
+// Testerna är TVÅSIDIGA per krav: varje egenskap som bär korrektheten prövas
+// både i den gröna riktningen (bygget gör rätt) och i den röda (en trolig
+// felform FÄLLS). Den röda sidan är den som betyder något — ett test som bara
+// bekräftar nuläget hade blivit grönt av fel skäl vid nästa ändring.
+
+const NARVARO_ANM = ['recA1', 'recA2', 'recA3'];
+const NARVARO_PERS = ['recP1', 'recP2', 'recP3'];
+const NARVARO_EVENT = 'recEvent1';
+
+t('buildDeltaganden: EN rad per anmälan × session (Deltagandens kardinalitet)', () => {
+  const rader = buildDeltaganden({
+    eventId: NARVARO_EVENT,
+    anmalanIds: NARVARO_ANM,
+    personIds: NARVARO_PERS,
+    config: CONFIG,
+  });
+  assert.equal(rader.length, NARVARO_ANM.length * CONFIG.narvaro.sessioner.length);
+  // Paret (Anmälan, Session) måste vara UNIKT — en dubblett visar samma person
+  // två gånger på samma session i dörr-listan.
+  const par = rader.map((r) => `${r.Anmälan[0]}§${r.Session}`);
+  assert.equal(new Set(par).size, par.length, 'ingen dubblett på Anmälan × Session');
+});
+
+t('buildDeltaganden: default-fixturen (8+8) ger 16 dörr-rader PER session', () => {
+  const anm = DEFAULTRADER.map((_, i) => `recA${i}`);
+  const pers = DEFAULTRADER.map((_, i) => `recP${i}`);
+  const rader = buildDeltaganden({
+    eventId: NARVARO_EVENT,
+    anmalanIds: anm,
+    personIds: pers,
+    config: CONFIG,
+  });
+  for (const nyckel of CONFIG.narvaro.sessioner) {
+    const iSession = rader.filter((r) => r.Session === CONFIG.select[nyckel]);
+    assert.equal(iSession.length, 16, `${CONFIG.select[nyckel]} ska bära 16 rader`);
+  }
+});
+
+t(
+  'buildDeltaganden: alla TRE länkarna satta — Event (get-attendance), Anmälan (prototypens join), Person (länk) (namn + städbarhet)',
+  () => {
+    const rader = buildDeltaganden({
+      eventId: NARVARO_EVENT,
+      anmalanIds: NARVARO_ANM,
+      personIds: NARVARO_PERS,
+      config: CONFIG,
+    });
+    for (const rad of rader) {
+      assert.deepEqual(rad.Event, [NARVARO_EVENT], 'Event bär get-attendances ingång');
+      assert.ok(NARVARO_ANM.includes(rad.Anmälan[0]), 'Anmälan bär prototypens join');
+      assert.ok(NARVARO_PERS.includes(rad['Person (länk)'][0]), 'Person (länk) bär namn-batchen');
+    }
+  },
+);
+
+t('buildDeltaganden: anmälan och person PARAS per index — aldrig korsade', () => {
+  const rader = buildDeltaganden({
+    eventId: NARVARO_EVENT,
+    anmalanIds: NARVARO_ANM,
+    personIds: NARVARO_PERS,
+    config: CONFIG,
+  });
+  // En korsning hade gett dörr-raden fel namn på rätt anmälan — tyst, och
+  // omöjligt att se i vyn utan att slå upp record-ID:na för hand.
+  for (const rad of rader) {
+    const i = NARVARO_ANM.indexOf(rad.Anmälan[0]);
+    assert.equal(rad['Person (länk)'][0], NARVARO_PERS[i]);
+  }
+});
+
+t('buildDeltaganden: varje rad föds "Ej avstämt" — dörren är granskningsobjektet', () => {
+  const rader = buildDeltaganden({
+    eventId: NARVARO_EVENT,
+    anmalanIds: NARVARO_ANM,
+    personIds: NARVARO_PERS,
+    config: CONFIG,
+  });
+  for (const rad of rader) {
+    assert.equal(rad.Status, CONFIG.select.deltagandeEjAvstamt);
+  }
+});
+
+t(
+  'ROLLUP-NEUTRALITET: statusen får ALDRIG vara en som ger Närvaropoäng 1 (den räknar upp hela kurshistoriken)',
+  () => {
+    const rader = buildDeltaganden({
+      eventId: NARVARO_EVENT,
+      anmalanIds: NARVARO_ANM,
+      personIds: NARVARO_PERS,
+      config: CONFIG,
+    });
+    // Närvaropoäng (fldwuo94BY46VUOm4) = 1 för dessa två, 0 annars. Bär
+    // fixturens rader någon av dem ändras RIM ×, Genomförda dagar och
+    // Antal genomförda event på varje seedad person — motiveringen till att
+    // raderna kan följa med UTAN flagga faller då.
+    const GER_POANG = new Set([CONFIG.select.deltagandeNarvarande, 'Deltog online']);
+    for (const rad of rader) {
+      assert.ok(!GER_POANG.has(rad.Status), `${rad.Status} skulle ge Närvaropoäng 1`);
+    }
+  },
+);
+
+t('buildDeltaganden: sessions-värdena är PINNADE select-värden, aldrig literaler', () => {
+  const rader = buildDeltaganden({
+    eventId: NARVARO_EVENT,
+    anmalanIds: NARVARO_ANM,
+    personIds: NARVARO_PERS,
+    config: CONFIG,
+  });
+  const PINNADE = new Set(CONFIG.narvaro.sessioner.map((n) => CONFIG.select[n]));
+  for (const rad of rader) {
+    assert.ok(PINNADE.has(rad.Session), `"${rad.Session}" är inte ett pinnat select-värde`);
+  }
+  // Sessionsmallen på det PINNADE eventformatet är "Dag 1 + Dag 2"
+  // (live-verifierat mot staging 2026-08-13). Avviker listan därifrån bär
+  // fixturen sessioner eventet inte har.
+  assert.deepEqual([...PINNADE], ['Dag 1', 'Dag 2']);
+});
+
+t('buildDeltaganden: ren funktion — samma indata ger identiska rader', () => {
+  const a = buildDeltaganden({
+    eventId: NARVARO_EVENT,
+    anmalanIds: NARVARO_ANM,
+    personIds: NARVARO_PERS,
+    config: CONFIG,
+  });
+  const b = buildDeltaganden({
+    eventId: NARVARO_EVENT,
+    anmalanIds: NARVARO_ANM,
+    personIds: NARVARO_PERS,
+    config: CONFIG,
+  });
+  assert.deepEqual(a, b);
+});
+
+// --- TASK-208, RÖD SIDA: varje guard fälls av sin egen felform ---
+
+t('RÖD SIDA: olika många anmälningar och personer REFUSERAS (parvisheten är kontraktet)', () => {
+  assert.throws(
+    () =>
+      buildDeltaganden({
+        eventId: NARVARO_EVENT,
+        anmalanIds: ['recA1', 'recA2'],
+        personIds: ['recP1'],
+        config: CONFIG,
+      }),
+    /parvisa/,
+  );
+});
+
+t('RÖD SIDA: tom narvaro.sessioner REFUSERAS av validateConfig', () => {
+  assert.throws(
+    () => validateConfig({ ...CONFIG, narvaro: { ...CONFIG.narvaro, sessioner: [] } }),
+    /narvaro\.sessioner saknas/,
+  );
+});
+
+t(
+  'RÖD SIDA: en session som INTE pekar ut ett pinnat select-värde REFUSERAS (literalen "Dag 1" är just en sådan)',
+  () => {
+    assert.throws(
+      () => validateConfig({ ...CONFIG, narvaro: { ...CONFIG.narvaro, sessioner: ['Dag 1'] } }),
+      /pekar inte ut ett pinnat select-värde/,
+    );
+  },
+);
+
+t('RÖD SIDA: dubblerad session REFUSERAS (den ger två rader på samma Anmälan × Session)', () => {
+  assert.throws(
+    () =>
+      validateConfig({
+        ...CONFIG,
+        narvaro: { ...CONFIG.narvaro, sessioner: ['sessionDag1', 'sessionDag1'] },
+      }),
+    /dubbletter/,
+  );
+});
+
+t('RÖD SIDA: okänd statusNyckel REFUSERAS', () => {
+  assert.throws(
+    () => validateConfig({ ...CONFIG, narvaro: { ...CONFIG.narvaro, statusNyckel: 'finnsInte' } }),
+    /statusNyckel/,
+  );
+});
+
+t(
+  'RÖD SIDA: saknad linkFields.eventNarvaro REFUSERAS (efter-verifieringen tappar sitt fält)',
+  () => {
+    const utan = { ...CONFIG.linkFields };
+    delete utan.eventNarvaro;
+    assert.throws(() => validateConfig({ ...CONFIG, linkFields: utan }), /eventNarvaro/);
+  },
+);
+
+t('linkFields.eventNarvaro är EXAKT fältnamnet get-attendance läser — inte ett eget påhitt', () => {
+  // Speglar supabase/functions/get-attendance/index.ts:
+  //   eventRecord.fields['Närvaro (records)']
+  // Driftar namnet isär blir efter-verifieringen grön mot ett fält ingen
+  // läser, och vyn tom utan att skriptet klagar.
+  assert.equal(CONFIG.linkFields.eventNarvaro, 'Närvaro (records)');
+});
+
+t('städbarheten: Person (länk) är spegeln stadaOrt samlar via personDeltaganden', () => {
+  // Satellit-städningen gör `lankadeIdn(raderasPersoner, 'Deltaganden')`.
+  // Det fältet fylls av `Deltaganden.Person (länk)` (symmetrin live-verifierad
+  // mot staging 2026-08-13). Utan länken blir varje seedad Deltagande-rad
+  // föräldralös vid clean — osynlig för både grafen och den riktade ID-kollen.
+  const rader = buildDeltaganden({
+    eventId: NARVARO_EVENT,
+    anmalanIds: NARVARO_ANM,
+    personIds: NARVARO_PERS,
+    config: CONFIG,
+  });
+  assert.equal(CONFIG.linkFields.personDeltaganden, 'Deltaganden');
+  assert.equal(CONFIG.linkFields.deltagandePersonLank, 'Person (länk)');
+  for (const rad of rader) {
+    assert.ok(Array.isArray(rad[CONFIG.linkFields.deltagandePersonLank]));
+  }
+});
+
+t('PURGE-KOLLISION: närvaro-raderna bär inga markörer setup-purgen kan matcha', () => {
+  // Skyddsräcke 2 i rad-form: Deltaganden bär varken Ort eller E-post, så de
+  // enda purge-bara markörerna kan inte uppstå här. Prövas mot den SKARPA
+  // policyn, aldrig mot ett antagande om vad den innehåller.
+  const rader = buildDeltaganden({
+    eventId: NARVARO_EVENT,
+    anmalanIds: NARVARO_ANM,
+    personIds: NARVARO_PERS,
+    config: CONFIG,
+  });
+  const samples = rader.flatMap((rad) => [
+    { table: CONFIG.tables.deltaganden.purgeName, field: 'Session', value: rad.Session },
+    { table: CONFIG.tables.deltaganden.purgeName, field: 'Status', value: rad.Status },
+  ]);
+  assert.deepEqual(purgeCollisions(samples, PURGE_POLICY), []);
+});
 
 process.on('beforeExit', () => {
   if (failed > 0) {

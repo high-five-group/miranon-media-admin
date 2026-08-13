@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // scripts/seed-review-fixture.mjs — skapar OCH städar GRANSKNINGSFIXTURER i
 // staging-basen: ett kommande event med N bekräftade + M obekräftade
-// anmälningar, realistiskt varierade, redo för design-review i browsern.
+// anmälningar, realistiskt varierade, redo för design-review i browsern —
+// plus (TASK-208) en Deltaganden-rad per anmälan × session, så även
+// närvaro- och check-in-ytorna går att granska. Se § CONFIG.narvaro.
 //
 // VARFÖR SKRIPTET FINNS: exakt samma jobb gjordes för hand 2026-07-22
 // (Event-796, Ort "Skövde", noteringen "GRANSKNINGSDATA (S75 review-våg 1)")
@@ -173,8 +175,10 @@
 //      samma form som purge-skriptets skyddsräcke 4. ÄNDRAD i TASK-97-
 //      uppföljningen (S103) från `Deltaganden` till `Anteckningar 2` —
 //      Deltaganden/Touchpoints städas numera EXPLICIT av stadaOrt (RIK-LÄGET
-//      kräver det: den rika personen FÅR Deltaganden av design). Full
-//      avvägning i CONFIG.personDataLinkFields-kommentaren.
+//      krävde det först: den rika personen FÅR Deltaganden av design. Sedan
+//      TASK-208 får VARJE fixturperson dem, vilket gör lättnaden bärande för
+//      hela fixturen i stället för för en enda rad). Full avvägning i
+//      CONFIG.personDataLinkFields-kommentaren.
 //   5. Utgångsstämpeln (TASK-95): svepet raderar ENDAST en fixtur vars stämpel
 //      passerat. Saknad, trasig eller framtida stämpel ⇒ rörs aldrig. Det är
 //      den halva som gör att en pågående granskning inte kan städas bort.
@@ -278,6 +282,61 @@ export const CONFIG = {
   eventformatRecordId: 'recclDd7hUQsfxoVs',
 
   /**
+   * NÄRVARON (TASK-208) — Deltaganden för den KOMMANDE fixturens anmälda.
+   *
+   * VARFÖR SKRIPTET GÖR AUTOMATIONENS JOBB: i prod skapar automation A3 en
+   * Deltaganden-rad per Anmälan × Session så fort anmälan har Person + Event
+   * (data-model.md § A3). I staging är automationerna AVSTÄNGDA — mätt, inte
+   * antaget: 16 skapade anmälningar gav 0 Deltaganden (se kommentaren vid
+   * Person-länken i korCreate). Skriptet emulerar redan A2 av exakt det skälet
+   * (det sätter `Anmälan.Person` självt); detta är SAMMA klass och samma skäl,
+   * en tabell längre ner i kedjan. Utan raderna är närvaro-/check-in-ytorna
+   * inte granskningsbara alls: `get-attendance` läser eventets
+   * `Närvaro (records)` — spegelfältet av `Deltaganden.Event` — och ett event
+   * utan Deltaganden ger en TOM lista, inte ett fel.
+   *
+   * INGEN FLAGGA, av två skäl som båda är mätta:
+   *   1. Realismen är fixturens hela poäng (§ DATAN SKA LIKNA VERKLIGHETEN).
+   *      I prod HAR varje anmälan sina Deltaganden. En fixtur utan dem är en
+   *      fixtur som ser ut som en bugg — samma felklass TASK-97 rättade för
+   *      namn, adresser och orter.
+   *   2. Raderna är ROLLUP-NEUTRALA i `Ej avstämt`: `Närvaropoäng`
+   *      (fldwuo94BY46VUOm4) är 1 endast för Närvarande/Deltog online, och
+   *      HELA kurshistoriken (RIM ×, Genomförda dagar, Antal genomförda event,
+   *      Erfarenhetsbadge) räknas uppåt därifrån. En `Ej avstämt`-rad ändrar
+   *      alltså ingen enda persons rollup — den kan inte förstöra en
+   *      person-granskning för den som seedade fixturen för personvyernas
+   *      skull. Hade den kunnat det vore en opt-out befogad; nu vore den
+   *      spekulativ komplexitet utan användare.
+   *
+   * SESSIONERNA ÄR KOPPLADE TILL `eventformatRecordId` OVAN, inte fritt valda.
+   * Den pinnade Eventformat-raden ÄR "Dag 1 + Dag 2", vilket gör eventets
+   * `Sessionsmall`-lookup till exakt dessa två (live-verifierat mot staging
+   * 2026-08-13 på recDUMxyXI8hFHOg3: `Sessionsmall: ["Dag 1","Dag 2"]`), och
+   * korCreate sätter Slutdatum = Startdatum + 1 av samma skäl. Ändras
+   * eventformatet MÅSTE denna lista följa med — validateConfig kan bara pröva
+   * att värdena är pinnade select-värden, aldrig att de matchar en rad
+   * tokenet inte får läsa (schema-blindheten). Därav kopplingen i prosa här,
+   * på det enda ställe båda värdena står bredvid varandra.
+   *
+   * VARFÖR BÅDA SESSIONERNA OCH INTE BARA "Dag 1": Deltaganden är EN rad per
+   * Anmälan × Session, och prototypens docblock kallar sessions-dimensionen
+   * "den skarpaste öppna designfrågan" — variant A visar sessionerna som
+   * kolumner, B och C härleder en default. En fixtur med bara Dag 1 kan inte
+   * skilja ett rätt svar från ett fel: den gör varje variant grön av fel skäl.
+   */
+  narvaro: {
+    /**
+     * Härledda ur `select` — ALDRIG egna strängliteraler. En andra kopia av
+     * "Dag 1" hade kunnat drifta från den pinnade konstanten utan att någon
+     * grind ser det, och ett ogiltigt select-värde ger 422 (ingen typecast).
+     */
+    sessioner: ['sessionDag1', 'sessionDag2'],
+    /** Alla rader föds oavstämda — dörren är själva granskningsobjektet. */
+    statusNyckel: 'deltagandeEjAvstamt',
+  },
+
+  /**
    * Fixtur-markörerna. Medvetet VID SIDAN AV purge-mönstren (fälla 1):
    * setup-purgen jagar `Ort = 'ZZ-create-event-test'` och
    * `create-test+<uuid>@staging.test`. En granskningsfixtur som matchade dem
@@ -318,6 +377,20 @@ export const CONFIG = {
   linkFields: {
     /** Eventplanering → Anmälningar. Samma fält korCreate efter-verifierar mot. */
     eventAnmalningar: 'Anmälningar (länkat fält)',
+    /**
+     * Eventplanering → Deltaganden (TASK-208). Spegelfältet av
+     * `Deltaganden.Event`; sätts aldrig av skriptet, uppstår av länken.
+     *
+     * VALT MED AVSIKT SOM EFTER-VERIFIERINGENS FÄLT: det är EXAKT fältet
+     * `get-attendance` läser för att hitta eventets närvarorader
+     * (supabase/functions/get-attendance/index.ts — "läser dess
+     * `Närvaro (records)`-länk … och batch-hämtar dem"). Att räkna det, i
+     * stället för att räkna svaren från vår egen create, bevisar därför att
+     * LÄSVÄGEN fungerar — inte bara att raderna blev skrivna. Ett event utan
+     * fältet ger tom lista i vyn, aldrig ett fel: utan denna koll hade en
+     * trasig Event-länk sett ut som en lyckad körning.
+     */
+    eventNarvaro: 'Närvaro (records)',
     /** Anmälningar → Personer. Sätts av skriptet självt vid create. */
     anmalanPerson: 'Person',
     /** Personer → Anmälningar. Tom lista ⇒ föräldralös fixturperson. */
@@ -370,6 +443,13 @@ export const CONFIG = {
    * `['Anteckningar 2']`. En MEDVETEN avvägning — den rika personen (--rik)
    * FÅR Deltaganden/Touchpoints AV DESIGN, och den gamla listan hade blockerat
    * varje städning av den för alltid.
+   *
+   * SEDAN TASK-208 ÄR LÄTTNADEN INTE LÄNGRE ETT SPECIALFALL: varje anmäld i
+   * fixturen får Deltaganden (närvaro-passet i korCreate). Den gamla listan
+   * hade alltså blockerat städningen av HELA fixturen, inte bara av den rika
+   * personen — samma slutsats, nu med hela batchen som skäl i stället för en
+   * enda rad. Resonemanget nedan om VARFÖR det är säkert är oförändrat och
+   * bär båda fallen: adressen är RFC 2606 § 3-reserverad.
    *
    * Varför det är säkert att släppa Deltaganden/Touchpoints ur guarden:
    * personen når hit ENDAST efter att redan ha passerat `isFixtureEmailRecord`
@@ -908,6 +988,43 @@ export function validateConfig(config) {
         `linkFields.${nyckel} saknas — länkgrafen är cleanens bärande identifiering (TASK-97)`,
       );
     }
+  }
+  // TASK-208: närvaro-blocket. Sessionerna lagras som NYCKLAR in i `select`,
+  // aldrig som egna strängar — så guarden nedan prövar det som faktiskt bär
+  // korrektheten: att varje nyckel pekar ut ett PINNAT select-värde. En
+  // literal hade passerat vilken guard som helst och först gett 422 i skarp
+  // körning, långt från felet.
+  const { sessioner, statusNyckel } = config.narvaro ?? {};
+  if (!Array.isArray(sessioner) || sessioner.length === 0) {
+    throw new Error(
+      'narvaro.sessioner saknas — utan minst en session skapas inga Deltaganden och ' +
+        'närvaro-/check-in-ytorna blir tomma (get-attendance läser eventets Närvaro (records))',
+    );
+  }
+  for (const nyckel of sessioner) {
+    if (typeof config.select?.[nyckel] !== 'string' || config.select[nyckel].length === 0) {
+      throw new Error(
+        `narvaro.sessioner: "${nyckel}" pekar inte ut ett pinnat select-värde — ` +
+          'sessionerna måste härledas ur select (ingen typecast, ingen andra kopia som kan drifta)',
+      );
+    }
+  }
+  if (new Set(sessioner).size !== sessioner.length) {
+    throw new Error(
+      'narvaro.sessioner innehåller dubbletter — det ger två Deltaganden på samma ' +
+        'Anmälan × Session och en dörr-lista som visar samma person två gånger',
+    );
+  }
+  if (
+    typeof config.select?.[statusNyckel] !== 'string' ||
+    config.select[statusNyckel].length === 0
+  ) {
+    throw new Error(`narvaro.statusNyckel "${statusNyckel}" pekar inte ut ett pinnat select-värde`);
+  }
+  if (typeof config.linkFields?.eventNarvaro !== 'string' || !config.linkFields.eventNarvaro) {
+    throw new Error(
+      'linkFields.eventNarvaro saknas — efter-verifieringen läser det fält get-attendance läser',
+    );
   }
   const { dagarDefault, maxDagar, stampelPrefix } = config.livstid ?? {};
   if (!Number.isInteger(dagarDefault) || dagarDefault < 1 || dagarDefault > (maxDagar ?? 0)) {
@@ -1668,6 +1785,58 @@ export function buildRegistrations({ ort, bekraftade, obekraftade, nu, config })
   return rader;
 }
 
+/**
+ * Deltaganden för den KOMMANDE fixturens anmälda (TASK-208) — EN rad per
+ * Anmälan × Session, alla i `Ej avstämt`. Automation A3:s jobb, gjort av
+ * skriptet därför att staging-automationerna är avstängda (§ CONFIG.narvaro).
+ *
+ * TRE LÄNKAR, VAR OCH EN MED SIN EGEN KONSUMENT — ingen är dekoration:
+ *   · `Event`      → spegelfältet `Närvaro (records)` är HELA get-attendances
+ *                    ingång till eventets närvarorader. Utan den är raden
+ *                    osynlig för vyn, hur rätt den än är i övrigt.
+ *   · `Anmälan`    → bär prototypens klient-join (`Deltagande.anmalanId →
+ *                    Registration.id`, CheckinPrototyp.tsx). Utan den saknar
+ *                    dörr-raden e-post, avbokad-flagga, medföljande och
+ *                    "bor över".
+ *   · `Person (länk)` → get-attendance läser person-record-ID:t HÄRIFRÅN
+ *                    (aldrig ur `Person (lookup)`, som returnerar record-ID)
+ *                    och batch-hämtar `Personer.Namn`. Utan den visar dörren
+ *                    "Namn saknas" tills registrerings-joinen råkar fylla i.
+ *                    Fältet är dessutom det som gör raden STÄDBAR: dess
+ *                    spegel `Personer.Deltaganden` är vad stadaOrt:s
+ *                    satellit-städning samlar (symmetrin live-verifierad mot
+ *                    staging 2026-08-13).
+ *
+ * Ren funktion av (ID:n, config) — ingen I/O, ingen tid, inget slumpat: samma
+ * indata ger alltid samma rader, samma disciplin som buildRegistrations.
+ */
+export function buildDeltaganden({ eventId, anmalanIds, personIds, config }) {
+  if (anmalanIds.length !== personIds.length) {
+    throw new Error(
+      `buildDeltaganden: ${anmalanIds.length} anmälningar mot ${personIds.length} personer — ` +
+        'listorna är parvisa (index i är samma rad i buildRegistrations)',
+    );
+  }
+  const status = config.select[config.narvaro.statusNyckel];
+  const rader = [];
+  // Session YTTERST, anmälan innerst: raderna föds grupperade per session,
+  // vilket är den ordning en dörr-lista läses i (och den ordning ett
+  // fällt antagande syns i loggen). Airtable bevarar inte ordning — detta är
+  // för läsbarheten i planen och testerna, aldrig ett kontrakt mot basen.
+  for (const sessionNyckel of config.narvaro.sessioner) {
+    for (let i = 0; i < anmalanIds.length; i += 1) {
+      rader.push({
+        'Person (länk)': [personIds[i]],
+        Anmälan: [anmalanIds[i]],
+        Event: [eventId],
+        Session: config.select[sessionNyckel],
+        Status: status,
+      });
+    }
+  }
+  return rader;
+}
+
 // ---------------------------------------------------------------------------
 // RIK-LÄGET (--rik, S103) — pura byggfunktioner för den rika personen.
 // Samma disciplin som buildRegistrations ovan: ren funktion av (index/nu/
@@ -2232,6 +2401,64 @@ async function korCreate({ args, config, token, purgePolicy }) {
   console.log(`   ✅ efter-verifiering: ${raknat}/${totalt} anmälningar länkade till eventet`);
 
   // -------------------------------------------------------------------
+  // NÄRVARON (TASK-208): en Deltagande-rad per anmälan × session, alla
+  // `Ej avstämt`. Automation A3:s jobb — staging-automationerna är av (se
+  // CONFIG.narvaro). Körs EFTER anmälningarnas efter-verifiering: raderna
+  // länkar till anmälningar som bevisat finns, aldrig till ett antagande.
+  // Gäller HELA batchen inklusive --rik-personens primära anmälan; RIK-blocket
+  // nedan bygger därför bara sin HISTORIK, aldrig den kommande raden (annars
+  // hade personen fått en dubblett på Dag 1).
+  // -------------------------------------------------------------------
+  const deltagandeFalt = buildDeltaganden({
+    eventId: event.id,
+    anmalanIds: anmalningar.map((a) => a.id),
+    personIds: personer.map((p) => p.id),
+    config,
+  });
+  const deltaganden = await createRecords(
+    expectedBaseId,
+    tables.deltaganden.id,
+    deltagandeFalt,
+    token,
+    requestThrottleMs,
+    batchSize,
+  );
+  if (deltaganden.length !== deltagandeFalt.length) {
+    throw new ApiError(`${deltaganden.length}/${deltagandeFalt.length} Deltaganden skapade`);
+  }
+  console.log(
+    `   ✅ ${deltaganden.length} Deltaganden skapade (${totalt} anmälda × ` +
+      `${config.narvaro.sessioner.length} sessioner, alla "${config.select[config.narvaro.statusNyckel]}")`,
+  );
+
+  // Efter-verifiering mot `Närvaro (records)` — INTE mot vårt eget create-svar.
+  // Fältet är spegeln av `Deltaganden.Event` och exakt det get-attendance
+  // läser, så en grön räkning här bevisar att LÄSVÄGEN bär raderna. Samma
+  // poll-form som anmälningarna ovan: länkspeglar har beräkningsfördröjning
+  // (data-model § Kända fällor 17).
+  let raknatNarvaro = null;
+  for (let forsok = 0; forsok < 6; forsok += 1) {
+    const rec = await airtableRequest(
+      `${AIRTABLE_API_URL}/${expectedBaseId}/${tables.eventplanering.id}/${event.id}`,
+      token,
+      requestThrottleMs,
+    );
+    raknatNarvaro = (rec.fields?.[config.linkFields.eventNarvaro] ?? []).length;
+    if (raknatNarvaro === deltagandeFalt.length) break;
+    await sleep(500);
+  }
+  if (raknatNarvaro !== deltagandeFalt.length) {
+    throw new ApiError(
+      `efter-verifiering: eventets "${config.linkFields.eventNarvaro}" bär ${raknatNarvaro} ` +
+        `Deltaganden, förväntade ${deltagandeFalt.length} — get-attendance hade visat samma tal`,
+    );
+  }
+  console.log(
+    `   ✅ efter-verifiering: ${raknatNarvaro}/${deltagandeFalt.length} Deltaganden i eventets ` +
+      `"${config.linkFields.eventNarvaro}" (fältet get-attendance läser)`,
+  );
+
+  // -------------------------------------------------------------------
   // RIK-LÄGET (--rik, S103): historik-event, Deltaganden, Touchpoints och
   // Anteckningar för personen som lades till sist i `rader` ovan. Körs
   // EFTER den vanliga batchen är skarpt skapad OCH verifierad, så ett fel
@@ -2241,7 +2468,6 @@ async function korCreate({ args, config, token, purgePolicy }) {
   if (args.rik) {
     const rikIndex = rader.length - 1;
     const rikPersonId = personer[rikIndex].id;
-    const rikAnmalanPrimarId = anmalningar[rikIndex].id;
     const rikRad = rader[rikIndex];
     const rikNamn = `${rikRad.person.Förnamn} ${rikRad.person.Efternamn}`;
     console.log(`\n▸ RIK-LÄGE: bygger historik för ${rikNamn} (${rikPersonId}) …`);
@@ -2330,44 +2556,41 @@ async function korCreate({ args, config, token, purgePolicy }) {
         `(${historySpecs.filter((s) => s.motivering).length} med motivering)`,
     );
 
-    // --- Deltaganden: 1 för den KOMMANDE (primära) anmälan + N per historik ---
-    const deltagandeFalt = [
-      {
+    // --- Deltaganden: ENBART historiken ---
+    //
+    // Den KOMMANDE (primära) anmälans rader byggs sedan TASK-208 av den
+    // gemensamma närvaro-passet ovan, som täcker HELA batchen — den rika
+    // personen inkluderad, och med BÅDA sessionerna i stället för bara Dag 1.
+    // Att bygga en primär rad även här hade gett en dubblett på Dag 1 och
+    // därmed en dörr-lista som visar personen två gånger på samma session.
+    const rikDeltagandeFalt = historySpecs.flatMap((spec, i) =>
+      spec.sessions.map((s) => ({
         'Person (länk)': [rikPersonId],
-        Anmälan: [rikAnmalanPrimarId],
-        Event: [event.id],
-        Session: config.select.sessionDag1,
-        Status: config.select.deltagandeEjAvstamt,
-      },
-      ...historySpecs.flatMap((spec, i) =>
-        spec.sessions.map((s) => ({
-          'Person (länk)': [rikPersonId],
-          Anmälan: [historyAnmalningar[i].id],
-          Event: [historyEvents[i].id],
-          Session: s.session,
-          Status:
-            s.status === 'Närvarande'
-              ? config.select.deltagandeNarvarande
-              : config.select.deltagandeFranvarande,
-        })),
-      ),
-    ];
-    const deltaganden = await createRecords(
+        Anmälan: [historyAnmalningar[i].id],
+        Event: [historyEvents[i].id],
+        Session: s.session,
+        Status:
+          s.status === 'Närvarande'
+            ? config.select.deltagandeNarvarande
+            : config.select.deltagandeFranvarande,
+      })),
+    );
+    const rikDeltaganden = await createRecords(
       expectedBaseId,
       tables.deltaganden.id,
-      deltagandeFalt,
+      rikDeltagandeFalt,
       token,
       requestThrottleMs,
       batchSize,
     );
-    if (deltaganden.length !== deltagandeFalt.length) {
+    if (rikDeltaganden.length !== rikDeltagandeFalt.length) {
       throw new ApiError(
-        `RIK-LÄGE: ${deltaganden.length}/${deltagandeFalt.length} Deltaganden skapade`,
+        `RIK-LÄGE: ${rikDeltaganden.length}/${rikDeltagandeFalt.length} Deltaganden skapade`,
       );
     }
     console.log(
-      `   ✅ ${deltaganden.length} Deltaganden skapade (1 Kommande + ` +
-        `${deltagandeFalt.length - 1} historik, inkl. ett tvådagars-event)`,
+      `   ✅ ${rikDeltaganden.length} historik-Deltaganden skapade (inkl. ett tvådagars-event) — ` +
+        'den kommande anmälans rader kom ur det gemensamma närvaro-passet',
     );
 
     // --- Touchpoints (hämtningar, riktiga datum spridda i tid) ---
@@ -2542,7 +2765,9 @@ async function stadaOrt({ ort, config, token, dryRun }) {
   const plan = planClean({ events, registrations, persons, ort: args.ort, pattern, config });
 
   /*
-   * SATELLIT-STÄDNING (RIK-LÄGET, S103). Deltaganden/Touchpoints hör till en
+   * SATELLIT-STÄDNING (RIK-LÄGET S103; sedan TASK-208 hela batchens väg —
+   * varje fixturperson har Deltaganden, inte bara den rika).
+   * Deltaganden/Touchpoints hör till en
    * PERSON men nås ALDRIG via länkgrafen ovan (den går event → anmälan →
    * person). Raderas en person utan att dessa städas EXPLICIT blir de
    * föräldralösa: Airtable rensar bara länk-VÄRDET på den raderade sidan,
