@@ -4,7 +4,7 @@ title: 'Skiva: Prod-driftsättning dag 1'
 status: To Do
 assignee: []
 created_date: '2026-08-11 20:27'
-updated_date: '2026-08-13 15:46'
+updated_date: '2026-08-13 18:11'
 labels:
   - ready-for-human
 dependencies:
@@ -61,4 +61,14 @@ AC #3 ÄR SVAGAST OCH FLAGGAD SOM SÅDAN: runbookens steg 6 är märkt PRELIMIN�
 ÖVRIGT UPPMÄTT SOM RUNBOOKEN BÄR: huvudkatalogen stod länkad mot STAGING vid skrivtillfället (supabase/.temp/project-ref) — därav ett eget avslutande steg som länkar tillbaka, eftersom link-tillståndet är sticky och per arbetskatalog. scripts/deploy-prod-functions.sh anropar BAR 'supabase' (globalt installerad v2.75.0) medan repots dokumenterade migrationsväg använder 'npx supabase' (v2.114.0, ej pinnad i package.json) — två CLI-versioner på samma maskin, bokförd som fälla 6. ADR-050:s 'ingen deploy-automatik' verifierad fortfarande gällande (rad 31; inget workflow refererar functions deploy).
 
 Grindar: npm run check:docs exit 0, 14/14 gröna (lychee 0 errors, Vale 0 errors/0 warnings, markdownlint rent efter en MD029-rättelse). Inga AC bockade av agenten — de bockas när driftsättningen faktiskt körts.
+
+BLOCKERAREN UPPLÖST (S105, 2026-08-13, Marcus GO verbatim "1A. GO! Kör bara!"): get-activity-log + log-activity tillagda i .prod-functions-allowlist.conf enligt runbookens steg 0.1-form (kommentarsblock med datum och GO-citat, filens egen konvention sedan app-paritetsutvidgningen 2026-08-11).
+
+MÄTT FÖRE: bash scripts/deploy-prod-functions.sh --list, exit 0 — deploy-set 33, exkluderade 6 (get-activity-log, log-activity + de fyra test-*).
+MÄTT EFTER: samma kommando, exit 0 — deploy-set 35, exkluderade 4 (enbart test-attachments-storage, test-auth, test-invite-completion, test-pdf-generation). Båda aktivitetslogg-funktionerna står nu som [prod].
+
+SIDOEFFEKT MÄTT, INTE ANTAGEN: tests/api/ef-metod-vakt.test.ts (TASK-38) är config-driven mot samma conf-fil, så de två nya raderna utvidgar automatiskt grindens täckning — 34 → 36 tester, alla gröna (exit 0). Både get-activity-log och log-activity bär metod-vakten (405 före requireUser, efter handleCors). Tvåriktat bevis: med test-auth temporärt tillagd fällde grinden exit 1 med 'test-auth: saknar explicit metod-vakt' — raden togs bort igen, diffen är fyra rader i en fil.
+scripts/test-deploy-prod-functions.sh: 4/4 PASS, 0 FAIL, exit 0.
+
+INGEN PROD RÖRD: endast conf-filen ändrad. Ingen deploy, ingen link, inget kommando med prod-refen — prod-ref-låset (TASK-203) respekterat, ingen bypass konstruerad. AC #2 kräver fortfarande faktisk deploy + smoke och förblir Marcus-moment; inga AC bockade här.
 <!-- SECTION:NOTES:END -->
