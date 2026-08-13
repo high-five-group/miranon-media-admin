@@ -15,9 +15,9 @@
 
 ## Aktuellt fokus
 
-**Session 105 ⏸️ PAUSAD IGEN (2026-08-12 kväll, `lifecycle: paused`) — FAS 6.5
-AKTIVITETSLOGGEN: BLOCKERINGEN FANNS ALDRIG — KEDJAN ÖPPNAD, HEM-SPALTEN TRE
-SKIVOR BORT.** **Access-"blockeringen" FALSIFIERAD på Marcus invändning:**
+**Session 105 ▶️ ÅTERUPPTAGEN (2026-08-13 em, `lifecycle: active`) — FAS 6.5
+AKTIVITETSLOGGEN: HELA VY-KEDJAN LANDAD, ALLT AGENT-GÖRBART I `TASK-201`
+KLART — KEDJAN VÄNTAR PÅ MARCUS-SEKVENSEN.** **Access-"blockeringen" FALSIFIERAD på Marcus invändning:**
 Supabase CLI var inloggat via macOS-nyckelringen sedan 2026-03-30 hela tiden
 (tom `~/.supabase/` var bevis för RÄTT lagring, läst som frånvaro; nattens
 `link`-hängning var lösenordsprompten, inte login). Migrationen applicerad,
@@ -91,8 +91,18 @@ facit-avvikelse · (2) `201.9` prod, HITL per ditt beslut A, det är vad som
 nyckelmigreringen · (5) `~/Downloads`-provet (`T141`) · (6) diagnos-pass för
 `TASK-205`/`TASK-206`.** Numrering disk-re-verifierad vid paus mot
 `7b9441b3`: ADR **112** · L**512** + **4 fragment** · tråd **T143** · nästa
-toppnivå-kort **task-207** · fälla **48** — re-derivera ALLTID. Full
-narrativ: sessionsdok S105 Del 1–6 + Paushistorik ×3 + PAUSLÄGE.
+toppnivå-kort **task-207** · fälla **48** — re-derivera ALLTID.
+**RESUME (2026-08-13 em):** paus-landningen `#1242` VERIFIERAD LANDAD
+(`a9115d95`, fyra jobb gröna) · noll öppna PR:er · numreringen oförändrad
+mot `a9115d95` · ägarlappen är nu DENNA sessions egen (S102:s borta,
+huvudkatalogen vår) · huvudkatalogen släpar 59 PR:er, ej ff:ad.
+**NYTT FYND — Nightly RÖD tre nätter i rad** (`a9115d95`/`ddabd215`/
+`ca9832d7`), ej bokfört vid paus: backlog-drift på `TASK-176`/`177`/`196`
+(Done men 0 AC + 4 DoD obockade) + tre obesvarade larm-ärenden `#1186`
+(29 h)/`#1184` (30 h)/`#1174` (32 h), etikett `ci-post-merge`, tröskel
+24 h. **INTE `TASK-206`** — grinden fullbordade och fällde på innehåll.
+Marcus kvitterade D3-städet som agentspår parallellt med sin sekvens.
+Full narrativ: sessionsdok S105 Del 1–7 + Paushistorik ×4.
 
 **Session 102 ⏸️ PAUSAD IGEN (2026-08-11 kväll, `lifecycle: paused`) —
 RESUME-DAGEN LEVERERADE GO-LIVE-KÄRNAN: prod-mailvägen SKARP (`176`+`177`
