@@ -4,7 +4,7 @@ title: 'Skiva: Instrumentering — resterande mutationer'
 status: Done
 assignee: []
 created_date: '2026-08-11 20:23'
-updated_date: '2026-08-12 22:03'
+updated_date: '2026-08-13 19:07'
 labels:
   - ready-for-agent
 dependencies:
@@ -203,6 +203,22 @@ persons/PersonDetail,persons/PersonDetailPrototyp,persons/PersonFlagEditor,
 persons/PersonNoteEditor}.tsx, tests/api/{record-activity,
 activity-log-resterande-statements(ny)}.test.ts, tests/e2e/
 {atgarder-kvitto,event-bor-over}.staging.test.ts.
+
+---
+
+AVGRÄNSNINGEN OVAN ÄR UPPHÄVD (2026-08-13, Marcus-order, S105).
+
+Marcus: 'Jag vill inte ha en enda lucka, varför skulle vi tillåta det????'
+
+Denna skiva uteslöt MEDVETET fyra mutationer — useUpdatePaymentNote, useLogPaymentReminder, useConfirmAll (räknings-argumentet: PRD:ns '~11' räknade inte in dem) och useSendActionTestEmail ('skriver strukturellt inget fält'). Båda argumenten är nu underkända:
+ · Räkningen förlorar mot PRD TASK-201s användarberättelse 9 — Lotta ska aldrig behöva tvivla på att appen minns. Ett förtroende-argument slår ett räkne-argument.
+ · Fält-argumentet var fel fråga: aktivitetsloggen är en logg över vad LOTTA GJORDE, inte över vilka fält som ändrades.
+
+Samtliga fyra är instrumenterade i TASK-201.13. Mätt efter den skivan: 15 exporterade mutationshooks, 15 recordActivity-anropsplatser, noll mutationsfiler utan recordActivity — NOLL DIFFERENS.
+
+TILLÄGG TILL DENNA SKIVAS KATALOG-VERIFIERING: två av de fyra uteslutna (useConfirmAll, useLogPaymentReminder) visade sig sakna anropsplatser helt — konsumenterna revs i TASK-145.3 respektive TASK-145.6. Det påverkar inte vad som byggdes här. De instrumenterades ändå i 201.13 (mekanisk invariant framför undantagslista); frågan om att RIVA dem är öppen och ligger hos Marcus, bokförd på TASK-201.13.
+
+Denna skivas AC/DoD står oförändrade och fortsatt uppfyllda. Avgränsningen var korrekt bokförd och öppet motiverad när den gjordes — vilket är precis varför den gick att ompröva i stället för att upptäckas som en tyst lucka.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

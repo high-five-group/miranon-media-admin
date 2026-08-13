@@ -3,6 +3,7 @@ import { http } from 'msw';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { FIXTUR_EPOST } from '../support/fixturvarld/hermetic';
+import { medvetetOanvand } from '../support/fixturvarld/overskuggnings-vakt';
 import { expect, test } from './support/acceptance-bas';
 
 /**
@@ -37,6 +38,27 @@ import { expect, test } from './support/acceptance-bas';
 
 const ANNA = 'recVisualReg000001';
 const BJORN = 'recVisualReg000002';
+
+/** Aktivitetsloggens utgående kroppar (TASK-201.13). Normalläget svarar redan
+ * rätt på `log-activity` (`handlers.ts`), men exponerar inget att LÄSA — samma
+ * lokala överskuggnings-mönster som `anmalan-detalj.acceptance.test.ts` §
+ * `mocka()` använder för pilotens bevis. */
+type Kropp = Record<string, unknown>;
+function fangaAktivitetslogg(loggar: Kropp[]) {
+  return http.post(EF('log-activity'), async ({ request }) => {
+    const body = (await request.json()) as Kropp;
+    loggar.push(body);
+    const b = body as unknown as { id: string; context: { extensions: Record<string, string> } };
+    return json(
+      {
+        id: b.id,
+        requestId: Object.values(b.context.extensions)[0],
+        occurredAt: '2026-08-13T08:00:00.000Z',
+      },
+      201,
+    );
+  });
+}
 
 async function gotoAtgarder(page: import('@playwright/test').Page) {
   await page.goto(`/event/${VISUAL_EVENT_ID}/atgarder`);
@@ -73,11 +95,13 @@ test.describe('Skicka till min inkorg — testmailets sändväg (TASK-147.10 AC 
     network,
   }) => {
     let sentBody: Record<string, unknown> | null = null;
+    const loggar: Kropp[] = [];
     network.use(
       http.post(EF('send-action-email'), async ({ request }) => {
         sentBody = (await request.json()) as Record<string, unknown>;
         return json({ status: 'sent' });
       }),
+      fangaAktivitetslogg(loggar),
     );
 
     await gotoAtgarder(page);
@@ -122,15 +146,38 @@ test.describe('Skicka till min inkorg — testmailets sändväg (TASK-147.10 AC 
     // redan ovan; denna rad bevisar att Björns kort inte fick ett eget
     // testutfall renderat).
     expect(body.registrationIds).not.toContain(BJORN);
+
+    // AKTIVITETSLOGGEN (TASK-201.13, riktning 1/2 — Marcus-order "inte en
+    // enda lucka"). TASK-201.4 uteslöt denna hook med motiveringen "skriver
+    // strukturellt inget fält"; loggen handlar om vad LOTTA GJORDE, och ett
+    // mail lämnade systemet på hennes kommando.
+    await expect.poll(() => loggar.length).toBe(1);
+    const logg = loggar[0] as unknown as {
+      verb: { display: Record<string, string> };
+      object: { id: string; definition: { name: Record<string, string> } };
+    };
+    expect(logg.verb.display['sv-SE']).toBe('skickade testmail till sig själv');
+    // Objektet är EVENTET — testgrenen rör ingen anmälan, så statementet får
+    // inte peka på platshållar-mottagarens.
+    expect(logg.object.id).toContain(`/objects/events/${VISUAL_EVENT_ID}`);
+    expect(logg.object.id).not.toContain('/objects/registrations/');
+    expect(logg.object.definition.name['sv-SE']).toBe('Utbildning Skövde (test: bekraftelse)');
   });
 
   test('avvisat testmail — ärligt felbesked med serverns skäl, granska-läget orört, knappen kvarstår', async ({
     page,
     network,
   }) => {
+    const loggar: Kropp[] = [];
     network.use(
       http.post(EF('send-action-email'), () =>
         json({ status: 'failed', reason: 'E-postadressen studsade (bounced)' }),
+      ),
+      medvetetOanvand(
+        fangaAktivitetslogg(loggar),
+        'NEGATIV SENSOR (TASK-201.13, riktning 2/2): EF:en svarar 200 med status "failed", så ' +
+          'mutationen LYCKAS medan sändningen FÖLL — servern är facit. Att handlern förblir ' +
+          'oanvänd ÄR resultatet: ingen aktivitetspost får skrivas för ett mail som aldrig gick.',
       ),
     );
 
@@ -141,6 +188,12 @@ test.describe('Skicka till min inkorg — testmailets sändväg (TASK-147.10 AC 
     await expect(
       page.getByText('Kunde inte skicka testmailet: E-postadressen studsade (bounced)'),
     ).toBeVisible();
+
+    // AKTIVITETSLOGGEN (riktning 2/2): INGEN post. Detta är den skarpaste av
+    // de två riktningarna — mutationen gick igenom (HTTP 200), så en naiv
+    // `onSuccess`-instrumentering utan `result.status`-grinden hade loggat ett
+    // utskick som aldrig skedde. Se `useSendActionTestEmail` § SERVERN ÄR FACIT.
+    expect(loggar).toHaveLength(0);
     await expect(page.getByRole('heading', { level: 1, name: 'Granska och skicka' })).toBeVisible();
 
     // OMKLICKSBESLUTET (S102-iterationen, Marcus 2026-08-11: "Kör på din

@@ -194,6 +194,7 @@ export function useSendConfirmationFromDetail(eventId: string, registrationId: s
 export function useConfirmAll(eventId: string) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
 
   return useMutation<ConfirmRegistrationsResult, Error, { registrationIds: string[] }>({
     mutationKey: ['confirm-all', eventId],
@@ -207,6 +208,11 @@ export function useConfirmAll(eventId: string) {
       const listan = queryKeys.registrations.byEvent(eventId);
       await queryClient.cancelQueries({ queryKey: listan });
       const bekraftade = new Set(result.confirmed);
+      // AKTIVITETSLOGGEN (TASK-201.13): namn-underlaget läses FÖRE patchen
+      // nedan — samma listcache som patchas, ingen extra hämtning. Efter
+      // `cancelQueries`, så ingen omhämtning i luften kan byta ut den under
+      // oss.
+      const underlag = queryClient.getQueryData<Registration[]>(listan);
       queryClient.setQueryData<Registration[]>(listan, (old) =>
         old?.map((r) =>
           bekraftade.has(r.id)
@@ -220,6 +226,53 @@ export function useConfirmAll(eventId: string) {
             : r,
         ),
       );
+
+      // EN POST PER BEKRÄFTAD ANMÄLAN — INTE en samlad bulk-post.
+      //
+      // DESIGNVALET, och varför det inte är godtyckligt (TASK-201.13):
+      //
+      // 1. PERSON-TIDSLINJEN AVGÖR. `PERSON_ID_EXTENSION_IRI` (TASK-201.12)
+      //    är det som gör att ett statement syns under RÄTT person. En
+      //    samlad post kan bära exakt ETT personId — bekräftar Lotta åtta
+      //    personer skulle sju av dem sakna varje spår av sin egen
+      //    bekräftelse i sin egen historik. Det är precis det tvivel PRD
+      //    TASK-201s användarberättelse 9 finns för att ta bort.
+      // 2. SYSKON-PRECEDENTEN. `useSendActionEmail` (`actionEmail.ts`) är
+      //    den andra äkta bulk-operationen och loggar redan EN post per
+      //    faktiskt sänd mottagare. Två bulk-vägar med olika loggform hade
+      //    gjort historiken oläsbar.
+      // 3. OBJEKT-MODELLEN. `object` är den SPECIFIKA anmälan
+      //    (`registrationObjectId`) — en samlad post har inget koherent
+      //    objekt att peka på utan att en ny pseudo-entitet uppfinns.
+      //
+      // Priset (en bulk kan ge många rader) är MEDVETET taget: det är
+      // läsvyns jobb att gruppera, inte skrivvägens att slänga sanning.
+      //
+      // SERVERN ÄR FACIT: loopen går över `result.confirmed` (de servern
+      // själv rapporterade), aldrig över det som SKICKADES.
+      const byId = new Map((underlag ?? []).map((r) => [r.id, r] as const));
+      for (const id of result.confirmed) {
+        const reg = byId.get(id);
+        void recordActivity({
+          dataSource,
+          actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+          verb: BEKRAFTADE_ANMALAN_VERB,
+          object: {
+            id: registrationObjectId(id),
+            type: ACTIVITY_OBJECT_TYPES.bekraftelse,
+            // MEDVETET INGET `continue` när cachen saknar raden (till
+            // skillnad mot `useSendActionEmail`s `if (!reg) continue`):
+            // servern HAR bekräftat anmälan, och en tom listcache är ett
+            // klient-tillstånd som aldrig får radera en sann händelse ur
+            // loggen. Namnet faller tillbaka på en tydlig platshållare —
+            // samma "aldrig tomt namn"-disciplin som `actorName` och
+            // `eventActivityName`.
+            name: reg ? `${displayName(reg)} (${reg.eventNamn ?? 'okänt event'})` : 'Okänd anmälan',
+          },
+          eventId,
+          personId: reg?.personId ?? undefined,
+        });
+      }
     },
 
     onError: () => {

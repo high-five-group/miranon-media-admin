@@ -3,6 +3,8 @@ import { useAuth } from '@/auth/useAuth';
 import { displayName } from '@/components/registrations/registration-display';
 import {
   ACTIVITY_OBJECT_TYPES,
+  betalningsnoteringVerb,
+  betalningspaminnelseVerb,
   betalningVerb,
   registrationObjectId,
 } from '@/data/activityLog/activityTypes';
@@ -187,6 +189,7 @@ export function useSetPaymentStatus(eventId: string) {
 export function useUpdatePaymentNote(eventId: string) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
   const key = queryKeys.registrations.byEvent(eventId);
 
   return useMutation<
@@ -225,10 +228,37 @@ export function useUpdatePaymentNote(eventId: string) {
 
     // aria-live: fältet självt visar texten men sparandet saknar visuell
     // bekräftelse — annonsera utfallet (mark-paid-precedentens F-komponent).
+    //
+    // AKTIVITETSLOGGEN (TASK-201.13, Marcus-order "inte en enda lucka"):
+    // fire-and-forget EFTER den riktiga skrivningen, samma form som
+    // `useSetPaymentStatus` ovan.
+    //
+    // INTEGRITETEN ÄR ABSOLUT OCH STRUKTURELL: `onSuccess` destrukturerar
+    // MEDVETET INTE mutationens `notering`-variabel — fritexten finns inte
+    // ens som binding i det här scopet, så den kan inte läcka in i
+    // statementet ens av misstag. `betalningsnoteringVerb` tar bara
+    // betalningens identitet (avgift/slut) och `object.name` är samma
+    // namn+event-form som alla andra registration-scopade statements.
+    // Loggen bär ATT en notering ändrades — ALDRIG vad den säger (S105 Del 2
+    // beslut 2, samma regel som anteckningar). Payload-nivå-bevis:
+    // `tests/api/activity-log-luckor-statements.ts` § INTEGRITETSVAKTEN.
     onSuccess: (_data, { registration, betalning }) => {
       alertScreenReader(
         `Notering för ${BETALNING_LABEL[betalning].toLowerCase()} sparad för ${displayName(registration)}`,
       );
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: betalningsnoteringVerb(betalning),
+        object: {
+          id: registrationObjectId(registration.id),
+          type: ACTIVITY_OBJECT_TYPES.betalning,
+          name: `${displayName(registration)} (${registration.eventNamn ?? 'okänt event'})`,
+        },
+        eventId,
+        // Samma NULLABLE-disciplin som `useSetPaymentStatus` ovan.
+        personId: registration.personId ?? undefined,
+      });
     },
 
     onSettled: () => {
@@ -250,6 +280,7 @@ export function useUpdatePaymentNote(eventId: string) {
 export function useLogPaymentReminder(eventId: string) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
+  const { user } = useAuth();
   const key = queryKeys.registrations.byEvent(eventId);
 
   return useMutation<
@@ -283,10 +314,27 @@ export function useLogPaymentReminder(eventId: string) {
       }
     },
 
+    // AKTIVITETSLOGGEN (TASK-201.13): fire-and-forget EFTER tidsstämpeln
+    // faktiskt skrivits. Verbet är "antecknade", inte "skickade" — se
+    // `betalningspaminnelseVerb`s docblock: klientens mailto-sändning kan
+    // aldrig observeras, och loggen får inte påstå mer än den vet.
     onSuccess: (_data, { registration, betalning }) => {
       alertScreenReader(
         `Påminnelse om ${BETALNING_LABEL[betalning].toLowerCase()} antecknad för ${displayName(registration)}`,
       );
+      void recordActivity({
+        dataSource,
+        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
+        verb: betalningspaminnelseVerb(betalning),
+        object: {
+          id: registrationObjectId(registration.id),
+          type: ACTIVITY_OBJECT_TYPES.betalning,
+          name: `${displayName(registration)} (${registration.eventNamn ?? 'okänt event'})`,
+        },
+        eventId,
+        // Samma NULLABLE-disciplin som `useSetPaymentStatus` ovan.
+        personId: registration.personId ?? undefined,
+      });
     },
 
     onSettled: () => {

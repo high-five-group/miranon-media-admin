@@ -2218,7 +2218,10 @@ function GranskningsSida({
      servern läser den EGNA gången ur `requireUser`, aldrig den klient-visade
      strängen). */
   const { user } = useAuth();
-  const sendActionTestEmail = useSendActionTestEmail(eventId);
+  /* `valtEvent?.eventNamn ?? null` (TASK-201.13): aktivitetsloggens objekt-
+     namn för testmailet — hook-bundet, samma form som `useCreateEventNote`.
+     Propen fanns redan; ingen ny trådning behövdes. */
+  const sendActionTestEmail = useSendActionTestEmail(eventId, valtEvent?.eventNamn ?? null);
   const [testUtfall, setTestUtfall] = useState<{
     status: 'sent' | 'failed';
     reason?: string;
