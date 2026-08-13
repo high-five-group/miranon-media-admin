@@ -2,7 +2,18 @@
   "prototyp": "s55-hem-konvergens",
   "last": "2026-07-07",
   "lasning": "avslutar detta prototypande … låser K10 som FACIT för hem-vyn. Prod-vyn ska se EXAKT likadan ut.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-13",
+    "citat": "Hem-spalten godkänd mot k10-facit 2026-08-13",
+    "sha": "1142034ca13bfb0333d89dced63f34bee4ef91a7",
+    "undantag": [
+      {
+        "yta": "hem-historikspalten (Senaste aktivitet)",
+        "skal": "Separatorn är mittpunkt · per Marcus-beslut 2026-08-12 — långa bindestreck förbjudna i användarsynlig text"
+      }
+    ]
+  },
   "manifest_mintat": {
     "datum": "2026-08-11",
     "session": "S105",
