@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-12 21:17'
+updated_date: '2026-08-13 15:42'
 labels: []
 dependencies: []
 priority: medium
@@ -46,3 +47,13 @@ RELATERAT MEN INTE SAMMA SAK: TASK-118 (grinden fail-closed:ar utan BACKLOG_CMD-
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+INSTANS 5 (2026-08-13, S105 resume-dagen) — mätt av orkestreraren direkt, inte via agentrapport. D3-A:s körning startade 16:31:01 i huvudkatalogen under fleet-last (loadavg 8,36 vid mätning, TVÅ samtidiga instanser av skriptet på maskinen: pid 22128 + 89962). Vid 12 min 07 s körtid: outputfilen 0 BYTES. Processen dog därefter utan att någonsin skriva en enda byte.
+
+NY EGENSKAP, ej bokförd i instans 1-4: skriptet ger INGEN PROGRESSIV OUTPUT. Det gör 'hängd' mekaniskt oskiljbart från 'arbetar' för den som väntar — man kan inte avgöra om en körning är värd att invänta eller ska avbrytas. Det är en separat defekt från långsamheten: även ett långsamt skript är hanterbart om det säger var det är. Kandidat-åtgärd vid fix: emittera per prövat kort (eller per N kort) till stderr, så väntan blir informerad.
+
+KONSEKVENS FÖR S105: TASK-176/177/196:s DoD-bockning (PR #1246) kunde därför INTE aggregat-verifieras lokalt. Kompensation: varje DoD-post styrktes i stället direkt mot GitHubs check-status per PR (gh pr view --json statusCheckRollup) plus en färsk check:docs-körning — starkare punktbelägg, men inte samma sak som grindens egen exit 0. Facit väntar på nattens Nightly, som kör utan fleet-last.
+<!-- SECTION:NOTES:END -->
