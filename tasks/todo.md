@@ -35,10 +35,20 @@ rad 92 "EJ ÄNDRAD", ADR-111-inlösta textställen ×3, FEATURE-ACTIVITY-LOG
 "Planerad", config.toml-stale-kommentaren, task-207-filnamnet).
 **C. Bokfört öppet:** ingen e2e för historikvy/spalt · visual-grinden utanför
 blockerande CI · `@ts-nocheck`-asymmetrin · Vercel Skew. Numrering
-re-verifierad: ADR 112 · L512 + 4 fragment · T144 · task-214. **NÄSTA: Marcus
-prioriterar A-besluten (3/5/6) → stängnings-våg B → QA `201.10` → fas-avslut
-via phase-end-verify.** HANDOFF: sessionsdok S105 Del 9. *(Paus-blocket nedan
-bevarat.)*
+re-verifierad: ADR 112 · L512 + 4 fragment · T144 · task-214. **EXEKVERINGS-
+VÅGEN GENOMFÖRD PÅ MARCUS MANDAT (Del 10, samma kväll):** `#1285`–`#1292` +
+`#1287` + `#1249` LANDADE · QA-vandringen körd MEKANISKT (Marcus descope,
+verbatim i `201.10`) med kärnbeviset live (hem-spalten utan omladdning,
+fritext aldrig exponerad, requestId läst i nätverksfliken) · `201.9`+`201.10`
+→ Done · stale-larmet om prod-fronten TILLBAKADRAGET efter förstapartsmätning
+(vercel inspect: `main@133cb91c` ⊇ `#1264` aliasad; Vercel-CLI-åtkomsten
+FANNS — ny registerrad i `atkomst-och-nycklar.md`) · FYND: event-filtrets
+namndubbletter (fix-agent i luften). **NÄSTA: `#1294` (201.15, 18/18 +
+hemvist-grind) + filter-fixen + RIV-agenten landar → PRD `201` stängs →
+fas-avslut via phase-end-verify → lessons-skörd (7+3 kandidater).**
+Marcus-`!`-moment: facit-notens stale mening (ADR-104-vakten nekar
+agent-edit av stämplat manifest, per design). HANDOFF: sessionsdok S105
+Del 9–10. *(Paus-blocket nedan bevarat.)*
 
 **Session 105 ⏸️ PAUSAD (2026-08-13 kväll, `lifecycle: paused`, historik) — FAS 6.5
 AKTIVITETSLOGGEN ÄR LIVE I PROD.** Marcus körde runbooken själv, guidad
