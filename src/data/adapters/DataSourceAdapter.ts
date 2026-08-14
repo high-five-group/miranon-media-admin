@@ -1,5 +1,9 @@
 import type { Attachment, UploadAttachmentInput } from '../../domain/models/Attachment';
-import type { Attendance } from '../../domain/models/Attendance';
+import type {
+  Attendance,
+  CreateAttendanceInput,
+  CreatedAttendance,
+} from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
@@ -105,11 +109,29 @@ export interface DataSourceAdapter {
   fetchAttendance(filters?: AttendanceFilters): Promise<Attendance[]>;
 
   /**
-   * Uppdatera en deltagandes status. Pre-M4 thin wrapper — kräver att
-   * caller specificerar operation (t.ex. 'attendance.set-status'). Idag
-   * throws eftersom operations-listan är tom i M4.
+   * Uppdatera en deltagandes status. Thin wrapper över `updateRecord` — caller
+   * specificerar operationen explicit. Enda giltiga nyckeln i dag är
+   * `'set-attendance-status'` (TASK-214.1: tabellen Deltaganden, EXAKT fältet
+   * `Status`). Allowlisten gatar FÄLTET, inte värdet, så samma operation bär
+   * hela toggeln Ej avstämt ⇄ Närvarande.
+   *
+   * `Avstämt` skrivs ALDRIG härifrån — automationen A8 triggar på ändring av
+   * just `Status` och äger tidsstämpeln (två skribenter på samma fält vore en
+   * kapplöpning appen inte kan vinna).
    */
   updateAttendance(operationKey: string, id: string, status: string): Promise<void>;
+
+  /**
+   * Skapa en Deltaganden-rad för en anmälan × session (TASK-214.2, PRD
+   * task-214). BACKUP-vägen för dörr-ögonblicket: dörrlistan drivs av
+   * ANMÄLNINGARNA, så en anmäld utan förskapad deltaganderad ska kunna checkas
+   * in ändå — rotorsaken läks i basen (task-213.12), aldrig här.
+   *
+   * `Status` sätts server-side till 'Närvarande' atomärt; klienten kan inte
+   * välja värde. Idempotent av design — finns raden redan returneras den med
+   * `created: false` i stället för en dubblett.
+   */
+  createAttendance(input: CreateAttendanceInput): Promise<CreatedAttendance>;
 
   /** Hämta väntelistan */
   fetchWaitlist(filters?: WaitlistFilters): Promise<WaitlistEntry[]>;

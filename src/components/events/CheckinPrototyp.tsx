@@ -42,12 +42,15 @@
  * byggd för att visa många. D är svaret på båda: samma språk som de
  * stämplade sidorna, och en lista som faktiskt är full.
  *
- * READ-ONLY (kontraktets miljöregel + prototyp-skillens förstärkning):
- * INGEN mutation kopplas in. Statusändringar lever i minnet (`useDorrLage`)
- * och försvinner vid omladdning. Ingen operationKey registreras, varken mot
- * staging eller prod — närvaro-WRITE finns inte i `field-allowlists.ts`
- * (noll av 13 operationer rör `Deltaganden`) och ska inte finnas förrän
- * skivan byggs skarpt.
+ * READ-ONLY GÄLLER A/B/C — INTE LÄNGRE D (TASK-214.2, 2026-08-14).
+ * Varianterna a/b/c är fortsatt rena prototyper: statusändringar lever i
+ * minnet (`useDorrLage`) och försvinner vid omladdning. Variant D har
+ * promoverats till skarp skrivväg och muterar basen via
+ * `useSetAttendanceStatus` (`src/data/mutations/attendance.ts`) — de två
+ * operationerna `set-attendance-status` och `create-attendance` finns sedan
+ * TASK-214.1 i `field-allowlists.ts`. Skrivningen går EXAKT när
+ * kvittensfönstret löpt ut; ångra inom fönstret ger noll anrop. Formen är
+ * oförändrad — se `facit.json` ytan "check-in (dörrlistan, variant D)".
  *
  * DATAT (underlaget från förarbetet):
  *   · `get-attendance` bär write-nyckeln (Deltaganden-record-ID) + sessionen
@@ -93,6 +96,7 @@ import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName } from '@/components/registrations/registration-display';
+import { useSetAttendanceStatus } from '@/data/mutations/attendance';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attendance } from '@/domain/models/Attendance';
 import type { Event } from '@/domain/models/Event';
@@ -1100,16 +1104,30 @@ function lageNyckel(rad: DorradD): string {
 /**
  * Dörrens tillstånd i variant D — nycklat på ANMÄLAN × SESSION (se
  * `lageNyckel`), inte på deltagandet, eftersom deltagandet kan saknas.
- * READ-ONLY: allt lever i minnet och försvinner vid omladdning.
+ *
+ * SKARP SEDAN TASK-214.2, och överlägget är nu det OPTIMISTISKA LAGRET, inte
+ * en prototyp-stub: flippen sker vid trycket, skrivningen 1,2 s senare när
+ * kvittensfönstret löpt ut. Den frikopplingen är hela skälet till att
+ * optimistiken inte kan bo i query-cachens `onMutate` som i husets övriga
+ * kryss-mutationer — se `src/data/mutations/attendance.ts` § VARFÖR
+ * OPTIMISTIKEN INTE BOR HÄR. Rollbacken (`aterstall`) är ADR-016:s komponent D,
+ * flyttad hit av samma skäl.
  */
 function useDorrLageD() {
   const [overlag, setOverlag] = useState<ReadonlyMap<string, AttendanceStatusValue>>(new Map());
   const [tider, setTider] = useState<ReadonlyMap<string, number>>(new Map());
   const [historik, setHistorik] = useState<readonly string[]>([]);
+  /**
+   * Skriv-nycklar som CREATE-backupen gett oss (lägesnyckel → Deltaganden-ID).
+   *
+   * REF, INTE STATE, och det är avsiktligt: värdet läses inuti kvittens-
+   * timerns callback, som stänger över den render den skapades i. En
+   * `useState` hade gett timern en FRUSEN karta; en efterföljande urbockning
+   * hade då trott att raden fortfarande saknas och skickat en ny CREATE.
+   */
+  const skapadeIdn = useRef(new Map<string, string>());
 
   const satt = (rad: DorradD, status: AttendanceStatusValue) => {
-    // [PROTOTYPE] STUB — här skulle den skarpa mutationen ligga. Ingen
-    // operationKey finns mot Deltaganden och ingen ska registreras här.
     const nyckel = lageNyckel(rad);
     setOverlag((nu) => new Map(nu).set(nyckel, status));
     setTider((nu) => new Map(nu).set(nyckel, Date.now()));
@@ -1118,6 +1136,49 @@ function useDorrLageD() {
       return status === AttendanceStatus.NARVARANDE ? [nyckel, ...utan] : utan;
     });
   };
+
+  /**
+   * Rulla tillbaka en rad till det tillstånd som gällde FÖRE flippen — anropas
+   * när skrivningen misslyckats. En misslyckad INCHECKNING återför raden till
+   * arbetslistan (kravet: ingen incheckning försvinner tyst); en misslyckad
+   * URBOCKNING lämnar raden incheckad, eftersom det är vad basen faktiskt bär.
+   */
+  const aterstall = (rad: DorradD, tidigare: AttendanceStatusValue) => {
+    const nyckel = lageNyckel(rad);
+    setOverlag((nu) => {
+      const nasta = new Map(nu);
+      // Sammanfaller det tidigare tillståndet med basens är överlägget
+      // överflödigt — raderas det kan en senare refetch inte överskuggas av
+      // ett inaktuellt lokalt värde.
+      if (tidigare === rad.basStatus) nasta.delete(nyckel);
+      else nasta.set(nyckel, tidigare);
+      return nasta;
+    });
+    setTider((nu) => {
+      // Var raden incheckad före flippen står klockslaget kvar — det är samma
+      // incheckning, inte en ny.
+      if (tidigare === AttendanceStatus.NARVARANDE) return nu;
+      const nasta = new Map(nu);
+      nasta.delete(nyckel);
+      return nasta;
+    });
+    setHistorik((nu) => {
+      const utan = nu.filter((k) => k !== nyckel);
+      return tidigare === AttendanceStatus.NARVARANDE ? [nyckel, ...utan] : utan;
+    });
+  };
+
+  /** Minns CREATE-vägens nya record-ID så nästa skrivning uppdaterar rätt rad. */
+  const kommIhagId = (rad: DorradD, id: string) => {
+    skapadeIdn.current.set(lageNyckel(rad), id);
+  };
+
+  /**
+   * Radens skriv-nyckel. Den lokalt skapade vinner över basens: `rad` kommer
+   * från renderets cache-läge och kan sakna ett ID vi själva just skapat.
+   */
+  const skrivNyckel = (rad: DorradD): string | null =>
+    skapadeIdn.current.get(lageNyckel(rad)) ?? rad.deltagandeId;
 
   const status = (rad: DorradD): AttendanceStatusValue =>
     overlag.get(lageNyckel(rad)) ?? rad.basStatus;
@@ -1130,7 +1191,7 @@ function useDorrLageD() {
     return Number.isNaN(d.getTime()) ? null : KLOCKSLAG.format(d);
   };
 
-  return { satt, status, tid, historik };
+  return { satt, aterstall, kommIhagId, skrivNyckel, status, tid, historik };
 }
 
 /**
@@ -1439,8 +1500,11 @@ function VariantD({
   const dataSource = useDataSource();
   const { sessioner, session, setSession, datumtext } = useSessionsval(event, alla);
   const lage = useDorrLageD();
+  const skrivning = useSetAttendanceStatus(eventId);
   const [fraga, setFraga] = useState('');
   const [visaKlara, setVisaKlara] = useState(false);
+  /** Rader vars skrivning misslyckats (lägesnyckel → namn). Se `skriv`. */
+  const [misslyckade, setMisslyckade] = useState<ReadonlyMap<string, string>>(() => new Map());
 
   /**
    * KVITTENSFÖNSTRET (S103-konvergensvarvet, Marcus punkt 6): raden ska BLI
@@ -1449,12 +1513,21 @@ function VariantD({
    * flyttar först därefter till klargruppen. Ångra inom fönstret avbryter
    * flytten direkt. Fönstret är en FÖRDRÖJNING, inte en rörelse - det
    * gäller därför oavsett `prefers-reduced-motion`.
+   *
+   * SEDAN TASK-214.2 ÄR FÖNSTRET OCKSÅ SKRIVNINGENS KLOCKA: timern bär både
+   * flytten till klargruppen och anropet till basen. De två kan inte skiljas
+   * åt — "ångra inom fönstret" betyder per definition att raden aldrig nådde
+   * basen, och det är bara sant om samma timer äger båda.
    */
   const [nyssKlara, setNyssKlara] = useState<ReadonlySet<string>>(() => new Set());
   const kvittensTimers = useRef(new Map<string, number>());
   useEffect(() => {
     const timers = kvittensTimers.current;
     return () => {
+      // Lämnar Lotta sidan inom fönstret rivs timern och ingen skrivning går.
+      // Det är SAMMA utfall som ett ångra inom fönstret, inte en tyst förlust:
+      // fönstret hann aldrig löpa ut, och kontraktet säger att skrivningen går
+      // först då.
       for (const t of timers.values()) window.clearTimeout(t);
     };
   }, []);
@@ -1552,15 +1625,68 @@ function VariantD({
     ? (rader.find((r) => lageNyckel(r) === senasteNyckel) ?? null)
     : null;
 
+  /**
+   * SKRIVNINGEN — den enda vägen till basen, alltid via mutations-hooken
+   * (adapter-gränsen respekteras; ingen fetch, ingen operationKey här).
+   *
+   * `tidigare` är tillståndet FÖRE flippen och bärs in som rollback-värde:
+   * mutationen startar först när kvittensfönstret löpt ut, så det finns inget
+   * `onMutate`-ögonblick att ta snapshotten i.
+   */
+  const skriv = (rad: DorradD, status: AttendanceStatusValue, tidigare: AttendanceStatusValue) => {
+    skrivning.mutate(
+      {
+        deltagandeId: lage.skrivNyckel(rad),
+        anmalanId: rad.anmalanId,
+        session: rad.session,
+        status,
+      },
+      {
+        onSuccess: ({ deltagandeId }) => {
+          if (deltagandeId != null) lage.kommIhagId(rad, deltagandeId);
+        },
+        onError: () => {
+          // ALDRIG TYST FÖRLUST: raden återgår till sitt tidigare läge (en
+          // misslyckad incheckning hamnar alltså tillbaka i arbetslistan) och
+          // felet syns — både visuellt och för skärmläsaren.
+          lage.aterstall(rad, tidigare);
+          setMisslyckade((forra) => new Map(forra).set(lageNyckel(rad), rad.namn));
+          alertScreenReader(
+            `${rad.namn} kunde inte sparas i basen. Personen står kvar i listan — försök igen.`,
+          );
+        },
+      },
+    );
+  };
+
   const vaxla = (rad: DorradD) => {
     const nyckel = lageNyckel(rad);
-    const varInne = lage.status(rad) === AttendanceStatus.NARVARANDE;
-    lage.satt(rad, varInne ? AttendanceStatus.EJ_AVSTAMT : AttendanceStatus.NARVARANDE);
+    const tidigare = lage.status(rad);
+    const varInne = tidigare === AttendanceStatus.NARVARANDE;
+    const nyStatus = varInne ? AttendanceStatus.EJ_AVSTAMT : AttendanceStatus.NARVARANDE;
+
+    // Ett nytt försök rensar radens gamla fel — felytan ska spegla nuläget,
+    // aldrig ett kvarhängande påstående om en rad som redan är åtgärdad.
+    setMisslyckade((forra) => {
+      if (!forra.has(nyckel)) return forra;
+      const nasta = new Map(forra);
+      nasta.delete(nyckel);
+      return nasta;
+    });
+
+    lage.satt(rad, nyStatus);
     if (varInne) {
       const timer = kvittensTimers.current.get(nyckel);
       if (timer != null) {
+        // ÅNGRA INOM KVITTENSFÖNSTRET: timern rivs innan den hunnit skriva, så
+        // NOLL anrop går till basen. Ett feltryck lämnar inget spår alls —
+        // det är hela skälet till att fönstret finns (S103 Del 15 F2).
         window.clearTimeout(timer);
         kvittensTimers.current.delete(nyckel);
+      } else {
+        // ÅNGRA EFTER FÖNSTRET (urbockning i klargruppen): raden är redan
+        // skriven till basen, så vägen tillbaka är en vanlig statusskrivning.
+        skriv(rad, nyStatus, tidigare);
       }
       setNyssKlara((forra) => {
         if (!forra.has(nyckel)) return forra;
@@ -1579,6 +1705,8 @@ function VariantD({
             nasta.delete(nyckel);
             return nasta;
           });
+          // SKRIV-ÖGONBLICKET: exakt när fönstret löpt ut, aldrig vid trycket.
+          skriv(rad, nyStatus, tidigare);
         }, 1200),
       );
     }
@@ -1695,6 +1823,18 @@ function VariantD({
             .filter(Boolean)
             .join(' ')}
         </p>
+      )}
+
+      {/* SKRIVFELET (TASK-214.2, AC #4) — står direkt ovanför arbetslistan,
+          där raden hamnat tillbaka. `MessageBox intent="error"` renderar
+          `role="alert"`, så felet annonseras assertivt; texten namnger
+          personerna och säger var de finns, aldrig bara "något gick fel".
+          Ytan finns BARA i felläget och rör därför inte den stämplade formen
+          (facit.json § check-in (dörrlistan, variant D)). */}
+      {misslyckade.size > 0 && (
+        <MessageBox intent="error" title="Incheckningen kunde inte sparas">
+          {`${[...misslyckade.values()].join(', ')} står kvar i listan att checka in. Kontrollera uppkopplingen och tryck igen.`}
+        </MessageBox>
       )}
 
       {/* ARBETSLISTAN — bara det som återstår (se VECKET ovan). */}

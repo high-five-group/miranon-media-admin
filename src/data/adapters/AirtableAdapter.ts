@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import type { Attachment, UploadAttachmentInput } from '../../domain/models/Attachment';
-import type { Attendance } from '../../domain/models/Attendance';
+import type {
+  Attendance,
+  CreateAttendanceInput,
+  CreatedAttendance,
+} from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
@@ -17,6 +21,7 @@ import {
   type ConfirmRegistrationsInput,
   type ConfirmRegistrationsResult,
   ConfirmRegistrationsResultSchema,
+  CreatedAttendanceSchema,
   type CreatedEvent,
   CreatedEventSchema,
   type CreateEventInput,
@@ -235,6 +240,25 @@ export class AirtableAdapter implements DataSourceAdapter {
   /** Uppdatera deltagandes status — kräver explicit operationKey (M4). */
   async updateAttendance(operationKey: string, id: string, status: string): Promise<void> {
     await this.updateRecord(operationKey, id, { Status: status });
+  }
+
+  /**
+   * Skapa en Deltaganden-rad (TASK-214.2 — dörrens CREATE-backup). Skickar
+   * ENDAST identiteten; `Status: 'Närvarande'` byggs server-side av EF:en och
+   * kan inte överstyras härifrån (`create-attendance/index.ts` § Bygg write-fält
+   * SERVER-SIDE). Samma POST-form som `createEventNote`/`createPersonNote`.
+   *
+   * `.parse()` validerar vid datagränsen (ADR-026) — ett single-objekt, inte en
+   * lista, så inget `z.array`.
+   */
+  async createAttendance(input: CreateAttendanceInput): Promise<CreatedAttendance> {
+    const data = await postEdgeFunction<unknown>('create-attendance', {
+      anmalanId: input.anmalanId,
+      eventId: input.eventId,
+      session: input.session,
+    });
+    const svar = CreatedAttendanceSchema.parse(data);
+    return { id: svar.record.id, created: svar.created };
   }
 
   /**

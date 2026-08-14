@@ -4,6 +4,7 @@ title: 'Skiva: Mutations-kopplingen — dörrlistan skriver skarpt efter kvitten
 status: To Do
 assignee: []
 created_date: '2026-08-14 19:13'
+updated_date: '2026-08-14 21:23'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,11 +21,11 @@ Dörrlistan (variant D, DEV-grindad) byter lokal state mot skarp skrivning bakom
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En incheckning i dörrlistan (variant-läget) skriver Status Närvarande via set-attendance-status EXAKT när kvittensfönstret (1,2 s) löpt ut — nätverks-observationen bevisar att inget skrivanrop går före fönstrets utgång
-- [ ] #2 Ångra inom kvittensfönstret ger noll skrivanrop; ångra efter fönstret (bocka ur i klargruppen) skriver Status Ej avstämt
-- [ ] #3 Saknar personen Deltaganden-rad skapas den via create-attendance i skrivögonblicket — dörren säger aldrig nej; användningen syns i loggen
-- [ ] #4 Misslyckad skrivning återför raden till arbetslistan med synligt fel — ingen incheckning försvinner tyst
-- [ ] #5 Dörrlistans renderade form är identisk med facit tasks/sessions/bilagor/s103-checkin-konvergens/facit.json ytan 'check-in (dörrlistan, variant D)' — mutations-kopplingen ändrar ingen form
+- [x] #1 En incheckning i dörrlistan (variant-läget) skriver Status Närvarande via set-attendance-status EXAKT när kvittensfönstret (1,2 s) löpt ut — nätverks-observationen bevisar att inget skrivanrop går före fönstrets utgång
+- [x] #2 Ångra inom kvittensfönstret ger noll skrivanrop; ångra efter fönstret (bocka ur i klargruppen) skriver Status Ej avstämt
+- [x] #3 Saknar personen Deltaganden-rad skapas den via create-attendance i skrivögonblicket — dörren säger aldrig nej; användningen syns i loggen
+- [x] #4 Misslyckad skrivning återför raden till arbetslistan med synligt fel — ingen incheckning försvinner tyst
+- [x] #5 Dörrlistans renderade form är identisk med facit tasks/sessions/bilagor/s103-checkin-konvergens/facit.json ytan 'check-in (dörrlistan, variant D)' — mutations-kopplingen ändrar ingen form
 <!-- AC:END -->
 
 ## Definition of Done
@@ -40,3 +41,31 @@ Dörrlistan (variant D, DEV-grindad) byter lokal state mot skarp skrivning bakom
 - [ ] #9 Kvittensfönstrets kontrakt bevisat via nätverks-observation: inget skrivanrop före fönstrets utgång, ångra ger noll anrop
 - [ ] #10 Facit-granskningen utförd mot tasks/sessions/bilagor/s103-checkin-konvergens/facit.json (ytan 'check-in (dörrlistan, variant D)')
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TASK-214.2 byggd 2026-08-14 (bygg-agent, Opus 5).
+
+RÖRDA FILER
+- src/domain/models/Attendance.ts — CreateAttendanceInput + CreatedAttendance (write-shapes).
+- src/domain/schemas/Attendance.schema.ts (+ index.ts) — CreatedAttendanceSchema, parsar create-attendance-svaret vid datagränsen (ADR-026).
+- src/data/adapters/DataSourceAdapter.ts / AirtableAdapter.ts / SupabaseAdapter.ts — createAttendance i alla tre (dubbel-källa, ADR-056). updateAttendance-docblocket rättat: det påstod att operations-listan är tom, vilket TASK-214.1 gjorde falskt.
+- src/data/mutations/attendance.ts (NY) — useSetAttendanceStatus. Bor i mutationskatalogen; en useMutation i komponenten fälls av tests/api/mutation-hemvist-vakt.test.ts.
+- src/components/events/CheckinPrototyp.tsx — useDorrLageD blir optimistiskt lager med rollback; skrivningen hängd på kvittensfönstrets timer; fel-yta (MessageBox intent=error, role=alert).
+- tests/acceptance/event-checkin-dorrlistan.acceptance.test.ts (NY) — 5 tester.
+
+DESIGNBESLUT UTANFÖR SPEC (motiverade i koden)
+1. Optimistiken ligger KVAR i komponent-state, inte i query-cachens onMutate (avsteg från ADR-016 komponent C/D:s vanliga placering). Tvingande skäl: flippen sker vid trycket, mutationen startar 1,2 s senare — en onMutate hade flippat för sent. Rollbacken flyttas med till komponenten (useDorrLageD.aterstall).
+2. Skrivnyckeln hålls i en useRef, inte useState: kvittenstimerns callback stänger över sin render, och en frusen karta hade gjort att en urbockning efter CREATE skickat en ny CREATE i stället för en uppdatering.
+3. Urbockning på en rad UTAN deltaganderad skickar INGET anrop (frånvaron av rad ÄR "Ej avstämt"). Kan inte nås via UI i dag; defensiv gren.
+
+BEVIS
+- ariaSnapshot FÖRE (main) vs EFTER (denna gren), tre tillstånd (utgångsläge / i kvittensfönstret / efter fönstret): diff exit 0, noll skillnad. AC #5.
+- Tvåriktnings-bevis: mutant som flyttar skrivningen till trycket fäller 5 av 5 tester; utan mutant 5 av 5 gröna.
+
+ÖPPNA FYND (ej åtgärdade i denna skiva)
+- create-attendance saknas i .prod-functions-allowlist.conf. Ingen grind fäller i dag (ef-metod-vakten går allowlist->källkod), men EF:en kan inte deployas till prod förrän raden finns. Behövs före go-live med flippad yta.
+- Incheckningen loggar INTE till aktivitetsloggen (recordActivity). PRD § Utanför omfattningen håller aktivitetsloggen utanför vertikalen och ett incheckningsverb är en ny post i activityTypes.ts. Ingen mekanisk grind fäller. Kandidat för egen skiva eller 214.5.
+- Preexisterande flake i acceptance-sviten, oberoende av denna skiva: mer-aktivitetshistorik-filter.acceptance.test.ts:457 (strict mode violation på getByText('Aktivitet')) fäller i FULL svit men passerar isolerat — mätt både med och utan denna skivas src-ändringar. hem.acceptance.test.ts:437 fällde i baseline-körningen men inte i skivans.
+<!-- SECTION:NOTES:END -->
