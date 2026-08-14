@@ -4,7 +4,6 @@ import { displayName } from '@/components/registrations/registration-display';
 import {
   ACTIVITY_OBJECT_TYPES,
   betalningsnoteringVerb,
-  betalningspaminnelseVerb,
   betalningVerb,
   registrationObjectId,
 } from '@/data/activityLog/activityTypes';
@@ -17,20 +16,28 @@ import { alertScreenReader } from '@/lib/alert-screen-reader';
 import { queryKeys } from '@/queries/keys';
 
 /**
- * Betalnings-arbetsytans tre mutationer (task-18.8; ADR-016 fem-komponents-
+ * Betalnings-arbetsytans två mutationer (task-18.8; ADR-016 fem-komponents-
  * mönster per mutation — mall: `useMarkRegistrationPaid`, som ersattes av
  * `useSetPaymentStatus` när arbetsytan tog över betalnings-vyns jobb).
  *
- * Alla tre är OPTIMISTISKA (PRD task-18 beslut 20: kryssen kräver det —
- * deltan/flikar/grupper härleds live ur cachen; noteringen och påminnelse-
- * loggen delar samma cache-rad och samma rollback-form). Servern nås via
- * update-record-operationerna (deny-by-default, allowlist-SSOT):
+ * Båda är OPTIMISTISKA (PRD task-18 beslut 20: kryssen kräver det — deltan/
+ * flikar/grupper härleds live ur cachen; noteringen delar samma cache-rad
+ * och samma rollback-form). Servern nås via update-record-operationerna
+ * (deny-by-default, allowlist-SSOT):
  *   avgift-kryss  → mark-registration-fee-paid  → 'Anmälningsavgift'
  *   slut-kryss    → mark-final-payment-paid     → 'Slutbetalning'
  *   notering      → update-registration-payment-note → de två ADDITIVA
  *                   per-betalnings-noteringsfälten
- *   påminn-logg   → log-payment-reminder → de två ADDITIVA per-betalnings-
- *                   tidsstämpelfälten (SENASTE påminnelsen per betalning)
+ *
+ * RIVEN (TASK-201.18, Marcus-mandat 2026-08-14): en tredje mutation,
+ * `useLogPaymentReminder` (log-payment-reminder), skrev de två ADDITIVA
+ * per-betalnings-tidsstämpelfälten från ett mailto-klick. Konsumenten
+ * (Betalningar.tsx) revs redan i TASK-145.6 — mailto-eran är över — och
+ * hooken hade noll anropsplatser sedan dess. Fälten den skrev
+ * (`paminnelseAnmalningsavgiftSkickad`/`paminnelseSlutbetalningSkickad`)
+ * LÄSES fortfarande på flera ställen (historiskt värde) och är orörda; det
+ * är bara skrivvägen som är riven. Koden finns kvar i git-historiken (se
+ * commit-SHA i backlog/tasks/task-201.18 § notes).
  */
 
 /** Betalnings-identiteten i arbetsytan: anmälningsavgiften eller slutbetalningen. */
@@ -55,11 +62,6 @@ const STATUS_FALT: Record<Betalning, string> = {
 const NOTERING_FALT: Record<Betalning, string> = {
   avgift: 'Notering anmälningsavgift',
   slut: 'Notering slutbetalning',
-};
-
-const PAMINNELSE_FALT: Record<Betalning, string> = {
-  avgift: 'Påminnelse anmälningsavgift skickad',
-  slut: 'Påminnelse slutbetalning skickad',
 };
 
 /** Rollback-context (ADR-016 komponent C): snapshot före optimistisk write. */
@@ -269,79 +271,6 @@ export function useUpdatePaymentNote(eventId: string) {
   });
 }
 
-/**
- * Påminnelse-loggens mutation: Påminn-klicket öppnar Lottas mailklient
- * (mailto — basens etablerade påminnelse-väg, formelfältet 'Skicka
- * betalningspåminnelse') och antecknar SAMTIDIGT tidsstämpeln i betalningens
- * additiva fält — historiken under personen härleds ur den (spårbarheten i
- * användarberättelse 22). Semantiken är öppet bokförd i kortet: tidsstämpeln
- * = när påminnelsen initierades från appen (klientens sändning kan inte
- * observeras); ett framtida server-side-utskick (18.6:s EF-mönster) kan
- * ersätta mailto utan att fälten ändrar form.
- */
-export function useLogPaymentReminder(eventId: string) {
-  const queryClient = useQueryClient();
-  const dataSource = useDataSource();
-  const { user } = useAuth();
-  const key = queryKeys.registrations.byEvent(eventId);
-
-  return useMutation<
-    void,
-    Error,
-    { registration: Registration; betalning: Betalning; tidpunkt: string },
-    PaymentContext
-  >({
-    mutationFn: ({ registration, betalning, tidpunkt }) =>
-      dataSource.updateRecord('log-payment-reminder', registration.id, {
-        [PAMINNELSE_FALT[betalning]]: tidpunkt,
-      }),
-
-    onMutate: async ({ registration, betalning, tidpunkt }) => {
-      await queryClient.cancelQueries({ queryKey: key });
-      const previous = queryClient.getQueryData<Registration[]>(key);
-      patchRegistration(
-        queryClient,
-        key,
-        registration.id,
-        betalning === 'avgift'
-          ? { paminnelseAnmalningsavgiftSkickad: tidpunkt }
-          : { paminnelseSlutbetalningSkickad: tidpunkt },
-      );
-      return { previous };
-    },
-
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(key, context.previous);
-      }
-    },
-
-    // AKTIVITETSLOGGEN (TASK-201.13): fire-and-forget EFTER tidsstämpeln
-    // faktiskt skrivits. Verbet är "antecknade", inte "skickade" — se
-    // `betalningspaminnelseVerb`s docblock: klientens mailto-sändning kan
-    // aldrig observeras, och loggen får inte påstå mer än den vet.
-    onSuccess: (_data, { registration, betalning }) => {
-      alertScreenReader(
-        `Påminnelse om ${BETALNING_LABEL[betalning].toLowerCase()} antecknad för ${displayName(registration)}`,
-      );
-      void recordActivity({
-        dataSource,
-        queryClient,
-        actor: { id: user?.id ?? '', name: user?.displayName ?? null },
-        verb: betalningspaminnelseVerb(betalning),
-        object: {
-          id: registrationObjectId(registration.id),
-          type: ACTIVITY_OBJECT_TYPES.betalning,
-          name: `${displayName(registration)} (${registration.eventNamn ?? 'okänt event'})`,
-        },
-        eventId,
-        // Samma NULLABLE-disciplin som `useSetPaymentStatus` ovan.
-        personId: registration.personId ?? undefined,
-      });
-    },
-
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: key });
-    },
-  });
-}
+// RIVEN (TASK-201.18, Marcus-mandat 2026-08-14): `useLogPaymentReminder` —
+// se filhuvudets RIVEN-notis ovan. Koden finns kvar i git-historiken (se
+// commit-SHA i backlog/tasks/task-201.18 § notes).
