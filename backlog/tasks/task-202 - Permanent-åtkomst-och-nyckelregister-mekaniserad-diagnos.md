@@ -1,10 +1,10 @@
 ---
 id: TASK-202
 title: Permanent åtkomst- och nyckelregister + mekaniserad diagnos
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-12 14:27'
-updated_date: '2026-08-12 14:49'
+updated_date: '2026-08-14 15:45'
 labels:
   - docs
   - tooling
@@ -34,7 +34,7 @@ Se kortets Implementation Notes vid stängning för fullständigt premiss-pass-u
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -67,3 +67,9 @@ GRINDAR (mätta, exitkod separat från output):
 
 Kortet checkat: AC 1-4, DoD 1/2/4. DoD #3 (CI grön per jobb) lämnas till orkestreraren efter push, per bygg-agent-kontraktet.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängningspass (nattgrind-fix, 2026-08-14, källa: gh run 31766814810 'Backlog-stängning' röd). Ursprungliga bygg-agentens arbete (2026-08-12, Implementation Notes ovan) var fullt levererat men kortet stod kvar på '○ To Do' med DoD #3 avbockad — nightly-grinden fällde på det, inte på faktiskt ofärdigt arbete. Detta pass re-verifierade varje AC mot disk (inte förtroende): AC1 docs/reference/atkomst-och-nycklar.md finns, regelraden (rad 8) och PAT/projektnyckel-tabellen (rad 98-101) och Documents-anomalin (rad 155/169/220) bekräftade. AC2 npm run atkomst:diagnos kört skarpt, KOD=0, gh auth + supabase projects list svarade inom budget. AC3 tasks/lessons.d/mat-atkomsten-inte-forklaringen-som-rakar-passa.md finns, [UNIVERSAL]-märkt (rad 10). AC4 CLAUDE.md-pekare bekräftad (rad 559-562). shellcheck --severity=style --enable=all scripts/atkomst-diagnos.sh .atkomst-diagnos-policy.conf: KOD=0 (tomt, 0 fynd). DoD #3 (CI grön per jobb): PR #1203 (commit d55b4264), merged 2026-08-12T15:11:46Z via merge queue — gh pr view statusCheckRollup: samtliga jobb SUCCESS utom tre förväntat SKIPPED (Staging sentinel purge/A11y/Staging E2E — docs+script-ändring rör aldrig staging). d55b4264 bekräftad som ancestor av HEAD (git merge-base --is-ancestor). Ingen kod ändrad i detta pass — endast kortets metadata.
+<!-- SECTION:FINAL_SUMMARY:END -->
