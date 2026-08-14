@@ -1,0 +1,10 @@
+- link "Tillbaka till eventet":
+  - /url: /event/recDorrEvtTomlage001
+- heading "Check-in" [level=1]
+- paragraph: /Föreläsning Tomläge · måndag \d+ oktober/
+- region "Framsteg": Alla är incheckade 2 av 2
+- searchbox "Sök bland de anmälda"
+- status:
+  - paragraph: Alla 2 är incheckade
+  - paragraph: Ingen väntar på incheckning.
+- button "2 incheckade"

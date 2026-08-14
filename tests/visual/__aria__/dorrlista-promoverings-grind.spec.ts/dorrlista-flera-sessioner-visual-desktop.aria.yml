@@ -1,0 +1,22 @@
+- link "Tillbaka till eventet":
+  - /url: /event/recDorrEvtFlera0001
+- heading "Check-in" [level=1]
+- paragraph: /Utbildning Referensstad · lördag \d+ september/
+- region "Framsteg": 4 kvar att checka in 0 av 4
+- radiogroup "Vilken session checkar du in?":
+  - radio "Dag 1" [checked]
+  - radio "Dag 2"
+- searchbox "Sök bland de anmälda"
+- list "Anmälda att checka in":
+  - listitem:
+    - text: Anna Andersson anna@example.se
+    - 'checkbox "Närvarande: Anna Andersson"'
+  - listitem:
+    - text: Björn Bergström björn@example.se
+    - 'checkbox "Närvarande: Björn Bergström"'
+  - listitem:
+    - text: Cecilia Ek cecilia@example.se
+    - 'checkbox "Närvarande: Cecilia Ek"'
+  - listitem:
+    - text: David Nilsson david@example.se
+    - 'checkbox "Närvarande: David Nilsson"'

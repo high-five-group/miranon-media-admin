@@ -1,0 +1,21 @@
+- link "Tillbaka till eventet":
+  - /url: /event/recDorrEvtKlargrp001
+- heading "Check-in" [level=1]
+- paragraph: /Föreläsning Klargrupp · måndag \d+ oktober/
+- region "Framsteg": 2 kvar att checka in 2 av 4
+- searchbox "Sök bland de anmälda"
+- list "Anmälda att checka in":
+  - listitem:
+    - text: Cecilia Ek cecilia@example.se
+    - 'checkbox "Närvarande: Cecilia Ek"'
+  - listitem:
+    - text: David Nilsson david@example.se
+    - 'checkbox "Närvarande: David Nilsson"'
+- button "2 incheckade" [expanded]
+- list "Incheckade":
+  - listitem:
+    - text: /Anna Andersson Incheckad \d+:\d+/
+    - 'checkbox "Närvarande: Anna Andersson" [checked]'
+  - listitem:
+    - text: /Björn Bergström Incheckad \d+:\d+/
+    - 'checkbox "Närvarande: Björn Bergström" [checked]'

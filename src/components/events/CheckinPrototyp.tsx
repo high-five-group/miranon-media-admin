@@ -1724,7 +1724,11 @@ function VariantD({
     // en enda hög. Personlistans facit har tre nivåer med tydligt olika luft
     // (rubrik → stort → sök → litet → meta → lista). Basen är därför `gap-2`
     // med `mt-1` bara där ett nytt stycke faktiskt börjar.
-    <section className="flex flex-col gap-2 pt-2 lg:pt-10">
+    //
+    // data-testid="dorrlista-yta" (TASK-214.3): promoverings-grindens ankare,
+    // samma minimala form som `personer-yta`/`aktivitetshistorik-yta` — ett
+    // attribut, ingen ny DOM-nod, flippar ingen form.
+    <section data-testid="dorrlista-yta" className="flex flex-col gap-2 pt-2 lg:pt-10">
       {/* SIDKROMEN ÄR HUSETS (S103-konvergensvarvet, Marcus punkt 1+2):
           44 px rund chevron + rubrik i text-3xl på EXAKT samma plats som
           EventDetail/PersonDetail (`sidRam`-formen, EventDetail.tsx:142-150).

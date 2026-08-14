@@ -1,0 +1,11 @@
+- link "Tillbaka till eventet":
+  - /url: /event/recDorrEvtEnSess0001
+- heading "Check-in" [level=1]
+- paragraph: Föreläsning Referensstad · måndag 5 oktober
+- region "Framsteg": 3 kvar att checka in 0 av 3
+- searchbox "Sök bland de anmälda": zzz
+- button "Rensa sökningen"
+- status: Visar 0 av 3 anmälda för "zzz".
+- status:
+  - paragraph: Ingen kvar att checka in bland träffarna
+  - paragraph: Ingen anmäld som matchar "zzz" väntar på incheckning.
