@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-11 19:12'
-updated_date: '2026-08-13 19:13'
+updated_date: '2026-08-14 19:28'
 labels: []
 dependencies: []
 priority: high
@@ -81,4 +81,10 @@ VERCEL SKEW PROTECTION — AVGJORD SOM EJ TILLGÄNGLIG UTAN ARBETE OCH ETT KONTO
 ÄR FÖNSTRET STÄNGT? Mot ANVÄNDAREN ja — det finns inte längre ett läge där Lotta möter en trasig sida utan förklaring och utan väg vidare. Mot NÄTVERKET nej — en chunk som inte finns kommer fortfarande inte att finnas, och rutten hon klickade på visas först efter omladdningen. Den skillnaden är vad Skew Protection skulle stänga.
 
 Rörda filer (denna uppföljning): src/lib/chunk-laddningsfel.ts (ny, mekanism), src/components/AppShell/AppUpdateBanner.tsx (andra läget), tests/webblasarbeteende/app-chunk-laddningsfel.test.ts (ny), docs/decisions/ADR-047-pwa-arkitektur-fas-5.md (andra Updates-posten). Tvåsidigt bevis: 8/8 röda utan mekanismen (exit 1), 8/8 gröna med (exit 0); hela klassen 58/58 grön (exit 0). Grindar: typecheck 0, biome 0, build 0, check:docs 14 gröna exit 0, check-langa-streck 0, api-pure 439 passed exit 0. test:api gav exit 1 av staging-preflighten (TASK-77: CI höll staging, post-merge.yml körning 31733210788 in_progress) — inte av diffen, som inte rör någon API-yta.
+
+INSTANS #2-SERIEN OMTOLKAD EFTER MÄTNING (S105 Del 10, 2026-08-14 kväll) — VIKTIG METODLÄRDOM för denna utredning:
+(a) Ett stale-larm restes först: domänens bundle saknade till synes TASK-210:s invalidering (sträng-grep i minifierade chunkar, TASK-199:s egen interimsmetod). Larmet DROGS TILLBAKA efter förstapartsmätning.
+(b) FACIT via vercel CLI (åtkomsten FINNS — inloggad marcus-2914, se atkomst-och-nycklar.md, ny registerrad): git-integrationen deployar VARJE main-push (deploy-lista 13 st senaste 2h), inspect visade full byggkedja (klon main@133cb91c → tsc+vite 3994 moduler → Ready → alias admin.miranon.dev), och domänens bundle-namn churna:de live med kvällens landningar (BLxhUi59 → mI1AGlay → Spim29K5).
+(c) METODVARNINGEN: bundle-greppen som interimsverktyg är OPÅLITLIG — chunk-attribution flyttar mellan byggen (recordActivitys anropsmönster hittades inte i någon chunk trots bevisat närvarande kod; "Checka in"-markören saknades trots landad källa, trolig orsak tree-shaking/lazy-chunks). RÄTT INSTRUMENT är vercel inspect-kedjan (källcommit→bygglogg→alias), nu tillgänglig via den mätta CLI-åtkomsten. Steg 6-interimsformen i prod-driftsattning-runbook.md bör vid utredningens avslut ersättas med inspect-kedjan.
+(d) Kortets ursprungsinstans (stale ≥20 h, 2026-08-11-eran) är därmed INTE motbevisad — men kvällens mätning visar att pipelinen i sitt NUVARANDE läge deployar och servar färskt.
 <!-- SECTION:NOTES:END -->

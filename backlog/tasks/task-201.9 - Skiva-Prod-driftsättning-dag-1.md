@@ -1,10 +1,10 @@
 ---
 id: TASK-201.9
 title: 'Skiva: Prod-driftsättning dag 1'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-11 20:27'
-updated_date: '2026-08-14 18:40'
+updated_date: '2026-08-14 19:23'
 labels:
   - ready-for-human
 dependencies:
@@ -28,15 +28,15 @@ Täcker: dag 1-leveransen av berättelserna 1–6, 9–12
 - [x] #1 activity_log född i prod-Supabase (samma migration + RLS-bevis som staging, 201.2-formen)
 - [x] #2 log-activity + get-activity-log deployade i prod; smoke per EF-praxis (deny-triple-andan)
 - [x] #3 Front-deployen VERIFIERAD utrullad (task-199-fällan: prod-fronten kan stå stale — verifiera faktisk version, anta inte)
-- [ ] #4 Rök-test i prod: en riktig åtgärd → posten syns i Lottas historik
+- [x] #4 Rök-test i prod: en riktig åtgärd → posten syns i Lottas historik
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -81,4 +81,12 @@ AC #2 (log-activity + get-activity-log deployade; smoke): Steg 4 EF-deploy — '
 AC #3 (front-deployen verifierad utrullad): Steg 6 Front — 'prod-bundeln bär aktivitetshistorik; alla verb funna i activityTypes-*.js' (task-199-fällan undveks: faktisk bundle grep, inte antagande). Del 8 bokför även en SW-precache-fälla som fångades LIVE under samma pass (gammal bundle-hash cachad i Marcus browser, löst med Clear site data) — orelaterad till AC #3:s verifiering men samma sessions fynd, bokförd som bekräftelse på att TASK-199s uppdateringsbanner behövdes.
 
 AC #4 LÄMNAS ÖPPEN per uppdrag — Marcus kör rök-testet i prod ikväll. Del 8 Steg 7 dokumenterar ETT tidigare rök-test i passet ('Anteckning på event → syns i historikvyn; hem-spalten dröjde (cache)') men det föregick TASK-210s fix (landad senare samma kväll, #1264, MERGED 2026-08-13T20:03:29Z) och är därför inte det AC #4 efterfrågar mot dagens läge.
+
+AC #4 BOCKAD MOT SAMMANSATT BEVISKEDJA (S105 Del 10, 2026-08-14 kväll), öppet komponerad eftersom Marcus avstod ett andra prod-rök-test (verbatim: "vi har ju redan för fan gjort tester i prod-appen på detta igår. Jag litar på att det här skiten funkar nu"):
+(1) RÖK-TESTET I PROD 2026-08-13 utförde en riktig åtgärd och posten syntes i historiken (AC-textens bokstav uppfylld då; hem-spaltens fördröjning var den kända cache-luckan).
+(2) LUCKAN STÄNGD OCH LANDAD: TASK-210 / PR #1264 MERGED, tvåsidigt testbevis enhet+acceptance.
+(3) BETEENDET LIVE-BEVISAT 2026-08-14 i staging-tvillingen (samma kod, mekanisk Playwright-vandring): anteckning skriven → hem-spalten visade posten "nyss" via ren klientnavigering utan omladdning.
+(4) PROD-FRONTEN VERIFIERAD FÄRSK via Vercel-förstapartskedjan: deployment 21:08 byggd från main@133cb91c (git-verifierat ⊇ #1264), Ready, aliasad till admin.miranon.dev; deploys rullar per main-push (bundle-churn observerad live).
+VARNING BOKFÖRD: ett tidigare stale-larm samma kväll byggde på sträng-grep i minifierade chunkar och DROGS TILLBAKA — chunk-attribution är opålitligt instrument; vercel inspect-kedjan är rätt. Full mätserie: TASK-199-kortets notes + sessionsdok S105 Del 10.
+DoD #2–#4: skivans landningar (#1219-runbooken, allowlist-raderna, prod-operationen 2026-08-13) bar gröna grindar per jobb vid respektive landning; denna stängnings-commit är docs-only.
 <!-- SECTION:NOTES:END -->
