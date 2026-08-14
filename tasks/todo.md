@@ -174,19 +174,24 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-14 samma kväll, `lifecycle: active`)
-— RESUME MOT `c7db8b16`, HUVUDKATALOGEN FRI OCH ÖVERTAGEN.** Paus-lägets
-påståenden prövade: `#1277`+`#1281` MERGED · stämpeln EJ körd
-(`godkand: null` på main) · arbetsform inget aktivt · ägarlappen var släppt
-som utlovat, vår satt mekaniskt vid första git-skrivningen · fixturen
-antagen kvar (~2026-08-27). **DIVERGENS:** plugin 1.34.0 ej i cachen —
-sessionen kör 1.33.0-skills (uppdatering = Marcus-moment). Numrering
-RE-VERIFIERAD mot `c7db8b16` — oförändrad: ADR **112** · L**512** + 4
-fragment · T**144** · task-**214**. **NÄSTA: Marcus stämpel
-(`facit:godkann`) → promoverings-spec (flipp + närvaro-WRITE) → bas-vågen
-(213.2 mätpasset) → `#1249` → lessons-skörd (a)–(l).** **HANDOFF:
-sessionsdok S103 Del 14 + § Paushistorik (2026-08-14 kväll).**
-*(Pausblocket nedan bevarat.)*
+**Session 103 ▶️ AKTIV (2026-08-14 kväll, `lifecycle: active`) — DEL 15:
+STÄMPELN LANDAD + PROMOVERINGS-SPEC:EN GRILLAD TILL SAMSYN.** Stämpeln satt
+i Marcus `!`-kanal (ADR-104 höll: chatt-klistrad form avvisades först) →
+`#1284` MERGED `7f3529c0`; resume-landningen `#1283` MERGED `9f9f7366`.
+**Grillning 6/6 kvitterade:** F1 ETT PRD (task-171-mallen, WRITE som
+enabling-skivor) · F2 `create-attendance` som BACKUP — rotorsaken läks i
+basen ("JAG AVSKYR ATT BEHANDLA SYMPTOM"); prod-mätt: 4 aktiva anmälningar
+utan Deltaganden-rader på kommande event (3 på Event-55, alla utan
+Person-länk, fälla 16/21) · F3 skriv EFTER kvittensfönstret (ångra = ingen
+skrivning) · F4 A/B/C rivs i flippen; rivningslandningen: rename →
+`EventCheckin.tsx` + riv `EventAttendance.tsx` · F5 attribuering (a) ·
+F6 rot-orsaks-fixen = ny HITL-skiva 213.12; parallell exekvering (AFK-
+promovering ‖ HITL 213.12→213.2). ORDLISTA +4 poster (Incheckning,
+Dörrlista, Kvittensfönster, Klargrupp). ADR-bar: under baren, ingen ny ADR.
+Parallellt: S105 återupptagen i egen session (`#1285`/`#1286`). **NÄSTA:
+/to-prd → /to-issues → 213.12-mintning → parallell exekvering per F6 →
+`#1249` → lessons-skörd (a)–(l).** **HANDOFF: sessionsdok S103 Del 15.**
+*(Resume-blocket Del 14: se § Paushistorik; pausblocket nedan bevarat.)*
 
 **Session 103 (Del 13, historik) — HÄLSOVÅGEN + KONTINUERLIG BAS-MAXNING +
 D GODKÄND OCH STÄMPEL-FÖRBEREDD.**
