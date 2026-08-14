@@ -3,10 +3,10 @@ id: TASK-205
 title: >-
   Fynd: post-merge på main röd — layout-invarianten i event-bekraftelse faller
   på dokumenthöjd, orsaken oavgjord
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-12 20:48'
-updated_date: '2026-08-13 14:59'
+updated_date: '2026-08-14 16:08'
 labels: []
 dependencies: []
 priority: high
@@ -53,10 +53,10 @@ ATTRIBUTIONSVARNING: fyndet rapporterades först till orkestreraren som orsakat 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -149,4 +149,26 @@ Detta korts EGEN mätserie (nu 17 körningar över tre dagar: 2026-08-10 via TAS
 Jag löser INTE denna motsägelse här — det är ett arkitektur-/prioriterings-beslut (vilket kort äger frågan, om de ska slås samman, vilken förklaring som är rätt) som inte är mitt att ta på eget bevåg. Bokfört öppet för Marcus/orkestrerarens ställningstagande.
 
 Källor: gh run view 31563875338 --log-failed; git diff 193d461c5330^1 193d461c5330 --stat; git log commit-datum (ISO) -1 <sha> för samtliga sex nämnda SHA:n; gh issue view 1174/1186 --json createdAt; grep -n 188/205 på respektive kortfil (noll träffar i båda riktningarna). Samtliga körda 2026-08-13.
+
+AVGÖRANDE (2026-08-14, denna agent): VARKEN (a) VARKEN (b) — en TREDJE, tidigare oidentifierad orsak, mekaniskt bevisad.
+
+METOD: page.on('response')-nätverksinstrumentering + en MutationObserver-tidslinje (requestAnimationFrame-poll, subtree+childList+attributes) injicerad i testet, körd lokalt mot egen `npm run dev` (localhost, VITE_DEVTOOLS av/på testat — ingen skillnad, devtools-hypotesen falsifierad separat) med RIKTIG inloggning (chromium-authenticated `setup`-projektet, storageState mot skarp staging-auth). Instrumenteringen backades ut igen (git checkout) innan fixen skrevs — finns INTE i den landade diffen.
+
+ROTORSAK, mekaniskt bevisad: `Anteckningar`-gruppen på eventsidan (`src/components/events/detail/Anteckningar.tsx`) fetchar `get-event-notes` via `useQuery` för VARJE render av eventsidan — OAVSETT vilket test som körs. Testfilens egen `mocka()`-funktion mockar EXAKT fyra routes (get-event, get-registrations, send-registration-confirmation, update-event) och saknade get-event-notes. Anropet gick därför UNMOCKAT mot RIKTIG skarp staging (`pqtshyierkdgwdnxuirz.supabase.co`), med testets fixtur-EVENT_ID `recBEKRAFTELSE001` — en identitet som ALDRIG är seedad i skarp staging (grep bekräftar: förekommer ingenstans utanför testfilen). Skarpa EF:en svarade verifierat 404 (bekräftat verbatim via page.on('response')). Det fick `Strommen`-komponenten (samma fil) att växla från laddläget (`<p role="status">Laddar anteckningar…</p>`, en rad) till felboxen (`<MessageBox intent="error">`, bredare/högre) — en `childList`-mutation i `div.pt-3.pb-4` som ALLTID adderar exakt +57px till `document.documentElement.scrollHeight`, bekräftat i fyra oberoende MutationObserver-tidslinjer (alla fyra: exakt en mutation, exakt Δ57, target alltid `DIV.pt-3 pb-4`).
+
+VARFÖR VÄRDET ALLTID VAR 57 MEN TRÄFFPUNKTEN VARIERADE: den äkta nätverks-roundtripen (skarp staging, verklig latens) race:ar mot testets EGNA synkrona handlingssekvens (öppna markera-läget → mäta → markera kort → mäta → avbryt → mäta). Landar 404-svaret MELLAN två av testets geometri()-anrop slår AC #1:s dok-invariant med Received: 57 (matchar VARJE belagd instans i detta korts historik, alla dagar, alla merge-SHA:n — alltid exakt 57). Landar det FÖRE första mätningen ELLER EFTER sista är BÅDA sidor av jämförelsen redan förskjutna lika mycket → falsk grön (bevisar INTE invarianten, bara att racet inte hann träffa just då).
+
+DÄRMED FALSIFIERAT: (a) kodregression i #1229 — redan falsifierat av kortets egen gron-röd-gron-mönster-analys, nu YTTERLIGARE bekräftat: Anteckningar.tsx rörs inte av NÅGON av de blamade PR:erna. (b) stagings datavolym — FALSIFIERAT på ett djupare plan än tidigare känt: AC #1-testets deltagardata är HELT mockad/deterministisk fixtur (`mangaObekraftade()`, 6 fasta poster), aldrig live Airtable-data. Höjden hade ALDRIG kunnat variera med "hur många rader eventet faktiskt bär" eftersom raderna aldrig kom från Airtable i detta test.
+
+KORSREFERENS TASK-188: dess slutsats "deterministisk 57px, INTE flake" var KORREKT om VÄRDET men fel om MEKANISMEN — TASK-188 föreslog en layoutförskjutning orsakad av markera-lägets EGEN CSS (batch-barens flex-wrap). Det är falsifierat här: batch-barens höjd (`bar`-mätvärdet) var IDENTISK (42px) i vilande och aktivt läge i samtliga instrumenterade körningar — förskjutningen sitter i en helt ANNAN, orelaterad sektion (Anteckningar-strömmen), inte i batch-baren. Rekommenderar att TASK-188 uppdateras/stängs mot detta kort (görs INTE här — cross-card-beslut, se ADR-086/scope-disciplin; kort append-notis lagd på TASK-188 som ren källhänvisning, ingen statusändring).
+
+FIX (rött-först verifierat): la till `GET_EVENT_NOTES`-mock i `mocka()` i tests/e2e/event-bekraftelse.staging.test.ts, exakt samma form som redan etablerad konvention `mockNotes()` i tests/e2e/event-detail.staging.test.ts (tom notes-array, 200). Docblocket uppdaterat att inkludera get-event-notes i den påstådda "Deterministisk via page.route-mock"-listan (som tidigare var ofullständig — det var själva bristen) + en TASK-205-daterad förklarande kommentar.
+
+VERIFIERING: RÖTT före fix — pristina filen, 8 seriella repeat-each-körningar (--workers=1 --retries=0) mot lokal dev-server: 2/8 föll (Received: 57, samma mönster). GRÖNT efter fix — 12/12 seriella repeat-each-körningar av exakt samma test, plus hela filens 16/16 tester gröna i en enda körning. Mekanismen strukturellt eliminerad (inte bara sannolikhetsminskad): mockad route svarar synkront ur samma microtask-kö som övriga mock-routes, ingen riktig nätverks-roundtrip kvar att race:a mot.
+
+INTE använt: npm run metrics:flake (formell flake-rate-mätning). Detta var inte en rate-fråga — orsaken är mekaniskt bevisad (nätverkssvar + DOM-mutation direkt observerad), inte statistiskt inferens. Repeat-siffrorna ovan är informella lokala bekräftelse-batcher (RÖTT-före/GRÖNT-efter), inte en CI-kostnads- eller rate-siffra — ingen sådan siffra påstås.
+
+SYSTEMISK EXPONERING, EJ ÅTGÄRDAD HÄR (utanför detta korts scope): grep visar SJU ytterligare `.staging.test.ts`-filer under tests/e2e som navigerar till /event/:id UTAN att mocka get-event-notes: atgarder-bekraftelsemail, atgarder-betalningar, atgarder-kvitto, atgarder-paminnelse-eventinfo-fritt, atgarder-testmail, event-bor-over, event-deltagare, mark-paid.staging.test.ts. Samma race-klass kan i princip träffa VILKEN mätning som helst i dessa filer som råkar korsa notes-anropets timing-fönster (inte bara dokumenthöjd) — men ingen av dem är bekräftat drabbad, bara EXPONERADE på samma sätt som event-bekraftelse.staging.test.ts var. Flaggas för triage (ADR-053): blockerar inte, men värdefullt — rekommenderar ett uppföljande kort som systematiskt lägger till get-event-notes-mock (och ev. auditerar create-event-note) i samtliga.
+
+Källor (kommandon körda 2026-08-14, denna session): grep -rn "markering-batchbar" src; läsning av Deltagare.tsx/Anteckningar.tsx/AirtableAdapter.ts/DataSourceAdapter.ts; page.on('response')-fångst av verklig 404 mot pqtshyierkdgwdnxuirz.supabase.co/functions/v1/get-event-notes?eventId=recBEKRAFTELSE001; MutationObserver-tidslinjer (4 körningar, samtliga Δ57 på DIV.pt-3.pb-4); npx playwright test --project=chromium-authenticated (flera repeat-each/--workers=1-körningar, röda och gröna, redovisade ovan); npm run typecheck, npx @biomejs/biome check, npm run build (samtliga exit 0).
 <!-- SECTION:NOTES:END -->

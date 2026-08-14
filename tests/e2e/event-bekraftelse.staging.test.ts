@@ -25,10 +25,29 @@ import { mockValjarLista } from './helpers/valjar-lista';
  * testMatch-kontrakt, inte staging-exklusivt).
  *
  * **Deterministisk via `page.route`-mock** av get-event, get-registrations,
- * send-registration-confirmation och update-event — samma split som 18.4/18.5/18.8:
- * SERVER-kontraktet (mail + status-flip, deny-by-default, icke-prod-spärren) bevisas av
+ * send-registration-confirmation, update-event OCH get-event-notes — samma split
+ * som 18.4/18.5/18.8: SERVER-kontraktet (mail + status-flip, deny-by-default,
+ * icke-prod-spärren) bevisas av
  * `tests/api/send-registration-confirmation.staging.test.ts` + `confirm-registrations.test.ts`
  * mot skarp staging; dessa e2e bevisar KLIENTENS form och beteende flak-fritt.
+ *
+ * TASK-205 (2026-08-14): get-event-notes SAKNADES i mockningen fram till denna
+ * rad. Anteckningar-gruppen (task-18.11) fetchar den UNMOCKAD för VARJE event —
+ * med `EVENT_ID` (en fixtur, aldrig seedad i skarp staging) svarade skarpa
+ * EF:en 404 (bekräftat via `page.on('response')` mot
+ * `pqtshyierkdgwdnxuirz.supabase.co`), vilket välte `Strommen` från
+ * "Laddar anteckningar…" till felboxen `MessageBox` NÅGON gång under testets
+ * gång — ett DOM-childList-hopp på exakt +57px i `div.pt-3.pb-4`
+ * (`Anteckningar.tsx`), bekräftat med en `MutationObserver`-tidslinje. Timingen
+ * (äkta nätverks-roundtrip mot verklig staging) race:ade mot testets synkrona
+ * mätpunkter — landade omslaget MELLAN två `geometri()`-anrop föll AC #1:s
+ * dok-invariant med `Received: 57`, annars föll det INTE (falsk grön, inte
+ * bevis). Detta var hela mekanismen bakom TASK-205 (post-merge-svepets
+ * "layout-invarianten i event-bekräftelse faller på dokumenthöjd") och det
+ * "deterministiska 57px" TASK-188 mätte — INGENDERA av kortens ursprungliga
+ * hypoteser (kodregression / stagings datavolym) stämde; test-mockningen var
+ * bara ofullständig, i strid mot denna docblocks eget påstådda kontrakt och
+ * mot syskonkonventionen `mockNotes()` i `event-detail.staging.test.ts`.
  *
  * Mockarna är TILLSTÅNDSBÄRANDE: bekräftelse-anropet muterar listan som
  * get-registrations serverar, så batchens utfall bevisas överleva
@@ -53,6 +72,7 @@ const GET_EVENT = /\/functions\/v1\/get-event\?/;
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const CONFIRM = '**/functions/v1/send-registration-confirmation';
 const UPDATE_EVENT = '**/functions/v1/update-event';
+const GET_EVENT_NOTES = '**/functions/v1/get-event-notes*';
 const EVENT_ID = 'recBEKRAFTELSE001';
 
 type Json = Record<string, unknown>;
@@ -274,6 +294,21 @@ async function mocka(page: Page, event: Json, deltagare: Json[] = grundData()): 
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ event: aktuellt, record: { id: EVENT_ID, fields: {} } }),
+    });
+  });
+  // Anteckningar-gruppen (task-18.11) fetchar get-event-notes för VARJE event —
+  // stubbas tom här (samma form som mockNotes() i event-detail.staging.test.ts)
+  // så eventsidans övriga sviter förblir deterministiska. TASK-205: obemockad
+  // gick anropet mot SKARP staging med denna fixtur-EVENT_ID (aldrig seedad
+  // där), fick 404, och Strommen växlade från laddläge till felboxen någon
+  // gång under testkörningen — ett äkta nätverks-race, inte flake i klassisk
+  // mening (antecknings-strömmens EGNA beteenden bevisas i
+  // `tests/acceptance/event-anteckningar.acceptance.test.ts`).
+  await page.route(GET_EVENT_NOTES, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ notes: [] }),
     });
   });
   return mockar;
