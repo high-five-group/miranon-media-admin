@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-08
+updated: 2026-08-14
 review_by: 2026-11-15
 status: stable
 ---
@@ -145,7 +145,7 @@ Det är inget löfte och ingen deadline — det är en realistisk gissning baser
 | **Fas 5** | Skalet — det du ser först | ✅ Klar (12 juni) | 1 pass |
 | **Fas 5.5** | Första riktiga interaktionen — markera betalning | ✅ Klar (17 juni) | 2 pass |
 | **Fas 6** | Alla rum — Hem, Event, Personer, Mer (i åtta delar) | 🟡 Pågår (6a–6d ✅ klara) | 7,5 pass |
-| **Fas 6.5** | "Vad har hänt?" — automatisk historik | ⏳ | 1 pass |
+| **Fas 6.5** | "Vad har hänt?" — automatisk historik | ✅ Klar (14 augusti) | 1 pass |
 | **Databasen maxas** | Airtable-databasen lyfts till toppklass (egen milstolpe, inte en fas) | 🏔️ Milstolpe | Storlek sätts senare |
 | **Fas 7** | Slutbesiktning — gör appen redo att publiceras | ⏳ | 3 pass |
 | **Fas 8** | Framtid — passkeys, push-notiser, offline-kö | 🔮 Framtid | Senare |
@@ -442,6 +442,15 @@ Det är inte övervakning — det är ett bevis på att systemet fungerar. Du ka
 Historiken sparas i 12 månader och hanteras enligt EU:s dataskyddsregler (GDPR). Loggformatet följer en internationell standard som heter [xAPI](https://xapi.com/) — det betyder att samma logg-data kan återanvändas i Passionslyftet utan ombyggnad.
 
 **Vad du märker:** En ny sektion under Mer-fliken där du kan se din historik. Allt du gjort, kronologiskt, sökbart.
+
+> ✅ **Fas 6.5 klar 14 augusti 2026.** Historiken är igång på riktigt sedan
+> 13 augusti: allt du gör sparas automatiskt, hem-sidan visar de senaste
+> händelserna direkt (utan att du behöver ladda om), och under Mer finns
+> hela historiken med filter för typ av händelse, event och tidsperiod.
+> En detalj blev annorlunda än planerat, med avsikt: historiken sparas i
+> vår egen databas (Supabase) i stället för i Airtable — det skyddar
+> Airtable-basen från att växa okontrollerat. Anteckningar syns som "du
+> antecknade", aldrig med själva innehållet.
 
 ### Databasen maxas — Airtable lyfts till toppklass
 

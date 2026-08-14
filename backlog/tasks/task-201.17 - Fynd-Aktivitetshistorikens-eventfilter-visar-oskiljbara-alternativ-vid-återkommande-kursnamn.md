@@ -3,10 +3,10 @@ id: TASK-201.17
 title: >-
   Fynd: Aktivitetshistorikens eventfilter visar oskiljbara alternativ vid
   återkommande kursnamn
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 19:12'
-updated_date: '2026-08-14 19:37'
+updated_date: '2026-08-14 21:29'
 labels:
   - ready-for-agent
 dependencies: []
@@ -57,7 +57,7 @@ Kortet är ett fynd ur S105:s QA-vandring, barn till TASK-201 (Aktivitetslogg Fa
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -73,4 +73,6 @@ AC #2 avbockad — testet 'TASK-201.17 — event-dropdownens etikett kvalificera
 AC #3 avbockad — eventOptions-sorteringen (AktivitetsHistorik.tsx, useMemo) primär namn (oförändrat) + sekundär startdatum-tie-break (lexikografisk localeCompare på ISO YYYY-MM-DD = kronologisk). Verifierat via acceptance-test 'identiskt namngivna event sorteras kronologiskt sinsemellan': tre Fjärrskådning-event i AVSIKTLIGT osorterad mock-ordning (okt/aug/aug-22) renderas i dropdownen i ordningen Skövde 1 aug / Varberg 22 aug / Falköping 1 okt.
 
 AC #4 avbockad — a11y orörd: Select-primitivens egen mekanik (option-roller, aria/labels, tangentbordsväg) rördes inte, endast options-BARNENS textinnehåll. Verifierat: befintliga tester 'AC #3 — axe 0 violations med filterraden synlig' och 'AC #3 — tangentbordsväg: kategori-filtret väljs utan mus' (oförändrade av denna skiva) körda tillsammans med de nya — samtliga 11 tester i mer-aktivitetshistorik-filter.acceptance.test.ts gröna, inkl. axe wcag2a/2aa/21a/21aa/22aa 0 violations.
+
+STÄNGNING (S105 Del 11): landad via PR #1298, merge 400d2ba9 — CI, Post-merge och CodeQL samtliga success (gh run list mot merge-SHA).
 <!-- SECTION:NOTES:END -->

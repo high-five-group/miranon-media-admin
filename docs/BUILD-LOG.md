@@ -3200,6 +3200,41 @@ orörda genom strecksvepet; acceptance 177/177, api 465/465.
 `task-175` (stämpel-SHA-härledningen) plockbara · T135-familjen väntar
 utredning · go-live-inventeringen = egen session.
 
+## Session 105 — Fas 6.5 Aktivitetslogg (xAPI): KOMPLETT (2026-08-11 → 2026-08-14)
+
+**Fas 6.5 KOMPLETT 2026-08-14.** Grillning → PRD `task-201` + 18 underkort →
+bygge → prod-driftsättning 2026-08-13 ~18:30 (Marcus körde
+`prod-driftsattning-runbook.md` guidat; prod-ref-låset aldrig kringgånget) →
+exekveringsvåg + fas-avslut 2026-08-14 på Marcus GO + mandat.
+
+- **Levererat:** Supabase `activity_log` (staging + prod, RLS, append-only
+  strukturellt bevisad via GRANT-formen) · `log-activity`/`get-activity-log`
+  under EF-ribban · xAPI-statements Zod-validerade, `requestId` enda
+  korrelations-ID (ADR-111) + personId-extension · hem-spalten "Senaste
+  aktivitet" (≥xl, facit-stämplad 2026-08-13, cache-invalidering `TASK-210`)
+  · historikvy + filterrad via Mer (disambiguerade event-etiketter
+  `TASK-201.17`) · e2e-skarven `aktivitetslogg-skarv.staging.test.ts`.
+- **Noll-luckor-invarianten MEKANISERAD:** varje exporterad mutationshook
+  loggar — 15/11/4 → 15/15 (`TASK-201.13`/`201.14`) → 18/18 efter
+  skrivvägs-extraktionen (`TASK-201.15`: createEvent + segment-mail +
+  saveSegment in i katalogen, hemvist-grinden
+  `tests/api/mutation-hemvist-vakt.test.ts` + `.mutation-hemvist-policy.conf`
+  fäller komponent-lokala mutationer) → **16/16/0** efter död-kod-rivningen
+  (`TASK-201.18`: `useConfirmAll`/`useLogPaymentReminder`, tre oberoende
+  noll-konsument-verifieringar, Marcus-mandat).
+- **QA:** manuella planen descope:ad av Marcus (verbatim i `task-201.10`
+  final summary); mekanisk Playwright-vandring mot staging-preview täckte
+  punkt 2–8 med kärnbeviset live (post "nyss" utan omladdning · fritext
+  aldrig i payload/render · requestId läst i nätverksfliken ·
+  tvåkontos-attribution · mobil 390 px). VoiceOver-ljudprov öppet descope:at.
+- **Prod-driftskorrigering under vågen:** stale-front-larm rest och
+  TILLBAKADRAGET efter förstapartsmätning (vercel inspect-kedjan; Vercel-CLI-
+  åtkomsten FANNS — ny registerrad i `atkomst-och-nycklar.md`); metodvarning
+  bokförd på `TASK-199` (minifierad bundle-grep är fel instrument).
+- **Landningar (samtliga MERGED, gröna per jobb):** `#1285`–`#1287`, `#1289`
+  –`#1292`, `#1294`, `#1296`–`#1298` + baslinje-PR `#1249` (godkänd efter
+  pixeldiff-granskning). Full narrativ: sessionsdok S105 Del 1–11.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).

@@ -43,12 +43,19 @@ fritext aldrig exponerad, requestId läst i nätverksfliken) · `201.9`+`201.10`
 → Done · stale-larmet om prod-fronten TILLBAKADRAGET efter förstapartsmätning
 (vercel inspect: `main@133cb91c` ⊇ `#1264` aliasad; Vercel-CLI-åtkomsten
 FANNS — ny registerrad i `atkomst-och-nycklar.md`) · FYND: event-filtrets
-namndubbletter (fix-agent i luften). **NÄSTA: `#1294` (201.15, 18/18 +
-hemvist-grind) + filter-fixen + RIV-agenten landar → PRD `201` stängs →
-fas-avslut via phase-end-verify → lessons-skörd (7+3 kandidater).**
+namndubbletter (fix-agent i luften). **FAS 6.5 ✅ KLAR (2026-08-14, Del 11):**
+alla 19 kort Done (PRD `201` + 18 underkort; katalog-invarianten slutmätt
+16/16/0 efter rivningen `201.18`) · `#1294`/`#1296`/`#1297`/`#1298` MERGED
+gröna per jobb · byggplan v1.17 + fas-rad ✅ + Slutförd-paragraf · CHANGELOG
+[0.8.0] · BUILD-LOG KOMPLETT-post · lättläst-v3 · två lessons-fragment
+(deploy-färskhet-i-kedjan [UNIVERSAL] + nästlade-worktree-sökvägar).
+phase-end-sviten körd i ekvivalent grep-form (skriptet kräver rg som saknas
+— HUB-FYND); CLAUDE.md/README-checkarna klassade som ADR-100-delegering,
+inte drift. **NÄSTA (vid session-avslut, ej fas): sessionsdok-arkivering +
+UNIVERSAL-hub-lyft + lessons-konsolidering (7+3 kandidater + 2 fragment).**
 Marcus-`!`-moment: facit-notens stale mening (ADR-104-vakten nekar
 agent-edit av stämplat manifest, per design). HANDOFF: sessionsdok S105
-Del 9–10. *(Paus-blocket nedan bevarat.)*
+Del 9–11. *(Paus-blocket nedan bevarat.)*
 
 **Session 105 ⏸️ PAUSAD (2026-08-13 kväll, `lifecycle: paused`, historik) — FAS 6.5
 AKTIVITETSLOGGEN ÄR LIVE I PROD.** Marcus körde runbooken själv, guidad
