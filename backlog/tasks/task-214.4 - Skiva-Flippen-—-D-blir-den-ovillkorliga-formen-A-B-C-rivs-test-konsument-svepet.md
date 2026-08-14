@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-14 19:17'
-updated_date: '2026-08-14 23:15'
+updated_date: '2026-08-14 23:47'
 labels:
   - ready-for-agent
 dependencies:
@@ -90,4 +90,34 @@ facit.json-bilderna slutlage-{desktop,mobil}.png — strukturellt/visuellt
 identiskt, enda skillnaden ar fixturdata (4 vs 16 personer) och railens
 antal chips (1 vs 4 — vantat, registret kromp med avsikt). test:api 750/750,
 acceptance-sviten for rorda filer grona, typecheck/biome/build EXIT=0.
+
+RÄTTELSE (samma session, efter CI-fynd på PR #1306): CI:s Acceptance-jobb
+fällde hermetik-sjalvtestets tvåsidiga bevis — scripts/hermetik-sjalvtest.mjs
+har INGEN skip-ventil med avsikt (varje test i acceptance-klassen ska
+bevisbart hänga på fixturvärlden; ett hoppat test bevisar inget och räknas
+som drift). Parkering (describe.skip) av event-narvaro.acceptance.test.ts
+var alltså fel form — strukturellt otillåtet i denna svit, till skillnad
+från persondetalj-precedentens person-note-edit.acceptance.test.ts (annan
+testklass utan detta självtest-krav).
+
+ÅTGÄRD: filen RADERAD helt (git rm), inte parkerad. Verifierat FÖRE
+raderingen att samtliga sju tester hade samma subjekt (EventAttendance via
+routen, plain page.goto utan ?variant=) — inget test hade ett annat
+subjekt, så hela filen kunde raderas utan att tappa täckning av något
+oberoende.
+
+EventAttendance.tsx SJÄLV rörs INTE (ADR-102 B3 skyddar prototyp-formen
+till TASK-214.7 — men skyddar inte den ersatta ytans DÖDA TESTER, som är
+skillnaden mot ADR-102 B3-resonemanget jag drog fel första gången).
+
+Verifierat: npm run test:acceptance (full svit) 229/229 EXIT=0 (en
+isolerad flake i mer-aktivitetshistorik-filter.acceptance.test.ts vid
+parallell last, omkörd och grön, bekräftat orelaterad — filen rör
+Aktivitetshistorik, delar ingen fil med denna diff) · test:acceptance:
+sjalvtest 229 tester/229 fällda/229 med OmockadRequestError, 0 avvikelser
+· hermetik-sjalvtest.mjs --negativ-kontroll EXIT=0 ("NEGATIV KONTROLL
+GRÖN") — 2 fällda/0 med OmockadRequestError UTAN self-test-flaggan, vilket
+BEVISAR att skriptet kan detektera drift (den positiva och negativa
+kontrollen pekar åt motsatta håll, som avsett) · typecheck/biome/build
+EXIT=0 efter raderingen.
 <!-- SECTION:NOTES:END -->
