@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-12
+updated: 2026-08-14
 review_by: 2026-11-15
 status: stable
 ---
@@ -27,7 +27,7 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 
 **Styrande dokument för byggandet:** `docs/byggplan.md` (i detta repo). Vue-repots `react-migration/`-mapp är historiskt referensmaterial — användes som källa under Fas 0 + Fas 1 men ersätts av byggplan.md från och med Fas 2.
 
-**Airtable-basen är en förstklassig LEVERABEL, inte ett provisorium:** den maxas till 11/10 / branschledarmässig och blir mall + övningsprojekt i Passionslyftet. Den är datakälla nu för att bygget ska avtäcka vad appen behöver av sin datakälla — defekt-registret (`docs/reference/data-model.md` §Kända fällor + T16) är kravspecen för bas-maximeringen (post-Fas-6-milstolpe). Resolution sker I BASEN, ej lappa, ej designa-bort; Supabase-migration är ett separat senare spår, ej en ersättning. Fullt beslut: [ADR-063](docs/decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md).
+**Airtable-basen är en förstklassig LEVERABEL, inte ett provisorium:** den maxas KONTINUERLIGT till 11/10 / branschledarmässig — defekter och förbättringspotential åtgärdas i basen när de avtäcks, ej väntas ut — och blir mall + övningsprojekt i Passionslyftet. Den är datakälla nu för att bygget ska avtäcka vad appen behöver av sin datakälla — defekt-registret (`docs/reference/data-model.md` §Kända fällor + T16) är kravspecen, ett löpande committat åtagande. Resolution sker I BASEN, ej lappa, ej designa-bort; Supabase-migration är ett separat senare spår, ej en ersättning. Post-Fas-6-milstolpen är omdefinierad till en dedikerad SLUTGENOMLYSNING ("en gång till") för kvarvarande förbättringspotential + audit av registrens korrekthet — ej längre resolutions-hemmet. Fullt beslut: [ADR-063](docs/decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md) § Updates (2026-08-14).
 
 ---
 

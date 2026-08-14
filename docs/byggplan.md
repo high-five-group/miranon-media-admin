@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-12
+updated: 2026-08-14
 review_by: 2026-11-15
 status: stable
 ---
@@ -841,16 +841,18 @@ Implementera xAPI-baserad aktivitetslogg för spårning av Lottas operativa åtg
 > **Detta är en MILSTOLPE, inte en fas.** Egen kommande pass-kedja, placerad EFTER Fas 6.5 — då hela app↔Airtable-interaktions-ytan är byggd av **Fas 6:s EF ensamt**. Fas 7 tillför inga nya Airtable-interaktioner, så interaktions-registret är moget vid denna slot.
 >
 > **AMENDERAT 2026-08-11 (S105/`TASK-201.1`, öppen ändring, ej tyst):** ovanstående ersätter den ursprungliga premissen "Fas 6:s EF + Fas 6.5:s `Activity Log`-write" — Fas 6.5:s aktivitetslogg lagras i Supabase, inte Airtable ([ADR-110](decisions/ADR-110-aktivitetsloggens-lagring-supabase-inte-airtable.md)), och tillför därmed INGEN app↔Airtable-interaktion att audita. Fas 6.5 kvarstår som TEMPORAL föregångare till denna milstolpe (se § Beroenden nedan), men bidrar ingen interaktions-registerpost.
+>
+> **AMENDERAT 2026-08-14 (Marcus GO, öppen ändring, ej tyst — [ADR-063](decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md) § Updates 2026-08-14):** milstolpen är INTE längre bas-maximeringens resolutions-hem. Defekter och förbättringspotential i basen åtgärdas KONTINUERLIGT när de avtäcks — i basen, eget kontrollerat pass, egen verifiering per ändring — i stället för att samlas och väntas ut. Milstolpen är nu en dedikerad SLUTGENOMLYSNING: "en gång till", för att hitta ytterligare förbättringspotential utöver vad det kontinuerliga arbetet redan fångat, plus auditen av registrens korrekthet ((a)+(b) nedan, oförändrade).
 
 #### Mål
 
-Maxa Airtable-basen till 11/10 / branschledarmässig / mall-redo — som förstklassig leverabel, ej ersättas (ADR-063). Resolution sker I BASEN.
+Slutgenomlysning av Airtable-basen: en dedikerad "en gång till"-titt (ADR-063 § Updates 2026-08-14) för att hitta KVARVARANDE förbättringspotential utöver vad den löpande kontinuerliga bas-maxningen redan åtgärdat, plus audit att registren är korrekta och kompletta. Basen maxas till 11/10 / branschledarmässig / mall-redo — som förstklassig leverabel, ej ersättas (ADR-063). Resolution sker fortsatt I BASEN — kontinuerligt, inte bara här.
 
 #### Scope
 
 - **(a)** Audita att ALLA app↔Airtable-interaktioner är registrerade KORREKT — mot `docs/reference/airtable-interaction.md` + app↔Airtable-interaktions-registret.
 - **(b)** Audita att HELA Airtable-skatten (`data-model.md` §Kända fällor) är registrerad KORREKT + KOMPLETT.
-- **(c)** Lösa ut allt: städa, fixa, optimera Airtable-basen själv till 11/10 / branschledarmässig / mall-redo (Passionslyft-övningsprojekt) — ej lappa provisoriskt, ej designa-bort i en efterträdare.
+- **(c)** Slutgenomlysning: hitta KVARVARANDE förbättringspotential utöver vad den löpande kontinuerliga bas-maxningen (ADR-063 § Updates 2026-08-14) redan åtgärdat, och lösa ut det i basen själv — ej lappa provisoriskt, ej designa-bort i en efterträdare.
 
 #### Inte scope
 

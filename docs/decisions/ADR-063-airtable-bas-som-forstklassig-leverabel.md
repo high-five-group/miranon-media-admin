@@ -135,3 +135,54 @@ Premissen var Chats (Claude), införd i ADR-062:s författning utan förankring 
 - data-model.md §Kända fällor + T16 — omframas som kravspec (Session 34 Landning 4).
 - L192 — omformuleras: register = committad förbättring (Session 34 Landning 5).
 - Passionslyftet — Airtable-basen som mall + övningsprojekt (kontext-lagret, Session 34 Landning 3).
+
+## Updates
+
+### 2026-08-14 — Kontinuerlig bas-maxning; milstolpen omdefinierad till slutgenomlysning (Marcus GO)
+
+Marcus beslut, verbatim: *"Vi ska INTE vänta på basmaximeringen, vi ska maxa
+basen kontinuerligt. Åtgärda det som behöver åtgärdas på proffsigast möjliga
+sätt. Basmaximeringen är när vi dedikerat tittar EN GÅNG TILL på basen för att
+hitta ytterligare förbättringspotential."*
+
+**Öppen rivning, inte tyst — vad som stryks.** Beslut 5(c) ("lösa ut allt:
+städa, fixa, optimera Airtable-basen … efter Fas 6") och Konsekvenser-radens
+formulering *"defekt-registret har ett committat resolutions-hem
+(post-Fas-6-milstolpen)"* bar premissen att resolution av avtäckta defekter
+och förbättringspotential VÄNTAR på milstolpen. Den premissen stryks. Den var
+aldrig Marcus intent framåt — bara hur milstolpen ursprungligen skrevs
+(Session 34), innan kontinuerlig-drift-beslutet fanns.
+
+**Vad som gäller i stället.** Avtäckta defekter och förbättringspotential i
+basen (Airtable-skatten, defekt-registret) åtgärdas KONTINUERLIGT, i takt med
+att de avtäcks — de samlas inte och väntas inte ut. Varje sådan åtgärd sker
+enligt Beslut 2 (I BASEN, aldrig lappa i appen, aldrig designa bort) och
+enligt Blast-radius-noten: eget kontrollerat pass, egen verifiering per
+ändring — basen är delad prod (Psionautics gäst) med automationerna A1–A11,
+och den försiktigheten gäller lika mycket för en enskild kontinuerlig fix som
+för milstolpen.
+
+**Milstolpen omdefinieras — den är kvar, men är inte längre
+resolutions-hemmet.** Den blir en dedikerad SLUTGENOMLYSNING: en gång till,
+dedikerat, för att hitta ytterligare förbättringspotential UTÖVER vad det
+kontinuerliga arbetet redan fångat. Beslut 5(a) och 5(b) — audit att ALLA
+app↔Airtable-interaktioner respektive HELA Airtable-skatten är registrerade
+KORREKT — står KVAR som milstolpens innehåll, oförändrade: en audit av
+registrens korrekthet hör rimligen till en dedikerad slutgenomgång, inte till
+löpande drift.
+
+**Orört (bekräftat explicit, inte bara underförstått):**
+
+- Beslut 1 — basen maxas som leverabel, ej ersätts.
+- Beslut 2 — resolution sker I BASEN, ej lappa, ej designa bort. Detta är
+  SKÄLET till att kontinuerlig maxning fungerar utan att bli lapptäcke: varje
+  fix går i basen, aldrig runt den.
+- Beslut 3 — defekt-registret förblir KRAVSPECEN, ett committat åtagande —
+  nu ett löpande sådant i stället för ett som väntar på en framtida dag.
+- Beslut 4 — app-sidans "beräkna från källan" (Deltaganden, ej rollups) står.
+- Beslut 6 — Supabase-migrationen är fortsatt ett separat SENARE spår, inte
+  en ersättning; migrations-tajming styr fortsatt INTE bas-maximeringen.
+
+**Landning i samma svep:** `docs/byggplan.md` §4-milstolpe-blocket (Mål +
+Scope-punkt (c)) och `CLAUDE.md` § "Vad är detta projekt?" amenderade för att
+spegla samma omdefiniering.
