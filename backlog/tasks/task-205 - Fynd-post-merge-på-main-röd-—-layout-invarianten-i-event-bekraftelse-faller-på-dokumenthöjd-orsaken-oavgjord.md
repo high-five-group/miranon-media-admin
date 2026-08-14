@@ -3,10 +3,10 @@ id: TASK-205
 title: >-
   Fynd: post-merge på main röd — layout-invarianten i event-bekraftelse faller
   på dokumenthöjd, orsaken oavgjord
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-12 20:48'
-updated_date: '2026-08-14 16:08'
+updated_date: '2026-08-14 16:53'
 labels: []
 dependencies: []
 priority: high
@@ -55,7 +55,7 @@ ATTRIBUTIONSVARNING: fyndet rapporterades först till orkestreraren som orsakat 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 

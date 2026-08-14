@@ -1,10 +1,10 @@
 ---
 id: TASK-211
 title: Utvidga worktree-städmekanismen med en sessions-worktree-klass
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-14 16:02'
-updated_date: '2026-08-14 16:36'
+updated_date: '2026-08-14 16:54'
 labels:
   - tooling
   - hub
@@ -34,7 +34,7 @@ Hemvist: skriptet bor i hub-pluginet (marcus-system) — arbetet är hub-sidigt 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
