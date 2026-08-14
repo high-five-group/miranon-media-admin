@@ -2,7 +2,12 @@
   "prototyp": "s103-checkin-konvergens",
   "last": "2026-08-14",
   "lasning": "Check-in-D efter två konvergensvarv: Marcus sju punkter (2026-08-14) + varv 2 (etiketten riven, tint-hörnen klipps). Formvalet uttalat i klartext; godkand-fältet stämplas av Marcus själv via facit:godkann (ADR-104) när formen landat på main.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-14",
+    "citat": "Toppen! Nu vill jag stämpla och promovera denna, det blir toppen!",
+    "sha": "c7db8b1606831014393489a389aad44f5d57e969"
+  },
   "ytor": [
     {
       "yta": "check-in (dörrlistan, variant D)",
