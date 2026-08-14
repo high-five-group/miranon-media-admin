@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-11
+updated: 2026-08-14
 review_by: 2027-01-02
 status: stable
 ---
@@ -324,3 +324,30 @@ väntelistan). Märket är härlett, aldrig lagrat (hållplats-modellen,
 alternativ C).
 *Undvik:* status-pill (den ersatta formen), badge (upptaget av
 Erfarenhetsbadge).
+
+**Incheckning** — handlingen att vid dörren markera en deltagare Närvarande
+för en session; uppdaterar Deltagandet, eller skapar det om raden mot
+förmodan saknas i basen (backup-vägen — rotorsaken läks alltid i basen,
+grillad samsyn S103 Del 15). Skild från *Deltagande* (posten) och närvaro
+(statusen).
+*Undvik:* närvaromarkering, avprickning.
+*I koden:* `checkin` (operationerna byggs under promoverings-PRD:t).
+
+**Dörrlista** — incheckningsytan för ett events session: arbetslistan visar
+BARA dem som återstår att checka in, med sök och sessionsval (endast vid
+flera sessioner); incheckade flyttar till Klargruppen. Formen är variant D:s
+stämplade facit (S103, 2026-08-14).
+*Undvik:* närvarolista (den ersatta läs-vyns form), deltagarlista
+(registervyn på eventsidan).
+*I koden:* `EventCheckin` (efter promoveringen; `CheckinPrototyp` före).
+
+**Kvittensfönster** — de 1,2 sekunder efter incheckningstrycket då raden
+visar grönt kvitto ("Incheckad HH:MM") INNAN flytt till Klargruppen; ångra
+inom fönstret avbryter helt — ingen skrivning har då skett, eftersom
+skrivningen går först när fönstret löpt ut (grillad samsyn S103 Del 15).
+*Undvik:* undo-fönster, grace period.
+
+**Klargrupp** — den kollapsade gruppen längst ned i dörrlistan med redan
+incheckade; ångra efter kvittensfönstret bor här (bocka ur = vanlig
+statusskrivning tillbaka).
+*Undvik:* klarlista, historik (upptaget av andra ytor).
