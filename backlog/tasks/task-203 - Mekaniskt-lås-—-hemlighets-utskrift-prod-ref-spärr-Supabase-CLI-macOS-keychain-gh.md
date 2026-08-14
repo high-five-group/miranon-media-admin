@@ -3,10 +3,10 @@ id: TASK-203
 title: >-
   Mekaniskt lås — hemlighets-utskrift + prod-ref-spärr (Supabase CLI, macOS
   keychain, gh)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-12 15:44'
-updated_date: '2026-08-12 16:02'
+updated_date: '2026-08-14 15:46'
 labels: []
 dependencies: []
 ordinal: 378000
@@ -84,7 +84,7 @@ Uppdragstext till bygg-agenten, 2026-08-12 (Marcus-citat + incidentbeskrivning).
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -104,4 +104,11 @@ Grindar körda och gröna: shellcheck --severity=style --enable=all (0.11.0, mat
 Skarpbevis att hookarna faktiskt LADDAS i en session startad EFTER denna landning är INTE gjort (kan inte förlitas på i byggsessionen, CLAUDE.md § "En ny hooks skarpbevis…") — bokförs som ÖPPEN SKULD för nästa session, ej stängd i denna leverans. Logiken är bevisad via testsviterna (45/45) + manuell körning mot verkligt konstruerat hook-JSON.
 
 Premiss-pass (ADR-086): båda project-refs verifierade mot TVÅ oberoende källor (uppdragstexten + docs/reference/atkomst-och-nycklar.md § Register, landad samma dag via oberoende PR #1203) — identiska värden, ingen divergens. Prod-skydds-kortets tidigare "föreslaget och obesvarat"-status verifierad ordagrant mot tasks/todo.md rad 47. DIVERGENS FUNNEN OCH BOKFÖRD: uppdraget nämner "supabase secrets list --reveal" som ett kommando att blockera — disk-verifierat 2026-08-12 att installerad CLI 2.113.0 REDAN avvisar flaggan (`{"code":"UnrecognizedOption","message":"Unrecognized flag: --reveal in command supabase secrets list"}`, körd direkt, ingen verklig hemlighet exponerad). Mönstret behölls ändå, defensivt/framtidssäkert, men är i dag inert — CLI:t skulle redan fela innan mönstret någonsin behöver träda in. `supabase projects api-keys` (utan --reveal) reproducerades AVSIKTLIGT INTE mot en riktig prod-ref under detta arbete — det vore att återskapa exakt den incident kortet finns för att stänga; incidentens faktiska utfall togs som källmärkt fakta från Marcus egen order i stället.
+
+SKARPBEVIS BETALT (stängningspass 2026-08-14, nästa sessions första handlingar per CLAUDE.md § 'En ny hooks skarpbevis…'). Denna worktree/session startades EFTER TASK-203s landning (PR #1212, commit 0ea604a1, merged 2026-08-12T16:23:29Z) — de facto exakt den 'session startad efter denna landning' som skulden krävde. Båda hookarna provocerades skarpt via riktiga Bash-tool-anrop (inte skriptets egen testsvit) och FÄLLDE:
+1) Lås 2 (prod-ref): ett kommando som nämnde produktionsrefen (se docs/reference/atkomst-och-nycklar.md § Register för värdet) gav PreToolUse:Bash hook error från scripts/deny-prod-ref.sh, verbatim: 'PROD-REF-LÅS (TASK-203): Bash-kommandot nämner produktions-Supabase-projektets ref. Ingen bypass-form (PROD_REF_GODKAND_AV_MARCUS=<ref>) hittades på kommandoraden.' — kommandot kördes ALDRIG (nekat före exekvering). (Detta bevis producerades två gånger av misstag i denna session — andra gången triggades hooken av kortets EGEN uppdateringskommando när det citerade refen verbatim i final-summary-texten; det NYA kommandot nekades likaledes, vilket är ytterligare ett oberoende skarpbevis.)
+2) Lås 1 (hemlighet): kommandot 'security find-generic-password -s "TASK-202-203-skarpbevis-test-nonexistent" -w' gav PreToolUse:Bash hook error från scripts/deny-hemlighet-utskrift.sh, verbatim: 'HEMLIGHETS-LÅS (TASK-203): Bash-kommandot matchar ett hemlighets-utskrivande mönster (security[[:space:]]+find-generic-password[^|;&]*[[:space:]]-w([[:space:]]|$)).' — kommandot kördes ALDRIG.
+Bägge testerna designades för att vara ofarliga även vid ett hook-bortfall (ingen riktig hemlighet, ingen riktig prod-mutation) — se instansregeln i task-167. Skulden bokförs som BETALD med dessa (nu tre) instanser som belägg, samma mönster som task-167-precedentet kortet självt citerar.
+
+DoD #3 (CI grön per jobb): PR #1212 (commit 0ea604a1) merged via merge queue — gh pr view statusCheckRollup: samtliga jobb SUCCESS utom tre förväntat SKIPPED (Staging sentinel purge/A11y/Staging E2E). 0ea604a1 bekräftad som ancestor av HEAD (git merge-base --is-ancestor). Re-verifierat denna session: shellcheck --severity=style --enable=all på alla fyra filer (två skript + två .conf) KOD=0 (0 fynd); scripts/test-deny-hemlighet-utskrift.sh 24/24 gröna, exit 0; scripts/test-deny-prod-ref.sh 21/21 gröna, exit 0; ci.yml-wiring bekräftad (rad 1297-1299, tre .conf-filer i shellcheck-strict-scope); .claude/settings.json-registrering för båda hookarna bekräftad. Ingen kod ändrad i detta pass — endast kortets metadata.
 <!-- SECTION:FINAL_SUMMARY:END -->
