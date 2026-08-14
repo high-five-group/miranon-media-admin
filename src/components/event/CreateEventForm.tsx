@@ -1,5 +1,5 @@
 import type { CalendarDate } from '@internationalized/date';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -13,8 +13,8 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { SlideToConfirm } from '@/components/primitives/SlideToConfirm';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
+import { useCreateEvent } from '@/data/mutations/useCreateEvent';
 import { useDataSource } from '@/data/useDataSource';
-import type { CreateEventInput } from '@/domain/schemas';
 import { eventformatEtikett } from '@/lib/eventformat-etikett';
 import { queryKeys } from '@/queries/keys';
 
@@ -74,7 +74,6 @@ function distinct(values: (string | null)[]): string[] {
 export function CreateEventForm() {
   const dataSource = useDataSource();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const bekraftelseRef = useRef<HTMLDivElement>(null);
 
@@ -119,13 +118,11 @@ export function CreateEventForm() {
     [events.data],
   );
 
-  const mutation = useMutation({
-    mutationFn: (input: CreateEventInput) => dataSource.createEvent(input),
-    onSuccess: () => {
-      // 201 (created) OCH 200 (replay) → samma framgång; listan är inaktuell.
-      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
-    },
-  });
+  // Mutationen extraherad till `useCreateEvent` (TASK-201.15, hemvistsluckan
+  // — se hookens docblock). Beteendet oförändrat: samma onSuccess-kontrakt
+  // (201/200-replay → invalidera events-cachen), nu plus fire-and-forget
+  // aktivitetsloggning.
+  const mutation = useCreateEvent();
   const skapat = mutation.isSuccess ? mutation.data : null;
 
   useEffect(() => {

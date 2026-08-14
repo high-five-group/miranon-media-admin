@@ -86,6 +86,14 @@ function dagsStart(ms: number): number {
  * anteckningar". Ordningen nedan följer den uppräkningen. `KATEGORI_VALUES`
  * själv (en vanlig array, ingen fullständighetskontroll) hade INTE fångat
  * detta ensam — det var `Record`-typen som fällde typecheck.
+ *
+ * `segment` (TASK-201.15) LADES TILL SIST, EFTER PRD-uppräkningen ovan —
+ * samma mekanism fällde typecheck EXAKT som docblocket beskriver: kategorin
+ * mintades i `activityTypes.ts` (spara-segment, hemvistsluckan), och denna
+ * fil vägrade kompilera förrän en svensk etikett fanns. Segment-spar
+ * omfattas av PRD-berättelse 1 ("allt jag gör som ändrar något loggas"),
+ * inte av berättelse 9:s uppräkning — se `activityTypes.ts`
+ * `ACTIVITY_OBJECT_TYPES.segment`s eget docblock för varför kategorin finns.
  */
 type KategoriKey = keyof typeof ACTIVITY_OBJECT_TYPES;
 const KATEGORI_VALUES: KategoriKey[] = [
@@ -98,6 +106,7 @@ const KATEGORI_VALUES: KategoriKey[] = [
   'event',
   'flagga',
   'anteckning',
+  'segment',
 ];
 const KATEGORI_LABEL: Record<KategoriKey, string> = {
   betalning: 'Betalning',
@@ -109,6 +118,7 @@ const KATEGORI_LABEL: Record<KategoriKey, string> = {
   event: 'Eventändring',
   flagga: 'Flagga',
   anteckning: 'Anteckning',
+  segment: 'Segment',
 };
 
 /** Filterradens TIDSPERIOD-axel (TASK-201.8) — ToggleButtonGroup, alltid ETT val. */

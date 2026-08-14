@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/primitives/Button';
@@ -6,8 +6,9 @@ import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
+import { useSaveSegment } from '@/data/mutations/segment';
 import { useDataSource } from '@/data/useDataSource';
-import type { Par, SaveSegmentInput, SegmentRule } from '@/domain/schemas';
+import type { Par, SegmentRule } from '@/domain/schemas';
 import { buildSkoolExport, downloadCsv, skoolExportFilename } from '@/lib/segment-export';
 import { deriveTaxonomy, labelForPar, parKey } from '@/lib/segment-taxonomy';
 import { queryKeys } from '@/queries/keys';
@@ -84,17 +85,15 @@ export function SegmentBuilder() {
     excluded: number;
   } | null>(null);
 
-  // Spara segment (L3): namn-input + mutation mot save-segment. onSuccess invaliderar
-  // den sparade-listans query (SavedSegmentsList) → listan refetchar, och namnet rensas.
-  const queryClient = useQueryClient();
+  // Spara segment (L3): namn-input + mutation mot save-segment. Mutationen
+  // extraherad till `useSaveSegment` (TASK-201.15, hemvistsluckan — se
+  // hookens docblock i `segment.ts`). onSuccess invaliderar fortfarande den
+  // sparade-listans query (SavedSegmentsList) → listan refetchar; namnet
+  // rensas i CALL-SITE onSuccess (samma mönster som
+  // `PersonAnteckningar.tsx`/`Anteckningar.tsx` — hooken äger inget
+  // komponent-lokalt state).
   const [namn, setNamn] = useState('');
-  const saveMutation = useMutation({
-    mutationFn: (input: SaveSegmentInput) => dataSource.saveSegment(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.segment.saved });
-      setNamn('');
-    },
-  });
+  const saveMutation = useSaveSegment();
 
   const hasInclude = rule.include.length > 0;
   const isStale = countedSig !== null && countedSig !== ruleSignature(rule);
@@ -142,7 +141,10 @@ export function SegmentBuilder() {
 
   function handleSave() {
     if (!canSave) return;
-    saveMutation.mutate({ namn: namn.trim(), rule, definition: buildDefinition() });
+    saveMutation.mutate(
+      { namn: namn.trim(), rule, definition: buildDefinition() },
+      { onSuccess: () => setNamn('') },
+    );
   }
 
   const backLink = (

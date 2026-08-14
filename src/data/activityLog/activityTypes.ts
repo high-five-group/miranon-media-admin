@@ -42,6 +42,11 @@ export const ACTIVITY_OBJECT_TYPES = {
    * person-anteckning (create OCH update) — samma ATT-antecknade-handling,
    * bara olika objekt (event kontra person, AC #2: aldrig innehåll). */
   anteckning: `${XAPI_IRI_BASE}/activity-types/anteckning`,
+  /** TASK-201.15: sparat segment (useSaveSegment, `segment.ts`). NY
+   * KATEGORI, motiverad öppet: ett segment är varken ett event, en anmälan,
+   * en person eller ett mail — det är App-segment-tabellens EGEN entitet
+   * (ADR-065), och inget av katalogens nio övriga objekt passar. */
+  segment: `${XAPI_IRI_BASE}/activity-types/segment`,
 } as const;
 
 /** Objekt-IRI för en specifik anmälan — samma id oavsett vilket verb
@@ -84,6 +89,23 @@ export function eventActivityName(eventNamn: string | null): string {
  * person-anteckningsverben (skapa/uppdatera). */
 export function personActivityName(personNamn: string | null): string {
   return personNamn && personNamn.trim() !== '' ? personNamn : 'Okänd person';
+}
+
+/** Objekt-IRI för ett specifikt sparat segment (TASK-201.15) — DELAD av
+ * `useSaveSegment` (objektet ÄR segmentet, kategori `segment`) och
+ * `useSendSegmentMail` (objektet är segmentet MAILET adresserar, kategori
+ * `mail`): samma entitet, två olika verb pekar på den. */
+export function segmentObjectId(segmentId: string): string {
+  return `${XAPI_IRI_BASE}/objects/segments/${segmentId}`;
+}
+
+/** Gunilla-namnet för ett segment-objekt — samma disciplin som
+ * `eventActivityName`/`personActivityName`, delad av `useSaveSegment` och
+ * `useSendSegmentMail` (`segment.ts`). Speglar UI-platshållaren
+ * `SegmentMailCompose.tsx`/`SavedSegmentsList` redan använder
+ * ("(namnlöst segment)") i Gunilla-formens stora bokstav. */
+export function segmentActivityName(namn: string | null): string {
+  return namn && namn.trim() !== '' ? namn : 'Namnlöst segment';
 }
 
 /**
@@ -273,4 +295,47 @@ export function betalningspaminnelseVerb(betalning: BetalningsSlag): ActivityVer
 export const SKICKADE_TESTMAIL_VERB: ActivityVerb = {
   id: `${XAPI_IRI_BASE}/verbs/skickade-testmail`,
   display: { 'sv-SE': 'skickade testmail till sig själv' },
+};
+
+/**
+ * TASK-201.15 — HEMVISTSLUCKAN (Marcus GO 2026-08-14, S105 Del 9): de tre
+ * skrivvägarna en tidigare "mapp-scopad" mätning inte kunde se, eftersom de
+ * bodde som komponent-lokala `useMutation`-anrop UTANFÖR
+ * `src/data/mutations/` (`CreateEventForm.tsx`, `SegmentMailCompose.tsx`,
+ * `SegmentBuilder.tsx`). Extraherade till `useCreateEvent.ts`/`segment.ts`;
+ * verben nedan hör till den extraktionen.
+ */
+
+/** Skapa-event-verbet — `useCreateEvent.ts`. Skilt från
+ * `UPPDATERADE_EVENT_VERB`: att SKAPA ett event är en distinkt handling i
+ * historiken, inte en ändring av ett befintligt. Objektet är det
+ * NYSKAPADE eventet (`eventObjectId(created.id)`) — samma kategori
+ * (`event`) som uppdatera-event, ingen ny kategori krävs. */
+export const SKAPADE_EVENT_VERB: ActivityVerb = {
+  id: `${XAPI_IRI_BASE}/verbs/skapade-event`,
+  display: { 'sv-SE': 'skapade eventet' },
+};
+
+/** Spara-segment-verbet — `segment.ts` § `useSaveSegment`. EN riktning (ett
+ * segment sparas; det finns ingen "avspara"). Objektet bär den NYA
+ * `ACTIVITY_OBJECT_TYPES.segment`-kategorin (se dess docblock för
+ * motiveringen). */
+export const SPARADE_SEGMENT_VERB: ActivityVerb = {
+  id: `${XAPI_IRI_BASE}/verbs/sparade-segment`,
+  display: { 'sv-SE': 'sparade segment' },
+};
+
+/**
+ * Segment-mailets verb — `segment.ts` § `useSendSegmentMail`. EN riktning
+ * (ett utskick skickas, ingen "ångra"). Objektet är SEGMENTET
+ * (`segmentObjectId`), kategori `mail` (delad med `mailVerb`/
+ * `SKICKADE_TESTMAIL_VERB` — det ÄR ett mail, bara riktat mot ett segment
+ * i stället för en anmälan/ett event) — se `segment.ts`s docblock för
+ * varför posten är EN AGGREGERAD post och inte en per faktiskt sänd
+ * mottagare (bulk-precedentens vanliga form, prövad mot detta EF-svar och
+ * funnen strukturellt omöjlig här).
+ */
+export const SKICKADE_SEGMENT_MAIL_VERB: ActivityVerb = {
+  id: `${XAPI_IRI_BASE}/verbs/skickade-segment-mail`,
+  display: { 'sv-SE': 'skickade mail till segment' },
 };
