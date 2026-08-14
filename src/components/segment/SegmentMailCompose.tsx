@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { Dialog } from '@/components/primitives/Dialog';
@@ -8,8 +8,9 @@ import { Modal } from '@/components/primitives/Modal';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { TextArea } from '@/components/primitives/TextArea';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
+import { useSendSegmentMail } from '@/data/mutations/segment';
 import { useDataSource } from '@/data/useDataSource';
-import type { MailPayload, MailSendResult } from '@/domain/models/MailPayload';
+import type { MailSendResult } from '@/domain/models/MailPayload';
 import { queryKeys } from '@/queries/keys';
 
 /**
@@ -33,7 +34,6 @@ import { queryKeys } from '@/queries/keys';
  */
 export function SegmentMailCompose() {
   const dataSource = useDataSource();
-  const queryClient = useQueryClient();
 
   const [selectedId, setSelectedId] = useState('');
   const [amne, setAmne] = useState('');
@@ -71,15 +71,11 @@ export function SegmentMailCompose() {
       failureCount < 3,
   });
 
-  const sendMutation = useMutation({
-    mutationFn: (payload: MailPayload) => dataSource.sendEmail(payload),
-    onSuccess: () => {
-      // Utskicksloggen har en ny rad → invalidera så maillogg-vyn refetchar.
-      queryClient.invalidateQueries({ queryKey: queryKeys.maillog.all });
-      // Ny send-avsikt nästa gång → färsk nyckel (denna sändning är slutförd).
-      setIdempotencyKey(crypto.randomUUID());
-    },
-  });
+  // Mutationen extraherad till `useSendSegmentMail` (TASK-201.15,
+  // hemvistsluckan — se hookens docblock i `segment.ts` för aktivitetslogg-
+  // designet, prövat mot EF:ens faktiska svar). Beteendet i övrigt
+  // oförändrat: samma onSuccess-invalidering av maillogg-cachen.
+  const sendMutation = useSendSegmentMail();
 
   const amneValid = amne.trim() !== '';
   const mailtextValid = mailtext.trim() !== '';
@@ -105,12 +101,23 @@ export function SegmentMailCompose() {
   }
 
   function handleConfirmSend() {
-    sendMutation.mutate({
-      amne: amne.trim(),
-      mailtext,
-      segmentIds: [selectedId],
-      idempotencyKey,
-    });
+    sendMutation.mutate(
+      {
+        amne: amne.trim(),
+        mailtext,
+        segmentIds: [selectedId],
+        idempotencyKey,
+        segmentNamn: selectedSegment?.namn ?? null,
+      },
+      {
+        // Ny send-avsikt nästa gång → färsk nyckel (denna sändning är
+        // slutförd). Lokal UI-state → call-site onSuccess (samma mönster
+        // som `PersonAnteckningar.tsx`/`Anteckningar.tsx` efter sina
+        // motsvarande hook-extraktioner), INTE hookens egen onSuccess —
+        // `useSendSegmentMail` äger inget komponent-lokalt state.
+        onSuccess: () => setIdempotencyKey(crypto.randomUUID()),
+      },
+    );
   }
 
   const result: MailSendResult | undefined = sendMutation.data;
