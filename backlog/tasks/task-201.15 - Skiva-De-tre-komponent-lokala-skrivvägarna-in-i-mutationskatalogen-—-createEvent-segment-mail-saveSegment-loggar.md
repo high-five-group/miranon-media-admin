@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-14 18:29'
-updated_date: '2026-08-14 19:11'
+updated_date: '2026-08-14 19:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -41,7 +41,7 @@ ABSOLUT MAILFÖRBUD: segment-mail-vägen utlöses ALDRIG skarpt; all verifiering
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
