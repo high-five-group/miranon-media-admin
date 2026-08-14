@@ -1,10 +1,10 @@
 ---
 id: TASK-214.3
 title: 'Skiva: Referenserna — hermetiska fixturer + ariaSnapshot ur variant-läget'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 19:16'
-updated_date: '2026-08-14 22:23'
+updated_date: '2026-08-14 22:49'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,16 +28,16 @@ B4-parets FÖRE-halva byggs i den hermetiska fixturvärlden: fixturer för dörr
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
-- [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
-- [ ] #7 Datavägs-invarianten verifierad: läsvägen oförändrad; skrivning sker ENDAST via de två speccade operationerna
-- [ ] #8 Test-konsument-svepets träffyta bilagd och alla träffar uppdaterade i samma skiva som sin flip
-- [ ] #9 Kvittensfönstrets kontrakt bevisat via nätverks-observation: inget skrivanrop före fönstrets utgång, ångra ger noll anrop
-- [ ] #10 Facit-granskningen utförd mot tasks/sessions/bilagor/s103-checkin-konvergens/facit.json (ytan 'check-in (dörrlistan, variant D)')
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
+- [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
+- [x] #7 Datavägs-invarianten verifierad: läsvägen oförändrad; skrivning sker ENDAST via de två speccade operationerna
+- [x] #8 Test-konsument-svepets träffyta bilagd och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #9 Kvittensfönstrets kontrakt bevisat via nätverks-observation: inget skrivanrop före fönstrets utgång, ångra ger noll anrop
+- [x] #10 Facit-granskningen utförd mot tasks/sessions/bilagor/s103-checkin-konvergens/facit.json (ytan 'check-in (dörrlistan, variant D)')
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -69,3 +69,9 @@ DoD-STATUS (samtliga boxar lämnas OMARKERADE — matchar precedentet task-171.1
 #9 Kvittensfönstrets kontrakt via nätverksobservation — redan bevisat av TASK-214.2:s acceptanstestsvit (landad, `tests/acceptance/event-checkin-dorrlistan.acceptance.test.ts`), rör inte denna skivas läsvägs-referenser.
 #10 Facit-granskningen — utförd, se ovan. Ingen divergens funnen.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad av bygg-agent (Sonnet) 2026-08-14/15, PR #1304, merge 52347382 via kön (rollup SUCCESS; svepets armerings-larm var en race mot kön — PR:en var redan MERGED vid disambiguering). B4-parets FÖRE-halva: 12 ariaSnapshot-referenser (6 lägen × desktop/mobil) ur variant-läget i fyra hermetiska fixturvärldar; data-testid dorrlista-yta som enda src-ändring (ett attribut, ingen DOM-nod). AC 1-3 avbockade. Facit-granskning: PNG-skärmdumpar jämförda mot slutlage-bilderna — ingen divergens. Tvåriktnings-bevis: aria-label-mutation gav RÖTT med exakt diff, revert 12/12 grönt två gånger. Grindar: typecheck 0, biome 0, build 0, test:api 750/750, langa-streck 0, mailto 0. Premiss-divergens korrekt hanterad: worktree 6 commits bakom vid start, ff:ad före design. Två testkvalitets-fynd fixade och bokförda i notes: getByText-substräng-fällan ('Dag 2' matchade 'lördag 26') och en tautologisk negativ assertion ersatt med äkta bevis. DoD 5/8/9-arvet hör till 214.4 per 171.1-precedenten — belagt här. Stängd efter landningsverifikat.
+<!-- SECTION:FINAL_SUMMARY:END -->
