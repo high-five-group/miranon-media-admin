@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-12
+updated: 2026-08-14
 review_by: 2026-11-15
 status: stable
 ---
@@ -358,6 +358,7 @@ De skrivbara fält som [ADR-066](../decisions/ADR-066-skapa-event-write-vertikal
 | Noteringar | `fldpCVTUC0C47ci0S` | multilineText | – |
 | Anmälan (länk) | `fldwQdDpRK8vByNhb` | multipleRecordLinks → Anmälningar | Sätts av A3 |
 | Event (länk) | `fldaj5mbpU3yPw2np` | multipleRecordLinks → Eventplanering | Sätts av A3 |
+| Registrerad av | `fldhx3tludhu1gH7w` | lastModifiedBy | **Bokför INTE vem som checkade in** — se §Kända fällor 48. |
 
 #### Personer — write-fält
 
@@ -1338,6 +1339,8 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
     → **Bas-fix krävs (ADR-063: resolution I BASEN, ej app-lapp):** formeln måste platta sin valda rollup med separator, alternativt deklareras ärligt som fler-värd. Kvarstående omätt: `Nästa event (text)` och `Senast deltagande (text)`/`Senast touchpoint (text)` var för sig — misstanken är nu stärkt av en bekräftad instans i samma familj, inte längre enbart strukturell.
 
 47. **`Personer.Antal hämtningar` (`fld4UQOdKTvWixZ9F`) räknar INTE hämtningar.** Formeln är `COUNTA({Engagemang})` (`flddG1tVJyaKBxBYv`) — den räknar rader i tabellen **`Engagemang`**, inte i `Touchpoints` eller `Hämtade erbjudanden`. Fältnamnet säger något annat än fältet gör. **Live-belagt 2026-08-10 (S103):** `Sofia Isaksson` har tre faktiska touchpoint-hämtningar (`Alla hämtningar` bär alla tre med datum) medan `Antal hämtningar` visar **0**. **Konsekvens för app-design:** fältet får ALDRIG användas som facit mot en hämtningslista — persondetaljens D-variant visade en tid "räknaren säger N, listan M" som ärlighets-not, och den jämförelsen var själv missvisande: den ställde två fält bredvid varandra som mäter olika saker, och sådde tvivel om en lista som var korrekt. Raden är riven. → **Maximerings-kandidat (T16):** döp om fältet till vad det faktiskt räknar, eller peka om formeln mot touchpoint-relationen.
+
+48. **`Deltaganden.Registrerad av` (`fldhx3tludhu1gH7w`, `lastModifiedBy`) bokför INTE vem som checkade in.** Fältet är varken skrivbart eller styrbart av appen — Airtable sätter det automatiskt till den som senast ändrade RADEN, och vid en API-skrivning (via `update-record`/`set-attendance-status` eller `create-attendance`, TASK-214.1) är det **integrationskontots token-ägare**, aldrig den inloggade Lotta. **Medvetet val, attribuerings-väg (a)** (förarbete: `tasks/sessions/bilagor/s90-checkin-forarbete/skarpt-underlag.md` § 2 — "acceptera och dokumentera"; PRD task-214 § Implementationsbeslut, S103 Del 15 F5): appen skriver bara `Status`, och `Registrerad av` blir därför aktivt VILSELEDANDE — det ser ut som en attribuering men svarar fel på "vem". `Avstämt` (`fld61tbzc2fqqf116`, satt av automationen A8) bär fortfarande NÄR incheckningen skedde. **Reversibelt:** väg (b) (ett additivt `singleLineText`-fält satt server-side ur JWT:ns verifierade identitet, ADR-075:s mönster) kan läggas till senare utan att riva detta beslut — utlösande signal är att fler än en person checkar in på samma event samtidigt (S90 § 2.4). Människo-attribueringen bärs annars av aktivitetsloggen (Fas 6.5) när den landar. → Ingen maximerings-åtgärd i basen: fältets BETEENDE är Airtable-plattformens (lastModifiedBy kan inte omkonfigureras), det är app-konsumtionen som måste veta bättre.
 
 <!-- markdownlint-enable MD029 -->
 

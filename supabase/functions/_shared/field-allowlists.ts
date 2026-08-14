@@ -389,6 +389,44 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Lagringsnyckel',
     ],
   },
+  // Sätt närvarostatus på ett Deltagande (check-in-vertikalen, TASK-214.1). Dörrens BINÄRA
+  // toggle (Ej avstämt ↔ Närvarande) OCH registrets fyra övriga statusvärden går
+  // genom SAMMA operation — allowlisten gatar FÄLTET, inte VÄRDET (samma princip
+  // som set-registration-lodging kryssar både i och ur, och som bär teardownen i
+  // testet). EXAKT ETT fält: 'Status' (fldRFOzNqVswqZ1mN, singleSelect med sex
+  // options), LIVE-VERIFIERAT mot staging-schemat (describe_table tbldWHH6sSHWoQPHH,
+  // base apphjj8Q7lkXCMsL4, 2026-08-14, TASK-214.1) INNAN posten låstes.
+  // 'Avstämt' (fld61tbzc2fqqf116) ligger MEDVETET utanför listan: automation A8
+  // (wfl1iYPrEmlKpEsRU, deployed) triggar på ÄNDRING AV JUST Status och sätter
+  // fältet själv — två skribenter på samma fält vore en kapplöpning appen inte kan
+  // vinna. Identitets-/strukturfälten (Anmälan, Event, Session, Person (länk)) är
+  // skrivbara men ligger utanför: de ÄGS av A3/A11 och att skriva dem vore att
+  // om-föräldra raden, inte att checka in någon. 'Noteringar' är skrivbart men hör
+  // till registret, inte dörren — läggs till när en yta faktiskt skriver det.
+  // Tabell per NAMN (ADR-050 bas-portabilitet). Förarbete: S90-bilagan
+  // (tasks/sessions/bilagor/s90-checkin-forarbete/skarpt-underlag.md § 1.2).
+  'set-attendance-status': {
+    tableId: 'Deltaganden',
+    allowedFields: ['Status'],
+  },
+  // Skapa en Deltaganden-rad atomärt när dörren möter en anmälan utan förskapad
+  // rad (TASK-214.1, PRD task-214 — backup-vägen för dörr-ögonblicket; rotorsaken
+  // (anmälningar utan Person-länk) läks i basen via task-213.12, en separat skiva).
+  // create-attendance-EF:en bygger `fields` SERVER-SIDE ur typade inputs
+  // (anmalanId/eventId/session) — listan är därför en SSOT-grind mot framtida
+  // kod-drift (findDisallowedField fäller ett fält utanför listan före Airtable-
+  // anropet), ej en klient-nåbar deny-yta. EXAKT de fyra write-fälten
+  // (data-model.md § Deltaganden write-fält): 'Anmälan' (fldwQdDpRK8vByNhb, länk),
+  // 'Event' (fldaj5mbpU3yPw2np, länk), 'Session' (fldBPZnsDL0bNIRHx, singleSelect)
+  // och 'Status' (fldRFOzNqVswqZ1mN, EF:en sätter alltid 'Närvarande' — check-in
+  // är den enda anledningen denna EF finns). 'Person (länk)' sätts ALDRIG här —
+  // den ägs av automationen A11 (samma avgränsning som set-attendance-status ovan).
+  // 'Avstämt' MEDVETET utanför listan av samma skäl (A8 äger fältet). Tabell per
+  // NAMN (ADR-050 bas-portabilitet).
+  'create-attendance': {
+    tableId: 'Deltaganden',
+    allowedFields: ['Anmälan', 'Event', 'Session', 'Status'],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.
