@@ -4,6 +4,7 @@ import { delay, http } from 'msw';
 import type { z } from 'zod';
 import {
   type ActivityStatementSchema,
+  type EventSchema,
   REQUEST_ID_EXTENSION_IRI,
   XAPI_IRI_BASE,
 } from '../../src/domain/schemas';
@@ -30,6 +31,13 @@ import { expect, test } from './support/acceptance-bas';
  * (URL-delbarhet + Back-knapp), samt "filterbyte mitt i paginering" —
  * ett filterbyte EFTER en "Ladda fler"-hämtning startar om cursorn (ingen
  * gammal sida blandas in i den nya filtermängden).
+ *
+ * TASK-201.17 (fynd, S105:s QA-vandring) — event-dropdownens ETIKETT: se
+ * beskrivningen längst ner i filen, vid testblocket "event-dropdownens
+ * etikett kvalificerar…". `SKOVDE.eventNamn`-assertionen i det ÄLDRE
+ * event-filter-testet nedan bytt till den fulla kvalificerade etiketten
+ * ("Utbildning Skövde · Skövde · 26 sep") — bar `eventNamn` hade efter
+ * TASK-201.17 inte längre matchat den faktiskt renderade options-texten.
  */
 
 type Statement = z.infer<typeof ActivityStatementSchema>;
@@ -95,6 +103,45 @@ function mockActivityLog(
 }
 
 const SKOVDE = EVENTS_RESPONSE.events[0];
+
+/** Härledd ur EventSchema (TASK-63-mönstret, se events-list-kalender.
+ * acceptance.test.ts:s identiska val) — ej beskriven bredvid det. */
+type EventRow = z.infer<typeof EventSchema>;
+
+/** Minimal, giltig event-rad för TASK-201.17-testerna nedan — bara de fält
+ * `eventFilterEtikett`/sorteringen faktiskt läser (namn/ort/startdatum)
+ * varieras per anrop; resten är schema-krävda konstanter utan betydelse för
+ * dessa test (trimmad kopia av events-list-kalender.acceptance.test.ts:s
+ * `ev()`, ingen delad export finns — samma isolering som produktionskodens
+ * egen `eventVisningsNamn`/`eventFilterEtikett`). */
+function ev(o: { id: string; namn: string; ort: string; startdatum: string }): EventRow {
+  return {
+    id: o.id,
+    eventlabel: o.namn,
+    eventNamn: o.namn,
+    typ: 'Kurs',
+    ort: o.ort,
+    startdatum: o.startdatum,
+    slutdatum: o.startdatum,
+    tidKvarTillEvent: null,
+    maxPlatser: null,
+    antalAnmalda: 0,
+    platserKvar: null,
+    anmaldBelaggning: null,
+    bekraftadBelaggning: null,
+    antalNyaAnmalningar: 0,
+    antalAnmalningsavgifter: 0,
+    antalSlutbetalningar: 0,
+    antalSlutbetalningFelande: 0,
+    status: 'Planerat',
+  };
+}
+
+/** Överskuggar `get-events` (mönster: events-list-kalender.acceptance.test.ts:s
+ * `mockEvents` — samma isolering, ingen delad export). */
+function mockEvents(network: NetworkFixture, events: EventRow[]): void {
+  network.use(http.get(EF('get-events'), () => json({ events })));
+}
 
 test.describe('Aktivitetshistoriken — filterraden (TASK-201.8, B-målet)', () => {
   test('AC #1 — filterraden renderas ovanför listan med labelade kontroller i nolläge', async ({
@@ -193,7 +240,9 @@ test.describe('Aktivitetshistoriken — filterraden (TASK-201.8, B-målet)', () 
     const eventTrigger = page.getByRole('button', { name: 'Event' });
     await expect(eventTrigger).toBeEnabled();
     await eventTrigger.click();
-    await page.getByRole('option', { name: SKOVDE.eventNamn }).click();
+    // TASK-201.17: options-etiketten är "Namn · Ort · datum", inte bar
+    // `eventNamn` — se testblocket längre ner i filen för fyndet i sin helhet.
+    await page.getByRole('option', { name: 'Utbildning Skövde · Skövde · 26 sep' }).click();
 
     await expect(page.getByText('Skovde-post')).toBeVisible();
     expect(requests.at(-1)?.searchParams.get('eventId')).toBe(SKOVDE.id);
@@ -450,5 +499,99 @@ test.describe('Aktivitetshistoriken — filterraden (TASK-201.8, B-målet)', () 
     await page.keyboard.press('Enter');
 
     await expect(page.getByText('Bekraftelse-post')).toBeVisible();
+  });
+
+  test('TASK-201.17 — event-dropdownens etikett kvalificerar med ort + datum, skiljer åt identiskt namngivna event', async ({
+    page,
+    network,
+  }) => {
+    // Fyndets exakta scenario (TASK-201.17-kortet, källmärkt mot staging-
+    // Airtable): SAMMA kursnamn ("Fjärrskådning") körs på flera orter/datum —
+    // en ÄKTA, återkommande verksamhetsform. Bar `eventNamn` gjorde dessa
+    // OMÖJLIGA att skilja åt i dropdownen (32+ identiska options i staging).
+    // FÄLLNINGSBEVIS: om etiketten regredierar till bar `eventNamn` matchar
+    // BÅDA `getByRole('option', …)`-anropen nedan samma text — Playwrights
+    // strict mode fäller testet med en "resolved to 2 elements"-krasch i
+    // stället för att tyst råka klicka fel alternativ.
+    mockEvents(network, [
+      ev({
+        id: 'rec-fjarr-skovde',
+        namn: 'Fjärrskådning',
+        ort: 'Skövde',
+        startdatum: '2026-09-15',
+      }),
+      ev({
+        id: 'rec-fjarr-varberg',
+        namn: 'Fjärrskådning',
+        ort: 'Varberg',
+        startdatum: '2026-08-22',
+      }),
+    ]);
+    mockActivityLog(network, (url) => {
+      if (url.searchParams.get('eventId') === 'rec-fjarr-varberg') {
+        return {
+          statements: [statement({ objectName: 'Varberg-post', timestamp: minuterSedan(1) })],
+          nextCursor: null,
+        };
+      }
+      return {
+        statements: [statement({ objectName: 'Ofiltrerad post', timestamp: minuterSedan(1) })],
+        nextCursor: null,
+      };
+    });
+
+    await page.goto('/mer/aktivitetshistorik');
+    await expect(page.getByText('Ofiltrerad post')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Event' }).click();
+    // Båda options SKA vara synliga och SKILDA — den positiva halvan av
+    // fällningsbeviset (bar `eventNamn` hade gett EN dubblerad, ej två unika,
+    // accessible names).
+    await expect(
+      page.getByRole('option', { name: 'Fjärrskådning · Skövde · 15 sep' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('option', { name: 'Fjärrskådning · Varberg · 22 aug' }),
+    ).toBeVisible();
+
+    // Väljer Varberg-alternativet SPECIFIKT (inte bara "ett Fjärrskådning-
+    // alternativ") och verifierar att RÄTT event-ID skickas till EF:en —
+    // bevisar att etiketten inte bara är kosmetiskt unik utan faktiskt
+    // navigerar till det event Lotta pekade på.
+    await page.getByRole('option', { name: 'Fjärrskådning · Varberg · 22 aug' }).click();
+    await expect(page.getByText('Varberg-post')).toBeVisible();
+  });
+
+  test('TASK-201.17 — identiskt namngivna event sorteras kronologiskt sinsemellan (sekundär tie-break)', async ({
+    page,
+    network,
+  }) => {
+    // Namn-sorteringen (oförändrad, primär nyckel) grupperar de tre
+    // "Fjärrskådning"-alternativen ihop; utan tie-breaken hade Airtables
+    // GODTYCKLIGA radordning avgjort deras inbördes ordning. Datumen läggs
+    // avsiktligt OSORTERADE i mock-svaret (senast → tidigast → mitten) så
+    // testet falsifierar en utebliven tie-break i stället för att råka
+    // stämma med källdatats egen ordning.
+    mockEvents(network, [
+      ev({ id: 'rec-c', namn: 'Fjärrskådning', ort: 'Falköping', startdatum: '2026-10-01' }),
+      ev({ id: 'rec-a', namn: 'Fjärrskådning', ort: 'Skövde', startdatum: '2026-08-01' }),
+      ev({ id: 'rec-b', namn: 'Fjärrskådning', ort: 'Varberg', startdatum: '2026-08-22' }),
+    ]);
+    mockActivityLog(network, () => ({
+      statements: [statement({ objectName: 'Ofiltrerad post', timestamp: minuterSedan(1) })],
+      nextCursor: null,
+    }));
+
+    await page.goto('/mer/aktivitetshistorik');
+    await expect(page.getByText('Ofiltrerad post')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Event' }).click();
+    const etiketter = await page.getByRole('option').allTextContents();
+    const fjarrEtiketter = etiketter.filter((t) => t.startsWith('Fjärrskådning'));
+    expect(fjarrEtiketter).toEqual([
+      'Fjärrskådning · Skövde · 1 aug',
+      'Fjärrskådning · Varberg · 22 aug',
+      'Fjärrskådning · Falköping · 1 okt',
+    ]);
   });
 });
