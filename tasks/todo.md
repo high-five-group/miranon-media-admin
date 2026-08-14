@@ -149,8 +149,22 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ⏸️ PAUSAD (2026-08-14 kväll, `lifecycle: paused`) — DEL 13:
-HÄLSOVÅGEN + KONTINUERLIG BAS-MAXNING + D GODKÄND OCH STÄMPEL-FÖRBEREDD.**
+**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-14 samma kväll, `lifecycle: active`)
+— RESUME MOT `c7db8b16`, HUVUDKATALOGEN FRI OCH ÖVERTAGEN.** Paus-lägets
+påståenden prövade: `#1277`+`#1281` MERGED · stämpeln EJ körd
+(`godkand: null` på main) · arbetsform inget aktivt · ägarlappen var släppt
+som utlovat, vår satt mekaniskt vid första git-skrivningen · fixturen
+antagen kvar (~2026-08-27). **DIVERGENS:** plugin 1.34.0 ej i cachen —
+sessionen kör 1.33.0-skills (uppdatering = Marcus-moment). Numrering
+RE-VERIFIERAD mot `c7db8b16` — oförändrad: ADR **112** · L**512** + 4
+fragment · T**144** · task-**214**. **NÄSTA: Marcus stämpel
+(`facit:godkann`) → promoverings-spec (flipp + närvaro-WRITE) → bas-vågen
+(213.2 mätpasset) → `#1249` → lessons-skörd (a)–(l).** **HANDOFF:
+sessionsdok S103 Del 14 + § Paushistorik (2026-08-14 kväll).**
+*(Pausblocket nedan bevarat.)*
+
+**Session 103 (Del 13, historik) — HÄLSOVÅGEN + KONTINUERLIG BAS-MAXNING +
+D GODKÄND OCH STÄMPEL-FÖRBEREDD.**
 Nattens tre röda orsaker åtgärdade (`#1270` länken · `#1271` TASK-202/203
 Done · `#1273` TASK-205 Done, tredje-orsaks-diagnos: omockad notes-fetch,
 +57 px) · 118+17 grenar + 16 worktrees städade · TASK-211 LEVERERAD (hub
