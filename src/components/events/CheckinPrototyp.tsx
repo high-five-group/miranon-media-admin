@@ -1652,7 +1652,7 @@ function VariantD({
           lage.aterstall(rad, tidigare);
           setMisslyckade((forra) => new Map(forra).set(lageNyckel(rad), rad.namn));
           alertScreenReader(
-            `${rad.namn} kunde inte sparas i basen. Personen står kvar i listan — försök igen.`,
+            `${rad.namn} kunde inte sparas i basen. Personen står kvar i listan. Försök igen.`,
           );
         },
       },
