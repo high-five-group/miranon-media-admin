@@ -1,0 +1,16 @@
+- link "Tillbaka till eventet":
+  - /url: /event/recDorrEvtEnSess0001
+- heading "Check-in" [level=1]
+- paragraph: Föreläsning Referensstad · måndag 5 oktober
+- region "Framsteg": 3 kvar att checka in 0 av 3
+- searchbox "Sök bland de anmälda"
+- list "Anmälda att checka in":
+  - listitem:
+    - text: Anna Andersson anna@example.se
+    - 'checkbox "Närvarande: Anna Andersson"'
+  - listitem:
+    - text: Björn Bergström björn@example.se
+    - 'checkbox "Närvarande: Björn Bergström"'
+  - listitem:
+    - text: Cecilia Ek cecilia@example.se
+    - 'checkbox "Närvarande: Cecilia Ek"'
