@@ -149,9 +149,26 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ⏸️ PAUSAD (2026-08-13 kväll, `lifecycle: paused`) — DEL 11:
-CHECK-IN-PASSET. GRANSKNINGSFIXTUR + D-VARIANT BYGGD OCH ITERERAD; TVÅ AV
-ORKESTRERARENS EGNA PÅSTÅENDEN FALSIFIERADE AV AGENT.** **Kvällens viktigaste
+**Session 103 ▶️ ÅTERUPPTAGEN (2026-08-14, `lifecycle: active`) — RESUME MOT
+`c8837277`, HUVUDKATALOGEN ÖVERTAGEN.** Paus-lägets påståenden prövade ett i
+taget: `#1266` **MERGED** (`f3d3b845`, `2026-08-13T20:26:08Z`) · arbetsform
+inget aktivt (inget att återskapa) · närvaro-WRITE 0 träffar oförändrat ·
+fixturen antagen kvar (livstid ~2026-08-27, ej re-verifierad mot basen).
+**Ägarlapps-skifte:** S105:s lapp prövades mot liveness vid resumens första
+git-skrivning, ägaren död — huvudkatalogen bär nu S103:s lapp
+(`2026-08-14T15:29:34Z`); landningen sker där, inte i worktree. Numrering
+RE-VERIFIERAD mot `c8837277` — samtliga oförändrade: ADR **112** · L**512** +
+4 fragment · T**143** · task-**211**. **Läget i sak oförändrat: FORMVALET ÄR
+INTE GJORT — NÄSTA: Marcus tittar på D
+(`/event/reckgn7arcyW367qT/narvaro?variant=d`) → formval → konvergens →
+stämpel → promovering · Carry 11 hemvist-beslut · närvaro-WRITE eget bygge.**
+Parallellt: repo-hälsosvep på Marcus order, bokförs vid landning. **HANDOFF:
+sessionsdok S103 Del 12 + § Paushistorik (2026-08-13 kväll).**
+*(Pausblocket nedan bevarat.)*
+
+**Session 103 (Del 11, historik) — CHECK-IN-PASSET. GRANSKNINGSFIXTUR +
+D-VARIANT BYGGD OCH ITERERAD; TVÅ AV ORKESTRERARENS EGNA PÅSTÅENDEN
+FALSIFIERADE AV AGENT.** **Kvällens viktigaste
 fynd är processuellt:** jag bedömde check-in-varianterna på LÄST KOD utan att ha
 sett dem renderade. Marcus fångade det (*"har du ens tittat på hur det ser
 ut?"*) och pekade på facit-sidorna som mått. **För en UI-yta är den renderade
