@@ -19,8 +19,8 @@
 // den delade requireUser-gatewayen (täcker alla Edge Functions).
 
 import { type APIRequestContext, expect, test } from '@playwright/test';
-import { HISTORY_PERSON_ID } from './fixtures';
-import { getApiConfig, getValidUserJWT } from './helpers';
+import { CHECKIN_DELTAGANDE_A_ID, CHECKIN_EVENT_ID, HISTORY_PERSON_ID } from './fixtures';
+import { type ApiConfig, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/update-record';
 
@@ -682,6 +682,122 @@ test.describe('update-record — bor över-vertikalen (task-18.7)', () => {
           operationKey: 'set-registration-lodging',
           recordId,
           fields: { 'Bor över': original },
+        },
+      });
+    }
+  });
+});
+
+// Check-in-vertikalens operation (TASK-214.1, PRD task-214 — S90-förarbetets
+// FÄRDIGA spec, tasks/sessions/bilagor/s90-checkin-forarbete/skarpt-underlag.md
+// § 1.2/1.5): set-attendance-status → EXAKT ['Status'] mot Deltaganden.
+// Deny-ytan är ETT ÄKTA Deltaganden-fält utanför listan: 'Avstämt' — A8:s eget
+// fält (samma "starkaste deny-fall"-princip som S90 § 1.5 föreskriver, eftersom
+// A8 annars skulle kapplöpa med appen om samma fält). Allow-vägen togglar
+// Närvarande ⇄ Ej avstämt på den permanenta CHECKIN_DELTAGANDE_A_ID-fixturen
+// (tests/api/fixtures.ts § ZZ-Checkin-fixtur) och läser tillbaka via
+// get-attendance (ingen Airtable-direktåtkomst i testet — samma disciplin som
+// readSeededBorOver ovan).
+//
+// RÄCKEN (S90 § 1.5 + PRD task-214 AC #4): asserterar ALDRIG på `Avstämt` (A8
+// är endast prod-verifierad, inte staging — se S90 § 3.3) och rör ALDRIG
+// ZZ-History Person 01:s tre Deltaganden (get-attendance.staging.test.ts:103
+// asserterar status där) eller granskningsfixturen (ZZ-GRANSKNING-*).
+test.describe('update-record — check-in-vertikalen: set-attendance-status (TASK-214.1)', () => {
+  /** Läs Status för en Deltagande-rad via get-attendance (läsvägen, aldrig Airtable direkt). */
+  async function readAttendanceStatus(
+    request: APIRequestContext,
+    config: ApiConfig,
+    authHeaders: Record<string, string>,
+    deltagandeId: string,
+  ): Promise<string | null> {
+    const r = await request.get(
+      `${config.baseUrl}/functions/v1/get-attendance?eventId=${encodeURIComponent(CHECKIN_EVENT_ID)}`,
+      { headers: authHeaders },
+    );
+    expect(r.status()).toBe(200);
+    const body = (await r.json()) as { attendance: ({ id: string } & Record<string, unknown>)[] };
+    const row = body.attendance.find((a) => a.id === deltagandeId);
+    expect(row, `Deltagande-raden ${deltagandeId} ska finnas på CHECKIN_EVENT_ID`).toBeTruthy();
+    return (row?.status as string | undefined) ?? null;
+  }
+
+  test('deny: set-attendance-status med Avstämt (A8:s eget fält) → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+
+    // Allowlisten är EXAKT ['Status'] — 'Avstämt' är ett ÄKTA Deltaganden-fält
+    // (A8:s eget) men ligger medvetet utanför: blandning fälls före
+    // Airtable-anropet, samma form som set-registration-lodging-deny-testet ovan.
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${userJwt}` },
+      data: {
+        operationKey: 'set-attendance-status',
+        recordId: 'recAAAAAAAAAAAAA',
+        fields: { Avstämt: '2026-08-14T10:00:00.000Z' },
+      },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/not allowed for operation/);
+  });
+
+  test('allow: set-attendance-status → 200 (Närvarande ⇄ Ej avstämt via läsvägen, restaurerar)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+    const authHeaders = { Authorization: `Bearer ${userJwt}` };
+
+    const original = await readAttendanceStatus(
+      request,
+      config,
+      authHeaders,
+      CHECKIN_DELTAGANDE_A_ID,
+    );
+
+    try {
+      const toNarvarande = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'set-attendance-status',
+          recordId: CHECKIN_DELTAGANDE_A_ID,
+          fields: { Status: 'Närvarande' },
+        },
+      });
+      expect(toNarvarande.status()).toBe(200);
+
+      // Läs-tillbaka via LÄSVÄGEN (get-attendance) — aldrig Avstämt, aldrig
+      // Airtable direkt. Detta är dörrens incheckad-markör (S90 § 3.1).
+      expect(
+        await readAttendanceStatus(request, config, authHeaders, CHECKIN_DELTAGANDE_A_ID),
+      ).toBe('Närvarande');
+
+      // Ångra-vägen går genom SAMMA operation (allowlisten gatar fältet, inte
+      // värdet) — dörrens "bocka ur i klargruppen"-flöde kontraktstestas åt
+      // båda håll.
+      const toEjAvstamt = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'set-attendance-status',
+          recordId: CHECKIN_DELTAGANDE_A_ID,
+          fields: { Status: 'Ej avstämt' },
+        },
+      });
+      expect(toEjAvstamt.status()).toBe(200);
+      expect(
+        await readAttendanceStatus(request, config, authHeaders, CHECKIN_DELTAGANDE_A_ID),
+      ).toBe('Ej avstämt');
+    } finally {
+      // Restore: skriv tillbaka ursprungstillståndet så den permanenta fixturen
+      // lämnas exakt som den hittades. Körs även om assertionen ovan kastar.
+      await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'set-attendance-status',
+          recordId: CHECKIN_DELTAGANDE_A_ID,
+          fields: { Status: original ?? 'Ej avstämt' },
         },
       });
     }

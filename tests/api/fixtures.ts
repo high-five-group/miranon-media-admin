@@ -150,3 +150,29 @@ export const ARBETSKO_EXPECTED = {
  * underlaget bredare.
  */
 export const ANTECKNING_FIXTUR_NOTE_ID = 'recLcii847ZK7K6OY';
+
+/**
+ * `ZZ-Checkin-fixtur` — permanent event i staging-Eventplanering (TASK-214.1;
+ * seedad via Airtable MCP 2026-08-14, Ort 'ZZ-Checkin-fixtur' — medvetet SKILD
+ * från alla `.purge-staging-policy.json`-mönster, samma konvention som
+ * ZZ-belaggning-/ZZ-arbetsko-fixturerna). EGET event så inga andra fixturers
+ * räkningar (ARBETSKO_EXPECTED.antalAnmalningar m.fl.) rörs. Bär TVÅ
+ * Anmälningar för närvaro-WRITE-conformance (TASK-214.1):
+ *
+ *   - `ZZ-Checkin Person A` (CHECKIN_ANMALAN_A_ID) — bär EN förskapad
+ *     Deltagande-rad (Session='Föreläsning', Status='Ej avstämt' baseline).
+ *     Konsumeras av update-record.staging.test.ts:s set-attendance-status
+ *     deny/allow-toggle (mutate-and-restore, samma mönster som
+ *     set-registration-lodging).
+ *   - `ZZ-Checkin Person B` (CHECKIN_ANMALAN_B_ID) — medvetet UTAN
+ *     Deltagande-rad: den "saknad rad"-scenario create-attendance-EF:en
+ *     finns för att lösa. Konsumeras av create-attendance.staging.test.ts
+ *     (EF:en är idempotent — testet skapar aldrig en varaktig andra rad,
+ *     se den filens huvud för resonemanget om varför ingen sentinel+purge
+ *     behövs här). STÄDA INTE bort någon av dessa tre poster.
+ */
+export const CHECKIN_EVENT_ID = 'recPwJEj88Hj8C2gU';
+export const CHECKIN_ANMALAN_A_ID = 'recCwbFpUBq45xbzA';
+export const CHECKIN_ANMALAN_B_ID = 'reckGJUD3Odd0azRQ';
+/** Den förskapade Deltagande-raden på CHECKIN_ANMALAN_A_ID (Session='Föreläsning'). */
+export const CHECKIN_DELTAGANDE_A_ID = 'recei18YBOSWZMQqr';

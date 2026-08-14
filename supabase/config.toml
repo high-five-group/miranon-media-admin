@@ -75,6 +75,18 @@ verify_jwt = true
 [functions.create-person-note]
 verify_jwt = true
 
+# create-attendance — check-in-dörrens BACKUP-vägen (TASK-214.1, PRD task-214):
+# skapar en Deltaganden-rad atomärt/idempotent när en anmälan möter dörren utan
+# förskapad rad. Gateway-första-försvar aktivt; requireUser läggs OVANPÅ i
+# koden (defense-in-depth). MEDVETET UTELÄMNAD ur .prod-functions-
+# allowlist.conf tills vidare — ingen UI-yta konsumerar den ännu (dörrlistans
+# mutations-koppling är en senare skiva i samma PRD, task-214.2); prod-EF-
+# deploy är alltid en separat Marcus-auktoriserad handling (ADR-050/ADR-063),
+# samma ordning create-event-note/create-person-note höll innan sin egen
+# prod-våg.
+[functions.create-attendance]
+verify_jwt = true
+
 # invite-user (TASK-127.5, ADR-092/ADR-093): utlöser en Användarinbjudan.
 # Samma resonemang som create-admin-user — gateway-första-försvar aktivt,
 # men anon-key (valid JWT) passerar gatewayn, så requireUser +
