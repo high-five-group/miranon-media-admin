@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-13 14:52'
-updated_date: '2026-08-13 14:55'
+updated_date: '2026-08-14 18:41'
 labels: []
 dependencies: []
 priority: medium
@@ -46,3 +46,9 @@ NÄSTA STEG FÖR DEN SOM TAR KORTET:
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FILNAMNS-UNDERSÖKNING (orkestrerar-agent, 2026-08-14): kortets fil hette redan 'backlog/tasks/task-207 - test-title.md' medan frontmatter-titeln var korrekt ('Fynd: staging Edge Runtime/Airtable transienta 502/503 …'). Prövat: npx backlog task edit 207 --title "<identisk titel>" (samma sträng som redan stod i frontmatter). Resultat mätt via git status --short backlog/tasks/ FÖRE och EFTER — noll diff, filnamnet oförändrat. Slutsats: backlog-CLI:t (backlog.md@1.49.1) härleder INTE om filnamnet från titeln vid edit — filnamnet sätts vid task create och är därefter fixerat oavsett senare titel-ändringar. CLI:t saknar synlig rename/mv-kommando (npx backlog task --help: create/list/edit/view/archive/complete/demote — inget av dem rör filnamnet). Ingen handredigering eller git mv utförd — registret ägs av verktyget, och verktyget kan inte utföra ändringen. Kvarstår som känt, ofarligt malformerat filnamn (enda av 415 kort); en riktig fix kräver antingen en uppströms CLI-funktion eller ett medvetet Marcus-beslut om undantag från 'aldrig handredigera registret'.
+<!-- SECTION:NOTES:END -->

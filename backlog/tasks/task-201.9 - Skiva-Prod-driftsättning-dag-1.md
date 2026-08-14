@@ -1,10 +1,10 @@
 ---
 id: TASK-201.9
 title: 'Skiva: Prod-driftsättning dag 1'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-11 20:27'
-updated_date: '2026-08-13 18:11'
+updated_date: '2026-08-14 18:40'
 labels:
   - ready-for-human
 dependencies:
@@ -25,9 +25,9 @@ Täcker: dag 1-leveransen av berättelserna 1–6, 9–12
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 activity_log född i prod-Supabase (samma migration + RLS-bevis som staging, 201.2-formen)
-- [ ] #2 log-activity + get-activity-log deployade i prod; smoke per EF-praxis (deny-triple-andan)
-- [ ] #3 Front-deployen VERIFIERAD utrullad (task-199-fällan: prod-fronten kan stå stale — verifiera faktisk version, anta inte)
+- [x] #1 activity_log född i prod-Supabase (samma migration + RLS-bevis som staging, 201.2-formen)
+- [x] #2 log-activity + get-activity-log deployade i prod; smoke per EF-praxis (deny-triple-andan)
+- [x] #3 Front-deployen VERIFIERAD utrullad (task-199-fällan: prod-fronten kan stå stale — verifiera faktisk version, anta inte)
 - [ ] #4 Rök-test i prod: en riktig åtgärd → posten syns i Lottas historik
 <!-- AC:END -->
 
@@ -71,4 +71,14 @@ SIDOEFFEKT MÄTT, INTE ANTAGEN: tests/api/ef-metod-vakt.test.ts (TASK-38) är co
 scripts/test-deploy-prod-functions.sh: 4/4 PASS, 0 FAIL, exit 0.
 
 INGEN PROD RÖRD: endast conf-filen ändrad. Ingen deploy, ingen link, inget kommando med prod-refen — prod-ref-låset (TASK-203) respekterat, ingen bypass konstruerad. AC #2 kräver fortfarande faktisk deploy + smoke och förblir Marcus-moment; inga AC bockade här.
+
+AC #1–#3 BOCKADE MOT BELÄGG (orkestrerar-agent, ADR-086, 2026-08-14) — källa: tasks/sessions/2026-08-11-session-105.md Del 8 § 'Prod-driftsättningen — steg för steg, faktiskt utfall' (Marcus körde runbooken guidat, kommando för kommando, 2026-08-13 em/kväll):
+
+AC #1 (activity_log född i prod): Steg 2 Migrationer — 'Båda applicerade; migration list visar local == remote för 20260811211759 + 20260812143131'. Steg 3 RLS-bevis — 'anon läsning 401, anon skrivning 401' (samma form som staging, TASK-201.2).
+
+AC #2 (log-activity + get-activity-log deployade; smoke): Steg 4 EF-deploy — 'log-activity + get-activity-log, "Deployed Functions.", båda ACTIVE v1'. Steg 5 Deny-triple — utfallet blev 401·401·401 i stället för förväntat 401·405·401; Del 8 förklarar och klassar detta ofarligt: supabase/config.toml har [functions.log-activity] verify_jwt = true, så plattformens gateway avvisar FÖRE koden körs (metod-vakten finns och svarar 405, men nås aldrig utan JWT — configens egen kommentar: 'gateway-första-försvar'). Alla sex anrop nekades (varken 200 öppen eller 404 ej deployad). Runbookens § Steg 5 bär ett dokumentationsfel (405-förväntan) som Del 8 flaggar för rättelse — smoke-avsikten (nekad åtkomst utan giltig auth) är uppfylld trots avvikelsen.
+
+AC #3 (front-deployen verifierad utrullad): Steg 6 Front — 'prod-bundeln bär aktivitetshistorik; alla verb funna i activityTypes-*.js' (task-199-fällan undveks: faktisk bundle grep, inte antagande). Del 8 bokför även en SW-precache-fälla som fångades LIVE under samma pass (gammal bundle-hash cachad i Marcus browser, löst med Clear site data) — orelaterad till AC #3:s verifiering men samma sessions fynd, bokförd som bekräftelse på att TASK-199s uppdateringsbanner behövdes.
+
+AC #4 LÄMNAS ÖPPEN per uppdrag — Marcus kör rök-testet i prod ikväll. Del 8 Steg 7 dokumenterar ETT tidigare rök-test i passet ('Anteckning på event → syns i historikvyn; hem-spalten dröjde (cache)') men det föregick TASK-210s fix (landad senare samma kväll, #1264, MERGED 2026-08-13T20:03:29Z) och är därför inte det AC #4 efterfrågar mot dagens läge.
 <!-- SECTION:NOTES:END -->

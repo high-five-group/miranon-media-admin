@@ -1,10 +1,10 @@
 ---
 id: TASK-201.14
 title: 'Skiva: Den villkorliga luckan i useSendActionEmail — posten släpps aldrig tyst'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-13 19:26'
-updated_date: '2026-08-13 19:34'
+updated_date: '2026-08-14 18:38'
 labels: []
 dependencies: []
 parent_task_id: TASK-201
@@ -29,10 +29,10 @@ useSendActionEmail (src/data/mutations/actionEmail.ts) gjorde 'if (!reg) continu
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -66,4 +66,12 @@ GRINDAR (exitkoder fångade separat, aldrig via pipe):
  · acceptance (nya filen)        exit 0 — 2/2
 
 INGA MAIL SKICKADE. send-action-email överskuggas i varje test och ligger medvetet utanför normalläget; all verifiering mot fixturvärld (MSW). Inga supabase-kommandon kördes. Prod orörd.
+
+DOD-VERIFIERING (orkestrerar-agent, ADR-086, 2026-08-14): PR #1263 MERGED 2026-08-13T19:56:18Z, merge-commit 2de189db1c4cd739af66c5ee1b216454085ac1eb — bekräftat ancestor av origin/main (git merge-base --is-ancestor). Merge-queue-körningen (event merge_group, run 31737551230, gren gh-readonly-queue/main/pr-1263-...) är GRÖN PER JOBB: Lint+Audit+TypeCheck success, Docs link check success, Acceptance (hermetisk) success, Webblasarbeteende success, Pure+Build success, A11y/Staging(API+E2E)/Staging sentinel purge skipped (förväntat), gate 'CI Passed or Skipped' success. DoD #4: gh pr diff 1263 --name-only — tre filer, samtliga inom scope (backlog-kortet, actionEmail.ts, den nya acceptance-testfilen). Noll orelaterade filer. DoD #2 vilar på kortets egna mätta grindutfall (typecheck/biome/build/test:api/acceptance, alla exit 0, se ovan).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+useSendActionEmails villkorliga lucka (if (!reg) continue) stängd: aktivitetsposten skrivs nu för VARJE id i result.completed, med fallback-namn 'Okänd anmälan' (ordagrant TASK-201.13s useConfirmAll-precedent) när uppslaget mot mutationsvariabeln mottagare missar. Person-ID-kopplingen går medvetet förlorad i det läget (öppet redovisat i kod, asserterat i test) snarare än gissad. Tvåsidigt bevis genom den riktiga hooken (positiv/negativ/fällningstest) i tests/acceptance/atgarder-cachemiss-logg.acceptance.test.ts. Landat via PR #1263, MERGED 2026-08-13T19:56:18Z. Merge-queue-körningen (run 31737551230) grön per jobb, inga orelaterade filer i diffen.
+<!-- SECTION:FINAL_SUMMARY:END -->
