@@ -80,131 +80,160 @@ function mockAttendance(
   return release;
 }
 
-test.describe('Närvaro-vy (Fas 6b L3 — sessions-grupperad LÄS-vy)', () => {
-  test('sessions-gruppering + närvarande-räkning; fokus → <h1>', async ({ page, network }) => {
-    mockAttendance(network, [
-      row({ personNamn: 'Anna Andersson', session: 'Dag 1', status: 'Närvarande' }),
-      row({ personNamn: 'Bo Bengtsson', session: 'Dag 1', status: 'Frånvarande' }),
-      row({ personNamn: 'Cecilia Carlsson', session: 'Dag 1', status: 'Deltog online' }),
-      row({ personNamn: 'Anna Andersson', session: 'Dag 2', status: 'Närvarande' }),
-    ]);
-    await page.goto(`/event/${EVENT_ID}/narvaro`);
+/**
+ * PARKERAD 2026-08-15 (TASK-214.4, ADR-103 B2 steg 1) — INTE riven, och
+ * skillnaden är hela poängen.
+ *
+ * Närvaro-routens (`/event/$eventId/narvaro`) form är flippad: `CheckinPrototyp`
+ * (dörrlistan, variant D) renderas OVILLKORLIGT. `EventAttendance` — den rena,
+ * sessions-grupperade LÄS-listan denna svit prövar — renderas numera bara av
+ * ingenting: routen monterar den inte längre. Komponenten finns kvar i koden
+ * (`src/components/events/EventAttendance.tsx`) men är inte nåbar via normal
+ * app-navigering, så samtliga sju fall i denna fil kan inte längre passera
+ * (fel DOM, och `get-registrations` är dessutom omockad här eftersom D:s join
+ * kräver den — testet skulle fela på fixtur-nivå innan det ens nådde sin
+ * egen assertion).
+ *
+ * VARFÖR PARKERAD OCH INTE BORTTAGEN: ADR-102 B3 förbjuder rivning av det
+ * gamla substratet före Marcus godkännande av den promoverade ytan.
+ * `EventAttendance.tsx` + denna fil rivs TILLSAMMANS i TASK-214.7, i samma
+ * landning — samma regel `.facit-policy.conf` bokför för markörer ("städas i
+ * SAMMA landning som rivningen som gör den död, aldrig 'sen'") och samma
+ * precedent som persondetaljens `person-note-edit.acceptance.test.ts`
+ * (commit `f3c25520`). Att ta bort testet nu vore att förekomma godkännandet
+ * med den ena halvan av en rivning.
+ *
+ * D-formens EGET täckande acceptance-test — läs, kvittensfönster, skriv-
+ * vägen — bor i `event-checkin-dorrlistan.acceptance.test.ts` (TASK-214.2)
+ * och `dorrlista-promoverings-grind.spec.ts` (TASK-214.3); ingen täckning
+ * tappas genom att parkera denna fil.
+ */
+test.describe
+  .skip('Närvaro-vy (Fas 6b L3 — sessions-grupperad LÄS-vy)', () => {
+    test('sessions-gruppering + närvarande-räkning; fokus → <h1>', async ({ page, network }) => {
+      mockAttendance(network, [
+        row({ personNamn: 'Anna Andersson', session: 'Dag 1', status: 'Närvarande' }),
+        row({ personNamn: 'Bo Bengtsson', session: 'Dag 1', status: 'Frånvarande' }),
+        row({ personNamn: 'Cecilia Carlsson', session: 'Dag 1', status: 'Deltog online' }),
+        row({ personNamn: 'Anna Andersson', session: 'Dag 2', status: 'Närvarande' }),
+      ]);
+      await page.goto(`/event/${EVENT_ID}/narvaro`);
 
-    // <h1> = "Närvaro", fokuserad efter async-laddning.
-    const heading = page.getByRole('heading', { level: 1, name: 'Närvaro' });
-    await expect(heading).toBeVisible();
-    await expect(heading).toBeFocused();
+      // <h1> = "Närvaro", fokuserad efter async-laddning.
+      const heading = page.getByRole('heading', { level: 1, name: 'Närvaro' });
+      await expect(heading).toBeVisible();
+      await expect(heading).toBeFocused();
 
-    // aria-live bekräftar att närvaron anlänt.
-    await expect(page.getByText('Närvaro laddad.')).toHaveCount(1);
+      // aria-live bekräftar att närvaron anlänt.
+      await expect(page.getByText('Närvaro laddad.')).toHaveCount(1);
 
-    // Två sessions-grupper (Dag 1, Dag 2) som h2-rubriker.
-    await expect(page.getByRole('heading', { level: 2, name: 'Dag 1' })).toBeVisible();
-    await expect(page.getByRole('heading', { level: 2, name: 'Dag 2' })).toBeVisible();
+      // Två sessions-grupper (Dag 1, Dag 2) som h2-rubriker.
+      await expect(page.getByRole('heading', { level: 2, name: 'Dag 1' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 2, name: 'Dag 2' })).toBeVisible();
 
-    // Dag 1: Närvarande + Deltog online = 2 av 3 (lynchpin-mängden).
-    await expect(page.getByText('2 av 3 närvarande')).toBeVisible();
-    // Dag 2: 1 av 1.
-    await expect(page.getByText('1 av 1 närvarande')).toBeVisible();
+      // Dag 1: Närvarande + Deltog online = 2 av 3 (lynchpin-mängden).
+      await expect(page.getByText('2 av 3 närvarande')).toBeVisible();
+      // Dag 2: 1 av 1.
+      await expect(page.getByText('1 av 1 närvarande')).toBeVisible();
 
-    // Person-NAMN syns (aldrig record-ID), status som TEXT.
-    await expect(page.getByText('Anna Andersson').first()).toBeVisible();
-    await expect(page.getByText('Frånvarande')).toBeVisible();
-    await expect(page.getByText('Deltog online')).toBeVisible();
+      // Person-NAMN syns (aldrig record-ID), status som TEXT.
+      await expect(page.getByText('Anna Andersson').first()).toBeVisible();
+      await expect(page.getByText('Frånvarande')).toBeVisible();
+      await expect(page.getByText('Deltog online')).toBeVisible();
 
-    // LÄS-vy: ingen markera-/spara-närvarande-kontroll finns (write = framtida slice).
-    // Namn-scopad (ej total button-count) så app-skalets chrome ej ger falskt negativ.
-    await expect(
-      page.getByRole('button', { name: /markera|spara|närvar|ändra|avstäm/i }),
-    ).toHaveCount(0);
+      // LÄS-vy: ingen markera-/spara-närvarande-kontroll finns (write = framtida slice).
+      // Namn-scopad (ej total button-count) så app-skalets chrome ej ger falskt negativ.
+      await expect(
+        page.getByRole('button', { name: /markera|spara|närvar|ändra|avstäm/i }),
+      ).toHaveCount(0);
 
-    // Tillbaka-länk → info-vyn.
-    await expect(page.getByRole('link', { name: '← Tillbaka till eventet' })).toHaveAttribute(
-      'href',
-      `/event/${EVENT_ID}`,
-    );
+      // Tillbaka-länk → info-vyn.
+      await expect(page.getByRole('link', { name: '← Tillbaka till eventet' })).toHaveAttribute(
+        'href',
+        `/event/${EVENT_ID}`,
+      );
+    });
+
+    test('endast vissa sessioner: bara Föreläsning renderas (ingen tom Dag 1/Dag 2)', async ({
+      page,
+      network,
+    }) => {
+      mockAttendance(network, [
+        row({ personNamn: 'Doris Dahl', session: 'Föreläsning', status: 'Närvarande' }),
+      ]);
+      await page.goto(`/event/${EVENT_ID}/narvaro`);
+
+      await expect(page.getByRole('heading', { level: 2, name: 'Föreläsning' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 2, name: 'Dag 1' })).toHaveCount(0);
+      await expect(page.getByRole('heading', { level: 2, name: 'Dag 2' })).toHaveCount(0);
+    });
+
+    test('kommande event: allt "Ej avstämt" → visas rakt av, ingen varnings-/fel-yta', async ({
+      page,
+      network,
+    }) => {
+      mockAttendance(network, [
+        row({ personNamn: 'Erik Ek', session: 'Dag 1', status: 'Ej avstämt' }),
+        row({ personNamn: 'Frida Falk', session: 'Dag 1', status: 'Ej avstämt' }),
+      ]);
+      await page.goto(`/event/${EVENT_ID}/narvaro`);
+
+      // 0 av 2 närvarande — förväntat tillstånd för kommande event, ej fel.
+      await expect(page.getByText('0 av 2 närvarande')).toBeVisible();
+      await expect(page.getByText('Ej avstämt').first()).toBeVisible();
+      // INGEN fel-yta (role=alert) för "Ej avstämt".
+      await expect(page.getByRole('alert')).toHaveCount(0);
+    });
+
+    test('tomt event (inga deltaganden) → vänlig tom-text, ej fel', async ({ page, network }) => {
+      mockAttendance(network, []);
+      await page.goto(`/event/${EVENT_ID}/narvaro`);
+
+      await expect(page.getByRole('heading', { level: 1, name: 'Närvaro' })).toBeVisible();
+      await expect(
+        page.getByText('Inga deltaganden registrerade för det här eventet än.'),
+      ).toBeVisible();
+      await expect(page.getByRole('alert')).toHaveCount(0);
+    });
+
+    test('personNamn null → "Namn saknas" (graciöst), aldrig krasch/tomt', async ({
+      page,
+      network,
+    }) => {
+      mockAttendance(network, [row({ personNamn: null, session: 'Dag 1', status: 'Närvarande' })]);
+      await page.goto(`/event/${EVENT_ID}/narvaro`);
+      await expect(page.getByText('Namn saknas')).toBeVisible();
+    });
+
+    test('fel (icke-2xx) → fel-UI via role=alert', async ({ page, network }) => {
+      mockAttendance(network, [], { status: 404 });
+      await page.goto(`/event/${EVENT_ID}/narvaro`);
+      await expect(page.getByRole('alert')).toContainText('Kunde inte hämta närvaron');
+    });
+
+    test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {
+      // Håll EF-svaret öppet → loading-tillståndet är deterministiskt synligt medan
+      // handlern väntar (ingen realtids-race mot en fast delayMs under parallell last).
+      const release = mockAttendance(network, [row()], { manualRelease: true });
+      await page.goto(`/event/${EVENT_ID}/narvaro`);
+      await expect(page.getByText('Laddar närvaro…')).toBeVisible();
+      // Släpp svaret → laddat tillstånd renderas.
+      release();
+      await expect(page.getByRole('heading', { level: 1, name: 'Närvaro' })).toBeVisible();
+    });
+
+    test('axe 0 violations på den renderade närvaro-vyn', async ({ page, network }) => {
+      mockAttendance(network, [
+        row({ personNamn: 'Anna Andersson', session: 'Dag 1', status: 'Närvarande' }),
+        row({ personNamn: 'Bo Bengtsson', session: 'Föreläsning', status: 'Ej avstämt' }),
+      ]);
+      await page.goto(`/event/${EVENT_ID}/narvaro`);
+      await expect(page.getByRole('heading', { level: 1, name: 'Närvaro' })).toBeVisible();
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+
+      expect(results.violations).toEqual([]);
+    });
   });
-
-  test('endast vissa sessioner: bara Föreläsning renderas (ingen tom Dag 1/Dag 2)', async ({
-    page,
-    network,
-  }) => {
-    mockAttendance(network, [
-      row({ personNamn: 'Doris Dahl', session: 'Föreläsning', status: 'Närvarande' }),
-    ]);
-    await page.goto(`/event/${EVENT_ID}/narvaro`);
-
-    await expect(page.getByRole('heading', { level: 2, name: 'Föreläsning' })).toBeVisible();
-    await expect(page.getByRole('heading', { level: 2, name: 'Dag 1' })).toHaveCount(0);
-    await expect(page.getByRole('heading', { level: 2, name: 'Dag 2' })).toHaveCount(0);
-  });
-
-  test('kommande event: allt "Ej avstämt" → visas rakt av, ingen varnings-/fel-yta', async ({
-    page,
-    network,
-  }) => {
-    mockAttendance(network, [
-      row({ personNamn: 'Erik Ek', session: 'Dag 1', status: 'Ej avstämt' }),
-      row({ personNamn: 'Frida Falk', session: 'Dag 1', status: 'Ej avstämt' }),
-    ]);
-    await page.goto(`/event/${EVENT_ID}/narvaro`);
-
-    // 0 av 2 närvarande — förväntat tillstånd för kommande event, ej fel.
-    await expect(page.getByText('0 av 2 närvarande')).toBeVisible();
-    await expect(page.getByText('Ej avstämt').first()).toBeVisible();
-    // INGEN fel-yta (role=alert) för "Ej avstämt".
-    await expect(page.getByRole('alert')).toHaveCount(0);
-  });
-
-  test('tomt event (inga deltaganden) → vänlig tom-text, ej fel', async ({ page, network }) => {
-    mockAttendance(network, []);
-    await page.goto(`/event/${EVENT_ID}/narvaro`);
-
-    await expect(page.getByRole('heading', { level: 1, name: 'Närvaro' })).toBeVisible();
-    await expect(
-      page.getByText('Inga deltaganden registrerade för det här eventet än.'),
-    ).toBeVisible();
-    await expect(page.getByRole('alert')).toHaveCount(0);
-  });
-
-  test('personNamn null → "Namn saknas" (graciöst), aldrig krasch/tomt', async ({
-    page,
-    network,
-  }) => {
-    mockAttendance(network, [row({ personNamn: null, session: 'Dag 1', status: 'Närvarande' })]);
-    await page.goto(`/event/${EVENT_ID}/narvaro`);
-    await expect(page.getByText('Namn saknas')).toBeVisible();
-  });
-
-  test('fel (icke-2xx) → fel-UI via role=alert', async ({ page, network }) => {
-    mockAttendance(network, [], { status: 404 });
-    await page.goto(`/event/${EVENT_ID}/narvaro`);
-    await expect(page.getByRole('alert')).toContainText('Kunde inte hämta närvaron');
-  });
-
-  test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {
-    // Håll EF-svaret öppet → loading-tillståndet är deterministiskt synligt medan
-    // handlern väntar (ingen realtids-race mot en fast delayMs under parallell last).
-    const release = mockAttendance(network, [row()], { manualRelease: true });
-    await page.goto(`/event/${EVENT_ID}/narvaro`);
-    await expect(page.getByText('Laddar närvaro…')).toBeVisible();
-    // Släpp svaret → laddat tillstånd renderas.
-    release();
-    await expect(page.getByRole('heading', { level: 1, name: 'Närvaro' })).toBeVisible();
-  });
-
-  test('axe 0 violations på den renderade närvaro-vyn', async ({ page, network }) => {
-    mockAttendance(network, [
-      row({ personNamn: 'Anna Andersson', session: 'Dag 1', status: 'Närvarande' }),
-      row({ personNamn: 'Bo Bengtsson', session: 'Föreläsning', status: 'Ej avstämt' }),
-    ]);
-    await page.goto(`/event/${EVENT_ID}/narvaro`);
-    await expect(page.getByRole('heading', { level: 1, name: 'Närvaro' })).toBeVisible();
-
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-      .analyze();
-
-    expect(results.violations).toEqual([]);
-  });
-});

@@ -97,10 +97,14 @@ test.describe('Mutationens hemvist-vakt — detektorn (TASK-201.15)', () => {
   });
 
   test('detektorn släpper igenom oskyldig text — INKLUSIVE en verklig gråzon (negativ kontroll)', () => {
-    // Ordet "useMutation" förekommer, men INGET anrop — precis
-    // CheckinPrototyp.tsx's faktiska rad (S90, PROTOTYPE STUB): en
-    // kommentar som FÖRKLARAR varför ingen mutation används, aldrig en som
-    // använder en.
+    // Ordet "useMutation" förekommer, men INGET anrop — HISTORISKT
+    // CheckinPrototyp.tsx's faktiska rad (S90, PROTOTYPE STUB, `useDorrLage`):
+    // en kommentar som FÖRKLARAR varför ingen mutation används, aldrig en
+    // som använder en. Raden själv är riven ur filen sedan TASK-214.4
+    // (A/B/C-teardownen, D skriver numera SKARPT via `useSetAttendanceStatus`
+    // — den bor korrekt i `src/data/mutations/attendance.ts`, inte här) —
+    // fixturen frysta ordalydelsen som en fristående regex-negativkontroll,
+    // den behöver inte spegla en levande rad för att bevisa rätt sak.
     const checkinPrototypForm =
       '// [PROTOTYPE] STUB — en skarp skiva skulle här ha en `useMutation`\n' +
       '// med onMutate/rollback — latensbudgeten vid dörren är sub-sekund.\n' +
