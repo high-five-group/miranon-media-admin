@@ -1,13 +1,19 @@
-// Aktivitetsloggens FYRA SISTA luckor (TASK-201.13, Marcus-order 2026-08-13:
-// "Jag vill inte ha en enda lucka") — api-pure (ren logik, ingen staging,
-// inga creds). Systerfil till `activity-log-pilot-statements.test.ts`
+// Aktivitetsloggens instrumenteringsluckor (TASK-201.13, Marcus-order
+// 2026-08-13: "Jag vill inte ha en enda lucka") — api-pure (ren logik, ingen
+// staging, inga creds). Systerfil till `activity-log-pilot-statements.test.ts`
 // (TASK-201.3) och `activity-log-resterande-statements.test.ts` (TASK-201.4);
-// samma form, nästa uppsättning mutationer:
+// samma form, denna uppsättning mutationer:
 //
 //   useUpdatePaymentNote      — betalningsnotering (FRITEXT, se nedan)
-//   useLogPaymentReminder     — påminnelse antecknad
-//   useConfirmAll             — bulk-bekräftelse, EN post per anmälan
 //   useSendActionTestEmail    — testmail till sig själv
+//
+// RIVEN (TASK-201.18, Marcus-mandat 2026-08-14): de ursprungliga fyra var
+// `useUpdatePaymentNote`, `useLogPaymentReminder`, `useConfirmAll` och
+// `useSendActionTestEmail`. `useLogPaymentReminder` (påminnelse antecknad)
+// och `useConfirmAll` (bulk-bekräftelse) hade noll anropsplatser redan vid
+// TASK-201.13 (konsumenter rivna i TASK-145.3/145.6) och är nu rivna själva
+// — statement-formerna för de två posterna nedan revs i samma commit (se
+// backlog/tasks/task-201.18 § notes för SHA).
 //
 // SKILLNADEN MOT SYSKONFILERNA, och varför den finns: de bevisar statement-
 // FORMEN genom att bygga en lokal kopia av det `recordActivity.ts` bygger.
@@ -24,9 +30,7 @@ import { expect, test } from '@playwright/test';
 import type { QueryClient } from '@tanstack/react-query';
 import {
   ACTIVITY_OBJECT_TYPES,
-  BEKRAFTADE_ANMALAN_VERB,
   betalningsnoteringVerb,
-  betalningspaminnelseVerb,
   eventActivityName,
   eventObjectId,
   registrationObjectId,
@@ -77,7 +81,7 @@ function stubAdapter(impl: DataSourceAdapter['recordActivity']): DataSourceAdapt
   return { recordActivity: impl } as DataSourceAdapter;
 }
 
-test.describe('§ 1 — de fyra sista luckornas statement-former (TASK-201.13)', () => {
+test.describe('§ 1 — de kvarvarande luckornas statement-former (TASK-201.13; två av fyra rivna, TASK-201.18)', () => {
   test('betalningsnotering AVGIFT: "uppdaterade noteringen för anmälningsavgiften", passerar schemat', () => {
     const stmt = statementFor(
       registrationObjectId(REG_ID),
@@ -95,43 +99,6 @@ test.describe('§ 1 — de fyra sista luckornas statement-former (TASK-201.13)',
       'uppdaterade noteringen för slutbetalningen',
     );
     expect(betalningsnoteringVerb('slut').id).not.toBe(betalningsnoteringVerb('avgift').id);
-  });
-
-  test('påminnelse: "antecknade", ALDRIG "skickade" — mailto-sändningen kan inte observeras', () => {
-    const stmt = statementFor(
-      registrationObjectId(REG_ID),
-      betalningspaminnelseVerb('avgift'),
-      REG_OBJEKT_NAMN,
-      ACTIVITY_OBJECT_TYPES.betalning,
-    );
-    expect(stmt.verb.display['sv-SE']).toBe('antecknade påminnelse om anmälningsavgiften');
-    // Stämplingslögnen som `AtgardsSida.tsx` § "mailto-eran" river får inte
-    // återuppstå i loggen: verbet påstår aldrig en sändning.
-    expect(stmt.verb.display['sv-SE']).not.toContain('skickade');
-    const result = ActivityStatementSchema.safeParse(stmt);
-    expect(result.success, JSON.stringify(!result.success && result.error.issues)).toBe(true);
-  });
-
-  test('påminnelse SLUT: egen verb-IRI, skild från avgift-varianten', () => {
-    expect(betalningspaminnelseVerb('slut').id).not.toBe(betalningspaminnelseVerb('avgift').id);
-  });
-
-  test('bulk-bekräftelse: ÅTERANVÄNDER enskild-vägens verb + objekttyp — ingen egen bulk-form', () => {
-    // DESIGNVALET (se `useConfirmAll`s onSuccess-kommentar): en post per
-    // anmälan, med EXAKT samma verb och objekttyp som
-    // `useSendConfirmationFromDetail` — historiken ska inte kunna se
-    // skillnad på om Lotta bekräftade en person från detaljvyn eller åtta
-    // från bulken. Ett eget "bekräftade alla"-verb hade gjort det.
-    const stmt = statementFor(
-      registrationObjectId(REG_ID),
-      BEKRAFTADE_ANMALAN_VERB,
-      REG_OBJEKT_NAMN,
-      ACTIVITY_OBJECT_TYPES.bekraftelse,
-    );
-    expect(stmt.verb.display['sv-SE']).toBe('bekräftade anmälan');
-    expect(stmt.object.id).toBe(`${XAPI_IRI_BASE}/objects/registrations/${REG_ID}`);
-    const result = ActivityStatementSchema.safeParse(stmt);
-    expect(result.success, JSON.stringify(!result.success && result.error.issues)).toBe(true);
   });
 
   test('testmail: objektet är EVENTET (inte platshållar-anmälan), typ = mail, passerar schemat', () => {

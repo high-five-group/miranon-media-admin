@@ -266,22 +266,10 @@ export function betalningsnoteringVerb(betalning: BetalningsSlag): ActivityVerb 
   };
 }
 
-/**
- * Påminnelse-loggens verb — `registrationPayments.ts` §
- * `useLogPaymentReminder`. "antecknade", inte "skickade": mutationen skriver
- * en TIDSSTÄMPEL och öppnar Lottas mailklient (mailto) — appen kan aldrig
- * observera att mailet faktiskt lämnade datorn, och ett "skickade" hade varit
- * exakt den stämplingslögn `useLogPaymentReminder`s eget docblock och
- * `AtgardsSida.tsx` § "mailto-eran" river. MEDVETET skilt från
- * `mailVerb('paminnelse')` ("skickade betalningspåminnelse"), som gäller den
- * SERVER-SIDA sändvägen där sändningen faktiskt är observerad.
- */
-export function betalningspaminnelseVerb(betalning: BetalningsSlag): ActivityVerb {
-  return {
-    id: `${XAPI_IRI_BASE}/verbs/antecknade-betalningspaminnelse/${betalning}`,
-    display: { 'sv-SE': `antecknade påminnelse om ${BETALNINGS_ORD[betalning]}` },
-  };
-}
+// RIVEN (TASK-201.18, Marcus-mandat 2026-08-14): `betalningspaminnelseVerb` —
+// enda konsumenten (`useLogPaymentReminder`, `registrationPayments.ts`) revs
+// i samma commit (noll andra anropsplatser, verifierat). Koden finns kvar i
+// git-historiken (se commit-SHA i backlog/tasks/task-201.18 § notes).
 
 /**
  * Testmailets verb — `actionEmail.ts` § `useSendActionTestEmail`. Objektet är
