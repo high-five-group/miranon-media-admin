@@ -3,10 +3,10 @@ id: TASK-210
 title: >-
   Hem-spalten speglar en nyss loggad handling — recordActivity invaliderar
   aktivitetsloggens cache
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-13 19:30'
-updated_date: '2026-08-13 19:42'
+updated_date: '2026-08-14 18:39'
 labels: []
 dependencies: []
 ordinal: 384000
@@ -29,10 +29,10 @@ Hem-spalten 'Senaste aktivitet' visade inte en nyss skriven anteckning medan his
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -57,4 +57,12 @@ TVÅSIDIGT BEVIS PÅ BÅDA NIVÅERNA — grinden mätt fallande, inte antagen:
 KOLLISION MED TASK-201.13, hanterad: rebase drog in fyra NYA recordActivity-anrop (useSendActionTestEmail, useConfirmAll, useUpdatePaymentNote, useLogPaymentReminder) + testfilen activity-log-luckor-statements. Den obligatoriska parametern fällde alla i typkontrollen — precis dess syfte. Fixade i egen commit; useSendActionTestEmail saknade useQueryClient() helt (som useSendReceipt).
 
 LOTTAS UPPLEVELSE: handlingen syns vid nästa gång hem-spalten monteras — ingen väntan, ingen omladdning. Var upp till 5 min.
+
+DOD-VERIFIERING (orkestrerar-agent, ADR-086, 2026-08-14): PR #1264 MERGED 2026-08-13T20:03:29Z, merge-commit 6fe93078568332468045f3a992f1c410f6a31c7d — bekräftat ancestor av origin/main (git merge-base --is-ancestor). Merge-queue-körningen (event merge_group, run 31738012955, gren gh-readonly-queue/main/pr-1264-...) är GRÖN PER JOBB: Lint+Audit+TypeCheck success, Docs link check success, Acceptance (hermetisk) success, Webblasarbeteende success, Pure+Build success, A11y/Staging(API+E2E)/Staging sentinel purge skipped (förväntat), gate 'CI Passed or Skipped' success. DoD #4: gh pr diff 1264 --name-only — sjutton filer, samtliga inom scope (backlog-kortet, recordActivity.ts, samtliga 11 mutationsfiler som anropar den obligatoriska queryClient-parametern, useActivityLog.ts, queries/keys.ts, tre testfiler). Noll orelaterade filer — bredden är designens avsikt (en plats, alla 15 anropare). DoD #2 vilar på kortets egna mätta grindutfall (typecheck/biome/build/test:acceptance/enhetstester, alla exit 0, se ovan; test:api:s enda röda var staging-preflighten, ej ett kodfel, mätt två gånger med samma utfall).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Hem-spaltens Senaste aktivitet speglade inte en nyss loggad handling förrän den globala staleTime (5 min) gick ut. Fix: recordActivity invaliderar queryKeys.activityLog.all-prefixet efter en lyckad loggning, med queryClient som OBLIGATORISK DI-parameter till alla 15 anropare (direkt-importerad singleton avvisad, ADR-055) — den obligatoriska parametern fällde TASK-201.13s fyra nya anrop mekaniskt vid rebase, exakt sitt syfte. Global staleTime medvetet orörd; fire-and-forget-kontraktet intakt. Tvåsidigt bevis på båda nivåerna (enhet 13/13 → 2 röda utan fixen; acceptance 2/2 → 2 röda utan fixen, på exakt Lottas symptom). Landat via PR #1264, MERGED 2026-08-13T20:03:29Z. Merge-queue-körningen (run 31738012955) grön per jobb, inga orelaterade filer i diffen.
+<!-- SECTION:FINAL_SUMMARY:END -->

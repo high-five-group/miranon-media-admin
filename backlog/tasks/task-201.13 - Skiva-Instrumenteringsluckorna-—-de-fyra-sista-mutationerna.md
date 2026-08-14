@@ -1,10 +1,10 @@
 ---
 id: TASK-201.13
 title: 'Skiva: Instrumenteringsluckorna — de fyra sista mutationerna'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-13 18:54'
-updated_date: '2026-08-13 19:02'
+updated_date: '2026-08-14 18:38'
 labels: []
 dependencies: []
 parent_task_id: TASK-201
@@ -31,10 +31,10 @@ ABSOLUT MAILFÖRBUD: tre av fyra är mail-relaterade. Koden instrumenteras; hook
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -88,4 +88,12 @@ GRINDAR (mätta, exitkoder fångade separat):
  · npm run test:api (fullt)       exit 1 — MEN INTE ett kodfel: staging-preflighten (TASK-77) stoppade api-staging-benet eftersom CI höll staging (post-merge.yml run 31732359688 in_progress). 449 passed / 271 did not run. MM_STAGING_PREFLIGHT=off användes MEDVETET INTE — staging är en delad bas och en lokal körning kunde ha gett falskt rött på det landade trädet. Öppen punkt för orkestreraren: api-staging-benet är CI:s jobb här.
 
 INGA MAIL SKICKADE. Ingen hook utlöstes skarpt; all verifiering mot fixturvärld (MSW) och injicerade adapter-stubs. Inga supabase-kommandon kördes. Prod orörd.
+
+DOD-VERIFIERING (orkestrerar-agent, ADR-086, 2026-08-14): PR #1261 MERGED 2026-08-13T19:32:55Z, merge-commit f727f921675dbacb1cd03c94087a4895767d2849 — bekräftat ancestor av origin/main (git merge-base --is-ancestor). Merge-queue-körningen (event merge_group, run 31735456957, gren gh-readonly-queue/main/pr-1261-...) är GRÖN PER JOBB: Lint+Audit+TypeCheck success, Docs link check success, Acceptance (hermetisk) success, Webblasarbeteende success, Pure+Build success, A11y/Staging(API+E2E)/Staging sentinel purge skipped (förväntat — samma mönster som kortets egna notes om staging-preflighten lokalt), gate 'CI Passed or Skipped' success. DoD #3 uppfyllt av merge-queue-körningen, inte den lokala (som redan var öppet redovisad som staging-blockerad, ej kodfel). DoD #4: gh pr diff 1261 --name-only — nio filer, samtliga inom scope (två backlog-kort, fyra mutations-/komponentfiler, tre test-filer). Noll orelaterade filer. DoD #2 vilar på kortets egna mätta grindutfall (typecheck/biome/build/test:api:pure/acceptance, alla exit 0, se ovan).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Fyra instrumenteringsluckor stängda (useUpdatePaymentNote, useLogPaymentReminder, useConfirmAll, useSendActionTestEmail) — mutationskatalogen visar 15/15, noll differens. Två av fyra hooks (useConfirmAll, useLogPaymentReminder) visade sig vara död kod (konsumenter rivna i TASK-145.3/145.6); instrumenterade ändå för invariantens skull, rivning ej tagen (Marcus scope-beslut, ej utfört). Bulk-designvalet: en post per bekräftad anmälan (person-tidslinjen kräver det). Integriteten (ingen fritext i loggen) bevisad tvåriktat med injicerad-läcka-fällningstest. Landat via PR #1261, MERGED 2026-08-13T19:32:55Z. Merge-queue-körningen (run 31735456957) grön per jobb, inga orelaterade filer i diffen.
+<!-- SECTION:FINAL_SUMMARY:END -->
