@@ -709,7 +709,7 @@ punkter** och bör märkas som sådan i ett eventuellt ADR.
 - *Columbia Accident Investigation Board Report, Volume I*, augusti 2003 — särskilt s. 169, 179, 190, 196, 201 samt fynd F6.1−2 — <https://www.nasa.gov/wp-content/uploads/static/history/columbia/reports/CAIBreportv1.pdf>
 - Cass R. Sunstein, *Two Conceptions of Irreversible Environmental Harm*, Olin Working Paper No. 407, 2008 — <https://dash.harvard.edu/server/api/core/bitstreams/7312037d-4051-6bd4-e053-0100007fdf3b/content>
 - SEC, *In the Matter of Knight Capital Americas LLC*, Admin. Proc. 34-70694, 2013-10-16, ¶15–17 — <https://www.sec.gov/files/litigation/admin/2013/34-70694.pdf>
-- GitLab, *Postmortem of database outage of January 31*, 2017-02-10 — <https://about.gitlab.com/blog/2017/02/10/postmortem-of-database-outage-of-january-31/>
+- GitLab, *Postmortem of database outage of January 31*, 2017-02-10 — <https://about.gitlab.com/blog/postmortem-of-database-outage-of-january-31/>
 - Amazon Web Services, *Summary of the Amazon S3 Service Disruption in the Northern Virginia (US-EAST-1) Region*, 2017-02-28 — <https://aws.amazon.com/message/41926/>
 - Kenneth J. Arrow & Anthony C. Fisher, "Environmental Preservation, Uncertainty, and Irreversibility", *Quarterly Journal of Economics* 88(2), 1974, s. 312–319
 - Robert S. Pindyck, "Irreversibility, Uncertainty, and Investment", *Journal of Economic Literature* XXIX, 1991 — <https://web.mit.edu/rpindyck/www/Papers/IrreverUncertInvestmentJEL1991.pdf>
