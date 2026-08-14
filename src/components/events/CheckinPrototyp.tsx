@@ -72,6 +72,7 @@ import {
   Check,
   CheckCheck,
   ChevronDown,
+  ChevronLeft,
   Circle,
   RotateCcw,
   Search,
@@ -1194,24 +1195,38 @@ function FramstegskortD({
           style={{ width: `${andel}%` }}
         />
       </div>
-      {kvitto}
+      {/* HÖJDLÅSET (S103-konvergensvarvet, Marcus punkt 4): kortet får ALDRIG
+          växa. Kvitto-raden renderas ALLTID i sin slutgeometri och står tom
+          tills första incheckningen - samma regel som personlistans
+          e-postrad (`DorrRadD` § HÖJDLÅSET). Tidigare växte kortet ~40 px
+          vid första incheckningen. */}
+      <div className="-mb-1 flex min-h-9 items-center gap-2 pt-1">{kvitto}</div>
     </section>
   );
 }
 
 /**
- * DÖRR-RADEN i variant D — personlistans anatomi plus EN riktig knapp.
+ * DÖRR-RADEN i variant D — personlistans anatomi plus EN kryssruta.
  *
- * VARFÖR EN EGEN KNAPP OCH INTE HELA RADEN SOM TOGGLE (A/B/C:s form):
- * Marcus dom på A/B/C var att "den viktigaste kontrollen är en naken
- * textlänk", och natt-chefens granskningsnot 3 lämnade frågan öppen. Svaret
- * här är en riktig knapp-yta, av tre skäl: (1) vid dörren är en råkad
- * incheckning av fel person den vanliga felhandlingen, och en hel rad som
- * klickyta bjuder in till den vid rullning; (2) en distinkt kontroll ger ett
- * entydigt tillgängligt namn ("Checka in Anna Ek") i stället för en
- * `aria-pressed`-rad vars namn är hela radens text; (3) `min-h-11` (44 px)
- * möter Apple HIG:s och WCAG 2.5.5:s golv för primärflöden, mätt på
- * kontrollen själv i stället för på raden runt den.
+ * KRYSSRUTAN ERSATTE KNAPPEN (S103-konvergensvarvet, Marcus punkt 6). Två
+ * skäl konvergerade: (1) docblockens egen öppna fråga - sjutton kantade
+ * "Checka in"-knappar var sidans tyngsta grafik, och varje nedskalning av en
+ * KNAPP rev antingen etiketten (ikonknapp, Carry 12) eller domen mot A/B/C
+ * ("naken textlänk"); (2) Marcus ville se en grön bock och en grön rad INNAN
+ * personen lämnar listan - en kryssruta ÄR det tillståndet: ikryssad =
+ * närvarande, urkryssad = ångrad, samma kontroll i båda listorna, ingen
+ * separat Ångra-knapp på raden. Formen är Deltagares markerbara korts
+ * stämplade grammatik (rå RAC Checkbox + `--mm-success`-kant/-platta,
+ * geometri som aldrig hoppar). `success` som TILLSTÅNDSfärg följer den
+ * markerings-precedenten; §19 dimension 1:s förbud gäller knapp-INTENTS,
+ * och kryssrutan är ingen knapp.
+ *
+ * KONTROLLEN ÄR RUTAN, INTE RADEN: en hel rad som klickyta bjuder in till
+ * råkad incheckning av fel person vid rullning (samma skäl som knapp-eran).
+ * Träffytan är `min-h-11` på kontrollen själv (WCAG 2.5.5), och namnet bär
+ * personens namn (`Närvarande: Anna Ek`) så sjutton kryssrutor förblir
+ * skiljbara i en skärmläsares elementlista. Etiketten "Närvarande" är
+ * synlig (WCAG 2.5.3: namnet innehåller den synliga texten).
  *
  * INGEN CHEVRON — medvetet, och det är en avvikelse värd att motivera:
  * chevronen i personlistan betyder "raden leder någonstans"
@@ -1219,12 +1234,6 @@ function FramstegskortD({
  * handling. Husets egen regel är redan skriven: `Gruppdynamik.tsx` utelämnar
  * chevron just för att DET kortet inte leder vidare (citerat i
  * `PersonsList.tsx:486-492`). En chevron här vore en osann affordans.
- *
- * EMPHASIS: `outline`, aldrig solid. `DESIGN-SYSTEM-SPEC` §19 dimension 2:
- * i ytklassen "kort och listrader" bärs intent-färgen av text + kant —
- * ALDRIG solid fyllnad inuti kort. INTENT: `primary`, aldrig `success` —
- * incheckning skriver bara internt; `success` är reserverat för handlingar
- * som når utomstående (§19 dimension 1).
  */
 function DorrRadD({
   rad,
@@ -1238,7 +1247,15 @@ function DorrRadD({
   onToggle: () => void;
 }) {
   return (
-    <li data-dorr-rad className="flex min-h-16 items-center gap-3 py-2.5">
+    // Success-tinten bär "nyss klar"-kvittensen (och klarlistans rader).
+    // `-mx-4 px-4` i BÅDA lägena: tinten når kortets kanter utan att
+    // innehållets geometri någonsin flyttar sig.
+    <li
+      data-dorr-rad
+      className={`-mx-4 flex min-h-16 items-center gap-3 px-4 py-2.5 ${
+        incheckad ? 'bg-(--mm-success-bg)' : ''
+      }`}
+    >
       {/* Identitetsmarkören byter GLYF med tillståndet, inte FÄRG: initialer
           när personen återstår, bock när hen är inne. Formen är personlistans
           `size-9`-cirkel i `bg-bg-emphasized` (`PersonsList.tsx:518-523`).
@@ -1292,66 +1309,29 @@ function DorrRadD({
         </span>
       </div>
 
-      {/* NAMNET BÄRS AV `aria-label`, inte av den synliga etiketten: sjutton
-          knappar som alla heter "Checka in" är oanvändbara i en skärmläsares
-          elementlista, där kontrollerna läses utan sin rad. Den synliga texten
-          hålls kort för att radens namnkolumn ska överleva på 390 px. */}
-      {/* VIKTEN FÖLJER ÅTERSTÅENDE ARBETE, inte handlingen. Mätt i eget skott
-          (varv 3): `subtle` gav Ångra-knappen en fylld grå platta, så de SEX
-          klara raderna vägde tyngre än de elva som återstod — bakvänt vid en
-          dörr, där ögat ska dras till nästa person. `ghost` låter klara rader
-          träda tillbaka — och `ghost` är en INTENT, inte en emphasis: §19
-          dimension 2 slår fast att `secondary`/`ghost` står UTANFÖR
-          emphasis-dimensionen (de ÄR redan en neutral subtle). Att skicka
-          dem som `emphasis` är ett typfel, vilket tsc också fällde.
-          Det är INTE en återgång till A/B/C:s nakna textlänk:
-          detta är fortfarande en riktig knapp med 44 px träffyta, hover/fokus
-          och eget tillgängligt namn — och den är den SEKUNDÄRA handlingen på
-          en redan klar rad, medan primärhandlingen "Checka in" behåller sin
-          synliga kant. */}
-      {/* STORLEKEN ÄR `sm`, TRÄFFYTAN OFÖRÄNDRAD 44 px (varv 2, S105).
-          `md` gav en 140 px bred knapp i `text-body`, och när arbetslistan
-          bara innehåller det som återstår blir VARJE synlig rad en sådan
-          knapp: fem identiska ramade rektanglar var det tyngsta på skärmen
-          (mätt i eget skott, v1-efter5-mobil-veck.png). I facitets rader är
-          högerkolumnen en 18 px chevron plus en tonal pill — allt utom namnet
-          träder tillbaka. `sm` (text-small, px-3) tar knappen till ~104 px
-          och lämnar 36 px till namnkolumnen, utan att röra `min-h-11`:
-          WCAG 2.5.5 och Apple HIG mäter TRÄFFYTAN, inte typografgrad.
-
-          EMPHASIS FÖRBLIR `outline` — men det är nu ett MÄTT val, inte ett
-          ärvt. §19:s ytklasstabell tillåter uttryckligen BÅDA för "Kort och
-          listrader" (*"`outline` eller `subtle` - intent-färgen bärs av
-          text + kant, ALDRIG solid fyllnad inuti kort"*; förbudet gäller
-          SOLID), och §19 har ett levande `primary`/`subtle` `sm`-prejudikat i
-          Markera-knappen på grupp-rubrikraden. D:s docblock läste tabellen som
-          om bara `outline` fanns, vilket var fel.
-          `subtle` PRÖVADES SKARPT I VARV 3 OCH BLEV SÄMRE
-          (v3-efter5-mobil-veck.png mot v2-efter5-mobil-veck.png):
-          `--mm-button-primary-subtle-bg` är `color-mix(--mm-btn-primary-bg
-          10%, transparent)` över en neutral bas, alltså en DÖD GRÅ platta.
-          Sex fyllda gråblock läser tyngre som massa än sex hårfina kanter,
-          och de läser dessutom som inaktiverade kontroller. Kanten är kvar.
-
-          KVARSTÅENDE, ÖPPET FÖR MARCUS: `outline`-kanten löses till
-          `--mm-btn-primary-bg` = `--p-neutral-800`, en nästan svart kant, och
-          sex av dem i kolumn är fortfarande sidans tyngsta grafik. Facitets
-          högerkolumn är en 18 px chevron plus en tonal pill. Att skala ned
-          kontrollen ytterligare (ikonknapp utan etikett) skulle stänga det
-          gapet men river den synliga etiketten - vilket går rakt emot domen
-          som fällde A/B/C ("den viktigaste kontrollen är en naken textlänk").
-          Den växlingen är Marcus, inte min: kontrollen behåller sin etikett
-          tills han säger annat. Ångra behåller `ghost`. */}
-      <Button
-        intent={incheckad ? 'ghost' : 'primary'}
-        emphasis={incheckad ? undefined : 'outline'}
-        size="sm"
-        className="min-h-11 shrink-0"
-        aria-label={incheckad ? `Ångra incheckningen av ${rad.namn}` : `Checka in ${rad.namn}`}
-        onPress={onToggle}
+      {/* Knapp-erans mätserie (emphasis-varven, storleksvarven, "sidans
+          tyngsta grafik"-frågan) är avslutad i och med kryssrutan - se
+          docblocken ovan. Carry 12 (ikonknapp-växlingen) föll bort med den:
+          etiketten "Närvarande" är synlig OCH kontrollen är lätt. */}
+      <Checkbox
+        isSelected={incheckad}
+        onChange={onToggle}
+        aria-label={`Närvarande: ${rad.namn}`}
+        className="group flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded px-1 data-[focus-visible]:outline-(--mm-focus-ring) data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2"
       >
-        {incheckad ? 'Ångra' : 'Checka in'}
-      </Button>
+        <span className="text-small text-text-muted group-data-[selected]:font-medium group-data-[selected]:text-text-secondary">
+          Närvarande
+        </span>
+        {/* Boxen: kant + platta i Deltagare-precedentens success-form; bocken
+            är mörk (text-text) på den ljusa plattan så glyf-kontrasten håller
+            oavsett vad `--mm-success` löser till. Kanten är 1.4.1-bäraren. */}
+        <span
+          aria-hidden="true"
+          className="flex size-6 shrink-0 items-center justify-center rounded border-2 border-border-strong bg-surface group-data-[selected]:border-(--mm-success) group-data-[selected]:bg-(--mm-success-bg)"
+        >
+          <Check size={16} className="text-text opacity-0 group-data-[selected]:opacity-100" />
+        </span>
+      </Checkbox>
     </li>
   );
 }
@@ -1367,10 +1347,14 @@ function DorrRadD({
  * listan. Mätt i eget skott (v0): topp-materialet sköt första ÅTGÄRDBARA
  * raden till 427 px, 50,6 % av en 844 px-skärm.
  *
- * Här bär EN caption-rad hela härledningen: ordet "Härledd", datumet och
- * uppmaningen att kontrollera. Sessionen syns i toggeln när det finns flera,
- * och i klartext när det bara finns en. Inget av kravet är borta; bara
- * upprepningen är det.
+ * "HÄRLEDD ..."-CAPTIONEN ÄR RIVEN (S103-konvergensvarvet, Marcus punkt 5:
+ * texten var obegriplig för sin läsare). Den förklarade systemets osäkerhet
+ * i stället för att bära den. Kravet "aldrig tyst" står kvar och bärs nu
+ * HELT av den synliga, överstyrbara toggeln: finns flera sessioner är valet
+ * en kontroll mitt på sidan som inte går att missa; finns bara EN session
+ * finns inget val att göra och ingenting renderas (datumet står redan i
+ * sidhuvudet). Felvals-risken hanteras av kontrollens synlighet, inte av en
+ * uppmaning i caption-grad.
  */
 function SessionsRadD({
   sessioner,
@@ -1381,15 +1365,7 @@ function SessionsRadD({
   vald: AttendanceSessionValue;
   onValj: (s: AttendanceSessionValue) => void;
 }) {
-  const harledning = (
-    <p className="text-caption text-text-muted">
-      <strong className="font-medium text-text-secondary">Härledd</strong>
-      {sessioner.length <= 1
-        ? ` session: ${vald}. Kontrollera att den stämmer.`
-        : ' ur eventets datum. Kontrollera att rätt dag är vald.'}
-    </p>
-  );
-  if (sessioner.length <= 1) return <div className="mt-1">{harledning}</div>;
+  if (sessioner.length <= 1) return null;
   return (
     <div className="mt-1 flex flex-col gap-1.5">
       <ToggleButtonGroup
@@ -1412,7 +1388,6 @@ function SessionsRadD({
           </ToggleButton>
         ))}
       </ToggleButtonGroup>
-      {harledning}
     </div>
   );
 }
@@ -1467,6 +1442,23 @@ function VariantD({
   const lage = useDorrLageD();
   const [fraga, setFraga] = useState('');
   const [visaKlara, setVisaKlara] = useState(false);
+
+  /**
+   * KVITTENSFÖNSTRET (S103-konvergensvarvet, Marcus punkt 6): raden ska BLI
+   * GRÖN innan den lämnar arbetslistan. Vid incheckning står raden kvar i
+   * 1,2 s med ikryssad ruta och success-tint där fingret redan är, och
+   * flyttar först därefter till klargruppen. Ångra inom fönstret avbryter
+   * flytten direkt. Fönstret är en FÖRDRÖJNING, inte en rörelse - det
+   * gäller därför oavsett `prefers-reduced-motion`.
+   */
+  const [nyssKlara, setNyssKlara] = useState<ReadonlySet<string>>(() => new Set());
+  const kvittensTimers = useRef(new Map<string, number>());
+  useEffect(() => {
+    const timers = kvittensTimers.current;
+    return () => {
+      for (const t of timers.values()) window.clearTimeout(t);
+    };
+  }, []);
 
   // Anmälningarna är variant D:s källa (se `byggRaderD`). De ligger redan i
   // cachen under samma nyckel som `useDorrData` använder — inget nytt anrop.
@@ -1527,8 +1519,14 @@ function VariantD({
    * Sökningen filtrerar BÅDA grupperna: en felincheckad person ska gå att
    * söka fram och ångra utan att först fälla ut gruppen.
    */
-  const attGora = traffar.filter((r) => lage.status(r) !== AttendanceStatus.NARVARANDE);
-  const klaraTraffar = traffar.filter((r) => lage.status(r) === AttendanceStatus.NARVARANDE);
+  // Rader i kvittensfönstret räknas som KLARA i framstegskortet (siffran
+  // ska svara direkt) men står kvar i ARBETSLISTAN tills fönstret löpt ut.
+  const attGora = traffar.filter(
+    (r) => lage.status(r) !== AttendanceStatus.NARVARANDE || nyssKlara.has(lageNyckel(r)),
+  );
+  const klaraTraffar = traffar.filter(
+    (r) => lage.status(r) === AttendanceStatus.NARVARANDE && !nyssKlara.has(lageNyckel(r)),
+  );
 
   /**
    * KVITTOT — en rad i framstegskortet, inte en panel.
@@ -1556,10 +1554,37 @@ function VariantD({
     : null;
 
   const vaxla = (rad: DorradD) => {
-    const nu = lage.status(rad) === AttendanceStatus.NARVARANDE;
-    lage.satt(rad, nu ? AttendanceStatus.EJ_AVSTAMT : AttendanceStatus.NARVARANDE);
+    const nyckel = lageNyckel(rad);
+    const varInne = lage.status(rad) === AttendanceStatus.NARVARANDE;
+    lage.satt(rad, varInne ? AttendanceStatus.EJ_AVSTAMT : AttendanceStatus.NARVARANDE);
+    if (varInne) {
+      const timer = kvittensTimers.current.get(nyckel);
+      if (timer != null) {
+        window.clearTimeout(timer);
+        kvittensTimers.current.delete(nyckel);
+      }
+      setNyssKlara((forra) => {
+        if (!forra.has(nyckel)) return forra;
+        const nasta = new Set(forra);
+        nasta.delete(nyckel);
+        return nasta;
+      });
+    } else {
+      setNyssKlara((forra) => new Set(forra).add(nyckel));
+      kvittensTimers.current.set(
+        nyckel,
+        window.setTimeout(() => {
+          kvittensTimers.current.delete(nyckel);
+          setNyssKlara((forra) => {
+            const nasta = new Set(forra);
+            nasta.delete(nyckel);
+            return nasta;
+          });
+        }, 1200),
+      );
+    }
     alertScreenReader(
-      nu
+      varInne
         ? `Incheckningen av ${rad.namn} är ångrad.`
         : `${rad.namn} är incheckad. ${antalKlara + 1} av ${rader.length} incheckade.`,
     );
@@ -1572,16 +1597,29 @@ function VariantD({
     // en enda hög. Personlistans facit har tre nivåer med tydligt olika luft
     // (rubrik → stort → sök → litet → meta → lista). Basen är därför `gap-2`
     // med `mt-1` bara där ett nytt stycke faktiskt börjar.
-    <section className="flex flex-col gap-2">
-      <TillbakaLank eventId={eventId} />
+    <section className="flex flex-col gap-2 pt-2 lg:pt-10">
+      {/* SIDKROMEN ÄR HUSETS (S103-konvergensvarvet, Marcus punkt 1+2):
+          44 px rund chevron + rubrik i text-3xl på EXAKT samma plats som
+          EventDetail/PersonDetail (`sidRam`-formen, EventDetail.tsx:142-150).
+          Prototypens textlänk och text-2xl var en avvikelse från appens
+          grund. D-LOKAL ändring: `TillbakaLank` (A/B/C) är orörd. */}
+      <Link
+        to="/event/$eventId"
+        params={{ eventId }}
+        aria-label="Tillbaka till eventet"
+        className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+      >
+        <ChevronLeft aria-hidden="true" size={26} />
+      </Link>
 
-      {/* EVENTNAMN OCH DATUM PÅ SAMMA RAD (varv 2): datumet bodde tidigare i
-          sessionsblocket och tvingade härlednings-noten till två rader på
-          390 px. Här är det gratis - underrubriken fanns redan. */}
-      <div className="flex flex-col gap-0.5">
-        <h1 className="font-semibold text-2xl">Check-in</h1>
-        <p className="text-small text-text-secondary">
-          {event.eventNamn ?? event.eventlabel ?? 'Eventet'}
+      {/* EVENTETS IDENTITET (punkt 3): body-grad med namnet i medium-vikt i
+          stället för small/sekundär - det är sidans enda kontextbärare och
+          ska kunna läsas på ett ögonkast vid dörren. Datumet förblir dämpat
+          på samma rad (varv 2-beslutet står). */}
+      <div className="mx-4 mt-4 flex flex-col gap-1">
+        <h1 className="font-semibold text-3xl">Check-in</h1>
+        <p className="text-body">
+          <span className="font-medium">{event.eventNamn ?? event.eventlabel ?? 'Eventet'}</span>
           {datumtext && <span className="text-text-muted">{` · ${datumtext}`}</span>}
         </p>
       </div>
@@ -1592,7 +1630,7 @@ function VariantD({
         klass="mt-1"
         kvitto={
           senaste && (
-            <div className="-mb-1 flex min-h-9 items-center gap-2 pt-1">
+            <>
               <Check aria-hidden="true" size={14} className="shrink-0 text-text-secondary" />
               <span className="min-w-0 flex-1 truncate text-caption text-text-secondary">
                 <span className="font-medium text-text">{senaste.namn}</span>
@@ -1615,7 +1653,7 @@ function VariantD({
                 <RotateCcw aria-hidden="true" size={14} className="shrink-0" />
                 Ångra
               </Button>
-            </div>
+            </>
           )
         }
       />
@@ -1644,16 +1682,21 @@ function VariantD({
         </div>
       </SearchField>
 
-      {/* Meta-raden i personlistans form (steg k09): kortets inner-inset,
-          dämpad, och den bär BÅDA bortfallen explicit — aldrig tyst.
-          Den räknar nu ARBETSLISTAN, inte hela registret: det är den siffra
-          som svarar mot vad man ser under den. */}
-      <p role="status" aria-live="polite" className="px-4 text-small text-text-muted">
-        {fraga
-          ? `Visar ${traffar.length} av ${rader.length} anmälda för "${fraga}".`
-          : `${attGora.length} av ${rader.length} anmälda återstår.`}
-        {avbokade > 0 && ` ${avbokade} avbokade visas inte.`}
-      </p>
+      {/* Meta-raden (S103-konvergensvarvet, Marcus punkt 7): "N av M
+          återstår"-räknaren är RIVEN - den upprepade framstegskortets
+          rubrik. Kvar är det raden ensam bär: sökutfallet och det explicita
+          bortfallet (avbokade visas aldrig tyst borttagna). Ingen träff-
+          textrad utan sökning = ingen rad alls. */}
+      {(fraga || avbokade > 0) && (
+        <p role="status" aria-live="polite" className="px-4 text-small text-text-muted">
+          {[
+            fraga ? `Visar ${traffar.length} av ${rader.length} anmälda för "${fraga}".` : null,
+            avbokade > 0 ? `${avbokade} avbokade visas inte.` : null,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        </p>
+      )}
 
       {/* ARBETSLISTAN — bara det som återstår (se VECKET ovan). */}
       {attGora.length === 0 ? (
@@ -1682,8 +1725,8 @@ function VariantD({
             <DorrRadD
               key={rad.anmalanId}
               rad={rad}
-              incheckad={false}
-              tid={null}
+              incheckad={lage.status(rad) === AttendanceStatus.NARVARANDE}
+              tid={lage.tid(rad)}
               onToggle={() => vaxla(rad)}
             />
           ))}
