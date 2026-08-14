@@ -346,12 +346,21 @@ inget CI-workflow refererar `supabase functions deploy`.
 ## Steg 5 — Deny-triple per funktion (AC #2, halva två)
 
 Formen är repots etablerade EF-smoke (`T39` §6, körd mot 13 prod-funktioner
-2026-07-24): **anon → 401 · fel metod → 405 · anon-Bearer → 401**. Den kräver
+2026-07-24): **anon → 401 · fel metod → 401 · anon-Bearer → 401**. Den kräver
 ingen användare och rör aldrig datavägen.
 
-Båda funktionerna prövar metoden FÖRE autentiseringen (källverifierat:
-`log-activity/index.ts:88`, `get-activity-log/index.ts:156`), så
-405-förväntan gäller även utan `Authorization`-header.
+**Rättat (S105, 2026-08-14):** raden ovan sa tidigare `fel metod → 405`. Det
+höll inte. `verify_jwt = true` för båda funktionerna
+(`supabase/config.toml:209-210` + `:219-220`) gör att Supabase-gatewayen
+svarar 401 på VARJE anrop utan giltig JWT — FÖRE funktionskoden körs. De tre
+curl-anropen nedan saknar `Authorization`-header, så samtliga träffar
+gatewayen, aldrig koden. Källpåståendet om kodordningen står kvar och
+stämmer fortfarande: båda funktionerna prövar metoden FÖRE autentiseringen
+(källverifierat: `log-activity/index.ts:88`, `get-activity-log/index.ts:156`)
+— men "405 före auth" gäller bara ANROPARE SOM NÅR KODEN, och en anropare
+utan giltig JWT kommer aldrig dit, oavsett metod. Discriminatorn är ett
+giltigt JWT som faller SENARE, i `requireUser` — anon-nyckeln (se
+`tasks/lessons.d/en-vakt-forst-i-din-kod-ar-inte-forst-i-kedjan.md`).
 
 ```bash
 FN="$PROD_URL/functions/v1"
@@ -369,17 +378,46 @@ curl -s -o /dev/null -w 'anon-bear %{http_code}\n' -X GET \
   -H "Authorization: Bearer $ANON" "$FN/get-activity-log"
 ```
 
-**Förväntad utdata:** `401 · 405 · 401` för vardera funktionen.
+**Förväntad utdata:** `401 · 401 · 401` för vardera funktionen.
 
 **Steget lyckades när:** alla sex utfallen stämmer. `requireUser` returnerar
 401 vid saknad header, fel headerformat, tom token, ogiltig eller utgången
 JWT, och även när token är en anon-nyckel (`_shared/auth.ts` rad 30–37, som
-räknar upp precis dessa fem fall).
+räknar upp precis dessa fem fall) — samt (för `fel metod`-raderna) gatewayens
+egen 401 innan `requireUser` någonsin anropas.
 
 **Om något utfall avviker:** stoppa kedjan. En `200` betyder att en obehörig
 kan skriva till eller läsa Lottas aktivitetslogg. Rulla tillbaka funktionen
 per § Rullbakåt R2 innan något annat görs. En `404` betyder att deployen inte
 gick igenom — tillbaka till steg 4.
+
+**VALFRI fjärde probe — metodvakten, observerad utifrån.** De tre
+obligatoriska proberna ovan kan aldrig visa "405 före auth" utifrån, eftersom
+gatewayen alltid stoppar en JWT-lös anropare tidigare. För den som vill se
+metod-vakten faktiskt köra: kombinera FEL metod med anon-nyckeln som
+`Authorization`-header. Anon-nyckeln är ett giltigt SIGNERAT JWT — den
+passerar gatewayen — men representerar ingen användare och faller i
+`requireUser`. Kombinationen passerar alltså gatewayen och når funktionens
+metod-vakt FÖRE `requireUser`:
+
+```bash
+curl -s -o /dev/null -w 'fel metod + anon-bear %{http_code}\n' -X GET \
+  -H "Authorization: Bearer $ANON" "$FN/log-activity"
+curl -s -o /dev/null -w 'fel metod + anon-bear %{http_code}\n' -X POST \
+  -H "Authorization: Bearer $ANON" "$FN/get-activity-log"
+```
+
+**Förväntad utdata:** `405` för vardera funktionen. Detta är EN ENDA VÄG att
+observera "405 före auth" mot en levande prod-gateway — och den kräver just
+denna icke-uppenbara kombination (fel metod OCH ett giltigt-men-icke-
+användar-JWT), inte bara "fel metod". Bifynd (TASK-38-kortet rad 37): ingen
+av de tretton allowlistade EF:erna emitterar en `Allow`-header på sitt
+405-svar (RFC 9110 kräver den) — förvänta dig INTE `Allow: POST`/`Allow: GET`
+i svaret, bara statuskoden. Proben är diagnostisk, inte blockerande: ett
+avvikande utfall här (t.ex. `401` i stället för `405`) är en regression i
+metod-vaktens PLACERING (se TASK-38) och bör felsökas, men stoppar inte
+driftsättningen på egen hand — de sex obligatoriska proberna ovan äger den
+bedömningen.
 
 ## Steg 6 — Front-deployen verifierad utrullad (AC #3)
 

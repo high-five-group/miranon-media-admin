@@ -212,10 +212,13 @@ verify_jwt = true
 # get-activity-log — Aktivitetsloggens läsväg (TASK-201.5, PRD TASK-201,
 # ADR-110/ADR-111). LÄSER bara, direkt ur Postgres-tabellen `activity_log`
 # (INGEN Airtable-interaktion) via `service_role` — samma gateway-första-
-# försvar som övriga läs-EF:er; requireUser läggs OVANPÅ i koden. MEDVETET
-# UTELÄMNAD ur .prod-functions-allowlist.conf — prod-driftsättning är
+# försvar som övriga läs-EF:er; requireUser läggs OVANPÅ i koden. STÅR i
+# .prod-functions-allowlist.conf (rad ~56, TASK-201.9, Marcus GO "GO! Kör
+# bara!" 2026-08-13) — raden ovan (t.o.m. S105, 2026-08-14) sa MEDVETET
+# UTELÄMNAD, vilket motsade den filen rakt av. Prod-driftsättningen var
 # TASK-201.9s egna, separata skiva (samma "ingen UI-yta i prod ännu"-
-# resonemang som send-receipt-email/generate-event-attachment ovan).
+# resonemang som send-receipt-email/generate-event-attachment ovan) — den
+# skivan är nu genomförd, och allowlisten är sanningen.
 [functions.get-activity-log]
 verify_jwt = true
 

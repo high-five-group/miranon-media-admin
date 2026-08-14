@@ -1,6 +1,19 @@
 // @ts-nocheck — Deno Edge Function (esm.sh-import + Deno-globaler; typas vid
 // deploy, se ADR-010 § Fas 7-åtagande). Samma undantags-mönster som
 // send-receipt-email/index.ts m.fl.
+//
+// MÄTT INERT för `npm run typecheck` (S105, 2026-08-14): denna fil ingår
+// inte i någon tsconfig-graf (varken tsconfig.app.json/src,
+// tsconfig.tests.json/tests, eller den enumererade filistan i
+// tsconfig.edge-shared.json) och tas därför aldrig upp av `tsc -b` —
+// empiriskt: `npm run typecheck` förblir exit 0 med pragmat borttaget.
+// Pragmat behålls ändå, som markör för ADR-010 § Fas 7-åtagandets
+// `deno check` (som RESPEKTERAR @ts-nocheck och alltså faktiskt bryr sig
+// om det den dagen kopplas in). Syskonet get-activity-log/index.ts saknar
+// pragmat men är i dag LIKA inert av samma skäl — asymmetrin har alltså
+// ingen funktionell effekt just nu. Huruvida syskonet BEHÖVER pragmat när
+// Fas 7 kopplar in `deno check` är OPRÖVAT (ingen Deno-CLI tillgänglig för
+// att mäta här) och lämnas öppet, inte gissat.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireUser } from '../_shared/auth.ts';
 import {

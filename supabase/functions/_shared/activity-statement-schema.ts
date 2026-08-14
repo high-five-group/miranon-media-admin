@@ -1,6 +1,12 @@
 // @ts-nocheck — Deno Edge Function (esm.sh-import; typas vid deploy, se
 // ADR-010 § Fas 7-åtagande). Samma undantags-mönster som send-receipt-email/
 // index.ts m.fl.
+//
+// MÄTT INERT för `npm run typecheck` (S105, 2026-08-14): den enda importören
+// är log-activity/index.ts, som själv aldrig ingår i tsconfig-grafen — se
+// den filens huvud för hela resonemanget (samma slutsats gäller här:
+// `npm run typecheck` förblir exit 0 med pragmat borttaget, pragmat behålls
+// för Fas 7:s `deno check`).
 import { z } from 'https://esm.sh/zod@4';
 
 // log-activity — Deno-sidans Zod-schema (TASK-201.3 AC #2, ADR-110/ADR-111).
