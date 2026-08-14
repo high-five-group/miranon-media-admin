@@ -15,7 +15,32 @@
 
 ## Aktuellt fokus
 
-**Session 105 ⏸️ PAUSAD (2026-08-13 kväll, `lifecycle: paused`) — FAS 6.5
+**Session 105 ▶️ ÅTERUPPTAGEN (2026-08-14 kväll, `lifecycle: active`) —
+INVENTERINGEN "EXAKT ALLT SOM ÄR KVAR" FÖR AKTIVITETSLOGGEN.** Marcus-order:
+allt aktivitetsloggs-relaterat ska fungera och vara redo för Lotta.
+Landningsverifikat: `#1261`/`#1263`/`#1264`/`#1265` samtliga MERGED —
+paus-NÄSTA steg 1 stängt. Komplett fil:rad-belagd inventering i sessionsdok
+S105 **Del 9** (Explore-svep + kort-/PR-/facit-/numreringsverifikat):
+**A. Lotta-påverkande kvar:** QA `201.10` punkt 2–8 (punkt 1 = facit-stämpeln
+REDAN gjord 2026-08-13) · `201.9` AC #4 rök-test hem-spalten i prod (nu
+möjligt, `#1264` utrullad) · **TRE oinstrumenterade skrivvägar utanför
+mutations-mappen** (`CreateEventForm.tsx:122` createEvent ·
+`SegmentMailCompose.tsx:74` sendEmail · `SegmentBuilder.tsx:91` saveSegment —
+Marcus-beslut: instrumentera eller öppet undanta) · runbookens § Steg 5-fel
+(`401·401·401`, inte 405, med `verify_jwt = true`) · `#1249`-beslutet ·
+död kod-beslutet (`useConfirmAll`/`useLogPaymentReminder`).
+**B. Stängningar:** korten `201.9`/`201.13`/`201.14`/`210` → Done · PRD `201`
+DoD-bockning (byggplan amenderad ✓, facit-stämpel ✓) · dok-driften (byggplans-
+rad 92 "EJ ÄNDRAD", ADR-111-inlösta textställen ×3, FEATURE-ACTIVITY-LOG
+"Planerad", config.toml-stale-kommentaren, task-207-filnamnet).
+**C. Bokfört öppet:** ingen e2e för historikvy/spalt · visual-grinden utanför
+blockerande CI · `@ts-nocheck`-asymmetrin · Vercel Skew. Numrering
+re-verifierad: ADR 112 · L512 + 4 fragment · T144 · task-214. **NÄSTA: Marcus
+prioriterar A-besluten (3/5/6) → stängnings-våg B → QA `201.10` → fas-avslut
+via phase-end-verify.** HANDOFF: sessionsdok S105 Del 9. *(Paus-blocket nedan
+bevarat.)*
+
+**Session 105 ⏸️ PAUSAD (2026-08-13 kväll, `lifecycle: paused`, historik) — FAS 6.5
 AKTIVITETSLOGGEN ÄR LIVE I PROD.** Marcus körde runbooken själv, guidad
 kommando för kommando (prod-låset kringgicks ALDRIG); `activity_log` +
 `log-activity` + `get-activity-log` skarpa sedan ~18:30, rök-testet
