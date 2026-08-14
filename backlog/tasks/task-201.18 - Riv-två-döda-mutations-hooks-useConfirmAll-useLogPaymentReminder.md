@@ -1,10 +1,10 @@
 ---
 id: TASK-201.18
 title: 'Riv: två döda mutations-hooks (useConfirmAll, useLogPaymentReminder)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 19:24'
-updated_date: '2026-08-14 19:34'
+updated_date: '2026-08-14 21:31'
 labels: []
 dependencies: []
 parent_task_id: TASK-201
@@ -28,10 +28,10 @@ Marcus-mandat (via orkestreraren, 2026-08-14, S105): RIV `useConfirmAll` (src/da
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -71,4 +71,8 @@ GRINDAR (mätta, exitkoder fångade separat, aldrig via pipe):
  test:api (fullt, med staging-benet) EJ kört lokalt — samma disciplin som TASK-201.13s notes: staging är en delad bas, CI:s jobb.
 
 INGA MAIL SKICKADE, inga hooks utlösta skarpt (de var redan död kod). Inga supabase-kommandon körda. Prod orörd.
+
+STÄNGNING (S105 Del 11): landad via PR #1297, merge 19b13759 — CI, Post-merge och CodeQL samtliga success (gh run list mot merge-SHA). Katalog-invarianten efter rivning: 16/16/0, hemvist-grinden grön.
+
+STÄNGNING (S105 Del 11): landad via PR #1297, merge 19b13759 — CI, Post-merge och CodeQL samtliga success (gh run list mot merge-SHA). Katalog-invarianten efter rivning: 16/16/0, hemvist-grinden grön. (Första stängningsförsöket i batch föll tyst — omkört enskilt.)
 <!-- SECTION:NOTES:END -->

@@ -7,6 +7,29 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-14
+
+### Added — Fas 6.5: Aktivitetslogg (xAPI) (Session 105, 2026-08-11 → 2026-08-14)
+
+- Supabase-tabell `activity_log` (staging + prod, RLS aktiv, append-only strukturellt bevisad; write endast via `service_role` i EF) — lagringsvalet Supabase i stället för Airtable per [ADR-110](docs/decisions/ADR-110-aktivitetsloggens-lagring-supabase-inte-airtable.md)
+- Edge Functions `log-activity` (skrivväg, fire-and-forget från klienten) + `get-activity-log` (läsväg med filter/paginering) under EF-ribban, metod-vakt före auth i koden (gateway `verify_jwt` svarar dock 401 först — runbook-rättelsen i samma fas)
+- xAPI-statements Zod-validerade runtime (`src/domain/schemas/ActivityStatement.schema.ts`): actor/verb/object/context/timestamp, IRI-nycklade verb med svenska `sv-SE`-display, `requestId` som enda korrelations-ID i `context.extensions` per [ADR-111](docs/decisions/ADR-111-requestid-enda-korrelations-id-ingen-trace-id.md), personId-extension för person-tidslinjen
+- `recordActivity` (`src/data/activityLog/`) med obligatorisk queryClient-DI och cache-invalidering av loggens query-nycklar — hem-spalten speglar en nyss loggad handling utan omladdning (TASK-210)
+- Hem-vyns spalt "Senaste aktivitet" (endast ≥xl; facit-stämplad mot k10 2026-08-13 med mittpunkts-undantaget) + full aktivitetshistorik med filterrad (kategori/event/tidsperiod) via Mer; event-filtrets alternativ disambiguerade `Namn · Ort · datum` (TASK-201.17)
+- Katalog-invarianten "varje exporterad mutationshook loggar" mekaniserad: gatekeeper `tests/api/mutation-hemvist-vakt.test.ts` + config-driven allowlist `.mutation-hemvist-policy.conf` fäller `useMutation` utanför `src/data/mutations/` (TASK-201.15); slutmätning 16/16/0
+- Nya mutations-hooks `useCreateEvent`, `useSendSegmentMail`, `useSaveSegment` (extraherade ur komponent-lokala `useMutation`, instrumenterade; segment-mail loggar EN aggregerad post per EF-kontraktets faktiska svar)
+- e2e-skarven `tests/e2e/aktivitetslogg-skarv.staging.test.ts`: mail-fri åtgärd → posten i hem-spalt (utan omladdning) och historikvy med rätt aktör/språk/tid; anteckningsfallet asserterar ATT-inte-innehåll
+
+### Changed
+
+- Anteckningsposter (event + person) loggar ATT en anteckning gjordes — aldrig innehållet; tvåsidigt fällningsbevisat på payload-nivå
+- `docs/features/FEATURE-ACTIVITY-LOG.md` omskriven från 2026-04-05-planeringsform till byggd form; superseded `ActivityEntry`-Airtable-modell och ikon-idén öppet markerade
+- `docs/reference/prod-driftsattning-runbook.md` § Steg 5: deny-triple-förväntan rättad till `401 · 401 · 401` (gatewayen exekverar före funktionskoden vid `verify_jwt = true`); valfri fjärde 405-probe med anon-Bearer tillagd
+
+### Removed
+
+- `useConfirmAll` + `useLogPaymentReminder` (död kod, noll anropsplatser efter TASK-145-rivningarna; tre oberoende verifieringar) inkl. exklusiva verb och testposter — Marcus-mandat, TASK-201.18
+
 ## [0.7.0] - 2026-06-17
 
 ### Added — Fas 5.5: Vertikal write-slice "markera anmälningsavgift som betald" (Sessions 18/19 + 22)
@@ -178,7 +201,10 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 - `docs/conversion-plan.md` → `docs/archive/conversion-plan-2026-04-14.md` (ADR-012)
 
-[Unreleased]: https://github.com/marcus803/miranon-media-admin/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/high-five-group/miranon-media-admin/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/high-five-group/miranon-media-admin/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/high-five-group/miranon-media-admin/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/high-five-group/miranon-media-admin/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/marcus803/miranon-media-admin/compare/v0.2.0...v0.3.0

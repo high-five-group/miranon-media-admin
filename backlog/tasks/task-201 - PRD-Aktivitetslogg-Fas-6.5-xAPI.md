@@ -1,9 +1,10 @@
 ---
 id: TASK-201
 title: 'PRD: Aktivitetslogg (Fas 6.5, xAPI)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 20:08'
+updated_date: '2026-08-14 21:33'
 labels: []
 dependencies: []
 ordinal: 365000
@@ -78,12 +79,20 @@ Dag 1-deadlinen till Lotta styr skivordningen: A-formen (kärnvy utan filterrad)
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Byggplanen amenderad öppet i denna arbetsenhet: § Fas 6.5-lagringsraden + AT-Max-premissen (Supabase-beslutet)
-- [ ] #6 Hem-spalten identisk mot facit-manifestets k10-bild (ADR-102 B5) — Marcus-granskad
-- [ ] #7 Zod-schemat validerar varje statement runtime — ogiltigt statement når aldrig activity_log
-- [ ] #8 requestId propageras klient → EF → activity_log-rad, läsbar i devtools (byggplanens DoD 3–4)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Byggplanen amenderad öppet i denna arbetsenhet: § Fas 6.5-lagringsraden + AT-Max-premissen (Supabase-beslutet)
+- [x] #6 Hem-spalten identisk mot facit-manifestets k10-bild (ADR-102 B5) — Marcus-granskad
+- [x] #7 Zod-schemat validerar varje statement runtime — ogiltigt statement når aldrig activity_log
+- [x] #8 requestId propageras klient → EF → activity_log-rad, läsbar i devtools (byggplanens DoD 3–4)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD stängd 2026-08-14 (S105 Del 11, fas-avslut samma kväll). Samtliga 18 underkort Done: grunderna 201.1–201.3, instrumenteringen 201.4/201.12–201.14, läs- och vyvägen 201.5–201.8, prod-driftsättningen 201.9 (Marcus guidad 2026-08-13), QA 201.10 (mekanisk vandring efter Marcus-descope, öppet bokförd), fynd 201.11 (falsifierad), skrivvägs-extraktionen 201.15 (18/18 + hemvist-grind), e2e-skarven 201.16, filter-etiketterna 201.17, död-kod-rivningen 201.18 (slutmätning 16/16/0).
+DoD-belägg: #1 PRD:n bär inga egna AC — skivorna bär dem, samtliga avbockade per kort (N/A-bock med denna not). #2–#4 per skivornas landningar (gröna per jobb, run-belägg i respektive korts stängningsnot). #5 byggplanen amenderad öppet (v1.15 lagringsraden + AT-Max-premissen; v1.16 tredje stale-stället). #6 facit-stämpeln 2026-08-13 (facit.json § toppnivå, mittpunkts-undantaget) + baslinjen landad #1287. #7 Zod-runtime: ActivityStatement.schema.ts + schema-sviterna (16 tester) — ogiltigt statement når aldrig activity_log (EF-sidans spegel-schema). #8 requestId klient→EF→rad, live-läst i devtools under QA-vandringen (01979e47-…, task-201.10 final summary punkt 8).
+Lotta-läget: loggen skriver skarpt i prod sedan 2026-08-13 ~18:30; hem-spalten speglar handlingar direkt; historiken filtrerar och länkar. Användarberättelse 9:s noll-luckor-löfte är MEKANISERAT (hemvist-grinden), inte bara uppfyllt.
+<!-- SECTION:FINAL_SUMMARY:END -->

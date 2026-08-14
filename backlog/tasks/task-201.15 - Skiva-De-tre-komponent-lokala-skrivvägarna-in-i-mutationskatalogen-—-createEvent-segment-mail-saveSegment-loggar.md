@@ -3,10 +3,10 @@ id: TASK-201.15
 title: >-
   Skiva: De tre komponent-lokala skrivvägarna in i mutationskatalogen —
   createEvent, segment-mail, saveSegment loggar
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-14 18:29'
-updated_date: '2026-08-14 19:14'
+updated_date: '2026-08-14 21:28'
 labels:
   - ready-for-agent
 dependencies: []
@@ -40,7 +40,7 @@ ABSOLUT MAILFÖRBUD: segment-mail-vägen utlöses ALDRIG skarpt; all verifiering
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -91,4 +91,6 @@ Berörda acceptance-sviter: 6 av 6 nya, 13 av 13 mer-segment-familjen (regressio
 INGA MAIL SKICKADE. send-email-hooken utlöstes ALDRIG skarpt — all verifiering mot fixturvärld MSW, inga supabase-kommandon körda, prod orörd.
 
 ÖPPET EJ VERIFIERAT AV MIG: tests/e2e/skapa-event.staging.test.ts (chromium-authenticated, kräver staging-inlogg) kördes inte — kräver en session-setup jag inte initierade i detta pass. CreateEventForm.tsx-refaktorn är behavior-preserving (typecheck, build och min egen acceptance-svit bevisar hooken), men just den e2e-filens regression är overifierad av mig och blir CI-jobb.
+
+STÄNGNING (S105 Del 11): landad via PR #1294, merge feea7ea2, CI success per jobb (gh run list mot merge-SHA). Rivningen TASK-201.18 justerade senare katalogen 18/18→16/16 (två döda hooks rivna på Marcus-mandat).
 <!-- SECTION:NOTES:END -->

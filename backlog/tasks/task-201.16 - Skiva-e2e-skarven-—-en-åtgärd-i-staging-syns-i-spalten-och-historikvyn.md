@@ -1,10 +1,10 @@
 ---
 id: TASK-201.16
 title: 'Skiva: e2e-skarven — en åtgärd i staging syns i spalten och historikvyn'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 18:30'
-updated_date: '2026-08-14 18:49'
+updated_date: '2026-08-14 21:28'
 labels:
   - ready-for-agent
 dependencies:
@@ -36,7 +36,7 @@ Beroendet på TASK-201.15 är mjukt: undvik samtidig redigering av samma testyto
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -80,4 +80,6 @@ Grindar (exitkoder separat, aldrig pipe): biome check (filen) exit=0, biome
 check . (hela repot) exit=0 (inga nya fynd i min fil), typecheck exit=0,
 build exit=0, test:api exit=0 (729 passed). verify:ci-parity INTE körd (
 diagnosverktyg, ingen ci.yml/ci-suite.yml-ändring gjord, CLAUDE.md-regeln).
+
+STÄNGNING (S105 Del 11): landad via PR #1292, merge 74c788b4 — CI, Post-merge och CodeQL samtliga success (gh run list mot merge-SHA).
 <!-- SECTION:NOTES:END -->
