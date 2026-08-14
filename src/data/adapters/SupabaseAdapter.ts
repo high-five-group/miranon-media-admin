@@ -1,5 +1,9 @@
 import type { Attachment, UploadAttachmentInput } from '../../domain/models/Attachment';
-import type { Attendance } from '../../domain/models/Attendance';
+import type {
+  Attendance,
+  CreateAttendanceInput,
+  CreatedAttendance,
+} from '../../domain/models/Attendance';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
@@ -97,6 +101,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async updateAttendance(_operationKey: string, _id: string, _status: string): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async createAttendance(_input: CreateAttendanceInput): Promise<CreatedAttendance> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

@@ -41,3 +41,22 @@ export const AttendanceSchema = z.object({
   // specialValue-fallback (NaN/Infinity-objekt → null).
   narvaropoang: z.number().nullable().optional(),
 });
+
+/**
+ * [GA] Runtime-validering av `create-attendance`-EF:ens svar (TASK-214.2).
+ *
+ * Parsar EXAKT det adaptern konsumerar — `record.id` (radens skriv-nyckel) och
+ * `created`-flaggan — och stripar resten. `record.fields` läses MEDVETET inte:
+ * EF:en ekar tillbaka Airtables råa fältform, och att parsa den här hade dragit
+ * in Airtable-shapen i domänen tvärs EF-snittet (ADR-080 § Snittet går vid
+ * protokollet). Behöver en framtida konsument fälten hämtas de via läsvägen
+ * (`get-attendance`), som redan har sin egen domän-mappning.
+ *
+ * `created: false` är idempotens-vägen (raden fanns redan, 200) — ett giltigt
+ * utfall, aldrig ett fel. Se `supabase/functions/create-attendance/index.ts`
+ * § IDEMPOTENT AV DESIGN.
+ */
+export const CreatedAttendanceSchema = z.object({
+  record: z.object({ id: z.string() }),
+  created: z.boolean(),
+});
