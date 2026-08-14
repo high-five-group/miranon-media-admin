@@ -3,10 +3,10 @@ id: TASK-214.1
 title: >-
   Skiva: WRITE-enabling — allowlist-posten set-attendance-status +
   create-attendance-EF + API-testparet
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 19:09'
-updated_date: '2026-08-14 20:14'
+updated_date: '2026-08-14 20:41'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,15 +31,15 @@ Skrivvägen för närvaro byggs och bevisas ände-till-ände i API-skarven, utan
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
-- [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
-- [ ] #7 Datavägs-invarianten verifierad: läsvägen oförändrad; skrivning sker ENDAST via de två speccade operationerna
-- [ ] #8 Test-konsument-svepets träffyta bilagd och alla träffar uppdaterade i samma skiva som sin flip
-- [ ] #9 Kvittensfönstrets kontrakt bevisat via nätverks-observation: inget skrivanrop före fönstrets utgång, ångra ger noll anrop
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
+- [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
+- [x] #7 Datavägs-invarianten verifierad: läsvägen oförändrad; skrivning sker ENDAST via de två speccade operationerna
+- [x] #8 Test-konsument-svepets träffyta bilagd och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #9 Kvittensfönstrets kontrakt bevisat via nätverks-observation: inget skrivanrop före fönstrets utgång, ångra ger noll anrop
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -64,3 +64,9 @@ DEPLOY: create-attendance + update-record (konsumerar den ändrade field-allowli
 
 DoD #5/#6/#9 (ariaSnapshot/bevis-loop-skärmdump/kvittensfönster) är INTE TILLÄMPLIGA på denna skiva — den rör ENDAST API-skarven, ingen UI-yta ("utan att någon UI-yta rörs", kortets egen beskrivning). Dessa DoD-punkter verkar vara ärvda oförändrade ur PRD-kortets DoD-mall och passar form-skivorna (214.2/214.3), inte denna. Flaggat, inte tyst ignorerat — orkestreraren avgör om DoD-mallen bör differentieras per skiva-typ.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad av bygg-agent (Sonnet) 2026-08-14, PR #1299, merge ecd444e5, via merge-kön med gröna grindar per jobb. AC 1–5 avbockade i agentens commit 7a66316b. Faktiskt mätta grindar: test:api 739/739 (inkl 11 nya check-in-tester), typecheck 0, biome 0, build grön, check:docs 14/14. Två divergenser öppet bokförda av agenten: (a) allowlist-registret bar 18 operationer, inte uppdragets 17; (b) S90-förarbetet täckte ENDAST set-attendance-status — create-attendance-EF:en designades av agenten mot PRD:t: idempotent (reverslänk-lookup, 200 created:false på dubblett), medvetet UTAN sentinel/purge (Deltaganden saknar purge-bart fritextfält; motivering i testfilens huvud). Tre permanenta CHECKIN_*-staging-fixturer seedade. DoD 5/6/9 (ariaSnapshot, bevis-loop, kvittensfönster) är N/A på denna rent API-scopade skiva — belagt här, inte tyst; process-fyndet att DoD-mallen kunde differentieras per skiva-typ noteras i sessionshandoffen. Stängd av orkestreraren efter landningsverifikat mot origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->
