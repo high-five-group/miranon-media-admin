@@ -50,6 +50,20 @@ import { queryKeys } from '@/queries/keys';
  * pagineringsbugg uppdraget varnade för). Se § "filterbyte mitt i paginering"
  * i `useActivityLogHistory`s docstring för hur markören hanteras vid ett
  * filterbyte.
+ *
+ * EVENT-FILTRETS ETIKETT (TASK-201.17, fynd ur S105:s mekaniska QA-vandring
+ * 2026-08-14): bar `event.eventNamn` gav 32+ options i staging identisk
+ * etikett "Fjärrskådning" (samma kurs körs på flera orter/datum — en ÄKTA
+ * verksamhetsform, INTE fixtur-brus; källmärkt mot staging-Airtable och
+ * `get-events`-EF:ens kod i fynd-kortets egen § Verifiering/§ Rotorsak) —
+ * omöjliga att skilja åt, Gunilla-principen fälld. Löst genom
+ * `eventFilterEtikett` ("Namn · Ort · datum", återbruk av hem-vyns
+ * `NyaAnmalningarCard.tsx`s postform) + kronologisk tie-break i
+ * `eventOptions`-sorteringen — se respektive funktions egna kommentarer
+ * nedan. Kod-nivå ID-dubblering (samma event-record två gånger i den
+ * hämtade listan) utreddes och avfärdades — `fetchFromAirtable`
+ * (`supabase/functions/_shared/airtable-client.ts`) pushar varje sidas
+ * poster EN gång, ingen dedup-logik behövdes.
  */
 
 /** Klockslag "14:22" — raden i grupper ÄLDRE än idag (dagen är redan sagd av gruppens h2). */
@@ -156,6 +170,36 @@ const ALLA = '__alla';
  * `NastaEventCard.tsx` redan valde för identisk logik, `components/hem/`). */
 function eventVisningsNamn(e: Event): string {
   return e.eventNamn ?? e.eventlabel ?? 'Namnlöst event';
+}
+
+/**
+ * Kortdatum "22 aug" (TASK-201.17) — LOKAL kopia av `NyaAnmalningarCard.tsx`s
+ * `KORTDATUM`/`kortDatum` (samma cross-feature-isolering som `eventVisningsNamn`
+ * ovan, ingen delad export finns eller ska skapas här). sv-SE utan avslutande
+ * punkt; null-säker.
+ */
+const KORTDATUM = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'short' });
+function kortDatum(iso: string | null): string | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? null : KORTDATUM.format(t).replace(/\.$/, '');
+}
+
+/**
+ * Filterradens event-options-ETIKETT (TASK-201.17, fynd ur S105:s QA-
+ * vandring): "Namn · Ort · datum" — SAMMA postform som hem-vyns
+ * anmälningslista (`NyaAnmalningarCard.tsx`s `eventIdentitet`), källmärkt i
+ * fynd-kortet TASK-201.17. Bar `eventVisningsNamn(e)` ENSAM gav 32+ event i
+ * staging identisk etikett "Fjärrskådning" (samma kursnamn körs på flera
+ * orter/datum — en ÄKTA, återkommande verksamhetsform, inte fixtur-brus,
+ * verifierat mot staging-Airtable i denna skivas byggsession) —
+ * oskiljbara för Lotta (Gunilla-principen fälld). `ort`/`startdatum` är
+ * redan del av `Event`-modellen (`domain/models/Event.ts`), ingen ny
+ * datakälla behövdes. `.filter(Boolean)` degraderar ärligt vid saknad
+ * ort/datum (aldrig en stray-separator).
+ */
+function eventFilterEtikett(e: Event): string {
+  return [eventVisningsNamn(e), e.ort, kortDatum(e.startdatum)].filter(Boolean).join(' · ');
 }
 
 /** Dagsgruppens etikett: "Idag" / "Igår" / långdatum. Kalenderdags-diff, inte 24h-fönster
@@ -361,6 +405,11 @@ function LaddLage() {
  * (`queryKeys.events.list`) — varm cache vid navigering från Event, kall
  * hämtning vid djuplänk hit; `isDisabled` under tiden (samma golv som
  * EventsList.tsx:s panel-Select under `isPending`).
+ *
+ * Event-optionens ETIKETT är `eventFilterEtikett` — "Namn · Ort · datum",
+ * INTE bar `eventVisningsNamn` (TASK-201.17, fynd ur S105:s QA-vandring: bar
+ * namn gav 32+ identiskt etiketterade options i staging, se funktionens eget
+ * kommentarsblock ovan för källmärkningen).
  */
 function FilterRad({
   kategori,
@@ -413,7 +462,7 @@ function FilterRad({
         <SelectItem id={ALLA}>Alla event</SelectItem>
         {eventOptions.map((e) => (
           <SelectItem key={e.id} id={e.id}>
-            {eventVisningsNamn(e)}
+            {eventFilterEtikett(e)}
           </SelectItem>
         ))}
       </Select>
@@ -506,11 +555,20 @@ export function AktivitetsHistorik() {
     queryKey: queryKeys.events.list,
     queryFn: () => dataSource.fetchEvents(),
   });
+  // Sortering (TASK-201.17): NAMN primär nyckel (oförändrat), STARTDATUM
+  // sekundär tie-break. Utan tie-breaken låg identiskt namngivna event
+  // (samma kurs, flera orter/datum — se `eventFilterEtikett` ovan) i
+  // godtycklig Airtable-radordning sinsemellan; kronologisk tie-break
+  // grupperar och ordnar dem läsbart. `startdatum` är ISO "YYYY-MM-DD" —
+  // lexikografisk `localeCompare` är redan kronologisk, ingen `Date.parse`
+  // behövs. `?? ''` sorterar events UTAN datum tidigast (null-säkert, aldrig
+  // ett kastat fel).
   const eventOptions = useMemo(
     () =>
-      [...(eventsData ?? [])].sort((a, b) =>
-        eventVisningsNamn(a).localeCompare(eventVisningsNamn(b), 'sv'),
-      ),
+      [...(eventsData ?? [])].sort((a, b) => {
+        const namnCmp = eventVisningsNamn(a).localeCompare(eventVisningsNamn(b), 'sv');
+        return namnCmp !== 0 ? namnCmp : (a.startdatum ?? '').localeCompare(b.startdatum ?? '');
+      }),
     [eventsData],
   );
 
