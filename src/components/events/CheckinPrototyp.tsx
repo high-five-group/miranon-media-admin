@@ -1319,9 +1319,8 @@ function DorrRadD({
         aria-label={`Närvarande: ${rad.namn}`}
         className="group flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded px-1 data-[focus-visible]:outline-(--mm-focus-ring) data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2"
       >
-        <span className="text-small text-text-muted group-data-[selected]:font-medium group-data-[selected]:text-text-secondary">
-          Närvarande
-        </span>
+        {/* Ingen synlig etikett (varv 2, Marcus): rutan är självförklarande i
+            sitt sammanhang. Namnet bärs helt av `aria-label`. */}
         {/* Boxen: kant + platta i Deltagare-precedentens success-form; bocken
             är mörk (text-text) på den ljusa plattan så glyf-kontrasten håller
             oavsett vad `--mm-success` löser till. Kanten är 1.4.1-bäraren. */}
@@ -1719,7 +1718,7 @@ function VariantD({
       ) : (
         <ul
           aria-label="Anmälda att checka in"
-          className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+          className="divide-y divide-border overflow-hidden rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
         >
           {attGora.map((rad) => (
             <DorrRadD
@@ -1761,7 +1760,7 @@ function VariantD({
             <ul
               id="checkin-klara-lista"
               aria-label="Incheckade"
-              className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+              className="divide-y divide-border overflow-hidden rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
             >
               {klaraTraffar.map((rad) => (
                 <DorrRadD
