@@ -3267,6 +3267,32 @@ exekveringsvåg + fas-avslut 2026-08-14 på Marcus GO + mandat.
 - **Lessons:** nio fragment (sju `[UNIVERSAL]`) i `tasks/lessons.d/`;
   kandidat-pool deferred, bokförd i Del 16.
 
+## Session 106 — Aktivitetshistorik-sidans omdesign: konvergens → promovering på EN dag (2026-08-15)
+
+- **Hela prototyp-till-skarpt-bågen sluten samma dag** (ADR-103/104-apparatens
+  snabbaste varv hittills): konvergens-pass direkt på befintlig yta (divergens
+  bortvald på Marcus order), fem steg mot RENDERAD yta med Check-in-fallets
+  rotdiagnos som grund (S103/task-209: tala husets stämplade språk) →
+  facit-låsning → PRD `TASK-225` + 5 skivor → flip + härdning → Marcus
+  `godkand`-stämpel via `!`-kanalen → mekanisk rivning (−1 078 rader substrat).
+- **Formen:** husets sidkrom (44 px chevron + text-3xl), personlistans
+  radgrammatik (initial-cirkel, tiden som rubrik, min-h-16, hover-underline
+  utan tint), uppdelad filterrad + NY datumväljare (eventsidans DatumFalt —
+  EF:ens from/to-range fanns redan, noll backend för filtret), verb-copy som
+  presentationslager i delad modul (`src/data/activityLog/verbCopy.ts`) —
+  hem-spalten påkopplad med facit-amendering (Marcus omstämpling).
+- **EF-utökning:** `get-activity-log` bär additiv `total` (exakt head-count) —
+  statusraden "Visar 20 av 279 poster." live-bevisad i staging; PROD-deployen
+  körd av Marcus via allowlist-skriptet (35/35, tog även väntande fixar som
+  `TASK-196` till prod).
+- **Härdning:** `DatumFalt` lyft till `src/components/primitives/` (bevisat
+  delbehov) · `h1[tabindex="-1"]`-fokusring-släckare i `base.css`.
+- **Landningar (samtliga MERGED):** `#1316` (dokfödelse), `#1328` (låsning),
+  `#1335` (PRD + 4 skivor + rivning, merge `b924fb1b`), `#1345` (Del 2 +
+  kort-stängningar), `#1353` (s55-inbakningen). Kort: `225.1`–`225.5` + PRD
+  `225` Done. Tråd `T144` född (heartbeat-larmbrus). Full narrativ:
+  sessionsdok S106 Del 1–3.
+
 ## Session-modellen
 
 Varje framtida session läggs till denna fil **som en ny `## Session NN`-sektion** (inte under en fas-rubrik — faserna kan spänna över flera sessioner eller flera faser kan rymmas i en session).
