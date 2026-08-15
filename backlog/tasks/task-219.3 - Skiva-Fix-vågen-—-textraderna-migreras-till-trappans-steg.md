@@ -1,10 +1,10 @@
 ---
 id: TASK-219.3
 title: 'Skiva: Fix-vågen — textraderna migreras till trappans steg'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 08:50'
-updated_date: '2026-08-15 09:57'
+updated_date: '2026-08-15 10:23'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,14 +26,6 @@ ordinal: 422000
 - [x] #3 Beteendeneutralitet bevisad: befintliga acceptance-/e2e-sviter för berörda ytor gröna; visual-sviten grön
 - [x] #4 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -170,3 +162,17 @@ tests/e2e/event-narvaro-register.staging.test.ts refererar
 existerar inte (sannolikt riven i samma TASK-214.7-promovering som
 EventAttendance.tsx). Bokförs, inte fixat (utanför detta korts scope).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1338 (commit 79f9814b, MERGED på main ab4f3c1c). Grep-deriverad verklig mängd: 10 produktionsytor med naken Laddar…-textrad som enda laddbesked (research-talet 32 räknade brett — sr-only/placeholders/kommentarer korrekt klassade och orörda), samtliga migrerade till trappans steg inom isPending-blocken (laddat läge matematiskt orört); appnivåns två 218.3-ägda rader orörda per scope; acceptance 62 grön, DoD-kvartetten grön.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
