@@ -15,6 +15,19 @@
 
 ## Aktuellt fokus
 
+**Session 102 ▶️ ÅTERUPPTAGEN (2026-08-15, `lifecycle: active`, Marcus vägval
+— Lotta-vandringen).** Resume per S102 PAUSLÄGE-handoffens andra paus (nu
+Paushistorik-form); egen worktree per ADR-090 beslut 2 (huvudkatalogens
+ägarlapp har LEVANDE ägare, deny-hooken bevisade process 39081). Ingång:
+Marcus fixlista från inloggningen och framåt → `147.9` (QA: Åtgärds-sidan
+hela Lotta-flödet). Av paus-sekvensen är (5) S103-granskningen inlöst
+(D-varianten vald, PRD `214` + `214.6` Done); (1) justeringslistan tas
+muntligt nu; (3) `127.10`/`126.3` och (4) `169`-stängningen kvarstår To Do.
+Numrering re-verifierad mot disk 2026-08-15: ADR **112** · tråd **T144** ·
+kort **task-216** (215 förbrukat, flake-kortet) · lesson **L512** + 7
+fragment — re-derivera alltid. Full handoff: sessionsdok S102 § Paushistorik
+(andra pausen).
+
 **Session 105 ✅ AVSLUTAD (2026-08-15, `lifecycle: closed`, Marcus-kvittens
 "Kvitterar, stäng") — FAS 6.5 AKTIVITETSLOGG ✅ KLAR.** Marcus-order:
 allt aktivitetsloggs-relaterat ska fungera och vara redo för Lotta.
