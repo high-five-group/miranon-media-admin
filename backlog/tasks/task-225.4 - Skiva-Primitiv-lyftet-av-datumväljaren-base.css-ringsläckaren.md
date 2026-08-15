@@ -1,9 +1,10 @@
 ---
 id: TASK-225.4
 title: 'Skiva: Primitiv-lyftet av datumväljaren + base.css-ringsläckaren'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 09:22'
+updated_date: '2026-08-15 10:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,6 +25,12 @@ Härdningen av två delade byggstenar S106-passet bevisade delbehov för: datumv
 - [ ] #2 Rubrikens programfokus-ringsläckning bärs av en base.css-regel i listbox-släckarens etablerade form; inline-stylen borttagen; tangentbords-fokusringar i övrigt opåverkade
 - [ ] #3 Biome, typecheck och acceptance-sviterna gröna
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Levererad i PR #1335 (merge b924fb1b). DatumFalt → src/components/primitives/ (3 konsumenter ompekade, beteende oförändrat); h1[tabindex=-1]:focus-visible-släckare i base.css (listbox-släckarens form), inline-interim riven; golv gröna.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

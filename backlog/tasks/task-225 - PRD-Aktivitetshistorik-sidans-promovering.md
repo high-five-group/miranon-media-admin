@@ -1,9 +1,10 @@
 ---
 id: TASK-225
 title: 'PRD: Aktivitetshistorik-sidans promovering'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 09:16'
+updated_date: '2026-08-15 10:48'
 labels: []
 dependencies: []
 ordinal: 412000
@@ -75,3 +76,9 @@ Skarv-valet Marcus-delegerat och avgjort 2026-08-15 ('Du vet bäst, du bestämme
 - [ ] #5 check-facit.sh grön genom hela kedjan — rivning omöjlig medan godkand är null
 - [ ] #6 Marcus godkand-stämpel via facit-godkännande FÖRE all rivning av prototyp-substrat
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Alla fem barn Done. Promoveringens båge komplett i PR #1335 (merge b924fb1b): flip → härdning (EF-total, hem-konsistens, primitiv-lyft, base.css-släckare) → Marcus granskning + godkand-stämpel → mekanisk rivning. Öppet kvar utanför PRD:n: prod-deploy av get-activity-log (Marcus runbook-moment) och inbakning av s55-amenderings-sidofilen i manifestet (Marcus !-moment).
+<!-- SECTION:NOTES:END -->

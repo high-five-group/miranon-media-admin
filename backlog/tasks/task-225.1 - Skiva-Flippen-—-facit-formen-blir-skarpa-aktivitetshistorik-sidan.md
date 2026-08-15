@@ -1,9 +1,10 @@
 ---
 id: TASK-225.1
 title: 'Skiva: Flippen — facit-formen blir skarpa aktivitetshistorik-sidan'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 09:18'
+updated_date: '2026-08-15 10:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,6 +25,12 @@ Promoveringens kärna (ADR-103 B2a): prototypens form blir den skarpa komponente
 - [ ] #3 Bägge acceptance-sviterna för routen är uppdaterade mot nya formen och gröna — externt beteende (rubrik, filterflöden inkl. datumval och dess exklusivitet mot tidsperioden, statusradens copy, radernas länkmål), aldrig klassnamn
 - [ ] #4 Prototyp-växeln, prototypfilen och snapshot-riggen står KVAR orörda — rivning sker först efter Marcus stämpel
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Levererad i PR #1335 (merge b924fb1b). Formen flyttad verbatim ur prototypen (ADR-103 B1/B2); acceptance 19/19 inkl nytt verbCopy-fall; facit-granskning utförd mot tasks/sessions/bilagor/s106-aktivitetslogg/facit.json; Marcus godkand-stämpel satt 2026-08-15; substratet rivet EFTER stämpeln (check-facit 0 ogodkända).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

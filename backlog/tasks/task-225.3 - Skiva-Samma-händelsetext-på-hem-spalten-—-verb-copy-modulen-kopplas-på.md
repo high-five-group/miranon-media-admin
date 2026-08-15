@@ -1,9 +1,10 @@
 ---
 id: TASK-225.3
 title: 'Skiva: Samma händelsetext på hem-spalten — verb-copy-modulen kopplas på'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 09:20'
+updated_date: '2026-08-15 10:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,6 +24,12 @@ Konsistensfyndet ur S106-passet: samma händelse visade olika text på hem ('mar
 - [ ] #2 s55-hem-konvergens-facitets manifest är öppet amenderat med undantaget (verb-copy som presentationslager, Marcus-riktning 2026-08-15) — aldrig en tyst avvikelse från stämplad yta
 - [ ] #3 Hem-sviternas acceptance-tester gröna; ariaSnapshot-referenser uppdaterade om händelsetexten ingår i dem
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Levererad i PR #1335 (merge b924fb1b). Hem-spalten på delade verb-copy-modulen; hem-acceptance 9/9; ariaSnapshot-refs uppdaterade. AVVIKELSE mot AC #2, öppet bokförd: s55-manifestet är AGENT-FRUSET efter stämpel (ADR-104-hooken, prövat+nekat ×2) — amenderingen bärs durabelt av sidofilen tasks/sessions/bilagor/s55-hem-konvergens/AMENDERING-2026-08-15-verbcopy.md; inbakningen i manifestet är Marcus !-moment.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

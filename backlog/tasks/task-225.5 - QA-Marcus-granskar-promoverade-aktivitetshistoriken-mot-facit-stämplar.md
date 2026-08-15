@@ -1,9 +1,10 @@
 ---
 id: TASK-225.5
 title: 'QA: Marcus granskar promoverade aktivitetshistoriken mot facit + stämplar'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 09:24'
+updated_date: '2026-08-15 10:48'
 labels:
   - ready-for-human
 dependencies:
@@ -26,6 +27,12 @@ Manuell testplan (Marcus): (1) Öppna skarpa /mer/aktivitetshistorik UTAN varian
 - [ ] #1 Skarpa ytan granskad mot facit-bilderna (desktop + mobil) och befunnen identisk — eller avvikelser bokförda som nya fynd-kort
 - [ ] #2 godkand-stämpeln satt av Marcus via facit-godkännande-kommandot genom !-kanalen (ADR-104 — kan inte sättas av agent)
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Marcus genomförde granskningen i dev-servern mot facit-bilderna 2026-08-15 och stämplade via !-kanalen: npm run facit:godkann -- --pass s106-aktivitetslogg --citat 'Godkänd mot facit 2026-08-15' (godkand av marcus, sha 871ae4f4). Rivningen verkställd EFTER stämpeln (PR #1335); manifestets kallor ompekade av Marcus sed-rad (manifestet agent-fruset).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
