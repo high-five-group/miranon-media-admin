@@ -9,6 +9,21 @@ export interface ForberedelseskarmProps {
 }
 
 /**
+ * Platshållar-props för de TVÅ ingångspunkter (TASK-218.3, `src/main.tsx` +
+ * `src/routes/__root.tsx`) som visar skärmen INNAN en riktig startvärmnings-
+ * handle finns: auth-resolution-fasen (varm/kall ännu inte avgjord, ADR-112
+ * beslut 5 tillåter skärmen i 0-läge här) och rot-Suspense-fallbacken
+ * (route-chunk-nedladdning — ett HELT ANNAT väntoläge än startvärmningens sju
+ * hämtningar). Hemvist HÄR, inte i `main.tsx`, för att undvika en cirkulär
+ * import (`main.tsx` → `router.ts` → `routeTree.gen.ts` → `__root.tsx` →
+ * `main.tsx`) om `__root.tsx` hade importerat den från `main.tsx`.
+ * `totalt: 1` håller stapeln vid 0 % utan division med noll — INGEN relation
+ * till startvärmningens riktiga `totalt` (7 datamängder, `startvarmningen.ts`
+ * `WARMUP_ITEMS`).
+ */
+export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, totalt: 1 };
+
+/**
  * Forberedelseskarm — Förberedelseskärmen (ORDLISTA; ADR-112; DESIGN-SYSTEM-
  * SPEC §15-familjen; PRD TASK-218 användarberättelser 1, 6, 7).
  *

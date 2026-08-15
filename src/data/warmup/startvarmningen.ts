@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { onlineManager } from '@tanstack/react-query';
 import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
-import { queryKeys } from '@/queries/keys';
+import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
 
 /**
  * Startvärmningsmotorn (TASK-218.1, ADR-112, ORDLISTA.md "Startvärmningen").
@@ -109,22 +109,21 @@ const DEFAULT_TIMEOUT_MS = 9000;
 const BATCH_SIZE = 2;
 
 /**
- * Hem-spaltens "Senaste aktivitet" (`src/components/hem/SenasteAktivitet.tsx`
- * rad 88, `ANTAL_RADER`) läser `queryKeys.activityLog.latest(4)` — INTE
+ * Hem-spaltens "Senaste aktivitet" (`src/components/hem/SenasteAktivitet.tsx`)
+ * läser `queryKeys.activityLog.latest(HEM_SENASTE_AKTIVITET_ANTAL)` — INTE
  * hookens egen default (`LATEST_DEFAULT_LIMIT = 5` i
  * `src/data/queries/useActivityLog.ts`). `limit` är DEL av query-nyckeln
  * (`['activityLog', 'latest', limit]`), så en warmup-seedning med fel tal
  * skriver en cache-post ingen konsument någonsin läser — teknisk framgång,
- * noll faktisk nytta för just den kortkomponenten. Värdet är därför
- * HÅRDKODAT och speglat härifrån, inte importerat (`ANTAL_RADER` exporteras
- * inte, och denna modul rör medvetet ingen UI-fil, se filhuvudet i
- * TASK-218.1s slutrapport). KÄND KOPPLINGSRISK, bokförd öppet: ändras
- * `ANTAL_RADER` i `SenasteAktivitet.tsx` utan att detta tal följer med,
- * seedar warmup fel nyckel igen utan att något test här fångar det (ett
- * sådant test skulle behöva känna till UI-komponentens konstant, vilket är
- * exakt kopplingen denna kommentar flaggar).
+ * noll faktisk nytta för just den kortkomponenten.
+ *
+ * TIDIGARE (TASK-218.1) var talet HÅRDKODAT och speglat härifrån, med en
+ * bokförd ÖPPEN kopplingsrisk: ändrades komponentens egen konstant utan att
+ * detta tal följde med, seedade warmup fel nyckel utan att något test fångade
+ * det. TASK-218.3 LÖSER driften: `HEM_SENASTE_AKTIVITET_ANTAL` exporteras nu
+ * från `@/queries/keys` (datalagret, INTE komponenten — motorn får aldrig
+ * importera UI) och BÅDA konsumenterna importerar samma export.
  */
-const HEM_SENASTE_AKTIVITET_LIMIT = 4;
 
 /** Se filhuvudets § "Äkta settled-räkning". */
 export interface StartvarmningForlopp {
@@ -257,8 +256,8 @@ const WARMUP_ITEMS: WarmupItem[] = [
     namn: 'activityLog',
     async kor({ qc, ds }) {
       await qc.ensureQueryData({
-        queryKey: queryKeys.activityLog.latest(HEM_SENASTE_AKTIVITET_LIMIT),
-        queryFn: () => ds.fetchActivityLog({ pageSize: HEM_SENASTE_AKTIVITET_LIMIT }),
+        queryKey: queryKeys.activityLog.latest(HEM_SENASTE_AKTIVITET_ANTAL),
+        queryFn: () => ds.fetchActivityLog({ pageSize: HEM_SENASTE_AKTIVITET_ANTAL }),
         revalidateIfStale: true,
       });
     },

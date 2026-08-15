@@ -31,6 +31,19 @@ import { expect, type Page, type Route, test } from '../support/test-bas';
  * och page.route är inte tillförlitlig genom SW-fetch, så assertionen
  * speglar renderat innehåll före/efter i stället för att styra datat.
  *
+ * TASK-218.3 (ADR-112, InnerApp-gaten i src/main.tsx): buster-/maxAge-
+ * undertesten i AC 3 är de COLD-vägen tar — restoren lämnar queryClienten
+ * TOM, samma signal gaten läser som "kall". De två testerna är justerade
+ * (Förberedelseskärmen i stället för det gamla tre-status-mönstret) som en
+ * DIREKT, nödvändig konsekvens av den ändringen — INTE ny kallstarts-
+ * täckning (den är TASK-218.4s scope). Återhämtnings-assertionen i BÅDA är
+ * DÄRFÖR inte längre helt page.route-deterministisk: startvärmningen hämtar
+ * fem ytterligare datamängder (waitlist/intresserade/maillog/segment/
+ * activityLog) mot RIKTIG staging (inga mockar för dem i denna fil) innan
+ * `main#main` monteras — generösa timeouts (12 s) täcker motorns hårda
+ * 9 s-tak (ADR-112 beslut 3) med marginal. gcTime-undertestet är OFÖRÄNDRAT
+ * (varm väg — cachen kastas aldrig i det scenariot).
+ *
  * Persist-nyckeln (REACT_QUERY_OFFLINE_CACHE, bibliotekets default) läses i
  * testerna ENDAST som observationsyta — aldrig som manipulations-API för
  * tömning (manuell nyckel-radering racear mot throttle-synken ~1 s,
@@ -292,15 +305,23 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     mocken.hall = true;
     await page.reload();
 
-    // Kastad cache ⇒ kalla laddlägets tre status-ytor, inget sentinel-data.
+    // Kastad cache ⇒ COLD-vägen (ADR-112/TASK-218.3, InnerApp-gaten i
+    // src/main.tsx): restore lämnar queryClienten TOM (buster-mismatchen
+    // gör att biblioteket aldrig hydrerar) — samma tomma-cache-signal gaten
+    // läser för "kall". Förberedelseskärmen ersätter det GAMLA tre-status-
+    // mönstret; main#main monteras inte förrän startvärmningen släpper.
     const main = page.locator('main#main');
-    await expect(main.getByRole('status')).toHaveCount(3);
-    await expect(main.getByText('Signe Sparad')).toHaveCount(0);
+    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeVisible();
+    await expect(main).toHaveCount(0);
+    await expect(page.getByText('Signe Sparad')).toHaveCount(0);
 
     // Återhämtning: färsk hämtning ersätter laddläget (rent efter versionsbyte).
+    // Startvärmningen kör sekventiella batcher (BATCH_SIZE 2, startvarmningen.ts)
+    // mot RIKTIG staging för de fem här omockade datamängderna — generös
+    // timeout täcker motorns hårda 9 s-tak (ADR-112 beslut 3) med marginal.
     mocken.hall = false;
     await mocken.slappAlla();
-    await expect(main.getByRole('link', { name: /Signe Sparad/ })).toBeVisible();
+    await expect(main.getByRole('link', { name: /Signe Sparad/ })).toBeVisible({ timeout: 12_000 });
   });
 
   test('AC 3 — gcTime ≥ maxAge: inaktivitet långt över gamla gcTime:n kasserar inte lagrad cache (GC-fällan)', async ({
@@ -368,13 +389,17 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     mocken.hall = true;
     await page.reload();
 
+    // Kastad cache ⇒ COLD-vägen (ADR-112/TASK-218.3) — se buster-testets
+    // kommentar ovan för det fullständiga resonemanget (samma mekanism,
+    // maxAge i stället för buster fäller restore).
     const main = page.locator('main#main');
-    await expect(main.getByRole('status')).toHaveCount(3);
-    await expect(main.getByText('Signe Sparad')).toHaveCount(0);
+    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeVisible();
+    await expect(main).toHaveCount(0);
+    await expect(page.getByText('Signe Sparad')).toHaveCount(0);
 
     mocken.hall = false;
     await mocken.slappAlla();
-    await expect(main.getByRole('link', { name: /Signe Sparad/ })).toBeVisible();
+    await expect(main.getByRole('link', { name: /Signe Sparad/ })).toBeVisible({ timeout: 12_000 });
   });
 });
 

@@ -8,6 +8,24 @@
  * läggs till (events, persons, dashboard …). En enda sanningskälla för nycklar
  * så list-query och mutation-cache-ops aldrig kan divergera.
  */
+/**
+ * Hem-spaltens "Senaste aktivitet"-korts radantal (TASK-201.7,
+ * `SenasteAktivitet.tsx`) — ENDA SANNINGSKÄLLAN för talet (TASK-218.3).
+ *
+ * Fram till denna rad speglade `startvarmningen.ts` (`src/data/warmup/`)
+ * talet som en egen hårdkodad, ospårad konstant — bokfört öppet av
+ * TASK-218.1-agenten som KÄND KOPPLINGSRISK: `limit` är DEL av
+ * `queryKeys.activityLog.latest(limit)`, så en warmup-seedning med fel tal
+ * skriver en cache-post ingen konsument läser. Denna export löser driften:
+ * komponenten OCH warmup-motorn importerar BÅDA härifrån i stället för att
+ * hårdkoda sitt eget tal. Hemvisten är `queries/keys.ts` — inte komponenten
+ * — av lagerriktningsskäl: warmup-motorn (`src/data/warmup/`) får aldrig
+ * importera en UI-komponent, men får (liksom komponenten) importera denna
+ * datalagerfil; den riktningen är redan etablerad (warmup importerar
+ * `queryKeys` härifrån sedan TASK-218.1).
+ */
+export const HEM_SENASTE_AKTIVITET_ANTAL = 4;
+
 export const queryKeys = {
   registrations: {
     all: ['registrations'] as const,

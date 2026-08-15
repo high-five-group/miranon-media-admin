@@ -5,7 +5,12 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { Suspense } from 'react';
 import type { AuthContextValue } from '@/auth/AuthProvider';
-import { AppUpdateBanner, RouteAnnouncer } from '@/components/AppShell';
+import {
+  AppUpdateBanner,
+  FORBEREDELSESKARM_VANTAR,
+  Forberedelseskarm,
+  RouteAnnouncer,
+} from '@/components/AppShell';
 import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
 
 interface RouterContext {
@@ -37,9 +42,13 @@ function RootLayout() {
       <AppUpdateBanner />
       <Suspense
         fallback={
-          <div role="status" aria-live="polite" className="p-4">
-            Laddar…
-          </div>
+          // TASK-218.3/ADR-112: appnivåns naket "Laddar…" ersatt av samma
+          // branded skärm som auth-resolution-fasen (src/main.tsx) — se
+          // Forberedelseskarm.tsx:s doc-block för FORBEREDELSESKARM_VANTAR.
+          <Forberedelseskarm
+            klara={FORBEREDELSESKARM_VANTAR.klara}
+            totalt={FORBEREDELSESKARM_VANTAR.totalt}
+          />
         }
       >
         <NuqsAdapter>

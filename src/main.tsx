@@ -1,7 +1,8 @@
 import * as Sentry from '@sentry/react';
+import { useIsRestoring } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { RouterProvider } from '@tanstack/react-router';
-import { StrictMode, useEffect } from 'react';
+import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // Validera env-variabler vid uppstart — kraschar direkt om något saknas.
@@ -12,7 +13,11 @@ import './styles/tailwind.css';
 
 import { AuthProvider } from './auth/AuthProvider';
 import { useAuth } from './auth/useAuth';
+import { FORBEREDELSESKARM_VANTAR, Forberedelseskarm } from './components/AppShell';
 import { AppErrorBoundary } from './components/ErrorBoundary';
+import { dataSource } from './data/dataSource';
+import type { StartvarmningForlopp, StartvarmningHandle } from './data/warmup/startvarmningen';
+import { starta } from './data/warmup/startvarmningen';
 import { registreraAppUppdatering } from './lib/app-uppdatering';
 import { reportWebVitals } from './lib/report-web-vitals';
 import { initSentry } from './observability/sentry';
@@ -23,6 +28,12 @@ import { queryClient, router } from './router';
 // (env-validering, root-element-fel, ...) fångas. Skip i lokal dev.
 initSentry();
 
+/** Gate-fasen (TASK-218.3, ADR-112) InnerApp driver EFTER auth är löst. */
+type GateFas =
+  | { typ: 'vantar' }
+  | { typ: 'varmar'; forlopp: StartvarmningForlopp }
+  | { typ: 'redo' };
+
 /**
  * InnerApp-pattern (officiell TanStack-rekommendation):
  * useAuth() kan bara anropas i React-komponent, inte i modul-scope. InnerApp wrappar
@@ -31,9 +42,54 @@ initSentry();
  *
  * Utan router.invalidate() kan _authenticated-routes fortsätta tänka att user är obehörig
  * efter login, eller vice versa efter logout.
+ *
+ * ═══ ADR-112/TASK-218.3 — WARMUP-GATEN ═══
+ *
+ * Utökar ADR-037s render-gate (nedan) med en andra fas EFTER auth är löst:
+ * innan `<RouterProvider>` monteras väntas ÄVEN `useIsRestoring()` ut
+ * (`PersistQueryClientProvider`s restore-försök, startvarmningen.ts:s
+ * filhuvud § "triggad av InnerApp EFTER både auth.isLoading === false och
+ * PersistQueryClientProviderns onSuccess" — `useIsRestoring()` flippar false
+ * EFTER `onSuccess`/`onError`, se biblioteks-källan, `finally(() =>
+ * setIsRestoring(false))`, så den bär samma "restore-försöket är avgjort"-
+ * signal utan en separat callback-prop).
+ *
+ * När BÅDA är klara avgörs varm/kall EXAKT en gång (`varmningHandle`-reffen,
+ * StrictMode-säker — se kommentaren i effekten):
+ * - VARM (`queryClient.getQueryCache().getAll().length > 0`, dvs. restore
+ *   ÅTERSTÄLLDE faktisk data) ⇒ HELT TYST, `starta()` anropas ALDRIG — noll
+ *   extra hämtningar utöver vad appen ändå gör. Detta är regressionsgolvet:
+ *   `tests/e2e/persist-cache.staging.test.ts` AC 1 (varm start) och AC 4
+ *   (offline-öppning, som också landar här eftersom offline-öppning ÄR en
+ *   varm-cache-öppning ur denna gates perspektiv — persist-lagret fungerar
+ *   identiskt offline/online) förlitar sig på att INGET laddläge syns när
+ *   cachen redan bär data.
+ * - KALL/STALE (tomt cache — äkta första besök, ELLER restore kastade pga
+ *   buster-/maxAge-mismatch, ADR-072 skyddsräcke 3/2 — båda ger samma tomma
+ *   cache och behandlas identiskt, ADR-112 grupperar dem uttryckligen) ⇒
+ *   `starta(queryClient, { dataSource })` anropas — Förberedelseskärmen visas
+ *   och drivs av motorns `forloppsprenumeration` tills `slutlofte` avgör
+ *   ('klar'/'timeout'/'offline' — samtliga tre hanteras IDENTISKT här: gaten
+ *   bryr sig bara om ATT slutlöftet avgjort, inte VILKET utfall. 'offline'
+ *   löser ut synkront i samma mikrotask-kedja (startvarmningen.ts:s filhuvud
+ *   § "Online-gate FÖRE start") — Förberedelseskärmen hinner därför aldrig
+ *   måla en synlig ram innan gaten redan växlat till 'redo', vilket ger
+ *   "offline: ingen skärm, direkt in" utan att denna gate behöver duplicera
+ *   motorns online-check).
+ *
+ * `dataSource` importeras STATISKT (samma singleton `router.ts` redan
+ * injicerar i router-context) — DI-kontraktet `starta()` kräver bor HÄR,
+ * hos anroparen, precis som startvarmningen.ts:s filhuvud föreskriver.
  */
 function InnerApp() {
   const auth = useAuth();
+  const isRestoring = useIsRestoring();
+  const [gate, setGate] = useState<GateFas>({ typ: 'vantar' });
+  // Persisterar handlen över Reacts StrictMode-dubbelkörning (dev): utan den
+  // hade en andra effekt-invokering antingen anropat starta() igen (dubbel
+  // startvärmning) eller lämnat förloppet oprenumererat (frusen 0-visning).
+  const varmningHandle = useRef<StartvarmningHandle | null>(null);
+  const varmtBeslutat = useRef(false);
 
   // **TRIGGER på BÅDA isAuthenticated OCH isLoading** för router.invalidate().
   // Race-condition utan isLoading-dep (upptäckt via K4.3 regression-test):
@@ -49,27 +105,109 @@ function InnerApp() {
   // Effekten KÖR vid state-ändring — router är modul-singleton, refereras inte i body.
   // biome-ignore lint/correctness/useExhaustiveDependencies: medveten TRIGGER på auth-state-byte
   useEffect(() => {
-    // Invalidate ENDAST när auth är löst. Under isLoading är <RouterProvider> render-gate:ad
-    // (mountas ej, se nedan) → routerns context.auth är fortfarande modul-defaulten (undefined).
-    // En invalidate då skulle köra beforeLoad mot undefined auth → krasch. Gaten + invalidate
-    // är komplementära: gaten sköter initial resolution, invalidate sköter login/logout
-    // (auth-byten EFTER mount, då isLoading redan är false).
-    if (!auth.isLoading) {
+    // Invalidate ENDAST när auth är löst OCH <RouterProvider> FAKTISKT är
+    // monterad (`gate.typ === 'redo'`, se render-gaten nedan).
+    //
+    // VARV 4-FÅNGSTEN (#1343, CI-massakern): kommentaren nedan beskrev fram
+    // till TASK-218.3 en sanning som blev falsk UTAN att raden uppdaterades.
+    // Före denna skiva var render-gaten en ENKEL boolean (`auth.isLoading`)
+    // och <RouterProvider> monterades i EXAKT samma render som `isLoading`
+    // föll till false — då var "!auth.isLoading" och "routern är monterad"
+    // samma villkor. TASK-218.3 lade en ANDRA, ASYNKRON gate-fas
+    // (warmup-effekten nedan, `gate: 'vantar' → 'varmar'/'redo'` via
+    // `setState`) MELLAN dem: på den FÖRSTA renderingen efter att auth löser
+    // ut är `auth.isLoading` redan false, men `gate.typ` är fortfarande
+    // 'vantar' (warmup-effektens `setGate` har inte hunnit köra än — den är
+    // en SYSKON-effekt, inte en synkron del av samma render). Denna effekt
+    // kördes då FÖRE routern någonsin monterats, `router.invalidate()`
+    // körde `beforeLoad` mot routerns modul-default `context.auth ===
+    // undefined` → `TypeError: Cannot read properties of undefined (reading
+    // 'isAuthenticated')` i `_authenticated.tsx`. Fångad av `SectionError`
+    // (routerns `defaultErrorComponent`) på VARJE autentiserad sidladdning i
+    // den hermetiska fixturvärlden (som alltid startar kall — tom
+    // localStorage per test, `hem-laddlage.acceptance.test.ts`s dokumenterade
+    // invariant) — mätt lokalt: 30 av 36 tester i `hem.acceptance.test.ts`
+    // föll på exakt detta EFTER att fixturvärldens EF-mock-lucka (samma
+    // varv, `tests/support/fixturvarld/handlers.ts`) täppts till.
+    //
+    // `gate.typ === 'redo'` i villkoret ovan återställer invarianten
+    // explicit i stället för att luta sig mot render-ordning: när gaten
+    // släpper (warm ELLER kall) monteras <RouterProvider> i SAMMA render
+    // som flippar `gate.typ`, och TanStack Routers egen mount-synk av
+    // `context.auth` (barn-effekt) hinner köra FÖRE denna förälder-effekt
+    // (React kör effekter barn-först inom samma commit) — invalidate() är
+    // därför säker både vid det första släppet OCH vid EFTERFÖLJANDE
+    // auth-byten (login/logout utan sidladdning), eftersom `gate.typ`
+    // förblir 'redo' permanent efter första auth-resolutionen
+    // (`varmtBeslutat`-reffen nedan, "en gång per auth-resolution").
+    if (!auth.isLoading && gate.typ === 'redo') {
       router.invalidate();
     }
-  }, [auth.isAuthenticated, auth.isLoading]);
+  }, [auth.isAuthenticated, auth.isLoading, gate.typ]);
 
-  // Render-gate (ADR-037): montera <RouterProvider> först när auth är löst. Invariant:
-  // context.auth är definitiv (isLoading=false) när VARJE beforeLoad körs → ingen flash
-  // av skyddat innehåll under auth-resolution (Fynd 2+3 + index.tsx-vektorn, K0.2b).
-  // Komplementär till invalidate-effekten ovan (initial resolution vs senare auth-byten).
-  // Laddningsindikatorn matchar __root.tsx Suspense-fallbacken (role=status, aria-live).
-  if (auth.isLoading) {
-    return (
-      <div role="status" aria-live="polite" className="p-4">
-        Laddar…
-      </div>
-    );
+  // Warmup-gaten (TASK-218.3, ADR-112 beslut 5) — se klassdoc-blocket ovan för
+  // hela resonemanget. Körs EN gång per auth-resolution: `auth.isLoading` och
+  // `isRestoring` kan strukturellt aldrig gå tillbaka till sant efter sitt
+  // första lös (AuthProvider.tsx sätter `isLoading=false` i varje event,
+  // ALDRIG true igen; PersistQueryClientProvider restaurerar en gång vid
+  // mount) — reffarna ovan är därför ett StrictMode-skyddsräcke, inte den
+  // mekanism som gör "en gång" sant.
+  useEffect(() => {
+    if (auth.isLoading || isRestoring || varmtBeslutat.current) return;
+
+    // OINLOGGAD ELLER PÅ EN AUTH-YTA ⇒ gaten öppnar DIREKT — ingen skärm,
+    // ingen startvärmning. Två skäl, båda CI-fångade (#1343 varv 1+2):
+    // (1) utan session finns inget att värma (EF-anropen kräver auth);
+    // (2) auth-ytorna nås även MED session — inbjudnings- och recovery-
+    // tokens skapar en (valkommen/nytt-losenord/passkey) — och får aldrig
+    // skymmas av Förberedelseskärmen mitt i sitt flöde. `varmtBeslutat`
+    // sätts MEDVETET INTE här, så en senare kall appstart på app-ytan får
+    // sitt varm/kall-avgörande. KÄND AVGRÄNSNING (öppet bokförd, eget
+    // uppföljningskort): skärmen direkt EFTER login-klicket kräver en
+    // router-medveten trigger (routaEfterLyckadInloggning-ingreppspunkten
+    // ur research-passet) — denna gate täcker appstarts-fallet, som är
+    // 218.4:s e2e-kontrakt och Lottas PWA-vardag.
+    const AUTH_YTOR = ['/login', '/glomt-losenord', '/nytt-losenord', '/passkey', '/valkommen'];
+    const paAuthYta = AUTH_YTOR.some((p) => window.location.pathname.startsWith(p));
+    if (!auth.isAuthenticated || paAuthYta) {
+      setGate({ typ: 'redo' });
+      return;
+    }
+
+    if (!varmningHandle.current) {
+      // Varm/kall-avgörandet — se klassdoc-blocket ovan.
+      const varmt = queryClient.getQueryCache().getAll().length > 0;
+      if (varmt) {
+        varmtBeslutat.current = true;
+        setGate({ typ: 'redo' });
+        return;
+      }
+      varmningHandle.current = starta(queryClient, { dataSource });
+      varmningHandle.current.slutlofte.then(() => {
+        varmtBeslutat.current = true;
+        setGate({ typ: 'redo' });
+      });
+    }
+
+    // Re-prenumereras vid varje (StrictMode-)invokering så förloppet aldrig
+    // fryser om en tidigare invokerings prenumeration städades av cleanup.
+    return varmningHandle.current.forloppsprenumeration((forlopp) => {
+      setGate((nuvarande) => (nuvarande.typ === 'redo' ? nuvarande : { typ: 'varmar', forlopp }));
+    });
+  }, [auth.isLoading, auth.isAuthenticated, isRestoring]);
+
+  // Render-gate (ADR-037 + TASK-218.3): montera <RouterProvider> först när
+  // auth är löst OCH (varm/kall-avgörandet gjort OCH ev. startvärmning klar).
+  // Invariant: context.auth är definitiv (isLoading=false) när VARJE
+  // beforeLoad körs → ingen flash av skyddat innehåll under auth-resolution
+  // (Fynd 2+3 + index.tsx-vektorn, K0.2b). Komplementär till invalidate-
+  // effekten ovan (initial resolution vs senare auth-byten).
+  // Förberedelseskärmen (AppShell/Forberedelseskarm.tsx) ersätter BÅDA
+  // appnivåns tidigare nakna "Laddar…"-rader (denna OCH __root.tsx:s Suspense-
+  // fallback) — auth-resolution-fasen visar den i 0-läge (ADR-112 beslut 5).
+  if (gate.typ !== 'redo') {
+    const forlopp = gate.typ === 'varmar' ? gate.forlopp : FORBEREDELSESKARM_VANTAR;
+    return <Forberedelseskarm klara={forlopp.klara} totalt={forlopp.totalt} />;
   }
 
   return <RouterProvider router={router} context={{ auth }} />;

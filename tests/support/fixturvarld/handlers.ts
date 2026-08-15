@@ -159,6 +159,28 @@ export const handlers = [
       201,
     );
   }),
+
+  // Startvärmningens (TASK-218.3, ADR-112) fyra ANDRA datamängder — HÄR i
+  // normalläget av samma skäl som get-activity-log ovan: gate-integrationen
+  // gör VARJE autentiserad sidladdning i fixturvärlden till en "kall" start
+  // (queryClient är per definition tom vid varje test-navigering; det finns
+  // ingen persist-restore i denna hermetiska värld), så `starta()` anropas
+  // alltid och hämtar samtliga sju warmup-EF:er. Utan mockar här stoppade
+  // hermetik-vakten anropen med `OmockadRequestError` — mätt (2026-08-15):
+  // 30 av 36 tester i `hem.acceptance.test.ts` föll på exakt detta, eftersom
+  // varje event/anmälnings-relaterat test går via Hem eller motsvarande
+  // autentiserad vy. Tomma listor räcker — warmup-motorn kräver bara att
+  // löftet settlar, inte visst innehåll, och `mer-segment.acceptance.
+  // test.ts` rad 143 etablerar redan `{ segments: [] }` som mönstret för en
+  // giltig tom EF-lista i just denna fixturvärld. De fyra sviter som äger
+  // FAKTISKT innehåll (`mer-vantelista`/`mer-intresserade`/`mer-maillogg`/
+  // `mer-segment`) överskuggar redan detta med `network.use()` per test —
+  // se dessa filers egna handlers, som vinner (`hermetic.ts` §
+  // "Överskugga en delad handler").
+  http.get(EF('get-waitlist'), () => json({ waitlist: [] })),
+  http.get(EF('get-leads'), () => json({ intresserade: [] })),
+  http.get(EF('get-mail-log'), () => json({ maillog: [] })),
+  http.get(EF('get-segments'), () => json({ segments: [] })),
 ];
 
 /**
