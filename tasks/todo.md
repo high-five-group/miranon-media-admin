@@ -47,12 +47,18 @@ verifierad). `218.3` tog FYRA CI-varv — varje rött äkta fångst, inkl. en
 genuin produktionsregression (invalidate mot odefinierad auth-kontext)
 och fixturvärldens warmup-mockgap. Prototyperna `#1344` på main
 (`/dev/hem-prototyp?variant=1/2/3`, kort `226` In Progress tills
-vinnarval). `227` mintat (post-login-skärmen). **RESUME-INGÅNG (Marcus,
-i ordning):** (1) prototyp-granskningen → vinnare → konvergens · (2) QA
-`218.5` · (3) QA `219.4` · (4) `221`-vägvalet · (5) `127.10` + Rogers
-inbjudan · (6) `222`–`224`/`227` plockbara · (7) `147.9`. Numrering:
-kort 228 · ADR 114 · T144 · L512+7 — re-derivera alltid. Full handoff:
-sessionsdok S102 § PAUSLÄGE (tredje pausen) + Del 9.
+vinnarval). `227` mintat (post-login-skärmen). **DEL 10-LÄGET
+(2026-08-16):** V1 VALD som vinnare · konvergensvarv 1 i kön (`#1355`) ·
+GRILLNING 4 till samsyn (hem = arbetsplatsen · bevakningsraden ·
+en-påminnelse-modellen med tre radlägen · kanban avvisad — åtta beslut i
+Del 10) · ordlistan +Morgonkoll +Bevakningsrad · CORS/localStorage-
+dubbelfällan mätt, dev-servern på 5174. **NÄSTA:** varv 2
+(bevakningsraden + tillståndsgrupperna + simulerade datalägen) → Marcus
+granskar varv 1+2 i ETT pass → facit → /to-prd hem + svepen · därefter
+sekvensen: QA `218.5` · QA `219.4` · `221`-vägvalet · `127.10` + Roger ·
+`222`–`224`/`227` plockbara · `147.9`. Numrering: kort 228 · ADR 114 ·
+**T145** (T144 förbrukad av S106) · L512+16 fragment — re-derivera
+alltid. Full handoff: sessionsdok S102 Del 10.
 
 *(Del 8-blocket nedan är historik.)*
 **Session 102 — Del 8-läget (2026-08-15 fm, historik).**

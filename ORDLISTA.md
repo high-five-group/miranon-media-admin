@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-15
+updated: 2026-08-16
 review_by: 2027-01-02
 status: stable
 ---
@@ -187,6 +187,19 @@ person — omvänt mot designflödet (lead först, anmälan sedan).
 **Modalitet** — event-taxonomins andra axel: Utbildning eller Föreläsning
 (kurs × modalitet).
 *I koden:* `Modalitet`.
+
+**Morgonkoll** — hem-vyns jobb som begrepp: den dagliga genomläsningen där
+Lotta ser vad som väntar och gör det direkt på plats. Identiteten låst S102
+Del 10 (grillning 4, beslut 1): Hem är ARBETSPLATSEN — handlingar påbörjas
+och slutförs utan att lämna vyn (sändflöden som overlay).
+*Undvik:* dashboard, översikt (Hem är en arbetsyta, inte en rapport).
+
+**Bevakningsrad** — hem-vyns yta för sällsynta men tidskritiska härledda
+uppgifter (först ut: eventinfo-utskicket): helt osynlig när inget finns,
+klickbar uppgiftsrad vid träff — till skillnad från BLOCK, som alltid står
+kvar med positivt kvitto vid noll (S102 Del 10, beslut 2–4).
+*Undvik:* larm, notis (raden är en uppgift som står kvar tills åtgärdad,
+inte en händelse som blinkar förbi).
 
 **Mina sidor** — HELA den inloggade admin-appen som begrepp: appens
 motsvarighet till "Mina sidor" på en myndighetswebb (FK-analogin —
