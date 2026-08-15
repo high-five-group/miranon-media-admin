@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
-import { CHECKIN_PROTO_VARIANTS, CheckinPrototyp } from '@/components/events/CheckinPrototyp';
+import { EventCheckin } from '@/components/events/EventCheckin';
 
 export const Route = createFileRoute('/_authenticated/event/$eventId/narvaro')({
   staticData: { title: 'Närvaro' },
@@ -8,57 +7,43 @@ export const Route = createFileRoute('/_authenticated/event/$eventId/narvaro')({
 });
 
 // Event-detalj — Närvaro-vy (Fas 6b L3, C1 nested routes): /event/$eventId/narvaro.
-// D ÄR PROMOVERAD (TASK-214.4) — logiken bor i CheckinPrototyp, routen håller
-// bara montering. Syskon-leaf: index.tsx (info) + betalning.tsx, <Outlet/>
-// bärs av _authenticated via AppShell.
+// Formen bor i EventCheckin, routen håller bara montering. Syskon-leaf:
+// index.tsx (info) + betalning.tsx, <Outlet/> bärs av _authenticated via AppShell.
 function EventAttendancePage() {
   const { eventId } = Route.useParams();
   return <NarvaroYta eventId={eventId} />;
 }
 
 /**
- * [PROTOTYPE] Check-in-sidans kvarvarande wiring — D ÄR PROMOVERAD.
+ * [PROMOVERING SLUTFÖRD — ADR-103 B2 steg 4, TASK-214.7, 2026-08-15]
+ * Dörrlistan (variant D, S103-konvergensen) är den skarpa check-in-ytan på
+ * denna route. Marcus godkände formen 2026-08-14 (kvitto:
+ * `tasks/sessions/bilagor/s103-checkin-konvergens/facit.json` § godkand,
+ * satt via `ADR-104`:s kanalseparation) — det förkrav `ADR-102` B3:s spärr
+ * kräver innan något rivs.
  *
- * VILLKORET ÄR FLIPPAT (ADR-103 B2 steg 1, TASK-214.4, 2026-08-15):
- * `CheckinPrototyp` renderas OVILLKORLIGT, UTANFÖR DEV-grinden — det är hela
- * poängen (PRD task-214: Lotta saknade en fungerande incheckningsyta
- * eftersom D levde bakom `import.meta.env.DEV`). Den gamla skarpa grenen
- * (`EventAttendance`, den rena läslistan) renderas inte längre härifrån —
- * filen är ORÖRD, rivningen är TASK-214.7:s ägande (ADR-102 B3). Datavägarna
- * behövde inget bevarande — prototypen kör redan samma
- * `useDataSource`/`fetchAttendance`/`fetchRegistrations`.
+ * RIVET (persondetalj-precedenten `4aad0111`, samma form): rail-monteringen
+ * (`PrototypeSwitcher`) och `CHECKIN_PROTO_VARIANTS`-registret. Villkor och
+ * växlar — ALDRIG form. `?variant=`-villkoret var redan bevisligen dött
+ * sedan TASK-214.4 (kompilatorn fällde det som oläst när A/B/C revs) — det
+ * fanns alltså ingen läsning kvar att riva här.
  *
- * A/B/C ÄR RIVNA i samma landning (persondetalj-precedenten, `dc0eb4ec`) —
- * de var jämförelseytor för ett formval som redan är gjort (Marcus,
- * 2026-08-13: "under all kritik"), aldrig kandidater. D:s form är facit.
+ * FILEN BYTTE NAMN: `CheckinPrototyp.tsx` → `EventCheckin.tsx`, buret av git
+ * som en rename så historiken följer FORMEN och inte filnamnet. Gamla skarpa
+ * läsvyn `EventAttendance.tsx` (ren läslista, ingen interaktion) är riven i
+ * samma landning — den renderades inte längre härifrån sedan flippen
+ * (TASK-214.4).
  *
- * `?variant=`-LÄSNINGEN HÄRIFRÅN ÄR BORTA. Den blev bevisligen död när
- * grenen mot `EventAttendance` föll bort — kompilatorn fällde den som oläst.
- * En stale `?variant=d`-URL (B4-parets FÖRE-referens,
- * `tests/visual/dorrlista-promoverings-grind.spec.ts`, bokmärke, delad
- * länk) är harmlös: ingen kod läser parametern längre, så adressen renderar
- * exakt samma träd som ingen query alls — promoverings-grinden bevisar det
- * mekaniskt.
- *
- * VÄXLAREN/RAILEN STÅR KVAR med avsikt: ADR-102 B3 förbjuder rivning av
- * prototyp-substratet före Marcus godkännande av den PROMOVERADE ytan.
- * `PrototypeSwitcher` läser `?variant=` INTERNT (egen `useQueryState`,
- * `PrototypeSwitcher.tsx:93`) — det är den läsningen som lever kvar, inte en
- * duplicerad här. `CHECKIN_PROTO_VARIANTS` är krympt till den enda
- * kvarvarande posten (`CheckinPrototyp.tsx`).
- *
- * RIVNING (TASK-214.7): ta bort denna kommentar + `PrototypeSwitcher`-
- * monteringen, och `git mv` `CheckinPrototyp.tsx` → `EventCheckin.tsx` så
- * historiken följer FORMEN och inte filnamnet (personlistans precedent,
- * commit `4aad0111`).
+ * En stale `?variant=d`-URL (bokmärke, delad länk, öppen flik) är harmlös:
+ * ingen fil läser parametern längre, så adressen renderar exakt samma träd
+ * som ingen query alls — `dorrlista-promoverings-grind.spec.ts` bevisar det
+ * mekaniskt (regressionslås; samma sex `ariaSnapshot`-referenser genom både
+ * flippen och denna rivning).
  */
 function NarvaroYta({ eventId }: { eventId: string }) {
   return (
-    <>
-      <div className="p-1">
-        <CheckinPrototyp eventId={eventId} />
-      </div>
-      {import.meta.env.DEV && <PrototypeSwitcher variants={CHECKIN_PROTO_VARIANTS} />}
-    </>
+    <div className="p-1">
+      <EventCheckin eventId={eventId} />
+    </div>
   );
 }

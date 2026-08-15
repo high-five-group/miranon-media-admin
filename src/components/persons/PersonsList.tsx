@@ -631,7 +631,7 @@ export function PersonsList() {
                       varierat mellan rader med och utan pill, och kolumnen
                       blivit ojämn i precis den scanlista den ska hjälpa.
                       Samma teknik som check-in-räknarens breddlås
-                      (`FramstegskortD` i CheckinPrototyp.tsx, TASK-214.4:
+                      (`FramstegskortD` i EventCheckin.tsx, TASK-214.4:
                       linjenumret drev när A/B/C revs, sök på "Breddlåset"
                       i stället för ett fryst tal): osynlig platshållare,
                       geometrin konstant. `visibility: hidden` tar dessutom bort

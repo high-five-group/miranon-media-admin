@@ -246,7 +246,7 @@ const KORT_KLASS =
  *
  * RAC-FORMEN VANN ÖVER NATIVE, av två skäl som båda är mätbara: den är appens
  * etablerade (4 av 5 kryss i `src/components/` bär exakt denna klassrad —
- * `Betalningar`, `Deltagare`, `CheckinPrototyp` och denna fil), och `accent-color`
+ * `Betalningar`, `Deltagare`, `EventCheckin` och denna fil), och `accent-color`
  * kan bara styra FÄRG — inte radie, storlek eller bockens form. Native hade
  * alltså aldrig kunnat matcha de andra fyra.
  *
