@@ -2,13 +2,18 @@
   "prototyp": "s106-aktivitetslogg",
   "last": "2026-08-15",
   "lasning": "Okej. Vi låser denna nu, ska jag stämpla och sedna promoverar du?",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-15",
+    "citat": "Godkänd mot facit 2026-08-15",
+    "sha": "871ae4f47a06ed048a3ba8c80ec660152f340054"
+  },
   "ytor": [
     {
       "yta": "aktivitetshistorik-sidan",
       "bilder": ["facit-aktivitetshistorik-desktop.png", "facit-aktivitetshistorik-mobil.png"],
       "kallor": [
-        "src/components/aktivitetshistorik/AktivitetsHistorikPrototyp.tsx",
+        "src/components/aktivitetshistorik/AktivitetsHistorik.tsx",
         "src/routes/_authenticated/mer/aktivitetshistorik.tsx",
         "src/data/activityLog/verbCopy.ts"
       ],
