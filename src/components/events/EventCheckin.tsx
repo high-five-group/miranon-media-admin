@@ -1,6 +1,15 @@
 /**
- * [PROTOTYPE] Check-in vid dörren — DIVERGENS-passet (S90, Marcus-beordrad
- * 2026-07-26). Kastbar kod per throwaway-kontraktet; absorberas ALDRIG.
+ * Dörrlistan — check-in-sidans skarpa yta. Skarp produktionskod.
+ *
+ * HÄRKOMST, eftersom den förklarar formen: detta ÄR S90/S103-konvergensens
+ * prototyp (divergens-passet, S90, Marcus-beordrad 2026-07-26), PROMOVERAD
+ * enligt `ADR-103` (B1 promoveringsformen, B2 steg 4 rivningen) och godkänd
+ * av Marcus 2026-08-14 (kvitto: `tasks/sessions/bilagor/s103-checkin-
+ * konvergens/facit.json` § godkand, satt via `ADR-104`:s kanalseparation).
+ * "Det skarpa bygget" är avskaffat som begrepp — den godkända formen byggs
+ * aldrig om, den flyttas hit. Filen bytte alltså namn FRÅN
+ * `CheckinPrototyp.tsx`; git bär bytet som en rename, så historiken följer
+ * formen och inte filnamnet (persondetalj-precedenten, commit `4aad0111`).
  *
  * ══════════════════════════════════════════════════════════════════════════
  *  FRÅGAN (kontraktets klausul i — nedskriven högst upp):
@@ -57,9 +66,14 @@
  * `TillbakaLank`, `SessionsRad`, `DorrRad`, `SenastListan`, `AvbokadeNot`
  * och `statusKort` dog med dem — samtliga utpekade av kompilatorn, aldrig
  * gissade. Beskrivningen av a/b/c i frågeavsnittet OVAN är HISTORISK: den
- * förklarar varför D vann, inte kod som finns kvar. `EventAttendance`
- * renderas inte längre härifrån men är ORÖRD — rivningen av den och av
- * prototyp-substratet (växlare/rail) är TASK-214.7:s ägande (ADR-102 B3).
+ * förklarar varför D vann, inte kod som finns kvar.
+ *
+ * RIVNINGEN SLUTFÖRD (TASK-214.7, 2026-08-15, ADR-102 B3). Marcus godkände
+ * den promoverade ytan (214.6) — förkravet B3:s spärr kräver innan något
+ * rivs. Rail-monteringen (`PrototypeSwitcher`) och `CHECKIN_PROTO_VARIANTS`-
+ * registret är rivna ur `narvaro.tsx` (villkor och växlar — ALDRIG form).
+ * `EventAttendance` (den gamla skarpa läslistan, ersatt sedan flippen) är
+ * riven i samma landning — den renderades inte härifrån sedan TASK-214.4.
  *
  * DATAT (underlaget från förarbetet):
  *   · `get-attendance` bär write-nyckeln (Deltaganden-record-ID) + sessionen
@@ -1168,7 +1182,7 @@ function useSessionsval(event: Event, rader: Dorrad[]) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  VÄXELN
+//  KOMPONENTEN
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
@@ -1181,11 +1195,11 @@ function useSessionsval(event: Event, rader: Dorrad[]) {
  * formen som finns kvar; en prop vars enda möjliga värde är `'d'` bär ingen
  * information.
  */
-export function CheckinPrototyp({ eventId }: { eventId: string }) {
+export function EventCheckin({ eventId }: { eventId: string }) {
   const { event, rader, isPending, isError } = useDorrData(eventId);
 
-  // Rulla alltid till toppen vid variantbyte så jämförelsen sker från samma
-  // utgångsläge (prototyp-ergonomi, inte produktbeteende).
+  // Rulla alltid till toppen vid montering så jämförelsen sker från samma
+  // utgångsläge (prototyp-ergonomi, kvar som produktbeteende).
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, []);
@@ -1212,15 +1226,3 @@ export function CheckinPrototyp({ eventId }: { eventId: string }) {
 
   return <VariantD eventId={eventId} event={event} rader={rader} />;
 }
-
-/**
- * Registret krymper till det som är kvar (personlistans flip-precedent,
- * commit `3d5020be`, exakt form: `"<Ytnamn> - promoverad"`). `steg`/
- * `stegLabel` är ORÖRDA — samma konvergens-läge som INNAN flippen, bara
- * etiketten ändras. Railen renderas fortfarande enbart för att ADR-102 B3
- * kräver att prototyp-substratet lever till Marcus godkännande av den
- * PROMOVERADE ytan; den rivs i TASK-214.7.
- */
-export const CHECKIN_PROTO_VARIANTS = [
-  { key: 'd', label: 'Dörrlistan - promoverad', steg: 2, stegLabel: 'Omtag' },
-];

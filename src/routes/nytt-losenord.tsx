@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Loader2, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { type FormEvent, useEffect, useId, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
 import { supabase } from '@/data/config/supabase-client';
@@ -106,7 +106,7 @@ function NyttLosenordRoute() {
  * appen ännu), så vägen framåt är en knapp här, inte en mänsklig begäran. */
 function OgiltigLank() {
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-2">
           <h1 className="font-semibold text-3xl text-text">Länken fungerar inte längre</h1>
@@ -128,7 +128,7 @@ function OgiltigLank() {
 
 function LosenordSparat() {
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-2">
           <h1 className="font-semibold text-3xl text-text">Lösenordet är sparat</h1>
@@ -229,7 +229,7 @@ function LosenordsFormular({ epost, onUtfall }: LosenordsFormularProps) {
   };
 
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <form
         onSubmit={(e) => {
           void handleSubmit(e);
@@ -312,15 +312,8 @@ function LosenordsFormular({ epost, onUtfall }: LosenordsFormularProps) {
           </MessageBox>
         )}
 
-        <Button type="submit" size="lg" isDisabled={status === 'sparar'}>
-          {status === 'sparar' ? (
-            <>
-              <Loader2 aria-hidden="true" className="size-4 motion-safe:animate-spin" />
-              Sparar …
-            </>
-          ) : (
-            'Spara nytt lösenord'
-          )}
+        <Button type="submit" size="lg" isLoading={status === 'sparar'} loadingText="Sparar …">
+          Spara nytt lösenord
         </Button>
       </form>
     </div>

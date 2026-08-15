@@ -1,6 +1,5 @@
 import * as Sentry from '@sentry/react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Loader2 } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
 import { supabase } from '@/data/config/supabase-client';
@@ -95,7 +94,7 @@ function GlomtLosenordRoute() {
 
   return (
     <main className="flex min-h-dvh w-full items-center justify-center p-4 sm:p-8 lg:p-12">
-      <div className="flex w-full max-w-xl flex-col gap-8">
+      <div className="flex w-full max-w-md flex-col gap-8">
         {tillstand === 'formular' ? (
           <form
             onSubmit={(e) => {
@@ -139,15 +138,8 @@ function GlomtLosenordRoute() {
               </MessageBox>
             )}
 
-            <Button type="submit" size="lg" isDisabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 aria-hidden="true" className="size-4 motion-safe:animate-spin" />
-                  Skickar …
-                </>
-              ) : (
-                'Skicka återställningslänk'
-              )}
+            <Button type="submit" size="lg" isLoading={isSubmitting} loadingText="Skickar …">
+              Skicka återställningslänk
             </Button>
 
             <Link

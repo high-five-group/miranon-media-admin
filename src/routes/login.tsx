@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { createFileRoute, Link, redirect, useNavigate, useSearch } from '@tanstack/react-router';
-import { Fingerprint, Loader2 } from 'lucide-react';
+import { Fingerprint } from 'lucide-react';
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import { Button, Input, MessageBox } from '@/components/primitives';
@@ -224,7 +224,7 @@ function LoginRoute() {
 
   return (
     <main className="flex min-h-dvh w-full items-center justify-center p-4 sm:p-8 lg:p-12">
-      <div className="flex w-full max-w-xl flex-col gap-8">
+      <div className="flex w-full max-w-md flex-col gap-8">
         <form
           onSubmit={handleSubmit}
           // Padding/gap smalnar under `sm` (BYGGKRAV: allt ska rymmas utan
@@ -293,15 +293,8 @@ function LoginRoute() {
             </div>
           )}
 
-          <Button type="submit" size="lg" isDisabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 aria-hidden="true" className="size-4 motion-safe:animate-spin" />
-                Loggar in …
-              </>
-            ) : (
-              'Logga in'
-            )}
+          <Button type="submit" size="lg" isLoading={isSubmitting} loadingText="Loggar in …">
+            Logga in
           </Button>
 
           {passkeyKnappSynlig && (
@@ -332,22 +325,15 @@ function LoginRoute() {
                 type="button"
                 intent="secondary"
                 size="lg"
-                isDisabled={isSubmitting || passkeyLaddar}
+                isDisabled={isSubmitting}
+                isLoading={passkeyLaddar}
+                loadingText="Loggar in …"
                 onPress={() => {
                   void handlePasskeyLogin();
                 }}
               >
-                {passkeyLaddar ? (
-                  <>
-                    <Loader2 aria-hidden="true" className="size-4 motion-safe:animate-spin" />
-                    Loggar in …
-                  </>
-                ) : (
-                  <>
-                    <Fingerprint aria-hidden="true" className="size-4" />
-                    Logga in med passkey
-                  </>
-                )}
+                <Fingerprint aria-hidden="true" className="size-4" />
+                Logga in med passkey
               </Button>
             </>
           )}

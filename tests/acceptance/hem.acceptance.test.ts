@@ -388,6 +388,48 @@ test.describe('Hälsningen (task-1.1 — namnkällan ur kontots metadata)', () =
     expect(FIXTUR_EPOST).not.toBe('');
     await expect(page.getByText(FIXTUR_EPOST)).toHaveCount(0);
   });
+
+  /**
+   * TASK-220 — registret bär FULLA namnet ("Marcus Johansson", Marcus-beslut
+   * S102 Lotta-vandringen), men hälsningen visar bara förnamnet. AC 1: första
+   * renderingen "Hej {förnamn}", återbesök bara "{förnamn}" — efternamnet
+   * syns ALDRIG i hälsningsraden, i vare sig läge.
+   */
+  test('TASK-220 AC 1 — fullt display-namn → hälsningen visar ENDAST förnamnet, båda lägena', async ({
+    page,
+    network,
+  }) => {
+    await patchStoredDisplayName(page, 'Marcus Johansson');
+    mock(network);
+    await page.goto('/hem');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Hej Marcus', exact: true }),
+    ).toBeVisible();
+    // Efternamnet är aldrig med — varken i "Hej"-formen ovan (exact-matchen
+    // hade redan fällt det) eller i återbesökets bara-namn-form nedan.
+    await page.reload();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Marcus', exact: true }),
+    ).toBeVisible();
+  });
+
+  /**
+   * TASK-220 kantfall — AuthProviderns `sessionToUser` trimmar bara det
+   * OMGIVANDE whitespace:t (`rawName.trim()`); inre extra mellanslag når
+   * hälsningens `fornamn()` orörda. Beviset står här, inte i AuthProvider —
+   * extraktionen (och därmed robustheten) bor i hälsningens visningslogik.
+   */
+  test('TASK-220 kantfall — omgivande/inre whitespace i display-namnet trimmas robust', async ({
+    page,
+    network,
+  }) => {
+    await patchStoredDisplayName(page, '  Marcus   Johansson  ');
+    mock(network);
+    await page.goto('/hem');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Hej Marcus', exact: true }),
+    ).toBeVisible();
+  });
 });
 
 test.describe('Hem polling (Fas 6d L2 — ADR-017 + erratum)', () => {

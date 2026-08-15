@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-08
+updated: 2026-08-15
 review_by: 2027-02-08
 status: stable
 ---
@@ -1066,15 +1066,52 @@ tab-baren är inte en rad-klass och berörs inte.
 
 ---
 
-## 15. Lugnt laddläge — laddprincipen + Skeleton-primitiven
+## 15. Lugnt laddläge — Laddtrappan + Skeleton-primitiven
 
-App-bred laddprincip (ORDLISTA "Lugnt laddläge"; task-7-grillningen S63
-Del 2, käll-verifierad research: NN/g Skeleton Screens 101, Chung-empirin
-om shimmer-tempo, Adrian Rosellis skeleton-a11y-mönster). Mekaniken bor i
-PRD TASK-8; Hem är första implementationsyta — övriga vyer migreras via
+App-bred laddprincip (ORDLISTA "Lugnt laddläge" + "Laddtrappan"; task-7-
+grillningen S63 Del 2, käll-verifierad research: NN/g Skeleton Screens 101,
+Chung-empirin om shimmer-tempo, Adrian Rosellis skeleton-a11y-mönster).
+Sedan [ADR-113](../decisions/ADR-113-laddtrappan-yttrappa-for-laddindikatorer.md)
+(S102 Del 7, källbelagd branschprövning:
+[`loading-indikator-branschpraxis-2026-08-15.md`](../research/loading-indikator-branschpraxis-2026-08-15.md))
+bär §15 Laddtrappans fyra steg i stället för det tidigare ovillkorade
+indikator-förbudet — Lugnt laddläge är trappans ORÖRDA överordnade princip:
+slutlig geometri från första bildrutan rivs inte av trappan, den styr VAL av
+indikator när laddning väl syns (ADR-078 komponerar oförändrat ovanpå).
+Mekaniken bor i PRD TASK-8 (skeleton) + PRD TASK-219 (trappan); Hem är
+första implementationsyta för skeleton-steget — övriga vyer migreras via
 egna kort och ärver principen härifrån utan nya beslut.
 
-### Principen (gäller varje vy)
+### Laddtrappan — fyra steg (ADR-113)
+
+Stegen är inte en preferensordning — varje steg är golvet för sin egen
+yttyp, inte ett alternativ till de andra:
+
+1. **Skeleton** — vyer och moduler med KÄND geometri. "Principen"-avsnittet
+   nedan är detta stegs fullständiga regelverk.
+2. **Spinner** — ENDAST knapp-internt, i arbetande knappar (submit,
+   mutation). Levereras via Button-primitivens `isLoading`-prop (spinner +
+   spärrat klickläge + skärmläsarbesked byggt EN gång på biblioteksnivå —
+   TASK-219.2). Aldrig som sid- eller modulladdning.
+3. **Determinate progress-bar** — längre kända flerstegsförlopp.
+   Förberedelseskärmen
+   ([ADR-112](../decisions/ADR-112-forberedelseskarmen-blockerande-startvarmning.md))
+   är appnivå-instansen.
+4. **ALDRIG naken "Laddar…"-textrad** som enda laddbesked, oavsett vilket av
+   de tre andra stegen som bär det faktiska beskedet — Marcus S62-beslut
+   (kollapsade Hem-kort med växande text = layout-skift) är trappans orörda
+   golv. Sr-only-besked parat med en synlig indikator är fortsatt
+   normformen.
+
+**Artighetsnivå:** laddbesked bärs av `role="status"` (`aria-live="polite"`)
+— aldrig `role="alert"`. FK:s eget FLoader-mönster använder `role="alert"`
+för sin laddtext, men det är FK:s egen avvikelse från WAI-ARIA-praxis
+(W3C WAI ARIA22), inte ett mönster appen följer
+(`loading-indikator-branschpraxis-2026-08-15.md` § 4). Laddning är rutin,
+inte ett avbrott som ska tränga sig före det en skärmläsaranvändare redan
+gör.
+
+### Principen (trappsteg 1 — gäller varje vy/modul med känd geometri)
 
 - **Slutgeometri från första bildrutan.** Inget växer, hoppar eller byter
   plats när data landar — layout-skift ≈ 0 är grindkravet och bevisas med
@@ -1089,9 +1126,13 @@ egna kort och ärver principen härifrån utan nya beslut.
   FK FLoader 1 s). Framträdande-formen är mätlåst per task-8.1: det
   uppmätta kallstartsfönstret ligger klart över 1 s → skeleton från första
   bildrutan, ingen framträdande-fördröjningsmekanism.
-- **"Laddar…"-textrader och spinners används inte.** Designen går medvetet
-  över FK-golvet (FK saknar skeleton; spinner efter 1 s är deras mönster) —
-  öppet bokfört med research-stöd i PRD TASK-8.
+- **Aldrig naken "Laddar…"-textrad som enda besked** (trappans golv, steg 4
+  ovan) — men spinner är inte generellt förbjudet på appnivå: utanför detta
+  steg är det reserverat för Laddtrappans steg 2 (knapp-internt), aldrig
+  för den sid- eller modulladdning detta avsnitt beskriver. Designen går
+  medvetet över FK-golvet för just SKELETON-steget (FK saknar skeleton;
+  spinner efter 1 s är deras enda mönster) — öppet bokfört med
+  research-stöd i PRD TASK-8 och ADR-113.
 
 ### Skeleton — API (medvetet minimalt)
 
@@ -1608,3 +1649,4 @@ segment-utskickets "Skicka till N personer" (`danger` → `success`).
 | 2026-07-26 | §16 MOTIVERINGS-RIVNING + hover-återkoppling (Marcus design-review S91: "borde inte 'Manuella' och 'Medföljande' i översta togglen där ha hover?"). Den gamla koden motiverade frånvaron med att pekare/tangentbord/touch skulle få "identisk semantik" — den motiveringen blandade ihop TILLSTÅND med ÅTERKOPPLING och är riven, inte kompletterad. Ovald pill får hover-skrimmet `--mm-state-hover` via `not-data-[selected]:data-[hovered]`; vald pill står orörd; `prefers-contrast: more` växlar till `--mm-state-hover-contrast`. Bäraren är React Arias `data-hovered` (Button/Input-precedenten) — touch och disabled utesluts strukturellt av `useHover`, inte av en override. Övergången är MEDVETET smalare än precedentens `transition-colors` (den drar med `outline-color` och hade tonat in fokusringen). NYA SEMANTISKA TOKENS: `--mm-state-hover` / `--mm-state-hover-contrast` (interaktions-lager, alfa-skrim) — en opak platta mätte ΔE00 0,00 mot Betalningars egna `bg-bg-emphasized`-track, dvs. hovern försvann på den ytan; skrim mörknar valfri bakgrund med konstant steg. Kontrast + ΔE00 uppmätt och computed-vaktat i sviten på båda tracken. |
 | 2026-07-25 | §19 REVIDERAD till TVÅDIMENSIONELL regel (Marcus beslut A, morgongranskningen — 18.16 facit-revidering): intent styr färgen × emphasis styrs av ytklassen (solid = sidnivå/primär handlingsyta, max en per yta/sektion · outline/subtle = kort och listrader, aldrig solid fyllnad inuti kort · subtle kompakt = tabellrader/toolbars). Ursprungsformens endimensionella regel riven öppet (revideringsnot i §19); K77-rivningen står kvar. Button-primitiven får emphasis-varianter + `--mm-button-*-outline/subtle-*`-tokens (success-textbäraren AA-mörkad 15 %). Flippar: deltagarkortens Skicka bekräftelse → success/outline (Greta-fallet) · Bekräfta alla-pillen → success/subtle. Research-grund: Polaris tone×variant · Carbon danger i tre viktnivåer · M3 text-buttons-i-kort · FK "en primär per del". |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |
+| 2026-08-15 | §15 SKRIVS OM till Laddtrappan (task-219.1, ADR-113, S102 Del 7): det tidigare ovillkorade "'Laddar…'-textrader och spinners används inte"-förbudet ersätts av en fyrstegs yttrappa (skeleton för känd geometri · spinner ENDAST knapp-internt via kommande Button `isLoading` · determinate progress-bar för längre förlopp, appinstans Förberedelseskärmen/ADR-112 · aldrig naken "Laddar…"-textrad som enda besked) med Lugnt laddläge kvar som orörd överordnad princip. Ny artighetsnivå-not: laddbesked är `role="status"`/polite, aldrig `role="alert"` — FK:s FLoader-avvikelse bokförd öppet mot WAI-ARIA-praxis. Källbelagt i `loading-indikator-branschpraxis-2026-08-15.md`. |

@@ -3235,6 +3235,38 @@ exekveringsvåg + fas-avslut 2026-08-14 på Marcus GO + mandat.
   –`#1292`, `#1294`, `#1296`–`#1298` + baslinje-PR `#1249` (godkänd efter
   pixeldiff-granskning). Full narrativ: sessionsdok S105 Del 1–11.
 
+## Session 103 — Person-vy-passet fullbordat: T97:s tre ytor skarpa, promoveringen ände-till-ände (2026-08-10 → 2026-08-15)
+
+- **Mål:** T97-bygg-spårets tre ytor (personlistan, persondetaljen,
+  check-in) designade, konvergerade och promoverade till skarpa ytor.
+- **Utfall:** MÅLET NÅTT. Personlistan och persondetaljen promoverades
+  under sessionens första del (Del 5–9); check-in-D konvergerades
+  (Del 11–13), stämplades av Marcus via `!`-kanalen (`#1284`) och
+  promoverades ände-till-ände under avslutande natt+morgon (Del 16):
+  närvaro-WRITE byggd (allowlist-posten `set-attendance-status` + ny
+  idempotent `create-attendance`-EF som mätt motiverad backup — rotorsaken
+  ägs av bas-vågen), mutations-koppling med kvittensfönster-semantik
+  (skrivning EFTER 1,2 s-fönstret, nätverksbevisad), referenser, flipp,
+  härdning (axe 30/30), granskning + QA på Marcus delegerade mandat, och
+  rivning med rename till `EventCheckin.tsx`. **Dörrlistan är appens
+  skarpa närvaro-yta; Insiktskedjan bevisad levande i basen.**
+- **Spec och beslut:** grillning 6/6 kvitterade (S103 Del 15) → PRD
+  `task-214` + åtta skivor; prod-mätning avtäckte fyra aktiva anmälningar
+  utan Deltaganden-rader (fälla 16/21-klassen) → `task-213.12` (HITL, ny
+  session). Kontinuerlig bas-maxning beslutad (`ADR-063` § Updates,
+  Del 13); `task-213`-familjen (PRD + 12 skivor) bär vågen.
+- **Landningar (S103:s egna, samtliga via kön):** `#1283`/`#1284`
+  (resume + stämpel) · `#1288` (grillningen + ORDLISTA ×4) · `#1293`/
+  `#1295` (PRD + skivor) · `#1299`–`#1321` udda urval (skivor +
+  stängningar; full tabell i sessionsdok Del 16) · fynd-kort `task-215`,
+  `task-217`. Del 1–10 (personlistan/persondetaljen): se dokets tidigare
+  Delar med PR-trail.
+- **Teknisk skuld/flaggor:** `TASK-194` (facit-hookens träffyte-bugg)
+  PRIORITERAD · `create-attendance` ej i prod-allowlisten (go-live-punkt)
+  · DoD-mall-läckaget (hub-kandidat) · flake `task-215`.
+- **Lessons:** nio fragment (sju `[UNIVERSAL]`) i `tasks/lessons.d/`;
+  kandidat-pool deferred, bokförd i Del 16.
+
 ## Session 106 — Aktivitetshistorik-sidans omdesign: konvergens → promovering på EN dag (2026-08-15)
 
 - **Hela prototyp-till-skarpt-bågen sluten samma dag** (ADR-103/104-apparatens

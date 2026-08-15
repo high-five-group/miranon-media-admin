@@ -340,8 +340,9 @@ export function PersonsList() {
   );
 
   // [PROTOTYPE] STEG 6 (k06) — LUGNT LADDLÄGE (spec §15).
-  // "Laddar personer…" är ordagrant förbjudet (spec:1078: "'Laddar…'-textrader
-  // och spinners används inte"). Sökfältet är statiskt känd chrome och ritas
+  // "Laddar personer…" som naken textrad är ordagrant förbjudet (spec §15,
+  // Laddtrappans steg 4: aldrig naken "Laddar…"-textrad som enda laddbesked).
+  // Sökfältet är statiskt känd chrome och ritas
   // direkt; ENDAST datakropparna blir skeleton-block, i radernas SLUTgeometri
   // (samma padding, samma gap, samma tre textnivåer) så inget hoppar när data
   // landar. Beskedet bärs av `aria-busy` + ett visuellt dolt sr-only-besked på
@@ -631,7 +632,7 @@ export function PersonsList() {
                       varierat mellan rader med och utan pill, och kolumnen
                       blivit ojämn i precis den scanlista den ska hjälpa.
                       Samma teknik som check-in-räknarens breddlås
-                      (`FramstegskortD` i CheckinPrototyp.tsx, TASK-214.4:
+                      (`FramstegskortD` i EventCheckin.tsx, TASK-214.4:
                       linjenumret drev när A/B/C revs, sök på "Breddlåset"
                       i stället för ett fryst tal): osynlig platshållare,
                       geometrin konstant. `visibility: hidden` tar dessutom bort

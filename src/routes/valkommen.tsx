@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Clock, Loader2, Lock } from 'lucide-react';
+import { Clock, Lock } from 'lucide-react';
 import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
 import { supabase } from '@/data/config/supabase-client';
@@ -181,7 +181,7 @@ function PrimarLankKnapp({ children }: { children: ReactNode }) {
  */
 function OgiltigLank() {
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div
         className={
           'flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8'
@@ -209,7 +209,7 @@ function OgiltigLank() {
  * inloggningsmoment — aldrig en session som råkar redan finnas kvar. */
 function KontotSkapat() {
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-2">
           <h1 className="font-semibold text-3xl text-text">Kontot är skapat</h1>
@@ -340,7 +340,7 @@ function LosenordsFormular({
   };
 
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div className="flex flex-col gap-3">
         <h1 className="font-semibold text-3xl text-text">
           {mottagarNamn ? `Välkommen, ${mottagarNamn}` : 'Du har bjudits in'}
@@ -437,15 +437,13 @@ function LosenordsFormular({
           </MessageBox>
         )}
 
-        <Button type="submit" size="lg" isDisabled={status === 'sparar'}>
-          {status === 'sparar' ? (
-            <>
-              <Loader2 aria-hidden="true" className="size-4 motion-safe:animate-spin" />
-              Skapar konto …
-            </>
-          ) : (
-            'Skapa mitt konto'
-          )}
+        <Button
+          type="submit"
+          size="lg"
+          isLoading={status === 'sparar'}
+          loadingText="Skapar konto …"
+        >
+          Skapa mitt konto
         </Button>
       </form>
 

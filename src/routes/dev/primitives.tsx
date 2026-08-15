@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { CalendarDays, ClipboardList, Hourglass, List, Star } from 'lucide-react';
 import { useState } from 'react';
+import { Forberedelseskarm } from '@/components/AppShell';
 import {
   Button,
   Dialog,
@@ -72,6 +73,18 @@ function PrimitivesPage() {
               onPress={() => setSenastTryckt(`${intent} DISABLED`)}
             >
               Inaktiverad
+            </Button>
+            {/* isLoading — Laddtrappans steg 2 (ADR-113, task-219.2): knapp-
+                intern spinner + spärrat klickläge + polite sr-besked, granskat
+                här för samtliga fem intents (onPress nollas internt av
+                isLoading — knappen ÄR faktiskt spärrad, precis som facitet). */}
+            <Button
+              intent={intent}
+              isLoading
+              loadingText="Laddar …"
+              onPress={() => setSenastTryckt(`${intent} LOADING`)}
+            >
+              Laddar
             </Button>
           </div>
         </section>
@@ -431,6 +444,46 @@ function PrimitivesPage() {
                 </div>
               )}
             </InstallPrompt>
+          </div>
+        </div>
+      </section>
+      <section aria-labelledby="rubrik-forberedelseskarm" className="mt-8">
+        <h2 id="rubrik-forberedelseskarm" className="text-xl">
+          Forberedelseskarm
+        </h2>
+        <p className="mt-2 text-small text-text-secondary">
+          Förberedelseskärmen (AC 3, task-218.2): helskärmsyta, helt props-driven{' '}
+          <code>{'{ klara, totalt }'}</code>. I produktion fyller ytan hela viewporten (anroparen
+          sätter höjden, TASK-218.3 gate-integrationen); här begränsas varje instans till en fast
+          inramning så alla tre förloppslägen (0 %, delvis, full) syns samtidigt.
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="flex flex-col gap-2">
+            <p className="text-caption text-text-muted">0 %</p>
+            <div
+              data-testid="forberedelseskarm-0"
+              className="relative h-72 overflow-hidden rounded-2xl border border-border"
+            >
+              <Forberedelseskarm klara={0} totalt={5} />
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-caption text-text-muted">Delvis</p>
+            <div
+              data-testid="forberedelseskarm-delvis"
+              className="relative h-72 overflow-hidden rounded-2xl border border-border"
+            >
+              <Forberedelseskarm klara={2} totalt={5} />
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-caption text-text-muted">Full</p>
+            <div
+              data-testid="forberedelseskarm-full"
+              className="relative h-72 overflow-hidden rounded-2xl border border-border"
+            >
+              <Forberedelseskarm klara={5} totalt={5} />
+            </div>
           </div>
         </div>
       </section>

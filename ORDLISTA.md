@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-14
+updated: 2026-08-15
 review_by: 2027-01-02
 status: stable
 ---
@@ -207,7 +207,37 @@ skeleton-block i datakropparna medan riktigt kort-chrome och rubriker
 renderas direkt, och under 1 sekund visas ingen indikation alls. Termen var
 odefinierad i UB 16 (granskningsfyndet L269); definierad i task-7-grillningen
 (S63, grillad samsyn); mekaniken bor i task-7:s PRD.
-*Undvik:* "Laddar…"-textrader (mönstret som underkändes i S62), spinner.
+*Undvik:* "Laddar…"-textrader (mönstret som underkändes i S62). Spinnern är
+sedan ADR-113 INTE förbjuden — men bara på Laddtrappans steg 2
+(knapp-internt i arbetande knappar), aldrig som sid- eller modulladdning.
+
+**Laddtrappan** — appens yttrappa för laddindikatorer (ADR-113, grillad
+samsyn S102 Del 7): skeleton för vyer/moduler med känd geometri ·
+spinner ENDAST knapp-internt i arbetande knappar (Button-primitivens
+`isLoading`) · determinate progress-bar för längre kända flerstegsförlopp ·
+ALDRIG naken "Laddar…"-textrad som enda laddbesked. Ersätter spec §15:s
+tidigare ovillkorade indikator-förbud; Lugnt laddläge förblir trappans
+överordnade princip (ingen geometriförändring när data landar).
+*Undvik:* "skeleton överallt" som regel-citat — det var
+agent-generaliseringen, inte beslutet.
+
+**Förberedelseskärmen** — den blockerande startskärm som visas vid kall
+appstart (ADR-112): logotyp, äkta determinate bar (X av N hämtningar
+klara) och den Marcus-låsta texten "Förbereder ditt
+administrationsverktyg". Visas ALDRIG vid varm start (tyst väg), aldrig
+offline; timeout ~8–10 s släpper tyst. Appnivå-instansen av Laddtrappans
+steg 3.
+*Undvik:* "splash"/"splash-skärm" i användarvänd text och dokumentation —
+Förberedelseskärmen är det kanoniska namnet ("splash" är okej som
+engelskt branschbegrepp i research-citat).
+
+**Startvärmningen** — warmup-fasen bakom Förberedelseskärmen (ADR-112):
+förvärmer samtliga flikars kärndata efter auth-resolution enligt
+hämta-en-gång-dela (en hämtning per datamängd, seedas till båda
+cache-nyckelfamiljerna; ADR-017:s poll-scope orört). Tyst vid varm cache,
+gate:ad mot offline, hård timeout.
+*Undvik:* "prefetch" om just denna fas — prefetch är hover/avsikts-mönstret
+på eventkorten; Startvärmningen är app-startens engångsfas.
 
 **Eventinfo** — det andra mailet i Lottas utskicksflöde: den praktiska
 informationen inför eventet (plats, tider, medtag), som går ut cirka två

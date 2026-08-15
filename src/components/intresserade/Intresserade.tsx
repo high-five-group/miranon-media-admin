@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Intresserad } from '@/domain/schemas';
@@ -115,12 +116,24 @@ export function Intresserade() {
   );
 
   if (isPending) {
+    // Lugnt laddläge (Laddtrappan steg 1, DESIGN-SYSTEM-SPEC §15): skeleton i
+    // listans SLUTGEOMETRI (rubrik + tre radplatshållare, Roselli-anatomin) i
+    // stället för en naken "Laddar…"-textrad — layout-skift ≈ 0 mot laddat läge.
     return (
-      <section className="flex flex-col gap-4 p-4" aria-busy="true">
+      <section className="flex flex-col gap-6 p-4">
         {backLink}
-        <p role="status" aria-live="polite">
-          Laddar intresserade…
-        </p>
+        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-4">
+          <span className="sr-only">Laddar intresserade…</span>
+          <div className="flex flex-col gap-1">
+            <Skeleton variant="text" className="w-40 text-2xl" />
+            <Skeleton variant="text" className="w-32 text-small" />
+          </div>
+          <div className="flex flex-col gap-3">
+            <Skeleton variant="listRow" />
+            <Skeleton variant="listRow" />
+            <Skeleton variant="listRow" />
+          </div>
+        </div>
       </section>
     );
   }

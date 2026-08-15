@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useEffect, useMemo, useRef } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
@@ -75,12 +76,31 @@ export function AnmalningarList() {
   );
 
   if (isPending) {
+    // Lugnt laddläge (Laddtrappan steg 1, DESIGN-SYSTEM-SPEC §15): skeleton i
+    // listans SLUTGEOMETRI (rubrik + tre kortplatshållare i radens EGEN
+    // kortYta-geometri, Roselli-anatomin) i stället för en naken
+    // "Laddar…"-textrad — layout-skift ≈ 0 mot laddat läge.
     return (
-      <section className="flex flex-col gap-4 p-4" aria-busy="true">
+      <section className="flex flex-col gap-4 p-4">
         {backLink}
-        <p role="status" aria-live="polite">
-          Laddar anmälningarna…
-        </p>
+        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-4">
+          <span className="sr-only">Laddar anmälningarna…</span>
+          <div className="flex flex-col gap-1">
+            <Skeleton variant="text" className="w-32 text-2xl" />
+            <Skeleton variant="text" className="w-24 text-small" />
+          </div>
+          <div className="flex flex-col gap-2">
+            {['a', 'b', 'c'].map((k) => (
+              <div
+                key={k}
+                className="flex flex-col gap-0.5 rounded-2xl border border-transparent bg-bg-muted p-4"
+              >
+                <Skeleton variant="text" className="w-2/5" />
+                <Skeleton variant="text" className="w-3/5 text-small" />
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
     );
   }

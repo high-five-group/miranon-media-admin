@@ -1,5 +1,5 @@
 import { createFileRoute, redirect, useNavigate, useSearch } from '@tanstack/react-router';
-import { Fingerprint, Loader2 } from 'lucide-react';
+import { Fingerprint } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 import { Button, MessageBox } from '@/components/primitives';
@@ -137,7 +137,7 @@ function PasskeyRoute() {
       )}
 
       {vy === 'erbjudande' && (
-        <div className="flex w-full max-w-xl flex-col gap-8">
+        <div className="flex w-full max-w-md flex-col gap-8">
           <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
             <div className="flex flex-col gap-3">
               <Fingerprint aria-hidden="true" className="text-(color:--mm-accent) size-8" />
@@ -171,19 +171,13 @@ function PasskeyRoute() {
             <div className="flex flex-col gap-3 sm:flex-row-reverse">
               <Button
                 size="lg"
-                isDisabled={sparar}
+                isLoading={sparar}
+                loadingText="Skapar …"
                 onPress={() => {
                   void registrera();
                 }}
               >
-                {sparar ? (
-                  <>
-                    <Loader2 aria-hidden="true" className="size-4 motion-safe:animate-spin" />
-                    Skapar …
-                  </>
-                ) : (
-                  'Skapa en passkey'
-                )}
+                Skapa en passkey
               </Button>
               <Button
                 intent="secondary"
@@ -201,7 +195,7 @@ function PasskeyRoute() {
       )}
 
       {vy === 'registrerad' && (
-        <div className="flex w-full max-w-xl flex-col gap-8">
+        <div className="flex w-full max-w-md flex-col gap-8">
           <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
             <div className="flex flex-col gap-2">
               <h1 className="font-semibold text-3xl text-text">Passkey skapad</h1>
