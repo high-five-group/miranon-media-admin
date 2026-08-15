@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 102 ⏸️ PAUSAD (2026-08-15 em, `lifecycle: paused`, tredje pausen —
-Marcus förhandsorder, byggvågen HELT landad).** Laddupplevelsen KLAR OCH
+**Session 102 ▶️ ÅTERUPPTAGEN (2026-08-15 kväll, `lifecycle: active`, tredje
+resumen — huvudkatalogen, egen ägarlapp).** Laddupplevelsen KLAR OCH
 STÄNGD: PRD `218` (Förberedelseskärmen + Startvärmningen, 218.1–218.4
 Done, e2e-bevisad i merge-kön) + PRD `219` (Laddtrappan, 219.1–219.3
 Done) + `216`/`220` Done + display_name-datafixen i prod (HITL,
