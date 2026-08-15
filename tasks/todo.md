@@ -15,6 +15,29 @@
 
 ## Aktuellt fokus
 
+**Session 106 ✅ AVSLUTAD (2026-08-15, `lifecycle: closed` efter Marcus
+coverage-kvittens) — AKTIVITETSHISTORIK-SIDANS OMDESIGN: HELA PROTOTYP→
+SKARPT-BÅGEN PÅ EN DAG.** Konvergens-pass direkt på befintlig yta (divergens
+bortvald på Marcus order; Check-in-rotdiagnosen S103/task-209 som grund,
+varje varv bedömt mot RENDERAD yta) → facit-låsning → PRD `TASK-225` + 5
+skivor → flip + härdning → Marcus `godkand`-stämpel via `!` → mekanisk
+rivning. **Formen:** husets sidkrom + personlistans radgrammatik + uppdelad
+filterrad + NY datumväljare (`DatumFalt`, lyft till primitives) + verb-copy
+som presentationslager (delad modul; hem-spalten påkopplad med Marcus-
+omstämplad facit-amendering) + EF-totalen ("Visar 20 av 279 poster.",
+live-bevisad). **Landningar (alla MERGED):** `#1316`/`#1328`/`#1335` (merge
+`b924fb1b`)/`#1345`/`#1353`. Kort `225.1`–`225.5` + PRD `225` Done. **PROD:**
+Marcus deployade full allowlist 35/35 (EF-totalen + väntande fixar inkl.
+`TASK-196` nu i prod) · display_name satt (Marcus + Lotta) → initialerna
+MJ/LG löser sig vid nästa inloggning; historiska rader behåller gamla namn
+(append-only, beslut). **Skörd:** 2 lessons-fragment (autofix-helträd
+[UNIVERSAL]-kandidat · facit-kallor-före-stämpel) + tråd `T144` (heartbeat-
+larmbrus för främmande PR:er). **NÄSTA ARBETE ÖPPNAR S107** — kandidater:
+AT-Max-milstolpen (byggplanens nästa) · S105 A-listans rester (tre
+oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
+session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
+ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
+
 **Session 102 ▶️ ÅTERUPPTAGEN (2026-08-15 kväll, `lifecycle: active`, tredje
 resumen — huvudkatalogen, egen ägarlapp).** Laddupplevelsen KLAR OCH
 STÄNGD: PRD `218` (Förberedelseskärmen + Startvärmningen, 218.1–218.4
