@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { TextArea } from '@/components/primitives/TextArea';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useCreateEventNote } from '@/data/mutations/useCreateEventNote';
@@ -179,10 +180,21 @@ function Strommen({ event }: { event: Event }) {
   });
 
   if (isPending) {
+    // Lugnt laddläge (Laddtrappan steg 1, DESIGN-SYSTEM-SPEC §15): skeleton i
+    // AnteckningsKort-kortets EGEN geometri (Roselli-anatomin) i stället för en
+    // naken "Laddar…"-textrad.
     return (
-      <p role="status" aria-live="polite" aria-busy="true" className="text-small text-text-muted">
-        Laddar anteckningar…
-      </p>
+      <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-2.5">
+        <span className="sr-only">Laddar anteckningar…</span>
+        <div className="flex flex-col gap-1.5 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)">
+          <Skeleton variant="text" className="w-2/5" />
+          <Skeleton variant="text" className="w-4/5" />
+        </div>
+        <div className="flex flex-col gap-1.5 rounded-xl border border-(--mm-navcard-border) bg-surface px-4 py-3 contrast-more:border-(--mm-navcard-border-contrast)">
+          <Skeleton variant="text" className="w-1/3" />
+          <Skeleton variant="text" className="w-3/5" />
+        </div>
+      </div>
     );
   }
 
