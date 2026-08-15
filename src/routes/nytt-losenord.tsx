@@ -106,7 +106,7 @@ function NyttLosenordRoute() {
  * appen ännu), så vägen framåt är en knapp här, inte en mänsklig begäran. */
 function OgiltigLank() {
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-2">
           <h1 className="font-semibold text-3xl text-text">Länken fungerar inte längre</h1>
@@ -128,7 +128,7 @@ function OgiltigLank() {
 
 function LosenordSparat() {
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-2">
           <h1 className="font-semibold text-3xl text-text">Lösenordet är sparat</h1>
@@ -229,7 +229,7 @@ function LosenordsFormular({ epost, onUtfall }: LosenordsFormularProps) {
   };
 
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <form
         onSubmit={(e) => {
           void handleSubmit(e);

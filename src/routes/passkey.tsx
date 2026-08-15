@@ -137,7 +137,7 @@ function PasskeyRoute() {
       )}
 
       {vy === 'erbjudande' && (
-        <div className="flex w-full max-w-xl flex-col gap-8">
+        <div className="flex w-full max-w-md flex-col gap-8">
           <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
             <div className="flex flex-col gap-3">
               <Fingerprint aria-hidden="true" className="text-(color:--mm-accent) size-8" />
@@ -201,7 +201,7 @@ function PasskeyRoute() {
       )}
 
       {vy === 'registrerad' && (
-        <div className="flex w-full max-w-xl flex-col gap-8">
+        <div className="flex w-full max-w-md flex-col gap-8">
           <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
             <div className="flex flex-col gap-2">
               <h1 className="font-semibold text-3xl text-text">Passkey skapad</h1>

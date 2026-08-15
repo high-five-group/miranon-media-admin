@@ -181,7 +181,7 @@ function PrimarLankKnapp({ children }: { children: ReactNode }) {
  */
 function OgiltigLank() {
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div
         className={
           'flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8'
@@ -209,7 +209,7 @@ function OgiltigLank() {
  * inloggningsmoment — aldrig en session som råkar redan finnas kvar. */
 function KontotSkapat() {
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div className="flex flex-col gap-5 rounded-2xl border border-border-light bg-surface p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-2">
           <h1 className="font-semibold text-3xl text-text">Kontot är skapat</h1>
@@ -340,7 +340,7 @@ function LosenordsFormular({
   };
 
   return (
-    <div className="flex w-full max-w-xl flex-col gap-8">
+    <div className="flex w-full max-w-md flex-col gap-8">
       <div className="flex flex-col gap-3">
         <h1 className="font-semibold text-3xl text-text">
           {mottagarNamn ? `Välkommen, ${mottagarNamn}` : 'Du har bjudits in'}
