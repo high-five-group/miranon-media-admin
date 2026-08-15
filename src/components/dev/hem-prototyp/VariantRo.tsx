@@ -504,7 +504,7 @@ function BevakningsRadItem({ rad }: { rad: BevakningRad }) {
       >
         <span className="min-w-0 flex-1 truncate text-body">
           <span className="font-semibold">{rad.eventNamn}</span>
-          {` · startar om ${rad.dagarTillStart} dagar — ${status}`}
+          {` · startar om ${rad.dagarTillStart} dagar · ${status}`}
         </span>
         <ChevronRight
           aria-hidden="true"
