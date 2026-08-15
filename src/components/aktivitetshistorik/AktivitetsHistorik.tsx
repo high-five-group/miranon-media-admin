@@ -788,6 +788,10 @@ export function AktivitetsHistorik() {
   const nuMs = Date.now();
   const grupper = grupperaPerDag(statements, nuMs);
   const total = statements.length;
+  // TASK-225.2: filtermängdens totalantal ur SENASTE sidan (EF:en räknar om
+  // per anrop — färskast vinner). `undefined` mot en äldre EF-deploy utan
+  // fältet → statusraden faller till interimsformen (skew-säkert).
+  const totalAntal = data?.pages.at(-1)?.total;
 
   return (
     <div className="flex flex-col gap-4" data-testid="aktivitetshistorik-yta">
@@ -871,14 +875,15 @@ export function AktivitetsHistorik() {
             aria-live="polite"
             className="px-2 text-small text-text-muted"
           >
-            {/* S106-passet, steg 3 — BYGGKRAV BOKFÖRT: målformen är
-                "Visar 20 av 347" (Marcus 2026-08-15), men get-activity-log
-                returnerar bara {statements, nextCursor} — ingen total.
-                EF-utökning (Supabase `count: 'exact'` på samma filtrerade
-                query) är leverans-materia och tas i TASK-225.2;
-                detta är den ärliga interimsformen tills totalen finns. */}
+            {/* TASK-225.2 — MÅLFORMEN (Marcus 2026-08-15): "Visar N av
+                TOTAL poster." när fler finns, "Visar alla N poster." när
+                allt är laddat. Interimsformen står kvar som SKEW-FALLBACK:
+                mot en äldre EF-deploy utan total-fältet visas den i stället
+                för NaN (Vercel Skew-klassen). */}
             {hasNextPage
-              ? `Visar de ${total} senaste posterna · fler finns.`
+              ? totalAntal != null
+                ? `Visar ${total} av ${totalAntal} poster.`
+                : `Visar de ${total} senaste posterna · fler finns.`
               : `Visar alla ${total} ${total === 1 ? 'post' : 'poster'}.`}
           </p>
 

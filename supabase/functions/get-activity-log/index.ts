@@ -233,9 +233,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data, error } = await query;
+    // TASK-225.2: totalen för HELA filtermängden — samma filter som
+    // huvudqueryn men UTAN cursor (cursorn skär mängden per sida, totalen
+    // avser mängden) och utan rader (head-count, `count: 'exact'` — exakt
+    // radräkning i Postgres, billig mot indexerade occurred_at-filter).
+    // ADDITIVT svarsfält: befintliga konsumenter läser {statements,
+    // nextCursor} och är obrutna.
+    let countQuery = supabaseAdmin
+      .from(TABLE_NAME)
+      .select('id', { count: 'exact', head: true });
+    if (category) countQuery = countQuery.eq('object_type', category);
+    if (rawFrom) countQuery = countQuery.gte('occurred_at', rawFrom);
+    if (rawTo) countQuery = countQuery.lte('occurred_at', rawTo);
+    if (eventId) {
+      countQuery = countQuery.contains('statement', {
+        context: { extensions: { [EVENT_ID_EXTENSION_IRI]: eventId } },
+      });
+    }
+
+    const [{ data, error }, { count, error: countError }] = await Promise.all([query, countQuery]);
     if (error) {
       throw new Error(`activity_log query failed: ${error.message}`);
+    }
+    if (countError) {
+      throw new Error(`activity_log count failed: ${countError.message}`);
     }
 
     const rows = (data ?? []) as { id: string; occurred_at: string; statement: unknown }[];
@@ -245,7 +266,7 @@ Deno.serve(async (req) => {
       hasNextPage && page.length > 0 ? buildCursor(page[page.length - 1]) : null;
 
     return new Response(
-      JSON.stringify({ statements: page.map((row) => row.statement), nextCursor }),
+      JSON.stringify({ statements: page.map((row) => row.statement), nextCursor, total: count ?? 0 }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (error) {

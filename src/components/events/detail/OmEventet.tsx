@@ -2,13 +2,13 @@ import { type CalendarDate, parseDate } from '@internationalized/date';
 import { useEffect, useRef, useState } from 'react';
 import { I18nProvider } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
+import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { useUpdateEvent } from '@/data/mutations/useUpdateEvent';
 import type { Event } from '@/domain/models/Event';
 import { EventStatus } from '@/domain/types/Status';
-import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { AndraRad, DetaljGrupp, EtikettVardeRad, RedigeringsRad } from './DetaljGrupp';
 import { datumSpannText } from './datumSpann';
 

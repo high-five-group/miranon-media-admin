@@ -144,7 +144,7 @@ function mockActivityLog(
   network: NetworkFixture,
   respond: (
     url: URL,
-  ) => { statements: Statement[]; nextCursor: string | null } | { status: number },
+  ) => { statements: Statement[]; nextCursor: string | null; total?: number } | { status: number },
 ): void {
   network.use(
     http.get(EF('get-activity-log'), ({ request }) => {
@@ -352,17 +352,20 @@ test.describe('Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen)', () => 
     ];
     const sida2 = [statement({ objectName: 'Post 3', timestamp: minuterSedan(3) })];
 
+    // TASK-225.2: EF:en bär `total` — statusraden visar målformen
+    // "Visar N av TOTAL". Övriga tester mockar UTAN total och bevisar
+    // därmed skew-fallbacken (interimsformen) mot en äldre EF-deploy.
     mockActivityLog(network, (url) => {
       const cursor = url.searchParams.get('cursor');
-      if (!cursor) return { statements: sida1, nextCursor: 'c1' };
-      if (cursor === 'c1') return { statements: sida2, nextCursor: null };
-      return { statements: [], nextCursor: null };
+      if (!cursor) return { statements: sida1, nextCursor: 'c1', total: 3 };
+      if (cursor === 'c1') return { statements: sida2, nextCursor: null, total: 3 };
+      return { statements: [], nextCursor: null, total: 3 };
     });
 
     await page.goto('/mer/aktivitetshistorik');
     const loadMore = page.getByRole('button', { name: 'Ladda fler' });
 
-    await expect(page.getByText('Visar de 2 senaste posterna · fler finns.')).toBeVisible();
+    await expect(page.getByText('Visar 2 av 3 poster.')).toBeVisible();
     await expect(loadMore).toBeVisible();
 
     await loadMore.click();

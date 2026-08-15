@@ -732,13 +732,20 @@ export class AirtableAdapter implements DataSourceAdapter {
     if (params?.cursor) query.cursor = params.cursor;
     if (params?.pageSize) query.pageSize = String(params.pageSize);
 
-    const data = await callEdgeFunction<{ statements: unknown; nextCursor: string | null }>(
-      'get-activity-log',
-      Object.keys(query).length > 0 ? query : undefined,
-    );
+    const data = await callEdgeFunction<{
+      statements: unknown;
+      nextCursor: string | null;
+      total?: unknown;
+    }>('get-activity-log', Object.keys(query).length > 0 ? query : undefined);
     return {
       statements: z.array(ActivityStatementSchema).parse(data.statements),
       nextCursor: data.nextCursor ?? null,
+      // TASK-225.2 — additivt och skew-säkert: fältet valideras defensivt
+      // och utelämnas mot en äldre EF-deploy (klienten faller till
+      // interimsformen i statusraden, aldrig NaN).
+      ...(typeof data.total === 'number' && Number.isFinite(data.total)
+        ? { total: data.total }
+        : {}),
     };
   }
 }
