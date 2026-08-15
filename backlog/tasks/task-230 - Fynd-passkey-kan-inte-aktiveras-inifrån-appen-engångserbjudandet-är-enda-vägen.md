@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-15 23:15'
-updated_date: '2026-08-15 23:29'
+updated_date: '2026-08-15 23:37'
 labels:
   - ready-for-human
 dependencies: []
@@ -22,7 +22,7 @@ S102 Lotta-vandringen punkt 8-följdfynd (Marcus 2026-08-16, 'vart i hela friden
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Marcus har valt form (Mer-yta eller annan vag) - bokfort pa kortet
+- [x] #1 Marcus har valt form (Mer-yta eller annan vag) - bokfort pa kortet
 - [ ] #2 Vald form byggd: passkey kan aktiveras och tas bort fran en permanent, hittbar plats i appen
 - [ ] #3 DoD-kvartetten gron
 <!-- AC:END -->
@@ -39,4 +39,6 @@ S102 Lotta-vandringen punkt 8-följdfynd (Marcus 2026-08-16, 'vart i hela friden
 
 <!-- SECTION:NOTES:BEGIN -->
 UPPGRADERAD 2026-08-16 efter Marcus branschfraga: settings-ytan ar BRANSCHGOLV (GitHub/Google-monstret: Settings - Sakerhet - Passkeys med lagg till/namnge/ta bort, flera passkeys per konto; nudge efter login ar komplement, aldrig enda vagen) - inte valfri form. 11/10-regeln: golvet skars aldrig. Direktnavigering till /passkey hjalper INTE heller sa lange kontot redan har passkey eller servern ar disabled (probe-studsen) - ytan ar alltsa HELT onabar idag. Bygget bor ta cue fran task-231 (serveraktiveringen) forst.
+
+FORMVAL KVITTERAT (Marcus 2026-08-16, 'Ja din rekommendation'): rad 'Inloggning & säkerhet' på Mer-sidan → egen sida med passkey-listan (lägg till, namnge, ta bort) — GitHub/Google-mönstret rakt av. Byggordning: EFTER task-231:s staging-aktivering (ytan kan inte e2e-verifieras mot avstängd server).
 <!-- SECTION:NOTES:END -->
