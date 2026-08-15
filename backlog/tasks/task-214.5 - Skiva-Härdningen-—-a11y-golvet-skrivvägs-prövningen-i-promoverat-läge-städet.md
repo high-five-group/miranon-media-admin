@@ -3,10 +3,10 @@ id: TASK-214.5
 title: >-
   Skiva: Härdningen — a11y-golvet, skrivvägs-prövningen i promoverat läge,
   städet
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 19:18'
-updated_date: '2026-08-15 00:37'
+updated_date: '2026-08-15 06:54'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,7 +33,7 @@ Den promoverade ytan härdas till skarp standard: tillgänglighetsgolvet bevisas
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
 - [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
@@ -137,3 +137,9 @@ OmockadRequestError) · npm run build EXIT=0.
   specifikt — städ-passet gick bredare än en ren AC-avprickning, alla fyra
   bokförda ovan.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad av bygg-agent (Sonnet) 2026-08-15, PR #1308, merge 2b43181e via kön. AC 1-4: axe 30/30 utan violations över samtliga sex lägen + kvalitetsribbans tre extra-lägen (prefers-contrast/reduced-motion/print, desktop+mobil); skrivvägens fem acceptanstester gröna mot PROMOVERADE routen (navigering utan variant-parameter, testinnehåll oförändrat); städ av fyra döda variant-referenser (två fler än väntat, bokförda) med designskälskommentarer bevarade; facit-jämförelse ren (ariaSnapshot-diff tom, bevis-loop-skärmdump strukturellt identisk med slutlage-bilderna). Grindar: typecheck 0, biome 0, build 0, test:api 750/750, langa-streck 0, mailto 0, acceptans rörd fil 5/5, visual 30/30, hermetik-självtest 229/229, check:docs via CI grön. Premiss-divergens marginell (radantal 1224 vs ~1239). Stängd efter landningsverifikat mot origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->
