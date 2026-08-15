@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-15 08:47'
-updated_date: '2026-08-15 10:38'
+updated_date: '2026-08-15 12:06'
 labels:
   - ready-for-agent
 dependencies:
@@ -83,6 +83,76 @@ bevisligen ingen ny kod), INTE en live e2e-körning. Rekommenderar att
 orkestreraren/CI:s "Staging (API + E2E)"-jobb bekräftar
 persist-cache.staging.test.ts (särskilt de två justerade AC3-undertesterna
 och deras 12s-timeout mot startvärmningens 9s-tak) innan kortet stängs.
+
+VARV 4 — CI-MASSAKERN PÅ #1343, ROTORSAK MÄTT (2026-08-15, byggagent):
+CI run 31880913364 fällde "Test suite / Acceptance (hermetisk)" massivt
+(30/36 röda redan i hem.acceptance.test.ts, hela jobbet slutligen CANCELLED
+efter 12 min). TVÅ separata, lagrade buggar hittades via lokal körning +
+tillfällig console-instrumentering (page.on('console'/'pageerror'),
+återställd efter diagnos) — INTE mission-hypotesens 9s-timeout-teori, som
+föll vid granskning (starta()s hårda timeout kan aldrig hänga längre än
+9000ms, för kort för att ensamt förklara massakern):
+
+BUGG 1 (fixturvärlden): warmup-setets sju EF-anrop är BARA delvis mockade i
+tests/support/fixturvarld/handlers.ts:s normalläge (events/registrations/
+activityLog fanns; waitlist/intresserade/maillog/segment saknades). Eftersom
+den hermetiska fixturvärlden ALLTID startar kall (tom localStorage per test
+— dokumenterad invariant, hem-laddlage.acceptance.test.ts:s eget filhuvud:
+"varje test där får en FÄRSK kontext med tom localStorage") körde starta()
+på VARJE autentiserad sidladdning, och de fyra omockade EF-anropen fällde
+hermetik-vakten med OmockadRequestError — testet dog innan sidan ens hann
+rendera. FIX: lade till de fyra saknade handlarna i handlers.ts:s normalläge
+som tomma listor (samma mönster som redan EVENT_ATTACHMENTS_RESPONSE och
+mer-segment.acceptance.test.ts:s {segments:[]}) — designtrogen enligt
+uppdragets egen ram (fixturvärlden SKA svara på warmup-setets alla anrop);
+kolliderar inte med de fyra sviter som äger riktigt innehåll via egna
+network.use()-överskuggningar (override vinner alltid, hermetic.ts §
+"Överskugga en delad handler").
+
+BUGG 2 (main.tsx, INGEN testfix — regression i själva gate-integrationen):
+den BEFINTLIGA (pre-218.3, K4.3) router.invalidate()-effekten triggar
+ovillkorligt på auth.isLoading→false, oberoende av den NYA warmup-gaten.
+Kommentaren i koden påstod "Under isLoading är <RouterProvider>
+render-gate:ad (mountas ej)" — sant FÖRE denna skiva (enkel boolean-gate,
+RouterProvider monterades i SAMMA render som isLoading föll). TASK-218.3
+lade en ANDRA, async gate-fas (gate: 'vantar'→'varmar'/'redo') MELLAN dem
+utan att uppdatera denna effekt. På den FÖRSTA renderingen efter
+auth-resolution är gate.typ fortfarande 'vantar' (warmup-effekten är en
+SYSKON-effekt, hinner inte köra setGate innan denna effekt läses) →
+router.invalidate() körde beforeLoad mot routerns omonterade
+context.auth===undefined → "TypeError: Cannot read properties of undefined
+(reading 'isAuthenticated')" i _authenticated.tsx, fångad av SectionError
+(routerns defaultErrorComponent) — på VARJE autentiserad sidladdning i
+fixturvärlden. FIX: lade till `gate.typ === 'redo'` som extra villkor +
+dependency i samma effekt. Verifierat att K4.3s ursprungliga scenarier
+(oinloggad→redirect, login/logout efter mount) fortsatt fungerar: gate.typ
+blir 'redo' SYNKRONT för oautentiserad/auth-yta (samma effekt-batch), och
+förblir 'redo' permanent efter första auth-resolutionen (varmtBeslutat-reffen)
+— invalidate() är därför säker vid BÅDA de ursprungliga scenarierna.
+auth-flow.staging.test.ts (K4.3 Test 4/6) är en .staging.test.ts och kunde
+INTE köras lokalt (kräver TEST_USER_EMAIL/PASSWORD mot staging) — resonerat
+igenom manuellt, inte körd; CI:s Staging-jobb är fortsatt grinden för den.
+
+MÄTT UTFALL LOKALT: full acceptance-svit 231/231 gröna, kördes TVÅ gånger
+(3.3 min resp. 3.7 min) — en enskild flake ("dagar-kvar-pillen"-testet)
+i mellanrunda ett, grön isolerat (6.1s) och grön i den andra fullkörningen;
+inte reproducerbar, bedöms orelaterad till denna fix (samma test rörs inte
+av diffen). test:acceptance:sjalvtest (positivt bevis, samma CI-jobb):
+231/231 fällda med OmockadRequestError som orsak — oförändrat. DoD-kvartetten
+om: typecheck 0 fel, biome 0 fel (0 träffar i de två rörda filerna),
+build grön, test:api 758/758 gröna. test:webblasarbeteende (regression åt
+andra hållet, fixen rör gate-logik): 58/58 gröna.
+
+AC #1/#2 (Förberedelseskärmens produktbeteende vid genuin kallstart,
+persist-e2e-sviten) rörs INTE av denna skiva och lämnas overifierade av
+mig — samma avgränsning ursprungsbygget bokförde (port 5173/staging-CORS,
+ej körbar lokalt denna session heller). CI:s Staging (API + E2E)-jobb är
+fortsatt den avgörande grinden för dem.
+
+Rörda filer: src/main.tsx (invalidate-effektens villkor+dependency,
+BUGG 2), tests/support/fixturvarld/handlers.ts (fyra nya EF-mockar i
+normalläget, BUGG 1). Ingen ändring i produktbeteende utöver att appen
+inte längre kraschar — Förberedelseskärmens design (ADR-112) är orörd.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

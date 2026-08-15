@@ -105,15 +105,45 @@ function InnerApp() {
   // Effekten KÖR vid state-ändring — router är modul-singleton, refereras inte i body.
   // biome-ignore lint/correctness/useExhaustiveDependencies: medveten TRIGGER på auth-state-byte
   useEffect(() => {
-    // Invalidate ENDAST när auth är löst. Under isLoading är <RouterProvider> render-gate:ad
-    // (mountas ej, se nedan) → routerns context.auth är fortfarande modul-defaulten (undefined).
-    // En invalidate då skulle köra beforeLoad mot undefined auth → krasch. Gaten + invalidate
-    // är komplementära: gaten sköter initial resolution, invalidate sköter login/logout
-    // (auth-byten EFTER mount, då isLoading redan är false).
-    if (!auth.isLoading) {
+    // Invalidate ENDAST när auth är löst OCH <RouterProvider> FAKTISKT är
+    // monterad (`gate.typ === 'redo'`, se render-gaten nedan).
+    //
+    // VARV 4-FÅNGSTEN (#1343, CI-massakern): kommentaren nedan beskrev fram
+    // till TASK-218.3 en sanning som blev falsk UTAN att raden uppdaterades.
+    // Före denna skiva var render-gaten en ENKEL boolean (`auth.isLoading`)
+    // och <RouterProvider> monterades i EXAKT samma render som `isLoading`
+    // föll till false — då var "!auth.isLoading" och "routern är monterad"
+    // samma villkor. TASK-218.3 lade en ANDRA, ASYNKRON gate-fas
+    // (warmup-effekten nedan, `gate: 'vantar' → 'varmar'/'redo'` via
+    // `setState`) MELLAN dem: på den FÖRSTA renderingen efter att auth löser
+    // ut är `auth.isLoading` redan false, men `gate.typ` är fortfarande
+    // 'vantar' (warmup-effektens `setGate` har inte hunnit köra än — den är
+    // en SYSKON-effekt, inte en synkron del av samma render). Denna effekt
+    // kördes då FÖRE routern någonsin monterats, `router.invalidate()`
+    // körde `beforeLoad` mot routerns modul-default `context.auth ===
+    // undefined` → `TypeError: Cannot read properties of undefined (reading
+    // 'isAuthenticated')` i `_authenticated.tsx`. Fångad av `SectionError`
+    // (routerns `defaultErrorComponent`) på VARJE autentiserad sidladdning i
+    // den hermetiska fixturvärlden (som alltid startar kall — tom
+    // localStorage per test, `hem-laddlage.acceptance.test.ts`s dokumenterade
+    // invariant) — mätt lokalt: 30 av 36 tester i `hem.acceptance.test.ts`
+    // föll på exakt detta EFTER att fixturvärldens EF-mock-lucka (samma
+    // varv, `tests/support/fixturvarld/handlers.ts`) täppts till.
+    //
+    // `gate.typ === 'redo'` i villkoret ovan återställer invarianten
+    // explicit i stället för att luta sig mot render-ordning: när gaten
+    // släpper (warm ELLER kall) monteras <RouterProvider> i SAMMA render
+    // som flippar `gate.typ`, och TanStack Routers egen mount-synk av
+    // `context.auth` (barn-effekt) hinner köra FÖRE denna förälder-effekt
+    // (React kör effekter barn-först inom samma commit) — invalidate() är
+    // därför säker både vid det första släppet OCH vid EFTERFÖLJANDE
+    // auth-byten (login/logout utan sidladdning), eftersom `gate.typ`
+    // förblir 'redo' permanent efter första auth-resolutionen
+    // (`varmtBeslutat`-reffen nedan, "en gång per auth-resolution").
+    if (!auth.isLoading && gate.typ === 'redo') {
       router.invalidate();
     }
-  }, [auth.isAuthenticated, auth.isLoading]);
+  }, [auth.isAuthenticated, auth.isLoading, gate.typ]);
 
   // Warmup-gaten (TASK-218.3, ADR-112 beslut 5) — se klassdoc-blocket ovan för
   // hela resonemanget. Körs EN gång per auth-resolution: `auth.isLoading` och
