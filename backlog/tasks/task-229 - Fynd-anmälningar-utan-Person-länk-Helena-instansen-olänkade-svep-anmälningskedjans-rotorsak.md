@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-15 22:59'
-updated_date: '2026-08-15 23:31'
+updated_date: '2026-08-15 23:47'
 labels:
   - ready-for-agent
 dependencies: []
@@ -170,4 +170,35 @@ körning; Gren 1/3/4 uteslutna med belägg) men INTE till trigger-vs-
 exekvering-nivå (kräver Airtable run-history, ej nåbar via MCP-ytan) —
 öppet bokförd som obestämbar på den sista graden, med allt uteslutet
 explicit ovan.
+
+## Del 4 — Batch-länkning av de 7 kvarvarande (Batch-GO Marcus 2026-08-16: "Batch-GO för de 7 kan jag ge direkt")
+
+Utfört EN länk i taget via mcp__airtable__update_records (fldQekqRlLfup8x5K),
+läst tillbaka BÅDA sidor per skrivning. Samtliga 7 matchade ENTYDIGT mot den
+namngivna personpost grenanalysen i Del 2/3 redan identifierade — 0 rader
+kunde INTE matchas, 0 osäkra länkar skrevs.
+
+| Anmälan (ID) | → Personpost | Äldre länkar FÖRE | Äldre länkar EFTER (orörda) | Ny länk EFTER |
+|---|---|---|---|---|
+| recNbJwwt8nlFtasL (868, Allan Nieminen) | rec5fF7QD16Qpr0C9 | 2 (recnqPMxTTbIS50Gh, recKMwCVSAaeh1bub) | samma 2, orörda | + recNbJwwt8nlFtasL |
+| rec4QfGSOjwljAbKV (877, Elin Melwinsson) | recZ8qJn3iOquLXC8 | 0 | 0 | + rec4QfGSOjwljAbKV |
+| recViNdItldmL6O8l (884, Ulrika Arvas) | recT8y8DvaZz09gtW | 2 (recIkMwXC8DZuEsiz, rec2ZnuEmEvUcvmQO) | samma 2, orörda | + recViNdItldmL6O8l |
+| rec1SD7i2467gPrJ9 (899, Lena Maria Olsson) | rectj3ixgMylQYAGH | 1 (recBRyIFcLiPIqdv3) | samma 1, orörd | + rec1SD7i2467gPrJ9 |
+| rec3A0IJir34yoekd (910, maria lejdeby) | recAZF4Y7Y0AyKFNq | 1 (recfbhorY1k2X8Wwn) | samma 1, orörd | + rec3A0IJir34yoekd |
+| rechDOujWs8FdnrCL (941, Karl Areskough) | recAc3ToqnjYUWEHq | 0 | 0 | + rechDOujWs8FdnrCL |
+| reczi2qUFpS1eiyYm (981, Agneta Lindell) | recM5CHah9vqFh3fb | 0 | 0 | + reczi2qUFpS1eiyYm |
+
+Allan Nieminen (868): ENDAST Person-fältet skrivet. EventKey-värdet "11"
+kontrollerat OFÖRÄNDRAT i både skriv- och läs-svaret (ägs nu av TASK-232,
+bekräftad existerande via git log — commit 6a71e8a6, "kort 232
+(EventKey-återfallet)", ej ännu mergad till main).
+
+Innan denna batch: uniciteten omprövad direkt före skrivning (ny
+list_records mot Anmälningar {Person}=BLANK() + ny sökning i Personer på
+samtliga 7 e-postadresser) — identiskt resultat mot Del 2/3:s ursprungliga
+sweep, ingen ny dubblett uppstod under mellantiden.
+
+SLUTKONTROLL: ny sweep {Person}=BLANK() mot hela Anmälningar-tabellen efter
+samtliga 7 skrivningar → 0 träffar. Olänkade-luckan i prod är därmed
+STÄNGD (8/8 ursprungligen olänkade nu länkade: Helena i Del 1 + dessa 7).
 <!-- SECTION:NOTES:END -->
