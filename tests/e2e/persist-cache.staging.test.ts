@@ -25,6 +25,29 @@ import { expect, type Page, type Route, test } from '../support/test-bas';
  *   auto-skip annars) — offline-omladdning visar restaurerad data i stället
  *   för laddläge/fel (networkMode 'online' pausar hämtning per ADR-047 B5).
  *
+ * TASK-218.4 (ADR-112, kallstartsfallet): ett ytterligare, FRISTÅENDE test
+ * ("Kallstart …") bevisar hela gate-RESAN som EXTERNT beteende, i stället för
+ * AC 3:s undertester som bara bevisar restore-SKYDDSRÄCKENA (buster/maxAge på
+ * en redan en gång varmad cache). Kallstartstestet rensar persist-nyckeln
+ * FÖRE app-boot (samma `arrangeraTomCache`-idiom som
+ * `tests/e2e/events-list.staging.test.ts`/`hem-laddlage.acceptance.test.ts`)
+ * — det äkta "aldrig varmad än"-fallet — och kör igenom: Förberedelseskärmen
+ * syns (progressbar-roll + den låsta texten) → baren fylls progressivt →
+ * skärmen släpper → Hem färdigt utan synliga skeletons → ett flikbyte (Event)
+ * direkt utan laddindikator (events.list redan varmad och delad till
+ * dashboard-nyckeln, ADR-112 beslut 4). "Baren når EXAKT fullt" (aria-valuenow
+ * === totalt) är MEDVETET INTE en assertion: sista WARMUP_ITEMS-batchen
+ * (activityLog, ensam sedan BATCH_SIZE 2 på 7 datamängder) settlar och
+ * `slutlöfte` löser gaten till 'redo' i SAMMA mikrotask-kedja utan
+ * mellanliggande async-gap (se `src/main.tsx`s InnerApp-effekt: `slutlofte
+ * .then(() => setGate({typ:'redo'}))` kör direkt efter sista `emit()`) —
+ * DOM-tillståndet "N av N" hinner därför strukturellt aldrig målas och är
+ * overifierbart utifrån (varken CDP-poll eller `waitForFunction(...,{polling:
+ * 'raf'})` kan fånga en frame som aldrig renderas till skärmen). Testet
+ * bevisar i stället det sista STABILA, garanterat observerbara steget
+ * (totalt−1, där den sista ensamma batchen fortfarande pågår mot RIKTIG
+ * staging) plus det rena handslaget till ett färdigt Hem.
+ *
  * Körs i chromium-authenticated-projektet. Mock-tester (AC 1–3) är
  * deterministiska via page.route (hem-svitens regex-kontrakt); AC 4 kör
  * medvetet UTAN mockar — i byggd preview kontrollerar service workern sidan
@@ -186,6 +209,15 @@ function lasPersistRaw(page: Page): Promise<string | null> {
   return page.evaluate((nyckel) => localStorage.getItem(nyckel), PERSIST_KEY);
 }
 
+/** Tom cache-arrangemang (ADR-072): persist-nyckeln bort FÖRE app-boot. Samma
+    idiom som `tests/e2e/events-list.staging.test.ts`/
+    `tests/acceptance/hem-laddlage.acceptance.test.ts` — det äkta
+    kallstartsfallet (TASK-218.4), skiljt från AC 3:s undertester nedan som
+    simulerar kallhet genom att MUTERA en redan en gång varmad cache. */
+function arrangeraTomCache(page: Page) {
+  return page.addInitScript((nyckel) => localStorage.removeItem(nyckel), PERSIST_KEY);
+}
+
 /** Väntar ut throttle-synken (~1 s) tills lagringen bär sentinel-strängen. */
 async function vantaPaPersistInnehall(page: Page, sentinel: string): Promise<void> {
   await expect
@@ -202,6 +234,80 @@ async function persistQueryAntal(page: Page): Promise<number> {
 }
 
 test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
+  test('Kallstart (TASK-218.4, ADR-112) — tom persist-cache: Förberedelseskärmen syns, baren fylls, Hem färdigt utan skeleton, flikbyte direkt', async ({
+    page,
+  }) => {
+    // Tom/rensad persist-cache FÖRE app-boot — det ÄKTA kallstartsfallet
+    // (skiljt från AC 3:s undertester nedan, som simulerar kallhet genom att
+    // mutera en redan en gång varmad cache).
+    await arrangeraTomCache(page);
+    const mocken = await hallbarMock(page, grunddata());
+    // Håller registrations+events (WARMUP_ITEMS[0..1], startvarmningen.ts)
+    // tillbaka — de är FÖRST i sekvensen (BATCH_SIZE 2), så resten av
+    // batcherna kan strukturellt inte starta förrän denna batch settlar
+    // (korAlla()s for-loop väntar batch för batch).
+    mocken.hall = true;
+    await page.goto('/hem');
+
+    // Förberedelseskärmen SYNS: progressbar-ytan (roll, ALDRIG klassnamn) +
+    // den MARCUS-LÅSTA texten (Forberedelseskarm.tsx). main#main INTE
+    // monterad — gaten öppnar <RouterProvider> först vid gate.typ === 'redo'.
+    const progressbar = page.getByRole('progressbar');
+    await expect(progressbar).toBeVisible();
+    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeVisible();
+    await expect(page.locator('main#main')).toHaveCount(0);
+
+    // Vänta ut den RIKTIGA warmup-handlens första snapshot: initialt (innan
+    // warmup-effekten hunnit köra) visar gaten `FORBEREDELSESKARM_VANTAR`
+    // (`src/components/AppShell`, totalt: 1, en 0-lägesplatshållare) — den
+    // äkta handlens totalt (WARMUP_ITEMS.length, i dag 7) skiljer sig alltid
+    // från platshållarens, så "!= '1'" är en stabil signal på att den riktiga
+    // startvärmningen är aktiv (inte bara auth-resolutionens 0-läge).
+    await expect
+      .poll(async () => progressbar.getAttribute('aria-valuemax'), { timeout: 5_000 })
+      .not.toBe('1');
+    await expect(progressbar).toHaveAttribute('aria-valuenow', '0');
+    const totaltStr = await progressbar.getAttribute('aria-valuemax');
+    if (!totaltStr) throw new Error('progressbar saknar aria-valuemax efter stabilisering');
+
+    // Släpp de två hållna mockarna. Resten av batcherna (waitlist+
+    // intresserade, maillog+segment, activityLog ensam i sista batchen) körs
+    // sekventiellt mot RIKTIG staging — samma "5 real, 2 mockade"-konvention
+    // som AC 3:s undertester (se filhuvudet).
+    mocken.hall = false;
+    await mocken.slappAlla();
+
+    // Baren FYLLS progressivt: batch 2 och batch 3 landar mot riktig staging
+    // med äkta nätverkspauser mellan (observerbart) upp till totalt−1 — sista
+    // batchen har bara EN datamängd (activityLog) kvar, och DESS
+    // klar-tillstånd (totalt/totalt) hinner strukturellt aldrig målas innan
+    // gaten släpper (se filhuvudets TASK-218.4-stycke för hela
+    // mikrotask-resonemanget) — totalt−1 är alltså det sista STABILA,
+    // garanterat observerbara steget.
+    const sistaStabila = String(Number(totaltStr) - 1);
+    await expect
+      .poll(async () => progressbar.getAttribute('aria-valuenow'), { timeout: 12_000 })
+      .toBe(sistaStabila);
+
+    // Skärmen släpper: main monteras, Hem färdigt UTAN synliga skeletons.
+    const main = page.locator('main#main');
+    await expect(main.getByRole('link', { name: /Signe Sparad/ })).toBeVisible({ timeout: 12_000 });
+    await expect(page.getByRole('progressbar')).toHaveCount(0);
+    await expect(main.getByRole('status')).toHaveCount(0);
+
+    // Minst ett flikbyte (Event) OMEDELBART utan laddindikator: events.list
+    // redan varmad av startvärmningen och delad till dashboard-nyckeln
+    // (ADR-112 beslut 4) — EventsList.tsx anropar samma nyckelfamilj, ingen
+    // ny hämtning krävs.
+    await page
+      .getByRole('navigation', { name: 'Huvudnavigation' })
+      .getByRole('link', { name: 'Event' })
+      .click();
+    await page.waitForURL('**/event');
+    await expect(page.getByText('Fjärrskådning')).toBeVisible();
+    await expect(main.getByRole('status')).toHaveCount(0);
+  });
+
   test('AC 1 — varm start: senast kända data direkt utan synligt laddläge; tyst bakgrundshämtning nätverksnivå-bevisad', async ({
     page,
   }) => {
