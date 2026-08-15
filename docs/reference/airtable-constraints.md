@@ -1,13 +1,13 @@
 ---
 owner: marcus803
-updated: 2026-08-10
+updated: 2026-08-15
 review_by: 2027-02-07
 status: stable
 ---
 
 # Airtable — strukturella begränsningar (plattform)
 
-> **Äger:** Airtable-plattformens strukturella väggar (P1–P30), varje posts
+> **Äger:** Airtable-plattformens strukturella väggar (P1–P31), varje posts
 > v1-kompensation och Fas E-migrationskrav. **Kartlägger:**
 > `docs/reference/data-model.md` §Kända fällor (avgränsning: fält-specifika
 > fällor bor där, plattforms-generella väggar bor här — se avgränsningsraden
@@ -267,6 +267,23 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
 - **v1-kompensation.** Outlier-svep mot ALL data före enum-härdning; robust blank-check `{Fält}&""!=""`.
 - **Fas E-krav.** Postgres `CHECK`-constraints / enum-typer hindrar att otillåtna värden ens skrivs;
   Supabase-adaptern läser från en källa där option-driften inte kan uppstå.
+
+#### P31 · Kallstartslatensen — sekventiella EF-hämtningar under det delade 5 req/s-taket
+
+- **Begränsning.** En kall appstart (tom/stale persist-cache) måste hämta samtliga flikars
+  kärndata som separata EF-anrop under P4:s delade rate-tak — total kallstartstid ~6–7 s mätt
+  (Marcus, S102 Lotta-vandringen 2026-08-15). Ingen bulk-/bootstrap-endpoint finns i Airtable
+  som kunde hämta allt i ett anrop.
+- **Kostnad/manifestation.** 6–7 s skeleton-regn vid första öppning per enhet/dag — exakt den
+  väntetidsklass där skeleton per NN/g är fel indikatorform. Källa:
+  [`app-startup-warmup-splash-2026-08-15.md`](../research/app-startup-warmup-splash-2026-08-15.md).
+- **v1-kompensation.** Förberedelseskärmen med blockerande startvärmning och determinate bar
+  ([ADR-112](../decisions/ADR-112-forberedelseskarmen-blockerande-startvarmning.md)):
+  hämta-en-gång-dela mellan nyckelfamiljerna, tyst vid varm start, offline-gate + tyst
+  timeout-släpp.
+- **Fas E-krav.** Med Postgres-latens (tiotals ms) blir startvärmningen självdöende via
+  tyst-vid-varmt-regeln; ADR-112:s blockerande form OMPRÖVAS då öppet mot den progressiva
+  branschriktningen (Linear/Figma-mönstret) i stället för att ärvas.
 
 ### C. Typning och coercion
 
@@ -613,3 +630,4 @@ detalj, åtgärds-rekommendation och live-stickprov.
 | 2026-07-31 | **`TASK-53` (commit `123dbca`) — P4:s öppna avvikelse STÄNGD.** 1 s-backoffen efter 429 ersatt av Airtable-konform väntan i en egen mekanism ([`_shared/airtable-retry.ts`](../../supabase/functions/_shared/airtable-retry.ts)), delad av alla tre call-sites: exponentiellt från 30 s med additiv jitter och tak på 2 omförsök (härlett ur Supabase Edge Functions 150 s idle timeout — ett tredje omförsök hade gett 504). Verifierad med mockat 429-enhetstest som mäter faktisk väntetid; skarp framkallning valdes bort eftersom kvoten är delad (P26). Posten är därmed den första i katalogen som gått från öppen avvikelse till åtgärdad — noten behålls som historik, inte som skuld. |
 | 2026-08-07 | **`TASK-146.1` — sektion G, bilagor och filhantering.** Två nya plattform-poster landade från kandidaterna forskningspasset [`utskicks-bilage-arkitektur-2026-08-03.md`](../research/utskicks-bilage-arkitektur-2026-08-03.md) § Delfråga 4 medvetet lämnade olandade: **P28** (attachment-URL:er utgår efter 2 timmar, sedan 2022-11-08 — v1-kompensation ej tillämplig, `Bilagor`-tabellen håller bara metadata) och **P29** (Upload Attachment-API kapat till 5 MB direkt-byte-uppladdning — v1-kompensation ej tillämplig, samma skäl). Båda är FRAMÅTRIKTADE: grönfält i denna kodbas, ingen manifestation ännu — de är skälet TASK-146 valde delad hemvist (bytes i Supabase Storage) i stället för Airtable-native attachment-fält, inte en åtgärdad brist. Plattform-poster nu 29, grupperade A–G. |
 | 2026-08-10 | **`TASK-184` — P30, formlernas räckvidd över tabellgränsen.** En post som saknades i katalogen trots att den är en av de mest styrande väggarna: en formel når bara sin egen rad, lookup kräver ett befintligt länkfält, och länkfältet kan inte beräknas. Två förstapartscitat (`lookup-field-overview` + `linked-record-field`, båda hämtade 2026-08-10). Väggen upptäcktes när `TASK-184` skulle ge anmälningsgrenen i `Senaste interaktion (text)` kurs och ort: touchpointen kan strukturellt inte bära uppgiften, och ett nytt länkfält hade krävt en backfill som dessutom inte var härledbar. v1-kompensationen blev att läsa grenen över den relation som redan finns (`Personer.Anmälningar`), med enbart beräknade fält och noll backfill. Närliggande men skild från **P9** (som handlar om vad en lookup RETURNERAR, inte om vad den kan NÅ). Plattform-poster nu 30, grupperade A–G. |
+| 2026-08-15 | **S102 Lotta-vandringen — P31, kallstartslatensen.** Kall appstart hämtar samtliga flikars kärndata sekventiellt under det delade 5 req/s-taket (P4) — ~6–7 s mätt skeleton-regn, väntetidsklassen där skeleton per NN/g är fel indikatorform. v1-kompensationen är Förberedelseskärmen med blockerande startvärmning ([ADR-112](../decisions/ADR-112-forberedelseskarmen-blockerande-startvarmning.md)); Fas E-kravet är en ÖPPEN omprövning av den blockerande formen mot den progressiva branschriktningen när Postgres-latensen gjort startvärmningen självdöende. Grillad samsyn S102 Del 7; research-belägg i [`app-startup-warmup-splash-2026-08-15.md`](../research/app-startup-warmup-splash-2026-08-15.md). Plattform-poster nu 31, grupperade A–G. |
