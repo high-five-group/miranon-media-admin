@@ -380,11 +380,11 @@ test.describe('Aktivitetshistoriken — filterraden (TASK-201.8, B-målet)', () 
     );
 
     await page.goto('/mer/aktivitetshistorik');
-    await expect(page.getByText('Visar 2 poster (fler finns).')).toBeVisible();
+    await expect(page.getByText('Visar de 2 senaste posterna · fler finns.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Ladda fler' }).click();
     await expect(page.getByText('Post 3')).toBeVisible();
-    await expect(page.getByText('Visar 3 poster.')).toBeVisible();
+    await expect(page.getByText('Visar alla 3 poster.')).toBeVisible();
 
     await page.getByRole('button', { name: 'Kategori' }).click();
     await page.getByRole('option', { name: 'Mail' }).click();
@@ -420,7 +420,7 @@ test.describe('Aktivitetshistoriken — filterraden (TASK-201.8, B-målet)', () 
     await expect(page.getByText('Post 1')).toHaveCount(0);
     await expect(page.getByText('Post 2')).toHaveCount(0);
     await expect(page.getByText('Post 3')).toHaveCount(0);
-    await expect(page.getByText('Visar 1 post.')).toBeVisible();
+    await expect(page.getByText('Visar alla 1 post.')).toBeVisible();
 
     // Det senaste anropet bar INGEN cursor (fräsch sida 1 för den nya
     // filterkombinationen) — mock-handlern hade annars kastat ovan.
@@ -463,7 +463,10 @@ test.describe('Aktivitetshistoriken — filterraden (TASK-201.8, B-målet)', () 
       nextCursor: null,
     }));
     await page.goto('/mer/aktivitetshistorik');
-    await expect(page.getByText('Aktivitet')).toBeVisible();
+    // Vänta in ifylld vy via rad 1 (aktör + händelse) — TIDSOBEROENDE:
+    // metaradens tidsform (relativ/klockslag) beror på klock-frysningen,
+    // och bar "Aktivitet" substring-matchar h1:an (strict-krock, S106).
+    await expect(page.getByText('Lotta markerade betalning')).toBeVisible();
     await expect(page.getByTestId('aktivitetshistorik-filterrad')).toBeVisible();
 
     const results = await new AxeBuilder({ page })
