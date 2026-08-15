@@ -1,14 +1,21 @@
+import { type CalendarDate, parseDate } from '@internationalized/date';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
+// Cross-feature-import med avsikt (S106-passet): DatumFalt är eventsidans
+// S73-facit-form (RAC DateRangePicker + RangeCalendar-popover). Historiken
+// är det BEVISADE DELBEHOV dess eget filhuvud villkorar primitiv-lyft på —
+// lyftet till src/components/primitives/ är TASK-225.4:s skiva.
+import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { ACTIVITY_OBJECT_TYPES } from '@/data/activityLog/activityTypes';
+import { verbCopy } from '@/data/activityLog/verbCopy';
 import { useActivityLogHistory } from '@/data/queries/useActivityLog';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
@@ -18,6 +25,18 @@ import {
   PERSON_ID_EXTENSION_IRI,
 } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
+
+/**
+ * PROMOVERAD ur S106-konvergenspassets prototyp, EJ återbyggd (ADR-103
+ * B1/B2, TASK-225.1): klasser, element och ordning hämtade verbatim ur
+ * `AktivitetsHistorikPrototyp.tsx`. Facit-manifestet
+ * `tasks/sessions/bilagor/s106-aktivitetslogg/facit.json` är den
+ * auktoritativa formbeskrivningen och slår varje prosabeskrivning
+ * (ADR-102 B1) — även denna. Prototypfilen + route-växeln (`?variant=a`)
+ * står KVAR tills Marcus satt `godkand`-stämpeln (TASK-225.5, ADR-104
+ * kanalseparation); först därefter rivs de mekaniskt
+ * (`scripts/check-facit.sh` håller trädet rött vid förtida rivning).
+ */
 
 /**
  * Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen) + filterraden
@@ -316,6 +335,33 @@ export function aktivitetensPersonId(statement: ActivityStatement): string | nul
  * (`.langa-streck-policy.json`). ORDLISTA.md:s illustrativa exempel ("Lotta
  * markerade betalning — …") är EJ facit för separatorn.
  */
+/* S106-passet, steg 3+4 — verb-copyn bor i den DELADE presentations-
+ * modulen `src/data/activityLog/verbCopy.ts` (flyttad dit i steg 4 på
+ * Marcus "fixa fynden"-kvittens: EN källa för händelsetexten; hem-spalten
+ * kopplas på i TASK-225.3 med facit-amendering — se modulens
+ * docblock för hela bokföringen, inkl. de medvetet oförändrade verben). */
+
+/** Initialer för identitetsmarkören — personlistans `initialer`, samma form
+ * (dörrlistans `initialerD` är tredje kopian av samma formel). Tål e-post som
+ * namn (dagens prod-fallback): "marcus@h5gruppen.se" → "M". */
+function initialer(namn: string): string {
+  return namn
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((d) => d[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+/* S106-passet, steg 2 — RADEN TALAR HUSETS RADGRAMMATIK (Check-in-
+ * rotdiagnosen i omvänd riktning: nuläget talade "eget språk" — textklump
+ * utan identitetsmarkör). Formen är personlistans/dörrlistans, verbatim:
+ * `size-9`-initial-cirkel i `bg-bg-emphasized` · rad 1 aktör i `font-medium`
+ * + händelse i normal vikt · rad 2 TIDEN SOM RUBRIK (`font-medium
+ * text-text-secondary tabular-nums`, PersonsList steg 12-13: "vikten bär
+ * hierarkin") + objekt dämpat efter mittpunkten · `min-h-16` höjdlås ·
+ * `-mx-4 px-4` så hover-tinten når kortkanten (dörrlistans tint-idiom;
+ * listans `overflow-hidden` klipper hörnen, Check-in-konvergensens varv 2). */
 function AktivitetsRad({
   statement,
   grupp,
@@ -330,42 +376,49 @@ function AktivitetsRad({
   // prioritetskommentar (eventId vinner när båda finns).
   const personId = eventId ? null : aktivitetensPersonId(statement);
   const tid = radensTid(statement.timestamp, grupp, nuMs);
-  const handelse = sprakText(statement.verb.display);
+  const handelse = verbCopy(statement.verb);
   const objekt = sprakText(statement.object.definition.name);
 
   const innehall = (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <p className="truncate text-body">
-        <span className="font-medium">{statement.actor.name}</span> {handelse}
-        {' · '}
-        {objekt}
-      </p>
-      <p className="text-caption text-text-muted">{tid}</p>
-    </div>
+    <>
+      <span
+        aria-hidden="true"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
+      >
+        {initialer(statement.actor.name)}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <p className="truncate text-body underline-offset-2 group-hover:underline">
+          <span className="font-medium">{statement.actor.name}</span> {handelse}
+        </p>
+        <p className="truncate text-caption">
+          <span className="font-medium text-text-secondary tabular-nums">{tid}</span>
+          <span className="text-text-muted">{` · ${objekt}`}</span>
+        </p>
+      </div>
+    </>
   );
 
+  /* S106-passet, steg 5 — hover per HUSETS divide-y-grammatik (Marcus
+   * 2026-08-15: bakgrunds-tinten skar sig mot separatorlinjerna): ingen
+   * rad-bakgrund vid hover — personlistans affordans i stället
+   * (`hover:underline` på textblocket via group; chevronen bär resten).
+   * `-mx-4`-tricket och listans `overflow-hidden` revs med tinten. */
+  const radKlass = 'group flex min-h-16 items-center gap-3 py-2.5';
   return (
     <li>
       {eventId ? (
-        <Link
-          to="/event/$eventId"
-          params={{ eventId }}
-          className="group flex items-center justify-between gap-3 px-2 py-3 hover:bg-bg-emphasized"
-        >
+        <Link to="/event/$eventId" params={{ eventId }} className={radKlass}>
           {innehall}
           <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
         </Link>
       ) : personId ? (
-        <Link
-          to="/personer/$personId"
-          params={{ personId }}
-          className="group flex items-center justify-between gap-3 px-2 py-3 hover:bg-bg-emphasized"
-        >
+        <Link to="/personer/$personId" params={{ personId }} className={radKlass}>
           {innehall}
           <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
         </Link>
       ) : (
-        <div className="flex items-center gap-3 px-2 py-3">{innehall}</div>
+        <div className="flex min-h-16 items-center gap-3 py-2.5">{innehall}</div>
       )}
     </li>
   );
@@ -381,9 +434,12 @@ function LaddLage() {
       <Skeleton variant="text" className="w-24 text-small" />
       <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex flex-col gap-1.5 py-3">
-            <Skeleton variant="text" className="w-2/5 text-body" />
-            <Skeleton variant="text" className="w-16 text-caption" />
+          <div key={i} className="flex min-h-16 items-center gap-3 py-2.5">
+            <Skeleton variant="text" className="size-9 shrink-0 rounded-full" />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <Skeleton variant="text" className="w-3/5 text-body" />
+              <Skeleton variant="text" className="w-2/5 text-caption" />
+            </div>
           </div>
         ))}
       </div>
@@ -420,6 +476,8 @@ function FilterRad({
   onEventChange,
   tidsperiod,
   onTidsperiodChange,
+  datumSpann,
+  onDatumSpannChange,
 }: {
   kategori: KategoriKey | null;
   onKategoriChange: (varde: KategoriKey | null) => void;
@@ -429,44 +487,17 @@ function FilterRad({
   onEventChange: (varde: string | null) => void;
   tidsperiod: Tidsperiod;
   onTidsperiodChange: (varde: Tidsperiod) => void;
+  datumSpann: { start: CalendarDate; end: CalendarDate } | null;
+  onDatumSpannChange: (v: { start: CalendarDate; end: CalendarDate } | null) => void;
 }) {
+  /* S106-passet, steg 2 — FILTERRADEN UPPDELAD (Marcus 2026-08-15: tre
+   * kontroller på samma rad "ser extremt ihoptryckt ut"). Husets stapling
+   * (Check-ins SessionsRad-precedent): tidsperiod-togglen FÖRST i fullbredd
+   * (`spread` + `min-h-11` per flik — varv 4-lärdomen: `size="sm"` ensamt
+   * gav 37 px, under 44 px-golvet), därunder de två dropdownerna sida vid
+   * sida (staplade på mobil). */
   return (
-    <div className="grid gap-3 sm:grid-cols-3" data-testid="aktivitetshistorik-filterrad">
-      <Select
-        label="Kategori"
-        size="sm"
-        selectedKey={kategori ?? ALLA}
-        onSelectionChange={(k) => {
-          const varde = k == null || String(k) === ALLA ? null : (String(k) as KategoriKey);
-          onKategoriChange(varde);
-        }}
-      >
-        <SelectItem id={ALLA}>Alla kategorier</SelectItem>
-        {KATEGORI_VALUES.map((k) => (
-          <SelectItem key={k} id={k}>
-            {KATEGORI_LABEL[k]}
-          </SelectItem>
-        ))}
-      </Select>
-
-      <Select
-        label="Event"
-        size="sm"
-        isDisabled={eventerLaddar}
-        selectedKey={eventId ?? ALLA}
-        onSelectionChange={(k) => {
-          const varde = k == null || String(k) === ALLA ? null : String(k);
-          onEventChange(varde);
-        }}
-      >
-        <SelectItem id={ALLA}>Alla event</SelectItem>
-        {eventOptions.map((e) => (
-          <SelectItem key={e.id} id={e.id}>
-            {eventFilterEtikett(e)}
-          </SelectItem>
-        ))}
-      </Select>
-
+    <div className="flex flex-col gap-3" data-testid="aktivitetshistorik-filterrad">
       <ToggleButtonGroup<Tidsperiod>
         label="Tidsperiod"
         spread
@@ -474,11 +505,61 @@ function FilterRad({
         onSelectionChange={onTidsperiodChange}
       >
         {TIDSPERIOD_VALUES.map((t) => (
-          <ToggleButton key={t} id={t} size="sm">
+          <ToggleButton key={t} id={t} size="sm" className="min-h-11">
             {TIDSPERIOD_LABEL[t]}
           </ToggleButton>
         ))}
       </ToggleButtonGroup>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Select
+          label="Kategori"
+          size="sm"
+          selectedKey={kategori ?? ALLA}
+          onSelectionChange={(k) => {
+            const varde = k == null || String(k) === ALLA ? null : (String(k) as KategoriKey);
+            onKategoriChange(varde);
+          }}
+        >
+          <SelectItem id={ALLA}>Alla kategorier</SelectItem>
+          {KATEGORI_VALUES.map((k) => (
+            <SelectItem key={k} id={k}>
+              {KATEGORI_LABEL[k]}
+            </SelectItem>
+          ))}
+        </Select>
+
+        <Select
+          label="Event"
+          size="sm"
+          isDisabled={eventerLaddar}
+          selectedKey={eventId ?? ALLA}
+          onSelectionChange={(k) => {
+            const varde = k == null || String(k) === ALLA ? null : String(k);
+            onEventChange(varde);
+          }}
+        >
+          <SelectItem id={ALLA}>Alla event</SelectItem>
+          {eventOptions.map((e) => (
+            <SelectItem key={e.id} id={e.id}>
+              {eventFilterEtikett(e)}
+            </SelectItem>
+          ))}
+        </Select>
+      </div>
+
+      {/* S106-passet, steg 5 — DATUMVÄLJAREN (Marcus 2026-08-15:
+          "välja en specifik dag att se vad som hände då"). Eventsidans
+          DatumFalt återanvänds: en dag = samma start/slut i kalendern, ett
+          spann fungerar också. Hela datakedjan fanns redan (EF:ens
+          from/to-range mot occurred_at · adapterns ActivityLogParams ·
+          ActivityLogFilters) — ingen backend-ändring. Ett valt spann
+          ÅSIDOSÄTTER tidsperiod-togglen; ett toggle-val rensar spannet
+          (ömsesidigt exklusiva, en tidsfiltrering i taget). */}
+      <div className="flex flex-col gap-1">
+        <span className="font-medium text-small text-text-secondary">Datum</span>
+        <DatumFalt value={datumSpann} onChange={onDatumSpannChange} />
+      </div>
     </div>
   );
 }
@@ -538,15 +619,53 @@ export function AktivitetsHistorik() {
     parseAsStringEnum(TIDSPERIOD_VALUES).withDefault('allt').withOptions({ history: 'push' }),
   );
 
-  // `from` beräknas ENDAST om `tidsperiod` faktiskt ändras (useMemo keyad på
-  // den ensam) — INTE varje render. `Date.now()` inline i queryKeyen hade
-  // gett en NY sträng (och därmed ny cache-post/refetch) varje render;
-  // samma disciplin som `EventsList.tsx`/`EventValjare.tsx`s `idagStart`.
-  const from = useMemo(() => tidsperiodFran(tidsperiod, Date.now()), [tidsperiod]);
+  // S106-passet, steg 5 — datumspannet i URL:en som två fria
+  // ISO-datumsträngar (URL-STATE-SPEC:s `parseAsString`-mönster för
+  // datadrivna värden, samma som `?event`). `parseDate` valideras defensivt:
+  // en handredigerad ogiltig URL ger null-spann, aldrig en krasch.
+  const [fran, setFran] = useQueryState('fran', parseAsString.withOptions({ history: 'push' }));
+  const [till, setTill] = useQueryState('till', parseAsString.withOptions({ history: 'push' }));
+  const datumSpann = useMemo(() => {
+    if (!fran || !till) return null;
+    try {
+      return { start: parseDate(fran), end: parseDate(till) };
+    } catch {
+      return null;
+    }
+  }, [fran, till]);
+  const valjDatumSpann = (v: { start: CalendarDate; end: CalendarDate } | null) => {
+    setFran(v ? v.start.toString() : null);
+    setTill(v ? v.end.toString() : null);
+    // Ömsesidig exklusivitet: spannet ersätter tidsperioden helt.
+    if (v) setTidsperiod(null);
+  };
+  const valjTidsperiod = (t: Tidsperiod) => {
+    setTidsperiod(t);
+    setFran(null);
+    setTill(null);
+  };
+
+  // `from`/`to` beräknas ENDAST när filtren faktiskt ändras (useMemo) —
+  // INTE varje render. `Date.now()` inline i queryKeyen hade gett en NY
+  // sträng (och därmed ny cache-post/refetch) varje render; samma disciplin
+  // som `EventsList.tsx`/`EventValjare.tsx`s `idagStart`. Spann-grenen:
+  // lokal dygnsgräns → ISO (Lottas dag, inte UTC-dygnet).
+  const from = useMemo(
+    () =>
+      datumSpann
+        ? new Date(`${datumSpann.start.toString()}T00:00:00`).toISOString()
+        : tidsperiodFran(tidsperiod, Date.now()),
+    [datumSpann, tidsperiod],
+  );
+  const to = useMemo(
+    () =>
+      datumSpann ? new Date(`${datumSpann.end.toString()}T23:59:59.999`).toISOString() : undefined,
+    [datumSpann],
+  );
   const kategoriIri = kategori ? ACTIVITY_OBJECT_TYPES[kategori] : undefined;
 
   const { data, isPending, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useActivityLogHistory({ category: kategoriIri, eventId: eventId ?? undefined, from });
+    useActivityLogHistory({ category: kategoriIri, eventId: eventId ?? undefined, from, to });
 
   // Event-dropdownens alternativ — delar queryKey med EventValjare/EventsList
   // (varm cache vid navigering från Event; se FilterRad-komponentens huvud).
@@ -572,11 +691,14 @@ export function AktivitetsHistorik() {
     [eventsData],
   );
 
-  const filterAktiv = kategori != null || eventId != null || tidsperiod !== 'allt';
+  const filterAktiv =
+    kategori != null || eventId != null || tidsperiod !== 'allt' || datumSpann != null;
   const rensaFilter = () => {
     setKategori(null);
     setEventId(null);
     setTidsperiod(null);
+    setFran(null);
+    setTill(null);
     // Filterraden stannar monterad (keepPreviousData), men RESULTATLISTAN
     // byts ut under fötterna på "Rensa filter"-knappen (den unmountas med
     // tomläget) — flytta fokus till den stabila h1:an i stället för att
@@ -622,16 +744,28 @@ export function AktivitetsHistorik() {
     }
   }, [isFetchingNextPage, statements.length]);
 
-  const backLink = (
-    <Link to="/mer" className="text-small underline">
-      ← Tillbaka till Mer
+  /* S106-passet, steg 2 — HUSETS SIDKROM (Check-in-varv 1-fixen, samma
+   * form som EventDetail/Check-in: 44 px rund chevron + `text-3xl`-rubrik
+   * ersätter textlänken + `text-2xl`). Kromet + rubriken renderas i ALLA
+   * tre tillstånd — stabil geometri, rubriken hoppar inte in när datan
+   * landar. */
+  const kromKnapp = (
+    <Link
+      to="/mer"
+      aria-label="Tillbaka till Mer"
+      className="flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+    >
+      <ChevronLeft aria-hidden="true" size={26} />
     </Link>
   );
 
   if (isPending) {
     return (
       <div className="flex flex-col gap-4" data-testid="aktivitetshistorik-yta">
-        {backLink}
+        {kromKnapp}
+        <header className="flex flex-col gap-1">
+          <h1 className="font-semibold text-3xl">Aktivitetshistorik</h1>
+        </header>
         <LaddLage />
       </div>
     );
@@ -640,7 +774,10 @@ export function AktivitetsHistorik() {
   if (isError) {
     return (
       <div className="flex flex-col gap-4" data-testid="aktivitetshistorik-yta">
-        {backLink}
+        {kromKnapp}
+        <header className="flex flex-col gap-1">
+          <h1 className="font-semibold text-3xl">Aktivitetshistorik</h1>
+        </header>
         <MessageBox intent="error" title="Kunde inte hämta aktivitetshistoriken">
           {error instanceof Error ? error.message : 'Okänt fel.'}
         </MessageBox>
@@ -651,17 +788,25 @@ export function AktivitetsHistorik() {
   const nuMs = Date.now();
   const grupper = grupperaPerDag(statements, nuMs);
   const total = statements.length;
+  // TASK-225.2: filtermängdens totalantal ur SENASTE sidan (EF:en räknar om
+  // per anrop — färskast vinner). `undefined` mot en äldre EF-deploy utan
+  // fältet → statusraden faller till interimsformen (skew-säkert).
+  const totalAntal = data?.pages.at(-1)?.total;
 
   return (
-    <div className="flex flex-col gap-6" data-testid="aktivitetshistorik-yta">
-      {backLink}
+    <div className="flex flex-col gap-4" data-testid="aktivitetshistorik-yta">
+      {kromKnapp}
 
       <p className="sr-only" role="status" aria-live="polite">
         Aktivitetshistorik laddad.
       </p>
 
       <header className="flex flex-col gap-1">
-        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
+        {/* Programfokuset (AC #3, skärmläsarens landningspunkt) BEHÅLLS;
+            ringen släcks av base.css:s h1[tabindex="-1"]-släckare
+            (TASK-225.4 — husets facit-rubriker är rena, och tabIndex={-1}
+            nås aldrig via Tab så ingen indikator förloras). */}
+        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
           Aktivitetshistorik
         </h1>
       </header>
@@ -676,7 +821,9 @@ export function AktivitetsHistorik() {
         eventerLaddar={eventerLaddar}
         onEventChange={setEventId}
         tidsperiod={tidsperiod}
-        onTidsperiodChange={setTidsperiod}
+        onTidsperiodChange={valjTidsperiod}
+        datumSpann={datumSpann}
+        onDatumSpannChange={valjDatumSpann}
       />
 
       {total === 0 ? (
@@ -728,7 +875,16 @@ export function AktivitetsHistorik() {
             aria-live="polite"
             className="px-2 text-small text-text-muted"
           >
-            {`Visar ${total} ${total === 1 ? 'post' : 'poster'}${hasNextPage ? ' (fler finns)' : ''}.`}
+            {/* TASK-225.2 — MÅLFORMEN (Marcus 2026-08-15): "Visar N av
+                TOTAL poster." när fler finns, "Visar alla N poster." när
+                allt är laddat. Interimsformen står kvar som SKEW-FALLBACK:
+                mot en äldre EF-deploy utan total-fältet visas den i stället
+                för NaN (Vercel Skew-klassen). */}
+            {hasNextPage
+              ? totalAntal != null
+                ? `Visar ${total} av ${totalAntal} poster.`
+                : `Visar de ${total} senaste posterna · fler finns.`
+              : `Visar alla ${total} ${total === 1 ? 'post' : 'poster'}.`}
           </p>
 
           {/* Dold live-region ENDAST för "Ladda fler"-tillskottet — status-

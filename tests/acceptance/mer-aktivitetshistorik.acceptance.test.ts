@@ -96,6 +96,7 @@ function minuterSedan(n: number): string {
 function statement({
   actorName = 'Lotta',
   verbDisplay = 'markerade betalning',
+  verbId = `${XAPI_IRI_BASE}/verbs/test-verb`,
   objectName = 'Anna Andersson (Fjärrskådning 2)',
   timestamp,
   eventId,
@@ -103,6 +104,9 @@ function statement({
 }: {
   actorName?: string;
   verbDisplay?: string;
+  /** S106: valfritt RIKTIGT verb-IRI för verbCopy-mappningens testfall —
+   * defaulten test-verb saknar mappning och renderar lagrad display. */
+  verbId?: string;
   objectName?: string;
   timestamp: string;
   eventId?: string;
@@ -116,7 +120,7 @@ function statement({
       name: actorName,
       account: { homePage: XAPI_IRI_BASE, name: testUuid() },
     },
-    verb: { id: `${XAPI_IRI_BASE}/verbs/test-verb`, display: { 'sv-SE': verbDisplay } },
+    verb: { id: verbId, display: { 'sv-SE': verbDisplay } },
     object: {
       objectType: 'Activity',
       id: `${XAPI_IRI_BASE}/objects/registrations/rec-test-${idCounter}`,
@@ -140,7 +144,7 @@ function mockActivityLog(
   network: NetworkFixture,
   respond: (
     url: URL,
-  ) => { statements: Statement[]; nextCursor: string | null } | { status: number },
+  ) => { statements: Statement[]; nextCursor: string | null; total?: number } | { status: number },
 ): void {
   network.use(
     http.get(EF('get-activity-log'), ({ request }) => {
@@ -195,6 +199,18 @@ test.describe('Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen)', () => 
           objectName: 'Anna Andersson (Fjärrskådning 2)',
           timestamp: idagIso,
         }),
+        // S106 verbCopy-fallet: ett KÄNT verb-IRI → presentationslagrets
+        // mappade text ("skapade ett event"), INTE den lagrade displayen
+        // ("skapade eventet") — historiska rader får ny copy utan migrering.
+        // Ligger i FALLANDE serverordning (30 min < 12 min-raden ovan) så
+        // dagsgrupperingen inte får en andra "Idag"-grupp.
+        statement({
+          actorName: 'Lotta',
+          verbId: `${XAPI_IRI_BASE}/verbs/skapade-event`,
+          verbDisplay: 'skapade eventet',
+          objectName: 'Fjärrskådning',
+          timestamp: minuterSedan(30),
+        }),
         statement({
           actorName: 'Roger',
           verbDisplay: 'bekräftade anmälan',
@@ -218,18 +234,23 @@ test.describe('Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen)', () => 
     const grupper = page.getByRole('heading', { level: 2 });
     await expect(grupper).toHaveText(['Idag', 'Igår', aldreLabel]);
 
-    // "Idag"-raden: relativ tid.
-    await expect(page.getByText('för 12 min sedan')).toBeVisible();
-    // "Igår"-raden: klockslag, INTE relativ tid.
-    await expect(page.getByText('14:30')).toBeVisible();
-    // Äldre rad: klockslag också (dagen står redan i h2:n).
-    await expect(page.getByText('09:15')).toBeVisible();
-
-    // Naturligt språk med MITTPUNKT-separator (Marcus-order 2026-08-12) —
-    // ALDRIG långt tankstreck.
+    // S106-formen: rad 1 = aktör + händelse; rad 2 = tid (som rubrik) +
+    // mittpunkt + objekt. "Idag"-raden: relativ tid.
     await expect(
-      page.getByText('markerade betalning · Anna Andersson (Fjärrskådning 2)'),
+      page.getByText('för 12 min sedan · Anna Andersson (Fjärrskådning 2)'),
     ).toBeVisible();
+    // "Igår"-raden: klockslag, INTE relativ tid.
+    await expect(page.getByText('14:30 · Erik Holm (Medveten Kontakt)')).toBeVisible();
+    // Äldre rad: klockslag också (dagen står redan i h2:n).
+    await expect(page.getByText('09:15 · Sara Björk (Medveten Kontakt)')).toBeVisible();
+
+    // Rad 1: aktör + händelse i naturligt språk (okänt verb-id → radens
+    // lagrade display, verbCopy-fallbacken).
+    await expect(page.getByText('Lotta markerade betalning')).toBeVisible();
+    // Känt verb-id → mappad copy, INTE lagrad display (verbCopy-modulen).
+    await expect(page.getByText('Lotta skapade ett event')).toBeVisible();
+    await expect(page.getByText('Lotta skapade eventet')).toHaveCount(0);
+    // MITTPUNKT-separator (Marcus-order 2026-08-12) — ALDRIG långt tankstreck.
     await expect(page.getByText(/—/)).toHaveCount(0);
 
     // Aktören bär font-medium (500) — computed, inte bara klass-närvaro.
@@ -331,28 +352,31 @@ test.describe('Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen)', () => 
     ];
     const sida2 = [statement({ objectName: 'Post 3', timestamp: minuterSedan(3) })];
 
+    // TASK-225.2: EF:en bär `total` — statusraden visar målformen
+    // "Visar N av TOTAL". Övriga tester mockar UTAN total och bevisar
+    // därmed skew-fallbacken (interimsformen) mot en äldre EF-deploy.
     mockActivityLog(network, (url) => {
       const cursor = url.searchParams.get('cursor');
-      if (!cursor) return { statements: sida1, nextCursor: 'c1' };
-      if (cursor === 'c1') return { statements: sida2, nextCursor: null };
-      return { statements: [], nextCursor: null };
+      if (!cursor) return { statements: sida1, nextCursor: 'c1', total: 3 };
+      if (cursor === 'c1') return { statements: sida2, nextCursor: null, total: 3 };
+      return { statements: [], nextCursor: null, total: 3 };
     });
 
     await page.goto('/mer/aktivitetshistorik');
     const loadMore = page.getByRole('button', { name: 'Ladda fler' });
 
-    await expect(page.getByText('Visar 2 poster (fler finns).')).toBeVisible();
+    await expect(page.getByText('Visar 2 av 3 poster.')).toBeVisible();
     await expect(loadMore).toBeVisible();
 
     await loadMore.click();
     await expect(page.getByText('Post 3')).toBeVisible();
-    await expect(page.getByText('Visar 3 poster.')).toBeVisible();
+    await expect(page.getByText('Visar alla 3 poster.')).toBeVisible();
     // A11y: aria-live annonserar antalet nya rader (speglar PersonsList.tsx).
     await expect(page.getByText('1 fler post laddade, 3 totalt.')).toHaveCount(1);
     // Sista sidan (nextCursor null) → knappen försvinner.
     await expect(loadMore).toHaveCount(0);
     // A11y: fokus tappas inte vid knappens försvinnande.
-    await expect(page.getByText('Visar 3 poster.')).toBeFocused();
+    await expect(page.getByText('Visar alla 3 poster.')).toBeFocused();
   });
 
   test('fel (500) → felytan via role=alert, ingen falsk tom lista', async ({ page, network }) => {

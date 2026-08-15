@@ -18,15 +18,17 @@ import {
 } from 'react-aria-components';
 
 /**
- * Datumfält för Om eventet-morfen (task-18.1; S73-facit K11/K12): RAC
- * DateRangePicker — segmenterad inmatning (bestämt format per locale) +
- * RangeCalendar i popover för start/slut. Kompakt rad-form: min-h-8 matchar
- * morf-radgeometrin (48 px-raden); etiketten bärs av raden utanför → aria-label.
+ * DatumFalt — bibliotekets DateRangePicker-primitiv: RAC DateRangePicker —
+ * segmenterad inmatning (bestämt format per locale) + RangeCalendar i
+ * popover för start/slut. Kompakt rad-form: min-h-8 matchar eventmorfens
+ * radgeometri (48 px-raden); etiketten bärs av anroparen → aria-label.
  *
- * Rå RAC-vägen per prototypens precedent — biblioteket saknar
- * DateRangePicker-primitiv (saknad primitiv = rå-RAC; primitiv-lyft är en
- * senare biblioteks-fråga vid bevisat delbehov). Nyskriven mot facit
- * (throwaway-kontraktet).
+ * LYFT TILL PRIMITIV i TASK-225.4 (S106): född som rå-RAC för Om
+ * eventet-morfen (task-18.1; S73-facit K11/K12) med villkoret "primitiv-lyft
+ * vid bevisat delbehov" — aktivitetshistorikens datumfilter (S106-facit)
+ * blev den andra konsumenten och uppfyllde villkoret. Beteendet är
+ * OFÖRÄNDRAT vid lyftet (AC:t); konsumenter: OmEventet, CreateEventForm,
+ * AktivitetsHistorik.
  */
 export function DatumFalt({
   value,

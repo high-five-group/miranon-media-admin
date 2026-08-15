@@ -48,4 +48,11 @@ export interface ActivityLogParams extends ActivityLogFilters {
 export interface ActivityLogPage {
   statements: ActivityStatement[];
   nextCursor: string | null;
+  /**
+   * Totalantal poster i HELA filtermängden (TASK-225.2, statusradens
+   * "Visar 20 av 347"). VALFRITT med avsikt — skew-säkert: en klient mot en
+   * äldre EF-deploy utan fältet faller till interimsformen, aldrig en krasch
+   * (Vercel Skew-klassen, S105 C-listan).
+   */
+  total?: number;
 }

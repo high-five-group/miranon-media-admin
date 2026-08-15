@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Skeleton } from '@/components/primitives/Skeleton';
+import { verbCopy } from '@/data/activityLog/verbCopy';
 import { useLatestActivity } from '@/data/queries/useActivityLog';
 import type { ActivityStatement } from '@/domain/schemas';
 import { relativTid } from './relativ-tid';
@@ -179,7 +180,12 @@ export function SenasteAktivitet() {
               </span>
               <span className="text-caption">
                 <span className="font-medium">{post.actor.name}</span>{' '}
-                {sprakText(post.verb.display)}
+                {/* TASK-225.3: händelsetexten via den DELADE verb-copy-
+                    modulen — samma statement ger samma text som historik-
+                    sidan (S106-konsistensfyndet). Facit-avvikelsen mot
+                    k10-bilden är AMENDERAD i s55-hem-konvergens-manifestet,
+                    aldrig tyst (hem-spalten är stämplad godkänd yta). */}
+                {verbCopy(post.verb)}
                 {' · '}
                 {sprakText(post.object.definition.name)}
               </span>

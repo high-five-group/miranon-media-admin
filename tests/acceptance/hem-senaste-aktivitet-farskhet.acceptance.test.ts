@@ -49,10 +49,11 @@ const ANTAL_RADER_I_SPALTEN = 4;
  *   objekt = 'Utbildning Skövde' — `eventActivityName(event.eventNamn)`
  * Separatorn är mittpunkt (Marcus-order 2026-08-12), som i systersviten.
  */
-const NY_RAD = 'Lotta antecknade · Utbildning Skövde';
+const NY_RAD = 'Lotta skrev en anteckning · Utbildning Skövde';
 
 /** En rad ur fixturvärldens frusna logg — bevisar att spalten alls är fylld. */
-const BEFINTLIG_RAD = 'Lotta markerade betalning · Alva Ekström (Utbildning Skövde)';
+// TASK-225.3: mappad verb-copy via delade modulen, inte lagrad display.
+const BEFINTLIG_RAD = 'Lotta markerade en betalning · Alva Ekström (Utbildning Skövde)';
 
 interface Rigg {
   /** Antal `get-activity-log`-anrop hittills — mätpunkten för båda riktningarna. */

@@ -271,6 +271,21 @@ body {
   outline: none;
 }
 
+/* PROGRAMFOKUSERADE RUBRIKER (TASK-225.4, S106): en vy som flyttar fokus
+   till sin h1 när datan anlänt (skärmläsarens landningspunkt, t.ex.
+   aktivitetshistoriken/MailLog — `tabIndex={-1}` + ref-fokus) fick den
+   globala `*:focus-visible`-ringen: rubriken såg ut som ett textfält
+   (Marcus-fällt i S106-passet, mot renderad yta). Målet är inte
+   interaktivt och nås ALDRIG via Tab — tabindex="-1" tar det ur
+   tabbordningen — så ingen tangentbordsanvändare förlorar en indikator
+   när ringen släcks (WCAG 2.4.7 gäller komponenter som kan opereras med
+   tangentbord; en rubrik kan inte det). Husets facit-rubriker är rena
+   (Check-in/AtgardsSida). Samma släckar-form och hemvist som
+   listbox-släckaren ovan: olagrad, dokumenterat skäl, smal attributselektor. */
+h1[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
 /* Rubriker: aktivera Inter Display-variant via opsz-axel.
    Se marcus-system DESIGN-FOUNDATION-v1.
    I @layer base (task-4.1, B-NYTT): olagrad author-CSS besegrar ALLA
