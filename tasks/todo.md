@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 105 ▶️ ÅTERUPPTAGEN (2026-08-14 kväll, `lifecycle: active`) —
-INVENTERINGEN "EXAKT ALLT SOM ÄR KVAR" FÖR AKTIVITETSLOGGEN.** Marcus-order:
+**Session 105 ✅ AVSLUTAD (2026-08-15, `lifecycle: closed`, Marcus-kvittens
+"Kvitterar, stäng") — FAS 6.5 AKTIVITETSLOGG ✅ KLAR.** Marcus-order:
 allt aktivitetsloggs-relaterat ska fungera och vara redo för Lotta.
 Landningsverifikat: `#1261`/`#1263`/`#1264`/`#1265` samtliga MERGED —
 paus-NÄSTA steg 1 stängt. Komplett fil:rad-belagd inventering i sessionsdok
@@ -51,11 +51,15 @@ gröna per jobb · byggplan v1.17 + fas-rad ✅ + Slutförd-paragraf · CHANGELO
 (deploy-färskhet-i-kedjan [UNIVERSAL] + nästlade-worktree-sökvägar).
 phase-end-sviten körd i ekvivalent grep-form (skriptet kräver rg som saknas
 — HUB-FYND); CLAUDE.md/README-checkarna klassade som ADR-100-delegering,
-inte drift. **NÄSTA (vid session-avslut, ej fas): sessionsdok-arkivering +
-UNIVERSAL-hub-lyft + lessons-konsolidering (7+3 kandidater + 2 fragment).**
-Marcus-`!`-moment: facit-notens stale mening (ADR-104-vakten nekar
+inte drift. **STÄNGD (Del 12):** coverage tolv poster noll SAKNAS ·
+transcript-ref 8 062 792 byte · 11 agent-worktrees städade ·
+arkiveringen DEFERRED öppet till nästa arkiveringssvep (9 referenser
+varav 3 CLI-låsta kort; S87–S104 väntar samma svep) · hub-lyftet deferred
+till hub-sync-moment. **NÄSTA ARBETE ÖPPNAR S106.** Numrering efter S105:
+ADR 112 · L512 + 6 fragment · T144 · task-215 — re-derivera ALLTID.
+Marcus-`!`-moment kvar: facit-notens stale mening (ADR-104-vakten nekar
 agent-edit av stämplat manifest, per design). HANDOFF: sessionsdok S105
-Del 9–11. *(Paus-blocket nedan bevarat.)*
+Del 9–12. *(Paus-blocket nedan bevarat.)*
 
 **Session 105 ⏸️ PAUSAD (2026-08-13 kväll, `lifecycle: paused`, historik) — FAS 6.5
 AKTIVITETSLOGGEN ÄR LIVE I PROD.** Marcus körde runbooken själv, guidad
