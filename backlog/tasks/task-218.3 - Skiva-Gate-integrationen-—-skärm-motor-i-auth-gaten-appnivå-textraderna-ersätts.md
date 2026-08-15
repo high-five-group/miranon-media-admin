@@ -3,10 +3,10 @@ id: TASK-218.3
 title: >-
   Skiva: Gate-integrationen — skärm + motor i auth-gaten, appnivå-textraderna
   ersätts
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-15 08:47'
-updated_date: '2026-08-15 12:06'
+updated_date: '2026-08-15 12:31'
 labels:
   - ready-for-agent
 dependencies:
@@ -29,14 +29,6 @@ ordinal: 417000
 - [x] #3 Appnivåns två nakna Laddar…-textrader borta (grep-bevis); ingen ny textrad införd
 - [x] #4 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -158,25 +150,13 @@ inte längre kraschar — Förberedelseskärmens design (ADR-112) är orörd.
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-ADR-037-gaten (src/main.tsx InnerApp) utökad med en warmup-fas EFTER
-auth.isLoading===false OCH useIsRestoring()===false: varm cache (queryClient
-har redan data efter restore) -> starta() anropas ALDRIG, helt tyst. Tomt
-cache (första besök ELLER buster/maxAge-kastad restore) -> starta(queryClient,
-{dataSource}) körs, Förberedelseskärmen visas och drivs av
-forloppsprenumeration tills slutlofte avgör (klar/timeout/offline hanteras
-identiskt -- offline löser ut synkront, ingen duplicerad online-check).
-Appnivåns två nakna "Laddar..."-rader (main.tsx-gaten + __root.tsx:s
-Suspense-fallback) ersatta av samma Förberedelseskärm-komponent (grep-bevis:
-noll träffar på levande "Laddar..."-JSX i src/). Konstant-driften mellan
-SenasteAktivitet.tsx och startvarmningen.ts löst: HEM_SENASTE_AKTIVITET_ANTAL
-exporteras nu från src/queries/keys.ts (datalagret), båda konsumerar samma
-export. DoD-kvartetten grön (typecheck/biome/build/test:api, 758 API-tester).
-AC3:s två cold-cache-persist-tester justerade (Förberedelseskärmen ersätter
-gamla tre-status-mönstret) som direkt, nödvändig konsekvens -- INTE ny
-kallstarts-täckning (TASK-218.4). Persist-cache-sviten kunde INTE köras live
-lokalt (port 5173 CORS-låst mot staging, upptagen av en sibling-agents
-dev-server hela sessionen, bunden poll ~24 min utan resultat) -- CI:s
-Staging-jobb är den återstående, obekräftade grinden för AC1/AC2 och de
-justerade AC3-testerna. PR öppnad och armerad mot main; CI-verifiering och
-Done-flipp ägs av orkestreraren.
+Levererad i PR #1343 (slutcommit de262db4, MERGED på main 817979a8) efter fyra CI-varv där varje rött var en äkta fångst: (1) oinloggade ytor skymdes — pathname/session-gate; (2) sessionsbärande auth-ytor (invite/recovery) skymdes — auth-ytelistan; (3) acceptance-massakern avslöjade TVÅ lagrade fel: fixturvärldens mockgap (3/7 warmup-EF:er) OCH en genuin produktionsregression (router-invalidate mot odefinierad auth-kontext under gatens väntfas). Slutläge: acceptance 231/231 ×2, webbläsar 58/58, api 758/758, DoD grön, merge-gruppens staging-jobb grönt. Konstant-driften löst (delad export). Känd öppen avgränsning → uppföljningskort: post-login-skärmen kräver router-medveten trigger; appstarts-fallet (Lottas PWA-vardag) täcks fullt.
 <!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
