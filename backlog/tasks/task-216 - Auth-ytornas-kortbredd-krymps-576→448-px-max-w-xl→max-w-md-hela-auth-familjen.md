@@ -3,10 +3,10 @@ id: TASK-216
 title: >-
   Auth-ytornas kortbredd krymps 576→448 px (max-w-xl→max-w-md), hela
   auth-familjen
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-15 07:44'
-updated_date: '2026-08-15 08:00'
+updated_date: '2026-08-15 08:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,14 +26,6 @@ Marcus-GO 2026-08-15 (S102 Lotta-vandringen, punkt 1): login-kortet upplevs lika
 - [x] #2 Visuell verifiering på dev-server: login-kortet är tydligt smalare än appens content-yta, inga radbrytnings-/overflow-defekter på någon av de fem ytorna i 375 px- och 1440 px-vyport
 - [x] #3 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -90,3 +82,17 @@ på en verifierat identisk, ännu oköad kopia av samma commit. mergeMethod på
 #1315 är "MERGE" (ej squash) så SHA:t bevaras när det landar, vilket gör
 denna gren strukturellt ren mot main när kön hinner ikapp.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1318 (commit cdb4ca6b, MERGED på main 96fc1ba5, 2026-08-15). Samtliga tio max-w-xl→max-w-md-byten på de fem auth-ytorna; grep-bevis noll kvarvarande auth-träffar; TabBar orörd. DoD-kvartetten grön (typecheck 0 · biome 0 fel · build grön · test:api 750 passed). Visuellt verifierad 375+1440 px på 4/5 ytor — passkey-ytan onåbar i staging (serverflaggan av), kodverifierad byte-identiskt mot de gröna ytorna; luckan öppet bokförd i implementation-notes.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
