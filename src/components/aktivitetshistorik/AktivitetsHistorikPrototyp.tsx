@@ -9,7 +9,7 @@ import { Button as AriaButton } from 'react-aria-components';
 // eventsidans S73-facit-form (RAC DateRangePicker + RangeCalendar-popover).
 // Detta är det BEVISADE DELBEHOV dess eget filhuvud villkorar primitiv-lyft
 // på — lyftet till src/components/primitives/ bokförs i promoverings-skivan.
-import { DatumFalt } from '@/components/events/detail/DatumFalt';
+import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';

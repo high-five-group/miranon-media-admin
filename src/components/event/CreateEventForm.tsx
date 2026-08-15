@@ -5,7 +5,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { I18nProvider } from 'react-aria-components';
 import { AntalFalt } from '@/components/events/detail/AntalFalt';
-import { DatumFalt } from '@/components/events/detail/DatumFalt';
+import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { DetaljGrupp } from '@/components/events/detail/DetaljGrupp';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';

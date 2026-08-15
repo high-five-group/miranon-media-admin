@@ -8,7 +8,7 @@ import { Select, SelectItem } from '@/components/primitives/Select';
 import { useUpdateEvent } from '@/data/mutations/useUpdateEvent';
 import type { Event } from '@/domain/models/Event';
 import { EventStatus } from '@/domain/types/Status';
-import { DatumFalt } from './DatumFalt';
+import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { AndraRad, DetaljGrupp, EtikettVardeRad, RedigeringsRad } from './DetaljGrupp';
 import { datumSpannText } from './datumSpann';
 

@@ -9,7 +9,7 @@ import { Button as AriaButton } from 'react-aria-components';
 // S73-facit-form (RAC DateRangePicker + RangeCalendar-popover). Historiken
 // är det BEVISADE DELBEHOV dess eget filhuvud villkorar primitiv-lyft på —
 // lyftet till src/components/primitives/ är TASK-225.4:s skiva.
-import { DatumFalt } from '@/components/events/detail/DatumFalt';
+import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
@@ -798,21 +798,11 @@ export function AktivitetsHistorik() {
       </p>
 
       <header className="flex flex-col gap-1">
-        {/* S106-passet, steg 2 — ring-släckning på programfokusmålet:
-            husets facit-rubriker är rena (Check-in/AtgardsSida bär ingen
-            ring). Programfokuset (AC #3, skärmläsarens landningspunkt)
-            BEHÅLLS — tabIndex={-1} nås aldrig via Tab, så ingen interaktiv
-            fokusindikator förloras (ringen fick rubriken att se ut som ett
-            textfält). INLINE STYLE med avsikt: base.css:s `*:focus-visible`
-            är OLAGRAD (cascade-arkitekturen, L246) och slår varje
-            Tailwind-utility — i TASK-225.4 lyfts detta till en riktig
-            base.css-släckare i listbox-släckarens form. */}
-        <h1
-          ref={headingRef}
-          tabIndex={-1}
-          style={{ outline: 'none' }}
-          className="font-semibold text-3xl"
-        >
+        {/* Programfokuset (AC #3, skärmläsarens landningspunkt) BEHÅLLS;
+            ringen släcks av base.css:s h1[tabindex="-1"]-släckare
+            (TASK-225.4 — husets facit-rubriker är rena, och tabIndex={-1}
+            nås aldrig via Tab så ingen indikator förloras). */}
+        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
           Aktivitetshistorik
         </h1>
       </header>
