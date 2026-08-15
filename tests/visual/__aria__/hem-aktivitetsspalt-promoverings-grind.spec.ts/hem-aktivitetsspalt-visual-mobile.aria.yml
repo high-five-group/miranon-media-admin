@@ -1,8 +1,8 @@
 - complementary "Senaste aktivitet":
   - list:
-    - listitem: för 2 tim sedan Lotta markerade betalning · Alva Ekström (Utbildning Skövde)
+    - listitem: för 2 tim sedan Lotta markerade en betalning · Alva Ekström (Utbildning Skövde)
     - listitem: för 5 tim sedan Roger bekräftade anmälan · Bosse Frisk (Utbildning Skövde)
     - listitem: /igår \d+:\d+ Marcus lade till person · Cilla Grahn/
-    - listitem: /igår \d+:\d+ Lotta markerade betalning · Doris Hallin \(Föreläsning Göteborg\)/
+    - listitem: /igår \d+:\d+ Lotta markerade en betalning · Doris Hallin \(Föreläsning Göteborg\)/
   - link "Se all aktivitetshistorik":
     - /url: /mer/aktivitetshistorik

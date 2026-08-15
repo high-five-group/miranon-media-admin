@@ -77,7 +77,9 @@ test.describe('Hem-spalten "Senaste aktivitet" (TASK-201.7, K10-facit)', () => {
     // bild visar "—", grinden check-langa-streck förbjuder det, och avvikelsen
     // är accepterad i förväg).
     await expect(
-      spalt.getByText('Lotta markerade betalning · Alva Ekström (Utbildning Skövde)'),
+      // TASK-225.3: mappad verb-copy ("en betalning") via delade modulen,
+      // inte fixturens lagrade display ("markerade betalning").
+      spalt.getByText('Lotta markerade en betalning · Alva Ekström (Utbildning Skövde)'),
     ).toBeVisible();
     await expect(spalt.getByText(/[—–]/)).toHaveCount(0);
 
