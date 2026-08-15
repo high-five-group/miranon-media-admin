@@ -1,8 +1,10 @@
 import { Link } from '@tanstack/react-router';
 import { CalendarDays, CircleCheck, MapPin, ReceiptText } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import { MessageBox, Skeleton } from '@/components/primitives';
+import type { Registration } from '@/domain/models/Registration';
 import {
   belaggningAndel,
   dagarKvarText,
@@ -11,10 +13,15 @@ import {
   forfallnaBetalningar,
   fornamn,
   obekraftadeAnmalningar,
+  paminnelsedatumText,
   velNastaEvent,
 } from './data';
 import type { VariantProps } from './types';
 import { DodIngang, Genvagar, InitialAvatar, SenasteAktivitetKompakt } from './ui';
+
+/** Stabil referens (ingen ny array-identitet varje render) för `?data=tom`
+    (task-226 konvergensvarv 1, punkt 1). */
+const TOM_LISTA: Registration[] = [];
 
 /**
  * [PROTOTYPE, TASK-226] V1 "Lugna morgonen" — redaktionell, luftig, stor fri
@@ -30,6 +37,17 @@ import { DodIngang, Genvagar, InitialAvatar, SenasteAktivitetKompakt } from './u
 export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProps) {
   const { user } = useAuth();
   const namn = user?.displayName ? fornamn(user.displayName) : null;
+  // [TASK-226 konvergensvarv 1, punkt 1] "?data=tom" i URL:en nollställer
+  // registreringarna INNAN block 3/4 räknar sina tal, så tomt läge är
+  // granskningsbart utan kodändring. "Nästa event" (events-driven) och
+  // Senaste aktivitet (eget datalager) är OBERÖRDA. Verklig data är
+  // fortsatt default (ingen param -> registrationsQuery.data oförändrat).
+  // Delar query-nyckeln "data" med PrototypeSwitcher-railens "verklig
+  // data"-checkbox (sätter "verklig"/null, oläst av hem-prototypen idag) --
+  // en tom-URL som sedan togglas via den checkboxen skrivs över, medvetet
+  // accepterat (se task-226-slutrapporten).
+  const [dataParam] = useQueryState('data');
+  const tomtLage = dataParam === 'tom';
 
   const idagStart = useMemo(() => dagsStart(nuMs), [nuMs]);
   const evMap = useMemo(() => eventsById(eventsQuery.data), [eventsQuery.data]);
@@ -40,13 +58,14 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
   );
 
   const anmalDataPending = registrationsQuery.isPending || eventsQuery.isPending;
+  const regsForListor = tomtLage ? TOM_LISTA : registrationsQuery.data;
   const anmalningar = useMemo(
-    () => obekraftadeAnmalningar(registrationsQuery.data, evMap, 6),
-    [registrationsQuery.data, evMap],
+    () => obekraftadeAnmalningar(regsForListor, evMap, 6),
+    [regsForListor, evMap],
   );
   const forfallna = useMemo(
-    () => forfallnaBetalningar(registrationsQuery.data, evMap, nuMs, 6),
-    [registrationsQuery.data, evMap, nuMs],
+    () => forfallnaBetalningar(regsForListor, evMap, nuMs, 6),
+    [regsForListor, evMap, nuMs],
   );
 
   const idagLangt = useMemo(
@@ -177,44 +196,74 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
             Inga anmälningar väntar på bekräftelse. Skönt.
           </p>
         ) : (
-          <ul aria-label="Nya anmälningar att bekräfta" className="flex flex-col gap-1">
-            {anmalningar.rows.map((rad, i) => (
-              <li
-                key={rad.reg.id}
-                className={
-                  i > 0
-                    ? 'border-border-light border-t contrast-more:border-border-strong'
-                    : undefined
-                }
-              >
-                {rad.reg.eventId ? (
-                  <Link
-                    to="/event/$eventId"
-                    params={{ eventId: rad.reg.eventId }}
-                    className="group flex items-center gap-3 py-3"
-                  >
-                    <InitialAvatar namn={rad.namn} />
-                    <span className="flex min-w-0 flex-col">
-                      <span className="truncate font-medium text-body group-hover:underline">
-                        {rad.namn}
+          <>
+            {/* [TASK-226 konvergensvarv 1, punkt 2] Fast maxhöjd (~6 rader) +
+                overflow-y-auto — listan växer aldrig sidans layout, den
+                skrollar internt. `tabIndex` GÖR ULEN till scrollytans
+                tab-stopp (SAMMA facit-mönster som `NyaAnmalningarCard.tsx`
+                k112/`AtgardsSida.tsx` — WCAG 2.1.1, axe
+                scrollable-region-focusable: raderna utan `reg.eventId` har
+                ingen egen länk och nås annars aldrig med tangentbord).
+                `focus-ring-inset` skyddar radernas EGNA fokusringar (Link)
+                mot att klippas av overflow (task-4.7 S67-fyndet);
+                `scrollbar-inline` är den token-baserade scrollmarkören
+                (K10-facit). */}
+            <ul
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:112.
+              tabIndex={0}
+              aria-label="Nya anmälningar att bekräfta"
+              className="focus-ring-inset scrollbar-inline flex max-h-96 flex-col gap-1 overflow-y-auto pr-3"
+            >
+              {anmalningar.rows.map((rad, i) => (
+                <li
+                  key={rad.reg.id}
+                  className={
+                    i > 0
+                      ? 'border-border-light border-t contrast-more:border-border-strong'
+                      : undefined
+                  }
+                >
+                  {rad.reg.eventId ? (
+                    <Link
+                      to="/event/$eventId"
+                      params={{ eventId: rad.reg.eventId }}
+                      className="group flex items-center gap-3 py-3"
+                    >
+                      <InitialAvatar namn={rad.namn} />
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate font-medium text-body group-hover:underline">
+                          {rad.namn}
+                        </span>
+                        <span className="truncate text-caption text-text-muted">
+                          {rad.identitet}
+                        </span>
                       </span>
-                      <span className="truncate text-caption text-text-muted">{rad.identitet}</span>
-                    </span>
-                  </Link>
-                ) : (
-                  <div className="flex items-center gap-3 py-3">
-                    <InitialAvatar namn={rad.namn} />
-                    <span className="flex min-w-0 flex-col">
-                      <span className="truncate font-medium text-body">{rad.namn}</span>
-                      <span className="truncate text-caption text-text-muted">{rad.identitet}</span>
-                    </span>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
+                    </Link>
+                  ) : (
+                    <div className="flex items-center gap-3 py-3">
+                      <InitialAvatar namn={rad.namn} />
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate font-medium text-body">{rad.namn}</span>
+                        <span className="truncate text-caption text-text-muted">
+                          {rad.identitet}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {anmalningar.total > anmalningar.rows.length ? (
+              <Link
+                to="/atgarder"
+                className="self-start font-medium text-caption underline-offset-2 hover:underline"
+              >
+                Visa alla {anmalningar.total} <span aria-hidden="true">→</span>
+              </Link>
+            ) : null}
+          </>
         )}
-        <DodIngang label="Bekräfta alla" icon={CircleCheck} intent="secondary" className="pt-1" />
+        <DodIngang label="Bekräfta alla" icon={CircleCheck} className="pt-1" skarp />
       </section>
 
       {/* 4. FÖRFALLNA BETALNINGAR — antal + initial-lista + avgiftstyp per
@@ -244,40 +293,59 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
             Inga förfallna betalningar. Allt är i fas.
           </p>
         ) : (
-          <ul aria-label="Förfallna betalningar" className="flex flex-col gap-1">
-            {forfallna.rows.map((rad, i) => (
-              <li
-                key={`${rad.reg.id}-${rad.avgiftstyp}`}
-                className={
-                  i > 0
-                    ? 'border-border-light border-t contrast-more:border-border-strong'
-                    : undefined
-                }
+          <>
+            {/* [TASK-226 konvergensvarv 1, punkt 2] Samma inline-scroll-
+                mönster (`tabIndex` på `<ul>`) som "Nya anmälningar" ovan —
+                se motivering där. */}
+            <ul
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:112.
+              tabIndex={0}
+              aria-label="Förfallna betalningar"
+              className="focus-ring-inset scrollbar-inline flex max-h-96 flex-col gap-1 overflow-y-auto pr-3"
+            >
+              {forfallna.rows.map((rad, i) => {
+                // [TASK-226 konvergensvarv 1, punkt 4] "Påmind" ersatt av
+                // datumbadgen — inget "Påminnelse 1/2", datamodellen bär
+                // ingen räkning (bara SENASTE tidsstämpeln per avgiftstyp).
+                const paminnelsedatum = paminnelsedatumText(rad.paminnelseSkickadIso);
+                return (
+                  <li
+                    key={`${rad.reg.id}-${rad.avgiftstyp}`}
+                    className={
+                      i > 0
+                        ? 'border-border-light border-t contrast-more:border-border-strong'
+                        : undefined
+                    }
+                  >
+                    <div className="flex items-center gap-3 py-3">
+                      <InitialAvatar namn={rad.namn} />
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate font-medium text-body">{rad.namn}</span>
+                        <span className="truncate text-caption text-text-muted">
+                          {rad.avgiftstyp} · {rad.eventNamn}
+                        </span>
+                      </span>
+                      {paminnelsedatum ? (
+                        <span className="shrink-0 rounded-full bg-surface px-2.5 py-0.5 text-caption text-text-secondary">
+                          Påminnelse skickad {paminnelsedatum}
+                        </span>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+            {forfallna.total > forfallna.rows.length ? (
+              <Link
+                to="/atgarder"
+                className="self-start font-medium text-caption underline-offset-2 hover:underline"
               >
-                <div className="flex items-center gap-3 py-3">
-                  <InitialAvatar namn={rad.namn} />
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate font-medium text-body">{rad.namn}</span>
-                    <span className="truncate text-caption text-text-muted">
-                      {rad.avgiftstyp} · {rad.eventNamn}
-                    </span>
-                  </span>
-                  {rad.skickat ? (
-                    <span className="shrink-0 rounded-full bg-surface px-2.5 py-0.5 text-caption text-text-secondary">
-                      Påmind
-                    </span>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
+                Visa alla {forfallna.total} <span aria-hidden="true">→</span>
+              </Link>
+            ) : null}
+          </>
         )}
-        <DodIngang
-          label="Skicka påminnelse till alla"
-          icon={ReceiptText}
-          intent="secondary"
-          className="pt-1"
-        />
+        <DodIngang label="Skicka påminnelse till alla" icon={ReceiptText} className="pt-1" skarp />
       </section>
 
       {/* 5. GENVÄGAR */}
