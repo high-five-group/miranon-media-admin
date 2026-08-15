@@ -73,6 +73,18 @@ function PrimitivesPage() {
             >
               Inaktiverad
             </Button>
+            {/* isLoading — Laddtrappans steg 2 (ADR-113, task-219.2): knapp-
+                intern spinner + spärrat klickläge + polite sr-besked, granskat
+                här för samtliga fem intents (onPress nollas internt av
+                isLoading — knappen ÄR faktiskt spärrad, precis som facitet). */}
+            <Button
+              intent={intent}
+              isLoading
+              loadingText="Laddar …"
+              onPress={() => setSenastTryckt(`${intent} LOADING`)}
+            >
+              Laddar
+            </Button>
           </div>
         </section>
       ))}
