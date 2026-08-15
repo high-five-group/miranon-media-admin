@@ -6,10 +6,11 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-15 23:15'
+updated_date: '2026-08-15 23:29'
 labels:
   - ready-for-human
 dependencies: []
-priority: medium
+priority: high
 ordinal: 430000
 ---
 
@@ -33,3 +34,9 @@ S102 Lotta-vandringen punkt 8-följdfynd (Marcus 2026-08-16, 'vart i hela friden
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+UPPGRADERAD 2026-08-16 efter Marcus branschfraga: settings-ytan ar BRANSCHGOLV (GitHub/Google-monstret: Settings - Sakerhet - Passkeys med lagg till/namnge/ta bort, flera passkeys per konto; nudge efter login ar komplement, aldrig enda vagen) - inte valfri form. 11/10-regeln: golvet skars aldrig. Direktnavigering till /passkey hjalper INTE heller sa lange kontot redan har passkey eller servern ar disabled (probe-studsen) - ytan ar alltsa HELT onabar idag. Bygget bor ta cue fran task-231 (serveraktiveringen) forst.
+<!-- SECTION:NOTES:END -->
