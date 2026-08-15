@@ -73,7 +73,7 @@ const SKAPAT_DELTAGANDE_ID = 'recDORRDELT0000002';
 const NAMN_MED = 'Anna Andersson';
 const NAMN_UTAN = 'Björn Bergström';
 
-/** Kvittensfönstret i millisekunder — samma tal som `CheckinPrototyp.tsx`. */
+/** Kvittensfönstret i millisekunder — samma tal som `EventCheckin.tsx`. */
 const KVITTENSFONSTER_MS = 1200;
 
 /** Kroppen `update-record` tar emot (EF-kontraktet, `update-record/index.ts`). */

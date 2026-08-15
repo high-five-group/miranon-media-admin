@@ -28,10 +28,11 @@
 // bevisad"):
 //   1. En KONSTRUERAD sträng (aldrig en riktig fil) bevisar att
 //      `containsMutationCall` själv diskriminerar rätt/fel — INKLUSIVE
-//      negativkontrollen mot en verklig, redan existerande gråzon
-//      (`src/components/events/CheckinPrototyp.tsx` NÄMNER "useMutation"
-//      i ett docblock-kommentar utan att någonsin ANROPA den — grinden får
-//      inte fälla på ordet, bara på anropet).
+//      negativkontrollen mot en verklig, HISTORISK gråzon (`CheckinPrototyp.tsx`,
+//      numera `src/components/events/EventCheckin.tsx` efter TASK-214.7:s
+//      rename, NÄMNDE "useMutation" i ett docblock-kommentar utan att
+//      någonsin ANROPA den — grinden får inte fälla på ordet, bara på
+//      anropet).
 //   2. En KONSTRUERAD temp-fil (skapad i denna testkörning, aldrig i
 //      src/) bevisar att `walkTsFiles` + scan-slingan TILLSAMMANS
 //      faktiskt detekterar en överträdelse på disk.
@@ -98,7 +99,8 @@ test.describe('Mutationens hemvist-vakt — detektorn (TASK-201.15)', () => {
 
   test('detektorn släpper igenom oskyldig text — INKLUSIVE en verklig gråzon (negativ kontroll)', () => {
     // Ordet "useMutation" förekommer, men INGET anrop — HISTORISKT
-    // CheckinPrototyp.tsx's faktiska rad (S90, PROTOTYPE STUB, `useDorrLage`):
+    // `CheckinPrototyp.tsx`:s (numera `EventCheckin.tsx`, TASK-214.7) faktiska
+    // rad (S90, PROTOTYPE STUB, `useDorrLage`):
     // en kommentar som FÖRKLARAR varför ingen mutation används, aldrig en
     // som använder en. Raden själv är riven ur filen sedan TASK-214.4
     // (A/B/C-teardownen, D skriver numera SKARPT via `useSetAttendanceStatus`

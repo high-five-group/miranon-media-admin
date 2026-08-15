@@ -13,7 +13,7 @@
       "yta": "check-in (dörrlistan, variant D)",
       "bilder": ["slutlage-mobil.png", "slutlage-desktop.png"],
       "kallor": [
-        "src/components/events/CheckinPrototyp.tsx",
+        "src/components/events/EventCheckin.tsx",
         "src/routes/_authenticated/event/$eventId/narvaro.tsx"
       ],
       "not": "Formen som låses (S103 2026-08-14, sju punkter + varv 2): husets sidkrom (44 px rund chevron + rubrik text-3xl på sidRam-platsen) · eventidentitet i body-grad, namn i medium-vikt, datum dämpat · framstegskort med HÖJDLÅS (kvitto-raden alltid reserverad; 127 px konstant mätt genom fem incheckningar) · sessionsval endast vid flera sessioner, UTAN härlednings-caption (riven på Marcus order; aldrig-tyst-kravet bärs av den synliga toggeln ensam) · sök · arbetslista med BARA det som återstår · kryssruta UTAN synlig etikett (namnet bärs av aria-label 'Närvarande: <namn>'; Deltagare-precedentens success-form) · KVITTENSFÖNSTER 1,2 s: raden blir grön (success-tint, bock, 'Incheckad HH:MM') INNAN flytt till klargruppen, ångra inom fönstret avbryter · klargrupp kollapsad längst ned · tintens hörn klipps av listans overflow-hidden (varv 2) · meta-raden bär endast sökutfall + avbokade-bortfall. Promoveringen (flipp till skarp yta + närvaro-WRITE-bygget) är NÄSTA steg efter stämpeln, inte del av den."

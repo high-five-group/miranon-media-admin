@@ -36,7 +36,7 @@ import { queryKeys } from '@/queries/keys';
  *
  * En `onMutate` hade alltså flippat 1,2 s FÖR SENT — mutationen startar först
  * när fönstret redan är slut. Det optimistiska lagret måste därför bo där
- * flippen sker (`useDorrLageD` i `CheckinPrototyp.tsx`), och rollbacken med
+ * flippen sker (`useDorrLageD` i `EventCheckin.tsx`), och rollbacken med
  * det. ADR-016:s komponenter finns kvar, i ett annat lager: C = överlägget
  * sätts vid trycket, D = anroparens `onError` river överlägget så raden
  * återförs till arbetslistan, E = `onSettled` invaliderar strömmen här.

@@ -8,18 +8,24 @@ import { expect, test } from '../support/fixturvarld/hermetic';
 /**
  * PROMOVERINGS-GRINDEN för Dörrlistan (TASK-214.3, `ADR-103` B4).
  *
- * [FAS 1 — FÖRE-HALVAN, fångad UR VARIANT-LÄGET] Detta är den första halvan
- * av B4:s `ariaSnapshot`-PAR: referenserna fångas ur prototyp-formen
- * (`?variant=d`) INNAN flippen (TASK-214.4). Efter flippen ska SAMMA
- * lokatorer och SAMMA `name:`-nycklar peka mot den promoverade, ovillkorliga
- * ytan — skiljer sig trädet på en enda byte fäller grinden, exakt beviset för
- * att promoveringen tog FORMEN och ingenting annat.
+ * ROLLBYTET ÄR GJORT (TASK-214.7, 2026-08-15). De sex referenserna nedan
+ * fångades UR VARIANT-LÄGET (`?variant=d`) INNAN flippen (TASK-214.4) — det
+ * var B4-parets FÖRE-halva. Marcus godkände formen (214.6) och rivningen
+ * (214.7, ADR-103 B2 steg 4) tog `CHECKIN_PROTO_VARIANTS`, rail-monteringen
+ * och `EventCheckin.tsx` bytte namn FRÅN `CheckinPrototyp.tsx`. Denna fil
+ * bevisar därför inte längre "variant == promoverad" — den är
+ * REGRESSIONSLÅS: att ytan fortsätter rendera exakt den låsta formen, för
+ * alla framtida ändringar i `EventCheckin.tsx`. Samma rollbyte som
+ * `personer-promoverings-grind.spec.ts` (commit `4aad0111`) bokförde.
  *
- * ORDNINGEN ÄR ENKELRIKTAD, och det är skälet denna fil skrivs FÖRE flippen:
- * variant-grenen renderas bara under `import.meta.env.DEV` (route-nivån,
- * `src/routes/_authenticated/event/$eventId/narvaro.tsx`). Flippas villkoret
- * i TASK-214.4 innan referenserna finns, upphör FÖRE-läget att existera och
- * paret kan aldrig konstrueras i efterhand.
+ * Referens-testerna nedan navigerar ORÖRDA, fortfarande via `?variant=d`
+ * (samma lokatorer, samma `name:`-nycklar som fångade referenserna) —
+ * parametern är verkningslös sedan TASK-214.4 (`narvaro.tsx` läser den
+ * aldrig), så navigeringen renderar exakt samma träd som ingen query alls.
+ * De TOLV `ariaSnapshot`-referenserna under `__aria__/` (sex lägen × två
+ * viewports) är ORÖRDA genom både flippen och rivningen — samma facit, ny
+ * innebörd. Att de förblir gröna efter att substansen bytt fil är det
+ * mekaniska beviset för att rivningen tog villkor och växlar, ALDRIG form.
  *
  * PRECEDENSEN denna fil följer, ordagrant i form (fixturkatalog,
  * referens-namngivning, ariaSnapshot-valet): `personer-promoverings-grind.spec.ts`
@@ -40,7 +46,8 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * sin egen referens-grind) och navigerar UTAN `?variant=d` — den skarpaste
  * bevisformen för att promoverade ytan är a11y-grön, oberoende av att
  * referens-testerna ovan fortsatt navigerar via den numera verkningslösa
- * parametern (se `narvaro.tsx` § `?variant=`-LÄSNINGEN HÄRIFRÅN ÄR BORTA).
+ * parametern (`narvaro.tsx` bekräftar: ingen fil läser den längre sedan
+ * TASK-214.4).
  *
  * FACIT: `tasks/sessions/bilagor/s103-checkin-konvergens/facit.json`, ytan
  * "check-in (dörrlistan, variant D)" — godkänd av Marcus 2026-08-14
@@ -644,9 +651,9 @@ async function gotoDorrlistaPromoverad(page: import('@playwright/test').Page, ev
 /**
  * [TASK-214.5, kortets AC #1] Axe-pass i SEX lägen — samma fyra fixturvärldar
  * och samma sex lägen referens-grinden ovan bevisar STRUKTUREN för, men
- * navigerar UTAN `?variant=d`: `narvaro.tsx` (§ `?variant=`-LÄSNINGEN
- * HÄRIFRÅN ÄR BORTA) bekräftar att parametern är död sedan flippen
- * (TASK-214.4), så en spårlös `page.goto` utan query-param är den skarpaste
+ * navigerar UTAN `?variant=d`: `narvaro.tsx` bekräftar att parametern är
+ * död sedan flippen (TASK-214.4), så en spårlös `page.goto` utan query-param
+ * är den skarpaste
  * bevisformen — den lutar inte på att en ignorerad parameter råkar vara
  * harmlös.
  *
@@ -746,8 +753,8 @@ test.describe('TASK-214.5 — kvalitetsribbans tre lägen på den promoverade d�
     await gotoDorrlistaPromoverad(page, EVENT_EN);
 
     // `FramstegskortD` — `<section aria-label="Framsteg">` — bär
-    // `contrast-more:border-border-strong` (`CheckinPrototyp.tsx` § rad
-    // ~422). Ett `<section>` med tillgängligt namn exponeras implicit som
+    // `contrast-more:border-border-strong` (`EventCheckin.tsx` § rad
+    // ~439). Ett `<section>` med tillgängligt namn exponeras implicit som
     // `role="region"`.
     const framsteg = page.getByRole('region', { name: 'Framsteg' });
     const kant = await framsteg.evaluate((el) => {
@@ -785,7 +792,7 @@ test.describe('TASK-214.5 — kvalitetsribbans tre lägen på den promoverade d�
     await expect(knapp).toBeVisible();
 
     // Chevronen bär `motion-safe:transition-transform`
-    // (`CheckinPrototyp.tsx` § rad ~1084) — under `reduced-motion: reduce`
+    // (`EventCheckin.tsx` § rad ~1100) — under `reduced-motion: reduce`
     // matchar Tailwinds `motion-safe:`-variant inte, så övergången uteblir.
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const varaktighet = await knapp
