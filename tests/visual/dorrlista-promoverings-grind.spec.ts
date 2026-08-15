@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
 import { EVENT_DETAIL_RESPONSE, REGISTRATIONS_RESPONSE } from '../support/fixturvarld/fixture-data';
@@ -28,14 +29,18 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * eskaleringsvägen om `ariaSnapshot` empiriskt missar en formskillnad, inte
  * default.
  *
- * A11Y-GOLVET (axe) INGÅR MEDVETET INTE HÄR — avvikelse mot personer-
- * precedentens filstruktur, som bar sitt axe-block redan i FÖRE-halvan.
- * PRD task-214 delar ISTÄLLET härdningen ut som en EGEN skiva (TASK-214.5:
- * "Härdningen — a11y-golvet, skrivvägs-prövningen i promoverat läge,
- * städet"), och task-214.3:s egna AC/DoD nämner inte axe. Att duplicera
- * axe-täckning här hade förgripit 214.5:s scope utan att någon AC krävde
- * det; 214.5 äger a11y-golvet och kan verifiera mot SAMMA lokatorer och
- * SAMMA fixturvärld som byggs här.
+ * A11Y-GOLVET (axe) INGICK MEDVETET INTE I DENNA FILS FÖRSTA HALVA (TASK-214.3)
+ * — avvikelse mot personer-precedentens filstruktur, som bar sitt axe-block
+ * redan i FÖRE-halvan. PRD task-214 delade ISTÄLLET härdningen ut som en EGEN
+ * skiva (TASK-214.5: "Härdningen — a11y-golvet, skrivvägs-prövningen i
+ * promoverat läge, städet"), och task-214.3:s egna AC/DoD nämnde inte axe.
+ * 214.5 äger a11y-golvet — axe-blocken står LÄNGST NED i DENNA fil (samma fil,
+ * ny beskrivning tillagd, INGEN av de sex referens-testerna ovan rörd; samma
+ * försiktighet `atgardssida-promoverings-grind.spec.ts` TASK-171.3 höll mot
+ * sin egen referens-grind) och navigerar UTAN `?variant=d` — den skarpaste
+ * bevisformen för att promoverade ytan är a11y-grön, oberoende av att
+ * referens-testerna ovan fortsatt navigerar via den numera verkningslösa
+ * parametern (se `narvaro.tsx` § `?variant=`-LÄSNINGEN HÄRIFRÅN ÄR BORTA).
  *
  * FACIT: `tasks/sessions/bilagor/s103-checkin-konvergens/facit.json`, ytan
  * "check-in (dörrlistan, variant D)" — godkänd av Marcus 2026-08-14
@@ -525,5 +530,285 @@ test.describe('tomläge — alla incheckade, ingen kvar i arbetslistan', () => {
     await expect(page.getByTestId('dorrlista-yta')).toMatchAriaSnapshot({
       name: 'dorrlista-tomlage.aria.yml',
     });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  TASK-214.5 — AXE-PASSET PÅ DEN PROMOVERADE DÖRRLISTAN (ADR-103, härdningen)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Klargrupp- och tomläge-världarna, EXTRAHERADE ur Värld C/D-testerna ovan
+ * som egna fabriker för axe-blockets räkning — Värld A/B hade redan
+ * `varldFlera`/`varldEnSession`, C/D byggde sina literal inline. De TVÅ
+ * befintliga testerna ovan (rad ~401 resp. ~487) är MEDVETET orörda (samma
+ * försiktighet som filens huvuddocblock beskriver): dessa fabriker är NY kod,
+ * inte en refaktor av referens-testerna, och bär samma record-ID:n/fält som
+ * literalen de är kopierade från.
+ */
+function varldKlargrupp() {
+  const event = dorrEvent(
+    EVENT_KLAR,
+    'Föreläsning Klargrupp',
+    'Föreläsning',
+    '2026-10-12',
+    '2026-10-12',
+  );
+  const registrations = [
+    anmalan(REG_KLAR_ANNA, 'Anna', 'Andersson', EVENT_KLAR),
+    anmalan(REG_KLAR_BJORN, 'Björn', 'Bergström', EVENT_KLAR),
+    anmalan(REG_KLAR_CECILIA, 'Cecilia', 'Ek', EVENT_KLAR),
+    anmalan(REG_KLAR_DAVID, 'David', 'Nilsson', EVENT_KLAR),
+  ];
+  const attendance = [
+    deltagande(
+      'recDorrAttKlargrp01',
+      REG_KLAR_ANNA,
+      EVENT_KLAR,
+      'Anna Andersson',
+      'Föreläsning',
+      'Närvarande',
+      '2026-10-12T09:15:00.000Z',
+    ),
+    deltagande(
+      'recDorrAttKlargrp02',
+      REG_KLAR_BJORN,
+      EVENT_KLAR,
+      'Björn Bergström',
+      'Föreläsning',
+      'Närvarande',
+      '2026-10-12T09:20:00.000Z',
+    ),
+    deltagande(
+      'recDorrAttKlargrp03',
+      REG_KLAR_CECILIA,
+      EVENT_KLAR,
+      'Cecilia Ek',
+      'Föreläsning',
+      'Ej avstämt',
+    ),
+    deltagande(
+      'recDorrAttKlargrp04',
+      REG_KLAR_DAVID,
+      EVENT_KLAR,
+      'David Nilsson',
+      'Föreläsning',
+      'Ej avstämt',
+    ),
+  ];
+  return { event, registrations, attendance };
+}
+
+function varldTomlage() {
+  const event = dorrEvent(
+    EVENT_TOM,
+    'Föreläsning Tomläge',
+    'Föreläsning',
+    '2026-10-19',
+    '2026-10-19',
+  );
+  const registrations = [
+    anmalan(REG_TOM_ANNA, 'Anna', 'Andersson', EVENT_TOM),
+    anmalan(REG_TOM_BJORN, 'Björn', 'Bergström', EVENT_TOM),
+  ];
+  const attendance = [
+    deltagande(
+      'recDorrAttTomlage01',
+      REG_TOM_ANNA,
+      EVENT_TOM,
+      'Anna Andersson',
+      'Föreläsning',
+      'Närvarande',
+      '2026-10-19T09:00:00.000Z',
+    ),
+    deltagande(
+      'recDorrAttTomlage02',
+      REG_TOM_BJORN,
+      EVENT_TOM,
+      'Björn Bergström',
+      'Föreläsning',
+      'Närvarande',
+      '2026-10-19T09:05:00.000Z',
+    ),
+  ];
+  return { event, registrations, attendance };
+}
+
+/** Navigerar UTAN `?variant=d` — den ovillkorliga, promoverade formen. */
+async function gotoDorrlistaPromoverad(page: import('@playwright/test').Page, eventId: string) {
+  await page.goto(`/event/${eventId}/narvaro`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Check-in' })).toBeVisible();
+  await expect(page.getByTestId('dorrlista-yta')).toBeVisible();
+}
+
+/**
+ * [TASK-214.5, kortets AC #1] Axe-pass i SEX lägen — samma fyra fixturvärldar
+ * och samma sex lägen referens-grinden ovan bevisar STRUKTUREN för, men
+ * navigerar UTAN `?variant=d`: `narvaro.tsx` (§ `?variant=`-LÄSNINGEN
+ * HÄRIFRÅN ÄR BORTA) bekräftar att parametern är död sedan flippen
+ * (TASK-214.4), så en spårlös `page.goto` utan query-param är den skarpaste
+ * bevisformen — den lutar inte på att en ignorerad parameter råkar vara
+ * harmlös.
+ *
+ * TRÖSKELN ÄR 0 VIOLATIONS, INGEN IMPACT-FILTRERING — strängare än kortets
+ * bokstav ("utan serious eller critical"): husets etablerade a11y-grindar
+ * (`tests/a11y/fixtures.ts` § ADR-045 beslut 2, `atgardssida-promoverings-
+ * grind.spec.ts` TASK-171.3, `personer-promoverings-grind.spec.ts`) fäller
+ * på VARJE violation, och kvalitetsribban (CLAUDE.md § Kvalitetsribba) kräver
+ * tillgänglighet 11 utan undantag — en medveten överträffning av kortets
+ * minimikrav, inte en avvikelse från det.
+ */
+test.describe('TASK-214.5 — axe-pass på den promoverade dörrlistan (ADR-103, härdningen)', () => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  /** Kör axe över hela sidan; violations skrivs ut läsbart vid fällning. */
+  async function axeNoll(page: import('@playwright/test').Page) {
+    const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+    expect(
+      resultat.violations,
+      resultat.violations
+        .map((v) => `[${v.impact ?? 'utan impact'}] ${v.id}: ${v.help}`)
+        .join('\n'),
+    ).toEqual([]);
+  }
+
+  test('flera sessioner — Dag 1 (default): axe 0', async ({ page, network }) => {
+    const { event, registrations, attendance } = varldFlera();
+    mockaVarld(network, event, registrations, attendance);
+    await gotoDorrlistaPromoverad(page, EVENT_FLERA);
+    await expect(page.getByText('David Nilsson')).toBeVisible();
+    await axeNoll(page);
+  });
+
+  test('en session — listläge: axe 0', async ({ page, network }) => {
+    const { event, registrations, attendance } = varldEnSession();
+    mockaVarld(network, event, registrations, attendance);
+    await gotoDorrlistaPromoverad(page, EVENT_EN);
+    await expect(page.getByText('Cecilia Ek')).toBeVisible();
+    await axeNoll(page);
+  });
+
+  test('sökning med träff: axe 0', async ({ page, network }) => {
+    const { event, registrations, attendance } = varldEnSession();
+    mockaVarld(network, event, registrations, attendance);
+    await gotoDorrlistaPromoverad(page, EVENT_EN);
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('Anna');
+    await expect(page.getByText('Visar 1 av 3 anmälda för "Anna".')).toBeVisible();
+    await axeNoll(page);
+  });
+
+  test('sökning utan träff: axe 0', async ({ page, network }) => {
+    const { event, registrations, attendance } = varldEnSession();
+    mockaVarld(network, event, registrations, attendance);
+    await gotoDorrlistaPromoverad(page, EVENT_EN);
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('zzz');
+    await expect(page.getByText('Visar 0 av 3 anmälda för "zzz".')).toBeVisible();
+    await axeNoll(page);
+  });
+
+  test('klargrupp expanderad: axe 0', async ({ page, network }) => {
+    const { event, registrations, attendance } = varldKlargrupp();
+    mockaVarld(network, event, registrations, attendance);
+    await gotoDorrlistaPromoverad(page, EVENT_KLAR);
+    await page.getByRole('button', { name: '2 incheckade' }).click();
+    await expect(page.getByRole('list', { name: 'Incheckade' })).toBeVisible();
+    await axeNoll(page);
+  });
+
+  test('tomläge: axe 0', async ({ page, network }) => {
+    const { event, registrations, attendance } = varldTomlage();
+    mockaVarld(network, event, registrations, attendance);
+    await gotoDorrlistaPromoverad(page, EVENT_TOM);
+    await expect(page.getByText('Alla 2 är incheckade')).toBeVisible();
+    await axeNoll(page);
+  });
+});
+
+/**
+ * [TASK-214.5, kortets AC #1 andra hälften] Kvalitetsribbans tre lägen
+ * (CLAUDE.md § Design-system: "Varje komponent ska klara prefers-contrast:
+ * more, prefers-reduced-motion, print"). Samma `emulateMedia`-mönster som
+ * `atgardssida-promoverings-grind.spec.ts` TASK-171.3, tillämpat på HELA den
+ * promoverade dörrlistan — plus en axe-scan i varje läge: en strukturell
+ * CSS-punktkoll ensam bevisar inte att RESTEN av ytan förblir grön i samma
+ * renderade tillstånd.
+ */
+test.describe('TASK-214.5 — kvalitetsribbans tre lägen på den promoverade dörrlistan', () => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  test('hög-kontrast-läge: Framstegskortet får synlig kantlinje (prefers-contrast: more)', async ({
+    page,
+    network,
+  }) => {
+    await page.emulateMedia({ contrast: 'more' });
+    const { event, registrations, attendance } = varldEnSession();
+    mockaVarld(network, event, registrations, attendance);
+    await gotoDorrlistaPromoverad(page, EVENT_EN);
+
+    // `FramstegskortD` — `<section aria-label="Framsteg">` — bär
+    // `contrast-more:border-border-strong` (`CheckinPrototyp.tsx` § rad
+    // ~422). Ett `<section>` med tillgängligt namn exponeras implicit som
+    // `role="region"`.
+    const framsteg = page.getByRole('region', { name: 'Framsteg' });
+    const kant = await framsteg.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { farg: s.borderTopColor, bredd: s.borderTopWidth, stil: s.borderTopStyle };
+    });
+    expect(kant.stil).toBe('solid');
+    expect(kant.bredd).toBe('1px');
+
+    // Färgen löses ur SAMMA token-kedja som klassen deklarerar
+    // (`contrast-more:border-border-strong` → `--mm-border-strong`) via en
+    // DOM-probe — computed-assertion, aldrig hårdkodad färg (L272).
+    const strongToken = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--mm-border-strong)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    });
+    expect(kant.farg).toBe(strongToken);
+
+    const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+
+  test('reduced-motion: klargruppens chevron neutraliseras (prefers-reduced-motion: reduce)', async ({
+    page,
+    network,
+  }) => {
+    const { event, registrations, attendance } = varldKlargrupp();
+    mockaVarld(network, event, registrations, attendance);
+    await gotoDorrlistaPromoverad(page, EVENT_KLAR);
+    const knapp = page.getByRole('button', { name: '2 incheckade' });
+    await expect(knapp).toBeVisible();
+
+    // Chevronen bär `motion-safe:transition-transform`
+    // (`CheckinPrototyp.tsx` § rad ~1084) — under `reduced-motion: reduce`
+    // matchar Tailwinds `motion-safe:`-variant inte, så övergången uteblir.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const varaktighet = await knapp
+      .locator('svg')
+      .first()
+      .evaluate((el) => Number.parseFloat(getComputedStyle(el).transitionDuration) || 0);
+    expect(varaktighet).toBeLessThanOrEqual(0.001);
+
+    const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+
+  test('print: rubrik, dörrlista-ytan och sökfältet förblir synliga', async ({ page, network }) => {
+    const { event, registrations, attendance } = varldEnSession();
+    mockaVarld(network, event, registrations, attendance);
+    await gotoDorrlistaPromoverad(page, EVENT_EN);
+    await page.emulateMedia({ media: 'print' });
+
+    await expect(page.getByRole('heading', { level: 1, name: 'Check-in' })).toBeVisible();
+    await expect(page.getByTestId('dorrlista-yta')).toBeVisible();
+    await expect(page.getByRole('searchbox', { name: SOKFALT })).toBeVisible();
+
+    const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+    expect(resultat.violations).toEqual([]);
   });
 });
