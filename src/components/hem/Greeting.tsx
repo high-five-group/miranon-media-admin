@@ -14,6 +14,19 @@ function readGreeted(): boolean {
 }
 
 /**
+ * Extraherar förnamnet ur ett fullt visningsnamn (TASK-220): registret bär
+ * HELA namnet ("Marcus Johansson") — hälsningen visar bara det första
+ * ordet. Extraktionen bor HÄR, i hälsningens egna visningslogik —
+ * AuthProviderns `displayName` förblir orört och bär hela namnet vidare
+ * till sina andra konsumenter (t.ex. inbjudarnamnet och aktivitetsloggens
+ * vem-fält). Robust mot omgivande/inre extra whitespace; ett enords-namn
+ * passerar oförändrat.
+ */
+function fornamn(helaNamnet: string): string {
+  return helaNamnet.trim().split(/\s+/)[0];
+}
+
+/**
  * Hälsningen på Hem — SIDANS `<h1>` (task-1.3 AC #6): A-skelettet har ingen
  * separat "Hem"-rubrik, hälsningen ÄR sidrubriken. Vy-namnet "Hem" bärs
  * vidare av RouteAnnouncer + `staticData.title` för skärmläsar-annonsering
@@ -25,10 +38,14 @@ function readGreeted(): boolean {
  * personligt utan att tjata). Utan display-namn hälsar vi neutralt "Hej"
  * hela sessionen. E-postadressen är ALDRIG fallback — varken varmt eller
  * Gunilla-begripligt (TASK-1 beslut 5).
+ *
+ * TASK-220: `user.displayName` bär hela namnet — hälsningen visar bara
+ * förnamnet (`fornamn` ovan).
  */
 export function Greeting() {
   const { user } = useAuth();
-  const name = user?.displayName;
+  const helaNamnet = user?.displayName;
+  const name = helaNamnet ? fornamn(helaNamnet) : null;
   // Lazy init: värdet läses EN gång per montering — flaggan som sätts i
   // effekten nedan får inte flippa rubriken mitt i den första visningen.
   const [greeted] = useState(readGreeted);

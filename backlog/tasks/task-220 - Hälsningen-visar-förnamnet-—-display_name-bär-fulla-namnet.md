@@ -1,9 +1,10 @@
 ---
 id: TASK-220
 title: Hälsningen visar förnamnet — display_name bär fulla namnet
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-15 08:59'
+updated_date: '2026-08-15 09:18'
 labels:
   - ready-for-agent
 dependencies: []
@@ -18,10 +19,10 @@ Marcus-beslut 2026-08-15 (S102 Lotta-vandringen): visningsnamnen i Supabase user
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 display_name 'Marcus Johansson' ⇒ hälsningen 'Hej Marcus' (första rendering) resp. 'Marcus' (återbesök) — aldrig hela namnet i hälsningsraden
-- [ ] #2 Enords-display_name och saknat namn beter sig exakt som i dag (naket 'Hej' vid saknat; e-post aldrig fallback)
-- [ ] #3 AuthProviderns displayName förblir hela namnet — endast hälsningens visning ändras (grep-bevis: inga andra konsumenter påverkade)
-- [ ] #4 DoD-kvartetten grön (test:api, typecheck, biome, build)
+- [x] #1 display_name 'Marcus Johansson' ⇒ hälsningen 'Hej Marcus' (första rendering) resp. 'Marcus' (återbesök) — aldrig hela namnet i hälsningsraden
+- [x] #2 Enords-display_name och saknat namn beter sig exakt som i dag (naket 'Hej' vid saknat; e-post aldrig fallback)
+- [x] #3 AuthProviderns displayName förblir hela namnet — endast hälsningens visning ändras (grep-bevis: inga andra konsumenter påverkade)
+- [x] #4 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
 
 ## Definition of Done
@@ -31,3 +32,9 @@ Marcus-beslut 2026-08-15 (S102 Lotta-vandringen): visningsnamnen i Supabase user
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implementerat: Greeting.tsx extraherar förnamnet (första ordet) ur AuthProviderns displayName i visningslogiken — AuthProvider orört, bär hela namnet till sina andra konsumenter (grep-bevisat: mutationers actor.name, recordActivity, waitlist/persons/registrations-modulernas EGNA lokala displayName()-helprar är obesläktade namn-funktioner, valkommen.tsx läser rå session-metadata separat). Enordsnamn och saknat namn oförändrat; robust mot inre/omgivande whitespace. Tester: tests/acceptance/hem.acceptance.test.ts utökad med två nya fall (fullt namn → endast förnamnet i båda lägena; whitespace-kantfall) — verifierat RÖTT utan fixen och GRÖNT med den (git stash-provocerat). DoD-kvartetten grön lokalt: typecheck exit 0, biome check (touched files) exit 0, build exit 0, test:api 750 passed. Full hem.acceptance.test.ts-svit (30 test) grön mot lokal dev-server.
+<!-- SECTION:NOTES:END -->
