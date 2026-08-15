@@ -216,24 +216,29 @@ ADR 110 · L512+3 fragment · T141 · task-196 · f47 — re-derivera ALLTID
 (S103/S104 förbrukar parallellt). Full narrativ: sessionsdok S102
 Del 1–5 + batchrapporten i Del 5.
 
-**Session 103 ▶️ AKTIV (2026-08-14 kväll, `lifecycle: active`) — DEL 15:
-STÄMPELN LANDAD + PROMOVERINGS-SPEC:EN GRILLAD TILL SAMSYN.** Stämpeln satt
-i Marcus `!`-kanal (ADR-104 höll: chatt-klistrad form avvisades först) →
-`#1284` MERGED `7f3529c0`; resume-landningen `#1283` MERGED `9f9f7366`.
-**Grillning 6/6 kvitterade:** F1 ETT PRD (task-171-mallen, WRITE som
-enabling-skivor) · F2 `create-attendance` som BACKUP — rotorsaken läks i
-basen ("JAG AVSKYR ATT BEHANDLA SYMPTOM"); prod-mätt: 4 aktiva anmälningar
-utan Deltaganden-rader på kommande event (3 på Event-55, alla utan
-Person-länk, fälla 16/21) · F3 skriv EFTER kvittensfönstret (ångra = ingen
-skrivning) · F4 A/B/C rivs i flippen; rivningslandningen: rename →
-`EventCheckin.tsx` + riv `EventAttendance.tsx` · F5 attribuering (a) ·
-F6 rot-orsaks-fixen = ny HITL-skiva 213.12; parallell exekvering (AFK-
-promovering ‖ HITL 213.12→213.2). ORDLISTA +4 poster (Incheckning,
-Dörrlista, Kvittensfönster, Klargrupp). ADR-bar: under baren, ingen ny ADR.
-Parallellt: S105 återupptagen i egen session (`#1285`/`#1286`). **NÄSTA:
-/to-prd → /to-issues → 213.12-mintning → parallell exekvering per F6 →
-`#1249` → lessons-skörd (a)–(l).** **HANDOFF: sessionsdok S103 Del 15.**
-*(Resume-blocket Del 14: se § Paushistorik; pausblocket nedan bevarat.)*
+**Session 103 ✅ AVSLUTAD 2026-08-15 (`lifecycle: closed` flippas efter
+Marcus coverage-kvittens, stängnings-grind 2) — T97-SPÅRET FULLBORDAT:
+DÖRRLISTAN ÄR APPENS SKARPA NÄRVARO-YTA.** Promoveringen exekverad
+ände-till-ände på Marcus mandat ("orkestrerar oss hela vägen in i mål"):
+PRD `task-214` + åtta skivor — WRITE-enabling (`#1299`, idempotent
+`create-attendance` som backup) · mutations-kopplingen (`#1301`, Opus,
+kvittensfönster-semantiken nätverksbevisad) · referenserna (`#1304`, 12
+ariaSnapshot) · FLIPPEN (`#1306`, A/B/C rivna 897 rader) · härdningen
+(`#1308`, axe 30/30) · granskningen (orkestreraren på delegerat mandat,
+`#1312`) · rivningen (`#1314`, rename `EventCheckin.tsx`, `EventAttendance`
+riven) · QA-vandringen (tio punkter, Insiktskedjan levande i basen, `#1321`).
+Två CI-varv rotorsakade (streck-grinden, hermetik-skip) → lessons. NIO
+fragment skördade (sju UNIVERSAL). Fynd-kort: `task-215` (flake, 2
+instanser) · `task-217` (incheckningsverb). **FLAGGOR: TASK-194 prioriterad
+(facit-hookens träffyta) · `create-attendance` ej i prod-allowlist
+(go-live-punkt) · DoD-mall-läckage (hub-kandidat).** Numrering vid
+stängning: ADR **112** · L**512** + 16 fragment · T**144** · task-**218**
+— räkna OM (parallellerna S102/S106 förbrukar). **NÄSTA (NY session):
+bas-passet HITL — 213.12 (Person-länkningen, Marcus GO per mutation) →
+213.2 (mätpasset i Airtables UI) → vågen; TASK-194; plugin 1.34.0.**
+**HANDOFF: sessionsdok S103 Del 16 (full tabell + protokollpekare).**
+*(Del 15-blocket: se § Paushistorik i sessionsdoket; Del 14-resume- och
+pausblocken nedan bevarade.)*
 
 **Session 103 (Del 13, historik) — HÄLSOVÅGEN + KONTINUERLIG BAS-MAXNING +
 D GODKÄND OCH STÄMPEL-FÖRBEREDD.**

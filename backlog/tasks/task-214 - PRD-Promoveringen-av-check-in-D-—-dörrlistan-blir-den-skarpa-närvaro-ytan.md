@@ -1,9 +1,10 @@
 ---
 id: TASK-214
 title: 'PRD: Promoveringen av check-in-D — dörrlistan blir den skarpa närvaro-ytan'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 18:56'
+updated_date: '2026-08-15 08:31'
 labels: []
 dependencies: []
 ordinal: 401000
@@ -81,13 +82,19 @@ Promoveringsformens TREDJE tillämpning — den FÖRSTA där datavägar tillkomm
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 ariaSnapshot-paret grönt för dörrlistan (variant-läget före == promoverad yta efter)
-- [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i varje form-skivas PR
-- [ ] #7 Datavägs-invarianten verifierad: läsvägen oförändrad vid flippen; skrivning sker ENDAST via de två speccade operationerna
-- [ ] #8 Test-konsument-svepets träffyta bilagd och alla träffar uppdaterade i samma skiva som sin flip
-- [ ] #9 Kvittensfönstrets kontrakt bevisat via nätverks-observation: inget skrivanrop före fönstrets utgång, ångra ger noll anrop
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 ariaSnapshot-paret grönt för dörrlistan (variant-läget före == promoverad yta efter)
+- [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i varje form-skivas PR
+- [x] #7 Datavägs-invarianten verifierad: läsvägen oförändrad vid flippen; skrivning sker ENDAST via de två speccade operationerna
+- [x] #8 Test-konsument-svepets träffyta bilagd och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #9 Kvittensfönstrets kontrakt bevisat via nätverks-observation: inget skrivanrop före fönstrets utgång, ångra ger noll anrop
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD:t fullbordat 2026-08-15, ett dygn efter mintning — promoveringsformens TREDJE tillämpning, den första med ny skrivväg. Alla åtta skivor Done via kön (full tabell: sessionsdok S103 Del 16): 214.1 WRITE-enabling #1299 (allowlist-post + idempotent create-attendance-EF, 739/739) · 214.2 mutations-kopplingen #1301 (Opus; kvittensfönster-semantiken nätverksbevisad, mutant-tvåriktningsbevis) · 214.3 referenserna #1304 (12 ariaSnapshot, 6 lägen) · 214.4 flippen #1306 (D ovillkorlig, A/B/C rivna, EFTER==FÖRE 12/12) · 214.5 härdningen #1308 (axe 30/30) · 214.6 granskningen #1312 (orkestreraren på Marcus delegerade klartext-mandat; mekaniska bevis, protokoll i kortet) · 214.7 rivningen #1314 (rename EventCheckin, EventAttendance riven, kallor synkade) · 214.8 QA-vandringen #1321 (tio punkter, Insiktskedjan levande i basen, staging återställd, noll nya fynd). DoD 5-9 belagda per skiva. Dörrlistan är appens skarpa närvaro-yta. KVARSTÅENDE utanför PRD:t, bokfört: rotorsaken (213.12, HITL) · create-attendance-prod-raden (go-live) · task-215/task-217 · TASK-194 prioriterad.
+<!-- SECTION:FINAL_SUMMARY:END -->
