@@ -23,7 +23,7 @@ import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
  */
 
 const DEADLINE_DAGAR = 14;
-const DAG_MS = 86_400_000;
+export const DAG_MS = 86_400_000;
 
 /** Lokal dagsstart (midnatt) för ett godtyckligt ms-ögonblick. */
 export function dagsStart(ms: number): number {
@@ -70,7 +70,13 @@ export function eventsById(events: Event[] | undefined): Map<string, Event> {
 }
 
 const KORTDATUM = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'short' });
-function kortDatum(iso: string | null): string | null {
+/**
+ * [TASK-226 konvergensvarv 2, punkt 2] EXPORTERAD sedan varv 2 — samma
+ * formel ("9 aug") återanvänds av "Dags att ringa"-gruppens "Påmind {kortdatum}
+ * · obetald"-copy (Marcus ordagrant, S102 Del 10 beslut 8), i stället för en
+ * ny parallell formatterare.
+ */
+export function kortDatum(iso: string | null): string | null {
   if (!iso) return null;
   const t = Date.parse(iso);
   return Number.isNaN(t) ? null : KORTDATUM.format(t).replace(/\.$/, '');
@@ -248,6 +254,112 @@ export function forfallnaBetalningar(
   }
   rader.sort((a, b) => a.deadlineMs - b.deadlineMs);
   return { total: rader.length, rows: rader.slice(0, maxRows) };
+}
+
+/**
+ * [TASK-226 konvergensvarv 2] Eventinfo-fönstret (bevakningsraden, punkt 1) —
+ * EGEN namngiven konstant, ALDRIG delad med betalnings-deadlinen
+ * (`DEADLINE_DAGAR`, 14 ovan) eller ringtröskeln (`RINGTROSKEL_DAGAR`, 7
+ * nedan). Tre oberoende tidstal, var för sig Marcus-beslutade (S102 Del 10
+ * beslut 7: "Tre tidskonstanter, aldrig delade tal").
+ */
+export const EVENTINFO_FONSTER_DAGAR = 21;
+
+/**
+ * Ringtröskeln — en-påminnelse-modellens tredje tillstånd ("Dags att ringa")
+ * tänds när SENASTE påminnelsen är minst detta gammal (S102 Del 10 beslut
+ * 7). Egen konstant, se ovan.
+ */
+export const RINGTROSKEL_DAGAR = 7;
+
+/**
+ * Bekräftad ⟺ Status har lämnat 'Obekräftad' — FACIT-MÖNSTER-STÖLD, ordagrant
+ * ur `AtgardsSida.tsx` `arBekraftad` (samma canon som ORDLISTA.md
+ * "Obekräftad/Bekräftad"). Bevakningsradens definition B ("minst en
+ * bekräftad anmälan saknar Deltagarinfo-stämpeln") vilar på just denna
+ * gräns.
+ */
+const arBekraftad = (r: Registration) => r.status !== RegistrationStatus.OBEKRAFTAD;
+
+export type BevakningLage = 'ej-skickad' | 'eftersalantrare';
+
+export interface BevakningRad {
+  event: Event;
+  eventNamn: string;
+  /** "Startar om N dagar" — clampad till ≥0 (samma golv som `dagarKvarText`). */
+  dagarTillStart: number;
+  lage: BevakningLage;
+  /** Antal bekräftade deltagare som saknar Deltagarinfo-stämpeln — radens
+      "X" i eftersläntrar-copyn (oanvänd i `ej-skickad`-läget). */
+  antalUtanEventinfo: number;
+}
+
+/**
+ * [TASK-226 konvergensvarv 2, punkt 1] Bevakningsraden (S102 Del 10 beslut
+ * 2–4). Trigger: `idag ≥ start − 21 dagar` OCH minst en bekräftad anmälan
+ * saknar Deltagarinfo-stämpeln (definition B — fångar eftersläntrare, inte
+ * bara "inget skickat än"). INGEN cap (till skillnad från blocken ovan):
+ * varje träffande event får en rad, sorterad närmast start först.
+ *
+ * ÖVRE GRÄNS, TILLAGD EFTER LIVE-VERIFIERING MOT STAGING (konvergensvarv 2):
+ * `start ≥ idag` — samma T14-disciplin `velNastaEvent` ovan bygger på
+ * ("TEMPORALT, ALDRIG via status-enumet"). Uppdraget specificerade bara den
+ * NEDRE gränsen (fönstret öppnar 21 dagar före); utan en övre gräns visade
+ * staging-verifieringen rader som "ZZ-Checkin-fixtur … 2025-11-01 · startar
+ * om 0 dagar" — ett event nästan ett år tillbaka i tiden, klampat till 0 av
+ * `Math.max` och därmed felaktigt läst som "idag". Eventinfo inför ett
+ * redan passerat event är per definition moot. Bokförd i slutrapporten som
+ * en avsiktlig, källbelagd precisering av uppdragets spec, inte en tyst
+ * avvikelse.
+ *
+ * Simulerar INGEN cron/schemaläggning — utskicksmotorn byggdes aldrig (Del
+ * 10 beslut 3, disk-verifierat: noll cron/schedule-referenser i repot).
+ * Detta är en ren klientside-härledning över redan hämtad data, precis som
+ * `forfallnaBetalningar` ovan.
+ */
+export function bevakningar(
+  events: Event[] | undefined,
+  regs: Registration[] | undefined,
+  idagStartMs: number,
+): BevakningRad[] {
+  if (!events || !regs) return [];
+  const rader: BevakningRad[] = [];
+  for (const event of events) {
+    if (!event.startdatum) continue;
+    const start = Date.parse(event.startdatum);
+    if (Number.isNaN(start)) continue;
+    if (idagStartMs < start - EVENTINFO_FONSTER_DAGAR * DAG_MS) continue; // fönstret inte öppnat än
+    if (start < idagStartMs) continue; // eventet är redan igång eller förbi — eventinfo inför det är moot
+    const bekraftade = regs.filter((r) => r.eventId === event.id && arBekraftad(r));
+    const utanEventinfo = bekraftade.filter((r) => r.deltagarinfoSkickad == null);
+    if (utanEventinfo.length === 0) continue; // inget att bevaka — allt skickat eller ingen bekräftad
+    rader.push({
+      event,
+      eventNamn: event.eventNamn ?? event.eventlabel ?? 'Namnlöst event',
+      dagarTillStart: Math.max(0, Math.round((start - idagStartMs) / DAG_MS)),
+      lage: utanEventinfo.length === bekraftade.length ? 'ej-skickad' : 'eftersalantrare',
+      antalUtanEventinfo: utanEventinfo.length,
+    });
+  }
+  rader.sort((a, b) => a.dagarTillStart - b.dagarTillStart);
+  return rader;
+}
+
+export type ForfallenGrupp = 'att-paminna' | 'vantar' | 'dags-att-ringa';
+
+/**
+ * [TASK-226 konvergensvarv 2, punkt 2] En-påminnelse-modellens tre
+ * tillstånd (S102 Del 10 beslut 7): **Att påminna** (ingen stämpel) →
+ * **Väntar** (stämpel yngre än `RINGTROSKEL_DAGAR`, badgen kvar från varv 1)
+ * → **Dags att ringa** (stämpel `RINGTROSKEL_DAGAR` eller äldre — "fortfarande
+ * obetald" är GARANTERAT av att `rad` bara existerar för obetalda rader,
+ * `forfallnaBetalningar` ovan, aldrig en andra check här).
+ */
+export function forfallenGrupp(rad: ForfallenRad, nuMs: number): ForfallenGrupp {
+  if (rad.paminnelseSkickadIso == null) return 'att-paminna';
+  const skickadMs = Date.parse(rad.paminnelseSkickadIso);
+  if (Number.isNaN(skickadMs)) return 'att-paminna'; // oparsbart datum, samma golv som paminnelsedatumText
+  return nuMs - skickadMs >= RINGTROSKEL_DAGAR * DAG_MS ? 'dags-att-ringa' : 'vantar';
 }
 
 /**
