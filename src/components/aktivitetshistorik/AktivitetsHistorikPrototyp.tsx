@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
@@ -335,6 +335,27 @@ export function aktivitetensPersonId(statement: ActivityStatement): string | nul
  * (`.langa-streck-policy.json`). ORDLISTA.md:s illustrativa exempel ("Lotta
  * markerade betalning — …") är EJ facit för separatorn.
  */
+/** Initialer för identitetsmarkören — personlistans `initialer`, samma form
+ * (dörrlistans `initialerD` är tredje kopian av samma formel). Tål e-post som
+ * namn (dagens prod-fallback): "marcus@h5gruppen.se" → "M". */
+function initialer(namn: string): string {
+  return namn
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((d) => d[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+/* [PROTOTYPE] S106 steg 2 — RADEN TALAR HUSETS RADGRAMMATIK (Check-in-
+ * rotdiagnosen i omvänd riktning: nuläget talade "eget språk" — textklump
+ * utan identitetsmarkör). Formen är personlistans/dörrlistans, verbatim:
+ * `size-9`-initial-cirkel i `bg-bg-emphasized` · rad 1 aktör i `font-medium`
+ * + händelse i normal vikt · rad 2 TIDEN SOM RUBRIK (`font-medium
+ * text-text-secondary tabular-nums`, PersonsList steg 12-13: "vikten bär
+ * hierarkin") + objekt dämpat efter mittpunkten · `min-h-16` höjdlås ·
+ * `-mx-4 px-4` så hover-tinten når kortkanten (dörrlistans tint-idiom;
+ * listans `overflow-hidden` klipper hörnen, Check-in-konvergensens varv 2). */
 function AktivitetsRad({
   statement,
   grupp,
@@ -353,23 +374,33 @@ function AktivitetsRad({
   const objekt = sprakText(statement.object.definition.name);
 
   const innehall = (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <p className="truncate text-body">
-        <span className="font-medium">{statement.actor.name}</span> {handelse}
-        {' · '}
-        {objekt}
-      </p>
-      <p className="text-caption text-text-muted">{tid}</p>
-    </div>
+    <>
+      <span
+        aria-hidden="true"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
+      >
+        {initialer(statement.actor.name)}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <p className="truncate text-body">
+          <span className="font-medium">{statement.actor.name}</span> {handelse}
+        </p>
+        <p className="truncate text-caption">
+          <span className="font-medium text-text-secondary tabular-nums">{tid}</span>
+          <span className="text-text-muted">{` · ${objekt}`}</span>
+        </p>
+      </div>
+    </>
   );
 
+  const radKlass = '-mx-4 flex min-h-16 items-center gap-3 px-4 py-2.5';
   return (
     <li>
       {eventId ? (
         <Link
           to="/event/$eventId"
           params={{ eventId }}
-          className="group flex items-center justify-between gap-3 px-2 py-3 hover:bg-bg-emphasized"
+          className={`${radKlass} hover:bg-bg-emphasized`}
         >
           {innehall}
           <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
@@ -378,13 +409,13 @@ function AktivitetsRad({
         <Link
           to="/personer/$personId"
           params={{ personId }}
-          className="group flex items-center justify-between gap-3 px-2 py-3 hover:bg-bg-emphasized"
+          className={`${radKlass} hover:bg-bg-emphasized`}
         >
           {innehall}
           <ChevronRight aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
         </Link>
       ) : (
-        <div className="flex items-center gap-3 px-2 py-3">{innehall}</div>
+        <div className={radKlass}>{innehall}</div>
       )}
     </li>
   );
@@ -398,11 +429,14 @@ function LaddLage() {
     <div className="flex flex-col gap-4" aria-busy="true">
       <span className="sr-only">Laddar aktivitetshistorik…</span>
       <Skeleton variant="text" className="w-24 text-small" />
-      <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4">
+      <div className="divide-y divide-border overflow-hidden rounded-2xl border border-transparent bg-bg-muted px-4">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex flex-col gap-1.5 py-3">
-            <Skeleton variant="text" className="w-2/5 text-body" />
-            <Skeleton variant="text" className="w-16 text-caption" />
+          <div key={i} className="flex min-h-16 items-center gap-3 py-2.5">
+            <Skeleton variant="text" className="size-9 shrink-0 rounded-full" />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <Skeleton variant="text" className="w-3/5 text-body" />
+              <Skeleton variant="text" className="w-2/5 text-caption" />
+            </div>
           </div>
         ))}
       </div>
@@ -449,43 +483,14 @@ function FilterRad({
   tidsperiod: Tidsperiod;
   onTidsperiodChange: (varde: Tidsperiod) => void;
 }) {
+  /* [PROTOTYPE] S106 steg 2 — FILTERRADEN UPPDELAD (Marcus 2026-08-15: tre
+   * kontroller på samma rad "ser extremt ihoptryckt ut"). Husets stapling
+   * (Check-ins SessionsRad-precedent): tidsperiod-togglen FÖRST i fullbredd
+   * (`spread` + `min-h-11` per flik — varv 4-lärdomen: `size="sm"` ensamt
+   * gav 37 px, under 44 px-golvet), därunder de två dropdownerna sida vid
+   * sida (staplade på mobil). */
   return (
-    <div className="grid gap-3 sm:grid-cols-3" data-testid="aktivitetshistorik-filterrad">
-      <Select
-        label="Kategori"
-        size="sm"
-        selectedKey={kategori ?? ALLA}
-        onSelectionChange={(k) => {
-          const varde = k == null || String(k) === ALLA ? null : (String(k) as KategoriKey);
-          onKategoriChange(varde);
-        }}
-      >
-        <SelectItem id={ALLA}>Alla kategorier</SelectItem>
-        {KATEGORI_VALUES.map((k) => (
-          <SelectItem key={k} id={k}>
-            {KATEGORI_LABEL[k]}
-          </SelectItem>
-        ))}
-      </Select>
-
-      <Select
-        label="Event"
-        size="sm"
-        isDisabled={eventerLaddar}
-        selectedKey={eventId ?? ALLA}
-        onSelectionChange={(k) => {
-          const varde = k == null || String(k) === ALLA ? null : String(k);
-          onEventChange(varde);
-        }}
-      >
-        <SelectItem id={ALLA}>Alla event</SelectItem>
-        {eventOptions.map((e) => (
-          <SelectItem key={e.id} id={e.id}>
-            {eventFilterEtikett(e)}
-          </SelectItem>
-        ))}
-      </Select>
-
+    <div className="flex flex-col gap-3" data-testid="aktivitetshistorik-filterrad">
       <ToggleButtonGroup<Tidsperiod>
         label="Tidsperiod"
         spread
@@ -493,11 +498,48 @@ function FilterRad({
         onSelectionChange={onTidsperiodChange}
       >
         {TIDSPERIOD_VALUES.map((t) => (
-          <ToggleButton key={t} id={t} size="sm">
+          <ToggleButton key={t} id={t} size="sm" className="min-h-11">
             {TIDSPERIOD_LABEL[t]}
           </ToggleButton>
         ))}
       </ToggleButtonGroup>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Select
+          label="Kategori"
+          size="sm"
+          selectedKey={kategori ?? ALLA}
+          onSelectionChange={(k) => {
+            const varde = k == null || String(k) === ALLA ? null : (String(k) as KategoriKey);
+            onKategoriChange(varde);
+          }}
+        >
+          <SelectItem id={ALLA}>Alla kategorier</SelectItem>
+          {KATEGORI_VALUES.map((k) => (
+            <SelectItem key={k} id={k}>
+              {KATEGORI_LABEL[k]}
+            </SelectItem>
+          ))}
+        </Select>
+
+        <Select
+          label="Event"
+          size="sm"
+          isDisabled={eventerLaddar}
+          selectedKey={eventId ?? ALLA}
+          onSelectionChange={(k) => {
+            const varde = k == null || String(k) === ALLA ? null : String(k);
+            onEventChange(varde);
+          }}
+        >
+          <SelectItem id={ALLA}>Alla event</SelectItem>
+          {eventOptions.map((e) => (
+            <SelectItem key={e.id} id={e.id}>
+              {eventFilterEtikett(e)}
+            </SelectItem>
+          ))}
+        </Select>
+      </div>
     </div>
   );
 }
@@ -641,16 +683,28 @@ export function AktivitetsHistorikPrototyp() {
     }
   }, [isFetchingNextPage, statements.length]);
 
-  const backLink = (
-    <Link to="/mer" className="text-small underline">
-      ← Tillbaka till Mer
+  /* [PROTOTYPE] S106 steg 2 — HUSETS SIDKROM (Check-in-varv 1-fixen, samma
+   * form som EventDetail/Check-in: 44 px rund chevron + `text-3xl`-rubrik
+   * ersätter textlänken + `text-2xl`). Kromet + rubriken renderas i ALLA
+   * tre tillstånd — stabil geometri, rubriken hoppar inte in när datan
+   * landar. */
+  const kromKnapp = (
+    <Link
+      to="/mer"
+      aria-label="Tillbaka till Mer"
+      className="flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+    >
+      <ChevronLeft aria-hidden="true" size={26} />
     </Link>
   );
 
   if (isPending) {
     return (
       <div className="flex flex-col gap-4" data-testid="aktivitetshistorik-yta">
-        {backLink}
+        {kromKnapp}
+        <header className="flex flex-col gap-1">
+          <h1 className="font-semibold text-3xl">Aktivitetshistorik</h1>
+        </header>
         <LaddLage />
       </div>
     );
@@ -659,7 +713,10 @@ export function AktivitetsHistorikPrototyp() {
   if (isError) {
     return (
       <div className="flex flex-col gap-4" data-testid="aktivitetshistorik-yta">
-        {backLink}
+        {kromKnapp}
+        <header className="flex flex-col gap-1">
+          <h1 className="font-semibold text-3xl">Aktivitetshistorik</h1>
+        </header>
         <MessageBox intent="error" title="Kunde inte hämta aktivitetshistoriken">
           {error instanceof Error ? error.message : 'Okänt fel.'}
         </MessageBox>
@@ -672,15 +729,29 @@ export function AktivitetsHistorikPrototyp() {
   const total = statements.length;
 
   return (
-    <div className="flex flex-col gap-6" data-testid="aktivitetshistorik-yta">
-      {backLink}
+    <div className="flex flex-col gap-4" data-testid="aktivitetshistorik-yta">
+      {kromKnapp}
 
       <p className="sr-only" role="status" aria-live="polite">
         Aktivitetshistorik laddad.
       </p>
 
       <header className="flex flex-col gap-1">
-        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
+        {/* [PROTOTYPE] S106 steg 2 — ring-släckning på programfokusmålet:
+            husets facit-rubriker är rena (Check-in/AtgardsSida bär ingen
+            ring). Programfokuset (AC #3, skärmläsarens landningspunkt)
+            BEHÅLLS — tabIndex={-1} nås aldrig via Tab, så ingen interaktiv
+            fokusindikator förloras (ringen fick rubriken att se ut som ett
+            textfält). INLINE STYLE med avsikt: base.css:s `*:focus-visible`
+            är OLAGRAD (cascade-arkitekturen, L246) och slår varje
+            Tailwind-utility — vid promovering lyfts detta till en riktig
+            base.css-släckare i listbox-släckarens form. */}
+        <h1
+          ref={headingRef}
+          tabIndex={-1}
+          style={{ outline: 'none' }}
+          className="font-semibold text-3xl"
+        >
           Aktivitetshistorik
         </h1>
       </header>
@@ -762,7 +833,7 @@ export function AktivitetsHistorikPrototyp() {
                 <h2 className="px-2 font-semibold text-small text-text-secondary">{grupp.label}</h2>
                 <ul
                   aria-label={`Aktiviteter, ${grupp.label.toLowerCase()}`}
-                  className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+                  className="divide-y divide-border overflow-hidden rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
                 >
                   {grupp.statements.map((s) => (
                     <AktivitetsRad key={s.id} statement={s} grupp={grupp.label} nuMs={nuMs} />
