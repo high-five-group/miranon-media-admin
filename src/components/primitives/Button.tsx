@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Loader2 } from 'lucide-react';
 import type { Ref } from 'react';
 import { Button as AriaButton, type ButtonProps as AriaButtonProps } from 'react-aria-components';
 import { cn } from '@/lib/cn';
@@ -18,7 +19,7 @@ import { cn } from '@/lib/cn';
 // emphasis-dimensionen (secondary ÄR en neutral outline, ghost ÄR en
 // neutral subtle) — emphasis-propen är en dokumenterad no-op för dem.
 const buttonVariants = cva(
-  'inline-flex select-none items-center justify-center rounded font-sans transition-colors data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
+  'inline-flex select-none items-center justify-center rounded font-sans transition-colors data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[loading]:cursor-progress',
   {
     variants: {
       intent: {
@@ -119,6 +120,34 @@ export interface ButtonProps
   className?: string;
   /** Ref till det underliggande <button>-elementet (React 19-stil). */
   ref?: Ref<HTMLButtonElement>;
+  /**
+   * Laddtrappans steg 2 (ADR-113): true medan knappen utför en arbetande
+   * mutation (submit, spara, radera). Byter innehållet mot en knapp-intern
+   * spinner + `loadingText`, spärrar klick och Enter/Space, och annonserar
+   * `loadingText` till skärmläsare — allt inbyggt EN gång på biblioteksnivå
+   * i stället för handbyggt per konsument (se PRD TASK-219 berättelse 6).
+   *
+   * MEDVETET INTE `isDisabled`/react-aria-components' `isPending`: båda
+   * renderar native `disabled`-attribut (`isDisabled`) resp. tvingar en
+   * `aria-live="assertive"`-annonsering (`isPending`s interna
+   * `announce(…, 'assertive')`, verifierat i källkoden) — assertive är
+   * samma aggressiva klass som FK:s eget `role="alert"`-mönster, som
+   * research-passet fann VARA STRÄNGARE än WAI-ARIA-praxis rekommenderar
+   * (`docs/research/loading-indikator-branschpraxis-2026-08-15.md` § 4;
+   * ADR-113 § Beslut punkt 2 väljer uttryckligen polite). Klick spärras i
+   * stället via `aria-disabled` (fokus bevaras — knappen tas ALDRIG bort ur
+   * tabordningen, till skillnad från native `disabled`) + att `onPress`
+   * kopplas bort + att `type="submit"` tillfälligt blir `type="button"`
+   * (stoppar webbläsarens implicita andra-submit via Enter i ETT annat
+   * fält, utan att röra fokus).
+   */
+  isLoading?: boolean;
+  /**
+   * Texten som visas OCH annonseras (polite, `role="status"`) medan
+   * `isLoading` är true — t.ex. "Loggar in …". Default "Laddar …" för
+   * konsumenter som inte bryr sig om ordvalet.
+   */
+  loadingText?: string;
 }
 
 /**
@@ -139,6 +168,12 @@ export interface ButtonProps
  * (40/48 px) i primärflöden per ACCESSIBILITY-CHECKLIST §2 (44×44-rekommendation).
  * `subtle` tänder en kant i intent-färgen under prefers-contrast: more.
  *
+ * `isLoading` (Laddtrappans steg 2, ADR-113): knapp-intern spinner + spärrat
+ * klickläge med bevarat fokus + polite skärmläsarbesked, se `ButtonProps`
+ * §isLoading för det fulla resonemanget kring varför INTE `isPending`.
+ * Respekterar `prefers-reduced-motion` (spinnern animeras endast via
+ * `motion-safe:`, samma gating som Skeleton-primitivens shimmer).
+ *
  * @example
  * ```tsx
  * <Button intent="primary" size="md" onPress={() => save()}>
@@ -150,14 +185,44 @@ export interface ButtonProps
  * <Button intent="danger" size="sm" isDisabled>
  *   Ta bort
  * </Button>
+ * <Button type="submit" size="lg" isLoading={isSubmitting} loadingText="Loggar in …">
+ *   Logga in
+ * </Button>
  * ```
  */
-export function Button({ intent, size, emphasis, className, ref, ...props }: ButtonProps) {
+export function Button({
+  intent,
+  size,
+  emphasis,
+  className,
+  ref,
+  isLoading = false,
+  loadingText = 'Laddar …',
+  type,
+  onPress,
+  children,
+  ...props
+}: ButtonProps) {
   return (
     <AriaButton
       {...props}
+      type={isLoading && type === 'submit' ? 'button' : type}
+      aria-disabled={isLoading || props['aria-disabled']}
+      onPress={isLoading ? undefined : onPress}
+      data-loading={isLoading || undefined}
       ref={ref}
       className={cn(buttonVariants({ intent, size, emphasis }), className)}
-    />
+    >
+      {isLoading ? (
+        <>
+          <Loader2 aria-hidden="true" className="size-4 shrink-0 motion-safe:animate-spin" />
+          <span role="status" aria-live="polite">
+            {loadingText}
+          </span>
+        </>
+      ) : (
+        children
+      )}
+    </AriaButton>
   );
 }

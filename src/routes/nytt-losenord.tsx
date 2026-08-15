@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Loader2, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { type FormEvent, useEffect, useId, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
 import { supabase } from '@/data/config/supabase-client';
@@ -312,15 +312,8 @@ function LosenordsFormular({ epost, onUtfall }: LosenordsFormularProps) {
           </MessageBox>
         )}
 
-        <Button type="submit" size="lg" isDisabled={status === 'sparar'}>
-          {status === 'sparar' ? (
-            <>
-              <Loader2 aria-hidden="true" className="size-4 motion-safe:animate-spin" />
-              Sparar …
-            </>
-          ) : (
-            'Spara nytt lösenord'
-          )}
+        <Button type="submit" size="lg" isLoading={status === 'sparar'} loadingText="Sparar …">
+          Spara nytt lösenord
         </Button>
       </form>
     </div>
