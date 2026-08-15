@@ -125,15 +125,21 @@ function InnerApp() {
   useEffect(() => {
     if (auth.isLoading || isRestoring || varmtBeslutat.current) return;
 
-    // OINLOGGAD ⇒ gaten öppnar DIREKT — ingen skärm, ingen startvärmning.
-    // Utan session finns inget att värma (EF-anropen kräver auth), och
-    // login-/glömt lösenord-/välkommen-ytorna får aldrig skymmas av
-    // Förberedelseskärmen (webblasarbeteende-svitens regressionsfångst,
-    // #1343 CI-varv 1). `varmtBeslutat` sätts MEDVETET INTE här: när
-    // inloggningen sedan sker (auth.isAuthenticated flippar, dep nedan)
-    // körs varm/kall-avgörandet på riktigt — det ÄR post-login-fallet
-    // ADR-112 beställde skärmen för.
-    if (!auth.isAuthenticated) {
+    // OINLOGGAD ELLER PÅ EN AUTH-YTA ⇒ gaten öppnar DIREKT — ingen skärm,
+    // ingen startvärmning. Två skäl, båda CI-fångade (#1343 varv 1+2):
+    // (1) utan session finns inget att värma (EF-anropen kräver auth);
+    // (2) auth-ytorna nås även MED session — inbjudnings- och recovery-
+    // tokens skapar en (valkommen/nytt-losenord/passkey) — och får aldrig
+    // skymmas av Förberedelseskärmen mitt i sitt flöde. `varmtBeslutat`
+    // sätts MEDVETET INTE här, så en senare kall appstart på app-ytan får
+    // sitt varm/kall-avgörande. KÄND AVGRÄNSNING (öppet bokförd, eget
+    // uppföljningskort): skärmen direkt EFTER login-klicket kräver en
+    // router-medveten trigger (routaEfterLyckadInloggning-ingreppspunkten
+    // ur research-passet) — denna gate täcker appstarts-fallet, som är
+    // 218.4:s e2e-kontrakt och Lottas PWA-vardag.
+    const AUTH_YTOR = ['/login', '/glomt-losenord', '/nytt-losenord', '/passkey', '/valkommen'];
+    const paAuthYta = AUTH_YTOR.some((p) => window.location.pathname.startsWith(p));
+    if (!auth.isAuthenticated || paAuthYta) {
       setGate({ typ: 'redo' });
       return;
     }
