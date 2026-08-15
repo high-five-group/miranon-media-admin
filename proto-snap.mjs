@@ -44,6 +44,10 @@ async function skott(state, { namn, url, viewport }) {
     storageState: state,
     viewport,
     deviceScaleFactor: 2,
+    // Lottas miljö, inte Playwrights default (en-US/UTC): utan detta visar
+    // RAC:s datumsegment amerikansk ordning i bilderna men inte i din browser.
+    locale: 'sv-SE',
+    timezoneId: 'Europe/Stockholm',
   });
   const page = await ctx.newPage();
   await page.goto(`${BAS}${url}`);
