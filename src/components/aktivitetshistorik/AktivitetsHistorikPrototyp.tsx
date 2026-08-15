@@ -9,6 +9,7 @@ import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { ACTIVITY_OBJECT_TYPES } from '@/data/activityLog/activityTypes';
+import { verbCopy } from '@/data/activityLog/verbCopy';
 import { useActivityLogHistory } from '@/data/queries/useActivityLog';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
@@ -335,40 +336,11 @@ export function aktivitetensPersonId(statement: ActivityStatement): string | nul
  * (`.langa-streck-policy.json`). ORDLISTA.md:s illustrativa exempel ("Lotta
  * markerade betalning — …") är EJ facit för separatorn.
  */
-/* [PROTOTYPE] S106 steg 3 — VERB-COPY SOM PRESENTATION (Marcus 2026-08-15:
- * "Lotta skapade eventet" → "Lotta skapade ett event"). Mappar på verb.id-
- * IRI:ns suffix (STABIL nyckel; `verb.display` är data fryst per rad — en
- * mappning vid rendering ger även HISTORISKA rader den nya texten, ingen
- * datamigrering). Nycklar utan mappning (bor över-paret, flaggan, testmail,
- * API-kontrolltest) faller till radens lagrade display — obestämd form är
- * ordliste-/Marcus-frågor, bokförda i sessionsdok.
- * VID PROMOVERING: beslut om mappningen blir DELAD (hem-spalten renderar
- * samma statements med lagrad display — samma händelse får annars två olika
- * texter på hem respektive här) — hem-spaltens form är LÅST facit (k10),
- * så den flytten är Marcus beslut, inte en tyst konsekvens. */
-const VERB_COPY: Record<string, string> = {
-  'skapade-event': 'skapade ett event',
-  'uppdaterade-event': 'uppdaterade ett event',
-  'skapade-anmalan': 'skapade en anmälan',
-  'bekraftade-anmalan': 'bekräftade en anmälan',
-  'markerade-betalning': 'markerade en betalning',
-  'avmarkerade-betalning': 'avmarkerade en betalning',
-  'uppdaterade-betalningsnotering': 'uppdaterade en betalningsnotering',
-  'skickade-kvitto': 'skickade ett kvitto',
-  'skickade-mail/bekraftelse': 'skickade ett bekräftelsemail',
-  'skickade-mail/paminnelse': 'skickade en betalningspåminnelse',
-  'skickade-mail/eventinfo': 'skickade eventinformation',
-  'skickade-mail/fritt': 'skickade ett mail',
-  'skickade-segment-mail': 'skickade mail till ett segment',
-  'sparade-segment': 'sparade ett segment',
-  antecknade: 'skrev en anteckning',
-  'uppdaterade-anteckning': 'uppdaterade en anteckning',
-};
-
-function verbCopy(verb: ActivityStatement['verb']): string {
-  const suffix = verb.id.split('/verbs/')[1];
-  return (suffix && VERB_COPY[suffix]) || sprakText(verb.display);
-}
+/* [PROTOTYPE] S106 steg 3+4 — verb-copyn bor i den DELADE presentations-
+ * modulen `src/data/activityLog/verbCopy.ts` (flyttad dit i steg 4 på
+ * Marcus "fixa fynden"-kvittens: EN källa för händelsetexten; hem-spalten
+ * kopplas på i promoverings-skivan med facit-amendering — se modulens
+ * docblock för hela bokföringen, inkl. de medvetet oförändrade verben). */
 
 /** Initialer för identitetsmarkören — personlistans `initialer`, samma form
  * (dörrlistans `initialerD` är tredje kopian av samma formel). Tål e-post som
