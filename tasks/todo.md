@@ -15,7 +15,24 @@
 
 ## Aktuellt fokus
 
-**Session 102 ▶️ AKTIV — Lotta-vandringen, Del 8 landad (2026-08-15 fm).**
+**Session 102 ⏸️ PAUSAD (2026-08-15 em, `lifecycle: paused`, tredje pausen —
+Marcus förhandsorder, byggvågen HELT landad).** Laddupplevelsen KLAR OCH
+STÄNGD: PRD `218` (Förberedelseskärmen + Startvärmningen, 218.1–218.4
+Done, e2e-bevisad i merge-kön) + PRD `219` (Laddtrappan, 219.1–219.3
+Done) + `216`/`220` Done + display_name-datafixen i prod (HITL,
+verifierad). `218.3` tog FYRA CI-varv — varje rött äkta fångst, inkl. en
+genuin produktionsregression (invalidate mot odefinierad auth-kontext)
+och fixturvärldens warmup-mockgap. Prototyperna `#1344` på main
+(`/dev/hem-prototyp?variant=1/2/3`, kort `226` In Progress tills
+vinnarval). `227` mintat (post-login-skärmen). **RESUME-INGÅNG (Marcus,
+i ordning):** (1) prototyp-granskningen → vinnare → konvergens · (2) QA
+`218.5` · (3) QA `219.4` · (4) `221`-vägvalet · (5) `127.10` + Rogers
+inbjudan · (6) `222`–`224`/`227` plockbara · (7) `147.9`. Numrering:
+kort 228 · ADR 114 · T144 · L512+7 — re-derivera alltid. Full handoff:
+sessionsdok S102 § PAUSLÄGE (tredje pausen) + Del 9.
+
+*(Del 8-blocket nedan är historik.)*
+**Session 102 — Del 8-läget (2026-08-15 fm, historik).**
 Byggvågens läge: `216`/`219.1`/`220` STÄNGDA (Hej Marcus live) ·
 `218.1`/`218.2`/`219.2` levererade+granskade (i kön) · `218.3`+`219.3` i
 luften · `218.4` väntar. Display_name-datafixen KLAR (HITL: Marcus
