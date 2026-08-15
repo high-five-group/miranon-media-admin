@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-14 21:57'
+updated_date: '2026-08-15 00:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,3 +32,9 @@ Exakt symptom (mätt 2026-08-14 under TASK-214.2-bygget, agentens tvåvägsmätn
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Instans 2 (2026-08-15, under TASK-214.4-bygget): samma test fällde i full acceptanssvit (229 passed, 1 failed) på en diff som inte delar en rad med filen; isolerad omkörning 11/11 grönt, full svit omkörd 229/229 grönt. Mönstret ordnings-/lastberoende står sig.
+<!-- SECTION:NOTES:END -->

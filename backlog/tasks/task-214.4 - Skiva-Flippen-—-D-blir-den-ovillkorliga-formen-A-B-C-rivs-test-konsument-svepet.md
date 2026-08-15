@@ -3,10 +3,10 @@ id: TASK-214.4
 title: >-
   Skiva: Flippen — D blir den ovillkorliga formen, A/B/C rivs,
   test-konsument-svepet
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 19:17'
-updated_date: '2026-08-14 23:47'
+updated_date: '2026-08-15 00:11'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,10 +33,10 @@ Formvillkoret flippas per ADR-103 B2 steg 1: D-formen blir den ovillkorliga på 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter)
-- [ ] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
+- [x] #6 Bevis-loopens spår (skärmdump + skillnadslista) bilagt i skivans PR
 - [x] #7 Datavägs-invarianten verifierad: läsvägen oförändrad; skrivning sker ENDAST via de två speccade operationerna
 - [x] #8 Test-konsument-svepets träffyta bilagd och alla träffar uppdaterade i samma skiva som sin flip
 - [x] #9 Kvittensfönstrets kontrakt bevisat via nätverks-observation: inget skrivanrop före fönstrets utgång, ångra ger noll anrop
@@ -121,3 +121,9 @@ BEVISAR att skriptet kan detektera drift (den positiva och negativa
 kontrollen pekar åt motsatta håll, som avsett) · typecheck/biome/build
 EXIT=0 efter raderingen.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad av bygg-agent (Sonnet) 2026-08-14/15, PR #1306, merge 26b1e724 via kön. Två varv: flippen c198d2fb (D ovillkorlig på närvaro-routen; A/B/C + exklusiva hjälpare rivna, 897 rader netto; routens dubblerade variant-läsning riven som död kod per dc0eb4ec-precedenten; konsument-svep med bilagd träffyta; ariaSnapshot 12/12 två gånger, referenser orörda; facit-jämförelse ren; AC 1-4 avbockade) + hermetik-fixen b66711f5/def534c0 (CI:s hermetik-självtest fällde de describe.skip-parkerade event-narvaro-testerna — självtestet har INGEN skip-ventil med avsikt; filen raderad efter subjekt-bekräftelse [7/7 tester hade den ersatta ytan som subjekt], EventAttendance.tsx orörd; självtest 229/229 noll avvikelser + negativ kontroll grön). Grindar: typecheck 0, biome 0, build 0, test:api 750/750, langa-streck 0, mailto 0, acceptans 229/229. Premiss-divergenser bokförda: worktree bakom vid start (ff:ad), CheckinPrototyp-radnummer ~144 rader fel i uppdraget. TASK-215-flaken observerad ÄNNU EN GÅNG (instans 2) i agentens fulla svit — bokförd på fyndkortet. Stängd efter landningsverifikat. DÖRRLISTAN ÄR NU DEN SKARPA FORMEN.
+<!-- SECTION:FINAL_SUMMARY:END -->
