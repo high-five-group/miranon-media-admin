@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attendance } from '@/domain/models/Attendance';
@@ -118,15 +119,18 @@ function NarvaroRegister({ eventId }: { eventId: string }) {
   });
 
   if (isPending) {
+    // Lugnt laddläge (Laddtrappan steg 1, DESIGN-SYSTEM-SPEC §15): skeleton i
+    // registrets SLUTGEOMETRI (summeringsrad + tre tabellradsplatshållare,
+    // Roselli-anatomin, speglar Gruppdynamik/Deltagare) i stället för en naken
+    // "Laddar…"-textrad.
     return (
-      <p
-        role="status"
-        aria-live="polite"
-        aria-busy="true"
-        className="py-8 text-center text-small text-text-muted"
-      >
-        Laddar närvaro…
-      </p>
+      <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-2 py-3">
+        <span className="sr-only">Laddar närvaro…</span>
+        <Skeleton variant="text" className="w-2/5" />
+        <Skeleton variant="listRow" className="h-10 rounded-lg" />
+        <Skeleton variant="listRow" className="h-10 rounded-lg" />
+        <Skeleton variant="listRow" className="h-10 rounded-lg" />
+      </div>
     );
   }
 

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
@@ -34,9 +35,20 @@ export function SavedSegmentsList() {
       <h2 className="font-medium text-lg">Sparade segment</h2>
 
       {isPending ? (
-        <p role="status" aria-live="polite" className="text-small text-text-muted">
-          Laddar sparade segment…
-        </p>
+        // Lugnt laddläge (Laddtrappan steg 1, DESIGN-SYSTEM-SPEC §15): skeleton i
+        // listans SLUTGEOMETRI (två radplatshållare, Roselli-anatomin) i stället
+        // för en naken "Laddar…"-textrad.
+        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-2">
+          <span className="sr-only">Laddar sparade segment…</span>
+          <div className="flex flex-col gap-1 border-text-muted/20 border-b pb-2">
+            <Skeleton variant="text" className="w-2/5" />
+            <Skeleton variant="text" className="w-3/5 text-small" />
+          </div>
+          <div className="flex flex-col gap-1 border-text-muted/20 border-b pb-2">
+            <Skeleton variant="text" className="w-1/3" />
+            <Skeleton variant="text" className="w-1/2 text-small" />
+          </div>
+        </div>
       ) : isError ? (
         <MessageBox intent="error" title="Kunde inte hämta sparade segment">
           {error instanceof Error ? error.message : 'Okänt fel.'}

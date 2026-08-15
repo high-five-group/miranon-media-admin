@@ -5,6 +5,7 @@ import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useSaveSegment } from '@/data/mutations/segment';
 import { useDataSource } from '@/data/useDataSource';
@@ -154,12 +155,25 @@ export function SegmentBuilder() {
   );
 
   if (isPending) {
+    // Lugnt laddläge (Laddtrappan steg 1, DESIGN-SYSTEM-SPEC §15): skeleton i
+    // sidans SLUTGEOMETRI (rubrik + ingress + tre radplatshållare, Roselli-
+    // anatomin) i stället för en naken "Laddar…"-textrad.
     return (
-      <section className="flex flex-col gap-4 p-4" aria-busy="true">
+      <section className="flex flex-col gap-6 p-4">
         {backLink}
-        <p role="status" aria-live="polite">
-          Laddar kurser…
-        </p>
+        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-4">
+          <span className="sr-only">Laddar kurser…</span>
+          <div className="flex flex-col gap-1">
+            <Skeleton variant="text" className="w-40 text-2xl" />
+            <Skeleton variant="text" className="w-4/5" />
+            <Skeleton variant="text" className="w-3/5" />
+          </div>
+          <div className="flex flex-col gap-3">
+            <Skeleton variant="listRow" className="h-10 rounded-lg" />
+            <Skeleton variant="listRow" className="h-10 rounded-lg" />
+            <Skeleton variant="listRow" className="h-10 rounded-lg" />
+          </div>
+        </div>
       </section>
     );
   }
