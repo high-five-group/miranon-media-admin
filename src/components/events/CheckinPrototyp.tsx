@@ -124,7 +124,7 @@ const DATUM_LANG = new Intl.DateTimeFormat('sv-SE', {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-//  DATA — läsning + klient-join (identisk i alla tre varianterna)
+//  DATA — läsning + klient-join
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** En dörr-rad: ETT deltagande (Anmälan × Session) berikat ur anmälan. */
@@ -134,7 +134,10 @@ type Dorrad = {
   namn: string;
   email: string | null;
   session: AttendanceSessionValue;
-  /** Status som den står i basen (prototypens överlagring bor i useDorrLage). */
+  /** Status som den står i basen. Fältet matas av `byggRader`/`useDorrData`
+   *  men läses inte av D — D:s egen statusöverlagring bor i `useDorrLageD`,
+   *  över `DorradD[]`, inte över denna delade `Dorrad[]`-typ (`useDorrLage`,
+   *  A/B/C:s motsvarighet, är riven med dem, TASK-214.4). */
   basStatus: AttendanceStatusValue;
   /** Basens `Avstämt` — A8 äger fältet; appen skriver det ALDRIG. */
   avstamt: string | null;
@@ -624,9 +627,7 @@ function SessionsRadD({
             dag vald är dessutom den dyraste felhandlingen på hela ytan -
             `Närvaropoäng` räknar Dag 1 och Föreläsning mot kurshistoriken men
             INTE Dag 2, så en feltryckning ger fel historik utan att någon ser
-            det. Kontrollen ska vara svår att missa.
-            ÄNDRINGEN ÄR D-LOKAL: den bor i `SessionsRadD`, inte i den delade
-            `SessionsRad`, så variant B och C är orörda. */}
+            det. Kontrollen ska vara svår att missa. */}
         {sessioner.map((s) => (
           <ToggleButton key={s} id={s} size="sm" className="min-h-11">
             {s}
@@ -918,7 +919,8 @@ function VariantD({
           44 px rund chevron + rubrik i text-3xl på EXAKT samma plats som
           EventDetail/PersonDetail (`sidRam`-formen, EventDetail.tsx:142-150).
           Prototypens textlänk och text-2xl var en avvikelse från appens
-          grund. D-LOKAL ändring: `TillbakaLank` (A/B/C) är orörd. */}
+          grund. A/B/C:s egen `TillbakaLank` (textlänken) är riven med dem
+          (TASK-214.4) — denna länk är D:s enda kvarvarande. */}
       <Link
         to="/event/$eventId"
         params={{ eventId }}

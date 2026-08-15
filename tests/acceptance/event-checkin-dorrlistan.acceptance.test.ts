@@ -174,8 +174,20 @@ function mockaSkrivning(network: NetworkFixture, { status = 200 }: { status?: nu
   return { uppdateringar, skapelser };
 }
 
+/**
+ * NAVIGERAR MOT DEN PROMOVERADE ROUTEN, UTAN `?variant=d` (TASK-214.5,
+ * kortets AC #2). Fram till flippen (TASK-214.4) navigerade denna funktion
+ * via `?variant=d` — nödvändigt då, eftersom D bara renderades bakom
+ * variant-villkoret. `narvaro.tsx` (§ `?variant=`-LÄSNINGEN HÄRIFRÅN ÄR
+ * BORTA) bekräftar att parametern är död sedan flippen: ingen kod läser den
+ * längre, så den gamla adressen renderade redan samma träd. Ändringen här
+ * är alltså bevis, inte reparation — den PROMOVERADE routen prövas nu
+ * uttryckligen, i stället för att luta på att en ignorerad parameter råkar
+ * vara harmlös. Testinnehållet (assertions, fixturvärld, kvittensfönstrets
+ * kontrakt) är OFÖRÄNDRAT.
+ */
 async function oppnaDorren(page: import('@playwright/test').Page) {
-  await page.goto(`/event/${EVENT_ID}/narvaro?variant=d`);
+  await page.goto(`/event/${EVENT_ID}/narvaro`);
   await expect(page.getByRole('heading', { level: 1, name: 'Check-in' })).toBeVisible();
 }
 
