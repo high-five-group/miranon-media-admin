@@ -6,10 +6,7 @@
   "ytor": [
     {
       "yta": "aktivitetshistorik-sidan",
-      "bilder": [
-        "facit-aktivitetshistorik-desktop.png",
-        "facit-aktivitetshistorik-mobil.png"
-      ],
+      "bilder": ["facit-aktivitetshistorik-desktop.png", "facit-aktivitetshistorik-mobil.png"],
       "kallor": [
         "src/components/aktivitetshistorik/AktivitetsHistorikPrototyp.tsx",
         "src/routes/_authenticated/mer/aktivitetshistorik.tsx",
