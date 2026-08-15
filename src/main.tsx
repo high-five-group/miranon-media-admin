@@ -17,7 +17,7 @@ import { FORBEREDELSESKARM_VANTAR, Forberedelseskarm } from './components/AppShe
 import { AppErrorBoundary } from './components/ErrorBoundary';
 import { dataSource } from './data/dataSource';
 import type { StartvarmningForlopp, StartvarmningHandle } from './data/warmup/startvarmningen';
-import { starta } from './data/warmup/startvarmningen';
+import { arCacheVarm, starta } from './data/warmup/startvarmningen';
 import { registreraAppUppdatering } from './lib/app-uppdatering';
 import { reportWebVitals } from './lib/report-web-vitals';
 import { initSentry } from './observability/sentry';
@@ -161,12 +161,18 @@ function InnerApp() {
     // (2) auth-ytorna nås även MED session — inbjudnings- och recovery-
     // tokens skapar en (valkommen/nytt-losenord/passkey) — och får aldrig
     // skymmas av Förberedelseskärmen mitt i sitt flöde. `varmtBeslutat`
-    // sätts MEDVETET INTE här, så en senare kall appstart på app-ytan får
-    // sitt varm/kall-avgörande. KÄND AVGRÄNSNING (öppet bokförd, eget
-    // uppföljningskort): skärmen direkt EFTER login-klicket kräver en
-    // router-medveten trigger (routaEfterLyckadInloggning-ingreppspunkten
-    // ur research-passet) — denna gate täcker appstarts-fallet, som är
-    // 218.4:s e2e-kontrakt och Lottas PWA-vardag.
+    // sätts MEDVETET INTE här — TASK-227 löser den EFTERFÖLJANDE
+    // avgränsningen (skärmen direkt EFTER ett login-klick) med en HELT
+    // FRISTÅENDE gate i `src/routes/_authenticated.tsx` i stället för att
+    // denna effekt görs router-medveten: den layout-routen monteras per
+    // konstruktion ALDRIG förrän `<RouterProvider>` gör det (dvs. EFTER att
+    // DENNA gate redan släppt), så de två gaterna kan strukturellt aldrig ha
+    // en startvärmning i flykten samtidigt — `arCacheVarm()` (delat predikat,
+    // startvarmningen.ts) är den enda samordning som behövs; ingen delad
+    // "redan avgjort"-flagga. Se _authenticated.tsx:s docblock för hela
+    // resonemanget, inklusive varför login.tsx (routaEfterLyckadInloggning)
+    // MEDVETET INTE rördes (racear mot denna effekts router.invalidate(),
+    // se VARV 4-fångsten ovan).
     const AUTH_YTOR = ['/login', '/glomt-losenord', '/nytt-losenord', '/passkey', '/valkommen'];
     const paAuthYta = AUTH_YTOR.some((p) => window.location.pathname.startsWith(p));
     if (!auth.isAuthenticated || paAuthYta) {
@@ -175,8 +181,9 @@ function InnerApp() {
     }
 
     if (!varmningHandle.current) {
-      // Varm/kall-avgörandet — se klassdoc-blocket ovan.
-      const varmt = queryClient.getQueryCache().getAll().length > 0;
+      // Varm/kall-avgörandet — se klassdoc-blocket ovan. Delat predikat
+      // (TASK-227): samma funktion som _authenticated.tsx:s app-yta-gate.
+      const varmt = arCacheVarm(queryClient);
       if (varmt) {
         varmtBeslutat.current = true;
         setGate({ typ: 'redo' });
