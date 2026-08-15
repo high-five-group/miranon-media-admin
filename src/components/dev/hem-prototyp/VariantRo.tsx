@@ -49,10 +49,16 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
   // granskningsbart utan kodändring. "Nästa event" (events-driven) och
   // Senaste aktivitet (eget datalager) är OBERÖRDA. Verklig data är
   // fortsatt default (ingen param -> registrationsQuery.data oförändrat).
-  // Delar query-nyckeln "data" med PrototypeSwitcher-railens "verklig
-  // data"-checkbox (sätter "verklig"/null, oläst av hem-prototypen idag) --
-  // en tom-URL som sedan togglas via den checkboxen skrivs över, medvetet
-  // accepterat (se task-226-slutrapporten).
+  //
+  // [TASK-226, Marcus-fynd 2026-08-16] Railens Dataläge-knapp cyklade
+  // tidigare BARA "verklig"/null (switcherns legacy-toggle) — ett läge
+  // hem-prototypen redan har som default, så knappen gjorde synligt
+  // ingenting här. Fixat i `PrototypeSwitcher.tsx` (`dataLagen`-propen,
+  // se dess docblock) + `routes/dev/hem-prototyp.tsx` (`DATA_LAGEN`):
+  // knappen cyklar nu verklig (null) → tom → demo → verklig, med en
+  // synlig badge för aktivt läge. Denna komponent (`VariantRo.tsx`) är
+  // ORÖRD av fixet — den läste redan `dataParam` korrekt, det var bara
+  // ingångsvägen (railen) som saknade en knapp dit.
   //
   // [TASK-226 konvergensvarv 2, punkt 3] "?data=demo" — tredje läget. Ett
   // SJÄLVSTÄNDIGT syntetiskt universum (`demoData.ts`) ersätter BÅDE events
