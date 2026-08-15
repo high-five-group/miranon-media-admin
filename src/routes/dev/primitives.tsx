@@ -442,7 +442,7 @@ function PrimitivesPage() {
         <p className="mt-2 text-small text-text-secondary">
           Förberedelseskärmen (AC 3, task-218.2): helskärmsyta, helt props-driven{' '}
           <code>{'{ klara, totalt }'}</code>. I produktion fyller ytan hela viewporten (anroparen
-          sätter höjden, TASK-218.3 gate-integrationen) — här begränsas varje instans till en fast
+          sätter höjden, TASK-218.3 gate-integrationen); här begränsas varje instans till en fast
           inramning så alla tre förloppslägen (0 %, delvis, full) syns samtidigt.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
