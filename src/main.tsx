@@ -125,6 +125,19 @@ function InnerApp() {
   useEffect(() => {
     if (auth.isLoading || isRestoring || varmtBeslutat.current) return;
 
+    // OINLOGGAD ⇒ gaten öppnar DIREKT — ingen skärm, ingen startvärmning.
+    // Utan session finns inget att värma (EF-anropen kräver auth), och
+    // login-/glömt lösenord-/välkommen-ytorna får aldrig skymmas av
+    // Förberedelseskärmen (webblasarbeteende-svitens regressionsfångst,
+    // #1343 CI-varv 1). `varmtBeslutat` sätts MEDVETET INTE här: när
+    // inloggningen sedan sker (auth.isAuthenticated flippar, dep nedan)
+    // körs varm/kall-avgörandet på riktigt — det ÄR post-login-fallet
+    // ADR-112 beställde skärmen för.
+    if (!auth.isAuthenticated) {
+      setGate({ typ: 'redo' });
+      return;
+    }
+
     if (!varmningHandle.current) {
       // Varm/kall-avgörandet — se klassdoc-blocket ovan.
       const varmt = queryClient.getQueryCache().getAll().length > 0;
@@ -145,7 +158,7 @@ function InnerApp() {
     return varmningHandle.current.forloppsprenumeration((forlopp) => {
       setGate((nuvarande) => (nuvarande.typ === 'redo' ? nuvarande : { typ: 'varmar', forlopp }));
     });
-  }, [auth.isLoading, isRestoring]);
+  }, [auth.isLoading, auth.isAuthenticated, isRestoring]);
 
   // Render-gate (ADR-037 + TASK-218.3): montera <RouterProvider> först när
   // auth är löst OCH (varm/kall-avgörandet gjort OCH ev. startvärmning klar).
