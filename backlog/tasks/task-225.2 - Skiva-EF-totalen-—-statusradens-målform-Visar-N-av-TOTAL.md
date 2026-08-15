@@ -1,9 +1,10 @@
 ---
 id: TASK-225.2
 title: 'Skiva: EF-totalen — statusradens målform ''Visar N av TOTAL'''
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 09:19'
+updated_date: '2026-08-15 10:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,6 +25,12 @@ Läs-EF:en utökas med exakt radräkning på samma filtrerade fråga (Supabase c
 - [ ] #2 Statusraden visar 'Visar N av TOTAL poster.' när fler finns och 'Visar alla N poster.' när allt är laddat
 - [ ] #3 Acceptance-sviten täcker den nya statusrads-copyn
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Levererad i PR #1335 (merge b924fb1b). Additivt total-fält i get-activity-log (exakt head-count, samma filter minus cursor); skew-säker statusrad (äldre EF → interimsformen); staging-deployad och live-bevisad 'Visar 20 av 279 poster.'; PROD-deploy återstår som Marcus runbook-moment (bokfört i sessionsdok).
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
