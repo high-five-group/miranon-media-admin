@@ -4,6 +4,7 @@ title: 'Skiva: Spec §15 skrivs om till Laddtrappan'
 status: To Do
 assignee: []
 created_date: '2026-08-15 08:49'
+updated_date: '2026-08-15 09:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,10 +20,10 @@ ordinal: 420000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Spec §15 bär trappans fyra steg per ADR-113 med Lugnt laddläge som överordnad princip; ORDLISTA-termen Laddtrappan refereras
-- [ ] #2 Artighetsnivå-noten (polite, ej alert) bokförd i spec-texten
-- [ ] #3 Stale §15-radreferenser i kodkommentarer rättade till adresserbar sektionsform (grep-belagd lista i notes)
-- [ ] #4 npm run check:docs grön
+- [x] #1 Spec §15 bär trappans fyra steg per ADR-113 med Lugnt laddläge som överordnad princip; ORDLISTA-termen Laddtrappan refereras
+- [x] #2 Artighetsnivå-noten (polite, ej alert) bokförd i spec-texten
+- [x] #3 Stale §15-radreferenser i kodkommentarer rättade till adresserbar sektionsform (grep-belagd lista i notes)
+- [x] #4 npm run check:docs grön
 <!-- AC:END -->
 
 ## Definition of Done
@@ -32,3 +33,24 @@ ordinal: 420000
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Genomförande
+
+Spec §15 (docs/specs/DESIGN-SYSTEM-SPEC.md) skriven om per ADR-113: rubrik till Lugnt laddläge — Laddtrappan + Skeleton-primitiven, ny sektion Laddtrappan — fyra steg (ADR-113) med de fyra stegen (skeleton, knapp-intern spinner via kommande isLoading, determinate progress-bar/ADR-112, aldrig naken Laddar…-textrad) samt artighetsnivå-noten (role=status/polite, aldrig role=alert — FK:s FLoader-avvikelse bokförd mot WAI-ARIA ARIA22, källa loading-indikator-branschpraxis-2026-08-15.md §4). Principen-avsnittet ommärkt som trappsteg 1; sista principbullet uppdaterad så att spinner-förbudet gäller SKELETON-steget specifikt, inte hela appen. Ändringsloggrad tillagd.
+
+## Grep-belagd lista — stale §15-radreferenser
+
+Sökt spec:[0-9]+ / SPEC.md:[0-9]+ / SPEC:[0-9]+ över src/ + tests/: EN träff.
+- src/components/persons/PersonsList.tsx:343 — citerade spec:1078 (off-by-14 mot regelraden, som låg på rad 1092 i spec-filen FÖRE denna ändring). Rättad till sektionsform: spec §15, Laddtrappans steg 4.
+
+Övriga §15-referenser i kodbasen (grep §15 över src/ + tests/) citerar redan sektionsform (spec §15, DESIGN-SYSTEM-SPEC §15) utan radnummer — rörda ingen: tailwind.css:111, components.css:243, DashboardCard.tsx:15,74,101, SenasteAktivitet.tsx:74, Skeleton.tsx:42, AktivitetsHistorik.tsx:374, PersonsList.tsx:84, PersonDetail.tsx:1630, EventsList.tsx:133, primitives.tsx:236, hem-laddlage.acceptance.test.ts:11, Skeleton.spec.ts:127.
+
+Ingen komponentkod ändrad utöver denna enda kommentarsrad — fix-vågen (TASK-219.3) och Button isLoading-propen (TASK-219.2) är egna skivor.
+
+## Grindar
+
+npm run check:docs → 14/14 gröna, exit 0.
+<!-- SECTION:NOTES:END -->
