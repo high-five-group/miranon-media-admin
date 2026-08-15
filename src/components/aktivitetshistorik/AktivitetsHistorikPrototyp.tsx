@@ -335,6 +335,41 @@ export function aktivitetensPersonId(statement: ActivityStatement): string | nul
  * (`.langa-streck-policy.json`). ORDLISTA.md:s illustrativa exempel ("Lotta
  * markerade betalning — …") är EJ facit för separatorn.
  */
+/* [PROTOTYPE] S106 steg 3 — VERB-COPY SOM PRESENTATION (Marcus 2026-08-15:
+ * "Lotta skapade eventet" → "Lotta skapade ett event"). Mappar på verb.id-
+ * IRI:ns suffix (STABIL nyckel; `verb.display` är data fryst per rad — en
+ * mappning vid rendering ger även HISTORISKA rader den nya texten, ingen
+ * datamigrering). Nycklar utan mappning (bor över-paret, flaggan, testmail,
+ * API-kontrolltest) faller till radens lagrade display — obestämd form är
+ * ordliste-/Marcus-frågor, bokförda i sessionsdok.
+ * VID PROMOVERING: beslut om mappningen blir DELAD (hem-spalten renderar
+ * samma statements med lagrad display — samma händelse får annars två olika
+ * texter på hem respektive här) — hem-spaltens form är LÅST facit (k10),
+ * så den flytten är Marcus beslut, inte en tyst konsekvens. */
+const VERB_COPY: Record<string, string> = {
+  'skapade-event': 'skapade ett event',
+  'uppdaterade-event': 'uppdaterade ett event',
+  'skapade-anmalan': 'skapade en anmälan',
+  'bekraftade-anmalan': 'bekräftade en anmälan',
+  'markerade-betalning': 'markerade en betalning',
+  'avmarkerade-betalning': 'avmarkerade en betalning',
+  'uppdaterade-betalningsnotering': 'uppdaterade en betalningsnotering',
+  'skickade-kvitto': 'skickade ett kvitto',
+  'skickade-mail/bekraftelse': 'skickade ett bekräftelsemail',
+  'skickade-mail/paminnelse': 'skickade en betalningspåminnelse',
+  'skickade-mail/eventinfo': 'skickade eventinformation',
+  'skickade-mail/fritt': 'skickade ett mail',
+  'skickade-segment-mail': 'skickade mail till ett segment',
+  'sparade-segment': 'sparade ett segment',
+  antecknade: 'skrev en anteckning',
+  'uppdaterade-anteckning': 'uppdaterade en anteckning',
+};
+
+function verbCopy(verb: ActivityStatement['verb']): string {
+  const suffix = verb.id.split('/verbs/')[1];
+  return (suffix && VERB_COPY[suffix]) || sprakText(verb.display);
+}
+
 /** Initialer för identitetsmarkören — personlistans `initialer`, samma form
  * (dörrlistans `initialerD` är tredje kopian av samma formel). Tål e-post som
  * namn (dagens prod-fallback): "marcus@h5gruppen.se" → "M". */
@@ -370,7 +405,7 @@ function AktivitetsRad({
   // prioritetskommentar (eventId vinner när båda finns).
   const personId = eventId ? null : aktivitetensPersonId(statement);
   const tid = radensTid(statement.timestamp, grupp, nuMs);
-  const handelse = sprakText(statement.verb.display);
+  const handelse = verbCopy(statement.verb);
   const objekt = sprakText(statement.object.definition.name);
 
   const innehall = (
@@ -818,7 +853,15 @@ export function AktivitetsHistorikPrototyp() {
             aria-live="polite"
             className="px-2 text-small text-text-muted"
           >
-            {`Visar ${total} ${total === 1 ? 'post' : 'poster'}${hasNextPage ? ' (fler finns)' : ''}.`}
+            {/* [PROTOTYPE] S106 steg 3 — BYGGKRAV BOKFÖRT: målformen är
+                "Visar 20 av 347" (Marcus 2026-08-15), men get-activity-log
+                returnerar bara {statements, nextCursor} — ingen total.
+                EF-utökning (Supabase `count: 'exact'` på samma filtrerade
+                query) är leverans-materia och tas i promoverings-skivan;
+                detta är den ärliga interimsformen tills totalen finns. */}
+            {hasNextPage
+              ? `Visar de ${total} senaste posterna · fler finns.`
+              : `Visar alla ${total} ${total === 1 ? 'post' : 'poster'}.`}
           </p>
 
           {/* Dold live-region ENDAST för "Ladda fler"-tillskottet — status-

@@ -51,7 +51,7 @@ async function skott(state, { namn, url, viewport }) {
   await page.addStyleTag({ content: '[data-proto-rail]{display:none !important}' });
   // Vänta bort skelettet: laddat läge, tomläge eller felruta.
   await page
-    .locator('p', { hasText: /Visar \d|Ingen aktivitet|Inga träffar|Kunde inte/ })
+    .locator('p', { hasText: /Visar (de |alla )?\d|Ingen aktivitet|Inga träffar|Kunde inte/ })
     .first()
     .waitFor({ timeout: 20000 })
     .catch(() => console.warn(`${namn}: inget slut-tillstånd inom 20 s — tar bilden ändå`));
