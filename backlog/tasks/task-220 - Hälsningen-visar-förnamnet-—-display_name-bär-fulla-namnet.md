@@ -1,10 +1,10 @@
 ---
 id: TASK-220
 title: Hälsningen visar förnamnet — display_name bär fulla namnet
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-15 08:59'
-updated_date: '2026-08-15 09:18'
+updated_date: '2026-08-15 09:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,6 +25,18 @@ Marcus-beslut 2026-08-15 (S102 Lotta-vandringen): visningsnamnen i Supabase user
 - [x] #4 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implementerat: Greeting.tsx extraherar förnamnet (första ordet) ur AuthProviderns displayName i visningslogiken — AuthProvider orört, bär hela namnet till sina andra konsumenter (grep-bevisat: mutationers actor.name, recordActivity, waitlist/persons/registrations-modulernas EGNA lokala displayName()-helprar är obesläktade namn-funktioner, valkommen.tsx läser rå session-metadata separat). Enordsnamn och saknat namn oförändrat; robust mot inre/omgivande whitespace. Tester: tests/acceptance/hem.acceptance.test.ts utökad med två nya fall (fullt namn → endast förnamnet i båda lägena; whitespace-kantfall) — verifierat RÖTT utan fixen och GRÖNT med den (git stash-provocerat). DoD-kvartetten grön lokalt: typecheck exit 0, biome check (touched files) exit 0, build exit 0, test:api 750 passed. Full hem.acceptance.test.ts-svit (30 test) grön mot lokal dev-server.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1331 (commit 6c4d1a77, MERGED på main afd4fc3f, 2026-08-15). fornamn()-helper i hälsningens visningslogik; AuthProvider orörd (fulla namnet till actor/aktivitetslogg, grep-bevisat); tvåsidigt testbevis (rött utan fix, grönt med; 30/30 hem-acceptance). 'Hej Marcus' aktiv efter nästa inloggning.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
@@ -32,9 +44,3 @@ Marcus-beslut 2026-08-15 (S102 Lotta-vandringen): visningsnamnen i Supabase user
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
-
-## Implementation Notes
-
-<!-- SECTION:NOTES:BEGIN -->
-Implementerat: Greeting.tsx extraherar förnamnet (första ordet) ur AuthProviderns displayName i visningslogiken — AuthProvider orört, bär hela namnet till sina andra konsumenter (grep-bevisat: mutationers actor.name, recordActivity, waitlist/persons/registrations-modulernas EGNA lokala displayName()-helprar är obesläktade namn-funktioner, valkommen.tsx läser rå session-metadata separat). Enordsnamn och saknat namn oförändrat; robust mot inre/omgivande whitespace. Tester: tests/acceptance/hem.acceptance.test.ts utökad med två nya fall (fullt namn → endast förnamnet i båda lägena; whitespace-kantfall) — verifierat RÖTT utan fixen och GRÖNT med den (git stash-provocerat). DoD-kvartetten grön lokalt: typecheck exit 0, biome check (touched files) exit 0, build exit 0, test:api 750 passed. Full hem.acceptance.test.ts-svit (30 test) grön mot lokal dev-server.
-<!-- SECTION:NOTES:END -->
