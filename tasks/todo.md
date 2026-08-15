@@ -15,7 +15,24 @@
 
 ## Aktuellt fokus
 
-**Session 102 ▶️ AKTIV — Lotta-vandringen, Del 7 landad (2026-08-15).**
+**Session 102 ▶️ AKTIV — Lotta-vandringen, Del 8 landad (2026-08-15 fm).**
+Byggvågens läge: `216`/`219.1`/`220` STÄNGDA (Hej Marcus live) ·
+`218.1`/`218.2`/`219.2` levererade+granskade (i kön) · `218.3`+`219.3` i
+luften · `218.4` väntar. Display_name-datafixen KLAR (HITL: Marcus
+Johansson · Lotta Gotthardsson · EF-smoke; Roger via `127.10`-inbjudan).
+Kortkollisionen 217→218/219 löst via CLI (S103-fångst). Fyndvågen
+`221`–`224` mintad (`221` = Marcus kravsätt/riv-vägval). **GRILLNING 3
+kvitterad: hem-vyns omdesign** (morgonkollen; Obetalda bort; Förfallna
+betalningar nytt; SVEPARNA — bekräftelse+påminnelse, EN triad var,
+cross-event, egen PRD; estetik via divergens-prototyp V1 ro/V2
+kontroll/V3 skönhet, kort `226`) — full samsyn i sessionsdok S102 Del 8.
+**NÄSTA:** divergens-agenten → Marcus väljer → konvergens → facit →
+/to-prd (hem + svepen) · QA `218.5`/`219.4` · `221`-vägval · `127.10` +
+Roger. Numrering: kort 227 (226 förbrukas nu; 225 = S106) · ADR 114 ·
+T144 · L512+7 — re-derivera alltid.
+
+*(Del 7-blocket nedan är historik.)*
+**Session 102 — Del 7-läget (2026-08-15, historik).**
 Resume `#1313` (egen worktree, ADR-090 — huvudkatalogens ägare LEVANDE;
 **S106 född parallellt** `#1316`). Vandringens fem inloggnings-punkter
 avverkade: `TASK-216` mintad `#1315` + byggd `#1318` (armerad, Done-flipp
