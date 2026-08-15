@@ -1,9 +1,9 @@
 ---
-id: TASK-218
+id: TASK-219
 title: 'PRD: Laddtrappan — yttrappa för laddindikatorer och fix-våg över textraderna'
 status: To Do
 assignee: []
-created_date: '2026-08-15 08:33'
+created_date: '2026-08-15 08:39'
 labels: []
 dependencies: []
 ordinal: 414000
@@ -58,7 +58,7 @@ ADR-113 (detta besluts bärare, mintad i samma landning) · ADR-112 (Förberedel
 
 ### Ytterligare anteckningar
 
-Grillad samsyn S102 Del 7 (Marcus kvittens 2026-08-15). Forensiken om förbudets ursprung: sessionsdok S102 Del 7. Research-underlag i loading-indikator-research-filen (2026-08-15) med beslutsmatrisen.
+Grillad samsyn S102 Del 7 (Marcus kvittens 2026-08-15). Forensiken om förbudets ursprung: sessionsdok S102 Del 7. Research-underlag i loading-indikator-research-filen (2026-08-15) med beslutsmatrisen. OMNUMRERAD 2026-08-15: först mintad som task-218, återskapad via CLI efter S103-kollisionen på 217 (PR #1323) per CLAUDE.md § Kortnummer.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Definition of Done

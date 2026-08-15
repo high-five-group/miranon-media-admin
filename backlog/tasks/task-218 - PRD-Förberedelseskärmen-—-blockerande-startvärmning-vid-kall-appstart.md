@@ -1,9 +1,9 @@
 ---
-id: TASK-217
+id: TASK-218
 title: 'PRD: Förberedelseskärmen — blockerande startvärmning vid kall appstart'
 status: To Do
 assignee: []
-created_date: '2026-08-15 08:32'
+created_date: '2026-08-15 08:38'
 labels: []
 dependencies: []
 ordinal: 413000
@@ -64,7 +64,7 @@ ADR-112 (detta besluts bärare, mintad i samma landning) · ADR-037 (render-gate
 
 ### Ytterligare anteckningar
 
-Grillad samsyn S102 Del 7 (Marcus kvittens 2026-08-15); research-underlag i app-startup-warmup-research-filen (2026-08-15). Airtable-väggen bokförd som P31 med Fas E-omprövningskrav.
+Grillad samsyn S102 Del 7 (Marcus kvittens 2026-08-15); research-underlag i app-startup-warmup-research-filen (2026-08-15). Airtable-väggen bokförd som P31 med Fas E-omprövningskrav. OMNUMRERAD 2026-08-15: först mintad som task-217, kolliderade med S103:s parallellt pushade task-217 (PR #1323, check_active_branches hål 2) — parkerad och återskapad via CLI per CLAUDE.md § Kortnummer.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Definition of Done
