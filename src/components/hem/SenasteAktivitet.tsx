@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { useLatestActivity } from '@/data/queries/useActivityLog';
 import type { ActivityStatement } from '@/domain/schemas';
+import { HEM_SENASTE_AKTIVITET_ANTAL } from '@/queries/keys';
 import { relativTid } from './relativ-tid';
 
 /**
@@ -84,8 +85,12 @@ import { relativTid } from './relativ-tid';
  * och kan därför inte läcka något skrivvägen inte skickat.
  */
 
-/** Antal rader spalten visar — K10-facitet visar exakt fyra. */
-const ANTAL_RADER = 4;
+/**
+ * Antal rader spalten visar — K10-facitet visar exakt fyra.
+ * `HEM_SENASTE_AKTIVITET_ANTAL` (`@/queries/keys`) är ENDA sanningskällan
+ * (TASK-218.3) — warmup-motorn (`startvarmningen.ts`) speglar samma export.
+ */
+const ANTAL_RADER = HEM_SENASTE_AKTIVITET_ANTAL;
 
 /**
  * xAPI Language Map → sv-SE-strängen (vi emitterar alltid endast den), med
