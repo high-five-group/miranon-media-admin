@@ -117,4 +117,15 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     ).toBeVisible();
     await checkA11y({ include: ['[aria-labelledby="rubrik-skeleton"]'] });
   });
+
+  test('Forberedelseskarm — sektion (tre förloppslägen: 0 %, delvis, full — AC 3, task-218.2)', async ({
+    page,
+    checkA11y,
+  }) => {
+    // Alla tre instanser renderar SAMTIDIGT (AC 3) — varje instans har sin
+    // egen useId()-genererade progressbar-etikett, så en dubblett-id-
+    // kollision (som skulle fälla axe) är strukturellt uteslutet.
+    await expect(page.getByRole('progressbar')).toHaveCount(3);
+    await checkA11y({ include: ['[aria-labelledby="rubrik-forberedelseskarm"]'] });
+  });
 });

@@ -256,4 +256,22 @@
   --mm-skeleton-block: var(--mm-bg-placeholder);
   --mm-skeleton-block-contrast: var(--mm-text-secondary);
   --mm-skeleton-shimmer: color-mix(in srgb, var(--mm-bg) 75%, transparent);
+
+  /* ── Forberedelseskarm (task-218.2 — Förberedelseskärmen, ADR-112) ──
+     Determinate bar. --mm-primary (gold-500/gold-9) mäter bara 2,57:1 mot
+     vitt (se Kryssrutans mätning ovan) — under WCAG 1.4.11:s 3:1-golv för
+     UI-komponentgränser. gold-10 (kryssrutans platta, 3,06:1 mot VITT)
+     RÄCKER INTE HÄR: spåret är --mm-bg-muted (neutral-50), en aning mörkare
+     än vitt, och computed-mätt (Forberedelseskarm.spec.ts, DOM-probe) landar
+     gold-10 mot den ytan på 2,80:1 — under golvet. Samma
+     golv-inte-tak-princip löst med NÄSTA steg: gold-11 (#966800, kryssrutans
+     kant-ton) mot --mm-bg-muted mäter ≥3:1 redan i normalläge. contrast-more
+     mörknar vidare till gold-12 (#513700, ≥4,5:1). Spåret återanvänder
+     bg-muted-neutralen (Skeleton/kort-precedentet) och bär SlideToConfirm-
+     spårets dubbelbälte (outline-color alltid satt, outline-style bara
+     under contrast-more/print — border-transparent-mönstret applicerat på
+     outline i stället för border). */
+  --mm-forberedelseskarm-bar-track: var(--mm-bg-muted);
+  --mm-forberedelseskarm-bar-fill: var(--p-gold-11);
+  --mm-forberedelseskarm-bar-fill-contrast: var(--p-gold-12);
 }
