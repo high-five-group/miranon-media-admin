@@ -15,18 +15,26 @@
 
 ## Aktuellt fokus
 
-**Session 102 ▶️ ÅTERUPPTAGEN (2026-08-15, `lifecycle: active`, Marcus vägval
-— Lotta-vandringen).** Resume per S102 PAUSLÄGE-handoffens andra paus (nu
-Paushistorik-form); egen worktree per ADR-090 beslut 2 (huvudkatalogens
-ägarlapp har LEVANDE ägare, deny-hooken bevisade process 39081). Ingång:
-Marcus fixlista från inloggningen och framåt → `147.9` (QA: Åtgärds-sidan
-hela Lotta-flödet). Av paus-sekvensen är (5) S103-granskningen inlöst
-(D-varianten vald, PRD `214` + `214.6` Done); (1) justeringslistan tas
-muntligt nu; (3) `127.10`/`126.3` och (4) `169`-stängningen kvarstår To Do.
-Numrering re-verifierad mot disk 2026-08-15: ADR **112** · tråd **T144** ·
-kort **task-216** (215 förbrukat, flake-kortet) · lesson **L512** + 7
-fragment — re-derivera alltid. Full handoff: sessionsdok S102 § Paushistorik
-(andra pausen).
+**Session 102 ▶️ AKTIV — Lotta-vandringen, Del 7 landad (2026-08-15).**
+Resume `#1313` (egen worktree, ADR-090 — huvudkatalogens ägare LEVANDE;
+**S106 född parallellt** `#1316`). Vandringens fem inloggnings-punkter
+avverkade: `TASK-216` mintad `#1315` + byggd `#1318` (armerad, Done-flipp
+efter verifikat) · gul global canvas PROVAD SKARPT OCH SKROTAD
+(decline-rationale i Del 7; fyndet `--mm-input-bg`→canvas-kortslutningen
+överlever) · display_name-forensiken klar (invite-EF:en kräver namn sedan
+TASK-143; HITL-datafix för Marcus/Roger/Lotta väntar signal;
+create-admin-user-hålet → kort-våg) · spinner-förbudet spårat till
+agent-generalisering utan Marcus-GO · research ×2 landade `#1317`.
+**GRILLAD SAMSYN kvitterad (Del 7, nio beslut):** blockerande splash
+"Förbereder ditt administrationsverktyg" (Airtable-kompensation, tyst vid
+varm start, offline-gate + tyst timeout-släpp, hämta-en-gång-dela,
+loaders separat/T90) + laddtrappan i spec §15 (skeleton/knapp-spinner/bar,
+S62-golvet orört, Button `isLoading`, fix-våg 32 filer). **NÄSTA:**
+/to-prd ×2 + ADR 112/113 + constraints-post → /to-issues → bygge ·
+`147.9`-vandringen fortsätter efter fix-vågen. Kvarstår ur paus-sekvensen:
+`127.10`/`126.3` · `169`-stängningen. Numrering efter Del 7: ADR **112** ·
+T **144** · kort **task-217** · L **512** + 7 fragment — re-derivera
+alltid. Full narrativ: sessionsdok S102 Del 7.
 
 **Session 105 ✅ AVSLUTAD (2026-08-15, `lifecycle: closed`, Marcus-kvittens
 "Kvitterar, stäng") — FAS 6.5 AKTIVITETSLOGG ✅ KLAR.** Marcus-order:
