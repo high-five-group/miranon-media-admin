@@ -55,6 +55,7 @@ export function DodIngang({
   emphasis,
   className,
   captionClassName,
+  skarp = false,
 }: {
   label: string;
   icon?: NavCardIcon;
@@ -63,16 +64,29 @@ export function DodIngang({
   emphasis?: ButtonProps['emphasis'];
   className?: string;
   captionClassName?: string;
+  /**
+   * [TASK-226 konvergensvarv 1, punkt 3 "SKARP KNAPPFORM"] Opt-in, default
+   * `false` — V2/V3:s ORÖRDA form: `isDisabled` (urblekt) + synlig
+   * caption-varning under knappen. `true` (V1 only): knappen renderar sin
+   * fulla, AKTIVA `intent`-färg utan `isDisabled`-urblekning och utan
+   * caption, så Marcus kan bedöma den skarpa visuella formen. Klicket
+   * skickar fortfarande INGENTING — ingen `onPress` kopplas, ett medvetet
+   * no-op, inte en glömd handler. Sändflödet (bekräfta-/påminn-svepen)
+   * byggs i svep-PRD:n, precis som innan.
+   */
+  skarp?: boolean;
 }) {
   return (
     <div className={`flex flex-col gap-1.5 ${className ?? ''}`}>
-      <Button type="button" intent={intent} size={size} emphasis={emphasis} isDisabled>
+      <Button type="button" intent={intent} size={size} emphasis={emphasis} isDisabled={!skarp}>
         {Icon ? <Icon aria-hidden={true} size={18} className="shrink-0" /> : null}
         {label}
       </Button>
-      <p className={captionClassName ?? 'text-caption text-text-muted'}>
-        Död ingång i prototypen, byggs i svep-PRD:n.
-      </p>
+      {skarp ? null : (
+        <p className={captionClassName ?? 'text-caption text-text-muted'}>
+          Död ingång i prototypen, byggs i svep-PRD:n.
+        </p>
+      )}
     </div>
   );
 }

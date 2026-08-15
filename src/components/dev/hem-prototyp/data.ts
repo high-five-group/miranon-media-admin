@@ -76,6 +76,24 @@ function kortDatum(iso: string | null): string | null {
   return Number.isNaN(t) ? null : KORTDATUM.format(t).replace(/\.$/, '');
 }
 
+/**
+ * [TASK-226 konvergensvarv 1, punkt 4] ISO-tidsstämpeln → "ÅÅÅÅ-MM-DD"
+ * (badgen "Påminnelse skickad ÅÅÅÅ-MM-DD" i V1 — `sv-SE` med explicita
+ * `2-digit`-alternativ, inte locale-default, så månad/dag alltid är
+ * nollutfyllda). Null eller oparsbar sträng → null, aldrig ett kraschat
+ * datum i UI:t.
+ */
+const PAMINNELSEDATUM = new Intl.DateTimeFormat('sv-SE', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+export function paminnelsedatumText(iso: string | null): string | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? null : PAMINNELSEDATUM.format(t);
+}
+
 /** Radens event-identitet "kurs · ort · kortdatum" (NyaAnmalningarCard.tsx-facit, klient-join). */
 export function eventIdentitet(reg: Registration, event: Event | undefined): string {
   if (!reg.eventId) return 'Utan event';
@@ -150,6 +168,17 @@ export interface ForfallenRad {
   avgiftstyp: Avgiftstyp;
   /** Skickat-markören: har EN påminnelse redan gått ut för just denna avgiftstyp. */
   skickat: boolean;
+  /**
+   * [TASK-226 konvergensvarv 1, punkt 4] Senaste påminnelse-tidsstämpeln
+   * (ISO, Airtable dateTime) för just denna avgiftstyp — samma källfält
+   * `skickat` deriveras ur (`Registration.paminnelseAnmalningsavgiftSkickad`
+   * / `…SlutbetalningSkickad`, `docs/reference/data-model.md` rad ~120–121).
+   * ADDITIVT fält: `skickat` behålls oförändrat för V2/V3 (VariantKontroll/
+   * VariantBento läser bara den, ORÖRDA); V1 formaterar detta till
+   * "Påminnelse skickad ÅÅÅÅ-MM-DD" via `paminnelsedatumText` nedan. Ingen
+   * räkning finns i datamodellen — skriv aldrig "Påminnelse 1/2".
+   */
+  paminnelseSkickadIso: string | null;
   deadlineMs: number;
 }
 
@@ -201,6 +230,7 @@ export function forfallnaBetalningar(
         eventNamn,
         avgiftstyp: 'Anmälningsavgift',
         skickat: reg.paminnelseAnmalningsavgiftSkickad != null,
+        paminnelseSkickadIso: reg.paminnelseAnmalningsavgiftSkickad ?? null,
         deadlineMs,
       });
     }
@@ -211,6 +241,7 @@ export function forfallnaBetalningar(
         eventNamn,
         avgiftstyp: 'Slutbetalning',
         skickat: reg.paminnelseSlutbetalningSkickad != null,
+        paminnelseSkickadIso: reg.paminnelseSlutbetalningSkickad ?? null,
         deadlineMs,
       });
     }
