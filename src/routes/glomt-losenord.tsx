@@ -95,7 +95,7 @@ function GlomtLosenordRoute() {
 
   return (
     <main className="flex min-h-dvh w-full items-center justify-center p-4 sm:p-8 lg:p-12">
-      <div className="flex w-full max-w-xl flex-col gap-8">
+      <div className="flex w-full max-w-md flex-col gap-8">
         {tillstand === 'formular' ? (
           <form
             onSubmit={(e) => {
