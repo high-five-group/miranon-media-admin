@@ -540,9 +540,9 @@ S103. Numrering RE-verifierad mot `4b085251` — oförändrad: **109 / task-195 
 T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
 § Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ⏸️ PAUSAD IGEN (2026-08-10 kväll, `lifecycle: paused`) —
+**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-16, `lifecycle: active`) —
 BYGGKONTRAKTET KOMPLETT: AND + GENERATOR + DE FJORTON + TÄCKNINGSVYN; MARCUS
-GRANSKNINGSVARV PÅGÅR, FACIT EJ LÅST.** Dagens kedja (13 commits, pushade som
+GRANSKNINGSVARV FORTSÄTTER, FACIT EJ LÅST.** Dagens kedja (13 commits, pushade som
 EN enhet på Marcus "landa allt"; PR skapad+armerad i paus-landningen —
 verifiera vid resume): AND-primitiven som konjunkt-grupper i `med` med
 klient-snitt per unikt villkor (`14c00f12`, differentialbevisad) →
@@ -561,9 +561,15 @@ varv 1:s zonering föll för ÖGAT, ej mätningen — lesson-kandidat 8
 facit-låsning → segment-ADR:n (109 FÖRBRUKAD av S102 ⇒ nästa lediga 110+) →
 basstruktur → PRD med FYRA EF-krav.** Numrering vid paus: 110/L512+2
 fragment/T141/f47/task-195 — re-derivera vid mint. Arbetsform `iteration`
-rensad för landnings-pushen, ÅTERSÄTTS vid resume. **HANDOFF: sessionsdok
-S104 § PAUSLÄGE (efter Del 6) + Del 4–6.** *(Radens tidigare Del 2/3-narrativ:
-sessionsdok Del 2–3 + Paushistorik 1–2.)*
+rensad för landnings-pushen, ÅTERSÄTTS vid resume. **Vid resumen
+(2026-08-16):** paus-PR:en `#1150` `MERGED` (merge `86ddaa33`) — inget i
+luften; ny gren `docs/s104-resume-3` från `a92877d9` i samma worktree.
+Numrering RE-verifierad mot disk — paus-värdena delvis förbrukade: nästa ADR
+**115** (110–114 mintade av mellansessioner) · **T143** · **task-247** ·
+**L512** (oförändrad) + 18 nummerlösa fragment; fällnumret ej omräknat.
+Arbetsform `iteration` återsatt; dev-servern :5175 omstartad. **HANDOFF:
+sessionsdok S104 § Paushistorik 3 (efter Del 6) + Del 4–6.** *(Radens
+tidigare Del 2/3-narrativ: sessionsdok Del 2–3 + Paushistorik 1–2.)*
 *(S103:s kadensrad nedan, bevarad.)*
 
 <!-- Föregående kadensrad, bevarad: -->
