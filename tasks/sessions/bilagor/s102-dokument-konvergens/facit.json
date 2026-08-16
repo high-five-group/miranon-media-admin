@@ -2,7 +2,12 @@
   "prototyp": "s102-dokument-konvergens",
   "last": "2026-08-16",
   "lasning": "Marcus verbatim (uppdragets citat): \"Dokument-ytan är okej nu.\" Granskning 3 (kortets notes, 2026-08-16): Marcus godkände skärpningsvarv 3 estetiskt (\"ser nice ut\"), och sköt facit-stämpeln medvetet upp tills task-245 (signerad nedladdnings-EF för bilagor) och task-246 (riktigt genererad PDF för klass B/C) landat, så hela Visa-upplevelsen kan dömas i ett svep. Båda är nu landade (se \"not\" nedan) — detta manifest är den förberedande halvan av AC #3 (task-147.6): facit-låset byggs och läggs fram, stämpeln (godkand-fältet) sätts av Marcus själv via !-kanalen (ADR-104), aldrig av en agent.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-16",
+    "citat": "godkänner",
+    "sha": "cc1d7c5307c683da3d1524c2caffd6f2769d3979"
+  },
   "ytor": [
     {
       "yta": "Dokument-ytan /mer/dokument, lista med filter + Visa-overlayens tre klasser",
