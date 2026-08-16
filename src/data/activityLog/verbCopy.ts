@@ -10,12 +10,13 @@
  * kan fortsätta slipas utan att röra datan.
  *
  * KONSUMENTER: aktivitetshistorik-vyn (S106-prototypen; skarpa vyn vid
- * promoveringen). Hem-spalten (`SenasteAktivitet.tsx`) renderar samma
- * statements med LAGRAD display och kopplas på i PROMOVERINGS-skivan, inte
- * här — den är stämplad skarp yta (k10-facit, `godkand` 2026-08-13) och en
- * copy-ändring där kräver facit-amendering (ADR-102 B3). Riktningen är
- * Marcus-kvitterad 2026-08-15 ("Fixa fynden på bästa möjliga sätt" på
- * konsistensfyndet: hem och historik ska säga samma sak).
+ * promoveringen) OCH hem-spalten (`SenasteAktivitet.tsx`) — kopplades på
+ * HÄR i PROMOVERINGS-skivan `TASK-225.3` (commit `c62d75b4`, landad via
+ * `b924fb1b`, 2026-08-15). Hem-spalten är stämplad skarp yta (k10-facit,
+ * `godkand` 2026-08-13) och en copy-ändring där kräver facit-amendering
+ * (ADR-102 B3). Riktningen är Marcus-kvitterad 2026-08-15 ("Fixa fynden på
+ * bästa möjliga sätt" på konsistensfyndet: hem och historik ska säga samma
+ * sak — uppfyllt sedan `TASK-225.3`, båda konsumerar denna mappning).
  *
  * MEDVETET OFÖRÄNDRADE (explicita rader, inte fallback-hål):
  * - "markerade/avmarkerade bor över" — `Bor över` är ordlistefäst kanonisk
