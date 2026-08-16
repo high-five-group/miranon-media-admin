@@ -53,7 +53,12 @@ STÄNGT, Done #1429) · svep varv 1 UNDERKÄNT → varv 2 på Opus #1438
 40-listan levererad #1436 (26/9/5) · prod: passkey t.o.m. p4 +
 Dokumentklass-fältet skapat #1435 · 221=B kvitterat · laststormen
 (577) sekvenserad cross-session · docs-skulder p8 #1432.
-**RESUME-INGÅNG (EXAKT ordning):** (0) Post-merge-facit: RÖD, run
+**RESUME-INGÅNG (EXAKT ordning):** (0.5) AVVIKELSE-FIXVARVET (Marcus
+prod-fynd: tid-kolumnen saknas · knappbredder olika · bevakningsradernas
+kolumn-alignering [ny order, facit-amendering]) FÖRE stämplar · (0.6)
+PROCESS-GRILLNINGEN (stämpelordning + mekanisk facit-jämförelse
+[ariaSnapshot-grinden beslutad ADR-103 B4 men aldrig skiv-kravsatt] +
+main=prod-synlighet in i kontraktet) · (0) Post-merge-facit: RÖD, run
 31968918858 — läs loggen först · (1) dokument-stämpeln (`!npm run facit:godkann -- --pass
 s102-dokument-konvergens --citat "..."`) → rivningspass · (2)
 svep-granskningen 5174 → varv 3/facit-lås · (3) 243.2 → 243.3
