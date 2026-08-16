@@ -509,6 +509,129 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
   });
 });
 
+/**
+ * TASK-227 (uppföljning ur TASK-218.3): router-medveten trigger för
+ * Förberedelseskärmen efter en AKTIV inloggning (inte bara kall appstart med
+ * en redan befintlig session, som ovanstående describe-block täcker).
+ * Ingreppspunkten är `src/routes/_authenticated.tsx` (layout-routens egen
+ * gate) — se den filens docblock för hela resonemanget om varför INTE
+ * `routaEfterLyckadInloggning` (login.tsx).
+ *
+ * Kräver en RIKTIG inloggning mot staging (TEST_USER_EMAIL/PASSWORD, samma
+ * hard-fail-mönster som `auth.setup.ts`) — `chromium-authenticated`-
+ * projektets default-storageState (redan inloggad) skulle dölja exakt det
+ * beteende dessa test bevisar. `storageState` övermannas därför per
+ * describe-block, samma idiom som `auth-flow.staging.test.ts`s "Utloggat
+ * tillstånd".
+ */
+test.describe('TASK-227 — Förberedelseskärmen efter aktiv inloggning (router-medveten trigger)', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  function krävTestAnvändare(): { email: string; password: string } {
+    const email = process.env.TEST_USER_EMAIL;
+    const password = process.env.TEST_USER_PASSWORD;
+    if (!email || !password) {
+      throw new Error(
+        'TEST_USER_EMAIL/TEST_USER_PASSWORD env vars required for TASK-227 login-testerna. ' +
+          'Samma hard-fail-mönster som auth.setup.ts.',
+      );
+    }
+    return { email, password };
+  }
+
+  test('kall enhet: aktiv inloggning visar Förberedelseskärmen innan Hem; /login skyms aldrig', async ({
+    page,
+  }) => {
+    const { email, password } = krävTestAnvändare();
+    const mocken = await hallbarMock(page, grunddata());
+    // Håller registrations+events (WARMUP_ITEMS[0..1]) tillbaka — samma
+    // idiom som "Kallstart"-testet ovan, så progressbaren är observerbar
+    // innan den släpper.
+    mocken.hall = true;
+
+    await page.goto('/login');
+    // Auth-ytan orörd (mined danger #1): ingen Förberedelseskärm på /login,
+    // varken före eller efter mocken är på plats.
+    await expect(page.getByRole('progressbar')).toHaveCount(0);
+    await expect(page.locator('h1#login-heading')).toHaveText(/Välkommen tillbaka/i);
+
+    await page.locator('#login-email').fill(email);
+    await page.locator('#login-password').fill(password);
+    await page.locator('button[type="submit"]').click();
+
+    // Förberedelseskärmen syns EFTER login-klicket, INNAN Hem — den
+    // router-medvetna triggern (_authenticated.tsx-gaten) startar
+    // startvärmningen så snart routern faktiskt landar på en app-yta med
+    // kall cache. main#main INTE monterad medan skärmen visas.
+    const progressbar = page.getByRole('progressbar');
+    await expect(progressbar).toBeVisible();
+    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeVisible();
+    await expect(page.locator('main#main')).toHaveCount(0);
+
+    mocken.hall = false;
+    await mocken.slappAlla();
+
+    // Skärmen släpper, Hem färdigt, utan kvarliggande laddindikator.
+    await page.waitForURL('**/hem');
+    const main = page.locator('main#main');
+    await expect(main.getByRole('link', { name: /Signe Sparad/ })).toBeVisible({ timeout: 12_000 });
+    await expect(page.getByRole('progressbar')).toHaveCount(0);
+    await expect(main.getByRole('status')).toHaveCount(0);
+  });
+
+  test('varm enhet: cachen är redan varmad (utgången session, INTE explicit utloggning) — omlogin förblir tyst', async ({
+    page,
+  }) => {
+    const { email, password } = krävTestAnvändare();
+
+    // Bygg en varm, persisterad cache via en RIKTIG inloggning (MEDVETET
+    // utan page.route-mockar — riktig staging-data, ingen sentinel att vänta
+    // på). describe-blockets `storageState`-övermanning (tom) gäller HELA
+    // blocket, så `page.goto('/hem')` utan en föregående inloggning hade
+    // landat på /login (guard i _authenticated.tsx), inte gett en varm cache.
+    await page.goto('/login');
+    await page.locator('#login-email').fill(email);
+    await page.locator('#login-password').fill(password);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL('**/hem');
+    await expect(page.locator('h1')).toHaveText(/^Hej/);
+    // Persist-throttlen (~1 s) har skrivit minst en dehydrerad query.
+    await expect.poll(() => persistQueryAntal(page), { timeout: 10_000 }).toBeGreaterThan(0);
+
+    // Simulera en UTGÅNGEN session (skiljt från en explicit utloggning, som
+    // hade tömt query-cachen via queryClient.clear(), ADR-072 skyddsräcke 1):
+    // ta bort ENDAST supabase-js egna auth-tokennyckel (prefix/suffix-
+    // matchning, `sb-<projekt>-auth-token` — se tests/support/fixturvarld/
+    // hermetic.ts:s kommentar om samma nyckelform), cache-nyckeln orörd.
+    await page.evaluate(() => {
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith('sb-') && key.endsWith('-auth-token')) localStorage.removeItem(key);
+      }
+    });
+    await page.reload();
+    await expect(page).toHaveURL(/\/login/);
+
+    // Logga in igen: cachen är fortfarande varm (persist-lagret rördes
+    // aldrig av ovanstående) — gaten (arCacheVarm-predikatet,
+    // startvarmningen.ts) ska förbli TYST (ADR-112 beslut 2), oavsett att
+    // detta är en AKTIV inloggning på en (till synes) "ny" session.
+    await page.locator('#login-email').fill(email);
+    await page.locator('#login-password').fill(password);
+    await page.locator('button[type="submit"]').click();
+
+    await page.waitForURL('**/hem');
+    await expect(page.getByRole('progressbar')).toHaveCount(0);
+    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toHaveCount(0);
+    // Hälsningens h1 (Greeting.tsx, task-4.2/B2): "Hej {namn}" bara VID
+    // FÖRSTA renderingen per sessionStorage-fönster — samma flikkontext har
+    // redan hälsat en gång tidigare i detta test (den första /hem-vyn ovan),
+    // så h1 visar bara namnet andra gången. Matchar båda formerna i stället
+    // för att anta VILKEN som gäller — det denna assertion faktiskt bevisar
+    // är att Hem renderat KLART (icke-tomt h1), inte hälsningens exakta form.
+    await expect(page.locator('h1')).not.toBeEmpty();
+  });
+});
+
 test.describe('AC 4 — offline-öppning visar restaurerad data (pwa-offline-mönstret)', () => {
   test('offline-omladdning renderar senast kända data — inget laddläge, inget felläge', async ({
     page,

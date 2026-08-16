@@ -265,6 +265,20 @@ const WARMUP_ITEMS: WarmupItem[] = [
 ];
 
 /**
+ * Varm/kall-avgörandet (ADR-112 beslut 5): en icke-tom query-cache räknas
+ * som varm — restore ÅTERSTÄLLDE faktisk data ELLER en tidigare gate redan
+ * hann varma den. EXPORTERAD (TASK-227) så BÅDA ingångspunkterna delar
+ * exakt samma predikat i stället för två divergerbara kopior:
+ * `InnerApp` (`src/main.tsx`, kall APPSTART med befintlig session, TASK-218.3)
+ * och app-yta-gaten (`src/routes/_authenticated.tsx`, aktiv inloggning på en
+ * redan monterad router, TASK-227). Ren läsning, inget tillstånd — ett andra
+ * anrop mot samma `qc` är alltid billigt och side-effect-fritt.
+ */
+export function arCacheVarm(qc: QueryClient): boolean {
+  return qc.getQueryCache().getAll().length > 0;
+}
+
+/**
  * Startar startvärmningen. Se filhuvudet för hela kontraktet.
  *
  * @param qc Query-clienten samtliga hämtningar seedas till.
