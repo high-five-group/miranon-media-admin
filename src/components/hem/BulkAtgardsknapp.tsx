@@ -35,7 +35,7 @@ export function BulkAtgardsknapp({ label }: { label: string }) {
         role="tooltip"
         className="text-(color:--mm-surface) pointer-events-none absolute top-full left-0 z-10 mt-2 w-max max-w-64 rounded-lg bg-(--mm-text) px-3 py-2 text-caption opacity-0 shadow-md group-focus-within:opacity-100 group-hover:opacity-100 motion-safe:transition-opacity"
       >
-        Skickar ingenting än — sändflödet (task-241) är inte byggt.
+        Skickar ingenting än. Sändflödet är inte byggt ännu.
       </p>
     </div>
   );
