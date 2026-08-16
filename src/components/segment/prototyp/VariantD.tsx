@@ -2866,12 +2866,11 @@ function VillkorsKort({
           <Radio value="Föreläsning">Föreläsning</Radio>
           <Radio value="Båda">Båda</Radio>
         </RadioGroup>
-        {villkor.modalitet === null && (
-          <p className="text-caption text-text-muted">
-            Det finns material som är direkt olämpligt att skicka till någon som bara gått en
-            föreläsning. Därför måste varje villkor säga vilket det gäller.
-          </p>
-        )}
+        {/* Säkerhetsförklaringen ("Det finns material som är direkt
+            olämpligt …") är riven även här — Marcus dömde ut texten på
+            generatorsidan (varv 4) och motivet (design förklarar, inte
+            brödtext) är detsamma. Kravet självt består: ingen default,
+            felmarkering när bygget börjat utan modalitet. */}
       </div>
 
       {/* FORMATET ÄR FÄLLT — det är en avgränsning, inte ett beslut, och en
@@ -2965,7 +2964,6 @@ function OkandaKurser({ parInfo }: { parInfo: ParInfo[] }) {
 }
 
 function VillkorsLista({
-  rubrik,
   hjalptext,
   villkor,
   parInfo,
@@ -2974,7 +2972,6 @@ function VillkorsLista({
   onLaggTill,
   onTaBort,
 }: {
-  rubrik: string;
   hjalptext: string;
   villkor: Villkor[];
   parInfo: ParInfo[];
@@ -2983,12 +2980,8 @@ function VillkorsLista({
   onLaggTill: () => void;
   onTaBort: (id: string) => void;
 }) {
-  const id = useId();
   return (
-    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2 px-4">
-      <h2 id={id} className="font-semibold text-lg">
-        {rubrik}
-      </h2>
+    <div className="flex min-w-0 flex-col gap-2">
       <p className="text-small text-text-muted">{hjalptext}</p>
       {villkor.length > 0 && (
         <ul className="flex flex-col gap-3 pt-1">
@@ -3012,7 +3005,7 @@ function VillkorsLista({
           {villkor.length === 0 ? 'Lägg till villkor' : 'Lägg till ett villkor till'}
         </button>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -3056,14 +3049,10 @@ function KonjunktLista({
   onLaggTillGrupp: () => void;
   onTaBortVillkor: (konjunktId: string, villkorId: string) => void;
 }) {
-  const id = useId();
   const flera = konjunkter.length > 1;
   const harFlerledad = konjunkter.some((k) => k.villkor.length > 1);
   return (
-    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2 px-4">
-      <h2 id={id} className="font-semibold text-lg">
-        Med - dessa räknas in
-      </h2>
+    <div className="flex min-w-0 flex-col gap-2">
       <p className="text-small text-text-muted">
         {harFlerledad || flera
           ? 'Den som uppfyller minst ett av alternativen är med i segmentet. Inom ett alternativ måste alla villkor uppfyllas samtidigt.'
@@ -3120,7 +3109,7 @@ function KonjunktLista({
                     className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-small text-text-secondary hover:bg-bg-emphasized motion-safe:transition-colors"
                   >
                     <Plus aria-hidden="true" size={16} className="shrink-0" />
-                    Och-krav: kräv även deltagande i mer
+                    Och: lägg till ett krav till
                   </button>
                 </div>
               </li>
@@ -3134,7 +3123,7 @@ function KonjunktLista({
           {konjunkter.length === 0 ? 'Lägg till villkor' : 'Eller: lägg till ett alternativ'}
         </button>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -3256,137 +3245,113 @@ function RegelVerkstad({
         <OkandaKurser parInfo={parInfo} />
       </div>
 
-      <div className="px-4">
-        <Input
-          label="Namn på segmentet"
-          value={namn}
-          onChange={setNamn}
-          placeholder="t.ex. RIM - alla utbildningsnivåer"
-          isRequired
-        />
-      </div>
+      {/* SAMMA TRE STEGKORT SOM MALLVYN OCH GENERATORN (varv 6c, Marcus:
+          "gör HELA sidan lika bra"). Appens tre skapandeytor delar nu form:
+          numrerade kort, namnet sist, summeringen i brödtextgrad. Namnet
+          flyttade från toppen till steg 3 — man vet vad segmentet ÄR innan
+          man döper det (mallvyns ordning). Steg 2 är valfritt och dämpas
+          därför aldrig. */}
+      <div className="flex flex-col gap-4 px-4">
+        <StegSektion nummer={1} rubrik="Vilka ska ingå?">
+          <KonjunktLista
+            konjunkter={pred.med}
+            parInfo={parInfo}
+            formatIBasen={formatIBasen}
+            onAndraVillkor={andraMed}
+            onLaggTillVillkor={laggTillOchKrav}
+            onLaggTillGrupp={laggTillGrupp}
+            onTaBortVillkor={taBortMedVillkor}
+          />
+        </StegSektion>
 
-      <KonjunktLista
-        konjunkter={pred.med}
-        parInfo={parInfo}
-        formatIBasen={formatIBasen}
-        onAndraVillkor={andraMed}
-        onLaggTillVillkor={laggTillOchKrav}
-        onLaggTillGrupp={laggTillGrupp}
-        onTaBortVillkor={taBortMedVillkor}
-      />
+        <StegSektion nummer={2} rubrik="Ska några räknas bort?">
+          <VillkorsLista
+            hjalptext="Valfritt. Den som uppfyller något av villkoren här tas bort igen, även om hon räknades in ovan."
+            villkor={pred.utan}
+            parInfo={parInfo}
+            formatIBasen={formatIBasen}
+            onAndra={andraUtan}
+            onLaggTill={laggTillUtan}
+            onTaBort={taBortUtan}
+          />
+        </StegSektion>
 
-      <VillkorsLista
-        rubrik="Utan - dessa räknas bort"
-        hjalptext="Den som uppfyller något av villkoren här tas bort igen, även om hon räknades in ovan."
-        villkor={pred.utan}
-        parInfo={parInfo}
-        formatIBasen={formatIBasen}
-        onAndra={andraUtan}
-        onLaggTill={laggTillUtan}
-        onTaBort={taBortUtan}
-      />
-
-      {/* SAMMANFATTNINGEN: definitionen och resultatet i ett andetag (`a`s
-          hjärta), men här i slutet av en yta som INTE också bär utskicket. */}
-      <section aria-labelledby="grupp-summering" className="flex min-w-0 flex-col gap-2">
-        <h2 id="grupp-summering" className="px-4 font-semibold text-lg">
-          Det här segmentet
-        </h2>
-        <div className={`divide-y divide-border ${KORT_KLASS}`}>
-          <div className="py-4">
-            <p className="text-lg">{predikatKlartext(pred)}</p>
+        <StegSektion nummer={3} rubrik="Det här blir segmentet" dampad={!harRegel}>
+          <div aria-live="polite" aria-busy={isFetching} className="flex flex-col gap-1">
+            {ofullstandiga > 0 ? (
+              <p className="text-small text-text-muted">
+                {ofullstandiga} {ofullstandiga === 1 ? 'villkor saknar' : 'villkor saknar'}{' '}
+                modalitet och räknas inte.
+              </p>
+            ) : !harRegel ? (
+              <p className="text-small text-text-muted">
+                Bygg minst ett villkor ovan, så visas segmentet här.
+              </p>
+            ) : (
+              <>
+                {/* Brödtextgrad, bara antalet bär vikt — samma beslut som
+                    mallvyns steg 3 (Marcus 2026-08-16). */}
+                <p className="text-body">{predikatKlartext(pred)}</p>
+                {isFetching ? (
+                  <p className="text-small text-text-muted">Räknar personer…</p>
+                ) : isError ? (
+                  <MessageBox intent="error" title="Kunde inte räkna antal">
+                    {error instanceof Error ? error.message : 'Okänt fel.'}
+                  </MessageBox>
+                ) : antal === undefined ? (
+                  // Regeln är ofullständig — det enda skälet till att ett tal
+                  // saknas är att det inte FINNS något att räkna ännu.
+                  <p className="text-small text-text-muted">
+                    Antalet visas när regeln är komplett.
+                  </p>
+                ) : (
+                  // Fälla #34: noll är neutralt, aldrig ett fel.
+                  <p className="text-body">
+                    <strong className="font-semibold text-xl tabular-nums">{antal}</strong>{' '}
+                    {antal === 0 ? 'personer ännu.' : `${personform(antal)} i det här segmentet.`}
+                  </p>
+                )}
+              </>
+            )}
           </div>
+          {/* RÄKNA-KNAPPEN ÄR RIVEN (Marcus 2026-08-10): cache-nyckeln på
+              regelns signatur bär hamrings-skyddet, spärren lade bara ett
+              klick mellan Lotta och svaret. EXPANSIONS-NOTEN ÄR RIVEN UR
+              SYNLIG TEXT (Marcus 2026-08-16): mekaniken bor i filhuvudets
+              EF-krav — servern måste skarpt äga både uppslaget och snittet
+              (segment-membership.ts § AND-PRIMITIVEN). */}
 
-          <div className="flex flex-col gap-3 py-4">
-            <div aria-live="polite" aria-busy={isFetching} className="flex flex-col gap-1">
-              {ofullstandiga > 0 ? (
-                <p className="text-body text-text-muted">
-                  {ofullstandiga} {ofullstandiga === 1 ? 'villkor saknar' : 'villkor saknar'}{' '}
-                  modalitet och räknas inte.
-                </p>
-              ) : !harRegel ? (
-                <p className="text-body text-text-muted">
-                  Bygg minst ett villkor under Med, så går regeln att räkna.
-                </p>
-              ) : isFetching ? (
-                <>
-                  <span className="sr-only">Räknar personer…</span>
-                  <Skeleton variant="text" className="w-20 text-3xl" />
-                  <Skeleton variant="text" className="w-56" />
-                </>
-              ) : isError ? (
-                <MessageBox intent="error" title="Kunde inte räkna antal">
-                  {error instanceof Error ? error.message : 'Okänt fel.'}
-                </MessageBox>
-              ) : antal === undefined ? (
-                // Regeln är ofullständig (ingen modalitet vald, inga villkor).
-                // Ingen räkning är begärd av användaren längre — den enda
-                // anledningen till att ett tal saknas är att det inte FINNS
-                // något att räkna ännu, och det säger raden rakt ut.
-                <p className="text-body text-text-muted">Antalet visas när regeln är komplett.</p>
-              ) : antal === 0 ? (
-                // Fälla #34: neutralt, aldrig som fel.
-                <p className="text-lg">
-                  <strong className="font-semibold text-3xl tabular-nums">0</strong> personer ännu.
-                </p>
-              ) : (
-                <p className="text-lg">
-                  <strong className="font-semibold text-3xl tabular-nums">{antal}</strong>{' '}
-                  {personform(antal)} i det här segmentet.
-                </p>
-              )}
-            </div>
-
-            {/* RÄKNA-KNAPPEN ÄR RIVEN (Marcus 2026-08-10). Talet följer
-                regeln av sig självt: ändras ett villkor byter frågan nyckel
-                och det nya talet hämtas direkt.
-
-                Varför spärren fanns, och varför den ändå faller: varje
-                räkning är en walk över ~1012 `Deltaganden`-rader, så den
-                fick inte hamras. Men `b` mätte hela interaktionspasset till
-                ETT `compute-segment`-anrop — cache-nyckeln på regelns
-                signatur bär redan det skyddet, och ett återbesök i
-                regelrymden kostar noll eftersom den gamla signaturens svar
-                ligger kvar. Spärren skyddade alltså inte mot walken; den
-                lade bara ett klick mellan Lotta och svaret. */}
-            {/* EXPANSIONS-NOTEN ÄR RIVEN UR SYNLIG TEXT (Marcus 2026-08-16,
-                varv 6: utvecklartext på Lottas yta). Mekaniken den beskrev
-                gäller oförändrat och bor i filhuvudets EF-krav: regeln
-                expanderas i webbläsaren och och-grupper snittas klient-side —
-                skarpt måste servern äga både uppslaget och snittet
-                (segment-membership.ts § AND-PRIMITIVEN får aldrig promoveras
-                som klient-snitt). */}
-          </div>
-        </div>
-      </section>
-
-      <div className="flex flex-col gap-3 px-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            intent="primary"
-            isDisabled={!harRegel || namn.trim() === ''}
-            onPress={() => {
-              setSparNot(true);
-              onSpara(namn.trim(), pred);
-            }}
-          >
-            Spara segmentet
-          </Button>
-          {/* EN LÅST KNAPP SKA SÄGA VARFÖR. `a`s form ("Bygg klart regeln
-              först."): skälet står bredvid knappen, inte i huvudet på den som
-              redan vet. */}
-          {(!harRegel || namn.trim() === '') && (
-            <span className="text-small text-text-muted">
-              {!harRegel
-                ? 'Bygg minst ett fullständigt villkor under Med.'
-                : 'Ge segmentet ett namn först.'}
-            </span>
+          {harRegel && (
+            <>
+              <Input
+                label="Namn på segmentet"
+                value={namn}
+                onChange={setNamn}
+                placeholder="t.ex. RIM - alla utbildningsnivåer"
+                isRequired
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  intent="primary"
+                  isDisabled={!harRegel || namn.trim() === ''}
+                  onPress={() => {
+                    setSparNot(true);
+                    onSpara(namn.trim(), pred);
+                  }}
+                >
+                  Spara segmentet
+                </Button>
+                {namn.trim() === '' && (
+                  <span className="text-small text-text-muted">Ge segmentet ett namn först.</span>
+                )}
+                <Button intent="secondary" onPress={onTillbaka}>
+                  Avbryt
+                </Button>
+              </div>
+            </>
           )}
-          <Button intent="secondary" onPress={onTillbaka}>
-            Avbryt
-          </Button>
-        </div>
+        </StegSektion>
+
         {sparNot && (
           <MessageBox
             intent="info"
