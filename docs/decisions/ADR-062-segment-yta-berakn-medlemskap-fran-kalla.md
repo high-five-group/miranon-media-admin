@@ -12,6 +12,12 @@
 > **Förfining 2026-06-25 (ADR-064):** Beslut 3:s taxonomi-uppräkning (fem kurser / '6×2')
 > förfinas av ADR-064 till den disk-/live-belagda sju-par-taxonomin över sex kursnamn.
 > Sak-besluten 1, 2, 4–7 oförändrade.
+>
+> **Förfining 2026-08-17 (ADR-115):** Beslut 3:s regelspråk förfinas en andra gång —
+> `include[]`:s rena OR-semantik falsifierades av de fjorton verkliga Skool-målen
+> (10 av 14 outtryckbara); `med` blir konjunkt-grupper (DNF), `utan` förblir platt,
+> och partitionen/täckningen tillkommer som generator respektive kvittens.
+> Sak-besluten 1, 2, 4–7 alltjämt oförändrade.
 
 ## Kontext
 
