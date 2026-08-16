@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 07:07'
+updated_date: '2026-08-16 07:55'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,6 +24,7 @@ Forensik 2026-08-16 (R5, nyupptäckt obokförd rot): acceptance-väggklockan vä
 - [ ] #1 Tillväxtens orsak identifierad med mätning (Acceptance-steget på 817979a8^1 vs 817979a8, eller metrics:ci-serien) — inte antagen
 - [ ] #2 Åtgärd som återtar marginalen (>2 min till taket) utan reflexmässig takhöjning
 - [ ] #3 Acceptance grön i nattnätet tre nätter i rad efter åtgärd (belägg: run-ID:n)
+- [ ] #4 Webblasarbeteende-jobbets artefaktsteg (ci-suite.yml ~rad 433) får samma failure() || cancelled()-villkor — fynd ur task-237 2026-08-16: identiskt mönster, timeout-minutes: 8, samma blindhet vid takfällning
 <!-- AC:END -->
 
 ## Definition of Done
