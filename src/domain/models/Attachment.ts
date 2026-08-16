@@ -1,3 +1,5 @@
+import type { AttachmentClassValue } from '../types/Status';
+
 /**
  * En bilaga i bilage-fundamentet (TASK-146.4, PRD task-146 "Bilage-fundamentet").
  *
@@ -17,6 +19,16 @@
  * NOT) — vad som FAKTISKT lades till additivt var `Lagringsnyckel`
  * (TASK-147.5, server-internt, EXPONERAS ALDRIG här — se
  * scripts/create-bilagor-table.mjs § Lagringsnyckel för varför).
+ *
+ * [RÄTTAD, TASK-147.12] Ovanstående stycke är HISTORIA, inte längre sant:
+ * "det behovet uppstod aldrig" höll i nio dagar. Marcus-GO 2026-08-16
+ * (ADR-063 — defekten löses I BASEN): Bilagor-tabellen bär nu
+ * `Dokumentklass` (singleSelect, additivt, staging `fldr2CwboZ3M4USCX`) och
+ * `dokumentklass` nedan speglar det i domänformen. `null` betyder "okänd
+ * klass" — antingen en rad skapad FÖRE fältet fanns och inte härledbar vid
+ * backfillen, eller en framtida klass C-skrivväg som ännu inte satts
+ * (kvitto-generering, TASK-147.7, skriver inte till DENNA tabell/detta
+ * fält).
  */
 export interface Attachment {
   id: string;
@@ -33,6 +45,14 @@ export interface Attachment {
   skapad: string;
   /** Länkat event-record-ID (första länken); null om länk saknas (defensivt läs). */
   eventId: string | null;
+  /**
+   * Dokumentklass (TASK-147.12, ORDLISTA.md A/B/C). `null` = okänd — en
+   * icke-härledbar förfälts-rad eller en klass som ännu saknar skrivväg
+   * (person-genererad/klass C). Satt av upload-attachment/finalize-
+   * attachment-upload (→ `Uppladdad`) resp. generate-event-attachment
+   * (→ `Event-mallad`) vid radskapelse — klienten läser, skriver aldrig.
+   */
+  dokumentklass: AttachmentClassValue | null;
 }
 
 /**

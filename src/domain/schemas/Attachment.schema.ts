@@ -1,8 +1,16 @@
 import { z } from 'zod';
+import { AttachmentClass } from '../types/Status';
 
 /**
  * [GA] Runtime-validering av upload-attachment/finalize-attachment-upload-svar
  * (ADR-026). Parallell sanningskälla: interfacet i `../models/Attachment.ts`.
+ *
+ * `dokumentklass` (TASK-147.12): `z.enum(AttachmentClass)` — Zod v4 accepterar
+ * ett enum-likt const-objekt direkt och läser dess VÄRDEN (de tre Airtable-
+ * optionsnamnen), `.nullable()` täcker både okänd/icke-härledd historik och
+ * klass C:s ännu obyggda skrivväg (se domänmodellens docblock). Samma teknik
+ * `ModalitetSchema` (Segment.schema.ts, `z.enum(ModalitetEnum)`) redan
+ * använder för sin Status.ts-speglade enum — inte en ny konvention.
  */
 export const AttachmentSchema = z.object({
   id: z.string(),
@@ -10,6 +18,7 @@ export const AttachmentSchema = z.object({
   storlekBytes: z.number(),
   skapad: z.string(),
   eventId: z.string().nullable(),
+  dokumentklass: z.enum(AttachmentClass).nullable(),
 });
 
 /**

@@ -89,3 +89,19 @@ export const Modalitet = {
 } as const;
 
 export type ModalitetValue = (typeof Modalitet)[keyof typeof Modalitet];
+
+// Bilagor.Dokumentklass (TASK-147.12, additivt fält — staging fldr2CwboZ3M4USCX,
+// skapad via MCP `create_field` 2026-08-16 eftersom AIRTABLE_SCHEMA_TOKEN
+// saknades i lokal .env.seed; scripts/create-bilagor-table.mjs CONFIG.fields
+// speglar SAMMA spec för framtida idempotenta körningar). ORDLISTA.md:s tre
+// dokumentklasser (grillad samsyn S93) — A/B/C-vokabuläret återges här som de
+// FAKTISKA Airtable-optionsnamnen, inte en bokstavskod, så domänvärdet är
+// direkt renderbart utan en översättningstabell. Prod bär INTE detta fält än
+// (kortets prod-klicklista, task-147.12 Implementation Notes).
+export const AttachmentClass = {
+  UPPLADDAD: 'Uppladdad',
+  EVENT_MALLAD: 'Event-mallad',
+  PERSON_GENERERAD: 'Person-genererad',
+} as const;
+
+export type AttachmentClassValue = (typeof AttachmentClass)[keyof typeof AttachmentClass];

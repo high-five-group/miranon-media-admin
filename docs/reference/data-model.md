@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-14
+updated: 2026-08-16
 review_by: 2026-11-15
 status: stable
 ---
@@ -154,6 +154,37 @@ matchar stagings namn utan kollisions-suffix.
 Fält som INTE behövde speglas (fanns redan i prod): `Antal platser`,
 `Notering` (Anmälningar) och `Närvaropoäng` (Deltaganden, `fldwuo94BY46VUOm4`
 — samma ID i båda baserna).
+
+#### Stagingbasens additiva tillskott 2026-08-16 (TASK-147.12) — ⚠️ INTE speglat till prod än
+
+Löser task-147.6:s fynd 1 (klass A/B strukturellt odelbara i Bilagor-metadatat)
+I BASEN, per Marcus-GO 2026-08-16 och ADR-063. Skapat via Airtable MCP
+`create_field` (inte `scripts/create-bilagor-table.mjs` självt —
+`AIRTABLE_SCHEMA_TOKEN` saknades i lokal `.env.seed`; skriptets `CONFIG.fields`
+speglar ändå exakt denna spec för framtida idempotenta körningar, se skriptets
+egen kommentar). **Detta fält finns ENDAST i staging** — prod-Bilagor
+(`tblevR1B54wFjp7QC`) har fortfarande bara sina ursprungliga 5 fält. Prod-steget
+(fält + backfill + EF-deploy) är bokfört som klicklista i `task-147.12`s
+Implementation Notes, ett separat Marcus-moment.
+
+| Yta | Staging-ID | Typ | Skiva |
+|---|---|---|---|
+| Bilagor → `Dokumentklass` | `fldr2CwboZ3M4USCX` | singleSelect — `Uppladdad` (`selRJGlFuqzbY8V9w`), `Event-mallad` (`selkwZzOdrKEcKbky`), `Person-genererad` (`selg6QYcmNlNCtL8n`) | 147.12 |
+
+**Skrivbarhet:** satt av den skrivande EF:en vid radskapelse — `upload-attachment`
+och `finalize-attachment-upload` skriver `Uppladdad` (klass A),
+`generate-event-attachment` skriver `Event-mallad` (klass B). `Person-genererad`
+(klass C) har ÄNNU ingen skrivväg till DENNA tabell — kvittogenereringen
+(TASK-147.7) skriver till den separata `Kvitton`-tabellen ovan, inte hit.
+Klienten LÄSER fältet (`Attachment.dokumentklass`, `get-event-attachments`),
+skriver aldrig — samma read/write-asymmetri som övriga skrivfält i denna bas.
+
+**Backfill:** de 18 rader som fanns i staging FÖRE fältet skapades är
+backfyllda (12 `Uppladdad`, 6 `Event-mallad`, 0 lämnade tomma — samtliga
+härledbara ur `Namn`-mönstret, se `scripts/backfill-bilagor-dokumentklass.mjs`
+§ KLASSIFICERINGSREGELN). Skriptet är idempotent och re-körbart; en `--dry-run`
+efter backfillen bekräftade `0 rader att backfylla` (andra, oberoende
+verifiering av MCP-backfillen).
 
 ### Aktiva event
 

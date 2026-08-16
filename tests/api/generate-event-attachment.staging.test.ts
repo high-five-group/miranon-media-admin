@@ -115,7 +115,14 @@ interface GenerateBody {
 }
 
 interface GenerateResponse {
-  attachment: { id: string; namn: string; storlekBytes: number; skapad: string; eventId: string };
+  attachment: {
+    id: string;
+    namn: string;
+    storlekBytes: number;
+    skapad: string;
+    eventId: string;
+    dokumentklass: string | null;
+  };
   record: { id: string; fields: Record<string, unknown> };
   storagePath: string;
   pdfBase64: string;
@@ -157,31 +164,33 @@ test.describe('generate-event-attachment — skarp conformance (TASK-146.5)', ()
     expect(body.record.fields['Storlek (bytes)']).toBe(body.attachment.storlekBytes);
     expect(Number.isNaN(Date.parse(body.record.fields['Skapad'] as string))).toBe(false);
 
-    // AC #4 — de tre dokumentklasserna oskiljbara i metadatat: NYCKELMÄNGDEN
-    // är exakt {Namn, 'Storlek (bytes)', Skapad, Event, Lagringsnyckel} —
-    // inget extra "Klass"/"Källa"-fält som avslöjar att raden genererades i
-    // stället för laddades upp. Detta är den mekaniska delen av AC #4
-    // (fältformen); fälten skapades via SAMMA field-allowlist-operation
-    // ('create-attachment') som en framtida klass A-uppladdning använder
-    // (se index.ts § SAMTIDIGHETS-NOT).
+    // [RÄTTAD, TASK-147.12] AC #4 (task-146.5) krävde tidigare att
+    // NYCKELMÄNGDEN skulle vara exakt {Namn, 'Storlek (bytes)', Skapad,
+    // Event, Lagringsnyckel} — INGET extra "Klass"-fält, som ett mekaniskt
+    // bevis på att de tre dokumentklasserna var oskiljbara i metadatat. Den
+    // odelbarheten visade sig vara en DEFEKT (task-147.6:s granskning:
+    // Dokument-ytan kunde inte visa verklig klass), inte en egenskap att
+    // bevara — Marcus-GO 2026-08-16 (ADR-063, löses I BASEN) lade till
+    // `Dokumentklass` just för att BRYTA odelbarheten. Detta testet bevisar
+    // nu den NYA kontraktsformen i stället: SEX fält, och `Dokumentklass`
+    // bär exakt värdet 'Event-mallad' (aldrig 'Uppladdad' — det hade varit
+    // fel klass för en genererad rad).
     //
-    // FEM FÄLT, inte längre fyra (rättat 2026-08-10): TASK-147.5 (merge
-    // c55e8fb2) gjorde EF:en additiv — den skriver numera även
-    // `Lagringsnyckel` (_shared/attachments.ts § buildAttachmentLeaf), och
-    // field-allowlists.ts:s 'create-attachment'-post tillåter fältet. Det
-    // gamla fyra-fälts-antagandet härifrån blev därmed falskt och fällde
-    // skarpt mot staging (rad ~164, Set saknade 'Lagringsnyckel' i det
-    // MOTTAGNA svaret — se PR-beskrivningen för de två oberoende
-    // fyndrapporterna). Mängden är fortfarande EXAKT, inte "minst dessa":
-    // testet ska fortsatt fälla på en OVÄNTAD sjätte skrivning.
+    // FEM FÄLT (2026-08-10, TASK-147.5) → SEX FÄLT (2026-08-16, TASK-147.12)
+    // — historiken (fyra → fem, rad ~164 i denna fil tidigare) visar att
+    // mängden verkligen ändras när fältuppsättningen växer; det är därför
+    // testet håller den EXAKT, inte "minst dessa", och kommer fälla igen
+    // den dag ett sjunde fält tillkommer utan att detta test uppdateras.
     expect(new Set(Object.keys(body.record.fields))).toEqual(
-      new Set(['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Lagringsnyckel']),
+      new Set(['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Lagringsnyckel', 'Dokumentklass']),
     );
+    expect(body.record.fields['Dokumentklass']).toBe('Event-mallad');
 
-    // Domän-envelope (attachment) — samma fyra sakuppgifter i klientvänlig form.
+    // Domän-envelope (attachment) — samma sakuppgifter i klientvänlig form.
     expect(body.attachment.id).toBe(body.record.id);
     expect(body.attachment.eventId).toBe(BELAGGNING_EVENT_ID);
     expect(body.attachment.namn).toBe(body.record.fields['Namn']);
+    expect(body.attachment.dokumentklass).toBe('Event-mallad');
 
     // AC #3 — svenska tecken korrekta i DEN FAKTISKT GENERERADE FILEN (inte i
     // request/response-JSON — pdfBase64 är den riktiga byte-strömmen som

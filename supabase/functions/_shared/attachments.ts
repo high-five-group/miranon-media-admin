@@ -17,6 +17,20 @@ export const BILAGOR_BUCKET_ID = 'bilagor';
 export const BILAGOR_TABLE = 'Bilagor';
 export const EVENTPLANERING_TABLE = 'Eventplanering';
 
+/**
+ * Bilagor.Dokumentklass-optionerna (TASK-147.12, additivt fält, staging
+ * `fldr2CwboZ3M4USCX`) — DUPLICERAS MEDVETET mot `src/domain/types/Status.ts`s
+ * `AttachmentClass`, samma duplicerings-mönster som BILAGOR_BUCKET_ID/
+ * SMALL_UPLOAD_MAX_BYTES ovan (Deno-EF:erna delar ingen build-kedja med
+ * Vite-bygget). Skrivande EF:er importerar DESSA konstanter, aldrig en
+ * bokstavlig sträng inline — en stavfel-drift mellan de två sidorna hade
+ * annars gett en tyst 400 (findDisallowedField) eller ett osynkat
+ * options-val i UI:t.
+ */
+export const ATTACHMENT_CLASS_UPPLADDAD = 'Uppladdad';
+export const ATTACHMENT_CLASS_EVENT_MALLAD = 'Event-mallad';
+export const ATTACHMENT_CLASS_PERSON_GENERERAD = 'Person-genererad';
+
 /** Se src/data/adapters/attachmentUpload.ts för det fulla resonemanget — samma tal. */
 export const SMALL_UPLOAD_MAX_BYTES = 6 * 1024 * 1024;
 
@@ -133,26 +147,51 @@ export function toBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+/** Giltiga `Dokumentklass`-optionsnamn — allt annat (inkl. `undefined`/tomt) mappas till `null`. */
+const VALID_ATTACHMENT_CLASSES: readonly string[] = [
+  ATTACHMENT_CLASS_UPPLADDAD,
+  ATTACHMENT_CLASS_EVENT_MALLAD,
+  ATTACHMENT_CLASS_PERSON_GENERERAD,
+];
+
 /**
  * Mappar en skapad Bilagor-rad → domän-Attachment (samma shape som
  * `AttachmentSchema` i src/domain/schemas/Attachment.schema.ts — klienten ser
  * ALDRIG Airtable-fältnamn). Fälten är EXAKT scripts/create-bilagor-table.mjs
- * CONFIG.fields: Namn / 'Storlek (bytes)' / Skapad / Event.
+ * CONFIG.fields: Namn / 'Storlek (bytes)' / Skapad / Event / Dokumentklass
+ * (TASK-147.12, sjätte fältet — Lagringsnyckel exponeras aldrig här, se
+ * dess egen docblock).
+ *
+ * `dokumentklass`: `null` för rader som saknar värdet (icke-backfyllda
+ * förfälts-rader, eller en framtida klass C-rad utan skrivväg än) ELLER bär
+ * ett värde utanför den kända mängden (defensivt — samma "gissa aldrig"-
+ * disciplin som resten av denna fil; ett okänt Airtable-optionsnamn ska
+ * synas som "okänt" i UI:t, aldrig krascha eller tystas till fel klass).
  */
 export function mapAttachmentRecord(record: {
   id: string;
   fields: Record<string, unknown>;
-}): { id: string; namn: string; storlekBytes: number; skapad: string; eventId: string | null } {
+}): {
+  id: string;
+  namn: string;
+  storlekBytes: number;
+  skapad: string;
+  eventId: string | null;
+  dokumentklass: string | null;
+} {
   const f = record.fields;
   const namn = f.Namn;
   const storlek = f['Storlek (bytes)'];
   const skapad = f.Skapad;
   const event = f.Event;
+  const klass = f.Dokumentklass;
   return {
     id: record.id,
     namn: typeof namn === 'string' ? namn : '',
     storlekBytes: typeof storlek === 'number' ? storlek : 0,
     skapad: typeof skapad === 'string' ? skapad : new Date(0).toISOString(),
     eventId: Array.isArray(event) && event.length > 0 ? (event[0] as string) : null,
+    dokumentklass:
+      typeof klass === 'string' && VALID_ATTACHMENT_CLASSES.includes(klass) ? klass : null,
   };
 }

@@ -24,6 +24,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import {
+  ATTACHMENT_CLASS_UPPLADDAD,
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
   buildAttachmentLeaf,
@@ -157,6 +158,10 @@ Deno.serve(async (req) => {
       // `filnamn` som `path` ovan byggdes med — `sanitizeFilnamn` trimmar
       // internt, så resultatet är per konstruktion identiskt med path-suffixet.
       Lagringsnyckel: buildAttachmentLeaf(attachmentId, filnamn),
+      // [TASK-147.12] Additivt — mönster 1 (denna EF) ÄR klass A per
+      // definition (Lotta laddar upp en fil). Konstanten importeras, aldrig
+      // en bokstavlig sträng inline (se field-allowlists.ts § Dokumentklass).
+      Dokumentklass: ATTACHMENT_CLASS_UPPLADDAD,
     };
 
     const disallowed = findDisallowedField(operation, fields);

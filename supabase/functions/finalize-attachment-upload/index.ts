@@ -25,6 +25,7 @@
 
 import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import {
+  ATTACHMENT_CLASS_UPPLADDAD,
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
   buildAttachmentLeaf,
@@ -167,6 +168,10 @@ Deno.serve(async (req) => {
       Event: [eventId],
       // [TASK-147.5] Additivt — se upload-attachment/index.ts:s motsvarande rad.
       Lagringsnyckel: expectedFilename,
+      // [TASK-147.12] Additivt — mönster 2 är fortfarande klass A (samma
+      // uppladdningshandling, bara stor fil). Se upload-attachment/index.ts:s
+      // motsvarande rad.
+      Dokumentklass: ATTACHMENT_CLASS_UPPLADDAD,
     };
 
     const disallowed = findDisallowedField(operation, fields);

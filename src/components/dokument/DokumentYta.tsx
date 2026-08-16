@@ -32,6 +32,18 @@
  * TASK-147.12 (dokumentklass-fältet); den här ytans filterrad (nedan) är
  * byggd så den tar emot fältet UTAN ombyggnad den dagen det finns.
  *
+ * [RÄTTAD, TASK-147.12] Fynd 1 var sant vid S100/147.6-byggtillfället — det
+ * är HISTORIA nu, inte längre tillstånd. Marcus-GO 2026-08-16 (ADR-063,
+ * "defekten löses I BASEN"): Bilagor-tabellen bär numera `Dokumentklass`
+ * (additivt fält, staging), och `Attachment.dokumentklass` bär den VERKLIGA
+ * klassen — ingen filnamns-heuristik, en riktig kolumn. Varje rad nedan visar
+ * därför sin faktiska klass (eller "Okänd" — ärligt, inte gissat — för de
+ * fåtal historiska rader som inte gick att härleda vid backfillen, se
+ * scripts/backfill-bilagor-dokumentklass.mjs). Gruppnamnet "Bilagor för valt
+ * event" är MEDVETET oförändrat: alla klasser hör fortfarande hemma i samma
+ * lista, bara nu med en synlig etikett per rad i stället för att vara en
+ * odelbar massa.
+ *
  * FYND 2 — BILAGE-FUNDAMENTET ÄR EVENT-SCOPAT, INTE ETT GLOBALT BIBLIOTEK.
  * `uploadAttachment` kräver `eventId` (obligatoriskt fält,
  * `UploadAttachmentInput`), och `fetchEventAttachments` läser EN händelses
@@ -329,6 +341,11 @@ function BilageRadRow({
         <span className="break-words font-medium text-body">{current.namn}</span>
         <MetaRad
           delar={[
+            // [TASK-147.12] Verklig klass — se filens docblock (Fynd 1,
+            // RÄTTAD). "Okänd" är en ÄRLIG etikett (Gunilla-principen), inte
+            // en gissning: den betyder "backfillen kunde inte härleda den
+            // här raden", aldrig "vi vet men visar det inte".
+            `Klass: ${current.dokumentklass ?? 'Okänd'}`,
             formatMB(current.storlekBytes),
             `Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`,
           ]}

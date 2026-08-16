@@ -10,12 +10,21 @@
 // genereras ur en HÅRDKODAD systemmall (AC #2 — mallen är INTE redigerbar i
 // v1, mall-editorn ligger uttryckligen senare) med eventets egna uppgifter
 // ifyllda, och landar som en rad i Bilagor-tabellen (TASK-146.2, additivt
-// skapad av scripts/create-bilagor-table.mjs) MED EXAKT SAMMA FÄLTFORM som
-// en uppladdad (klass A) bilaga skulle få: Namn / 'Storlek (bytes)' / Skapad
-// / Event — inga extra klass-markörer (AC #4, "de tre dokumentklasserna är
-// oskiljbara i metadatat"). Bytesen bor i samma privata Storage-bucket
-// ("bilagor", TASK-146.3), path-prefixad per event — samma delade hemvist
-// som PRD:n (§ Lösning) beskriver för alla tre dokumentklasser.
+// skapad av scripts/create-bilagor-table.mjs). Bytesen bor i samma privata
+// Storage-bucket ("bilagor", TASK-146.3), path-prefixad per event — samma
+// delade hemvist som PRD:n (§ Lösning) beskriver för alla tre
+// dokumentklasser.
+//
+// [RÄTTAD, TASK-147.12] Stycket ovan sade tidigare att raden landar "MED
+// EXAKT SAMMA FÄLTFORM som en uppladdad (klass A) bilaga... inga extra
+// klass-markörer (AC #4, 'de tre dokumentklasserna är oskiljbara i
+// metadatat')". Det VAR sant och var en avsiktlig AC (task-146.5) — men
+// task-147.6:s granskning fann att odelbarheten var en DEFEKT, inte en
+// egenskap (Dokument-ytan kunde inte visa verklig klass). Marcus-GO
+// 2026-08-16 (ADR-063 — löses I BASEN): raden bär nu 'Dokumentklass' =
+// 'Event-mallad' (additivt fält, staging fldr2CwboZ3M4USCX) — SEX fält, inte
+// fem. tests/api/generate-event-attachment.staging.test.ts:s gamla
+// "exakt fem fält, inget klass-fält"-assert är uppdaterat i samma commit.
 //
 // SAMTIDIGHETS-NOT (byggd 2026-08-10, S102-batchen, kort ③ av 14, ADR-086
 // premiss-pass): TASK-146.4 (adapter-ytan + uppladdningsfunktionen, PR #1090)
@@ -52,6 +61,7 @@ import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-c
 // TASK-146.4:s delade modul (landad #1090) i stället för dupliceras — se
 // filhuvudets SAMTIDIGHETS-NOT.
 import {
+  ATTACHMENT_CLASS_EVENT_MALLAD,
   BILAGOR_BUCKET_ID,
   buildAttachmentLeaf,
   buildAttachmentPath,
@@ -231,6 +241,9 @@ Deno.serve(async (req) => {
       // som varierar per event och alltså INTE är vad som faktiskt ligger i
       // Storage).
       Lagringsnyckel: buildAttachmentLeaf(attachmentId, STORAGE_FILNAMN),
+      // [TASK-147.12] Additivt — denna EF ÄR klass B per definition (mall +
+      // eventfält, ingen mänsklig uppladdning). Se filhuvudets RÄTTAD-not.
+      Dokumentklass: ATTACHMENT_CLASS_EVENT_MALLAD,
     };
 
     const disallowed = findDisallowedField(operation, fields);
@@ -250,10 +263,12 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         // SAMMA mapper som klass A (upload-attachment, TASK-146.4) använder
-        // för sin skriv-respons — ytterligare ett mekaniskt AC #4-bevis: två
-        // olika uppkomster (uppladdad vs genererad) producerar identisk
-        // domän-shape via EN delad funktion, inte två parallella som råkar
-        // se lika ut.
+        // för sin skriv-respons — två olika uppkomster (uppladdad vs
+        // genererad) producerar samma domän-SHAPE via EN delad funktion,
+        // inte två parallella som råkar se lika ut. [RÄTTAD, TASK-147.12]
+        // Shapen är identisk, VÄRDET på `dokumentklass` är det som numera
+        // skiljer dem — se filhuvudets RÄTTAD-not för varför "identisk
+        // domän-shape" INTE längre betyder "oskiljbar".
         attachment: mapAttachmentRecord(created),
         record: { id: created.id, fields: created.fields },
         storagePath: path,

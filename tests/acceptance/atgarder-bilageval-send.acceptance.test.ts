@@ -36,12 +36,19 @@ import { expect, test } from './support/acceptance-bas';
 const ANNA = 'recVisualReg000001';
 const BJORN = 'recVisualReg000002';
 
+// dokumentklass (TASK-147.12): AttachmentSchema.parse() kräver fältet
+// (nullable, inte optional) — mockresponsen måste bära det eller klienten
+// kraschar vid parse. Värdena är REPRESENTATIVA (klass A/B, matchar
+// respektive filnamns verkliga uppkomst) men INTE vad detta test bevisar
+// (se filhuvudets "VAD DENNA FIL BEVISAR" — dokumentklass-visning provas i
+// DokumentYta.tsx:s egna prototyp-yta, inte här).
 const BILAGA_INFO = {
   id: 'recBilagaInfo0001',
   namn: 'Hörlursinformation.pdf',
   storlekBytes: 188_416,
   skapad: '2026-08-01T10:00:00.000Z',
   eventId: VISUAL_EVENT_ID,
+  dokumentklass: 'Uppladdad',
 };
 const BILAGA_DELTAGARINFO = {
   id: 'recBilagaDelt0001',
@@ -49,6 +56,7 @@ const BILAGA_DELTAGARINFO = {
   storlekBytes: 1_292,
   skapad: '2026-08-05T10:00:00.000Z',
   eventId: VISUAL_EVENT_ID,
+  dokumentklass: 'Event-mallad',
 };
 
 async function gotoAtgarder(page: import('@playwright/test').Page) {

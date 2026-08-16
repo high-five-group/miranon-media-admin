@@ -154,11 +154,15 @@ test.describe('create-attachment-upload-ticket + finalize-attachment-upload — 
     expect(finalizeBody.record.fields.Namn).toBe(filnamn);
     expect(finalizeBody.record.fields['Storlek (bytes)']).toBe(bytes.length);
     expect(finalizeBody.record.fields.Event).toEqual([BELAGGNING_EVENT_ID]);
+    // [TASK-147.12] mönster 2 är fortfarande klass A (samma uppladdningshandling,
+    // bara stor fil) — samma värde som mönster 1 (upload-attachment.staging.test.ts).
+    expect(finalizeBody.record.fields.Dokumentklass).toBe('Uppladdad');
 
     // (ii) Domän-shape.
     const attachment: Attachment = AttachmentSchema.parse(finalizeBody.attachment);
     expect(attachment.storlekBytes).toBe(bytes.length);
     expect(attachment.eventId).toBe(BELAGGNING_EVENT_ID);
+    expect(attachment.dokumentklass).toBe('Uppladdad');
   });
 
   test('deny: sizeBytes över bucketens faktiska gräns → 400 i MB, INNAN ticket utfärdas (AC #6/PRD US11)', async ({
