@@ -193,8 +193,9 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CircleCheck,
   Group,
-  Layers,
+  ListChecks,
   ListPlus,
   Pencil,
   Plus,
@@ -1312,28 +1313,43 @@ function publikOrd(modalitet: ModalitetsVal): string {
 }
 
 /**
- * EN UPPSÄTTNING, ETT PANEL. Panelerna läggs ÖVER listan (mellan handlings-
- * raden och korten) — listan döljs aldrig, täckningen är ett TILLÄGG, inte
- * en ersättning. `role="status"` + `aria-live="polite"` på summeringen
- * (kvalitetsribban): talen uppdateras när frågorna svarar, och det ska höras
- * utan att man letar upp raden själv — samma mönster som
- * fördelnings-kontrollen i `UtskicksVy`. Dubbeltäckningen bärs av
- * `StatusBadge` (TEXT + ikon), aldrig av färg ensam.
+ * EN UPPSÄTTNING, EN KVITTENS. Kvittenserna läggs ÖVER listan (mellan
+ * handlingsraden och korten) — listan döljs aldrig, kontrollen är ett
+ * TILLÄGG, inte en ersättning.
  *
- * TVÅ FALL, INTE ETT (Marcus granskning 2026-08-16). Klar-läget hade EN form
- * som skrev ut allt den visste, och i det friska fallet blev det tre meningar
- * om samma sak: badgen "Varje person i exakt en grupp", raden "3 personer
- * täckta - i exakt en av grupperna" och "Kontrollerat: ingen står utanför…".
- * Det bryter filens egen regel (`PersonRad` § NORMEN ÄR TYST): bara avvikelsen
- * ska märkas. Nu skiljer panelen på fallen:
+ * DET FRISKA FALLET BÄR INGEN PANEL (Marcus granskning 2026-08-16, tredje
+ * varvet: "otydligt, fult, oproffsigt"). Formen före detta varv gav VARJE
+ * uppsättning en `rounded-2xl border bg-surface p-4`-ruta med en `<h2>`
+ * ("Täckning: De fjorton"), en grön badge ("Täckningen stämmer") och en
+ * mening — tre lager chrome runt beskedet "allt är som det ska". En ruta
+ * med rubrik är en INNEHÅLLSBÄRARE; ett friskt utfall har inget innehåll
+ * att bära, bara ett svar. Nu är friskt läge EN rad — bock + mening på en
+ * tonal grön yta, ingen kant, ingen rubrik — och rutan sparas till det som
+ * faktiskt behöver den.
  *
- *   FRISKT (`dubbla === 0` OCH inga utanför) — rubrik + EN kompakt rad: grön
- *     `StatusBadge` + en mening som bär antalet, "exakt en grupp" och "ingen
- *     står utanför". Badgen bär statusen, meningen innehållet; ingen av dem
- *     upprepar den andra.
- *   AVVIKELSE (`dubbla > 0` ELLER någon utanför) — den detaljerade formen
- *     står kvar oförändrad: warning-badge, "N täckta"-raden och `MessageBox`
- *     med "Visa vilka"-utfällningen. Där ÄR varje mening ett eget fynd.
+ * SYSTEMORDEN ÄR UTE. "Täckning"/"täckta"/"täckningen" är vårt ord för
+ * mängdlärans `⋃ = population`, inte Lottas ord för någonting alls (samma
+ * klass som "genomförd närvaro" och "modalitet", `publikOrd` ovan). Ytan
+ * säger i stället vad den gör: den kontrollerar grupperna. Identifierarna i
+ * koden (`useTackning`, `tackningsLage`) är oförändrade — de är inte synlig
+ * text, och ett namnbyte hade breddat diffen utan att flytta en pixel.
+ *
+ * AVVIKELSEN FÅR TA PLATS, OCH HAR EN RUBRIK SOM SÄGER FELET RAKT. Två
+ * oberoende fynd ⇒ två `MessageBox`ar, aldrig en sammanslagen: "2 personer
+ * är med i flera grupper" och "1 person står utanför grupperna" är olika
+ * problem med olika konsekvenser (dubbla mail respektive uteblivet mail).
+ * Rubriken bär hela fyndet — en badge som säger samma sak en gång till är
+ * borta av samma skäl som det friska fallets panel.
+ *
+ * EN ENDA LIVE-REGION, OCH DEN LIGGER UTANPÅ INGENTING (fälla 6 + nästlade
+ * regioner). `MessageBox` bär SJÄLV `role="alert"` för `warning`/`error`
+ * (primitivens egen semantik) — låg den inuti en `role="status"`-wrapper
+ * blev det en nästlad live-region, där den yttre `aria-atomic` läser om
+ * hela blocket vid varje ändring. Därför är regionen ett SYSKON till
+ * rutorna: den bär kvittensraden och avvikelsens ledtext, rutorna larmar
+ * själva. Regionen är monterad så länge kontrolläget är på och byter bara
+ * innehåll — en `aria-live` som monteras SAMTIDIGT som sin text annonseras
+ * inte (samma regel som `SegmentKort`s antal-rad och generatorns steg 3).
  *
  * "Visa vilka"-listan speglar `UtskicksVy`s blandade-mottagare-mönster:
  * antal ≤ `CHUNK` visas hel, annars de första `CHUNK` + ett rest-antal.
@@ -1341,118 +1357,114 @@ function publikOrd(modalitet: ModalitetsVal): string {
 function TackningsPanel({
   uppsattning,
   parInfo,
+  visaNamn,
 }: {
   uppsattning: Uppsattning;
   parInfo: ParInfo[];
+  /** Sant när ytan visar FLER än en uppsättning — då måste varje kvittens
+      säga VILKEN den gäller, annars är två rader omöjliga att skilja åt.
+      Vid en ensam uppsättning vore namnet brus: det finns inget att välja
+      mellan. */
+  visaNamn: boolean;
 }) {
   const utfall = useTackning(uppsattning, parInfo);
   const [visaUtanfor, setVisaUtanfor] = useState(false);
   const utanforPanelId = useId();
 
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
-      <h2 className="font-semibold text-body">Täckning: {uppsattning.namn}</h2>
+  const klart = utfall.status === 'klar' ? utfall : null;
+  const friskt = klart !== null && klart.dubbla === 0 && klart.utanfor.length === 0;
+  // Uppsättningens namn som RUBRIKPREFIX i avvikelsefallet ("De fjorton: 2
+  // personer …"). Kolon-formen scopar fyndet utan att böja rubriken, som en
+  // invävning ("… i De fjorton") hade tvingat fram i tre olika kasus.
+  const prefix = visaNamn ? `${uppsattning.namn}: ` : '';
 
-      {utfall.status === 'raknar' && (
-        <p aria-live="polite" className="text-small text-text-muted">
-          Räknar täckningen…
-        </p>
-      )}
+  return (
+    <div className="flex flex-col gap-3">
+      <div role="status" aria-live="polite" aria-atomic="true">
+        {utfall.status === 'raknar' && (
+          <p className="text-small text-text-muted">Kontrollerar grupperna…</p>
+        )}
+
+        {friskt && klart !== null && (
+          // KVITTENSRADEN. Bocken är samma ikon och samma `text-success` som
+          // `StatusBadge ton="success"` redan använder, på samma
+          // `bg-success-bg` — ingen ny token, ingen ny färgparning. Texten bär
+          // hela beskedet ensam; ikonen är `aria-hidden` och förstärker bara
+          // (WCAG 1.4.1). `items-start` + `mt-px` håller bocken mot första
+          // textraden när meningen bryter till två.
+          <p className="flex items-start gap-2 rounded-xl bg-success-bg px-4 py-2.5 text-small">
+            <CircleCheck aria-hidden="true" size={18} className="mt-px shrink-0 text-success" />
+            <span>
+              {visaNamn
+                ? `Grupperna i ${uppsattning.namn} stämmer: alla ${klart.tackta} som ${publikOrd(uppsattning.modalitet)} är med - var och en i exakt en grupp, ingen saknas.`
+                : `Grupperna stämmer: alla ${klart.tackta} som ${publikOrd(uppsattning.modalitet)} är med - var och en i exakt en grupp, ingen saknas.`}
+            </span>
+          </p>
+        )}
+
+        {klart !== null && !friskt && (
+          // AVVIKELSENS LEDTEXT — hur många som ÄR rätt placerade. Den står
+          // kvar även när något är fel, för den är det enda talet som säger
+          // hur STORT felet är i förhållande till helheten.
+          <p className="text-small text-text-secondary">
+            {`${prefix}${klart.tackta} ${personform(klart.tackta)} är med i exakt en grupp.`}
+          </p>
+        )}
+      </div>
 
       {utfall.status === 'fel' && (
-        <MessageBox intent="error" title="Täckningen kunde inte räknas">
+        <MessageBox intent="error" title="Kontrollen kunde inte göras">
           Något av delsvaren gick inte att hämta. Försök igen om en stund.
         </MessageBox>
       )}
 
-      {utfall.status === 'klar' && utfall.dubbla === 0 && utfall.utanfor.length === 0 && (
-        // FRISKA FALLET — EN RAD. Badgen säger ATT det stämmer, meningen VAD
-        // som stämmer. `flex-wrap` gör att de bryter till två rader på smal
-        // skärm utan att bli två stycken.
-        <div
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          className="flex flex-wrap items-center gap-x-2 gap-y-1"
+      {klart !== null && klart.dubbla > 0 && (
+        <MessageBox
+          intent="warning"
+          title={`${prefix}${klart.dubbla} ${personform(klart.dubbla)} är med i flera grupper`}
         >
-          <StatusBadge ton="success" storlek="sm">
-            Täckningen stämmer
-          </StatusBadge>
-          <p className="text-small text-text-secondary">
-            {`Alla ${utfall.tackta} ${personform(utfall.tackta)} täckta - var och en i exakt en grupp, ingen står utanför.`}
-          </p>
-        </div>
+          De hamnar i mer än en av grupperna och får därför flera mail om du skickar till alla
+          grupperna.
+        </MessageBox>
       )}
 
-      {utfall.status === 'klar' && (utfall.dubbla > 0 || utfall.utanfor.length > 0) && (
-        <div role="status" aria-live="polite" aria-atomic="true" className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {utfall.dubbla === 0 ? (
-              <StatusBadge ton="success" storlek="sm">
-                Varje person i exakt en grupp
-              </StatusBadge>
-            ) : (
-              // `StatusBadge.children` är typad `string` (samma disciplin som
-              // resten av filens `StatusBadge`-anrop) - en mall-sträng, inte
-              // flera barn-noder.
-              <StatusBadge ton="warning" storlek="sm">
-                {`${utfall.dubbla} ${personform(utfall.dubbla)} i mer än en grupp`}
-              </StatusBadge>
-            )}
-          </div>
-
-          <p className="text-small text-text-secondary">
-            {utfall.tackta} {personform(utfall.tackta)} täckta - i exakt en av grupperna.
+      {klart !== null && klart.utanfor.length > 0 && (
+        <MessageBox
+          intent="warning"
+          title={`${prefix}${klart.utanfor.length} ${personform(klart.utanfor.length)} står utanför grupperna`}
+        >
+          <p>
+            De {publikOrd(uppsattning.modalitet)} men är inte med i någon av grupperna - de nås inte
+            om du skickar till hela uppsättningen.
           </p>
-
-          {utfall.utanfor.length === 0 ? (
-            <p className="text-small text-text-secondary">
-              Kontrollerat: ingen står utanför - alla som {publikOrd(uppsattning.modalitet)} hör
-              hemma i någon av grupperna.
-            </p>
-          ) : (
-            <MessageBox
-              intent="warning"
-              title={`${utfall.utanfor.length} ${personform(utfall.utanfor.length)} i ingen grupp`}
-            >
-              <p>
-                De {publikOrd(uppsattning.modalitet)} men är inte med i någon av grupperna - de nås
-                inte om du skickar till hela uppsättningen.
-              </p>
-              <button
-                type="button"
-                aria-expanded={visaUtanfor}
-                aria-controls={utanforPanelId}
-                onClick={() => setVisaUtanfor((v) => !v)}
-                className="flex items-center gap-1.5 self-start font-medium text-small underline hover:no-underline"
-              >
-                {visaUtanfor
-                  ? 'Dölj vilka'
-                  : `Visa vilka (${Math.min(utfall.utanfor.length, CHUNK)})`}
-                <ChevronDown
-                  aria-hidden="true"
-                  size={16}
-                  className={`shrink-0 motion-safe:transition-transform ${
-                    visaUtanfor ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              <ul id={utanforPanelId} hidden={!visaUtanfor} className="flex flex-col gap-0.5 pt-1">
-                {utfall.utanfor.slice(0, CHUNK).map((m) => (
-                  <li key={m.id} className="text-small">
-                    {visatNamn(m)}
-                    <span className="text-text-muted"> · {m.email ?? 'ingen e-postadress'}</span>
-                  </li>
-                ))}
-                {utfall.utanfor.length > CHUNK && (
-                  <li className="text-small text-text-muted">
-                    + {utfall.utanfor.length - CHUNK} till
-                  </li>
-                )}
-              </ul>
-            </MessageBox>
-          )}
-        </div>
+          <button
+            type="button"
+            aria-expanded={visaUtanfor}
+            aria-controls={utanforPanelId}
+            onClick={() => setVisaUtanfor((v) => !v)}
+            className="flex items-center gap-1.5 self-start font-medium text-small underline hover:no-underline"
+          >
+            {visaUtanfor ? 'Dölj vilka' : `Visa vilka (${Math.min(klart.utanfor.length, CHUNK)})`}
+            <ChevronDown
+              aria-hidden="true"
+              size={16}
+              className={`shrink-0 motion-safe:transition-transform ${
+                visaUtanfor ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          <ul id={utanforPanelId} hidden={!visaUtanfor} className="flex flex-col gap-0.5 pt-1">
+            {klart.utanfor.slice(0, CHUNK).map((m) => (
+              <li key={m.id} className="text-small">
+                {visatNamn(m)}
+                <span className="text-text-muted"> · {m.email ?? 'ingen e-postadress'}</span>
+              </li>
+            ))}
+            {klart.utanfor.length > CHUNK && (
+              <li className="text-small text-text-muted">+ {klart.utanfor.length - CHUNK} till</li>
+            )}
+          </ul>
+        </MessageBox>
       )}
     </div>
   );
@@ -1786,12 +1798,20 @@ function SegmentLista({
           )}
         </div>
 
-        {/* TÄCKNINGSVYNS INGÅNG (S104 Del 4, task-181, beslut 1: "ett LÄGE
+        {/* KONTROLLÄGETS INGÅNG (S104 Del 4, task-181, beslut 1: "ett LÄGE
             på listan") — en EGEN lågmäld rad, högerställd, direkt ovanför
-            panelerna den slår på och av. Textknapp som byter etikett
+            kvittenserna den slår på och av. Textknapp som byter etikett
             (Markera-mönstret), lättare vikt än kapslarna: kontrollen är ett
             gransknings-läge, inte en daglig handling, och ska inte
-            konkurrera med skapandeknapparna om radplats eller uppmärksamhet. */}
+            konkurrera med skapandeknapparna om radplats eller uppmärksamhet.
+
+            ETIKETTEN SÄGER HANDLINGEN, INTE MÄNGDLÄRAN (Marcus 2026-08-16).
+            "Visa täckning" namngav ett begrepp Lotta inte har; "Kontrollera
+            grupperna" säger vad knappen gör åt henne. `ListChecks` framför
+            `ShieldCheck`: skölden betyder skydd/säkerhet i varje etablerat
+            ikonbibliotek och hade lovat något annat än det knappen gör -
+            checklistan betyder "gå igenom och pricka av", vilket är exakt
+            handlingen. Båda finns i lucide-react 1.28.0 (mätt). */}
         {!markeraLage && markerbara > 0 && (
           <div className="-mt-2 flex justify-end print:hidden">
             <button
@@ -1801,38 +1821,43 @@ function SegmentLista({
                 tackningsLage ? 'bg-bg-emphasized' : 'text-text-secondary hover:bg-bg-emphasized'
               }`}
             >
-              <Layers aria-hidden="true" size={16} className="shrink-0" />
-              {tackningsLage ? 'Dölj täckning' : 'Visa täckning'}
+              <ListChecks aria-hidden="true" size={16} className="shrink-0" />
+              {tackningsLage ? 'Dölj kontrollen' : 'Kontrollera grupperna'}
             </button>
           </div>
         )}
 
-        {/* TÄCKNINGSPANELERNA (S104 Del 4, task-181). Läggs ÖVER listan -
-            mellan handlingsraden och korten, listan döljs aldrig. Göms i
+        {/* KVITTENSERNA (S104 Del 4, task-181). Läggs ÖVER listan - mellan
+            handlingsraden och korten, listan döljs aldrig. Göms i
             markera-läget: de två lägena löser olika ärenden och har inget
             gemensamt att visa samtidigt (samma princip som "Nytt
             segment"/"Dela upp i grupper" göms där). En uppsättning per
-            panel (flera-uppsättningar-beslutet i docblocket ovan
+            kvittens (flera-uppsättningar-beslutet i docblocket ovan
             `TackningsPanel`) - de fjorton finns från mount, så listan är
             aldrig tom när läget slås på.
 
             `!laddar` GRINDAR ÄVEN HÄR (till skillnad från handlingsraden
             ovan, som redan visas under laddning): innan `events` svarat är
-            `parInfo` tom, och en panel som räknar mot en tom taxonomi hade
-            kunnat visa "0 utanför" en bråkdel av en sekund innan det rätta
-            talet landar. Ett kort missvisande nollresultat är precis den
-            tysta felklass täckningsvyn finns för att avslöja - den ska
-            därför aldrig själv producera en. */}
+            `parInfo` tom, och en kontroll som räknar mot en tom taxonomi
+            hade kunnat visa "ingen saknas" en bråkdel av en sekund innan
+            det rätta talet landar. Ett kort missvisande nollresultat är
+            precis den tysta felklass kontrolläget finns för att avslöja -
+            det ska därför aldrig självt producera en. */}
         {tackningsLage && !markeraLage && !laddar && (
           <div className="flex flex-col gap-4">
             {uppsattningar.length === 0 ? (
               <p className="text-small text-text-muted">
-                Ingen genererad grupp-uppsättning att visa täckning för än. Täckning gäller de
-                fjorton förskapade grupperna eller en körning av "Dela upp i grupper".
+                Det finns inga grupper att kontrollera än. Kontrollen gäller de fjorton förskapade
+                grupperna eller en körning av "Dela upp i grupper".
               </p>
             ) : (
               uppsattningar.map((u) => (
-                <TackningsPanel key={u.nyckel} uppsattning={u} parInfo={parInfo} />
+                <TackningsPanel
+                  key={u.nyckel}
+                  uppsattning={u}
+                  parInfo={parInfo}
+                  visaNamn={uppsattningar.length > 1}
+                />
               ))
             )}
           </div>
@@ -1905,8 +1930,8 @@ function SegmentLista({
               Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är
               påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad. De
               fjorton förskapade grupperna bär dessutom sitt eget facit - se skalprovs-växeln för
-              vad det betyder. Täckningsknappen visar om gruppernas uppsättning täcker alla som
-              borde vara med - alltid på riktiga tal, oavsett skalprovets läge.
+              vad det betyder. Kontrollera grupperna-knappen visar om alla som borde vara med är med
+              - alltid på riktiga tal, oavsett skalprovets läge.
             </PrototypNot>
           </>
         )}
@@ -3320,19 +3345,34 @@ function popcount(mask: number): number {
 }
 
 /**
- * ETT STEG SOM SEKTION (S104 varv 2, Marcus GO 2026-08-16). Ärver EXAKT
- * verkstadens sektionsgrammatik — `<section aria-labelledby>` + `<h2>` i
- * `font-semibold text-lg` + hjälptext i `text-small text-text-muted`, `px-4`,
- * `gap-2` (`KonjunktLista`/`VillkorsSektion` ovan) — vilket i sin tur är
- * eventsidans `DetaljGrupp`-grammatik. Sidan blir därmed visuellt släkt med
- * både verkstaden bredvid och detaljvyerna, utan en enda ny klass eller token.
+ * ETT STEG SOM KORT (S104 varv 3, Marcus 2026-08-16: "gör den SNYGG,
+ * PROFFSIG, ENKEL, TYDLIG"). Varv 2 gav stegen rätt SEMANTIK — `<section
+ * aria-labelledby>` + `<h2>`, hela vägen synlig från mount — men lät dem stå
+ * som lösa textblock på naken sida. Semantiken är oförändrad här; det som
+ * ändras är att varje steg får en yta att stå på.
  *
- * NUMRET ÄR TEXT, INTE EN GLYF. ①②③ är dekorativa unicode-tecken vars
- * uppläsning skiljer sig mellan skärmläsare (allt från "circled digit one"
- * till tystnad); "Steg 1." läses likadant överallt och är dessutom samma
- * numrerings-språk som verkstadens egna etiketter ("Villkor 1", "Grupp 1 ·
- * villkor 1"). Numret ligger i rubrikens egen text — inte i ett `::before` —
- * så det följer med i skärmläsarens rubriklista.
+ * YTAN ÄR PANELGRAMMATIKEN, INTE LISTKORTS-GRAMMATIKEN. Appen bär två
+ * kortformer, och de betyder olika saker: LISTPOSTEN är fylld och kantlös
+ * (`bg-bg-muted border-transparent`, `SegmentKort`), BEHÅLLAREN är vit med
+ * en ritad kant (`bg-surface border-border`, den forna täckningspanelen).
+ * Ett steg är en behållare för kontroller, inte en post i en lista — och
+ * valet är dessutom påtvingat nedåt: steg 3:s förhandsvisning ÄR listposter
+ * (`bg-bg-muted`), och de hade blivit osynliga på en `bg-bg-muted`-yta.
+ * Nästlingen avgör, inte smaken.
+ *
+ * NUMRET ÄR EN RUNDEL FÖR ÖGAT OCH TEXT FÖR ÖRAT. Rundeln ärver publikradens
+ * initial-grammatik (`rounded-full bg-bg-emphasized font-semibold text-small
+ * text-text-secondary`, `PersonRad`) i mindre steg — `size-7` mot radens
+ * `size-9`, för ett steg-nummer är ett tecken och en rubrikmarkör, inte två
+ * initialer i en scanlista. Den är `aria-hidden`; rubrikens tillgängliga namn
+ * får numret ur ett `sr-only`-prefix i stället.
+ *
+ * SR-ONLY FRAMFÖR `aria-label` PÅ RUBRIKEN, och skälet är hållbarhet: ett
+ * `aria-label` ERSÄTTER rubrikens textinnehåll för skärmläsaren, så den
+ * synliga och den upplästa rubriken blir två strängar som kan glida isär vid
+ * nästa textputs. Ett `sr-only`-prefix ADDERAR i stället till den synliga
+ * texten — en källa, inte två. Filen har redan precedenten (`SegmentLista`s
+ * "<span class="sr-only"> segment markerade</span>").
  *
  * VILANDE STEG SYNS, OCH DET ÄR HELA POÄNGEN. Ett steg som ännu inte är
  * åtkomligt renderar sin rubrik och en ledtext som säger vad som saknas,
@@ -3340,6 +3380,13 @@ function popcount(mask: number): number {
  * ERSÄTTER innehållet i stället för att gråtona det — en `opacity`-dämpad
  * kontroll är fortfarande fokuserbar och läses fortfarande upp, medan en
  * ledtext säger sanningen ("gör steget före först") för alla.
+ *
+ * DÄMPNINGEN ÄR EN TEXTFÄRG, ALDRIG `opacity`. Ett vilande steg tonar rubrik
+ * och ledtext till `text-text-muted` — MÄTT till 5,33:1 mot `bg-surface`
+ * (#6b6b6b mot #ffffff) och 4,88:1 mot `bg-bg-muted`, alltså AA i båda
+ * lägena. `opacity` på hela kortet hade multiplicerat NER varje kontrast
+ * inklusive kantens och därmed sänkt golvet; en kontrast man kan räkna på i
+ * förväg kan `opacity` per definition inte ge.
  */
 function StegSektion({
   nummer,
@@ -3355,9 +3402,21 @@ function StegSektion({
 }) {
   const id = useId();
   return (
-    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2 px-4">
-      <h2 id={id} className="font-semibold text-lg">
-        <span className="text-text-muted">Steg {nummer}.</span> {rubrik}
+    <section
+      aria-labelledby={id}
+      className="flex min-w-0 flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
+    >
+      <h2 id={id} className="flex items-start gap-2.5 font-semibold text-lg">
+        <span
+          aria-hidden="true"
+          className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small ${
+            vilar === undefined ? 'text-text-secondary' : 'text-text-muted'
+          }`}
+        >
+          {nummer}
+        </span>
+        <span className="sr-only">Steg {nummer}: </span>
+        <span className={`min-w-0 ${vilar === undefined ? '' : 'text-text-muted'}`}>{rubrik}</span>
       </h2>
       {vilar === undefined ? children : <p className="text-small text-text-muted">{vilar}</p>}
     </section>
@@ -3472,7 +3531,11 @@ function DelaUppIGrupper({
             ? 'Räknar grupperna…'
             : befolkade.length === 0
               ? 'Ingen har någon av de här kombinationerna än.'
-              : `${befolkade.length} ${befolkade.length === 1 ? 'grupp skapas' : 'grupper skapas'} · ${tackta} ${personform(tackta)} täcks`;
+              : // "N personer täcks" var samma systemord som listans kontrolläge
+                // rensade bort (Marcus 2026-08-16) - och dessutom passivt om en
+                // handling Lotta utför. "får en grupp" säger vad som händer med
+                // personerna, i samma riktning som resten av meningen.
+                `${befolkade.length} ${befolkade.length === 1 ? 'grupp skapas' : 'grupper skapas'} · ${tackta} ${personform(tackta)} får en grupp`;
 
   function skapa() {
     if (!kanSkapa || modalitet === null) return;
@@ -3502,30 +3565,61 @@ function DelaUppIGrupper({
         </p>
       </header>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4 px-4">
         {/* SAMMA FORM + SÄKERHETSMOTIVERING SOM `VillkorsKort`. Ingen
             röd/ogiltig-styling här: till skillnad från ett villkor mitt i
             byggnad finns det inget FÖRE modaliteten att röra vid - så det
             "orörda" läget varar hela tiden fram till första valet, och en röd
             ram hade skällt på någon som ännu inte gjort något. */}
         <StegSektion nummer={1} rubrik="Vilka räknas med?">
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-2">
             {/* ETIKETTERNA BÄR SUBJEKT (varv 2). "Utbildning"/"Föreläsning"
                 namngav formatet på ett event; frågan steget ställer handlar om
                 PERSONER. De interna värdena är oförändrade `ModalitetsVal` -
-                bara orden på skärmen är nya. Gruppetiketten följde med av
-                samma skäl: "Räknas som" var kongruent med format-orden, inte
-                med de här. */}
-            <RadioGroup
+                bara orden på skärmen är nya.
+
+                RADIOPRICKAR → APPENS KNAPPGRUPP (varv 3). Samma primitiv och
+                samma användning som publikens "Alla / Får mailet / Får inte
+                mailet"-växel i `PublikSektion` - `spread` ger likbreda segment
+                som fyller kortets bredd. `size="sm"` är det enda tillägget:
+                primitivens `sm` är dokumenterat list-/flikmiljöns steg, och
+                etiketterna här är satser ("De som gått utbildningar"), inte
+                enordiga vynamn - i `md` (text-body + px-5) bryter var och en
+                till två rader i innehållsspalten.
+
+                OKONTROLLERAD, MED FLIT - och det är MÄTT, inte antaget.
+                Primitiven mappar `selectedKey === undefined` till
+                `selectedKeys={undefined}`, alltså okontrollerat läge; skickade
+                vi `modalitet ?? undefined` hade komponenten bytt från
+                okontrollerad till kontrollerad vid första valet och
+                react-stately hade skrivit "WARN: A component changed from
+                uncontrolled to controlled" i dev
+                (`react-stately/dist/private/utils/useControlledState.mjs:25`).
+                De tre egenskaper steget kräver får vi utan den växlingen, ur
+                `useToggleGroupState.mjs:18-36`: (a) `defaultSelectedKeys`
+                utelämnad ⇒ `new Set()` ⇒ INGET valt vid mount, (b)
+                `selectionMode: 'single'` ⇒ exakt ett val, (c)
+                `disallowEmptySelection` ⇒ grenen `selectedKeys.has(key) &&
+                !disallowEmptySelection ? [] : [key]` kan aldrig ta vägen `[]`,
+                så ett gjort val går inte att avvälja till noll - exakt
+                radions semantik. `modalitet` speglar valet och kan inte glida
+                isär från det: inget annat i filen skriver till `setModalitet`,
+                och hela vyn avmonteras när man lämnar generatorn. */}
+            <ToggleButtonGroup<ModalitetsVal>
               label="Räknas med"
-              orientation="horizontal"
-              value={modalitet}
-              onChange={(v) => setModalitet(v as ModalitetsVal)}
+              spread
+              onSelectionChange={setModalitet}
             >
-              <Radio value="Utbildning">De som gått utbildningar</Radio>
-              <Radio value="Föreläsning">De som varit på föreläsningar</Radio>
-              <Radio value="Båda">Båda</Radio>
-            </RadioGroup>
+              <ToggleButton size="sm" id="Utbildning">
+                De som gått utbildningar
+              </ToggleButton>
+              <ToggleButton size="sm" id="Föreläsning">
+                De som varit på föreläsningar
+              </ToggleButton>
+              <ToggleButton size="sm" id="Båda">
+                Båda
+              </ToggleButton>
+            </ToggleButtonGroup>
             {/* SÄKERHETSSKÄLET FÖRSVINNER INTE MED VALET (varv 2). Förut
                 visades det bara medan `modalitet === null`, alltså exakt fram
                 till den sekund då valet fick konsekvenser. Men valet går att
@@ -3600,8 +3694,15 @@ function DelaUppIGrupper({
             </div>
           ) : modalitet !== null && kanSkapa ? (
             <>
-              {/* EN RAD PER GRUPP SOM FAKTISKT BLIR AV, i listkortets egen
-                  anatomi (namn fetstilt, meningen dämpad under, talet höger).
+              {/* EN RAD PER GRUPP SOM FAKTISKT BLIR AV — ett MINI-SEGMENTKORT,
+                  för det är precis vad raden är: den blir ett kort i listan när
+                  man trycker på knappen nedanför. Anatomin är listpostens (namn,
+                  meningen dämpad under, talet höger) i publikradens nedskalade
+                  mått (`rounded-xl bg-bg-muted px-4 py-2.5`, `font-medium`) —
+                  en förhandsvisning ska likna resultatet utan att konkurrera
+                  med det, och den ligger dessutom INUTI steg 3:s vita
+                  behållare, där den tonala fyllningen är det som gör den synlig.
+
                   Meningen kommer ur `manniskoMening` - EXAKT samma formulerare
                   som `byggGrupp` kör när gruppen skapas, med samma två
                   argument. Förhandsvisningen kan därför inte säga en annan sak
@@ -3614,10 +3715,10 @@ function DelaUppIGrupper({
                   return (
                     <li
                       key={k.mask}
-                      className="flex items-start justify-between gap-3 rounded-2xl border border-transparent bg-bg-muted px-4 py-3 contrast-more:border-border-strong"
+                      className="flex items-start justify-between gap-3 rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 contrast-more:border-border-strong"
                     >
                       <span className="flex min-w-0 flex-col gap-0.5">
-                        <span className="font-semibold text-body">{k.namn}</span>
+                        <span className="font-medium text-body">{k.namn}</span>
                         <span className="text-small text-text-secondary">
                           {manniskoMening(ivaldaIGrupp, utanfor, modalitet)}
                         </span>
@@ -3651,19 +3752,29 @@ function DelaUppIGrupper({
               )}
             </>
           ) : null}
+
+          {/* HANDLINGEN BOR I STEGET (varv 3). Knappen stod förut i sidfoten
+              bredvid "Avbryt" - två knappar i rad, den ena en verkställande
+              handling på steg 3:s innehåll, den andra en flykt från hela
+              sidan. Den listan man just läst ("Det här blir grupperna") och
+              knappen som gör den verklig hör ihop; att lämna sidan gör de
+              inte. Kortet är därför handlingens hem, sidfoten flyktens.
+
+              TALET STÅR I KNAPPEN BARA NÄR DET BETYDER NÅGOT. "Skapa 0
+              segment" var sidans första möte i den gamla formen: ett löfte om
+              noll, på en knapp som inte gick att trycka på. Utan tal är
+              knappen ärlig i väntläget, och talet dyker upp i samma sekund som
+              det finns grupper att skapa. */}
+          <div className="flex pt-1">
+            <Button intent="primary" isDisabled={!kanSkapa} onPress={skapa}>
+              {befolkade.length > 0 ? `Skapa ${befolkade.length} segment` : 'Skapa segmenten'}
+            </Button>
+          </div>
         </StegSektion>
       </div>
 
       <div className="flex flex-col gap-3 px-4 pb-2">
         <div className="flex flex-wrap items-center gap-2">
-          {/* TALET STÅR I KNAPPEN BARA NÄR DET BETYDER NÅGOT. "Skapa 0
-              segment" var sidans första möte i den gamla formen: ett löfte om
-              noll, på en knapp som inte gick att trycka på. Utan tal är
-              knappen ärlig i väntläget, och talet dyker upp i samma sekund som
-              det finns grupper att skapa. */}
-          <Button intent="primary" isDisabled={!kanSkapa} onPress={skapa}>
-            {befolkade.length > 0 ? `Skapa ${befolkade.length} segment` : 'Skapa segmenten'}
-          </Button>
           <Button intent="secondary" onPress={onTillbaka}>
             Avbryt
           </Button>
