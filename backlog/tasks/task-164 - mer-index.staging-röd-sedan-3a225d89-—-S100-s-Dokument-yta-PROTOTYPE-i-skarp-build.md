@@ -3,10 +3,10 @@ id: TASK-164
 title: >-
   mer-index.staging röd sedan 3a225d89 — S100:s Dokument-yta [PROTOTYPE] i skarp
   build
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-08 17:10'
-updated_date: '2026-08-08 17:34'
+updated_date: '2026-08-16 22:04'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,6 +31,14 @@ Testet mer-index.staging ('Mer-landningsytan ... ikoner chevron per rad') är de
 - [x] #2 Fix landad enligt O3-flaggformen om hypotesen bekräftas (DEV-grind, prototypen kvar i dev)
 - [ ] #3 Testet bevisat grönt i post-merge-körning på main
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -82,12 +90,30 @@ grupper återställs exakt).
 AC#3 KAN INTE VERIFIERAS AV DENNA AGENT: kräver post-merge-körning på main
 efter landning (ADR-096 — bygg-agenten parkerar aldrig på landnings-vakter).
 Lämnas avbockad för orkestrerarens svep.
-<!-- SECTION:NOTES:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
+RIVNINGSPASSET (2026-08-16/17, task-164-rivning-uppdraget, gren
+docs-dokument-rivning-task164): dev-grinden `visaDokumentPrototyp`
+(mer/index.tsx) RIVEN — Dokument-ytan promoverad till skarp, ovillkorlig
+NavCard-rad i grupp 2 (ADR-102 B3-villkoret uppfyllt: Marcus satte
+"godkand" i s102-dokument-konvergens/facit.json, sha cc1d7c53, PR #1446).
+mer-index.staging.test.ts uppdaterat till ÅTTA rader/grupp 2 = ['Bygg
+segment', 'Dokument'] (var SJU) — kört lokalt mot canonical
+`npx playwright test --project=chromium-authenticated` (webServer på 5173):
+GRÖNT före (7 länkar, dev-grinden höll) OCH grönt efter (8 länkar, facit
+uppdaterat). Enda kvarvarande fel i filen är AC 2 (måttjämförelse mot /hem)
+— OFÖRÄNDRAT i båda körningarna, orsakat av hem-ytans EGEN pågående
+konvergens (s102-hem-konvergens/facit.json, "godkand": null), UTANFÖR
+detta korts scope.
+
+AC #3 lämnas AVBOCKAD med avsikt: dess bokstav ("post-merge-körning på
+main") kan inte uppfyllas av en bygg-agent (ADR-096 — ingen agent väntar in
+CI/landning). Den ursprungliga MÅLSÄTTNINGEN (mer-index.staging.test.ts
+grönt) är dessutom SUPERSEDERAD av rivningen: det gamla facitet (Dokument
+DOLD, 7 länkar) existerar inte längre — det NYA facitet (Dokument SKARP, 8
+länkar) är vad testet nu låser, och det är bevisat grönt lokalt ovan.
+Orkestrerarens post-merge-svep är den slutgiltiga verifieraren, som för
+varje landning.
+
+Kortet sätts INTE till Done av denna agent (bygg-agent-kontraktet:
+"Sätt aldrig kortet till Done" — orkestreraren stänger efter CI-grönt).
+<!-- SECTION:NOTES:END -->

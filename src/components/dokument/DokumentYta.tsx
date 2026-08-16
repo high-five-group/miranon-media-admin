@@ -1,282 +1,89 @@
 /**
- * [PROTOTYPE] [S100] DOKUMENT-YTAN — Mer-ytan där bilagor förvaltas (`T131`).
+ * Dokument-ytan — Mer-ytan där bilagor förvaltas (`T131`). PROMOVERAD ur
+ * S100/TASK-147.6:s konvergenspass (ADR-102 B1/B2, ADR-103 B2 steg 1) —
+ * denna fil ÄR den skarpa ytan, ingen separat prototypfil att riva.
+ * Facit-manifestet
+ * `tasks/sessions/bilagor/s102-dokument-konvergens/facit.json` är den
+ * auktoritativa formbeskrivningen (ADR-102 B1) och bär Marcus godkännande
+ * (TASK-164-rivningen, ADR-103 B2 steg 4). Fullständig bygghistorik
+ * (skärpningsvarv 1–3, TASK-245/246) finns i
+ * `git log -p -- src/components/dokument/DokumentYta.tsx`, inte upprepad
+ * här.
  *
- * FRÅGAN SOM BESVARAS (throwaway-kontraktet klausul i):
- *   "Vilken form ska Dokument-ytan ha — den yta som förvaltar det
- *    bilageväljaren på åtgärds-sidan visar?"
+ * FRÅGAN YTAN BESVARAR: vilken form Dokument-ytan ska ha — den yta som
+ * förvaltar det bilageväljaren på åtgärds-sidan visar (underlaget § 9,
+ * Marcus-beslut 2026-08-07).
  *
- * VARFÖR DEN BYGGS I SAMMA SESSION SOM ÅTGÄRDS-SIDAN (underlaget § 9,
- * Marcus-beslut 2026-08-07): bilageväljaren visar det den här ytan förvaltar.
+ * FYND 1 — KLASS ÄR EN RIKTIG KOLUMN (TASK-147.12). Bilagor-tabellen bär
+ * `Dokumentklass` (Uppladdad/Event-mallad, additivt fält, staging); och
+ * `Attachment.dokumentklass` visar den VERKLIGA klassen per rad — ingen
+ * filnamns-heuristik. "Okänd" är en ärlig etikett (Gunilla-principen), inte
+ * en gissning: den betyder att backfillen (se
+ * `scripts/backfill-bilagor-dokumentklass.mjs`) inte kunde härleda den raden.
  *
- * [TASK-147.6, SKÄRPT MOT VERKLIGT FUNDAMENT, VARV 1] Ursprungsformen
- * (S100/T131) hade tre klass-grupper fyllda med PÅHITTADE stubbar och läste
- * ingen data. Fundamentet (TASK-146.4 adapter + TASK-146.5 klass B-
- * generering) finns nu — denna version läser VERKLIG data och laddar
- * VERKLIGT upp, men avtäckte samtidigt att prototypens tre premisser inte
- * håller mot det byggda fundamentet. De tre fynden nedan är kortets
- * GRANSKNINGSUNDERLAG (AC #2) — inte gissningar, varje rad är verifierad
- * mot koden som refereras.
- *
- * FYND 1 — KLASS A/B ÄR STRUKTURELLT ODELBARA I DATAN, INTE BARA I UI:t.
- * Bilagor-tabellen (TASK-146.2) bär inget dokumentklass-fält
- * (`supabase/functions/get-event-attachments/index.ts` § filhuvud,
- * `Attachment.ts` § docblock). `fetchEventAttachments(eventId)` returnerar
- * DÄRFÖR alla rader länkade till eventet oavsett hur de uppstod — uppladdad
- * (klass A) och event-mallat genererad (klass B) är omöjliga att skilja åt
- * i den data adaptern faktiskt ger. Denna yta gissar därför INTE en klass
- * ur filnamnsmönster (`generate-event-attachment/index.ts` bygger
- * `Namn = "Deltagarinformation – {eventlabel}.pdf"`, ett tekniskt sett
- * matchbart mönster) — en sådan heuristik hade sett ut som riktig
- * klassificering utan att vara det, och en Lotta-fil som råkar heta likadant
- * hade klassats fel. DATAGRUNDEN för en riktig klass-etikett landar via
- * TASK-147.12 (dokumentklass-fältet); den här ytans filterrad (nedan) är
- * byggd så den tar emot fältet UTAN ombyggnad den dagen det finns.
- *
- * [RÄTTAD, TASK-147.12] Fynd 1 var sant vid S100/147.6-byggtillfället — det
- * är HISTORIA nu, inte längre tillstånd. Marcus-GO 2026-08-16 (ADR-063,
- * "defekten löses I BASEN"): Bilagor-tabellen bär numera `Dokumentklass`
- * (additivt fält, staging), och `Attachment.dokumentklass` bär den VERKLIGA
- * klassen — ingen filnamns-heuristik, en riktig kolumn. Varje rad nedan visar
- * därför sin faktiska klass (eller "Okänd" — ärligt, inte gissat — för de
- * fåtal historiska rader som inte gick att härleda vid backfillen, se
- * scripts/backfill-bilagor-dokumentklass.mjs). Gruppnamnet "Bilagor för valt
- * event" är MEDVETET oförändrat: alla klasser hör fortfarande hemma i samma
- * lista, bara nu med en synlig etikett per rad i stället för att vara en
- * odelbar massa.
- *
- * FYND 2 — BILAGE-FUNDAMENTET ÄR EVENT-SCOPAT, INTE ETT GLOBALT BIBLIOTEK.
- * `uploadAttachment` kräver `eventId` (obligatoriskt fält,
- * `UploadAttachmentInput`), och `fetchEventAttachments` läser EN händelses
- * omvända länk — adaptern har ingen "alla bilagor oavsett event"-metod.
- * Ytan bär därför en eventväljare (samma `EventValjare`-komponent som
- * Åtgärds-sidan och manuell anmälan) — ett REELLT formbeslut som följer av
- * fundamentet, inte ett estetiskt val.
+ * FYND 2 — EVENT-SCOPAT, INTE ETT GLOBALT BIBLIOTEK. `uploadAttachment`
+ * kräver `eventId`; `fetchEventAttachments` läser EN händelses omvända länk
+ * — adaptern har ingen "alla bilagor oavsett event"-metod. Ytan bär därför
+ * en eventväljare (samma `EventValjare`-komponent som Åtgärds-sidan och
+ * manuell anmälan).
  *
  * FYND 3 — "ANVÄNDS I N EVENT" ÄR INTE BYGGBART. Domänmodellen
- * (`Attachment.eventId`) läser bara FÖRSTA länkade eventet
- * (`mapAttachmentRecord`, `_shared/attachments.ts`) även om Airtable-fältet
- * tekniskt är `multipleRecordLinks` — och ingen adapter-metod lägger någonsin
- * till fler länkar på en befintlig rad. Prototypens `anvandsI`-räknare är
- * därför borttagen snarare än fejkad.
+ * (`Attachment.eventId`, `mapAttachmentRecord` i `_shared/attachments.ts`)
+ * läser bara FÖRSTA länkade eventet, även om Airtable-fältet tekniskt är
+ * `multipleRecordLinks` — och ingen adapter-metod lägger någonsin till fler
+ * länkar på en befintlig rad. En "används i N event"-räknare är därför
+ * strukturellt obyggbar, inte bara utelämnad.
  *
- * "ERSÄTT" (AC #1) — [ÄKTA SEDAN TASK-147.11] Detta stycket beskrev
- * ursprungligen (TASK-147.6) en klientsidig attrapp: adaptern saknade ett
- * delete/replace-primitiv, så en ny uppladdning med SAMMA `Namn` grupperades
- * bara klient-sidigt som en "nyare version" av samma rad — den gamla raden
- * blev liggande kvar i Airtable OCH Storage som skräp, synligt bara som en
- * "Ersatte en tidigare version"-notis, och en TREDJE uppladdning gjorde den
- * ÄLDSTA av tre osynlig i listan (varken egen rad eller notis). TASK-147.11
- * byggde den saknade primitiven (`delete-attachment`-EF:en +
- * `DataSourceAdapter.deleteAttachment`) och kopplade "Ersätt"
- * (`useReplaceAttachment`) till den: en lyckad ersättning laddar upp den nya
- * filen FÖRST och raderar sedan den gamla posten FAKTISKT — både Storage-
- * bytesen och Bilagor-raden. Ingen ny uppladdning kan därför längre skapa en
- * dubblett via "Ersätt". `grupperaPerNamn` (nedan) är DEGRADERAD till en ren
- * visningshjälp för KVARVARANDE dubbletter (t.ex. flera identiska klass
- * B-genereringar via `generate-event-attachment` — helt orört av denna
- * ändring) — den påstår inte längre NÅGOT om att en dubblett är en
- * "ersättning". (Formväxeln `?form=grupper`/`?form=lista` som tidigare stod
- * nämnd här är riven — se skärpningsvarv 2, punkt 3, nedan; listan är nu
- * ytans enda form.)
+ * "ERSÄTT" (AC #1, TASK-147.11): `useReplaceAttachment` laddar upp den nya
+ * filen FÖRST och raderar sedan den gamla posten FAKTISKT (både Storage-
+ * bytesen och Bilagor-raden, via `delete-attachment`-EF:en) — en ny
+ * uppladdning kan därför inte skapa en dubblett via "Ersätt".
+ * `grupperaPerNamn` (nedan) är en ren visningshjälp för KVARVARANDE
+ * dubbletter (t.ex. flera identiska klass B-genereringar via
+ * `generate-event-attachment`) — den påstår inget om att en dubblett är en
+ * "ersättning".
  *
- * KLASS B/C (mallar/generatorer): FORTFARANDE stubbar SOM KATALOG-RADER —
- * `MALLAR`/`GENERATORER` nedan är fortsatt kod-nivå-KATALOGER (vilken mall/
- * generator som FINNS), inte instans-listor. Att lista VERKLIGA genererade
- * INSTANSER (tidigare genererade kvitton/brev) hade krävt samma
- * klass-gissning Fynd 1 avvisar, och är fortfarande utanför scope.
- * Uppdragets AC #1 begränsar "uppladdning + ersättning" till klass A
- * uttryckligen — mallar/generatorer får ingen sådan handling.
+ * KLASS B/C (mallar/generatorer): `MALLAR`/`GENERATORER` nedan är
+ * kod-nivå-KATALOGER (vilken mall/generator som FINNS), inte instans-
+ * listor. Att lista VERKLIGA genererade instanser (tidigare genererade
+ * kvitton/brev) hade krävt samma klass-gissning Fynd 1 avvisar och är
+ * utanför scope. Uppladdning + ersättning gäller uttryckligen bara klass
+ * A — mallar/generatorer får ingen sådan handling.
  *
- * [RÄTTAD, TASK-246, 2026-08-16] "Visa" på en katalog-rad är DÄREMOT INTE
- * längre read-only i den bemärkelsen att den bara visar statisk katalogdata
- * (se [RÄTTAD, TASK-246] nedan) — Marcus-ordern (uppdraget, "en riktigt
- * genererad PDF på alla mallar ... och även generatorn") ersätter varv 3:s
- * `ProduceratExempel`-fältlista med en RIKTIGT genererad, sidoeffektsfri
- * PDF per klick. Skillnaden mot Fynd 1/klass-gissningen ovan: detta listar
- * fortfarande INGA instanser (ingen ny rad, inget kvarvarande objekt) — det
- * genererar en TRANSIENT PDF vid klick och kastar bort den när dialogen
- * stängs, exakt en gång per klick.
+ * SIDKROM: stulen verbatim ur `AktivitetsHistorik.tsx` § `kromKnapp`
+ * (S106-facitet, `tasks/sessions/bilagor/s106-aktivitetslogg/facit.json`)
+ * — rund `size-11 bg-bg-muted`-chevron (`ChevronLeft 26`) tillbaka till
+ * `/mer`, `<header className="flex flex-col gap-1">`, ingen egen
+ * sidopadding (rätt mot `AppShell`s `main`-padding). `AtgardsSida.tsx`s
+ * `Sidhuvud` förkastades som mönsterkälla: dess extra `px-4`/`mx-4`-nivå
+ * hade dubblat sidmarginalen ovanpå `AppShell`s egen — samma
+ * dubbleringsfel `MailLog.tsx`/`Intresserade.tsx` bär.
  *
- * READ-ONLY MOT BASEN/STORAGE FÖR KLASS B/C: ingen handling här SKRIVER
- * något (Airtable, Storage eller mail) — TASK-246:s generering är
- * sidoeffektsfri per konstruktion (AC #3), inte bara "oförändrat sedan
- * S100" längre (den frasen gällde att inget skrevs ALLS, inklusive ingen
- * PDF-generering — nu genereras en riktig PDF, men fortfarande utan att
- * något PERSISTERAS).
+ * FORMEN ÄR LÅST TILL EN LISTA (Marcus-GO 2026-08-16): `?form=grupper`/
+ * `?form=lista`-växeln och `DokumentGrupper`-funktionen (tre klass-grupper)
+ * är rivna (git bevarar historiken) — bara den flata, filtrerbara listan
+ * kvarstår, aldrig bakom en växel.
  *
- * VERKLIG FÖRDELNING (live, staging, fixturhändelsen recIFrxHZw165ycXk, mätt
- * 2026-08-16 via get-event-attachments-EF:n direkt): 12 riktiga Bilagor-rader
- * — 9 unika "ZZ-attachment-test-*.pdf" (klass A-liknande, TASK-146.4:s egna
- * staging-sentineler) + 3 st "Deltagarinformation – ZZ-belaggning-fixtur..."
- * (klass B, TASK-146.5:s genererings-sentineler, alla identiskt namn). INGEN
- * äkta Lotta-skapad bilaga finns ännu i staging — hela den mätta fördelningen
- * är testsviternas egna sentineler.
+ * VISA-BETEENDET: `BilagaVisaKnapp` (TASK-245) hämtar en tidsbegränsad
+ * signerad nedladdnings-URL (`DataSourceAdapter.getAttachmentDownloadUrl`,
+ * 300s TTL — se `_shared/attachments.ts` § SIGNED_DOWNLOAD_URL_TTL_SECONDS)
+ * och visar riktig förhandsvisning (PDF via `<iframe>`, bild via `<img>`)
+ * plus en "Ladda ner"-länk, eller en ärlig `MessageBox intent="info"`-gräns
+ * för format som varken är PDF eller bild ("gissa aldrig"-disciplinen).
+ * `GenereradPdfVisaKnapp` (TASK-246) genererar i stället en TRANSIENT PDF
+ * per klick för klass B/C (`Blob`+`createObjectURL`, riven med
+ * `URL.revokeObjectURL` i `useEffect`s cleanup) — SIDOEFFEKTSFRI per
+ * konstruktion (AC #3): `previewEventTemplate` (klass B, `preview: true`
+ * mot generate-event-attachment) och `previewReceipt` (klass C, en NY,
+ * dedikerad EF `preview-receipt` som varken importerar send-receipt.ts,
+ * receipt-numbering.ts eller Resend direkt) når ALDRIG Storage-
+ * uppladdningen, Bilagor-radskapelsen eller ett allokerat kvittonummer.
  *
- * [TASK-147.6, SKÄRPNINGSVARV 2 — HUSETS FORM, 2026-08-16] Marcus underkände
- * varv 1 (uppdragstexten, 2026-08-16: "prototypen måste byggas EXAKT som det
- * kommer se ut i prod-appen — SNYGGT, PROFFSIGT, ENKELT") på fyra punkter,
- * alla åtgärdade i detta varv:
- *
- *  1. SIDKROM SAKNADES HELT (ingen chevron, ingen sidgrund). Stulet verbatim
- *     ur `AktivitetsHistorik.tsx`s krom
- *     (`components/aktivitetshistorik/AktivitetsHistorik.tsx` § `kromKnapp`,
- *     S106-omdesignen, Marcus-godkänd 2026-08-15,
- *     `tasks/sessions/bilagor/s106-aktivitetslogg/facit.json`) — SAMMA
- *     nav-djup som denna yta (`/mer`-leaf), senaste husfacit: rund
- *     `size-11 bg-bg-muted`-chevron (`ChevronLeft 26`) tillbaka till `/mer`,
- *     `<header className="flex flex-col gap-1">` med `h1 font-semibold
- *     text-3xl`, ingen undertext. `AtgardsSida.tsx`s `Sidhuvud`
- *     (§ Sidhuvud, `border-b` + `mx-4`-chevron, Åtgärds-sidan, den ANDRA
- *     mönsterkällan) vägdes som andra kandidat men förkastades HÄR: den bär
- *     en extra `px-4`/`mx-4`-nivå ovanpå `AppShell`s egen `main`-padding
- *     (`px-4 py-4`, `AppShell.tsx`), vilket hade dubblat sidmarginalen —
- *     samma dubbleringsfel `MailLog.tsx`/`Intresserade.tsx` bär (den ÄLDRE
- *     `<section className="… p-4">`-konventionen, oförändrad sedan före
- *     S106 och exakt formen denna fil själv bar till och med varv 1).
- *     `AktivitetsHistorik`s krom har INGEN egen sidopadding — rätt mot
- *     `AppShell`, och den formen ärvs här verbatim.
- *
- *  2. PROTOTYP-/META-TEXT I UI:T (fynd-rutan "Om datan i denna prototyp" +
- *     slutraden "Prototyp. Bilagor + uppladdning är verkliga …") ÄR RIVNA ur
- *     den renderade ytan. Fynden 1–3 ovan och ersätt-heuristikens gräns
- *     finns KVAR — i DENNA docblock och i kortets Implementation Notes
- *     (task-147.6, backlog-CLI:t) — Lotta ser dem aldrig. Ytan visar bara
- *     det hon ska se: filnamn, storlek, datum, en Ersätt-knapp.
- *
- *  3. FORMEN VAR TVÅ, ÄR NU LÅST TILL EN. Marcus-GO (uppdraget, 2026-08-16,
- *     på orkestrerarens rekommendation): "listan är formen." `?form=grupper`/
- *     `?form=lista`-växeln och `DokumentGrupper`-funktionen (tre klass-
- *     grupper) är RIVNA (git bevarar historiken,
- *     `git log -p -- src/components/dokument/DokumentYta.tsx`) — bara den
- *     tidigare "lista"-formens flata, filtrerbara lista kvarstår, aldrig
- *     bakom en växel.
- *
- *  4. OLIKA BREDA KONTROLLER. Typ-filtret (`ListaTyp`, `LISTA_FILTER`) bär
- *     nu `spread` (`ToggleButtonGroup`-primitivens likbredds-läge, ADR-044)
- *     + `min-h-11` per pill — samma touch-target-golv som
- *     `AktivitetsHistorik`s tidsperiod-toggel bär (den filens egen kommentar:
- *     "`size='sm'` ensamt gav 37 px, under 44 px-golvet"). Med
- *     Visningsform-växeln riven (punkt 3) finns bara EN `ToggleButtonGroup`
- *     kvar på ytan — den tidigare bredd-sågtanden mellan två olika breda
- *     växlare på samma yta är därmed strukturellt omöjlig, inte bara fixad.
- *     Button-raderna (`Ersätt`/`Visa`) bar redan enhetlig `ghost`/`sm` sedan
- *     varv 1, oförändrat.
- *
- * [TASK-147.6, SKÄRPNINGSVARV 3, 2026-08-16] Marcus FEM kvitterade punkter
- * (sessionsdok `tasks/sessions/2026-08-10-session-102.md` rad 1043–1052,
- * MARCUS-SEKVENS punkt 1), alla åtgärdade i detta varv:
- *
- *  1. IKONERNA FRAMFÖR MALLAR/GENERATORER (`Sparkles`/`UserRound`) ÄR TAGNA
- *     BORT — bilagornas egen `FileText`-ikon (`BilageRadRow`) rörs INTE, bara
- *     mall-/generator-raderna nämndes i punkten.
- *
- *  2–3. VISA-KNAPPEN BÄR NU `intent="primary" emphasis="subtle"` (tonad
- *     bakgrund, ej `ghost`) I STÄLLET FÖR den gamla `ghost`-formen. Detta
- *     löser BÅDA punkterna i SAMMA byte: `ghost`s hover-token
- *     (`--mm-button-ghost-bg-hover` = `var(--mm-bg-muted)`) råkar vara
- *     IDENTISK med radgruppens egen bakgrund (`bg-bg-muted` på
- *     `grupp-kort` nedan) — en verklig `data-[hovered]`-hover FANNS redan i
- *     CVA:n (Button.tsx), men var osynlig mot en identisk bakgrundsfärg.
- *     `subtle`s 10/16/22-procents färgmix (`components.css`, samma par som
- *     `Deltagare.tsx`s `MarkeraKnapp`) är en helt annan yta och löser
- *     synligheten OCH hover-kontrasten utan en enda ny token.
- *
- *  4. VISA-KNAPPEN ÄR VERTIKALT CENTRERAD (`self-center` på knappen/dess
- *     grupperingsspann) — radens egen `items-start` rörs INTE (ikonen ska
- *     fortfarande hänga mot textens första rad, det var aldrig punkten).
- *
- *  5. VISA-BETEENDET (Marcus kvitterade rekommendation): `VisaKnapp` nedan
- *     öppnar husets `Dialog`-primitiv (`DialogTrigger`/`Modal`/`Dialog`,
- *     ADR-044, samma mönster som `AtgardsSida.tsx`s `SkickaKvittoKnapp`) i
- *     stället för att vara en död knapp. Mallar/generatorer visar ett
- *     ÄRLIGT "producerat exempel" (`ProduceratExempel`) byggt UR
- *     `Mall.fyllerI`/`Generator.byggsUr` — samma katalogdata som redan stod
- *     i radens metatext, aldrig en hittepå-instans (samma "gissa aldrig"-
- *     disciplin som Fynd 1/3 ovan).
- *
- *     BILAGOR (klass A) — GENUIN GRÄNS, FLAGGAD, INTE TYST KRINGGÅD (HISTORIA,
- *     se [RÄTTAD, TASK-245] nedan): den kvitterade rekommendationen
- *     ("overlay-förhandsvisning för bilagor … ladda ner-fallback när
- *     förhandsvisning inte går") FÖRUTSATTE en URL till filens bytes. INGEN
- *     sådan fanns i kontraktet vid detta varvs byggtillfälle — verifierat:
- *     `Attachment` (denna fils import) bar `id`/`namn`/`storlekBytes`/
- *     `skapad`/`eventId`/`dokumentklass`, ingen URL; `mapAttachmentRecord`
- *     (`supabase/functions/_shared/attachments.ts`) mappade ALDRIG en URL;
- *     `get-event-attachments/index.ts` läste bara `ATTACHMENT_FIELDS =
- *     ['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Dokumentklass']`;
- *     bucketen `bilagor` är PRIVAT (`scripts/provision-attachments-
- *     bucket.mjs`, `public: false`, ingen `storage.objects`-policy funnen i
- *     `supabase/`) så en direkt klient-`createSignedUrl` är stängd av RLS;
- *     och EN signerad NEDLADDNINGS-URL existerade ingenstans i
- *     `supabase/functions/` — bara en UPPLADDNINGS-signatur
- *     (`create-attachment-upload-ticket`). `VisaKnapp` för bilagor öppnade
- *     därför dialogen med ett ÄRLIGT, Gunilla-läsbart `MessageBox
- *     intent="info"` — "går inte att öppna här ännu" — i stället för
- *     antingen en fejkad förhandsvisning eller en trasig nedladdningslänk.
- *
- * [RÄTTAD, TASK-245, 2026-08-16] Gapet ovan är STÄNGT. `get-attachment-
- *     download-url`-EF:en (samma ägarskaps-guard-mönster som
- *     `delete-attachment`, TASK-147.11) ger en tidsbegränsad signerad URL
- *     (`DataSourceAdapter.getAttachmentDownloadUrl`, 300s TTL — se
- *     `_shared/attachments.ts` § SIGNED_DOWNLOAD_URL_TTL_SECONDS för
- *     TTL-motiveringen). `BilagaVisaKnapp` (nedan) ERSÄTTER den ärliga
- *     info-dialogen för bilage-raden med RIKTIG förhandsvisning (PDF via
- *     `<iframe>`, bild via `<img>`) plus en "Ladda ner"-länk — och en
- *     tredje, ÄRLIG gräns för format som varken är PDF eller bild (samma
- *     "gissa aldrig"-disciplin: en `MessageBox intent="info"` i stället för
- *     ett trasigt försök att rendera en filtyp webbläsaren inte kan visa).
- *     `VisaKnapp` (den generiska primitiven) rörs INTE — Mallar/Generatorer
- *     fortsätter använda den oförändrat, de har inget URL-behov.
- *
- * [RÄTTAD, TASK-246, 2026-08-16] Föregående styckets sista mening ("Mallar/
- * Generatorer fortsätter använda [VisaKnapp] oförändrat") är HISTORIA —
- * Marcus-ordern (uppdraget, 2026-08-16: "det proffsigaste och mest
- * branschledande är väl att man ser en riktigt genererad PDF på alla
- * mallar ... och även generatorn") ersätter varv 3:s `ProduceratExempel`-
- * fältlista med en RIKTIGT genererad PDF, precis som TASK-245 gjorde för
- * bilagor ovan. `VisaKnapp`/`ProduceratExempel` är RIVNA (git bevarar
- * historiken) — `GenereradPdfVisaKnapp` (nedan) är deras ersättare, delad
- * av BÅDA klasserna B och C (en `typ`-prop väljer vilken EF som anropas).
- *
- * SKILLNADEN MOT `BilagaVisaKnapp` (TASK-245): bilagor har en REDAN LAGRAD
- * fil att peka en signerad URL mot; klass B/C har INGEN lagrad instans —
- * varje klick GENERERAR en ny, transient PDF (POST, bytesen kommer som
- * base64 i svaret, inte en URL). `Blob`+`createObjectURL` bygger en
- * lokal, klient-sidig objekt-URL av den base64-strängen (branschmönster
- * för att förhandsvisa en genererad fil utan `data:`-URI:ers
- * storleksgränser), riven med `URL.revokeObjectURL` i samma `useEffect`s
- * cleanup — annars läcker en objekt-URL per klick.
- *
- * SIDOEFFEKTSFRIHET (AC #3, HÅRD GRÄNS): BÅDA EF-anropen är transienta per
- * konstruktion, inte "genererade + efterstädade":
- *   - Klass B (`previewEventTemplate` → generate-event-attachment MED
- *     `preview: true`): SAMMA `byggPdf`-anrop som den persisterande vägen
- *     (146.5), men en gren som ALDRIG når Storage-uppladdningen eller
- *     Bilagor-radskapelsen — ingen kvarliggande artefakt, se EF:ens eget
- *     filhuvud § [TASK-246].
- *   - Klass C (`previewReceipt` → preview-receipt, en NY, dedikerad EF):
- *     den ordinarie kvittosändningen (`_shared/send-receipt.ts`) allokerar
- *     ALLTID ett riktigt kvittonummer (Airtable-skrivning, FÖRE
- *     sändningsförsöket) och skickar ett riktigt mail vid lyckad körning —
- *     kan inte grenas bort inuti den orkestratorn. preview-receipt
- *     importerar VARKEN send-receipt.ts, receipt-numbering.ts eller Resend
- *     DIREKT (en indirekt, type-only-import via receipt-content.ts eraderas
- *     vid transpilering — se EF:ens eget filhuvud för nyansen).
- *
- * PERSONDATA FÖR KLASS C: TYPEXEMPEL, inte en verklig anmälan (bokfört
- * beslut, kortets notes AC #2 — se preview-receipt/index.ts § PERSONDATA
- * för det fulla resonemanget: Dokument-ytan har ingen anmälan/betalning
+ * PERSONDATA FÖR KLASS C: TYPEXEMPEL, inte en verklig anmälan (se
+ * `preview-receipt/index.ts` § PERSONDATA) — ingen anmälan/betalning är
  * VALD på denna generiska katalograd, och basen saknar ett prisfält
- * oavsett — belopp/betalsätt är ALLTID Lotta-inmatade vid en riktig
- * sändning, aldrig lästa ur basen). Eventets namn ÄR verkligt (samma
- * eventId som Dokument-ytans redan valda event).
- *
- * DEV-GRINDEN (`mer/index.tsx` § `visaDokumentPrototyp`) och `[PROTOTYPE]`-
- * märkningen ovan RÖRS INTE av detta varv — facit-låset (AC #3, task-147.6,
- * stämpel via !-kanalen ADR-104) är Marcus egen morgonhandling, skild från
- * detta skärpningsvarv.
- *
- * KASTBAR: koden absorberas ALDRIG (klausul iv).
+ * oavsett. Eventets namn ÄR verkligt (samma eventId som Dokument-ytans
+ * redan valda event).
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -425,8 +232,8 @@ export function DokumentYta() {
   return (
     <div className="flex flex-col gap-4" data-testid="dokument-yta">
       {/* HUSETS SIDKROM — stulet verbatim ur AktivitetsHistorik.tsx § kromKnapp
-          (S106-facitet). Se filhuvudets skärpningsvarv 2, punkt 1, för varför
-          AtgardsSida.tsx § Sidhuvud (den andra mönsterkällan) INTE ärvs här. */}
+          (S106-facitet). Se filhuvudets SIDKROM-not för varför AtgardsSida.tsx
+          § Sidhuvud (den andra mönsterkällan) INTE ärvs här. */}
       <Link
         to="/mer"
         aria-label="Tillbaka till Mer"
@@ -607,12 +414,11 @@ function forhandsvisningsFormat(namn: string): ForhandsvisningsFormat {
 
 /**
  * BILAGORNAS VISA-KNAPP (TASK-245, ersätter den ärliga info-dialogen — se
- * filhuvudets [RÄTTAD, TASK-245]-stycke). SKILD komponent från den generiska
- * `VisaKnapp` ovan: bilagor behöver en LAZY, dialog-scopad datahämtning
- * (signerad URL, TTL 300s) som Mallar/Generatorer (statisk katalogdata,
- * `ProduceratExempel`) aldrig behöver — att trycka in fetch-logik i den
- * delade primitiven hade tvingat två orelaterade call sites att bära samma
- * komplexitet.
+ * filhuvudets VISA-BETEENDET-not). SKILD komponent från `GenereradPdfVisaKnapp`
+ * ovan: bilagor behöver en LAZY, dialog-scopad datahämtning (signerad URL,
+ * TTL 300s) som Mallar/Generatorer (transient PDF-generering, ingen lagrad
+ * resurs) aldrig behöver — att trycka in fetch-logik i en delad primitiv
+ * hade tvingat två orelaterade call sites att bära samma komplexitet.
  *
  * LAZY PER KONSTRUKTION: `isOpen` styr BÅDE `DialogTrigger` (kontrollerad,
  * till skillnad mot `VisaKnapp`s okontrollerade form) OCH queryns `enabled`
@@ -717,10 +523,10 @@ function BilageRadRow({
         <span className="break-words font-medium text-body">{current.namn}</span>
         <MetaRad
           delar={[
-            // [TASK-147.12] Verklig klass — se filens docblock (Fynd 1,
-            // RÄTTAD). "Okänd" är en ÄRLIG etikett (Gunilla-principen), inte
-            // en gissning: den betyder "backfillen kunde inte härleda den
-            // här raden", aldrig "vi vet men visar det inte".
+            // [TASK-147.12] Verklig klass — se filens docblock (Fynd 1).
+            // "Okänd" är en ÄRLIG etikett (Gunilla-principen), inte en
+            // gissning: den betyder "backfillen kunde inte härleda den här
+            // raden", aldrig "vi vet men visar det inte".
             `Klass: ${current.dokumentklass ?? 'Okänd'}`,
             formatMB(current.storlekBytes),
             `Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`,
@@ -802,8 +608,8 @@ const LISTA_FILTER: { key: ListaTyp; label: string }[] = [
 ];
 
 /**
- * DOKUMENT-LISTAN — sedan skärpningsvarv 2 den ENDA formen (Marcus-GO,
- * filhuvudets punkt 3), inte längre en av två växlingsbara varianter. En
+ * DOKUMENT-LISTAN — den ENDA formen (Marcus-GO, filhuvudets "FORMEN ÄR LÅST
+ * TILL EN LISTA"-not), inte längre en av två växlingsbara varianter. En
  * flat, filtrerbar lista: typ-chipsen filtrerar klient-sidigt över samma
  * `rader`/mallar/generatorer som tidigare — ingen ny data.
  *
