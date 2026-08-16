@@ -110,7 +110,7 @@ export function Forhandsvisning({
         <p
           // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som AtgardsSida.tsx:2624.
           tabIndex={0}
-          className={`${TEXTYTA_KLASS} overflow-auto whitespace-pre-wrap bg-surface text-body text-text-secondary`}
+          className={`${TEXTYTA_KLASS} scrollbar-inline overflow-auto whitespace-pre-wrap bg-surface text-body text-text-secondary`}
         >
           {mailtext(grupp)}
         </p>
