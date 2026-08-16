@@ -147,6 +147,39 @@
       transform: translateY(0);
     }
   }
+
+  /* ── Tona in (skärpningsvarv TASK-242, appens första-vy-crossfade,
+     src/main.tsx InnerApp) — OPACITY-ENDAST syskon till mm-avsloj ovan,
+     samma 0,2 s ease-out men UTAN translateY-komponenten.
+     Källbelagt motiv (isolerad repro 2026-08-16, PR #1400, CI-jobb
+     Webblasarbeteende — tests/webblasarbeteende/valkommen.test.ts:261+271
+     fällde 3/3 på både desktop och mobil): mm-avsloj:s `from`-keyframe
+     (`transform: translateY(8px)`) räknas in i
+     `document.documentElement.scrollHeight` när elementet som bär
+     animationen spänner HELA sidans höjd — ett `transform`-värde skilt
+     från `none` utökar dokumentets scrollbara overflow med
+     translate-offsetten även om elementets LAYOUT-box är oförändrad.
+     Mätt isolerat (fristående HTML-repro, samma keyframe, 390×844):
+     852 px scrollHeight mot 844 px clientHeight vid animationens start,
+     0 px diff efter — och 0 px diff genomgående med translateY borttagen.
+     En sida byggd för att rymmas EXAKT (valkommen.tsx:s "GRÄNSEN"-kontrakt,
+     samma mönster som login.tsx) tippar över i just det ögonblicket.
+     mm-avsloj självt är ORÖRT — dess fem befintliga konsumenter (auth-
+     routes MessageBox-reveals m.fl.) är små, inline-innehållsblock där
+     transienten aldrig träffar en sida redan vid sin höjdgräns.
+     --animate-mm-tona-in är ENDAST för app-mount-crossfaden, inte en
+     allmän ersättning för mm-avsloj. */
+  --animate-mm-tona-in: mm-tona-in 0.2s ease-out both;
+
+  @keyframes mm-tona-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
 }
 
 /* ── Inline-rullningsytans scrollmarkör (K10-facit, task-4.4) ──

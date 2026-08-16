@@ -240,44 +240,51 @@ function InnerApp() {
   // strukturell position mellan en "wrappad" och en "owrappad" gren, vilket
   // hade fått React att avmontera/återmontera hela routerträdet (och
   // därmed nollställa all routerstate) vid övergångens slut. Endast
-  // KLASSNAMNET växlar (`motion-safe:animate-mm-avsloj` → inget), inte
+  // KLASSNAMNET växlar (`motion-safe:animate-mm-tona-in` → inget), inte
   // trädformen.
   //
-  // KLASSEN STRIPPAS EFTER ANIMATIONEN (onAnimationEnd) — INTE valfritt.
-  // `--animate-mm-avsloj`s `both`-fill-mode HÅLLER kvar sista keyframens
-  // `transform: translateY(0)` på elementet EFTER att animationen avslutats
-  // om klassen finns kvar. Ett kvarstående, icke-`none`-transform-värde
-  // etablerar per CSS-specen en NY containing block för alla
-  // `position: fixed`-ättlingar — och AppShells `<TabBar />` ÄR
-  // fixed-positionerad (`TabBar.tsx`: `className="fixed inset-x-4
-  // bottom-4 ..."`). Utan strippningen hade tab-baren blivit PERMANENT
-  // felpositionerad (fixerad mot denna wrapper i stället för viewporten)
-  // för hela sessionen efter FÖRSTA appmonteringen — inte bara under de
-  // 0,2 sekunderna animationen faktiskt kör.
+  // `--animate-mm-tona-in`, INTE `--animate-mm-avsloj` — TVÅ RUNDOR CI-
+  // FÄLLDA innan rätt mekanism hittades (PR #1400, tests/webblasarbeteende/
+  // valkommen.test.ts:261+271, "GRÄNSEN: allt innehåll ryms utan vertikal
+  // scroll", 3/3 fällningar på BÅDA försöken — se `git log` på denna fil
+  // för de två reverterade stegen: (1) `min-h-dvh` på wrappern, (2) samma
+  // fällning KVARSTOD efter att `min-h-dvh` togs bort, vilket bevisade att
+  // höjden aldrig var boven). Rotorsak, isolerat käll-verifierad (fristående
+  // HTML-repro, 390×844, se PR-beskrivningen): `--animate-mm-avsloj`s
+  // `from`-keyframe (`transform: translateY(8px)`) räknas in i
+  // `document.documentElement.scrollHeight` när det ANIMERADE ELEMENTET
+  // spänner hela sidans höjd — mätt 852 px scrollHeight mot 844 px
+  // clientHeight vid animationens start, 0 px diff efter och 0 px diff
+  // genomgående med translateY borttagen. `/valkommen` (liksom `/login`)
+  // är byggd för att rymmas EXAKT — noll marginal — så den 8 px:s transienta
+  // visuella bleeden (som INTE ändrar layout-boxen, bara den POST-transform
+  // målade positionen) räcker för att tippa `scrollHeight > clientHeight`.
+  // `--animate-mm-tona-in` (`src/styles/tailwind.css`) är en OPACITY-ENDAST
+  // syskon-animation till `--animate-mm-avsloj` — samma 0,2 s ease-out,
+  // UTAN translateY-komponenten, vilket strukturellt inte KAN inflatera
+  // scrollHeight (opacity påverkar aldrig layout-/målningsgränser för
+  // overflow-beräkningen). `--animate-mm-avsloj` självt är ORÖRT och
+  // fortsätter bära sina fem befintliga auth-route-konsumenter — de är
+  // små, inline-innehållsblock där transienten aldrig träffar en sida
+  // redan vid sin höjdgräns; `mm-tona-in` är EN NY, SMALARE variant för
+  // just denna helsides-wrap-användning, inte en ersättning.
   //
-  // WRAPPERN BÄR MEDVETET INGEN EGEN HÖJD (varken `min-h-dvh` eller annat).
-  // Ett tidigare försök att lägga `min-h-dvh` på wrappern (för att dämpa
-  // TabBar-glappet UNDER de 0,2 sekunderna, se stycket ovan) körde sönder
-  // `/valkommen`s "allt ryms utan scroll"-kontrakt
-  // (`tests/webblasarbeteende/valkommen.test.ts` rad 261/271, CI-fällning
-  // 2026-08-16 PR #1400) — sidans EGET innehåll sätter redan sin egen höjd
-  // (samma mönster som `login.tsx`s `<main className="min-h-dvh ...">`),
-  // och en TVINGAD extra min-höjd på wrappern OVANPÅ det trycker sidan förbi
-  // viewportens kant. RouterProvider-innehållet bär redan sin höjd — wrappern
-  // ska aldrig lägga sig i den. KVARSTÅENDE, INTE LÖST: under de 0,2
-  // animerade sekunderna (endast vid FÖRSTA appmonteringen, endast om
-  // motion tillåts) kan `<TabBar />`s `bottom-4` transientvis beräknas mot
-  // wrapperns egen — nu icke garanterat viewport-höga — box i stället för
-  // viewporten, om den matchade rutten är kortare än viewporten. Ovannämnda
-  // strippning gör felet ALLTID transient (aldrig permanent) om det alls
-  // uppstår; ett bevis på renderad autentiserad yta kunde inte tas
-  // (CORS blockerar warmup-EF-anrop från en icke-allowlistad dev-port,
-  // se PR-beskrivningen) — bokfört öppet, inte löst i denna skiva.
+  // KLASSEN STRIPPAS EFTER ANIMATIONEN (onAnimationEnd) — INTE valfritt,
+  // oberoende av vilken av de två animationerna som används: `both`-
+  // fill-mode HÅLLER kvar sista keyframens beräknade stil på elementet
+  // EFTER att animationen avslutats om klassen finns kvar. Detta har ingen
+  // praktisk effekt för `mm-tona-in` (sista keyframen är bara
+  // `opacity: 1`, redan CSS-defaulten), men mönstret hålls konsekvent och
+  // billigt att behålla.
+  //
+  // WRAPPERN BÄR INGEN EGEN HÖJD (varken `min-h-dvh` eller annat) —
+  // RouterProvider-innehållet (login.tsx/valkommen.tsx/AppShell) sätter
+  // redan sin egen höjd; wrappern ska aldrig lägga sig i den.
   return (
     <div
       data-testid="app-entreanimation"
       className={
-        visaEntreanimation && !entreanimationKlar ? 'motion-safe:animate-mm-avsloj' : undefined
+        visaEntreanimation && !entreanimationKlar ? 'motion-safe:animate-mm-tona-in' : undefined
       }
       onAnimationEnd={() => setEntreanimationKlar(true)}
     >
