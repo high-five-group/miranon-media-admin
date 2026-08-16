@@ -1,10 +1,10 @@
 ---
 id: TASK-147.11
 title: Äkta ersätt och radera för bilagor — EF + adapter + Dokument-ytans koppling
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 08:39'
-updated_date: '2026-08-16 10:24'
+updated_date: '2026-08-16 11:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,3 +33,9 @@ Ur task-147.6:s fynd 3 (2026-08-16, Marcus-GO 'byggas idag'): adaptern saknar de
 - [ ] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #1397 (merge d11e700e, 2026-08-16) genom merge-kön. delete-attachment-EF med auth + ägarskaps-guard (EN post per anrop, SECURITY-SPEC 6.10), deny-triple-klass 10/10 skarpt mot staging; useReplaceAttachment (ny FÖRST, radera EFTER) wirad i DokumentYta; grupperaPerNamn degraderad till visningshjälp; ände-till-ände-bevis verbatim i slutrapporten. Rebase-läkning in i facit-formen (662f3818). Prod-deploy bokförd i .prod-functions-allowlist.conf för dagens allowlist-moment.
+<!-- SECTION:FINAL_SUMMARY:END -->
