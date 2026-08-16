@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { AppShell, FORBEREDELSESKARM_VANTAR, Forberedelseskarm } from '@/components/AppShell';
 import { useDataSource } from '@/data/useDataSource';
 import type { StartvarmningForlopp, StartvarmningHandle } from '@/data/warmup/startvarmningen';
-import { arCacheVarm, starta } from '@/data/warmup/startvarmningen';
+import { arCacheVarm, lasVarmningTimeoutOverride, starta } from '@/data/warmup/startvarmningen';
+import { env } from '@/env';
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context, location }) => {
@@ -117,7 +118,18 @@ function useAppYtaVarmningsgate(): AppYtaVarmningsFas {
     if (avgjortRef.current) return;
 
     if (!handleRef.current) {
-      handleRef.current = starta(queryClient, { dataSource });
+      // TASK-236 varv 2: samma timeoutMs-beräkning som InnerApp (main.tsx)
+      // — se den filens `beraknaVarmningTimeoutMs()`-docblock för hela
+      // resonemanget. DENNA gate triggas efter en KLIENT-SIDES omdirigering
+      // (aktiv inloggning, TASK-227) — `window.location` är redan
+      // destinations-URL:en då, vilket är EXAKT skälet till att
+      // `lasVarmningTimeoutOverride()` läser sessionStorage i stället för
+      // en URL-query-param (se den funktionens docblock, startvarmningen.ts).
+      const varmningTimeoutMs = lasVarmningTimeoutOverride() ?? env.VITE_E2E_WARMUP_TIMEOUT_MS;
+      handleRef.current = starta(queryClient, {
+        dataSource,
+        ...(varmningTimeoutMs !== undefined ? { timeoutMs: varmningTimeoutMs } : {}),
+      });
       handleRef.current.slutlofte.then(() => {
         avgjortRef.current = true;
         setFas({ typ: 'redo' });

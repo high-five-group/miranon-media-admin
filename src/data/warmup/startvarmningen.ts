@@ -278,6 +278,42 @@ export function arCacheVarm(qc: QueryClient): boolean {
   return qc.getQueryCache().getAll().length > 0;
 }
 
+/** sessionStorage-nyckeln {@link lasVarmningTimeoutOverride} läser. Egen
+ * konstant (inte inline-strängad på båda anropsställena) så nyckeln inte
+ * kan glida isär mellan skrivaren (Playwright-testerna) och läsaren. */
+const E2E_TIMEOUT_OVERRIDE_NYCKEL = 'e2eVarmningTimeoutMs';
+
+/**
+ * TASK-236 varv 2 — per-sidladdnings timeoutMs-override för startvärmningen,
+ * läst från `sessionStorage` (satt via Playwrights `page.addInitScript()`
+ * i enskilda tester som vill OBSERVERA riktig warmup-progression, t.ex.
+ * `persist-cache.staging.test.ts`:s Kallstart- och TASK-227-block).
+ *
+ * `sessionStorage` i stället för en URL-query-param: DELAT predikat
+ * (samma skäl som `arCacheVarm` ovan) mellan BÅDA `starta()`-anropsställena
+ * — `main.tsx`:s bootgate (kör vid en fräsch sidladdning, URL:en är
+ * testets egen `page.goto()`-mål) och `_authenticated.tsx`:s app-yta-gate
+ * (TASK-227, kör efter en KLIENT-SIDES omdirigering post-login, där
+ * `window.location` redan hunnit bli destinations-URL:en — en query-param
+ * satt på `/login` hade tappats i den redirecten). `sessionStorage`
+ * överlever klient-sides navigation inom samma flik oavsett URL, så samma
+ * mekanism täcker båda ingångspunkterna utan att de behöver känna till
+ * VARFÖR läsplatsen skiljer sig.
+ *
+ * `try/catch`: sessionStorage kan kasta i låst/privat browserläge — en
+ * startvärmning ska ALDRIG krascha appen för en diagnostik-läsning.
+ */
+export function lasVarmningTimeoutOverride(): number | undefined {
+  try {
+    const rått = sessionStorage.getItem(E2E_TIMEOUT_OVERRIDE_NYCKEL);
+    if (rått === null) return undefined;
+    const parsed = Number(rått);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Startar startvärmningen. Se filhuvudet för hela kontraktet.
  *

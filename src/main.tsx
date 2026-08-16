@@ -17,7 +17,7 @@ import { FORBEREDELSESKARM_VANTAR, Forberedelseskarm } from './components/AppShe
 import { AppErrorBoundary } from './components/ErrorBoundary';
 import { dataSource } from './data/dataSource';
 import type { StartvarmningForlopp, StartvarmningHandle } from './data/warmup/startvarmningen';
-import { arCacheVarm, starta } from './data/warmup/startvarmningen';
+import { arCacheVarm, lasVarmningTimeoutOverride, starta } from './data/warmup/startvarmningen';
 import { registreraAppUppdatering } from './lib/app-uppdatering';
 import { reportWebVitals } from './lib/report-web-vitals';
 import { initSentry } from './observability/sentry';
@@ -33,6 +33,46 @@ type GateFas =
   | { typ: 'vantar' }
   | { typ: 'varmar'; forlopp: StartvarmningForlopp }
   | { typ: 'redo' };
+
+/**
+ * TASK-236 varv 2 — warmup-gatens timeoutMs för DENNA sidladdning.
+ *
+ * ═══ VARFÖR VARV 2 BEHÖVDES ═══
+ * Varv 1 (samma kort) satte en ENDA e2e-default (6000ms, ner från
+ * produktionens 9000ms) via `env.VITE_E2E_WARMUP_TIMEOUT_MS`. Lokal
+ * mätning visade stor förbättring (shell.staging.test.ts 8/8→1/8 röda),
+ * men CI:s POST-MERGE-körning på den landade fixen (run 31943270329,
+ * c3f2a288) sprängde ändå 12-min-taket: den nedladdade artefakten (möjlig
+ * sedan task-237s failure()||cancelled()-fix) visade minst 11 nya, tidigare
+ * ORÖRDA tester (event-bor-over.staging.test.ts, mer-index.staging.test.ts,
+ * ytterligare skapa-event-tester) med EXAKT samma "Timeout: 5000ms —
+ * element(s) not found"-signatur. Slutsats: ~200 testers kalla gate-väntan
+ * (även nedkortad till 6s) summerar fortfarande för mycket — ETT globalt
+ * tal löser inte det, oavsett värde, eftersom varje enskild kall
+ * sidladdning fortfarande BETALAR något innan Hem/en authenticated-route
+ * kan monteras.
+ *
+ * ═══ VARV 2:S LÖSNING — TVÅ NIVÅER ═══
+ * E2E-DEFAULTEN (`VITE_E2E_WARMUP_TIMEOUT_MS`, satt av playwright.config.ts:s
+ * e2e-webServer) sänks till NÄRA NOLL (se den filens kommentar) — gaten
+ * släpper i praktiken OMEDELBART för de ~190 tester som inte bryr sig om
+ * warmup-UI:t alls. De FÅ tester som EXPLICIT testar startvärmningens
+ * PROGRESSION (persist-cache.staging.test.ts:s Kallstart/TASK-227-block)
+ * opterar i stället in i produktionens RIKTIGA timeout via
+ * `lasVarmningTimeoutOverride()` (startvarmningen.ts, sessionStorage-baserad
+ * — DELAT mellan denna gate OCH `_authenticated.tsx`:s app-yta-gate, se den
+ * funktionens docblock för varför sessionStorage vann över en URL-query-
+ * param). Overriden går FÖRE env-defaulten.
+ *
+ * `korAlla()` (startvarmningen.ts) kör fortfarande de sju verkliga
+ * datahämtningarna i bakgrunden OAVSETT timeoutMs — bara GATENS EGEN VÄNTAN
+ * kortas. Detta ändrar INGEN produktionssemantik: build:staging/
+ * build:production sätter varken env-defaulten eller sessionStorage-nyckeln,
+ * så DEFAULT_TIMEOUT_MS (9000ms, ADR-112 beslut 3) är opåverkad där.
+ */
+function beraknaVarmningTimeoutMs(): number | undefined {
+  return lasVarmningTimeoutOverride() ?? env.VITE_E2E_WARMUP_TIMEOUT_MS;
+}
 
 /**
  * InnerApp-pattern (officiell TanStack-rekommendation):
@@ -205,21 +245,19 @@ function InnerApp() {
         setGate({ typ: 'redo' });
         return;
       }
-      // TASK-236 (218.3 e2e-svit-tid): e2e-läges timeoutMs-override via
-      // BEFINTLIG seam (StartvarmningBeroenden.timeoutMs, startvarmningen.ts).
-      // `env.VITE_E2E_WARMUP_TIMEOUT_MS` sätts ENDAST av playwright.config.ts:s
-      // e2e-webServer — `undefined` i varje riktig byggnad (dev/build:staging/
-      // build:production), så produktionens DEFAULT_TIMEOUT_MS (9000ms,
-      // ADR-112 beslut 3) är helt orörd. Ingen ny gate-semantik: samma
-      // seam testerna redan använder ("Tester sätter ett litet värde",
-      // startvarmningen.ts:s StartvarmningBeroenden-docblock), bara pluggad
-      // in en nivå högre upp (anroparen, precis där modulens eget filhuvud
-      // säger att DI-injektionen hör hemma).
+      // TASK-236 varv 2 (arkitektur-omtag, se filhuvudets § nedan för hela
+      // resonemanget): timeoutMs-override via BEFINTLIG seam
+      // (StartvarmningBeroenden.timeoutMs, startvarmningen.ts) — men nu med
+      // TVÅ nivåer i stället för en. `beraknaVarmningTimeoutMs()` läser
+      // per-sida query-param FÖRST (tester som vill OBSERVERA riktig
+      // warmup-progression), annars `env.VITE_E2E_WARMUP_TIMEOUT_MS`
+      // (e2e-webServerns nya nära-noll-default), annars `undefined`
+      // (produktionens 9000ms, ADR-112 beslut 3, HELT ORÖRD — ingen av
+      // vägarna sätts i dev/build:staging/build:production).
+      const varmningTimeoutMs = beraknaVarmningTimeoutMs();
       varmningHandle.current = starta(queryClient, {
         dataSource,
-        ...(env.VITE_E2E_WARMUP_TIMEOUT_MS !== undefined
-          ? { timeoutMs: env.VITE_E2E_WARMUP_TIMEOUT_MS }
-          : {}),
+        ...(varmningTimeoutMs !== undefined ? { timeoutMs: varmningTimeoutMs } : {}),
       });
       varmningHandle.current.slutlofte.then(() => {
         varmtBeslutat.current = true;

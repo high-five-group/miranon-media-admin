@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 07:06'
-updated_date: '2026-08-16 10:36'
+updated_date: '2026-08-16 12:18'
 labels:
   - ready-for-agent
 dependencies: []
@@ -80,4 +80,20 @@ STEG 4 — BOKFÖRT PER ORKESTRERARENS BEGÄRAN:
 Sannolikt KONTOTILLSTÅND på det delade staging-kontot (flaggan aldrig satt), inte en 218.3-regression — CI:s "3F"-budget lämnar knappt rum. Kan vara FÖRSTA INDIKATIONEN på en passkey-effekt (jfr task-240:s "ej utesluten, ej indikerad"). RÖRD EJ, flaggas för orkestrerarens bedömning.
 
 TASK-240-NOTIS: seamen (StartvarmningBeroenden) fick INGEN AbortSignal i denna PR — interfacet är ett öppet objekt-literal ({ dataSource, isOnline?, timeoutMs? }), så ett framtida valfritt signal?-fält kan läggas till utan brytande ändring. Ingen dörr stängd.
+
+VARV 2 (efter orkestrerarens AC4-fällning: post-merge på c3f2a288 (varv 1:s landade fix), run 31943270329, 12m16s → cancelled, samma tak sprängt igen):
+
+BEVIS-GÅNGEN: Laddade ner playwright-e2e-artefakter (job 95155437146) — 11 UNIKA tester med kompletta 3-försöksfel, minst 4 av dem i FILER varv 1 aldrig rörde (event-bor-over.staging.test.ts, mer-index.staging.test.ts + fler skapa-event-tester än de 3 varv 1 fixade). Verifierat error-context.md för flera: IDENTISK "Timeout: 5000ms — element(s) not found"-signatur som varv 1:s fynd. Dot-reportern visade fortfarande bara "2 F" (ner från 3, en riktig förbättring) — men artefaktbeviset visar att dot-räkningen ÄR en cancellation-mätartefakt (se varv 1:s addendum), inte sanningen.
+
+KANDIDAT (1) VERIFIERAD, EJ ROTORSAKEN: seamens VITE_E2E_WARMUP_TIMEOUT_MS-mekanism (Vite process.env → import.meta.env för VITE_-prefix) är SAMMA etablerade mönster som visual/acceptance-grenens VITE_SUPABASE_URL-override i samma fil (bevisat fungera i CI sedan tidigare) — inget genuint tecken på att den INTE når fram. Ingen direkt CI-side-loggbevis kunde produceras (ingen instrumentering finns för att läsa gatens INTERNA timeoutMs-värde ur en artefakt) — deklarerat öppet som en gap, inte en gissning maskerad som bevis.
+
+KANDIDAT (2) VALD OCH IMPLEMENTERAD — STRUKTURELL FIX: e2e-DEFAULTEN sänkt till NÄRA NOLL (playwright.config.ts: VITE_E2E_WARMUP_TIMEOUT_MS='50', ner från varv 1:s '6000') — gaten släpper i praktiken omedelbart för de ~190 tester som inte bryr sig om warmup-UI:t. NY seam-utökning: `lasVarmningTimeoutOverride()` (src/data/warmup/startvarmningen.ts, sessionStorage-baserad, delat predikat-mönster à la `arCacheVarm`) låter ENSKILDA tester opta in i produktionens RIKTIGA 9000ms-tak. sessionStorage i stället för en URL-query-param: TVÅ separata starta()-anropsställen fanns (upptäckt under detta varv — `_authenticated.tsx`:s app-yta-gate, TASK-227, hade ALDRIG fått varv 1:s fix!) som triggas vid OLIKA tidpunkter i navigationslivscykeln (main.tsx:s bootgate vid page.goto, _authenticated.tsx:s gate efter en KLIENT-SIDES omdirigering där en query-param på startsidan hade tappats). sessionStorage täcker båda oavsett URL.
+
+Rörda filer utöver varv 1: src/data/warmup/startvarmningen.ts (ny export), src/routes/_authenticated.tsx (andra starta()-anropet fick SAMMA fix — missad i varv 1), tests/e2e/persist-cache.staging.test.ts (ny optaInRiktigVarmning()-helper, tillämpad på Kallstart + AC3 buster/maxAge + TASK-227 kall enhet — de EXPLICIT progressbar-observerande testerna).
+
+VERIFIERAT (isolerat, workers=2/1, staging fri): buster + maxAge → FIXADE (verifierat FÖRE/EFTER, gick från "Förbereder..."-text aldrig synlig till korrekt observerad). Kallstart → mekanismen BEVISAT FUNGERANDE (progressbar_värde 5 vs förväntat 6 — en 12s-marginal-miss under hög systemlast, INTE ett mekanism-fel; samma test var HELT GRÖNT i en tidigare mindre belastad körning). 
+
+KVARSTÅENDE, EJ LÖST: TASK-227 "kall enhet"-testet (rad 594) visar KONSEKVENT (isolerad enfils-körning, workers=1, 16.6s, deterministiskt reproducerad) att progressbaren ALDRIG blir synlig — accessibility-snapshotten vid fällningen visar Hem REDAN FÄRDIGRENDERAT ("Hej Lotta" + kort). Detta betyder gaten resolvade EXTREMT snabbt trots opt-in-anropet (sessionStorage-nyckeln verifierat korrekt satt/läst, samma stavning på båda sidor). Djupdykning (tidsbudget tog slut innan roten hittades): mest sannolikt en RACE mellan main.tsx:s InnerApp-effekt (som kan RE-TRIGGRAS efter login eftersom `varmtBeslutat.current` medvetet INTE sätts på auth-yte-bypass-grenen, per befintlig kod-kommentar) och _authenticated.tsx:s EGEN gate — endera kan "vinna" och seeda cachen innan den andra hinner starta sin egen `starta()`, vilket gör `arCacheVarm()` sant för den förlorande gaten (ingen progressbar visas alls). Detta är en PRE-EXISTERANDE arkitektur-subtilitet (dokumenterad som "kan strukturellt aldrig hända samtidigt" i main.tsx:s egna kommentarer — en invariant som min mycket snabbare gate tycks ha gjort mer sannolik att brytas, om ovanstående hypotes stämmer). EJ samma symptom som varv 1:s flaggade "TASK-227 passkey-redirect"-fynd (den visade fel h1-text; detta visar KORREKT Hem-innehåll, bara utan observerad progressbar) — detta testet var REDAN i CI:s v2-artefakt-lista över 11 trasiga tester FÖRE mina varv 2-ändringar, så jag gör det INTE sämre, bara med en annan symptombild nu. RÖRT EJ vidare (utanför tidsbudget för denna session) — flaggas för orkestrerarens bedömning: antingen ett eget smalt fynd-kort för _authenticated.tsx-racet, eller acceptera som känd brist i just detta ENA mock-baserade lokala test (symptomet kräver page.route-hållna mockar för att framkalla — ovisst om det manifesterar i CI:s verkliga (omockade) nätverksförhållanden alls).
+
+GRINDAR (varv 2, på fräsch gren mot senaste main inkl. task-242s splash-entré-animation som landat samtidigt — auto-merge:ad ren, inga konfliktmarkörer): typecheck 0 fel, biome 0 fel (520 filer), build grön.
 <!-- SECTION:NOTES:END -->
