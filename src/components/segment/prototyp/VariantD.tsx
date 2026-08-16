@@ -3024,11 +3024,7 @@ function VillkorsLista({
         </ul>
       )}
       <div className="flex pt-1">
-        <button
-          type="button"
-          onClick={onLaggTill}
-          className={`${KAPSEL_KLASS} w-64 justify-center`}
-        >
+        <button type="button" onClick={onLaggTill} className={`${KAPSEL_KLASS} w-64`}>
           <Plus aria-hidden="true" size={18} className="shrink-0" />
           {villkor.length === 0 ? 'Lägg till villkor' : 'Lägg till ett villkor till'}
         </button>
@@ -3139,7 +3135,7 @@ function KonjunktLista({
                   <button
                     type="button"
                     onClick={() => onLaggTillVillkor(k.id)}
-                    className="inline-flex w-64 shrink-0 items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+                    className="inline-flex w-64 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
                   >
                     <Plus aria-hidden="true" size={18} className="shrink-0" />
                     Och: lägg till ett krav till
@@ -3153,11 +3149,7 @@ function KonjunktLista({
       <div className="flex pt-1">
         {/* Samma fasta bredd som Och-knappen (Marcus 2026-08-16: paret ska
             vara lika brett och lika högt; nyansen skiljer dem). */}
-        <button
-          type="button"
-          onClick={onLaggTillGrupp}
-          className={`${KAPSEL_KLASS} w-64 justify-center`}
-        >
+        <button type="button" onClick={onLaggTillGrupp} className={`${KAPSEL_KLASS} w-64`}>
           <Plus aria-hidden="true" size={18} className="shrink-0" />
           {konjunkter.length === 0 ? 'Lägg till villkor' : 'Eller: lägg till ett alternativ'}
         </button>
