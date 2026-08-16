@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import {
   BedDouble,
   Check,
@@ -10,7 +10,7 @@ import {
   MailCheck,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -46,6 +46,27 @@ import {
   TOMT_REGISTER_FILTER,
   vagInTest,
 } from './hallplats-steg-prototyp';
+
+/**
+ * Urvalet (TASK-228) bärs i NAVIGERINGENS history-state — samma idiom som
+ * `ManuellAnmalanForm.tsx` § `mmAvsloja`: ett engångs-fat som seedar
+ * Åtgärds-sidans INITIALA mottagarurval, inte ett bokmärkbart filter (hon
+ * äger urvalet lokalt därefter — `AtgardsSida.tsx` § "därefter äger Lotta
+ * urvalet"). Ett urval av registrerings-ID:n, inte ett shareable-state:
+ * URL-STATE-SPEC:s "allt som påverkar VAD som visas lever i URL:en" gäller
+ * DURABELT/delbart state (filter, sök, flik) — mottagarurvalet är varken,
+ * exakt samma skäl som `mmAvsloja` valde history-state framför search-param
+ * (`ny-anmalan.tsx`s kommentar om `fran`: "en tillbaka-väg måste överleva en
+ * omladdning; avslöjnings-avsikten behöver inte det").
+ */
+declare module '@tanstack/react-router' {
+  interface HistoryState {
+    /** Markerade registrerings-ID:n, i visningsordning (TASK-228) — satt av
+        `MarkeringsBatchBar`s Åtgärder-knapp, läst EN gång av `AtgardsSida`s
+        seedning. */
+    mmAtgardsUrval?: string[];
+  }
+}
 
 /**
  * Anmälda deltagare som ARBETSKÖ — skelettet (task-18.4; S73-facit K35–K58).
@@ -108,9 +129,10 @@ import {
  *
  * Kvar står ett explicit MARKERA-LÄGE (`useMarkeringsLage`) där hela kortet är
  * klickyta med checkbox-semantik, och en batch-bar vars primärknapp bär texten
- * **Åtgärder** och tar urvalet vidare. Vägen in är Markera-knappen, förankrad i
- * batch-barens vänsterkant (§ REGISTRET ovan — rubrikraden den satt på är
- * riven); Esc och Avbryt är vägarna ut, oförändrat.
+ * **Åtgärder** och tar urvalet vidare — sedan TASK-228 en RIKTIG navigation
+ * till Åtgärds-sidan (`MarkeringsBatchBar`s egen docblock). Vägen in är
+ * Markera-knappen, förankrad i batch-barens vänsterkant (§ REGISTRET ovan —
+ * rubrikraden den satt på är riven); Esc och Avbryt är vägarna ut, oförändrat.
  *
  * KANDIDATMÄNGDEN ÄR VISAD LISTA (TASK-145.3 AC #2, promoverad TASK-162.3):
  * `registerListaA` i `ArbetsKo` — den filtrerade vyn när ett steg-/
@@ -497,10 +519,15 @@ function useMarkeringsLage(kandidatIds: readonly string[]) {
  * (`TASK-147`). Primärknappen bär därför ALLTID texten Åtgärder och tar
  * urvalet vidare — det är eventsidans enda utgång mot en handling.
  *
- * UTGÅNGEN ÄR EN ÄRLIG INTERIM (AC #3): Åtgärds-sidan finns inte ännu, så
- * knappen är en DISCLOSURE mot en platshållare på samma sida — inte en länk
- * och inte en chevron. Båda de senare hade lovat en navigation som saknas.
- * Formen byts mot en riktig väg vidare när `TASK-147` landar.
+ * UTGÅNGEN ÄR EN RIKTIG NAVIGATION (TASK-228). [RIVEN, TASK-228] Fram till
+ * TASK-147 landade var den en ÄRLIG INTERIM (AC #3 i TASK-145.3): en
+ * disclosure mot en platshållare på samma sida ("Åtgärds-sidan är inte byggd
+ * ännu…", `aria-expanded`/`aria-controls`, `data-testid="atgarder-
+ * platshallare") — ingen länk, ingen chevron, eftersom båda hade lovat en
+ * navigation som saknades. Åtgärds-sidan finns nu (`/event/$eventId/
+ * atgarder`, TASK-147-serien), så knappen NAVIGERAR dit och skickar urvalet
+ * med i navigeringens history-state (`mmAtgardsUrval`, se modul-
+ * augmenteringen ovan) — samma engångsfat-idiom som `mmAvsloja`.
  */
 function MarkeringsBatchBar({
   antal,
@@ -508,7 +535,8 @@ function MarkeringsBatchBar({
   allaValda,
   onMarkeraAlla,
   onRensa,
-  valdaNamn,
+  eventId,
+  valdaIds,
   markeraKnapp,
   aktivt,
 }: {
@@ -517,89 +545,73 @@ function MarkeringsBatchBar({
   allaValda: boolean;
   onMarkeraAlla: () => void;
   onRensa: () => void;
-  /** De markerades namn, i visningsordning — urvalet som följer med vidare
-      (AC #2), visat i interim-platshållaren tills Åtgärds-sidan finns. */
-  valdaNamn: string[];
+  /** Eventet urvalet gäller — Åtgärder navigerar till dess Åtgärds-sida
+      (TASK-228). */
+  eventId: string;
+  /** De markerades registrerings-ID:n, i visningsordning — urvalet som följer
+      med till Åtgärds-sidan (TASK-228, AC #1) via navigeringens
+      history-state. */
+  valdaIds: string[];
   /** Markera/Avbryt-knappen, förankrad i barens vänsterkant. Renderas i BÅDA
       lägena — se § GEOMETRIN ovan. */
   markeraKnapp: React.ReactNode;
   /** Markera-läget på/av. `false` ⇒ enbart `markeraKnapp` syns. */
   aktivt: boolean;
 }) {
-  const [visaPlatshallare, setVisaPlatshallare] = useState(false);
-  const platshallareId = useId();
+  const navigate = useNavigate();
 
   return (
-    <>
-      <div data-testid="markering-batchbar" className="flex flex-wrap items-center gap-2 pb-2.5">
-        {markeraKnapp}
-        {aktivt && (
-          <Button
-            intent="primary"
-            size="sm"
-            isDisabled={antal === 0}
-            aria-expanded={visaPlatshallare}
-            aria-controls={platshallareId}
-            onPress={() => setVisaPlatshallare((v) => !v)}
-          >
-            Åtgärder
-          </Button>
-        )}
-        {aktivt && (
-          <Button intent="secondary" size="sm" isDisabled={allaValda} onPress={onMarkeraAlla}>
-            Markera alla
-          </Button>
-        )}
-        {aktivt && antal > 0 && (
-          <Button intent="ghost" size="sm" onPress={onRensa}>
-            Rensa
-          </Button>
-        )}
-        {/* Live-räknaren: seende ser antalet i platshållaren, skärmläsaren får
-            det här. `polite` — urvalet är löpande arbete, aldrig ett avbrott
-            värt assertive.
-
-            Villkorad på `aktivt` sedan iterationsvåg 5: i AV-läget finns inget
-            urval att räkna, och en `role="status"` som står och säger "0 av 9
-            markerade" när ingen markerar är brus i skärmläsaren — samma klass
-            av oombedd a11y-struktur som rev två CI-grindar i våg 2. */}
-        {aktivt && (
-          <span
-            data-testid="markering-live"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            className="sr-only"
-          >
-            {`${antal} av ${totalt} markerade`}
-          </span>
-        )}
-      </div>
-      {/* INTERIM-PLATSHÅLLAREN (AC #3) — ett litet kort på samma sida, INTE en
-          sida och inte ett löfte om en. Texten säger rakt ut att sidan inte
-          finns ännu och att urvalet följer med dit när den gör det; Gunilla ska
-          förstå exakt vad som händer härnäst utan att kunna något om kort-ID:n.
-          Renderas som EGEN syskon-div (inte inuti raden ovan) så barens egen
-          radgeometri är oberoende av om platshållaren är utfälld. */}
-      {aktivt && visaPlatshallare && (
-        <div
-          id={platshallareId}
-          data-testid="atgarder-platshallare"
-          className="mb-2.5 rounded-xl border border-(--mm-navcard-border) bg-surface p-3 text-small contrast-more:border-(--mm-navcard-border-contrast)"
+    <div data-testid="markering-batchbar" className="flex flex-wrap items-center gap-2 pb-2.5">
+      {markeraKnapp}
+      {aktivt && (
+        <Button
+          intent="primary"
+          size="sm"
+          isDisabled={antal === 0}
+          onPress={() =>
+            navigate({
+              to: '/event/$eventId/atgarder',
+              params: { eventId },
+              // Urvalet i history-state (TASK-228) — spridningen bevarar
+              // routerns interna nycklar, samma form som ManuellAnmalanForm.tsx
+              // § mmAvsloja.
+              state: (prev) => ({ ...prev, mmAtgardsUrval: valdaIds }),
+            })
+          }
         >
-          <p className="font-medium">
-            {`Åtgärds-sidan är inte byggd ännu. Här står de ${antal} du markerat - de följer med dit när sidan finns.`}
-          </p>
-          {valdaNamn.length > 0 && (
-            <ul className="mt-1.5 flex flex-col gap-0.5 text-text-secondary">
-              {valdaNamn.map((namn) => (
-                <li key={namn}>{namn}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+          Åtgärder
+        </Button>
       )}
-    </>
+      {aktivt && (
+        <Button intent="secondary" size="sm" isDisabled={allaValda} onPress={onMarkeraAlla}>
+          Markera alla
+        </Button>
+      )}
+      {aktivt && antal > 0 && (
+        <Button intent="ghost" size="sm" onPress={onRensa}>
+          Rensa
+        </Button>
+      )}
+      {/* Live-räknaren: seende ser antalet i räkningen på Åtgärds-sidan efter
+          navigation, skärmläsaren får det här. `polite` — urvalet är löpande
+          arbete, aldrig ett avbrott värt assertive.
+
+          Villkorad på `aktivt` sedan iterationsvåg 5: i AV-läget finns inget
+          urval att räkna, och en `role="status"` som står och säger "0 av 9
+          markerade" när ingen markerar är brus i skärmläsaren — samma klass
+          av oombedd a11y-struktur som rev två CI-grindar i våg 2. */}
+      {aktivt && (
+        <span
+          data-testid="markering-live"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {`${antal} av ${totalt} markerade`}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -1701,6 +1713,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                   onMarkeraAlla={markering.markeraAlla}
                   onRensa={markering.rensa}
                   aktivt={markering.aktivt}
+                  eventId={event.id}
                   markeraKnapp={
                     <MarkeraKnapp
                       aktivt={markering.aktivt}
@@ -1709,9 +1722,9 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
                       buttonRef={markeraKnappRef}
                     />
                   }
-                  valdaNamn={registerListaA
+                  valdaIds={registerListaA
                     .filter((r) => markering.valda.has(r.id))
-                    .map(displayName)}
+                    .map((r) => r.id)}
                 />
                 {registerListaA.length > 0 ? (
                   <DeltagarListan

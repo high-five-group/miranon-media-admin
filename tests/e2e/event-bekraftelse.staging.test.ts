@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, type Route, test } from '../support/test-bas';
-import { mockValjarLista } from './helpers/valjar-lista';
+import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
 /**
  * task-48 — MARKERA-LÄGET i Anmälda deltagare (S86-prototypens facit).
@@ -64,8 +64,10 @@ import { mockValjarLista } from './helpers/valjar-lista';
  * Täckning: rivningarna inkl. batch-bekräftelsens (AC #2), markera-lägets
  * in-/utgång inkl. Esc, den vertikala stabiliteten (AC #1), valt korts form +
  * det enda steg-märket, batch-barens tre knappar + live-räknaren, markering i
- * FILTRERAT läge (AC #2), utgångens ärlighet (AC #3), länkarnas vila,
- * registrets scroll-form, axe 0 i läget och med utgången utfälld.
+ * FILTRERAT läge (AC #2), länkarnas vila, registrets scroll-form, axe 0 i
+ * läget. [ÄNDRAT, TASK-228] utgångens forna "ärlighet" (AC #3, en disclosure
+ * UTAN navigation) är ERSATT av utgångens RIKTIGA navigation — se
+ * describe-blockets egen [ÄNDRAT, TASK-228]-not nedan.
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
@@ -243,7 +245,17 @@ type Mockar = {
  * tillbaka in i eventsidan fångar `confirmCalls` den.
  */
 async function mocka(page: Page, event: Json, deltagare: Json[] = grundData()): Promise<Mockar> {
-  await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
+  // task-18.19: väljarens listquery — aldrig staging i deterministisk svit.
+  // EVENT_ID ingår (utöver default-raden) sedan TASK-228: Åtgärder-knappen
+  // navigerar dit, och destinationens EGEN events.list-query (samma
+  // GET_EVENTS_GLOB) behöver kunna slå upp EVENT_ID deterministiskt.
+  await mockValjarLista(page, [
+    valjarRad({
+      id: EVENT_ID,
+      namn: event.eventNamn as string,
+      startdatum: event.startdatum as string,
+    }),
+  ]);
   const mockar: Mockar = { confirmCalls: [], updateEventCalls: [] };
   let aktuellt = event;
   const lista = [...deltagare];
@@ -404,6 +416,14 @@ async function oppnaMarkeringslaget(page: Page): Promise<void> {
  * bekräfta-flödet FAKTISKT är borta och att bekräftelse-EF:en aldrig anropas
  * (AC #2), markera-läget i FILTRERAT läge (AC #2, PRD användarberättelse 12)
  * och utgångens ärlighet (AC #3).
+ *
+ * [ÄNDRAT, TASK-228] AC #3:s bokstav ("ärlig interim … ingen navigation som
+ * saknas") gällde bara SÅ LÄNGE Åtgärds-sidan inte fanns — dess egen text sade
+ * det rakt ut ("Formen byts mot en riktig väg vidare när TASK-147 landar").
+ * TASK-147 landade och TASK-228 kopplar om Åtgärder-knappen till en RIKTIG
+ * navigation; testerna nedan som en gång bevisade disclosure-formen
+ * (`atgarder-platshallare`) är omskrivna mot navigationen i stället —
+ * se varje tests egen [ÄNDRAT]/[ERSÄTTER]-not.
  */
 test.describe('Markera-läget — urvalet och utgången mot Åtgärds-sidan (task-48 + TASK-145.3)', () => {
   test('AC #2: rivningarna — per-kort-knappen (K46), Bekräfta alla-pillen (K47/K48) OCH batch-bekräftelsen finns inte', async ({
@@ -430,13 +450,13 @@ test.describe('Markera-läget — urvalet och utgången mot Åtgärds-sidan (tas
     await expect(gruppen(page).getByRole('button', { name: /^Bekräfta \d+ anmäl/ })).toHaveCount(0);
     await expect(gruppen(page).getByRole('button', { name: 'Åtgärder' })).toBeVisible();
 
-    // Hela vägen igenom utgången: markera allt, tryck Åtgärder, öppna
-    // platshållaren — bekräftelse-EF:en anropas ALDRIG. Det är det mekaniska
-    // beviset för "rivet, inte dolt": en dold knapp hade fortfarande kunnat
-    // avfyra mutationen, en riven kan inte.
+    // Hela vägen igenom utgången: markera allt, tryck Åtgärder — navigerar
+    // till Åtgärds-sidan (TASK-228) — bekräftelse-EF:en anropas ALDRIG. Det
+    // är det mekaniska beviset för "rivet, inte dolt": en dold knapp hade
+    // fortfarande kunnat avfyra mutationen, en riven kan inte.
     await gruppen(page).getByRole('button', { name: 'Markera alla' }).click();
     await gruppen(page).getByRole('button', { name: 'Åtgärder' }).click();
-    await expect(gruppen(page).getByTestId('atgarder-platshallare')).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/event/${EVENT_ID}/atgarder$`));
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect(mockar.confirmCalls).toHaveLength(0);
   });
@@ -635,41 +655,68 @@ test.describe('Markera-läget — urvalet och utgången mot Åtgärds-sidan (tas
       .filter({ hasText: /markerade$/ });
     await expect(live).toHaveText('2 av 2 markerade');
 
-    // Urvalet följer med ut i utgången — och filtret står kvar.
+    // Urvalet följer med ut i utgången (TASK-228) — EXAKT det filtrerade
+    // urvalet (Anna + Bertil), inte hela registret (Cecilia utelämnad),
+    // buret i navigeringens history-state (Deltagare.tsx § mmAtgardsUrval).
     await gruppen(page).getByRole('button', { name: 'Åtgärder' }).click();
-    const platshallare = gruppen(page).getByTestId('atgarder-platshallare');
-    await expect(platshallare.getByText('Anna Ek')).toBeVisible();
-    await expect(platshallare.getByText('Bertil Sund')).toBeVisible();
-    await expect(platshallare.getByText('Cecilia Lund')).toHaveCount(0);
-    await expect(gruppen(page).getByRole('button', { name: /^Rensa filter/ })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/event/${EVENT_ID}/atgarder$`));
+    const urval = await page.evaluate(() => window.history.state.mmAtgardsUrval as string[]);
+    expect([...urval].sort()).toEqual(['recAnna', 'recBertil'].sort());
   });
 
-  test('AC #3: utgången är en ÄRLIG interim — ingen länk och ingen chevron mot en sida som inte finns', async ({
+  /**
+   * [ERSÄTTER, TASK-228] Den forna "AC #3: utgången är en ÄRLIG interim" —
+   * TASK-145.3s AC #3 krävde en disclosure UTAN navigation, exakt för att
+   * Åtgärds-sidan då inte fanns (§ "Formen byts mot en riktig väg vidare när
+   * TASK-147 landar"). TASK-147 landade och TASK-228 kopplar om knappen — AC
+   * #3:s bokstav är därmed medvetet UPPHÄVD, inte bruten. Detta test bevisar
+   * i stället TASK-228s eget AC #1: en RIKTIG navigation som landar med
+   * EXAKT urvalet som mottagare (QA 147.9 steg 1: "Markera 2 deltagare på
+   * eventdetaljen → Åtgärder → mottagarna är SAMMA kort, avmarkera en").
+   */
+  test('AC #1 (TASK-228): Åtgärder navigerar till Åtgärds-sidan med EXAKT urvalet som mottagare, avmarkering fungerar där', async ({
     page,
   }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
     await oppnaMarkeringslaget(page);
+    await markerbaraKort(page).filter({ hasText: 'Anna Ek' }).click();
     await markerbaraKort(page).filter({ hasText: 'Bertil Sund' }).click();
 
     const atgarder = gruppen(page).getByRole('button', { name: 'Åtgärder' });
-    // Knappen är en DISCLOSURE mot en yta på samma sida, inte en navigation:
-    // den bär aria-expanded/aria-controls och är ingen `<a>`. Blir den en länk
-    // eller får den en chevron innan Åtgärds-sidan finns, lovar ytan en resa
-    // som inte går att göra — det är precis vad AC #3 förbjuder.
-    await expect(atgarder).toHaveAttribute('aria-expanded', 'false');
-    await expect(atgarder).toHaveAttribute('aria-controls', /.+/);
-    await expect(gruppen(page).locator('a[href*="/atgarder"]')).toHaveCount(0);
+    // [RIVEN, TASK-228] Knappen var en DISCLOSURE (aria-expanded/aria-
+    // controls) mot en interim-platshållare — nu en RIKTIG navigation, utan
+    // disclosure-semantik kvar.
+    await expect(atgarder).not.toHaveAttribute('aria-expanded');
+    await expect(atgarder).not.toHaveAttribute('aria-controls');
 
     await atgarder.click();
-    await expect(atgarder).toHaveAttribute('aria-expanded', 'true');
-    const platshallare = gruppen(page).getByTestId('atgarder-platshallare');
-    await expect(platshallare).toBeVisible();
-    // Texten säger rakt ut att sidan inte finns ännu — ingen halvsanning.
-    await expect(platshallare.getByText(/Åtgärds-sidan är inte byggd ännu/)).toBeVisible();
-    await expect(platshallare.getByText('Bertil Sund')).toBeVisible();
-    // Ingen navigation ut ur platshållaren heller.
-    await expect(platshallare.locator('a')).toHaveCount(0);
+    await expect(page).toHaveURL(new RegExp(`/event/${EVENT_ID}/atgarder$`));
+    await expect(page.getByTestId('eventet-block')).toBeVisible();
+
+    // Mottagarräkningen: exakt 2 av 3 — Cecilia (omarkerad) är INTE med.
+    await expect(page.getByTestId('markering-rakning')).toHaveText('2 av 3 deltagare markerade');
+
+    // Fäll ut listan — SAMMA kort som markerades på eventdetaljen (PRD-kravet
+    // "EXAKT SAMMA KORT IGEN … i markeringsläge, alltså gröna").
+    await page.getByRole('button', { name: /deltagare markerade$/ }).click();
+    const mottagarkort = page.getByTestId('markerbart-kort');
+    await expect(mottagarkort).toHaveCount(2);
+    await expect(mottagarkort.filter({ hasText: 'Anna Ek' })).toBeVisible();
+    await expect(mottagarkort.filter({ hasText: 'Bertil Sund' })).toBeVisible();
+    await expect(mottagarkort.filter({ hasText: 'Cecilia Lund' })).toHaveCount(0);
+
+    // Avmarkera en (QA 147.9 steg 1) — kortet ligger KVAR i listan, bara
+    // avkryssat: samma grammatik som eventdetaljens markera-läge (§
+    // MottagarYta "Ett avmarkerat kort ligger kvar i listan"). Klick på
+    // KORTET (labeln), inte på `kryssI()` direkt — samma idiom som
+    // `markerbaraKort(page).filter(...).click()` ovan (RAC-labeln bär
+    // träffytan, `kryssI()` är bara assertion-lokatorn).
+    await mottagarkort.filter({ hasText: 'Anna Ek' }).click();
+    await expect(page.getByTestId('markering-rakning')).toHaveText('1 av 3 deltagare markerade');
+    await expect(mottagarkort).toHaveCount(2);
+    await expect(kryssI(mottagarkort.filter({ hasText: 'Anna Ek' }))).not.toBeChecked();
+    await expect(kryssI(mottagarkort.filter({ hasText: 'Bertil Sund' }))).toBeChecked();
   });
 
   test('fynd (e): korthöjden är oberoende av märkets innehåll — mellan kort OCH genom lägena', async ({
@@ -805,9 +852,16 @@ test.describe('Markera-läget — urvalet och utgången mot Åtgärds-sidan (tas
     await expect(reg).toHaveAttribute('aria-label', 'Deltagarregister');
   });
 
-  test('axe 0 i markera-läget med valda kort och med utgångens platshållare utfälld', async ({
-    page,
-  }) => {
+  /**
+   * [ÄNDRAT, TASK-228] Scannade tidigare EN andra gång med utgångens
+   * interim-platshållare utfälld på SAMMA sida (disclosure-formen, TASK-
+   * 145.3 AC #3). Åtgärder navigerar nu bort från eventdetaljen — det finns
+   * ingen "utfälld" DOM kvar HÄR att scanna. Åtgärds-sidans egen axe-
+   * täckning i mottagarurvalet-öppet-läget bärs redan av
+   * `atgardssida-promoverings-grind.spec.ts` ("mottagarurvalet öppet …
+   * axe 0"), så täckningen flyttar med subjektet, den försvinner inte.
+   */
+  test('axe 0 i markera-läget med valda kort', async ({ page }) => {
     await mocka(page, eventDetail());
     await oppnaEventsidan(page);
     await oppnaMarkeringslaget(page);
@@ -817,15 +871,6 @@ test.describe('Markera-läget — urvalet och utgången mot Åtgärds-sidan (tas
       .include('section[aria-labelledby="grupp-deltagare"]')
       .analyze();
     expect(lage.violations).toEqual([]);
-
-    // Utgången är en disclosure på samma sida (AC #3) — inte en modal. Scannas
-    // i UTFÄLLT läge, eftersom det är den DOM som Lotta faktiskt möter.
-    await gruppen(page).getByRole('button', { name: 'Åtgärder' }).click();
-    await expect(gruppen(page).getByTestId('atgarder-platshallare')).toBeVisible();
-    const utfallt = await new AxeBuilder({ page })
-      .include('section[aria-labelledby="grupp-deltagare"]')
-      .analyze();
-    expect(utfallt.violations).toEqual([]);
   });
 });
 
