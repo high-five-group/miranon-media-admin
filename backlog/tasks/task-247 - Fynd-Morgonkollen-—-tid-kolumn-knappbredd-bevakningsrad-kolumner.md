@@ -4,7 +4,7 @@ title: 'Fynd: Morgonkollen — tid-kolumn, knappbredd, bevakningsrad-kolumner'
 status: To Do
 assignee: []
 created_date: '2026-08-16 21:08'
-updated_date: '2026-08-16 21:38'
+updated_date: '2026-08-16 21:41'
 labels: []
 dependencies: []
 ordinal: 455000
@@ -28,7 +28,7 @@ Avvikelse-fixvarvet punkt 0.5 ur S102:s resume-sekvens (tasks/sessions/2026-08-1
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
