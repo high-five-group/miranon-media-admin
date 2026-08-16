@@ -462,7 +462,12 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
   test('övrigt fel (icke-404) → generisk fel-UI via role=alert', async ({ page }) => {
     await mockEvent(page, eventDetail(), { status: 400 });
     await page.goto(`/event/${EVENT_ID}`);
-    await expect(page.getByRole('alert')).toContainText('Kunde inte hämta eventet');
+    // TASK-236 (218.3-regression): FÖRSTA renderingen på en fräsch, kall
+    // kontext går genom hela warmup-gaten (main.tsx InnerApp, upp till
+    // motorns tak) innan NÅGON route — inklusive fel-UI:t — kan monteras.
+    await expect(page.getByRole('alert')).toContainText('Kunde inte hämta eventet', {
+      timeout: 12_000,
+    });
   });
 
   test('Lugnt laddläge: skeleton i slutgeometri (aria-busy + sr-besked), ingen "Laddar…"-textrad', async ({
@@ -472,8 +477,10 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     await page.goto(`/event/${EVENT_ID}`);
 
     // Scopa till skeletonens status-region (OfflineIndicator bär också role=status).
+    // TASK-236 (218.3-regression): se kommentaren i testet ovan — samma
+    // warmup-gate-fördröjning gäller innan SKELETONEN ens hinner monteras.
     const status = page.getByRole('status').filter({ hasText: 'Laddar event…' });
-    await expect(status).toHaveAttribute('aria-busy', 'true');
+    await expect(status).toHaveAttribute('aria-busy', 'true', { timeout: 12_000 });
     // Besked endast sr-only — ingen synlig "Laddar…"-textrad (Lugnt laddläge).
     const synligLaddtext = page.getByText('Laddar event…');
     await expect(synligLaddtext).toHaveClass(/sr-only/);
@@ -1156,7 +1163,11 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
   // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
   async function oppnaSidan(page: any): Promise<void> {
     await page.goto(`/event/${PK_EVENT_ID}`);
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // TASK-236 (218.3-regression): FÖRSTA renderingen på en fräsch, kall
+    // chromium-authenticated-kontext går genom HELA warmup-gaten
+    // (ADR-112/main.tsx InnerApp) — default-timeouten (5000ms) räcker inte
+    // längre. Samma mönster som persist-cache.staging.test.ts:s fix.
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 12_000 });
     await expect(gruppen(page).getByRole('heading', { name: 'Anmälda deltagare' })).toBeVisible();
     // [ÄNDRAT, TASK-145.1] Inget arkiv att fälla ut längre — Obekräftade-kön
     // och Bekräftade-arkivet (med sin `GruppRubrik`-knapp) är rivna till EN
@@ -1551,7 +1562,9 @@ test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (ta
   // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
   async function oppnaSidan(page: any): Promise<void> {
     await page.goto(`/event/${GD_EVENT_ID}`);
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // TASK-236 (218.3-regression): se motsvarande kommentar vid Personkorten-
+    // beskrivningens oppnaSidan ovan — samma orsak, samma fix.
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 12_000 });
     await expect(gruppen(page).getByRole('heading', { name: 'Gruppdynamik' })).toBeVisible();
   }
 
@@ -2080,7 +2093,9 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
     await page.goto(`/event/${EVENT_ID}`);
 
     const heading = page.getByRole('heading', { level: 1, name: 'Resor i medvetandet 3' });
-    await expect(heading).toBeVisible();
+    // TASK-236 (218.3-regression): se testet "övrigt fel"-kommentaren ovan
+    // (rad ~465) — samma warmup-gate-fördröjning på en fräsch kall kontext.
+    await expect(heading).toBeVisible({ timeout: 12_000 });
     const trigger = heading.getByRole('button');
 
     // FONT-VAKT: mät aldrig textbredd förrän Inter är laddad — fallback-

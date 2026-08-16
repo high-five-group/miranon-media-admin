@@ -362,6 +362,21 @@ export default defineConfig({
                 url: `http://localhost:${E2E_DEV_PORT}`,
                 reuseExistingServer: false,
                 timeout: 60_000,
+                // TASK-236 (218.3 e2e-svit-tid): kortar startvärmningens
+                // hårda tak (produktionsdefault 9000ms, ADR-112 beslut 3)
+                // till 6000ms för BÅDA e2e-konsumenterna av denna webServer
+                // (setup + chromium-authenticated) via BEFINTLIG seam
+                // (StartvarmningBeroenden.timeoutMs, src/env.ts +
+                // src/main.tsx). Rör ENDAST denna körnings dev-server —
+                // build:staging/build:production sätter aldrig detta,
+                // så produktionens tak är helt orört. Vald konservativt:
+                // 1/3 kortare än produktionens 9s, fortsatt gott om marginal
+                // (typisk batchad real-nätverkstid uppmätt lokalt << 1s/batch)
+                // över det normala fallet — sänker bara TAKET på den
+                // ovanliga, seg-nätverk-svansen som drar ut svit-tiden.
+                env: {
+                  VITE_E2E_WARMUP_TIMEOUT_MS: '6000',
+                },
               },
   projects: [
     {

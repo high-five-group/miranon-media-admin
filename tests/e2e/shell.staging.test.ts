@@ -23,7 +23,13 @@ test.describe('App-skal (Fas 5 DoD)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/hem');
     // /hem:s h1 är hälsningen (task-1.3 AC #6) — namn-delen miljöberoende.
-    await expect(page.getByRole('heading', { name: /^Hej/, level: 1 })).toBeVisible();
+    // TASK-236 (218.3-regression): FÖRSTA renderingen på en fräsch, kall
+    // chromium-authenticated-kontext går genom hela warmup-gaten
+    // (ADR-112/main.tsx InnerApp) — default-timeouten (5000ms) räcker inte
+    // längre. Samma mönster som persist-cache.staging.test.ts:s fix.
+    await expect(page.getByRole('heading', { name: /^Hej/, level: 1 })).toBeVisible({
+      timeout: 12_000,
+    });
   });
 
   test('DoD 1 — skal + tab bar med 4 flikar på /hem', async ({ page }) => {

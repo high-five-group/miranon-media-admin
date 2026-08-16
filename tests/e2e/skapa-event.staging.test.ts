@@ -363,7 +363,13 @@ test.describe('Skapa nytt event — facit-formen + flödet (task-19.3)', () => {
     });
 
     await page.goto('/event/skapa');
-    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+    // TASK-236 (218.3-regression): FÖRSTA renderingen på en fräsch, kall
+    // chromium-authenticated-kontext går genom hela warmup-gaten
+    // (ADR-112/main.tsx InnerApp) — default-timeouten (5000ms) räcker inte
+    // längre. Samma mönster som persist-cache.staging.test.ts:s fix.
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused({
+      timeout: 12_000,
+    });
 
     await fyllFormular(page, { medFormat: false });
     await page.getByRole('button', { name: 'Skapa event', exact: true }).click();
@@ -430,7 +436,11 @@ test.describe('Skapa nytt event — SKARPT mot staging (AC #1)', () => {
     const eventsSvar = page.waitForResponse((r) => r.url().includes('/get-events'));
     const formatSvar = page.waitForResponse((r) => r.url().includes('/get-event-formats'));
     await page.goto('/event/skapa');
-    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+    // TASK-236 (218.3-regression): fräsch (ej delad) storageState här också —
+    // se "validering"-testets kommentar ovan för samma warmup-gate-orsak.
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused({
+      timeout: 12_000,
+    });
     expect((await eventsSvar).status()).toBe(200);
     expect((await formatSvar).status()).toBe(200);
 
@@ -483,7 +493,11 @@ test.describe('Skapa nytt event — SKARPT mot staging (AC #1)', () => {
     // publicera" (medium-lyftet rivet med MiranonSe-komponenten; K81-sagan
     // stängd — domänen förekommer inte längre som synlig text på sidan).
     await page.goto('/event/skapa');
-    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused();
+    // TASK-236 (218.3-regression): se testet ovan ("formuläret skapar ett
+    // riktigt event...") för samma warmup-gate-orsak.
+    await expect(page.getByRole('heading', { level: 1, name: 'Skapa nytt event' })).toBeFocused({
+      timeout: 12_000,
+    });
     const handtag = page.getByRole('switch', { name: 'Publicera på miranon.se' });
     await handtag.focus();
     await page.keyboard.press(' ');

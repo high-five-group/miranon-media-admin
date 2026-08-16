@@ -386,7 +386,14 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
     const mocken = await hallbarMock(page, grunddata());
     await page.goto('/hem');
-    await expect(page.getByRole('link', { name: /Signe Sparad/ })).toBeVisible();
+    // TASK-236 (218.3-regression): denna FÖRSTA render går genom HELA
+    // warmup-gaten (ADR-112/main.tsx InnerApp) på en fräsch, kall
+    // browser-kontext — inte bara de två mockade get-events/get-registrations-
+    // anropen. Default-timeouten (5000ms) räckte FÖRE 218.3:s gate men är
+    // för snäv nu; samma generösa 12s som denna tests EGEN
+    // post-cold-start-assertion längre ned (rad ~430) — filen missade att
+    // applicera den HÄR när gaten lades till.
+    await expect(page.getByRole('link', { name: /Signe Sparad/ })).toBeVisible({ timeout: 12_000 });
     await vantaPaPersistInnehall(page, 'Signe');
 
     // Skyddsräcke 3 (ADR-072 beslut 4): lagringens buster ÄR app-versionen.
@@ -438,7 +445,12 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     await page.clock.install();
     const mocken = await hallbarMock(page, grunddata());
     await page.goto('/hem');
-    await expect(page.getByRole('link', { name: /Signe Sparad/ })).toBeVisible();
+    // TASK-236 (218.3-regression): se buster-testets kommentar ovan — samma
+    // FÖRSTA-render-genom-hela-gaten-mekanism, samma 12s-fix. Extra skärpt
+    // här: `page.clock.install()` fryser warmup-motorns EGNA 9s-säkerhetsnät
+    // (setTimeout-driven) tills testet self fastForward:ar, så gaten kan
+    // ENDAST släppa via korAlla() faktiskt avslutas — ingen timeout-reträtt.
+    await expect(page.getByRole('link', { name: /Signe Sparad/ })).toBeVisible({ timeout: 12_000 });
     await page.clock.fastForward(1_500); // throttle-synken (~1 s) fyrar
     await vantaPaPersistInnehall(page, 'Signe');
 
@@ -480,7 +492,9 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
   test('AC 3 — maxAge 24 h: cache äldre än 24 h kastas vid restore', async ({ page }) => {
     const mocken = await hallbarMock(page, grunddata());
     await page.goto('/hem');
-    await expect(page.getByRole('link', { name: /Signe Sparad/ })).toBeVisible();
+    // TASK-236 (218.3-regression): se buster-testets kommentar ovan (rad
+    // ~389) — samma FÖRSTA-render-genom-hela-gaten-mekanism, samma 12s-fix.
+    await expect(page.getByRole('link', { name: /Signe Sparad/ })).toBeVisible({ timeout: 12_000 });
     await vantaPaPersistInnehall(page, 'Signe');
 
     // Åldra payloaden 25 h (simulerar lagring skriven i går) → utanför
@@ -642,7 +656,14 @@ test.describe('AC 4 — offline-öppning visar restaurerad data (pwa-offline-mö
     // Assertionen speglar därför RENDERAT innehåll före/efter omladdningen
     // (datavärdes-fri) — riktiga läs-EF:er mot staging via semaforen.
     await page.goto('/hem');
-    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
+    // TASK-236 (218.3-regression): se buster-testets kommentar (rad ~389) —
+    // samma FÖRSTA-render-genom-hela-gaten-mekanism, samma 12s-fix. Extra
+    // skärpt här: INGA mockar alls i detta test, så samtliga sju
+    // warmup-poster (inte bara fem) går mot RIKTIG staging innan main#main
+    // monteras.
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible({
+      timeout: 12_000,
+    });
 
     // SW-guarden (pwa-offline-svitens mönster): kräver byggd preview —
     // auto-skip i dev/CI där SW:n inte existerar (devOptions.enabled false).
