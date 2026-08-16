@@ -3,10 +3,10 @@ id: TASK-236
 title: >-
   Staging-e2e spränger 12-min-taket sedan TASK-218.3 — namnge fällningarna,
   åtgärda warmup-kostnaden
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 07:06'
-updated_date: '2026-08-16 12:18'
+updated_date: '2026-08-16 13:20'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,7 +24,7 @@ Forensik 2026-08-16 (R2): 5/5 körningar som körde sviten på träd med 817979a
 - [x] #1 De 3 fällningarna namngivna via lokal 'npx playwright test --project=chromium-authenticated --retries=0' — läs docs/reference/staging-verifiering-runbook.md först och verifiera att ingen staging-CI-körning är i luften
 - [x] #2 De två 218.3-inducerade fällningarna fixade (kandidat: persist-cache.staging.test.ts — 218.3 ändrade både prod-kod och testfil)
 - [x] #3 Warmup-kostnaden i e2e åtgärdad via befintlig seam (StartvarmningBeroenden) — inte via höjt tak
-- [ ] #4 Staging-jobbet når sin sammanfattning < 12 min (post-merge-belägg)
+- [x] #4 Staging-jobbet når sin sammanfattning < 12 min (post-merge-belägg)
 <!-- AC:END -->
 
 ## Definition of Done
@@ -97,3 +97,9 @@ KVARSTÅENDE, EJ LÖST: TASK-227 "kall enhet"-testet (rad 594) visar KONSEKVENT 
 
 GRINDAR (varv 2, på fräsch gren mot senaste main inkl. task-242s splash-entré-animation som landat samtidigt — auto-merge:ad ren, inga konfliktmarkörer): typecheck 0 fel, biome 0 fel (520 filer), build grön.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+R2 STÄNGD över två varv: varv 1 (PR #1398, merge c3f2a288) seam 6000ms + 17 riktade fällnings-fixar — undersköt taket (post-merge 12m16s cancelled, run 31943270329, första takfällningen MED artefakter tack vare TASK-237). Varv 2 (PR #1409, merge 8214ef2f) strukturell fix: e2e-default 50ms + sessionStorage-opt-in (lasVarmningTimeoutOverride) + det ANDRA missade starta()-anropsstället (_authenticated.tsx, TASK-227-gaten). AC4-BEVIS: post-merge på 8214ef2f, staging-jobbet 12:44:28→12:53:02 = 8m34s < 12min-taket, sammanfattning nådd (run 31947844163). 4 kvarvarande NAMNGIVNA fällningar (kanter av snabb-gaten + staging-datadubbletter) → eget kort task-244, varv 3. Forensik-arv: 17-tester-fyndet, dot-mätartefakten, passkey-detaljerna, straggler-dörren öppen — allt i Implementation Notes.
+<!-- SECTION:FINAL_SUMMARY:END -->

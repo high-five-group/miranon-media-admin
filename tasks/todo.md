@@ -38,11 +38,24 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 🔄 ÅTERUPPTAGEN (2026-08-16, `lifecycle: active`, resume efter
-fjärde pausen — RESUME-INGÅNGEN nedan gäller).** Numrering re-deriverad mot
-disk vid resume: kort **task-235** · ADR **114** · tråd **T145** · lesson
-**L512** (+18 fragment på disk) · fälla **f49** (§Kända fällor bär 48 poster —
-handoffens f47 var föråldrad; disk vinner). Kvällens
+**Session 102 ⏸️ PAUSAD (2026-08-16 em, `lifecycle: paused`, FEMTE pausen —
+Marcus-order "kör paus när allt landat"; ALLT LANDAT, kön tom, alla nio
+agenter inne).** Dagens skörd: röd-kedjans forensik 12 larm → 6 rötter, 5
+fixade+landade (R2 stängd med AC4-bevis 8m34s) · 16 larm stängda, öppet
+är ENDAST ärende 1403 (medveten arbetssignal, task-244) · kort 235–244 mintade
+(235/236/237/242 + 147.11/147.12 + 208/209 Done) · PRD-paret task-241
+Sveparna + task-243 Morgonkollen + ADR-114 publicerade · hem-facit LÅST
+(s102-hem-konvergens, godkand: null) · dokument-familjen komplett
+(skärpning + klassfält + äkta ersätt/radera) · splash skärpt (tona-in).
+**RESUME-INGÅNG:** (1) dokument-varv 3 (Marcus fem kvitterade punkter +
+Visa-beteendet) → omgranskning → dokument-facit · (2) task-244 (staging
+helt grön → #1403 stängs) · (3) /to-issues på 241+243 · (4) prod-momentet
+(allowlist + 147.12-klicklistan + passkey/231) · (5) spot-checks (splash-
+övergången) · (6) QA 218.5/219.4 · straggler-kortet · (7) 40-listan ·
+221-vägvalet · Airtable-HITL · 127.10+Roger · (8) CLAUDE.md-rättelsen
+(§ Kortnummer, "view opåverkad" falsifierad). Numrering: task-245 ·
+ADR 115 · T145 · L512+18 fragment · f49 — re-derivera ALLTID. Full
+handoff: sessionsdok S102 § PAUSLÄGE (femte) + Del 12–13. Kvällens
 skörd: Lotta-vandringen p6–p10 rotorsakade (korten `228`–`234`) · `227`+`228`
 BYGGDA+LANDADE+Done · basen 0 olänkade (Helena + batch 7) · passkeys PÅ i
 staging (Marcus-aktiverad, e2e-bevisad; prod-klicklista i `231`) ·
