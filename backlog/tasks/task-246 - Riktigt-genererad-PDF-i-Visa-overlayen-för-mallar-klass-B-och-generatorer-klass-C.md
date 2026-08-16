@@ -3,10 +3,10 @@ id: TASK-246
 title: >-
   Riktigt genererad PDF i Visa-overlayen för mallar (klass B) och generatorer
   (klass C)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 15:26'
-updated_date: '2026-08-16 17:05'
+updated_date: '2026-08-16 17:43'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,7 +32,7 @@ Marcus-order 2026-08-16, nära-verbatim: 'det proffsigaste och mest branschledan
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -60,3 +60,9 @@ PROD-KLICKLISTAN (AC #4): preview-receipt (NY EF) tillagd i .prod-functions-allo
 
 STAGING-DEPLOY (manuellt, ADR-050): generate-event-attachment, send-receipt-email, preview-receipt deployade till pqtshyierkdgwdnxuirz via `supabase functions deploy <namn> --project-ref pqtshyierkdgwdnxuirz` (tre gånger vardera: skarp version → negativt kontrollprov → reverterad skarp version igen).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1431 (merge 62bdef6a, commit 2ec0c6d1). Klass B: preview-gren i generate-event-attachment (PDF byggs, ingenting persisteras). Klass C: ny EF preview-receipt (delad renderKvittoPdf utbruten; typexempel-data, kvittonummer alltid FÖRHANDSVISNING, aldrig allokerat, inget mail). Sidoeffektsfrihet bevisad i BÅDA riktningarna med negativa kontrollprov (guard urkopplad → rött på riktig persisterad rad → återställd; content-stream-exakt kvittojämförelse efter att första substring-provet visats blint). Deny-triple preview-receipt 9/9; 405-lucka i generate-event-attachment-sviten stängd (fanns sedan 146.5). CI grön per jobb via merge-kön. Prod-skuld på klicklistan: preview-receipt (ny) + generate-event-attachment (ändrad) — HITL.
+<!-- SECTION:FINAL_SUMMARY:END -->
