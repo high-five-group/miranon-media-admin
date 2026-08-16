@@ -13,13 +13,15 @@
 // motiv som get-event-notes: länkfilter matchar länkens primär-display, inte
 // record-ID (T15-klass-bugg). Record-ID = enda tillförlitliga nyckeln.
 //
-// KLASS A/B ÄR STRUKTURELLT ODELBARA I METADATAT (generate-event-attachment/
-// index.ts § SAMTIDIGHETS-NOT, TASK-146.5): Bilagor-tabellen bär inget
-// dokumentklass-fält. Denna EF listar därför ALLA rader länkade till eventet,
-// oavsett hur de uppstod (uppladdad/genererad) — det är exakt vad "klass A
-// och klass B sändbara" betyder i praktiken, ingen klientsidig filtrering
-// krävs eftersom det inte finns någon klass-signal att filtrera på. Klass C
-// (kvitto, TASK-147.7, ej byggd) har ingen Bilagor-rad att lista här.
+// [RÄTTAD, TASK-147.12] Bilagor-tabellen bär NU ett dokumentklass-fält
+// (`Dokumentklass`, additivt, staging fldr2CwboZ3M4USCX) — nedanstående
+// stycke beskrev tidigare (TASK-146.5–147.6) ett strukturellt odelbart
+// tillstånd som inte längre håller. Denna EF listar FORTFARANDE ALLA rader
+// länkade till eventet oavsett klass (ingen server-side filtrering — samma
+// beteende som förut), men SVARET bär nu klassen per rad
+// (`mapAttachmentRecord`), så konsumenten (DokumentYta.tsx) kan visa/gruppera
+// på verklig klass i stället för att gissa. Klass C (kvitto, TASK-147.7) har
+// fortfarande ingen Bilagor-rad att lista här — ingen skrivväg dit än.
 //
 // `Lagringsnyckel` (TASK-147.5, additiv) EXPONERAS ALDRIG i svaret —
 // `mapAttachmentRecord` (_shared/attachments.ts) är den delade mappern
@@ -47,10 +49,11 @@ const ATTACHMENTS_LINK_FIELD = 'Bilagor';
 const ATTACHMENTS_BATCH_SIZE = 50;
 
 // Fält att hämta ur Bilagor — Lagringsnyckel UTESLUTS MEDVETET (server-internt,
-// se filhuvudet). mapAttachmentRecord läser bara dessa fyra ändå, men en
-// explicit fields-lista är en andra, oberoende spärr mot att fältet någonsin
-// läcker ut i svaret genom en framtida mapper-ändring.
-const ATTACHMENT_FIELDS = ['Namn', 'Storlek (bytes)', 'Skapad', 'Event'];
+// se filhuvudet). mapAttachmentRecord läser bara dessa fem ändå (TASK-147.12
+// lade till Dokumentklass), men en explicit fields-lista är en andra,
+// oberoende spärr mot att Lagringsnyckel någonsin läcker ut i svaret genom en
+// framtida mapper-ändring.
+const ATTACHMENT_FIELDS = ['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Dokumentklass'];
 
 type Fields = Record<string, unknown>;
 type AirtableRow = { id: string; fields: Fields };

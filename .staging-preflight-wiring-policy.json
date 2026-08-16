@@ -97,6 +97,11 @@
       "sökväg": "scripts/create-kvitton-table.mjs",
       "funktion": "main",
       "skäl": "Kvitton-tabellens schema-skript (schema:kvitton, TASK-147.7, ADR-109). Samma Metadata-API-skrivväg mot samma delade staging-bas som create-bilagor-table.mjs — identisk risk, identisk motivering."
+    },
+    {
+      "sökväg": "scripts/backfill-bilagor-dokumentklass.mjs",
+      "funktion": "main",
+      "skäl": "Dokumentklass-backfillen (backfill:bilagor-dokumentklass, TASK-147.12). Läser OCH skriver Bilagor-records via samma delade staging-bas som purge/seed-review/create-bilagor-table — en lokal körning samtidigt med ett CI-staging-jobb ska stoppas av samma skäl."
     }
   ],
   "nodeSkriptUpptäckt": {
@@ -127,6 +132,10 @@
       {
         "sökväg": "scripts/test-create-kvitton-table.mjs",
         "skäl": "Hermetisk testsvit (TASK-147.7, ADR-109) — importerar bara de pura funktionerna ur create-kvitton-table.mjs, anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, identiskt mönster som test-create-bilagor-table.mjs."
+      },
+      {
+        "sökväg": "scripts/test-backfill-bilagor-dokumentklass.mjs",
+        "skäl": "Hermetisk testsvit (TASK-147.12) — importerar bara de pura funktionerna ur backfill-bilagor-dokumentklass.mjs (classifyByNamn, planBackfill, validateBaseGuard), anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, identiskt mönster som test-create-bilagor-table.mjs/test-create-kvitton-table.mjs."
       }
     ]
   }

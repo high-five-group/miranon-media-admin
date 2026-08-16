@@ -214,6 +214,48 @@ export const CONFIG = {
         'ensamt kan inte adressera lagringsobjektet entydigt.',
       options: {},
     },
+    {
+      // [TASK-147.12] ADDITIVT tillägg — löser task-147.6:s fynd 1 (klass A/B
+      // strukturellt odelbara i metadatat) I BASEN, per ADR-063 (Marcus-GO
+      // 2026-08-16). ORDLISTA.md:s tre dokumentklasser (grillad samsyn S93)
+      // som Airtable-optionsnamn, inte en bokstavskod — direkt renderbart i
+      // UI utan översättningstabell. Satt av den skrivande EF:en vid
+      // radskapelse: upload-attachment/finalize-attachment-upload →
+      // 'Uppladdad', generate-event-attachment → 'Event-mallad'. 'Person-
+      // genererad' (klass C, t.ex. kvitto) har ännu ingen skrivväg till DENNA
+      // tabell (TASK-147.7 skriver till den separata Kvitton-tabellen) —
+      // optionen finns förberedd, inte spekulativt påhittad: den är samma
+      // vokabulär som redan står i ORDLISTA.md och krävs för att fältet ska
+      // täcka alla tre klasser den dag ett skrivbehov uppstår, i stället för
+      // att behöva en ny options-migrering då.
+      //
+      // FÄLTET SKAPADES DEN 2026-08-16 VIA AIRTABLE MCP (create_field), INTE
+      // GENOM ATT KÖRA DETTA SKRIPT: AIRTABLE_SCHEMA_TOKEN saknades i lokal
+      // .env.seed vid byggtillfället (bara STAGING_AIRTABLE_TOKEN fanns).
+      // CONFIG.fields nedan speglar EXAKT den skapade specen (verifierat via
+      // describe_table efteråt: id fldr2CwboZ3M4USCX, choices-ID:n
+      // selRJGlFuqzbY8V9w/selkwZzOdrKEcKbky/selg6QYcmNlNCtL8n) så att en
+      // FRAMTIDA körning av detta skript (med token på plats) är en no-op
+      // (planFields ser fältet som redan existerande, `toCreate: []`) i
+      // stället för att försöka skapa det på nytt eller — värre — larma
+      // mismatch. Skriptet förblir den deklarativa hemvisten för SPECEN;
+      // detta är ett dokumenterat undantag från "skriptet utförde skapandet",
+      // inte en övergiven konvention.
+      name: 'Dokumentklass',
+      type: 'singleSelect',
+      description:
+        'Vilken av de tre dokumentklasserna bilagan hör till (ORDLISTA.md, grillad ' +
+        'samsyn S93): Uppladdad (klass A, statisk fil Lotta laddar upp), Event-mallad ' +
+        '(klass B, systemmall med eventfälten ifyllda), Person-genererad (klass C, ' +
+        'byggd ur person-/betalningsdata, t.ex. kvitto). Satt av den skrivande EF:en ' +
+        'vid radskapelse (upload-attachment/finalize-attachment-upload -> Uppladdad; ' +
+        'generate-event-attachment -> Event-mallad) — TASK-147.12, additivt fält. ' +
+        'Rader skapade FÖRE detta fält fanns är backfyllda där klassen är härledbar ' +
+        'ur Namn-mönstret, annars lämnade tomma.',
+      options: {
+        choices: [{ name: 'Uppladdad' }, { name: 'Event-mallad' }, { name: 'Person-genererad' }],
+      },
+    },
   ],
 
   requestThrottleMs: 250,

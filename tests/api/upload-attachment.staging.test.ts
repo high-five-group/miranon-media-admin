@@ -117,12 +117,15 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(body.record.fields.Event).toEqual([BELAGGNING_EVENT_ID]);
     expect(typeof body.record.fields.Skapad).toBe('string');
     expect(Number.isNaN(Date.parse(body.record.fields.Skapad as string))).toBe(false);
+    // [TASK-147.12] mönster 1 (denna EF) ÄR klass A per definition.
+    expect(body.record.fields.Dokumentklass).toBe('Uppladdad');
 
     // (ii) Domän-shape (adapterns parse-väg).
     const attachment: Attachment = AttachmentSchema.parse(body.attachment);
     expect(attachment.namn).toBe(filnamn);
     expect(attachment.storlekBytes).toBe(2048);
     expect(attachment.eventId).toBe(BELAGGNING_EVENT_ID);
+    expect(attachment.dokumentklass).toBe('Uppladdad');
   });
 
   test('deny: ogiltig eventId-form → 400', async ({ request }) => {

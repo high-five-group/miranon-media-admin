@@ -303,10 +303,12 @@ export interface DataSourceAdapter {
    * nyast först (server-side). Ren läsning — speglar `fetchEventNotes` exakt.
    *
    * Listar BÅDA klass A (uppladdad, TASK-146.4) och klass B (event-mallad,
-   * TASK-146.5) — Bilagor-tabellen bär inget dokumentklass-fält, så alla
-   * rader länkade till eventet är per konstruktion "klass A eller B". Klass
-   * C (kvitto, TASK-147.7) har ingen Bilagor-rad och är alltså strukturellt
-   * frånvarande här, inte filtrerad bort.
+   * TASK-146.5) — ingen server-side klassfiltrering. [RÄTTAD, TASK-147.12]
+   * Bilagor-tabellen bär numera `Dokumentklass` (additivt fält), så varje
+   * `Attachment` i svaret bär sin verkliga klass (`dokumentklass`, `null` för
+   * icke-härledda förfälts-rader) i stället för att vara odelbar från de
+   * andra. Klass C (kvitto, TASK-147.7) har fortfarande ingen Bilagor-rad
+   * och är alltså strukturellt frånvarande här, inte filtrerad bort.
    */
   fetchEventAttachments(eventId: string): Promise<Attachment[]>;
 

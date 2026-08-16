@@ -325,9 +325,17 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // Attachment-domänformen); krävs för att den bilage-bärande sändvägen ska
   // kunna hämta rätt bytes tillbaka (Namn ensamt är tvetydigt — se
   // scripts/create-bilagor-table.mjs § Lagringsnyckel för instansen).
+  // 'Dokumentklass' (TASK-147.12, additiv singleSelect, staging
+  // fldr2CwboZ3M4USCX) — upload-attachment/finalize-attachment-upload
+  // skriver 'Uppladdad' (klass A), generate-event-attachment skriver
+  // 'Event-mallad' (klass B). Optionsnamnen speglas i
+  // src/domain/types/Status.ts AttachmentClass OCH i
+  // _shared/attachments.ts ATTACHMENT_CLASS_* (Deno↔Vite-dubblering, samma
+  // mönster som BILAGOR_BUCKET_ID) — skrivande EF:er importerar dessa
+  // konstanter, skriver aldrig en bokstavlig sträng inline.
   'create-attachment': {
     tableId: 'Bilagor',
-    allowedFields: ['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Lagringsnyckel'],
+    allowedFields: ['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Lagringsnyckel', 'Dokumentklass'],
   },
   // Åtgärdsutskickens sändväg (TASK-147.1, ADR-067-revisionen — repots sjunde
   // write-vertikal, tredje mail-vertikal). send-action-email-EF:en bygger `fields`
