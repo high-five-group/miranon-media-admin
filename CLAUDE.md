@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-14
+updated: 2026-08-16
 review_by: 2026-11-15
 status: stable
 ---
@@ -536,12 +536,19 @@ Praktiskt, i den ordningen:
    handredigerad `id:`-rad löser symptomet och bryter den regel som gör registret
    trovärdigt.
 
-**Kostnaden är mätt, och den träffar smalare än man tror:** `task list` går från
-~0,52 s till ~6,50 s och `task create` från ~0,69 s till ~7,09 s, men
-`task <id>` (view) är **opåverkad** (~0,52 → ~0,55 s). Kostnaden är per
-`list`/`create` — inte per CLI-anrop. Därför tog `check-backlog-closure.sh`
-164,60 s med flaggan på, trots sina ~173 anrop: den gör ett `list` och resten
-`view`. Multiplicera inte per-anropstalet; mät.
+**Kostnaden är mätt — och "view är opåverkad" var FALSKT i en vecka:**
+`task list` ~0,52→6,50 s och `task create` ~0,69→7,09 s (ursprungsmätningen
+2026-07-30), men raden här påstod att `task <id>` (view) var opåverkad
+(~0,52→0,55 s). Falsifierat av `task-238` (2026-08-16, ren A/B):
+**28,5 → 1,96 s per view-anrop** med flaggan på respektive av — dussintals
+gren-skannande barnprocesser mot noll. Det, inte list-anropet, är varför
+`check-backlog-closure.sh` tog 164,60 s. Grindens CI-körning kör sedan
+`task-238` via ROOT_CONFIG-mekanismen (temporär config med flaggan AV för
+grind-processen; riktiga TASK-93-flaggan orörd). Kvarstående regel, nu med
+skärpt bevis: multiplicera inte per-anropstal — MÄT, och lita aldrig på en
+frikännande mätning som inte gjorts i den kontext där kostnaden gör ont
+(`backlog config set` är dessutom bevisat FÖRLUSTFULLT vid round-trip —
+skriv aldrig config via CLI:t; belägg: task-238-kortet).
 
 **Varför raden står här:** den gäller i `task create`-ögonblicket, och en agent
 som ska minta ett kort läser inte en ADR först. `ADR-081` påstod i tre månader att
