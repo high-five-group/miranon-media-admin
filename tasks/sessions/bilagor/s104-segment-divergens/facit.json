@@ -2,7 +2,12 @@
   "prototyp": "s104-segment-divergens",
   "last": "2026-08-17",
   "lasning": "Jag är helt nöjd på alla sidor i hela segment-ytan nu.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-16",
+    "citat": "Godkänd mot facit 2026-08-17",
+    "sha": "a40f3543670f0de310d27542241128b4b5242ea3"
+  },
   "ytor": [
     {
       "yta": "segment-listan",
