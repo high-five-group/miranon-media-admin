@@ -362,20 +362,32 @@ export default defineConfig({
                 url: `http://localhost:${E2E_DEV_PORT}`,
                 reuseExistingServer: false,
                 timeout: 60_000,
-                // TASK-236 (218.3 e2e-svit-tid): kortar startvärmningens
-                // hårda tak (produktionsdefault 9000ms, ADR-112 beslut 3)
-                // till 6000ms för BÅDA e2e-konsumenterna av denna webServer
-                // (setup + chromium-authenticated) via BEFINTLIG seam
-                // (StartvarmningBeroenden.timeoutMs, src/env.ts +
-                // src/main.tsx). Rör ENDAST denna körnings dev-server —
-                // build:staging/build:production sätter aldrig detta,
-                // så produktionens tak är helt orört. Vald konservativt:
-                // 1/3 kortare än produktionens 9s, fortsatt gott om marginal
-                // (typisk batchad real-nätverkstid uppmätt lokalt << 1s/batch)
-                // över det normala fallet — sänker bara TAKET på den
-                // ovanliga, seg-nätverk-svansen som drar ut svit-tiden.
+                // TASK-236 VARV 2 (218.3 e2e-svit-tid — se src/main.tsx:s
+                // `beraknaVarmningTimeoutMs()`-docblock för hela
+                // bakgrunden/motiveringen). Varv 1:s 6000ms räckte INTE —
+                // CI:s post-merge-artefakt (run 31943270329) visade minst
+                // 11 NYA marginella tester utöver de 17 varv 1 redan
+                // fixade, alla med samma "kall gate-väntan"-signatur.
+                // Aritmetiken: ~200 tester × ÄVEN en kort kall väntan
+                // summerar för mycket i EN 12-minuters CI-svit. Lösningen
+                // är strukturell, inte ett bättre tal: e2e-DEFAULTEN sätts
+                // nära noll (gaten släpper i praktiken omedelbart för de
+                // ~190 tester som inte bryr sig om warmup-UI:t), och de FÅ
+                // tester som EXPLICIT testar startvärmningens progression
+                // (persist-cache.staging.test.ts) begär produktionens
+                // riktiga tak via en query-param på sin egen
+                // page.goto()-URL (?e2eVarmningMs=9000) — query-param
+                // vinner alltid över denna default (se
+                // beraknaVarmningTimeoutMs()). 50ms, inte 0: `src/env.ts`s
+                // zod-schema kräver `.positive()` — 0 hade kraschat
+                // createEnv() vid appstart. `korAlla()` kör ändå de sju
+                // riktiga hämtningarna i bakgrunden oavsett detta tal —
+                // bara GATENS EGEN VÄNTAN kortas, ingen ny gate-semantik.
+                // Produktionens DEFAULT_TIMEOUT_MS (9000ms, ADR-112 beslut
+                // 3) är helt orörd — build:staging/build:production sätter
+                // aldrig denna variabel.
                 env: {
-                  VITE_E2E_WARMUP_TIMEOUT_MS: '6000',
+                  VITE_E2E_WARMUP_TIMEOUT_MS: '50',
                 },
               },
   projects: [

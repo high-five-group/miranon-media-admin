@@ -218,6 +218,29 @@ function arrangeraTomCache(page: Page) {
   return page.addInitScript((nyckel) => localStorage.removeItem(nyckel), PERSIST_KEY);
 }
 
+/**
+ * TASK-236 varv 2: opta in i RIKTIG warmup-progression (produktionens
+ * 9000ms-tak, ADR-112 beslut 3) i stället för e2e-webServerns nära-noll-
+ * default (playwright.config.ts). Krävs av DE FÅ tester i denna fil som
+ * faktiskt observerar progressbarens VÄRDEN (Kallstart, TASK-227 kall
+ * enhet) — övriga tester i filen bryr sig bara om SLUTRESULTATET och
+ * påverkas inte av gate-hastigheten.
+ *
+ * `addInitScript` (inte en URL-query-param): körs FÖRE varje enskild
+ * sidladdning i denna browserkontext, oavsett om triggern är en direkt
+ * `page.goto()` (Kallstart, main.tsx:s bootgate) eller en KLIENT-SIDES
+ * omdirigering efter login (TASK-227, _authenticated.tsx:s app-yta-gate,
+ * där `window.location` redan hunnit bli destinations-URL:en när gaten
+ * kör — en query-param på startsidan hade tappats i den omdirigeringen).
+ * Läsaren: `lasVarmningTimeoutOverride()` (startvarmningen.ts).
+ */
+function optaInRiktigVarmning(page: Page, timeoutMs = 9000) {
+  return page.addInitScript(([nyckel, varde]) => sessionStorage.setItem(nyckel, varde), [
+    'e2eVarmningTimeoutMs',
+    String(timeoutMs),
+  ] as [string, string]);
+}
+
 /** Väntar ut throttle-synken (~1 s) tills lagringen bär sentinel-strängen. */
 async function vantaPaPersistInnehall(page: Page, sentinel: string): Promise<void> {
   await expect
@@ -241,6 +264,11 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     // (skiljt från AC 3:s undertester nedan, som simulerar kallhet genom att
     // mutera en redan en gång varmad cache).
     await arrangeraTomCache(page);
+    // TASK-236 varv 2: DETTA test observerar progressbarens FAKTISKA värden
+    // (aria-valuenow-progression nedan) — måste opta in i riktig
+    // warmup-timing, annars flippar gaten (e2e-defaulten är nära noll)
+    // innan progressbaren hinner bli observerbar.
+    await optaInRiktigVarmning(page);
     const mocken = await hallbarMock(page, grunddata());
     // Håller registrations+events (WARMUP_ITEMS[0..1], startvarmningen.ts)
     // tillbaka — de är FÖRST i sekvensen (BATCH_SIZE 2), så resten av
@@ -384,6 +412,13 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     // Samma manifest-källa som versionsraden på Hem (task-4.2 B-NYTT2):
     // versionen läses ur package.json, aldrig hårdkodad i assertionen.
     const { version } = JSON.parse(readFileSync('package.json', 'utf8')) as { version: string };
+    // TASK-236 varv 2: testet checkar SENARE (rad ~433) att "Förbereder..."
+    // faktiskt HINNER synas efter buster-mismatchen tvingar COLD-vägen igen
+    // — med e2e-defaultens nära-noll-gate hinner den texten aldrig målas
+    // (verifierat: föll på EXAKT den assertionen utan denna opt-in). Måste
+    // sättas FÖRE den FÖRSTA page.goto (gäller sedan hela testet, inkl.
+    // den senare page.reload()).
+    await optaInRiktigVarmning(page);
     const mocken = await hallbarMock(page, grunddata());
     await page.goto('/hem');
     // TASK-236 (218.3-regression): denna FÖRSTA render går genom HELA
@@ -490,6 +525,9 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
   });
 
   test('AC 3 — maxAge 24 h: cache äldre än 24 h kastas vid restore', async ({ page }) => {
+    // TASK-236 varv 2: se buster-testets kommentar ovan (rad ~409) — samma
+    // "Förbereder..."-observerbarhets-behov efter den tvingade COLD-vägen.
+    await optaInRiktigVarmning(page);
     const mocken = await hallbarMock(page, grunddata());
     await page.goto('/hem');
     // TASK-236 (218.3-regression): se buster-testets kommentar ovan (rad
@@ -562,6 +600,12 @@ test.describe('TASK-227 — Förberedelseskärmen efter aktiv inloggning (router
     // idiom som "Kallstart"-testet ovan, så progressbaren är observerbar
     // innan den släpper.
     mocken.hall = true;
+    // TASK-236 varv 2: gaten som triggas HÄR bor i _authenticated.tsx
+    // (app-yta-gaten, TASK-227) — inte main.tsx:s bootgate — men delar
+    // samma sessionStorage-läsning. Måste sättas FÖRE page.goto('/login')
+    // (addInitScript kör på VARJE sidladdning i denna kontext, inklusive
+    // den klient-sides omdirigeringen efter login).
+    await optaInRiktigVarmning(page);
 
     await page.goto('/login');
     // Auth-ytan orörd (mined danger #1): ingen Förberedelseskärm på /login,
