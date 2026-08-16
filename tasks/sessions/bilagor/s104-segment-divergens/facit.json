@@ -1,0 +1,54 @@
+{
+  "prototyp": "s104-segment-divergens",
+  "last": "2026-08-17",
+  "lasning": "Jag är helt nöjd på alla sidor i hela segment-ytan nu.",
+  "godkand": null,
+  "ytor": [
+    {
+      "yta": "segment-listan",
+      "bilder": [],
+      "kallor": [
+        "src/components/segment/prototyp/VariantD.tsx",
+        "src/routes/_authenticated/mer/segment.tsx",
+        "src/lib/segment-taxonomy.ts"
+      ],
+      "not": "INGEN facit-bild låst — facit för HELA passet är ariaSnapshot-referenser som promoverings-grinden fångar (s93-atgardssida-precedentet, ADR-103 B4): Playwright-screenshots timeoutar konsekvent på ytan (S104 Del 7, lesson-kandidat 11) så a11y-snapshots + DOM-mätningar är bevisformen. YTAN: SegmentLista + SegmentKort/SegmentKortMedAntal — ingressen 'Urval av personer'; knappraden = TRE kapslar (skapande vänster · Markera högerankare; fyra likviktiga knappar i smal spalt FALSIFIERAT, Del 6 varv 'knapprad varv 2'); Täckning som egen lågmäld textknapp ('Visa/Dölj täckning') ovanför panelerna den styr; korttexterna är MÄNNISKOMENINGAR UR AVSIKTEN (manniskoMening via byggGrupp: 'Har gått både RIM 1 och RIM 2 - men ingen av de andra två utbildningarna.'; redigerad grupp tappar meningen → regel-klartext; utan-sidan binds ' eller ', aldrig 'Eller:'-meningar); LÅST KORTHÖJD min-h-[2lh] — alla 14 kort mätta till exakt 168 px; Marcus i 16c25de6: låst korthöjd är APP-GLOBAL REGEL; träff-ordet följer valet (utbildningar/föreläsningar/event, 1e5f7b1e); fälla #34-formen: '0 personer ännu'-fraser via publikOrd(), neutralt aldrig fel; ordet 'grupp' ENDAST i uppdelnings-betydelsen. PROMOVERINGS-BYGGKRAV (PASS-NIVÅ, bokförda S104 Paushistorik 2+3 & Del 7): FEM EF-krav — (1) via: Par[], (2) år kräver deltagandedatum, (3) expansionen server-side, (4) AND-stödet in i supabase/functions/_shared/segment-membership.ts (klient-snittet i VariantD får ALDRIG promoveras, filhuvudet § AND-PRIMITIVEN), (5) tidsperioden server-side (Villkor.period-docblockens räkne-ärlighetskrav) · basstrukturen (familj + nivå som fält) beslutad men EJ byggd — KURS_KARTA hårdkodad tills dess · PersonsList-höjdlåsbuggen (skarp yta, latent — fynd-kort vid skörden) · rivningen (ADR-103): variant a/b/c + SegmentBuilder + PrototypRigg/SkalprovsVaxel dör; formen rivs aldrig."
+    },
+    {
+      "yta": "tackningsvyn",
+      "bilder": [],
+      "kallor": ["src/components/segment/prototyp/VariantD.tsx"],
+      "not": "TackningsPanel + useTackning/harledUppsattningar — täckningsytan är en KVITTENS, inte ett arbetsläge (Del 6 varv 3-underkännandet: 'Kontrollera grupperna' revs, ordet Täckning + Layers-ikonen återställda). Procent-formen verbatim: '100 % - Full täckning. Alla deltagare som gått en eller flera utbildningar finns representerade i något av segmenten.' — golvad procent, avvikelser redovisas i %-rubriker."
+    },
+    {
+      "yta": "nytt-segment-mallvyn",
+      "bilder": [],
+      "kallor": ["src/components/segment/prototyp/VariantD.tsx"],
+      "not": "NyttSegmentVy — mallar som PRIMÄR ingång, verkstaden som avancerat läge (branschmönstret ur docs/research/segment-byggare-branschmonster-2026-08-16.md: 8 produkter bygger TVÅ lager; ingen ersätter byggaren; rå AND/OR-terminologi missförstås mätbart). Tre steg: 'Vilka räknas med?' → 'Vilka ska ingå?' (tre vägar: minst en av / vissa men inte andra / exakt kombinationen) → 'Det här blir segmentet' med människomening + live-antal + förifyllt namn (malNamnForslag); Skapa öppnar detaljvyn direkt. byggGrupp/manniskoMening ÅTERANVÄNDA — noll ny regelmotor."
+    },
+    {
+      "yta": "verkstaden",
+      "bilder": [],
+      "kallor": ["src/components/segment/prototyp/VariantD.tsx"],
+      "not": "RegelVerkstad + VillkorsKort/VillkorsLista/KonjunktLista — verkstaden i mallvyns form: tre stegkort, namn SIST, brödtextgrad, 'Spara segmentet', h1 = namn/'Nytt segment', utvecklarnoter rivna. Villkorskortet: mallvyns fråga FÖRST (valrader, nyansinverterad bg-surface), modalitet/'Räknas som' ersatta; 'Ta bort' dold för enda villkoret; Villkor-etiketten som eyebrow; och/eller-knappparet i identisk geometri (256×39, vänsterställt). AND-PRIMITIVEN: konjunkt-grupper i 'med' (VariantD filhuvud § AND-PRIMITIVEN, S104 Del 3-4 — de fjorton verkliga Skool-målsegmenten falsifierade rent OR-regelspråk). Tidsperioden som RIKTIG kontroll: DatumFalt under 'Fler avgränsningar', klartexten bär perioden, räkne-ärlighetsraden. TEXTINVENTERINGEN — VERBET BÄR FORMEN (7-scenariers matris, b16d5d14): 'Har gått X' (utbildning) / 'Har varit på en föreläsning i X' / 'Har deltagit i X - som utbildning eller föreläsning'; vägetiketter modalitetsmedvetna. Terminologi: villkorsgrupp → 'alternativ'; Rogers ord 'utbildning' i ALL UI-text (koden behåller domäntermen kurs — ORDLISTA: taxonomi-axeln)."
+    },
+    {
+      "yta": "segment-detaljvyn",
+      "bilder": [],
+      "kallor": ["src/components/segment/prototyp/VariantD.tsx"],
+      "not": "SegmentDetalj + PublikSektion/PersonRad — publiklistan i PersonsList-anatomi med INLINE-SCROLL (chunk-knappen riven); radernas höjdlås kräver U+00A0 (' ' FALSIFIERAT — mäter 0 px; samma latenta bugg i skarpa PersonsList.tsx:542/601, EJ rörd här — fynd-kort vid skörden); 'Får inte mailet' (f.d. 'Undertrycks') skiljer serverns consent-grindade ur listan; testmail som åtgärdssidans rad — STUB tills task-147.1 (send-email enkel-mottagar-gren, beroendet följer med in i PRD)."
+    },
+    {
+      "yta": "generatorn",
+      "bilder": [],
+      "kallor": ["src/components/segment/prototyp/VariantD.tsx"],
+      "not": "DelaUppIGrupper + StegSektion + byggDeFjorton — 'Dela upp i grupper' som TRE SYNLIGA STEGKORT; partition-SOM-generator (partitionen genererar segmentuppsättningen, S104 Del 4-5); de fjorton förskapade grupperna slår upp FACIT_KARTA (juli 2026 års uppmätta Skool-antal, 1 till 188) — deras mål är inte påhittat, instrumentet deklarerar sig självt."
+    },
+    {
+      "yta": "utskicksvyn",
+      "bilder": [],
+      "kallor": ["src/components/segment/prototyp/VariantD.tsx"],
+      "not": "UtskicksVy — ÄRVER åtgärdssidans låsta grammatik (s93-atgardssida-promovering-facitet; DUKNING § 1.1: segment-sändvyn uppfinner inte mottagarurval eller granskningssteg). T50-härdningens tre lager BEHÅLLNA som beteendekrav: (a) skriv-för-att-bekräfta, (b) mottagarkontroll där SERVERN äger sanningen (send-email löser mottagare ur segmentIds, aldrig klientbyggd lista), (c) pessimistisk bulk med stabil idempotensnyckel. Grön-knapp-regeln (task-18.16): utskick = intent success, aldrig danger. PrototypRigg (utfallslägena allt/delvis/inget) och SkalprovsVaxel är RIGGAR utanför facit-scope — de deklarerar sig själva i UI:t och rivs med promoveringen (ADR-103: flaggor och växlar rivs, aldrig formen)."
+    }
+  ]
+}
