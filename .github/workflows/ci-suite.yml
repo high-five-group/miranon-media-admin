@@ -429,8 +429,15 @@ jobs:
       - name: Webblasarbeteende-tester (fixturfritt, noll nätverksanrop)
         run: npm run test:webblasarbeteende
 
+      # Playwright-artefakter vid RÖTT, eller vid takfällning (cancelled —
+      # jobbets timeout-minutes slår till): utan cancelled() här hoppar
+      # steget över och en takfällning lämnar noll traces, screenshots eller
+      # sammanfattning — samma tredje identiska mönster som acceptance- och
+      # test-staging-jobbens artefaktsteg (forensik S3, TASK-237; fynd ur
+      # TASK-237 utanför dess eget kort-scope, registrerat och åtgärdat här
+      # som TASK-239 AC #4, PR #1380 för de två andra instanserna).
       - name: Ladda upp Playwright-artefakter vid rött
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-webblasarbeteende-artefakter
