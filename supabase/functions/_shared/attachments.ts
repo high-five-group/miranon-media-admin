@@ -47,6 +47,30 @@ export const SMALL_UPLOAD_MAX_BYTES = 6 * 1024 * 1024;
  */
 export const SIGNED_UPLOAD_URL_TTL_SECONDS = 7200;
 
+/**
+ * Signerad NEDLADDNINGS-URL:ens giltighetstid (TASK-245, `get-attachment-
+ * download-url`). KORT TTL per branschstandard — AWS Prescriptive Guidance
+ * (docs.aws.amazon.com/prescriptive-guidance/latest/presigned-url-best-
+ * practices, research-pass 2026-08-16, sökning "signed URL expiration best
+ * practice download preview time-limited"): "Keep the expiration times
+ * short… shorter expiration times (minutes to hours rather than days) are
+ * generally recommended for security purposes."
+ *
+ * 300 sekunder (5 minuter) — gott om tid att öppna Dokument-ytans
+ * Visa-overlay, förhandsvisa en PDF/bild och/eller klicka "Ladda ner", men
+ * kort nog att en läckt URL slutar fungera inom samma session den lästes i.
+ * MEDVETET kortare än `SIGNED_UPLOAD_URL_TTL_SECONDS` (7200s, plattformens
+ * FASTA uppladdnings-TTL, se den konstantens docblock): uppladdning är en
+ * engångs-transaktion som kan dra ut på tiden för stora filer (mönster 2s
+ * tre steg), nedladdning är en användare som öppnar EN redan existerande
+ * fil i en dialog — inget skäl att hålla länken vid liv timmar efter att
+ * dialogen stängts. Till skillnad mot uppladdnings-TTL:en (plattformens
+ * FASTA värde, ingen expires-parameter finns) VÄLJER vi denna själva —
+ * `createSignedUrl(path, expiresIn)` tar expiresIn i sekunder, verifierat
+ * mot `@supabase/storage-js`s källkod (`StorageFileApi.ts`).
+ */
+export const SIGNED_DOWNLOAD_URL_TTL_SECONDS = 300;
+
 /** Läsbar filstorlek för fel på Lottas språk (AC #6: "inte i byte"). */
 export function formatMB(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

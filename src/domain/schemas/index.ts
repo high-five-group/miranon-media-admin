@@ -19,7 +19,11 @@ export {
   RecordActivityResultSchema,
   XAPI_IRI_BASE,
 } from './ActivityStatement.schema';
-export { AttachmentSchema, AttachmentUploadTicketSchema } from './Attachment.schema';
+export {
+  AttachmentDownloadUrlSchema,
+  AttachmentSchema,
+  AttachmentUploadTicketSchema,
+} from './Attachment.schema';
 export { AttendanceSchema, CreatedAttendanceSchema } from './Attendance.schema';
 export {
   type ConfirmRegistrationsInput,

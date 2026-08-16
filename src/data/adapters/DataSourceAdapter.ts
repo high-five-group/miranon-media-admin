@@ -1,4 +1,8 @@
-import type { Attachment, UploadAttachmentInput } from '../../domain/models/Attachment';
+import type {
+  Attachment,
+  AttachmentDownloadUrl,
+  UploadAttachmentInput,
+} from '../../domain/models/Attachment';
 import type {
   Attendance,
   CreateAttendanceInput,
@@ -330,6 +334,28 @@ export interface DataSourceAdapter {
    * anropade den.
    */
   deleteAttachment(eventId: string, attachmentId: string): Promise<void>;
+
+  /**
+   * Hämta en TIDSBEGRÄNSAD signerad nedladdnings-/förhandsvisnings-URL för
+   * EN bilaga (TASK-245, "Signerad nedladdnings-EF för bilagor —
+   * Visa-overlayens saknade fil-URL"). Bucketen `bilagor` är PRIVAT — ingen
+   * klient-`createSignedUrl` är möjlig (RLS stänger den vägen), och ingen
+   * nedladdnings-signatur fanns i `supabase/functions/` före detta kort
+   * (bara en UPPLADDNINGS-motsvarighet, `create-attachment-upload-ticket`).
+   *
+   * GET mot get-attachment-download-url-EF:en, som verifierar SERVER-SIDE
+   * att bilagan FAKTISKT hör till `eventId` (ägarskaps-guard, 403 annars —
+   * SAMMA mönster som `deleteAttachment`) innan en URL signeras. TTL:en
+   * (300s, se `_shared/attachments.ts` § SIGNED_DOWNLOAD_URL_TTL_SECONDS)
+   * bärs i svaret, inte hårdkodad klient-side.
+   *
+   * Dokument-ytans Visa-dialog (`DokumentYta.tsx`) anropar denna LAZY — bara
+   * när dialogen faktiskt öppnas, aldrig i förväg för hela listan — och
+   * väljer förhandsvisnings-form (bild/PDF/nedladdning-fallback) utifrån
+   * bilagans filnamnsändelse, samma disciplin som `Attachment` i övrigt
+   * (ingen server-buren `contentType`, se `Attachment.schema.ts`).
+   */
+  getAttachmentDownloadUrl(eventId: string, attachmentId: string): Promise<AttachmentDownloadUrl>;
 
   /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5, PRD

@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import type { Attachment, UploadAttachmentInput } from '../../domain/models/Attachment';
+import type {
+  Attachment,
+  AttachmentDownloadUrl,
+  UploadAttachmentInput,
+} from '../../domain/models/Attachment';
 import type {
   Attendance,
   CreateAttendanceInput,
@@ -15,6 +19,7 @@ import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
   type ActivityStatement,
   ActivityStatementSchema,
+  AttachmentDownloadUrlSchema,
   AttachmentSchema,
   AttachmentUploadTicketSchema,
   AttendanceSchema,
@@ -720,6 +725,24 @@ export class AirtableAdapter implements DataSourceAdapter {
    */
   async deleteAttachment(eventId: string, attachmentId: string): Promise<void> {
     await postEdgeFunction<{ deleted: boolean }>('delete-attachment', { eventId, attachmentId });
+  }
+
+  /**
+   * Hämta en signerad nedladdnings-/förhandsvisnings-URL för en bilaga
+   * (TASK-245). GET mot get-attachment-download-url-EF:en — se
+   * `DataSourceAdapter.getAttachmentDownloadUrl` för det fulla kontraktet
+   * (ägarskaps-guarden, TTL:en). `.parse()` validerar vid datagränsen
+   * (ADR-026), speglar `fetchEventAttachments`.
+   */
+  async getAttachmentDownloadUrl(
+    eventId: string,
+    attachmentId: string,
+  ): Promise<AttachmentDownloadUrl> {
+    const data = await callEdgeFunction<unknown>('get-attachment-download-url', {
+      eventId,
+      attachmentId,
+    });
+    return AttachmentDownloadUrlSchema.parse(data);
   }
 
   /**

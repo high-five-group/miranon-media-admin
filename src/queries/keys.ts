@@ -100,6 +100,15 @@ export const queryKeys = {
     // — bilageväljaren och granskningsytans "valda bilagor"-summering delar
     // samma cache-entry, ingen dubbel-fetch när båda monteras kort efter varandra.
     byEvent: (eventId: string) => ['attachments', eventId] as const,
+    // Signerad nedladdnings-URL för EN bilaga (TASK-245): PER-BILAGA-nyckel
+    // (eventId + attachmentId, ägarskaps-guarden bär båda) — Dokument-ytans
+    // Visa-dialog fetchar den LAZY (enabled: dialogen är öppen), och en
+    // stängd/återöppnad dialog ska kunna fråga igen om TTL:en (300s,
+    // _shared/attachments.ts § SIGNED_DOWNLOAD_URL_TTL_SECONDS) hunnit gå ut
+    // — ingen explicit invalidation krävs, TanStack Querys default staleTime
+    // (0) räcker för att en re-enable alltid refetchar.
+    downloadUrl: (eventId: string, attachmentId: string) =>
+      ['attachments', eventId, attachmentId, 'download-url'] as const,
   },
   segment: {
     // App-sparade segment (Fas 6g L3, ADR-065): GLOBAL läs-lista (get-segments). STABIL

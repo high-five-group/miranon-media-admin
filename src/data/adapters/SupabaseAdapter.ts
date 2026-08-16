@@ -1,4 +1,8 @@
-import type { Attachment, UploadAttachmentInput } from '../../domain/models/Attachment';
+import type {
+  Attachment,
+  AttachmentDownloadUrl,
+  UploadAttachmentInput,
+} from '../../domain/models/Attachment';
 import type {
   Attendance,
   CreateAttendanceInput,
@@ -208,6 +212,13 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async deleteAttachment(_eventId: string, _attachmentId: string): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async getAttachmentDownloadUrl(
+    _eventId: string,
+    _attachmentId: string,
+  ): Promise<AttachmentDownloadUrl> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
