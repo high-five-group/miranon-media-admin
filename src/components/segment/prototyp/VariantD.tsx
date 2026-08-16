@@ -588,10 +588,11 @@ function listaOrd(delar: string[], bindeord = 'eller'): string {
  */
 function villkorKlartext(v: Villkor): string {
   if (v.modalitet === null) return 'Ofullständigt villkor - välj vad som räknas.';
-  const familj =
-    v.familjer.length === 0
-      ? 'någon utbildning'
-      : listaOrd(v.familjer.map((f) => `${f}-utbildning`));
+  // TAUTOLOGIN RIVEN (Marcus GO 2026-08-16): "-utbildning"-suffixet gav
+  // "Deltagit i RIM-utbildning som utbildning" — familjeledet bär nu bara
+  // namnet, modalitetsledet bär formen. Tomma fallet: "något" i stället för
+  // "någon utbildning" av samma skäl ("något som utbildning" är ren svenska).
+  const familj = v.familjer.length === 0 ? 'något' : listaOrd(v.familjer);
   const niva = v.nivaer.length === 0 ? '' : ` på ${listaOrd(v.nivaer.map((n) => NIVA_ETIKETT[n]))}`;
   const modalitet = ` som ${MODALITET_ORD[v.modalitet]}`;
   const format = v.format.length === 0 ? '' : ` i formatet ${listaOrd(v.format)}`;
@@ -2946,7 +2947,6 @@ function VillkorsKort({
                 })
               }
             />
-            <p className="text-caption text-text-muted">Tom = deltagande när som helst räknas.</p>
           </div>
         </div>
       </div>
@@ -3024,7 +3024,11 @@ function VillkorsLista({
         </ul>
       )}
       <div className="flex pt-1">
-        <button type="button" onClick={onLaggTill} className={KAPSEL_KLASS}>
+        <button
+          type="button"
+          onClick={onLaggTill}
+          className={`${KAPSEL_KLASS} w-64 justify-center`}
+        >
           <Plus aria-hidden="true" size={18} className="shrink-0" />
           {villkor.length === 0 ? 'Lägg till villkor' : 'Lägg till ett villkor till'}
         </button>
@@ -3135,7 +3139,7 @@ function KonjunktLista({
                   <button
                     type="button"
                     onClick={() => onLaggTillVillkor(k.id)}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+                    className="inline-flex w-64 shrink-0 items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
                   >
                     <Plus aria-hidden="true" size={18} className="shrink-0" />
                     Och: lägg till ett krav till
@@ -3147,7 +3151,13 @@ function KonjunktLista({
         </ul>
       )}
       <div className="flex pt-1">
-        <button type="button" onClick={onLaggTillGrupp} className={KAPSEL_KLASS}>
+        {/* Samma fasta bredd som Och-knappen (Marcus 2026-08-16: paret ska
+            vara lika brett och lika högt; nyansen skiljer dem). */}
+        <button
+          type="button"
+          onClick={onLaggTillGrupp}
+          className={`${KAPSEL_KLASS} w-64 justify-center`}
+        >
           <Plus aria-hidden="true" size={18} className="shrink-0" />
           {konjunkter.length === 0 ? 'Lägg till villkor' : 'Eller: lägg till ett alternativ'}
         </button>
