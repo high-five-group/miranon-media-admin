@@ -1,10 +1,10 @@
 ---
 id: TASK-245
 title: Signerad nedladdnings-EF för bilagor — Visa-overlayens saknade fil-URL
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 14:40'
-updated_date: '2026-08-16 15:49'
+updated_date: '2026-08-16 16:21'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,7 +28,7 @@ Fynd ur dokument-varv 3 (PR #1415): Marcus kvitterade overlay-förhandsvisning m
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -37,3 +37,9 @@ Fynd ur dokument-varv 3 (PR #1415): Marcus kvitterade overlay-förhandsvisning m
 <!-- SECTION:NOTES:BEGIN -->
 get-attachment-download-url-EF (GET, query eventId+attachmentId) byggd mönster-troget mot delete-attachment (TASK-147.11): samma ägarskaps-guard (Event-länk måste innehålla eventId, 403 annars), samma EF1-EF6-ribba (SECURITY-SPEC §6.10), 409 (inte 404/500) om Lagringsnyckel saknas (legacy-rad). TTL 300s (5 min), källbelagt mot AWS Prescriptive Guidance (signed URL best practices — 'minutes to hours', korta TTL:er rekommenderas) i _shared/attachments.ts § SIGNED_DOWNLOAD_URL_TTL_SECONDS. Deployad till staging (pqtshyierkdgwdnxuirz) via 'supabase functions deploy get-attachment-download-url --project-ref pqtshyierkdgwdnxuirz'. Deny-triple + ägarskaps-guard + ÅTKOMST-bevis (verkligt HTTP-anrop mot signerad URL, byte-för-byte-längd verifierad) skarpt gröna: 9/9 i tests/api/get-attachment-download-url.staging.test.ts. DokumentYta.tsx: ny BilagaVisaKnapp-komponent (skild från generiska VisaKnapp) — lazy fetch (enabled: isOpen), format via filnamnsändelse (pdf/bild/okänt), iframe för PDF + img för bild + MessageBox-fallback för okänt format, alltid en 'Ladda ner'-länk. Empiriskt verifierat i dev-servern (mot staging) mot TVÅ riktiga bilagor på recIFrxHZw165ycXk: en genuin klass B-PDF (generate-event-attachment) renderade FULLSTÄNDIGT korrekt i iframen (Chrome PDF.js-vy, läsbart innehåll); en klass A-sentinel (upload-attachment.staging.test.ts:s pseudo-PDF-bytes, inte en strukturellt giltig PDF) gav PDF.js egen 'Det gick inte att läsa in PDF-dokumentet'-felskärm INUTI iframen — bevisar att iframe/CSP/sandbox INTE blockerar (ingen CSP är ens kopplad in i appen ännu, verifierat) och att PDF.js-felet är en egenskap hos testfixturens FEJKADE bytes, inte en bugg. Escape stängde dialogen och focus återgick till triggerande Visa-knappen (Modal-primitivens dokumenterade a11y-kontrakt, empiriskt bekräftat, inte bara antaget). Bild/okänt-grenarna INTE empiriskt körda i UI:t (bucketen tillåter idag bara application/pdf, ingen icke-PDF-bilaga existerar i staging) — verifierat via kod-granskning + typecheck, disclosed gap. Prod-deploy: get-attachment-download-url tillagd i .prod-functions-allowlist.conf (CI:s ef-metod-vakt.test.ts + test-deploy-prod-functions.sh omfattar den automatiskt). Den FAKTISKA prod-deployen (scripts/deploy-prod-functions.sh) är INTE utförd av denna agent — HITL, hör till prod-momentets klicklista (Marcus-auktoriserad handling).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1423 (merge 88e012d8, commit f7bc0acf). Signerad nedladdnings-EF (get-attachment-download-url, ägarskaps-guard per 147.11-mönstret, TTL 300 s källbelagd) + BilagaVisaKnapp med iframe-PDF-visning i husets Modal, bevisad mot riktigt genererad PDF i staging. Deny-triple 9/9 grönt inkl. genuint hämt-bevis mot signerad URL (byte-exakt). CI grön per jobb via merge-kön. Prod-deployen av EF:en är HITL — står på prod-momentets klicklista (.prod-functions-allowlist.conf uppdaterad). Kända kanter: bild-/okänt-format-grenarna ej empiriskt körda (bucketen tillåter endast PDF i dag) — bokfört i notes.
+<!-- SECTION:FINAL_SUMMARY:END -->
