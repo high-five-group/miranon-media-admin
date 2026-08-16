@@ -141,7 +141,7 @@
  * knappar.
  */
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import {
   Check,
   ChevronDown,
@@ -2849,15 +2849,29 @@ function GranskningsSida({
  * ================================================================== */
 export function AtgardsSida({ eventId }: { eventId?: string }) {
   const dataSource = useDataSource();
-  /* MARKERINGEN hon kom hit med. I skarp form levereras den av registret
-     (eventdetaljens markera-läge → Åtgärder); i prototypen SEEDAS den ur
-     "obekräftade eller obetalda" så ytan har något att visa, och simulerar
-     därmed exakt det urval Lotta oftast gör.
+  /* MARKERINGEN hon kom hit med (TASK-228, SKARP sedan denna skiva). Kommer
+     hon från registret (eventdetaljens markera-läge → Åtgärder) levereras
+     urvalet i navigeringens history-state, `mmAtgardsUrval` — ett
+     engångsfat, satt av `Deltagare.tsx` § `MarkeringsBatchBar`, samma idiom
+     som `ManuellAnmalanForm.tsx` § `mmAvsloja`. Fångas EN gång via en ren
+     `useState`-initialiserare (StrictMode-säker — samma mönster som
+     `mmAvsloja`), så en omrendering aldrig läser om ett urval hon redan
+     backat ur.
+
+     SAKNAS urvalet (direktlänk, eller vägen in via `/atgarder`s fristående
+     eventväljare) SEEDAS den ur "obekräftade eller obetalda" i stället, så
+     ytan ändå har något att visa — samma fallback som bar hela sidan innan
+     TASK-228, nu en medveten reserv snarare än enda källan.
 
      `synligaIds` är LISTANS medlemskap, `valda` är MARKERINGEN — två olika
      saker sedan varv 4. Ett avmarkerat kort ligger kvar i listan (vitt) men
      räknas inte som mottagare; det är markeringslägets grammatik, oförändrad
-     från eventdetaljen. */
+     från eventdetaljen. Ett urvals-ID som inte längre finns i `alla` faller
+     bort automatiskt: `synliga` nedan filtrerar mot den faktiskt hämtade
+     listan, så ett urval som pekar på en försvunnen anmälan räknar aldrig
+     fel. */
+  const mmAtgardsUrval = useLocation({ select: (l) => l.state.mmAtgardsUrval });
+  const [urval] = useState(() => mmAtgardsUrval);
   const [seedad, setSeedad] = useState(false);
   const [synligaIds, setSynligaIds] = useState<ReadonlySet<string>>(() => new Set());
   const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
@@ -2886,8 +2900,12 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
   const alla = useMemo(() => anmalningar.data ?? [], [anmalningar.data]);
 
   // Seedningen sker EN gång, när datan landat — därefter äger Lotta urvalet.
+  // Urvalet hon kom med (TASK-228) styr när det finns; annars fallbacken.
   if (!seedad && alla.length > 0) {
-    const start = new Set(alla.filter((r) => obekraftad(r) || obetald(r)).map((r) => r.id));
+    const start =
+      urval && urval.length > 0
+        ? new Set(urval)
+        : new Set(alla.filter((r) => obekraftad(r) || obetald(r)).map((r) => r.id));
     setSynligaIds(start);
     setValda(start);
     setSeedad(true);
