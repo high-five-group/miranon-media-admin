@@ -342,7 +342,7 @@ jobs:
           fi
 
       - name: Ladda upp Playwright-artefakter vid rött
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-acceptance-artefakter
@@ -584,11 +584,14 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
 
-      # Playwright-artefakter vid RÖTT e2e-steg (trace/screenshot/video).
+      # Playwright-artefakter vid RÖTT e2e-steg, eller vid takfällning
+      # (cancelled — jobbets timeout-minutes slår till): utan cancelled()
+      # här hoppar steget över och en takfällning lämnar noll traces,
+      # screenshots eller sammanfattning (forensik S3, TASK-237).
       # global-teardown.ts har redan purgat klartext-lösenord ur
       # error-context.md (ADR-061 pelare 3, T29) innan uppladdningen.
       - name: Ladda upp Playwright-artefakter vid rött e2e
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-e2e-artefakter
