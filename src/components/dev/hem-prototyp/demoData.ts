@@ -21,6 +21,11 @@ import { DAG_MS, dagsStart } from './data';
  * Visar samtidigt (VariantRo.tsx kopplar in detta bakom `?data=demo`):
  *  - bevakningsradens BÅDA lägen: `demo-event-tom` (inget utskick alls) och
  *    `demo-event-efter` (eftersläntrare, delvis skickat)
+ *  - [TASK-226 konvergens-varv 4, AC 3] bevakningsradens VÄRSTA FALL,
+ *    permanent: `demo-event-bevakning-varsta-fall` — ett avsiktligt långt
+ *    eventnamn + tvåsiffrigt antal (X=12), längre än de två fixturerna ovan,
+ *    så line-clamp-2-skyddsnätet (VariantRo.tsx) alltid prövas mot en rad
+ *    som faktiskt inte ryms på en rad
  *  - förfallna-blockets TRE tillståndsgrupper på `demo-event-forfallna`,
  *    sex rader i varje (gott om marginal över inline-scrollens ~5–6
  *    synliga rader, så scroll-läget faktiskt syns)
@@ -180,6 +185,41 @@ export function demoUniversum(nuMs: number): DemoUniversum {
     ),
   ];
 
+  // --- BEVAKNINGSRAD värsta fall (TASK-226 konvergens-varv 4, AC 3):
+  // permanent, avsiktligt LÄNGRE än dagens längsta rad (lång eventnamn +
+  // tvåsiffrigt antal) — designen ska alltid prövas mot den, inte bara mot
+  // de två "typiska" fixturerna ovan. Isolerat event/regs, rör inget annat
+  // block (BEKRÄFTAD + MOTTAGEN-defaulten läcker aldrig in i "Nya
+  // anmälningar" eller "Förfallna betalningar").
+  const eventBevakningVarstaFall = demoEvent({
+    id: 'demo-event-bevakning-varsta-fall',
+    eventNamn:
+      'Demo: Fördjupningskurs i konflikthantering och medling för föreningsledare i Västerbotten',
+    ort: 'Umeå',
+    startdatum: isoOmDagar(nuMs, 12),
+    maxPlatser: 30,
+    antalAnmalda: 18,
+  });
+  const eventBevakningVarstaFallRegs: Registration[] = [
+    ...[1, 2, 3].map((i) =>
+      demoReg({
+        id: `demo-reg-varsta-fall-skickad-${i}`,
+        namn: `Demo Deltagare VF${i}`,
+        eventId: eventBevakningVarstaFall.id,
+        deltagarinfoSkickad: isoOmDagar(nuMs, -2), // redan skickad
+      }),
+    ),
+    ...Array.from({ length: 12 }, (_, idx) => {
+      const i = idx + 4;
+      return demoReg({
+        id: `demo-reg-varsta-fall-ostampad-${i}`,
+        namn: `Demo Deltagare VF${i}`,
+        eventId: eventBevakningVarstaFall.id,
+        deltagarinfoSkickad: null, // eftersläntrare — X=12
+      });
+    }),
+  ];
+
   // --- FÖRFALLNA-BLOCKET + "Nya anmälningar" (demo-event-forfallna, passerat) ---
   const eventForfallna = demoEvent({
     id: 'demo-event-forfallna',
@@ -245,10 +285,11 @@ export function demoUniversum(nuMs: number): DemoUniversum {
   });
 
   return {
-    events: [eventTom, eventEfter, eventForfallna],
+    events: [eventTom, eventEfter, eventBevakningVarstaFall, eventForfallna],
     registrations: [
       ...eventTomRegs,
       ...eventEfterRegs,
+      ...eventBevakningVarstaFallRegs,
       ...nyaAnmalningar,
       ...attPaminna,
       ...vantar,
