@@ -3007,12 +3007,24 @@ function VillkorsKort({
       {villkorGiltigt(villkor) && (
         <div className="flex flex-col gap-1 border-border border-t pt-3">
           <p className="text-body">{villkorKlartext(villkor)}</p>
+          {/* TRÄFF-ORDET FÖLJER VALET (Marcus 2026-08-16, viktigt): vid
+              "Båda" omfattar träffarna både utbildningar och föreläsningar —
+              samlingsordet är "event"; vid föreläsningsvalet är träffarna
+              föreläsningar. */}
           <p className="text-small text-text-muted">
-            {traffade.length === 0
-              ? 'Träffar ingen utbildning i basen i dag. Regeln är giltig - den fylls när utbildningen finns.'
-              : `Träffar ${traffade.length} av ${parInfo.length} utbildningar: ${traffade
-                  .map((p) => labelForPar(p.par))
-                  .join(', ')}`}
+            {(() => {
+              const ord =
+                villkor.modalitet === 'Föreläsning'
+                  ? { ingen: 'ingen föreläsning', den: 'föreläsningen', flera: 'föreläsningar' }
+                  : villkor.modalitet === 'Båda'
+                    ? { ingen: 'inget event', den: 'eventet', flera: 'event' }
+                    : { ingen: 'ingen utbildning', den: 'utbildningen', flera: 'utbildningar' };
+              return traffade.length === 0
+                ? `Träffar ${ord.ingen} i basen i dag. Regeln är giltig - den fylls när ${ord.den} finns.`
+                : `Träffar ${traffade.length} av ${parInfo.length} ${ord.flera}: ${traffade
+                    .map((p) => labelForPar(p.par))
+                    .join(', ')}`;
+            })()}
           </p>
         </div>
       )}
