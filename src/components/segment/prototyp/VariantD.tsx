@@ -186,6 +186,7 @@
  * (`fetchEvents`, `listSegments`, `computeSegment`) går via `useDataSource()`
  * (ADR-055/057); adapter-gränsen kringgås aldrig.
  */
+import { parseDate } from '@internationalized/date';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
@@ -207,6 +208,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { DetaljGrupp, EtikettVardeRad } from '@/components/events/detail/DetaljGrupp';
 import { Button } from '@/components/primitives/Button';
+import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
@@ -296,25 +298,21 @@ const MODALITET_ORD: Record<ModalitetsVal, string> = {
  * ut vad ytan INTE kan är billigare än att låta någon upptäcka det efter ett
  * utskick — och kravet ska med i PRD:n, inte lösas i klienten.
  */
-const AR_EF_KRAV = {
-  rubrik: 'Tidsperiod går inte att välja än',
-  brod:
-    'En regel kan i dag säga VAD någon gått igenom, inte NÄR. Motorn räknar per utbildning ' +
-    'och form - den vet inte vilket tillfälle någon var på. "Alla som gick något under 2025" ' +
-    'går därför inte att uttrycka, och en årsknapp här hade i själva verket valt UTBILDNINGAR ' +
-    'som råkade gå det året. Det är en annan fråga, och sannolikt inte den någon ställer.',
-  krav:
-    'Kravet hör hemma i servern: deltagandets datum måste följa med i källfrågan och ' +
-    'regeln bära ett tidsfönster. Då blir tidsperioden en riktig dimension.',
-} as const;
-
 /**
  * ETT VILLKOR = ett predikat över dimensionerna. Tom lista på en dimension
  * betyder "alla värden" — UTOM modaliteten, som aldrig får vara osagd.
  *
- * INGEN `ar`-gren: se `AR_EF_KRAV` + filhuvudet. Dimensionen är riven ur
- * predikatet därför att motorn inte kan bära den, inte därför att den saknar
- * värde.
+ * `period` ÄR EN UI-DIMENSION MED ETT SERVER-KRAV (varv 6d, Marcus
+ * 2026-08-16: "jag vill kunna välja tidsperiod … på proffsigast möjliga
+ * sätt" — det tidigare text-utlägget om varför året inte gick att välja är
+ * rivet och ersatt av en riktig kontroll). Formen bär valet och klartexten
+ * bär det i regelmeningen, men PROTOTYPENS RÄKNING KAN INTE VERKSTÄLLA DET:
+ * motorn räknar per (utbildning, form) utan tidpunkt — `AttendanceRow` bär
+ * inget datum, och ett klient-filter hade varit exakt den tysta felklass
+ * som aldrig får promoveras. EF-KRAVET (sedan Paushistorik 2, nu med
+ * UI-halvan byggd): deltagandets datum måste följa med i källfrågan och
+ * regeln bära tidsfönstret server-side — tills dess markerar räknesteget
+ * öppet att antalet är utan tidsfiltret.
  */
 type Villkor = {
   id: string;
@@ -323,7 +321,20 @@ type Villkor = {
   /** OBLIGATORISK. `null` = användaren har inte valt än → villkoret räknas inte. */
   modalitet: ModalitetsVal | null;
   format: string[];
+  /** ISO-datumpar (från/till). `null` = deltagande när som helst räknas. */
+  period: { start: string; end: string } | null;
 };
+
+/** Perioden som människotext — "1 feb. 2025 till 30 juni 2025". */
+function periodText(p: { start: string; end: string }): string {
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString('sv-SE', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  return p.start === p.end ? fmt(p.start) : `${fmt(p.start)} till ${fmt(p.end)}`;
+}
 
 /**
  * EN KONJUNKT-GRUPP: alla villkor i gruppen ska uppfyllas SAMTIDIGT (och).
@@ -348,6 +359,7 @@ function nyttVillkor(): Villkor {
     nivaer: [],
     modalitet: null,
     format: [],
+    period: null,
   };
 }
 
@@ -575,7 +587,7 @@ function listaOrd(delar: string[], bindeord = 'eller'): string {
  * dess meningsstruktur är en annan och går inte att kopiera rakt hit.
  */
 function villkorKlartext(v: Villkor): string {
-  if (v.modalitet === null) return 'Ofullständigt villkor - modalitet saknas.';
+  if (v.modalitet === null) return 'Ofullständigt villkor - välj vad som räknas.';
   const familj =
     v.familjer.length === 0
       ? 'någon utbildning'
@@ -583,7 +595,8 @@ function villkorKlartext(v: Villkor): string {
   const niva = v.nivaer.length === 0 ? '' : ` på ${listaOrd(v.nivaer.map((n) => NIVA_ETIKETT[n]))}`;
   const modalitet = ` som ${MODALITET_ORD[v.modalitet]}`;
   const format = v.format.length === 0 ? '' : ` i formatet ${listaOrd(v.format)}`;
-  return `Deltagit i ${familj}${niva}${modalitet}${format}.`;
+  const period = v.period === null ? '' : `, under perioden ${periodText(v.period)}`;
+  return `Deltagit i ${familj}${niva}${modalitet}${format}${period}.`;
 }
 
 /**
@@ -908,7 +921,7 @@ const RAD_KLASS =
 const TILLBAKA_KLASS =
   'mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted hover:bg-bg-emphasized motion-safe:transition-colors';
 const KAPSEL_KLASS =
-  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors';
+  'inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors';
 
 function personform(n: number): string {
   return n === 1 ? 'person' : 'personer';
@@ -2784,13 +2797,14 @@ function VillkorsKort({
   const [merOppen, setMerOppen] = useState(false);
   const merPanelId = useId();
   const traffade = traffar(villkor, parInfo);
-  const merAktiva = villkor.format.length;
+  const merAktiva = villkor.format.length + (villkor.period ? 1 : 0);
   /** Orört = ingen dimension vald alls. Styr om den saknade modaliteten är röd. */
   const orort =
     villkor.modalitet === null &&
     villkor.familjer.length === 0 &&
     villkor.nivaer.length === 0 &&
-    merAktiva === 0;
+    villkor.format.length === 0 &&
+    villkor.period === null;
   const visaNiva =
     villkor.familjer.length === 0 || villkor.familjer.some((f) => FAMILJER_MED_NIVA.includes(f));
 
@@ -2912,17 +2926,27 @@ function VillkorsKort({
               </ValChip>
             ))}
           </ChipRad>
-          <p className="text-caption text-text-muted">
-            Formatet är i dag 1:1 med modaliteten - dimensionen blir meningsfull när fler format
-            tillkommer.
-          </p>
-          {/* DET SOM INTE FINNS SÄGS RAKT UT. Alternativet - en årsknapp som
-              i själva verket väljer kurser - är exakt den tysta felklass
-              modalitets-kravet finns för att avskaffa. */}
-          <div className="flex flex-col gap-1 border-border border-t pt-3">
-            <p className="font-medium text-small">{AR_EF_KRAV.rubrik}</p>
-            <p className="text-caption text-text-muted">{AR_EF_KRAV.brod}</p>
-            <p className="text-caption text-text-muted">{AR_EF_KRAV.krav}</p>
+          {/* TIDSPERIODEN SOM RIKTIG KONTROLL (varv 6d) — text-utlägget om
+              varför året inte gick att välja är rivet på Marcus order
+              ("jag vill kunna välja tidsperiod … proffsigast möjliga sätt").
+              Server-kravet och räkne-ärligheten: se `Villkor.period`s
+              docblock + steg 3-raden i verkstaden. */}
+          <div className="flex flex-col gap-1.5 border-border border-t pt-3">
+            <span className="font-medium text-small">Tidsperiod</span>
+            <DatumFalt
+              value={
+                villkor.period
+                  ? { start: parseDate(villkor.period.start), end: parseDate(villkor.period.end) }
+                  : null
+              }
+              onChange={(r) =>
+                onAndra({
+                  ...villkor,
+                  period: r ? { start: r.start.toString(), end: r.end.toString() } : null,
+                })
+              }
+            />
+            <p className="text-caption text-text-muted">Tom = deltagande när som helst räknas.</p>
           </div>
         </div>
       </div>
@@ -2933,7 +2957,7 @@ function VillkorsKort({
         <p className="text-body">{villkorKlartext(villkor)}</p>
         <p className="text-small text-text-muted">
           {!villkorGiltigt(villkor)
-            ? 'Räknas inte förrän modaliteten är vald.'
+            ? 'Villkoret används inte förrän du valt vad som räknas.'
             : traffade.length === 0
               ? 'Träffar ingen utbildning i basen i dag. Regeln är giltig - den fylls när utbildningen finns.'
               : `Träffar ${traffade.length} av ${parInfo.length} utbildningar: ${traffade
@@ -3103,12 +3127,17 @@ function KonjunktLista({
                   </div>
                 )}
                 <div className="flex">
+                  {/* SAMMA GEOMETRI SOM ELLER-KNAPPEN, ANNAN GRÅ NYANS (Marcus
+                      2026-08-16): kapselformen (radie, padding, typografi) är
+                      identisk med `KAPSEL_KLASS`; nyansskillnaden bär
+                      hierarkin - Eller (vidgar regeln) står på grå platta,
+                      Och (smalnar ett alternativ) som grå kontur. */}
                   <button
                     type="button"
                     onClick={() => onLaggTillVillkor(k.id)}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-small text-text-secondary hover:bg-bg-emphasized motion-safe:transition-colors"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
                   >
-                    <Plus aria-hidden="true" size={16} className="shrink-0" />
+                    <Plus aria-hidden="true" size={18} className="shrink-0" />
                     Och: lägg till ett krav till
                   </button>
                 </div>
@@ -3163,6 +3192,9 @@ function RegelVerkstad({
     (v) => !villkorGiltigt(v),
   ).length;
   const harRegel = rule.include.length > 0;
+  const harPeriod = [...pred.med.flatMap((k) => k.villkor), ...pred.utan].some(
+    (v) => v.period !== null,
+  );
 
   /* RÄKNINGEN FÖLJER REGELN — ingen begäran, ingen knapp (Marcus 2026-08-10).
      `enabled` är `harRegel`, inte en sparad signatur.
@@ -3279,9 +3311,13 @@ function RegelVerkstad({
         <StegSektion nummer={3} rubrik="Det här blir segmentet" dampad={!harRegel}>
           <div aria-live="polite" aria-busy={isFetching} className="flex flex-col gap-1">
             {ofullstandiga > 0 ? (
+              // "Modalitet" är systemspråk (Marcus 2026-08-16: "Jag förstår
+              // inte modalitet och det kommer inte Lotta heller göra") — raden
+              // pekar i stället på det val som saknas, med dess egna ord.
               <p className="text-small text-text-muted">
-                {ofullstandiga} {ofullstandiga === 1 ? 'villkor saknar' : 'villkor saknar'}{' '}
-                modalitet och räknas inte.
+                {ofullstandiga === 1
+                  ? 'Ett villkor saknar valet av vad som räknas (Räknas som) och används inte.'
+                  : `${ofullstandiga} villkor saknar valet av vad som räknas (Räknas som) och används inte.`}
               </p>
             ) : !harRegel ? (
               <p className="text-small text-text-muted">
@@ -3305,11 +3341,22 @@ function RegelVerkstad({
                     Antalet visas när regeln är komplett.
                   </p>
                 ) : (
-                  // Fälla #34: noll är neutralt, aldrig ett fel.
-                  <p className="text-body">
-                    <strong className="font-semibold text-xl tabular-nums">{antal}</strong>{' '}
-                    {antal === 0 ? 'personer ännu.' : `${personform(antal)} i det här segmentet.`}
-                  </p>
+                  <>
+                    {/* Fälla #34: noll är neutralt, aldrig ett fel. */}
+                    <p className="text-body">
+                      <strong className="font-semibold text-xl tabular-nums">{antal}</strong>{' '}
+                      {antal === 0 ? 'personer ännu.' : `${personform(antal)} i det här segmentet.`}
+                    </p>
+                    {/* RÄKNE-ÄRLIGHETEN för tidsperioden (varv 6d): UI:t bär
+                        valet, servern måste verkställa det (EF-kravet,
+                        `Villkor.period`s docblock). Tills dess sägs det kort
+                        i stället för att antalet tyst ljuger. */}
+                    {harPeriod && (
+                      <p className="text-caption text-text-muted">
+                        Tidsperioden räknas av servern - antalet är ännu utan den.
+                      </p>
+                    )}
+                  </>
                 )}
               </>
             )}
