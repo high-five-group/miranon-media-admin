@@ -146,6 +146,62 @@
  *     Button-raderna (`Ersätt`/`Visa`) bar redan enhetlig `ghost`/`sm` sedan
  *     varv 1, oförändrat.
  *
+ * [TASK-147.6, SKÄRPNINGSVARV 3, 2026-08-16] Marcus FEM kvitterade punkter
+ * (sessionsdok `tasks/sessions/2026-08-10-session-102.md` rad 1043–1052,
+ * MARCUS-SEKVENS punkt 1), alla åtgärdade i detta varv:
+ *
+ *  1. IKONERNA FRAMFÖR MALLAR/GENERATORER (`Sparkles`/`UserRound`) ÄR TAGNA
+ *     BORT — bilagornas egen `FileText`-ikon (`BilageRadRow`) rörs INTE, bara
+ *     mall-/generator-raderna nämndes i punkten.
+ *
+ *  2–3. VISA-KNAPPEN BÄR NU `intent="primary" emphasis="subtle"` (tonad
+ *     bakgrund, ej `ghost`) I STÄLLET FÖR den gamla `ghost`-formen. Detta
+ *     löser BÅDA punkterna i SAMMA byte: `ghost`s hover-token
+ *     (`--mm-button-ghost-bg-hover` = `var(--mm-bg-muted)`) råkar vara
+ *     IDENTISK med radgruppens egen bakgrund (`bg-bg-muted` på
+ *     `grupp-kort` nedan) — en verklig `data-[hovered]`-hover FANNS redan i
+ *     CVA:n (Button.tsx), men var osynlig mot en identisk bakgrundsfärg.
+ *     `subtle`s 10/16/22-procents färgmix (`components.css`, samma par som
+ *     `Deltagare.tsx`s `MarkeraKnapp`) är en helt annan yta och löser
+ *     synligheten OCH hover-kontrasten utan en enda ny token.
+ *
+ *  4. VISA-KNAPPEN ÄR VERTIKALT CENTRERAD (`self-center` på knappen/dess
+ *     grupperingsspann) — radens egen `items-start` rörs INTE (ikonen ska
+ *     fortfarande hänga mot textens första rad, det var aldrig punkten).
+ *
+ *  5. VISA-BETEENDET (Marcus kvitterade rekommendation): `VisaKnapp` nedan
+ *     öppnar husets `Dialog`-primitiv (`DialogTrigger`/`Modal`/`Dialog`,
+ *     ADR-044, samma mönster som `AtgardsSida.tsx`s `SkickaKvittoKnapp`) i
+ *     stället för att vara en död knapp. Mallar/generatorer visar ett
+ *     ÄRLIGT "producerat exempel" (`ProduceratExempel`) byggt UR
+ *     `Mall.fyllerI`/`Generator.byggsUr` — samma katalogdata som redan stod
+ *     i radens metatext, aldrig en hittepå-instans (samma "gissa aldrig"-
+ *     disciplin som Fynd 1/3 ovan).
+ *
+ *     BILAGOR (klass A) — GENUIN GRÄNS, FLAGGAD, INTE TYST KRINGGÅD: den
+ *     kvitterade rekommendationen ("overlay-förhandsvisning för bilagor …
+ *     ladda ner-fallback när förhandsvisning inte går") FÖRUTSÄTTER en URL
+ *     till filens bytes. INGEN sådan finns i dagens kontrakt —
+ *     verifierat: `Attachment` (denna fils import) bär `id`/`namn`/
+ *     `storlekBytes`/`skapad`/`eventId`/`dokumentklass`, ingen URL;
+ *     `mapAttachmentRecord` (`supabase/functions/_shared/attachments.ts`)
+ *     mappar ALDRIG en URL; `get-event-attachments/index.ts` läser bara
+ *     `ATTACHMENT_FIELDS = ['Namn', 'Storlek (bytes)', 'Skapad', 'Event',
+ *     'Dokumentklass']`; bucketen `bilagor` är PRIVAT
+ *     (`scripts/provision-attachments-bucket.mjs`, `public: false`, ingen
+ *     `storage.objects`-policy funnen i `supabase/`) så en direkt
+ *     klient-`createSignedUrl` är stängd av RLS; och EN signerad
+ *     NEDLADDNINGS-URL existerar ingenstans i `supabase/functions/` — bara
+ *     en UPPLADDNINGS-signatur (`create-attachment-upload-ticket`). Att
+ *     bygga den primitiven är en NY produktions-EF (backend-arkitektur),
+ *     inte en av de fem UI-punkterna — samma gräns detta korts EGEN historik
+ *     redan drog för "Ersätt" i varv 1 (byggdes riktigt i TASK-147.11,
+ *     separat kort). `VisaKnapp` för bilagor öppnar därför dialogen med ett
+ *     ÄRLIGT, Gunilla-läsbart `MessageBox intent="info"` — "går inte att
+ *     öppna här ännu" — i stället för antingen en fejkad förhandsvisning
+ *     eller en trasig nedladdningslänk. Nästa steg (en signerad
+ *     nedladdnings-EF) hör till ett eget, separat kort.
+ *
  * DEV-GRINDEN (`mer/index.tsx` § `visaDokumentPrototyp`) och `[PROTOTYPE]`-
  * märkningen ovan RÖRS INTE av detta varv — facit-låset (AC #3, task-147.6,
  * stämpel via !-kanalen ADR-104) är Marcus egen morgonhandling, skild från
@@ -155,13 +211,16 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft, FileText, Sparkles, Upload, UserRound } from 'lucide-react';
+import { ChevronLeft, FileText, Upload } from 'lucide-react';
 import { useQueryState } from 'nuqs';
+import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
+import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Modal } from '@/components/primitives/Modal';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { formatMB } from '@/data/adapters/attachmentUpload';
@@ -355,6 +414,59 @@ function MetaRad({ delar }: { delar: (string | null)[] }) {
   return <span className="text-caption text-text-muted">{text}</span>;
 }
 
+/**
+ * VISA-KNAPPEN (skärpningsvarv 3, punkt b–e i filhuvudet) — husets
+ * `Dialog`-primitiv (ADR-044: `DialogTrigger`/`Modal`/`Dialog`, samma mönster
+ * som `AtgardsSida.tsx`s `SkickaKvittoKnapp`) i stället för en död knapp.
+ * `intent="primary" emphasis="subtle"` ger BÅDE den tonade bakgrunden
+ * (punkt d) och en verklig hover-kontrast (punkt b) — se filhuvudet för
+ * varför `ghost`s hover var osynlig. `buttonClassName` låter anroparen sätta
+ * `self-center` (punkt e) DIREKT på knappen (`DialogTrigger` renderar ingen
+ * egen DOM-nod — `Button`/`Modal` blir alltså riktiga syskon i anroparens
+ * flex-rad) utan att röra radens egen `items-start`.
+ */
+function VisaKnapp({
+  title,
+  children,
+  buttonClassName,
+}: {
+  title: string;
+  children: ReactNode;
+  buttonClassName?: string;
+}) {
+  return (
+    <DialogTrigger>
+      <Button intent="primary" emphasis="subtle" size="sm" className={buttonClassName}>
+        Visa
+      </Button>
+      <Modal isDismissable>
+        <Dialog title={title}>{children}</Dialog>
+      </Modal>
+    </DialogTrigger>
+  );
+}
+
+/**
+ * "PRODUCERAT EXEMPEL" (Marcus kvitterade rekommendation, filhuvudet punkt 5)
+ * — en ÄRLIG illustration av vilka fält dokumentet fylls i med, byggd UR
+ * `Mall.fyllerI`/`Generator.byggsUr` (samma katalogdata som redan står i
+ * radens egen metatext). Varje värde är bokstavligen ordet "Exempelvärde" —
+ * ALDRIG ett hittepå-namn/datum som kunde förväxlas med en riktig rad, samma
+ * "gissa aldrig"-disciplin som Fynd 1/3 i filhuvudet.
+ */
+function ProduceratExempel({ falt }: { falt: readonly string[] }) {
+  return (
+    <dl className="flex flex-col divide-y divide-border text-small">
+      {falt.map((f) => (
+        <div key={f} className="flex items-baseline justify-between gap-3 py-1.5">
+          <dt className="text-text-secondary">{f}</dt>
+          <dd className="text-text-muted italic">Exempelvärde</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 type UploadMutation = ReturnType<typeof useUploadAttachment>;
 type ReplaceMutation = ReturnType<typeof useReplaceAttachment>;
 
@@ -397,14 +509,21 @@ function BilageRadRow({
           </span>
         )}
       </span>
-      <FileTrigger
-        acceptedFileTypes={['application/pdf']}
-        onSelect={(files) => onReplace(files, current.id)}
-      >
-        <Button intent="ghost" size="sm" isDisabled={ersatterDennaRaden}>
-          {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
-        </Button>
-      </FileTrigger>
+      <span className="flex shrink-0 items-center gap-2 self-center">
+        <VisaKnapp title={current.namn}>
+          <MessageBox intent="info" title="Går inte att öppna här ännu">
+            Du kan inte förhandsvisa eller ladda ner den här filen i den här vyn just nu.
+          </MessageBox>
+        </VisaKnapp>
+        <FileTrigger
+          acceptedFileTypes={['application/pdf']}
+          onSelect={(files) => onReplace(files, current.id)}
+        >
+          <Button intent="ghost" size="sm" isDisabled={ersatterDennaRaden}>
+            {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
+          </Button>
+        </FileTrigger>
+      </span>
     </div>
   );
 }
@@ -412,14 +531,13 @@ function BilageRadRow({
 function MallRad({ mall }: { mall: Mall }) {
   return (
     <div data-testid="dokument-mall" className="flex items-start gap-3 py-3">
-      <Sparkles aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-text-muted" />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="break-words font-medium text-body">{mall.namn}</span>
         <MetaRad delar={[`Fyller i ${mall.fyllerI.join(', ').toLowerCase()}`]} />
       </span>
-      <Button intent="ghost" size="sm">
-        Visa
-      </Button>
+      <VisaKnapp title={mall.namn} buttonClassName="self-center">
+        <ProduceratExempel falt={mall.fyllerI} />
+      </VisaKnapp>
     </div>
   );
 }
@@ -427,14 +545,13 @@ function MallRad({ mall }: { mall: Mall }) {
 function GeneratorRad({ gen }: { gen: Generator }) {
   return (
     <div data-testid="dokument-generator" className="flex items-start gap-3 py-3">
-      <UserRound aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-text-muted" />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="break-words font-medium text-body">{gen.namn}</span>
         <MetaRad delar={[`Byggs ur ${gen.byggsUr.join(', ').toLowerCase()}`]} />
       </span>
-      <Button intent="ghost" size="sm">
-        Visa
-      </Button>
+      <VisaKnapp title={gen.namn} buttonClassName="self-center">
+        <ProduceratExempel falt={gen.byggsUr} />
+      </VisaKnapp>
     </div>
   );
 }
