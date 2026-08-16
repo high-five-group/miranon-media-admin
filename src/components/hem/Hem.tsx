@@ -1,83 +1,140 @@
-import { CTA } from './CTA';
-import { Greeting } from './Greeting';
-import { NastaEventCard } from './NastaEventCard';
-import { NyaAnmalningarCard } from './NyaAnmalningarCard';
-import { ObetaldaCard } from './ObetaldaCard';
-import { SenasteAktivitet } from './SenasteAktivitet';
+import { useMemo, useState } from 'react';
+import { useAuth } from '@/auth/useAuth';
+import { Bevakningsrad } from './Bevakningsrad';
+import { ForfallnaBetalningar } from './ForfallnaBetalningar';
+import { Genvagar } from './Genvagar';
+import {
+  bevakningar,
+  dagsStart,
+  eventsById,
+  forfallnaBetalningar,
+  fornamn,
+  obekraftadeAnmalningar,
+  velNastaEvent,
+} from './hem-derivations';
+import { NastaEvent } from './NastaEvent';
+import { NyaAnmalningar } from './NyaAnmalningar';
+import { SenasteAktivitetKompakt } from './SenasteAktivitetKompakt';
+import { useDashboardEvents, useDashboardRegistrations } from './useDashboardData';
 
 /**
- * Hem — K10-facit-strukturen (task-4.2; designen låst S55 Del 12, referens
- * `bb31a12`): header-fri skärm-centrerad kolumn, hälsningskort ("Hej {namn}"
- * utan utropstecken) → Nästa event (primär-tint,
- * helkorts-klickbart) bredvid Obetalda avgifter (antalet stort) →
- * helbredds-listkortet Nya anmälningar → stor helbredds-CTA sist. Vertikal
- * stapling, max två kort i rad (FK-mixen), tonala kortytor utan kantlinjer,
- * generös hörnradie. Data mot BEFINTLIGA read-EF via router-context-DI
- * (ADR-055); poll-lagret (ADR-017 + erratum) bär färskheten ENSAMT — den
- * manuella uppdatera-kontrollen utgick med B5 (ADR-017 Updates-noten).
+ * Hem — Morgonkollen, V1 "Lugna morgonen" (TASK-243.1, promoverad ur
+ * `dev/hem-prototyp/VariantRo.tsx` till skarp yta med VERKLIG data via
+ * husets hooks/adapter — ADR-102/103). Formen är promoverad EXAKT ur facitet
+ * `tasks/sessions/bilagor/s102-hem-konvergens/facit.json` (ytan "hem-vyn V1
+ * 'Lugna morgonen'"): denna komponent designar ingenting nytt, den bär
+ * facit-formen till den skarpa routen.
  *
- * Facitets sista sektion är aktivitetsspalten "Senaste aktivitet"
- * (TASK-201.7, `SenasteAktivitet.tsx`) — bottenlinjerad med anmälningskortet,
- * ENDAST ≥xl, utan visuell rubrik och utan ikoner. Den ligger i skalets 600
- * px-flöde men UTANFÖR kolumnen (`absolute left-full`), så kolumnens
- * skärm-centrering är orörd.
+ * Blockordningen (Marcus-låst, S102 Del 8 + Del 10, AC #2): fri hälsning utan
+ * platta → Nästa event (fullbredd, primär-tint) → Bevakningsrad (osynlig vid
+ * noll träffar) → Nya anmälningar (räknar-rubrik + bekräftelsesvep) →
+ * Förfallna betalningar (tre tillståndsgrupper) → Genvägar → Senaste
+ * aktivitet (kompakt, alla bredder).
  *
- * Geometrin mot K10-facitets kolumn (`p-4 pt-6 pb-24 lg:pt-14` på 600-boxen):
- * skalets main bär px-4 + pt-4 + pb-24 → sektionen adderar pt-2 (mobil,
- * totalt pt-6) och lg:pt-10 (desktop, totalt pt-14) och bär ingen egen
- * sidopadding (facitets inset = 16 px, inte A-skelettets dubblerade 32 px).
+ * Härledningslogiken (förfallen-definitionen, tillståndsgrupperna,
+ * bevakningsradens trigger) bor i det SKARPA datalagret
+ * (`hem-derivations.ts`, AC #3) — aldrig inline här.
  *
- * A11y (vy-ribba 11/10/10, Tillgänglighet 11):
- * - `<h1>` = hälsningen (AC #6 — ingen "Hem"-rubrik). INGEN programmatisk
- *   h1-fokus vid montering — /hem är default-landningsytan, så fokus-stöld
- *   skulle slå ut app-skalets skip-länk (skip-link-först-tab-ordning).
- *   Skal-navigations-a11y bärs av RouteAnnouncer + `staticData.title` ("Hem").
- * - Rubrik-hierarki h1 → h2 (varje card är en `<section>` med egen `<h2>`).
- * - Varje cards laddnings-/fel-tillstånd annonseras via `role=status`/`role=alert`
- *   inifrån DashboardCard.
- * - Tonala ytor utan kantlinjer får synlig gräns under `prefers-contrast: more`
- *   och vid utskrift (border-transparent-mönstret — layoutstabilt).
+ * EN läskolumn (`max-w-2xl`), oförändrad mobil→desktop — ingen bredare grid
+ * tar över när skärmen växer (facitets "ro"-identitet).
  *
- * K10-facit-avvikelse (ÖPPET bokförd, task-9.3): facitet visar en
- * "Mina sidor"-platshållarknapp i hälsningskortet (task-4 beslut 4), men den
- * är RIVEN — Marcus-kvitterat per T69 Revision S64 punkt 3, sedan
- * "Mina sidor" omdefinierades till hela appen (ORDLISTA) och destinationen
- * upplöstes. Platsen är konceptuellt reserverad för notis-klockan (T77);
- * INGEN ersättare byggs här.
+ * AVVIKELSE mot den retirerade K10-formens `Hem.tsx`, ÖPPET bokförd: den
+ * gamla versionsraden ("Miranon Media Admin v…", nere till vänster på
+ * desktop) fanns INTE i facit-prototypen och promoveras därför inte —
+ * ADR-102 B1 ("prototypen ÄR facit … vid motsägelse mellan prototyp och
+ * kravtext vinner prototypen") väger tyngre än att tyst återuppfinna en yta
+ * facit inte visar. Ingen ersättare byggs; se slutrapporten för TASK-243.1.
  */
-
 export function Hem() {
+  const { user } = useAuth();
+  const namn = user?.displayName ? fornamn(user.displayName) : null;
+
+  const eventsQuery = useDashboardEvents();
+  const registrationsQuery = useDashboardRegistrations();
+
+  // "Nu" läst EN gång per montering (inte per render) — samma referenspunkt
+  // genom hela vyn, annars kunde "förfallen"/bevakningsraden flippa mellan
+  // en switch och nästa utan att datat faktiskt ändrats.
+  const [nuMs] = useState(() => Date.now());
+
+  const idagStart = useMemo(() => dagsStart(nuMs), [nuMs]);
+  const evMap = useMemo(() => eventsById(eventsQuery.data), [eventsQuery.data]);
+  const nasta = useMemo(
+    () => velNastaEvent(eventsQuery.data, idagStart),
+    [eventsQuery.data, idagStart],
+  );
+
+  const anmalDataPending = registrationsQuery.isPending || eventsQuery.isPending;
+  const regsError = registrationsQuery.isError;
+
+  const anmalningar = useMemo(
+    () => obekraftadeAnmalningar(registrationsQuery.data, evMap),
+    [registrationsQuery.data, evMap],
+  );
+  const forfallna = useMemo(
+    () => forfallnaBetalningar(registrationsQuery.data, evMap, nuMs),
+    [registrationsQuery.data, evMap, nuMs],
+  );
+  const bevakningRader = useMemo(
+    () => bevakningar(eventsQuery.data, registrationsQuery.data, idagStart),
+    [eventsQuery.data, registrationsQuery.data, idagStart],
+  );
+
+  const idagLangt = useMemo(
+    () =>
+      kapitalisera(
+        new Intl.DateTimeFormat('sv-SE', { weekday: 'long', day: 'numeric', month: 'long' }).format(
+          nuMs,
+        ),
+      ),
+    [nuMs],
+  );
+
   return (
-    <section className="flex flex-col gap-3 pt-2 lg:pt-10">
-      {/* Hälsningskortet (K10: FK:s namnkort) — h1; platshållar-ytan riven (task-9.3). */}
-      <div className="rounded-2xl border border-transparent bg-bg-muted p-6 contrast-more:border-border-strong print:border-border-strong">
-        <Greeting />
+    <section className="mx-auto flex min-w-0 max-w-2xl flex-col gap-12 p-6 pt-10 pb-24 sm:p-8 lg:pt-16">
+      {/* 1. FRI HÄLSNING — ingen platta, stor redaktionell rubrik + en varm
+          dagsrad. h1 = sidans rubrik (ingen separat "Hem"-rubrik). */}
+      <div className="flex flex-col gap-2">
+        <p className="text-body text-text-secondary">{idagLangt}</p>
+        <h1 className="font-semibold text-4xl tracking-tight lg:text-5xl">
+          {namn ? `Hej ${namn}` : 'Hej'}
+        </h1>
       </div>
 
-      {/* Max två kort i rad (FK-mixen): Nästa event (primär-tint) | Obetalda. */}
-      <div className="grid grid-cols-2 gap-3">
-        <NastaEventCard />
-        <ObetaldaCard />
-      </div>
+      {/* 2. NÄSTA EVENT — fullbredd, hero-ton. */}
+      <NastaEvent eventsQuery={eventsQuery} nasta={nasta} idagStart={idagStart} />
 
-      {/* Aktivitetsspalten bottenlinjerar med anmälningskortet (K10-facit,
-          `bb31a12`: `<div className="relative">` runt kortet + spaltens
-          `absolute bottom-0 left-full`). Wrappern är spaltens positionerings-
-          kontext och ENDAST det — kortet renderar oförändrat. Spalten är
-          osynlig under xl; se SenasteAktivitet.tsx § Synlighet. */}
-      <div className="relative">
-        <NyaAnmalningarCard />
-        <SenasteAktivitet />
-      </div>
+      {/* BEVAKNINGSRAD — mellan "Nästa event" och "Nya anmälningar"
+          (Marcus-låst blockordning); helt osynlig vid noll träffar. */}
+      <Bevakningsrad rader={bevakningRader} />
 
-      <CTA />
+      {/* 3. NYA ANMÄLNINGAR */}
+      <NyaAnmalningar
+        anmalDataPending={anmalDataPending}
+        regsError={regsError}
+        registrationsQuery={registrationsQuery}
+        anmalningar={anmalningar}
+        nuMs={nuMs}
+      />
 
-      {/* Versionsraden (B-NYTT2): diskret nere till vänster, ENDAST desktop
-          (mobilen behåller dagens form); versionen build-injicerad ur
-          paketmanifestet — aldrig hårdkodad. */}
-      <span className="fixed bottom-4 left-4 hidden text-caption text-text-muted lg:block">
-        Miranon Media Admin v{__APP_VERSION__}
-      </span>
+      {/* 4. FÖRFALLNA BETALNINGAR */}
+      <ForfallnaBetalningar
+        anmalDataPending={anmalDataPending}
+        regsError={regsError}
+        registrationsQuery={registrationsQuery}
+        forfallna={forfallna}
+        nuMs={nuMs}
+      />
+
+      {/* 5. GENVÄGAR */}
+      <Genvagar />
+
+      {/* 6. SENASTE AKTIVITET — kompakt, alla bredder. */}
+      <SenasteAktivitetKompakt />
     </section>
   );
+}
+
+function kapitalisera(s: string): string {
+  return s.length === 0 ? s : s[0].toUpperCase() + s.slice(1);
 }

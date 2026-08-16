@@ -29,7 +29,10 @@ feedback-loop tillbaka till oss (hennes fynd → dagliga fix-vågor).
 1. **S103 — person-vyerna** (D-varianten redo att granskas): FÖRE
    Lotta — kärnyta i hennes vardag. Marcus återupptar och granskar.
 2. **Hem-vyns omdesign**: egen ny session (Marcus startar). Underlag:
-   `tasks/sessions/bilagor/s55-hem-konvergens/` (k10-facit).
+   `tasks/sessions/bilagor/s102-hem-konvergens/` (Morgonkoll-facitet;
+   k10-facitet arkiverat till
+   `tasks/sessions/archive/bilagor/s55-hem-konvergens/`, superseded vid
+   TASK-243.1-promoveringen 2026-08-16).
 3. **Fas 6.5 — Aktivitetslogg (xAPI)**, "historik-grejen": **S105
    STARTAD 2026-08-11** (Marcus beslut: ska till Lotta dag 1 → nytt
    go/no-go-kriterium nedan).

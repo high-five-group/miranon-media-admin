@@ -50,7 +50,6 @@ import { expect, type Page, test } from './support/acceptance-bas';
  */
 
 const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
-const H1_HALSNING = /^Hej/;
 
 /**
  * Härledda ur schemana, ej beskrivna bredvid dem (TASK-63) — se `acceptance-bas.ts`
@@ -190,136 +189,7 @@ function arrangeraTomCache(page: Page) {
   return page.addInitScript((nyckel) => localStorage.removeItem(nyckel), PERSIST_KEY);
 }
 
-/** Löser en CSS-custom-property till computed färg via DOM-probe
-    (Skeleton.spec-mönstret; L272: computed-assertioner, aldrig pixel-titt). */
-async function resolvedTokenColor(page: Page, tokenNamn: string): Promise<string> {
-  return page.evaluate((namn) => {
-    const probe = document.createElement('span');
-    probe.style.color = `var(${namn})`;
-    document.body.appendChild(probe);
-    const color = getComputedStyle(probe).color;
-    probe.remove();
-    return color;
-  }, tokenNamn);
-}
-
-/** De tre kort-regionernas namn (aria-labelledby → h2-rubriken). */
-const KORT = {
-  nastaEvent: 'Nästa event',
-  obetalda: 'Obetalda anmälningsavgifter',
-  anmalningar: 'Nya anmälningar att hantera',
-} as const;
-
 test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
-  test('AC 1 — tom cache: rubriker + kort-chrome i slutgeometri från första bildrutan; skeleton-block endast i datakropparna', async ({
-    page,
-    network,
-  }) => {
-    await arrangeraTomCache(page);
-    hallbarMock(network, fulltData()); // parkerad från start — äkta kallstartsfönster
-    await page.goto('/hem');
-
-    // Riktiga rubriker + riktig kort-chrome DIREKT (statiskt kända): h1 +
-    // alla tre h2 synliga medan EF-svaren fortfarande är parkerade.
-    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
-    for (const namn of Object.values(KORT)) {
-      await expect(page.getByRole('heading', { level: 2, name: namn })).toBeVisible();
-    }
-
-    // Chromen är den RIKTIGA (computed, L272): tonala ytor + radie renderade
-    // redan i laddläget — Nästa event i primär-tint, Obetalda i bg-muted,
-    // anmälningskortet med koppar-kontur (task-4.4-facitets accent).
-    const nastaEvent = page.getByRole('region', { name: KORT.nastaEvent });
-    const obetalda = page.getByRole('region', { name: KORT.obetalda });
-    const anmalningar = page.getByRole('region', { name: KORT.anmalningar });
-    expect(await nastaEvent.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
-      await resolvedTokenColor(page, '--mm-primary-tint'),
-    );
-    expect(await obetalda.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
-      await resolvedTokenColor(page, '--mm-bg-muted'),
-    );
-    expect(await anmalningar.evaluate((el) => getComputedStyle(el).borderTopColor)).toBe(
-      await resolvedTokenColor(page, '--mm-accent'),
-    );
-    for (const kort of [nastaEvent, obetalda, anmalningar]) {
-      expect(await kort.evaluate((el) => getComputedStyle(el).borderRadius)).not.toBe('0px');
-    }
-
-    // Endast datakropparna bär skeleton-block, och blocken SPEGLAR kommande
-    // innehåll: eventmeta-raderna (3 metarader + caption + stapelplats),
-    // talet (1 number-block), listraderna (4 synliga listrads-block).
-    const block = (region: ReturnType<Page['getByRole']>) =>
-      region.getByRole('status').locator('span[aria-hidden="true"]');
-    await expect(block(nastaEvent)).toHaveCount(5);
-    await expect(block(obetalda)).toHaveCount(1);
-    await expect(block(anmalningar)).toHaveCount(4);
-
-    // Inga fel-ytor i laddläget.
-    await expect(page.getByRole('alert')).toHaveCount(0);
-  });
-
-  test('AC 1 — grindkravet: kortens och listans boundingBox IDENTISK under laddning och efter data (layout-skift ≈ 0)', async ({
-    page,
-    network,
-  }) => {
-    await arrangeraTomCache(page);
-    const mocken = hallbarMock(network, fulltData());
-    await page.goto('/hem');
-
-    // Laddläget står (EF-svaren parkerade): tre laddande containrar.
-    const main = page.locator('main#main');
-    await expect(main.getByRole('status')).toHaveCount(3);
-
-    // L246-mätfällan: neutralisera muspekaren före mätning.
-    await page.mouse.move(0, 0);
-
-    // Mät UNDER laddning: main, alla tre korten, CTA:n och listytan
-    // (task-4.5 AC 2:s mät-stillhets-form).
-    const ytor = {
-      main,
-      nastaEvent: page.getByRole('region', { name: KORT.nastaEvent }),
-      obetalda: page.getByRole('region', { name: KORT.obetalda }),
-      anmalningar: page.getByRole('region', { name: KORT.anmalningar }),
-      cta: page.getByRole('link', { name: 'Visa alla anmälningar' }),
-    };
-    const foreBoxar: Record<string, Awaited<ReturnType<typeof main.boundingBox>>> = {};
-    for (const [namn, yta] of Object.entries(ytor)) foreBoxar[namn] = await yta.boundingBox();
-
-    // Anmälningslistans dimensionsreserverade yta under laddning …
-    const skelettLista = ytor.anmalningar.getByRole('status').locator('> div');
-    const listYtaFore = await skelettLista.boundingBox();
-    if (!listYtaFore) throw new Error('boundingBox saknas för skelett-listytan');
-
-    // … släpp EF-svaren → innehållet landar …
-    mocken.hall = false;
-    mocken.slappAlla();
-    await expect(page.getByRole('link', { name: /Person0 Andersson/ })).toBeVisible();
-    await expect(page.getByText('5 av 20 platser reserverade')).toBeVisible();
-    await expect(main.getByRole('status')).toHaveCount(0);
-    // Deterministisk måla-klart-vänta (dubbel-rAF, task-4.5) — ingen fast delay.
-    await page.evaluate(
-      () => new Promise((klar) => requestAnimationFrame(() => requestAnimationFrame(klar))),
-    );
-
-    // … och INGENTING har flyttat sig: exakt samma boxar som under laddning.
-    for (const [namn, yta] of Object.entries(ytor)) {
-      expect(await yta.boundingBox(), `${namn} ska stå mät-still över datalandningen`).toEqual(
-        foreBoxar[namn],
-      );
-    }
-
-    // Listytan: den riktiga listan står EXAKT där skelettytan stod, i samma
-    // storlek (dimensionsreservationen är sann — inget trycks ner när listan
-    // dyker upp, användarberättelse 7).
-    const lista = page.getByRole('list', { name: 'Senaste anmälningarna' });
-    const listYtaEfter = await lista.boundingBox();
-    if (!listYtaEfter) throw new Error('boundingBox saknas för den laddade listan');
-    expect(listYtaEfter.y).toBeCloseTo(listYtaFore.y, 1);
-    expect(listYtaEfter.x).toBeCloseTo(listYtaFore.x, 1);
-    expect(listYtaEfter.width).toBeCloseTo(listYtaFore.width, 1);
-    expect(listYtaEfter.height).toBeCloseTo(listYtaFore.height, 1);
-  });
-
   test("AC 2 — 'Laddar…'-textraderna är borta ur Hem: laddbeskeden är enbart sr-only; ingen spinner", async ({
     page,
     network,
