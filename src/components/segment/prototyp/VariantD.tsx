@@ -4180,14 +4180,17 @@ function NyttSegmentVy({
               </p>
             ) : (
               <>
-                <p className="text-lg">{mening}</p>
+                {/* Brödtextstorlek, inte plakat (Marcus 2026-08-16): meningen
+                    läser som text, bara ANTALET får bära vikt och ett steg
+                    större grad. */}
+                <p className="text-body">{mening}</p>
                 {isFetching ? (
                   <p className="text-small text-text-muted">Räknar personer…</p>
                 ) : isError ? (
                   <p className="text-small text-text-muted">Antalet kunde inte räknas.</p>
                 ) : antal !== undefined ? (
-                  <p className="text-lg">
-                    <strong className="font-semibold text-3xl tabular-nums">{antal}</strong>{' '}
+                  <p className="text-body">
+                    <strong className="font-semibold text-xl tabular-nums">{antal}</strong>{' '}
                     {personform(antal)} i det här segmentet.
                   </p>
                 ) : null}
