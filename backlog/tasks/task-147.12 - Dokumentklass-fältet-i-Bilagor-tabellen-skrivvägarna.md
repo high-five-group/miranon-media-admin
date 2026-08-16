@@ -1,10 +1,10 @@
 ---
 id: TASK-147.12
 title: Dokumentklass-fältet i Bilagor-tabellen + skrivvägarna
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 08:40'
-updated_date: '2026-08-16 09:59'
+updated_date: '2026-08-16 11:30'
 labels:
   - ready-for-agent
 dependencies: []
@@ -97,3 +97,9 @@ rikta kommandon mot prod mekaniskt):
    RIKTIGA prod-fält-ID:t från steg 1 — anta aldrig att det blir samma
    sträng som staging.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #1394 (merge 1dd90f98, 2026-08-16) genom merge-kön. Dokumentklass-fältet (fldr2CwboZ3M4USCX, Uppladdad/Event-mallad/Person-genererad per ORDLISTA A/B/C) i staging; båda skrivvägarna staging-bevisade; backfill 33/33, 0 oklassificerbara; DokumentYta läser fältet med Okänd-fallback; data-model.md uppdaterad; prod-klicklistan (5 steg) i Implementation Notes för dagens prod-moment. Rebase-läkning mot skärpningsvarvet utförd (9d9bac20).
+<!-- SECTION:FINAL_SUMMARY:END -->
