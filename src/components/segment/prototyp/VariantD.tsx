@@ -1770,12 +1770,19 @@ function SegmentLista({
         <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
           Segment
         </h1>
-        {/* Marcus text verbatim (2026-08-10, resume-varvet). Den tidigare
-            tredje meningen ("Flera grupper i samma utskick: markera dem")
-            ströks i och med bytet — markera-funktionen får bära sig själv. */}
+        {/* Marcus text verbatim - men NY text sedan 2026-08-16
+            (begreppsrenheten), inte den från 2026-08-10. Den ersatta lydelsen
+            löd "Grupper av personer som du kan skicka riktade mail till. Spara
+            en grupp och återanvänd den - …" och kallade alltså ett SEGMENT för
+            en grupp. Det ordet är sedan uppdelnings-generatorn finns upptaget
+            av något annat: en grupp är en av de delar publiken delas upp i.
+            Ingressen säger därför "urval", och ordet segment står kvar som
+            sidans egen term. Den tidigare tredje meningen ("Flera grupper i
+            samma utskick: markera dem") ströks redan 2026-08-10 - markera-
+            funktionen får bära sig själv - och återinförs inte här. */}
         <p className="text-small text-text-muted">
-          Grupper av personer som du kan skicka riktade mail till. Spara en grupp och återanvänd den
-          - antalet räknas upp automatiskt, så antalet stämmer även när fler personer tillfaller
+          Urval av personer som du kan skicka riktade mail till. Spara ett segment och återanvänd
+          det - antalet räknas upp automatiskt, så antalet stämmer även när fler personer tillfaller
           segmentet.
         </p>
       </header>
@@ -3010,16 +3017,27 @@ function VillkorsLista({
 }
 
 /**
- * MED-GRENEN SOM KONJUNKT-GRUPPER. En grupp med ETT villkor renderas exakt
- * som förut — inget ramverk, ingen ny terminologi förrän någon aktivt bett
- * om ett och-krav. Först vid TVÅ eller fler villkor får gruppen sin ram och
- * sin egen rubrik, och "och"-bindningen står som text mellan korten —
- * semantiken bärs av grupprubriken och klartext-meningen, aldrig av enbart
+ * MED-GRENEN SOM KONJUNKT-ALTERNATIV. Ett alternativ med ETT villkor renderas
+ * exakt som förut — inget ramverk, ingen ny terminologi förrän någon aktivt
+ * bett om ett och-krav. Först vid TVÅ eller fler villkor får alternativet sin
+ * ram och sin egen rubrik, och "och"-bindningen står som text mellan korten —
+ * semantiken bärs av rubriken och klartext-meningen, aldrig av enbart
  * layouten.
  *
- * Två tillägg-knappar med olika verb, med avsikt: "och-krav" bor PER GRUPP
- * (smalnar av gruppen), "ny grupp" bor på sektionen (vidgar regeln). Att ge
- * dem samma knapp hade återinfört exakt den tvetydighet AND-luckan bestod av.
+ * Två tillägg-knappar med olika verb, med avsikt: "och-krav" bor PER
+ * ALTERNATIV (smalnar av det), "nytt alternativ" bor på sektionen (vidgar
+ * regeln). Att ge dem samma knapp hade återinfört exakt den tvetydighet
+ * AND-luckan bestod av.
+ *
+ * ORDET "GRUPP" ÄR UTE UR VERKSTADENS SYNLIGA TEXT (Marcus 2026-08-16,
+ * begreppsrenheten). Det kolliderade med uppdelnings-betydelsen, där en grupp
+ * är en MÄNGD PERSONER som får ett eget mail ("Dela upp i grupper",
+ * täckningen) - här betydde samma ord en OR-gren i ett predikat. Två
+ * betydelser, ett ord, på ytor man rör sig mellan i samma arbetspass.
+ * Verkstaden säger därför "alternativ"; uppdelningen behåller "grupp" ensam.
+ * Identifierarna (`onLaggTillGrupp`, `gruppEtikett`, `KonjunktLista`) är
+ * ORÖRDA per Marcus order - de är inte synlig text, och ett namnbyte hade
+ * breddat diffen utan att flytta en pixel.
  */
 function KonjunktLista({
   konjunkter,
@@ -3048,14 +3066,16 @@ function KonjunktLista({
       </h2>
       <p className="text-small text-text-muted">
         {harFlerledad || flera
-          ? 'Den som uppfyller minst en av grupperna är med i segmentet. Inom en grupp måste alla villkor uppfyllas samtidigt.'
+          ? 'Den som uppfyller minst ett av alternativen är med i segmentet. Inom ett alternativ måste alla villkor uppfyllas samtidigt.'
           : 'Den som uppfyller minst ett av villkoren är med i segmentet.'}
       </p>
       {konjunkter.length > 0 && (
         <ul className="flex flex-col gap-3 pt-1">
           {konjunkter.map((k, ki) => {
             const gruppEtikett = (vi: number) =>
-              flera || harFlerledad ? `Grupp ${ki + 1} · villkor ${vi + 1}` : `Villkor ${vi + 1}`;
+              flera || harFlerledad
+                ? `Alternativ ${ki + 1} · villkor ${vi + 1}`
+                : `Villkor ${vi + 1}`;
             const kort = (v: Villkor, vi: number) => (
               <VillkorsKort
                 villkor={v}
@@ -3076,7 +3096,7 @@ function KonjunktLista({
                 ) : (
                   <div className="flex flex-col gap-3 rounded-2xl border border-border p-3">
                     <p className="font-medium text-small text-text-secondary">
-                      Grupp {ki + 1} - alla villkor nedan måste uppfyllas samtidigt
+                      Alternativ {ki + 1} - alla villkor nedan måste uppfyllas samtidigt
                     </p>
                     {k.villkor.map((v, vi) => (
                       <div key={v.id} className="flex flex-col gap-3">
@@ -3111,7 +3131,7 @@ function KonjunktLista({
       <div className="flex pt-1">
         <button type="button" onClick={onLaggTillGrupp} className={KAPSEL_KLASS}>
           <Plus aria-hidden="true" size={18} className="shrink-0" />
-          {konjunkter.length === 0 ? 'Lägg till villkor' : 'Eller: lägg till en alternativ grupp'}
+          {konjunkter.length === 0 ? 'Lägg till villkor' : 'Eller: lägg till ett alternativ'}
         </button>
       </div>
     </section>
