@@ -711,6 +711,18 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
+   * Radera en bilage-post (TASK-147.11). POST mot delete-attachment-EF:en —
+   * se `DataSourceAdapter.deleteAttachment` för det fulla kontraktet
+   * (ägarskaps-guarden, Storage+Airtable-borttagningen, "Ersätt"-
+   * kompositionen). Svaret bär bara `{ deleted: true }`; ingen domän-shape
+   * att parsa (till skillnad mot `createEventNote`/`uploadAttachment` finns
+   * ingen resurs kvar att returnera).
+   */
+  async deleteAttachment(eventId: string, attachmentId: string): Promise<void> {
+    await postEdgeFunction<{ deleted: boolean }>('delete-attachment', { eventId, attachmentId });
+  }
+
+  /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5). Läsning
    * via get-activity-log: DIREKT ur Postgres-tabellen `activity_log`
    * (ADR-110) — ingen Airtable-tabell inblandad, till skillnad mot övriga
