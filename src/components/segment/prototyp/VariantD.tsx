@@ -195,7 +195,7 @@ import {
   ChevronRight,
   CircleCheck,
   Group,
-  ListChecks,
+  Layers,
   ListPlus,
   Pencil,
   Plus,
@@ -1313,6 +1313,25 @@ function publikOrd(modalitet: ModalitetsVal): string {
 }
 
 /**
+ * Samma mekanik som `publikOrd` (modalitet in, verbfras ut) men i den
+ * RELATIVSATS kvittensraden kräver - "Alla deltagare som ..." tar `som gått`,
+ * inte `har gått`. Marcus gav Utbildnings-varianten ordagrant ("som gått en
+ * eller flera utbildningar", granskning 2026-08-16 varv 4); "en eller flera"
+ * i stället för `publikOrd`s "någon" är avsiktligt kvar bara här - den friska
+ * kvittensen påstår FULLSTÄNDIGHET, och räkneordet bär den nyansen.
+ *
+ * TVÅ FUNKTIONER, INTE EN UTBYGGD: `publikOrd` bär fortfarande
+ * avvikelse-boxens brödtext oförändrad (Marcus: "+ befintlig brödtext"), och
+ * att tvinga båda kasus genom en gemensam formulerare hade kostat en
+ * parameter för två anropsplatser.
+ */
+function tacktaOrd(modalitet: ModalitetsVal): string {
+  if (modalitet === 'Föreläsning') return 'varit på en eller flera föreläsningar';
+  if (modalitet === 'Båda') return 'gått någon utbildning eller varit på någon föreläsning';
+  return 'gått en eller flera utbildningar';
+}
+
+/**
  * EN UPPSÄTTNING, EN KVITTENS. Kvittenserna läggs ÖVER listan (mellan
  * handlingsraden och korten) — listan döljs aldrig, kontrollen är ett
  * TILLÄGG, inte en ersättning.
@@ -1327,19 +1346,32 @@ function publikOrd(modalitet: ModalitetsVal): string {
  * tonal grön yta, ingen kant, ingen rubrik — och rutan sparas till det som
  * faktiskt behöver den.
  *
- * SYSTEMORDEN ÄR UTE. "Täckning"/"täckta"/"täckningen" är vårt ord för
- * mängdlärans `⋃ = population`, inte Lottas ord för någonting alls (samma
- * klass som "genomförd närvaro" och "modalitet", `publikOrd` ovan). Ytan
- * säger i stället vad den gör: den kontrollerar grupperna. Identifierarna i
- * koden (`useTackning`, `tackningsLage`) är oförändrade — de är inte synlig
- * text, och ett namnbyte hade breddat diffen utan att flytta en pixel.
+ * "TÄCKNING" ÄR MARCUS ORD OCH STÅR I KLARTEXT (granskning 2026-08-16, fjärde
+ * varvet — en RIVEN tes, inte en glömd). Varv 3 rensade ordet ur all synlig
+ * text på tesen att det var systemspråk i klass med "genomförd närvaro" och
+ * "modalitet"; Marcus underkände den ordagrant ("Jag vill ha tillbaka
+ * täckningsyta och ikonen vi hade innan"). Skillnaden mot de två andra orden
+ * är att täckning är ett ord han själv använder om saken — inte ett vi
+ * översatt från mängdläran åt honom.
+ *
+ * PROCENTEN ÄR GOLVAD, OCH DET ÄR EN SANNINGSEGENSKAP: `Math.floor` gör att
+ * "100 %" kan visas ENDAST när `utanfor` är exakt 0 — 99,7 % blir 99 %, aldrig
+ * en avrundning uppåt som påstår fullständighet den inte har. Nämnaren är
+ * `tackta + utanfor` (populationen minus dubbelräkning), och det gröna läget
+ * kräver dessutom `dubbla === 0`, så den gröna raden och talet 100 % kan bara
+ * uppträda tillsammans.
+ *
+ * PROCENT HÖR TILL UTANFÖR-DIMENSIONEN, ALDRIG TILL DUBBEL (Marcus, samma
+ * varv: "blanda inte"). Att vara med i två segment gör ingen otäckt — det är
+ * ett annat fel med en annan konsekvens (flera mail, inte uteblivet mail), och
+ * ett procenttal i den rubriken hade beskrivit fel storhet.
  *
  * AVVIKELSEN FÅR TA PLATS, OCH HAR EN RUBRIK SOM SÄGER FELET RAKT. Två
- * oberoende fynd ⇒ två `MessageBox`ar, aldrig en sammanslagen: "2 personer
- * är med i flera grupper" och "1 person står utanför grupperna" är olika
- * problem med olika konsekvenser (dubbla mail respektive uteblivet mail).
- * Rubriken bär hela fyndet — en badge som säger samma sak en gång till är
- * borta av samma skäl som det friska fallets panel.
+ * oberoende fynd ⇒ två `MessageBox`ar, aldrig en sammanslagen: "2 deltagare
+ * finns i mer än ett segment" och "93 % täckning - 1 deltagare saknas i
+ * segmenten" är olika problem med olika konsekvenser (dubbla mail respektive
+ * uteblivet mail). Rubriken bär hela fyndet — en badge som säger samma sak en
+ * gång till är borta av samma skäl som det friska fallets panel.
  *
  * EN ENDA LIVE-REGION, OCH DEN LIGGER UTANPÅ INGENTING (fälla 6 + nästlade
  * regioner). `MessageBox` bär SJÄLV `role="alert"` för `warning`/`error`
@@ -1373,16 +1405,32 @@ function TackningsPanel({
 
   const klart = utfall.status === 'klar' ? utfall : null;
   const friskt = klart !== null && klart.dubbla === 0 && klart.utanfor.length === 0;
-  // Uppsättningens namn som RUBRIKPREFIX i avvikelsefallet ("De fjorton: 2
-  // personer …"). Kolon-formen scopar fyndet utan att böja rubriken, som en
-  // invävning ("… i De fjorton") hade tvingat fram i tre olika kasus.
+  // TÄCKNINGSGRADEN. Nämnaren är populationen sedd genom uppsättningen:
+  // `tackta` (i exakt en grupp) + `utanfor` (i ingen). `dubbla` ingår
+  // medvetet i VARKEN täljare eller nämnare — de är täckta, men fel täckta,
+  // och deras fel bärs av sin egen ruta.
+  //
+  // NOLL-NÄMNAREN ÄR ETT EGET FALL, INTE EN DIVISION. En uppsättning vars
+  // modalitet inte har en enda person i basen ger `0/0` → `NaN %`; en yta
+  // vars hela syfte är att avslöja tysta fel får aldrig själv skriva NaN på
+  // skärmen. Då finns ingen täckningsgrad att uttala sig om, och raden säger
+  // det i stället för att räkna.
+  const namnare = klart === null ? 0 : klart.tackta + klart.utanfor.length;
+  const procent =
+    klart === null || namnare === 0 ? null : Math.floor((klart.tackta / namnare) * 100);
+  // Uppsättningens namn som PREFIX i varje utfall - friskt som avvikande ("De
+  // fjorton: 100 % - Full täckning …", Marcus form 2026-08-16). Kolon-formen
+  // scopar fyndet utan att böja rubriken, som en invävning ("… i De fjorton")
+  // hade tvingat fram i tre olika kasus. Varv 3 vävde in namnet i den friska
+  // meningen och prefixade avvikelserna — två former för samma sak; nu är det
+  // en, och den fungerar i båda.
   const prefix = visaNamn ? `${uppsattning.namn}: ` : '';
 
   return (
     <div className="flex flex-col gap-3">
       <div role="status" aria-live="polite" aria-atomic="true">
         {utfall.status === 'raknar' && (
-          <p className="text-small text-text-muted">Kontrollerar grupperna…</p>
+          <p className="text-small text-text-muted">Räknar täckningen…</p>
         )}
 
         {friskt && klart !== null && (
@@ -1395,9 +1443,9 @@ function TackningsPanel({
           <p className="flex items-start gap-2 rounded-xl bg-success-bg px-4 py-2.5 text-small">
             <CircleCheck aria-hidden="true" size={18} className="mt-px shrink-0 text-success" />
             <span>
-              {visaNamn
-                ? `Grupperna i ${uppsattning.namn} stämmer: alla ${klart.tackta} som ${publikOrd(uppsattning.modalitet)} är med - var och en i exakt en grupp, ingen saknas.`
-                : `Grupperna stämmer: alla ${klart.tackta} som ${publikOrd(uppsattning.modalitet)} är med - var och en i exakt en grupp, ingen saknas.`}
+              {procent === null
+                ? `${prefix}Ingen som ${tacktaOrd(uppsattning.modalitet)} finns i basen än - det finns ingen täckning att räkna.`
+                : `${prefix}${procent} % - Full täckning. Alla deltagare som ${tacktaOrd(uppsattning.modalitet)} finns representerade i något av segmenten.`}
             </span>
           </p>
         )}
@@ -1413,7 +1461,7 @@ function TackningsPanel({
       </div>
 
       {utfall.status === 'fel' && (
-        <MessageBox intent="error" title="Kontrollen kunde inte göras">
+        <MessageBox intent="error" title="Täckningen kunde inte räknas">
           Något av delsvaren gick inte att hämta. Försök igen om en stund.
         </MessageBox>
       )}
@@ -1421,7 +1469,11 @@ function TackningsPanel({
       {klart !== null && klart.dubbla > 0 && (
         <MessageBox
           intent="warning"
-          title={`${prefix}${klart.dubbla} ${personform(klart.dubbla)} är med i flera grupper`}
+          // INGEN PROCENT HÄR (Marcus 2026-08-16: "blanda inte") - se
+          // docblockets § PROCENT HÖR TILL UTANFÖR-DIMENSIONEN. "deltagare"
+          // böjs inte i plural, så rubriken bär ordet oböjt i stället för via
+          // `personform` (som ger person/personer).
+          title={`${prefix}${klart.dubbla} deltagare finns i mer än ett segment`}
         >
           De hamnar i mer än en av grupperna och får därför flera mail om du skickar till alla
           grupperna.
@@ -1431,7 +1483,16 @@ function TackningsPanel({
       {klart !== null && klart.utanfor.length > 0 && (
         <MessageBox
           intent="warning"
-          title={`${prefix}${klart.utanfor.length} ${personform(klart.utanfor.length)} står utanför grupperna`}
+          // RUBRIKEN SPEGLAR PROCENTFORMEN: samma tal som den gröna raden
+          // hade visat om allt stämt, men här som det det är - ett underskott.
+          // `procent` kan inte vara null i den här grenen (`utanfor.length >
+          // 0` ⇒ nämnaren > 0), men typen tvingar fram en gren och en tyst
+          // `?? 0` hade varit en gissning; utan tal säger rubriken bara felet.
+          title={
+            procent === null
+              ? `${prefix}${klart.utanfor.length} deltagare saknas i segmenten`
+              : `${prefix}${procent} % täckning - ${klart.utanfor.length} deltagare saknas i segmenten`
+          }
         >
           <p>
             De {publikOrd(uppsattning.modalitet)} men är inte med i någon av grupperna - de nås inte
@@ -1805,13 +1866,17 @@ function SegmentLista({
             gransknings-läge, inte en daglig handling, och ska inte
             konkurrera med skapandeknapparna om radplats eller uppmärksamhet.
 
-            ETIKETTEN SÄGER HANDLINGEN, INTE MÄNGDLÄRAN (Marcus 2026-08-16).
-            "Visa täckning" namngav ett begrepp Lotta inte har; "Kontrollera
-            grupperna" säger vad knappen gör åt henne. `ListChecks` framför
-            `ShieldCheck`: skölden betyder skydd/säkerhet i varje etablerat
-            ikonbibliotek och hade lovat något annat än det knappen gör -
-            checklistan betyder "gå igenom och pricka av", vilket är exakt
-            handlingen. Båda finns i lucide-react 1.28.0 (mätt). */}
+            ETIKETTEN ÄR "VISA TÄCKNING", OCH DET ÄR ETT ÅTERSTÄLLT BESLUT
+            (Marcus granskning 2026-08-16, fjärde varvet: "Jag vill ha tillbaka
+            täckningsyta och ikonen vi hade innan"). Varv 3 bytte till
+            "Kontrollera grupperna" + `ListChecks` på tesen att "täckning" var
+            ett begrepp Lotta inte har - Marcus underkände den tesen: ordet ÄR
+            hans, och den nya kvittenstexten bär det i klartext ("100 % - Full
+            täckning"). Knappen och kvittensen måste då säga samma ord, annars
+            namnger de två olika saker. `Layers` framför `ListChecks`: lagren
+            är bilden av flera segment som tillsammans ska täcka en population,
+            vilket är exakt vad ytan mäter. Båda finns i lucide-react 1.28.0
+            (mätt). */}
         {!markeraLage && markerbara > 0 && (
           <div className="-mt-2 flex justify-end print:hidden">
             <button
@@ -1821,8 +1886,8 @@ function SegmentLista({
                 tackningsLage ? 'bg-bg-emphasized' : 'text-text-secondary hover:bg-bg-emphasized'
               }`}
             >
-              <ListChecks aria-hidden="true" size={16} className="shrink-0" />
-              {tackningsLage ? 'Dölj kontrollen' : 'Kontrollera grupperna'}
+              <Layers aria-hidden="true" size={16} className="shrink-0" />
+              {tackningsLage ? 'Dölj täckning' : 'Visa täckning'}
             </button>
           </div>
         )}
@@ -1847,8 +1912,8 @@ function SegmentLista({
           <div className="flex flex-col gap-4">
             {uppsattningar.length === 0 ? (
               <p className="text-small text-text-muted">
-                Det finns inga grupper att kontrollera än. Kontrollen gäller de fjorton förskapade
-                grupperna eller en körning av "Dela upp i grupper".
+                Det finns inga grupper att räkna täckning för än. Täckningen gäller de fjorton
+                förskapade grupperna eller en körning av "Dela upp i grupper".
               </p>
             ) : (
               uppsattningar.map((u) => (
@@ -1930,8 +1995,8 @@ function SegmentLista({
               Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är
               påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad. De
               fjorton förskapade grupperna bär dessutom sitt eget facit - se skalprovs-växeln för
-              vad det betyder. Kontrollera grupperna-knappen visar om alla som borde vara med är med
-              - alltid på riktiga tal, oavsett skalprovets läge.
+              vad det betyder. Täckningsknappen visar om alla som borde vara med är med - alltid på
+              riktiga tal, oavsett skalprovets läge.
             </PrototypNot>
           </>
         )}
@@ -2643,13 +2708,39 @@ function ValChip({
   );
 }
 
-function ChipRad({ etikett, children }: { etikett: string; children: React.ReactNode }) {
+function ChipRad({
+  etikett,
+  doldEtikett,
+  children,
+}: {
+  etikett: string;
+  /** Döljer legenden VISUELLT (`sr-only`) - aldrig från tillgänglighetsträdet.
+      Sätts där en stegrubrik direkt ovanför redan namnger gruppen, se nedan. */
+  doldEtikett?: boolean;
+  children: React.ReactNode;
+}) {
   // `<fieldset>`/`<legend>` framför `role="group"` + `aria-label`: samma
   // semantik med inbyggd elementbetydelse, och grupprubriken blir synlig text
   // i stället för ett attribut bara skärmläsaren ser.
+  //
+  // ...UTOM när steget ovanför redan ställt frågan (Marcus 2026-08-16, varv 4:
+  // "ta bort alla under rubriken exempelvis 'Utbildningar' som visas över
+  // pill-valen"). Under rubriken "Vilka utbildningar ska publiken delas upp
+  // efter?" är legenden "Utbildningar" en andra, svagare rubrik för samma sak.
+  // Den tas därför ur SYNFÄLTET, inte ur trädet: `sr-only` håller kvar
+  // fieldsetens tillgängliga namn, så gruppen fortfarande annonseras
+  // ("Utbildningar, grupp") för den som inte ser stegrubrikens närhet.
+  // Ribban är 11 - en dold etikett är ett layout-beslut, aldrig ett
+  // semantiskt. En egen prop framför en global ändring: regelverkstadens tre
+  // chip-rader (Familj, Nivå, Format) står UTAN stegrubrik ovanför sig och
+  // behöver sina synliga legender.
   return (
     <fieldset>
-      <legend className="pb-1.5 font-medium text-small text-text-secondary">{etikett}</legend>
+      <legend
+        className={doldEtikett ? 'sr-only' : 'pb-1.5 font-medium text-small text-text-secondary'}
+      >
+        {etikett}
+      </legend>
       <div className="flex flex-wrap gap-2">{children}</div>
     </fieldset>
   );
@@ -3572,20 +3663,49 @@ function DelaUppIGrupper({
             "orörda" läget varar hela tiden fram till första valet, och en röd
             ram hade skällt på någon som ännu inte gjort något. */}
         <StegSektion nummer={1} rubrik="Vilka räknas med?">
-          <div className="flex flex-col gap-2">
-            {/* ETIKETTERNA BÄR SUBJEKT (varv 2). "Utbildning"/"Föreläsning"
+          {/* ETIKETTERNA BÄR SUBJEKT (varv 2). "Utbildning"/"Föreläsning"
                 namngav formatet på ett event; frågan steget ställer handlar om
                 PERSONER. De interna värdena är oförändrade `ModalitetsVal` -
                 bara orden på skärmen är nya.
 
                 RADIOPRICKAR → APPENS KNAPPGRUPP (varv 3). Samma primitiv och
                 samma användning som publikens "Alla / Får mailet / Får inte
-                mailet"-växel i `PublikSektion` - `spread` ger likbreda segment
-                som fyller kortets bredd. `size="sm"` är det enda tillägget:
-                primitivens `sm` är dokumenterat list-/flikmiljöns steg, och
-                etiketterna här är satser ("De som gått utbildningar"), inte
-                enordiga vynamn - i `md` (text-body + px-5) bryter var och en
-                till två rader i innehållsspalten.
+                mailet"-växel i `PublikSektion`. `size="sm"` är det enda
+                tillägget: primitivens `sm` är dokumenterat list-/flikmiljöns
+                steg, och etiketterna här är satser ("De som gått
+                utbildningar"), inte enordiga vynamn - i `md` (text-body +
+                px-5) bryter var och en till två rader i innehållsspalten.
+
+                UTAN `spread` (varv 4). Marcus: pillergruppen är bra men
+                "togglen blir för fet/hög". Orsaken var mätbar och satt i
+                LAYOUTEN, inte i etiketterna: `spread` ger primitiven `grid
+                w-full auto-cols-fr`, alltså tre LIKA BREDA kolumner. Den
+                bredaste etiketten ("De som varit på föreläsningar") behöver
+                mer än en tredjedel, den smalaste ("Båda") långt mindre - så
+                lika kolumner tvingade radbrytning INUTI de två långa pillren
+                medan den korta stod med tom luft. Primitivens andra läge
+                (`inline-flex`, default) låter varje pill ta sin naturliga
+                innehållsbredd, vilket är exakt vad etiketter av så olika längd
+                kräver.
+
+                TRACKET BEHÖLLS, GRUPPEN FICK `flex-wrap`. Kapselformen
+                (`rounded-full bg-bg-muted p-1`) är primitivens grammatik och
+                kräver inte `spread` - de två layout-lägena delar track. Det
+                som däremot försvann med `spread` var `w-full`s implicita
+                radbrytnings-skydd: en `inline-flex` utan wrap hade svämmat
+                över i stället för att brytas på smal vyport. `flex-wrap`
+                flyttar tillbaka brytningen dit den hör hemma - MELLAN hela
+                piller, aldrig inuti ett. `whitespace-nowrap` på varje pill är
+                bältet till det hängslet: den gör brytning inuti en etikett
+                strukturellt omöjlig oavsett vilken bredd gruppen råkar få.
+
+                `self-start` KRÄVS, och det är en följd av att `spread` föll:
+                `StegSektion` är en `flex flex-col`, där default
+                `align-items: stretch` sträcker varje barn till full bredd -
+                också ett `inline-flex`. Utan `self-start` hade tracket blivit
+                lika brett som förut, med pillren hopträngda till vänster och
+                tom kapselyta till höger: samma feta form, fast tommare.
+                `self-start` låter kapseln sluta där innehållet slutar.
 
                 OKONTROLLERAD, MED FLIT - och det är MÄTT, inte antaget.
                 Primitiven mappar `selectedKey === undefined` till
@@ -3605,35 +3725,28 @@ function DelaUppIGrupper({
                 radions semantik. `modalitet` speglar valet och kan inte glida
                 isär från det: inget annat i filen skriver till `setModalitet`,
                 och hela vyn avmonteras när man lämnar generatorn. */}
-            <ToggleButtonGroup<ModalitetsVal>
-              label="Räknas med"
-              spread
-              onSelectionChange={setModalitet}
-            >
-              <ToggleButton size="sm" id="Utbildning">
-                De som gått utbildningar
-              </ToggleButton>
-              <ToggleButton size="sm" id="Föreläsning">
-                De som varit på föreläsningar
-              </ToggleButton>
-              <ToggleButton size="sm" id="Båda">
-                Båda
-              </ToggleButton>
-            </ToggleButtonGroup>
-            {/* SÄKERHETSSKÄLET FÖRSVINNER INTE MED VALET (varv 2). Förut
-                visades det bara medan `modalitet === null`, alltså exakt fram
-                till den sekund då valet fick konsekvenser. Men valet går att
-                ändra genom hela flödet, och den som överväger att byta till
-                "Båda" behöver veta VARFÖR raden finns - inte bara den som
-                aldrig valt något. Efter valet faller instruktionen ("välj
-                därför ... innan du") bort och risken står kvar ensam: den är
-                den enda meningen som fortfarande bär information. */}
-            <p className="text-caption text-text-muted">
-              {modalitet === null
-                ? 'Det finns material som är direkt olämpligt att skicka till någon som bara gått en föreläsning. Välj därför vad grupperna ska räknas som innan du väljer utbildningar.'
-                : 'Det finns material som är direkt olämpligt att skicka till någon som bara gått en föreläsning. Därför avgör det här valet vilka som räknas med.'}
-            </p>
-          </div>
+          {/* SÄKERHETSFÖRKLARINGEN ÄR BORTTAGEN, INTE BORTGLÖMD (Marcus
+              2026-08-16, varv 4, ordagrant: "Ta bort 'Det finns material som
+              är direkt...'"). Stycket ("Det finns material som är direkt
+              olämpligt att skicka till någon som bara gått en föreläsning
+              …") stod i BÅDA lägena - före och efter valet - och är ute i
+              båda. Stegrubriken "Vilka räknas med?" ställer frågan; svaret
+              behöver ingen brasklapp under sig. */}
+          <ToggleButtonGroup<ModalitetsVal>
+            label="Räknas med"
+            className="flex-wrap self-start"
+            onSelectionChange={setModalitet}
+          >
+            <ToggleButton size="sm" id="Utbildning" className="whitespace-nowrap">
+              De som gått utbildningar
+            </ToggleButton>
+            <ToggleButton size="sm" id="Föreläsning" className="whitespace-nowrap">
+              De som varit på föreläsningar
+            </ToggleButton>
+            <ToggleButton size="sm" id="Båda" className="whitespace-nowrap">
+              Båda
+            </ToggleButton>
+          </ToggleButtonGroup>
         </StegSektion>
 
         <StegSektion
@@ -3642,7 +3755,7 @@ function DelaUppIGrupper({
           vilar={modalitet === null ? 'Välj först vilka som räknas med.' : undefined}
         >
           <div className="flex flex-col gap-2">
-            <ChipRad etikett="Utbildningar">
+            <ChipRad etikett="Utbildningar" doldEtikett>
               {atomer.length === 0 ? (
                 <p className="text-small text-text-muted">
                   Inga utbildningar i basen matchar det valet.
