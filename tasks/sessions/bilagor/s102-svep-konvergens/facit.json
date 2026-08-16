@@ -1,0 +1,40 @@
+{
+  "prototyp": "s102-svep-konvergens",
+  "last": "2026-08-17",
+  "lasning": "Marcus verbatim (uppdragets citat): \"Jag är nöjd med svep-sidorna nu, blev bra med scrollbaren\" — kvittens efter konvergensvarv 3 (scrollbar-inline-fixen på mail-textytan, PR #1448/commit 4b853766) + uttrycklig promoverings-order (2026-08-16). Detta manifest är AC #5:s FÖRBEREDANDE halva (task-241.1): facit-låset byggs och läggs fram, stämpeln (godkand-fältet, ADR-104 § Beslut 2) sätts av Marcus själv via !-kanalen — aldrig av en agent.",
+  "godkand": null,
+  "ytor": [
+    {
+      "yta": "Sändytan — bekräftelse-/påminnelsesvepen som OVERLAY ovanpå Hem (ADR-114, S102 Del 10 beslut 1)",
+      "bilder": [
+        "facit-svep-bekraftelse-granska-adresslista-desktop.png",
+        "facit-svep-bekraftelse-granska-forhandsvisning-desktop.png",
+        "facit-svep-bekraftelse-armerat-desktop.png",
+        "facit-svep-bekraftelse-skickar-desktop.png",
+        "facit-svep-bekraftelse-resultat-desktop.png",
+        "facit-svep-bekraftelse-tomt-urval-desktop.png",
+        "facit-svep-bekraftelse-fel-resultat-desktop.png",
+        "facit-svep-bekraftelse-granska-mobil.png",
+        "facit-svep-bekraftelse-resultat-mobil.png",
+        "facit-svep-paminnelse-granska-adresslista-desktop.png",
+        "facit-svep-paminnelse-granska-forhandsvisning-desktop.png",
+        "facit-svep-paminnelse-armerat-desktop.png",
+        "facit-svep-paminnelse-skickar-desktop.png",
+        "facit-svep-paminnelse-resultat-desktop.png",
+        "facit-svep-paminnelse-tomt-urval-desktop.png",
+        "facit-svep-paminnelse-fel-resultat-desktop.png",
+        "facit-svep-paminnelse-granska-mobil.png",
+        "facit-svep-paminnelse-resultat-mobil.png"
+      ],
+      "kallor": [
+        "src/routes/dev/svep-prototyp.tsx",
+        "src/components/dev/svep-prototyp/SvepOverlay.tsx",
+        "src/components/dev/svep-prototyp/Adresslista.tsx",
+        "src/components/dev/svep-prototyp/Forhandsvisning.tsx",
+        "src/components/dev/svep-prototyp/data.ts",
+        "src/components/dev/svep-prototyp/types.ts"
+      ],
+      "not": "FÖRBEREDANDE FACIT-LÅS (task-241.1 AC #5s första halva), byggt EFTER Marcus godkännande av konvergensvarv 3 (scrollbar-inline på mail-textytans förhandsvisning, Forhandsvisning.tsx:113 — Marcus sista granskningsändring, landad som commit 4b853766 på grenen fix/task-241.1-scrollbar-inline / PR #1448, ARMERAD men inte ännu mergad till origin/main vid detta pass — bekräftat via `git merge-base --is-ancestor 4b853766 origin/main` (NEJ) resp. mot `origin/fix/task-241.1-scrollbar-inline` (JA), samt `gh pr view 1448` som visar `autoMergeRequest` satt och `mergeStateStatus: BLOCKED` (kön väntar). Detta pass grenar därför av scrollbar-grenen, inte av main, per uppdragets egen fallback-regel — bilderna BÄR fixen (se `scrollbar-inline`-klassen i Forhandsvisning.tsx, grep-verifierad).\n\nBÅDA SVEP-INSTANSERNA × SAMTLIGA LÄGEN (ADR-114 beslut 4 — de två instanserna delar form, olika innehåll): bekräftelsesvepet (3 event-grupper, 9 mottagare: Sommarkurs i akvarell/Uppsala·3, Hantverkshelg/Falun·2, Novemberretreat/Åre·4) och påminnelsesvepet (2 event-grupper, 3 mottagare, samtliga läge 1 \"Att påminna\" per en-påminnelse-modellens invariant — Sommarkurs i akvarell/Uppsala·2, Novemberretreat/Åre·1), varje instans fotograferad i: granska-läget med adresslistans FÖRSTA grupp expanderad (namn+e-post-radgrammatiken, ackordion öppet) · granska-läget med adresslistan kollapsad (pill-vy) och förhandsvisningen bläddrad ett steg (bläddringsmekaniken \"N av M\" synlig) · armerat läge (SlideToConfirm via tangentbord — Space på role=switch, samma commit-logik som drag) · skickar (transient loading-läge, 700ms-fönstret i simuleraSand) · resultat normal (samtliga grupper \"sent\", grön MessageBox \"Utskicket lyckades\") · tomt urval (data=tomt-urval, MessageBox \"Inget att skicka just nu\") · fel-läge resultat (data=fel-utfall — ADR-114 beslut 3: delresultat PER EVENT-GRUPP. Bekräftelse ger alla tre utfallsklasser samtidigt eftersom 3 grupper räcker åt simuleraSand-logiken: Sommarkurs i akvarell 3/3 sent, Hantverkshelg 1/2 partial, Novemberretreat 0/4 failed. Påminnelse med bara 2 grupper ger ingen ren \"sent\"-grupp: Sommarkurs i akvarell 1/2 partial, Novemberretreat 0/1 failed — ändå fullt dömbart för delresultat-principen). Mobil (390×844) begränsad till granska + resultat per uppdraget; desktop (1440×900) bär samtliga sju lägen.\n\nRENDERINGSMETOD: EGEN dev-server (`vite --port 5190 --strictPort`, INTE 5173/5174/5175 — upptagna av Marcus/andra agenter vid tillfället, docs/reference/prototyp-verifiering-runbook.md § Portkartan), Playwright `chromium.launch()` (runbookens bärande kringgång, INTE test-runnern — playwright.config.ts:s webServer/strictPort på 5173 berörs aldrig). Inloggad som TEST_USER (.env.test, Supabase GoTrue — öppen CORS, blockeras inte av CORS_ALLOWED_ORIGINS som bara gäller husets egna Edge Functions). INGEN CORS-kringgång (page.route-interception) behövdes: routens egen bakgrund (VariantRo) matas med HANDBYGGDA syntetiska fejk-queries (routens docblock, `fakeQuery()`), och sändytans HELA innehåll (adresslista/förhandsvisning/resultat) är prototypens egna simulerade data ur `data.ts` — inget riktigt nätverksanrop bär någon av de 18 bilderna. Ingen PDF-yta ingår (till skillnad från s102-dokument-konvergens) så bundlad headless Chromium räcker rakt av, ingen `channel:'chrome'`-omtagning behövdes.\n\nKÄND BILDARTEFAKT: React Query Devtools-badgen (uppe till vänster) och TanStack Router Devtools-badgen (uppe till höger) syns i samtliga 18 bilder — dev-only overlays, samma klass artefakt som s102-dokument-konvergens/s102-hem-konvergens-facitens motsvarande not. Hem-bakgrunden bakom overlayen visar konsol-fel i webbläsarloggen (CORS-blockerade get-events/get-registrations/get-activity-log/get-leads/get-waitlist-anrop från localhost:5190, som inte är CORS-allowlistat) — DETTA ÄR FÖRVÄNTAT och stör inte sändytans egen rendering (routens docblock beskriver samma fenomen för SenasteAktivitetKompakt); bakgrunden är medvetet suddig/overlay-täckt i samtliga bilder och ingen av de 18 facit-bilderna bär en trasig sändyta.\n\nMÄTT SKRIPT-BUGG, RÄTTAD UNDER PASSET (bokförd, inte tyst kringgången): en första körning använde en DYNAMISK locator (`getByRole('button', {expanded:false}).first()`) för att öppna och sedan stänga adresslistans första grupp. Playwright-locators är lazy och re-evalueras vid varje anrop — efter första klicket matchade `expanded:false` inte längre samma element (dess `aria-expanded` hade blivit `true`), så det \"stängande\" andra klicket träffade i stället NÄSTA stängda grupp och öppnade DEN i stället. Symptomet: fem av sju desktop-lägen (förhandsvisning/armerat/skickar/resultat) fick två ackordion-grupper öppna samtidigt och en oren scrollposition. Fixat med en STABIL locator (`getByRole('button', {name:/Sommarkurs i akvarell/})` — samma ackordion-knapps ACCESSIBLE NAME ändras inte av `aria-expanded`) plus en explicit scroll-till-topp (`scrollTop=0` på dialogens `max-h-[52vh]`-body) före varje skott. Samtliga 18 bilder i detta manifest är från den RÄTTADE körningen — verifierat visuellt bild för bild innan facit-låset lades fram.\n\nAVGRÄNSNING MOT DET SKARPA BYGGET: prototypens datamodell (SimEventGrupp/SimMottagare, types.ts) är egen och lättviktig, INTE appens Registration/Event-domänmodeller (typernas docblock: \"sändytan är cross-event ... prototypens enda jobb är att göra triadens FORM dömbar\") — den riktiga intags-/datavägen avgörs av den skarpa byggskivan efter facit-låset, se kortets Implementation Notes för mmAtgardsUrval-precedentet (task-228)."
+    }
+  ]
+}
