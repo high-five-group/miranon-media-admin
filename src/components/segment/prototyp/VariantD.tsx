@@ -3503,15 +3503,22 @@ function StegSektion({
   nummer,
   rubrik,
   vilar,
+  dampad,
   children,
 }: {
   nummer: number;
   rubrik: string;
   /** Satt när steget ännu inte är åtkomligt — ledtexten ersätter `children`. */
   vilar?: string;
+  /** Dämpar rubrik+rundel UTAN att ersätta `children` — för steg vars innehåll
+      själv bär sin vilande ledtext i en monterad live-region (steg 3): `vilar`
+      hade avmonterat regionen och återinfört monterings-annonseringsfelet
+      (Marcus fynd 2026-08-16: steg 3-rubriken stod omutad när steget vilade). */
+  dampad?: boolean;
   children: React.ReactNode;
 }) {
   const id = useId();
+  const aktiv = vilar === undefined && !dampad;
   return (
     <section
       aria-labelledby={id}
@@ -3521,13 +3528,13 @@ function StegSektion({
         <span
           aria-hidden="true"
           className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small ${
-            vilar === undefined ? 'text-text-secondary' : 'text-text-muted'
+            aktiv ? 'text-text-secondary' : 'text-text-muted'
           }`}
         >
           {nummer}
         </span>
         <span className="sr-only">Steg {nummer}: </span>
-        <span className={`min-w-0 ${vilar === undefined ? '' : 'text-text-muted'}`}>{rubrik}</span>
+        <span className={`min-w-0 ${aktiv ? '' : 'text-text-muted'}`}>{rubrik}</span>
       </h2>
       {vilar === undefined ? children : <p className="text-small text-text-muted">{vilar}</p>}
     </section>
@@ -3688,63 +3695,25 @@ function DelaUppIGrupper({
                 PERSONER. De interna värdena är oförändrade `ModalitetsVal` -
                 bara orden på skärmen är nya.
 
-                RADIOPRICKAR → APPENS KNAPPGRUPP (varv 3). Samma primitiv och
-                samma användning som publikens "Alla / Får mailet / Får inte
-                mailet"-växel i `PublikSektion`. `size="sm"` är det enda
-                tillägget: primitivens `sm` är dokumenterat list-/flikmiljöns
-                steg, och etiketterna här är satser ("De som gått
-                utbildningar"), inte enordiga vynamn - i `md` (text-body +
-                px-5) bryter var och en till två rader i innehållsspalten.
+                VERTIKALA VALRADER (varv 5, Marcus 2026-08-16: "Blev inte så
+                bra med togglen. … rada upp alternativen i steg 1 vertikalt
+                … grå bakgrund"). Knappgruppen (varv 3) och dess
+                naturlig-bredd-form (varv 4) är rivna - historiken bor i git.
+                Formen nu: appens `RadioGroup`/`Radio`-primitiv (samma som
+                regelverkstadens "Räknas som"), vertikal default-orientering,
+                varje alternativ som en full-bredds valrad i listpostens
+                grammatik (`rounded-xl bg-bg-muted px-4 py-2.5` - samma yta
+                som steg 3:s förhandsvisningsposter, så de två stegen läser
+                som samma familj). Vald rad markeras med kant i `--mm-text`
+                UTÖVER indikatorpricken - kanten är förstärkning, aldrig enda
+                bäraren (WCAG 1.4.1).
 
-                UTAN `spread` (varv 4). Marcus: pillergruppen är bra men
-                "togglen blir för fet/hög". Orsaken var mätbar och satt i
-                LAYOUTEN, inte i etiketterna: `spread` ger primitiven `grid
-                w-full auto-cols-fr`, alltså tre LIKA BREDA kolumner. Den
-                bredaste etiketten ("De som varit på föreläsningar") behöver
-                mer än en tredjedel, den smalaste ("Båda") långt mindre - så
-                lika kolumner tvingade radbrytning INUTI de två långa pillren
-                medan den korta stod med tom luft. Primitivens andra läge
-                (`inline-flex`, default) låter varje pill ta sin naturliga
-                innehållsbredd, vilket är exakt vad etiketter av så olika längd
-                kräver.
-
-                TRACKET BEHÖLLS, GRUPPEN FICK `flex-wrap`. Kapselformen
-                (`rounded-full bg-bg-muted p-1`) är primitivens grammatik och
-                kräver inte `spread` - de två layout-lägena delar track. Det
-                som däremot försvann med `spread` var `w-full`s implicita
-                radbrytnings-skydd: en `inline-flex` utan wrap hade svämmat
-                över i stället för att brytas på smal vyport. `flex-wrap`
-                flyttar tillbaka brytningen dit den hör hemma - MELLAN hela
-                piller, aldrig inuti ett. `whitespace-nowrap` på varje pill är
-                bältet till det hängslet: den gör brytning inuti en etikett
-                strukturellt omöjlig oavsett vilken bredd gruppen råkar få.
-
-                `self-start` KRÄVS, och det är en följd av att `spread` föll:
-                `StegSektion` är en `flex flex-col`, där default
-                `align-items: stretch` sträcker varje barn till full bredd -
-                också ett `inline-flex`. Utan `self-start` hade tracket blivit
-                lika brett som förut, med pillren hopträngda till vänster och
-                tom kapselyta till höger: samma feta form, fast tommare.
-                `self-start` låter kapseln sluta där innehållet slutar.
-
-                OKONTROLLERAD, MED FLIT - och det är MÄTT, inte antaget.
-                Primitiven mappar `selectedKey === undefined` till
-                `selectedKeys={undefined}`, alltså okontrollerat läge; skickade
-                vi `modalitet ?? undefined` hade komponenten bytt från
-                okontrollerad till kontrollerad vid första valet och
-                react-stately hade skrivit "WARN: A component changed from
-                uncontrolled to controlled" i dev
-                (`react-stately/dist/private/utils/useControlledState.mjs:25`).
-                De tre egenskaper steget kräver får vi utan den växlingen, ur
-                `useToggleGroupState.mjs:18-36`: (a) `defaultSelectedKeys`
-                utelämnad ⇒ `new Set()` ⇒ INGET valt vid mount, (b)
-                `selectionMode: 'single'` ⇒ exakt ett val, (c)
-                `disallowEmptySelection` ⇒ grenen `selectedKeys.has(key) &&
-                !disallowEmptySelection ? [] : [key]` kan aldrig ta vägen `[]`,
-                så ett gjort val går inte att avvälja till noll - exakt
-                radions semantik. `modalitet` speglar valet och kan inte glida
-                isär från det: inget annat i filen skriver till `setModalitet`,
-                och hela vyn avmonteras när man lämnar generatorn. */}
+                KONTROLLERAD, till skillnad från togglens okontrollerade läge:
+                `RadioGroup` tar `value={modalitet}` där `null` är "inget
+                valt" - react-arias RadioGroup är null-medveten, så någon
+                okontrollerad→kontrollerad-växling (togglens mätta fälla)
+                existerar inte här. Radiosemantiken ger enval + inget avval
+                gratis. */}
           {/* SÄKERHETSFÖRKLARINGEN ÄR BORTTAGEN, INTE BORTGLÖMD (Marcus
               2026-08-16, varv 4, ordagrant: "Ta bort 'Det finns material som
               är direkt...'"). Stycket ("Det finns material som är direkt
@@ -3752,21 +3721,31 @@ function DelaUppIGrupper({
               …") stod i BÅDA lägena - före och efter valet - och är ute i
               båda. Stegrubriken "Vilka räknas med?" ställer frågan; svaret
               behöver ingen brasklapp under sig. */}
-          <ToggleButtonGroup<ModalitetsVal>
+          <RadioGroup
             label="Räknas med"
-            className="flex-wrap self-start"
-            onSelectionChange={setModalitet}
+            hideLabel
+            value={modalitet}
+            onChange={(v) => setModalitet(v as ModalitetsVal)}
           >
-            <ToggleButton size="sm" id="Utbildning" className="whitespace-nowrap">
+            <Radio
+              value="Utbildning"
+              className="w-full rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+            >
               De som gått utbildningar
-            </ToggleButton>
-            <ToggleButton size="sm" id="Föreläsning" className="whitespace-nowrap">
+            </Radio>
+            <Radio
+              value="Föreläsning"
+              className="w-full rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+            >
               De som varit på föreläsningar
-            </ToggleButton>
-            <ToggleButton size="sm" id="Båda" className="whitespace-nowrap">
+            </Radio>
+            <Radio
+              value="Båda"
+              className="w-full rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+            >
               Båda
-            </ToggleButton>
-          </ToggleButtonGroup>
+            </Radio>
+          </RadioGroup>
         </StegSektion>
 
         <StegSektion
@@ -3808,7 +3787,11 @@ function DelaUppIGrupper({
           </div>
         </StegSektion>
 
-        <StegSektion nummer={3} rubrik="Det här blir grupperna">
+        <StegSektion
+          nummer={3}
+          rubrik="Det här blir grupperna"
+          dampad={modalitet === null || valdaAtomer.length < 2}
+        >
           <p aria-live="polite" className="text-small text-text-muted">
             {steg3Text}
           </p>
