@@ -4,7 +4,7 @@ title: 'Skiva: Dokument-ytan mot verklig data + facit-lås'
 status: In Progress
 assignee: []
 created_date: '2026-08-10 07:02'
-updated_date: '2026-08-16 07:57'
+updated_date: '2026-08-16 09:57'
 labels:
   - ready-for-human
 dependencies:
@@ -63,4 +63,6 @@ FORMVÄXEL (à la prototyp-konventionen, EGEN "form"-axel skild från /mer-index
 KLASS B/C (mallar/generatorer): MEDVETET oförändrade kod-nivå-kataloger — instans-listning hade krävt samma klass-gissning Fynd 1 avvisar, och AC #1 begränsar uppladdning+ersättning till klass A.
 
 VERIFIERAT: typecheck/biome/build/test:api gröna. Renderat verifierat på egen dev-server (port 5176, 5173-5175 upptagna av andra samtidiga agenter/huvudkatalogen) — CORS_ALLOWED_ORIGINS på staging tillåter EXAKT http://localhost:5173 (tidigare dokumenterat i TASK-201.5/TASK-5/TASK-18.6), så port 5176 blockeras strukturellt från riktiga fetches. Löst med tvåkanalig verifiering i stället för att gripa 5173: (a) backend-kontraktet bevisat end-to-end via direkt EF-anrop med riktig TEST_USER-JWT (samma 12 rader som ovan), (b) UI-renderingen bevisad med Playwright page.route()-interception som serverar EXAKT den nyss hämtade riktiga JSON:en (ingen påhittad data) — grupper-formen, lista-formen och typfiltret verifierade renderade korrekt med de 12 raderna, ingen React-krasch, noll nya konsolfel (alla 125 konsolfel på sidan var CORS-blockerade BAKGRUNDS-queries från andra sidor/appens warmup — get-registrations/get-waitlist/get-leads/get-mail-log/get-segments — noll av dem rör Dokument-ytans egna två queries).
+
+SKÄRPNINGSVARV 2 (2026-08-16, Marcus underkännande av varv 1-ytan): fyra AC — (1) husets sidkrom stulet verbatim ur AktivitetsHistorik.tsx § kromKnapp (S106-facitet, senaste husfacit för en /mer-leaf) i stället för AtgardsSida.tsx § Sidhuvud (förkastad — dess mx-4/px-4 hade dubblat AppShell.tsx main-paddingen, samma fel som MailLog.tsx/Intresserade.tsx bär), (2) MessageBox-fyndrutan + slutradens prototyp-text rivna ur renderad UI (fynden kvar i filens docblock + här), (3) form=grupper/form=lista-växeln + DokumentGrupper-funktionen rivna, listan är nu ENDA formen (Marcus-GO), (4) typ-filtret bär nu spread + min-h-11 (ToggleButtonGroup-primitiven, enhetlig bredd) — med Visningsform-växeln riven finns bara EN ToggleButtonGroup kvar på ytan. Verifierat mot renderad yta (egen port 5180, CORS-kringgången ur prototyp-verifiering-runbook.md) mobil 375px + desktop 1440px, sida-vid-sida mot AktivitetsHistorik-facit: identisk chrome-position/storlek. PREMISS-FYND (ej byggt på, bara flaggat): get-event-attachments-EF:n på staging returnerar REDAN ett dokumentklass-fält (Uppladdad/Event-mallad) för recIFrxHZw165ycXk (33 rader, mätt live 2026-08-16) — trots att task-147.12 (som äger fältet) står To Do utan gren. Frontend/domänlagret (Attachment.ts, AirtableAdapter) läser det INTE ännu (oförändrat av mig) så ingen kod-påverkan, men orkestreraren bör veta att backend-sidan av 147.12 verkar redan vara i rörelse.
 <!-- SECTION:NOTES:END -->
