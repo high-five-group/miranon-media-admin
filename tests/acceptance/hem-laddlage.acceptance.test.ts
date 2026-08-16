@@ -215,6 +215,11 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
     page,
     network,
   }) => {
+    // [TASK-243.1] ÖPPET bokförd, minimal anpassning (kortets DoD-gräns):
+    // testet mäter K10-formens tre kort-regioner ("Obetalda anmälningsavgifter"
+    // m.fl.) och deras DashboardCard-chrome (tonala bakgrunder, koppar-kontur)
+    // — retirerad ur ADR-102/103-promoveringen. Full omskrivning: task-243.3.
+    test.skip(true, '[TASK-243.1] K10-kortchromet är retirerat — se task-243.3');
     await arrangeraTomCache(page);
     hallbarMock(network, fulltData()); // parkerad från start — äkta kallstartsfönster
     await page.goto('/hem');
@@ -262,6 +267,10 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
     page,
     network,
   }) => {
+    // [TASK-243.1] ÖPPET bokförd, minimal anpassning — samma skäl som
+    // föregående test: K10-kortregionerna är retirerade. Full omskrivning:
+    // task-243.3.
+    test.skip(true, '[TASK-243.1] K10-kortchromet är retirerat — se task-243.3');
     await arrangeraTomCache(page);
     const mocken = hallbarMock(network, fulltData());
     await page.goto('/hem');

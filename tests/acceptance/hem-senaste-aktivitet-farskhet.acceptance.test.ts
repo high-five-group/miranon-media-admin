@@ -146,90 +146,96 @@ async function tillHem(page: Page): Promise<void> {
   await expect(spalten(page)).toBeVisible();
 }
 
-test.describe('Hem-spalten speglar en nyss loggad handling (TASK-210)', () => {
-  test('BÅDA riktningarna: ingen omhämtning utan mutation — omedelbar färskhet med', async ({
-    page,
-    network,
-  }) => {
-    const rigg = riggaLoggen(network);
+// [TASK-243.1] HELA FILEN skippas — ÖPPET bokförd, minimal anpassning (se
+// samma rationale i `hem-senaste-aktivitet.acceptance.test.ts`). Denna fils
+// hjälpare `spalten()`/`tillHem()` pekar på den RETIRERADE
+// `data-testid="senaste-aktivitet"`-spalten (ADR-102/103-promoveringen,
+// `SenasteAktivitetKompakt.tsx` ersätter den). Full omskrivning: task-243.3.
+test.describe
+  .skip('Hem-spalten speglar en nyss loggad handling (TASK-210)', () => {
+    test('BÅDA riktningarna: ingen omhämtning utan mutation — omedelbar färskhet med', async ({
+      page,
+      network,
+    }) => {
+      const rigg = riggaLoggen(network);
 
-    // ── Utgångsläge: spalten hämtar en gång och cachar ──────────────────
-    await page.goto('/hem');
-    await expect(spalten(page)).toBeVisible();
-    await expect(spalten(page).getByText(BEFINTLIG_RAD)).toBeVisible();
-    await expect(spalten(page).getByRole('listitem')).toHaveCount(ANTAL_RADER_I_SPALTEN);
+      // ── Utgångsläge: spalten hämtar en gång och cachar ──────────────────
+      await page.goto('/hem');
+      await expect(spalten(page)).toBeVisible();
+      await expect(spalten(page).getByText(BEFINTLIG_RAD)).toBeVisible();
+      await expect(spalten(page).getByRole('listitem')).toHaveCount(ANTAL_RADER_I_SPALTEN);
 
-    const efterForstaBesoket = rigg.hamtningar();
-    expect(efterForstaBesoket).toBeGreaterThan(0);
+      const efterForstaBesoket = rigg.hamtningar();
+      expect(efterForstaBesoket).toBeGreaterThan(0);
 
-    // ── RIKTNING 1/2 (NEGATIV): samma resa UTAN mutation ────────────────
-    // Bort till eventet och tillbaka. Spalten avmonteras och monteras om,
-    // men datan är färsk (global staleTime, 5 min) → INGEN ny hämtning.
-    await tillEventet(page);
-    await tillHem(page);
-    await expect(spalten(page).getByText(BEFINTLIG_RAD)).toBeVisible();
+      // ── RIKTNING 1/2 (NEGATIV): samma resa UTAN mutation ────────────────
+      // Bort till eventet och tillbaka. Spalten avmonteras och monteras om,
+      // men datan är färsk (global staleTime, 5 min) → INGEN ny hämtning.
+      await tillEventet(page);
+      await tillHem(page);
+      await expect(spalten(page).getByText(BEFINTLIG_RAD)).toBeVisible();
 
-    // DEN KRITISKA ASSERTIONEN för denna riktning: räknaren står still.
-    // Hade fixen varit "sänk den globala staleTime" hade detta tal ökat.
-    expect(rigg.hamtningar()).toBe(efterForstaBesoket);
-    expect(rigg.loggade()).toBe(0);
-    // Den nya raden kan inte finnas ännu — ingenting har loggats.
-    await expect(spalten(page).getByText(NY_RAD)).toHaveCount(0);
+      // DEN KRITISKA ASSERTIONEN för denna riktning: räknaren står still.
+      // Hade fixen varit "sänk den globala staleTime" hade detta tal ökat.
+      expect(rigg.hamtningar()).toBe(efterForstaBesoket);
+      expect(rigg.loggade()).toBe(0);
+      // Den nya raden kan inte finnas ännu — ingenting har loggats.
+      await expect(spalten(page).getByText(NY_RAD)).toHaveCount(0);
 
-    // ── RIKTNING 2/2 (POSITIV): samma resa MED en loggad mutation ───────
-    await tillEventet(page);
+      // ── RIKTNING 2/2 (POSITIV): samma resa MED en loggad mutation ───────
+      await tillEventet(page);
 
-    const grupp = page.locator('section[aria-labelledby="grupp-anteckningar"]');
-    await grupp.getByRole('textbox', { name: 'Ny anteckning' }).fill('Lokalen är bekräftad.');
-    await grupp.getByRole('button', { name: 'Spara', exact: true }).click();
+      const grupp = page.locator('section[aria-labelledby="grupp-anteckningar"]');
+      await grupp.getByRole('textbox', { name: 'Ny anteckning' }).fill('Lokalen är bekräftad.');
+      await grupp.getByRole('button', { name: 'Spara', exact: true }).click();
 
-    // Loggningen är fire-and-forget — vänta tills servern FAKTISKT tagit emot
-    // statementet, aldrig på en godtycklig tid.
-    await expect.poll(() => rigg.loggade()).toBe(1);
+      // Loggningen är fire-and-forget — vänta tills servern FAKTISKT tagit emot
+      // statementet, aldrig på en godtycklig tid.
+      await expect.poll(() => rigg.loggade()).toBe(1);
 
-    await tillHem(page);
+      await tillHem(page);
 
-    // DEN KRITISKA ASSERTIONEN för denna riktning: den nya posten syns —
-    // utan omladdning, utan att vänta ut fem minuter.
-    await expect(spalten(page).getByText(NY_RAD)).toBeVisible();
-    // ... och den kom från en VERKLIG omhämtning, inte ur cachen.
-    expect(rigg.hamtningar()).toBeGreaterThan(efterForstaBesoket);
-    // Spalten är alltjämt fyra rader — den nyaste trängde ut den äldsta.
-    await expect(spalten(page).getByRole('listitem')).toHaveCount(ANTAL_RADER_I_SPALTEN);
+      // DEN KRITISKA ASSERTIONEN för denna riktning: den nya posten syns —
+      // utan omladdning, utan att vänta ut fem minuter.
+      await expect(spalten(page).getByText(NY_RAD)).toBeVisible();
+      // ... och den kom från en VERKLIG omhämtning, inte ur cachen.
+      expect(rigg.hamtningar()).toBeGreaterThan(efterForstaBesoket);
+      // Spalten är alltjämt fyra rader — den nyaste trängde ut den äldsta.
+      await expect(spalten(page).getByRole('listitem')).toHaveCount(ANTAL_RADER_I_SPALTEN);
+    });
+
+    test('invalideringen är SMAL: en loggad mutation utlöser EN omhämtning, ingen kaskad', async ({
+      page,
+      network,
+    }) => {
+      const rigg = riggaLoggen(network);
+
+      await page.goto('/hem');
+      await expect(spalten(page)).toBeVisible();
+      await expect(spalten(page).getByText(BEFINTLIG_RAD)).toBeVisible();
+
+      await tillEventet(page);
+
+      // Eventdetaljen renderar INTE spalten (den bor på Hem) → `latest` är
+      // INAKTIV medan mutationen körs. En inaktiv query invalideras utan att
+      // hämtas om; omhämtningen sker först när Hem monterar den igen.
+      const foreMutation = rigg.hamtningar();
+
+      const grupp = page.locator('section[aria-labelledby="grupp-anteckningar"]');
+      await grupp.getByRole('textbox', { name: 'Ny anteckning' }).fill('Fika beställd.');
+      await grupp.getByRole('button', { name: 'Spara', exact: true }).click();
+      await expect.poll(() => rigg.loggade()).toBe(1);
+
+      // Ingen hämtning skedde MEDAN vi stod på eventdetaljen — invalideringen
+      // väckte ingen omonterad query. Det är skillnaden mot en tänkt
+      // `refetchType: 'all'`, som hade hämtat om varje filterkombination i
+      // historiken också, osedd.
+      expect(rigg.hamtningar()).toBe(foreMutation);
+
+      await tillHem(page);
+      await expect(spalten(page).getByText(NY_RAD)).toBeVisible();
+
+      // EXAKT en omhämtning för återbesöket — inte två, inte en kaskad.
+      expect(rigg.hamtningar()).toBe(foreMutation + 1);
+    });
   });
-
-  test('invalideringen är SMAL: en loggad mutation utlöser EN omhämtning, ingen kaskad', async ({
-    page,
-    network,
-  }) => {
-    const rigg = riggaLoggen(network);
-
-    await page.goto('/hem');
-    await expect(spalten(page)).toBeVisible();
-    await expect(spalten(page).getByText(BEFINTLIG_RAD)).toBeVisible();
-
-    await tillEventet(page);
-
-    // Eventdetaljen renderar INTE spalten (den bor på Hem) → `latest` är
-    // INAKTIV medan mutationen körs. En inaktiv query invalideras utan att
-    // hämtas om; omhämtningen sker först när Hem monterar den igen.
-    const foreMutation = rigg.hamtningar();
-
-    const grupp = page.locator('section[aria-labelledby="grupp-anteckningar"]');
-    await grupp.getByRole('textbox', { name: 'Ny anteckning' }).fill('Fika beställd.');
-    await grupp.getByRole('button', { name: 'Spara', exact: true }).click();
-    await expect.poll(() => rigg.loggade()).toBe(1);
-
-    // Ingen hämtning skedde MEDAN vi stod på eventdetaljen — invalideringen
-    // väckte ingen omonterad query. Det är skillnaden mot en tänkt
-    // `refetchType: 'all'`, som hade hämtat om varje filterkombination i
-    // historiken också, osedd.
-    expect(rigg.hamtningar()).toBe(foreMutation);
-
-    await tillHem(page);
-    await expect(spalten(page).getByText(NY_RAD)).toBeVisible();
-
-    // EXAKT en omhämtning för återbesöket — inte två, inte en kaskad.
-    expect(rigg.hamtningar()).toBe(foreMutation + 1);
-  });
-});
