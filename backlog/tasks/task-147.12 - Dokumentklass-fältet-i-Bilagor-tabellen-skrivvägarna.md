@@ -4,7 +4,7 @@ title: Dokumentklass-fältet i Bilagor-tabellen + skrivvägarna
 status: Done
 assignee: []
 created_date: '2026-08-16 08:40'
-updated_date: '2026-08-16 11:30'
+updated_date: '2026-08-16 18:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -96,6 +96,8 @@ rikta kommandon mot prod mekaniskt):
    dokumenteras i "Prod-basens additiva tillskott 2026-08-11"), med det
    RIKTIGA prod-fält-ID:t från steg 1 — anta aldrig att det blir samma
    sträng som staging.
+
+PROD-KLICKLISTANS PUNKT 1–2 UTFÖRDA (orkestreraren via Airtable-MCP, Marcus GO 2026-08-16): (1) Dokumentklass-fältet skapat i prod-basen (app8uGPrVCVOm6LfD, Bilagor tblevR1B54wFjp7QC) — fält-ID fldeB2dlwfk2KkKVT, choices Uppladdad=selzhVB3EU7vAGetM / Event-mallad=selRCThfTxaBeZuvU / Person-genererad=selu96NPchIercPeU, beskrivning verbatim ur create-bilagor-table.mjs. (2) Backfill: prod-tabellen bar NOLL rader (EF:erna aldrig prod-deployade ⇒ inga rader kunnat födas) — ingen klassning behövdes, utfall verifierat via list_records. Punkt 3 (EF-deploy-svepet) KVARSTÅR på HITL-klicklistan.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
