@@ -22,11 +22,26 @@ import { Button } from '@/components/primitives';
  * `group-focus-within:opacity-100`) — aldrig en `title`-attributs-tooltip
  * (Gunilla-principen: en pekskärms- eller tangentbordsanvändare ser den
  * aldrig). `motion-safe:` respekterar prefers-reduced-motion.
+ *
+ * FULLBREDD (TASK-247, fynd b): wrappern är `flex flex-col` — SAMMA form
+ * som prototypens `DodIngang` (`dev/hem-prototyp/ui.tsx`, `flex flex-col
+ * gap-1.5`) — inte `inline-block`. Skälet är CSS-mekaniskt, inte kosmetiskt:
+ * `Button` är `inline-flex` och sizear sig efter EGET textinnehåll oavsett
+ * förälder; `inline-block` ärvde den auto-bredden rakt igenom och gjorde
+ * "Bekräfta alla" (kortare etikett) synligt smalare än "Skicka påminnelse
+ * till alla" (längre etikett) — mätt 124,5px mot 222,75px, identiskt på
+ * desktop (1440px) och mobil (390px) eftersom bredden aldrig berodde på
+ * containern. `flex flex-col` gör knappen till ENDA flex-barnet i en
+ * flex-column-behållare — default `align-items: stretch` sträcker den till
+ * förälderns fulla bredd, som i sin tur ärver full bredd av sektionens
+ * `flex-col`-förälder (samma stretch-kedja). Facit
+ * (`facit-hem-v1-demo-desktop.png`) visar båda knapparna fullbredd —
+ * bekräftat via renderad skärmdump mot denna körning.
  */
 export function BulkAtgardsknapp({ label }: { label: string }) {
   const beskrivningId = useId();
   return (
-    <div className="group relative inline-block">
+    <div className="group relative flex flex-col">
       <Button type="button" intent="primary" aria-disabled="true" aria-describedby={beskrivningId}>
         {label}
       </Button>
