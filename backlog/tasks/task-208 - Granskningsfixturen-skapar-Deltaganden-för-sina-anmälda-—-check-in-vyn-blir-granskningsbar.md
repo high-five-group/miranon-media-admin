@@ -3,10 +3,10 @@ id: TASK-208
 title: >-
   Granskningsfixturen skapar Deltaganden för sina anmälda — check-in-vyn blir
   granskningsbar
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-13 18:14'
-updated_date: '2026-08-13 18:33'
+updated_date: '2026-08-16 12:07'
 labels: []
 dependencies: []
 ordinal: 383000
@@ -31,10 +31,10 @@ Granskningsfixturen (npm run seed:review) skapar event + anmälningar men INGA D
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -121,3 +121,9 @@ alltså en defekt i datakällan, vilket är precis vad ADR-063 säger att den sk
 göra. Kräver Marcus/orkestrerar-beslut om hemvist (defekt-registret i
 data-model.md § Kända fällor) — ingen åtgärd tagen här, utanför detta korts scope.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat och CI-verifierat (PR #1257, commit 19ddd713 + rättelsen 330ecb5a). Samtliga 7 AC var bockade sedan 2026-08-13 men DoD/status blev aldrig satt — stängt av backlog-stängningsgrinden (TASK-238, invariant 1: alla AC bockade + öppet status bortom karensen).
+<!-- SECTION:FINAL_SUMMARY:END -->

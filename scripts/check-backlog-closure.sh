@@ -267,6 +267,99 @@ esac
 
 BACKLOG_UNDANTAGNA_STATUSAR="${BACKLOG_UNDANTAGNA_STATUSAR-}"
 
+# ═══ CI-KONTEXTENS check_active_branches-AVSTÄNGNING (TASK-238) ═══
+#
+# check_active_branches: true (TASK-93) skyddar ID-allokering vid INTERAKTIV
+# `task create` — grinden allokerar ALDRIG ett ID (bara `task list` +
+# `task <id>`), så flaggan skyddar ingenting här och kostar bara. Fem nätter i
+# rad växte körtiden monotont (7m26s→10m15s) och natt 08-16 korsade
+# timeout-minutes: 10 (cancelled). Se TASK-238 för forensiken.
+#
+# LÖSNINGEN ÄR CONFIG-DRIVEN, INTE ETT CLI-HACK — men INTE via `backlog config
+# set` heller. Research 2026-08-16 mot backlog.md 1.49.1, i fallande ordning:
+#
+#   1. En per-anrops-flagga/env-var: FINNS INTE. `task list --help`/
+#      `task view --help` bär ingen sådan flagga, och binären känner bara
+#      till env-namnen BACKLOG_CWD/BACKLOG_BUNDLE_ASSET_DIR (grep mot
+#      strängarna i node_modules/backlog.md-darwin-x64/backlog).
+#   2. `backlog config set checkActiveBranches false`: skriver till SAMMA fil
+#      interaktiv användning läser (backlog/config.yml) — får inte röras (se
+#      ovan) — och är dessutom MÄTT FÖRLUSTFULL som round-trip: en
+#      false→true-tur lämnade filen omserialiserad (t.ex. `definition_of_done`
+#      normaliserat från YAML-lista till inline JSON-array) trots identiskt
+#      booleskt värde. Även i en engångs-CI-checkout hade det varit en
+#      onödig risk att förlita sig på.
+#   3. `backlog.config.yml` i PROJEKTROTEN (CLI:ts "ROOT_CONFIG", en
+#      DOKUMENTERAD mekanism i CLI:ts egen källkod, inte ett reverse-
+#      engineering-hack): finns filen äger den ALLA inställningar
+#      (`checkActiveBranches` inkluderat), medan uppgiftsdatan fortfarande
+#      löses ur den riktiga `backlog/`-mappen. VERIFIERAT LIVE 2026-08-16:
+#      med en sådan fil (`check_active_branches: false`, för övrigt en
+#      byte-för-byte-kopia av backlog/config.yml) läste
+#      `config get checkActiveBranches` "false" och `task list --plain`
+#      visade fortfarande de riktiga korten. Väg 3 är den valda.
+#
+# Filen skapas som en KOPIA av den riktiga config.yml (aldrig via
+# `config set`) med endast `check_active_branches`-raden bytt — varje annan
+# inställning ärvs exakt, utan att förlita sig på att CLI:ts defaults råkar
+# matcha projektets. `trap … EXIT` garanterar att filen tas bort igen vid
+# skriptets egna `exit`-vägar OCH vid ett avbrott utifrån — den riktiga
+# backlog/config.yml (den INTERAKTIVA flaggan, TASK-93) rörs ALDRIG, varken
+# i CI eller lokalt.
+#
+# STÄDNINGEN ÄR GARANTERAD MEN INTE OMEDELBAR — MÄTT 2026-08-16 under detta
+# korts eget byggarbete, kontrollerat A/B med en minimal repro (`$(sleep 30)`
+# i stället för det riktiga CLI-anropet): ett `kill` (SIGTERM) medan skriptet
+# är blockerat i en pågående `$(${BACKLOG_CMD} …)`-substitution kör INTE
+# trappen förrän det just då pågående anropet självt returnerar — även med
+# explicita INT/TERM/HUP-trappar (identiskt utfall med och utan; bash kör
+# inte pending traps förrän den blockerande wait() på barnprocessen är klar).
+# INT/TERM/HUP finns ändå kvar nedan: de kostar inget och täcker den smalare
+# tidslucka där skriptet INTE är blockerat i ett CLI-anrop. Konsekvensen av
+# den deferrade städningen: CI:s checkout kastas ändå (aldrig committat) så
+# en fördröjd städning där är ofarlig — job 95102582546 (kortets forensik,
+# "Terminate orphan process… backlog") är exakt den situationen. Lokalt är
+# städningen fördröjd, inte utebliven: filen försvinner så snart det
+# pågående CLI-anropet returnerar (verifierat i samma A/B).
+#
+# OPTIONELL: tomt/saknat värde = grinden beter sig precis som innan detta
+# kort (ingen override). Universell logik, projekt-specifikt värde i policy —
+# samma mönster som resten av filen.
+if [[ "${BACKLOG_CI_STANG_AV_AKTIVA_GRENAR:-}" == "true" ]]; then
+    if [[ -z "${BACKLOG_CONFIG_YML_SOKVAG:-}" ]]; then
+        echo "❌ BACKLOG_CI_STANG_AV_AKTIVA_GRENAR är true men BACKLOG_CONFIG_YML_SOKVAG saknas i ${POLICY_FIL}" >&2
+        echo "   Grinden vägrar gissa var config.yml ligger." >&2
+        exit 2
+    fi
+    if [[ ! -f "${BACKLOG_CONFIG_YML_SOKVAG}" ]]; then
+        echo "❌ ${BACKLOG_CONFIG_YML_SOKVAG} (BACKLOG_CONFIG_YML_SOKVAG) hittas inte" >&2
+        exit 2
+    fi
+    BACKLOG_CI_ROOT_OVERRIDE="backlog.config.yml"
+    if [[ -e "${BACKLOG_CI_ROOT_OVERRIDE}" ]]; then
+        echo "❌ ${BACKLOG_CI_ROOT_OVERRIDE} finns redan — grinden skriver aldrig över en befintlig fil" >&2
+        exit 2
+    fi
+    if grep -q '^check_active_branches:' "${BACKLOG_CONFIG_YML_SOKVAG}"; then
+        sed -E 's/^check_active_branches:.*/check_active_branches: false/' \
+            "${BACKLOG_CONFIG_YML_SOKVAG}" > "${BACKLOG_CI_ROOT_OVERRIDE}"
+    else
+        cp "${BACKLOG_CONFIG_YML_SOKVAG}" "${BACKLOG_CI_ROOT_OVERRIDE}"
+        printf 'check_active_branches: false\n' >> "${BACKLOG_CI_ROOT_OVERRIDE}"
+    fi
+    # shellcheck disable=SC2064 # sökvägen ska expanderas NU, inte vid trap-tillfället
+    trap "rm -f '${BACKLOG_CI_ROOT_OVERRIDE}'" EXIT
+    # INT/TERM/HUP anropar bara `exit N` — det UTLÖSER i sin tur EXIT-trappen
+    # ovan, så städningen står på EN plats. Täcker den tidslucka där skriptet
+    # INTE är blockerat i ett CLI-anrop (se A/B-mätningen i kommentarblocket
+    # ovanför BACKLOG_CI_ROOT_OVERRIDE-tilldelningen för vad som mättes och
+    # vad som INTE mättes — dessa rader garanterar inte omedelbar städning
+    # under ett blockerat CLI-anrop, bara vid ett `exit N` som faktiskt körs).
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    trap 'exit 129' HUP
+fi
+
 # ═══ KARENSENS BRYTPUNKT — RÄKNAS I UTC, EN GÅNG ═══
 #
 # Kortens tidsstämplar skrivs av backlog-CLI:t i UTC. MÄTT 2026-07-31 över 12

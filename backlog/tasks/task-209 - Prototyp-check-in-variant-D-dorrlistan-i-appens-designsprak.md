@@ -1,10 +1,10 @@
 ---
 id: TASK-209
 title: 'Prototyp: check-in variant D - dorrlistan i appens designsprak'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-13 18:40'
-updated_date: '2026-08-13 20:01'
+updated_date: '2026-08-16 12:08'
 labels: []
 dependencies: []
 ordinal: 383000
@@ -30,7 +30,7 @@ S105-omtag av check-in-prototypen efter att Marcus underkant A/B/C rakt av. Vari
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -70,3 +70,9 @@ fortfarande sidans tyngsta grafik. subtle prövades i varv 3 och blev sämre (d�
 platta). Att skala ned till ikonknapp utan etikett river den synliga etiketten och
 går emot domen som fällde A/B/C - den växlingen är Marcus, inte agentens.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat och CI-verifierat över flera PR:er (#1259, #1266, #1277, #1284 — S105-iterering + S103-konvergens). Samtliga AC + DoD 1/2/4 var bockade sedan 2026-08-13; endast DoD #3 (CI grön) saknade bock trots landad, CI-grön kod. Stängt av backlog-stängningsgrinden (TASK-238, invariant 1).
+<!-- SECTION:FINAL_SUMMARY:END -->
