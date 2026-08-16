@@ -56,6 +56,33 @@ import { type BevakningRad, bevakningDagarText, bevakningStatusText } from './he
  * mobilformen (`sm:hidden`, `aria-hidden` — rent dekorativ, försvinner
  * helt ur DOM-flödet vid `sm:contents` så den aldrig äter en grid-cell
  * på desktop).
+ *
+ * TASK-243.2 AC #3-VERIFIERING (kortcopy-modulen `bevakningStatusText`/
+ * `bevakningDagarText` + line-clamp-2-skyddsnätet, PR #1388 varv 4):
+ * `hem-derivations.ts` bär funktionerna BYTE-IDENTISKT ur `data.ts` (diff
+ * mot commit `f14d8ee9`, 0 avvikelser) — inget nytt att promovera, redan
+ * levererat med TASK-243.1:s helträds-kopiering.
+ *
+ * KÄND, ICKE-BLOCKERANDE GRÄNSFALL (live mätt, `getBoundingClientRect`/
+ * `scrollHeight` vs `clientHeight`, 375px OCH 1440px): PR #1388:s egen
+ * PERMANENTA "värsta fall"-fixtur (`demoData.ts` `demo-event-bevakning-
+ * varsta-fall`, "Demo: Fördjupningskurs i konflikthantering och medling
+ * för föreningsledare i Västerbotten", 91 tecken) klipper FORTFARANDE med
+ * webkit-ellipsis efter två rader i eventnamn-kolumnen — `scrollHeight`
+ * 72–96px mot `clientHeight` 48px (375px respektive 1440px). Detta är INTE
+ * en promoveringsregression: samma exakta sträng klipper HÅRDARE i den
+ * LÅSTA prototypens egen rendering (`VariantRo.tsx`, en sammanhängande
+ * sträng utan kolumnseparation) — `scrollHeight` 120px mot `clientHeight`
+ * 48px vid 375px, dvs den skarpa grid-formen klipper MINDRE innehåll än
+ * facit självt gör för samma extremfall. Realistiska namn ("Fjärrskådning",
+ * "Demo: Sommarläger Örnsköldsvik", "Demo: Höstkurs Umeå") klipper INTE —
+ * mätt live i samma pass. Skyddsnätets syfte (max två rader i stället för
+ * en klippt/mitt-i-ordet trunkering, ADR-102) är därmed uppfyllt för det
+ * realistiska intervallet; det avsiktligt extrema stresstestet är ett känt,
+ * redan-i-facit-accepterat gränsfall — ADR-102 B2 kräver ett uttryckligt
+ * Marcus-beslut för ett åtgärdande avsteg, denna commit tar inte det
+ * beslutet åt honom (samma disciplin som `ForfallnaBetalningar.tsx`s
+ * badge-squeeze-fynd, TASK-243.1 slutrapport).
  */
 export function Bevakningsrad({ rader }: { rader: BevakningRad[] }) {
   if (rader.length === 0) return null;
