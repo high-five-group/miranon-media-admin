@@ -38,9 +38,13 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 ⏸️ PAUSAD (2026-08-16 kväll, `lifecycle: paused`, SJÄTTE
-pausen — Marcus-order "förbered paus när allt landat"; ALLT LANDAT, kön
-TOM, main `4bd58068`).** Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
+**Session 102 ▶️ ÅTERUPPTAGEN (2026-08-16 sen kväll, resume 6,
+`lifecycle: active`; pausad samma kväll som SJÄTTE paus — Marcus-order
+"förbered paus när allt landat"; ALLT LANDAT vid paus, kön TOM, main
+`4bd58068`). Post-merge-facit avläst vid resume: röda run 31968918858
+(`b900601b`, staging-e2e) ÖVERSPELAD av grön Post-merge på `4bd58068`
+(senare, mer inkluderande träd) — loggläsning kvarstår som klassning,
+inte larm.** Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
 3 #1415 · task-245 byggd+stängd #1423/#1425 · task-246
 byggd+stängd #1431/#1433; dokument-stämpeln VÄNTAR — facit-låset
 förberett #1437,
