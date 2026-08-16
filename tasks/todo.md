@@ -38,8 +38,11 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 ⏸️ PAUSAD (2026-08-16 natt, `lifecycle: paused`, fjärde pausen —
-autonom stängning på Marcus kvällsorder; ALLT LANDAT, kön tom).** Kvällens
+**Session 102 🔄 ÅTERUPPTAGEN (2026-08-16, `lifecycle: active`, resume efter
+fjärde pausen — RESUME-INGÅNGEN nedan gäller).** Numrering re-deriverad mot
+disk vid resume: kort **task-235** · ADR **114** · tråd **T145** · lesson
+**L512** (+18 fragment på disk) · fälla **f49** (§Kända fällor bär 48 poster —
+handoffens f47 var föråldrad; disk vinner). Kvällens
 skörd: Lotta-vandringen p6–p10 rotorsakade (korten `228`–`234`) · `227`+`228`
 BYGGDA+LANDADE+Done · basen 0 olänkade (Helena + batch 7) · passkeys PÅ i
 staging (Marcus-aktiverad, e2e-bevisad; prod-klicklista i `231`) ·
