@@ -285,12 +285,6 @@ const FORMAT_FOR_MODALITET: Record<Modalitet, string> = {
 /** Modalitetsvalet i ett villkor. `null` = INTE VALT — villkoret är då ogiltigt. */
 type ModalitetsVal = Modalitet | 'Båda';
 
-const MODALITET_ORD: Record<ModalitetsVal, string> = {
-  Utbildning: 'utbildning',
-  Föreläsning: 'föreläsning',
-  Båda: 'utbildning eller föreläsning',
-};
-
 /**
  * ÅR-DIMENSIONEN SOM EF-KRAV, INTE SOM KONTROLL.
  *
@@ -587,17 +581,30 @@ function listaOrd(delar: string[], bindeord = 'eller'): string {
  * dess meningsstruktur är en annan och går inte att kopiera rakt hit.
  */
 function villkorKlartext(v: Villkor): string {
-  if (v.modalitet === null) return 'Ofullständigt villkor - välj vad som räknas.';
-  // TAUTOLOGIN RIVEN (Marcus GO 2026-08-16): "-utbildning"-suffixet gav
-  // "Deltagit i RIM-utbildning som utbildning" — familjeledet bär nu bara
-  // namnet, modalitetsledet bär formen. Tomma fallet: "något" i stället för
-  // "någon utbildning" av samma skäl ("något som utbildning" är ren svenska).
-  const familj = v.familjer.length === 0 ? 'något' : listaOrd(v.familjer);
+  if (v.modalitet === null) return 'Ofullständigt villkor - välj vilka som räknas.';
+  // VERBET BÄR FORMEN (Marcus 2026-08-16, textinventeringen: "Deltagit i
+  // något som utbildning" var ingen mening, och "som utbildning" efter valet
+  // "De som gått utbildningar" var dubbelmacka). Samma princip som
+  // `manniskoMening`/`publikOrd`: "Har gått" ÄR utbildning, "Har varit på en
+  // föreläsning" ÄR föreläsning — bara "Båda" behöver ett förtydligande led,
+  // för där är det inte redundant.
+  const namn = v.familjer.length === 0 ? null : listaOrd(v.familjer);
   const niva = v.nivaer.length === 0 ? '' : ` på ${listaOrd(v.nivaer.map((n) => NIVA_ETIKETT[n]))}`;
-  const modalitet = ` som ${MODALITET_ORD[v.modalitet]}`;
   const format = v.format.length === 0 ? '' : ` i formatet ${listaOrd(v.format)}`;
   const period = v.period === null ? '' : `, under perioden ${periodText(v.period)}`;
-  return `Deltagit i ${familj}${niva}${modalitet}${format}${period}.`;
+  const stomme =
+    v.modalitet === 'Utbildning'
+      ? namn === null
+        ? `Har gått någon utbildning${niva}`
+        : `Har gått ${namn}${niva}`
+      : v.modalitet === 'Föreläsning'
+        ? namn === null
+          ? `Har varit på någon föreläsning${niva}`
+          : `Har varit på en föreläsning i ${namn}${niva}`
+        : namn === null
+          ? `Har gått någon utbildning eller varit på någon föreläsning${niva}`
+          : `Har deltagit i ${namn}${niva} - som utbildning eller föreläsning`;
+  return `${stomme}${format}${period}.`;
 }
 
 /**
@@ -3995,12 +4002,9 @@ function malMening(
   alla: KursAtom[],
   modalitet: ModalitetsVal,
 ): string {
-  const slut =
-    modalitet === 'Föreläsning'
-      ? ' Räknat som föreläsning.'
-      : modalitet === 'Båda'
-        ? ' Räknat som utbildning eller föreläsning.'
-        : '';
+  // VERBET BÄR FORMEN (textinventeringen 2026-08-16, samma princip som
+  // `villkorKlartext`): "Har gått" ÄR utbildning, föreläsning får sitt eget
+  // verb, och bara "Båda" bär en slutmening — där är den inte redundant.
   const A = valdaA.map((a) => a.etikett);
   if (vag === 'exakt') {
     const ivaldaNycklar = new Set(valdaA.map((a) => a.nyckel));
@@ -4010,13 +4014,20 @@ function malMening(
       modalitet,
     );
   }
+  const verb = (namn: string) =>
+    modalitet === 'Utbildning'
+      ? `Har gått ${namn}`
+      : modalitet === 'Föreläsning'
+        ? `Har varit på en föreläsning i ${namn}`
+        : `Har deltagit i ${namn}`;
+  const slut = modalitet === 'Båda' ? ' Räknat som utbildning eller föreläsning.' : '';
   if (vag === 'menInte') {
     const B = valdaB.map((a) => a.etikett);
-    return `Har gått ${A.length === 2 ? 'både ' : ''}${listaOrd(A, 'och')} - men inte ${listaOrd(B, 'eller')}.${slut}`;
+    return `${verb(`${A.length === 2 ? 'både ' : ''}${listaOrd(A, 'och')}`)} - men inte ${listaOrd(B, 'eller')}.${slut}`;
   }
   return A.length === 1
-    ? `Har gått ${A[0] ?? ''}.${slut}`
-    : `Har gått minst en av ${listaOrd(A, 'och')}.${slut}`;
+    ? `${verb(A[0] ?? '')}.${slut}`
+    : `${verb(`minst en av ${listaOrd(A, 'och')}`)}.${slut}`;
 }
 
 /** Namnförslaget ur valet — redigerbart, aldrig ett krav. */
@@ -4133,9 +4144,28 @@ function NyttSegmentVy({
     });
   }
 
+  // VÄGETIKETTERNA FÖLJER MODALITETEN (textinventeringen 2026-08-16):
+  // "Alla som gått … utbildningarna" var fel mening när man valt
+  // föreläsningar — samma dubbelmacke-klass som villkorsmeningarna.
   const VAGAR: { id: MallVag; etikett: string }[] = [
-    { id: 'nagon', etikett: 'Alla som gått minst en av utbildningarna' },
-    { id: 'menInte', etikett: 'Har gått vissa - men inte andra' },
+    {
+      id: 'nagon',
+      etikett:
+        modalitet === 'Föreläsning'
+          ? 'Alla som varit på minst en av föreläsningarna'
+          : modalitet === 'Båda'
+            ? 'Alla som deltagit i minst en av dem'
+            : 'Alla som gått minst en av utbildningarna',
+    },
+    {
+      id: 'menInte',
+      etikett:
+        modalitet === 'Föreläsning'
+          ? 'Varit på vissa - men inte andra'
+          : modalitet === 'Båda'
+            ? 'Deltagit i vissa - men inte andra'
+            : 'Har gått vissa - men inte andra',
+    },
     { id: 'exakt', etikett: 'Exakt den här kombinationen' },
   ];
   const VALRAD_KLASS =
@@ -4217,7 +4247,17 @@ function NyttSegmentVy({
           {vag !== null &&
             (vag === 'menInte' ? (
               <div className="flex flex-col gap-3">
-                <ChipRad etikett="Har gått">{chipsFor(valdaA, setValdaA, valdaB)}</ChipRad>
+                <ChipRad
+                  etikett={
+                    modalitet === 'Föreläsning'
+                      ? 'Varit på'
+                      : modalitet === 'Båda'
+                        ? 'Deltagit i'
+                        : 'Har gått'
+                  }
+                >
+                  {chipsFor(valdaA, setValdaA, valdaB)}
+                </ChipRad>
                 <ChipRad etikett="Men inte">{chipsFor(valdaB, setValdaB, valdaA)}</ChipRad>
               </div>
             ) : (
