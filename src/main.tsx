@@ -250,21 +250,34 @@ function InnerApp() {
   // etablerar per CSS-specen en NY containing block för alla
   // `position: fixed`-ättlingar — och AppShells `<TabBar />` ÄR
   // fixed-positionerad (`TabBar.tsx`: `className="fixed inset-x-4
-  // bottom-4 ..."`). Utan strippningen hade tab-baren blivit permanent
+  // bottom-4 ..."`). Utan strippningen hade tab-baren blivit PERMANENT
   // felpositionerad (fixerad mot denna wrapper i stället för viewporten)
   // för hela sessionen efter FÖRSTA appmonteringen — inte bara under de
-  // 0,2 sekunderna animationen faktiskt kör. `min-h-dvh` på wrappern
-  // minimerar dessutom glappet UNDER de 0,2 sekunderna (samma dvh-enhet
-  // som login.tsx): så länge sidans innehåll ryms inom viewporten (det
-  // vanliga fallet) sammanfaller wrapperns nedre kant med viewportens,
-  // så tab-barens `bottom-4` hamnar rätt även medan transformet är aktivt.
+  // 0,2 sekunderna animationen faktiskt kör.
+  //
+  // WRAPPERN BÄR MEDVETET INGEN EGEN HÖJD (varken `min-h-dvh` eller annat).
+  // Ett tidigare försök att lägga `min-h-dvh` på wrappern (för att dämpa
+  // TabBar-glappet UNDER de 0,2 sekunderna, se stycket ovan) körde sönder
+  // `/valkommen`s "allt ryms utan scroll"-kontrakt
+  // (`tests/webblasarbeteende/valkommen.test.ts` rad 261/271, CI-fällning
+  // 2026-08-16 PR #1400) — sidans EGET innehåll sätter redan sin egen höjd
+  // (samma mönster som `login.tsx`s `<main className="min-h-dvh ...">`),
+  // och en TVINGAD extra min-höjd på wrappern OVANPÅ det trycker sidan förbi
+  // viewportens kant. RouterProvider-innehållet bär redan sin höjd — wrappern
+  // ska aldrig lägga sig i den. KVARSTÅENDE, INTE LÖST: under de 0,2
+  // animerade sekunderna (endast vid FÖRSTA appmonteringen, endast om
+  // motion tillåts) kan `<TabBar />`s `bottom-4` transientvis beräknas mot
+  // wrapperns egen — nu icke garanterat viewport-höga — box i stället för
+  // viewporten, om den matchade rutten är kortare än viewporten. Ovannämnda
+  // strippning gör felet ALLTID transient (aldrig permanent) om det alls
+  // uppstår; ett bevis på renderad autentiserad yta kunde inte tas
+  // (CORS blockerar warmup-EF-anrop från en icke-allowlistad dev-port,
+  // se PR-beskrivningen) — bokfört öppet, inte löst i denna skiva.
   return (
     <div
       data-testid="app-entreanimation"
       className={
-        visaEntreanimation && !entreanimationKlar
-          ? 'min-h-dvh motion-safe:animate-mm-avsloj'
-          : undefined
+        visaEntreanimation && !entreanimationKlar ? 'motion-safe:animate-mm-avsloj' : undefined
       }
       onAnimationEnd={() => setEntreanimationKlar(true)}
     >
