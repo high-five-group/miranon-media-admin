@@ -1,6 +1,7 @@
 import type { UseQueryResult } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useQueryState } from 'nuqs';
+import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
 import { demoUniversum } from '@/components/dev/hem-prototyp/demoData';
 import { VariantRo } from '@/components/dev/hem-prototyp/VariantRo';
@@ -9,10 +10,9 @@ import {
   PrototypeSwitcher,
   type PrototypeVariant,
 } from '@/components/dev/PrototypeSwitcher';
-import { SVEP_RUBRIK } from '@/components/dev/svep-prototyp/data';
 import { SvepOverlay } from '@/components/dev/svep-prototyp/SvepOverlay';
 import type { Scenario, SvepTyp } from '@/components/dev/svep-prototyp/types';
-import { Dialog, Modal } from '@/components/primitives';
+import { Modal } from '@/components/primitives';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 
@@ -30,69 +30,92 @@ export const Route = createFileRoute('/dev/svep-prototyp')({
 });
 
 /**
- * TASK-241.1 KONVERGENSVARV 1 — sändytan (bekräftelse-/påminnelsesvepen) som
+ * TASK-241.1 KONVERGENSVARV 2 — sändytan (bekräftelse-/påminnelsesvepen) som
  * OVERLAY ovanpå hem-vyn (ADR-114 + S102 Del 10 beslut 1: "Hem är
  * ARBETSPLATSEN — handlingar påbörjas och slutförs utan att lämna vyn").
  *
- * BAKGRUNDEN är hem-prototypens V1-form (`VariantRo`, task-226-facitet,
- * facit-låst 2026-08-16) — RIVNINGSBEROENDE, bokfört i kortets notes: när
- * `task-243.5` river `components/dev/hem-prototyp/` måste denna import
- * pekas om (mot den då-skarpa `/hem`-vyn, eller mot en frusen egen kopia om
- * svepytan fortfarande är i prototypform). Bakgrunden matas med ETT EGET
- * syntetiskt universum (`demoUniversum`, samma fixtur som hem-prototypens
- * `?data=demo`) via HANDBYGGDA query-liknande objekt — INTE de riktiga
- * `useDashboardEvents`/`useDashboardRegistrations`-hooken: den här routen
- * körs typiskt på en ANNAN dev-port än 5173 (egen worktree,
- * `docs/reference/prototyp-verifiering-runbook.md` § "En egen ports
- * CORS-vägg"), och 5173 är den enda CORS-allowlistade porten för Supabase-
- * anropen. Bakgrunden ska vara stillsam dekoration, inte ett nätverksfel.
- * `SenasteAktivitetKompakt` (inne i `VariantRo`) gör ändå ETT eget riktigt
- * anrop (`useLatestActivity`) som denna route INTE kan mocka utan att röra
- * hem-prototyp-katalogen — MÄTT på port 5180 (varv 1s egen-verifiering):
- * appens globala startvärmning (ADR-112) gör dessutom SAMMA sak för
- * events/registrations/leads/waitlist oavsett route, så flera CORS-fel
- * loggas i konsolen vid varje sidladdning. Ingen av dem stör renderingen —
- * "Senaste aktivitet" visar sitt SKELETON i några sekunder (React Querys
- * retry-fördröjning) och faller sedan tillbaka till sitt egna, redan
- * inbyggda felläge ("Kunde inte hämta senaste aktiviteten.", bekräftat
- * efter 15 s väntan). Se slutrapporten för fullständigt verifieringsutfall.
+ * BAKGRUNDEN är hem-prototypens V1-form (`VariantRo`, task-226-facitet) —
+ * RIVNINGSBEROENDE, bokfört i kortets notes: när `task-243.5` river
+ * `components/dev/hem-prototyp/` måste denna import pekas om. Bakgrunden
+ * matas med ETT EGET syntetiskt universum via HANDBYGGDA query-liknande
+ * objekt — INTE de riktiga hookarna: routen körs på en annan dev-port än
+ * 5173, och 5173/4173 är de enda CORS-allowlistade portarna
+ * (`docs/reference/prototyp-verifiering-runbook.md` § Portkartan).
+ * `SenasteAktivitetKompakt` inne i `VariantRo` gör ändå ETT eget riktigt
+ * anrop som routen inte kan mocka utan att röra hem-prototyp-katalogen; det
+ * faller till sitt egna inbyggda felläge och stör inte renderingen.
  *
- * SÄNDYTAN öppnas via prototyp-växlarens variant-knappar (`bekraftelse`/
- * `paminnelse`) — INTE via hem-bakgrundens egna "Bekräfta alla"/"Skicka
- * påminnelse till alla"-knappar (`DodIngang`, `skarp`, medvetet UTAN
- * `onPress` i hem-prototypen, task-226-scope). Att koppla dem hade krävt
- * att ändra `VariantRo.tsx` — en fil som hör till en ANNAN skiva och rivs i
- * task-243.5; själva ihopkopplingen ("Hem PEKAR") är dessutom explicit
- * UTANFÖR denna skivas AC (den handlar om sändytans EGEN form). Railens
- * variant-knappar är därför den avsedda ingången i prototypform, samma
- * mönster som `/dev/hem-prototyp` redan använder för V1/V2/V3.
+ * VARV 2 ÅTGÄRDAR TRE SAKER I DENNA FIL — scrimmen, bredden och railen:
  *
- * Overlayen är husets `Modal`+`Dialog`-primitiv (ADR-044, react-aria-
- * components under huven): fokusfälla, Escape-stängning, `inert` bakgrund
- * och fokus-retur kommer gratis. Övergången (AC #4) är SKISSAD i varv 1 —
- * Modal-primitivens befintliga fade+scale-transition (`data-entering`/
- * `data-exiting`), som redan respekterar `prefers-reduced-motion` via
- * `base.css`s globala neutralisering. En mer komponerad "fortsättning av
- * Morgonkollen"-koreografi (`--animate-mm-*`-familjen nämns som precedent i
- * uppdraget) är en kandidat för ett SENARE varv, inte avgjord här.
+ * SCRIMMEN (Marcus-fynd 1). Husets delade scrim är
+ * `color-mix(in srgb, var(--mm-text) 50%, transparent)`
+ * (`components.css:227`), utan blur. Den är avvägd för husets små
+ * formulärdialoger (28 rem); under en yta som täcker halva skärmen blev den
+ * "en platt, tung gråmassa som dödar hemmet bakom". Routen sätter därför en
+ * LOKAL override av samma token via `style` — värdet går genom `Modal`s
+ * `...props` till `ModalOverlay`, alltså precis det element som konsumerar
+ * variabeln (`Modal.tsx:32-34`), och når varken den globala token-filen
+ * eller husets övriga dialoger. Samma formel som huset, lägre täckning, plus
+ * en lätt blur som håller hemmet läsbart men ur fokus. Att i stället ändra
+ * `components.css` hade träffat varenda dialog i appen — utanför denna
+ * skivas scope. Förslag till Marcus, inte ett fait accompli.
+ *
+ * BREDDEN. Varv 1 körde `w-[min(94vw,52rem)]`. Det var roten till att
+ * ämnesradens värde hamnade "i extremhögerkanten": Åtgärds-sidans
+ * etikett/värde-grammatik är avvägd för en LÄSKOLUMN, inte för 52 rem.
+ * 40 rem är samma storleksordning som förlagans kolumn.
+ *
+ * ÖVERGÅNGEN (Marcus-fynd 8). `Modal`s egen transition är
+ * `duration-200 data-[entering]:scale-95` (`Modal.tsx:38`) — den hårda
+ * växlingen. `className` går via `cn()` (tailwind-merge) till samma element,
+ * så en längre duration och en mindre skalning vinner utan att primitiven
+ * ändras. Innehållets mjuka entré ligger i `SvepOverlay` via husets
+ * `--animate-mm-avsloj`. `prefers-reduced-motion` neutraliserar båda globalt
+ * (`base.css`).
  */
 const VARIANTER: PrototypeVariant[] = [
-  { key: 'bekraftelse', label: 'Bekräftelsesvepet', steg: 1, stegLabel: 'Konvergensvarv 1' },
-  { key: 'paminnelse', label: 'Påminnelsesvepet', steg: 1, stegLabel: 'Konvergensvarv 1' },
+  { key: '1', label: 'Bekräftelsesvepet', steg: 2, stegLabel: 'Konvergensvarv 2' },
+  { key: '2', label: 'Påminnelsesvepet', steg: 2, stegLabel: 'Konvergensvarv 2' },
 ];
 
 /**
- * Simulerade datalägen (kortets AC #1). Värdena kolliderar MEDVETET inte
- * med `VariantRo.tsx`s egna `?data=`-lägen (`'tom'`/`'demo'`) — samma
- * query-nyckel (`?data=`) delas därför riskfritt mellan bakgrunden (som
- * aldrig matchar dessa strängar och alltid stannar i sitt "verklig"-läge)
- * och sändytans eget scenario-val.
+ * RAILEN (Marcus-fynd 7, uppgraderat till hårt krav i förstärkningen).
+ *
+ * MÄTT ROT-ORSAK — varv 1 byggde ALDRIG en egen rail. Det finns exakt EN
+ * `PrototypeSwitcher` i repot (`src/components/dev/PrototypeSwitcher.tsx`,
+ * grep-verifierat), och både `/dev/hem-prototyp` och denna route importerade
+ * redan samma fil. Symptomen kom uteslutande ur KONFIGURATIONEN:
+ *
+ *   • Variant-knappen renderar `v.key` som synlig text i en 36x36 px cirkel
+ *     (`PrototypeSwitcher.tsx:317`). Varv 1 skickade `key: 'bekraftelse'` —
+ *     elva tecken i en cirkel byggd för ett. Det var klippningen mot kanten.
+ *     Hem-prototypen skickar `'1'`/`'2'`/`'3'`.
+ *   • Dataläges-badgen renderar `label` i en 16 px hörn-badge
+ *     (`PrototypeSwitcher.tsx:359`). Varv 1 skickade `'Tomt urval'` och
+ *     `'Fel-läge'`. Det var de överlappande badgarna. Hem-prototypen
+ *     skickar `'Tom'`/`'Demo'`.
+ *
+ * Varv 2 konfigurerar därför railen som hem-prototypen gör, och rör inte den
+ * delade komponenten. `aliases` håller varv 1:s URL:er levande.
+ *
+ * `?data=`-VÄRDENA är MEDVETET oförändrade: de delas med bakgrundens egen
+ * `?data=`-läsning (`VariantRo` känner `'tom'`/`'demo'`), och varv 1 valde
+ * icke-kolliderande strängar just därför. Bara ETIKETTERNA är förkortade —
+ * det är de, inte värdena, som badgen visar.
  */
+const ALIASES: Record<string, string> = { bekraftelse: '1', paminnelse: '2' };
+
 const DATA_LAGEN: PrototypeDataLage[] = [
-  { value: null, label: 'Normalt urval' },
-  { value: 'tomt-urval', label: 'Tomt urval' },
-  { value: 'fel-utfall', label: 'Fel-läge' },
+  { value: null, label: 'Normal' },
+  { value: 'tomt-urval', label: 'Tomt' },
+  { value: 'fel-utfall', label: 'Fel' },
 ];
+
+/** Lokal scrim-override, se docblocket § SCRIMMEN. */
+const SCRIM: CSSProperties = {
+  '--mm-dialog-overlay-bg': 'color-mix(in srgb, var(--mm-text) 32%, transparent)',
+  backdropFilter: 'blur(3px)',
+} as CSSProperties;
 
 function tillScenario(data: string | null): Scenario {
   if (data === 'tomt-urval') return 'tomt';
@@ -100,13 +123,16 @@ function tillScenario(data: string | null): Scenario {
   return 'normal';
 }
 
+/** Både varv 2:s korta nycklar och varv 1:s långa (som `ALIASES` håller
+    levande i railen) leder till samma svep-typ. */
 function tillSvepTyp(variant: string | null): SvepTyp | null {
-  return variant === 'bekraftelse' || variant === 'paminnelse' ? variant : null;
+  if (variant === '1' || variant === 'bekraftelse') return 'bekraftelse';
+  if (variant === '2' || variant === 'paminnelse') return 'paminnelse';
+  return null;
 }
 
 /** Duck-typade query-liknande objekt (endast fälten `VariantRo`/`ui.tsx`
-    faktiskt läser: `data`/`isPending`/`isError`/`error`) — se docblockets
-    CORS-motiv. Aldrig en riktig `useQuery`-instans, aldrig ett nätverksanrop. */
+    faktiskt läser) — se docblockets CORS-motiv. Aldrig ett nätverksanrop. */
 function fakeQuery<T>(data: T): UseQueryResult<T, Error> {
   return {
     data,
@@ -138,18 +164,19 @@ function SvepPrototypPage() {
       <Modal
         isOpen={svepTyp != null}
         isDismissable
+        style={SCRIM}
+        // Scrollen bor på dialogens body (se `SvepOverlay`s docblock), så
+        // `Modal` självt får inte scrolla: `overflow-hidden` vinner över
+        // primitivens `overflow-auto` via tailwind-merge.
+        className="w-[min(94vw,40rem)] overflow-hidden duration-300 data-[entering]:scale-[0.98] data-[exiting]:scale-[0.98]"
         onOpenChange={(open) => {
           if (!open) stang();
         }}
       >
-        {svepTyp && (
-          <Dialog title={SVEP_RUBRIK[svepTyp]} className="max-h-[85vh] w-[min(94vw,52rem)]">
-            {({ close }) => <SvepOverlay svepTyp={svepTyp} scenario={scenario} onClose={close} />}
-          </Dialog>
-        )}
+        {svepTyp && <SvepOverlay svepTyp={svepTyp} scenario={scenario} onClose={stang} />}
       </Modal>
 
-      <PrototypeSwitcher variants={VARIANTER} dataLagen={DATA_LAGEN} />
+      <PrototypeSwitcher variants={VARIANTER} aliases={ALIASES} dataLagen={DATA_LAGEN} />
     </>
   );
 }
