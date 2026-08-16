@@ -35,8 +35,8 @@ import { useDashboardEvents, useDashboardRegistrations } from './useDashboardDat
  * bevakningsradens trigger) bor i det SKARPA datalagret
  * (`hem-derivations.ts`, AC #3) — aldrig inline här.
  *
- * EN läskolumn (`max-w-2xl`), oförändrad mobil→desktop — ingen bredare grid
- * tar över när skärmen växer (facitets "ro"-identitet).
+ * EN läskolumn, oförändrad mobil→desktop — ingen bredare grid tar över när
+ * skärmen växer (facitets "ro"-identitet).
  *
  * AVVIKELSE mot den retirerade K10-formens `Hem.tsx`, ÖPPET bokförd: den
  * gamla versionsraden ("Miranon Media Admin v…", nere till vänster på
@@ -44,6 +44,35 @@ import { useDashboardEvents, useDashboardRegistrations } from './useDashboardDat
  * ADR-102 B1 ("prototypen ÄR facit … vid motsägelse mellan prototyp och
  * kravtext vinner prototypen") väger tyngre än att tyst återuppfinna en yta
  * facit inte visar. Ingen ersättare byggs; se slutrapporten för TASK-243.1.
+ *
+ * BREDD (TASK-247, fjärde S102-paus-fyndet) — INGEN EGEN `max-w`/`mx-auto`/
+ * horisontell padding längre. Fram till denna rättning bar sektionen
+ * `mx-auto max-w-2xl … p-6 … sm:p-8 …` — BYTE-IDENTISKT med prototypens
+ * `dev/hem-prototyp/VariantRo.tsx` rad 154 (ADR-102 B2, promoverad EXAKT).
+ * Skillnaden som gjorde skarpa `/hem` synligt smalare än varje annan sida:
+ * prototypens dev-route (`src/routes/dev/hem-prototyp.tsx`) renderar
+ * `VariantRo` HELT UTAN `AppShell` runt sig — `max-w-2xl` (672px) var där
+ * den ENDA bredd-begränsningen. Skarpa `/hem` körs INUTI `AppShell`, vars
+ * `<main>` redan sätter `max-w-[600px] px-4` (`AppShell.tsx` rad 38) — SAMMA
+ * `px-4`/bredd-kontrakt VARJE annan skarp vy (t.ex.
+ * `aktivitetshistorik/AktivitetsHistorik.tsx`, kommentar rad ~597: "Landmärket
+ * är skalets `<main>` — ingen egen inre landmark") litar på ENSAMT, utan
+ * egen wrapper. Hem hade docklurat på prototypens wrapper OVANPÅ AppShells
+ * — dubbel horisontell padding, uppmätt (Playwright `boundingBox`, 1440px,
+ * facit-formen): **504px** innehållsbredd (600 − 2×16 AppShell-`px-4` −
+ * 2×32 Hem-`sm:p-8`), mot **568px** på varje annan sida (600 − 2×16, ingen
+ * egen wrapper). Facit-bilderna (`facit-hem-v1-*.png`) visar INTE denna
+ * 504px-form — de är tagna på den fristående dev-routen (ingen AppShell)
+ * och mäter i stället ≈608px (672 − 2×32) — en tredje, egen siffra som
+ * aldrig existerat i produktion. Ingen av facitets tre siffror matchade
+ * alltså varandra; klassat som AVVIKELSE (ej en medveten facit-amendering,
+ * jfr Bevakningsrad.tsx TASK-247 fynd c) eftersom facit inte visar/avser
+ * den smala 504px-formen — se TASK-247 slutrapport för hela
+ * klassnings-resonemanget. Fixen: dropp `mx-auto`/`max-w-2xl`, `p-6`/
+ * `sm:p-8` blir vertikalt-bara `py-6`/`sm:py-8` (den vertikala rytmen —
+ * `pt-10`/`pb-24`/`lg:pt-16`/`gap-12` — är ORÖRD, bara den horisontella
+ * dubbleringen bort). Innehållsbredden blir därmed EXAKT 568px, identisk
+ * med varje annan sida — mätt efter fix i samma viewport.
  */
 export function Hem() {
   const { user } = useAuth();
@@ -91,7 +120,7 @@ export function Hem() {
   );
 
   return (
-    <section className="mx-auto flex min-w-0 max-w-2xl flex-col gap-12 p-6 pt-10 pb-24 sm:p-8 lg:pt-16">
+    <section className="flex min-w-0 flex-col gap-12 py-6 pt-10 pb-24 sm:py-8 lg:pt-16">
       {/* 1. FRI HÄLSNING — ingen platta, stor redaktionell rubrik + en varm
           dagsrad. h1 = sidans rubrik (ingen separat "Hem"-rubrik). */}
       <div className="flex flex-col gap-2">
