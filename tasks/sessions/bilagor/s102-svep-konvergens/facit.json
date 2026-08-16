@@ -2,7 +2,12 @@
   "prototyp": "s102-svep-konvergens",
   "last": "2026-08-17",
   "lasning": "Marcus verbatim (uppdragets citat): \"Jag är nöjd med svep-sidorna nu, blev bra med scrollbaren\" — kvittens efter konvergensvarv 3 (scrollbar-inline-fixen på mail-textytan, PR #1448/commit 4b853766) + uttrycklig promoverings-order (2026-08-16). Detta manifest är AC #5:s FÖRBEREDANDE halva (task-241.1): facit-låset byggs och läggs fram, stämpeln (godkand-fältet, ADR-104 § Beslut 2) sätts av Marcus själv via !-kanalen — aldrig av en agent.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-16",
+    "citat": "godkänner",
+    "sha": "10dff531c0aeea572f720483d217723f4aaef605"
+  },
   "ytor": [
     {
       "yta": "Sändytan — bekräftelse-/påminnelsesvepen som OVERLAY ovanpå Hem (ADR-114, S102 Del 10 beslut 1)",

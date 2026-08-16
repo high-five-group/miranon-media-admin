@@ -1,10 +1,10 @@
 ---
 id: TASK-241.1
 title: 'Skiva: Sändytans konvergens-prototyp → facit-lås'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-16 14:39'
-updated_date: '2026-08-16 22:10'
+updated_date: '2026-08-16 22:56'
 labels:
   - ready-for-human
 dependencies: []
@@ -24,15 +24,15 @@ Sändytan är Sveparnas ansikte och Marcus WOW-yta — den konvergeras till faci
 - [x] #2 Trygghetstriaden komplett i prototypform: adresslista grupperad per event · bläddringsbar per-event-förhandsvisning · testmail-momentet (simulerat, ingen skarp sändning ur prototypen)
 - [x] #3 Båda svep-instanserna representerade: bekräftelsesvepet och påminnelsesvepet (urval ENDAST läge 1 'Att påminna' — mekaniskt spamsäkert per en-påminnelse-modellen)
 - [x] #4 Övergången hem ↔ overlay skissad i prototypen (WOW-riktningen, prefers-reduced-motion respekterad)
-- [ ] #5 Facit LÅST efter Marcus konvergensvarv: manifest under tasks/sessions/bilagor/ (godkand: null tills promoveringsstämpel), B3-markör satt — byggskivorna publiceras först mot detta facit (ADR-102 B5)
+- [x] #5 Facit LÅST efter Marcus konvergensvarv: manifest under tasks/sessions/bilagor/ (godkand: null tills promoveringsstämpel), B3-markör satt — byggskivorna publiceras först mot detta facit (ADR-102 B5)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -88,3 +88,9 @@ BEVARAT FRAN VARV 1 (ej regredierat): triadens informationsarkitektur, bada inst
 
 FACIT-LÅS FÖRBERETT (AC #5s förberedande halva, 2026-08-17): manifest tasks/sessions/bilagor/s102-svep-konvergens/facit.json skapat med "godkand": null — 18 facit-bilder mot svep-prototypens EGEN simulerade data (ingen CORS-kringgång behövdes, sändytans hela innehåll är syntetiskt via data.ts/fakeQuery, till skillnad från s102-dokument-konvergens). BÅDA instanserna (bekräftelse 3 event/9 mottagare, påminnelse 2 event/3 mottagare) x sju lägen på desktop 1440px (granska-adresslista/granska-förhandsvisning/armerat/skickar/resultat/tomt-urval/fel-resultat) + granska+resultat på mobil 390px. BASVAL: origin/main saknade fortfarande commit 4b853766 (PR #1448 armerad, mergeStateStatus BLOCKED, ej landad) vid grenpunkten — grenade därför av origin/fix/task-241.1-scrollbar-inline per uppdragets egen fallback-regel; bilderna bär scrollbar-inline-fixen (Forhandsvisning.tsx:113, grep-verifierad). B3-markör "[PROTOTYPE, TASK-241.1] Sändytans overlay — KONVERGENSVARV 2." (SvepOverlay.tsx:17, docblockets titelrad) tillagd i .facit-policy.conf § FACIT_PROTO_MARKORER — grep -rlF unik (1 träff) före tillägg, negativt kontrollprov kört skarpt (markör temporärt bytt ut -> check-facit.sh exit 1/rött med korrekt felmeddelande; återställd -> exit 0/grönt, git diff bit-identisk). check-facit.sh grönt: 9 manifest, 15 ytor, 3 ogodkända (hem+dokument+svep). Mätt skript-bugg under passet, rättad och bokförd i manifestets not-fält: en dynamisk Playwright-locator (expanded:false-filter) matchade fel element vid andra klicket eftersom aria-expanded ändras men accessible name inte gör det — fixad med en stabil name-baserad locator + explicit scrollTop=0-reset, samtliga 18 bilder är från den rättade körningen. DoD-kvartetten grön (se separat commit/PR). Ingen appkod ändrad i detta pass. AC #5 bockas INTE här — stämpeln (godkand-fältet, ADR-104 §Beslut 2) är Marcus egen handling via !-kanalen, rörs inte av denna commit; orkestreraren bockar efter CI-verifiering.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+AC5 stängd: facit-låset förberett i PR #1450 (18 bilder, B3-markör, kontrollprov) och Marcus stämplade via !-kanalen (ADR-104) 2026-08-17 — godkand: av marcus, citat "godkänner", sha 10dff531. DoD-belägg: alla kortets landningar (#1422/#1438/#1448/#1450) mergade via merge-kön (grönt krav); grindkvartetten exit 0 per varv-rapporterna; path-scopad add per varv. Nästa: /to-issues publicerar 241-byggskivorna mot facit (ADR-102 B5); prototyp-substratets rivning skivas där (B3-markören städas i rivningens landning, TASK-192-regeln).
+<!-- SECTION:FINAL_SUMMARY:END -->
