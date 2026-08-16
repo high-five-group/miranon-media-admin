@@ -39,6 +39,13 @@ import { expect, test } from '../support/test-bas';
  *
  * AKTIVITETSHISTORIK TILLKOM TASK-201.6 (AC #2 — Mer-menyns mobil-/platta-
  * ingång): SJUNDE raden, sist i grupp 1 (listorna). Höjer raderna till SJU.
+ *
+ * DOKUMENT TILLKOM TASK-164-RIVNINGEN (2026-08-16, ADR-103 B2 steg 4):
+ * ÅTTONDE raden, sist i grupp 2 (handling/verktyg, efter "Bygg segment").
+ * Ytan var tidigare DEV-grindad (`visaDokumentPrototyp`, S100/T131) och
+ * osynlig för detta test; efter Marcus godkännande av facit-låset
+ * (`tasks/sessions/bilagor/s102-dokument-konvergens/facit.json`) är den
+ * en skarp, ovillkorlig ingång. Höjer raderna till ÅTTA.
  */
 
 test.describe('Mer-landningen (Fas 6e L2 — statiskt skal + logout-golv)', () => {
@@ -125,7 +132,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     await expect(page.locator('header')).toHaveCount(0);
   });
 
-  test('AC 1: sex NavCard-rader i TRE grupper med facit-ordning, tysta ikoner, chevron per rad', async ({
+  test('AC 1: åtta NavCard-rader i TRE grupper med facit-ordning, tysta ikoner, chevron per rad', async ({
     page,
   }) => {
     await page.goto('/mer');
@@ -141,9 +148,10 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     // Grupp 1 = listorna, grupp 2 = handling före verktyg, grupp 3 =
     // Inställningar — exakt ordning. Skapa nytt event-raden RIVEN
     // (task-19.2 — se rivnings-bokföringen i fil-huvudet); grupp 2 bär
-    // numera enbart Bygg segment, grupp 3 (task-126.3) enbart
-    // Installera appen. Aktivitetshistorik (TASK-201.6, AC #2) tillkom sist
-    // i grupp 1 — höjer SEX rader till SJU.
+    // numera Bygg segment + Dokument (TASK-164-rivningen, se fil-huvudets
+    // "DOKUMENT TILLKOM"-not), grupp 3 (task-126.3) enbart Installera
+    // appen. Aktivitetshistorik (TASK-201.6, AC #2) tillkom sist i grupp 1
+    // — höjer SJU rader till ÅTTA.
     await expect(grupper.nth(0).getByRole('link')).toHaveText([
       'Anmälningar',
       'Väntelista',
@@ -151,9 +159,9 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
       'Maillogg',
       'Aktivitetshistorik',
     ]);
-    await expect(grupper.nth(1).getByRole('link')).toHaveText(['Bygg segment']);
+    await expect(grupper.nth(1).getByRole('link')).toHaveText(['Bygg segment', 'Dokument']);
     await expect(grupper.nth(2).getByRole('link')).toHaveText(['Installera appen']);
-    await expect(nav.getByRole('link')).toHaveCount(7);
+    await expect(nav.getByRole('link')).toHaveCount(8);
 
     // Varje rad bär EXAKT två dekorativa svg (radikon + chevron, båda
     // aria-hidden) — etiketten ensam bär länknamnet (redan assertat via
@@ -171,7 +179,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     // (S73 K25-prövningens Marcus-kvitterade konsekvens, PRD task-18
     // beslut 15) — chevron betyder att raden leder vidare, och Mer-menyns
     // rader bär den för app-koherens med eventsidans åtgärdsrader.
-    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(7);
+    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(8);
   });
 
   test('Skapa nytt event är RIVEN ur Mer (task-19.2) — ingången bor på event-listan', async ({

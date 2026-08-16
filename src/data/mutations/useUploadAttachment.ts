@@ -17,10 +17,11 @@ import { queryKeys } from '@/queries/keys';
  * `eventId` binds vid hook-anropet (samma id för write + cache-nyckel) —
  * samma mönster som `useCreateEventNote(eventId, …)`.
  *
- * INGEN AKTIVITETSLOGGNING här (medvetet avgränsat): Dokument-ytan är en
- * [PROTOTYPE] (S100/T131, throwaway-kontraktet) utan facit-lås ännu — att
+ * INGEN AKTIVITETSLOGGNING här (medvetet avgränsat, ÖPPEN SKULD): Dokument-
+ * ytan är promoverad (T131, ADR-103 B2 steg 1, TASK-164-rivningen) men att
  * välja ett nytt `ACTIVITY_OBJECT_TYPES`/verb-par för bilage-uppladdning är
- * ett formbeslut som hör till promoveringen, inte till granskningspasset.
+ * inte gjort — registrerat som tråd `T145` (tasks/threads/README.md), en
+ * egen skiva utanför rivningens scope.
  */
 export function useUploadAttachment(eventId: string) {
   const queryClient = useQueryClient();
