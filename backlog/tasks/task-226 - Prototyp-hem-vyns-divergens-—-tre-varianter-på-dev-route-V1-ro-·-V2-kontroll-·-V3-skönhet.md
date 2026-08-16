@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-15 09:59'
-updated_date: '2026-08-15 10:43'
+updated_date: '2026-08-16 09:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -57,4 +57,6 @@ V3 "Bento" (skönhet): asymmetrisk CSS-grid-mosaik (lg:grid-cols-3, auto-placeme
 Delad datalogik (src/components/dev/hem-prototyp/data.ts) garanterar att alla tre visar SAMMA tal — bara ytan skiljer. Delade UI-atomer (ui.tsx: InitialAvatar, DodIngang, Genvagar, SenasteAktivitetKompakt) för de innehållsmässigt identiska bitarna.
 
 Throwaway-kontraktet gäller (ADR-102/103): Marcus väljer EN i browsern, förlorarna rivs, vinnaren konvergeras separat. Kortet stängs av orkestreraren efter CI-verifikat — INTE av bygg-agenten.
+
+FACIT LÅST (2026-08-16): vinnaren V1 "Lugna morgonen" efter konvergensvarv 1-4 (#1355, #1357, dataläge-knappen #1366, #1379, #1388) facit-låst mot origin/main b1ac411e. Marcus kvittens i klartext: "Varv 4 ser bra ut, lås facit." Katalog: tasks/sessions/bilagor/s102-hem-konvergens/ (facit.json + 6 skärmdumpar: verklig/tom/demo x mobil/desktop). godkand: null (ADR-104 kanalseparation — sätts av Marcus egen kanal, aldrig av bygg-agenten). B3-markören "V1 Lugna morgonen (ro)" tillagd i .facit-policy.conf (skyddar dev-routens prototyp-substrat mot förtida rivning tills godkänt). bash scripts/check-facit.sh grönt.
 <!-- SECTION:NOTES:END -->

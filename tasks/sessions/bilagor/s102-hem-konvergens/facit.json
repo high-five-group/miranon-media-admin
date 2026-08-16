@@ -1,0 +1,28 @@
+{
+  "prototyp": "s102-hem-konvergens",
+  "last": "2026-08-16",
+  "lasning": "Varv 4 ser bra ut, lås facit.",
+  "godkand": null,
+  "ytor": [
+    {
+      "yta": "hem-vyn V1 \"Lugna morgonen\" (dev-route /dev/hem-prototyp?variant=1)",
+      "bilder": [
+        "facit-hem-v1-verklig-desktop.png",
+        "facit-hem-v1-verklig-mobil.png",
+        "facit-hem-v1-tom-desktop.png",
+        "facit-hem-v1-tom-mobil.png",
+        "facit-hem-v1-demo-desktop.png",
+        "facit-hem-v1-demo-mobil.png"
+      ],
+      "kallor": [
+        "src/routes/dev/hem-prototyp.tsx",
+        "src/components/dev/hem-prototyp/VariantRo.tsx",
+        "src/components/dev/hem-prototyp/data.ts",
+        "src/components/dev/hem-prototyp/demoData.ts",
+        "src/components/dev/hem-prototyp/types.ts",
+        "src/components/dev/hem-prototyp/ui.tsx"
+      ],
+      "not": "FACIT-LÅSNING av hem-vyns omdesign (task-226), vinnaren V1 \"Lugna morgonen\" efter konvergensvarv 1-4. Marcus godkände varv 1-3 löpande under S102 Del 8-11 och kvitterade varv 4 i klartext 2026-08-16 (\"Varv 4 ser bra ut, lås facit\") — se \"lasning\" ovan. BESLUTSTRAILEN: grillad samsyn S102 Del 8 (åtta beslut: blockordning, ADR-044-dev-route-formen, delad datalogik, WOW-ribban) + Del 10 (ytterligare konvergensbeslut, bl.a. beslut 2-4 bevakningsraden, beslut 7 en-påminnelse-modellens tre tillstånd, beslut 8 kortdatum-copy). PR-KEDJAN (disk-verifierad via `git log --oneline`, TASK-226-taggade commits): #1344 divergensfasen (V1 ro · V2 kontroll · V3 skönhet) -> #1355 konvergensvarv 1 (tomt läge, inline-scroll, skarp knappform, påminnelsedatum) -> #1357 konvergensvarv 2 (bevakningsraden, förfallna-blockets tre tillståndsgrupper, simulerat demoläge) -> #1366 dataläge-knappen (cyklar verklig/tom/demo, Marcus-fynd 2026-08-16 — landad MELLAN varv 2 och 3) -> #1379 konvergensvarv 3 (relativ tid, ikon-städ, scroll-likriktning, räknar-pill, hover, tomma-läget) -> #1388 konvergensvarv 4 (bevakningsradens kortcopy + line-clamp-2-skyddsnät, Marcus-granskning 2026-08-16). SHA vid bildtagning: origin/main b1ac411e (varv 4 + ett efterföljande orelaterat docs-kort, task-240, landade i samma spann). AVVIKELSE FRÅN UPPDRAGSTEXTEN, öppet bokförd: uppdraget räknade upp PR-listan som \"#1355, dataläge-knappen, #1379, #1388\" utan #1357 — git-loggen visar #1357 (konvergensvarv 2) som en egen, separat landad PR mellan #1355 och dataläge-knappens #1366; båda är medtagna här. BILDERNA är tagna mot en EGEN dev-server (port 5230, INTE 5173 — den porten är Marcus, se docs/reference/prototyp-verifiering-runbook.md § Portkartan) på origin/main b1ac411e, inloggad som TEST_USER, med RIKTIG staging-data hämtad server-sidan och foderad in via page.route() (runbookens § \"En egen ports CORS-vägg\") — INGEN mockad styling, all data äkta. \"tom\"/\"demo\"-lägena är appens EGNA syntetiska datalägen (VariantRo.tsx `?data=tom`/`?data=demo`), inte en testrigg-mock. Startvärmningen (ADR-112/TASK-218) krävde att SAMTLIGA sju kärn-EF:er (inte bara get-events/get-registrations) proxades för att Förberedelseskärmen skulle släppa igenom. KÄND BILDARTEFAKT: React Query Devtools-knappen (uppe till vänster) och TanStack Router Devtools-badgen (uppe till höger) syns i alla sex bilderna — dev-only overlays som alltid renderas i utvecklingsläge, samma klass artefakt som s106-aktivitetsloggens dev-logga-överlägg (facit.json där, \"KÄNDA BILDARTEFAKTER\"); inte en designdefekt. Den flytande PrototypeSwitcher-railen (sifferknapparna 1/2/3 + dataläge-cykelknappen) syns likaså — hör till dev-routen, rivs med resten av prototyp-substratet vid promoveringen. \"Senaste aktivitet\"-blocket visar RIKTIG aktivitetslogg oavsett dataläge (delad, oförändrad useLatestActivity-konsumtion, se data.ts filhuvud) — förväntat, inte en bugg i tom/demo-bilderna. VILKA BILDER SOM ÄR FACIT: samtliga sex (senaste/enda tagningen i detta pass, ingen tidigare iterationsbild sparad i denna katalog)."
+    }
+  ]
+}
