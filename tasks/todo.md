@@ -38,11 +38,31 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 🔄 ÅTERUPPTAGEN (2026-08-16 sen em, `lifecycle: active`, resume
-efter femte pausen — RESUME-INGÅNGEN nedan gäller).** Numrering re-deriverad
-mot disk vid resume: kort **task-245** · ADR **115** · tråd **T145** · lesson
-**L512** (+18 fragment på disk) · fälla **f49** — handoffens samtliga värden
-bekräftade; disk vinner alltid. Dagens skörd: röd-kedjans forensik 12 larm → 6 rötter, 5
+**Session 102 ⏸️ PAUSAD (2026-08-16 kväll, `lifecycle: paused`, SJÄTTE
+pausen — Marcus-order "förbered paus när allt landat"; ALLT LANDAT, kön
+TOM, main `4bd58068`).** Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
+3 #1415 · task-245 byggd+stängd #1423/#1425 · task-246
+byggd+stängd #1431/#1433; dokument-stämpeln VÄNTAR — facit-låset
+förberett #1437,
+`s102-dokument-konvergens`, godkand: null) · **Morgonkollen LANDAD**
+(243.1 två varv + S55-arkivflytten [Marcus vägval 1] #1426/`3792359d`,
+stängd #1440; skarpa hem ÄR nya formen, OGRANSKAD — 243.4 är grinden) ·
+R2 SLUTBEVISAD (244 varv 3+4, post-merge grön run 31958558973, #1403
+STÄNGT, Done #1429) · svep varv 1 UNDERKÄNT → varv 2 på Opus #1438
+(fem orkestrerar-premisser mätt-falsifierade; Marcus granskar) ·
+40-listan levererad #1436 (26/9/5) · prod: passkey t.o.m. p4 +
+Dokumentklass-fältet skapat #1435 · 221=B kvitterat · laststormen
+(577) sekvenserad cross-session · docs-skulder p8 #1432.
+**RESUME-INGÅNG (EXAKT ordning):** (0) Post-merge-facit: RÖD, run
+31968918858 — läs loggen först · (1) dokument-stämpeln (`!npm run facit:godkann -- --pass
+s102-dokument-konvergens --citat "..."`) → rivningspass · (2)
+svep-granskningen 5174 → varv 3/facit-lås · (3) 243.2 → 243.3
+(BRÅDSKANDE) → QA 243.4 → 243.5 · (4) 221-rivningen · (5)
+CLI-lastkortet mintas · (6) EF-deploy-svepet prod (12 EF:er, HITL) ·
+(7) 40-beslutspasset · (8) passkey p5–6 · (9) QA-rester. Numrering:
+task-247 · ADR 115 · T145 · L512+18 fragment · f49 — re-derivera
+ALLTID (S104 parallell i dag). Full handoff: sessionsdok S102 §
+PAUSLÄGE (sjätte) + Del 14. Föregående (femte pausens) skörd: röd-kedjans forensik 12 larm → 6 rötter, 5
 fixade+landade (R2 stängd med AC4-bevis 8m34s) · 16 larm stängda, öppet
 är ENDAST ärende 1403 (medveten arbetssignal, task-244) · kort 235–244 mintade
 (235/236/237/242 + 147.11/147.12 + 208/209 Done) · PRD-paret task-241
