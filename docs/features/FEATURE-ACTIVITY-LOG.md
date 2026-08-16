@@ -251,7 +251,9 @@ aktivitetshistorik ›".
 [ADR-102](../decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md)
 B1/B5: prototypens låsta K10-form är den auktoritativa specen, inte denna
 dok eller en AC-text. Manifest:
-`tasks/sessions/bilagor/s55-hem-konvergens/facit.json`, godkänt av Marcus
+`tasks/sessions/archive/bilagor/s55-hem-konvergens/facit.json` (arkiverat
+2026-08-16, superseded av `s102-hem-konvergens` vid Morgonkoll-promoveringen
+TASK-243.1; godkännandet nedan är historik), godkänt av Marcus
 **2026-08-13** ("Hem-spalten godkänd mot k10-facit 2026-08-13"), med ETT
 bokfört undantag: separatorn i raderna är mittpunkt `·`, inte facit-bildens
 långa tankstreck (Marcus-order 2026-08-12 — långa bindestreck är förbjudna i
