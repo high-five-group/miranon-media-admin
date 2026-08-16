@@ -3,10 +3,10 @@ id: TASK-244
 title: >-
   Staging-sviten helt grön: de fyra kvarvarande fällningarna efter R2-varv-2
   (varv 3)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 13:20'
-updated_date: '2026-08-16 16:00'
+updated_date: '2026-08-16 16:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,7 +22,7 @@ Ur AC4-beviset (post-merge run 31947844163 på 8214ef2f, 2026-08-16): taket är 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Alla fyra fällningarna rotorsakade och åtgärdade (fix eller motiverad baseline-uppdatering per fall — aldrig blind timeout-bump)
-- [ ] #2 Post-merge-staging HELT grön (run-ID-belägg) och #1403 stängd mot beviset
+- [x] #2 Post-merge-staging HELT grön (run-ID-belägg) och #1403 stängd mot beviset
 - [x] #3 TASK-227-racet (kall enhet, förexisterande) triagerat: fixat här eller eget kort med motivering
 <!-- AC:END -->
 
@@ -89,3 +89,9 @@ Diagnostik-artefakter (engångs, borttagna innan push): temporär per-item timin
 
 Gren: fix/task-244-varv4-kallstart-batching-race, byggd från färskt origin/main (c86df19a, ≥ b0b28c8d).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i två varv: PR #1417 (varv 3, merge 417f4775) — fällning 1 (tvåradersform-assertion), fällning 2 (placeholderData-seedning, 12s-timeout reverterad till 5s), fällning 4 (navigeringsrace) + AC3/TASK-227-racet (main.tsx varmtBeslutat-grenen); tre av fyra kort-hypoteser falsifierades före fix. PR #1424 (varv 4, merge 6c355b75) — Kallstart-testets React-batching-antagande rättat (motiverad baseline-uppdatering; race- och rate-limit-hypoteserna falsifierade med trace ur run 31955429690). AC2-BEVIS: Post-merge-run 31958558973 på 6c355b75 HELT GRÖN; #1403 stängd mot beviset. CI grön per jobb via merge-kön i båda varven.
+<!-- SECTION:FINAL_SUMMARY:END -->
