@@ -4,7 +4,7 @@ title: 'Skiva: Sändytans konvergens-prototyp → facit-lås'
 status: In Progress
 assignee: []
 created_date: '2026-08-16 14:39'
-updated_date: '2026-08-16 18:19'
+updated_date: '2026-08-16 22:10'
 labels:
   - ready-for-human
 dependencies: []
@@ -83,4 +83,8 @@ TVA DEFEKTER SOM BARA DEN RENDERADE GRANSKNINGEN FANGADE (bada infordes av varv 
 HOJDERNA AR MATTA I DOM, inte uppskattade: body 52vh ger dialoghojd 722 px mot taket 765 px (desktop 1440x900) och 717 px mot 760 px (mobil 390x844) -- ca 43 px marginal i BADA. Mobilen bar 90vh-taket, sm: och uppat 85vh, eftersom rubrik/sammanfattning/knapprad radbryter dar.
 
 BEVARAT FRAN VARV 1 (ej regredierat): triadens informationsarkitektur, bada instanserna + lage 1-urvalet, simulerade datalagen, fokusfalla/Escape, egen katalog.
+
+---
+
+FACIT-LÅS FÖRBERETT (AC #5s förberedande halva, 2026-08-17): manifest tasks/sessions/bilagor/s102-svep-konvergens/facit.json skapat med "godkand": null — 18 facit-bilder mot svep-prototypens EGEN simulerade data (ingen CORS-kringgång behövdes, sändytans hela innehåll är syntetiskt via data.ts/fakeQuery, till skillnad från s102-dokument-konvergens). BÅDA instanserna (bekräftelse 3 event/9 mottagare, påminnelse 2 event/3 mottagare) x sju lägen på desktop 1440px (granska-adresslista/granska-förhandsvisning/armerat/skickar/resultat/tomt-urval/fel-resultat) + granska+resultat på mobil 390px. BASVAL: origin/main saknade fortfarande commit 4b853766 (PR #1448 armerad, mergeStateStatus BLOCKED, ej landad) vid grenpunkten — grenade därför av origin/fix/task-241.1-scrollbar-inline per uppdragets egen fallback-regel; bilderna bär scrollbar-inline-fixen (Forhandsvisning.tsx:113, grep-verifierad). B3-markör "[PROTOTYPE, TASK-241.1] Sändytans overlay — KONVERGENSVARV 2." (SvepOverlay.tsx:17, docblockets titelrad) tillagd i .facit-policy.conf § FACIT_PROTO_MARKORER — grep -rlF unik (1 träff) före tillägg, negativt kontrollprov kört skarpt (markör temporärt bytt ut -> check-facit.sh exit 1/rött med korrekt felmeddelande; återställd -> exit 0/grönt, git diff bit-identisk). check-facit.sh grönt: 9 manifest, 15 ytor, 3 ogodkända (hem+dokument+svep). Mätt skript-bugg under passet, rättad och bokförd i manifestets not-fält: en dynamisk Playwright-locator (expanded:false-filter) matchade fel element vid andra klicket eftersom aria-expanded ändras men accessible name inte gör det — fixad med en stabil name-baserad locator + explicit scrollTop=0-reset, samtliga 18 bilder är från den rättade körningen. DoD-kvartetten grön (se separat commit/PR). Ingen appkod ändrad i detta pass. AC #5 bockas INTE här — stämpeln (godkand-fältet, ADR-104 §Beslut 2) är Marcus egen handling via !-kanalen, rörs inte av denna commit; orkestreraren bockar efter CI-verifiering.
 <!-- SECTION:NOTES:END -->
