@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-15 23:37'
+updated_date: '2026-08-16 22:28'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,3 +34,20 @@ Bifynd ur TASK-229:s olänkade-svep (2026-08-16): anmälan ID 868 (Allan Niemine
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BIFYND ur TASK-248 (Inskickad-backfillen, 2026-08-17) — OMFATTNINGEN AR STORRE AN DETTA KORT ANTAR.
+
+Kortet beskriver EN rad (ID 868, Allan Nieminen). Mätning mot prod-basen (app8uGPrVCVOm6LfD, tbloOcrppVoyrHbrq, REST paginerad, 2026-08-17) visar 26 rader med EventKey utan Event-prefix — inom den delmängd (294 rader) som saknade Inskickad. Hela tabellen är INTE genomsökt för detta; 26 är ett GOLV, inte totalen.
+
+EventKey '11': 17 rader — ID 856, 857, 864, 865, 868, 872, 875, 885, 886, 889, 900, 901, 906, 914, 939, 944, 946
+EventKey '10': 9 rader  — ID 850, 913, 938, 940, 947, 967, 970, 972, 986
+
+MONSTER: samtliga 26 bär 'Från formulär = Huvudformulär' (Zap 4). Ingen annan formulärklass förekommer. Det pekar rotorsaken mot Huvudformulärets pre-fill-parameter (EventKey kommer dynamiskt via URL enligt schema_reference.md rad ~1170), inte mot en formel/automation i basen.
+
+TIDSSPANN: 2026-04-26 (ID 850) till 2026-08-15 (ID 986). Kortet anger att fälla 10/F.2 sanerades 2026-04-26 — den tidigaste återfallsraden bär SAMMA datum. Återfallet började alltså omedelbart och pågår: senaste instansen är 2026-08-15, dagen före denna mätning. Buggen är LEVANDE, inte historisk.
+
+Ingen av dessa rader ändrades av TASK-248 utöver fältet Inskickad — EventKey rördes ALDRIG (mandatet var fält-avgränsat).
+<!-- SECTION:NOTES:END -->

@@ -1,20 +1,24 @@
 ---
 owner: marcus803
-updated: 2026-07-08
-review_by: 2026-10-08
+updated: 2026-08-17
+review_by: 2026-11-17
 status: stable
 ---
 
-# Execute-log — Airtable-avstämning maj-2026-eventen (Session 60)
+# Execute-log — skarpa prod-basskrivningar
 
-> Auktoritativ, kronologisk logg över de **prod-basskrivningar** (`app8uGPrVCVOm6LfD`)
-> som utfördes under Session 60 för att stämma av tre genomförda maj-2026-event mot
-> faktiska deltagarlistor. Airtable-skrivningar lever i basen, inte i git — denna fil
+> Auktoritativ, kronologisk logg över **skarpa skrivningar mot prod-basen**
+> (`app8uGPrVCVOm6LfD`). Airtable-skrivningar lever i basen, inte i git — denna fil
 > är deras enda spårbara artefakt. Systemförståelsen (automationer, fält, fällor)
 > bor i [`../reference/data-model.md`](../reference/data-model.md); denna fil bär
 > *vad som faktiskt gjordes, i vilken ordning, och med vilken verifiering*.
+>
+> **Poster:** Session 60 (2026-07-08/09) — närvaroavstämning av tre maj-2026-event
+> mot faktiska deltagarlistor · Session 102 (2026-08-17) — backfill av tidsfältet
+> `Inskickad` på 294 rader. Varje post bär sitt eget mandat och sin egen
+> verifiering; en ny post läggs sist, tidigare poster skrivs inte om.
 
-## Syfte och pivot
+## Session 60 — syfte och pivot
 
 Roger & Lotta genomförde tre event vintern/våren 2026 vars deltagare aldrig
 avstämts i basen (alla Deltaganden `Ej avstämt` → osynliga för närvaro-gated
@@ -178,6 +182,96 @@ update). Verifierat i svaret.
   **fälla 4 + fälla 33 (Lucka C)**; segment påverkas ej (källäst).
 - **Jessica Karlsson** (Event-19): inbjudan → senaste anmälans e-post
   (`jesshundteam@gmail.com`); `@live.se` läggs i hennes Persons `Anteckningar` — EJ GJORT.
+
+## 2026-08-17 — Backfill av `Inskickad` (294 rader), Session 102
+
+Andra skarpa prod-skrivningen i denna logg, och en annan klass än ovanstående:
+inte en avstämning mot en extern deltagarlista, utan ifyllnad av ett **tidsfält
+som aldrig sattes vid källan**. Mandat: Marcus 2026-08-17, verbatim *"Det är GO
+på tid-åtgärden"* — avgränsat till att skriva `Inskickad` där fältet var tomt.
+Kort: `TASK-248`. Fälla: [fälla 49](../reference/data-model.md).
+
+### Rotorsak
+
+`Inskickad` (`fldNtSHQivkL26B6L`, dateTime, skrivbar) sätts bara av vägar som
+uttryckligen mappar det: EF `create-registration` och Zap 1
+(`Anmälan-Psionautics.se`). **Zap 4 (`Huvudformulär`) mappar det inte** — därför
+saknade dess anmälningar inskickstid. Zap 3 (`Expressformulär`) saknar
+mappningen likaledes men har **noll rader** i prod och är alltså en latent, aldrig
+materialiserad rotorsak.
+
+| Formulärklass | Rader totalt | Varav utan `Inskickad` | Andel |
+|---|---|---|---|
+| Huvudformulär | 302 | **273** | 90,4 % |
+| Backfill (historisk) | 479 | 20 | 4,2 % |
+| Anmälan-Psionautics.se | 49 | **0** | 0 % |
+| Expressformulär | 0 | 0 | — |
+| *(utan `Från formulär`)* | 1 | 1 | `rec8H1aVug1RMw3hq` |
+
+Att Zap 1-klassen står på 0 och Huvudformulär på 273 är det som isolerar
+rotorsaken till den saknade mappningen — inte till något i basen.
+
+### Källvalet
+
+Backfillat värde = `Rad skapad` (`fldet9MU1rJBSpo3y`). Fältet är av typen
+**`createdTime`** — Airtables egen skapelsetidstämpel, inte ett Zapier-skrivet
+värde. Det ger två egenskaper som gör valet exakt snarare än ungefärligt: det kan
+aldrig vara tomt, och det är per konstruktion identiskt med `record.createdTime`
+(verifierat på alla 294 rader, 0 avvikelser). Uppdragets planerade fallback
+"`createdTime` när `Rad skapad` saknas" var därför en distinktion utan skillnad.
+
+### Automations-inertitet — bevisad FÖRE full körning
+
+| Automation | Trigger | Utfall |
+|---|---|---|
+| A1, A2 | record **created** → Anmälningar | Kan inte fyra på en PATCH |
+| A7 (`wflDxN31sRJNWCqfu`) | record updated → Anmälningar | `watchFields = [Slutbetalning, Event]` — `Inskickad` står inte där |
+| A3 (`wfl4qb2eP28SfKlck`) | matches conditions → Anmälningar | 26 av raderna matchade villkoret → **mätt med kanariefågel** |
+
+A3 var den enda reella risken (den skapar Deltaganden — en annan tabell, utanför
+mandatet). I stället för att anta Airtables trigger-semantik skrevs **en** rad ur
+just den exponerade klassen (`rec1g6TqK9yKOpa5V`, Elnaz Mohajer), följt av
+mätning: Deltaganden **1716 → 1716**, kanariefågelns egna Deltaganden 0 → 0.
+Först därefter kördes resterande 293.
+
+### Körning och verifiering
+
+293 skrivna + 1 överhoppad (kanariefågeln, av skriptets idempotensfilter) = 294.
+Batchar om 10, endast fältet `Inskickad`, med spärr som kastar om ett annat fält
+eller ett record-ID utanför dry-run-listan förekommer.
+
+| Kontroll | Utfall |
+|---|---|
+| (a) re-count `{Inskickad} = BLANK()` | **0** (förväntat 0) |
+| (b) read-back av hela listan, `Inskickad == Rad skapad` | **294/294**, 0 felaktiga |
+| (c) rader utanför listan | 574 (= 868 − 294), varav **0** saknar värde |
+| (c) rader utanför listan med `Inskickad == Rad skapad` | **0** |
+| Konservering: Deltaganden | 1716 → **1716** |
+
+Kontroll (c):s andra rad är det tvåvägs-beviset: signaturen `Inskickad == Rad
+skapad` är unik för de rader som skrevs. Hade en rad utanför listan rörts skulle
+den bära samma signatur — ingen gör det. Detta är medvetet en annan bevisform än
+Session 60:s konserveringskontroll, som §Steg 4 visade är blind för kategori-fel.
+
+### Öppet efter denna post
+
+- **Framåtgarantin är skapad men ännu inte i drift.** Senaste raden utan
+  `Inskickad` skapades 2026-08-16, dagen före backfillen; spannet löper
+  2025-11-27 → 2026-08-16. Automationen **A12** (`wflVeU33Etsi8g8wh`) skapades
+  2026-08-17 av orkestreraren — trigger `recordCreated` på Anmälningar, villkor
+  `Inskickad isEmpty`, sätter `getWorkflowExecutionIsoDateTime()` (A8-formen) —
+  med `configurationStatus: valid` men **`deploymentStatus: undeployed`**.
+  Airtable tillåter ingen agent-aktivering, så Marcus slår på den i UI:t. Tills
+  det skett är hålet öppet. Kollisionskontrollen (sex celler mot A1–A11)
+  rapporteras PASS av orkestreraren; av dessa kunde denna post pröva **en**
+  oberoende — att A7:s `watchFields` är `[Slutbetalning, Event]` — och den
+  håller, samma mätning som friade backfillens egen PATCH. Övriga fem är
+  obelagda härifrån: claude.ai-connectorn nekade läsning med `permission_error`,
+  och PAT-servern ser inte automationer.
+- **Bifynd, ej åtgärdade** (fält-mandatet var avgränsat till `Inskickad`):
+  26 rader bär `EventKey` utan `Event-`-prefix (`"11"` ×17, `"10"` ×9), samtliga
+  `Huvudformulär`, spann 2026-04-26 → 2026-08-15 → bokfört på `TASK-232`, som
+  antog en enda rad. En rad saknar `Från formulär` helt (`rec8H1aVug1RMw3hq`).
 
 ## Källor
 
