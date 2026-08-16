@@ -313,6 +313,25 @@ export interface DataSourceAdapter {
   fetchEventAttachments(eventId: string): Promise<Attachment[]>;
 
   /**
+   * Radera en bilage-post (TASK-147.11, "äkta" radering — task-147.6:s fynd
+   * 3 flaggade att adaptern saknade denna primitiv helt, `grep -n delete
+   * DataSourceAdapter.ts` gav 0 träffar; Dokument-ytans "Ersätt" byggde
+   * därför en klientsidig `grupperaPerNamn`-attrapp i stället). POST mot
+   * delete-attachment-EF:en, som verifierar SERVER-SIDE att bilagan
+   * FAKTISKT hör till `eventId` (ägarskaps-guard, 403 annars) innan den
+   * raderas — både Storage-bytesen (best-effort) och Bilagor-metadataraden
+   * (hårt krav). EN post per anrop, ALDRIG bulk (SECURITY-SPEC §6.10).
+   *
+   * "Ersätt" (Dokument-ytan) komponerar denna metoden EFTER en lyckad
+   * `uploadAttachment` — ladda upp nya FÖRST, radera gamla EFTER lyckad
+   * uppladdning, aldrig tvärtom (`useReplaceAttachment`). Denna metoden vet
+   * ingenting om "ersätt"-semantiken — den bara raderar EN namngiven post,
+   * precis som `createEventNote` inte vet något om vilken UI-flow som
+   * anropade den.
+   */
+  deleteAttachment(eventId: string, attachmentId: string): Promise<void>;
+
+  /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5, PRD
    * TASK-201). Läsning via get-activity-log: DIREKT ur Postgres-tabellen
    * `activity_log` (ADR-110) — ingen Airtable-interaktion, till skillnad

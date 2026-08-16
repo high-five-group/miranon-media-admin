@@ -207,6 +207,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
+  async deleteAttachment(_eventId: string, _attachmentId: string): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
   async fetchActivityLog(_params?: ActivityLogParams): Promise<ActivityLogPage> {
     throw new Error(NOT_IMPLEMENTED);
   }

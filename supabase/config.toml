@@ -234,6 +234,18 @@ verify_jwt = true
 [functions.get-activity-log]
 verify_jwt = true
 
+# delete-attachment — TASK-147.11 "Äkta ersätt och radera för bilagor" (PRD
+# task-147, uppföljning av task-147.6:s fynd 3: adaptern saknade delete/
+# replace helt). Repots ANDRA delete-operation (LedgerRemover,
+# `_shared/receipt-numbering.ts`, TASK-147.7, var den FÖRSTA). Gateway-
+# första-försvar aktivt; requireUser + en ägarskaps-guard (bilagans Event-
+# länk måste matcha det angivna eventId:t) läggs OVANPÅ i koden. STÅR i
+# .prod-functions-allowlist.conf (TASK-147.11, 2026-08-16, Marcus-GO) —
+# allowlist-posten är bokföring inför en KOMMANDE Marcus-auktoriserad
+# prod-deploy (kortets AC #4), ingen prod-operation är utförd av denna rad.
+[functions.delete-attachment]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #

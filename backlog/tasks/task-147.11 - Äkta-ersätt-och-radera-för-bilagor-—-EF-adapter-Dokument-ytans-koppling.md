@@ -4,6 +4,7 @@ title: Äkta ersätt och radera för bilagor — EF + adapter + Dokument-ytans k
 status: To Do
 assignee: []
 created_date: '2026-08-16 08:39'
+updated_date: '2026-08-16 10:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,16 +20,16 @@ Ur task-147.6:s fynd 3 (2026-08-16, Marcus-GO 'byggas idag'): adaptern saknar de
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 EF:n raderar/ersätter en bilage-post med auth + guard enligt EF-ribban; deny-triple-klass-bevis
-- [ ] #2 Adapter-metod + Dokument-ytans Ersätt använder den — ingen klientsidig låtsas-ersättning kvar
-- [ ] #3 Staging-bevisad ände-till-ände (ladda upp → ersätt → gamla borta, nya kvar)
-- [ ] #4 Prod-deploy-behovet bokfört för dagens allowlist-moment
+- [x] #1 EF:n raderar/ersätter en bilage-post med auth + guard enligt EF-ribban; deny-triple-klass-bevis
+- [x] #2 Adapter-metod + Dokument-ytans Ersätt använder den — ingen klientsidig låtsas-ersättning kvar
+- [x] #3 Staging-bevisad ände-till-ände (ladda upp → ersätt → gamla borta, nya kvar)
+- [x] #4 Prod-deploy-behovet bokfört för dagens allowlist-moment
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

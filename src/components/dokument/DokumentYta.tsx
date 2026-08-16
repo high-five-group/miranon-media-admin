@@ -59,19 +59,25 @@
  * till fler länkar på en befintlig rad. Prototypens `anvandsI`-räknare är
  * därför borttagen snarare än fejkad.
  *
- * "ERSÄTT" (AC #1) — byggd UTAN ny backend-yta, ÄN. Adaptern saknar ett
- * delete/replace-primitiv (`DataSourceAdapter.ts` bär bara `uploadAttachment`
- * + `fetchEventAttachments`, `grep -n delete` = 0 träffar) — en ny
- * uppladdning med SAMMA `Namn` grupperas därför klient-sidigt som en nyare
- * version av samma rad (`grupperaPerNamn` nedan); den gamla raden finns kvar
- * i Airtable (additivt, ADR-063) men visas bara som en daterad "Ersatte en
- * tidigare version"-notis under den nya. HEURISTIK, ÖPPET BOKFÖRD: gruppering
- * sker på exakt filnamns-match, inte ett riktigt `ersätter`-fält. Djupet är
- * EN nivå (prototypens exakta `ersatte?: string`-fält, aldrig en kedja) — se
- * `grupperaPerNamn`s egen kommentar. Den ÄKTA server-sidiga ersätt/radera-
- * ytan (EF + adapter-metod, ingen skräprad kvar i Airtable) landar via
- * TASK-147.11 — denna fils klient-gruppering rörs inte av det kortet, den
- * FASAS UT först när 147.11 kopplar in sin egen mutation här.
+ * "ERSÄTT" (AC #1) — [ÄKTA SEDAN TASK-147.11] Detta stycket beskrev
+ * ursprungligen (TASK-147.6) en klientsidig attrapp: adaptern saknade ett
+ * delete/replace-primitiv, så en ny uppladdning med SAMMA `Namn` grupperades
+ * bara klient-sidigt som en "nyare version" av samma rad — den gamla raden
+ * blev liggande kvar i Airtable OCH Storage som skräp, synligt bara som en
+ * "Ersatte en tidigare version"-notis, och en TREDJE uppladdning gjorde den
+ * ÄLDSTA av tre osynlig i listan (varken egen rad eller notis). TASK-147.11
+ * byggde den saknade primitiven (`delete-attachment`-EF:en +
+ * `DataSourceAdapter.deleteAttachment`) och kopplade "Ersätt"
+ * (`useReplaceAttachment`) till den: en lyckad ersättning laddar upp den nya
+ * filen FÖRST och raderar sedan den gamla posten FAKTISKT — både Storage-
+ * bytesen och Bilagor-raden. Ingen ny uppladdning kan därför längre skapa en
+ * dubblett via "Ersätt". `grupperaPerNamn` (nedan) är DEGRADERAD till en ren
+ * visningshjälp för KVARVARANDE dubbletter (t.ex. flera identiska klass
+ * B-genereringar via `generate-event-attachment` — helt orört av denna
+ * ändring) — den påstår inte längre NÅGOT om att en dubblett är en
+ * "ersättning". (Formväxeln `?form=grupper`/`?form=lista` som tidigare stod
+ * nämnd här är riven — se skärpningsvarv 2, punkt 3, nedan; listan är nu
+ * ytans enda form.)
  *
  * KLASS B/C (mallar/generatorer): FORTFARANDE stubbar, MEDVETET — de är
  * kod-nivå-KATALOGER (vilken mall/generator som FINNS), inte instans-listor.
@@ -159,6 +165,7 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { formatMB } from '@/data/adapters/attachmentUpload';
+import { useReplaceAttachment } from '@/data/mutations/useReplaceAttachment';
 import { useUploadAttachment } from '@/data/mutations/useUploadAttachment';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
@@ -211,17 +218,27 @@ const DATUM_TID = new Intl.DateTimeFormat('sv-SE', {
 });
 
 /**
- * En rad i listan — den verkliga, senaste versionen av en fil, plus (om en
- * tidigare version med SAMMA `Namn` fanns) datumet den ersatte. Se filhuvudets
- * "ERSÄTT"-stycke för heuristikens gräns.
+ * En rad i listan — den verkliga, senaste versionen av en fil, plus (om
+ * ytterligare rader med SAMMA `Namn` finns) antalet äldre dubbletter som
+ * döljs. Se filhuvudets "ERSÄTT"-stycke: `dolda` bär INGEN claim om VARFÖR
+ * en dubblett finns (Ersätt skapar inte längre några — se `grupperaPerNamn`
+ * nedan för vad som kan).
  */
-type BilageRad = { current: Attachment; ersatte?: Attachment };
+type BilageRad = { current: Attachment; dolda: number };
 
 /**
- * Grupperar VERKLIGA `fetchEventAttachments`-rader per filnamn. Listan
- * kommer redan sorterad nyast-först från servern (`get-event-attachments`
- * § kommentar "Nyast först") — första träffen per namn är därför garanterat
- * den senaste, ingen omsortering behövs inom gruppen.
+ * [TASK-147.11, DEGRADERAD TILL REN VISNINGSHJÄLP] Grupperar VERKLIGA
+ * `fetchEventAttachments`-rader per filnamn — kollapsar dubbletter till EN
+ * rad (den nyaste; listan kommer redan sorterad nyast-först från servern,
+ * `get-event-attachments` § kommentar "Nyast först", så första träffen per
+ * namn är garanterat den senaste) plus en räkning av hur många äldre
+ * dubbletter som döljs. Bär INTE längre någon "ersatte en tidigare
+ * version"-CLAIM (TASK-147.6:s ursprungliga form, se filhuvudet): "Ersätt"
+ * raderar nu FAKTISKT den gamla posten (`useReplaceAttachment`), så en
+ * framtida ersättning kan aldrig skapa en dubblett att gruppera här.
+ * Kvarvarande dubbletter (t.ex. flera identiska klass B-genereringar via
+ * `generate-event-attachment`) är INTE ersättningar — funktionen gissar
+ * inget om hur de uppstod, den kollapsar dem bara för listläsbarhet.
  */
 function grupperaPerNamn(attachments: readonly Attachment[]): BilageRad[] {
   const perNamn = new Map<string, Attachment[]>();
@@ -232,7 +249,7 @@ function grupperaPerNamn(attachments: readonly Attachment[]): BilageRad[] {
   }
   const rader: BilageRad[] = [];
   for (const lista of perNamn.values()) {
-    rader.push({ current: lista[0], ersatte: lista[1] });
+    rader.push({ current: lista[0], dolda: lista.length - 1 });
   }
   // Nyast övergripande överst (sekundär sort — grupperingen kan ha blandat
   // ordningen mellan olika namn).
@@ -257,6 +274,11 @@ export function DokumentYta() {
   });
 
   const uploadMutation = useUploadAttachment(eventId ?? '');
+  // "Ersätt" (TASK-147.11) — SKILD hook/mutation från uppladdningsknappen
+  // längst ner: samma FileTrigger-mönster, men bär vilken befintlig post
+  // som ska bort (`oldAttachmentId`) och komponerar upload+delete i rätt
+  // ordning (se useReplaceAttachment.ts för kontraktet).
+  const replaceMutation = useReplaceAttachment(eventId ?? '');
 
   const rader = useMemo(
     () => grupperaPerNamn(attachmentsQuery.data ?? []),
@@ -266,6 +288,11 @@ export function DokumentYta() {
   const handleUpload = (files: FileList | null) => {
     const file = files?.[0];
     if (file) uploadMutation.mutate(file);
+  };
+
+  const handleReplace = (files: FileList | null, oldAttachmentId: string) => {
+    const file = files?.[0];
+    if (file) replaceMutation.mutate({ file, oldAttachmentId });
   };
 
   return (
@@ -309,7 +336,13 @@ export function DokumentYta() {
           {attachmentsQuery.error instanceof Error ? attachmentsQuery.error.message : 'Okänt fel.'}
         </MessageBox>
       ) : (
-        <DokumentLista rader={rader} onUpload={handleUpload} uploadMutation={uploadMutation} />
+        <DokumentLista
+          rader={rader}
+          onUpload={handleUpload}
+          uploadMutation={uploadMutation}
+          onReplace={handleReplace}
+          replaceMutation={replaceMutation}
+        />
       )}
     </div>
   );
@@ -323,17 +356,25 @@ function MetaRad({ delar }: { delar: (string | null)[] }) {
 }
 
 type UploadMutation = ReturnType<typeof useUploadAttachment>;
+type ReplaceMutation = ReturnType<typeof useReplaceAttachment>;
 
 function BilageRadRow({
   rad,
-  onUpload,
-  uploadMutation,
+  onReplace,
+  replaceMutation,
 }: {
   rad: BilageRad;
-  onUpload: (files: FileList | null) => void;
-  uploadMutation: UploadMutation;
+  onReplace: (files: FileList | null, oldAttachmentId: string) => void;
+  replaceMutation: ReplaceMutation;
 }) {
-  const { current, ersatte } = rad;
+  const { current, dolda } = rad;
+  // Bara DENNA rads knapp visar "Ersätter…"/blir avstängd — inte hela
+  // listan (till skillnad mot uppladdningsknappen längst ner, som stänger
+  // av sig själv via sin egen `uploadMutation.isPending`). `variables`
+  // finns bara medan mutationen faktiskt pågår (TanStack Query), så
+  // jämförelsen är säker även innan första anropet.
+  const ersatterDennaRaden =
+    replaceMutation.isPending && replaceMutation.variables?.oldAttachmentId === current.id;
   return (
     <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
       <FileText aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-text-muted" />
@@ -350,15 +391,18 @@ function BilageRadRow({
             `Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`,
           ]}
         />
-        {ersatte && (
+        {dolda > 0 && (
           <span className="text-caption text-text-secondary">
-            Ersatte en tidigare version från {DATUM_TID.format(new Date(ersatte.skapad))}
+            +{dolda} {dolda === 1 ? 'äldre fil' : 'äldre filer'} med samma namn (visas inte)
           </span>
         )}
       </span>
-      <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={onUpload}>
-        <Button intent="ghost" size="sm" isDisabled={uploadMutation.isPending}>
-          Ersätt
+      <FileTrigger
+        acceptedFileTypes={['application/pdf']}
+        onSelect={(files) => onReplace(files, current.id)}
+      >
+        <Button intent="ghost" size="sm" isDisabled={ersatterDennaRaden}>
+          {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
         </Button>
       </FileTrigger>
     </div>
@@ -404,6 +448,18 @@ function UppladdningsFel({ uploadMutation }: { uploadMutation: UploadMutation })
   );
 }
 
+/** Speglar `UppladdningsFel` — egen felruta för "Ersätt" (TASK-147.11), eget
+ * felmeddelande (kan skilja på "vilket steg som föll", se
+ * `useReplaceAttachment.ts`). */
+function ErsattningsFel({ replaceMutation }: { replaceMutation: ReplaceMutation }) {
+  if (!replaceMutation.isError) return null;
+  return (
+    <MessageBox intent="error" title="Kunde inte ersätta filen">
+      {replaceMutation.error instanceof Error ? replaceMutation.error.message : 'Okänt fel.'}
+    </MessageBox>
+  );
+}
+
 type ListaTyp = 'alla' | 'bilaga' | 'mall' | 'generator';
 
 const LISTA_FILTER: { key: ListaTyp; label: string }[] = [
@@ -436,10 +492,14 @@ function DokumentLista({
   rader,
   onUpload,
   uploadMutation,
+  onReplace,
+  replaceMutation,
 }: {
   rader: BilageRad[];
   onUpload: (files: FileList | null) => void;
   uploadMutation: UploadMutation;
+  onReplace: (files: FileList | null, oldAttachmentId: string) => void;
+  replaceMutation: ReplaceMutation;
 }) {
   const [filter, setFilter] = useQueryState('typ');
   const aktivtFilter: ListaTyp =
@@ -473,8 +533,8 @@ function DokumentLista({
             <BilageRadRow
               key={r.current.id}
               rad={r}
-              onUpload={onUpload}
-              uploadMutation={uploadMutation}
+              onReplace={onReplace}
+              replaceMutation={replaceMutation}
             />
           ))}
         {visaMallar && MALLAR.map((m) => <MallRad key={m.id} mall={m} />)}
@@ -485,6 +545,7 @@ function DokumentLista({
       </div>
 
       <UppladdningsFel uploadMutation={uploadMutation} />
+      <ErsattningsFel replaceMutation={replaceMutation} />
       <div>
         <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={onUpload}>
           <Button intent="secondary" isDisabled={uploadMutation.isPending}>
