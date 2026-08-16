@@ -569,9 +569,18 @@ S103. Numrering RE-verifierad mot `4b085251` — oförändrad: **109 / task-195 
 T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
 § Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ⏸️ PAUSAD (2026-08-17 natt, `lifecycle: paused`) — HELA
-SEGMENT-YTAN GODKÄND AV MARCUS ("helt nöjd på alla sidor", 2026-08-16);
-PROMOVERINGEN KÖRS I NÄSTA RESUME (färsk kontext, Marcus beslut).**
+**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-17, `lifecycle: active`, resume 4) —
+HELA SEGMENT-YTAN GODKÄND AV MARCUS ("helt nöjd på alla sidor",
+2026-08-16); PROMOVERINGEN PÅGÅR I DENNA RESUME.** **Vid resumen
+(2026-08-17):** paus-PR:en `#1456` `MERGED` (merge `d61ec793`) — inget i
+luften; ny gren `docs/s104-resume-4` i samma worktree. Numrering
+RE-verifierad mot `d61ec793`: **115 / task-249 / T145 / L512 + 19
+fragment** (247/248 + T143/T144 förbrukade av mellansessioner).
+Promoveringens steg 1: facit-manifestet FÖRFATTAT
+(`bilagor/s104-segment-divergens/facit.json`, sju ytor, `godkand: null`,
+`check-facit` grön; bevisform ariaSnapshot per s93-precedentet) — stämpeln
+väntar Marcus `!`-kanal (ADR-104). Arbetsform EJ återsatt
+(PAUSLÄGE-ordern: promoveringen väljer form efter sin process).
 Resume 3-dagen: agent-varven 1–4 (Opus; utbildning globalt · täckningens
 100 %-kvittens · publiklistan scanlista+inline-scroll · testmail-raden ·
 generatorn tre stegkort · begreppsrenheten "alternativ"/"urval") →
