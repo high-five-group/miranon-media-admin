@@ -4,7 +4,7 @@ title: 'Skiva: Dokument-ytan mot verklig data + facit-lås'
 status: In Progress
 assignee: []
 created_date: '2026-08-10 07:02'
-updated_date: '2026-08-16 15:30'
+updated_date: '2026-08-16 19:26'
 labels:
   - ready-for-human
 dependencies:
@@ -81,4 +81,6 @@ PREMISS-DIVERGENS FLAGGAD, INTE TYST KRINGGÅDD: rekommendationen för BILAGOR (
 VERIFIERAT: typecheck (exit 0), biome (exit 0, 0 fel i denna fil), build (exit 0), test:api (768 passed, exit 0) — alla fyra DoD-kommandon körda i förgrunden på denna gren. Ingen AC checkad i detta varv (AC1/AC2 var redan bockade från varv 1/2; AC3, Marcus facit-lås, är HITL och rörs inte här).
 
 GRANSKNING 3 (2026-08-16): Marcus GODKÄNDE varv 3 estetiskt ('ser nice ut'). FACIT-LÅSET MEDVETET UPPSKJUTET på Marcus order: stämpeln (AC3, !-kanalen) sätts först när task-245 (signerad nedladdnings-EF, bilage-visning) + task-246 (riktigt genererad PDF för klass B/C) landat, så hela Visa-upplevelsen kan dömas i ett svep. Ingen ytterligare granskningsskuld på varv 3 självt.
+
+FACIT-LÅS FÖRBERETT (AC #3s förberedande halva, 2026-08-16): manifest tasks/sessions/bilagor/s102-dokument-konvergens/facit.json skapat med "godkand": null — 5 facit-bilder (listvyn desktop+mobil, Visa-overlayens tre klasser bilaga/mall/kvitto). Listvy-bilderna togs med Playwrights bundlade headless Chromium; de tre Visa-overlay-bilderna krävde en omtagning med channel:'chrome' (systemets riktiga Chrome, PDFium-visare) eftersom bundlad headless Chromium renderade PDF-iframen tom — ingen mockning, samma riktiga staging-data i båda passen. B3-markör "DOKUMENT-YTAN — Mer-ytan där bilagor förvaltas" (docblockets titelrad, DokumentYta.tsx:2) tillagd i .facit-policy.conf § FACIT_PROTO_MARKORER, grep-verifierad unik (grep -rlF, 1 träff) före tillägget, och negativt kontrollprov kört skarpt (markören temporärt borttagen -> check-facit.sh exit 1/rött; återställd -> exit 0/grönt, git diff bekräftat identiskt). check-facit.sh grönt: 9 manifest, 16 ytor, 2 ogodkända (hem + dokument). DoD-kvartetten grön: typecheck exit 0, biome exit 0 (endast pre-existing warnings/infos i orörda filer), build exit 0, test:api 788 passed. Ingen kod i DokumentYta.tsx/appen ändrad av detta pass — enbart manifest + policy-conf + bilder + dessa kortnotes. AC #3 bockas INTE här (stämpeln, godkand-fältet, är Marcus egen handling via !-kanalen ADR-104) — orkestreraren bockar efter CI-verifiering per husets rutin.
 <!-- SECTION:NOTES:END -->
