@@ -91,6 +91,22 @@ function InnerApp() {
   const varmningHandle = useRef<StartvarmningHandle | null>(null);
   const varmtBeslutat = useRef(false);
 
+  // ═══ ÖVERGÅNGEN SPLASH → APP (skärpningsvarv TASK-242, forberedelseskarm-
+  // splash-branschmonster-2026-08-16.md § Rekommendation 4) ═══
+  // Avgörs EN gång, lazy, vid InnerApps allra första rendering (samma
+  // inline-mönster som `SlideToConfirm.tsx` — appen är rent CSR, ingen
+  // SSR-guard behövs): tillåter `prefers-reduced-motion: reduce` INTE
+  // rörelse ⇒ wrappern nedan appliceras ALDRIG någon animationsklass —
+  // "direkt byte utan animation" (Marcus-kravet), inte bara en tyst/inert
+  // klass som råkar inte matcha sitt media-villkor.
+  const [visaEntreanimation] = useState(
+    () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  // Flippar EN gång när entré-animationen faktiskt spelat klart
+  // (onAnimationEnd nedan) — under reduced motion körs ingen animation så
+  // detta förblir false för hela sessionen, vilket är korrekt (se ovan).
+  const [entreanimationKlar, setEntreanimationKlar] = useState(false);
+
   // **TRIGGER på BÅDA isAuthenticated OCH isLoading** för router.invalidate().
   // Race-condition utan isLoading-dep (upptäckt via K4.3 regression-test):
   //   1. Initial mount: AuthProvider state är { user: null, isLoading: true, isAuthenticated: false }
@@ -217,7 +233,44 @@ function InnerApp() {
     return <Forberedelseskarm klara={forlopp.klara} totalt={forlopp.totalt} />;
   }
 
-  return <RouterProvider router={router} context={{ auth }} />;
+  // ÖVERGÅNGEN — se klassdoc-blocket för `visaEntreanimation`/
+  // `entreanimationKlar` ovan för hela resonemanget. Wrappern är ALLTID
+  // närvarande (samma <div>, samma position i trädet) från och med FÖRSTA
+  // 'redo'-renderingen och framåt — <RouterProvider> byter ALDRIG
+  // strukturell position mellan en "wrappad" och en "owrappad" gren, vilket
+  // hade fått React att avmontera/återmontera hela routerträdet (och
+  // därmed nollställa all routerstate) vid övergångens slut. Endast
+  // KLASSNAMNET växlar (`motion-safe:animate-mm-avsloj` → inget), inte
+  // trädformen.
+  //
+  // KLASSEN STRIPPAS EFTER ANIMATIONEN (onAnimationEnd) — INTE valfritt.
+  // `--animate-mm-avsloj`s `both`-fill-mode HÅLLER kvar sista keyframens
+  // `transform: translateY(0)` på elementet EFTER att animationen avslutats
+  // om klassen finns kvar. Ett kvarstående, icke-`none`-transform-värde
+  // etablerar per CSS-specen en NY containing block för alla
+  // `position: fixed`-ättlingar — och AppShells `<TabBar />` ÄR
+  // fixed-positionerad (`TabBar.tsx`: `className="fixed inset-x-4
+  // bottom-4 ..."`). Utan strippningen hade tab-baren blivit permanent
+  // felpositionerad (fixerad mot denna wrapper i stället för viewporten)
+  // för hela sessionen efter FÖRSTA appmonteringen — inte bara under de
+  // 0,2 sekunderna animationen faktiskt kör. `min-h-dvh` på wrappern
+  // minimerar dessutom glappet UNDER de 0,2 sekunderna (samma dvh-enhet
+  // som login.tsx): så länge sidans innehåll ryms inom viewporten (det
+  // vanliga fallet) sammanfaller wrapperns nedre kant med viewportens,
+  // så tab-barens `bottom-4` hamnar rätt även medan transformet är aktivt.
+  return (
+    <div
+      data-testid="app-entreanimation"
+      className={
+        visaEntreanimation && !entreanimationKlar
+          ? 'min-h-dvh motion-safe:animate-mm-avsloj'
+          : undefined
+      }
+      onAnimationEnd={() => setEntreanimationKlar(true)}
+    >
+      <RouterProvider router={router} context={{ auth }} />
+    </div>
+  );
 }
 
 const rootEl = document.getElementById('root');
