@@ -3174,7 +3174,6 @@ function RegelVerkstad({
     (v) => !villkorGiltigt(v),
   ).length;
   const harRegel = rule.include.length > 0;
-  const harFlerledadGrupp = pred.med.some((k) => konjunktGiltig(k) && k.villkor.length > 1);
 
   /* RÄKNINGEN FÖLJER REGELN — ingen begäran, ingen knapp (Marcus 2026-08-10).
      `enabled` är `harRegel`, inte en sparad signatur.
@@ -3228,12 +3227,18 @@ function RegelVerkstad({
   return (
     <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmentet">
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
-        <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
-          Regeln
+        {/* RUBRIKEN ÄR SEGMENTET, INTE SYSTEMORDET (Marcus 2026-08-16:
+            "'Regeln' … väldigt förvirrande"). Befintligt segment bär sitt
+            namn; ett namnlöst utkast (vägen ur mallvyns "Bygg med egna
+            villkor") heter det man håller på att göra. Den gamla tekniska
+            ingressen ("En regel beskriver vad någon har gått igenom - inte
+            vilka utbildningar som fanns …") är ersatt av en rad i
+            nyttospråk — automatik-poängen bor nu i villkorens egen text. */}
+        <h1 ref={rubrikRef} tabIndex={-1} className="min-w-0 truncate font-semibold text-3xl">
+          {entitet.namn.trim() !== '' ? entitet.namn : 'Nytt segment'}
         </h1>
         <p className="text-small text-text-muted">
-          En regel beskriver vad någon har gått igenom - inte vilka utbildningar som fanns när du
-          byggde den. Startar en ny nivå senare omfattas den automatiskt.
+          Egna villkor för vilka som ingår - antalet räknas medan du bygger.
         </p>
       </header>
 
@@ -3345,17 +3350,13 @@ function RegelVerkstad({
                 regelrymden kostar noll eftersom den gamla signaturens svar
                 ligger kvar. Spärren skyddade alltså inte mot walken; den
                 lade bara ett klick mellan Lotta och svaret. */}
-            {/* EXPANSIONEN, SAGD KORT. Kort med flit: den är en not om
-                mekaniken, inte en varning om ytan. */}
-            <p className="text-caption text-text-muted">
-              Regeln slås upp mot {rule.include.length} av {parInfo.length} utbildningar i
-              webbläsaren och skickas som en utbildningslista till servern.
-              {harFlerledadGrupp &&
-                ' Och-grupperna räknas som snitt av flera frågor i webbläsaren.'}{' '}
-              Skarpt måste servern äga{' '}
-              {harFlerledadGrupp ? 'både uppslaget och snittet' : 'uppslaget'} - annars kan
-              mottagarkontrollen inte lita på regeln.
-            </p>
+            {/* EXPANSIONS-NOTEN ÄR RIVEN UR SYNLIG TEXT (Marcus 2026-08-16,
+                varv 6: utvecklartext på Lottas yta). Mekaniken den beskrev
+                gäller oförändrat och bor i filhuvudets EF-krav: regeln
+                expanderas i webbläsaren och och-grupper snittas klient-side —
+                skarpt måste servern äga både uppslaget och snittet
+                (segment-membership.ts § AND-PRIMITIVEN får aldrig promoveras
+                som klient-snitt). */}
           </div>
         </div>
       </section>
@@ -3370,7 +3371,7 @@ function RegelVerkstad({
               onSpara(namn.trim(), pred);
             }}
           >
-            Spara regeln
+            Spara segmentet
           </Button>
           {/* EN LÅST KNAPP SKA SÄGA VARFÖR. `a`s form ("Bygg klart regeln
               först."): skälet står bredvid knappen, inte i huvudet på den som
@@ -3896,6 +3897,342 @@ function DelaUppIGrupper({
           </Button>
         </div>
         <PrototypNot>Grupperna läggs till i listan. Inget sparas i basen.</PrototypNot>
+      </div>
+    </SidRam>
+  );
+}
+
+/* ================================================================== *
+ * NYTT SEGMENT — mall-lagret (S104 varv 6, Marcus GO 2026-08-16)
+ * ================================================================== */
+
+type MallVag = 'nagon' | 'menInte' | 'exakt';
+
+/**
+ * MALL-LAGRET FRAMFÖR BYGGAREN — branschmönstret, inte en egen idé.
+ * Research-passet (docs/research/segment-byggare-branschmonster-2026-08-16.md)
+ * fann att samtliga 8 undersökta produkter bär en teknisk villkorsbyggare i
+ * botten och att de bästa (Mailchimp Pre-Built Segments tydligast) lägger
+ * namngivna mallar som PRIMÄR ingång, med byggaren som avancerat läge —
+ * ingen av de 8 ersätter byggaren med mallar, så vår `RegelVerkstad` står
+ * kvar och nås via "Bygg med egna villkor". UX-forskningen (Hearst kap. 4,
+ * Nielsen) mäter varför mallarna behövs: rå boolesk logik missförstås även
+ * av vana användare. Lotta ska aldrig se en operator — hon väljer en mening.
+ *
+ * TRE VÄGAR täcker domänens verkliga segmentklasser (4 utbildningar ×
+ * modalitet): "minst en av" (bred), "dessa men inte de här" (snäv) och
+ * "exakt kombinationen" (`byggGrupp`-motorn — samma som de fjorton).
+ * Predikatet genereras UR VALET; människomeningen är kvittot, i samma
+ * meningsfamilj som gruppkorten (`manniskoMening`).
+ *
+ * SAMMA STEGFORM SOM "DELA UPP I GRUPPER" (StegSektion, valrader, chips):
+ * appens två skapandevägar är syskon och ska läsa som det. Steg 1 är
+ * ordagrant generatorns steg 1.
+ */
+function malMening(
+  vag: MallVag,
+  valdaA: KursAtom[],
+  valdaB: KursAtom[],
+  alla: KursAtom[],
+  modalitet: ModalitetsVal,
+): string {
+  const slut =
+    modalitet === 'Föreläsning'
+      ? ' Räknat som föreläsning.'
+      : modalitet === 'Båda'
+        ? ' Räknat som utbildning eller föreläsning.'
+        : '';
+  const A = valdaA.map((a) => a.etikett);
+  if (vag === 'exakt') {
+    const ivaldaNycklar = new Set(valdaA.map((a) => a.nyckel));
+    return manniskoMening(
+      valdaA,
+      alla.filter((a) => !ivaldaNycklar.has(a.nyckel)),
+      modalitet,
+    );
+  }
+  if (vag === 'menInte') {
+    const B = valdaB.map((a) => a.etikett);
+    return `Har gått ${A.length === 2 ? 'både ' : ''}${listaOrd(A, 'och')} - men inte ${listaOrd(B, 'eller')}.${slut}`;
+  }
+  return A.length === 1
+    ? `Har gått ${A[0] ?? ''}.${slut}`
+    : `Har gått minst en av ${listaOrd(A, 'och')}.${slut}`;
+}
+
+/** Namnförslaget ur valet — redigerbart, aldrig ett krav. */
+function malNamnForslag(vag: MallVag, valdaA: KursAtom[], valdaB: KursAtom[]): string {
+  const A = valdaA.map((a) => a.etikett);
+  if (vag === 'exakt') return A.join(' + ');
+  if (vag === 'menInte')
+    return `${listaOrd(A, 'och')} utan ${listaOrd(
+      valdaB.map((a) => a.etikett),
+      'och',
+    )}`;
+  return listaOrd(A, 'eller');
+}
+
+function NyttSegmentVy({
+  parInfo,
+  onSkapa,
+  onAvancerat,
+  onTillbaka,
+}: {
+  parInfo: ParInfo[];
+  onSkapa: (entitet: SegmentEntitet) => void;
+  /** Öppnar RegelVerkstad — med mallvalets predikat som utgångsläge när ett finns. */
+  onAvancerat: (predikat: Predikat | null, namn: string) => void;
+  onTillbaka: () => void;
+}) {
+  const rubrikRef = useRef<HTMLHeadingElement>(null);
+  useVyFokus(rubrikRef, true);
+  const [modalitet, setModalitet] = useState<ModalitetsVal | null>(null);
+  const [vag, setVag] = useState<MallVag | null>(null);
+  const [valdaA, setValdaA] = useState<ReadonlySet<string>>(() => new Set());
+  const [valdaB, setValdaB] = useState<ReadonlySet<string>>(() => new Set());
+  const [namn, setNamn] = useState('');
+  const [namnRedigerat, setNamnRedigerat] = useState(false);
+
+  const atomer = useMemo(
+    () => (modalitet === null ? [] : harledKursAtomer(parInfo, modalitet)),
+    [parInfo, modalitet],
+  );
+  // Samma vakt som generatorn: en atom som försvinner vid modalitetsbyte får
+  // inte förbli vald osynligt.
+  useEffect(() => {
+    const kvar = (s: ReadonlySet<string>) =>
+      new Set([...s].filter((k) => atomer.some((a) => a.nyckel === k)));
+    setValdaA((s) => {
+      const ny = kvar(s);
+      return ny.size === s.size ? s : ny;
+    });
+    setValdaB((s) => {
+      const ny = kvar(s);
+      return ny.size === s.size ? s : ny;
+    });
+  }, [atomer]);
+
+  const atomerA = useMemo(() => atomer.filter((a) => valdaA.has(a.nyckel)), [atomer, valdaA]);
+  const atomerB = useMemo(() => atomer.filter((a) => valdaB.has(a.nyckel)), [atomer, valdaB]);
+
+  const komplett =
+    modalitet !== null &&
+    vag !== null &&
+    atomerA.length > 0 &&
+    (vag !== 'menInte' || atomerB.length > 0);
+
+  /* PREDIKATET GENERERAS UR VALET — Lotta ser aldrig strukturen, bara
+     meningen. "nagon" = en konjunktgrupp PER atom (grupper är ELLER);
+     "menInte" = EN grupp av alla A (OCH) + B i utan; "exakt" = byggGrupps
+     form (alla valda + allt annat uteslutet). */
+  const pred = useMemo<Predikat | null>(() => {
+    if (!komplett || modalitet === null || vag === null) return null;
+    if (vag === 'nagon')
+      return {
+        med: atomerA.map((a) => nyKonjunkt([villkorForAtom(a, modalitet)])),
+        utan: [],
+      };
+    if (vag === 'menInte')
+      return {
+        med: [nyKonjunkt(atomerA.map((a) => villkorForAtom(a, modalitet)))],
+        utan: atomerB.map((a) => villkorForAtom(a, modalitet)),
+      };
+    const ivaldaNycklar = new Set(atomerA.map((a) => a.nyckel));
+    return {
+      med: [nyKonjunkt(atomerA.map((a) => villkorForAtom(a, modalitet)))],
+      utan: atomer
+        .filter((a) => !ivaldaNycklar.has(a.nyckel))
+        .map((a) => villkorForAtom(a, modalitet)),
+    };
+  }, [komplett, modalitet, vag, atomerA, atomerB, atomer]);
+
+  const mening =
+    komplett && modalitet !== null && vag !== null
+      ? malMening(vag, atomerA, atomerB, atomer, modalitet)
+      : null;
+  const { data, isFetching, isError } = usePredikatMedlemmar(pred, null, parInfo, pred !== null);
+  const antal = data?.count;
+
+  // Namnförslaget följer valet tills Lotta själv rört fältet — därefter är
+  // hennes text helig (samma princip som höjdlåset: datan får inte svika).
+  useEffect(() => {
+    if (namnRedigerat || vag === null) return;
+    setNamn(komplett ? malNamnForslag(vag, atomerA, atomerB) : '');
+  }, [namnRedigerat, vag, komplett, atomerA, atomerB]);
+
+  const kanSkapa = komplett && pred !== null && namn.trim() !== '';
+
+  function skapa() {
+    if (!kanSkapa || pred === null || mening === null) return;
+    onSkapa({
+      id: `nytt-${Date.now()}`,
+      namn: namn.trim(),
+      predikat: pred,
+      arvdRegel: null,
+      skiss: true,
+      beskrivning: mening,
+    });
+  }
+
+  const VAGAR: { id: MallVag; etikett: string }[] = [
+    { id: 'nagon', etikett: 'Alla som gått minst en av utbildningarna' },
+    { id: 'menInte', etikett: 'Har gått vissa - men inte andra' },
+    { id: 'exakt', etikett: 'Exakt den här kombinationen' },
+  ];
+  const VALRAD_KLASS =
+    'w-full rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong';
+
+  const chipsFor = (
+    valda: ReadonlySet<string>,
+    satt: (fn: (s: ReadonlySet<string>) => ReadonlySet<string>) => void,
+    filtreraBort?: ReadonlySet<string>,
+  ) =>
+    atomer
+      .filter((a) => !filtreraBort?.has(a.nyckel))
+      .map((a) => (
+        <ValChip
+          key={a.nyckel}
+          vald={valda.has(a.nyckel)}
+          onTryck={() =>
+            satt((s) => {
+              const ny = new Set(s);
+              if (ny.has(a.nyckel)) ny.delete(a.nyckel);
+              else ny.add(a.nyckel);
+              return ny;
+            })
+          }
+        >
+          {a.etikett}
+        </ValChip>
+      ));
+
+  return (
+    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+      <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
+        <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
+          Nytt segment
+        </h1>
+        <p className="text-small text-text-muted">
+          Välj vilka som ska ingå - antalet räknas medan du väljer.
+        </p>
+      </header>
+
+      <div className="flex flex-col gap-4 px-4">
+        <StegSektion nummer={1} rubrik="Vilka räknas med?">
+          <RadioGroup
+            label="Räknas med"
+            hideLabel
+            value={modalitet}
+            onChange={(v) => setModalitet(v as ModalitetsVal)}
+          >
+            <Radio value="Utbildning" className={VALRAD_KLASS}>
+              De som gått utbildningar
+            </Radio>
+            <Radio value="Föreläsning" className={VALRAD_KLASS}>
+              De som varit på föreläsningar
+            </Radio>
+            <Radio value="Båda" className={VALRAD_KLASS}>
+              Båda
+            </Radio>
+          </RadioGroup>
+        </StegSektion>
+
+        <StegSektion
+          nummer={2}
+          rubrik="Vilka ska ingå?"
+          vilar={modalitet === null ? 'Välj först vilka som räknas med.' : undefined}
+        >
+          <RadioGroup
+            label="Vad ska segmentet innehålla"
+            hideLabel
+            value={vag}
+            onChange={(v) => setVag(v as MallVag)}
+          >
+            {VAGAR.map((v) => (
+              <Radio key={v.id} value={v.id} className={VALRAD_KLASS}>
+                {v.etikett}
+              </Radio>
+            ))}
+          </RadioGroup>
+
+          {vag !== null &&
+            (vag === 'menInte' ? (
+              <div className="flex flex-col gap-3">
+                <ChipRad etikett="Har gått">{chipsFor(valdaA, setValdaA, valdaB)}</ChipRad>
+                <ChipRad etikett="Men inte">{chipsFor(valdaB, setValdaB, valdaA)}</ChipRad>
+              </div>
+            ) : (
+              <ChipRad etikett="Utbildningar" doldEtikett>
+                {chipsFor(valdaA, setValdaA)}
+              </ChipRad>
+            ))}
+        </StegSektion>
+
+        <StegSektion nummer={3} rubrik="Det här blir segmentet" dampad={!komplett}>
+          {/* Live-regionen är monterad från mount och byter bara innehåll —
+              samma disciplin som generatorns steg 3. */}
+          <div aria-live="polite" aria-busy={isFetching} className="flex flex-col gap-1">
+            {!komplett ? (
+              <p className="text-small text-text-muted">
+                {vag === 'menInte' && atomerA.length > 0
+                  ? 'Välj också vilka som inte ska ingå.'
+                  : 'Gör valen ovan, så visas segmentet här.'}
+              </p>
+            ) : (
+              <>
+                <p className="text-lg">{mening}</p>
+                {isFetching ? (
+                  <p className="text-small text-text-muted">Räknar personer…</p>
+                ) : isError ? (
+                  <p className="text-small text-text-muted">Antalet kunde inte räknas.</p>
+                ) : antal !== undefined ? (
+                  <p className="text-lg">
+                    <strong className="font-semibold text-3xl tabular-nums">{antal}</strong>{' '}
+                    {personform(antal)} i det här segmentet.
+                  </p>
+                ) : null}
+              </>
+            )}
+          </div>
+
+          {komplett && (
+            <>
+              <Input
+                label="Namn på segmentet"
+                value={namn}
+                onChange={(v) => {
+                  setNamn(v);
+                  setNamnRedigerat(true);
+                }}
+                isRequired
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button intent="primary" isDisabled={!kanSkapa} onPress={skapa}>
+                  Skapa segmentet
+                </Button>
+                <Button intent="secondary" onPress={onTillbaka}>
+                  Avbryt
+                </Button>
+              </div>
+            </>
+          )}
+        </StegSektion>
+
+        {/* AVANCERAT LÄGE — byggaren står kvar (research: 0 av 8 ersätter den
+            med mallar). Lågmäld textknapp i täckningsväxelns grammatik; tar
+            mallvalets predikat med sig så finjustering aldrig börjar om. */}
+        <div className="flex justify-end print:hidden">
+          <button
+            type="button"
+            onClick={() => onAvancerat(pred, namn.trim())}
+            className="-mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 font-medium text-small text-text-secondary hover:bg-bg-emphasized motion-safe:transition-colors"
+          >
+            <Pencil aria-hidden="true" size={16} className="shrink-0" />
+            Bygg med egna villkor
+          </button>
+        </div>
+
+        <PrototypNot>Segmentet läggs till i listan. Inget sparas i basen.</PrototypNot>
       </div>
     </SidRam>
   );
@@ -4606,17 +4943,20 @@ function UtskicksVy({
  */
 type Vy =
   | { namn: 'lista' }
+  | { namn: 'nytt' }
   | { namn: 'detalj'; id: string }
   | { namn: 'regel'; id: string }
   | { namn: 'generator' }
   | { namn: 'utskick'; ids: string[]; retur: 'lista' | 'detalj' };
 
-/** Ett tomt segment i byggläge — utgången ur "Nytt segment". */
-function nyEntitet(): SegmentEntitet {
+/** Ett segment i byggläge — utgången ur mallvyns "Bygg med egna villkor".
+    Predikatet förbefolkas ur mallvalet när ett finns (varv 6): finjustering
+    ska aldrig börja om från noll. */
+function nyEntitet(predikat: Predikat | null = null, namn = ''): SegmentEntitet {
   return {
     id: `nytt-${Date.now()}`,
-    namn: '',
-    predikat: { med: [nyKonjunkt()], utan: [] },
+    namn,
+    predikat: predikat ?? { med: [nyKonjunkt()], utan: [] },
     arvdRegel: null,
     skiss: true,
   };
@@ -4760,6 +5100,28 @@ export function VariantD() {
     );
   }
 
+  if (vy.namn === 'nytt') {
+    return (
+      <NyttSegmentVy
+        parInfo={parInfo}
+        onTillbaka={() => setVy({ namn: 'lista' })}
+        onSkapa={(entitet) => {
+          setEgna((lista) => [...lista, entitet]);
+          // WOW-skarven: det nya segmentet öppnas direkt — "här är ditt
+          // segment, det här är publiken" — i stället för att landa i listan
+          // och leta upp sitt eget kort.
+          setVy({ namn: 'detalj', id: entitet.id });
+        }}
+        onAvancerat={(predikat, namn) => {
+          const entitet = nyEntitet(predikat, namn);
+          setEgna((lista) => [...lista, entitet]);
+          setUtkastId(entitet.id);
+          setVy({ namn: 'regel', id: entitet.id });
+        }}
+      />
+    );
+  }
+
   if (vy.namn === 'utskick') {
     const valdaEntiteter = vy.ids
       .map((id) => hitta(id))
@@ -4817,12 +5179,7 @@ export function VariantD() {
       markeraLage={markeraLage}
       valda={valda}
       onOppna={(id) => setVy({ namn: 'detalj', id })}
-      onNytt={() => {
-        const entitet = nyEntitet();
-        setEgna((lista) => [...lista, entitet]);
-        setUtkastId(entitet.id);
-        setVy({ namn: 'regel', id: entitet.id });
-      }}
+      onNytt={() => setVy({ namn: 'nytt' })}
       onDelaUpp={() => setVy({ namn: 'generator' })}
       onOppnaMarkering={() => setMarkeraLage(true)}
       onStangMarkering={() => {
