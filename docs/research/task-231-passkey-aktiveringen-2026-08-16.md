@@ -62,7 +62,7 @@ Docs](https://supabase.com/docs/guides/auth/passkeys) (läst via WebFetch
    - **Relying Party ID** — "the bare domain name for your application (for
      example, 'example.com'). Do not include a scheme, port, or path."
    - **Relying Party Origins** — "comma-separated list of allowed origins
-     (for example 'https://example.com,https://app.example.com'). Up to 5
+     (for example `https://example.com,https://app.example.com`). Up to 5
      origins."
 
 Dashboarden **auto-fyller** dessa tre fält ur projektets Site URL och namn —
@@ -91,7 +91,7 @@ v1-update-auth-service-config](https://supabase.com/docs/reference/api/v1-update
 (läst via WebFetch 2026-08-16, bekräftad äkta URL via WebSearch-träff mot
 samma sida):
 
-```
+```http
 PATCH /v1/projects/{ref}/config/auth
 Authorization: Bearer <Supabase PAT, sbp_…>
 Content-Type: application/json
@@ -153,8 +153,8 @@ smalaste giltiga formen (RP-ID == origin-domänen exakt) är golvet enligt
 Aktivering av staging kräver en autentiserad `PATCH` mot Management API.
 Två vägar undersöktes:
 
-**(a) CLI-mediated.** `npx supabase --version` → `2.114.0`. `npx supabase
-config --help` visar EN subcommand: `push`. `push` skickar HELA
+**(a) CLI-mediated.** `npx supabase --version` → `2.114.0`. `npx supabase config --help`
+visar EN subcommand: `push`. `push` skickar HELA
 `config.toml` deklarativt — dokumenterat i filen själv (rad 283–289) som
 en verklig risk: första skarpa pushen mot staging (2026-08-05) ändrade 22
 av 242 fält, varav 7 var oavsiktliga regressioner (MFA/TOTP avstängt,
@@ -168,7 +168,7 @@ säkrare vägen för exakt den här typen av miljöspecifikt fält. En full
 
 **(b) Direkt Management API-anrop.** Kräver Supabase-PAT:ets råvärde som
 `Authorization: Bearer`-header. PAT:et ligger i macOS-nyckelringen (tjänst
-"Supabase CLI", konto "supabase" — `docs/reference/atkomst-och-nycklar.md`
+`Supabase CLI`, konto `supabase` — `docs/reference/atkomst-och-nycklar.md`
 § Register). `scripts/deny-hemlighet-utskrift.sh` (TASK-203) blockerar
 mekaniskt (fail-closed, exit 2) varje Bash-kommando som matchar
 `security find-generic-password ... -w` eller `... -g` — de enda kommandon
@@ -230,7 +230,7 @@ CLAUDE.md § Issue-substrat). Sammanfattning här för spårbarhet:
 
 **(a) Probe-flippen.** Samma curl som kortets premiss, körd om:
 
-```
+```bash
 curl -X POST https://pqtshyierkdgwdnxuirz.supabase.co/auth/v1/passkeys/authentication/options \
   -H "apikey: <staging anon key>" -H "Content-Type: application/json" -d '{}'
 ```
@@ -242,14 +242,14 @@ Efter: `200 {"challenge_id":"266f3685-…","options":{"challenge":"…",
 `webauthn_rp_id`/`webauthn_rp_origins` (`localhost`/`http://localhost:5173`)
 landade rätt.
 
-**(b) E2E med virtual authenticator.** `npm run dev -- --port 5173
---strictPort` (mode `development`, `.env.development` pekar redan mot
-staging). Playwright MCP (`browser_run_code_unsafe`), CDP `WebAuthn.enable`
-+ `WebAuthn.addVirtualAuthenticator` (`protocol: ctap2, transport:
-internal, hasResidentKey: true, hasUserVerification: true, isUserVerified:
-true, automaticPresenceSimulation: true`) — en simulerad plattforms-
-autentiserare (Touch ID-motsvarighet), eftersom en riktig sådan inte kan
-triggas programmatiskt.
+**(b) E2E med virtual authenticator.** `npm run dev -- --port 5173 --strictPort`
+(mode `development`, `.env.development` pekar redan mot staging). Playwright
+MCP (`browser_run_code_unsafe`), CDP `WebAuthn.enable` och
+`WebAuthn.addVirtualAuthenticator` (`protocol: ctap2, transport: internal,
+hasResidentKey: true, hasUserVerification: true, isUserVerified: true,
+automaticPresenceSimulation: true`) — en simulerad plattformsautentiserare
+(Touch ID-motsvarighet), eftersom en riktig sådan inte kan triggas
+programmatiskt.
 
 Flöde körd mot `staging-admin@miranon.test` (`.env.test`):
 
