@@ -569,9 +569,25 @@ S103. Numrering RE-verifierad mot `4b085251` — oförändrad: **109 / task-195 
 T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
 § Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-16, `lifecycle: active`) —
-BYGGKONTRAKTET KOMPLETT: AND + GENERATOR + DE FJORTON + TÄCKNINGSVYN; MARCUS
-GRANSKNINGSVARV FORTSÄTTER, FACIT EJ LÅST.** Dagens kedja (13 commits, pushade som
+**Session 104 ⏸️ PAUSAD (2026-08-17 natt, `lifecycle: paused`) — HELA
+SEGMENT-YTAN GODKÄND AV MARCUS ("helt nöjd på alla sidor", 2026-08-16);
+PROMOVERINGEN KÖRS I NÄSTA RESUME (färsk kontext, Marcus beslut).**
+Resume 3-dagen: agent-varven 1–4 (Opus; utbildning globalt · täckningens
+100 %-kvittens · publiklistan scanlista+inline-scroll · testmail-raden ·
+generatorn tre stegkort · begreppsrenheten "alternativ"/"urval") →
+research-passet (segment-byggare, 8 produkter: mallar framför byggare) →
+direkthands-varven 5–6 (mallvyn "Nytt segment" i tre steg med tre vägar +
+levande mening/antal/namn · verkstaden i samma form, namn sist ·
+tidsperioden som DatumFalt-kontroll [server-EF-krav bokfört] ·
+textinventeringen: VERBET BÄR FORMEN · träff-ordet
+utbildningar/föreläsningar/event). Gren
+`fix/task-181-s104-granskningsvarv-utbildning-tackning`, PR i
+paus-landningen — verifiera vid resume. Fynd-kort väntar skörden:
+PersonsList-höjdlåsbuggen (latent, skarp yta) + lessons-kandidater 1–12 +
+ORDLISTA-kandidater. Numrering vid paus: 115+/L512+~18 fragment/T143/
+task-247 — re-derivera ALLT vid mint. **HANDOFF: sessionsdok S104
+§ PAUSLÄGE (efter Del 7) + Del 7.** *(Radens tidigare Del 4–6-narrativ:
+sessionsdok Del 4–6 + Paushistorik 3.)* Dagens kedja (13 commits, pushade som
 EN enhet på Marcus "landa allt"; PR skapad+armerad i paus-landningen —
 verifiera vid resume): AND-primitiven som konjunkt-grupper i `med` med
 klient-snitt per unikt villkor (`14c00f12`, differentialbevisad) →

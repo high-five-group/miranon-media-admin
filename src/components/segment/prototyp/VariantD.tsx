@@ -186,6 +186,7 @@
  * (`fetchEvents`, `listSegments`, `computeSegment`) går via `useDataSource()`
  * (ADR-055/057); adapter-gränsen kringgås aldrig.
  */
+import { parseDate } from '@internationalized/date';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
@@ -193,10 +194,10 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CircleCheck,
   Group,
   Layers,
   ListPlus,
-  MailCheck,
   Pencil,
   Plus,
   Send,
@@ -207,6 +208,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { DetaljGrupp, EtikettVardeRad } from '@/components/events/detail/DetaljGrupp';
 import { Button } from '@/components/primitives/Button';
+import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
@@ -283,12 +285,6 @@ const FORMAT_FOR_MODALITET: Record<Modalitet, string> = {
 /** Modalitetsvalet i ett villkor. `null` = INTE VALT — villkoret är då ogiltigt. */
 type ModalitetsVal = Modalitet | 'Båda';
 
-const MODALITET_ORD: Record<ModalitetsVal, string> = {
-  Utbildning: 'utbildning',
-  Föreläsning: 'föreläsning',
-  Båda: 'utbildning eller föreläsning',
-};
-
 /**
  * ÅR-DIMENSIONEN SOM EF-KRAV, INTE SOM KONTROLL.
  *
@@ -296,25 +292,21 @@ const MODALITET_ORD: Record<ModalitetsVal, string> = {
  * ut vad ytan INTE kan är billigare än att låta någon upptäcka det efter ett
  * utskick — och kravet ska med i PRD:n, inte lösas i klienten.
  */
-const AR_EF_KRAV = {
-  rubrik: 'Tidsperiod går inte att välja än',
-  brod:
-    'En regel kan i dag säga VAD någon gått igenom, inte NÄR. Motorn räknar per kurs ' +
-    'och form - den vet inte vilket tillfälle någon var på. "Alla som gick något under 2025" ' +
-    'går därför inte att uttrycka, och en årsknapp här hade i själva verket valt KURSER som ' +
-    'råkade gå det året. Det är en annan fråga, och sannolikt inte den någon ställer.',
-  krav:
-    'Kravet hör hemma i servern: deltagandets datum måste följa med i källfrågan och ' +
-    'regeln bära ett tidsfönster. Då blir tidsperioden en riktig dimension.',
-} as const;
-
 /**
  * ETT VILLKOR = ett predikat över dimensionerna. Tom lista på en dimension
  * betyder "alla värden" — UTOM modaliteten, som aldrig får vara osagd.
  *
- * INGEN `ar`-gren: se `AR_EF_KRAV` + filhuvudet. Dimensionen är riven ur
- * predikatet därför att motorn inte kan bära den, inte därför att den saknar
- * värde.
+ * `period` ÄR EN UI-DIMENSION MED ETT SERVER-KRAV (varv 6d, Marcus
+ * 2026-08-16: "jag vill kunna välja tidsperiod … på proffsigast möjliga
+ * sätt" — det tidigare text-utlägget om varför året inte gick att välja är
+ * rivet och ersatt av en riktig kontroll). Formen bär valet och klartexten
+ * bär det i regelmeningen, men PROTOTYPENS RÄKNING KAN INTE VERKSTÄLLA DET:
+ * motorn räknar per (utbildning, form) utan tidpunkt — `AttendanceRow` bär
+ * inget datum, och ett klient-filter hade varit exakt den tysta felklass
+ * som aldrig får promoveras. EF-KRAVET (sedan Paushistorik 2, nu med
+ * UI-halvan byggd): deltagandets datum måste följa med i källfrågan och
+ * regeln bära tidsfönstret server-side — tills dess markerar räknesteget
+ * öppet att antalet är utan tidsfiltret.
  */
 type Villkor = {
   id: string;
@@ -323,7 +315,20 @@ type Villkor = {
   /** OBLIGATORISK. `null` = användaren har inte valt än → villkoret räknas inte. */
   modalitet: ModalitetsVal | null;
   format: string[];
+  /** ISO-datumpar (från/till). `null` = deltagande när som helst räknas. */
+  period: { start: string; end: string } | null;
 };
+
+/** Perioden som människotext — "1 feb. 2025 till 30 juni 2025". */
+function periodText(p: { start: string; end: string }): string {
+  const fmt = (iso: string) =>
+    new Date(`${iso}T00:00:00`).toLocaleDateString('sv-SE', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  return p.start === p.end ? fmt(p.start) : `${fmt(p.start)} till ${fmt(p.end)}`;
+}
 
 /**
  * EN KONJUNKT-GRUPP: alla villkor i gruppen ska uppfyllas SAMTIDIGT (och).
@@ -348,6 +353,7 @@ function nyttVillkor(): Villkor {
     nivaer: [],
     modalitet: null,
     format: [],
+    period: null,
   };
 }
 
@@ -548,15 +554,57 @@ function listaOrd(delar: string[], bindeord = 'eller'): string {
 /**
  * Ett villkor som svensk mening. Modaliteten står ALLTID med — den är
  * meningens verb-komplement och därmed omöjlig att läsa förbi.
+ *
+ * ÖPPEN SPÄNNING EFTER ORDBYTET (mätt i webbläsaren 2026-08-16, Marcus
+ * beslut "Utbildning ska definitivt vara globalt"). Meningen har TVÅ led som
+ * nu kan bära samma ord av olika skäl: familj-ledet (taxonomin — det som
+ * hette "kurs") och modalitets-ledet (formen deltagandet hade). De tre
+ * utfallen, verbatim ur ytan:
+ *
+ *   "Deltagit i RIM-utbildning som utbildning."      ← TAUTOLOGI
+ *   "Deltagit i någon utbildning som utbildning."    ← värst, familjen tom
+ *   "Deltagit i RIM-utbildning som föreläsning."     ← läsbart, men skaver
+ *
+ * ORDBYTET ÄR ÄNDÅ GJORT RAKT AV, med avsikt: ordern gällde ordet, och
+ * meningens FORM är ett Marcus-beslut som inte fattas här. Modaliteten får
+ * inte falla bort som lösning — den är säkerhetskrav (filhuvudet § MODALITET
+ * ÄR OBLIGATORISK), inte stilistik.
+ *
+ * VÄGEN UT, om formen ska ändras: stryk substantivet ur FAMILJ-ledet i
+ * stället ("Deltagit i RIM på Nivå 1 som utbildning" / "… som föreläsning").
+ * Då bär modaliteten ordet ensam och ingen mening säger det två gånger.
+ * Tomma familj-fallet behöver då ett eget ord — `publikOrd` löser samma
+ * problem genom att baka in modaliteten i frasen.
+ *
+ * Jämför `manniskoMening`, som redan gör ett VILLKORAT val åt andra hållet
+ * (ordet bara när modaliteten ÄR Utbildning) — den precedensen finns, men
+ * dess meningsstruktur är en annan och går inte att kopiera rakt hit.
  */
 function villkorKlartext(v: Villkor): string {
-  if (v.modalitet === null) return 'Ofullständigt villkor - modalitet saknas.';
-  const familj =
-    v.familjer.length === 0 ? 'någon kurs' : listaOrd(v.familjer.map((f) => `${f}-kurs`));
+  if (v.modalitet === null) return 'Ofullständigt villkor - välj vilka som räknas.';
+  // VERBET BÄR FORMEN (Marcus 2026-08-16, textinventeringen: "Deltagit i
+  // något som utbildning" var ingen mening, och "som utbildning" efter valet
+  // "De som gått utbildningar" var dubbelmacka). Samma princip som
+  // `manniskoMening`/`publikOrd`: "Har gått" ÄR utbildning, "Har varit på en
+  // föreläsning" ÄR föreläsning — bara "Båda" behöver ett förtydligande led,
+  // för där är det inte redundant.
+  const namn = v.familjer.length === 0 ? null : listaOrd(v.familjer);
   const niva = v.nivaer.length === 0 ? '' : ` på ${listaOrd(v.nivaer.map((n) => NIVA_ETIKETT[n]))}`;
-  const modalitet = ` som ${MODALITET_ORD[v.modalitet]}`;
   const format = v.format.length === 0 ? '' : ` i formatet ${listaOrd(v.format)}`;
-  return `Deltagit i ${familj}${niva}${modalitet}${format}.`;
+  const period = v.period === null ? '' : `, under perioden ${periodText(v.period)}`;
+  const stomme =
+    v.modalitet === 'Utbildning'
+      ? namn === null
+        ? `Har gått någon utbildning${niva}`
+        : `Har gått ${namn}${niva}`
+      : v.modalitet === 'Föreläsning'
+        ? namn === null
+          ? `Har varit på någon föreläsning${niva}`
+          : `Har varit på en föreläsning i ${namn}${niva}`
+        : namn === null
+          ? `Har gått någon utbildning eller varit på någon föreläsning${niva}`
+          : `Har deltagit i ${namn}${niva} - som utbildning eller föreläsning`;
+  return `${stomme}${format}${period}.`;
 }
 
 /**
@@ -639,7 +687,7 @@ function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
   if (entitet.beskrivning) return entitet.beskrivning;
   if (entitet.predikat) return predikatKlartext(entitet.predikat);
   const rule = bruttoRegelFor(entitet, parInfo);
-  if (rule.include.length === 0) return 'Uppräknad regel utan inkluderade kurser.';
+  if (rule.include.length === 0) return 'Uppräknad regel utan inkluderade utbildningar.';
   const med = `${rule.include.map(labelForPar).join(' ELLER ')}.`;
   // Samma "eller"-språkfix som predikatKlartexts utan-sida (Marcus 2026-08-10).
   return rule.exclude.length > 0
@@ -881,7 +929,7 @@ const RAD_KLASS =
 const TILLBAKA_KLASS =
   'mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted hover:bg-bg-emphasized motion-safe:transition-colors';
 const KAPSEL_KLASS =
-  'inline-flex shrink-0 items-center gap-1.5 rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors';
+  'inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors';
 
 function personform(n: number): string {
   return n === 1 ? 'person' : 'personer';
@@ -889,6 +937,22 @@ function personform(n: number): string {
 
 function visatNamn(m: { namn: string | null }): string {
   return m.namn?.trim() || '(namn saknas)';
+}
+
+/**
+ * Initialerna för radens rundel — DUPLICERAD ur `PersonsList.tsx:162-169`
+ * (som i sin tur kopierade `PersonMiniKort.tsx:6-13`), avsiktligt. Att i
+ * stället importera hjälparen hade bundit prototypen till en skarp fil, och
+ * att bredda `PersonMiniKort` till en delad primitiv före Marcus godkännande
+ * är exakt det `ADR-102 B3` förbjuder. Konsolideringen hör till promoveringen.
+ */
+function initialer(namn: string): string {
+  return namn
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((d) => d[0]?.toUpperCase() ?? '')
+    .join('');
 }
 
 /** Fyller `{förnamn}`/`{namn}` ur EN NAMNGIVEN mottagare + rapporterar ofyllda. */
@@ -1270,13 +1334,75 @@ function publikOrd(modalitet: ModalitetsVal): string {
 }
 
 /**
- * EN UPPSÄTTNING, ETT PANEL. Panelerna läggs ÖVER listan (mellan handlings-
- * raden och korten) — listan döljs aldrig, täckningen är ett TILLÄGG, inte
- * en ersättning. `role="status"` + `aria-live="polite"` på summeringen
- * (kvalitetsribban): talen uppdateras när frågorna svarar, och det ska höras
- * utan att man letar upp raden själv — samma mönster som
- * fördelnings-kontrollen i `UtskicksVy`. Dubbeltäckningen bärs av
- * `StatusBadge` (TEXT + ikon), aldrig av färg ensam.
+ * Samma mekanik som `publikOrd` (modalitet in, verbfras ut) men i den
+ * RELATIVSATS kvittensraden kräver - "Alla deltagare som ..." tar `som gått`,
+ * inte `har gått`. Marcus gav Utbildnings-varianten ordagrant ("som gått en
+ * eller flera utbildningar", granskning 2026-08-16 varv 4); "en eller flera"
+ * i stället för `publikOrd`s "någon" är avsiktligt kvar bara här - den friska
+ * kvittensen påstår FULLSTÄNDIGHET, och räkneordet bär den nyansen.
+ *
+ * TVÅ FUNKTIONER, INTE EN UTBYGGD: `publikOrd` bär fortfarande
+ * avvikelse-boxens brödtext oförändrad (Marcus: "+ befintlig brödtext"), och
+ * att tvinga båda kasus genom en gemensam formulerare hade kostat en
+ * parameter för två anropsplatser.
+ */
+function tacktaOrd(modalitet: ModalitetsVal): string {
+  if (modalitet === 'Föreläsning') return 'varit på en eller flera föreläsningar';
+  if (modalitet === 'Båda') return 'gått någon utbildning eller varit på någon föreläsning';
+  return 'gått en eller flera utbildningar';
+}
+
+/**
+ * EN UPPSÄTTNING, EN KVITTENS. Kvittenserna läggs ÖVER listan (mellan
+ * handlingsraden och korten) — listan döljs aldrig, kontrollen är ett
+ * TILLÄGG, inte en ersättning.
+ *
+ * DET FRISKA FALLET BÄR INGEN PANEL (Marcus granskning 2026-08-16, tredje
+ * varvet: "otydligt, fult, oproffsigt"). Formen före detta varv gav VARJE
+ * uppsättning en `rounded-2xl border bg-surface p-4`-ruta med en `<h2>`
+ * ("Täckning: De fjorton"), en grön badge ("Täckningen stämmer") och en
+ * mening — tre lager chrome runt beskedet "allt är som det ska". En ruta
+ * med rubrik är en INNEHÅLLSBÄRARE; ett friskt utfall har inget innehåll
+ * att bära, bara ett svar. Nu är friskt läge EN rad — bock + mening på en
+ * tonal grön yta, ingen kant, ingen rubrik — och rutan sparas till det som
+ * faktiskt behöver den.
+ *
+ * "TÄCKNING" ÄR MARCUS ORD OCH STÅR I KLARTEXT (granskning 2026-08-16, fjärde
+ * varvet — en RIVEN tes, inte en glömd). Varv 3 rensade ordet ur all synlig
+ * text på tesen att det var systemspråk i klass med "genomförd närvaro" och
+ * "modalitet"; Marcus underkände den ordagrant ("Jag vill ha tillbaka
+ * täckningsyta och ikonen vi hade innan"). Skillnaden mot de två andra orden
+ * är att täckning är ett ord han själv använder om saken — inte ett vi
+ * översatt från mängdläran åt honom.
+ *
+ * PROCENTEN ÄR GOLVAD, OCH DET ÄR EN SANNINGSEGENSKAP: `Math.floor` gör att
+ * "100 %" kan visas ENDAST när `utanfor` är exakt 0 — 99,7 % blir 99 %, aldrig
+ * en avrundning uppåt som påstår fullständighet den inte har. Nämnaren är
+ * `tackta + utanfor` (populationen minus dubbelräkning), och det gröna läget
+ * kräver dessutom `dubbla === 0`, så den gröna raden och talet 100 % kan bara
+ * uppträda tillsammans.
+ *
+ * PROCENT HÖR TILL UTANFÖR-DIMENSIONEN, ALDRIG TILL DUBBEL (Marcus, samma
+ * varv: "blanda inte"). Att vara med i två segment gör ingen otäckt — det är
+ * ett annat fel med en annan konsekvens (flera mail, inte uteblivet mail), och
+ * ett procenttal i den rubriken hade beskrivit fel storhet.
+ *
+ * AVVIKELSEN FÅR TA PLATS, OCH HAR EN RUBRIK SOM SÄGER FELET RAKT. Två
+ * oberoende fynd ⇒ två `MessageBox`ar, aldrig en sammanslagen: "2 deltagare
+ * finns i mer än ett segment" och "93 % täckning - 1 deltagare saknas i
+ * segmenten" är olika problem med olika konsekvenser (dubbla mail respektive
+ * uteblivet mail). Rubriken bär hela fyndet — en badge som säger samma sak en
+ * gång till är borta av samma skäl som det friska fallets panel.
+ *
+ * EN ENDA LIVE-REGION, OCH DEN LIGGER UTANPÅ INGENTING (fälla 6 + nästlade
+ * regioner). `MessageBox` bär SJÄLV `role="alert"` för `warning`/`error`
+ * (primitivens egen semantik) — låg den inuti en `role="status"`-wrapper
+ * blev det en nästlad live-region, där den yttre `aria-atomic` läser om
+ * hela blocket vid varje ändring. Därför är regionen ett SYSKON till
+ * rutorna: den bär kvittensraden och avvikelsens ledtext, rutorna larmar
+ * själva. Regionen är monterad så länge kontrolläget är på och byter bara
+ * innehåll — en `aria-live` som monteras SAMTIDIGT som sin text annonseras
+ * inte (samma regel som `SegmentKort`s antal-rad och generatorns steg 3).
  *
  * "Visa vilka"-listan speglar `UtskicksVy`s blandade-mottagare-mönster:
  * antal ≤ `CHUNK` visas hel, annars de första `CHUNK` + ett rest-antal.
@@ -1284,23 +1410,76 @@ function publikOrd(modalitet: ModalitetsVal): string {
 function TackningsPanel({
   uppsattning,
   parInfo,
+  visaNamn,
 }: {
   uppsattning: Uppsattning;
   parInfo: ParInfo[];
+  /** Sant när ytan visar FLER än en uppsättning — då måste varje kvittens
+      säga VILKEN den gäller, annars är två rader omöjliga att skilja åt.
+      Vid en ensam uppsättning vore namnet brus: det finns inget att välja
+      mellan. */
+  visaNamn: boolean;
 }) {
   const utfall = useTackning(uppsattning, parInfo);
   const [visaUtanfor, setVisaUtanfor] = useState(false);
   const utanforPanelId = useId();
 
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
-      <h2 className="font-semibold text-body">Täckning: {uppsattning.namn}</h2>
+  const klart = utfall.status === 'klar' ? utfall : null;
+  const friskt = klart !== null && klart.dubbla === 0 && klart.utanfor.length === 0;
+  // TÄCKNINGSGRADEN. Nämnaren är populationen sedd genom uppsättningen:
+  // `tackta` (i exakt en grupp) + `utanfor` (i ingen). `dubbla` ingår
+  // medvetet i VARKEN täljare eller nämnare — de är täckta, men fel täckta,
+  // och deras fel bärs av sin egen ruta.
+  //
+  // NOLL-NÄMNAREN ÄR ETT EGET FALL, INTE EN DIVISION. En uppsättning vars
+  // modalitet inte har en enda person i basen ger `0/0` → `NaN %`; en yta
+  // vars hela syfte är att avslöja tysta fel får aldrig själv skriva NaN på
+  // skärmen. Då finns ingen täckningsgrad att uttala sig om, och raden säger
+  // det i stället för att räkna.
+  const namnare = klart === null ? 0 : klart.tackta + klart.utanfor.length;
+  const procent =
+    klart === null || namnare === 0 ? null : Math.floor((klart.tackta / namnare) * 100);
+  // Uppsättningens namn som PREFIX i varje utfall - friskt som avvikande ("De
+  // fjorton: 100 % - Full täckning …", Marcus form 2026-08-16). Kolon-formen
+  // scopar fyndet utan att böja rubriken, som en invävning ("… i De fjorton")
+  // hade tvingat fram i tre olika kasus. Varv 3 vävde in namnet i den friska
+  // meningen och prefixade avvikelserna — två former för samma sak; nu är det
+  // en, och den fungerar i båda.
+  const prefix = visaNamn ? `${uppsattning.namn}: ` : '';
 
-      {utfall.status === 'raknar' && (
-        <p aria-live="polite" className="text-small text-text-muted">
-          Räknar täckningen…
-        </p>
-      )}
+  return (
+    <div className="flex flex-col gap-3">
+      <div role="status" aria-live="polite" aria-atomic="true">
+        {utfall.status === 'raknar' && (
+          <p className="text-small text-text-muted">Räknar täckningen…</p>
+        )}
+
+        {friskt && klart !== null && (
+          // KVITTENSRADEN. Bocken är samma ikon och samma `text-success` som
+          // `StatusBadge ton="success"` redan använder, på samma
+          // `bg-success-bg` — ingen ny token, ingen ny färgparning. Texten bär
+          // hela beskedet ensam; ikonen är `aria-hidden` och förstärker bara
+          // (WCAG 1.4.1). `items-start` + `mt-px` håller bocken mot första
+          // textraden när meningen bryter till två.
+          <p className="flex items-start gap-2 rounded-xl bg-success-bg px-4 py-2.5 text-small">
+            <CircleCheck aria-hidden="true" size={18} className="mt-px shrink-0 text-success" />
+            <span>
+              {procent === null
+                ? `${prefix}Ingen som ${tacktaOrd(uppsattning.modalitet)} finns i basen än - det finns ingen täckning att räkna.`
+                : `${prefix}${procent} % - Full täckning. Alla deltagare som ${tacktaOrd(uppsattning.modalitet)} finns representerade i något av segmenten.`}
+            </span>
+          </p>
+        )}
+
+        {klart !== null && !friskt && (
+          // AVVIKELSENS LEDTEXT — hur många som ÄR rätt placerade. Den står
+          // kvar även när något är fel, för den är det enda talet som säger
+          // hur STORT felet är i förhållande till helheten.
+          <p className="text-small text-text-secondary">
+            {`${prefix}${klart.tackta} ${personform(klart.tackta)} är med i exakt en grupp.`}
+          </p>
+        )}
+      </div>
 
       {utfall.status === 'fel' && (
         <MessageBox intent="error" title="Täckningen kunde inte räknas">
@@ -1308,75 +1487,66 @@ function TackningsPanel({
         </MessageBox>
       )}
 
-      {utfall.status === 'klar' && (
-        <div role="status" aria-live="polite" aria-atomic="true" className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {utfall.dubbla === 0 ? (
-              <StatusBadge ton="success" storlek="sm">
-                Varje person i exakt en grupp
-              </StatusBadge>
-            ) : (
-              // `StatusBadge.children` är typad `string` (samma disciplin som
-              // resten av filens `StatusBadge`-anrop) - en mall-sträng, inte
-              // flera barn-noder.
-              <StatusBadge ton="warning" storlek="sm">
-                {`${utfall.dubbla} ${personform(utfall.dubbla)} i mer än en grupp`}
-              </StatusBadge>
-            )}
-          </div>
+      {klart !== null && klart.dubbla > 0 && (
+        <MessageBox
+          intent="warning"
+          // INGEN PROCENT HÄR (Marcus 2026-08-16: "blanda inte") - se
+          // docblockets § PROCENT HÖR TILL UTANFÖR-DIMENSIONEN. "deltagare"
+          // böjs inte i plural, så rubriken bär ordet oböjt i stället för via
+          // `personform` (som ger person/personer).
+          title={`${prefix}${klart.dubbla} deltagare finns i mer än ett segment`}
+        >
+          De hamnar i mer än en av grupperna och får därför flera mail om du skickar till alla
+          grupperna.
+        </MessageBox>
+      )}
 
-          <p className="text-small text-text-secondary">
-            {utfall.tackta} {personform(utfall.tackta)} täckta - i exakt en av grupperna.
+      {klart !== null && klart.utanfor.length > 0 && (
+        <MessageBox
+          intent="warning"
+          // RUBRIKEN SPEGLAR PROCENTFORMEN: samma tal som den gröna raden
+          // hade visat om allt stämt, men här som det det är - ett underskott.
+          // `procent` kan inte vara null i den här grenen (`utanfor.length >
+          // 0` ⇒ nämnaren > 0), men typen tvingar fram en gren och en tyst
+          // `?? 0` hade varit en gissning; utan tal säger rubriken bara felet.
+          title={
+            procent === null
+              ? `${prefix}${klart.utanfor.length} deltagare saknas i segmenten`
+              : `${prefix}${procent} % täckning - ${klart.utanfor.length} deltagare saknas i segmenten`
+          }
+        >
+          <p>
+            De {publikOrd(uppsattning.modalitet)} men är inte med i någon av grupperna - de nås inte
+            om du skickar till hela uppsättningen.
           </p>
-
-          {utfall.utanfor.length === 0 ? (
-            <p className="text-small text-text-secondary">
-              Kontrollerat: ingen står utanför - alla som {publikOrd(uppsattning.modalitet)} hör
-              hemma i någon av grupperna.
-            </p>
-          ) : (
-            <MessageBox
-              intent="warning"
-              title={`${utfall.utanfor.length} ${personform(utfall.utanfor.length)} i ingen grupp`}
-            >
-              <p>
-                De {publikOrd(uppsattning.modalitet)} men är inte med i någon av grupperna - de nås
-                inte om du skickar till hela uppsättningen.
-              </p>
-              <button
-                type="button"
-                aria-expanded={visaUtanfor}
-                aria-controls={utanforPanelId}
-                onClick={() => setVisaUtanfor((v) => !v)}
-                className="flex items-center gap-1.5 self-start font-medium text-small underline hover:no-underline"
-              >
-                {visaUtanfor
-                  ? 'Dölj vilka'
-                  : `Visa vilka (${Math.min(utfall.utanfor.length, CHUNK)})`}
-                <ChevronDown
-                  aria-hidden="true"
-                  size={16}
-                  className={`shrink-0 motion-safe:transition-transform ${
-                    visaUtanfor ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              <ul id={utanforPanelId} hidden={!visaUtanfor} className="flex flex-col gap-0.5 pt-1">
-                {utfall.utanfor.slice(0, CHUNK).map((m) => (
-                  <li key={m.id} className="text-small">
-                    {visatNamn(m)}
-                    <span className="text-text-muted"> · {m.email ?? 'ingen e-postadress'}</span>
-                  </li>
-                ))}
-                {utfall.utanfor.length > CHUNK && (
-                  <li className="text-small text-text-muted">
-                    + {utfall.utanfor.length - CHUNK} till
-                  </li>
-                )}
-              </ul>
-            </MessageBox>
-          )}
-        </div>
+          <button
+            type="button"
+            aria-expanded={visaUtanfor}
+            aria-controls={utanforPanelId}
+            onClick={() => setVisaUtanfor((v) => !v)}
+            className="flex items-center gap-1.5 self-start font-medium text-small underline hover:no-underline"
+          >
+            {visaUtanfor ? 'Dölj vilka' : `Visa vilka (${Math.min(klart.utanfor.length, CHUNK)})`}
+            <ChevronDown
+              aria-hidden="true"
+              size={16}
+              className={`shrink-0 motion-safe:transition-transform ${
+                visaUtanfor ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+          <ul id={utanforPanelId} hidden={!visaUtanfor} className="flex flex-col gap-0.5 pt-1">
+            {klart.utanfor.slice(0, CHUNK).map((m) => (
+              <li key={m.id} className="text-small">
+                {visatNamn(m)}
+                <span className="text-text-muted"> · {m.email ?? 'ingen e-postadress'}</span>
+              </li>
+            ))}
+            {klart.utanfor.length > CHUNK && (
+              <li className="text-small text-text-muted">+ {klart.utanfor.length - CHUNK} till</li>
+            )}
+          </ul>
+        </MessageBox>
       )}
     </div>
   );
@@ -1621,12 +1791,19 @@ function SegmentLista({
         <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
           Segment
         </h1>
-        {/* Marcus text verbatim (2026-08-10, resume-varvet). Den tidigare
-            tredje meningen ("Flera grupper i samma utskick: markera dem")
-            ströks i och med bytet — markera-funktionen får bära sig själv. */}
+        {/* Marcus text verbatim - men NY text sedan 2026-08-16
+            (begreppsrenheten), inte den från 2026-08-10. Den ersatta lydelsen
+            löd "Grupper av personer som du kan skicka riktade mail till. Spara
+            en grupp och återanvänd den - …" och kallade alltså ett SEGMENT för
+            en grupp. Det ordet är sedan uppdelnings-generatorn finns upptaget
+            av något annat: en grupp är en av de delar publiken delas upp i.
+            Ingressen säger därför "urval", och ordet segment står kvar som
+            sidans egen term. Den tidigare tredje meningen ("Flera grupper i
+            samma utskick: markera dem") ströks redan 2026-08-10 - markera-
+            funktionen får bära sig själv - och återinförs inte här. */}
         <p className="text-small text-text-muted">
-          Grupper av personer som du kan skicka riktade mail till. Spara en grupp och återanvänd den
-          - antalet räknas upp automatiskt, så antalet stämmer även när fler personer tillfaller
+          Urval av personer som du kan skicka riktade mail till. Spara ett segment och återanvänd
+          det - antalet räknas upp automatiskt, så antalet stämmer även när fler personer tillfaller
           segmentet.
         </p>
       </header>
@@ -1710,12 +1887,24 @@ function SegmentLista({
           )}
         </div>
 
-        {/* TÄCKNINGSVYNS INGÅNG (S104 Del 4, task-181, beslut 1: "ett LÄGE
+        {/* KONTROLLÄGETS INGÅNG (S104 Del 4, task-181, beslut 1: "ett LÄGE
             på listan") — en EGEN lågmäld rad, högerställd, direkt ovanför
-            panelerna den slår på och av. Textknapp som byter etikett
+            kvittenserna den slår på och av. Textknapp som byter etikett
             (Markera-mönstret), lättare vikt än kapslarna: kontrollen är ett
             gransknings-läge, inte en daglig handling, och ska inte
-            konkurrera med skapandeknapparna om radplats eller uppmärksamhet. */}
+            konkurrera med skapandeknapparna om radplats eller uppmärksamhet.
+
+            ETIKETTEN ÄR "VISA TÄCKNING", OCH DET ÄR ETT ÅTERSTÄLLT BESLUT
+            (Marcus granskning 2026-08-16, fjärde varvet: "Jag vill ha tillbaka
+            täckningsyta och ikonen vi hade innan"). Varv 3 bytte till
+            "Kontrollera grupperna" + `ListChecks` på tesen att "täckning" var
+            ett begrepp Lotta inte har - Marcus underkände den tesen: ordet ÄR
+            hans, och den nya kvittenstexten bär det i klartext ("100 % - Full
+            täckning"). Knappen och kvittensen måste då säga samma ord, annars
+            namnger de två olika saker. `Layers` framför `ListChecks`: lagren
+            är bilden av flera segment som tillsammans ska täcka en population,
+            vilket är exakt vad ytan mäter. Båda finns i lucide-react 1.28.0
+            (mätt). */}
         {!markeraLage && markerbara > 0 && (
           <div className="-mt-2 flex justify-end print:hidden">
             <button
@@ -1731,32 +1920,37 @@ function SegmentLista({
           </div>
         )}
 
-        {/* TÄCKNINGSPANELERNA (S104 Del 4, task-181). Läggs ÖVER listan -
-            mellan handlingsraden och korten, listan döljs aldrig. Göms i
+        {/* KVITTENSERNA (S104 Del 4, task-181). Läggs ÖVER listan - mellan
+            handlingsraden och korten, listan döljs aldrig. Göms i
             markera-läget: de två lägena löser olika ärenden och har inget
             gemensamt att visa samtidigt (samma princip som "Nytt
             segment"/"Dela upp i grupper" göms där). En uppsättning per
-            panel (flera-uppsättningar-beslutet i docblocket ovan
+            kvittens (flera-uppsättningar-beslutet i docblocket ovan
             `TackningsPanel`) - de fjorton finns från mount, så listan är
             aldrig tom när läget slås på.
 
             `!laddar` GRINDAR ÄVEN HÄR (till skillnad från handlingsraden
             ovan, som redan visas under laddning): innan `events` svarat är
-            `parInfo` tom, och en panel som räknar mot en tom taxonomi hade
-            kunnat visa "0 utanför" en bråkdel av en sekund innan det rätta
-            talet landar. Ett kort missvisande nollresultat är precis den
-            tysta felklass täckningsvyn finns för att avslöja - den ska
-            därför aldrig själv producera en. */}
+            `parInfo` tom, och en kontroll som räknar mot en tom taxonomi
+            hade kunnat visa "ingen saknas" en bråkdel av en sekund innan
+            det rätta talet landar. Ett kort missvisande nollresultat är
+            precis den tysta felklass kontrolläget finns för att avslöja -
+            det ska därför aldrig självt producera en. */}
         {tackningsLage && !markeraLage && !laddar && (
           <div className="flex flex-col gap-4">
             {uppsattningar.length === 0 ? (
               <p className="text-small text-text-muted">
-                Ingen genererad grupp-uppsättning att visa täckning för än. Täckning gäller de
-                fjorton förskapade grupperna eller en körning av "Dela upp i grupper".
+                Det finns inga grupper att räkna täckning för än. Täckningen gäller de fjorton
+                förskapade grupperna eller en körning av "Dela upp i grupper".
               </p>
             ) : (
               uppsattningar.map((u) => (
-                <TackningsPanel key={u.nyckel} uppsattning={u} parInfo={parInfo} />
+                <TackningsPanel
+                  key={u.nyckel}
+                  uppsattning={u}
+                  parInfo={parInfo}
+                  visaNamn={uppsattningar.length > 1}
+                />
               ))
             )}
           </div>
@@ -1800,7 +1994,7 @@ function SegmentLista({
                 <p className="font-medium text-body">Inga sparade segment än</p>
                 <p className="max-w-prose text-small text-text-muted">
                   Ett segment är en grupp personer du kan skicka till om och om igen. Du bygger det
-                  som en regel - och regeln fortsätter gälla när nya kurser tillkommer.
+                  som en regel - och regeln fortsätter gälla när nya utbildningar tillkommer.
                 </p>
                 <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
                   <ListPlus aria-hidden="true" size={18} className="shrink-0" />
@@ -1829,8 +2023,8 @@ function SegmentLista({
               Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är
               påhittade - antalen är det inte: de räknas mot samma källa som en sparad rad. De
               fjorton förskapade grupperna bär dessutom sitt eget facit - se skalprovs-växeln för
-              vad det betyder. Täckningsknappen visar om gruppernas uppsättning täcker alla som
-              borde vara med - alltid på riktiga tal, oavsett skalprovets läge.
+              vad det betyder. Täckningsknappen visar om alla som borde vara med är med - alltid på
+              riktiga tal, oavsett skalprovets läge.
             </PrototypNot>
           </>
         )}
@@ -2044,6 +2238,47 @@ function SkalprovsVaxel({ aktivt, onVaxla }: { aktivt: boolean; onVaxla: (v: boo
  * mailet precis som alla andra — utan en upplysning om VAD hon faktiskt gått
  * igenom. Den bär därför ett neutralt textpill utan ton, inte en `StatusBadge`:
  * samma skillnad `a` gjorde mellan "fel" och "annan härkomst".
+ *
+ * ANATOMIN ÄR PERSONLISTANS (Marcus granskning 2026-08-16: publiklistan ska
+ * vara "snygg och proffsig som andra listor på personer i appen"). Förebilden
+ * är den S103-promoverade `PersonsList.tsx:513-545`, och den bär tre saker som
+ * kopieras hit rakt av:
+ *
+ *   1. RUNDEL + NAMN + UNDERRAD. `size-9 rounded-full bg-bg-emphasized` med
+ *      initialer, namnet `font-medium text-body`, e-posten `text-caption
+ *      text-text-muted`.
+ *   2. TONAL SCANLISTA, INTE KORT PER RAD. `rounded-xl bg-bg-muted` per rad är
+ *      formen för 3-12 poster; publiken ska tåla 600+ (Marcus 2026-08-16: prod
+ *      har 600+ mottagare under "Alla"). Plattan rivs, radgrammatiken blir
+ *      `flex items-center gap-3 py-2.5` och avdelarna bärs av listans egen
+ *      `divide-y` — exakt PersonsLists val, av exakt samma skäl.
+ *   3. HÖJDLÅSET. E-postraden renderas ALLTID, med en platshållare när adressen
+ *      saknas (Marcus app-globala regel, S104 `16c25de6`). Villkorad rendering
+ *      hade gjort radhöjden till en funktion av datan — och `medlem.email` ÄR
+ *      null för en del av publiken, så det är inte ett teoretiskt fall här.
+ *      Tom-markören `—` som stod här förut sa samma sak men band höjden till
+ *      att någon skrev ut den.
+ *
+ *      PLATSHÅLLAREN ÄR ` `, INTE `' '` — mätt 2026-08-16, och det är en
+ *      avvikelse från förebilden. `PersonsList.tsx:542` (och `:601`) skriver
+ *      `{contact ?? ' '}`; ett vanligt mellanslag är kollapsbar whitespace och
+ *      ger elementet höjden NOLL, så låset öppnar sig i exakt det fall det
+ *      finns för. Mätning i publiklistan: 63 px mot 56 px mellan en rad med
+ *      och en utan e-post, underradens egen höjd 0 px. Med ` ` (icke
+ *      kollapsbar) blir båda raderna lika höga. Förebilden har aldrig fällt
+ *      felet eftersom var och en av de 50 personerna i staging HAR e-post
+ *      (mätt: 0 rader med platshållare) — tekniken är oprövad där, inte rätt.
+ *      Fyndet rör en skarp yta och rapporteras, men rättas inte härifrån.
+ *
+ * DUPLICERAT, INTE BREDDAT (`ADR-102` B3): `PersonsList`/`PersonMiniKort` är
+ * skarpa ytor och rörs inte före godkännande — samma val PersonsList själv
+ * bokför åt andra hållet i sin `k13`-kommentar.
+ *
+ * INGEN LÄNK TILL PERSONDETALJEN, medvetet: PersonsLists rad leder vidare och
+ * bär därför `relative` + `after:inset-0`. Publiken är en KONTROLLISTA mitt i
+ * ett sändflöde — man läser den för att bedöma utskicket, inte för att navigera
+ * bort från det. Övervägt och avstått; formen tål att länken läggs till senare
+ * (anatomin är redan förebildens).
  */
 function PersonRad({
   medlem,
@@ -2052,11 +2287,18 @@ function PersonRad({
   medlem: SegmentMember;
   endastForelasning?: boolean;
 }) {
+  const namn = visatNamn(medlem);
   return (
-    <li className="flex break-inside-avoid items-center gap-3 rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 contrast-more:border-border-strong">
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="truncate font-medium text-body">{visatNamn(medlem)}</span>
+    <li className="flex break-inside-avoid items-center gap-3 py-2.5">
+      <span
+        aria-hidden="true"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
+      >
+        {initialer(namn)}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className="truncate font-medium text-body">{namn}</span>
           {endastForelasning && (
             <span className="shrink-0 rounded-full border border-transparent bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
               Bara föreläsning
@@ -2073,7 +2315,7 @@ function PersonRad({
             </StatusBadge>
           )}
         </span>
-        <span className="truncate text-small text-text-muted">{medlem.email ?? '—'}</span>
+        <span className="truncate text-caption text-text-muted">{medlem.email ?? ' '}</span>
       </span>
     </li>
   );
@@ -2088,16 +2330,28 @@ function PersonRad({
  * KONTROLLERAR ALLTID. Det som görs varje gång får inte kosta ett klick.
  *
  * Skalan bärs som i `b`: sammanfattningen svarar utan att man läser en rad,
- * visningsfiltret isolerar avvikelserna, söket är vägen till EN person, och
- * listan chunkas i steg om 25.
+ * visningsfiltret isolerar avvikelserna, och söket är vägen till EN person.
  *
- * VAD CHUNKEN FAKTISKT GÖR, mätt vid 85 personer (skalprovet, 2026-08-10):
- * hela publiken ligger i DOM:en och de bortom chunken döljs med `hidden
- * print:contents` — det är så papperet får alla rader utan en egen kodväg.
- * Chunken sparar alltså MÅLNING och SIDHÖJD, inte DOM-noder: 3 217 px vid
- * första chunken mot 7 766 px utfälld. (En tidigare formulering här påstod
- * "så DOM:en är liten"; det var fel, och det syntes först när skalprovet
- * gjorde 85 personer möjliga att mäta.)
+ * CHUNKEN ÄR RIVEN (Marcus 2026-08-16: prod har 600+ mottagare under "Alla").
+ * Den sparade SIDHÖJD, inte DOM-noder — hela publiken låg redan i DOM:en och
+ * de bortom chunken doldes med `hidden print:contents` (mätt vid 85 personer,
+ * 2026-08-10: 3 217 px vid första chunken mot 7 766 px utfälld). Men "Visa 25
+ * till" skalar inte: vid 600 mottagare är det 24 klick för att se listans slut,
+ * och sidhöjden växer ändå med varje klick.
+ *
+ * INLINE-SCROLL I STÄLLET — appens etablerade mönster för en lång lista som
+ * inte får trycka ned resten av sidan (`Deltagare.tsx:1188-1200`,
+ * `NyaAnmalningarCard.tsx:111-115`): `max-h` + `overflow-y-auto`, klippet mitt
+ * i en rad ÄR scroll-affordansen, och rullningsytan blir ett riktigt tab-stopp
+ * (axe scrollable-region-focusable, WCAG 2.1.1) — men BARA när den faktiskt
+ * klipper. Under tröskeln vore ett fokuserbart område utan funktion ett tomt
+ * stopp i tangentbordsflödet; det är `kanRulla`-vaktens hela uppgift, ärvd
+ * verbatim ur `DeltagarListan`.
+ *
+ * PAPPERET FÅR FORTFARANDE ALLA RADER. Det var `hidden print:contents` som bar
+ * det förut; nu bär `print:max-h-none print:overflow-visible` samma sak — en
+ * klippt scrollyta hade annars gett papperet de sex första raderna och tyst
+ * ätit resten. Ingen egen kodväg för print, som förut.
  */
 function PublikSektion({
   medlemmar,
@@ -2121,7 +2375,6 @@ function PublikSektion({
 }) {
   const [vy, setVy] = useState<PublikVy>('alla');
   const [sok, setSok] = useState('');
-  const [visade, setVisade] = useState(CHUNK);
 
   const sokTerm = sok.trim().toLocaleLowerCase('sv-SE');
   const synliga = useMemo(
@@ -2137,15 +2390,14 @@ function PublikSektion({
     [medlemmar, vy, sokTerm],
   );
 
-  // Chunken nollställs när underlaget byter karaktär — annars pekar "Visa 25
-  // till" på en lista som inte finns längre.
-  const underlag = `${medlemmar.length}|${vy}|${sokTerm}`;
-  const forra = useRef(underlag);
-  useEffect(() => {
-    if (forra.current === underlag) return;
-    forra.current = underlag;
-    setVisade(CHUNK);
-  }, [underlag]);
+  // RULLNINGENS TRÖSKEL. `max-h-[25.5rem]` (408 px) rymmer drygt sex rader vid
+  // radens mätta höjd (~60 px: `py-2.5` + `size-9`-rundelns 36 px, med
+  // namn/e-post-blocket som den högre av de två). Sju rader är alltså den
+  // första mängd som faktiskt klipps — och klippet mitt i den sjunde ÄR
+  // affordansen. Talet är förebildens eget (`Deltagare.tsx:1189`), där det
+  // valdes för ~3 av dess betydligt högre kort; samma höjd, annan radhöjd,
+  // annat radantal. Tab-stoppet hör till RULLNINGEN, inte till listan.
+  const kanRulla = synliga.length > 6;
 
   if (isError) {
     return (
@@ -2188,7 +2440,7 @@ function PublikSektion({
               mätinstrument och sitter under publikens filter på segmentets sida.
             </p>
             <p>
-              Kontroller som bygger på verklig kurshistorik - fördelningen mellan utbildning och
+              Kontroller som bygger på verklig historik - fördelningen mellan utbildning och
               föreläsning - räknar bara de verkliga personerna.
             </p>
           </MessageBox>
@@ -2229,7 +2481,11 @@ function PublikSektion({
             >
               <ToggleButton id="alla">Alla</ToggleButton>
               <ToggleButton id="far">Får mailet</ToggleButton>
-              <ToggleButton id="undertryckt">Undertrycks</ToggleButton>
+              {/* "Undertrycks" är serverspråk (Marcus 2026-08-16). Paret
+                  "Får mailet"/"Får inte mailet" säger samma sak i Lottas ord
+                  och läses som ett par utan att man tänker efter. Nyckeln
+                  `undertryckt` är kod och rörs inte. */}
+              <ToggleButton id="undertryckt">Får inte mailet</ToggleButton>
             </ToggleButtonGroup>
             {medlemmar.length > 10 && (
               <Input
@@ -2263,29 +2519,36 @@ function PublikSektion({
               </button>
             </div>
           ) : (
-            <>
-              <ul aria-label="Personer i publiken" className="flex flex-col gap-2 px-4">
-                {synliga.map((m, i) => (
-                  <span key={m.id} className={i < visade ? 'contents' : 'hidden print:contents'}>
-                    <PersonRad medlem={m} endastForelasning={endastForelasning?.has(m.id)} />
-                  </span>
+            // LISTYTAN ÄR PERSONLISTANS (`PersonsList.tsx:476-479`): tonal
+            // platta, `divide-y` som avdelare, `px-4` inner-inset "där
+            // rundningen slutar". Den yttre `mx-4` ersätter sektionens `px-4`
+            // på just denna rad - plattan ska ha samma kant som sidans övriga
+            // kort, inte ligga i marginalen.
+            //
+            // `pr-2.5` FÖRE `px-4` i klasslistan hade förlorat mot den; därför
+            // står rullningens klasser sist. Höger-insetet blir 10 px i stället
+            // för 16 - det är plats åt rullningslisten (`scrollbar-inline`),
+            // samma val som `DeltagarListan`.
+            <div className="px-4">
+              <ul
+                aria-label="Personer i publiken"
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:112.
+                tabIndex={kanRulla ? 0 : undefined}
+                className={`flex flex-col divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong ${
+                  kanRulla
+                    ? 'focus-ring-inset scrollbar-inline max-h-[25.5rem] overflow-y-auto pr-2.5 print:max-h-none print:overflow-visible print:pr-4'
+                    : ''
+                }`}
+              >
+                {synliga.map((m) => (
+                  <PersonRad
+                    key={m.id}
+                    medlem={m}
+                    endastForelasning={endastForelasning?.has(m.id)}
+                  />
                 ))}
               </ul>
-              {synliga.length > visade && (
-                <div className="flex flex-col items-center gap-1 px-4 print:hidden">
-                  <button
-                    type="button"
-                    onClick={() => setVisade((n) => n + CHUNK)}
-                    className={KAPSEL_KLASS}
-                  >
-                    Visa {Math.min(CHUNK, synliga.length - visade)} till
-                  </button>
-                  <span className="text-caption text-text-muted">
-                    {visade} av {synliga.length} visade
-                  </span>
-                </div>
-              )}
-            </>
+            </div>
           )}
         </>
       )}
@@ -2350,14 +2613,14 @@ function SegmentDetalj({
             allt annat. Färg är aldrig ensam bärare — uppdelningen är text. */}
         <p className="text-small text-text-muted" aria-live="polite">
           {tomRegel
-            ? 'Regeln träffar inga kurser än.'
+            ? 'Regeln träffar inga utbildningar än.'
             : isPending
               ? 'Räknar personer…'
               : isError
                 ? 'Antalet kunde inte räknas'
                 : medlemmar.length === 0
                   ? '0 personer ännu'
-                  : `${medlemmar.length} ${personform(medlemmar.length)} · ${antalFar} får mailet · ${undertryckta} undertrycks`}
+                  : `${medlemmar.length} ${personform(medlemmar.length)} · ${antalFar} får mailet · ${undertryckta} får inte mailet`}
         </p>
       </header>
 
@@ -2400,15 +2663,19 @@ function SegmentDetalj({
           "Ändra regeln" är raden som leder vidare (chevron höger). */}
       <DetaljGrupp id="grupp-regel" rubrik="Regeln">
         <EtikettVardeRad term="Form">
-          {entitet.predikat ? 'Predikat över dimensioner' : 'Uppräknade kurspar (äldre form)'}
+          {entitet.predikat
+            ? 'Predikat över dimensioner'
+            : 'Uppräknade utbildningspar (äldre form)'}
         </EtikettVardeRad>
         <EtikettVardeRad term="Räknas ur">
           Genomförd närvaro (Närvarande eller Deltog online)
         </EtikettVardeRad>
         <EtikettVardeRad term="Motsvarar">
           {rule.include.length === 0
-            ? 'Inga kurser'
-            : `${rule.include.length} ${rule.include.length === 1 ? 'kurs' : 'kurser'} i basen i dag`}
+            ? 'Inga utbildningar'
+            : `${rule.include.length} ${
+                rule.include.length === 1 ? 'utbildning' : 'utbildningar'
+              } i basen i dag`}
         </EtikettVardeRad>
         <div className="py-3">
           <p className="text-small text-text-secondary">{definitionFor(entitet, parInfo)}</p>
@@ -2469,13 +2736,39 @@ function ValChip({
   );
 }
 
-function ChipRad({ etikett, children }: { etikett: string; children: React.ReactNode }) {
+function ChipRad({
+  etikett,
+  doldEtikett,
+  children,
+}: {
+  etikett: string;
+  /** Döljer legenden VISUELLT (`sr-only`) - aldrig från tillgänglighetsträdet.
+      Sätts där en stegrubrik direkt ovanför redan namnger gruppen, se nedan. */
+  doldEtikett?: boolean;
+  children: React.ReactNode;
+}) {
   // `<fieldset>`/`<legend>` framför `role="group"` + `aria-label`: samma
   // semantik med inbyggd elementbetydelse, och grupprubriken blir synlig text
   // i stället för ett attribut bara skärmläsaren ser.
+  //
+  // ...UTOM när steget ovanför redan ställt frågan (Marcus 2026-08-16, varv 4:
+  // "ta bort alla under rubriken exempelvis 'Utbildningar' som visas över
+  // pill-valen"). Under rubriken "Vilka utbildningar ska publiken delas upp
+  // efter?" är legenden "Utbildningar" en andra, svagare rubrik för samma sak.
+  // Den tas därför ur SYNFÄLTET, inte ur trädet: `sr-only` håller kvar
+  // fieldsetens tillgängliga namn, så gruppen fortfarande annonseras
+  // ("Utbildningar, grupp") för den som inte ser stegrubrikens närhet.
+  // Ribban är 11 - en dold etikett är ett layout-beslut, aldrig ett
+  // semantiskt. En egen prop framför en global ändring: regelverkstadens tre
+  // chip-rader (Familj, Nivå, Format) står UTAN stegrubrik ovanför sig och
+  // behöver sina synliga legender.
   return (
     <fieldset>
-      <legend className="pb-1.5 font-medium text-small text-text-secondary">{etikett}</legend>
+      <legend
+        className={doldEtikett ? 'sr-only' : 'pb-1.5 font-medium text-small text-text-secondary'}
+      >
+        {etikett}
+      </legend>
       <div className="flex flex-wrap gap-2">{children}</div>
     </fieldset>
   );
@@ -2501,6 +2794,7 @@ function VillkorsKort({
   formatIBasen,
   onAndra,
   onTaBort,
+  kanTasBort = true,
 }: {
   villkor: Villkor;
   etikett: string;
@@ -2508,33 +2802,95 @@ function VillkorsKort({
   formatIBasen: string[];
   onAndra: (v: Villkor) => void;
   onTaBort: () => void;
+  /** Regelns enda villkor kan inte tas bort (Marcus 2026-08-16) — att ta
+      bort det sista hade bara gett en tom regel, en handling utan mening. */
+  kanTasBort?: boolean;
 }) {
   const [merOppen, setMerOppen] = useState(false);
   const merPanelId = useId();
   const traffade = traffar(villkor, parInfo);
-  const merAktiva = villkor.format.length;
+  const merAktiva = villkor.format.length + (villkor.period ? 1 : 0);
   /** Orört = ingen dimension vald alls. Styr om den saknade modaliteten är röd. */
   const orort =
     villkor.modalitet === null &&
     villkor.familjer.length === 0 &&
     villkor.nivaer.length === 0 &&
-    merAktiva === 0;
+    villkor.format.length === 0 &&
+    villkor.period === null;
   const visaNiva =
     villkor.familjer.length === 0 || villkor.familjer.some((f) => FAMILJER_MED_NIVA.includes(f));
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
-      <div className="flex items-center justify-between gap-3">
-        <span className="font-medium text-small text-text-secondary">{etikett}</span>
-        <Button
-          intent="ghost"
-          size="sm"
-          aria-label={`Ta bort ${etikett.toLowerCase()}`}
-          onPress={onTaBort}
+      {/* KORTETS IDENTITET SOM EYEBROW (Marcus 2026-08-16: "Villkor 1"
+          hade exakt samma stil som fältetiketterna — hierarkin syntes inte).
+          Versal spärrad caption i dämpad ton är den klassiska
+          överrads-etiketten: identitet, inte fält. Ta bort-knappen visas
+          bara när borttagning är en meningsfull handling. */}
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <span className="font-medium text-caption text-text-muted uppercase tracking-wider">
+          {etikett}
+        </span>
+        {kanTasBort && (
+          <Button
+            intent="ghost"
+            size="sm"
+            aria-label={`Ta bort ${etikett.toLowerCase()}`}
+            onPress={onTaBort}
+          >
+            <X aria-hidden="true" size={16} className="shrink-0" />
+            Ta bort
+          </Button>
+        )}
+      </div>
+
+      {/* MODALITETSVALET FÖRST OCH MED MALLVYNS ORD (Marcus 2026-08-16:
+          '"Räknas som" fattar jag inte … ska man fylla i den först kan den
+          inte ligga på rad 3'). Det obligatoriska valet ligger nu överst —
+          dess framträdande färg är därmed rätt signal i stället för en
+          vilseledande — och frågan/alternativen är ordagrant samma som
+          mallvyns och generatorns steg 1, så alla tre ytorna talar samma
+          språk. Säkerhetskravet (ingen default, rött när bygget börjat utan
+          val) är oförändrat. */}
+      {/* SAMMA VALRADS-FORM SOM MALLVYN/GENERATORN (Marcus 2026-08-16:
+          "Lista dem vertikalt exakt som vi gjorde på grupper"), med EN
+          nyansinvertering: kortet är självt `bg-bg-muted`, så raderna bär
+          `bg-surface` — grå rader på grå botten hade varit osynliga (samma
+          nästlingsregel som stegkortens minikort, fast åt andra hållet).
+          Etiketten renderas i ChipRads legendstil så "Vilka räknas med?",
+          "Familj" och "Nivå" delar typsnitt och färg — primitivens egen
+          Label-stil avviker, därför `hideLabel` + egen rad. */}
+      <div className="flex flex-col gap-1.5">
+        <span aria-hidden="true" className="font-medium text-small text-text-secondary">
+          Vilka räknas med?
+        </span>
+        <RadioGroup
+          label="Vilka räknas med?"
+          hideLabel
+          value={villkor.modalitet}
+          onChange={(v) => onAndra({ ...villkor, modalitet: v as ModalitetsVal })}
+          isInvalid={villkor.modalitet === null && !orort}
+          errorMessage="Välj vilka som räknas innan villkoret kan användas."
         >
-          <X aria-hidden="true" size={16} className="shrink-0" />
-          Ta bort
-        </Button>
+          <Radio
+            value="Utbildning"
+            className="w-full rounded-xl border border-transparent bg-surface px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+          >
+            De som gått utbildningar
+          </Radio>
+          <Radio
+            value="Föreläsning"
+            className="w-full rounded-xl border border-transparent bg-surface px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+          >
+            De som varit på föreläsningar
+          </Radio>
+          <Radio
+            value="Båda"
+            className="w-full rounded-xl border border-transparent bg-surface px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+          >
+            Båda
+          </Radio>
+        </RadioGroup>
       </div>
 
       <ChipRad etikett="Familj">
@@ -2552,9 +2908,6 @@ function VillkorsKort({
           );
         })}
       </ChipRad>
-      {villkor.familjer.length === 0 && (
-        <p className="-mt-2.5 text-caption text-text-muted">Inget val = alla familjer.</p>
-      )}
 
       {visaNiva && (
         <ChipRad etikett="Nivå">
@@ -2581,26 +2934,6 @@ function VillkorsKort({
           då är den saknade modaliteten ett verkligt fel som ska synas som ett.
           Motiveringen under står kvar i BÅDA lägena — den lär ut, den skäller
           inte. */}
-      <div className="flex flex-col gap-1.5">
-        <RadioGroup
-          label="Räknas som"
-          orientation="horizontal"
-          value={villkor.modalitet}
-          onChange={(v) => onAndra({ ...villkor, modalitet: v as ModalitetsVal })}
-          isInvalid={villkor.modalitet === null && !orort}
-          errorMessage="Välj vad som räknas innan villkoret kan användas."
-        >
-          <Radio value="Utbildning">Utbildning</Radio>
-          <Radio value="Föreläsning">Föreläsning</Radio>
-          <Radio value="Båda">Båda</Radio>
-        </RadioGroup>
-        {villkor.modalitet === null && (
-          <p className="text-caption text-text-muted">
-            Det finns material som är direkt olämpligt att skicka till någon som bara gått en
-            föreläsning. Därför måste varje villkor säga vilket det gäller.
-          </p>
-        )}
-      </div>
 
       {/* FORMATET ÄR FÄLLT — det är en avgränsning, inte ett beslut, och en
           ständigt öppen rad per dimension hade gjort kortet dubbelt så högt.
@@ -2641,35 +2974,60 @@ function VillkorsKort({
               </ValChip>
             ))}
           </ChipRad>
-          <p className="text-caption text-text-muted">
-            Formatet är i dag 1:1 med modaliteten - dimensionen blir meningsfull när fler format
-            tillkommer.
-          </p>
-          {/* DET SOM INTE FINNS SÄGS RAKT UT. Alternativet - en årsknapp som
-              i själva verket väljer kurser - är exakt den tysta felklass
-              modalitets-kravet finns för att avskaffa. */}
-          <div className="flex flex-col gap-1 border-border border-t pt-3">
-            <p className="font-medium text-small">{AR_EF_KRAV.rubrik}</p>
-            <p className="text-caption text-text-muted">{AR_EF_KRAV.brod}</p>
-            <p className="text-caption text-text-muted">{AR_EF_KRAV.krav}</p>
+          {/* TIDSPERIODEN SOM RIKTIG KONTROLL (varv 6d) — text-utlägget om
+              varför året inte gick att välja är rivet på Marcus order
+              ("jag vill kunna välja tidsperiod … proffsigast möjliga sätt").
+              Server-kravet och räkne-ärligheten: se `Villkor.period`s
+              docblock + steg 3-raden i verkstaden. */}
+          <div className="flex flex-col gap-1.5 border-border border-t pt-3">
+            <span className="font-medium text-small">Tidsperiod</span>
+            <DatumFalt
+              value={
+                villkor.period
+                  ? { start: parseDate(villkor.period.start), end: parseDate(villkor.period.end) }
+                  : null
+              }
+              onChange={(r) =>
+                onAndra({
+                  ...villkor,
+                  period: r ? { start: r.start.toString(), end: r.end.toString() } : null,
+                })
+              }
+            />
           </div>
         </div>
       </div>
 
       {/* MENINGEN, SIST. Modaliteten står i den varje gång — den läses utan
           att frågas om. Under den: vad villkoret expanderas till just nu. */}
-      <div className="flex flex-col gap-1 border-border border-t pt-3">
-        <p className="text-body">{villkorKlartext(villkor)}</p>
-        <p className="text-small text-text-muted">
-          {!villkorGiltigt(villkor)
-            ? 'Räknas inte förrän modaliteten är vald.'
-            : traffade.length === 0
-              ? 'Träffar ingen kurs i basen i dag. Regeln är giltig - den fylls när kursen finns.'
-              : `Träffar ${traffade.length} av ${parInfo.length} kurser: ${traffade
-                  .map((p) => labelForPar(p.par))
-                  .join(', ')}`}
-        </p>
-      </div>
+      {/* MENINGEN VISAS FÖRST NÄR DEN FINNS (Marcus 2026-08-16: hellre
+          ingenting än "Ofullständigt villkor …" — meningen dyker upp när
+          valen är gjorda, samma princip som mallvyns steg 3). Radiogruppens
+          eget felmeddelande bär kravet tills dess. */}
+      {villkorGiltigt(villkor) && (
+        <div className="flex flex-col gap-1 border-border border-t pt-3">
+          <p className="text-body">{villkorKlartext(villkor)}</p>
+          {/* TRÄFF-ORDET FÖLJER VALET (Marcus 2026-08-16, viktigt): vid
+              "Båda" omfattar träffarna både utbildningar och föreläsningar —
+              samlingsordet är "event"; vid föreläsningsvalet är träffarna
+              föreläsningar. */}
+          <p className="text-small text-text-muted">
+            {(() => {
+              const ord =
+                villkor.modalitet === 'Föreläsning'
+                  ? { ingen: 'ingen föreläsning', den: 'föreläsningen', flera: 'föreläsningar' }
+                  : villkor.modalitet === 'Båda'
+                    ? { ingen: 'inget event', den: 'eventet', flera: 'event' }
+                    : { ingen: 'ingen utbildning', den: 'utbildningen', flera: 'utbildningar' };
+              return traffade.length === 0
+                ? `Träffar ${ord.ingen} i basen i dag. Regeln är giltig - den fylls när ${ord.den} finns.`
+                : `Träffar ${traffade.length} av ${parInfo.length} ${ord.flera}: ${traffade
+                    .map((p) => labelForPar(p.par))
+                    .join(', ')}`;
+            })()}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -2679,21 +3037,20 @@ function OkandaKurser({ parInfo }: { parInfo: ParInfo[] }) {
   const okanda = [...new Set(parInfo.filter((p) => p.familj === null).map((p) => p.par.kurs))];
   if (okanda.length === 0) return null;
   return (
-    <MessageBox intent="warning" title="Kurser utan familj i prototypens karta">
+    <MessageBox intent="warning" title="Utbildningar utan familj i prototypens karta">
       <p>
         {okanda.join(', ')} finns i basen men saknas i den hårdkodade kartan, och matchar därför
         inget familj-villkor.
       </p>
       <p>
-        I den skarpa lösningen bär basen fälten och sätter dem när kursen skapas - då kan det här
-        inte inträffa.
+        I den skarpa lösningen bär basen fälten och sätter dem när utbildningen skapas - då kan det
+        här inte inträffa.
       </p>
     </MessageBox>
   );
 }
 
 function VillkorsLista({
-  rubrik,
   hjalptext,
   villkor,
   parInfo,
@@ -2702,7 +3059,6 @@ function VillkorsLista({
   onLaggTill,
   onTaBort,
 }: {
-  rubrik: string;
   hjalptext: string;
   villkor: Villkor[];
   parInfo: ParInfo[];
@@ -2711,12 +3067,8 @@ function VillkorsLista({
   onLaggTill: () => void;
   onTaBort: (id: string) => void;
 }) {
-  const id = useId();
   return (
-    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2 px-4">
-      <h2 id={id} className="font-semibold text-lg">
-        {rubrik}
-      </h2>
+    <div className="flex min-w-0 flex-col gap-2">
       <p className="text-small text-text-muted">{hjalptext}</p>
       {villkor.length > 0 && (
         <ul className="flex flex-col gap-3 pt-1">
@@ -2735,26 +3087,37 @@ function VillkorsLista({
         </ul>
       )}
       <div className="flex pt-1">
-        <button type="button" onClick={onLaggTill} className={KAPSEL_KLASS}>
+        <button type="button" onClick={onLaggTill} className={`${KAPSEL_KLASS} w-64`}>
           <Plus aria-hidden="true" size={18} className="shrink-0" />
           {villkor.length === 0 ? 'Lägg till villkor' : 'Lägg till ett villkor till'}
         </button>
       </div>
-    </section>
+    </div>
   );
 }
 
 /**
- * MED-GRENEN SOM KONJUNKT-GRUPPER. En grupp med ETT villkor renderas exakt
- * som förut — inget ramverk, ingen ny terminologi förrän någon aktivt bett
- * om ett och-krav. Först vid TVÅ eller fler villkor får gruppen sin ram och
- * sin egen rubrik, och "och"-bindningen står som text mellan korten —
- * semantiken bärs av grupprubriken och klartext-meningen, aldrig av enbart
+ * MED-GRENEN SOM KONJUNKT-ALTERNATIV. Ett alternativ med ETT villkor renderas
+ * exakt som förut — inget ramverk, ingen ny terminologi förrän någon aktivt
+ * bett om ett och-krav. Först vid TVÅ eller fler villkor får alternativet sin
+ * ram och sin egen rubrik, och "och"-bindningen står som text mellan korten —
+ * semantiken bärs av rubriken och klartext-meningen, aldrig av enbart
  * layouten.
  *
- * Två tillägg-knappar med olika verb, med avsikt: "och-krav" bor PER GRUPP
- * (smalnar av gruppen), "ny grupp" bor på sektionen (vidgar regeln). Att ge
- * dem samma knapp hade återinfört exakt den tvetydighet AND-luckan bestod av.
+ * Två tillägg-knappar med olika verb, med avsikt: "och-krav" bor PER
+ * ALTERNATIV (smalnar av det), "nytt alternativ" bor på sektionen (vidgar
+ * regeln). Att ge dem samma knapp hade återinfört exakt den tvetydighet
+ * AND-luckan bestod av.
+ *
+ * ORDET "GRUPP" ÄR UTE UR VERKSTADENS SYNLIGA TEXT (Marcus 2026-08-16,
+ * begreppsrenheten). Det kolliderade med uppdelnings-betydelsen, där en grupp
+ * är en MÄNGD PERSONER som får ett eget mail ("Dela upp i grupper",
+ * täckningen) - här betydde samma ord en OR-gren i ett predikat. Två
+ * betydelser, ett ord, på ytor man rör sig mellan i samma arbetspass.
+ * Verkstaden säger därför "alternativ"; uppdelningen behåller "grupp" ensam.
+ * Identifierarna (`onLaggTillGrupp`, `gruppEtikett`, `KonjunktLista`) är
+ * ORÖRDA per Marcus order - de är inte synlig text, och ett namnbyte hade
+ * breddat diffen utan att flytta en pixel.
  */
 function KonjunktLista({
   konjunkter,
@@ -2773,24 +3136,22 @@ function KonjunktLista({
   onLaggTillGrupp: () => void;
   onTaBortVillkor: (konjunktId: string, villkorId: string) => void;
 }) {
-  const id = useId();
   const flera = konjunkter.length > 1;
   const harFlerledad = konjunkter.some((k) => k.villkor.length > 1);
   return (
-    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2 px-4">
-      <h2 id={id} className="font-semibold text-lg">
-        Med - dessa räknas in
-      </h2>
+    <div className="flex min-w-0 flex-col gap-2">
       <p className="text-small text-text-muted">
         {harFlerledad || flera
-          ? 'Den som uppfyller minst en av grupperna är med i segmentet. Inom en grupp måste alla villkor uppfyllas samtidigt.'
+          ? 'Den som uppfyller minst ett av alternativen är med i segmentet. Inom ett alternativ måste alla villkor uppfyllas samtidigt.'
           : 'Den som uppfyller minst ett av villkoren är med i segmentet.'}
       </p>
       {konjunkter.length > 0 && (
         <ul className="flex flex-col gap-3 pt-1">
           {konjunkter.map((k, ki) => {
             const gruppEtikett = (vi: number) =>
-              flera || harFlerledad ? `Grupp ${ki + 1} · villkor ${vi + 1}` : `Villkor ${vi + 1}`;
+              flera || harFlerledad
+                ? `Alternativ ${ki + 1} · villkor ${vi + 1}`
+                : `Villkor ${vi + 1}`;
             const kort = (v: Villkor, vi: number) => (
               <VillkorsKort
                 villkor={v}
@@ -2799,6 +3160,7 @@ function KonjunktLista({
                 formatIBasen={formatIBasen}
                 onAndra={(ny) => onAndraVillkor(k.id, v.id, ny)}
                 onTaBort={() => onTaBortVillkor(k.id, v.id)}
+                kanTasBort={flera || k.villkor.length > 1}
               />
             );
             return (
@@ -2811,7 +3173,7 @@ function KonjunktLista({
                 ) : (
                   <div className="flex flex-col gap-3 rounded-2xl border border-border p-3">
                     <p className="font-medium text-small text-text-secondary">
-                      Grupp {ki + 1} - alla villkor nedan måste uppfyllas samtidigt
+                      Alternativ {ki + 1} - alla villkor nedan måste uppfyllas samtidigt
                     </p>
                     {k.villkor.map((v, vi) => (
                       <div key={v.id} className="flex flex-col gap-3">
@@ -2829,13 +3191,18 @@ function KonjunktLista({
                   </div>
                 )}
                 <div className="flex">
+                  {/* SAMMA GEOMETRI SOM ELLER-KNAPPEN, ANNAN GRÅ NYANS (Marcus
+                      2026-08-16): kapselformen (radie, padding, typografi) är
+                      identisk med `KAPSEL_KLASS`; nyansskillnaden bär
+                      hierarkin - Eller (vidgar regeln) står på grå platta,
+                      Och (smalnar ett alternativ) som grå kontur. */}
                   <button
                     type="button"
                     onClick={() => onLaggTillVillkor(k.id)}
-                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-medium text-small text-text-secondary hover:bg-bg-emphasized motion-safe:transition-colors"
+                    className="inline-flex w-64 shrink-0 items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
                   >
-                    <Plus aria-hidden="true" size={16} className="shrink-0" />
-                    Och-krav: kräv även deltagande i mer
+                    <Plus aria-hidden="true" size={18} className="shrink-0" />
+                    Och: lägg till ett krav till
                   </button>
                 </div>
               </li>
@@ -2844,12 +3211,14 @@ function KonjunktLista({
         </ul>
       )}
       <div className="flex pt-1">
-        <button type="button" onClick={onLaggTillGrupp} className={KAPSEL_KLASS}>
+        {/* Samma fasta bredd som Och-knappen (Marcus 2026-08-16: paret ska
+            vara lika brett och lika högt; nyansen skiljer dem). */}
+        <button type="button" onClick={onLaggTillGrupp} className={`${KAPSEL_KLASS} w-64`}>
           <Plus aria-hidden="true" size={18} className="shrink-0" />
-          {konjunkter.length === 0 ? 'Lägg till villkor' : 'Eller: lägg till en alternativ grupp'}
+          {konjunkter.length === 0 ? 'Lägg till villkor' : 'Eller: lägg till ett alternativ'}
         </button>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -2889,7 +3258,9 @@ function RegelVerkstad({
     (v) => !villkorGiltigt(v),
   ).length;
   const harRegel = rule.include.length > 0;
-  const harFlerledadGrupp = pred.med.some((k) => konjunktGiltig(k) && k.villkor.length > 1);
+  const harPeriod = [...pred.med.flatMap((k) => k.villkor), ...pred.utan].some(
+    (v) => v.period !== null,
+  );
 
   /* RÄKNINGEN FÖLJER REGELN — ingen begäran, ingen knapp (Marcus 2026-08-10).
      `enabled` är `harRegel`, inte en sparad signatur.
@@ -2943,20 +3314,27 @@ function RegelVerkstad({
   return (
     <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmentet">
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
-        <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
-          Regeln
+        {/* RUBRIKEN ÄR SEGMENTET, INTE SYSTEMORDET (Marcus 2026-08-16:
+            "'Regeln' … väldigt förvirrande"). Befintligt segment bär sitt
+            namn; ett namnlöst utkast (vägen ur mallvyns "Bygg med egna
+            villkor") heter det man håller på att göra. Den gamla tekniska
+            ingressen ("En regel beskriver vad någon har gått igenom - inte
+            vilka utbildningar som fanns …") är ersatt av en rad i
+            nyttospråk — automatik-poängen bor nu i villkorens egen text. */}
+        <h1 ref={rubrikRef} tabIndex={-1} className="min-w-0 truncate font-semibold text-3xl">
+          {entitet.namn.trim() !== '' ? entitet.namn : 'Nytt segment'}
         </h1>
         <p className="text-small text-text-muted">
-          En regel beskriver vad någon har gått igenom - inte vilka kurser som fanns när du byggde
-          den. Startar en ny nivå senare omfattas den automatiskt.
+          Egna villkor för vilka som ingår - antalet räknas medan du bygger.
         </p>
       </header>
 
       {entitet.predikat === null && (
         <div className="px-4">
           <MessageBox intent="info" title="Det här segmentet är sparat i den äldre formen">
-            Regeln är en uppräkning av kurser: {definitionFor(entitet, parInfo)} Den fortsätter
-            fungera, men omfattar inte nya kurser. Villkoren nedan bygger om den som ett predikat.
+            Regeln är en uppräkning av utbildningar: {definitionFor(entitet, parInfo)} Den
+            fortsätter fungera, men omfattar inte nya utbildningar. Villkoren nedan bygger om den
+            som ett predikat.
           </MessageBox>
         </div>
       )}
@@ -2965,141 +3343,128 @@ function RegelVerkstad({
         <OkandaKurser parInfo={parInfo} />
       </div>
 
-      <div className="px-4">
-        <Input
-          label="Namn på segmentet"
-          value={namn}
-          onChange={setNamn}
-          placeholder="t.ex. RIM - alla utbildningsnivåer"
-          isRequired
-        />
-      </div>
+      {/* SAMMA TRE STEGKORT SOM MALLVYN OCH GENERATORN (varv 6c, Marcus:
+          "gör HELA sidan lika bra"). Appens tre skapandeytor delar nu form:
+          numrerade kort, namnet sist, summeringen i brödtextgrad. Namnet
+          flyttade från toppen till steg 3 — man vet vad segmentet ÄR innan
+          man döper det (mallvyns ordning). Steg 2 är valfritt och dämpas
+          därför aldrig. */}
+      <div className="flex flex-col gap-4 px-4">
+        <StegSektion nummer={1} rubrik="Vilka ska ingå?">
+          <KonjunktLista
+            konjunkter={pred.med}
+            parInfo={parInfo}
+            formatIBasen={formatIBasen}
+            onAndraVillkor={andraMed}
+            onLaggTillVillkor={laggTillOchKrav}
+            onLaggTillGrupp={laggTillGrupp}
+            onTaBortVillkor={taBortMedVillkor}
+          />
+        </StegSektion>
 
-      <KonjunktLista
-        konjunkter={pred.med}
-        parInfo={parInfo}
-        formatIBasen={formatIBasen}
-        onAndraVillkor={andraMed}
-        onLaggTillVillkor={laggTillOchKrav}
-        onLaggTillGrupp={laggTillGrupp}
-        onTaBortVillkor={taBortMedVillkor}
-      />
+        <StegSektion nummer={2} rubrik="Ska några räknas bort?">
+          <VillkorsLista
+            hjalptext="Valfritt. Den som uppfyller något av villkoren här tas bort igen, även om hon räknades in ovan."
+            villkor={pred.utan}
+            parInfo={parInfo}
+            formatIBasen={formatIBasen}
+            onAndra={andraUtan}
+            onLaggTill={laggTillUtan}
+            onTaBort={taBortUtan}
+          />
+        </StegSektion>
 
-      <VillkorsLista
-        rubrik="Utan - dessa räknas bort"
-        hjalptext="Den som uppfyller något av villkoren här tas bort igen, även om hon räknades in ovan."
-        villkor={pred.utan}
-        parInfo={parInfo}
-        formatIBasen={formatIBasen}
-        onAndra={andraUtan}
-        onLaggTill={laggTillUtan}
-        onTaBort={taBortUtan}
-      />
-
-      {/* SAMMANFATTNINGEN: definitionen och resultatet i ett andetag (`a`s
-          hjärta), men här i slutet av en yta som INTE också bär utskicket. */}
-      <section aria-labelledby="grupp-summering" className="flex min-w-0 flex-col gap-2">
-        <h2 id="grupp-summering" className="px-4 font-semibold text-lg">
-          Det här segmentet
-        </h2>
-        <div className={`divide-y divide-border ${KORT_KLASS}`}>
-          <div className="py-4">
-            <p className="text-lg">{predikatKlartext(pred)}</p>
+        <StegSektion nummer={3} rubrik="Det här blir segmentet" dampad={!harRegel}>
+          <div aria-live="polite" aria-busy={isFetching} className="flex flex-col gap-1">
+            {ofullstandiga > 0 ? (
+              // "Modalitet" är systemspråk (Marcus 2026-08-16: "Jag förstår
+              // inte modalitet och det kommer inte Lotta heller göra") — raden
+              // pekar i stället på det val som saknas, med dess egna ord.
+              <p className="text-small text-text-muted">
+                {ofullstandiga === 1
+                  ? 'Ett villkor saknar valet av vad som räknas (Räknas som) och används inte.'
+                  : `${ofullstandiga} villkor saknar valet av vad som räknas (Räknas som) och används inte.`}
+              </p>
+            ) : !harRegel ? (
+              <p className="text-small text-text-muted">
+                Bygg minst ett villkor ovan, så visas segmentet här.
+              </p>
+            ) : (
+              <>
+                {/* Brödtextgrad, bara antalet bär vikt — samma beslut som
+                    mallvyns steg 3 (Marcus 2026-08-16). */}
+                <p className="text-body">{predikatKlartext(pred)}</p>
+                {isFetching ? (
+                  <p className="text-small text-text-muted">Räknar personer…</p>
+                ) : isError ? (
+                  <MessageBox intent="error" title="Kunde inte räkna antal">
+                    {error instanceof Error ? error.message : 'Okänt fel.'}
+                  </MessageBox>
+                ) : antal === undefined ? (
+                  // Regeln är ofullständig — det enda skälet till att ett tal
+                  // saknas är att det inte FINNS något att räkna ännu.
+                  <p className="text-small text-text-muted">
+                    Antalet visas när regeln är komplett.
+                  </p>
+                ) : (
+                  <>
+                    {/* Fälla #34: noll är neutralt, aldrig ett fel. */}
+                    <p className="text-body">
+                      <strong className="font-semibold text-xl tabular-nums">{antal}</strong>{' '}
+                      {antal === 0 ? 'personer ännu.' : `${personform(antal)} i det här segmentet.`}
+                    </p>
+                    {/* RÄKNE-ÄRLIGHETEN för tidsperioden (varv 6d): UI:t bär
+                        valet, servern måste verkställa det (EF-kravet,
+                        `Villkor.period`s docblock). Tills dess sägs det kort
+                        i stället för att antalet tyst ljuger. */}
+                    {harPeriod && (
+                      <p className="text-caption text-text-muted">
+                        Tidsperioden räknas av servern - antalet är ännu utan den.
+                      </p>
+                    )}
+                  </>
+                )}
+              </>
+            )}
           </div>
+          {/* RÄKNA-KNAPPEN ÄR RIVEN (Marcus 2026-08-10): cache-nyckeln på
+              regelns signatur bär hamrings-skyddet, spärren lade bara ett
+              klick mellan Lotta och svaret. EXPANSIONS-NOTEN ÄR RIVEN UR
+              SYNLIG TEXT (Marcus 2026-08-16): mekaniken bor i filhuvudets
+              EF-krav — servern måste skarpt äga både uppslaget och snittet
+              (segment-membership.ts § AND-PRIMITIVEN). */}
 
-          <div className="flex flex-col gap-3 py-4">
-            <div aria-live="polite" aria-busy={isFetching} className="flex flex-col gap-1">
-              {ofullstandiga > 0 ? (
-                <p className="text-body text-text-muted">
-                  {ofullstandiga} {ofullstandiga === 1 ? 'villkor saknar' : 'villkor saknar'}{' '}
-                  modalitet och räknas inte.
-                </p>
-              ) : !harRegel ? (
-                <p className="text-body text-text-muted">
-                  Bygg minst ett villkor under Med, så går regeln att räkna.
-                </p>
-              ) : isFetching ? (
-                <>
-                  <span className="sr-only">Räknar personer…</span>
-                  <Skeleton variant="text" className="w-20 text-3xl" />
-                  <Skeleton variant="text" className="w-56" />
-                </>
-              ) : isError ? (
-                <MessageBox intent="error" title="Kunde inte räkna antal">
-                  {error instanceof Error ? error.message : 'Okänt fel.'}
-                </MessageBox>
-              ) : antal === undefined ? (
-                // Regeln är ofullständig (ingen modalitet vald, inga villkor).
-                // Ingen räkning är begärd av användaren längre — den enda
-                // anledningen till att ett tal saknas är att det inte FINNS
-                // något att räkna ännu, och det säger raden rakt ut.
-                <p className="text-body text-text-muted">Antalet visas när regeln är komplett.</p>
-              ) : antal === 0 ? (
-                // Fälla #34: neutralt, aldrig som fel.
-                <p className="text-lg">
-                  <strong className="font-semibold text-3xl tabular-nums">0</strong> personer ännu.
-                </p>
-              ) : (
-                <p className="text-lg">
-                  <strong className="font-semibold text-3xl tabular-nums">{antal}</strong>{' '}
-                  {personform(antal)} i det här segmentet.
-                </p>
-              )}
-            </div>
-
-            {/* RÄKNA-KNAPPEN ÄR RIVEN (Marcus 2026-08-10). Talet följer
-                regeln av sig självt: ändras ett villkor byter frågan nyckel
-                och det nya talet hämtas direkt.
-
-                Varför spärren fanns, och varför den ändå faller: varje
-                räkning är en walk över ~1012 `Deltaganden`-rader, så den
-                fick inte hamras. Men `b` mätte hela interaktionspasset till
-                ETT `compute-segment`-anrop — cache-nyckeln på regelns
-                signatur bär redan det skyddet, och ett återbesök i
-                regelrymden kostar noll eftersom den gamla signaturens svar
-                ligger kvar. Spärren skyddade alltså inte mot walken; den
-                lade bara ett klick mellan Lotta och svaret. */}
-            {/* EXPANSIONEN, SAGD KORT. Kort med flit: den är en not om
-                mekaniken, inte en varning om ytan. */}
-            <p className="text-caption text-text-muted">
-              Regeln slås upp mot {rule.include.length} av {parInfo.length} kurser i webbläsaren och
-              skickas som en kurslista till servern.
-              {harFlerledadGrupp &&
-                ' Och-grupperna räknas som snitt av flera frågor i webbläsaren.'}{' '}
-              Skarpt måste servern äga{' '}
-              {harFlerledadGrupp ? 'både uppslaget och snittet' : 'uppslaget'} - annars kan
-              mottagarkontrollen inte lita på regeln.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <div className="flex flex-col gap-3 px-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            intent="primary"
-            isDisabled={!harRegel || namn.trim() === ''}
-            onPress={() => {
-              setSparNot(true);
-              onSpara(namn.trim(), pred);
-            }}
-          >
-            Spara regeln
-          </Button>
-          {/* EN LÅST KNAPP SKA SÄGA VARFÖR. `a`s form ("Bygg klart regeln
-              först."): skälet står bredvid knappen, inte i huvudet på den som
-              redan vet. */}
-          {(!harRegel || namn.trim() === '') && (
-            <span className="text-small text-text-muted">
-              {!harRegel
-                ? 'Bygg minst ett fullständigt villkor under Med.'
-                : 'Ge segmentet ett namn först.'}
-            </span>
+          {harRegel && (
+            <>
+              <Input
+                label="Namn på segmentet"
+                value={namn}
+                onChange={setNamn}
+                placeholder="t.ex. RIM - alla utbildningsnivåer"
+                isRequired
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  intent="primary"
+                  isDisabled={!harRegel || namn.trim() === ''}
+                  onPress={() => {
+                    setSparNot(true);
+                    onSpara(namn.trim(), pred);
+                  }}
+                >
+                  Spara segmentet
+                </Button>
+                {namn.trim() === '' && (
+                  <span className="text-small text-text-muted">Ge segmentet ett namn först.</span>
+                )}
+                <Button intent="secondary" onPress={onTillbaka}>
+                  Avbryt
+                </Button>
+              </div>
+            </>
           )}
-          <Button intent="secondary" onPress={onTillbaka}>
-            Avbryt
-          </Button>
-        </div>
+        </StegSektion>
+
         {sparNot && (
           <MessageBox
             intent="info"
@@ -3170,6 +3535,92 @@ function popcount(mask: number): number {
 }
 
 /**
+ * ETT STEG SOM KORT (S104 varv 3, Marcus 2026-08-16: "gör den SNYGG,
+ * PROFFSIG, ENKEL, TYDLIG"). Varv 2 gav stegen rätt SEMANTIK — `<section
+ * aria-labelledby>` + `<h2>`, hela vägen synlig från mount — men lät dem stå
+ * som lösa textblock på naken sida. Semantiken är oförändrad här; det som
+ * ändras är att varje steg får en yta att stå på.
+ *
+ * YTAN ÄR PANELGRAMMATIKEN, INTE LISTKORTS-GRAMMATIKEN. Appen bär två
+ * kortformer, och de betyder olika saker: LISTPOSTEN är fylld och kantlös
+ * (`bg-bg-muted border-transparent`, `SegmentKort`), BEHÅLLAREN är vit med
+ * en ritad kant (`bg-surface border-border`, den forna täckningspanelen).
+ * Ett steg är en behållare för kontroller, inte en post i en lista — och
+ * valet är dessutom påtvingat nedåt: steg 3:s förhandsvisning ÄR listposter
+ * (`bg-bg-muted`), och de hade blivit osynliga på en `bg-bg-muted`-yta.
+ * Nästlingen avgör, inte smaken.
+ *
+ * NUMRET ÄR EN RUNDEL FÖR ÖGAT OCH TEXT FÖR ÖRAT. Rundeln ärver publikradens
+ * initial-grammatik (`rounded-full bg-bg-emphasized font-semibold text-small
+ * text-text-secondary`, `PersonRad`) i mindre steg — `size-7` mot radens
+ * `size-9`, för ett steg-nummer är ett tecken och en rubrikmarkör, inte två
+ * initialer i en scanlista. Den är `aria-hidden`; rubrikens tillgängliga namn
+ * får numret ur ett `sr-only`-prefix i stället.
+ *
+ * SR-ONLY FRAMFÖR `aria-label` PÅ RUBRIKEN, och skälet är hållbarhet: ett
+ * `aria-label` ERSÄTTER rubrikens textinnehåll för skärmläsaren, så den
+ * synliga och den upplästa rubriken blir två strängar som kan glida isär vid
+ * nästa textputs. Ett `sr-only`-prefix ADDERAR i stället till den synliga
+ * texten — en källa, inte två. Filen har redan precedenten (`SegmentLista`s
+ * "<span class="sr-only"> segment markerade</span>").
+ *
+ * VILANDE STEG SYNS, OCH DET ÄR HELA POÄNGEN. Ett steg som ännu inte är
+ * åtkomligt renderar sin rubrik och en ledtext som säger vad som saknas,
+ * aldrig ingenting: hela vägen ska synas från första sekunden. Ledtexten
+ * ERSÄTTER innehållet i stället för att gråtona det — en `opacity`-dämpad
+ * kontroll är fortfarande fokuserbar och läses fortfarande upp, medan en
+ * ledtext säger sanningen ("gör steget före först") för alla.
+ *
+ * DÄMPNINGEN ÄR EN TEXTFÄRG, ALDRIG `opacity`. Ett vilande steg tonar rubrik
+ * och ledtext till `text-text-muted` — MÄTT till 5,33:1 mot `bg-surface`
+ * (#6b6b6b mot #ffffff) och 4,88:1 mot `bg-bg-muted`, alltså AA i båda
+ * lägena. `opacity` på hela kortet hade multiplicerat NER varje kontrast
+ * inklusive kantens och därmed sänkt golvet; en kontrast man kan räkna på i
+ * förväg kan `opacity` per definition inte ge.
+ */
+function StegSektion({
+  nummer,
+  rubrik,
+  vilar,
+  dampad,
+  children,
+}: {
+  nummer: number;
+  rubrik: string;
+  /** Satt när steget ännu inte är åtkomligt — ledtexten ersätter `children`. */
+  vilar?: string;
+  /** Dämpar rubrik+rundel UTAN att ersätta `children` — för steg vars innehåll
+      själv bär sin vilande ledtext i en monterad live-region (steg 3): `vilar`
+      hade avmonterat regionen och återinfört monterings-annonseringsfelet
+      (Marcus fynd 2026-08-16: steg 3-rubriken stod omutad när steget vilade). */
+  dampad?: boolean;
+  children: React.ReactNode;
+}) {
+  const id = useId();
+  const aktiv = vilar === undefined && !dampad;
+  return (
+    <section
+      aria-labelledby={id}
+      className="flex min-w-0 flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
+    >
+      <h2 id={id} className="flex items-start gap-2.5 font-semibold text-lg">
+        <span
+          aria-hidden="true"
+          className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small ${
+            aktiv ? 'text-text-secondary' : 'text-text-muted'
+          }`}
+        >
+          {nummer}
+        </span>
+        <span className="sr-only">Steg {nummer}: </span>
+        <span className={`min-w-0 ${aktiv ? '' : 'text-text-muted'}`}>{rubrik}</span>
+      </h2>
+      {vilar === undefined ? children : <p className="text-small text-text-muted">{vilar}</p>}
+    </section>
+  );
+}
+
+/**
  * PARTITION-GENERATORN SOM EGEN YTA (S104 Del 3, beslut "partition som
  * generator"). Samma verkstads-princip som `RegelVerkstad`: den kostar klick
  * och tar plats, men bor inte på samma skärm som listan.
@@ -3177,6 +3628,12 @@ function popcount(mask: number): number {
  * ORDNINGEN ÄR AVSIKTLIG: modaliteten väljs FÖRST, kurserna härleds sedan ur
  * den (`harledKursAtomer`) — så en atom-chip betyder alltid "den här kursen,
  * räknad som den modalitet du redan valt", aldrig en tyst gissning.
+ *
+ * TRE SYNLIGA STEG (varv 2). Formen före detta varv öppnade med en ensam
+ * radiogrupp och en död "Skapa 0 segment"-knapp; utbildningsvalet och
+ * förhandsvisningen dök upp stegvis utan förvarning. Nu står alla tre stegen
+ * på sidan från mount — de som väntar med en ledtext — och knappen bär ett
+ * tal först när talet betyder något.
  */
 function DelaUppIGrupper({
   parInfo,
@@ -3190,7 +3647,6 @@ function DelaUppIGrupper({
   const rubrikRef = useRef<HTMLHeadingElement>(null);
   useVyFokus(rubrikRef, true);
   const dataSource = useDataSource();
-  const forhandsvisningRubrikId = useId();
 
   const [modalitet, setModalitet] = useState<ModalitetsVal | null>(null);
   const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
@@ -3245,6 +3701,39 @@ function DelaUppIGrupper({
   const befolkade = kombinationer.filter((k) => k.antal > 0);
   const kanSkapa = visaForhandsvisning && allaSvarat && !nagotFel && befolkade.length > 0;
 
+  /* TÄCKNINGEN ÄR EN REN SUMMA, INTE EN UPPSKATTNING. Varje person bär exakt
+     EN bitmask (`raknaKombinationer` slår ihop personens alla atom-träffar
+     till ett tal per person-id), så en person kan omöjligt räknas i två
+     kombinationer — summan över de befolkade är därför antalet UNIKA personer
+     som hamnar i någon grupp. Den som inte gått någon av de valda
+     utbildningarna har mask 0 och finns inte i räkningen alls; det är också
+     rätt, för hen får inget av de här mailen. */
+  const tackta = befolkade.reduce((summa, k) => summa + k.antal, 0);
+  const tomma = kombinationer.length - befolkade.length;
+
+  /* STEG 3:s ENDA LIVE-REGION bär hela stegets tillstånd — vilande, räknande,
+     mätt-men-tomt eller klart — i stället för att varje läge monterar sin egen
+     rad. Skälet står i `SegmentKort` (antal-raden): en `aria-live` som monteras
+     SAMTIDIGT som sin text annonseras inte, så regionen måste finnas hela
+     tiden och bara byta innehåll. Den gamla formen monterade sin summering
+     inuti `allaSvarat`-grenen och led av precis det felet. */
+  const steg3Text =
+    modalitet === null
+      ? 'Välj först vilka som räknas med.'
+      : valdaAtomer.length < 2
+        ? 'Välj minst två utbildningar, så visas grupperna här.'
+        : nagotFel
+          ? ''
+          : !allaSvarat
+            ? 'Räknar grupperna…'
+            : befolkade.length === 0
+              ? 'Ingen har någon av de här kombinationerna än.'
+              : // "N personer täcks" var samma systemord som listans kontrolläge
+                // rensade bort (Marcus 2026-08-16) - och dessutom passivt om en
+                // handling Lotta utför. "får en grupp" säger vad som händer med
+                // personerna, i samma riktning som resten av meningen.
+                `${befolkade.length} ${befolkade.length === 1 ? 'grupp skapas' : 'grupper skapas'} · ${tackta} ${personform(tackta)} får en grupp`;
+
   function skapa() {
     if (!kanSkapa || modalitet === null) return;
     const nu = Date.now();
@@ -3261,135 +3750,603 @@ function DelaUppIGrupper({
         <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
           Dela upp i grupper
         </h1>
+        {/* INGRESSEN SÄGER NYTTAN, INTE PARTITIONEN (Marcus 2026-08-16).
+            Den gamla underrubriken beskrev matematiken - "EXAKT en grupp ...
+            precis hens egen kombination" - vilket är sant men svarar på en
+            fråga Lotta inte ställt. Den som står här undrar varför hon skulle
+            vilja dela upp någonting alls; löftet "ett mail per person" är
+            svaret, och det bär partitionens garanti på köpet. */}
         <p className="text-small text-text-muted">
-          Välj de kurser du vill dela upp mellan. Varje person hamnar i EXAKT en grupp - den som
-          motsvarar precis hens egen kombination av kurser, aldrig fler.
+          Vill du skriva olika mail till olika delar av publiken? Här delas den upp åt dig: var och
+          en hamnar i exakt en grupp och får exakt ett mail.
         </p>
       </header>
 
-      <div className="flex flex-col gap-6 px-4">
+      <div className="flex flex-col gap-4 px-4">
         {/* SAMMA FORM + SÄKERHETSMOTIVERING SOM `VillkorsKort`. Ingen
             röd/ogiltig-styling här: till skillnad från ett villkor mitt i
             byggnad finns det inget FÖRE modaliteten att röra vid - så det
             "orörda" läget varar hela tiden fram till första valet, och en röd
             ram hade skällt på någon som ännu inte gjort något. */}
-        <div className="flex flex-col gap-1.5">
+        <StegSektion nummer={1} rubrik="Vilka räknas med?">
+          {/* ETIKETTERNA BÄR SUBJEKT (varv 2). "Utbildning"/"Föreläsning"
+                namngav formatet på ett event; frågan steget ställer handlar om
+                PERSONER. De interna värdena är oförändrade `ModalitetsVal` -
+                bara orden på skärmen är nya.
+
+                VERTIKALA VALRADER (varv 5, Marcus 2026-08-16: "Blev inte så
+                bra med togglen. … rada upp alternativen i steg 1 vertikalt
+                … grå bakgrund"). Knappgruppen (varv 3) och dess
+                naturlig-bredd-form (varv 4) är rivna - historiken bor i git.
+                Formen nu: appens `RadioGroup`/`Radio`-primitiv (samma som
+                regelverkstadens "Räknas som"), vertikal default-orientering,
+                varje alternativ som en full-bredds valrad i listpostens
+                grammatik (`rounded-xl bg-bg-muted px-4 py-2.5` - samma yta
+                som steg 3:s förhandsvisningsposter, så de två stegen läser
+                som samma familj). Vald rad markeras med kant i `--mm-text`
+                UTÖVER indikatorpricken - kanten är förstärkning, aldrig enda
+                bäraren (WCAG 1.4.1).
+
+                KONTROLLERAD, till skillnad från togglens okontrollerade läge:
+                `RadioGroup` tar `value={modalitet}` där `null` är "inget
+                valt" - react-arias RadioGroup är null-medveten, så någon
+                okontrollerad→kontrollerad-växling (togglens mätta fälla)
+                existerar inte här. Radiosemantiken ger enval + inget avval
+                gratis. */}
+          {/* SÄKERHETSFÖRKLARINGEN ÄR BORTTAGEN, INTE BORTGLÖMD (Marcus
+              2026-08-16, varv 4, ordagrant: "Ta bort 'Det finns material som
+              är direkt...'"). Stycket ("Det finns material som är direkt
+              olämpligt att skicka till någon som bara gått en föreläsning
+              …") stod i BÅDA lägena - före och efter valet - och är ute i
+              båda. Stegrubriken "Vilka räknas med?" ställer frågan; svaret
+              behöver ingen brasklapp under sig. */}
           <RadioGroup
-            label="Räknas som"
-            orientation="horizontal"
+            label="Räknas med"
+            hideLabel
             value={modalitet}
             onChange={(v) => setModalitet(v as ModalitetsVal)}
           >
-            <Radio value="Utbildning">Utbildning</Radio>
-            <Radio value="Föreläsning">Föreläsning</Radio>
-            <Radio value="Båda">Båda</Radio>
+            <Radio
+              value="Utbildning"
+              className="w-full rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+            >
+              De som gått utbildningar
+            </Radio>
+            <Radio
+              value="Föreläsning"
+              className="w-full rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+            >
+              De som varit på föreläsningar
+            </Radio>
+            <Radio
+              value="Båda"
+              className="w-full rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+            >
+              Båda
+            </Radio>
           </RadioGroup>
-          {modalitet === null && (
-            <p className="text-caption text-text-muted">
-              Det finns material som är direkt olämpligt att skicka till någon som bara gått en
-              föreläsning. Välj därför vad grupperna ska räknas som innan du väljer kurser.
-            </p>
-          )}
-        </div>
+        </StegSektion>
 
-        {modalitet !== null && (
-          <ChipRad etikett="Kurser">
-            {atomer.length === 0 ? (
-              <p className="text-small text-text-muted">Inga kurser i basen matchar det valet.</p>
-            ) : (
-              atomer.map((a) => (
-                <ValChip
-                  key={a.nyckel}
-                  vald={valda.has(a.nyckel)}
-                  onTryck={() =>
-                    setValda((s) => {
-                      const ny = new Set(s);
-                      if (ny.has(a.nyckel)) ny.delete(a.nyckel);
-                      else ny.add(a.nyckel);
-                      return ny;
-                    })
-                  }
-                >
-                  {a.etikett}
-                </ValChip>
-              ))
-            )}
-          </ChipRad>
-        )}
-
-        {modalitet !== null && valdaAtomer.length === 1 && (
-          <p className="text-small text-text-muted">
-            Välj minst två kurser för att dela upp - en ensam kurs är redan sin egen grupp.
-          </p>
-        )}
-
-        {visaForhandsvisning && (
-          <section aria-labelledby={forhandsvisningRubrikId} className="flex flex-col gap-3">
-            <h2 id={forhandsvisningRubrikId} className="font-semibold text-lg">
-              Förhandsvisning
-            </h2>
-            {nagotFel ? (
-              <MessageBox intent="error" title="Kunde inte räkna grupperna">
-                Försök igen, eller välj färre kurser.
-              </MessageBox>
-            ) : !allaSvarat ? (
-              <div role="status" aria-busy="true" className="flex flex-col gap-2">
-                <span className="sr-only">Räknar grupperna…</span>
-                {['a', 'b', 'c'].map((k) => (
-                  <Skeleton key={k} variant="text" className="w-2/3 text-body" />
-                ))}
-              </div>
-            ) : (
-              <>
-                {/* TALET SOM ARIA-LIVE (kvalitetsribba 11): antalet befolkade
-                    kombinationer ändras varje gång en kurs väljs om, och det
-                    ska höras utan att man letar upp raden själv. */}
-                <p aria-live="polite" className="text-small text-text-muted">
-                  {befolkade.length} av {kombinationer.length}{' '}
-                  {kombinationer.length === 1 ? 'kombination har' : 'kombinationer har'} personer -{' '}
-                  {kombinationer.length - befolkade.length === 0
-                    ? 'ingen utelämnas'
-                    : `${kombinationer.length - befolkade.length} utelämnas`}
-                  .
+        <StegSektion
+          nummer={2}
+          rubrik="Vilka utbildningar ska publiken delas upp efter?"
+          vilar={modalitet === null ? 'Välj först vilka som räknas med.' : undefined}
+        >
+          <div className="flex flex-col gap-2">
+            <ChipRad etikett="Utbildningar" doldEtikett>
+              {atomer.length === 0 ? (
+                <p className="text-small text-text-muted">
+                  Inga utbildningar i basen matchar det valet.
                 </p>
-                <ul className="flex flex-col gap-2">
-                  {kombinationer.map((k) => (
+              ) : (
+                atomer.map((a) => (
+                  <ValChip
+                    key={a.nyckel}
+                    vald={valda.has(a.nyckel)}
+                    onTryck={() =>
+                      setValda((s) => {
+                        const ny = new Set(s);
+                        if (ny.has(a.nyckel)) ny.delete(a.nyckel);
+                        else ny.add(a.nyckel);
+                        return ny;
+                      })
+                    }
+                  >
+                    {a.etikett}
+                  </ValChip>
+                ))
+              )}
+            </ChipRad>
+            {valdaAtomer.length === 1 && (
+              <p className="text-small text-text-muted">
+                Välj minst två utbildningar för att dela upp - en ensam utbildning är redan sin egen
+                grupp.
+              </p>
+            )}
+          </div>
+        </StegSektion>
+
+        <StegSektion
+          nummer={3}
+          rubrik="Det här blir grupperna"
+          dampad={modalitet === null || valdaAtomer.length < 2}
+        >
+          <p aria-live="polite" className="text-small text-text-muted">
+            {steg3Text}
+          </p>
+          {nagotFel ? (
+            <MessageBox intent="error" title="Kunde inte räkna grupperna">
+              Försök igen, eller välj färre utbildningar.
+            </MessageBox>
+          ) : visaForhandsvisning && !allaSvarat ? (
+            /* Skeletonen är REN DEKOR här - live-regionen ovan säger redan
+               "Räknar grupperna…", så en egen `role="status"` med sr-only-text
+               hade annonserat samma sak två gånger. */
+            <div aria-hidden="true" className="flex flex-col gap-2 pt-1">
+              {['a', 'b', 'c'].map((k) => (
+                <Skeleton key={k} variant="text" className="w-2/3 text-body" />
+              ))}
+            </div>
+          ) : modalitet !== null && kanSkapa ? (
+            <>
+              {/* EN RAD PER GRUPP SOM FAKTISKT BLIR AV — ett MINI-SEGMENTKORT,
+                  för det är precis vad raden är: den blir ett kort i listan när
+                  man trycker på knappen nedanför. Anatomin är listpostens (namn,
+                  meningen dämpad under, talet höger) i publikradens nedskalade
+                  mått (`rounded-xl bg-bg-muted px-4 py-2.5`, `font-medium`) —
+                  en förhandsvisning ska likna resultatet utan att konkurrera
+                  med det, och den ligger dessutom INUTI steg 3:s vita
+                  behållare, där den tonala fyllningen är det som gör den synlig.
+
+                  Meningen kommer ur `manniskoMening` - EXAKT samma formulerare
+                  som `byggGrupp` kör när gruppen skapas, med samma två
+                  argument. Förhandsvisningen kan därför inte säga en annan sak
+                  än kortet kommer säga: de delar formulerare precis som de
+                  sedan tidigare delar predikat-kodväg (`villkorForAtom`). */}
+              <ul className="flex flex-col gap-2">
+                {befolkade.map((k) => {
+                  const ivaldaIGrupp = valdaAtomer.filter((_, i) => (k.mask & (1 << i)) !== 0);
+                  const utanfor = valdaAtomer.filter((_, i) => (k.mask & (1 << i)) === 0);
+                  return (
                     <li
                       key={k.mask}
-                      className={`flex items-center justify-between gap-3 rounded-xl px-4 py-2 ${
-                        k.antal === 0 ? 'text-text-muted' : 'bg-bg-muted'
-                      }`}
+                      className="flex items-start justify-between gap-3 rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 contrast-more:border-border-strong"
                     >
-                      <span className="font-medium text-body">{k.namn}</span>
-                      <span className="text-small tabular-nums">
-                        {k.antal === 0
-                          ? 'utelämnas (0 personer)'
-                          : `${k.antal} ${personform(k.antal)}`}
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="font-medium text-body">{k.namn}</span>
+                        <span className="text-small text-text-secondary">
+                          {manniskoMening(ivaldaIGrupp, utanfor, modalitet)}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-small tabular-nums">
+                        {k.antal} {personform(k.antal)}
                       </span>
                     </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </section>
-        )}
+                  );
+                })}
+              </ul>
+              {/* DE TOMMA KOMBINATIONERNA ÄR EN RAD, INTE N RADER (varv 2).
+                  Förut fick varje obefolkad kombination ett eget listobjekt med
+                  texten "utelämnas (0 personer)" - vid fyra valda utbildningar
+                  är det upp till elva rader som beskriver vad som INTE händer,
+                  placerade mellan de rader som beskriver vad som händer.
+
+                  NAMNEN STÅR UT BARA NÄR DE ÄR EN. Då är namnet gratis och gör
+                  raden konkret. Vid flera är antalet den enda signal som bär
+                  något ("det blir färre grupper än max - väntat"): vilka de är
+                  går att räkna ut ur listan ovanför, och en utfällning med
+                  elva namn hade konkurrerat med grupperna om uppmärksamheten
+                  för att beskriva frånvaro. Utfällningen är därför medvetet
+                  bortvald, inte förbisedd. */}
+              {tomma > 0 && (
+                <p className="text-small text-text-muted">
+                  {tomma === 1
+                    ? `1 kombination finns inte i publiken än och skapas inte: ${kombinationer.find((k) => k.antal === 0)?.namn ?? ''}.`
+                    : `${tomma} kombinationer finns inte i publiken än och skapas inte.`}
+                </p>
+              )}
+            </>
+          ) : null}
+
+          {/* HANDLINGEN BOR I STEGET (varv 3). Knappen stod förut i sidfoten
+              bredvid "Avbryt" - två knappar i rad, den ena en verkställande
+              handling på steg 3:s innehåll, den andra en flykt från hela
+              sidan. Den listan man just läst ("Det här blir grupperna") och
+              knappen som gör den verklig hör ihop; att lämna sidan gör de
+              inte. Kortet är därför handlingens hem, sidfoten flyktens.
+
+              TALET STÅR I KNAPPEN BARA NÄR DET BETYDER NÅGOT. "Skapa 0
+              segment" var sidans första möte i den gamla formen: ett löfte om
+              noll, på en knapp som inte gick att trycka på. Utan tal är
+              knappen ärlig i väntläget, och talet dyker upp i samma sekund som
+              det finns grupper att skapa. */}
+          <div className="flex pt-1">
+            <Button intent="primary" isDisabled={!kanSkapa} onPress={skapa}>
+              {befolkade.length > 0 ? `Skapa ${befolkade.length} segment` : 'Skapa segmenten'}
+            </Button>
+          </div>
+        </StegSektion>
       </div>
 
       <div className="flex flex-col gap-3 px-4 pb-2">
         <div className="flex flex-wrap items-center gap-2">
-          <Button intent="primary" isDisabled={!kanSkapa} onPress={skapa}>
-            Skapa {befolkade.length} segment
-          </Button>
-          {visaForhandsvisning && allaSvarat && !nagotFel && befolkade.length === 0 && (
-            <span className="text-small text-text-muted">
-              Ingen av kombinationerna har några personer än.
-            </span>
-          )}
           <Button intent="secondary" onPress={onTillbaka}>
             Avbryt
           </Button>
         </div>
         <PrototypNot>Grupperna läggs till i listan. Inget sparas i basen.</PrototypNot>
+      </div>
+    </SidRam>
+  );
+}
+
+/* ================================================================== *
+ * NYTT SEGMENT — mall-lagret (S104 varv 6, Marcus GO 2026-08-16)
+ * ================================================================== */
+
+type MallVag = 'nagon' | 'menInte' | 'exakt';
+
+/**
+ * MALL-LAGRET FRAMFÖR BYGGAREN — branschmönstret, inte en egen idé.
+ * Research-passet (docs/research/segment-byggare-branschmonster-2026-08-16.md)
+ * fann att samtliga 8 undersökta produkter bär en teknisk villkorsbyggare i
+ * botten och att de bästa (Mailchimp Pre-Built Segments tydligast) lägger
+ * namngivna mallar som PRIMÄR ingång, med byggaren som avancerat läge —
+ * ingen av de 8 ersätter byggaren med mallar, så vår `RegelVerkstad` står
+ * kvar och nås via "Bygg med egna villkor". UX-forskningen (Hearst kap. 4,
+ * Nielsen) mäter varför mallarna behövs: rå boolesk logik missförstås även
+ * av vana användare. Lotta ska aldrig se en operator — hon väljer en mening.
+ *
+ * TRE VÄGAR täcker domänens verkliga segmentklasser (4 utbildningar ×
+ * modalitet): "minst en av" (bred), "dessa men inte de här" (snäv) och
+ * "exakt kombinationen" (`byggGrupp`-motorn — samma som de fjorton).
+ * Predikatet genereras UR VALET; människomeningen är kvittot, i samma
+ * meningsfamilj som gruppkorten (`manniskoMening`).
+ *
+ * SAMMA STEGFORM SOM "DELA UPP I GRUPPER" (StegSektion, valrader, chips):
+ * appens två skapandevägar är syskon och ska läsa som det. Steg 1 är
+ * ordagrant generatorns steg 1.
+ */
+function malMening(
+  vag: MallVag,
+  valdaA: KursAtom[],
+  valdaB: KursAtom[],
+  alla: KursAtom[],
+  modalitet: ModalitetsVal,
+): string {
+  // VERBET BÄR FORMEN (textinventeringen 2026-08-16, samma princip som
+  // `villkorKlartext`): "Har gått" ÄR utbildning, föreläsning får sitt eget
+  // verb, och bara "Båda" bär en slutmening — där är den inte redundant.
+  const A = valdaA.map((a) => a.etikett);
+  if (vag === 'exakt') {
+    const ivaldaNycklar = new Set(valdaA.map((a) => a.nyckel));
+    return manniskoMening(
+      valdaA,
+      alla.filter((a) => !ivaldaNycklar.has(a.nyckel)),
+      modalitet,
+    );
+  }
+  const verb = (namn: string) =>
+    modalitet === 'Utbildning'
+      ? `Har gått ${namn}`
+      : modalitet === 'Föreläsning'
+        ? `Har varit på en föreläsning i ${namn}`
+        : `Har deltagit i ${namn}`;
+  const slut = modalitet === 'Båda' ? ' Räknat som utbildning eller föreläsning.' : '';
+  if (vag === 'menInte') {
+    const B = valdaB.map((a) => a.etikett);
+    return `${verb(`${A.length === 2 ? 'både ' : ''}${listaOrd(A, 'och')}`)} - men inte ${listaOrd(B, 'eller')}.${slut}`;
+  }
+  return A.length === 1
+    ? `${verb(A[0] ?? '')}.${slut}`
+    : `${verb(`minst en av ${listaOrd(A, 'och')}`)}.${slut}`;
+}
+
+/** Namnförslaget ur valet — redigerbart, aldrig ett krav. */
+function malNamnForslag(vag: MallVag, valdaA: KursAtom[], valdaB: KursAtom[]): string {
+  const A = valdaA.map((a) => a.etikett);
+  if (vag === 'exakt') return A.join(' + ');
+  if (vag === 'menInte')
+    return `${listaOrd(A, 'och')} utan ${listaOrd(
+      valdaB.map((a) => a.etikett),
+      'och',
+    )}`;
+  return listaOrd(A, 'eller');
+}
+
+function NyttSegmentVy({
+  parInfo,
+  onSkapa,
+  onAvancerat,
+  onTillbaka,
+}: {
+  parInfo: ParInfo[];
+  onSkapa: (entitet: SegmentEntitet) => void;
+  /** Öppnar RegelVerkstad — med mallvalets predikat som utgångsläge när ett finns. */
+  onAvancerat: (predikat: Predikat | null, namn: string) => void;
+  onTillbaka: () => void;
+}) {
+  const rubrikRef = useRef<HTMLHeadingElement>(null);
+  useVyFokus(rubrikRef, true);
+  const [modalitet, setModalitet] = useState<ModalitetsVal | null>(null);
+  const [vag, setVag] = useState<MallVag | null>(null);
+  const [valdaA, setValdaA] = useState<ReadonlySet<string>>(() => new Set());
+  const [valdaB, setValdaB] = useState<ReadonlySet<string>>(() => new Set());
+  const [namn, setNamn] = useState('');
+  const [namnRedigerat, setNamnRedigerat] = useState(false);
+
+  const atomer = useMemo(
+    () => (modalitet === null ? [] : harledKursAtomer(parInfo, modalitet)),
+    [parInfo, modalitet],
+  );
+  // Samma vakt som generatorn: en atom som försvinner vid modalitetsbyte får
+  // inte förbli vald osynligt.
+  useEffect(() => {
+    const kvar = (s: ReadonlySet<string>) =>
+      new Set([...s].filter((k) => atomer.some((a) => a.nyckel === k)));
+    setValdaA((s) => {
+      const ny = kvar(s);
+      return ny.size === s.size ? s : ny;
+    });
+    setValdaB((s) => {
+      const ny = kvar(s);
+      return ny.size === s.size ? s : ny;
+    });
+  }, [atomer]);
+
+  const atomerA = useMemo(() => atomer.filter((a) => valdaA.has(a.nyckel)), [atomer, valdaA]);
+  const atomerB = useMemo(() => atomer.filter((a) => valdaB.has(a.nyckel)), [atomer, valdaB]);
+
+  const komplett =
+    modalitet !== null &&
+    vag !== null &&
+    atomerA.length > 0 &&
+    (vag !== 'menInte' || atomerB.length > 0);
+
+  /* PREDIKATET GENERERAS UR VALET — Lotta ser aldrig strukturen, bara
+     meningen. "nagon" = en konjunktgrupp PER atom (grupper är ELLER);
+     "menInte" = EN grupp av alla A (OCH) + B i utan; "exakt" = byggGrupps
+     form (alla valda + allt annat uteslutet). */
+  const pred = useMemo<Predikat | null>(() => {
+    if (!komplett || modalitet === null || vag === null) return null;
+    if (vag === 'nagon')
+      return {
+        med: atomerA.map((a) => nyKonjunkt([villkorForAtom(a, modalitet)])),
+        utan: [],
+      };
+    if (vag === 'menInte')
+      return {
+        med: [nyKonjunkt(atomerA.map((a) => villkorForAtom(a, modalitet)))],
+        utan: atomerB.map((a) => villkorForAtom(a, modalitet)),
+      };
+    const ivaldaNycklar = new Set(atomerA.map((a) => a.nyckel));
+    return {
+      med: [nyKonjunkt(atomerA.map((a) => villkorForAtom(a, modalitet)))],
+      utan: atomer
+        .filter((a) => !ivaldaNycklar.has(a.nyckel))
+        .map((a) => villkorForAtom(a, modalitet)),
+    };
+  }, [komplett, modalitet, vag, atomerA, atomerB, atomer]);
+
+  const mening =
+    komplett && modalitet !== null && vag !== null
+      ? malMening(vag, atomerA, atomerB, atomer, modalitet)
+      : null;
+  const { data, isFetching, isError } = usePredikatMedlemmar(pred, null, parInfo, pred !== null);
+  const antal = data?.count;
+
+  // Namnförslaget följer valet tills Lotta själv rört fältet — därefter är
+  // hennes text helig (samma princip som höjdlåset: datan får inte svika).
+  useEffect(() => {
+    if (namnRedigerat || vag === null) return;
+    setNamn(komplett ? malNamnForslag(vag, atomerA, atomerB) : '');
+  }, [namnRedigerat, vag, komplett, atomerA, atomerB]);
+
+  const kanSkapa = komplett && pred !== null && namn.trim() !== '';
+
+  function skapa() {
+    if (!kanSkapa || pred === null || mening === null) return;
+    onSkapa({
+      id: `nytt-${Date.now()}`,
+      namn: namn.trim(),
+      predikat: pred,
+      arvdRegel: null,
+      skiss: true,
+      beskrivning: mening,
+    });
+  }
+
+  // VÄGETIKETTERNA FÖLJER MODALITETEN (textinventeringen 2026-08-16):
+  // "Alla som gått … utbildningarna" var fel mening när man valt
+  // föreläsningar — samma dubbelmacke-klass som villkorsmeningarna.
+  const VAGAR: { id: MallVag; etikett: string }[] = [
+    {
+      id: 'nagon',
+      etikett:
+        modalitet === 'Föreläsning'
+          ? 'Alla som varit på minst en av föreläsningarna'
+          : modalitet === 'Båda'
+            ? 'Alla som deltagit i minst en av dem'
+            : 'Alla som gått minst en av utbildningarna',
+    },
+    {
+      id: 'menInte',
+      etikett:
+        modalitet === 'Föreläsning'
+          ? 'Varit på vissa - men inte andra'
+          : modalitet === 'Båda'
+            ? 'Deltagit i vissa - men inte andra'
+            : 'Har gått vissa - men inte andra',
+    },
+    { id: 'exakt', etikett: 'Exakt den här kombinationen' },
+  ];
+  const VALRAD_KLASS =
+    'w-full rounded-xl border border-transparent bg-bg-muted px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong';
+
+  const chipsFor = (
+    valda: ReadonlySet<string>,
+    satt: (fn: (s: ReadonlySet<string>) => ReadonlySet<string>) => void,
+    filtreraBort?: ReadonlySet<string>,
+  ) =>
+    atomer
+      .filter((a) => !filtreraBort?.has(a.nyckel))
+      .map((a) => (
+        <ValChip
+          key={a.nyckel}
+          vald={valda.has(a.nyckel)}
+          onTryck={() =>
+            satt((s) => {
+              const ny = new Set(s);
+              if (ny.has(a.nyckel)) ny.delete(a.nyckel);
+              else ny.add(a.nyckel);
+              return ny;
+            })
+          }
+        >
+          {a.etikett}
+        </ValChip>
+      ));
+
+  return (
+    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+      <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
+        <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
+          Nytt segment
+        </h1>
+        <p className="text-small text-text-muted">
+          Välj vilka som ska ingå - antalet räknas medan du väljer.
+        </p>
+      </header>
+
+      <div className="flex flex-col gap-4 px-4">
+        <StegSektion nummer={1} rubrik="Vilka räknas med?">
+          <RadioGroup
+            label="Räknas med"
+            hideLabel
+            value={modalitet}
+            onChange={(v) => setModalitet(v as ModalitetsVal)}
+          >
+            <Radio value="Utbildning" className={VALRAD_KLASS}>
+              De som gått utbildningar
+            </Radio>
+            <Radio value="Föreläsning" className={VALRAD_KLASS}>
+              De som varit på föreläsningar
+            </Radio>
+            <Radio value="Båda" className={VALRAD_KLASS}>
+              Båda
+            </Radio>
+          </RadioGroup>
+        </StegSektion>
+
+        <StegSektion
+          nummer={2}
+          rubrik="Vilka ska ingå?"
+          vilar={modalitet === null ? 'Välj först vilka som räknas med.' : undefined}
+        >
+          <RadioGroup
+            label="Vad ska segmentet innehålla"
+            hideLabel
+            value={vag}
+            onChange={(v) => setVag(v as MallVag)}
+          >
+            {VAGAR.map((v) => (
+              <Radio key={v.id} value={v.id} className={VALRAD_KLASS}>
+                {v.etikett}
+              </Radio>
+            ))}
+          </RadioGroup>
+
+          {vag !== null &&
+            (vag === 'menInte' ? (
+              <div className="flex flex-col gap-3">
+                <ChipRad
+                  etikett={
+                    modalitet === 'Föreläsning'
+                      ? 'Varit på'
+                      : modalitet === 'Båda'
+                        ? 'Deltagit i'
+                        : 'Har gått'
+                  }
+                >
+                  {chipsFor(valdaA, setValdaA, valdaB)}
+                </ChipRad>
+                <ChipRad etikett="Men inte">{chipsFor(valdaB, setValdaB, valdaA)}</ChipRad>
+              </div>
+            ) : (
+              <ChipRad etikett="Utbildningar" doldEtikett>
+                {chipsFor(valdaA, setValdaA)}
+              </ChipRad>
+            ))}
+        </StegSektion>
+
+        <StegSektion nummer={3} rubrik="Det här blir segmentet" dampad={!komplett}>
+          {/* Live-regionen är monterad från mount och byter bara innehåll —
+              samma disciplin som generatorns steg 3. */}
+          <div aria-live="polite" aria-busy={isFetching} className="flex flex-col gap-1">
+            {!komplett ? (
+              <p className="text-small text-text-muted">
+                {vag === 'menInte' && atomerA.length > 0
+                  ? 'Välj också vilka som inte ska ingå.'
+                  : 'Gör valen ovan, så visas segmentet här.'}
+              </p>
+            ) : (
+              <>
+                {/* Brödtextstorlek, inte plakat (Marcus 2026-08-16): meningen
+                    läser som text, bara ANTALET får bära vikt och ett steg
+                    större grad. */}
+                <p className="text-body">{mening}</p>
+                {isFetching ? (
+                  <p className="text-small text-text-muted">Räknar personer…</p>
+                ) : isError ? (
+                  <p className="text-small text-text-muted">Antalet kunde inte räknas.</p>
+                ) : antal !== undefined ? (
+                  <p className="text-body">
+                    <strong className="font-semibold text-xl tabular-nums">{antal}</strong>{' '}
+                    {personform(antal)} i det här segmentet.
+                  </p>
+                ) : null}
+              </>
+            )}
+          </div>
+
+          {komplett && (
+            <>
+              <Input
+                label="Namn på segmentet"
+                value={namn}
+                onChange={(v) => {
+                  setNamn(v);
+                  setNamnRedigerat(true);
+                }}
+                isRequired
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <Button intent="primary" isDisabled={!kanSkapa} onPress={skapa}>
+                  Skapa segmentet
+                </Button>
+                <Button intent="secondary" onPress={onTillbaka}>
+                  Avbryt
+                </Button>
+              </div>
+            </>
+          )}
+        </StegSektion>
+
+        {/* AVANCERAT LÄGE — byggaren står kvar (research: 0 av 8 ersätter den
+            med mallar). Lågmäld textknapp i täckningsväxelns grammatik; tar
+            mallvalets predikat med sig så finjustering aldrig börjar om. */}
+        <div className="flex justify-end print:hidden">
+          <button
+            type="button"
+            onClick={() => onAvancerat(pred, namn.trim())}
+            className="-mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 font-medium text-small text-text-secondary hover:bg-bg-emphasized motion-safe:transition-colors"
+          >
+            <Pencil aria-hidden="true" size={16} className="shrink-0" />
+            Bygg med egna villkor
+          </button>
+        </div>
+
+        <PrototypNot>Segmentet läggs till i listan. Inget sparas i basen.</PrototypNot>
       </div>
     </SidRam>
   );
@@ -3597,7 +4554,9 @@ function UtskicksVy({
   }
   const raMottagare = [...unionKarta.values()];
   const overlapp = [...forekomster.values()].filter((n) => n > 1).length;
-  const summaPerSegment = perEntitet.reduce((n, p) => n + (p.data?.count ?? 0), 0);
+  // `summaPerSegment` (summan av segmentens egna tal) föll med noll-fallets rad
+  // 2026-08-16 — den enda konsumenten. Det talet står kvar per segment i
+  // segment-gruppens rader, så inget mätvärde försvann; bara uppräkningen.
 
   /* UNIONENS MÅL = SUMMAN AV DE INGÅENDES. Ett fast 85 hade fått ett utskick
      till fyra segment att se MINDRE ut än ett av dem, vilket är precis den
@@ -3787,20 +4746,33 @@ function UtskicksVy({
           {/* ÖVERLAPPSRADEN — funktionens hela existensberättigande i formen.
               Utan den är unionens tal något Lotta inte kan kontrollräkna, och
               skillnaden mot summan är exakt den tysta feltyp ett utskick inte
-              får bära. */}
-          <div className="py-3">
-            <p className="text-small text-text-secondary">
-              {misslyckade > 0
-                ? 'Överlappet kan inte räknas förrän alla segment svarat.'
-                : `${summaPerSegment} platser i segmenten, ${raMottagare.length} unika personer. ${
-                    overlapp === 0
-                      ? 'Ingen finns i mer än ett segment.'
-                      : `${overlapp} ${
-                          overlapp === 1 ? 'person finns' : 'personer finns'
-                        } i flera segment och får ETT mail.`
-                  }`}
-            </p>
-          </div>
+              får bära.
+
+              NOLL-FALLET ÄR RIVET (Marcus 2026-08-16, ordagrant om just den
+              strängen). "N platser i segmenten, M unika personer. Ingen finns i
+              mer än ett segment." sa Lotta ingenting hon behövde: när ingen
+              överlappar ÄR summan antalet, och raden bad henne jämföra två tal
+              som är lika. Kvar står bara det som bär en verklig konsekvens.
+
+              PLATS-FÖRLEDET FÖLJDE MED UT även ur överlapps-fallet: "N platser
+              i segmenten, M unika personer" var uppräkningen som gjorde raden
+              lång, och konsekvensen ("får ETT mail") står starkare ensam.
+              Räknefaktan finns kvar per segment i raderna ovanför.
+
+              MISSLYCKANDE-RADEN STÅR KVAR OFÖRÄNDRAD: där är tystnaden farlig -
+              ett tal som inte gick att räkna får aldrig se ut som ett tal som
+              råkade bli noll. */}
+          {(misslyckade > 0 || overlapp > 0) && (
+            <div className="py-3">
+              <p className="text-small text-text-secondary">
+                {misslyckade > 0
+                  ? 'Överlappet kan inte räknas förrän alla segment svarat.'
+                  : `${overlapp} ${
+                      overlapp === 1 ? 'person finns' : 'personer finns'
+                    } i flera segment och får ETT mail.`}
+              </p>
+            </div>
+          )}
         </DetaljGrupp>
       )}
 
@@ -3922,6 +4894,12 @@ function UtskicksVy({
             isDisabled={lage === 'skickar'}
             placeholder="Ämnesraden mottagaren ser"
           />
+          {/* HJÄLPTEXTEN ÄR RIVEN (Marcus 2026-08-16): "Skriv {förnamn} där
+              mottagarens förnamn ska stå." Platshållar-MEKANIKEN är orörd -
+              `fyllPlatshallare` fyller fortfarande, ofyllda-varningen fäller
+              fortfarande, och förhandsvisningen visar fortfarande resultatet
+              för en namngiven mottagare. Det som föll var instruktionen under
+              fältet, inte funktionen. */}
           <TextArea
             label="Meddelande"
             value={text}
@@ -3929,7 +4907,6 @@ function UtskicksVy({
             rows={7}
             isRequired
             isDisabled={lage === 'skickar'}
-            description="Skriv {förnamn} där mottagarens förnamn ska stå."
           />
         </div>
 
@@ -3944,14 +4921,6 @@ function UtskicksVy({
                 ? `Förhandsvisningsexempel - som ${visatNamn(forsta)} får det`
                 : 'Förhandsvisningsexempel'}
             </span>
-            {/* TRYGGHETSTRIADENS (c): knappen finns i formen, vägen finns inte
-                — `send-email` saknar enkel-mottagar-gren tills task-147.1
-                landar. Fälla #44: en testmail-väg får ALDRIG filtrera på
-                adressmönster (Marcus egna adresser är riktiga deltagares). */}
-            <Button intent="secondary" size="sm" onPress={() => setTestNot(true)}>
-              <MailCheck aria-hidden="true" size={16} className="shrink-0" />
-              Skicka test till mig
-            </Button>
           </div>
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-transparent bg-surface px-3 py-2 contrast-more:border-border-strong">
             <span className="shrink-0 text-small text-text-muted">Ämne</span>
@@ -3964,6 +4933,52 @@ function UtskicksVy({
           >
             {brodtext.text || 'Meddelandet visas här när du skrivit det.'}
           </p>
+        </div>
+
+        {/* TRYGGHETSTRIADENS (c) — TESTMAILET SOM RAD, INTE SOM KNAPP I EN
+            RUBRIKRAD (Marcus 2026-08-16). Formen är åtgärdssidans, verbatim:
+            `AtgardsSida.tsx:2708-2741`, där platsvalet redan är fattat och
+            motiverat (S102, Marcus form-beslut A) — etikett vänster dämpad,
+            handling/utfall höger, sist i samma grupp som fältens innehåll.
+            Den gamla `intent="secondary"`-knappen i förhandsvisningens
+            rubrikrad var samma grå form Marcus underkände där.
+
+            HOVERN ÄR MÄTT NÖDVÄNDIG, inte kosmetik: `intent="ghost"` hovrar
+            till `--mm-button-ghost-bg-hover` = `--mm-bg-muted`, och
+            `DetaljGrupp`s egen kortbakgrund ÄR `bg-bg-muted` (DetaljGrupp.tsx
+            :31) - identiska toner, hovern försvinner in i panelen. Samma fix
+            som förebilden: `data-[hovered]:bg-bg-emphasized`, ALDRIG `hover:`
+            (en annan tailwind-merge-modifierare än primitivens egen bas, och
+            den vinner aldrig mot den).
+
+            SERVERVÄGEN ÄR FORTFARANDE INTE KOPPLAD - `send-email` saknar
+            enkel-mottagar-gren tills task-147.1 landar, och fälla #44 står
+            kvar orörd: en testmail-väg får ALDRIG filtrera på adressmönster
+            (Marcus egna adresser är riktiga deltagares). Klicket visar därför
+            samma `testNot`-info som förut, med samma text. Den ligger UNDER
+            raden i stället för i höger-sloten: en `MessageBox` är bred, och
+            högerjusterad hade den brutit rad-grammatiken den just fick.
+
+            EN `divide-y`-avdelare, inte två: raden och dess info delar ETT
+            barn i `DetaljGrupp`s kort (avvikelse mot förebildens `py-3` direkt
+            på raden - `py-3` sitter här på wrappern i stället, geometriskt
+            identiskt när infon är dold). */}
+        <div className="flex flex-col gap-2 py-3">
+          <div className="flex items-start justify-between gap-4">
+            <span className="shrink-0 text-small text-text-muted">Testmail</span>
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                intent="ghost"
+                size="sm"
+                className="data-[hovered]:bg-bg-emphasized"
+                isDisabled={lage === 'skickar'}
+                onPress={() => setTestNot(true)}
+              >
+                <Send aria-hidden="true" size={12} className="shrink-0" />
+                Skicka till min inkorg
+              </Button>
+            </div>
+          </div>
           {testNot && (
             <MessageBox
               intent="info"
@@ -4042,17 +5057,20 @@ function UtskicksVy({
  */
 type Vy =
   | { namn: 'lista' }
+  | { namn: 'nytt' }
   | { namn: 'detalj'; id: string }
   | { namn: 'regel'; id: string }
   | { namn: 'generator' }
   | { namn: 'utskick'; ids: string[]; retur: 'lista' | 'detalj' };
 
-/** Ett tomt segment i byggläge — utgången ur "Nytt segment". */
-function nyEntitet(): SegmentEntitet {
+/** Ett segment i byggläge — utgången ur mallvyns "Bygg med egna villkor".
+    Predikatet förbefolkas ur mallvalet när ett finns (varv 6): finjustering
+    ska aldrig börja om från noll. */
+function nyEntitet(predikat: Predikat | null = null, namn = ''): SegmentEntitet {
   return {
     id: `nytt-${Date.now()}`,
-    namn: '',
-    predikat: { med: [nyKonjunkt()], utan: [] },
+    namn,
+    predikat: predikat ?? { med: [nyKonjunkt()], utan: [] },
     arvdRegel: null,
     skiss: true,
   };
@@ -4196,6 +5214,28 @@ export function VariantD() {
     );
   }
 
+  if (vy.namn === 'nytt') {
+    return (
+      <NyttSegmentVy
+        parInfo={parInfo}
+        onTillbaka={() => setVy({ namn: 'lista' })}
+        onSkapa={(entitet) => {
+          setEgna((lista) => [...lista, entitet]);
+          // WOW-skarven: det nya segmentet öppnas direkt — "här är ditt
+          // segment, det här är publiken" — i stället för att landa i listan
+          // och leta upp sitt eget kort.
+          setVy({ namn: 'detalj', id: entitet.id });
+        }}
+        onAvancerat={(predikat, namn) => {
+          const entitet = nyEntitet(predikat, namn);
+          setEgna((lista) => [...lista, entitet]);
+          setUtkastId(entitet.id);
+          setVy({ namn: 'regel', id: entitet.id });
+        }}
+      />
+    );
+  }
+
   if (vy.namn === 'utskick') {
     const valdaEntiteter = vy.ids
       .map((id) => hitta(id))
@@ -4253,12 +5293,7 @@ export function VariantD() {
       markeraLage={markeraLage}
       valda={valda}
       onOppna={(id) => setVy({ namn: 'detalj', id })}
-      onNytt={() => {
-        const entitet = nyEntitet();
-        setEgna((lista) => [...lista, entitet]);
-        setUtkastId(entitet.id);
-        setVy({ namn: 'regel', id: entitet.id });
-      }}
+      onNytt={() => setVy({ namn: 'nytt' })}
       onDelaUpp={() => setVy({ namn: 'generator' })}
       onOppnaMarkering={() => setMarkeraLage(true)}
       onStangMarkering={() => {
