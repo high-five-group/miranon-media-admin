@@ -178,29 +178,39 @@
  *     i radens metatext, aldrig en hittepå-instans (samma "gissa aldrig"-
  *     disciplin som Fynd 1/3 ovan).
  *
- *     BILAGOR (klass A) — GENUIN GRÄNS, FLAGGAD, INTE TYST KRINGGÅD: den
- *     kvitterade rekommendationen ("overlay-förhandsvisning för bilagor …
- *     ladda ner-fallback när förhandsvisning inte går") FÖRUTSÄTTER en URL
- *     till filens bytes. INGEN sådan finns i dagens kontrakt —
- *     verifierat: `Attachment` (denna fils import) bär `id`/`namn`/
- *     `storlekBytes`/`skapad`/`eventId`/`dokumentklass`, ingen URL;
- *     `mapAttachmentRecord` (`supabase/functions/_shared/attachments.ts`)
- *     mappar ALDRIG en URL; `get-event-attachments/index.ts` läser bara
- *     `ATTACHMENT_FIELDS = ['Namn', 'Storlek (bytes)', 'Skapad', 'Event',
- *     'Dokumentklass']`; bucketen `bilagor` är PRIVAT
- *     (`scripts/provision-attachments-bucket.mjs`, `public: false`, ingen
- *     `storage.objects`-policy funnen i `supabase/`) så en direkt
- *     klient-`createSignedUrl` är stängd av RLS; och EN signerad
- *     NEDLADDNINGS-URL existerar ingenstans i `supabase/functions/` — bara
- *     en UPPLADDNINGS-signatur (`create-attachment-upload-ticket`). Att
- *     bygga den primitiven är en NY produktions-EF (backend-arkitektur),
- *     inte en av de fem UI-punkterna — samma gräns detta korts EGEN historik
- *     redan drog för "Ersätt" i varv 1 (byggdes riktigt i TASK-147.11,
- *     separat kort). `VisaKnapp` för bilagor öppnar därför dialogen med ett
- *     ÄRLIGT, Gunilla-läsbart `MessageBox intent="info"` — "går inte att
- *     öppna här ännu" — i stället för antingen en fejkad förhandsvisning
- *     eller en trasig nedladdningslänk. Nästa steg (en signerad
- *     nedladdnings-EF) hör till ett eget, separat kort.
+ *     BILAGOR (klass A) — GENUIN GRÄNS, FLAGGAD, INTE TYST KRINGGÅD (HISTORIA,
+ *     se [RÄTTAD, TASK-245] nedan): den kvitterade rekommendationen
+ *     ("overlay-förhandsvisning för bilagor … ladda ner-fallback när
+ *     förhandsvisning inte går") FÖRUTSATTE en URL till filens bytes. INGEN
+ *     sådan fanns i kontraktet vid detta varvs byggtillfälle — verifierat:
+ *     `Attachment` (denna fils import) bar `id`/`namn`/`storlekBytes`/
+ *     `skapad`/`eventId`/`dokumentklass`, ingen URL; `mapAttachmentRecord`
+ *     (`supabase/functions/_shared/attachments.ts`) mappade ALDRIG en URL;
+ *     `get-event-attachments/index.ts` läste bara `ATTACHMENT_FIELDS =
+ *     ['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Dokumentklass']`;
+ *     bucketen `bilagor` är PRIVAT (`scripts/provision-attachments-
+ *     bucket.mjs`, `public: false`, ingen `storage.objects`-policy funnen i
+ *     `supabase/`) så en direkt klient-`createSignedUrl` är stängd av RLS;
+ *     och EN signerad NEDLADDNINGS-URL existerade ingenstans i
+ *     `supabase/functions/` — bara en UPPLADDNINGS-signatur
+ *     (`create-attachment-upload-ticket`). `VisaKnapp` för bilagor öppnade
+ *     därför dialogen med ett ÄRLIGT, Gunilla-läsbart `MessageBox
+ *     intent="info"` — "går inte att öppna här ännu" — i stället för
+ *     antingen en fejkad förhandsvisning eller en trasig nedladdningslänk.
+ *
+ * [RÄTTAD, TASK-245, 2026-08-16] Gapet ovan är STÄNGT. `get-attachment-
+ *     download-url`-EF:en (samma ägarskaps-guard-mönster som
+ *     `delete-attachment`, TASK-147.11) ger en tidsbegränsad signerad URL
+ *     (`DataSourceAdapter.getAttachmentDownloadUrl`, 300s TTL — se
+ *     `_shared/attachments.ts` § SIGNED_DOWNLOAD_URL_TTL_SECONDS för
+ *     TTL-motiveringen). `BilagaVisaKnapp` (nedan) ERSÄTTER den ärliga
+ *     info-dialogen för bilage-raden med RIKTIG förhandsvisning (PDF via
+ *     `<iframe>`, bild via `<img>`) plus en "Ladda ner"-länk — och en
+ *     tredje, ÄRLIG gräns för format som varken är PDF eller bild (samma
+ *     "gissa aldrig"-disciplin: en `MessageBox intent="info"` i stället för
+ *     ett trasigt försök att rendera en filtyp webbläsaren inte kan visa).
+ *     `VisaKnapp` (den generiska primitiven) rörs INTE — Mallar/Generatorer
+ *     fortsätter använda den oförändrat, de har inget URL-behov.
  *
  * DEV-GRINDEN (`mer/index.tsx` § `visaDokumentPrototyp`) och `[PROTOTYPE]`-
  * märkningen ovan RÖRS INTE av detta varv — facit-låset (AC #3, task-147.6,
@@ -211,10 +221,10 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft, FileText, Upload } from 'lucide-react';
+import { ChevronLeft, Download, FileText, Upload } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import type { ReactNode } from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
@@ -396,6 +406,7 @@ export function DokumentYta() {
         </MessageBox>
       ) : (
         <DokumentLista
+          eventId={eventId}
           rader={rader}
           onUpload={handleUpload}
           uploadMutation={uploadMutation}
@@ -467,14 +478,122 @@ function ProduceratExempel({ falt }: { falt: readonly string[] }) {
   );
 }
 
+/**
+ * FÖRHANDSVISNINGS-FORMATET, härlett ur filnamnets ändelse (TASK-245) —
+ * SAMMA "gissa aldrig ur mönster"-disciplin som filhuvudets Fynd 1: ingen
+ * server-buren `contentType` finns på `Attachment` (`Attachment.schema.ts`),
+ * så ändelsen är den enda signal klienten faktiskt HAR. Bucketen `bilagor`
+ * tillåter i dag ENDAST `application/pdf`
+ * (`scripts/provision-attachments-bucket.mjs` § MIME-FILTER) — `bild`-grenen
+ * är alltså medvetet FRAMÅTRIKTAD (AC #2 nämner uttryckligen "bild/PDF") och
+ * overifierad mot verklig data i dag, men kostar noll extra rader att hålla
+ * generisk i stället för PDF-bara.
+ */
+const BILD_ANDELSER = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
+
+type ForhandsvisningsFormat = 'pdf' | 'bild' | 'okant';
+
+function forhandsvisningsFormat(namn: string): ForhandsvisningsFormat {
+  const match = /\.([a-z0-9]+)$/i.exec(namn);
+  const andelse = match ? match[1].toLowerCase() : '';
+  if (andelse === 'pdf') return 'pdf';
+  if (BILD_ANDELSER.has(andelse)) return 'bild';
+  return 'okant';
+}
+
+/**
+ * BILAGORNAS VISA-KNAPP (TASK-245, ersätter den ärliga info-dialogen — se
+ * filhuvudets [RÄTTAD, TASK-245]-stycke). SKILD komponent från den generiska
+ * `VisaKnapp` ovan: bilagor behöver en LAZY, dialog-scopad datahämtning
+ * (signerad URL, TTL 300s) som Mallar/Generatorer (statisk katalogdata,
+ * `ProduceratExempel`) aldrig behöver — att trycka in fetch-logik i den
+ * delade primitiven hade tvingat två orelaterade call sites att bära samma
+ * komplexitet.
+ *
+ * LAZY PER KONSTRUKTION: `isOpen` styr BÅDE `DialogTrigger` (kontrollerad,
+ * till skillnad mot `VisaKnapp`s okontrollerade form) OCH queryns `enabled`
+ * — URL:en hämtas FÖRST när dialogen faktiskt öppnas, aldrig i förväg för
+ * varje rad i listan. TanStack Querys default `staleTime` (0) gör att en
+ * stängd-och-återöppnad dialog refetchar automatiskt i stället för att
+ * återanvända en potentiellt utgången URL — ingen egen invalidation-logik
+ * behövs (se `queryKeys.attachments.downloadUrl`).
+ */
+function BilagaVisaKnapp({ eventId, attachment }: { eventId: string; attachment: Attachment }) {
+  const dataSource = useDataSource();
+  const [isOpen, setIsOpen] = useState(false);
+  const format = forhandsvisningsFormat(attachment.namn);
+
+  const downloadQuery = useQuery({
+    queryKey: queryKeys.attachments.downloadUrl(eventId, attachment.id),
+    queryFn: () => dataSource.getAttachmentDownloadUrl(eventId, attachment.id),
+    enabled: isOpen,
+  });
+
+  return (
+    <DialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Button intent="primary" emphasis="subtle" size="sm" className="self-center">
+        Visa
+      </Button>
+      <Modal isDismissable>
+        <Dialog title={attachment.namn} size="lg">
+          {downloadQuery.isPending ? (
+            <div role="status" aria-busy="true" className="flex flex-col gap-2">
+              <span className="sr-only">Förbereder förhandsvisning…</span>
+              <Skeleton variant="listRow" className="h-[60vh]" />
+            </div>
+          ) : downloadQuery.isError ? (
+            <MessageBox intent="error" title="Kunde inte öppna filen">
+              {downloadQuery.error instanceof Error ? downloadQuery.error.message : 'Okänt fel.'}
+            </MessageBox>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {format === 'pdf' && (
+                <iframe
+                  src={downloadQuery.data.url}
+                  title={`Förhandsvisning av ${attachment.namn}`}
+                  className="h-[60vh] w-full rounded border border-border bg-bg"
+                />
+              )}
+              {format === 'bild' && (
+                <img
+                  src={downloadQuery.data.url}
+                  alt={attachment.namn}
+                  className="max-h-[60vh] w-full rounded border border-border object-contain"
+                />
+              )}
+              {format === 'okant' && (
+                <MessageBox intent="info" title="Kan inte förhandsvisas här">
+                  Den här filtypen kan inte förhandsvisas i den här vyn. Ladda ner den för att öppna
+                  den.
+                </MessageBox>
+              )}
+              <a
+                href={downloadQuery.data.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 self-start font-medium text-body underline underline-offset-2 hover:text-text"
+              >
+                <Download aria-hidden="true" size={16} />
+                Ladda ner {attachment.namn}
+              </a>
+            </div>
+          )}
+        </Dialog>
+      </Modal>
+    </DialogTrigger>
+  );
+}
+
 type UploadMutation = ReturnType<typeof useUploadAttachment>;
 type ReplaceMutation = ReturnType<typeof useReplaceAttachment>;
 
 function BilageRadRow({
+  eventId,
   rad,
   onReplace,
   replaceMutation,
 }: {
+  eventId: string;
   rad: BilageRad;
   onReplace: (files: FileList | null, oldAttachmentId: string) => void;
   replaceMutation: ReplaceMutation;
@@ -510,11 +629,7 @@ function BilageRadRow({
         )}
       </span>
       <span className="flex shrink-0 items-center gap-2 self-center">
-        <VisaKnapp title={current.namn}>
-          <MessageBox intent="info" title="Går inte att öppna här ännu">
-            Du kan inte förhandsvisa eller ladda ner den här filen i den här vyn just nu.
-          </MessageBox>
-        </VisaKnapp>
+        <BilagaVisaKnapp eventId={eventId} attachment={current} />
         <FileTrigger
           acceptedFileTypes={['application/pdf']}
           onSelect={(files) => onReplace(files, current.id)}
@@ -606,12 +721,14 @@ const LISTA_FILTER: { key: ListaTyp; label: string }[] = [
  * strukturellt den dagen, bara vad "Bilagor" i praktiken innehåller.
  */
 function DokumentLista({
+  eventId,
   rader,
   onUpload,
   uploadMutation,
   onReplace,
   replaceMutation,
 }: {
+  eventId: string;
   rader: BilageRad[];
   onUpload: (files: FileList | null) => void;
   uploadMutation: UploadMutation;
@@ -649,6 +766,7 @@ function DokumentLista({
           rader.map((r) => (
             <BilageRadRow
               key={r.current.id}
+              eventId={eventId}
               rad={r}
               onReplace={onReplace}
               replaceMutation={replaceMutation}

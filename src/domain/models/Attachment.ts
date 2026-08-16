@@ -75,3 +75,16 @@ export interface UploadAttachmentInput {
   eventId: string;
   file: File;
 }
+
+/**
+ * Svaret från `DataSourceAdapter.getAttachmentDownloadUrl` (TASK-245). En
+ * TIDSBEGRÄNSAD signerad URL för EN bilaga i den privata `bilagor`-bucketen
+ * — se `_shared/attachments.ts` § SIGNED_DOWNLOAD_URL_TTL_SECONDS för
+ * TTL-motiveringen. `expiresInSeconds` speglar servern (300 i dag) i stället
+ * för att hårdkodas i UI:t — samma "servern äger sanningen"-disciplin som
+ * `AttachmentUploadTicketSchema.expiresInSec`.
+ */
+export interface AttachmentDownloadUrl {
+  url: string;
+  expiresInSeconds: number;
+}

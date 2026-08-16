@@ -47,3 +47,16 @@ export const AttachmentUploadTicketSchema = z.object({
   maxBytes: z.number(),
   expiresInSec: z.number(),
 });
+
+/**
+ * Svaret från get-attachment-download-url-EF:en (TASK-245). Tidsbegränsad
+ * signerad nedladdnings-/förhandsvisnings-URL för EN bilaga i den privata
+ * `bilagor`-bucketen — se `_shared/attachments.ts` §
+ * SIGNED_DOWNLOAD_URL_TTL_SECONDS för TTL-motiveringen (300s, källbelagt
+ * mot AWS Prescriptive Guidance). `.parse()` validerar vid datagränsen
+ * (ADR-026), samma disciplin som `AttachmentUploadTicketSchema`.
+ */
+export const AttachmentDownloadUrlSchema = z.object({
+  url: z.string(),
+  expiresInSeconds: z.number(),
+});
