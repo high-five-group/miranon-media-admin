@@ -1,10 +1,10 @@
 ---
 id: TASK-227
 title: Förberedelseskärmen direkt efter login-klicket — router-medveten trigger
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-15 13:18'
-updated_date: '2026-08-15 23:49'
+updated_date: '2026-08-16 00:33'
 labels:
   - ready-for-agent
 dependencies: []
@@ -82,4 +82,6 @@ HERMETISKA SVITER (oberörda av staging-rate-limits):
 
 DoD-kvartetten: typecheck 0 fel, biome 0 fel (endast förbefintliga
 warnings/infos i orelaterade filer), build grön, test:api 758/758.
+
+LANDNINGSVERIFIKAT (orkestreraren 2026-08-16 natt): PR #1365 MERGED till main (17716a24) efter en failed_checks-utsparkning med tyst konsumerad armering som heartbeat-svepet fångade och om-armerade (CLEAN-vägen, isInMergeQueue-verifierad). Done-flipp efter verifikat.
 <!-- SECTION:NOTES:END -->

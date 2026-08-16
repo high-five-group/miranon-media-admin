@@ -3,10 +3,10 @@ id: TASK-228
 title: >-
   Fynd: Deltagare-blockets Åtgärder-knapp visar interim-platshållaren - koppla
   urvalet till Åtgärds-sidan
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-15 22:59'
-updated_date: '2026-08-16 00:01'
+updated_date: '2026-08-16 00:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -52,4 +52,6 @@ AC-UTFALL, MATT
 - AC 1: bevisat BADE automatiserat (ny e2e-test, chromium-authenticated, exit 0) OCH manuellt mot skarp staging-data (dev-server, Playwright MCP): markerade Ingrid Rehn + Johan Dahlgren pa /event/recDUMxyXI8hFHOg3, Atgarder -> landade pa /event/recDUMxyXI8hFHOg3/atgarder med history.state.mmAtgardsUrval = [recYZ4Oy0C4pb0GJa, recA06dGqJrYUI6OB] (exakt deras anmalnings-ID:n), rakningen 2 av 17 deltagare markerade, forhandsvisningen Johan Dahlgren och Ingrid Rehn, avmarkerade Ingrid -> 1 av 17, kortet kvar i listan (grammatiken oforandrad).
 - AC 2: platshallarens hela villkorskod (visaPlatshallare, platshallareId, den betingade diven) borttagen - grep efter atgarder-platshallare / Atgards-sidan ar inte byggd annu i src/ ger noll traffar.
 - AC 3: DoD-kvartetten gron (typecheck exit 0, biome exit 0 noll nya fynd, build exit 0, test:api 758/758 grona). Berorda webblasarfall: event-bekraftelse.staging.test.ts 16/16 grona (chromium-authenticated); facit-lasta promoveringsgrindar oforandrade och grona - atgardssida-promoverings-grind.spec.ts 40/40 (bevisar fallback-seedningen for direktlank/tomt-lage ar OFORANDRAD) och eventsida-promoverings-grind.spec.ts 26/26 (bevisar vilande-lagets DOM, som inte ror den andrade koden, ar oforandrad).
+
+LANDNINGSVERIFIKAT (orkestreraren 2026-08-16): PR #1368 MERGED till main (215ef73f), lokala main ff-synkad. Done-flipp efter verifikat per konventionen.
 <!-- SECTION:NOTES:END -->
