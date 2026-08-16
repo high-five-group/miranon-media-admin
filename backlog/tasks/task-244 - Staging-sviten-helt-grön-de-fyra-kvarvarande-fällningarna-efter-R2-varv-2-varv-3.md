@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 13:20'
+updated_date: '2026-08-16 14:55'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,15 +21,53 @@ Ur AC4-beviset (post-merge run 31947844163 på 8214ef2f, 2026-08-16): taket är 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Alla fyra fällningarna rotorsakade och åtgärdade (fix eller motiverad baseline-uppdatering per fall — aldrig blind timeout-bump)
+- [x] #1 Alla fyra fällningarna rotorsakade och åtgärdade (fix eller motiverad baseline-uppdatering per fall — aldrig blind timeout-bump)
 - [ ] #2 Post-merge-staging HELT grön (run-ID-belägg) och #1403 stängd mot beviset
-- [ ] #3 TASK-227-racet (kall enhet, förexisterande) triagerat: fixat här eller eget kort med motivering
+- [x] #3 TASK-227-racet (kall enhet, förexisterande) triagerat: fixat här eller eget kort med motivering
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ROTORSAK-PASS (task-244, 2026-08-16) — samtliga fyra fällningarna reproducerade lokalt (npx playwright test --project=chromium-authenticated --retries=0 --workers=1) mot faktisk staging INNAN fix, sedan bevisade gröna EFTER fix. Post-merge run 31949282911 (4fe1eee2) gav facit-listan (error-context.md-snapshots granskade under körningen).
+
+PREMISS-DIVERGENSER mot uppdraget (ADR-086, samtliga verifierade mot disk/CI-loggar innan design):
+- Radnumren i uppdraget (aktivitetslogg:231, event-detail:473) var describe/test-signaturrader, inte assertionsraderna — de faktiska fällningarna satt på rad 293 resp. 483/335/625. Ingen blockerande divergens; bara bokförd.
+- Fällning (2) beskrevs som "sannolikt ny baseline mot varv 2s snabb-gate" — FALSIFIERAT. Rotorsaken är EventDetail.tsx:s placeholderData (seedad av warmup via SAMMA get-events-mock testet redan satte upp), helt oberoende av gate-timingen. 218.3-gaten var redan neutraliserad av varv 2:s 50ms-default.
+- Fällning (3)-beskrivningen ("behöver varv 2s sessionStorage-opt-in ... inkopplad") var FELAKTIG — optaInRiktigVarmning(page) var REDAN inkopplad i TASK-227-kall-enhet-testet (rad 608, från varv 2). Den verkliga rotorsaken var en race i main.tsx (se AC3 nedan), exakt den task-236 varv 2 lämnade som KVARSTÅENDE EJ LÖST.
+- Fällning (4) beskrevs som "data-städning eller testselektor-skärpning" (staging-datadubblett). FALSIFIERAT via diagnostisk DOM-poll: INGEN staging-datadubblett — en transient cirka 250ms SPA-navigeringsrace (Hems egna widgets ej ännu avmonterade när EventsList redan monterat) fångad av en ostoppad getByText utan gate på destinationsrutten.
+
+(1) aktivitetslogg-skarv.staging.test.ts:293 — historikvyns assertion.
+Rotorsak: forvantadRad (rad ~271) byggdes i task-235 för att matcha SPALTENS rendering (SenasteAktivitet.tsx: aktör+händelse+·+objekt i EN span) och verifierades DÄR, aldrig mot historikvyn. AktivitetsHistorik.tsx:s AktivitetsRad (S106-passets dokumenterade, avsiktliga form) delar aktör+händelse och tid+objekt på TVÅ separata p-element. error-context.md bevisade exakt detta: raden renderas som "Lotta skrev en anteckning" / "nyss · Loggskarvprövning" — forvantadRad kan strukturellt aldrig matcha en enda nod där.
+Åtgärd (fix, ej baseline-gissning): assertionen mot historikvyn byggs nu mot AktivitetsRad:s FAKTISKA tvåradersform — aktörnamn+verbCopy (rad 1) + "nyss · EVENT_NAMN" (rad 2) — i stället för forvantadRad. Spaltens check är orörd (forvantadRad stämmer där).
+Lokalt bevisat: rött FÖRE (element not found, 5000ms) → grönt EFTER (2/2 passed).
+
+(2) event-detail.staging.test.ts:473 (Lugnt laddläge: skeleton).
+Rotorsak: mockEvent() registrerar internt mockValjarLista(page, VALJAR_LISTA) — VALJAR_LISTA[0].id === EVENT_ID. Warmup (startvarmningen.ts WARMUP_ITEMS[0]) värmer queryKeys.events.list via SAMMA mockade get-events-endpoint INNAN EventDetail mountar. EventDetail.tsx:s placeholderData (rad 76-77) hittar då direkt en matchande listpost → isPending blir false OMEDELBART, helt oberoende av att get-event manuellt hölls tillbaka. Skeletonen hoppade därför HELT över. Den gamla TASK-236-kommentaren (warmup-gate-fördröjning) var fel rotorsak.
+Åtgärd (fix): denna ENA testet override:ar get-events-mocken EFTER mockEvent() med VALJAR_LISTA minus EVENT_ID (Playwright kör routes i omvänd registreringsordning) — placeholderData kan då aldrig matcha. Verifierat att EventValjare läser sitt valtEvent direkt ur get-event-svaret, inte listan — h1-checken efter release() är opåverkad.
+Bevis i BÅDA riktningar: 12000ms-timeouten (satt av task-236 på fel grund) reverterades till standard 5000ms — testet går grönt på 2,1s, vilket bevisar att fixen adresserar rotorsaken.
+
+(3) TASK-227-racet (AC3 — triage: FIXAT HÄR).
+Rotorsak (bekräftar task-236 varv 2s hypotes, mekanismen nu fastställd): main.tsx:s InnerApp-warmup-effekt satte MEDVETET INTE varmtBeslutat.current på auth-yta-bypass-grenen. Vid en AKTIV inloggning återkommer InnerApps effekt en andra gång. gate.typ är då REDAN redo (från bypass-beslutet på /login), så prenumerations-callbackens guard hindrar en SYNLIG andra skärm — men starta() hinner ändå anropas OSYNLIGT i bakgrunden, och dess FÖRSTA ensureQueryData registrerar en Query i cachen SYNKRONT innan fetchen settlar. _authenticated.tsx:s EGEN arCacheVarm-koll hinner då se en "varm" cache trots att ingen riktig data landat, och tystnar HELT.
+Åtgärd (fix, ej blind timeout-bump): src/main.tsx sätter nu varmtBeslutat.current = true även på auth-yta-bypass-grenen — InnerApps varm/kall-beslut fattas därmed EXAKT en gång per sidladdning. src/routes/_authenticated.tsx docblock uppdaterad i linje.
+Verifierat: kall enhet OCH varm enhet BÅDA gröna lokalt. Full persist-cache.staging.test.ts-fil körd (9 passed, 1 skipped — AC4 kräver byggd preview, förväntat) — ingen regression. events-list.staging.test.ts eget kalla-laddläge-test körd separat: grönt.
+
+(4) persist-cache.staging.test.ts:335 (strict-mode Fjärrskådning, Kallstart-testet).
+Rotorsak: EJ staging-datadubblett. page.waitForURL löser vid history-API-ändringen INNAN React avmonterat Hem/monterat EventsList. Diagnostisk DOM-poll mätte fönstret till cirka 250ms lokalt: vid t+0ms innehöll main#main FORTFARANDE Hems egna Fjärrskådning-referenser (Nästa event-länk + BÅDA NyaAnmalningarCard-raderna) SAMTIDIGT som EventsList redan monterat sin egen länk. getByText fångade strict-mode-violationen på FÖRSTA evalueringen.
+Åtgärd (fix): assertionen väntar nu FÖRST in heading Event (unik för destinationsrutten) innan den läser main#main-scopad Fjärrskådning-text.
+Kvarstående OBSERVERAD men EJ task-244-relaterad flaka: en körning träffade progressbarens aria-valuenow-stabilisering mot RIKTIG staging (12000ms) — reproducerades EN gång av tre, matchar task-236s dokumenterade systembelastning under denna sessions egen upprepade staging-trafik. Rörs EJ.
+
+DoD-GRINDAR (körda FÖR PUSH, faktiska exitkoder): npm run test:api 768/768 passed exit 0. npm run typecheck exit 0. npx biomejs biome check exit 0 (0 fel, 6 warnings/43 infos samtliga pre-existerande i orörda filer). npm run build exit 0.
+
+AC2 (Post-merge-staging HELT grön): EJ avbockad härifrån med avsikt — kräver post-merge-run-ID-belägg som bara existerar EFTER denna PRs landning. Orkestreraren äger CI-svansen; #1403 stängs mot det beviset.
+
+Rörda filer: src/main.tsx (AC3-fix) · src/routes/_authenticated.tsx (docblock i linje med AC3-fixen) · tests/e2e/aktivitetslogg-skarv.staging.test.ts (fällning 1) · tests/e2e/event-detail.staging.test.ts (fällning 2) · tests/e2e/persist-cache.staging.test.ts (fällning 3 diagnostik + fällning 4 fix).
+<!-- SECTION:NOTES:END -->

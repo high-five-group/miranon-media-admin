@@ -332,7 +332,22 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
       .getByRole('link', { name: 'Event' })
       .click();
     await page.waitForURL('**/event');
-    await expect(page.getByText('Fjärrskådning')).toBeVisible();
+    // ROTORSAKAD (task-244, 2026-08-16, disk-mätt via diagnostisk DOM-poll):
+    // `waitForURL` löser vid history-API:ets URL-ändring — INNAN React hunnit
+    // avmontera Hem/montera EventsList. I det TRANSIENTA fönstret (mätt
+    // ~250ms lokalt) innehåller `main#main` FORTFARANDE Hems egna
+    // "Fjärrskådning"-referenser (Nästa event-kortets länk + BÅDA
+    // NyaAnmalningarCard-raderna, eftersom grunddata() länkar båda
+    // testregistreringarna till SAMMA mockade event) SAMTIDIGT som
+    // EventsList redan börjat montera sin EGEN "Fjärrskådning"-länk — en
+    // äkta men kortlivad multi-match, inte datastädning. `getByText`
+    // (auto-retry) hann fånga den strict-mode-violationen på sin FÖRSTA
+    // evaluering och gav aldrig chansen att självläka. `heading "Event"` är
+    // UNIK för denna route (Hems är "Hej …") och finns bara i den FÄRDIGA
+    // renderingen — väntar man in den FÖRST har övergången redan avslutats
+    // och main#main bär bara EventsLists egen "Fjärrskådning"-länk.
+    await expect(page.getByRole('heading', { level: 1, name: 'Event' })).toBeVisible();
+    await expect(main.getByText('Fjärrskådning')).toBeVisible();
     await expect(main.getByRole('status')).toHaveCount(0);
   });
 
