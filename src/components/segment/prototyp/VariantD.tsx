@@ -2787,6 +2787,7 @@ function VillkorsKort({
   formatIBasen,
   onAndra,
   onTaBort,
+  kanTasBort = true,
 }: {
   villkor: Villkor;
   etikett: string;
@@ -2794,6 +2795,9 @@ function VillkorsKort({
   formatIBasen: string[];
   onAndra: (v: Villkor) => void;
   onTaBort: () => void;
+  /** Regelns enda villkor kan inte tas bort (Marcus 2026-08-16) — att ta
+      bort det sista hade bara gett en tom regel, en handling utan mening. */
+  kanTasBort?: boolean;
 }) {
   const [merOppen, setMerOppen] = useState(false);
   const merPanelId = useId();
@@ -2811,17 +2815,26 @@ function VillkorsKort({
 
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong">
-      <div className="flex items-center justify-between gap-3">
-        <span className="font-medium text-small text-text-secondary">{etikett}</span>
-        <Button
-          intent="ghost"
-          size="sm"
-          aria-label={`Ta bort ${etikett.toLowerCase()}`}
-          onPress={onTaBort}
-        >
-          <X aria-hidden="true" size={16} className="shrink-0" />
-          Ta bort
-        </Button>
+      {/* KORTETS IDENTITET SOM EYEBROW (Marcus 2026-08-16: "Villkor 1"
+          hade exakt samma stil som fältetiketterna — hierarkin syntes inte).
+          Versal spärrad caption i dämpad ton är den klassiska
+          överrads-etiketten: identitet, inte fält. Ta bort-knappen visas
+          bara när borttagning är en meningsfull handling. */}
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <span className="font-medium text-caption text-text-muted uppercase tracking-wider">
+          {etikett}
+        </span>
+        {kanTasBort && (
+          <Button
+            intent="ghost"
+            size="sm"
+            aria-label={`Ta bort ${etikett.toLowerCase()}`}
+            onPress={onTaBort}
+          >
+            <X aria-hidden="true" size={16} className="shrink-0" />
+            Ta bort
+          </Button>
+        )}
       </div>
 
       {/* MODALITETSVALET FÖRST OCH MED MALLVYNS ORD (Marcus 2026-08-16:
@@ -3128,6 +3141,7 @@ function KonjunktLista({
                 formatIBasen={formatIBasen}
                 onAndra={(ny) => onAndraVillkor(k.id, v.id, ny)}
                 onTaBort={() => onTaBortVillkor(k.id, v.id)}
+                kanTasBort={flera || k.villkor.length > 1}
               />
             );
             return (
