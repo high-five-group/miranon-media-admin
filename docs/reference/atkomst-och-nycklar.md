@@ -127,6 +127,27 @@ läses som en hängning i en headless-miljö (se § Rotorsak 1 ovan). Behövs
 `link` ändå: styr stdin explicit, t.ex. `echo "" | npx supabase link
 --project-ref <ref>`.
 
+**Rå-extraktion av PAT-VÄRDET är agenten förbjuden, och kräver Marcus
+(TASK-203).** `scripts/deny-hemlighet-utskrift.sh` blockerar mekaniskt varje
+`security find-generic-password ... -w/-g` mot posten ovan — se
+§ Relaterat. Existens-check (utan `-w`/`-g`) är fri och redan i bruk i
+`atkomst-diagnos.sh`. Behöver en riktad Management API-`PATCH` (t.ex.
+`config/auth`) genuint råvärdet: det är Marcus beslut att köra kommandot
+själv, i sin EGEN terminal, utanför Claude Code. **Känd form, källmärkt
+`TASK-231` (2026-08-16, Marcus egen körning):** `security
+find-generic-password -s "Supabase CLI" -a supabase -w` gav INTE PAT:et
+direkt — värdet macOS-nyckelringen returnerade var wrappat som
+`go-keyring-base64:<base64>` (Supabase CLI:t går via Go:s `go-keyring`-
+bibliotek, som base64-kodar värdet innan lagring). Uppackning krävs:
+`security find-generic-password -s "Supabase CLI" -a supabase -w | sed
+'s/^go-keyring-base64://' | base64 -d` — resultatet är det faktiska
+`sbp_…`-PAT:et, användbart som `Authorization: Bearer`-header. Detta är
+återigen ett fall av § Bakgrund-mönstret ("omgivningen mättes, inte
+åtkomsten") i en NY form: den råa nyckelrings-posten är inte tom eller fel
+— den är WRAPPAD, och ett kommando som bara läser `-w` rakt av och stoppar
+in resultatet som bearer-token hade fått ett `401` och sett ut som "PAT:et
+fungerar inte", inte "PAT:et behöver packas upp".
+
 ## Fil-åtkomstmatris per värdapp — MÄTNING, inte förklaring
 
 TCC-behörighet (macOS "Integritet och säkerhet → Filer och mappar") sätts
