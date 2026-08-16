@@ -38,8 +38,18 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 ▶️ ÅTERUPPTAGEN (2026-08-15 kväll, `lifecycle: active`, tredje
-resumen — huvudkatalogen, egen ägarlapp).** Laddupplevelsen KLAR OCH
+**Session 102 ⏸️ PAUSAD (2026-08-16 natt, `lifecycle: paused`, fjärde pausen —
+autonom stängning på Marcus kvällsorder; ALLT LANDAT, kön tom).** Kvällens
+skörd: Lotta-vandringen p6–p10 rotorsakade (korten `228`–`234`) · `227`+`228`
+BYGGDA+LANDADE+Done · basen 0 olänkade (Helena + batch 7) · passkeys PÅ i
+staging (Marcus-aktiverad, e2e-bevisad; prod-klicklista i `231`) ·
+prototypens varv 2 + dataläge-knappen landade — granskningspasset på 5174
+självbetjänande. **RESUME-INGÅNG:** (1) prototyp-granskningen → facit →
+/to-prd · (2) passkey-prod-klicken (`231`) · (3) QA-rester `218.5` · (4)
+dokument-prototypen → `147.6` · (5) Airtable-HITL (A2-historik + Helenas
+kort) · (6) `221`-vägvalet · (7) plockbara: `233`/`234`/`230` (avblockade) ·
+`232` · `222`–`224` · (8) QA `219.4`/`147.9` · `127.10`. Full handoff:
+sessionsdok S102 § PAUSLÄGE (fjärde) + Del 11. Laddupplevelsen KLAR OCH
 STÄNGD: PRD `218` (Förberedelseskärmen + Startvärmningen, 218.1–218.4
 Done, e2e-bevisad i merge-kön) + PRD `219` (Laddtrappan, 219.1–219.3
 Done) + `216`/`220` Done + display_name-datafixen i prod (HITL,
