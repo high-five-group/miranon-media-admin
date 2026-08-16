@@ -40,9 +40,10 @@ ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
 **Session 102 ⏸️ PAUSAD (2026-08-16 kväll, `lifecycle: paused`, SJÄTTE
 pausen — Marcus-order "förbered paus när allt landat"; ALLT LANDAT, kön
-TOM, main `4bd58068`).** Resume 5:s skörd: Visa-kedjan KOMPLETT (varv 3
-#1415 · task-245 byggd+stängd #1423/#1425 · task-246 byggd+stängd
-#1431/#1433; dokument-stämpeln VÄNTAR — facit-låset förberett #1437,
+TOM, main `4bd58068`).** Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
+3 #1415 · task-245 byggd+stängd #1423/#1425 · task-246
+byggd+stängd #1431/#1433; dokument-stämpeln VÄNTAR — facit-låset
+förberett #1437,
 `s102-dokument-konvergens`, godkand: null) · **Morgonkollen LANDAD**
 (243.1 två varv + S55-arkivflytten [Marcus vägval 1] #1426/`3792359d`,
 stängd #1440; skarpa hem ÄR nya formen, OGRANSKAD — 243.4 är grinden) ·
@@ -52,8 +53,8 @@ STÄNGT, Done #1429) · svep varv 1 UNDERKÄNT → varv 2 på Opus #1438
 40-listan levererad #1436 (26/9/5) · prod: passkey t.o.m. p4 +
 Dokumentklass-fältet skapat #1435 · 221=B kvitterat · laststormen
 (577) sekvenserad cross-session · docs-skulder p8 #1432.
-**RESUME-INGÅNG (EXAKT ordning):** (0) Post-merge-utfall run
-31968918858 · (1) dokument-stämpeln (`!npm run facit:godkann -- --pass
+**RESUME-INGÅNG (EXAKT ordning):** (0) Post-merge-facit: RÖD, run
+31968918858 — läs loggen först · (1) dokument-stämpeln (`!npm run facit:godkann -- --pass
 s102-dokument-konvergens --citat "..."`) → rivningspass · (2)
 svep-granskningen 5174 → varv 3/facit-lås · (3) 243.2 → 243.3
 (BRÅDSKANDE) → QA 243.4 → 243.5 · (4) 221-rivningen · (5)
