@@ -38,9 +38,11 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 ⏸️ PAUSAD (2026-08-16 em, `lifecycle: paused`, FEMTE pausen —
-Marcus-order "kör paus när allt landat"; ALLT LANDAT, kön tom, alla nio
-agenter inne).** Dagens skörd: röd-kedjans forensik 12 larm → 6 rötter, 5
+**Session 102 🔄 ÅTERUPPTAGEN (2026-08-16 sen em, `lifecycle: active`, resume
+efter femte pausen — RESUME-INGÅNGEN nedan gäller).** Numrering re-deriverad
+mot disk vid resume: kort **task-245** · ADR **115** · tråd **T145** · lesson
+**L512** (+18 fragment på disk) · fälla **f49** — handoffens samtliga värden
+bekräftade; disk vinner alltid. Dagens skörd: röd-kedjans forensik 12 larm → 6 rötter, 5
 fixade+landade (R2 stängd med AC4-bevis 8m34s) · 16 larm stängda, öppet
 är ENDAST ärende 1403 (medveten arbetssignal, task-244) · kort 235–244 mintade
 (235/236/237/242 + 147.11/147.12 + 208/209 Done) · PRD-paret task-241
