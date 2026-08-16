@@ -2832,17 +2832,46 @@ function VillkorsKort({
           mallvyns och generatorns steg 1, så alla tre ytorna talar samma
           språk. Säkerhetskravet (ingen default, rött när bygget börjat utan
           val) är oförändrat. */}
-      <RadioGroup
-        label="Vilka räknas med?"
-        value={villkor.modalitet}
-        onChange={(v) => onAndra({ ...villkor, modalitet: v as ModalitetsVal })}
-        isInvalid={villkor.modalitet === null && !orort}
-        errorMessage="Välj vilka som räknas innan villkoret kan användas."
-      >
-        <Radio value="Utbildning">De som gått utbildningar</Radio>
-        <Radio value="Föreläsning">De som varit på föreläsningar</Radio>
-        <Radio value="Båda">Båda</Radio>
-      </RadioGroup>
+      {/* SAMMA VALRADS-FORM SOM MALLVYN/GENERATORN (Marcus 2026-08-16:
+          "Lista dem vertikalt exakt som vi gjorde på grupper"), med EN
+          nyansinvertering: kortet är självt `bg-bg-muted`, så raderna bär
+          `bg-surface` — grå rader på grå botten hade varit osynliga (samma
+          nästlingsregel som stegkortens minikort, fast åt andra hållet).
+          Etiketten renderas i ChipRads legendstil så "Vilka räknas med?",
+          "Familj" och "Nivå" delar typsnitt och färg — primitivens egen
+          Label-stil avviker, därför `hideLabel` + egen rad. */}
+      <div className="flex flex-col gap-1.5">
+        <span aria-hidden="true" className="font-medium text-small text-text-secondary">
+          Vilka räknas med?
+        </span>
+        <RadioGroup
+          label="Vilka räknas med?"
+          hideLabel
+          value={villkor.modalitet}
+          onChange={(v) => onAndra({ ...villkor, modalitet: v as ModalitetsVal })}
+          isInvalid={villkor.modalitet === null && !orort}
+          errorMessage="Välj vilka som räknas innan villkoret kan användas."
+        >
+          <Radio
+            value="Utbildning"
+            className="w-full rounded-xl border border-transparent bg-surface px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+          >
+            De som gått utbildningar
+          </Radio>
+          <Radio
+            value="Föreläsning"
+            className="w-full rounded-xl border border-transparent bg-surface px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+          >
+            De som varit på föreläsningar
+          </Radio>
+          <Radio
+            value="Båda"
+            className="w-full rounded-xl border border-transparent bg-surface px-4 py-2.5 data-[selected]:border-(--mm-text) contrast-more:border-border-strong"
+          >
+            Båda
+          </Radio>
+        </RadioGroup>
+      </div>
 
       <ChipRad etikett="Familj">
         {FAMILJER.map((f) => {
@@ -2859,9 +2888,6 @@ function VillkorsKort({
           );
         })}
       </ChipRad>
-      {villkor.familjer.length === 0 && (
-        <p className="-mt-2.5 text-caption text-text-muted">Inget val = alla familjer.</p>
-      )}
 
       {visaNiva && (
         <ChipRad etikett="Nivå">
