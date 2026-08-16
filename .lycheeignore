@@ -39,6 +39,21 @@
 ^https://github\.com/marcus803/miranon-media-admin/compare/v\d.*$
 ^https://github\.com/marcus803/miranon-media-admin/releases/tag/.*$
 
+# Samma pre-release-mall-mönster, men under repots NUVARANDE orgnamn
+# (high-five-group) — CHANGELOG.md:s [Unreleased]/[0.5.0]–[0.8.0]-länkar
+# använder redan det nya orgnamnet (repot döptes om/flyttades ägare efter
+# marcus803-eran) medan v0.4.0 och äldre fortfarande pekar mot marcus803
+# ovan. Fyra 404:or i nightly-links 31921753720 (2026-08-16, issue #1189):
+# compare/v0.5.0...v0.6.0 (CHANGELOG.md:57:4), compare/v0.6.0...v0.7.0
+# (33:4), compare/v0.7.0...v0.8.0 (10:4), compare/v0.8.0...HEAD (8:4).
+# Verifierat 2026-08-16: `git tag -l` (lokalt, tomt) +
+# `gh api repos/high-five-group/miranon-media-admin/tags` (tomt) +
+# `.../releases` (tomt) — inga taggar eller releases existerar över huvud
+# taget i repot, så länkarnas mål är genuint aldrig skapat, inte flyttat.
+# Samma "vi har inga releases än"-skäl som marcus803-posten ovan; fixas
+# naturligt den dag ett riktigt 0.5.0-släpp taggas.
+^https://github\.com/high-five-group/miranon-media-admin/compare/v\d.*$
+
 # Stale upstream-ref (Adobe har flyttat CHANGELOG.md) — fixas vid Fas 3
 # UI-primitiver om/när react-aria-components-ref blir aktuell.
 ^https://github\.com/adobe/react-spectrum/blob/main/packages/react-aria-components/CHANGELOG\.md$
@@ -576,7 +591,25 @@
 # lokalt 2026-08-12: HTTP 200 (både plain- och Chrome-UA-header).
 # EN-INSTANS-POST (fyra platser, en händelse), öppet bokförd per
 # wirfs-brock.com/cs.umd.edu-precedenten ovan.
-^https://kubernetes\.io/docs/concepts/architecture/controller/$
+#
+# ESKALERAD TILL DOMÄN-BRED 2026-08-16 (nightly-links 31921753720,
+# issue #1189). TRE NYA distinkta sidvägar föll i SAMMA körning, ingen av
+# dem sammanfaller med /docs/concepts/architecture/controller/ ovan:
+#   /docs/concepts/architecture/leases/                (302:4, 572:3)
+#   /docs/reference/access-authn-authz/admission-controllers/ (310:4, 574:3)
+#   /docs/reference/using-api/api-concepts/             (209:2, 573:3)
+# — samtliga i docs/research/kodfils-partitionering-parallella-agenter-
+# 2026-08-04.md, plus en fjärde träff på leases/ i
+# docs/research/sessionsdok-tva-aktorer-optionsrymd-2026-08-01.md (384:4).
+# Samma felsignatur ("Connection failed" / "Error (cached)"). Det är nu
+# FYRA distinkta sidvägar över TVÅ separata nätter (2026-08-12 + 2026-08-16)
+# som fällt med identisk signatur under samma domän — starkare bevis än
+# vite.dev-precedentens enda-körnings-krav (tre sidvägar, en körning) för
+# att detta är ett domän-nivå-block av GHA:s IP-ranges, inte en enskild
+# sidas problem. Klassbevis, mätt lokalt 2026-08-16: samtliga tre nya
+# sidvägar HTTP 200 (både plain- och Chrome-UA-header, se kommandona ovan).
+# Domän-bred ersätter nu de fyra tänkbara path-scopade raderna.
+^https://kubernetes\.io/.*$
 
 # openpolicyagent.org — samma felsignatur och klass som kubernetes.io-
 # posten ovan ("Connection failed. Check network connectivity and
@@ -589,3 +622,35 @@
 # inom loppet av någon sekund. Klassbevis, mätt lokalt 2026-08-12: HTTP
 # 200 (både plain- och Chrome-UA-header).
 ^https://www\.openpolicyagent\.org/docs/cicd$
+
+# ═══════════════════════════════════════════════════════════════════════
+# Nattkörning 31921753720 (2026-08-16, issue #1189) — 14 fel. kubernetes.io
+# hanterades ovan (eskalerad till domän-bred). CHANGELOG-postens
+# high-five-group-form hanterades i Block 1. Kvar: två domäner nedan.
+# ═══════════════════════════════════════════════════════════════════════
+
+# uxdesign.cc — Medium-hostad publikation, bot-skydd. Samma familj som
+# medium.com/cakeinpanic.medium.com/dteare.medium.com ovan men egen
+# custom-domän — ingen av de befintliga medium.com-mönstren matchar den.
+# Två förekomster samma URL i
+# docs/research/loading-indikator-branschpraxis-2026-08-15.md (242:1 +
+# 489:15). Klassbevis, mätt lokalt 2026-08-16:
+#   uxdesign.cc   403/403 (plain- och Chrome-UA) → UA/fingerprint-klassen,
+#                 symmetriskt fel (samma som CI) — inte runner-IP-klassen.
+# Källan är citerad i forskningsdokumentet; det är grindens hämtning som
+# blockeras, inte källans existens. EN-INSTANS-POST per iso.org/
+# agilealliance.org-precedenten ovan (symmetriskt UA-fel kräver ingen
+# andra instans för att klassas).
+^https://uxdesign\.cc/.*$
+
+# arri.gay — personlig blogg. Runnern gav "Connection failed. Check
+# network connectivity and firewall settings" (490:18 i
+# docs/research/prototypkod-isolering-och-parallella-strommar-
+# branschmonster-2026-08-08.md); lokalt frisk. Klassbevis, mätt lokalt
+# 2026-08-16:
+#   arri.gay   200/200 (plain- och Chrome-UA) → ASYMMETRISKT,
+#              runner-IP-klassen (samma familj som wirfs-brock.com/
+#              cs.umd.edu/danger.systems ovan — värd- eller nät-sidigt
+#              avvisande av GHA-nätet, inte en rutten länk).
+# EN-INSTANS-POST, öppet bokförd per samma precedent.
+^https://arri\.gay/.*$
