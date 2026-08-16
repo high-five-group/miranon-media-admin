@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type {
   Attachment,
   AttachmentDownloadUrl,
+  DocumentPreview,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -30,6 +31,7 @@ import {
   type CreatedEvent,
   CreatedEventSchema,
   type CreateEventInput,
+  DocumentPreviewSchema,
   type EventFormat,
   EventFormatSchema,
   EventNoteSchema,
@@ -743,6 +745,31 @@ export class AirtableAdapter implements DataSourceAdapter {
       attachmentId,
     });
     return AttachmentDownloadUrlSchema.parse(data);
+  }
+
+  /**
+   * Sidoeffektsfri förhandsvisning av klass B:s systemmall (TASK-246). POST
+   * mot generate-event-attachment MED `preview: true` — se
+   * `DataSourceAdapter.previewEventTemplate` för det fulla kontraktet (SAMMA
+   * EF, en gren som aldrig når Storage/Bilagor-skrivningen).
+   */
+  async previewEventTemplate(eventId: string): Promise<DocumentPreview> {
+    const data = await postEdgeFunction<unknown>('generate-event-attachment', {
+      eventId,
+      preview: true,
+    });
+    return DocumentPreviewSchema.parse(data);
+  }
+
+  /**
+   * Sidoeffektsfri förhandsvisning av klass C:s kvitto-generator (TASK-246).
+   * POST mot preview-receipt — en NY, dedikerad EF (INTE send-receipt-email
+   * — se `DataSourceAdapter.previewReceipt` för varför den ordinarie
+   * sändvägen inte kan återanvändas).
+   */
+  async previewReceipt(eventId: string): Promise<DocumentPreview> {
+    const data = await postEdgeFunction<unknown>('preview-receipt', { eventId });
+    return DocumentPreviewSchema.parse(data);
   }
 
   /**

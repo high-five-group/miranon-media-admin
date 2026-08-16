@@ -4,7 +4,6 @@
 // generate-event-attachment/index.ts.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from 'https://esm.sh/resend@6';
-import { PDFDocument, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1';
 import {
   createAirtableRecord,
   deleteAirtableRecord,
@@ -19,6 +18,11 @@ import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 import { kvittoRader } from '../_shared/receipt-content.ts';
+// [TASK-246] renderKvittoPdf — UTBRUTEN pdf-lib-renderare (var tidigare
+// inline i denna fil, se _shared/receipt-pdf.ts § filhuvud för varför):
+// preview-receipt-EF:en (klass C:s sidoeffektsfria förhandsvisning) delar
+// nu SAMMA layout i stället för att duplicera pdf-lib-anropen.
+import { renderKvittoPdf } from '../_shared/receipt-pdf.ts';
 import type { KvittoLedgerEntry, ReceiptAllocationDeps } from '../_shared/receipt-numbering.ts';
 import { NonProdAddressError } from '../_shared/send-bulk.ts';
 import {
@@ -105,21 +109,13 @@ function makeRealLedger(): ReceiptAllocationDeps {
   };
 }
 
-/** PDF-byggaren — pdf-lib, SAMMA svenska-tecken-mönster som generate-event-attachment/index.ts. */
+/**
+ * PDF-byggaren — kvittoRader (formatering) + renderKvittoPdf (pdf-lib-
+ * layouten, _shared/receipt-pdf.ts, TASK-246-utbrytning). Samma svenska-
+ * tecken-mönster som generate-event-attachment/index.ts.
+ */
 function makeRealPdfBuilder(): ReceiptPdfBuilder {
   return async (spec) => {
-    const doc = await PDFDocument.create();
-    const page = doc.addPage([500, 420]);
-    const font = await doc.embedFont(StandardFonts.Helvetica);
-
-    let y = 380;
-    const draw = (text: string, size: number, dy: number) => {
-      if (text.length > 0) {
-        page.drawText(text, { x: 40, y, size, font });
-      }
-      y -= dy;
-    };
-
     const rader = kvittoRader({
       kvittonummer: spec.kvittonummer,
       kundnamn: spec.kundnamn,
@@ -129,11 +125,7 @@ function makeRealPdfBuilder(): ReceiptPdfBuilder {
       eventNamn: spec.eventNamn,
       datum: spec.datum,
     });
-    for (const [i, rad] of rader.entries()) {
-      draw(rad, i === 0 ? 18 : 12, i === 0 ? 26 : 18);
-    }
-
-    const bytes = await doc.save();
+    const bytes = await renderKvittoPdf(rader);
     return { filename: `${spec.kvittonummer}.pdf`, contentBase64: toBase64(bytes) };
   };
 }

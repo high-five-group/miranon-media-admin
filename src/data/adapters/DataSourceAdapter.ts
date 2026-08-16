@@ -1,6 +1,7 @@
 import type {
   Attachment,
   AttachmentDownloadUrl,
+  DocumentPreview,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -356,6 +357,37 @@ export interface DataSourceAdapter {
    * (ingen server-buren `contentType`, se `Attachment.schema.ts`).
    */
   getAttachmentDownloadUrl(eventId: string, attachmentId: string): Promise<AttachmentDownloadUrl>;
+
+  /**
+   * Sidoeffektsfri förhandsvisning av klass B:s systemmall ("Deltagar-
+   * information", TASK-146.5) — TASK-246, Marcus-ordern 2026-08-16 ("en
+   * riktigt genererad PDF på alla mallar"). POST mot generate-event-
+   * attachment MED `preview: true` — SAMMA EF, SAMMA `byggPdf`-anrop
+   * (identisk PDF-kvalitet ur eventets verkliga data) som den persisterande
+   * vägen, men en gren som returnerar bytesen direkt och ALDRIG når
+   * Storage-uppladdningen eller Bilagor-radskapelsen (AC #3 — ingen
+   * kvarliggande artefakt, genereringen är transient per konstruktion, inte
+   * "genererad + städad"). Dokument-ytans Visa-dialog för mallar anropar
+   * denna LAZY (samma `enabled: isOpen`-mönster som
+   * `getAttachmentDownloadUrl`).
+   */
+  previewEventTemplate(eventId: string): Promise<DocumentPreview>;
+
+  /**
+   * Sidoeffektsfri förhandsvisning av klass C:s kvitto-generator
+   * ("Betalningskvitto", TASK-147.7) — TASK-246. POST mot preview-receipt,
+   * en NY, DEDIKERAD EF (INTE en gren på send-receipt-email): den ordinarie
+   * sändvägen (`_shared/send-receipt.ts` § sendReceipt) allokerar alltid ett
+   * riktigt kvittonummer (Airtable-skrivning, sker FÖRE sändningsförsöket)
+   * och skickar ett riktigt mail vid lyckad körning — båda är förbjudna
+   * sidoeffekter för en förhandsvisning (AC #3), och kan inte grenas bort
+   * inuti den sammansatta orkestratorn utan att riskera den riktiga vägen.
+   * Persondata är TYPEXEMPEL (bokfört beslut, kortets notes AC #2) —
+   * eventets namn är verkligt (samma eventId som Dokument-ytans valda
+   * event). Kvittonumret är ALDRIG ett allokerat nummer ("FÖRHANDSVISNING",
+   * en ärlig platshållare — se preview-receipt/index.ts § filhuvud).
+   */
+  previewReceipt(eventId: string): Promise<DocumentPreview>;
 
   /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5, PRD

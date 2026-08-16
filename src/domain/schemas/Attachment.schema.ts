@@ -60,3 +60,14 @@ export const AttachmentDownloadUrlSchema = z.object({
   url: z.string(),
   expiresInSeconds: z.number(),
 });
+
+/**
+ * Svaret från generate-event-attachment (`preview: true`-grenen) resp.
+ * preview-receipt-EF:en (TASK-246). Parallell sanningskälla:
+ * `../models/Attachment.ts` § DocumentPreview — se den docblocken för
+ * varför formen är MEDVETET minimal (ingen `attachment`/`record`/
+ * `storagePath`, AC #3).
+ */
+export const DocumentPreviewSchema = z.object({
+  pdfBase64: z.string(),
+});

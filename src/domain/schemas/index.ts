@@ -23,6 +23,7 @@ export {
   AttachmentDownloadUrlSchema,
   AttachmentSchema,
   AttachmentUploadTicketSchema,
+  DocumentPreviewSchema,
 } from './Attachment.schema';
 export { AttendanceSchema, CreatedAttendanceSchema } from './Attendance.schema';
 export {
