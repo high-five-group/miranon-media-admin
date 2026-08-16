@@ -1,9 +1,11 @@
 import { Link } from '@tanstack/react-router';
-import { CalendarDays, ChevronRight, CircleCheck, MapPin, ReceiptText } from 'lucide-react';
+import { CalendarDays, ChevronRight, CircleCheck, MapPin } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 import { useAuth } from '@/auth/useAuth';
+import { relativTid } from '@/components/hem/relativ-tid';
 import { MessageBox, Skeleton } from '@/components/primitives';
+import { inskickadTid } from '@/components/registrations/registration-display';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import {
@@ -91,8 +93,18 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
     : demoLage
       ? demo?.registrations
       : registrationsQuery.data;
+  // [TASK-226 konvergensvarv 3, AC 3] `Number.POSITIVE_INFINITY` i stället
+  // för varv 1:s "6" — SAMMA likriktning som förfallnaBetalningar redan fick
+  // i varv 2 (se motiveringen nedan): listan visar nu ALLA obekräftade i sin
+  // egen inline-scroll (`max-h-96 overflow-y-auto` nedan) i stället för att
+  // klippa vid 6 rader med en extern "Visa alla →"-länk till Åtgärds-sidan.
+  // Skillnaden mot förfallna-blocket var en INKONSEKVENS, inte ett avsiktligt
+  // designval — varv 2:s kommentar nedan ändrade BARA sitt eget anropsställe
+  // och nämnde aldrig detta ("V2/V3 fortsätter skicka sina egna tal"), så
+  // "Nya anmälningar" ärvde tyst varv 1:s cap. LOKAL ändring i detta
+  // anropsställe — den delade funktionens signatur/semantik är orörd.
   const anmalningar = useMemo(
-    () => obekraftadeAnmalningar(regsForListor, evMap, 6),
+    () => obekraftadeAnmalningar(regsForListor, evMap, Number.POSITIVE_INFINITY),
     [regsForListor, evMap],
   );
   // [TASK-226 konvergensvarv 2, punkt 2] `Number.POSITIVE_INFINITY` i stället
@@ -151,7 +163,15 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
       {/* 2. NÄSTA EVENT — fullbredd, hero-ton, status (dagar-kvar) + beläggning. */}
       <section
         aria-labelledby="ro-nasta-event"
-        className="flex min-w-0 flex-col gap-4 rounded-3xl border border-transparent bg-primary-tint p-8 contrast-more:border-border-strong print:border-border-strong"
+        // [TASK-226 konvergensvarv 3, AC 5a] Hover = en aning mörkare guld,
+        // SAMMA color-mix-teknik som PersonDetail.tsx (~rad 1223) redan
+        // etablerat för en yta med sin EGEN tonala bakgrund: appens 6 %-steg
+        // blandas direkt in i `--mm-primary-tint` (token, aldrig en
+        // hårdkodad hex) i stället för `--mm-state-hover` som ett lager ovanpå
+        // (det hade ERSATT guldtonen, inte mörkat den — samma fälla
+        // PersonDetail.tsx:1211–1214 redan dokumenterar).
+        // `motion-safe:` respekterar prefers-reduced-motion automatiskt.
+        className="flex min-w-0 flex-col gap-4 rounded-3xl border border-transparent bg-primary-tint p-8 hover:bg-[color-mix(in_srgb,var(--mm-text)_6%,var(--mm-primary-tint))] motion-safe:transition-colors contrast-more:border-border-strong print:border-border-strong"
       >
         <h2
           id="ro-nasta-event"
@@ -260,29 +280,46 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
             <Skeleton variant="listRow" />
           </div>
         ) : anmalningar.rows.length === 0 ? (
-          <p className="text-body text-text-secondary">
-            Inga anmälningar väntar på bekräftelse. Skönt.
+          // [TASK-226 konvergensvarv 3, AC 6b + AC 7 SAMMANSLAGNA — samma
+          // sträng i koden, se slutrapporten] Grön bock (CircleCheck +
+          // `text-success` → `--mm-success` → `--p-green-500`) FRAMFÖR
+          // texten; AC 7:s exakta copy vinner över AC 6b:s kortare form.
+          <p className="flex items-center gap-2 text-body text-text-secondary">
+            <CircleCheck aria-hidden="true" size={20} className="shrink-0 text-success" />
+            Inga nya anmälningar att bekräfta, läget är under kontroll.
           </p>
         ) : (
-          <>
-            {/* [TASK-226 konvergensvarv 1, punkt 2] Fast maxhöjd (~6 rader) +
-                overflow-y-auto — listan växer aldrig sidans layout, den
-                skrollar internt. `tabIndex` GÖR ULEN till scrollytans
-                tab-stopp (SAMMA facit-mönster som `NyaAnmalningarCard.tsx`
-                k112/`AtgardsSida.tsx` — WCAG 2.1.1, axe
-                scrollable-region-focusable: raderna utan `reg.eventId` har
-                ingen egen länk och nås annars aldrig med tangentbord).
-                `focus-ring-inset` skyddar radernas EGNA fokusringar (Link)
-                mot att klippas av overflow (task-4.7 S67-fyndet);
-                `scrollbar-inline` är den token-baserade scrollmarkören
-                (K10-facit). */}
-            <ul
-              // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:112.
-              tabIndex={0}
-              aria-label="Nya anmälningar att bekräfta"
-              className="focus-ring-inset scrollbar-inline flex max-h-96 flex-col gap-1 overflow-y-auto pr-3"
-            >
-              {anmalningar.rows.map((rad, i) => (
+          /* [TASK-226 konvergensvarv 1, punkt 2] Fast maxhöjd (~6 rader) +
+             overflow-y-auto — listan växer aldrig sidans layout, den
+             skrollar internt. `tabIndex` GÖR ULEN till scrollytans
+             tab-stopp (SAMMA facit-mönster som `NyaAnmalningarCard.tsx`
+             k112/`AtgardsSida.tsx` — WCAG 2.1.1, axe
+             scrollable-region-focusable: raderna utan `reg.eventId` har
+             ingen egen länk och nås annars aldrig med tangentbord).
+             `focus-ring-inset` skyddar radernas EGNA fokusringar (Link)
+             mot att klippas av overflow (task-4.7 S67-fyndet);
+             `scrollbar-inline` är den token-baserade scrollmarkören
+             (K10-facit). [TASK-226 konvergensvarv 3, AC 3] Ingen cap längre
+             (se `anmalningar`-useMemo ovan) — ALLA rader renderas här, listan
+             bär hela skrollansvaret, ingen extern "Visa alla →"-länk kvar. */
+          <ul
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:112.
+            tabIndex={0}
+            aria-label="Nya anmälningar att bekräfta"
+            className="focus-ring-inset scrollbar-inline flex max-h-96 flex-col gap-1 overflow-y-auto pr-3"
+          >
+            {anmalningar.rows.map((rad, i) => {
+              // [TASK-226 konvergensvarv 3, AC 1] Relativ tid sedan anmälan
+              // kom in — SAMMA formatterare hem-ytans "Senaste aktivitet"
+              // redan bär (`relativTid`, `hem/relativ-tid.ts`), ingen ny
+              // duplikat-util. `inskickadTid` (registration-display.ts) ger
+              // `Number.NEGATIVE_INFINITY` för saknad/oparsbar `inskickad` —
+              // `Number.isFinite` filtrerar bort det tillståndet tyst i
+              // stället för att rendera en trasig "för -Infinity dagar
+              // sedan"-sträng.
+              const inskickadMs = inskickadTid(rad.reg);
+              const relTid = Number.isFinite(inskickadMs) ? relativTid(inskickadMs, nuMs) : null;
+              return (
                 <li
                   key={rad.reg.id}
                   className={
@@ -298,7 +335,7 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
                       className="group flex items-center gap-3 py-3"
                     >
                       <InitialAvatar namn={rad.namn} />
-                      <span className="flex min-w-0 flex-col">
+                      <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate font-medium text-body group-hover:underline">
                           {rad.namn}
                         </span>
@@ -306,32 +343,32 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
                           {rad.identitet}
                         </span>
                       </span>
+                      {relTid ? (
+                        <span className="shrink-0 pl-2 text-caption text-text-muted">{relTid}</span>
+                      ) : null}
                     </Link>
                   ) : (
                     <div className="flex items-center gap-3 py-3">
                       <InitialAvatar namn={rad.namn} />
-                      <span className="flex min-w-0 flex-col">
+                      <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate font-medium text-body">{rad.namn}</span>
                         <span className="truncate text-caption text-text-muted">
                           {rad.identitet}
                         </span>
                       </span>
+                      {relTid ? (
+                        <span className="shrink-0 pl-2 text-caption text-text-muted">{relTid}</span>
+                      ) : null}
                     </div>
                   )}
                 </li>
-              ))}
-            </ul>
-            {anmalningar.total > anmalningar.rows.length ? (
-              <Link
-                to="/atgarder"
-                className="self-start font-medium text-caption underline-offset-2 hover:underline"
-              >
-                Visa alla {anmalningar.total} <span aria-hidden="true">→</span>
-              </Link>
-            ) : null}
-          </>
+              );
+            })}
+          </ul>
         )}
-        <DodIngang label="Bekräfta alla" icon={CircleCheck} className="pt-1" skarp />
+        {/* [TASK-226 konvergensvarv 3, AC 2 + AC 6a] Ren textknapp (ikonen
+            borttagen) — visas bara när det finns något att bekräfta. */}
+        {anmalningar.total > 0 ? <DodIngang label="Bekräfta alla" className="pt-1" skarp /> : null}
       </section>
 
       {/* 4. FÖRFALLNA BETALNINGAR — TASK-226 konvergensvarv 2, punkt 2:
@@ -360,8 +397,11 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
             <Skeleton variant="listRow" />
           </div>
         ) : forfallna.rows.length === 0 ? (
-          <p className="text-body text-text-secondary">
-            Inga förfallna betalningar. Allt är i fas.
+          // [TASK-226 konvergensvarv 3, AC 6b] Grön bock FRAMFÖR texten,
+          // siffran borttagen, EXAKT målsträngen ur AC-texten.
+          <p className="flex items-center gap-2 text-body text-text-secondary">
+            <CircleCheck aria-hidden="true" size={20} className="shrink-0 text-success" />
+            Inga förfallna betalningar.
           </p>
         ) : (
           <div className="flex min-w-0 flex-col gap-6">
@@ -369,9 +409,15 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
               <div className="flex min-w-0 flex-col gap-3">
                 <h3
                   id="ro-forfallna-paminna"
-                  className="font-medium text-caption text-text-secondary uppercase tracking-wide"
+                  className="flex items-center gap-2 font-medium text-caption text-text-secondary uppercase tracking-wide"
                 >
-                  Att påminna · {forfallnaGrupper.attPaminna.length}
+                  Att påminna
+                  {/* [TASK-226 konvergensvarv 3, AC 4] Räknar-pill — fyrkantig
+                      (rounded-md, INTE rounded-full) mot en bakgrundstoken,
+                      "·"-separatorn utgår. */}
+                  <span className="rounded-md bg-bg-emphasized px-1.5 py-0.5 font-semibold text-text tabular-nums">
+                    {forfallnaGrupper.attPaminna.length}
+                  </span>
                 </h3>
                 {/* [TASK-226 konvergensvarv 1, punkt 2] Samma inline-scroll-
                     mönster (`tabIndex` på `<ul>`) som "Nya anmälningar" ovan —
@@ -395,12 +441,12 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
                     </li>
                   ))}
                 </ul>
-                <DodIngang
-                  label="Skicka påminnelse till alla"
-                  icon={ReceiptText}
-                  className="pt-1"
-                  skarp
-                />
+                {/* [TASK-226 konvergensvarv 3, AC 2] Ren textknapp — ikonen
+                    borttagen. [AC 6a] Redan villkorad korrekt: nästlad i
+                    `attPaminna.length > 0`, som är tomt varje gång
+                    `forfallna.total` är 0 (grupperna delar samma `rows`) —
+                    ingen extra guard behövs, se slutrapporten. */}
+                <DodIngang label="Skicka påminnelse till alla" className="pt-1" skarp />
               </div>
             ) : null}
 
@@ -438,9 +484,12 @@ export function VariantRo({ eventsQuery, registrationsQuery, nuMs }: VariantProp
               <div className="flex min-w-0 flex-col gap-3">
                 <h3
                   id="ro-forfallna-ringa"
-                  className="font-medium text-caption text-text-secondary uppercase tracking-wide"
+                  className="flex items-center gap-2 font-medium text-caption text-text-secondary uppercase tracking-wide"
                 >
-                  Dags att ringa · {forfallnaGrupper.dagsAttRinga.length}
+                  Dags att ringa
+                  <span className="rounded-md bg-bg-emphasized px-1.5 py-0.5 font-semibold text-text tabular-nums">
+                    {forfallnaGrupper.dagsAttRinga.length}
+                  </span>
                 </h3>
                 <ul
                   // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:112.
@@ -506,7 +555,12 @@ function BevakningsRadItem({ rad }: { rad: BevakningRad }) {
     <li>
       <button
         type="button"
-        className="text-(color:--mm-navcard-text) flex min-h-12 w-full items-center gap-3 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-3 text-left contrast-more:border-(--mm-navcard-border-contrast)"
+        // [TASK-226 konvergensvarv 3, AC 5b] Samma etablerade hover-mönster
+        // som appens övriga klickbara list-rader (`hover:bg-bg-emphasized
+        // motion-safe:transition-colors` — se t.ex. Atgarder.tsx RAD_KLASS,
+        // AtgardsSida.tsx:213, EventValjare.tsx:190). Uppfinner ingen ny
+        // hover-form.
+        className="text-(color:--mm-navcard-text) flex min-h-12 w-full items-center gap-3 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-(--mm-navcard-border-contrast)"
       >
         <span className="min-w-0 flex-1 truncate text-body">
           <span className="font-semibold">{rad.eventNamn}</span>

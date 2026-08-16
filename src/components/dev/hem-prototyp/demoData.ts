@@ -1,7 +1,7 @@
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
-import { DAG_MS } from './data';
+import { DAG_MS, dagsStart } from './data';
 
 /**
  * [PROTOTYPE-DEMODATA, TASK-226 konvergensvarv 2, punkt 3] Syntetiskt
@@ -33,6 +33,45 @@ import { DAG_MS } from './data';
 function isoOmDagar(nuMs: number, dagar: number): string {
   return new Date(nuMs + dagar * DAG_MS).toISOString();
 }
+
+/**
+ * [TASK-226 konvergensvarv 3, AC 1] `N` minuter före `nuMs` — bär "Nya
+ * anmälningar"-radernas sub-dygns-åldrar ("nyss" / "för N min sedan" /
+ * "för N tim sedan").
+ */
+function isoForMinuterSedan(nuMs: number, minuter: number): string {
+  return new Date(nuMs - minuter * 60_000).toISOString();
+}
+
+/**
+ * [TASK-226 konvergensvarv 3, AC 1] Ankrad i lokal MIDNATT (`dagsStart`),
+ * INTE i `nuMs` — gör "igår HH:MM"/"för N dagar sedan"-formerna
+ * deterministiska oavsett vilken tid på dygnet demoläget råkar öppnas
+ * (subtraherar man i stället N*24h rakt av från `nuMs` kan resultatet hoppa
+ * en kalenderdag beroende på klockslaget just då).
+ */
+function isoForDagarSedanVidTid(nuMs: number, dagar: number, timmePaDygnet: number): string {
+  return new Date(dagsStart(nuMs) - dagar * DAG_MS + timmePaDygnet * 3_600_000).toISOString();
+}
+
+/**
+ * [TASK-226 konvergensvarv 3, AC 1] "Nya anmälningar"-radernas 8 `inskickad`-
+ * tidsstämplar — VARIERADE, realistiska åldrar som täcker `relativTid`s alla
+ * fyra former (`hem/relativ-tid.ts`): nyss · för N min sedan · för N tim
+ * sedan · igår HH:MM · för N dagar sedan. Utan detta hade alla åtta rader
+ * delat `inskickad: null` (demoReg-defaulten) och visat ingen relativ tid
+ * alls — exakt den lucka AC 1 pekar ut.
+ */
+const NYA_ANMALNINGAR_ALDRAR: ReadonlyArray<(nuMs: number) => string> = [
+  (nuMs) => isoForMinuterSedan(nuMs, 0.5), // "nyss"
+  (nuMs) => isoForMinuterSedan(nuMs, 8), // "för 8 min sedan"
+  (nuMs) => isoForMinuterSedan(nuMs, 45), // "för 45 min sedan"
+  (nuMs) => isoForMinuterSedan(nuMs, 180), // "för 3 tim sedan"
+  (nuMs) => isoForMinuterSedan(nuMs, 540), // "för 9 tim sedan"
+  (nuMs) => isoForDagarSedanVidTid(nuMs, 1, 18), // "igår 18:00"
+  (nuMs) => isoForDagarSedanVidTid(nuMs, 3, 10), // "för 3 dagar sedan"
+  (nuMs) => isoForDagarSedanVidTid(nuMs, 8, 10), // "för 8 dagar sedan"
+];
 
 function demoEvent(
   overrides: Partial<Event> & Pick<Event, 'id' | 'eventNamn' | 'startdatum'>,
@@ -162,6 +201,7 @@ export function demoUniversum(nuMs: number): DemoUniversum {
       eventId: eventForfallna.id,
       status: RegistrationStatus.OBEKRAFTAD,
       deltagarinfoSkickad: null, // obekräftad — räknas aldrig som "bekräftad" i bevakningsraden
+      inskickad: NYA_ANMALNINGAR_ALDRAR[idx](nuMs), // AC 1 — varierade, realistiska åldrar
     });
   });
 
