@@ -547,6 +547,31 @@ function listaOrd(delar: string[], bindeord = 'eller'): string {
 /**
  * Ett villkor som svensk mening. Modaliteten står ALLTID med — den är
  * meningens verb-komplement och därmed omöjlig att läsa förbi.
+ *
+ * ÖPPEN SPÄNNING EFTER ORDBYTET (mätt i webbläsaren 2026-08-16, Marcus
+ * beslut "Utbildning ska definitivt vara globalt"). Meningen har TVÅ led som
+ * nu kan bära samma ord av olika skäl: familj-ledet (taxonomin — det som
+ * hette "kurs") och modalitets-ledet (formen deltagandet hade). De tre
+ * utfallen, verbatim ur ytan:
+ *
+ *   "Deltagit i RIM-utbildning som utbildning."      ← TAUTOLOGI
+ *   "Deltagit i någon utbildning som utbildning."    ← värst, familjen tom
+ *   "Deltagit i RIM-utbildning som föreläsning."     ← läsbart, men skaver
+ *
+ * ORDBYTET ÄR ÄNDÅ GJORT RAKT AV, med avsikt: ordern gällde ordet, och
+ * meningens FORM är ett Marcus-beslut som inte fattas här. Modaliteten får
+ * inte falla bort som lösning — den är säkerhetskrav (filhuvudet § MODALITET
+ * ÄR OBLIGATORISK), inte stilistik.
+ *
+ * VÄGEN UT, om formen ska ändras: stryk substantivet ur FAMILJ-ledet i
+ * stället ("Deltagit i RIM på Nivå 1 som utbildning" / "… som föreläsning").
+ * Då bär modaliteten ordet ensam och ingen mening säger det två gånger.
+ * Tomma familj-fallet behöver då ett eget ord — `publikOrd` löser samma
+ * problem genom att baka in modaliteten i frasen.
+ *
+ * Jämför `manniskoMening`, som redan gör ett VILLKORAT val åt andra hållet
+ * (ordet bara när modaliteten ÄR Utbildning) — den precedensen finns, men
+ * dess meningsstruktur är en annan och går inte att kopiera rakt hit.
  */
 function villkorKlartext(v: Villkor): string {
   if (v.modalitet === null) return 'Ofullständigt villkor - modalitet saknas.';
@@ -2109,12 +2134,23 @@ function SkalprovsVaxel({ aktivt, onVaxla }: { aktivt: boolean; onVaxla: (v: boo
  *      har 600+ mottagare under "Alla"). Plattan rivs, radgrammatiken blir
  *      `flex items-center gap-3 py-2.5` och avdelarna bärs av listans egen
  *      `divide-y` — exakt PersonsLists val, av exakt samma skäl.
- *   3. HÖJDLÅSET. E-postraden renderas ALLTID, med `' '` när adressen saknas
- *      (Marcus app-globala regel, S104 `16c25de6`; tekniken i PersonsLists
- *      "HÖJDLÅSET"-kommentar). Villkorad rendering hade gjort radhöjden till en
- *      funktion av datan — och `medlem.email` ÄR null för en del av publiken,
- *      så det är inte ett teoretiskt fall här. Tom-markören `—` som stod här
- *      förut sa samma sak men band höjden till att någon skrev ut den.
+ *   3. HÖJDLÅSET. E-postraden renderas ALLTID, med en platshållare när adressen
+ *      saknas (Marcus app-globala regel, S104 `16c25de6`). Villkorad rendering
+ *      hade gjort radhöjden till en funktion av datan — och `medlem.email` ÄR
+ *      null för en del av publiken, så det är inte ett teoretiskt fall här.
+ *      Tom-markören `—` som stod här förut sa samma sak men band höjden till
+ *      att någon skrev ut den.
+ *
+ *      PLATSHÅLLAREN ÄR ` `, INTE `' '` — mätt 2026-08-16, och det är en
+ *      avvikelse från förebilden. `PersonsList.tsx:542` (och `:601`) skriver
+ *      `{contact ?? ' '}`; ett vanligt mellanslag är kollapsbar whitespace och
+ *      ger elementet höjden NOLL, så låset öppnar sig i exakt det fall det
+ *      finns för. Mätning i publiklistan: 63 px mot 56 px mellan en rad med
+ *      och en utan e-post, underradens egen höjd 0 px. Med ` ` (icke
+ *      kollapsbar) blir båda raderna lika höga. Förebilden har aldrig fällt
+ *      felet eftersom var och en av de 50 personerna i staging HAR e-post
+ *      (mätt: 0 rader med platshållare) — tekniken är oprövad där, inte rätt.
+ *      Fyndet rör en skarp yta och rapporteras, men rättas inte härifrån.
  *
  * DUPLICERAT, INTE BREDDAT (`ADR-102` B3): `PersonsList`/`PersonMiniKort` är
  * skarpa ytor och rörs inte före godkännande — samma val PersonsList själv
@@ -2161,7 +2197,7 @@ function PersonRad({
             </StatusBadge>
           )}
         </span>
-        <span className="truncate text-caption text-text-muted">{medlem.email ?? ' '}</span>
+        <span className="truncate text-caption text-text-muted">{medlem.email ?? ' '}</span>
       </span>
     </li>
   );
