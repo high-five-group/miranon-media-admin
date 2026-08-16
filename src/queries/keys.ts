@@ -110,6 +110,16 @@ export const queryKeys = {
     downloadUrl: (eventId: string, attachmentId: string) =>
       ['attachments', eventId, attachmentId, 'download-url'] as const,
   },
+  // Sidoeffektsfria klass B/C-förhandsvisningar (TASK-246). PER-EVENT-nyckel
+  // (samma disciplin som attachments.byEvent) — Dokument-ytans Visa-dialoger
+  // för mallar/generatorer fetchar LAZY (enabled: dialogen är öppen), och
+  // TanStack Querys default staleTime (0) räcker för att en stängd-och-
+  // återöppnad dialog alltid genererar färskt (varje generering är transient
+  // ändå — ingen server-side cache att bli stale mot).
+  documentPreviews: {
+    eventTemplate: (eventId: string) => ['documentPreviews', 'eventTemplate', eventId] as const,
+    receipt: (eventId: string) => ['documentPreviews', 'receipt', eventId] as const,
+  },
   segment: {
     // App-sparade segment (Fas 6g L3, ADR-065): GLOBAL läs-lista (get-segments). STABIL
     // nyckel — `listSegments()` hämtar alla app-sparade segment (legacy Make-rader

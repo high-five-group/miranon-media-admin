@@ -21,6 +21,15 @@
 //      (SYSTEMMALL_BRODTEXT), inte en syntetisk sidosträng.
 //   4. deny: saknad/malformad eventId → 400; okänt event (rec-format, finns ej) → 404;
 //      anon (ingen JWT) → 401; CORS preflight.
+//   5. [TASK-246] `preview: true` → 200, INTE 201 — och SIDOEFFEKTSFRIHETEN
+//      BEVISAD, inte bara påstådd: svaret saknar `attachment`/`record`/
+//      `storagePath` HELT (strukturellt bevis — koden nådde aldrig
+//      persisterings-grenen), OCH ett get-event-attachments-anrop FÖRE/EFTER
+//      visar att Bilagor-radantalet för eventet är EXAKT oförändrat (funk-
+//      tionellt bevis — ingen ny rad landade, oavsett vad svaret PÅSTÅR).
+//      pdfBase64 är ändå en RIKTIG, pdf-lib-renderad PDF (samma
+//      inflate+WinAnsi-bevis som allow-testet ovan) — "riktigt genererad",
+//      inte en attrapp.
 //
 // ATTACH-MÅL: den permanenta beläggnings-fixturens event (BELAGGNING_EVENT_ID) —
 // SAMMA konvention som create-event-note.staging.test.ts och (verifierat live
@@ -112,6 +121,15 @@ function extractInflatedText(pdfBytes: Buffer): string {
 
 interface GenerateBody {
   eventId?: unknown;
+  preview?: unknown;
+}
+
+/** [TASK-246] Svaret från `preview: true`-grenen — MEDVETET en ANNAN form än
+ * `GenerateResponse` nedan (inget `attachment`/`record`/`storagePath` —
+ * strukturellt bevis, se filhuvudets punkt 5). */
+interface PreviewResponse {
+  pdfBase64: string;
+  requestId: string;
 }
 
 interface GenerateResponse {
@@ -138,6 +156,45 @@ function postGenerate(
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (jwt) headers.Authorization = `Bearer ${jwt}`;
   return request.post(`${config.baseUrl}${ENDPOINT}`, { headers, data: body });
+}
+
+/**
+ * [TASK-246] SIDOEFFEKTSFRIHETS-MÄTAREN — antalet Bilagor-rader länkade till
+ * eventet vars `namn` bär generate-event-attachment:s EGEN, unika
+ * naming-signatur (`Deltagarinformation – …`), via get-event-attachments
+ * (befintlig, oförändrad EF, TASK-147.5). Räknat FÖRE och EFTER ett
+ * `preview: true`-anrop ska ge SAMMA tal — det funktionella beviset att
+ * INGEN ny klass B-rad landade.
+ *
+ * FILTRERAD, INTE TOTAL RÄKNING — MEDVETET (fångat live, TASK-246-byggets
+ * första `npm run test:api`-körning, 2026-08-16): BELAGGNING_EVENT_ID är en
+ * DELAD fixtur som `upload-attachment`/`delete-attachment`/`get-attachment-
+ * download-url`s egna staging-sviter ALLA skapar/raderar `ZZ-attachment-
+ * test-*.pdf`-rader på, PARALLELLT (olika testfiler, olika Playwright-
+ * workers). Ett TOTALT antal fällde en gång på 40→41 — inte en riktig
+ * sidoeffekt, utan en ANNAN fils legitima uppladdning som råkade landa i
+ * mätfönstret. Endast generate-event-attachment producerar namnet
+ * "Deltagarinformation – …" (ingen annan EF/testfil gör det) — filtrerat på
+ * just den signaturen är räkningen immun mot samtidig, orelaterad churn.
+ */
+const KLASS_B_NAMN_PREFIX = 'Deltagarinformation – ';
+
+async function countKlassBAttachments(
+  request: APIRequestContext,
+  config: ApiConfig,
+  jwt: string,
+  eventId: string,
+): Promise<number> {
+  const res = await request.get(
+    `${config.baseUrl}/functions/v1/get-event-attachments?eventId=${eventId}`,
+    { headers: { Authorization: `Bearer ${jwt}` } },
+  );
+  const raw = await res.text();
+  expect(res.status(), `get-event-attachments misslyckades: ${raw}`).toBe(200);
+  const body = JSON.parse(raw) as { attachments: { namn?: unknown }[] };
+  return body.attachments.filter(
+    (a) => typeof a.namn === 'string' && a.namn.startsWith(KLASS_B_NAMN_PREFIX),
+  ).length;
 }
 
 test.describe('generate-event-attachment — skarp conformance (TASK-146.5)', () => {
@@ -209,6 +266,49 @@ test.describe('generate-event-attachment — skarp conformance (TASK-146.5)', ()
     }
   });
 
+  test('allow: preview-läge (TASK-246) → 200 + riktig PDF + INGEN Bilagor-rad skapas', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const foreCount = await countKlassBAttachments(request, config, jwt, BELAGGNING_EVENT_ID);
+
+    const res = await postGenerate(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      preview: true,
+    });
+    const raw = await res.text();
+    // 200, INTE 201 — inget skapades (201 hade varit fel semantik för en
+    // förhandsvisning).
+    expect(res.status(), raw).toBe(200);
+    const body = JSON.parse(raw) as PreviewResponse & Record<string, unknown>;
+
+    // STRUKTURBEVIS: svaret bär BARA pdfBase64+requestId — koden nådde
+    // ALDRIG persisterings-grenen (annars hade attachment/record/storagePath
+    // funnits, se GenerateResponse ovan).
+    expect(typeof body.pdfBase64).toBe('string');
+    expect(body.attachment).toBeUndefined();
+    expect(body.record).toBeUndefined();
+    expect(body.storagePath).toBeUndefined();
+
+    // FUNKTIONELLT BEVIS: antalet klass B-rader (namn-prefixet) för eventet
+    // är EXAKT oförändrat — orört av samtidig, orelaterad churn (se
+    // countKlassBAttachments § docblock).
+    const efterCount = await countKlassBAttachments(request, config, jwt, BELAGGNING_EVENT_ID);
+    expect(efterCount, 'preview: true skapade en klass B-rad — sidoeffekt!').toBe(foreCount);
+
+    // "RIKTIGT GENERERAD", inte en attrapp — SAMMA svenska-tecken-bevis som
+    // allow-testet ovan, mot DENNA förhandsvisnings-pdfBase64.
+    const pdfBytes = Buffer.from(body.pdfBase64, 'base64');
+    expect(pdfBytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    const decoded = extractInflatedText(pdfBytes);
+    for (const rad of SYSTEMMALL_SWENSKA_RADER) {
+      const expectedHex = winAnsiHex(rad);
+      expect(decoded.toUpperCase().includes(expectedHex), `Rad saknas: "${rad}"`).toBe(true);
+    }
+  });
+
   test('deny: saknad eventId → 400', async ({ request }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
@@ -258,5 +358,19 @@ test.describe('generate-event-attachment — skarp conformance (TASK-146.5)', ()
     });
     expect(res.status()).toBe(200);
     expect(res.headers()['access-control-allow-origin']).toBe('http://localhost:5173');
+  });
+
+  // [TASK-246] Deny-triple-klassens tredje ben (anon 401 + CORS ovan + denna)
+  // saknades i denna svit före TASK-246 — lagd till här eftersom EF:en
+  // ÄNDRADES i detta kort (preview-grenen), samma krav som varje ny/ändrad
+  // EF-väg bär (se get-attachment-download-url.staging.test.ts för
+  // referensformen).
+  test('fel HTTP-metod (GET) → 405', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await request.get(`${config.baseUrl}${ENDPOINT}?eventId=${BELAGGNING_EVENT_ID}`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    expect(res.status()).toBe(405);
   });
 });

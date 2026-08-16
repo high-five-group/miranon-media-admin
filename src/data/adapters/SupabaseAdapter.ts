@@ -1,6 +1,7 @@
 import type {
   Attachment,
   AttachmentDownloadUrl,
+  DocumentPreview,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -219,6 +220,14 @@ export class SupabaseAdapter implements DataSourceAdapter {
     _eventId: string,
     _attachmentId: string,
   ): Promise<AttachmentDownloadUrl> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async previewEventTemplate(_eventId: string): Promise<DocumentPreview> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async previewReceipt(_eventId: string): Promise<DocumentPreview> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

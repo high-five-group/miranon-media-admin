@@ -88,3 +88,20 @@ export interface AttachmentDownloadUrl {
   url: string;
   expiresInSeconds: number;
 }
+
+/**
+ * Svaret från `DataSourceAdapter.previewEventTemplate`/`previewReceipt`
+ * (TASK-246, klass B/C:s riktigt genererade men SIDOEFFEKTSFRIA förhands-
+ * visning — Marcus-ordern 2026-08-16: "en riktigt genererad PDF på alla
+ * mallar ... och även generatorn"). BÅDA metoderna returnerar SAMMA shape —
+ * en base64-kodad PDF-byteström, ingenting mer (ingen `attachment`/`record`/
+ * `storagePath` — de fälten hade antytt persistens som ALDRIG sker här,
+ * AC #3). `pdfBase64` är MEDVETET rå (ingen data-URL-prefix) — konsumenten
+ * (`DokumentYta.tsx`) avgör själv om den bygger en `Blob`/objekt-URL eller
+ * en data-URI, samma "servern äger bytesen, klienten äger presentationen"-
+ * linje som `generate-event-attachment`s existerande `pdfBase64`-fält
+ * (persisterande vägen, TASK-146.5) redan etablerar.
+ */
+export interface DocumentPreview {
+  pdfBase64: string;
+}

@@ -53,6 +53,19 @@
 // (å/ä/ö delar kodpunkt med Latin-1 i 0xA0–0xFF-intervallet). Systemmallens
 // brödtext är HÅRDKODAD svensk löptext (inte eventdata) så att AC #3 bevisas
 // deterministiskt oavsett vilket event som testas.
+//
+// [TASK-246] FÖRHANDSVISNINGS-LÄGE (body-flaggan `preview: true`) — ÅTERANVÄND
+// EF (AC #1: "ny EF byggs endast om befintlig yta bevisat inte räcker"; denna
+// yta räckte, den behövde bara en väg som HOPPAR ÖVER persisteringen, inte en
+// ny yta). Samma eventuppgifts-läsning och SAMMA `byggPdf`-anrop som den
+// persisterande vägen (identisk PDF-kvalitet, "riktigt genererad ur eventets
+// verkliga data" — Marcus-ordern 2026-08-16) — grenen som SKILJER dem ligger
+// EFTER `pdfBytes` är byggda: `preview: true` returnerar `{pdfBase64}` direkt
+// och rör VARKEN Storage-uppladdningen NEDAN eller Bilagor-radskapelsen
+// (AC #3, hård gräns — ingen mail/bas-skrivning/kvarliggande artefakt är
+// relevant här eftersom klass B:s "sändning" bara ÄR Storage+Airtable-
+// skrivningen; en förhandsvisning som aldrig når den koden har per
+// konstruktion noll sidoeffekter, inte "sidoeffekter som sedan städas").
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { PDFDocument, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1';
@@ -182,6 +195,11 @@ Deno.serve(async (req) => {
   try {
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const eventId = body?.eventId;
+    // [TASK-246] Se filhuvudets FÖRHANDSVISNINGS-LÄGE-stycke. Strikt boolean
+    // — ett klient-skickat truthy-men-inte-`true`-värde (t.ex. `"true"` som
+    // sträng) faller till den PERSISTERANDE vägen i stället för att tyst tolkas
+    // som förhandsvisning (samma "gissa aldrig"-disciplin som resten av filen).
+    const preview = body?.preview === true;
 
     // eventId: Airtable-recordId-format (speglar create-registration/create-event-note:s rec-prefix-grind).
     if (typeof eventId !== 'string' || !eventId.startsWith('rec')) {
@@ -198,6 +216,14 @@ Deno.serve(async (req) => {
 
     const uppgifter = lasEventUppgifter(eventRecord);
     const pdfBytes = await byggPdf(uppgifter);
+
+    if (preview) {
+      console.log(`[generate-event-attachment] PREVIEW | caller_user_id=${user.id} | event=${eventId}`);
+      return new Response(JSON.stringify({ pdfBase64: toBase64(pdfBytes), requestId }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Bytesen skrivs med FÖRHÖJD behörighet (service-role) — samma mönster
     // som test-attachments-storage/index.ts (TASK-146.3). Klienten rör

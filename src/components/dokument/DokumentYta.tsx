@@ -79,14 +79,30 @@
  * nämnd här är riven — se skärpningsvarv 2, punkt 3, nedan; listan är nu
  * ytans enda form.)
  *
- * KLASS B/C (mallar/generatorer): FORTFARANDE stubbar, MEDVETET — de är
- * kod-nivå-KATALOGER (vilken mall/generator som FINNS), inte instans-listor.
- * Att lista VERKLIGA genererade instanser hade krävt samma klass-gissning
- * Fynd 1 avvisar. Uppdragets AC #1 begränsar "uppladdning + ersättning" till
- * klass A uttryckligen — mallar/generatorer rörs inte här.
+ * KLASS B/C (mallar/generatorer): FORTFARANDE stubbar SOM KATALOG-RADER —
+ * `MALLAR`/`GENERATORER` nedan är fortsatt kod-nivå-KATALOGER (vilken mall/
+ * generator som FINNS), inte instans-listor. Att lista VERKLIGA genererade
+ * INSTANSER (tidigare genererade kvitton/brev) hade krävt samma
+ * klass-gissning Fynd 1 avvisar, och är fortfarande utanför scope.
+ * Uppdragets AC #1 begränsar "uppladdning + ersättning" till klass A
+ * uttryckligen — mallar/generatorer får ingen sådan handling.
  *
- * READ-ONLY FÖR KLASS B/C: ingen handling där skriver något (oförändrat
- * sedan S100).
+ * [RÄTTAD, TASK-246, 2026-08-16] "Visa" på en katalog-rad är DÄREMOT INTE
+ * längre read-only i den bemärkelsen att den bara visar statisk katalogdata
+ * (se [RÄTTAD, TASK-246] nedan) — Marcus-ordern (uppdraget, "en riktigt
+ * genererad PDF på alla mallar ... och även generatorn") ersätter varv 3:s
+ * `ProduceratExempel`-fältlista med en RIKTIGT genererad, sidoeffektsfri
+ * PDF per klick. Skillnaden mot Fynd 1/klass-gissningen ovan: detta listar
+ * fortfarande INGA instanser (ingen ny rad, inget kvarvarande objekt) — det
+ * genererar en TRANSIENT PDF vid klick och kastar bort den när dialogen
+ * stängs, exakt en gång per klick.
+ *
+ * READ-ONLY MOT BASEN/STORAGE FÖR KLASS B/C: ingen handling här SKRIVER
+ * något (Airtable, Storage eller mail) — TASK-246:s generering är
+ * sidoeffektsfri per konstruktion (AC #3), inte bara "oförändrat sedan
+ * S100" längre (den frasen gällde att inget skrevs ALLS, inklusive ingen
+ * PDF-generering — nu genereras en riktig PDF, men fortfarande utan att
+ * något PERSISTERAS).
  *
  * VERKLIG FÖRDELNING (live, staging, fixturhändelsen recIFrxHZw165ycXk, mätt
  * 2026-08-16 via get-event-attachments-EF:n direkt): 12 riktiga Bilagor-rader
@@ -212,6 +228,49 @@
  *     `VisaKnapp` (den generiska primitiven) rörs INTE — Mallar/Generatorer
  *     fortsätter använda den oförändrat, de har inget URL-behov.
  *
+ * [RÄTTAD, TASK-246, 2026-08-16] Föregående styckets sista mening ("Mallar/
+ * Generatorer fortsätter använda [VisaKnapp] oförändrat") är HISTORIA —
+ * Marcus-ordern (uppdraget, 2026-08-16: "det proffsigaste och mest
+ * branschledande är väl att man ser en riktigt genererad PDF på alla
+ * mallar ... och även generatorn") ersätter varv 3:s `ProduceratExempel`-
+ * fältlista med en RIKTIGT genererad PDF, precis som TASK-245 gjorde för
+ * bilagor ovan. `VisaKnapp`/`ProduceratExempel` är RIVNA (git bevarar
+ * historiken) — `GenereradPdfVisaKnapp` (nedan) är deras ersättare, delad
+ * av BÅDA klasserna B och C (en `typ`-prop väljer vilken EF som anropas).
+ *
+ * SKILLNADEN MOT `BilagaVisaKnapp` (TASK-245): bilagor har en REDAN LAGRAD
+ * fil att peka en signerad URL mot; klass B/C har INGEN lagrad instans —
+ * varje klick GENERERAR en ny, transient PDF (POST, bytesen kommer som
+ * base64 i svaret, inte en URL). `Blob`+`createObjectURL` bygger en
+ * lokal, klient-sidig objekt-URL av den base64-strängen (branschmönster
+ * för att förhandsvisa en genererad fil utan `data:`-URI:ers
+ * storleksgränser), riven med `URL.revokeObjectURL` i samma `useEffect`s
+ * cleanup — annars läcker en objekt-URL per klick.
+ *
+ * SIDOEFFEKTSFRIHET (AC #3, HÅRD GRÄNS): BÅDA EF-anropen är transienta per
+ * konstruktion, inte "genererade + efterstädade":
+ *   - Klass B (`previewEventTemplate` → generate-event-attachment MED
+ *     `preview: true`): SAMMA `byggPdf`-anrop som den persisterande vägen
+ *     (146.5), men en gren som ALDRIG når Storage-uppladdningen eller
+ *     Bilagor-radskapelsen — ingen kvarliggande artefakt, se EF:ens eget
+ *     filhuvud § [TASK-246].
+ *   - Klass C (`previewReceipt` → preview-receipt, en NY, dedikerad EF):
+ *     den ordinarie kvittosändningen (`_shared/send-receipt.ts`) allokerar
+ *     ALLTID ett riktigt kvittonummer (Airtable-skrivning, FÖRE
+ *     sändningsförsöket) och skickar ett riktigt mail vid lyckad körning —
+ *     kan inte grenas bort inuti den orkestratorn. preview-receipt
+ *     importerar VARKEN send-receipt.ts, receipt-numbering.ts eller Resend
+ *     DIREKT (en indirekt, type-only-import via receipt-content.ts eraderas
+ *     vid transpilering — se EF:ens eget filhuvud för nyansen).
+ *
+ * PERSONDATA FÖR KLASS C: TYPEXEMPEL, inte en verklig anmälan (bokfört
+ * beslut, kortets notes AC #2 — se preview-receipt/index.ts § PERSONDATA
+ * för det fulla resonemanget: Dokument-ytan har ingen anmälan/betalning
+ * VALD på denna generiska katalograd, och basen saknar ett prisfält
+ * oavsett — belopp/betalsätt är ALLTID Lotta-inmatade vid en riktig
+ * sändning, aldrig lästa ur basen). Eventets namn ÄR verkligt (samma
+ * eventId som Dokument-ytans redan valda event).
+ *
  * DEV-GRINDEN (`mer/index.tsx` § `visaDokumentPrototyp`) och `[PROTOTYPE]`-
  * märkningen ovan RÖRS INTE av detta varv — facit-låset (AC #3, task-147.6,
  * stämpel via !-kanalen ADR-104) är Marcus egen morgonhandling, skild från
@@ -223,8 +282,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronLeft, Download, FileText, Upload } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
@@ -237,7 +295,7 @@ import { formatMB } from '@/data/adapters/attachmentUpload';
 import { useReplaceAttachment } from '@/data/mutations/useReplaceAttachment';
 import { useUploadAttachment } from '@/data/mutations/useUploadAttachment';
 import { useDataSource } from '@/data/useDataSource';
-import type { Attachment } from '@/domain/models/Attachment';
+import type { Attachment, DocumentPreview } from '@/domain/models/Attachment';
 import { queryKeys } from '@/queries/keys';
 
 /* ------------------------------------------------------------------ *
@@ -426,55 +484,101 @@ function MetaRad({ delar }: { delar: (string | null)[] }) {
 }
 
 /**
- * VISA-KNAPPEN (skärpningsvarv 3, punkt b–e i filhuvudet) — husets
- * `Dialog`-primitiv (ADR-044: `DialogTrigger`/`Modal`/`Dialog`, samma mönster
- * som `AtgardsSida.tsx`s `SkickaKvittoKnapp`) i stället för en död knapp.
- * `intent="primary" emphasis="subtle"` ger BÅDE den tonade bakgrunden
- * (punkt d) och en verklig hover-kontrast (punkt b) — se filhuvudet för
- * varför `ghost`s hover var osynlig. `buttonClassName` låter anroparen sätta
- * `self-center` (punkt e) DIREKT på knappen (`DialogTrigger` renderar ingen
- * egen DOM-nod — `Button`/`Modal` blir alltså riktiga syskon i anroparens
- * flex-rad) utan att röra radens egen `items-start`.
+ * GENERERAD PDF — VISA-KNAPPEN (TASK-246). Ersätter varv 3:s `VisaKnapp` +
+ * `ProduceratExempel` (den statiska fältlistan, git bevarar historiken) för
+ * klass B/C — Marcus-ordern 2026-08-16: "en riktigt genererad PDF på alla
+ * mallar ... och även generatorn". SKILD komponent från `BilagaVisaKnapp`
+ * (ovan): den hämtar en signerad URL till en REDAN LAGRAD fil (TASK-245);
+ * denna genererar en HELT NY, TRANSIENT PDF VID KLICK (POST, ingen lagrad
+ * resurs att peka en URL mot) — bytesen kommer som base64 i själva svaret.
+ *
+ * `Blob` + `createObjectURL` i stället för en `data:`-URI: robust mot
+ * data-URI-storleksgränser i vissa webbläsare (branschmönster för
+ * "förhandsvisa en genererad fil i webbläsaren"), och `URL.revokeObjectURL`
+ * städas explicit i `useEffect`s cleanup — en objekt-URL som aldrig
+ * återkallas läcker minne, en per klick.
+ *
+ * SAMMA lazy-mönster som `BilagaVisaKnapp`: `isOpen` styr BÅDE
+ * `DialogTrigger` OCH queryns `enabled` — PDF:en genereras FÖRST när
+ * dialogen faktiskt öppnas, aldrig i förväg för hela listan.
  */
-function VisaKnapp({
+function GenereradPdfVisaKnapp({
   title,
-  children,
-  buttonClassName,
+  eventId,
+  typ,
 }: {
   title: string;
-  children: ReactNode;
-  buttonClassName?: string;
+  eventId: string;
+  /** Vilken generator-EF som ska anropas — se DataSourceAdapter för kontraktet per typ. */
+  typ: 'mall' | 'generator';
 }) {
+  const dataSource = useDataSource();
+  const [isOpen, setIsOpen] = useState(false);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+
+  const queryKey =
+    typ === 'mall'
+      ? queryKeys.documentPreviews.eventTemplate(eventId)
+      : queryKeys.documentPreviews.receipt(eventId);
+
+  const previewQuery = useQuery<DocumentPreview>({
+    queryKey,
+    queryFn: () =>
+      typ === 'mall'
+        ? dataSource.previewEventTemplate(eventId)
+        : dataSource.previewReceipt(eventId),
+    enabled: isOpen,
+  });
+
+  // Bygger/river objekt-URL:en när base64-datan ändras — INTE inuti queryFn
+  // (queryFn ska vara REN datahämtning, ingen DOM-sideeffekt; samma
+  // disciplin som gör att TanStack Query kan cacha/dedupa fritt).
+  useEffect(() => {
+    if (!previewQuery.data) return;
+    const bytes = Uint8Array.from(atob(previewQuery.data.pdfBase64), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    setBlobUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [previewQuery.data]);
+
   return (
-    <DialogTrigger>
-      <Button intent="primary" emphasis="subtle" size="sm" className={buttonClassName}>
+    <DialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Button intent="primary" emphasis="subtle" size="sm" className="self-center">
         Visa
       </Button>
       <Modal isDismissable>
-        <Dialog title={title}>{children}</Dialog>
+        <Dialog title={title} size="lg">
+          {previewQuery.isPending ? (
+            <div role="status" aria-busy="true" className="flex flex-col gap-2">
+              <span className="sr-only">Genererar förhandsvisning…</span>
+              <Skeleton variant="listRow" className="h-[60vh]" />
+            </div>
+          ) : previewQuery.isError ? (
+            <MessageBox intent="error" title="Kunde inte generera dokumentet">
+              {previewQuery.error instanceof Error ? previewQuery.error.message : 'Okänt fel.'}
+            </MessageBox>
+          ) : blobUrl ? (
+            <div className="flex flex-col gap-3">
+              <iframe
+                src={blobUrl}
+                title={`Förhandsvisning av ${title}`}
+                className="h-[60vh] w-full rounded border border-border bg-bg"
+              />
+              <a
+                href={blobUrl}
+                download={`${title}.pdf`}
+                className="inline-flex items-center gap-1.5 self-start font-medium text-body underline underline-offset-2 hover:text-text"
+              >
+                <Download aria-hidden="true" size={16} />
+                Ladda ner {title}.pdf
+              </a>
+            </div>
+          ) : null}
+        </Dialog>
       </Modal>
     </DialogTrigger>
-  );
-}
-
-/**
- * "PRODUCERAT EXEMPEL" (Marcus kvitterade rekommendation, filhuvudet punkt 5)
- * — en ÄRLIG illustration av vilka fält dokumentet fylls i med, byggd UR
- * `Mall.fyllerI`/`Generator.byggsUr` (samma katalogdata som redan står i
- * radens egen metatext). Varje värde är bokstavligen ordet "Exempelvärde" —
- * ALDRIG ett hittepå-namn/datum som kunde förväxlas med en riktig rad, samma
- * "gissa aldrig"-disciplin som Fynd 1/3 i filhuvudet.
- */
-function ProduceratExempel({ falt }: { falt: readonly string[] }) {
-  return (
-    <dl className="flex flex-col divide-y divide-border text-small">
-      {falt.map((f) => (
-        <div key={f} className="flex items-baseline justify-between gap-3 py-1.5">
-          <dt className="text-text-secondary">{f}</dt>
-          <dd className="text-text-muted italic">Exempelvärde</dd>
-        </div>
-      ))}
-    </dl>
   );
 }
 
@@ -643,30 +747,26 @@ function BilageRadRow({
   );
 }
 
-function MallRad({ mall }: { mall: Mall }) {
+function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
   return (
     <div data-testid="dokument-mall" className="flex items-start gap-3 py-3">
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="break-words font-medium text-body">{mall.namn}</span>
         <MetaRad delar={[`Fyller i ${mall.fyllerI.join(', ').toLowerCase()}`]} />
       </span>
-      <VisaKnapp title={mall.namn} buttonClassName="self-center">
-        <ProduceratExempel falt={mall.fyllerI} />
-      </VisaKnapp>
+      <GenereradPdfVisaKnapp title={mall.namn} eventId={eventId} typ="mall" />
     </div>
   );
 }
 
-function GeneratorRad({ gen }: { gen: Generator }) {
+function GeneratorRad({ gen, eventId }: { gen: Generator; eventId: string }) {
   return (
     <div data-testid="dokument-generator" className="flex items-start gap-3 py-3">
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="break-words font-medium text-body">{gen.namn}</span>
         <MetaRad delar={[`Byggs ur ${gen.byggsUr.join(', ').toLowerCase()}`]} />
       </span>
-      <VisaKnapp title={gen.namn} buttonClassName="self-center">
-        <ProduceratExempel falt={gen.byggsUr} />
-      </VisaKnapp>
+      <GenereradPdfVisaKnapp title={gen.namn} eventId={eventId} typ="generator" />
     </div>
   );
 }
@@ -772,8 +872,9 @@ function DokumentLista({
               replaceMutation={replaceMutation}
             />
           ))}
-        {visaMallar && MALLAR.map((m) => <MallRad key={m.id} mall={m} />)}
-        {visaGeneratorer && GENERATORER.map((g) => <GeneratorRad key={g.id} gen={g} />)}
+        {visaMallar && MALLAR.map((m) => <MallRad key={m.id} mall={m} eventId={eventId} />)}
+        {visaGeneratorer &&
+          GENERATORER.map((g) => <GeneratorRad key={g.id} gen={g} eventId={eventId} />)}
         {visaBilagor && rader.length === 0 && !visaMallar && !visaGeneratorer && (
           <p className="py-3 text-small text-text-muted">Inga bilagor för det här eventet än.</p>
         )}
