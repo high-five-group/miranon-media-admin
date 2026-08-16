@@ -8,14 +8,14 @@
  * VARFÖR DEN BYGGS I SAMMA SESSION SOM ÅTGÄRDS-SIDAN (underlaget § 9,
  * Marcus-beslut 2026-08-07): bilageväljaren visar det den här ytan förvaltar.
  *
- * [TASK-147.6, SKÄRPT MOT VERKLIGT FUNDAMENT] Ursprungsformen (S100/T131)
- * hade tre klass-grupper fyllda med PÅHITTADE stubbar och läste ingen data.
- * Fundamentet (TASK-146.4 adapter + TASK-146.5 klass B-generering) finns nu
- * — denna version läser VERKLIG data och laddar VERKLIGT upp, men avtäckte
- * samtidigt att prototypens tre premisser inte håller mot det byggda
- * fundamentet. De tre fynden nedan är kortets GRANSKNINGSUNDERLAG
- * (AC #2) — inte gissningar, varje rad är verifierad mot koden som
- * refereras.
+ * [TASK-147.6, SKÄRPT MOT VERKLIGT FUNDAMENT, VARV 1] Ursprungsformen
+ * (S100/T131) hade tre klass-grupper fyllda med PÅHITTADE stubbar och läste
+ * ingen data. Fundamentet (TASK-146.4 adapter + TASK-146.5 klass B-
+ * generering) finns nu — denna version läser VERKLIG data och laddar
+ * VERKLIGT upp, men avtäckte samtidigt att prototypens tre premisser inte
+ * håller mot det byggda fundamentet. De tre fynden nedan är kortets
+ * GRANSKNINGSUNDERLAG (AC #2) — inte gissningar, varje rad är verifierad
+ * mot koden som refereras.
  *
  * FYND 1 — KLASS A/B ÄR STRUKTURELLT ODELBARA I DATAN, INTE BARA I UI:t.
  * Bilagor-tabellen (TASK-146.2) bär inget dokumentklass-fält
@@ -23,26 +23,22 @@
  * `Attachment.ts` § docblock). `fetchEventAttachments(eventId)` returnerar
  * DÄRFÖR alla rader länkade till eventet oavsett hur de uppstod — uppladdad
  * (klass A) och event-mallat genererad (klass B) är omöjliga att skilja åt
- * i den data adaptern faktiskt ger. Det gäller BÅDA kandidatformerna lika:
- * varken tre klass-grupper eller "en lista med klass-filter" kan filtrera
- * på en klass som inte finns i datan. Denna yta gissar därför INTE en klass
+ * i den data adaptern faktiskt ger. Denna yta gissar därför INTE en klass
  * ur filnamnsmönster (`generate-event-attachment/index.ts` bygger
  * `Namn = "Deltagarinformation – {eventlabel}.pdf"`, ett tekniskt sett
  * matchbart mönster) — en sådan heuristik hade sett ut som riktig
  * klassificering utan att vara det, och en Lotta-fil som råkar heta likadant
- * hade klassats fel. Gruppen nedan heter därför "Bilagor för valt event",
- * inte "Uppladdade filer": den senare hade varit en osann etikett på rader
- * som kan vara genererade.
+ * hade klassats fel. DATAGRUNDEN för en riktig klass-etikett landar via
+ * TASK-147.12 (dokumentklass-fältet); den här ytans filterrad (nedan) är
+ * byggd så den tar emot fältet UTAN ombyggnad den dagen det finns.
  *
  * FYND 2 — BILAGE-FUNDAMENTET ÄR EVENT-SCOPAT, INTE ETT GLOBALT BIBLIOTEK.
  * `uploadAttachment` kräver `eventId` (obligatoriskt fält,
  * `UploadAttachmentInput`), och `fetchEventAttachments` läser EN händelses
  * omvända länk — adaptern har ingen "alla bilagor oavsett event"-metod.
- * Prototypens ursprungsform (en ospecificerad global lista, "Uppladdade
- * filer" utan eventkontext) matchar alltså inte hur fundamentet faktiskt är
- * byggt. Ytan bär därför en eventväljare (samma `EventValjare`-komponent
- * som Åtgärds-sidan och manuell anmälan) — ett REELLT formbeslut som följer
- * av fundamentet, inte ett estetiskt val.
+ * Ytan bär därför en eventväljare (samma `EventValjare`-komponent som
+ * Åtgärds-sidan och manuell anmälan) — ett REELLT formbeslut som följer av
+ * fundamentet, inte ett estetiskt val.
  *
  * FYND 3 — "ANVÄNDS I N EVENT" ÄR INTE BYGGBART. Domänmodellen
  * (`Attachment.eventId`) läser bara FÖRSTA länkade eventet
@@ -51,34 +47,19 @@
  * till fler länkar på en befintlig rad. Prototypens `anvandsI`-räknare är
  * därför borttagen snarare än fejkad.
  *
- * "ERSÄTT" (AC #1) — byggd UTAN ny backend-yta. Adaptern saknar ett
+ * "ERSÄTT" (AC #1) — byggd UTAN ny backend-yta, ÄN. Adaptern saknar ett
  * delete/replace-primitiv (`DataSourceAdapter.ts` bär bara `uploadAttachment`
- * + `fetchEventAttachments`, `grep -n delete` = 0 träffar) — att lägga till
- * ett sådant är ett nytt fält + ny EF-logik, alltså backend-arkitektur
- * utanför detta korts scope ("adapter-ytan från 146.4 ... finns SOM
- * FUNDAMENT", uppdraget). I stället: en ny uppladdning med SAMMA `Namn`
- * grupperas klient-sidigt som en nyare version av samma rad (`grupperaPerNamn`
- * nedan) — den gamla raden finns kvar i Airtable (additivt, ADR-063), men
- * visas bara som en daterad "Ersatte en tidigare version"-notis under den
- * nya. HEURISTIK, ÖPPET BOKFÖRD: gruppering sker på exakt filnamns-match,
- * inte ett riktigt `ersätter`-fält — två olika filer som råkar heta likadant
- * grupperas felaktigt ihop. Att stänga den luckan kräver ett nytt additivt
- * fält på Bilagor-tabellen, återigen backend-arkitektur utanför scope.
- * DJUPET ÄR EN NIVÅ (prototypens exakta `ersatte?: string`-fält, aldrig en
- * kedja): en TREDJE uppladdning med samma `Namn` gör den ÄLDSTA av de tre
- * osynlig i listan — den finns kvar i Airtable men varken som egen rad
- * (samma `namn` som en nyare rad) eller i "Ersatte …"-notisen (som bara
- * pekar på NÄST senaste). Live-verifierat 2026-08-16: "Deltagarinformation
- * – ZZ-belaggning-fixtur …" existerar i tre exemplar för fixturhändelsen
- * (andra kort i sviten har genererat den flera gånger) — exakt det scenariot.
- *
- * FORMVÄXELN (AC #2, "om det är praktiskt inom scope"): samma verkliga data
- * renderas i BÅDA kandidatformerna — `?form=grupper` (default, tre grupper,
- * prototypens ursprungsform) och `?form=lista` (en flat lista med
- * typ-filter, den avvisade formen ur prototypens eget docblock). DEV-gränsen
- * ärvs av routens befintliga gate (mer/index.tsx `visaDokumentPrototyp`) —
- * ingen ny build-time-spärr behövs, denna växel är samma ograndrade
- * prototyp-substrat som resten av ytan.
+ * + `fetchEventAttachments`, `grep -n delete` = 0 träffar) — en ny
+ * uppladdning med SAMMA `Namn` grupperas därför klient-sidigt som en nyare
+ * version av samma rad (`grupperaPerNamn` nedan); den gamla raden finns kvar
+ * i Airtable (additivt, ADR-063) men visas bara som en daterad "Ersatte en
+ * tidigare version"-notis under den nya. HEURISTIK, ÖPPET BOKFÖRD: gruppering
+ * sker på exakt filnamns-match, inte ett riktigt `ersätter`-fält. Djupet är
+ * EN nivå (prototypens exakta `ersatte?: string`-fält, aldrig en kedja) — se
+ * `grupperaPerNamn`s egen kommentar. Den ÄKTA server-sidiga ersätt/radera-
+ * ytan (EF + adapter-metod, ingen skräprad kvar i Airtable) landar via
+ * TASK-147.11 — denna fils klient-gruppering rörs inte av det kortet, den
+ * FASAS UT först när 147.11 kopplar in sin egen mutation här.
  *
  * KLASS B/C (mallar/generatorer): FORTFARANDE stubbar, MEDVETET — de är
  * kod-nivå-KATALOGER (vilken mall/generator som FINNS), inte instans-listor.
@@ -89,15 +70,77 @@
  * READ-ONLY FÖR KLASS B/C: ingen handling där skriver något (oförändrat
  * sedan S100).
  *
+ * VERKLIG FÖRDELNING (live, staging, fixturhändelsen recIFrxHZw165ycXk, mätt
+ * 2026-08-16 via get-event-attachments-EF:n direkt): 12 riktiga Bilagor-rader
+ * — 9 unika "ZZ-attachment-test-*.pdf" (klass A-liknande, TASK-146.4:s egna
+ * staging-sentineler) + 3 st "Deltagarinformation – ZZ-belaggning-fixtur..."
+ * (klass B, TASK-146.5:s genererings-sentineler, alla identiskt namn). INGEN
+ * äkta Lotta-skapad bilaga finns ännu i staging — hela den mätta fördelningen
+ * är testsviternas egna sentineler.
+ *
+ * [TASK-147.6, SKÄRPNINGSVARV 2 — HUSETS FORM, 2026-08-16] Marcus underkände
+ * varv 1 (uppdragstexten, 2026-08-16: "prototypen måste byggas EXAKT som det
+ * kommer se ut i prod-appen — SNYGGT, PROFFSIGT, ENKELT") på fyra punkter,
+ * alla åtgärdade i detta varv:
+ *
+ *  1. SIDKROM SAKNADES HELT (ingen chevron, ingen sidgrund). Stulet verbatim
+ *     ur `AktivitetsHistorik.tsx`s krom
+ *     (`components/aktivitetshistorik/AktivitetsHistorik.tsx` § `kromKnapp`,
+ *     S106-omdesignen, Marcus-godkänd 2026-08-15,
+ *     `tasks/sessions/bilagor/s106-aktivitetslogg/facit.json`) — SAMMA
+ *     nav-djup som denna yta (`/mer`-leaf), senaste husfacit: rund
+ *     `size-11 bg-bg-muted`-chevron (`ChevronLeft 26`) tillbaka till `/mer`,
+ *     `<header className="flex flex-col gap-1">` med `h1 font-semibold
+ *     text-3xl`, ingen undertext. `AtgardsSida.tsx`s `Sidhuvud`
+ *     (§ Sidhuvud, `border-b` + `mx-4`-chevron, Åtgärds-sidan, den ANDRA
+ *     mönsterkällan) vägdes som andra kandidat men förkastades HÄR: den bär
+ *     en extra `px-4`/`mx-4`-nivå ovanpå `AppShell`s egen `main`-padding
+ *     (`px-4 py-4`, `AppShell.tsx`), vilket hade dubblat sidmarginalen —
+ *     samma dubbleringsfel `MailLog.tsx`/`Intresserade.tsx` bär (den ÄLDRE
+ *     `<section className="… p-4">`-konventionen, oförändrad sedan före
+ *     S106 och exakt formen denna fil själv bar till och med varv 1).
+ *     `AktivitetsHistorik`s krom har INGEN egen sidopadding — rätt mot
+ *     `AppShell`, och den formen ärvs här verbatim.
+ *
+ *  2. PROTOTYP-/META-TEXT I UI:T (fynd-rutan "Om datan i denna prototyp" +
+ *     slutraden "Prototyp. Bilagor + uppladdning är verkliga …") ÄR RIVNA ur
+ *     den renderade ytan. Fynden 1–3 ovan och ersätt-heuristikens gräns
+ *     finns KVAR — i DENNA docblock och i kortets Implementation Notes
+ *     (task-147.6, backlog-CLI:t) — Lotta ser dem aldrig. Ytan visar bara
+ *     det hon ska se: filnamn, storlek, datum, en Ersätt-knapp.
+ *
+ *  3. FORMEN VAR TVÅ, ÄR NU LÅST TILL EN. Marcus-GO (uppdraget, 2026-08-16,
+ *     på orkestrerarens rekommendation): "listan är formen." `?form=grupper`/
+ *     `?form=lista`-växeln och `DokumentGrupper`-funktionen (tre klass-
+ *     grupper) är RIVNA (git bevarar historiken,
+ *     `git log -p -- src/components/dokument/DokumentYta.tsx`) — bara den
+ *     tidigare "lista"-formens flata, filtrerbara lista kvarstår, aldrig
+ *     bakom en växel.
+ *
+ *  4. OLIKA BREDA KONTROLLER. Typ-filtret (`ListaTyp`, `LISTA_FILTER`) bär
+ *     nu `spread` (`ToggleButtonGroup`-primitivens likbredds-läge, ADR-044)
+ *     + `min-h-11` per pill — samma touch-target-golv som
+ *     `AktivitetsHistorik`s tidsperiod-toggel bär (den filens egen kommentar:
+ *     "`size='sm'` ensamt gav 37 px, under 44 px-golvet"). Med
+ *     Visningsform-växeln riven (punkt 3) finns bara EN `ToggleButtonGroup`
+ *     kvar på ytan — den tidigare bredd-sågtanden mellan två olika breda
+ *     växlare på samma yta är därmed strukturellt omöjlig, inte bara fixad.
+ *     Button-raderna (`Ersätt`/`Visa`) bar redan enhetlig `ghost`/`sm` sedan
+ *     varv 1, oförändrat.
+ *
+ * DEV-GRINDEN (`mer/index.tsx` § `visaDokumentPrototyp`) och `[PROTOTYPE]`-
+ * märkningen ovan RÖRS INTE av detta varv — facit-låset (AC #3, task-147.6,
+ * stämpel via !-kanalen ADR-104) är Marcus egen morgonhandling, skild från
+ * detta skärpningsvarv.
+ *
  * KASTBAR: koden absorberas ALDRIG (klausul iv).
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { FileText, Sparkles, Upload, UserRound } from 'lucide-react';
+import { ChevronLeft, FileText, Sparkles, Upload, UserRound } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 import { FileTrigger } from 'react-aria-components';
-import { DetaljGrupp } from '@/components/events/detail/DetaljGrupp';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -156,9 +199,9 @@ const DATUM_TID = new Intl.DateTimeFormat('sv-SE', {
 });
 
 /**
- * En rad i "Bilagor för valt event" — den verkliga, senaste versionen av en
- * fil, plus (om en tidigare version med SAMMA `Namn` fanns) datumet den
- * ersatte. Se filhuvudets "ERSÄTT"-stycke för heuristikens gräns.
+ * En rad i listan — den verkliga, senaste versionen av en fil, plus (om en
+ * tidigare version med SAMMA `Namn` fanns) datumet den ersatte. Se filhuvudets
+ * "ERSÄTT"-stycke för heuristikens gräns.
  */
 type BilageRad = { current: Attachment; ersatte?: Attachment };
 
@@ -188,13 +231,6 @@ function grupperaPerNamn(attachments: readonly Attachment[]): BilageRad[] {
 export function DokumentYta() {
   const dataSource = useDataSource();
   const [eventId, setEventId] = useQueryState('event');
-  // Formväxeln (filhuvudets "FORMVÄXELN"): default = grupper (prototypens
-  // ursprungsform, oförändrad utan query-param), `?form=lista` väljer den
-  // avvisade alternativa formen. Egen `form`-axel, skild från `/mer`-index-
-  // gatens `variant=dokument` (annan semantik, samma sida får inte läsa två
-  // betydelser ur samma parameternamn).
-  const [form, setForm] = useQueryState('form');
-  const visaLista = form === 'lista';
 
   const eventsQuery = useQuery({
     queryKey: queryKeys.events.list,
@@ -221,16 +257,20 @@ export function DokumentYta() {
   };
 
   return (
-    <section className="flex flex-col gap-4 p-4">
-      <Link to="/mer" className="text-small underline">
-        ← Tillbaka till Mer
+    <div className="flex flex-col gap-4" data-testid="dokument-yta">
+      {/* HUSETS SIDKROM — stulet verbatim ur AktivitetsHistorik.tsx § kromKnapp
+          (S106-facitet). Se filhuvudets skärpningsvarv 2, punkt 1, för varför
+          AtgardsSida.tsx § Sidhuvud (den andra mönsterkällan) INTE ärvs här. */}
+      <Link
+        to="/mer"
+        aria-label="Tillbaka till Mer"
+        className="flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+      >
+        <ChevronLeft aria-hidden="true" size={26} />
       </Link>
 
       <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-2xl">Dokument</h1>
-        <p className="text-small text-text-muted">
-          {MALLAR.length + GENERATORER.length} mallar/generatorer + bilagorna för valt event
-        </p>
+        <h1 className="font-semibold text-3xl">Dokument</h1>
       </header>
 
       {/* Eventväljaren (Fynd 2): fundamentet är event-scopat, så ytan
@@ -244,34 +284,6 @@ export function DokumentYta() {
         onByte={(id) => void setEventId(id)}
       />
 
-      {/* GRANSKNINGSUNDERLAGET (AC #2): verklig fördelning + de tre fynden
-          synliga PÅ YTAN, inte bara i agentrapporten. */}
-      <MessageBox intent="info" title="Om datan i denna prototyp">
-        Bilagor-tabellen har inget dokumentklass-fält. Klass A (uppladdad) och klass B (event-mallat
-        genererad) syns identiska här och kan inte skiljas åt i UI:t heller (se filens docblock,
-        Fynd 1). Listan nedan visar därför ALLA verkliga bilagor för valt event, oavsett hur de
-        uppstod.
-      </MessageBox>
-
-      {/* Formväxeln — à la prototyp-konventionen (ADR-103-lagren), egen
-          `form`-axel. `ToggleButtonGroup`-primitiven (ADR-044): exakt EN
-          form vald alltid, radiogroup/radio-semantik, pilnavigering ingår
-          gratis — samma verktyg som period-togglen. Den fulla
-          PrototypeSwitcher-railen är byggd för flerdimensionell
-          divergens/konvergens och vore överdimensionerad här. */}
-      <ToggleButtonGroup
-        label="Visningsform"
-        selectedKey={visaLista ? 'lista' : 'grupper'}
-        onSelectionChange={(key) => void setForm(key === 'lista' ? 'lista' : null)}
-      >
-        <ToggleButton id="grupper" size="sm">
-          Grupper
-        </ToggleButton>
-        <ToggleButton id="lista" size="sm">
-          Lista
-        </ToggleButton>
-      </ToggleButtonGroup>
-
       {eventId == null ? (
         <p className="text-small text-text-muted">Välj ett event för att se dess bilagor.</p>
       ) : attachmentsQuery.isPending ? (
@@ -284,18 +296,10 @@ export function DokumentYta() {
         <MessageBox intent="error" title="Kunde inte hämta bilagor">
           {attachmentsQuery.error instanceof Error ? attachmentsQuery.error.message : 'Okänt fel.'}
         </MessageBox>
-      ) : visaLista ? (
-        <DokumentLista rader={rader} onUpload={handleUpload} uploadMutation={uploadMutation} />
       ) : (
-        <DokumentGrupper rader={rader} onUpload={handleUpload} uploadMutation={uploadMutation} />
+        <DokumentLista rader={rader} onUpload={handleUpload} uploadMutation={uploadMutation} />
       )}
-
-      <p className="text-small text-text-muted">
-        <strong className="font-medium">Prototyp.</strong> Bilagor + uppladdning är verkliga
-        (TASK-146.4-fundamentet). Mallar/generatorer nedan är kod-nivå-kataloger, inte listade
-        instanser (se filens docblock).
-      </p>
-    </section>
+    </div>
   );
 }
 
@@ -374,83 +378,12 @@ function GeneratorRad({ gen }: { gen: Generator }) {
   );
 }
 
-/** Förklaringsraden per grupp — Gunilla-principen: inget antas känt. */
-function GruppText({ children }: { children: string }) {
-  return <p className="py-3 text-small text-text-secondary">{children}</p>;
-}
-
 function UppladdningsFel({ uploadMutation }: { uploadMutation: UploadMutation }) {
   if (!uploadMutation.isError) return null;
   return (
     <MessageBox intent="error" title="Kunde inte ladda upp filen">
       {uploadMutation.error instanceof Error ? uploadMutation.error.message : 'Okänt fel.'}
     </MessageBox>
-  );
-}
-
-/**
- * FORM "GRUPPER" — prototypens ursprungsform (S100): tre grupper, en per
- * dokumentklass. Klass A-gruppen ("Bilagor för valt event", omdöpt ur
- * "Uppladdade filer" — se filhuvudets Fynd 1) bär nu VERKLIG data; B/C är
- * kod-nivå-kataloger (oförändrade).
- */
-function DokumentGrupper({
-  rader,
-  onUpload,
-  uploadMutation,
-}: {
-  rader: BilageRad[];
-  onUpload: (files: FileList | null) => void;
-  uploadMutation: UploadMutation;
-}) {
-  return (
-    <div className="flex flex-col gap-6">
-      <DetaljGrupp id="grupp-bilagor" rubrik="Bilagor för valt event">
-        <GruppText>
-          Alla verkliga bilagor för eventet. Uppladdade och event-mallat genererade syns identiska
-          (Fynd 1, filens docblock).
-        </GruppText>
-        {rader.length === 0 && (
-          <p className="py-3 text-small text-text-muted">Inga bilagor för det här eventet än.</p>
-        )}
-        {rader.map((r) => (
-          <BilageRadRow
-            key={r.current.id}
-            rad={r}
-            onUpload={onUpload}
-            uploadMutation={uploadMutation}
-          />
-        ))}
-        <UppladdningsFel uploadMutation={uploadMutation} />
-        <div className="py-3">
-          <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={onUpload}>
-            <Button intent="secondary" isDisabled={uploadMutation.isPending}>
-              <Upload aria-hidden="true" size={16} className="shrink-0" />
-              {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp en fil'}
-            </Button>
-          </FileTrigger>
-        </div>
-      </DetaljGrupp>
-
-      <DetaljGrupp id="grupp-mallar" rubrik="Event-mallar">
-        <GruppText>
-          Brev där eventets egna uppgifter fylls i automatiskt. Alla på samma event får samma brev.
-        </GruppText>
-        {MALLAR.map((m) => (
-          <MallRad key={m.id} mall={m} />
-        ))}
-      </DetaljGrupp>
-
-      <DetaljGrupp id="grupp-genererade" rubrik="Skapas för varje person">
-        <GruppText>
-          Byggs på plats ur personens egna uppgifter. Skickar du till sex personer skapas sex olika
-          filer - en åt var och en.
-        </GruppText>
-        {GENERATORER.map((g) => (
-          <GeneratorRad key={g.id} gen={g} />
-        ))}
-      </DetaljGrupp>
-    </div>
   );
 }
 
@@ -464,11 +397,23 @@ const LISTA_FILTER: { key: ListaTyp; label: string }[] = [
 ];
 
 /**
- * FORM "LISTA" — den avvisade alternativa formen ur prototypens eget
- * docblock ("en lista med klass-filter"), byggd här för att göra
- * formfrågan jämförbar med verklig data i BÅDA formerna (uppdragets
- * instruktion). Typ-chips filtrerar klient-sidigt; ingen ny data,
- * samma `rader`/mallar/generatorer som grupper-formen.
+ * DOKUMENT-LISTAN — sedan skärpningsvarv 2 den ENDA formen (Marcus-GO,
+ * filhuvudets punkt 3), inte längre en av två växlingsbara varianter. En
+ * flat, filtrerbar lista: typ-chipsen filtrerar klient-sidigt över samma
+ * `rader`/mallar/generatorer som tidigare — ingen ny data.
+ *
+ * FILTERRADEN (uppdraget: "husets uppdelade filterrad, historik-sidans
+ * mönster") — `ToggleButtonGroup` med `spread` (likbredds-läge, ADR-044) på
+ * EGEN rad ovanför listan, samma disciplin som `AktivitetsHistorik.tsx`
+ * § `FilterRad`s tidsperiod-toggel: `min-h-11` per pill håller 44 px-
+ * touch-target-golvet (samma filens kommentar: "`size='sm'` ensamt gav
+ * 37 px, under golvet").
+ *
+ * TYPFILTRETS DATAGRUND: `ListaTyp`/`LISTA_FILTER` filtrerar i dag bara på
+ * VILKEN LISTA en rad kommer från (bilagor/mallar/generatorer) — inom
+ * "Bilagor" finns ingen verklig klass-uppdelning ännu (Fynd 1, filhuvudet).
+ * TASK-147.12 kopplar in den verkliga klassen; denna filterrad ändras inte
+ * strukturellt den dagen, bara vad "Bilagor" i praktiken innehåller.
  */
 function DokumentLista({
   rader,
@@ -491,11 +436,12 @@ function DokumentLista({
     <div className="flex flex-col gap-3">
       <ToggleButtonGroup
         label="Filtrera på typ"
+        spread
         selectedKey={aktivtFilter}
         onSelectionChange={(key) => void setFilter(key === 'alla' ? null : key)}
       >
         {LISTA_FILTER.map((f) => (
-          <ToggleButton key={f.key} id={f.key} size="sm">
+          <ToggleButton key={f.key} id={f.key} size="sm" className="min-h-11">
             {f.label}
           </ToggleButton>
         ))}
