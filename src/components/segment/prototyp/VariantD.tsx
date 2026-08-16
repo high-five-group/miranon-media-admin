@@ -2824,6 +2824,26 @@ function VillkorsKort({
         </Button>
       </div>
 
+      {/* MODALITETSVALET FÖRST OCH MED MALLVYNS ORD (Marcus 2026-08-16:
+          '"Räknas som" fattar jag inte … ska man fylla i den först kan den
+          inte ligga på rad 3'). Det obligatoriska valet ligger nu överst —
+          dess framträdande färg är därmed rätt signal i stället för en
+          vilseledande — och frågan/alternativen är ordagrant samma som
+          mallvyns och generatorns steg 1, så alla tre ytorna talar samma
+          språk. Säkerhetskravet (ingen default, rött när bygget börjat utan
+          val) är oförändrat. */}
+      <RadioGroup
+        label="Vilka räknas med?"
+        value={villkor.modalitet}
+        onChange={(v) => onAndra({ ...villkor, modalitet: v as ModalitetsVal })}
+        isInvalid={villkor.modalitet === null && !orort}
+        errorMessage="Välj vilka som räknas innan villkoret kan användas."
+      >
+        <Radio value="Utbildning">De som gått utbildningar</Radio>
+        <Radio value="Föreläsning">De som varit på föreläsningar</Radio>
+        <Radio value="Båda">Båda</Radio>
+      </RadioGroup>
+
       <ChipRad etikett="Familj">
         {FAMILJER.map((f) => {
           const antal = parInfo.filter((p) => p.familj === f).length;
@@ -2868,25 +2888,6 @@ function VillkorsKort({
           då är den saknade modaliteten ett verkligt fel som ska synas som ett.
           Motiveringen under står kvar i BÅDA lägena — den lär ut, den skäller
           inte. */}
-      <div className="flex flex-col gap-1.5">
-        <RadioGroup
-          label="Räknas som"
-          orientation="horizontal"
-          value={villkor.modalitet}
-          onChange={(v) => onAndra({ ...villkor, modalitet: v as ModalitetsVal })}
-          isInvalid={villkor.modalitet === null && !orort}
-          errorMessage="Välj vad som räknas innan villkoret kan användas."
-        >
-          <Radio value="Utbildning">Utbildning</Radio>
-          <Radio value="Föreläsning">Föreläsning</Radio>
-          <Radio value="Båda">Båda</Radio>
-        </RadioGroup>
-        {/* Säkerhetsförklaringen ("Det finns material som är direkt
-            olämpligt …") är riven även här — Marcus dömde ut texten på
-            generatorsidan (varv 4) och motivet (design förklarar, inte
-            brödtext) är detsamma. Kravet självt består: ingen default,
-            felmarkering när bygget börjat utan modalitet. */}
-      </div>
 
       {/* FORMATET ÄR FÄLLT — det är en avgränsning, inte ett beslut, och en
           ständigt öppen rad per dimension hade gjort kortet dubbelt så högt.
@@ -2953,18 +2954,22 @@ function VillkorsKort({
 
       {/* MENINGEN, SIST. Modaliteten står i den varje gång — den läses utan
           att frågas om. Under den: vad villkoret expanderas till just nu. */}
-      <div className="flex flex-col gap-1 border-border border-t pt-3">
-        <p className="text-body">{villkorKlartext(villkor)}</p>
-        <p className="text-small text-text-muted">
-          {!villkorGiltigt(villkor)
-            ? 'Villkoret används inte förrän du valt vad som räknas.'
-            : traffade.length === 0
+      {/* MENINGEN VISAS FÖRST NÄR DEN FINNS (Marcus 2026-08-16: hellre
+          ingenting än "Ofullständigt villkor …" — meningen dyker upp när
+          valen är gjorda, samma princip som mallvyns steg 3). Radiogruppens
+          eget felmeddelande bär kravet tills dess. */}
+      {villkorGiltigt(villkor) && (
+        <div className="flex flex-col gap-1 border-border border-t pt-3">
+          <p className="text-body">{villkorKlartext(villkor)}</p>
+          <p className="text-small text-text-muted">
+            {traffade.length === 0
               ? 'Träffar ingen utbildning i basen i dag. Regeln är giltig - den fylls när utbildningen finns.'
               : `Träffar ${traffade.length} av ${parInfo.length} utbildningar: ${traffade
                   .map((p) => labelForPar(p.par))
                   .join(', ')}`}
-        </p>
-      </div>
+          </p>
+        </div>
+      )}
     </div>
   );
 }
