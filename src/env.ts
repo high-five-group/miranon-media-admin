@@ -18,6 +18,14 @@ export const env = createEnv({
     // den är satt. Lokal dev körs utan Sentry för att inte spam:a
     // Sentry-kvoten med utvecklings-fel.
     VITE_SENTRY_DSN: z.string().url().optional(),
+    // TASK-236 (218.3 e2e-svit-tid): valfri e2e-läges-override av
+    // startvärmningens hårda tak (DEFAULT_TIMEOUT_MS 9000,
+    // src/data/warmup/startvarmningen.ts). Sätts ENDAST av
+    // playwright.config.ts:s e2e-webServer (chromium-authenticated/setup) —
+    // aldrig av build:staging/build:production, så produktions-defaulten
+    // (9000ms, ADR-112 beslut 3) förblir orörd. Existerande DI-seam
+    // (`StartvarmningBeroenden.timeoutMs`), inte ett nytt gate-beteende.
+    VITE_E2E_WARMUP_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
   },
   runtimeEnv: import.meta.env,
   emptyStringAsUndefined: true,

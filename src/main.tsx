@@ -6,7 +6,7 @@ import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // Validera env-variabler vid uppstart — kraschar direkt om något saknas.
-import './env';
+import { env } from './env';
 
 import './styles/base.css';
 import './styles/tailwind.css';
@@ -189,7 +189,22 @@ function InnerApp() {
         setGate({ typ: 'redo' });
         return;
       }
-      varmningHandle.current = starta(queryClient, { dataSource });
+      // TASK-236 (218.3 e2e-svit-tid): e2e-läges timeoutMs-override via
+      // BEFINTLIG seam (StartvarmningBeroenden.timeoutMs, startvarmningen.ts).
+      // `env.VITE_E2E_WARMUP_TIMEOUT_MS` sätts ENDAST av playwright.config.ts:s
+      // e2e-webServer — `undefined` i varje riktig byggnad (dev/build:staging/
+      // build:production), så produktionens DEFAULT_TIMEOUT_MS (9000ms,
+      // ADR-112 beslut 3) är helt orörd. Ingen ny gate-semantik: samma
+      // seam testerna redan använder ("Tester sätter ett litet värde",
+      // startvarmningen.ts:s StartvarmningBeroenden-docblock), bara pluggad
+      // in en nivå högre upp (anroparen, precis där modulens eget filhuvud
+      // säger att DI-injektionen hör hemma).
+      varmningHandle.current = starta(queryClient, {
+        dataSource,
+        ...(env.VITE_E2E_WARMUP_TIMEOUT_MS !== undefined
+          ? { timeoutMs: env.VITE_E2E_WARMUP_TIMEOUT_MS }
+          : {}),
+      });
       varmningHandle.current.slutlofte.then(() => {
         varmtBeslutat.current = true;
         setGate({ typ: 'redo' });

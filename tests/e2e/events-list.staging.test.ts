@@ -326,7 +326,11 @@ test.describe('Event-listan till S72-facit (task-17.2)', () => {
   }) => {
     await mockEvents(page, EVENTS);
     await page.goto('/event');
-    await expect(eventItems(page)).toHaveCount(5);
+    // TASK-236 (218.3-regression): FÖRSTA renderingen på en fräsch, kall
+    // chromium-authenticated-kontext går genom hela warmup-gaten
+    // (ADR-112/main.tsx InnerApp) — default-timeouten (5000ms) räcker inte
+    // längre. Samma mönster som persist-cache.staging.test.ts:s fix.
+    await expect(eventItems(page)).toHaveCount(5, { timeout: 12_000 });
 
     // Rubriken reserverar EXAKT 2 rader (min-height = 2lh) på VARJE kort —
     // computed (L245): text-body 16px × 1.5 = 24px per rad → 48px.
@@ -402,7 +406,9 @@ test.describe('Event-listan till S72-facit (task-17.2)', () => {
     // dekor — prototypens kort-opacity drog texterna under AA (axe-fångst,
     // öppet bokförd facit-avvikelse i task-17.2).
     const installt = kort(page, 'Sommarkurs i närvaro');
-    await expect(slot(installt)).toHaveText('Inställt');
+    // TASK-236 (218.3-regression): se "slot-korten"-testets kommentar ovan
+    // (rad ~331) — samma warmup-gate-fördröjning på en fräsch kall kontext.
+    await expect(slot(installt)).toHaveText('Inställt', { timeout: 12_000 });
     expect(await slot(installt).evaluate((el) => getComputedStyle(el).color)).toBe(
       await resolvedTokenColor(page, '--mm-error'),
     );
@@ -485,7 +491,12 @@ test.describe('Event-listan till S72-facit (task-17.2)', () => {
     await page.goto('/event');
 
     // Riktiga kontroller DIREKT medan svaret är parkerat: h1 + period-toggeln.
-    await expect(page.getByRole('heading', { level: 1, name: 'Event' })).toBeVisible();
+    // TASK-236 (218.3-regression): rubriken monteras INTE förrän hela
+    // warmup-gaten (main.tsx InnerApp) släppt — parkeringen ovan gäller bara
+    // get-events, inte de fem övriga warmup-posterna mot RIKTIG staging.
+    await expect(page.getByRole('heading', { level: 1, name: 'Event' })).toBeVisible({
+      timeout: 12_000,
+    });
     const toggle = page.getByRole('radiogroup', { name: 'Period' });
     await expect(toggle).toBeVisible();
 
@@ -760,8 +771,10 @@ test.describe('Filtervyn på event-listan + skriv ut (task-17.7)', () => {
     await page.goto('/event');
 
     // Stängd ingång: "Visa filter", aria-expanded=false, ingen badge.
+    // TASK-236 (218.3-regression): se "slot-korten"-testets kommentar (rad
+    // ~331) — samma warmup-gate-fördröjning på en fräsch kall kontext.
     const knapp = filterKnapp(page);
-    await expect(knapp).toHaveAccessibleName('Visa filter');
+    await expect(knapp).toHaveAccessibleName('Visa filter', { timeout: 12_000 });
     await expect(knapp).toHaveAttribute('aria-expanded', 'false');
 
     // Öppning: aria-expanded=true + namnbytet till "Dölj filter";
