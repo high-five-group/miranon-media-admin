@@ -247,10 +247,10 @@ export function DokumentYta() {
       {/* GRANSKNINGSUNDERLAGET (AC #2): verklig fördelning + de tre fynden
           synliga PÅ YTAN, inte bara i agentrapporten. */}
       <MessageBox intent="info" title="Om datan i denna prototyp">
-        Bilagor-tabellen har inget dokumentklass-fält — klass A (uppladdad) och klass B
-        (event-mallat genererad) syns identiska här och kan inte skiljas åt i UI:t heller (se filens
-        docblock, Fynd 1). Listan nedan visar därför ALLA verkliga bilagor för valt event, oavsett
-        hur de uppstod.
+        Bilagor-tabellen har inget dokumentklass-fält. Klass A (uppladdad) och klass B (event-mallat
+        genererad) syns identiska här och kan inte skiljas åt i UI:t heller (se filens docblock,
+        Fynd 1). Listan nedan visar därför ALLA verkliga bilagor för valt event, oavsett hur de
+        uppstod.
       </MessageBox>
 
       {/* Formväxeln — à la prototyp-konventionen (ADR-103-lagren), egen
@@ -407,7 +407,7 @@ function DokumentGrupper({
     <div className="flex flex-col gap-6">
       <DetaljGrupp id="grupp-bilagor" rubrik="Bilagor för valt event">
         <GruppText>
-          Alla verkliga bilagor för eventet — uppladdade och event-mallat genererade syns identiska
+          Alla verkliga bilagor för eventet. Uppladdade och event-mallat genererade syns identiska
           (Fynd 1, filens docblock).
         </GruppText>
         {rader.length === 0 && (
