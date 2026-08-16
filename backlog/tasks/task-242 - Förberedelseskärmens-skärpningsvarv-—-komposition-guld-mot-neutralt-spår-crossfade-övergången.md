@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 09:34'
+updated_date: '2026-08-16 10:45'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,10 +21,10 @@ Marcus-kvittens 2026-08-16 på research-passets fyra domar (docs/research/forber
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Kompositionen centrerad som login-blocket (samma layoutankare, verifierat sida-vid-sida på renderad yta)
-- [ ] #2 Baren: guld-fyllnad mot neutralt spår via tokens — inga hårdkodade färger
-- [ ] #3 Crossfade splash→app med appens reveal-animation; reduced-motion ger direkt byte utan animation (båda lägena bevisade på renderad yta)
-- [ ] #4 Stegtexten kvar; ingen procent-siffra introducerad
+- [x] #1 Kompositionen centrerad som login-blocket (samma layoutankare, verifierat sida-vid-sida på renderad yta)
+- [x] #2 Baren: guld-fyllnad mot neutralt spår via tokens — inga hårdkodade färger
+- [x] #3 Crossfade splash→app med appens reveal-animation; reduced-motion ger direkt byte utan animation (båda lägena bevisade på renderad yta)
+- [x] #4 Stegtexten kvar; ingen procent-siffra introducerad
 <!-- AC:END -->
 
 ## Definition of Done

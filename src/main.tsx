@@ -91,6 +91,22 @@ function InnerApp() {
   const varmningHandle = useRef<StartvarmningHandle | null>(null);
   const varmtBeslutat = useRef(false);
 
+  // ═══ ÖVERGÅNGEN SPLASH → APP (skärpningsvarv TASK-242, forberedelseskarm-
+  // splash-branschmonster-2026-08-16.md § Rekommendation 4) ═══
+  // Avgörs EN gång, lazy, vid InnerApps allra första rendering (samma
+  // inline-mönster som `SlideToConfirm.tsx` — appen är rent CSR, ingen
+  // SSR-guard behövs): tillåter `prefers-reduced-motion: reduce` INTE
+  // rörelse ⇒ wrappern nedan appliceras ALDRIG någon animationsklass —
+  // "direkt byte utan animation" (Marcus-kravet), inte bara en tyst/inert
+  // klass som råkar inte matcha sitt media-villkor.
+  const [visaEntreanimation] = useState(
+    () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  // Flippar EN gång när entré-animationen faktiskt spelat klart
+  // (onAnimationEnd nedan) — under reduced motion körs ingen animation så
+  // detta förblir false för hela sessionen, vilket är korrekt (se ovan).
+  const [entreanimationKlar, setEntreanimationKlar] = useState(false);
+
   // **TRIGGER på BÅDA isAuthenticated OCH isLoading** för router.invalidate().
   // Race-condition utan isLoading-dep (upptäckt via K4.3 regression-test):
   //   1. Initial mount: AuthProvider state är { user: null, isLoading: true, isAuthenticated: false }
@@ -232,7 +248,64 @@ function InnerApp() {
     return <Forberedelseskarm klara={forlopp.klara} totalt={forlopp.totalt} />;
   }
 
-  return <RouterProvider router={router} context={{ auth }} />;
+  // ÖVERGÅNGEN — se klassdoc-blocket för `visaEntreanimation`/
+  // `entreanimationKlar` ovan för hela resonemanget. Wrappern är ALLTID
+  // närvarande (samma <div>, samma position i trädet) från och med FÖRSTA
+  // 'redo'-renderingen och framåt — <RouterProvider> byter ALDRIG
+  // strukturell position mellan en "wrappad" och en "owrappad" gren, vilket
+  // hade fått React att avmontera/återmontera hela routerträdet (och
+  // därmed nollställa all routerstate) vid övergångens slut. Endast
+  // KLASSNAMNET växlar (`motion-safe:animate-mm-tona-in` → inget), inte
+  // trädformen.
+  //
+  // `--animate-mm-tona-in`, INTE `--animate-mm-avsloj` — TVÅ RUNDOR CI-
+  // FÄLLDA innan rätt mekanism hittades (PR #1400, tests/webblasarbeteende/
+  // valkommen.test.ts:261+271, "GRÄNSEN: allt innehåll ryms utan vertikal
+  // scroll", 3/3 fällningar på BÅDA försöken — se `git log` på denna fil
+  // för de två reverterade stegen: (1) `min-h-dvh` på wrappern, (2) samma
+  // fällning KVARSTOD efter att `min-h-dvh` togs bort, vilket bevisade att
+  // höjden aldrig var boven). Rotorsak, isolerat käll-verifierad (fristående
+  // HTML-repro, 390×844, se PR-beskrivningen): `--animate-mm-avsloj`s
+  // `from`-keyframe (`transform: translateY(8px)`) räknas in i
+  // `document.documentElement.scrollHeight` när det ANIMERADE ELEMENTET
+  // spänner hela sidans höjd — mätt 852 px scrollHeight mot 844 px
+  // clientHeight vid animationens start, 0 px diff efter och 0 px diff
+  // genomgående med translateY borttagen. `/valkommen` (liksom `/login`)
+  // är byggd för att rymmas EXAKT — noll marginal — så den 8 px:s transienta
+  // visuella bleeden (som INTE ändrar layout-boxen, bara den POST-transform
+  // målade positionen) räcker för att tippa `scrollHeight > clientHeight`.
+  // `--animate-mm-tona-in` (`src/styles/tailwind.css`) är en OPACITY-ENDAST
+  // syskon-animation till `--animate-mm-avsloj` — samma 0,2 s ease-out,
+  // UTAN translateY-komponenten, vilket strukturellt inte KAN inflatera
+  // scrollHeight (opacity påverkar aldrig layout-/målningsgränser för
+  // overflow-beräkningen). `--animate-mm-avsloj` självt är ORÖRT och
+  // fortsätter bära sina fem befintliga auth-route-konsumenter — de är
+  // små, inline-innehållsblock där transienten aldrig träffar en sida
+  // redan vid sin höjdgräns; `mm-tona-in` är EN NY, SMALARE variant för
+  // just denna helsides-wrap-användning, inte en ersättning.
+  //
+  // KLASSEN STRIPPAS EFTER ANIMATIONEN (onAnimationEnd) — INTE valfritt,
+  // oberoende av vilken av de två animationerna som används: `both`-
+  // fill-mode HÅLLER kvar sista keyframens beräknade stil på elementet
+  // EFTER att animationen avslutats om klassen finns kvar. Detta har ingen
+  // praktisk effekt för `mm-tona-in` (sista keyframen är bara
+  // `opacity: 1`, redan CSS-defaulten), men mönstret hålls konsekvent och
+  // billigt att behålla.
+  //
+  // WRAPPERN BÄR INGEN EGEN HÖJD (varken `min-h-dvh` eller annat) —
+  // RouterProvider-innehållet (login.tsx/valkommen.tsx/AppShell) sätter
+  // redan sin egen höjd; wrappern ska aldrig lägga sig i den.
+  return (
+    <div
+      data-testid="app-entreanimation"
+      className={
+        visaEntreanimation && !entreanimationKlar ? 'motion-safe:animate-mm-tona-in' : undefined
+      }
+      onAnimationEnd={() => setEntreanimationKlar(true)}
+    >
+      <RouterProvider router={router} context={{ auth }} />
+    </div>
+  );
 }
 
 const rootEl = document.getElementById('root');

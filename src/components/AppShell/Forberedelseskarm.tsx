@@ -96,37 +96,72 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * varumärket och ger starkare igenkänning under en blockerande väntan än
  * den textlösa ikon-formen. `alt` är varumärkesnamnet, inte "logotyp"
  * (etablerad a11y-konvention för logotyper).
+ *
+ * ═══ LAYOUTANKARET — SAMMA MÖNSTER SOM LOGIN-BLOCKET (skärpningsvarv
+ * TASK-242, forberedelseskarm-splash-branschmonster-2026-08-16.md,
+ * Marcus-kvitterad punkt 1) ═══
+ *
+ * Ytterdiven centrerar EXAKT som `login.tsx`s `<main>` (`items-center
+ * justify-center`, samma responsiva padding-skala `p-4 sm:p-8 lg:p-12`).
+ * Logotyp → progressindikator → stegtext sitter i ett INRE
+ * `max-w-md flex-col items-center gap-8`-block — samma bredd/gap-kontrakt
+ * som login-blocket (`w-full max-w-md flex-col gap-8`, `login.tsx` rad
+ * ~227). `items-center` läggs till på blocket (login-blockets enda barn är
+ * ett `w-full`-formulär som inte behöver det) eftersom denna ytas innehåll
+ * är en centrerad KOLUMN, inte ett vänsterställt kort.
+ *
+ * EN AVSIKTLIG SKILLNAD mot login, disk-verifierad
+ * (`src/routes/dev/primitives.tsx` rad ~455–458): ytterdiven behåller
+ * `h-full min-h-full` (fyller SIN FÖRÄLDER) i stället för login.tsx:s
+ * `min-h-dvh` (fyller VIEWPORTEN). Komponenten har FYRA renderingskontexter
+ * (`main.tsx`s InnerApp, `__root.tsx`s Suspense-fallback,
+ * `_authenticated.tsx`s app-yta-gate, samt dev-showcasen
+ * `/dev/primitives`) — dev-showcasen begränsar MEDVETET varje instans till
+ * en `h-72 overflow-hidden`-inramning för att visa alla tre förloppslägen
+ * sida vid sida (kommentaren där: "I produktion fyller ytan hela
+ * viewporten ... här begränsas varje instans till en fast inramning"). Ett
+ * byte till `min-h-dvh` hade brutit ut ur den inramningen och gjort
+ * dev-showcasens tre instanser omöjliga att jämföra sida vid sida — precis
+ * det `h-full min-h-full` finns för att undvika. Login har ingen sådan
+ * multi-kontext-återanvändning (en enda route, en enda rendering), så
+ * `min-h-dvh` är säkert DÄR men inte HÄR.
  */
 export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
   const textId = useId();
   const besked = `${klara} av ${totalt} hämtningar klara`;
 
   return (
-    <div className="flex h-full min-h-full w-full flex-col items-center justify-center gap-8 bg-bg p-6">
-      <img src="/miranon-media-ordmarke.svg" alt="Miranon Media" className="h-auto w-48 sm:w-56" />
-      <div className="flex w-full max-w-xs flex-col items-center gap-4">
-        <ProgressBar
-          aria-labelledby={textId}
-          value={klara}
-          minValue={0}
-          maxValue={totalt}
-          valueLabel={besked}
-          className="w-full"
-        >
-          {({ percentage }) => (
-            <div className="h-2 w-full overflow-hidden rounded-full bg-(--mm-forberedelseskarm-bar-track) outline-border-strong contrast-more:outline print:outline">
-              <div
-                className="h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)"
-                style={{ width: `${percentage ?? 0}%` }}
-              />
-            </div>
-          )}
-        </ProgressBar>
-        {/* MARCUS-LÅST ORDALYDELSE — ändra aldrig ett tecken (PRD TASK-218,
-            ADR-112, ORDLISTA "Förberedelseskärmen"). */}
-        <p id={textId} className="text-center text-body text-text-secondary">
-          Förbereder ditt administrationsverktyg
-        </p>
+    <div className="flex h-full min-h-full w-full flex-col items-center justify-center bg-bg p-4 sm:p-8 lg:p-12">
+      <div className="flex w-full max-w-md flex-col items-center gap-8">
+        <img
+          src="/miranon-media-ordmarke.svg"
+          alt="Miranon Media"
+          className="h-auto w-48 sm:w-56"
+        />
+        <div className="flex w-full max-w-xs flex-col items-center gap-4">
+          <ProgressBar
+            aria-labelledby={textId}
+            value={klara}
+            minValue={0}
+            maxValue={totalt}
+            valueLabel={besked}
+            className="w-full"
+          >
+            {({ percentage }) => (
+              <div className="h-2 w-full overflow-hidden rounded-full bg-(--mm-forberedelseskarm-bar-track) outline-border-strong contrast-more:outline print:outline">
+                <div
+                  className="h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)"
+                  style={{ width: `${percentage ?? 0}%` }}
+                />
+              </div>
+            )}
+          </ProgressBar>
+          {/* MARCUS-LÅST ORDALYDELSE — ändra aldrig ett tecken (PRD TASK-218,
+              ADR-112, ORDLISTA "Förberedelseskärmen"). */}
+          <p id={textId} className="text-center text-body text-text-secondary">
+            Förbereder ditt administrationsverktyg
+          </p>
+        </div>
       </div>
       {/* Kanal 2 — polite, alltid monterad; se klassdoc-blocket ovan. */}
       <p role="status" aria-live="polite" className="sr-only">
