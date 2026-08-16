@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 13:20'
-updated_date: '2026-08-16 14:55'
+updated_date: '2026-08-16 16:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -70,4 +70,22 @@ DoD-GRINDAR (körda FÖR PUSH, faktiska exitkoder): npm run test:api 768/768 pas
 AC2 (Post-merge-staging HELT grön): EJ avbockad härifrån med avsikt — kräver post-merge-run-ID-belägg som bara existerar EFTER denna PRs landning. Orkestreraren äger CI-svansen; #1403 stängs mot det beviset.
 
 Rörda filer: src/main.tsx (AC3-fix) · src/routes/_authenticated.tsx (docblock i linje med AC3-fixen) · tests/e2e/aktivitetslogg-skarv.staging.test.ts (fällning 1) · tests/e2e/event-detail.staging.test.ts (fällning 2) · tests/e2e/persist-cache.staging.test.ts (fällning 3 diagnostik + fällning 4 fix).
+
+---
+
+VARV 4 (2026-08-16, post-merge run 31955429690 på merge-commit 417f4775 — AC2 uteblev): EXAKT EN kvarvarande fällning, Kallstart-testet (persist-cache.staging.test.ts:318), rött 3/3 (retry2), "Expected 6, Received 4" — de tre ANDRA fällningarna (1/2/4) höll i CI, bekräftar varv 3s fixar.
+
+PREMISS-PASS PÅ ORKESTRERARENS EGNA HYPOTESER (samtliga PRÖVADE mot faktiska bevis, inte antagna):
+- Hypotes "CI-timing exponerar en kvarvarande gren av TASK-227-racet": FALSIFIERAD — detta är Kallstart-testet (main.tsx InnerApp-vägen), inte TASK-227-gaten (_authenticated.tsx); de är strukturellt oberoende och varv 3s fix rör inte denna kodväg.
+- Hypotes "delad Airtable 5 req/s-budget (P4) utarmad av föregående test:api:staging (293 req, samma CI-jobb)": PRÖVAD OCH FALSIFIERAD på TVÅ sätt. (a) Laddade ner och extraherade trace.zip ur DEN FAKTISKA röda CI-körningen (run 31955429690, retry1) — nätverksloggen visar samtliga SJU EF-anrop (get-events/get-registrations/get-leads/get-waitlist/get-segments/get-mail-log/get-activity-log) landa med status 200 inom 1,6s totalt, INGEN 429, ingen fördröjning. (b) Reproducerade lokalt: full test:api:staging (293-294 req) omedelbart följt av samma fem EF-anrop warmupens batch2-4 gör — samtliga under 1,1s, två separata körningar. airtable-retry.ts:s 30s-429-golv (som hade förklarat en flerasekunders stagnation) syns ingenstans i bevisen.
+
+ROTORSAK (falsifierbar, evidensbaserad): kortets EGEN tidigare motivering för "totalt−1 är sista STABILA, garanterat observerbara steget" (filhuvudet, ursprungligen skriven för ATT förklara varför totalt/totalt ALDRIG är observerbart — samma mikrotask-resonemang som gate-släppet) höll inte EN batch tidigare än vad som antogs. Trace-beviset visar batch2 (waitlist+intresserade) och batch3 (maillog+segment) landa så tätt (delar av en sekund) att React kan batcha flera på-varandra-följande klara-inkrement — INKLUSIVE gate-släppet till redo — till EN enda paint. "totalt−1" hann då aldrig målas som en egen observerbar DOM-frame; testets poll fastnade på det SENAST lyckade avläsningsvärdet ("4") medan progressbar-elementet redan hunnit försvinna (gate redan redo, Hem redan fullt renderat — bekräftat i alla tre CI-retry-snapshotsens error-context.md).
+
+ÅTGÄRD (motiverad baseline-uppdatering, ej blind timeout-bump — samma 12s-budget oförändrad): assertionen godtar nu BÅDA de bevisat giltiga utfallen — sistaStabila OBSERVERAS, ELLER gaten har REDAN släppt (progressbaren borta, via count() — inte getAttribute som annars väntar in ett element som aldrig kommer). En äkta stagnation (varken nås ELLER släpper gaten inom 12s) fäller fortfarande — grinden bevarar sin skyddande förmåga. Filhuvudets docblock uppdaterat i linje.
+
+Verifierat lokalt: 3/3 gröna körningar av Kallstart-testet efter fixen, plus full persist-cache.staging.test.ts-regression (9 passed, 1 skipped — AC4 oförändrat). DoD-kvartetten grön: test:api 768/768, typecheck 0 fel, biome 0 fel, build grön.
+
+Diagnostik-artefakter (engångs, borttagna innan push): temporär per-item timing-loggning i startvarmningen.ts (reverterad till exakt ursprungsform, noll diff kvar) + två temporära debug-testfiler (tests/e2e/_debug-task244-varv4.staging.test.ts, tests/api/_debug-task244-varv4.staging.test.ts, båda raderade).
+
+Gren: fix/task-244-varv4-kallstart-batching-race, byggd från färskt origin/main (c86df19a, ≥ b0b28c8d).
 <!-- SECTION:NOTES:END -->

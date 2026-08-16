@@ -44,9 +44,15 @@ import { expect, type Page, type Route, test } from '../support/test-bas';
  * DOM-tillståndet "N av N" hinner därför strukturellt aldrig målas och är
  * overifierbart utifrån (varken CDP-poll eller `waitForFunction(...,{polling:
  * 'raf'})` kan fånga en frame som aldrig renderas till skärmen). Testet
- * bevisar i stället det sista STABILA, garanterat observerbara steget
- * (totalt−1, där den sista ensamma batchen fortfarande pågår mot RIKTIG
- * staging) plus det rena handslaget till ett färdigt Hem.
+ * bevisar i stället att baren HUNNIT MINST FRAM TILL totalt−1 (`sistaStabila`
+ * i testkroppen) — INTE längre en garanterat observerbar STABIL punkt (den
+ * distinktionen föll, task-244 varv 4, 2026-08-16: trace-bevis ur en faktisk
+ * röd CI-körning visade batch 2+3 kunna landa så tätt att React batchar
+ * flera `klara`-inkrement — inklusive gate-släppet — till EN paint, exakt
+ * samma mekanism som redan gällde "totalt/totalt", bara en batch tidigare)
+ * — assertionen godtar därför även att gaten redan hunnit släppa (bevisat
+ * MINST totalt−1 genom att ha gått hela vägen till klart) som giltigt utfall,
+ * plus det rena handslaget till ett färdigt Hem.
  *
  * Körs i chromium-authenticated-projektet. Mock-tester (AC 1–3) är
  * deterministiska via page.route (hem-svitens regex-kontrakt); AC 4 kör
@@ -305,17 +311,43 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     mocken.hall = false;
     await mocken.slappAlla();
 
-    // Baren FYLLS progressivt: batch 2 och batch 3 landar mot riktig staging
-    // med äkta nätverkspauser mellan (observerbart) upp till totalt−1 — sista
-    // batchen har bara EN datamängd (activityLog) kvar, och DESS
-    // klar-tillstånd (totalt/totalt) hinner strukturellt aldrig målas innan
-    // gaten släpper (se filhuvudets TASK-218.4-stycke för hela
-    // mikrotask-resonemanget) — totalt−1 är alltså det sista STABILA,
-    // garanterat observerbara steget.
-    const sistaStabila = String(Number(totaltStr) - 1);
+    // Baren FYLLS progressivt: batch 2 och batch 3 landar mot riktig staging.
+    //
+    // ROTORSAKAD BASELINE-ÄNDRING (task-244 varv 4, 2026-08-16) — kortets
+    // TIDIGARE antagande här ("totalt−1 är det sista STABILA, garanterat
+    // observerbara steget") är FALSIFIERAT med trace-bevis ur en faktisk röd
+    // CI-körning (run 31955429690, persist-cache.staging.test.ts:318 föll
+    // "Expected 6, Received 4" 3/3 försök). Nätverksspåret ur den körningens
+    // egen trace.zip visade samtliga SJU EF-anrop (batch 1–4) landa med
+    // status 200 inom 1,6s TOTALT — ingen 429, ingen nätverksfördröjning; den
+    // delade Airtable-budgeten (P4, airtable-constraints.md) och EF-lagrets
+    // 30s-429-backoff (airtable-retry.ts) BÅDA FALSIFIERADE som rotorsak
+    // (samma sekvens EF-anrop mätt direkt, lokalt, EFTER en full
+    // test:api:staging-körning: samtliga under 1,1s). Roten är i stället att
+    // batch 2 (waitlist+intresserade) och batch 3 (maillog+segment) kan landa
+    // SÅ TÄTT (millisekunder isär, samma mekanism filhuvudets egen
+    // TASK-218.4-stycke redan beskriver för DEN SISTA batchen) att React
+    // batchar flera på-varandra-följande `klara`-inkrement — inklusive
+    // gate-släppet — till EN paint. "totalt−1" är alltså INTE garanterat
+    // observerbart, exakt samma strukturella skäl som "totalt/totalt" redan
+    // var dokumenterat att aldrig vara det — det gäller bara EN batch
+    // tidigare än vad kortet ursprungligen antog. Fixen: godta BÅDA de
+    // giltiga, bevisade utfallen — värdet hann observeras ELLER gaten hann
+    // redan släppa (progressbaren är borta, `count()` — inte `getAttribute`,
+    // som annars väntar in ett element som aldrig kommer). En äkta stagnation
+    // (varken värdet NÅS eller gaten släpper) fäller fortfarande — ingen
+    // blind timeout-bump, samma 12s-budget som förut.
+    const sistaStabila = Number(totaltStr) - 1;
     await expect
-      .poll(async () => progressbar.getAttribute('aria-valuenow'), { timeout: 12_000 })
-      .toBe(sistaStabila);
+      .poll(
+        async () => {
+          if ((await progressbar.count()) === 0) return true; // gaten har redan släppt
+          const nu = await progressbar.getAttribute('aria-valuenow');
+          return nu !== null && Number(nu) >= sistaStabila;
+        },
+        { timeout: 12_000 },
+      )
+      .toBe(true);
 
     // Skärmen släpper: main monteras, Hem färdigt UTAN synliga skeletons.
     const main = page.locator('main#main');
