@@ -1,4 +1,5 @@
 import type { Route } from '@playwright/test';
+import { verbCopy } from '../../src/data/activityLog/verbCopy';
 import { expect, type Page, test } from '../support/test-bas';
 import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
@@ -80,7 +81,7 @@ const REQUEST_ID_EXTENSION_IRI = 'https://admin.miranon.dev/xapi/extensions/requ
 interface UtgaendeStatement {
   id: string;
   actor: { name: string; account: { name: string } };
-  verb: { display: Record<string, string> };
+  verb: { id: string; display: Record<string, string> };
   object: { definition: { name: Record<string, string> } };
   context: { extensions: Record<string, string> };
   timestamp: string;
@@ -259,10 +260,15 @@ test.describe('Aktivitetsloggens e2e-skarv (TASK-201.16): en anteckning → spal
     // aldrig hårdkodat här, samma disciplin som atgarder-betalningar.staging.
     // test.ts § AKTIVITETSLOGGEN).
     expect(statement.actor.name.length).toBeGreaterThan(0);
+    // Den LAGRADE displayen är frusen per rad (xAPI-arkivformatet, orört) —
+    // se `verbCopy.ts`s docstring. Testets FÖRVÄNTAN nedan får aldrig frysa
+    // presentationssträngen separat (TASK-235, regression i b924fb1b): den
+    // byggs UR presentationslagret, så en framtida copy-ändring i
+    // `verbCopy.ts` aldrig kan tysta detta test av misstag.
     expect(statement.verb.display['sv-SE']).toBe('antecknade');
     expect(statement.object.definition.name['sv-SE']).toBe(EVENT_NAMN);
 
-    const forvantadRad = `${statement.actor.name} antecknade · ${EVENT_NAMN}`;
+    const forvantadRad = `${statement.actor.name} ${verbCopy(statement.verb)} · ${EVENT_NAMN}`;
 
     // ── Tillbaka till Hem, KLIENT-SIDE (TabBar) — cachen var inaktiv och ──
     // invaliderad; detta är precis den återhämtning TASK-210 reparerade.
