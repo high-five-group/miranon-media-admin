@@ -37,9 +37,41 @@
  * reserverad plats även utan aktiv variant — höjd-hopp är förbjudna);
  * flyttbar via grip (pointer-drag ELLER piltangenter; Home/Escape
  * dockar; dubbelklick dockar).
+ *
+ * DATALÄGE-KNAPPEN — CYKEL, INTE BINÄR TOGGLE (TASK-226, Marcus-fynd
+ * 2026-08-16). Ursprungsformen togglade `?data=` mellan `'verklig'` och
+ * `null` — rätt för auth-prototypens mock-default/verklig-opt-in-semantik
+ * (samma kontrakt referens-ytan `/dev/prototyper` visar upp), men FEL för
+ * hem-prototypen: där ÄR `null` redan verklig data (konvergensvarv 1+2),
+ * så knappens båda lägen såg visuellt identiska ut och `tom`/`demo` nåddes
+ * bara via handskriven URL. `dataLagen`-propen generaliserar knappen till
+ * en N-stegs cykel (klick → nästa, wrap-around) med en SYNLIG badge för
+ * det aktiva läget (Marcus ska se läget, inte gissa) — men ENDAST när en
+ * konsument skickar FLER än två lägen. Default (propen utelämnad) är
+ * `DATA_LAGEN_DEFAULT`, samma tvåläges array som ger EXAKT samma
+ * aria-pressed/aria-label/DOM som innan denna ändring — auth-prototypens
+ * och `/dev/prototyper`s användning är därmed orörd, bevisat genom att
+ * badgen (och den utökade aria-label-formen) bara renderas när
+ * `dataLagen.length > 2`.
  */
 import { useQueryState } from 'nuqs';
 import { useRef, useState } from 'react';
+
+export type PrototypeDataLage = {
+  /** `?data=`-värdet detta läge sätter (`null` tar bort parametern). */
+  value: string | null;
+  /** Kort etikett — bär den synliga badgen (index > 0, se ovan) OCH den
+      utökade `aria-label`-formen när `dataLagen.length > 2`. */
+  label: string;
+};
+
+/** Legacy tvåläges-cykeln (ADR-074 beslut 1): mock/default (`null`) ↔
+    `verklig`. ORÖRD sedan innan TASK-226 — auth-prototypens och
+    `/dev/prototyper`s kontrakt. */
+const DATA_LAGEN_DEFAULT: readonly PrototypeDataLage[] = [
+  { value: null, label: 'Mock' },
+  { value: 'verklig', label: 'Verklig' },
+];
 
 /** Dragen position {x,y} i px; saknad post = dockad default-position. */
 const POS_KEY = 'mm-proto-switcher-pos';
@@ -81,6 +113,7 @@ export function PrototypeSwitcher({
   aliases = {},
   vyer = [],
   vyParam = 'vy',
+  dataLagen = DATA_LAGEN_DEFAULT,
 }: {
   variants: PrototypeVariant[];
   /** Legacy-/familje-URL-värden → variant-nyckel (se URL-kontraktet ovan). */
@@ -89,10 +122,20 @@ export function PrototypeSwitcher({
   vyer?: PrototypeVy[];
   /** URL-parametern vy-axeln äger. Default `vy`; auth-familjen kör `skarm`. */
   vyParam?: string;
+  /** Dataläge-knappens cykel (se docblocket ovan). Default: auth-
+      prototypens/`/dev/prototyper`s tvåläges mock/verklig-toggle, ORÖRD.
+      Familjer med fler datalägen (hem-prototypen: verklig/tom/demo)
+      skickar sin egen ordnade lista. */
+  dataLagen?: readonly PrototypeDataLage[];
 }) {
   const [variantParam, setVariant] = useQueryState('variant');
   const [dataMode, setDataMode] = useQueryState('data');
   const [vyValue, setVy] = useQueryState(vyParam);
+  // Index -1 (dataMode matchar inget läge i cykeln, t.ex. en handskriven
+  // okänd `?data=`-URL) faller till läge 0 vid klick: (-1 + 1) % length = 0.
+  const dataIdx = dataLagen.findIndex((l) => l.value === dataMode);
+  const aktivtDataLage = dataLagen[dataIdx] ?? dataLagen[0];
+  const flerDatalagen = dataLagen.length > 2;
   const [pos, setPos] = useState<Pos | null>(lasPos);
   // Positionen speglas i en ref (L300/L307) så persistensen sker SYNKRONT
   // i event-handlern — aldrig som side effect i setState-updatern.
@@ -187,9 +230,13 @@ export function PrototypeSwitcher({
         ? 'border border-primary bg-primary-tint font-semibold text-text'
         : 'border border-transparent text-text-secondary hover:bg-bg-subtle'
     }`;
-  const stegBadge = (steg: number) => (
+  // Generisk hörn-badge — GENERALISERAD (TASK-226) ur den ursprungliga
+  // `stegBadge` så variant-knapparnas stegnummer och Dataläge-knappens
+  // synliga lägesetikett (endast `flerDatalagen`, se ovan) delar EN
+  // implementation i stället för två nästan identiska.
+  const hjornBadge = (innehall: string | number) => (
     <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-text px-0.5 font-semibold text-[10px] text-text-inverse">
-      {steg}
+      {innehall}
     </span>
   );
 
@@ -269,18 +316,26 @@ export function PrototypeSwitcher({
           ) : (
             <span className="font-mono">{v.key}</span>
           )}
-          {stegBadge(v.steg)}
+          {hjornBadge(v.steg)}
         </button>
       ))}
       <button
         type="button"
         onClick={() => {
-          if (active) setDataMode(dataMode === 'verklig' ? null : 'verklig');
+          // Cykel med wrap-around; dataIdx -1 (okänt `?data=`-värde, t.ex.
+          // en handskriven URL) faller till läge 0: (-1 + 1) % length = 0.
+          if (active) setDataMode(dataLagen[(dataIdx + 1) % dataLagen.length].value);
         }}
-        aria-pressed={active != null && dataMode === 'verklig'}
+        aria-pressed={active != null && dataIdx > 0}
         aria-disabled={active == null}
-        aria-label={active == null ? 'Dataläge (kräver prototyp)' : 'Dataläge'}
-        className={`${knapp(active != null && dataMode === 'verklig')} ${
+        aria-label={
+          active == null
+            ? 'Dataläge (kräver prototyp)'
+            : flerDatalagen
+              ? `Dataläge: ${aktivtDataLage.label}`
+              : 'Dataläge'
+        }
+        className={`${knapp(active != null && dataIdx > 0)} ${
           active == null ? 'cursor-default opacity-40 hover:bg-transparent' : ''
         }`}
       >
@@ -297,6 +352,11 @@ export function PrototypeSwitcher({
           <path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9" />
           <path d="M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2" />
         </svg>
+        {/* Synlig lägesbadge — ENDAST när konsumenten skickar fler än två
+            datalägen (TASK-226-fixet). Auth-prototypens/`/dev/prototyper`s
+            legacy tvåläges-toggle renderar aldrig denna, DOM identisk med
+            innan fixet. */}
+        {flerDatalagen && active != null && dataIdx > 0 ? hjornBadge(aktivtDataLage.label) : null}
       </button>
       {vyer.length > 1 ? (
         <>

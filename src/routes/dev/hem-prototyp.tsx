@@ -3,7 +3,11 @@ import { useQueryState } from 'nuqs';
 import { VariantBento } from '@/components/dev/hem-prototyp/VariantBento';
 import { VariantKontroll } from '@/components/dev/hem-prototyp/VariantKontroll';
 import { VariantRo } from '@/components/dev/hem-prototyp/VariantRo';
-import { PrototypeSwitcher, type PrototypeVariant } from '@/components/dev/PrototypeSwitcher';
+import {
+  type PrototypeDataLage,
+  PrototypeSwitcher,
+  type PrototypeVariant,
+} from '@/components/dev/PrototypeSwitcher';
 import { useDashboardEvents, useDashboardRegistrations } from '@/components/hem/useDashboardData';
 
 export const Route = createFileRoute('/dev/hem-prototyp')({
@@ -47,6 +51,23 @@ const VARIANTER: PrototypeVariant[] = [
   { key: '3', label: 'V3 Bento (skönhet)', steg: 1, stegLabel: 'Steg 1 - divergens' },
 ];
 
+/**
+ * DATALÄGE-KNAPPENS CYKEL (TASK-226, Marcus-fynd 2026-08-16). Hem-
+ * prototypen bär TRE datalägen, inte switcherns legacy tvåläges
+ * mock/verklig-toggle: `null` ÄR redan verklig data här (konvergensvarv
+ * 1+2 byggde `?data=tom` och `?data=demo`, bara nåbara via handskriven
+ * URL innan detta fixet). `'verklig'` tas INTE med — värdet är oanvänt av
+ * VariantRo.tsx och hade bara varit ett fjärde, meningslöst steg i cykeln.
+ * V2/V3 läser inte `?data=` alls (orörda, TASK-226-scope) — knappen
+ * ändrar URL:en även när de är aktiva, precis som den redan gjorde för
+ * `'verklig'`-läget innan detta fixet; ingen regression.
+ */
+const DATA_LAGEN: PrototypeDataLage[] = [
+  { value: null, label: 'Verklig' },
+  { value: 'tom', label: 'Tom' },
+  { value: 'demo', label: 'Demo' },
+];
+
 function IngenSkarpVy() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-bg-subtle p-6">
@@ -88,7 +109,7 @@ function HemPrototypPage() {
         <IngenSkarpVy />
       )}
 
-      <PrototypeSwitcher variants={VARIANTER} />
+      <PrototypeSwitcher variants={VARIANTER} dataLagen={DATA_LAGEN} />
     </>
   );
 }
