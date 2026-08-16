@@ -3,10 +3,10 @@ id: TASK-242
 title: >-
   Förberedelseskärmens skärpningsvarv — komposition, guld mot neutralt spår,
   crossfade-övergången
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 09:34'
-updated_date: '2026-08-16 10:45'
+updated_date: '2026-08-16 11:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,3 +34,9 @@ Marcus-kvittens 2026-08-16 på research-passets fyra domar (docs/research/forber
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #1400 (merge 475ebcbf, 2026-08-16) genom merge-kön efter TVÅ CI-fångade varv: (1) min-h-dvh-staplingen, (2) den verkliga mekanismen — reveal-animationens translateY(8px) inflaterar dokumentets scrollhöjd på helsides-element (isolerat mätt 852 vs 844 px) → ny opacity-ren tona-in-animation för app-entrén, original-animationen orörd för sina fem konsumenter, TabBar-transform-risken eliminerad helt. AC1 komposition = login-blockets mått · AC2 guld-mot-neutralt-spår var redan korrekt (explicit verifierat, ingen ändring) · AC3 crossfade bevisad i båda motion-lägena · AC4 stegtext orörd utan procent. Residual: Marcus spot-check av övergången på skarp autentiserad yta (bokfört i paus-handoffen).
+<!-- SECTION:FINAL_SUMMARY:END -->
