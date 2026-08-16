@@ -12,6 +12,8 @@ import {
   type BevakningRad,
   belaggningAndel,
   bevakningar,
+  bevakningDagarText,
+  bevakningStatusText,
   dagarKvarText,
   dagsStart,
   eventsById,
@@ -547,10 +549,9 @@ function kapitalisera(s: string): string {
  * — fokuserbar, ser aktiv ut, klicket gör bokstavligen ingenting.
  */
 function BevakningsRadItem({ rad }: { rad: BevakningRad }) {
-  const status =
-    rad.lage === 'ej-skickad'
-      ? 'eventinfo inte skickad'
-      : `${rad.antalUtanEventinfo} nya deltagare saknar eventinfo`;
+  // [TASK-226 konvergens-varv 4, AC 1] Statuscopyn kommer nu ur DEN delade
+  // källan (`data.ts`) i stället för en lokal ternary — se dess docblock.
+  const status = bevakningStatusText(rad);
   return (
     <li>
       <button
@@ -562,9 +563,17 @@ function BevakningsRadItem({ rad }: { rad: BevakningRad }) {
         // hover-form.
         className="text-(color:--mm-navcard-text) flex min-h-12 w-full items-center gap-3 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-(--mm-navcard-border-contrast)"
       >
-        <span className="min-w-0 flex-1 truncate text-body">
+        {/* [TASK-226 konvergens-varv 4, AC 2] `line-clamp-2` i stället för
+            `truncate` — en lång rad bryter till max två rader i stället för
+            att klippas med ellipsis mitt i ett ord (Marcus-fyndet
+            "3 nya deltagare saknar e…", 2026-08-16). Ingen `min-h-[2lh]`:
+            till skillnad från EventCard.tsx:s uniforma kort-slotar (som
+            MÅSTE reservera 2 rader för att hålla kortgriden jämn) är detta
+            en enkel vertikal lista — normalraden förblir kompakt, bara
+            undantagsraden växer (AC 2: "designat, inte en bugg"). */}
+        <span className="line-clamp-2 min-w-0 flex-1 text-body">
           <span className="font-semibold">{rad.eventNamn}</span>
-          {` · startar om ${rad.dagarTillStart} dagar · ${status}`}
+          {` · ${bevakningDagarText(rad.dagarTillStart)} · ${status}`}
         </span>
         <ChevronRight
           aria-hidden="true"

@@ -295,6 +295,40 @@ export interface BevakningRad {
 }
 
 /**
+ * [TASK-226 konvergens-varv 4, AC 1] Bevakningsradens statuscopy — EN delad
+ * källa PER BEVAKNINGSTYP i stället för en lokal ternary i `VariantRo.tsx`,
+ * så ett kommande facit kan låsa strängarna på ETT ställe. Marcus-
+ * granskning 2026-08-16: den gamla "N nya deltagare saknar eventinfo"
+ * klipptes med ellipsis i demo-läget ("3 nya deltagare saknar e…") — en
+ * klippt mening är obegriplig för Lotta (Gunilla-principen). Mönster:
+ * behåll betydelsen, stryk utfyllnadsordet "nya" — canon-ordet "eventinfo"
+ * (ORDLISTA.md, aldrig "deltagarinfo" i UI-text) rörs inte.
+ */
+export function bevakningStatusText(
+  rad: Pick<BevakningRad, 'lage' | 'antalUtanEventinfo'>,
+): string {
+  return rad.lage === 'ej-skickad'
+    ? 'Eventinfo saknas'
+    : `${rad.antalUtanEventinfo} deltagare saknar eventinfo`;
+}
+
+/**
+ * [TASK-226 konvergens-varv 4, AC 1] Live-mätning mot en riktig browser
+ * (375 px) visade att den gamla frasen "startar om N dagar" ensam redan åt
+ * upp ~19 tecken av bevakningsradens ~33-teckens enradsbudget — kortare
+ * copy på STATUS-delen räckte inte, hela raden (namn + dagar + status)
+ * måste rymmas. Samma tre textformer `dagarKvarText` (ovan, "Nästa event"-
+ * heroets facit) redan bär, men tar `BevakningRad.dagarTillStart` — ett
+ * REDAN avrundat/clampat tal — direkt i stället för rå ms (samma
+ * dubblerings-mönster som `EventCard.tsx`s egen lokala `dagarKvarText`-kopia
+ * redan etablerar: en 3-radig vy-lokal formatterare, ingen delad modul).
+ */
+export function bevakningDagarText(dagarTillStart: number): string {
+  if (dagarTillStart <= 0) return 'Idag';
+  return dagarTillStart === 1 ? '1 dag kvar' : `${dagarTillStart} dagar kvar`;
+}
+
+/**
  * [TASK-226 konvergensvarv 2, punkt 1] Bevakningsraden (S102 Del 10 beslut
  * 2–4). Trigger: `idag ≥ start − 21 dagar` OCH minst en bekräftad anmälan
  * saknar Deltagarinfo-stämpeln (definition B — fångar eftersläntrare, inte
