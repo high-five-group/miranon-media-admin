@@ -216,22 +216,43 @@ function InnerApp() {
     // (1) utan session finns inget att värma (EF-anropen kräver auth);
     // (2) auth-ytorna nås även MED session — inbjudnings- och recovery-
     // tokens skapar en (valkommen/nytt-losenord/passkey) — och får aldrig
-    // skymmas av Förberedelseskärmen mitt i sitt flöde. `varmtBeslutat`
-    // sätts MEDVETET INTE här — TASK-227 löser den EFTERFÖLJANDE
-    // avgränsningen (skärmen direkt EFTER ett login-klick) med en HELT
-    // FRISTÅENDE gate i `src/routes/_authenticated.tsx` i stället för att
-    // denna effekt görs router-medveten: den layout-routen monteras per
-    // konstruktion ALDRIG förrän `<RouterProvider>` gör det (dvs. EFTER att
-    // DENNA gate redan släppt), så de två gaterna kan strukturellt aldrig ha
-    // en startvärmning i flykten samtidigt — `arCacheVarm()` (delat predikat,
-    // startvarmningen.ts) är den enda samordning som behövs; ingen delad
-    // "redan avgjort"-flagga. Se _authenticated.tsx:s docblock för hela
-    // resonemanget, inklusive varför login.tsx (routaEfterLyckadInloggning)
-    // MEDVETET INTE rördes (racear mot denna effekts router.invalidate(),
-    // se VARV 4-fångsten ovan).
+    // skymmas av Förberedelseskärmen mitt i sitt flöde.
+    //
+    // `varmtBeslutat.current = true` SÄTTS HÄR (rättat, task-244 — stod
+    // tidigare "MEDVETET INTE", en falsifierad premiss): utan den satt
+    // återkommer denna effekt EN GÅNG TILL när `auth.isAuthenticated` flippar
+    // (aktiv inloggning) — och då är `gate.typ` redan 'redo' (RouterProvider
+    // redan monterad från BYPASS-beslutet ovan). Prenumerations-callbacken
+    // längre ned (`nuvarande.typ === 'redo' ? nuvarande : {typ:'varmar',...}`)
+    // förhindrar visserligen att gaten NÅGONSIN visar EN EGEN andra skärm i
+    // det läget — men `starta()` hade ÄNDÅ anropats OSYNLIGT i bakgrunden,
+    // och dess FÖRSTA `qc.ensureQueryData(...)`-anrop registrerar en Query i
+    // cachen SYNKRONT (innan fetchen ens settlar). `_authenticated.tsx`:s
+    // EGEN `arCacheVarm()`-koll (TASK-227-gaten, dess lazy `useState`-
+    // initierare) kan då hinna se en "varm" cache trots att INGEN riktig
+    // data hunnit landa — och tystnar HELT, utan att någonsin visa SIN
+    // Förberedelseskärm. Resultatet mätt (task-244, persist-cache.staging.
+    // test.ts:594 "kall enhet"): H1 "Hej Lotta" renderas direkt, Hems EGNA
+    // per-widget-frågor (Nästa event/Obetalda/Nya anmälningar) hamnar var
+    // för sig i sitt normala kalla laddläge i stället för att gå via den
+    // koordinerade splashen — den bakomliggande orsaken till att kortets
+    // egen kommentar (nu korrigerad) påstod att "de två gaterna kan
+    // strukturellt aldrig ha en startvärmning i flykten samtidigt": det
+    // påståendet höll bara för InnerApps ALLRA FÖRSTA beslut, inte för en
+    // andra invokering efter att `gate.typ` redan är 'redo'. Med
+    // `varmtBeslutat.current` satt HÄR gör denna effekt sitt beslut EXAKT EN
+    // gång per sidladdning (matchar `starta()`-kontraktets egen "en gång per
+    // auth-resolution", ADR-112 beslut 5) — en aktiv inloggning på en
+    // auth-yta lämnar HELA varm/kall-avgörandet åt `_authenticated.tsx`:s
+    // HELT FRISTÅENDE gate (TASK-227), precis som denna kommentar redan sa
+    // var AVSIKTEN. Se _authenticated.tsx:s docblock för hela resonemanget,
+    // inklusive varför login.tsx (routaEfterLyckadInloggning) MEDVETET INTE
+    // rördes (racear mot denna effekts router.invalidate(), se VARV
+    // 4-fångsten ovan).
     const AUTH_YTOR = ['/login', '/glomt-losenord', '/nytt-losenord', '/passkey', '/valkommen'];
     const paAuthYta = AUTH_YTOR.some((p) => window.location.pathname.startsWith(p));
     if (!auth.isAuthenticated || paAuthYta) {
+      varmtBeslutat.current = true;
       setGate({ typ: 'redo' });
       return;
     }

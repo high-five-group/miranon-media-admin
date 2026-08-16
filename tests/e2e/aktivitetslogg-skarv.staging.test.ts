@@ -290,8 +290,26 @@ test.describe('Aktivitetsloggens e2e-skarv (TASK-201.16): en anteckning → spal
     await expect(page.getByRole('heading', { level: 1, name: 'Aktivitetshistorik' })).toBeVisible();
 
     // AC #2 (andra läsytan): SAMMA post, rätt aktör/sammanfattning/tid.
-    await expect(historikvyn(page).getByText(forvantadRad)).toBeVisible();
-    await expect(historikvyn(page).getByText('nyss')).toBeVisible();
+    //
+    // ROTORSAKAD BASELINE-ÄNDRING (task-244, 2026-08-16, disk-verifierad via
+    // error-context.md): `forvantadRad` (rad ~271) byggs för SPALTENS form
+    // (SenasteAktivitet.tsx — aktör+händelse+·+objekt i EN sammanhängande
+    // <span>, TASK-235s facit) — men historikvyns rad (AktivitetsRad,
+    // AktivitetsHistorik.tsx, S106-passets DOKUMENTERADE, avsiktliga form)
+    // delar aktör+händelse och tid+objekt på TVÅ SEPARATA <p>-element ("tiden
+    // som rubrik ... + objekt dämpat efter mittpunkten"). `forvantadRad` kan
+    // därför STRUKTURELLT ALDRIG matcha en enda historikvy-nod — bekräftat:
+    // error-context.md visade raden som två separata paragrafer ("Lotta
+    // skrev en anteckning" / "nyss · Loggskarvprövning"). Detta är den ENDA
+    // av kortets fyra fällningar som INTE är TASK-236-relaterad (task-236
+    // flaggade den redan som "R1, task-235:s mål, ej rört där") — bara
+    // täckt fel-form ärvd av task-235, som verifierade forvantadRad ENDAST
+    // mot SenasteAktivitet.tsx:s renderingskedja (kortets egna
+    // Implementation Notes), aldrig mot historikvyns.
+    await expect(
+      historikvyn(page).getByText(`${statement.actor.name} ${verbCopy(statement.verb)}`),
+    ).toBeVisible();
+    await expect(historikvyn(page).getByText(`nyss · ${EVENT_NAMN}`)).toBeVisible();
 
     // AC #3 (andra läsytan): innehållet syns fortfarande aldrig.
     await expect(page.getByText(NOTE_TEXT)).toHaveCount(0);

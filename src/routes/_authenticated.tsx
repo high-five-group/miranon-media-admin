@@ -82,17 +82,28 @@ export const Route = createFileRoute('/_authenticated')({
  * `arCacheVarm()` (delat, `startvarmningen.ts`, TASK-227) är EXAKT samma
  * predikat InnerApps egen gate använder. Den läser query-cachens FAKTISKA
  * innehåll VID MOUNT — inte en delad "redan avgjort"-flagga. Det håller av
- * två skäl: (1) InnerApps EGEN startvärmning (om den någonsin körs) hinner
- * ALLTID settla FÖRE `<RouterProvider>` monteras (render-gaten i main.tsx
- * blockerar montering på `gate.typ !== 'redo'`), så denna layout kan
- * strukturellt ALDRIG montera medan en startvärmning redan pågår någon
- * annanstans — ingen kapplöpning att samordna. (2) Predikatet ger
- * "tyst-vid-varmt" (ADR-112 beslut 2) korrekt ÄVEN för det ovanliga fallet
- * en session LÖPER UT (inte en explicit utloggning — den tömmer cachen via
- * `queryClient.clear()`, ADR-072 skyddsräcke 1) medan den PERSISTERADE
- * query-cachen fortfarande är varm: användaren loggar in igen, denna gate
- * ser en varm cache och förblir tyst — utan att känna till VARFÖR den är
- * varm.
+ * två skäl: (1) InnerApp gör sitt varm/kall-BESLUT (och därmed sitt ENDA
+ * `starta()`-anrop) EXAKT EN gång per sidladdning — `varmtBeslutat.current`
+ * sätts numera ÄVEN på auth-yta-bypass-grenen (main.tsx, rättat task-244;
+ * stod tidigare "MEDVETET INTE"). INNAN den rättningen kunde InnerApps egen
+ * warmup-effekt återkomma en andra gång efter en AKTIV inloggning (samma
+ * `auth.isAuthenticated`-flipp denna layout själv reagerar på) och starta EN
+ * OSYNLIG andra startvärmning i bakgrunden — `gate.typ` var redan 'redo' då
+ * (bypass-beslutet höll RouterProvider monterad), så INGEN egen skärm syntes
+ * från InnerApp, men dess FÖRSTA `ensureQueryData`-anrop registrerar en Query
+ * i cachen SYNKRONT, före fetchen ens settlar — vilket kunde hinna göra
+ * `arCacheVarm()` HÄR sant innan denna gates lazy `useState`-initierare ens
+ * körde, och tystade HELA denna gate i onödan (mätt: `main#main` monterat
+ * direkt, Hems egna per-widget-frågor i sitt normala kalla laddläge i stället
+ * för den koordinerade splashen). Med rättningen gör InnerApp ALDRIG ett
+ * andra `starta()`-anrop, så denna layout kan nu verkligen ALDRIG montera
+ * medan en startvärmning pågår någon annanstans — ingen kapplöpning att
+ * samordna. (2) Predikatet ger "tyst-vid-varmt" (ADR-112 beslut 2) korrekt
+ * ÄVEN för det ovanliga fallet en session LÖPER UT (inte en explicit
+ * utloggning — den tömmer cachen via `queryClient.clear()`, ADR-072
+ * skyddsräcke 1) medan den PERSISTERADE query-cachen fortfarande är varm:
+ * användaren loggar in igen, denna gate ser en varm cache och förblir tyst —
+ * utan att känna till VARFÖR den är varm.
  *
  * ── STRICTMODE ──
  *

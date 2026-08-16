@@ -474,13 +474,33 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     page,
   }) => {
     const release = await mockEvent(page, eventDetail(), { manualRelease: true });
+    // ROTORSAKAD (task-244, 2026-08-16, error-context.md-bevisad): `mockEvent()`
+    // registrerar internt `mockValjarLista(page, VALJAR_LISTA)` — och
+    // VALJAR_LISTA:s FÖRSTA rad har `id: EVENT_ID` (rad ~61). Warmup
+    // (`startvarmningen.ts`s WARMUP_ITEMS) värmer `queryKeys.events.list` via
+    // SAMMA mockade get-events-endpoint INNAN EventDetail mountas —
+    // `EventDetail.tsx`s `placeholderData` (rad ~76-77) hittar då DIREKT en
+    // matchande listpost och `isPending` blir false OMEDELBART, helt oavsett
+    // hur länge `get-event` (singular, denna testets manualRelease-mock)
+    // hålls tillbaka. Skeletonen hoppas därmed HELT över — den gamla
+    // TASK-236-kommentaren ("samma warmup-gate-fördröjning") var fel
+    // rotorsak; 218.3-gaten var redan neutraliserad av varv 2:s 50ms-default,
+    // problemet var placeholderData, inte gate-timing. Fixen: denna ENDA
+    // testet får en get-events-lista UTAN sidans eget event (Playwright kör
+    // routes i OMVÄND registreringsordning — senast registrerad vinner, se
+    // `helpers/valjar-lista.ts`), så placeholderData äkta uteblir och
+    // `isPending` stannar true tills `release()` anropas. `valtEvent`-proppen
+    // (EventDetail→EventValjare) kommer ändå från get-event-svaret, inte
+    // listan, så h1-checken efter `release()` nedan är opåverkad.
+    await mockValjarLista(
+      page,
+      VALJAR_LISTA.filter((rad) => rad.id !== EVENT_ID),
+    );
     await page.goto(`/event/${EVENT_ID}`);
 
     // Scopa till skeletonens status-region (OfflineIndicator bär också role=status).
-    // TASK-236 (218.3-regression): se kommentaren i testet ovan — samma
-    // warmup-gate-fördröjning gäller innan SKELETONEN ens hinner monteras.
     const status = page.getByRole('status').filter({ hasText: 'Laddar event…' });
-    await expect(status).toHaveAttribute('aria-busy', 'true', { timeout: 12_000 });
+    await expect(status).toHaveAttribute('aria-busy', 'true');
     // Besked endast sr-only — ingen synlig "Laddar…"-textrad (Lugnt laddläge).
     const synligLaddtext = page.getByText('Laddar event…');
     await expect(synligLaddtext).toHaveClass(/sr-only/);
