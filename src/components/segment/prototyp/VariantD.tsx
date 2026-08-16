@@ -3320,6 +3320,51 @@ function popcount(mask: number): number {
 }
 
 /**
+ * ETT STEG SOM SEKTION (S104 varv 2, Marcus GO 2026-08-16). Ärver EXAKT
+ * verkstadens sektionsgrammatik — `<section aria-labelledby>` + `<h2>` i
+ * `font-semibold text-lg` + hjälptext i `text-small text-text-muted`, `px-4`,
+ * `gap-2` (`KonjunktLista`/`VillkorsSektion` ovan) — vilket i sin tur är
+ * eventsidans `DetaljGrupp`-grammatik. Sidan blir därmed visuellt släkt med
+ * både verkstaden bredvid och detaljvyerna, utan en enda ny klass eller token.
+ *
+ * NUMRET ÄR TEXT, INTE EN GLYF. ①②③ är dekorativa unicode-tecken vars
+ * uppläsning skiljer sig mellan skärmläsare (allt från "circled digit one"
+ * till tystnad); "Steg 1." läses likadant överallt och är dessutom samma
+ * numrerings-språk som verkstadens egna etiketter ("Villkor 1", "Grupp 1 ·
+ * villkor 1"). Numret ligger i rubrikens egen text — inte i ett `::before` —
+ * så det följer med i skärmläsarens rubriklista.
+ *
+ * VILANDE STEG SYNS, OCH DET ÄR HELA POÄNGEN. Ett steg som ännu inte är
+ * åtkomligt renderar sin rubrik och en ledtext som säger vad som saknas,
+ * aldrig ingenting: hela vägen ska synas från första sekunden. Ledtexten
+ * ERSÄTTER innehållet i stället för att gråtona det — en `opacity`-dämpad
+ * kontroll är fortfarande fokuserbar och läses fortfarande upp, medan en
+ * ledtext säger sanningen ("gör steget före först") för alla.
+ */
+function StegSektion({
+  nummer,
+  rubrik,
+  vilar,
+  children,
+}: {
+  nummer: number;
+  rubrik: string;
+  /** Satt när steget ännu inte är åtkomligt — ledtexten ersätter `children`. */
+  vilar?: string;
+  children: React.ReactNode;
+}) {
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className="flex min-w-0 flex-col gap-2 px-4">
+      <h2 id={id} className="font-semibold text-lg">
+        <span className="text-text-muted">Steg {nummer}.</span> {rubrik}
+      </h2>
+      {vilar === undefined ? children : <p className="text-small text-text-muted">{vilar}</p>}
+    </section>
+  );
+}
+
+/**
  * PARTITION-GENERATORN SOM EGEN YTA (S104 Del 3, beslut "partition som
  * generator"). Samma verkstads-princip som `RegelVerkstad`: den kostar klick
  * och tar plats, men bor inte på samma skärm som listan.
@@ -3327,6 +3372,12 @@ function popcount(mask: number): number {
  * ORDNINGEN ÄR AVSIKTLIG: modaliteten väljs FÖRST, kurserna härleds sedan ur
  * den (`harledKursAtomer`) — så en atom-chip betyder alltid "den här kursen,
  * räknad som den modalitet du redan valt", aldrig en tyst gissning.
+ *
+ * TRE SYNLIGA STEG (varv 2). Formen före detta varv öppnade med en ensam
+ * radiogrupp och en död "Skapa 0 segment"-knapp; utbildningsvalet och
+ * förhandsvisningen dök upp stegvis utan förvarning. Nu står alla tre stegen
+ * på sidan från mount — de som väntar med en ledtext — och knappen bär ett
+ * tal först när talet betyder något.
  */
 function DelaUppIGrupper({
   parInfo,
@@ -3340,7 +3391,6 @@ function DelaUppIGrupper({
   const rubrikRef = useRef<HTMLHeadingElement>(null);
   useVyFokus(rubrikRef, true);
   const dataSource = useDataSource();
-  const forhandsvisningRubrikId = useId();
 
   const [modalitet, setModalitet] = useState<ModalitetsVal | null>(null);
   const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
@@ -3395,6 +3445,35 @@ function DelaUppIGrupper({
   const befolkade = kombinationer.filter((k) => k.antal > 0);
   const kanSkapa = visaForhandsvisning && allaSvarat && !nagotFel && befolkade.length > 0;
 
+  /* TÄCKNINGEN ÄR EN REN SUMMA, INTE EN UPPSKATTNING. Varje person bär exakt
+     EN bitmask (`raknaKombinationer` slår ihop personens alla atom-träffar
+     till ett tal per person-id), så en person kan omöjligt räknas i två
+     kombinationer — summan över de befolkade är därför antalet UNIKA personer
+     som hamnar i någon grupp. Den som inte gått någon av de valda
+     utbildningarna har mask 0 och finns inte i räkningen alls; det är också
+     rätt, för hen får inget av de här mailen. */
+  const tackta = befolkade.reduce((summa, k) => summa + k.antal, 0);
+  const tomma = kombinationer.length - befolkade.length;
+
+  /* STEG 3:s ENDA LIVE-REGION bär hela stegets tillstånd — vilande, räknande,
+     mätt-men-tomt eller klart — i stället för att varje läge monterar sin egen
+     rad. Skälet står i `SegmentKort` (antal-raden): en `aria-live` som monteras
+     SAMTIDIGT som sin text annonseras inte, så regionen måste finnas hela
+     tiden och bara byta innehåll. Den gamla formen monterade sin summering
+     inuti `allaSvarat`-grenen och led av precis det felet. */
+  const steg3Text =
+    modalitet === null
+      ? 'Välj först vilka som räknas med.'
+      : valdaAtomer.length < 2
+        ? 'Välj minst två utbildningar, så visas grupperna här.'
+        : nagotFel
+          ? ''
+          : !allaSvarat
+            ? 'Räknar grupperna…'
+            : befolkade.length === 0
+              ? 'Ingen har någon av de här kombinationerna än.'
+              : `${befolkade.length} ${befolkade.length === 1 ? 'grupp skapas' : 'grupper skapas'} · ${tackta} ${personform(tackta)} täcks`;
+
   function skapa() {
     if (!kanSkapa || modalitet === null) return;
     const nu = Date.now();
@@ -3411,133 +3490,180 @@ function DelaUppIGrupper({
         <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
           Dela upp i grupper
         </h1>
+        {/* INGRESSEN SÄGER NYTTAN, INTE PARTITIONEN (Marcus 2026-08-16).
+            Den gamla underrubriken beskrev matematiken - "EXAKT en grupp ...
+            precis hens egen kombination" - vilket är sant men svarar på en
+            fråga Lotta inte ställt. Den som står här undrar varför hon skulle
+            vilja dela upp någonting alls; löftet "ett mail per person" är
+            svaret, och det bär partitionens garanti på köpet. */}
         <p className="text-small text-text-muted">
-          Välj de utbildningar du vill dela upp mellan. Varje person hamnar i EXAKT en grupp - den
-          som motsvarar precis hens egen kombination av utbildningar, aldrig fler.
+          Vill du skriva olika mail till olika delar av publiken? Här delas den upp åt dig: var och
+          en hamnar i exakt en grupp och får exakt ett mail.
         </p>
       </header>
 
-      <div className="flex flex-col gap-6 px-4">
+      <div className="flex flex-col gap-6">
         {/* SAMMA FORM + SÄKERHETSMOTIVERING SOM `VillkorsKort`. Ingen
             röd/ogiltig-styling här: till skillnad från ett villkor mitt i
             byggnad finns det inget FÖRE modaliteten att röra vid - så det
             "orörda" läget varar hela tiden fram till första valet, och en röd
             ram hade skällt på någon som ännu inte gjort något. */}
-        <div className="flex flex-col gap-1.5">
-          <RadioGroup
-            label="Räknas som"
-            orientation="horizontal"
-            value={modalitet}
-            onChange={(v) => setModalitet(v as ModalitetsVal)}
-          >
-            <Radio value="Utbildning">Utbildning</Radio>
-            <Radio value="Föreläsning">Föreläsning</Radio>
-            <Radio value="Båda">Båda</Radio>
-          </RadioGroup>
-          {modalitet === null && (
+        <StegSektion nummer={1} rubrik="Vilka räknas med?">
+          <div className="flex flex-col gap-1.5">
+            {/* ETIKETTERNA BÄR SUBJEKT (varv 2). "Utbildning"/"Föreläsning"
+                namngav formatet på ett event; frågan steget ställer handlar om
+                PERSONER. De interna värdena är oförändrade `ModalitetsVal` -
+                bara orden på skärmen är nya. Gruppetiketten följde med av
+                samma skäl: "Räknas som" var kongruent med format-orden, inte
+                med de här. */}
+            <RadioGroup
+              label="Räknas med"
+              orientation="horizontal"
+              value={modalitet}
+              onChange={(v) => setModalitet(v as ModalitetsVal)}
+            >
+              <Radio value="Utbildning">De som gått utbildningar</Radio>
+              <Radio value="Föreläsning">De som varit på föreläsningar</Radio>
+              <Radio value="Båda">Båda</Radio>
+            </RadioGroup>
+            {/* SÄKERHETSSKÄLET FÖRSVINNER INTE MED VALET (varv 2). Förut
+                visades det bara medan `modalitet === null`, alltså exakt fram
+                till den sekund då valet fick konsekvenser. Men valet går att
+                ändra genom hela flödet, och den som överväger att byta till
+                "Båda" behöver veta VARFÖR raden finns - inte bara den som
+                aldrig valt något. Efter valet faller instruktionen ("välj
+                därför ... innan du") bort och risken står kvar ensam: den är
+                den enda meningen som fortfarande bär information. */}
             <p className="text-caption text-text-muted">
-              Det finns material som är direkt olämpligt att skicka till någon som bara gått en
-              föreläsning. Välj därför vad grupperna ska räknas som innan du väljer utbildningar.
+              {modalitet === null
+                ? 'Det finns material som är direkt olämpligt att skicka till någon som bara gått en föreläsning. Välj därför vad grupperna ska räknas som innan du väljer utbildningar.'
+                : 'Det finns material som är direkt olämpligt att skicka till någon som bara gått en föreläsning. Därför avgör det här valet vilka som räknas med.'}
             </p>
-          )}
-        </div>
+          </div>
+        </StegSektion>
 
-        {modalitet !== null && (
-          <ChipRad etikett="Utbildningar">
-            {atomer.length === 0 ? (
-              <p className="text-small text-text-muted">
-                Inga utbildningar i basen matchar det valet.
-              </p>
-            ) : (
-              atomer.map((a) => (
-                <ValChip
-                  key={a.nyckel}
-                  vald={valda.has(a.nyckel)}
-                  onTryck={() =>
-                    setValda((s) => {
-                      const ny = new Set(s);
-                      if (ny.has(a.nyckel)) ny.delete(a.nyckel);
-                      else ny.add(a.nyckel);
-                      return ny;
-                    })
-                  }
-                >
-                  {a.etikett}
-                </ValChip>
-              ))
-            )}
-          </ChipRad>
-        )}
-
-        {modalitet !== null && valdaAtomer.length === 1 && (
-          <p className="text-small text-text-muted">
-            Välj minst två utbildningar för att dela upp - en ensam utbildning är redan sin egen
-            grupp.
-          </p>
-        )}
-
-        {visaForhandsvisning && (
-          <section aria-labelledby={forhandsvisningRubrikId} className="flex flex-col gap-3">
-            <h2 id={forhandsvisningRubrikId} className="font-semibold text-lg">
-              Förhandsvisning
-            </h2>
-            {nagotFel ? (
-              <MessageBox intent="error" title="Kunde inte räkna grupperna">
-                Försök igen, eller välj färre utbildningar.
-              </MessageBox>
-            ) : !allaSvarat ? (
-              <div role="status" aria-busy="true" className="flex flex-col gap-2">
-                <span className="sr-only">Räknar grupperna…</span>
-                {['a', 'b', 'c'].map((k) => (
-                  <Skeleton key={k} variant="text" className="w-2/3 text-body" />
-                ))}
-              </div>
-            ) : (
-              <>
-                {/* TALET SOM ARIA-LIVE (kvalitetsribba 11): antalet befolkade
-                    kombinationer ändras varje gång en kurs väljs om, och det
-                    ska höras utan att man letar upp raden själv. */}
-                <p aria-live="polite" className="text-small text-text-muted">
-                  {befolkade.length} av {kombinationer.length}{' '}
-                  {kombinationer.length === 1 ? 'kombination har' : 'kombinationer har'} personer -{' '}
-                  {kombinationer.length - befolkade.length === 0
-                    ? 'ingen utelämnas'
-                    : `${kombinationer.length - befolkade.length} utelämnas`}
-                  .
+        <StegSektion
+          nummer={2}
+          rubrik="Vilka utbildningar ska publiken delas upp efter?"
+          vilar={modalitet === null ? 'Välj först vilka som räknas med.' : undefined}
+        >
+          <div className="flex flex-col gap-2">
+            <ChipRad etikett="Utbildningar">
+              {atomer.length === 0 ? (
+                <p className="text-small text-text-muted">
+                  Inga utbildningar i basen matchar det valet.
                 </p>
-                <ul className="flex flex-col gap-2">
-                  {kombinationer.map((k) => (
+              ) : (
+                atomer.map((a) => (
+                  <ValChip
+                    key={a.nyckel}
+                    vald={valda.has(a.nyckel)}
+                    onTryck={() =>
+                      setValda((s) => {
+                        const ny = new Set(s);
+                        if (ny.has(a.nyckel)) ny.delete(a.nyckel);
+                        else ny.add(a.nyckel);
+                        return ny;
+                      })
+                    }
+                  >
+                    {a.etikett}
+                  </ValChip>
+                ))
+              )}
+            </ChipRad>
+            {valdaAtomer.length === 1 && (
+              <p className="text-small text-text-muted">
+                Välj minst två utbildningar för att dela upp - en ensam utbildning är redan sin egen
+                grupp.
+              </p>
+            )}
+          </div>
+        </StegSektion>
+
+        <StegSektion nummer={3} rubrik="Det här blir grupperna">
+          <p aria-live="polite" className="text-small text-text-muted">
+            {steg3Text}
+          </p>
+          {nagotFel ? (
+            <MessageBox intent="error" title="Kunde inte räkna grupperna">
+              Försök igen, eller välj färre utbildningar.
+            </MessageBox>
+          ) : visaForhandsvisning && !allaSvarat ? (
+            /* Skeletonen är REN DEKOR här - live-regionen ovan säger redan
+               "Räknar grupperna…", så en egen `role="status"` med sr-only-text
+               hade annonserat samma sak två gånger. */
+            <div aria-hidden="true" className="flex flex-col gap-2 pt-1">
+              {['a', 'b', 'c'].map((k) => (
+                <Skeleton key={k} variant="text" className="w-2/3 text-body" />
+              ))}
+            </div>
+          ) : modalitet !== null && kanSkapa ? (
+            <>
+              {/* EN RAD PER GRUPP SOM FAKTISKT BLIR AV, i listkortets egen
+                  anatomi (namn fetstilt, meningen dämpad under, talet höger).
+                  Meningen kommer ur `manniskoMening` - EXAKT samma formulerare
+                  som `byggGrupp` kör när gruppen skapas, med samma två
+                  argument. Förhandsvisningen kan därför inte säga en annan sak
+                  än kortet kommer säga: de delar formulerare precis som de
+                  sedan tidigare delar predikat-kodväg (`villkorForAtom`). */}
+              <ul className="flex flex-col gap-2">
+                {befolkade.map((k) => {
+                  const ivaldaIGrupp = valdaAtomer.filter((_, i) => (k.mask & (1 << i)) !== 0);
+                  const utanfor = valdaAtomer.filter((_, i) => (k.mask & (1 << i)) === 0);
+                  return (
                     <li
                       key={k.mask}
-                      className={`flex items-center justify-between gap-3 rounded-xl px-4 py-2 ${
-                        k.antal === 0 ? 'text-text-muted' : 'bg-bg-muted'
-                      }`}
+                      className="flex items-start justify-between gap-3 rounded-2xl border border-transparent bg-bg-muted px-4 py-3 contrast-more:border-border-strong"
                     >
-                      <span className="font-medium text-body">{k.namn}</span>
-                      <span className="text-small tabular-nums">
-                        {k.antal === 0
-                          ? 'utelämnas (0 personer)'
-                          : `${k.antal} ${personform(k.antal)}`}
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="font-semibold text-body">{k.namn}</span>
+                        <span className="text-small text-text-secondary">
+                          {manniskoMening(ivaldaIGrupp, utanfor, modalitet)}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-small tabular-nums">
+                        {k.antal} {personform(k.antal)}
                       </span>
                     </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </section>
-        )}
+                  );
+                })}
+              </ul>
+              {/* DE TOMMA KOMBINATIONERNA ÄR EN RAD, INTE N RADER (varv 2).
+                  Förut fick varje obefolkad kombination ett eget listobjekt med
+                  texten "utelämnas (0 personer)" - vid fyra valda utbildningar
+                  är det upp till elva rader som beskriver vad som INTE händer,
+                  placerade mellan de rader som beskriver vad som händer.
+
+                  NAMNEN STÅR UT BARA NÄR DE ÄR EN. Då är namnet gratis och gör
+                  raden konkret. Vid flera är antalet den enda signal som bär
+                  något ("det blir färre grupper än max - väntat"): vilka de är
+                  går att räkna ut ur listan ovanför, och en utfällning med
+                  elva namn hade konkurrerat med grupperna om uppmärksamheten
+                  för att beskriva frånvaro. Utfällningen är därför medvetet
+                  bortvald, inte förbisedd. */}
+              {tomma > 0 && (
+                <p className="text-small text-text-muted">
+                  {tomma === 1
+                    ? `1 kombination finns inte i publiken än och skapas inte: ${kombinationer.find((k) => k.antal === 0)?.namn ?? ''}.`
+                    : `${tomma} kombinationer finns inte i publiken än och skapas inte.`}
+                </p>
+              )}
+            </>
+          ) : null}
+        </StegSektion>
       </div>
 
       <div className="flex flex-col gap-3 px-4 pb-2">
         <div className="flex flex-wrap items-center gap-2">
+          {/* TALET STÅR I KNAPPEN BARA NÄR DET BETYDER NÅGOT. "Skapa 0
+              segment" var sidans första möte i den gamla formen: ett löfte om
+              noll, på en knapp som inte gick att trycka på. Utan tal är
+              knappen ärlig i väntläget, och talet dyker upp i samma sekund som
+              det finns grupper att skapa. */}
           <Button intent="primary" isDisabled={!kanSkapa} onPress={skapa}>
-            Skapa {befolkade.length} segment
+            {befolkade.length > 0 ? `Skapa ${befolkade.length} segment` : 'Skapa segmenten'}
           </Button>
-          {visaForhandsvisning && allaSvarat && !nagotFel && befolkade.length === 0 && (
-            <span className="text-small text-text-muted">
-              Ingen av kombinationerna har några personer än.
-            </span>
-          )}
           <Button intent="secondary" onPress={onTillbaka}>
             Avbryt
           </Button>
