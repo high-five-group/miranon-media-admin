@@ -1,10 +1,10 @@
 ---
 id: TASK-147.6
 title: 'Skiva: Dokument-ytan mot verklig data + facit-lås'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-10 07:02'
-updated_date: '2026-08-16 19:26'
+updated_date: '2026-08-16 21:35'
 labels:
   - ready-for-human
 dependencies:
@@ -30,15 +30,15 @@ Stödjer användarberättelser 7–8 (bilageväljaren och Dokument-ytan är två
 <!-- AC:BEGIN -->
 - [x] #1 Dokument-ytan visar verklig data ur fundamentet; uppladdning + ersättning fungerar (klass A)
 - [x] #2 Granskningsunderlag klart för Marcus formbeslut (grupper vs lista) med verklig fördelning synlig
-- [ ] #3 Marcus facit-lås bokfört per promoveringskontraktet (stämpel via !-kanalen, ADR-104)
+- [x] #3 Marcus facit-lås bokfört per promoveringskontraktet (stämpel via !-kanalen, ADR-104)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -84,3 +84,9 @@ GRANSKNING 3 (2026-08-16): Marcus GODKÄNDE varv 3 estetiskt ('ser nice ut'). FA
 
 FACIT-LÅS FÖRBERETT (AC #3s förberedande halva, 2026-08-16): manifest tasks/sessions/bilagor/s102-dokument-konvergens/facit.json skapat med "godkand": null — 5 facit-bilder (listvyn desktop+mobil, Visa-overlayens tre klasser bilaga/mall/kvitto). Listvy-bilderna togs med Playwrights bundlade headless Chromium; de tre Visa-overlay-bilderna krävde en omtagning med channel:'chrome' (systemets riktiga Chrome, PDFium-visare) eftersom bundlad headless Chromium renderade PDF-iframen tom — ingen mockning, samma riktiga staging-data i båda passen. B3-markör "DOKUMENT-YTAN — Mer-ytan där bilagor förvaltas" (docblockets titelrad, DokumentYta.tsx:2) tillagd i .facit-policy.conf § FACIT_PROTO_MARKORER, grep-verifierad unik (grep -rlF, 1 träff) före tillägget, och negativt kontrollprov kört skarpt (markören temporärt borttagen -> check-facit.sh exit 1/rött; återställd -> exit 0/grönt, git diff bekräftat identiskt). check-facit.sh grönt: 9 manifest, 16 ytor, 2 ogodkända (hem + dokument). DoD-kvartetten grön: typecheck exit 0, biome exit 0 (endast pre-existing warnings/infos i orörda filer), build exit 0, test:api 788 passed. Ingen kod i DokumentYta.tsx/appen ändrad av detta pass — enbart manifest + policy-conf + bilder + dessa kortnotes. AC #3 bockas INTE här (stämpeln, godkand-fältet, är Marcus egen handling via !-kanalen ADR-104) — orkestreraren bockar efter CI-verifiering per husets rutin.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+AC3 stängd: Marcus stämplade facit-låset via !-kanalen (ADR-104) 2026-08-16 — facit.json godkand: av marcus, citat "godkänner", sha cc1d7c53 (main, post-merge grön). Orkestrator-bock efter CI-verifiering per husets rutin. Rivningspasset (dev-grinden visaDokumentPrototyp + [PROTOTYPE]-docblock + B3-markören) spawnas som eget pass per S102-sekvensens punkt 1.
+<!-- SECTION:FINAL_SUMMARY:END -->
