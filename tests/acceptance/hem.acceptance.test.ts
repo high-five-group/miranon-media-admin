@@ -8,27 +8,21 @@ import { FIXTUR_EPOST } from '../support/fixturvarld/hermetic';
 import { expect, type Page, test } from './support/acceptance-bas';
 
 /**
- * Hem-vyn (task-1.3 A-skelettet → task-4.2 K10-facit-strukturen → task-4.3
- * facit-korten → task-4.4 anmälningslistan → task-4.5 osynliga uppdateringen
- * [B3] → task-9.3 platshållar-borttagningen). Uppifrån och ned: hälsningskort
- * (h1 "Hej {namn}" utan utropstecken; återbesök i sessionen visar bara namnet
- * [B2]; INGEN "Mina sidor"-platshållare — riven per T69 Revision S64 p3, och
- * uppdatera-kontrollen borta sedan B5) →
- * Nästa event (primär-tint, HELA kortet klickbart till eventets detaljsida;
- * dagar-kvar-pill, metagrupp med ikoner, beläggningsstapel) bredvid Obetalda
- * anmälningsavgifter (BARA antalet, task-4.3) → helbredds-listkortet "Nya
- * anmälningar att hantera" (koppar-kontur + varningsikon; ~25 senaste i
- * rullbar zebra-lista; raden bär namn / joinad event-identitet / relativ tid;
- * rad-klick → EVENTETS sida [B1]; rad utan event olänkad med "Utan event") →
- * stor helbredds-CTA sist. INGEN separat "Hem"-rubrik (AC #6): hälsningen ÄR
- * sidans h1 → h1-assertions matchar /^Hej/ (miljö-neutralt: namn-delen styrs
- * av sessionens display-namn, task-1.1).
+ * Hem-vyn — Morgonkollen, V1 "Lugna morgonen" (TASK-243.3, full omskrivning
+ * mot den promoverade formen ur TASK-243.1/`src/components/hem/Hem.tsx`;
+ * ersätter K10-formens skrivning som revs i `27288c3e`). Facit:
+ * `tasks/sessions/bilagor/s102-hem-konvergens/facit.json`; `Hem.tsx` bär
+ * facit-formens exakta blockordning i sin egen docblock — den upprepas inte
+ * här. Blockordningen (Marcus-låst, S102 Del 8 + Del 10): fri hälsning utan
+ * platta → Nästa event (fullbredd, primär-tint) → Bevakningsrad (helt
+ * osynlig vid noll träffar) → Nya anmälningar (räknar-rubrik +
+ * bekräftelsesvep) → Förfallna betalningar (tre tillståndsgrupper) →
+ * Genvägar → Senaste aktivitet (kompakt, alla bredder). INGEN separat
+ * "Hem"-rubrik: hälsningen ÄR sidans h1 → h1-assertions matchar /^Hej/
+ * (miljö-neutralt: namn-delen styrs av sessionens display-namn, task-1.1).
  *
- * ACCEPTANCE-KLASSEN (task-59.3, ADR-080): filen flyttades hit ur e2e-sviten
+ * ACCEPTANCE-KLASSEN (task-59.3, ADR-080): filen flyttades ur e2e-sviten
  * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
- * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 62
- * restanrop, samtliga typsnitt, noll skarpa — filen bar FLEST restanrop av alla
- * arton i klassen och är därmed den tyngsta lasten pilotvågen kunde pröva.
  *
  * **Deterministisk via `network.use()`** — överskuggningar på fixturvärldens
  * delade normalläge, inte `page.route`. Skälet är inte smak: page-routes prövas
@@ -43,13 +37,24 @@ import { expect, type Page, test } from './support/acceptance-bas';
  * Mockarna speglar EF-svaren `{ registrations: [...] }` / `{ events: [...] }`
  * (Registration.schema / Event.schema-rader → adapterns `.parse()` passerar).
  *
- * Täckning: A-skelettets rendering (senaste anmälningar recency-sorterat,
- * nästa event temporalt, obetalda-antal stort), hälsnings-h1, klick-ytorna
- * (helkorts-klick AC #2, rad-klick + "Utan event" AC #3), CTA→/event,
- * tom-state per card, fel (4xx role=alert, no-retry), axe 0. INGEN
+ * Täckning (TASK-243.3 AC #1 + PRD task-243 användarberättelser 1–9;
+ * berättelse 10, Senaste aktivitet, har egen svit — `hem-senaste-
+ * aktivitet.acceptance.test.ts`): blockordningen inkl. Bevakningsradens
+ * villkorade plats, tomma läget per block, statusfiltret bakom "Nya
+ * anmälningar", förfallna-definitionen + en-påminnelse-modellens tre
+ * grupper, Bevakningsradens trigger + osynlighet, Genvägarna, hälsnings-h1,
+ * axe 0 (sparsam OCH kitchen-sink), fel (4xx role=alert, no-retry). INGEN
  * h1-auto-fokus-assertion: /hem är default-landningsytan → containern flyttar
  * INTE fokus (skip-link-först-tab-ordning, speglar EventsList; se Hem.tsx +
  * shell DoD 2).
+ *
+ * FACIT-GRANSKNING (DoD #5): `Hem.tsx`/`Bevakningsrad.tsx`/
+ * `BulkAtgardsknapp.tsx` m.fl. bär i sina egna docblocks den fullständiga
+ * proveniensen mot facit (inkl. de öppet bokförda avvikelserna — B2-
+ * återbesöksformen ej promoverad, versionsraden ej promoverad, helkorts-
+ * klicket ej promoverat, dagar-kvar-pillen ej promoverad). Testerna nedan
+ * asserterar mot KODENS faktiska, redan facit-korslästa beteende — de kräver
+ * ingenting facit motsäger, och uppfinner ingen egen tolkning av bilderna.
  */
 
 /** Sidrubriken = hälsningen (AC #6) — namn-delen är miljöberoende → prefix-match. */
@@ -149,17 +154,29 @@ function mock(
 }
 
 test.describe('Hem — A-skelettet (task-1.3)', () => {
-  test('get-registrations 4xx → fel-UI (role=alert) i anmälnings-cards, event-card opåverkat', async ({
+  test('get-registrations 4xx → fel-UI (role=alert) i BÅDA anmälnings-blocken, eventblocket opåverkat', async ({
     page,
     network,
   }) => {
-    // 4xx = klient-fel → no-retry-grenen (speglar 6c). Båda anmälnings-cards delar
-    // queryn → båda visar alert; event-cardet (separat query, 200) renderar fint.
+    // 4xx = klient-fel → no-retry-grenen (speglar 6c). `regsError` delas av
+    // Nya anmälningar OCH Förfallna betalningar (samma query, hem-derivations
+    // AC #3) — båda visar VARSIN alert med sin egen title; Nästa event
+    // (separat query, 200) renderar fint.
     mock(network, { regStatus: 404, events: [ev({ eventNamn: 'Resor i medvetandet 1' })] });
     await page.goto('/hem');
 
-    await expect(page.getByRole('alert').first()).toContainText('Kunde inte hämta anmälningar');
-    await expect(page.getByRole('link', { name: 'Resor i medvetandet 1' })).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(2);
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Kunde inte hämta anmälningar' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'Kunde inte hämta betalningar' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: 'Nästa event' }).getByRole('link', {
+        name: 'Resor i medvetandet 1',
+      }),
+    ).toBeVisible();
   });
 
   test('axe 0 violations på den renderade Hem-vyn', async ({ page, network }) => {
@@ -285,14 +302,42 @@ test.describe('Hem polling (Fas 6d L2 — ADR-017 + erratum)', () => {
 });
 
 /**
- * task-4.3 — Nästa event + Obetalda till K10-facit (S55 Del 12). Renderad
- * verifiering per L246: computed-style/boxmätning, aldrig enbart klass-närvaro.
- * Facit-formerna: dagar-kvar som VIT pill topp-höger med tre EXAKTA former;
- * metagrupp text-small med kartnåls-/kalenderikon och långdatum; kortrubrik
- * text-xl semibold mörk; beläggningsstapel (vit track, primär-dämpad fyllnad)
- * vars andel matchar X/Y; Obetalda anmälningsavgifter BARA antalet text-3xl.
+ * Nästa event — Morgonkollens hero-block (PRD task-243 användarberättelse 2;
+ * `NastaEvent.tsx`, promoverad ur `dev/hem-prototyp/VariantRo.tsx`). Renderad
+ * verifiering per L246 för beläggningsstapeln (boxmätning, aldrig enbart
+ * klass-närvaro). Dagar-kvar-formen är EN RAD under eventnamnet (INTE en
+ * positionerad pill — den formen hörde K10-facitet till och är INTE
+ * promoverad, öppet bokfört i `NastaEvent.tsx`s docblock).
  */
-test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
+test.describe('Nästa event till facit (PRD task-243 berättelse 2)', () => {
+  test('dagar-kvar-formens tre exakta texter: "Idag" / "1 dag kvar" / "N dagar kvar"', async ({
+    page,
+    network,
+  }) => {
+    // FROZEN_NOW = 2026-09-15T10:00+02:00 (fixture-data.ts) → Stockholm-
+    // midnatt "idag" = 2026-09-15T00:00+02:00. Ett datumlöst (endast
+    // ÅÅÅÅ-MM-DD) startdatum parsar som UTC-midnatt; `dagarKvarText` rundar
+    // (start−idagStart)/dygn — för varje kalenderdag D dagar efter idag ger
+    // det EXAKT D (den 2-timmars UTC-offseten rundar alltid ned), räknat och
+    // verifierat separat innan värdena skrevs in (samma disciplin som
+    // `relativTid`-testernas tidsstränglitteraler — tautologi-fällan).
+    const fall = [
+      { startdatum: '2026-09-15', text: 'Idag' },
+      { startdatum: '2026-09-16', text: '1 dag kvar' },
+      { startdatum: '2026-09-25', text: '10 dagar kvar' },
+    ] as const;
+
+    for (const { startdatum, text } of fall) {
+      mock(network, {
+        registrations: [],
+        events: [ev({ eventNamn: 'Fjärrskådning', startdatum })],
+      });
+      await page.goto('/hem');
+      const kort = page.getByRole('region', { name: 'Nästa event' });
+      await expect(kort.getByText(text, { exact: true })).toBeVisible();
+    }
+  });
+
   test('AC 4 — "X av Y platser reserverade" + beläggningsstapelns fyllnadsandel matchar X/Y (renderad mätning)', async ({
     page,
     network,
@@ -346,7 +391,7 @@ test.describe('Nästa event + Obetalda till facit (task-4.3)', () => {
   });
 });
 
-test.describe('Hem-strukturen till K10-facit (task-4.2)', () => {
+test.describe('AppShell-kontraktet — hem ärver skalets kolumnbredd (TASK-247)', () => {
   test('kolumnen 600 px skärm-centrerad på desktop; headern borta (AC 1–2)', async ({
     page,
     network,
@@ -360,5 +405,508 @@ test.describe('Hem-strukturen till K10-facit (task-4.2)', () => {
     // Renderad mätning (L246): 600-boxen + skärm-centrering (viewport 1280).
     expect(box.width).toBe(600);
     expect(Math.abs(box.x - (1280 - 600) / 2)).toBeLessThanOrEqual(1);
+  });
+});
+
+/**
+ * Blockordningen (Marcus-låst, S102 Del 8 + Del 10; TASK-243.3 AC #1).
+ * Bevakningsraden är det enda VILLKORADE blocket — de övriga står alltid
+ * kvar (med sitt eget tomma-läge-kvitto), Bevakningsraden är HELT frånvarande
+ * ur DOM:en vid noll träffar (asymmetrin är Marcus-låst, se
+ * `Bevakningsrad.tsx`s docblock).
+ */
+test.describe('Blockordningen (S102 Del 8 + Del 10, AC #1)', () => {
+  test('samtliga rubriker i facit-ordning; Bevakningsraden mellan Nästa event och Nya anmälningar när den finns', async ({
+    page,
+    network,
+  }) => {
+    // Event 15 dagar bort (inom Bevakningsradens 21-dagarsfönster, UTANFÖR
+    // Förfallna-betalningars 14-dagarsdeadline) med EN bekräftad anmälan som
+    // saknar Deltagarinfo-stämpeln → triggar ENDAST Bevakningsraden, inget
+    // annat block får data.
+    mock(network, {
+      registrations: [
+        reg({
+          fornamn: 'Vera',
+          efternamn: 'Vik',
+          eventId: 'recEvBevakning',
+          status: 'Bekräftad (mail skickat)',
+          anmalningsavgift: 'Mottagen',
+          slutbetalning: 'Mottagen',
+          deltagarinfoSkickad: null,
+        }),
+      ],
+      events: [ev({ id: 'recEvBevakning', eventNamn: 'Fjärrskådning', startdatum: '2026-09-30' })],
+    });
+    await page.goto('/hem');
+    // `allTextContents()` är en ÖGONBLICKSBILD (ingen auto-retry, task-64s
+    // web-first-disciplin) — vänta in SISTA blockets rubrik FÖRST, annars
+    // läses listan innan Hem hunnit rendera klart (tomt/partiellt resultat).
+    await expect(page.getByRole('heading', { level: 2, name: 'Senaste aktivitet' })).toBeVisible();
+
+    // Rubrikerna i DOM-ordning — h1 (hälsningen) räknas med separat.
+    // Bevakningsraden bär INGEN rubrik (Marcus-låst asymmetri) och syns
+    // därför inte i denna lista — dess PLATS bevisas separat nedan via
+    // renderad ordning (L246).
+    const rubriker = await page.locator('main#main').getByRole('heading').allTextContents();
+    expect(rubriker[0]).toMatch(H1_HALSNING);
+    expect(rubriker.slice(1)).toEqual([
+      'Nästa event',
+      '0 nya anmälningar att bekräfta',
+      '0 förfallna betalningar',
+      'Genvägar',
+      'Senaste aktivitet',
+    ]);
+
+    const nastaEvent = page.getByRole('region', { name: 'Nästa event' });
+    const bevakningsrad = page.getByRole('list', { name: 'Bevakningar' });
+    const nyaAnmalningar = page.getByRole('heading', { level: 2, name: /att bekräfta$/ });
+    await expect(bevakningsrad).toBeVisible();
+    const [nastaBox, bevakningBox, nyaBox] = await Promise.all([
+      nastaEvent.boundingBox(),
+      bevakningsrad.boundingBox(),
+      nyaAnmalningar.boundingBox(),
+    ]);
+    if (!nastaBox || !bevakningBox || !nyaBox) {
+      throw new Error('boundingBox saknas i ordnings-mätningen');
+    }
+    expect(nastaBox.y).toBeLessThan(bevakningBox.y);
+    expect(bevakningBox.y).toBeLessThan(nyaBox.y);
+  });
+
+  test('noll bevakningsträffar → Bevakningsraden HELT FRÅNVARANDE ur DOM:en (ingen wrapper, ingen rubrik)', async ({
+    page,
+    network,
+  }) => {
+    mock(network, {
+      registrations: [reg()],
+      events: [ev({ startdatum: '2099-06-01' })], // långt utanför 21-dagarsfönstret
+    });
+    await page.goto('/hem');
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Bevakningar' })).toHaveCount(0);
+  });
+});
+
+/**
+ * Tomma läget (PRD task-243 användarberättelse 8): grön bock, "läget är
+ * under kontroll" — trygghet, inte "trasigt". Bevakningsraden är asymmetrisk
+ * mot detta (se ovan): den har inget eget tomt-läge-kvitto, den är bara borta.
+ */
+test.describe('Tomma läget (PRD task-243 berättelse 8)', () => {
+  test('noll data överallt → grön bock i Nya anmälningar och Förfallna betalningar, ingen bevakningsrad, inga alerts, inga bulk-knappar', async ({
+    page,
+    network,
+  }) => {
+    mock(network, { registrations: [], events: [] });
+    await page.goto('/hem');
+
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
+    // Nästa event — vänlig tom-text, byte-identisk med facit-prototypen.
+    await expect(
+      page.getByRole('region', { name: 'Nästa event' }).getByText('Inga kommande event just nu.'),
+    ).toBeVisible();
+
+    await expect(
+      page.getByText('Inga nya anmälningar att bekräfta, läget är under kontroll.'),
+    ).toBeVisible();
+    await expect(page.getByText('Inga förfallna betalningar.')).toBeVisible();
+
+    // Bevakningsraden är HELT osynlig — den bär inget eget kvitto.
+    await expect(page.getByRole('list', { name: 'Bevakningar' })).toHaveCount(0);
+
+    // Ingen bulk-knapp renderas när det inte finns något att agera på.
+    await expect(page.getByRole('button', { name: 'Bekräfta alla' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Skicka påminnelse till alla' })).toHaveCount(0);
+
+    // Inga fel-alerts i det tomma, lyckade läget.
+    await expect(page.getByRole('alert')).toHaveCount(0);
+
+    // Genvägarna och Senaste aktivitet-blocket kvarstår alltid.
+    await expect(page.getByRole('heading', { level: 2, name: 'Genvägar' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Senaste aktivitet' })).toBeVisible();
+  });
+});
+
+/**
+ * Nya anmälningar — statusfiltret, räknar-rubriken, bekräftelsesvep-knappen,
+ * anmälans ålder (PRD task-243 berättelser 3, 4, 6). `obekraftadeAnmalningar`
+ * kräver `status === 'Obekräftad'` — recency-utan-filter är INTE facit-formen.
+ */
+test.describe('Nya anmälningar — statusfilter, räknare, bekräftelsesvep, ålder (PRD berättelse 3, 4, 6)', () => {
+  test('räknar-rubriken räknar ENDAST status Obekräftad; recency-sorterat; ålder som relativ tid; bulk-knappen aktiv-vy men funktionellt no-op', async ({
+    page,
+    network,
+  }) => {
+    mock(network, {
+      registrations: [
+        reg({
+          fornamn: 'Alice',
+          efternamn: 'Ek',
+          status: 'Obekräftad',
+          inskickad: '2026-09-15T06:00:00.000Z', // 2 tim före FROZEN_NOW (10:00+02:00 = 08:00Z)
+        }),
+        reg({
+          fornamn: 'Bertil',
+          efternamn: 'Berg',
+          status: 'Obekräftad',
+          inskickad: '2026-09-15T07:55:00.000Z', // 5 min före FROZEN_NOW
+        }),
+        // Redan bekräftad — räknas INTE (facit-kravet, hem-derivations.ts §
+        // obekraftadeAnmalningar).
+        reg({ fornamn: 'Cecilia', efternamn: 'Cold', status: 'Bekräftad (mail skickat)' }),
+      ],
+      events: [ev()],
+    });
+    await page.goto('/hem');
+    const block = page.getByRole('region', { name: '2 nya anmälningar att bekräfta' });
+    await expect(block).toBeVisible();
+    await expect(page.getByText('Cecilia Cold')).toHaveCount(0);
+
+    // Senast inskickad först (Bertil, 5 min sedan) — recency-sorterat.
+    const rader = block.getByRole('listitem');
+    await expect(rader).toHaveCount(2);
+    await expect(rader.first()).toContainText('Bertil');
+    await expect(rader.last()).toContainText('Alice');
+
+    // Ålder som relativ tid (PRD berättelse 4) — beräknat för hand mot
+    // FROZEN_NOW, samma tautologi-vakt som `relativTid`-testerna nedan.
+    await expect(block.getByText('för 5 min sedan', { exact: true })).toBeVisible();
+    await expect(block.getByText('för 2 tim sedan', { exact: true })).toBeVisible();
+
+    // Bekräftelsesvep-knappen: VISUELLT full aktiv yta men FUNKTIONELLT
+    // avstängd (AC #4, `BulkAtgardsknapp.tsx`) — ARIA-disabled, INTE native
+    // `isDisabled` (`Button.tsx`s docblock: native `disabled` hade tagit
+    // bort träffytan ur tabordningen OCH lagt `data-[disabled]:opacity-50`).
+    // Playwrights `toBeDisabled()`-matcher räknar SJÄLV `aria-disabled="true"`
+    // som "disabled" (ARIA-semantiken, inte bara det native attributet) — det
+    // beviset görs i stället RAKT, mot det som faktiskt skiljer de två
+    // vägarna åt: knappen är KVAR i tabordningen (`tabindex="0"`, aldrig
+    // `-1`/borttagen).
+    const knapp = block.getByRole('button', { name: 'Bekräfta alla' });
+    await expect(knapp).toBeVisible();
+    await expect(knapp).toHaveAttribute('aria-disabled', 'true');
+    await expect(knapp).toHaveAttribute('tabindex', '0');
+    await expect(knapp).toHaveAccessibleDescription(
+      'Skickar ingenting än. Sändflödet är inte byggt ännu.',
+    );
+  });
+
+  test('singular — exakt EN ny anmälan → "1 ny anmälan att bekräfta"', async ({
+    page,
+    network,
+  }) => {
+    mock(network, { registrations: [reg({ status: 'Obekräftad' })], events: [ev()] });
+    await page.goto('/hem');
+    await expect(
+      page.getByRole('heading', { level: 2, name: '1 ny anmälan att bekräfta' }),
+    ).toBeVisible();
+  });
+
+  test('inline-rullning ALLA rader — ingen kapad lista, ingen "visa alla"-länk, rullytan tangentbordsfokuserbar', async ({
+    page,
+    network,
+  }) => {
+    const manga = Array.from({ length: 30 }, (_, i) =>
+      reg({
+        fornamn: `Person${String(i).padStart(2, '0')}`,
+        efternamn: 'Testsson',
+        status: 'Obekräftad',
+        inskickad: new Date(Date.UTC(2026, 8, 1, 12, 0, 0) - i * 3_600_000).toISOString(),
+      }),
+    );
+    mock(network, { registrations: manga, events: [ev()] });
+    await page.goto('/hem');
+    const lista = page.getByRole('list', { name: 'Nya anmälningar att bekräfta' });
+    await expect(lista.getByRole('listitem')).toHaveCount(30);
+    // WCAG 2.1.1/axe scrollable-region-focusable.
+    await expect(lista).toHaveAttribute('tabindex', '0');
+    // Ingen extern "Visa alla →"-länk (K10-formens navigation) — inline-scroll
+    // bär hela ansvaret (PRD berättelse 6).
+    await expect(page.getByRole('link', { name: /Visa alla/ })).toHaveCount(0);
+  });
+});
+
+/**
+ * Förfallna betalningar — avgiftstyp per rad, skickat-markören, en-
+ * påminnelse-modellens TRE tillståndsgrupper (PRD berättelse 5; S102 Del 10
+ * beslut 7–8; `ForfallnaBetalningar.tsx`). Deadline = eventstart − 14 dagar;
+ * samtliga event nedan har startdatum 2026-09-20 (deadline 2026-09-06, redan
+ * passerad mot FROZEN_NOW 2026-09-15).
+ */
+test.describe('Förfallna betalningar — avgiftstyp, skickat-markör, tre tillståndsgrupper (PRD berättelse 5, S102 Del 10 beslut 7–8)', () => {
+  test('EN registrering som saknar BÅDA avgifterna ger TVÅ rader; "Att påminna" när ingen påminnelse skickats', async ({
+    page,
+    network,
+  }) => {
+    mock(network, {
+      registrations: [
+        reg({
+          fornamn: 'Disa',
+          efternamn: 'Dahl',
+          eventId: 'recEvForf',
+          anmalningsavgift: 'Ej mottagen',
+          slutbetalning: 'Ej mottagen',
+        }),
+      ],
+      events: [ev({ id: 'recEvForf', eventNamn: 'Fjärrskådning', startdatum: '2026-09-20' })],
+    });
+    await page.goto('/hem');
+    await expect(page.getByRole('region', { name: '2 förfallna betalningar' })).toBeVisible();
+
+    const attPaminna = page.getByRole('heading', { level: 3, name: /^Att påminna/ }).locator('..');
+    await expect(attPaminna).toContainText('Anmälningsavgift · Fjärrskådning');
+    await expect(attPaminna).toContainText('Slutbetalning · Fjärrskådning');
+    await expect(attPaminna.getByRole('listitem')).toHaveCount(2);
+
+    // BulkAtgardsknappens syskon lever ENSAM i "Att påminna" (Marcus-låst).
+    await expect(page.getByRole('button', { name: 'Skicka påminnelse till alla' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: /^Väntar/ })).toHaveCount(0);
+    await expect(page.getByRole('heading', { level: 3, name: /^Dags att ringa/ })).toHaveCount(0);
+  });
+
+  test('"Väntar" — påminnelse skickad för < 7 dagar sedan, med skickat-markören; ingen bulk-knapp', async ({
+    page,
+    network,
+  }) => {
+    mock(network, {
+      registrations: [
+        reg({
+          fornamn: 'Egon',
+          efternamn: 'Ek',
+          eventId: 'recEvForf',
+          anmalningsavgift: 'Mottagen',
+          slutbetalning: 'Ej mottagen',
+          paminnelseSlutbetalningSkickad: '2026-09-13T08:00:00.000Z', // 2 dagar sedan
+        }),
+      ],
+      events: [ev({ id: 'recEvForf', eventNamn: 'Fjärrskådning', startdatum: '2026-09-20' })],
+    });
+    await page.goto('/hem');
+    await expect(page.getByRole('heading', { level: 3, name: /^Väntar · 1$/ })).toBeVisible();
+    await expect(page.getByText('Påminnelse skickad 2026-09-13')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Skicka påminnelse till alla' })).toHaveCount(0);
+  });
+
+  test('"Dags att ringa" — påminnelse ≥ 7 dagar sedan → konstaterande copy + telefon + avgiftstypens notering', async ({
+    page,
+    network,
+  }) => {
+    mock(network, {
+      registrations: [
+        reg({
+          fornamn: 'Frida',
+          efternamn: 'Falk',
+          eventId: 'recEvForf',
+          telefon: '070-9998877',
+          anmalningsavgift: 'Ej mottagen',
+          slutbetalning: 'Mottagen',
+          paminnelseAnmalningsavgiftSkickad: '2026-09-01T08:00:00.000Z', // 14 dagar sedan
+          noteringAnmalningsavgift: 'Ringde, inget svar förra veckan.',
+        }),
+      ],
+      events: [ev({ id: 'recEvForf', eventNamn: 'Fjärrskådning', startdatum: '2026-09-20' })],
+    });
+    await page.goto('/hem');
+    const grupp = page.getByRole('heading', { level: 3, name: /^Dags att ringa/ }).locator('..');
+    await expect(grupp).toContainText('Påmind 1 sep · obetald · 070-9998877');
+    await expect(grupp).toContainText('Ringde, inget svar förra veckan.');
+  });
+});
+
+/**
+ * Bevakningsraden — trigger, full text UTAN klippning, två lägen (PRD
+ * berättelse 7; S102 Del 10 beslut 2–4; `Bevakningsrad.tsx`). Facit-kravet:
+ * ALDRIG ellips på meningsbärande text (line-clamp-2, aldrig `truncate`).
+ */
+test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD berättelse 7, S102 Del 10 beslut 2–4)', () => {
+  test('"ej-skickad" — ALLA bekräftade saknar stämpeln → "Eventinfo saknas"; ett långt eventnamn klipps ALDRIG med ellipsis', async ({
+    page,
+    network,
+  }) => {
+    const langtNamn =
+      'Fjärrskådning och medveten närvaro i gränslandet mellan sömn och vakenhet — en fördjupningshelg';
+    mock(network, {
+      registrations: [
+        reg({
+          eventId: 'recEvBev',
+          status: 'Bekräftad (mail skickat)',
+          anmalningsavgift: 'Mottagen',
+          slutbetalning: 'Mottagen',
+          deltagarinfoSkickad: null,
+        }),
+      ],
+      events: [ev({ id: 'recEvBev', eventNamn: langtNamn, startdatum: '2026-09-30' })],
+    });
+    await page.goto('/hem');
+    const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
+    await expect(rad).toHaveCount(1);
+    // HELA namnet finns i DOM:en — line-clamp klipper VISUELLT (CSS), aldrig
+    // textinnehållet, till skillnad från `truncate`/ellipsis.
+    await expect(rad).toContainText(langtNamn);
+    await expect(rad).toContainText('Eventinfo saknas');
+    await expect(rad).toContainText('15 dagar kvar');
+    // Riktig knapp med chevron — leder framåt men no-op (svep-PRD:n bygger
+    // inte här, task-241).
+    const knapp = rad.getByRole('button');
+    await expect(knapp).toBeVisible();
+    await expect(knapp.locator('svg')).toHaveCount(1);
+    // Klippnings-klassen är line-clamp-2, ALDRIG truncate (Gunilla-principen).
+    const namnSpan = rad.locator('span.line-clamp-2').first();
+    await expect(namnSpan).toHaveText(langtNamn);
+    await expect(namnSpan).not.toHaveClass(/truncate/);
+  });
+
+  test('"eftersalantrare" — NÅGRA (inte alla) bekräftade saknar stämpeln → "N deltagare saknar eventinfo"', async ({
+    page,
+    network,
+  }) => {
+    mock(network, {
+      registrations: [
+        reg({
+          fornamn: 'Gun',
+          efternamn: 'Gren',
+          eventId: 'recEvBev',
+          status: 'Bekräftad (mail skickat)',
+          anmalningsavgift: 'Mottagen',
+          slutbetalning: 'Mottagen',
+          deltagarinfoSkickad: null,
+        }),
+        reg({
+          fornamn: 'Hans',
+          efternamn: 'Holm',
+          eventId: 'recEvBev',
+          status: 'Bekräftad (mail skickat)',
+          anmalningsavgift: 'Mottagen',
+          slutbetalning: 'Mottagen',
+          deltagarinfoSkickad: '2026-09-10T08:00:00.000Z', // redan skickad
+        }),
+        // Obekräftad räknas INTE med bland "bekräftade" (definition B).
+        reg({ fornamn: 'Iris', efternamn: 'Idun', eventId: 'recEvBev', status: 'Obekräftad' }),
+      ],
+      events: [ev({ id: 'recEvBev', eventNamn: 'Fjärrskådning', startdatum: '2026-09-30' })],
+    });
+    await page.goto('/hem');
+    const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
+    await expect(rad).toHaveCount(1);
+    await expect(rad).toContainText('1 deltagare saknar eventinfo');
+  });
+});
+
+/** Genvägar (PRD task-243 användarberättelse 9) — BÅDA är redan skarpa, byggda routes. */
+test.describe('Genvägar (PRD berättelse 9)', () => {
+  test('två genvägar med korrekta hrefs och etiketter, inuti nav[aria-label="Genvägar"]', async ({
+    page,
+    network,
+  }) => {
+    mock(network);
+    await page.goto('/hem');
+    const nav = page.getByRole('navigation', { name: 'Genvägar' });
+    await expect(nav.getByRole('link', { name: 'Lägg till manuell anmälan' })).toHaveAttribute(
+      'href',
+      '/anmalan/ny',
+    );
+    await expect(nav.getByRole('link', { name: 'Öppna Åtgärds-sidan' })).toHaveAttribute(
+      'href',
+      '/atgarder',
+    );
+  });
+});
+
+/**
+ * Tillgänglighet (TASK-243.3 AC #2): rubrikstruktur, axe 0 på det FULLA
+ * "kitchen sink"-läget (Bevakningsrad + alla tre förfallna-grupper samtidigt
+ * — den sparsamma axe-svepningen ovan i "Hem — A-skelettet" täcker redan det
+ * enkla läget).
+ */
+test.describe('Tillgänglighet — rubrikstruktur och kitchen-sink axe (AC #2)', () => {
+  test('alla block populerade samtidigt (Bevakningsrad + tre förfallna-grupper) → axe 0 violations', async ({
+    page,
+    network,
+  }) => {
+    mock(network, {
+      registrations: [
+        reg({ fornamn: 'Alice', efternamn: 'Ek', status: 'Obekräftad' }),
+        reg({
+          fornamn: 'Bertil',
+          efternamn: 'Berg',
+          eventId: 'recEvForf',
+          anmalningsavgift: 'Ej mottagen',
+          slutbetalning: 'Mottagen',
+        }),
+        reg({
+          fornamn: 'Cecilia',
+          efternamn: 'Cold',
+          eventId: 'recEvForf',
+          anmalningsavgift: 'Ej mottagen',
+          slutbetalning: 'Mottagen',
+          paminnelseAnmalningsavgiftSkickad: '2026-09-13T08:00:00.000Z',
+        }),
+        reg({
+          fornamn: 'David',
+          efternamn: 'Dag',
+          eventId: 'recEvForf',
+          anmalningsavgift: 'Mottagen',
+          slutbetalning: 'Ej mottagen',
+          paminnelseSlutbetalningSkickad: '2026-09-01T08:00:00.000Z',
+        }),
+        reg({
+          fornamn: 'Elin',
+          efternamn: 'Edman',
+          eventId: 'recEvBev',
+          status: 'Bekräftad (mail skickat)',
+          anmalningsavgift: 'Mottagen',
+          slutbetalning: 'Mottagen',
+          deltagarinfoSkickad: null,
+        }),
+      ],
+      events: [
+        ev({ id: 'recEvForf', eventNamn: 'Fjärrskådning', startdatum: '2026-09-20' }),
+        ev({ id: 'recEvBev', eventNamn: 'Meditation i tystnad', startdatum: '2026-09-30' }),
+      ],
+    });
+    await page.goto('/hem');
+    await expect(page.getByRole('list', { name: 'Bevakningar' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: /^Dags att ringa/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: /^Väntar/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: /^Att påminna/ })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('rubrikstrukturen är h1 → h2 → h3 utan hopp; Bevakningsraden bär medvetet ingen egen rubrik', async ({
+    page,
+    network,
+  }) => {
+    mock(network, {
+      registrations: [
+        reg({
+          fornamn: 'Frida',
+          efternamn: 'Falk',
+          eventId: 'recEvForf',
+          anmalningsavgift: 'Ej mottagen',
+          slutbetalning: 'Mottagen',
+        }),
+      ],
+      events: [ev({ id: 'recEvForf', eventNamn: 'Fjärrskådning', startdatum: '2026-09-20' })],
+    });
+    await page.goto('/hem');
+    // `evaluateAll()` är en ÖGONBLICKSBILD (ingen auto-retry) — vänta in
+    // förfallna-gruppens h3 FÖRST (sist renderade nivå i detta scenario).
+    await expect(page.getByRole('heading', { level: 3, name: /^Att påminna/ })).toBeVisible();
+    const nivaer = await page
+      .locator('main#main')
+      .getByRole('heading')
+      .evaluateAll((els) => els.map((el) => Number(el.tagName.slice(1))));
+    // Aldrig ett hopp uppåt på mer än en nivå (WCAG 1.3.1/2.4.6-andan).
+    for (let i = 1; i < nivaer.length; i += 1) {
+      expect(nivaer[i] - nivaer[i - 1]).toBeLessThanOrEqual(1);
+    }
+    expect(nivaer[0]).toBe(1);
+    expect(nivaer).toContain(2);
+    expect(nivaer).toContain(3); // "Att påminna" (Förfallna betalningars undergrupp)
   });
 });

@@ -224,7 +224,16 @@ async function mockSidan(page: Page): Promise<Rigg> {
   return { loggade: () => loggade };
 }
 
-const spalten = (page: Page) => page.getByTestId('senaste-aktivitet');
+// TASK-243.3 (hem-form-skiftet): `data-testid="senaste-aktivitet"` fanns på
+// den RETIRERADE `SenasteAktivitet.tsx` (K10-facit, xl-only-spalt). Den
+// promoverade Morgonkollen-formen (`SenasteAktivitetKompakt.tsx`, ADR-102/
+// 103) bär ingen testid — samma landmärke nås i stället via `aria-labelledby`
+// (sektionens `role="region"`, namnet ur h2:n "Senaste aktivitet"), SAMMA
+// mönster hem-acceptance-sviternas övriga block-lokatorer redan använder.
+// Verifierat att den kombinerade aktör+verb+·+objekt-formen (raden nedan
+// bygger `forvantadRad` mot) är STRUKTURELLT OFÖRÄNDRAD i den nya
+// komponenten — bara denna lokator behövde bytas, ingenting nedanför.
+const spalten = (page: Page) => page.getByRole('region', { name: 'Senaste aktivitet' });
 const historikvyn = (page: Page) => page.getByTestId('aktivitetshistorik-yta');
 
 test.describe('Aktivitetsloggens e2e-skarv (TASK-201.16): en anteckning → spalten och historikvyn', () => {
