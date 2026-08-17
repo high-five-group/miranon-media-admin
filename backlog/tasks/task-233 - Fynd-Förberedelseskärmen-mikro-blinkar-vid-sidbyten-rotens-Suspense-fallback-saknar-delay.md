@@ -3,10 +3,10 @@ id: TASK-233
 title: >-
   Fynd: Förberedelseskärmen mikro-blinkar vid sidbyten - rotens
   Suspense-fallback saknar delay
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 23:43'
-updated_date: '2026-08-17 00:04'
+updated_date: '2026-08-17 01:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,7 +31,7 @@ S102 Lotta-vandringen punkt 10 (Marcus 2026-08-16): 'laddnings-sidan dyker upp e
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -116,3 +116,9 @@ klass av staging-datahygien/rate-limit-mönster som task-227 och task-236
 redan dokumenterat för samma testfil). CI:s Staging-jobb är den
 avgörande grinden per etablerad praxis (CONTRIBUTING.md).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd av orkestreraren 2026-08-17: PR #1463 mergad via kön (grönt krav); efterföljande post-merge på trädet (5b71dcbb) grön. Marcus praktikbevis (blink-frihet i prod) är öppen bevakning, bokförd i sessionsdok.
+<!-- SECTION:FINAL_SUMMARY:END -->

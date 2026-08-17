@@ -3,10 +3,10 @@ id: TASK-164
 title: >-
   mer-index.staging röd sedan 3a225d89 — S100:s Dokument-yta [PROTOTYPE] i skarp
   build
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-08 17:10'
-updated_date: '2026-08-16 22:04'
+updated_date: '2026-08-17 01:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,14 +29,14 @@ Testet mer-index.staging ('Mer-landningsytan ... ikoner chevron per rad') är de
 <!-- AC:BEGIN -->
 - [x] #1 Diagnosen fastställd: exakt varför mer-index-testet faller, mot 3a225d89:s faktiska diff
 - [x] #2 Fix landad enligt O3-flaggformen om hypotesen bekräftas (DEV-grind, prototypen kvar i dev)
-- [ ] #3 Testet bevisat grönt i post-merge-körning på main
+- [x] #3 Testet bevisat grönt i post-merge-körning på main
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -117,3 +117,9 @@ varje landning.
 Kortet sätts INTE till Done av denna agent (bygg-agent-kontraktet:
 "Sätt aldrig kortet till Done" — orkestreraren stänger efter CI-grönt).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd av orkestreraren 2026-08-17: rivningen mergad (#1449, 7ad23d51) och post-merge på 5b71dcbb (som bär rivningen) GRÖN — seriens första fulla gröna; mellanliggande rödingar klassade förbefintliga (persist-cache/mer-index-klasserna, lagade i task-243.3 #1470).
+<!-- SECTION:FINAL_SUMMARY:END -->
