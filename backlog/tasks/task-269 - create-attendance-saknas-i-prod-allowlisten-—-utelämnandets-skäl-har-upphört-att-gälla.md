@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-17 11:51'
-updated_date: '2026-08-17 12:02'
+updated_date: '2026-08-17 12:57'
 labels:
   - ready-for-human
 dependencies: []
@@ -58,4 +58,12 @@ AC2 — config.toml-kommentaren rättad. Det stale skälet ('ingen UI-yta konsum
 AC3 KVARSTÅR och kan inte stängas av mig: funktionen är nu DEPLOYBAR, inte deployad. Prod-deployen är Marcus HITL-handling (fas 4 steg 3). Efter den ska dörrens backup-väg prövas skarpt mot en anmälan utan Deltaganden-rad.
 
 BREDDMÄTNING (hela ytan, inte bara detta fall): jämförde supabase/functions/ mot allowlisten i båda riktningarna. På disk men ej i allowlist före denna ändring: create-attendance + fyra test-* (test-attachments-storage, test-auth, test-invite-completion, test-pdf-generation — samtliga korrekt utanför prod per allowlistens eget huvud). I allowlist men ej på disk: NOLL — deployen kan inte fela på en saknad funktion. create-attendance var alltså den ENDA verkliga luckan; felklassen upprepas inte någon annanstans.
+
+MÄTT 2026-08-17 (Marcus --kontrollera mot prod): create-attendance SAKNAS FORTFARANDE i prod. Prod-listan bär 38 ACTIVE funktioner; create-attendance är inte en av dem.
+
+Det bekräftar kortets premiss skarpt, med prod-data i stället för härledning: allowlist-raden landade i dag (#1548) men deployen som fyllde prod skedde 06:59 samma morgon — ALLTSÅ FÖRE raden fanns. Funktionen är därmed byggd, testad, konsumerad av appen (AirtableAdapter.ts:262) och allowlistad — men aldrig deployad.
+
+Check-in-dörrens backup-väg ger fortfarande 404 i prod. AC3 kvarstår och stängs först när Marcus kört --deploya och prövat vägen skarpt mot en anmälan utan Deltaganden-rad.
+
+BIFYND värt att notera för nästa deploy: eftersom de övriga 38 redan bär dagens kod är en omkörning av hela allowlisten en no-op för dem — kostnaden för den kanoniska vägen (hela listan i stället för en handplockad delmängd) är alltså nära noll här, medan skyddsräcket (fail-closed allowlist-kontroll) behålls.
 <!-- SECTION:NOTES:END -->

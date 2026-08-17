@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-17 11:53'
-updated_date: '2026-08-17 12:03'
+updated_date: '2026-08-17 12:57'
 labels:
   - ready-for-human
 dependencies: []
@@ -56,4 +56,16 @@ OBEROENDE BEKRÄFTELSE ur passkey-proben mot prod (samma pass): Supabase svarar 
 KVARSTÅR ÄNDÅ ATT LÄSA: INVITE_REDIRECT_URL:s faktiska värde (supabase secrets list). Att domänen lever bevisar inte att variabeln pekar på den — den kan vara osatt (Supabase faller då tillbaka på projektets Site URL) eller peka på något annat. Kortets AC3 är därför inte moot; den är billig att stänga i fas 4 steg 1.
 
 BONUSMÄTNING (stänger underlagets R10 för detta tillfälle): prod-bundlen index-C4xgzwJE.js innehåller strängen 'grid min-h-dvh w-full' — 266-fixens egna klasser, mergad 11:10Z i dag. Fronten är alltså FÄRSK, inte stale. Metodnot: en första sökning på funktionsnamnen ur inloggningsdestination.ts gav noll träffar, men det bevisade ingenting — bundlen är minifierad och identifierare manglas. Endast strängliteraler överlever; välj markör därefter.
+
+MÄTT 2026-08-17 (Marcus körde --kontrollera mot prod): UTFALL (c) BEKRÄFTAT — INVITE_REDIRECT_URL FINNS INTE bland prod-hemligheterna.
+
+Samtliga 16 hemligheter lästa: ADMIN_EMAILS, AIRTABLE_BASE_ID, AIRTABLE_TOKEN, CORS_ALLOWED_ORIGINS, ENVIRONMENT, RESEND_API_KEY, RESEND_FROM, RESEND_REPLY_TO, SUPABASE_ANON_KEY, SUPABASE_DB_URL, SUPABASE_JWKS, SUPABASE_PUBLISHABLE_KEYS, SUPABASE_SECRET_KEYS, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL, VITE_SENTRY_DSN. Ingen INVITE_REDIRECT_URL.
+
+KONSEKVENSEN, härledd ur koden: supabase/functions/invite-user/index.ts:260 läser 'Deno.env.get(INVITE_REDIRECT_URL) ?? ' och normaliserar tomt till undefined; rad 269 skickar redirectTo endast när det är satt. Saknas variabeln skickas ingen redirectTo alls, och Supabase faller tillbaka på PROJEKTETS SITE URL. Inbjudningslänkens destination bestäms alltså i dag av en dashboard-inställning som ingen i repot äger eller bevakar.
+
+DOMÄNEN SJÄLV ÄR FRISK (AC1/AC2 redan bockade): admin.miranon.dev → 76.76.21.21 (Vercel), HTTP 200, och Supabase passkey-probens rpId bekräftar samma värd oberoende. Men att domänen lever säger ingenting om vart Site URL pekar.
+
+REKOMMENDATION till AC3: sätt INVITE_REDIRECT_URL explicit till https://admin.miranon.dev i stället för att förlita sig på Site URL-fallbacken. En explicit variabel kan inte ändras som sidoeffekt av att någon rör en annan auth-inställning, och den blir läsbar i samma svep som allt annat driftläge. Kräver Marcus avläsning av Site URL först — om den redan pekar rätt är risken låg men bärarlös.
+
+ÄVEN AVLÄST: CORS_ALLOWED_ORIGINS FINNS (uppdaterad 2026-08-05T15:06:09Z) men secrets list visar endast namn + sha256-digest, aldrig värden. Att den finns bevisar INTE att prod-origin står i den. Måste läsas i dashboarden — och deployens curl-verifiering upptäcker aldrig ett CORS-fel, eftersom curl inte skickar Origin-header.
 <!-- SECTION:NOTES:END -->
