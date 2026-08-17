@@ -602,8 +602,8 @@ T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
 § Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
 **Session 104 ▶️ AKTIV (2026-08-17, `lifecycle: active`, resume 5) —
-NATT-ORKESTRERINGEN FULLBORDAD: alla åtta 249-skivor MERGADE (`#1475
-#1477 #1478 #1480 #1492 #1494 #1501 #1510`), EF:erna prod-deployade
+NATT-ORKESTRERINGEN FULLBORDAD: alla åtta 249-skivor MERGADE (PR
+1475/1477/1478/1480/1492/1494/1501/1510), EF:erna prod-deployade
 38/38 (Marcus egen körning), fronten bundle-bevisad färsk, Marcus QA
 körd → fyndspåren 259 (`#1534` LANDAD) · utredningen 260 (`#1522`,
 0 leads — 154/247 namnlösa är äkta backfill-klass) · K1 `task-264`
