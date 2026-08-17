@@ -4,10 +4,12 @@ title: 'Skiva: Prototyp-rivningen — dev-substratet bort efter stämpeln'
 status: To Do
 assignee: []
 created_date: '2026-08-16 14:39'
+updated_date: '2026-08-17 09:52'
 labels:
   - ready-for-agent
 dependencies:
   - TASK-243.4
+  - TASK-241.7
 parent_task_id: TASK-243
 ordinal: 451000
 ---
