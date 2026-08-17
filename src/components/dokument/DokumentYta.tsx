@@ -452,6 +452,34 @@ function MetaRad({ delar }: { delar: (string | null)[] }) {
  * (`src/data/mutations/dokumentKalla.ts`) — samma DRY-motiv den rivna
  * `GenereradPdfVisaKnapp`s docblock uttryckte, nu genomfört för alla tre i
  * stället för bara två.
+ *
+ * ═══ KNAPPFORMEN ÄR `primary`+`subtle` — RÖR DEN INTE TILL `ghost` ═══
+ *
+ * Detta är en ÅTERSTÄLLD fix, inte ett smakval, och den har rivits en gång
+ * redan. Historiken, för den som frestas förenkla:
+ *
+ *   1. `3b592e8c` (TASK-147.6 varv 3) bytte den dåvarande Visa-knappen FRÅN
+ *      `ghost` TILL `intent="primary" emphasis="subtle"` — på Marcus
+ *      granskningsfynd. Skälet stod i klartext i den commitens docblock:
+ *      `ghost`s hover-token (`--mm-button-ghost-bg-hover`) är
+ *      `var(--mm-bg-muted)`, vilket är EXAKT samma färg som radgruppens egen
+ *      bakgrund (`bg-bg-muted` på `grupp-kort`, se `DokumentLista` och
+ *      `GemensamtLage` nedan). Hovern FANNS i CVA:n hela tiden — den var
+ *      osynlig mot en identisk bakgrund.
+ *   2. `b881fe64` (TASK-273.4) ersatte Visa-knappen med detta ikonpar och
+ *      satte `intent="ghost"` — vilket återinförde exakt samma
+ *      token-identitet, och därmed exakt samma osynliga hover.
+ *   3. Marcus fångade den igen vid QA 273.5 steg 5 (2026-08-17):
+ *      "de behöver alltså samma bakgrund som visa-knappen hade, samma hover
+ *      också liksom". Samma defekt, andra ronden.
+ *
+ * INVARIANTEN, formulerad så den överlever nästa ombyggnad: en knapp som
+ * sitter INUTI `grupp-kort` (`bg-bg-muted`) får aldrig bära `ghost`, för
+ * `ghost`s hover ÄR `bg-bg-muted`. `subtle` är dessutom primitivens egen
+ * deklarerade form för just denna ytklass ("tabellrader/toolbars, kompakt:
+ * svag intent-tonad platta", `Button.tsx` § subtle) och tänder en kant i
+ * intent-färgen under `prefers-contrast: more` — 11-golvet, som `ghost`
+ * (transparent botten) inte kan ge här.
  */
 function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: DokumentKalla }) {
   const forhandsvisaMutation = useForhandsvisaDokument();
@@ -467,7 +495,8 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
     <span className="flex flex-col items-end gap-1.5 self-center">
       <span className="flex items-center gap-1">
         <Button
-          intent="ghost"
+          intent="primary"
+          emphasis="subtle"
           size="sm"
           className="size-11 shrink-0 p-0"
           // MEDVETET `aria-disabled` — INTE `isDisabled` (som Button.tsx:s
@@ -494,7 +523,8 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
           )}
         </Button>
         <Button
-          intent="ghost"
+          intent="primary"
+          emphasis="subtle"
           size="sm"
           className="size-11 shrink-0 p-0"
           aria-disabled={nedladdningMutation.isPending}
@@ -906,11 +936,13 @@ function GemensamtLage({
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-small text-text-muted">
-        Gemensamma dokument gäller flera event: en kurstyp eller alla event. Ändras här, syns direkt
-        överallt de gäller.
-      </p>
-
+      {/* HJÄLPTEXTEN ÄR BORTTAGEN (Marcus, QA 273.5 steg 5, 2026-08-17:
+          "Ta bort hjälptexten … den behövs inte"). Den löd "Gemensamma
+          dokument gäller flera event: en kurstyp eller alla event. Ändras
+          här, syns direkt överallt de gäller." — informationen bärs redan av
+          `RackviddBadge` per rad, som säger samma sak om den enskilda filen i
+          stället för i abstrakt form ovanför listan. Återinför den inte utan
+          att först fråga; raden är beslutad bort, inte tappad. */}
       {laddar ? (
         <div role="status" aria-busy="true" className="flex flex-col gap-2">
           <span className="sr-only">Laddar gemensamma dokument…</span>
