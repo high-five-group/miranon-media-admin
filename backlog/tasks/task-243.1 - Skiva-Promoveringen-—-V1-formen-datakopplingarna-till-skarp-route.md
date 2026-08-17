@@ -4,7 +4,7 @@ title: 'Skiva: Promoveringen — V1-formen + datakopplingarna till skarp route'
 status: Done
 assignee: []
 created_date: '2026-08-16 14:32'
-updated_date: '2026-08-16 19:55'
+updated_date: '2026-08-17 09:46'
 labels:
   - ready-for-agent
 dependencies: []
@@ -65,6 +65,8 @@ Hem.tsx B-NYTT2) fanns INTE i facit-prototypen och promoveras därför inte
 (ADR-102 B1: prototypen vinner). Bokfört i Hem.tsx docblock + slutrapport.
 
 VARV 2 (S102, hermetik-självtest-fix): täckningsluckan flyttar från '33 skippade' till 'raderade, återbyggs i 243.3' — samma medvetna lucka i grind-kompatibel form. Skälet: scripts/hermetik-sjalvtest.mjs kräver att VARJE test i tömd fixtur får status 'unexpected' (OmockadRequestError); test.skip ger 'skipped', en avvikelse per skippat fall — strukturellt inkompatibelt, fällde PR #1426 (run 31959987827). ÅTGÄRD: raderade samtliga 33 varv-1-skippade fall (git bevarar historik) — 13 individuella test.skip i tests/acceptance/hem.acceptance.test.ts, 2 hela describe.skip-block (6+3 fall) i samma fil, 2 individuella test.skip i tests/acceptance/hem-laddlage.acceptance.test.ts, samt de två helt skippade filerna hem-senaste-aktivitet.acceptance.test.ts (7 fall) och hem-senaste-aktivitet-farskhet.acceptance.test.ts (2 fall) via git rm. 13+5=18 gröna tester behållna orörda (matchar varv 1:s bokförda tal). Följdstädning: nu-oanvända readFileSync-import, KORT-konstant, resolvedTokenColor-funktion, GET_REGISTRATIONS/GET_EVENTS/H1_HALSNING-konstanter borttagna (typecheck TS6133). VERIFIERAT: npm run test:acceptance:sjalvtest → 198 tester · 198 fällda · 198 med OmockadRequestError (exit 0). npx playwright test --project=acceptance (RÄTT kommando är npm run test:acceptance — uppdragets kommandotext saknade PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1-prefixet, se slutrapport) → 195-196/198 grönt över tre körningar under svår maskinlast (CLI-storm, load1 25-500); de 2-3 kvarvarande röda är BEVISADE kontentions-flakes (samtliga passerar 100% i isolerad körning med --workers=1, ingen i min diff). DoD-kvartett grön: test:api 768 passed, typecheck 0 fel, biome check exit 0, build exit 0.
+
+B2-BESLUTET FÄLLT (Marcus, 2026-08-17, vid QA 243.4): AMENDERA — badge+375px-squeezen (~1,7 px, byte-identisk med låsta prototypen) accepteras som godkänd form tills vidare. Marcus ordagrant: 'Vi kör amenderar B2 just nu, orkar inte ta tag i det just nu.' Omprövning är FRI vid ett senare mobilpass — beslutet är ett medvetet nu-läge, inte en evighetsdom. Facit-bilderna (som redan bär squeezen) står därmed oförändrade som baseline.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
