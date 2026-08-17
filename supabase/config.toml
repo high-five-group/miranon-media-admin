@@ -78,12 +78,20 @@ verify_jwt = true
 # create-attendance — check-in-dörrens BACKUP-vägen (TASK-214.1, PRD task-214):
 # skapar en Deltaganden-rad atomärt/idempotent när en anmälan möter dörren utan
 # förskapad rad. Gateway-första-försvar aktivt; requireUser läggs OVANPÅ i
-# koden (defense-in-depth). MEDVETET UTELÄMNAD ur .prod-functions-
-# allowlist.conf tills vidare — ingen UI-yta konsumerar den ännu (dörrlistans
-# mutations-koppling är en senare skiva i samma PRD, task-214.2); prod-EF-
-# deploy är alltid en separat Marcus-auktoriserad handling (ADR-050/ADR-063),
-# samma ordning create-event-note/create-person-note höll innan sin egen
-# prod-våg.
+# koden (defense-in-depth).
+#
+# ALLOWLISTAD 2026-08-17 (S102 resume 8, Marcus GO). Här stod tidigare att
+# funktionen var "MEDVETET UTELÄMNAD ur .prod-functions-allowlist.conf tills
+# vidare — ingen UI-yta konsumerar den ännu (dörrlistans mutations-koppling är
+# en senare skiva i samma PRD, task-214.2)". Det skälet var sant när det
+# skrevs och FÖLL när task-214.2 landade 2026-08-14/15 (PR #1301, merge
+# aca14cff) — appen anropar EF:en skarpt i dag (AirtableAdapter.ts:262 m.fl.).
+# Kommentaren stod kvar och blev därmed en yta som ljög: utan allowlist-rad
+# deployades funktionen aldrig, och dörrens backup-väg gav 404 i prod.
+# Forensiken: backlog/tasks/task-269.
+#
+# Prod-EF-deploy är alltjämt en separat Marcus-auktoriserad handling
+# (ADR-050/ADR-063) — allowlist-raden gör funktionen deploybar, inte deployad.
 [functions.create-attendance]
 verify_jwt = true
 

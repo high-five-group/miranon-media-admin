@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-17 11:51'
+updated_date: '2026-08-17 12:02'
 labels:
   - ready-for-human
 dependencies: []
@@ -32,8 +33,8 @@ Detta kort ÄR beslutsunderlaget underlagets R9 efterlyste.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Beslut fattat och skrivet: create-attendance in i allowlisten, ELLER utelämnandet motiverat på ny, sann grund
-- [ ] #2 config.toml-kommentaren rad 78-86 rättad — det stale skälet ('ingen UI-yta konsumerar den ännu') står inte kvar
+- [x] #1 Beslut fattat och skrivet: create-attendance in i allowlisten, ELLER utelämnandet motiverat på ny, sann grund
+- [x] #2 config.toml-kommentaren rad 78-86 rättad — det stale skälet ('ingen UI-yta konsumerar den ännu') står inte kvar
 - [ ] #3 Vid allowlist-tillägg: funktionen deployad till prod och verifierad ACTIVE, och dörrens backup-väg prövad skarpt mot en anmälan utan Deltaganden-rad
 <!-- AC:END -->
 
@@ -44,3 +45,17 @@ Detta kort ÄR beslutsunderlaget underlagets R9 efterlyste.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MARCUS GO 2026-08-17 ('create-attendance måste ju funka också, eller vadå?'). AC1 + AC2 utförda i samma pass.
+
+AC1 — BESLUT: funktionen läggs till i .prod-functions-allowlist.conf. Deploy-setet går därmed 38 → 39, verifierat med 'bash scripts/deploy-prod-functions.sh --list' (exit 0, 'Deploy-set (39)', create-attendance listad).
+
+AC2 — config.toml-kommentaren rättad. Det stale skälet ('ingen UI-yta konsumerar den ännu') står inte kvar som gällande påstående; det är bevarat i rättelsetexten som historik, med datum för när det föll och varför. Att bara radera det hade dolt att ytan en gång ljög.
+
+AC3 KVARSTÅR och kan inte stängas av mig: funktionen är nu DEPLOYBAR, inte deployad. Prod-deployen är Marcus HITL-handling (fas 4 steg 3). Efter den ska dörrens backup-väg prövas skarpt mot en anmälan utan Deltaganden-rad.
+
+BREDDMÄTNING (hela ytan, inte bara detta fall): jämförde supabase/functions/ mot allowlisten i båda riktningarna. På disk men ej i allowlist före denna ändring: create-attendance + fyra test-* (test-attachments-storage, test-auth, test-invite-completion, test-pdf-generation — samtliga korrekt utanför prod per allowlistens eget huvud). I allowlist men ej på disk: NOLL — deployen kan inte fela på en saknad funktion. create-attendance var alltså den ENDA verkliga luckan; felklassen upprepas inte någon annanstans.
+<!-- SECTION:NOTES:END -->

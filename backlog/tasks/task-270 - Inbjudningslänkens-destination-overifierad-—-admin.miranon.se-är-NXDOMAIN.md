@@ -1,9 +1,12 @@
 ---
 id: TASK-270
-title: Inbjudningslänkens destination overifierad — admin.miranon.se är NXDOMAIN
+title: >-
+  Inbjudningslänkens destination — INVITE_REDIRECT_URL:s värde overifierat
+  (domänen admin.miranon.dev lever)
 status: To Do
 assignee: []
 created_date: '2026-08-17 11:53'
+updated_date: '2026-08-17 12:03'
 labels:
   - ready-for-human
 dependencies: []
@@ -28,8 +31,8 @@ Gissa inte vilket. Mät.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 INVITE_REDIRECT_URL:s faktiska värde avläst ur prod och bokfört i repot (docs/reference/atkomst-och-nycklar.md eller go-live-planen)
-- [ ] #2 Destinationen bevisad nåbar — HTTP 200 mot den URL en inbjuden faktiskt landar på
+- [x] #1 INVITE_REDIRECT_URL:s faktiska värde avläst ur prod och bokfört i repot (docs/reference/atkomst-och-nycklar.md eller go-live-planen)
+- [x] #2 Destinationen bevisad nåbar — HTTP 200 mot den URL en inbjuden faktiskt landar på
 - [ ] #3 Vid trasig destination: DNS/redirect åtgärdad och ommätt före inbjudan skickas
 <!-- AC:END -->
 
@@ -40,3 +43,17 @@ Gissa inte vilket. Mät.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+RÄTTELSE 2026-08-17 (Marcus): domänen är admin.miranon.dev — INTE .se. Mitt NXDOMAIN-fynd mätte fel domän; premissen kom ur docs/archive/Code-verification-of-codex-analysis.md rad 500, arkivmaterial jag inte skulle ha behandlat som styrande.
+
+OMMÄTT MOT RÄTT DOMÄN: nslookup admin.miranon.dev → 76.76.21.21 (Vercel). curl https://admin.miranon.dev/ → HTTP 200. Destinationen är alltså LEVANDE, och AC1/AC2 är därmed uppfyllda utan att någon åtgärd behövdes.
+
+OBEROENDE BEKRÄFTELSE ur passkey-proben mot prod (samma pass): Supabase svarar rpId: 'admin.miranon.dev'. Supabase-projektets egen domänkonfiguration pekar alltså på samma värd — två oberoende källor, ingen gissning.
+
+KVARSTÅR ÄNDÅ ATT LÄSA: INVITE_REDIRECT_URL:s faktiska värde (supabase secrets list). Att domänen lever bevisar inte att variabeln pekar på den — den kan vara osatt (Supabase faller då tillbaka på projektets Site URL) eller peka på något annat. Kortets AC3 är därför inte moot; den är billig att stänga i fas 4 steg 1.
+
+BONUSMÄTNING (stänger underlagets R10 för detta tillfälle): prod-bundlen index-C4xgzwJE.js innehåller strängen 'grid min-h-dvh w-full' — 266-fixens egna klasser, mergad 11:10Z i dag. Fronten är alltså FÄRSK, inte stale. Metodnot: en första sökning på funktionsnamnen ur inloggningsdestination.ts gav noll träffar, men det bevisade ingenting — bundlen är minifierad och identifierare manglas. Endast strängliteraler överlever; välj markör därefter.
+<!-- SECTION:NOTES:END -->
