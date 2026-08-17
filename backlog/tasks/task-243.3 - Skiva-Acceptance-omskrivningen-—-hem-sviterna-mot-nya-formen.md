@@ -1,10 +1,10 @@
 ---
 id: TASK-243.3
 title: 'Skiva: Acceptance-omskrivningen — hem-sviterna mot nya formen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 14:36'
-updated_date: '2026-08-17 00:48'
+updated_date: '2026-08-17 01:55'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,7 +31,7 @@ Hem-vyns acceptance-skydd skrivs om så nya Morgonkollen-formen bär samma testt
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning: testernas förväntningar korsläses mot tasks/sessions/bilagor/s102-hem-konvergens/facit.json — testet får aldrig kräva något facit motsäger
 <!-- DOD:END -->
@@ -49,3 +49,9 @@ KLASSNING AV TRÄDLÄGETS RÖDA (samtliga verifierade via direkt kod-läsning + 
 
 Samtliga tre filer LIGGER UTANFÖR AC #1:s uppräknade fyra hem-acceptance-sviter (de är e2e/*.staging.test.ts, inte tests/acceptance/hem*.ts) men klassades som hem-formens-skifte per uppdragets egen scope-regel och åtgärdades i denna skiva. Ingen av de tre kräver en armerad grind-cykel för att bevisas — samtliga körda LIVE mot staging under bygget (chromium-authenticated).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd av orkestreraren 2026-08-17 (omapplicerad efter kort-rebase): PR #1470 mergad via kön (5b71dcbb) efter overlay-semantik-rebasen; post-merge SUCCESS — rödserien bruten.
+<!-- SECTION:FINAL_SUMMARY:END -->

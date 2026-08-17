@@ -3,10 +3,10 @@ id: TASK-240
 title: >-
   Förberedelseskärmens loadingbar körde inte vid utloggning/inloggning —
   rotorsaka och fixa
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 09:00'
-updated_date: '2026-08-17 00:55'
+updated_date: '2026-08-17 01:55'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,10 +28,10 @@ Marcus-observation 2026-08-16 (skarp yta, logga ut → logga in): Förberedelses
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -103,3 +103,9 @@ VERKTYG PASS 3: egen dev-server portarna 5185-5189, aldrig 5173/5174. CORS-kring
 
 GREN-HISTORIK, FLAGGAT ÖPPET: en FÖRSTA gren (`fix/task-240-stall-signal`, ej pushad) byggdes av misstag mot en ÄLDRE `origin/main`-punkt (innan #1466 hann landa) och dupplicerade därför AC1/AC3-bockningarna + Pass 2-notesen manuellt. Upptäckt via `git fetch` + `git log origin/main` INNAN push (fångades av premiss-pass-disciplinen, inte av en extern granskare) — koden (Forberedelseskarm.tsx/startvarmningen.ts-diffen) extraherades som patch och applicerades rent på en NY gren mot verkligt FÄRSKT `origin/main` (denna gren); den gamla grenen pushades ALDRIG och lämnas oanvänd lokalt.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd av orkestreraren 2026-08-17 (omapplicerad efter kort-rebase): AC 1–3 bockade (#1466 + #1472 mergade via kön); post-merge på 5b71dcbb grön; DoD mot pass 2/3-beläggen.
+<!-- SECTION:FINAL_SUMMARY:END -->
