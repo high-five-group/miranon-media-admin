@@ -44,7 +44,7 @@
 // trädet trasigt vid ett avbrott (samma resonemang som
 // attachment-layer-independence.test.ts § filhuvudet).
 
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -79,9 +79,11 @@ function walkTsFiles(dir: string): string[] {
 }
 
 /** Samma parsningsform som .prod-functions-allowlist.conf/ef-metod-vakt.test.ts:
- * en sökväg per rad, `#` inleder kommentar (även inline), blankrader ignoreras. */
-function readAllowlist(): string[] {
-  return readFileSync(ALLOWLIST_FILE, 'utf8')
+ * en sökväg per rad, `#` inleder kommentar (även inline), blankrader ignoreras.
+ * Filvägen är parametriserad så parsern kan bevisas mot en KONSTRUERAD conf
+ * (TASK-249.6) utan att den riktiga policyfilen behöver bära testposter. */
+function readAllowlist(file: string = ALLOWLIST_FILE): string[] {
+  return readFileSync(file, 'utf8')
     .split('\n')
     .map((line) => line.replace(/#.*$/, '').trim())
     .filter((line) => line.length > 0);
@@ -150,10 +152,62 @@ test.describe('Mutationens hemvist-vakt — detektorn (TASK-201.15)', () => {
 });
 
 test.describe('Mutationens hemvist-vakt — REPOT (TASK-201.15 AC #5)', () => {
-  test('allowlisten är läst och bär de förväntade posterna (canary mot en tom/trasig conf)', () => {
-    const allowlist = readAllowlist();
-    expect(allowlist).toContain('src/components/segment/SegmentBuilder.tsx');
-    expect(allowlist).toContain('src/components/segment/prototyp/VariantA.tsx');
+  /**
+   * CANARYN ÄR OMFORMAD (TASK-249.6, 2026-08-17) — och skälet är värt att
+   * läsa innan någon "återställer" den.
+   *
+   * DEN GAMLA FORMEN krävde två NAMNGIVNA poster som bevis för att conf:en
+   * var läst och icke-tom: `src/components/segment/SegmentBuilder.tsx` och
+   * `src/components/segment/prototyp/VariantA.tsx`. Båda filerna revs med
+   * segment-promoveringen (ADR-103, TASK-249.6) och deras allowlist-poster
+   * med dem — så det testet hade fällt på ett KORREKT tillstånd.
+   *
+   * ATT LISTAN ÄR TOM ÄR GRINDENS STRÄNGASTE LÄGE, INTE ETT TRASIGT. Vakten
+   * är fail-closed: en tom allowlist betyder att ingen komponent-lokal
+   * `useMutation` är tillåten någonstans under src/. En tom/trasig conf kan
+   * därför aldrig göra testet nedan vakuöst grönt — den gör det maximalt
+   * strängt, och en parser som returnerade tomt av misstag hade fällt
+   * högljutt i "INGEN useMutation utanför..."-testet, inte tystat det.
+   *
+   * KVAR STÅR DE TVÅ EGENSKAPER SOM FAKTISKT BEHÖVER SKYDD: att parsern
+   * fungerar mot conf-formatet (bevisat tvåsidigt mot en konstruerad fil,
+   * nedan), och att listan inte tyst fylls med skräp. Den andra är STARKARE
+   * än den gamla formen: en post som pekar på en riven fil är osynlig i dag
+   * och vidgar grinden tyst den dag sökvägen återuppstår.
+   */
+  test('allowlist-parsern skiljer poster från kommentarer och blankrader (tvåsidigt självtest)', () => {
+    const tmpDir = mkdtempSync(path.join(tmpdir(), 'mutation-hemvist-conf-'));
+    try {
+      const conf = path.join(tmpDir, 'policy.conf');
+      writeFileSync(
+        conf,
+        '# rubrikkommentar som aldrig är en post\n' +
+          '\n' +
+          'src/komponenter/Ett.tsx\n' +
+          'src/komponenter/Tva.tsx # inline-skälet stripplas\n' +
+          '   \n' +
+          '#src/komponenter/Utkommenterad.tsx\n',
+      );
+      // TAR de två riktiga posterna, SLÄPPER rubriken, blankraderna och den
+      // utkommenterade sökvägen — båda riktningarna i ett påstående.
+      expect(readAllowlist(conf)).toEqual(['src/komponenter/Ett.tsx', 'src/komponenter/Tva.tsx']);
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test('varje allowlistad sökväg pekar på en fil som FINNS på disk (ingen skräppost)', () => {
+    const dodaPoster = readAllowlist().filter(
+      (relative) => !existsSync(path.join(REPO_ROOT, relative)),
+    );
+    expect(
+      dodaPoster,
+      dodaPoster.length > 0
+        ? `${dodaPoster.length} allowlist-post(er) i .mutation-hemvist-policy.conf pekar på ` +
+            `filer som inte finns: ${dodaPoster.join(', ')}. Ta bort dem — en post utan fil ` +
+            'vidgar grinden tyst den dag sökvägen återuppstår.'
+        : undefined,
+    ).toEqual([]);
   });
 
   test('INGEN useMutation utanför src/data/mutations/ som inte är allowlistad', () => {
