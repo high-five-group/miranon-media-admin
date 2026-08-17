@@ -91,6 +91,12 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { loadavg } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+// Samma hemvist som playwright.config.ts läser porten ur (TASK-251) — riggens
+// portvakt nedan MÅSTE gälla den port webServer faktiskt startar på, och en
+// egen literal här hade blivit osann i samma stund som en agent kör i en
+// worktree. `.ts` från `.mjs` går via Nodes type stripping (default sedan
+// 22.18; .nvmrc-golvet är 24).
+import { devPort } from '../tests/support/dev-portar.ts';
 
 // ---------------------------------------------------------------------------
 // Pura funktioner (exporterade för scripts/test-flake-matserie.mjs)
@@ -395,20 +401,31 @@ async function kor() {
     return { gateOk: true };
   }
 
-  /** Port 5399 MÅSTE vara ledig. webServer kör reuseExistingServer: false +
-   *  --strictPort, så en dröjande dev-server ger hård vägran och en
-   *  NOLL-körning som ser ut som en fällning. Det hände i TASK-74:s A/B-serie
-   *  (run-02-B, 2 s, exit 1) och är ett MÄTFEL, inte data — därför vakten. */
+  /** Acceptance-klassens dev-serverport MÅSTE vara ledig. webServer kör
+   *  reuseExistingServer: false + --strictPort, så en dröjande dev-server ger
+   *  hård vägran och en NOLL-körning som ser ut som en fällning. Det hände i
+   *  TASK-74:s A/B-serie (run-02-B, 2 s, exit 1) och är ett MÄTFEL, inte data
+   *  — därför vakten.
+   *
+   *  PORTEN HÄMTAS, DEN SKRIVS INTE (TASK-251). Vakten stod tidigare på
+   *  literalen 5399 och `pkill -f 'vite --port 5399'`. Båda blev fel så fort
+   *  riggen kördes i en worktree: lsof hade tittat på en port ingen av VÅRA
+   *  processer lyssnade på, och pkill hade dödat en ANNAN agents dev-server —
+   *  en mätrigg som saboterar grannen är värre än ingen vakt alls. */
+  const ACCEPTANCE_PORT = devPort('acceptance');
+
   async function vantaPaPort() {
     for (let i = 0; i < 30; i++) {
       try {
-        execFileSync('lsof', ['-ti', ':5399'], { stdio: ['ignore', 'pipe', 'ignore'] });
+        execFileSync('lsof', ['-ti', `:${ACCEPTANCE_PORT}`], {
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
       } catch {
         return true; // lsof exit 1 = ingen lyssnare
       }
       if (i === 10) {
         try {
-          execFileSync('pkill', ['-f', 'vite --port 5399'], { stdio: 'ignore' });
+          execFileSync('pkill', ['-f', `vite --port ${ACCEPTANCE_PORT}`], { stdio: 'ignore' });
         } catch {
           /* redan borta */
         }

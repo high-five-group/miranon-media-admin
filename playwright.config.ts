@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
+import { devPort } from './tests/support/dev-portar';
 import {
   VISUAL_SUPABASE_ANON_KEY,
   VISUAL_SUPABASE_URL,
@@ -29,7 +30,15 @@ dotenv.config({ path: path.resolve(import.meta.dirname, '.env.test'), quiet: tru
 // reuseExistingServer: false vägrar återanvända. Aktiveras via
 // test:a11y-scriptets env-flagga så övriga projekts webServer-beteende
 // är orört.
-const A11Y_DEV_PORT = 5199;
+//
+// PORTEN ÄR WORKTREE-DERIVERAD SEDAN TASK-251 (gäller alla fyra fixturbundna
+// klasserna nedan): basporten här är huvudkatalogens, och varje linked worktree
+// får sitt eget block så parallella bygg-agenter på samma maskin inte delar
+// resurs. Hela motiveringen — inklusive varför port 0 inte är farbar med
+// Playwrights webServer, och vad som medvetet INTE deriveras — står i
+// tests/support/dev-portar.ts. Basportarna själva bor där, inte här: två
+// hemvister för samma tal är exakt den drift som gör en literal osann.
+const A11Y_DEV_PORT = devPort('a11y');
 const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
 
 // Visual-runnern (task-36.7) kör mot en ALLTID-FÄRSK dev-server på dedikerad
@@ -40,7 +49,7 @@ const isA11yRun = process.env.PLAYWRIGHT_A11Y_DEV_SERVER === '1';
 // verklig env, och stale-server-vakten ska vägra den — inte tvinga fram att
 // den stängs (E2E-portlåset till 5173 är CORS-bundet; visual har ingen
 // CORS-yta alls, så fri port är riskfri).
-const VISUAL_DEV_PORT = 5299;
+const VISUAL_DEV_PORT = devPort('visual');
 const isVisualRun = process.env.PLAYWRIGHT_VISUAL_DEV_SERVER === '1';
 
 // Manifest-skärmbilds-runden (TASK-126.4, npm run generate:manifest-screenshots)
@@ -64,7 +73,7 @@ const isManifestScreenshotsRun = process.env.PLAYWRIGHT_MANIFEST_SCREENSHOTS ===
 // förklädd till namnstädning — nyckeln härleds ur värdnamnet, inte ur en
 // konstant vi äger. Det läser skevt när acceptance-klassen hänger på dem; det
 // är priset för att flytten är ren.
-const ACCEPTANCE_DEV_PORT = 5399;
+const ACCEPTANCE_DEV_PORT = devPort('acceptance');
 const isAcceptanceRun = process.env.PLAYWRIGHT_ACCEPTANCE_DEV_SERVER === '1';
 
 // Webbläsarbeteende-klassen (TASK-131, ADR-094): fixturfria Playwright-tester
@@ -89,7 +98,7 @@ const isAcceptanceRun = process.env.PLAYWRIGHT_ACCEPTANCE_DEV_SERVER === '1';
 // saknar all route-interception). a11y har kört så sedan Fas 3.5 utan att det
 // kostat CI-tillförlitlighet; att bygga font-pinning här hade varit en andra,
 // oberoende hemvist för samma egenskap a11y redan bevisat vara onödig.
-const WEBBLASARBETEENDE_DEV_PORT = 5499;
+const WEBBLASARBETEENDE_DEV_PORT = devPort('webblasarbeteende');
 const isWebblasarbeteendeRun = process.env.PLAYWRIGHT_WEBBLASARBETEENDE_DEV_SERVER === '1';
 
 // Självtestläget (task-60, T104): normalläget töms och testens egna
