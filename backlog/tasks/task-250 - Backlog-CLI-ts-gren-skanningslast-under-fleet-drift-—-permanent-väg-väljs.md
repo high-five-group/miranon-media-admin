@@ -1,10 +1,10 @@
 ---
 id: TASK-250
 title: 'Backlog-CLI:ts gren-skanningslast under fleet-drift — permanent väg väljs'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 01:20'
-updated_date: '2026-08-17 07:59'
+updated_date: '2026-08-17 08:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,14 +23,6 @@ S102 punkt 5 (pausens resume-sekvens). Två sessioner har nu betalat lasten live
 - [x] #2 Lösningsrymden prövad mot mätning och EN väg vald med belägg: (a) check_active_branches av permanent + annan kollisionsvakt, (b) ROOT_CONFIG-mönstret breddas till standard-wrapper för ALLA icke-create-anrop, (c) wrapper-skript i scripts/, (d) uppströms-issue till backlog.md — vald väg mekaniserad, inte prosa
 - [x] #3 task create-vägen behåller gren-skanningen (nummer-allokeringen) oavsett vald väg — kollisionsskyddet TASK-93 får aldrig försvagas
 <!-- AC:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -68,3 +60,17 @@ VAD SOM INTE ÄR MEKANISERAT, MED AVSIKT: adoptionen är en KONVENTION, inte en 
 
 GRINDAR: shellcheck --severity=style --enable=all exit 0 · actionlint -color -ignore (CI:s exakta form) exit 0 · npm run verify:ci-parity --list exit 0 (paritets-preflight grön, ci.yml-raden plockas upp automatiskt) · scripts/test-backlog-cli.sh 16 passerade 0 failade · npm run check:docs exit 0.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGNING (orkestreraren, 2026-08-17): PR #1505 MERGED 08:15:42Z via merge-kön, per-jobb-checks gröna — DoD betald. Permanent väg vald med belägg: variant (c), wrapper-skript scripts/backlog-cli.sh (npm run bl) med BACKLOG_CWD-isolering (7,63 → 2,10 s, byte-identisk utdata); (b):s rot-fil förkastad som ej fleet-säker (fast delad sökväg). task create-vägen passerar orörd — TASK-93-skanningen intakt (AC3, testad W1–W4). Öppet kvarstående beslut åt Marcus: mekanisering av wrapper-adoption via PreToolUse-hook (rör varje agents verktygsyta) — bokfört i ADR-117 § Vad som INTE är mekaniserat.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
