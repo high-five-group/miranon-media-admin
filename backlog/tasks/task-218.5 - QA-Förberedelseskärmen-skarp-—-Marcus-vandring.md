@@ -4,6 +4,7 @@ title: 'QA: Förberedelseskärmen skarp — Marcus vandring'
 status: To Do
 assignee: []
 created_date: '2026-08-15 08:48'
+updated_date: '2026-08-17 10:07'
 labels:
   - ready-for-human
 dependencies:
@@ -33,3 +34,9 @@ Manuell testplan (Marcus, mot staging eller prod efter utrullning): (1) KALL STA
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MARCUS-OBSERVATION FÖRE VANDRINGEN (2026-08-17, staging-preview 4173, verifierat staging-bygge): vid inloggning var laddningsskärmens logo + loadingbar INTE centrerade (förväntan: mitten, per TASK-242:s layoutankare). Koden säger centrerad (Forberedelseskarm.tsx:183–184) — hypoteser: höjdkedje-kollaps i login-monteringen ELLER annan fallback-komponent renderas (233 bytte rot-fallback till Sidbytesindikatorn). Observationen matad till TASK-261-diagnosagenten (samma login-övergångsfönster som blinket) — korsläs 261:s utfall innan denna vandring; om 261 inte täcker centreringen är den en egen punkt i denna QA.
+<!-- SECTION:NOTES:END -->
