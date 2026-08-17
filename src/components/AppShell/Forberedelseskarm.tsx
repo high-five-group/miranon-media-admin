@@ -9,17 +9,22 @@ export interface ForberedelseskarmProps {
 }
 
 /**
- * Platshållar-props för de TVÅ ingångspunkter (TASK-218.3, `src/main.tsx` +
- * `src/routes/__root.tsx`) som visar skärmen INNAN en riktig startvärmnings-
- * handle finns: auth-resolution-fasen (varm/kall ännu inte avgjord, ADR-112
- * beslut 5 tillåter skärmen i 0-läge här) och rot-Suspense-fallbacken
- * (route-chunk-nedladdning — ett HELT ANNAT väntoläge än startvärmningens sju
- * hämtningar). Hemvist HÄR, inte i `main.tsx`, för att undvika en cirkulär
- * import (`main.tsx` → `router.ts` → `routeTree.gen.ts` → `__root.tsx` →
- * `main.tsx`) om `__root.tsx` hade importerat den från `main.tsx`.
- * `totalt: 1` håller stapeln vid 0 % utan division med noll — INGEN relation
- * till startvärmningens riktiga `totalt` (7 datamängder, `startvarmningen.ts`
- * `WARMUP_ITEMS`).
+ * Platshållar-props för de TVÅ ingångspunkter (`src/main.tsx`s `InnerApp`,
+ * TASK-218.3, samt `src/routes/_authenticated.tsx`s app-yta-gate,
+ * TASK-227) som visar skärmen INNAN en riktig startvärmnings-handle finns:
+ * auth-resolution-fasen (varm/kall ännu inte avgjord, ADR-112 beslut 5
+ * tillåter skärmen i 0-läge här) respektive en aktiv inloggning på en kall
+ * enhet. `totalt: 1` håller stapeln vid 0 % utan division med noll —
+ * INGEN relation till startvärmningens riktiga `totalt` (7 datamängder,
+ * `startvarmningen.ts` `WARMUP_ITEMS`).
+ *
+ * TASK-233 (rättelse): `src/routes/__root.tsx`s rot-Suspense-fallback
+ * (route-chunk-nedladdning vid SPA-sidbyten) återanvände tidigare DENNA
+ * komponent — redan då flaggat här som "ett HELT ANNAT väntoläge än
+ * startvärmningens sju hämtningar". Det visade sig vara fel vikt (mikro-
+ * blink av hela skärmen vid vanliga in-app-navigationer) och är nu ersatt
+ * av `Sidbytesindikator.tsx`, som INTE bygger på denna komponent —
+ * se den filens doc-block för hela rotorsaks- och tröskel-resonemanget.
  */
 export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, totalt: 1 };
 
@@ -113,10 +118,11 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * EN AVSIKTLIG SKILLNAD mot login, disk-verifierad
  * (`src/routes/dev/primitives.tsx` rad ~455–458): ytterdiven behåller
  * `h-full min-h-full` (fyller SIN FÖRÄLDER) i stället för login.tsx:s
- * `min-h-dvh` (fyller VIEWPORTEN). Komponenten har FYRA renderingskontexter
- * (`main.tsx`s InnerApp, `__root.tsx`s Suspense-fallback,
- * `_authenticated.tsx`s app-yta-gate, samt dev-showcasen
- * `/dev/primitives`) — dev-showcasen begränsar MEDVETET varje instans till
+ * `min-h-dvh` (fyller VIEWPORTEN). Komponenten har TRE renderingskontexter
+ * (`main.tsx`s InnerApp, `_authenticated.tsx`s app-yta-gate, samt
+ * dev-showcasen `/dev/primitives` — TASK-233 tog bort den fjärde,
+ * `__root.tsx`s Suspense-fallback, se doc-blocket ovan) — dev-showcasen
+ * begränsar MEDVETET varje instans till
  * en `h-72 overflow-hidden`-inramning för att visa alla tre förloppslägen
  * sida vid sida (kommentaren där: "I produktion fyller ytan hela
  * viewporten ... här begränsas varje instans till en fast inramning"). Ett

@@ -274,4 +274,17 @@
   --mm-forberedelseskarm-bar-track: var(--mm-bg-muted);
   --mm-forberedelseskarm-bar-fill: var(--p-gold-11);
   --mm-forberedelseskarm-bar-fill-contrast: var(--p-gold-12);
+
+  /* ── Sidbytesindikator (TASK-233 — route-chunk-övergångar) ──
+     Egna tokens i stället för att återanvända --mm-forberedelseskarm-bar-*
+     rakt av: namnet på DE tokens säger "forberedelseskarm" och en
+     tvärkomponent-koppling via ett komponentspecifikt namn vore en
+     namn-smell (DESIGN-SYSTEM-SPEC §1, "komponentspecifikt"). Samma
+     underliggande primitiv-värden och samma WCAG 1.4.11-resonemang som
+     Forberedelseskarm-tokens ovan (gold-11 mot --mm-bg-muted ≥3:1,
+     contrast-more skärper till gold-12) — se den kommentaren för hela
+     kontrastmätningen, upprepas inte här. */
+  --mm-sidbytesindikator-track: var(--mm-bg-muted);
+  --mm-sidbytesindikator-fill: var(--p-gold-11);
+  --mm-sidbytesindikator-fill-contrast: var(--p-gold-12);
 }

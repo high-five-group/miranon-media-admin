@@ -5,12 +5,7 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { Suspense } from 'react';
 import type { AuthContextValue } from '@/auth/AuthProvider';
-import {
-  AppUpdateBanner,
-  FORBEREDELSESKARM_VANTAR,
-  Forberedelseskarm,
-  RouteAnnouncer,
-} from '@/components/AppShell';
+import { AppUpdateBanner, RouteAnnouncer, Sidbytesindikator } from '@/components/AppShell';
 import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
 
 interface RouterContext {
@@ -42,13 +37,18 @@ function RootLayout() {
       <AppUpdateBanner />
       <Suspense
         fallback={
-          // TASK-218.3/ADR-112: appnivåns naket "Laddar…" ersatt av samma
-          // branded skärm som auth-resolution-fasen (src/main.tsx) — se
-          // Forberedelseskarm.tsx:s doc-block för FORBEREDELSESKARM_VANTAR.
-          <Forberedelseskarm
-            klara={FORBEREDELSESKARM_VANTAR.klara}
-            totalt={FORBEREDELSESKARM_VANTAR.totalt}
-          />
+          // TASK-233: INTE längre Forberedelseskarm (appstartens helskärms-
+          // splash var fel vikt för en route-chunks in-app-blink — se
+          // Sidbytesindikator.tsx:s doc-block för hela rotorsaks-
+          // resonemanget). Denna rot-gräns är numera i praktiken en
+          // SÄKERHETSNÄT-fallback: `router.ts`s `defaultPendingComponent`
+          // aktiverar VARJE routes EGEN Suspense-gräns, så en vanlig
+          // route-chunks kast fångas normalt DÄR (samma Sidbytesindikator,
+          // renderad utan denna rot-gräns inblandad) INNAN det någonsin
+          // bubblar hit. Samma komponent här ändå, för den ovanliga
+          // situationen att just DENNA gräns är den som fångar (t.ex.
+          // allra första renderingen).
+          <Sidbytesindikator />
         }
       >
         <NuqsAdapter>

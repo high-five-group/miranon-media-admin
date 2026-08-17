@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter } from '@tanstack/react-router';
 import type { AuthContextValue } from './auth/AuthProvider';
+import { Sidbytesindikator } from './components/AppShell';
 import { SectionError } from './components/ErrorBoundary';
 import { dataSource } from './data/dataSource';
 import { PERSIST_MAX_AGE_MS } from './queries/persist';
@@ -50,6 +51,26 @@ export const router = createRouter({
   // Sentry-capture sker via createRoot onCaughtError (main.tsx) — ingen onError
   // här (undviker dubbel-rapport).
   defaultErrorComponent: SectionError,
+  // TASK-233: aktiverar VARJE routes egen `React.Suspense`-gräns (TanStack
+  // Routers `MatchView`/`ResolvedSuspenseBoundary` blir `React.Suspense`
+  // ENDAST om en pendingComponent finns, route-egen eller — som här —
+  // router-default). Utan detta bubblar en route-chunks Suspense-kast förbi
+  // varje mellanliggande gräns till __root.tsx:s rot-gräns (källäst mot
+  // node_modules/@tanstack/react-router/src/Match.tsx v1.170.21) — det var
+  // ROTORSAKEN till TASK-233:s mikro-blink (Förberedelseskärmen återanvänd
+  // som rot-Suspense-fallback, fel vikt för en vanlig sidbyte). Se
+  // `Sidbytesindikator.tsx`s docblock för hela resonemanget, inkl. varför
+  // en handrullad CSS-fördröjning INTE löser samma problem.
+  //
+  // 1000/500 ms är INTE en gissning: matchar ORDLISTA.md "Lugnt laddläge"
+  // ("under 1 sekund visas ingen indikation alls", Laddtrappans egen
+  // överordnade princip, ADR-113) OCH TanStack Routers egen bibliotekets-
+  // default (källäst, `@tanstack/router-core/src/router.ts` rad
+  // ~1139–1140) — satt EXPLICIT här (i stället för tyst default) så en
+  // framtida biblioteksuppgradering inte kan glida under oss.
+  defaultPendingComponent: Sidbytesindikator,
+  defaultPendingMs: 1000,
+  defaultPendingMinMs: 500,
   // `dataSource` injiceras som statisk modul-instans (som `queryClient`) — DI via
   // router-context, ADR-055. `auth` är det enda per-render-bootstrappade värdet
   // (fylls av InnerApp i main.tsx). Hela route-trädets `context.dataSource` typas
