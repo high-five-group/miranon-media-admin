@@ -4,7 +4,7 @@ title: 'QA: Marcus granskar promoverade aktivitetshistoriken mot facit + stämpl
 status: Done
 assignee: []
 created_date: '2026-08-15 09:24'
-updated_date: '2026-08-15 10:48'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-human
 dependencies:
@@ -24,22 +24,22 @@ Manuell testplan (Marcus): (1) Öppna skarpa /mer/aktivitetshistorik UTAN varian
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Skarpa ytan granskad mot facit-bilderna (desktop + mobil) och befunnen identisk — eller avvikelser bokförda som nya fynd-kort
-- [ ] #2 godkand-stämpeln satt av Marcus via facit-godkännande-kommandot genom !-kanalen (ADR-104 — kan inte sättas av agent)
+- [x] #1 Skarpa ytan granskad mot facit-bilderna (desktop + mobil) och befunnen identisk — eller avvikelser bokförda som nya fynd-kort
+- [x] #2 godkand-stämpeln satt av Marcus via facit-godkännande-kommandot genom !-kanalen (ADR-104 — kan inte sättas av agent)
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 check-facit.sh grön genom hela kedjan — rivning omöjlig medan godkand är null
+- [x] #6 Marcus godkand-stämpel via facit-godkännande FÖRE all rivning av prototyp-substrat
+<!-- DOD:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 Marcus genomförde granskningen i dev-servern mot facit-bilderna 2026-08-15 och stämplade via !-kanalen: npm run facit:godkann -- --pass s106-aktivitetslogg --citat 'Godkänd mot facit 2026-08-15' (godkand av marcus, sha 871ae4f4). Rivningen verkställd EFTER stämpeln (PR #1335); manifestets kallor ompekade av Marcus sed-rad (manifestet agent-fruset).
 <!-- SECTION:NOTES:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 check-facit.sh grön genom hela kedjan — rivning omöjlig medan godkand är null
-- [ ] #6 Marcus godkand-stämpel via facit-godkännande FÖRE all rivning av prototyp-substrat
-<!-- DOD:END -->

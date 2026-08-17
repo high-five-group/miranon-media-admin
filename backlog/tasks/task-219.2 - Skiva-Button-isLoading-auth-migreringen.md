@@ -4,7 +4,7 @@ title: 'Skiva: Button isLoading + auth-migreringen'
 status: Done
 assignee: []
 created_date: '2026-08-15 08:49'
-updated_date: '2026-08-15 10:09'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,6 +26,14 @@ ordinal: 421000
 - [x] #4 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -45,11 +53,3 @@ Miljöfynd under bygget: en orphanad (PPID=1) vite-devserver från ett syskon-wo
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1333 (commit 08416ba5, MERGED på main 14863d61). Button isLoading för samtliga intents/varianter: knapp-intern spinner + spärrat klickläge + polite sr-besked — react-arias isPending FALSIFIERAD som bärare (hårdkodar assertive announce, källkodsbelagt) → egen blockering; sex auth-ställen migrerade (grep-bevis noll lokala ihopsättningar); a11y 88/88, visual-avvikelser stash-bevisade pre-existing; submit-dämpnings-avvikelsen till 219.4-QA.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->

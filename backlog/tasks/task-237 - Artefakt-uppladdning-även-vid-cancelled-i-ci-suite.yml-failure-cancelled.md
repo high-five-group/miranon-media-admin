@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-16 07:06'
-updated_date: '2026-08-16 08:19'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,7 +30,7 @@ Forensik 2026-08-16 (S3): artefaktsteget 'Ladda upp Playwright-artefakter vid r�
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 

@@ -4,7 +4,7 @@ title: 'Skiva: Spec §15 skrivs om till Laddtrappan'
 status: Done
 assignee: []
 created_date: '2026-08-15 08:49'
-updated_date: '2026-08-15 09:34'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,6 +25,14 @@ ordinal: 420000
 - [x] #3 Stale §15-radreferenser i kodkommentarer rättade till adresserbar sektionsform (grep-belagd lista i notes)
 - [x] #4 npm run check:docs grön
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -52,11 +60,3 @@ npm run check:docs → 14/14 gröna, exit 0.
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1330 (commit ec593d3d, MERGED på main 32cf290d, 2026-08-15). Spec §15 bär Laddtrappans fyra steg per ADR-113 med Lugnt laddläge som orörd överordnad princip + artighetsnivå-noten (polite, källbelagd); enda stale radreferensen (spec:1078, off-by-14) rättad med grep-belagd fullständighetslista i notes. check:docs 14/14 grön; DoD-kvartetten grön lokalt; CI grön per jobb i kön.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->

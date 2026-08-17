@@ -4,7 +4,7 @@ title: 'Skiva: Primitiv-lyftet av datumväljaren + base.css-ringsläckaren'
 status: Done
 assignee: []
 created_date: '2026-08-15 09:22'
-updated_date: '2026-08-15 10:48'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies:
@@ -21,23 +21,23 @@ Härdningen av två delade byggstenar S106-passet bevisade delbehov för: datumv
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Datumväljar-komponenten bor i primitiv-biblioteket med oförändrat beteende; eventsidans och historikens konsumtion pekar dit — inga dubbla kopior kvar
-- [ ] #2 Rubrikens programfokus-ringsläckning bärs av en base.css-regel i listbox-släckarens etablerade form; inline-stylen borttagen; tangentbords-fokusringar i övrigt opåverkade
-- [ ] #3 Biome, typecheck och acceptance-sviterna gröna
+- [x] #1 Datumväljar-komponenten bor i primitiv-biblioteket med oförändrat beteende; eventsidans och historikens konsumtion pekar dit — inga dubbla kopior kvar
+- [x] #2 Rubrikens programfokus-ringsläckning bärs av en base.css-regel i listbox-släckarens etablerade form; inline-stylen borttagen; tangentbords-fokusringar i övrigt opåverkade
+- [x] #3 Biome, typecheck och acceptance-sviterna gröna
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 check-facit.sh grön genom hela kedjan — rivning omöjlig medan godkand är null
+- [x] #6 Marcus godkand-stämpel via facit-godkännande FÖRE all rivning av prototyp-substrat
+<!-- DOD:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 Levererad i PR #1335 (merge b924fb1b). DatumFalt → src/components/primitives/ (3 konsumenter ompekade, beteende oförändrat); h1[tabindex=-1]:focus-visible-släckare i base.css (listbox-släckarens form), inline-interim riven; golv gröna.
 <!-- SECTION:NOTES:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 check-facit.sh grön genom hela kedjan — rivning omöjlig medan godkand är null
-- [ ] #6 Marcus godkand-stämpel via facit-godkännande FÖRE all rivning av prototyp-substrat
-<!-- DOD:END -->

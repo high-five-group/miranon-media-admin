@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-15 08:47'
-updated_date: '2026-08-15 12:31'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,11 +24,19 @@ ordinal: 417000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Kall/stale start: Förberedelseskärmen visas tills warmup släpper; därefter färdigt Hem utan skeleton och omedelbara flikbyten
-- [ ] #2 Varm start helt tyst och offline-start direkt in — befintliga persist-E2E-AC:n gröna oförändrade
+- [x] #1 Kall/stale start: Förberedelseskärmen visas tills warmup släpper; därefter färdigt Hem utan skeleton och omedelbara flikbyten
+- [x] #2 Varm start helt tyst och offline-start direkt in — befintliga persist-E2E-AC:n gröna oförändrade
 - [x] #3 Appnivåns två nakna Laddar…-textrader borta (grep-bevis); ingen ny textrad införd
 - [x] #4 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -152,11 +160,3 @@ inte längre kraschar — Förberedelseskärmens design (ADR-112) är orörd.
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1343 (slutcommit de262db4, MERGED på main 817979a8) efter fyra CI-varv där varje rött var en äkta fångst: (1) oinloggade ytor skymdes — pathname/session-gate; (2) sessionsbärande auth-ytor (invite/recovery) skymdes — auth-ytelistan; (3) acceptance-massakern avslöjade TVÅ lagrade fel: fixturvärldens mockgap (3/7 warmup-EF:er) OCH en genuin produktionsregression (router-invalidate mot odefinierad auth-kontext under gatens väntfas). Slutläge: acceptance 231/231 ×2, webbläsar 58/58, api 758/758, DoD grön, merge-gruppens staging-jobb grönt. Konstant-driften löst (delad export). Känd öppen avgränsning → uppföljningskort: post-login-skärmen kräver router-medveten trigger; appstarts-fallet (Lottas PWA-vardag) täcks fullt.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
