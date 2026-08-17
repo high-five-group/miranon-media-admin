@@ -12,6 +12,12 @@
 // TS-klienten (src/data/adapters/attachmentUpload.ts) — Deno-EF:erna delar
 // ingen build-kedja med Vite-bygget. Samma duplicerings-mönster som
 // STAGING_PROJECT_REF i scripts/provision-attachments-bucket.mjs.
+//
+// [TASK-275.2, ADR-118] `z` importeras här för den nya
+// AttachmentScopeInputSchema (räckviddsparametrarnas strikta write-side-
+// validering, AC #2) — SAMMA esm.sh-URL-form som
+// `_shared/activity-statement-schema.ts` redan etablerar för Deno-EF:er.
+import { z } from 'https://esm.sh/zod@4';
 
 export const BILAGOR_BUCKET_ID = 'bilagor';
 export const BILAGOR_TABLE = 'Bilagor';
@@ -30,6 +36,105 @@ export const EVENTPLANERING_TABLE = 'Eventplanering';
 export const ATTACHMENT_CLASS_UPPLADDAD = 'Uppladdad';
 export const ATTACHMENT_CLASS_EVENT_MALLAD = 'Event-mallad';
 export const ATTACHMENT_CLASS_PERSON_GENERERAD = 'Person-genererad';
+
+/**
+ * Bilagor.Räckvidd-optionerna (TASK-275.2, ADR-118 beslut 1+4, additivt fält
+ * — staging `fldU6i9Ju5HRwSRBf`, prod `fldsEltfGx3y63hhF`, se data-model.md §
+ * "Staging- och prodbasens additiva tillskott 2026-08-17 (task-275.1...)".
+ * DUPLICERAS MEDVETET mot `src/domain/types/Status.ts`s `AttachmentScope` —
+ * samma Deno↔Vite-dubblerings-mönster som ATTACHMENT_CLASS_* ovan.
+ *
+ * Varje bilaga bär EXAKT en räckvidd (ORDLISTA.md § Räckvidd):
+ *   - Event: dagens koppling, `Kursfamilj`/`Kursnivå` UTELÄMNADE.
+ *   - Kurstyp: `Kursfamilj` OBLIGATORISK, `Kursnivå` valfri (tom = hela
+ *     familjen — "tom-nivå-regeln", samma regel som Eventplanering).
+ *   - Alla event: varken `Kursfamilj` eller `Kursnivå`.
+ */
+export const ATTACHMENT_SCOPE_EVENT = 'Event';
+export const ATTACHMENT_SCOPE_KURSTYP = 'Kurstyp';
+export const ATTACHMENT_SCOPE_ALLA_EVENT = 'Alla event';
+
+/** Giltiga `Räckvidd`-optionsnamn — speglar VALID_ATTACHMENT_CLASSES nedan. */
+const VALID_ATTACHMENT_SCOPES: readonly string[] = [
+  ATTACHMENT_SCOPE_EVENT,
+  ATTACHMENT_SCOPE_KURSTYP,
+  ATTACHMENT_SCOPE_ALLA_EVENT,
+];
+
+/**
+ * `Kursfamilj`/`Kursnivå`s giltiga valslag på Bilagor — EXAKT samma
+ * options-namn som Eventplanerings ADR-115-fält (data-model.md § "Staging-
+ * och prodbasens additiva tillskott 2026-08-17 (S104 basstrukturen,
+ * ADR-115)"), inte importerade från `course-dimensions.ts` (den modulen är
+ * keyed på KURSNAMN → dimensioner, ett annat uppslag än denna raka
+ * write-side-enum).
+ */
+const KURSFAMILJ_VALUES = ['RIM', 'Fjärrskådning', 'Psionautics'] as const;
+const KURSNIVA_VALUES = ['Intro', 'Nivå 1', 'Nivå 2', 'Nivå 3'] as const;
+
+/**
+ * WRITE-SIDANS strikta Zod-validering av räckviddsparametrarna (TASK-275.2
+ * AC #2: "validerar strikt via Zod"). Delad mellan upload-attachment
+ * (mönster 1) och finalize-attachment-upload (mönster 2 — se den EF:ens
+ * filhuvud för varför INTE create-attachment-upload-ticket: ticket-steget
+ * skriver ingen Bilagor-rad och behöver därför aldrig räckviddsparametrarna).
+ *
+ * Strikt HÄR är korrekt trots den NÄRLIGGANDE varningen i motsatt riktning
+ * (airtable-constraints.md § P22, "hård enum på LIVE-LÄSVÄG knäcker på
+ * legacy-värden") — DENNA enum sitter på WRITE-vägen, mot NYA klient-
+ * angivna värden vi själva kontrollerar, inte mot historisk Airtable-data.
+ * Läsvägen (`mapAttachmentRecord` nedan) förblir defensiv (okänt → null).
+ *
+ * `rackvidd` default:ar till Event (dagens beteende, bakåtkompatibelt — en
+ * uppladdning som inte anger räckvidd alls fortsätter fungera identiskt).
+ * `kursfamilj` KRÄVS när rackvidd=Kurstyp (annars validation-fel);
+ * `kursniva` är ALLTID valfri (tom = "hela familjen", ADR-118 beslut 1).
+ * Ett `kursfamilj`/`kursniva`-värde utanför Kurstyp-räckvidden är ett
+ * kontraktsfel (ogiltig input), inte tyst ignorerat.
+ */
+export const AttachmentScopeInputSchema = z
+  .object({
+    rackvidd: z
+      .enum([ATTACHMENT_SCOPE_EVENT, ATTACHMENT_SCOPE_KURSTYP, ATTACHMENT_SCOPE_ALLA_EVENT])
+      .default(ATTACHMENT_SCOPE_EVENT),
+    kursfamilj: z.enum(KURSFAMILJ_VALUES).optional(),
+    kursniva: z.enum(KURSNIVA_VALUES).optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.rackvidd === ATTACHMENT_SCOPE_KURSTYP && !val.kursfamilj) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Kursfamilj krävs för räckvidd Kurstyp.',
+        path: ['kursfamilj'],
+      });
+    }
+    if (val.rackvidd !== ATTACHMENT_SCOPE_KURSTYP && (val.kursfamilj || val.kursniva)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Kursfamilj/Kursnivå är bara giltiga tillsammans med räckvidd Kurstyp.',
+        path: ['rackvidd'],
+      });
+    }
+  });
+
+export type AttachmentScopeInput = z.infer<typeof AttachmentScopeInputSchema>;
+
+/**
+ * Bygger de bas-fält (`Räckvidd`/`Kursfamilj`/`Kursnivå`) en skrivande EF ska
+ * lägga till `fields` vid radskapelse, ur ett redan Zod-validerat
+ * `AttachmentScopeInput`. `Kursnivå` UTELÄMNAS (aldrig satt till tomsträng)
+ * när den inte angetts — samma "utelämnande är formen för 'ingen känd
+ * nivå'"-disciplin som `create-event`s `Kursfamilj`/`Kursnivå`-hantering
+ * (`_shared/course-dimensions.ts` docblock).
+ */
+export function buildScopeFields(input: AttachmentScopeInput): Record<string, string> {
+  const fields: Record<string, string> = { Räckvidd: input.rackvidd };
+  if (input.rackvidd === ATTACHMENT_SCOPE_KURSTYP) {
+    if (input.kursfamilj) fields.Kursfamilj = input.kursfamilj;
+    if (input.kursniva) fields.Kursnivå = input.kursniva;
+  }
+  return fields;
+}
 
 /** Se src/data/adapters/attachmentUpload.ts för det fulla resonemanget — samma tal. */
 export const SMALL_UPLOAD_MAX_BYTES = 6 * 1024 * 1024;
@@ -202,6 +307,9 @@ export function mapAttachmentRecord(record: {
   skapad: string;
   eventId: string | null;
   dokumentklass: string | null;
+  rackvidd: string | null;
+  kursfamilj: string | null;
+  kursniva: string | null;
 } {
   const f = record.fields;
   const namn = f.Namn;
@@ -209,6 +317,14 @@ export function mapAttachmentRecord(record: {
   const skapad = f.Skapad;
   const event = f.Event;
   const klass = f.Dokumentklass;
+  // [TASK-275.2, ADR-118] Räckvidd/Kursfamilj/Kursnivå — SAMMA defensiva
+  // "okänt/saknat → null"-disciplin som Dokumentklass ovan. Legacy-rader
+  // (skrivna före denna skiva, eller innan basmigreringen i task-275.1)
+  // saknar fälten helt; ett okänt Airtable-optionsnamn ska synas som "okänt"
+  // i UI:t, aldrig krascha eller gissas till 'Event'.
+  const rackvidd = f['Räckvidd'];
+  const kursfamilj = f['Kursfamilj'];
+  const kursniva = f['Kursnivå'];
   return {
     id: record.id,
     namn: typeof namn === 'string' ? namn : '',
@@ -217,5 +333,11 @@ export function mapAttachmentRecord(record: {
     eventId: Array.isArray(event) && event.length > 0 ? (event[0] as string) : null,
     dokumentklass:
       typeof klass === 'string' && VALID_ATTACHMENT_CLASSES.includes(klass) ? klass : null,
+    rackvidd:
+      typeof rackvidd === 'string' && VALID_ATTACHMENT_SCOPES.includes(rackvidd)
+        ? rackvidd
+        : null,
+    kursfamilj: typeof kursfamilj === 'string' && kursfamilj.length > 0 ? kursfamilj : null,
+    kursniva: typeof kursniva === 'string' && kursniva.length > 0 ? kursniva : null,
   };
 }

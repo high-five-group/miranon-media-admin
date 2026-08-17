@@ -105,3 +105,19 @@ export const AttachmentClass = {
 } as const;
 
 export type AttachmentClassValue = (typeof AttachmentClass)[keyof typeof AttachmentClass];
+
+// Bilagor.Räckvidd (TASK-275.2, ADR-118 beslut 1+4, additivt fält — staging
+// fldU6i9Ju5HRwSRBf, prod fldsEltfGx3y63hhF, task-275.1, data-model.md §
+// "Staging- och prodbasens additiva tillskott 2026-08-17 (task-275.1...)").
+// SPEGLAR `supabase/functions/_shared/attachments.ts`s ATTACHMENT_SCOPE_*
+// (Deno↔Vite-dubblering, samma mönster som AttachmentClass ovan). Varje
+// bilaga bär EXAKT en räckvidd (ORDLISTA.md § Räckvidd): Event (dagens
+// koppling) · Kurstyp (Kursfamilj obligatorisk + Kursnivå valfri, tom =
+// hela familjen) · Alla event.
+export const AttachmentScope = {
+  EVENT: 'Event',
+  KURSTYP: 'Kurstyp',
+  ALLA_EVENT: 'Alla event',
+} as const;
+
+export type AttachmentScopeValue = (typeof AttachmentScope)[keyof typeof AttachmentScope];

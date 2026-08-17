@@ -300,6 +300,11 @@ export interface DataSourceAdapter {
    * SERVER-SIDE i BÅDA mönstren (AC #5) — klienten får bara ett scopat
    * tillstånd, aldrig en genväg runt adaptern. En misslyckad uppladdning
    * kastar med ett fel på Lottas språk, inte i byte (AC #6).
+   *
+   * [UTBYGGD, TASK-275.2, ADR-118] `input.rackvidd`/`kursfamilj`/`kursniva`
+   * (valfria — se `UploadAttachmentInput`) trär igenom till BÅDA mönstren
+   * oförändrat; `eventId` FÖRBLIR obligatoriskt oavsett räckvidd (se
+   * modellens docblock för det medvetna skälet).
    */
   uploadAttachment(input: UploadAttachmentInput): Promise<Attachment>;
 
@@ -316,6 +321,11 @@ export interface DataSourceAdapter {
    * icke-härledda förfälts-rader) i stället för att vara odelbar från de
    * andra. Klass C (kvitto, TASK-147.7) har fortfarande ingen Bilagor-rad
    * och är alltså strukturellt frånvarande här, inte filtrerad bort.
+   *
+   * [UTBYGGD, TASK-275.2, ADR-118 beslut 2] Svaret är NU unionen av eventets
+   * EGNA + KURSTYP-matchande + ALLA-EVENT-bilagor (server-side, `get-event-
+   * attachments`) — gemensamma bilagor syns automatiskt, märkta med sin
+   * `rackvidd` (se `Attachment`-modellens docblock för badge-underlaget).
    */
   fetchEventAttachments(eventId: string): Promise<Attachment[]>;
 
@@ -335,8 +345,17 @@ export interface DataSourceAdapter {
    * ingenting om "ersätt"-semantiken — den bara raderar EN namngiven post,
    * precis som `createEventNote` inte vet något om vilken UI-flow som
    * anropade den.
+   *
+   * [UTBYGGD, TASK-275.2, ADR-118 beslut 3] `eventId` är NU `string | null`
+   * — `null` signalerar "räckviddsläge" (Dokument-ytans läge utan valt
+   * event). För en GEMENSAM bilaga (räckvidd Kurstyp/Alla event) NEKAS
+   * raderingen (403) om `eventId` anges (ur eventkontext, olycksskyddet)
+   * och TILLÅTS om `eventId` är `null` (räckviddsläge). För en
+   * Event-räckviddig bilaga är beteendet OFÖRÄNDRAT: `eventId` krävs,
+   * ägarskaps-guarden gäller som förut. Se delete-attachment/index.ts §
+   * filhuvudet för den fulla auktorisationslogiken.
    */
-  deleteAttachment(eventId: string, attachmentId: string): Promise<void>;
+  deleteAttachment(eventId: string | null, attachmentId: string): Promise<void>;
 
   /**
    * Hämta en TIDSBEGRÄNSAD signerad nedladdnings-/förhandsvisnings-URL för

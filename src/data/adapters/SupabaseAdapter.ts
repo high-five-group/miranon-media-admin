@@ -212,7 +212,7 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async deleteAttachment(_eventId: string, _attachmentId: string): Promise<void> {
+  async deleteAttachment(_eventId: string | null, _attachmentId: string): Promise<void> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

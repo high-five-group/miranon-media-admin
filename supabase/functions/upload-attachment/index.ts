@@ -20,15 +20,30 @@
 // FELMEDDELANDEN PÅ LOTTAS SPRÅK (AC #6): varje avvisning ger ett
 // människoläsbart svenskt fel (filstorlek i MB, inte byte) — aldrig en rå
 // bytejämförelse.
+//
+// [TASK-275.2, ADR-118] RÄCKVIDDSPARAMETRARNA (`rackvidd`/`kursfamilj`/
+// `kursniva`, valfria — default 'Event', dagens beteende oförändrat)
+// valideras STRIKT via `_shared/attachments.ts`s `AttachmentScopeInputSchema`
+// innan `fields` byggs (`buildScopeFields`). `eventId` FÖRBLIR obligatoriskt
+// och `Event: [eventId]` skrivs OAVSETT räckvidd (medveten avgränsning: den
+// bär storage-path-ankaret och den befintliga ägarskaps-mekaniken i delete-
+// attachment/get-attachment-download-url oförändrad; olycksskyddet mot
+// radering ur eventkontext läses av `Räckvidd`, inte av `Event`s satthet —
+// se delete-attachment/index.ts). Ett genuint event-löst uppladdningsläge
+// ("gemensamt läge utan valt event", ADR-118 beslut 5) stöds INTE av denna
+// EF-kontrakt-version — flaggat öppet för task-275.3 (UI-skivan) i stället
+// för att uppfinnas i förväg utan en UI att prova det mot.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import {
   ATTACHMENT_CLASS_UPPLADDAD,
+  AttachmentScopeInputSchema,
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
   buildAttachmentLeaf,
   buildAttachmentPath,
+  buildScopeFields,
   EVENTPLANERING_TABLE,
   formatMB,
   isValidEventId,
@@ -107,6 +122,21 @@ Deno.serve(async (req) => {
       return badRequest('Filen saknar innehåll.', corsHeaders);
     }
 
+    // [TASK-275.2] Räckviddsparametrarna — strikt Zod (AC #2). Ogiltig
+    // kombination (t.ex. Kurstyp utan Kursfamilj, eller Kursfamilj angiven
+    // trots räckvidd Event) → 400 med Zod:s egna, specifika felmeddelande.
+    const scopeParsed = AttachmentScopeInputSchema.safeParse({
+      rackvidd: body?.rackvidd,
+      kursfamilj: body?.kursfamilj,
+      kursniva: body?.kursniva,
+    });
+    if (!scopeParsed.success) {
+      return badRequest(
+        scopeParsed.error.issues[0]?.message ?? 'Ogiltig räckvidd.',
+        corsHeaders,
+      );
+    }
+
     const bytes = decodeBase64(bytesBase64);
     if (bytes.length === 0) {
       return badRequest('Filen verkar vara tom.', corsHeaders);
@@ -162,6 +192,9 @@ Deno.serve(async (req) => {
       // definition (Lotta laddar upp en fil). Konstanten importeras, aldrig
       // en bokstavlig sträng inline (se field-allowlists.ts § Dokumentklass).
       Dokumentklass: ATTACHMENT_CLASS_UPPLADDAD,
+      // [TASK-275.2, ADR-118] Räckvidd (+ Kursfamilj/Kursnivå vid Kurstyp) —
+      // se filhuvudet för varför `Event` ovan förblir satt oavsett räckvidd.
+      ...buildScopeFields(scopeParsed.data),
     };
 
     const disallowed = findDisallowedField(operation, fields);
@@ -176,7 +209,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[upload-attachment] ALLOW | caller_user_id=${user.id} | event=${eventId} | path=${path} | bytes=${bytes.length}`,
+      `[upload-attachment] ALLOW | caller_user_id=${user.id} | event=${eventId} | path=${path} | bytes=${bytes.length} | rackvidd=${scopeParsed.data.rackvidd}`,
     );
 
     let created: { id: string; fields: Record<string, unknown>; createdTime: string };

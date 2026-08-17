@@ -245,11 +245,25 @@ option-ID:n mellan fält). Styrande beslut:
 | Bilagor → `Kursfamilj` | `fldiJnZk66jlkUiX8` | `fld8Mc23OdJXFSBEx` | singleSelect — `RIM` · `Fjärrskådning` · `Psionautics` |
 | Bilagor → `Kursnivå` | `fldep25m32Q3Cjh41` | `fldMAGsqnQ4ddFmaI` | singleSelect — `Intro` · `Nivå 1` · `Nivå 2` · `Nivå 3`; TOMT för nivålösa familjer (samma regel som Eventplanering) |
 
-**Skrivbarhet:** ännu ingen skrivväg — denna skiva är ren basstruktur,
-ingen applikationskod rörd (task-275.1 AC #4). `upload-attachment`/
-`finalize-attachment-upload` tar emot räckviddsparametrar först i
-task-275.2 (EF-lagret); klienten (Dokument-ytans räckviddsval) i task-275.3.
-Fram tills dess är fälten skrivbara endast via Airtable-UI:t eller MCP.
+**Skrivbarhet [UPPDATERAD, task-275.2]:** `upload-attachment` (mönster 1)
+och `finalize-attachment-upload` (mönster 2, steg 2) tar nu emot valfria
+räckviddsparametrar (`rackvidd`/`kursfamilj`/`kursniva`), strikt Zod-
+validerade (`_shared/attachments.ts` § `AttachmentScopeInputSchema`), och
+skriver alla tre fält via en utökad `create-attachment`-allowlist-post
+(`_shared/field-allowlists.ts`). `create-attachment-upload-ticket` (mönster
+2, steg 1) rör dem INTE — den skriver ingen Bilagor-rad. `Event` FÖRBLIR
+satt oavsett räckvidd (medveten avgränsning: storage-path-ankaret och den
+befintliga ägarskaps-mekaniken i delete-attachment/get-attachment-download-
+url hålls oförändrad — olycksskyddet mot radering ur eventkontext läser
+`Räckvidd`, inte `Event`s satthet). `get-event-attachments` returnerar
+UNIONEN av eventets egna + kurstyps-matchande (inkl. tom-nivå-regeln) +
+alla-event-bilagor, var och en märkt med sin `rackvidd` i svaret (ADR-118
+beslut 2). `delete-attachment` accepterar nu `eventId: null`
+("räckviddsläge") för gemensamma bilagor (ADR-118 beslut 3). Klienten
+(Dokument-ytans räckviddsval, UI) landar i task-275.3 — adapter-/mutations-
+lagret (`AirtableAdapter.ts`/`DataSourceAdapter.ts`/`Attachment`-domän-
+modellen) är redan utbyggt i task-275.2 och väntar bara på UI:t som
+skickar räckviddsvalet.
 
 **Migrering av befintliga rader (AC #2, `Räckvidd = Event` som default —
 dagens sanning):** staging bar 24 rader (samtliga ZZ-testfixturer) FÖRE

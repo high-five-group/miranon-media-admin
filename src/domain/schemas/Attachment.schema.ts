@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AttachmentClass } from '../types/Status';
+import { AttachmentClass, AttachmentScope } from '../types/Status';
 
 /**
  * [GA] Runtime-validering av upload-attachment/finalize-attachment-upload-svar
@@ -11,6 +11,13 @@ import { AttachmentClass } from '../types/Status';
  * klass C:s ännu obyggda skrivväg (se domänmodellens docblock). Samma teknik
  * `ModalitetSchema` (Segment.schema.ts, `z.enum(ModalitetEnum)`) redan
  * använder för sin Status.ts-speglade enum — inte en ny konvention.
+ *
+ * [UTBYGGD, TASK-275.2, ADR-118] `rackvidd`: `z.enum(AttachmentScope)`
+ * `.nullable()` — SAMMA teknik som `dokumentklass`, säkert eftersom
+ * `mapAttachmentRecord` (server-side) redan defuserar okända värden till
+ * `null` innan svaret lämnar EF:en. `kursfamilj`/`kursniva`: LENIENT
+ * `z.string().nullable()` (INTE ett strikt enum) — P22-motiverat, speglar
+ * `Event.schema.ts`s `kursfamilj`/`kursniva` för samma värdedomän.
  */
 export const AttachmentSchema = z.object({
   id: z.string(),
@@ -19,6 +26,9 @@ export const AttachmentSchema = z.object({
   skapad: z.string(),
   eventId: z.string().nullable(),
   dokumentklass: z.enum(AttachmentClass).nullable(),
+  rackvidd: z.enum(AttachmentScope).nullable(),
+  kursfamilj: z.string().nullable(),
+  kursniva: z.string().nullable(),
 });
 
 /**

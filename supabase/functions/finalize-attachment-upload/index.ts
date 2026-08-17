@@ -22,14 +22,22 @@
 // "träffa" en path som den SJÄLV fick ett giltigt, scopat tillstånd för och
 // FAKTISKT laddade upp bytes till — annars finns ingenting att hitta på den
 // deriverade platsen och verifieringen faller.
+//
+// [TASK-275.2, ADR-118] RÄCKVIDDSPARAMETRARNA — SAMMA disciplin som upload-
+// attachment/index.ts (se den filens motsvarande stycke): valfria, strikt
+// Zod-validerade, `Event` förblir satt oavsett räckvidd. `create-attachment-
+// upload-ticket` (steg 1) rör INTE dessa — den skriver ingen Bilagor-rad,
+// bara denna (steg 2, radskapelsen) behöver dem.
 
 import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import {
   ATTACHMENT_CLASS_UPPLADDAD,
+  AttachmentScopeInputSchema,
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
   buildAttachmentLeaf,
   buildAttachmentPath,
+  buildScopeFields,
   EVENTPLANERING_TABLE,
   isValidAttachmentId,
   isValidEventId,
@@ -82,6 +90,20 @@ Deno.serve(async (req) => {
     }
     if (typeof filnamn !== 'string' || !filnamn.trim()) {
       return badRequest('Filen saknar namn.', corsHeaders);
+    }
+
+    // [TASK-275.2] Räckviddsparametrarna — strikt Zod (AC #2), samma schema
+    // som upload-attachment/index.ts.
+    const scopeParsed = AttachmentScopeInputSchema.safeParse({
+      rackvidd: body?.rackvidd,
+      kursfamilj: body?.kursfamilj,
+      kursniva: body?.kursniva,
+    });
+    if (!scopeParsed.success) {
+      return badRequest(
+        scopeParsed.error.issues[0]?.message ?? 'Ogiltig räckvidd.',
+        corsHeaders,
+      );
     }
 
     const eventRecord = await fetchAirtableRecord(EVENTPLANERING_TABLE, eventId);
@@ -172,6 +194,8 @@ Deno.serve(async (req) => {
       // uppladdningshandling, bara stor fil). Se upload-attachment/index.ts:s
       // motsvarande rad.
       Dokumentklass: ATTACHMENT_CLASS_UPPLADDAD,
+      // [TASK-275.2, ADR-118] Se upload-attachment/index.ts:s motsvarande rad.
+      ...buildScopeFields(scopeParsed.data),
     };
 
     const disallowed = findDisallowedField(operation, fields);
@@ -183,7 +207,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[finalize-attachment-upload] ALLOW | caller_user_id=${user.id} | event=${eventId} | path=${path} | bytes=${actualSizeBytes}`,
+      `[finalize-attachment-upload] ALLOW | caller_user_id=${user.id} | event=${eventId} | path=${path} | bytes=${actualSizeBytes} | rackvidd=${scopeParsed.data.rackvidd}`,
     );
 
     const created = await createAirtableRecord(BILAGOR_TABLE, fields);

@@ -18,6 +18,7 @@ import {
   buildLinkedRecordFilter,
   buildSearchAcrossFieldsFilter,
   combineWithAnd,
+  combineWithOr,
   escapeFormulaValue,
   parseAirtableString,
 } from '../../supabase/functions/_shared/airtable-filter';
@@ -234,5 +235,21 @@ test.describe('airtable-filter — combineWithAnd', () => {
 
   test('flera filter → AND-uttryck', () => {
     expect(combineWithAnd(['{A} = "1"', '{B} = "2"'])).toBe('AND({A} = "1", {B} = "2")');
+  });
+});
+
+// TASK-275.2 (ADR-118 union-hämtningen) — symmetrisk motsvarighet till
+// combineWithAnd ovan, samma tre fall.
+test.describe('airtable-filter — combineWithOr', () => {
+  test('tom lista → undefined', () => {
+    expect(combineWithOr([])).toBe(undefined);
+  });
+
+  test('en filter → samma filter', () => {
+    expect(combineWithOr(['{Kursniva} = ""'])).toBe('{Kursniva} = ""');
+  });
+
+  test('flera filter → OR-uttryck', () => {
+    expect(combineWithOr(['{A} = "1"', '{B} = "2"'])).toBe('OR({A} = "1", {B} = "2")');
   });
 });
