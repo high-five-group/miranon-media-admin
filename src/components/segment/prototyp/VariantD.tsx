@@ -1,4 +1,26 @@
 /**
+ * [PROMOVERAD TASK-249.5, ADR-103 B2 steg 1] Denna fil ÄR sedan flippen den
+ * OVILLKORLIGA skarpa formen på `/mer/segment` (`src/routes/_authenticated/
+ * mer/segment.tsx`) — inte längre bara nåbar via `?variant=d`. Docblocket
+ * nedan är historiskt kvar (S104 divergens-passets resonemang, korrekt som
+ * HISTORIK) men FYRA claims är nu STALE och superseded av 249.5:
+ *   - "KASTBAR KOD" (rad nedan) — filen är permanent, inte kastbar.
+ *   - § EXPANSIONEN SKER I KLIENTEN + § AND-PRIMITIVEN's "prototyp-genväg"/
+ *     "klient-snittet" — LÖST: `predikatTillDnfRegel` bygger regeln som EN
+ *     DNF-formad `SegmentRuleDnf` och skickar den i ETT `compute-segment`-
+ *     anrop; `Frageplan`/`byggFrageplan`/`raknaSammansatt` (klient-side
+ *     snitt/union) är BORTTAGNA (AC#2).
+ *   - `KURS_KARTA` (härnäst i filen) — BORTTAGEN; `byggParInfo` läser
+ *     `Event.kursfamilj`/`Event.kursniva` (TASK-249.4:s basfält) via
+ *     `familjFranBas`/`nivaFranBas` (AC#3).
+ *   - Tidsperiodens "räknesteget markerar öppet att antalet är utan
+ *     tidsfiltret" (§ REGELFORMEN + `RegelVerkstad`) — LÖST: `Villkor.period`
+ *     följer med som `Par.period` i DNF-regeln, servern filtrerar (ADR-115
+ *     EF-krav 2/5, TASK-249.3), och räkne-ärlighets-disclaimern är borttagen.
+ * `saveSegment`/`sendEmail`/testmail RÖRS INTE av 249.5 (AC#1: den
+ * promoverade formen är identisk med den körande prototypen i variant
+ * d-läge) — de förblir no-op/simulerade, exakt som innan flippen.
+ *
  * [PROTOTYPE] S104 divergens — VARIANT D: SYNTESEN. KASTBAR KOD.
  *
  * Född på Marcus-beslut 2026-08-10 (`ADR-074` identitetsmodellen: fler
@@ -218,7 +240,14 @@ import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleB
 import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
-import type { Modalitet, Par, SegmentMember, SegmentRule } from '@/domain/schemas';
+import type {
+  MedVillkor,
+  Modalitet,
+  Par,
+  SegmentMember,
+  SegmentRule,
+  SegmentRuleDnf,
+} from '@/domain/schemas';
 import { deriveTaxonomy, labelForPar, parKey } from '@/lib/segment-taxonomy';
 
 /* ================================================================== *
@@ -229,33 +258,52 @@ type Familj = 'RIM' | 'Fjärrskådning' | 'Psionautics';
 type Niva = 'intro' | '1' | '2' | '3';
 
 /**
- * [SIMULERAR KOMMANDE BASSTRUKTUR — Marcus-bekräftad 2026-08-10]
+ * [TASK-249.5, AC#3] BASFÄLTEN — Kursfamilj/Kursnivå finns nu som fält på
+ * Eventplanering (TASK-249.4, verifierat prod 51/51 satta) och exponeras av
+ * `get-events` (`Event.kursfamilj`/`Event.kursniva`). Den tidigare hårdkodade
+ * `KURS_KARTA`-konstanten är BORTTAGEN — `byggParInfo` nedan läser
+ * dimensionerna ur `Event`-raderna direkt via `familjFranBas`/`nivaFranBas`.
  *
- * Familj och nivå finns INTE som fält i Airtable-basen i dag. Beslutet
- * (S104 Del 2, punkt 2: *"Basen ska leverera vad appen vill ha, punkt!"*) är
- * att de ska byggas — två nya fält på Eventplanering. Tills dess bor
- * mappningen här, som en hårdkodad konstant, och INGEN annanstans.
+ * BASENS RÅVÄRDEN SKILJER SIG FRÅN UI-INTERNA `Niva`-KONSTANTERNA:
+ * `Kursnivå` bär "Intro"/"Nivå 1"/"Nivå 2"/"Nivå 3" (data-model.md), medan
+ * `Niva`-typen internt är `'intro' | '1' | '2' | '3'` (radio-/toggle-värden,
+ * `NIVA_ETIKETT` nedan). `nivaFranBas` är den ENDA översättningspunkten.
+ * `Kursfamilj` bär redan exakt `Familj`-unionens värden ('RIM' ·
+ * 'Fjärrskådning' · 'Psionautics') — `familjFranBas` validerar bara att
+ * strängen är en av de tre kända (fail-closed mot en framtida okänd familj).
  *
- * Nakna "Resor i medvetandet" hör till RIM-familjen som nivå `intro` men är en
- * FÖRELÄSNING (fälla #35: det är ett distinkt kursnamn, skilt från RIM
- * 1/2/3-serien). Just det paret är hela skälet till att modaliteten måste
- * anges separat: familj + nivå räcker inte för att veta vad någon faktiskt
- * gått igenom.
+ * Nakna "Resor i medvetandet" (RIM-familjen, nivå Intro) är en FÖRELÄSNING
+ * (fälla #35: distinkt kursnamn, skilt från RIM 1/2/3-serien) — basens
+ * backfill (`course-dimensions.ts`) speglar exakt samma mappning som den
+ * tidigare `KURS_KARTA` bar, så detta ändras inte i sak, bara i källa.
  *
- * PROTOTYPENS EGEN LUCKA, öppet: en kurs UTANFÖR kartan får ingen familj och
- * matchar därför inget familj-villkor. Det är precis den tysta ruttnandet
- * predikat-formen finns för att avskaffa — i basen sätts fältet när kursen
- * skapas, och RIM 4 omfattas då automatiskt. Ytan säger det själv (se
- * `OkandaKurser`), i stället för att låta kursen försvinna tyst.
+ * DEN ÖPPNA LUCKAN LEVER KVAR, NU MOT VERKLIG DATA: en kurs UTAN känd
+ * Kursfamilj i basen (okänt kursnamn, `create-event` utelämnar fälten öppet
+ * — `course-dimensions.ts`) får `familj: null` och matchar därför inget
+ * familj-villkor. `OkandaKurser` nedan säger det öppet i UI:t i stället för
+ * att låta kursen försvinna tyst — samma disciplin som innan, nu mot basens
+ * faktiska tillstånd i stället för en hårdkodad karta.
  */
-const KURS_KARTA: Record<string, { familj: Familj; niva: Niva | null }> = {
-  Fjärrskådning: { familj: 'Fjärrskådning', niva: null },
-  'Resor i medvetandet': { familj: 'RIM', niva: 'intro' },
-  'Resor i medvetandet 1': { familj: 'RIM', niva: '1' },
-  'Resor i medvetandet 2': { familj: 'RIM', niva: '2' },
-  'Resor i medvetandet 3': { familj: 'RIM', niva: '3' },
-  Psionautics: { familj: 'Psionautics', niva: null },
+const NIVA_FRAN_BAS: Readonly<Record<string, Niva>> = {
+  Intro: 'intro',
+  'Nivå 1': '1',
+  'Nivå 2': '2',
+  'Nivå 3': '3',
 };
+
+/** Kursnivå-basvärde → intern `Niva`. Okänt/tomt värde → `null` (nivålös familj
+ *  eller okänd sträng — bägge räknas som "ingen nivå att villkora på"). */
+function nivaFranBas(varde: string | null): Niva | null {
+  return varde === null ? null : (NIVA_FRAN_BAS[varde] ?? null);
+}
+
+/** Kursfamilj-basvärde → `Familj`, fail-closed mot okänd sträng (bidrar då
+ *  till `OkandaKurser` i stället för att gissa en familj). */
+function familjFranBas(varde: string | null): Familj | null {
+  return varde !== null && (FAMILJER as readonly string[]).includes(varde)
+    ? (varde as Familj)
+    : null;
+}
 
 /** Fast ordning — aldrig alfabetisk, aldrig härledd ur datan (deterministisk UI). */
 const FAMILJER: Familj[] = ['RIM', 'Fjärrskådning', 'Psionautics'];
@@ -298,15 +346,15 @@ type ModalitetsVal = Modalitet | 'Båda';
  *
  * `period` ÄR EN UI-DIMENSION MED ETT SERVER-KRAV (varv 6d, Marcus
  * 2026-08-16: "jag vill kunna välja tidsperiod … på proffsigast möjliga
- * sätt" — det tidigare text-utlägget om varför året inte gick att välja är
- * rivet och ersatt av en riktig kontroll). Formen bär valet och klartexten
- * bär det i regelmeningen, men PROTOTYPENS RÄKNING KAN INTE VERKSTÄLLA DET:
- * motorn räknar per (utbildning, form) utan tidpunkt — `AttendanceRow` bär
- * inget datum, och ett klient-filter hade varit exakt den tysta felklass
- * som aldrig får promoveras. EF-KRAVET (sedan Paushistorik 2, nu med
- * UI-halvan byggd): deltagandets datum måste följa med i källfrågan och
- * regeln bära tidsfönstret server-side — tills dess markerar räknesteget
- * öppet att antalet är utan tidsfiltret.
+ * sätt"). Formen bär valet och klartexten bär det i regelmeningen.
+ * [TASK-249.5] LÖST: `predikatTillDnfRegel` lägger `period` på varje `Par`
+ * regeln expanderas till, och servern (`_shared/segment-membership.ts`,
+ * TASK-249.3, ADR-115 EF-krav 2/5) filtrerar deltagandet inom fönstret —
+ * `AttendanceRow` bär numera datum (`Event startdatum`,
+ * `segment-resolution.ts`). Antalet är därför ALLTID det verkställda talet;
+ * ingen räkne-ärlighets-disclaimer behövs längre (den tidigare "Tidsperioden
+ * räknas av servern - antalet är ännu utan den"-raden i `RegelVerkstad` är
+ * borttagen).
  */
 type Villkor = {
   id: string;
@@ -367,7 +415,9 @@ function nyKonjunkt(villkor: Villkor[] = [nyttVillkor()]): Konjunkt {
  * TAXONOMIN BERIKAD — bron mellan predikatet och `compute-segment`
  * ================================================================== */
 
-/** Ett taxonomi-par med sina dimensionsvärden. `familj: null` = utanför kartan. */
+/** Ett taxonomi-par med sina dimensionsvärden. `familj: null` = okänd
+ *  Kursfamilj i basen (TASK-249.5 § BASFÄLTEN ovan) — inte längre "utanför
+ *  en hårdkodad karta". */
 type ParInfo = {
   par: Par;
   nyckel: string;
@@ -377,7 +427,16 @@ type ParInfo = {
 };
 
 /**
- * Berikar `deriveTaxonomy`-paren med dimensionerna.
+ * Berikar `deriveTaxonomy`-paren med dimensionerna — LÄSTA UR BASENS FÄLT
+ * (TASK-249.5, AC#3), inte längre ur `KURS_KARTA`.
+ *
+ * DIMENSIONERNA ÄR PER KURSNAMN, INTE PER EVENT-RAD: flera Eventplanering-
+ * rader kan dela samma `eventNamn` (kursen hålls flera gånger), så
+ * `dimsPerKurs` indexerar FÖRSTA kända (icke-null Kursfamilj) träffen per
+ * kursnamn — en enstaka rad utan fälten (t.ex. föddes innan create-event
+ * satte dem, eller ett CI-skapat ZZ-event, data-model.md § kända kanten)
+ * spärrar då inte hela kursens dimension om en ANNAN rad med samma namn bär
+ * den. Matchar `deriveTaxonomy`s eget "första förekomst vinner"-mönster.
  *
  * INGET ÅR HÄRLEDS HÄR LÄNGRE. Första formen samlade eventens `Startdatum` per
  * par — men ett år knutet till ett PAR kan bara svara på "vilka kurser gick
@@ -385,13 +444,20 @@ type ParInfo = {
  * någon tidpunkt alls. Datan fanns; frågan den kunde besvara var fel fråga.
  */
 function byggParInfo(events: Event[]): ParInfo[] {
+  const dimsPerKurs = new Map<string, { familj: string | null; niva: string | null }>();
+  for (const e of events) {
+    if (!e.eventNamn) continue;
+    const kand = dimsPerKurs.get(e.eventNamn);
+    if (kand?.familj) continue; // en känd familj för kursnamnet räcker
+    dimsPerKurs.set(e.eventNamn, { familj: e.kursfamilj ?? null, niva: e.kursniva ?? null });
+  }
   return deriveTaxonomy(events).map((par) => {
-    const kartlagt = KURS_KARTA[par.kurs];
+    const dims = dimsPerKurs.get(par.kurs);
     return {
       par,
       nyckel: parKey(par),
-      familj: kartlagt?.familj ?? null,
-      niva: kartlagt?.niva ?? null,
+      familj: familjFranBas(dims?.familj ?? null),
+      niva: nivaFranBas(dims?.niva ?? null),
       format: FORMAT_FOR_MODALITET[par.modalitet],
     };
   });
@@ -427,12 +493,11 @@ function konjunktGiltig(k: Konjunkt): boolean {
  * ett par, inte två (EF:ens `parseSegmentRule` bryr sig inte, men en dubblett
  * i klartexten hade läst som ett fel).
  *
- * SEDAN AND-PRIMITIVEN ÄR DETTA INTE ALLTID FRÅGAN. För ett predikat utan
- * flerledade grupper ÄR bruttot regeln (exakt dagens semantik). Bär predikatet
- * en flerledad grupp äger `byggFrageplan` frågan i stället — bruttot används
- * då bara för ytor som frågar "vilka kurser rör regeln" (Motsvarar-raden,
- * modalitets-vakten, verkstadens expansions-not). Ogiltiga grupper bidrar
- * med INGENTING — inte heller sina giltiga villkor.
+ * SEDAN AND-PRIMITIVEN ÄR DETTA INTE ALLTID FRÅGAN — bruttot är METADATA
+ * (Motsvarar-raden, modalitets-vakten, verkstadens expansions-not), aldrig
+ * frågevägen. Den frågevägen (TASK-249.5) är `predikatTillDnfRegel` nedan,
+ * som skickar EN DNF-regel direkt (ingen klient-side snitt/union, AC#2).
+ * Ogiltiga grupper bidrar med INGENTING — inte heller sina giltiga villkor.
  */
 function expandera(pred: Predikat, parInfo: ParInfo[]): SegmentRule {
   const plocka = (villkor: Villkor[]): Par[] => {
@@ -448,100 +513,89 @@ function expandera(pred: Predikat, parInfo: ParInfo[]): SegmentRule {
   };
 }
 
-/** Deterministisk signatur → query-nyckel + "har regeln ändrats"-jämförelse. */
-function regelSignatur(rule: SegmentRule): string {
-  const nycklar = (pars: Par[]) => pars.map(parKey).sort();
-  return JSON.stringify({ include: nycklar(rule.include), exclude: nycklar(rule.exclude) });
-}
-
-/* ================================================================== *
- * FRÅGEPLANEN — AND som mängdalgebra över per-villkor-frågor
- * ================================================================== */
-
-/** Ett villkor som EGEN EF-fråga: include = villkorets expansion, inget
- *  exclude. Villkoret är frågans ATOM — det är OR-uttryckbart mot motorn,
- *  vilket en konjunkt-grupp inte är. */
+/** Ett villkor som EGEN, FLAT OR-regel — generatorns per-atom-frågor
+ *  (`DelaUppIGrupper`) behöver K OBEROENDE medlemsmängder (en per vald atom)
+ *  för att räkna bitmask-kombinationer (`raknaKombinationer`); det är en
+ *  annan fråga än AND-primitivens (som numera går via `predikatTillDnfRegel`
+ *  i EN DNF-regel), så denna enkla byggare lever kvar oförändrad. */
 function villkorsRegel(v: Villkor, parInfo: ParInfo[]): SegmentRule {
   return { include: traffar(v, parInfo).map((p) => p.par), exclude: [] };
 }
 
-/**
- * TVÅ VÄGAR, MED AVSIKT:
- *
- *   enkel      — inga flerledade grupper (eller ärvd uppräknad regel): exakt
- *                dagens beteende. EN walk, samma cache-nyckel som förut —
- *                noll regression för allt som fanns före AND.
- *   sammansatt — minst en flerledad giltig grupp: en fråga PER UNIKT VILLKOR
- *                (dedupad på signatur), snitt inom grupp, union mellan
- *                grupper, differens mot utan — allt i `raknaSammansatt`.
- *                Även `utan` dekomponeras per villkor, så de fjorton
- *                Skool-grupperna delar FYRA frågor totalt.
- *
- * PROTOTYP-GENVÄG (EF-krav 4, filhuvudet § AND-PRIMITIVEN): skarpt måste
- * snittet ske server-side i `segment-membership.ts`.
- */
-type Frageplan =
-  | { typ: 'enkel'; regel: SegmentRule }
-  | {
-      typ: 'sammansatt';
-      /** Unika villkor-frågor, dedupade på regel-signatur. */
-      regler: SegmentRule[];
-      /** Per GILTIG med-grupp: index i `regler` för gruppens villkor. */
-      grupper: number[][];
-      /** Index i `regler` för de giltiga utan-villkoren. */
-      utan: number[];
-    };
+/** Deterministisk signatur → query-nyckel + "har regeln ändrats"-jämförelse.
+ *  [TASK-249.5] DNF-medveten (`MedVillkor` = `Par` ELLER en Konjunkt-grupp
+ *  `Par[]`) och periodmedveten — två regler som skiljer sig bara i
+ *  `Par.period` MÅSTE få olika signatur, annars delar de fel cache-post. */
+function parNyckelMedPeriod(p: Par): string {
+  return p.period ? `${parKey(p)}@${p.period.start}..${p.period.end}` : parKey(p);
+}
+function medVillkorNyckel(v: MedVillkor): string {
+  return Array.isArray(v)
+    ? `[${v.map(parNyckelMedPeriod).sort().join(',')}]`
+    : parNyckelMedPeriod(v);
+}
+function regelSignatur(rule: SegmentRuleDnf): string {
+  const include = rule.include.map(medVillkorNyckel).sort();
+  const exclude = rule.exclude.map(parNyckelMedPeriod).sort();
+  return JSON.stringify({ include, exclude });
+}
 
-function byggFrageplan(pred: Predikat, parInfo: ParInfo[]): Frageplan {
-  const flerledad = pred.med.some((k) => konjunktGiltig(k) && k.villkor.length > 1);
-  if (!flerledad) return { typ: 'enkel', regel: expandera(pred, parInfo) };
+/* ================================================================== *
+ * DNF-REGELN DIREKT — EN regel, ETT compute-segment-anrop (AC#2, TASK-249.5)
+ * ================================================================== */
 
-  const regler: SegmentRule[] = [];
-  const index = new Map<string, number>();
-  const nrFor = (v: Villkor): number => {
-    const regel = villkorsRegel(v, parInfo);
-    const sig = regelSignatur(regel);
-    const finns = index.get(sig);
-    if (finns !== undefined) return finns;
-    regler.push(regel);
-    index.set(sig, regler.length - 1);
-    return regler.length - 1;
-  };
-  return {
-    typ: 'sammansatt',
-    grupper: pred.med.filter(konjunktGiltig).map((k) => k.villkor.map(nrFor)),
-    utan: pred.utan.filter(villkorGiltigt).map(nrFor),
-    regler,
-  };
+/** Ett `Par` med villkorets `period` (om satt) — ADR-115 EF-krav 2/5:
+ *  servern filtrerar deltagande inom fönstret; `undefined` = när som helst. */
+function parMedPeriod(v: Villkor, p: Par): Par {
+  return v.period ? { ...p, period: v.period } : p;
+}
+
+/** Kartesisk produkt över flera villkors par-mängder — en kombination per
+ *  Konjunkt-term (ett par PER villkor, alla samtidigt). Ett villkor utan
+ *  träffar gör HELA kombinationen omöjlig (tom produkt), aldrig ett
+ *  fail-open "hoppa över villkoret". */
+function kombinationer(perVillkor: Par[][]): Par[][] {
+  return perVillkor.reduce<Par[][]>(
+    (acc, pars) =>
+      pars.length === 0 ? [] : acc.flatMap((kombo) => pars.map((p) => [...kombo, p])),
+    [[]],
+  );
 }
 
 /**
- * MÄNGDALGEBRAN. Identiteten är person-id; medlemsobjektet tas ur gruppens
- * FÖRSTA villkorssvar. Ordningen är deterministisk: grupperna i planordning,
- * inom gruppen första villkorssvarets ordning, första förekomsten vinner —
- * samma dedup-princip som EF:ens egen union (`resolveSegmentMembers`).
- * Ett villkor som träffar noll kurser svarar lokalt med tom mängd
- * (`medlemsFraga`), så dess grupp blir tom — aldrig ett nätanrop i onödan.
+ * Predikatet → EN `SegmentRuleDnf`, inget klient-side snitt/union (AC#2:
+ * "ingen medlemsberäkning eller regelexpansion sker i klienten" — ersätter
+ * `Frageplan`/`byggFrageplan`/`raknaSammansatt`, som körde 1..N
+ * `compute-segment`-frågor och räknade snittet i webbläsaren).
+ *
+ * Enledade giltiga grupper (vanligast — mallvyns "minst en av", ett enkelt
+ * villkor) blir platta `Par`-poster i `include`, EXAKT `expandera()`s
+ * semantik. Flerledade giltiga grupper (AND, ADR-115) distribueras till sina
+ * konkreta AND-kombinationer (kartesisk produkt över gruppens villkor, se
+ * `kombinationer`) — servern (`_shared/segment-membership.ts` `Konjunkt`)
+ * kräver en FLAT `Par[]`-lista som alla ska vara uppfyllda samtidigt, så ett
+ * villkor med flera träffande par inom en AND-grupp måste distribueras ut
+ * som separata Konjunkt-termer (standard AND-över-OR). `utan` förblir platt
+ * (ADR-115: exklusiviteten behövde aldrig AND).
  */
-function raknaSammansatt(
-  plan: Extract<Frageplan, { typ: 'sammansatt' }>,
-  svar: readonly Medlemssvar[],
-): Medlemssvar {
-  const idMangd = (i: number) => new Set((svar[i]?.members ?? []).map((m) => m.id));
-  const union = new Map<string, SegmentMember>();
-  for (const grupp of plan.grupper) {
-    const [forsta, ...rest] = grupp;
-    if (forsta === undefined) continue;
-    const restMangder = rest.map(idMangd);
-    for (const m of svar[forsta]?.members ?? []) {
-      if (restMangder.every((s) => s.has(m.id)) && !union.has(m.id)) union.set(m.id, m);
+function predikatTillDnfRegel(pred: Predikat, parInfo: ParInfo[]): SegmentRuleDnf {
+  const include: MedVillkor[] = [];
+  for (const k of pred.med) {
+    if (!konjunktGiltig(k)) continue;
+    if (k.villkor.length === 1) {
+      const v = k.villkor[0] as Villkor;
+      for (const p of traffar(v, parInfo)) include.push(parMedPeriod(v, p.par));
+    } else {
+      const perVillkor = k.villkor.map((v) =>
+        traffar(v, parInfo).map((p) => parMedPeriod(v, p.par)),
+      );
+      for (const term of kombinationer(perVillkor)) include.push(term);
     }
   }
-  for (const i of plan.utan) {
-    for (const m of svar[i]?.members ?? []) union.delete(m.id);
-  }
-  const members = [...union.values()];
-  return { members, count: members.length };
+  const exclude = pred.utan
+    .filter(villkorGiltigt)
+    .flatMap((v) => traffar(v, parInfo).map((p) => parMedPeriod(v, p.par)));
+  return { include, exclude };
 }
 
 /* ── Klartext ─────────────────────────────────────────────────────── */
@@ -1039,7 +1093,7 @@ type Medlemssvar = { members: SegmentMember[]; count: number };
  */
 function medlemsFraga(
   dataSource: ReturnType<typeof useDataSource>,
-  rule: SegmentRule,
+  rule: SegmentRuleDnf,
 ): { queryKey: unknown[]; queryFn: () => Promise<Medlemssvar>; staleTime: number } {
   return {
     queryKey: ['proto-d', 'compute', regelSignatur(rule)],
@@ -1051,17 +1105,17 @@ function medlemsFraga(
   };
 }
 
-function useMedlemmar(rule: SegmentRule, aktiv: boolean) {
+function useMedlemmar(rule: SegmentRuleDnf, aktiv: boolean) {
   const dataSource = useDataSource();
   return useQuery<Medlemssvar>({ ...medlemsFraga(dataSource, rule), enabled: aktiv });
 }
 
 /**
- * MEDLEMSUTFALLET FÖR ETT PREDIKAT — en hook oavsett frågeplanens typ.
- * `useQueries` bär 1..N frågor på SAMMA fabrik (`medlemsFraga`) och därmed
- * samma signatur-cache som resten av varianten: ett villkor som redan
- * ställts — av ett annat segment, en annan vy — kostar noll. Svarsformen är
- * `useMedlemmar`s, så konsumtionsytorna märker ingen skillnad.
+ * MEDLEMSUTFALLET FÖR ETT PREDIKAT — EN `compute-segment`-fråga (TASK-249.5,
+ * AC#2), inte 1..N + klient-side snitt (`Frageplan`/`raknaSammansatt`,
+ * borttagna). `predikatTillDnfRegel` bygger regeln direkt; servern äger
+ * AND/OR-algebran (ADR-115). Signaturen (`regelSignatur`, DNF+period-medveten)
+ * ärver cache-delningen `medlemsFraga`s docblock beskriver.
  */
 function usePredikatMedlemmar(
   predikat: Predikat | null,
@@ -1069,35 +1123,15 @@ function usePredikatMedlemmar(
   parInfo: ParInfo[],
   aktiv: boolean,
 ) {
-  const dataSource = useDataSource();
-  const plan = useMemo<Frageplan>(
+  const regel = useMemo<SegmentRuleDnf>(
     () =>
       predikat
-        ? byggFrageplan(predikat, parInfo)
-        : { typ: 'enkel', regel: arvdRegel ?? { include: [], exclude: [] } },
+        ? predikatTillDnfRegel(predikat, parInfo)
+        : (arvdRegel ?? { include: [], exclude: [] }),
     [predikat, arvdRegel, parInfo],
   );
-  const regler = plan.typ === 'enkel' ? [plan.regel] : plan.regler;
-  const svar = useQueries({
-    queries: regler.map((r) => ({ ...medlemsFraga(dataSource, r), enabled: aktiv })),
-  });
-  const felSvar = svar.find((s) => s.isError);
-  const allaSvarat = svar.every((s) => s.data !== undefined);
-  const data: Medlemssvar | undefined = !allaSvarat
-    ? undefined
-    : plan.typ === 'enkel'
-      ? svar[0]?.data
-      : raknaSammansatt(
-          plan,
-          svar.map((s) => s.data as Medlemssvar),
-        );
-  return {
-    data,
-    isPending: svar.some((s) => s.isPending),
-    isFetching: svar.some((s) => s.isFetching),
-    isError: felSvar !== undefined,
-    error: felSvar?.error ?? null,
-  };
+  const { data, isPending, isFetching, isError, error } = useMedlemmar(regel, aktiv);
+  return { data, isPending, isFetching, isError, error };
 }
 
 function useEntitetsMedlemmar(entitet: SegmentEntitet, parInfo: ParInfo[]) {
@@ -1105,20 +1139,20 @@ function useEntitetsMedlemmar(entitet: SegmentEntitet, parInfo: ParInfo[]) {
 }
 
 /**
- * UNIONEN ÖVER FLERA ENTITETER (utskicksvyn). Alla entiteters frågeplaner
- * plattas till EN uppsättning unika frågor (dedup på signatur ÖVER
- * entitets-gränserna — två segment som delar ett villkor delar walk), och
- * varje entitets utfall räknas ur sin del av svaren. Vakten mot tyst
- * underräkning (filhuvudet § MULTI-SEGMENT) ärvs oförändrad: `misslyckade`
- * räknar SEGMENT vars någon fråga felat, och unionen byggs bara ur segment
- * vars samtliga frågor svarat.
+ * UNIONEN ÖVER FLERA ENTITETER (utskicksvyn). Varje entitets predikat blir
+ * EN DNF-regel (`predikatTillDnfRegel`/ärvd regel), dedupad på signatur ÖVER
+ * entitets-gränserna (två segment med identisk regel delar walk) — samma
+ * dedup-princip som förut, nu på HELA entitetens regel i stället för på
+ * enskilda villkors-frågor (AC#2: ingen klient-side snitt kvar att dedupa
+ * byggblock för). Vakten mot tyst underräkning (filhuvudet § MULTI-SEGMENT)
+ * ärvs oförändrad: `misslyckade` räknar segment vars fråga felat.
  */
 function useUnionsUtfall(entiteter: SegmentEntitet[], parInfo: ParInfo[]) {
   const dataSource = useDataSource();
-  const { regler, planer } = useMemo(() => {
-    const regler: SegmentRule[] = [];
+  const { regler, indexPerEntitet } = useMemo(() => {
+    const regler: SegmentRuleDnf[] = [];
     const index = new Map<string, number>();
-    const nrFor = (regel: SegmentRule): number => {
+    const nrFor = (regel: SegmentRuleDnf): number => {
       const sig = regelSignatur(regel);
       const finns = index.get(sig);
       if (finns !== undefined) return finns;
@@ -1126,38 +1160,23 @@ function useUnionsUtfall(entiteter: SegmentEntitet[], parInfo: ParInfo[]) {
       index.set(sig, regler.length - 1);
       return regler.length - 1;
     };
-    const planer = entiteter.map((e) => {
-      const plan: Frageplan = e.predikat
-        ? byggFrageplan(e.predikat, parInfo)
-        : { typ: 'enkel', regel: e.arvdRegel ?? { include: [], exclude: [] } };
-      return plan.typ === 'enkel'
-        ? { typ: 'enkel' as const, regel: nrFor(plan.regel) }
-        : {
-            typ: 'sammansatt' as const,
-            grupper: plan.grupper.map((g) => g.map((i) => nrFor(plan.regler[i] as SegmentRule))),
-            utan: plan.utan.map((i) => nrFor(plan.regler[i] as SegmentRule)),
-          };
-    });
-    return { regler, planer };
+    const indexPerEntitet = entiteter.map((e) =>
+      nrFor(
+        e.predikat
+          ? predikatTillDnfRegel(e.predikat, parInfo)
+          : (e.arvdRegel ?? { include: [], exclude: [] }),
+      ),
+    );
+    return { regler, indexPerEntitet };
   }, [entiteter, parInfo]);
 
   const svar = useQueries({ queries: regler.map((r) => medlemsFraga(dataSource, r)) });
 
-  const perEntitet = planer.map((plan) => {
-    const indexlista = plan.typ === 'enkel' ? [plan.regel] : [...plan.grupper.flat(), ...plan.utan];
-    const vantar = indexlista.some((i) => svar[i]?.data === undefined);
-    const fel = indexlista.some((i) => svar[i]?.isError);
-    const data: Medlemssvar | undefined =
-      vantar || fel
-        ? undefined
-        : plan.typ === 'enkel'
-          ? svar[plan.regel]?.data
-          : raknaSammansatt(
-              { typ: 'sammansatt', regler, grupper: plan.grupper, utan: plan.utan },
-              svar.map((s) => s.data as Medlemssvar),
-            );
-    return { data, vantar, fel };
-  });
+  const perEntitet = indexPerEntitet.map((i) => ({
+    data: svar[i]?.data,
+    vantar: svar[i]?.data === undefined,
+    fel: svar[i]?.isError ?? false,
+  }));
 
   return {
     perEntitet,
@@ -3072,19 +3091,20 @@ function VillkorsKort({
   );
 }
 
-/** Kurser utanför `KURS_KARTA` — prototypens egen lucka, sagd rakt ut. */
+/** Kurser utan känd Kursfamilj i basen (TASK-249.5 § BASFÄLTEN) — sagt rakt ut,
+ *  i stället för att kursen tyst försvinner ur familj-villkoren. */
 function OkandaKurser({ parInfo }: { parInfo: ParInfo[] }) {
   const okanda = [...new Set(parInfo.filter((p) => p.familj === null).map((p) => p.par.kurs))];
   if (okanda.length === 0) return null;
   return (
-    <MessageBox intent="warning" title="Utbildningar utan familj i prototypens karta">
+    <MessageBox intent="warning" title="Utbildningar utan familj i basen">
       <p>
-        {okanda.join(', ')} finns i basen men saknas i den hårdkodade kartan, och matchar därför
+        {okanda.join(', ')} saknar Kursfamilj på sin(a) Eventplanering-rad(er), och matchar därför
         inget familj-villkor.
       </p>
       <p>
-        I den skarpa lösningen bär basen fälten och sätter dem när utbildningen skapas - då kan det
-        här inte inträffa.
+        Lägg till Kursfamilj (och Kursnivå om det är en RIM-nivå) på utbildningen i basen - då
+        omfattas den automatiskt.
       </p>
     </MessageBox>
   );
@@ -3298,9 +3318,6 @@ function RegelVerkstad({
     (v) => !villkorGiltigt(v),
   ).length;
   const harRegel = rule.include.length > 0;
-  const harPeriod = [...pred.med.flatMap((k) => k.villkor), ...pred.utan].some(
-    (v) => v.period !== null,
-  );
 
   /* RÄKNINGEN FÖLJER REGELN — ingen begäran, ingen knapp (Marcus 2026-08-10).
      `enabled` är `harRegel`, inte en sparad signatur.
@@ -3461,15 +3478,6 @@ function RegelVerkstad({
                           ? 'personer ännu.'
                           : `${personform(antal)} i det här segmentet.`}
                       </p>
-                      {/* RÄKNE-ÄRLIGHETEN för tidsperioden (varv 6d): UI:t bär
-                        valet, servern måste verkställa det (EF-kravet,
-                        `Villkor.period`s docblock). Tills dess sägs det kort
-                        i stället för att antalet tyst ljuger. */}
-                      {harPeriod && (
-                        <p className="text-caption text-text-muted">
-                          Tidsperioden räknas av servern - antalet är ännu utan den.
-                        </p>
-                      )}
                     </>
                   )}
                 </>

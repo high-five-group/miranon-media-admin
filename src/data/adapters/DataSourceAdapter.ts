@@ -30,7 +30,7 @@ import type {
   SavedSegment,
   SaveSegmentInput,
   SegmentResult,
-  SegmentRule,
+  SegmentRuleDnf,
   SendActionEmailInput,
   SendActionEmailResult,
   SendActionTestEmailInput,
@@ -153,8 +153,10 @@ export interface DataSourceAdapter {
   /** Hämta mailloggen (GLOBAL lista — hela utskicksloggen, ingen filter-gren) */
   fetchMailLog(): Promise<MailLogEntry[]>;
 
-  /** Beräkna segment-medlemskap från källan (Deltaganden, strikt Närvaropoäng=1) givet en regel */
-  computeSegment(rule: SegmentRule): Promise<SegmentResult>;
+  /** Beräkna segment-medlemskap från källan (Deltaganden, strikt Närvaropoäng=1) givet en regel.
+   *  `SegmentRuleDnf` (TASK-249.5, ADR-115): DNF-formen (Par | Konjunkt)[] — en vanlig
+   *  platt `SegmentRule` är alltid en giltig `SegmentRuleDnf` (Par[] ⊂ MedVillkor[]). */
+  computeSegment(rule: SegmentRuleDnf): Promise<SegmentResult>;
 
   /** Spara en namngiven segment-regel som en rad i Segment-tabellen (Fas 6g L3, ADR-065) */
   saveSegment(input: SaveSegmentInput): Promise<SavedSegment>;

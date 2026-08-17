@@ -54,7 +54,7 @@ import {
   type SaveSegmentInput,
   type SegmentResult,
   SegmentResultSchema,
-  type SegmentRule,
+  type SegmentRuleDnf,
   type SendActionEmailInput,
   type SendActionEmailResult,
   SendActionEmailResultSchema,
@@ -359,7 +359,7 @@ export class AirtableAdapter implements DataSourceAdapter {
    * query-params) via postEdgeFunction. `.parse()` validerar svaret vid
    * datagränsen (ADR-026). Consent (ejGodkandMail) bärs med, filtreras ej (L4).
    */
-  async computeSegment(rule: SegmentRule): Promise<SegmentResult> {
+  async computeSegment(rule: SegmentRuleDnf): Promise<SegmentResult> {
     const data = await postEdgeFunction<unknown>('compute-segment', rule);
     return SegmentResultSchema.parse(data);
   }
