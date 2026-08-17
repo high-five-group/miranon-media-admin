@@ -4,6 +4,7 @@ title: 'Depbot-major: @tanstack/react-table 8.21.3 → 9.1.2 — migrationen få
 status: To Do
 assignee: []
 created_date: '2026-08-17 06:42'
+updated_date: '2026-08-17 09:12'
 labels:
   - ready-for-human
 dependencies: []
@@ -19,7 +20,7 @@ PR #1491 (Dependabot 2026-08-17, måndags-schemat). Major-bump = ADR-031 Lager 4
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 v9:s changelog/breaking changes lästa och migrationens faktiska omfattning i VÅR kodbas bokförd på kortet (vilka ytor, vilka API-brott)
+- [x] #1 v9:s changelog/breaking changes lästa och migrationens faktiska omfattning i VÅR kodbas bokförd på kortet (vilka ytor, vilka API-brott)
 - [ ] #2 Marcus-beslut: migrera nu eller parkera med motiv + omprövningsdatum
 - [ ] #3 Vid migrering: DoD-fyran grön + tabellytorna verifierade i browsern
 <!-- AC:END -->
@@ -31,3 +32,66 @@ PR #1491 (Dependabot 2026-08-17, måndags-schemat). Major-bump = ADR-031 Lager 4
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## AC1 — Kartläggning av v9-migrationens omfattning (2026-08-17, Opus på Marcus order)
+
+**Huvudfynd: kortbeskrivningens premiss "Tabellytor i appen konsumerar react-table" är FALSIFIERAD.** Noll källfiler i repot konsumerar paketet. Migrationens omfattning i kod är därmed 0 filer.
+
+### Mätning (kommando → utfall)
+
+- `grep -rn "@tanstack/react-table|@tanstack/table-core"` över hela repot utom `node_modules`: **0 träffar i källkod**. Enda träffarna är `package.json:65` och `package-lock.json`.
+- Grep över v8:s API-symboler (`useReactTable`, `createColumnHelper`, `getCoreRowModel`, `getSortedRowModel`, `getFilteredRowModel`, `getPaginationRowModel`, `flexRender`, `ColumnDef` m.fl.) i `src/`, `tests/`, `playwright/`, `scripts/`, `supabase/`: **0 träffar**.
+- Lock-trädets konsumenter: endast root-`package.json` (direkt beroende utan användare). Ingen transitiv konsument.
+- Bundle-bevis, tvåsidigt: `npm run build` exit 0; `grep -rlE "useReactTable|tanstack.{0,3}table|table-core" dist/` → **exit 1, 0 av 126 filer**. Kontrollprov `grep -rlE "react" dist/assets/` → exit 0, dvs. grep fungerar mot `dist/`. Paketet finns alltså inte i produktionsbundlen.
+- CI på PR #1491: samtliga körda jobb **pass** (Acceptance hermetisk, Pure + Build, Webblasarbeteende, Lint + Audit + TypeCheck, Vercel) — koherent med noll konsumenter.
+
+### Varför paketet finns utan användare
+
+ADR-013 (Fas 4-borttagningen, Accepted 2026-05-05) § Kontext p.3: "**TanStack Table är redan installerat** … När/om DataTable behövs är beroendet redo — komponenten själv är den enda saknade biten." DataTable flyttades till Fas 7 som **villkorligt** scope — `docs/byggplan.md:915`: "DataTable-komponent (om event-detalj behöver det; annars eliminera)". Paketet har legat oanvänt sedan Fas 0.
+
+### Yt-tabell (yta → träffat API → v9-förändring → bedömd insats)
+
+| Yta | Träffat API | v9-förändring | Insats |
+|---|---|---|---|
+| Ingen källfil i `src/`, `tests/`, `playwright/` | inget | ej tillämplig | **0** |
+| `package.json:65` | `"@tanstack/react-table": "^8.21.3"` | version-spec → `^9.1.2` | S (1 rad, redan gjord av Dependabot) |
+| `package-lock.json` | lock-poster | nytt runtime-beroende `@tanstack/react-store ^0.11.0`; `table-core` 8.21.3 → 9.1.2 | S (auto) |
+
+**Total migrationsinsats i kod: S — noll kodändringar.**
+
+### v9:s brytningar
+
+Relevanta först vid ett FRAMTIDA DataTable-bygge, inte nu. Verifierade mot paketets egen `dist` (`npm pack @tanstack/react-table@9.1.2`) utöver dokumentationen:
+
+- `useReactTable` → **`useTable`**. `useReactTable` saknas helt i huvudexporten (`dist/index.d.ts`) — hård brytning för varje v8-konsument.
+- Row models: `get*RowModel()` → `create*RowModel()` som namngivna slots i `tableFeatures()`. `getCoreRowModel()` blir automatisk och utgår.
+- **Opt-in feature-registrering krävs** (`tableFeatures()` eller `stockFeatures`) — tree-shakebart, lägre minnesåtgång.
+- State: `table.getState()` → `table.state` / `table.store` / `table.atoms.<slice>`. `onStateChange` borttagen (slice-vis `on[State]Change` kvar). `data` och `columns` är readonly.
+- Sortering: `sortingFn` → `sortFn`, `sortingFns` → `sortFns`, `getSortingFn()` → `getSortFn()`.
+- Pinning går från fysisk till logisk riktning: `left`/`right` → `start`/`end`; alla `getLeft*`/`getRight*` → `getStart*`/`getEnd*`.
+- Column sizing splittad i `columnSizingFeature` + `columnResizingFeature`; `columnSizingInfo` → `columnResizing`.
+- Typgenerics bär nu `TFeatures` först: `ColumnDef<TData>` → `ColumnDef<TFeatures, TData, TValue>` (samma för `Table`, `Row`, `Cell`, `Column`). `createColumnHelper<TData>` → `createColumnHelper<TFeatures, TData>`.
+- Aggregation blir eget feature (`rowAggregationFeature`); `getAggregationValue(rows, depth)` → `getAggregationValue({ rows, maxDepth })`; `getAggregationFn()` → `getAggregationFns()`.
+- Row selection: `getToggleSelectedHandler()` slår på shift-range som default (`enableRowRangeSelection: false` återställer v8-beteendet).
+- Instansmetoder får inte destruktureras (kontextbindning krävs).
+- **`flexRender` är oförändrad**; ny komponentform `<FlexRender />` tillkommer.
+- Escape hatch: `@tanstack/react-table/legacy` exporterar `useLegacyTable` plus hela v8-ytan (`getCoreRowModel`, `getSortedRowModel`, `legacyCreateColumnHelper` m.fl.) — verifierat i `dist/legacy.d.ts`. Deprecerad och allt-inkluderande.
+- Nytt runtime-beroende `@tanstack/react-store ^0.11.0`; peer `react >=18` (vi kör React 19, uppfyllt).
+
+Källor: <https://tanstack.com/table/latest/docs/framework/react/guide/migrating> · <https://tanstack.com/blog/tanstack-table-v9-taking-form> · context7 `/tanstack/table` (`docs/framework/react/guide/migrating.md`) · `npm pack @tanstack/react-table@9.1.2` → `dist/index.d.ts`, `dist/legacy.d.ts`, `package.json` exports.
+
+### Rekommendation som underlag inför AC2 (beslutet är Marcus)
+
+Eftersom noll kod konsumerar paketet finns **ingen migration att utföra**. Frågan är i stället vilken hemvist ett oanvänt direkt beroende ska ha.
+
+**Förstahandsval — (B) ta bort `@tanstack/react-table` ur `package.json` och stäng #1491.** ADR-013 gjorde DataTable villkorligt ("annars eliminera") och åberopade själv M4-principen: komponent utan empirisk användning är onödig kodbasyta plus underhållskostnad. Beroendet har burits oanvänt sedan Fas 0 och genererar återkommande Dependabot-major-brus (detta kort är första instansen), audit-yta och lock-tyngd utan en enda användare. Behövs DataTable i Fas 7 är `npm i @tanstack/react-table` en engångsoperation som då hämtar dåvarande aktuella major — strikt bättre än att i förväg bära en version som hinner åldras.
+
+**Andrahandsval — (A) merga #1491.** Risken är noll (0 konsumenter, CI grön) och Fas 7 skulle starta mot aktuell major. Sämre än (B) endast på den punkten att vi fortsätter bära ett oanvänt paket, men fullt försvarbart om Fas 7:s DataTable bedöms sannolik.
+
+**Avrådes — (C) parkera kvar på v8.** Ger det sämsta av båda: kvarvarande oanvänt beroende plus en öppen PR och återkommande hygien-brus vid varje ny v9-utgåva.
+
+**Observation, ej åtgärdad (utanför detta korts AC1-mandat):** #1491 står `CLEAN`, odraftad och oarmerad. Per ADR-031 Lager 4 ska den aldrig auto-mergas, men enligt `tasks/lessons.d/parkerad-pr-utan-draft-ar-oskiljbar-fran-glomd.md` är en medvetet parkerad PR utan draft-status oskiljbar från en glömd för varje bevakningsmekanism. Överväg `gh pr ready 1491 --undo` tills AC2 är beslutat. PR:en är orörd av detta arbete.
+<!-- SECTION:NOTES:END -->
