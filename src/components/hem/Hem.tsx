@@ -73,6 +73,25 @@ import { useDashboardEvents, useDashboardRegistrations } from './useDashboardDat
  * `pt-10`/`pb-24`/`lg:pt-16`/`gap-12` — är ORÖRD, bara den horisontella
  * dubbleringen bort). Innehållsbredden blir därmed EXAKT 568px, identisk
  * med varje annan sida — mätt efter fix i samma viewport.
+ *
+ * TOMT LÄGE (TASK-243.2, AC #1/#2) — facit-granskning utförd LIVE mot
+ * `/hem`, egen dev-server (port 5190, ej 5173 — Marcus, se
+ * `docs/reference/prototyp-verifiering-runbook.md`), `get-registrations`
+ * intercepterad till `registrations: []` (samma tomtLage-princip som
+ * prototypens `TOM_LISTA`, VariantRo.tsx), `get-events` orörd (Nästa
+ * event-blocket är eventsdrivet, inte registrerings-drivet — matchar
+ * facitets `facit-hem-v1-tom-*.png`, som fortsatt visar ett riktigt
+ * kommande event). Jämfört desktop (1440×) och mobil (375×) mot
+ * `facit-hem-v1-tom-desktop.png`/`-mobil.png`: blockordningen, den fria
+ * hälsningen, Nästa event-kortet, de två gröna-bock-kvittona ("läget är
+ * under kontroll" / "Inga förfallna betalningar.") och Bevakningsradens
+ * fullständiga frånvaro (`Bevakningsrad({ rader: [] })` → `null`, AC #2)
+ * matchar facit exakt. Enda avvikelsen mot facit-bilderna är AppShells
+ * egen chrome (TabBar, avatar) — facit-prototypen renderas UTAN AppShell
+ * (samma redan bokförda distinktion som BREDD-avsnittet ovan), inte en
+ * Hem-formsavvikelse. `verktyget task243_2-tomt-lage-verify.mjs` var ett
+ * `[DEBUG-task243.2]`-engångsskript, städat efter passet
+ * (Städkontraktet, prototyp-verifiering-runbook.md).
  */
 export function Hem() {
   const { user } = useAuth();
