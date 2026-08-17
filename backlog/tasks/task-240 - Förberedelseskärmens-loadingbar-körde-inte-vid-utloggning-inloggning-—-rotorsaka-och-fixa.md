@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 09:00'
-updated_date: '2026-08-17 00:31'
+updated_date: '2026-08-17 00:55'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,7 +22,7 @@ Marcus-observation 2026-08-16 (skarp yta, logga ut → logga in): Förberedelses
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Buggen reproducerad och rotorsakad med fil:rad-belägg
-- [ ] #2 Fix: baren driver mot faktisk warmup-progress på ut/inloggnings-vägen; varm-start förblir tyst (ADR-112)
+- [x] #2 Fix: baren driver mot faktisk warmup-progress på ut/inloggnings-vägen; varm-start förblir tyst (ADR-112)
 - [x] #3 Bevis på renderad yta i båda riktningar (kall start: bar rör sig steg för steg · varm start: ingen skärm)
 <!-- AC:END -->
 
@@ -74,4 +74,32 @@ KOORDINATION: rörde ENDAST backlog/tasks/task-240 — noll filer i 243.3:s (tes
 VERKTYG: egen dev-server 5183 (Körning 1+2) och 5184 (Körning 3), aldrig 5173/5174. CORS-kringgången exakt per runbooken. Diagnostikskript (scratch-task240/, [DEBUG-task240]) raderade efter passet — rådata (events.json, skärmdumpar) fanns bara transient i skriptets OUT-mapp under körningen, aldrig committade.
 
 DoD-GRINDAR (körda FÖR PUSH, faktiska exitkoder): se Final Summary.
+
+PASS 3 — STALL-SIGNALEN + OBSERVABILITY (2026-08-17, samma dag som Pass 2, Marcus-beslut mottaget: "Vi kör på din rek" = Pass 2:s rekommenderade alternativ 3 — bygg BÅDA uppföljningarna). PR #1466 (Pass 2:s diagnosrapport, AC1+AC3) hade redan LANDAT i main (`ace4ca3c`) när detta pass startade — verifierat via `git log origin/main`. Denna PR:s gren är därför byggd på FÄRSKT `origin/main` (post-#1466, post-#1463/task-233, post-#1464/task-241.2) — `git diff` mot de tre rörda filerna (main.tsx/_authenticated.tsx/startvarmningen.ts) visade 0 rader innan denna PR:s egna ändringar, så inget av de landade syskon-korten rör detta korts domän.
+
+AC2 — STALL-SIGNALEN (fix byggd, ramarna gavs av Marcus-beslutet i uppdragstexten):
+- `src/data/warmup/startvarmningen.ts`: ny exporterad `STALL_THRESHOLD_MS = 3000` i motorns konstant-grannskap (bredvid `DEFAULT_TIMEOUT_MS`/`BATCH_SIZE`) — enda källan; importeras av UI-komponenten som en REN konstant (samma mönster som `HEM_SENASTE_AKTIVITET_ANTAL`, queries/keys.ts).
+- `src/components/AppShell/Forberedelseskarm.tsx`: intern `useEffect` (deps `[klara, totalt]`, biome-ignore med motivering — samma etablerade "trigger, inte läst i kroppen"-mönster som main.tsx:s InnerApp-invalidate-effekt) återstartar en `setTimeout(STALL_THRESHOLD_MS)` vid VARJE props-ändring; vid tröskeln sätts `stallad=true` → fyllnaden får `motion-safe:animate-pulse` (Tailwinds `motion-safe:`-variant, samma dubbelbälte-mönster som befintlig `motion-safe:transition-[width]` — neutraliseras HELT under `prefers-reduced-motion: reduce`) och en ADDITIV rad "Tar lite längre tid än vanligt…" monteras (ej bara CSS-döljs) under den LÅSTA textraden, som INTE rörs ett tecken. Live-regionen (kanal 2) väver in samma text vid stall — ingen ny live-region skapad. Bredden (`percentage`) förblir HELA TIDEN den faktiska klara/totalt-kvoten — signalen ljuger aldrig, den lägger bara till en "fortfarande igång"-indikation.
+
+BEVIS FÖRE/EFTER (samma repro-metodik som Pass 2 — egen dev-server, CORS-kringgången per prototyp-verifiering-runbook.md, DOM-poll mot [role="progressbar"] + puls-klass + stall-text — portarna 5185-5189, aldrig 5173/5174):
+
+FÖRE (kod tillfälligt `git stash`:ad till pre-fix-tillstånd, port 5185, 8500ms artificiell fördröjning på get-activity-log — samma metod som Pass 2:s Körning 2): baren når 6/7 vid t=23587ms, fryser HELT (0 rörelse) i ~4,86s till t=28447ms då skärmen försvinner ABRUPT. `sagPuls=false, sagStallText=false` hela vägen — matchar Pass 2:s ursprungsfynd (variansen 4,86s mot Pass 2:s 5,5s är normal nätverksvarians, inte en avvikelse eller regression).
+
+EFTER (fix återställd via `git stash pop`, port 5186, samma 8500ms fördröjning): baren når 6/7 vid t=16408ms, tyst i ~2,9s (under 3000ms-tröskeln, EXAKT som designat) till t=19309ms då `harPuls:true` OCH `stallTextSynlig:true` BÅDA blir sanna och förblir sanna (11 pollningar á 200ms) till t=22156ms då skärmen försvinner — nu en SIGNALERAD, inte tyst, väntan. `sagPuls=true, sagStallText=true`.
+
+NORMALFALLET OPÅVERKAT (port 5187, ingen artificiell fördröjning): baren rör sig 0→1→2→4→6→borta med samtliga mellanrum under 1050ms (klart under 3000ms-tröskeln) — `sagPuls=false, sagStallText=false` genom HELA körningen. Signalen fyrar aldrig i vägen för normal drift.
+
+VARM START FORTSATT TYST (port 5188-5189, `page.reload()` efter fullständig startvärmning + 6s väntan): `maxTotaltSett` stannade på 1 genom HELA 3s-pollningsfönstret — warmup-motorns RIKTIGA 7-tal utlöstes ALDRIG. En sub-100ms auth-resolution-placeholder (klara:0, totalt:1, ADR-112 beslut 5 — INTE beslut 2:s tyst-vid-varmt-kontrakt, som gäller warmup-FASEN specifikt) kunde fångas i EN av två körningar (15ms-pollfrekvens) — en förexisterande, dokumenterad, ALLTID närvarande (varm ELLER kall) mikro-rendering, HELT ORÖRD av denna fix (main.tsx/gate-logiken rördes inte). RÄTTELSE mot Pass 2:s formulering ("NOLL Förberedelseskärm renderad" i Körning 3): den var en överskattning av vad som faktiskt mättes — samma mikro-rendering fanns sannolikt även då, men Pass 2:s 30ms-poll råkade inte sampla den (mätgranularitet, inte en verklig skillnad mellan passen). Det AVGÖRANDE beviset — att den RIKTIGA 7-stegs-startvärmningen aldrig triggas på en varm reload — står oförändrat i BÅDA passen. `sagPuls`/`sagStallText` förblev `false` genomgående: signalen kan strukturellt inte fyra på en sub-100ms placeholder (tröskeln är 3000ms).
+
+OBSERVABILITY (Marcus-instruktion "MÄT FÖRST vilken observability-yta repot FAKTISKT har"): `grep -n "Sentry\|@sentry" package.json` → `@sentry/react` FINNS (`src/observability/sentry.ts`, `initSentry()`). Grep av existerande Sentry-anropsformer i `src/` gav den ETABLERADE konventionen: `Sentry.captureException` för fel, `Sentry.captureMessage(msg, {level:'warning', tags:{...}})` för icke-fel/fail-open-händelser — exakt precedent i `src/routes/glomt-losenord.tsx` rad 82-85 och `src/routes/valkommen.tsx` rad 305-308 (båda "(fail-open)"-formuleringar, strukturellt identisk klass händelse som denna). AVVIKELSE, bokförd öppet: min EGEN Pass 2-rekommendation lydde "breadcrumb" — den ordalydelsen var en OBELAGD gissning skriven INNAN jag faktiskt grep:ade repot. `addBreadcrumb` har NOLL precedent i kodbasen. Följde i stället den FAKTISKT etablerade formen (`captureMessage`) eftersom Marcus-instruktionen själv krävde att mätningen, inte mitt tidigare ord, skulle avgöra formen.
+
+Implementerat i `startvarmningen.ts`s `avgorMed`: `Sentry.captureMessage('Startvärmningen nådde hård timeout innan alla datamängder klara', { level: 'warning', tags: { warmup: 'timeout-partial' }, extra: { klara, totalt, timeoutMs } })`, guardat på `utfall === 'timeout' && klara < totalt` — fyrar ALDRIG vid ett fullständigt 'klar'-utfall eller vid 'offline'. Inget nytt tredjepartsberoende infört (Sentry var redan repots enda, etablerade observability-yta) — matchar instruktionens "finns annan etablerad yta: använd den formen" (Sentry ÄR den etablerade ytan; formen anpassades till dess redan levande konvention).
+
+DoD-GRINDAR PASS 3 (körda FÖR PUSH, faktiska exitkoder, byggda på FÄRSKT origin/main post-#1466): `npm run typecheck` exit 0. `npx @biomejs/biome check .` exit 0 (0 fel; 7 warnings/43 infos, samtliga pre-existerande — matchar Pass 2:s baslinje, ingen ny). `npm run build` exit 0. `npm run test:api` exit 0 — 788/788 passed (ingen staging-preflight-blockering denna gång, ingen bypass behövdes).
+
+KOORDINATION PASS 3: rörde `src/components/AppShell/Forberedelseskarm.tsx` + `src/data/warmup/startvarmningen.ts` + detta kort — noll filer i 243.3:s (`tests/`) eller 241.2:s (redan landad, `#1464`) domän.
+
+VERKTYG PASS 3: egen dev-server portarna 5185-5189, aldrig 5173/5174. CORS-kringgången per `docs/reference/prototyp-verifiering-runbook.md`. Diagnostikskript (`scratch-task240b/`, `[DEBUG-task240b]`) raderade efter passet.
+
+GREN-HISTORIK, FLAGGAT ÖPPET: en FÖRSTA gren (`fix/task-240-stall-signal`, ej pushad) byggdes av misstag mot en ÄLDRE `origin/main`-punkt (innan #1466 hann landa) och dupplicerade därför AC1/AC3-bockningarna + Pass 2-notesen manuellt. Upptäckt via `git fetch` + `git log origin/main` INNAN push (fångades av premiss-pass-disciplinen, inte av en extern granskare) — koden (Forberedelseskarm.tsx/startvarmningen.ts-diffen) extraherades som patch och applicerades rent på en NY gren mot verkligt FÄRSKT `origin/main` (denna gren); den gamla grenen pushades ALDRIG och lämnas oanvänd lokalt.
 <!-- SECTION:NOTES:END -->

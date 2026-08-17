@@ -1,5 +1,6 @@
-import { useId } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { ProgressBar } from 'react-aria-components';
+import { STALL_THRESHOLD_MS } from '@/data/warmup/startvarmningen';
 
 export interface ForberedelseskarmProps {
   /** Antal hämtningar (av startvärmningens set) som blivit klara. */
@@ -36,7 +37,32 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * datakontrakt-ytan — komponenten gör ingen egen datahämtning och vet
  * ingenting om TanStack Query, warmup-motorn (TASK-218.1) eller
  * gate-integrationen (TASK-218.3) som monterar den. Den blockerande
- * startvärmningens LOGIK bor helt utanför denna fil.
+ * startvärmningens LOGIK bor helt utanför denna fil. ENDA undantaget
+ * (task-240, STALL-SIGNALEN nedan): `STALL_THRESHOLD_MS` importeras som en
+ * REN KONSTANT ur `startvarmningen.ts` — samma mönster som
+ * `HEM_SENASTE_AKTIVITET_ANTAL` (queries/keys.ts) redan etablerar för att
+ * hålla en delad siffra i EN källa. Ingen QueryClient-, hook- eller
+ * motor-koppling adderas.
+ *
+ * ═══ STALL-SIGNALEN (task-240, Marcus-beslut 2026-08-17) ═══
+ *
+ * Rotorsak (task-240s Implementation Notes, kontrollerad repro): när
+ * motorns SISTA batch-item är segt fryser baren SYNLIGT utan feedback tills
+ * ADR-112 beslut 3:s hårda timeout löser ut abrupt. Denna komponent håller
+ * därför internt reda på tid sedan senaste `klara`/`totalt`-ÄNDRING
+ * (`useEffect` som återstartar en `setTimeout(STALL_THRESHOLD_MS)` vid
+ * varje props-ändring) — INTE motorns interna tillstånd, bara "har mina
+ * props ändrats nyligen". Vid tröskeln: fyllnaden får en pulserande
+ * opacitets-animation (`motion-safe:animate-pulse` — Tailwinds
+ * `motion-safe:`-variant applicerar ALDRIG under `prefers-reduced-motion:
+ * reduce`, samma dubbelbälte-mönster som `motion-safe:transition-[width]`
+ * nedan) och en ADDITIV rad ("Tar lite längre tid än vanligt…") monteras
+ * under den LÅSTA textraden — den låsta raden ändras inte ett tecken.
+ * Bredden (`percentage`) förblir hela tiden den FAKTISKA `klara`/`totalt`-
+ * kvoten — signalen lägger till en "fortfarande igång"-indikation, den
+ * ersätter aldrig den sanningsenliga datan med en generisk indeterminate-
+ * bar. Tokens: samma `--mm-forberedelseskarm-bar-fill` som redan bär
+ * kontrast-golvet (§ "Fyllnadsfärgen" nedan) — ingen ny färg införs.
  *
  * Namnet är Swedish/ORDLISTA-transrivet (ö→o, ä→a) enligt samma konvention
  * som `NastaEventCard` (`hem/`) — Förberedelseskärmen är ett låst, namngivet
@@ -136,6 +162,23 @@ export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
   const textId = useId();
   const besked = `${klara} av ${totalt} hämtningar klara`;
 
+  // Stall-signalen (se klassdoc-blocket ovan) — återstartar vid VARJE
+  // props-ändring, inte bara vid mount. `totalt` i deps FÖRUTOM `klara`:
+  // övergången FORBEREDELSESKARM_VANTAR ({0,1}) → riktig startvärmning
+  // ({0,7}) är en totalt-ändring UTAN klara-ändring, och räknas korrekt som
+  // "nyss gjorde framsteg" (en riktig handle just anslöt).
+  const [stallad, setStallad] = useState(false);
+  // TRIGGER på klara/totalt-ÄNDRING (samma etablerade mönster som main.tsx:s
+  // InnerApp-invalidate-effekt) — ingen av dem LÄSES i effektkroppen, de
+  // finns bara för att tvinga en omstart av timern varje gång ett nytt
+  // framsteg anländer.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: medveten TRIGGER på props-ändring, se ovan
+  useEffect(() => {
+    setStallad(false);
+    const timer = setTimeout(() => setStallad(true), STALL_THRESHOLD_MS);
+    return () => clearTimeout(timer);
+  }, [klara, totalt]);
+
   return (
     <div className="flex h-full min-h-full w-full flex-col items-center justify-center bg-bg p-4 sm:p-8 lg:p-12">
       <div className="flex w-full max-w-md flex-col items-center gap-8">
@@ -156,7 +199,11 @@ export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
             {({ percentage }) => (
               <div className="h-2 w-full overflow-hidden rounded-full bg-(--mm-forberedelseskarm-bar-track) outline-border-strong contrast-more:outline print:outline">
                 <div
-                  className="h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)"
+                  className={
+                    stallad
+                      ? 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:animate-pulse motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
+                      : 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
+                  }
                   style={{ width: `${percentage ?? 0}%` }}
                 />
               </div>
@@ -167,11 +214,22 @@ export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
           <p id={textId} className="text-center text-body text-text-secondary">
             Förbereder ditt administrationsverktyg
           </p>
+          {/* STALL-SIGNALEN (task-240) — ADDITIV rad, den låsta raden ovan
+              rörs inte. Monteras/avmonteras med `stallad`, ej bara döljd via
+              CSS, så den aldrig ligger dold-men-närvarande i DOM:en mellan
+              framsteg. */}
+          {stallad && (
+            <p className="text-center text-body text-text-secondary">
+              Tar lite längre tid än vanligt…
+            </p>
+          )}
         </div>
       </div>
-      {/* Kanal 2 — polite, alltid monterad; se klassdoc-blocket ovan. */}
+      {/* Kanal 2 — polite, alltid monterad; se klassdoc-blocket ovan.
+          Stall-meddelandet vävs in i SAMMA live-region (inte en andra) så
+          det annonseras vid text-ändringen utan att duplicera kanal 1. */}
       <p role="status" aria-live="polite" className="sr-only">
-        {besked}
+        {stallad ? `${besked}. Tar lite längre tid än vanligt…` : besked}
       </p>
     </div>
   );
