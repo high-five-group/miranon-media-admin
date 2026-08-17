@@ -4,7 +4,7 @@ title: 'Skiva: Påminnelsesvepet med en-påminnelse-urvalet'
 status: To Do
 assignee: []
 created_date: '2026-08-16 23:04'
-updated_date: '2026-08-17 02:32'
+updated_date: '2026-08-17 02:35'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,6 +31,6 @@ Påminnelsesvepet återanvänder sändmaskineriet ur 241.3; det nya är urvalslo
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning mot tasks/sessions/bilagor/s102-svep-konvergens/facit.json (18 bilder) — renderad yta jämförd läge för läge
 <!-- DOD:END -->
