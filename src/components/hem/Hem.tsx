@@ -3,7 +3,13 @@ import { useAuth } from '@/auth/useAuth';
 import { Modal } from '@/components/primitives';
 import { displayName } from '@/components/registrations/registration-display';
 import { SvepOverlay } from '@/components/svep/SvepOverlay';
-import { bekraftelsesvepUrval } from '@/components/svep/svep-urval';
+import {
+  bekraftelsesvepUrval,
+  paminnelseAvgiftstyperByRegId,
+  paminnelseRader,
+  paminnelsesvepUrval,
+} from '@/components/svep/svep-urval';
+import type { SvepTyp } from '@/components/svep/types';
 import type { Registration } from '@/domain/models/Registration';
 import { Bevakningsrad } from './Bevakningsrad';
 import { ForfallnaBetalningar } from './ForfallnaBetalningar';
@@ -13,6 +19,7 @@ import {
   dagsStart,
   eventIdentitet,
   eventsById,
+  type ForfallenRad,
   forfallnaBetalningar,
   fornamn,
   obekraftadeAnmalningar,
@@ -155,33 +162,66 @@ export function Hem() {
     [eventsQuery.data, registrationsQuery.data, idagStart],
   );
 
-  /* [TASK-241.2] Bekräftelsesvepets sändyta — Hem PEKAR, svepet SKICKAR
-     (ADR-114 beslut 1). `svepOppen` styr overlayen; urvalet är SAMMA
-     urvalskälla som räknaren ovan (`anmalningar`/`obekraftadeAnmalningar`),
-     bara omgrupperat per event (`bekraftelsesvepUrval`, AC #2). */
-  const [svepOppen, setSvepOppen] = useState(false);
+  /* [TASK-241.2/241.4] Svepens sändyta — Hem PEKAR, svepet SKICKAR (ADR-114
+     beslut 1). EN union-state (`aktivtSvep: SvepTyp | null`) i stället för
+     två separata booleaner: bekräftelse- och påminnelsesvepet är TVÅ
+     INSTANSER AV SAMMA FORM (ADR-114 beslut 4), aldrig öppna samtidigt, så
+     ETT `<Modal>`/`<SvepOverlay>`-par nedan väljer innehåll efter vilken typ
+     som är aktiv i stället för att duplicera hela overlay-blocket.
+     Urvalen är SAMMA urvalskällor som räknarna ovan — `anmalningar`/
+     `obekraftadeAnmalningar` för bekräftelse (`bekraftelsesvepUrval`,
+     TASK-241.2 AC #2), `forfallna`/`forfallnaBetalningar`+`forfallenGrupp`
+     för påminnelse (`paminnelseRader`/`paminnelsesvepUrval`, TASK-241.4
+     AC #1) — bara omgrupperade per event. */
+  const [aktivtSvep, setAktivtSvep] = useState<SvepTyp | null>(null);
   const bekraftelseGrupper = useMemo(
     () => bekraftelsesvepUrval(registrationsQuery.data, evMap),
     [registrationsQuery.data, evMap],
   );
 
-  /* [TASK-241.3 AC #3] Skickat-markörerna — session-lokalt minne av VILKA
-     registreringar som faktiskt bekräftades via svepet, oberoende av
+  /* [TASK-241.4 AC #1] Påminnelsesvepets urval — en-påminnelse-modellens
+     LÄGE 1 "Att påminna" ENDAST (S102 Del 10 beslut 7), mekaniskt spamsäkert:
+     `paminnelseRader` är den delade filtrerade radkällan som BÅDE
+     `paminnelsesvepUrval` (sändytans event-grupper) OCH
+     `paminnelseAvgiftstyperByRegId` (adresslistans avgiftstyp-suffix,
+     AC #2) samt skickat-markörernas rekonstruktion (nedan) läser — EN källa,
+     tre konsumenter, aldrig tre separata filtreringar som kan glida isär. */
+  const paminnelseRaderList = useMemo(
+    () => paminnelseRader(registrationsQuery.data, evMap, nuMs),
+    [registrationsQuery.data, evMap, nuMs],
+  );
+  const paminnelseGrupper = useMemo(
+    () => paminnelsesvepUrval(paminnelseRaderList, evMap),
+    [paminnelseRaderList, evMap],
+  );
+  const paminnelseAvgiftstyper = useMemo(
+    () => paminnelseAvgiftstyperByRegId(paminnelseRaderList),
+    [paminnelseRaderList],
+  );
+
+  /* [TASK-241.3 AC #3 / TASK-241.4 AC #3] Skickat-markörerna — session-lokalt
+     minne av VAD respektive svep FAKTISKT skickade, oberoende av
      query-cachens läge. NÖDVÄNDIGT eftersom en lyckad bekräftelse flippar
      `Registration.status` bort från `OBEKRAFTAD` server-side (samma
      fält-skrivning som `confirmRegistrations`, se `useSendActionEmail`s
-     docblock) — raden lämnar `obekraftadeAnmalningar`s filter vid nästa
-     refetch, precis som den SKA. Utan ett eget minne skulle "skickat"
-     aldrig synas: rader försvinner i stället för att markeras.
+     docblock) och en lyckad påminnelse stämplar `Påminnelse …skickad`
+     (`send-action-email/index.ts` § `stampFieldsFor`) — i BÅDA fallen
+     lämnar raden sitt filter vid nästa refetch, precis som den SKA. Utan
+     ett eget minne skulle "skickat" aldrig synas: rader försvinner (eller,
+     för påminnelse, hoppar tyst till "Väntar") i stället för att markeras
+     FÖRST.
      `onSkickat` (`SvepOverlay.tsx`) levererar UNIONEN av samtliga gruppers
-     `lyckade` när svepet landar i resultatläget.
+     `lyckade` (`Registration[]`) när svepet landar i resultatläget — för
+     påminnelse rekonstrueras RADERNA (med avgiftstyp) genom att filtrera
+     `paminnelseRaderList` (fånget vid öppningstillfället, se ovan) mot de
+     lyckade registrerings-ID:na, samma granularitet som
+     `ForfallnaBetalningar.tsx`s "Att påminna"-lista redan visar.
 
-     BEGRÄNSNING, ÖPPET BOKFÖRD: minnet rensas ALDRIG automatiskt — det
-     lever tills `Hem` unmountas (sidladdning/navigering bort och
-     tillbaka). Ett svep körs typiskt en gång per morgon, så mängden är
-     liten och avgränsad; en tidsstyrd urblekning hade varit spekulativ
-     komplexitet utan en nedskriven regel att bygga mot (Marcus har inte
-     dömt hur länge markören ska synas) — se slutrapporten för TASK-241.3. */
+     BEGRÄNSNING, ÖPPET BOKFÖRD (ärvd ur TASK-241.3): minnet rensas ALDRIG
+     automatiskt — det lever tills `Hem` unmountas. Ett svep körs typiskt en
+     gång per morgon, så mängden är liten och avgränsad; en tidsstyrd
+     urblekning hade varit spekulativ komplexitet utan en nedskriven regel
+     att bygga mot. */
   const [nyligenSkickade, setNyligenSkickade] = useState<Registration[]>([]);
   const nyligenSkickadeRader = useMemo(
     () =>
@@ -192,6 +232,7 @@ export function Hem() {
       })),
     [nyligenSkickade, evMap],
   );
+  const [nyligenPaminda, setNyligenPaminda] = useState<ForfallenRad[]>([]);
 
   const idagLangt = useMemo(
     () =>
@@ -229,7 +270,7 @@ export function Hem() {
           registrationsQuery={registrationsQuery}
           anmalningar={anmalningar}
           nuMs={nuMs}
-          onBekraftaAlla={() => setSvepOppen(true)}
+          onBekraftaAlla={() => setAktivtSvep('bekraftelse')}
           nyligenSkickade={nyligenSkickadeRader}
         />
 
@@ -240,6 +281,8 @@ export function Hem() {
           registrationsQuery={registrationsQuery}
           forfallna={forfallna}
           nuMs={nuMs}
+          onSkickaPaminnelseAlla={() => setAktivtSvep('paminnelse')}
+          nyligenPaminda={nyligenPaminda}
         />
 
         {/* 5. GENVÄGAR */}
@@ -250,27 +293,47 @@ export function Hem() {
       </section>
 
       {/* SÄNDYTAN — se `SvepOverlay.tsx`s docblock för varför Modal-ansvaret
-          bor här och inte i komponenten. `svepOppen && <SvepOverlay/>` (INTE
+          bor här och inte i komponenten. `aktivtSvep && <SvepOverlay/>` (INTE
           en `isOpen`-prop på SvepOverlay självt) speglar prototypens
           `{svepTyp && <SvepOverlay/>}`: overlayen UNMOUNTAS helt vid stängning,
-          så `armerad`/testmail-state aldrig läcker in i nästa öppning. */}
+          så `armerad`/testmail-state aldrig läcker in i nästa öppning — och
+          aldrig mellan de två svep-TYPERNA heller, eftersom `aktivtSvep`
+          bara kan vara EN av dem åt gången. */}
       <Modal
-        isOpen={svepOppen}
+        isOpen={aktivtSvep != null}
         isDismissable
         style={SVEP_SCRIM}
         // Scrollen bor på Dialogens body (se `SvepOverlay`s docblock), så
         // `Modal` självt får inte scrolla.
         className="w-[min(94vw,40rem)] overflow-hidden duration-300 data-[entering]:scale-[0.98] data-[exiting]:scale-[0.98]"
         onOpenChange={(open) => {
-          if (!open) setSvepOppen(false);
+          if (!open) setAktivtSvep(null);
         }}
       >
-        {svepOppen && (
+        {aktivtSvep === 'bekraftelse' && (
           <SvepOverlay
             svepTyp="bekraftelse"
             eventGrupper={bekraftelseGrupper}
-            onClose={() => setSvepOppen(false)}
+            onClose={() => setAktivtSvep(null)}
             onSkickat={(lyckade) => setNyligenSkickade((nu) => [...lyckade, ...nu])}
+          />
+        )}
+        {aktivtSvep === 'paminnelse' && (
+          <SvepOverlay
+            svepTyp="paminnelse"
+            eventGrupper={paminnelseGrupper}
+            avgiftstypByRegId={paminnelseAvgiftstyper}
+            onClose={() => setAktivtSvep(null)}
+            onSkickat={(lyckade) => {
+              // [TASK-241.4 AC #3] Rekonstruera RADERNA (med avgiftstyp) ur
+              // urvalet som gällde VID ÖPPNINGSTILLFÄLLET — `onSkickat` ger
+              // bara `Registration[]` (sändningen är registrerings-granulär,
+              // `svep-urval.ts`s dedup-motiv), inte vilken/vilka avgiftstyper
+              // som ingick per mottagare.
+              const lyckadeIds = new Set(lyckade.map((r) => r.id));
+              const nyaRader = paminnelseRaderList.filter((rad) => lyckadeIds.has(rad.reg.id));
+              setNyligenPaminda((nu) => [...nyaRader, ...nu]);
+            }}
           />
         )}
       </Modal>

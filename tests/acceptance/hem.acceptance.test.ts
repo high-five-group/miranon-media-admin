@@ -581,12 +581,13 @@ test.describe('Nya anmälningar — statusfilter, räknare, bekräftelsesvep, å
 
     // Bekräftelsesvep-knappen: sedan [TASK-241.2] en RIKTIG, klickbar knapp
     // — `BulkAtgardsknapp.tsx`s `onPress`-gren (Hem pekar, svepet skickar,
-    // ADR-114). Den gamla no-op-formen (`aria-disabled` + tooltip, `onPress`
-    // UTELÄMNAD) lever kvar OENDAST i ForfallnaBetalningars syskonknapp
-    // "Skicka påminnelse till alla" — se den describen nedan. Visuellt
-    // OFÖRÄNDRAD i båda lägena (samma `intent="primary"`, samma fullbredd);
-    // `aria-disabled`/`onPress` är det enda som skiljer dem, per
-    // `BulkAtgardsknapp.tsx`s docblock.
+    // ADR-114). ForfallnaBetalningars syskonknapp "Skicka påminnelse till
+    // alla" fick SAMMA behandling i [TASK-241.4] — se den describen nedan
+    // (§ "Förfallna betalningar"). Den gamla no-op-formen (`aria-disabled` +
+    // tooltip, `onPress` UTELÄMNAD) finns inte längre kvar på NÅGON av de
+    // två bulk-knapparna. Visuellt OFÖRÄNDRAD i båda lägena (samma
+    // `intent="primary"`, samma fullbredd); `aria-disabled`/`onPress` är det
+    // enda som skiljer dem, per `BulkAtgardsknapp.tsx`s docblock.
     const knapp = block.getByRole('button', { name: 'Bekräfta alla' });
     await expect(knapp).toBeVisible();
     await expect(knapp).not.toHaveAttribute('aria-disabled');
@@ -647,9 +648,17 @@ test.describe('Nya anmälningar — statusfilter, räknare, bekräftelsesvep, å
  * beslut 7–8; `ForfallnaBetalningar.tsx`). Deadline = eventstart − 14 dagar;
  * samtliga event nedan har startdatum 2026-09-20 (deadline 2026-09-06, redan
  * passerad mot FROZEN_NOW 2026-09-15).
+ *
+ * BULK-KNAPPENS SÄNDVÄG (TASK-241.4, ände-till-ände + negativa sensorn för
+ * en-påminnelse-modellens läge 1-filter) HAR EN EGEN FIL:
+ * `svep-paminnelse-send.acceptance.test.ts` — samma uppdelning som
+ * bekräftelsesvepets `svep-bekraftelse-send.acceptance.test.ts` (TASK-241.3).
+ * Testet nedan bevisar bara att knappen ÄR den öppnande ingången (rebase-
+ * semantiken, samma mall som `44649e54`s "Bekräfta alla"-fix), inte hela
+ * sändflödet.
  */
 test.describe('Förfallna betalningar — avgiftstyp, skickat-markör, tre tillståndsgrupper (PRD berättelse 5, S102 Del 10 beslut 7–8)', () => {
-  test('EN registrering som saknar BÅDA avgifterna ger TVÅ rader; "Att påminna" när ingen påminnelse skickats', async ({
+  test('EN registrering som saknar BÅDA avgifterna ger TVÅ rader; "Att påminna" när ingen påminnelse skickats; bulk-knappen öppnar påminnelsesvepets sändyta', async ({
     page,
     network,
   }) => {
@@ -673,10 +682,29 @@ test.describe('Förfallna betalningar — avgiftstyp, skickat-markör, tre tills
     await expect(attPaminna).toContainText('Slutbetalning · Fjärrskådning');
     await expect(attPaminna.getByRole('listitem')).toHaveCount(2);
 
-    // BulkAtgardsknappens syskon lever ENSAM i "Att påminna" (Marcus-låst).
-    await expect(page.getByRole('button', { name: 'Skicka påminnelse till alla' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 3, name: /^Väntar/ })).toHaveCount(0);
     await expect(page.getByRole('heading', { level: 3, name: /^Dags att ringa/ })).toHaveCount(0);
+
+    // BulkAtgardsknappens syskon lever ENSAM i "Att påminna" (Marcus-låst) —
+    // och är sedan [TASK-241.4] en RIKTIG, klickbar knapp (`onSkickaPaminnelseAlla`,
+    // ADR-114), inte längre den aria-disabled no-op-formen TASK-243.1 lämnade
+    // den i (samma rebase-mönster som `44649e54`s "Bekräfta alla"-fix).
+    const knapp = page.getByRole('button', { name: 'Skicka påminnelse till alla' });
+    await expect(knapp).toBeVisible();
+    await expect(knapp).not.toHaveAttribute('aria-disabled');
+
+    // Öppnar sändytans dialog (`SvepOverlay`, namnet ur `title="Skicka
+    // påminnelse till alla"`) — och Escape stänger den igen UTAN
+    // sidoeffekter: raden står kvar, ingen ny alert, ingen navigering bort
+    // från /hem.
+    await knapp.click();
+    const dialog = page.getByRole('dialog', { name: 'Skicka påminnelse till alla' });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(page).toHaveURL(/\/hem$/);
+    await expect(attPaminna.getByRole('listitem')).toHaveCount(2);
+    await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
   test('"Väntar" — påminnelse skickad för < 7 dagar sedan, med skickat-markören; ingen bulk-knapp', async ({

@@ -18,7 +18,19 @@ import type { useDashboardRegistrations } from './useDashboardData';
  * morgonen"): en-påminnelse-modellens TRE tillståndsgrupper (S102 Del 10
  * beslut 7–8), var och en sin egen inline-scroll. "Bekräfta"-svepets
  * syskonknapp ("Skicka påminnelse till alla") lever ENSAM i Att
- * påminna-sektionen (Marcus-låst: svep opererar aldrig på väntar/ring-rader).
+ * påminna-sektionen (Marcus-låst: svep opererar aldrig på väntar/ring-rader)
+ * — och är sedan [TASK-241.4] en RIKTIG, klickbar knapp (`onSkickaPaminnelseAlla`,
+ * `BulkAtgardsknapp.tsx`s `onPress`-gren), inte längre den aria-disabled
+ * no-op-formen TASK-243.1 lämnade den i.
+ *
+ * SKICKAT-MARKÖRERNA (TASK-241.4 AC #3): `nyligenPaminda` är `Hem.tsx`s
+ * session-lokala minne av VILKA (registrering, avgiftstyp)-rader svepet just
+ * påminde — SAMMA mönster som `NyaAnmalningar.tsx`s `nyligenSkickade` (se
+ * dess docblock för hela motivet). Live-grupperingen nedan filtrerar bort
+ * dessa rader via `paminndaNycklar` (samma `${regId}-${avgiftstyp}`-nyckel
+ * som `ForfallenRadInnehall`s React-`key`) så en rad aldrig visas BÅDE som
+ * en vanlig "Att påminna"-rad OCH som en markörrad samtidigt under fönstret
+ * innan refetchen landar.
  */
 export function ForfallnaBetalningar({
   anmalDataPending,
@@ -26,25 +38,40 @@ export function ForfallnaBetalningar({
   registrationsQuery,
   forfallna,
   nuMs,
+  onSkickaPaminnelseAlla,
+  nyligenPaminda,
 }: {
   anmalDataPending: boolean;
   regsError: boolean;
   registrationsQuery: ReturnType<typeof useDashboardRegistrations>;
   forfallna: ForfallnaVy;
   nuMs: number;
+  /** [TASK-241.4] Öppnar påminnelsesvepets sändyta (`Hem.tsx`s `aktivtSvep`).
+      Threading, ingen egen logik här — se `BulkAtgardsknapp.tsx`s docblock
+      för de två lägena en `onPress` styr. */
+  onSkickaPaminnelseAlla: () => void;
+  /** [TASK-241.4 AC #3] Rader svepet FAKTISKT påminde denna session —
+      `Hem.tsx`s `nyligenPaminda`. Tom array (alltid given av `Hem.tsx`) före
+      första svepet. */
+  nyligenPaminda: ForfallenRad[];
 }) {
+  const paminndaNycklar = useMemo(
+    () => new Set(nyligenPaminda.map((rad) => `${rad.reg.id}-${rad.avgiftstyp}`)),
+    [nyligenPaminda],
+  );
   const grupper = useMemo(() => {
     const attPaminna: ForfallenRad[] = [];
     const vantar: ForfallenRad[] = [];
     const dagsAttRinga: ForfallenRad[] = [];
     for (const rad of forfallna.rows) {
+      if (paminndaNycklar.has(`${rad.reg.id}-${rad.avgiftstyp}`)) continue;
       const grupp = forfallenGrupp(rad, nuMs);
       if (grupp === 'att-paminna') attPaminna.push(rad);
       else if (grupp === 'vantar') vantar.push(rad);
       else dagsAttRinga.push(rad);
     }
     return { attPaminna, vantar, dagsAttRinga };
-  }, [forfallna.rows, nuMs]);
+  }, [forfallna.rows, nuMs, paminndaNycklar]);
 
   return (
     <section aria-labelledby="hem-forfallna" className="flex min-w-0 flex-col gap-4">
@@ -74,7 +101,7 @@ export function ForfallnaBetalningar({
         </p>
       ) : (
         <div className="flex min-w-0 flex-col gap-6">
-          {grupper.attPaminna.length > 0 ? (
+          {grupper.attPaminna.length > 0 || nyligenPaminda.length > 0 ? (
             <div className="flex min-w-0 flex-col gap-3">
               <h3
                 id="hem-forfallna-paminna"
@@ -103,9 +130,27 @@ export function ForfallnaBetalningar({
                     <ForfallenRadInnehall rad={rad} />
                   </li>
                 ))}
+                {/* [TASK-241.4 AC #3] Nyss påminda — samma markörgrammatik som
+                    `NyaAnmalningar.tsx`s "Bekräftelse skickad"-rader, sist i
+                    samma lista, ingen ny visuell nivå. */}
+                {nyligenPaminda.map((rad, i) => (
+                  <li
+                    key={`${rad.reg.id}-${rad.avgiftstyp}-skickad`}
+                    className={
+                      grupper.attPaminna.length + i > 0
+                        ? 'border-border-light border-t contrast-more:border-border-strong'
+                        : undefined
+                    }
+                  >
+                    <PamindRadInnehall rad={rad} />
+                  </li>
+                ))}
               </ul>
               <div className="pt-1">
-                <BulkAtgardsknapp label="Skicka påminnelse till alla" />
+                <BulkAtgardsknapp
+                  label="Skicka påminnelse till alla"
+                  onPress={onSkickaPaminnelseAlla}
+                />
               </div>
             </div>
           ) : null}
@@ -210,6 +255,30 @@ function ForfallenRadInnehall({ rad }: { rad: ForfallenRad }) {
           Påminnelse skickad {paminnelsedatum}
         </span>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * [TASK-241.4 AC #3] Nyss påminda-radens innehåll — SAMMA markörgrammatik
+ * som `NyaAnmalningar.tsx`s motsvarande rad (`opacity-70` + grön
+ * `CircleCheck` + konstaterande copy i stället för den vanliga
+ * datum-badgen). Se `Hem.tsx`s docblock för hela minnes-mekaniken.
+ */
+function PamindRadInnehall({ rad }: { rad: ForfallenRad }) {
+  return (
+    <div className="flex items-center gap-3 py-3 opacity-70">
+      <InitialAvatar namn={rad.namn} />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate font-medium text-body">{rad.namn}</span>
+        <span className="truncate text-caption text-text-muted">
+          {rad.avgiftstyp} · {rad.eventNamn}
+        </span>
+      </span>
+      <span className="flex shrink-0 items-center gap-1.5 pl-2 text-caption text-success">
+        <CircleCheck aria-hidden="true" size={14} className="shrink-0" />
+        Påminnelse skickad
+      </span>
     </div>
   );
 }

@@ -68,11 +68,17 @@ const ATGARD_NAMN: Record<SvepTyp, string> = {
 export function SvepOverlay({
   svepTyp,
   eventGrupper,
+  avgiftstypByRegId,
   onClose,
   onSkickat,
 }: {
   svepTyp: SvepTyp;
   eventGrupper: SvepEventGrupp[];
+  /** [TASK-241.4] Adresslistans avgiftstyp-suffix — endast given av `Hem.tsx`
+      för `svepTyp === 'paminnelse'` (`svep-urval.ts` §
+      `paminnelseAvgiftstyperByRegId`). `undefined` för bekräftelsesvepet,
+      som aldrig visar avgiftstyp (`Adresslista.tsx`s docblock). */
+  avgiftstypByRegId?: Map<string, string>;
   onClose: () => void;
   onSkickat?: (lyckade: Registration[]) => void;
 }) {
@@ -223,7 +229,7 @@ export function SvepOverlay({
         ) : kanSkicka ? (
           <div className="flex flex-col gap-6">
             <DetaljGrupp id="grupp-svep-mottagare" rubrik="Mottagare">
-              <Adresslista eventGrupper={eventGrupper} />
+              <Adresslista eventGrupper={eventGrupper} avgiftstypByRegId={avgiftstypByRegId} />
             </DetaljGrupp>
 
             <DetaljGrupp id="grupp-svep-utskicket" rubrik="Utskicket">
