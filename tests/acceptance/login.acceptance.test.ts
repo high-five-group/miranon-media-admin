@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { HttpResponse, http } from 'msw';
+import { delay, HttpResponse, http } from 'msw';
 import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
 import { expect, test } from './support/acceptance-bas';
 
@@ -141,6 +141,123 @@ test.describe('/login — routing efter lyckad lösenords-inloggning (AC #1)', (
     await expect(page).toHaveURL(/\/passkey\?/);
     const url = new URL(page.url());
     expect(url.searchParams.get('redirect')).toBe(SAKERT_MAL);
+  });
+
+  test('TASK-261: Förberedelseskärmen blinkar ALDRIG fram mellan inloggningen och passkey-erbjudandet', async ({
+    page,
+    network,
+  }) => {
+    // ═══ VAD DETTA TESTAR, OCH VARFÖR SPANAREN BEHÖVS ═══
+    //
+    // Marcus observerade i prod (2026-08-17) att Förberedelseskärmen
+    // blinkade till MELLAN inloggningen och passkey-förfrågan. Rotorsaken
+    // är ett RACE mellan två navigeringsvägar som båda startar när
+    // `auth.login()` flippar `isAuthenticated` (login.tsx `handleSubmit`):
+    //
+    //   VÄG A (snabb, mikrotask): InnerApps effekt (main.tsx) kör
+    //     `router.invalidate()` → `/login`s EGEN `beforeLoad` re-evaluerar
+    //     → ser `isAuthenticated: true` → `throw redirect({ to:
+    //     search.redirect })`. Målet är en `_authenticated`-yta, så
+    //     `AuthenticatedLayout` monteras → dess app-yta-gate
+    //     (`useAppYtaVarmningsgate`) ser en KALL cache redan i sin lazy
+    //     `useState`-initierare → Förberedelseskärmen renderas.
+    //   VÄG B (långsam, TVÅ await): `routaEfterLyckadInloggning()` väntar
+    //     in `getSession()` OCH `probaPasskeyTillganglighet()` (ett riktigt
+    //     nätverksanrop) innan den navigerar till `/passkey`.
+    //
+    // Väg A vinner alltid; skärmen den monterar rivs ned igen när väg B
+    // landar. Det ÄR blinket.
+    //
+    // `_authenticated.tsx`s eget docblock bokförde förutsättningen som
+    // gjorde racet harmlöst: destinationen var densamma oavsett vem som
+    // vann — "förutom det just nu avstängda passkey-erbjudandet". TASK-231
+    // slog PÅ passkey-erbjudandet, och därmed föll den förutsättningen.
+    //
+    // FÖRDRÖJNINGEN gör racet DETERMINISTISKT i stället för "ibland":
+    // 1200 ms på probe-anropet garanterar att väg A hinner montera
+    // `_authenticated` först. Utan den avgörs utfallet av nätverksjitter —
+    // exakt därför Marcus såg det som ett "ibland"-fenomen.
+    //
+    // SPANAREN, inte en `toBeVisible()`-koll: blinket är per definition
+    // TRANSIENT. En assertion som körs EFTER navigeringen ser en redan
+    // nedriven skärm och blir grön på ett trasigt flöde. MutationObserver:n
+    // installeras före första bytet app-JS och latchar `true` för alltid om
+    // Förberedelseskärmens LÅSTA textrad (Forberedelseskarm.tsx) någonsin
+    // funnits i DOM — även för en enda frame.
+    // ═══ SPANAREN — TRE FALLGROPAR, ALLA MÄTTA I DENNA SKIVA ═══
+    //
+    // (1) Den rapporterar via `console`, inte via en variabel på `window`
+    //     eller i `sessionStorage`. Båda de senare lästes tomma från
+    //     `page.evaluate()` efter navigeringen trots att spanaren
+    //     bevisligen kört — de gav "ingen blink" på ett flöde som blinkade.
+    // (2) Den använder INTE `MutationObserver`. `document.documentElement`
+    //     är `null` när ett init-script kör, så `.observe(null, …)` kastar
+    //     och dödar resten av scriptet TYST — inklusive all kod som
+    //     deklarerats efter den.
+    // (3) Den mäter inte tid. Fixturvärlden fryser klockan
+    //     (`hermetic.ts`, `page.clock.setFixedTime`), så `Date.now()`-
+    //     deltan är alltid 0. Timers kör däremot i realtid, vilket är
+    //     varför ren polling fungerar.
+    //
+    // Pollintervallet (5 ms) ligger långt under blinkets längd: det varar
+    // hela probe-anropet, som fördröjs 1200 ms nedan.
+    // MÄTFÖNSTRET ÖPPNAS FÖRST VID KLICKET, inte vid sidladdningen. Utan den
+    // avgränsningen fångar spanaren `InnerApp`s auth-resolution-placeholder
+    // (`main.tsx`, ADR-112 beslut 5) — en dokumenterad, ALLTID närvarande
+    // mikro-rendering av samma komponent under `auth.isLoading`, som inträffar
+    // på varje sidladdning INNAN någon ens loggat in. Den är ett annat,
+    // förexisterande beteende än det race denna skiva åtgärdar, och att
+    // blanda ihop dem gör testet falskt rött. (Mätt: utan avgränsningen
+    // fällde testet med `FORBEREDELSESKARM @ /login` även med fixen på plats.)
+    const konsollogg: string[] = [];
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (text.startsWith('[TASK-261]')) konsollogg.push(text);
+    });
+    await page.addInitScript(() => {
+      const LAST_TEXTRAD = 'Förbereder ditt administrationsverktyg';
+      let sag = false;
+      setInterval(() => {
+        const aktiv = (window as unknown as { __task261Aktiv?: boolean }).__task261Aktiv;
+        if (aktiv && !sag && document.body?.textContent?.includes(LAST_TEXTRAD)) {
+          sag = true;
+          console.log(`[TASK-261] FORBEREDELSESKARM @ ${location.pathname}`);
+        }
+      }, 5);
+    });
+
+    network.use(
+      losenordsGrantHandler(),
+      http.get('*/auth/v1/passkeys', async () => {
+        await delay(1200);
+        return HttpResponse.json([]);
+      }),
+    );
+
+    await rensaInloggadSession(page);
+    await page.goto(`/login?redirect=${encodeURIComponent(SAKERT_MAL)}`);
+    await page.getByLabel('E-postadress').fill('login-acceptance@visual-fixture.se');
+    await page.getByLabel('Lösenord').fill('ett-testlosenord-1234');
+    // Auth-resolutionen är avgjord här (formuläret är interaktivt) — allt
+    // som renderas härefter tillhör inloggningsövergången.
+    await page.evaluate(() => {
+      (window as unknown as { __task261Aktiv?: boolean }).__task261Aktiv = true;
+    });
+    await page.getByRole('button', { name: 'Logga in', exact: true }).click();
+
+    // Destinationen ska fortfarande vara erbjudandet — fixen får inte
+    // "lösa" blinket genom att tappa bort passkey-omvägen.
+    await expect(page).toHaveURL(/\/passkey\?/);
+    expect(new URL(page.url()).searchParams.get('redirect')).toBe(SAKERT_MAL);
+
+    // Rubriken bevisar att erbjudandet FAKTISKT renderades (inte bara att
+    // URL:en råkar stämma) — samma överskuggnings-disciplin som testet
+    // nedan följer med sin `waitForRequest`.
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Vill du logga in snabbare nästa gång?' }),
+    ).toBeVisible();
+
+    expect(konsollogg).toEqual([]);
   });
 
   test('kontot har REDAN en passkey → navigerar DIREKT (hoppar över erbjudandet), markerar sett', async ({
