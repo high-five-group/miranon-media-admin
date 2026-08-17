@@ -1,0 +1,39 @@
+---
+id: TASK-249.8
+title: 'QA: Segment-promoveringen granskas i browsern'
+status: To Do
+assignee: []
+created_date: '2026-08-17 00:38'
+labels:
+  - ready-for-human
+dependencies:
+  - TASK-249.1
+  - TASK-249.2
+  - TASK-249.3
+  - TASK-249.4
+  - TASK-249.5
+  - TASK-249.6
+  - TASK-249.7
+parent_task_id: TASK-249
+ordinal: 470000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+MANUELL TESTPLAN (skarpa segment-ytan, utan variantparameter): 1) Mallvyn: skapa segment via var och en av de tre vägarna — människomening + live-antal + förifyllt namn ska följa valen; Skapa öppnar detaljvyn direkt. 2) Verkstaden: bygg en OCH-kombination (gått både RIM 1 och RIM 2) — meningen läser som EN svensk mening, antalet stämmer mot publiklistan. 3) Modalitetsgrinden: ett nytt villkor utan modalitetsval räknas INTE och sändning är låst; blandad modalitet ger synlig fördelningsvarning. 4) Generatorn: Dela upp i grupper — tre synliga stegkort, de fjorton förskapade med verkliga mål, täckningskvittensen visar procent-formen (100 % - Full täckning...). 5) Detaljvyn: publiklistan i personlistans anatomi, inline-scroll, Får inte mailet-märkning för consent-grindade; radhöjden hoppar aldrig. 6) Utskicksvyn: testmail-raden, skriv-för-att-bekräfta mot synligt mottagarantal, grön sändknapp (aldrig röd). 7) Tidsperioden: DatumFalt under Fler avgränsningar — antalet är serverfiltrerat. 8) Rogers ord: utbildning i all UI-text, träff-ordet följer modalitetsvalet (utbildningar/föreläsningar/event). 9) 0-träffsform: ett segment utan avstämd närvaro visar neutral 0 personer ännu-fras, aldrig fel. 10) Skapa ett nytt event i basen med Kursfamilj/Kursnivå satta och se att det omfattas av familjevillkor utan kodändring. 11) Tillgänglighet stickprov: fokusflytt till h1 vid dataanländning, synlig fokusring, prefers-contrast more.
+<!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Marcus har gått igenom hela testplanen i Description mot skarpa ytan (dev-server eller staging) och kvitterat per punkt
+<!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [ ] #5 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
+<!-- DOD:END -->
