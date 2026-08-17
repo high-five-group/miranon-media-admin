@@ -3,9 +3,10 @@ id: TASK-249
 title: >-
   PRD: Segment-promoveringen — variant d till skarp yta med server-ägt
   regelspråk
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 00:19'
+updated_date: '2026-08-17 12:25'
 labels: []
 dependencies: []
 ordinal: 462000
@@ -97,3 +98,9 @@ Den Marcus-godkända prototypformen (variant d, facit stämplat) promoveras till
 - [ ] #5 ariaSnapshot-referenserna låsta ur variant d FÖRE flippen (enkelriktad ordning, ADR-103 B4)
 - [ ] #6 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+SEGMENT-PROMOVERINGEN FULLBORDAD (S104, 2026-08-17): alla åtta skivor + följdskivan 249.9 byggda och landade i natt-orkestreringen (PR 1475/1477/1478/1480/1492/1494/1501/1510); EF:erna prod-deployade 38/38 (Marcus egen körning, prod-ref-låset); fronten bundle-bevisad; Marcus prod-QA → fynden åtgärdade (259, 264) och utredda (260); slutkvittens 'Ser bra ut'. MEDVETET UTANFÖR SCOPE, durabelt hem: sparande/sändning är fortfarande klient-simulerade — spec-frö task-271 (grillning först). Kvarvarande syskon: task-257 (fynd), task-258 (städ), task-265 (B1, bas), task-213.4-varningen. Full narrativ: sessionsdok S104 Del 1–10 + BUILD-LOG.
+<!-- SECTION:FINAL_SUMMARY:END -->
