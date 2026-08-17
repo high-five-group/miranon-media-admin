@@ -1,9 +1,11 @@
-// Uttömmande enhetstest för segment-medlemskaps-MOTORN (Fas 6g L1, ADR-064).
+// Uttömmande enhetstest för segment-medlemskaps-MOTORN (Fas 6g L1, ADR-064;
+// AND/DNF ADR-115/TASK-249.2; tidsperioden ADR-115 EF-krav 2/5/TASK-249.3).
 //
 // api-pure (ren logik, ingen staging, inga creds) → körs lokalt + CI. Låser
 // algebran in-memory: kvalificerad ⟺ ≥1 include-par (OR) AND 0 exclude-par
 // (NOT-any); include=[] ⇒ []; (kurs × modalitet)-MÄNGD ⇒ tvådagars-dedup gratis;
-// modalitet-skiljande korrekthet (golv). Bevisar OCKSÅ parseSegmentRule:
+// modalitet-skiljande korrekthet (golv); `par.period` filtrerar VILKET datum
+// som räknas för ett par (TASK-249.3). Bevisar OCKSÅ parseSegmentRule:
 // felformad regel → InvalidSegmentRuleError (EF mappar → 400) utan att deploya.
 
 import { expect, test } from '@playwright/test';
@@ -19,13 +21,18 @@ import {
   type SegmentRule,
 } from '../../supabase/functions/_shared/segment-membership';
 
-// Kortform för att bygga närvaro-rader: row(person, kurs, modalitet).
+// Kortform för att bygga närvaro-rader: row(person, kurs, modalitet, datum?).
+// `datum` defaultar till ett neutralt ISO-datum — de flesta tester bryr sig
+// inte om VILKET datum, bara att paret finns i personens mängd (TASK-249.3
+// gjorde `datum` obligatoriskt på AttendanceRow; defaulten håller alla
+// FÖRE-249.3-tester oförändrade, noll regression).
 function row(
   personId: string,
   kurs: string,
   modalitet: 'Utbildning' | 'Föreläsning',
+  datum = '2025-01-01',
 ): AttendanceRow {
-  return { personId, kurs, modalitet };
+  return { personId, kurs, modalitet, datum };
 }
 const U = 'Utbildning' as const;
 const F = 'Föreläsning' as const;
@@ -486,5 +493,258 @@ test.describe('De fjorton Skool-grupperna — uttryckbara, korrekta, disjunkta (
   test('den femtonde (obefolkade) kombinationen Fjärrskådning+RIM2+Psionautics är algebraiskt uttryckbar och korrekt (0 personer i denna fixtur, sk15 matchar sig själv)', () => {
     const denFemtonde = grupp([FS, R2, PS]);
     expect(computeMembership(denFemtonde, rows)).toEqual(['sk15']);
+  });
+});
+
+// ============================================================================
+// TIDSPERIODEN — par.period (ADR-115 EF-krav 2/5, TASK-249.3 AC#2/AC#3).
+// "Villkorets tidsperiod verkställs server-side: deltagandets datum följer med
+// i källfrågan och tidsfönstret filtrerar medlemskapet" — de TRE namngivna
+// testfallen ur kortets AC#2 (datumspann/tomt spann/spann utan träffar), plus
+// gräns-, AND-grupp- och exclude-symmetri-fall. AC#3 (räkne-ärligheten flyttar
+// till servern) är en NATURLIG konsekvens av dessa — `computeMembership(Via)`s
+// utdata ÄR redan det tidsfiltrerade antalet, inget extra steg testas separat.
+// ============================================================================
+
+test.describe('computeMembership — par.period (tidsperiod, TASK-249.3)', () => {
+  test('DATUMSPANN: period täcker det enda deltagandet ⇒ medlem inkluderas', () => {
+    const rows = [row('p1', 'RIM 1', U, '2025-06-15')];
+    const r = rule([
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2025-06-01', end: '2025-06-30' } },
+    ]);
+    expect(computeMembership(r, rows)).toEqual(['p1']);
+  });
+
+  test('TOMT SPANN: period täcker INGET datum i hela raddatan (annan tidsålder) ⇒ []', () => {
+    const rows = [row('p1', 'RIM 1', U, '2025-06-15'), row('p2', 'RIM 2', U, '2025-07-01')];
+    const r = rule([
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2099-01-01', end: '2099-12-31' } },
+    ]);
+    expect(computeMembership(r, rows)).toEqual([]);
+  });
+
+  test('SPANN UTAN TRÄFFAR: perioden är giltig och andra rader FINNS i den allmänna tidrymden, men ingen träff för DETTA par ⇒ []', () => {
+    // p1s RIM 1 ligger 2025-06-15 (utanför spannet); p2s RIM 2 2025-07-01 visar
+    // att spannet inte är "tomt" i meningen att ingenting alls hände då — bara
+    // att INGET RIM 1-deltagande föll i just detta fönster.
+    const rows = [row('p1', 'RIM 1', U, '2025-06-15'), row('p2', 'RIM 2', U, '2025-07-01')];
+    const r = rule([
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2025-07-01', end: '2025-07-31' } },
+    ]);
+    expect(computeMembership(r, rows)).toEqual([]);
+  });
+
+  test('GRÄNS — INKLUSIV: start === slut === deltagandets datum ⇒ medlem inkluderas', () => {
+    const rows = [row('p1', 'RIM 1', U, '2025-06-15')];
+    const r = rule([
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2025-06-15', end: '2025-06-15' } },
+    ]);
+    expect(computeMembership(r, rows)).toEqual(['p1']);
+  });
+
+  test('GRÄNS — en dag UTANFÖR i vardera riktningen diskvalificerar (av-en-fel-testat)', () => {
+    const rows = [row('p1', 'RIM 1', U, '2025-06-15')];
+    const fore = rule([
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2025-06-01', end: '2025-06-14' } },
+    ]);
+    const efter = rule([
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2025-06-16', end: '2025-06-30' } },
+    ]);
+    expect(computeMembership(fore, rows)).toEqual([]);
+    expect(computeMembership(efter, rows)).toEqual([]);
+  });
+
+  test('par UTAN period räknar deltagande NÄR SOM HELST (dagens beteende, noll regression) — även bredvid ett period-bärande par i SAMMA regel', () => {
+    const rows = [row('p1', 'RIM 1', U, '1999-01-01'), row('p2', 'RIM 2', U, '2025-06-15')];
+    const r = rule([
+      { kurs: 'RIM 1', modalitet: U }, // ingen period ⇒ p1 matchar oavsett datum
+      { kurs: 'RIM 2', modalitet: U, period: { start: '2025-06-01', end: '2025-06-30' } },
+    ]);
+    expect(computeMembership(r, rows).sort()).toEqual(['p1', 'p2']);
+  });
+
+  test('AND-grupp: period gäller PER PAR — bägge parens EGNA fönster måste hålla, oberoende av varandra', () => {
+    const rows = [row('p1', 'RIM 1', U, '2025-06-15'), row('p1', 'RIM 2', U, '2025-08-01')];
+    const konjunkt: Konjunkt = [
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2025-06-01', end: '2025-06-30' } },
+      { kurs: 'RIM 2', modalitet: U, period: { start: '2025-08-01', end: '2025-08-31' } },
+    ];
+    expect(computeMembership(rule([konjunkt]), rows)).toEqual(['p1']);
+
+    // Flytta RIM 2:s fönster så det INTE täcker 2025-08-01 → gruppen faller.
+    const konjunktSomFaller: Konjunkt = [
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2025-06-01', end: '2025-06-30' } },
+      { kurs: 'RIM 2', modalitet: U, period: { start: '2025-09-01', end: '2025-09-30' } },
+    ];
+    expect(computeMembership(rule([konjunktSomFaller]), rows)).toEqual([]);
+  });
+
+  test('exclude respekterar period SYMMETRISKT: deltagande UTANFÖR exclude-parets fönster diskvalificerar EJ', () => {
+    const rows = [row('p1', 'RIM 1', U, '2025-06-15'), row('p1', 'Psionautics', U, '2025-01-01')];
+    // p1 deltog i Psionautics, men INTE inom exclude-parets period → kvalificerar ändå.
+    const r = rule(
+      [{ kurs: 'RIM 1', modalitet: U }],
+      [{ kurs: 'Psionautics', modalitet: U, period: { start: '2025-06-01', end: '2025-06-30' } }],
+    );
+    expect(computeMembership(r, rows)).toEqual(['p1']);
+  });
+
+  test('exclude respekterar period SYMMETRISKT: deltagande INOM exclude-parets fönster diskvalificerar', () => {
+    const rows = [row('p1', 'RIM 1', U, '2025-06-15'), row('p1', 'Psionautics', U, '2025-06-20')];
+    const r = rule(
+      [{ kurs: 'RIM 1', modalitet: U }],
+      [{ kurs: 'Psionautics', modalitet: U, period: { start: '2025-06-01', end: '2025-06-30' } }],
+    );
+    expect(computeMembership(r, rows)).toEqual([]);
+  });
+
+  test('flera datum på SAMMA par (t.ex. omtagning): matchar om NÅGOT av datumen faller i fönstret', () => {
+    const rows = [row('p1', 'RIM 1', U, '1999-01-01'), row('p1', 'RIM 1', U, '2025-06-15')];
+    const r = rule([
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2025-06-01', end: '2025-06-30' } },
+    ]);
+    expect(computeMembership(r, rows)).toEqual(['p1']);
+  });
+
+  test('computeMembershipVia: via-paret BÄR sin period (transparent mot fördelningen)', () => {
+    const rows = [row('p1', 'RIM 1', U, '2025-06-15')];
+    const periodPar: Par = {
+      kurs: 'RIM 1',
+      modalitet: U,
+      period: { start: '2025-06-01', end: '2025-06-30' },
+    };
+    const hits = computeMembershipVia(rule([periodPar]), rows);
+    expect(hits).toEqual([{ personId: 'p1', via: [periodPar] }]);
+  });
+});
+
+test.describe('parseSegmentRule — par.period (ADR-115 EF-krav 2/5, TASK-249.3)', () => {
+  test('giltig period parsas igenom oförändrad', () => {
+    const parsed = parseSegmentRule({
+      include: [
+        {
+          kurs: 'RIM 1',
+          modalitet: 'Utbildning',
+          period: { start: '2025-01-01', end: '2025-12-31' },
+        },
+      ],
+      exclude: [],
+    });
+    expect(parsed.include[0]).toEqual({
+      kurs: 'RIM 1',
+      modalitet: 'Utbildning',
+      period: { start: '2025-01-01', end: '2025-12-31' },
+    });
+  });
+
+  test('period utelämnad ⇒ par utan `period`-fält (dagens form, bakåtkompatibelt)', () => {
+    const parsed = parseSegmentRule({
+      include: [{ kurs: 'RIM 1', modalitet: 'Utbildning' }],
+      exclude: [],
+    });
+    expect(parsed.include[0]).toEqual({ kurs: 'RIM 1', modalitet: 'Utbildning' });
+    expect(Object.hasOwn(parsed.include[0], 'period')).toBe(false);
+  });
+
+  test('period: null behandlas som utelämnad (samma resultat)', () => {
+    const parsed = parseSegmentRule({
+      include: [{ kurs: 'RIM 1', modalitet: 'Utbildning', period: null }],
+      exclude: [],
+    });
+    expect(parsed.include[0]).toEqual({ kurs: 'RIM 1', modalitet: 'Utbildning' });
+  });
+
+  test('exclude-par kan också bära period', () => {
+    const parsed = parseSegmentRule({
+      include: [{ kurs: 'RIM 1', modalitet: 'Utbildning' }],
+      exclude: [
+        {
+          kurs: 'Psionautics',
+          modalitet: 'Utbildning',
+          period: { start: '2025-01-01', end: '2025-01-31' },
+        },
+      ],
+    });
+    expect(parsed.exclude[0]).toEqual({
+      kurs: 'Psionautics',
+      modalitet: 'Utbildning',
+      period: { start: '2025-01-01', end: '2025-01-31' },
+    });
+  });
+
+  for (const bad of [
+    { start: '2025-01-01' }, // saknar end
+    { end: '2025-01-01' }, // saknar start
+    { start: 20250101, end: '2025-01-31' }, // start ej sträng
+    { start: '2025-01-01', end: '31 januari 2025' }, // end ej ISO
+    { start: '25-01-01', end: '2025-01-31' }, // start fel format (kort år)
+    { start: '2025-06-30', end: '2025-06-01' }, // start EFTER end (omvänd)
+    'sträng',
+    [],
+    42,
+  ]) {
+    test(`felformad period → InvalidSegmentRuleError: ${JSON.stringify(bad)}`, () => {
+      expect(() =>
+        parseSegmentRule({
+          include: [{ kurs: 'RIM 1', modalitet: 'Utbildning', period: bad }],
+          exclude: [],
+        }),
+      ).toThrow(InvalidSegmentRuleError);
+    });
+  }
+});
+
+// ============================================================================
+// SEND-EMAIL-PARITETEN (ADR-115 EF-krav 4 send-email-halvan, TASK-249.3 AC#1).
+// `resolveSegmentMembers` (send-email-unionen, segment-resolution.ts) anropar
+// `computeMembership`; `resolveRuleMembers` (compute-segment) anropar
+// `computeMembershipVia`. Båda konsumerar SAMMA algebra i denna fil — detta
+// test bevisar explicit, för en regel med konjunkt-grupper (AND) OCH ett
+// period-fönster, att de två vägarna ger IDENTISK mottagarmängd. Ingen
+// produktionskod behövde ändras för AC#1 (`computeMembership` var redan denna
+// funktion sedan TASK-249.2) — detta test är beviset, inte en migrering.
+// ============================================================================
+
+test.describe('send-email vs compute-segment — identisk mottagarmängd (TASK-249.3 AC#1)', () => {
+  test('AND-konjunkt-regel: send-email-vägen (computeMembership) === compute-segment-vägen (computeMembershipVia → id:n)', () => {
+    const rows = [
+      row('pA', 'RIM 1', U, '2025-06-10'),
+      row('pA', 'RIM 2', U, '2025-06-20'),
+      row('pB', 'RIM 1', U, '2025-06-10'), // saknar RIM 2 → matchar EJ AND-gruppen
+      row('pC', 'Psionautics', U, '2025-01-01'),
+    ];
+    const andRule = rule([
+      [
+        { kurs: 'RIM 1', modalitet: U },
+        { kurs: 'RIM 2', modalitet: U },
+      ] as Konjunkt,
+      { kurs: 'Psionautics', modalitet: U },
+    ]);
+
+    const sendEmailVagen = computeMembership(andRule, rows); // resolveSegmentMembers
+    const computeSegmentVagen = computeMembershipVia(andRule, rows).map((h) => h.personId); // resolveRuleMembers
+
+    expect(sendEmailVagen).toEqual(computeSegmentVagen);
+    expect(sendEmailVagen.sort()).toEqual(['pA', 'pC']);
+  });
+
+  test('AND-konjunkt-regel MED tidsperiod: samma parität håller när period-filtret snävar mängden', () => {
+    const rows = [
+      row('pA', 'RIM 1', U, '2025-06-10'),
+      row('pA', 'RIM 2', U, '2025-06-20'),
+      row('pD', 'RIM 1', U, '2020-01-01'), // utanför RIM 1-periodens fönster
+      row('pD', 'RIM 2', U, '2025-06-20'),
+    ];
+    const konjunkt: Konjunkt = [
+      { kurs: 'RIM 1', modalitet: U, period: { start: '2025-01-01', end: '2025-12-31' } },
+      { kurs: 'RIM 2', modalitet: U },
+    ];
+    const periodRule = rule([konjunkt]);
+
+    const sendEmailVagen = computeMembership(periodRule, rows);
+    const computeSegmentVagen = computeMembershipVia(periodRule, rows).map((h) => h.personId);
+
+    expect(sendEmailVagen).toEqual(computeSegmentVagen);
+    expect(sendEmailVagen).toEqual(['pA']); // pD:s RIM 1 föll utanför fönstret
   });
 });

@@ -23,6 +23,14 @@ import {
 // den personen medlem, så en fördelning (vilken grupp/kurs) kräver ingen
 // andra fråga.
 //
+// TIDSPERIODEN (ADR-115 EF-krav 2/5, TASK-249.3): ETT valfritt `par.period`
+// ({ start, end }, ISO, inklusive) filtrerar VILKA deltaganden som räknas för
+// just det paret — deltagandets datum följer med i källfrågan
+// (segment-resolution.ts, 'Event startdatum') och algebran
+// (segment-membership.ts) prövar det server-side. Räkne-ärligheten (EF-krav
+// 5, AC#3) är därmed en NATURLIG konsekvens: `count`/`members` nedan ÄR redan
+// det tidsfiltrerade utfallet, inget extra steg.
+//
 // UPPLÖSNINGEN (Deltaganden-walk → algebra → Personer-berikning) bor sedan Fas 6h
 // L2b i _shared/segment-resolution.ts (resolveRuleMembers), delad med send-email så
 // EN väg löser medlemskap. Denna handler är nu en tunn POST→regel→resolve-wrapper;

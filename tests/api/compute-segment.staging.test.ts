@@ -1,5 +1,5 @@
 // compute-segment — skarp conformance mot deployad staging-EF (Fas 6g L1, ADR-064;
-// AND/DNF + via ADR-115, TASK-249.2).
+// AND/DNF + via ADR-115, TASK-249.2; tidsperioden ADR-115 EF-krav 2/5, TASK-249.3).
 //
 // compute-segment beräknar segment-MEDLEMSKAP från KÄLLAN (Deltaganden, strikt
 // Närvaropoäng=1) givet en regel { include: MedVillkor[], exclude: Par[] } över
@@ -35,7 +35,9 @@ import { SegmentResultSchema } from '../../src/domain/schemas';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 type Modalitet = 'Utbildning' | 'Föreläsning';
-type Par = { kurs: string; modalitet: Modalitet };
+/** ISO-datumpar, inklusive (ADR-115 EF-krav 2/5, TASK-249.3). */
+type Period = { start: string; end: string };
+type Par = { kurs: string; modalitet: Modalitet; period?: Period };
 /** EN AND-grupp (ADR-115) — samma form som `Konjunkt` i segment-membership.ts. */
 type Konjunkt = Par[];
 type MedVillkor = Par | Konjunkt;
@@ -232,6 +234,99 @@ test.describe('compute-segment — AND/DNF (ADR-115 EF-krav 1, 3, 4)', () => {
   test('AUTH: 401 utan token, även för en AND/DNF-formad regel', async ({ request }) => {
     const config = getApiConfig();
     const res = await postSegment(request, config, null, { include: [[RIM1, RIM2]], exclude: [] });
+    await classify401Body(res);
+  });
+});
+
+// ============================================================================
+// TIDSPERIODEN — SKARP conformance mot deployad staging-EF (ADR-115 EF-krav
+// 2/5, TASK-249.3 AC#2). Bevisar att "deltagandets datum följer med i
+// källfrågan" är LEVANDE i den deployade koden (segment-resolution.ts läser
+// verkligen 'Event startdatum' från Airtable och algebran filtrerar på det) —
+// den rena algebran är redan bevisad in-memory i
+// tests/api/segment-membership.test.ts; detta är TRÅDEN GENOM ÄKTA AIRTABLE-
+// DATA, den delen ett api-pure-test per definition inte kan se.
+//
+// Live-verifierat 2026-08-17 (staging, TASK-249.3-bygget, describe_table +
+// list_records): RIM 1 (Utbildning) har på staging minst TVÅ Närvaropoäng=1-
+// rader med KÄNDA, ÅTSKILDA datum — en 2025-08-10, en 2026-01-15 (andra
+// personer). Perioden nedan (augusti 2025) täcker DEN FÖRSTA men inte den
+// ANDRA — en strukturell, icke-identitets-hårdkodad delmängds-relation mot
+// RIM1-basmängden, samma disciplin som AND/DNF-blocket ovan.
+// ============================================================================
+
+test.describe('compute-segment — tidsperioden (ADR-115 EF-krav 2/5, TASK-249.3)', () => {
+  test('period SNÄVAR strukturellt: RIM1-med-period ⊆ RIM1-utan-period (delmängd, ej utökning)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const rim1MedPeriod: Par = {
+      ...RIM1,
+      period: { start: '2025-08-01', end: '2025-08-31' },
+    };
+    const [obegransadRes, periodRes] = await Promise.all([
+      postSegment(request, config, jwt, { include: [RIM1], exclude: [] }),
+      postSegment(request, config, jwt, { include: [rim1MedPeriod], exclude: [] }),
+    ]);
+    expect(obegransadRes.status()).toBe(200);
+    expect(periodRes.status()).toBe(200);
+
+    const obegransad = SegmentResultSchema.parse(await obegransadRes.json());
+    const period = SegmentResultSchema.parse(await periodRes.json());
+
+    // Monotoni: period kan bara snäva eller bibehålla mängden, aldrig utöka den.
+    expect(period.count, 'period-filtrerad ≤ obegränsad').toBeLessThanOrEqual(obegransad.count);
+    expect(
+      period.count,
+      'augusti 2025 träffar minst det kända RIM1-deltagandet',
+    ).toBeGreaterThanOrEqual(1);
+    // Perioden är genuint SNÄVARE (inte bara samma mängd i förklädnad) — det
+    // finns minst en RIM1-person UTANFÖR augusti 2025 på staging (2026-01-15).
+    expect(period.count, 'perioden utesluter minst en obegränsad RIM1-medlem').toBeLessThan(
+      obegransad.count,
+    );
+
+    // Delmängds-bevis (id-nivå): varje period-träff finns i den obegränsade träffmängden.
+    const obegransadIds = new Set(obegransad.members.map((m) => m.id));
+    for (const m of period.members) {
+      expect(
+        obegransadIds.has(m.id),
+        `${m.id}: period-träff måste finnas i obegränsad träffmängd`,
+      ).toBe(true);
+    }
+  });
+
+  test('period UTAN NÅGON träff (år 2000, långt före all historik) → tomt segment (0), inte ett fel', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const rim1Ar2000: Par = { ...RIM1, period: { start: '2000-01-01', end: '2000-12-31' } };
+    const res = await postSegment(request, config, jwt, { include: [rim1Ar2000], exclude: [] });
+    expect(res.status()).toBe(200);
+
+    const { members, count } = SegmentResultSchema.parse(await res.json());
+    expect(count).toBe(0);
+    expect(members).toEqual([]); // tomt = korrekt utdata (ADR-064), ej 400/500
+  });
+
+  test('ogiltig period (start EFTER end) → 400 (fail-closed, parse-tid — samma kontrakt som tom Konjunkt-grupp)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const ogiltig: Par = { ...RIM1, period: { start: '2025-06-30', end: '2025-06-01' } };
+    const res = await postSegment(request, config, jwt, { include: [ogiltig], exclude: [] });
+    expect(res.status()).toBe(400);
+  });
+
+  test('AUTH: 401 utan token, även för en period-formad regel', async ({ request }) => {
+    const config = getApiConfig();
+    const medPeriod: Par = { ...RIM1, period: { start: '2025-08-01', end: '2025-08-31' } };
+    const res = await postSegment(request, config, null, { include: [medPeriod], exclude: [] });
     await classify401Body(res);
   });
 });

@@ -44,7 +44,20 @@ const SEGMENT_TABLE = 'Segment';
 // (fldiU06kbTxSafkm4): 0 tomma bland Närvaropoäng=1 (verifierat live), samma
 // gruppfält som get-attendance. 'Kursnamn (lookup)' (fldJyjymEoo514AgN) +
 // 'Event typ' (fldiDF6PWfYa8afMr, lookup→singleSelect {Utbildning, Föreläsning}).
-const SOURCE_FIELDS = ['Person (länk)', 'Kursnamn (lookup)', 'Event typ'];
+// 'Event startdatum' (fldExIP1zw5o6ib63, ROLLUP av Eventplanering.Startdatum via
+// Event-länken) tillagt TASK-249.3 (ADR-115 EF-krav 2 — "deltagandets datum
+// följer med i källfrågan"). Live-verifierat 2026-08-17 (describe_table +
+// list_records, staging): fältet returnerar BAR ISO-datum ("2025-08-10") — INTE
+// systerfältet 'Deltog datum' (fldvYGItTZkfc2yPZ, en FORMULA som lindar samma
+// rollup i ett IF och serialiseras med tidsstämpel, "2025-08-10T00:00:00.000Z").
+// Skillnaden är en Airtable-egenhet (formelfält som resulterar i datum
+// serialiseras alltid med instant/Z, rena rollup-/datumfält med ett
+// tidslöst dateFormat serialiseras utan) — 'Event startdatum' vinner för att
+// slippa en extra parse/strip-time-koercion. Semantiskt likvärdiga HÄR:
+// NARVARO_FILTER nedan filtrerar redan till Närvaropoäng=1, så 'Deltog datum'
+// (blank om ej närvaro) och 'Event startdatum' (alltid satt via Event-länken)
+// är identiska för de rader vi någonsin läser.
+const SOURCE_FIELDS = ['Person (länk)', 'Kursnamn (lookup)', 'Event typ', 'Event startdatum'];
 
 // Strikt närvaro-golv (ADR-064 beslut 1) — identisk mängd som rollup-kedjans
 // lynchpin (Status ∈ {Närvarande, Deltog online}, EventAttendance.tsx).
@@ -93,21 +106,35 @@ function singleLinkedId(value: unknown): string | null {
   return value.length > 0 && typeof value[0] === 'string' ? value[0] : null;
 }
 
+// ISO-datum (YYYY-MM-DD) — samma form segment-membership.ts:s `parsePeriod`
+// validerar mot (TASK-249.3). 'Event startdatum' returnerar redan bar ISO
+// (se SOURCE_FIELDS-kommentaren), så detta är ett FORM-golv mot en oväntad
+// Airtable-drift, inte en normal parse-väg.
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
  * Deltaganden-rad → AttendanceRow. Lookups koerceras defensivt till skalär
- * (scalarString varnar vid >1). En rad utan ifylld person/kurs eller utan
- * giltig modalitet hör inte till taxonomin (live-verifierat 0 sådana bland
- * Närvaropoäng=1) → null (hoppas, ej tyst förvanskad).
+ * (scalarString varnar vid >1). En rad utan ifylld person/kurs/datum eller
+ * utan giltig modalitet hör inte till taxonomin (live-verifierat 0 sådana
+ * bland Närvaropoäng=1 för person/kurs/modalitet; datum-golvet är nytt,
+ * TASK-249.3) → null (hoppas, ej tyst förvanskad).
  */
 function toAttendanceRow(record: { fields: Fields }): AttendanceRow | null {
   const f = record.fields;
   const personId = singleLinkedId(f['Person (länk)']);
   const kurs = scalarString(f['Kursnamn (lookup)']);
   const modalitet = scalarString(f['Event typ']);
-  if (personId === null || kurs === null || !isModalitet(modalitet)) {
+  const datum = scalarString(f['Event startdatum']);
+  if (
+    personId === null ||
+    kurs === null ||
+    !isModalitet(modalitet) ||
+    datum === null ||
+    !ISO_DATE_RE.test(datum)
+  ) {
     return null;
   }
-  return { personId, kurs, modalitet };
+  return { personId, kurs, modalitet, datum };
 }
 
 /**
