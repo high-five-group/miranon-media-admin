@@ -45,7 +45,12 @@ export function RackviddBadge({
   const text =
     rackvidd === AttachmentScope.ALLA_EVENT
       ? 'Alla event'
-      : `${kursfamilj ?? 'Okänd kursfamilj'} · ${kursniva ?? 'alla nivåer'}`;
+      : // "Okänd familj", inte "Okänd kursfamilj" — samma UI-språksbyte som
+        // uppladdningsflödets Select-etikett (S107 QA-vandringen, Marcus:
+        // "Kursfamilj" heter bara "Familj"). Prop-namnet `kursfamilj` är
+        // ORÖRT med avsikt: det speglar Airtable-fältet `Kursfamilj`, och
+        // datakällans namn byts inte från en UI-copy-ändring.
+        `${kursfamilj ?? 'Okänd familj'} · ${kursniva ?? 'alla nivåer'}`;
 
   return (
     <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">

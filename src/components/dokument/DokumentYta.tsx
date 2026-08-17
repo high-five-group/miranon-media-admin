@@ -148,6 +148,7 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
+import { StegSektion } from '@/components/primitives/StegSektion';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { formatMB } from '@/data/adapters/attachmentUpload';
 import type { DokumentKalla } from '@/data/mutations/dokumentKalla';
@@ -795,10 +796,35 @@ function DokumentLista({
  * JSX-grenar i `DokumentYta`, aldrig samma monterade instans) — lokalt
  * `useState` behöver därför ingen synk-effekt.
  *
- * VALIDERING: räckvidd Kurstyp UTAN vald Kursfamilj håller uppladdnings-
+ * VALIDERING: räckvidd Kurstyp UTAN vald Familj håller uppladdnings-
  * knappen avstängd (`scopeGiltig`) — Lotta kan inte råka skicka ett
  * ofullständigt val som EF:en ändå hade avvisat (400, `AttachmentScope
  * InputSchema`); felet fångas HÄR, innan filväljaren ens öppnas.
+ *
+ * ═══ FLÖDET ÄR ETT EGET BLOCK I TVÅ STEG (S107 QA-vandringen) ═══
+ *
+ * Marcus fynd, steg 5: "allt under gemensamma dokument-ytan måste ligga i
+ * ett eget block … sedan kanske det behöver struktureras lite som
+ * segmentsidan gör, lite wizard liksom". Före detta varv låg räckviddsvalet,
+ * fält-selectarna och uppladdningsknappen NAKNA på sidan, direkt under
+ * listkortet — kontroller utan behållare, medan listan bredvid satt i ett
+ * eget kort. Ytan såg oavslutad ut, och det var den.
+ *
+ * Formen är husets `StegSektion` (`primitives/StegSektion.tsx`, lyft ur
+ * segment-byggaren i samma landning) — INTE en lokal variant. Två steg:
+ *
+ *   1. "Vad ska filen gälla?"  räckvidd + (vid Eventtyp) familj/nivå
+ *   2. "Välj fil"              filväljaren
+ *
+ * STEG 2 VILAR I STÄLLET FÖR ATT BARA VARA AVSTÄNGT när `scopeGiltig` är
+ * falskt. En avstängd knapp säger "nej" utan att säga varför; ett vilande
+ * steg säger vad som saknas och vart man går för att fixa det. Knappens egen
+ * `isDisabled` behålls ändå som andra spärr — vilar-ledtexten är
+ * kommunikation, `isDisabled` är grinden, och de ska inte förväxlas.
+ *
+ * UPPLADDNINGSFELET FLYTTADE MED till steg 2, där handlingen bor. Det stod
+ * förut mellan selectarna och knappen, alltså i steg 1:s yta, och pekade på
+ * ett fel som uppstått i steg 2.
  */
 function UppladdningsFlode({
   harEvent,
@@ -820,81 +846,99 @@ function UppladdningsFlode({
 
   return (
     <div className="flex flex-col gap-3">
-      <RadioGroup
-        label="Räckvidd"
-        orientation="horizontal"
-        value={rackvidd}
-        onChange={(value) => {
-          const next = value as AttachmentScopeValue;
-          setRackvidd(next);
-          if (next !== AttachmentScope.KURSTYP) {
-            setKursfamilj(null);
-            setKursniva(null);
-          }
-        }}
-      >
-        <Radio value={AttachmentScope.EVENT} isDisabled={!harEvent}>
-          Detta event
-        </Radio>
-        <Radio value={AttachmentScope.KURSTYP}>En kurstyp</Radio>
-        <Radio value={AttachmentScope.ALLA_EVENT}>Alla event</Radio>
-      </RadioGroup>
-
-      {rackvidd === AttachmentScope.KURSTYP && (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-          <Select
-            label="Kursfamilj"
-            placeholder="Välj kursfamilj"
-            selectedKey={kursfamilj}
-            onSelectionChange={(key) => {
-              setKursfamilj(key == null ? null : String(key));
+      <StegSektion nummer={1} rubrik="Vad ska filen gälla?">
+        <RadioGroup
+          label="Räckvidd"
+          orientation="horizontal"
+          value={rackvidd}
+          onChange={(value) => {
+            const next = value as AttachmentScopeValue;
+            setRackvidd(next);
+            if (next !== AttachmentScope.KURSTYP) {
+              setKursfamilj(null);
               setKursniva(null);
-            }}
-            className="sm:max-w-56"
-          >
-            {KURSFAMILJ_VALUES.map((v) => (
-              <SelectItem key={v} id={v}>
-                {v}
-              </SelectItem>
-            ))}
-          </Select>
-          {kursfamiljHarNivaer && (
+            }
+          }}
+        >
+          <Radio value={AttachmentScope.EVENT} isDisabled={!harEvent}>
+            Detta event
+          </Radio>
+          {/* "En familj" — INTE "En eventtyp". `Eventtyp` är upptaget av ett
+              ANNAT begrepp på tre ställen samtidigt: ORDLISTA.md § Eventtyp
+              (= Utbildning/Föreläsning), `CreateEventForm.tsx`s egen
+              `label="Eventtyp"` för samma sak, och Airtable-fältet `Eventtyp`
+              (länken till Eventformat). Etiketten här följer i stället
+              Select:en nedan, som heter "Familj". VÄRDET som skickas är
+              oförändrat `AttachmentScope.KURSTYP` = strängen 'Kurstyp' —
+              basens optionsnamn i fältet `Räckvidd`, som INTE får bytas
+              härifrån (datakällans kontrakt, se ADR-118). */}
+          <Radio value={AttachmentScope.KURSTYP}>En familj</Radio>
+          <Radio value={AttachmentScope.ALLA_EVENT}>Alla event</Radio>
+        </RadioGroup>
+
+        {rackvidd === AttachmentScope.KURSTYP && (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
             <Select
-              label="Kursnivå"
-              placeholder="Alla nivåer"
-              selectedKey={kursniva}
-              onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
+              label="Familj"
+              placeholder="Välj familj"
+              selectedKey={kursfamilj}
+              onSelectionChange={(key) => {
+                setKursfamilj(key == null ? null : String(key));
+                setKursniva(null);
+              }}
               className="sm:max-w-56"
             >
-              {KURSNIVA_VALUES.map((v) => (
+              {KURSFAMILJ_VALUES.map((v) => (
                 <SelectItem key={v} id={v}>
                   {v}
                 </SelectItem>
               ))}
             </Select>
-          )}
-        </div>
-      )}
+            {kursfamiljHarNivaer && (
+              <Select
+                label="Nivå"
+                placeholder="Alla nivåer"
+                selectedKey={kursniva}
+                onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
+                className="sm:max-w-56"
+              >
+                {KURSNIVA_VALUES.map((v) => (
+                  <SelectItem key={v} id={v}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </Select>
+            )}
+          </div>
+        )}
+      </StegSektion>
 
-      <UppladdningsFel uploadMutation={uploadMutation} />
-      <div>
-        <FileTrigger
-          acceptedFileTypes={['application/pdf']}
-          onSelect={(files) =>
-            onUpload(files, {
-              rackvidd,
-              kursfamilj:
-                rackvidd === AttachmentScope.KURSTYP ? (kursfamilj ?? undefined) : undefined,
-              kursniva: rackvidd === AttachmentScope.KURSTYP ? (kursniva ?? undefined) : undefined,
-            })
-          }
-        >
-          <Button intent="secondary" isDisabled={uploadMutation.isPending || !scopeGiltig}>
-            <Upload aria-hidden="true" size={16} className="shrink-0" />
-            {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp en fil'}
-          </Button>
-        </FileTrigger>
-      </div>
+      <StegSektion
+        nummer={2}
+        rubrik="Välj fil"
+        vilar={scopeGiltig ? undefined : 'Välj en familj i steget ovan först.'}
+      >
+        <UppladdningsFel uploadMutation={uploadMutation} />
+        <div>
+          <FileTrigger
+            acceptedFileTypes={['application/pdf']}
+            onSelect={(files) =>
+              onUpload(files, {
+                rackvidd,
+                kursfamilj:
+                  rackvidd === AttachmentScope.KURSTYP ? (kursfamilj ?? undefined) : undefined,
+                kursniva:
+                  rackvidd === AttachmentScope.KURSTYP ? (kursniva ?? undefined) : undefined,
+              })
+            }
+          >
+            <Button intent="secondary" isDisabled={uploadMutation.isPending || !scopeGiltig}>
+              <Upload aria-hidden="true" size={16} className="shrink-0" />
+              {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp en fil'}
+            </Button>
+          </FileTrigger>
+        </div>
+      </StegSektion>
     </div>
   );
 }
