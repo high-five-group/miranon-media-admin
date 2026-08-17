@@ -24,6 +24,66 @@ import { type ApiConfig, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/update-record';
 
+// ── LÄS-TILLBAKA MED BUNDEN VÄNTAN (TASK-256) ──────────────────────────────
+//
+// VARFÖR: varje allow-test här skriver via update-record och läser DIREKT
+// tillbaka genom en läs-EF för att bevisa att mutationen faktiskt landade (ej
+// bara att svaret var 200). Läsvägarna går via Airtables LIST-endpoint
+// (get-registrations/get-attendance: filterByFormula + paginerad walk) medan
+// skrivningen går via PATCH på record-endpointen — två olika vägar in i samma
+// bas. Läsningen speglar normalt skrivningen omedelbart, men INTE alltid.
+//
+// MÄTT, INTE ANTAGET (TASK-256, 2026-08-17):
+//   · CI-population: 1 av 63 staging-körningar (post-merge.yml + nightly.yml,
+//     2026-07-23→2026-08-17) fällde här. Instansen är körning 31984652487:
+//     BÅDA de skrivande allow-testerna föll i samma körning, och båda med
+//     exakt FÖRE-värdet tillbaka — `Bor över` gav `true` där `false` just
+//     skrivits och kvitterats 200, `Status` gav `'Ej avstämt'` där
+//     `'Närvarande'` just skrivits och kvitterats 200. Playwrights
+//     `retries: 2` grönade båda på omförsöket ⇒ "2 flaky".
+//   · Lokal mekanism-sond: 180 skriv→läs-cykler mot samma två fixturer gav
+//     NOLL inaktuella förstaläsningar. Läsanropet självt kostade p50 ~0,9–1,0 s,
+//     p95 ~1,1 s, enstaka utstickare 7,85 s. Luckan är alltså SÄLLSYNT — den
+//     går inte att reproducera på begäran, och dess magnitud är därför omätt.
+//
+// VAD DETTA ÄR OCH INTE ÄR: en bunden väntan, inte en tystad assertion.
+// `expect.poll` pollar ENDAST om matcharen ger värde-mismatch; ett undantag ur
+// callbacken (icke-200 från läs-EF:en, posten saknas) propagerar OMEDELBART
+// utan omförsök — verifierat mot Playwrights egen implementation
+// (`packages/playwright/src/matchers/expect.ts`: `await actual()` ligger
+// UTANFÖR try-blocket) och mot dess regressionstest
+// `expect-poll.spec.ts` › "should not retry predicate that threw an error".
+// Infrastrukturfel felar alltså lika hårt och lika snabbt som förut; bara ett
+// ÄNNU-INTE-speglat värde väntas ut. En äkta regression (skrivningen landar
+// aldrig) fäller fortfarande — den fäller efter budgeten nedan i stället för
+// omedelbart, och med sista lästa värde i felutskriften.
+//
+// BUDGETEN ÄR VALD MOT MÄTNINGEN, inte gissad: 8 s rymmer ~5–6 läsförsök vid
+// uppmätt läshastighet, och håller ett test med TVÅ läs-tillbaka (bor över,
+// check-in) under Playwrights 30-sekunderstak även i värsta fall
+// (~5,6 s normal körtid + 2 × ~7 s extra ≈ 20 s). I lyckat fall — 99 % av
+// körningarna enligt mätningen ovan — träffar FÖRSTA proben och kostnaden är
+// oförändrad mot före. Skulle den verkliga luckan visa sig vara längre än 8 s
+// fäller testet precis som i dag, med CI:s `retries: 2` kvar som nät; höj då
+// talet mot en MÄTNING av luckan, aldrig reflexmässigt.
+const LAS_TILLBAKA_TIMEOUT_MS = 8_000;
+const LAS_TILLBAKA_INTERVALL = [250, 500, 1_000, 2_000];
+
+/**
+ * Läs tillbaka `vad` tills läsvägen speglar `vantat`, eller fäll efter budgeten.
+ * `las` ska vara läs-EF-anropet självt — dess egna `expect`:ar (status 200,
+ * posten hittad) behåller sin fail-fast-semantik, se resonemanget ovan.
+ */
+async function forvantaLastVarde<T>(las: () => Promise<T>, vantat: T, vad: string): Promise<void> {
+  await expect
+    .poll(las, {
+      timeout: LAS_TILLBAKA_TIMEOUT_MS,
+      intervals: LAS_TILLBAKA_INTERVALL,
+      message: `läs-tillbaka av ${vad} speglade aldrig skrivningen inom ${LAS_TILLBAKA_TIMEOUT_MS} ms`,
+    })
+    .toEqual(vantat);
+}
+
 test.describe('update-record — operations-allowlist (M4)', () => {
   test('deny: okänd operation → 400', async ({ request }) => {
     const config = getApiConfig();
@@ -133,7 +193,7 @@ test.describe('update-record — operations-allowlist (M4)', () => {
       expect(res.status()).toBe(200);
 
       // Läs-tillbaka: bevisar att mutationen faktiskt satte fältet (ej bara 200).
-      expect(await readAnmalningsavgift()).toBe('Mottagen');
+      await forvantaLastVarde(readAnmalningsavgift, 'Mottagen', 'Anmälningsavgift');
     } finally {
       // Restore: skriv tillbaka ursprungsvärdet (samma operation — allowlisten
       // gatar fältet, inte värdet) så staging-data aldrig lämnas muterad. Körs
@@ -212,7 +272,7 @@ test.describe('update-record — update-person-note (Personer.Anteckningar)', ()
       expect(res.status()).toBe(200);
 
       // Läs-tillbaka: bevisar att mutationen faktiskt satte fältet (ej bara 200).
-      expect(await readAnteckningar()).toBe(SENTINEL);
+      await forvantaLastVarde(readAnteckningar, SENTINEL, 'Anteckningar');
     } finally {
       // Restore: skriv tillbaka ursprungsvärdet (samma operation — allowlisten
       // gatar fältet, inte värdet). Var det null → '' (tom multilineText
@@ -304,7 +364,7 @@ test.describe('update-record — update-person-flag (Personer.Flagga)', () => {
       expect(res.status()).toBe(200);
 
       // Läs-tillbaka: bevisar att mutationen faktiskt satte fältet (ej bara 200).
-      expect(await readFlagga()).toBe(SENTINEL);
+      await forvantaLastVarde(readFlagga, SENTINEL, 'Flagga');
     } finally {
       // Restore: skriv tillbaka ursprungsvärdet (samma operation — allowlisten
       // gatar fältet, inte värdet). Var det null → '' (tom singleLineText
@@ -469,9 +529,12 @@ test.describe('update-record — betalnings-vertikalen (task-18.8)', () => {
       expect(res.status()).toBe(200);
 
       // Läs-tillbaka: bevisar att mutationen faktiskt satte fältet (ej bara 200).
-      expect(
-        (await readSeededPayment(request, config.baseUrl, authHeaders, recordId)).slutbetalning,
-      ).toBe('Mottagen');
+      await forvantaLastVarde(
+        async () =>
+          (await readSeededPayment(request, config.baseUrl, authHeaders, recordId)).slutbetalning,
+        'Mottagen',
+        'Slutbetalning',
+      );
     } finally {
       // Restore: allowlisten gatar fältet, inte värdet — samma operation
       // skriver tillbaka ursprungsvärdet ('Ej mottagen' om posten saknade).
@@ -512,10 +575,20 @@ test.describe('update-record — betalnings-vertikalen (task-18.8)', () => {
       });
       expect(res.status()).toBe(200);
 
-      // Läs-tillbaka bevisar mutationen OCH läs-shapens nya noteringsfält.
-      const after = await readSeededPayment(request, config.baseUrl, authHeaders, recordId);
-      expect(after.noteringAnmalningsavgift).toBe(AVGIFT_SENTINEL);
-      expect(after.noteringSlutbetalning).toBe(SLUT_SENTINEL);
+      // Läs-tillbaka bevisar mutationen OCH läs-shapens nya noteringsfält. BÅDA
+      // fälten skrivs i SAMMA PATCH, så de pollas som ETT par — ett halvspeglat
+      // mellanläge är då inte ett giltigt slutvärde att stanna på.
+      await forvantaLastVarde(
+        async () => {
+          const a = await readSeededPayment(request, config.baseUrl, authHeaders, recordId);
+          return {
+            noteringAnmalningsavgift: a.noteringAnmalningsavgift,
+            noteringSlutbetalning: a.noteringSlutbetalning,
+          };
+        },
+        { noteringAnmalningsavgift: AVGIFT_SENTINEL, noteringSlutbetalning: SLUT_SENTINEL },
+        'de båda noteringsfälten',
+      );
     } finally {
       // Restore: null → '' (tom multilineText round-trippar till null vid
       // läsning — update-person-note-precedentens teardown-form).
@@ -554,10 +627,19 @@ test.describe('update-record — betalnings-vertikalen (task-18.8)', () => {
       expect(res.status()).toBe(200);
 
       // Läs-tillbaka: epoch-jämförelse (Airtable normaliserar ISO-formen,
-      // tidpunkten är kontraktet — inte strängformen).
-      const after = await readSeededPayment(request, config.baseUrl, authHeaders, recordId);
-      expect(after.paminnelseAnmalningsavgiftSkickad, 'tidsstämpeln sattes inte').not.toBeNull();
-      expect(Date.parse(after.paminnelseAnmalningsavgiftSkickad as string)).toBe(Date.parse(STAMP));
+      // tidpunkten är kontraktet — inte strängformen). `null` (fältet ännu
+      // osatt) projiceras till null och matchar aldrig epoch-talet, så den
+      // tidigare separata not-toBeNull-assertionen är bevarad i samma jämförelse.
+      await forvantaLastVarde(
+        async () => {
+          const a = await readSeededPayment(request, config.baseUrl, authHeaders, recordId);
+          return a.paminnelseAnmalningsavgiftSkickad === null
+            ? null
+            : Date.parse(a.paminnelseAnmalningsavgiftSkickad);
+        },
+        Date.parse(STAMP),
+        'Påminnelse anmälningsavgift skickad (som epoch)',
+      );
     } finally {
       // Restore: null RENSAR dateTime-fältet (Airtable-PATCH-semantik) —
       // fixturen lämnas exakt som den hittades.
@@ -659,7 +741,11 @@ test.describe('update-record — bor över-vertikalen (task-18.7)', () => {
 
       // Läs-tillbaka: bevisar att krysset faktiskt sattes (ej bara 200) OCH att
       // läs-shapens nya `borOver` bär det.
-      expect(await readSeededBorOver(request, config.baseUrl, authHeaders, recordId)).toBe(true);
+      await forvantaLastVarde(
+        () => readSeededBorOver(request, config.baseUrl, authHeaders, recordId),
+        true,
+        'Bor över (ikryssad)',
+      );
 
       // Av-bocken går genom SAMMA operation (allowlisten gatar fältet, inte
       // värdet) — kryss-lägets toggle är därmed kontraktstestad åt båda håll.
@@ -672,7 +758,11 @@ test.describe('update-record — bor över-vertikalen (task-18.7)', () => {
         },
       });
       expect(av.status()).toBe(200);
-      expect(await readSeededBorOver(request, config.baseUrl, authHeaders, recordId)).toBe(false);
+      await forvantaLastVarde(
+        () => readSeededBorOver(request, config.baseUrl, authHeaders, recordId),
+        false,
+        'Bor över (urkryssad)',
+      );
     } finally {
       // Restore: skriv tillbaka ursprungstillståndet så staging-data lämnas
       // exakt som den hittades. Körs även om assertionen ovan kastar.
@@ -770,9 +860,11 @@ test.describe('update-record — check-in-vertikalen: set-attendance-status (TAS
 
       // Läs-tillbaka via LÄSVÄGEN (get-attendance) — aldrig Avstämt, aldrig
       // Airtable direkt. Detta är dörrens incheckad-markör (S90 § 3.1).
-      expect(
-        await readAttendanceStatus(request, config, authHeaders, CHECKIN_DELTAGANDE_A_ID),
-      ).toBe('Närvarande');
+      await forvantaLastVarde(
+        () => readAttendanceStatus(request, config, authHeaders, CHECKIN_DELTAGANDE_A_ID),
+        'Närvarande',
+        'Deltagande-radens Status (Närvarande)',
+      );
 
       // Ångra-vägen går genom SAMMA operation (allowlisten gatar fältet, inte
       // värdet) — dörrens "bocka ur i klargruppen"-flöde kontraktstestas åt
@@ -786,9 +878,11 @@ test.describe('update-record — check-in-vertikalen: set-attendance-status (TAS
         },
       });
       expect(toEjAvstamt.status()).toBe(200);
-      expect(
-        await readAttendanceStatus(request, config, authHeaders, CHECKIN_DELTAGANDE_A_ID),
-      ).toBe('Ej avstämt');
+      await forvantaLastVarde(
+        () => readAttendanceStatus(request, config, authHeaders, CHECKIN_DELTAGANDE_A_ID),
+        'Ej avstämt',
+        'Deltagande-radens Status (Ej avstämt)',
+      );
     } finally {
       // Restore: skriv tillbaka ursprungstillståndet så den permanenta fixturen
       // lämnas exakt som den hittades. Körs även om assertionen ovan kastar.
