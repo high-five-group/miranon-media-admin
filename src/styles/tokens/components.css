@@ -385,6 +385,90 @@
      glida isär — vid 85 % blir resultatet rgb(237,237,233). */
   --mm-forberedelseskarm-fond-kamouflage: color-mix(in srgb, var(--mm-bg) 85%, #888a6b);
 
+  /* ── Forberedelseskarm KANTTON (S107 QA-fynd runda 3, Marcus-fångst
+     2026-08-17: "jag ser den vita strimman fortfarande ganska väl" — EFTER
+     att kamouflaget ovan redan landat) ──
+
+     PROBLEMET MED KAMOUFLAGET ENSAMT, mätt inte antaget
+     (docs/research/rannstens-strimman-branschlosningar-2026-08-17.md § 3.3):
+     `background-size: cover` BYTER BESKÄRNINGSAXEL vid viewport-aspekt under
+     fotots egen (1600/1061 ≈ 1,508). I breda fönster visas bildens fulla
+     bredd, så det ÄR kantkolumnen som möter rännstenen — precis vad
+     kamouflaget samplades ur. I SMALA/HÖGA fönster (halvskärmsläge, en
+     platta i porträtt, ett fönster nära 640 px-tröskeln) beskär cover i
+     SIDLED i stället, och pixeln mot rännstenen blir en skiva nära bildens
+     HORISONTELLA MITT — Roger & Lottas ljusa kläder, uppmätt exakt
+     rgb(255,255,255) mot kamouflagets rgb(237,237,233). Samma pass mätte att
+     en tvåhinks-variant (ett andra kamouflagevärde gated på aspect-ratio)
+     bara FLYTTAR missmatchningen från kanterna till mitten — en flat färg kan
+     strukturellt aldrig matcha ett foto som varierar längs hela höjden.
+
+     DENNA TOKEN VÄNDER PÅ PROBLEMET: i stället för att få rännstenen att
+     matcha fotot får den FOTOT att matcha rännstenen. De yttersta
+     --mm-forberedelseskarm-kantton-bredd pixlarna av vänster och höger kant
+     tonas till EXAKT kamouflagefärgen ovan. Gradienten är ett
+     `background-image` och behöver därför ALDRIG nå ut i rännstenen (den kan
+     inte — Chromium-spec-gapet w3c/csswg-drafts#8099, se tokenen ovan); den
+     behöver bara göra att fotots SYNLIGA ytterkant redan bär den färg
+     rännstenen har. Sömmen blir därmed osynlig OAVSETT beskärningsaxel, och
+     hopp-förbudet (Marcus-direktiv S96) är orört: ingen layout ändras, bara
+     målning inuti en redan existerande box.
+
+     MÄTT, inte resonerat (Playwright 1.62.1 / HeadlessChrome 151, den äkta
+     public/roger-och-lotta.webp och ordagrant denna CSS; innersta
+     rännstenspixel mot yttersta fotopixel, båda kanterna, fem höjder, MAX
+     KANALAVVIKELSE — inte kanalmedel, som underskattar en synlig kant):
+
+       viewport    aspekt  före  efter
+       640×900     0,711     22      1
+       800×1200    0,667     22      1
+       1024×1366   0,750     22      1
+       1440×900    1,600     17      1
+       1920×1080   1,778     20      1
+
+     Kvarvarande 1 är kvantiseringsgolvet (pixelns mitt ligger ett halvt steg
+     in i rampen), inte en missmatchning.
+
+     LIGGER PÅ SCRIM-LAGRET, ovanpå dess egen background-color — inte på
+     fotolagret under det. Skälet är att stoppfärgen då är kamouflaget SJÄLVT
+     och sömmen blir exakt oberoende av scrimmets procenttal. Under scrimmet
+     hade gradienten i stället behövt bära kantfärgen #888a6b och varit
+     beroende av att de två procenttalen hålls i synk för hand.
+
+     BREDDEN ÄR INTE BANDRISK-STYRD — det mättes. Ett svep 16/24/32/48 px gav
+     söm-avvikelse 1 i samtliga fall, och gradientens EGET bidrag (mätt som
+     efter−före per pixel, så fototexturen kancellerar) har ett största steg
+     på 2–4 enheter per pixel vid ALLA fyra bredderna, alltså långt under
+     bandtröskeln oavsett val; bidraget är dessutom exakt 0 från bredd + 8 px
+     och inåt (mätpunkten), så ingenting läcker in i bilden. 24 px valdes som
+     6 × 4 px-spacingbasen
+     (DESIGN-FOUNDATION-v1) och drygt 2 × rännstenens uppmätta 11 px.
+
+     `transparent` som mellanstopp är säkert: gradienter interpolerar
+     PREMULTIPLICERAT (css-images-3 § 3.4.3), så färgen tonar i alfa utan den
+     grå svacka en icke-premultiplicerad interpolation hade gett. Verifierat i
+     samma mätning: residualen mot en ideal linjär modell är ≤ 1,3 enheter.
+
+     KVARSTÅENDE, MEDVETET EJ LÖST: overlay-scrollbars (macOS-default) tar
+     ingen layoutplats, så rännstenen är då 0 px bred trots att fönstret är
+     ≥ 640. Gaten kan strukturellt inte skilja det fallet från det klassiska —
+     CSS har ingen fråga för "finns en rännsten". Kanttonen målas då utan
+     något att matcha och blir en svag vinjett: uppmätt största ändring mot
+     dagens läge 22 enheter vid den YTTERSTA pixeln i smala fönster, 5–8 i
+     breda, och exakt 0 bortom 24 px. Ingen defekt, men inte heller en vinst
+     där. En JS-mätning av rännstensbredden vid mount kunde stänga det; den är
+     inte byggd, eftersom den lägger en dokument-mätning på en yta som lever
+     några sekunder — och Marcus ser strimman, alltså har HANS uppsättning en
+     rännsten. */
+  --mm-forberedelseskarm-kantton-bredd: 24px;
+  --mm-forberedelseskarm-kantton: linear-gradient(
+    to right,
+    var(--mm-forberedelseskarm-fond-kamouflage) 0,
+    transparent var(--mm-forberedelseskarm-kantton-bredd),
+    transparent calc(100% - var(--mm-forberedelseskarm-kantton-bredd)),
+    var(--mm-forberedelseskarm-fond-kamouflage) 100%
+  );
+
   /* ── Sidbytesindikator (TASK-233 — route-chunk-övergångar) ──
      Egna tokens i stället för att återanvända --mm-forberedelseskarm-bar-*
      rakt av: namnet på DE tokens säger "forberedelseskarm" och en

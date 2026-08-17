@@ -174,17 +174,43 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * (referensräknad ovan) — se base.css § RÄNNSTENS-KAMOUFLAGE för varför
  * bilden SJÄLV inte kan målas där oavsett teknik.
  *
+ * ...OCH KAMOUFLAGET ENSAMT RÄCKTE INTE (S107 QA-fynd runda 3, Marcus:
+ * "jag ser den vita strimman fortfarande ganska väl"). En flat färg kan bara
+ * matcha fotot i ETT beskärningsfall: `cover` byter beskärningsaxel när
+ * fönstrets sidförhållande understiger bildens egna 1,508, och då möter
+ * bildens nästan vita MITTKOLUMN rännstenen i stället för kantkolumnen
+ * kamouflaget samplades ur. Scrim-lagret nedan bär därför också
+ * `--mm-forberedelseskarm-kantton`: en gradient som tonar fotots yttersta
+ * 24 px till EXAKT kamouflagefärgen, så att sömmen försvinner oavsett
+ * beskärningsaxel (uppmätt max kanalavvikelse 17–22 → 1 i fem fönsterformat).
+ * Hela mätserien, breddsvepet och den kvarstående overlay-scrollbar-kanten:
+ * components.css § Forberedelseskarm KANTTON.
+ *
+ * GATEN ÄR `min-[640px]:`, INTE `sm:` — och skillnaden är funktionell, inte
+ * stilistisk. Tailwinds `sm:` kompilerar till `40rem`, medan rännstenen i
+ * base.css aktiveras vid `640px`. Vid en annan rot-fontstorlek än 16 px
+ * glider de isär, och kanttonen hade då antingen uteblivit där rännstenen
+ * finns eller målats där den inte finns. Gaten måste matcha rännstensregelns
+ * villkor ORDAGRANT, alltså i px.
+ *
  * TVÅ LAGER, inte en förblandad bild: ett rent `bg-cover bg-center`-foto-
  * lager och ett separat vitt scrim-lager ovanpå (`--mm-forberedelseskarm-
- * scrim`, 90 % vit color-mix, components.css). `cover`-beteendet ger
+ * scrim`, 85 % vit color-mix, components.css). `cover`-beteendet ger
  * "centrerad och lika stor som webbläsarfönstret" (Marcus form-beskrivning)
  * — beskär i stället för att bredda ut, aldrig letterboxad. Scrimmets
  * opacitet är INTE en gissning: en pixel-för-pixel WCAG-luminansanalys av
  * den FAKTISKA filen (sharp, samtliga 1 708 800 pixlar) visar att även det
- * absolut mörkaste pixelvärdet i bilden, blandat med 90 % vitt, ger
- * fyllnaden (--p-sage-9) en kontrastkvot på 4,48:1 mot bakgrunden — rejält
- * över 1.4.11:s 3:1-golv. Full räkning: components.css:s tokenkommentar för
- * `--mm-forberedelseskarm-scrim`.
+ * absolut mörkaste pixelvärdet i bilden, blandat med scrimmet, ger
+ * fyllnaden (--p-sage-9) en kontrastkvot **4,02:1** mot bakgrunden — 34 %
+ * marginal över 1.4.11:s 3:1-golv. Full räkning: components.css:s
+ * tokenkommentar för `--mm-forberedelseskarm-scrim`.
+ *
+ * SIFFRORNA OVAN ÄR RUNDA 2:s, inte runda 1:s. Marcus sänkte scrimmet
+ * 90 % → 85 % ("liiite mer av fotot") och kontrastkvoten föll då 4,52 →
+ * 4,02:1; 80 % mättes till 3,56:1 och valdes bort. Detta docblock bar
+ * "90 %" och "4,48:1" i ett dygn efter att tokenet redan sagt 85 % —
+ * rättat 2026-08-18. Prosan om ett tokenvärde är alltid den som glider;
+ * läs `components.css` när de två säger olika.
  *
  * `aria-hidden="true"` på båda lagren (rent dekorativt, CSS-bakgrund — inte
  * en `<img>`, så inget textalternativ-krav uppstår över huvud taget).
@@ -321,10 +347,20 @@ export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
         data-testid="forberedelseskarm-bakgrund"
         className="absolute inset-0 bg-[url('/roger-och-lotta.webp')] bg-center bg-cover bg-no-repeat contrast-more:hidden print:hidden"
       />
+      {/* Scrimmet bär TVÅ saker på samma nod, med avsikt: sin egen
+          `background-color` (opaciteten, en token för sig) och ovanpå den
+          kanttonens `background-image` (se doc-block § RÄNNSTENEN). Ett eget
+          tredje lager hade gett samma pixlar men en nod till — gradienten
+          måste ändå ligga OVANPÅ scrimmet för att stoppfärgen ska kunna vara
+          kamouflaget självt, och `background-image` målas per CSS Backgrounds
+          § 3.8 alltid ovanpå samma elements `background-color`. Bonusen är
+          att contrast-more/print-döljningen redan sitter här: kanttonen
+          försvinner tillsammans med det den justerar, i stället för att bli
+          den enda tonade ytan på en i övrigt ren skärm. */}
       <div
         aria-hidden="true"
         data-testid="forberedelseskarm-scrim"
-        className="absolute inset-0 bg-(--mm-forberedelseskarm-scrim) contrast-more:hidden print:hidden"
+        className="min-[640px]:bg-(image:--mm-forberedelseskarm-kantton) absolute inset-0 bg-(--mm-forberedelseskarm-scrim) contrast-more:hidden print:hidden"
       />
       <div
         data-testid="forberedelseskarm-block"
