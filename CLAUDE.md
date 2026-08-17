@@ -255,6 +255,50 @@ utanför läs-ordningen hittas inte när det behövs.
 och bevisar ingenting. Och klass B är övervägande **lokal** — för en flake som
 bara CI ser kan en lokal serie vara fel instrument helt och hållet.
 
+### Prod-EF-deploy körs via SKRIPTET — handkörning har fällt tre gånger
+
+Ska Edge Functions till prod (fas 4-klassen) kör Marcus, i sin egen terminal
+eller via `!`-prefixet:
+
+```bash
+bash scripts/fas4-prod-deploy.sh --kontrollera <prod-ref>   # läser prod-läget, ändrar inget
+bash scripts/fas4-prod-deploy.sh --deploya     <prod-ref>   # länka → deploya → verifiera → länka tillbaka
+```
+
+Skriptet kodar bort de tre fel som mätts när sekvensen kördes för hand:
+`supabase link` utan styrd stdin **hänger** på databas-lösenordsprompten (en
+hängning är inget felmeddelande); **fel projekt länkat** vid en skarp operation
+— fem EF:er deployades oavsiktligt till prod 2026-08-10 16:47 på exakt det
+felet; och **återlänkningen till staging glöms** — `link`-tillståndet är sticky
+och osynligt, så nästa `db push` i samma katalog går mot prod. Skriptet styr
+stdin överallt, verifierar `supabase/.temp/project-ref` före varje skarp
+operation, och återlänkar i en EXIT-trap som körs även när något fallerar
+halvvägs.
+
+**Project-refen anges som ARGUMENT, aldrig ur config — och det är avsiktligt.**
+`scripts/deny-prod-ref.sh` matchar refens närvaro i Bash-kommandosträngen, så
+ett bekvämt anrop som läste refen ur `.prod-ref-policy.conf` hade gjort hela
+prod-låset verkningslöst för varje agent som läser repot. Argument-formen
+bevarar låset: Marcus anrop bär refen och passerar hans kanal, en agents anrop
+bär den också och **fälls**. Prövat skarpt — ett agent-anrop med prod-refen
+avvisades av låset med korrekt skäl. Testsviten
+(`scripts/test-fas4-prod-deploy.sh`, CI-wirad) vaktar invarianten i båda
+riktningar.
+
+**Läs `UPDATED_AT`, inte `VERSION`, i verifieringen.** En deploy bumpar
+`VERSION` +1 på ALLA funktioner medan `UPDATED_AT` står stilla för dem som inte
+rördes — plattforms-artefakt, inte ett fel.
+
+**Och: en driftkarta härledd ur git är en HYPOTES om prod, aldrig en mätning.**
+Fas 4-underlaget beskrev tre EF:er som "aldrig deployade" — de hade deployats
+kl 06:59 samma dag underlaget skrevs. Mät artefakten (`functions list`), härled
+den inte. Full historik: `TASK-272`, `TASK-268`, `TASK-269`.
+
+**Varför raden står här:** samma skäl som `seed:review` och `metrics:flake`
+ovan — ett verktyg utanför sessionsstartens läs-ordning hittas inte när det
+behövs, och nästa prod-deploy sker i en session som inte var med när skriptet
+byggdes.
+
 ### En ny hooks skarpbevis kan inte FÖRLITAS på i sessionen som byggde den
 
 Hookar registrerade i `.claude/settings.json` mitt i en session **kan inte
