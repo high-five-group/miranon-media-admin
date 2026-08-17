@@ -36,7 +36,7 @@
 // skrivas här — det är en EGENSKAP hos att de två tabellerna aldrig kopplas
 // ihop av någon skrivande operation.
 
-import { NonProdAddressError, RESEND_TEST_ADDRESSES } from './send-bulk.ts';
+import { NonProdAddressError, RESEND_TEST_ADDRESSES, UtskickSparratError } from './send-bulk.ts';
 import type { AllocatedReceiptNumber, ReceiptAllocationDeps } from './receipt-numbering.ts';
 import { allocateReceiptNumber } from './receipt-numbering.ts';
 
@@ -64,6 +64,13 @@ export type ReceiptSendInput = {
   jobId: string;
   /** ENVIRONMENT === 'production'. Fail-closed: allt annat → false (EF:ens ansvar). */
   isProd: boolean;
+  /**
+   * [TASK-274] `isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'))` — klassificerat
+   * i EF:en, samma per-EF-läsmönster som `isProd`. Sant → `sendReceipt` kastar
+   * `UtskickSparratError` FÖRE allt annat (även före kvitto-nummer-allokering),
+   * oberoende av `isProd`.
+   */
+  utskickSparrat: boolean;
   /** Tidsstämpeln som skrivs/räknas år ur — injicerad så testet slipper systemklockan. */
   nu: string;
 };
@@ -138,6 +145,10 @@ export function receiptIdempotencyKey(
 
 /**
  * Kör EN kvittosändning. Ordning är lastbärande:
+ *  0. [TASK-274] UTSKICKS-SPÄRR (Marcus-flip) FÖRE ALLT — `input.utskickSparrat`
+ *     sant → kasta `UtskickSparratError`, oberoende av miljö. FÖRE till och med
+ *     kvitto-numrets allokering (steg 2): ett nummer ska aldrig förbrukas för
+ *     ett mail som ändå inte får skickas.
  *  1. ICKE-PROD-SPÄRR (GOLV, ÅTERANVÄND ur send-bulk.ts — ALDRIG kringgången
  *     eller kopierad) — FÖRE allokering: ett kvitto-NUMMER ska aldrig
  *     förbrukas för ett mail som ändå inte kunde skickas i den här miljön.
@@ -158,6 +169,10 @@ export async function sendReceipt(
   input: ReceiptSendInput,
   deps: ReceiptSendDeps,
 ): Promise<ReceiptSendResult> {
+  if (input.utskickSparrat) {
+    throw new UtskickSparratError();
+  }
+
   const email = input.email.trim();
   if (!input.isProd && !RESEND_TEST_ADDRESSES.includes(email)) {
     throw new NonProdAddressError([email]);

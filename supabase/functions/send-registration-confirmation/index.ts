@@ -17,7 +17,7 @@ import {
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
-import { NonProdAddressError } from '../_shared/send-bulk.ts';
+import { isUtskickSparrat, NonProdAddressError, UtskickSparratError } from '../_shared/send-bulk.ts';
 
 // send-registration-confirmation — bekräftelse-vertikalen (task-18.6, PRD task-18
 // beslut 7). Repots sjätte write-vertikal och andra mail-vertikal.
@@ -207,6 +207,9 @@ Deno.serve(async (req) => {
 
   // Fail-closed icke-prod-detektion: endast ENVIRONMENT==='production' är prod.
   const isProd = Deno.env.get('ENVIRONMENT') === 'production';
+  // [TASK-274] Utskicks-spärren (Marcus beslut B) — central kill-switch, LÄST PER
+  // ANROP (ingen cache): frånvarande/uttryckligt 'av' = öppet, allt annat = blockerat.
+  const utskickSparrat = isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'));
 
   try {
     // Mottagar-upplösning SERVER-SIDE (record-ID → adress/namn/status). Okänt ID → 404
@@ -221,7 +224,7 @@ Deno.serve(async (req) => {
     }
 
     const result = await confirmRegistrations(
-      { targets, jobId, isProd, nu: new Date().toISOString() },
+      { targets, jobId, isProd, utskickSparrat, nu: new Date().toISOString() },
       { sender: makeRealSender(), flipStatus: makeRealFlipper(user.id) },
     );
 
@@ -232,6 +235,10 @@ Deno.serve(async (req) => {
     );
     return jsonResponse(result, 200, corsHeaders);
   } catch (error) {
+    if (error instanceof UtskickSparratError) {
+      console.warn(`[${OPERATION_KEY}] UTSKICK-SPARR REFUSED | caller_user_id=${user.id}`);
+      return jsonResponse({ error: error.message, code: 'utskick_blockerat' }, 423, corsHeaders);
+    }
     if (error instanceof NonProdAddressError) {
       console.warn(
         `[${OPERATION_KEY}] NONPROD-GUARD REFUSED | caller_user_id=${user.id} | offending=${error.offending.length}`,

@@ -21,12 +21,15 @@ import type { SegmentMember } from '../../supabase/functions/_shared/prepare-bul
 import {
   type BatchOutcome,
   type BatchSender,
+  isUtskickSparrat,
   type LogWriter,
   NonProdAddressError,
   RESEND_TEST_ADDRESSES,
   type RunBulkSendInput,
   renderHtml,
   runBulkSend,
+  UTSKICK_SPARR_AV,
+  UtskickSparratError,
 } from '../../supabase/functions/_shared/send-bulk';
 
 const JOB_ID = '11111111-1111-4111-8111-111111111111';
@@ -93,6 +96,7 @@ function baseInput(members: SegmentMember[], isProd: boolean): RunBulkSendInput 
     mailtext: 'Rad1\nRad2',
     jobId: JOB_ID,
     isProd,
+    utskickSparrat: false,
     filterSnapshot: 'seg',
   };
 }
@@ -131,6 +135,66 @@ test.describe('runBulkSend — icke-prod-spärr (D5/GOLV, lastbärande)', () => 
     });
     expect(res.status).toBe('sent');
     expect(res.accepted).toBe(1);
+  });
+});
+
+test.describe('isUtskickSparrat — ren klassificering (TASK-274, AC #3)', () => {
+  test('frånvarande hemlighet (undefined) → ÖPPET (dagens beteende oförändrat)', () => {
+    expect(isUtskickSparrat(undefined)).toBe(false);
+  });
+
+  test('exakt UTSKICK_SPARR_AV ("av") → ÖPPET', () => {
+    expect(isUtskickSparrat(UTSKICK_SPARR_AV)).toBe(false);
+    expect(UTSKICK_SPARR_AV).toBe('av');
+  });
+
+  test('VARJE annat värde → BLOCKERAT, en felskriven flip blockerar hellre än släpper', () => {
+    for (const varde of ['på', 'PA', 'true', '1', 'blockera', 'AV', ' av', 'av ', '']) {
+      expect(isUtskickSparrat(varde), `värde "${varde}" ska klassas blockerat`).toBe(true);
+    }
+  });
+});
+
+test.describe('runBulkSend — utskicks-spärren (TASK-274, Marcus beslut B, central kill-switch)', () => {
+  test('utskickSparrat: true → VÄGRAR hela sändningen OAVSETT miljö (prod)', async () => {
+    const sender = mockSender();
+    const log = mockLogWriter();
+
+    await expect(
+      runBulkSend(
+        { ...baseInput([member('p1', TEST_ADDR)], true), utskickSparrat: true },
+        { batchSender: sender, writeLog: log },
+      ),
+    ).rejects.toThrow(UtskickSparratError);
+
+    expect(sender.calls, 'noll Resend-anrop när spärren är på').toHaveLength(0);
+    expect(log.entries, 'ingen Utskickslogg-rad när spärren är på').toHaveLength(0);
+  });
+
+  test('utskickSparrat: true → fäller ÄVEN i icke-prod, INNAN icke-prod-adress-spärren ens prövas', async () => {
+    const sender = mockSender();
+    const log = mockLogWriter();
+    // Icke-test-adress i icke-prod hade ANDRA fällt NonProdAddressError —
+    // spärren ska fälla FÖRST med sin egen felklass, aldrig den andra.
+    const members = [member('p1', 'riktig@kund.se')];
+
+    await expect(
+      runBulkSend(
+        { ...baseInput(members, false), utskickSparrat: true },
+        { batchSender: sender, writeLog: log },
+      ),
+    ).rejects.toThrow(UtskickSparratError);
+    expect(sender.calls).toHaveLength(0);
+  });
+
+  test('utskickSparrat: false (default) → INGEN vägran, dagens beteende oförändrat', async () => {
+    const sender = mockSender();
+    const log = mockLogWriter();
+    const res = await runBulkSend(baseInput([member('p1', TEST_ADDR)], false), {
+      batchSender: sender,
+      writeLog: log,
+    });
+    expect(res.status).toBe('sent');
   });
 });
 

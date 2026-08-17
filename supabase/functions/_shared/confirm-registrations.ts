@@ -14,7 +14,7 @@
 // Resend-test-adress, annars vägras hela operationen (noll mail, noll flip).
 
 import type { ResendBatchData } from './resend-batch.ts';
-import { NonProdAddressError, RESEND_TEST_ADDRESSES, renderHtml } from './send-bulk.ts';
+import { NonProdAddressError, RESEND_TEST_ADDRESSES, renderHtml, UtskickSparratError } from './send-bulk.ts';
 
 /** Basens Status-ord (data-model.md §Status-värden — Anmälningar). */
 const STATUS_OBEKRAFTAD = 'Obekräftad';
@@ -93,6 +93,12 @@ export type ConfirmRegistrationsInput = {
   jobId: string;
   /** ENVIRONMENT === 'production'. Fail-closed: allt annat → false (EF:ens ansvar). */
   isProd: boolean;
+  /**
+   * [TASK-274] `isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'))` — klassificerat
+   * i EF:en, samma per-EF-läsmönster som `isProd`. Sant → `confirmRegistrations`
+   * kastar `UtskickSparratError` FÖRE allt annat, oberoende av `isProd`.
+   */
+  utskickSparrat: boolean;
   /** Tidsstämpeln som skrivs (injicerad så testet slipper systemklockan). */
   nu: string;
 };
@@ -171,6 +177,8 @@ export function parseConfirmOutcome(
 /**
  * Bekräfta en eller flera anmälningar (enskild = längd 1; Bekräfta alla = längd N —
  * SAMMA operation, kontrollfrågan bor i UI:t). Ordning är lastbärande:
+ *  0. [TASK-274] UTSKICKS-SPÄRR (Marcus-flip) FÖRE ALLT — `input.utskickSparrat`
+ *     sant → kasta `UtskickSparratError`, oberoende av miljö.
  *  1. Partitionering: inaktiv (avbokad/inställt) → redan bekräftad → e-post-lös
  *     hamnar bland `skipped` med SKÄL; endast Obekräftad med e-post försöks.
  *  2. ICKE-PROD-SPÄRR (GOLV) FÖRE sändning: en enda icke-test-adress → kasta
@@ -185,6 +193,10 @@ export async function confirmRegistrations(
   input: ConfirmRegistrationsInput,
   deps: ConfirmRegistrationsDeps,
 ): Promise<ConfirmRegistrationsResult> {
+  if (input.utskickSparrat) {
+    throw new UtskickSparratError();
+  }
+
   const skipped: { registrationId: string; reason: SkipReason }[] = [];
   const specs: ConfirmSpec[] = [];
 
