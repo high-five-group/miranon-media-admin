@@ -168,8 +168,18 @@ function AuthenticatedLayout() {
   // (TASK-218.3), monterad HÄR i stället för main.tsx — se klassdoc-blocket
   // ovan för varför. Kan per konstruktion aldrig skymma en auth-yta (denna
   // komponent existerar bara efter _authenticated-guarden passerat).
+  // ANROPAREN SÄTTER HÖJDEN (TASK-266) — samma `grid min-h-dvh w-full`-wrapper
+  // som main.tsx:s gate-gren, av exakt samma skäl. Se den filens kommentar för
+  // hela resonemanget: kontraktet ("anroparen sätter höjden"), mätvärdena, och
+  // varför wrappern är `grid` och inte `flex` (barnets `h-full` löses mot
+  // grid-arean men kollapsar i en flex-förälder vars höjd kommer från
+  // min-height).
   if (gate.typ !== 'redo') {
-    return <Forberedelseskarm klara={gate.forlopp.klara} totalt={gate.forlopp.totalt} />;
+    return (
+      <div className="grid min-h-dvh w-full">
+        <Forberedelseskarm klara={gate.forlopp.klara} totalt={gate.forlopp.totalt} />
+      </div>
+    );
   }
 
   return (
