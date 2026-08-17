@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-17 10:16'
+updated_date: '2026-08-17 10:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,3 +33,9 @@ Registrerade i task-256:s notes (attachment-upload-large.staging.test.ts:101 + g
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+RELATERAD MEN SEPARAT KLASS (266-agentens bifynd, 2026-08-17): acceptance-svitens oanvänd-stub-vakt gav exit 1 (GET */auth/v1/passkeys) i 1 av 4 körningar medan 16/16 tester passerade — baslinje ren, isolerad omkörning ren, identisk omkörning ren. Vakten varnar själv för falska fynd vid delmängdskörning. En observation; eget kort mintas vid nästa instans — bokförd här för mönsterspårning, INTE samma mekanism som API-stegs-flakesen ovan.
+<!-- SECTION:NOTES:END -->
