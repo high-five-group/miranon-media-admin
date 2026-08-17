@@ -38,11 +38,14 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 🔄 ÅTERUPPTAGEN (2026-08-17, `lifecycle: active`, sjunde
-resumen — Marcus fullmandat: repo-städ + rotorsaks-läkning +
-agent-flotta [modell Opus på rotorsaksarbete, Marcus order 2026-08-17];
-main `2d10f72a`, paus-7-landningen #1493 mergad efter lint-fix
-`8775e2c7`).** Senior-svepets fynd i resume-rapporten (chatt 2026-08-17):
+**Session 102 ⏸️ PAUSAD (2026-08-17, `lifecycle: paused`, ÅTTONDE
+pausen — dagens våg: senior-svepet + rotorsaks-flottan [238/250/251/
+255/256/261/266 lösta] + QA 243.4/241.6 godkända + fas 4-underlaget
+klart i `docs/research/fas4-ef-deploy-underlag-2026-08-17.md`; main
+`5f44ca9b`; resume-ingång = Marcus-sekvensen i sessionsdok §
+PAUSLÄGE (åttonde): a/b-hookbeslutet → fas 4-deployen → buffén →
+0.6-grillning → passkey → QA-rester → stängningsskulder →
+SESSION-END).** Senior-svepets fynd i resume-rapporten (chatt 2026-08-17):
 nightly röd 19 raka nätter — dominanter Länkkontroll (ADR-082-vald
 kostnad) + backlog-grinden (task-238-fixen VAR ombord natt 17/8, grinden
 cancellades ÄNDÅ mot 10-min-taket → resten av 238 är CI-körtiden) ·
