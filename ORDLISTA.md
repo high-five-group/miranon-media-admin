@@ -182,8 +182,21 @@ hörlursinfo, meny), **B — event-mallad** (systemmall där eventfälten fylls 
 t.ex. deltagarinformations-brevet), **C — person-genererad** (skapas ur
 person- + betalningsdata, t.ex. betalningskvittot). Bytesen bor i Storage,
 metadatat och eventkopplingen i basen (delad hemvist, ADR vid bygget).
+Varje bilaga bär dessutom exakt EN **räckvidd** (S107-grillningen, ADR-118):
+**event-specifik** (dagens koppling), **kurstyp** (Kursfamilj + valfri
+Kursnivå — ärvs automatiskt av alla event av typen, även framtida) eller
+**alla event**. Räckvidden är ortogonal mot dokumentklassen: klassen är
+innehållets ursprung, räckvidden dess spridning.
 *Undvik:* dokument (tvetydigt — Dokument är YTAN i Mer där bilagor hanteras),
 attachment.
+
+**Gemensam bilaga** — en bilaga med räckvidd kurstyp eller alla event: syns
+automatiskt, märkt med räckviddsbadge, i varje berört events dokumentlista
+och i Åtgärds-sidans bilageväljare; byts/raderas ENDAST i sitt räckviddsläge
+på Dokument-ytan, aldrig ur ett enskilt events kontext (S107-grillningen,
+ADR-118).
+*Undvik:* universell bilaga (arbetsbegreppet under grillningen), global
+bilaga, statisk bilaga (förväxlas med dokumentklass A).
 
 **Åtgärds-sida** — den event-knutna sida där Lotta verkställer utskick:
 mottagarna hon markerat och "dragit med", åtgärdsval (utskickstyp),
