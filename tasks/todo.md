@@ -68,10 +68,15 @@ ordning):** (1) QA 243.4 hem-stämpeln + B2-beslutet → 243.5-agent ·
 HITL) · (5) 40-listan (+ task-34/28 moot, 235 stängningskandidat) ·
 (6) passkey p5–6 → 231 → 127.10 · (7) QA-rester 218.5/219.4/127.10+
 Roger/147.9 · (8) larm-triage-GO (13 ärenden) + Dependabot #1488.
-Numrering: task-252 · ADR 116 (115 förbrukad av S104:s
-segment-regelspråk, disk-verifierad vid resume 2026-08-17) · T146 ·
-L512+18 fragment · f50 — re-derivera ALLTID (S104 parallell). Full
-handoff: sessionsdok S102 § Paushistorik (sjunde) + Del 15. Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
+Rotorsaks-vågen 2026-08-17 fm LANDAD (sessionsdok Del 16): 238/250/
+251/255 Done (kvadratroten 1332→14,57 s + ADR-117 · CLI-wrappern ·
+worktree-portarna · kontraktsvakt-fixturen), 239 öppen på
+mätbevakning, DoD-driftsvepet 24 kort (#1508), issue-svepet 16
+stängda/3 bärare, städet 12+148 grenar & 18 worktrees (arkiv-taggat).
+Numrering: task-257 (255/256 agent-förbrukade) · ADR 116 (reserverad;
+117 förbrukad av 238-agenten) · T146 · L512+18 fragment (+5
+kandidater i Del 16) · f50 — re-derivera ALLTID (S104 parallell).
+Full handoff: sessionsdok S102 § Paushistorik (sjunde) + Del 15–16. Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
 3 #1415 · task-245 byggd+stängd #1423/#1425 · task-246
 byggd+stängd #1431/#1433; dokument-stämpeln VÄNTAR — facit-låset
 förberett #1437,
