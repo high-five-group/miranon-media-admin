@@ -3,10 +3,10 @@ id: TASK-270
 title: >-
   Inbjudningslänkens destination — INVITE_REDIRECT_URL:s värde overifierat
   (domänen admin.miranon.dev lever)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 11:53'
-updated_date: '2026-08-17 12:57'
+updated_date: '2026-08-17 13:05'
 labels:
   - ready-for-human
 dependencies: []
@@ -33,7 +33,7 @@ Gissa inte vilket. Mät.
 <!-- AC:BEGIN -->
 - [x] #1 INVITE_REDIRECT_URL:s faktiska värde avläst ur prod och bokfört i repot (docs/reference/atkomst-och-nycklar.md eller go-live-planen)
 - [x] #2 Destinationen bevisad nåbar — HTTP 200 mot den URL en inbjuden faktiskt landar på
-- [ ] #3 Vid trasig destination: DNS/redirect åtgärdad och ommätt före inbjudan skickas
+- [x] #3 Vid trasig destination: DNS/redirect åtgärdad och ommätt före inbjudan skickas
 <!-- AC:END -->
 
 ## Definition of Done
@@ -68,4 +68,26 @@ DOMÄNEN SJÄLV ÄR FRISK (AC1/AC2 redan bockade): admin.miranon.dev → 76.76.2
 REKOMMENDATION till AC3: sätt INVITE_REDIRECT_URL explicit till https://admin.miranon.dev i stället för att förlita sig på Site URL-fallbacken. En explicit variabel kan inte ändras som sidoeffekt av att någon rör en annan auth-inställning, och den blir läsbar i samma svep som allt annat driftläge. Kräver Marcus avläsning av Site URL först — om den redan pekar rätt är risken låg men bärarlös.
 
 ÄVEN AVLÄST: CORS_ALLOWED_ORIGINS FINNS (uppdaterad 2026-08-05T15:06:09Z) men secrets list visar endast namn + sha256-digest, aldrig värden. Att den finns bevisar INTE att prod-origin står i den. Måste läsas i dashboarden — och deployens curl-verifiering upptäcker aldrig ett CORS-fel, eftersom curl inte skickar Origin-header.
+
+CORS-FRÅGAN STÄNGD 2026-08-17 — mätt direkt, inte avläst i dashboarden.
+
+Underlagets R5 (prod-origin saknas i CORS_ALLOWED_ORIGINS) kunde inte avgöras av secrets list, som bara visar namn + digest. Den kunde däremot mätas: en riktig CORS-preflight mot en deployad EF avslöjar den faktiska konfigurationen oavsett hemlighetens värde.
+
+TVÅSIDIGT BEVIS (OPTIONS mot /functions/v1/get-events, anon-URL ur .env.production):
+- Origin https://admin.miranon.dev → HTTP 200, svaret bär
+  access-control-allow-origin: https://admin.miranon.dev
+  access-control-allow-headers: authorization, x-client-info, apikey, content-type
+  access-control-allow-methods: GET, POST, PATCH, OPTIONS
+- Origin https://illasinnad.example.com → HTTP 403, INGEN
+  access-control-allow-origin-header alls.
+
+Prod-origin ÄR med, och konfigurationen är INTE wildcard. R5 stängd.
+
+METODNOTEN ÄR POÄNGEN: underlagets deny-triple hade INTE fångat ett CORS-fel — curl skickar ingen Origin-header, så preflight-vägen aktiveras aldrig. Underlaget säger det självt. En verifiering utan Origin kan aldrig uttala sig om CORS, och det krävs BÅDE en giltig och en ogiltig origin för att skilja korrekt konfigurerad från wildcard-som-släpper-allt.
+
+SITE URL AVLÄST 2026-08-17 (Marcus, Supabase-dashboarden): https://admin.miranon.dev — samma värd som DNS-mätningen och passkey-probens rpId. Inbjudningslänkens destination är därmed KORREKT i dagens läge, via Site URL-fallbacken.
+
+AC3 bockad: destinationen är verifierad nåbar (HTTP 200) OCH bevisad vara den appen faktiskt bor på, från TRE oberoende håll — DNS/HTTP, Supabase auth-konfigurationens rpId, och Marcus avläsning av Site URL.
+
+KVARSTÅENDE ROBUSTHETS-FRÅGA, INTE BLOCKERANDE (deferrad): INVITE_REDIRECT_URL saknas fortfarande som explicit hemlighet, så destinationen ägs av Site URL. Det fungerar, men bäraren är en auth-inställning som kan ändras som sidoeffekt av annat dashboard-arbete utan att något i repot märker det. Att sätta variabeln explicit gör destinationen till ett driftvärde som läses i samma svep som allt annat driftläge. Förkastas INTE — bokförs som öppen förbättring att ta när go-live-trycket släppt.
 <!-- SECTION:NOTES:END -->
