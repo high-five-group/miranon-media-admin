@@ -177,7 +177,16 @@
 # klassens RIKTIGA grindar, och en av dem är ordagrant "mall-/DoD-nivåns
 # semantiska grind". Det är exakt vad detta är. Ingen konflikt.
 #
-# Kortens innehåll läses via backlog-CLI:t, aldrig genom att parsa task-filer.
+# Kortens metadata och relationer läses via backlog-CLI:t. Raden sade fram till
+# TASK-238 (2026-08-17) att kortens INNEHÅLL lästes så "aldrig genom att parsa
+# task-filer" — och grinden gjorde då ett CLI-anrop PER KORT. Det är mätt
+# ohållbart: `task view` kostar linjärt i katalogens storlek, så svepet är
+# O(n²) och sprängde sitt tak i CI (run 31987759931, cancelled efter 10m16s).
+# Fakta-insamlingen bor sedan dess i scripts/backlog-kortfakta.mjs, som tar
+# metadata/relationer ur CLI:ts `task list --json` i ETT anrop och ENDAST
+# AC/DoD-kryssrutornas antal ur task-filerna — med en korsvalidering mot CLI:t
+# varje körning. Hela avvägningen, mätserien och de förkastade alternativen bor
+# i den filens huvud; upprepa dem inte här (ADR-100 § karta, aldrig kopia).
 #
 # Exit 0 = inga inkonsistenta kort. Exit 1 = drift funnen. Exit 2 = anropsfel.
 #
@@ -416,24 +425,44 @@ antal_med_tid=0
 # grind-körningar pågår samtidigt.
 KORT_RADER=""
 
-# Kort-ID:n ur EN listning — aldrig ett CLI-anrop per kort för att hitta dem.
+# ═══ KORT-FAKTA I ETT SVEP (TASK-238) ═══
+#
+# Ett CLI-anrop per kort är strukturellt ohållbart: `task view` laddar hela
+# uppgiftskatalogen vid varje anrop (MÄTT 2026-08-17: 0,471 s vid 10 kort →
+# 2,654 s vid 502), så svepet är O(n²) — 502 kort ≈ 22 min, och talet växer
+# kvadratiskt med backloggen. Natten 2026-08-17 cancellades grinden mot
+# timeout-minutes: 10 efter 10m16s med gren-skanningsfixen redan i trädet.
+#
+# Insamlingen bor därför i scripts/backlog-kortfakta.mjs: `task list --json` i
+# ETT anrop för metadata och relationer, AC/DoD-kryssrutorna ur task-filerna,
+# plus en korsvalidering mot CLI:t varje körning. Avvägningen mot repots
+# "läs kort endast via CLI:t"-konvention är utskriven i den filens huvud och i
+# ADR-117 — den är ett medvetet, bevakat undantag, inte en glidning.
+#
+# Fältordning (status SIST — fältet får svälja resten av raden):
+#   id|tid12|ac_totalt|ac_obockat|dod_obockat|barn_ids|labels|status
 #
 # PORTABILITET: `mapfile`/`readarray` finns först i bash 4. macOS levererar
 # bash 3.2, så en mapfile-form hade fungerat i CI och aldrig lokalt — alltså en
 # grind ingen kan pröva på sin egen maskin före push. Den `while read`-form som
 # används här kör i båda. Av samma skäl används INGEN associativ array
-# (`declare -A`, bash 4) för barn-uppslaget — därav temporärfilen ovan.
-KORT=()
-lista_ut=""
-lista_ut="$(${BACKLOG_CMD} task list --plain 2>/dev/null)" || true
-rader=""
-rader="$(printf '%s\n' "${lista_ut}" | grep -oE 'TASK-[0-9]+(\.[0-9]+)?' | sort -u -V)" || true
-while IFS= read -r rad; do
-    [[ -z "${rad}" ]] && continue
-    KORT+=("${rad#TASK-}")   # parameterexpansion, inte sed (SC2001)
-done <<< "${rader}"
-
-if [[ "${#KORT[@]}" -eq 0 ]]; then
+# (`declare -A`, bash 4) för barn-uppslaget — därav rad-strängen ovan.
+#
+# Exitkoden fångas SEPARAT: helperns exit 2 (anropsfel) måste nå ut som 2, och
+# en pipe hade läst sista ledets kod i stället (L440).
+KORTFAKTA_SKRIPT="${BACKLOG_KORTFAKTA_SKRIPT:-scripts/backlog-kortfakta.mjs}"
+if [[ ! -f "${KORTFAKTA_SKRIPT}" ]]; then
+    echo "❌ ${KORTFAKTA_SKRIPT} saknas — grinden kan inte samla kort-fakta" >&2
+    exit 2
+fi
+KORTFAKTA=""
+KORTFAKTA="$(BACKLOG_CMD="${BACKLOG_CMD}" node "${KORTFAKTA_SKRIPT}")"
+kortfakta_kod=$?
+if [[ "${kortfakta_kod}" -ne 0 ]]; then
+    echo "❌ ${KORTFAKTA_SKRIPT} gav exitkod ${kortfakta_kod} — korten är OPRÖVADE" >&2
+    exit 2
+fi
+if [[ -z "${KORTFAKTA}" ]]; then
     echo "❌ noll kort hittades — CLI:t svarade inte som väntat" >&2
     echo "   Fail-closed: en tom lista är ett anropsfel, aldrig 'allt är bra'." >&2
     exit 2
@@ -441,54 +470,12 @@ fi
 
 # ═══ PASS 1 — läs varje kort en gång, pröva invariant 1 och 2, spara raden ═══
 
-for id in "${KORT[@]}"; do
-    utdata="$(${BACKLOG_CMD} task "${id}" --plain 2>/dev/null)" || continue
-    [[ -z "${utdata}" ]] && continue
+while IFS='|' read -r id tid_siffror ac_totalt ac_obockat dod_obockat barn_ids labels status; do
+    [[ -z "${id}" ]] && continue
+    [[ -z "${status}" ]] && continue
     antal_kort=$((antal_kort + 1))
 
-    status_rad=""
-    status_rad="$(grep -m1 '^Status:' <<< "${utdata}")" || true
-    status="${status_rad#Status:}"
-    status="${status#"${status%%[![:space:]]*}"}"   # trimma inledande blanksteg
-    [[ -z "${status}" ]] && continue
-
-    # AC-blocket är raderna mellan "Acceptance Criteria:" och "Definition of Done:".
-    # DoD-blocket är raderna efter "Definition of Done:". Båda använder samma
-    # kryssruteform, så de MÅSTE avgränsas — annars räknas de ihop och grinden
-    # blir osann i båda riktningar.
-    ac_block=""
-    ac_block="$(awk '/^Acceptance Criteria:/{f=1;next} /^Definition of Done:/{f=0} f' <<< "${utdata}")" || true
-    dod_block=""
-    dod_block="$(awk '/^Definition of Done:/{f=1;next} f' <<< "${utdata}")" || true
-
-    ac_totalt=0;   ac_totalt="$(grep -cE '^- \[[ x]\] ' <<< "${ac_block}")"   || ac_totalt=0
-    ac_obockat=0;  ac_obockat="$(grep -cE '^- \[ \] '   <<< "${ac_block}")"   || ac_obockat=0
-    dod_obockat=0; dod_obockat="$(grep -cE '^- \[ \] '  <<< "${dod_block}")"  || dod_obockat=0
-
-    # Barn-ID:n ur CLI:ts eget Subtasks-block. Blocket består av rader som
-    # börjar `- TASK-`; första raden som inte gör det avslutar blocket.
-    # Ankringen på radstart är avsiktlig: en skiv-titel kan nämna ett ANNAT
-    # kort-ID, och en oankrad matchning hade plockat upp det som ett barn.
-    barn_rader=""
-    barn_rader="$(awk '/^Subtasks \(/{f=1;next} f && /^- TASK-/{print;next} f{f=0}' <<< "${utdata}")" || true
-    barn_ids=""
-    while IFS= read -r brad; do
-        [[ -z "${brad}" ]] && continue
-        b="${brad#- TASK-}"
-        b="${b%% *}"
-        # Bara rena numeriska ID:n accepteras — allt annat är en rad vi inte
-        # förstår, och en missförstådd rad får aldrig bli ett antaget barn.
-        case "${b}" in
-            ''|*[!0-9.]*) continue ;;
-            *) ;;
-        esac
-        barn_ids="${barn_ids}${barn_ids:+,}${b}"
-    done <<< "${barn_rader}"
-
-    # Etiketterna, exakt per token. `Labels:`-raden är kommaseparerad.
-    labels_rad=""
-    labels_rad="$(grep -m1 '^Labels:' <<< "${utdata}")" || true
-    labels="${labels_rad#Labels:}"
+    # Etiketterna, exakt per token. Fältet är kommaseparerat.
     deklarerad=0
     rest="${labels}"
     while [[ -n "${rest}" ]]; do
@@ -501,31 +488,25 @@ for id in "${KORT[@]}"; do
 
     # ── Karensens tidsstämpel ────────────────────────────────────────────────
     #
-    # `Updated:` är kortets senaste ändring och därmed den tidpunkt då det gick
-    # in i sitt nuvarande tillstånd. Saknas fältet har kortet ALDRIG redigerats
-    # efter skapandet — och då ÄR `Created:` den tidpunkten. Fallbacken är
-    # alltså inte en approximation utan det korrekta värdet för just de korten.
+    # `tid_siffror` (YYYYMMDDHHMM) kommer färdig ur kortfakta-skriptet, som tar
+    # `updatedAt` och faller tillbaka på `createdAt`: `updatedAt` är kortets
+    # senaste ändring och därmed den tidpunkt då det gick in i sitt nuvarande
+    # tillstånd. Saknas fältet har kortet ALDRIG redigerats efter skapandet — och
+    # då ÄR `createdAt` den tidpunkten. Fallbacken är alltså inte en
+    # approximation utan det korrekta värdet för just de korten.
     #
     # Att fallbacken dessutom är ofarlig går att härleda: tillståndet invariant 1
     # fäller på kräver bockade AC, och AC bockas med `task edit --check-ac`, som
     # SKRIVER `updated_date`. Ett kort utan fältet kan därför inte ha nått
     # tillståndet via arbetsflödet.
     #
-    # FÖRKASTAT — låta avsaknad av `Updated:` betyda "utanför karens" (bedöm
+    # FÖRKASTAT — låta avsaknad av tidsstämpel betyda "utanför karens" (bedöm
     # direkt). Det hade gjort ett saknat fält till en fällande signal, vilket är
     # att gissa åt det dyraste hållet.
     # FÖRKASTAT — tyst hoppa över kort utan tidsstämpel. Det är exakt TASK-90:s
     # defekt: en blind fläck som utskriften inte redovisar. De räknas i stället
     # öppet i täcknings-blocket.
-    tid_rad=""
-    tid_rad="$(grep -m1 '^Updated:' <<< "${utdata}")" || true
-    [[ -z "${tid_rad}" ]] && { tid_rad="$(grep -m1 '^Created:' <<< "${utdata}")" || true; }
-    tid_siffror=""
-    if [[ -n "${tid_rad}" ]]; then
-        tid_siffror="$(tr -cd '0-9' <<< "${tid_rad#*:}")" || tid_siffror=""
-        tid_siffror="${tid_siffror:0:12}"          # YYYYMMDDHHMM, sekunder ignoreras
-    fi
-
+    #
     # 0 = bedömbar, 1 = inom karens, 2 = ingen läsbar tidsstämpel
     karens_lage=0
     if [[ "${#tid_siffror}" -ne 12 ]]; then
@@ -587,10 +568,13 @@ for id in "${KORT[@]}"; do
         antal_fel=$((antal_fel + 1))
         EXIT_CODE=1
     fi
-done
+    # Herestring, inte pipe: en pipe hade kört loopen i ett SUBSKAL, och då
+    # hade antal_kort/KORT_RADER/EXIT_CODE nollställts vid loopens slut —
+    # grinden hade rapporterat 0 prövade kort och exit 0. Samma form som pass 2.
+done <<< "${KORTFAKTA}"
 
-# Fail-closed mot TYST FORMAT-DRIFT. Karensen läser `Updated:`/`Created:` ur
-# CLI:ts utdata. Byter verktyget namn på de fälten skulle VARJE kort hamna i
+# Fail-closed mot TYST FORMAT-DRIFT. Karensen läser tidsstämplarna ur CLI:ts
+# JSON. Byter verktyget namn på de fälten skulle VARJE kort hamna i
 # karens_lage 2 — och grinden gå grön utan att ha prövat någonting. Att noll av
 # N kort bar en läsbar tidsstämpel är därför ett anropsfel, aldrig "allt är bra".
 # Samma resonemang som "noll kort hittades" ovan, tillämpat på ett fält i

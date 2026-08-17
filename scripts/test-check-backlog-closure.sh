@@ -39,22 +39,139 @@ FARSK="$(date -u +'%Y-%m-%d %H:%M')"
 PASS=0
 FAIL=0
 
-# Bygger ett stubbat `backlog`-kommando. $1 = katalog med fixturer.
-# Stubben svarar på `task list --plain` och `task <id> --plain`.
+# Bygger ett stubbat `backlog`-kommando OCH den kort-yta grinden numera läser.
+# $1 = katalog med fixturer.
+#
+# ═══ VARFÖR STUBBEN GÖR TVÅ SAKER SEDAN TASK-238 ═══
+#
+# Grinden läste förut `task <id> --plain` per kort. Sedan TASK-238 (ADR-117)
+# hämtas fakta i ETT svep: metadata och relationer ur `task list --json`,
+# AC/DoD-kryssrutorna ur task-FILERNA, plus en korsvalidering mot
+# `task view --json`. Stubben måste därför servera BÅDA ytorna.
+#
+# FIXTUR-FORMATET ÄR OFÖRÄNDRAT — med flit. Sviten bär 50 fall vars värde
+# ligger i vad de PÅSTÅR, inte i hur de lagras; att skriva om varje fall hade
+# bytt ut bevisningen samtidigt som koden ändrades, vilket är exakt hur en
+# svit tyst slutar pröva det den säger. Konverteringen sker därför i
+# plumbningen: fixtur-texten (en mini-`--plain`-render) översätts här till
+# task-filer + JSON, och testfallen står orörda.
 skapa_stub() {
     local dir="$1"
+    mkdir -p "${dir}/fixturer" "${dir}/tasks" "${dir}/view"
+    node - "${dir}" <<'KONV'
+// Fixtur-text -> task-filer (.md med AC/DOD-markörer) + JSON-svar.
+const fs = require("node:fs");
+const path = require("node:path");
+const dir = process.argv[2];
+const fixDir = path.join(dir, "fixturer");
+const filer = fs.existsSync(fixDir)
+    ? fs.readdirSync(fixDir).filter((f) => f.endsWith(".txt"))
+    : [];
+
+const kort = [];
+for (const f of filer) {
+    const id = `TASK-${path.basename(f, ".txt")}`;
+    const rader = fs.readFileSync(path.join(fixDir, f), "utf8").split("\n");
+    let status = "";
+    let labels = [];
+    let updated = null;
+    let created = null;
+    const barn = [];
+    const ac = [];
+    const dod = [];
+    let block = "";
+    for (const r of rader) {
+        if (/^Status:/.test(r)) {
+            // Glyfen (✔/○/✖) är CLI:ts DISPLAY-form; JSON bär det rena värdet.
+            status = r.replace(/^Status:\s*/, "").replace(/^[^\p{L}]+/u, "").trim();
+            continue;
+        }
+        if (/^Labels:/.test(r)) {
+            labels = r.replace(/^Labels:\s*/, "").split(",").map((s) => s.trim()).filter(Boolean);
+            continue;
+        }
+        if (/^Updated:/.test(r)) { updated = r.replace(/^Updated:\s*/, "").trim(); continue; }
+        if (/^Created:/.test(r)) { created = r.replace(/^Created:\s*/, "").trim(); continue; }
+        if (/^Subtasks \(/.test(r)) { block = "barn"; continue; }
+        if (/^Acceptance Criteria:/.test(r)) { block = "ac"; continue; }
+        if (/^Definition of Done:/.test(r)) { block = "dod"; continue; }
+        if (block === "barn") {
+            const m = r.match(/^- (TASK-[0-9.]+)/);
+            if (m) { barn.push(m[1]); continue; }
+            block = "";
+        }
+        const kryss = r.match(/^- \[([ x])\] (.*)$/);
+        if (!kryss) continue;
+        const post = { checked: kryss[1] === "x", text: kryss[2] };
+        if (block === "ac") ac.push(post);
+        if (block === "dod") dod.push(post);
+    }
+    kort.push({ id, status, labels, updated, created, barn, ac, dod });
+}
+
+// Förälder/barn deklareras i fixturen på FÖRÄLDERN (Subtasks-blocket) men bärs
+// i JSON av BARNET (parentTaskId) — samma inversion som verkligheten.
+const forald = new Map();
+for (const k of kort) for (const b of k.barn) forald.set(b, k.id);
+
+const iso = (s) => (s ? `${s.replace(" ", "T")}:00Z` : null);
+const blk = (poster) =>
+    poster.map((p, i) => `- [${p.checked ? "x" : " "}] #${i + 1} ${p.text.replace(/^#\d+\s*/, "")}`).join("\n");
+
+for (const k of kort) {
+    const fm = [
+        "---",
+        `id: ${k.id}`,
+        `status: ${k.status}`,
+        `labels: [${k.labels.join(", ")}]`,
+        k.created ? `created_date: '${k.created}'` : null,
+        k.updated ? `updated_date: '${k.updated}'` : null,
+        forald.has(k.id) ? `parent_task_id: ${forald.get(k.id)}` : null,
+        "---",
+        "",
+    ].filter((r) => r !== null);
+    const kropp = [];
+    if (k.ac.length > 0) {
+        kropp.push("## Acceptance Criteria", "<!-- AC:BEGIN -->", blk(k.ac), "<!-- AC:END -->", "");
+    }
+    if (k.dod.length > 0) {
+        kropp.push("## Definition of Done", "<!-- DOD:BEGIN -->", blk(k.dod), "<!-- DOD:END -->", "");
+    }
+    fs.writeFileSync(path.join(dir, "tasks", `task-${k.id.replace("TASK-", "")}.md`),
+        `${fm.join("\n")}${kropp.join("\n")}`);
+    fs.writeFileSync(path.join(dir, "view", `${k.id.replace("TASK-", "")}.json`),
+        JSON.stringify({
+            schemaVersion: 1, kind: "task",
+            task: { id: k.id, status: k.status, acceptanceCriteria: k.ac, definitionOfDone: k.dod },
+        }));
+}
+
+fs.writeFileSync(path.join(dir, "lista.json"), JSON.stringify({
+    schemaVersion: 1, kind: "task-list",
+    tasks: kort.map((k) => ({
+        id: k.id, title: "fixtur", status: k.status, labels: k.labels,
+        parentTaskId: forald.get(k.id) || null,
+        createdAt: iso(k.created), updatedAt: iso(k.updated),
+    })),
+}));
+KONV
     cat > "${dir}/backlog" <<'STUB'
 #!/usr/bin/env bash
-FIXDIR="$(dirname "$0")/fixturer"
+ROT="$(dirname "$0")"
 if [[ "${1:-}" == "task" && "${2:-}" == "list" ]]; then
-    for f in "${FIXDIR}"/*.txt; do
+    if [[ "${*}" == *--json* ]]; then cat "${ROT}/lista.json"; exit 0; fi
+    for f in "${ROT}"/fixturer/*.txt; do
         [[ -e "$f" ]] || continue
         echo "  TASK-$(basename "$f" .txt) - fixtur"
     done
     exit 0
 fi
+if [[ "${1:-}" == "task" && "${2:-}" == "view" && -n "${3:-}" ]]; then
+    cat "${ROT}/view/${3}.json" 2>/dev/null; exit 0
+fi
 if [[ "${1:-}" == "task" && -n "${2:-}" ]]; then
-    cat "${FIXDIR}/${2}.txt" 2>/dev/null
+    if [[ "${*}" == *--json* ]]; then cat "${ROT}/view/${2}.json" 2>/dev/null; exit 0; fi
+    cat "${ROT}/fixturer/${2}.txt" 2>/dev/null
     exit 0
 fi
 exit 1
@@ -101,7 +218,7 @@ SISTA_KOD=0
 kor_fixtur() {
     local d="$1"
     SISTA_KOD=0
-    SISTA_UT="$(BACKLOG_CMD="${d}/backlog" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" \
+    SISTA_UT="$(BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" \
                 bash "${GRIND}" 2>&1)" || SISTA_KOD=$?
 }
 
@@ -262,7 +379,7 @@ printf 'Updated: %s\nStatus: ✖ Cancelled\n%s\n- [x] #1 ett\n%s\n- [x] #1 dod\n
 skapa_stub "${d}"
 printf 'BACKLOG_KLAR_STATUS="Done"\nBACKLOG_UNDANTAGNA_STATUSAR="Cancelled"\nBACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="%s"\nBACKLOG_KARENS_TIMMAR="%s"\n' \
     "${ETIKETT}" "${KARENS_H}" > "${d}/policy.conf"
-if BACKLOG_CMD="${d}/backlog" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" >/dev/null 2>&1; then
+if BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" >/dev/null 2>&1; then
     echo "  ✓ T8  undantagen status fäller inte invariant 1"
     PASS=$((PASS + 1))
 else
@@ -281,7 +398,7 @@ printf 'BACKLOG_KLAR_STATUS="Done"\nBACKLOG_UNDANTAGNA_STATUSAR=""\nBACKLOG_AVSI
     "${ETIKETT}" "${KARENS_H}" > "${d}/policy.conf"
 kod=0
 ut=""
-ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
 if [[ "${kod}" -eq 2 ]] && grep -q 'noll kort hittades' <<< "${ut}"; then
     echo "  ✓ T9  noll kort -> exit 2 (anropsfel), inte exit 0"
     PASS=$((PASS + 1))
@@ -296,7 +413,7 @@ printf 'Status: ✔ Done\n' > "${d}/fixturer/1.txt"
 skapa_stub "${d}"
 kod=0
 ut=""
-ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_CLOSURE_POLICY="${d}/finns-inte.conf" bash "${GRIND}" 2>&1)" || kod=$?
+ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" BACKLOG_CLOSURE_POLICY="${d}/finns-inte.conf" bash "${GRIND}" 2>&1)" || kod=$?
 if [[ "${kod}" -eq 2 ]] && grep -q 'policy-fil saknas' <<< "${ut}"; then
     echo "  ✓ T10 saknad policy-fil -> exit 2, grinden gissar aldrig"
     PASS=$((PASS + 1))
@@ -316,12 +433,46 @@ prova_flera "T12 förälder öppen + ETT barn öppet -> passerar (arbete kvar)" 
     1.1 "${BARN_KLART}" \
     1.2 "${BARN_OPPET}"
 
-# Fail-safe: ett barn i Subtasks-blocket som saknas i listningen (arkiverat,
-# eller en CLI-avvikelse) gör förälderns tillstånd OKÄNT. En gissning åt
-# fällande håll är precis det falska röda som devalverar nästa larm.
-prova_flera "T13 förälder öppen + barn SAKNAS i listningen -> passerar (ingen gissning)" 0 \
+# Fail-safe: ett kort vars tillstånd grinden INTE känner får aldrig låta en
+# förälder bedömas "alla barn klara" mot en ofullständig bild.
+#
+# FORMEN BYTTE PLATS OCH BLEV HÖGLJUDD I TASK-238 (ADR-117). Förr nämndes ett
+# barn i förälderns Subtasks-block utan att finnas i listningen, och grinden
+# höll TYST om föräldern (räknade den som "obedömbar"). I bulk-formen härleds
+# barnen ur samma listning som allt annat, så det tillståndet är inte längre
+# representerbart — CLI:ts Subtasks-block är för övrigt självt listnings-härlett
+# (verifierat 2026-08-17: TASK-17 listar 6 barn, det completed-lagda TASK-17.6
+# är inte ett av dem), så den gamla grenen var redan strukturellt onåbar mot ett
+# verkligt CLI.
+#
+# Faran den skyddade mot finns kvar och prövas nu där den ÄR nåbar: ett kort som
+# ligger på disk utan att synas i listningen fäller med exit 2 i stället för att
+# tyst utelämnas. En tyst fail-safe kan inte skiljas från "allt är bra" — det
+# var TASK-90:s defekt, och den ska inte återuppfinnas här.
+d="${TMP}/kort-utanfor-listningen"
+bygg_fixturer "${d}" 1 "${FORALDER_UTAN_AC}" 1.1 "${BARN_KLART}"
+# Kortet läggs till EFTER stub-bygget, så det finns på disk men aldrig i
+# lista.json — exakt "tillstånd okänt för grinden".
+printf -- '---\nid: TASK-1.2\nstatus: Done\nlabels: []\n---\n' > "${d}/tasks/task-1.2.md"
+kod=0
+ut=""
+ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" \
+      BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+if [[ "${kod}" -eq 2 ]] && grep -q 'saknas i CLI:ts listning' <<< "${ut}"; then
+    echo "  ✓ T13 kort på disk men utanför listningen -> exit 2, aldrig en gissad förälder"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T13 kort utanför listningen gav inte exit 2 av rätt orsak (kod=${kod})"
+    while IFS= read -r r; do echo "      ${r}"; done <<< "${ut}"
+    FAIL=$((FAIL + 1))
+fi
+
+# Paret till T13: samma uppsättning UTAN det okända kortet ska passera normalt,
+# så exit 2 ovan bevisligen kommer från listnings-divergensen och inget annat.
+prova_flera "T13b samma uppsättning utan okänt kort -> passerar" 0 \
     1 "${FORALDER_UTAN_AC}" \
-    1.1 "${BARN_KLART}"
+    1.1 "${BARN_KLART}" \
+    1.2 "${BARN_OPPET}"
 
 # Förälderns EGNA AC vinner över barnens fullbordan: ett obockat eget kriterium
 # är genuint återstående arbete (typiskt en QA-skiva som ligger på föräldern).
@@ -643,7 +794,7 @@ printf 'BACKLOG_KLAR_STATUS="Done"\nBACKLOG_UNDANTAGNA_STATUSAR=""\nBACKLOG_AVSI
     "${ETIKETT}" "${KARENS_H}" > "${d}/policy.conf"
 kod=0
 ut=""
-ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
 if [[ "${kod}" -eq 2 ]] && grep -q 'läsbar tidsstämpel' <<< "${ut}"; then
     echo "  ✓ T42 inget kort med tidsstämpel -> exit 2 (format-drift), inte tyst grönt"
     PASS=$((PASS + 1))
@@ -706,7 +857,7 @@ prova_date_gren() {
     bygg_fixturer "${d}" 1 "${innehall}"
     skapa_date_stubbe "${d}/datebin" "${stil}"
     local kod=0 ut=""
-    ut="$(PATH="${d}/datebin:${PATH}" BACKLOG_CMD="${d}/backlog" \
+    ut="$(PATH="${d}/datebin:${PATH}" BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" \
           BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
     SISTA_UT="${ut}"; SISTA_KOD="${kod}"
     local ok=0
@@ -740,7 +891,7 @@ TRASIG
 chmod +x "${d}/datebin/date"
 kod=0
 ut=""
-ut="$(PATH="${d}/datebin:${PATH}" BACKLOG_CMD="${d}/backlog" \
+ut="$(PATH="${d}/datebin:${PATH}" BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" \
       BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
 if [[ "${kod}" -eq 2 ]] && grep -q 'brytpunkt' <<< "${ut}"; then
     echo "  ✓ T48 ingen date-form fungerar -> exit 2, aldrig en gissad karens"
@@ -773,6 +924,79 @@ if ! grep -nE '^[[:space:]]*echo .*npx ' "${GRIND}" > /dev/null; then
 else
     echo "  ✗ T50 grinden lär ut namnkollisionen i sin egen åtgärds-utskrift:"
     grep -nE '^[[:space:]]*echo .*npx ' "${GRIND}" | while IFS= read -r r; do echo "      ${r}"; done
+    FAIL=$((FAIL + 1))
+fi
+
+# ── Bulk-formens egna skyddsräcken (TASK-238, ADR-117) ──────────────────────
+#
+# AC/DoD läses ur task-filerna, allt annat ur CLI:t. Den avvikelsen är bara
+# försvarbar så länge den är MEKANISKT bevakad — annars är den ett löfte i
+# prosa (ADR-083). Räckena nedan prövas därför i par: att de fäller när de ska,
+# och att samma uppsättning utan defekten passerar.
+
+# Korsvalideringen: filparsningen och CLI:t måste vara överens. Fixturen
+# manipuleras EFTER stub-bygget så att .md-filen säger något annat än den
+# JSON stubben serverar — exakt vad ett ändrat filformat skulle ge.
+d="${TMP}/korsvalidering"
+bygg_fixturer "${d}" 1 "Status: ✔ Done
+${AC_HDR}
+- [x] #1 ett
+${DOD_HDR}
+- [x] #1 dod"
+# CLI-sidan (view/1.json) säger fortfarande bockat; filen säger obockat.
+perl -pi -e 's/^- \[x\] #1 ett$/- [ ] #1 ett/' "${d}/tasks/task-1.md"
+kod=0
+ut=""
+ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" \
+      BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+if [[ "${kod}" -eq 2 ]] && grep -q 'korsvalidering FÄLLDE' <<< "${ut}"; then
+    echo "  ✓ T51 fil och CLI oense om AC -> exit 2 (parsningen är bevakad)"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T51 oenig korsvalidering gav inte exit 2 av rätt orsak (kod=${kod})"
+    while IFS= read -r r; do echo "      ${r}"; done <<< "${ut}"
+    FAIL=$((FAIL + 1))
+fi
+
+prova "T51b samma fixtur ORÖRD -> passerar (fällningen kom från oenigheten)" 0 \
+"Status: ✔ Done
+${AC_HDR}
+- [x] #1 ett
+${DOD_HDR}
+- [x] #1 dod"
+
+# Formatdrift: en AC-RUBRIK utan markörpar får aldrig tolkas som "noll AC".
+# Utan detta räcke hade ett ändrat filformat gett tyst grönt — grinden hade
+# räknat varje kort som AC-löst och slutat pröva invariant 1 helt.
+d="${TMP}/markor-borta"
+bygg_fixturer "${d}" 1 "Status: ○ To Do
+${AC_HDR}
+- [x] #1 ett
+${DOD_HDR}
+- [x] #1 dod"
+perl -0777 -pi -e 's/<!-- AC:BEGIN -->\n|<!-- AC:END -->\n//g' "${d}/tasks/task-1.md"
+kod=0
+ut=""
+ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" \
+      BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+if [[ "${kod}" -eq 2 ]] && grep -q 'saknar markörparet' <<< "${ut}"; then
+    echo "  ✓ T52 AC-rubrik utan markörpar -> exit 2, aldrig tyst 'noll AC'"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T52 saknad markör gav inte exit 2 av rätt orsak (kod=${kod})"
+    while IFS= read -r r; do echo "      ${r}"; done <<< "${ut}"
+    FAIL=$((FAIL + 1))
+fi
+
+# Källassertion: bulk-formens hela poäng är att INGET CLI-anrop sker per kort.
+# Kryper en per-kort-loop tillbaka in är kvadratiken tillbaka utan att någon
+# testkörning blir röd — den kostar bara tid, och tid syns först i natten.
+if ! grep -qE '^\s*(for|while).*\$\{BACKLOG_CMD\}' "${GRIND}"; then
+    echo "  ✓ T53 grinden bär ingen per-kort-loop över BACKLOG_CMD"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T53 en per-kort-loop över BACKLOG_CMD är tillbaka i grinden:"
+    grep -nE '^\s*(for|while).*\$\{BACKLOG_CMD\}' "${GRIND}" | while IFS= read -r r; do echo "      ${r}"; done
     FAIL=$((FAIL + 1))
 fi
 
