@@ -15,8 +15,26 @@
 
 ## Aktuellt fokus
 
-**Session 107 ▶️ ÅTERUPPTAGEN (2026-08-17, `lifecycle: active`) —
-NIO-PUNKTSLISTAN: utredning + nio byggskivor landade på EN dag.** Sju
+**Session 107 ⏸️ PAUSAD IGEN (2026-08-17, `lifecycle: paused`) — PROD LÄKT,
+QA-VANDRINGEN PÅBÖRJAD.** Prod stod i ett trasigt halvläge: fronten
+utrullad av Vercel, EF:erna kvar på 13:08Z-koden — nya schemat kräver fält
+gamla EF:en inte returnerade, så varje bilage-yta kastade. Marcus körde
+`fas4-prod-deploy.sh --deploya` (39 funktioner, hash-verifierade); prod går
+nu i fas med `main` på båda halvorna. **QA 273.5: steg 1–3 gångna, fyra
+defekter ut och åtgärdade** — fel bild (→ 97 kB webp, luminans omräknad) ·
+vit rännsten (kamouflage mot KANTfärg, ej helbildsmedel) · **blinket
+rotorsakat** (`main.tsx` målade splashen under `'vantar'`-fasen → 200 ms
+tröskel) · genvägarna till eventsidans form (delad som KOD i
+`primitives/HandlingsRad`, eventsidans regressionslås 26/26). PR #1587
+landad (`e319b08c`); **PR #1589 armerad och i luften vid paus**. KVAR: QA
+273.5 steg 4–6 · facit-omstämplingarna (sekvensfynd: hem+åtgärdssidan vid
+273.5, dokument EN gång vid 275.4; hem behöver en TREDJE sidofil) · QA
+275.4 · Done-flippar · PRD 276 · `INVITE_REDIRECT_URL` saknas i prod.
+Numrering: ADR 119 · task-277 · L512+fragment · T145 · f50 — re-derivera
+ALLTID. Full handoff: sessionsdok S107 § PAUSLÄGE (andra gången).**
+
+**Session 107 — första passet (historik): NIO-PUNKTSLISTAN: utredning +
+nio byggskivor landade på EN dag.** Sju
 utredningsagenter →
 bas-svepet (Event-59/60/61 skapade, 26 orphan-anmälningar länkade, Agneta
 läkt — `{Event}=BLANK()` mätt 0) → PRD 273 (UI-fixpaketet) + 274
