@@ -243,6 +243,41 @@ jobs:
     # TASK-59-kortet deferar MED AVSIKT: den linjära skalningen i workers är ett
     # ANTAGANDE som ska mätas när den aktiveras, inte ärvas härifrån. Taket
     # köper tid till den mätningen; det ersätter den inte.
+    #
+    # ═══ TASK-239 (2026-08-17) — ANDRUMMET TOG SLUT, OCH TAKET RÖRDES INTE ═══
+    #
+    # Raden ovan förutsade sitt eget utfall: kurvan fortsatte, sviten gick
+    # 152 → 233 tester, och taket nåddes. Två post-merge-fällningar betalades
+    # — run 31958171806 (12,28 min, `#1428`) och run 31962091899 (12,08 min,
+    # `#1434`), båda `cancelled` mot detta tak — med tolv mellanliggande
+    # körningar på 8,4–11,6 min. Marginalen var förbrukad, inte krympande.
+    #
+    # TVÅ ÅTGÄRDER LANDADE, INGEN AV DEM EN TAKHÖJNING:
+    #
+    #   1. ROTEN. Warmup-gaten (ADR-112/TASK-218.3) körde oavkortat i
+    #      fixturvärlden: task-236 varv 2:s seam
+    #      (`VITE_E2E_WARMUP_TIMEOUT_MS`) satt bara på e2e-webServern, aldrig
+    #      på den acceptance kör mot. Mätt kostnad +75 s isolerat i detta
+    #      jobbs teststeg (08-15 → 08-16, testantal konstant). Fixad i
+    #      playwright.config.ts — se dess kommentar för hela härledningen,
+    #      inklusive varför kostnaden är KONCENTRERAD till de fem tester som
+    #      parkerar nätverket (9000 ms var) snarare än utsmetad.
+    #
+    #   2. STRUKTUREN. Hermetik-självtestet var ett STEG här och är nu ett
+    #      eget, PARALLELLT jobb (`acceptance-sjalvtest` nedan). De två
+    #      arbetsmängderna är jämnstora (261–352 s mot 218–313 s), så det
+    #      jobbet mätte summan av dem mot ett tak avsett för en av dem.
+    #      Väggklockan blir max(A,B) i stället för A+B — utan att en enda
+    #      `workers`-siffra rörs och utan någon svit som delas, alltså utan
+    #      det skalningsantagande stycket ovan kräver mätning för. Rivningen
+    #      av det gamla "beviset körs efter sviten med avsikt" är öppet
+    #      motiverad vid det nya jobbet, inte tyst.
+    #
+    # DÄRFÖR LIGGER TALET 12 KVAR. Efter (1) och (2) mäter taket detta jobbs
+    # skarpa svit ensam: svansen 352 s minus gatens ~62 s ≈ 290 s ≈ 4,8 min,
+    # alltså ~7 min marginal mot ett orört tak. En höjning hade köpt samma
+    # andrum genom att göra skyddsnätet slappare i stället för arbetet
+    # mindre; task-239 AC #2 kräver uttryckligen det förra utan det senare.
     timeout-minutes: 12
     permissions:
       contents: read
@@ -302,33 +337,116 @@ jobs:
             npm run test:acceptance
           fi
 
-      # Tvåsidigt bevis, task-60 / T104. Den gröna sviten ovan visar att appen
-      # beter sig rätt GIVET fixturens svar; detta steg visar att svaren faktiskt
-      # BÄR testerna — normalläget töms, testens egna network.use() görs
-      # verkningslösa, och varje test måste då fällas AV VAKTEN. Ett test som
-      # överlever konsumerar inget EF-svar och bevisar inget om databeteendet.
-      #
-      # KOSTNADEN, MÄTT I CI OCH INTE PROJICERAD FRÅN LOKALT. Första skarpa
-      # körningen tog 289 s för detta steg mot ~50 s lokalt, och drev jobbet till
-      # 6,5 min mot taket 8. Orsaken var `retries: CI ? 2 : 0`: i självtestläget
-      # är en fällning det FÖRVÄNTADE utfallet, så varje test kördes tre gånger
-      # och spelades in på video — 153 körningar för noll extra information.
-      # Skriptet kör därför `--retries=0` och config stänger av
-      # failure-artefakter i regimen. Efter fixen: 73 s (mätt med CI=1 lokalt,
-      # 297 s → 73 s i samma uppställning), alltså ~2,5 min totalt mot taket 8.
-      #
-      # Retries vore dessutom FEL här, inte bara dyrt: ett test som fäller vid
-      # första försöket men passerar vid andra är per definition inget
-      # hermetik-bevis, och hade räknats som grönt.
-      #
-      # Steget körs EFTER den skarpa sviten med avsikt — är den röd stannar
-      # jobbet där, och ett självtest mot en redan trasig svit hade bara gett två
-      # röda besked om samma fel.
-      #
-      # URVALET GÄLLER ÄVEN HÄR (TASK-75), och det är ingen detalj: kördes den
-      # skarpa sviten på EN spec-fil men beviset på arton, blev beviset jobbets
-      # nya kritiska väg och urvalet en halv besparing. Steget bär samma
-      # `read -r -a`-form och samma tomma default som steget ovan.
+      - name: Ladda upp Playwright-artefakter vid rött
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-acceptance-artefakter
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Tvåsidigt bevis, task-60 / T104. Den gröna sviten i `acceptance` ovan visar
+  # att appen beter sig rätt GIVET fixturens svar; detta jobb visar att svaren
+  # faktiskt BÄR testerna — normalläget töms, testens egna network.use() görs
+  # verkningslösa, och varje test måste då fällas AV VAKTEN. Ett test som
+  # överlever konsumerar inget EF-svar och bevisar inget om databeteendet.
+  # ADR-080 beslut 3: VILLKOR för acceptance-klassens existens, inte
+  # förhandlingsbart — och oförändrat av att beviset flyttat hit.
+  #
+  # ═══ VARFÖR ETT EGET JOBB SEDAN TASK-239 (2026-08-17) ═══
+  #
+  # Beviset var ett STEG i `acceptance`, efter den skarpa sviten. Den formen
+  # bar en uttrycklig motivering som HÄRMED RIVS ÖPPET, inte tyst: *"Steget
+  # körs EFTER den skarpa sviten med avsikt — är den röd stannar jobbet där,
+  # och ett självtest mot en redan trasig svit hade bara gett två röda besked
+  # om samma fel."*
+  #
+  # Den motiveringen var ett SIGNAL-argument, och avvägningen har vänt eftersom
+  # dess pris växte medan dess värde stod still. Mätt (task-239 AC #1 +
+  # verifiering 2026-08-17, `gh api .../actions/jobs` mot post-merge-körningar,
+  # 233 tester): den skarpa sviten 261–352 s och beviset 218–313 s — de två
+  # stegen är i praktiken JÄMNSTORA, och tillsammans 94–96 % av jobbets
+  # väggklocka. Sekventiellt betyder det A+B mot ett `timeout-minutes: 12`.
+  # Två fällningar har redan betalats: run 31958171806 (12,28 min, `#1428`,
+  # cancelled MITT I beviset) och run 31962091899 (12,08 min, `#1434`).
+  # Kostnaden av det rivna designvalet är alltså numera en falsk röd på
+  # timeout — samma signal-förstörelse som taket självt finns för att undvika
+  # — medan dess vinst är att en agent slipper läsa ett andra rött besked som
+  # pekar på samma fil. Den bytesaffären går inte ihop längre.
+  #
+  # PARALLELLT, INTE SNABBARE PER TEST. Väggklockan blir max(A,B) i stället för
+  # A+B. Detta är den form av parallellisering `acceptance`-jobbets egen
+  # takkommentar pekar ut som "den varaktiga häven" — men UTAN det antagande
+  # den samtidigt varnar för: här delas ingen svit, och ingen `workers`-siffra
+  # höjs. De två arbetsmängderna var redan oberoende; de kör nu på var sin
+  # runner med var sina kärnor och sin egen oförändrade worker-uppsättning, så
+  # ingen CPU-mättnad införs och ingen skalningsfaktor behöver mätas. Det är
+  # aritmetik, inte en hypotes. (En `workers`-höjning vore det motsatta, och
+  # playwright.config.ts:s acceptance-block har mätt sig fram till att INTE
+  # röra den siffran — se dess § VIDEO-FORMEN ÄR PRÖVAD.)
+  #
+  # VAD SOM INTE ÄNDRAS: samma svit, samma urval, samma `--retries=0`, samma
+  # avstängda artefakter. Beviset körs på VARJE landning precis som förr.
+  #
+  # KOSTNADEN, MÄTT I CI OCH INTE PROJICERAD FRÅN LOKALT (historik, gäller
+  # alltjämt). Första skarpa körningen tog 289 s mot ~50 s lokalt, och drev
+  # jobbet till 6,5 min mot taket 8. Orsaken var `retries: CI ? 2 : 0`: i
+  # självtestläget är en fällning det FÖRVÄNTADE utfallet, så varje test kördes
+  # tre gånger och spelades in på video — 153 körningar för noll extra
+  # information. Skriptet kör därför `--retries=0` och config stänger av
+  # failure-artefakter i regimen. Efter fixen: 73 s (mätt med CI=1 lokalt,
+  # 297 s → 73 s i samma uppställning).
+  #
+  # Retries vore dessutom FEL här, inte bara dyrt: ett test som fäller vid
+  # första försöket men passerar vid andra är per definition inget
+  # hermetik-bevis, och hade räknats som grönt.
+  #
+  # URVALET GÄLLER ÄVEN HÄR (TASK-75), och det är ingen detalj: kördes den
+  # skarpa sviten på EN spec-fil men beviset på arton, blev beviset den
+  # kritiska vägen och urvalet en halv besparing. Steget bär samma
+  # `read -r -a`-form och samma tomma default som `acceptance`-jobbets.
+  acceptance-sjalvtest:
+    name: Acceptance — tvåsidigt bevis (hermetik-självtest)
+    runs-on: ubuntu-latest
+    # SAMMA TAK SOM `acceptance`, av samma skäl: de två arbetsmängderna är
+    # jämnstora (mätserien ovan), och samma längd ska ha samma tak. Efter
+    # delningen mäter taket EN av dem i stället för summan — marginalen mot
+    # svansen (313 s beviset, 352 s sviten) går från ~1,0 min till ~5,7 min
+    # UTAN att taket rörts, vilket var hela poängen med task-239 AC #2.
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Samma cache-nyckel som acceptance/a11y/test-staging (ADR-029 §1c) —
+      # först färdiga jobbet värmer, de andra hit:ar. Delningen ovan lägger till
+      # EN konsument av samma nyckel; den skapar ingen ny cache-yta.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6.1.0
+        id: playwright-cache-acceptance-sjalvtest
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
       - name: Acceptance-klassens tvåsidiga bevis (hermetik-självtest)
         env:
           ACCEPTANCE_URVAL: ${{ inputs.acceptance_selection }}
@@ -341,11 +459,16 @@ jobs:
             npm run test:acceptance:sjalvtest
           fi
 
+      # EGET artefaktnamn, inte `acceptance`-jobbets: `upload-artifact@v4+`
+      # avvisar två uppladdningar med samma namn i samma körning, och efter
+      # delningen kan båda jobben vara röda samtidigt. `failure() ||
+      # cancelled()` av samma skäl som överallt annars (TASK-237): utan
+      # `cancelled()` lämnar en takfällning noll spår.
       - name: Ladda upp Playwright-artefakter vid rött
         if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-acceptance-artefakter
+          name: playwright-acceptance-sjalvtest-artefakter
           path: |
             test-results/
             playwright-report/

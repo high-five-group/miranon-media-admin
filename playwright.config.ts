@@ -357,6 +357,58 @@ export default defineConfig({
                 // Devtools-knapparna (dev-läge) hör inte hemma i baselines
                 // och deras versioner får aldrig driva pixlar (__root.tsx).
                 VITE_DEVTOOLS: '0',
+                // TASK-239 — SAMMA SEAM SOM TASK-236, ANDRA TESTKLASSEN.
+                //
+                // Varv 2 av task-236 satte `VITE_E2E_WARMUP_TIMEOUT_MS: '50'`
+                // på e2e-webServern (grenen längst ned i denna ternary). Den
+                // grenen bär BARA setup + chromium-authenticated. Acceptance
+                // kör mot DENNA webServer-gren och fick därför aldrig fixen —
+                // warmup-gaten (ADR-112/TASK-218.3) har kört oavkortat i
+                // fixturvärlden sedan 817979a8 landade 2026-08-15.
+                //
+                // KOSTNADEN ÄR CI-MÄTT, INTE PROJICERAD (task-239 AC #1,
+                // nattkörningarnas steg-tider via `gh api .../actions/jobs`):
+                // 08-15 (229 tester, FÖRE gaten) → 08-16 (231 tester, MED
+                // gaten) flyttade `Acceptance tests (hermetiska)`-steget
+                // 286 → 361 s, alltså +75 s ISOLERAT i det steget, medan
+                // självtest-steget MINSKADE 7 s (dess EF-mock-vakt fäller
+                // warmup-anropen omedelbart — gaten kostar inget där, och
+                // denna rad påverkar det steget därför knappt).
+                //
+                // VAR KOSTNADEN SITTER, LÄST I KÄLLAN. `starta()`
+                // (startvarmningen.ts) resolvar på det FÖRSTA av (a) alla sju
+                // WARMUP_ITEMS klara i fyra sekventiella batchar, (b)
+                // `timeoutMs`. De flesta acceptance-tester betalar (a) — en
+                // handfull MSW-tur-och-retur per sidladdning. Men tester som
+                // PARKERAR nätverket för att observera laddläget
+                // (hem-laddlage.acceptance.test.ts:s `hallbarMock`, fem
+                // tester) parkerar `get-registrations`/`get-events` — BÅDA
+                // WARMUP_ITEMS — så batchen resolvar aldrig och gaten väntar
+                // ut HELA (b): 9000 ms per test, innan routern ens monteras.
+                // Kostnaden är alltså inte jämnt utsmetad; den är koncentrerad
+                // till just de tester som avsiktligt håller nätverket.
+                //
+                // 50, inte 0: `src/env.ts`s zod-schema kräver `.positive()`.
+                // Samma tal och samma skäl som e2e-grenen — se dess kommentar
+                // och `src/main.tsx`s `beraknaVarmningTimeoutMs()` för hela
+                // härledningen. `korAlla()` kör fortfarande de sju verkliga
+                // hämtningarna; bara GATENS EGEN VÄNTAN kortas.
+                //
+                // VILLKORAT PÅ `isAcceptanceRun`, INTE SATT FÖR HELA GRENEN.
+                // Grenen delas med visual, webblasarbeteende och
+                // manifest-screenshots. Visual/manifest RENDERAR fixturvärlden
+                // till pixlar — ändras gatens släpp-tidpunkt där kan en
+                // baseline röra sig av en orsak som inte är den ändring som
+                // testas. Blast radius hålls därför vid den klass mätningen
+                // gäller. Ett acceptance-test som EXPLICIT vill ha
+                // produktionens 9000 ms opterar in via
+                // `lasVarmningTimeoutOverride()` (startvarmningen.ts,
+                // sessionStorage — samma opt-in task-236 varv 2 byggde);
+                // ingen fil under tests/acceptance/ behöver den i dag
+                // (hem-laddlage asserterar `progressbar` count 0, alltså
+                // gatens FRÅNVARO — ett snabbare släpp gör den assertionen
+                // mer sann, inte mindre).
+                ...(isAcceptanceRun ? { VITE_E2E_WARMUP_TIMEOUT_MS: '50' } : {}),
               },
             }
           : isA11yRun
