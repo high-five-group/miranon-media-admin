@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-17 19:27'
+updated_date: '2026-08-17 19:43'
 labels: []
 dependencies: []
 ordinal: 501000
@@ -40,3 +41,13 @@ BIFYND: testhjalparen relativLuminans i Forberedelseskarm.spec.ts antog alltid 0
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ÖPPET EFTER MARCUS GRANSKNING 2026-08-17 (dev-server, landad e319b08c) — EJ ÅTGÄRDAT, medvetet uppskjutet på Marcus order ("vill inte fastna, vill vidare i QA-vandringen"):
+
+(a) SCRIMMEN FÖR STARK. Marcus: "skulle nog vilja se liiite mer av fotot". Justering av --mm-forberedelseskarm-scrim (idag 90 % vit). OBS: sänkt opacitet sänker kontrastmarginalen — dagens 4,52:1 mot 1.4.11:s 3:1-golv har utrymme, men luminansanalysen MÅSTE räknas om mot det nya värdet, och components.css-tokenens kommentar med den. Kamouflagefärgen --mm-forberedelseskarm-fond-kamouflage är uttryckt med SAMMA 90 %-tal och måste följa med i samma ändring, annars glider rännstenen isär från bilden.
+
+(b) RÄNNSTENEN SYNS FORTFARANDE DELVIS. Marcus: "såg även lite av rännstenen såg det ut som". Kamouflaget är en PLATT ton (fotots MEDELfärg bakom scrim, rgb(247,247,245)) medan fotot varierar över höjden — vid över- och underkant kan avvikelsen bli synlig. Kandidater att mäta INNAN val: (1) kamouflagefärg från fotots faktiska KANT-kolumner i stället för hela bildens medel, (2) acceptera avvikelsen som mätt-och-liten (samma kompromiss login-fonden bokförde), (3) undersöka om cover-beskärningen gör kantfärgen viewport-beroende och därmed omöjlig att träffa med EN ton. Diagnos före åtgärd — dagens värde var en mätning, inte en gissning, så avvikelsen har en förklaring som ska hittas.
+<!-- SECTION:NOTES:END -->

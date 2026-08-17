@@ -1,5 +1,11 @@
 export { Button, type ButtonProps } from './Button';
 export { Dialog, type DialogProps, DialogTrigger } from './Dialog';
+export {
+  HANDLINGSRAD_KLASS,
+  HANDLINGSRAD_OMSLAG_KLASS,
+  HandlingsRadInnehall,
+  HandlingsRadKort,
+} from './HandlingsRad';
 export { Input, type InputProps } from './Input';
 export { InstallPrompt, type InstallPromptProps } from './InstallPrompt';
 export { MessageBox, type MessageBoxProps } from './MessageBox';

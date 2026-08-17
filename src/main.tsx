@@ -24,6 +24,49 @@ import { initSentry } from './observability/sentry';
 import { persistOptions } from './queries/persist';
 import { queryClient, router } from './router';
 
+/**
+ * Hur länge appen får vänta INNAN Förberedelseskärmen målas (S107).
+ * Full motivering — rotorsak, varför inte en synkron koll, varför just
+ * detta tal — i `InnerApp`s `troskelPasserad`-doc-block.
+ */
+const SPLASH_TROSKEL_MS = 200;
+
+/** sessionStorage-nyckeln {@link lasSplashTroskelOverride} läser. Egen
+ *  konstant av samma skäl som `E2E_TIMEOUT_OVERRIDE_NYCKEL`
+ *  (startvarmningen.ts): nyckeln får inte glida isär mellan skrivaren
+ *  (Playwright) och läsaren. */
+const E2E_SPLASH_TROSKEL_NYCKEL = 'e2eSplashTroskelMs';
+
+/**
+ * Per-sidladdnings override av splash-tröskeln, läst ur `sessionStorage`
+ * (satt via Playwrights `page.addInitScript()`).
+ *
+ * VARFÖR DEN BEHÖVS: tröskeln gör att skärmen INTE målas för väntan under
+ * ~200 ms — vilket i en testmiljö med nära-noll warmup-timeout betyder
+ * ALDRIG. `forberedelseskarm-hojdkedja.test.ts` mäter höjdkedjan (TASK-266)
+ * på den skarpa produktions-wrappern under gate-fönstret, och det
+ * kontraktet är fortsatt giltigt — testet behöver bara kunna framkalla
+ * skärmen. Med `0` här målas den direkt, precis som före tröskeln.
+ *
+ * SAMMA MEKANISM SOM `lasVarmningTimeoutOverride` (startvarmningen.ts), och
+ * av samma skäl `sessionStorage` framför query-param: den överlever
+ * klient-sides navigation inom fliken, så en override satt på `/login`
+ * följer med genom en post-login-redirect.
+ *
+ * `try/catch`: sessionStorage kan kasta i låst/privat browserläge — en
+ * otillgänglig lagring ska ge produktionsvärdet, aldrig en kraschad app.
+ */
+function lasSplashTroskelOverride(): number | undefined {
+  try {
+    const rått = sessionStorage.getItem(E2E_SPLASH_TROSKEL_NYCKEL);
+    if (rått === null) return undefined;
+    const parsed = Number(rått);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 // M7: initiera Sentry FÖRE React mountas så att tidiga fel
 // (env-validering, root-element-fel, ...) fångas. Skip i lokal dev.
 initSentry();
@@ -130,6 +173,57 @@ function InnerApp() {
   // startvärmning) eller lämnat förloppet oprenumererat (frusen 0-visning).
   const varmningHandle = useRef<StartvarmningHandle | null>(null);
   const varmtBeslutat = useRef(false);
+
+  // ═══ SPLASHEN MÅLAS INTE UNDER TRÖSKELN (S107, Marcus-fångst 2026-08-17:
+  // "förberedelseskärmen blinkar till i en millisekund vid omladdning") ═══
+  //
+  // ROTORSAKEN, mätt i koden: `gate` initieras till `'vantar'` — "vi vet inte
+  // än" — och render-gaten nedan målar Förberedelseskärmen för ALLT som inte
+  // är `'redo'`. Varm/kall-avgörandet sitter i warmup-effekten, som returnerar
+  // tidigt medan `auth.isLoading || isRestoring`. Vid en omladdning med VARM
+  // cache är hela den fasen några frames lång: splashen målas, effekten kör,
+  // gaten flippar till `'redo'`, splashen rivs. En garanterad enframs-blink,
+  // varje omladdning.
+  //
+  // `_authenticated.tsx`s app-yta-gate har INTE buggen — den avgör varm/kall
+  // SYNKRONT i en lazy `useState`-initierare, före första renderingen. Samma
+  // trick går inte att kopiera hit: här måste vi vänta in BÅDE auth-
+  // resolutionen OCH `PersistQueryClientProvider`s cache-restaurering
+  // (`isRestoring`), och ingen av dem är avläsbar synkront vid första
+  // renderingen. Skillnaden är strukturell, inte slarv.
+  //
+  // DÄRFÖR EN TRÖSKEL I STÄLLET FÖR EN SYNKRON KOLL: under de första
+  // `SPLASH_TROSKEL_MS` målas ingenting alls. Är väntan äkta (kall start,
+  // långsam uppkoppling) passerar den tröskeln och splashen visas med sitt
+  // förlopp precis som förr; är den en varm-cache-omladdning hinner gaten
+  // flippa och skärmen målas ALDRIG. Blank yta under tröskeln är inte en
+  // försämring — det är exakt vad användaren annars hade sett under samma
+  // millisekunder.
+  //
+  // ADR-112 beslut 5 ("auth-resolution-fasen visar den i 0-läge") HÅLLER
+  // oförändrat för varje väntan som är lång nog att ha ett 0-läge att visa.
+  // Det som ändras är att en väntan UNDER perceptionströskeln inte längre
+  // producerar en visuell artefakt.
+  //
+  // VARFÖR 200 ms: Nielsens klassiska gräns för "känns omedelbart" är 0,1 s,
+  // och 1,0 s för "tankeflödet bryts". En laddindikator som visas för väntan
+  // under ~0,2 s hinner bara registreras som ett hopp, aldrig som
+  // information. Samma storleksordning som webbens etablerade
+  // spinner-fördröjningsmönster.
+  //
+  // VARFÖR INTE `TASK-233`:s avfärdade delay-mönster: det avfärdades i
+  // `lib/auth/inloggningsdestination.ts` för att en fördröjning DÄR bara
+  // hade DOLT en skärm vars montering ändå startade sju bortkastade
+  // EF-anrop. Här startas ingen värmning av att splashen målas — värmningen
+  // avgörs av effekten oavsett vad som ritas. Fördröjningen döljer alltså
+  // ingen kostnad; det finns ingen att dölja.
+  const [troskelPasserad, setTroskelPasserad] = useState(() => lasSplashTroskelOverride() === 0);
+  useEffect(() => {
+    const troskel = lasSplashTroskelOverride() ?? SPLASH_TROSKEL_MS;
+    if (troskel === 0) return;
+    const timer = setTimeout(() => setTroskelPasserad(true), troskel);
+    return () => clearTimeout(timer);
+  }, []);
 
   // ═══ ÖVERGÅNGEN SPLASH → APP (skärpningsvarv TASK-242, forberedelseskarm-
   // splash-branschmonster-2026-08-16.md § Rekommendation 4) ═══
@@ -336,6 +430,12 @@ function InnerApp() {
   // komponenten) — grid är den enda som ger BÅDE viewporthöjd och växt utan
   // att röra Förberedelseskärmen själv.
   if (gate.typ !== 'redo') {
+    // Under tröskeln: ingen splash, ingen artefakt — se `troskelPasserad`s
+    // doc-block ovan. Den tomma ytan bär samma höjd som splashen skulle ha
+    // haft, så ingenting hoppar när den väl visas.
+    if (!troskelPasserad) {
+      return <div className="grid min-h-dvh w-full" data-testid="splash-under-troskel" />;
+    }
     const forlopp = gate.typ === 'varmar' ? gate.forlopp : FORBEREDELSESKARM_VANTAR;
     return (
       <div className="grid min-h-dvh w-full">

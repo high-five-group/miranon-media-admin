@@ -82,6 +82,26 @@ async function samlaHojdmatningar(page: import('@playwright/test').Page): Promis
     console.error(`[T266] sidfel: ${fel.message}`);
   });
 
+  // SPLASH-TRÖSKELN NEUTRALISERAD (S107): `main.tsx` målar inte skärmen för
+  // väntan under ~200 ms — det är hela poängen med tröskeln (den tog bort en
+  // enframs-blink vid varm-cache-omladdning, Marcus-fångst 2026-08-17). I
+  // denna testmiljö är gate-fönstret nära noll, så skärmen hade ALDRIG
+  // målats och detta test hade mätt ingenting.
+  //
+  // Höjdkedje-kontraktet (TASK-266) gäller oförändrat — det handlar om hur
+  // skärmen ser ut NÄR den visas, inte om NÄR den visas. Overriden framkallar
+  // den utan att röra kontraktet. Samma sessionStorage-mekanism som
+  // `lasVarmningTimeoutOverride` (startvarmningen.ts), satt i samma
+  // init-skriv-fönster.
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem('e2eSplashTroskelMs', '0');
+    } catch {
+      // Låst lagring: testet faller tillbaka på produktionströskeln och
+      // fäller i så fall på uteblivna prov — synligt, aldrig tyst grönt.
+    }
+  });
+
   await page.addInitScript(() => {
     // MutationObserver, INTE bara en timer. Fönstret är inte tillförlitligt
     // observerbart med polling: `gate`-bytet sker i en `useEffect` (passiv

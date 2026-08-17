@@ -133,16 +133,21 @@ test.describe('Forberedelseskarm — Förberedelseskärmens UI-kontrakt (task-21
     expect(stilar.storlek).toBe('cover');
     expect(stilar.position).toBe('50% 50%');
 
-    // Scrimmets opacitet är den MÄTTA WCAG-säkerhetsmarginalen (≥90 % vitt,
-    // components.css:s tokenkommentar: håller ≥3:1 även mot bildens
-    // absolut mörkaste uppmätta pixel). En regression under 90 % skulle
-    // sänka den mätta marginalen utan att någon annan grind fångar det.
+    // Scrimmets opacitet är den MÄTTA WCAG-säkerhetsmarginalen. Golvet
+    // sänktes 0,90 → 0,85 i S107 på Marcus granskning ("liiite mer av
+    // fotot"); vid 85 % ger bildens absolut mörkaste uppmätta pixel
+    // (0,10,24) kontrasten 4,02:1 mot barens fyllnad — fortsatt över
+    // 1.4.11:s 3:1-golv, med 34 % marginal. 80 % mättes (3,56:1) och valdes
+    // bort. Talet här är ett GOLV, inte ett mål: en regression under det
+    // äter den mätta marginalen utan att någon annan grind fångar det.
+    // Sänks det igen MÅSTE luminansanalysen räknas om — och kamouflagefärgen
+    // med den (samma procenttal, se components.css).
     const alfa = await scrim.evaluate((el) => {
       const bg = getComputedStyle(el).backgroundColor;
       const match = bg.match(/rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(?:,\s*([\d.]+)\s*)?\)/);
       return match?.[1] === undefined ? 1 : Number(match[1]);
     });
-    expect(alfa).toBeGreaterThanOrEqual(0.9);
+    expect(alfa).toBeGreaterThanOrEqual(0.85);
   });
 
   test('task-273.6 AC 3: prefers-contrast: more DÖLJER bakgrund+scrim helt, faller tillbaka till ren yta', async ({
@@ -182,9 +187,39 @@ test.describe('Forberedelseskarm — Förberedelseskärmens UI-kontrakt (task-21
     const bg = await resolvedTokenColor(page, '--mm-bg');
     expect(htmlBakgrund).not.toBe(bg);
 
-    // ... men skillnaden ska vara försumbar för ögat: kamouflaget är fotots
-    // medelfärg bakom SAMMA 90 %-scrim, inte en egen designad ton.
-    expect(kontrastKvot(htmlBakgrund, bg)).toBeLessThan(1.1);
+    // DEN INVARIANT SOM FAKTISKT SKYDDAR (S107, andra varvet): kamouflaget
+    // och scrimmet MÅSTE bära samma procenttal. Gör de inte det målas
+    // rännstenen i en annan ton än fotot bredvid — vilket var precis det
+    // Marcus såg när kamouflaget byggde på helbildsmedlet i stället för
+    // kantfärgen.
+    //
+    // En tidigare version av detta test låste i stället "kamouflaget ligger
+    // nära vitt". Det var fel kontrakt: när kantfärgen mättes korrekt blev
+    // kamouflaget RÄTTELIGEN mörkare, och testet fällde en förbättring.
+    // Närhet till vitt var aldrig kravet — närhet till FOTOT är det.
+    // Scrimmets procenttal läses ur TOKENEN, inte ur en nod: testet ska
+    // hålla även om komponentens lager-struktur skrivs om. Alfat
+    // serialiseras som `rgba(r, g, b, a)` ELLER `color(srgb r g b / a)`
+    // beroende på hur webbläsaren väljer att skriva ut color-mix-resultatet.
+    const scrimFarg = await resolvedTokenColor(page, '--mm-forberedelseskarm-scrim');
+    const alfaMatch = scrimFarg.match(/[/,]\s*([\d.]+)\s*\)$/);
+    const scrimAlfa = alfaMatch ? Number(alfaMatch[1]) : 1;
+    expect(scrimAlfa).toBeGreaterThan(0);
+    expect(scrimAlfa).toBeLessThan(1);
+    const forvantat = await page.evaluate(
+      (procent) => {
+        const probe = document.createElement('span');
+        // Samma kantfärg som components.css-tokenen bär, samma procenttal som
+        // scrimmet faktiskt har just nu.
+        probe.style.color = `color-mix(in srgb, var(--mm-bg) ${procent}%, #888a6b)`;
+        document.body.appendChild(probe);
+        const c = getComputedStyle(probe).color;
+        probe.remove();
+        return c;
+      },
+      Math.round(scrimAlfa * 100),
+    );
+    expect(htmlBakgrund).toBe(forvantat);
 
     // contrast-more/print döljer foto+scrim → kamouflaget måste följa med,
     // annars blir rännstenen den enda tonade ytan på en i övrigt ren skärm.

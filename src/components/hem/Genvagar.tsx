@@ -1,5 +1,11 @@
+import { Link } from '@tanstack/react-router';
 import { ListChecks, UserPlus } from 'lucide-react';
-import { NavCard } from '@/components/primitives';
+import {
+  HANDLINGSRAD_KLASS,
+  HANDLINGSRAD_OMSLAG_KLASS,
+  HandlingsRadInnehall,
+  HandlingsRadKort,
+} from '@/components/primitives/HandlingsRad';
 
 /**
  * Genvägar — manuell anmälan + Åtgärds-sidan (TASK-243.1, promoverad ur
@@ -7,6 +13,23 @@ import { NavCard } from '@/components/primitives';
  * BÅDA är REDAN skarpa, byggda routes (`/anmalan/ny`, `/atgarder`) vars
  * "tomt läge" ÄR eventväljar-steget (147.8-språket) — riktiga länkar, inte
  * döda ingångar. Ersätter den retirerade `CTA.tsx`.
+ *
+ * ═══ FORMEN ÄR EVENTDETALJSIDANS, INTE NAVCARDS (S107, Marcus-order
+ * 2026-08-17: "de ska VARA EXAKT SAMMA PÅ HEM-VYN") ═══
+ *
+ * Raderna byggdes tidigare av `NavCard`, där kortet SJÄLVT är länken och
+ * hela den rounded-2xl-stora ytan byter ton vid hover. Eventdetaljsidans
+ * genvägar är i stället transparenta rader inuti ett kort, som hovrar till
+ * en INDRAGEN rounded-lg-platta. Samma hover-klass och samma färgsteg i
+ * båda — men helt olika avläsning, och det var skillnaden Marcus såg.
+ *
+ * `task-273.2` beskrev avvikelsen som avsiktlig i sin amenderings-sidofil
+ * ("det exakta pixelvärdet för insetten är det inte, med avsikt"). Det var
+ * fel läsning av ordern: identiskt betydde identiskt. Formen delas nu som
+ * KOD via `primitives/HandlingsRad` — inte som en beskrivning två ytor var
+ * för sig ska leva upp till.
+ *
+ * `NavCard` är orörd och bär fortsatt Mer-vyns åtta rader (M6-facitet).
  */
 export function Genvagar() {
   return (
@@ -15,14 +38,28 @@ export function Genvagar() {
         Genvägar
       </h2>
       <nav aria-label="Genvägar">
-        <ul className="flex flex-col gap-3">
-          <li>
-            <NavCard to="/anmalan/ny" icon={UserPlus} label="Lägg till manuell anmälan" />
-          </li>
-          <li>
-            <NavCard to="/atgarder" icon={ListChecks} label="Gå till åtgärder" />
-          </li>
-        </ul>
+        <HandlingsRadKort data-testid="hem-genvagar-kort">
+          <ul className="flex flex-col">
+            <li className={HANDLINGSRAD_OMSLAG_KLASS}>
+              <Link to="/anmalan/ny" className={HANDLINGSRAD_KLASS}>
+                <HandlingsRadInnehall
+                  ledande={<UserPlus aria-hidden="true" size={16} className="shrink-0" />}
+                >
+                  Lägg till manuell anmälan
+                </HandlingsRadInnehall>
+              </Link>
+            </li>
+            <li className={HANDLINGSRAD_OMSLAG_KLASS}>
+              <Link to="/atgarder" className={HANDLINGSRAD_KLASS}>
+                <HandlingsRadInnehall
+                  ledande={<ListChecks aria-hidden="true" size={16} className="shrink-0" />}
+                >
+                  Gå till åtgärder
+                </HandlingsRadInnehall>
+              </Link>
+            </li>
+          </ul>
+        </HandlingsRadKort>
       </nav>
     </section>
   );

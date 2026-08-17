@@ -1,6 +1,11 @@
 import { Link } from '@tanstack/react-router';
-import { ChevronRight, type LucideIcon, Printer, Send, UserCheck } from 'lucide-react';
+import { type LucideIcon, Printer, Send, UserCheck } from 'lucide-react';
 import { Button } from '@/components/primitives/Button';
+import {
+  HANDLINGSRAD_KLASS,
+  HANDLINGSRAD_OMSLAG_KLASS,
+  HandlingsRadInnehall,
+} from '@/components/primitives/HandlingsRad';
 
 /**
  * [TASK-147.8, NAMNBYTE] Check-in-ingången + GENVÄGAR-ytan (tidigare kallad
@@ -44,8 +49,10 @@ import { Button } from '@/components/primitives/Button';
  * godkännande). Se `EventDetail.tsx`/`Deltagare.tsx`/`Betalningar.tsx` för
  * rivningen.
  */
-const RAD_KLASS =
-  '-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
+// Formen bor sedan S107 i primitiven `HandlingsRad` — hem-vyns Genvägar
+// konsumerar SAMMA sträng och samma innehållsgrammatik, så de två ytorna
+// inte kan glida isär igen (de hade gjort det: se primitivens doc-block).
+const RAD_KLASS = HANDLINGSRAD_KLASS;
 
 /**
  * Radnumret i vit ruta (18.15-facitet; S83 konvergens-pass 2, Marcus-låst
@@ -97,19 +104,19 @@ function HandlingsLank({
   children: string;
 }) {
   return (
-    <div className="flex flex-col py-1.5">
+    <div className={HANDLINGSRAD_OMSLAG_KLASS}>
       <Link to={to} params={{ eventId }} className={RAD_KLASS}>
-        {ledande.nummer !== undefined ? (
-          <NumRuta n={ledande.nummer} />
-        ) : (
-          <ledande.ikon aria-hidden="true" size={16} className="shrink-0" />
-        )}
-        {children}
-        <ChevronRight
-          aria-hidden="true"
-          size={18}
-          className="ml-auto shrink-0 text-text-secondary"
-        />
+        <HandlingsRadInnehall
+          ledande={
+            ledande.nummer !== undefined ? (
+              <NumRuta n={ledande.nummer} />
+            ) : (
+              <ledande.ikon aria-hidden="true" size={16} className="shrink-0" />
+            )
+          }
+        >
+          {children}
+        </HandlingsRadInnehall>
       </Link>
     </div>
   );
@@ -141,6 +148,10 @@ export function CheckInKort({ eventId }: { eventId: string }) {
     </div>
   );
 }
+// Kortskalet ovan är den form `HandlingsRadKort` (primitiven) bär — hem-vyns
+// Genvägar konsumerar den. Kvar som literal HÄR med avsikt: `data-testid`
+// och den exakta noden är facit-/testlåst yta på eventsidan (S83), och en
+// omskrivning hit hade rört ett lås denna fix inte har ärende i.
 
 /**
  * [TASK-147.8, KOPPLAD] Ingången till åtgärds-sidan (`/event/$eventId/atgarder`)

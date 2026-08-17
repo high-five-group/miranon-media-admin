@@ -324,8 +324,15 @@
      filen var fel foto (bygg-agenten tog repots enda RL-bild), Marcus
      levererade rätt original (4096×2714 PNG, 20,9 MB) som skalats och
      konverterats till 1600×1061 webp, 97 kB (cwebp -q 80; LÄTTARE än den
-     gamlas 132 kB). Talen ovan är omräknade mot den NYA filen med samma
-     metod — marginalen steg från 4,48:1 till 4,52:1. Verifierat i Forberedelseskarm.spec.ts
+     gamlas 132 kB).
+
+     SÄNKT 90 % → 85 % samma dag, på Marcus granskning ("skulle nog vilja se
+     liiite mer av fotot"). Talen ovan är den 90-procentiga blandningen;
+     vid 85 % ger samma värsta pixel (0,10,24) bakgrundsluminansen 0,702 och
+     därmed kontrasten 4,02:1 — fortsatt rejält över 3:1-golvet, med 34 %
+     marginal. 80 % mättes också (3,56:1) och valdes BORT: den håller golvet
+     men äter upp marginalen för en ändring Marcus beskrev som "liiite".
+     Verifierat i Forberedelseskarm.spec.ts
      mot den LEVERERADE scrim-opaciteten (inte mot bilden live varje
      körning — en pixel-för-pixel-mätning i CI vore skör mot framtida
      bildbyten); en oavsiktlig sänkning under den mätta opaciteten fångas
@@ -334,7 +341,7 @@
      normalläget hade FÖRE denna skiva, alltså exakt de sedan tidigare
      verifierade kontrasttalen (--mm-forberedelseskarm-bar-fill-contrast
      mot --mm-forberedelseskarm-bar-track, ≥4,5:1, se testet). */
-  --mm-forberedelseskarm-scrim: color-mix(in srgb, var(--mm-bg) 90%, transparent);
+  --mm-forberedelseskarm-scrim: color-mix(in srgb, var(--mm-bg) 85%, transparent);
 
   /* ── Forberedelseskarm rännstens-kamouflage (S107 fynd-fix, Marcus-fångst
      2026-08-17: "den vita scroll-spalten bredvid fotot") ──
@@ -357,16 +364,26 @@
      oberoende, och /dev/primitives kan fortsatt rendera FLERA instanser på
      samma sida — vilket en rot-bakgrund hade omöjliggjort).
 
-     Värdet är MÄTT, inte valt: fotots medelfärg är rgb(173,173,159)
-     (sharp, hela filen), och samma 90 % vit-blandning som scrimmet ger
-     rgb(247,247,245). Kamouflaget uttrycks som color-mix med SAMMA
-     90 %-tal som scrimmet ovan, så en framtida scrim-ändring drar färgen
-     med sig i stället för att glida isär. Kompromissen som kvarstår är
-     densamma som login-fondens: EN platt ton för båda kanterna — men här
-     är avvikelsen försumbar, eftersom 90 % vitt gör den scrimmade ytan
-     nästan enfärgad (login hade en diagonal toning med två olika
-     kantfärger). */
-  --mm-forberedelseskarm-fond-kamouflage: color-mix(in srgb, var(--mm-bg) 90%, #adad9f);
+     Värdet är MÄTT — men FÖRSTA mätningen var fel underlag, och det syntes.
+     Ursprungsvärdet byggde på HELA bildens medelfärg, rgb(173,173,159).
+     Marcus såg ändå "lite av rännstenen" vid granskningen, och ommätningen
+     visar varför: bildens YTTERKANTER (32 px per sida, 2 %) har medelfärgen
+     rgb(136,138,107) — 37 punkter mörkare i rött/grönt och 52 i blått än
+     helbildsmedlet. Kamouflaget målade alltså rännstenen LJUSARE än fotot
+     bredvid den. Avvikelsen var 5 punkter vid 90 % scrim och växer när
+     scrimmet sänks (11 punkter vid 80 %) — den hade alltså blivit VÄRRE av
+     nästa ändring, inte bättre.
+
+     Underlaget är därför kantkolumnerna, inte helbilden: rännstenen ligger
+     vid vänster och höger kant, och det är DEN pixeln kamouflaget ska möta.
+     Snittet av båda kanterna används (vänster rgb(130,134,96), höger
+     rgb(142,142,118) — nära nog att en ton räcker; hade de divergerat kraftigt
+     vore EN platt ton fel verktyg, samma gräns login-fonden bokförde).
+
+     Kamouflaget uttrycks som color-mix med SAMMA procenttal som scrimmet
+     ovan, så en framtida scrim-ändring drar färgen med sig i stället för att
+     glida isär — vid 85 % blir resultatet rgb(237,237,233). */
+  --mm-forberedelseskarm-fond-kamouflage: color-mix(in srgb, var(--mm-bg) 85%, #888a6b);
 
   /* ── Sidbytesindikator (TASK-233 — route-chunk-övergångar) ──
      Egna tokens i stället för att återanvända --mm-forberedelseskarm-bar-*
