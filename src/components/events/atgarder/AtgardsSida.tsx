@@ -196,7 +196,6 @@ import {
   type ActionSkipReason,
   BETALSATT_VARDEN,
   type Betalsatt,
-  type SendActionEmailInput,
   type SendActionEmailResult,
 } from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
@@ -204,6 +203,18 @@ import { alertScreenReader } from '@/lib/alert-screen-reader';
 import { queryKeys } from '@/queries/keys';
 import { AndraRad, DetaljGrupp } from '../detail/DetaljGrupp';
 import { EventValjare } from '../EventValjare';
+import {
+  ATGARDER,
+  type AtgardsTyp,
+  DAG_MANAD_FORMAT,
+  dagManad,
+  fyllPlatshallare,
+  type Granskning,
+  obekraftad,
+  obetald,
+  saknarAnmalningsavgift,
+  saknarSlutbetalning,
+} from './atgardsmallar';
 
 /* ------------------------------------------------------------------ *
  * Grammatik ärvd ur detail/Atgarder.tsx — hover-plattan skjuter 8 px
@@ -359,78 +370,15 @@ function namnPreview(namn: string[]): { pillar: string[]; rest: number; mening: 
 }
 
 /* ------------------------------------------------------------------ *
- * De FYRA åtgärdstyperna (varv 6, Marcus 2026-08-07).
- *
- * LISTAN VAR SEX OCH ÄR NU FYRA — båda strykningarna har samma motiv:
- * en åtgärdslista ska bara innehålla saker som GÖRS MOT URVALET.
- *
- *  · "Manuell anmälan" flyttade UPP till mottagar-ytan, som en andra väg in
- *    bredvid "Lägg till fler personer från eventet". Den hörde aldrig hemma
- *    här: den bygger urvalet, den verkar inte på det. Marcus: "flytta upp
- *    'manuell anmälan' dit. Då blir 'Skicka bekräftelse' första åtgärd i
- *    åtgärdsblocket/listan vilket är väldigt rimligt."
- *  · "Markera betalda" ströks helt. Den skriver i basen om BETALNINGAR, och
- *    betalningarna har redan en egen ingång längre ned. Marcus: "Det får
- *    eventuellt bli en 'markera alla funktion' i betalningsblocket sen" —
- *    alltså en parkerad idé på rätt plats, inte en åtgärd på fel.
- *
- * FÖLJDEN: alla fyra kvarvarande ÄR utskick, och alla fyra fäller ut here.
- * Fälten `utskick` och `leder` blev därmed konstanta och är borttagna
- * tillsammans med sina grenar — ett fält som alltid har samma värde döljer
- * att valet inte längre finns. ORDLISTAs gloss "(utskickstyp)" för åtgärdsval,
- * som docblocken tidigare kallade "för smal", är nu exakt rätt.
- *
- * NAMNEN ÄR MARCUS EGNA, verbatim ur omstyrningen: varje rad inleds med
- * verbet "Skicka", vilket gör listan till fyra parallella handlingar i stället
- * för fyra substantiv av olika slag ("Bekräftelse" ~ "Fritt utskick").
+ * De FYRA åtgärdstyperna (varv 6, Marcus 2026-08-07) — `AtgardsTyp`,
+ * `ATGARDER` (namnen/mallarna, verbatim ur den ursprungliga omstyrningen)
+ * och predikaten `saknarAnmalningsavgift`/`saknarSlutbetalning`/`obetald`/
+ * `obekraftad` FLYTTADE [TASK-241.2] till `./atgardsmallar` — samma innehåll,
+ * importerat ovan — så att sändytan (`src/components/svep/`) kan återanvända
+ * mallarna i stället för att bygga en egen kopia (ADR-114 § Implementations-
+ * beslut: "Sändvägarna återanvänder Åtgärds-sidans befintliga sändkontrakt").
+ * Se `atgardsmallar.ts` för hela historiken bakom fyra-listan.
  * ------------------------------------------------------------------ */
-type AtgardsTyp = {
-  nr: number;
-  /** [TASK-147.3] Typad mot EF-kontraktets `actionType` — samma union, inte
-      en fri sträng — så `GranskningsSida.skicka()` kan skicka `nyckel` rakt
-      in i `SendActionEmailInput` utan en runtime-check av fyra literaler. */
-  nyckel: SendActionEmailInput['actionType'];
-  namn: string;
-  /** Prototyp-stubb: mallens ämnesrad. Ingen mall-datakälla finns ännu. */
-  amne: string;
-  /** Prototyp-stubb: mallens brödtext. */
-  mall: string;
-  /** Vilka i urvalet åtgärden är relevant för — driver räknaren på raden. */
-  urvalsfilter?: (r: Registration) => boolean;
-};
-
-const saknarAnmalningsavgift = (r: Registration) =>
-  r.anmalningsavgift === PaymentStatus.EJ_MOTTAGEN;
-const saknarSlutbetalning = (r: Registration) => r.slutbetalning === PaymentStatus.EJ_MOTTAGEN;
-const obetald = (r: Registration) => saknarAnmalningsavgift(r) || saknarSlutbetalning(r);
-const obekraftad = (r: Registration) => r.status === RegistrationStatus.OBEKRAFTAD;
-
-const ATGARDER: AtgardsTyp[] = [
-  {
-    nr: 1,
-    nyckel: 'bekraftelse',
-    namn: 'Skicka bekräftelsemail',
-    amne: 'Din plats är bekräftad',
-    mall: 'Hej {förnamn},\n\nDin plats på {event} är bekräftad. Vi ses {datum} i {ort}.\n\nVarmt välkommen!\nRoger och Lotta',
-    urvalsfilter: obekraftad,
-  },
-  {
-    nr: 2,
-    nyckel: 'paminnelse',
-    namn: 'Skicka betalningspåminnelse',
-    amne: 'Påminnelse om betalning',
-    mall: 'Hej {förnamn},\n\nVi ser att betalningen för {event} inte kommit in ännu. Sista dag är {deadline}.\n\nHör gärna av dig om något krånglar.\nRoger och Lotta',
-    urvalsfilter: obetald,
-  },
-  {
-    nr: 3,
-    nyckel: 'eventinfo',
-    namn: 'Skicka eventinformation',
-    amne: 'Information inför {event}',
-    mall: 'Hej {förnamn},\n\nSnart är det dags! Här kommer praktisk information inför {event}.\n\nRoger och Lotta',
-  },
-  { nr: 4, nyckel: 'fritt', namn: 'Skicka mail', amne: '', mall: '' },
-];
 
 /* ------------------------------------------------------------------ *
  * BILAGEVÄLJAREN — SKARP sedan TASK-147.5. Den hårdkodade fyra-post-stubben
@@ -463,74 +411,11 @@ const ATGARDER: AtgardsTyp[] = [
  * ------------------------------------------------------------------ */
 
 /* ================================================================== *
- * PLATSHÅLLARNA — granskningens skarpaste verktyg (varv 19).
- *
- * PRD `TASK-147` berättelse 9 säger "förhandsvisa utskicket **som mottagaren
- * ser det**". En förhandsvisning som visar `Hej {förnamn},` visar alltså inte
- * utskicket — den visar mallen, och mallen är inte det som går ut. Skillnaden
- * är hela poängen med att granska.
- *
- * DE OFYLLDA ÄR FYNDET, INTE ETT FEL I VISNINGEN. Går en platshållare inte att
- * fylla lämnas den KVAR i klartext och räknas upp ovanför texten. Det är exakt
- * den klass av fel granskningen finns för att fånga: ett mail som gick ut med
- * `Sista dag är {deadline}.` är ett mail Lotta hade stoppat om hon sett det.
- * Att i stället tyst ersätta med tom sträng eller ett streck hade DÖLJT felet
- * bakom en yta som såg färdig ut.
- *
- * `{deadline}` HÄRLEDS, den läses inte: 14 dagar före startdatum, samma LÅSTA
- * regel som `Betalningar.tsx` § `deadlineStatus` (K30, Marcus 2026-07-21).
- * Regeln kopieras INTE hit — bara dess datum-uträkning, och den dagen basens
- * egen 'Deadline slutbetalning' blir källa byter båda ställen samtidigt.
+ * PLATSHÅLLARNA — granskningens skarpaste verktyg (varv 19). `deadlineDatum`,
+ * `fyllPlatshallare` och `Granskning` FLYTTADE [TASK-241.2] till
+ * `./atgardsmallar` (importerade ovan) av samma skäl som `ATGARDER` — se den
+ * filens docblock för hela "de ofyllda är fyndet"-bakgrunden.
  * ================================================================== */
-const DAGMANAD_LANG = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
-
-/** Deadline-DATUMET (inte statusraden) — 14 dagar före start, eller null. */
-function deadlineDatum(startdatum: string | null | undefined): string | null {
-  if (!startdatum) return null;
-  const start = new Date(startdatum);
-  if (Number.isNaN(start.getTime())) return null;
-  const d = new Date(start);
-  d.setDate(d.getDate() - 14);
-  return DAGMANAD_LANG.format(d);
-}
-
-/**
- * Fyller mallens platshållare för EN mottagare och rapporterar vad som inte
- * gick att fylla. Ofyllda lämnas orörda i texten — se blockets docblock.
- */
-function fyllPlatshallare(
-  mall: string,
-  reg: Registration | undefined,
-  event: Event | undefined,
-): { text: string; ofyllda: string[] } {
-  const varden: Record<string, string | null | undefined> = {
-    förnamn: reg?.fornamn,
-    event: event?.eventNamn ?? event?.eventlabel,
-    datum: dagManad(event?.startdatum),
-    ort: event?.ort,
-    deadline: deadlineDatum(event?.startdatum),
-  };
-
-  const ofyllda: string[] = [];
-  const text = mall.replace(/\{([a-zåäöA-ZÅÄÖ]+)\}/g, (traff, nyckel: string) => {
-    const varde = varden[nyckel];
-    if (varde == null || varde === '') {
-      if (!ofyllda.includes(traff)) ofyllda.push(traff);
-      return traff;
-    }
-    return varde;
-  });
-
-  return { text, ofyllda };
-}
-
-/** Det som bärs över till gransknings-vyn — hela utskicket, fruset vid klicket. */
-type Granskning = {
-  atgard: AtgardsTyp;
-  amne: string;
-  text: string;
-  bilagor: string[];
-};
 
 /* ================================================================== *
  * DELTAGARKORTET — samma kort Lotta MARKERADE på eventdetaljen.
@@ -570,7 +455,6 @@ type Granskning = {
  * hela kortet en kryssruta, och det är precis det läget den här sidan bär.
  * ================================================================== */
 
-const DAGMANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
 const KLOCKSLAG = new Intl.DateTimeFormat('sv-SE', { hour: '2-digit', minute: '2-digit' });
 
 /** Bekräftad ⟺ basens Status har lämnat 'Obekräftad' (ORDLISTA; S73 K53). */
@@ -600,19 +484,15 @@ const KATEGORI_PILL: Partial<Record<DeltagarKategori, string>> = {
   vantelista: 'Från väntelistan',
 };
 
-/** Dag + månad ur en ISO-tidsstämpel ('26 juni'); null/ogiltigt → null. */
-function dagManad(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? null : DAGMANAD.format(d);
-}
+/* `dagManad` FLYTTAD [TASK-241.2] till `./atgardsmallar` (importerad ovan,
+   samma `DAG_MANAD_FORMAT`-instans som `anmaldText` nedan återanvänder). */
 
 /** "Anmäld 1 juli 09:00" på EN rad (K45); saknad tidsstämpel ⇒ raden uteblir. */
 function anmaldText(reg: Registration): string | null {
   if (!reg.inskickad) return null;
   const d = new Date(reg.inskickad);
   if (Number.isNaN(d.getTime())) return null;
-  return `Anmäld ${DAGMANAD.format(d)} ${KLOCKSLAG.format(d)}`;
+  return `Anmäld ${DAG_MANAD_FORMAT.format(d)} ${KLOCKSLAG.format(d)}`;
 }
 
 /** SENASTE påminnelsen över basens tre parallella tidsstämplar (T16 enar dem). */

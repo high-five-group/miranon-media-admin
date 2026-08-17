@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react';
+import { type CSSProperties, useMemo, useState } from 'react';
 import { useAuth } from '@/auth/useAuth';
+import { Modal } from '@/components/primitives';
+import { SvepOverlay } from '@/components/svep/SvepOverlay';
+import { bekraftelsesvepUrval } from '@/components/svep/svep-urval';
 import { Bevakningsrad } from './Bevakningsrad';
 import { ForfallnaBetalningar } from './ForfallnaBetalningar';
 import { Genvagar } from './Genvagar';
@@ -16,6 +19,27 @@ import { NastaEvent } from './NastaEvent';
 import { NyaAnmalningar } from './NyaAnmalningar';
 import { SenasteAktivitetKompakt } from './SenasteAktivitetKompakt';
 import { useDashboardEvents, useDashboardRegistrations } from './useDashboardData';
+
+/**
+ * [TASK-241.2] Sändytans Modal-inramning — SAMMA scrim/bredd/övergångs-
+ * klasser prototypens dev-route (`dev/svep-prototyp.tsx`) bar, flyttade hit
+ * eftersom `Hem` (inte en dev-route) nu är den yta som öppnar sändytan
+ * (ADR-114 Del 10 beslut 1: "handlingar påbörjas OCH slutförs utan att
+ * Lotta lämnar Hem"). Se `SvepOverlay.tsx`s docblock för hela
+ * ansvarsfördelningen mellan denna fil och den.
+ *
+ * SCRIMMEN: husets delade scrim (`color-mix(in srgb, var(--mm-text) 50%,
+ * transparent)`, ingen blur) är avvägd för husets små formulärdialoger —
+ * under en yta som täcker halva skärmen blir den en tung gråmassa. Lokal
+ * override via `style` (går genom `Modal`s `...props` till `ModalOverlay`,
+ * exakt elementet som konsumerar variabeln) — samma formel, lägre täckning,
+ * plus lätt blur. Husets globala token är ORÖRD; ändring där hade träffat
+ * varenda dialog i appen, utanför denna skivas scope.
+ */
+const SVEP_SCRIM: CSSProperties = {
+  '--mm-dialog-overlay-bg': 'color-mix(in srgb, var(--mm-text) 32%, transparent)',
+  backdropFilter: 'blur(3px)',
+} as CSSProperties;
 
 /**
  * Hem — Morgonkollen, V1 "Lugna morgonen" (TASK-243.1, promoverad ur
@@ -128,6 +152,16 @@ export function Hem() {
     [eventsQuery.data, registrationsQuery.data, idagStart],
   );
 
+  /* [TASK-241.2] Bekräftelsesvepets sändyta — Hem PEKAR, svepet SKICKAR
+     (ADR-114 beslut 1). `svepOppen` styr overlayen; urvalet är SAMMA
+     urvalskälla som räknaren ovan (`anmalningar`/`obekraftadeAnmalningar`),
+     bara omgrupperat per event (`bekraftelsesvepUrval`, AC #2). */
+  const [svepOppen, setSvepOppen] = useState(false);
+  const bekraftelseGrupper = useMemo(
+    () => bekraftelsesvepUrval(registrationsQuery.data, evMap),
+    [registrationsQuery.data, evMap],
+  );
+
   const idagLangt = useMemo(
     () =>
       kapitalisera(
@@ -139,47 +173,75 @@ export function Hem() {
   );
 
   return (
-    <section className="flex min-w-0 flex-col gap-12 py-6 pt-10 pb-24 sm:py-8 lg:pt-16">
-      {/* 1. FRI HÄLSNING — ingen platta, stor redaktionell rubrik + en varm
-          dagsrad. h1 = sidans rubrik (ingen separat "Hem"-rubrik). */}
-      <div className="flex flex-col gap-2">
-        <p className="text-body text-text-secondary">{idagLangt}</p>
-        <h1 className="font-semibold text-4xl tracking-tight lg:text-5xl">
-          {namn ? `Hej ${namn}` : 'Hej'}
-        </h1>
-      </div>
+    <>
+      <section className="flex min-w-0 flex-col gap-12 py-6 pt-10 pb-24 sm:py-8 lg:pt-16">
+        {/* 1. FRI HÄLSNING — ingen platta, stor redaktionell rubrik + en varm
+            dagsrad. h1 = sidans rubrik (ingen separat "Hem"-rubrik). */}
+        <div className="flex flex-col gap-2">
+          <p className="text-body text-text-secondary">{idagLangt}</p>
+          <h1 className="font-semibold text-4xl tracking-tight lg:text-5xl">
+            {namn ? `Hej ${namn}` : 'Hej'}
+          </h1>
+        </div>
 
-      {/* 2. NÄSTA EVENT — fullbredd, hero-ton. */}
-      <NastaEvent eventsQuery={eventsQuery} nasta={nasta} idagStart={idagStart} />
+        {/* 2. NÄSTA EVENT — fullbredd, hero-ton. */}
+        <NastaEvent eventsQuery={eventsQuery} nasta={nasta} idagStart={idagStart} />
 
-      {/* BEVAKNINGSRAD — mellan "Nästa event" och "Nya anmälningar"
-          (Marcus-låst blockordning); helt osynlig vid noll träffar. */}
-      <Bevakningsrad rader={bevakningRader} />
+        {/* BEVAKNINGSRAD — mellan "Nästa event" och "Nya anmälningar"
+            (Marcus-låst blockordning); helt osynlig vid noll träffar. */}
+        <Bevakningsrad rader={bevakningRader} />
 
-      {/* 3. NYA ANMÄLNINGAR */}
-      <NyaAnmalningar
-        anmalDataPending={anmalDataPending}
-        regsError={regsError}
-        registrationsQuery={registrationsQuery}
-        anmalningar={anmalningar}
-        nuMs={nuMs}
-      />
+        {/* 3. NYA ANMÄLNINGAR */}
+        <NyaAnmalningar
+          anmalDataPending={anmalDataPending}
+          regsError={regsError}
+          registrationsQuery={registrationsQuery}
+          anmalningar={anmalningar}
+          nuMs={nuMs}
+          onBekraftaAlla={() => setSvepOppen(true)}
+        />
 
-      {/* 4. FÖRFALLNA BETALNINGAR */}
-      <ForfallnaBetalningar
-        anmalDataPending={anmalDataPending}
-        regsError={regsError}
-        registrationsQuery={registrationsQuery}
-        forfallna={forfallna}
-        nuMs={nuMs}
-      />
+        {/* 4. FÖRFALLNA BETALNINGAR */}
+        <ForfallnaBetalningar
+          anmalDataPending={anmalDataPending}
+          regsError={regsError}
+          registrationsQuery={registrationsQuery}
+          forfallna={forfallna}
+          nuMs={nuMs}
+        />
 
-      {/* 5. GENVÄGAR */}
-      <Genvagar />
+        {/* 5. GENVÄGAR */}
+        <Genvagar />
 
-      {/* 6. SENASTE AKTIVITET — kompakt, alla bredder. */}
-      <SenasteAktivitetKompakt />
-    </section>
+        {/* 6. SENASTE AKTIVITET — kompakt, alla bredder. */}
+        <SenasteAktivitetKompakt />
+      </section>
+
+      {/* SÄNDYTAN — se `SvepOverlay.tsx`s docblock för varför Modal-ansvaret
+          bor här och inte i komponenten. `svepOppen && <SvepOverlay/>` (INTE
+          en `isOpen`-prop på SvepOverlay självt) speglar prototypens
+          `{svepTyp && <SvepOverlay/>}`: overlayen UNMOUNTAS helt vid stängning,
+          så `armerad`/testmail-state aldrig läcker in i nästa öppning. */}
+      <Modal
+        isOpen={svepOppen}
+        isDismissable
+        style={SVEP_SCRIM}
+        // Scrollen bor på Dialogens body (se `SvepOverlay`s docblock), så
+        // `Modal` självt får inte scrolla.
+        className="w-[min(94vw,40rem)] overflow-hidden duration-300 data-[entering]:scale-[0.98] data-[exiting]:scale-[0.98]"
+        onOpenChange={(open) => {
+          if (!open) setSvepOppen(false);
+        }}
+      >
+        {svepOppen && (
+          <SvepOverlay
+            svepTyp="bekraftelse"
+            eventGrupper={bekraftelseGrupper}
+            onClose={() => setSvepOppen(false)}
+          />
+        )}
+      </Modal>
+    </>
   );
 }
 
