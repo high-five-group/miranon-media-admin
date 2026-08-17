@@ -1,0 +1,35 @@
+- heading "Utskick" [level=1]
+- paragraph: RIM 1 + RIM 2
+- paragraph:
+  - text: Utskick till
+  - strong: "2"
+  - text: personer.
+- alert:
+  - strong: Några kommer inte fram
+  - paragraph: 1 har tackat nej till utskick.
+  - paragraph: Servern tar bort dem - de räknas inte som skickade.
+- region "Publiken":
+  - heading "Publiken" [level=2]
+  - radiogroup "Visa i publiken":
+    - radio "Alla" [checked]
+    - radio "Får mailet"
+    - radio "Får inte mailet"
+  - list "Personer i publiken":
+    - listitem: Cecilia Cederqvist cecilia.cederqvist@example.se
+    - listitem: David Dahl Tackat nej till utskick david.dahl@example.se
+- region "Utskicket":
+  - heading "Utskicket" [level=2]
+  - text: Ämne
+  - textbox "Ämne":
+    - /placeholder: Ämnesraden mottagaren ser
+  - text: Meddelande
+  - textbox "Meddelande": "Hej {förnamn}, Varmt hälsat Roger och Lotta"
+  - text: Förhandsvisningsexempel - som Cecilia Cederqvist får det Ämne -
+  - paragraph: Hej Cecilia, Varmt hälsat Roger och Lotta
+  - text: Testmail
+  - button "Skicka till min inkorg"
+- text: Skriv antalet mottagare (2) för att låsa upp utskicket.
+- textbox "Skriv antalet mottagare (2) för att låsa upp utskicket."
+- paragraph
+- button "Skicka till 2 personer" [disabled]
+- button "Tillbaka"

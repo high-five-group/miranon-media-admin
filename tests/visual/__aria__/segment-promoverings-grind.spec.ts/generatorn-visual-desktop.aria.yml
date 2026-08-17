@@ -1,0 +1,28 @@
+- heading "Dela upp i grupper" [level=1]
+- paragraph: "Vill du skriva olika mail till olika delar av publiken? Här delas den upp åt dig: var och en hamnar i exakt en grupp och får exakt ett mail."
+- 'region "Steg 1: Vilka räknas med?"':
+  - 'heading "Steg 1: Vilka räknas med?" [level=2]'
+  - radiogroup "Räknas med":
+    - radio "De som gått utbildningar" [checked]
+    - text: De som gått utbildningar
+    - radio "De som varit på föreläsningar"
+    - text: De som varit på föreläsningar
+    - radio "Båda"
+    - text: Båda
+- 'region "Steg 2: Vilka utbildningar ska publiken delas upp efter?"':
+  - 'heading "Steg 2: Vilka utbildningar ska publiken delas upp efter?" [level=2]'
+  - group "Utbildningar":
+    - text: ""
+    - button "Fjärrskådning"
+    - button "RIM 1" [pressed]
+    - button "RIM 2" [pressed]
+    - button "Psionautics"
+- 'region "Steg 3: Det här blir grupperna"':
+  - 'heading "Steg 3: Det här blir grupperna" [level=2]'
+  - paragraph: 3 grupper skapas · 6 personer får en grupp
+  - list:
+    - listitem: RIM 1 Har bara gått RIM 1 - inte RIM 2. 3 personer
+    - listitem: RIM 2 Har bara gått RIM 2 - inte RIM 1. 1 person
+    - listitem: RIM 1 + RIM 2 Har gått alla två utbildningarna. 2 personer
+  - button "Skapa 3 segment"
+- button "Avbryt"

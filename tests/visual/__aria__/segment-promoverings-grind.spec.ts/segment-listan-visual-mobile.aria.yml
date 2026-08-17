@@ -1,0 +1,47 @@
+- button "Nytt segment"
+- button "Dela upp i grupper"
+- button "Markera"
+- button "Visa täckning"
+- list:
+  - listitem:
+    - button "RIM 1"
+    - text: Har bara gått RIM 1 - ingen av de andra tre utbildningarna. 2 personer
+  - listitem:
+    - button "Fjärrskådning"
+    - text: Har bara gått Fjärrskådning - ingen av de andra tre utbildningarna. 1 person
+  - listitem:
+    - button "Psionautics"
+    - text: Har bara gått Psionautics - ingen av de andra tre utbildningarna. 1 person
+  - listitem:
+    - button "RIM 1 + RIM 2"
+    - text: Har gått både RIM 1 och RIM 2 - men ingen av de andra två utbildningarna. 2 personer
+  - listitem:
+    - button "Fjärrskådning + RIM 1"
+    - text: Har gått både Fjärrskådning och RIM 1 - men ingen av de andra två utbildningarna. 1 person
+  - listitem:
+    - button "Fjärrskådning + RIM 1 + RIM 2"
+    - text: Har gått Fjärrskådning, RIM 1 och RIM 2 - men inte Psionautics. 0 personer ännu
+  - listitem:
+    - button "Fjärrskådning + RIM 1 + RIM 2 + Psionautics"
+    - text: Har gått alla fyra utbildningarna. 0 personer ännu
+  - listitem:
+    - button "RIM 1 + Psionautics"
+    - text: Har gått både RIM 1 och Psionautics - men ingen av de andra två utbildningarna. 0 personer ännu
+  - listitem:
+    - button "RIM 1 + RIM 2 + Psionautics"
+    - text: Har gått RIM 1, RIM 2 och Psionautics - men inte Fjärrskådning. 0 personer ännu
+  - listitem:
+    - button "Fjärrskådning + RIM 1 + Psionautics"
+    - text: Har gått Fjärrskådning, RIM 1 och Psionautics - men inte RIM 2. 0 personer ännu
+  - listitem:
+    - button "Fjärrskådning + Psionautics"
+    - text: Har gått både Fjärrskådning och Psionautics - men ingen av de andra två utbildningarna. 0 personer ännu
+  - listitem:
+    - button "RIM 2"
+    - text: Har bara gått RIM 2 - ingen av de andra tre utbildningarna. 1 person
+  - listitem:
+    - button "RIM 2 + Psionautics"
+    - text: Har gått både RIM 2 och Psionautics - men ingen av de andra två utbildningarna. 0 personer ännu
+  - listitem:
+    - button "Fjärrskådning + RIM 2"
+    - text: Har gått både Fjärrskådning och RIM 2 - men ingen av de andra två utbildningarna. 0 personer ännu
