@@ -15,6 +15,15 @@ verifiering (`git show` mot working tree), rättat i `27303f60` FÖRE push,
 alla grindar omkörda mot rätt HEAD. (2) TASK-214.7:s kort-notes — samma
 mönster i samma skiva, bokfört i commit-meddelandet.
 
+**Tredje instansen (2026-08-16, S102, samma mönster i ett `git mv`-liknande
+läge):** facit-arkivflytten under Morgonkollens landning (`task-243.1`, PR
+**#1426**) bar ett tyst `git add`-pathspec-avbrott — bilagekatalogen flyttades
+till `tasks/sessions/archive/bilagor/s55-hem-konvergens/` och en pathspec
+pekade på den gamla, nu borta sökvägen. Självfångat av orkestreraren i samma
+pass och rättat öppet, tillsammans med en pipe-dold checkout-exitkod
+(`L440`-klassen). Bokfört i sessionsdok S102 Del 14 och buret som
+carry-kandidat genom tre pauser.
+
 **Det generella:** "committen finns och grindarna var gröna" bevisar inte
 att committen BÄR ändringen — grindarna kan ha mätt arbetsträdet medan
 committen bär en delmängd. Post-commit-verifiering av innehåll är den
