@@ -36,6 +36,42 @@ const EVENT_SKOVDE = VISUAL_EVENT_ID;
 const EVENT_GBG = 'recVisualEvent0002';
 const EVENT_VARBERG = 'recVisualEvent0003';
 
+/**
+ * BASDIMENSIONERNA I FIXTUREN (task-255) — `kursfamilj` + `kursniva`.
+ *
+ * KONTRAKTSVAKTENS ANDRA SKARPA FYND, inte en gissning. `TASK-249.4` (commit
+ * `63384db2`) lade AVSIKTLIGT till dimensionerna i läsvägen — `get-events`
+ * och `get-event` läser basfälten `Kursfamilj`/`Kursnivå` via `selectName`
+ * (`string | null`, nyckeln ALLTID närvarande, aldrig utelämnad) — men rörde
+ * inte denna fil. Natten därpå (run `31987759931`, ärende #1483) larmade
+ * vakten `FIXTUREN-BAKOM` på båda endpointsen: `kursfamilj`/`kursniva`
+ * levererades i 86/86 respektive 1/1 skarpa poster och saknades här.
+ *
+ * DÄRFÖR BÄR VARJE EVENT BÅDA NYCKLARNA. Att utelämna dem på ett event vore
+ * fel form: EF:en skickar dem alltid, `null` är dess "ingen känd familj/nivå".
+ *
+ * VÄRDENA SPEGLAR TVÅ SANNINGAR SAMTIDIGT — svarets FORM och DOMÄNEN
+ * (`supabase/functions/_shared/course-dimensions.ts` § `KURS_KARTA`):
+ *
+ * - Skövde (`events[0]`) bär en NIVÅLÖS familj (`Fjärrskådning` → `kursniva`
+ *   `null` per design, inte en lucka). Valet är formstyrt: `EVENT_DETAIL_RESPONSE`
+ *   spreadar just detta event, och skarpa `get-event` bar `kursfamilj: sträng`
+ *   + `kursniva: null` (1/1) i samma mätning.
+ * - Göteborg är en föreläsning utanför kursfamiljerna → båda `null`. Det är
+ *   mappningens ärliga utfall för okänt kursnamn: aldrig en gissad familj.
+ * - Varberg bär en NIVÅBÄRANDE familj (`RIM` → `Nivå 2`), så `kursniva` finns
+ *   i sin sträng-form någonstans i listan.
+ *
+ * Tillsammans ger de tre listprofilen `null | sträng` för BÅDA nycklarna —
+ * exakt vad staging levererade i 86/86 poster. Hade alla tre burit `null`
+ * blivit vakten grön ändå (typjämförelsen hoppar över helt-null-nycklar,
+ * `kontraktsjamforelse.ts` § `ickeNullTyper`) — men då hade fixturen aldrig
+ * prövat sträng-formen. Form-paritet betyder att båda formerna finns, inte
+ * att larmet tystnar.
+ *
+ * INGEN VY LÄSER FÄLTEN (`grep src/`: endast `Event.ts` + `Event.schema.ts`),
+ * så värdena rör inga visuella baselines.
+ */
 /** `get-events`-svaret: kommande utbildning + kommande föreläsning + genomförd. */
 export const EVENTS_RESPONSE = {
   events: [
@@ -59,6 +95,10 @@ export const EVENTS_RESPONSE = {
       antalSlutbetalningFelande: 1,
       status: 'Planerat',
       eventKey: 'Event-41',
+      // Nivålös familj — `kursniva: null` är korrekt per design (KURS_KARTA),
+      // och speglar skarpa get-event (som detaljfixturen nedan spreadar).
+      kursfamilj: 'Fjärrskådning',
+      kursniva: null,
       borOverAntal: 3,
     },
     {
@@ -81,6 +121,10 @@ export const EVENTS_RESPONSE = {
       antalSlutbetalningFelande: 0,
       status: 'Planerat',
       eventKey: 'Event-42',
+      // Föreläsning utanför kursfamiljerna — mappningens ärliga utfall för
+      // okänt kursnamn är `null`, aldrig en gissad familj.
+      kursfamilj: null,
+      kursniva: null,
       borOverAntal: 0,
     },
     {
@@ -103,6 +147,10 @@ export const EVENTS_RESPONSE = {
       antalSlutbetalningFelande: 0,
       status: 'Genomfört',
       eventKey: 'Event-38',
+      // Nivåbärande familj — bär sträng-formen för `kursniva`, så listprofilen
+      // blir `null | sträng` för BÅDA nycklarna (paritet med stagings 86/86).
+      kursfamilj: 'RIM',
+      kursniva: 'Nivå 2',
       borOverAntal: 5,
     },
   ],
