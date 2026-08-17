@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "bl": "bash scripts/backlog-cli.sh",
     "dev": "vite",
     "build": "tsr generate && tsc -b && vite build",
     "build:staging": "npm run build -- --mode staging",

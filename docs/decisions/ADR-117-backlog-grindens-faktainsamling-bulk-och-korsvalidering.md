@@ -147,3 +147,84 @@ riktiga korten.
 
 **Vänta på uppströms-stöd** (AC/DoD i `task list --json`). Rätt på sikt och
 kvarstår som öppen väg i `TASK-250`, men löser ingenting i natt.
+
+## Del 2 — gren-skanningens permanenta form (`TASK-250`)
+
+`TASK-238` löste grindens kvadratik. Gren-skanningen (`check_active_branches`,
+`TASK-93`) är en ANNAN axel: den kostar i VARJE CLI-anrop, av varje agent, hela
+dygnet. Flaggan skyddar exakt en sak — ID-allokeringen i `task create` — och
+allt annat betalar ändå.
+
+**Mätt 2026-08-17** (lugn last, avg 4,68 → 3,23; 43 git-refs varav 24 remote;
+tre körningar per punkt):
+
+| anrop | skanning PÅ | skanning AV | faktor |
+|---|---|---|---|
+| `task list --json` | 7,83 s / 6,61 s | 2,11 s / 1,59 s | ~3,7–4,2× |
+| `task view` | 8,94 s / 7,63 s | 2,76 s / 2,10 s | ~3,2–3,6× |
+
+Under fleet-drift är utfallet värre än en multiplikator: `TASK-238`:s grind
+betalade 164,60 s i EN körning, och S102:s orkestrator-`task edit` dog mot ett
+2-minuterstak medan en parallell agents anrop malde. En `task edit` mättes till
+16,00 s även under lugn last.
+
+### Lösningsrymden prövad mot mätning
+
+- **(a) `check_active_branches` av permanent + annan kollisionsvakt** —
+  FÖRKASTAD. Stänger av skyddet även för `create`, vilket `TASK-250` AC3
+  uttryckligen förbjuder, och kräver att en ny vakt byggs för ett problem som
+  redan har en fungerande lösning.
+- **(b) ROOT_CONFIG-mönstret breddat till standard för alla icke-create-anrop**
+  — FÖRKASTAD I DEN FORMEN. `backlog.config.yml` i projektroten är en **fast,
+  delad** sökväg; två samtidiga anrop i samma träd trampar på varandra.
+  Grinden hanterar det genom att vägra köra om filen finns (fail-closed) —
+  rätt för en grind, oanvändbart för ett vardagskommando i en fleet.
+- **(c) wrapper-skript i `scripts/`** — **VALD**, men implementerad med
+  `BACKLOG_CWD`-isolering i stället för rot-fil-mutation.
+- **(d) uppströms-issue till backlog.md** — kvarstår öppen, löser inget idag.
+
+### Beslut (del 2)
+
+Numreringen fortsätter § Beslut ovan (beslut 6–8).
+
+1. **Beslut 6 — `scripts/backlog-cli.sh` är den permanenta formen**, exponerad som
+   `npm run bl`. Allokerande anrop (`create` någonstans i argumenten) går
+   igenom ORÖRDA med full gren-skanning; allt annat körs mot en isolerad
+   projektrot — en temporär katalog med egen `backlog.config.yml` och en
+   symlänk till repots riktiga `backlog/`, utpekad via CLI:ts `BACKLOG_CWD`.
+
+   Verifierat live 2026-08-17: `config get checkActiveBranches` läser `false`,
+   `task list --json` ger alla 502 riktiga kort **byte-identiskt** med ett rakt
+   anrop, och en `task edit` skriver igenom symlänken till den riktiga
+   kortfilen (prövat mot ett kastbart substrat).
+
+   Formen har **ingen delad muterbar fil**: `backlog/config.yml` rörs aldrig,
+   projektroten lämnas ren, och två samtidiga agenter kan inte kollidera.
+   `backlog config set` används inte — den är mätt förlustfull vid round-trip.
+
+2. **Beslut 7 — fail-safe-riktningen är utskriven:** träffas `create` som ett VÄRDE
+   (`task edit 5 --title create`) går anropet igenom orört. Följden är ett
+   långsammare anrop, aldrig ett oskyddat.
+
+3. **Beslut 8 — sökvägarna i utdatan pekas tillbaka på det riktiga trädet.** CLI:t skriver
+   ut den sökväg det löste igenom, och isolerings-katalogen är borta när
+   anropet returnerat — en läsare som kopierar den får en död sökväg.
+   Omskrivningen sker bara när stdout inte är en terminal, så CLI:ts
+   interaktiva lägen är orörda; exitkoden fångas separat och returneras
+   oförvanskad (`L440`).
+
+### Vad som INTE är mekaniserat, med avsikt
+
+**Adoptionen är en konvention, inte en spärr.** Wrappern finns och är testad,
+men inget hindrar ett direktanrop till binären. En `PreToolUse`-hook som
+avvisar eller skriver om direktanrop vore möjlig — den berör varje agents
+verktygsyta i repot och är därför ett Marcus-beslut, inte något en bygg-agent
+inför på eget bevåg. Bokförd öppet här i stället för att smygas in eller
+utelämnas.
+
+**Bevakningen som FINNS** är wrapperns egen testsvit
+(`scripts/test-backlog-cli.sh`, 16 fall, CI-wirad i `ci.yml`), som prövar i par
+att `create` behåller skanningen (`W1`–`W4`), att övriga anrop isoleras
+(`W5`–`W8`), att `backlog/config.yml` är byte-identisk efteråt (`W9`), att
+projektroten lämnas ren (`W10`), och att exitkoder går igenom oförvanskade
+(`W12`–`W13`).
