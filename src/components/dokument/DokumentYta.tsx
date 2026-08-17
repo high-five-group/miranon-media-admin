@@ -137,10 +137,19 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft, Download, Eye, FileText, Loader2, Upload } from 'lucide-react';
+import {
+  ChevronLeft,
+  Download,
+  ExternalLink,
+  Loader2,
+  Replace,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
+import { stegEtikett } from '@/components/dokument/nivaSprak';
 import { RackviddBadge } from '@/components/dokument/RackviddBadge';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
@@ -493,7 +502,11 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
       : null;
 
   return (
-    <span className="flex flex-col items-end gap-1.5 self-center">
+    // VÄNSTERSTÄLLD, inte högerställd: knapparna står numera i radens egen
+    // informationskolumn (namn → knappar → räckvidd → datum, Marcus
+    // strukturfynd 2026-08-17), inte i en högermarginal. `items-end` hade
+    // dragit dem till kolumnens högra kant, ut ur läsflödet.
+    <span className="flex flex-col items-start gap-1.5">
       <span className="flex items-center gap-1">
         <Button
           intent="primary"
@@ -520,7 +533,14 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
           {forhandsvisaMutation.isPending ? (
             <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
           ) : (
-            <Eye aria-hidden="true" size={18} />
+            // `ExternalLink`, inte `Eye` (Marcus: "previewikonen är ful").
+            // Bytet är inte bara kosmetiskt — det är ÄRLIGARE: knappen öppnar
+            // dokumentet i en NY FLIK (`window.open` i onPress nedan), den
+            // visar det inte inline. Ögat lovar en förhandsvisning på plats
+            // som aldrig kommer; pilen-ur-rutan säger vad som faktiskt
+            // händer, och skiljer sig dessutom tydligare från nedladdnings-
+            // pilen bredvid än ett öga gör.
+            <ExternalLink aria-hidden="true" size={18} />
           )}
         </Button>
         <Button
@@ -588,16 +608,17 @@ function BilageRadRow({
   const gemensam = arGemensam(current.rackvidd);
   return (
     <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
-      <FileText aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-text-muted" />
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span className="break-words font-medium text-body">{current.namn}</span>
-          <RackviddBadge
-            rackvidd={current.rackvidd}
-            kursfamilj={current.kursfamilj}
-            kursniva={current.kursniva}
-          />
-        </span>
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+        <span className="break-words font-medium text-body">{current.namn}</span>
+        <DokumentAtgardsKnappar
+          namn={current.namn}
+          kalla={{ typ: 'bilaga', eventId, attachmentId: current.id }}
+        />
+        <RackviddBadge
+          rackvidd={current.rackvidd}
+          kursfamilj={current.kursfamilj}
+          kursniva={current.kursniva}
+        />
         <MetaRad
           delar={[
             // [TASK-147.12] Verklig klass — se filens docblock (Fynd 1).
@@ -615,12 +636,8 @@ function BilageRadRow({
           </span>
         )}
       </span>
-      <span className="flex shrink-0 items-center gap-2 self-center">
-        <DokumentAtgardsKnappar
-          namn={current.namn}
-          kalla={{ typ: 'bilaga', eventId, attachmentId: current.id }}
-        />
-        {!gemensam && (
+      {!gemensam && (
+        <span className="flex shrink-0 items-center gap-1">
           <FileTrigger
             acceptedFileTypes={['application/pdf']}
             onSelect={(files) =>
@@ -631,12 +648,24 @@ function BilageRadRow({
               })
             }
           >
-            <Button intent="ghost" size="sm" isDisabled={ersatterDennaRaden}>
-              {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
+            <Button
+              intent="secondary"
+              size="sm"
+              className="size-11 shrink-0 p-0"
+              isDisabled={ersatterDennaRaden}
+              aria-label={
+                ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
+              }
+            >
+              {ersatterDennaRaden ? (
+                <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+              ) : (
+                <Replace aria-hidden="true" size={18} />
+              )}
             </Button>
           </FileTrigger>
-        )}
-      </span>
+        </span>
+      )}
     </div>
   );
 }
@@ -840,13 +869,27 @@ function UppladdningsFlode({
   );
   const [kursfamilj, setKursfamilj] = useState<string | null>(null);
   const [kursniva, setKursniva] = useState<string | null>(null);
+  const blockRubrikId = useId();
 
   const kursfamiljHarNivaer = kursfamilj != null && KURSFAMILJ_MED_NIVAER.has(kursfamilj);
   const scopeGiltig = rackvidd !== AttachmentScope.KURSTYP || kursfamilj != null;
 
   return (
-    <div className="flex flex-col gap-3">
-      <StegSektion nummer={1} rubrik="Vad ska filen gälla?">
+    // BLOCKET HAR EN EGEN RUBRIK (Marcus: "Wizarden måste ju ha en egen
+    // rubrik eller eget block liksom, typ 'Ladda upp filer'. Det ser inte
+    // riktigt lika snyggt ut som på segmentsidan"). Skillnaden mot
+    // segmentsidan var att DEN har en `<h1>` direkt ovanför sina steg —
+    // stegen stod aldrig rubriklösa. Här saknades det ledet helt: stegen
+    // hängde under en lista utan att något sa vad de tillsammans ÄR.
+    //
+    // Rubriken är `<h2>` under sidans `<h1>Dokument`, och stegen går därför
+    // ner till `<h3>` (`rubrikNiva`) — annars hade blockrubriken blivit
+    // syskon till sina egna steg i rubrikordningen.
+    <section aria-labelledby={blockRubrikId} className="flex flex-col gap-3">
+      <h2 id={blockRubrikId} className="font-semibold text-lg">
+        Ladda upp filer
+      </h2>
+      <StegSektion nummer={1} rubrikNiva={3} rubrik="Vad ska filen gälla?">
         <RadioGroup
           label="Räckvidd"
           orientation="horizontal"
@@ -896,15 +939,18 @@ function UppladdningsFlode({
             </Select>
             {kursfamiljHarNivaer && (
               <Select
-                label="Nivå"
-                placeholder="Alla nivåer"
+                label="Steg"
+                placeholder="Alla steg"
                 selectedKey={kursniva}
                 onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
                 className="sm:max-w-56"
               >
+                {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
+                    ('Steg 1'). Det som skickas till EF:en är därför
+                    oförändrat — se nivaSprak.ts. */}
                 {KURSNIVA_VALUES.map((v) => (
                   <SelectItem key={v} id={v}>
-                    {v}
+                    {stegEtikett(v)}
                   </SelectItem>
                 ))}
               </Select>
@@ -915,6 +961,7 @@ function UppladdningsFlode({
 
       <StegSektion
         nummer={2}
+        rubrikNiva={3}
         rubrik="Välj fil"
         vilar={scopeGiltig ? undefined : 'Välj en familj i steget ovan först.'}
       >
@@ -939,7 +986,7 @@ function UppladdningsFlode({
           </FileTrigger>
         </div>
       </StegSektion>
-    </div>
+    </section>
   );
 }
 
@@ -1053,16 +1100,17 @@ function GemensamBilageRadRow({
     deleteMutation.isPending && deleteMutation.variables?.attachmentId === current.id;
   return (
     <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
-      <FileText aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-text-muted" />
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span className="break-words font-medium text-body">{current.namn}</span>
-          <RackviddBadge
-            rackvidd={current.rackvidd}
-            kursfamilj={current.kursfamilj}
-            kursniva={current.kursniva}
-          />
-        </span>
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+        <span className="break-words font-medium text-body">{current.namn}</span>
+        <DokumentAtgardsKnappar
+          namn={current.namn}
+          kalla={{ typ: 'bilaga', eventId: null, attachmentId: current.id }}
+        />
+        <RackviddBadge
+          rackvidd={current.rackvidd}
+          kursfamilj={current.kursfamilj}
+          kursniva={current.kursniva}
+        />
         <MetaRad
           delar={[
             `Klass: ${current.dokumentklass ?? 'Okänd'}`,
@@ -1076,11 +1124,24 @@ function GemensamBilageRadRow({
           </span>
         )}
       </span>
-      <span className="flex shrink-0 items-center gap-2 self-center">
-        <DokumentAtgardsKnappar
-          namn={current.namn}
-          kalla={{ typ: 'bilaga', eventId: null, attachmentId: current.id }}
-        />
+      {/* HANDLINGSKOLUMNEN — de MUTERANDE handlingarna, skilda från radens
+          egen informationskolumn. Ersätt och Radera ändrar beståndet;
+          förhandsvisa och ladda ner gör det inte, och de bor därför kvar i
+          informationskolumnen ovan. Separationen är avsiktlig: den gör att
+          ingen når Radera på väg mot Ladda ner.
+
+          FÄRGTONINGEN BÄR SAMMA SKILLNAD (Marcus: "rödtoning på radera och
+          gul eller grå på ersätt"). Vi har ingen gul intent — paletten bär
+          primary/secondary/danger/success/ghost — så Ersätt får `secondary`
+          (neutral, ritad kant) och Radera `danger`+`subtle` (röd tonad
+          platta). Båda är husets egna former, ingen ny uppfinning.
+
+          INGEN `ghost` HÄR. Samma skäl som ikonparets docblock stavar ut:
+          `ghost`s hover-token ÄR `bg-bg-muted`, vilket är radgruppens egen
+          bakgrund — hovern hade varit osynlig. Knapparna bar `ghost` fram
+          till detta varv och hade alltså samma latenta defekt som Visa-
+          knappen en gång hade. */}
+      <span className="flex shrink-0 items-center gap-1">
         <FileTrigger
           acceptedFileTypes={['application/pdf']}
           onSelect={(files) =>
@@ -1091,17 +1152,36 @@ function GemensamBilageRadRow({
             })
           }
         >
-          <Button intent="ghost" size="sm" isDisabled={ersatterDennaRaden}>
-            {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
+          <Button
+            intent="secondary"
+            size="sm"
+            className="size-11 shrink-0 p-0"
+            isDisabled={ersatterDennaRaden}
+            aria-label={
+              ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
+            }
+          >
+            {ersatterDennaRaden ? (
+              <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+            ) : (
+              <Replace aria-hidden="true" size={18} />
+            )}
           </Button>
         </FileTrigger>
         <Button
-          intent="ghost"
+          intent="danger"
+          emphasis="subtle"
           size="sm"
+          className="size-11 shrink-0 p-0"
           isDisabled={raderarDennaRaden}
+          aria-label={raderarDennaRaden ? `Raderar ${current.namn} …` : `Radera ${current.namn}`}
           onPress={() => onDelete(current.id, current.namn)}
         >
-          {raderarDennaRaden ? 'Raderar…' : 'Radera'}
+          {raderarDennaRaden ? (
+            <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+          ) : (
+            <Trash2 aria-hidden="true" size={18} />
+          )}
         </Button>
       </span>
     </div>

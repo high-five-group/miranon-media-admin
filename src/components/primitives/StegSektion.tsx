@@ -59,12 +59,25 @@ import { useId } from 'react';
 export function StegSektion({
   nummer,
   rubrik,
+  rubrikNiva = 2,
   vilar,
   dampad,
   children,
 }: {
   nummer: number;
   rubrik: string;
+  /**
+   * Rubrikens nivå i dokumentets överskriftsordning. Default 2 — formen
+   * föddes direkt under en sidrubrik (`<h1>`) i segment-byggaren.
+   *
+   * Ligger stegen i stället under en egen blockrubrik ("Ladda upp filer" på
+   * Dokument-ytan) måste de gå ett steg ner, annars hoppar ordningen från
+   * `h2` till `h2` och blockrubriken blir syskon till sina egna steg — en
+   * äkta a11y-defekt (WCAG 1.3.1), inte en formalitet. Skärmläsarens
+   * rubrikhopp är hur en van användare navigerar en sida; en trasig ordning
+   * gör innehållet plattare än det är.
+   */
+  rubrikNiva?: 2 | 3;
   /** Satt när steget ännu inte är åtkomligt — ledtexten ersätter `children`. */
   vilar?: string;
   /**
@@ -78,12 +91,16 @@ export function StegSektion({
 }) {
   const id = useId();
   const aktiv = vilar === undefined && !dampad;
+  // Elementet väljs av nivån, men den VISUELLA formen är oförändrad —
+  // `text-lg` bärs av klassen, inte av taggens egen default. Ett steg ska se
+  // likadant ut oavsett var i rubrikordningen det råkar sitta.
+  const Rubrik = rubrikNiva === 3 ? 'h3' : 'h2';
   return (
     <section
       aria-labelledby={id}
       className="flex min-w-0 flex-col gap-3 rounded-2xl border border-border bg-surface p-4"
     >
-      <h2 id={id} className="flex items-start gap-2.5 font-semibold text-lg">
+      <Rubrik id={id} className="flex items-start gap-2.5 font-semibold text-lg">
         <span
           aria-hidden="true"
           className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small ${
@@ -94,7 +111,7 @@ export function StegSektion({
         </span>
         <span className="sr-only">Steg {nummer}: </span>
         <span className={`min-w-0 ${aktiv ? '' : 'text-text-muted'}`}>{rubrik}</span>
-      </h2>
+      </Rubrik>
       {vilar === undefined ? children : <p className="text-small text-text-muted">{vilar}</p>}
     </section>
   );

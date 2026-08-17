@@ -16,7 +16,7 @@ import { expect, test } from './support/acceptance-bas';
  *
  * TÄCKNING:
  *   AC #1 — uppladdningsflödet bär räckviddsval (radio: Detta event/En
- *     familj/Alla event; familj-läget visar Familj-select + Nivå-select
+ *     familj/Alla event; familj-läget visar Familj-select + Steg-select
  *     BARA för en nivåbärande familj, RIM).
  *
  *   UI-SPRÅKET BYTTE VID S107 QA-VANDRINGEN, VÄRDENA GJORDE DET INTE.
@@ -115,18 +115,23 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // i stället (samma etablerade repo-mönster).
     await enKurstyp.locator('xpath=ancestor::label[1]').click();
     await expect(page.getByLabel('Familj', { exact: true })).toBeVisible();
-    // Nivå-selecten syns INTE förrän en nivåbärande familj är vald.
-    await expect(page.getByLabel('Nivå', { exact: true })).toHaveCount(0);
+    // Steg-selecten syns INTE förrän en nivåbärande familj är vald.
+    await expect(page.getByLabel('Steg', { exact: true })).toHaveCount(0);
 
     await page.getByLabel('Familj', { exact: true }).click();
     await page.getByRole('option', { name: 'RIM', exact: true }).click();
-    await expect(page.getByLabel('Nivå', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Steg', { exact: true })).toBeVisible();
 
-    // Byte till en nivålös familj (Fjärrskådning) döljer Nivå-selecten
+    // Byte till en nivålös familj (Fjärrskådning) döljer Steg-selecten
     // igen (ADR-118 beslut 1: nivålösa familjer lämnar alltid nivån tom).
+    //
+    // `exact: true` BÄR VIKT HÄR: wizardens egna sektioner heter
+    // "Steg 1: …"/"Steg 2: …" via aria-labelledby, och en icke-exakt
+    // matchning hade fångat dem i stället för selecten. Se
+    // `src/components/dokument/nivaSprak.ts` för den öppna ord-kollisionen.
     await page.getByLabel('Familj', { exact: true }).click();
     await page.getByRole('option', { name: 'Fjärrskådning', exact: true }).click();
-    await expect(page.getByLabel('Nivå', { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel('Steg', { exact: true })).toHaveCount(0);
   });
 
   test('AC #2: räckviddsläget (utan valt event) visar gemensamma dokument, "Detta event" avstängd', async ({
@@ -156,7 +161,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
       .getByTestId('dokument-fil')
       .filter({ hasText: BILAGA_GEMENSAM.namn });
     await expect(gemensamRadEventlage).toBeVisible();
-    await expect(gemensamRadEventlage.getByText('RIM · alla nivåer')).toBeVisible();
+    await expect(gemensamRadEventlage.getByText('RIM · alla steg')).toBeVisible();
     await expect(gemensamRadEventlage.getByRole('button', { name: 'Ersätt' })).toHaveCount(0);
     await expect(gemensamRadEventlage.getByRole('button', { name: 'Radera' })).toHaveCount(0);
 
