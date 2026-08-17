@@ -30,11 +30,23 @@
 //   15. deny: okänt rackvidd-värde → 400.
 //   16. deny: okänt kursfamilj-värde → 400.
 //
+// TASK-275.3 (ADR-118 beslut 5) tillägg — EVENT-LÖS UPPLADDNING (mönster 1,
+// "allow/deny-testbevis" per DoD-disciplinen):
+//   17. allow: eventId UTELÄMNAD + rackvidd Kurstyp → 201, `Event`-fältet
+//       HELT FRÅNVARANDE i raw record.fields (aldrig en tom länk).
+//   18. allow: eventId UTELÄMNAD + rackvidd Alla event → 201, samma.
+//   19. deny: eventId UTELÄMNAD + rackvidd Event (default, ingen räckvidd
+//       angiven alls) → 400 ("Ogiltigt event-id.") — en event-specifik
+//       bilaga utan event är en kontradiktion, inte ett läge.
+//
 // SENTINEL: filnamnet bär en per-körning-unik markör
 // (`ZZ-attachment-test-<uuid>.pdf`) → ingen cross-run-kollision. TEARDOWN =
 // setup-purge (ADR-060): .purge-staging-policy.json:s
 // `upload-attachment-sentineler`-target raderar Bilagor-RADEN (bounded
 // ackumulering tolererad, samma mönster som create-event-note-sentineler).
+// De TVÅ event-lösa testerna (17/18) städar SIG SJÄLVA via delete-attachment
+// i räckviddsläge (samma väg get-event-attachments.staging.test.ts redan
+// bevisar) — de skapade raderna behöver aldrig vänta på setup-purgen.
 //
 // STORAGE-BYTESEN SJÄLVA rensas INTE av purge-skriptet (det purgar bara
 // Airtable-rader) — en medveten, öppet bokförd avgränsning: objekten är
@@ -58,12 +70,13 @@ import { BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/upload-attachment';
+const DELETE_ENDPOINT = '/functions/v1/delete-attachment';
 const SMALL_UPLOAD_MAX_BYTES = 6 * 1024 * 1024;
 
 type Attachment = z.infer<typeof AttachmentSchema>;
 
 interface UploadBody {
-  eventId?: string;
+  eventId?: string | null;
   filnamn?: string;
   contentType?: string;
   bytesBase64?: string;
@@ -382,5 +395,97 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
       kursfamilj: 'RIM 4',
     });
     expect(res.status()).toBe(400);
+  });
+
+  // TASK-275.3 (ADR-118 beslut 5) — EVENT-LÖS UPPLADDNING (räckviddsläget,
+  // se filhuvudets nya stycke).
+  test('allow: eventId UTELÄMNAD + rackvidd Kurstyp → 201, Event-fältet HELT FRÅNVARANDE', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // `kursfamilj: 'Fjärrskådning'` är MEDVETET VALD (å/ä) — RÖTT-FÖRST-
+    // BELÄGG mot skarp staging (2026-08-17): storage-path-ANKARET
+    // (`buildStorageAnchor`, _shared/attachments.ts) satte tidigare den RÅA
+    // strängen som path-segment, och Supabase Storage-serverns egen
+    // nyckel-validering avvisade den ("Invalid key…") — löst med en
+    // ASCII-slug-tabell (`KURSFAMILJ_SLUG`). Detta test är därför INTE
+    // utbytbart mot ett ASCII-namn (RIM/Psionautics) utan att tappa
+    // regressionsskyddet mot exakt den buggen.
+    const res = await postUpload(request, config, jwt, {
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Kurstyp',
+      kursfamilj: 'Fjärrskådning',
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+
+    expect(body.record.fields.Räckvidd).toBe('Kurstyp');
+    expect(body.record.fields.Kursfamilj).toBe('Fjärrskådning');
+    // Kärnpremissen (TASK-275.3): INGEN `Event`-länk alls, inte en tom lista.
+    expect(body.record.fields.Event).toBeUndefined();
+
+    const attachment = AttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    expect(attachment.eventId).toBeNull();
+
+    // Städar sig själv — räckviddsläge (eventId utelämnad), samma väg
+    // get-event-attachments.staging.test.ts redan bevisar.
+    const delRes = await request.post(`${config.baseUrl}${DELETE_ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      data: { attachmentId: attachment.id },
+    });
+    expect(delRes.status(), await delRes.text()).toBe(200);
+  });
+
+  test('allow: eventId UTELÄMNAD + rackvidd Alla event → 201, Event-fältet HELT FRÅNVARANDE', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Alla event',
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+
+    expect(body.record.fields.Räckvidd).toBe('Alla event');
+    expect(body.record.fields.Event).toBeUndefined();
+
+    const attachment = AttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    expect(attachment.eventId).toBeNull();
+
+    const delRes = await request.post(`${config.baseUrl}${DELETE_ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      data: { attachmentId: attachment.id },
+    });
+    expect(delRes.status(), await delRes.text()).toBe(200);
+  });
+
+  test('deny: eventId UTELÄMNAD + rackvidd Event (default) → 400 — en event-specifik bilaga utan event är en kontradiktion', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // rackvidd UTELÄMNAD OCKSÅ → default 'Event' (AttachmentScopeInputSchema)
+    // — den STRIKTASTE kombinationen, ingen räddande gren.
+    const res = await postUpload(request, config, jwt, {
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(400);
+    const body = JSON.parse(raw) as { error?: string };
+    expect(body.error).toMatch(/event-id/i);
   });
 });

@@ -23,6 +23,13 @@
 //   6. Baslinjen (401/404/405/CORS) — samma fyra icke-lyckade-vägar som
 //      övriga EF:er i denna familj.
 //
+// [TILLÄGG, TASK-275.3, ADR-118 beslut 5] 7. RÄCKVIDDSLÄGET: `eventId`
+//   UTELÄMNAD ⇒ ALLA gemensamma bilagor (oavsett event, INKLUSIVE en
+//   GENUINT event-lös uppladdning) — en Event-räckviddig bilaga är
+//   FRÅNVARANDE. Se filhuvudets tidigare "6 icke-lyckade-vägar"-räkning:
+//   denna testfil bär nu 9 `test()`-fall totalt (8 + detta), inte längre 8
+//   — disk-verifierat (`grep -c '^  test('`), inte en avskriven siffra.
+//
 // Räckviddsparametrarna sätts via upload-attachment (redan bevisad mönster-
 // 1-skrivväg, TASK-275.2 AC #2 — se upload-attachment.staging.test.ts för
 // den validerings-fokuserade sviten; DENNA fil återanvänder skrivvägen
@@ -145,6 +152,20 @@ async function hamtaAttachments(
   eventId: string,
 ): Promise<Attachment[]> {
   const res = await request.get(`${config.baseUrl}${GET_ENDPOINT}?eventId=${eventId}`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  expect(res.status(), await res.text()).toBe(200);
+  const body = (await res.json()) as { attachments: unknown[] };
+  return body.attachments.map((a) => AttachmentSchema.parse(a));
+}
+
+/** [TASK-275.3, ADR-118 beslut 5] Räckviddsläget — ANROPAS UTAN `eventId`. */
+async function hamtaAllaGemensamma(
+  request: APIRequestContext,
+  config: ApiConfig,
+  jwt: string,
+): Promise<Attachment[]> {
+  const res = await request.get(`${config.baseUrl}${GET_ENDPOINT}`, {
     headers: { Authorization: `Bearer ${jwt}` },
   });
   expect(res.status(), await res.text()).toBe(200);
@@ -360,5 +381,55 @@ test.describe('get-event-attachments — union-hämtningen (TASK-275.2, ADR-118 
       data: {},
     });
     expect(res.status()).toBe(405);
+  });
+
+  // TASK-275.3 (ADR-118 beslut 5) — RÄCKVIDDSLÄGET: `eventId` UTELÄMNAD ⇒
+  // ALLA gemensamma bilagor (Kurstyp/Alla event), oavsett event — se
+  // filhuvudets nya stycke.
+  test('eventId UTELÄMNAD (räckviddsläget): ALLA gemensamma bilagor, en Event-räckviddig bilaga är FRÅNVARANDE', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // (a) Event-räckviddig — ska INTE synas i räckviddsläget.
+    const egen = await skapaBilaga(request, config, jwt, BELAGGNING_EVENT_ID);
+    // (b) Kurstyp, GENUINT EVENT-LÖS uppladdning (TASK-275.3) — bevisar
+    //     samtidigt att räckviddsläget listar event-lösa gemensamma bilagor,
+    //     inte bara sådana som råkar bära en Event-länk.
+    const kurstypRes = await request.post(`${config.baseUrl}${UPLOAD_ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      data: {
+        filnamn: sentinelFilnamn(),
+        contentType: 'application/pdf',
+        bytesBase64: buildPseudoPdfBase64(1024),
+        rackvidd: 'Kurstyp',
+        kursfamilj: 'Psionautics',
+      },
+    });
+    expect(kurstypRes.status(), await kurstypRes.text()).toBe(201);
+    const kurstyp = AttachmentSchema.parse((await kurstypRes.json()).attachment).id;
+    // (c) Alla event, MED event (275.2:s väg — ska ändå synas i räckviddsläget).
+    const allaEvent = await skapaBilaga(request, config, jwt, BELAGGNING_EVENT_ID, {
+      rackvidd: 'Alla event',
+    });
+
+    const gemensamma = await hamtaAllaGemensamma(request, config, jwt);
+    const ids = gemensamma.map((a) => a.id);
+
+    expect(ids).not.toContain(egen);
+    expect(ids).toContain(kurstyp);
+    expect(ids).toContain(allaEvent);
+
+    const kurstypTraff = gemensamma.find((a) => a.id === kurstyp);
+    expect(kurstypTraff?.rackvidd).toBe('Kurstyp');
+    expect(kurstypTraff?.kursfamilj).toBe('Psionautics');
+    expect(kurstypTraff?.eventId).toBeNull();
+
+    // Teardown: `egen` i sitt eventkontext (den enda tillåtna vägen för
+    // Event-räckvidd); `kurstyp`/`allaEvent` i räckviddsläge.
+    await raderaIEventkontext(request, config, jwt, BELAGGNING_EVENT_ID, egen);
+    await raderaIRackviddslage(request, config, jwt, kurstyp);
+    await raderaIRackviddslage(request, config, jwt, allaEvent);
   });
 });

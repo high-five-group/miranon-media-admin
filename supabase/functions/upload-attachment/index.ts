@@ -24,26 +24,51 @@
 // [TASK-275.2, ADR-118] RÄCKVIDDSPARAMETRARNA (`rackvidd`/`kursfamilj`/
 // `kursniva`, valfria — default 'Event', dagens beteende oförändrat)
 // valideras STRIKT via `_shared/attachments.ts`s `AttachmentScopeInputSchema`
-// innan `fields` byggs (`buildScopeFields`). `eventId` FÖRBLIR obligatoriskt
-// och `Event: [eventId]` skrivs OAVSETT räckvidd (medveten avgränsning: den
-// bär storage-path-ankaret och den befintliga ägarskaps-mekaniken i delete-
-// attachment/get-attachment-download-url oförändrad; olycksskyddet mot
-// radering ur eventkontext läses av `Räckvidd`, inte av `Event`s satthet —
-// se delete-attachment/index.ts). Ett genuint event-löst uppladdningsläge
-// ("gemensamt läge utan valt event", ADR-118 beslut 5) stöds INTE av denna
-// EF-kontrakt-version — flaggat öppet för task-275.3 (UI-skivan) i stället
-// för att uppfinnas i förväg utan en UI att prova det mot.
+// innan `fields` byggs (`buildScopeFields`). Anges `eventId` skrivs
+// `Event: [eventId]` OAVSETT räckvidd (oförändrat 275.2-beteende: den bär
+// storage-path-ankaret och den befintliga ägarskaps-mekaniken i delete-
+// attachment/get-attachment-download-url; olycksskyddet mot radering ur
+// eventkontext läses av `Räckvidd`, inte av `Event`s satthet — se
+// delete-attachment/index.ts).
+//
+// [UTBYGGD, TASK-275.3, ADR-118 beslut 5] `eventId` ÄR NU VALFRI — men
+// ENDAST för Kurstyp/Alla event (GEMENSAM bilaga). Räckvidd Event kräver
+// FORTFARANDE `eventId` (400 annars — en event-specifik bilaga utan event
+// att specifik-vara-mot är en kontradiktion, inte ett läge). Det här är den
+// "gemensamt läge utan valt event"-uppladdningen (ADR-118 beslut 5,
+// Dokument-ytans räckviddsläge) som 275.2 flaggade öppet som ostödd — löst
+// HÄR, inte gissad i förväg.
+//
+// `Event`-FÄLTET UTELÄMNAS (aldrig satt till en tom länk) när `eventId`
+// saknas — ingen radlänk att peka mot. Storage-path-ANKARET härleds då i
+// stället av `buildStorageAnchor` (_shared/attachments.ts): `kurstyp/
+// <kursfamilj>` respektive den fasta strängen `alla-event` — SAMMA funktion
+// `delete-attachment`/`get-attachment-download-url` läser tillbaka från
+// (via bilagans EGNA fält, inte klient-buret) vid radering/nedladdning, så
+// path-formeln kan aldrig drifta isär mellan skrivning och läsning.
+//
+// MEDVETEN AVGRÄNSNING (bokförd öppet, inte gissad): event-löst stöd gäller
+// BARA mönster 1 (denna EF, filer ≤ SMALL_UPLOAD_MAX_BYTES). Mönster 2
+// (create-attachment-upload-ticket + finalize-attachment-upload) rör INTE
+// denna skiva — `eventId` är FORTFARANDE obligatorisk där. Adaptern
+// (`AirtableAdapter.uploadAttachment`) avvisar därför ett event-löst
+// uppladdningsförsök över gränsen med ett ärligt klientfel INNAN den ens
+// försöker mönster 2 (se dess docblock för resonemanget) — Lottas verkliga
+// dokument (hörlursinfo, meny) är PDF:er på några hundra kB, ordentligt
+// under 6 MB-gränsen, så avgränsningen kostar inget i praktiken.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import {
   ATTACHMENT_CLASS_UPPLADDAD,
+  ATTACHMENT_SCOPE_EVENT,
   AttachmentScopeInputSchema,
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
   buildAttachmentLeaf,
   buildAttachmentPath,
   buildScopeFields,
+  buildStorageAnchor,
   EVENTPLANERING_TABLE,
   formatMB,
   isValidEventId,
@@ -104,14 +129,21 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    const eventId = body?.eventId;
+    const rawEventId = body?.eventId;
     const filnamn = body?.filnamn;
     const contentType = body?.contentType;
     const bytesBase64 = body?.bytesBase64;
 
-    if (!isValidEventId(eventId)) {
+    // [TASK-275.3, ADR-118 beslut 5] `eventId` är VALFRI på KROPPS-nivå —
+    // ANGES den måste den ändå ha rec-formen (ett klientfel oavsett räckvidd).
+    // Om den KRÄVS avgörs nedan, EFTER att räckvidden är känd (se
+    // scopeParsed nedan) — samma tvåstegs-validering som delete-attachment/
+    // index.ts redan etablerar för samma `eventId: string | null`-form.
+    if (rawEventId !== undefined && rawEventId !== null && !isValidEventId(rawEventId)) {
       return badRequest('Ogiltigt event-id.', corsHeaders);
     }
+    const eventId: string | null = typeof rawEventId === 'string' ? rawEventId : null;
+
     if (typeof filnamn !== 'string' || !filnamn.trim()) {
       return badRequest('Filen saknar namn.', corsHeaders);
     }
@@ -137,6 +169,13 @@ Deno.serve(async (req) => {
       );
     }
 
+    // [TASK-275.3, ADR-118 beslut 5] `eventId` KRÄVS fortfarande för räckvidd
+    // Event (en event-specifik bilaga utan event är en kontradiktion) — men
+    // ÄR VALFRI för Kurstyp/Alla event (gemensam bilaga, räckviddsläget).
+    if (eventId === null && scopeParsed.data.rackvidd === ATTACHMENT_SCOPE_EVENT) {
+      return badRequest('Ogiltigt event-id.', corsHeaders);
+    }
+
     const bytes = decodeBase64(bytesBase64);
     if (bytes.length === 0) {
       return badRequest('Filen verkar vara tom.', corsHeaders);
@@ -149,12 +188,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    const eventRecord = await fetchAirtableRecord(EVENTPLANERING_TABLE, eventId);
-    if (!eventRecord) {
-      return new Response(JSON.stringify({ error: 'Eventet hittades inte.' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Eventet FINNS-kontrollen görs bara när ett eventId faktiskt angetts —
+    // en genuint event-lös gemensam uppladdning har inget event att slå upp.
+    if (eventId !== null) {
+      const eventRecord = await fetchAirtableRecord(EVENTPLANERING_TABLE, eventId);
+      if (!eventRecord) {
+        return new Response(JSON.stringify({ error: 'Eventet hittades inte.' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const supabaseAdmin = createClient(
@@ -163,7 +206,21 @@ Deno.serve(async (req) => {
     );
 
     const attachmentId = crypto.randomUUID();
-    const path = buildAttachmentPath(eventId, attachmentId, filnamn);
+    // [TASK-275.3] Ankaret HÄRLEDS — se `buildStorageAnchor`s docblock för de
+    // tre grenarna. `null` är strukturellt ouppnåeligt här: schemat ovan
+    // garanterar redan att (eventId satt) ELLER (rackvidd=Kurstyp+kursfamilj)
+    // ELLER (rackvidd=Alla event) håller — men en explicit 500 (i stället för
+    // att skicka `null` vidare till `buildAttachmentPath` och få en trasig
+    // `null/...`-path) är fail-closed, inte ett tyst antagande.
+    const anchor = buildStorageAnchor({
+      eventId,
+      rackvidd: scopeParsed.data.rackvidd,
+      kursfamilj: scopeParsed.data.kursfamilj ?? null,
+    });
+    if (anchor === null) {
+      throw new HttpError(500, 'Kunde inte härleda lagringsplats för filen.');
+    }
+    const path = buildAttachmentPath(anchor, attachmentId, filnamn);
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from(BILAGOR_BUCKET_ID)
@@ -181,7 +238,10 @@ Deno.serve(async (req) => {
       Namn: filnamn.trim(),
       'Storlek (bytes)': bytes.length,
       Skapad: new Date().toISOString(),
-      Event: [eventId],
+      // [TASK-275.3, ADR-118 beslut 5] `Event` sätts BARA när `eventId` är
+      // känd — UTELÄMNAD (aldrig en tom länk), inte satt, för en genuint
+      // event-lös gemensam uppladdning. Se filhuvudet.
+      ...(eventId !== null ? { Event: [eventId] } : {}),
       // [TASK-147.5] Additivt — den bilage-bärande sändvägen läser detta för
       // att hämta EXAKT rätt Storage-objekt (se _shared/attachments.ts §
       // buildAttachmentLeaf för varför Namn ensamt inte räcker). SAMMA
@@ -193,7 +253,8 @@ Deno.serve(async (req) => {
       // en bokstavlig sträng inline (se field-allowlists.ts § Dokumentklass).
       Dokumentklass: ATTACHMENT_CLASS_UPPLADDAD,
       // [TASK-275.2, ADR-118] Räckvidd (+ Kursfamilj/Kursnivå vid Kurstyp) —
-      // se filhuvudet för varför `Event` ovan förblir satt oavsett räckvidd.
+      // se filhuvudet för varför `Event` ovan förblir satt oavsett räckvidd
+      // NÄR den är känd.
       ...buildScopeFields(scopeParsed.data),
     };
 
@@ -209,7 +270,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[upload-attachment] ALLOW | caller_user_id=${user.id} | event=${eventId} | path=${path} | bytes=${bytes.length} | rackvidd=${scopeParsed.data.rackvidd}`,
+      `[upload-attachment] ALLOW | caller_user_id=${user.id} | event=${eventId ?? '(räckviddsläge)'} | path=${path} | bytes=${bytes.length} | rackvidd=${scopeParsed.data.rackvidd}`,
     );
 
     let created: { id: string; fields: Record<string, unknown>; createdTime: string };

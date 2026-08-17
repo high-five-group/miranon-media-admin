@@ -631,6 +631,21 @@ export class AirtableAdapter implements DataSourceAdapter {
     if (input.file.size <= SMALL_UPLOAD_MAX_BYTES) {
       return this.uploadAttachmentSmall(input);
     }
+    // [TASK-275.3, ADR-118 beslut 5, MEDVETEN AVGRÄNSNING] Mönster 2
+    // (create-attachment-upload-ticket + finalize-attachment-upload) STÖDER
+    // INTE event-lösa uppladdningar — `eventId` är där fortfarande
+    // obligatorisk (se upload-attachment/index.ts § filhuvudet för
+    // avgränsningens fulla resonemang). Ett event-löst försök över
+    // mönster-1-gränsen skulle annars nå EF:en och möta en generisk
+    // "Ogiltigt event-id."-400 — den här kontrollen ger Lotta ett ärligt,
+    // FÖRKLARANDE fel direkt i stället, INNAN nätverksanropet ens görs.
+    if (input.eventId === null) {
+      throw new Error(
+        `"${input.file.name}" (${formatMB(input.file.size)}) är för stor för en gemensam ` +
+          `uppladdning utan valt event (max ${formatMB(SMALL_UPLOAD_MAX_BYTES)}). ` +
+          'Prova en mindre fil, eller ladda upp filen från ett events sida i stället.',
+      );
+    }
     return this.uploadAttachmentLarge(input);
   }
 
@@ -643,6 +658,10 @@ export class AirtableAdapter implements DataSourceAdapter {
   private async uploadAttachmentSmall(input: UploadAttachmentInput): Promise<Attachment> {
     const bytesBase64 = await fileToBase64(input.file);
     const data = await postEdgeFunction<{ attachment: unknown }>('upload-attachment', {
+      // [TASK-275.3, ADR-118 beslut 5] `null` skickas EXPLICIT (aldrig
+      // utelämnad) för en genuint event-lös gemensam uppladdning — samma
+      // "explicit null, aldrig tyst utelämning"-disciplin som
+      // `deleteAttachment` redan etablerar.
       eventId: input.eventId,
       filnamn: input.file.name,
       contentType: input.file.type || 'application/pdf',
@@ -729,6 +748,16 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
+   * Hämta ALLA gemensamma bilagor (TASK-275.3, ADR-118 beslut 5). SAMMA
+   * get-event-attachments-EF, anropad UTAN `eventId`-param — se
+   * `DataSourceAdapter.fetchGemensammaBilagor` för det fulla kontraktet.
+   */
+  async fetchGemensammaBilagor(): Promise<Attachment[]> {
+    const data = await callEdgeFunction<{ attachments: unknown }>('get-event-attachments');
+    return z.array(AttachmentSchema).parse(data.attachments);
+  }
+
+  /**
    * Radera en bilage-post (TASK-147.11). POST mot delete-attachment-EF:en —
    * se `DataSourceAdapter.deleteAttachment` för det fulla kontraktet
    * (ägarskaps-guarden, Storage+Airtable-borttagningen, "Ersätt"-
@@ -752,11 +781,17 @@ export class AirtableAdapter implements DataSourceAdapter {
    * (ADR-026), speglar `fetchEventAttachments`.
    */
   async getAttachmentDownloadUrl(
-    eventId: string,
+    eventId: string | null,
     attachmentId: string,
   ): Promise<AttachmentDownloadUrl> {
+    // [TASK-275.3, ADR-118 beslut 5] `eventId` UTELÄMNAS helt ur query-strängen
+    // när `null` (till skillnad mot POST-kropparnas explicita `null` — GET-
+    // params är alltid strängar, `callEdgeFunction`s `Record<string, string>`-
+    // form har ingen plats för `null`) — get-attachment-download-url/index.ts
+    // läser `URLSearchParams.get('eventId')`, som redan ger `null` för en
+    // UTELÄMNAD nyckel, exakt samma tolkning.
     const data = await callEdgeFunction<unknown>('get-attachment-download-url', {
-      eventId,
+      ...(eventId !== null ? { eventId } : {}),
       attachmentId,
     });
     return AttachmentDownloadUrlSchema.parse(data);

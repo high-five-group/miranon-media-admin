@@ -29,6 +29,23 @@
 // delete-attachment.staging.test.ts/upload-attachment.staging.test.ts bär
 // för samma bevisklass).
 //
+// TASK-275.3 (ADR-118 beslut 5) TILLÄGG — RÄCKVIDDSMEDVETEN GUARD ("testbevis
+// i båda riktningarna", uppdragets egen formulering):
+//   9.  allow: GEMENSAM bilaga (Kurstyp), öppnad UTAN eventId (räckvidds-
+//       läget) → 200 — inget ägarskaps-guard alls för gemensamma bilagor.
+//   10. allow: GEMENSAM bilaga, öppnad från ETT ANNAT (giltigt, orelaterat)
+//       event än det den skapades i → 200 — detta ÄR buggen AC #2 kräver
+//       fixad ("förhandsvisning/nedladdning av ÄRVDA dokument MÅSTE
+//       fungera"; INNAN denna rättning gav samma anrop 403).
+//   11. allow: en GENUINT EVENT-LÖS gemensam bilaga (TASK-275.3s event-lösa
+//       uppladdning, ingen Event-länk alls) → 200, och URL:EN GER FAKTISKT
+//       FILEN (samma åtkomst-bevis som fall 1) — bevisar att path-ANKARET
+//       (`kurstyp/<kursfamilj>`) deriveras IDENTISKT vid uppladdning och
+//       nedladdning, annars 502/tomt svar.
+//   12. REGRESSION: en Event-räckviddig bilaga NEKAS FORTFARANDE (403) från
+//       fel event — samma fall som (2) ovan, bevisar att relaxeringen är
+//       RÄCKVIDDSMEDVETEN, inte en total avstängning av guarden.
+//
 // TÄCKNINGSGRÄNS, ÖPPET BOKFÖRD: EF:ens 409-väg (Bilagor-rad utan
 // `Lagringsnyckel`, pre-TASK-147.5 legacy-data) prövas INTE här — testerna
 // får aldrig Airtable-token (ADR-060) och kan därför inte skapa en rad som
@@ -114,12 +131,14 @@ async function skapaBilaga(
   return AttachmentSchema.parse(body.attachment).id;
 }
 
-/** Rader denna svit skapar städas via delete-attachment — självstädande. */
+/** Rader denna svit skapar städas via delete-attachment — självstädande.
+ * [TASK-275.3] `eventId: null` = räckviddsläge (gemensam bilaga, ADR-118
+ * beslut 3) — samma `string | null`-kontrakt som `deleteAttachment` bär. */
 async function stadaBilaga(
   request: APIRequestContext,
   config: ApiConfig,
   jwt: string,
-  eventId: string,
+  eventId: string | null,
   attachmentId: string,
 ): Promise<void> {
   const res = await request.post(`${config.baseUrl}${DELETE_ENDPOINT}`, {
@@ -253,5 +272,135 @@ test.describe('get-attachment-download-url — skarp conformance (TASK-245)', ()
       data: { eventId: BELAGGNING_EVENT_ID, attachmentId: 'recANY' },
     });
     expect(res.status()).toBe(405);
+  });
+
+  // TASK-275.3 (ADR-118 beslut 5) — RÄCKVIDDSMEDVETEN GUARD, se filhuvudets
+  // TILLÄGG-stycke för fallen 9–12.
+  test('allow: GEMENSAM bilaga (Kurstyp), öppnad UTAN eventId (räckviddsläget) → 200', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const uploadRes = await request.post(`${config.baseUrl}${UPLOAD_ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      data: {
+        eventId: BELAGGNING_EVENT_ID,
+        filnamn: sentinelFilnamn(),
+        contentType: 'application/pdf',
+        bytesBase64: buildPseudoPdfBase64(SENTINEL_BYTES),
+        rackvidd: 'Kurstyp',
+        kursfamilj: 'Fjärrskådning',
+      },
+    });
+    expect(uploadRes.status(), await uploadRes.text()).toBe(201);
+    const attachmentId = AttachmentSchema.parse((await uploadRes.json()).attachment).id;
+
+    try {
+      const res = await getDownloadUrl(request, config, jwt, { attachmentId });
+      const raw = await res.text();
+      expect(res.status(), raw).toBe(200);
+      const body = JSON.parse(raw) as { url?: string };
+      expect(typeof body.url).toBe('string');
+    } finally {
+      await stadaBilaga(request, config, jwt, null, attachmentId);
+    }
+  });
+
+  test('allow: GEMENSAM bilaga öppnad från ETT ANNAT event än den skapades i → 200 (AC #2, ärvda dokument)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    // Skapad i BELAGGNING_EVENT_ID:s kontext (275.2:s "Event förblir satt"-
+    // beteende) men räckvidden är Alla event — ska vara öppningsbar från
+    // ARBETSKO_EVENT_ID (ett HELT ANNAT, orelaterat event) ändå.
+    const uploadRes = await request.post(`${config.baseUrl}${UPLOAD_ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      data: {
+        eventId: BELAGGNING_EVENT_ID,
+        filnamn: sentinelFilnamn(),
+        contentType: 'application/pdf',
+        bytesBase64: buildPseudoPdfBase64(SENTINEL_BYTES),
+        rackvidd: 'Alla event',
+      },
+    });
+    expect(uploadRes.status(), await uploadRes.text()).toBe(201);
+    const attachmentId = AttachmentSchema.parse((await uploadRes.json()).attachment).id;
+
+    try {
+      const res = await getDownloadUrl(request, config, jwt, {
+        eventId: ARBETSKO_EVENT_ID,
+        attachmentId,
+      });
+      const raw = await res.text();
+      expect(res.status(), raw).toBe(200);
+      const body = JSON.parse(raw) as { url?: string };
+      expect(typeof body.url).toBe('string');
+    } finally {
+      // [RÄTTAT, RÖTT-FÖRST-BELÄGG mot skarp staging] Städas i RÄCKVIDDSLÄGE
+      // (eventId UTELÄMNAD) — INTE i sitt eventkontext. Denna kommentar sade
+      // tidigare att bilagan kunde städas via BELAGGNING_EVENT_ID eftersom
+      // den "BÄR fortfarande en Event-länk" — det påståendet är sant men
+      // IRRELEVANT: delete-attachment/index.ts:s auktorisation läser
+      // bilagans `Räckvidd` (Alla event = gemensam), ALDRIG om en `Event`-
+      // länk råkar finnas (se den filens § filhuvud, "AUKTORISATIONEN —
+      // läser bilagans EGEN Räckvidd, ALDRIG Event"). Ett verkligt
+      // testkörning mot staging fällde detta (403 "Gemensamma bilagor kan
+      // bara raderas i sitt räckviddsläge…") innan rättningen.
+      await stadaBilaga(request, config, jwt, null, attachmentId);
+    }
+  });
+
+  test('allow: GENUINT EVENT-LÖS gemensam bilaga → 200, URL:en ger FAKTISKT filen (anker-symmetri upload↔download)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const uploadRes = await request.post(`${config.baseUrl}${UPLOAD_ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      data: {
+        filnamn: sentinelFilnamn(),
+        contentType: 'application/pdf',
+        bytesBase64: buildPseudoPdfBase64(SENTINEL_BYTES),
+        rackvidd: 'Alla event',
+      },
+    });
+    expect(uploadRes.status(), await uploadRes.text()).toBe(201);
+    const attachmentId = AttachmentSchema.parse((await uploadRes.json()).attachment).id;
+
+    try {
+      const res = await getDownloadUrl(request, config, jwt, { attachmentId });
+      const raw = await res.text();
+      expect(res.status(), raw).toBe(200);
+      const body = JSON.parse(raw) as { url?: string };
+      expect(typeof body.url).toBe('string');
+
+      // ÅTKOMST-BEVISET (samma disciplin som fall 1 ovan) — INTE bara ett
+      // plausibelt svar: den signerade URL:en måste FAKTISKT ge bytesen på
+      // den path uppladdningen skrev till (`alla-event/<leaf>`).
+      const fileRes = await request.get(body.url as string);
+      expect(fileRes.status(), `signerad URL gav inte filen: ${await fileRes.text()}`).toBe(200);
+      expect((await fileRes.body()).byteLength).toBe(SENTINEL_BYTES);
+    } finally {
+      await stadaBilaga(request, config, jwt, null, attachmentId);
+    }
+  });
+
+  test('REGRESSION: Event-räckviddig bilaga NEKAS FORTFARANDE (403) från fel event', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const attachmentId = await skapaBilaga(request, config, jwt, BELAGGNING_EVENT_ID);
+
+    try {
+      const res = await getDownloadUrl(request, config, jwt, {
+        eventId: ARBETSKO_EVENT_ID,
+        attachmentId,
+      });
+      expect(res.status(), await res.text()).toBe(403);
+    } finally {
+      await stadaBilaga(request, config, jwt, BELAGGNING_EVENT_ID, attachmentId);
+    }
   });
 });
