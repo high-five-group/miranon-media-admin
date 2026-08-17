@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-16
+updated: 2026-08-17
 review_by: 2026-11-15
 status: stable
 ---
@@ -554,6 +554,41 @@ skriv aldrig config via CLI:t; belägg: task-238-kortet).
 som ska minta ett kort läser inte en ADR först. `ADR-081` påstod i tre månader att
 kortnumren *"redan är lösta"* — det var falskt hela tiden, och kostade en skarp
 kollision 2026-07-30 innan någon mätte efter. Rättelsen: `ADR-081` § Updates.
+
+**Betala inte skanningen där den inte skyddar något — använd `npm run bl`.**
+Flaggan skyddar EXAKT EN sak: ID-allokeringen i `task create`. Varje annat
+anrop betalar ändå. Mätt 2026-08-17 (lugn last, 43 git-refs varav 24 remote):
+
+```bash
+npm run bl -- task 250 --plain        # scripts/backlog-cli.sh
+npm run bl -- task edit 250 --check-ac 1
+npx backlog task create "…"            # create: OFÖRÄNDRAT, aldrig via wrappern
+```
+
+| anrop | rakt (skanning på) | via `npm run bl` |
+|---|---|---|
+| `task list --json` | 6,61 s | **1,59 s** |
+| `task <id> --plain` | 7,63 s | **2,10 s** |
+
+Utdatan är **byte-identisk** i båda fallen (verifierat med `diff`). Wrappern
+skickar allokerande anrop (`create` någonstans i argumenten) rakt igenom med
+full gren-skanning, och kör allt annat mot en isolerad projektrot via CLI:ts
+`BACKLOG_CWD` — egen `backlog.config.yml`, symlänk till de riktiga korten.
+**`backlog/config.yml` muteras aldrig** (till skillnad från `backlog config
+set`, som är MÄTT förlustfull vid round-trip), och **ingen delad fil lämnas i
+projektroten**, så två samtidiga agenter i samma träd kan inte trampa på
+varandra. Beslut och mätserie: [ADR-117](docs/decisions/ADR-117-backlog-grindens-faktainsamling-bulk-och-korsvalidering.md).
+
+**Detta är en KONVENTION, inte en spärr** — inget hindrar ett direktanrop, och
+den enda mekaniska bevakningen är wrapperns egen testsvit
+(`scripts/test-backlog-cli.sh`, 16 fall, CI-wirad). Skrivs raden om till att
+påstå en spärr är det exakt den `ADR-083`-felklass repot städat bort två
+gånger.
+
+**Under fleet-drift är kostnaden värre än multiplikatorn ovan.** `TASK-238`:s
+grind betalade 164,60 s i en körning, och en orkestrator-`task edit` dog mot
+ett 2-minuterstak medan en parallell agents anrop malde. Kostnaden växer med
+antalet grenar — och en fleet av agenter PRODUCERAR grenar.
 
 ---
 

@@ -960,6 +960,7 @@ jobs:
           bash scripts/test-staging-semaphore.sh
           bash scripts/test-check-listparitet.sh
           bash scripts/test-check-backlog-closure.sh
+          bash scripts/test-backlog-cli.sh
           bash scripts/test-stop-vakt.sh
           bash scripts/test-check-facit.sh
           node scripts/test-check-langa-streck.mjs
