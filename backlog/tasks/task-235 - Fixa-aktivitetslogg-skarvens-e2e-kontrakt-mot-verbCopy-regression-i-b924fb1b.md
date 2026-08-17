@@ -1,10 +1,10 @@
 ---
 id: TASK-235
 title: Fixa aktivitetslogg-skarvens e2e-kontrakt mot verbCopy (regression i b924fb1b)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 07:05'
-updated_date: '2026-08-16 07:24'
+updated_date: '2026-08-17 06:55'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,19 +21,25 @@ Forensik 2026-08-16 (S102, röd-kedjan): tests/e2e/aktivitetslogg-skarv.staging.
 <!-- AC:BEGIN -->
 - [x] #1 Testet bygger förväntan ur verbCopy (importera presentationslagret; frys aldrig presentationssträngen i testet igen)
 - [x] #2 verbCopy.ts:s doc-block ('kopplas på i PROMOVERINGS-skivan, inte här') städat — skivan var b924fb1b
-- [ ] #3 Testet grönt mot staging (lokal körning eller nästa post-merge med belägg)
+- [x] #3 Testet grönt mot staging (lokal körning eller nästa post-merge med belägg)
 <!-- AC:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 AC#3 delvis: lokal Playwright-körning (npx playwright test --project=chromium-authenticated tests/e2e/aktivitetslogg-skarv.staging.test.ts) blockerades av webServer-konflikt — port 5173 upptagen av en annan aktiv session (lsof bekräftar en annan node-process i LISTEN + flera ESTABLISHED-anslutningar, sannolikt parallellt task-236-arbete). Kunde inte döda processen (kan vara en annan agents aktiva session). I stället enhetsnivå-bevis (Node 24 native TS type-stripping, körd mot faktisk src/data/activityLog/verbCopy.ts): verbCopy({id:'.../verbs/antecknade', display:{sv-SE:antecknade}}) => 'skrev en anteckning'; forvantadRad-konstruktionen (actor + verbCopy(verb) + eventnamn) matchar EXAKT SenasteAktivitet.tsx:187-195s renderingskedja (samma sammansättning: actor.name + ' ' + verbCopy(verb) + ' · ' + objektnamn). Bidirektionellt: den GAMLA hårdkodade strängen 'Testanvändare antecknade · Loggskarvprövning' != nya 'Testanvändare skrev en anteckning · Loggskarvprövning' — bevisar att testet innan fixen verkligen var blint för regressionen. Kvarstående belägg: nästa post-merge-körning av denna fil i CI (chromium-authenticated) är det slutgiltiga AC#3-beviset; AC#3 lämnas avbockad tills dess.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+AC3 stängd med post-merge-belägg 2026-08-17 (S102-resumen, issue-svepets log-verifikat): grön run 31984913923 (311 API + 201 E2E, noll fällningar — aktivitetslogg-skarv.staging grön) bekräftad av 31989715595/31992951436/31996099499. AC1/AC2 landade i 169f20ad (PR #1378). Notera svepets korrigering: rad 231-fällningarna i post-merge-strimman 16/8 var INTE detta korts rot (de bar TASK-244 varv 3 + TASK-243.3); kortets verbCopy-koppling (rad 266) höll hela vägen. Stängd av orkestreraren under Marcus fullmandat 2026-08-17.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
