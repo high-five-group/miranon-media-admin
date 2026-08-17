@@ -170,3 +170,13 @@ export function combineWithAnd(filters: readonly string[]): string | undefined {
   if (filters.length === 1) return filters[0];
   return `AND(${filters.join(', ')})`;
 }
+
+// Kombinera flera filter-uttryck till OR(f1, f2, ...) — symmetrisk motsvarighet
+// till combineWithAnd (TASK-275.2, ADR-118 union-hämtningen: "tom-nivå-regeln"
+// behöver `OR({Kursnivå} = "", {Kursnivå} = "<eventets nivå>")`). Samma
+// tomlista-/singel-beteende som combineWithAnd.
+export function combineWithOr(filters: readonly string[]): string | undefined {
+  if (filters.length === 0) return undefined;
+  if (filters.length === 1) return filters[0];
+  return `OR(${filters.join(', ')})`;
+}

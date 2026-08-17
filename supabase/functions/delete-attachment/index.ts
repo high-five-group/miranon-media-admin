@@ -31,6 +31,23 @@
 // operation kan aldrig pekas mot en resurs utan att servern SJÄLV verifierar
 // att resursen faktiskt hör dit klienten påstår.
 //
+// [UTBYGGD, TASK-275.2, ADR-118 beslut 3] `eventId` ÄR NU VALFRI —
+// signalen som skiljer "ur eventkontext" från "i räckviddsläge" för en
+// GEMENSAM bilaga (Räckvidd Kurstyp/Alla event):
+//   - Bilagans Räckvidd är Event (eller legacy/okänt, fail-closed mot den
+//     STRIKTARE vägen): `eventId` KRÄVS fortfarande, ägarskaps-guarden ovan
+//     gäller OFÖRÄNDRAT.
+//   - Bilagans Räckvidd är Kurstyp/Alla event (GEMENSAM bilaga):
+//       * `eventId` ANGIVEN → 403 NEKAS ("ur eventkontext" — AC #3, olycks-
+//         skyddet: att städa ett events lista får aldrig radera kurs-
+//         familjens/alla-event-dokumentet).
+//       * `eventId` UTELÄMNAD → TILLÅTS ("räckviddsläge" — Dokument-ytans
+//         läge utan valt event, ADR-118 beslut 5). Inget ägarskaps-guard
+//         här: det finns inget "claimed event" att verifiera mot.
+// Auktorisationen läser alltså `Räckvidd`, ALDRIG `Event`s satthet — se
+// upload-attachment/index.ts § filhuvudet för varför `Event` fortfarande är
+// satt även på gemensamma bilagor (storage-path-ankaret).
+//
 // RADERAR BÅDE STORAGE-BYTESEN OCH BILAGOR-METADATARADEN. `Lagringsnyckel`
 // (TASK-147.5, additiv) ÄR redan den fullständiga Storage-LEAF:en
 // (`buildAttachmentLeaf(attachmentId, filnamn)` — se `upload-attachment`/
@@ -58,6 +75,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { deleteAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import {
+  ATTACHMENT_SCOPE_ALLA_EVENT,
+  ATTACHMENT_SCOPE_KURSTYP,
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
   isValidEventId as isValidRecordId,
@@ -99,15 +118,17 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    const eventId = body?.eventId;
+    const rawEventId = body?.eventId;
     const attachmentId = body?.attachmentId;
 
-    // EN post per anrop (SECURITY-SPEC §6.10) — body-formen bär inte ens
-    // plats för en lista, men den explicita formen är öppen bokföring, inte
-    // bara implicit av typen.
-    if (!isValidRecordId(eventId)) {
-      throw new ValidationError('eventId is required and must be an Airtable record ID (rec…)');
+    // [TASK-275.2] `eventId` är NU VALFRI — se filhuvudet. ANGES den måste
+    // den ändå ha rec-formen (en ogiltig-format-eventId är ALLTID ett
+    // klientfel, oavsett räckvidd).
+    if (rawEventId !== undefined && rawEventId !== null && !isValidRecordId(rawEventId)) {
+      throw new ValidationError('eventId must be an Airtable record ID (rec…) when provided');
     }
+    const eventId: string | null = typeof rawEventId === 'string' ? rawEventId : null;
+
     if (!isValidRecordId(attachmentId)) {
       throw new ValidationError(
         'attachmentId is required and must be an Airtable record ID (rec…)',
@@ -125,26 +146,58 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2) ÄGARSKAPS-GUARDEN: bilagans Event-länk måste FAKTISKT innehålla det
-    //    angivna eventId:t. En klient som skickar ett giltigt attachmentId
-    //    men fel/gissat eventId nekas — server-side, inte klient-litad.
-    const linkedEventIds = attachmentRecord.fields[EVENT_LINK_FIELD];
-    const belongsToEvent =
-      Array.isArray(linkedEventIds) && (linkedEventIds as unknown[]).includes(eventId);
-    if (!belongsToEvent) {
-      console.warn(
-        `[delete-attachment] DENY ownership guard | caller_user_id=${user.id} | attachment=${attachmentId} | claimed_event=${eventId}`,
-      );
-      throw new ForbiddenError('Bilagan hör inte till det angivna eventet.');
+    // 2) AUKTORISATIONEN — läser bilagans EGEN `Räckvidd`, ALDRIG `Event`s
+    //    satthet (se filhuvudet, [UTBYGGD, TASK-275.2]).
+    const rackvidd = attachmentRecord.fields['Räckvidd'];
+    const isGemensam = rackvidd === ATTACHMENT_SCOPE_KURSTYP || rackvidd === ATTACHMENT_SCOPE_ALLA_EVENT;
+
+    if (isGemensam) {
+      if (eventId !== null) {
+        console.warn(
+          `[delete-attachment] DENY gemensam bilaga ur eventkontext | caller_user_id=${user.id} | attachment=${attachmentId} | rackvidd=${rackvidd} | claimed_event=${eventId}`,
+        );
+        throw new ForbiddenError(
+          'Gemensamma bilagor kan bara raderas i sitt räckviddsläge, inte ur ett enskilt events sida.',
+        );
+      }
+      // räckviddsläge (inget eventId angivet) — TILLÅTET, inget ägarskaps-
+      // guard: det finns inget "claimed event" att verifiera mot.
+    } else {
+      // Event-räckvidd (eller legacy/okänt Räckvidd-värde — fail-closed mot
+      // den STRIKTARE av de två vägarna): eventId krävs, ägarskaps-guarden
+      // gäller OFÖRÄNDRAT (samma beteende som före TASK-275.2).
+      if (eventId === null) {
+        throw new ValidationError('eventId is required and must be an Airtable record ID (rec…)');
+      }
+      const linkedEventIds = attachmentRecord.fields[EVENT_LINK_FIELD];
+      const belongsToEvent =
+        Array.isArray(linkedEventIds) && (linkedEventIds as unknown[]).includes(eventId);
+      if (!belongsToEvent) {
+        console.warn(
+          `[delete-attachment] DENY ownership guard | caller_user_id=${user.id} | attachment=${attachmentId} | claimed_event=${eventId}`,
+        );
+        throw new ForbiddenError('Bilagan hör inte till det angivna eventet.');
+      }
     }
 
-    // 3) Storage-bytesen — BEST-EFFORT (se filhuvudet). `Lagringsnyckel`
-    //    ÄR redan den fulla leaf-strängen (buildAttachmentLeaf), så
-    //    `${eventId}/${lagringsnyckel}` är EXAKT samma path
-    //    buildAttachmentPath byggde vid uppladdning/generering.
+    // 3) Storage-bytesen — BEST-EFFORT (se filhuvudet). Path-ankaret är
+    //    bilagans EGEN `Event`-länk (attachmentRecord, INTE det klient-
+    //    angivna eventId:t) — samma värde i Event-fallet (ägarskaps-guarden
+    //    ovan bevisade redan likheten), men den ENDA tillgängliga källan i
+    //    räckviddsläge-fallet (ingen eventId från klienten där).
+    //    `Lagringsnyckel` ÄR redan den fulla leaf-strängen
+    //    (buildAttachmentLeaf), så `${ankareEventId}/${lagringsnyckel}` är
+    //    EXAKT samma path buildAttachmentPath byggde vid uppladdning.
+    const linkedEvent = attachmentRecord.fields[EVENT_LINK_FIELD];
+    const ankareEventId =
+      Array.isArray(linkedEvent) && linkedEvent.length > 0 ? (linkedEvent[0] as string) : null;
     const lagringsnyckel = attachmentRecord.fields[LAGRINGSNYCKEL_FIELD];
-    if (typeof lagringsnyckel === 'string' && lagringsnyckel.length > 0) {
-      const path = `${eventId}/${lagringsnyckel}`;
+    if (
+      ankareEventId &&
+      typeof lagringsnyckel === 'string' &&
+      lagringsnyckel.length > 0
+    ) {
+      const path = `${ankareEventId}/${lagringsnyckel}`;
       const supabaseAdmin = createClient(
         Deno.env.get('SUPABASE_URL')!,
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -160,8 +213,8 @@ Deno.serve(async (req) => {
       }
     } else {
       console.warn(
-        `[delete-attachment] Ingen Lagringsnyckel på raden — legacy-rad från före TASK-147.5, ` +
-          `hoppar över Storage-borttagning | caller_user_id=${user.id} | attachment=${attachmentId}`,
+        `[delete-attachment] Ingen Lagringsnyckel/Event-länk på raden — legacy-rad från före ` +
+          `TASK-147.5, hoppar över Storage-borttagning | caller_user_id=${user.id} | attachment=${attachmentId}`,
       );
     }
 
@@ -175,7 +228,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[delete-attachment] ALLOW | caller_user_id=${user.id} | event=${eventId} | attachment=${attachmentId}`,
+      `[delete-attachment] ALLOW | caller_user_id=${user.id} | event=${eventId ?? '(räckviddsläge)'} | attachment=${attachmentId}`,
     );
 
     return new Response(JSON.stringify({ deleted: true, requestId }), {

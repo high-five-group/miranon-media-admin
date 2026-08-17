@@ -345,9 +345,35 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // _shared/attachments.ts ATTACHMENT_CLASS_* (Deno↔Vite-dubblering, samma
   // mönster som BILAGOR_BUCKET_ID) — skrivande EF:er importerar dessa
   // konstanter, skriver aldrig en bokstavlig sträng inline.
+  // 'Räckvidd'/'Kursfamilj'/'Kursnivå' (TASK-275.2, ADR-118, additiva
+  // singleSelect — staging fldU6i9Ju5HRwSRBf/fldiJnZk66jlkUiX8/
+  // fldep25m32Q3Cjh41, prod fldsEltfGx3y63hhF/fld8Mc23OdJXFSBEx/
+  // fldMAGsqnQ4ddFmaI, task-275.1, LIVE-VERIFIERADE mot BÅDA baserna INNAN
+  // denna post låstes — data-model.md § "Staging- och prodbasens additiva
+  // tillskott 2026-08-17 (task-275.1...)"). upload-attachment/finalize-
+  // attachment-upload bygger dem SERVER-SIDE ur `_shared/attachments.ts`s
+  // `buildScopeFields`, redan strikt Zod-validerade
+  // (AttachmentScopeInputSchema) INNAN de når `fields` — listan är därför
+  // en SSOT-grind mot framtida kod-drift, ej en klient-nåbar deny-yta,
+  // exakt samma form som 'Dokumentklass' ovan. `Event` FÖRBLIR satt även
+  // för Kurstyp/Alla event-räckvidd (medveten avgränsning, TASK-275.2 §
+  // slutrapport — bär storage-path-ankaret och delete-attachment/get-
+  // attachment-download-urls befintliga ägarskaps-mekanik oförändrade;
+  // olycksskyddet mot radering ur eventkontext avgörs av `Räckvidd`, inte
+  // av `Event`s när/om-satthet).
   'create-attachment': {
     tableId: 'Bilagor',
-    allowedFields: ['Namn', 'Storlek (bytes)', 'Skapad', 'Event', 'Lagringsnyckel', 'Dokumentklass'],
+    allowedFields: [
+      'Namn',
+      'Storlek (bytes)',
+      'Skapad',
+      'Event',
+      'Lagringsnyckel',
+      'Dokumentklass',
+      'Räckvidd',
+      'Kursfamilj',
+      'Kursnivå',
+    ],
   },
   // Åtgärdsutskickens sändväg (TASK-147.1, ADR-067-revisionen — repots sjunde
   // write-vertikal, tredje mail-vertikal). send-action-email-EF:en bygger `fields`

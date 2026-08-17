@@ -25,6 +25,16 @@
 //   8. CORS preflight (tillåten origin) → 200 + speglad origin.
 //   9. fel HTTP-metod (GET) → 405.
 //
+// TASK-275.2 (ADR-118 beslut 3) tillägg — GEMENSAMMA bilagors olycksskydd,
+// bevisat i BÅDA riktningar (uppdragets krav, ej bara "att grinden är grön"):
+//   10. deny: en GEMENSAM bilaga (räckvidd Kurstyp) kan INTE raderas med
+//       `eventId` angiven ("ur eventkontext") → 403, raden orörd.
+//   11. allow: SAMMA bilaga raderas UTAN `eventId` ("i räckviddsläge") → 200,
+//       raden FAKTISKT borta.
+//   12. deny: en Event-räckviddig bilaga UTAN `eventId` → 400 (oförändrat
+//       beteende — regressionsskydd, "eventId krävs" gäller fortfarande för
+//       den vanliga vägen).
+//
 // (7)+(8)+(9) = deny-triple-klass-beviset (samma tre icke-lyckade-vägar som
 // upload-attachment.staging.test.ts bär för samma bevisklass).
 //
@@ -88,12 +98,14 @@ function buildPseudoPdfBase64(totalBytes: number): string {
 }
 
 /** Skapar en RIKTIG bilaga via upload-attachment-EF:en — setup-hjälpare, delad
- * av flera fall i denna svit. Returnerar attachmentId (Bilagor-record-ID). */
+ * av flera fall i denna svit. Returnerar attachmentId (Bilagor-record-ID).
+ * `scope` (TASK-275.2, ADR-118) — utelämnad default:ar till räckvidd Event. */
 async function skapaBilaga(
   request: APIRequestContext,
   config: ApiConfig,
   jwt: string,
   eventId: string,
+  scope: { rackvidd?: string; kursfamilj?: string; kursniva?: string } = {},
 ): Promise<string> {
   const res = await request.post(`${config.baseUrl}${UPLOAD_ENDPOINT}`, {
     headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
@@ -102,6 +114,7 @@ async function skapaBilaga(
       filnamn: sentinelFilnamn(),
       contentType: 'application/pdf',
       bytesBase64: buildPseudoPdfBase64(2048),
+      ...scope,
     },
   });
   const raw = await res.text();
@@ -281,5 +294,75 @@ test.describe('delete-attachment — skarp conformance (TASK-147.11)', () => {
       headers: { Authorization: `Bearer ${jwt}` },
     });
     expect(res.status()).toBe(405);
+  });
+
+  // TASK-275.2 (ADR-118 beslut 3) — gemensamma bilagors olycksskydd, BÅDA riktningar.
+  test('deny: gemensam bilaga (Kurstyp) raderas MED eventId ("ur eventkontext") → 403, raden orörd', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const attachmentId = await skapaBilaga(request, config, jwt, BELAGGNING_EVENT_ID, {
+      rackvidd: 'Kurstyp',
+      kursfamilj: 'Fjärrskådning',
+    });
+
+    const res = await postDelete(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      attachmentId,
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(403);
+
+    // BLOCKERINGS-BEVIS: raden finns FORTFARANDE.
+    const listRes = await request.get(
+      `${config.baseUrl}/functions/v1/get-event-attachments?eventId=${BELAGGNING_EVENT_ID}`,
+      { headers: { Authorization: `Bearer ${jwt}` } },
+    );
+    const listBody = (await listRes.json()) as { attachments: Array<{ id: string }> };
+    expect(listBody.attachments.some((a) => a.id === attachmentId)).toBe(true);
+
+    // Städa upp via RÄTT väg — räckviddsläge (eventId UTELÄMNAD), samma
+    // väg nästa test bevisar explicit.
+    const cleanupRes = await postDelete(request, config, jwt, { attachmentId });
+    expect(cleanupRes.status()).toBe(200);
+  });
+
+  test('allow: samma gemensamma bilaga raderas UTAN eventId ("räckviddsläge") → 200, raden FAKTISKT borta', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const attachmentId = await skapaBilaga(request, config, jwt, BELAGGNING_EVENT_ID, {
+      rackvidd: 'Alla event',
+    });
+
+    const res = await postDelete(request, config, jwt, { attachmentId });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(200);
+    const body = JSON.parse(raw) as { deleted?: boolean };
+    expect(body.deleted).toBe(true);
+
+    // EXISTENS-BEVIS: raden är FAKTISKT borta — ett andra raderings-anrop 404:ar.
+    const secondRes = await postDelete(request, config, jwt, { attachmentId });
+    expect(secondRes.status()).toBe(404);
+  });
+
+  test('deny: Event-räckviddig bilaga UTAN eventId → 400 (regressionsskydd, oförändrat beteende)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const attachmentId = await skapaBilaga(request, config, jwt, BELAGGNING_EVENT_ID);
+
+    const res = await postDelete(request, config, jwt, { attachmentId });
+    expect(res.status()).toBe(400);
+
+    // Städa upp med RÄTT eventId (den vanliga vägen, oförändrad).
+    const cleanupRes = await postDelete(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      attachmentId,
+    });
+    expect(cleanupRes.status()).toBe(200);
   });
 });

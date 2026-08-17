@@ -18,6 +18,18 @@
 //   9. CORS preflight (tillåten origin) → 200 + speglad origin.
 //   10. fel HTTP-metod (GET) → 405.
 //
+// TASK-275.2 (ADR-118) tillägg — RÄCKVIDDSPARAMETRARNAS strikta Zod-
+// validering (AC #2), "allow/deny-testbevis" per DoD-disciplinen:
+//   11. allow: rackvidd Kurstyp + kursfamilj/kursniva → 201, Räckvidd/
+//       Kursfamilj/Kursnivå SKRIVNA, `Event` FÖRBLIR satt (medveten
+//       avgränsning, se upload-attachment/index.ts § filhuvudet).
+//   12. allow: rackvidd Alla event (inga kursfält) → 201, Kursfamilj/
+//       Kursnivå OSATTA (utelämnade, inte tomsträng).
+//   13. deny: rackvidd Kurstyp UTAN kursfamilj → 400.
+//   14. deny: kursfamilj angiven trots rackvidd Event (default) → 400.
+//   15. deny: okänt rackvidd-värde → 400.
+//   16. deny: okänt kursfamilj-värde → 400.
+//
 // SENTINEL: filnamnet bär en per-körning-unik markör
 // (`ZZ-attachment-test-<uuid>.pdf`) → ingen cross-run-kollision. TEARDOWN =
 // setup-purge (ADR-060): .purge-staging-policy.json:s
@@ -55,6 +67,9 @@ interface UploadBody {
   filnamn?: string;
   contentType?: string;
   bytesBase64?: string;
+  rackvidd?: unknown;
+  kursfamilj?: unknown;
+  kursniva?: unknown;
 }
 
 function postUpload(
@@ -119,6 +134,11 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(Number.isNaN(Date.parse(body.record.fields.Skapad as string))).toBe(false);
     // [TASK-147.12] mönster 1 (denna EF) ÄR klass A per definition.
     expect(body.record.fields.Dokumentklass).toBe('Uppladdad');
+    // [TASK-275.2] rackvidd UTELÄMNAD i requesten → default 'Event' (dagens
+    // beteende, oförändrat); Kursfamilj/Kursnivå OSATTA.
+    expect(body.record.fields.Räckvidd).toBe('Event');
+    expect(body.record.fields.Kursfamilj).toBeUndefined();
+    expect(body.record.fields.Kursnivå).toBeUndefined();
 
     // (ii) Domän-shape (adapterns parse-väg).
     const attachment: Attachment = AttachmentSchema.parse(body.attachment);
@@ -126,6 +146,9 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(attachment.storlekBytes).toBe(2048);
     expect(attachment.eventId).toBe(BELAGGNING_EVENT_ID);
     expect(attachment.dokumentklass).toBe('Uppladdad');
+    expect(attachment.rackvidd).toBe('Event');
+    expect(attachment.kursfamilj).toBeNull();
+    expect(attachment.kursniva).toBeNull();
   });
 
   test('deny: ogiltig eventId-form → 400', async ({ request }) => {
@@ -252,5 +275,112 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
       headers: { Authorization: `Bearer ${jwt}` },
     });
     expect(res.status()).toBe(405);
+  });
+
+  // TASK-275.2 (ADR-118) — räckviddsparametrarnas strikta Zod-validering (AC #2).
+  test('allow: rackvidd Kurstyp + kursfamilj/kursniva → 201, fälten skrivna, Event FÖRBLIR satt', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Kurstyp',
+      kursfamilj: 'RIM',
+      kursniva: 'Nivå 1',
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+
+    expect(body.record.fields.Räckvidd).toBe('Kurstyp');
+    expect(body.record.fields.Kursfamilj).toBe('RIM');
+    expect(body.record.fields.Kursnivå).toBe('Nivå 1');
+    // MEDVETET: Event förblir satt (storage-path-ankaret) — se
+    // upload-attachment/index.ts § filhuvudet.
+    expect(body.record.fields.Event).toEqual([BELAGGNING_EVENT_ID]);
+  });
+
+  test('allow: rackvidd Alla event (inga kursfält) → 201, Kursfamilj/Kursnivå UTELÄMNADE', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Alla event',
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+
+    expect(body.record.fields.Räckvidd).toBe('Alla event');
+    expect(body.record.fields.Kursfamilj).toBeUndefined();
+    expect(body.record.fields.Kursnivå).toBeUndefined();
+  });
+
+  test('deny: rackvidd Kurstyp UTAN kursfamilj → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Kurstyp',
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('deny: kursfamilj angiven trots rackvidd Event (default) → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      kursfamilj: 'RIM',
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('deny: okänt rackvidd-värde → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Alla kurser',
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('deny: okänt kursfamilj-värde → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Kurstyp',
+      kursfamilj: 'RIM 4',
+    });
+    expect(res.status()).toBe(400);
   });
 });

@@ -1,4 +1,4 @@
-import type { AttachmentClassValue } from '../types/Status';
+import type { AttachmentClassValue, AttachmentScopeValue } from '../types/Status';
 
 /**
  * En bilaga i bilage-fundamentet (TASK-146.4, PRD task-146 "Bilage-fundamentet").
@@ -29,6 +29,18 @@ import type { AttachmentClassValue } from '../types/Status';
  * backfillen, eller en framtida klass C-skrivväg som ännu inte satts
  * (kvitto-generering, TASK-147.7, skriver inte till DENNA tabell/detta
  * fält).
+ *
+ * [UTBYGGD, TASK-275.2, ADR-118] `rackvidd`/`kursfamilj`/`kursniva` —
+ * räckviddsmodellen (ADR-118 beslut 1). `fetchEventAttachments` returnerar
+ * numera UNIONEN av eventets egna + kurstyps-matchande + alla-event-bilagor
+ * (server-side, `get-event-attachments`); dessa tre fält är badge-underlaget
+ * som skiljer dem åt i UI:t (task-275.3, inte byggt av denna skiva).
+ * `rackvidd: null` = okänt/saknat Räckvidd-värde (samma defensiva
+ * "gissa aldrig"-disciplin som `dokumentklass`, ALDRIG antaget 'Event').
+ * `kursfamilj`/`kursniva` är `null` utanför Kurstyp-räckvidden ELLER för en
+ * nivålös familj (tom-nivå-regeln) — LENIENT `string | null` på läsvägen
+ * (INTE ett strikt enum), samma P22-motiverade val som `Event.schema.ts`s
+ * `kursfamilj`/`kursniva` redan gör för samma underliggande värdedomän.
  */
 export interface Attachment {
   id: string;
@@ -53,6 +65,12 @@ export interface Attachment {
    * (→ `Event-mallad`) vid radskapelse — klienten läser, skriver aldrig.
    */
   dokumentklass: AttachmentClassValue | null;
+  /** Räckvidd (TASK-275.2, ADR-118) — se docblocken ovan. */
+  rackvidd: AttachmentScopeValue | null;
+  /** Kursfamilj vid räckvidd Kurstyp; `null` annars (se docblocken ovan). */
+  kursfamilj: string | null;
+  /** Kursnivå vid räckvidd Kurstyp; `null` för nivålösa familjer ELLER utanför Kurstyp. */
+  kursniva: string | null;
 }
 
 /**
@@ -69,11 +87,28 @@ export interface Attachment {
  * `fetchEventAttachments`, laddar aldrig upp) — det är Dokument-ytan
  * (TASK-147.6, ännu en kastbar S100-prototyp, `src/components/dokument/
  * DokumentYta.tsx`) eller motsvarande framtida uppladdnings-yta.
+ *
+ * [UTBYGGD, TASK-275.2, ADR-118] `rackvidd`/`kursfamilj`/`kursniva` — VALFRIA,
+ * default Event (dagens beteende, oförändrat om utelämnade). `eventId`
+ * FÖRBLIR OBLIGATORISK oavsett räckvidd — se upload-attachment/index.ts §
+ * filhuvudet för det medvetna skälet (storage-path-ankaret, den befintliga
+ * ägarskaps-mekaniken i delete/download oförändrad). Ett genuint
+ * event-löst uppladdningsläge stöds INTE av denna EF-kontrakt-version;
+ * flaggat för task-275.3. `kursfamilj` krävs av EF:en när `rackvidd` är
+ * Kurstyp (server-validerat, `AttachmentScopeInputSchema`) — typas löst
+ * (`string`) här snarare än `AttachmentScopeValue`-liknande enum eftersom
+ * write-sidans strikta enum-validering redan sitter server-side.
  */
 export interface UploadAttachmentInput {
   /** Airtable-record-ID (rec-format) för eventet bilagan hör till. */
   eventId: string;
   file: File;
+  /** Räckvidd — default Event (oförändrat beteende) om utelämnad. */
+  rackvidd?: AttachmentScopeValue;
+  /** Kursfamilj — krävs av EF:en när `rackvidd` är Kurstyp. */
+  kursfamilj?: string;
+  /** Kursnivå — valfri; tom/utelämnad = hela familjen (tom-nivå-regeln). */
+  kursniva?: string;
 }
 
 /**

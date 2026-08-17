@@ -22,6 +22,14 @@
 //      (storage.list, inte ett client-påstående) faktiskt fäller.
 //   4. deny/404/401/CORS för båda EF:erna.
 //
+// TASK-275.2 (ADR-118) tillägg — RÄCKVIDDSPARAMETRARNA trär igenom även
+// mönster 2:s finalize-steg (samma AttachmentScopeInputSchema som mönster 1,
+// redan uttömmande testad i upload-attachment.staging.test.ts — HÄR bevisas
+// bara att TRÅDNINGEN genom ticket→PUT→finalize fungerar, inte varje
+// validerings-gren igen):
+//   5. allow: rackvidd Kurstyp trär igenom finalize → Räckvidd/Kursfamilj skrivna.
+//   6. deny: rackvidd Kurstyp UTAN kursfamilj i finalize-anropet → 400.
+//
 // SENTINEL + TEARDOWN: samma mönster som upload-attachment.staging.test.ts —
 // filnamnet bär `ZZ-attachment-test-<uuid>.pdf`, Bilagor-RADEN purgas av
 // .purge-staging-policy.json:s `upload-attachment-sentineler`-target.
@@ -56,6 +64,9 @@ interface FinalizeBody {
   eventId?: string;
   attachmentId?: string;
   filnamn?: string;
+  rackvidd?: unknown;
+  kursfamilj?: unknown;
+  kursniva?: unknown;
 }
 
 function postTicket(
@@ -331,5 +342,75 @@ test.describe('create-attachment-upload-ticket + finalize-attachment-upload — 
       headers: { Authorization: `Bearer ${jwt}` },
     });
     expect(res.status()).toBe(405);
+  });
+
+  // TASK-275.2 (ADR-118) — räckviddsparametrarna trär igenom mönster 2:s
+  // finalize-steg (se filhuvudets tillägg-stycke för avgränsningen).
+  test('allow: rackvidd Kurstyp trär igenom finalize → Räckvidd/Kursfamilj skrivna', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const filnamn = sentinelFilnamn();
+    const bytes = buildPseudoPdfBuffer(1024);
+
+    const ticketRes = await postTicket(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn,
+      contentType: 'application/pdf',
+      sizeBytes: bytes.length,
+    });
+    const ticketBody = JSON.parse(await ticketRes.text()) as { ticket: unknown };
+    const ticket: Ticket = AttachmentUploadTicketSchema.parse(ticketBody.ticket);
+
+    const putRes = await request.put(ticket.signedUrl, {
+      headers: { 'Content-Type': 'application/pdf' },
+      data: bytes,
+    });
+    expect(putRes.status(), await putRes.text()).toBeLessThan(300);
+
+    const finalizeRes = await postFinalize(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      attachmentId: ticket.attachmentId,
+      filnamn,
+      rackvidd: 'Kurstyp',
+      kursfamilj: 'RIM',
+    });
+    const raw = await finalizeRes.text();
+    expect(finalizeRes.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+    expect(body.record.fields.Räckvidd).toBe('Kurstyp');
+    expect(body.record.fields.Kursfamilj).toBe('RIM');
+    expect(body.record.fields.Event).toEqual([BELAGGNING_EVENT_ID]);
+  });
+
+  test('deny: rackvidd Kurstyp UTAN kursfamilj i finalize-anropet → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const filnamn = sentinelFilnamn();
+    const bytes = buildPseudoPdfBuffer(1024);
+
+    const ticketRes = await postTicket(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn,
+      contentType: 'application/pdf',
+      sizeBytes: bytes.length,
+    });
+    const ticketBody = JSON.parse(await ticketRes.text()) as { ticket: unknown };
+    const ticket: Ticket = AttachmentUploadTicketSchema.parse(ticketBody.ticket);
+
+    const putRes = await request.put(ticket.signedUrl, {
+      headers: { 'Content-Type': 'application/pdf' },
+      data: bytes,
+    });
+    expect(putRes.status(), await putRes.text()).toBeLessThan(300);
+
+    const finalizeRes = await postFinalize(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      attachmentId: ticket.attachmentId,
+      filnamn,
+      rackvidd: 'Kurstyp',
+    });
+    expect(finalizeRes.status()).toBe(400);
   });
 });

@@ -647,6 +647,11 @@ export class AirtableAdapter implements DataSourceAdapter {
       filnamn: input.file.name,
       contentType: input.file.type || 'application/pdf',
       bytesBase64,
+      // [TASK-275.2, ADR-118] Valfria — EF:en default:ar rackvidd till
+      // 'Event' när utelämnad (oförändrat beteende).
+      rackvidd: input.rackvidd,
+      kursfamilj: input.kursfamilj,
+      kursniva: input.kursniva,
     });
     return AttachmentSchema.parse(data.attachment);
   }
@@ -699,6 +704,12 @@ export class AirtableAdapter implements DataSourceAdapter {
       eventId: input.eventId,
       attachmentId: ticket.attachmentId,
       filnamn: input.file.name,
+      // [TASK-275.2, ADR-118] Se uploadAttachmentSmall ovan — samma
+      // valfria trädgren, `create-attachment-upload-ticket` (steget ovan)
+      // rör dem aldrig (skriver ingen Bilagor-rad).
+      rackvidd: input.rackvidd,
+      kursfamilj: input.kursfamilj,
+      kursniva: input.kursniva,
     });
     return AttachmentSchema.parse(data.attachment);
   }
@@ -725,7 +736,11 @@ export class AirtableAdapter implements DataSourceAdapter {
    * att parsa (till skillnad mot `createEventNote`/`uploadAttachment` finns
    * ingen resurs kvar att returnera).
    */
-  async deleteAttachment(eventId: string, attachmentId: string): Promise<void> {
+  async deleteAttachment(eventId: string | null, attachmentId: string): Promise<void> {
+    // [TASK-275.2, ADR-118 beslut 3] `eventId: null` (räckviddsläge) skickas
+    // som JSON `null` (ALDRIG utelämnad nyckel) — delete-attachment-EF:en
+    // tolkar båda formerna som "inget event angivet", men en explicit
+    // `null` är öppen bokföring av avsikten, inte en tyst utelämning.
     await postEdgeFunction<{ deleted: boolean }>('delete-attachment', { eventId, attachmentId });
   }
 
