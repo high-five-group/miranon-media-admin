@@ -294,12 +294,15 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     mocken.hall = true;
     await page.goto('/hem');
 
-    // Förberedelseskärmen SYNS: progressbar-ytan (roll, ALDRIG klassnamn) +
-    // den MARCUS-LÅSTA texten (Forberedelseskarm.tsx). main#main INTE
-    // monterad — gaten öppnar <RouterProvider> först vid gate.typ === 'redo'.
+    // Förberedelseskärmen SYNS: progressbar-ytan (roll, ALDRIG klassnamn).
+    // Den MARCUS-LÅSTA texten är kvar i DOM:en (progressbarens
+    // aria-labelledby-mål) men INTE längre visuellt synlig — sr-only sedan
+    // task-273.6 ("rensas till enbart loadingbaren"), därav toBeAttached()
+    // i stället för toBeVisible() här. main#main INTE monterad — gaten
+    // öppnar <RouterProvider> först vid gate.typ === 'redo'.
     const progressbar = page.getByRole('progressbar');
     await expect(progressbar).toBeVisible();
-    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeVisible();
+    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeAttached();
     await expect(page.locator('main#main')).toHaveCount(0);
 
     // Vänta ut den RIKTIGA warmup-handlens första snapshot: initialt (innan
@@ -520,8 +523,10 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     // gör att biblioteket aldrig hydrerar) — samma tomma-cache-signal gaten
     // läser för "kall". Förberedelseskärmen ersätter det GAMLA tre-status-
     // mönstret; main#main monteras inte förrän startvärmningen släpper.
+    // Texten är DOM-kvar men sr-only sedan task-273.6 — toBeAttached(), se
+    // kommentaren vid det första förekomsten ovan i filen.
     const main = page.locator('main#main');
-    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeVisible();
+    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeAttached();
     await expect(main).toHaveCount(0);
     await expect(page.getByText('Signe Sparad')).toHaveCount(0);
 
@@ -611,9 +616,10 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
 
     // Kastad cache ⇒ COLD-vägen (ADR-112/TASK-218.3) — se buster-testets
     // kommentar ovan för det fullständiga resonemanget (samma mekanism,
-    // maxAge i stället för buster fäller restore).
+    // maxAge i stället för buster fäller restore). Texten är sr-only sedan
+    // task-273.6, se kommentaren vid filens första förekomst.
     const main = page.locator('main#main');
-    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeVisible();
+    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeAttached();
     await expect(main).toHaveCount(0);
     await expect(page.getByText('Signe Sparad')).toHaveCount(0);
 
@@ -682,10 +688,12 @@ test.describe('TASK-227 — Förberedelseskärmen efter aktiv inloggning (router
     // Förberedelseskärmen syns EFTER login-klicket, INNAN Hem — den
     // router-medvetna triggern (_authenticated.tsx-gaten) startar
     // startvärmningen så snart routern faktiskt landar på en app-yta med
-    // kall cache. main#main INTE monterad medan skärmen visas.
+    // kall cache. main#main INTE monterad medan skärmen visas. Texten är
+    // sr-only sedan task-273.6 — DOM-kvar (toBeAttached), inte visuellt
+    // synlig; baren (role=progressbar) är den faktiskt synliga signalen.
     const progressbar = page.getByRole('progressbar');
     await expect(progressbar).toBeVisible();
-    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeVisible();
+    await expect(page.getByText('Förbereder ditt administrationsverktyg')).toBeAttached();
     await expect(page.locator('main#main')).toHaveCount(0);
 
     mocken.hall = false;

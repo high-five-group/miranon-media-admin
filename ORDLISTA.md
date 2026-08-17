@@ -291,11 +291,14 @@ tidigare ovillkorade indikator-förbud; Lugnt laddläge förblir trappans
 agent-generaliseringen, inte beslutet.
 
 **Förberedelseskärmen** — den blockerande startskärm som visas vid kall
-appstart (ADR-112): logotyp, äkta determinate bar (X av N hämtningar
-klara) och den Marcus-låsta texten "Förbereder ditt
-administrationsverktyg". Visas ALDRIG vid varm start (tyst väg), aldrig
-offline; timeout ~8–10 s släpper tyst. Appnivå-instansen av Laddtrappans
-steg 3.
+appstart (ADR-112): en äkta determinate bar (X av N hämtningar klara) mot
+en dov, fönsterfyllande bakgrundsbild (Roger & Lotta-fotot, task-273.6,
+Marcus tillägg 2 2026-08-17) — "rensas till enbart loadingbaren", ingen
+logotyp längre synlig. Den Marcus-låsta texten "Förbereder ditt
+administrationsverktyg" finns kvar i DOM:en (progressbarens tillgängliga
+namn) men är sr-only, inte längre visuellt synlig. Visas ALDRIG vid varm
+start (tyst väg), aldrig offline; timeout ~8–10 s släpper tyst.
+Appnivå-instansen av Laddtrappans steg 3.
 *Undvik:* "splash"/"splash-skärm" i användarvänd text och dokumentation —
 Förberedelseskärmen är det kanoniska namnet ("splash" är okej som
 engelskt branschbegrepp i research-citat).

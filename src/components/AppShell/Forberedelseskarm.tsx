@@ -103,9 +103,12 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  *    (react-aria-components `ProgressBar`, samma etablerade bibliotek som
  *    `Select`/`Button`/`ToggleButtonGroup` redan bygger på). Namnges via
  *    `aria-labelledby` mot den låsta textraden under baren — ingen dold
- *    dubblett-etikett. `valueLabel` sätts explicit till "X av Y" (ADR-112:s
- *    egen fras) i stället för RAC:s procent-default, så `aria-valuetext`
- *    matchar ADR:ns språk för en skärmläsare som frågar widgeten direkt.
+ *    dubblett-etikett (raden är själv `sr-only` sedan task-273.6, se
+ *    § BAKGRUNDSBILDEN — `aria-labelledby` fungerar identiskt oavsett om
+ *    måltexten är visuellt synlig eller ej). `valueLabel` sätts explicit
+ *    till "X av Y" (ADR-112:s egen fras) i stället för RAC:s procent-
+ *    default, så `aria-valuetext` matchar ADR:ns språk för en skärmläsare
+ *    som frågar widgeten direkt.
  * 2. **Den polite-annonserade statusraden** — en SEPARAT `role="status"
  *    aria-live="polite"` `sr-only`-rad med samma "X av Y"-text. En
  *    `aria-valuenow`-ändring på en `role="progressbar"` annonseras INTE
@@ -128,31 +131,78 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * `transition-duration: 0.01ms !important`-neutralisering står kvar som
  * dubbelbälte, precis som Skeleton-shimmerns mönster.
  *
- * ═══ LOGOTYPEN ═══
+ * ═══ BAKGRUNDSBILDEN — ROGER & LOTTA-FOTOT, INTE LOGOTYPEN (task-273.6,
+ * Marcus tillägg 2, 2026-08-17) ═══
  *
- * `public/miranon-media-ordmarke.svg` — det fullständiga ordmärket (SVG,
- * bokstavsformerna som paths, inga fontberoenden), oanvänt sedan det
- * lämnades kvar av auth-skärmarnas prototyp-divergens (`VariantB.tsx`s
- * kommentar: "LOGOTYPEN ÄR BORTTAGEN … `public/miranon-media-ordmarke.svg`
- * ligger kvar oanvänd"). Valt framför `public/miranon-logo.svg` (det fria
- * 4-parallellogram-märket utan text, källan för PWA-ikonerna) eftersom
- * Förberedelseskärmen är den enda ytan på skärmen — ordmärket stavar ut
- * varumärket och ger starkare igenkänning under en blockerande väntan än
- * den textlösa ikon-formen. `alt` är varumärkesnamnet, inte "logotyp"
- * (etablerad a11y-konvention för logotyper).
+ * Skärmen "rensas till enbart loadingbaren" (Marcus egna ord, PRD-kortet):
+ * ordmärket (`public/miranon-media-ordmarke.svg`, tidigare synligt här) och
+ * den låsta textraden är BORTA ur den RENDERADE ytan — bara baren är
+ * visuellt kvar. `public/roger-och-lotta.webp` (enda RL-bilden i repot,
+ * 1600×1068, 132 kB, tidigare helt oanvänd i appen) ersätter dem som en dov,
+ * centrerad, fönsterfyllande bakgrund BAKOM baren — inte en logotyp-
+ * ersättning, ett stämningsfoto.
+ *
+ * TVÅ LAGER, inte en förblandad bild: ett rent `bg-cover bg-center`-foto-
+ * lager och ett separat vitt scrim-lager ovanpå (`--mm-forberedelseskarm-
+ * scrim`, 90 % vit color-mix, components.css). `cover`-beteendet ger
+ * "centrerad och lika stor som webbläsarfönstret" (Marcus form-beskrivning)
+ * — beskär i stället för att bredda ut, aldrig letterboxad. Scrimmets
+ * opacitet är INTE en gissning: en pixel-för-pixel WCAG-luminansanalys av
+ * den FAKTISKA filen (sharp, samtliga 1 708 800 pixlar) visar att även det
+ * absolut mörkaste pixelvärdet i bilden, blandat med 90 % vitt, ger
+ * fyllnaden (--p-sage-9) en kontrastkvot på 4,48:1 mot bakgrunden — rejält
+ * över 1.4.11:s 3:1-golv. Full räkning: components.css:s tokenkommentar för
+ * `--mm-forberedelseskarm-scrim`.
+ *
+ * `aria-hidden="true"` på båda lagren (rent dekorativt, CSS-bakgrund — inte
+ * en `<img>`, så inget textalternativ-krav uppstår över huvud taget).
+ * contrast-more och print DÖLJER båda lagren helt (`contrast-more:hidden
+ * print:hidden`) — faller tillbaka till containerns egna `bg-bg` (samma
+ * rena vita bakgrund skärmen hade FÖRE denna skiva), Marcus egen
+ * AC-formulering ("bilden får tonas ned ytterligare eller döljas där").
+ *
+ * ═══ LADDNINGSSTRATEGI (AC 4 — 132 kB på APPENS FÖRSTA skärm) ═══
+ *
+ * CSS `background-image` (via Tailwinds `bg-[url(...)]`), INTE en `<img>`.
+ * Skälet är fetch-PRIORITET, inte semantik: Chrome tilldelar varje bild Low
+ * priority som DEFAULT — även hjältebilder — och höjer den bara vid
+ * explicit `fetchpriority="high"` eller `<link rel="preload">` (web.dev,
+ * "Optimize resource loading with the Fetch Priority API",
+ * https://web.dev/articles/fetch-priority). Ingen av delarna används HÄR,
+ * MEDVETET: fotot är dekoration bakom baren, inte innehållet skärmen
+ * finns för att kommunicera — det ska ALDRIG konkurrera om bandbredd med
+ * auth-hämtningen eller startvärmningens sju hämtningar (samma nätverk,
+ * samma sekund). Med CSS-bakgrund upptäcks resursen dessutom först efter
+ * layout (i en CSR-app utan server-renderad HTML finns ingen
+ * preload-scanner-fördel för `<img>` att förlora här — DOM:en existerar
+ * inte förrän React committat den, oavsett teknik). Containerns egen
+ * `bg-bg` (vit) är en OMEDELBAR fallback: baren och dess (sr-only) text
+ * renderar direkt oavsett bildens hämtningsstatus, fotot poppar in bakom
+ * när det är klart, ingen blockering, ingen layoutskift. Bilden är
+ * medvetet INTE nedskalad eller omkonverterad i denna skiva (utpekad
+ * källfil, ingen bildpipeline i scope) — mitigeringen är prioritets-
+ * strategin ovan, inte filstorleken.
  *
  * ═══ LAYOUTANKARET — SAMMA MÖNSTER SOM LOGIN-BLOCKET (skärpningsvarv
  * TASK-242, forberedelseskarm-splash-branschmonster-2026-08-16.md,
  * Marcus-kvitterad punkt 1) ═══
  *
  * Ytterdiven centrerar EXAKT som `login.tsx`s `<main>` (`items-center
- * justify-center`, samma responsiva padding-skala `p-4 sm:p-8 lg:p-12`).
- * Logotyp → progressindikator → stegtext sitter i ett INRE
- * `max-w-md flex-col items-center gap-8`-block — samma bredd/gap-kontrakt
- * som login-blocket (`w-full max-w-md flex-col gap-8`, `login.tsx` rad
- * ~227). `items-center` läggs till på blocket (login-blockets enda barn är
- * ett `w-full`-formulär som inte behöver det) eftersom denna ytas innehåll
- * är en centrerad KOLUMN, inte ett vänsterställt kort.
+ * justify-center`, samma responsiva padding-skala `p-4 sm:p-8 lg:p-12`) och
+ * är dessutom `relative` — positioneringskontext för bakgrundslagren i
+ * § BAKGRUNDSBILDEN ovan, ett tillägg i task-273.6.
+ *
+ * FÖRE task-273.6 satt progressindikatorn i ett tvånivå-block
+ * (`max-w-md` yttre för logotypen, `max-w-xs` inre för bar+text). Sedan
+ * logotypen togs bort finns bara EN nivå kvar: `max-w-xs flex-col
+ * items-center gap-4` (`data-testid="forberedelseskarm-block"` — ersätter
+ * `img[alt="Miranon Media"]` som testankare i
+ * `tests/webblasarbeteende/forberedelseskarm-hojdkedja.test.ts`, se den
+ * filens kommentar). Blocket är `relative` av samma stapel-skäl som
+ * ytterdiven: utan det målar de `absolute`-positionerade bakgrundslagren
+ * OVANPÅ det (CSS-målningsordning rankar positionerade element efter
+ * positionerade element, inte efter DOM-ordning mot icke-positionerade
+ * syskon) — ett `position: static`-block hade hamnat UNDER fotot.
  *
  * EN AVSIKTLIG SKILLNAD mot login, disk-verifierad
  * (`src/routes/dev/primitives.tsx` rad ~455–458): ytterdiven behåller
@@ -212,50 +262,63 @@ export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
   }, [klara, totalt]);
 
   return (
-    <div className="flex h-full min-h-full w-full flex-col items-center justify-center bg-bg p-4 sm:p-8 lg:p-12">
-      <div className="flex w-full max-w-md flex-col items-center gap-8">
-        <img
-          src="/miranon-media-ordmarke.svg"
-          alt="Miranon Media"
-          className="h-auto w-48 sm:w-56"
-        />
-        <div className="flex w-full max-w-xs flex-col items-center gap-4">
-          <ProgressBar
-            aria-labelledby={textId}
-            value={klara}
-            minValue={0}
-            maxValue={totalt}
-            valueLabel={besked}
-            className="w-full"
-          >
-            {({ percentage }) => (
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--mm-forberedelseskarm-bar-track) outline-border-strong contrast-more:outline print:outline">
-                <div
-                  className={
-                    stallad
-                      ? 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:animate-pulse motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
-                      : 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
-                  }
-                  style={{ width: `${percentage ?? 0}%` }}
-                />
-              </div>
-            )}
-          </ProgressBar>
-          {/* MARCUS-LÅST ORDALYDELSE — ändra aldrig ett tecken (PRD TASK-218,
-              ADR-112, ORDLISTA "Förberedelseskärmen"). */}
-          <p id={textId} className="text-center text-body text-text-secondary">
-            Förbereder ditt administrationsverktyg
-          </p>
-          {/* STALL-SIGNALEN (task-240) — ADDITIV rad, den låsta raden ovan
-              rörs inte. Monteras/avmonteras med `stallad`, ej bara döljd via
-              CSS, så den aldrig ligger dold-men-närvarande i DOM:en mellan
-              framsteg. */}
-          {stallad && (
-            <p className="text-center text-body text-text-secondary">
-              Tar lite längre tid än vanligt…
-            </p>
+    <div className="relative flex h-full min-h-full w-full flex-col items-center justify-center bg-bg p-4 sm:p-8 lg:p-12">
+      {/* Bakgrundsbilden — se doc-block § BAKGRUNDSBILDEN (task-273.6). Foto
+          och scrim är TVÅ separata lager i stället för en förblandad bild:
+          scrimmets opacitet är en TOKEN (mätbar, testad, bytbar för sig),
+          och båda döljs oberoende av innehållet under contrast-more. Båda
+          `aria-hidden` — rent dekorativt, ingen textalternativ-skuld. */}
+      <div
+        aria-hidden="true"
+        data-testid="forberedelseskarm-bakgrund"
+        className="absolute inset-0 bg-[url('/roger-och-lotta.webp')] bg-center bg-cover bg-no-repeat contrast-more:hidden print:hidden"
+      />
+      <div
+        aria-hidden="true"
+        data-testid="forberedelseskarm-scrim"
+        className="absolute inset-0 bg-(--mm-forberedelseskarm-scrim) contrast-more:hidden print:hidden"
+      />
+      <div
+        data-testid="forberedelseskarm-block"
+        className="relative flex w-full max-w-xs flex-col items-center gap-4"
+      >
+        <ProgressBar
+          aria-labelledby={textId}
+          value={klara}
+          minValue={0}
+          maxValue={totalt}
+          valueLabel={besked}
+          className="w-full"
+        >
+          {({ percentage }) => (
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--mm-forberedelseskarm-bar-track) outline-border-strong contrast-more:outline print:outline">
+              <div
+                className={
+                  stallad
+                    ? 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:animate-pulse motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
+                    : 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
+                }
+                style={{ width: `${percentage ?? 0}%` }}
+              />
+            </div>
           )}
-        </div>
+        </ProgressBar>
+        {/* MARCUS-LÅST ORDALYDELSE — ändra aldrig ett tecken (PRD TASK-218,
+            ADR-112, ORDLISTA "Förberedelseskärmen"). Sedan task-273.6:
+            sr-only i stället för synlig text — "rensas till enbart
+            loadingbaren" (Marcus tillägg 2) — men kvar i DOM:en som
+            progressbarens aria-labelledby-mål, se § TVÅ SKILDA
+            A11Y-KANALER ovan. Ordalydelsen ändras inte, bara synligheten. */}
+        <p id={textId} className="sr-only">
+          Förbereder ditt administrationsverktyg
+        </p>
+        {/* STALL-SIGNALEN (task-240) — ADDITIV rad, den låsta raden ovan
+            rörs inte. Monteras/avmonteras med `stallad`, ej bara döljd via
+            CSS, så den aldrig ligger dold-men-närvarande i DOM:en mellan
+            framsteg. sr-only sedan task-273.6 av samma skäl som ovan —
+            stall-LOGIKEN (tröskel, pulsning på baren) är oförändrad, bara
+            denna rads visuella närvaro. */}
+        {stallad && <p className="sr-only">Tar lite längre tid än vanligt…</p>}
       </div>
       {/* Kanal 2 — polite, alltid monterad; se klassdoc-blocket ovan.
           Stall-meddelandet vävs in i SAMMA live-region (inte en andra) så
