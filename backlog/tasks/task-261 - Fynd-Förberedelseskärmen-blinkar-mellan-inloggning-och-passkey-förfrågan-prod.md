@@ -3,10 +3,10 @@ id: TASK-261
 title: >-
   Fynd: Förberedelseskärmen blinkar mellan inloggning och passkey-förfrågan
   (prod)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 09:36'
-updated_date: '2026-08-17 10:12'
+updated_date: '2026-08-17 10:28'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,10 +30,10 @@ Marcus-observation 2026-08-17 under QA 243.4-morgonkollen, skarp prod (admin.mir
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -70,3 +70,9 @@ test:api: ROTT, men EJ av denna skiva — differentialbevisat. Körning 1 fälld
 
 SEPARAT DEFEKT FUNNEN OCH MÄTT, EJ ÅTGÄRDAD (Marcus live-observation via orkestreraren: logotyp+loadingbar ocentrerade på staging-preview): Forberedelseskarm.tsx rad 183 bär 'flex h-full min-h-full ... items-center justify-center'. h-full/min-h-full är procenthöjder och kräver att hela förälderkedjan bär höjd — men base.css rad 19-23 sätter 'html, body { margin: 0; padding: 0; }' UTAN height, och #root har ingen CSS-regel alls (noll träffar i src/styles/). SKARP MÄTNING i browsern: viewport=720, men root.clientHeight=176, container.clientHeight=176, bodyHeight=176px, htmlHeight=176px — containern kollapsar till innehållshöjden, så justify-center centrerar inom en 176px-låda högst upp på sidan och innehållet ser topp-ankrat ut. Orkestrerarens hypotes 1 (höjdkedje-kollaps) BEKRÄFTAD; hypotes 2 (fel komponent renderas) FALSIFIERAD — klassnamnet i mätningen matchar Forberedelseskarms egen rad 183 exakt. Detta är en SEPARAT rot från blinket (CSS-höjdkedja, inte navigerings-race) och åtgärdades INTE här: komponenten är ADR-112-/TASK-242-styrd med tätt specat layoutankare, så valet av ersättning (login.tsx använder viewport-baserad min-h-dvh för samma centrering och är immun mot kedjan) är ett designbeslut, inte en agent-solofix. Inget kort mintat per orkestrerarens instruktion.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGNING (orkestreraren, 2026-08-17): PR #1528 MERGED via merge-kön (per-jobb-checks gröna) — DoD betald. Rotorsak: race mellan två navigeringsvägar vid login, väckt när TASK-231 aktiverade passkey-erbjudandet (en annan kodvägs dokumenterade harmlöshets-antagande revs). Fix tvåsidigt bevisad (fäller utan/grön med, 13/13 login+passkey). Prod-verifikatet bokförs vid fas 4-EF/front-deploy-svepet (Marcus HITL) — appen i prod bär fixen så fort Vercel deployat main. Bifynd i separata kort: task-266 (höjdkedjan, agent bygger) + task-267 (obärda API-flakes).
+<!-- SECTION:FINAL_SUMMARY:END -->
