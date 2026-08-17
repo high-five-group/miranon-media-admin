@@ -83,8 +83,23 @@ async function skickaMail(
   await dialog.getByRole('button', { name: 'Skicka till 3 personer' }).click();
 }
 
+// [TASK-249.5] Båda testerna i denna describe skippas individuellt — ÖPPET
+// bokförd, minimal anpassning (TASK-243.1/243.3-precedentet). ADR-102/103-
+// promoveringen flippade /mer/segment till `VariantD`: `SegmentMailCompose`-
+// UI:t (`skickaMail`-hjälparen ovan) renderas inte längre där, OCH VariantD:s
+// `UtskicksVy.skicka()` är fortfarande `setTimeout`-SIMULERAD (AC#1 i
+// TASK-249.5 — `useSendSegmentMail`/`log-activity` anropas aldrig), så denna
+// filens HELA bevisyta (den RIKTIGA hookens aktivitetslogg-sidoeffekt) saknar
+// motsvarighet i den promoverade formen. Se TASK-249.9.
 test.describe('Segment-mailets aktivitetslogg (TASK-201.15)', () => {
   test.beforeEach(async ({ network }) => {
+    // Skip:et sitter HÄR (inte i varje test-kropp) så att beforeEach:s egna
+    // network.use()-registreringar aldrig körs — annars flaggar
+    // överskuggnings-vakten dem som döda (se TASK-249.5-kommentaren ovan).
+    test.skip(
+      true,
+      '[TASK-249.5] SegmentMailCompose-UI retirerad, sändning simulerad — se TASK-249.9',
+    );
     const members = Array.from({ length: 3 }, (_, i) => ({
       id: `recM${i}`,
       namn: `Person ${i}`,

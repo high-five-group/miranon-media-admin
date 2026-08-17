@@ -133,6 +133,16 @@ function choosePar(page: Page, groupName: string, choice: 'Inkludera' | 'Exklude
     .click();
 }
 
+// [TASK-249.5] Nio av de tio testerna i denna describe skippas individuellt —
+// ÖPPET bokförd, minimal anpassning (samma precedent som TASK-243.1/243.3 för
+// hem-vyn: "gör MINIMAL anpassning så CI är grönt per jobb — den FULLA
+// omskrivningen är en egen skiva"). ADR-102/103-promoveringen (TASK-249.5)
+// flippade /mer/segment till `VariantD` (mallvyn/verkstaden/segment-listan) —
+// den gamla `SegmentBuilder`-ytan ("Bygg segment"-rubriken, RadioGroup
+// Inkludera/Exkludera/Ignorera per kurs) renderas inte längre där. Full
+// omskrivning: TASK-249.9. Den tionde (axe-testet) är ERSATT, inte skippad —
+// se `axe 0 violations på den promoverade segment-ytan` nedan, så a11y-golvet
+// (11 utan undantag) inte stod obevakat under tiden.
 test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
   // SavedSegmentsList (L3) hämtar get-segments vid varje /mer/segment-load → mocka
   // default tom så de count-fokuserade L2-testerna förblir deterministiska. Spara-testet
@@ -147,6 +157,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     page,
     network,
   }) => {
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad — se TASK-249.9');
     mockEvents(network, TAXONOMY_EVENTS);
     await page.goto('/mer/segment');
 
@@ -178,6 +189,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     page,
     network,
   }) => {
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad — se TASK-249.9');
     mockEvents(network, TAXONOMY_EVENTS);
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
@@ -187,6 +199,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
   });
 
   test('include/exclude uppdaterar klartext-speglingen', async ({ page, network }) => {
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad — se TASK-249.9');
     mockEvents(network, TAXONOMY_EVENTS);
     await page.goto('/mer/segment');
     await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
@@ -200,6 +213,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
   });
 
   test('"Räkna antal" → count visas; aria-live', async ({ page, network }) => {
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad — se TASK-249.9');
     mockEvents(network, TAXONOMY_EVENTS);
     mockCompute(network, 3);
     await page.goto('/mer/segment');
@@ -213,6 +227,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
   });
 
   test('tomt resultat (count===0) → NEUTRAL text, ej role=alert', async ({ page, network }) => {
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad — se TASK-249.9');
     mockEvents(network, TAXONOMY_EVENTS);
     mockCompute(network, 0);
     await page.goto('/mer/segment');
@@ -228,13 +243,31 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('axe 0 violations på den renderade byggar-vyn', async ({ page, network }) => {
-    mockEvents(network, TAXONOMY_EVENTS);
-    await page.goto('/mer/segment');
-    await expect(page.getByRole('heading', { level: 1, name: 'Bygg segment' })).toBeFocused();
+  /**
+   * [TASK-249.5] ERSÄTTER det gamla SegmentBuilder-axe-testet (retirerat,
+   * se batch-kommentaren ovan) — a11y-golvet (11 utan undantag) ska aldrig
+   * stå obevakat mellan flippen och den fulla omskrivningen (TASK-249.9).
+   * Minimal, men ÄKTA: navigerar mot den PROMOVERADE ytan UTAN variant-param
+   * (AC#1), väntar in segment-listans fokusmål, kör axe mot HELA sidan
+   * (samma tag-uppsättning som resten av klassen).
+   */
+  test('axe 0 violations på den promoverade segment-ytan', async ({ page, network }) => {
+    // Egen fixtur (inte `TAXONOMY_EVENTS`, som saknar kursfamilj/kursniva) —
+    // VariantD:s `harledKursAtomer` kräver `familj !== null` per par
+    // (`byggParInfo`, TASK-249.5); en okänd-familj-fixtur hade gett en TOM
+    // de-fjorton-lista i stället för den realistiska ytan axe ska granska.
+    mockEvents(network, [
+      ev('Resor i medvetandet 1', 'Utbildning', { kursfamilj: 'RIM', kursniva: 'Nivå 1' }),
+      ev('Resor i medvetandet 2', 'Utbildning', { kursfamilj: 'RIM', kursniva: 'Nivå 2' }),
+      ev('Fjärrskådning', 'Utbildning', { kursfamilj: 'Fjärrskådning', kursniva: null }),
+      ev('Psionautics', 'Utbildning', { kursfamilj: 'Psionautics', kursniva: null }),
+    ]);
+    network.use(http.post(EF('compute-segment'), () => json({ members: [], count: 0 })));
 
-    // Interagera så klartext-spegling + knapp-aktiv-state är med i scanet.
-    await choosePar(page, 'Resor i medvetandet 1 (utbildning)', 'Inkludera');
+    await page.goto('/mer/segment');
+    await expect(page.getByRole('heading', { level: 1, name: 'Segment' })).toBeVisible();
+    await expect(page.getByTestId('segment-listan')).toBeVisible();
+    await expect(page.getByText(/Räknar/)).toHaveCount(0);
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -247,6 +280,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     page,
     network,
   }) => {
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad — se TASK-249.9');
     mockEvents(network, TAXONOMY_EVENTS);
     mockComputeMembers(network, [
       { id: 'recM0', namn: 'Anna A', email: 'anna@example.se', ejGodkandMail: false },
@@ -285,6 +319,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     page,
     network,
   }) => {
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad — se TASK-249.9');
     mockEvents(network, TAXONOMY_EVENTS);
     mockComputeMembers(network, [
       { id: 'recM0', namn: 'Anna A', email: 'anna@example.se', ejGodkandMail: false },
@@ -309,6 +344,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     page,
     network,
   }) => {
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad — se TASK-249.9');
     mockEvents(network, TAXONOMY_EVENTS);
     mockCompute(network, 0);
     await page.goto('/mer/segment');
@@ -328,6 +364,7 @@ test.describe('Segment-byggar-yta (Fas 6g L2)', () => {
     page,
     network,
   }) => {
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad — se TASK-249.9');
     mockEvents(network, TAXONOMY_EVENTS);
 
     const savedSeg = {

@@ -95,8 +95,26 @@ const SEND_SENT = {
   logRecordId: 'recLOG1',
 };
 
+// [TASK-249.5] Samtliga tre tester i denna describe skippas individuellt —
+// ÖPPET bokförd, minimal anpassning (TASK-243.1/243.3-precedentet). ADR-102/
+// 103-promoveringen flippade /mer/segment till `VariantD`: den gamla
+// `SegmentBuilder`+`SegmentMailCompose`-composeUI:t ("Bygg segment"-rubriken,
+// "Skicka mail till ett segment"-rubriken) renderas inte längre där.
+// UTÖVER UI-formen: VariantD:s `UtskicksVy.skicka()` är fortfarande en
+// `setTimeout`-SIMULERAD sändning (AC#1 i TASK-249.5 — den promoverade formen
+// är identisk med den körande prototypen; `dataSource.sendEmail` anropas
+// ALDRIG) — dessa tester kan alltså inte skrivas om mot VariantD förrän/om en
+// separat skiva kopplar in en riktig `useSendSegmentMail()`. Se TASK-249.9.
 test.describe('Skicka mail på segment (Fas 6h L3)', () => {
   test.beforeEach(async ({ network }) => {
+    // Skip:et sitter HÄR (inte bara i varje test-kropp) så att `beforeEach`s
+    // egna network.use()-registreringar aldrig körs — annars flaggar
+    // överskuggnings-vakten dem som döda (registrerade men aldrig
+    // konsumerade av något test i filen, se TASK-249.5-kommentaren ovan).
+    test.skip(
+      true,
+      '[TASK-249.5] SegmentMailCompose-UI retirerad, sändning simulerad — se TASK-249.9',
+    );
     const members = Array.from({ length: 3 }, (_, i) => ({
       id: `recM${i}`,
       namn: `Person ${i}`,

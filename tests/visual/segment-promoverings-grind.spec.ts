@@ -125,8 +125,17 @@ const KURS_FS: Par = { kurs: 'Fjärrskådning', modalitet: 'Utbildning' };
 const KURS_PS: Par = { kurs: 'Psionautics', modalitet: 'Utbildning' };
 
 /** Minimal `EventRow`, all fält `EventSchema` kräver — samma helper-form som
- *  `mer-segment.acceptance.test.ts` § `ev()`, förenklad till denna filens behov. */
-function ev(eventNamn: string, typ: string, id: string) {
+ *  `mer-segment.acceptance.test.ts` § `ev()`, förenklad till denna filens behov.
+ *  `kursfamilj`/`kursniva` (TASK-249.5) matchar basens verifierade backfill
+ *  (`course-dimensions.ts` — samma mappning `byggParInfo`/`VariantD.tsx` nu
+ *  läser via `familjFranBas`/`nivaFranBas`; historiskt `KURS_KARTA`s form). */
+function ev(
+  eventNamn: string,
+  typ: string,
+  id: string,
+  kursfamilj: string,
+  kursniva: string | null,
+) {
   return {
     id,
     eventlabel: eventNamn,
@@ -146,16 +155,18 @@ function ev(eventNamn: string, typ: string, id: string) {
     antalSlutbetalningar: 0,
     antalSlutbetalningFelande: 0,
     status: null,
+    kursfamilj,
+    kursniva,
   };
 }
 
-/** Matchar `KURS_KARTA` (`VariantD.tsx`) exakt — de fyra atomer
+/** Matchar basens Kursfamilj/Kursnivå-backfill exakt — de fyra atomer
  *  `DE_FJORTON_ATOMER` också bygger på. */
 const SEGMENT_TAXONOMY_EVENTS = [
-  ev('Resor i medvetandet 1', 'Utbildning', 'recSegEvRim1'),
-  ev('Resor i medvetandet 2', 'Utbildning', 'recSegEvRim2'),
-  ev('Fjärrskådning', 'Utbildning', 'recSegEvFs'),
-  ev('Psionautics', 'Utbildning', 'recSegEvPs'),
+  ev('Resor i medvetandet 1', 'Utbildning', 'recSegEvRim1', 'RIM', 'Nivå 1'),
+  ev('Resor i medvetandet 2', 'Utbildning', 'recSegEvRim2', 'RIM', 'Nivå 2'),
+  ev('Fjärrskådning', 'Utbildning', 'recSegEvFs', 'Fjärrskådning', null),
+  ev('Psionautics', 'Utbildning', 'recSegEvPs', 'Psionautics', null),
 ];
 
 function mockEvents(network: NetworkFixture): void {
@@ -259,17 +270,31 @@ function harPar(kurser: readonly Par[], mal: Par): boolean {
  * json()` — samma body-läsande mönster som `handlers.ts` § `log-activity`
  * — och svarar `include`-unionen minus `exclude`-unionen över `ATTENDANCE`,
  * precis som en riktig `compute-segment`-EF skulle göra för denna
- * fixturvärld. `VariantD.tsx`s klient-sida AND-kombinerar redan flerledade
- * villkor (`raknaSammansatt`) ur flera såna enkla svar — handlern behöver
- * alltså aldrig se en konjunktion, bara OR/exclude per anrop.
+ * fixturvärld.
+ *
+ * [TASK-249.5] DNF-MEDVETEN: `VariantD.tsx` skickar numera EN DNF-formad
+ * regel per fråga (`predikatTillDnfRegel`) i stället för att AND-kombinera
+ * flera enkla svar klient-side (`raknaSammansatt`, borttagen) — ett
+ * `include`-element är antingen ett enkelt `Par` (OR) eller en Konjunkt-grupp
+ * (`Par[]`, AND, ADR-115). `uppfyllerVillkor` speglar servern
+ * (`_shared/segment-membership.ts` `matchedViaPars`) exakt: en grupp kräver
+ * ALLA sina par samtidigt. Ingen av fixturens ATTENDANCE-rader bär `period`,
+ * så mocken behöver inte filtrera på det (grind-scenarierna väljer aldrig en
+ * tidsperiod).
  */
+function uppfyllerVillkor(kurser: readonly Par[], villkor: Par | Par[]): boolean {
+  return Array.isArray(villkor)
+    ? villkor.every((par) => harPar(kurser, par))
+    : harPar(kurser, villkor);
+}
+
 function mockComputeSegment(network: NetworkFixture): void {
   network.use(
     http.post(EF('compute-segment'), async ({ request }) => {
-      const rule = (await request.json()) as { include: Par[]; exclude: Par[] };
+      const rule = (await request.json()) as { include: (Par | Par[])[]; exclude: Par[] };
       const members = ATTENDANCE.filter(
         ({ kurser }) =>
-          rule.include.some((par) => harPar(kurser, par)) &&
+          rule.include.some((villkor) => uppfyllerVillkor(kurser, villkor)) &&
           !rule.exclude.some((par) => harPar(kurser, par)),
       ).map(({ person }) => ({
         id: person.id,

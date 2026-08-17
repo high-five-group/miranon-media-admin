@@ -68,6 +68,8 @@ export {
   RelateradAnmalanSchema,
 } from './RegistrationDetail.schema';
 export {
+  type MedVillkor,
+  MedVillkorSchema,
   type Modalitet,
   ModalitetSchema,
   type Par,
@@ -80,6 +82,8 @@ export {
   type SegmentResult,
   SegmentResultSchema,
   type SegmentRule,
+  type SegmentRuleDnf,
+  SegmentRuleDnfSchema,
   SegmentRuleSchema,
 } from './Segment.schema';
 export {

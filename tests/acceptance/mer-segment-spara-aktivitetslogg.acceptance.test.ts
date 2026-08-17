@@ -67,8 +67,21 @@ const SAVED_SEG = {
   definition: 'Med: deltog i Fjärrskådning (utbildning).',
 };
 
+// [TASK-249.5] Båda testerna i denna describe skippas individuellt — ÖPPET
+// bokförd, minimal anpassning (TASK-243.1/243.3-precedentet). ADR-102/103-
+// promoveringen flippade /mer/segment till `VariantD`: `SegmentBuilder`-UI:t
+// (`choosePar`-hjälparen ovan, "Spara segment"-knappen) renderas inte längre
+// där, OCH VariantD:s skaparflöden (mallvyn/verkstaden/generatorn) lägger
+// nya segment i LOKALT React-state (AC#1 i TASK-249.5 — `useSaveSegment`/
+// `log-activity` anropas aldrig), så denna filens HELA bevisyta (den RIKTIGA
+// hookens aktivitetslogg-sidoeffekt) saknar motsvarighet i den promoverade
+// formen. Se TASK-249.9.
 test.describe('Spara-segments aktivitetslogg (TASK-201.15)', () => {
   test.beforeEach(async ({ network }) => {
+    // Skip:et sitter HÄR (inte i varje test-kropp) så att beforeEach:s egna
+    // network.use()-registreringar aldrig körs — annars flaggar
+    // överskuggnings-vakten dem som döda (se TASK-249.5-kommentaren ovan).
+    test.skip(true, '[TASK-249.5] SegmentBuilder-UI retirerad, spara lokalt-state — se TASK-249.9');
     network.use(
       http.get(EF('get-events'), () => json({ events: TAXONOMY_EVENTS })),
       http.get(EF('get-segments'), () => json({ segments: [] })),

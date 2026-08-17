@@ -31,7 +31,7 @@ import {
   type SavedSegment,
   type SaveSegmentInput,
   type SegmentResult,
-  type SegmentRule,
+  type SegmentRuleDnf,
   type SendActionEmailInput,
   type SendActionEmailResult,
   type SendActionTestEmailInput,
@@ -133,7 +133,7 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async computeSegment(_rule: SegmentRule): Promise<SegmentResult> {
+  async computeSegment(_rule: SegmentRuleDnf): Promise<SegmentResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
