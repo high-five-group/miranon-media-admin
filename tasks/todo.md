@@ -15,6 +15,19 @@
 
 ## Aktuellt fokus
 
+**Session 107 ⏸️ PAUSAD (2026-08-17, `lifecycle: paused`) — NIO-PUNKTSLISTAN:
+utredning + åtta byggskivor landade på EN dag.** Sju utredningsagenter →
+bas-svepet (Event-59/60/61 skapade, 26 orphan-anmälningar länkade, Agneta
+läkt — `{Event}=BLANK()` mätt 0) → PRD 273 (UI-fixpaketet) + 274
+(utskicks-spärren) + ADR-118/PRD 275 (bilagornas räckviddsmodell, grillad
+samsyn) + förlage-analysen (`docs/research/dokumentmallarnas-forlagor-2026-08-17.md`).
+LANDAT: 273.1/.2/.3/.4/.6 · 274 · 275.1/.2 (+ 275.3 i KÖN vid paus,
+PR 1584 med grön körning). KVAR: Done-flippar · Marcus QA 273.5 + 275.4 (4
+amenderings-sidofiler väntar omstämpling) · spärrens prod-deploy · tre
+mallsvaren → PRD 276 · test-aktivitetsraden · S102-arvet (127.10/147.9/269
+AC3 → Lotta). Numrering efter S107-paus: ADR 119 · task-276 · L512+fragment ·
+T145 · f50 — re-derivera ALLTID. Full handoff: sessionsdok S107 § PAUSLÄGE.**
+
 **Session 106 ✅ AVSLUTAD (2026-08-15, `lifecycle: closed` efter Marcus
 coverage-kvittens) — AKTIVITETSHISTORIK-SIDANS OMDESIGN: HELA PROTOTYP→
 SKARPT-BÅGEN PÅ EN DAG.** Konvergens-pass direkt på befintlig yta (divergens
