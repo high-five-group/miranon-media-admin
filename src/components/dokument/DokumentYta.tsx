@@ -159,7 +159,6 @@ import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { StegSektion } from '@/components/primitives/StegSektion';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
-import { formatMB } from '@/data/adapters/attachmentUpload';
 import type { DokumentKalla } from '@/data/mutations/dokumentKalla';
 import { useDeleteAttachment } from '@/data/mutations/useDeleteAttachment';
 import { useForhandsvisaDokument } from '@/data/mutations/useForhandsvisaDokument';
@@ -171,7 +170,7 @@ import {
 } from '@/data/mutations/useUploadAttachment';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
-import { AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Status';
+import { AttachmentClass, AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
 
 /* ------------------------------------------------------------------ *
@@ -451,6 +450,46 @@ function MetaRad({ delar }: { delar: (string | null)[] }) {
 }
 
 /**
+ * Radens metadata-delar — EN källa, så event- och räckviddsläget aldrig
+ * glider isär (de bar identiska men separata literal-listor före S107:s
+ * fjärde QA-rond).
+ *
+ * ═══ VARFÖR "Klass:" ÄR BORTA, OCH VARFÖR DET INTE RÄCKTE ═══
+ *
+ * Marcus: *"Ta bort 'Klass:' framför 'Uppladdad:'"*. Raden löd
+ * `Klass: Uppladdad · 0.0 MB · Uppladdad 17 aug. 2026 22:38`.
+ *
+ * Att bara stryka prefixet hade gett `Uppladdad · 0.0 MB · Uppladdad 17
+ * aug.` — ordet TVÅ gånger, alltså sämre. Dokumentklassens egna värden är
+ * `Uppladdad` · `Event-mallad` · `Person-genererad` (`AttachmentClass`), och
+ * det första kolliderar med datumledets verb.
+ *
+ * Tre beslut, i tur och ordning:
+ *
+ *   1. KLASSEN VISAS BARA NÄR DEN SÄGER NÅGOT NYTT. `Uppladdad` är
+ *      default-fallet och upprepar det datumledet redan säger — den utelämnas
+ *      därför. `Event-mallad`/`Person-genererad`/`Okänd` bär äkta
+ *      information och visas. Samma regel som segment-byggarens räknare
+ *      ("N av M matchar" syns bara när filtret gör skillnad, `VariantD.tsx`).
+ *   2. FILSTORLEKEN UTGÅR. `0.0 MB` är brus för varje fil under 50 kB, och
+ *      Lotta fattar inget beslut på den. Den fanns för att den var lätt att
+ *      visa, inte för att någon frågade efter den.
+ *   3. DATUMET BÄR RADEN. Kvar står `Uppladdad 17 aug. 2026 22:38` — det
+ *      enda meta-värdet som faktiskt skiljer två filer åt i en lista.
+ *
+ * "Okänd" behålls som ÄRLIG etikett (Gunilla-principen, TASK-147.12): den
+ * betyder "backfillen kunde inte härleda den här raden", aldrig "vi vet men
+ * visar det inte".
+ */
+function metaDelar(current: BilageRad['current']): (string | null)[] {
+  const klass = current.dokumentklass;
+  return [
+    klass != null && klass !== AttachmentClass.UPPLADDAD ? klass : null,
+    `Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`,
+  ];
+}
+
+/**
  * FÖRHANDSVISNINGS-/NEDLADDNINGS-IKONERNA (TASK-273.4) — se filhuvudets
  * IKONPAR-not för hela resonemanget (popup-blockerar-säkert mönster,
  * `download`-query-parameter-verifieringen mot staging, blob-URL-hantering
@@ -502,72 +541,187 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
       : null;
 
   return (
-    // VÄNSTERSTÄLLD, inte högerställd: knapparna står numera i radens egen
-    // informationskolumn (namn → knappar → räckvidd → datum, Marcus
-    // strukturfynd 2026-08-17), inte i en högermarginal. `items-end` hade
-    // dragit dem till kolumnens högra kant, ut ur läsflödet.
-    <span className="flex flex-col items-start gap-1.5">
-      <span className="flex items-center gap-1">
-        <Button
-          intent="primary"
-          emphasis="subtle"
-          size="sm"
-          className="size-11 shrink-0 p-0"
-          // MEDVETET `aria-disabled` — INTE `isDisabled` (som Button.tsx:s
-          // egen `isLoading`-docblock förklarar: `isDisabled` renderar ett
-          // native `disabled`-attribut och tar bort knappen ur tabordningen
-          // mitt i klicket. `aria-disabled` annonserar samma tillstånd utan
-          // att flytta fokus — dubbelklicks-skyddet sköts av
-          // early-return-vakten i onPress nedan, samma teknik Button.tsx
-          // själv använder för `isLoading`.
-          aria-disabled={forhandsvisaMutation.isPending}
-          aria-label={forhandsvisaMutation.isPending ? `Öppnar ${namn} …` : `Förhandsvisa ${namn}`}
-          onPress={() => {
-            if (forhandsvisaMutation.isPending) return;
-            // KRITISKT: window.open MÅSTE anropas synkront här, före all
-            // await/mutate-hantering — se filhuvudets IKONPAR-not.
-            const handle = window.open('', '_blank');
-            forhandsvisaMutation.mutate({ kalla, handle });
-          }}
-        >
-          {forhandsvisaMutation.isPending ? (
-            <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
-          ) : (
-            // `ExternalLink`, inte `Eye` (Marcus: "previewikonen är ful").
-            // Bytet är inte bara kosmetiskt — det är ÄRLIGARE: knappen öppnar
-            // dokumentet i en NY FLIK (`window.open` i onPress nedan), den
-            // visar det inte inline. Ögat lovar en förhandsvisning på plats
-            // som aldrig kommer; pilen-ur-rutan säger vad som faktiskt
-            // händer, och skiljer sig dessutom tydligare från nedladdnings-
-            // pilen bredvid än ett öga gör.
-            <ExternalLink aria-hidden="true" size={18} />
-          )}
-        </Button>
-        <Button
-          intent="primary"
-          emphasis="subtle"
-          size="sm"
-          className="size-11 shrink-0 p-0"
-          aria-disabled={nedladdningMutation.isPending}
-          aria-label={nedladdningMutation.isPending ? `Laddar ner ${namn} …` : `Ladda ner ${namn}`}
-          onPress={() => {
-            if (nedladdningMutation.isPending) return;
-            nedladdningMutation.mutate({ kalla, namn });
-          }}
-        >
-          {nedladdningMutation.isPending ? (
-            <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
-          ) : (
-            <Download aria-hidden="true" size={18} />
-          )}
-        </Button>
-      </span>
+    <>
+      {/* ÖPPNA-KNAPPEN TÄCKER HELA RADEN via `after:absolute after:inset-0`
+          mot radens `relative`. Det är husets etablerade grepp för "hela
+          posten är målet" (`PersonsList.tsx`s namn-Link, `EventCard.tsx`s
+          rubrik) — men här på en `<button>`, inte en `<Link>`, eftersom
+          destinationen inte är en route utan en asynkront hämtad URL som
+          måste öppnas i en synkront skapad flik. */}
+      <button
+        type="button"
+        // `aria-disabled`, INTE `disabled` — samma skäl som förr: ett native
+        // `disabled` tar knappen ur tabordningen mitt i klicket. Vakten
+        // nedan bär dubbelklicks-skyddet.
+        aria-disabled={forhandsvisaMutation.isPending}
+        className="-mx-1 flex min-w-0 items-center gap-1.5 rounded px-1 text-left after:absolute after:inset-0 focus-visible:outline-(--mm-focus-ring) focus-visible:outline-2 focus-visible:outline-offset-2"
+        onClick={() => {
+          if (forhandsvisaMutation.isPending) return;
+          // KRITISKT: window.open MÅSTE anropas synkront här, före all
+          // await/mutate-hantering — se filhuvudets IKONPAR-not.
+          const handle = window.open('', '_blank');
+          forhandsvisaMutation.mutate({ kalla, handle });
+        }}
+      >
+        <span className="min-w-0 break-words font-medium text-body">{namn}</span>
+        {/* AFFORDANSEN, inte dekoration. Raden leder inte vidare INOM appen
+            (då hade det varit HandlingsRads chevron) — den öppnar en ny
+            webbläsarflik, och `ExternalLink` är den etablerade symbolen för
+            just det. Utan den vore en klickbar rad som byter flik en
+            överraskning. */}
+        {forhandsvisaMutation.isPending ? (
+          <Loader2
+            aria-hidden="true"
+            size={14}
+            className="shrink-0 text-text-muted motion-safe:animate-spin"
+          />
+        ) : (
+          <ExternalLink aria-hidden="true" size={14} className="shrink-0 text-text-muted" />
+        )}
+        {/* ADDITIVT sr-only-led, aldrig `aria-label`: ett aria-label hade
+            ERSATT filnamnet i det tillgängliga namnet, så synlig och uppläst
+            text kunnat glida isär vid nästa textputs. Samma regel som
+            `StegSektion`s "Steg N:"-prefix. */}
+        <span className="sr-only">
+          {forhandsvisaMutation.isPending ? ' — öppnas …' : ' — öppna i ny flik'}
+        </span>
+      </button>
+
       {fel && (
         <MessageBox intent="error" className="max-w-56">
           {fel instanceof Error ? fel.message : 'Okänt fel.'}
         </MessageBox>
       )}
-    </span>
+    </>
+  );
+}
+
+/**
+ * NEDLADDNINGEN ÄR RADENS ENDA ALLTID-SYNLIGA IKONKNAPP.
+ *
+ * Före S107:s fjärde QA-rond bar varje rad TRE kvadratiska ikonrutor
+ * (`size-11 shrink-0 p-0`). Mönsterkartläggningen av appen visade att den
+ * formen inte fanns någon annanstans i huset — samtliga träffar på den
+ * klass-strängen låg i denna fil. Det var en lokal uppfinning, och Marcus
+ * läste den som främmande ("dokumentsidan är skitdålig").
+ *
+ * Husets svar på radhandlingar är i stället att den PRIMÄRA handlingen är
+ * hela raden (`HandlingsRad`-grammatiken). Förhandsvisningen är den
+ * handlingen här; nedladdningen är den enda sekundära som Lotta gör ofta nog
+ * att den ska stå framme. Ersätt/Radera är förvaltning och bor i sin egen
+ * kolumn, se radernas egna kommentarer.
+ */
+/**
+ * ═══ RADENS DELADE SKAL — EN FORM FÖR BÅDA LÄGENA ═══
+ *
+ * Eventläget och räckviddsläget renderade före S107:s fjärde QA-rond varsin
+ * nästan identisk rad, med samma metadata-lista skriven två gånger. De hade
+ * redan börjat glida isär. Skalet är därför delat KOD, inte delad
+ * beskrivning — samma lärdom `HandlingsRad` bär i sitt eget huvud.
+ *
+ * Det enda som skiljer lägena är `handlingar`: eventläget skickar Ersätt för
+ * event-egna filer, räckviddsläget skickar Ersätt + Radera. Nedladdningen
+ * står alltid framme, och öppnandet är hela raden.
+ *
+ * ── VARFÖR HELA RADEN ÄR KLICKBAR ──
+ *
+ * Marcus dom 2026-08-17: *"dokumentsidan är skitdålig… Lotta kommer inte
+ * gilla detta."* Mönsterkartläggningen gav orsaken: raden bar TRE
+ * kvadratiska ikonrutor, och den formen fanns inte någon annanstans i appen
+ * — samtliga träffar på `size-11 shrink-0 p-0` låg i denna fil. Huset löser
+ * radhandlingar med att den primära handlingen ÄR raden (`PersonsList`,
+ * `EventCard`, `HandlingsRad`), inte med en knappkolumn.
+ *
+ * Att öppna dokumentet är den handlingen. `after:absolute after:inset-0` på
+ * öppna-knappen mot detta `relative`-skal är samma grepp `PersonsList`s
+ * namn-Link använder; de sekundära knapparna lyfts över med `relative z-10`
+ * så de förblir egna träffytor.
+ *
+ * ── HOVERN MÅSTE VARA `bg-bg-emphasized`, ALDRIG `bg-bg-muted` ──
+ *
+ * Kortet raden bor i bär `bg-bg-muted`. En hover i samma token hade varit
+ * osynlig — exakt den felklass denna yta redan drabbats av tre gånger
+ * (`ghost`-hovern två gånger, räckviddspillen en). `bg-bg-emphasized` är
+ * husets nästa steg upp och det `HandlingsRad` självt använder.
+ */
+function DokumentRadSkal({
+  namn,
+  kalla,
+  current,
+  dolda,
+  handlingar,
+}: {
+  namn: string;
+  kalla: DokumentKalla;
+  current: BilageRad['current'];
+  dolda: number;
+  handlingar: React.ReactNode;
+}) {
+  return (
+    <div
+      data-testid="dokument-fil"
+      className="relative -mx-2 flex items-start gap-3 rounded-lg px-2 py-3 hover:bg-bg-emphasized motion-safe:transition-colors"
+    >
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+        <DokumentAtgardsKnappar namn={namn} kalla={kalla} />
+        {/* Pill och datum på SAMMA rad, inte staplade: de är två meta-värden
+            om samma fil, och en rad var gör dem till två påståenden. `gap-x`
+            skiljer dem, `flex-wrap` bryter först när bredden kräver det. */}
+        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <RackviddBadge
+            rackvidd={current.rackvidd}
+            kursfamilj={current.kursfamilj}
+            kursniva={current.kursniva}
+          />
+          <MetaRad delar={metaDelar(current)} />
+        </span>
+        {dolda > 0 && (
+          <span className="text-caption text-text-secondary">
+            +{dolda} {dolda === 1 ? 'äldre fil' : 'äldre filer'} med samma namn (visas inte)
+          </span>
+        )}
+      </span>
+      {/* `relative z-10` lyfter de sekundära handlingarna ÖVER öppna-knappens
+          `after`-lager. Utan det hade varje klick på Ladda ner/Ersätt/Radera
+          fångats av raden och öppnat dokumentet i stället. */}
+      <span className="relative z-10 flex shrink-0 items-center gap-1">
+        <LaddaNerKnapp namn={namn} kalla={kalla} />
+        {handlingar}
+      </span>
+    </div>
+  );
+}
+
+function LaddaNerKnapp({ namn, kalla }: { namn: string; kalla: DokumentKalla }) {
+  const nedladdningMutation = useLaddaNerDokument();
+  return (
+    <>
+      <Button
+        intent="primary"
+        emphasis="subtle"
+        size="sm"
+        className="size-11 shrink-0 p-0"
+        aria-disabled={nedladdningMutation.isPending}
+        aria-label={nedladdningMutation.isPending ? `Laddar ner ${namn} …` : `Ladda ner ${namn}`}
+        onPress={() => {
+          if (nedladdningMutation.isPending) return;
+          nedladdningMutation.mutate({ kalla, namn });
+        }}
+      >
+        {nedladdningMutation.isPending ? (
+          <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+        ) : (
+          <Download aria-hidden="true" size={18} />
+        )}
+      </Button>
+      {nedladdningMutation.isError && (
+        <MessageBox intent="error" className="max-w-56">
+          {nedladdningMutation.error instanceof Error
+            ? nedladdningMutation.error.message
+            : 'Okänt fel.'}
+        </MessageBox>
+      )}
+    </>
   );
 }
 
@@ -607,37 +761,21 @@ function BilageRadRow({
   // knapp den vet kommer avvisas.
   const gemensam = arGemensam(current.rackvidd);
   return (
-    <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-        <span className="break-words font-medium text-body">{current.namn}</span>
-        <DokumentAtgardsKnappar
-          namn={current.namn}
-          kalla={{ typ: 'bilaga', eventId, attachmentId: current.id }}
-        />
-        <RackviddBadge
-          rackvidd={current.rackvidd}
-          kursfamilj={current.kursfamilj}
-          kursniva={current.kursniva}
-        />
-        <MetaRad
-          delar={[
-            // [TASK-147.12] Verklig klass — se filens docblock (Fynd 1).
-            // "Okänd" är en ÄRLIG etikett (Gunilla-principen), inte en
-            // gissning: den betyder "backfillen kunde inte härleda den här
-            // raden", aldrig "vi vet men visar det inte".
-            `Klass: ${current.dokumentklass ?? 'Okänd'}`,
-            formatMB(current.storlekBytes),
-            `Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`,
-          ]}
-        />
-        {dolda > 0 && (
-          <span className="text-caption text-text-secondary">
-            +{dolda} {dolda === 1 ? 'äldre fil' : 'äldre filer'} med samma namn (visas inte)
-          </span>
-        )}
-      </span>
-      {!gemensam && (
-        <span className="flex shrink-0 items-center gap-1">
+    <DokumentRadSkal
+      namn={current.namn}
+      kalla={{ typ: 'bilaga', eventId, attachmentId: current.id }}
+      current={current}
+      dolda={dolda}
+      handlingar={
+        // [TASK-275.3, ADR-118 beslut 3] Ersätt VISAS INTE i eventkontext för
+        // en GEMENSAM bilaga — badgen bär förklaringen (AC #4). Servern nekar
+        // 403 ändå, men UI-lagret ska inte erbjuda en knapp den vet avvisas.
+        //
+        // För eventets EGNA filer står den kvar (Marcus-beslut 2026-08-17):
+        // förvaltningen flyttades i övrigt till räckviddsläget, men en
+        // event-egen fil syns inte där, så utan denna knapp hade den saknat
+        // ersätt-väg helt.
+        gemensam ? null : (
           <FileTrigger
             acceptedFileTypes={['application/pdf']}
             onSelect={(files) =>
@@ -664,32 +802,61 @@ function BilageRadRow({
               )}
             </Button>
           </FileTrigger>
-        </span>
-      )}
-    </div>
+        )
+      }
+    />
   );
 }
 
+/**
+ * ⚠️ `relative` PÅ RADEN ÄR ETT KRAV, INTE KOSMETIK — och frånvaron var en
+ * skarp bugg i 20 minuter (S107, fjärde QA-ronden).
+ *
+ * `DokumentAtgardsKnappar` öppnar dokumentet via en knapp med
+ * `after:absolute after:inset-0`. Ett absolut positionerat element mäts mot
+ * närmaste POSITIONERADE förfader — saknar raden `relative` klättrar
+ * `after`-lagret uppåt i trädet och lägger sig som en osynlig klickfälla
+ * över allt det förfadern täcker. Mätt utfall: uppladdningsflödets
+ * radioknappar gick inte att klicka, eftersom mall-radens `after` låg över
+ * dem. Playwright-felet var ordagrant "…button… intercepts pointer events".
+ *
+ * Bilagerader får sitt `relative` av `DokumentRadSkal`. Mall- och
+ * generatorrader har egen struktur (ingen räckviddsbadge, ingen
+ * ersätt-handling) och måste därför bära det själva. Tar du bort `relative`
+ * här återuppstår buggen tyst — den syns inte i något statiskt test, bara
+ * när någon försöker klicka på något annat på sidan.
+ */
 function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
   return (
-    <div data-testid="dokument-mall" className="flex items-start gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="break-words font-medium text-body">{mall.namn}</span>
+    <div
+      data-testid="dokument-mall"
+      className="relative -mx-2 flex items-start gap-3 rounded-lg px-2 py-3 hover:bg-bg-emphasized motion-safe:transition-colors"
+    >
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+        <DokumentAtgardsKnappar namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
         <MetaRad delar={[`Fyller i ${mall.fyllerI.join(', ').toLowerCase()}`]} />
       </span>
-      <DokumentAtgardsKnappar namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
+      <span className="relative z-10 flex shrink-0 items-center gap-1">
+        <LaddaNerKnapp namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
+      </span>
     </div>
   );
 }
 
+/** Samma `relative`-krav som `MallRad` ovan — se dess docblock. */
 function GeneratorRad({ gen, eventId }: { gen: Generator; eventId: string }) {
   return (
-    <div data-testid="dokument-generator" className="flex items-start gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="break-words font-medium text-body">{gen.namn}</span>
+    <div
+      data-testid="dokument-generator"
+      className="relative -mx-2 flex items-start gap-3 rounded-lg px-2 py-3 hover:bg-bg-emphasized motion-safe:transition-colors"
+    >
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
+        <DokumentAtgardsKnappar namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
         <MetaRad delar={[`Byggs ur ${gen.byggsUr.join(', ').toLowerCase()}`]} />
       </span>
-      <DokumentAtgardsKnappar namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
+      <span className="relative z-10 flex shrink-0 items-center gap-1">
+        <LaddaNerKnapp namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
+      </span>
     </div>
   );
 }
@@ -762,49 +929,67 @@ function DokumentLista({
   const aktivtFilter: ListaTyp =
     filter === 'bilaga' || filter === 'mall' || filter === 'generator' ? filter : 'alla';
 
+  const listRubrikId = useId();
   const visaBilagor = aktivtFilter === 'alla' || aktivtFilter === 'bilaga';
   const visaMallar = aktivtFilter === 'alla' || aktivtFilter === 'mall';
   const visaGeneratorer = aktivtFilter === 'alla' || aktivtFilter === 'generator';
 
   return (
-    <div className="flex flex-col gap-3">
-      <ToggleButtonGroup
-        label="Filtrera på typ"
-        spread
-        selectedKey={aktivtFilter}
-        onSelectionChange={(key) => void setFilter(key === 'alla' ? null : key)}
-      >
-        {LISTA_FILTER.map((f) => (
-          <ToggleButton key={f.key} id={f.key} size="sm" className="min-h-11">
-            {f.label}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
-
-      <div
-        data-testid="grupp-kort"
-        className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
-      >
-        {visaBilagor &&
-          rader.map((r) => (
-            <BilageRadRow
-              key={r.current.id}
-              eventId={eventId}
-              rad={r}
-              onReplace={onReplace}
-              replaceMutation={replaceMutation}
-            />
-          ))}
-        {visaMallar && MALLAR.map((m) => <MallRad key={m.id} mall={m} eventId={eventId} />)}
-        {visaGeneratorer &&
-          GENERATORER.map((g) => <GeneratorRad key={g.id} gen={g} eventId={eventId} />)}
-        {visaBilagor && rader.length === 0 && !visaMallar && !visaGeneratorer && (
-          <p className="py-3 text-small text-text-muted">Inga bilagor för det här eventet än.</p>
-        )}
-      </div>
-
-      <ErsattningsFel replaceMutation={replaceMutation} />
+    // ═══ UPPLADDNINGEN FÖRST, LISTAN SEDAN (Marcus 2026-08-17) ═══
+    //
+    // Ordningen var omvänd: filterrad → lista → uppladdning. För att ladda
+    // upp en fil fick Lotta skrolla förbi hela dokumentlistan, vars längd vi
+    // inte styr. Marcus: *"man måste ju SE ladda upp sektionen"* — och på
+    // frågan vad Lotta gör oftast: *"Tror hon kommer ladda upp mest"*.
+    //
+    // Den vanligaste handlingen ligger nu överst. Infällning av listan
+    // övervägdes och valdes BORT: huset använder `Disclosure` enbart för
+    // filterpaneler (`EventsList.tsx`), aldrig för innehållslistor, och en
+    // infälld lista hade dolt symptomet i stället för att flytta orsaken.
+    <div className="flex flex-col gap-4">
       <UppladdningsFlode harEvent onUpload={onUpload} uploadMutation={uploadMutation} />
+
+      <section aria-labelledby={listRubrikId} className="flex flex-col gap-3">
+        <h2 id={listRubrikId} className="font-semibold text-lg">
+          Dokument för eventet
+        </h2>
+        <ToggleButtonGroup
+          label="Filtrera på typ"
+          spread
+          selectedKey={aktivtFilter}
+          onSelectionChange={(key) => void setFilter(key === 'alla' ? null : key)}
+        >
+          {LISTA_FILTER.map((f) => (
+            <ToggleButton key={f.key} id={f.key} size="sm" className="min-h-11">
+              {f.label}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+
+        <div
+          data-testid="grupp-kort"
+          className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+        >
+          {visaBilagor &&
+            rader.map((r) => (
+              <BilageRadRow
+                key={r.current.id}
+                eventId={eventId}
+                rad={r}
+                onReplace={onReplace}
+                replaceMutation={replaceMutation}
+              />
+            ))}
+          {visaMallar && MALLAR.map((m) => <MallRad key={m.id} mall={m} eventId={eventId} />)}
+          {visaGeneratorer &&
+            GENERATORER.map((g) => <GeneratorRad key={g.id} gen={g} eventId={eventId} />)}
+          {visaBilagor && rader.length === 0 && !visaMallar && !visaGeneratorer && (
+            <p className="py-3 text-small text-text-muted">Inga bilagor för det här eventet än.</p>
+          )}
+        </div>
+
+        <ErsattningsFel replaceMutation={replaceMutation} />
+      </section>
     </div>
   );
 }
@@ -1025,48 +1210,64 @@ function GemensamtLage({
   onDelete: (attachmentId: string, namn: string) => void;
   deleteMutation: DeleteMutation;
 }) {
+  const listRubrikId = useId();
   return (
-    <div className="flex flex-col gap-3">
-      {/* HJÄLPTEXTEN ÄR BORTTAGEN (Marcus, QA 273.5 steg 5, 2026-08-17:
-          "Ta bort hjälptexten … den behövs inte"). Den löd "Gemensamma
-          dokument gäller flera event: en kurstyp eller alla event. Ändras
-          här, syns direkt överallt de gäller." — informationen bärs redan av
-          `RackviddBadge` per rad, som säger samma sak om den enskilda filen i
-          stället för i abstrakt form ovanför listan. Återinför den inte utan
-          att först fråga; raden är beslutad bort, inte tappad. */}
-      {laddar ? (
-        <div role="status" aria-busy="true" className="flex flex-col gap-2">
-          <span className="sr-only">Laddar gemensamma dokument…</span>
-          <Skeleton variant="listRow" />
-          <Skeleton variant="listRow" />
-        </div>
-      ) : fel ? (
-        <MessageBox intent="error" title="Kunde inte hämta gemensamma dokument">
-          {felmeddelande}
-        </MessageBox>
-      ) : (
-        <div
-          data-testid="grupp-kort"
-          className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
-        >
-          {rader.map((r) => (
-            <GemensamBilageRadRow
-              key={r.current.id}
-              rad={r}
-              onReplace={onReplace}
-              replaceMutation={replaceMutation}
-              onDelete={onDelete}
-              deleteMutation={deleteMutation}
-            />
-          ))}
-          {rader.length === 0 && (
-            <p className="py-3 text-small text-text-muted">Inga gemensamma dokument än.</p>
-          )}
-        </div>
-      )}
-
-      <ErsattningsFel replaceMutation={replaceMutation} />
+    // SAMMA ORDNING SOM EVENTLÄGET: uppladdningen först, listan sedan
+    // (Marcus 2026-08-17). De två lägena delar nu skelett — en användare som
+    // lärt sig det ena känner igen det andra.
+    <div className="flex flex-col gap-4">
       <UppladdningsFlode harEvent={false} onUpload={onUpload} uploadMutation={uploadMutation} />
+
+      <section aria-labelledby={listRubrikId} className="flex flex-col gap-3">
+        <h2 id={listRubrikId} className="font-semibold text-lg">
+          Gemensamma dokument
+        </h2>
+        {/* HJÄLPTEXTEN ÄR BORTTAGEN (Marcus, QA 273.5 steg 5, 2026-08-17:
+            "Ta bort hjälptexten … den behövs inte"). Den löd "Gemensamma
+            dokument gäller flera event: en kurstyp eller alla event. Ändras
+            här, syns direkt överallt de gäller." — informationen bärs redan av
+            `RackviddBadge` per rad, som säger samma sak om den enskilda filen i
+            stället för i abstrakt form ovanför listan. Återinför den inte utan
+            att först fråga; raden är beslutad bort, inte tappad.
+
+            INGEN TYP-FILTERRAD HÄR, och det är avsiktligt: räckviddsläget
+            visar BARA bilagor (klass A). Mallar och generatorer härleds ur
+            ett events data och har inget meningsfullt läge utan valt event —
+            en filterrad med tre döda alternativ hade lovat något ytan inte
+            kan hålla. */}
+        {laddar ? (
+          <div role="status" aria-busy="true" className="flex flex-col gap-2">
+            <span className="sr-only">Laddar gemensamma dokument…</span>
+            <Skeleton variant="listRow" />
+            <Skeleton variant="listRow" />
+          </div>
+        ) : fel ? (
+          <MessageBox intent="error" title="Kunde inte hämta gemensamma dokument">
+            {felmeddelande}
+          </MessageBox>
+        ) : (
+          <div
+            data-testid="grupp-kort"
+            className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+          >
+            {rader.map((r) => (
+              <GemensamBilageRadRow
+                key={r.current.id}
+                rad={r}
+                onReplace={onReplace}
+                replaceMutation={replaceMutation}
+                onDelete={onDelete}
+                deleteMutation={deleteMutation}
+              />
+            ))}
+            {rader.length === 0 && (
+              <p className="py-3 text-small text-text-muted">Inga gemensamma dokument än.</p>
+            )}
+          </div>
+        )}
+
+        <ErsattningsFel replaceMutation={replaceMutation} />
+      </section>
     </div>
   );
 }
@@ -1099,91 +1300,60 @@ function GemensamBilageRadRow({
   const raderarDennaRaden =
     deleteMutation.isPending && deleteMutation.variables?.attachmentId === current.id;
   return (
-    <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-        <span className="break-words font-medium text-body">{current.namn}</span>
-        <DokumentAtgardsKnappar
-          namn={current.namn}
-          kalla={{ typ: 'bilaga', eventId: null, attachmentId: current.id }}
-        />
-        <RackviddBadge
-          rackvidd={current.rackvidd}
-          kursfamilj={current.kursfamilj}
-          kursniva={current.kursniva}
-        />
-        <MetaRad
-          delar={[
-            `Klass: ${current.dokumentklass ?? 'Okänd'}`,
-            formatMB(current.storlekBytes),
-            `Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`,
-          ]}
-        />
-        {dolda > 0 && (
-          <span className="text-caption text-text-secondary">
-            +{dolda} {dolda === 1 ? 'äldre fil' : 'äldre filer'} med samma namn (visas inte)
-          </span>
-        )}
-      </span>
-      {/* HANDLINGSKOLUMNEN — de MUTERANDE handlingarna, skilda från radens
-          egen informationskolumn. Ersätt och Radera ändrar beståndet;
-          förhandsvisa och ladda ner gör det inte, och de bor därför kvar i
-          informationskolumnen ovan. Separationen är avsiktlig: den gör att
-          ingen når Radera på väg mot Ladda ner.
-
-          FÄRGTONINGEN BÄR SAMMA SKILLNAD (Marcus: "rödtoning på radera och
-          gul eller grå på ersätt"). Vi har ingen gul intent — paletten bär
-          primary/secondary/danger/success/ghost — så Ersätt får `secondary`
-          (neutral, ritad kant) och Radera `danger`+`subtle` (röd tonad
-          platta). Båda är husets egna former, ingen ny uppfinning.
-
-          INGEN `ghost` HÄR. Samma skäl som ikonparets docblock stavar ut:
-          `ghost`s hover-token ÄR `bg-bg-muted`, vilket är radgruppens egen
-          bakgrund — hovern hade varit osynlig. Knapparna bar `ghost` fram
-          till detta varv och hade alltså samma latenta defekt som Visa-
-          knappen en gång hade. */}
-      <span className="flex shrink-0 items-center gap-1">
-        <FileTrigger
-          acceptedFileTypes={['application/pdf']}
-          onSelect={(files) =>
-            onReplace(files, current.id, {
-              rackvidd: current.rackvidd ?? undefined,
-              kursfamilj: current.kursfamilj ?? undefined,
-              kursniva: current.kursniva ?? undefined,
-            })
-          }
-        >
-          <Button
-            intent="secondary"
-            size="sm"
-            className="size-11 shrink-0 p-0"
-            isDisabled={ersatterDennaRaden}
-            aria-label={
-              ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
+    <DokumentRadSkal
+      namn={current.namn}
+      kalla={{ typ: 'bilaga', eventId: null, attachmentId: current.id }}
+      current={current}
+      dolda={dolda}
+      handlingar={
+        // RÄCKVIDDSLÄGET ÄR FÖRVALTNINGSYTAN (Marcus 2026-08-17): här — och
+        // enligt ADR-118 beslut 3 BARA här — får en gemensam bilaga ersättas
+        // och raderas. Eventläget är Lottas läsflöde och ska inte bära
+        // handlingar som kan förstöra något för alla event samtidigt.
+        <>
+          <FileTrigger
+            acceptedFileTypes={['application/pdf']}
+            onSelect={(files) =>
+              onReplace(files, current.id, {
+                rackvidd: current.rackvidd ?? undefined,
+                kursfamilj: current.kursfamilj ?? undefined,
+                kursniva: current.kursniva ?? undefined,
+              })
             }
           >
-            {ersatterDennaRaden ? (
+            <Button
+              intent="secondary"
+              size="sm"
+              className="size-11 shrink-0 p-0"
+              isDisabled={ersatterDennaRaden}
+              aria-label={
+                ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
+              }
+            >
+              {ersatterDennaRaden ? (
+                <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+              ) : (
+                <Replace aria-hidden="true" size={18} />
+              )}
+            </Button>
+          </FileTrigger>
+          <Button
+            intent="danger"
+            emphasis="subtle"
+            size="sm"
+            className="size-11 shrink-0 p-0"
+            isDisabled={raderarDennaRaden}
+            aria-label={raderarDennaRaden ? `Raderar ${current.namn} …` : `Radera ${current.namn}`}
+            onPress={() => onDelete(current.id, current.namn)}
+          >
+            {raderarDennaRaden ? (
               <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
             ) : (
-              <Replace aria-hidden="true" size={18} />
+              <Trash2 aria-hidden="true" size={18} />
             )}
           </Button>
-        </FileTrigger>
-        <Button
-          intent="danger"
-          emphasis="subtle"
-          size="sm"
-          className="size-11 shrink-0 p-0"
-          isDisabled={raderarDennaRaden}
-          aria-label={raderarDennaRaden ? `Raderar ${current.namn} …` : `Radera ${current.namn}`}
-          onPress={() => onDelete(current.id, current.namn)}
-        >
-          {raderarDennaRaden ? (
-            <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
-          ) : (
-            <Trash2 aria-hidden="true" size={18} />
-          )}
-        </Button>
-      </span>
-    </div>
+        </>
+      }
+    />
   );
 }

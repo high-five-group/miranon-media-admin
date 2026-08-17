@@ -59,7 +59,35 @@ export function RackviddBadge({
         `${kursfamilj ?? 'Okänd familj'} · ${stegEtikett(kursniva) ?? 'Alla steg'}`;
 
   return (
-    <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
+    // ═══ `bg-surface`, INTE `bg-bg-muted` — OCH DET ÄR EN BUGGFIX ═══
+    //
+    // Pillen bar `bg-bg-muted` fram till S107 QA-vandringens fjärde rond.
+    // Det är husets kanoniska metadata-pill-sträng (samma som
+    // `Gruppdynamik.tsx:160` och `AtgardsSida.tsx:916`), så formen var rätt —
+    // men den renderas INUTI Dokument-ytans listkort, och det kortet bär
+    // också `bg-bg-muted`. Mätt i renderad yta: pillens bakgrund
+    // `rgb(245,245,243)`, kortets bakgrund `rgb(245,245,243)`. IDENTISKA.
+    // Kanten är `border-transparent` utom i `contrast-more`, så det fanns
+    // ingenting kvar som avgränsade pillen — den läste som fri text.
+    //
+    // Marcus fångade den exakt så ("Räckvidds ettiketten hänger ju fritt som
+    // text bara, borde det inte vara pills eller något") — invändningen var
+    // rätt, men orsaken var inte att formen saknades utan att den var
+    // osynlig.
+    //
+    // DETTA ÄR TREDJE INSTANSEN AV SAMMA FELKLASS i denna yta: `ghost`s
+    // hover-token ÄR `bg-bg-muted` och gav samma osynlighet på Visa-knappen
+    // (två gånger) och på Ersätt/Radera. `bg-bg-muted` används både som
+    // KORTETS bakgrund och som "svag yta"-token för element INUTI kortet —
+    // allt som bär den mot ett sådant kort försvinner. Fråga alltid vad
+    // underlaget bär innan denna token väljs.
+    //
+    // `bg-surface` är den ljusare av husets två ytor och ger pillen kontrast
+    // mot kortet utan att bryta pill-grammatiken i övrigt (radie, padding,
+    // typografi och `contrast-more`-kanten är oförändrade). På en yta som
+    // INTE är `bg-bg-muted` — t.ex. Åtgärds-sidans bilageväljare
+    // (`AtgardsSida.tsx:1551`) — läser den fortfarande som en pill.
+    <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
       {text}
     </span>
   );
