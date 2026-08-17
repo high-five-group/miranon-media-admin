@@ -4,6 +4,7 @@ title: 'Skiva: Mekanisk rivning — varianter, gamla byggaren, riggarna'
 status: To Do
 assignee: []
 created_date: '2026-08-17 00:35'
+updated_date: '2026-08-17 02:07'
 labels:
   - ready-for-agent
 dependencies:
@@ -35,3 +36,13 @@ Rivningen är mekanisk eftersom godkännandet redan är stämplat via kanalsepar
 - [ ] #6 ariaSnapshot-referenserna låsta ur variant d FÖRE flippen (enkelriktad ordning, ADR-103 B4)
 - [ ] #7 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+author: orkestreraren S104
+created: 2026-08-17 02:07
+---
+ORKESTRERAR-BOKFÖRING (S104 resume 5, 2026-08-17, natt-orkestreringen): FÖRUTSÄGBAR GRIND-KANT vid rivningen. task-249.1:s låsta referenser tests/visual/__aria__/segment-promoverings-grind.spec.ts/segment-detaljvyn-visual-{desktop,mobile}.aria.yml bär SkalprovsVaxel SYNLIGT (AC #3 partiell på 249.1-kortet: växeln sitter i PublikSektion mitt i samma div som ToggleButtonGroup/Input — flytt hade brutit Marcus-godkänd DOM, ADR-102). När denna skiva river SkalprovsVaxel fäller ariaSnapshot-matchningen (children: 'contain' kräver att referensens noder FINNS) de två referenserna. DoD-kravet 'referenserna orörda och gröna efteråt' är därför mekaniskt ouppfyllbart för exakt dessa två. LÖSNING KRÄVER KVITTENS: re-låsning av de två referenserna i rivnings-committen är den mekaniska konsekvensen av den redan beslutade rivningen (ytformen ToggleButtonGroup/Input består), men 'orörda' omtolkas inte tyst — Marcus kvitterar formen innan 249.6-agenten bockar det DoD-ledet. Byggagenten: bygg allt övrigt, STOPPA på detta led om kvittens saknas.
+---
+<!-- COMMENTS:END -->
