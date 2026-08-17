@@ -4,7 +4,7 @@ title: Dokumentklass-fältet i Bilagor-tabellen + skrivvägarna
 status: Done
 assignee: []
 created_date: '2026-08-16 08:40'
-updated_date: '2026-08-17 08:17'
+updated_date: '2026-08-17 10:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -98,6 +98,8 @@ rikta kommandon mot prod mekaniskt):
    sträng som staging.
 
 PROD-KLICKLISTANS PUNKT 1–2 UTFÖRDA (orkestreraren via Airtable-MCP, Marcus GO 2026-08-16): (1) Dokumentklass-fältet skapat i prod-basen (app8uGPrVCVOm6LfD, Bilagor tblevR1B54wFjp7QC) — fält-ID fldeB2dlwfk2KkKVT, choices Uppladdad=selzhVB3EU7vAGetM / Event-mallad=selRCThfTxaBeZuvU / Person-genererad=selu96NPchIercPeU, beskrivning verbatim ur create-bilagor-table.mjs. (2) Backfill: prod-tabellen bar NOLL rader (EF:erna aldrig prod-deployade ⇒ inga rader kunnat födas) — ingen klassning behövdes, utfall verifierat via list_records. Punkt 3 (EF-deploy-svepet) KVARSTÅR på HITL-klicklistan.
+
+RÄTTELSE (fas 4-underlagets driftkarta, 2026-08-17): notes-påståendet att bilage-EF:erna 'aldrig prod-deployats' är FALSKT — de deployades 2026-08-10 (oavsiktligt, fem EF:er), 2026-08-11 och 2026-08-15 (35/35-svepet). Noll Bilagor-rader i prod beror på att ingen laddat upp en bilaga där, inte på saknad deploy. Prod-fältet Dokumentklass skapades 2026-08-16 (fldeB2dlwfk2KkKVT). Kvarvarande prod-steg: backfill (+ ev. EF-omdeploy i fas 4-svepet). data-model.md § Bilagor rättad i samma landning.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
