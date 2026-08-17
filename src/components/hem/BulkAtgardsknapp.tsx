@@ -10,18 +10,25 @@ import { Button } from '@/components/primitives';
  * `react-aria-components`-källan: `data-disabled` sätts ENDAST av
  * `isDisabled`-propen) — exakt den dämpning facit-bilden inte visar.
  *
- * FUNKTIONELLT avstängd tills sändflödet (task-241) finns: ingen `onPress`
- * kopplas (klicket gör bokstavligen ingenting, samma no-op-princip som
- * prototypens `DodIngang`), och `aria-disabled="true"` (RAKT, inte via
- * `isDisabled`) annonserar tillståndet för skärmläsare utan att sänka
- * opaciteten eller ta bort träffytan ur tabordningen.
+ * TVÅ LÄGEN SEDAN [TASK-241.2], styrda av EN valfri `onPress`-prop:
  *
- * Den tillgängliga motiveringen ligger ALLTID i DOM:en (`aria-describedby`,
- * så en skärmläsare annonserar den vid fokus oavsett synligt tillstånd) men
- * är VISUELLT dold tills fokus/hover (`opacity-0` → `group-hover`/
- * `group-focus-within:opacity-100`) — aldrig en `title`-attributs-tooltip
- * (Gunilla-principen: en pekskärms- eller tangentbordsanvändare ser den
- * aldrig). `motion-safe:` respekterar prefers-reduced-motion.
+ *  · `onPress` UTELÄMNAD (ForfallnaBetalningars "Skicka påminnelse till
+ *    alla", oförändrat tills TASK-241.4 kopplar påminnelsesvepet):
+ *    FUNKTIONELLT avstängd — ingen `onPress` kopplas (klicket gör
+ *    bokstavligen ingenting, samma no-op-princip som prototypens
+ *    `DodIngang`), och `aria-disabled="true"` (RAKT, inte via `isDisabled`)
+ *    annonserar tillståndet för skärmläsare utan att sänka opaciteten eller
+ *    ta bort träffytan ur tabordningen. Den tillgängliga motiveringen ligger
+ *    ALLTID i DOM:en (`aria-describedby`) men är VISUELLT dold tills
+ *    fokus/hover — aldrig en `title`-attributs-tooltip (Gunilla-principen).
+ *  · `onPress` GIVEN (NyaAnmalningars "Bekräfta alla", TASK-241.2): en
+ *    RIKTIG, klickbar knapp — `onPress` kopplas rakt av, `aria-disabled`
+ *    utelämnas, ingen tooltip renderas. Den visuella formen (samma
+ *    `intent="primary"`, samma fullbredd) är OFÖRÄNDRAD i båda lägena —
+ *    facit skiljer inte visuellt mellan "funktionell" och "väntar på
+ *    sändflödet", bara `aria-disabled`/`onPress` gör det.
+ *
+ * `motion-safe:` respekterar prefers-reduced-motion.
  *
  * FULLBREDD (TASK-247, fynd b): wrappern är `flex flex-col` — SAMMA form
  * som prototypens `DodIngang` (`dev/hem-prototyp/ui.tsx`, `flex flex-col
@@ -38,8 +45,17 @@ import { Button } from '@/components/primitives';
  * (`facit-hem-v1-demo-desktop.png`) visar båda knapparna fullbredd —
  * bekräftat via renderad skärmdump mot denna körning.
  */
-export function BulkAtgardsknapp({ label }: { label: string }) {
+export function BulkAtgardsknapp({ label, onPress }: { label: string; onPress?: () => void }) {
   const beskrivningId = useId();
+  if (onPress) {
+    return (
+      <div className="flex flex-col">
+        <Button type="button" intent="primary" onPress={onPress}>
+          {label}
+        </Button>
+      </div>
+    );
+  }
   return (
     <div className="group relative flex flex-col">
       <Button type="button" intent="primary" aria-disabled="true" aria-describedby={beskrivningId}>

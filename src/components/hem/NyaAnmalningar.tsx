@@ -26,12 +26,17 @@ export function NyaAnmalningar({
   registrationsQuery,
   anmalningar,
   nuMs,
+  onBekraftaAlla,
 }: {
   anmalDataPending: boolean;
   regsError: boolean;
   registrationsQuery: ReturnType<typeof useDashboardRegistrations>;
   anmalningar: AnmalningarVy;
   nuMs: number;
+  /** [TASK-241.2] Öppnar bekräftelsesvepets sändyta (`Hem.tsx`s `svepOppen`).
+      Threading, ingen egen logik här — se `BulkAtgardsknapp.tsx`s docblock
+      för de två lägena en `onPress` styr. */
+  onBekraftaAlla: () => void;
 }) {
   return (
     <section aria-labelledby="hem-nya-anmalningar" className="flex min-w-0 flex-col gap-4">
@@ -114,7 +119,7 @@ export function NyaAnmalningar({
       )}
       {anmalningar.total > 0 ? (
         <div className="pt-1">
-          <BulkAtgardsknapp label="Bekräfta alla" />
+          <BulkAtgardsknapp label="Bekräfta alla" onPress={onBekraftaAlla} />
         </div>
       ) : null}
     </section>
