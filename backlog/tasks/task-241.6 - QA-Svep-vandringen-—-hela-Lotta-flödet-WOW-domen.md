@@ -4,7 +4,7 @@ title: 'QA: Svep-vandringen — hela Lotta-flödet + WOW-domen'
 status: To Do
 assignee: []
 created_date: '2026-08-16 23:08'
-updated_date: '2026-08-17 03:37'
+updated_date: '2026-08-17 10:24'
 labels:
   - ready-for-human
 dependencies:
@@ -36,6 +36,12 @@ Manuell testplan (Marcus, staging med granskningsdata vid behov — npm run seed
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TESTPLANENS SÄND-STEG OMKLASSADE (orkestreraren 2026-08-17, öppen amendering — inte tyst): kodläsning visade att staging-spärren (send-bulk.ts RESEND_TEST_ADDRESSES + NonProdAddressError, 'noll skickat') per design blockerar (a) testmail till inloggad adress och (b) skarp sändning till fixturens @example.com-rader. Stegen 4/6/7/8 kan därför INTE utföras manuellt i staging mot granskningsfixturen. Täckning i stället: sändvägarna är maskinbevisade ände-till-ände i 241.3/241.4:s staging-E2E (testadress-mönstret, körs per natt/PR); inkorgs-beviset flyttas till PROD-verifikatet efter fas 4-EF-deployen där inloggad adress är Marcus riktiga. Marcus manuella dom omfattar: granskningsytan (steg 1–3, avklarade), avbryt-vägen (5), tomt-urvals-domen (9), WOW-domen (10) + facit 18/18 (AC3).
+<!-- SECTION:NOTES:END -->
 
 ## Comments
 
