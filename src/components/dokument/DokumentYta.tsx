@@ -958,9 +958,6 @@ function DokumentLista({
       <UppladdningsFlode harEvent onUpload={onUpload} uploadMutation={uploadMutation} />
 
       <section aria-labelledby={listRubrikId} className="flex flex-col gap-3">
-        <h2 id={listRubrikId} className="font-semibold text-lg">
-          Dokument för eventet
-        </h2>
         <ToggleButtonGroup
           label="Filtrera på typ"
           spread
@@ -974,26 +971,41 @@ function DokumentLista({
           ))}
         </ToggleButtonGroup>
 
+        {/* RUBRIKEN BOR I KORTET (Marcus 2026-08-17: "Borde inte rubrikerna
+            flyttas in i sina block typ, vore inte det snyggare?"). Den låg
+            förut ovanför kortet och läste som en sidsektion; nu namnger den
+            det den faktiskt namnger.
+
+            Rubriken står UTANFÖR `divide-y`-flödet — en avdelare mellan
+            rubrik och första raden hade läst som om rubriken vore en post i
+            listan. Därav den inre wrappern. */}
         <div
           data-testid="grupp-kort"
-          className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+          className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted px-4 py-3 contrast-more:border-border-strong"
         >
-          {visaBilagor &&
-            rader.map((r) => (
-              <BilageRadRow
-                key={r.current.id}
-                eventId={eventId}
-                rad={r}
-                onReplace={onReplace}
-                replaceMutation={replaceMutation}
-              />
-            ))}
-          {visaMallar && MALLAR.map((m) => <MallRad key={m.id} mall={m} eventId={eventId} />)}
-          {visaGeneratorer &&
-            GENERATORER.map((g) => <GeneratorRad key={g.id} gen={g} eventId={eventId} />)}
-          {visaBilagor && rader.length === 0 && !visaMallar && !visaGeneratorer && (
-            <p className="py-3 text-small text-text-muted">Inga bilagor för det här eventet än.</p>
-          )}
+          <h2 id={listRubrikId} className="font-semibold text-lg">
+            Dokument för eventet
+          </h2>
+          <div className="divide-y divide-border">
+            {visaBilagor &&
+              rader.map((r) => (
+                <BilageRadRow
+                  key={r.current.id}
+                  eventId={eventId}
+                  rad={r}
+                  onReplace={onReplace}
+                  replaceMutation={replaceMutation}
+                />
+              ))}
+            {visaMallar && MALLAR.map((m) => <MallRad key={m.id} mall={m} eventId={eventId} />)}
+            {visaGeneratorer &&
+              GENERATORER.map((g) => <GeneratorRad key={g.id} gen={g} eventId={eventId} />)}
+            {visaBilagor && rader.length === 0 && !visaMallar && !visaGeneratorer && (
+              <p className="py-3 text-small text-text-muted">
+                Inga bilagor för det här eventet än.
+              </p>
+            )}
+          </div>
         </div>
 
         <ErsattningsFel replaceMutation={replaceMutation} />
@@ -1035,7 +1047,7 @@ function DokumentLista({
  * Formen är husets `StegSektion` (`primitives/StegSektion.tsx`, lyft ur
  * segment-byggaren i samma landning) — INTE en lokal variant. Två steg:
  *
- *   1. "Vad ska filen gälla?"  räckvidd + (vid Eventtyp) familj/nivå
+ *   1. "Vilka event ska filen gälla?"  räckvidd + (vid familj) familj/steg
  *   2. "Välj fil"              filväljaren
  *
  * STEG 2 VILAR I STÄLLET FÖR ATT BARA VARA AVSTÄNGT när `scopeGiltig` är
@@ -1078,11 +1090,27 @@ function UppladdningsFlode({
     // Rubriken är `<h2>` under sidans `<h1>Dokument`, och stegen går därför
     // ner till `<h3>` (`rubrikNiva`) — annars hade blockrubriken blivit
     // syskon till sina egna steg i rubrikordningen.
-    <section aria-labelledby={blockRubrikId} className="flex flex-col gap-3">
+    // ── RUBRIKEN BOR INUTI BLOCKET (Marcus 2026-08-17) ──
+    //
+    // Den stod förut ovanför en naken stegstapel och läste som en
+    // sidsektion snarare än som blockets eget namn. Nu bär sektionen husets
+    // BEHÅLLAR-skal och rubriken sitter i det, ovanför sina steg.
+    //
+    // SKALET ÄR `bg-bg-muted`, INTE `bg-surface` — och det är påtvingat, inte
+    // smak. `StegSektion` är själv `bg-surface` (panelgrammatiken); ett
+    // `bg-surface`-skal hade gjort stegkorten osynliga mot sin egen
+    // behållare. Det är EXAKT den felklass denna yta redan drabbats av fyra
+    // gånger (`ghost`-hovern ×2, Ersätt/Radera, räckviddspillen — alla
+    // `bg-bg-muted` mot `bg-bg-muted`). Nästlingen avgör tokenvalet: muted
+    // skal, surface innehåll — samma ordning som `HandlingsRadKort`.
+    <section
+      aria-labelledby={blockRubrikId}
+      className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
+    >
       <h2 id={blockRubrikId} className="font-semibold text-lg">
         Ladda upp filer
       </h2>
-      <StegSektion nummer={1} rubrikNiva={3} rubrik="Vad ska filen gälla?">
+      <StegSektion nummer={1} rubrikNiva={3} rubrik="Vilka event ska filen gälla?">
         {/* `hideLabel` — INTE borttagen etikett (Marcus: "Ta bort
             underrubriken Räckvidd, behövs inte" · "rubriken Familj till
             dropdownlistan kan tas bort"). Primitiven gör då `label` till
@@ -1241,9 +1269,6 @@ function GemensamtLage({
       <UppladdningsFlode harEvent={false} onUpload={onUpload} uploadMutation={uploadMutation} />
 
       <section aria-labelledby={listRubrikId} className="flex flex-col gap-3">
-        <h2 id={listRubrikId} className="font-semibold text-lg">
-          Gemensamma dokument
-        </h2>
         {/* HJÄLPTEXTEN ÄR BORTTAGEN (Marcus, QA 273.5 steg 5, 2026-08-17:
             "Ta bort hjälptexten … den behövs inte"). Den löd "Gemensamma
             dokument gäller flera event: en kurstyp eller alla event. Ändras
@@ -1270,21 +1295,28 @@ function GemensamtLage({
         ) : (
           <div
             data-testid="grupp-kort"
-            className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+            className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted px-4 py-3 contrast-more:border-border-strong"
           >
-            {rader.map((r) => (
-              <GemensamBilageRadRow
-                key={r.current.id}
-                rad={r}
-                onReplace={onReplace}
-                replaceMutation={replaceMutation}
-                onDelete={onDelete}
-                deleteMutation={deleteMutation}
-              />
-            ))}
-            {rader.length === 0 && (
-              <p className="py-3 text-small text-text-muted">Inga gemensamma dokument än.</p>
-            )}
+            {/* Rubriken i kortet, utanför `divide-y`-flödet — se eventlägets
+                motsvarande kommentar. */}
+            <h2 id={listRubrikId} className="font-semibold text-lg">
+              Gemensamma dokument
+            </h2>
+            <div className="divide-y divide-border">
+              {rader.map((r) => (
+                <GemensamBilageRadRow
+                  key={r.current.id}
+                  rad={r}
+                  onReplace={onReplace}
+                  replaceMutation={replaceMutation}
+                  onDelete={onDelete}
+                  deleteMutation={deleteMutation}
+                />
+              ))}
+              {rader.length === 0 && (
+                <p className="py-3 text-small text-text-muted">Inga gemensamma dokument än.</p>
+              )}
+            </div>
           </div>
         )}
 
