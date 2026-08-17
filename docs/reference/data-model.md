@@ -155,17 +155,22 @@ Fält som INTE behövde speglas (fanns redan i prod): `Antal platser`,
 `Notering` (Anmälningar) och `Närvaropoäng` (Deltaganden, `fldwuo94BY46VUOm4`
 — samma ID i båda baserna).
 
-#### Stagingbasens additiva tillskott 2026-08-16 (TASK-147.12) — ⚠️ INTE speglat till prod än
+#### Stagingbasens additiva tillskott 2026-08-16 (TASK-147.12) — prod-fältet skapat 2026-08-16, backfill + EF-deploy återstår
 
 Löser task-147.6:s fynd 1 (klass A/B strukturellt odelbara i Bilagor-metadatat)
 I BASEN, per Marcus-GO 2026-08-16 och ADR-063. Skapat via Airtable MCP
 `create_field` (inte `scripts/create-bilagor-table.mjs` självt —
 `AIRTABLE_SCHEMA_TOKEN` saknades i lokal `.env.seed`; skriptets `CONFIG.fields`
 speglar ändå exakt denna spec för framtida idempotenta körningar, se skriptets
-egen kommentar). **Detta fält finns ENDAST i staging** — prod-Bilagor
-(`tblevR1B54wFjp7QC`) har fortfarande bara sina ursprungliga 5 fält. Prod-steget
-(fält + backfill + EF-deploy) är bokfört som klicklista i `task-147.12`s
-Implementation Notes, ett separat Marcus-moment.
+egen kommentar). **Prod-fältet FINNS sedan 2026-08-16**: `Dokumentklass`
+skapades i prod-Bilagor (`tblevR1B54wFjp7QC`) som `fldeB2dlwfk2KkKVT`
+(sessionsdok S102 Del 14-eran, PR #1435-passet). Denna rad påstod fram till
+2026-08-17 att fältet "ENDAST finns i staging" — falsifierat av fas 4-
+underlagets driftkarta (samma svep fann att `task-147.12`-notes felaktigt
+påstod att bilage-EF:erna aldrig prod-deployats; de deployades 08-10/08-11/
+08-15 — noll prod-rader beror på att ingen laddat upp en bilaga i prod).
+Kvarvarande prod-steg: backfill + EF-deploy-svepet (fas 4, Marcus-moment,
+klicklista i `task-147.12`s Implementation Notes).
 
 | Yta | Staging-ID | Typ | Skiva |
 |---|---|---|---|
