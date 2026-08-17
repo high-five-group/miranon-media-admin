@@ -3314,6 +3314,17 @@ Syftet är att en ny läsare ska kunna läsa sista sessionen och förstå var vi
 - [`../tasks/lessons.md`](../tasks/lessons.md) — universella lärdomar
 - [`../tasks/todo.md`](../tasks/todo.md) — aktuell todo-status
 
+## Session 102 (2026-08-10 → 2026-08-17) — Go-live-passet: åtta pauser, rotorsaker och prod skarpt
+
+- **Commit-range:** `3d641184` (dagsorderns bas) → `4d2ca94d` (T144-trådkortets landning)
+- **Mål:** ta reda på exakt vad som återstår före go-live (Roger & Lotta släpps in), göra allt funnet plockbart, och lämna rent bord. Dagen blev en vecka och åtta pauser.
+- **Faktiskt:** go-live-inventeringen → tre-sidors-spåret (check-in/personer/persondetalj) promoverat → mailvägen skarp → Lotta-vandringen p1–p10 → laddupplevelsen (233/240/266) → Morgonkollen konvergerad och stämplad → svep-kedjan (241.1–241.7) → dokument-familjen komplett → rotorsaks-flottan (238 kvadratroten 1332→14,57 s · 250 CLI-wrappern · 251 worktree-portarna · 255 kontraktsvakts-fixturen · 256 API-flaken · 261 blinket · 266 höjdkedjan) → **fas 4: 39 EF:er deployade till prod med skriptad sekvens** → passkeys aktiverade och probe-verifierade
+- **Avvikelser:** ref-incidenten 2026-08-10 (fem EF:er till fel projekt — blev skälet till att `fas4-prod-deploy.sh` verifierar länkläget före varje skarp operation) · nightly röd 19 raka nätter, dominanterna två drift-detektorer (Länkkontroll = ADR-082:s valda kostnad, backlog-grinden = 238-roten) · fas 4-underlaget beskrev en baslinje som var inaktuell redan när det skrevs (git-derivering, inte artefakt-mätning) · min egen `.se`/`.dev`-förväxling ur arkivmaterial · shellcheck körd utan `--enable=all` gav falskt grönt lokalt
+- **Verifiering:** deployen mätt mot prod-svaret (39 ACTIVE, alla `updated_at` inom 55 s, noll test-\* i prod) · deny-triple mot `create-attendance` (401/401/405) · CORS tvåsidigt bevisat (rätt origin 200 + speglad, främmande 403) · prod-bundlen bevisad bära dagens kod (`grid min-h-dvh w-full`) · passkey-probe 200 med `rpId: admin.miranon.dev` · prod-basens `Bilagor` mätt tom
+- **Teknisk skuld:** `task-268` (icke-strikt `DocumentPreviewSchema` döljer fel-gren-svar) · `task-269` AC3 (dörrens backup-väg oprövad skarpt) · `task-239` (tre gröna nätter, tidigast 2026-08-20) · `task-256` AC4 · stämpel-hookens delta-fix (a/b-beslutet, väg b vald men obyggd) · `T144` (heartbeat-larm utan ägarskaps-filter, andra instansen mätt) · `INVITE_REDIRECT_URL` bör sättas explicit i stället för Site URL-fallback · 40-listans beslutspass · fem Dependabot-PR:er i review
+- **Full narrativ:** `tasks/sessions/2026-08-10-session-102.md` Del 1–18
+- **Producerade underlag:** `docs/research/fas4-ef-deploy-underlag-2026-08-17.md` · `docs/research/40-listan-proveniens-relevans-2026-08-16.md` · `docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md` · `scripts/fas4-prod-deploy.sh` + `scripts/test-fas4-prod-deploy.sh` (TASK-272) · `tasks/threads/T144-heartbeat-svepet-larmar-utan-agarskaps-filter.md`
+
 ## Session 104 (2026-08-10 → 2026-08-17) — Segment-passet: design-om + promoveringen
 
 - **Commit-range:** `44ffbfe9` (facit-lås-förberedelsen) → natt-orkestreringens svans (`#1534` m.fl., 2026-08-17)

@@ -38,16 +38,28 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 ▶️ ÅTERUPPTAGEN (2026-08-17, `lifecycle: active`, resume 8
-— STÄNGNINGSRESUMEN; Marcus order "ta den till stängning"). Dagens våg
-före pausen: senior-svepet + rotorsaks-flottan [238/250/251/255/256/261/
-266 lösta] + QA 243.4/241.6 godkända + fas 4-underlaget klart i
-`docs/research/fas4-ef-deploy-underlag-2026-08-17.md`. Bas vid resume:
-main `1fb91348` (paus-8 landad #1539; 266-fixen #1537 MERGED
-`cb24f4d5`). Arbetsordning = Marcus-sekvensen i sessionsdok §
-Paushistorik (åttonde): a/b-hookbeslutet → fas 4-deployen → buffén →
-0.6-grillning → passkey → QA-rester → stängningsskulder →
-SESSION-END.** Senior-svepets fynd i resume-rapporten (chatt 2026-08-17):
+**Session 102 ✅ AVSLUTAD (2026-08-17, `lifecycle: closed`) — GO-LIVE-PASSET,
+åtta pauser, 2026-08-10 → 2026-08-17. Resume 8 var stängningspasset.
+**FAS 4 KLAR: 39 EF:er deployade till prod** via `scripts/fas4-prod-deploy.sh`
+(TASK-272, byggt i passet — verifierar länkläget före varje skarp operation
+och återlänkar till staging i en EXIT-trap; skyddsräckena höll vid första
+verkliga körningen). Mätt mot prod-svaret: 39 ACTIVE, alla `updated_at` inom
+55 s, noll `test-*` i prod, `create-attendance` v1 med deny-triple 401/401/405.
+**Prod-verifikat i passet:** CORS tvåsidigt bevisad (rätt origin 200 + speglad,
+främmande 403) · prod-bundlen bär dagens kod · passkeys aktiva med
+`rpId: admin.miranon.dev` · Site URL bekräftad av Marcus · `Bilagor` mätt tom.
+**Klass B-buggen (tyst dataförorening vid varje Visa-klick) var redan borta** —
+deployen 06:59 bar preview-grenen; kedjan ancestor-bevisad.
+**Go-live-planen ommätt:** två kriterier var redan uppfyllda utan att bockas
+(person-vyerna, aktivitetsloggen). **KVAR TILL NÄSTA SESSION (Marcus moment):**
+QA `127.10` inbjudningsvandringen · QA `147.9` · `269` AC3 (dörrens backup-väg
+skarpt) · sedan Lotta. **KVAR TEKNISKT:** stämpel-hookens delta-fix (väg b vald,
+obyggd) · `268` schema-strikthet · `239` tre gröna nätter (tidigast 20/8) ·
+`256` AC4 · `T144` · `INVITE_REDIRECT_URL` explicit · 40-listan · fem
+Dependabot-PR:er. **NÄSTA ARBETE ÖPPNAR NY SESSION.** Numrering efter S102:
+task-273 · ADR 116 (reserverad, aldrig mintad) · L512 + 47 fragment · T145 ·
+f50 — re-derivera ALLTID. Full narrativ: sessionsdok S102 Del 1–18 + BUILD-LOG
+S102-post.** Senior-svepets fynd i resume-rapporten (chatt 2026-08-17):
 nightly röd 19 raka nätter — dominanter Länkkontroll (ADR-082-vald
 kostnad) + backlog-grinden (task-238-fixen VAR ombord natt 17/8, grinden
 cancellades ÄNDÅ mot 10-min-taket → resten av 238 är CI-körtiden) ·
