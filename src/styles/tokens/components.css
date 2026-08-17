@@ -282,33 +282,44 @@
      samtliga. Effekten kan därför bara HÖJA kontrasten, aldrig sänka den. */
   --mm-laddtext-vag: var(--mm-text);
 
-  /* ── Forberedelseskarm (task-218.2 — Förberedelseskärmen, ADR-112) ──
-     Determinate bar. --mm-primary (gold-500/gold-9) mäter bara 2,57:1 mot
-     vitt (se Kryssrutans mätning ovan) — under WCAG 1.4.11:s 3:1-golv för
-     UI-komponentgränser. gold-10 (kryssrutans platta, 3,06:1 mot VITT)
-     RÄCKER INTE HÄR: spåret är --mm-bg-muted (neutral-50), en aning mörkare
-     än vitt, och computed-mätt (Forberedelseskarm.spec.ts, DOM-probe) landar
-     gold-10 mot den ytan på 2,80:1 — under golvet. Samma
-     golv-inte-tak-princip löst med NÄSTA steg: gold-11 (#966800, kryssrutans
-     kant-ton) mot --mm-bg-muted mäter ≥3:1 redan i normalläge. contrast-more
-     mörknar vidare till gold-12 (#513700, ≥4,5:1). Spåret återanvänder
+  /* ── Forberedelseskarm (task-218.2 — Förberedelseskärmen, ADR-112;
+     färg+höjd task-273.1, 2026-08-17) ──
+     Determinate bar, 6 px-klassen (samma höjd som nästa event-kortets
+     kapacitetsbar, hem/NastaEvent.tsx). Fyllnaden bar tidigare gold-11/
+     gold-12 (samma familj som --mm-primary) — bytt till SAGE så systemets
+     egen laddningssignal skiljer sig visuellt från innehållets guld-
+     kapacitetsbar och de två aldrig förväxlas (Marcus prod-granskning
+     2026-08-17, PRD task-273 användarberättelser 1–2). Spåret är
+     --mm-bg-muted (neutral-50, #f5f5f3). Computed WCAG 2.x-mätning mot den
+     FAKTISKA spårfärgen (relativ luminans, ej mot vitt): sage-9 (#606b57 —
+     samma hex --mm-success redan pekar på via sin --p-green-500-alias, en
+     redan bevisat läsbar ton) mäter 5,15:1 — rejält över 1.4.11:s 3:1-golv
+     redan i normalläge (golv-inte-tak-mönstret, se Sidbytesindikator-
+     kommentaren nedan för gold-motsvarigheten). contrast-more mörknar
+     vidare till sage-11 (#434c3b, 8,24:1). Spåret återanvänder
      bg-muted-neutralen (Skeleton/kort-precedentet) och bär SlideToConfirm-
      spårets dubbelbälte (outline-color alltid satt, outline-style bara
      under contrast-more/print — border-transparent-mönstret applicerat på
      outline i stället för border). */
   --mm-forberedelseskarm-bar-track: var(--mm-bg-muted);
-  --mm-forberedelseskarm-bar-fill: var(--p-gold-11);
-  --mm-forberedelseskarm-bar-fill-contrast: var(--p-gold-12);
+  --mm-forberedelseskarm-bar-fill: var(--p-sage-9);
+  --mm-forberedelseskarm-bar-fill-contrast: var(--p-sage-11);
 
   /* ── Sidbytesindikator (TASK-233 — route-chunk-övergångar) ──
      Egna tokens i stället för att återanvända --mm-forberedelseskarm-bar-*
      rakt av: namnet på DE tokens säger "forberedelseskarm" och en
      tvärkomponent-koppling via ett komponentspecifikt namn vore en
-     namn-smell (DESIGN-SYSTEM-SPEC §1, "komponentspecifikt"). Samma
-     underliggande primitiv-värden och samma WCAG 1.4.11-resonemang som
-     Forberedelseskarm-tokens ovan (gold-11 mot --mm-bg-muted ≥3:1,
-     contrast-more skärper till gold-12) — se den kommentaren för hela
-     kontrastmätningen, upprepas inte här. */
+     namn-smell (DESIGN-SYSTEM-SPEC §1, "komponentspecifikt"). Behåller
+     GOLD (Forberedelseskarm bytte till sage i task-273.1 — se kommentaren
+     ovan — men Sidbytesindikatorn rördes uttryckligen INTE, Marcus svar 2,
+     2026-08-17): --mm-primary (gold-500/gold-9) mäter bara 2,57:1 mot vitt
+     — under WCAG 1.4.11:s 3:1-golv. gold-10 (kryssrutans platta, 3,06:1
+     mot VITT) räcker inte mot --mm-bg-muted heller (computed-mätt,
+     Forberedelseskarm.spec.ts landade historiskt på 2,80:1 för samma
+     primitiv mot samma spår) — golv-inte-tak löst med NÄSTA steg: gold-11
+     (#966800, kryssrutans kant-ton) mot --mm-bg-muted mäter ≥3:1 redan i
+     normalläge, contrast-more mörknar vidare till gold-12 (#513700,
+     ≥4,5:1). */
   --mm-sidbytesindikator-track: var(--mm-bg-muted);
   --mm-sidbytesindikator-fill: var(--p-gold-11);
   --mm-sidbytesindikator-fill-contrast: var(--p-gold-12);

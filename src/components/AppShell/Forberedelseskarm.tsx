@@ -62,7 +62,8 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * kvoten — signalen lägger till en "fortfarande igång"-indikation, den
  * ersätter aldrig den sanningsenliga datan med en generisk indeterminate-
  * bar. Tokens: samma `--mm-forberedelseskarm-bar-fill` som redan bär
- * kontrast-golvet (§ "Fyllnadsfärgen" nedan) — ingen ny färg införs.
+ * kontrast-golvet (§ "Höjden och fyllnadsfärgen" nedan) — ingen ny färg
+ * införs för pulsningen specifikt (den ÄRVER task-273.1s sage, se nedan).
  *
  * Namnet är Swedish/ORDLISTA-transrivet (ö→o, ä→a) enligt samma konvention
  * som `NastaEventCard` (`hem/`) — Förberedelseskärmen är ett låst, namngivet
@@ -70,17 +71,29 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * så komponenten bor i `AppShell/` tillsammans med annan app-rot-chrome
  * (`AppUpdateBanner`, `OfflineIndicator`) snarare än i `primitives/`.
  *
- * ═══ FYLLNADSFÄRGEN — GOLD-11, INTE --mm-primary (components.css) ═══
+ * ═══ HÖJDEN OCH FYLLNADSFÄRGEN — 6 PX + SAGE, INTE GOLD (task-273.1) ═══
  *
- * `--mm-primary` (gold-500/gold-9) mäter 2,57:1 mot vitt — under WCAG
- * 1.4.11:s 3:1-golv för UI-komponentgränser. gold-10 (kryssrutans platta,
- * 3,06:1 mot VITT) räcker inte här: spåret är `--mm-bg-muted` (en aning
- * mörkare än vitt), och computed-mätt (`Forberedelseskarm.spec.ts`) landar
- * gold-10 mot den ytan på 2,80:1 — under golvet. I stället för att förlita
- * sig på `contrast-more:` för att bli laglig (tak, inte golv) bär fyllnaden
- * gold-11 (kryssrutans kant-ton, ≥3:1 mot `--mm-bg-muted`) redan i
- * normalläge; contrast-more mörknar vidare till gold-12 (≥4,5:1). Tokens:
- * `--mm-forberedelseskarm-bar-*` (components.css).
+ * Baren delar nästa event-kortets bar-KLASS (`hem/NastaEvent.tsx` rad ~95,
+ * `h-1.5` = 6 px) men INTE dess färg: systemets egen laddningssignal (sage)
+ * ska skiljas visuellt från innehållets kapacitetsbar (guld,
+ * `--mm-primary`/`bg-primary-muted`), så de två aldrig förväxlas (Marcus
+ * prod-granskning 2026-08-17, PRD task-273 användarberättelser 1–2).
+ *
+ * Fyllnaden bär `--p-sage-9` (`#606b57`) — samma hex som `--mm-success`
+ * redan pekar på via sin `--p-green-500`-alias (33 användningar, bl.a.
+ * skapa-knappen), alltså en redan bevisat läsbar ton i appen, inte en ny
+ * uppfunnen kulör. Computed-mätt mot faktiska spårfärgen `--mm-bg-muted`
+ * (`--p-neutral-50`, `#f5f5f3`): sage-9 mäter **5,15:1** — golvet i WCAG
+ * 1.4.11 (3:1 för UI-komponentgränser) är alltså rejält passerat redan i
+ * normalläge, samma "golv-inte-tak"-princip som `Sidbytesindikator`s
+ * gold-11/gold-12-par etablerade (se den tokenkommentaren i
+ * `components.css` för resonemanget bakom mönstret; siffrorna skiljer sig
+ * eftersom sage och gold har olika luminanskurvor — sage klarar 3:1 redan
+ * vid steg 7, gold behövde steg 11 av 12). contrast-more mörknar vidare
+ * till `--p-sage-11` (`#434c3b`, **8,24:1** mot spåret) — en meningsfull
+ * skärpning, inte en marginell. Båda talen är räknade med WCAG 2.x
+ * relativ-luminans-formeln mot spårets FAKTISKA färgvärde, inte mot vitt.
+ * Tokens: `--mm-forberedelseskarm-bar-*` (components.css).
  *
  * ═══ TVÅ SKILDA A11Y-KANALER (spec §15 Roselli-mönstret + AppUpdateBanner-
  * precedentet: en snäv, alltid-monterad live-region för DYNAMISKT innehåll,
@@ -216,7 +229,7 @@ export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
             className="w-full"
           >
             {({ percentage }) => (
-              <div className="h-2 w-full overflow-hidden rounded-full bg-(--mm-forberedelseskarm-bar-track) outline-border-strong contrast-more:outline print:outline">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--mm-forberedelseskarm-bar-track) outline-border-strong contrast-more:outline print:outline">
                 <div
                   className={
                     stallad
