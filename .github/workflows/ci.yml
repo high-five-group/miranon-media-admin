@@ -947,6 +947,20 @@ jobs:
         # LOKALT mätt (macOS, 2026-08-10, `time node
         # scripts/test-check-mailto.mjs`) — CI-tiden är INTE mätt av mig och
         # kan avvika åt båda håll.
+        #
+        # test-fas4-prod-deploy.sh (TASK-272) hör hit av ett SKÄRPT skäl:
+        # skriptet det prövar kör skarpa operationer mot PROD, och dess
+        # viktigaste egenskap är att det INTE är en väg förbi prod-låset
+        # (scripts/deny-prod-ref.sh). Den egenskapen vilar på att project-refen
+        # kommer ur ARGUMENTET, aldrig ur .prod-ref-policy.conf — en enda
+        # bekvämlighets-refaktor som läser refen ur policyn skulle göra låset
+        # verkningslöst för varje agent, tyst. Fall 8/9 vaktar exakt den
+        # invarianten i båda riktningar. Sviten rör inget nätverk: samtliga 11
+        # fall ligger före första nätverksanropet, och de skarpa vägarna är
+        # otestbara här per konstruktion (de kräver prod-refen, som låset
+        # spärrar). 0,18 s LOKALT mätt (macOS, 2026-08-17, nanosekunds-
+        # avgränsad körning av `bash scripts/test-fas4-prod-deploy.sh`) —
+        # CI-tiden är INTE mätt av mig.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -967,6 +981,7 @@ jobs:
           bash scripts/test-check-nattvakt-dedup.sh
           bash scripts/test-check-sessionsdok-fonster.sh
           node scripts/test-check-mailto.mjs
+          bash scripts/test-fas4-prod-deploy.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
