@@ -3,10 +3,10 @@ id: TASK-266
 title: >-
   Förberedelseskärmens höjdkedja kollapsad — centrering sker i 176px-låda,
   min-h-dvh-vägen väljs
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 10:15'
-updated_date: '2026-08-17 10:55'
+updated_date: '2026-08-17 11:28'
 labels:
   - ready-for-human
 dependencies: []
@@ -29,10 +29,10 @@ TASK-261-agentens skarpa browsermätning (2026-08-17): viewport 720 px men html/
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
