@@ -28,7 +28,10 @@ import {
   findDisallowedField,
   getOperation,
 } from '../../supabase/functions/_shared/field-allowlists';
-import { NonProdAddressError, UtskickSparratError } from '../../supabase/functions/_shared/send-bulk';
+import {
+  NonProdAddressError,
+  UtskickSparratError,
+} from '../../supabase/functions/_shared/send-bulk';
 
 const TEST_ADDR = 'delivered@resend.dev';
 const TEST_ADDR_2 = 'bounced@resend.dev';

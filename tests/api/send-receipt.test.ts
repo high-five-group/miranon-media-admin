@@ -22,7 +22,10 @@
 
 import { expect, test } from '@playwright/test';
 import type { ReceiptAllocationDeps } from '../../supabase/functions/_shared/receipt-numbering';
-import { NonProdAddressError, UtskickSparratError } from '../../supabase/functions/_shared/send-bulk';
+import {
+  NonProdAddressError,
+  UtskickSparratError,
+} from '../../supabase/functions/_shared/send-bulk';
 import {
   type ReceiptFinalizer,
   type ReceiptPdfBuilder,

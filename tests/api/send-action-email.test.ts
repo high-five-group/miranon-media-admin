@@ -39,7 +39,10 @@ import {
   runActionSend,
   runActionTestSend,
 } from '../../supabase/functions/_shared/send-action-email';
-import { NonProdAddressError, UtskickSparratError } from '../../supabase/functions/_shared/send-bulk';
+import {
+  NonProdAddressError,
+  UtskickSparratError,
+} from '../../supabase/functions/_shared/send-bulk';
 
 const TEST_ADDR = 'delivered@resend.dev';
 const TEST_ADDR_2 = 'bounced@resend.dev';
@@ -216,10 +219,12 @@ test.describe('runActionSend — utskicks-spärren (TASK-274, Marcus beslut B, c
     const attachmentReader = mockAttachmentReader();
 
     await expect(
-      runActionSend(
-        input({ utskickSparrat: true, attachments: [resolvedAttachment()] }),
-        { sender, writeFields: writer, singleSender, readAttachments: attachmentReader },
-      ),
+      runActionSend(input({ utskickSparrat: true, attachments: [resolvedAttachment()] }), {
+        sender,
+        writeFields: writer,
+        singleSender,
+        readAttachments: attachmentReader,
+      }),
     ).rejects.toThrow(UtskickSparratError);
 
     expect(singleSender.calls, 'noll singel-anrop när spärren är på').toHaveLength(0);
