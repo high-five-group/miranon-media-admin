@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import type { QueryClient } from '@tanstack/react-query';
 import { onlineManager } from '@tanstack/react-query';
 import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
@@ -11,7 +12,11 @@ import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
  * här. Körs EN gång per auth-resolution (ADR-112 beslut 5), triggad av
  * `InnerApp` (`src/main.tsx`) EFTER både `auth.isLoading === false` och
  * `PersistQueryClientProvider`s `onSuccess` — den ordningen ägs av 218.3,
- * inte av denna modul.
+ * inte av denna modul. ENDA sidoeffekten utöver datahämtningarna själva
+ * (task-240, OBSERVABILITY): `avgorMed('timeout')` rapporterar via
+ * `Sentry.captureMessage` (repots redan etablerade, enda observability-yta
+ * — `src/observability/sentry.ts`) när gaten löste ut med `klara < totalt`.
+ * Ren mätning, ingen UI, inget nytt tredjepartsberoende.
  *
  * `dataSource` är ett OBLIGATORISKT injicerat beroende (`starta(qc,
  * { dataSource })`), INTE ett modul-scope statiskt importerat singleton —
@@ -107,6 +112,37 @@ const DEFAULT_TIMEOUT_MS = 9000;
 
 /** Se § "Rate-limit-respekterande sekvensering" ovan. */
 const BATCH_SIZE = 2;
+
+/**
+ * STALL-SIGNALEN (task-240, DIAGNOS-PASS 2 → Marcus-beslut 2026-08-17).
+ *
+ * Kontrollerad repro (task-240-kortets Implementation Notes) bevisade
+ * rotorsaken till "frusen bar, sedan abrupt släpp": när det SISTA, oparade
+ * batch-itemet (7 items / `BATCH_SIZE` 2 lämnar en rest på 1) är segt ger
+ * `korAlla()` NOLL visuell feedback under hela väntan — upp till hela
+ * `DEFAULT_TIMEOUT_MS`-budgeten — innan ADR-112 beslut 3:s DOKUMENTERADE
+ * hårda timeout löser ut med ett partiellt `klara`-värde. Mekanismen är
+ * korrekt (skyddsräcket gör exakt vad det ska); det som saknades var en
+ * signal till användaren om att motorn fortfarande arbetar.
+ *
+ * `Forberedelseskarm.tsx` konsumerar denna konstant för att avgöra när baren
+ * ska gå in i indeterminate-pulsläge + den additiva raden "Tar lite längre
+ * tid än vanligt…" (Marcus-beslutets ramar: motion-safe, additiv text,
+ * komponent-tokens, ingen ändring av den låsta ordalydelsen). EXPORTERAD
+ * här — i motorns eget konstant-grannskap, INTE en privat duplicerad siffra
+ * i presentationskomponenten — så tröskeln har en enda källa, samma princip
+ * som `HEM_SENASTE_AKTIVITET_ANTAL` (queries/keys.ts) löser för
+ * kopplingsrisken mellan motor och UI.
+ *
+ * 3000 ms: klart över normal inter-item-latens (task-240s repro mätte
+ * 152–830 ms mellan på-varandra-följande `emit()`-anrop under verklig
+ * staging-trafik — tröskeln fyrar därför ALDRIG under normal drift, se
+ * Forberedelseskarm.tsx:s egen "normalfallet opåverkat"-verifiering) och
+ * klart under `DEFAULT_TIMEOUT_MS` (9000 ms) — signalen hinner synas innan
+ * gaten släpper, den kapar aldrig timeout-budgeten. Ren UI-tröskel: ändrar
+ * INGEN motor-semantik (`korAlla()`/`slutlöfte` är helt orörda).
+ */
+export const STALL_THRESHOLD_MS = 3000;
 
 /**
  * Hem-spaltens "Senaste aktivitet" (`src/components/hem/SenasteAktivitet.tsx`)
@@ -374,6 +410,21 @@ export function starta(qc: QueryClient, beroenden: StartvarmningBeroenden): Star
     const avgorMed = (utfall: StartvarmningUtfall): void => {
       if (avgjort) return;
       avgjort = true;
+      // OBSERVABILITY (task-240, Marcus-beslut 2026-08-17): ADR-112 beslut
+      // 3:s hårda timeout löste ut med ett PARTIELLT klara-värde — samma
+      // etablerade fail-open-mönster som glomt-losenord.tsx/valkommen.tsx
+      // (Sentry.captureMessage, level 'warning', ingen ny observability-yta
+      // införd — Sentry är redan repots enda, se src/observability/sentry.ts).
+      // Ren mätning: ändrar inget om SLUTLÖFTETS eget kontrakt ("kastar
+      // ALDRIG", filhuvudets § "slutlöfte kastar aldrig") — resolve() nedan
+      // körs oavsett.
+      if (utfall === 'timeout' && klara < totalt) {
+        Sentry.captureMessage('Startvärmningen nådde hård timeout innan alla datamängder klara', {
+          level: 'warning',
+          tags: { warmup: 'timeout-partial' },
+          extra: { klara, totalt, timeoutMs },
+        });
+      }
       resolve({ utfall, forlopp: { klara, totalt } });
     };
 
