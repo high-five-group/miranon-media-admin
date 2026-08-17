@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-15
+updated: 2026-08-17
 review_by: 2027-02-08
 status: stable
 ---
@@ -1630,6 +1630,46 @@ segment-utskickets "Skicka till N personer" (`danger` → `success`).
 
 ---
 
+## 20. Låst korthöjd — app-bred kortgeometri-regel
+
+**Regel (Marcus-order 2026-08-10, S104 Del 6 "Tre-fynd-varvet"):** varje
+list-/innehållskort reserverar höjden för sitt MAXINNEHÅLL och får ALDRIG
+växa eller krympa med det faktiska innehållet. Geometrin ligger fast när
+data landar, när skalprovet växlas, när namnet är kort.
+
+### Mekanismen
+
+Varje textrad som kan variera i längd (namn, beskrivning) får
+`line-clamp-2 min-h-[2lh]`: `min-h-[2lh]` reserverar två radhöjder i
+elementets EGEN typografi (CSS `lh`-enheten — line-height, inte ett
+hårdkodat pixeltal), kombinerat med `line-clamp-2` som klipper vid två
+rader om innehållet är längre. Antal-/metaraden får sin egen fasta
+`min-h-8`. Samma grepp som personlistans låsta radhöjd (S103) — ett
+generellt mönster för likformiga kort/rader, inte en engångslösning.
+
+### Belägg
+
+Mätt på `SegmentKort` (segmentprototypens listrad,
+`src/components/segment/prototyp/VariantD.tsx`): **samtliga 14 genererade
+kort exakt 168 px**, oavsett att namn- och beskrivningstexterna varierar
+kraftigt i längd (commit `16c25de6`, S104 Del 6-tabellens
+"Tre-fynd-varvet"-rad, `tasks/sessions/2026-08-10-session-104.md`).
+Mönstret hade redan produktionsprecedent i `EventCard` (task-17.2,
+S72-facitet — §14 ovan bygger på samma NavCard-generation): S104:s fynd
+höjer det uttryckligen till en APP-GLOBAL regel i stället för att förbli
+ett enskilt komponentmönster.
+
+### Vad regeln INTE är
+
+168 px är det MÄTTA utfallet för `SegmentKort`s specifika textmängd, inte
+ett pixeltal andra kort ska matcha. Regeln låser att höjden är en FUNKTION
+av komponentens eget maxinnehåll, beräknad en gång i dess egen typografi —
+och att den geometrin sedan aldrig rör sig. Nya kort-komponenter räknar ut
+sitt eget `min-h-[Nlh]` utifrån sitt eget maxinnehåll; talet 168 px är inte
+en app-bred konstant.
+
+---
+
 ## Ändringslogg
 
 | Datum | Förändring |
@@ -1650,3 +1690,4 @@ segment-utskickets "Skicka till N personer" (`danger` → `success`).
 | 2026-07-25 | §19 REVIDERAD till TVÅDIMENSIONELL regel (Marcus beslut A, morgongranskningen — 18.16 facit-revidering): intent styr färgen × emphasis styrs av ytklassen (solid = sidnivå/primär handlingsyta, max en per yta/sektion · outline/subtle = kort och listrader, aldrig solid fyllnad inuti kort · subtle kompakt = tabellrader/toolbars). Ursprungsformens endimensionella regel riven öppet (revideringsnot i §19); K77-rivningen står kvar. Button-primitiven får emphasis-varianter + `--mm-button-*-outline/subtle-*`-tokens (success-textbäraren AA-mörkad 15 %). Flippar: deltagarkortens Skicka bekräftelse → success/outline (Greta-fallet) · Bekräfta alla-pillen → success/subtle. Research-grund: Polaris tone×variant · Carbon danger i tre viktnivåer · M3 text-buttons-i-kort · FK "en primär per del". |
 | 2026-04-13 | Migrerat från `tailwind.config.ts` till Tailwind v4 `@theme`-direktivet (CSS-first). §8 innehåller nu komplett `@theme`-block i stället för JS-config. §4 Lint: ESLint+Stylelint-kodexempel borttagna, Biome 2.0 införd som enda lint/format-verktyg. §2 Tailwind-mappning: typografi uttryckt som `@theme`-variabler. §1 Token-lager: semantiska tokens refereras nu i `@theme`-blocket i `tailwind.css`. Se `conversion-plan.md` fotnoter och ändringsspec 2026-04-13. |
 | 2026-08-15 | §15 SKRIVS OM till Laddtrappan (task-219.1, ADR-113, S102 Del 7): det tidigare ovillkorade "'Laddar…'-textrader och spinners används inte"-förbudet ersätts av en fyrstegs yttrappa (skeleton för känd geometri · spinner ENDAST knapp-internt via kommande Button `isLoading` · determinate progress-bar för längre förlopp, appinstans Förberedelseskärmen/ADR-112 · aldrig naken "Laddar…"-textrad som enda besked) med Lugnt laddläge kvar som orörd överordnad princip. Ny artighetsnivå-not: laddbesked är `role="status"`/polite, aldrig `role="alert"` — FK:s FLoader-avvikelse bokförd öppet mot WAI-ARIA-praxis. Källbelagt i `loading-indikator-branschpraxis-2026-08-15.md`. |
+| 2026-08-17 | §20 Låst korthöjd — app-bred kortgeometri-regel (S104 Del 6, Marcus-order 2026-08-10): `line-clamp-2 min-h-[2lh]` per variabel textrad reserverar höjden för kortets maxinnehåll, geometrin rör sig aldrig; mätt på `SegmentKort` — 14 genererade kort exakt 168 px trots varierande textlängd (commit `16c25de6`). Produktionsprecedent i `EventCard` (§14, task-17.2) höjs uttryckligen till app-bred regel. Ordlistans fyra S104-begrepp (Grupp/Uppsättning/Alternativ/Urval av personer) skördade samma pass (task-249.7). |

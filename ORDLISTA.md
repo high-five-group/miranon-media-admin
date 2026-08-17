@@ -118,6 +118,49 @@ Deltaganden — aldrig en lagrad mottagarlista (ADR-062).
 *Undvik:* målgrupp, lista.
 *I koden:* `Segment`.
 
+**Grupp** — i segmentdomänen: en av de mängder personer som
+"Dela upp i grupper"-generatorn (partition-som-generator) skapar vid EN
+körning; varje person hamnar i exakt en grupp (disjunkt fördelning), och
+varje grupp blir ett vanligt predikat-segment. Ordet bär sedan S104 ENDAST
+denna uppdelnings-betydelse — den tidigare andra betydelsen (en OR-gren i
+verkstadens regel) heter numera Alternativ (Marcus 2026-08-16,
+begreppsrenheten: två betydelser, ett ord, på ytor man rör sig mellan i
+samma arbetspass).
+*Undvik:* grupp om verkstadens OR-gren (se Alternativ), villkorsgrupp.
+*I koden:* `byggGrupp`/`DelaUppIGrupper` (prototyp,
+`src/components/segment/prototyp/VariantD.tsx`).
+
+**Uppsättning** — den samlade omgången Grupper som "Dela upp i
+grupper"-generatorn skapar tillsammans vid EN körning (t.ex. de fjorton
+kurs-grupperna); bär en delad uppsättnings-identitet (härledd ur id-prefix)
+som Täckningsvyn läser för att visa omgången som helhet ("varje person i
+exakt en grupp", "N personer i ingen grupp"). Flera uppsättningar kan visas
+samtidigt; namnet döljs vid en ensam uppsättning (inget att välja mellan,
+brus).
+*Undvik:* batch, omgång, sats (informella, ej kanoniserade).
+*I koden:* uppsättnings-identitet härledd ur id-prefix (prototyp,
+`VariantD.tsx`).
+
+**Alternativ** — i segmentverkstaden: en OR-gren i regelns `med`-sida — en
+konjunkt-grupp av villkor som (vid två eller fler villkor) måste uppfyllas
+SAMTIDIGT ("och-krav" smalnar av ETT alternativ), medan personen kvalificerar
+så fort NÅGOT alternativ är uppfyllt ("Eller: lägg till ett alternativ"
+vidgar regeln). Ersätter det interna namnet "villkorsgrupp" i synlig text
+sedan S104 — se Grupp för varför ordet "grupp" är ute ur verkstadens copy.
+*Undvik:* villkorsgrupp (i synlig text — kvar som intern beskrivning), grupp
+(verkstadens sammanhang).
+*I koden:* `KonjunktLista`; identifierarna `onLaggTillGrupp`/`gruppEtikett`
+är medvetet ORÖRDA trots namnbytet i synlig text (Marcus order — inte synlig
+text, ett namnbyte hade breddat diffen utan att flytta en pixel); prototyp,
+`VariantD.tsx`.
+
+**Urval av personer** — segmentlistans ingress-definition av vad ett Segment
+är för Lotta: "Urval av personer som du kan skicka riktade mail till."
+Kanoniserat, begreppsrent ordval (S104) för ytan som möter Lotta — undviker
+teknisk regel-/predikat-språk i ingressen.
+*Undvik:* regel, predikat, filter (tekniskt språk, inte ingressens ord).
+*I koden:* prototyp, `VariantD.tsx` (segmentlistans ingress).
+
 **Utskick** — ett mail som skickas till ett eller flera segments mottagare och
 loggas i Utskicksloggen.
 *Undvik:* kampanj.
