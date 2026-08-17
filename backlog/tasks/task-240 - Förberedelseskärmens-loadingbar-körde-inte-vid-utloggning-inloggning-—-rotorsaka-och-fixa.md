@@ -3,10 +3,10 @@ id: TASK-240
 title: >-
   Förberedelseskärmens loadingbar körde inte vid utloggning/inloggning —
   rotorsaka och fixa
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 09:00'
-updated_date: '2026-08-17 00:31'
+updated_date: '2026-08-17 01:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,10 +28,10 @@ Marcus-observation 2026-08-16 (skarp yta, logga ut → logga in): Förberedelses
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -75,3 +75,9 @@ VERKTYG: egen dev-server 5183 (Körning 1+2) och 5184 (Körning 3), aldrig 5173/
 
 DoD-GRINDAR (körda FÖR PUSH, faktiska exitkoder): se Final Summary.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd av orkestreraren 2026-08-17: alla tre AC bockade (diagnos #1466 + stall-signal/observability #1472, båda mergade via kön); post-merge på efterföljande träd (5b71dcbb) grön. DoD 1–4 mot pass 2/3-rapporternas belägg (grindkvartett exit 0, path-scopade diffar).
+<!-- SECTION:FINAL_SUMMARY:END -->

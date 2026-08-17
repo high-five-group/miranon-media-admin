@@ -1,9 +1,10 @@
 ---
 id: TASK-243.3
 title: 'Skiva: Acceptance-omskrivningen — hem-sviterna mot nya formen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 14:36'
+updated_date: '2026-08-17 01:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,7 +31,13 @@ Hem-vyns acceptance-skydd skrivs om så nya Morgonkollen-formen bär samma testt
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Facit-granskning: testernas förväntningar korsläses mot tasks/sessions/bilagor/s102-hem-konvergens/facit.json — testet får aldrig kräva något facit motsäger
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd av orkestreraren 2026-08-17: PR #1470 mergad via kön (5b71dcbb) efter overlay-semantik-rebasen (44649e54); post-merge SUCCESS — rödserien bruten, DoD#3 uppfylld.
+<!-- SECTION:FINAL_SUMMARY:END -->
