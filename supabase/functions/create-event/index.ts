@@ -2,6 +2,7 @@ import { upsertAirtableRecord } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
+import { lookupCourseDimensions } from '../_shared/course-dimensions.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 
@@ -24,6 +25,16 @@ import { findDisallowedField, getOperation } from '../_shared/field-allowlists.t
 // i fields-mapen som `true`; OARMERAT → fältet UTELÄMNAS helt (se fields-bygget nedan).
 // Vad flaggan STYR på miranon.se (kalender-synlighet, anmälningsformulär, event-sida) är
 // T79:s kontrakt — EF:en bär bara flaggan. Prod-fältet måste finnas FÖRE prod-deploy.
+//
+// BASDIMENSIONERNA (TASK-249.4, ADR-115): Kursfamilj/Kursnivå härleds SERVER-SIDE ur
+// `event`-kursnamnet via `_shared/course-dimensions.ts`s kursnamnsmappning (EXAKT samma
+// mappning som redan kört backfillen, data-model.md § "Staging- och prodbasens additiva
+// tillskott 2026-08-17"). Känt kursnamn → BÅDA/Kursfamilj-ensam sätts (nivålösa familjer
+// bär ingen Kursnivå — TOMT per design). Okänt kursnamn → BÅDA fälten UTELÄMNAS (ingen
+// gissad familj) och en varning loggas (öppet, aldrig tyst — samma disciplin som
+// OkandaKurser-mönstret i prototypen, VariantD.tsx). Detta stänger den dokumenterade
+// skapelseväg-kanten: "skapelsevägarna sätter INTE fälten än" (data-model.md, samma
+// sektion) — nya event föds aldrig utan familj när kursnamnet är känt.
 //
 // VALIDERING (manuell deny-by-default): speglar create-registration/save-segment som
 // validerar manuellt, INTE via Zod — Zod används bara i klient-/adapter-lagret (ADR-026),
@@ -214,6 +225,21 @@ Deno.serve(async (req) => {
     // UTELÄMNA nyckeln är därför enda korrekta formen för "lämnar flaggan osatt".
     if (publicera === true) {
       fields[PUBLICERAD_FIELD] = true;
+    }
+
+    // BASDIMENSIONERNA (TASK-249.4): känt kursnamn → Kursfamilj sätts alltid, Kursnivå
+    // sätts endast för nivåbärande familjer (RIM). Okänt kursnamn → BÅDA UTELÄMNADE ur
+    // fields-mapen (aldrig en gissad familj skriven på en ny rad) + öppen server-logg.
+    const kursdimensioner = lookupCourseDimensions(event.trim());
+    if (kursdimensioner) {
+      fields['Kursfamilj'] = kursdimensioner.kursfamilj;
+      if (kursdimensioner.kursniva !== null) {
+        fields['Kursnivå'] = kursdimensioner.kursniva;
+      }
+    } else {
+      console.warn(
+        `[create-event] Kursnamn utanför kursnamnsmappningen — Kursfamilj/Kursnivå UTELÄMNADE | caller_user_id=${user.id} | event=${event.trim()}`,
+      );
     }
 
     // SSOT-grind: varje server-byggt fält måste vara på operationens allowlist

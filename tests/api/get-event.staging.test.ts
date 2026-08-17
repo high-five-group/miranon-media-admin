@@ -108,6 +108,60 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     ).toBeGreaterThan(0);
   });
 
+  // ── Basdimensionerna (TASK-249.4, ADR-115) ──
+  // get-events exponerar Kursfamilj/Kursnivå — läsvägen ur basens fält, aldrig
+  // gissat. Bevisar mot RIKTIGA staging-fixturer (Resor i medvetandet 1/2/3,
+  // samma "kända, redan namngivna" fixturer som NaN-beläggnings-testet ovan
+  // pekar ut), live-verifierade mot staging (mcp__airtable__list_records,
+  // 2026-08-17) innan detta test skrevs: Kursfamilj='RIM',
+  // Kursnivå='Nivå 1'/'Nivå 2'/'Nivå 3'.
+
+  test('basdimensionerna (AC #2): get-events exponerar kursfamilj/kursniva typade ur basens fält', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    expect(res.status()).toBe(200);
+    const events = z.array(EventSchema).parse(((await res.json()) as { events: unknown }).events);
+
+    // RIM-familjen: minst ETT event vars eventNamn börjar med "Resor i medvetandet"
+    // ska bära kursfamilj==='RIM' och en av de fyra kända kursnivåerna (aldrig null
+    // för en KÄND kursnamns-rad — backfillen satte fältet).
+    const rimEvent = events.find((e) => e.eventNamn?.startsWith('Resor i medvetandet'));
+    expect(rimEvent, 'staging-basen måste ha minst ETT "Resor i medvetandet"-event').toBeDefined();
+    expect(rimEvent?.kursfamilj, 'RIM-eventets kursfamilj').toBe('RIM');
+    expect(['Intro', 'Nivå 1', 'Nivå 2', 'Nivå 3']).toContain(rimEvent?.kursniva);
+  });
+
+  test('basdimensionerna (AC #2): get-event (single) exponerar samma kursfamilj/kursniva-shape', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // Härled ett RIM-event ur listan (samma mönster som firstEventId ovan) — mer
+    // robust än ett hårdkodat ID.
+    const listRes = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    const listEvents = z
+      .array(EventSchema)
+      .parse(((await listRes.json()) as { events: unknown }).events);
+    const rim = listEvents.find((e) => e.eventNamn?.startsWith('Resor i medvetandet'));
+    expect(rim, 'staging-basen måste ha minst ETT "Resor i medvetandet"-event').toBeDefined();
+
+    const res = await callGetEvent(request, config, jwt, rim?.id);
+    expect(res.status()).toBe(200);
+    const event = EventSchema.parse(((await res.json()) as { event: unknown }).event);
+    // Håll i synk med get-events (mapEvent-kommentaren i EF:erna) — samma rad,
+    // samma värden ur single-get som ur listan.
+    expect(event.kursfamilj).toBe('RIM');
+    expect(event.kursniva).toBe(rim?.kursniva);
+  });
+
   // ── Beläggningens innehållsmodell (task-18.2; K16 — AC #1) ──
   // PERMANENT seedad fixtur (tests/api/fixtures.ts BELAGGNING_*) — den globala
   // stopp-grinden "seeda inte i onödan" är prövad och passerad: ingen EF kan

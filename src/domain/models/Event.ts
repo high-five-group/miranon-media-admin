@@ -22,6 +22,20 @@ export interface Event {
   /** System-genererad EventKey-formel ("Event-N") — optional: speglar schemat (task-18.1). */
   eventKey?: string;
 
+  // Basdimensionerna (TASK-249.4, ADR-115) — Eventplanerings additiva Kursfamilj/
+  // Kursnivå-fält (data-model.md § "Staging- och prodbasens additiva tillskott
+  // 2026-08-17"). Sätts vid skapelse (create-event, kursnamnsmappningen i
+  // `_shared/course-dimensions.ts`) och läses här ur basens fält — ALDRIG gissat.
+  // OPTIONAL är en BAKÅTKOMPATIBILITETS-lucka för svar/cache från FÖRE denna leverans
+  // (eventKey-formen ovan) — get-events/get-event/update-event bär nyckeln ALLTID
+  // sedan denna leverans (aldrig omitted av EF:erna själva); `null` betyder att raden
+  // saknar en känd familj (okänt kursnamn) eller — för kursnivå — en nivålös familj
+  // (Fjärrskådning/Psionautics, TOMT per design). "Okänd familj" försvinner alltså
+  // aldrig tyst: nyckeln är alltid närvarande i EF-svaret, värdet är `null` i klartext.
+  kursfamilj?: string | null;
+  /** Kursnivå (Intro/Nivå 1-3) — se `kursfamilj` för formens fulla rationale. */
+  kursniva?: string | null;
+
   // Beläggningens innehållsmodell (task-18.2; K16 — mappar basen 1-till-1).
   // Optional-fälten speglar schemat (utelämnas-vid-saknas, aldrig null —
   // 18.1:s eventKey-form): endast get-event aggregerar; get-events/

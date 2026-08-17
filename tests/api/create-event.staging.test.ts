@@ -131,11 +131,53 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
     // System-genererade fält FÖDDES utan att vi satte dem.
     expect(body.record.fields['EventKey']).toMatch(/^Event-\d+$/);
     expect(typeof body.record.fields['Event-nr']).toBe('number');
+    // BASDIMENSIONERNA (TASK-249.4): 'Fjärrskådning' är en KÄND, nivålös familj —
+    // Kursfamilj SATT, Kursnivå UTELÄMNAD (TOMT per design, ej en lucka). Detta ÄR
+    // instansen av den dokumenterade kanten (data-model.md § 2026-08-17: "Ett
+    // CI-skapat ZZ-event föddes MITT UNDER backfillen och fångades av
+    // blank-verifikatet") — samma kursnamn ('Fjärrskådning') och samma väg
+    // (create-event), nu med fältet stängt.
+    expect(body.record.fields['Kursfamilj']).toBe('Fjärrskådning');
+    expect(body.record.fields['Kursnivå']).toBeUndefined();
 
     // (ii) Domän-envelope (adapterns parse-väg byggs i L2) — bär system-tilldelningen.
     expect(body.event.eventNamn).toBe('Fjärrskådning');
     expect(body.event.eventKey).toMatch(/^Event-\d+$/);
   });
+
+  test('BASDIMENSIONERNA (TASK-249.4): RIM-kurs med nivå → Kursfamilj RIM + Kursnivå satt', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+
+    const res = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      event: 'Resor i medvetandet 2',
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+
+    // Live-verifierat mot staging (mcp__airtable__list_records, 2026-08-17): exakt
+    // denna mappning bär de befintliga "Resor i medvetandet 2"-raderna redan.
+    expect(body.record.fields['Kursfamilj']).toBe('RIM');
+    expect(body.record.fields['Kursnivå']).toBe('Nivå 2');
+  });
+
+  // "Okänt kursnamn → Kursfamilj/Kursnivå UTELÄMNADE" (create-event/index.ts:s
+  // else-gren) är MEDVETET INTE prövat mot LIVE staging här: `Event (source)`
+  // är en STÄNGD singleSelect (data-model.md rad 404, `flddlv4JA5C5CeH5R`) med
+  // EXAKT de sex värden `_shared/course-dimensions.ts`s KURS_KARTA täcker —
+  // `typecast:false` (airtable-client.ts) FÄLLER varje värde utanför den
+  // listan REDAN på Airtable-anropet (500, ej vår mapping-gren). Scenariot
+  // blir alltså skarpt reproducerbart först den dag Marcus lägger till en ny
+  // singleSelect-option (t.ex. "RIM 4") UTAN att uppdatera kartan — exakt
+  // berättelse 15:s (PRD task-249) beskrivna kant. Lookup-logiken för ett
+  // okänt namn är däremot fullt bevisad i `course-dimensions.test.ts`
+  // ("okänt kursnamn → null") — den prövar exakt samma gren utan att
+  // förutsätta ett Airtable-schema-tillstånd som inte finns i staging idag.
 
   test('IDEMPOTENS: färsk UUID → 201 created; samma UUID → 200 replay, samma record-ID, noll dubblett', async ({
     request,

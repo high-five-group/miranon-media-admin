@@ -149,6 +149,10 @@ function mapEvent(
     // EventSchema — saknas värdet UTELÄMNAS nyckeln: JSON.stringify droppar
     // undefined; aldrig null). Båda EF:erna bär fältet sedan samma leverans.
     eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
+    // Basdimensionerna (TASK-249.4, ADR-115): direkta singleSelect-fält, alltid lästa —
+    // selectName ger string|null (aldrig gissat). Håll i synk med get-events/update-event.
+    kursfamilj: selectName(f['Kursfamilj']),
+    kursniva: selectName(f['Kursnivå']),
     // Beläggningens innehållsmodell (task-18.2, K16 — mappar basen 1-till-1):
     // de två skrivbara kategorifälten ur eventraden + de aggregerade räkningarna.
     // Osatt i basen → nyckeln UTELÄMNAS (undefined droppas av JSON.stringify;

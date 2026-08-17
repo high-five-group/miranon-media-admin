@@ -183,6 +183,16 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // samma ordning som 'Idempotensnyckel', data-model.md §Kända fällor 37). EF:en skriver
   // fältet ENDAST när flaggan är ARMERAD; oarmerat utelämnas det ur fields-mapen (ett skrivet
   // `false` skulle SÄTTA checkboxen till omarkerad — utelämnande är formen för "osatt").
+  // 'Kursfamilj'/'Kursnivå' (TASK-249.4, ADR-115) — basdimensionerna som stänger den
+  // dokumenterade skapelseväg-kanten (data-model.md § "Staging- och prodbasens additiva
+  // tillskott 2026-08-17" — "skapelsevägarna sätter INTE fälten än"). BÅDA fälten
+  // ADDITIVA singleSelect, skapade staging FÖRST och därefter prod (samma leverans som
+  // backfillen, LIVE-VERIFIERADE via mcp__airtable__list_records 2026-08-17 INNAN denna
+  // post låstes). EF:en härleder dem SERVER-SIDE ur kursnamnet via
+  // `_shared/course-dimensions.ts`s kursnamnsmappning (EXAKT samma mappning som
+  // backfillens källa, prototypens KURS_KARTA) — klienten skickar dem ALDRIG. Kursnivå
+  // UTELÄMNAS för nivålösa familjer (Fjärrskådning/Psionautics) OCH för okänt kursnamn
+  // (öppet, aldrig gissat — modulens docblock).
   'create-event': {
     tableId: 'Eventplanering',
     allowedFields: [
@@ -196,6 +206,8 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Status',
       'Eventtyp',
       'Publicerad på miranon.se',
+      'Kursfamilj',
+      'Kursnivå',
       'Idempotensnyckel',
     ],
   },

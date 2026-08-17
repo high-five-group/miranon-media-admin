@@ -160,6 +160,13 @@ test.describe('update-event — skarp conformance (task-18.1)', () => {
       expect(domain.id).toBe(eventId);
       expect(domain.typ).toBe('Föreläsning');
       expect(domain.eventKey).toMatch(/^Event-\d+$/);
+      // Basdimensionerna (TASK-249.4): sentinel-eventet skapades med
+      // event='Fjärrskådning' (createSentinelEvent) → create-event satte
+      // Kursfamilj vid radskapelse. update-event RÖR ALDRIG kursnamnet/
+      // Kursfamilj, men PATCH-svaret bär basens FULLSTÄNDIGA fields (mapEvent-
+      // kommentaren i update-event/index.ts) — håll-i-synk-beviset: fältet
+      // överlever oförändrat genom en update som inte rör det.
+      expect(domain.kursfamilj).toBe('Fjärrskådning');
 
       // (iii) OMLÄSNING via get-event — nya värden syns i läs-vägen (AC #1).
       const reread = await readEvent(request, config, jwt, eventId);
