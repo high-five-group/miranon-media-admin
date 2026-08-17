@@ -4,6 +4,7 @@ title: 'Skiva: Basstruktur — Räckvidd/Kursfamilj/Kursnivå på Bilagor'
 status: To Do
 assignee: []
 created_date: '2026-08-17 15:34'
+updated_date: '2026-08-17 16:04'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,10 +20,10 @@ Basen bär räckviddsdimensionen (ADR-118 beslut 4): fälten skapas via Airtable
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Bilagor-tabellen i STAGING och PROD bär tre nya fält: Räckvidd (singleSelect: Event / Kurstyp / Alla event) samt Kursfamilj och Kursnivå med exakt samma valslag som Eventplanerings motsvarande fält — alla fält-ID:n bokförda i rapporten per bas
-- [ ] #2 Befintliga Bilagor-rader default-migrerade till Räckvidd = Event i båda baserna (dagens sanning) — antal rader per bas bokfört, count-verifierat före/efter
-- [ ] #3 docs/reference/data-model.md § Bilagor uppdaterad med de nya fälten (båda basernas ID:n, valslag, skrivbarhet) enligt referensens etablerade form
-- [ ] #4 Ingen applikationskod rörd i denna skiva — ren basstruktur + referensregistrering (diff-bevis)
+- [x] #1 Bilagor-tabellen i STAGING och PROD bär tre nya fält: Räckvidd (singleSelect: Event / Kurstyp / Alla event) samt Kursfamilj och Kursnivå med exakt samma valslag som Eventplanerings motsvarande fält — alla fält-ID:n bokförda i rapporten per bas
+- [x] #2 Befintliga Bilagor-rader default-migrerade till Räckvidd = Event i båda baserna (dagens sanning) — antal rader per bas bokfört, count-verifierat före/efter
+- [x] #3 docs/reference/data-model.md § Bilagor uppdaterad med de nya fälten (båda basernas ID:n, valslag, skrivbarhet) enligt referensens etablerade form
+- [x] #4 Ingen applikationskod rörd i denna skiva — ren basstruktur + referensregistrering (diff-bevis)
 <!-- AC:END -->
 
 ## Definition of Done
