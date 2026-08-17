@@ -3,10 +3,10 @@ id: TASK-264
 title: >-
   K1: mailvägen namntålig — hälsningens egen väg, förhandsvisningens exempel,
   publikens öppna tal
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 10:03'
-updated_date: '2026-08-17 11:38'
+updated_date: '2026-08-17 12:28'
 labels:
   - qa-fix
 dependencies: []
@@ -34,3 +34,9 @@ Ur publik-utredningen (docs/research/utskickspublikens-leads-och-namnlosa-2026-0
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd (Opus), landad och CI-verifierad via merge-kön (259: PR #1534 MERGED 10:58Z · 264: PR #1546 MERGED 12:09Z); Marcus slutkvittens i prod 'Ser bra ut' 2026-08-17. Done-flippad vid S104 session-end.
+<!-- SECTION:FINAL_SUMMARY:END -->

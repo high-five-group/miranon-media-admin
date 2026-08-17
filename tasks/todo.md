@@ -606,7 +606,13 @@ S103. Numrering RE-verifierad mot `4b085251` — oförändrad: **109 / task-195 
 T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
 § Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ▶️ AKTIV (2026-08-17, `lifecycle: active`, resume 5) —
+**Session 104 ✅ AVSLUTAD (2026-08-17, `lifecycle: closed`, efter resume 5) —
+SEGMENT-PROMOVERINGEN FULLBORDAD OCH PRD task-249 DONE; Marcus
+slutkvittens i prod "Ser bra ut" + coverage-kvittens "go". Öppna arv:
+task-271 (sändytan skarp — GRILLNING som nästa sessions start) · task-265
+(B1 Leads-vyn, Marcus-moment) · task-257/258 · 213.4-varningen. Hub-lyft
+deferat. HANDOFF: sessionsdok S104 § Sessionsavslut + Del 10.** *(radens
+tidigare mitt-i-natten-form nedan, bevarad som historik.)*
 NATT-ORKESTRERINGEN FULLBORDAD: alla åtta 249-skivor MERGADE (PR
 1475/1477/1478/1480/1492/1494/1501/1510), EF:erna prod-deployade
 38/38 (Marcus egen körning), fronten bundle-bevisad färsk, Marcus QA
