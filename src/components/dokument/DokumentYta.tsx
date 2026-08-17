@@ -1074,7 +1074,6 @@ function UppladdningsFlode({
   );
   const [kursfamilj, setKursfamilj] = useState<string | null>(null);
   const [kursniva, setKursniva] = useState<string | null>(null);
-  const blockRubrikId = useId();
 
   const kursfamiljHarNivaer = kursfamilj != null && KURSFAMILJ_MED_NIVAER.has(kursfamilj);
   const scopeGiltig = rackvidd !== AttachmentScope.KURSTYP || kursfamilj != null;
@@ -1103,14 +1102,40 @@ function UppladdningsFlode({
     // gånger (`ghost`-hovern ×2, Ersätt/Radera, räckviddspillen — alla
     // `bg-bg-muted` mot `bg-bg-muted`). Nästlingen avgör tokenvalet: muted
     // skal, surface innehåll — samma ordning som `HandlingsRadKort`.
+    // ── INGEN SYNLIG BLOCKRUBRIK (Marcus 2026-08-17) ──
+    //
+    // "Ladda upp filer" stod som `<h2>` här ett varv. Marcus: *"jag vill nog
+    // fan ta bort rubriken helt. Det är antingen det eller att göra rubriken
+    // till en dropdown-knapp."*
+    //
+    // BORTTAGNING VALDES, DROPDOWN AVRÅDDES — och skälet är Marcus eget
+    // svar på vad Lotta gör oftast ("Tror hon kommer ladda upp mest"). En
+    // dropdown hade lagt den vanligaste handlingen bakom ett klick, alltså
+    // rivit precis det blockets uppflyttning nyss åstadkom. Huset använder
+    // dessutom `Disclosure` enbart för filterpaneler (`EventsList.tsx`) —
+    // verktyg man sällan rör — aldrig för det man kom för att göra.
+    //
+    // Blocket klarar sig utan rubrik: den grå rutan avgränsar det, stegen är
+    // numrerade, och steg 2 heter "Välj fil" med knappen "Ladda upp en fil".
+    // En rubrik hade lagt en tredje rubriknivå på ett formulär med två fält.
+    //
+    // STEGEN GICK TILLBAKA TILL `<h2>` NÄR RUBRIKEN FÖRSVANN. De stod som
+    // `<h3>` så länge blocket hade en egen `<h2>` ovanför sig; utan den
+    // hoppade rubrikordningen H1 → H3, vilket är ett äkta rubrikhopp
+    // (WCAG 1.3.1) och inte en formalitet — en skärmläsaranvändare som
+    // navigerar på rubriknivå tappar då ett steg i trädet. Mätt i renderad
+    // yta efter borttagningen, innan detta rättades.
+    //
+    // NAMNET FINNS KVAR FÖR SKÄRMLÄSARE via `aria-label`. En `<section>`
+    // utan tillgängligt namn är ingen landmark alls — den försvinner ur
+    // rubrik-/regionnavigationen, vilket är precis den navigationsväg en van
+    // skärmläsaranvändare använder för att hoppa hit. Ögat slipper raden;
+    // örat behåller den.
     <section
-      aria-labelledby={blockRubrikId}
+      aria-label="Ladda upp filer"
       className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
     >
-      <h2 id={blockRubrikId} className="font-semibold text-lg">
-        Ladda upp filer
-      </h2>
-      <StegSektion nummer={1} rubrikNiva={3} rubrik="Vilka event ska filen gälla?">
+      <StegSektion nummer={1} rubrik="Vilka event ska filen gälla?">
         {/* `hideLabel` — INTE borttagen etikett (Marcus: "Ta bort
             underrubriken Räckvidd, behövs inte" · "rubriken Familj till
             dropdownlistan kan tas bort"). Primitiven gör då `label` till
@@ -1196,7 +1221,6 @@ function UppladdningsFlode({
 
       <StegSektion
         nummer={2}
-        rubrikNiva={3}
         rubrik="Välj fil"
         vilar={scopeGiltig ? undefined : 'Välj en familj i steget ovan först.'}
       >
@@ -1299,8 +1323,12 @@ function GemensamtLage({
           >
             {/* Rubriken i kortet, utanför `divide-y`-flödet — se eventlägets
                 motsvarande kommentar. */}
+            {/* "Dokument", inte "Gemensamma dokument" (Marcus 2026-08-17:
+                "borde ju bara kunna heta Dokument"). I DETTA läge finns inga
+                andra — räckviddsläget visar per definition bara gemensamma
+                bilagor, så ordet skilde inte längre något från något. */}
             <h2 id={listRubrikId} className="font-semibold text-lg">
-              Gemensamma dokument
+              Dokument
             </h2>
             <div className="divide-y divide-border">
               {rader.map((r) => (
