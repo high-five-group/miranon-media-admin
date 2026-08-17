@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 07:07'
-updated_date: '2026-08-16 10:56'
+updated_date: '2026-08-17 07:46'
 labels:
   - ready-for-agent
 dependencies: []
@@ -55,11 +55,63 @@ LOKAL KONTROLLERAD A/B (kortets efterfrågade jämförelse, 817979a8^1 vs 817979
 
 Mekanismen läst i källan: src/main.tsx:s InnerApp anropar starta(queryClient, { dataSource }) (StartvarmningBeroenden-seamen, startvarmningen.ts) på VARJE auth-löst sidladdning med tom query-cache — exakt fixturvärldens per-test-startvillkor (tom localStorage/tom cache per test). 7 warmup-items i ~4 sekventiella batchar.
 
-ÅTGÄRD (AC #2) — STOPPAT, EJ BYGGT. Mätningen pekar entydigt på att den STÖRSTA identifierade, fixbara komponenten (den enda som ensam förklarar 5-sekundersmarginalen mot 12-min-taket) är SAMMA StartvarmningBeroenden-seam task-236-agenten just nu åtgärdar för staging-e2e (samma fil, samma integrationspunkt, samma mekanism — bara olika testklass runt den). Per uppdragets koordineringsregel: byggde INTE en parallell fix mot samma seam (risk för merge-konflikt/dubblerat designval); byggde heller INTE en kringgående åtgärd (workers-höjning/sharding) eftersom (a) det hade maskerat grundorsaken task-236 redan löser, (b) CI-risken för en oprövad worker-/sharding-ändring inte går att stänga lokalt idag, (c) organisk testtillväxt fortsätter oavsett — margin-återtagningen behöver egentligen BÅDE seam-fixen OCH en strukturell buffert, och den senare är inte detta korts att gissa fram oprövat.
+ÅTGÄRD (AC #2) — STOPPAT, EJ BYGGT [VARV 1, 2026-08-16]. Mätningen pekar entydigt på att den STÖRSTA identifierade, fixbara komponenten (den enda som ensam förklarar 5-sekundersmarginalen mot 12-min-taket) är SAMMA StartvarmningBeroenden-seam task-236-agenten just nu åtgärdar för staging-e2e (samma fil, samma integrationspunkt, samma mekanism — bara olika testklass runt den). Per uppdragets koordineringsregel: byggde INTE en parallell fix mot samma seam (risk för merge-konflikt/dubblerat designval); byggde heller INTE en kringgående åtgärd (workers-höjning/sharding) eftersom (a) det hade maskerat grundorsaken task-236 redan löser, (b) CI-risken för en oprövad worker-/sharding-ändring inte går att stänga lokalt idag, (c) organisk testtillväxt fortsätter oavsett — margin-återtagningen behöver egentligen BÅDE seam-fixen OCH en strukturell buffert, och den senare är inte detta korts att gissa fram oprövat.
 
 REKOMMENDATION till orkestreraren: låt task-236 landa, mät om Acceptance-jobbets marginal som BIEFFEKT (samma main.tsx-integrationspunkt bär båda testklasserna), och bedöm om en KOMPLETTERANDE strukturell åtgärd (testsvits-sharding, worker-konfig) fortfarande behövs som eget kort när färsk data finns.
 
 AC #3 (tre gröna nätter) — bevakas av orkestreraren/nattnätet, ej görbart idag.
 
 AC #4 byggd: ci-suite.yml rad ~433 (webblasarbeteende-jobbets artefaktsteg) fick if: failure() || cancelled(), identiskt mönster som PR #1380 gav acceptance/test-staging-jobben. actionlint + yamllint gröna. verify:ci-parity (fullt läge, egen CI-ändring) föll först rött (3 poster: test-ci-wait T1 + 13 acceptance-specs) — samtliga verifierade vara LOKALA LOADAVG-artefakter (uppmätt 300-800 under körningen pga mina egna sekventiella lokala A/B-körningar) och INTE orsakade av diffen: test-ci-wait 27/27 grönt vid isolerad ompröving efter att lasten sjunkit, samtliga 11 berörda acceptance-specfiler (96 tester) 0/96 fällda vid isolerad omkörning under normal last. Diffen rör uteslutande webblasarbeteende-jobbet, strukturellt oberoende av acceptance-jobbets testinnehåll.
+
+═══════════════════════════════════════════════════════════════
+VARV 2 (2026-08-17) — ÅTGÄRDEN BYGGD. Varv 1:s blockering upphävd: task-236 är Done (varv 2, merge 8214ef2f), så koordineringsrisken mot samma seam finns inte längre.
+═══════════════════════════════════════════════════════════════
+
+FÄRSK CI-MÄTNING (7 post-merge-körningar med Acceptance-jobbet, 2026-08-17, gh api .../actions/runs/<id>/jobs). Jobb-total / Install / Acceptance-steg / Självtest-steg, sekunder:
+31996099499  696 / 12 / 352 / 313
+31989715595  672 / 12 / 341 / 305
+31987946806  689 / 14 / 348 / 306
+31984913923  646 / 15 / 327 / 292
+31992951436  582 / 10 / 297 / 255
+31984652487  580 / 11 / 291 / 258
+31987146435  505 / 11 / 261 / 218
+
+VAR TIDEN GÅR — svaret på kortets fråga: de TVÅ teststegen är 94-96 % av jobbet, och de är JÄMNSTORA (261-352 s mot 218-313 s). All infrastruktur (checkout + npm ci + Playwright-cache/-install) är ~30 s. Jobbet kör alltså sviten TVÅ GÅNGER sekventiellt och mäter SUMMAN mot ett timeout-minutes: 12 avsett för EN av dem. Loggverifierat (job 95287922103): "Running 233 tests using 2 workers", skarp svit 5.8m, därefter "233 tester · 233 fällda" på 313 s.
+
+FÄLLNINGARNA, jobbsteg-verifierade (INTE bara rollup-status):
+· #1428, run 31958171806: Acceptance 16:17:39→16:29:56 = 12m17s (12,28 min), cancelled MITT I självtest-steget (skarp svit hann 375 s, självtestet 330 s).
+· #1434, run 31962091899: Acceptance 17:36:22→17:48:27 = 12m05s (12,08 min), cancelled.
+
+ROTEN, LÄST I KÄLLAN OCH BELAGD: task-236 varv 2:s seam (VITE_E2E_WARMUP_TIMEOUT_MS: '50') sätts ENDAST i playwright.config.ts:s e2e-webServer-gren (setup + chromium-authenticated). Acceptance kör mot en ANNAN webServer-gren — den som delas med visual/webblasarbeteende/manifest-screenshots — och fick därför ALDRIG fixen. Warmup-gaten har alltså kört oavkortat i fixturvärlden sedan 817979a8. Exakt vad varv 1 förutsåg ("SAMMA StartvarmningBeroenden-seam ... bara olika testklass runt den").
+
+KOSTNADEN ÄR KONCENTRERAD, INTE UTSMETAD (nytt fynd detta varv). starta() resolvar på det FÖRSTA av (a) alla sju WARMUP_ITEMS klara i fyra sekventiella batchar, (b) timeoutMs. De flesta tester betalar (a) — några MSW-turer. Men tester som PARKERAR nätverket för att observera laddläget (hem-laddlage.acceptance.test.ts:s hallbarMock, FEM tester) parkerar get-registrations OCH get-events — BÅDA WARMUP_ITEMS — så batchen resolvar aldrig och gaten väntar ut HELA (b): 9000 ms per test, före router-mount.
+
+ÅTGÄRD 1 — ROTEN (playwright.config.ts): acceptance-webServern får VITE_E2E_WARMUP_TIMEOUT_MS: '50', villkorat på isAcceptanceRun så visual/manifest-baselines och webblasarbeteende är ORÖRDA (gatens släpp-tidpunkt får inte flytta pixlar i en baseline).
+MÄTT, interfolierad A/B på hem-laddlage-filen (A=9000 = beteendet FÖRE, B=50 = EFTER; enda skillnaden är literalen; workers=1, retries=0):
+  A varv1: 60 s (loadavg 19,7) · B varv1: 14 s (8,9)
+  A varv2: 60 s (loadavg 8,1)  · B varv2: 20 s (5,5)
+  Samtliga fyra körningar 5/5 passed.
+Alltså ~60 s → ~17 s på FEM tester = -43 s, dvs -8,6 s/test — vilket matchar den förutsagda 9000 ms-mekanismen exakt. (Lokalt tal, men gate-väntan är en ren timer och därmed maskinoberoende till sin natur.)
+
+ÅTGÄRD 2 — STRUKTUREN (ci-suite.yml): hermetik-självtestet var ett STEG i acceptance-jobbet och är nu ett EGET, PARALLELLT jobb (acceptance-sjalvtest). Väggklockan blir max(A,B) i stället för A+B. Detta är den parallellisering acceptance-jobbets egen takkommentar pekar ut som "den varaktiga häven" — men UTAN det antagande den samtidigt kräver mätning för: ingen svit delas, ingen workers-siffra höjs, varje jobb behåller sin oförändrade 2-worker-uppsättning på egna kärnor. Aritmetik, inte skalningshypotes.
+Det gamla designvalet ("steget körs EFTER den skarpa sviten med avsikt") är RIVET ÖPPET med motivering i YAML:en, inte tyst: det var ett signal-argument vars pris (en falsk röd på timeout, betald två gånger) växte medan dess värde (slippa ett andra rött besked om samma fil) stod still.
+TAKET RÖRDES INTE. timeout-minutes: 12 ligger kvar på båda jobben.
+
+RULESET-FYNDET som gjorde åtgärd 2 möjlig (verifierat, ej antaget): rulesetet main-skydd (id 19627609) kräver ENDAST kontexten "CI Passed or Skipped" — inga enskilda jobbnamn. Ett nytt jobb inuti ci-suite.yml bärs automatiskt av ci.yml:s suite-jobb och därmed av ci-passed. Ingen ruleset-ändring behövdes.
+
+ÅTGÄRD 3 — PARITETSPOLICYN (.ci-parity-policy.json): nya jobbet registrerat i knownJobs.ciSuite + derivedJobs.ciSuite, och diffClassification-rationalens jobbuppräkning uppdaterad. TVÅSIDIGT BEVIS på att vakten fungerar: med posten BORTTAGEN föll npm run verify:ci-parity -- --list med exit 2 och texten 'jobbet "acceptance-sjalvtest" är NYTT — okänt för .ci-parity-policy.json'; med posten på plats exit 0 och båda jobben listade med rätt härledda steg. Paritetsytan är oförändrad i sak — samma två teststeg härleds och körs verbatim, bara ur två jobb i stället för ett.
+
+HERMETIKEN ÄR OFÖRSVAGAD — den enda reella risken med åtgärd 1, och den är stängd med mätning: en snabbare gate kunde teoretiskt låta ett test avslutas INNAN det hunnit göra sitt omockade anrop, vilket hade gjort självtestet grönt på fel grund. Kört på 7 filer med seamen aktiv: "65 tester · 65 fällda · 65 med OmockadRequestError som orsak — BEVISET HÅLLER".
+
+DIVERGENSER MOT UPPDRAGETS PREMISSER (ADR-086), samtliga prövade mot faktiskt tillstånd:
+1) Uppdraget angav #1428 = 12,08 min och #1434 = 12,28 min. Jobbsteg-mätningen visar det OMVÄNDA: #1428 = 12,28 och #1434 = 12,08. Substansen (båda cancelled mot taket) håller; talen var parvis omkastade.
+2) Uppdraget angav 9,66-11,70 min för "de tolv senaste" post-merge-körningarna. Endast 7 av de 16 senaste bär Acceptance-jobbet alls, och deras spann är 8,42-11,60 min. Undre gränsen är alltså lägre än angivet.
+3) Uppdraget nämnde bara Acceptance för #1428. Den körningen hade ÄVEN "Staging (API + E2E)" som failure — inte enbart ett acceptance-ärende.
+4) FÄRSKARE ÄN UPPDRAGET: TASK-249.5 (merge 2650b42c, landad medan detta arbete pågick) raderade döda acceptance-tester. Klassen är nu 217 tester i 36 filer, ner från 233 i 40 — verifierat med --list på 9dde7244. All mätning ovan gjordes på 233-svit; den nya siffran gör marginalen bättre, inte sämre, men talen ska läsas mot 233.
+
+AC #2 EJ AVBOCKAD HÄRIFRÅN, med avsikt — samma precedent som task-236:s AC4: kriteriet kräver en MÄTT marginal (>2 min till taket), och den mätningen existerar först i post-merge efter landning. Åtgärden är byggd och verifierad; talet är CI:s att fastställa. Projektion att pröva mot: taket mäter nu ett jobb i taget — skarp svit svans 352 s minus gatens ~62 s ≈ 4,8 min, självtest svans 313 s ≈ 5,2 min, båda mot 12 min. Faller de ut som projicerat är marginalen ~7 min, och AC #2 kan bockas på det belägget.
+
+#1476-BENET: bedömt att INTE tillhöra detta korts klass (annat jobb, annan testklass, annan mekanism) → eget kort TASK-256 mintat i stället för en post här.
+
+GRINDAR (varv 2, lokalt, exitkoder fångade separat): actionlint -color -ignore 'unexpected key "queue"...' = 0 · yamllint -c .yamllint.yml ci-suite.yml = 0 · npm run typecheck = 0 · npx @biomejs/biome check . = 0 · npm run build = 0 · npm run test:api = 0 (862 passed, 2.2m) · npm run verify:ci-parity -- --list = 0 (och 2 i den riggade negativa kontrollen) · acceptance-delmängd 8 filer/66 tester = 0 · hermetik-självtest 7 filer/65 tester = 0.
 <!-- SECTION:NOTES:END -->
