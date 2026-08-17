@@ -569,9 +569,13 @@ S103. Numrering RE-verifierad mot `4b085251` — oförändrad: **109 / task-195 
 T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
 § Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ⏸️ PAUSAD (2026-08-17, `lifecycle: paused`, efter Del 9) —
-SPEC-KEDJAN KOMPLETT; NÄSTA RESUME = AUTONOM NATT-ORKESTRERING av
-249-skivorna (Marcus-order: "skickar vi ut agenter på alla skivor").**
+**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-17, `lifecycle: active`, resume 5) —
+AUTONOM NATT-ORKESTRERING AV 249-SKIVORNA PÅGÅR (Marcus-order: "skickar
+vi ut agenter på alla skivor").** **Vid resume 5 (2026-08-17):** ny gren
+`docs/s104-resume-5` i samma worktree; numrering RE-verifierad mot
+`origin/main`: **115 / task-249 / T145 FÖRBRUKAD (nästa: T146) / L512 +
+18 fragment** — handoffens "T144 högst" och "19 fragment" föråldrade av
+mellansessioner, disk vinner (L230).
 Del 9: PRD `task-249` + åtta skivor publicerade (`#1468` MERGED
 `d9c94669`): våg 1 = 249.1 grinden · 249.2 EF-motorn · 249.4
 basdim · 249.7 ordlistan; våg 2 = 249.3; våg 3 = 249.5 flippen; våg 4 =
