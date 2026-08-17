@@ -6,6 +6,11 @@ import { z } from 'zod';
 import { Button, Input, MessageBox } from '@/components/primitives';
 import { supabase } from '@/data/config/supabase-client';
 import {
+  borjaAgaInloggningsdestinationen,
+  inloggningsdestinationenAgs,
+  slutaAgaInloggningsdestinationen,
+} from '@/lib/auth/inloggningsdestination';
+import {
   harSettErbjudandeTidigare,
   loggaInMedPasskey,
   markeraErbjudandeSett,
@@ -28,6 +33,17 @@ export const Route = createFileRoute('/login')({
     // Redan inloggad? Hoppa direkt till redirect-target. Skyddar mot "stuck on /login"
     // för redan-autentiserade users.
     if (context.auth.isAuthenticated) {
+      // ... men INTE mitt under en pågående inloggnings EGEN
+      // destinations-bestämning. Denna redirect är annars den snabba
+      // grenen i ett race mot `routaEfterLyckadInloggning`s passkey-probe,
+      // och när den vinner blinkar Förberedelseskärmen fram på
+      // `search.redirect`-ytan innan `/passkey` hinner monteras (TASK-261 —
+      // hela resonemanget i `inloggningsdestination.ts`s docblock).
+      //
+      // Fönstret stängs ovillkorligt i `routaEfterLyckadInloggning`s
+      // `finally`, och den funktionen navigerar i BÅDA sina grenar — "stuck
+      // on /login" kan därför inte uppstå ur detta undantag.
+      if (inloggningsdestinationenAgs()) return;
       throw redirect({ to: search.redirect });
     }
   },
@@ -168,22 +184,35 @@ function LoginRoute() {
    * passkey-erbjudandet (`/passkey`) INNAN det landar på `search.redirect`.
    * Se komponentens topp-kommentar § PASSKEY punkt 2 för hela resonemanget. */
   const routaEfterLyckadInloggning = async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!harSettErbjudandeTidigare(session)) {
-      const probe = await probaPasskeyTillganglighet();
-      if (probe.webblasarstod && probe.servertillgangligt && !probe.harRedanPasskey) {
-        navigate({ to: '/passkey', search: { redirect: search.redirect } });
-        return;
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!harSettErbjudandeTidigare(session)) {
+        const probe = await probaPasskeyTillganglighet();
+        if (probe.webblasarstod && probe.servertillgangligt && !probe.harRedanPasskey) {
+          navigate({ to: '/passkey', search: { redirect: search.redirect } });
+          return;
+        }
+        if (probe.harRedanPasskey) {
+          await markeraErbjudandeSett();
+        }
+        // Otillgängligt (webbläsarstöd saknas ELLER servern nekar): sätt
+        // INGEN flagga — se passkey.ts § ERBJUDANDE_SETT_NYCKEL.
       }
-      if (probe.harRedanPasskey) {
-        await markeraErbjudandeSett();
-      }
-      // Otillgängligt (webbläsarstöd saknas ELLER servern nekar): sätt
-      // INGEN flagga — se passkey.ts § ERBJUDANDE_SETT_NYCKEL.
+      navigate({ to: search.redirect });
+    } catch (err) {
+      // FAIL-SAFE (TASK-261): inloggningen HAR lyckats när vi står här —
+      // bara destinations-BESLUTET gick fel. Att låta felet bubbla hade
+      // renderat "kunde inte logga in" på en inloggad användare OCH, sedan
+      // `beforeLoad` börjat lämna företräde åt denna funktion, lämnat henne
+      // kvar på /login utan någon som navigerar. Ta henne till målet i
+      // stället; erbjudandet kan visas vid nästa inloggning.
+      Sentry.captureException(err, { tags: { auth: 'passkey-routingbeslut' } });
+      navigate({ to: search.redirect });
+    } finally {
+      slutaAgaInloggningsdestinationen();
     }
-    navigate({ to: search.redirect });
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -192,10 +221,19 @@ function LoginRoute() {
     setMisslyckades(false);
 
     try {
+      // Öppnas FÖRE `auth.login()` — racet startar i samma ögonblick som
+      // anropet flippar `auth.isAuthenticated`, inte när det returnerar hit
+      // (se `inloggningsdestination.ts`s docblock).
+      borjaAgaInloggningsdestinationen();
       await auth.login(email, password);
       // router.invalidate() i InnerApp triggar beforeLoad-re-eval.
       await routaEfterLyckadInloggning();
     } catch (err) {
+      // Hit når numera ENDAST fel från `auth.login()` självt —
+      // `routaEfterLyckadInloggning` fångar sina egna (se dess catch).
+      // Inloggningen misslyckades alltså på riktigt: ingen destination att
+      // äga, stäng fönstret direkt.
+      slutaAgaInloggningsdestinationen();
       // Supabase auth-errors är medvetet otydliga om "fel email" vs "fel lösenord"
       // (motverkar email-enumeration, ADR-093 §6.3.8). Generiskt felmeddelande (AC#2).
       setMisslyckades(true);
