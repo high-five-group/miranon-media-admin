@@ -228,6 +228,36 @@ harmlöst där (ZZ-data), men regeln är att fälten sätts när eventet skapas.
 Prototypens `KURS_KARTA` är interimsbäraren app-side och dör med
 promoveringen.
 
+#### Staging- och prodbasens additiva tillskott 2026-08-17 (task-275.1, ADR-118 bilagors räckviddsmodell)
+
+Räckviddsdimensionen på `Bilagor` — Marcus GO given i grillningens
+slutkvittens 2026-08-17 ("Yes, kvitterar"). Skapat via Airtable-MCP
+`create_field`, staging FÖRST och verifierat med `describe_table` innan
+prod, enbart additivt — inget befintligt fält rört. `Kursfamilj`/`Kursnivå`
+speglar Eventplanerings valslag (ADR-115-fälten ovan) EXAKT på namn; nya
+option-ID:n autogenererades per fält/bas som vanligt (Airtable delar aldrig
+option-ID:n mellan fält). Styrande beslut:
+[ADR-118](../decisions/ADR-118-bilagors-rackviddsmodell.md).
+
+| Yta | Staging-ID | Prod-ID | Typ |
+|---|---|---|---|
+| Bilagor → `Räckvidd` | `fldU6i9Ju5HRwSRBf` | `fldsEltfGx3y63hhF` | singleSelect — `Event` · `Kurstyp` · `Alla event` |
+| Bilagor → `Kursfamilj` | `fldiJnZk66jlkUiX8` | `fld8Mc23OdJXFSBEx` | singleSelect — `RIM` · `Fjärrskådning` · `Psionautics` |
+| Bilagor → `Kursnivå` | `fldep25m32Q3Cjh41` | `fldMAGsqnQ4ddFmaI` | singleSelect — `Intro` · `Nivå 1` · `Nivå 2` · `Nivå 3`; TOMT för nivålösa familjer (samma regel som Eventplanering) |
+
+**Skrivbarhet:** ännu ingen skrivväg — denna skiva är ren basstruktur,
+ingen applikationskod rörd (task-275.1 AC #4). `upload-attachment`/
+`finalize-attachment-upload` tar emot räckviddsparametrar först i
+task-275.2 (EF-lagret); klienten (Dokument-ytans räckviddsval) i task-275.3.
+Fram tills dess är fälten skrivbara endast via Airtable-UI:t eller MCP.
+
+**Migrering av befintliga rader (AC #2, `Räckvidd = Event` som default —
+dagens sanning):** staging bar 24 rader (samtliga ZZ-testfixturer) FÖRE
+migreringen; samtliga 24 PATCH:ade till `Räckvidd = Event`,
+count-verifierat efter med `{Räckvidd} = BLANK()` → 0 träffar (24/24).
+Prod-tabellen mättes TOM i S102 och är TOM alltjämt — `list_records` gav 0
+rader både före och efter fältskapelsen (0/0, inget att migrera).
+
 ### Aktiva event
 
 | Event | Record ID | Datum | Max antal platser |
