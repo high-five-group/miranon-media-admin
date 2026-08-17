@@ -576,11 +576,16 @@ HELA SEGMENT-YTAN GODKÄND AV MARCUS ("helt nöjd på alla sidor",
 luften; ny gren `docs/s104-resume-4` i samma worktree. Numrering
 RE-verifierad mot `d61ec793`: **115 / task-249 / T145 / L512 + 19
 fragment** (247/248 + T143/T144 förbrukade av mellansessioner).
-Promoveringens steg 1: facit-manifestet FÖRFATTAT
-(`bilagor/s104-segment-divergens/facit.json`, sju ytor, `godkand: null`,
-`check-facit` grön; bevisform ariaSnapshot per s93-precedentet) — stämpeln
-väntar Marcus `!`-kanal (ADR-104). Arbetsform EJ återsatt
-(PAUSLÄGE-ordern: promoveringen väljer form efter sin process).
+Promoveringens steg 1–3 UTFÖRDA samma natt (Del 8): facit FÖRFATTAT
+(`#1458`) + STÄMPLAT av Marcus via `!`-kanalen (`#1460`, sha `a40f3543`,
+inga undantag) · ADR-115 mintad (`#1462` — regelspråket: AND-primitiven/
+partition-generatorn/täckningen; andra förfiningen av ADR-062 beslut 3) ·
+basstrukturen BYGGD staging+prod (Marcus GO "Go staging + prod":
+`Kursfamilj`+`Kursnivå` på Eventplanering, backfill 51/51 prod
+blank-verifierad + 83 staging [1 medvetet tom]; KÄND KANT:
+skapelsevägarna sätter inte fälten — PRD-krav, data-model.md). KVAR: PRD +
+skivor ur facit (FEM EF-krav + kanten + rivningslistan). Arbetsform EJ
+återsatt (PAUSLÄGE-ordern: promoveringen väljer form efter sin process).
 Resume 3-dagen: agent-varven 1–4 (Opus; utbildning globalt · täckningens
 100 %-kvittens · publiklistan scanlista+inline-scroll · testmail-raden ·
 generatorn tre stegkort · begreppsrenheten "alternativ"/"urval") →

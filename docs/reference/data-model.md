@@ -186,6 +186,43 @@ härledbara ur `Namn`-mönstret, se `scripts/backfill-bilagor-dokumentklass.mjs`
 efter backfillen bekräftade `0 rader att backfylla` (andra, oberoende
 verifiering av MCP-backfillen).
 
+#### Staging- och prodbasens additiva tillskott 2026-08-17 (S104 basstrukturen, ADR-115)
+
+Segmentytans dimensionsmodell (familj + nivå) som riktiga datafält på
+Eventplanering — Marcus beslut S104 Del 2 (*"Basen ska leverera vad appen
+vill ha, punkt!"*), GO "Go staging + prod" 2026-08-17. Skapat via Airtable-MCP
+`create_field`, staging FÖRST, prod därefter — enbart additivt, inget
+befintligt fält rört. **Medvetet DATAFÄLT, inte formel över kursnamnet:** en
+formel hade återinfört det sträng-matchnings-mönster som orsakade Lucka B
+([ADR-062](../decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md));
+fälten sätts när kursen/eventet skapas, så en ny kurs (t.ex. RIM 4) omfattas
+automatiskt av familjevillkor. Styrande beslut:
+[ADR-115](../decisions/ADR-115-segmentets-regelsprak-and-partition-tackning.md).
+
+| Yta | Staging-ID | Prod-ID | Typ |
+|---|---|---|---|
+| Eventplanering → `Kursfamilj` | `fld1BLsgFLm1WPBPV` | `fldxBUGMfya0WEbFB` | singleSelect — `RIM` · `Fjärrskådning` · `Psionautics` |
+| Eventplanering → `Kursnivå` | `fldWSwuWhrGD1cmgV` | `flduoLmR7zXFGBIYC` | singleSelect — `Intro` · `Nivå 1` · `Nivå 2` · `Nivå 3`; TOMT för nivålösa familjer (Fjärrskådning, Psionautics) |
+
+**Backfill (mappningen = prototypens `KURS_KARTA`,
+`src/components/segment/prototyp/VariantD.tsx`):** `Fjärrskådning` → familj
+`Fjärrskådning` · `Resor i medvetandet N` → `RIM` + `Nivå N` · nakna
+`Resor i medvetandet` (fälla #35) → `RIM` + `Intro` · `Psionautics` →
+`Psionautics`. **Prod: 51/51 rader satta**, verifierat med
+`{Kursfamilj} = BLANK()` → 0 träffar. **Staging: 83 rader satta; exakt 1 rad
+utan värde** (`recPwJEj88Hj8C2gU`, saknar även `Event (source)` — utan
+kursnamn ingen familj, korrekt per design). Ett CI-skapat ZZ-event föddes
+MITT UNDER backfillen och fångades av blank-verifikatet (Event-7755, sattes i
+efterhand) — instansbevis för kanten nedan.
+
+**KÄND KANT — skapelsevägarna sätter INTE fälten än:** `create-event`-EF:en
+(och staging-CI:ts ZZ-event-skapelser) föder rader utan
+`Kursfamilj`/`Kursnivå`. Tills EF:en sätter dem vid skapelse (bokfört
+PRD-krav för segment-passets promoveringsskivor) ackumulerar staging luckor —
+harmlöst där (ZZ-data), men regeln är att fälten sätts när eventet skapas.
+Prototypens `KURS_KARTA` är interimsbäraren app-side och dör med
+promoveringen.
+
 ### Aktiva event
 
 | Event | Record ID | Datum | Max antal platser |
