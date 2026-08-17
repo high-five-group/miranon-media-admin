@@ -5,10 +5,17 @@ import { ATGARDER, fyllPlatshallare } from '@/components/events/atgarder/atgards
 import { DetaljGrupp } from '@/components/events/detail/DetaljGrupp';
 import { Button, Dialog, MessageBox, SlideToConfirm } from '@/components/primitives';
 import { useSendActionTestEmail } from '@/data/mutations/actionEmail';
+import { type SvepGruppUtfall, useSendSvep } from '@/data/mutations/svepSend';
+import type { Registration } from '@/domain/models/Registration';
 import { Adresslista } from './Adresslista';
 import { Forhandsvisning, type TestUtfall } from './Forhandsvisning';
+import { ResultatVy } from './ResultatVy';
 import { totalMottagare } from './svep-urval';
 import type { SvepEventGrupp, SvepTyp } from './types';
+
+/** De tre lägena på samma yta — samma grammatik som `AtgardsSida.tsx`s
+    `GranskningsSida` (granska → skickar → resultat), se dess docblock. */
+type SvepLage = 'granska' | 'skickar' | 'resultat';
 
 const SVEP_RUBRIK: Record<SvepTyp, string> = {
   bekraftelse: 'Bekräfta alla',
@@ -34,14 +41,24 @@ const ATGARD_NAMN: Record<SvepTyp, string> = {
  * ALDRIG en formändring — `Hem.tsx` bär SCRIM/bredd/duration-klasserna
  * verbatim ur prototyp-routens docblock.
  *
- * SÄNDNINGEN ÄR STUBBAD, ÖPPET BOKFÖRD (kortets AC #5 och SCOPE-GRÄNSER):
- * armeringsinteraktionen (`SlideToConfirm` → `armerad`) är fullt byggd och
- * identisk med facit-läget "armerat" — men `skicka()` utför INGET
- * sändanrop. Det riktiga sändanropet (ETT per event-grupp, ADR-114 beslut 3)
- * är TASK-241.3s hela AC #2. Att bygga en falsk "skickar"/"resultat"-vy här
- * hade antingen ljugit om ett utfall eller byggt en yta 241.3 ändå måste
- * riva och göra om — `skicka()` stannar därför kvar på samma granska-skärm
- * och visar en `MessageBox` som säger exakt detta, i stället för att låtsas.
+ * SÄNDNINGEN ÄR SKARP (TASK-241.3 AC #2): `skicka()` går genom
+ * `useSendSvep` (`data/mutations/svepSend.ts`) — STOPP-VILLKORET (AC #1)
+ * prövade Åtgärds-sidans befintliga sändkontrakt (`dataSource.
+ * sendActionEmail`, eventId + bulk `registrationIds[]`) och fann att det
+ * REDAN levererar "ett sändanrop per event-grupp" när det anropas en gång
+ * per grupp — ingen ny serverfunktions-yta byggdes. Tre lägen på samma yta
+ * (`granska → skickar → resultat`), samma grammatik som `AtgardsSida.tsx`s
+ * `GranskningsSida`: ingen konstgjord fördröjning, mutationens FAKTISKA
+ * väntan bär `skickar`-lägets synlighet, och resultatet renderas PER
+ * event-grupp (`ResultatVy`, ADR-114 beslut 3 — fel och delresultat
+ * rapporteras per grupp, aldrig som en global siffra).
+ *
+ * `onSkickat` (TASK-241.3 AC #3, valfri): notifierar `Hem.tsx` om VILKA
+ * registreringar som faktiskt gick igenom (unionen av samtliga gruppers
+ * `lyckade`) när svepet landar i `resultat`-läget — Morgonkollens
+ * skickat-markörer byggs av det anropet, inte av denna komponent (samma
+ * "hem PEKAR, svepet SKICKAR"-ansvarsfördelning som ADR-114 beslut 1 redan
+ * bär, applicerad på utfallet också).
  *
  * TESTMAILET ÄR SKARPT (AC #4) — `useSendActionTestEmail`, samma kontrakt
  * `AtgardsSida.tsx`s `GranskningsSida` använder. Bundet till den grupp Lotta
@@ -52,16 +69,20 @@ export function SvepOverlay({
   svepTyp,
   eventGrupper,
   onClose,
+  onSkickat,
 }: {
   svepTyp: SvepTyp;
   eventGrupper: SvepEventGrupp[];
   onClose: () => void;
+  onSkickat?: (lyckade: Registration[]) => void;
 }) {
   const { user } = useAuth();
   const atgard = ATGARDER.find((a) => a.nyckel === svepTyp);
   const [armerad, setArmerad] = useState(false);
   const [aktuellGrupp, setAktuellGrupp] = useState<SvepEventGrupp | null>(eventGrupper[0] ?? null);
-  const [sandningEjKopplad, setSandningEjKopplad] = useState(false);
+  const [lage, setLage] = useState<SvepLage>('granska');
+  const [resultat, setResultat] = useState<SvepGruppUtfall[] | null>(null);
+  const sendSvep = useSendSvep();
 
   /* [TASK-147.10, T53 väg C] SAMMA kontrakt som `AtgardsSida.tsx`s
      `GranskningsSida` — se den filens docblock. `aktuellGrupp?.event.id`
@@ -76,6 +97,7 @@ export function SvepOverlay({
 
   const total = totalMottagare(eventGrupper);
   const kanSkicka = total > 0;
+  const visarResultat = lage === 'resultat' && resultat != null;
 
   function skickaTest() {
     if (!aktuellGrupp || !atgard) return;
@@ -100,9 +122,30 @@ export function SvepOverlay({
     );
   }
 
-  /* STUBBEN — se filens docblock § SÄNDNINGEN ÄR STUBBAD. */
+  /* [TASK-241.3 AC #2] Ingen konstgjord fördröjning — mutationens FAKTISKA
+     väntan bär `skickar`-lägets synlighet (samma princip som
+     `AtgardsSida.tsx`s `skicka()`). `onSuccess` kan inte fira för denna
+     specifika `mutate()`-anrop UTAN att `resultat` sätts (`useSendSvep`
+     fångar varje grupps eget fel internt och löser alltid), men `onError`
+     står kvar som ett defensivt golv mot ett äkta oväntat kast (t.ex. en
+     trasig `amne`/`mailtext`-funktion) — samma "tillbaka till granska,
+     handtaget nollställt"-grammatik som Åtgärds-sidan. */
   function skicka() {
-    setSandningEjKopplad(true);
+    setLage('skickar');
+    sendSvep.mutate(
+      { svepTyp, eventGrupper, amne, mailtext },
+      {
+        onSuccess: (utfallPerGrupp) => {
+          setResultat(utfallPerGrupp);
+          setLage('resultat');
+          onSkickat?.(utfallPerGrupp.flatMap((g) => g.lyckade));
+        },
+        onError: () => {
+          setArmerad(false);
+          setLage('granska');
+        },
+      },
+    );
   }
 
   if (!atgard) return null;
@@ -120,15 +163,25 @@ export function SvepOverlay({
       // så rubriken aldrig hamnar under den.
       className="relative max-h-[90vh] w-full overflow-hidden p-5 pr-14 sm:max-h-[85vh] sm:p-6 sm:pr-16"
       actions={
-        kanSkicka ? (
+        visarResultat ? (
+          <Button intent="primary" onPress={onClose}>
+            Tillbaka till Hem
+          </Button>
+        ) : kanSkicka ? (
           <>
-            <Button intent="secondary" onPress={onClose}>
+            <Button intent="secondary" onPress={onClose} isDisabled={lage === 'skickar'}>
               Avbryt
             </Button>
             {/* DYNAMISKA GRÖN-REGELN, verbatim ur `AtgardsSida.tsx`:
                 oarmerat når klicket ingen utomstående → primary; armerat går
                 utskicket iväg → success. Grönt betyder "nu går det iväg". */}
-            <Button intent={armerad ? 'success' : 'primary'} isDisabled={!armerad} onPress={skicka}>
+            <Button
+              intent={armerad ? 'success' : 'primary'}
+              isDisabled={!armerad || lage === 'skickar'}
+              isLoading={lage === 'skickar'}
+              loadingText="Skickar…"
+              onPress={skicka}
+            >
               Skicka till {total} {total === 1 ? 'person' : 'personer'}
             </Button>
           </>
@@ -153,8 +206,9 @@ export function SvepOverlay({
       </Button>
 
       {/* SAMMANFATTNINGEN — en naturlig mening, normal vikt (Marcus-dömt på
-          just denna yta, prototypens punkt B). */}
-      {kanSkicka && (
+          just denna yta, prototypens punkt B). Dold i resultatläget — utfallet
+          har redan sin egen `MessageBox`-sammanfattning (`ResultatVy`). */}
+      {!visarResultat && kanSkicka && (
         <p className="text-body text-text-secondary">
           {ATGARD_NAMN[svepTyp]} till {total} {total === 1 ? 'person' : 'personer'} i{' '}
           {eventGrupper.length} event.
@@ -164,7 +218,9 @@ export function SvepOverlay({
       {/* BODY — den enda scrollande zonen. `motion-safe:animate-mm-avsloj` är
           husets allmänna mjuka entré. */}
       <div className="mt-4 max-h-[52vh] overflow-auto motion-safe:animate-mm-avsloj">
-        {kanSkicka ? (
+        {visarResultat && resultat ? (
+          <ResultatVy eventGrupper={eventGrupper} resultat={resultat} />
+        ) : kanSkicka ? (
           <div className="flex flex-col gap-6">
             <DetaljGrupp id="grupp-svep-mottagare" rubrik="Mottagare">
               <Adresslista eventGrupper={eventGrupper} />
@@ -182,12 +238,6 @@ export function SvepOverlay({
                 onGruppVisas={setAktuellGrupp}
               />
             </DetaljGrupp>
-
-            {sandningEjKopplad && (
-              <MessageBox intent="info" title="Sändningen är inte kopplad ännu">
-                Skarp sändning byggs i nästa skiva (TASK-241.3). Ingenting har skickats.
-              </MessageBox>
-            )}
           </div>
         ) : (
           <MessageBox intent="info" title="Inget att skicka just nu">
@@ -202,7 +252,7 @@ export function SvepOverlay({
           Åtgärds-sidans egen sekvens. Se prototypens docblock för det mätta
           skälet (en dold slider under scroll-kanten gjorde en korrekt
           spärrad knapp obegriplig). */}
-      {kanSkicka && (
+      {!visarResultat && kanSkicka && (
         <div className="mt-4">
           <SlideToConfirm
             label={

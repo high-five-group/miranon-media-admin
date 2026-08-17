@@ -192,12 +192,7 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
-import {
-  type ActionSkipReason,
-  BETALSATT_VARDEN,
-  type Betalsatt,
-  type SendActionEmailResult,
-} from '@/domain/schemas';
+import { BETALSATT_VARDEN, type Betalsatt } from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
 import { queryKeys } from '@/queries/keys';
@@ -215,6 +210,7 @@ import {
   saknarAnmalningsavgift,
   saknarSlutbetalning,
 } from './atgardsmallar';
+import { type Utfall, verkligtUtfallTillUtfall } from './atgardsutfall';
 
 /* ------------------------------------------------------------------ *
  * Grammatik ärvd ur detail/Atgarder.tsx — hover-plattan skjuter 8 px
@@ -1915,70 +1911,12 @@ const TILLBAKA_KLASS =
  * TASK-147.3 (alla fyra åtgärdstyper skickar verkligt) är servern den ENDA
  * källan till klassen — se `verkligtUtfallTillUtfall` nedan.
  * ================================================================== */
-const SKAL_INGEN_EPOST = 'Saknar e-postadress';
-
-type Utfall = {
-  status: 'sent' | 'partial' | 'failed' | 'skipped';
-  lyckade: Registration[];
-  fallna: { reg: Registration; skal: string }[];
-};
-
-/** Svenska skäl för serverns skip-koder (`ActionSkipReason`) — samma tre koder
-    `_shared/confirm-registrations.ts`s golv-lista redan bär, se `SendActionEmail.
-    schema.ts`s docblock för varför enumen ändå är EGEN och inte återanvänd. */
-const SKAL_REDAN_BEKRAFTAD = 'Redan bekräftad';
-const SKAL_INAKTIV = 'Anmälan är inte längre aktiv';
-
-function skalForSkip(reason: ActionSkipReason): string {
-  switch (reason) {
-    case 'no_email':
-      return SKAL_INGEN_EPOST;
-    case 'already_confirmed':
-      return SKAL_REDAN_BEKRAFTAD;
-    case 'inactive':
-      return SKAL_INAKTIV;
-    default:
-      // Uttömmande switch — en framtida ActionSkipReason-utökning fäller
-      // detta i typecheck (never-tilldelningen), inte tyst i runtime.
-      return reason;
-  }
-}
-
-/**
- * [TASK-147.2/147.3] VERKLIGT utfall → samma `Utfall`-form den nu rivna
- * `simuleraUtfall` en gång byggde — resultatlägets rendering (`UtfallsKort`,
- * `MessageBox`-sammanfattningen) är DÄRMED OFÖRÄNDRAD sedan prototyp-eran,
- * bara källan bytt (server i stället för minne).
- *
- * Servern svarar med registration-ID:n (`completed`/`skipped`/`failed`), inte
- * `Registration`-objekt (SCOPE-KÄRNAN: mottagaren löses server-side och
- * kommer aldrig tillbaka till klienten som andra fält än ID:t). `byId` slår
- * upp mot urvalet SOM SKICKADES — ett ID servern nämner men som saknas i
- * kartan (borde vara omöjligt: EF:en validerar `registrationId` mot exakt de
- * ID:n klienten skickade) filtreras tyst bort i stället för att krascha
- * rendering — samma försiktighet som `verkligtUtfallTillUtfall`s anropare
- * redan visar mot serverdata den inte kan garantera formen på.
- */
-function verkligtUtfallTillUtfall(
-  result: SendActionEmailResult,
-  mottagare: Registration[],
-): Utfall {
-  const byId = new Map(mottagare.map((r) => [r.id, r] as const));
-  const lyckade = result.completed
-    .map((id) => byId.get(id))
-    .filter((r): r is Registration => r != null);
-  const fallna: { reg: Registration; skal: string }[] = [
-    ...result.skipped.flatMap(({ registrationId, reason }) => {
-      const reg = byId.get(registrationId);
-      return reg ? [{ reg, skal: skalForSkip(reason) }] : [];
-    }),
-    ...result.failed.flatMap(({ registrationId, reason }) => {
-      const reg = byId.get(registrationId);
-      return reg ? [{ reg, skal: reason }] : [];
-    }),
-  ];
-  return { status: result.status, lyckade, fallna };
-}
+/* [TASK-241.3] `Utfall`-typen, `skalForSkip` och `verkligtUtfallTillUtfall`
+   FLYTTADE (ren flytt, ingen beteendeändring) till `./atgardsutfall.ts` —
+   sändytans svep (`src/data/mutations/svepSend.ts`) återanvänder EXAKT
+   samma server-till-svensk-text-mappning, samma "atgardsmallar.ts"-mönster
+   som TASK-241.2 redan etablerade för mallmotorn. Importerad överst i
+   filen. */
 
 /** Kortet i resultatläget — samma innehåll som mottagarkortet, plus utfallet. */
 function UtfallsKort({ reg, skal }: { reg: Registration; skal: string | null }) {

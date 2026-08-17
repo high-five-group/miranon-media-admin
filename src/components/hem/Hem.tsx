@@ -1,14 +1,17 @@
 import { type CSSProperties, useMemo, useState } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import { Modal } from '@/components/primitives';
+import { displayName } from '@/components/registrations/registration-display';
 import { SvepOverlay } from '@/components/svep/SvepOverlay';
 import { bekraftelsesvepUrval } from '@/components/svep/svep-urval';
+import type { Registration } from '@/domain/models/Registration';
 import { Bevakningsrad } from './Bevakningsrad';
 import { ForfallnaBetalningar } from './ForfallnaBetalningar';
 import { Genvagar } from './Genvagar';
 import {
   bevakningar,
   dagsStart,
+  eventIdentitet,
   eventsById,
   forfallnaBetalningar,
   fornamn,
@@ -162,6 +165,34 @@ export function Hem() {
     [registrationsQuery.data, evMap],
   );
 
+  /* [TASK-241.3 AC #3] Skickat-markörerna — session-lokalt minne av VILKA
+     registreringar som faktiskt bekräftades via svepet, oberoende av
+     query-cachens läge. NÖDVÄNDIGT eftersom en lyckad bekräftelse flippar
+     `Registration.status` bort från `OBEKRAFTAD` server-side (samma
+     fält-skrivning som `confirmRegistrations`, se `useSendActionEmail`s
+     docblock) — raden lämnar `obekraftadeAnmalningar`s filter vid nästa
+     refetch, precis som den SKA. Utan ett eget minne skulle "skickat"
+     aldrig synas: rader försvinner i stället för att markeras.
+     `onSkickat` (`SvepOverlay.tsx`) levererar UNIONEN av samtliga gruppers
+     `lyckade` när svepet landar i resultatläget.
+
+     BEGRÄNSNING, ÖPPET BOKFÖRD: minnet rensas ALDRIG automatiskt — det
+     lever tills `Hem` unmountas (sidladdning/navigering bort och
+     tillbaka). Ett svep körs typiskt en gång per morgon, så mängden är
+     liten och avgränsad; en tidsstyrd urblekning hade varit spekulativ
+     komplexitet utan en nedskriven regel att bygga mot (Marcus har inte
+     dömt hur länge markören ska synas) — se slutrapporten för TASK-241.3. */
+  const [nyligenSkickade, setNyligenSkickade] = useState<Registration[]>([]);
+  const nyligenSkickadeRader = useMemo(
+    () =>
+      nyligenSkickade.map((reg) => ({
+        reg,
+        namn: displayName(reg),
+        identitet: eventIdentitet(reg, reg.eventId ? evMap.get(reg.eventId) : undefined),
+      })),
+    [nyligenSkickade, evMap],
+  );
+
   const idagLangt = useMemo(
     () =>
       kapitalisera(
@@ -199,6 +230,7 @@ export function Hem() {
           anmalningar={anmalningar}
           nuMs={nuMs}
           onBekraftaAlla={() => setSvepOppen(true)}
+          nyligenSkickade={nyligenSkickadeRader}
         />
 
         {/* 4. FÖRFALLNA BETALNINGAR */}
@@ -238,6 +270,7 @@ export function Hem() {
             svepTyp="bekraftelse"
             eventGrupper={bekraftelseGrupper}
             onClose={() => setSvepOppen(false)}
+            onSkickat={(lyckade) => setNyligenSkickade((nu) => [...lyckade, ...nu])}
           />
         )}
       </Modal>
