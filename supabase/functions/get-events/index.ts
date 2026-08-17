@@ -117,6 +117,10 @@ function mapEvent(record: { id: string; fields: Record<string, unknown> }, borOv
     // null — fältet är OPTIONAL i EventSchema, så z.array-parsen håller ändå);
     // båda EF:erna bär fältet sedan samma leverans.
     eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
+    // Basdimensionerna (TASK-249.4, ADR-115): direkta singleSelect-fält, alltid lästa —
+    // selectName ger string|null (aldrig gissat). Håll i synk med get-event/update-event.
+    kursfamilj: selectName(f['Kursfamilj']),
+    kursniva: selectName(f['Kursnivå']),
     // Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över' bland
     // eventets länkade Anmälningar (listkortets säng-rad). Aggregeras per event ur
     // registrerings-batchen (fetchBorOverAntalByEvent) och skickas in här. Håll i

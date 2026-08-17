@@ -99,6 +99,11 @@ function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
     // eventKey: saknas värdet UTELÄMNAS nyckeln (undefined droppas av
     // JSON.stringify; OPTIONAL i EventSchema — aldrig null). Håll i synk.
     eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
+    // Basdimensionerna (TASK-249.4, ADR-115): direkta singleSelect-fält, alltid lästa ur
+    // PATCH-svarets fullständiga fields (kommentaren ovan mapEvent) — selectName ger
+    // string|null (aldrig gissat). Håll i synk med get-event/get-events.
+    kursfamilj: selectName(f['Kursfamilj']),
+    kursniva: selectName(f['Kursnivå']),
     // Beläggningens TVÅ skrivbara kategorifält (task-18.2, K16) — PATCH-svaret
     // bär dem. Räkningarna (viaFormular/medfoljande/vantelista) aggregeras
     // MEDVETET INTE här (write-EF:en förblir ett Airtable-anrop; ADDITIVT-

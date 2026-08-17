@@ -29,6 +29,14 @@ export const EventSchema = z.object({
   // BÅDA läs-EF:erna (get-event + get-events) returnerar fältet sedan samma leverans.
   eventKey: z.string().optional(),
 
+  // Basdimensionerna (TASK-249.4, ADR-115) — Kursfamilj/Kursnivå. `.nullable()` bär det
+  // ÄRLIGA "ingen känd familj/nivå"-läget (aldrig gissat); `.optional()` är en
+  // BAKÅTKOMPATIBILITETS-lucka för svar/cache från FÖRE denna leverans (eventKey-formen)
+  // — get-events/get-event/update-event bär nyckeln ALLTID sedan denna leverans, se
+  // Event.ts. Håll i synk med Event.ts.
+  kursfamilj: z.string().nullable().optional(),
+  kursniva: z.string().nullable().optional(),
+
   // ── Beläggningens innehållsmodell (task-18.2; S73-facit K16, PRD task-18
   // beslut 5) — mappar basen 1-till-1. SAMTLIGA fält ADDITIVT-OPTIONAL i
   // eventKey-formen: UTELÄMNAS-vid-saknas, ALDRIG null (null skulle kollidera
