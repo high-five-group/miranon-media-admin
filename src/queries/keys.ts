@@ -99,26 +99,14 @@ export const queryKeys = {
     // omvända länk). Egen gren, PER-EVENT-nyckel (mönster ur events.notes)
     // — bilageväljaren och granskningsytans "valda bilagor"-summering delar
     // samma cache-entry, ingen dubbel-fetch när båda monteras kort efter varandra.
+    //
+    // [RIVET, TASK-273.4] `downloadUrl`/`documentPreviews` (nedan, tidigare
+    // ett eget top-level-block) fanns bara för Visa-dialogens lazy
+    // `useQuery({enabled: isOpen})`-mönster. Ikonparet som ersatte dialogen
+    // (`DokumentAtgardsKnappar`, DokumentYta.tsx) hämtar imperativt via
+    // `useMutation` vid klick i stället — inget cache-bundet läsläge kvar
+    // att nyckla. Git bevarar formen (`git log -p -- src/queries/keys.ts`).
     byEvent: (eventId: string) => ['attachments', eventId] as const,
-    // Signerad nedladdnings-URL för EN bilaga (TASK-245): PER-BILAGA-nyckel
-    // (eventId + attachmentId, ägarskaps-guarden bär båda) — Dokument-ytans
-    // Visa-dialog fetchar den LAZY (enabled: dialogen är öppen), och en
-    // stängd/återöppnad dialog ska kunna fråga igen om TTL:en (300s,
-    // _shared/attachments.ts § SIGNED_DOWNLOAD_URL_TTL_SECONDS) hunnit gå ut
-    // — ingen explicit invalidation krävs, TanStack Querys default staleTime
-    // (0) räcker för att en re-enable alltid refetchar.
-    downloadUrl: (eventId: string, attachmentId: string) =>
-      ['attachments', eventId, attachmentId, 'download-url'] as const,
-  },
-  // Sidoeffektsfria klass B/C-förhandsvisningar (TASK-246). PER-EVENT-nyckel
-  // (samma disciplin som attachments.byEvent) — Dokument-ytans Visa-dialoger
-  // för mallar/generatorer fetchar LAZY (enabled: dialogen är öppen), och
-  // TanStack Querys default staleTime (0) räcker för att en stängd-och-
-  // återöppnad dialog alltid genererar färskt (varje generering är transient
-  // ändå — ingen server-side cache att bli stale mot).
-  documentPreviews: {
-    eventTemplate: (eventId: string) => ['documentPreviews', 'eventTemplate', eventId] as const,
-    receipt: (eventId: string) => ['documentPreviews', 'receipt', eventId] as const,
   },
   segment: {
     // App-sparade segment (Fas 6g L3, ADR-065): GLOBAL läs-lista (get-segments). STABIL
