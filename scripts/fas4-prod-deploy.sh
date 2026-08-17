@@ -124,18 +124,22 @@ command -v npx > /dev/null 2>&1 || doden "npx saknas i PATH."
 
 cd "${REPO_ROT}"
 
-if [[ -n "$(git status --porcelain)" ]]; then
+TRADSTATUS="$(git status --porcelain)" || doden "git status misslyckades."
+if [[ -n "${TRADSTATUS}" ]]; then
     git status --short >&2
     doden "Arbetsträdet är smutsigt. Deploya aldrig från ett träd du inte vet vad det innehåller."
 fi
 gront "✓ Arbetsträdet rent"
 
-GREN="$(git branch --show-current)"
+GREN="$(git branch --show-current)" || doden "Kunde inte läsa aktuell gren."
 [[ "${GREN}" = "main" ]] || doden "Du står på grenen '${GREN}'. Prod-deploy sker från main."
-gront "✓ På main ($(git rev-parse --short HEAD))"
+HEAD_KORT="$(git rev-parse --short HEAD)" || doden "Kunde inte läsa HEAD."
+gront "✓ På main (${HEAD_KORT})"
 
 git fetch --quiet origin main || doden "git fetch mot origin misslyckades."
-if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
+LOKAL_SHA="$(git rev-parse HEAD)" || doden "Kunde inte läsa lokal HEAD."
+FJARR_SHA="$(git rev-parse origin/main)" || doden "Kunde inte läsa origin/main."
+if [[ "${LOKAL_SHA}" != "${FJARR_SHA}" ]]; then
     doden "Lokal main är inte i nivå med origin/main. Kör 'git merge --ff-only origin/main' först."
 fi
 gront "✓ main i nivå med origin/main"
@@ -209,8 +213,13 @@ aterstall_staging() {
     [[ "${ATERSTALLD}" -eq 1 ]] && return
     ATERSTALLD=1
     rubrik "Återlänkar till staging"
+    # shellcheck disable=SC2310  # `set -e` SKA vara avstängt här — trappen
+    # måste rapportera ett misslyckande med egen text, inte dö tyst mitt i
+    # återställningen. Det är hela poängen med steget.
     if lanka "${PROD_REF_STAGING}"; then
-        if [[ -f "${LANK_TILLSTAND}" ]] && [[ "$(cat "${LANK_TILLSTAND}")" = "${PROD_REF_STAGING}" ]]; then
+        local efter=""
+        [[ -f "${LANK_TILLSTAND}" ]] && efter="$(cat "${LANK_TILLSTAND}")"
+        if [[ "${efter}" = "${PROD_REF_STAGING}" ]]; then
             gront "✓ Länkat tillbaka till staging"
         else
             rott "⚠️  Återlänkningen rapporterade OK men tillståndsfilen säger något annat."
@@ -225,6 +234,9 @@ aterstall_staging() {
 trap aterstall_staging EXIT
 
 rubrik "Länkar till prod"
+# shellcheck disable=SC2310  # avsiktligt: `lanka` returnerar felkod och vi
+# vill ge ett eget, begripligt skäl via `doden` i stället för `set -e`:s tysta
+# död — utfallet är identiskt (avbrott), men läsaren får veta varför.
 lanka "${ANGIVEN_REF}" || doden "Länkningen misslyckades." 2
 kraev_lankat "${ANGIVEN_REF}" "deploy"
 

@@ -21,6 +21,13 @@ POLICY="${SCRIPT_DIR}/../.prod-ref-policy.conf"
 
 # shellcheck source=/dev/null
 source "${POLICY}"
+# Policyn ovan sätter dessa; shellcheck kan inte följa `source` av en variabel
+# sökväg och rapporterar dem annars som otilldelade (SC2154). Defaultar till
+# tomt så en trasig policy ger ett tydligt testfel i stället för `set -u`-död.
+PROD_REF_STAGING="${PROD_REF_STAGING:-}"
+PROD_REF_PROD="${PROD_REF_PROD:-}"
+[[ -n "${PROD_REF_STAGING}" && -n "${PROD_REF_PROD}" ]] \
+    || { echo "❌ Policyn ${POLICY} saknar refer — sviten kan inte köra." >&2; exit 1; }
 
 FALL=0
 FEL=0
