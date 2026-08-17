@@ -11,9 +11,10 @@ import { expect, test } from './fixtures';
  * komponentens klassdoc), den Marcus-låsta ordalydelsen, reducerad
  * rörelse (diskret stegning — ingen transition-deklaration alls under
  * reduce, samma progressive-enhancement-mönster som Skeleton.spec.ts),
- * och kontrastkontraktet (normalläge redan ≥3:1 mot spåret — gold-11
+ * och kontrastkontraktet (normalläge redan ≥3:1 mot spåret — sage-9
  * golvet, inte bara ett contrast-more-tak — som mörknar vidare till
- * gold-12 under contrast-more).
+ * sage-11 under contrast-more; färgbytet från gold är task-273.1,
+ * 2026-08-17 — systemets laddningssignal skiljs från innehållets guld).
  *
  * Kör i a11y-projektet mot /dev/primitives (ADR-044/045) — axe-skanningen
  * av sektionen bor i primitives.spec.ts.
@@ -146,8 +147,8 @@ test.describe('Forberedelseskarm — Förberedelseskärmens UI-kontrakt (task-21
     expect(normalOutline).toBe('none');
     const normalFill = await forstaFyllnad.evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(normalFill).toBe(await resolvedTokenColor(page, '--mm-forberedelseskarm-bar-fill'));
-    expect(normalFill).toBe(await resolvedTokenColor(page, '--p-gold-11'));
-    // Golvet gäller redan i NORMALLÄGE (gold-11, inte --mm-primary/gold-9):
+    expect(normalFill).toBe(await resolvedTokenColor(page, '--p-sage-9'));
+    // Golvet gäller redan i NORMALLÄGE (sage-9, inte gold — task-273.1):
     // ≥3:1 mot spåret, inte bara ett contrast-more-tak.
     const trackBg = await forstaTrack.evaluate((el) => getComputedStyle(el).backgroundColor);
     expect(kontrastKvot(normalFill, trackBg)).toBeGreaterThanOrEqual(3);
@@ -159,7 +160,7 @@ test.describe('Forberedelseskarm — Förberedelseskärmens UI-kontrakt (task-21
     expect(contrastFill).toBe(
       await resolvedTokenColor(page, '--mm-forberedelseskarm-bar-fill-contrast'),
     );
-    expect(contrastFill).toBe(await resolvedTokenColor(page, '--p-gold-12'));
+    expect(contrastFill).toBe(await resolvedTokenColor(page, '--p-sage-11'));
     expect(kontrastKvot(contrastFill, trackBg)).toBeGreaterThanOrEqual(4.5);
   });
 
