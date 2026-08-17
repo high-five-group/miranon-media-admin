@@ -302,9 +302,46 @@ function InnerApp() {
   // Förberedelseskärmen (AppShell/Forberedelseskarm.tsx) ersätter BÅDA
   // appnivåns tidigare nakna "Laddar…"-rader (denna OCH __root.tsx:s Suspense-
   // fallback) — auth-resolution-fasen visar den i 0-läge (ADR-112 beslut 5).
+  // ANROPAREN SÄTTER HÖJDEN (TASK-266) — kontraktet stod redan skrivet på två
+  // ställen men var aldrig implementerat på någon av de två produktions-
+  // anroparna: `routes/dev/primitives.tsx` ("I produktion fyller ytan hela
+  // viewporten, ANROPAREN SÄTTER HÖJDEN, TASK-218.3 gate-integrationen") och
+  // wrapper-noten längre ned i denna fil ("RouterProvider-innehållet sätter
+  // redan sin egen höjd"). Förberedelseskärmen själv bär `h-full min-h-full`
+  // (fyller SIN FÖRÄLDER — medvetet, se dess doc-block § LAYOUTANKARET: ett
+  // byte till `min-h-dvh` i komponenten hade brutit ut ur dev-showcasens
+  // `h-72 overflow-hidden`-inramning). Utan en förälder med höjd kollapsade
+  // hela kedjan: skarpt uppmätt 2026-08-17 på 1280×720 var html/body/#root/
+  // container ALLA 219 px, och `justify-center` centrerade följaktligen i den
+  // 219 px höga topplådan — logons mitt hamnade på y=69 i stället för 360
+  // (Marcus live-observation: "logo+loadingbar ocentrerade").
+  //
+  // `min-h-dvh` är login.tsx:s egen höjdkälla (`min-h-dvh` på dess `<main>`,
+  // rad 226) applicerad på det lager kontraktet pekar ut. `min-h-` (inte
+  // `h-`) så ytan kan VÄXA förbi viewporten i stället för att klippa: mätt i
+  // isolerad repro växer den till 1032 px vid 1000 px innehåll, medan `h-dvh`
+  // fastnar på 720 med innehållets nedre del onåbar (scrollHeight förblir
+  // 720). Samma skäl som login.tsx väljer min-h framför h.
+  //
+  // `grid`, INTE `flex` — och det är en MÄTT skillnad, inte en stilfråga.
+  // Barnet bär `h-full` (`height: 100%`), och en procent-höjd mot en förälder
+  // vars höjd kommer från `min-height` (alltså `height: auto`) löser sig inte:
+  // i en FLEX-förälder blir barnet 219 px, eftersom `height: 100%` heller inte
+  // computear till `auto` och därför aldrig utlöser `align-items: stretch`.
+  // I en GRID-förälder löses barnets procent-höjd mot GRID-AREAN, som är
+  // definit så snart raden dimensionerats av containerns min-height → barnet
+  // blir 720. Fyra former mättes sida vid sida i samma körning
+  // (`flex min-h-dvh` 219 · `h-dvh` 720 utan växt · `grid min-h-dvh` 720 med
+  // växt · `flex-col` + `flex-1` på barnet 720 men kräver ändring i
+  // komponenten) — grid är den enda som ger BÅDE viewporthöjd och växt utan
+  // att röra Förberedelseskärmen själv.
   if (gate.typ !== 'redo') {
     const forlopp = gate.typ === 'varmar' ? gate.forlopp : FORBEREDELSESKARM_VANTAR;
-    return <Forberedelseskarm klara={forlopp.klara} totalt={forlopp.totalt} />;
+    return (
+      <div className="grid min-h-dvh w-full">
+        <Forberedelseskarm klara={forlopp.klara} totalt={forlopp.totalt} />
+      </div>
+    );
   }
 
   // ÖVERGÅNGEN — se klassdoc-blocket för `visaEntreanimation`/

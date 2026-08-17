@@ -157,6 +157,25 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * det `h-full min-h-full` finns för att undvika. Login har ingen sådan
  * multi-kontext-återanvändning (en enda route, en enda rendering), så
  * `min-h-dvh` är säkert DÄR men inte HÄR.
+ *
+ * FÖLJDEN AV DET VALET ÄR ETT KRAV PÅ ANROPAREN, och det kravet var i tre
+ * kontexter skrivet men i två av dem aldrig uppfyllt (TASK-266): `h-full`
+ * fyller sin förälder, alltså MÅSTE föräldern ha en höjd. Dev-showcasen
+ * uppfyllde kravet (`h-72`) och formulerade det ("I produktion fyller ytan
+ * hela viewporten — ANROPAREN SÄTTER HÖJDEN"), men båda produktions-
+ * anroparna renderade komponenten NAKEN direkt under `#root`. Eftersom
+ * `base.css` inte sätter någon höjd på html/body och `#root` saknar
+ * CSS-regel kollapsade hela kedjan: skarpt uppmätt 2026-08-17 på 1280×720
+ * var html/body/#root/container ALLA 219 px (176 px innan logo-SVG:n
+ * laddat), och `justify-center` centrerade därför i den kollapsade
+ * topplådan — logons mitt på y=69 i stället för 360.
+ *
+ * Rättat i anroparna, inte här: `main.tsx`s gate-gren och
+ * `_authenticated.tsx`s app-yta-gate bär nu `grid min-h-dvh w-full`. Att i
+ * stället flytta `min-h-dvh` HIT hade brutit dev-showcasen enligt stycket
+ * ovan. Se `main.tsx`s kommentar vid gate-grenen för varför wrappern måste
+ * vara `grid` och inte `flex` (mätt: `h-full` mot en flex-förälder med
+ * min-height ger 219 px, mot en grid-förälder 720 px).
  */
 export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
   const textId = useId();
