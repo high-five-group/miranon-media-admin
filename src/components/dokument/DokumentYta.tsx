@@ -907,8 +907,8 @@ function GemensamtLage({
   return (
     <div className="flex flex-col gap-3">
       <p className="text-small text-text-muted">
-        Gemensamma dokument gäller flera event — en kurstyp eller alla event. Ändras här, syns
-        direkt överallt de gäller.
+        Gemensamma dokument gäller flera event: en kurstyp eller alla event. Ändras här, syns direkt
+        överallt de gäller.
       </p>
 
       {laddar ? (
