@@ -3,10 +3,10 @@ id: TASK-249.2
 title: >-
   Skiva: EF-motorn — AND/DNF i membership, server-ägd expansion, via: Par[] i
   svaret
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 00:24'
-updated_date: '2026-08-17 01:46'
+updated_date: '2026-08-17 09:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -56,3 +56,9 @@ genom flipp/rivning) rör INTE denna skiva — de är forward-looking mot 249.1/
 PRD-DoD-mallen kopierad in på varje barn-skiva. Lämnade omarkerade, ej gissat
 klara. Se PR-rapporten för full motivering.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd och landad i natt-orkestreringen S104 2026-08-17 (resume 5). PR: se kortets notes/kommentarer; CI grön per jobb + merge-kö-verifikat. Stängd av orkestreraren efter landnings-verifiering mot origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-249.1
 title: 'Skiva: Promoverings-grinden — ariaSnapshot-referenser låsta ur variant d'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 00:22'
-updated_date: '2026-08-17 02:01'
+updated_date: '2026-08-17 09:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -46,3 +46,9 @@ VIKTIGT FYND UNDER BYGGET: Playwrights toMatchAriaSnapshot() matchar i default-l
 
 DoD #7 ("check-facit grön genom flipp OCH rivning") är FRAMÅTRIKTAT och rör TASK-249.5/249.6 (flippen har inte skett än) — lämnas avsiktligt oavbockad här. Fixturvärlden (fyra kurser: Resor i medvetandet 1/2, Fjärrskådning, Psionautics + åtta fixturpersoner, se spec-filens huvud) är EGEN och OBEROENDE av Skool-bilagans juli-2026-facit (FACIT_KARTA i VariantD.tsx) — siffrorna i referenserna (t.ex. "RIM 1 + RIM 2": 2 personer) är denna testfilens egna deterministiska tal, INTE Skool-talen (188 osv). Skalprovet star AV (default) i samtliga sju tester, sa FACIT_KARTA/skalprovMal paverkar aldrig referenserna.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd och landad i natt-orkestreringen S104 2026-08-17 (resume 5). PR: se kortets notes/kommentarer; CI grön per jobb + merge-kö-verifikat. Stängd av orkestreraren efter landnings-verifiering mot origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->
