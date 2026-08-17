@@ -127,7 +127,7 @@ export function Genvagar({
             <NavCard to="/anmalan/ny" icon={UserPlus} label="Lägg till manuell anmälan" />
           </li>
           <li>
-            <NavCard to="/atgarder" icon={ListChecks} label="Öppna Åtgärds-sidan" />
+            <NavCard to="/atgarder" icon={ListChecks} label="Gå till åtgärder" />
           </li>
         </ul>
       </nav>

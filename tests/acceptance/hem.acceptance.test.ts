@@ -848,7 +848,7 @@ test.describe('Genvägar (PRD berättelse 9)', () => {
       'href',
       '/anmalan/ny',
     );
-    await expect(nav.getByRole('link', { name: 'Öppna Åtgärds-sidan' })).toHaveAttribute(
+    await expect(nav.getByRole('link', { name: 'Gå till åtgärder' })).toHaveAttribute(
       'href',
       '/atgarder',
     );

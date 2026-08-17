@@ -29,16 +29,24 @@ interface NavCardLinkProps extends Omit<AriaLinkProps, 'children' | 'className' 
 // ingen-chevron-regeln är RIVEN ÖPPET (task-18.3; S73 K25-prövningens
 // Marcus-kvitterade konsekvens, PRD task-18 beslut 15) — chevron betyder
 // att raden leder vidare, samma grammatik som eventsidans åtgärdsrader
-// (spec §14 bär rivningen). INGEN hover-bakgrundsändring (M3 prövad och
-// förkastad) — medvetet facit-beslut, inte utelämnande. Fokusringen
-// kommer från den globala *:focus-visible-regeln i base.css; kantlinjen
-// blir synlig under prefers-contrast: more. Raden är statisk (ingen
-// transition/animation).
+// (spec §14 bär rivningen). HOVER-BAKGRUNDSÄNDRING
+// (hover:bg-bg-emphasized motion-safe:transition-colors): det tidigare
+// M3-beslutet ("INGEN hover-bakgrundsändring — prövad och förkastad",
+// S64) är RIVET ÖPPET på Marcus omprövning 2026-08-17 (task-273.2, PRD
+// task-273 beslut 3) — samma bakgrundsplatta + mjuk övergång som
+// eventdetaljens åtgärdsrader (Atgarder.tsx RAD_KLASS) och hem-vyns
+// Bevakningsrad (samma --mm-navcard-*-formade kort, redan
+// hover:bg-bg-emphasized sedan TASK-243.1) — raden var alltså
+// inkonsekvent med sitt eget syskon på samma sida tills denna skiva.
+// Fokusringen kommer från den globala *:focus-visible-regeln i
+// base.css; kantlinjen blir synlig under prefers-contrast: more;
+// övergången är villkorad med motion-safe: (ingen transition vid
+// prefers-reduced-motion).
 function NavCardLink({ icon: Icon, label, ...props }: NavCardLinkProps) {
   return (
     <AriaLink
       {...props}
-      className="text-(color:--mm-navcard-text) flex min-h-12 items-center gap-4 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-4 font-semibold text-body contrast-more:border-(--mm-navcard-border-contrast)"
+      className="text-(color:--mm-navcard-text) flex min-h-12 items-center gap-4 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-4 font-semibold text-body hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-(--mm-navcard-border-contrast)"
     >
       <Icon size={20} aria-hidden className="text-(color:--mm-navcard-icon) shrink-0" />
       <span className="grow">{label}</span>

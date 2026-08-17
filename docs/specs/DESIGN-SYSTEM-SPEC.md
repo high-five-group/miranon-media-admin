@@ -1027,14 +1027,20 @@ Radgap inom grupp: 10 px (`gap-2.5`); mellan grupper: 32 px (`gap-8`).
   grammatik som eventsidans åtgärdsrader (S73 K25/K72); tillagd vid
   2026-07-21-regelrivningen (se regel-sektionen nedan). Länknamnet är
   fortsatt etiketten ENSAM.
-- **Ingen hover-bakgrundsändring** — transparent-i-vila + hover-grå
-  är PRÖVAD OCH FÖRKASTAD (M3, S64); återinförs inte utan nytt
-  facit-beslut.
+- **Hover-bakgrundsändring** (`hover:bg-bg-emphasized
+  motion-safe:transition-colors`) — det tidigare M3-beslutet
+  ("transparent-i-vila + hover-grå prövad och förkastad", S64) är RIVET
+  ÖPPET på Marcus omprövning 2026-08-17 (task-273.2, PRD task-273 beslut
+  3): samma bakgrundsplatta + mjuk övergång som eventdetaljens
+  åtgärdsrader och hem-vyns Bevakningsrad (redan `hover:bg-bg-emphasized`
+  sedan TASK-243.1, samma `--mm-navcard-*`-kortform).
 - Fokus: den globala `:focus-visible`-ringen (base.css) — ingen egen
   fokus-styling.
 - `prefers-contrast: more`: synlig kantlinje `--mm-navcard-border-contrast`
-  (= `--mm-border-strong`). Statisk rad — reduced-motion/print utan
-  specialfall (globala neutraliseringen täcker).
+  (= `--mm-border-strong`). `prefers-reduced-motion`: hover-övergången är
+  villkorad med `motion-safe:` (ingen transition vid reducerad rörelse,
+  bakgrunden växlar ändå direkt); print: opåverkat (hover gäller aldrig
+  papper).
 
 ### App-bred regel: chevron betyder att raden leder vidare
 
