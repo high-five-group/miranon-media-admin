@@ -64,6 +64,13 @@ const ATGARD_NAMN: Record<SvepTyp, string> = {
  * `AtgardsSida.tsx`s `GranskningsSida` använder. Bundet till den grupp Lotta
  * FAKTISKT bläddrat till (`Forhandsvisning`s `onGruppVisas`), inte hårdkodat
  * till den första — se `Forhandsvisning.tsx`s docblock för hela motivet.
+ *
+ * [TASK-241.5] BODYNS STAGGER — triadens sektioner kaskadar in i tur och
+ * ordning i stället för att poppa in samtidigt, se docblocket vid `<div
+ * className="mt-4 max-h-[52vh] …">` nedan. `Modal`s egen övergång
+ * (skalning/duration/origin) bor i `Hem.tsx`s docblock — den filen äger
+ * `<Modal>`, se dess § WOW-ÖVERGÅNGEN för hela resonemanget inklusive de
+ * avfärdade alternativen.
  */
 export function SvepOverlay({
   svepTyp,
@@ -221,36 +228,54 @@ export function SvepOverlay({
         </p>
       )}
 
-      {/* BODY — den enda scrollande zonen. `motion-safe:animate-mm-avsloj` är
-          husets allmänna mjuka entré. */}
-      <div className="mt-4 max-h-[52vh] overflow-auto motion-safe:animate-mm-avsloj">
+      {/* BODY — den enda scrollande zonen. [TASK-241.5] `--animate-mm-avsloj`
+          flyttad NER från denna behållare till varje enskild sektion
+          (nedan) — samma token, inte en ny animation — så triadens LEDER
+          kaskadar in i tur och ordning (Mottagare → Utskicket) i stället för
+          att poppa in som EN platta samtidigt: "fortsättning av
+          Morgonkollen", inte ett uppslag som byts i ett enda hopp. Stagern
+          är en `animation-delay` på husets EGEN keyframe (`tailwind.css`
+          `--animate-mm-avsloj`), inget nytt myntat. `motion-safe:` bär
+          samma dubbelbälte som förut: under `prefers-reduced-motion` läggs
+          `animate-mm-avsloj`-klassen aldrig på, så en satt `animationDelay`
+          utan matchande `animation-name` är ett no-op — stagern kan aldrig
+          läcka igenom reduced-motion-golvet. */}
+      <div className="mt-4 max-h-[52vh] overflow-auto">
         {visarResultat && resultat ? (
-          <ResultatVy eventGrupper={eventGrupper} resultat={resultat} />
+          <div className="motion-safe:animate-mm-avsloj">
+            <ResultatVy eventGrupper={eventGrupper} resultat={resultat} />
+          </div>
         ) : kanSkicka ? (
           <div className="flex flex-col gap-6">
-            <DetaljGrupp id="grupp-svep-mottagare" rubrik="Mottagare">
-              <Adresslista eventGrupper={eventGrupper} avgiftstypByRegId={avgiftstypByRegId} />
-            </DetaljGrupp>
+            <div className="motion-safe:animate-mm-avsloj">
+              <DetaljGrupp id="grupp-svep-mottagare" rubrik="Mottagare">
+                <Adresslista eventGrupper={eventGrupper} avgiftstypByRegId={avgiftstypByRegId} />
+              </DetaljGrupp>
+            </div>
 
-            <DetaljGrupp id="grupp-svep-utskicket" rubrik="Utskicket">
-              <Forhandsvisning
-                eventGrupper={eventGrupper}
-                amne={amne}
-                mailtext={mailtext}
-                testUtfall={testUtfall}
-                testPending={sendActionTestEmail.isPending}
-                testAdress={user?.email ?? null}
-                onSkickaTest={skickaTest}
-                onGruppVisas={setAktuellGrupp}
-              />
-            </DetaljGrupp>
+            <div className="[animation-delay:70ms] motion-safe:animate-mm-avsloj">
+              <DetaljGrupp id="grupp-svep-utskicket" rubrik="Utskicket">
+                <Forhandsvisning
+                  eventGrupper={eventGrupper}
+                  amne={amne}
+                  mailtext={mailtext}
+                  testUtfall={testUtfall}
+                  testPending={sendActionTestEmail.isPending}
+                  testAdress={user?.email ?? null}
+                  onSkickaTest={skickaTest}
+                  onGruppVisas={setAktuellGrupp}
+                />
+              </DetaljGrupp>
+            </div>
           </div>
         ) : (
-          <MessageBox intent="info" title="Inget att skicka just nu">
-            {svepTyp === 'bekraftelse'
-              ? 'Ingen väntar på bekräftelse längre.'
-              : 'Ingen väntar på påminnelse längre.'}
-          </MessageBox>
+          <div className="motion-safe:animate-mm-avsloj">
+            <MessageBox intent="info" title="Inget att skicka just nu">
+              {svepTyp === 'bekraftelse'
+                ? 'Ingen väntar på bekräftelse längre.'
+                : 'Ingen väntar på påminnelse längre.'}
+            </MessageBox>
+          </div>
         )}
       </div>
 
