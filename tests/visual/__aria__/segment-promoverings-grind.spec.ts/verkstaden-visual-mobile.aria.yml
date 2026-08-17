@@ -1,0 +1,109 @@
+- heading "RIM 1 + RIM 2" [level=1]
+- paragraph: Egna villkor för vilka som ingår - antalet räknas medan du bygger.
+- 'region "Steg 1: Vilka ska ingå?"':
+  - 'heading "Steg 1: Vilka ska ingå?" [level=2]'
+  - paragraph: Den som uppfyller minst ett av alternativen är med i segmentet. Inom ett alternativ måste alla villkor uppfyllas samtidigt.
+  - list:
+    - listitem:
+      - paragraph: Alternativ 1 - alla villkor nedan måste uppfyllas samtidigt
+      - text: Alternativ 1 · villkor 1
+      - button "Ta bort alternativ 1 · villkor 1"
+      - radiogroup "Vilka räknas med?":
+        - radio "De som gått utbildningar" [checked]
+        - text: De som gått utbildningar
+        - radio "De som varit på föreläsningar"
+        - text: De som varit på föreläsningar
+        - radio "Båda"
+        - text: Båda
+      - group "Familj":
+        - text: ""
+        - button "RIM2" [pressed]
+        - button "Fjärrskådning1"
+        - button "Psionautics1"
+      - group "Nivå":
+        - text: ""
+        - button "Intro"
+        - button "Nivå 1" [pressed]
+        - button "Nivå 2"
+        - button "Nivå 3"
+      - button "Fler avgränsningar"
+      - paragraph: Har gått RIM på Nivå 1.
+      - paragraph: "Träffar 1 av 4 utbildningar: Resor i medvetandet 1 (utbildning)"
+      - text: Alternativ 1 · villkor 2
+      - button "Ta bort alternativ 1 · villkor 2"
+      - radiogroup "Vilka räknas med?":
+        - radio "De som gått utbildningar" [checked]
+        - text: De som gått utbildningar
+        - radio "De som varit på föreläsningar"
+        - text: De som varit på föreläsningar
+        - radio "Båda"
+        - text: Båda
+      - group "Familj":
+        - text: ""
+        - button "RIM2" [pressed]
+        - button "Fjärrskådning1"
+        - button "Psionautics1"
+      - group "Nivå":
+        - text: ""
+        - button "Intro"
+        - button "Nivå 1"
+        - button "Nivå 2" [pressed]
+        - button "Nivå 3"
+      - button "Fler avgränsningar"
+      - paragraph: Har gått RIM på Nivå 2.
+      - paragraph: "Träffar 1 av 4 utbildningar: Resor i medvetandet 2 (utbildning)"
+      - 'button "Och: lägg till ett krav till"'
+  - 'button "Eller: lägg till ett alternativ"'
+- 'region "Steg 2: Ska några räknas bort?"':
+  - 'heading "Steg 2: Ska några räknas bort?" [level=2]'
+  - paragraph: Valfritt. Den som uppfyller något av villkoren här tas bort igen, även om hon räknades in ovan.
+  - list:
+    - listitem:
+      - text: Villkor 1
+      - button "Ta bort villkor 1"
+      - radiogroup "Vilka räknas med?":
+        - radio "De som gått utbildningar" [checked]
+        - text: De som gått utbildningar
+        - radio "De som varit på föreläsningar"
+        - text: De som varit på föreläsningar
+        - radio "Båda"
+        - text: Båda
+      - group "Familj":
+        - text: ""
+        - button "RIM2"
+        - button "Fjärrskådning1" [pressed]
+        - button "Psionautics1"
+      - button "Fler avgränsningar"
+      - paragraph: Har gått Fjärrskådning.
+      - paragraph: "Träffar 1 av 4 utbildningar: Fjärrskådning (utbildning)"
+    - listitem:
+      - text: Villkor 2
+      - button "Ta bort villkor 2"
+      - radiogroup "Vilka räknas med?":
+        - radio "De som gått utbildningar" [checked]
+        - text: De som gått utbildningar
+        - radio "De som varit på föreläsningar"
+        - text: De som varit på föreläsningar
+        - radio "Båda"
+        - text: Båda
+      - group "Familj":
+        - text: ""
+        - button "RIM2"
+        - button "Fjärrskådning1"
+        - button "Psionautics1" [pressed]
+      - button "Fler avgränsningar"
+      - paragraph: Har gått Psionautics.
+      - paragraph: "Träffar 1 av 4 utbildningar: Psionautics (utbildning)"
+  - button "Lägg till ett villkor till"
+- 'region "Steg 3: Det här blir segmentet"':
+  - 'heading "Steg 3: Det här blir segmentet" [level=2]'
+  - paragraph: "Har gått RIM på Nivå 1, och samtidigt har gått RIM på Nivå 2. Utan: Har gått Fjärrskådning eller Har gått Psionautics."
+  - paragraph:
+    - strong: "2"
+    - text: personer i det här segmentet.
+  - text: Namn på segmentet
+  - textbox "Namn på segmentet":
+    - /placeholder: t.ex. RIM - alla utbildningsnivåer
+    - text: RIM 1 + RIM 2
+  - button "Spara segmentet"
+  - button "Avbryt"

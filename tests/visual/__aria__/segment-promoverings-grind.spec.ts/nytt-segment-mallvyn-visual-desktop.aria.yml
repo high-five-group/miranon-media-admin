@@ -1,0 +1,37 @@
+- heading "Nytt segment" [level=1]
+- paragraph: Välj vilka som ska ingå - antalet räknas medan du väljer.
+- 'region "Steg 1: Vilka räknas med?"':
+  - 'heading "Steg 1: Vilka räknas med?" [level=2]'
+  - radiogroup "Räknas med":
+    - radio "De som gått utbildningar" [checked]
+    - text: De som gått utbildningar
+    - radio "De som varit på föreläsningar"
+    - text: De som varit på föreläsningar
+    - radio "Båda"
+    - text: Båda
+- 'region "Steg 2: Vilka ska ingå?"':
+  - 'heading "Steg 2: Vilka ska ingå?" [level=2]'
+  - radiogroup "Vad ska segmentet innehålla":
+    - radio "Alla som gått minst en av utbildningarna" [checked]
+    - text: Alla som gått minst en av utbildningarna
+    - radio "Har gått vissa - men inte andra"
+    - text: Har gått vissa - men inte andra
+    - radio "Exakt den här kombinationen"
+    - text: Exakt den här kombinationen
+  - group "Utbildningar":
+    - text: ""
+    - button "Fjärrskådning"
+    - button "RIM 1" [pressed]
+    - button "RIM 2" [pressed]
+    - button "Psionautics"
+- 'region "Steg 3: Det här blir segmentet"':
+  - 'heading "Steg 3: Det här blir segmentet" [level=2]'
+  - paragraph: Har gått minst en av RIM 1 och RIM 2.
+  - paragraph:
+    - strong: "6"
+    - text: personer i det här segmentet.
+  - text: Namn på segmentet
+  - textbox "Namn på segmentet": RIM 1 eller RIM 2
+  - button "Skapa segmentet"
+  - button "Avbryt"
+- button "Bygg med egna villkor"

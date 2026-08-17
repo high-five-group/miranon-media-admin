@@ -1,0 +1,27 @@
+- heading "RIM 1 + RIM 2" [level=1]
+- paragraph: 2 personer · 1 får mailet · 1 får inte mailet
+- button "Skicka utskick till det här segmentet"
+- region "Publiken":
+  - heading "Publiken" [level=2]
+  - radiogroup "Visa i publiken":
+    - radio "Alla" [checked]
+    - radio "Får mailet"
+    - radio "Får inte mailet"
+  - paragraph:
+    - strong: Prototyp-rigg.
+    - text: Staging har för lite avstämd närvaro för att visa hur publiken beter sig i den storlek den är byggd för.
+  - paragraph: "/De fjorton förskapade grupperna är undantaget: deras mål är det uppmätta antalet från juli \\d+ \\(1 till \\d+\\), inte ett påhittat tal - och de får fyllas även från en tom verklig publik, eftersom och-kombinationer inte går att befolka i staging ännu\\. Övriga segment fylls aldrig ur en tom publik\\./"
+  - 'button /Skalprov: fyll publiken till \d+ personer/'
+  - list "Personer i publiken":
+    - listitem: Cecilia Cederqvist cecilia.cederqvist@example.se
+    - listitem: David Dahl Tackat nej till utskick david.dahl@example.se
+- region "Regeln":
+  - heading "Regeln" [level=2]
+  - term: Form
+  - definition: Predikat över dimensioner
+  - term: Räknas ur
+  - definition: Genomförd närvaro (Närvarande eller Deltog online)
+  - term: Motsvarar
+  - definition: 2 utbildningar i basen i dag
+  - paragraph: Har gått både RIM 1 och RIM 2 - men ingen av de andra två utbildningarna.
+  - button "Ändra regeln"
