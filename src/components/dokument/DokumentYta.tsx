@@ -137,15 +137,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import {
-  ChevronLeft,
-  Download,
-  ExternalLink,
-  Loader2,
-  Replace,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { ChevronLeft, Download, ExternalLink, FileUp, Loader2, Trash2, Upload } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useId, useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
@@ -443,6 +435,33 @@ export function DokumentYta() {
 }
 
 /** Metaraden under namnet — bara verkliga fält (storlek, uppladdad-datum). */
+/* ═══ DE FYRA RADHANDLINGARNA DELAR EXAKT FORM ═══
+ *
+ * Marcus 2026-08-17: *"alla fyra knappar måste se likadana ut och sitta i
+ * rad, alltså även previewknappen, gör de mindre så får de plats."*
+ *
+ * Formen bor därför i EN konstant i stället för att upprepas på fyra
+ * anropsställen i två radkomponenter — samma skäl som `HandlingsRad` och
+ * `StegSektion` lyftes: en delad form som beskrivs på flera ställen glider
+ * isär, och glidningen upptäcks av Marcus öga, inte av en grind.
+ *
+ * ── STORLEKEN ÄR 44 px, OCH DEN ÄR ETT GOLV VI INTE SÄNKER ──
+ *
+ * "Gör dem mindre" löstes med IKONEN (18 → 16 px) och luften mellan dem
+ * (`gap-1` → `gap-0.5`), aldrig med träffytan. 44×44 är repots egen
+ * uttalade ribba (`DESIGN-SYSTEM-SPEC.md` § checklista, "Touch targets ≥
+ * 44px?") och den är mekaniskt låst på annat håll i huset
+ * (`tests/a11y/NavCard.spec.ts`: "träffyta: raden är ≈58 px hög (≥44
+ * px-golvet)"). Fyra knappar à 44 px + tre 2 px-mellanrum = 182 px, mätt.
+ *
+ * Skulle bredden ändå inte räcka på en smal skärm är rätt svar att låta
+ * raden bryta, inte att krympa träffytan — en knapp som är för liten att
+ * träffa är trasig för Lotta på mobil, medan en rad som bryter bara är
+ * längre.
+ */
+const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
+const IKON_STORLEK = 16;
+
 function MetaRad({ delar }: { delar: (string | null)[] }) {
   const text = delar.filter(Boolean).join(' · ');
   if (!text) return null;
@@ -532,30 +551,20 @@ function metaDelar(current: BilageRad['current']): (string | null)[] {
  */
 function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: DokumentKalla }) {
   const forhandsvisaMutation = useForhandsvisaDokument();
-  const nedladdningMutation = useLaddaNerDokument();
-
-  const fel = forhandsvisaMutation.isError
-    ? forhandsvisaMutation.error
-    : nedladdningMutation.isError
-      ? nedladdningMutation.error
-      : null;
 
   return (
     <>
-      {/* ÖPPNA-KNAPPEN TÄCKER HELA RADEN via `after:absolute after:inset-0`
-          mot radens `relative`. Det är husets etablerade grepp för "hela
-          posten är målet" (`PersonsList.tsx`s namn-Link, `EventCard.tsx`s
-          rubrik) — men här på en `<button>`, inte en `<Link>`, eftersom
-          destinationen inte är en route utan en asynkront hämtad URL som
-          måste öppnas i en synkront skapad flik. */}
-      <button
-        type="button"
-        // `aria-disabled`, INTE `disabled` — samma skäl som förr: ett native
-        // `disabled` tar knappen ur tabordningen mitt i klicket. Vakten
-        // nedan bär dubbelklicks-skyddet.
+      <Button
+        intent="primary"
+        emphasis="subtle"
+        size="sm"
+        className={IKONKNAPP_KLASS}
+        // `aria-disabled`, INTE `isDisabled`: ett native `disabled` tar
+        // knappen ur tabordningen mitt i klicket. Vakten i onPress bär
+        // dubbelklicks-skyddet i stället.
         aria-disabled={forhandsvisaMutation.isPending}
-        className="-mx-1 flex min-w-0 items-center gap-1.5 rounded px-1 text-left after:absolute after:inset-0 focus-visible:outline-(--mm-focus-ring) focus-visible:outline-2 focus-visible:outline-offset-2"
-        onClick={() => {
+        aria-label={forhandsvisaMutation.isPending ? `Öppnar ${namn} …` : `Öppna ${namn}`}
+        onPress={() => {
           if (forhandsvisaMutation.isPending) return;
           // KRITISKT: window.open MÅSTE anropas synkront här, före all
           // await/mutate-hantering — se filhuvudets IKONPAR-not.
@@ -563,33 +572,17 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
           forhandsvisaMutation.mutate({ kalla, handle });
         }}
       >
-        <span className="min-w-0 break-words font-medium text-body">{namn}</span>
-        {/* AFFORDANSEN, inte dekoration. Raden leder inte vidare INOM appen
-            (då hade det varit HandlingsRads chevron) — den öppnar en ny
-            webbläsarflik, och `ExternalLink` är den etablerade symbolen för
-            just det. Utan den vore en klickbar rad som byter flik en
-            överraskning. */}
         {forhandsvisaMutation.isPending ? (
-          <Loader2
-            aria-hidden="true"
-            size={14}
-            className="shrink-0 text-text-muted motion-safe:animate-spin"
-          />
+          <Loader2 aria-hidden="true" size={IKON_STORLEK} className="motion-safe:animate-spin" />
         ) : (
-          <ExternalLink aria-hidden="true" size={14} className="shrink-0 text-text-muted" />
+          <ExternalLink aria-hidden="true" size={IKON_STORLEK} />
         )}
-        {/* ADDITIVT sr-only-led, aldrig `aria-label`: ett aria-label hade
-            ERSATT filnamnet i det tillgängliga namnet, så synlig och uppläst
-            text kunnat glida isär vid nästa textputs. Samma regel som
-            `StegSektion`s "Steg N:"-prefix. */}
-        <span className="sr-only">
-          {forhandsvisaMutation.isPending ? ' — öppnas …' : ' — öppna i ny flik'}
-        </span>
-      </button>
-
-      {fel && (
+      </Button>
+      {forhandsvisaMutation.isError && (
         <MessageBox intent="error" className="max-w-56">
-          {fel instanceof Error ? fel.message : 'Okänt fel.'}
+          {forhandsvisaMutation.error instanceof Error
+            ? forhandsvisaMutation.error.message
+            : 'Okänt fel.'}
         </MessageBox>
       )}
     </>
@@ -658,15 +651,11 @@ function DokumentRadSkal({
   handlingar: React.ReactNode;
 }) {
   return (
-    <div
-      data-testid="dokument-fil"
-      className="relative -mx-2 flex items-start gap-3 rounded-lg px-2 py-3 hover:bg-bg-emphasized motion-safe:transition-colors"
-    >
+    <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-        <DokumentAtgardsKnappar namn={namn} kalla={kalla} />
-        {/* Pill och datum på SAMMA rad, inte staplade: de är två meta-värden
-            om samma fil, och en rad var gör dem till två påståenden. `gap-x`
-            skiljer dem, `flex-wrap` bryter först när bredden kräver det. */}
+        <span className="break-words font-medium text-body">{namn}</span>
+        {/* Pill och datum på SAMMA rad: två meta-värden om samma fil, och en
+            rad var hade gjort dem till två påståenden. */}
         <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <RackviddBadge
             rackvidd={current.rackvidd}
@@ -681,10 +670,24 @@ function DokumentRadSkal({
           </span>
         )}
       </span>
-      {/* `relative z-10` lyfter de sekundära handlingarna ÖVER öppna-knappens
-          `after`-lager. Utan det hade varje klick på Ladda ner/Ersätt/Radera
-          fångats av raden och öppnat dokumentet i stället. */}
-      <span className="relative z-10 flex shrink-0 items-center gap-1">
+      {/* HANDLINGSRADEN — fyra likformiga ikonknappar (Marcus 2026-08-17).
+          Öppna och Ladda ner är alltid med; `handlingar` bär de muterande
+          (Ersätt, och i räckviddsläget Radera).
+
+          TRE AV FYRA ÄR IDENTISKA — Öppna, Ladda ner och Ersätt bär alla
+          `primary`+`subtle`. Ersätt bar `secondary` (transparent + kant) ett
+          varv och var därmed den enda utan fylld platta; den stack ut i
+          precis den mening Marcus ville bort ("alla fyra knappar måste se
+          likadana ut").
+
+          RADERA BEHÅLLER SIN RÖDA TON, och det är ett medvetet undantag, inte
+          en missad rad: rödtoningen är Marcus egen order från föregående
+          varv ("rödtoning på radera"), och "se likadana ut" läses här som
+          form och storlek — inte som att en destruktiv handling ska sluta
+          se destruktiv ut. Två order som pekar åt olika håll; den här
+          tolkningen är flaggad till Marcus, inte tyst vald. */}
+      <span className="flex shrink-0 items-center gap-0.5">
+        <DokumentAtgardsKnappar namn={namn} kalla={kalla} />
         <LaddaNerKnapp namn={namn} kalla={kalla} />
         {handlingar}
       </span>
@@ -700,7 +703,7 @@ function LaddaNerKnapp({ namn, kalla }: { namn: string; kalla: DokumentKalla }) 
         intent="primary"
         emphasis="subtle"
         size="sm"
-        className="size-11 shrink-0 p-0"
+        className={IKONKNAPP_KLASS}
         aria-disabled={nedladdningMutation.isPending}
         aria-label={nedladdningMutation.isPending ? `Laddar ner ${namn} …` : `Ladda ner ${namn}`}
         onPress={() => {
@@ -709,9 +712,9 @@ function LaddaNerKnapp({ namn, kalla }: { namn: string; kalla: DokumentKalla }) 
         }}
       >
         {nedladdningMutation.isPending ? (
-          <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+          <Loader2 aria-hidden="true" size={IKON_STORLEK} className="motion-safe:animate-spin" />
         ) : (
-          <Download aria-hidden="true" size={18} />
+          <Download aria-hidden="true" size={IKON_STORLEK} />
         )}
       </Button>
       {nedladdningMutation.isError && (
@@ -787,18 +790,23 @@ function BilageRadRow({
             }
           >
             <Button
-              intent="secondary"
+              intent="primary"
+              emphasis="subtle"
               size="sm"
-              className="size-11 shrink-0 p-0"
+              className={IKONKNAPP_KLASS}
               isDisabled={ersatterDennaRaden}
               aria-label={
                 ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
               }
             >
               {ersatterDennaRaden ? (
-                <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+                <Loader2
+                  aria-hidden="true"
+                  size={IKON_STORLEK}
+                  className="motion-safe:animate-spin"
+                />
               ) : (
-                <Replace aria-hidden="true" size={18} />
+                <FileUp aria-hidden="true" size={IKON_STORLEK} />
               )}
             </Button>
           </FileTrigger>
@@ -836,7 +844,7 @@ function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
         <DokumentAtgardsKnappar namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
         <MetaRad delar={[`Fyller i ${mall.fyllerI.join(', ').toLowerCase()}`]} />
       </span>
-      <span className="relative z-10 flex shrink-0 items-center gap-1">
+      <span className="flex shrink-0 items-center gap-0.5">
         <LaddaNerKnapp namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
       </span>
     </div>
@@ -854,7 +862,7 @@ function GeneratorRad({ gen, eventId }: { gen: Generator; eventId: string }) {
         <DokumentAtgardsKnappar namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
         <MetaRad delar={[`Byggs ur ${gen.byggsUr.join(', ').toLowerCase()}`]} />
       </span>
-      <span className="relative z-10 flex shrink-0 items-center gap-1">
+      <span className="flex shrink-0 items-center gap-0.5">
         <LaddaNerKnapp namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
       </span>
     </div>
@@ -1075,8 +1083,20 @@ function UppladdningsFlode({
         Ladda upp filer
       </h2>
       <StegSektion nummer={1} rubrikNiva={3} rubrik="Vad ska filen gälla?">
+        {/* `hideLabel` — INTE borttagen etikett (Marcus: "Ta bort
+            underrubriken Räckvidd, behövs inte" · "rubriken Familj till
+            dropdownlistan kan tas bort"). Primitiven gör då `label` till
+            `aria-label`, så skärmläsaren behåller ett namn på kontrollen
+            medan ögat slipper en rubrik det inte behöver.
+
+            Det är samma resonemang segment-byggaren redan bär: en grupp som
+            står DIREKT under en stegrubrik som ställer frågan behöver ingen
+            egen synlig rubrik ("Sätts där en stegrubrik direkt ovanför redan
+            namnger gruppen", VariantD.tsx). Här är stegrubriken "Vad ska
+            filen gälla?" — den säger allt "Räckvidd" sade, på svenska. */}
         <RadioGroup
           label="Räckvidd"
+          hideLabel
           orientation="horizontal"
           value={rackvidd}
           onChange={(value) => {
@@ -1108,6 +1128,7 @@ function UppladdningsFlode({
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
             <Select
               label="Familj"
+              hideLabel
               placeholder="Välj familj"
               selectedKey={kursfamilj}
               onSelectionChange={(key) => {
@@ -1125,6 +1146,7 @@ function UppladdningsFlode({
             {kursfamiljHarNivaer && (
               <Select
                 label="Steg"
+                hideLabel
                 placeholder="Alla steg"
                 selectedKey={kursniva}
                 onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
@@ -1322,18 +1344,23 @@ function GemensamBilageRadRow({
             }
           >
             <Button
-              intent="secondary"
+              intent="primary"
+              emphasis="subtle"
               size="sm"
-              className="size-11 shrink-0 p-0"
+              className={IKONKNAPP_KLASS}
               isDisabled={ersatterDennaRaden}
               aria-label={
                 ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
               }
             >
               {ersatterDennaRaden ? (
-                <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+                <Loader2
+                  aria-hidden="true"
+                  size={IKON_STORLEK}
+                  className="motion-safe:animate-spin"
+                />
               ) : (
-                <Replace aria-hidden="true" size={18} />
+                <FileUp aria-hidden="true" size={IKON_STORLEK} />
               )}
             </Button>
           </FileTrigger>
@@ -1341,15 +1368,19 @@ function GemensamBilageRadRow({
             intent="danger"
             emphasis="subtle"
             size="sm"
-            className="size-11 shrink-0 p-0"
+            className={IKONKNAPP_KLASS}
             isDisabled={raderarDennaRaden}
             aria-label={raderarDennaRaden ? `Raderar ${current.namn} …` : `Radera ${current.namn}`}
             onPress={() => onDelete(current.id, current.namn)}
           >
             {raderarDennaRaden ? (
-              <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+              <Loader2
+                aria-hidden="true"
+                size={IKON_STORLEK}
+                className="motion-safe:animate-spin"
+              />
             ) : (
-              <Trash2 aria-hidden="true" size={18} />
+              <Trash2 aria-hidden="true" size={IKON_STORLEK} />
             )}
           </Button>
         </>
