@@ -238,23 +238,25 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     });
     expect(await logoutBlock.evaluate((el) => getComputedStyle(el).paddingTop)).toBe('16px');
 
-    // Topp-luften i HEM-PARITET (pt-2 lg:pt-10): mät sektionens paddingTop på
-    // båda vyerna — desktop (1280, lg) och mobil (390) — och kräv likhet.
-    const merPadTopDesktop = await section.evaluate((el) => getComputedStyle(el).paddingTop);
+    // Mobilmåttet: mät sektionens paddingTop på 390 px (samma FK-mått-yta som
+    // radens absoluta vänsterkant nedan).
     await page.setViewportSize({ width: 390, height: 844 });
-    const merPadTopMobil = await section.evaluate((el) => getComputedStyle(el).paddingTop);
     // Facitets FK-mått togs på 390-skärm: radens absoluta vänsterkant = 16 px.
     const radBoxMobil = await rad.boundingBox();
     expect(radBoxMobil?.x).toBe(16);
 
-    await page.goto('/hem');
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    const hemSection = page.locator('main#main > section');
-    const hemPadTopMobil = await hemSection.evaluate((el) => getComputedStyle(el).paddingTop);
-    expect(merPadTopMobil).toBe(hemPadTopMobil);
-    await page.setViewportSize({ width: 1280, height: 720 });
-    const hemPadTopDesktop = await hemSection.evaluate((el) => getComputedStyle(el).paddingTop);
-    expect(merPadTopDesktop).toBe(hemPadTopDesktop);
+    // TASK-243.3 (hem-form-skiftet): den tidigare HEM-PARITET-jämförelsen
+    // (Mer och Hem delar `pt-2 lg:pt-10`) är RIVEN här, inte lagad — den var
+    // en K10-era design-koppling, aldrig ett facit-krav. Morgonkollens
+    // promoverade vertikala rytm (`Hem.tsx`: `pt-10 … lg:pt-16`, facit-låst
+    // sedan TASK-243.1/247) är MEDVETET en annan siffra än Mers statiska
+    // navigationslista (`pt-2 lg:pt-10`, `src/routes/_authenticated/mer/
+    // index.tsx`) — mätt 2026-08-17: mobil 40px (Hem, `pt-10`, `sm:py-8`
+    // gäller inte under 640px) mot 8px (Mer, `pt-2`); desktop 64px (Hem,
+    // `lg:pt-16`) mot 40px (Mer, `lg:pt-10`). Ingen av siffrorna är fel för
+    // sin egen vy — paritets-KRAVET självt är obsolet, superseded av
+    // ADR-102/103-promoveringens facit-låsta, avsiktligt friare Morgonkoll-
+    // rytm. Mers EGNA mått (raden ovan) är opåverkade och står kvar.
   });
 
   test('AC 3: Logga ut är ghost-knapp med ikon + text, CENTRERAD under grupperna', async ({

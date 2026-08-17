@@ -141,7 +141,17 @@ function ev(overrides: Row = {}): Row {
 }
 
 /** Stabil grunddata med sentinel-namnet 'Signe Sparad' (dagsgamla tider —
-    relativa tidsformer glider inte inom testets sekunder). Obetalda = 1. */
+    relativa tidsformer glider inte inom testets sekunder).
+ *
+ * TASK-243.3 — status: 'Obekräftad' (INTE `reg()`s Bekräftad-default) är
+ * BÄRANDE, inte kosmetisk: den promoverade Morgonkollen-formen
+ * (`NyaAnmalningar.tsx`, `hem-derivations.ts` § obekraftadeAnmalningar)
+ * visar ENDAST Obekräftade registreringar som länkar — den gamla
+ * "NyaAnmalningarCard" (retirerad) visade ALLA registreringar recency-
+ * sorterat oavsett status. Sentinelen måste vara Obekräftad för att
+ * fortsätta synas som `role=link`; annars fälls varje väntan på henne
+ * deterministiskt (`element(s) not found`), oavsett staging-basens
+ * faktiska innehåll — se kortets slutrapport för hela klassningen. */
 function grunddata() {
   return {
     registrations: [
@@ -150,6 +160,7 @@ function grunddata() {
         fornamn: 'Signe',
         efternamn: 'Sparad',
         eventId: 'recEvent1',
+        status: 'Obekräftad',
         anmalningsavgift: 'Ej mottagen',
         inskickad: new Date(Date.now() - 3 * 86_400_000).toISOString(),
       }),
@@ -368,8 +379,8 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     // `waitForURL` löser vid history-API:ets URL-ändring — INNAN React hunnit
     // avmontera Hem/montera EventsList. I det TRANSIENTA fönstret (mätt
     // ~250ms lokalt) innehåller `main#main` FORTFARANDE Hems egna
-    // "Fjärrskådning"-referenser (Nästa event-kortets länk + BÅDA
-    // NyaAnmalningarCard-raderna, eftersom grunddata() länkar båda
+    // "Fjärrskådning"-referenser (Nästa event-blockets länk + Nya
+    // anmälningar-radens metatext, eftersom grunddata() länkar båda
     // testregistreringarna till SAMMA mockade event) SAMTIDIGT som
     // EventsList redan börjat montera sin EGEN "Fjärrskådning"-länk — en
     // äkta men kortlivad multi-match, inte datastädning. `getByText`
@@ -415,17 +426,21 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     await expect(main.getByRole('status')).toHaveCount(0);
     await expect(main.getByText(/^Laddar/)).toHaveCount(0);
 
-    // Släpp svaren med ÄNDRAT data (Bos avgift flippar → Obetalda 1 → 2):
-    // den tysta hämtningen landar och uppdaterar per osynlighets-mekaniken.
+    // Släpp svaren med ÄNDRAT data (Bos status flippar Obekräftad → räknar-
+    // rubriken 1 → 2 nya anmälningar): den tysta hämtningen landar och
+    // uppdaterar per osynlighets-mekaniken (TASK-243.3: ersätter det
+    // retirerade "Obetalda anmälningsavgifter"-kortets 1→2-bevis — samma
+    // princip, ny räknare).
     const nytt = grunddata();
     const bo = nytt.registrations[1];
     if (!bo) throw new Error('grunddatan saknar Bo-raden');
-    bo.anmalningsavgift = 'Ej mottagen';
+    bo.status = 'Obekräftad';
     mocken.data = nytt;
     mocken.hall = false;
     await mocken.slappAlla();
-    const obetalda = page.getByRole('region', { name: 'Obetalda anmälningsavgifter' });
-    await expect(obetalda.getByText('2', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 2, name: '2 nya anmälningar att bekräfta' }),
+    ).toBeVisible();
   });
 
   test('AC 2 — utloggning tömmer persistad cache: ingen tidigare data i lagringen efter logout', async ({
@@ -727,12 +742,11 @@ test.describe('TASK-227 — Förberedelseskärmen efter aktiv inloggning (router
     await page.waitForURL('**/hem');
     await expect(page.getByRole('progressbar')).toHaveCount(0);
     await expect(page.getByText('Förbereder ditt administrationsverktyg')).toHaveCount(0);
-    // Hälsningens h1 (Greeting.tsx, task-4.2/B2): "Hej {namn}" bara VID
-    // FÖRSTA renderingen per sessionStorage-fönster — samma flikkontext har
-    // redan hälsat en gång tidigare i detta test (den första /hem-vyn ovan),
-    // så h1 visar bara namnet andra gången. Matchar båda formerna i stället
-    // för att anta VILKEN som gäller — det denna assertion faktiskt bevisar
-    // är att Hem renderat KLART (icke-tomt h1), inte hälsningens exakta form.
+    // Hälsningens h1 (`Hem.tsx`): den promoverade Morgonkollen-formen visar
+    // ALLTID "Hej {namn}" (B2:s återbesöks-endast-namn-form är INTE
+    // promoverad, öppet bokfört i `Hem.tsx`s docblock) — icke-tom h1 räcker
+    // för att bevisa att Hem renderat KLART, vilket är vad detta steg
+    // faktiskt behöver visa.
     await expect(page.locator('h1')).not.toBeEmpty();
   });
 });
@@ -784,9 +798,13 @@ test.describe('AC 4 — offline-öppning visar restaurerad data (pwa-offline-mö
     await expect(page.getByRole('alert')).toHaveCount(0);
     await expect.poll(() => persistQueryAntal(page), { timeout: 15_000 }).toBeGreaterThanOrEqual(2);
 
-    // Spegla renderat innehåll (Obetalda-kortet: rubrik + antal — stabil yta).
-    const obetalda = page.getByRole('region', { name: 'Obetalda anmälningsavgifter' });
-    const obetaldaFore = await obetalda.textContent();
+    // Spegla renderat innehåll (Nästa event-blocket: rubrik + eventnamn +
+    // dagar-kvar — stabil yta, INGEN sekund-nivå "för X sedan"-formatering,
+    // så jämförelsen kan inte glida av att klockan tickar mellan snapshotten.
+    // TASK-243.3: ersätter det retirerade "Obetalda anmälningsavgifter"-
+    // kortet — samma princip, en annan data-buren, tidsneutral yta.)
+    const nastaEvent = page.getByRole('region', { name: 'Nästa event' });
+    const nastaEventFore = await nastaEvent.textContent();
 
     // Offline-öppning: nätet av → omladdning → SW serverar skalet, persist
     // restaurerar datat, networkMode 'online' pausar hämtningsförsök
@@ -794,14 +812,15 @@ test.describe('AC 4 — offline-öppning visar restaurerad data (pwa-offline-mö
     await context.setOffline(true);
     await page.reload();
 
-    // h1 är besöks-form-beroende (B2, task-4.2: återbesök i sessionen visar
-    // bara namnet — sessionStorage överlever reload) → assertera synlig h1,
-    // inte Hej-formen.
+    // h1 visar ALLTID "Hej {namn}" i den promoverade formen (B2:s
+    // återbesöks-endast-namn-form är INTE promoverad, öppet bokfört i
+    // `Hem.tsx`s docblock) — assertera synlig, icke-tom h1 snarare än en
+    // specifik textform, så testet inte antar en detalj som redan är riven.
     await expect(page.locator('h1')).toBeVisible();
     await expect(main.getByRole('status')).toHaveCount(0);
     await expect(page.getByRole('alert')).toHaveCount(0);
-    const obetaldaEfter = await obetalda.textContent();
-    expect(obetaldaEfter).toBe(obetaldaFore);
+    const nastaEventEfter = await nastaEvent.textContent();
+    expect(nastaEventEfter).toBe(nastaEventFore);
 
     await context.setOffline(false);
   });

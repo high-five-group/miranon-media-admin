@@ -11,11 +11,25 @@ import { expect, type Page, test } from './support/acceptance-bas';
  * DESIGN-SYSTEM-SPEC §15 + PRD TASK-8 beslut 5–10). Vid tom cache renderas
  * Hem från FÖRSTA bildrutan med riktiga kortrubriker och riktig kort-chrome i
  * full slutgeometri — endast datakropparna bär Skeleton-primitivens block
- * (eventmeta-rader i Nästa event, talet i Obetalda, listrader i Nya
- * anmälningar); anmälningslistans yta är dimensionsreserverad; datalandningen
- * byter block → innehåll UTAN att något flyttar sig (layout-skift ≈ 0 är
- * grindkravet). 'Laddar…'-textraderna är borta och ingen spinner finns
- * (medvetet över FK-golvet, PRD-beslut 9).
+ * (eventmeta-rader i Nästa event, räknar-rubriken i Nya anmälningar, listrader
+ * i BÅDA Nya anmälningar OCH Förfallna betalningar — TASK-243.3: "Obetalda
+ * anmälningsavgifter"-kortet retirerades av Morgonkollen-redesignen och
+ * ersattes av Förfallna betalningar, samma laddläge-kontrakt oförändrat);
+ * anmälningslistans yta är dimensionsreserverad; datalandningen byter block →
+ * innehåll UTAN att något flyttar sig (layout-skift ≈ 0 är grindkravet).
+ * 'Laddar…'-textraderna är borta och ingen spinner finns (medvetet över
+ * FK-golvet, PRD-beslut 9).
+ *
+ * DE TRE MÄTTA CONTAINRARNA (`main#main [role="status"]`, count 3 nedan) är
+ * Nästa event + Nya anmälningar + Förfallna betalningar — samtliga styrda av
+ * `anmalDataPending`/`eventsQuery.isPending`. Senaste aktivitet-blocket
+ * (`SenasteAktivitetKompakt.tsx`) bär SITT EGET, OBEROENDE `role="status"`
+ * (egen query, `useLatestActivity`) — held-mock-riggen nedan parkerar bara
+ * get-events/get-registrations, så den fjärde containern hinner alltid
+ * settla (normalläget svarar utan konstgjord fördröjning) innan assertionerna
+ * läses; en fjärde, permanent parkerad container hade krävt en egen
+ * `get-activity-log`-hållning här, vilket denna svit inte behöver för att
+ * bevisa sitt kontrakt.
  *
  * Bevisformer:
  * - Layout-skift ≈ 0 per task-4.5-bevismönstret (S55 Del 11): EF-svaren
