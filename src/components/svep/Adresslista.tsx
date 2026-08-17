@@ -15,21 +15,49 @@ const PREVIEW_GRANS = 7;
  * Formen är BYTE-IDENTISK med prototypens (samma klasser, samma
  * accordion-grammatik, samma en-visuell-nivå-regel); den enda ändringen är
  * datakällan: `Registration`/`displayName` i stället för prototypens egna
- * `SimMottagare`. `avgiftstyp`-suffixet i prototypens rad-grammatik utelämnas
- * här AVSIKTLIGT — bekräftelsesvepets facit-mottagare bär ingen avgiftstyp
- * (den hör till påminnelseformen, TASK-241.4:s scope).
+ * `SimMottagare`.
+ *
+ * AVGIFTSTYP-SUFFIXET [TASK-241.4] — prototypens rad-grammatik
+ * (`m.epost{ · avgiftstyp}`) återinförs HÄR för påminnelseinstansen ENDAST,
+ * via den valfria `avgiftstypByRegId`-kartan (`svep-urval.ts` §
+ * `paminnelseAvgiftstyperByRegId`) — facit-bevisat
+ * (`facit-svep-paminnelse-granska-adresslista-desktop.png`: "camilla.ost@
+ * example.se · Anmälningsavgift"). Bekräftelsesvepet ger ALDRIG kartan
+ * (`SvepOverlay.tsx` skickar den bara för `svepTyp === 'paminnelse'`) —
+ * dess facit-mottagare bär fortsatt ingen avgiftstyp, oförändrat mot den
+ * ursprungliga TASK-241.2-formen. SUFFIXET SYNS ENDAST I DEN ÖPPNA
+ * (expanderade) rad-listan — pill-vyn (stängd) visar bara namnet, precis
+ * som prototypens `{n}`-pillar (facit: `-granska-forhandsvisning`-bilden
+ * visar "Camilla Öst"/"David Frank" utan suffix i pill-läget).
  */
-export function Adresslista({ eventGrupper }: { eventGrupper: SvepEventGrupp[] }) {
+export function Adresslista({
+  eventGrupper,
+  avgiftstypByRegId,
+}: {
+  eventGrupper: SvepEventGrupp[];
+  /** [TASK-241.4] Endast given för påminnelseinstansen. */
+  avgiftstypByRegId?: Map<string, string>;
+}) {
   return (
     <>
       {eventGrupper.map((grupp) => (
-        <EventGruppSektion key={grupp.event.id} grupp={grupp} />
+        <EventGruppSektion
+          key={grupp.event.id}
+          grupp={grupp}
+          avgiftstypByRegId={avgiftstypByRegId}
+        />
       ))}
     </>
   );
 }
 
-function EventGruppSektion({ grupp }: { grupp: SvepEventGrupp }) {
+function EventGruppSektion({
+  grupp,
+  avgiftstypByRegId,
+}: {
+  grupp: SvepEventGrupp;
+  avgiftstypByRegId?: Map<string, string>;
+}) {
   const [oppen, setOppen] = useState(false);
   const panelId = useId();
   const pillar = grupp.mottagare.slice(0, PREVIEW_GRANS);
@@ -83,12 +111,18 @@ function EventGruppSektion({ grupp }: { grupp: SvepEventGrupp }) {
 
       {/* ÖPPEN: personlistans radgrammatik — namn + e-post, tunna avdelare. */}
       <div id={panelId} hidden={!oppen} className="mt-1 flex flex-col divide-y divide-border">
-        {grupp.mottagare.map((m) => (
-          <div key={m.id} className="flex min-w-0 flex-col gap-0.5 py-2">
-            <span className="truncate font-medium text-body">{displayName(m)}</span>
-            <span className="truncate text-caption text-text-muted">{m.email}</span>
-          </div>
-        ))}
+        {grupp.mottagare.map((m) => {
+          const avgiftstyp = avgiftstypByRegId?.get(m.id);
+          return (
+            <div key={m.id} className="flex min-w-0 flex-col gap-0.5 py-2">
+              <span className="truncate font-medium text-body">{displayName(m)}</span>
+              <span className="truncate text-caption text-text-muted">
+                {m.email}
+                {avgiftstyp ? ` · ${avgiftstyp}` : ''}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

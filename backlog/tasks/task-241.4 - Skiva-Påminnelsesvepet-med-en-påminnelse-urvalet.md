@@ -4,6 +4,7 @@ title: 'Skiva: Påminnelsesvepet med en-påminnelse-urvalet'
 status: To Do
 assignee: []
 created_date: '2026-08-16 23:04'
+updated_date: '2026-08-17 02:32'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,16 +21,16 @@ Påminnelsesvepet återanvänder sändmaskineriet ur 241.3; det nya är urvalslo
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Urvalet omfattar ENDAST rader i läge 1 Att påminna (en-påminnelse-modellens tre radlägen, S102 Del 10) — mekaniskt spamsäkert: ingen deltagare kan få dubbel påminnelse
-- [ ] #2 Hela triaden + sändning + resultatläge för påminnelseformen — identisk med facit tasks/sessions/bilagor/s102-svep-konvergens/facit.json påminnelse-lägena (granska, resultat, delresultat)
-- [ ] #3 Påminnelse-markörer på hemmet + aktivitetslogg-spår, samma former som bekräftelsesvepets
+- [x] #1 Urvalet omfattar ENDAST rader i läge 1 Att påminna (en-påminnelse-modellens tre radlägen, S102 Del 10) — mekaniskt spamsäkert: ingen deltagare kan få dubbel påminnelse
+- [x] #2 Hela triaden + sändning + resultatläge för påminnelseformen — identisk med facit tasks/sessions/bilagor/s102-svep-konvergens/facit.json påminnelse-lägena (granska, resultat, delresultat)
+- [x] #3 Påminnelse-markörer på hemmet + aktivitetslogg-spår, samma former som bekräftelsesvepets
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-granskning mot tasks/sessions/bilagor/s102-svep-konvergens/facit.json (18 bilder) — renderad yta jämförd läge för läge
+- [x] #5 Facit-granskning mot tasks/sessions/bilagor/s102-svep-konvergens/facit.json (18 bilder) — renderad yta jämförd läge för läge
 <!-- DOD:END -->

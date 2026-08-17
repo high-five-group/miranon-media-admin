@@ -18,9 +18,9 @@ import type { Registration } from '@/domain/models/Registration';
  */
 
 /** De två svep-instanserna (ADR-114 beslut 4) — SAMMA form, olika innehåll
-    och olika urvalsregel. Endast `'bekraftelse'` är kopplad mot verklig data
-    i denna skiva (TASK-241.2 AC:erna nämner uteslutande "Bekräfta alla");
-    `'paminnelse'` är TASK-241.4:s urvalslogik (en-påminnelse-modellen). */
+    och olika urvalsregel. `'bekraftelse'` kopplades mot verklig data i
+    TASK-241.2; `'paminnelse'` i TASK-241.4 (en-påminnelse-modellens läge 1
+    "Att påminna", `svep-urval.ts` § `paminnelsesvepUrval`). */
 export type SvepTyp = 'bekraftelse' | 'paminnelse';
 
 /** En event-grupp i cross-event-urvalet — adresslistans och
