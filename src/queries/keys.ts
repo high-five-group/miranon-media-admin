@@ -107,6 +107,18 @@ export const queryKeys = {
     // `useMutation` vid klick i stället — inget cache-bundet läsläge kvar
     // att nyckla. Git bevarar formen (`git log -p -- src/queries/keys.ts`).
     byEvent: (eventId: string) => ['attachments', eventId] as const,
+    // [TASK-275.3, ADR-118 beslut 5] Räckviddslägets lista (ALLA gemensamma
+    // bilagor, inget event) — EGEN gren under SAMMA `'attachments'`-prefix
+    // som `byEvent`, medvetet: en uppladdning/ersättning/radering av en
+    // GEMENSAM bilaga kan påverka VILKET events union-fråga som helst (inte
+    // bara det event Lotta råkar stå på), så mutationerna invaliderar hela
+    // `all`-prefixet nedan (`exact: false`, React Querys default) i stället
+    // för att försöka räkna ut exakt vilka event-nycklar som berörs —
+    // `gemensamma` fångas då automatiskt i samma svep.
+    gemensamma: ['attachments', 'gemensamma'] as const,
+    /** Invalideringsroten (TASK-275.3): matchar `byEvent(*)` OCH `gemensamma`
+        — se ovan för varför en bred invalidering är RÄTT här, inte en genväg. */
+    all: ['attachments'] as const,
   },
   segment: {
     // App-sparade segment (Fas 6g L3, ADR-065): GLOBAL läs-lista (get-segments). STABIL

@@ -161,6 +161,7 @@ import {
 import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { useAuth } from '@/auth/useAuth';
+import { RackviddBadge } from '@/components/dokument/RackviddBadge';
 import { Button } from '@/components/primitives/Button';
 import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { Input } from '@/components/primitives/Input';
@@ -1540,7 +1541,19 @@ function BilageValjare({
                   className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
                 />
               </span>
-              <span className="truncate font-medium text-body">{b.namn}</span>
+              <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                <span className="truncate font-medium text-body">{b.namn}</span>
+                {/* [TASK-275.3, ADR-118 beslut 2] Räckviddsbadgen — SAMMA
+                    komponent som Dokument-ytans lista (RackviddBadge.tsx,
+                    husets Pill-grammatik). Renderar inget för räckvidd
+                    Event: bara GEMENSAMMA bilagor (redan i unionen sedan
+                    TASK-275.2) behöver förklaringen. */}
+                <RackviddBadge
+                  rackvidd={b.rackvidd}
+                  kursfamilj={b.kursfamilj}
+                  kursniva={b.kursniva}
+                />
+              </span>
               {/* Storleken höger-justerad — samma plats som räknarna på sidans
                   övriga rader (`RAD_KLASS` § `ml-auto`). */}
               <span className="ml-auto shrink-0 text-small text-text-muted">

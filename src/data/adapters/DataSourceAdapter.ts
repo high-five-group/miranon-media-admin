@@ -330,6 +330,21 @@ export interface DataSourceAdapter {
   fetchEventAttachments(eventId: string): Promise<Attachment[]>;
 
   /**
+   * Hämta ALLA gemensamma bilagor (TASK-275.3, ADR-118 beslut 5) — bakom
+   * Dokument-ytans RÄCKVIDDSLÄGE (läget utan valt event, ORDLISTA.md §
+   * Gemensam bilaga). GET mot get-event-attachments-EF:en UTAN `eventId`
+   * (den nya, valfria query-param-formen) — SAMMA endpoint som
+   * `fetchEventAttachments`, en annan gren server-side (ingen eventunion,
+   * bara `Räckvidd IN (Kurstyp, Alla event)`, se get-event-attachments/
+   * index.ts § filhuvudet). EGEN adapter-metod i stället för att göra
+   * `fetchEventAttachments`s `eventId`-parameter valfri: två genuint olika
+   * frågor (ett events dokument vs. ALLA gemensamma dokument) förtjänar
+   * varsitt namn — "håll adapter-API:t smalt och välnamnat" gäller åt båda
+   * hållen, inte bara mot att lägga till metoder.
+   */
+  fetchGemensammaBilagor(): Promise<Attachment[]>;
+
+  /**
    * Radera en bilage-post (TASK-147.11, "äkta" radering — task-147.6:s fynd
    * 3 flaggade att adaptern saknade denna primitiv helt, `grep -n delete
    * DataSourceAdapter.ts` gav 0 träffar; Dokument-ytans "Ersätt" byggde
@@ -371,13 +386,23 @@ export interface DataSourceAdapter {
    * (300s, se `_shared/attachments.ts` § SIGNED_DOWNLOAD_URL_TTL_SECONDS)
    * bärs i svaret, inte hårdkodad klient-side.
    *
-   * Dokument-ytans Visa-dialog (`DokumentYta.tsx`) anropar denna LAZY — bara
-   * när dialogen faktiskt öppnas, aldrig i förväg för hela listan — och
-   * väljer förhandsvisnings-form (bild/PDF/nedladdning-fallback) utifrån
-   * bilagans filnamnsändelse, samma disciplin som `Attachment` i övrigt
-   * (ingen server-buren `contentType`, se `Attachment.schema.ts`).
+   * [UTBYGGD, TASK-275.3, ADR-118 beslut 5] `eventId` är NU `string | null` —
+   * speglar `deleteAttachment`s form. För en GEMENSAM bilaga (räckvidd
+   * Kurstyp/Alla event) läser EF:en INGET ägarskaps-guard alls (varje
+   * event/räckviddsläge får öppna den, se get-attachment-download-url/
+   * index.ts § filhuvudet) — `eventId` skickas ändå med om den råkar finnas
+   * (kalla-kontextens eget event), men bara som spårbarhet i loggen, inte
+   * som en behörighetskälla. `null` är GILTIGT för en gemensam bilaga öppnad
+   * från räckviddsläget. För en Event-räckviddig bilaga är kontraktet
+   * OFÖRÄNDRAT: `eventId` krävs, guarden gäller som förut.
+   *
+   * Dokument-ytans ikonpar (`DokumentAtgardsKnappar`, `DokumentYta.tsx`)
+   * anropar denna LAZY — bara vid klick, aldrig i förväg för hela listan.
    */
-  getAttachmentDownloadUrl(eventId: string, attachmentId: string): Promise<AttachmentDownloadUrl>;
+  getAttachmentDownloadUrl(
+    eventId: string | null,
+    attachmentId: string,
+  ): Promise<AttachmentDownloadUrl>;
 
   /**
    * Sidoeffektsfri förhandsvisning av klass B:s systemmall ("Deltagar-

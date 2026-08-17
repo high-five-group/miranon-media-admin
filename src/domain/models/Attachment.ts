@@ -89,19 +89,28 @@ export interface Attachment {
  * DokumentYta.tsx`) eller motsvarande framtida uppladdnings-yta.
  *
  * [UTBYGGD, TASK-275.2, ADR-118] `rackvidd`/`kursfamilj`/`kursniva` — VALFRIA,
- * default Event (dagens beteende, oförändrat om utelämnade). `eventId`
- * FÖRBLIR OBLIGATORISK oavsett räckvidd — se upload-attachment/index.ts §
- * filhuvudet för det medvetna skälet (storage-path-ankaret, den befintliga
- * ägarskaps-mekaniken i delete/download oförändrad). Ett genuint
- * event-löst uppladdningsläge stöds INTE av denna EF-kontrakt-version;
- * flaggat för task-275.3. `kursfamilj` krävs av EF:en när `rackvidd` är
- * Kurstyp (server-validerat, `AttachmentScopeInputSchema`) — typas löst
- * (`string`) här snarare än `AttachmentScopeValue`-liknande enum eftersom
- * write-sidans strikta enum-validering redan sitter server-side.
+ * default Event (dagens beteende, oförändrat om utelämnade). `kursfamilj`
+ * krävs av EF:en när `rackvidd` är Kurstyp (server-validerat,
+ * `AttachmentScopeInputSchema`) — typas löst (`string`) här snarare än
+ * `AttachmentScopeValue`-liknande enum eftersom write-sidans strikta
+ * enum-validering redan sitter server-side.
+ *
+ * [UTBYGGD, TASK-275.3, ADR-118 beslut 5] `eventId` är NU `string | null` —
+ * `null` är GILTIGT ENDAST för `rackvidd` Kurstyp/Alla event (räckviddslägets
+ * genuint event-lösa uppladdning; server-validerat, se upload-attachment/
+ * index.ts § filhuvudet). Räckvidd Event KRÄVER fortfarande ett verkligt
+ * `eventId` (adaptern skickar det oförändrat vidare — den server-sidiga
+ * 400:an vid en kontradiktorisk kombination är golvet, inte klienten).
+ * MEDVETEN AVGRÄNSNING: event-löst stöd gäller BARA mönster 1 (filer
+ * ≤ `SMALL_UPLOAD_MAX_BYTES`) — adaptern (`AirtableAdapter.uploadAttachment`)
+ * avvisar ett event-löst FÖRSÖK över gränsen med ett klientfel innan
+ * mönster 2 (som fortfarande kräver `eventId`) ens anropas.
  */
 export interface UploadAttachmentInput {
-  /** Airtable-record-ID (rec-format) för eventet bilagan hör till. */
-  eventId: string;
+  /** Airtable-record-ID (rec-format) för eventet bilagan hör till, eller
+   *  `null` för en genuint event-lös gemensam uppladdning (räckviddsläget,
+   *  giltigt endast för `rackvidd` Kurstyp/Alla event). */
+  eventId: string | null;
   file: File;
   /** Räckvidd — default Event (oförändrat beteende) om utelämnad. */
   rackvidd?: AttachmentScopeValue;

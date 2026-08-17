@@ -79,6 +79,7 @@ import {
   ATTACHMENT_SCOPE_KURSTYP,
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
+  buildStorageAnchor,
   isValidEventId as isValidRecordId,
 } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
@@ -180,24 +181,35 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 3) Storage-bytesen — BEST-EFFORT (se filhuvudet). Path-ankaret är
-    //    bilagans EGEN `Event`-länk (attachmentRecord, INTE det klient-
-    //    angivna eventId:t) — samma värde i Event-fallet (ägarskaps-guarden
-    //    ovan bevisade redan likheten), men den ENDA tillgängliga källan i
-    //    räckviddsläge-fallet (ingen eventId från klienten där).
+    // 3) Storage-bytesen — BEST-EFFORT (se filhuvudet). Path-ankaret HÄRLEDS
+    //    ur bilagans EGNA fält via `buildStorageAnchor` (_shared/
+    //    attachments.ts, TASK-275.3) — INTE bara `Event`-länken längre:
+    //    en GENUINT event-lös gemensam bilaga (räckviddslägets
+    //    event-lösa uppladdning, ADR-118 beslut 5) saknar `Event` helt, och
+    //    dess Storage-objekt ligger i stället under `kurstyp/<kursfamilj>`
+    //    eller `alla-event` — SAMMA formel `upload-attachment/index.ts` skrev
+    //    med vid uppladdning (en formel, två användningar, se den
+    //    funktionens docblock). Rader FRÅN FÖRE TASK-275.3 (alla bar en
+    //    `Event`-länk oavsett räckvidd, 275.2:s design) tar fortfarande
+    //    gren 1 (eventId satt) — beteendet för dem är BYTE FÖR BYTE
+    //    OFÖRÄNDRAT.
     //    `Lagringsnyckel` ÄR redan den fulla leaf-strängen
-    //    (buildAttachmentLeaf), så `${ankareEventId}/${lagringsnyckel}` är
+    //    (buildAttachmentLeaf), så `${anchor}/${lagringsnyckel}` är
     //    EXAKT samma path buildAttachmentPath byggde vid uppladdning.
     const linkedEvent = attachmentRecord.fields[EVENT_LINK_FIELD];
-    const ankareEventId =
+    const linkedEventId =
       Array.isArray(linkedEvent) && linkedEvent.length > 0 ? (linkedEvent[0] as string) : null;
+    const anchor = buildStorageAnchor({
+      eventId: linkedEventId,
+      rackvidd: typeof rackvidd === 'string' ? rackvidd : '',
+      kursfamilj:
+        typeof attachmentRecord.fields['Kursfamilj'] === 'string'
+          ? (attachmentRecord.fields['Kursfamilj'] as string)
+          : null,
+    });
     const lagringsnyckel = attachmentRecord.fields[LAGRINGSNYCKEL_FIELD];
-    if (
-      ankareEventId &&
-      typeof lagringsnyckel === 'string' &&
-      lagringsnyckel.length > 0
-    ) {
-      const path = `${ankareEventId}/${lagringsnyckel}`;
+    if (anchor && typeof lagringsnyckel === 'string' && lagringsnyckel.length > 0) {
+      const path = `${anchor}/${lagringsnyckel}`;
       const supabaseAdmin = createClient(
         Deno.env.get('SUPABASE_URL')!,
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,

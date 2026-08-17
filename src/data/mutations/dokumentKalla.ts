@@ -12,9 +12,16 @@ import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
  * `src/data/mutations/`) och komponenten — enda källan till "hur hämtar vi
  * bytes för den här klassen", så de två mutationerna inte duplicerar
  * adapter-anropen var för sig.
+ *
+ * [UTBYGGD, TASK-275.3, ADR-118 beslut 5] Klass bilagas `eventId` är NU
+ * `string | null` — `null` för en GEMENSAM bilaga öppnad i räckviddsläget
+ * (inget event valt). Mallar/generatorer (klass B/C) kräver FORTFARANDE ett
+ * riktigt `eventId` (de genererar ur eventets data — det finns inget
+ * "mallar utan event"-läge, och räckviddsläget visar dem aldrig, se
+ * `DokumentYta.tsx`).
  */
 export type DokumentKalla =
-  | { typ: 'bilaga'; eventId: string; attachmentId: string }
+  | { typ: 'bilaga'; eventId: string | null; attachmentId: string }
   | { typ: 'mall'; eventId: string }
   | { typ: 'generator'; eventId: string };
 

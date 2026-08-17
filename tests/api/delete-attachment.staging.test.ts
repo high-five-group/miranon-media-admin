@@ -35,6 +35,13 @@
 //       beteende — regressionsskydd, "eventId krävs" gäller fortfarande för
 //       den vanliga vägen).
 //
+// TASK-275.3 (ADR-118 beslut 5) tillägg — EVENT-LÖS STORAGE-ANKARE:
+//   13. allow: en GENUINT EVENT-LÖS gemensam bilaga (ingen `Event`-länk
+//       alls, `kurstyp/<kursfamilj>`-storage-ankaret) raderas i
+//       räckviddsläge → 200, raden FAKTISKT borta. Fall 11 ovan bevisar
+//       samma sak för en bilaga som RÅKAR bära en `Event`-länk (275.2:s
+//       väg); detta fall bevisar den ANDRA storage-anker-grenen.
+//
 // (7)+(8)+(9) = deny-triple-klass-beviset (samma tre icke-lyckade-vägar som
 // upload-attachment.staging.test.ts bär för samma bevisklass).
 //
@@ -364,5 +371,42 @@ test.describe('delete-attachment — skarp conformance (TASK-147.11)', () => {
       attachmentId,
     });
     expect(cleanupRes.status()).toBe(200);
+  });
+
+  // [TILLÄGG, TASK-275.3, ADR-118 beslut 5] 13. allow: en GENUINT EVENT-LÖS
+  // gemensam bilaga (ingen Event-länk alls vid skapelsen — räckviddslägets
+  // egen uppladdning) raderas i räckviddsläge → 200, raden FAKTISKT borta.
+  // Bevisar att `buildStorageAnchor`s Kurstyp/Alla-event-gren (`kurstyp/
+  // <kursfamilj>`/`alla-event`) FUNGERAR som storage-path-anker vid
+  // radering, inte bara den `Event`-länk-buren grenen (fall 11 ovan).
+  test('allow: GENUINT event-lös gemensam bilaga raderas i räckviddsläge → 200, raden FAKTISKT borta', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const uploadRes = await request.post(`${config.baseUrl}${UPLOAD_ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+      data: {
+        filnamn: sentinelFilnamn(),
+        contentType: 'application/pdf',
+        bytesBase64: buildPseudoPdfBase64(2048),
+        rackvidd: 'Kurstyp',
+        kursfamilj: 'Psionautics',
+      },
+    });
+    const uploadRaw = await uploadRes.text();
+    expect(uploadRes.status(), `setup-uppladdning misslyckades: ${uploadRaw}`).toBe(201);
+    const attachmentId = AttachmentSchema.parse(JSON.parse(uploadRaw).attachment).id;
+
+    const res = await postDelete(request, config, jwt, { attachmentId });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(200);
+    const body = JSON.parse(raw) as { deleted?: boolean };
+    expect(body.deleted).toBe(true);
+
+    // EXISTENS-BEVIS: raden är FAKTISKT borta — ett andra raderings-anrop 404:ar.
+    const secondRes = await postDelete(request, config, jwt, { attachmentId });
+    expect(secondRes.status()).toBe(404);
   });
 });

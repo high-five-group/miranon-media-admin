@@ -113,26 +113,55 @@
  * redan valda event). `previewEventTemplate`/`previewReceipt` (klass B/C)
  * når ALDRIG Storage-uppladdningen, Bilagor-radskapelsen eller ett
  * allokerat kvittonummer — SIDOEFFEKTSFRI förhandsvisning (AC #3, TASK-246).
+ *
+ * [UTBYGGD, TASK-275.3, ADR-118] RÄCKVIDDSVAL + RÄCKVIDDSLÄGE + BADGES — se
+ * amenderings-sidofilen `tasks/sessions/bilagor/s102-dokument-konvergens/
+ * AMENDERING-2026-08-17-rackviddsval-gemensamt-lage-badges.md` för hela
+ * avvikelsen mot det godkända facit-manifestet. Kort sammanfattat:
+ *   - UPPLADDNINGSFLÖDET (`UppladdningsFlode` nedan, delad mellan
+ *     eventläget och räckviddsläget) bär nu ett räckviddsval (RadioGroup:
+ *     Detta event/En kurstyp/Alla event — husets radioval-primitiv,
+ *     `RadioGroup`/`Radio`), med Kursfamilj/Kursnivå-`Select` (husets
+ *     select-primitiv) när Kurstyp är valt. "Detta event" är avstängt
+ *     (`isDisabled`) när inget event är valt.
+ *   - RÄCKVIDDSLÄGET (`GemensamtLage` nedan) är Dokument-ytans NYA läge
+ *     UTAN valt event (ORDLISTA.md § Gemensam bilaga/Räckvidd) — ersätter
+ *     den tidigare "Välj ett event för att se dess bilagor."-texten. Listar
+ *     ALLA gemensamma bilagor (`fetchGemensammaBilagor`), och är den ENDA
+ *     platsen en gemensam bilaga kan ersättas/raderas (ADR-118 beslut 3).
+ *   - BADGEN (`RackviddBadge`, `src/components/dokument/RackviddBadge.tsx`)
+ *     märker varje gemensam bilaga i eventlägets lista — husets neutrala
+ *     metadata-pill-grammatik, ingen ny formuppfinning.
+ *   - ERSÄTT DÖLJS i eventläget för gemensamma bilagor (`BilageRadRow`
+ *     nedan) — badgen bär förklaringen (ADR-118 beslut 3, AC #4).
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronLeft, Download, Eye, FileText, Loader2, Upload } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
+import { RackviddBadge } from '@/components/dokument/RackviddBadge';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
+import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { formatMB } from '@/data/adapters/attachmentUpload';
 import type { DokumentKalla } from '@/data/mutations/dokumentKalla';
+import { useDeleteAttachment } from '@/data/mutations/useDeleteAttachment';
 import { useForhandsvisaDokument } from '@/data/mutations/useForhandsvisaDokument';
 import { useLaddaNerDokument } from '@/data/mutations/useLaddaNerDokument';
 import { useReplaceAttachment } from '@/data/mutations/useReplaceAttachment';
-import { useUploadAttachment } from '@/data/mutations/useUploadAttachment';
+import {
+  type UploadAttachmentVariables,
+  useUploadAttachment,
+} from '@/data/mutations/useUploadAttachment';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
+import { AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
 
 /* ------------------------------------------------------------------ *
@@ -172,6 +201,31 @@ const GENERATORER: Generator[] = [
   },
 ];
 
+/* ------------------------------------------------------------------ *
+ * KURSFAMILJ/KURSNIVÅ-VALSLAGET (TASK-275.3, ADR-118 beslut 1)
+ *
+ * EXAKT samma valslag som Bilagor.Kursfamilj/Kursnivå (staging
+ * `fld8Mc23OdJXFSBEx`/`fldMAGsqnQ4ddFmaI`, disk-verifierat mot
+ * `docs/reference/data-model.md` § "Staging- och prodbasens additiva
+ * tillskott 2026-08-17") och server-sidans `_shared/attachments.ts` §
+ * KURSFAMILJ_VALUES/KURSNIVA_VALUES — DUPLICERAD MEDVETET (samma Deno↔Vite-
+ * dubblerings-mönster som `AttachmentClass`/`AttachmentScope` i
+ * `domain/types/Status.ts` redan etablerar; write-sidans strikta
+ * server-enum är golvet, denna lista är bara UI-urvalet).
+ *
+ * `KURSFAMILJ_MED_NIVAER`: BARA RIM har verkliga nivåer (Intro/Nivå 1-3) —
+ * Fjärrskådning och Psionautics är NIVÅLÖSA familjer (data-model.md § samma
+ * sektion: "TOMT för nivålösa familjer"; `_shared/course-dimensions.ts`s
+ * `KURS_KARTA` speglar samma fakta för event-sidans Kursfamilj/Kursnivå).
+ * Kursnivå-selecten renderas därför BARA när en nivåbärande familj är vald
+ * — att visa den för Fjärrskådning/Psionautics hade bjudit in ett val som
+ * ADR-118 beslut 1 uttryckligen förbjuder ("nivålösa familjer lämnar alltid
+ * nivån tom, samma regel som eventen").
+ * ------------------------------------------------------------------ */
+const KURSFAMILJ_VALUES = ['RIM', 'Fjärrskådning', 'Psionautics'] as const;
+const KURSNIVA_VALUES = ['Intro', 'Nivå 1', 'Nivå 2', 'Nivå 3'] as const;
+const KURSFAMILJ_MED_NIVAER: ReadonlySet<string> = new Set(['RIM']);
+
 /** Full precision, Gunilla-läsbart — samma format som Anteckningar.tsx § ANTECKNING_TID. */
 const DATUM_TID = new Intl.DateTimeFormat('sv-SE', {
   day: 'numeric',
@@ -189,6 +243,11 @@ const DATUM_TID = new Intl.DateTimeFormat('sv-SE', {
  * nedan för vad som kan).
  */
 type BilageRad = { current: Attachment; dolda: number };
+
+/** [TASK-275.3] Räckviddsvalet `UppladdningsFlode` producerar — delad shape
+    mellan uppladdning (`UploadAttachmentVariables` minus `file`) och
+    ersättning (`ReplaceAttachmentInput` minus `file`/`oldAttachmentId`). */
+type UploadScopeVal = Pick<UploadAttachmentVariables, 'rackvidd' | 'kursfamilj' | 'kursniva'>;
 
 /**
  * [TASK-147.11, DEGRADERAD TILL REN VISNINGSHJÄLP] Grupperar VERKLIGA
@@ -237,26 +296,56 @@ export function DokumentYta() {
     enabled: eventId != null,
   });
 
-  const uploadMutation = useUploadAttachment(eventId ?? '');
+  // [TASK-275.3, ADR-118 beslut 5] Räckviddsläget (Fynd, filhuvudets nya
+  // stycke): ALLA gemensamma bilagor, hämtas BARA när inget event är valt —
+  // ömsesidigt uteslutande mot `attachmentsQuery` ovan (samma `enabled`-par
+  // som redan höll för `attachmentsQuery`, bara omvänt).
+  const gemensammaQuery = useQuery({
+    queryKey: queryKeys.attachments.gemensamma,
+    queryFn: () => dataSource.fetchGemensammaBilagor(),
+    enabled: eventId == null,
+  });
+
+  // EN mutation-instans TÄCKER BÅDA lägena — `eventId` (`string | null`)
+  // BINDS till VILKET läge som faktiskt renderar just nu (bara ETT läge
+  // renderar åt gången, se JSX-grenen nedan), så hooken behöver aldrig
+  // instansieras två gånger.
+  const uploadMutation = useUploadAttachment(eventId);
   // "Ersätt" (TASK-147.11) — SKILD hook/mutation från uppladdningsknappen
   // längst ner: samma FileTrigger-mönster, men bär vilken befintlig post
   // som ska bort (`oldAttachmentId`) och komponerar upload+delete i rätt
   // ordning (se useReplaceAttachment.ts för kontraktet).
-  const replaceMutation = useReplaceAttachment(eventId ?? '');
+  const replaceMutation = useReplaceAttachment(eventId);
+  // [TASK-275.3] Standalone Radera — ANVÄNDS bara i räckviddsläget
+  // (`GemensamtLage` nedan; se useDeleteAttachment.ts § docblock för varför
+  // signaturen ändå speglar hela `string | null`-kontraktet).
+  const deleteMutation = useDeleteAttachment(eventId);
 
   const rader = useMemo(
     () => grupperaPerNamn(attachmentsQuery.data ?? []),
     [attachmentsQuery.data],
   );
+  const gemensammaRader = useMemo(
+    () => grupperaPerNamn(gemensammaQuery.data ?? []),
+    [gemensammaQuery.data],
+  );
 
-  const handleUpload = (files: FileList | null) => {
+  const handleUpload = (files: FileList | null, scope: UploadScopeVal) => {
     const file = files?.[0];
-    if (file) uploadMutation.mutate(file);
+    if (file) uploadMutation.mutate({ file, ...scope });
   };
 
-  const handleReplace = (files: FileList | null, oldAttachmentId: string) => {
+  const handleReplace = (
+    files: FileList | null,
+    oldAttachmentId: string,
+    scope: UploadScopeVal,
+  ) => {
     const file = files?.[0];
-    if (file) replaceMutation.mutate({ file, oldAttachmentId });
+    if (file) replaceMutation.mutate({ file, oldAttachmentId, ...scope });
+  };
+
+  const handleDelete = (attachmentId: string, namn: string) => {
+    deleteMutation.mutate({ attachmentId, namn });
   };
 
   return (
@@ -280,15 +369,46 @@ export function DokumentYta() {
           behöver ett valt event innan verklig data kan hämtas. Samma
           delade komponent som Åtgärds-sidan/manuell anmälan (kontextrad-
           formen). Tomt läge tills Marcus/Lotta väljer — ingen fixtur
-          default-vald här. */}
+          default-vald här. TOMT LÄGE är sedan TASK-275.3 INTE längre "väntar
+          på val" — det ÄR räckviddsläget (se GemensamtLage nedan). */}
       <EventValjare
         valtEventId={eventId ?? undefined}
         valtEvent={valtEvent}
         onByte={(id) => void setEventId(id)}
       />
 
+      {/* [TASK-275.3] Vägen TILLBAKA till räckviddsläget — EventValjarens
+          popover har inget "rensa val"-alternativ (den byter bara MELLAN
+          event), så ett eget, litet textutträde behövs. Husets Button-
+          primitiv (`intent="ghost" size="sm"`) — ingen ny formuppfinning.
+          Syns bara när ett event faktiskt är valt (annars redan i
+          räckviddsläget, knappen vore meningslös). */}
+      {eventId != null && (
+        <Button
+          intent="ghost"
+          size="sm"
+          className="self-start"
+          onPress={() => void setEventId(null)}
+        >
+          Visa gemensamma dokument
+        </Button>
+      )}
+
       {eventId == null ? (
-        <p className="text-small text-text-muted">Välj ett event för att se dess bilagor.</p>
+        <GemensamtLage
+          rader={gemensammaRader}
+          laddar={gemensammaQuery.isPending}
+          fel={gemensammaQuery.isError}
+          felmeddelande={
+            gemensammaQuery.error instanceof Error ? gemensammaQuery.error.message : 'Okänt fel.'
+          }
+          onUpload={handleUpload}
+          uploadMutation={uploadMutation}
+          onReplace={handleReplace}
+          replaceMutation={replaceMutation}
+          onDelete={handleDelete}
+          deleteMutation={deleteMutation}
+        />
       ) : attachmentsQuery.isPending ? (
         <div role="status" aria-busy="true" className="flex flex-col gap-2">
           <span className="sr-only">Laddar bilagor…</span>
@@ -402,6 +522,14 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
 
 type UploadMutation = ReturnType<typeof useUploadAttachment>;
 type ReplaceMutation = ReturnType<typeof useReplaceAttachment>;
+type DeleteMutation = ReturnType<typeof useDeleteAttachment>;
+
+/** [TASK-275.3] Sant för en GEMENSAM bilaga (räckvidd Kurstyp/Alla event) —
+    delad mellan BilageRadRow (döljer Ersätt) och badgens eget "rendera
+    inget"-villkor (RackviddBadge.tsx). */
+function arGemensam(rackvidd: Attachment['rackvidd']): boolean {
+  return rackvidd === AttachmentScope.KURSTYP || rackvidd === AttachmentScope.ALLA_EVENT;
+}
 
 function BilageRadRow({
   eventId,
@@ -411,7 +539,7 @@ function BilageRadRow({
 }: {
   eventId: string;
   rad: BilageRad;
-  onReplace: (files: FileList | null, oldAttachmentId: string) => void;
+  onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
   replaceMutation: ReplaceMutation;
 }) {
   const { current, dolda } = rad;
@@ -422,11 +550,23 @@ function BilageRadRow({
   // jämförelsen är säker även innan första anropet.
   const ersatterDennaRaden =
     replaceMutation.isPending && replaceMutation.variables?.oldAttachmentId === current.id;
+  // [TASK-275.3, ADR-118 beslut 3] Ersätt VISAS INTE i eventkontext för en
+  // GEMENSAM bilaga — badgen bär förklaringen (AC #4). Servern nekar 403
+  // ändå (delete-attachment/index.ts), men UI-lagret ska inte erbjuda en
+  // knapp den vet kommer avvisas.
+  const gemensam = arGemensam(current.rackvidd);
   return (
     <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
       <FileText aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-text-muted" />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="break-words font-medium text-body">{current.namn}</span>
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span className="break-words font-medium text-body">{current.namn}</span>
+          <RackviddBadge
+            rackvidd={current.rackvidd}
+            kursfamilj={current.kursfamilj}
+            kursniva={current.kursniva}
+          />
+        </span>
         <MetaRad
           delar={[
             // [TASK-147.12] Verklig klass — se filens docblock (Fynd 1).
@@ -449,14 +589,22 @@ function BilageRadRow({
           namn={current.namn}
           kalla={{ typ: 'bilaga', eventId, attachmentId: current.id }}
         />
-        <FileTrigger
-          acceptedFileTypes={['application/pdf']}
-          onSelect={(files) => onReplace(files, current.id)}
-        >
-          <Button intent="ghost" size="sm" isDisabled={ersatterDennaRaden}>
-            {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
-          </Button>
-        </FileTrigger>
+        {!gemensam && (
+          <FileTrigger
+            acceptedFileTypes={['application/pdf']}
+            onSelect={(files) =>
+              onReplace(files, current.id, {
+                rackvidd: current.rackvidd ?? undefined,
+                kursfamilj: current.kursfamilj ?? undefined,
+                kursniva: current.kursniva ?? undefined,
+              })
+            }
+          >
+            <Button intent="ghost" size="sm" isDisabled={ersatterDennaRaden}>
+              {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
+            </Button>
+          </FileTrigger>
+        )}
       </span>
     </div>
   );
@@ -545,9 +693,9 @@ function DokumentLista({
 }: {
   eventId: string;
   rader: BilageRad[];
-  onUpload: (files: FileList | null) => void;
+  onUpload: (files: FileList | null, scope: UploadScopeVal) => void;
   uploadMutation: UploadMutation;
-  onReplace: (files: FileList | null, oldAttachmentId: string) => void;
+  onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
   replaceMutation: ReplaceMutation;
 }) {
   const [filter, setFilter] = useQueryState('typ');
@@ -595,16 +743,291 @@ function DokumentLista({
         )}
       </div>
 
-      <UppladdningsFel uploadMutation={uploadMutation} />
       <ErsattningsFel replaceMutation={replaceMutation} />
+      <UppladdningsFlode harEvent onUpload={onUpload} uploadMutation={uploadMutation} />
+    </div>
+  );
+}
+
+/**
+ * UPPLADDNINGSFLÖDET (TASK-275.3, AC #1) — räckviddsval delat mellan
+ * eventläget (`DokumentLista` ovan, `harEvent` alltid true) och
+ * räckviddsläget (`GemensamtLage` nedan, `harEvent` alltid false). Radioval
+ * via husets primitiv (`RadioGroup`/`Radio`), Kursfamilj/Kursnivå via husets
+ * `Select` — INGA nya formuppfinningar (Marcus kvalitetsdirektiv
+ * 2026-08-17).
+ *
+ * "Detta event" är `isDisabled` när `!harEvent` (räckviddsläget har inget
+ * event att koppla mot) — startvärdet väljs DÄRFÖR olika (Event när ett
+ * event finns, annars Kurstyp): en avstängd men FÖRVALD radioknapp hade
+ * lämnat räckviddsläget i ett tillstånd utan giltigt val. Komponenten
+ * MONTERAS OM när `harEvent` byter (DokumentLista/GemensamtLage är skilda
+ * JSX-grenar i `DokumentYta`, aldrig samma monterade instans) — lokalt
+ * `useState` behöver därför ingen synk-effekt.
+ *
+ * VALIDERING: räckvidd Kurstyp UTAN vald Kursfamilj håller uppladdnings-
+ * knappen avstängd (`scopeGiltig`) — Lotta kan inte råka skicka ett
+ * ofullständigt val som EF:en ändå hade avvisat (400, `AttachmentScope
+ * InputSchema`); felet fångas HÄR, innan filväljaren ens öppnas.
+ */
+function UppladdningsFlode({
+  harEvent,
+  onUpload,
+  uploadMutation,
+}: {
+  harEvent: boolean;
+  onUpload: (files: FileList | null, scope: UploadScopeVal) => void;
+  uploadMutation: UploadMutation;
+}) {
+  const [rackvidd, setRackvidd] = useState<AttachmentScopeValue>(
+    harEvent ? AttachmentScope.EVENT : AttachmentScope.KURSTYP,
+  );
+  const [kursfamilj, setKursfamilj] = useState<string | null>(null);
+  const [kursniva, setKursniva] = useState<string | null>(null);
+
+  const kursfamiljHarNivaer = kursfamilj != null && KURSFAMILJ_MED_NIVAER.has(kursfamilj);
+  const scopeGiltig = rackvidd !== AttachmentScope.KURSTYP || kursfamilj != null;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <RadioGroup
+        label="Räckvidd"
+        orientation="horizontal"
+        value={rackvidd}
+        onChange={(value) => {
+          const next = value as AttachmentScopeValue;
+          setRackvidd(next);
+          if (next !== AttachmentScope.KURSTYP) {
+            setKursfamilj(null);
+            setKursniva(null);
+          }
+        }}
+      >
+        <Radio value={AttachmentScope.EVENT} isDisabled={!harEvent}>
+          Detta event
+        </Radio>
+        <Radio value={AttachmentScope.KURSTYP}>En kurstyp</Radio>
+        <Radio value={AttachmentScope.ALLA_EVENT}>Alla event</Radio>
+      </RadioGroup>
+
+      {rackvidd === AttachmentScope.KURSTYP && (
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          <Select
+            label="Kursfamilj"
+            placeholder="Välj kursfamilj"
+            selectedKey={kursfamilj}
+            onSelectionChange={(key) => {
+              setKursfamilj(key == null ? null : String(key));
+              setKursniva(null);
+            }}
+            className="sm:max-w-56"
+          >
+            {KURSFAMILJ_VALUES.map((v) => (
+              <SelectItem key={v} id={v}>
+                {v}
+              </SelectItem>
+            ))}
+          </Select>
+          {kursfamiljHarNivaer && (
+            <Select
+              label="Kursnivå"
+              placeholder="Alla nivåer"
+              selectedKey={kursniva}
+              onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
+              className="sm:max-w-56"
+            >
+              {KURSNIVA_VALUES.map((v) => (
+                <SelectItem key={v} id={v}>
+                  {v}
+                </SelectItem>
+              ))}
+            </Select>
+          )}
+        </div>
+      )}
+
+      <UppladdningsFel uploadMutation={uploadMutation} />
       <div>
-        <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={onUpload}>
-          <Button intent="secondary" isDisabled={uploadMutation.isPending}>
+        <FileTrigger
+          acceptedFileTypes={['application/pdf']}
+          onSelect={(files) =>
+            onUpload(files, {
+              rackvidd,
+              kursfamilj:
+                rackvidd === AttachmentScope.KURSTYP ? (kursfamilj ?? undefined) : undefined,
+              kursniva: rackvidd === AttachmentScope.KURSTYP ? (kursniva ?? undefined) : undefined,
+            })
+          }
+        >
+          <Button intent="secondary" isDisabled={uploadMutation.isPending || !scopeGiltig}>
             <Upload aria-hidden="true" size={16} className="shrink-0" />
             {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp en fil'}
           </Button>
         </FileTrigger>
       </div>
+    </div>
+  );
+}
+
+/**
+ * RÄCKVIDDSLÄGET (TASK-275.3, ADR-118 beslut 5) — Dokument-ytans läge UTAN
+ * valt event (ORDLISTA.md § Gemensam bilaga/Räckvidd). Ersätter den
+ * tidigare "Välj ett event för att se dess bilagor."-texten (se
+ * amenderings-sidofilen). Listar ALLA gemensamma bilagor och är den ENDA
+ * platsen en gemensam bilaga kan ersättas/raderas (ADR-118 beslut 3) —
+ * servern nekar 403 annars.
+ *
+ * INGEN typ-filterrad (till skillnad mot `DokumentLista`): mallar/
+ * generatorer (klass B/C) genereras UR eventets data och har därför inget
+ * meningsfullt läge utan valt event — räckviddsläget visar BARA bilagor.
+ */
+function GemensamtLage({
+  rader,
+  laddar,
+  fel,
+  felmeddelande,
+  onUpload,
+  uploadMutation,
+  onReplace,
+  replaceMutation,
+  onDelete,
+  deleteMutation,
+}: {
+  rader: BilageRad[];
+  laddar: boolean;
+  fel: boolean;
+  felmeddelande: string;
+  onUpload: (files: FileList | null, scope: UploadScopeVal) => void;
+  uploadMutation: UploadMutation;
+  onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
+  replaceMutation: ReplaceMutation;
+  onDelete: (attachmentId: string, namn: string) => void;
+  deleteMutation: DeleteMutation;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-small text-text-muted">
+        Gemensamma dokument gäller flera event — en kurstyp eller alla event. Ändras här, syns
+        direkt överallt de gäller.
+      </p>
+
+      {laddar ? (
+        <div role="status" aria-busy="true" className="flex flex-col gap-2">
+          <span className="sr-only">Laddar gemensamma dokument…</span>
+          <Skeleton variant="listRow" />
+          <Skeleton variant="listRow" />
+        </div>
+      ) : fel ? (
+        <MessageBox intent="error" title="Kunde inte hämta gemensamma dokument">
+          {felmeddelande}
+        </MessageBox>
+      ) : (
+        <div
+          data-testid="grupp-kort"
+          className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+        >
+          {rader.map((r) => (
+            <GemensamBilageRadRow
+              key={r.current.id}
+              rad={r}
+              onReplace={onReplace}
+              replaceMutation={replaceMutation}
+              onDelete={onDelete}
+              deleteMutation={deleteMutation}
+            />
+          ))}
+          {rader.length === 0 && (
+            <p className="py-3 text-small text-text-muted">Inga gemensamma dokument än.</p>
+          )}
+        </div>
+      )}
+
+      <ErsattningsFel replaceMutation={replaceMutation} />
+      <UppladdningsFlode harEvent={false} onUpload={onUpload} uploadMutation={uploadMutation} />
+    </div>
+  );
+}
+
+/**
+ * En rad i räckviddslägets lista (TASK-275.3) — speglar `BilageRadRow`, men
+ * med TVÅ skillnader: badgen visas ALLTID (varje rad här ÄR gemensam per
+ * konstruktion — ingen `arGemensam`-gren behövs), och Ersätt/Radera är
+ * BÅDA tillgängliga (detta ÄR räckviddsläget, ADR-118 beslut 3). `eventId`
+ * i `kalla` är MEDVETET `null` — förhandsvisning/nedladdning av en gemensam
+ * bilaga kräver inget eventkontext (get-attachment-download-url/index.ts §
+ * filhuvudet, "gemensam bilaga: inget ägarskaps-guard alls").
+ */
+function GemensamBilageRadRow({
+  rad,
+  onReplace,
+  replaceMutation,
+  onDelete,
+  deleteMutation,
+}: {
+  rad: BilageRad;
+  onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
+  replaceMutation: ReplaceMutation;
+  onDelete: (attachmentId: string, namn: string) => void;
+  deleteMutation: DeleteMutation;
+}) {
+  const { current, dolda } = rad;
+  const ersatterDennaRaden =
+    replaceMutation.isPending && replaceMutation.variables?.oldAttachmentId === current.id;
+  const raderarDennaRaden =
+    deleteMutation.isPending && deleteMutation.variables?.attachmentId === current.id;
+  return (
+    <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
+      <FileText aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-text-muted" />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span className="break-words font-medium text-body">{current.namn}</span>
+          <RackviddBadge
+            rackvidd={current.rackvidd}
+            kursfamilj={current.kursfamilj}
+            kursniva={current.kursniva}
+          />
+        </span>
+        <MetaRad
+          delar={[
+            `Klass: ${current.dokumentklass ?? 'Okänd'}`,
+            formatMB(current.storlekBytes),
+            `Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`,
+          ]}
+        />
+        {dolda > 0 && (
+          <span className="text-caption text-text-secondary">
+            +{dolda} {dolda === 1 ? 'äldre fil' : 'äldre filer'} med samma namn (visas inte)
+          </span>
+        )}
+      </span>
+      <span className="flex shrink-0 items-center gap-2 self-center">
+        <DokumentAtgardsKnappar
+          namn={current.namn}
+          kalla={{ typ: 'bilaga', eventId: null, attachmentId: current.id }}
+        />
+        <FileTrigger
+          acceptedFileTypes={['application/pdf']}
+          onSelect={(files) =>
+            onReplace(files, current.id, {
+              rackvidd: current.rackvidd ?? undefined,
+              kursfamilj: current.kursfamilj ?? undefined,
+              kursniva: current.kursniva ?? undefined,
+            })
+          }
+        >
+          <Button intent="ghost" size="sm" isDisabled={ersatterDennaRaden}>
+            {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
+          </Button>
+        </FileTrigger>
+        <Button
+          intent="ghost"
+          size="sm"
+          isDisabled={raderarDennaRaden}
+          onPress={() => onDelete(current.id, current.namn)}
+        >
+          {raderarDennaRaden ? 'Raderar…' : 'Radera'}
+        </Button>
+      </span>
     </div>
   );
 }

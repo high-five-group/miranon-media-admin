@@ -246,13 +246,105 @@ export function buildAttachmentLeaf(attachmentId: string, filnamn: string): stri
  * händelses/annan uppladdnings fil: de kan bara "träffa" en path som
  * FAKTISKT har bytes där, och bytes hamnar bara där via ett tillstånd som
  * SERVERN redan knöt till just detta (eventId, attachmentId, filnamn).
+ *
+ * [UTBYGGD, TASK-275.3, ADR-118] Parametern heter `anchor`, inte längre
+ * `eventId` (ren namnändring — INGEN formel/beteendeförändring, samma
+ * `${anchor}/${leaf}`-konkatenering som förut). Anledningen: EF:erna för
+ * MÖNSTER 2 (create-attachment-upload-ticket/finalize-attachment-upload,
+ * OFÖRÄNDRADE av denna skiva) skickar alltid ett riktigt `eventId` (rec…)
+ * hit — event-löst mönster 2-stöd är MEDVETET UTANFÖR denna skivas scope
+ * (se upload-attachment/index.ts § filhuvudet). MÖNSTER 1
+ * (upload-attachment/index.ts) kan däremot skicka in VILKEN sträng
+ * `buildStorageAnchor` nedan än härledde — ett rec-ID (Event-räckvidd/
+ * event-kontext) ELLER en scope-prefix-sträng (event-löst Kurstyp/Alla
+ * event, se den funktionens docblock). Funktionen bryr sig inte om VILKET —
+ * den konkatenerar bara.
  */
 export function buildAttachmentPath(
-  eventId: string,
+  anchor: string,
   attachmentId: string,
   filnamn: string,
 ): string {
-  return `${eventId}/${buildAttachmentLeaf(attachmentId, filnamn)}`;
+  return `${anchor}/${buildAttachmentLeaf(attachmentId, filnamn)}`;
+}
+
+/**
+ * [TASK-275.3, ADR-118 beslut 5] Storage-path-ANKARET — den DETERMINISTISKA
+ * härledningen som gör `buildAttachmentPath` möjlig även för en GENUINT
+ * event-lös uppladdning (räckviddsläget på Dokument-ytan, ingen `eventId`
+ * i kontext). Tre grenar, i PRIORITETSORDNING:
+ *
+ *   1. `eventId` ANGIVEN (oavsett räckvidd) → ANVÄND DEN, oförändrat mot
+ *      TASK-275.2:s beteende. Detta täcker BÅDA: (a) alla Event-räckviddiga
+ *      bilagor (eventId är obligatorisk för dem, se upload-attachment/
+ *      index.ts) OCH (b) en Kurstyp/Alla-event-bilaga uppladdad FRÅN ett
+ *      events kontext (Lotta står på ett events sida men väljer ändå en
+ *      delad räckvidd) — 275.2:s medvetna design att `Event`-länken förblir
+ *      satt oavsett räckvidd när ett event faktiskt är känt.
+ *   2. `eventId` UTELÄMNAD + räckvidd Kurstyp → `kurstyp/<kursfamilj-SLUG>`
+ *      (se `KURSFAMILJ_SLUG` nedan — INTE det råa Airtable-optionsnamnet,
+ *      RÖTT-FÖRST-BELÄGG nedan). Alla bilagor för SAMMA kursfamilj (oavsett
+ *      Kursnivå — anKRET är MEDVETET grövre än matchningsformeln i
+ *      get-event-attachments, som SJÄLV hanterar tom-nivå-regeln vid
+ *      LÄSNING; storage-anKRET behöver bara vara stabilt och
+ *      deterministiskt, inte semantiskt fullständigt) delar Storage-mapp —
+ *      rent organisatoriskt, ingen åtkomstkontroll vilar på detta (den
+ *      sitter i Bilagor-radens `Räckvidd`-fält och EF-guarderna, se
+ *      delete-attachment/get-attachment-download-url).
+ *   3. `eventId` UTELÄMNAD + räckvidd Alla event → den FASTA strängen
+ *      `'alla-event'`.
+ *
+ * RÖTT-FÖRST-BELÄGG (TASK-275.3, skarpt mot staging 2026-08-17): en
+ * event-lös uppladdning med `kursfamilj: 'Fjärrskådning'` (rå sträng, å/ä)
+ * som storage-path-segment gav Supabase Storage-serverns EGNA 400
+ * `"Invalid key: kurstyp/Fjärrskådning/…"` — INTE ett fel i vår kod runt
+ * anropet, utan plattformens objektnyckel-validering som avvisar denna
+ * icke-ASCII-formen. `RIM`/`Psionautics` (redan rena ASCII-strängar) föll
+ * ALDRIG i samma test — det isolerar felet till just diakritiska tecken i
+ * path-SEGMENT, inte till Kurstyp-grenen i stort. `KURSFAMILJ_SLUG` löser
+ * det med samma "ASCII-slug för en icke-ASCII-domänsträng"-disciplin som
+ * `sanitizeFilnamn` redan bär för klient-angivna filnamn (fast den
+ * funktionen tar INTE bort å/ä/ö — bara styrtecken/separatorer — så den var
+ * inte lösningen här; kursfamilj är dessutom en SLUTEN, server-kontrollerad
+ * uppsättning om tre värden, en explicit uppslagstabell är därför säkrare
+ * än en generisk transliterations-algoritm).
+ *
+ * ANVÄNDS BÅDE VID SKRIVNING (upload-attachment: bygger en NY path ur
+ * klientens `{eventId, rackvidd, kursfamilj}`) OCH VID LÄSNING/RADERING
+ * (delete-attachment/get-attachment-download-url: härleder SAMMA anker ur
+ * en REDAN SKAPAD Bilagor-rads egna fält — `eventId` blir då radens `Event`-
+ * länk om satt, annars `null`). EN formel, två användningar — exakt samma
+ * disciplin som `buildAttachmentLeaf` redan etablerar för Lagringsnyckel.
+ *
+ * Returnerar `null` OM inget anker kan härledas (defensivt, borde vara
+ * ouppnåeligt givet `AttachmentScopeInputSchema`s validering vid skrivning
+ * — men en läsande anropare möter historisk/legacy-data den inte kontrollerat
+ * skrev, så "kan inte härleda" måste vara ett uttryckt, hanterat fall snarare
+ * än ett kraschande antagande). Ett OKÄNT `kursfamilj`-värde (utanför
+ * KURSFAMILJ_SLUG — kan bara nås av läsande anropare mot historisk/felaktig
+ * data, ALDRIG av skrivvägen som validerar strikt) faller till samma `null`.
+ */
+const KURSFAMILJ_SLUG: Readonly<Record<string, string>> = {
+  RIM: 'rim',
+  Fjärrskådning: 'fjarrskadning',
+  Psionautics: 'psionautics',
+};
+
+export function buildStorageAnchor(params: {
+  eventId: string | null;
+  rackvidd: string;
+  kursfamilj?: string | null;
+}): string | null {
+  if (params.eventId) return params.eventId;
+  if (params.rackvidd === ATTACHMENT_SCOPE_KURSTYP && params.kursfamilj) {
+    const slug = KURSFAMILJ_SLUG[params.kursfamilj];
+    if (!slug) return null;
+    return `kurstyp/${slug}`;
+  }
+  if (params.rackvidd === ATTACHMENT_SCOPE_ALLA_EVENT) {
+    return 'alla-event';
+  }
+  return null;
 }
 
 /**

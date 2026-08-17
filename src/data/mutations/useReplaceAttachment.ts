@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
+import type { AttachmentScopeValue } from '@/domain/types/Status';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
 import { queryKeys } from '@/queries/keys';
 
@@ -9,10 +10,22 @@ import { queryKeys } from '@/queries/keys';
  * ska bort. `oldAttachmentId` bärs i `variables` (inte i hook-anropet, till
  * skillnad mot `eventId`) — SAMMA hook-instans "Ersätt"-knappen delas mellan
  * alla rader i listan, olika rader ersätter olika poster.
+ *
+ * [UTBYGGD, TASK-275.3, ADR-118 beslut 5] `rackvidd`/`kursfamilj`/`kursniva`
+ * — den ERSATTA bilagans EGEN räckvidd, buren av ANROPAREN (den läser den
+ * direkt ur den befintliga `Attachment`-raden i listan, `rad.current.
+ * rackvidd` m.fl.). "Ersätt" byter ALDRIG räckvidd — det är en filbyte, inte
+ * en omklassificering — så uppladdningen av den NYA filen måste medvetet
+ * återanvända den GAMLA radens räckvidd i stället för att implicit falla
+ * till EF:ens Event-default (vilket hade tyst DEGRADERAT en gemensam bilaga
+ * till event-specifik vid nästa "Ersätt").
  */
 export interface ReplaceAttachmentInput {
   file: File;
   oldAttachmentId: string;
+  rackvidd?: AttachmentScopeValue;
+  kursfamilj?: string;
+  kursniva?: string;
 }
 
 /**
@@ -35,21 +48,35 @@ export interface ReplaceAttachmentInput {
  * ÄNDÅ ett fel — men den NYA filen finns redan och `onSettled` refetchar
  * listan oavsett utfall, så Lotta ser den nya raden direkt. Felmeddelandet
  * är därför explicit om VILKET steg som föll, inte en generisk "misslyckades".
+ *
+ * [UTBYGGD, TASK-275.3, ADR-118 beslut 3+5] `eventId` är NU `string | null`
+ * — `null` i räckviddsläget (Dokument-ytans läge utan valt event), den ENDA
+ * platsen en GEMENSAM bilaga får ersättas ifrån (server-sidan nekar 403
+ * annars, delete-attachment/index.ts § filhuvudet). En Event-räckviddig
+ * bilaga ersätts fortfarande ur sitt eventkontext, `eventId` = det eventet
+ * — OFÖRÄNDRAT beteende.
  */
-export function useReplaceAttachment(eventId: string) {
+export function useReplaceAttachment(eventId: string | null) {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
-  const key = queryKeys.attachments.byEvent(eventId);
 
   return useMutation<Attachment, Error, ReplaceAttachmentInput>({
-    // mutationKey scopar per event (samma dedup-motiv som useUploadAttachment) —
-    // INTE per oldAttachmentId: två samtidiga ersättningar på samma event är
-    // lika ovanligt/odesignat som två samtidiga uppladdningar redan är.
-    mutationKey: ['replace-attachment', eventId],
+    // mutationKey scopar per kontext (eventet, eller 'gemensamt' i
+    // räckviddsläget — samma form som useUploadAttachment) — INTE per
+    // oldAttachmentId: två samtidiga ersättningar i samma kontext är lika
+    // ovanligt/odesignat som två samtidiga uppladdningar redan är.
+    mutationKey: ['replace-attachment', eventId ?? 'gemensamt'],
 
-    mutationFn: async ({ file, oldAttachmentId }) => {
-      // 1) Ladda upp den nya filen FÖRST.
-      const uploaded = await dataSource.uploadAttachment({ eventId, file });
+    mutationFn: async ({ file, oldAttachmentId, rackvidd, kursfamilj, kursniva }) => {
+      // 1) Ladda upp den nya filen FÖRST — med DEN GAMLA radens räckvidd
+      //    (se ReplaceAttachmentInput-docblocken för varför).
+      const uploaded = await dataSource.uploadAttachment({
+        eventId,
+        file,
+        rackvidd,
+        kursfamilj,
+        kursniva,
+      });
 
       // 2) Radera den gamla posten EFTER lyckad uppladdning — aldrig tvärtom.
       try {
@@ -69,11 +96,11 @@ export function useReplaceAttachment(eventId: string) {
       alertScreenReader(`${attachment.namn} har ersatt den tidigare filen`);
     },
 
-    // Synka mot servern oavsett utfall (samma mönster som useUploadAttachment)
-    // — även vid ett delvis-misslyckande (uppladdad, radering föll) ska listan
-    // visa den nya raden direkt i stället för att vänta på nästa navigering.
+    // Synka mot servern oavsett utfall (samma mönster som useUploadAttachment,
+    // se den hookens INVALIDERINGEN-stycke för varför HELA attachments-
+    // prefixet — inte bara denna nyckel — invalideras).
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: queryKeys.attachments.all });
     },
   });
 }

@@ -40,6 +40,13 @@
 // oavsett räckvidd). Varje post i svaret bär sin `rackvidd` (badge-underlag)
 // — se `mapAttachmentRecord`.
 //
+// [UTBYGGD, TASK-275.3, ADR-118 beslut 5] `eventId` ÄR NU VALFRI.
+// UTELÄMNAD signalerar RÄCKVIDDSLÄGET (Dokument-ytans läge utan valt event):
+// svaret blir då ALLA gemensamma bilagor (Räckvidd Kurstyp/Alla event, se
+// `fetchAllaGemensamma` nedan) — ingen eventunion, ingen `Eventraden
+// måste existera`-kontroll (det finns inget event att slå upp). ANGES
+// `eventId` är resten av denna fil (union-hämtningen ovan) HELT OFÖRÄNDRAD.
+//
 // `Lagringsnyckel` (TASK-147.5, additiv) EXPONERAS ALDRIG i svaret —
 // `mapAttachmentRecord` (_shared/attachments.ts) är den delade mappern
 // upload-attachment/finalize-attachment-upload/generate-event-attachment
@@ -155,6 +162,27 @@ async function fetchAllaEvent(): Promise<AirtableRow[]> {
   })) as AirtableRow[];
 }
 
+/**
+ * [TASK-275.3, ADR-118 beslut 5] RÄCKVIDDSLÄGET — ALLA gemensamma bilagor
+ * (Räckvidd Kurstyp ELLER Alla event), oavsett event. Detta är listningen
+ * bakom Dokument-ytans läge UTAN valt event ("Dokument-sidan har ett läge
+ * som visar gemensamma dokument UTAN valt event", task-275.3 AC #2) — inget
+ * events Kursfamilj/Kursnivå att matcha mot, så EN enda OR-filtrerad
+ * hämtning räcker (ingen union av tre mängder, ingen dedup-risk: en rad bär
+ * exakt EN Räckvidd, så Kurstyp- och Alla-event-träffar är per konstruktion
+ * disjunkta mängder).
+ */
+async function fetchAllaGemensamma(): Promise<AirtableRow[]> {
+  const filterByFormula = combineWithOr([
+    buildEqualsFilter('Räckvidd', ATTACHMENT_SCOPE_KURSTYP),
+    buildEqualsFilter('Räckvidd', ATTACHMENT_SCOPE_ALLA_EVENT),
+  ]) as string;
+  return (await fetchFromAirtable(BILAGOR_TABLE, {
+    filterByFormula,
+    fields: ATTACHMENT_FIELDS,
+  })) as AirtableRow[];
+}
+
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -174,11 +202,26 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const eventId = url.searchParams.get('eventId');
+
+  // [TASK-275.3, ADR-118 beslut 5] `eventId` ÄR NU VALFRI — UTELÄMNAD
+  // signalerar räckviddsläget (Dokument-ytans läge utan valt event): svaret
+  // blir då ALLA gemensamma bilagor (Kurstyp/Alla event), ingen
+  // eventunion. ANGES `eventId` är BETEENDET HELT OFÖRÄNDRAT mot TASK-275.2
+  // (unionen av eventets egna + kurstyps-matchande + alla-event).
   if (!eventId) {
-    return new Response(JSON.stringify({ error: 'Missing eventId' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    try {
+      const attachments = (await fetchAllaGemensamma()).map(mapAttachmentRecord);
+      attachments.sort((a, b) => (a.skapad < b.skapad ? 1 : a.skapad > b.skapad ? -1 : 0));
+      return new Response(JSON.stringify({ attachments }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      return mapErrorToResponse(error, requestId, corsHeaders, {
+        function: 'get-event-attachments',
+        method: req.method,
+        callerUserId: auth.user.id,
+      });
+    }
   }
 
   try {

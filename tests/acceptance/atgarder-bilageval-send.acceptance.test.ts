@@ -41,9 +41,14 @@ const BJORN = 'recVisualReg000002';
 // mockresponsen måste bära dem eller klienten kraschar vid parse. Värdena
 // är REPRESENTATIVA (klass A/B, matchar respektive filnamns verkliga
 // uppkomst; räckvidd Event — dagens koppling, samma som ADR-118:s
-// migrerade default) men INTE vad detta test bevisar (se filhuvudets "VAD
-// DENNA FIL BEVISAR" — dokumentklass-/räckviddsvisning provas i
-// DokumentYta.tsx:s egna prototyp-yta, inte här).
+// migrerade default) men INTE vad DE FLESTA testen i denna fil bevisar (se
+// filhuvudets "VAD DENNA FIL BEVISAR" — den generella dokumentklass-/
+// räckviddsvisningen provas i DokumentYta.tsx:s egen svit,
+// `dokument-rackviddsval.acceptance.test.ts`). [UTBYGGD, TASK-275.3] EN
+// EGEN gemensam-bilaga-fixtur (`BILAGA_GEMENSAM` nedan) finns HÄR specifikt
+// för AC #3 ("Åtgärdssidans bilageväljare visar unionen med badge och kan
+// bifoga gemensamma bilagor") — den ENDA räckviddsbevisade ytan i den
+// filens ansvar.
 const BILAGA_INFO = {
   id: 'recBilagaInfo0001',
   namn: 'Hörlursinformation.pdf',
@@ -63,6 +68,19 @@ const BILAGA_DELTAGARINFO = {
   eventId: VISUAL_EVENT_ID,
   dokumentklass: 'Event-mallad',
   rackvidd: 'Event',
+  kursfamilj: null,
+  kursniva: null,
+};
+// [TASK-275.3, ADR-118] Gemensam bilaga (räckvidd Alla event) — union-
+// medlem sedan TASK-275.2, badge-bärande sedan TASK-275.3 (AC #3).
+const BILAGA_GEMENSAM = {
+  id: 'recBilagaGemensam02',
+  namn: 'Menyalternativ.pdf',
+  storlekBytes: 45_056,
+  skapad: '2026-08-03T10:00:00.000Z',
+  eventId: VISUAL_EVENT_ID,
+  dokumentklass: 'Uppladdad',
+  rackvidd: 'Alla event',
   kursfamilj: null,
   kursniva: null,
 };
@@ -218,5 +236,39 @@ test.describe('Bilageväljaren skarp — verkligt fundament (TASK-147.5)', () =>
     expect(sentBody).not.toBeNull();
     const body = sentBody as unknown as Record<string, unknown>;
     expect(body.attachmentIds).toEqual([]);
+  });
+
+  // [TASK-275.3, ADR-118] AC #3: "Åtgärdssidans bilageväljare visar unionen
+  // med badge och kan bifoga gemensamma bilagor". Unionen SJÄLV kommer
+  // redan från servern (TASK-275.2, oförändrad här — `BILAGA_GEMENSAM`
+  // ligger bara i EF-svaret precis som en riktig gemensam bilaga hade
+  // gjort); det NYA denna skiva lägger till är badgen OCH beviset att
+  // checkboxen fungerar identiskt för en gemensam rad.
+  test('AC #3: gemensam bilaga bär räckviddsbadge i bilageväljaren OCH kan bifogas', async ({
+    page,
+    network,
+  }) => {
+    network.use(
+      http.get(EF('get-event-attachments'), () =>
+        json({ attachments: [BILAGA_INFO, BILAGA_GEMENSAM] }),
+      ),
+    );
+
+    await gotoAtgarder(page);
+    await oppnaAtgard(page, 'Skicka bekräftelsemail');
+
+    const gemensamKryss = page.getByRole('checkbox', { name: `Bifoga ${BILAGA_GEMENSAM.namn}` });
+    await expect(gemensamKryss).toBeVisible();
+    // Badgen — "Alla event" (RackviddBadge.tsx, husets Pill-grammatik).
+    // Den event-scopade bilagan (BILAGA_INFO, räckvidd Event) bär INGEN
+    // badge (RackviddBadge renderar inget för räckvidd Event) — bara EN
+    // "Alla event"-text på hela sidan bevisar att badgen inte läcker.
+    await expect(page.getByText('Alla event')).toHaveCount(1);
+
+    // BIFOGBARHETEN: samma klick-mekanik som en vanlig bilaga (klickaKryss-
+    // mönstret, se filhuvudets docblock för varför ancestor-label klickas).
+    await gemensamKryss.locator('xpath=ancestor::label[1]').click();
+    await expect(gemensamKryss).toBeChecked();
+    await expect(page.getByText('1 valda')).toBeVisible();
   });
 });
