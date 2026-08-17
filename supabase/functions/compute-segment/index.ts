@@ -9,16 +9,25 @@ import {
 } from '../_shared/segment-membership.ts';
 
 // compute-segment — beräknat segment-medlemskap från KÄLLAN (Deltaganden),
-// strikt Närvaropoäng=1, regel-utvärderad (ADR-064). Repots första POST-LÄS-
-// only-EF: regeln (include[]/exclude[] över taxonomin) ryms ej i query-params.
-// LÄSER bara Airtable — ingen skrivning, ingen field-allowlists.ts-post. Consent
-// FILTRERAS EJ — ejGodkandMail bärs med (L4).
+// strikt Närvaropoäng=1, regel-utvärderad (ADR-064; AND/DNF ADR-115). Repots
+// första POST-LÄS-only-EF: regeln (include[]/exclude[] över taxonomin) ryms ej
+// i query-params. LÄSER bara Airtable — ingen skrivning, ingen
+// field-allowlists.ts-post. Consent FILTRERAS EJ — ejGodkandMail bärs med (L4).
+//
+// REGELFORMEN (ADR-115, TASK-249.2): `include` är DNF — varje villkor är
+// antingen ett enkelt par (ren OR, oförändrad) eller en Konjunkt-grupp (AND,
+// Par[]); `exclude` förblir platt. Servern ÄGER hela expansionen och
+// konjunktionen — en klient behöver aldrig fler än ETT anrop, oavsett hur
+// många AND-grupper regeln har (ingen klient-side snitt-genväg, T50).
+// Svaret bär `via: Par[]` per medlem (EF-krav 1) — vilka par som gjorde just
+// den personen medlem, så en fördelning (vilken grupp/kurs) kräver ingen
+// andra fråga.
 //
 // UPPLÖSNINGEN (Deltaganden-walk → algebra → Personer-berikning) bor sedan Fas 6h
 // L2b i _shared/segment-resolution.ts (resolveRuleMembers), delad med send-email så
 // EN väg löser medlemskap. Denna handler är nu en tunn POST→regel→resolve-wrapper;
 // beteendet är identiskt med pre-extraktion (samma källfråga, samma algebra, samma
-// berikning).
+// berikning) plus `via` per medlem.
 //
 // Tabeller per NAMN (ej tbl-id) → samma kod prod+staging (ADR-050).
 

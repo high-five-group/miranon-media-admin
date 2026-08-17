@@ -17,13 +17,24 @@ import type { SegmentMember } from './prepare-bulk-send.ts';
 import {
   type AttendanceRow,
   computeMembership,
+  computeMembershipVia,
   InvalidSegmentRuleError,
   isModalitet,
+  type Par,
   parseSegmentRule,
   type SegmentRule,
 } from './segment-membership.ts';
 
 export type { SegmentMember };
+
+/**
+ * compute-segments svars-medlem: `SegmentMember` (namn/e-post/consent) plus
+ * VILKA par som gjorde personen medlem (ADR-115 EF-krav 1, `via: Par[]`).
+ * Endast `resolveRuleMembers` (compute-segment) producerar detta — send-
+ * email-unionen (`resolveSegmentMembers`) förblir vid ren `SegmentMember`
+ * (ADR-067:s kontrakt, orört).
+ */
+export type SegmentMemberWithVia = SegmentMember & { via: Par[] };
 
 const DELTAGANDEN_TABLE = 'Deltaganden';
 const PERSONER_TABLE = 'Personer';
@@ -136,13 +147,20 @@ export async function fetchAttendanceRows(): Promise<AttendanceRow[]> {
 }
 
 /**
- * En regel → berikade medlemmar (compute-segments tidigare handler-kropp, verbatim
- * extraherad): källa → algebra → berikning. Beteende-identiskt med pre-refaktor.
+ * En regel → berikade medlemmar MED `via` (ADR-115 EF-krav 1 + 3): källa →
+ * algebra (computeMembershipVia, ger både medlemskap OCH vilka par som
+ * kvalificerade var och en) → namn/e-post/consent-berikning. `via` bärs med
+ * på svars-medlemmen så fördelningen (vilken kurs/grupp gjorde personen
+ * medlem) kräver ingen andra fråga — precis den klient-genväg ADR-115 skarpt
+ * avskaffar (S104 Del 3: klient-snittet över flera compute-segment-anrop får
+ * aldrig promoveras).
  */
-export async function resolveRuleMembers(rule: SegmentRule): Promise<SegmentMember[]> {
+export async function resolveRuleMembers(rule: SegmentRule): Promise<SegmentMemberWithVia[]> {
   const rows = await fetchAttendanceRows();
-  const memberIds = computeMembership(rule, rows);
-  return enrichMembers(memberIds);
+  const hits = computeMembershipVia(rule, rows);
+  const members = await enrichMembers(hits.map((hit) => hit.personId));
+  const viaByPersonId = new Map(hits.map((hit) => [hit.personId, hit.via]));
+  return members.map((member) => ({ ...member, via: viaByPersonId.get(member.id) ?? [] }));
 }
 
 /**

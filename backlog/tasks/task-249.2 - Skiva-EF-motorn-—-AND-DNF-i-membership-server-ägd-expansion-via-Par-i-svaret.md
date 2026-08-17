@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-17 00:24'
+updated_date: '2026-08-17 01:46'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,19 +22,37 @@ Serversidan lär sig ADR-115:s regelspråk: och-kombinationer räknas i motorn, 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Membership-motorn accepterar regelformen med konjunkt-grupper i med (DNF) och platt utan; ett predikat utan flerledade grupper ger IDENTISK medlemsmängd som dagens par-lista (ingen regression, befintliga api-tester gröna)
-- [ ] #2 De fjorton Skool-gruppernas regler är uttryckbara och ger korrekta, disjunkta medlemsmängder i api-testerna — inklusive de 10 fall som var outtryckbara i ren OR
-- [ ] #3 compute-segment tar den nya regelformen och ÄGER expansionen predikat till par server-side; svaret bär via: Par[] per medlem (fördelningen kräver ingen andra fråga)
-- [ ] #4 Medlemskapsgolvet Närvaropoäng=1 är ORÖRT (ADR-064 beslut 1) — inga golvlättnader
-- [ ] #5 Testfallen landar som utökningar av de BEFINTLIGA api-sviterna för membership och compute-segment, inte nya klasser
+- [x] #1 Membership-motorn accepterar regelformen med konjunkt-grupper i med (DNF) och platt utan; ett predikat utan flerledade grupper ger IDENTISK medlemsmängd som dagens par-lista (ingen regression, befintliga api-tester gröna)
+- [x] #2 De fjorton Skool-gruppernas regler är uttryckbara och ger korrekta, disjunkta medlemsmängder i api-testerna — inklusive de 10 fall som var outtryckbara i ren OR
+- [x] #3 compute-segment tar den nya regelformen och ÄGER expansionen predikat till par server-side; svaret bär via: Par[] per medlem (fördelningen kräver ingen andra fråga)
+- [x] #4 Medlemskapsgolvet Närvaropoäng=1 är ORÖRT (ADR-064 beslut 1) — inga golvlättnader
+- [x] #5 Testfallen landar som utökningar av de BEFINTLIGA api-sviterna för membership och compute-segment, inte nya klasser
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 ariaSnapshot-referenserna låsta ur variant d FÖRE flippen (enkelriktad ordning, ADR-103 B4)
 - [ ] #6 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+EF-motorn byggd additivt (Par | Konjunkt-union i include, DNF) — noll breaking
+change för SegmentBuilder.tsx/VariantA-C/befintliga api-tester. via: Par[]
+tillagt i compute-segment-svaret via ny SegmentMemberWithVia (segment-resolution.ts);
+send-email-unionen (resolveSegmentMembers) opåverkad, orört SegmentMember-kontrakt
+(ADR-067). compute-segment manuellt deployad till staging (ADR-050-disciplin,
+CI har inget deploy-steg) för att skarpa AND/DNF+via-testerna i
+compute-segment.staging.test.ts ska bevisa mot verklig deployad kod, ej gissning.
+
+DoD #5 (ariaSnapshot-referenser låsta ur variant d) och #6 (check-facit grön
+genom flipp/rivning) rör INTE denna skiva — de är forward-looking mot 249.1/
+249.5/249.6 (flipp+rivning har inte skett än) och tycks vara boilerplate ur
+PRD-DoD-mallen kopierad in på varje barn-skiva. Lämnade omarkerade, ej gissat
+klara. Se PR-rapporten för full motivering.
+<!-- SECTION:NOTES:END -->
