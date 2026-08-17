@@ -2,7 +2,12 @@
   "prototyp": "s102-hem-konvergens",
   "last": "2026-08-16",
   "lasning": "Varv 4 ser bra ut, lås facit.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-17",
+    "citat": "Hem-vyn ser bra ut, precis som prototypen.",
+    "sha": "8044e5b655dad5b3a12a4eba7fe682f88705f8e4"
+  },
   "ytor": [
     {
       "yta": "hem-vyn V1 \"Lugna morgonen\" (dev-route /dev/hem-prototyp?variant=1)",
