@@ -3,7 +3,7 @@ import { CircleCheck } from 'lucide-react';
 import { MessageBox, Skeleton } from '@/components/primitives';
 import { inskickadTid } from '@/components/registrations/registration-display';
 import { BulkAtgardsknapp } from './BulkAtgardsknapp';
-import type { AnmalningarVy } from './hem-derivations';
+import type { AnmalningarVy, AnmalningRad } from './hem-derivations';
 import { InitialAvatar } from './InitialAvatar';
 import { relativTid } from './relativ-tid';
 import type { useDashboardRegistrations } from './useDashboardData';
@@ -19,6 +19,16 @@ import type { useDashboardRegistrations } from './useDashboardData';
  * `tabIndex={0}` gör ULEN till scrollytans tab-stopp (WCAG 2.1.1, axe
  * scrollable-region-focusable — rader utan `reg.eventId` har ingen egen
  * länk och nås annars aldrig med tangentbord).
+ *
+ * SKICKAT-MARKÖRERNA (TASK-241.3 AC #3): `nyligenSkickade` är `Hem.tsx`s
+ * session-lokala minne av VAD svepet just bekräftade (se dess docblock för
+ * hela motivet — status flippar bort från OBEKRAFTAD server-side, så raden
+ * annars bara försvinner). Renderas som EGNA rader, sist i samma lista, med
+ * en grön bock i stället för relativ tid — samma radgrammatik i övrigt
+ * (avatar/namn/identitet), ingen ny visuell nivå. `synligaRader` filtrerar
+ * bort ett ID som råkar finnas i BÅDA listorna (ett kort fönster innan
+ * query-cachen hunnit refetcha efter svepet) — markörraden vinner alltid,
+ * aldrig en dubblettrad med samma nyckel.
  */
 export function NyaAnmalningar({
   anmalDataPending,
@@ -27,6 +37,7 @@ export function NyaAnmalningar({
   anmalningar,
   nuMs,
   onBekraftaAlla,
+  nyligenSkickade,
 }: {
   anmalDataPending: boolean;
   regsError: boolean;
@@ -37,7 +48,15 @@ export function NyaAnmalningar({
       Threading, ingen egen logik här — se `BulkAtgardsknapp.tsx`s docblock
       för de två lägena en `onPress` styr. */
   onBekraftaAlla: () => void;
+  /** [TASK-241.3 AC #3] Registreringar svepet FAKTISKT bekräftade denna
+      session — `Hem.tsx`s `nyligenSkickadeRader`. Tom array (alltid given
+      av `Hem.tsx`) före första svepet. */
+  nyligenSkickade: AnmalningRad[];
 }) {
+  const skickadeIds = new Set(nyligenSkickade.map((rad) => rad.reg.id));
+  const synligaRader = anmalningar.rows.filter((rad) => !skickadeIds.has(rad.reg.id));
+  const visarNagot = synligaRader.length > 0 || nyligenSkickade.length > 0;
+
   return (
     <section aria-labelledby="hem-nya-anmalningar" className="flex min-w-0 flex-col gap-4">
       <h2 id="hem-nya-anmalningar" className="font-semibold text-2xl">
@@ -59,7 +78,7 @@ export function NyaAnmalningar({
           <Skeleton variant="listRow" />
           <Skeleton variant="listRow" />
         </div>
-      ) : anmalningar.rows.length === 0 ? (
+      ) : !visarNagot ? (
         <p className="flex items-center gap-2 text-body text-text-secondary">
           <CircleCheck aria-hidden="true" size={20} className="shrink-0 text-success" />
           Inga nya anmälningar att bekräfta, läget är under kontroll.
@@ -71,7 +90,7 @@ export function NyaAnmalningar({
           aria-label="Nya anmälningar att bekräfta"
           className="focus-ring-inset scrollbar-inline flex max-h-96 flex-col gap-1 overflow-y-auto pr-3"
         >
-          {anmalningar.rows.map((rad, i) => {
+          {synligaRader.map((rad, i) => {
             const inskickadMs = inskickadTid(rad.reg);
             const relTid = Number.isFinite(inskickadMs) ? relativTid(inskickadMs, nuMs) : null;
             return (
@@ -115,6 +134,28 @@ export function NyaAnmalningar({
               </li>
             );
           })}
+          {nyligenSkickade.map((rad, i) => (
+            <li
+              key={rad.reg.id}
+              className={
+                synligaRader.length + i > 0
+                  ? 'border-border-light border-t contrast-more:border-border-strong'
+                  : undefined
+              }
+            >
+              <div className="flex items-center gap-3 py-3 opacity-70">
+                <InitialAvatar namn={rad.namn} />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-medium text-body">{rad.namn}</span>
+                  <span className="truncate text-caption text-text-muted">{rad.identitet}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5 pl-2 text-caption text-success">
+                  <CircleCheck aria-hidden="true" size={14} className="shrink-0" />
+                  Bekräftelse skickad
+                </span>
+              </div>
+            </li>
+          ))}
         </ul>
       )}
       {anmalningar.total > 0 ? (
