@@ -3,10 +3,10 @@ id: TASK-231
 title: >-
   Fynd: passkeys AVSTÄNGDA server-side - aktivera i Supabase Auth (staging
   bevisat, prod mäts av Marcus)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-15 23:26'
-updated_date: '2026-08-16 00:07'
+updated_date: '2026-08-17 12:01'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,7 +24,7 @@ S102 Lotta-vandringen punkt 8-rotorsaken (2026-08-16): staging-Supabase svarar 4
 <!-- AC:BEGIN -->
 - [x] #1 Aktiveringsvagen kallbelagd mot Supabase forstapartsdocs
 - [x] #2 Staging aktiverad och e2e-verifierad (probe + registrera + logga in)
-- [ ] #3 Prod-klicklista levererad till Marcus; prod-aktivering utford av Marcus och verifierad
+- [x] #3 Prod-klicklista levererad till Marcus; prod-aktivering utford av Marcus och verifierad
 <!-- AC:END -->
 
 ## Definition of Done
@@ -122,4 +122,14 @@ admin.miranon.dev (produktionstrafikens enda origin, ADR-091), aldrig på
 en förhandsgranskningslänk.
 
 Efter aktivering: QA 127.10 steg 6 blir kortbar (kortets egen premiss, punkt 4).
+
+AC3 STÄNGD 2026-08-17: Marcus rapporterade att han redan aktiverat passkeys i Supabase-dashboarden. VERIFIERAT, ej antaget — anon-probe mot prod (curl POST /auth/v1/passkeys/authentication/options, anon key ur .env.production):
+
+HTTP 200 med {challenge_id, options:{challenge, timeout:300000, rpId:'admin.miranon.dev', userVerification:'preferred'}, expires_at}.
+
+Jämför utgångsläget kortet beskriver: 404 passkey_disabled. Flippen är alltså bevisad på samma endpoint och med samma metod som staging-verifieringen i AC2.
+
+BIFYND: rpId är 'admin.miranon.dev' — Supabase-projektets domänkonfiguration bekräftar prod-domänen oberoende av DNS-mätningen på TASK-270.
+
+KVARSTÅR för QA 127.10 steg 6: registrering + inloggning med passkey e2e i browsern. Serverledet är nu öppet; klientflödet byggdes mot det (127.8/ADR-093) och degraderade tyst så länge servern svarade 404 — den tystnaden ska nu vara borta.
 <!-- SECTION:NOTES:END -->
