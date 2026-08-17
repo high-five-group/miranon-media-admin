@@ -6,6 +6,7 @@ import { useDataSource } from '@/data/useDataSource';
 import type { StartvarmningForlopp, StartvarmningHandle } from '@/data/warmup/startvarmningen';
 import { arCacheVarm, lasVarmningTimeoutOverride, starta } from '@/data/warmup/startvarmningen';
 import { env } from '@/env';
+import { konsumeraAvsiktligUtloggning } from '@/lib/auth/utloggningsavsikt';
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context, location }) => {
@@ -13,10 +14,15 @@ export const Route = createFileRoute('/_authenticated')({
     // definitiv (isLoading=false) när denna beforeLoad körs. Här återstår enbart
     // behörighetskontrollen — ej autentiserad → redirect till /login med ursprungs-URL i
     // search (så användaren återvänder efter login).
+    //
+    // UNDANTAG (S107 fynd-fix): var utloggningen AVSIKTLIG utelämnas ursprungs-URL:en,
+    // så `/login`s `/hem`-default tar över. Utan det blev vägen en sluten loop —
+    // utloggningsknappen finns bara på Mer-vyn, så varje utloggning → inloggning
+    // landade på `/mer`. Se `lib/auth/utloggningsavsikt.ts` för hela resonemanget.
     if (!context.auth.isAuthenticated) {
       throw redirect({
         to: '/login',
-        search: { redirect: location.href },
+        search: konsumeraAvsiktligUtloggning() ? {} : { redirect: location.href },
       });
     }
   },

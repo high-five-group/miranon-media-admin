@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/auth/useAuth';
 import { Button, NavCard } from '@/components/primitives';
+import { markeraAvsiktligUtloggning } from '@/lib/auth/utloggningsavsikt';
 
 export const Route = createFileRoute('/_authenticated/mer/')({
   staticData: { title: 'Mer' },
@@ -114,9 +115,22 @@ function MerPage() {
           sköts av _authenticated-guarden: logout() → onAuthStateChange →
           router.invalidate() (main.tsx) → beforeLoad re-evaluerar → redirect
           (ADR-037-kedjan, oförändrad). Ingen bekräftelsedialog (Fas 6e-
-          beslutet står). */}
+          beslutet står).
+
+          `markeraAvsiktligUtloggning()` FÖRE logout() (S107 fynd-fix): utan
+          den sparade guarden ursprungs-URL:en och skickade användaren
+          tillbaka hit vid nästa inloggning — och eftersom knappen bara finns
+          HÄR blev det en sluten loop där /hem aldrig nåddes. Ordningen är
+          inte utbytbar: kedjan startar när logout() flippar auth-tillståndet,
+          inte när anropet returnerar. */}
       <div className="flex justify-center pt-4">
-        <Button intent="ghost" onPress={() => void logout()}>
+        <Button
+          intent="ghost"
+          onPress={() => {
+            markeraAvsiktligUtloggning();
+            void logout();
+          }}
+        >
           <LogOut size={20} aria-hidden />
           Logga ut
         </Button>

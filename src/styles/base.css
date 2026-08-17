@@ -163,6 +163,37 @@ html[data-auth-fond="true"] body {
   background: transparent;
 }
 
+/* RÄNNSTENS-KAMOUFLAGE FÖR FÖRBEREDELSESKÄRMEN (S107 fynd-fix, Marcus-fångst
+   2026-08-17: "den vita scroll-spalten bredvid fotot").
+
+   Samma grundorsak som auth-fonden ovan — rännstenen ligger utanför
+   body-boxen, så komponentens egna foto-/scrimlager kan aldrig nå dit — men
+   en MINDRE åtgärd, med avsikt. Här flyttas inte bakgrunden till roten; bara
+   en platt kamouflagefärg läggs i canvas-lagret, där den syns ENDAST i
+   rännstenen (body bär en egen ogenomskinlig --mm-bg och täcker resten).
+   Fotot självt kan ändå aldrig målas där (Chromium-spec-gapet, se
+   components.css-tokenens kommentar), så att flytta det till roten hade
+   kostat komponentens två-lagers-form och /dev/primitives flera instanser
+   utan att vinna en enda målad pixel.
+
+   Markören sätts av komponenten vid mount och städas vid unmount
+   (referensräknad — demo-ytan renderar flera instanser samtidigt).
+   Rännstenen är ORÖRD: ingen breddändring, inget hopp vid övergången
+   förberedelseskärm → app. Hopp-förbudet (Marcus-direktiv S96) är absolut.
+
+   contrast-more/print: komponenten döljer foto och scrim där och faller
+   tillbaka till ren --mm-bg — kamouflaget följer med, annars hade
+   rännstenen blivit den ENDA tonade ytan på en i övrigt ren skärm. */
+html[data-forberedelse-fond="true"] {
+  background-color: var(--mm-forberedelseskarm-fond-kamouflage);
+}
+
+@media (prefers-contrast: more), print {
+  html[data-forberedelse-fond="true"] {
+    background-color: var(--mm-bg);
+  }
+}
+
 body {
   font-family: var(--p-font-sans);
   font-size: var(--p-text-base);
