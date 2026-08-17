@@ -4,6 +4,7 @@ title: 'QA: Svep-vandringen — hela Lotta-flödet + WOW-domen'
 status: To Do
 assignee: []
 created_date: '2026-08-16 23:08'
+updated_date: '2026-08-17 03:37'
 labels:
   - ready-for-human
 dependencies:
@@ -35,3 +36,12 @@ Manuell testplan (Marcus, staging med granskningsdata vid behov — npm run seed
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-17 03:37
+---
+Orkestrator-bokföring inför QA-vandringen (2026-08-17): (1) 241.5:s facit-granskning täckte 8/18 bilder — de 6 ogranskade (mobil-lägena + några påminnelse-lägen) fångas av detta korts AC #3 (samtliga 18); vila-formen ska vara oförändrad av motion-skivan, verifiera särskilt mobil. (2) Fynd ur 241.5-passet: Bekräfta alla-knappen renderas INTE alls vid tomt urval (pre-existing sedan 241.2; påminnelseinstansen har explicit test för sitt tomt-läge) — bedöm under vandringens punkt 9/facit-jämförelsen om det är rätt form (facit-läget tomt-urval finns som bild) eller defekt att korta.
+---
+<!-- COMMENTS:END -->
