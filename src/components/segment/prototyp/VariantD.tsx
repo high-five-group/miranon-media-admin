@@ -996,8 +996,45 @@ function personform(n: number): string {
   return n === 1 ? 'person' : 'personer';
 }
 
+/**
+ * BASENS SENTINEL FÖR EN NAMNLÖS PERSON — `data-model.md` § Kända fällor 43.
+ *
+ * `Personer.Namn` (`fldnYys0Ac3UGOdpe`) är en FORMEL:
+ * `IF(AND(Förnamn="", Efternamn=""), "Ej tillgängligt", TRIM(Förnamn & " " &
+ * Efternamn))`. Den som saknar namn bär alltså en ICKE-TOM sträng, och en
+ * falsy-fallback (`m.namn?.trim() || '…'`) blir därmed DÖD KOD i drift.
+ *
+ * Jämförelsen är gemen-normaliserad mot `sv-SE`: strängen kommer ur en formel
+ * vi inte äger, och en framtida versaländring där ska inte tyst återuppliva
+ * felet. Den är däremot INTE en substrängs-match — en verklig person kan heta
+ * något som innehåller orden, och en normal fallback får aldrig äta ett namn.
+ */
+const NAMN_SENTINEL = 'ej tillgängligt';
+
+/**
+ * Mottagarens ÄKTA namn, eller `null` när hon inte har ett registrerat.
+ *
+ * BÅDA NAMNLÖSA FORMERNA FALLER HÄR, med avsikt. Sentinel-strängen är formen
+ * basen skriver i dag; tomt/`null` är formen `TASK-213.4` byter till
+ * (`BLANK()`). Utan den andra grenen hade bas-fixen flyttat felet i mailvägen
+ * från pinsamt ("Hej Ej,") till obegripligt ("Hej (namn,") — utredningens
+ * mätta slutsats, `docs/research/utskickspublikens-leads-och-namnlosa-2026-08-17.md`
+ * § Den avgörande delfrågan. 154 av 247 mottagare i den publik Marcus
+ * granskade 2026-08-17 är namnlösa; det är majoritetsfallet, inte en kant.
+ *
+ * NAMNEN FEJKAS ALDRIG (Marcus beslut 2026-08-17). De finns inte i basen och
+ * kan inte backfillas — appen ska vara ärlig och professionell UTAN dem, inte
+ * hitta på ett "Vän" eller ett "Hej du".
+ */
+function aktaNamn(m: { namn: string | null }): string | null {
+  const rensat = m.namn?.trim() ?? '';
+  if (rensat === '') return null;
+  return rensat.toLocaleLowerCase('sv-SE') === NAMN_SENTINEL ? null : rensat;
+}
+
+/** Namnet som det VISAS i en lista — fallbacken är en upplysning, aldrig ett namn. */
 function visatNamn(m: { namn: string | null }): string {
-  return m.namn?.trim() || '(namn saknas)';
+  return aktaNamn(m) ?? '(namn saknas)';
 }
 
 /**
@@ -1016,13 +1053,59 @@ function initialer(namn: string): string {
     .join('');
 }
 
-/** Fyller `{förnamn}`/`{namn}` ur EN NAMNGIVEN mottagare + rapporterar ofyllda. */
+/**
+ * HÄLSNINGENS EGEN VÄG — platshållaren plus det den bär med sig.
+ *
+ * `{förnamn}`/`{namn}` fick aldrig plockas isär ur en FALLBACK-sträng: den
+ * gamla vägen körde `visatNamn(mottagare).split(' ')[0]`, vilket för en
+ * namnlös mottagare gav `"Ej tillgängligt".split(' ')[0]` = `Ej` och därmed
+ * ***"Hej Ej,"*** i skarpt mail (mätt i prod 2026-08-17). Efter `TASK-213.4`
+ * hade samma rad gett `(namn` och alltså *"Hej (namn,"*. Ingen platshållar-
+ * text får någonsin nå en mottagare.
+ *
+ * SAKNAS NAMNET FALLER HELA NAMNFRASEN, inte bara namnet. Mönstret äter
+ * platshållaren, det blanksteg som bar den, och det skiljetecken som skulle
+ * följt namnet — annars blir "Hej {förnamn}," till "Hej ," i stället för
+ * "Hej!". Regeln har två grenar, båda förutsägbara:
+ *
+ *   · Stod platshållaren SIST PÅ SIN RAD — hälsningens normalfall — blir en
+ *     hängande separator (`,` `;` `:`) eller ett saknat tecken till `!`:
+ *     "Hej {förnamn}," → "Hej!"   ·   "Hej {namn}" → "Hej!"
+ *     En meningsavslutare får stå kvar som den är: "Hej {namn}!" → "Hej!".
+ *   · Stod den MITT I EN MENING behålls tecknet orört och bara namnet faller:
+ *     "Hej {förnamn}, nu är det dags" → "Hej, nu är det dags".
+ *
+ * `[^\S\n]` är horisontellt blanksteg — radbrytningen får aldrig ätas, den
+ * bär mallens styckeindelning.
+ */
+const NAMN_PLATSHALLARE = /[^\S\n]*\{(?:förnamn|namn)\}([,;:!.?]?)/gu;
+
+function utanNamn(mall: string): string {
+  return mall.replace(NAMN_PLATSHALLARE, (trad: string, tecken: string, position: number) => {
+    const efter = position + trad.length;
+    const sistPaRaden = efter === mall.length || mall[efter] === '\n';
+    if (!sistPaRaden) return tecken;
+    return tecken === '' || tecken === ',' || tecken === ';' || tecken === ':' ? '!' : tecken;
+  });
+}
+
+/**
+ * Fyller `{förnamn}`/`{namn}` ur EN mottagare + rapporterar ofyllda.
+ *
+ * Har mottagaren ett äkta namn fylls det som förut. Saknas det tas namnfrasen
+ * bort helt (`utanNamn` ovan) — hälsningen blir generisk, aldrig härledd ur
+ * en platshållartext. `ofyllda` räknar det som står kvar oersatt efteråt och
+ * är därmed fortfarande en ärlig varning: den fäller på `{ort}` och andra
+ * okända platshållare, men inte på en namnlucka som är MEDVETET stängd.
+ */
 function fyllPlatshallare(mall: string, mottagare: SegmentMember | undefined) {
-  const text = mottagare
-    ? mall
-        .replaceAll('{förnamn}', visatNamn(mottagare).split(' ')[0] ?? '')
-        .replaceAll('{namn}', visatNamn(mottagare))
-    : mall;
+  const namn = mottagare ? aktaNamn(mottagare) : undefined;
+  const text =
+    namn === undefined
+      ? mall
+      : namn === null
+        ? utanNamn(mall)
+        : mall.replaceAll('{förnamn}', namn.split(' ')[0] ?? namn).replaceAll('{namn}', namn);
   return { text, ofyllda: [...new Set(text.match(/\{[^}]+\}/g) ?? [])] };
 }
 
@@ -2226,6 +2309,13 @@ function PublikSektion({
     [medlemmar, vy, sokTerm],
   );
 
+  // PUBLIKENS ÖPPNA TAL. 154 av 247 rader som säger "(namn saknas)" är inte en
+  // kontrollista man kan granska — och QA-fyndet 2026-08-17 ("varför står det
+  // Hej Ej?") hade besvarat sig självt med den här raden på plats. Räknas ur
+  // HELA publiken, aldrig ur `synliga`: talet beskriver mängden man ska skicka
+  // till, inte vad filtret råkar visa just nu.
+  const namnlosa = useMemo(() => medlemmar.filter((m) => aktaNamn(m) === null).length, [medlemmar]);
+
   // RULLNINGENS TRÖSKEL. `max-h-[25.5rem]` (408 px) rymmer drygt sex rader vid
   // radens mätta höjd (~60 px: `py-2.5` + `size-9`-rundelns 36 px, med
   // namn/e-post-blocket som den högre av de två). Sju rader är alltså den
@@ -2264,6 +2354,23 @@ function PublikSektion({
           </span>
         )}
       </div>
+
+      {/* NAMNLÖSHETEN SÄGS RAKT UT, aldrig underförstått av 154 identiska
+          rader. Den syns BARA när den finns (`namnlosa > 0`) — en publik där
+          alla har namn ska inte bära en rad som säger "0 av 12", exakt samma
+          norm-är-tyst-regel som `PersonRad`s märken följer.
+
+          TALET STÅR FÖRE FILTREN, inte bland dem: det är en egenskap hos
+          publiken man behöver veta INNAN man börjar sålla i den. Formen är
+          ren fakta utan råd — vad namnlösheten betyder för mailet syns i
+          utskicksvyns förhandsvisning, och att upprepa det här hade varit
+          samma dubbling Marcus rev två gånger på den här ytan (noll-fallets
+          överlappsrad, "Visar N av M" mot "N av M visade"). */}
+      {!isPending && namnlosa > 0 && (
+        <p className="px-4 text-small text-text-secondary">
+          {namnlosa} av {medlemmar.length} saknar registrerat namn.
+        </p>
+      )}
 
       {isPending ? (
         <div role="status" aria-busy="true" className="flex flex-col gap-2 px-4">
@@ -4392,9 +4499,21 @@ function UtskicksVy({
   const signatur = mottagare.map((m) => m.id).join(',');
   const utanEpost = mottagare.filter((m) => !m.email).length;
   const nekade = mottagare.filter((m) => m.email && m.ejGodkandMail).length;
-  const forsta = mottagare[0];
-  const brodtext = fyllPlatshallare(text, forsta);
-  const amneVisning = fyllPlatshallare(amne, forsta);
+  /* EXEMPEL-MOTTAGAREN VÄLJS — den råkar inte längre bli `mottagare[0]`.
+     Ordningen är EF-svarets, alltså första-förekomst-ordningen i
+     `Deltaganden`-walken, och den är namnlös i 62 % av fallen för den grupp
+     Marcus råkade lista först (mätt 2026-08-17). Utfallet "som Ej tillgängligt
+     får det" var alltså deterministiskt, inte otur.
+
+     ETT NAMNGIVET EXEMPEL ÄR ÄRLIGARE — det visar vad `{förnamn}` faktiskt
+     gör. Finns ingen namngiven i publiken finns inget att exemplifiera med,
+     och då säger etiketten det i stället för att peka ut en platshållartext
+     som om den vore en person. Fallbacken till `mottagare[0]` bär då den
+     NAMNLÖSA formen, vilket är exakt vad var och en i publiken får. */
+  const namngivetExempel = mottagare.find((m) => aktaNamn(m) !== null);
+  const exempel = namngivetExempel ?? mottagare[0];
+  const brodtext = fyllPlatshallare(text, exempel);
+  const amneVisning = fyllPlatshallare(amne, exempel);
   const ofyllda = [...new Set([...brodtext.ofyllda, ...amneVisning.ofyllda])];
 
   // Blandningen kan uppstå INUTI ett segment ("Båda") lika gärna som MELLAN
@@ -4736,21 +4855,35 @@ function UtskicksVy({
 
           {/* TRYGGHETSTRIADENS (a): EN NAMNGIVEN MOTTAGARE. Var och en får sitt
             eget mail, så det finns ingen enda sann text att visa — att visa
-            den första och säga vems den är är ärligare än att visa mallen.
-            Plain text, aldrig HTML-render. */}
+            EN och säga vems den är är ärligare än att visa mallen.
+            Plain text, aldrig HTML-render.
+
+            [TASK-264] "DEN FÖRSTA" ÄR NU "EN VALD" — se `namngivetExempel`
+            ovan. Ordet stod här i sin gamla form ända tills exempelvalet
+            slutade vara `mottagare[0]`. */}
           <div className="flex flex-col gap-2 py-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-caption text-text-muted">
-                {forsta
-                  ? `Förhandsvisningsexempel - som ${visatNamn(forsta)} får det`
-                  : 'Förhandsvisningsexempel'}
+                {namngivetExempel
+                  ? `Förhandsvisningsexempel - som ${aktaNamn(namngivetExempel)} får det`
+                  : exempel
+                    ? 'Förhandsvisningsexempel - ingen i publiken har ett registrerat namn'
+                    : 'Förhandsvisningsexempel'}
               </span>
             </div>
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-xl border border-transparent bg-surface px-3 py-2 contrast-more:border-border-strong">
               <span className="shrink-0 text-small text-text-muted">Ämne</span>
               <span className="min-w-0 text-right text-body">{amneVisning.text || '-'}</span>
             </div>
+            {/* [TASK-264] `data-testid` — brödtexten måste gå att assertera
+                UTAN att `Meddelande`-fältets egen mall räknas med. Ett bevis
+                för "hälsningen är generisk" som läser hela vyn läser också
+                `Hej {förnamn},` i inmatningsfältet och blir därmed ett svagare
+                påstående än det utger sig för. `data-testid` syns inte i
+                `ariaSnapshot`, så referenserna berörs inte (ADR-103 B4 samma
+                motiv som `utskicksvyn` ovan). */}
             <p
+              data-testid="forhandsvisning-brodtext"
               // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som AtgardsSida.tsx:2267.
               tabIndex={0}
               className="max-h-48 overflow-auto whitespace-pre-wrap rounded-xl border border-transparent bg-surface px-3 py-2 text-body text-text-secondary contrast-more:border-border-strong"
