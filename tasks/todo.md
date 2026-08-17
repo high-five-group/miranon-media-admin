@@ -38,13 +38,31 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 ▶️ ÅTERUPPTAGEN (2026-08-16 sen kväll, resume 6,
-`lifecycle: active`; pausad samma kväll som SJÄTTE paus — Marcus-order
-"förbered paus när allt landat"; ALLT LANDAT vid paus, kön TOM, main
-`4bd58068`). Post-merge-facit avläst vid resume: röda run 31968918858
-(`b900601b`, staging-e2e) ÖVERSPELAD av grön Post-merge på `4bd58068`
-(senare, mer inkluderande träd) — loggläsning kvarstår som klassning,
-inte larm.** Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
+**Session 102 ⏸️ PAUSAD (2026-08-17, `lifecycle: paused`, SJUNDE
+pausen — byggfokus-passet KLART på Marcus order, hans moment sparade
+till resume; main `1173933a`, post-merge GRÖN ×3, kön tom för S102).**
+Resume 6:s skörd (13 PR:er #1445–#1486): dokument-kedjan KOMPLETT
+(stämpel + 147.6 Done + rivning, task-164 Done, ytan SKARP) ·
+tid-åtgärden KLAR (rotorsak Zap 4, Opus-backfill 294/294 `Inskickad :=
+Rad skapad`, fälla 49, kort 248, A12 skapad+DEPLOYED) · svep-kedjan
+stämplad+skivad+BYGGD (241.1 Done, skivor 241.2–241.7 publicerade,
+241.2/.3/.4/.5 LANDADE — EF-ytan räckte, unifierad aktivtSvep,
+WOW-koreografi + reduced-motion-grind; kvar: QA 241.6 + rivning
+241.7) · Morgonkoll-kedjan vid QA-grinden (243.2 facit-tom-granskad,
+243.3 hem-sviterna 365→912+ rader — rödserien BRUTEN `5b71dcbb`; kvar:
+QA 243.4 + rivning 243.5) · fixvarvet task-247 (b/c/d byggda, a =
+basvägen) · Förberedelseskärmen: 233 blink-fix (Sidbytesindikator) +
+240 stall-signal+Sentry, båda Done · kort 250/251 mintade · Done-
+flippar 164/243.3/233/240 (#1479). **RESUME-INGÅNG (Marcus moment, i
+ordning):** (1) QA 243.4 hem-stämpeln + B2-beslutet → 243.5-agent ·
+(2) QA 241.6 WOW-domen + facit 18/18 → 241.7-agent · (3)
+0.6-grillningen → ADR-115 · (4) EF-deploy-svepet prod (12 EF:er,
+HITL) · (5) 40-listan (+ task-34/28 moot, 235 stängningskandidat) ·
+(6) passkey p5–6 → 231 → 127.10 · (7) QA-rester 218.5/219.4/127.10+
+Roger/147.9 · (8) larm-triage-GO (13 ärenden) + Dependabot #1488.
+Numrering: task-252 · ADR 115 · T146 · L512+18 fragment · f50 —
+re-derivera ALLTID (S104 parallell). Full handoff: sessionsdok S102 §
+PAUSLÄGE (sjunde) + Del 15. Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
 3 #1415 · task-245 byggd+stängd #1423/#1425 · task-246
 byggd+stängd #1431/#1433; dokument-stämpeln VÄNTAR — facit-låset
 förberett #1437,
