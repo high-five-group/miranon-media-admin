@@ -64,45 +64,75 @@
  * är rivna (git bevarar historiken) — bara den flata, filtrerbara listan
  * kvarstår, aldrig bakom en växel.
  *
- * VISA-BETEENDET: `BilagaVisaKnapp` (TASK-245) hämtar en tidsbegränsad
- * signerad nedladdnings-URL (`DataSourceAdapter.getAttachmentDownloadUrl`,
- * 300s TTL — se `_shared/attachments.ts` § SIGNED_DOWNLOAD_URL_TTL_SECONDS)
- * och visar riktig förhandsvisning (PDF via `<iframe>`, bild via `<img>`)
- * plus en "Ladda ner"-länk, eller en ärlig `MessageBox intent="info"`-gräns
- * för format som varken är PDF eller bild ("gissa aldrig"-disciplinen).
- * `GenereradPdfVisaKnapp` (TASK-246) genererar i stället en TRANSIENT PDF
- * per klick för klass B/C (`Blob`+`createObjectURL`, riven med
- * `URL.revokeObjectURL` i `useEffect`s cleanup) — SIDOEFFEKTSFRI per
- * konstruktion (AC #3): `previewEventTemplate` (klass B, `preview: true`
- * mot generate-event-attachment) och `previewReceipt` (klass C, en NY,
- * dedikerad EF `preview-receipt` som varken importerar send-receipt.ts,
- * receipt-numbering.ts eller Resend direkt) når ALDRIG Storage-
- * uppladdningen, Bilagor-radskapelsen eller ett allokerat kvittonummer.
+ * [ERSATT, TASK-273.4] VISA-BETEENDET nedan (dialog-baserad Visa-knapp) är
+ * RIVET — se IKONPAR-noten som ersätter det. Historiken behålls här för
+ * `git log -p` (Visa-dialogen bar en `<iframe>`/`<img>`-inbäddad
+ * förhandsvisning, TASK-245/246): `BilagaVisaKnapp` (TASK-245) hämtade en
+ * tidsbegränsad signerad nedladdnings-URL
+ * (`DataSourceAdapter.getAttachmentDownloadUrl`, 300s TTL — se
+ * `_shared/attachments.ts` § SIGNED_DOWNLOAD_URL_TTL_SECONDS) och visade
+ * förhandsvisning INUTI dialogen; `GenereradPdfVisaKnapp` (TASK-246)
+ * genererade en TRANSIENT PDF per klick för klass B/C på samma sätt.
+ *
+ * IKONPAR (TASK-273.4, Marcus-beslut 2026-08-17 — se amenderings-sidofilen
+ * `tasks/sessions/bilagor/s102-dokument-konvergens/AMENDERING-2026-08-17-
+ * visa-till-ikonpar.md`): Visa-dialogen ersatt av TVÅ ikonknappar per rad,
+ * `DokumentAtgardsKnappar` nedan, för alla tre dokumentklasser. Förhandsvisa
+ * öppnar dokumentet i en RIKTIG ny webbläsarflik (webbläsarens egen
+ * PDF-/bildvisare, ingen egen iframe/img-rendering längre) via ett
+ * POPUP-BLOCKERAR-SÄKERT mönster: `window.open('', '_blank')` anropas
+ * SYNKRONT i klick-handlern (innan någon `await`, se `PrototypeSwitcher.tsx`
+ * rad 381 för samma synkrona-öppning-princip), adressen sätts EFTERÅT när
+ * den asynkrona hämtningen är klar — bevisat i ett skarpt Chrome-
+ * beteendetest (AC #1, throwaway, kastat efter passet) att detta inte
+ * blockeras. `noopener` är MEDVETET UTESLUTET: verifierat (samma throwaway-
+ * pass) att `window.open('', '_blank', 'noopener')` returnerar `null` i
+ * riktig Chrome — noopener och "navigera handtaget senare" är ömsesidigt
+ * uteslutande. Destinationen är alltid egen, betrodd data (signerad
+ * Storage-URL i vår egen bucket, eller en `blob:`-URL byggd av vår egen JS),
+ * aldrig en tredjeparts-länk, vilket gör reverse-tabnabbing-risken av det
+ * uteblivna `noopener` försumbar här.
+ *
+ * Nedladdning triggar INGEN flik: en dold `<a download>`-länk klickas
+ * programmatiskt. Klass A: den signerade URL:en får en `download`-query-
+ * parameter påklistrad KLIENT-SIDIGT — `@supabase/storage-js`s egen
+ * `createSignedUrl` bygger exakt denna parameter EFTER att URL:en redan
+ * signerats (`node_modules/@supabase/storage-js/src/packages/
+ * StorageFileApi.ts` rad 723–728), så att lägga till den i efterhand kräver
+ * INGEN ändring av `get-attachment-download-url`-EF:en. VERIFIERAT LIVE mot
+ * staging (TASK-273.4, samma fixturhändelse `recIFrxHZw165ycXk`): Storage-
+ * servern svarar då med en riktig `Content-Disposition: attachment`-header
+ * (utan parametern: ingen disposition-header alls). Klass B/C: samma
+ * blob-URL som förhandsvisningen (byggd färskt per klick) — `download`-
+ * attributet honoreras nativt eftersom blob-URL:er redan är same-origin.
  *
  * PERSONDATA FÖR KLASS C: TYPEXEMPEL, inte en verklig anmälan (se
  * `preview-receipt/index.ts` § PERSONDATA) — ingen anmälan/betalning är
  * VALD på denna generiska katalograd, och basen saknar ett prisfält
  * oavsett. Eventets namn ÄR verkligt (samma eventId som Dokument-ytans
- * redan valda event).
+ * redan valda event). `previewEventTemplate`/`previewReceipt` (klass B/C)
+ * når ALDRIG Storage-uppladdningen, Bilagor-radskapelsen eller ett
+ * allokerat kvittonummer — SIDOEFFEKTSFRI förhandsvisning (AC #3, TASK-246).
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft, Download, FileText, Upload } from 'lucide-react';
+import { ChevronLeft, Download, Eye, FileText, Loader2, Upload } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
-import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { MessageBox } from '@/components/primitives/MessageBox';
-import { Modal } from '@/components/primitives/Modal';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { formatMB } from '@/data/adapters/attachmentUpload';
+import type { DokumentKalla } from '@/data/mutations/dokumentKalla';
+import { useForhandsvisaDokument } from '@/data/mutations/useForhandsvisaDokument';
+import { useLaddaNerDokument } from '@/data/mutations/useLaddaNerDokument';
 import { useReplaceAttachment } from '@/data/mutations/useReplaceAttachment';
 import { useUploadAttachment } from '@/data/mutations/useUploadAttachment';
 import { useDataSource } from '@/data/useDataSource';
-import type { Attachment, DocumentPreview } from '@/domain/models/Attachment';
+import type { Attachment } from '@/domain/models/Attachment';
 import { queryKeys } from '@/queries/keys';
 
 /* ------------------------------------------------------------------ *
@@ -291,206 +321,82 @@ function MetaRad({ delar }: { delar: (string | null)[] }) {
 }
 
 /**
- * GENERERAD PDF — VISA-KNAPPEN (TASK-246). Ersätter varv 3:s `VisaKnapp` +
- * `ProduceratExempel` (den statiska fältlistan, git bevarar historiken) för
- * klass B/C — Marcus-ordern 2026-08-16: "en riktigt genererad PDF på alla
- * mallar ... och även generatorn". SKILD komponent från `BilagaVisaKnapp`
- * (ovan): den hämtar en signerad URL till en REDAN LAGRAD fil (TASK-245);
- * denna genererar en HELT NY, TRANSIENT PDF VID KLICK (POST, ingen lagrad
- * resurs att peka en URL mot) — bytesen kommer som base64 i själva svaret.
- *
- * `Blob` + `createObjectURL` i stället för en `data:`-URI: robust mot
- * data-URI-storleksgränser i vissa webbläsare (branschmönster för
- * "förhandsvisa en genererad fil i webbläsaren"), och `URL.revokeObjectURL`
- * städas explicit i `useEffect`s cleanup — en objekt-URL som aldrig
- * återkallas läcker minne, en per klick.
- *
- * SAMMA lazy-mönster som `BilagaVisaKnapp`: `isOpen` styr BÅDE
- * `DialogTrigger` OCH queryns `enabled` — PDF:en genereras FÖRST när
- * dialogen faktiskt öppnas, aldrig i förväg för hela listan.
+ * FÖRHANDSVISNINGS-/NEDLADDNINGS-IKONERNA (TASK-273.4) — se filhuvudets
+ * IKONPAR-not för hela resonemanget (popup-blockerar-säkert mönster,
+ * `download`-query-parameter-verifieringen mot staging, blob-URL-hantering
+ * för klass B/C). Ren presentationskomponent: den faktiska hämt-/öppna-
+ * logiken bor i `useForhandsvisaDokument`/`useLaddaNerDokument`
+ * (`src/data/mutations/`, TASK-201.15s mutations-hemvist-grind — en
+ * komponent-lokal `useMutation` hade fällt `mutation-hemvist-vakt.test.ts`).
+ * Delad över alla tre dokumentklasser via `DokumentKalla`
+ * (`src/data/mutations/dokumentKalla.ts`) — samma DRY-motiv den rivna
+ * `GenereradPdfVisaKnapp`s docblock uttryckte, nu genomfört för alla tre i
+ * stället för bara två.
  */
-function GenereradPdfVisaKnapp({
-  title,
-  eventId,
-  typ,
-}: {
-  title: string;
-  eventId: string;
-  /** Vilken generator-EF som ska anropas — se DataSourceAdapter för kontraktet per typ. */
-  typ: 'mall' | 'generator';
-}) {
-  const dataSource = useDataSource();
-  const [isOpen, setIsOpen] = useState(false);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: DokumentKalla }) {
+  const forhandsvisaMutation = useForhandsvisaDokument();
+  const nedladdningMutation = useLaddaNerDokument();
 
-  const queryKey =
-    typ === 'mall'
-      ? queryKeys.documentPreviews.eventTemplate(eventId)
-      : queryKeys.documentPreviews.receipt(eventId);
-
-  const previewQuery = useQuery<DocumentPreview>({
-    queryKey,
-    queryFn: () =>
-      typ === 'mall'
-        ? dataSource.previewEventTemplate(eventId)
-        : dataSource.previewReceipt(eventId),
-    enabled: isOpen,
-  });
-
-  // Bygger/river objekt-URL:en när base64-datan ändras — INTE inuti queryFn
-  // (queryFn ska vara REN datahämtning, ingen DOM-sideeffekt; samma
-  // disciplin som gör att TanStack Query kan cacha/dedupa fritt).
-  useEffect(() => {
-    if (!previewQuery.data) return;
-    const bytes = Uint8Array.from(atob(previewQuery.data.pdfBase64), (c) => c.charCodeAt(0));
-    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-    setBlobUrl(url);
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [previewQuery.data]);
+  const fel = forhandsvisaMutation.isError
+    ? forhandsvisaMutation.error
+    : nedladdningMutation.isError
+      ? nedladdningMutation.error
+      : null;
 
   return (
-    <DialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
-      <Button intent="primary" emphasis="subtle" size="sm" className="self-center">
-        Visa
-      </Button>
-      <Modal isDismissable>
-        <Dialog title={title} size="lg">
-          {previewQuery.isPending ? (
-            <div role="status" aria-busy="true" className="flex flex-col gap-2">
-              <span className="sr-only">Genererar förhandsvisning…</span>
-              <Skeleton variant="listRow" className="h-[60vh]" />
-            </div>
-          ) : previewQuery.isError ? (
-            <MessageBox intent="error" title="Kunde inte generera dokumentet">
-              {previewQuery.error instanceof Error ? previewQuery.error.message : 'Okänt fel.'}
-            </MessageBox>
-          ) : blobUrl ? (
-            <div className="flex flex-col gap-3">
-              <iframe
-                src={blobUrl}
-                title={`Förhandsvisning av ${title}`}
-                className="h-[60vh] w-full rounded border border-border bg-bg"
-              />
-              <a
-                href={blobUrl}
-                download={`${title}.pdf`}
-                className="inline-flex items-center gap-1.5 self-start font-medium text-body underline underline-offset-2 hover:text-text"
-              >
-                <Download aria-hidden="true" size={16} />
-                Ladda ner {title}.pdf
-              </a>
-            </div>
-          ) : null}
-        </Dialog>
-      </Modal>
-    </DialogTrigger>
-  );
-}
-
-/**
- * FÖRHANDSVISNINGS-FORMATET, härlett ur filnamnets ändelse (TASK-245) —
- * SAMMA "gissa aldrig ur mönster"-disciplin som filhuvudets Fynd 1: ingen
- * server-buren `contentType` finns på `Attachment` (`Attachment.schema.ts`),
- * så ändelsen är den enda signal klienten faktiskt HAR. Bucketen `bilagor`
- * tillåter i dag ENDAST `application/pdf`
- * (`scripts/provision-attachments-bucket.mjs` § MIME-FILTER) — `bild`-grenen
- * är alltså medvetet FRAMÅTRIKTAD (AC #2 nämner uttryckligen "bild/PDF") och
- * overifierad mot verklig data i dag, men kostar noll extra rader att hålla
- * generisk i stället för PDF-bara.
- */
-const BILD_ANDELSER = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']);
-
-type ForhandsvisningsFormat = 'pdf' | 'bild' | 'okant';
-
-function forhandsvisningsFormat(namn: string): ForhandsvisningsFormat {
-  const match = /\.([a-z0-9]+)$/i.exec(namn);
-  const andelse = match ? match[1].toLowerCase() : '';
-  if (andelse === 'pdf') return 'pdf';
-  if (BILD_ANDELSER.has(andelse)) return 'bild';
-  return 'okant';
-}
-
-/**
- * BILAGORNAS VISA-KNAPP (TASK-245, ersätter den ärliga info-dialogen — se
- * filhuvudets VISA-BETEENDET-not). SKILD komponent från `GenereradPdfVisaKnapp`
- * ovan: bilagor behöver en LAZY, dialog-scopad datahämtning (signerad URL,
- * TTL 300s) som Mallar/Generatorer (transient PDF-generering, ingen lagrad
- * resurs) aldrig behöver — att trycka in fetch-logik i en delad primitiv
- * hade tvingat två orelaterade call sites att bära samma komplexitet.
- *
- * LAZY PER KONSTRUKTION: `isOpen` styr BÅDE `DialogTrigger` (kontrollerad,
- * till skillnad mot `VisaKnapp`s okontrollerade form) OCH queryns `enabled`
- * — URL:en hämtas FÖRST när dialogen faktiskt öppnas, aldrig i förväg för
- * varje rad i listan. TanStack Querys default `staleTime` (0) gör att en
- * stängd-och-återöppnad dialog refetchar automatiskt i stället för att
- * återanvända en potentiellt utgången URL — ingen egen invalidation-logik
- * behövs (se `queryKeys.attachments.downloadUrl`).
- */
-function BilagaVisaKnapp({ eventId, attachment }: { eventId: string; attachment: Attachment }) {
-  const dataSource = useDataSource();
-  const [isOpen, setIsOpen] = useState(false);
-  const format = forhandsvisningsFormat(attachment.namn);
-
-  const downloadQuery = useQuery({
-    queryKey: queryKeys.attachments.downloadUrl(eventId, attachment.id),
-    queryFn: () => dataSource.getAttachmentDownloadUrl(eventId, attachment.id),
-    enabled: isOpen,
-  });
-
-  return (
-    <DialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
-      <Button intent="primary" emphasis="subtle" size="sm" className="self-center">
-        Visa
-      </Button>
-      <Modal isDismissable>
-        <Dialog title={attachment.namn} size="lg">
-          {downloadQuery.isPending ? (
-            <div role="status" aria-busy="true" className="flex flex-col gap-2">
-              <span className="sr-only">Förbereder förhandsvisning…</span>
-              <Skeleton variant="listRow" className="h-[60vh]" />
-            </div>
-          ) : downloadQuery.isError ? (
-            <MessageBox intent="error" title="Kunde inte öppna filen">
-              {downloadQuery.error instanceof Error ? downloadQuery.error.message : 'Okänt fel.'}
-            </MessageBox>
+    <span className="flex flex-col items-end gap-1.5 self-center">
+      <span className="flex items-center gap-1">
+        <Button
+          intent="ghost"
+          size="sm"
+          className="size-11 shrink-0 p-0"
+          // MEDVETET `aria-disabled` — INTE `isDisabled` (som Button.tsx:s
+          // egen `isLoading`-docblock förklarar: `isDisabled` renderar ett
+          // native `disabled`-attribut och tar bort knappen ur tabordningen
+          // mitt i klicket. `aria-disabled` annonserar samma tillstånd utan
+          // att flytta fokus — dubbelklicks-skyddet sköts av
+          // early-return-vakten i onPress nedan, samma teknik Button.tsx
+          // själv använder för `isLoading`.
+          aria-disabled={forhandsvisaMutation.isPending}
+          aria-label={forhandsvisaMutation.isPending ? `Öppnar ${namn} …` : `Förhandsvisa ${namn}`}
+          onPress={() => {
+            if (forhandsvisaMutation.isPending) return;
+            // KRITISKT: window.open MÅSTE anropas synkront här, före all
+            // await/mutate-hantering — se filhuvudets IKONPAR-not.
+            const handle = window.open('', '_blank');
+            forhandsvisaMutation.mutate({ kalla, handle });
+          }}
+        >
+          {forhandsvisaMutation.isPending ? (
+            <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
           ) : (
-            <div className="flex flex-col gap-3">
-              {format === 'pdf' && (
-                <iframe
-                  src={downloadQuery.data.url}
-                  title={`Förhandsvisning av ${attachment.namn}`}
-                  className="h-[60vh] w-full rounded border border-border bg-bg"
-                />
-              )}
-              {format === 'bild' && (
-                <img
-                  src={downloadQuery.data.url}
-                  alt={attachment.namn}
-                  className="max-h-[60vh] w-full rounded border border-border object-contain"
-                />
-              )}
-              {format === 'okant' && (
-                <MessageBox intent="info" title="Kan inte förhandsvisas här">
-                  Den här filtypen kan inte förhandsvisas i den här vyn. Ladda ner den för att öppna
-                  den.
-                </MessageBox>
-              )}
-              <a
-                href={downloadQuery.data.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 self-start font-medium text-body underline underline-offset-2 hover:text-text"
-              >
-                <Download aria-hidden="true" size={16} />
-                Ladda ner {attachment.namn}
-              </a>
-            </div>
+            <Eye aria-hidden="true" size={18} />
           )}
-        </Dialog>
-      </Modal>
-    </DialogTrigger>
+        </Button>
+        <Button
+          intent="ghost"
+          size="sm"
+          className="size-11 shrink-0 p-0"
+          aria-disabled={nedladdningMutation.isPending}
+          aria-label={nedladdningMutation.isPending ? `Laddar ner ${namn} …` : `Ladda ner ${namn}`}
+          onPress={() => {
+            if (nedladdningMutation.isPending) return;
+            nedladdningMutation.mutate({ kalla, namn });
+          }}
+        >
+          {nedladdningMutation.isPending ? (
+            <Loader2 aria-hidden="true" size={18} className="motion-safe:animate-spin" />
+          ) : (
+            <Download aria-hidden="true" size={18} />
+          )}
+        </Button>
+      </span>
+      {fel && (
+        <MessageBox intent="error" className="max-w-56">
+          {fel instanceof Error ? fel.message : 'Okänt fel.'}
+        </MessageBox>
+      )}
+    </span>
   );
 }
 
@@ -539,7 +445,10 @@ function BilageRadRow({
         )}
       </span>
       <span className="flex shrink-0 items-center gap-2 self-center">
-        <BilagaVisaKnapp eventId={eventId} attachment={current} />
+        <DokumentAtgardsKnappar
+          namn={current.namn}
+          kalla={{ typ: 'bilaga', eventId, attachmentId: current.id }}
+        />
         <FileTrigger
           acceptedFileTypes={['application/pdf']}
           onSelect={(files) => onReplace(files, current.id)}
@@ -560,7 +469,7 @@ function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
         <span className="break-words font-medium text-body">{mall.namn}</span>
         <MetaRad delar={[`Fyller i ${mall.fyllerI.join(', ').toLowerCase()}`]} />
       </span>
-      <GenereradPdfVisaKnapp title={mall.namn} eventId={eventId} typ="mall" />
+      <DokumentAtgardsKnappar namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
     </div>
   );
 }
@@ -572,7 +481,7 @@ function GeneratorRad({ gen, eventId }: { gen: Generator; eventId: string }) {
         <span className="break-words font-medium text-body">{gen.namn}</span>
         <MetaRad delar={[`Byggs ur ${gen.byggsUr.join(', ').toLowerCase()}`]} />
       </span>
-      <GenereradPdfVisaKnapp title={gen.namn} eventId={eventId} typ="generator" />
+      <DokumentAtgardsKnappar namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
     </div>
   );
 }
