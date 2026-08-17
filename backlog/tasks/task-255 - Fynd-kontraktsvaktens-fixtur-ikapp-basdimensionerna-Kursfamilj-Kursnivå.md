@@ -1,10 +1,10 @@
 ---
 id: TASK-255
 title: 'Fynd: kontraktsvaktens fixtur ikapp basdimensionerna (Kursfamilj/Kursnivå)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 06:46'
-updated_date: '2026-08-17 06:53'
+updated_date: '2026-08-17 07:20'
 labels: []
 dependencies: []
 ordinal: 471000
@@ -38,14 +38,6 @@ FORMVALET: fixturens tre event får dimensionerna med värden som är sanna båd
 - [x] #6 Inga vyer/baselines rörda: grep src/ visar att endast Event.ts och Event.schema.ts nämner fälten
 <!-- AC:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -65,3 +57,17 @@ OBSERVATION (data, ej form): get-events skarpa postantal var 86/86 i nattens run
 
 GRINDAR (exitkoder mätta separat, aldrig via pipe): npm run typecheck = 0 · npx @biomejs/biome check . = 0 (7 warnings, 47 infos, inga fel) · npm run vakt:kontrakt = 0.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGNING (orkestreraren, 2026-08-17): PR #1497 MERGED 07:13:28Z via merge-kön (main 5ce7666c→#1497-mergen); kö-bygget körde per-jobb-checks gröna mot main + föregående poster — DoD 3 därmed betald. Rotorsaken (fixtur-drift efter TASK-249.4:s avsiktliga EF-utökning) åtgärdad med form-paritet, inte larm-tystnad.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
