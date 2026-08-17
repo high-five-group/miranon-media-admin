@@ -45,6 +45,48 @@ import { useDashboardEvents, useDashboardRegistrations } from './useDashboardDat
  * exakt elementet som konsumerar variabeln) — samma formel, lägre täckning,
  * plus lätt blur. Husets globala token är ORÖRD; ändring där hade träffat
  * varenda dialog i appen, utanför denna skivas scope.
+ *
+ * [TASK-241.5] WOW-ÖVERGÅNGEN — prototypens 300ms/scale-98 (konvergensvarv 2,
+ * `svep-prototyp.tsx`s docblock § ÖVERGÅNGEN) är GOLV, förstärkt här utan att
+ * lämna husets CSS-transition-mekanik (React Aria `data-entering`/
+ * `data-exiting` + Tailwind, `Modal.tsx`s egen teknik — inget nytt bibliotek):
+ *
+ *   • `origin-top` — skalningen ankrar mot toppen i stället för centrum, så
+ *     ytan känns som att den veckar ut sig NEDÅT från knappen som öppnade
+ *     den (båda triggerknapparna — "Bekräfta alla"/"Skicka påminnelse till
+ *     alla" — sitter i hemmets ÖVRE hälft) i stället för att bara krympa mot
+ *     mitten. ÖVERVÄGT OCH AVFÄRDAT: exakt per-klick `transform-origin`
+ *     (knappens verkliga `getBoundingClientRect()`) — kräver antingen en
+ *     ref genom `Modal`-primitiven (den exponerar ingen idag; att lägga till
+ *     en påverkar VARENDA dialog i huset, utanför denna skivas scope, samma
+ *     motiv som SCRIMMEN ovan) eller en fast gissning av dialogens egen
+ *     höjd (okänd före montering — `max-h-[85vh] w-fit`, innehållsdriven).
+ *     `origin-top` ger samma RIKTNINGSKÄNSLA utan någotdera.
+ *   • Asymmetrisk duration — 300ms in, 200ms ut. Material Motion-golvet:
+ *     "elements permanently leaving the screen use the acceleration curve to
+ *     speed off-screen over a slightly shorter duration, as they will not be
+ *     returning and require less user focus" (m1.material.io/motion/
+ *     duration-easing.html, "Choreography"). En snabbare bekräftad-stängning
+ *     läses som "klart", inte som en trög retur.
+ *   • React Aria `SharedElementTransition`/View Transitions API (finns i
+ *     `react-aria-components`@1.20.0, `node_modules/react-aria-components/
+ *     SharedElementTransition/`) ÖVERVÄGD OCH AVFÄRDAD — den vore husets
+ *     FÖRSTA konsument (grep: noll träffar i `src/` för `view-transition`/
+ *     `SharedElementTransition`; DESIGN-SYSTEM-SPEC.md §9 "View Transitions"
+ *     är märkt `[GA]`, ett odokumenterat gap-analys-tillägg, aldrig byggt —
+ *     `base.css` saknar `@view-transition`-blocket specen beskriver). Att
+ *     introducera mönstret här, som sidoeffekt av EN övergångs-skiva, hade
+ *     varit ett nytt husmönster utan egen designrond eller
+ *     webbläsarstöds-avvägning — precis den arkitektur-utvidgning
+ *     uppdraget bad att STOPPA och rapportera i stället för att tyst införa.
+ *     Rapporterat i kortets notes/slutrapport, inte tyst uteslutet.
+ *
+ * Stagern på triadens sektioner (Mottagare → Utskicket) och `--mm-avsloj`-
+ * användningen bor i `SvepOverlay.tsx`s docblock. `prefers-reduced-motion`
+ * neutraliserar ALLT ovan via `base.css`s globala blanket-regel (samma
+ * dubbelbälte som `--animate-mm-avsloj`) — inget av det ovan är villkorat
+ * på egen hand, base.css klampar `transition-duration`/`animation-duration`
+ * till 0,01 ms oavsett vilken data-variant som är aktiv.
  */
 const SVEP_SCRIM: CSSProperties = {
   '--mm-dialog-overlay-bg': 'color-mix(in srgb, var(--mm-text) 32%, transparent)',
@@ -304,8 +346,27 @@ export function Hem() {
         isDismissable
         style={SVEP_SCRIM}
         // Scrollen bor på Dialogens body (se `SvepOverlay`s docblock), så
-        // `Modal` självt får inte scrolla.
-        className="w-[min(94vw,40rem)] overflow-hidden duration-300 data-[entering]:scale-[0.98] data-[exiting]:scale-[0.98]"
+        // `Modal` självt får inte scrolla. `origin-top` + asymmetrisk
+        // duration + skalningen — se docblocket ovan (§ WOW-ÖVERGÅNGEN,
+        // TASK-241.5) för varför och för de avfärdade alternativen.
+        //
+        // DURATIONEN SITTER PÅ VILOLÄGET (`duration-300`, INTE
+        // `data-[entering]:duration-300`) — CSS-transitions specifikation:
+        // vilken `transition-duration` som STYR en övergång är värdet i
+        // MÅLSTILEN, inte startstilen. "Entering" är STARTSTILEN (elementet
+        // monteras MED attributet satt, sedan tas det bort på nästa bildruta
+        // för att TRIGGA övergången mot vilostilen) — målet för den
+        // övergången är alltså vilostilen, så det är DÄR durationen måste
+        // sitta. `data-[entering]:duration-300` såg rätt ut men var en
+        // död kodrad: uppmätt med en rAF-sampler (chromium, 60 bildrutor)
+        // visade `getComputedStyle(el).transitionDuration` konsekvent
+        // `0.2s` (Modal.tsx:s egen bas) trots klassen, exakt det spec-
+        // beteendet förutsäger. `data-[exiting]:duration-200` däremot är
+        // KORREKT redan: vid stängning är vilostilen START och
+        // exiting-stilen MÅL, så exiting-klassens duration är den som
+        // gäller — 200ms, den snabbare urladdningen Material Motion-
+        // golvet (docblocket ovan) beskriver.
+        className="w-[min(94vw,40rem)] origin-top overflow-hidden duration-300 data-[entering]:scale-95 data-[exiting]:scale-95 data-[exiting]:duration-200"
         onOpenChange={(open) => {
           if (!open) setAktivtSvep(null);
         }}
