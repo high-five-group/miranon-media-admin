@@ -1,10 +1,10 @@
 ---
 id: TASK-259
 title: 'QA-fix: prototyp-rester och laddtextens form på segment-ytan'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 09:34'
-updated_date: '2026-08-17 10:15'
+updated_date: '2026-08-17 12:28'
 labels:
   - qa-fix
 dependencies: []
@@ -54,3 +54,9 @@ GRINDAR: typecheck exit 0 · biome exit 0 · build exit 0 · aria-grind exit 0 (
 
 ÖVRIGT FYND, ej åtgärdat (ADR-053, blockerar ej): verkstaden bär en kvarvarande MessageBox 'Prototyp - ingenting sparades' (sparNot, VariantD.tsx ~3300). Annan text än PrototypNot och ej namngiven i kortet — rivning vore ett scope-beslut på eget bevåg.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd (Opus), landad och CI-verifierad via merge-kön (259: PR #1534 MERGED 10:58Z · 264: PR #1546 MERGED 12:09Z); Marcus slutkvittens i prod 'Ser bra ut' 2026-08-17. Done-flippad vid S104 session-end.
+<!-- SECTION:FINAL_SUMMARY:END -->
