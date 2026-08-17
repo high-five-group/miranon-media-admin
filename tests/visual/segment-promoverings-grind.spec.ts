@@ -18,13 +18,15 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * partitionen som generator, täckningen som kvittens) som ytorna nedan
  * övar.
  *
- * ORDNINGEN ÄR ENKELRIKTAD: `SegmentPrototyp`/`VariantD` renderas bara
- * under `import.meta.env.DEV && variant === 'd'`
- * (`src/routes/_authenticated/mer/segment.tsx`). Flippas villkoret (TASK-
- * 249.5) upphör FÖRE-läget att existera — referenserna nedan låses därför
- * i EN EGEN commit, före flippen, exakt som `persondetalj-promoverings-
- * grind.spec.ts` (77bc2ada) och `personer-promoverings-grind.spec.ts`
- * (46c03f6c) redan etablerat.
+ * ORDNINGEN VAR ENKELRIKTAD, OCH ÄR NU GENOMFÖRD. När referenserna låstes
+ * renderades `VariantD` bara under `import.meta.env.DEV && variant === 'd'`
+ * (`src/routes/_authenticated/mer/segment.tsx`), så FÖRE-läget upphörde att
+ * existera i samma stund villkoret flippades — därför låstes de i EN EGEN
+ * commit före flippen, exakt som `persondetalj-promoverings-grind.spec.ts`
+ * (77bc2ada) och `personer-promoverings-grind.spec.ts` (46c03f6c) redan
+ * etablerat. Flippen landade i TASK-249.5 och rivningen i TASK-249.6;
+ * routen monterar sedan dess `VariantD` ovillkorligt, och testerna nedan
+ * navigerar därför till `/mer/segment` utan variantparameter.
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (ADR-103 B4): deterministiskt, noll
  * nya beroenden, jämför STRUKTUR + TILLGÄNGLIGT NAMN. Särskilt relevant
@@ -43,19 +45,27 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * en `toMatchAriaSnapshot()` scopad till dem kan aldrig fånga riggen. Ingen
  * av dessa sex tester klickar någonsin på en rigg-kontroll.
  *
- * DEN SJUNDE — `segment-detaljvyn` — ÄR ETT KÄNT, RAPPORTERAT UNDANTAG.
- * `SkalprovsVaxel` sitter i `PublikSektion` mitt i SAMMA `<div>` som
- * `ToggleButtonGroup`/`Input` (dess docblock: "VÄXELN BOR DÄR PUBLIKEN BOR,
- * sist bland dess kontroller"), inte som ett efterföljande syskon. En
- * ariaSnapshot-lokator scopar till ETT sammanhängande subträd och kan inte
- * hoppa över ett mittensyskon; att FLYTTA växeln för att lösa det hade
- * ändrat en redan godkänd (facit.json, sha a40f3543) DOM-position — exakt
- * den sortens ändring `ADR-102` (prototypen ÄR facit) förbjuder lika hårt
- * som att ändra formen självt. `segment-detaljvyn.aria.yml` bär därför
- * `SkalprovsVaxel` synligt (dess egen "Prototyp-rigg."-text gör den
- * omisskännlig i referensen). Se `VariantD.tsx` § `SegmentDetalj`s
- * docblock för samma resonemang på plats, och slutrapporten för hur detta
- * bokfördes uppåt.
+ * DEN SJUNDE — `segment-detaljvyn` — VAR ETT KÄNT, RAPPORTERAT UNDANTAG,
+ * OCH ÄR UPPLÖST AV RIVNINGEN (TASK-249.6, 2026-08-17).
+ *
+ * `SkalprovsVaxel` satt i `PublikSektion` mitt i SAMMA `<div>` som
+ * `ToggleButtonGroup`/`Input` ("VÄXELN BOR DÄR PUBLIKEN BOR, sist bland
+ * dess kontroller"), inte som ett efterföljande syskon. En ariaSnapshot-
+ * lokator scopar till ETT sammanhängande subträd och kan inte hoppa över
+ * ett mittensyskon; att FLYTTA växeln för att lösa det hade ändrat en redan
+ * godkänd (facit.json, sha a40f3543) DOM-position — exakt den sortens
+ * ändring `ADR-102` (prototypen ÄR facit) förbjuder lika hårt som att ändra
+ * formen självt. De två `segment-detaljvyn`-referenserna bar därför växeln
+ * synligt, med sin egen "Prototyp-rigg."-text.
+ *
+ * NÄR VÄXELN REVS I STÄLLET FÖR FLYTTADES försvann de noderna utan att
+ * formen rördes, och `children: 'contain'` (se nedan) kräver att
+ * referensens noder FINNS — de två filerna omgenererades därför i
+ * rivnings-committen, med Marcus kvittens 2026-08-17, och ENDAST de två.
+ * Övriga tolv referenser är byte-identiska genom rivningen; skillnaden i de
+ * två nya är uteslutande växelns frånvaro — `ToggleButtonGroup`, `Input`,
+ * publiklistan och regeldelen står rad för rad oförändrade. Det är beviset
+ * ADR-103 efterfrågar: rivningen tog en växel, aldrig formen.
  *
  * RÖTT-FÖRST-BEVISET FÖR AVGRÄNSNINGEN (kortets AC #4), OCH EN VIKTIG
  * PRECISERING AV VAD DET FAKTISKT BEVISAR: `toMatchAriaSnapshot()` matchar
@@ -105,9 +115,10 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * test.ts`s `mockCompute`, som alltid svarar samma N oavsett regel): denna
  * handler läser `request.json()` och svarar olika beroende på VILKEN regel
  * som frågas, exakt som en riktig EF. Räkningarna är DÄRFÖR EGNA, INTE
- * Skool-bilagans juli-2026-facit (`FACIT_KARTA`/`DE_FJORTON_DATA` i
- * `VariantD.tsx`) — de siffrorna används bara av `skalprovMal` (skalprovet
- * är AV som default i alla tester nedan, så de rör aldrig referenserna).
+ * Skool-bilagans juli-2026-facit (`DE_FJORTON_DATA` i `VariantD.tsx`). Så
+ * länge skalprovet fanns slog `skalprovMal` upp de talen via `FACIT_KARTA`,
+ * men riggen var AV som default i varje test här och rörde alltså aldrig
+ * referenserna; med den riven (TASK-249.6) finns ingen sådan väg alls kvar.
  *
  * ATTENDANCE-MATRISEN ÄR KONSTRUERAD SÅ ATT TÄCKNINGEN BLIR 100 % REN
  * (`tackningsvyn`-testet): var och en av de åtta personerna hamnar i
@@ -307,12 +318,21 @@ function mockComputeSegment(network: NetworkFixture): void {
   );
 }
 
-/** Grundnavigeringen: mockar taxonomin + medlemsmotorn, går till variant-d,
- *  väntar in listans ankare. */
-async function gotoVariantD(page: import('@playwright/test').Page, network: NetworkFixture) {
+/** Grundnavigeringen: mockar taxonomin + medlemsmotorn, går till segment-ytan,
+ *  väntar in listans ankare.
+ *
+ *  [TASK-249.6] URL:en är `/mer/segment` UTAN `?variant=d`. Referenserna
+ *  fångades genom den parametern medan varianterna levde; flippen
+ *  (TASK-249.5) gjorde `VariantD` till routens ovillkorliga form och
+ *  rivningen tog bort växeln som läste parametern, så `?variant=d` är sedan
+ *  dess en oläst sträng — kvar bara som en vilseledande pekare till en riven
+ *  mekanism. Samma städning som `personer-promoverings-grind.spec.ts` gjorde
+ *  efter sin flipp. Referenserna är oförändrade av bytet: samma komponent
+ *  renderades i båda fallen. */
+async function gotoSegmentytan(page: import('@playwright/test').Page, network: NetworkFixture) {
   mockEvents(network);
   mockComputeSegment(network);
-  await page.goto('/mer/segment?variant=d');
+  await page.goto('/mer/segment');
   await expect(page.getByTestId('segment-listan')).toBeVisible();
 }
 
@@ -343,7 +363,7 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för segment-yta
     page,
     network,
   }) => {
-    await gotoVariantD(page, network);
+    await gotoSegmentytan(page, network);
     await vantaInRakningar(page);
     await expect(page.getByTestId('segment-listan')).toMatchAriaSnapshot({
       name: 'segment-listan.aria.yml',
@@ -354,7 +374,7 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för segment-yta
     page,
     network,
   }) => {
-    await gotoVariantD(page, network);
+    await gotoSegmentytan(page, network);
     await vantaInRakningar(page);
     await page.getByRole('button', { name: 'Visa täckning' }).click();
     await vantaInRakningar(page);
@@ -368,7 +388,7 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för segment-yta
     page,
     network,
   }) => {
-    await gotoVariantD(page, network);
+    await gotoSegmentytan(page, network);
     await vantaInRakningar(page);
     await page.getByRole('button', { name: 'Nytt segment' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Nytt segment' })).toBeVisible();
@@ -389,7 +409,7 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för segment-yta
     page,
     network,
   }) => {
-    await gotoVariantD(page, network);
+    await gotoSegmentytan(page, network);
     await vantaInRakningar(page);
     await page.getByRole('button', { name: 'RIM 1 + RIM 2', exact: true }).click();
     await vantaInRakningar(page);
@@ -406,7 +426,7 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för segment-yta
     page,
     network,
   }) => {
-    await gotoVariantD(page, network);
+    await gotoSegmentytan(page, network);
     await vantaInRakningar(page);
     await page.getByRole('button', { name: 'RIM 1 + RIM 2', exact: true }).click();
     await vantaInRakningar(page);
@@ -420,7 +440,7 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för segment-yta
     page,
     network,
   }) => {
-    await gotoVariantD(page, network);
+    await gotoSegmentytan(page, network);
     await vantaInRakningar(page);
     await page.getByRole('button', { name: 'Dela upp i grupper' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Dela upp i grupper' })).toBeVisible();
@@ -437,7 +457,7 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för segment-yta
   });
 
   test('utskicksvyn — granska-läget, "RIM 1 + RIM 2" (2 mottagare)', async ({ page, network }) => {
-    await gotoVariantD(page, network);
+    await gotoSegmentytan(page, network);
     await vantaInRakningar(page);
     await page.getByRole('button', { name: 'RIM 1 + RIM 2', exact: true }).click();
     await vantaInRakningar(page);

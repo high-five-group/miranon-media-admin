@@ -47,10 +47,12 @@
  * variantens egen mappnings-konstant för hur familj/nivå simuleras tills
  * basstrukturen byggts.
  *
- * Fullständig märkning, frågan och det bindande premissunderlaget:
- * `src/components/segment/SegmentPrototyp.tsx` +
+ * Frågan och det bindande premissunderlaget:
  * `tasks/sessions/bilagor/s104-segment-divergens/DUKNING.md` +
- * sessionsdok S104 Del 2 (besluten).
+ * sessionsdok S104 Del 2 (besluten). Divergens-passets märkning bodde i
+ * `src/components/segment/SegmentPrototyp.tsx` — växeln mellan a/b/c/d — och
+ * revs med varianterna (TASK-249.6); denna fil är sedan TASK-249.5 den skarpa
+ * segment-ytan, monterad direkt av `src/routes/_authenticated/mer/segment.tsx`.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * FYRA YTOR, INGA NYA ROUTES (samma grepp som `c`: internt `vy`-tillstånd)
@@ -189,18 +191,20 @@
  * (T50 lager b). Klient-snittet får inte promoveras.
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * SKALPROVET (ärvt ur `b`) — variantens tes går inte att bedöma utan det.
+ * SKALPROVET ÄR RIVET (TASK-249.6) — det var en rigg, och riggar rivs med
+ * promoveringen (ADR-103: flaggor och växlar, aldrig formen).
  *
- * Detaljvyns hela idé är att publiken är huvudinnehållet, synlig direkt. Men
- * staging ger 1–2 personer med avstämd närvaro, så chunkningen (25),
- * visningsfiltret och söket har aldrig setts arbeta — och det är precis det
- * som ska bedömas. Skalprovet är en AVSTÄNGD-SOM-DEFAULT växel som fyller
- * publiken till 85 med `@exempel.invalid`-personer.
+ * Vad det var, för den som läser en äldre referens: detaljvyns hela idé är att
+ * publiken är huvudinnehållet, synlig direkt — men staging ger 1–2 personer
+ * med avstämd närvaro, så chunkningen (25), visningsfiltret och söket hade
+ * aldrig setts arbeta. Skalprovet var en AVSTÄNGD-SOM-DEFAULT växel som fyllde
+ * publiken till ett mål per segment med `@exempel.invalid`-personer, med en
+ * varningsruta som inte gick att missa överallt publiken visades. Det FYLLDE
+ * UT en verklig publik, det SKAPADE aldrig en.
  *
- * `b`s disciplin ärvs oavkortat: skalprovet FYLLER UT en verklig publik, det
- * SKAPAR ingen (villkoret är `raMedlemmar.length > 0`), och en påhittad publik
- * som ser äkta ut är värre än ingen publik alls — därför en varningsruta som
- * inte går att missa, överallt publiken visas. Rivs med prototypen.
+ * Eftersom det var avstängt som default rörde det aldrig någon referens eller
+ * någon granskad yta — rivningen tar därför bort kontrollen och dess kod utan
+ * att ett enda tal eller en enda rad i formen ändras.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  * READ-ONLY FÖRSTÄRKT: `saveSegment`, `sendEmail` och testmail är no-op-
@@ -908,8 +912,12 @@ function byggGrupp(
  * Skool-inbjudan (juli 2026) delade 416 personer i 14 disjunkta grupper efter
  * EXAKT vilken kombination av kurser de gått. Atomerna här är FASTA — inte
  * härledda ur `parInfo` som generatorns egna — så de fjorton finns oavsett
- * vad staging råkar innehålla just nu (staging kan dessutom omöjligt befolka
- * och-kombinationerna på riktigt, se `FACIT_KARTA` + `skalprovMal`).
+ * vad staging råkar innehålla just nu. Staging kan dessutom omöjligt befolka
+ * och-kombinationerna på riktigt; juli-talen bärs av `DE_FJORTON_DATA.facit`
+ * och av bilagan `underlag-de-fjorton-skool-grupperna.md`. Uppslagskartan
+ * `FACIT_KARTA` och `skalprovMal`, som lät riggen fylla grupperna till just de
+ * talen, revs med skalprovet (TASK-249.6) — grupperna räknas nu mot
+ * compute-segment som varje annat segment.
  */
 const DE_FJORTON_ATOMER: KursAtom[] = [
   { familj: 'Fjärrskådning', niva: null, nyckel: 'Fjärrskådning|', etikett: 'Fjärrskådning' },
@@ -961,16 +969,15 @@ function byggDeFjorton(): SegmentEntitet[] {
   });
 }
 
-/**
- * Facit-antalet per förskapad grupp — en SEPARAT karta i stället för ett
- * fält på `SegmentEntitet` (beslut 6, minsta yta): bara `skalprovMal` och
- * invariant-undantaget i `fyllUt`/`visatAntal` behöver slå upp den, och
- * ingen annan entitet (sparad, egen, generator-skapad) bär ett fält den
- * aldrig sätter.
- */
-const FACIT_KARTA: Record<string, number> = Object.fromEntries(
-  DE_FJORTON_DATA.map((rad) => [`de-fjorton-${rad.gruppnummer}`, rad.facit]),
-);
+/* [TASK-249.6] `FACIT_KARTA` — juli 2026 års uppmätta Skool-antal per
+   förskapad grupp — är RIVEN med skalprovet. Dess eget docblock namngav
+   uppslagets enda konsumenter: `skalprovMal` och invariant-undantaget i
+   `fyllUt`/`visatAntal`, samtliga rigg-funktioner som gick i samma rivning
+   (ADR-103). Talen finns kvar i `DE_FJORTON_DATA.facit` och i bilagan
+   `tasks/sessions/bilagor/s104-segment-divergens/underlag-de-fjorton-skool-
+   grupperna.md` — det som försvann var instrumentets uppslagsväg, inte
+   underlaget. Grupperna själva räknas nu som varje annat segment: mot
+   compute-segment, aldrig mot ett förväntat tal. */
 
 /* ================================================================== *
  * DELAD GRAMMATIK — klassrader ärvda ur Event-familjen (G2)
@@ -1298,11 +1305,11 @@ type TackningsUtfall =
  * Utbildning — samma innehåll ⇒ samma `regelSignatur` ⇒ samma cache-post om
  * den hooken råkar vara monterad någon annanstans (frågeekonomin, beslut 5).
  *
- * RÄKNAS ALLTID PÅ VERKLIGA MÄNGDER (beslut 4): varken `perEntitet` eller
- * `population` går via `fyllUt`/skalprovet — de är `compute-segment`s
- * obehandlade svar. Skalprovs-växeln kan stå i vilket läge som helst utan
- * att en enda siffra här ändras; det är en EGENSKAP av att koden aldrig rör
- * skalprovet, inte ett villkor som kollas.
+ * RÄKNAS ALLTID PÅ VERKLIGA MÄNGDER (beslut 4): både `perEntitet` och
+ * `population` är `compute-segment`s obehandlade svar. Det gällde redan när
+ * skalprovet fanns — täckningen gick aldrig via dess utfyllnad, oavsett vilket
+ * läge växeln stod i — och med riggen riven (TASK-249.6) finns ingen annan
+ * mängd att förväxla dem med.
  */
 function useTackning(uppsattning: Uppsattning, parInfo: ParInfo[]): TackningsUtfall {
   const {
@@ -1695,7 +1702,6 @@ function SegmentKort({
 function SegmentKortMedAntal(props: {
   entitet: SegmentEntitet;
   parInfo: ParInfo[];
-  skalprov: boolean;
   markeraLage: boolean;
   vald: boolean;
   onOppna: () => void;
@@ -1711,12 +1717,7 @@ function SegmentKortMedAntal(props: {
     <SegmentKort
       entitet={props.entitet}
       definition={definitionFor(props.entitet, props.parInfo)}
-      antal={visatAntal(
-        data?.count,
-        props.skalprov,
-        props.entitet.id,
-        props.entitet.id in FACIT_KARTA,
-      )}
+      antal={data?.count}
       raknar={isFetching && data === undefined}
       markeraLage={props.markeraLage}
       vald={props.vald}
@@ -1743,8 +1744,6 @@ function SegmentLista({
   parInfo,
   laddar,
   fel,
-  skalprov,
-  onSkalprov,
   markeraLage,
   valda,
   onOppna,
@@ -1763,8 +1762,6 @@ function SegmentLista({
   parInfo: ParInfo[];
   laddar: boolean;
   fel: Error | null;
-  skalprov: boolean;
-  onSkalprov: (v: boolean) => void;
   markeraLage: boolean;
   valda: ReadonlySet<string>;
   onOppna: (id: string) => void;
@@ -1794,7 +1791,6 @@ function SegmentLista({
           key={e.id}
           entitet={e}
           parInfo={parInfo}
-          skalprov={skalprov}
           markeraLage={markeraLage}
           vald={valda.has(e.id)}
           onOppna={() => onOppna(e.id)}
@@ -1830,13 +1826,16 @@ function SegmentLista({
       {/* [TASK-249.1] Wrappern bär grindens ariaSnapshot-fäste
           (`data-testid="segment-listan"`, ADR-103 B4) — samma
           testid-avgränsningsmönster som `atgardssida-promoverings-grind.
-          spec.ts` etablerade för `granskning-yta`: `SkalprovsVaxel` (riggen,
-          se dess egen docblock "samma visuella klass säger 'detta är
-          riggen, inte ytan'") och `PrototypNot` (dev-scaffolding-texten,
-          "Prototyp. Inget sparas…" — försvinner vid flippen precis som
-          riggen) står som EGNA syskon-noder UTANFÖR denna div, inte som barn
-          till den. En ariaSnapshot scopad hit kan därför aldrig fånga dem —
-          strukturellt, inte via ett filter i testet. */}
+          spec.ts` etablerade för `granskning-yta`: instrumenten står som
+          EGNA syskon-noder UTANFÖR denna div, inte som barn till den. En
+          ariaSnapshot scopad hit kan därför aldrig fånga dem —
+          strukturellt, inte via ett filter i testet.
+
+          [TASK-249.6] `SkalprovsVaxel` är RIVEN med promoveringen (ADR-103:
+          flaggor och växlar rivs, aldrig formen). `PrototypNot` står kvar:
+          sändningen och sparandet är fortfarande no-op i den promoverade
+          formen (TASK-249.9 § Observera), så noten beskriver ett läge som
+          alltjämt gäller. Referensen för denna yta är därför oförändrad. */}
       <div data-testid="segment-listan" className="flex flex-col gap-6 px-4">
         {/* EN RAD, ALLTID NÄRVARANDE (`c` ← `Deltagare.tsx § MarkeringsBatchBar`,
             `TASK-145.3` AC #1): läget växlas genom en horisontell utvidgning,
@@ -2047,21 +2046,17 @@ function SegmentLista({
         )}
       </div>
 
-      {/* [TASK-249.1] RIGGEN + PROTOTYP-NOTEN STÅR UTANFÖR `segment-listan`s
+      {/* [TASK-249.1] PROTOTYP-NOTEN STÅR UTANFÖR `segment-listan`s
           testid-scope, med avsikt (se ankar-kommentaren ovan `segment-listan`).
-          Samma `!laddar`-grind som förut. */}
+          Samma `!laddar`-grind som förut. [TASK-249.6] Skalprovs-växeln som
+          stod först i denna div är riven; noten står kvar och har mist sina
+          två meningar om skalprovet. */}
       {!laddar && (
         <div className="flex flex-col gap-6 px-4">
-          {/* RIGGEN BOR SIST, under listan den påverkar — samma placering
-              som på publikens yta, och samma streckade formspråk. */}
-          <SkalprovsVaxel aktivt={skalprov} onVaxla={onSkalprov} />
-
           <PrototypNot>
             Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är påhittade
-            - antalen är det inte: de räknas mot samma källa som en sparad rad. De fjorton
-            förskapade grupperna bär dessutom sitt eget facit - se skalprovs-växeln för vad det
-            betyder. Täckningsknappen visar om alla som borde vara med är med - alltid på riktiga
-            tal, oavsett skalprovets läge.
+            - antalen är det inte: de räknas mot samma källa som en sparad rad. Täckningsknappen
+            visar om alla som borde vara med är med.
           </PrototypNot>
         </div>
       )}
@@ -2079,191 +2074,6 @@ const CHUNK = 25;
 
 function farMailet(m: SegmentMember): boolean {
   return Boolean(m.email) && !m.ejGodkandMail;
-}
-
-/* ── SKALPROVET (ärvt ur `b`) ──────────────────────────────────────────────
-   Staging bär 1–2 personer med avstämd närvaro. Chunkningen, visningsfiltret
-   och söket finns i koden men har aldrig setts arbeta — och att PÅSTÅ att
-   formen skalar utan att kunna visa det vore precis den obelagda sortens
-   anspråk hela passet handlar om att inte göra.
-
-   `b`s disciplin ärvs oavkortat: skalprovet FYLLER UT en verklig publik, det
-   SKAPAR ingen. Det är ett INSTRUMENT, inte data, och det säger det själv. */
-const SKALPROV_MAL = 85;
-
-/**
- * SKALPROVETS MÅL PER SEGMENT — varierat, deterministiskt, samma överallt.
- *
- * Ett FAST mål (85) räckte så länge skalprovet bara bodde på detaljsidan: där
- * finns ett segment i bild och frågan är "hur beter sig publiken vid 85?".
- * När riggen når LISTAN blir ett fast tal fel på ett nytt sätt — alla kort
- * visar samma siffra, och en lista där varje rad säger 85 svarar lika lite på
- * "hur läser sig listan?" som en där varje rad säger 1.
- *
- * Målet härleds därför ur segmentets id: samma segment får alltid samma tal,
- * listan får spridning, och talet på kortet är detsamma som publiken på
- * detaljsidan — annars hade riggen motsagt sig själv mellan två vyer och gjort
- * siffrorna otrovärdiga i stället för illustrativa.
- *
- * Spannet 8-137 är valt för att träffa både korta listor och sådana som kräver
- * chunkning (`CHUNK` = 25), så att listans former faktiskt prövas.
- *
- * DE FJORTON FÖRSKAPADE GRUPPERNA SLÅR UPP `FACIT_KARTA` FÖRST (S104 Del 3
- * konvergens). Deras mål är inte påhittat — det är juli 2026 års uppmätta
- * antal ur Skool-underlaget (1–188). Alla andra id:n faller till hash-vägen
- * oförändrad.
- */
-function skalprovMal(id: string): number {
-  const facit = FACIT_KARTA[id];
-  if (facit !== undefined) return facit;
-  let h = 0;
-  for (let i = 0; i < id.length; i += 1) h = (h * 31 + id.charCodeAt(i)) % 100_000;
-  return 8 + (h % 130);
-}
-const SKALPROV_FORNAMN = [
-  'Anna',
-  'Bengt',
-  'Cecilia',
-  'David',
-  'Elin',
-  'Fredrik',
-  'Gunilla',
-  'Håkan',
-  'Ingrid',
-  'Johan',
-  'Karin',
-  'Lars',
-  'Maria',
-  'Niklas',
-  'Olga',
-  'Per',
-  'Quintus',
-  'Rebecka',
-  'Sven',
-  'Tova',
-  'Ulf',
-  'Vera',
-  'Wilma',
-  'Yvonne',
-  'Zara',
-  'Åsa',
-  'Ärling',
-  'Örjan',
-];
-const SKALPROV_EFTERNAMN = [
-  'Andersson',
-  'Bergström',
-  'Carlsson',
-  'Dahl',
-  'Ek',
-  'Forsberg',
-  'Gustafsson',
-  'Hedlund',
-  'Isaksson',
-  'Jonsson',
-  'Karlsson',
-  'Lind',
-];
-
-/**
- * Deterministiskt utfyllda exempelpersoner (`b`s form). Var sjunde saknar
- * e-post och var elfte har tackat nej — så att de undertryckta faktiskt finns
- * att titta på i listan, i visningsfiltret och i granskningens varningar.
- */
-function byggSkalprov(befintliga: number, mal: number): SegmentMember[] {
-  const ut: SegmentMember[] = [];
-  for (let i = befintliga; i < mal; i += 1) {
-    const f = SKALPROV_FORNAMN[i % SKALPROV_FORNAMN.length] ?? 'Exempel';
-    const e = SKALPROV_EFTERNAMN[(i * 5) % SKALPROV_EFTERNAMN.length] ?? 'Person';
-    ut.push({
-      id: `skalprov-${i}`,
-      namn: `${f} ${e}`,
-      email: i % 7 === 3 ? null : `${`${f}.${e}`.toLowerCase()}@exempel.invalid`,
-      ejGodkandMail: i % 11 === 5,
-    });
-  }
-  return ut;
-}
-
-/**
- * FYLLER UT, SKAPAR ALDRIG — för alla ICKE-förskapade segment. En tom publik
- * förblir tom även med skalprovet på, annars hade instrumentet svarat på en
- * fråga ingen ställt ("hur ser 85 av ingenting ut?") och samtidigt dolt
- * fälla #34:s tomläge, som är en av de former som faktiskt ska bedömas.
- *
- * INVARIANT-JUSTERING FÖR DE FJORTON (S104 Del 3 konvergens, bokförd med
- * avsikt): `tillatFranTomt` släpper igenom fyllning ur en tom VERKLIG publik.
- * Anropas bara med `true` för en förskapad grupp (`id in FACIT_KARTA`) —
- * talen är dokumenterade juli 2026-tal ur bilagan, inte påhitt, och staging
- * kan omöjligt befolka och-kombinationerna (grupp 4–11, 13, 14). Alla ANDRA
- * segment behåller invarianten oförändrad.
- */
-function fyllUt(
-  medlemmar: SegmentMember[],
-  skalprov: boolean,
-  mal: number = SKALPROV_MAL,
-  tillatFranTomt = false,
-): SegmentMember[] {
-  if (!skalprov) return medlemmar;
-  if (medlemmar.length === 0 && !tillatFranTomt) return medlemmar;
-  return [...medlemmar, ...byggSkalprov(medlemmar.length, mal)];
-}
-
-/**
- * KORTETS TAL under skalprovet. Samma invariant som `fyllUt`, inklusive
- * samma `tillatFranTomt`-undantag för de fjorton: grupp 13/14 ska visa 1 —
- * `Math.max(0, skalprovMal(id))` med `mal = 1` ger exakt det, aldrig mer.
- */
-function visatAntal(
-  antal: number | undefined,
-  skalprov: boolean,
-  id: string,
-  tillatFranTomt = false,
-): number | undefined {
-  if (antal === undefined || !skalprov) return antal;
-  if (antal === 0 && !tillatFranTomt) return antal;
-  return Math.max(antal, skalprovMal(id));
-}
-
-/** Skalprovets egna, påhittade personer — aldrig underlag för en äkta kontroll. */
-function arPahittad(m: SegmentMember): boolean {
-  return m.id.startsWith('skalprov-');
-}
-
-/**
- * Instrumentet, i `PrototypRigg`s streckade formspråk: samma visuella klass
- * säger "detta är riggen, inte ytan" utan att det behöver skrivas.
- */
-function SkalprovsVaxel({ aktivt, onVaxla }: { aktivt: boolean; onVaxla: (v: boolean) => void }) {
-  return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border border-dashed p-3 print:hidden">
-      <p className="text-caption text-text-muted">
-        <strong className="font-medium">Prototyp-rigg.</strong> Staging har för lite avstämd närvaro
-        för att visa hur publiken beter sig i den storlek den är byggd för.
-      </p>
-      {/* INSTRUMENTET DEKLARERAR SIG SJÄLVT (S104 Del 3 konvergens): de
-          fjorton förskapade grupperna fylls annorlunda än alla andra segment,
-          och den skillnaden ska synas här — inte upptäckas som en avvikelse. */}
-      <p className="text-caption text-text-muted">
-        De fjorton förskapade grupperna är undantaget: deras mål är det uppmätta antalet från juli
-        2026 (1 till 188), inte ett påhittat tal - och de får fyllas även från en tom verklig
-        publik, eftersom och-kombinationer inte går att befolka i staging ännu. Övriga segment fylls
-        aldrig ur en tom publik.
-      </p>
-      {/* PÅ/AV MÅSTE VARA OMISSKÄNNLIGT. Första formen lånade `PrototypRigg`s
-          dämpade markering (`bg-bg-emphasized`) — men den fungerar bara i ett
-          treval där något ALLTID är valt och de tre jämförs med varandra. En
-          ensam växel har inget att jämföras med, och skärmdumpen visade det:
-          påslaget läste som avslaget. Här gäller variantens egen chip-grammatik
-          i stället (`ValChip`): vald = `bg-text`, oval = synlig kant på
-          `bg-surface` — kanten, aldrig plattan, är WCAG-bäraren. */}
-      <div className="flex">
-        <ValChip vald={aktivt} onTryck={() => onVaxla(!aktivt)}>
-          Skalprov: fyll publiken till {SKALPROV_MAL} personer
-        </ValChip>
-      </div>
-    </div>
-  );
 }
 
 /**
@@ -2395,8 +2205,6 @@ function PublikSektion({
   isError,
   error,
   endastForelasning,
-  skalprov,
-  onSkalprov,
 }: {
   medlemmar: SegmentMember[];
   isPending: boolean;
@@ -2404,10 +2212,6 @@ function PublikSektion({
   error: unknown;
   /** Person-ID:n som kvalificerat sig UTAN någon utbildning (granskningsvyn). */
   endastForelasning?: ReadonlySet<string>;
-  /** Skalprovet påslaget — publiken är då delvis påhittad. */
-  skalprov?: boolean;
-  /** Satt = växeln bor på DENNA yta. Utelämnad = bara varningen följer med hit. */
-  onSkalprov?: (v: boolean) => void;
 }) {
   const [vy, setVy] = useState<PublikVy>('alla');
   const [sok, setSok] = useState('');
@@ -2465,24 +2269,6 @@ function PublikSektion({
         )}
       </div>
 
-      {/* Skalprovet får ALDRIG gå obemärkt förbi (`b`s regel) — en påhittad
-          publik som ser äkta ut är värre än ingen publik alls. Rutan följer
-          med till VARJE yta som visar publiken, även den där växeln inte bor. */}
-      {skalprov && (
-        <div className="px-4">
-          <MessageBox intent="warning" title="Skalprov påslaget - publiken är delvis påhittad">
-            <p>
-              Personerna med adressen <code>@exempel.invalid</code> finns inte. Växeln är ett
-              mätinstrument och sitter under publikens filter på segmentets sida.
-            </p>
-            <p>
-              Kontroller som bygger på verklig historik - fördelningen mellan utbildning och
-              föreläsning - räknar bara de verkliga personerna.
-            </p>
-          </MessageBox>
-        </div>
-      )}
-
       {isPending ? (
         <div role="status" aria-busy="true" className="flex flex-col gap-2 px-4">
           <span className="sr-only">Räknar publiken…</span>
@@ -2534,10 +2320,6 @@ function PublikSektion({
                 description="Söker i den redan hämtade publiken - kostar inget serveranrop."
               />
             )}
-            {/* VÄXELN BOR DÄR PUBLIKEN BOR, sist bland dess kontroller: den
-                är ett instrument för att bedöma listan, inte ett filter över
-                den. Den syns bara när det FINNS en publik att fylla ut. */}
-            {onSkalprov && <SkalprovsVaxel aktivt={Boolean(skalprov)} onVaxla={onSkalprov} />}
           </div>
 
           {synliga.length === 0 ? (
@@ -2599,16 +2381,12 @@ function PublikSektion({
 function SegmentDetalj({
   entitet,
   parInfo,
-  skalprov,
-  onSkalprov,
   onTillbaka,
   onSkicka,
   onAndra,
 }: {
   entitet: SegmentEntitet;
   parInfo: ParInfo[];
-  skalprov: boolean;
-  onSkalprov: (v: boolean) => void;
   onTillbaka: () => void;
   onSkicka: () => void;
   onAndra: () => void;
@@ -2618,18 +2396,11 @@ function SegmentDetalj({
   const { data, isPending, isError, error } = useEntitetsMedlemmar(entitet, parInfo);
   useVyFokus(rubrikRef, !isPending);
 
-  // Skalprovet fyller UT den verkliga publiken. Headerns tal räknar den
-  // utfyllda mängden — annars hade rubriken sagt "2 personer" ovanför en lista
-  // med 85, vilket är precis den motsägelse instrumentet inte får skapa.
-  // SAMMA MÅL SOM KORTET I LISTAN (`skalprovMal(entitet.id)`) — öppnar man ett
-  // kort som säger 47 ska publiken vara 47, inte 85. Riggen får vara påhittad;
-  // den får inte vara osammanhängande.
-  const medlemmar = fyllUt(
-    data?.members ?? [],
-    skalprov,
-    skalprovMal(entitet.id),
-    entitet.id in FACIT_KARTA,
-  );
+  // [TASK-249.6] Publiken är EF:ens svar, rakt av. Skalprovets utfyllnad —
+  // som stod här och blåste upp mängden till ett mål per segment — är riven
+  // med promoveringen (ADR-103). Talen i headern nedan räknas därför på
+  // samma mängd som listan visar, vilket de gjorde redan med riggen AV.
+  const medlemmar = data?.members ?? [];
   const antalFar = medlemmar.filter(farMailet).length;
   const undertryckta = medlemmar.length - antalFar;
   const tomRegel = rule.include.length === 0;
@@ -2643,20 +2414,19 @@ function SegmentDetalj({
           `segment-listan` ovan). `PrototypNot` sist i funktionen står
           UTANFÖR som en egen syskon-div, av samma skäl.
 
-          KÄND, RAPPORTERAD AVGRÄNSNING (öppen i PR:en, se slutrapporten):
-          till skillnad från `segment-listan`/`utskicksvyn` kan
-          `SkalprovsVaxel` INTE strukturellt uteslutas härifrån utan att
-          FLYTTA dess DOM-position ur `PublikSektion` (`onSkalprov`-grenen,
-          se dess docblock "VÄXELN BOR DÄR PUBLIKEN BOR, sist bland dess
-          kontroller") — den sitter mitt i en delad kontrolldiv tillsammans
-          med `ToggleButtonGroup`/`Input`, inte som ett efterföljande
-          syskon. En `ariaSnapshot`-lokator scopar till ETT sammanhängande
-          subträd och kan inte hoppa över ett mittensyskon; att flytta
-          växeln för att lösa det hade ändrat en REDAN GODKÄND (facit.json,
-          sha a40f3543) DOM-position, vilket `ADR-102` (prototypen ÄR facit)
-          förbjuder lika hårt som att ändra formen självt. Referensen nedan
-          bär därför `SkalprovsVaxel` — den enda av de sju ytorna där så är
-          fallet. */}
+          [TASK-249.6] DEN AVGRÄNSNING SOM STOD HÄR ÄR UPPLÖST AV RIVNINGEN.
+          Till skillnad från de sex andra ytorna kunde `SkalprovsVaxel` inte
+          uteslutas strukturellt härifrån: den satt mitt i `PublikSektion`s
+          delade kontrolldiv tillsammans med `ToggleButtonGroup`/`Input`, och
+          en `ariaSnapshot`-lokator kan inte hoppa över ett mittensyskon. Att
+          FLYTTA växeln hade ändrat en redan godkänd (facit.json, sha
+          a40f3543) DOM-position — det `ADR-102` förbjuder — så referensen
+          bar växeln synligt. När växeln nu är RIVEN i stället för flyttad
+          försvinner noderna utan att formen rörs, och de två referenserna
+          (`segment-detaljvyn-visual-{desktop,mobile}.aria.yml`) är
+          omgenererade i rivnings-committen med Marcus kvittens 2026-08-17.
+          Ytformen omkring — `ToggleButtonGroup`, `Input`, publiklistan —
+          står rad för rad oförändrad. */}
       <div data-testid="segment-detaljvyn" className="flex flex-col gap-6">
         <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
@@ -2705,15 +2475,12 @@ function SegmentDetalj({
           </div>
         </div>
 
-        {/* PUBLIKEN — HUVUDINNEHÅLLET. Direkt, aldrig bakom en fällning. Och
-          det är HÄR skalprovets växel bor: publikens egen yta. */}
+        {/* PUBLIKEN — HUVUDINNEHÅLLET. Direkt, aldrig bakom en fällning. */}
         <PublikSektion
           medlemmar={medlemmar}
           isPending={isPending && !tomRegel}
           isError={isError}
           error={error}
-          skalprov={skalprov}
-          onSkalprov={onSkalprov}
         />
 
         {/* REGELN STÅR SIST, och det är avsiktligt. Den läses sällan (Marcus
@@ -3373,8 +3140,9 @@ function RegelVerkstad({
       {/* [TASK-249.1] `data-testid="verkstaden"` (ADR-103 B4) — `gap-6`
           speglar `SidRam`s `<section>`-klass, samma noll-synligt-avstånd-
           grepp som övriga sex ytor. `PrototypNot` sist i funktionen står
-          UTANFÖR som egen syskon-div. Inget `PrototypRigg`/`SkalprovsVaxel`
-          förekommer i denna vy — bara `PrototypNot` behöver uteslutas. */}
+          UTANFÖR som egen syskon-div. Riggarna förekom aldrig i denna vy —
+          bara `PrototypNot` behövde uteslutas, och den står kvar (TASK-249.6
+          rev `PrototypRigg`/`SkalprovsVaxel`, inte noten). */}
       <div data-testid="verkstaden" className="flex flex-col gap-6">
         <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
           {/* RUBRIKEN ÄR SEGMENTET, INTE SYSTEMORDET (Marcus 2026-08-16:
@@ -3810,8 +3578,8 @@ function DelaUppIGrupper({
           speglar `SidRam`s `<section>`-klass. Omsluter BÅDA de befintliga
           topp-nivå-divarna (stegkorten + Avbryt-raden, redan syskon till
           varandra) men INTE `PrototypNot`, som flyttas till en egen
-          syskon-div sist. Inget `PrototypRigg`/`SkalprovsVaxel` förekommer
-          i denna vy. */}
+          syskon-div sist. Riggarna förekom aldrig i denna vy (och är rivna
+          sedan TASK-249.6). */}
       <div data-testid="generatorn" className="flex flex-col gap-6">
         <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
           <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
@@ -4282,8 +4050,8 @@ function NyttSegmentVy({
     <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
       {/* [TASK-249.1] `data-testid="nytt-segment-mallvyn"` (ADR-103 B4) —
           `gap-6` speglar `SidRam`s `<section>`-klass. `PrototypNot` sist i
-          funktionen står UTANFÖR som egen syskon-div. Inget
-          `PrototypRigg`/`SkalprovsVaxel` förekommer i denna vy. */}
+          funktionen står UTANFÖR som egen syskon-div. Riggarna förekom
+          aldrig i denna vy (och är rivna sedan TASK-249.6). */}
       <div data-testid="nytt-segment-mallvyn" className="flex flex-col gap-6">
         <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
           <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
@@ -4435,8 +4203,6 @@ function NyttSegmentVy({
  * UTSKICKET — eget steg, `a`s inline-grammatik
  * ================================================================== */
 
-type UtfallsLage = 'allt' | 'delvis' | 'inget';
-
 type Utfall = {
   accepterade: number;
   utanEpost: number;
@@ -4447,11 +4213,23 @@ type Utfall = {
   signatur: string;
 };
 
-function simulera(mottagare: SegmentMember[], lage: UtfallsLage, signatur: string): Utfall {
+/**
+ * Utskickets svar byggs fortfarande i webbläsaren: sändningen är NO-OP i den
+ * promoverade formen (TASK-249.9 § Observera — den skarpa mutations-wiringen
+ * är ett eget, ännu obyggt kort), och AC #1 på TASK-249.5 kräver att formen är
+ * IDENTISK med den godkända prototypen.
+ *
+ * [TASK-249.6] VÄXELN ÖVER UTFALLEN ÄR RIVEN, INTE SIMULERINGEN. `PrototypRigg`
+ * lät en utvecklare välja allt/delvis/inget och är exakt en sådan flagga
+ * ADR-103 river; delutfallet var dess default och är därmed det beteende varje
+ * referens och varje granskning redan speglar. Kvar står alltså den form som
+ * godkändes, utan kontrollen som kunde ändra den.
+ */
+function simulera(mottagare: SegmentMember[], signatur: string): Utfall {
   const utanEpost = mottagare.filter((m) => !m.email).length;
   const tackatNej = mottagare.filter((m) => m.email && m.ejGodkandMail).length;
   const kvar = mottagare.length - utanEpost - tackatNej;
-  const accepterade = lage === 'allt' ? kvar : lage === 'inget' ? 0 : Math.ceil(kvar * (2 / 3));
+  const accepterade = Math.ceil(kvar * (2 / 3));
   return {
     accepterade,
     utanEpost,
@@ -4460,57 +4238,6 @@ function simulera(mottagare: SegmentMember[], lage: UtfallsLage, signatur: strin
     totalt: mottagare.length,
     signatur,
   };
-}
-
-/** `AtgardsSida.tsx § PrototypRigg` — samma streckade form, samma avsikt. */
-function PrototypRigg({
-  lage,
-  onValj,
-  onAterstall,
-}: {
-  lage: UtfallsLage;
-  onValj: (l: UtfallsLage) => void;
-  onAterstall?: () => void;
-}) {
-  const val: { nyckel: UtfallsLage; etikett: string }[] = [
-    { nyckel: 'allt', etikett: 'Allt gick fram' },
-    { nyckel: 'delvis', etikett: 'Delutfall' },
-    { nyckel: 'inget', etikett: 'Inget gick fram' },
-  ];
-  return (
-    <div className="mx-4 flex flex-col gap-2 rounded-lg border border-border border-dashed p-3 print:hidden">
-      <p className="text-caption text-text-muted">
-        <strong className="font-medium">Prototyp-rigg.</strong> Välj vilket utfall som ska
-        simuleras. Inget skickas - svaret byggs i webbläsaren.
-      </p>
-      <div className="flex flex-wrap items-center gap-2">
-        {val.map((v) => (
-          <button
-            key={v.nyckel}
-            type="button"
-            onClick={() => onValj(v.nyckel)}
-            aria-pressed={lage === v.nyckel}
-            className={`rounded-full px-3 py-1 text-small ${
-              lage === v.nyckel
-                ? 'bg-bg-emphasized font-medium'
-                : 'text-text-secondary hover:bg-bg-muted'
-            }`}
-          >
-            {v.etikett}
-          </button>
-        ))}
-        {onAterstall && (
-          <button
-            type="button"
-            onClick={onAterstall}
-            className="ml-auto text-small text-text-secondary underline"
-          >
-            Granska igen
-          </button>
-        )}
-      </div>
-    </div>
-  );
 }
 
 /**
@@ -4534,9 +4261,11 @@ function PrototypRigg({
  * MULTI-SEGMENT: `kanBlandas` avgörs av UNIONEN av de valda segmentens regler
  * — en blandning kan uppstå mellan två segment lika gärna som inuti ett.
  *
- * SKALPROV: instrumentets påhittade personer hålls UTANFÖR underlaget. De har
- * ingen kurshistorik, så en kontroll som räknade dem hade svarat på en fråga
- * om påhittad data — och det säger skalprovets egen varningsruta rakt ut.
+ * UNDERLAGET ÄR MOTTAGARNA, RAKT AV. Så länge skalprovet fanns sållades dess
+ * påhittade personer bort först — de hade ingen kurshistorik, så en kontroll
+ * som räknat dem hade svarat på en fråga om påhittad data. Med riggen riven
+ * (TASK-249.6) är varje mottagare verklig och sållningen har inget kvar att
+ * göra.
  *
  * KOSTNADEN ÄR EN WALK — EN GÅNG PER SESSION, inte per segment. Regeln är
  * identisk för alla segment, och `useMedlemmar` nycklar på REGELNS SIGNATUR
@@ -4581,12 +4310,10 @@ function useModalitetsFordelning(
 function UtskicksVy({
   entiteter,
   parInfo,
-  skalprov,
   onTillbaka,
 }: {
   entiteter: SegmentEntitet[];
   parInfo: ParInfo[];
-  skalprov: boolean;
   onTillbaka: () => void;
 }) {
   const rubrikRef = useRef<HTMLHeadingElement>(null);
@@ -4604,7 +4331,6 @@ function UtskicksVy({
   const [bekraftelse, setBekraftelse] = useState('');
   const [lage, setLage] = useState<'granska' | 'skickar' | 'resultat'>('granska');
   const [utfall, setUtfall] = useState<Utfall | null>(null);
-  const [riggLage, setRiggLage] = useState<UtfallsLage>('delvis');
   const [testNot, setTestNot] = useState(false);
   const [visaBlandade, setVisaBlandade] = useState(false);
   const blandadePanelId = useId();
@@ -4637,19 +4363,11 @@ function UtskicksVy({
   // 2026-08-16 — den enda konsumenten. Det talet står kvar per segment i
   // segment-gruppens rader, så inget mätvärde försvann; bara uppräkningen.
 
-  /* UNIONENS MÅL = SUMMAN AV DE INGÅENDES. Ett fast 85 hade fått ett utskick
-     till fyra segment att se MINDRE ut än ett av dem, vilket är precis den
-     sortens motsägelse riggen inte får införa. Summan är ett medvetet TAK, inte
-     en exakt modell: överlappet mellan segment kan inte simuleras, och riktiga
-     personer dedupas ändå av `unionKarta` ovan innan utfyllnaden sker. */
-  const unionsMal = entiteter.reduce((n, e) => n + skalprovMal(e.id), 0);
-  // TESTUTSKICKS-FALLET (PAUSLÄGE punkt 5): är HELA urvalet förskapade grupper
-  // (normalfallet är ETT segment — grupp 13/14 öppnade från detaljsidan) får
-  // unionen fyllas ur en tom verklig publik, av samma skäl som `fyllUt`s
-  // invariant-undantag ovan. Ett urval som blandar in ett icke-förskapat
-  // segment faller tillbaka till den vanliga, strikta invarianten.
-  const allaForskapade = entiteter.every((e) => e.id in FACIT_KARTA);
-  const mottagare = fyllUt(raMottagare, skalprov, unionsMal, allaForskapade);
+  // [TASK-249.6] Mottagarna ÄR unionen. Skalprovets utfyllnad — som här tog
+  // summan av de ingående segmentens mål som tak — är riven med promoveringen
+  // (ADR-103). Dedupen ovan (`unionKarta`) är och förblir den enda
+  // bearbetningen mellan EF-svaren och mottagarlistan.
+  const mottagare = raMottagare;
   const signatur = mottagare.map((m) => m.id).join(',');
   const utanEpost = mottagare.filter((m) => !m.email).length;
   const nekade = mottagare.filter((m) => m.email && m.ejGodkandMail).length;
@@ -4663,8 +4381,10 @@ function UtskicksVy({
   const kanBlandas = entiteter.some((e) =>
     bruttoRegelFor(e, parInfo).include.some((p) => p.modalitet === 'Föreläsning'),
   );
-  const fordelningsUnderlag = mottagare.filter((m) => !arPahittad(m));
-  const fordelning = useModalitetsFordelning(kanBlandas, parInfo, fordelningsUnderlag);
+  // [TASK-249.6] Underlaget är hela mottagarmängden. Filtret som stod här höll
+  // skalprovets påhittade personer utanför kontrollen — med riggen riven finns
+  // ingen påhittad person kvar att sålla bort.
+  const fordelning = useModalitetsFordelning(kanBlandas, parInfo, mottagare);
   const blandade = mottagare.filter((m) => fordelning.ids.has(m.id));
 
   /* GRINDEN ÄR HÄRLEDD (T50 lager a): `bekraftelse` mäts mot det AKTUELLA
@@ -4700,7 +4420,7 @@ function UtskicksVy({
     // → resultat, och resultatet kommer först när "servern" (riggen) svarat.
     setLage('skickar');
     window.setTimeout(() => {
-      setUtfall(simulera(mottagare, riggLage, signatur));
+      setUtfall(simulera(mottagare, signatur));
       setLage('resultat');
     }, 1100);
   }
@@ -4712,9 +4432,9 @@ function UtskicksVy({
         {/* [TASK-249.1] `data-testid="utskicksvyn"` (ADR-103 B4) — DELAS
             med `granska`-lägets gren nedan (mutuellt uteslutande DOM-träd,
             samma mönster som `granskning-yta` i
-            `atgardssida-promoverings-grind.spec.ts`). `PrototypRigg`
-            (utfallslägena) och `PrototypNot` står UTANFÖR som egna
-            syskon-noder. */}
+            `atgardssida-promoverings-grind.spec.ts`). `PrototypNot` står
+            UTANFÖR som egen syskon-nod; `PrototypRigg` (utfallslägena) stod
+            bredvid den och är riven (TASK-249.6, ADR-103). */}
         <div data-testid="utskicksvyn" className="flex flex-col gap-6">
           <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
             <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
@@ -4763,18 +4483,6 @@ function UtskicksVy({
         <div className="px-4">
           <PrototypNot />
         </div>
-
-        {import.meta.env.DEV && (
-          <PrototypRigg
-            lage={riggLage}
-            onValj={setRiggLage}
-            onAterstall={() => {
-              setUtfall(null);
-              setBekraftelse('');
-              setLage('granska');
-            }}
-          />
-        )}
       </SidRam>
     );
   }
@@ -4901,16 +4609,18 @@ function UtskicksVy({
               </MessageBox>
             ) : blandade.length === 0 ? (
               <p className="text-small text-text-secondary">
-                Kontrollerat: alla {fordelningsUnderlag.length} mottagare har gått minst en
-                utbildning.
+                Kontrollerat: alla {mottagare.length} mottagare har gått minst en utbildning.
               </p>
             ) : (
-              // NÄMNAREN ÄR DE VERKLIGA MOTTAGARNA, inte den utfyllda publiken:
-              // skalprovets personer har ingen kurshistorik att kontrollera.
+              // NÄMNAREN ÄR MOTTAGARNA. Den stod tidigare mot ett eget
+              // `fordelningsUnderlag` som sållade bort skalprovets påhittade
+              // personer — de hade ingen kurshistorik att kontrollera. Med
+              // riggen riven (TASK-249.6) är varje mottagare verklig, och de
+              // två mängderna är samma mängd.
               <MessageBox intent="warning" title="Publiken är blandad">
                 <p>
                   <strong>
-                    {blandade.length} av {fordelningsUnderlag.length}
+                    {blandade.length} av {mottagare.length}
                   </strong>{' '}
                   mottagare har bara gått föreläsning - ingen utbildning.
                 </p>
@@ -4978,7 +4688,6 @@ function UtskicksVy({
           isError={false}
           error={undefined}
           endastForelasning={fordelning.ids}
-          skalprov={skalprov}
         />
 
         <DetaljGrupp id="grupp-utskicket" rubrik="Utskicket">
@@ -5142,8 +4851,6 @@ function UtskicksVy({
       <div className="px-4">
         <PrototypNot />
       </div>
-
-      {import.meta.env.DEV && <PrototypRigg lage={riggLage} onValj={setRiggLage} />}
     </SidRam>
   );
 }
@@ -5200,16 +4907,10 @@ export function VariantD() {
   /** Markera-läget i listan — multi-segmentets ingång. */
   const [markeraLage, setMarkeraLage] = useState(false);
   const [valda, setValda] = useState<ReadonlySet<string>>(() => new Set());
-  /**
-   * SKALPROVET bor på variant-nivå, inte i detaljvyn. Skälet är att svaret på
-   * "håller formen vid 85?" inte får sluta vid detaljsidans dörr: publiken
-   * följer med till utskicksvyn, där listan, grinden och granskningens rutor
-   * ska klara samma storlek. Växeln bor däremot bara där publiken bor.
-   */
-  const [skalprov, setSkalprov] = useState(false);
-  /** Täckningsvyns läge (S104 Del 4, task-181) — bor på variant-nivå av samma
-   *  skäl som `skalprov`: läget hör till LISTAN, inte till en enskild
-   *  post, och listan är den enda ytan som renderar `SegmentLista`. */
+  /** Täckningsvyns läge (S104 Del 4, task-181) — bor på variant-nivå därför
+   *  att läget hör till LISTAN, inte till en enskild post, och listan är den
+   *  enda ytan som renderar `SegmentLista`. (Skalprovs-läget bodde här av
+   *  samma skäl och är rivet med promoveringen, TASK-249.6.) */
   const [tackningsLage, setTackningsLage] = useState(false);
 
   const segments = useQuery({
@@ -5348,7 +5049,6 @@ export function VariantD() {
         <UtskicksVy
           entiteter={valdaEntiteter}
           parInfo={parInfo}
-          skalprov={skalprov}
           onTillbaka={() =>
             setVy(vy.retur === 'detalj' ? { namn: 'detalj', id: forsta.id } : { namn: 'lista' })
           }
@@ -5374,8 +5074,6 @@ export function VariantD() {
         <SegmentDetalj
           entitet={entitet}
           parInfo={parInfo}
-          skalprov={skalprov}
-          onSkalprov={setSkalprov}
           onTillbaka={() => setVy({ namn: 'lista' })}
           onSkicka={() => setVy({ namn: 'utskick', ids: [entitet.id], retur: 'detalj' })}
           onAndra={() => setVy({ namn: 'regel', id: entitet.id })}
@@ -5390,8 +5088,6 @@ export function VariantD() {
       parInfo={parInfo}
       laddar={laddar}
       fel={fel}
-      skalprov={skalprov}
-      onSkalprov={setSkalprov}
       markeraLage={markeraLage}
       valda={valda}
       onOppna={(id) => setVy({ namn: 'detalj', id })}
