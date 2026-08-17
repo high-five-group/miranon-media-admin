@@ -7,5 +7,6 @@ export {
 } from './Forberedelseskarm';
 export { OfflineIndicator } from './OfflineIndicator';
 export { RouteAnnouncer } from './RouteAnnouncer';
+export { Sidbytesindikator } from './Sidbytesindikator';
 export { SkipLink } from './SkipLink';
 export { TabBar } from './TabBar';

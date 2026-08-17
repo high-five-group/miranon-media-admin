@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-16
+updated: 2026-08-17
 review_by: 2027-01-02
 status: stable
 ---
@@ -251,6 +251,23 @@ cache-nyckelfamiljerna; ADR-017:s poll-scope orört). Tyst vid varm cache,
 gate:ad mot offline, hård timeout.
 *Undvik:* "prefetch" om just denna fas — prefetch är hover/avsikts-mönstret
 på eventkorten; Startvärmningen är app-startens engångsfas.
+
+**Sidbytesindikator** — den lätta, route-chunk-medvetna laddindikatorn för
+SPA-sidbyten (TASK-233): en tunn balk fäst överst i viewporten, tyst under
+1 sekund (Lugnt laddläge) och synlig först vid en genuint sen route-chunk-
+nedladdning. Byggd på TanStack Routers `defaultPendingComponent` (routern
+väntar med att committa den nya matchen — den GAMLA sidan stannar synlig
+hela tystnadsfönstret, ingen DOM avmonteras i onödan), INTE en återanvändning
+av Förberedelseskärmen (som förblir startskärmens/app-yta-gatens egen
+komponent). Täcker en femte, tidigare oadresserad klass i Laddtrappan
+(route hela-vyn-inte-nedladdad-än) som ADR-113:s fyra steg inte uttryckligen
+namnger — bokfört öppet som en kandidat för en framtida ADR-113-amendering,
+inte en tyst utvidgning.
+*Undvik:* Förberedelseskärmen för sidbyten (fel vikt — Marcus-låst text och
+helskärms-blockering hör till start/app-yta-gaten, inte in-app-navigation).
+*I koden:* `src/components/AppShell/Sidbytesindikator.tsx`, wire:ad i
+`src/router.ts` (`defaultPendingComponent`/`defaultPendingMs`/
+`defaultPendingMinMs`).
 
 **Eventinfo** — det andra mailet i Lottas utskicksflöde: den praktiska
 informationen inför eventet (plats, tider, medtag), som går ut cirka två
