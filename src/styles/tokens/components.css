@@ -305,6 +305,31 @@
   --mm-forberedelseskarm-bar-fill: var(--p-sage-9);
   --mm-forberedelseskarm-bar-fill-contrast: var(--p-sage-11);
 
+  /* ── Forberedelseskarm bakgrundsscrim (task-273.6 — Roger & Lotta-fotot
+     (public/roger-och-lotta.webp) som dov, fönsterfyllande bakgrund bakom
+     baren, Marcus tillägg 2 2026-08-17) ──
+     90 % vit color-mix ovanpå fotot, samma color-mix-mönster som
+     --mm-skeleton-shimmer ovan. Opaciteten är INTE en gissning: en
+     pixel-för-pixel WCAG 2.x-relativluminans-analys av den faktiska filen
+     (sharp, 1600×1068 = 1 708 800 pixlar) gav p0,1 %-percentilen 0,00045,
+     p1 %-percentilen 0,00535 och ett absolut svartaste pixelvärde
+     (0,0,0) — samtliga använda som VÄRSTA FALL, inte medelvärdet (0,60,
+     bilden är överlag ljus). Vid 90 % vit-blandning ger även det absoluta
+     svartaste pixelvärdet en bakgrundsluminans på 0,787 — mot fyllnadens
+     (--p-sage-9, #606b57, luminans 0,137) ett kontraskvot på 4,48:1,
+     rejält över 1.4.11:s 3:1-golv (golv-inte-tak, samma mönster som
+     bar-fill-tokens ovan). Mot en verklig p1 %-percentil-pixel (RGB
+     34,9,0) blir marginalen 4,54:1. Verifierat i Forberedelseskarm.spec.ts
+     mot den LEVERERADE scrim-opaciteten (inte mot bilden live varje
+     körning — en pixel-för-pixel-mätning i CI vore skör mot framtida
+     bildbyten); en oavsiktlig sänkning under den mätta opaciteten fångas
+     mekaniskt. contrast-more DÖLJER både foto och scrim helt
+     (Forberedelseskarm.tsx) — faller tillbaka till samma rena --mm-bg som
+     normalläget hade FÖRE denna skiva, alltså exakt de sedan tidigare
+     verifierade kontrasttalen (--mm-forberedelseskarm-bar-fill-contrast
+     mot --mm-forberedelseskarm-bar-track, ≥4,5:1, se testet). */
+  --mm-forberedelseskarm-scrim: color-mix(in srgb, var(--mm-bg) 90%, transparent);
+
   /* ── Sidbytesindikator (TASK-233 — route-chunk-övergångar) ──
      Egna tokens i stället för att återanvända --mm-forberedelseskarm-bar-*
      rakt av: namnet på DE tokens säger "forberedelseskarm" och en

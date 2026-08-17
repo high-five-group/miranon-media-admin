@@ -3,18 +3,23 @@ import { expect, test } from './fixtures';
 
 /**
  * Forberedelseskarm — beteende-tester mot Förberedelseskärmens UI-kontrakt
- * (ADR-112; PRD TASK-218 användarberättelser 1, 6, 7; task-218.2 AC 1–3).
+ * (ADR-112; PRD TASK-218 användarberättelser 1, 6, 7; task-218.2 AC 1–3;
+ * bakgrundsbilden task-273.6 AC 1–4).
  *
  * Testar externt beteende, inte implementationsdetaljer: progressbar-
  * semantiken + korrekta aria-värden per förloppsläge, den polite-
  * annonserade sr-only-statusraden (skild kanal från widgeten, se
- * komponentens klassdoc), den Marcus-låsta ordalydelsen, reducerad
- * rörelse (diskret stegning — ingen transition-deklaration alls under
- * reduce, samma progressive-enhancement-mönster som Skeleton.spec.ts),
- * och kontrastkontraktet (normalläge redan ≥3:1 mot spåret — sage-9
- * golvet, inte bara ett contrast-more-tak — som mörknar vidare till
- * sage-11 under contrast-more; färgbytet från gold är task-273.1,
- * 2026-08-17 — systemets laddningssignal skiljs från innehållets guld).
+ * komponentens klassdoc), den Marcus-låsta ordalydelsen (kvar i DOM:en men
+ * sr-only sedan task-273.6 — logotypen och den synliga texten är borta ur
+ * den renderade ytan, bara baren är kvar), reducerad rörelse (diskret
+ * stegning — ingen transition-deklaration alls under reduce, samma
+ * progressive-enhancement-mönster som Skeleton.spec.ts), och
+ * kontrastkontraktet: dels det ursprungliga (normalläge redan ≥3:1 mot
+ * spåret — sage-9 golvet, inte bara ett contrast-more-tak — som mörknar
+ * vidare till sage-11 under contrast-more; färgbytet från gold är
+ * task-273.1, 2026-08-17), dels det NYA (bakgrundsscrimmets opacitet mot
+ * det mätta WCAG-golvet, task-273.6 — se components.css:s tokenkommentar
+ * för fullständig pixelanalys av `public/roger-och-lotta.webp`).
  *
  * Kör i a11y-projektet mot /dev/primitives (ADR-044/045) — axe-skanningen
  * av sektionen bor i primitives.spec.ts.
@@ -54,20 +59,94 @@ function kontrastKvot(a: string, b: string): number {
 }
 
 test.describe('Forberedelseskarm — Förberedelseskärmens UI-kontrakt (task-218.2)', () => {
-  test('AC 1: logotyp, determinate bar och den EXAKTA låsta texten renderas i alla tre demo-instanser', async ({
+  test('task-273.6 AC 1: logotypen är helt borta, den låsta texten är kvar i DOM:en men INTE synlig, baren orörd', async ({
     page,
   }) => {
-    const instanser = page.locator(SEKTION).locator('img[alt="Miranon Media"]');
-    await expect(instanser).toHaveCount(3);
+    // Logotypen är BORTTAGEN, inte bara osynlig — noll instanser.
+    const logor = page.locator(SEKTION).locator('img[alt="Miranon Media"]');
+    await expect(logor).toHaveCount(0);
 
+    // Ordalydelsen är fortfarande LÅST och kvar — progressbarens
+    // aria-labelledby-mål (se testet nedan) — men "rensas till enbart
+    // loadingbaren" (Marcus tillägg 2) gör den sr-only i stället för synlig.
     const texter = page.locator(SEKTION).getByText(LAST_TEXT, { exact: true });
     await expect(texter).toHaveCount(3);
-
-    // Ordalydelsen är LÅST — inte "innehåller", exakt den fulla strängen,
-    // inget mer och inget mindre (Marcus-kravet, ändra aldrig ett tecken).
     for (const el of await texter.all()) {
+      // Ordalydelsen är LÅST — inte "innehåller", exakt den fulla strängen,
+      // inget mer och inget mindre (Marcus-kravet, ändra aldrig ett tecken).
       await expect(el).toHaveText(LAST_TEXT);
+      // ...men inte längre VISUELLT synlig (AC 1: "borta ur den renderade
+      // ytan"). Playwrights toBeVisible() räcker INTE här — mätt: den
+      // klassar ett sr-only-element som "visible" ändå, eftersom
+      // clip-tekniken bara påverkar MÅLNING, inte layoutboxen som
+      // getBoundingClientRect() läser. Mät i stället den FAKTISKA synliga
+      // ytan: en sr-only-rad har en ~1×1px bounding box, inte en läsbar
+      // textrads mått.
+      const box = await el.boundingBox();
+      expect(box?.width ?? 0).toBeLessThanOrEqual(1);
+      expect(box?.height ?? 0).toBeLessThanOrEqual(1);
     }
+
+    // Baren (task-273.1:s form) är KVAR ORÖRD — tre progressbars, en per
+    // demo-instans, oförändrad räkning.
+    await expect(page.locator(`${SEKTION} [role="progressbar"]`)).toHaveCount(3);
+  });
+
+  test('task-273.6 AC 2/4: bakgrundsbilden renderas — foto (cover/center, aria-hidden) + scrim, ingen <img>', async ({
+    page,
+  }) => {
+    const foton = page.locator(SEKTION).locator('[data-testid="forberedelseskarm-bakgrund"]');
+    await expect(foton).toHaveCount(3);
+    const scrim = page.locator(SEKTION).locator('[data-testid="forberedelseskarm-scrim"]').first();
+    await expect(scrim).toHaveCount(1);
+
+    const forstaFoto = foton.first();
+    await expect(forstaFoto).toHaveAttribute('aria-hidden', 'true');
+    await expect(scrim).toHaveAttribute('aria-hidden', 'true');
+
+    const stilar = await forstaFoto.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return {
+        bild: cs.backgroundImage,
+        storlek: cs.backgroundSize,
+        position: cs.backgroundPosition,
+      };
+    });
+    // "centrerad och täcker hela ... fönstret (cover-beteende)" — Marcus
+    // form-beskrivning, task-273.6 AC 2 — inte letterboxad/upprepad.
+    expect(stilar.bild).toContain('roger-och-lotta.webp');
+    expect(stilar.storlek).toBe('cover');
+    expect(stilar.position).toBe('50% 50%');
+
+    // Scrimmets opacitet är den MÄTTA WCAG-säkerhetsmarginalen (≥90 % vitt,
+    // components.css:s tokenkommentar: håller ≥3:1 även mot bildens
+    // absolut mörkaste uppmätta pixel). En regression under 90 % skulle
+    // sänka den mätta marginalen utan att någon annan grind fångar det.
+    const alfa = await scrim.evaluate((el) => {
+      const bg = getComputedStyle(el).backgroundColor;
+      const match = bg.match(/rgba?\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*(?:,\s*([\d.]+)\s*)?\)/);
+      return match?.[1] === undefined ? 1 : Number(match[1]);
+    });
+    expect(alfa).toBeGreaterThanOrEqual(0.9);
+  });
+
+  test('task-273.6 AC 3: prefers-contrast: more DÖLJER bakgrund+scrim helt, faller tillbaka till ren yta', async ({
+    page,
+  }) => {
+    const foto = page
+      .locator(SEKTION)
+      .locator('[data-testid="forberedelseskarm-bakgrund"]')
+      .first();
+    const scrim = page.locator(SEKTION).locator('[data-testid="forberedelseskarm-scrim"]').first();
+    await expect(foto).toBeVisible();
+    await expect(scrim).toBeVisible();
+
+    await page.emulateMedia({ contrast: 'more' });
+    // "bilden får tonas ned ytterligare eller döljas där" (Marcus AC 3) —
+    // denna implementation DÖLJER, faller tillbaka till containerns egen
+    // bg-bg (samma rena yta som fanns FÖRE denna skiva).
+    await expect(foto).toBeHidden();
+    await expect(scrim).toBeHidden();
   });
 
   test('AC 2: progressbar-semantik — korrekta aria-värden per förloppsläge (0 %, delvis, full)', async ({
@@ -164,12 +243,22 @@ test.describe('Forberedelseskarm — Förberedelseskärmens UI-kontrakt (task-21
     expect(kontrastKvot(contrastFill, trackBg)).toBeGreaterThanOrEqual(4.5);
   });
 
-  test('print: spårets outline blir synlig (samma dubbelbälte som SlideToConfirm-spåret)', async ({
+  test('print: spårets outline blir synlig (samma dubbelbälte som SlideToConfirm-spåret); bakgrundsbilden döljs (task-273.6)', async ({
     page,
   }) => {
     await page.emulateMedia({ media: 'print' });
     const forstaTrack = page.locator(`${SEKTION} [role="progressbar"]`).first().locator('> div');
     const stil = await forstaTrack.evaluate((el) => getComputedStyle(el).outlineStyle);
     expect(stil).toBe('solid');
+
+    // Foto+scrim döljs under utskrift av samma skäl som contrast-more —
+    // faller tillbaka till containerns rena bg-bg, inget bläckslöseri.
+    const foto = page
+      .locator(SEKTION)
+      .locator('[data-testid="forberedelseskarm-bakgrund"]')
+      .first();
+    const scrim = page.locator(SEKTION).locator('[data-testid="forberedelseskarm-scrim"]').first();
+    await expect(foto).toBeHidden();
+    await expect(scrim).toBeHidden();
   });
 });

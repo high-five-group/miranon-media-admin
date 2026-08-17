@@ -99,11 +99,14 @@ async function samlaHojdmatningar(page: import('@playwright/test').Page): Promis
     // kräver bara att MINST ett fångades — uteblivna prov ger rött, aldrig
     // tyst grönt.
     const matPunkt = () => {
-      const logo = document.querySelector('img[alt="Miranon Media"]');
-      if (!logo) return false;
-      // container > block(max-w-md) > img — Förberedelseskärmens enda <img>.
-      const block = logo.parentElement;
-      const container = block?.parentElement ?? null;
+      // Ankaret var `img[alt="Miranon Media"]` (logotypen) fram till
+      // task-273.6 — den togs bort ur den renderade ytan
+      // (Forberedelseskarm.tsx § BAKGRUNDSBILDEN). `data-testid` är nu det
+      // stabila ankaret: container > block(`forberedelseskarm-block`,
+      // max-w-xs). Samma två-nivås uppmätning som förut, bara annat urval.
+      const block = document.querySelector('[data-testid="forberedelseskarm-block"]');
+      if (!block) return false;
+      const container = block.parentElement ?? null;
       const root = document.getElementById('root');
       const contRect = container?.getBoundingClientRect();
       const blockRect = block?.getBoundingClientRect();
@@ -190,7 +193,9 @@ test.describe('Förberedelseskärmens höjdkedja (TASK-266)', () => {
     await expect(inramning).toBeVisible();
 
     const hojder = await inramning.evaluate((ram) => {
-      const container = ram.querySelector('img[alt="Miranon Media"]')?.parentElement?.parentElement;
+      // Se kommentaren i samlaHojdmatningar() ovan — samma testid-ankare
+      // sedan task-273.6, ersätter det borttagna `img[alt="Miranon Media"]`.
+      const container = ram.querySelector('[data-testid="forberedelseskarm-block"]')?.parentElement;
       return {
         ram: ram.getBoundingClientRect().height,
         // Inramningen bär `border`, så komponenten fyller dess INNEHÅLLSBOX
