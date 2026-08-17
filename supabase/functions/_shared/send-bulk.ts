@@ -36,6 +36,42 @@ export class NonProdAddressError extends Error {
   }
 }
 
+/**
+ * [TASK-274, Marcus beslut B 2026-08-17] Utskicks-spärrens explicita
+ * "öppet"-värde. Fail-closed ÅT RÄTT HÅLL (AC #3): frånvarande hemlighet
+ * ELLER EXAKT detta värde = öppet (dagens beteende oförändrat); VARJE annat
+ * värde (felstavning, "på", "true", "1", tomsträng) = blockerat. En felskriven
+ * flip ska hellre blockera än släppa igenom.
+ */
+export const UTSKICK_SPARR_AV = 'av';
+
+/**
+ * Ren klassificering av `UTSKICK_SPARR`-hemlighetens råa värde — Deno-global-
+ * FRI (denna fil måste förbli Node-importerbar för api-pure-kontraktstestet,
+ * se filhuvudet). `Deno.env.get('UTSKICK_SPARR')` läses PER ANROP i VARJE
+ * EF:s `index.ts` (samma per-EF-läsemönster som `isProd`, se
+ * `RunBulkSendInput.isProd`s docstring) — aldrig här. EF:en skickar det redan
+ * klassificerade booleanet vidare som orkestratorns `utskickSparrat`-input.
+ */
+export function isUtskickSparrat(varde: string | undefined): boolean {
+  return varde !== undefined && varde !== UTSKICK_SPARR_AV;
+}
+
+/**
+ * [TASK-274] Utskicks-spärren (Marcus beslut B) vägrade — en CENTRAL
+ * kill-switch, oberoende av miljö (AC #2: fäller "oavsett miljö"). Samtliga
+ * fyra utskicks-EF:er (åtgärdsmail/segmentutskick/kvitto/anmälningsbekräftelse)
+ * kastar DENNA klass, ALDRIG en egen kopia — se `RunBulkSendInput.
+ * utskickSparrat` och motsvarande fält i `send-action-email.ts`/`send-
+ * receipt.ts`/`confirm-registrations.ts` för var den konsumeras.
+ */
+export class UtskickSparratError extends Error {
+  constructor() {
+    super('Utskick är blockerade just nu.');
+    this.name = 'UtskickSparratError';
+  }
+}
+
 /** Normaliserat utfall av ETT batch-anrop — Resend-SDK-formen stannar i EF:ens sender. */
 export type BatchOutcome = {
   accepted: { email: string }[];
@@ -84,6 +120,12 @@ export type RunBulkSendInput = {
   jobId: string;
   /** ENVIRONMENT === 'production'. Fail-closed: allt annat → false (EF:ens ansvar). */
   isProd: boolean;
+  /**
+   * [TASK-274] `isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'))` — klassificerat
+   * i EF:en, samma per-EF-läsmönster som `isProd`. Sant → `runBulkSend` kastar
+   * `UtskickSparratError` FÖRE allt annat, oberoende av `isProd`.
+   */
+  utskickSparrat: boolean;
   /** "Vilka fick" — segment/filter-ögonblicksbild för Utskickslogg. */
   filterSnapshot: string;
 };
@@ -107,6 +149,9 @@ export function renderHtml(mailtext: string): string {
 
 /**
  * Orkestrera ett bulk-utskick (ADR-067). Ordning är lastbärande:
+ *  0. [TASK-274] UTSKICKS-SPÄRR (Marcus-flip) FÖRE ALLT — central kill-switch,
+ *     oberoende av miljö: `input.utskickSparrat` sant → kasta `UtskickSparratError`
+ *     (noll räkning, noll sändning, noll logg-rad).
  *  1. prepareBulkSend (L1): consent/no-email/dedup/chunk + räkning.
  *  2. ICKE-PROD-SPÄRR (GOLV) FÖRE varje sänd-anrop: i icke-prod måste VARJE upplöst
  *     adress vara en Resend-test-adress; en enda icke-test-adress → kasta
@@ -122,6 +167,11 @@ export async function runBulkSend(
   input: RunBulkSendInput,
   deps: RunBulkSendDeps,
 ): Promise<BulkSendStatus> {
+  // 0) Utskicks-spärren — FÖRE allt annat, oberoende av miljö.
+  if (input.utskickSparrat) {
+    throw new UtskickSparratError();
+  }
+
   const { batches, counts } = prepareBulkSend(input.members);
 
   // 2) Lastbärande icke-prod-spärr — före all sändning.

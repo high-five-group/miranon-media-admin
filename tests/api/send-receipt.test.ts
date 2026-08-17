@@ -22,7 +22,10 @@
 
 import { expect, test } from '@playwright/test';
 import type { ReceiptAllocationDeps } from '../../supabase/functions/_shared/receipt-numbering';
-import { NonProdAddressError } from '../../supabase/functions/_shared/send-bulk';
+import {
+  NonProdAddressError,
+  UtskickSparratError,
+} from '../../supabase/functions/_shared/send-bulk';
 import {
   type ReceiptFinalizer,
   type ReceiptPdfBuilder,
@@ -47,6 +50,7 @@ function input(overrides: Partial<ReceiptSendInput> = {}): ReceiptSendInput {
     eventNamn: 'Utbildning Skövde',
     jobId: '11111111-1111-4111-8111-111111111111',
     isProd: false,
+    utskickSparrat: false,
     nu: NU,
     ...overrides,
   };
@@ -240,6 +244,37 @@ test.describe('sendReceipt — icke-prod-spärren (GOLV, återanvänd ur send-bu
   test('prod (isProd: true) tillåter en icke-test-adress', async () => {
     const ledger = makeLedger();
     const result = await sendReceipt(input({ email: 'roger@miranonmedia.se', isProd: true }), {
+      ledger,
+      buildPdf: makeBuildPdf(),
+      sendEmail: makeSender({ accepted: true }),
+      finalizeReceipt: makeFinalizer(),
+    });
+    expect(result.status).toBe('sent');
+  });
+});
+
+test.describe('sendReceipt — utskicks-spärren (TASK-274, Marcus beslut B, central kill-switch)', () => {
+  test('utskickSparrat: true → VÄGRAR, INGEN allokering görs, oavsett miljö (prod)', async () => {
+    const ledger = makeLedger();
+    const pdfCalls: unknown[] = [];
+
+    await expect(
+      sendReceipt(input({ utskickSparrat: true, isProd: true }), {
+        ledger,
+        buildPdf: makeBuildPdf(pdfCalls),
+        sendEmail: makeSender({ accepted: true }),
+        finalizeReceipt: makeFinalizer(),
+      }),
+    ).rejects.toBeInstanceOf(UtskickSparratError);
+
+    // Spärren körde FÖRE ALLT — även före allokeringen (samma golv som icke-prod-spärren).
+    expect(pdfCalls).toHaveLength(0);
+    expect(await ledger.listByYear(2026)).toHaveLength(0);
+  });
+
+  test('utskickSparrat: false (default) → INGEN vägran, dagens beteende oförändrat', async () => {
+    const ledger = makeLedger();
+    const result = await sendReceipt(input(), {
       ledger,
       buildPdf: makeBuildPdf(),
       sendEmail: makeSender({ accepted: true }),

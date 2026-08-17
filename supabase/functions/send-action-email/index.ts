@@ -24,7 +24,7 @@ import {
   runActionSend,
   runActionTestSend,
 } from '../_shared/send-action-email.ts';
-import { NonProdAddressError } from '../_shared/send-bulk.ts';
+import { isUtskickSparrat, NonProdAddressError, UtskickSparratError } from '../_shared/send-bulk.ts';
 
 // send-action-email — åtgärdsutskickens sändväg (TASK-147.1, ADR-067-revisionen).
 // Repots SJUNDE write-vertikal, TREDJE mail-vertikal.
@@ -468,6 +468,9 @@ Deno.serve(async (req) => {
 
   // Fail-closed icke-prod-detektion: endast ENVIRONMENT==='production' är prod.
   const isProd = Deno.env.get('ENVIRONMENT') === 'production';
+  // [TASK-274] Utskicks-spärren (Marcus beslut B) — central kill-switch, LÄST PER
+  // ANROP (ingen cache): frånvarande/uttryckligt 'av' = öppet, allt annat = blockerat.
+  const utskickSparrat = isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'));
 
   try {
     // Eventet — 404 om okänt (get-event-kontraktet, aldrig 500).
@@ -505,6 +508,7 @@ Deno.serve(async (req) => {
           testRecipientEmail: user.email,
           jobId,
           isProd,
+          utskickSparrat,
         },
         { sender: makeRealSender() },
       );
@@ -555,6 +559,7 @@ Deno.serve(async (req) => {
         mailtext,
         jobId,
         isProd,
+        utskickSparrat,
         nu: new Date().toISOString(),
         attachments: resolvedAttachments,
       },
@@ -574,6 +579,10 @@ Deno.serve(async (req) => {
     );
     return jsonResponse(result, 200, corsHeaders);
   } catch (error) {
+    if (error instanceof UtskickSparratError) {
+      console.warn(`[${OPERATION_KEY}] UTSKICK-SPARR REFUSED | caller_user_id=${user.id}`);
+      return jsonResponse({ error: error.message, code: 'utskick_blockerat' }, 423, corsHeaders);
+    }
     if (error instanceof NonProdAddressError) {
       console.warn(
         `[${OPERATION_KEY}] NONPROD-GUARD REFUSED | caller_user_id=${user.id} | offending=${error.offending.length}`,

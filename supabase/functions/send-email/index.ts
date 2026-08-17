@@ -11,9 +11,11 @@ import { resolveSegmentMembers, SegmentNotResolvableError } from '../_shared/seg
 import {
   type BatchOutcome,
   type BatchSender,
+  isUtskickSparrat,
   type LogWriter,
   NonProdAddressError,
   runBulkSend,
+  UtskickSparratError,
 } from '../_shared/send-bulk.ts';
 
 // send-email — bulk-mail på segment (Fas 6h, ADR-067). Repots fjärde write-vertikal.
@@ -213,6 +215,9 @@ Deno.serve(async (req) => {
 
   // Fail-closed icke-prod-detektion: endast ENVIRONMENT==='production' är prod.
   const isProd = Deno.env.get('ENVIRONMENT') === 'production';
+  // [TASK-274] Utskicks-spärren (Marcus beslut B) — central kill-switch, LÄST PER
+  // ANROP (ingen cache): frånvarande/uttryckligt 'av' = öppet, allt annat = blockerat.
+  const utskickSparrat = isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'));
 
   try {
     // Mottagar-upplösning SERVER-SIDE (segmentIds → union-medlemmar). Okänt/legacy → 400.
@@ -225,6 +230,7 @@ Deno.serve(async (req) => {
         mailtext,
         jobId,
         isProd,
+        utskickSparrat,
         filterSnapshot: `segmentIds: ${(segmentIds as string[]).join(', ')}`,
       },
       {
@@ -242,6 +248,10 @@ Deno.serve(async (req) => {
     // Distinkta klient-fel-vägar före generisk 500.
     if (error instanceof SegmentNotResolvableError) {
       return badRequest(error.message, corsHeaders);
+    }
+    if (error instanceof UtskickSparratError) {
+      console.warn(`[send-email] UTSKICK-SPARR REFUSED | caller_user_id=${user.id}`);
+      return jsonResponse({ error: error.message, code: 'utskick_blockerat' }, 423, corsHeaders);
     }
     if (error instanceof NonProdAddressError) {
       console.warn(

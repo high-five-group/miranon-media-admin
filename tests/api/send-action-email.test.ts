@@ -39,7 +39,10 @@ import {
   runActionSend,
   runActionTestSend,
 } from '../../supabase/functions/_shared/send-action-email';
-import { NonProdAddressError } from '../../supabase/functions/_shared/send-bulk';
+import {
+  NonProdAddressError,
+  UtskickSparratError,
+} from '../../supabase/functions/_shared/send-bulk';
 
 const TEST_ADDR = 'delivered@resend.dev';
 const TEST_ADDR_2 = 'bounced@resend.dev';
@@ -187,10 +190,56 @@ function input(overrides: Partial<ActionSendInput> = {}): ActionSendInput {
     mailtext: 'Hej {förnamn}, din plats är bekräftad.',
     jobId: '11111111-1111-4111-8111-111111111111',
     isProd: false,
+    utskickSparrat: false,
     nu: NU,
     ...overrides,
   };
 }
+
+test.describe('runActionSend — utskicks-spärren (TASK-274, Marcus beslut B, central kill-switch)', () => {
+  test('utskickSparrat: true → VÄGRAR HELA sändningen, FÖRE partitionering, oavsett miljö', async () => {
+    const sender = mockSender();
+    const writer = mockWriter();
+
+    await expect(
+      runActionSend(input({ utskickSparrat: true, isProd: true }), {
+        sender,
+        writeFields: writer,
+      }),
+    ).rejects.toThrow(UtskickSparratError);
+
+    expect(sender.calls, 'noll Resend-anrop när spärren är på').toHaveLength(0);
+    expect(writer.writes, 'noll fält-skrivningar när spärren är på').toHaveLength(0);
+  });
+
+  test('utskickSparrat: true täcker ÄVEN den bilage-bärande grenen (EN check, båda grenarna)', async () => {
+    const sender = mockSender();
+    const writer = mockWriter();
+    const singleSender = mockSingleSender();
+    const attachmentReader = mockAttachmentReader();
+
+    await expect(
+      runActionSend(input({ utskickSparrat: true, attachments: [resolvedAttachment()] }), {
+        sender,
+        writeFields: writer,
+        singleSender,
+        readAttachments: attachmentReader,
+      }),
+    ).rejects.toThrow(UtskickSparratError);
+
+    expect(singleSender.calls, 'noll singel-anrop när spärren är på').toHaveLength(0);
+    expect(attachmentReader.calls, 'bilagornas bytes hämtas aldrig när spärren är på').toHaveLength(
+      0,
+    );
+  });
+
+  test('utskickSparrat: false (default) → INGEN vägran, dagens beteende oförändrat', async () => {
+    const sender = mockSender();
+    const writer = mockWriter();
+    const result = await runActionSend(input(), { sender, writeFields: writer });
+    expect(result.status).toBe('sent');
+  });
+});
 
 test.describe('runActionSend — åtgärdsutskickens orkestrator (TASK-147.1)', () => {
   test('isActionType: exakt de fyra nycklarna är giltiga, inget annat', () => {
@@ -598,9 +647,19 @@ test.describe('runActionTestSend — testmailets orkestrator (TASK-147.10)', () 
       testRecipientEmail: TEST_ADDR,
       jobId: '22222222-2222-4222-8222-222222222222',
       isProd: false,
+      utskickSparrat: false,
       ...overrides,
     };
   }
+
+  test('[TASK-274] utskickSparrat: true → VÄGRAR testmailet, oavsett miljö', async () => {
+    const sender = mockSender();
+
+    await expect(
+      runActionTestSend(testInput({ utskickSparrat: true, isProd: true }), { sender }),
+    ).rejects.toThrow(UtskickSparratError);
+    expect(sender.calls).toHaveLength(0);
+  });
 
   test('adressen mailet FAKTISKT går till är testRecipientEmail — ALDRIG target.email (AC #2)', async () => {
     const sender = mockSender();

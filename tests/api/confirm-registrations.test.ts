@@ -28,7 +28,10 @@ import {
   findDisallowedField,
   getOperation,
 } from '../../supabase/functions/_shared/field-allowlists';
-import { NonProdAddressError } from '../../supabase/functions/_shared/send-bulk';
+import {
+  NonProdAddressError,
+  UtskickSparratError,
+} from '../../supabase/functions/_shared/send-bulk';
 
 const TEST_ADDR = 'delivered@resend.dev';
 const TEST_ADDR_2 = 'bounced@resend.dev';
@@ -87,10 +90,35 @@ function input(overrides: Partial<ConfirmRegistrationsInput> = {}): ConfirmRegis
     targets: [target({ id: 'rec1' })],
     jobId: '11111111-1111-4111-8111-111111111111',
     isProd: false,
+    utskickSparrat: false,
     nu: NU,
     ...overrides,
   };
 }
+
+test.describe('confirmRegistrations — utskicks-spärren (TASK-274, Marcus beslut B, central kill-switch)', () => {
+  test('utskickSparrat: true → VÄGRAR, INGEN flip, oavsett miljö (prod)', async () => {
+    const sender = mockSender();
+    const flipper = mockFlipper();
+
+    await expect(
+      confirmRegistrations(input({ utskickSparrat: true, isProd: true }), {
+        sender,
+        flipStatus: flipper,
+      }),
+    ).rejects.toThrow(UtskickSparratError);
+
+    expect(sender.calls, 'noll Resend-anrop när spärren är på').toHaveLength(0);
+    expect(flipper.flips, 'noll status-flippar när spärren är på').toHaveLength(0);
+  });
+
+  test('utskickSparrat: false (default) → INGEN vägran, dagens beteende oförändrat', async () => {
+    const sender = mockSender();
+    const flipper = mockFlipper();
+    const result = await confirmRegistrations(input(), { sender, flipStatus: flipper });
+    expect(result.status).toBe('sent');
+  });
+});
 
 test.describe('confirmRegistrations — bekräftelse-orkestratorn (task-18.6)', () => {
   test('lyckad väg: mail skickas OCH status flippas i samma operation', async () => {

@@ -24,7 +24,7 @@ import { kvittoRader } from '../_shared/receipt-content.ts';
 // nu SAMMA layout i stället för att duplicera pdf-lib-anropen.
 import { renderKvittoPdf } from '../_shared/receipt-pdf.ts';
 import type { KvittoLedgerEntry, ReceiptAllocationDeps } from '../_shared/receipt-numbering.ts';
-import { NonProdAddressError } from '../_shared/send-bulk.ts';
+import { isUtskickSparrat, NonProdAddressError, UtskickSparratError } from '../_shared/send-bulk.ts';
 import {
   BETALSATT_VARDEN,
   type Betalning,
@@ -281,6 +281,9 @@ Deno.serve(async (req) => {
   }
 
   const isProd = Deno.env.get('ENVIRONMENT') === 'production';
+  // [TASK-274] Utskicks-spärren (Marcus beslut B) — central kill-switch, LÄST PER
+  // ANROP (ingen cache): frånvarande/uttryckligt 'av' = öppet, allt annat = blockerat.
+  const utskickSparrat = isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'));
 
   try {
     const registration = await readRegistration(registrationId);
@@ -311,6 +314,7 @@ Deno.serve(async (req) => {
         eventNamn,
         jobId,
         isProd,
+        utskickSparrat,
         nu: new Date().toISOString(),
       },
       {
@@ -327,6 +331,10 @@ Deno.serve(async (req) => {
     );
     return jsonResponse(result, 200, corsHeaders);
   } catch (error) {
+    if (error instanceof UtskickSparratError) {
+      console.warn(`[send-receipt-email] UTSKICK-SPARR REFUSED | caller_user_id=${user.id}`);
+      return jsonResponse({ error: error.message, code: 'utskick_blockerat' }, 423, corsHeaders);
+    }
     if (error instanceof NonProdAddressError) {
       console.warn(
         `[send-receipt-email] NONPROD-GUARD REFUSED | caller_user_id=${user.id} | offending=${error.offending.length}`,

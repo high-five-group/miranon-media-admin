@@ -44,7 +44,7 @@ import {
   parseConfirmOutcome,
   STATUS_BEKRAFTAD,
 } from './confirm-registrations.ts';
-import { NonProdAddressError, RESEND_TEST_ADDRESSES, renderHtml } from './send-bulk.ts';
+import { NonProdAddressError, RESEND_TEST_ADDRESSES, renderHtml, UtskickSparratError } from './send-bulk.ts';
 
 /** De fyra åtgärdstyperna (task-147.1-kortet + AtgardsSida.tsx `ATGARDER[].nyckel`). */
 export type ActionType = 'bekraftelse' | 'paminnelse' | 'eventinfo' | 'fritt';
@@ -216,6 +216,12 @@ export type ActionSendInput = {
   jobId: string;
   /** ENVIRONMENT === 'production'. Fail-closed: allt annat → false (EF:ens ansvar). */
   isProd: boolean;
+  /**
+   * [TASK-274] `isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'))` — klassificerat
+   * i EF:en, samma per-EF-läsmönster som `isProd`. Sant → `runActionSend` kastar
+   * `UtskickSparratError` FÖRE allt annat, oberoende av `isProd`.
+   */
+  utskickSparrat: boolean;
   /** Tidsstämpeln som skrivs (injicerad så testet slipper systemklockan). */
   nu: string;
   /**
@@ -265,6 +271,12 @@ export type ActionTestSendInput = {
   jobId: string;
   /** ENVIRONMENT === 'production'. Fail-closed: allt annat → false (EF:ens ansvar). */
   isProd: boolean;
+  /**
+   * [TASK-274] `isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'))` — samma
+   * fält/kontrakt som `ActionSendInput.utskickSparrat`. Sant → `runActionTestSend`
+   * kastar `UtskickSparratError` FÖRE allt annat.
+   */
+  utskickSparrat: boolean;
 };
 
 export type ActionTestSendResult = {
@@ -277,6 +289,8 @@ export type ActionTestSendResult = {
  * Kör ETT testmail (längd 1, `ActionTestSendInput.target`). Ordning speglar
  * `runActionSend` minus partitionerings- och fält-skrivningsstegen (irrelevanta
  * för diagnostik):
+ *  0. [TASK-274] UTSKICKS-SPÄRR (Marcus-flip) FÖRE ALLT — `input.utskickSparrat`
+ *     sant → kasta `UtskickSparratError`, oberoende av miljö.
  *  1. Rendera mailet ur `target`s platshållar-data (SAMMA `renderFor` som den
  *     verkliga sändvägen — granskningen Lotta ser och testmailet hon FÅR är
  *     samma algoritm).
@@ -294,6 +308,11 @@ export async function runActionTestSend(
   input: ActionTestSendInput,
   deps: { sender: ActionSender },
 ): Promise<ActionTestSendResult> {
+  // 0) Utskicks-spärren — FÖRE allt annat, oberoende av miljö.
+  if (input.utskickSparrat) {
+    throw new UtskickSparratError();
+  }
+
   const mail = renderFor(input.amne, input.mailtext, input.target, input.event);
   const email = input.testRecipientEmail.trim();
 
@@ -421,11 +440,20 @@ function partitionTargets(input: ActionSendInput): Partitioned {
  * index.ts) behöver inte veta vilken mekanism som används. Icke-tom
  * `input.attachments` ⇒ den bilage-bärande grenen (loopad singelsändning,
  * ADR-067 D9); annars den bilage-fria batchgrenen (D2, oförändrad).
+ *
+ * [TASK-274] UTSKICKS-SPÄRREN (Marcus-flip) kastas HÄR, FÖRE grenvalet —
+ * `input.utskickSparrat` sant → `UtskickSparratError`, oberoende av miljö. EN
+ * check täcker BÅDA grenarna (ingen kan skicka förbi via vare sig den
+ * bilage-fria eller den bilage-bärande vägen).
  */
 export async function runActionSend(
   input: ActionSendInput,
   deps: ActionSendDeps,
 ): Promise<ActionSendResult> {
+  if (input.utskickSparrat) {
+    throw new UtskickSparratError();
+  }
+
   const partitioned = partitionTargets(input);
   const attachments = input.attachments ?? [];
   if (attachments.length > 0) {
