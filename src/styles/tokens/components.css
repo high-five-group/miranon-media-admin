@@ -257,6 +257,31 @@
   --mm-skeleton-block-contrast: var(--mm-text-secondary);
   --mm-skeleton-shimmer: color-mix(in srgb, var(--mm-bg) 75%, transparent);
 
+  /* ── Laddtextens våg (TASK-259 — Marcus QA-fynd 2026-08-17) ──
+     Syskon till Skeleton-shimmern ovan, men för TEXT: en våg som far
+     genom bokstäverna medan ett tal räknas ("Räknar personer…").
+     Mekaniken bor i base.css § .mm-laddtext; hit hör bara vågtoppen.
+
+     VÅGEN ÄR EN MÖRKNING, ALDRIG EN LJUSNING — och det är ett
+     tillgänglighetsbeslut, inte en smaksak. Skeleton-glansen ovan får
+     ljusna för att den sveper över ett DEKORATIVT block (aria-hidden,
+     undantaget från 1.4.11). Den här vågen sveper över LÄSBAR TEXT, och
+     en ljusning hade sänkt kontrasten mot den ljusa ytan under vågens
+     passage.
+
+     DÄRFÖR FINNS INGEN BAS-TOKEN: gradientens bas är `currentColor`, satt
+     i base.css. En bas-token hade varit ett LÖFTE om att varje konsument
+     bär samma textfärg — och det löftet höll inte. Skarpmätt under bygget
+     (2026-08-17, DOM-probe mot dev-servern): sex av de sju laddtexterna
+     bär `text-text-muted` (#6b6b6b), men segmentkortets "Räknar…" ärver
+     `text-text-secondary` (#525151) från sin live-region. En bas låst till
+     --mm-text-muted hade alltså gjort PRECIS den raden LJUSARE under
+     vågen — exakt det stycket ovan förbjuder. Med `currentColor` är basen
+     per konstruktion identisk med färgen raden har utan vågen, oavsett
+     vilken textklass konsumenten bär, och toppen nedan är mörkare än
+     samtliga. Effekten kan därför bara HÖJA kontrasten, aldrig sänka den. */
+  --mm-laddtext-vag: var(--mm-text);
+
   /* ── Forberedelseskarm (task-218.2 — Förberedelseskärmen, ADR-112) ──
      Determinate bar. --mm-primary (gold-500/gold-9) mäter bara 2,57:1 mot
      vitt (se Kryssrutans mätning ovan) — under WCAG 1.4.11:s 3:1-golv för
