@@ -38,9 +38,17 @@ oinstrumenterade skrivvägar, runbook-felet) · `T144`. Numrering efter S106:
 session 107 · ADR 112 · L512 + 8 fragment · T145 · task-226 — re-derivera
 ALLTID. Full narrativ: sessionsdok S106 Del 1–3 + BUILD-LOG S106-post.
 
-**Session 102 ⏸️ PAUSAD (2026-08-17, `lifecycle: paused`, SJUNDE
-pausen — byggfokus-passet KLART på Marcus order, hans moment sparade
-till resume; main `1173933a`, post-merge GRÖN ×3, kön tom för S102).**
+**Session 102 🔄 ÅTERUPPTAGEN (2026-08-17, `lifecycle: active`, sjunde
+resumen — Marcus fullmandat: repo-städ + rotorsaks-läkning +
+agent-flotta [modell Opus på rotorsaksarbete, Marcus order 2026-08-17];
+main `2d10f72a`, paus-7-landningen #1493 mergad efter lint-fix
+`8775e2c7`).** Senior-svepets fynd i resume-rapporten (chatt 2026-08-17):
+nightly röd 19 raka nätter — dominanter Länkkontroll (ADR-082-vald
+kostnad) + backlog-grinden (task-238-fixen VAR ombord natt 17/8, grinden
+cancellades ÄNDÅ mot 10-min-taket → resten av 238 är CI-körtiden) ·
+kontraktsvakt-benet #1483 OTRIAGERAT · 5 post-merge-ärenden med färdigt
+facit väntar referens-stängning · depbot-majors (react-table 9, motion
+13) saknar kort-hem · 6+6 stale grenar städas (arkiv-tag före radering).
 Resume 6:s skörd (13 PR:er #1445–#1486): dokument-kedjan KOMPLETT
 (stämpel + 147.6 Done + rivning, task-164 Done, ytan SKARP) ·
 tid-åtgärden KLAR (rotorsak Zap 4, Opus-backfill 294/294 `Inskickad :=
@@ -60,9 +68,10 @@ ordning):** (1) QA 243.4 hem-stämpeln + B2-beslutet → 243.5-agent ·
 HITL) · (5) 40-listan (+ task-34/28 moot, 235 stängningskandidat) ·
 (6) passkey p5–6 → 231 → 127.10 · (7) QA-rester 218.5/219.4/127.10+
 Roger/147.9 · (8) larm-triage-GO (13 ärenden) + Dependabot #1488.
-Numrering: task-252 · ADR 115 · T146 · L512+18 fragment · f50 —
-re-derivera ALLTID (S104 parallell). Full handoff: sessionsdok S102 §
-PAUSLÄGE (sjunde) + Del 15. Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
+Numrering: task-252 · ADR 116 (115 förbrukad av S104:s
+segment-regelspråk, disk-verifierad vid resume 2026-08-17) · T146 ·
+L512+18 fragment · f50 — re-derivera ALLTID (S104 parallell). Full
+handoff: sessionsdok S102 § Paushistorik (sjunde) + Del 15. Resume 5:s skörd: Visa-kedjan KOMPLETT (varv
 3 #1415 · task-245 byggd+stängd #1423/#1425 · task-246
 byggd+stängd #1431/#1433; dokument-stämpeln VÄNTAR — facit-låset
 förberett #1437,
