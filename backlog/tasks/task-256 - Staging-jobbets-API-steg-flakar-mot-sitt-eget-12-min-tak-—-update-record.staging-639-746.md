@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-17 07:41'
-updated_date: '2026-08-17 09:47'
+updated_date: '2026-08-17 09:51'
 labels:
   - ready-for-agent
 dependencies: []
@@ -148,4 +148,38 @@ och verifierade borta (`grep ZZ-TASK-256|__zzKall` → 0 träffar).
    ~15 % av budgeten och även 3,07-min-utfallet för bara ~26 %). #1476:s avbrott drevs
    av E2E-steget, inte av API-steget: i run 31984652487 hann E2E 514 s utan att bli
    klart medan API-steget kostade 184 s.
+
+── OVÄNTAT FYND, REGISTRERAT EJ ÅTGÄRDAT (ADR-053: blockerar ej + värdefullt)
+En REN LÄSNING av de rörda fixturerna efter att alla grindar gått gröna (ingen
+skrivning, via get-registrations/get-attendance) gav:
+
+  borOver=false · checkinStatus="Ej avstämt"      ← korrekt utgångsläge
+  slutbetalning="Mottagen"
+  noteringAnmalningsavgift="ZZ-18.8-avgift-notering"
+  noteringSlutbetalning="ZZ-18.8-slut-notering"
+  paminnelseAnmalningsavgiftSkickad="2026-07-22T10:00:00.000Z"
+
+De fyra sista är EXAKT de värden betalnings-testerna skriver: sentinel-strängarna
+`AVGIFT_SENTINEL`/`SLUT_SENTINEL` och `STAMP`-konstanten. Seed-ankaret bär alltså
+sannolikt kvarlämnade testvärden från en körning som avbröts före sitt `finally`.
+
+VARFÖR DET INTE ÄR DENNA AGENTS: mönstret mutera→assertera→restaurera är
+tillståndsbevarande — en körning som SLUTFÖRS lämnar exakt vad den fann. De tre
+betalnings-allow-testerna kördes i denna session ENDAST inuti körningar som gick
+igenom helt (19 passed ×2, `npm run test:api` 874 passed); de grep-avgränsade
+körningarna och mekanism-sonden rörde bara `Bor över` och check-in-statusen.
+Tillståndet ovan förelåg alltså före sessionens första fil-körning.
+
+VARFÖR DET SPELAR ROLL: när `original` REDAN är sentinelvärdet blir läs-tillbaka-
+assertionen TAUTOLOGISK — testet skriver ett värde som redan låg där, läser det,
+och "bevisar" ingenting. Det gäller tre assertioner (mark-final-payment-paid,
+update-registration-payment-note, log-payment-reminder). Denna PR gör det varken
+bättre eller sämre: pollen träffar på första proben, precis som den gamla
+enskotts-läsningen gjorde.
+
+INGET ÄR ÄNDRAT I BASEN. Att skriva om delad staging-fixturdata är ett beslut om
+en förstklassig leverabel (CLAUDE.md § Airtable-basen som leverabel) och fattas
+inte av bygg-agenten på eget bevåg. Behöver eget kort: fastställ om värdena är
+legitima seed-värden eller kvarlämningar, och om testerna bör kräva ett
+utgångsläge SKILT från det de skriver (annars kan assertionen aldrig fälla).
 <!-- SECTION:NOTES:END -->
