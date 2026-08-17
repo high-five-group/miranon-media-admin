@@ -101,6 +101,31 @@ test.describe('Mer-landningen (Fas 6e L2 — statiskt skal + logout-golv)', () =
     // _authenticated-guarden redirectar till /login efter SIGNED_OUT-invalidering.
     await page.waitForURL(/\/login/);
     await expect(page).toHaveURL(/\/login/);
+
+    // S107 fynd-fix (Marcus-fångst "borde jag inte hamna på Hem?"): en
+    // AVSIKTLIG utloggning får INTE bära med sig ursprungs-URL:en. Gjorde den
+    // det blev vägen en sluten loop — knappen finns bara här, så varje
+    // utloggning → inloggning landade tillbaka på /mer och /login:s
+    // /hem-default blev oåtkomlig. Se lib/auth/utloggningsavsikt.ts.
+    await expect(page).not.toHaveURL(/[?&]redirect=/);
+  });
+
+  test('S107 fynd-fix: efter avsiktlig utloggning landar nästa inloggning på /hem, inte /mer', async ({
+    page,
+  }) => {
+    await page.route('**/auth/v1/logout**', async (route) => {
+      await route.fulfill({ status: 204, contentType: 'application/json', body: '{}' });
+    });
+
+    await page.goto('/mer');
+    await page.getByRole('button', { name: 'Logga ut' }).click();
+    await page.waitForURL(/\/login/);
+
+    // Destinationen ÄR /login:s search-default när inget redirect fångats.
+    // Kontraktet mäts på den faktiska URL:en hellre än på modulflaggan:
+    // flaggan är en implementationsdetalj, destinationen är beteendet.
+    const destination = new URL(page.url()).searchParams.get('redirect');
+    expect(destination).toBeNull();
   });
 });
 

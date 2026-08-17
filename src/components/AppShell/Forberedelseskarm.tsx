@@ -2,6 +2,23 @@ import { useEffect, useId, useState } from 'react';
 import { ProgressBar } from 'react-aria-components';
 import { STALL_THRESHOLD_MS } from '@/data/warmup/startvarmningen';
 
+/**
+ * Rännstens-kamouflagets referensräknare (S107 fynd-fix).
+ *
+ * Markören `data-forberedelse-fond` bor på `<html>` — den är en EGENSKAP HOS
+ * DOKUMENTET, inte hos komponentinstansen, och `/dev/primitives` renderar
+ * TRE instanser samtidigt. En naiv `set på mount / ta bort på unmount` hade
+ * därför låtit den först avmonterade instansen städa bort markören medan de
+ * andra två fortfarande stod kvar. Räknaren gör städningen korrekt oavsett
+ * antal samtidiga instanser: sista ut släcker lyset.
+ *
+ * Modul-scope, inte `useRef`: räknaren delas MELLAN instanser, vilket är
+ * hela poängen. (Vite code-splitting-fällan som TASK-261 mätte gäller
+ * route-filer som delas i separata chunkar — denna modul importeras av
+ * samtliga konsumenter som EN modul, så delat modultillstånd är säkert här.)
+ */
+let fondReferenser = 0;
+
 export interface ForberedelseskarmProps {
   /** Antal hämtningar (av startvärmningens set) som blivit klara. */
   klara: number;
@@ -137,10 +154,25 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * Skärmen "rensas till enbart loadingbaren" (Marcus egna ord, PRD-kortet):
  * ordmärket (`public/miranon-media-ordmarke.svg`, tidigare synligt här) och
  * den låsta textraden är BORTA ur den RENDERADE ytan — bara baren är
- * visuellt kvar. `public/roger-och-lotta.webp` (enda RL-bilden i repot,
- * 1600×1068, 132 kB, tidigare helt oanvänd i appen) ersätter dem som en dov,
- * centrerad, fönsterfyllande bakgrund BAKOM baren — inte en logotyp-
- * ersättning, ett stämningsfoto.
+ * visuellt kvar. `public/roger-och-lotta.webp` (1600×1061, 97 kB) ersätter
+ * dem som en dov, centrerad, fönsterfyllande bakgrund BAKOM baren — inte en
+ * logotyp-ersättning, ett stämningsfoto.
+ *
+ * BILDEN BYTTES 2026-08-17 (S107 fynd-fix, Marcus-fångst "det är fel bild"):
+ * skivan tog repots ENDA befintliga RL-bild, vilken var fel foto. Marcus
+ * levererade rätt original (`Roger_och_Lotta_Miranon_Media_1.png`, 4096×2714,
+ * 20,9 MB) som skalats och konverterats med `cwebp -q 80` — LÄTTARE än den
+ * gamla (97 mot 132 kB) trots högre källupplösning. Scrimmets
+ * luminansanalys är omräknad mot den nya filen i samma landning
+ * (components.css-tokenens kommentar): marginalen steg 4,48 → 4,52:1.
+ *
+ * RÄNNSTENEN: foto- och scrimlagren ligger INUTI body och kan därför aldrig
+ * nå ut i den rännsten `scrollbar-gutter: stable both-edges` reserverar —
+ * det syntes som två vita spalter i kanterna (Marcus-fångst 2026-08-17,
+ * samma klass som login-fondens S96-fynd). Åtgärdat med en platt
+ * kamouflagefärg på `<html>` via markören `data-forberedelse-fond`
+ * (referensräknad ovan) — se base.css § RÄNNSTENS-KAMOUFLAGE för varför
+ * bilden SJÄLV inte kan målas där oavsett teknik.
  *
  * TVÅ LAGER, inte en förblandad bild: ett rent `bg-cover bg-center`-foto-
  * lager och ett separat vitt scrim-lager ovanpå (`--mm-forberedelseskarm-
@@ -178,10 +210,11 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * inte förrän React committat den, oavsett teknik). Containerns egen
  * `bg-bg` (vit) är en OMEDELBAR fallback: baren och dess (sr-only) text
  * renderar direkt oavsett bildens hämtningsstatus, fotot poppar in bakom
- * när det är klart, ingen blockering, ingen layoutskift. Bilden är
- * medvetet INTE nedskalad eller omkonverterad i denna skiva (utpekad
- * källfil, ingen bildpipeline i scope) — mitigeringen är prioritets-
- * strategin ovan, inte filstorleken.
+ * när det är klart, ingen blockering, ingen layoutskift. Sedan bildbytet
+ * 2026-08-17 är filstorleken dessutom en aktiv del av mitigeringen och inte
+ * bara prioritetsstrategin: 20,9 MB-originalet skalades till 1600 px bredd
+ * och `-q 80` innan det landade (97 kB). Rå-PNG:n får ALDRIG skeppas —
+ * detta är appens första skärm.
  *
  * ═══ LAYOUTANKARET — SAMMA MÖNSTER SOM LOGIN-BLOCKET (skärpningsvarv
  * TASK-242, forberedelseskarm-splash-branschmonster-2026-08-16.md,
@@ -260,6 +293,21 @@ export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
     const timer = setTimeout(() => setStallad(true), STALL_THRESHOLD_MS);
     return () => clearTimeout(timer);
   }, [klara, totalt]);
+
+  // Rännstens-kamouflaget (S107 fynd-fix) — se doc-block § BAKGRUNDSBILDEN
+  // och base.css § RÄNNSTENS-KAMOUFLAGE. Tom beroendelista: markören hör till
+  // skärmens LIVSTID, inte till dess framsteg.
+  useEffect(() => {
+    fondReferenser += 1;
+    document.documentElement.setAttribute('data-forberedelse-fond', 'true');
+    return () => {
+      fondReferenser -= 1;
+      if (fondReferenser <= 0) {
+        fondReferenser = 0;
+        document.documentElement.removeAttribute('data-forberedelse-fond');
+      }
+    };
+  }, []);
 
   return (
     <div className="relative flex h-full min-h-full w-full flex-col items-center justify-center bg-bg p-4 sm:p-8 lg:p-12">

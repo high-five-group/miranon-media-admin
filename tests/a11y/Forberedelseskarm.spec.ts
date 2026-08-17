@@ -40,11 +40,26 @@ async function resolvedTokenColor(page: Page, tokenNamn: string): Promise<string
   }, tokenNamn);
 }
 
-/** WCAG 2.x relativ luminans ur en computed `rgb(r, g, b)`-sträng. */
-function relativLuminans(rgb: string): number {
-  const [r, g, b] = (rgb.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number);
+/**
+ * WCAG 2.x relativ luminans ur en computed färgsträng.
+ *
+ * TVÅ FORMAT, med avsikt (S107 fynd-fix): Chromium serialiserar vanliga
+ * färger som `rgb(r, g, b)` med 0–255-kanaler, MEN resultatet av en
+ * `color-mix()` som `color(srgb 0.97 0.97 0.96)` med 0–1-kanaler. Den
+ * ursprungliga formen dividerade alltid med 255 och läste därför ett
+ * near-vitt color-mix-värde som near-svart — en kontrastkvot på 20,9 där
+ * sanningen var 1,0. Felet var LATENT: samtliga dåvarande anrop jämförde
+ * tokens som råkade resolva till `rgb()`. Första color-mix-tokenen som
+ * mättes avslöjade det.
+ */
+function relativLuminans(farg: string): number {
+  const kanaler = (farg.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number);
+  // `color(srgb …)` bär redan 0–1; `rgb(…)` bär 0–255. "srgb" innehåller
+  // inga siffror, så matchningen ovan är opåverkad av prefixet.
+  const skala = farg.startsWith('color(') ? 1 : 255;
+  const [r, g, b] = kanaler;
   const lin = (kanal: number) => {
-    const c = kanal / 255;
+    const c = kanal / skala;
     return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   };
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
@@ -147,6 +162,37 @@ test.describe('Forberedelseskarm — Förberedelseskärmens UI-kontrakt (task-21
     // bg-bg (samma rena yta som fanns FÖRE denna skiva).
     await expect(foto).toBeHidden();
     await expect(scrim).toBeHidden();
+  });
+
+  test('S107 fynd-fix: rännstens-kamouflaget målar canvas-lagret så scroll-spalten inte blir vit', async ({
+    page,
+  }) => {
+    // Markören sitter på <html> — foto/scrim ligger INUTI body och kan aldrig
+    // nå rännstenen (Chromium-spec-gapet, se components.css-tokenen).
+    await expect(page.locator('html')).toHaveAttribute('data-forberedelse-fond', 'true');
+
+    const kamouflage = await resolvedTokenColor(page, '--mm-forberedelseskarm-fond-kamouflage');
+    const htmlBakgrund = await page.evaluate(
+      () => getComputedStyle(document.documentElement).backgroundColor,
+    );
+    expect(htmlBakgrund).toBe(kamouflage);
+
+    // Kärnan i fyndet: canvas-lagret får INTE stå kvar som appens rena vita,
+    // för då är rännstenen fortfarande en vit spalt bredvid fotot.
+    const bg = await resolvedTokenColor(page, '--mm-bg');
+    expect(htmlBakgrund).not.toBe(bg);
+
+    // ... men skillnaden ska vara försumbar för ögat: kamouflaget är fotots
+    // medelfärg bakom SAMMA 90 %-scrim, inte en egen designad ton.
+    expect(kontrastKvot(htmlBakgrund, bg)).toBeLessThan(1.1);
+
+    // contrast-more/print döljer foto+scrim → kamouflaget måste följa med,
+    // annars blir rännstenen den enda tonade ytan på en i övrigt ren skärm.
+    await page.emulateMedia({ contrast: 'more' });
+    const underContrastMore = await page.evaluate(
+      () => getComputedStyle(document.documentElement).backgroundColor,
+    );
+    expect(underContrastMore).toBe(bg);
   });
 
   test('AC 2: progressbar-semantik — korrekta aria-värden per förloppsläge (0 %, delvis, full)', async ({
