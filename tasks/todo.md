@@ -569,9 +569,14 @@ S103. Numrering RE-verifierad mot `4b085251` — oförändrad: **109 / task-195 
 T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
 § Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-17, `lifecycle: active`, resume 4) —
-HELA SEGMENT-YTAN GODKÄND AV MARCUS ("helt nöjd på alla sidor",
-2026-08-16); PROMOVERINGEN PÅGÅR I DENNA RESUME.** **Vid resumen
+**Session 104 ⏸️ PAUSAD (2026-08-17, `lifecycle: paused`, efter Del 9) —
+SPEC-KEDJAN KOMPLETT; NÄSTA RESUME = AUTONOM NATT-ORKESTRERING av
+249-skivorna (Marcus-order: "skickar vi ut agenter på alla skivor").**
+Del 9: PRD `task-249` + åtta skivor publicerade (`#1468` MERGED
+`d9c94669`): våg 1 = 249.1 grinden · 249.2 EF-motorn · 249.4
+basdim · 249.7 ordlistan; våg 2 = 249.3; våg 3 = 249.5 flippen; våg 4 =
+249.6 rivningen; 249.8 QA `ready-for-human` till Marcus. **HANDOFF:
+sessionsdok S104 § PAUSLÄGE (efter Del 9) + Del 8–9.** **Vid resumen
 (2026-08-17):** paus-PR:en `#1456` `MERGED` (merge `d61ec793`) — inget i
 luften; ny gren `docs/s104-resume-4` i samma worktree. Numrering
 RE-verifierad mot `d61ec793`: **115 / task-249 / T145 / L512 + 19
