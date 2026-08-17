@@ -2944,59 +2944,8 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
               </div>
             </div>
           </section>
-
-          <PrototypNot />
         </>
       )}
     </section>
-  );
-}
-
-/**
- * [TASK-147.8, REVIDERAD — S102-batchens kort ⑤:s fynd, kortets tillägg]
- * Notens historik: föddes som "Prototyp-not" (Marcus ser vad som ännu inte
- * har datakälla), fick en RÄTTAD text i TASK-147.5 ("inget skickas, inget
- * sparas" var redan falskt för tre av fyra åtgärder sedan TASK-147.3 — se
- * git-historiken, `git log -p -- src/components/events/atgarder/
- * AtgardsSida.tsx`, för den fulla rättelsen).
- *
- * DEN CITERADE GAMLA COPYN ("Inget skickas, inget sparas.") FANNS INTE PÅ
- * DISK NÄR DENNA SKIVA BÖRJADE — premiss-passet (ADR-086) verifierade det:
- * TASK-147.5 hade redan bytt ut den mot "allt annat skickar och sparar
- * verkligt, inklusive bilagor" (commit-par `9742334a`/`1aea42d2`, landad
- * FÖRE denna skiva). Uppdragets beskrivning av copyn var alltså en
- * obelagd/förlegad premiss — den prövades, divergensen bokförs här och i
- * PR-body, och byggs INTE vidare på.
- *
- * VAD SOM FAKTISKT REVIDERAS I DENNA SKIVA: sidan är PRODUKTIONSKOD sedan
- * TASK-171.5 (filens docblock överst), och `PrototypNot` monteras
- * OVILLKORLIGT (aldrig `import.meta.env.DEV`-grindad) — Lotta ser den
- * varje gång hon öppnar åtgärds-sidan. Att en produktionssida bär en
- * synlig etikett "Prototyp." är precis den sortens stale grå-löfte-
- * liknande text kortets AC #4/tillägg pekar ut, nu när `PrototypRigg` (den
- * FAKTISKA prototyp-infrastrukturen) är riven i samma skiva. Etiketten och
- * reassurance-satsen ("allt annat skickar och sparar verkligt") är därför
- * rivna — det är produktionens normalläge, inget som längre behöver sägas.
- * KVAR: den ENDA genuina, medvetna begränsningen (PRD § Utanför
- * omfattningen) — mallens ämnesrad/brödtext är hårdkodade stubbar, ingen
- * mall-editor är byggd. Det är information Lotta faktiskt behöver (hon ser
- * den hårdkodade texten i förhandsvisningen), inte en ursäkt för en
- * ofärdig yta.
- *
- * ARIA-DELTA (redovisat i PR-body/kortets notes per uppdraget): `<p>`-noden
- * i `AtgardsSida`s hub-läge bär nu KORTARE text utan `<strong>Prototyp.</strong>`-
- * segmentet — en rad-nivå textändring, ingen ny nod, inget nytt landmärke.
- * Ingen av de sex namngivna ariaSnapshot-referenserna i
- * `atgardssida-promoverings-grind.spec.ts` täcker hub-lägets FULLA yta
- * (de scopar till `atgardssida-tomt`/`mottagar-kort`/`granskning-yta`) —
- * denna nod ligger alltså utanför samtliga facit-lås, verifierat genom
- * läsning av specfilen innan ändringen gjordes, inte antaget.
- */
-function PrototypNot() {
-  return (
-    <p className="px-4 text-small text-text-muted">
-      <strong className="font-medium">Mallar.</strong> Ämnesrad och brödtext är hårdkodade stubbar
-      (ingen mall-editor i appen ännu).
-    </p>
   );
 }
