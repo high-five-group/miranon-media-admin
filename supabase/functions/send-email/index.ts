@@ -23,6 +23,15 @@ import {
 // SERVER-SIDE via _shared/segment-resolution.ts (segmentIds→union); ALDRIG klient-lista.
 // Konformans-kärnan (consent/dedup/chunk/status/icke-prod-spärr) bor i den injicerade
 // orkestratorn _shared/send-bulk.ts (api-pure-testad); HÄR wiras de SKARPA gränserna.
+//
+// PARITETEN MED compute-segment (ADR-115 EF-krav 4 send-email-halvan + EF-krav 2/5,
+// TASK-249.3): `resolveSegmentMembers` löser mottagare via `computeMembership` —
+// SAMMA motor (segment-membership.ts) som `resolveRuleMembers`/compute-segment
+// konsumerar via `computeMembershipVia`, inklusive AND/DNF-konjunkter OCH
+// `par.period`-tidsfiltret. En regel med konjunkt-grupper eller tidsperiod ger
+// därför IDENTISK mottagarmängd oavsett vilken av de två EF:erna som löser den
+// (bevisat algebraiskt i tests/api/segment-membership.test.ts — ingen kod här
+// behövde ändras, `computeMembership` var redan denna funktion).
 
 const OPERATION_KEY = 'send-email';
 const MERGE_FIELD = 'Idempotensnyckel';
