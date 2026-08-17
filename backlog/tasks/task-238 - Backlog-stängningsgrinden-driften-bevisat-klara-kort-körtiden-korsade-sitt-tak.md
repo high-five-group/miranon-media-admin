@@ -3,10 +3,10 @@ id: TASK-238
 title: >-
   Backlog-stängningsgrinden: driften (bevisat-klara kort) + körtiden korsade
   sitt tak
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 07:07'
-updated_date: '2026-08-17 07:45'
+updated_date: '2026-08-17 08:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,14 +25,6 @@ Forensik 2026-08-16 (R3): fyra nätter i rad Backlog-DRIFT (kort vars arbete är
 - [x] #2 Körtiden: grinden åter under sitt tak — rekommenderad väg är check_active_branches AV i grindens CI-kontext (config-driven); takhöjning endast med öppen motivering
 - [x] #3 De 36 signal-lösa korten (noll AC, inga barn) listade för Marcus-beslut — stängs ALDRIG blint
 <!-- AC:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -59,3 +51,17 @@ GRINDAR: shellcheck --severity=style --enable=all (CI:s exakta flaggor) exit 0 �
 
 FÖRKASTAT MED MÄTNING: parallellisering (xargs -P) — köper konstant faktor mot kvadratisk kostnad, taket nås igen vid ~650 kort, GitHub-runner har 4 vCPU mot mätmaskinens 16; körningen avbröts sedan -P 8 drivit maskinens load average till 277. Takhöjning — grinden växer kvadratiskt, ett tak som rymmer den idag spricker inom månader.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+STÄNGNING (orkestreraren, 2026-08-17): PR #1503 MERGED 08:05:18Z via merge-kön, per-jobb-checks gröna — DoD betald. Kvarvarande rot efter d5507aac var KVADRATISK kostnad (502 × task view ≈ 22 min), inte gren-skanningen: löst med bulk-faktainsamling (scripts/backlog-kortfakta.mjs, 1332 s → 14,57 s), CLI-konventionsavvikelsen ADR-prövad öppet (ADR-117) och mekaniskt bevakad (korsvalidering → exit 2). Grinden rapporterar nu ÄRLIGT exit 1 på 24 invariant-2-driftare — evidens-svep pågår (eget pass). Verifikationspunkt framåt: nattens nightly-körning under 10-min-taket.
+<!-- SECTION:FINAL_SUMMARY:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
