@@ -1,10 +1,10 @@
 ---
 id: TASK-249.5
 title: 'Skiva: Flippen — variant d promoveras till skarp segment-yta'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 00:33'
-updated_date: '2026-08-17 05:46'
+updated_date: '2026-08-17 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -56,3 +56,9 @@ DoD-status: #3 (CI grön per jobb) lämnas obockad — CI-verifikation ägs av o
 Grindar körda och gröna: npm run typecheck (0 fel) · npx @biomejs/biome check . (0 fel, 7 varningar/47 infos — identiskt med bas-mätningen före ändringarna) · npm run build (grön) · npm run test:api (862/862 gröna) · aria-grinden (PLAYWRIGHT_VISUAL_DEV_SERVER=1, 14/14 gröna, visual-desktop+visual-mobile) · de fyra segment-acceptance-filerna (PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1, 16 skippade + 1 grön, exit 0).
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd och landad i natt-orkestreringen S104 2026-08-17 (resume 5). PR: se kortets notes/kommentarer; CI grön per jobb + merge-kö-verifikat. Stängd av orkestreraren efter landnings-verifiering mot origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->

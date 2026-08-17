@@ -1,10 +1,10 @@
 ---
 id: TASK-249.3
 title: 'Skiva: EF — send-email-pariteten och tidsperioden server-side'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 00:29'
-updated_date: '2026-08-17 04:31'
+updated_date: '2026-08-17 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -87,3 +87,9 @@ DoD #5/#6 (ariaSnapshot/check-facit) rör INTE denna skiva — samma
 boilerplate-mönster tre syskonskivor (249.1/.2/.4) redan bokfört; flipp/
 rivning har inte skett än. Lämnade omarkerade, ej gissat klara.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd och landad i natt-orkestreringen S104 2026-08-17 (resume 5). PR: se kortets notes/kommentarer; CI grön per jobb + merge-kö-verifikat. Stängd av orkestreraren efter landnings-verifiering mot origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->

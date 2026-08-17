@@ -1,10 +1,10 @@
 ---
 id: TASK-249.6
 title: 'Skiva: Mekanisk rivning — varianter, gamla byggaren, riggarna'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 00:35'
-updated_date: '2026-08-17 07:45'
+updated_date: '2026-08-17 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -62,3 +62,9 @@ EFTERÅT: aria-grinden 14/14 grön (PLAYWRIGHT_VISUAL_DEV_SERVER=1, visual-deskt
 DoD #6 är bockad som historiskt uppfyllt: referenserna låstes ur variant d i TASK-249.1 FÖRE flippen (TASK-249.5) — denna skiva bryter inte den enkelriktade ordningen, den är den sista etappen i den.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd och landad i natt-orkestreringen S104 2026-08-17 (resume 5, Opus-agent per ADR-089-avvikelse). CI grön per jobb + merge-kö-verifikat. Stängd av orkestreraren efter landnings-verifiering mot origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->

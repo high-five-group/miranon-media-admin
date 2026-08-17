@@ -1,10 +1,10 @@
 ---
 id: TASK-249.9
 title: 'Skiva: Acceptance-omskrivningen — segment-sviterna mot VariantD-formen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 05:33'
-updated_date: '2026-08-17 08:40'
+updated_date: '2026-08-17 09:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -75,3 +75,9 @@ GRINDARNAS UTFALL (lokalt, mätt 2026-08-17, exitkoder fångade separat — aldr
 - `npm run test:acceptance:sjalvtest:negativ` → exit 0 ("NEGATIV KONTROLL GRÖN") — bevis i andra riktningen: bedömningen faller utan självtestläget.
 - `npm run test:visual -- tests/visual/segment-promoverings-grind.spec.ts` → exit 0, 14/14 (18,1 s). `git status` på `tests/visual/**` = 0 rader ⇒ referensfilerna orörda.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd och landad i natt-orkestreringen S104 2026-08-17 (resume 5, Opus-agent per ADR-089-avvikelse). CI grön per jobb + merge-kö-verifikat. Stängd av orkestreraren efter landnings-verifiering mot origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->

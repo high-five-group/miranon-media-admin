@@ -1,10 +1,10 @@
 ---
 id: TASK-249.7
 title: 'Skiva: ORDLISTA- och design-spec-skörden ur segment-passet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 00:36'
-updated_date: '2026-08-17 01:21'
+updated_date: '2026-08-17 09:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -43,3 +43,9 @@ created: 2026-08-17 01:21
 DIVERGENS bokförd (ADR-086): DoD #5 ("ariaSnapshot-referenserna låsta ur variant d FÖRE flippen") och #6 ("check-facit grön genom flipp OCH rivning") är verbatim-identiska med task-249.1 och 249.5:s DoD — boilerplate från /to-issues-genereringen, kopierad över alla task-249.X-skivor oavsett scope. Denna skiva rör ENDAST ORDLISTA.md + docs/specs/DESIGN-SYSTEM-SPEC.md (dokumentationsskörd); ingen kod i VariantD.tsx rörs, ingen flipp/rivning sker, check-facit har ingen relevant referens att pröva. Item #5/#6 är därför INAPPLICERBARA på denna skiva och lämnas avsiktligt obockade, inte glömda — den faktiska flip-verifieringen hör hemma på task-249.1/249.5.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Byggd och landad i natt-orkestreringen S104 2026-08-17 (resume 5). PR: se kortets notes/kommentarer; CI grön per jobb + merge-kö-verifikat. Stängd av orkestreraren efter landnings-verifiering mot origin/main.
+<!-- SECTION:FINAL_SUMMARY:END -->
