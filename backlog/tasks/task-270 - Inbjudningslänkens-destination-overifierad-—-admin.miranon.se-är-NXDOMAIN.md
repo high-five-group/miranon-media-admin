@@ -3,10 +3,10 @@ id: TASK-270
 title: >-
   Inbjudningslänkens destination — INVITE_REDIRECT_URL:s värde overifierat
   (domänen admin.miranon.dev lever)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 11:53'
-updated_date: '2026-08-17 12:03'
+updated_date: '2026-08-17 13:02'
 labels:
   - ready-for-human
 dependencies: []
@@ -33,7 +33,7 @@ Gissa inte vilket. Mät.
 <!-- AC:BEGIN -->
 - [x] #1 INVITE_REDIRECT_URL:s faktiska värde avläst ur prod och bokfört i repot (docs/reference/atkomst-och-nycklar.md eller go-live-planen)
 - [x] #2 Destinationen bevisad nåbar — HTTP 200 mot den URL en inbjuden faktiskt landar på
-- [ ] #3 Vid trasig destination: DNS/redirect åtgärdad och ommätt före inbjudan skickas
+- [x] #3 Vid trasig destination: DNS/redirect åtgärdad och ommätt före inbjudan skickas
 <!-- AC:END -->
 
 ## Definition of Done
@@ -56,4 +56,10 @@ OBEROENDE BEKRÄFTELSE ur passkey-proben mot prod (samma pass): Supabase svarar 
 KVARSTÅR ÄNDÅ ATT LÄSA: INVITE_REDIRECT_URL:s faktiska värde (supabase secrets list). Att domänen lever bevisar inte att variabeln pekar på den — den kan vara osatt (Supabase faller då tillbaka på projektets Site URL) eller peka på något annat. Kortets AC3 är därför inte moot; den är billig att stänga i fas 4 steg 1.
 
 BONUSMÄTNING (stänger underlagets R10 för detta tillfälle): prod-bundlen index-C4xgzwJE.js innehåller strängen 'grid min-h-dvh w-full' — 266-fixens egna klasser, mergad 11:10Z i dag. Fronten är alltså FÄRSK, inte stale. Metodnot: en första sökning på funktionsnamnen ur inloggningsdestination.ts gav noll träffar, men det bevisade ingenting — bundlen är minifierad och identifierare manglas. Endast strängliteraler överlever; välj markör därefter.
+
+SITE URL AVLÄST 2026-08-17 (Marcus, Supabase-dashboarden): https://admin.miranon.dev — samma värd som DNS-mätningen och passkey-probens rpId. Inbjudningslänkens destination är därmed KORREKT i dagens läge, via Site URL-fallbacken.
+
+AC3 bockad: destinationen är verifierad nåbar (HTTP 200) OCH bevisad vara den appen faktiskt bor på, från tre oberoende håll — DNS/HTTP, Supabase auth-konfigurationens rpId, och Marcus avläsning av Site URL.
+
+KVARSTÅENDE ROBUSTHETS-FRÅGA, INTE BLOCKERANDE (deferras): INVITE_REDIRECT_URL saknas fortfarande som explicit hemlighet, så destinationen ägs av Site URL. Det fungerar, men bäraren är en auth-inställning som kan ändras som sidoeffekt av annat dashboard-arbete, utan att något i repot märker det. Att sätta variabeln explicit gör destinationen till ett driftvärde som läses i samma svep som allt annat. Förkastas INTE — bokförs som öppen förbättring att ta när go-live-trycket släppt.
 <!-- SECTION:NOTES:END -->
