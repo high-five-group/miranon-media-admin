@@ -4,6 +4,7 @@ title: 'Skiva: Å3 — Personer.Namn slutar returnera platshållarsträngen (§4
 status: To Do
 assignee: []
 created_date: '2026-08-14 17:22'
+updated_date: '2026-08-17 09:55'
 labels:
   - ready-for-human
 dependencies:
@@ -68,3 +69,13 @@ Täcker användarberättelser: 4
 - [ ] #5 Rollback-väg dokumenterad och bevisat reversibel (formeltext eller record-ID:n sparade verbatim) FÖRE varje prod-mutation, per skiva
 - [ ] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+author: orkestreraren S104
+created: 2026-08-17 09:55
+---
+VARNING från publik-utredningen (S104, 2026-08-17, docs/research/utskickspublikens-leads-och-namnlosa-2026-08-17.md § Den avgörande delfrågan): kör INTE denna skiva med nuvarande AC-lista. Byt-till-BLANK()-fixen gör MAILVÄGEN värre — utskicksytans visatNamn (VariantD.tsx ~999-1001) är en falsy-fallback som med BLANK() ger '(namn saknas)' → mail-hälsningen blir 'Hej (namn,'. AC #3 verifierar PersonsList/PersonDetail/Intresserade men SAKNAR utskicksytan. AC-listan måste utökas med utskicksvyn + mail-förhandsvisningen, och kodfixen K1 (visatNamn tål båda formerna + {förnamn} egen väg) bör landa FÖRE bas-bytet.
+---
+<!-- COMMENTS:END -->
