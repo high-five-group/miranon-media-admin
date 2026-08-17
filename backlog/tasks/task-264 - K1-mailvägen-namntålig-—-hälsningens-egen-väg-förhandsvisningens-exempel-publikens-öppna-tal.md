@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-17 10:03'
+updated_date: '2026-08-17 11:38'
 labels:
   - qa-fix
 dependencies: []
@@ -20,10 +21,10 @@ Ur publik-utredningen (docs/research/utskickspublikens-leads-och-namnlosa-2026-0
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Hälsningen är generisk vid namnlöst (båda formerna), aldrig härledd ur platshållartext
-- [ ] #2 Förhandsvisningen exemplifierar med namngiven mottagare eller neutral form
-- [ ] #3 Publiken visar N-av-M-talet för namnlösa
-- [ ] #4 Berörda aria-referenser re-genererade med diff-bevis; övriga byte-identiska
+- [x] #1 Hälsningen är generisk vid namnlöst (båda formerna), aldrig härledd ur platshållartext
+- [x] #2 Förhandsvisningen exemplifierar med namngiven mottagare eller neutral form
+- [x] #3 Publiken visar N-av-M-talet för namnlösa
+- [x] #4 Berörda aria-referenser re-genererade med diff-bevis; övriga byte-identiska
 <!-- AC:END -->
 
 ## Definition of Done

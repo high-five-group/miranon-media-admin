@@ -165,7 +165,15 @@ const KURS_RIM2: Par = { kurs: 'Resor i medvetandet 2', modalitet: 'Utbildning' 
 const KURS_FS: Par = { kurs: 'Fjärrskådning', modalitet: 'Utbildning' };
 const KURS_PS: Par = { kurs: 'Psionautics', modalitet: 'Utbildning' };
 
-type FixturPerson = { id: string; namn: string; email: string | null; ejGodkandMail: boolean };
+/** `namn` är NULLBAR som i `SegmentMemberSchema` — `TASK-213.4` byter basens
+ *  `"Ej tillgängligt"`-formel mot `BLANK()`, och den formen måste gå att
+ *  fixtursätta i dag (se `NAMNLOSHET_*`-matriserna nedan). */
+type FixturPerson = {
+  id: string;
+  namn: string | null;
+  email: string | null;
+  ejGodkandMail: boolean;
+};
 
 /**
  * ÅTTA PERSONER MED KÄNDA KURSKOMBINATIONER — samma matris som
@@ -232,7 +240,9 @@ const HUGO: FixturPerson = {
   ejGodkandMail: false,
 };
 
-const ATTENDANCE: { person: FixturPerson; kurser: Par[] }[] = [
+type Narvaro = { person: FixturPerson; kurser: Par[] };
+
+const ATTENDANCE: Narvaro[] = [
   { person: ALICE, kurser: [KURS_RIM1] },
   { person: BERTIL, kurser: [KURS_RIM1] },
   { person: CECILIA, kurser: [KURS_RIM1, KURS_RIM2] },
@@ -241,6 +251,49 @@ const ATTENDANCE: { person: FixturPerson; kurser: Par[] }[] = [
   { person: FREDRIK, kurser: [KURS_FS] },
   { person: GRETA, kurser: [KURS_FS, KURS_RIM1] },
   { person: HUGO, kurser: [KURS_PS] },
+];
+
+/**
+ * NAMNLÖSHETENS TVÅ FORMER — [TASK-264] egen fixturvärld, DEN DELADE ÄR ORÖRD.
+ *
+ * `ATTENDANCE` ovan speglar `tests/visual/segment-promoverings-grind.spec.ts`
+ * person för person, medvetet (samma matris ⇒ jämförbara tal). Namnlösheten
+ * får därför INTE bakas in där — den bor i egna matriser som bara de två
+ * testerna nedan väljer, via `gotoSegmentytan`s tredje argument.
+ *
+ * Formerna som måste tålas, båda med belägg:
+ *
+ *   1. `'Ej tillgängligt'` — basens formel `IF(AND(Förnamn="", Efternamn=""),
+ *      "Ej tillgängligt", …)` (`fldnYys0Ac3UGOdpe`, fälla 43). En ICKE-TOM
+ *      sträng, så en falsy-fallback är död kod mot den. 154 av 247 mottagare
+ *      i den publik Marcus granskade 2026-08-17 bär den.
+ *   2. `null` / `'   '` — formen `TASK-213.4` byter till (`BLANK()`).
+ *      Framtidssäkring: utan den grenen hade bas-fixen gjort "Hej Ej," till
+ *      "Hej (namn,".
+ *
+ * ALLA GÅR RIM 1 + RIM 2 och inget annat, så de faller ut ur den förskapade
+ * gruppen "RIM 1 + RIM 2" (en EXAKT kombination — övriga atomer exkluderas).
+ * Det är samma väg in i utskicksvyn som visual-grinden använder.
+ *
+ * ORDNINGEN ÄR EN DEL AV BEVISET: den namnlösa står FÖRST, alltså på den plats
+ * `mottagare[0]` läser. Blir hon exemplet är valet inte gjort.
+ */
+function namnlos(id: string, namn: string | null): FixturPerson {
+  return { id, namn, email: `${id.toLowerCase()}@example.se`, ejGodkandMail: false };
+}
+
+const NAMNLOSHET_BLANDAT: Narvaro[] = [
+  { person: namnlos('recSegN001', 'Ej tillgängligt'), kurser: [KURS_RIM1, KURS_RIM2] },
+  { person: namnlos('recSegN002', null), kurser: [KURS_RIM1, KURS_RIM2] },
+  { person: namnlos('recSegN003', 'Cecilia Cederqvist'), kurser: [KURS_RIM1, KURS_RIM2] },
+  { person: namnlos('recSegN004', 'David Dahl'), kurser: [KURS_RIM1, KURS_RIM2] },
+];
+
+const NAMNLOSHET_ALLA: Narvaro[] = [
+  { person: namnlos('recSegN101', 'Ej tillgängligt'), kurser: [KURS_RIM1, KURS_RIM2] },
+  { person: namnlos('recSegN102', null), kurser: [KURS_RIM1, KURS_RIM2] },
+  // Rent blanksteg — samma tomtillstånd som `null`, en annan väg dit.
+  { person: namnlos('recSegN103', '   '), kurser: [KURS_RIM1, KURS_RIM2] },
 ];
 
 function harPar(kurser: readonly Par[], mal: Par): boolean {
@@ -269,29 +322,38 @@ function uppfyllerVillkor(kurser: readonly Par[], villkor: Par | Par[]): boolean
     : harPar(kurser, villkor);
 }
 
-function mockComputeSegment(network: NetworkFixture): void {
+function mockComputeSegment(network: NetworkFixture, matris: Narvaro[] = ATTENDANCE): void {
   network.use(
     http.post(EF('compute-segment'), async ({ request }) => {
       const rule = (await request.json()) as { include: (Par | Par[])[]; exclude: Par[] };
-      const members = ATTENDANCE.filter(
-        ({ kurser }) =>
-          rule.include.some((villkor) => uppfyllerVillkor(kurser, villkor)) &&
-          !rule.exclude.some((par) => harPar(kurser, par)),
-      ).map(({ person }) => ({
-        id: person.id,
-        namn: person.namn,
-        email: person.email,
-        ejGodkandMail: person.ejGodkandMail,
-      }));
+      const members = matris
+        .filter(
+          ({ kurser }) =>
+            rule.include.some((villkor) => uppfyllerVillkor(kurser, villkor)) &&
+            !rule.exclude.some((par) => harPar(kurser, par)),
+        )
+        .map(({ person }) => ({
+          id: person.id,
+          namn: person.namn,
+          email: person.email,
+          ejGodkandMail: person.ejGodkandMail,
+        }));
       return json({ members, count: members.length });
     }),
   );
 }
 
-/** Grundnavigeringen: taxonomin + medlemsmotorn mockade, sedan segment-ytan. */
-async function gotoSegmentytan(page: Page, network: NetworkFixture): Promise<void> {
+/** Grundnavigeringen: taxonomin + medlemsmotorn mockade, sedan segment-ytan.
+ *  `narvaro` byter ut medlemsmotorns fixturvärld utan att röra den delade
+ *  matrisen — mocken måste ligga FÖRE `page.goto`, annars hinner listans egna
+ *  räkningar landa i query-cachen mot fel svar. */
+async function gotoSegmentytan(
+  page: Page,
+  network: NetworkFixture,
+  narvaro: Narvaro[] = ATTENDANCE,
+): Promise<void> {
   mockEvents(network);
-  mockComputeSegment(network);
+  mockComputeSegment(network, narvaro);
   await page.goto('/mer/segment');
   await expect(page.getByRole('heading', { level: 1, name: 'Segment' })).toBeVisible();
   await expect(page.getByTestId('segment-listan')).toBeVisible();
@@ -578,6 +640,109 @@ test.describe('Segment-yta (Fas 6g L2, promoverad TASK-249.5)', () => {
     await expect(kort).toContainText('2 personer');
 
     await expect(page.getByText(/app-segment-test/)).toHaveCount(0);
+  });
+
+  /**
+   * [TASK-264] UTSKICKSVYN — NAMNLÖSA I PUBLIKEN, BLANDAT MED NAMNGIVNA.
+   *
+   * Bevisar två av kortets tre led i det läge som faktiskt råder i prod: en
+   * publik där majoriteten saknar namn men någon har det.
+   *
+   *   · LED 2 — exemplet VÄLJS. `mottagare[0]` är här den sentinel-namnlösa,
+   *     alltså exakt den person den gamla koden exemplifierade med ("som Ej
+   *     tillgängligt får det", och "Hej Ej," i brödtexten). Efter valet står
+   *     Cecilia där, och `{förnamn}` visar vad platshållaren faktiskt gör.
+   *   · LED 3 — publiken säger talet öppet, räknat ur BÅDA namnlösa formerna
+   *     (sentinel + `null`), inte bara den ena.
+   */
+  test('utskicksvyn: exemplet väljer en namngiven mottagare, publiken säger hur många som saknar namn', async ({
+    page,
+    network,
+  }) => {
+    await gotoSegmentytan(page, network, NAMNLOSHET_BLANDAT);
+    await vantaInRakningar(page);
+
+    await page.getByRole('button', { name: 'RIM 1 + RIM 2', exact: true }).click();
+    await vantaInRakningar(page);
+    await page.getByRole('button', { name: 'Skicka utskick till det här segmentet' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Utskick' })).toBeVisible();
+    await vantaInRakningar(page);
+
+    const utskicksvyn = page.getByTestId('utskicksvyn');
+    await expect(page.getByText('Utskick till 4 personer.')).toBeVisible();
+
+    // LED 3: talet är DYNAMISKT (2 av 4), och räknar sentinel-formen lika väl
+    // som `null`-formen.
+    await expect(page.getByRole('region', { name: 'Publiken' })).toContainText(
+      '2 av 4 saknar registrerat namn.',
+    );
+
+    // LED 2: exemplet är den namngivna, inte `mottagare[0]`.
+    await expect(utskicksvyn).toContainText(
+      'Förhandsvisningsexempel - som Cecilia Cederqvist får det',
+    );
+    // BRÖDTEXTEN SCOPAS, aldrig hela vyn: `Meddelande`-fältet bär mallen
+    // `Hej {förnamn},` och hade gjort varje negativ assertion nedan svagare
+    // än den ser ut.
+    const brodtext = page.getByTestId('forhandsvisning-brodtext');
+    await expect(brodtext).toContainText('Hej Cecilia,');
+
+    // DE TVÅ UTFALL SOM ALDRIG FÅR ÅTERKOMMA — platshållartexten som namn,
+    // i etiketten respektive i hälsningen.
+    await expect(utskicksvyn).not.toContainText('som Ej tillgängligt får det');
+    await expect(brodtext).not.toContainText('Hej Ej,');
+  });
+
+  /**
+   * [TASK-264] UTSKICKSVYN — INGEN I PUBLIKEN HAR ETT NAMN.
+   *
+   * Led 1 i sin renaste form, och led 2:s neutrala gren. Det finns ingen
+   * namngiven att exemplifiera med, så hälsningen måste stå på egna ben.
+   *
+   * BÅDA FRAMTIDA FELFORMERNA ASSERTERAS BORTA, inte bara dagens: "Hej Ej,"
+   * är utfallet med basens nuvarande formel, "Hej (namn," det `TASK-213.4`
+   * hade gett om `visatNamn`s fallback-sträng fortsatt plockas isär med
+   * `split(' ')`. Fixturen bär därför BÅDA formerna samtidigt.
+   */
+  test('utskicksvyn: ingen namngiven mottagare ger generisk hälsning och neutralt exempel', async ({
+    page,
+    network,
+  }) => {
+    await gotoSegmentytan(page, network, NAMNLOSHET_ALLA);
+    await vantaInRakningar(page);
+
+    await page.getByRole('button', { name: 'RIM 1 + RIM 2', exact: true }).click();
+    await vantaInRakningar(page);
+    await page.getByRole('button', { name: 'Skicka utskick till det här segmentet' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Utskick' })).toBeVisible();
+    await vantaInRakningar(page);
+
+    const utskicksvyn = page.getByTestId('utskicksvyn');
+    await expect(page.getByText('Utskick till 3 personer.')).toBeVisible();
+
+    // LED 3: hela publiken saknar namn, och det sägs.
+    await expect(page.getByRole('region', { name: 'Publiken' })).toContainText(
+      '3 av 3 saknar registrerat namn.',
+    );
+
+    // LED 2, neutrala grenen: ingen person pekas ut som exempel.
+    await expect(utskicksvyn).toContainText(
+      'Förhandsvisningsexempel - ingen i publiken har ett registrerat namn',
+    );
+
+    // LED 1: hälsningen är GENERISK. Mallen är `Hej {förnamn},` — kommat följer
+    // med namnet ut, annars hade det stått "Hej ,". Scopat till brödtexten:
+    // `Meddelande`-fältet bär fortfarande mallen med sin platshållare, och en
+    // negativ assertion mot hela vyn hade därför bevisat mindre än den ser ut.
+    const brodtext = page.getByTestId('forhandsvisning-brodtext');
+    await expect(brodtext).toContainText('Hej!');
+    await expect(brodtext).not.toContainText('Hej Ej,');
+    await expect(brodtext).not.toContainText('Hej (namn,');
+    await expect(brodtext).not.toContainText('Hej ,');
+    // Platshållaren är HANTERAD, inte kvarlämnad i förhandsvisningen — och
+    // `ofyllda`-varningen ska därför inte fälla på den.
+    await expect(brodtext).not.toContainText('{förnamn}');
+    await expect(page.getByText('Något i texten kunde inte fyllas i')).toHaveCount(0);
   });
 
   /**
