@@ -161,7 +161,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
       .getByTestId('dokument-fil')
       .filter({ hasText: BILAGA_GEMENSAM.namn });
     await expect(gemensamRadEventlage).toBeVisible();
-    await expect(gemensamRadEventlage.getByText('RIM · alla steg')).toBeVisible();
+    await expect(gemensamRadEventlage.getByText('RIM · Alla steg')).toBeVisible();
     await expect(gemensamRadEventlage.getByRole('button', { name: 'Ersätt' })).toHaveCount(0);
     await expect(gemensamRadEventlage.getByRole('button', { name: 'Radera' })).toHaveCount(0);
 

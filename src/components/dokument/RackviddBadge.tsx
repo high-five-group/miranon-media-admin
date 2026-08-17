@@ -27,7 +27,7 @@ import { AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Statu
  * STORLEK dokumenterar.
  *
  * TEXTEN, GUNILLA-LÄSBAR: "Alla event" (rakt av) eller "<Kursfamilj> · Nivå
- * N" / "<Familj> · alla steg" (tom-nivå-regeln, ADR-118 beslut 1 —
+ * N" / "<Familj> · Alla steg" (tom-nivå-regeln, ADR-118 beslut 1 —
  * EXPLICIT utskriven i stället för underförstådd, samma "gissa aldrig eller
  * lämna tvetydigt"-linje som `Attachment`-modellens `dokumentklass: null` →
  * "Okänd").
@@ -56,7 +56,7 @@ export function RackviddBadge({
         // 2026-08-17). Mappningen bor i DokumentYta.tsx och är den ENDA
         // platsen ordet översätts — se dess docblock för den öppna
         // kollisionen mot wizardens egna "Steg 1"/"Steg 2".
-        `${kursfamilj ?? 'Okänd familj'} · ${stegEtikett(kursniva) ?? 'alla steg'}`;
+        `${kursfamilj ?? 'Okänd familj'} · ${stegEtikett(kursniva) ?? 'Alla steg'}`;
 
   return (
     <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
