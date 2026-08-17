@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-17 11:51'
-updated_date: '2026-08-17 12:57'
+updated_date: '2026-08-17 13:10'
 labels:
   - ready-for-human
 dependencies: []
@@ -66,4 +66,18 @@ Det bekräftar kortets premiss skarpt, med prod-data i stället för härledning
 Check-in-dörrens backup-väg ger fortfarande 404 i prod. AC3 kvarstår och stängs först när Marcus kört --deploya och prövat vägen skarpt mot en anmälan utan Deltaganden-rad.
 
 BIFYND värt att notera för nästa deploy: eftersom de övriga 38 redan bär dagens kod är en omkörning av hela allowlisten en no-op för dem — kostnaden för den kanoniska vägen (hela listan i stället för en handplockad delmängd) är alltså nära noll här, medan skyddsräcket (fail-closed allowlist-kontroll) behålls.
+
+DEPLOYAD 2026-08-17 (Marcus körde --deploya via fas4-prod-deploy.sh). Verifierat mot prod-svaret, inte antaget:
+
+DEPLOY-UTFALL: 39 funktioner ACTIVE. Samtliga updated_at i spannet 13:08:12–13:09:07Z — INGEN funktion bär gammal tidsstämpel, alltså gick hela setet igenom och inte bara en delmängd. create-attendance: ACTIVE, version 1, created_at 13:09:07Z (den enda som är helt ny; övriga 38 fick version+1 mot samma innehåll). De fyra test-* är fortfarande UTE ur prod — allowlisten höll.
+
+SKRIPTETS SKYDDSRÄCKEN FUNGERADE SKARPT: länkläget verifierades före både deploy och verifiering ('✓ Verifierat länkat projekt före deploy' / '...före verifiering'), och återlänkningen till staging kördes automatiskt vid slutet ('✓ Länkat tillbaka till staging'). Det sista är steget som glöms för hand och kostar mest senare.
+
+DENY-TRIPLE MOT DEN NYA FUNKTIONEN (prod, anon-URL ur .env.production):
+- anon POST (apikey-header)      → 401
+- anon-Bearer POST               → 401
+- fel metod GET                  → 405
+Inget 404 — funktionen FINNS, svarar, och grindar korrekt. Jämför utgångsläget: 404, eftersom EF:en inte var deployad alls.
+
+AC3 KVARSTÅR ÄNDÅ: kriteriet kräver att dörrens backup-väg prövas SKARPT mot en anmälan utan förskapad Deltaganden-rad — alltså att raden faktiskt skapas atomärt/idempotent. Deny-triplen bevisar att endpointen lever och grindar, inte att beteendet är rätt. Marcus browservandring är den prövningen.
 <!-- SECTION:NOTES:END -->
