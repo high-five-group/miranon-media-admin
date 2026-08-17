@@ -3313,3 +3313,13 @@ Syftet är att en ny läsare ska kunna läsa sista sessionen och förstå var vi
 - [`gap-analysis.md`](archive/gap-analysis.md) — gap-analys som motiverade `[GA]`-tilläggen
 - [`../tasks/lessons.md`](../tasks/lessons.md) — universella lärdomar
 - [`../tasks/todo.md`](../tasks/todo.md) — aktuell todo-status
+
+## Session 104 (2026-08-10 → 2026-08-17) — Segment-passet: design-om + promoveringen
+
+- **Commit-range:** `44ffbfe9` (facit-lås-förberedelsen) → natt-orkestreringens svans (`#1534` m.fl., 2026-08-17)
+- **Mål:** `/mer/segment` designas om mot appens satta formspråk och promoveras till skarp yta med server-ägt regelspråk (PRD `task-249`, ADR-115; byggplan Fas 6-sfären)
+- **Faktiskt:** divergens-prototyp (varianter a–d) → Marcus valde d → konvergens till "helt nöjd på alla sidor" → facit stämplat (`a40f3543`) → basstruktur (`Kursfamilj`/`Kursnivå`) i båda baserna → åtta byggskivor via autonom natt-orkestrering (Del 10-tabellen: `#1475 #1477 #1478 #1480 #1492 #1494 #1501 #1510`) → EF:erna prod-deployade 38/38 (Marcus egen körning, prod-ref-låset) → front bundle-bevisad färsk → Marcus QA → fyndspåren 259 (`#1534`, landad) + utredningen 260 (`#1522`) + K1/B1-korten (264/265)
+- **Avvikelser:** en CI-cykel på 249.5 (skip-mot-självtest, precedent-fix); re-låsning av två aria-referenser med Marcus-kvittens (ADR-102/103-disciplinen höll); modell-routing skärpt mitt i natten (Opus för svåra, ADR-089)
+- **Verifiering:** merge-kö-verifikat per PR; aria-grinden 14/14 genom flipp OCH rivning; hermetik-självtestet 222/222; 874 API-tester
+- **Teknisk skuld:** task-257 (PersonsList-höjdlåset) · task-258 (död kod + sparNot/PrototypNot-rester) · task-265 (Leads-vyn i basen) · 213.4-varningen (BLANK()-kanten)
+- **Full narrativ:** `tasks/sessions/2026-08-10-session-104.md` Del 1–10

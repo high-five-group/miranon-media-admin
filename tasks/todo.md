@@ -601,9 +601,15 @@ S103. Numrering RE-verifierad mot `4b085251` — oförändrad: **109 / task-195 
 T141 / L512** plus 2 nummerlösa fragment. **HANDOFF: sessionsdok S103
 § Paushistorik (efter Del 6) + Del 1–6.** *(S104:s kadensrad nedan, bevarad.)*
 
-**Session 104 ▶️ ÅTERUPPTAGEN (2026-08-17, `lifecycle: active`, resume 5) —
-AUTONOM NATT-ORKESTRERING AV 249-SKIVORNA PÅGÅR (Marcus-order: "skickar
-vi ut agenter på alla skivor").** **Vid resume 5 (2026-08-17):** ny gren
+**Session 104 ▶️ AKTIV (2026-08-17, `lifecycle: active`, resume 5) —
+NATT-ORKESTRERINGEN FULLBORDAD: alla åtta 249-skivor MERGADE (`#1475
+#1477 #1478 #1480 #1492 #1494 #1501 #1510`), EF:erna prod-deployade
+38/38 (Marcus egen körning), fronten bundle-bevisad färsk, Marcus QA
+körd → fyndspåren 259 (`#1534` LANDAD) · utredningen 260 (`#1522`,
+0 leads — 154/247 namnlösa är äkta backfill-klass) · K1 `task-264`
+(Opus-bygge pågår) · B1 `task-265` (ready-for-human). KVAR: K1-landning
+→ 249.8 + PRD-stängning → skörd → session-end. Full narrativ: sessionsdok
+Del 10 + BUILD-LOG S104-posten.** **Vid resume 5 (2026-08-17):** ny gren
 `docs/s104-resume-5` i samma worktree; numrering RE-verifierad mot
 `origin/main`: **115 / task-249 / T145 FÖRBRUKAD (nästa: T146) / L512 +
 18 fragment** — handoffens "T144 högst" och "19 fragment" föråldrade av

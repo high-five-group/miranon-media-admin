@@ -26,3 +26,8 @@ skriver kommandon; en ev. skärpning av väg 2 (exkludera sökvägar under
 
 Instanser: S105 sessionsdok Del 10 § lessons-kandidater p. 3 +
 bygg-agenternas slutrapporter (TASK-201.15/201.16/201.18-landningarna).
+Instans 2–3 (2026-08-17, S104 natt-orkestreringen): 249.4- och
+249.3-agenterna fälldes oberoende av varandra på `cd <egen-worktree> &&
+git …`-former mot egna worktrees; båda löste det med cwd-formen ovan utan
+att känna till detta fragment — mönstret är alltså återupptäckbart men
+kostar varje agent en egen omväg (S104 sessionsdok Del 10).
