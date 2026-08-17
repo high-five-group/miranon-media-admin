@@ -4,7 +4,7 @@ title: 'PRD: Aktivitetshistorik-sidans promovering'
 status: Done
 assignee: []
 created_date: '2026-08-15 09:16'
-updated_date: '2026-08-15 10:48'
+updated_date: '2026-08-17 08:17'
 labels: []
 dependencies: []
 ordinal: 412000
@@ -69,12 +69,12 @@ Skarv-valet Marcus-delegerat och avgjort 2026-08-15 ('Du vet bäst, du bestämme
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 check-facit.sh grön genom hela kedjan — rivning omöjlig medan godkand är null
-- [ ] #6 Marcus godkand-stämpel via facit-godkännande FÖRE all rivning av prototyp-substrat
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 check-facit.sh grön genom hela kedjan — rivning omöjlig medan godkand är null
+- [x] #6 Marcus godkand-stämpel via facit-godkännande FÖRE all rivning av prototyp-substrat
 <!-- DOD:END -->
 
 ## Implementation Notes

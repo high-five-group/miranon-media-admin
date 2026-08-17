@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-08 17:10'
-updated_date: '2026-08-17 01:53'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,7 +34,7 @@ Testet mer-index.staging ('Mer-landningsytan ... ikoner chevron per rad') är de
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)

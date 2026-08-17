@@ -4,7 +4,7 @@ title: 'Skiva: Startvärmningsmotorn — warmup-modul med äkta förloppsräknin
 status: Done
 assignee: []
 created_date: '2026-08-15 08:46'
-updated_date: '2026-08-15 10:09'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,6 +26,14 @@ ordinal: 415000
 - [x] #4 Hermetiska tester (räkning, timeout, offline-gate, seed-delning) gröna utan staging-beroende
 - [x] #5 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -94,11 +102,3 @@ no-network), hård timeout med hängande hämtning, slutlöfte kastar aldrig
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1332 (commit c3db1827, MERGED på main 71f5f888). Warmup-motorn med äkta settled-räkning, online-gate, timeout-delresultat, hämta-en-gång-dela (payload-identiteten verifierad — ingen fallback behövdes); 8 hermetiska tester med röd-först-bevis ×2; DI-avvikelsen starta(qc,{dataSource}) bokförd i notes; konstant-driftrisken överlämnad till 218.3 (löst där).
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->

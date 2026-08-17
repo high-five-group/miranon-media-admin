@@ -4,7 +4,7 @@ title: Förberedelseskärmen direkt efter login-klicket — router-medveten trig
 status: Done
 assignee: []
 created_date: '2026-08-15 13:18'
-updated_date: '2026-08-16 00:33'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,7 +29,7 @@ Uppföljningskort ur TASK-218.3:s öppet bokförda avgränsning (varv 3-fixen, 2
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 

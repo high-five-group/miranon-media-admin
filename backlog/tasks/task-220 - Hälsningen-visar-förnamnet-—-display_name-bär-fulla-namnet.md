@@ -4,7 +4,7 @@ title: Hälsningen visar förnamnet — display_name bär fulla namnet
 status: Done
 assignee: []
 created_date: '2026-08-15 08:59'
-updated_date: '2026-08-15 09:43'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,6 +25,14 @@ Marcus-beslut 2026-08-15 (S102 Lotta-vandringen): visningsnamnen i Supabase user
 - [x] #4 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -36,11 +44,3 @@ Implementerat: Greeting.tsx extraherar förnamnet (första ordet) ur AuthProvide
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1331 (commit 6c4d1a77, MERGED på main afd4fc3f, 2026-08-15). fornamn()-helper i hälsningens visningslogik; AuthProvider orörd (fulla namnet till actor/aktivitetslogg, grep-bevisat); tvåsidigt testbevis (rött utan fix, grönt med; 30/30 hem-acceptance). 'Hej Marcus' aktiv efter nästa inloggning.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->

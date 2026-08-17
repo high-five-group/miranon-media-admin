@@ -4,7 +4,7 @@ title: 'Skiva: E2E-kallstartsfallet — persist-sviten utökas'
 status: Done
 assignee: []
 created_date: '2026-08-15 08:48'
-updated_date: '2026-08-15 13:18'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,8 +23,16 @@ ordinal: 418000
 <!-- AC:BEGIN -->
 - [x] #1 Nytt kallstartsfall i persist-cache-sviten: skärm → fylld bar → färdigt Hem utan skeleton, grönt mot staging
 - [x] #2 Befintliga varm-/offline-AC:n gröna oförändrade i samma körning
-- [ ] #3 DoD-kvartetten grön + berörd e2e-svit grön
+- [x] #3 DoD-kvartetten grön + berörd e2e-svit grön
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -81,11 +89,3 @@ merge-kö-jobbets faktiska utfall.
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1349 (commit 61241989, MERGED på main c47cc262 — merge-köns staging-jobb grönt = det skarpa e2e-beviset för hela kedjan). Kallstartsfallet i persist-sviten: tom cache → Förberedelseskärm (progressbar + låst text) → bar fylls → färdigt Hem utan skeletons → omedelbart flikbyte; varm-/offline-AC:n gröna i samma körning. Ärlig testdesign bokförd: sista bar-steget strukturellt omålbart (mikrotask-kedjan) → asserterar sista observerbara steget + färdigt Hem. Lokal skarp körning blockerad av upptagen port (parallell session) — CI-vägen var beviset, öppet bokfört.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->

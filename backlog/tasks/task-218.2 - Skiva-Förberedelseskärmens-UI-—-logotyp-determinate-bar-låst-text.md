@@ -4,7 +4,7 @@ title: 'Skiva: Förberedelseskärmens UI — logotyp, determinate bar, låst tex
 status: Done
 assignee: []
 created_date: '2026-08-15 08:47'
-updated_date: '2026-08-15 10:09'
+updated_date: '2026-08-17 08:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,6 +26,14 @@ ordinal: 416000
 - [x] #4 DoD-kvartetten grön (test:api, typecheck, biome, build)
 <!-- AC:END -->
 
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
+
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -37,11 +45,3 @@ Byggd av bygg-agenten (2026-08-15). Komponent src/components/AppShell/Forberedel
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad i PR #1336 (commit cc84d8cf + lintfix cf9c9e00, MERGED på main 1d0573ae). Förberedelseskärmen: ordmärkes-logotyp, react-aria ProgressBar, Marcus-låsta texten, polite-besked, reduced-motion + contrast-more (egen kontrastfångst gold-10 2,80:1 → gold-11/12 — testet fällde på riktigt före fix); tre lägen granskningsbara i dev-primitives; DoD grön.
 <!-- SECTION:FINAL_SUMMARY:END -->
-
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
