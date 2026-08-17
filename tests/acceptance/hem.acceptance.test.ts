@@ -534,7 +534,7 @@ test.describe('Tomma läget (PRD task-243 berättelse 8)', () => {
  * kräver `status === 'Obekräftad'` — recency-utan-filter är INTE facit-formen.
  */
 test.describe('Nya anmälningar — statusfilter, räknare, bekräftelsesvep, ålder (PRD berättelse 3, 4, 6)', () => {
-  test('räknar-rubriken räknar ENDAST status Obekräftad; recency-sorterat; ålder som relativ tid; bulk-knappen aktiv-vy men funktionellt no-op', async ({
+  test('räknar-rubriken räknar ENDAST status Obekräftad; recency-sorterat; ålder som relativ tid; bulk-knappen öppnar bekräftelsesvepets sändyta', async ({
     page,
     network,
   }) => {
@@ -556,7 +556,12 @@ test.describe('Nya anmälningar — statusfilter, räknare, bekräftelsesvep, å
         // obekraftadeAnmalningar).
         reg({ fornamn: 'Cecilia', efternamn: 'Cold', status: 'Bekräftad (mail skickat)' }),
       ],
-      events: [ev()],
+      // EXPLICIT id, matchar reg()-defaultens eventId 'recEvent1' — annars
+      // (ev()s slumpade default-id) faller Alice/Bertil ur
+      // `bekraftelsesvepUrval`s eventId→eventsMap-koppling (dokumenterad
+      // gräns, `svep-urval.ts`) och dialogens "Skicka till N personer"-läge
+      // hade aldrig prövats, bara det tomma undantagsläget.
+      events: [ev({ id: 'recEvent1' })],
     });
     await page.goto('/hem');
     const block = page.getByRole('region', { name: '2 nya anmälningar att bekräfta' });
@@ -574,22 +579,31 @@ test.describe('Nya anmälningar — statusfilter, räknare, bekräftelsesvep, å
     await expect(block.getByText('för 5 min sedan', { exact: true })).toBeVisible();
     await expect(block.getByText('för 2 tim sedan', { exact: true })).toBeVisible();
 
-    // Bekräftelsesvep-knappen: VISUELLT full aktiv yta men FUNKTIONELLT
-    // avstängd (AC #4, `BulkAtgardsknapp.tsx`) — ARIA-disabled, INTE native
-    // `isDisabled` (`Button.tsx`s docblock: native `disabled` hade tagit
-    // bort träffytan ur tabordningen OCH lagt `data-[disabled]:opacity-50`).
-    // Playwrights `toBeDisabled()`-matcher räknar SJÄLV `aria-disabled="true"`
-    // som "disabled" (ARIA-semantiken, inte bara det native attributet) — det
-    // beviset görs i stället RAKT, mot det som faktiskt skiljer de två
-    // vägarna åt: knappen är KVAR i tabordningen (`tabindex="0"`, aldrig
-    // `-1`/borttagen).
+    // Bekräftelsesvep-knappen: sedan [TASK-241.2] en RIKTIG, klickbar knapp
+    // — `BulkAtgardsknapp.tsx`s `onPress`-gren (Hem pekar, svepet skickar,
+    // ADR-114). Den gamla no-op-formen (`aria-disabled` + tooltip, `onPress`
+    // UTELÄMNAD) lever kvar OENDAST i ForfallnaBetalningars syskonknapp
+    // "Skicka påminnelse till alla" — se den describen nedan. Visuellt
+    // OFÖRÄNDRAD i båda lägena (samma `intent="primary"`, samma fullbredd);
+    // `aria-disabled`/`onPress` är det enda som skiljer dem, per
+    // `BulkAtgardsknapp.tsx`s docblock.
     const knapp = block.getByRole('button', { name: 'Bekräfta alla' });
     await expect(knapp).toBeVisible();
-    await expect(knapp).toHaveAttribute('aria-disabled', 'true');
-    await expect(knapp).toHaveAttribute('tabindex', '0');
-    await expect(knapp).toHaveAccessibleDescription(
-      'Skickar ingenting än. Sändflödet är inte byggt ännu.',
-    );
+    await expect(knapp).not.toHaveAttribute('aria-disabled');
+
+    // Öppnar sändytans dialog (`SvepOverlay`, `role="dialog"` via
+    // react-aria-components `Dialog`, namnet ur `title="Bekräfta alla"`) —
+    // och Escape stänger den igen UTAN sidoeffekter: samma två anmälningar
+    // står kvar, ingen ny alert, ingen navigering bort från /hem
+    // (`Modal isDismissable` bär Escape-hanteringen, `Hem.tsx`s docblock).
+    await knapp.click();
+    const dialog = page.getByRole('dialog', { name: 'Bekräfta alla' });
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(page).toHaveURL(/\/hem$/);
+    await expect(rader).toHaveCount(2);
+    await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
   test('singular — exakt EN ny anmälan → "1 ny anmälan att bekräfta"', async ({
