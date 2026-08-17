@@ -286,6 +286,108 @@ h1[tabindex="-1"]:focus-visible {
   outline: none;
 }
 
+/* ── LADDTEXTENS VÅG (TASK-259, Marcus QA-fynd 2026-08-17) ──
+   "Räknar personer…" stod som stum grå text medan talet hämtades och
+   läste som en yta som hängt sig. Marcus önskan, verbatim: "en annan
+   vikt eller storlek på typsnittet eller att det går som en
+   'laddnings-våg' genom texten". Vågen valdes: en viktändring flyttar
+   layouten när texten byts mot talet, en storleksändring gör det
+   dessutom två gånger (in och ut). Vågen rör INGEN metrik.
+
+   BRANSCHFORMEN, INTE EN EGEN IDÉ: gradient klippt till texten +
+   animerad bakgrundsposition är samma mekanik som shadcn/ui:s
+   `shimmer`-utility (background-clip: text, --shimmer-duration 2s) och
+   AI SDK Elements' `Shimmer` (text-transparent + background-clip,
+   2 s linear), och samma svep-familj som MUI:s wave-skeleton vårt eget
+   `Skeleton.tsx` redan citerar. DURATIONEN ÄR HUSETS, INTE BRANSCHENS:
+   2,5 s ease-in-out är exakt --animate-skeleton-shimmer (tailwind.css,
+   Chung-empirin — långsam shimmer upplevs kortare än snabb). Laddtexten
+   står ofta bredvid ett skelettblock (PublikSektion), och två svep i
+   olika takt bredvid varandra läses som två olika saker som händer.
+
+   MEDIA-GATEN ÄR STRUKTURELL, inte en neutralisering. Hela
+   behandlingen — gradienten, klippningen, den genomskinliga texten —
+   bor INUTI prefers-reduced-motion: no-preference. Under `reduce`
+   existerar regeln alltså inte alls, och raden är vanlig text i sin
+   vanliga färg. Att i stället gata bara `animation` (motion-safe:-
+   varianten, som skeleton-shimmern använder) hade lämnat texten
+   gradient-klippt och frusen mitt i ett svep — statiskt, men inte
+   "statisk text". base.css-neutraliseringen längst ned står kvar som
+   dubbelbälte.
+
+   GENOMSKINLIGHETEN GÖRS MED `-webkit-text-fill-color`, INTE `color`, och
+   det är en bärande detalj — inte en prefix-kuriosa. Gradientens bas är
+   `currentColor` (skälet: components.css § Laddtextens våg), och
+   `currentColor` löser mot elementets EGEN `color`. Hade `color` satts
+   till `transparent` hade alltså gradienten blivit genomskinlig i samma
+   drag och raden osynlig. `-webkit-text-fill-color` styr enbart textens
+   FYLLNING och lämnar `color` orört, så basen fortsätter att vara den
+   färg raden faktiskt bär. Egenskapen har dessutom samma stödyta som
+   `background-clip: text` självt, och saknas den blir utfallet det
+   säkraste tänkbara: texten fylls i sin vanliga färg, gradienten syns
+   inte, ingenting går förlorat.
+
+   @supports-VILLKORET ÄR ETT SKYDDSRÄCKE MOT OSYNLIG TEXT, inte
+   kosmetik (MDN:s uttryckliga varning för background-clip: text). Utan
+   stöd faller raden till vanlig ärvd färg.
+
+   FORCED-COLORS OCH PRINT nollar behandlingen av samma skäl från andra
+   hållet: systemet respektive skrivaren ritar inte bakgrundsbilden, och
+   en ofylld text hade blivit osynlig.
+
+   OLAGRAD, som grannarna ovan: `text-text-muted` sätter `color` i
+   utilities-lagret, och den olagrade regeln här måste vinna över den
+   för att klippningen ska synas alls (cascade-arkitekturen, L246). */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (background-clip: text) or (-webkit-background-clip: text) {
+    .mm-laddtext {
+      background-image: linear-gradient(
+        90deg,
+        currentColor 0%,
+        currentColor 40%,
+        var(--mm-laddtext-vag) 50%,
+        currentColor 60%,
+        currentColor 100%
+      );
+      background-size: 300% 100%;
+      background-repeat: no-repeat;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: mm-laddtext-vag 2.5s ease-in-out infinite;
+    }
+
+    /* Bilden är 3× radens bredd med vågtoppen i mitten. 100 % lägger
+       toppen strax utanför vänsterkanten, 0 % strax utanför höger — ett
+       fullt svep genom hela raden, aldrig en topp som står still i kant. */
+    @keyframes mm-laddtext-vag {
+      from {
+        background-position-x: 100%;
+      }
+
+      to {
+        background-position-x: 0%;
+      }
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .mm-laddtext {
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+    animation: none;
+  }
+}
+
+@media print {
+  .mm-laddtext {
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+    animation: none;
+  }
+}
+
 /* Rubriker: aktivera Inter Display-variant via opsz-axel.
    Se marcus-system DESIGN-FOUNDATION-v1.
    I @layer base (task-4.1, B-NYTT): olagrad author-CSS besegrar ALLA

@@ -1070,14 +1070,15 @@ function SidRam({
   );
 }
 
-function PrototypNot({ children }: { children?: React.ReactNode }) {
-  return (
-    <p className="text-small text-text-muted">
-      <strong className="font-medium">Prototyp.</strong> Inget sparas, inget skickas.{' '}
-      {children ?? null}
-    </p>
-  );
-}
+/* `PrototypNot` ÄR RIVEN (TASK-259, Marcus QA-fynd 2026-08-17). Noten satt
+   på sju ställen och sa "Prototyp. Inget sparas, inget skickas." på en yta
+   som sedan TASK-249.5 är routens ovillkorliga, skarpa form — Lotta mötte
+   alltså en prototyp-etikett på en produktionssida, samma stale grå-löfte
+   TASK-147.8 rev ur `AtgardsSida.tsx` av exakt samma skäl. Docblocken som
+   sa att noten "står kvar" (TASK-249.1/249.6-ankarkommentarerna vid varje
+   `data-testid`) är rättade i samma commit; den kommentar i `VariantD` som
+   påstod att noten försvinner vid flippen — bokförd som felaktig i
+   249.6-rapporten och listad på städkortet TASK-258 — dör med noten själv. */
 
 /* ================================================================== *
  * MEDLEMSFRÅGAN — lat, delad på regelns signatur
@@ -1477,7 +1478,7 @@ function TackningsPanel({
     <div className="flex flex-col gap-3">
       <div role="status" aria-live="polite" aria-atomic="true">
         {utfall.status === 'raknar' && (
-          <p className="text-small text-text-muted">Räknar täckningen…</p>
+          <p className="mm-laddtext text-small text-text-muted">Räknar täckningen…</p>
         )}
 
         {friskt && klart !== null && (
@@ -1655,7 +1656,13 @@ function SegmentKort({
           {raknar ? (
             <>
               <Users aria-hidden="true" size={14} className="shrink-0" />
-              Räknar…
+              {/* VÅGEN BÄRS AV EN EGEN SPAN, INTE AV LIVE-REGIONEN. `.mm-laddtext`
+                  sätter `color: transparent` (background-clip: text), och
+                  `Users`-ikonen ritas med `currentColor` — låg klassen på den
+                  gemensamma föräldern hade ikonen blivit osynlig i samma
+                  ögonblick som texten började vaja. Spanen bär ingen roll och
+                  bidrar bara med sin text till tillgänglighetsträdet. */}
+              <span className="mm-laddtext">Räknar…</span>
             </>
           ) : antal === undefined ? null : (
             <>
@@ -1669,8 +1676,9 @@ function SegmentKort({
           "Sparade i basen"-grupperingen). Med CI-fixturerna bortfiltrerade är
           VARJE kort i listan en skiss, så pillen satt på alla och skilde
           ingenting åt — den gjorde bara att listan inte gick att bedöma som
-          den yta Lotta möter. Att prototypen inte sparar något står kvar en
-          gång, i `PrototypNot` under listan, i stället för på varje rad. */}
+          den yta Lotta möter. [TASK-259] Raden pekade tidigare vidare till
+          `PrototypNot` under listan som stället där prototyp-förbehållet stod
+          en gång; noten är riven, och listan bär inget förbehåll alls. */}
     </>
   );
 
@@ -1832,10 +1840,13 @@ function SegmentLista({
           strukturellt, inte via ett filter i testet.
 
           [TASK-249.6] `SkalprovsVaxel` är RIVEN med promoveringen (ADR-103:
-          flaggor och växlar rivs, aldrig formen). `PrototypNot` står kvar:
-          sändningen och sparandet är fortfarande no-op i den promoverade
-          formen (TASK-249.9 § Observera), så noten beskriver ett läge som
-          alltjämt gäller. Referensen för denna yta är därför oförändrad. */}
+          flaggor och växlar rivs, aldrig formen). [TASK-259] `PrototypNot`
+          stod kvar efter den rivningen, med motiveringen att sändningen och
+          sparandet ännu är no-op (TASK-249.9 § Observera). Marcus QA-fynd
+          2026-08-17 avgjorde frågan åt andra hållet: ett internt förbehåll
+          om vad koden ännu inte gör hör inte hemma på en yta Lotta använder
+          skarpt. Noten är riven, och referensen för denna yta är oförändrad
+          — den stod aldrig inom testid-scopet (se ankaret ovan). */}
       <div data-testid="segment-listan" className="flex flex-col gap-6 px-4">
         {/* EN RAD, ALLTID NÄRVARANDE (`c` ← `Deltagare.tsx § MarkeringsBatchBar`,
             `TASK-145.3` AC #1): läget växlas genom en horisontell utvidgning,
@@ -2039,27 +2050,12 @@ function SegmentLista({
           // PROTOTYP-egenskap. I skarp drift är varje rad i listan riktig,
           // och då finns ingen gruppering att göra. Ytan gick alltså inte
           // att bedöma som den yta den ska bli.
-          //
-          // Att inget här sparas på riktigt står kvar EN gång, i
-          // `PrototypNot` under listan — inte på varje kort.
           kortLista(poster)
         )}
       </div>
-
-      {/* [TASK-249.1] PROTOTYP-NOTEN STÅR UTANFÖR `segment-listan`s
-          testid-scope, med avsikt (se ankar-kommentaren ovan `segment-listan`).
-          Samma `!laddar`-grind som förut. [TASK-249.6] Skalprovs-växeln som
-          stod först i denna div är riven; noten står kvar och har mist sina
-          två meningar om skalprovet. */}
-      {!laddar && (
-        <div className="flex flex-col gap-6 px-4">
-          <PrototypNot>
-            Segmenten ovan är byggda ur riktig taxonomi i den nya regelformen. Posterna är påhittade
-            - antalen är det inte: de räknas mot samma källa som en sparad rad. Täckningsknappen
-            visar om alla som borde vara med är med.
-          </PrototypNot>
-        </div>
-      )}
+      {/* [TASK-259] Prototyp-noten som stod som egen syskon-div här — utanför
+          `segment-listan`s testid-scope, bakom samma `!laddar`-grind — är
+          riven med komponenten. Listan slutar med sitt sista kort. */}
     </section>
   );
 }
@@ -2309,6 +2305,13 @@ function PublikSektion({
                   `undertryckt` är kod och rörs inte. */}
               <ToggleButton id="undertryckt">Får inte mailet</ToggleButton>
             </ToggleButtonGroup>
+            {/* [TASK-259] HJÄLPRADEN UNDER SÖKRUTAN ÄR RIVEN (Marcus QA-fynd
+                2026-08-17). Den sa "Söker i den redan hämtade publiken -
+                kostar inget serveranrop." — en upplysning om appens INRE
+                mekanik (att sökningen sker i minnet och inte kostar ett
+                anrop), inte om vad Lotta gör. Att det går fort märks; att
+                det går fort för att datan redan är hämtad är vår sak.
+                Sökrutan bär sin egen platshållare och behöver inget mer. */}
             {medlemmar.length > 10 && (
               <Input
                 label="Sök i publiken"
@@ -2317,7 +2320,6 @@ function PublikSektion({
                 value={sok}
                 onChange={setSok}
                 placeholder="Sök namn eller e-post i publiken…"
-                description="Söker i den redan hämtade publiken - kostar inget serveranrop."
               />
             )}
           </div>
@@ -2411,8 +2413,8 @@ function SegmentDetalj({
           (`data-testid="segment-detaljvyn"`, ADR-103 B4) — `gap-6` speglar
           `SidRam`s egen `<section>`-klass exakt, så DETTA extra DOM-lager
           ändrar inget synligt avstånd (samma grepp som `granskning-yta`/
-          `segment-listan` ovan). `PrototypNot` sist i funktionen står
-          UTANFÖR som en egen syskon-div, av samma skäl.
+          `segment-listan` ovan). [TASK-259] `PrototypNot`, som stod sist i
+          funktionen som en egen syskon-div av samma skäl, är riven.
 
           [TASK-249.6] DEN AVGRÄNSNING SOM STOD HÄR ÄR UPPLÖST AV RIVNINGEN.
           Till skillnad från de sex andra ytorna kunde `SkalprovsVaxel` inte
@@ -2438,8 +2440,21 @@ function SegmentDetalj({
             </h1>
           </div>
           {/* KONSEKVENSEN FÖRST: talet och dess uppdelning står i headern, före
-            allt annat. Färg är aldrig ensam bärare — uppdelningen är text. */}
-          <p className="text-small text-text-muted" aria-live="polite">
+            allt annat. Färg är aldrig ensam bärare — uppdelningen är text.
+
+            [TASK-259] Raden byter innehåll mellan fem lägen i SAMMA nod (en
+            `aria-live` som monteras samtidigt som sin text annonseras inte),
+            så laddvågen måste sättas villkorligt på noden i stället för att
+            omsluta texten. Villkoret är härlett ur samma två flaggor grenen
+            nedan använder — ingen egen kopia av kedjan. */}
+          <p
+            className={
+              !tomRegel && isPending
+                ? 'mm-laddtext text-small text-text-muted'
+                : 'text-small text-text-muted'
+            }
+            aria-live="polite"
+          >
             {tomRegel
               ? 'Regeln träffar inga utbildningar än.'
               : isPending
@@ -2517,10 +2532,6 @@ function SegmentDetalj({
             </button>
           </div>
         </DetaljGrupp>
-      </div>
-
-      <div className="px-4">
-        <PrototypNot>Publiken hämtas på riktigt med compute-segment.</PrototypNot>
       </div>
     </SidRam>
   );
@@ -3139,10 +3150,10 @@ function RegelVerkstad({
     <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmentet">
       {/* [TASK-249.1] `data-testid="verkstaden"` (ADR-103 B4) — `gap-6`
           speglar `SidRam`s `<section>`-klass, samma noll-synligt-avstånd-
-          grepp som övriga sex ytor. `PrototypNot` sist i funktionen står
-          UTANFÖR som egen syskon-div. Riggarna förekom aldrig i denna vy —
-          bara `PrototypNot` behövde uteslutas, och den står kvar (TASK-249.6
-          rev `PrototypRigg`/`SkalprovsVaxel`, inte noten). */}
+          grepp som övriga sex ytor. Riggarna förekom aldrig i denna vy —
+          bara `PrototypNot` behövde uteslutas ur scopet, och den är sedan
+          TASK-259 riven helt (TASK-249.6 rev `PrototypRigg`/
+          `SkalprovsVaxel`, noten överlevde det varvet). */}
       <div data-testid="verkstaden" className="flex flex-col gap-6">
         <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
           {/* RUBRIKEN ÄR SEGMENTET, INTE SYSTEMORDET (Marcus 2026-08-16:
@@ -3226,7 +3237,7 @@ function RegelVerkstad({
                     mallvyns steg 3 (Marcus 2026-08-16). */}
                   <p className="text-body">{predikatKlartext(pred)}</p>
                   {isFetching ? (
-                    <p className="text-small text-text-muted">Räknar personer…</p>
+                    <p className="mm-laddtext text-small text-text-muted">Räknar personer…</p>
                   ) : isError ? (
                     <MessageBox intent="error" title="Kunde inte räkna antal">
                       {error instanceof Error ? error.message : 'Okänt fel.'}
@@ -3278,9 +3289,13 @@ function RegelVerkstad({
                   >
                     Spara segmentet
                   </Button>
-                  {namn.trim() === '' && (
-                    <span className="text-small text-text-muted">Ge segmentet ett namn först.</span>
-                  )}
+                  {/* [TASK-259] "Ge segmentet ett namn först." ÄR RIVEN
+                      (Marcus QA-fynd 2026-08-17). Raden dök upp bredvid en
+                      redan inaktiverad Spara-knapp och sa samma sak en andra
+                      gång: namnfältet ovanför är `isRequired` och bär redan
+                      märkningen, och knappens `isDisabled` bär spärren.
+                      Tredubbelt besked om ett tomt fält läser som en
+                      tillrättavisning, inte som hjälp. */}
                   <Button intent="secondary" onPress={onTillbaka}>
                     Avbryt
                   </Button>
@@ -3301,10 +3316,6 @@ function RegelVerkstad({
           )}
         </div>
       </div>
-
-      <div className="px-4">
-        <PrototypNot />
-      </div>
     </SidRam>
   );
 }
@@ -3312,6 +3323,12 @@ function RegelVerkstad({
 /* ================================================================== *
  * "DELA UPP I GRUPPER" — partition-generatorns egna yta
  * ================================================================== */
+
+/** Generatorns laddtext. Egen konstant eftersom steg 3:s enda live-region
+ *  bär FYRA lägen i samma nod (se `steg3Text`): laddvågen måste kunna
+ *  frågas efter i renderingen utan att villkorskedjan skrivs av en andra
+ *  gång — två kopior av samma villkor glider isär, en konstant kan inte. */
+const RAKNAR_GRUPPERNA = 'Räknar grupperna…';
 
 /**
  * Ett tal per icke-tom delmängd av de valda kurserna. Räknat lokalt ur K
@@ -3553,7 +3570,7 @@ function DelaUppIGrupper({
         : nagotFel
           ? ''
           : !allaSvarat
-            ? 'Räknar grupperna…'
+            ? RAKNAR_GRUPPERNA
             : befolkade.length === 0
               ? 'Ingen har någon av de här kombinationerna än.'
               : // "N personer täcks" var samma systemord som listans kontrolläge
@@ -3577,9 +3594,9 @@ function DelaUppIGrupper({
       {/* [TASK-249.1] `data-testid="generatorn"` (ADR-103 B4) — `gap-6`
           speglar `SidRam`s `<section>`-klass. Omsluter BÅDA de befintliga
           topp-nivå-divarna (stegkorten + Avbryt-raden, redan syskon till
-          varandra) men INTE `PrototypNot`, som flyttas till en egen
-          syskon-div sist. Riggarna förekom aldrig i denna vy (och är rivna
-          sedan TASK-249.6). */}
+          varandra). `PrototypNot`, som låg i en egen syskon-div sist just
+          för att hållas utanför scopet, är riven (TASK-259). Riggarna
+          förekom aldrig i denna vy (och är rivna sedan TASK-249.6). */}
       <div data-testid="generatorn" className="flex flex-col gap-6">
         <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
           <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
@@ -3706,7 +3723,18 @@ function DelaUppIGrupper({
             rubrik="Det här blir grupperna"
             dampad={modalitet === null || valdaAtomer.length < 2}
           >
-            <p aria-live="polite" className="text-small text-text-muted">
+            {/* [TASK-259] Laddvågen sätts på NODEN, villkorad av att raden
+                just nu ÄR laddtexten. Jämförelsen går mot samma konstant
+                kedjan ovan skriver, aldrig mot en kopia av dess villkor —
+                det är den enda formen som inte kan glida isär. */}
+            <p
+              aria-live="polite"
+              className={
+                steg3Text === RAKNAR_GRUPPERNA
+                  ? 'mm-laddtext text-small text-text-muted'
+                  : 'text-small text-text-muted'
+              }
+            >
               {steg3Text}
             </p>
             {nagotFel ? (
@@ -3810,10 +3838,6 @@ function DelaUppIGrupper({
             </Button>
           </div>
         </div>
-      </div>
-
-      <div className="px-4 pb-2">
-        <PrototypNot>Grupperna läggs till i listan. Inget sparas i basen.</PrototypNot>
       </div>
     </SidRam>
   );
@@ -4049,9 +4073,10 @@ function NyttSegmentVy({
   return (
     <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
       {/* [TASK-249.1] `data-testid="nytt-segment-mallvyn"` (ADR-103 B4) —
-          `gap-6` speglar `SidRam`s `<section>`-klass. `PrototypNot` sist i
-          funktionen står UTANFÖR som egen syskon-div. Riggarna förekom
-          aldrig i denna vy (och är rivna sedan TASK-249.6). */}
+          `gap-6` speglar `SidRam`s `<section>`-klass. `PrototypNot`, som
+          stod sist i funktionen som egen syskon-div utanför scopet, är
+          riven (TASK-259). Riggarna förekom aldrig i denna vy (och är
+          rivna sedan TASK-249.6). */}
       <div data-testid="nytt-segment-mallvyn" className="flex flex-col gap-6">
         <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
           <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
@@ -4140,7 +4165,7 @@ function NyttSegmentVy({
                     större grad. */}
                   <p className="text-body">{mening}</p>
                   {isFetching ? (
-                    <p className="text-small text-text-muted">Räknar personer…</p>
+                    <p className="mm-laddtext text-small text-text-muted">Räknar personer…</p>
                   ) : isError ? (
                     <p className="text-small text-text-muted">Antalet kunde inte räknas.</p>
                   ) : antal !== undefined ? (
@@ -4190,10 +4215,6 @@ function NyttSegmentVy({
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="px-4">
-        <PrototypNot>Segmentet läggs till i listan. Inget sparas i basen.</PrototypNot>
       </div>
     </SidRam>
   );
@@ -4432,9 +4453,10 @@ function UtskicksVy({
         {/* [TASK-249.1] `data-testid="utskicksvyn"` (ADR-103 B4) — DELAS
             med `granska`-lägets gren nedan (mutuellt uteslutande DOM-träd,
             samma mönster som `granskning-yta` i
-            `atgardssida-promoverings-grind.spec.ts`). `PrototypNot` står
-            UTANFÖR som egen syskon-nod; `PrototypRigg` (utfallslägena) stod
-            bredvid den och är riven (TASK-249.6, ADR-103). */}
+            `atgardssida-promoverings-grind.spec.ts`). `PrototypNot` stod
+            UTANFÖR som egen syskon-nod och är riven (TASK-259);
+            `PrototypRigg` (utfallslägena) stod bredvid den och revs redan
+            i TASK-249.6 (ADR-103). */}
         <div data-testid="utskicksvyn" className="flex flex-col gap-6">
           <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
             <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
@@ -4478,10 +4500,6 @@ function UtskicksVy({
               </Button>
             </div>
           </div>
-        </div>
-
-        <div className="px-4">
-          <PrototypNot />
         </div>
       </SidRam>
     );
@@ -4843,13 +4861,11 @@ function UtskicksVy({
           </div>
 
           <div aria-live="polite" aria-busy={lage === 'skickar'} className="min-h-6">
-            {lage === 'skickar' && <p className="text-small text-text-muted">Skickar utskicket…</p>}
+            {lage === 'skickar' && (
+              <p className="mm-laddtext text-small text-text-muted">Skickar utskicket…</p>
+            )}
           </div>
         </div>
-      </div>
-
-      <div className="px-4">
-        <PrototypNot />
       </div>
     </SidRam>
   );
