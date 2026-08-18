@@ -15,30 +15,34 @@
 
 ## Aktuellt fokus
 
-**Session 107 ▶️ ÅTERUPPTAGEN (tredje gången, 2026-08-18, `lifecycle:
-active`) — QA-VANDRINGENS STEG 5 FULLBORDAT: DOKUMENTSIDANS OMTAG.** Marcus dom
-öppnade passet ("dokumentsidan är skitdålig, Lotta kommer inte gilla
-detta") och stängde det ("Nu ser det visuellt väldigt snyggt ut på
-startytan"). **Nio fyndomgångar** mot renderad yta: uppladdningen först ·
-rubrikerna in i blocken · fyra likformiga 44×44-knappar · radhöjden LÅST
-till namn/täckning/datum (innehållshöjd 74 px på varje rad, långa namn
-trunkeras) · `Nivå`→`Steg` som presentationslager · etiketterna dolda med
-`hideLabel` · ingången till räckviddsläget flyttad in i listan (den FÅR
-inte tas bort — `EventValjare` avvisar avmarkering, enda vägen tillbaka).
-**RÄNNSTENEN STÄNGD** (`d7011a20`): `cover` byter beskärningsaxel i smala
-fönster; fotots yttersta 24 px tonas nu till kamouflagefärgen — söm 17–22
-→ **1** i fem format. **DEMO-FIXTUR** (`65b0e112`): fyra permanenta rader
-via EF:en, 17–24 tecken, radbryter inte. **SYSTEMISKT FYND:**
-`bg-bg-muted` dubbelanvänds som kortbakgrund OCH svag-yta-token — FEM
-mätta instanser där något blev osynligt. PR **#1594 MERGED** `34e1416e`
-(verifierat vid resume; ingen re-armering behövdes).
-KVAR: **eventläget är resume-ingången** (Marcus hann precis börja) · QA
-273.5 steg 6 facit · QA 275.4 · "Steg"-kollisionen · app-brett
-terminologi-svep · ORDLISTA saknar `Familj` · task-277 (basfältnamnen) ·
-blob-segheten · Done-flippar · PRD 276. Numrering: ADR 119 · task-277 ·
-L512+fragment · T145 · f50 — samtliga re-deriverade mot disk vid resume,
-oförändrade. Full handoff: sessionsdok S107 § Paushistorik (tredje
-gången) + Del 8-registret + Del 10.**
+**Session 107 ⏸️ PAUSAD (fjärde gången, 2026-08-18, `lifecycle: paused`) —
+DOKUMENTSIDANS OMTAG LIVE I PROD + VANDRINGENS RESTLISTA REGISTRERAD.**
+Marcus dom stängde omtaget: *"Nu är jag jättenöjd med hur det ser ut och
+funkar."* **PR #1597 MERGED `13203e51`, `Vercel: success` verifierat** —
+noll EF-filer i vågen, så ingen prod-EF-deploy behövdes. Fem commits:
+rubrikerna bort · **räckvidds-axeln blev EN kontroll** (knappen "Visa
+gemensamma dokument" riven, `EventValjare` bär läget via opt-in
+`gemensamtAlternativ`; knappens etikett var dessutom OSANN — eventläget
+visar redan gemensamma bilagor) · **filen först, räckvidden sedan** (det
+permanenta tvåstegs-blocket rivet, `RackviddsDialog` frågar efter filvalet)
+· listan rullar inline (exakt 4 rader, 396 px MÄTT, fast höjd så filterbyte
+inte flyttar layouten) · listan blev egen `bg-surface`-yta med symmetrisk
+ram. **"Delade dokument"**, inte "Alla dokument" (det senare OSANT — bara
+Kurstyp/Alla event visas där). **INSTANS SEX av osynlighets-buggen fångad
+FÖRE landning** — och den avslöjade en LEVANDE bugg: `RackviddBadge` har
+varit osynlig på **Åtgärds-sidans** bilageväljare i tre veckor, friskriven i
+prosa utan mätning. Två acceptance-vakter mäter nu faktisk
+`backgroundColor`. KVAR (fullständig disk-verifierad restlista i **Del 11 §
+D**): **alla 14 kort står To Do** (Del 8 sade nio) · `task-277` ej skapat ·
+ORDLISTA § Familj saknas · `VariantD` är LIVE ej prototyp · **lesson-lucka
+(16)–(18) aldrig utskrivna** · QA 273.5 steg 6 + QA 275.4. **TRE NYA
+MARCUS-PUNKTER i Del 11 § E:** Personer-vyns räknare+filtrering (INTE en
+enkel ändring — sju e2e-assertions + saknad serversiffra) ·
+**nollställningen inför Lotta / brytpunkts-frågan (tyngst, tidskritisk —
+Lotta släpps in imorgon)** · bevakningsraderna (leder ingenstans är
+AVSIKTLIGT, sändflödet obyggt i task-241; två lägen finns redan kodade).
+Numrering: ADR 119 · task-277 · L512+fragment · T145 · f50 — re-derivera
+ALLTID. Full handoff: sessionsdok S107 § PAUSLÄGE (fjärde gången) + Del 11.**
 
 **Session 107 — första passet (historik): NIO-PUNKTSLISTAN: utredning +
 nio byggskivor landade på EN dag.** Sju
