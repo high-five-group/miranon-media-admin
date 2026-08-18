@@ -41,13 +41,26 @@ enkel ändring — sju e2e-assertions + saknad serversiffra) ·
 **nollställningen inför Lotta / brytpunkts-frågan (tyngst, tidskritisk —
 Lotta släpps in imorgon)** · bevakningsraderna (leder ingenstans är
 AVSIKTLIGT, sändflödet obyggt i task-241; två lägen finns redan kodade).
-Numrering: ADR 119 · task-277 · L512+fragment · T145 · f50 — samtliga
-disk-verifierade vid resume 5 (Del 12 § B), utom f50 som kvarstår som
-ohärledd hypotes. ÅTERUPPTAGEN 2026-08-18 (femte passet) — MARCUS
-PRIO-ORDNING styr om handoffens: (1) testraden i aktivitetsloggen bort
-(Marcus-moment, prod) · (2) personlistans räknare + filtrering · (3)
-bevakningsraderna · (4) blob-segheten + dokumentmallarna · (5)
-nollställningen inför Lotta. Full handoff: sessionsdok S107 Del 12 + Del 11.**
+**PAUS 5 (2026-08-18): PRIO 1 + 3 STÄNGDA.** Testraden borta ur prod
+(`count = 0`, länk återställd till staging). **Eventinfo-svepet LANDAT**
+(#1604) — samma overlay + övergång, ordet "nya" återinfört med geometri MÄTT
+(375 px en rad, 1440 px två). Åtta PR:er landade (#1600–#1607), `main`
+`a54d4bbd`, träd rent. **Marcus pushback fällde tre av Code:s ramar:**
+täckningshålet var i själva verket **fälla 47** — `Antal hämtningar` är
+`COUNTA({Engagemang})` och `get-leads` filtrerar på den, så **33 riktiga
+leads är osynliga i HELA appen** (69 personer bär divergensen, mätt i prod) ·
+PDF-frågan var ramad i vår runtime i stället för i branschpraxis → omstyrd
+research ger domen **HTML/CSS-rendering, aldrig koordinat-ritning**; headless
+Chrome går strukturellt inte i Edge Functions, men Supabases egen dok visar
+Satori köra CSS-layout där · nollställningens brytpunkt 2026-04-19 är FEL —
+backfillen rörde bara närvaro, så **308 av 457 förfallna ligger FÖRE
+fönstret**, och 457 är ett golv (565 anmälningar har TOMMA betalfält).
+**SEX ÖPPNA BESLUT väntar Marcus** (PDF-vägen · brytpunkten · de tomma
+betalfälten · ompeka basformeln · 69 Engagemang-rader · AC #7 på 241.8).
+`TASK-277` färdigspeccad men EJ BYGGD. Heartbeat-monitorn stoppad medvetet —
+**starta om vid resume**. Numrering: ADR 119 · **task-278** (277 förbrukat) ·
+L512 + 48 fragment · T145 · f50 (ohärledd) — re-derivera ALLTID. Full
+handoff: sessionsdok S107 § PAUSLÄGE (femte gången) + Del 14.**
 
 **Session 107 — första passet (historik): NIO-PUNKTSLISTAN: utredning +
 nio byggskivor landade på EN dag.** Sju
