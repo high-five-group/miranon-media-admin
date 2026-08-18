@@ -5,11 +5,13 @@ import { displayName } from '@/components/registrations/registration-display';
 import { SvepOverlay } from '@/components/svep/SvepOverlay';
 import {
   bekraftelsesvepUrval,
+  eventinfoSvepUrval,
   paminnelseAvgiftstyperByRegId,
   paminnelseRader,
   paminnelsesvepUrval,
 } from '@/components/svep/svep-urval';
 import type { SvepTyp } from '@/components/svep/types';
+import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { Bevakningsrad } from './Bevakningsrad';
 import { ForfallnaBetalningar } from './ForfallnaBetalningar';
@@ -199,26 +201,66 @@ export function Hem() {
     () => forfallnaBetalningar(registrationsQuery.data, evMap, nuMs),
     [registrationsQuery.data, evMap, nuMs],
   );
+  /* [TASK-241.8 AC #4] `nyligenEventinfoSkickade` — server-BEKRÄFTADE
+     registrerings-ID:n (ur `onSkickat`s `lyckade`) som eventinfo-svepet
+     just stämplat, applicerade LOKALT ovanpå `registrationsQuery.data`
+     INNAN `bevakningar()` körs. Motivet är INTE kosmetiskt (till skillnad
+     från `nyligenSkickade`/`nyligenPaminda` nedan, vars enda syfte är ett
+     kvitto Lotta annars aldrig skulle se): `bevakningar()` läser
+     `registrationsQuery.data` direkt, och `useSendSvep`s
+     cache-invalidering (`svepSend.ts` § `onSettled`) triggar en ASYNK
+     refetch — utan detta lokala overlay vore AC #4 ("raden försvinner …
+     annars kvarstår … med korrekt kvarvarande antal") en KAPPLÖPNING mot
+     nätverket i stället för deterministisk vid stängning av dialogen.
+     `bevakningRegs` är en RENDRINGS-lokal overlay, aldrig skriven tillbaka
+     till `registrationsQuery.data` — nästa refetch tar över och detta
+     minne blir en no-op (samma `Set`-medlemmar matchar redan riktiga
+     stämplar då). */
+  const [nyligenEventinfoSkickade, setNyligenEventinfoSkickade] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const bevakningRegs = useMemo(() => {
+    if (nyligenEventinfoSkickade.size === 0) return registrationsQuery.data;
+    return registrationsQuery.data?.map((r) =>
+      r.deltagarinfoSkickad == null && nyligenEventinfoSkickade.has(r.id)
+        ? { ...r, deltagarinfoSkickad: new Date(nuMs).toISOString() }
+        : r,
+    );
+  }, [registrationsQuery.data, nyligenEventinfoSkickade, nuMs]);
   const bevakningRader = useMemo(
-    () => bevakningar(eventsQuery.data, registrationsQuery.data, idagStart),
-    [eventsQuery.data, registrationsQuery.data, idagStart],
+    () => bevakningar(eventsQuery.data, bevakningRegs, idagStart),
+    [eventsQuery.data, bevakningRegs, idagStart],
   );
 
-  /* [TASK-241.2/241.4] Svepens sändyta — Hem PEKAR, svepet SKICKAR (ADR-114
-     beslut 1). EN union-state (`aktivtSvep: SvepTyp | null`) i stället för
-     två separata booleaner: bekräftelse- och påminnelsesvepet är TVÅ
-     INSTANSER AV SAMMA FORM (ADR-114 beslut 4), aldrig öppna samtidigt, så
-     ETT `<Modal>`/`<SvepOverlay>`-par nedan väljer innehåll efter vilken typ
-     som är aktiv i stället för att duplicera hela overlay-blocket.
+  /* [TASK-241.2/241.4/241.8] Svepens sändyta — Hem PEKAR, svepet SKICKAR
+     (ADR-114 beslut 1). EN union-state (`aktivtSvep: SvepTyp | null`) i
+     stället för separata booleaner: alla TRE svepen är INSTANSER AV SAMMA
+     FORM (ADR-114 beslut 4, utökad PRD task-241 § Amendering 2026-08-18),
+     aldrig öppna samtidigt, så ETT `<Modal>`/`<SvepOverlay>`-par nedan
+     väljer innehåll efter vilken typ som är aktiv i stället för att
+     duplicera hela overlay-blocket.
      Urvalen är SAMMA urvalskällor som räknarna ovan — `anmalningar`/
      `obekraftadeAnmalningar` för bekräftelse (`bekraftelsesvepUrval`,
      TASK-241.2 AC #2), `forfallna`/`forfallnaBetalningar`+`forfallenGrupp`
      för påminnelse (`paminnelseRader`/`paminnelsesvepUrval`, TASK-241.4
-     AC #1) — bara omgrupperade per event. */
+     AC #1), `eventinfoEvent`/`bevakningar()` för eventinfo
+     (`eventinfoSvepUrval`, TASK-241.8 AC #1) — bara omgrupperade per
+     event. */
   const [aktivtSvep, setAktivtSvep] = useState<SvepTyp | null>(null);
   const bekraftelseGrupper = useMemo(
     () => bekraftelsesvepUrval(registrationsQuery.data, evMap),
     [registrationsQuery.data, evMap],
+  );
+
+  /* [TASK-241.8 AC #1] Eventinfo-svepets mål-event — SATT av
+     `Bevakningsrad`s `onOppna` (den klickade radens FULLA `Event`), inte
+     härlett ur `aktivtSvep` ensamt (den bär bara TYPEN, inte VILKET
+     event). Nollställs tillsammans med `aktivtSvep` vid stängning, se
+     `<Modal onOpenChange>` nedan. */
+  const [eventinfoEvent, setEventinfoEvent] = useState<Event | null>(null);
+  const eventinfoGrupper = useMemo(
+    () => (eventinfoEvent ? eventinfoSvepUrval(eventinfoEvent, registrationsQuery.data) : []),
+    [eventinfoEvent, registrationsQuery.data],
   );
 
   /* [TASK-241.4 AC #1] Påminnelsesvepets urval — en-påminnelse-modellens
@@ -303,7 +345,13 @@ export function Hem() {
 
         {/* BEVAKNINGSRAD — mellan "Nästa event" och "Nya anmälningar"
             (Marcus-låst blockordning); helt osynlig vid noll träffar. */}
-        <Bevakningsrad rader={bevakningRader} />
+        <Bevakningsrad
+          rader={bevakningRader}
+          onOppna={(event) => {
+            setEventinfoEvent(event);
+            setAktivtSvep('eventinfo');
+          }}
+        />
 
         {/* 3. NYA ANMÄLNINGAR */}
         <NyaAnmalningar
@@ -368,7 +416,13 @@ export function Hem() {
         // golvet (docblocket ovan) beskriver.
         className="w-[min(94vw,40rem)] origin-top overflow-hidden duration-300 data-[entering]:scale-95 data-[exiting]:scale-95 data-[exiting]:duration-200"
         onOpenChange={(open) => {
-          if (!open) setAktivtSvep(null);
+          if (!open) {
+            setAktivtSvep(null);
+            // [TASK-241.8] Nollställs SAMTIDIGT med `aktivtSvep` — annars
+            // pekar nästa eventinfo-öppning tillfälligt på FÖRRA eventet
+            // under en bildruta innan `onOppna` hinner sätta det nya.
+            setEventinfoEvent(null);
+          }
         }}
       >
         {aktivtSvep === 'bekraftelse' && (
@@ -395,6 +449,26 @@ export function Hem() {
               const nyaRader = paminnelseRaderList.filter((rad) => lyckadeIds.has(rad.reg.id));
               setNyligenPaminda((nu) => [...nyaRader, ...nu]);
             }}
+          />
+        )}
+        {aktivtSvep === 'eventinfo' && eventinfoEvent && (
+          <SvepOverlay
+            svepTyp="eventinfo"
+            eventGrupper={eventinfoGrupper}
+            onClose={() => {
+              setAktivtSvep(null);
+              setEventinfoEvent(null);
+            }}
+            // [TASK-241.8 AC #4] Se `nyligenEventinfoSkickade`s docblock
+            // ovan — deterministisk radspegling vid stängning, ingen
+            // väntan på refetch.
+            onSkickat={(lyckade) =>
+              setNyligenEventinfoSkickade((nu) => {
+                const next = new Set(nu);
+                for (const reg of lyckade) next.add(reg.id);
+                return next;
+              })
+            }
           />
         )}
       </Modal>

@@ -1,4 +1,5 @@
 import {
+  eventinfoMottagare,
   type ForfallenRad,
   forfallenGrupp,
   forfallnaBetalningar,
@@ -126,6 +127,24 @@ export function paminnelsesvepUrval(
     }
   }
   return [...grupper.values()];
+}
+
+/**
+ * [TASK-241.8 AC #1] Eventinfo-svepets urval — det ENDA av de tre som är
+ * ETT event, inte cross-event: bevakningsraden pekar redan på exakt vilket
+ * event Lotta klickade, så det finns inget att gruppera. Mottagarna är
+ * `eventinfoMottagare` (`hem-derivations.ts`) — SAMMA predikat
+ * bevakningsradens räknare/läge bygger på, aldrig härlett en andra gång.
+ * Tom array (inte en engrupps-array med noll mottagare) när urvalet är
+ * tomt — `SvepOverlay`s `kanSkicka`/`totalMottagare` läser grupp-längden,
+ * samma tomt-kontrakt som `bekraftelsesvepUrval`/`paminnelsesvepUrval`.
+ */
+export function eventinfoSvepUrval(
+  event: Event,
+  regs: Registration[] | undefined,
+): SvepEventGrupp[] {
+  const mottagare = eventinfoMottagare(regs, event.id);
+  return mottagare.length === 0 ? [] : [{ event, mottagare }];
 }
 
 /**

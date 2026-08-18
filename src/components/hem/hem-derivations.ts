@@ -259,19 +259,55 @@ export interface BevakningRad {
   antalUtanEventinfo: number;
 }
 
-/** Bevakningsradens statuscopy — EN delad källa per bevakningstyp. */
+/**
+ * Bevakningsradens statuscopy — EN delad källa per bevakningstyp.
+ *
+ * [TASK-241.8] "nya" ÅTERINFÖRT i eftersläntrare-formen (Marcus beslut
+ * 2026-08-18, mitt i denna skivas bygge — kortets ursprungliga gräns 4 mot
+ * copy-ändring UPPHÄVDES uttryckligen). Ordet ströks tyst i commit
+ * `d0366271` (TASK-226 varv 4) som en platsbesparing (`truncate` klippte
+ * "3 nya deltagare saknar e…" mitt i ordet vid 375px) — men SAMMA commit
+ * bytte samtidigt `truncate` mot `line-clamp-2`, som löser klippningen på
+ * ett annat sätt. Skälet till strykningen försvann alltså redan då, utan
+ * att någon bokförde det. Grillningens beslut 4
+ * (`tasks/sessions/2026-08-10-session-102.md:726-727`) motiverar ordet
+ * uttryckligen: "'nya' friar Lotta från falsk glömske-signal" — utan det
+ * kan Lotta läsa en oförändrad kvarstående siffra som att INGET hänt sedan
+ * senast, när det i själva verket är rätt personer, bara ännu inte
+ * skickat till. `ej-skickad`-formen ("Eventinfo saknas") är ORÖRD — endast
+ * eftersläntrare-formen bär ett tal att kvalificera.
+ */
 export function bevakningStatusText(
   rad: Pick<BevakningRad, 'lage' | 'antalUtanEventinfo'>,
 ): string {
   return rad.lage === 'ej-skickad'
     ? 'Eventinfo saknas'
-    : `${rad.antalUtanEventinfo} deltagare saknar eventinfo`;
+    : `${rad.antalUtanEventinfo} nya deltagare saknar eventinfo`;
 }
 
 /** Dagar-kvar-formen för bevakningsraden — samma tre textformer som `dagarKvarText`. */
 export function bevakningDagarText(dagarTillStart: number): string {
   if (dagarTillStart <= 0) return 'Idag';
   return dagarTillStart === 1 ? '1 dag kvar' : `${dagarTillStart} dagar kvar`;
+}
+
+/**
+ * [TASK-241.8 AC #1] Bekräftade anmälningar för ETT event som saknar
+ * Deltagarinfo-stämpeln (definition B ovan) — den DELADE predikat-källan
+ * bakom BÅDE bevakningsradens räknare/läge (`bevakningar()` nedan) OCH
+ * eventinfo-svepets mottagarurval (`svep-urval.ts` §
+ * `eventinfoSvepUrval`). Extraherad hit så mottagarurvalet ALDRIG härleds
+ * en andra gång — en avvikande filtrering i sändytan hade gjort
+ * bevakningsradens räknare och svepets adresslista inkonsekventa.
+ */
+export function eventinfoMottagare(
+  regs: Registration[] | undefined,
+  eventId: string,
+): Registration[] {
+  if (!regs) return [];
+  return regs.filter(
+    (r) => r.eventId === eventId && arBekraftad(r) && r.deltagarinfoSkickad == null,
+  );
 }
 
 /**
@@ -299,7 +335,7 @@ export function bevakningar(
     if (idagStartMs < start - EVENTINFO_FONSTER_DAGAR * DAG_MS) continue; // fönstret inte öppnat än
     if (start < idagStartMs) continue; // eventet är redan igång eller förbi
     const bekraftade = regs.filter((r) => r.eventId === event.id && arBekraftad(r));
-    const utanEventinfo = bekraftade.filter((r) => r.deltagarinfoSkickad == null);
+    const utanEventinfo = eventinfoMottagare(regs, event.id);
     if (utanEventinfo.length === 0) continue; // inget att bevaka
     rader.push({
       event,
