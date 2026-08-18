@@ -25,6 +25,13 @@ import { dateValue, eventName } from './EventCard';
 import { groupByMonth } from './manadsgrupp';
 
 /**
+ * Sentinel-nyckeln för det KONTEXTLÖSA alternativet (opt-in `gemensamtAlternativ`).
+ * Dubbla understreck så den aldrig kan kollidera med ett Airtable-record-ID
+ * (`rec…`), som är den enda andra nyckelrymden i listan.
+ */
+const GEMENSAMT_KEY = '__gemensamt';
+
+/**
  * Eventväljaren — delad väljar-komponent med TVÅ ytor (biblioteks-beviset,
  * dubbel-output-visionen): manuell anmälan-sidan (task-18.18, `form=
  * "kontextrad"`) och eventdetaljsidan (task-18.19, `form="rubrik"` — väljaren
@@ -88,6 +95,28 @@ import { groupByMonth } from './manadsgrupp';
  * Kommande event närmast först; månadsgrupperade i EventsLists EGEN
  * rubrikform via delade `groupByMonth` (punkt 9 — lyftet är skivans krav).
  *
+ * ═══ DET KONTEXTLÖSA ALTERNATIVET (`gemensamtAlternativ`, opt-in) ═══
+ *
+ * Dokument-ytan har två lägen på SAMMA axel som väljaren styr: ett valt
+ * event, eller inget event alls (räckviddsläget — ORDLISTA.md § Gemensam
+ * bilaga). Innan denna prop bars lägesbytet av en egen knapp längst ner i
+ * dokumentlistan ("Visa gemensamma dokument"), vilket gav ytan TVÅ kontroller
+ * på samma axel: väljaren valde event, knappen valde "inget event". Marcus
+ * fällde formen 2026-08-18: *"knappen 'Visa gemensamma dokument' förändrar ju
+ * hela tillståndet på listan … detta är inte bra."* Knappens etikett var
+ * dessutom falsk — eventläget VISAR redan gemensamma bilagor (`get-event-
+ * attachments` unionerar dem, ADR-118 beslut 2); det knappen egentligen gjorde
+ * var att gå till förvaltningsytan.
+ *
+ * Propen gör axeln till EN kontroll: en rad överst i listan, vald när
+ * `valtEventId` är utelämnad. Stängda läget visar då etiketten i stället för
+ * "Välj event" — väljaren säger alltid VAR du är, aldrig att ett val saknas.
+ *
+ * OPT-IN med avsikt: manuell anmälan (18.18) och eventdetaljsidan (18.19)
+ * har inget meningsfullt kontextlöst läge — en anmälan utan event är inget,
+ * och detaljsidan ÄR ett event. De skickar inte propen och är oförändrade,
+ * inklusive sina testkontrakt på "Välj event" som accessible name.
+ *
  * Datakällan är listcachen (`events.list` — samma nyckel som event-listan):
  * varm vid navigering från listan; kall djuplänk startar hämtningen vid
  * mount (sidans primära interaktion är väljaren — ADR-078: ingen väntan på
@@ -101,6 +130,7 @@ export function EventValjare({
   form = 'kontextrad',
   rubrikRef,
   onAvsikt,
+  gemensamtAlternativ,
 }: {
   /** Valt event-ID (djuplänken/URL:en). Utelämnad = tomt läge (punkt 7). */
   valtEventId?: string;
@@ -117,6 +147,11 @@ export function EventValjare({
   /** Avsikts-signal (hover) på en listrad — prefetch-krok (ADR-078 beslut 3).
       Anropas med radens event-ID; konsumenten äger vad som värms. */
   onAvsikt?: (eventId: string) => void;
+  /** Opt-in kontextlöst alternativ överst i listan — se komponent-huvudet.
+      Etikett och handling i ETT objekt, så formen aldrig kan hamna i ett
+      halvtillstånd (etikett utan handler, eller tvärtom). Utelämnad = ingen
+      sådan rad, och komponenten beter sig exakt som före propen. */
+  gemensamtAlternativ?: { etikett: string; onValj: () => void };
 }) {
   const dataSource = useDataSource();
   const { contains } = useFilter({ sensitivity: 'base' });
@@ -148,7 +183,11 @@ export function EventValjare({
     return groupByMonth(kommande);
   }, [data, idagStart]);
 
-  const tomtLage = valtEventId == null;
+  // TRE lägen sedan `gemensamtAlternativ`, inte längre två: valt event ·
+  // det kontextlösa alternativet valt · inget alls. Det sista nås BARA av
+  // konsumenter som inte skickar propen — för dem är härledningen oförändrad.
+  const gemensamtValt = valtEventId == null && gemensamtAlternativ != null;
+  const tomtLage = valtEventId == null && gemensamtAlternativ == null;
   const rubrikForm = form === 'rubrik';
 
   return (
@@ -157,10 +196,17 @@ export function EventValjare({
       // former av den osynliga "Välj event"-etiketten (18.18-testkontraktet).
       aria-label={rubrikForm ? undefined : 'Välj event'}
       aria-labelledby={rubrikForm ? namnId : undefined}
-      selectedKey={valtEventId ?? null}
+      selectedKey={valtEventId ?? (gemensamtValt ? GEMENSAMT_KEY : null)}
       onSelectionChange={(key) => {
         if (key == null) return;
         const id = String(key);
+        // Sentinel-grenen FÖRE event-grenen: nyckelrymderna är disjunkta
+        // (`__gemensamt` vs `rec…`), så ordningen är läsbarhet snarare än
+        // korrekthet — men den håller om record-ID-formen någonsin ändras.
+        if (id === GEMENSAMT_KEY) {
+          gemensamtAlternativ?.onValj();
+          return;
+        }
         if (id !== valtEventId) onByte(id);
       }}
       isDisabled={isDisabled}
@@ -236,6 +282,12 @@ export function EventValjare({
             {() =>
               tomtLage ? (
                 'Välj event'
+              ) : gemensamtAlternativ != null && valtEventId == null ? (
+                // Det kontextlösa alternativet valt: ren text i KontextRads
+                // namn-vikt, utan färgprick/ort/datumspann — de leden hör till
+                // ett event och har inget värde här. Triggern behåller
+                // pill-formen: detta ÄR ett val, inte ett tomt läge.
+                <span className="min-w-0 truncate font-medium">{gemensamtAlternativ.etikett}</span>
               ) : valtEvent ? (
                 <KontextRad event={valtEvent} />
               ) : (
@@ -287,6 +339,22 @@ export function EventValjare({
               </p>
             )}
           >
+            {/* Det kontextlösa alternativet står ÖVERST, utanför månads-
+                grupperna — det hör inte till någon månad. Direkt `SelectItem`
+                i stället för en egen `ListBoxSection`: en sektionsrubrik över
+                EN rad hade varit brus, och nästa månadsrubrik skiljer den
+                visuellt ändå. Sökningen filtrerar den som vilken rad som helst
+                (Autocomplete matchar `textValue`) — söker man "RIM" är den
+                borta, vilket är rätt. */}
+            {gemensamtAlternativ != null ? (
+              <SelectItem
+                id={GEMENSAMT_KEY}
+                textValue={gemensamtAlternativ.etikett}
+                className="font-medium"
+              >
+                {gemensamtAlternativ.etikett}
+              </SelectItem>
+            ) : null}
             {grupper.map((grupp) => (
               <ListBoxSection id={grupp.label} key={grupp.label}>
                 {/* Månadsrubriks-formen — EventsLists EGEN (punkt 9):

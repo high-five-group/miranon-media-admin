@@ -217,4 +217,73 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
       .analyze();
     expect(resultat.violations).toEqual([]);
   });
+
+  // ═══ RÄCKVIDDS-AXELN ÄR EN KONTROLL (Marcus 2026-08-18, S107 QA-vandringen) ═══
+  //
+  // Lägesbytet bars tidigare av en knapp längst ner i dokumentlistan ("Visa
+  // gemensamma dokument"), vilket gav ytan TVÅ kontroller på samma axel — och
+  // knappen kolliderade visuellt med typfiltrets "Alla", som opererar på en
+  // HELT ANNAN axel. Marcus: *"vi kan ju inte ha toggle-valet 'ALLA' i
+  // eventläget och även ha knappen 'Visa gemensamma dokument' … detta är inte
+  // bra."* Knappen är riven; `EventValjare` bär nu ett kontextlöst alternativ
+  // (`gemensamtAlternativ`, opt-in) överst i sin lista.
+  //
+  // Testerna nedan låser BÅDA halvorna: att knappen är borta (annars kan den
+  // smyga tillbaka vid en framtida ändring), och att väljarvägen faktiskt
+  // fungerar i båda riktningarna.
+
+  test('räckvidds-axeln: väljaren bär "Gemensamma dokument" och tar en till förvaltningsläget', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    await gotoEventlage(page);
+
+    // Den rivna knappen får inte återuppstå — varken i listan eller ovanför.
+    await expect(page.getByRole('button', { name: 'Visa gemensamma dokument' })).toHaveCount(0);
+
+    await page.getByTestId('event-valjare-trigger').click();
+    const alternativ = page.getByRole('option', { name: 'Gemensamma dokument', exact: true });
+    await expect(alternativ).toBeVisible();
+    await alternativ.click();
+
+    // Valet nollar `?event=` → förvaltningsläget, där eventets EGNA bilaga
+    // inte hör hemma och Radera (räckviddslägets ensamrätt) finns.
+    await expect(page).toHaveURL(/\/mer\/dokument$/);
+    await expect(page.getByText(BILAGA_EGEN.namn)).toHaveCount(0);
+    await expect(
+      page
+        .getByTestId('dokument-fil')
+        .filter({ hasText: BILAGA_GEMENSAM.namn })
+        .getByRole('button', { name: 'Radera' }),
+    ).toBeVisible();
+  });
+
+  test('räckvidds-axeln: stängda väljaren säger VAR man är, inte att ett val saknas', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    await gotoRackviddslage(page);
+
+    // Före denna ändring stod "Välj event" här — vilket läser som ett ogjort
+    // val trots att förvaltningsläget ÄR ett valt läge.
+    const trigger = page.getByTestId('event-valjare-trigger');
+    await expect(trigger).toContainText('Gemensamma dokument');
+    await expect(trigger).not.toContainText('Välj event');
+
+    // Och vägen tillbaka in i ett event fungerar från samma kontroll.
+    await trigger.click();
+    // Fixturens Skövde-event ÄR `VISUAL_EVENT_ID` (fixture-data.ts:
+    // `eventNamn: 'Utbildning Skövde'`, startdatum 2026-09-26 = kommande, så
+    // väljarens kommande-filter släpper igenom det). Matchas på orten: den är
+    // unik bland fixturens tre event (Skövde/Göteborg/Varberg) och står i
+    // både namnet och `KontextRad`s ort-led.
+    await page
+      .getByRole('option', { name: /Skövde/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(new RegExp(`event=${VISUAL_EVENT_ID}`));
+    await expect(page.getByText(BILAGA_EGEN.namn)).toBeVisible();
+  });
 });

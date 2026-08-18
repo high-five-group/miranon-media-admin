@@ -372,18 +372,37 @@ export function DokumentYta() {
           formen). Tomt läge tills Marcus/Lotta väljer — ingen fixtur
           default-vald här. TOMT LÄGE är sedan TASK-275.3 INTE längre "väntar
           på val" — det ÄR räckviddsläget (se GemensamtLage nedan). */}
+      {/* VÄLJAREN ÄGER HELA RÄCKVIDDS-AXELN (Marcus 2026-08-18). Listan har
+          ett kontextlöst alternativ överst — "Gemensamma dokument" — som är
+          valt när `?event=` saknas. Ett val, en kontroll.
+
+          Det ersätter knappen "Visa gemensamma dokument" som stod längst ner
+          i dokumentlistan. Den var en NAVIGERING nedstoppad bland listans
+          egna kontroller, och kolliderade med typfiltrets "Alla": två
+          kontroller i samma kort, på två olika axlar, med samma vikt. Marcus:
+          *"vi kan ju inte ha toggle-valet 'ALLA' i eventläget och även ha
+          knappen 'Visa gemensamma dokument' … trycker jag på den hamnar ju
+          listan i förvaltningsläget. Alltså vad gör vi, detta är inte bra."*
+
+          Knappens etikett var dessutom osann: eventläget visar REDAN
+          gemensamma bilagor (`get-event-attachments` unionerar eventets egna
+          + kurstyp + alla-event, ADR-118 beslut 2, märkta med `RackviddBadge`).
+          Vad den faktiskt gjorde var att gå till förvaltningsytan — den enda
+          plats de får ersättas/raderas (ADR-118 beslut 3).
+
+          `EventValjare`s avvisning av avmarkering (`onSelectionChange`:
+          `if (key == null) return;`) är därmed inte längre ett problem att
+          kompensera för: man avmarkerar aldrig, man väljer ett annat
+          alternativ. */}
       <EventValjare
         valtEventId={eventId ?? undefined}
         valtEvent={valtEvent}
         onByte={(id) => void setEventId(id)}
+        gemensamtAlternativ={{
+          etikett: 'Gemensamma dokument',
+          onValj: () => void setEventId(null),
+        }}
       />
-
-      {/* [TASK-275.3] Vägen TILLBAKA till räckviddsläget — EventValjarens
-          popover har inget "rensa val"-alternativ (den byter bara MELLAN
-          event), så ett eget, litet textutträde behövs. Husets Button-
-          primitiv (`intent="ghost" size="sm"`) — ingen ny formuppfinning.
-          Syns bara när ett event faktiskt är valt (annars redan i
-          räckviddsläget, knappen vore meningslös). */}
 
       {eventId == null ? (
         <GemensamtLage
@@ -413,7 +432,6 @@ export function DokumentYta() {
       ) : (
         <DokumentLista
           eventId={eventId}
-          onVisaGemensamma={() => void setEventId(null)}
           rader={rader}
           onUpload={handleUpload}
           uploadMutation={uploadMutation}
@@ -955,15 +973,12 @@ const LISTA_FILTER: { key: ListaTyp; label: string }[] = [
  */
 function DokumentLista({
   eventId,
-  onVisaGemensamma,
   rader,
   onUpload,
   uploadMutation,
   onReplace,
   replaceMutation,
 }: {
-  /** Byter till räckviddsläget genom att nollställa eventvalet. */
-  onVisaGemensamma: () => void;
   eventId: string;
   rader: BilageRad[];
   onUpload: (files: FileList | null, scope: UploadScopeVal) => void;
@@ -1055,24 +1070,13 @@ function DokumentLista({
               </p>
             )}
           </div>
-          {/* INGÅNGEN TILL RÄCKVIDDSLÄGET BOR I LISTAN, INTE OVANFÖR DEN
-              (Marcus 2026-08-17: "den kan ju i vilket fall som helst inte
-              ligga direkt under eventväljaren … mycket mer logiskt om det
-              ligger runt dokumentlistan").
-
-              Den stod förut mellan eventväljaren och uppladdningsblocket och
-              bröt vägen från "välj event" till "ladda upp" med en handling
-              som hörde till en helt annan vy.
-
-              KNAPPEN FÅR INTE TAS BORT, bara flyttas: `EventValjare` avvisar
-              avmarkering (`onSelectionChange`: `if (key == null) return;`),
-              så detta är ENDA vägen tillbaka till räckviddsläget — och
-              räckviddsläget är den enda ytan där gemensamma bilagor får
-              ersättas/raderas (ADR-118 beslut 3). Utan den blir förvaltningen
-              onåbar så snart ett event valts. */}
-          <Button intent="ghost" size="sm" className="self-start" onPress={onVisaGemensamma}>
-            Visa gemensamma dokument
-          </Button>
+          {/* INGEN INGÅNG TILL FÖRVALTNINGSLÄGET HÄR — den bor i väljaren
+              (se `DokumentYta`s kommentar vid `EventValjare`). Knappen
+              "Visa gemensamma dokument" stod här ett dygn, flyttad hit
+              2026-08-17 från platsen under eventväljaren; 2026-08-18 revs
+              den helt när Marcus såg att den kolliderade med typfiltrets
+              "Alla" och att dess etikett var osann. Bygg inte tillbaka den —
+              varken här eller ovanför listan. */}
         </div>
 
         <ErsattningsFel replaceMutation={replaceMutation} />
