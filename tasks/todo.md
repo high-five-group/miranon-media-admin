@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 107 ⏸️ PAUSAD (tredje gången, 2026-08-18, `lifecycle: paused`) —
-QA-VANDRINGENS STEG 5 FULLBORDAT: DOKUMENTSIDANS OMTAG.** Marcus dom
+**Session 107 ▶️ ÅTERUPPTAGEN (tredje gången, 2026-08-18, `lifecycle:
+active`) — QA-VANDRINGENS STEG 5 FULLBORDAT: DOKUMENTSIDANS OMTAG.** Marcus dom
 öppnade passet ("dokumentsidan är skitdålig, Lotta kommer inte gilla
 detta") och stängde det ("Nu ser det visuellt väldigt snyggt ut på
 startytan"). **Nio fyndomgångar** mot renderad yta: uppladdningen först ·
@@ -30,13 +30,15 @@ fönster; fotots yttersta 24 px tonas nu till kamouflagefärgen — söm 17–22
 → **1** i fem format. **DEMO-FIXTUR** (`65b0e112`): fyra permanenta rader
 via EF:en, 17–24 tecken, radbryter inte. **SYSTEMISKT FYND:**
 `bg-bg-muted` dubbelanvänds som kortbakgrund OCH svag-yta-token — FEM
-mätta instanser där något blev osynligt. PR **#1594 armerad** vid paus.
+mätta instanser där något blev osynligt. PR **#1594 MERGED** `34e1416e`
+(verifierat vid resume; ingen re-armering behövdes).
 KVAR: **eventläget är resume-ingången** (Marcus hann precis börja) · QA
 273.5 steg 6 facit · QA 275.4 · "Steg"-kollisionen · app-brett
 terminologi-svep · ORDLISTA saknar `Familj` · task-277 (basfältnamnen) ·
 blob-segheten · Done-flippar · PRD 276. Numrering: ADR 119 · task-277 ·
-L512+fragment · T145 · f50 — re-derivera ALLTID. Full handoff: sessionsdok
-S107 § PAUSLÄGE (tredje gången) + Del 8-registret.**
+L512+fragment · T145 · f50 — samtliga re-deriverade mot disk vid resume,
+oförändrade. Full handoff: sessionsdok S107 § Paushistorik (tredje
+gången) + Del 8-registret + Del 10.**
 
 **Session 107 — första passet (historik): NIO-PUNKTSLISTAN: utredning +
 nio byggskivor landade på EN dag.** Sju
