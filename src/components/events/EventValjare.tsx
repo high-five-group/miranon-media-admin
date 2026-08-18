@@ -287,6 +287,10 @@ export function EventValjare({
                 // namn-vikt, utan färgprick/ort/datumspann — de leden hör till
                 // ett event och har inget värde här. Triggern behåller
                 // pill-formen: detta ÄR ett val, inte ett tomt läge.
+                //
+                // INGEN SPACER HÄR, till skillnad mot listraden: stängda
+                // triggern har ingen prick i samma rad att linjera mot, så en
+                // tom 10 px-lucka hade bara läst som slarv.
                 <span className="min-w-0 truncate font-medium">{gemensamtAlternativ.etikett}</span>
               ) : valtEvent ? (
                 <KontextRad event={valtEvent} />
@@ -350,8 +354,31 @@ export function EventValjare({
               <SelectItem
                 id={GEMENSAMT_KEY}
                 textValue={gemensamtAlternativ.etikett}
-                className="font-medium"
+                // `mt-2` — LUFT MOT SÖKRUTANS FOKUSRING (Marcus 2026-08-18:
+                // *"när fokusringen är aktiverad på sökrutan så ligger den
+                // direkt på delade dokument-markeringen"*). Popovern bär
+                // `gap-1` (4 px) mellan sökfältet och listboxen; raden är
+                // listans FÖRSTA och har — till skillnad från eventraderna —
+                // ingen månadsrubrik ovanför sig att låna luft av (`pt-3` på
+                // `Header`). Utan marginalen möttes sökrutans fokusring och
+                // radens markerings-bakgrund kant i kant.
+                className="mt-2 font-medium"
               >
+                {/* OSYNLIG SPACER MED PRICKENS EXAKTA GEOMETRI — inte en
+                    hårdkodad vänsterindragning (Marcus 2026-08-18: *"det ser
+                    skevt ut, flytta in texten så det linjerar"*).
+
+                    Raden bär medvetet INGEN kursfärgs-prick: `kursfargForKurs`
+                    faller tillbaka på klassen 'annat' för okända kurser, så en
+                    prick här hade sett ut som ett event vars kurs inte kunde
+                    härledas — fel signal, inte en neutral. Men utan den började
+                    texten 18 px till vänster om event-radernas.
+
+                    Spacern bär `size-2.5 shrink-0` — prickens egna klasser
+                    minus färg och rundning — och sitter i samma `gap-2`-flöde.
+                    Ändras prickens storlek någonsin följer indraget med av sig
+                    självt; en `pl-[18px]` hade tyst glidit isär. */}
+                <span aria-hidden="true" className="size-2.5 shrink-0" />
                 {gemensamtAlternativ.etikett}
               </SelectItem>
             ) : null}

@@ -88,6 +88,32 @@ async function gotoRackviddslage(page: import('@playwright/test').Page) {
 }
 
 /**
+ * Öppnar räckviddsdialogen genom att välja en fil (S107 2026-08-18).
+ *
+ * FRÅGAN OM RÄCKVIDD STÄLLS NU EFTER FILVALET, inte före: sidan bär en
+ * knapp, och dialogen kommer när det finns en fil att fråga om. Testerna
+ * nedan prövar samma AC som förut — räckviddsvalets form, värden och
+ * validering — bara via den nya vägen dit.
+ *
+ * `setInputFiles` mot `FileTrigger`s dolda `<input type="file">` är enda
+ * vägen: en native filväljardialog kan Playwright inte styra. Inputen SCOPAS
+ * till `[data-testid="ladda-upp-ny-fil"]` eftersom ytan bär flera
+ * FileTriggers — varje "Ersätt"-knapp är en, och `.first()` på en oscopad
+ * sökning hade träffat vilken som helst av dem beroende på DOM-ordning.
+ */
+async function oppnaRackviddsdialog(page: Page, filnamn = 'Testfil.pdf') {
+  await page
+    .getByTestId('ladda-upp-ny-fil')
+    .locator('input[type="file"]')
+    .setInputFiles({
+      name: filnamn,
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4 acceptance-fixtur'),
+    });
+  await expect(page.getByRole('dialog')).toBeVisible();
+}
+
+/**
  * Select-ankare som överlever ett val.
  *
  * Etiketterna är `hideLabel` (Marcus 2026-08-17), och react-aria sätter då
@@ -106,6 +132,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
   }) => {
     network.use(bilagorHandler());
     await gotoEventlage(page);
+    await oppnaRackviddsdialog(page);
 
     const radioGroup = page.getByRole('radiogroup', { name: 'Räckvidd' });
     await expect(radioGroup).toBeVisible();
@@ -166,6 +193,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // räckviddsläget — bara den gemensamma bilagan listas.
     await expect(page.getByText(BILAGA_EGEN.namn)).toHaveCount(0);
 
+    await oppnaRackviddsdialog(page);
     const radioGroup = page.getByRole('radiogroup', { name: 'Räckvidd' });
     await expect(radioGroup.getByRole('radio', { name: 'Detta event' })).toBeDisabled();
     await expect(radioGroup.getByRole('radio', { name: 'En familj' })).toBeChecked();
@@ -218,6 +246,113 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     expect(resultat.violations).toEqual([]);
   });
 
+  // ═══ FILEN FÖRST, RÄCKVIDDEN SEDAN (Marcus 2026-08-18) ═══
+  //
+  // Det permanenta tvåstegs-blocket på sidan är rivet. Sidan bär en knapp;
+  // räckviddsfrågan ställs i en dialog EFTER filvalet, med filnamnet synligt
+  // så svaret gäller något konkret. Testerna nedan låser det som inte får
+  // gå sönder i den flytten: dialogen är axe-ren, och flödet fungerar hela
+  // vägen till EF-anropet med RÄTT räckvidd.
+
+  test('uppladdningsdialogen är axe-ren (ny yta sedan blocket revs)', async ({ page, network }) => {
+    network.use(bilagorHandler());
+    await gotoEventlage(page);
+    await oppnaRackviddsdialog(page);
+
+    const resultat = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+
+  test('flödet ände-till-ände: fil → dialog → räckvidd → EF-anropet bär valet, dialogen stänger', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+
+    // Fångar EF-kroppen så testet kan bevisa VAD som skickades, inte bara
+    // att något skickades. Räckvidden är hela poängen med dialogen.
+    let skickadKropp: Record<string, unknown> | null = null;
+    network.use(
+      http.post(EF('upload-attachment'), async ({ request }) => {
+        skickadKropp = (await request.json()) as Record<string, unknown>;
+        return json({
+          attachment: {
+            ...BILAGA_GEMENSAM,
+            id: 'recBilagaNy00000001',
+            namn: 'Testfil.pdf',
+            rackvidd: 'Alla event',
+            kursfamilj: null,
+          },
+        });
+      }),
+    );
+
+    await gotoEventlage(page);
+    await oppnaRackviddsdialog(page, 'Testfil.pdf');
+
+    const dialog = page.getByRole('dialog');
+    // Filnamnet står i dialogen — frågan gäller något konkret, inte "en fil".
+    await expect(dialog.getByText('Testfil.pdf')).toBeVisible();
+
+    // RAC:s `<Radio>` täcks visuellt av ett dekorativt `<span>`; klicka
+    // ancestor-`<label>` (samma repo-mönster som AC #1 ovan).
+    await dialog
+      .getByRole('radio', { name: 'Alla event' })
+      .locator('xpath=ancestor::label[1]')
+      .click();
+    await dialog.getByRole('button', { name: 'Ladda upp' }).click();
+
+    // Dialogen stänger av sig själv när uppladdningen lyckats — Lotta ska
+    // inte behöva stänga en dialog vars jobb är gjort.
+    await expect(dialog).toHaveCount(0);
+    expect(skickadKropp).toMatchObject({ rackvidd: 'Alla event' });
+  });
+
+  test('inline-rullningen: tabb-stopp och max-höjd bara när listan faktiskt rullar', async ({
+    page,
+    network,
+  }) => {
+    // Fixturen ger fyra poster i eventläget (2 bilagor + 1 mall + 1 generator)
+    // — precis PÅ gränsen, alltså ingen rullning och inget tomt tabb-stopp.
+    network.use(bilagorHandler());
+    await gotoEventlage(page);
+
+    const lista = page.getByTestId('dokument-lista');
+    await expect(lista).not.toHaveAttribute('tabindex', '0');
+
+    // Sex bilagor tippar över gränsen: rullningen blir verklig, och DÅ är
+    // tabb-stoppet ett WCAG 2.1.1-golv (axe scrollable-region-focusable).
+    //
+    // ETT ANDRA `network.use` RÄCKER — MSW prependar runtime-handlers, så den
+    // senast tillagda vinner. `page.unrouteAll()` vore FEL verktyg: det river
+    // fixturvärldens samtliga grundmockar och fäller hermetik-vakten på nästa
+    // omockade anrop (mätt: OmockadRequestError, första försöket).
+    network.use(
+      http.get(EF('get-event-attachments'), ({ request }) => {
+        const eventId = new URL(request.url).searchParams.get('eventId');
+        if (!eventId) return json({ attachments: [BILAGA_GEMENSAM] });
+        return json({
+          attachments: Array.from({ length: 6 }, (_, i) => ({
+            ...BILAGA_EGEN,
+            id: `recBilagaManga${String(i).padStart(5, '0')}`,
+            namn: `Bilaga ${i + 1}.pdf`,
+          })),
+        });
+      }),
+    );
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+
+    const rullande = page.getByTestId('dokument-lista');
+    await expect(rullande).toHaveAttribute('tabindex', '0');
+    await expect(rullande).toHaveAttribute('aria-label', 'Dokument');
+    // Höjden är FAKTISKT begränsad — klassnamnet ensamt bevisar ingenting.
+    const box = await rullande.boundingBox();
+    expect(box?.height).toBeLessThanOrEqual(384);
+  });
+
   // ═══ RÄCKVIDDS-AXELN ÄR EN KONTROLL (Marcus 2026-08-18, S107 QA-vandringen) ═══
   //
   // Lägesbytet bars tidigare av en knapp längst ner i dokumentlistan ("Visa
@@ -226,13 +361,16 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
   // HELT ANNAN axel. Marcus: *"vi kan ju inte ha toggle-valet 'ALLA' i
   // eventläget och även ha knappen 'Visa gemensamma dokument' … detta är inte
   // bra."* Knappen är riven; `EventValjare` bär nu ett kontextlöst alternativ
-  // (`gemensamtAlternativ`, opt-in) överst i sin lista.
+  // (`gemensamtAlternativ`, opt-in) överst i sin lista, etiketterat "Delade
+  // dokument" sedan Marcus copy-beslut samma dag. MODELLBEGREPPET är
+  // oförändrat — ORDLISTA.md § Gemensam bilaga och `AttachmentScope`-värdena
+  // rörs inte; detta är UI-språk, samma skiktning som `Nivå`→`Steg`.
   //
   // Testerna nedan låser BÅDA halvorna: att knappen är borta (annars kan den
   // smyga tillbaka vid en framtida ändring), och att väljarvägen faktiskt
   // fungerar i båda riktningarna.
 
-  test('räckvidds-axeln: väljaren bär "Gemensamma dokument" och tar en till förvaltningsläget', async ({
+  test('räckvidds-axeln: väljaren bär "Delade dokument" och tar en till förvaltningsläget', async ({
     page,
     network,
   }) => {
@@ -243,7 +381,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     await expect(page.getByRole('button', { name: 'Visa gemensamma dokument' })).toHaveCount(0);
 
     await page.getByTestId('event-valjare-trigger').click();
-    const alternativ = page.getByRole('option', { name: 'Gemensamma dokument', exact: true });
+    const alternativ = page.getByRole('option', { name: 'Delade dokument', exact: true });
     await expect(alternativ).toBeVisible();
     await alternativ.click();
 
@@ -269,7 +407,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // Före denna ändring stod "Välj event" här — vilket läser som ett ogjort
     // val trots att förvaltningsläget ÄR ett valt läge.
     const trigger = page.getByTestId('event-valjare-trigger');
-    await expect(trigger).toContainText('Gemensamma dokument');
+    await expect(trigger).toContainText('Delade dokument');
     await expect(trigger).not.toContainText('Välj event');
 
     // Och vägen tillbaka in i ett event fungerar från samma kontroll.

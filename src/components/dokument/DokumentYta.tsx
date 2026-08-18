@@ -118,12 +118,14 @@
  * amenderings-sidofilen `tasks/sessions/bilagor/s102-dokument-konvergens/
  * AMENDERING-2026-08-17-rackviddsval-gemensamt-lage-badges.md` för hela
  * avvikelsen mot det godkända facit-manifestet. Kort sammanfattat:
- *   - UPPLADDNINGSFLÖDET (`UppladdningsFlode` nedan, delad mellan
- *     eventläget och räckviddsläget) bär nu ett räckviddsval (RadioGroup:
- *     Detta event/En kurstyp/Alla event — husets radioval-primitiv,
- *     `RadioGroup`/`Radio`), med Kursfamilj/Kursnivå-`Select` (husets
- *     select-primitiv) när Kurstyp är valt. "Detta event" är avstängt
- *     (`isDisabled`) när inget event är valt.
+ *   - RÄCKVIDDSVALET (RadioGroup: Detta event/En kurstyp/Alla event — husets
+ *     radioval-primitiv, `RadioGroup`/`Radio`), med Kursfamilj/Kursnivå-
+ *     `Select` (husets select-primitiv) när Kurstyp är valt. "Detta event" är
+ *     avstängt (`isDisabled`) när inget event är valt.
+ *     [OMHÄNGT 2026-08-18] Valet bodde först i `UppladdningsFlode` — ett
+ *     permanent tvåstegs-block på sidan. Det blocket är rivet; frågan ställs
+ *     nu i `RackviddsDialog` EFTER att filen valts. Formen och värdena är
+ *     oförändrade, bara tidpunkten bytte — se dialogens eget docblock.
  *   - RÄCKVIDDSLÄGET (`GemensamtLage` nedan) är Dokument-ytans NYA läge
  *     UTAN valt event (ORDLISTA.md § Gemensam bilaga/Räckvidd) — ersätter
  *     den tidigare "Välj ett event för att se dess bilagor."-texten. Listar
@@ -145,11 +147,12 @@ import { stegEtikett } from '@/components/dokument/nivaSprak';
 import { RackviddBadge } from '@/components/dokument/RackviddBadge';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
+import { Dialog } from '@/components/primitives/Dialog';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Modal } from '@/components/primitives/Modal';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { StegSektion } from '@/components/primitives/StegSektion';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import type { DokumentKalla } from '@/data/mutations/dokumentKalla';
 import { useDeleteAttachment } from '@/data/mutations/useDeleteAttachment';
@@ -245,7 +248,7 @@ const DATUM_TID = new Intl.DateTimeFormat('sv-SE', {
  */
 type BilageRad = { current: Attachment; dolda: number };
 
-/** [TASK-275.3] Räckviddsvalet `UppladdningsFlode` producerar — delad shape
+/** [TASK-275.3] Räckviddsvalet `RackviddsDialog` producerar — delad shape
     mellan uppladdning (`UploadAttachmentVariables` minus `file`) och
     ersättning (`ReplaceAttachmentInput` minus `file`/`oldAttachmentId`). */
 type UploadScopeVal = Pick<UploadAttachmentVariables, 'rackvidd' | 'kursfamilj' | 'kursniva'>;
@@ -331,9 +334,21 @@ export function DokumentYta() {
     [gemensammaQuery.data],
   );
 
-  const handleUpload = (files: FileList | null, scope: UploadScopeVal) => {
+  // ═══ FILEN FÖRST, RÄCKVIDDEN SEDAN (Marcus 2026-08-18) ═══
+  //
+  // Vald fil, i väntan på att Lotta svarat på räckviddsfrågan. Att den bor
+  // HÄR och inte i knappen är avsiktligt: dialogen gäller hela sidan, inte
+  // ett läge — samma fil ska kunna laddas upp oavsett om ett event är valt
+  // eller inte, och två monterade dialoger (en per läge) hade kunnat glida
+  // isär precis som de två radkomponenterna gjorde före S107:s fjärde rond.
+  const [valdaFiler, setValdaFiler] = useState<FileList | null>(null);
+
+  const handleUpload = (files: FileList | null, scope: UploadScopeVal, onKlart?: () => void) => {
     const file = files?.[0];
-    if (file) uploadMutation.mutate({ file, ...scope });
+    // `onSuccess` — INTE ett `isSuccess`-useEffect: mutationens flagga står
+    // kvar efter stängning och hade stängt nästa dialog i samma ögonblick
+    // den öppnades. Callbacken fyrar exakt en gång, för just denna körning.
+    if (file) uploadMutation.mutate({ file, ...scope }, { onSuccess: onKlart });
   };
 
   const handleReplace = (
@@ -362,6 +377,12 @@ export function DokumentYta() {
         <ChevronLeft aria-hidden="true" size={26} />
       </Link>
 
+      {/* INGEN INGRESS — PRÖVAD RENDERAD OCH FÄLLD (Marcus 2026-08-18).
+          "Filerna som bifogas i utskicken till deltagarna." stod här en kort
+          stund som svar på hans egen fråga om vad sidan handlar om; efter att
+          ha sett den mot renderad yta: *"Ta bort underrubriken … det fattar
+          hon ändå."* Sidans tydlighet bärs i stället av strukturen — ett val,
+          en knapp, en lista. Återinför den inte utan att fråga. */}
       <header className="flex flex-col gap-1">
         <h1 className="font-semibold text-3xl">Dokument</h1>
       </header>
@@ -373,7 +394,7 @@ export function DokumentYta() {
           default-vald här. TOMT LÄGE är sedan TASK-275.3 INTE längre "väntar
           på val" — det ÄR räckviddsläget (se GemensamtLage nedan). */}
       {/* VÄLJAREN ÄGER HELA RÄCKVIDDS-AXELN (Marcus 2026-08-18). Listan har
-          ett kontextlöst alternativ överst — "Gemensamma dokument" — som är
+          ett kontextlöst alternativ överst — "Delade dokument" — som är
           valt när `?event=` saknas. Ett val, en kontroll.
 
           Det ersätter knappen "Visa gemensamma dokument" som stod längst ner
@@ -399,7 +420,11 @@ export function DokumentYta() {
         valtEvent={valtEvent}
         onByte={(id) => void setEventId(id)}
         gemensamtAlternativ={{
-          etikett: 'Gemensamma dokument',
+          // "Delade dokument", inte "Gemensamma dokument" (Marcus 2026-08-18).
+          // MODELLBEGREPPET är oförändrat: ORDLISTA.md § Gemensam bilaga och
+          // `AttachmentScope`-värdena rörs inte — detta är UI-språk, samma
+          // skillnad som `Nivå`→`Steg` redan bär (nivaSprak.ts).
+          etikett: 'Delade dokument',
           onValj: () => void setEventId(null),
         }}
       />
@@ -412,8 +437,6 @@ export function DokumentYta() {
           felmeddelande={
             gemensammaQuery.error instanceof Error ? gemensammaQuery.error.message : 'Okänt fel.'
           }
-          onUpload={handleUpload}
-          uploadMutation={uploadMutation}
           onReplace={handleReplace}
           replaceMutation={replaceMutation}
           onDelete={handleDelete}
@@ -433,10 +456,65 @@ export function DokumentYta() {
         <DokumentLista
           eventId={eventId}
           rader={rader}
-          onUpload={handleUpload}
-          uploadMutation={uploadMutation}
           onReplace={handleReplace}
           replaceMutation={replaceMutation}
+        />
+      )}
+
+      {/* SIDANS PRIMÄRA HANDLING — EN KNAPP, INTE ETT FORMULÄR, OCH DEN STÅR
+          UNDER LISTAN (Marcus 2026-08-18).
+
+          Placeringen hänger ihop med att listan RULLAR INLINE: den kan aldrig
+          växa förbi sin max-höjd, så knappen under den är alltid inom en
+          skärmhöjd. Marcus: *"detta gör det logiskt att sätta Ladda upp-
+          knappen under dokumentlistan, vilket också gör layouten snyggare."*
+          Utan rullningen hade placeringen varit fel — det var precis därför
+          uppladdningen flyttades ÖVER listan 2026-08-17, när listans längd
+          var obegränsad.
+
+          Knappen öppnar filväljaren DIREKT; räckviddsfrågan kommer efteråt, i
+          dialogen, när det finns en fil att ställa den om. Före detta stod ett
+          permanent tvåstegs-block ("Steg 1: Vilka event ska filen gälla?" →
+          "Steg 2: Välj fil") som frågade om spridning innan filen fanns.
+
+          `data-testid` på WRAPPERN, inte på knappen: `FileTrigger` renderar
+          sin dolda `<input type="file">` som syskon till knappen, och det är
+          inputen testet behöver nå (`setInputFiles`). Sidan bär flera
+          FileTriggers — varje "Ersätt" är en — så ett scopat ankare är enda
+          sättet att träffa RÄTT input. */}
+      <div data-testid="ladda-upp-ny-fil">
+        <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={setValdaFiler}>
+          <Button intent="primary" isDisabled={uploadMutation.isPending}>
+            <Upload aria-hidden="true" size={16} className="shrink-0" />
+            {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp ny fil'}
+          </Button>
+        </FileTrigger>
+      </div>
+
+      {/* Uppladdningsfelet bor på SIDAN, inte i dialogen: dialogen stänger
+          vid framgång och rivs, så ett fel som uppstår i sista ögonblicket
+          hade försvunnit med den. Här står det kvar tills nästa försök. */}
+      <UppladdningsFel uploadMutation={uploadMutation} />
+
+      {/* RÄCKVIDDSFRÅGAN — VILLKORAT MONTERAD, inte bara `isOpen`-styrd.
+          Formulärstate (räckvidd/familj/steg) bor i dialogens egen komponent
+          och ska vara FÄRSKT vid varje öppning: en kvarhängande "En familj"
+          från förra filen hade tyst satt fel räckvidd på nästa. Villkorad
+          rendering ger det gratis — samma disciplin som `Hem.tsx`s
+          svep-overlay (*"overlayen UNMOUNTAS helt vid stängning, så state
+          aldrig läcker in i nästa öppning"*).
+
+          Priset är att ut-animationen hoppas över. Medvetet: `Modal`s
+          exit-transition kräver att barnen lever under utgången, och ett
+          läckande räckviddsval är en verklig defekt medan en utebliven
+          200 ms-skalning inte är det. */}
+      {valdaFiler != null && (
+        <RackviddsDialog
+          filer={valdaFiler}
+          harEvent={eventId != null}
+          uploadMutation={uploadMutation}
+          onStang={() => setValdaFiler(null)}
+          onUpload={handleUpload}
         />
       )}
     </div>
@@ -974,15 +1052,11 @@ const LISTA_FILTER: { key: ListaTyp; label: string }[] = [
 function DokumentLista({
   eventId,
   rader,
-  onUpload,
-  uploadMutation,
   onReplace,
   replaceMutation,
 }: {
   eventId: string;
   rader: BilageRad[];
-  onUpload: (files: FileList | null, scope: UploadScopeVal) => void;
-  uploadMutation: UploadMutation;
   onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
   replaceMutation: ReplaceMutation;
 }) {
@@ -993,6 +1067,16 @@ function DokumentLista({
   const visaBilagor = aktivtFilter === 'alla' || aktivtFilter === 'bilaga';
   const visaMallar = aktivtFilter === 'alla' || aktivtFilter === 'mall';
   const visaGeneratorer = aktivtFilter === 'alla' || aktivtFilter === 'generator';
+
+  // Fyra rader ryms i `max-h-96`; först den femte gör rullningen verklig.
+  // Samma gräns-resonemang som `Deltagare.tsx` (*"fyra är gränsen där max-h
+  // börjar bita"*), räknat på DENNA listas radhöjd — 99 px mätt i renderad
+  // yta, tre led låsta sedan S107 Del 9.
+  const antalSynliga =
+    (visaBilagor ? rader.length : 0) +
+    (visaMallar ? MALLAR.length : 0) +
+    (visaGeneratorer ? GENERATORER.length : 0);
+  const kanRulla = antalSynliga > 4;
 
   return (
     // ═══ UPPLADDNINGEN FÖRST, LISTAN SEDAN (Marcus 2026-08-17) ═══
@@ -1007,8 +1091,6 @@ function DokumentLista({
     // filterpaneler (`EventsList.tsx`), aldrig för innehållslistor, och en
     // infälld lista hade dolt symptomet i stället för att flytta orsaken.
     <div className="flex flex-col gap-4">
-      <UppladdningsFlode harEvent onUpload={onUpload} uploadMutation={uploadMutation} />
-
       <section className="flex flex-col gap-3">
         {/* INGEN RUBRIK I KORTET — BESLUTAD BORT, INTE TAPPAD (Marcus,
             QA 273.5 steg 5, 2026-08-18: *"Ta bort rubriken 'Dokument för
@@ -1050,26 +1132,66 @@ function DokumentLista({
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
-          <div className="divide-y divide-border">
+          {/* INLINE-RULLNING — husets etablerade form (Marcus 2026-08-18:
+              *"vi gör dokumentlistan till en inline-scroll lista, det har vi
+              många i appen"*, verifierat: `NyaAnmalningar.tsx`,
+              `ForfallnaBetalningar.tsx` ×3, `Deltagare.tsx`, `EventValjare`s
+              listbox). Klasserna är kopierade ur den formen, inte uppfunna.
+
+              TABB-STOPPET SÄTTS BARA NÄR LISTAN FAKTISKT RULLAR — ärvt ur
+              `Deltagare.tsx`s förfining: *"ett fokuserbart område utan
+              funktion vore ett tomt stopp i tangentbordsflödet"*. När den
+              rullar är `tabIndex={0}` däremot ett WCAG 2.1.1-golv (axe
+              `scrollable-region-focusable`): raderna har egna knappar, men
+              själva rullningen måste gå att nå med tangentbord.
+
+              ANTALET RÄKNAS UR DET FAKTISKT RENDERADE, inte ur `rader.length`
+              — typfiltret döljer hela grupper, och en lista som filtrerats ner
+              till två poster ska inte bära ett tomt tabb-stopp. */}
+          {/* `<ul>`/`<li>`, INTE `<div>` — och det är ett a11y-krav, inte
+              smak. `aria-label` stöds inte av en rollös `<div>` (biome
+              `useAriaPropsSupportedByRole` fällde exakt det, mätt 2026-08-18);
+              listrollen bär namnet. Det är dessutom husets form för samma sak
+              (`NyaAnmalningar.tsx`, `Deltagare.tsx`). `divide-y` opererar på
+              direkta barn, så avdelarna följer `<li>`-elementen oförändrat. */}
+          <ul
+            data-testid="dokument-lista"
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx.
+            tabIndex={kanRulla ? 0 : undefined}
+            aria-label={kanRulla ? 'Dokument' : undefined}
+            className={`divide-y divide-border ${
+              kanRulla ? 'focus-ring-inset scrollbar-inline max-h-96 overflow-y-auto pr-3' : ''
+            }`}
+          >
             {visaBilagor &&
               rader.map((r) => (
-                <BilageRadRow
-                  key={r.current.id}
-                  eventId={eventId}
-                  rad={r}
-                  onReplace={onReplace}
-                  replaceMutation={replaceMutation}
-                />
+                <li key={r.current.id}>
+                  <BilageRadRow
+                    eventId={eventId}
+                    rad={r}
+                    onReplace={onReplace}
+                    replaceMutation={replaceMutation}
+                  />
+                </li>
               ))}
-            {visaMallar && MALLAR.map((m) => <MallRad key={m.id} mall={m} eventId={eventId} />)}
+            {visaMallar &&
+              MALLAR.map((m) => (
+                <li key={m.id}>
+                  <MallRad mall={m} eventId={eventId} />
+                </li>
+              ))}
             {visaGeneratorer &&
-              GENERATORER.map((g) => <GeneratorRad key={g.id} gen={g} eventId={eventId} />)}
+              GENERATORER.map((g) => (
+                <li key={g.id}>
+                  <GeneratorRad gen={g} eventId={eventId} />
+                </li>
+              ))}
             {visaBilagor && rader.length === 0 && !visaMallar && !visaGeneratorer && (
-              <p className="py-3 text-small text-text-muted">
+              <li className="py-3 text-small text-text-muted">
                 Inga bilagor för det här eventet än.
-              </p>
+              </li>
             )}
-          </div>
+          </ul>
           {/* INGEN INGÅNG TILL FÖRVALTNINGSLÄGET HÄR — den bor i väljaren
               (se `DokumentYta`s kommentar vid `EventValjare`). Knappen
               "Visa gemensamma dokument" stod här ett dygn, flyttad hit
@@ -1086,59 +1208,53 @@ function DokumentLista({
 }
 
 /**
- * UPPLADDNINGSFLÖDET (TASK-275.3, AC #1) — räckviddsval delat mellan
- * eventläget (`DokumentLista` ovan, `harEvent` alltid true) och
- * räckviddsläget (`GemensamtLage` nedan, `harEvent` alltid false). Radioval
- * via husets primitiv (`RadioGroup`/`Radio`), Kursfamilj/Kursnivå via husets
- * `Select` — INGA nya formuppfinningar (Marcus kvalitetsdirektiv
- * 2026-08-17).
+ * RÄCKVIDDSFRÅGAN — FILEN FÖRST, SPRIDNINGEN SEDAN (Marcus 2026-08-18).
  *
- * "Detta event" är `isDisabled` när `!harEvent` (räckviddsläget har inget
- * event att koppla mot) — startvärdet väljs DÄRFÖR olika (Event när ett
- * event finns, annars Kurstyp): en avstängd men FÖRVALD radioknapp hade
- * lämnat räckviddsläget i ett tillstånd utan giltigt val. Komponenten
- * MONTERAS OM när `harEvent` byter (DokumentLista/GemensamtLage är skilda
- * JSX-grenar i `DokumentYta`, aldrig samma monterade instans) — lokalt
- * `useState` behöver därför ingen synk-effekt.
+ * Ersätter `UppladdningsFlode`: ett permanent tvåstegs-block på sidan
+ * ("Steg 1: Vilka event ska filen gälla?" → "Steg 2: Välj fil"). Marcus dom
+ * öppnade omtaget: *"när Lotta trycker på dokument i mer-vyn så kommer hon
+ * till denna sida och då ska det vara SJÄLVKLART vad hon kan göra här och
+ * vad sidan handlar om."*
  *
- * VALIDERING: räckvidd Kurstyp UTAN vald Familj håller uppladdnings-
- * knappen avstängd (`scopeGiltig`) — Lotta kan inte råka skicka ett
- * ofullständigt val som EF:en ändå hade avvisat (400, `AttachmentScope
- * InputSchema`); felet fångas HÄR, innan filväljaren ens öppnas.
+ * ═══ VARFÖR ORDNINGEN VÄNDES, INTE BARA GÖMDES ═══
  *
- * ═══ FLÖDET ÄR ETT EGET BLOCK I TVÅ STEG (S107 QA-vandringen) ═══
+ * Blocket frågade om filens SPRIDNING innan den fanns. Lotta tänker tvärtom:
+ * hon har en PDF och undrar vart den ska. Att fälla in samma formulär bakom
+ * en knapp hade dolt symptomet — en yta full av formulär — utan att röra
+ * orsaken. Nu bär sidan en knapp; frågan ställs när det finns något att
+ * svara på, och FILNAMNET står i dialogen så svaret gäller något konkret.
  *
- * Marcus fynd, steg 5: "allt under gemensamma dokument-ytan måste ligga i
- * ett eget block … sedan kanske det behöver struktureras lite som
- * segmentsidan gör, lite wizard liksom". Före detta varv låg räckviddsvalet,
- * fält-selectarna och uppladdningsknappen NAKNA på sidan, direkt under
- * listkortet — kontroller utan behållare, medan listan bredvid satt i ett
- * eget kort. Ytan såg oavslutad ut, och det var den.
+ * ═══ VAD SOM BEVARADES ORÖRT ═══
  *
- * Formen är husets `StegSektion` (`primitives/StegSektion.tsx`, lyft ur
- * segment-byggaren i samma landning) — INTE en lokal variant. Två steg:
+ * Räckviddsvalets FORM och VÄRDEN är oförändrade sedan TASK-275.3/ADR-118:
+ * husets `RadioGroup`/`Radio` + `Select`, `hideLabel` på båda selectarna,
+ * "En familj" (aldrig "En eventtyp" — se nedan), `stegEtikett` som rent
+ * presentationslager över basvärdena, och valideringen som håller Kurstyp
+ * utan familj ogiltig. Det som bytte är VAR frågan ställs, inte VAD den
+ * frågar — så api-staging-sviterna och basens `Räckvidd`-optioner är
+ * opåverkade.
  *
- *   1. "Vilka event ska filen gälla?"  räckvidd + (vid familj) familj/steg
- *   2. "Välj fil"              filväljaren
+ * "Detta event" är `isDisabled` när `!harEvent` (förvaltningsläget har inget
+ * event att koppla mot); startvärdet väljs DÄRFÖR olika — en avstängd men
+ * förvald radioknapp hade lämnat dialogen utan giltigt val.
  *
- * STEG 2 VILAR I STÄLLET FÖR ATT BARA VARA AVSTÄNGT när `scopeGiltig` är
- * falskt. En avstängd knapp säger "nej" utan att säga varför; ett vilande
- * steg säger vad som saknas och vart man går för att fixa det. Knappens egen
- * `isDisabled` behålls ändå som andra spärr — vilar-ledtexten är
- * kommunikation, `isDisabled` är grinden, och de ska inte förväxlas.
- *
- * UPPLADDNINGSFELET FLYTTADE MED till steg 2, där handlingen bor. Det stod
- * förut mellan selectarna och knappen, alltså i steg 1:s yta, och pekade på
- * ett fel som uppstått i steg 2.
+ * DIALOGEN GÅR INTE ATT STÄNGA AV MISSTAG UNDER PÅGÅENDE UPPLADDNING
+ * (`isDismissable`/`isKeyboardDismissDisabled` speglar `isPending`): ett
+ * klick utanför mitt i en flerhundra-kB-uppladdning hade sett ut som en
+ * avbruten uppladdning utan att vara det — mutationen kör vidare oavsett.
  */
-function UppladdningsFlode({
+function RackviddsDialog({
+  filer,
   harEvent,
-  onUpload,
   uploadMutation,
+  onStang,
+  onUpload,
 }: {
+  filer: FileList;
   harEvent: boolean;
-  onUpload: (files: FileList | null, scope: UploadScopeVal) => void;
   uploadMutation: UploadMutation;
+  onStang: () => void;
+  onUpload: (files: FileList | null, scope: UploadScopeVal, onKlart?: () => void) => void;
 }) {
   const [rackvidd, setRackvidd] = useState<AttachmentScopeValue>(
     harEvent ? AttachmentScope.EVENT : AttachmentScope.KURSTYP,
@@ -1148,175 +1264,150 @@ function UppladdningsFlode({
 
   const kursfamiljHarNivaer = kursfamilj != null && KURSFAMILJ_MED_NIVAER.has(kursfamilj);
   const scopeGiltig = rackvidd !== AttachmentScope.KURSTYP || kursfamilj != null;
+  const laddarUpp = uploadMutation.isPending;
+  const filnamn = filer.item(0)?.name ?? 'Filen';
 
   return (
-    // BLOCKET HAR EN EGEN RUBRIK (Marcus: "Wizarden måste ju ha en egen
-    // rubrik eller eget block liksom, typ 'Ladda upp filer'. Det ser inte
-    // riktigt lika snyggt ut som på segmentsidan"). Skillnaden mot
-    // segmentsidan var att DEN har en `<h1>` direkt ovanför sina steg —
-    // stegen stod aldrig rubriklösa. Här saknades det ledet helt: stegen
-    // hängde under en lista utan att något sa vad de tillsammans ÄR.
-    //
-    // Rubriken är `<h2>` under sidans `<h1>Dokument`, och stegen går därför
-    // ner till `<h3>` (`rubrikNiva`) — annars hade blockrubriken blivit
-    // syskon till sina egna steg i rubrikordningen.
-    // ── RUBRIKEN BOR INUTI BLOCKET (Marcus 2026-08-17) ──
-    //
-    // Den stod förut ovanför en naken stegstapel och läste som en
-    // sidsektion snarare än som blockets eget namn. Nu bär sektionen husets
-    // BEHÅLLAR-skal och rubriken sitter i det, ovanför sina steg.
-    //
-    // SKALET ÄR `bg-bg-muted`, INTE `bg-surface` — och det är påtvingat, inte
-    // smak. `StegSektion` är själv `bg-surface` (panelgrammatiken); ett
-    // `bg-surface`-skal hade gjort stegkorten osynliga mot sin egen
-    // behållare. Det är EXAKT den felklass denna yta redan drabbats av fyra
-    // gånger (`ghost`-hovern ×2, Ersätt/Radera, räckviddspillen — alla
-    // `bg-bg-muted` mot `bg-bg-muted`). Nästlingen avgör tokenvalet: muted
-    // skal, surface innehåll — samma ordning som `HandlingsRadKort`.
-    // ── INGEN SYNLIG BLOCKRUBRIK (Marcus 2026-08-17) ──
-    //
-    // "Ladda upp filer" stod som `<h2>` här ett varv. Marcus: *"jag vill nog
-    // fan ta bort rubriken helt. Det är antingen det eller att göra rubriken
-    // till en dropdown-knapp."*
-    //
-    // BORTTAGNING VALDES, DROPDOWN AVRÅDDES — och skälet är Marcus eget
-    // svar på vad Lotta gör oftast ("Tror hon kommer ladda upp mest"). En
-    // dropdown hade lagt den vanligaste handlingen bakom ett klick, alltså
-    // rivit precis det blockets uppflyttning nyss åstadkom. Huset använder
-    // dessutom `Disclosure` enbart för filterpaneler (`EventsList.tsx`) —
-    // verktyg man sällan rör — aldrig för det man kom för att göra.
-    //
-    // Blocket klarar sig utan rubrik: den grå rutan avgränsar det, stegen är
-    // numrerade, och steg 2 heter "Välj fil" med knappen "Ladda upp en fil".
-    // En rubrik hade lagt en tredje rubriknivå på ett formulär med två fält.
-    //
-    // STEGEN GICK TILLBAKA TILL `<h2>` NÄR RUBRIKEN FÖRSVANN. De stod som
-    // `<h3>` så länge blocket hade en egen `<h2>` ovanför sig; utan den
-    // hoppade rubrikordningen H1 → H3, vilket är ett äkta rubrikhopp
-    // (WCAG 1.3.1) och inte en formalitet — en skärmläsaranvändare som
-    // navigerar på rubriknivå tappar då ett steg i trädet. Mätt i renderad
-    // yta efter borttagningen, innan detta rättades.
-    //
-    // NAMNET FINNS KVAR FÖR SKÄRMLÄSARE via `aria-label`. En `<section>`
-    // utan tillgängligt namn är ingen landmark alls — den försvinner ur
-    // rubrik-/regionnavigationen, vilket är precis den navigationsväg en van
-    // skärmläsaranvändare använder för att hoppa hit. Ögat slipper raden;
-    // örat behåller den.
-    <section
-      aria-label="Ladda upp filer"
-      className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
+    <Modal
+      isOpen
+      isDismissable={!laddarUpp}
+      isKeyboardDismissDisabled={laddarUpp}
+      onOpenChange={(open) => {
+        if (!open) onStang();
+      }}
     >
-      <StegSektion nummer={1} rubrik="Vilka event ska filen gälla?">
-        {/* `hideLabel` — INTE borttagen etikett (Marcus: "Ta bort
-            underrubriken Räckvidd, behövs inte" · "rubriken Familj till
-            dropdownlistan kan tas bort"). Primitiven gör då `label` till
-            `aria-label`, så skärmläsaren behåller ett namn på kontrollen
-            medan ögat slipper en rubrik det inte behöver.
+      {/* `close` ur Dialogs render-prop används MEDVETET inte: overlayen är
+          fristående monterad (`isOpen` utan `DialogTrigger`, samma form som
+          `Hem.tsx`), så stängningen ägs av `onStang` i alla tre vägarna —
+          Avbryt, Escape/utanförklick och lyckad uppladdning. En blandning av
+          två stängningsmekanismer hade gjort det oklart vilken som gäller. */}
+      <Dialog
+        title="Vad ska filen gälla?"
+        size="md"
+        aria-description="Välj om filen gäller det valda eventet, en hel familj eller alla event."
+      >
+        <div className="flex flex-col gap-4">
+          {/* FILNAMNET ÄR EGEN RAD, INTE INBAKAT I RUBRIKEN. En rubrik som
+              växer med filnamnet bryter dialogens geometri vid långa namn;
+              här kan raden trunkera fritt, och `title` bär hela namnet för
+              den som behöver läsa det. */}
+          <p className="min-w-0 truncate text-body text-text-secondary" title={filnamn}>
+            {filnamn}
+          </p>
 
-            Det är samma resonemang segment-byggaren redan bär: en grupp som
-            står DIREKT under en stegrubrik som ställer frågan behöver ingen
-            egen synlig rubrik ("Sätts där en stegrubrik direkt ovanför redan
-            namnger gruppen", VariantD.tsx). Här är stegrubriken "Vad ska
-            filen gälla?" — den säger allt "Räckvidd" sade, på svenska. */}
-        <RadioGroup
-          label="Räckvidd"
-          hideLabel
-          orientation="horizontal"
-          value={rackvidd}
-          onChange={(value) => {
-            const next = value as AttachmentScopeValue;
-            setRackvidd(next);
-            if (next !== AttachmentScope.KURSTYP) {
-              setKursfamilj(null);
-              setKursniva(null);
-            }
-          }}
-        >
-          <Radio value={AttachmentScope.EVENT} isDisabled={!harEvent}>
-            Detta event
-          </Radio>
-          {/* "En familj" — INTE "En eventtyp". `Eventtyp` är upptaget av ett
-              ANNAT begrepp på tre ställen samtidigt: ORDLISTA.md § Eventtyp
-              (= Utbildning/Föreläsning), `CreateEventForm.tsx`s egen
-              `label="Eventtyp"` för samma sak, och Airtable-fältet `Eventtyp`
-              (länken till Eventformat). Etiketten här följer i stället
-              Select:en nedan, som heter "Familj". VÄRDET som skickas är
-              oförändrat `AttachmentScope.KURSTYP` = strängen 'Kurstyp' —
-              basens optionsnamn i fältet `Räckvidd`, som INTE får bytas
-              härifrån (datakällans kontrakt, se ADR-118). */}
-          <Radio value={AttachmentScope.KURSTYP}>En familj</Radio>
-          <Radio value={AttachmentScope.ALLA_EVENT}>Alla event</Radio>
-        </RadioGroup>
-
-        {rackvidd === AttachmentScope.KURSTYP && (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-            <Select
-              label="Familj"
-              hideLabel
-              placeholder="Välj familj"
-              selectedKey={kursfamilj}
-              onSelectionChange={(key) => {
-                setKursfamilj(key == null ? null : String(key));
+          {/* `hideLabel` — INTE borttagen etikett (Marcus: "Ta bort
+              underrubriken Räckvidd, behövs inte" · "rubriken Familj till
+              dropdownlistan kan tas bort"). Primitiven gör då `label` till
+              `aria-label`, så skärmläsaren behåller ett namn på kontrollen
+              medan ögat slipper en rubrik det inte behöver. Dialogens egen
+              rubrik ställer redan frågan gruppen svarar på. */}
+          <RadioGroup
+            label="Räckvidd"
+            hideLabel
+            orientation="horizontal"
+            value={rackvidd}
+            onChange={(value) => {
+              const next = value as AttachmentScopeValue;
+              setRackvidd(next);
+              if (next !== AttachmentScope.KURSTYP) {
+                setKursfamilj(null);
                 setKursniva(null);
-              }}
-              className="sm:max-w-56"
-            >
-              {KURSFAMILJ_VALUES.map((v) => (
-                <SelectItem key={v} id={v}>
-                  {v}
-                </SelectItem>
-              ))}
-            </Select>
-            {kursfamiljHarNivaer && (
+              }
+            }}
+          >
+            <Radio value={AttachmentScope.EVENT} isDisabled={!harEvent}>
+              Detta event
+            </Radio>
+            {/* "En familj" — INTE "En eventtyp". `Eventtyp` är upptaget av ett
+                ANNAT begrepp på tre ställen samtidigt: ORDLISTA.md § Eventtyp
+                (= Utbildning/Föreläsning), `CreateEventForm.tsx`s egen
+                `label="Eventtyp"` för samma sak, och Airtable-fältet `Eventtyp`
+                (länken till Eventformat). Etiketten här följer i stället
+                Select:en nedan, som heter "Familj". VÄRDET som skickas är
+                oförändrat `AttachmentScope.KURSTYP` = strängen 'Kurstyp' —
+                basens optionsnamn i fältet `Räckvidd`, som INTE får bytas
+                härifrån (datakällans kontrakt, se ADR-118). */}
+            <Radio value={AttachmentScope.KURSTYP}>En familj</Radio>
+            <Radio value={AttachmentScope.ALLA_EVENT}>Alla event</Radio>
+          </RadioGroup>
+
+          {rackvidd === AttachmentScope.KURSTYP && (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
               <Select
-                label="Steg"
+                label="Familj"
                 hideLabel
-                placeholder="Alla steg"
-                selectedKey={kursniva}
-                onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
+                placeholder="Välj familj"
+                selectedKey={kursfamilj}
+                onSelectionChange={(key) => {
+                  setKursfamilj(key == null ? null : String(key));
+                  setKursniva(null);
+                }}
                 className="sm:max-w-56"
               >
-                {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
-                    ('Steg 1'). Det som skickas till EF:en är därför
-                    oförändrat — se nivaSprak.ts. */}
-                {KURSNIVA_VALUES.map((v) => (
+                {KURSFAMILJ_VALUES.map((v) => (
                   <SelectItem key={v} id={v}>
-                    {stegEtikett(v)}
+                    {v}
                   </SelectItem>
                 ))}
               </Select>
-            )}
-          </div>
-        )}
-      </StegSektion>
+              {kursfamiljHarNivaer && (
+                <Select
+                  label="Steg"
+                  hideLabel
+                  placeholder="Alla steg"
+                  selectedKey={kursniva}
+                  onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
+                  className="sm:max-w-56"
+                >
+                  {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
+                      ('Steg 1'). Det som skickas till EF:en är därför
+                      oförändrat — se nivaSprak.ts. */}
+                  {KURSNIVA_VALUES.map((v) => (
+                    <SelectItem key={v} id={v}>
+                      {stegEtikett(v)}
+                    </SelectItem>
+                  ))}
+                </Select>
+              )}
+            </div>
+          )}
 
-      <StegSektion
-        nummer={2}
-        rubrik="Välj fil"
-        vilar={scopeGiltig ? undefined : 'Välj en familj i steget ovan först.'}
-      >
-        <UppladdningsFel uploadMutation={uploadMutation} />
-        <div>
-          <FileTrigger
-            acceptedFileTypes={['application/pdf']}
-            onSelect={(files) =>
-              onUpload(files, {
-                rackvidd,
-                kursfamilj:
-                  rackvidd === AttachmentScope.KURSTYP ? (kursfamilj ?? undefined) : undefined,
-                kursniva:
-                  rackvidd === AttachmentScope.KURSTYP ? (kursniva ?? undefined) : undefined,
-              })
-            }
-          >
-            <Button intent="secondary" isDisabled={uploadMutation.isPending || !scopeGiltig}>
-              <Upload aria-hidden="true" size={16} className="shrink-0" />
-              {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp en fil'}
+          {/* LEDTEXTEN SÄGER VAD SOM SAKNAS, knappens `isDisabled` är grinden
+              — de ska inte förväxlas. Samma disciplin som steg 2:s
+              vilo-tillstånd bar innan blocket revs: en avstängd knapp säger
+              "nej" utan att säga varför. */}
+          {!scopeGiltig && (
+            <p className="text-small text-text-muted">Välj en familj för att gå vidare.</p>
+          )}
+
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button intent="ghost" onPress={onStang} isDisabled={laddarUpp}>
+              Avbryt
             </Button>
-          </FileTrigger>
+            <Button
+              intent="primary"
+              isDisabled={laddarUpp || !scopeGiltig}
+              onPress={() =>
+                onUpload(
+                  filer,
+                  {
+                    rackvidd,
+                    kursfamilj:
+                      rackvidd === AttachmentScope.KURSTYP ? (kursfamilj ?? undefined) : undefined,
+                    kursniva:
+                      rackvidd === AttachmentScope.KURSTYP ? (kursniva ?? undefined) : undefined,
+                  },
+                  onStang,
+                )
+              }
+            >
+              <Upload aria-hidden="true" size={16} className="shrink-0" />
+              {laddarUpp ? 'Laddar upp…' : 'Ladda upp'}
+            </Button>
+          </div>
         </div>
-      </StegSektion>
-    </section>
+      </Dialog>
+    </Modal>
   );
 }
 
@@ -1337,8 +1428,6 @@ function GemensamtLage({
   laddar,
   fel,
   felmeddelande,
-  onUpload,
-  uploadMutation,
   onReplace,
   replaceMutation,
   onDelete,
@@ -1348,20 +1437,17 @@ function GemensamtLage({
   laddar: boolean;
   fel: boolean;
   felmeddelande: string;
-  onUpload: (files: FileList | null, scope: UploadScopeVal) => void;
-  uploadMutation: UploadMutation;
   onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
   replaceMutation: ReplaceMutation;
   onDelete: (attachmentId: string, namn: string) => void;
   deleteMutation: DeleteMutation;
 }) {
+  const kanRulla = rader.length > 4;
   return (
     // SAMMA ORDNING SOM EVENTLÄGET: uppladdningen först, listan sedan
     // (Marcus 2026-08-17). De två lägena delar nu skelett — en användare som
     // lärt sig det ena känner igen det andra.
     <div className="flex flex-col gap-4">
-      <UppladdningsFlode harEvent={false} onUpload={onUpload} uploadMutation={uploadMutation} />
-
       <section className="flex flex-col gap-3">
         {/* HJÄLPTEXTEN ÄR BORTTAGEN (Marcus, QA 273.5 steg 5, 2026-08-17:
             "Ta bort hjälptexten … den behövs inte"). Den löd "Gemensamma
@@ -1397,21 +1483,34 @@ function GemensamtLage({
                 kortades till "Dokument" 2026-08-17 — och blev därmed en ren
                 dubblett av sidhuvudets `<h1>Dokument` en skärmhöjd ovanför.
                 Se eventlägets sektionskommentar för `section`-formen. */}
-            <div className="divide-y divide-border">
+            {/* SAMMA INLINE-RULLNING SOM EVENTLÄGET (se dess kommentar för
+                formens härkomst och för varför tabb-stoppet är villkorat).
+                Räkningen är enklare här: räckviddsläget visar BARA bilagor,
+                ingen filterrad döljer grupper. */}
+            <ul
+              data-testid="dokument-lista"
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx.
+              tabIndex={kanRulla ? 0 : undefined}
+              aria-label={kanRulla ? 'Delade dokument' : undefined}
+              className={`divide-y divide-border ${
+                kanRulla ? 'focus-ring-inset scrollbar-inline max-h-96 overflow-y-auto pr-3' : ''
+              }`}
+            >
               {rader.map((r) => (
-                <GemensamBilageRadRow
-                  key={r.current.id}
-                  rad={r}
-                  onReplace={onReplace}
-                  replaceMutation={replaceMutation}
-                  onDelete={onDelete}
-                  deleteMutation={deleteMutation}
-                />
+                <li key={r.current.id}>
+                  <GemensamBilageRadRow
+                    rad={r}
+                    onReplace={onReplace}
+                    replaceMutation={replaceMutation}
+                    onDelete={onDelete}
+                    deleteMutation={deleteMutation}
+                  />
+                </li>
               ))}
               {rader.length === 0 && (
-                <p className="py-3 text-small text-text-muted">Inga gemensamma dokument än.</p>
+                <li className="py-3 text-small text-text-muted">Inga delade dokument än.</li>
               )}
-            </div>
+            </ul>
           </div>
         )}
 
