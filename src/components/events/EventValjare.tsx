@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, ChevronsUpDown, X } from 'lucide-react';
-import { type Ref, useEffect, useId, useMemo } from 'react';
+import { type ReactNode, type Ref, useEffect, useId, useMemo } from 'react';
 import {
   Button as AriaButton,
   Input as AriaInput,
@@ -139,19 +139,39 @@ export function EventValjare({
   /** Byte/val: navigerar URL:en (beslut a/13) — väljaren äger inget state. */
   onByte: (eventId: string) => void;
   isDisabled?: boolean;
-  /** Triggerns form: 'kontextrad' (18.18-ytan) eller 'rubrik' — väljaren ÄR
-      h1:an (18.19 variant A). List-/sök-maskineriet är identiskt. */
-  form?: 'kontextrad' | 'rubrik';
+  /** Triggerns form: 'kontextrad' (18.18-ytan), 'rubrik' (väljaren ÄR h1:an,
+      18.19 variant A) eller 'fristaende'. List-/sök-maskineriet är identiskt
+      i alla tre.
+
+      'fristaende' bär den STORA, luftiga rutan som 'kontextrad' annars visar
+      bara i sitt TOMMA läge (`rounded-2xl`, `py-4`, `text-body`, full bredd)
+      — även när ett val ÄR gjort. Marcus 2026-08-18, efter att ha jämfört
+      Dokument-ytan med manuell anmälan: *"jag vill i alla fall att vi
+      kopierar eventväljarens utseende i tomma läget så som det ser ut på
+      manuell anmälan."*
+
+      Formen finns för ytor där väljaren är sidans PRIMÄRA VAL och aldrig står
+      tom — Dokument-ytan har ett kontextlöst alternativ ("Delade dokument"),
+      så dess `tomtLage` är per konstruktion alltid falskt och pillformen blev
+      den enda den någonsin visade. */
+  form?: 'kontextrad' | 'rubrik' | 'fristaende';
   /** h1-elementet i rubrik-formen (sidans fokusmål vid laddning). */
   rubrikRef?: Ref<HTMLHeadingElement>;
   /** Avsikts-signal (hover) på en listrad — prefetch-krok (ADR-078 beslut 3).
       Anropas med radens event-ID; konsumenten äger vad som värms. */
   onAvsikt?: (eventId: string) => void;
   /** Opt-in kontextlöst alternativ överst i listan — se komponent-huvudet.
-      Etikett och handling i ETT objekt, så formen aldrig kan hamna i ett
-      halvtillstånd (etikett utan handler, eller tvärtom). Utelämnad = ingen
-      sådan rad, och komponenten beter sig exakt som före propen. */
-  gemensamtAlternativ?: { etikett: string; onValj: () => void };
+      Etikett, valfri ikon och handling i ETT objekt, så formen aldrig kan
+      hamna i ett halvtillstånd (etikett utan handler, eller tvärtom).
+      Utelämnad = ingen sådan rad, och komponenten beter sig exakt som före
+      propen.
+
+      `ikon` KOMMER FRÅN KONSUMENTEN, aldrig härifrån: vilken symbol som
+      betyder "det kontextlösa valet" är en domänfråga (Dokument-ytan väljer
+      `Files` för "flera dokument"), och väljaren ska inte känna till någon
+      enskild ytas domän. Utelämnas den faller raden tillbaka på en osynlig
+      spacer med prickens geometri — linjeringen håller i båda fallen. */
+  gemensamtAlternativ?: { etikett: string; ikon?: ReactNode; onValj: () => void };
 }) {
   const dataSource = useDataSource();
   const { contains } = useFilter({ sensitivity: 'base' });
@@ -189,6 +209,11 @@ export function EventValjare({
   const gemensamtValt = valtEventId == null && gemensamtAlternativ != null;
   const tomtLage = valtEventId == null && gemensamtAlternativ == null;
   const rubrikForm = form === 'rubrik';
+  // GEOMETRIN är skild från TILLSTÅNDET: den stora rutan används både när
+  // inget är valt (tomtLage, oförändrat) och när konsumenten uttryckligen
+  // ber om den ('fristaende'). Kalenderikonen följer däremot tillståndet —
+  // se dess villkor nedan.
+  const storForm = tomtLage || form === 'fristaende';
 
   return (
     <AriaSelect
@@ -266,8 +291,10 @@ export function EventValjare({
         <AriaButton
           data-testid="event-valjare-trigger"
           className={
-            tomtLage
+            storForm
               ? // Fristående formen (punkt 7): sidans enda handling, full bredd.
+                // Sedan 2026-08-18 även åtkomlig via `form="fristaende"` för
+                // ytor där väljaren är primärvalet men aldrig står tom.
                 'flex w-full items-center gap-2.5 rounded-2xl border border-border bg-surface px-4 py-4 text-body hover:bg-bg-muted motion-safe:transition-colors'
               : // Pillen på grå kortyta (punkt 3): vit, lyfter ur ytan. FAST
                 // BREDD över hela blocket (Marcus-beslut 2026-07-25) — aldrig
@@ -275,8 +302,22 @@ export function EventValjare({
                 'flex w-full items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-small hover:bg-bg-muted motion-safe:transition-colors'
           }
         >
+          {/* Kalenderikonen följer TILLSTÅNDET, inte geometrin: den betyder
+              "inget valt än" — en kalender vore fel över ett gjort val. */}
           {tomtLage ? (
             <CalendarDays aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
+          ) : null}
+          {/* Det kontextlösa alternativets EGEN ikon, på kalenderns plats.
+              Marcus 2026-08-18: *"borde inte delade dokument också få en ikon
+              nu i detta läge? Så som 'Välj ett event' har på manuell
+              anmälan"*. I den smala pillen bar en tom spacer det här utrymmet
+              gott nog; i den stora rutan (`form="fristaende"`) blev tomrummet
+              synligt i stället. Ikonen kommer från konsumenten — se propens
+              docblock för varför. */}
+          {gemensamtValt && gemensamtAlternativ?.ikon != null ? (
+            <span aria-hidden="true" className="flex shrink-0 text-text-secondary">
+              {gemensamtAlternativ.ikon}
+            </span>
           ) : null}
           <SelectValue className="flex min-w-0 items-center gap-2">
             {() =>
@@ -288,10 +329,26 @@ export function EventValjare({
                 // ett event och har inget värde här. Triggern behåller
                 // pill-formen: detta ÄR ett val, inte ett tomt läge.
                 //
-                // INGEN SPACER HÄR, till skillnad mot listraden: stängda
-                // triggern har ingen prick i samma rad att linjera mot, så en
-                // tom 10 px-lucka hade bara läst som slarv.
-                <span className="min-w-0 truncate font-medium">{gemensamtAlternativ.etikett}</span>
+                // SPACERN GÄLLER ÄVEN HÄR — och det är en ÖPPEN RIVNING av
+                // raden som stod här fram till 2026-08-18: *"ingen spacer här
+                // … en tom 10 px-lucka hade bara läst som slarv"*. Den var
+                // riktig så länge triggern var den smala pillen. Med
+                // `form="fristaende"` (samma dag, stora rutan) blev hoppet
+                // mellan lägena synligt i stället: växlar man mellan ett event
+                // och det kontextlösa alternativet flyttar sig texten 20 px i
+                // sidled, eftersom eventformens prick + `gap-2.5` bär det
+                // indraget. Samma spacer, samma skäl som i listraden.
+                <>
+                  {/* Spacern behövs BARA när ingen ikon skickats — annars bär
+                      ikonen ovanför redan vänsterkanten, och två utfyllnader
+                      hade dubblat indraget. */}
+                  {gemensamtAlternativ.ikon == null ? (
+                    <span aria-hidden="true" className="size-2.5 shrink-0" />
+                  ) : null}
+                  <span className="min-w-0 truncate font-medium">
+                    {gemensamtAlternativ.etikett}
+                  </span>
+                </>
               ) : valtEvent ? (
                 <KontextRad event={valtEvent} />
               ) : (
@@ -378,7 +435,13 @@ export function EventValjare({
                     minus färg och rundning — och sitter i samma `gap-2`-flöde.
                     Ändras prickens storlek någonsin följer indraget med av sig
                     självt; en `pl-[18px]` hade tyst glidit isär. */}
-                <span aria-hidden="true" className="size-2.5 shrink-0" />
+                {gemensamtAlternativ.ikon != null ? (
+                  <span aria-hidden="true" className="flex shrink-0 text-text-secondary">
+                    {gemensamtAlternativ.ikon}
+                  </span>
+                ) : (
+                  <span aria-hidden="true" className="size-2.5 shrink-0" />
+                )}
                 {gemensamtAlternativ.etikett}
               </SelectItem>
             ) : null}

@@ -139,7 +139,16 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft, Download, ExternalLink, FileUp, Loader2, Trash2, Upload } from 'lucide-react';
+import {
+  ChevronLeft,
+  Download,
+  ExternalLink,
+  Files,
+  FileUp,
+  Loader2,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
@@ -416,6 +425,12 @@ export function DokumentYta() {
           kompensera för: man avmarkerar aldrig, man väljer ett annat
           alternativ. */}
       <EventValjare
+        // Den STORA, luftiga rutan — samma geometri som manuell anmälans
+        // tomma läge (Marcus 2026-08-18). Dokument-ytans väljare är sidans
+        // primära val och står per konstruktion ALDRIG tom ("Delade dokument"
+        // är valt när `?event=` saknas), så pillformen var den enda den
+        // någonsin visade. Se `EventValjare`s `form`-prop för hela motivet.
+        form="fristaende"
         valtEventId={eventId ?? undefined}
         valtEvent={valtEvent}
         onByte={(id) => void setEventId(id)}
@@ -425,6 +440,12 @@ export function DokumentYta() {
           // `AttachmentScope`-värdena rörs inte — detta är UI-språk, samma
           // skillnad som `Nivå`→`Steg` redan bär (nivaSprak.ts).
           etikett: 'Delade dokument',
+          // `Files` — FLERA dokument, vilket är precis vad räckvidden betyder
+          // (ORDLISTA.md § Gemensam bilaga: syns i varje berört events lista).
+          // Kalender vore fel: den betyder event, och detta är valet UTAN
+          // event. `Layers` var upptaget av segment-byggarens lager-begrepp.
+          // Storleken 18 speglar kalenderikonens i väljarens tomma läge.
+          ikon: <Files aria-hidden="true" size={18} className="shrink-0" />,
           onValj: () => void setEventId(null),
         }}
       />
