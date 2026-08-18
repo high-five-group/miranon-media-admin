@@ -15,6 +15,7 @@ export { Radio, RadioGroup, type RadioGroupProps } from './RadioGroup';
 export { Select, SelectItem, type SelectProps } from './Select';
 export { Skeleton, type SkeletonProps } from './Skeleton';
 export { SlideToConfirm, type SlideToConfirmProps } from './SlideToConfirm';
+export { StegSektion } from './StegSektion';
 export { TextArea, type TextAreaProps } from './TextArea';
 export {
   ToggleButton,

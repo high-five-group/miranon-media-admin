@@ -39,6 +39,8 @@
     "schema:kvitton": "node --env-file-if-exists=.env.seed scripts/create-kvitton-table.mjs",
     "seed:review": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs",
     "seed:review:clean": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs --clean",
+    "seed:dokument": "node --env-file-if-exists=.env.test scripts/seed-dokument-fixture.mjs",
+    "seed:dokument:clean": "node --env-file-if-exists=.env.test scripts/seed-dokument-fixture.mjs --clean",
     "facit:godkann": "node scripts/facit-godkann.mjs",
     "metrics:ci": "node scripts/ci-metrics.mjs",
     "metrics:agents": "node scripts/agent-spawn-metrics.mjs",
