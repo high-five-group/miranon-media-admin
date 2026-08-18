@@ -15,27 +15,28 @@
 
 ## Aktuellt fokus
 
-**Session 107 🔄 ÅTERUPPTAGEN IGEN (2026-08-17, `lifecycle: active`) — PROD
-LÄKT, QA-VANDRINGEN PÅBÖRJAD.** Prod stod i ett trasigt halvläge: fronten
-utrullad av Vercel, EF:erna kvar på 13:08Z-koden — nya schemat kräver fält
-gamla EF:en inte returnerade, så varje bilage-yta kastade. Marcus körde
-`fas4-prod-deploy.sh --deploya` (39 funktioner, hash-verifierade); prod går
-nu i fas med `main` på båda halvorna. **QA 273.5: steg 1–3 gångna, fyra
-defekter ut och åtgärdade** — fel bild (→ 97 kB webp, luminans omräknad) ·
-vit rännsten (kamouflage mot KANTfärg, ej helbildsmedel) · **blinket
-rotorsakat** (`main.tsx` målade splashen under `'vantar'`-fasen → 200 ms
-tröskel) · genvägarna till eventsidans form (delad som KOD i
-`primitives/HandlingsRad`, eventsidans regressionslås 26/26). PR #1587
-landad (`e319b08c`); **PR #1589 landade av sig själv under pausen**
-(merge `e492a4d4`), paus-landningen #1590 = `4d3ab4fd` = `origin/main`;
-**Vercel-utrullningen bevisad i deploy-kedjan** (Production 20:38:12Z,
-status `success`, `e492a4d4` ancestor). KVAR: QA
-273.5 steg 4–6 · facit-omstämplingarna (sekvensfynd: hem+åtgärdssidan vid
-273.5, dokument EN gång vid 275.4; hem behöver en TREDJE sidofil) · QA
-275.4 · Done-flippar · PRD 276 · `INVITE_REDIRECT_URL` saknas i prod.
-Numrering re-deriverad vid resume 2: ADR 119 · task-277 · L512+fragment ·
-T145 · f50 — re-derivera ALLTID. Full handoff: sessionsdok S107
-§ Paushistorik (andra gången) + Del 7.**
+**Session 107 ⏸️ PAUSAD (tredje gången, 2026-08-18, `lifecycle: paused`) —
+QA-VANDRINGENS STEG 5 FULLBORDAT: DOKUMENTSIDANS OMTAG.** Marcus dom
+öppnade passet ("dokumentsidan är skitdålig, Lotta kommer inte gilla
+detta") och stängde det ("Nu ser det visuellt väldigt snyggt ut på
+startytan"). **Nio fyndomgångar** mot renderad yta: uppladdningen först ·
+rubrikerna in i blocken · fyra likformiga 44×44-knappar · radhöjden LÅST
+till namn/täckning/datum (innehållshöjd 74 px på varje rad, långa namn
+trunkeras) · `Nivå`→`Steg` som presentationslager · etiketterna dolda med
+`hideLabel` · ingången till räckviddsläget flyttad in i listan (den FÅR
+inte tas bort — `EventValjare` avvisar avmarkering, enda vägen tillbaka).
+**RÄNNSTENEN STÄNGD** (`d7011a20`): `cover` byter beskärningsaxel i smala
+fönster; fotots yttersta 24 px tonas nu till kamouflagefärgen — söm 17–22
+→ **1** i fem format. **DEMO-FIXTUR** (`65b0e112`): fyra permanenta rader
+via EF:en, 17–24 tecken, radbryter inte. **SYSTEMISKT FYND:**
+`bg-bg-muted` dubbelanvänds som kortbakgrund OCH svag-yta-token — FEM
+mätta instanser där något blev osynligt. PR **#1594 armerad** vid paus.
+KVAR: **eventläget är resume-ingången** (Marcus hann precis börja) · QA
+273.5 steg 6 facit · QA 275.4 · "Steg"-kollisionen · app-brett
+terminologi-svep · ORDLISTA saknar `Familj` · task-277 (basfältnamnen) ·
+blob-segheten · Done-flippar · PRD 276. Numrering: ADR 119 · task-277 ·
+L512+fragment · T145 · f50 — re-derivera ALLTID. Full handoff: sessionsdok
+S107 § PAUSLÄGE (tredje gången) + Del 8-registret.**
 
 **Session 107 — första passet (historik): NIO-PUNKTSLISTAN: utredning +
 nio byggskivor landade på EN dag.** Sju
