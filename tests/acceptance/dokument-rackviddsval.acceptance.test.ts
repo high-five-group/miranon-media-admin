@@ -348,9 +348,66 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     const rullande = page.getByTestId('dokument-lista');
     await expect(rullande).toHaveAttribute('tabindex', '0');
     await expect(rullande).toHaveAttribute('aria-label', 'Dokument');
-    // Höjden är FAKTISKT begränsad — klassnamnet ensamt bevisar ingenting.
-    const box = await rullande.boundingBox();
-    expect(box?.height).toBeLessThanOrEqual(384);
+    // ═══ EXAKT FYRA RADER, KLIPPT VID SEPARATORN ═══
+    //
+    // Marcus 2026-08-18: *"se till att listan visar exakt 4 dokumentrader,
+    // alltså att den fjärde längst ner klipps exakt precis över separatorn."*
+    // Höjden MÄTS mot radernas faktiska geometri i stället för mot en
+    // hårdkodad siffra — då fäller testet om radhöjden någonsin ändras, i
+    // stället för att tyst acceptera en halv rad i underkanten.
+    const geometri = await rullande.evaluate((ul) => {
+      const items = Array.from(ul.children) as HTMLElement[];
+      const forsta = items[0].getBoundingClientRect();
+      const fjarde = items[3].getBoundingClientRect();
+      return {
+        listHojd: ul.getBoundingClientRect().height,
+        fyraRader: fjarde.bottom - forsta.top,
+        rullar: ul.scrollHeight > ul.clientHeight,
+      };
+    });
+    expect(geometri.listHojd).toBe(geometri.fyraRader);
+    expect(geometri.rullar).toBe(true);
+
+    // ═══ LAYOUTEN HOPPAR INTE NÄR FILTRET VÄXLAR ═══
+    //
+    // Marcus: *"nu ser skillnaden genom att växla mellan 'Alla' och
+    // 'Bilagor', för då hoppar layouten/listan i höjd."* Höjden låses på
+    // TOTALEN, inte på det filtrerade antalet, så allt under listan —
+    // inklusive uppladdningsknappen — står stilla.
+    const foreVaxling = (await rullande.boundingBox())?.height;
+    await page.getByRole('radio', { name: 'Bilagor' }).click();
+    await expect(page.getByText('Deltagarinformation')).toHaveCount(0);
+    const efterVaxling = (await page.getByTestId('dokument-lista').boundingBox())?.height;
+    expect(efterVaxling).toBe(foreVaxling);
+  });
+
+  test('täckningspillen är SYNLIG mot sitt underlag — mätt, inte antaget', async ({
+    page,
+    network,
+  }) => {
+    // ═══ VAKT MOT EN FELKLASS SOM SLAGIT SEX GÅNGER PÅ DENNA YTA ═══
+    //
+    // `bg-bg-muted` bär BÅDE kortbakgrunden och rollen "svag yta för element
+    // inuti kortet", och `bg-surface` gör detsamma en nivå ner. Varje gång en
+    // behållare bytt bakgrund har något inuti den blivit osynligt: ghost-hovern
+    // på Visa-knappen (två gånger), Ersätt/Radera, räckviddspillen,
+    // uppladdningsskalet, och senast pillen igen när listan fick sin egen
+    // `bg-surface`-yta 2026-08-18.
+    //
+    // Varje instans har hittills fångats av Marcus öga eller av en kommentar
+    // som ingen läste. Detta är vakten: den mäter FAKTISK `backgroundColor` i
+    // renderad yta och bryr sig inte om vilka klassnamn som råkar stå där.
+    network.use(bilagorHandler());
+    await gotoEventlage(page);
+
+    const pill = page.getByText('RIM · Alla steg');
+    await expect(pill).toBeVisible();
+    const pillFarg = await pill.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const listFarg = await page
+      .getByTestId('dokument-lista')
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    expect(pillFarg).not.toBe(listFarg);
   });
 
   // ═══ RÄCKVIDDS-AXELN ÄR EN KONTROLL (Marcus 2026-08-18, S107 QA-vandringen) ═══

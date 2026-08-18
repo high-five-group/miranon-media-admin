@@ -570,13 +570,48 @@ export function DokumentYta() {
 const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
 
 /**
+ * Listans rullnings-geometri — MÄTT i renderad yta, inte uppskattad.
+ *
+ * Marcus 2026-08-18: *"se till att listan också visar exakt 4 dokumentrader,
+ * alltså att den fjärde längst ner klipps exakt precis över separatorn."*
+ *
+ * Radsteget är **99 px** (uppmätt: fyra raders `top`-värden på 284/383/482/581
+ * i acceptance-riggen), så fyra rader är **396 px** — mätt som avståndet från
+ * första radens överkant till fjärde radens underkant. `max-h-96` (384 px) som
+ * stod här innan klippte alltså 12 px IN i fjärde raden.
+ *
+ * Talet är hårt bundet till radhöjden, och den är LÅST till tre led sedan
+ * S107 Del 9 (namn · täckning · datum, alla trunkerande). Ändras radens
+ * innehållshöjd måste detta mätas om — måttet är en mätning, inte en
+ * konvention, och en gissning här syns direkt som en halv rad i underkanten.
+ */
+const LISTA_SYNLIGA_RADER = 4;
+const LISTA_MAXHOJD = 'max-h-[396px]';
+
+/**
  * Täckningspillens klass — EN källa, delad av `RackviddBadge` (bilagor) och
  * mall-/generatorraderna. De bar samma sträng på tre ställen innan
  * höjdlåsningen; en delad form som beskrivs flera gånger glider isär, och
  * glidningen upptäcks av Marcus öga i stället för av en grind.
+ *
+ * ═══ `bg-bg-muted`, INTE `bg-surface` — INSTANS SEX, FÅNGAD FÖRE LANDNING ═══
+ *
+ * Pillen bar `bg-surface` så länge den låg på kortets `bg-bg-muted`. När
+ * listan 2026-08-18 fick sin EGEN `bg-surface`-yta (Marcus: *"ge inline-
+ * scroll-ytan en annan färg/toning"*) vände nästlingen — och pillen blev
+ * osynlig mot sin nya bakgrund. MÄTT, inte antaget:
+ * `getComputedStyle` gav `pill=rgb(255,255,255)` och
+ * `lista=rgb(255,255,255)` i renderad yta.
+ *
+ * Det är sjätte gången samma token-identitet gjort något osynligt på DENNA
+ * yta (ghost-hovern ×2, Ersätt/Radera, räckviddspillen, uppladdningsskalet
+ * — se filhuvudets systemiska fynd). Regeln som faller ut: **tokenvalet följer
+ * NÄSTLINGEN, aldrig vanan.** Byter en behållare bakgrund måste allt som
+ * ligger I den prövas om — och prövningen är en mätning av `backgroundColor`,
+ * inte en blick på klassnamnet.
  */
 const TACKNING_KLASS =
-  'inline-flex shrink-0 items-center rounded-full border border-transparent bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
+  'inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
 const IKON_STORLEK = 16;
 
 function MetaRad({ delar }: { delar: (string | null)[] }) {
@@ -1089,15 +1124,30 @@ function DokumentLista({
   const visaMallar = aktivtFilter === 'alla' || aktivtFilter === 'mall';
   const visaGeneratorer = aktivtFilter === 'alla' || aktivtFilter === 'generator';
 
-  // Fyra rader ryms i `max-h-96`; först den femte gör rullningen verklig.
-  // Samma gräns-resonemang som `Deltagare.tsx` (*"fyra är gränsen där max-h
-  // börjar bita"*), räknat på DENNA listas radhöjd — 99 px mätt i renderad
-  // yta, tre led låsta sedan S107 Del 9.
+  // ═══ TVÅ SKILDA VILLKOR, OCH DE MÄTER OLIKA SAKER ═══
+  //
+  // `kanRulla` — rullar listan I DET AKTUELLA FILTRET? Styr tabb-stoppet.
+  // Ett fokuserbart område som inte rullar vore ett tomt stopp i
+  // tangentbordsflödet (`Deltagare.tsx`s förfining).
+  //
+  // `lasHojd` — skulle listan rulla i NÅGOT filter? Styr den FASTA höjden.
+  // Marcus 2026-08-18: *"nu ser skillnaden genom att växla mellan 'Alla' och
+  // 'Bilagor', för då hoppar layouten/listan i höjd."* Filtret smalnar av
+  // innehållet, listan krymper, och allt under den — inklusive
+  // uppladdningsknappen — flyttar sig. Det syntes inte förut, när listan
+  // delade kortets bakgrund och saknade egen kant.
+  //
+  // Höjden låses därför på TOTALEN, inte på det filtrerade antalet: bär
+  // eventet fler än fyra dokument står listan stilla oavsett vilket filter
+  // som är valt. Bär det färre är listan kort ändå, och en fast höjd hade
+  // bara skapat tom vit yta utan att lösa något.
   const antalSynliga =
     (visaBilagor ? rader.length : 0) +
     (visaMallar ? MALLAR.length : 0) +
     (visaGeneratorer ? GENERATORER.length : 0);
-  const kanRulla = antalSynliga > 4;
+  const totaltAntal = rader.length + MALLAR.length + GENERATORER.length;
+  const kanRulla = antalSynliga > LISTA_SYNLIGA_RADER;
+  const lasHojd = totaltAntal > LISTA_SYNLIGA_RADER;
 
   return (
     // ═══ UPPLADDNINGEN FÖRST, LISTAN SEDAN (Marcus 2026-08-17) ═══
@@ -1134,7 +1184,7 @@ function DokumentLista({
             hjälp. */}
         <div
           data-testid="grupp-kort"
-          className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted px-4 py-3 contrast-more:border-border-strong"
+          className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
         >
           {/* FILTRET BOR I KORTET, ÖVERST (Marcus-granskning 2026-08-17,
               eventläget). Det stod förut UTANFÖR kortet; ordningen är nu
@@ -1153,7 +1203,43 @@ function DokumentLista({
               </ToggleButton>
             ))}
           </ToggleButtonGroup>
-          {/* INLINE-RULLNING — husets etablerade form (Marcus 2026-08-18:
+          {/* ═══ LISTAN ÄR EN EGEN YTA: `bg-surface` MOT KORTETS `bg-bg-muted` ═══
+              Marcus 2026-08-18: *"vi behöver ge inline-scroll-ytan en annan
+              färg/toning och skapa lite luft mellan toggle-valen och själva
+              listan."*
+
+              TOKENVALET ÄR PÅTVINGAT, INTE SMAK. Kortet ÄR `bg-bg-muted`
+              (`--p-neutral-50`), så en lista med samma token hade varit
+              OSYNLIG — exakt den felklass denna yta drabbats av FEM gånger
+              (ghost-hovern ×2, Ersätt/Radera, räckviddspillen,
+              uppladdningsskalet; se filhuvudets systemiska fynd). Nästlingen
+              avgör: muted skal, surface innehåll — samma ordning som
+              `StegSektion` bar i uppladdningsblocket och som `HandlingsRadKort`
+              följer.
+
+              `px-3` på listan eftersom raderna bara bär vertikal padding
+              (`DokumentRadSkal`: `py-3`) och tidigare ärvde kortets `px-4`.
+              `pr-3` ur rull-klasserna utgick i samma veva — `px-3` täcker
+              högersidan, och `scrollbar-inline` reserverar redan plats för
+              rullningslisten via `scrollbar-gutter: stable`.
+
+              `contrast-more:border-border-strong` speglar kortets egen rad:
+              under `prefers-contrast: more` räcker inte en vit yta mot en grå
+              för att skilja dem åt.
+
+              LUFTEN mellan filterraden och listan bärs av kortets `gap-3`
+              (var `gap-2`).
+
+              KORTETS PADDING ÄR SYMMETRISK (`p-4`, var `px-4 py-3`) — Marcus
+              fångade asymmetrin så fort listan fick egen yta: *"den grå ramen
+              ser bredare ut på sidorna än vad den är över och under"*. 16 px
+              horisontellt mot 12 px vertikalt syntes inte så länge listan
+              delade kortets bakgrund; med en egen yta blev kortets padding en
+              synlig RAM, och en ram ska vara lika bred runtom. Mätt efter
+              ändringen: vänster 17 · höger 17 · under 17 px (16 padding + 1 px
+              genomskinlig kant).
+
+              INLINE-RULLNING — husets etablerade form (Marcus 2026-08-18:
               *"vi gör dokumentlistan till en inline-scroll lista, det har vi
               många i appen"*, verifierat: `NyaAnmalningar.tsx`,
               `ForfallnaBetalningar.tsx` ×3, `Deltagare.tsx`, `EventValjare`s
@@ -1180,8 +1266,10 @@ function DokumentLista({
             // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx.
             tabIndex={kanRulla ? 0 : undefined}
             aria-label={kanRulla ? 'Dokument' : undefined}
-            className={`divide-y divide-border ${
-              kanRulla ? 'focus-ring-inset scrollbar-inline max-h-96 overflow-y-auto pr-3' : ''
+            className={`divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong ${
+              lasHojd
+                ? `focus-ring-inset scrollbar-inline h-[396px] ${LISTA_MAXHOJD} overflow-y-auto`
+                : ''
             }`}
           >
             {visaBilagor &&
@@ -1463,7 +1551,10 @@ function GemensamtLage({
   onDelete: (attachmentId: string, namn: string) => void;
   deleteMutation: DeleteMutation;
 }) {
-  const kanRulla = rader.length > 4;
+  // Förvaltningsläget har INGEN filterrad (bara bilagor visas), så det finns
+  // inget filter att hoppa mellan — höjden behöver därför ingen låsning, bara
+  // taket. Se `DokumentLista` för varför de två villkoren skiljs där.
+  const kanRulla = rader.length > LISTA_SYNLIGA_RADER;
   return (
     // SAMMA ORDNING SOM EVENTLÄGET: uppladdningen först, listan sedan
     // (Marcus 2026-08-17). De två lägena delar nu skelett — en användare som
@@ -1496,7 +1587,7 @@ function GemensamtLage({
         ) : (
           <div
             data-testid="grupp-kort"
-            className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted px-4 py-3 contrast-more:border-border-strong"
+            className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
           >
             {/* INGEN RUBRIK — BESLUTAD BORT, INTE TAPPAD (Marcus, QA 273.5
                 steg 5, 2026-08-18: *"Ta även bort rubriken 'Dokument' i
@@ -1513,8 +1604,8 @@ function GemensamtLage({
               // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx.
               tabIndex={kanRulla ? 0 : undefined}
               aria-label={kanRulla ? 'Delade dokument' : undefined}
-              className={`divide-y divide-border ${
-                kanRulla ? 'focus-ring-inset scrollbar-inline max-h-96 overflow-y-auto pr-3' : ''
+              className={`divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong ${
+                kanRulla ? `focus-ring-inset scrollbar-inline ${LISTA_MAXHOJD} overflow-y-auto` : ''
               }`}
             >
               {rader.map((r) => (

@@ -265,6 +265,22 @@ test.describe('Bilageväljaren skarp — verkligt fundament (TASK-147.5)', () =>
     // "Alla event"-text på hela sidan bevisar att badgen inte läcker.
     await expect(page.getByText('Alla event')).toHaveCount(1);
 
+    // ═══ BADGEN MÅSTE SYNAS MOT SITT UNDERLAG — MÄTT, INTE ANTAGET ═══
+    //
+    // Bilageväljarens rader står på `bg-surface` (`divide-y divide-border
+    // rounded-lg bg-surface`). Badgen bar SAMMA token fram till 2026-08-18 och
+    // var alltså osynlig här — mätt: `badge=rgb(255,255,255)`,
+    // `underlag=rgb(255,255,255)`. Buggen levde eftersom `RackviddBadge.tsx`
+    // uttryckligen FRISKREV denna yta i prosa ("läser den fortfarande som en
+    // pill") utan att någon mätte efter. Vakten mäter i stället.
+    const badgeFarg = await page
+      .getByText('Alla event')
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    const underlagFarg = await page
+      .getByText('Alla event')
+      .evaluate((el) => getComputedStyle(el.closest('label')?.parentElement ?? el).backgroundColor);
+    expect(badgeFarg).not.toBe(underlagFarg);
+
     // BIFOGBARHETEN: samma klick-mekanik som en vanlig bilaga (klickaKryss-
     // mönstret, se filhuvudets docblock för varför ancestor-label klickas).
     await gemensamKryss.locator('xpath=ancestor::label[1]').click();
