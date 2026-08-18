@@ -41,8 +41,13 @@ enkel ändring — sju e2e-assertions + saknad serversiffra) ·
 **nollställningen inför Lotta / brytpunkts-frågan (tyngst, tidskritisk —
 Lotta släpps in imorgon)** · bevakningsraderna (leder ingenstans är
 AVSIKTLIGT, sändflödet obyggt i task-241; två lägen finns redan kodade).
-Numrering: ADR 119 · task-277 · L512+fragment · T145 · f50 — re-derivera
-ALLTID. Full handoff: sessionsdok S107 § PAUSLÄGE (fjärde gången) + Del 11.**
+Numrering: ADR 119 · task-277 · L512+fragment · T145 · f50 — samtliga
+disk-verifierade vid resume 5 (Del 12 § B), utom f50 som kvarstår som
+ohärledd hypotes. ÅTERUPPTAGEN 2026-08-18 (femte passet) — MARCUS
+PRIO-ORDNING styr om handoffens: (1) testraden i aktivitetsloggen bort
+(Marcus-moment, prod) · (2) personlistans räknare + filtrering · (3)
+bevakningsraderna · (4) blob-segheten + dokumentmallarna · (5)
+nollställningen inför Lotta. Full handoff: sessionsdok S107 Del 12 + Del 11.**
 
 **Session 107 — första passet (historik): NIO-PUNKTSLISTAN: utredning +
 nio byggskivor landade på EN dag.** Sju
