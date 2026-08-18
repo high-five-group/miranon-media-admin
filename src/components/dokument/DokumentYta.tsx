@@ -139,7 +139,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronLeft, Download, ExternalLink, FileUp, Loader2, Trash2, Upload } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useId, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import { stegEtikett } from '@/components/dokument/nivaSprak';
 import { RackviddBadge } from '@/components/dokument/RackviddBadge';
@@ -975,7 +975,6 @@ function DokumentLista({
   const aktivtFilter: ListaTyp =
     filter === 'bilaga' || filter === 'mall' || filter === 'generator' ? filter : 'alla';
 
-  const listRubrikId = useId();
   const visaBilagor = aktivtFilter === 'alla' || aktivtFilter === 'bilaga';
   const visaMallar = aktivtFilter === 'alla' || aktivtFilter === 'mall';
   const visaGeneratorer = aktivtFilter === 'alla' || aktivtFilter === 'generator';
@@ -995,29 +994,35 @@ function DokumentLista({
     <div className="flex flex-col gap-4">
       <UppladdningsFlode harEvent onUpload={onUpload} uploadMutation={uploadMutation} />
 
-      <section aria-labelledby={listRubrikId} className="flex flex-col gap-3">
-        {/* RUBRIKEN BOR I KORTET (Marcus 2026-08-17: "Borde inte rubrikerna
-            flyttas in i sina block typ, vore inte det snyggare?"). Den låg
-            förut ovanför kortet och läste som en sidsektion; nu namnger den
-            det den faktiskt namnger.
+      <section className="flex flex-col gap-3">
+        {/* INGEN RUBRIK I KORTET — BESLUTAD BORT, INTE TAPPAD (Marcus,
+            QA 273.5 steg 5, 2026-08-18: *"Ta bort rubriken 'Dokument för
+            eventet' i eventläget … Man ser ju vad de olika ytorna är för
+            något ändå."*).
 
-            Rubriken står UTANFÖR `divide-y`-flödet — en avdelare mellan
-            rubrik och första raden hade läst som om rubriken vore en post i
-            listan. Därav den inre wrappern. */}
+            Rubriken flyttades in i kortet 2026-08-17 och togs bort dagen
+            därpå: `<h1>Dokument` står redan i sidhuvudet och `EventValjare`
+            direkt ovanför visar VILKET event listan gäller, så en `<h2>` som
+            upprepar båda tillförde ingenting. Återinför den inte utan att
+            först fråga.
+
+            `<section>` behåller sin tagg men står nu UTAN `aria-labelledby`
+            — husets etablerade form för sektioner utan egen rubrik
+            (`Waitlist.tsx`, `Hem.tsx`, `InstalleraAppen.tsx`). En namnlös
+            `section` exponeras per spec inte som landmark, vilket är rätt:
+            den ÄR inte en självständig region. En `sr-only`-rubrik övervägdes
+            och valdes bort — huset har ingen sådan, och en osynlig rubrik som
+            säger det synliga redan säger är brus för skärmläsaren, inte
+            hjälp. */}
         <div
           data-testid="grupp-kort"
           className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted px-4 py-3 contrast-more:border-border-strong"
         >
-          <h2 id={listRubrikId} className="font-semibold text-lg">
-            Dokument för eventet
-          </h2>
-          {/* FILTRET BOR I KORTET, UNDER SIN EGEN RUBRIK (Marcus-granskning
-              2026-08-17, eventläget). Det stod förut UTANFÖR kortet och
-              OVANFÖR rubriken — alltså före det som namnger vad filtret
-              opererar på, och utanför det block rubrikerna nyss flyttades in
-              i. Ordningen är nu rubrik → filter → lista, vilket är den
-              enda som läser rätt: säg vad det är, sedan hur det kan smalnas
-              av, sedan innehållet. */}
+          {/* FILTRET BOR I KORTET, ÖVERST (Marcus-granskning 2026-08-17,
+              eventläget). Det stod förut UTANFÖR kortet; ordningen är nu
+              filter → lista inuti samma block — säg hur listan kan smalnas
+              av, sedan innehållet. Rubriksteget däremellan utgick 2026-08-18
+              (se sektionskommentaren ovan). */}
           <ToggleButtonGroup
             label="Filtrera på typ"
             spread
@@ -1346,7 +1351,6 @@ function GemensamtLage({
   onDelete: (attachmentId: string, namn: string) => void;
   deleteMutation: DeleteMutation;
 }) {
-  const listRubrikId = useId();
   return (
     // SAMMA ORDNING SOM EVENTLÄGET: uppladdningen först, listan sedan
     // (Marcus 2026-08-17). De två lägena delar nu skelett — en användare som
@@ -1354,7 +1358,7 @@ function GemensamtLage({
     <div className="flex flex-col gap-4">
       <UppladdningsFlode harEvent={false} onUpload={onUpload} uploadMutation={uploadMutation} />
 
-      <section aria-labelledby={listRubrikId} className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3">
         {/* HJÄLPTEXTEN ÄR BORTTAGEN (Marcus, QA 273.5 steg 5, 2026-08-17:
             "Ta bort hjälptexten … den behövs inte"). Den löd "Gemensamma
             dokument gäller flera event: en kurstyp eller alla event. Ändras
@@ -1383,15 +1387,12 @@ function GemensamtLage({
             data-testid="grupp-kort"
             className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted px-4 py-3 contrast-more:border-border-strong"
           >
-            {/* Rubriken i kortet, utanför `divide-y`-flödet — se eventlägets
-                motsvarande kommentar. */}
-            {/* "Dokument", inte "Gemensamma dokument" (Marcus 2026-08-17:
-                "borde ju bara kunna heta Dokument"). I DETTA läge finns inga
-                andra — räckviddsläget visar per definition bara gemensamma
-                bilagor, så ordet skilde inte längre något från något. */}
-            <h2 id={listRubrikId} className="font-semibold text-lg">
-              Dokument
-            </h2>
+            {/* INGEN RUBRIK — BESLUTAD BORT, INTE TAPPAD (Marcus, QA 273.5
+                steg 5, 2026-08-18: *"Ta även bort rubriken 'Dokument' i
+                förvaltningsläget."*). Den hette först "Gemensamma dokument",
+                kortades till "Dokument" 2026-08-17 — och blev därmed en ren
+                dubblett av sidhuvudets `<h1>Dokument` en skärmhöjd ovanför.
+                Se eventlägets sektionskommentar för `section`-formen. */}
             <div className="divide-y divide-border">
               {rader.map((r) => (
                 <GemensamBilageRadRow
