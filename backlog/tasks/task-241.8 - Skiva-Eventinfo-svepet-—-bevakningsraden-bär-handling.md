@@ -4,7 +4,7 @@ title: 'Skiva: Eventinfo-svepet — bevakningsraden bär handling'
 status: To Do
 assignee: []
 created_date: '2026-08-18 10:57'
-updated_date: '2026-08-18 10:58'
+updated_date: '2026-08-18 11:11'
 labels: []
 dependencies:
   - TASK-241.3
@@ -58,6 +58,8 @@ medveten.
 - [ ] #4 Efter genomfört svep speglar bevakningsraden det nya läget: raden försvinner när alla bekräftade bär stämpeln, annars kvarstår den i eftersalantrare-läget med korrekt kvarvarande antal
 - [ ] #5 Aktivitetsloggen får en post per FAKTISKT skickad mottagare, samma form som de två befintliga sveptyperna (svepSend.ts:100-120)
 - [ ] #6 Acceptance-täckning i send-klassen med samma skarv som bekräftelse- och påminnelsesvepen; ingen ny testskarv införs
+- [ ] #7 Övergången hem↔sändyta är IDENTISK med de två befintliga sveptypernas (TASK-241.5, Hem.tsx:52-86) inklusive prefers-reduced-motion-respekten; resultatvyn redovisas per event-grupp och skickat-markörerna sätts på hemmets rader efteråt — Lotta ska inte kunna se att detta är en nyare sveptyp
+- [ ] #8 Bevakningsradens eftersalantrare-copy uttrycker informationen FULLT UT enligt grillningens beslut 4 (ordet nya åter); radens layout får utökas med en rad för att rymma den, och formen ska vara snygg, ren och strukturerad (Marcus 2026-08-18). Renderingen MÄTS mot faktisk geometri vid 375 px och 1440 px — aldrig avläst ur en fullPage-screenshot — och prövas mot värsta-falls-fixturen i demoData.ts (långt eventnamn + X=12)
 <!-- AC:END -->
 
 ## Definition of Done
