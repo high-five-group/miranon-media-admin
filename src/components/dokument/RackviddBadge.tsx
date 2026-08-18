@@ -41,7 +41,30 @@ export function RackviddBadge({
   kursfamilj: string | null;
   kursniva: string | null;
 }) {
-  if (rackvidd !== AttachmentScope.KURSTYP && rackvidd !== AttachmentScope.ALLA_EVENT) return null;
+  // ═══ RENDERAR NU ÄVEN "Detta event" — TIDIGARE `return null` ═══
+  //
+  // Badgen returnerade `null` för räckvidd Event/`null`, med motiveringen att
+  // "en bilaga som bara hör till DETTA event behöver ingen förklarande
+  // badge". Det höll så länge raderna fick vara olika höga.
+  //
+  // Marcus 2026-08-17 låste radhöjden: *"alla dokumentrader [ska vara] lika
+  // höga … Dokumentnamn / Täckning / Uppladdningsdatum PÅ ALLA rader,
+  // alltid."* En rad utan badge hade då antingen blivit lägre än de andra
+  // (bryter låsningen) eller burit ett tomrum där de andra bär information.
+  //
+  // "Detta event" är ÄRLIGARE än tomrummet och försvagar inte ADR-118
+  // beslut 3:s signal — den blir tydligare: nu står täckningen på VARJE rad,
+  // så "Detta event" mot "Alla event"/"RIM · Steg 1" är en jämförelse man
+  // kan göra med ögat i stället för en frånvaro man ska tolka. Att
+  // Ersätt/Radera saknas för de gemensamma har fortfarande sin förklaring
+  // i badgen — den säger nu bara vad DEN HÄR raden gäller också.
+  if (rackvidd !== AttachmentScope.KURSTYP && rackvidd !== AttachmentScope.ALLA_EVENT) {
+    return (
+      <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
+        Detta event
+      </span>
+    );
+  }
 
   const text =
     rackvidd === AttachmentScope.ALLA_EVENT

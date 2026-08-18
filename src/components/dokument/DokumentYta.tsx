@@ -384,16 +384,6 @@ export function DokumentYta() {
           primitiv (`intent="ghost" size="sm"`) — ingen ny formuppfinning.
           Syns bara när ett event faktiskt är valt (annars redan i
           räckviddsläget, knappen vore meningslös). */}
-      {eventId != null && (
-        <Button
-          intent="ghost"
-          size="sm"
-          className="self-start"
-          onPress={() => void setEventId(null)}
-        >
-          Visa gemensamma dokument
-        </Button>
-      )}
 
       {eventId == null ? (
         <GemensamtLage
@@ -423,6 +413,7 @@ export function DokumentYta() {
       ) : (
         <DokumentLista
           eventId={eventId}
+          onVisaGemensamma={() => void setEventId(null)}
           rader={rader}
           onUpload={handleUpload}
           uploadMutation={uploadMutation}
@@ -460,12 +451,30 @@ export function DokumentYta() {
  * längre.
  */
 const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
+
+/**
+ * Täckningspillens klass — EN källa, delad av `RackviddBadge` (bilagor) och
+ * mall-/generatorraderna. De bar samma sträng på tre ställen innan
+ * höjdlåsningen; en delad form som beskrivs flera gånger glider isär, och
+ * glidningen upptäcks av Marcus öga i stället för av en grind.
+ */
+const TACKNING_KLASS =
+  'inline-flex shrink-0 items-center rounded-full border border-transparent bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
 const IKON_STORLEK = 16;
 
 function MetaRad({ delar }: { delar: (string | null)[] }) {
   const text = delar.filter(Boolean).join(' · ');
   if (!text) return null;
-  return <span className="text-caption text-text-muted">{text}</span>;
+  // TRUNKERAS, precis som namnet ovan — och av samma skäl. Mätt före denna
+  // rad: tio av elva rader låg på 99 px och EN på 116, eftersom
+  // generatorradens "Byggs ur namn, e-post, betalning …" bröt till två
+  // rader. Höjdlåsningen (Marcus 2026-08-17) håller bara om VARJE led är
+  // ett svep; det räcker inte att låsa namnet.
+  return (
+    <span className="w-full min-w-0 truncate text-caption text-text-muted" title={text}>
+      {text}
+    </span>
+  );
 }
 
 /**
@@ -637,6 +646,39 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
  * (`ghost`-hovern två gånger, räckviddspillen en). `bg-bg-emphasized` är
  * husets nästa steg upp och det `HandlingsRad` självt använder.
  */
+/**
+ * ═══ RADENS FORM ÄR LÅST TILL TRE RADER (Marcus 2026-08-17) ═══
+ *
+ * *"vi måste se till att alla dokumentrader är lika höga, det måste vara:
+ * Dokumentnamn / Täckning / Uppladdningsdatum PÅ ALLA rader, alltid."*
+ *
+ * Det är INTE ett nytt mönster — `PersonsList.tsx` bär redan samma
+ * höjdlåsning ("varje rad renderas ALLTID, tomt fält får en osynlig
+ * platshållare, aldrig villkorad rendering"). Raderna här var förut olika
+ * höga beroende på om en badge fanns, om namnet radbröt och om
+ * "+N äldre filer" behövdes; listan blev ojämn att skanna.
+ *
+ * TRE LED, ALLTID RENDERADE:
+ *   1. namnet     — ETT svep, trunkerat (se nedan)
+ *   2. täckningen — badge; event-egna får "Detta event" i stället för
+ *                   ingenting (se `RackviddBadge`s egen not)
+ *   3. datumet    — `Uppladdad <datum>`
+ *
+ * NAMNET TRUNKERAS I STÄLLET FÖR ATT RADBRYTA. `truncate` kräver `min-w-0`
+ * på varje flex-förfader hela vägen upp, annars växer kolumnen i stället för
+ * att klippa — därav `min-w-0` på både kolumnen och namn-spannet.
+ *
+ * HELA NAMNET NÅS PÅ TRE VÄGAR, och det behövs: `title` (pekare), knappens
+ * `aria-label` (skärmläsare — den bär alltid hela namnet), och radens egen
+ * `title`. KÄND KANT, medvetet accepterad: på TOUCH finns ingen hover, så
+ * ett avklippt namn kan där inte läsas i sin helhet. Motvikten är att
+ * verkliga filnamn är korta — demo-fixturen mäter 17–24 tecken mot
+ * testsentinelernas 59 — och att trunkeringen är ett skyddsnät för
+ * undantaget, inte normalfallet.
+ *
+ * "+N ÄLDRE FILER" FLYTTADE IN I DATUMLEDET. Den stod som en fjärde rad och
+ * bröt låsningen för just de rader som hade dubbletter.
+ */
 function DokumentRadSkal({
   namn,
   kalla,
@@ -652,40 +694,22 @@ function DokumentRadSkal({
 }) {
   return (
     <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-        <span className="break-words font-medium text-body">{namn}</span>
-        {/* Pill och datum på SAMMA rad: två meta-värden om samma fil, och en
-            rad var hade gjort dem till två påståenden. */}
-        <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <RackviddBadge
-            rackvidd={current.rackvidd}
-            kursfamilj={current.kursfamilj}
-            kursniva={current.kursniva}
-          />
-          <MetaRad delar={metaDelar(current)} />
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+        <span className="w-full min-w-0 truncate font-medium text-body" title={namn}>
+          {namn}
         </span>
-        {dolda > 0 && (
-          <span className="text-caption text-text-secondary">
-            +{dolda} {dolda === 1 ? 'äldre fil' : 'äldre filer'} med samma namn (visas inte)
-          </span>
-        )}
+        <RackviddBadge
+          rackvidd={current.rackvidd}
+          kursfamilj={current.kursfamilj}
+          kursniva={current.kursniva}
+        />
+        <MetaRad
+          delar={[
+            ...metaDelar(current),
+            dolda > 0 ? `+${dolda} ${dolda === 1 ? 'äldre fil' : 'äldre filer'}` : null,
+          ]}
+        />
       </span>
-      {/* HANDLINGSRADEN — fyra likformiga ikonknappar (Marcus 2026-08-17).
-          Öppna och Ladda ner är alltid med; `handlingar` bär de muterande
-          (Ersätt, och i räckviddsläget Radera).
-
-          TRE AV FYRA ÄR IDENTISKA — Öppna, Ladda ner och Ersätt bär alla
-          `primary`+`subtle`. Ersätt bar `secondary` (transparent + kant) ett
-          varv och var därmed den enda utan fylld platta; den stack ut i
-          precis den mening Marcus ville bort ("alla fyra knappar måste se
-          likadana ut").
-
-          RADERA BEHÅLLER SIN RÖDA TON, och det är ett medvetet undantag, inte
-          en missad rad: rödtoningen är Marcus egen order från föregående
-          varv ("rödtoning på radera"), och "se likadana ut" läses här som
-          form och storlek — inte som att en destruktiv handling ska sluta
-          se destruktiv ut. Två order som pekar åt olika håll; den här
-          tolkningen är flaggad till Marcus, inte tyst vald. */}
       <span className="flex shrink-0 items-center gap-0.5">
         <DokumentAtgardsKnappar namn={namn} kalla={kalla} />
         <LaddaNerKnapp namn={namn} kalla={kalla} />
@@ -841,8 +865,16 @@ function BilageRadRow({
 function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
   return (
     <div data-testid="dokument-mall" className="flex items-start gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-        <span className="break-words font-medium text-body">{mall.namn}</span>
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+        <span className="w-full min-w-0 truncate font-medium text-body" title={mall.namn}>
+          {mall.namn}
+        </span>
+        {/* SAMMA TRE LED SOM BILAGERADEN (namn / täckning / detalj), så
+            höjdlåsningen håller genom hela listan — inte bara för bilagor.
+            En mall genereras ur DETTA events data och gäller därför bara
+            det; `TACKNING_KLASS` är samma pill-sträng `RackviddBadge` bär,
+            delad som konstant så de två aldrig glider isär. */}
+        <span className={TACKNING_KLASS}>Detta event</span>
         <MetaRad delar={[`Fyller i ${mall.fyllerI.join(', ').toLowerCase()}`]} />
       </span>
       <span className="flex shrink-0 items-center gap-0.5">
@@ -857,8 +889,11 @@ function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
 function GeneratorRad({ gen, eventId }: { gen: Generator; eventId: string }) {
   return (
     <div data-testid="dokument-generator" className="flex items-start gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-        <span className="break-words font-medium text-body">{gen.namn}</span>
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+        <span className="w-full min-w-0 truncate font-medium text-body" title={gen.namn}>
+          {gen.namn}
+        </span>
+        <span className={TACKNING_KLASS}>Detta event</span>
         <MetaRad delar={[`Byggs ur ${gen.byggsUr.join(', ').toLowerCase()}`]} />
       </span>
       <span className="flex shrink-0 items-center gap-0.5">
@@ -920,12 +955,15 @@ const LISTA_FILTER: { key: ListaTyp; label: string }[] = [
  */
 function DokumentLista({
   eventId,
+  onVisaGemensamma,
   rader,
   onUpload,
   uploadMutation,
   onReplace,
   replaceMutation,
 }: {
+  /** Byter till räckviddsläget genom att nollställa eventvalet. */
+  onVisaGemensamma: () => void;
   eventId: string;
   rader: BilageRad[];
   onUpload: (files: FileList | null, scope: UploadScopeVal) => void;
@@ -1012,6 +1050,24 @@ function DokumentLista({
               </p>
             )}
           </div>
+          {/* INGÅNGEN TILL RÄCKVIDDSLÄGET BOR I LISTAN, INTE OVANFÖR DEN
+              (Marcus 2026-08-17: "den kan ju i vilket fall som helst inte
+              ligga direkt under eventväljaren … mycket mer logiskt om det
+              ligger runt dokumentlistan").
+
+              Den stod förut mellan eventväljaren och uppladdningsblocket och
+              bröt vägen från "välj event" till "ladda upp" med en handling
+              som hörde till en helt annan vy.
+
+              KNAPPEN FÅR INTE TAS BORT, bara flyttas: `EventValjare` avvisar
+              avmarkering (`onSelectionChange`: `if (key == null) return;`),
+              så detta är ENDA vägen tillbaka till räckviddsläget — och
+              räckviddsläget är den enda ytan där gemensamma bilagor får
+              ersättas/raderas (ADR-118 beslut 3). Utan den blir förvaltningen
+              onåbar så snart ett event valts. */}
+          <Button intent="ghost" size="sm" className="self-start" onPress={onVisaGemensamma}>
+            Visa gemensamma dokument
+          </Button>
         </div>
 
         <ErsattningsFel replaceMutation={replaceMutation} />
