@@ -817,11 +817,15 @@ function BilageRadRow({
 }
 
 /**
- * ⚠️ `relative` PÅ RADEN ÄR ETT KRAV, INTE KOSMETIK — och frånvaron var en
- * skarp bugg i 20 minuter (S107, fjärde QA-ronden).
+ * [HISTORIK, kravet gäller INTE längre] `relative` var ett hårt krav på
+ * dessa rader så länge öppna-knappen bar `after:absolute after:inset-0`
+ * (radklick-greppet). Det greppet är rivet på Marcus order — förhandsvisning
+ * är en vanlig ikonknapp igen — så raden behöver inget `relative`.
  *
- * `DokumentAtgardsKnappar` öppnar dokumentet via en knapp med
- * `after:absolute after:inset-0`. Ett absolut positionerat element mäts mot
+ * Noten står kvar för att buggen var dyr och lätt att återinföra: den
+ *
+ * uppstår i samma sekund någon återinför ett `after:inset-0`-grepp här.
+ * Ett absolut positionerat element mäts mot
  * närmaste POSITIONERADE förfader — saknar raden `relative` klättrar
  * `after`-lagret uppåt i trädet och lägger sig som en osynlig klickfälla
  * över allt det förfadern täcker. Mätt utfall: uppladdningsflödets
@@ -836,15 +840,13 @@ function BilageRadRow({
  */
 function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
   return (
-    <div
-      data-testid="dokument-mall"
-      className="relative -mx-2 flex items-start gap-3 rounded-lg px-2 py-3 hover:bg-bg-emphasized motion-safe:transition-colors"
-    >
+    <div data-testid="dokument-mall" className="flex items-start gap-3 py-3">
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-        <DokumentAtgardsKnappar namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
+        <span className="break-words font-medium text-body">{mall.namn}</span>
         <MetaRad delar={[`Fyller i ${mall.fyllerI.join(', ').toLowerCase()}`]} />
       </span>
       <span className="flex shrink-0 items-center gap-0.5">
+        <DokumentAtgardsKnappar namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
         <LaddaNerKnapp namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
       </span>
     </div>
@@ -854,15 +856,13 @@ function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
 /** Samma `relative`-krav som `MallRad` ovan — se dess docblock. */
 function GeneratorRad({ gen, eventId }: { gen: Generator; eventId: string }) {
   return (
-    <div
-      data-testid="dokument-generator"
-      className="relative -mx-2 flex items-start gap-3 rounded-lg px-2 py-3 hover:bg-bg-emphasized motion-safe:transition-colors"
-    >
+    <div data-testid="dokument-generator" className="flex items-start gap-3 py-3">
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-        <DokumentAtgardsKnappar namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
+        <span className="break-words font-medium text-body">{gen.namn}</span>
         <MetaRad delar={[`Byggs ur ${gen.byggsUr.join(', ').toLowerCase()}`]} />
       </span>
       <span className="flex shrink-0 items-center gap-0.5">
+        <DokumentAtgardsKnappar namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
         <LaddaNerKnapp namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
       </span>
     </div>
@@ -958,19 +958,6 @@ function DokumentLista({
       <UppladdningsFlode harEvent onUpload={onUpload} uploadMutation={uploadMutation} />
 
       <section aria-labelledby={listRubrikId} className="flex flex-col gap-3">
-        <ToggleButtonGroup
-          label="Filtrera på typ"
-          spread
-          selectedKey={aktivtFilter}
-          onSelectionChange={(key) => void setFilter(key === 'alla' ? null : key)}
-        >
-          {LISTA_FILTER.map((f) => (
-            <ToggleButton key={f.key} id={f.key} size="sm" className="min-h-11">
-              {f.label}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-
         {/* RUBRIKEN BOR I KORTET (Marcus 2026-08-17: "Borde inte rubrikerna
             flyttas in i sina block typ, vore inte det snyggare?"). Den låg
             förut ovanför kortet och läste som en sidsektion; nu namnger den
@@ -986,6 +973,25 @@ function DokumentLista({
           <h2 id={listRubrikId} className="font-semibold text-lg">
             Dokument för eventet
           </h2>
+          {/* FILTRET BOR I KORTET, UNDER SIN EGEN RUBRIK (Marcus-granskning
+              2026-08-17, eventläget). Det stod förut UTANFÖR kortet och
+              OVANFÖR rubriken — alltså före det som namnger vad filtret
+              opererar på, och utanför det block rubrikerna nyss flyttades in
+              i. Ordningen är nu rubrik → filter → lista, vilket är den
+              enda som läser rätt: säg vad det är, sedan hur det kan smalnas
+              av, sedan innehållet. */}
+          <ToggleButtonGroup
+            label="Filtrera på typ"
+            spread
+            selectedKey={aktivtFilter}
+            onSelectionChange={(key) => void setFilter(key === 'alla' ? null : key)}
+          >
+            {LISTA_FILTER.map((f) => (
+              <ToggleButton key={f.key} id={f.key} size="sm" className="min-h-11">
+                {f.label}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
           <div className="divide-y divide-border">
             {visaBilagor &&
               rader.map((r) => (
