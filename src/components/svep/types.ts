@@ -17,11 +17,15 @@ import type { Registration } from '@/domain/models/Registration';
  * ADR-114 § Implementationsbeslut) tar redan en `Registration` rakt av.
  */
 
-/** De två svep-instanserna (ADR-114 beslut 4) — SAMMA form, olika innehåll
-    och olika urvalsregel. `'bekraftelse'` kopplades mot verklig data i
-    TASK-241.2; `'paminnelse'` i TASK-241.4 (en-påminnelse-modellens läge 1
-    "Att påminna", `svep-urval.ts` § `paminnelsesvepUrval`). */
-export type SvepTyp = 'bekraftelse' | 'paminnelse';
+/** De TRE svep-instanserna (ADR-114 beslut 4 + PRD task-241 § Amendering
+    2026-08-18) — SAMMA form, olika innehåll och olika urvalsregel.
+    `'bekraftelse'` kopplades mot verklig data i TASK-241.2; `'paminnelse'`
+    i TASK-241.4 (en-påminnelse-modellens läge 1 "Att påminna",
+    `svep-urval.ts` § `paminnelsesvepUrval`); `'eventinfo'` i TASK-241.8
+    (bevakningsradens urval, `hem-derivations.ts` § `eventinfoMottagare`,
+    `svep-urval.ts` § `eventinfoSvepUrval`) — den ENDA av de tre vars urval
+    är ETT enda event (det klickade), inte cross-event. */
+export type SvepTyp = 'bekraftelse' | 'paminnelse' | 'eventinfo';
 
 /** En event-grupp i cross-event-urvalet — adresslistans och
     förhandsvisningens grupperingsnyckel (ADR-114 beslut 2/3). Bär det FULLA

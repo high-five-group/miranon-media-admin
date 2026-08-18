@@ -20,11 +20,16 @@ type SvepLage = 'granska' | 'skickar' | 'resultat';
 const SVEP_RUBRIK: Record<SvepTyp, string> = {
   bekraftelse: 'Bekräfta alla',
   paminnelse: 'Skicka påminnelse till alla',
+  // [TASK-241.8] Ingen bulk-knapp öppnar denna — bevakningsraden gör, ETT
+  // event åt gången — men rubriken följer SAMMA grammatik som de andra två
+  // ("Skicka X till alla [bekräftade utan stämpel för det eventet]").
+  eventinfo: 'Skicka eventinformation',
 };
 
 const ATGARD_NAMN: Record<SvepTyp, string> = {
   bekraftelse: 'Bekräftelsemail',
   paminnelse: 'Påminnelsemail',
+  eventinfo: 'Eventinformation',
 };
 
 /**
@@ -273,7 +278,9 @@ export function SvepOverlay({
             <MessageBox intent="info" title="Inget att skicka just nu">
               {svepTyp === 'bekraftelse'
                 ? 'Ingen väntar på bekräftelse längre.'
-                : 'Ingen väntar på påminnelse längre.'}
+                : svepTyp === 'paminnelse'
+                  ? 'Ingen väntar på påminnelse längre.'
+                  : 'Alla bekräftade deltagare har redan fått eventinformation.'}
             </MessageBox>
           </div>
         )}
@@ -287,7 +294,11 @@ export function SvepOverlay({
         <div className="mt-4">
           <SlideToConfirm
             label={
-              svepTyp === 'bekraftelse' ? 'Bekräfta bekräftelsesvepet' : 'Bekräfta påminnelsesvepet'
+              svepTyp === 'bekraftelse'
+                ? 'Bekräfta bekräftelsesvepet'
+                : svepTyp === 'paminnelse'
+                  ? 'Bekräfta påminnelsesvepet'
+                  : 'Bekräfta eventinfo-svepet'
             }
             prompt="Dra för att bekräfta"
             confirmedLabel="Bekräftat"

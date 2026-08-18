@@ -4,7 +4,7 @@ title: 'Skiva: Eventinfo-svepet — bevakningsraden bär handling'
 status: To Do
 assignee: []
 created_date: '2026-08-18 10:57'
-updated_date: '2026-08-18 11:11'
+updated_date: '2026-08-18 11:30'
 labels: []
 dependencies:
   - TASK-241.3
@@ -52,20 +52,49 @@ medveten.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Bevakningsraden bär onPress som öppnar svepytan med SvepTyp 'eventinfo'; mottagarurvalet är utanEventinfo för det klickade eventet, hämtat ur samma härledning som radens läge (hem-derivations.ts:302) och aldrig härlett en andra gång
-- [ ] #2 Trygghetstriaden gäller oförändrat: adresslista grupperad per event, bläddringsbar förhandsvisning, testmail till sig själv, och SlideToConfirm-armering krävs före skarp sändning
-- [ ] #3 Sändningen går via befintliga send-action-email med actionType 'eventinfo' — ingen ny Edge Function byggs (samma stoppvillkor som TASK-241.3 AC #1 tillämpade)
-- [ ] #4 Efter genomfört svep speglar bevakningsraden det nya läget: raden försvinner när alla bekräftade bär stämpeln, annars kvarstår den i eftersalantrare-läget med korrekt kvarvarande antal
-- [ ] #5 Aktivitetsloggen får en post per FAKTISKT skickad mottagare, samma form som de två befintliga sveptyperna (svepSend.ts:100-120)
-- [ ] #6 Acceptance-täckning i send-klassen med samma skarv som bekräftelse- och påminnelsesvepen; ingen ny testskarv införs
+- [x] #1 Bevakningsraden bär onPress som öppnar svepytan med SvepTyp 'eventinfo'; mottagarurvalet är utanEventinfo för det klickade eventet, hämtat ur samma härledning som radens läge (hem-derivations.ts:302) och aldrig härlett en andra gång
+- [x] #2 Trygghetstriaden gäller oförändrat: adresslista grupperad per event, bläddringsbar förhandsvisning, testmail till sig själv, och SlideToConfirm-armering krävs före skarp sändning
+- [x] #3 Sändningen går via befintliga send-action-email med actionType 'eventinfo' — ingen ny Edge Function byggs (samma stoppvillkor som TASK-241.3 AC #1 tillämpade)
+- [x] #4 Efter genomfört svep speglar bevakningsraden det nya läget: raden försvinner när alla bekräftade bär stämpeln, annars kvarstår den i eftersalantrare-läget med korrekt kvarvarande antal
+- [x] #5 Aktivitetsloggen får en post per FAKTISKT skickad mottagare, samma form som de två befintliga sveptyperna (svepSend.ts:100-120)
+- [x] #6 Acceptance-täckning i send-klassen med samma skarv som bekräftelse- och påminnelsesvepen; ingen ny testskarv införs
 - [ ] #7 Övergången hem↔sändyta är IDENTISK med de två befintliga sveptypernas (TASK-241.5, Hem.tsx:52-86) inklusive prefers-reduced-motion-respekten; resultatvyn redovisas per event-grupp och skickat-markörerna sätts på hemmets rader efteråt — Lotta ska inte kunna se att detta är en nyare sveptyp
-- [ ] #8 Bevakningsradens eftersalantrare-copy uttrycker informationen FULLT UT enligt grillningens beslut 4 (ordet nya åter); radens layout får utökas med en rad för att rymma den, och formen ska vara snygg, ren och strukturerad (Marcus 2026-08-18). Renderingen MÄTS mot faktisk geometri vid 375 px och 1440 px — aldrig avläst ur en fullPage-screenshot — och prövas mot värsta-falls-fixturen i demoData.ts (långt eventnamn + X=12)
+- [x] #8 Bevakningsradens eftersalantrare-copy uttrycker informationen FULLT UT enligt grillningens beslut 4 (ordet nya åter); radens layout får utökas med en rad för att rymma den, och formen ska vara snygg, ren och strukturerad (Marcus 2026-08-18). Renderingen MÄTS mot faktisk geometri vid 375 px och 1440 px — aldrig avläst ur en fullPage-screenshot — och prövas mot värsta-falls-fixturen i demoData.ts (långt eventnamn + X=12)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+STOPP-VILLKOR (AC #3) — UTFALL: räckte utan ny EF. `send-action-email` bar redan `eventinfo` som `actionType` (schema + `_shared/send-action-email.ts:366-367` stämplar `FALT_DELTAGARINFO_SKICKAD`), och `ATGARDER` (`atgardsmallar.ts`) bar redan en `eventinfo`-post med mall+ämne. Klient-plumbing enbart: `SvepTyp` utökad, `eventinfoSvepUrval` tillagd, `Bevakningsrad` fick `onOppna`, `Hem.tsx` ny state + tredje overlay-gren.
+
+PREMISS-AVVIKELSER (ADR-086), mot uppdragets källmärkta påståenden:
+- Bevakningsrad.tsx:100-103 — button låg på rad 103-106 vid granskning (offset ~3), oskyldig glidning.
+- "Urvalet finns redan härlett" (hem-derivations.ts:302) — DELVIS FEL: `utanEventinfo` på rad 302 var en LOKAL variabel inuti `bevakningar()`, aldrig returnerad/exponerad — bara dess `.length` bevarades i `BevakningRad.antalUtanEventinfo`. Den FAKTISKA registrerings-listan fanns ingenstans att återanvända. Löst genom att extrahera predikatet till en ny exporterad `eventinfoMottagare(regs, eventId)` i hem-derivations.ts, konsumerad av BÅDE `bevakningar()` (ersätter den gamla inline-filtreringen) och `svep-urval.ts § eventinfoSvepUrval` — AC #1:s "aldrig härlett en andra gång" hålls, men mekaniken skiljer sig från vad uppdraget beskrev.
+- Övriga sex premisser (send-action-email, atgardsmallar, svepSend/SvepOverlay-precedent, Hem.tsx-montering) stämde exakt mot fil:rad.
+
+MITT-I-BYGGET-TILLÄGG FRÅN MARCUS (två meddelanden, 2026-08-18):
+1) Paritetskrav: eventinfo-svepet ska vara OSKILJBART från de andra två (samma SvepOverlay-instans/tre lägen/SlideToConfirm/grön-regel/avbryt, samma WOW-övergång, samma resultatform, samma onSkickat-mönster). Löst genom att INTE bygga en parallell overlay — samma <SvepOverlay svepTyp="eventinfo"> som de andra två, alla WOW/transition/resultatform-mekanik ärvs gratis. `onSkickat` wiring: se öppen fråga nedan.
+2) Gräns 4 (copy-strängen orörd) UPPHÄVDES: "nya" återinfört i eftersläntrare-formen (`bevakningStatusText`). Geometri MÄTT (inte skärmdump) mot permanenta värsta-fall-fixturen (91-tecken namn + X=12): 375px scrollHeight/clientHeight 24/24 (en rad), 1440px 48/48 (två rader, EXAKT fyllt, ingen marginal kvar — X=12 är gränsen denna form bär utan ny klippning, X≥100 overifierat). Ingen layoutändring behövdes — befintlig line-clamp-2 bar strängen. Ny geometri-test i hem.acceptance.test.ts (2 fall, 375/1440px).
+
+ÖPPEN FRÅGA TILL MARCUS — onSkickat-parity vs Bevakningsradens låsta asymmetri: NyaAnmalningar/ForfallnaBetalningar visar ett PERSISTENT "skickat"-kvitto (nyligenSkickade/nyligenPaminda, egna listrader) efter sänt svep — Bevakningsradens EGEN docblock låser motsatsen ("HELT OSYNLIG vid noll träffar... inget kvitto... asymmetrin är Marcus-låst"). Jag har INTE byggt en ny kvitto-lista (hade motsagt den låsningen). Jag HAR wired onSkickat: Hem.tsx håller `nyligenEventinfoSkickade` (Set med server-bekräftade reg-ID:n ur onSkickat) och applicerar den LOKALT ovanpå registrationsQuery.data innan bevakningar() körs — deterministisk radspegling (AC #4: rad försvinner/uppdateras direkt vid stängning) UTAN att vänta in cache-refetchens kappspring. Detta är samma ARKITEKTUR (onSkickat → lokalt minne → derivation) men INTE samma SYNLIGA form (ingen ny receipt-rad). Om Marcus vill ha en synlig "Eventinfo skickad"-markör ändå: flagga tillbaka, det är en ren tilläggsändring ovanpå detta.
+
+RÖRDA FILER:
+- src/components/hem/hem-derivations.ts — eventinfoMottagare (ny, delad), bevakningStatusText ("nya"), bevakningar() konsumerar den nya funktionen.
+- src/components/svep/types.ts — SvepTyp + 'eventinfo'.
+- src/components/svep/svep-urval.ts — eventinfoSvepUrval (ny).
+- src/components/svep/SvepOverlay.tsx — SVEP_RUBRIK/ATGARD_NAMN + eventinfo, tom-läge-text, SlideToConfirm-label, tre-vägs ternaries.
+- src/components/hem/Bevakningsrad.tsx — onOppna-prop, <button> → react-aria <Button> (onPress), docblock uppdaterad + geometri-mätning bokförd.
+- src/components/hem/Hem.tsx — eventinfoEvent-state, eventinfoGrupper, nyligenEventinfoSkickade + bevakningRegs-overlay, tredje SvepOverlay-gren, Modal onOpenChange nollställer båda.
+- tests/acceptance/hem.acceptance.test.ts — copy-assertion uppdaterad ("nya"), ny geometri-svit (375/1440px).
+- tests/acceptance/svep-eventinfo-send.acceptance.test.ts — NY, mirror av svep-bekraftelse-send/svep-paminnelse-send (AC #1-5 + avbryt), samma skarv, ingen ny testinfrastruktur.
+
+VERIFIERAT: typecheck 0 fel, biome 0 fel (repo-brett, pre-existing warnings orörda av mig), build grön, test:api 920/920, test:acceptance för de tre svep-filerna + hem.acceptance.test.ts + reduced-motion-syskontest = 43/43 gröna (ingen regression i bekräftelse-/påminnelsesvepen).
+<!-- SECTION:NOTES:END -->

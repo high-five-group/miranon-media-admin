@@ -1,4 +1,6 @@
 import { ChevronRight } from 'lucide-react';
+import { Button as AriaButton } from 'react-aria-components';
+import type { Event } from '@/domain/models/Event';
 import { type BevakningRad, bevakningDagarText, bevakningStatusText } from './hem-derivations';
 
 /**
@@ -9,11 +11,18 @@ import { type BevakningRad, bevakningDagarText, bevakningStatusText } from './he
  * kvitto (till skillnad från block, som alltid står kvar med positivt
  * kvitto vid noll) — asymmetrin är Marcus-låst.
  *
- * En RIKTIG `<button>` utan `onPress`: sändflödet finns inte byggt än
- * (svep-PRD:n task-241) — samma no-op-mönster som bulk-knapparna
- * (`BulkAtgardsknapp.tsx`), men UTAN den knappens disabled-semantik: raden
- * leder framåt (chevron) mot en framtida destination, den utför inget
- * skarpt just nu.
+ * [TASK-241.8] `onPress` ÄR SKARPT NU: klicket öppnar sändytan
+ * (`SvepOverlay`, `svepTyp='eventinfo'`) förifiltrerad på exakt de
+ * bekräftade som saknar Deltagarinfo-stämpeln FÖR DET KLICKADE eventet
+ * (S102-grillningens beslut 4, `2026-08-10-session-102.md:726-727`) — se
+ * `Hem.tsx` § SÄNDYTAN för montering/state. Elementet är `react-aria-
+ * components`s `Button` (INTE husets styrda CVA-`Button`-primitiv, som
+ * hade tvingat på en av intent/emphasis-variantformerna ovanpå denna
+ * radens EGNA `--mm-navcard-*`-form) — samma val NavCard gör för sin
+ * `AriaLink` (`NavCard.tsx`), av samma skäl: en riktig interaktiv-
+ * primitiv för Enter/Space + pekar/touch-semantik, med klassnamnen orörda.
+ * `hover:bg-bg-emphasized` är äkta CSS `:hover` (inte react-arias
+ * `data-hovered`) — samma etablerade blandning `NavCardLink` redan bär.
  *
  * KOLUMN-FORM (TASK-247, fynd c) — MEDVETEN FACIT-AMENDERING, inte en
  * avvikelse-rättning: den promoverade formen (facit
@@ -59,9 +68,30 @@ import { type BevakningRad, bevakningDagarText, bevakningStatusText } from './he
  *
  * TASK-243.2 AC #3-VERIFIERING (kortcopy-modulen `bevakningStatusText`/
  * `bevakningDagarText` + line-clamp-2-skyddsnätet, PR #1388 varv 4):
- * `hem-derivations.ts` bär funktionerna BYTE-IDENTISKT ur `data.ts` (diff
- * mot commit `f14d8ee9`, 0 avvikelser) — inget nytt att promovera, redan
- * levererat med TASK-243.1:s helträds-kopiering.
+ * `hem-derivations.ts` bar funktionerna BYTE-IDENTISKT ur `data.ts` (diff
+ * mot commit `f14d8ee9`, 0 avvikelser) VID DEN TIDPUNKTEN — inget nytt att
+ * promovera, redan levererat med TASK-243.1:s helträds-kopiering. INTE
+ * LÄNGRE sant för `bevakningStatusText`: TASK-241.8 (Marcus beslut
+ * 2026-08-18, mitt i skivans bygge) återinförde ordet "nya" i
+ * eftersläntrare-formen — se funktionens EGEN docblock i
+ * `hem-derivations.ts` för hela motiveringen, inte upprepad här.
+ *
+ * [TASK-241.8] "NYA"-COPYNS GEOMETRI, LIVE MÄTT (`scrollHeight`/
+ * `clientHeight`, `tests/acceptance/hem.acceptance.test.ts` § "'nya'-
+ * copyns geometri vid värsta fall", SAMMA permanenta värsta-fall-form som
+ * ovan — 91-tecken eventnamn + tvåsiffrigt antal, X=12): status-kolumnens
+ * `line-clamp-2`-span ("12 nya deltagare saknar eventinfo") klipper INTE
+ * vid NÅGON av de två viewporten — `scrollHeight` === `clientHeight` i
+ * båda: **24px/24px vid 375px** (radad EN rad i den staplade mobilformen,
+ * som får nästan hela radbredden), **48px/48px vid 1440px** (radad TVÅ
+ * rader — desktop-gridets `minmax(9rem,1fr)`-kolumn är SMALARE än
+ * mobilformens fulla bredd, trots det bredare viewportet, eftersom
+ * kolumnen delar `Hem`s ≈568px-innehållskolumn med namn- och
+ * dagar-kolumnerna). Exakt likhet (ingen marginal kvar) vid 1440px betyder
+ * att X=12 är gränsen denna form bär UTAN ny klippning — ett tredje
+ * siffertecken (X≥100) är overifierat. Ingen layoutändring krävdes: den
+ * redan befintliga `line-clamp-2` (byggd för just detta ändamål, TASK-247)
+ * bar den längre strängen utan att någon extra rad behövde adderas.
  *
  * KÄND, ICKE-BLOCKERANDE GRÄNSFALL (live mätt, `getBoundingClientRect`/
  * `scrollHeight` vs `clientHeight`, 375px OCH 1440px): PR #1388:s egen
@@ -84,24 +114,39 @@ import { type BevakningRad, bevakningDagarText, bevakningStatusText } from './he
  * beslutet åt honom (samma disciplin som `ForfallnaBetalningar.tsx`s
  * badge-squeeze-fynd, TASK-243.1 slutrapport).
  */
-export function Bevakningsrad({ rader }: { rader: BevakningRad[] }) {
+export function Bevakningsrad({
+  rader,
+  onOppna,
+}: {
+  rader: BevakningRad[];
+  /** [TASK-241.8 AC #1] Klickad rads FULLA `Event` — `Hem.tsx` öppnar
+      eventinfo-svepet förifiltrerat på just det eventet. */
+  onOppna: (event: Event) => void;
+}) {
   if (rader.length === 0) return null;
   return (
     <ul aria-label="Bevakningar" className="flex min-w-0 flex-col gap-2">
       {rader.map((rad) => (
-        <BevakningsradRad key={rad.event.id} rad={rad} />
+        <BevakningsradRad key={rad.event.id} rad={rad} onOppna={onOppna} />
       ))}
     </ul>
   );
 }
 
-function BevakningsradRad({ rad }: { rad: BevakningRad }) {
+function BevakningsradRad({
+  rad,
+  onOppna,
+}: {
+  rad: BevakningRad;
+  onOppna: (event: Event) => void;
+}) {
   const status = bevakningStatusText(rad);
   const dagar = bevakningDagarText(rad.dagarTillStart);
   return (
     <li>
-      <button
+      <AriaButton
         type="button"
+        onPress={() => onOppna(rad.event)}
         className="text-(color:--mm-navcard-text) grid min-h-12 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-(--mm-navcard-border-contrast)"
       >
         <span className="grid min-w-0 gap-y-0.5 sm:grid-cols-[2fr_7rem_minmax(9rem,1fr)] sm:items-center sm:gap-x-3">
@@ -122,7 +167,7 @@ function BevakningsradRad({ rad }: { rad: BevakningRad }) {
           size={18}
           className="text-(color:--mm-navcard-icon) shrink-0"
         />
-      </button>
+      </AriaButton>
     </li>
   );
 }

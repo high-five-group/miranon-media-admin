@@ -799,7 +799,7 @@ test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD be
     await expect(namnSpan).not.toHaveClass(/truncate/);
   });
 
-  test('"eftersalantrare" — NÅGRA (inte alla) bekräftade saknar stämpeln → "N deltagare saknar eventinfo"', async ({
+  test('"eftersalantrare" — NÅGRA (inte alla) bekräftade saknar stämpeln → "N nya deltagare saknar eventinfo"', async ({
     page,
     network,
   }) => {
@@ -831,8 +831,88 @@ test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD be
     await page.goto('/hem');
     const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
     await expect(rad).toHaveCount(1);
-    await expect(rad).toContainText('1 deltagare saknar eventinfo');
+    await expect(rad).toContainText('1 nya deltagare saknar eventinfo');
   });
+});
+
+/**
+ * [TASK-241.8] "nya"-återinförandet — geometri-beviset Marcus krävde: MÄTT
+ * `scrollHeight`/`clientHeight` (inte en helsidesbild — `fullPage`-
+ * screenshots ljuger om fixed-element, S107) vid 375px OCH 1440px, mot
+ * SAMMA permanenta värsta-fall-form som `Bevakningsrad.tsx`s docblock redan
+ * refererar (`demoData.ts` § "BEVAKNINGSRAD värsta fall": ett 91-tecken
+ * eventnamn + tvåsiffrigt antal, X=12) — bara byggd som en `reg()`/`ev()`-
+ * fixtur i DENNA fils egen form i stället för dev-prototypens `demoReg`/
+ * `demoEvent`, eftersom skarpa `/hem` (denna fils yta) och `/dev/hem-
+ * prototyp` (frusen, ADR-102 B3) är två olika komponentträd.
+ */
+test.describe('Bevakningsraden — "nya"-copyns geometri vid värsta fall (TASK-241.8, Marcus GO 2026-08-18)', () => {
+  const VARSTA_FALL_NAMN =
+    'Demo: Fördjupningskurs i konflikthantering och medling för föreningsledare i Västerbotten';
+
+  function varstaFallRegs(): RegRow[] {
+    const skickade = [1, 2, 3].map((i) =>
+      reg({
+        fornamn: `VF${i}`,
+        efternamn: 'Skickad',
+        eventId: 'recEvVarstaFall',
+        status: 'Bekräftad (mail skickat)',
+        anmalningsavgift: 'Mottagen',
+        slutbetalning: 'Mottagen',
+        deltagarinfoSkickad: '2026-09-10T08:00:00.000Z',
+      }),
+    );
+    const ostampade = Array.from({ length: 12 }, (_, idx) =>
+      reg({
+        fornamn: `VF${idx + 4}`,
+        efternamn: 'Ostampad',
+        eventId: 'recEvVarstaFall',
+        status: 'Bekräftad (mail skickat)',
+        anmalningsavgift: 'Mottagen',
+        slutbetalning: 'Mottagen',
+        deltagarinfoSkickad: null,
+      }),
+    );
+    return [...skickade, ...ostampade];
+  }
+
+  for (const viewport of [
+    { width: 375, height: 800, namn: '375px (mobil, staplad kolumnform)' },
+    { width: 1440, height: 900, namn: '1440px (desktop, grid-kolumnform)' },
+  ]) {
+    test(`${viewport.namn}: "12 nya deltagare saknar eventinfo" ryms i line-clamp-2 — ingen NY klippning`, async ({
+      page,
+      network,
+    }) => {
+      mock(network, {
+        registrations: varstaFallRegs(),
+        events: [
+          ev({ id: 'recEvVarstaFall', eventNamn: VARSTA_FALL_NAMN, startdatum: '2026-09-30' }),
+        ],
+      });
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto('/hem');
+
+      const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
+      await expect(rad).toHaveCount(1);
+      await expect(rad).toContainText('12 nya deltagare saknar eventinfo');
+
+      // Statuskolumnens line-clamp-2-element är det ANDRA `.line-clamp-2`-
+      // spannet i raden (det första bär eventnamnet) — samma lokalisering
+      // som testet ovan använder för namn-spannet.
+      const statusSpan = rad.locator('span.line-clamp-2').nth(1);
+      const geometri = await statusSpan.evaluate((el) => ({
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+      }));
+      // BEVISET: `scrollHeight` (innehållets FAKTISKA höjd) överskrider ALDRIG
+      // `clientHeight` (den synliga, clampade höjden) — annars klipper
+      // line-clamp-2 en tredje rad av "12 nya deltagare saknar eventinfo",
+      // och Gunilla-principens skyddsnät (ALDRIG ellips på meningsbärande
+      // text mitt i en mening) är brutet.
+      expect(geometri.scrollHeight).toBeLessThanOrEqual(geometri.clientHeight);
+    });
+  }
 });
 
 /** Genvägar (PRD task-243 användarberättelse 9) — BÅDA är redan skarpa, byggda routes. */
