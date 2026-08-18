@@ -4,6 +4,7 @@ title: Personlistan — äkta totalsiffra och täckningshålet mot Leads-ytan
 status: To Do
 assignee: []
 created_date: '2026-08-18 11:44'
+updated_date: '2026-08-18 11:55'
 labels: []
 dependencies: []
 ordinal: 503000
@@ -11,6 +12,7 @@ ordinal: 503000
 
 ## Description
 
+<!-- SECTION:DESCRIPTION:BEGIN -->
 <!-- SECTION:DESCRIPTION:BEGIN -->
 Marcus 2026-08-18: *"Det står 'Visar 50 personer (fler finns).' och det tycker
 jag är oproffsigt. Jag vill att det ska stå 'Visar 50 av XXX'."*
@@ -79,16 +81,68 @@ godkänd 2026-08-10). Samma felklass finns i `tests/api/get-persons.staging.test
 Filter-UI på Personer-vyn (synliga snitt à la basens elva vyer) är ett
 DESIGNBESLUT som ligger hos Marcus och inte ingår här. Denna skiva ändrar
 inte `BAS_FILTER`s default-beteende utöver att stänga hålet ovan.
+
+## ROTORSAKEN — mätt i prod 2026-08-18, ersätter "täckningshålet" ovan
+
+Marcus pushback: *"Men har man varken anmält sig eller hämtat ett erbjudande
+så kan man väl inte ens finnas i vårt register?"* Frågan var rätt, och
+mätningen vände hela bilden.
+
+**De 35 HAR hämtat.** 33 av dem bär `Senaste interaktion (text)` =
+`"Hämtade Meditationen Kraftfältet"` eller `"Hämtade Pyramidernas Vajrar"`;
+de två övriga säger `"Anmälde sig"`. Kontrollmätning på en post:
+`Antal hämtningar` = **0**, men `Totalt antal hämtningar (erbjudande)` = **1**
+och `Alla hämtningar` = `"Meditationen Kraftfältet (2025-11-25)"`.
+
+**Detta är fälla 47, redan bokförd** (`docs/reference/data-model.md:1458`,
+live-belagd 2026-08-10 i S103): *"`Personer.Antal hämtningar` räknar INTE
+hämtningar. Formeln är `COUNTA({Engagemang})` — den räknar rader i tabellen
+`Engagemang`, inte i `Touchpoints` eller `Hämtade erbjudanden`. Fältnamnet
+säger något annat än fältet gör."* Fällan varnar uttryckligen: *"fältet får
+ALDRIG användas som facit mot en hämtningslista."*
+
+**`get-leads` gör exakt det fällan förbjuder.** `LEAD_FILTER`
+(`get-leads/index.ts:23-24`) kräver `{Antal hämtningar} > 0`.
+
+**Omfattningen, mätt mot prod:** **69 personer** bär
+`Totalt antal hämtningar (erbjudande)` > 0 medan `Antal hämtningar` = 0.
+Av dem har **33 noll anmälningar** — rena leads, osynliga i BÅDE Personer-
+och Leads-ytan. Övriga 36 syns i Personer-vyn men med osynlig
+hämtningshistorik. Fältet är inte dött: andra personer har `Antal hämtningar`
+> 0, så datan är **inkonsekvent**, inte frånvarande.
+
+**Trolig uppkomst:** 21 av de 33 skapades 2025-11-25 mellan 18:43 och 18:49
+— en batch på sex minuter. `Engagemang` fylls av automation **A5**
+(`data-model.md:1119-1122`, *"om Engagemang finns → uppdatera Senaste
+hämtning, annars → skapa nytt Engagemang"*). Posterna ser ut att ha
+importerats utan att A5 fyrade. **Ej verifierat — hypotes, inte fynd.**
+
+### Varför AC #3 ("gör dem synliga") REVS
+
+Den ursprungliga formuleringen ville visa raderna i UI:t. Att rendera rader
+vars underliggande fält är fel löser ingenting. Rätt fix är att läsa det
+fält som bär sanningen — därav AC #6.
+
+### Vad som INTE görs här, och varför
+
+- **Backfill av 69 `Engagemang`-rader** (skapa dem retroaktivt, replikera
+  A5). Dyrast, löser minst, riskerar dubbletter, och lämnar fältnamnet lika
+  missvisande. Bokförs som öppen fråga, ej i denna skiva.
+- **Ompekning av `Antal hämtningar`-formeln i basen.** Detta är
+  rotorsaksfixen och fälla 47:s egen rekommendation (*"döp om fältet till
+  vad det faktiskt räknar, eller peka om formeln"*, maximerings-kandidat
+  T16). Den är en PROD-SCHEMAÄNDRING och kräver Marcus uttryckliga GO —
+  läggs fram separat, aldrig i samma andetag som appfixen.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 get-persons returnerar ett additivt total-fält, beräknat server-side ENBART när cursor saknas; full-walk med fields[] begränsat till ett fält, aldrig en räkning per sida
 - [ ] #2 Copyn lyder 'Visar N av TOTAL personer' (och 'Visar N av TOTAL personer för "sökterm"' vid sökning); formuleringen (fler finns) utgår helt
-- [ ] #3 Täckningshålet stängt: personer med noll anmälningar OCH noll hämtningar är synliga i appen; EF-kommentaren på get-persons:104-108 rättad så den inte längre påstår ett komplement utan hål
-- [ ] #4 Samtliga NIO bundna ställen migrerade i SAMMA landning: fem acceptance-assertions (rad 113/129/134/144/162, varav 129 använder toBeFocused) och fyra aria-snapshotrader under tests/visual/__aria__/
-- [ ] #5 Stale prosa rättad: PersonsList.tsx:443-448, :414-415, :473-475 och tests/api/get-persons.staging.test.ts:57 pekar inte längre på persons-list.staging.test.ts eller på en migrering som redan är utförd
-- [ ] #6 Totalsiffrans kostnad mätt och redovisad: faktiskt antal Airtable-anrop och svarstid för en vy-laddning före och efter, aldrig antaget
+- [ ] #3 Samtliga NIO bundna ställen migrerade i SAMMA landning: fem acceptance-assertions (rad 113/129/134/144/162, varav 129 använder toBeFocused) och fyra aria-snapshotrader under tests/visual/__aria__/
+- [ ] #4 Stale prosa rättad: PersonsList.tsx:443-448, :414-415, :473-475 och tests/api/get-persons.staging.test.ts:57 pekar inte längre på persons-list.staging.test.ts eller på en migrering som redan är utförd
+- [ ] #5 Totalsiffrans kostnad mätt och redovisad: faktiskt antal Airtable-anrop och svarstid för en vy-laddning före och efter, aldrig antaget
+- [ ] #6 get-leads LEAD_FILTER läser 'Totalt antal hämtningar (erbjudande)' i stället för 'Antal hämtningar' — det senare är COUNTA({Engagemang}) och räknar rader i aggregeringstabellen Engagemang, inte hämtningar (fälla 47, live-belagd S103). Mätt i prod 2026-08-18: 69 personer bär rollup > 0 medan COUNTA ger 0, varav 33 är rena leads osynliga i HELA appen
 <!-- AC:END -->
 
 ## Definition of Done
