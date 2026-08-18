@@ -1,9 +1,10 @@
 ---
 id: TASK-241
-title: 'PRD: Sveparna — cross-event-sändytorna (bekräftelse + påminnelse)'
+title: 'PRD: Sveparna — cross-event-sändytorna (bekräftelse + påminnelse + eventinfo)'
 status: To Do
 assignee: []
 created_date: '2026-08-16 09:20'
+updated_date: '2026-08-18 10:57'
 labels: []
 dependencies: []
 ordinal: 443000
@@ -11,6 +12,7 @@ ordinal: 443000
 
 ## Description
 
+<!-- SECTION:DESCRIPTION:BEGIN -->
 <!-- SECTION:DESCRIPTION:BEGIN -->
 ### Problemformulering
 Lotta ser på hemmet att anmälningar väntar på bekräftelse och betalningar förfallit över flera event samtidigt, men verkställandet är per event (Åtgärds-sidan) — sju event betyder sju separata granskningsrundor. Massutskick utan granskning är samtidigt otänkbart: fel mail till fel person skadar förtroendet för hela verktyget.
@@ -57,6 +59,55 @@ Externt beteende testas, aldrig implementationsdetaljer. Primär skarv: acceptan
 
 ### Ytterligare anteckningar
 Marcus WOW-krav 2026-08-16 nära-verbatim: riktigt snygg övergång till och från granskningsvyn från hem-vyn, så Lotta känner WOW, vilken grej detta är. Hemmets facit (knapparnas placering): s102-hem-konvergens-manifestet, ägs av hem-PRD:n.
+
+### Amendering 2026-08-18 — eventinfo blir en TREDJE sveptyp (S107, Marcus GO)
+
+PRD:n hette fram till nu *"(bekräftelse + påminnelse)"* och avgränsade sig
+till två sveptyper. Den avgränsningen växer öppet här — den revs inte tyst.
+
+**Vad som utlöste det.** Marcus prio 3 i S107: *"Bevakningsraderna på hemvyn
+leder ingenstans … bör väl vara knappar och funka som 'bekräfta alla' och
+'skicka påminnelse till alla' gör, eller hur?"* Utredningen (S107 Del 13 § C)
+fällde fyra premisser som fanns i registret och visade att arbetet är
+väsentligt mindre än det såg ut:
+
+- **Sändmotorn finns och är skarp.** `send-action-email` bär redan
+  `eventinfo` som åtgärdstyp, och `_shared/send-action-email.ts:366-367`
+  stämplar exakt det fält bevakningsraden läser
+  (`FALT_DELTAGARINFO_SKICKAD`). Mall + ämne finns i
+  `atgardsmallar.ts:66-71`. Ytan är live på `/atgarder` sedan `TASK-147.3`.
+- **Designbeslutet är redan fattat och grillat.** S102-grillningen beslut 4
+  (`2026-08-10-session-102.md:726-727`) verbatim: *"klicket öppnar
+  sändflödet förifiltrerat på exakt de ostämplade."* Det är det enda av
+  grillningens åtta beslut som aldrig implementerades.
+- **Vad som saknas är klient-plumbing, inte en EF.**
+
+**Varför HÄR och inte i ett eget PRD** (Marcus scope-beslut 2026-08-18,
+alternativ (a) av tre framlagda): samma sändmotor, samma yta
+(`SvepOverlay`), samma trygghetstriad. Grillningens beslut 5 kräver *"EN
+delad sändmotor per åtgärdstyp under båda ytorna — aldrig två
+implementationer"*, vilket talar för att hålla typerna i samma familj. Ett
+eget PRD för en tredje variant av samma sak vore ceremoni utan innehåll.
+
+**Ny användarberättelse (10).** Som Lotta vill jag kunna skicka eventinfo
+till exakt de bekräftade deltagare som saknar den, direkt från
+bevakningsraden på hemmet, så att eftersläntrare efter utskicket inte
+kräver att jag går in i eventet och plockar mottagare för hand.
+
+**Nya implementationsbeslut.**
+- `SvepTyp` utökas med `'eventinfo'`; urvalet är `utanEventinfo` för det
+  klickade eventet — samma predikat som `hem-derivations.ts:302` redan
+  härleder för bevakningsradens två lägen.
+- Bevakningsraden bär handling DIREKT (svep), den navigerar inte till
+  Åtgärds-sidan. Navigerings-vägen (`mmAtgardsUrval` →
+  `/event/$eventId/atgarder`) prövades och avråddes: den flyttar Lotta bort
+  från hemvyn mitt i morgonrutinen.
+- Ingen ny EF byggs — samma stoppvillkor som `TASK-241.3` AC #1 tillämpade.
+- `UTSKICK_SPARR` gäller mekaniskt för `runActionSend`, alltså även denna
+  väg. Prod-flippen är ett öppet Marcus-moment.
+
+**Utanför omfattningen växer INTE:** hem-vyns egen form, per-rad-undantag
+inuti svepet och nya mailmallar ligger kvar utanför.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Definition of Done
