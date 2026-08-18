@@ -60,7 +60,7 @@ export function RackviddBadge({
   // i badgen — den säger nu bara vad DEN HÄR raden gäller också.
   if (rackvidd !== AttachmentScope.KURSTYP && rackvidd !== AttachmentScope.ALLA_EVENT) {
     return (
-      <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
+      <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
         Detta event
       </span>
     );
@@ -105,12 +105,30 @@ export function RackviddBadge({
     // allt som bär den mot ett sådant kort försvinner. Fråga alltid vad
     // underlaget bär innan denna token väljs.
     //
-    // `bg-surface` är den ljusare av husets två ytor och ger pillen kontrast
-    // mot kortet utan att bryta pill-grammatiken i övrigt (radie, padding,
-    // typografi och `contrast-more`-kanten är oförändrade). På en yta som
-    // INTE är `bg-bg-muted` — t.ex. Åtgärds-sidans bilageväljare
-    // (`AtgardsSida.tsx:1551`) — läser den fortfarande som en pill.
-    <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
+    // ═══ VÄNT TILLBAKA TILL `bg-bg-muted` 2026-08-18 — OCH DET LAGAR TVÅ YTOR ═══
+    //
+    // Resonemanget ovan var riktigt för sitt underlag, men underlaget bytte:
+    // Dokument-ytans lista fick sin EGEN `bg-surface`-yta (Marcus: *"ge
+    // inline-scroll-ytan en annan färg/toning"*), och då blev en
+    // `bg-surface`-pill osynlig mot den. MÄTT: `pill=rgb(255,255,255)`,
+    // `lista=rgb(255,255,255)`.
+    //
+    // FALSIFIERAT SAMTIDIGT, av en andra mätning: raden ovan påstod att
+    // pillen *"på en yta som INTE är `bg-bg-muted` — t.ex. Åtgärds-sidans
+    // bilageväljare — läser den fortfarande som en pill"*. Den ytan är
+    // `divide-y divide-border rounded-lg bg-surface` (`AtgardsSida.tsx`), och
+    // mätningen där gav `badge=rgb(255,255,255)`, `underlag=rgb(255,255,255)`.
+    // Badgen har alltså varit OSYNLIG på Åtgärds-sidan sedan den byttes —
+    // en levande bugg som friskrevs i prosa utan att mätas.
+    //
+    // Bytet till `bg-bg-muted` gör pillen synlig på BÅDA ytorna, eftersom
+    // båda numera är `bg-surface`. Det är inte en kompromiss mellan dem.
+    //
+    // REGELN SOM FALLER UT, dyrköpt över sex instanser: tokenvalet följer
+    // NÄSTLINGEN, aldrig vanan — och "syns den?" besvaras med en mätning av
+    // `backgroundColor` i renderad yta, aldrig med en blick på klassnamnet
+    // eller ett resonemang om vilken yta som "brukar" bära vad.
+    <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
       {text}
     </span>
   );

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, ChevronsUpDown, X } from 'lucide-react';
-import { type Ref, useEffect, useId, useMemo } from 'react';
+import { type ReactNode, type Ref, useEffect, useId, useMemo } from 'react';
 import {
   Button as AriaButton,
   Input as AriaInput,
@@ -23,6 +23,13 @@ import { queryKeys } from '@/queries/keys';
 import { datumSpannText } from './detail/datumSpann';
 import { dateValue, eventName } from './EventCard';
 import { groupByMonth } from './manadsgrupp';
+
+/**
+ * Sentinel-nyckeln för det KONTEXTLÖSA alternativet (opt-in `gemensamtAlternativ`).
+ * Dubbla understreck så den aldrig kan kollidera med ett Airtable-record-ID
+ * (`rec…`), som är den enda andra nyckelrymden i listan.
+ */
+const GEMENSAMT_KEY = '__gemensamt';
 
 /**
  * Eventväljaren — delad väljar-komponent med TVÅ ytor (biblioteks-beviset,
@@ -88,6 +95,28 @@ import { groupByMonth } from './manadsgrupp';
  * Kommande event närmast först; månadsgrupperade i EventsLists EGEN
  * rubrikform via delade `groupByMonth` (punkt 9 — lyftet är skivans krav).
  *
+ * ═══ DET KONTEXTLÖSA ALTERNATIVET (`gemensamtAlternativ`, opt-in) ═══
+ *
+ * Dokument-ytan har två lägen på SAMMA axel som väljaren styr: ett valt
+ * event, eller inget event alls (räckviddsläget — ORDLISTA.md § Gemensam
+ * bilaga). Innan denna prop bars lägesbytet av en egen knapp längst ner i
+ * dokumentlistan ("Visa gemensamma dokument"), vilket gav ytan TVÅ kontroller
+ * på samma axel: väljaren valde event, knappen valde "inget event". Marcus
+ * fällde formen 2026-08-18: *"knappen 'Visa gemensamma dokument' förändrar ju
+ * hela tillståndet på listan … detta är inte bra."* Knappens etikett var
+ * dessutom falsk — eventläget VISAR redan gemensamma bilagor (`get-event-
+ * attachments` unionerar dem, ADR-118 beslut 2); det knappen egentligen gjorde
+ * var att gå till förvaltningsytan.
+ *
+ * Propen gör axeln till EN kontroll: en rad överst i listan, vald när
+ * `valtEventId` är utelämnad. Stängda läget visar då etiketten i stället för
+ * "Välj event" — väljaren säger alltid VAR du är, aldrig att ett val saknas.
+ *
+ * OPT-IN med avsikt: manuell anmälan (18.18) och eventdetaljsidan (18.19)
+ * har inget meningsfullt kontextlöst läge — en anmälan utan event är inget,
+ * och detaljsidan ÄR ett event. De skickar inte propen och är oförändrade,
+ * inklusive sina testkontrakt på "Välj event" som accessible name.
+ *
  * Datakällan är listcachen (`events.list` — samma nyckel som event-listan):
  * varm vid navigering från listan; kall djuplänk startar hämtningen vid
  * mount (sidans primära interaktion är väljaren — ADR-078: ingen väntan på
@@ -101,6 +130,7 @@ export function EventValjare({
   form = 'kontextrad',
   rubrikRef,
   onAvsikt,
+  gemensamtAlternativ,
 }: {
   /** Valt event-ID (djuplänken/URL:en). Utelämnad = tomt läge (punkt 7). */
   valtEventId?: string;
@@ -109,14 +139,39 @@ export function EventValjare({
   /** Byte/val: navigerar URL:en (beslut a/13) — väljaren äger inget state. */
   onByte: (eventId: string) => void;
   isDisabled?: boolean;
-  /** Triggerns form: 'kontextrad' (18.18-ytan) eller 'rubrik' — väljaren ÄR
-      h1:an (18.19 variant A). List-/sök-maskineriet är identiskt. */
-  form?: 'kontextrad' | 'rubrik';
+  /** Triggerns form: 'kontextrad' (18.18-ytan), 'rubrik' (väljaren ÄR h1:an,
+      18.19 variant A) eller 'fristaende'. List-/sök-maskineriet är identiskt
+      i alla tre.
+
+      'fristaende' bär den STORA, luftiga rutan som 'kontextrad' annars visar
+      bara i sitt TOMMA läge (`rounded-2xl`, `py-4`, `text-body`, full bredd)
+      — även när ett val ÄR gjort. Marcus 2026-08-18, efter att ha jämfört
+      Dokument-ytan med manuell anmälan: *"jag vill i alla fall att vi
+      kopierar eventväljarens utseende i tomma läget så som det ser ut på
+      manuell anmälan."*
+
+      Formen finns för ytor där väljaren är sidans PRIMÄRA VAL och aldrig står
+      tom — Dokument-ytan har ett kontextlöst alternativ ("Delade dokument"),
+      så dess `tomtLage` är per konstruktion alltid falskt och pillformen blev
+      den enda den någonsin visade. */
+  form?: 'kontextrad' | 'rubrik' | 'fristaende';
   /** h1-elementet i rubrik-formen (sidans fokusmål vid laddning). */
   rubrikRef?: Ref<HTMLHeadingElement>;
   /** Avsikts-signal (hover) på en listrad — prefetch-krok (ADR-078 beslut 3).
       Anropas med radens event-ID; konsumenten äger vad som värms. */
   onAvsikt?: (eventId: string) => void;
+  /** Opt-in kontextlöst alternativ överst i listan — se komponent-huvudet.
+      Etikett, valfri ikon och handling i ETT objekt, så formen aldrig kan
+      hamna i ett halvtillstånd (etikett utan handler, eller tvärtom).
+      Utelämnad = ingen sådan rad, och komponenten beter sig exakt som före
+      propen.
+
+      `ikon` KOMMER FRÅN KONSUMENTEN, aldrig härifrån: vilken symbol som
+      betyder "det kontextlösa valet" är en domänfråga (Dokument-ytan väljer
+      `Files` för "flera dokument"), och väljaren ska inte känna till någon
+      enskild ytas domän. Utelämnas den faller raden tillbaka på en osynlig
+      spacer med prickens geometri — linjeringen håller i båda fallen. */
+  gemensamtAlternativ?: { etikett: string; ikon?: ReactNode; onValj: () => void };
 }) {
   const dataSource = useDataSource();
   const { contains } = useFilter({ sensitivity: 'base' });
@@ -148,8 +203,17 @@ export function EventValjare({
     return groupByMonth(kommande);
   }, [data, idagStart]);
 
-  const tomtLage = valtEventId == null;
+  // TRE lägen sedan `gemensamtAlternativ`, inte längre två: valt event ·
+  // det kontextlösa alternativet valt · inget alls. Det sista nås BARA av
+  // konsumenter som inte skickar propen — för dem är härledningen oförändrad.
+  const gemensamtValt = valtEventId == null && gemensamtAlternativ != null;
+  const tomtLage = valtEventId == null && gemensamtAlternativ == null;
   const rubrikForm = form === 'rubrik';
+  // GEOMETRIN är skild från TILLSTÅNDET: den stora rutan används både när
+  // inget är valt (tomtLage, oförändrat) och när konsumenten uttryckligen
+  // ber om den ('fristaende'). Kalenderikonen följer däremot tillståndet —
+  // se dess villkor nedan.
+  const storForm = tomtLage || form === 'fristaende';
 
   return (
     <AriaSelect
@@ -157,10 +221,17 @@ export function EventValjare({
       // former av den osynliga "Välj event"-etiketten (18.18-testkontraktet).
       aria-label={rubrikForm ? undefined : 'Välj event'}
       aria-labelledby={rubrikForm ? namnId : undefined}
-      selectedKey={valtEventId ?? null}
+      selectedKey={valtEventId ?? (gemensamtValt ? GEMENSAMT_KEY : null)}
       onSelectionChange={(key) => {
         if (key == null) return;
         const id = String(key);
+        // Sentinel-grenen FÖRE event-grenen: nyckelrymderna är disjunkta
+        // (`__gemensamt` vs `rec…`), så ordningen är läsbarhet snarare än
+        // korrekthet — men den håller om record-ID-formen någonsin ändras.
+        if (id === GEMENSAMT_KEY) {
+          gemensamtAlternativ?.onValj();
+          return;
+        }
         if (id !== valtEventId) onByte(id);
       }}
       isDisabled={isDisabled}
@@ -220,8 +291,10 @@ export function EventValjare({
         <AriaButton
           data-testid="event-valjare-trigger"
           className={
-            tomtLage
+            storForm
               ? // Fristående formen (punkt 7): sidans enda handling, full bredd.
+                // Sedan 2026-08-18 även åtkomlig via `form="fristaende"` för
+                // ytor där väljaren är primärvalet men aldrig står tom.
                 'flex w-full items-center gap-2.5 rounded-2xl border border-border bg-surface px-4 py-4 text-body hover:bg-bg-muted motion-safe:transition-colors'
               : // Pillen på grå kortyta (punkt 3): vit, lyfter ur ytan. FAST
                 // BREDD över hela blocket (Marcus-beslut 2026-07-25) — aldrig
@@ -229,13 +302,53 @@ export function EventValjare({
                 'flex w-full items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-small hover:bg-bg-muted motion-safe:transition-colors'
           }
         >
+          {/* Kalenderikonen följer TILLSTÅNDET, inte geometrin: den betyder
+              "inget valt än" — en kalender vore fel över ett gjort val. */}
           {tomtLage ? (
             <CalendarDays aria-hidden="true" size={18} className="shrink-0 text-text-secondary" />
+          ) : null}
+          {/* Det kontextlösa alternativets EGEN ikon, på kalenderns plats.
+              Marcus 2026-08-18: *"borde inte delade dokument också få en ikon
+              nu i detta läge? Så som 'Välj ett event' har på manuell
+              anmälan"*. I den smala pillen bar en tom spacer det här utrymmet
+              gott nog; i den stora rutan (`form="fristaende"`) blev tomrummet
+              synligt i stället. Ikonen kommer från konsumenten — se propens
+              docblock för varför. */}
+          {gemensamtValt && gemensamtAlternativ?.ikon != null ? (
+            <span aria-hidden="true" className="flex shrink-0 text-text-secondary">
+              {gemensamtAlternativ.ikon}
+            </span>
           ) : null}
           <SelectValue className="flex min-w-0 items-center gap-2">
             {() =>
               tomtLage ? (
                 'Välj event'
+              ) : gemensamtAlternativ != null && valtEventId == null ? (
+                // Det kontextlösa alternativet valt: ren text i KontextRads
+                // namn-vikt, utan färgprick/ort/datumspann — de leden hör till
+                // ett event och har inget värde här. Triggern behåller
+                // pill-formen: detta ÄR ett val, inte ett tomt läge.
+                //
+                // SPACERN GÄLLER ÄVEN HÄR — och det är en ÖPPEN RIVNING av
+                // raden som stod här fram till 2026-08-18: *"ingen spacer här
+                // … en tom 10 px-lucka hade bara läst som slarv"*. Den var
+                // riktig så länge triggern var den smala pillen. Med
+                // `form="fristaende"` (samma dag, stora rutan) blev hoppet
+                // mellan lägena synligt i stället: växlar man mellan ett event
+                // och det kontextlösa alternativet flyttar sig texten 20 px i
+                // sidled, eftersom eventformens prick + `gap-2.5` bär det
+                // indraget. Samma spacer, samma skäl som i listraden.
+                <>
+                  {/* Spacern behövs BARA när ingen ikon skickats — annars bär
+                      ikonen ovanför redan vänsterkanten, och två utfyllnader
+                      hade dubblat indraget. */}
+                  {gemensamtAlternativ.ikon == null ? (
+                    <span aria-hidden="true" className="size-2.5 shrink-0" />
+                  ) : null}
+                  <span className="min-w-0 truncate font-medium">
+                    {gemensamtAlternativ.etikett}
+                  </span>
+                </>
               ) : valtEvent ? (
                 <KontextRad event={valtEvent} />
               ) : (
@@ -287,6 +400,51 @@ export function EventValjare({
               </p>
             )}
           >
+            {/* Det kontextlösa alternativet står ÖVERST, utanför månads-
+                grupperna — det hör inte till någon månad. Direkt `SelectItem`
+                i stället för en egen `ListBoxSection`: en sektionsrubrik över
+                EN rad hade varit brus, och nästa månadsrubrik skiljer den
+                visuellt ändå. Sökningen filtrerar den som vilken rad som helst
+                (Autocomplete matchar `textValue`) — söker man "RIM" är den
+                borta, vilket är rätt. */}
+            {gemensamtAlternativ != null ? (
+              <SelectItem
+                id={GEMENSAMT_KEY}
+                textValue={gemensamtAlternativ.etikett}
+                // `mt-2` — LUFT MOT SÖKRUTANS FOKUSRING (Marcus 2026-08-18:
+                // *"när fokusringen är aktiverad på sökrutan så ligger den
+                // direkt på delade dokument-markeringen"*). Popovern bär
+                // `gap-1` (4 px) mellan sökfältet och listboxen; raden är
+                // listans FÖRSTA och har — till skillnad från eventraderna —
+                // ingen månadsrubrik ovanför sig att låna luft av (`pt-3` på
+                // `Header`). Utan marginalen möttes sökrutans fokusring och
+                // radens markerings-bakgrund kant i kant.
+                className="mt-2 font-medium"
+              >
+                {/* OSYNLIG SPACER MED PRICKENS EXAKTA GEOMETRI — inte en
+                    hårdkodad vänsterindragning (Marcus 2026-08-18: *"det ser
+                    skevt ut, flytta in texten så det linjerar"*).
+
+                    Raden bär medvetet INGEN kursfärgs-prick: `kursfargForKurs`
+                    faller tillbaka på klassen 'annat' för okända kurser, så en
+                    prick här hade sett ut som ett event vars kurs inte kunde
+                    härledas — fel signal, inte en neutral. Men utan den började
+                    texten 18 px till vänster om event-radernas.
+
+                    Spacern bär `size-2.5 shrink-0` — prickens egna klasser
+                    minus färg och rundning — och sitter i samma `gap-2`-flöde.
+                    Ändras prickens storlek någonsin följer indraget med av sig
+                    självt; en `pl-[18px]` hade tyst glidit isär. */}
+                {gemensamtAlternativ.ikon != null ? (
+                  <span aria-hidden="true" className="flex shrink-0 text-text-secondary">
+                    {gemensamtAlternativ.ikon}
+                  </span>
+                ) : (
+                  <span aria-hidden="true" className="size-2.5 shrink-0" />
+                )}
+                {gemensamtAlternativ.etikett}
+              </SelectItem>
+            ) : null}
             {grupper.map((grupp) => (
               <ListBoxSection id={grupp.label} key={grupp.label}>
                 {/* Månadsrubriks-formen — EventsLists EGEN (punkt 9):
