@@ -13,8 +13,13 @@ import { PersonSchema } from './Person.schema';
  * skapades — fälla 47, data-model.md).
  *
  * Rikare än list-`PersonSchema` med exakt de två leads-rollups listan utelämnar:
- * `antalHamtningar` (= `COUNTA(Engagemang)`, appens kanoniska hämtnings-mått —
- * speglar get-person:s mappning) och `allaHamtningar` ("vad de nappat på").
+ * `antalHamtningar` (= `Totalt antal hämtningar (erbjudande)`, en ROLLUP över
+ * Touchpoints — TASK-278 pekade om från `COUNTA(Engagemang)`/fälla 47, som
+ * kunde visa 0 för en person filtret redan avgjort HAR hämtat något, se
+ * get-leads/index.ts. AVVIKER numera MEDVETET från get-person:s mappning,
+ * som fortfarande läser `COUNTA(Engagemang)` — se kommentaren där; ingen
+ * synlig självmotsägelse eftersom det fältet aldrig renderas i PersonDetail)
+ * och `allaHamtningar` ("vad de nappat på").
  * Senaste interaktion (text/datum) finns REDAN i `PersonSchema` → dubblas EJ.
  *
  * `Person.schema.ts` lämnas ORÖRD — list-, detalj- och intresserad-vägen har

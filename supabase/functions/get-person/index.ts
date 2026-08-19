@@ -285,6 +285,17 @@ function mapPersonDetail(
     antalGenomfordaEvent: asNumber(f['Antal genomförda event']),
     // "Senaste deltagande datum" = MAX-rollup → ett värde → explicit skalär.
     senasteDeltagandeDatum: scalarString(f['Senaste deltagande datum']),
+    // `Antal hämtningar` = COUNTA(Engagemang), fälla 47 — kan visa 0 trots
+    // riktiga hämtningar (Sofia Isaksson-instansen). MEDVETET ORÖRT
+    // (TASK-278 korsundersökning, AC #2), TILL SKILLNAD från get-leads:s
+    // `antalHamtningar` (som TASK-278 pekade om till `Totalt antal
+    // hämtningar (erbjudande)`, fälla 50): detta fält renderas ingenstans i
+    // PersonDetail.tsx — jämförelse-blocket som en gång visade det revs
+    // 2026-08-10 av precis detta skäl (se rad ~1470 nedan i den filen) —
+    // så avvikelsen skapar ingen synlig självmotsägelse HÄR idag.
+    // Fixture-data.ts § RIK_DETALJ dokumenterar samma inkonsistens som
+    // "basens verkliga", inte ett slarvfel. Rotorsaksfixen (basens formel)
+    // löser båda ytorna på en gång — T16, PROD-SCHEMAÄNDRING, ej denna skiva.
     antalHamtningar: asNumber(f['Antal hämtningar']),
     // "Alla hämtningar" = rollup över Touchpoints (1→MÅNGA) → FLER-VÄRT; namnet
     // säger "alla" → stringArray bevarar samtliga (firstString vore data-förlust).

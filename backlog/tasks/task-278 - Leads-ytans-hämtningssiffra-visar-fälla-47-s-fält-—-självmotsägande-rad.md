@@ -4,6 +4,7 @@ title: 'Leads-ytans hämtningssiffra visar fälla 47:s fält — självmotsägan
 status: To Do
 assignee: []
 created_date: '2026-08-19 09:24'
+updated_date: '2026-08-19 09:42'
 labels: []
 dependencies: []
 ordinal: 504000
@@ -52,11 +53,11 @@ appens läsning, inte basens fält.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 get-leads mappar antalHamtningar från 'Totalt antal hämtningar (erbjudande)', inte från 'Antal hämtningar'
-- [ ] #2 allaHamtningar och get-person (singular) korsundersökta för samma felklass; utfall bokfört i kortet oavsett om ändring behövdes eller ej
-- [ ] #3 Docblock-citat av mappningen synkade med koden i alla rörda filer (ADR-083-disciplinen)
-- [ ] #4 Verifierat mot staging eller fixturvärld att en lead med rollup>0 och COUNTA=0 nu visar ett värde > 0
-- [ ] #5 Ingen ändring av basens fält eller formler
+- [x] #1 get-leads mappar antalHamtningar från 'Totalt antal hämtningar (erbjudande)', inte från 'Antal hämtningar'
+- [x] #2 allaHamtningar och get-person (singular) korsundersökta för samma felklass; utfall bokfört i kortet oavsett om ändring behövdes eller ej
+- [x] #3 Docblock-citat av mappningen synkade med koden i alla rörda filer (ADR-083-disciplinen)
+- [x] #4 Verifierat mot staging eller fixturvärld att en lead med rollup>0 och COUNTA=0 nu visar ett värde > 0
+- [x] #5 Ingen ändring av basens fält eller formler
 <!-- AC:END -->
 
 ## Definition of Done
@@ -66,3 +67,15 @@ appens läsning, inte basens fält.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #2 korsundersökning (2026-08-19):
+
+1) allaHamtningar ('Alla hämtningar', get-leads OCH get-person) — INTE samma felklass. Fältet är en rollup DIREKT över Touchpoints (rålogget), samma länk fälla 50 dokumenterar — fälla 47:s egen text bekräftar det (Sofia Isaksson: 'Alla hämtningar bär alla tre med datum'). Ingen ändring behövdes.
+
+2) get-person (singular, PersonDetail) — BÄR SAMMA felklass (antalHamtningar: asNumber(f['Antal hämtningar']), fälla 47/COUNTA(Engagemang)) men MEDVETET LÄMNAT ORÖRT: fältet renderas ingenstans i PersonDetail.tsx (grep bekräftar noll konsumenter) — jämförelse-blocket som en gång visade det revs redan 2026-08-10 av precis detta skäl (se PersonDetail.tsx rad ~1462-1476). fixture-data.ts § RIK_DETALJ dokumenterar samma mismatch ('antalHamtningar: 1 mot tre poster i allaHamtningar') uttryckligen som 'basens verkliga inkonsistens... inte ett slarvfel'. Alltså: ingen synlig självmotsägande rad på den ytan idag, till skillnad från Intresserade-vyn. Rotorsaksfixen (T16, basens formel) löser båda samtidigt; att duplicera den kosmetiska fixen i get-person utan en renderande konsument bedömdes vara scope-expansion utan mätbar nytta (ADR-053-triage: blockerar ej, lågvärde eftersom fältet är dött i UI:t idag) — dokumenterat, inte tyst förkastat.
+
+AC #4 staging-belägg: zz-lead-person-01/02 (T146, nu fixat parallellt) har Totalt antal hämtningar (erbjudande)=1 = Antal hämtningar=1 — diskriminerar INTE mellan gammal/ny mappning. Verklig diskriminerande post hittad i staging: Sofia Isaksson (recxF88ZKUbP9JUs1) — Totalt antal hämtningar (erbjudande)=3, Antal hämtningar (COUNTA)=0 (har dock anmälningar, är alltså inte en 'lead' per LEAD_FILTER just nu). Ingen post i staging matchar alla tre LEAD_FILTER-villkor (rollup>0 ∧ COUNTA=0 ∧ 0 anmälningar) just nu — bokfört öppet, inte dolt.
+<!-- SECTION:NOTES:END -->
