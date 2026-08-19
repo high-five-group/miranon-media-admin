@@ -24,6 +24,15 @@ export interface ListParams {
 export interface PersonsPage {
   persons: Person[];
   nextCursor: string | null;
+  /**
+   * Totalantal poster i HELA filtermängden (TASK-277 Del 1, statusradens
+   * "Visar N av TOTAL personer"). VALFRITT med avsikt — skew-säkert: en
+   * klient mot en äldre EF-deploy utan fältet faller till interimsformen,
+   * aldrig en krasch (Vercel Skew-klassen, S105 C-listan; speglar
+   * `ActivityLogPage.total` nedan, TASK-225.2, exakt samma mönster).
+   * Beräknad server-side ENBART på FÖRSTA sidan (cursor saknas).
+   */
+  total?: number;
 }
 
 /**

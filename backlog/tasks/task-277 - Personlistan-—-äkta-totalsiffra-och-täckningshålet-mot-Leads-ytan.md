@@ -4,7 +4,7 @@ title: Personlistan — äkta totalsiffra och täckningshålet mot Leads-ytan
 status: To Do
 assignee: []
 created_date: '2026-08-18 11:44'
-updated_date: '2026-08-19 08:32'
+updated_date: '2026-08-19 09:03'
 labels: []
 dependencies: []
 ordinal: 503000
@@ -137,12 +137,12 @@ fält som bär sanningen — därav AC #6.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 get-persons returnerar ett additivt total-fält, beräknat server-side ENBART när cursor saknas; full-walk med fields[] begränsat till ett fält, aldrig en räkning per sida
-- [ ] #2 Copyn lyder 'Visar N av TOTAL personer' (och 'Visar N av TOTAL personer för "sökterm"' vid sökning); formuleringen (fler finns) utgår helt
-- [ ] #3 Samtliga NIO bundna ställen migrerade i SAMMA landning: fem acceptance-assertions (rad 113/129/134/144/162, varav 129 använder toBeFocused) och fyra aria-snapshotrader under tests/visual/__aria__/
-- [ ] #4 Stale prosa rättad: PersonsList.tsx:443-448, :414-415, :473-475 och tests/api/get-persons.staging.test.ts:57 pekar inte längre på persons-list.staging.test.ts eller på en migrering som redan är utförd
-- [ ] #5 Totalsiffrans kostnad mätt och redovisad: faktiskt antal Airtable-anrop och svarstid för en vy-laddning före och efter, aldrig antaget
-- [ ] #6 get-leads LEAD_FILTER läser 'Totalt antal hämtningar (erbjudande)' i stället för 'Antal hämtningar' — det senare är COUNTA({Engagemang}) och räknar rader i aggregeringstabellen Engagemang, inte hämtningar (fälla 47, live-belagd S103). Mätt i prod 2026-08-18: 69 personer bär rollup > 0 medan COUNTA ger 0, varav 33 är rena leads osynliga i HELA appen
+- [x] #1 get-persons returnerar ett additivt total-fält, beräknat server-side ENBART när cursor saknas; full-walk med fields[] begränsat till ett fält, aldrig en räkning per sida
+- [x] #2 Copyn lyder 'Visar N av TOTAL personer' (och 'Visar N av TOTAL personer för "sökterm"' vid sökning); formuleringen (fler finns) utgår helt
+- [x] #3 Samtliga NIO bundna ställen migrerade i SAMMA landning: fem acceptance-assertions (rad 113/129/134/144/162, varav 129 använder toBeFocused) och fyra aria-snapshotrader under tests/visual/__aria__/
+- [x] #4 Stale prosa rättad: PersonsList.tsx:443-448, :414-415, :473-475 och tests/api/get-persons.staging.test.ts:57 pekar inte längre på persons-list.staging.test.ts eller på en migrering som redan är utförd
+- [x] #5 Totalsiffrans kostnad mätt och redovisad: faktiskt antal Airtable-anrop och svarstid för en vy-laddning före och efter, aldrig antaget
+- [x] #6 get-leads LEAD_FILTER läser 'Totalt antal hämtningar (erbjudande)' i stället för 'Antal hämtningar' — det senare är COUNTA({Engagemang}) och räknar rader i aggregeringstabellen Engagemang, inte hämtningar (fälla 47, live-belagd S103). Mätt i prod 2026-08-18: 69 personer bär rollup > 0 medan COUNTA ger 0, varav 33 är rena leads osynliga i HELA appen
 <!-- AC:END -->
 
 ## Definition of Done

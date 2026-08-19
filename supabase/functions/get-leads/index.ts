@@ -14,14 +14,24 @@ const MAX_PAGE_SIZE = 100;
 const TABLE_NAME = 'Personer';
 
 // Lead-filtret (Läsning 2, Marcus-låst Fas 6e L1): en INTRESSERAD = person som
-// hämtat något ({Antal hämtningar} = COUNTA(Engagemang) > 0) men aldrig anmält
-// sig ({Antal anmälningar (totalt)} = 0). KONSTANT formel — inget klient-input,
-// inget länk-ID-filter → ingen injektions-yta, ingen T15. Deltaganden-klausulen
-// är UTELÄMNAD som BEVISAT redundant: ett Deltagande är "en rad per Anmälan ×
-// Session" (data-model.md rad 74/107; A3 kräver Anmälan.Person) → 0 anmälningar
-// ⟹ 0 deltaganden nödvändigtvis.
+// hämtat något men aldrig anmält sig ({Antal anmälningar (totalt)} = 0).
+// KONSTANT formel — inget klient-input, inget länk-ID-filter → ingen
+// injektions-yta, ingen T15. Deltaganden-klausulen är UTELÄMNAD som BEVISAT
+// redundant: ett Deltagande är "en rad per Anmälan × Session" (data-model.md
+// rad 74/107; A3 kräver Anmälan.Person) → 0 anmälningar ⟹ 0 deltaganden
+// nödvändigtvis.
+//
+// TASK-277 AC #6 — "hämtat något" läser {Totalt antal hämtningar
+// (erbjudande)}, INTE längre {Antal hämtningar}. `Antal hämtningar` är
+// `COUNTA({Engagemang})` — den räknar rader i aggregeringstabellen
+// `Engagemang`, inte hämtningar (fälla 47, data-model.md rad 1458,
+// live-belagd S103). `Totalt antal hämtningar (erbjudande)` är i stället en
+// ROLLUP direkt över `Touchpoints` (rålogget) och missar därför inte de
+// hämtningar vars `Engagemang`-rad aldrig skapades. Mätt i prod 2026-08-19
+// (TASK-277 premisskontroll): 69 personer bär rollup > 0 medan COUNTA ger 0,
+// varav 33 var rena leads osynliga i HELA appen — LEAD_FILTER läckte dem.
 const LEAD_FILTER =
-  'AND({Antal hämtningar} > 0, {Antal anmälningar (totalt)} = 0)';
+  'AND({Totalt antal hämtningar (erbjudande)} > 0, {Antal anmälningar (totalt)} = 0)';
 
 function asNumber(val: unknown): number {
   return typeof val === 'number' ? val : 0;
@@ -62,6 +72,16 @@ function mapLead(record: { id: string; fields: Record<string, unknown> }) {
       : [],
     deltagandeIds: Array.isArray(f['Deltaganden']) ? f['Deltaganden'] : [],
     // Leads-rollups (utöver list-schemat) — "vad de nappat på".
+    //
+    // ÖPPEN KANT (TASK-277, medvetet EJ löst här): `antalHamtningar` mappas
+    // FORTSATT från `Antal hämtningar` (COUNTA(Engagemang), fälla 47) —
+    // ENDAST LEAD_FILTER ovan pekades om, inte detta visningsfält. De 33 nya
+    // leads som filtret nu släpper in (rollup > 0, COUNTA = 0) visar därför
+    // `antalHamtningar: 0` trots att de uppenbarligen hämtat något; ett
+    // kosmetiskt facit-fel, inte ett synlighets-fel (`allaHamtningar` nedan
+    // fortsätter visa VAD de hämtat, eftersom den läser Touchpoints direkt).
+    // Rätt fix är basens formel (fälla 47:s egen rekommendation) — en
+    // PROD-SCHEMAÄNDRING utanför denna skivas mandat.
     antalHamtningar: asNumber(f['Antal hämtningar']), // formula COUNTA(Engagemang)
     allaHamtningar: stringArray(f['Alla hämtningar']), // rollup ö. Touchpoints (FLER-VÄRT)
   };

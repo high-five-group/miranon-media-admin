@@ -25,6 +25,22 @@
 // — RÖR EJ; vardera + en länkad Engagemang så COUNTA(Engagemang)=1, 0 Anmälningar):
 //   zz-lead-person-01@staging.test  (rec…Kavd · Engagemang rec…ZlL2)
 //   zz-lead-person-02@staging.test  (rec…r0Cd · Engagemang rec…VJ0)
+//
+// ⚠️ DEPLOY-LANDMINA (upptäckt TASK-277, EJ ÅTGÄRDAD HÄR — läs innan denna
+// EF deployas till staging): `LEAD_FILTER` (`get-leads/index.ts`) pekades om
+// i TASK-277 AC #6 från `{Antal hämtningar}` till `{Totalt antal hämtningar
+// (erbjudande)}` (en ROLLUP över `Touchpoints`, inte `Engagemang`). Mätt
+// 2026-08-19 (Airtable-MCP, staging `apphjj8Q7lkXCMsL4`, READ-only): BÅDA
+// fixturerna ovan har `Totalt antal hämtningar (erbjudande) = 0` — de bär en
+// länkad `Engagemang`-rad men INGEN matchande `Touchpoints`-rad. Deployas
+// den nya `LEAD_FILTER`-koden UTAN att fixturerna FÖRST får varsin
+// `Touchpoints`-rad (med `Erbjudande` satt, länkad till respektive person),
+// exkluderas BÅDA fixturerna av det nya filtret och test 1–3 nedan fäller
+// (`emails.has(...)` blir false, `lead`-uppslaget blir `undefined`,
+// cursor-walken hittar aldrig e-postadresserna). Detta ÄR alltså inte en kod-
+// bugg i denna svit — det är en fixtur/kod-synk som måste lösas FÖRE deploy.
+// Ingen backfill/basformelsändring gjordes i TASK-277 (uttryckligen utanför
+// omfattningen) — detta är bokfört som öppen skuld, inte löst.
 
 import { type APIRequestContext, expect, test } from '@playwright/test';
 import { z } from 'zod';

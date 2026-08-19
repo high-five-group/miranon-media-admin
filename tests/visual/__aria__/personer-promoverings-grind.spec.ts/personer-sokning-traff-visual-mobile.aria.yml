@@ -1,7 +1,7 @@
 - searchbox "Sök person": Gunilla
 - button "Rensa sökningen"
 - status
-- status: Visar 1 person för "Gunilla".
+- status: Visar 1 av 1 personer för "Gunilla".
 - list "Personer":
   - listitem:
     - link "Gunilla Granqvist":

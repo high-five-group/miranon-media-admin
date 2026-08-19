@@ -1,6 +1,6 @@
 - searchbox "Sök person"
 - status
-- status: /Visar \d+ personer \(fler finns\)\./
+- status: /Visar \d+ av \d+ personer\./
 - list "Personer":
   - listitem:
     - link "Anna Andersson":
