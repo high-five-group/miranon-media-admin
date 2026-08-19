@@ -123,3 +123,17 @@ tests/visual/__screenshots__/**/*-win32.png
 # felet hade legat latent tills någon återskapade en av dem eller lade till en
 # ny undantagen fil. Raden var dessutom redundant: `.env` + `.env.*` ovan
 # täcker samma yta, med de undantag som faktiskt behövs.
+
+# Bilage-mallarnas granskningsväg (TASK-279) — genererat innehåll, checkas
+# aldrig in, samma princip som dist/ ovan.
+docs/mallar/bilagor/*.granskning.html
+docs/mallar/bilagor/*.png
+
+# Lokal symlänk till Cavolini-typsnittet för mall-granskning. Fonten får
+# ALDRIG committas (licensbiten fsType=0x0008 tillåter dokumentinbäddning,
+# inte fil-distribution) — se docs/mallar/bilagor/README.md § Granska
+# mallarna lokalt. INGEN trailing slash: mönstret måste matcha symlänken
+# SJÄLV (git ser en symlänk-till-katalog som en annan objekttyp än en
+# katalog — ett mönster med trailing "/" matchar bara riktiga kataloger
+# och missar symlänken, disk-verifierat i denna skiva innan commit).
+docs/mallar/bilagor/lokala-typsnitt

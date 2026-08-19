@@ -4,7 +4,7 @@ title: HTML/CSS-mallarna för bekräftelsebilagan och deltagarinformationen
 status: To Do
 assignee: []
 created_date: '2026-08-19 09:53'
-updated_date: '2026-08-19 12:01'
+updated_date: '2026-08-19 12:30'
 labels: []
 dependencies: []
 ordinal: 505000
@@ -68,12 +68,12 @@ Marcus API-nyckel eller prod-deploy.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Två HTML/CSS-mallar finns: bekräftelsebilagan och deltagarinformationen, parametriserade på exakt den dynamiska yta ADR-119 beslut 3 anger
-- [ ] #2 Ingen persondata förekommer i någon mall — mottagarnamn hör till mailkroppen, aldrig bilagan
-- [ ] #3 Mallarna går att granska med riktig eventdata utan extern tjänst; hur man gör det är dokumenterat i kortet
-- [ ] #4 Visuell jämförelse mot förlagorna gjord och redovisad — vad som matchar och vad som avviker, med skäl
-- [ ] #5 Fontvalet bokfört med motivering; Cavolini-licensen förblir obelagd och antas aldrig
-- [ ] #6 Ingen DocRaptor-integration, ingen EF, inget Storage — scope hålls
+- [x] #1 Två HTML/CSS-mallar finns: bekräftelsebilagan och deltagarinformationen, parametriserade på exakt den dynamiska yta ADR-119 beslut 3 anger
+- [x] #2 Ingen persondata förekommer i någon mall — mottagarnamn hör till mailkroppen, aldrig bilagan
+- [x] #3 Mallarna går att granska med riktig eventdata utan extern tjänst; hur man gör det är dokumenterat i kortet
+- [x] #4 Visuell jämförelse mot förlagorna gjord och redovisad — vad som matchar och vad som avviker, med skäl
+- [x] #5 Fontvalet bokfört med motivering; Cavolini-licensen förblir obelagd och antas aldrig
+- [x] #6 Ingen DocRaptor-integration, ingen EF, inget Storage — scope hålls
 <!-- AC:END -->
 
 ## Definition of Done
@@ -171,4 +171,18 @@ Kriteriet lyder "fontvalet bokfört med motivering; Cavolini-licensen förblir
 obelagd och antas aldrig". Licensen är nu BELAGD. Uppfyll AC:t genom att
 bokföra fsType-mätningen och tvålägesstrategin — inte genom att upprepa att
 frågan är öppen.
+
+## Byggd (denna skiva, S107)
+
+Mallarna: `docs/mallar/bilagor/{bekraftelsebilaga,deltagarinformation}.html` + delad CSS `bilaga-delad.css`. Fullständig dokumentation, granskningsväg och AC #4:s visuella jämförelse (matchar/avviker, med skäl) ligger i `docs/mallar/bilagor/README.md` — läs den för allt detaljerat, återges inte här.
+
+**Granska (AC #3):** `npm run mall:granska -- bekraftelsebilaga` / `npm run mall:granska -- deltagarinformation`, öppna sedan `docs/mallar/bilagor/<mall>.granskning.html` direkt i webbläsaren. Ingen server, ingen extern tjänst. Cavolini lokalt: `ln -s ~/.miranon-fonts docs/mallar/bilagor/lokala-typsnitt` (git-ignorerad, aldrig committad — saknas den faller rubriken avsiktligt till Comic Neue, verifierat med skarpt av/på-test).
+
+**AC #5, oberoende bekräftelse:** fsType lästes själv ur `~/.miranon-fonts/Cavolini-*.ttf` (Python `struct`-parsning av OS/2-tabellen, ingen extern lib) = 0x0008 för alla fyra vikterna — matchar och BEKRÄFTAR notes-avsnittets mätning oberoende.
+
+**Premiss-avvikelse funnen och bokförd (ADR-086):** notes ovan säger sidfotens 'nedre vänstra hörn → miranon.se, nedre högra → instagram'. Den faktiska förlagan (`bekräftelsebilaga-exempel.pdf`, läst direkt) visar motsatsen — Instagram vänster, globe/miranon.se höger. Mallen matchar BILDEN (den högre källan). Se README § Bekräftelsebilagan — avviker, med skäl.
+
+**QR-koderna:** genererade ur URL-strängarna med `qrcode` (npm, MIT, soldair/node-qrcode) i en isolerad scratch-installation (aldrig en projekt-dependency), inbäddade som statisk SVG. Ingen centrerad logo-overlay (skäl + full motivering i README § QR-koderna).
+
+**biome.json:** lade till `!docs/mallar/bilagor/*.html` i files.includes, samma mönster/skäl som befintliga `!supabase/templates` (Biomes HTML-parser stödjer inte `{{ }}`-interpolation utan en config-flagga; exkludering följer redan etablerat precedent, ingen ny ADR bedömd nödvändig — under ADR-baren, samma klass som föregångaren).
 <!-- SECTION:NOTES:END -->
