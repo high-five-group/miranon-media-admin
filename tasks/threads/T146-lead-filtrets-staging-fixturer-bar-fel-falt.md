@@ -3,7 +3,7 @@ owner: marcus803
 updated: 2026-08-19
 review_by: 2026-11-19
 status: stable
-lifecycle: active
+lifecycle: closed
 ---
 
 # T146 — `get-leads`s nya filter fäller tre staging-tester vid deploy: fixturerna bär fel fält
@@ -52,7 +52,48 @@ En deploy av `get-leads` till staging fäller **tre tester** i
 `tests/api/get-leads.staging.test.ts`. Det är inte ett trädfel — det är
 grinden som korrekt rapporterar att fixturerna inte längre matchar filtret.
 
-## Åtgärd (ej vidtagen)
+## Åtgärd — VIDTAGEN och verifierad (2026-08-19)
+
+Två `Touchpoints`-rader skapade i staging (`tbl22SCvlHrgcAiZi`), en per fixtur:
+
+| Touchpoint | Person | `Typ` | `Erbjudande` | `Datum` |
+|---|---|---|---|---|
+| `recL21qSD7lcZoxoL` (ID 980) | `ZZ-Lead Person 01` | Angett e-post för att ta del av ett erbjudande | Meditationen Kraftfältet | 2025-11-25T18:45:00Z |
+| `recQiquDjgSnZSX6H` (ID 981) | `ZZ-Lead Person 02` | Angett e-post för att ta del av ett erbjudande | Meditationen Kraftfältet | 2025-11-25T18:45:00Z |
+
+**Samma datum på båda med avsikt.** `get-leads.staging.test.ts`s cursor-walk
+är uttryckligen ordnings-agnostisk med motiveringen *"båda fixturer saknar
+interaktionsdatum"*. Olika datum hade gjort ordningen deterministisk och
+tyst ändrat en förutsättning testet vilar på; identiska datum bevarar den.
+
+Båda raderna bär ett `Metadata`-fält som förklarar varför de finns och att de
+inte får röras.
+
+**Verifierat efter skrivningen** (samma filter som `get-leads` nu kör):
+
+```text
+AND({Totalt antal hämtningar (erbjudande)} > 0, {Antal anmälningar (totalt)} = 0)
+```
+
+| Fixtur | `Antal hämtningar` | `Totalt antal hämtningar (erbjudande)` | Överlever filtret? |
+|---|--:|--:|---|
+| `ZZ-Lead Person 01` | 1 | **1** | **Ja** |
+| `ZZ-Lead Person 02` | 1 | **1** | **Ja** |
+
+`Alla hämtningar` blev `"Meditationen Kraftfältet (2025-11-25)"` på båda, och
+`Senaste interaktion (text)` blev `"Hämtade Meditationen Kraftfältet"` — alltså
+exakt den form de 33 riktiga leadsen i prod bär.
+
+**Fixturen är nu robust mot BÅDA filtren:** `Antal hämtningar` är kvar på 1
+(`Engagemang`-raden rördes inte), så varken den gamla eller den nya formeln
+tappar den. Det gör också att `TASK-278`s ompekade VISNINGSfält (`antalHamtningar`
+från rollupen) ger 1 — testets `antalHamtningar ≥ 1` håller i båda världar.
+
+**Ingen kod ändrad.** Varningskommentaren i `tests/api/get-leads.staging.test.ts`
+lämnades kvar med avsikt: den beskriver varför fixturerna ser ut som de gör, och
+det är fortfarande sant.
+
+## Ursprunglig åtgärdsbeskrivning (före verkställighet)
 
 Ge `ZZ-Lead-person-01` och `-02` **en `Touchpoints`-rad vardera** i staging,
 så att rollupen blir > 0 och fixturerna åter representerar en verklig lead.
