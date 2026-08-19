@@ -159,11 +159,29 @@ Deno.serve(async (req) => {
     // fält håller full-walk-payloaden minimal (record-ID + ett fält/rad,
     // inga övriga 20+ kolumner). Äldre klienter läser bara
     // {persons, nextCursor} och är obrutna.
+    // FELISOLERING (orkestrerar-granskning, samma landning): full-walken gör
+    // FLERA sekventiella Airtable-anrop — dess felyta (429, transient 5xx,
+    // timeout mitt i walken) är därför mångdubbelt större än sid-anropets.
+    // Utan egen .catch() hade en rejectad totalPromise kastat HELA
+    // Promise.all och tagit ner listan (`mapErrorToResponse`, felruta i
+    // stället för 50 rader) — en KOSMETISK siffra hade fällt appens
+    // huvudyta. Listan är viktigare än räknaren: en trasig full-walk
+    // degraderar till `undefined` (samma additiva/skew-säkra väg klienten
+    // redan bär, `PersonsList.tsx`s `data?.pages[0]?.total ?? loadedCount`),
+    // ALDRIG till ett kastat fel. Loggas ändå (samma
+    // varna-och-degradera-mönster som `get-segments/index.ts`s
+    // `toSavedSegment`) så en SYSTEMATISKT trasig full-walk syns i loggarna
+    // i stället för att bli osynlig bakom en alltid-grön fallback.
     const totalPromise = offset
       ? Promise.resolve(undefined)
-      : fetchFromAirtable(TABLE_NAME, { filterByFormula, fields: ['Namn'] }).then(
-          (records) => records.length,
-        );
+      : fetchFromAirtable(TABLE_NAME, { filterByFormula, fields: ['Namn'] })
+          .then((records) => records.length)
+          .catch((totalError) => {
+            console.warn(
+              `[get-persons] totalsiffra-full-walk fallerade, degraderar till undefined: ${(totalError as Error).message}`,
+            );
+            return undefined;
+          });
 
     const [{ records, nextOffset }, total] = await Promise.all([pagePromise, totalPromise]);
 
