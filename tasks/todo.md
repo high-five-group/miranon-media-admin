@@ -15,9 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 107 ▶️ AKTIV (återupptagen femte gången, 2026-08-19,
-`lifecycle: active`) — SEX BESLUT VÄNTAR MARCUS, `TASK-277` FÄRDIGSPECCAD
-MEN EJ BYGGD.**
+**Session 107 ⏸️ PAUSAD (sjätte gången, 2026-08-19, `lifecycle: paused`) —
+PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
 Marcus dom stängde omtaget: *"Nu är jag jättenöjd med hur det ser ut och
 funkar."* **PR #1597 MERGED `13203e51`, `Vercel: success` verifierat** —
 noll EF-filer i vågen, så ingen prod-EF-deploy behövdes. Fem commits:
@@ -67,7 +66,7 @@ numreringen re-deriverad (f50 nu HÄRLEDD ur disk, var ohärledd; **fragment
 är 47, inte 48** — handoffen räknade `README.md` som fragment), todo-rubrikens paus-räknare rättad, och **heartbeat-monitorn
 medvetet EJ omstartad** — `#1488` är röd, och policyns GRÄNS-rad undantar
 röd-vägen från Dependabot-tystnaden, så en omstart återinför larm var
-90:e sekund (`T144`). Vägvalet är Marcus. Läge: Del 15.**
+90:e sekund (`T144`). Vägvalet är Marcus. Läge: Del 15.** **PAUS 6 (2026-08-19):** `TASK-277`+`278` byggda och staging-deployade (`total: 58` verifierat) · **ADR-119** låser PDF-vägen (extern HTML/CSS-motor, generering EN gång per event, BIFOGA) · **ADR-120** gör Resend till ett medvetet val i stället för ett arv · loggan i äkta vektor med originalfärger (Marcus fångst: två hexvärden) · favicon + PWA-ikoner bär nu Rogers riktiga M · Cavolini-licensen MÄTT (`fsType 0x0008`) · `TASK-279` bilage-mallarna byggda (#1634 armerad). **MARCUS ÖPPNA MOMENT: prod-EF-deploy · verifiera favicon+PWA-ikon · granska mallarna (QR-placeringen omvänd i kortet mot förlagan).** Numrering: ADR 121 · task-280 · L512 + 47 fragment · T148 · f51. Full handoff: sessionsdok S107 § PAUSLÄGE (sjätte gången) + Del 17.
 
 **Session 107 — första passet (historik): NIO-PUNKTSLISTAN: utredning +
 nio byggskivor landade på EN dag.** Sju
