@@ -1006,6 +1006,11 @@ function matchesSearch(person: FixturePerson, term: string): boolean {
  * EF:en: sortering på Namn stigande, sökning över fyra fält, opak cursor och
  * `nextCursor: null` först på sista sidan. Det är det som gör att BÅDE
  * sökningen och "Ladda fler" går att visa i fixturvärlden.
+ *
+ * TASK-277 Del 1 — `total` speglar EF:ens additiva svarsfält: beräknad mot
+ * SAMMA filtrerade mängd (`traffar.length`, efter sök men FÖRE sidskärning)
+ * och satt ENBART när cursor saknas, precis som `get-persons/index.ts`s
+ * full-walk (en gång per vy-/sökladdning, aldrig per sida).
  */
 export function resolvePersonsResponse(url: URL) {
   const term = (url.searchParams.get('search') ?? '').trim().toLowerCase();
@@ -1025,6 +1030,7 @@ export function resolvePersonsResponse(url: URL) {
   return {
     persons: traffar.slice(offset, slut),
     nextCursor: slut < traffar.length ? encodeFixtureCursor(slut) : null,
+    ...(cursor ? {} : { total: traffar.length }),
   };
 }
 

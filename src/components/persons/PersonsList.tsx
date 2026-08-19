@@ -392,7 +392,13 @@ export function PersonsList() {
     );
   }
 
-  const total = persons.length;
+  const loadedCount = persons.length;
+  // TASK-277 AC #1 — äkta serversiffra (`get-persons` full-walk, beräknad
+  // ENBART på FÖRSTA sidan/cursor saknas — `data.pages[0]`). Skew-säkert
+  // fallback till `loadedCount`: en äldre EF-deploy utan fältet (Vercel
+  // Skew-klassen, samma mönster som AktivitetsHistorik/TASK-225.2) faller
+  // tillbaka på "visar N av N", aldrig NaN, aldrig en krasch.
+  const totalCount = data?.pages[0]?.total ?? loadedCount;
 
   return (
     <div className="flex flex-col gap-4" data-testid="personer-yta">
@@ -411,9 +417,11 @@ export function PersonsList() {
           så beskedet fortfarande annonseras — annars vore tomläget tyst för en
           skärmläsare.
 
-          Byggkrav: `persons-list.staging.test.ts:121` asserterar den gamla
-          strängen ordagrant och migreras i samma landning (R3). */}
-      {total === 0 ? (
+          Tomlägets copy hade ETT byggkrav mot `persons-list.staging.test.ts`
+          — en fil FLYTTAD i `task-59.4` (ADR-080, Acceptance-klassen); den
+          hänger numera i `tests/acceptance/persons-list.acceptance.test.ts`
+          (TASK-277 AC #4, rättat efter att raden stod stale i tre veckor). */}
+      {loadedCount === 0 ? (
         <div
           role="status"
           aria-live="polite"
@@ -438,14 +446,15 @@ export function PersonsList() {
               Copyn: "laddade" är maskin-svenska (Gunilla-principen), och
               grammatikbuggen `1 person laddade` (PersonsList.tsx:164)
               försvinner genom konstruktion när verbet inte längre böjs efter
-              antalet.
+              antalet. (Historisk not: den promoveringstida VARNINGEN om SJU
+              e2e-assertions i `persons-list.staging.test.ts` avsåg en fil
+              som redan var flyttad — se `tests/acceptance/persons-list.acceptance.test.ts` —
+              och migreringen är sedan länge utförd; ADR-103 B2 steg 4.)
 
-              VARNING till skarpt bygge (byggunderlagets R3): SJU
-              e2e-assertions hänger i den gamla copyn
-              (persons-list.staging.test.ts rad 88, 97, 104, 109, 114, 121,
-              127 — rad 114 asserterar just buggen). De ska migreras i SAMMA
-              landning, aldrig lämnas röda. Prototypen rör dem inte: e2e kör
-              den skarpa vyn utan `?variant=`. */}
+              TASK-277 AC #2 (Marcus 2026-08-18/19, LÅST ordalydelse): den
+              gamla "(fler finns)"-svansen utgår HELT. Formen är nu "Visar N
+              av TOTAL personer[ för \"sökterm\"]." — `totalCount` är den
+              äkta serversiffran (se ovan), inte `hasNextPage`. */}
           <p
             ref={statusRef}
             tabIndex={-1}
@@ -453,9 +462,7 @@ export function PersonsList() {
             aria-live="polite"
             className="px-4 text-small text-text-muted"
           >
-            {`Visar ${total} ${total === 1 ? 'person' : 'personer'}${q ? ` för "${q}"` : ''}${
-              hasNextPage ? ' (fler finns)' : ''
-            }.`}
+            {`Visar ${loadedCount} av ${totalCount} personer${q ? ` för "${q}"` : ''}.`}
           </p>
 
           {/* [PROTOTYPE] STEG 3 (k03) — KORTANATOMIN. Raden slutade vara ett
@@ -471,8 +478,11 @@ export function PersonsList() {
           "där rundningen slutar" (DetaljGrupp.tsx:29-36).
 
           `<ul aria-label="Personer">` BEHÅLLS oförändrad — sex e2e-assertions
-          hänger i `getByRole('list', { name: 'Personer' })` och strukturen ska
-          överleva till skarpt bygge (byggunderlagets R4). */}
+          hänger i `getByRole('list', { name: 'Personer' })`
+          (`tests/acceptance/persons-list.acceptance.test.ts`, promoverad hit
+          via ADR-103 B1; migreringen är sedan länge UTFÖRD, inte en framtida
+          "skarpt bygge"-punkt — TASK-277 AC #4 rättade den stale
+          framtids-formuleringen). */}
           <ul
             aria-label="Personer"
             className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"

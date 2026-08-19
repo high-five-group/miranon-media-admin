@@ -76,7 +76,13 @@ function person(i: number) {
   } satisfies z.infer<typeof PersonSchema>;
 }
 
-/** Cursor-paginerad mock: tre sidor (00–01 → c1 → 02–03 → c2 → 04 → null). */
+/**
+ * Cursor-paginerad mock: tre sidor (00–01 → c1 → 02–03 → c2 → 04 → null).
+ *
+ * TASK-277 Del 1 — `total` speglar `get-persons`s additiva svarsfält: satt
+ * ENBART när cursor saknas (full-walk-semantiken, en gång per vy-/
+ * sökladdning), aldrig på en efterföljande sida.
+ */
 function respondPage(rawUrl: string) {
   const url = new URL(rawUrl);
   const search = url.searchParams.get('search');
@@ -86,10 +92,10 @@ function respondPage(rawUrl: string) {
   if (search) {
     const all = [0, 1, 2, 3, 4].map(person);
     const persons = all.filter((p) => p.namn.toLowerCase().includes(search.toLowerCase()));
-    return { persons, nextCursor: null };
+    return { persons, nextCursor: null, total: persons.length };
   }
 
-  if (!cursor) return { persons: [person(0), person(1)], nextCursor: 'c1' };
+  if (!cursor) return { persons: [person(0), person(1)], nextCursor: 'c1', total: 5 };
   if (cursor === 'c1') return { persons: [person(2), person(3)], nextCursor: 'c2' };
   if (cursor === 'c2') return { persons: [person(4)], nextCursor: null };
   return { persons: [], nextCursor: null };
@@ -110,7 +116,7 @@ test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
 
     // Sida 1.
     await expect(list.getByRole('listitem')).toHaveCount(2);
-    await expect(page.getByText('Visar 2 personer (fler finns).')).toBeVisible();
+    await expect(page.getByText('Visar 2 av 5 personer.')).toBeVisible();
     await expect(loadMore).toBeVisible();
 
     // Sida 2 appendas (cursor c1). Knappen finns kvar (fler sidor).
@@ -126,12 +132,12 @@ test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
     await expect(list.getByRole('listitem')).toHaveCount(5);
     await expect(loadMore).toHaveCount(0);
     // A11y: fokus tappas inte — flyttas till status-raden när knappen försvinner.
-    await expect(page.getByText('Visar 5 personer.')).toBeFocused();
+    await expect(page.getByText('Visar 5 av 5 personer.')).toBeFocused();
   });
 
   test('DoD 5 — sökning skriver ?q och filtrerar via server-param', async ({ page }) => {
     await page.goto('/personer');
-    await expect(page.getByText('Visar 2 personer (fler finns).')).toBeVisible();
+    await expect(page.getByText('Visar 2 av 5 personer.')).toBeVisible();
 
     await page.getByRole('searchbox', { name: 'Sök person' }).fill('Person 00');
 
@@ -141,7 +147,7 @@ test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
     // efter antalet. Konvergensens k09 rev den genom KONSTRUKTION — "Visar"
     // böjs inte — så buggen kan inte återuppstå, och testet asserterar den
     // därför inte längre.
-    await expect(page.getByText('Visar 1 person för "Person 00".')).toBeVisible();
+    await expect(page.getByText('Visar 1 av 1 personer för "Person 00".')).toBeVisible();
     await expect(page.getByRole('list', { name: 'Personer' }).getByRole('listitem')).toHaveCount(1);
   });
 
@@ -159,7 +165,7 @@ test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
 
   test('DoD 4 — axe 0 violations på den renderade listan', async ({ page }) => {
     await page.goto('/personer');
-    await expect(page.getByText('Visar 2 personer (fler finns).')).toBeVisible();
+    await expect(page.getByText('Visar 2 av 5 personer.')).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

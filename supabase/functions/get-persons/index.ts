@@ -2,7 +2,7 @@ import {
   buildSearchAcrossFieldsFilter,
   type SearchField,
 } from '../_shared/airtable-filter.ts';
-import { fetchAirtablePage } from '../_shared/airtable-client.ts';
+import { fetchAirtablePage, fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { selectName, stringArray } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
@@ -102,10 +102,14 @@ Deno.serve(async (req) => {
     { name: 'Ort', isArray: true },
   ];
   // KONSTANT bas-filter (S103, Marcus 2026-08-10): Personer-vyn visar ENDAST
-  // personer med minst en anmälan. Det är exakt komplementet till get-leads
-  // LEAD_FILTER (`AND({Antal hämtningar} > 0, {Antal anmälningar (totalt)} = 0)`),
-  // så de två ytorna täcker basen utan hål och utan överlapp: Intresserade bor
-  // under Mer, resten här.
+  // personer med minst en anmälan. Tänkt som komplementet till get-leads
+  // LEAD_FILTER (numera `AND({Totalt antal hämtningar (erbjudande)} > 0,
+  // {Antal anmälningar (totalt)} = 0)`, TASK-277 AC #6 — citatet här hölls i
+  // synk med koden, den ändras varje gång LEAD_FILTER gör det): Intresserade
+  // bor under Mer, resten här. "Exakt komplement utan hål" var TASK-277:s
+  // ursprungliga Del 2-fynd FALSKT (35 personer föll mellan ytorna) — AC #6
+  // stänger den mätta klassen (33 av dem), men detta bas-filter RÖRS INTE av
+  // skivan (uttryckligt utanför omfattningen).
   //
   // GRÄNSEN GÅR VID ANMÄLAN, INTE VID GENOMFÖRT EVENT. Marcus formulering var
   // "gått en eller flera kurser", men han preciserade skälet: personer med
@@ -138,20 +142,57 @@ Deno.serve(async (req) => {
 
   try {
     // ETT Airtable-listanrop per sida (ingen full-walk) — cursor-port (ADR-056).
-    const { records, nextOffset } = await fetchAirtablePage(TABLE_NAME, {
+    const pagePromise = fetchAirtablePage(TABLE_NAME, {
       filterByFormula,
       sort: [{ field: 'Namn', direction: 'asc' }],
       pageSize,
       offset,
     });
 
+    // TASK-277 Del 1 — äkta totalsiffra, ADDITIVT svarsfält (speglar
+    // get-activity-log/TASK-225.2, `index.ts:236-269`). Airtable saknar en
+    // count-primitiv för ett filtrerat urval (`airtable-constraints.md` P6:
+    // "ingen numerisk offset, ingen totalräkning") — full-walk mot SAMMA
+    // filterByFormula är den enda vägen till ett äkta antal. Beräknas ENBART
+    // på FÖRSTA sidan (cursor saknas), aldrig per sida — annars hade varje
+    // "Ladda fler" kostat en extra full-walk. `fields` begränsat till ETT
+    // fält håller full-walk-payloaden minimal (record-ID + ett fält/rad,
+    // inga övriga 20+ kolumner). Äldre klienter läser bara
+    // {persons, nextCursor} och är obrutna.
+    // FELISOLERING (orkestrerar-granskning, samma landning): full-walken gör
+    // FLERA sekventiella Airtable-anrop — dess felyta (429, transient 5xx,
+    // timeout mitt i walken) är därför mångdubbelt större än sid-anropets.
+    // Utan egen .catch() hade en rejectad totalPromise kastat HELA
+    // Promise.all och tagit ner listan (`mapErrorToResponse`, felruta i
+    // stället för 50 rader) — en KOSMETISK siffra hade fällt appens
+    // huvudyta. Listan är viktigare än räknaren: en trasig full-walk
+    // degraderar till `undefined` (samma additiva/skew-säkra väg klienten
+    // redan bär, `PersonsList.tsx`s `data?.pages[0]?.total ?? loadedCount`),
+    // ALDRIG till ett kastat fel. Loggas ändå (samma
+    // varna-och-degradera-mönster som `get-segments/index.ts`s
+    // `toSavedSegment`) så en SYSTEMATISKT trasig full-walk syns i loggarna
+    // i stället för att bli osynlig bakom en alltid-grön fallback.
+    const totalPromise = offset
+      ? Promise.resolve(undefined)
+      : fetchFromAirtable(TABLE_NAME, { filterByFormula, fields: ['Namn'] })
+          .then((records) => records.length)
+          .catch((totalError) => {
+            console.warn(
+              `[get-persons] totalsiffra-full-walk fallerade, degraderar till undefined: ${(totalError as Error).message}`,
+            );
+            return undefined;
+          });
+
+    const [{ records, nextOffset }, total] = await Promise.all([pagePromise, totalPromise]);
+
     const persons = records.map(mapPerson);
     // Wrappa Airtables offset opakt; null på sista sidan.
     const nextCursor = nextOffset ? encodeCursor(nextOffset) : null;
 
-    return new Response(JSON.stringify({ persons, nextCursor }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ persons, nextCursor, ...(total !== undefined ? { total } : {}) }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   } catch (error) {
     return mapErrorToResponse(error, requestId, corsHeaders, {
       function: 'get-persons',

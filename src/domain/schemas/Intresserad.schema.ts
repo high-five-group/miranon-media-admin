@@ -2,12 +2,15 @@ import { z } from 'zod';
 import { PersonSchema } from './Person.schema';
 
 /**
- * En INTRESSERAD = en PERSON som är ett lead: har hämtat något (minst ett
- * Engagemang) men ännu inte anmält sig (noll Anmälningar totalt). Läsning 2
- * (Marcus-låst, Fas 6e L1) — INTE en nedladdningshändelse (det vore Läsning 1,
- * den förkastade tolkningen; den föräldralösa `Lead`-domänen rensas i L1
- * Landning 2). Server-filtret (get-leads) uttrycker definitionen:
- * `AND({Antal hämtningar} > 0, {Antal anmälningar (totalt)} = 0)`.
+ * En INTRESSERAD = en PERSON som är ett lead: har hämtat något men ännu inte
+ * anmält sig (noll Anmälningar totalt). Läsning 2 (Marcus-låst, Fas 6e L1) —
+ * INTE en nedladdningshändelse (det vore Läsning 1, den förkastade
+ * tolkningen; den föräldralösa `Lead`-domänen rensas i L1 Landning 2).
+ * Server-filtret (get-leads) uttrycker definitionen:
+ * `AND({Totalt antal hämtningar (erbjudande)} > 0, {Antal anmälningar
+ * (totalt)} = 0)` (TASK-277 AC #6 — pekades om från `{Antal hämtningar}` =
+ * `COUNTA(Engagemang)`, som missade leads vars `Engagemang`-rad aldrig
+ * skapades — fälla 47, data-model.md).
  *
  * Rikare än list-`PersonSchema` med exakt de två leads-rollups listan utelämnar:
  * `antalHamtningar` (= `COUNTA(Engagemang)`, appens kanoniska hämtnings-mått —

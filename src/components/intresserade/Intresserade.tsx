@@ -61,9 +61,11 @@ function IntresseradRow({ person }: { person: Intresserad }) {
 /**
  * Intresserade-vy (Fas 6e L1 Landning 3) — GLOBAL LÄS-vy över leads. Data via
  * `fetchIntresserade()` → get-leads-EF (router-context-DI, ADR-055), som
- * serverside-filtrerar den STRIKTA lead-formeln (`AND({Antal hämtningar} > 0,
- * {Antal anmälningar (totalt)} = 0)` — Läsning 2) och sorterar 'Senaste
- * interaktion (datum)' desc → INGEN klient-sortering här. Global lista (inga params).
+ * serverside-filtrerar den STRIKTA lead-formeln (`AND({Totalt antal
+ * hämtningar (erbjudande)} > 0, {Antal anmälningar (totalt)} = 0)` — Läsning
+ * 2; fältet TASK-277 AC #6 pekade om från `{Antal hämtningar}`, fälla 47)
+ * och sorterar 'Senaste interaktion (datum)' desc → INGEN klient-sortering
+ * här. Global lista (inga params).
  *
  * LÄSER bara: ingen write-affordans (mailutskick m.m. = L2/L3, egna slices).
  * Speglar Waitlist/EventRegistrations 11/10-a11y-mönster EXAKT (väg A: status/fält

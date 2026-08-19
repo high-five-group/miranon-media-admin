@@ -53,8 +53,11 @@
 // skarpa beviset körs i CI (STAGING_REQUIRED=1, secrets injicerade).
 //
 // SCOPE: denna svit täcker EF/cursor-MEKANIKEN skarpt. Klient-a11y ("Ladda
-// fler"/fokus-behållning/aria-live) täcks av L3:s mock-baserade e2e
-// (persons-list.staging.test.ts) — ingen duplicering här.
+// fler"/fokus-behållning/aria-live) täcks av den mock-baserade
+// Acceptance-sviten (`tests/acceptance/persons-list.acceptance.test.ts`,
+// task-59.4/ADR-080 flyttade filen dit — den refererade tidigare namnet
+// `persons-list.staging.test.ts` fanns aldrig i den flyttade formen och är
+// rättat, TASK-277 AC #4) — ingen duplicering här.
 
 import { type APIRequestContext, expect, test } from '@playwright/test';
 import { assertCursorPortConformance, type CursorPage } from './cursor-conformance';
