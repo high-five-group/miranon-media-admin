@@ -59,7 +59,8 @@ lite som ett experiment/MVP för den här appen"*). Därmed faller det ena av
 1. **Resend behålls** — men som ett MEDVETET val, inte ett arv.
 
 2. **Det som bär beslutet nu är domänverifieringen, inte delningen.**
-   SPF/DKIM/DMARC på outsidereality-domänen är uppsatt och fungerar. Att
+   SPF/DKIM/DMARC på **`miranon.dev`** är uppsatt och fungerar (se
+   § Amendering nedan — detta stod först felaktigt som "outsidereality"). Att
    flytta den är inte konfiguration: det är en period där utgående mail kan
    hamna i skräpkorgen medan DNS propagerar och mottagarnas rykte-system
    omvärderar avsändaren. För en verksamhet vars affär är att nå deltagare
@@ -157,3 +158,51 @@ alternativ vägdes mot mätta tal och förkastades av konkreta skäl.
 **Att beslutet inte ändrar någon kod gör det inte mindre ADR-bart.** Ett arv
 som aldrig prövats och ett val som prövats och bekräftats ser identiska ut i
 kodbasen — och helt olika ut för den som ska fatta nästa beslut.
+
+## Amendering 2026-08-19 (samma dag) — domänen var FEL i beslut 2
+
+**Beslut 2 påstod ursprungligen att SPF/DKIM/DMARC var uppsatt på
+"outsidereality-domänen". Det är falskt.**
+
+Felet uppstod genom att `ADR-015`s citat lästes som ett påstående om
+NULÄGET. `ADR-015` skrevs 2026-05-05, och den tidens research
+(`docs/research/datamodell-research/01-extraction.md:474`) bokförde domänen
+som **öppen fråga**, ordagrant: *"Domän pending | outsidereality.se eller
+psionautics.se i Resend (kvarstår)"*. Något beslut i den frågan nådde aldrig
+denna ADR — jag ärvde ett tre månader gammalt "pending" och skrev ned det som
+verifierat faktum.
+
+**Vad som faktiskt gäller, mätt mot en DMARC-rapport från Google
+(2026-08-19, rapportfönster 2026-08-17):**
+
+| Post | Faktiskt värde |
+|---|---|
+| Rapporterad domän | **`miranon.dev`** |
+| Publicerad policy | `p=quarantine`, `sp=quarantine`, `np=quarantine`, `pct=100` |
+| Header-from | `send.miranon.dev` |
+| DKIM (selector `resend`) | **pass** på `send.miranon.dev` |
+| SPF | **pass** på `send.send.miranon.dev` |
+| Disposition | `none` på samtliga poster — inget karantänerades |
+| Volym i fönstret | **3 mail** |
+
+`outsidereality.se` förekommer i kodbasen enbart som **reply-to-adress**
+(`lotta@outsidereality.se`), aldrig som sändande domän.
+
+**Beslutet står oförändrat.** Domänverifieringen bär det fortfarande — det är
+bara en annan domän än den jag skrev. Att flytta `miranon.dev`s
+SPF/DKIM/DMARC till en ny leverantör bär exakt samma propagerings-risk som
+beslut 2 beskriver.
+
+**Ett fynd som STÄRKER beslutet, upptäckt i samma rapport:** posterna bär en
+andra godkänd DKIM-signatur från **`amazonses.com`**. Resend kör alltså
+ovanpå Amazon SES. Alternativet "byt till SES" i § Alternativ ovan vore
+därmed inte ett leverantörsbyte utan ett lager-byte till **samma
+underliggande infrastruktur** — man skulle ge upp Resends API och behålla
+SES leveransväg. Det gör alternativet svagare än det såg ut när det
+förkastades, inte starkare.
+
+**Felklassen är känd och namngiven i detta repo:** ett citat som var sant när
+det skrevs, läst som ett påstående om nuläget. Samma klass som `S107` Del 13
+§ E dokumenterade för kodkommentarer (`RackviddBadge`-prosan,
+`PersonsList.tsx:443-448`, `Bevakningsrad.tsx:13-14`) — och begången här av
+den som skrev ned den lärdomen, tre timmar senare, i en ADR.
