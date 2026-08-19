@@ -4,7 +4,7 @@ title: Personlistan — äkta totalsiffra och täckningshålet mot Leads-ytan
 status: To Do
 assignee: []
 created_date: '2026-08-18 11:44'
-updated_date: '2026-08-18 11:55'
+updated_date: '2026-08-19 08:32'
 labels: []
 dependencies: []
 ordinal: 503000
@@ -152,3 +152,43 @@ fält som bär sanningen — därav AC #6.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Premisskontroll mot prod 2026-08-19 (orkestreraren, före bygg-agent)
+
+Tre av kortets premisser mättes om mot prod-basen `app8uGPrVCVOm6LfD`
+tabell `Personer` (`tbl6ZyCm3V026iFTU`) via Airtable-MCP, READ-only:
+
+1. **Fältet finns:** `Totalt antal hämtningar (erbjudande)` =
+   **`fldd782imiCRtFJ4t`**. Bekräftat i tabellens fältlista.
+2. **AC #6:s bärande premiss var OVERIFIERAD och är nu mätt:** rollup-fältet
+   ÄR filtrerbart i `filterByFormula`. Skarpt prövat med
+   `AND({Totalt antal hämtningar (erbjudande)} > 0, {Antal anmälningar (totalt)} = 0)`
+   — anropet returnerade poster, ingen formelfel. Kortet antog detta utan bevis.
+3. **De 33 står kvar:** `AND({Totalt antal hämtningar (erbjudande)} > 0,
+   {Antal hämtningar} = 0, {Antal anmälningar (totalt)} = 0)` gav **exakt 33
+   poster** 2026-08-19 — samma tal som 2026-08-18. Mängderna är disjunkta per
+   konstruktion, så Leads-ytan växer med exakt 33.
+
+### Två tillägg till omfattningen som följer av mätningen
+
+**(a) `data-model.md` saknar fältet helt.** Referensen dokumenterar
+`Antal hämtningar` (fälla 47, rad 1458) och `Alla hämtningar`, men
+`Totalt antal hämtningar (erbjudande)` finns inte i filen. Efter denna skiva
+är det fältet en LÄST yta i produktionskod — det ska stå i referensen, med
+korsreferens till fälla 47. Läggs i samma landning.
+
+**(b) Bifynd, ingen åtgärd här:** en stor andel av de 33 bär `Namn` =
+`"Ej tillgängligt"` och blir därmed namnlösa rader i Leads-ytan när de blir
+synliga. Det är ett datakvalitetsproblem i basen, inte i appen. Bokförs som
+observation — INTE denna skivas jobb att lösa.
+
+### AC #2 — copyn Marcus-kvitterad 2026-08-19
+
+Marcus formulering varierade mellan två pass ("Visar 50 av XXX" 2026-08-18,
+"Visar 50 totalt XXX personer" 2026-08-19). Framlagt som val; Marcus valde
+**kortets befintliga AC #2-form**: `Visar N av TOTAL personer`. AC:n är
+oförändrad och är den låsta ordalydelsen.
+<!-- SECTION:NOTES:END -->
