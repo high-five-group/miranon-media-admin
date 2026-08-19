@@ -124,6 +124,29 @@ visuellt: en ljudvågsformad "M" i grönt (`#548235`) med en röd (`#FF0000`)
 skuggkant, följt av kursiv text "iranonMedia" i samma två färger — texten
 "MiranonMedia" läses ut som helhet via vågformen som första "M".
 
+> **RÄTTELSE 2026-08-19 (S107, Marcus fångst):** stycket nedan är FALSIFIERAT
+> i sin huvudsak. `public/miranon-media-ordmarke.svg` är **samma logotyp** som
+> förlagans — samma vågform, samma bokstavsformer, samma proportion — endast
+> OMFÄRGAD. Marcus: *"det ÄR Rogers Powerpoint-logga fast med justerade färger
+> och i SVG-format"*, och färgjusteringen var hans eget experiment för
+> miranon.se. Bevisat på tre sätt: (1) `Miranon_Media_logo.svg` i Marcus
+> logo-mapp är **byte-identisk** med repots fil (`diff` utan utslag);
+> (2) `Miranon Logga.pptx` bär BÅDA paletterna — `FF0000` på slide 1/4/5/6/7
+> och `A3491B`+`606C57` på slide 2/3, alltså original och justerad i samma
+> källfil; (3) en overlay av repots SVG med färgerna återställda mot
+> förlagans rasterlogga visar sammanfallande bokstavsformer, vikt och
+> proportion (endast marginalen skiljer, olika beskärning).
+>
+> Slutsatsen *"den riktiga loggan måste hämtas från Roger/Lotta"* var alltså
+> fel väg, och den kostade ett halvt pass i PowerPoint-export, fontsubstitution
+> och kalibreringsförsök. Rätt svar var att byta två hexvärden i en fil vi
+> redan hade. Resultatet ligger i
+> `public/miranon-media-ordmarke-original.svg`.
+>
+> **Vad felet berodde på:** passet jämförde FÄRG och drog en slutsats om
+> IDENTITET. Två renderingar av samma geometri i olika paletter ser olika ut
+> för ögat — men geometrin var densamma hela tiden, och den kunde ha mätts.
+
 **Detta är INTE samma logotyp som redan ligger i repot.**
 `public/miranon-logo.svg` (fyra sage/copper-parallellogram, `#636b5b` +
 `#984f2b`, ingen text) och `public/miranon-media-ordmarke.svg` (bokstavs-
