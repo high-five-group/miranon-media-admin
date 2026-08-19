@@ -15,8 +15,9 @@
 
 ## Aktuellt fokus
 
-**Session 107 ⏸️ PAUSAD (fjärde gången, 2026-08-18, `lifecycle: paused`) —
-DOKUMENTSIDANS OMTAG LIVE I PROD + VANDRINGENS RESTLISTA REGISTRERAD.**
+**Session 107 ▶️ AKTIV (återupptagen femte gången, 2026-08-19,
+`lifecycle: active`) — SEX BESLUT VÄNTAR MARCUS, `TASK-277` FÄRDIGSPECCAD
+MEN EJ BYGGD.**
 Marcus dom stängde omtaget: *"Nu är jag jättenöjd med hur det ser ut och
 funkar."* **PR #1597 MERGED `13203e51`, `Vercel: success` verifierat** —
 noll EF-filer i vågen, så ingen prod-EF-deploy behövdes. Fem commits:
@@ -60,7 +61,13 @@ betalfälten · ompeka basformeln · 69 Engagemang-rader · AC #7 på 241.8).
 `TASK-277` färdigspeccad men EJ BYGGD. Heartbeat-monitorn stoppad medvetet —
 **starta om vid resume**. Numrering: ADR 119 · **task-278** (277 förbrukat) ·
 L512 + 48 fragment · T145 · f50 (ohärledd) — re-derivera ALLTID. Full
-handoff: sessionsdok S107 § PAUSLÄGE (femte gången) + Del 14.**
+handoff: sessionsdok S107 § Paushistorik (femte gången) + Del 14. **RESUME 5
+(2026-08-19):** paus-landningen verifierad på `main` (#1609, `f598883d`),
+numreringen re-deriverad (f50 nu HÄRLEDD ur disk, var ohärledd; **fragment
+är 47, inte 48** — handoffen räknade `README.md` som fragment), todo-rubrikens paus-räknare rättad, och **heartbeat-monitorn
+medvetet EJ omstartad** — `#1488` är röd, och policyns GRÄNS-rad undantar
+röd-vägen från Dependabot-tystnaden, så en omstart återinför larm var
+90:e sekund (`T144`). Vägvalet är Marcus. Läge: Del 15.**
 
 **Session 107 — första passet (historik): NIO-PUNKTSLISTAN: utredning +
 nio byggskivor landade på EN dag.** Sju
