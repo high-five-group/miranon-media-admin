@@ -38,9 +38,10 @@ function asNumber(val: unknown): number {
 }
 
 // mapLead = get-persons mapPerson-fälten + de två leads-rollups list-schemat
-// utelämnar (IntresseradSchema = PersonSchema.extend). Coercion speglar
-// get-person: antalHamtningar via asNumber (skalär), allaHamtningar via
-// stringArray (FLER-VÄRT rollup, ALDRIG firstString).
+// utelämnar (IntresseradSchema = PersonSchema.extend). Coercion: antalHamtningar
+// via asNumber (skalär), allaHamtningar via stringArray (FLER-VÄRT rollup,
+// ALDRIG firstString). `antalHamtningar` AVVIKER numera från get-person:s
+// mappning (TASK-278) — se kommentaren vid fältet nedan för skälet.
 function mapLead(record: { id: string; fields: Record<string, unknown> }) {
   const f = record.fields;
 
@@ -73,16 +74,27 @@ function mapLead(record: { id: string; fields: Record<string, unknown> }) {
     deltagandeIds: Array.isArray(f['Deltaganden']) ? f['Deltaganden'] : [],
     // Leads-rollups (utöver list-schemat) — "vad de nappat på".
     //
-    // ÖPPEN KANT (TASK-277, medvetet EJ löst här): `antalHamtningar` mappas
-    // FORTSATT från `Antal hämtningar` (COUNTA(Engagemang), fälla 47) —
-    // ENDAST LEAD_FILTER ovan pekades om, inte detta visningsfält. De 33 nya
-    // leads som filtret nu släpper in (rollup > 0, COUNTA = 0) visar därför
-    // `antalHamtningar: 0` trots att de uppenbarligen hämtat något; ett
-    // kosmetiskt facit-fel, inte ett synlighets-fel (`allaHamtningar` nedan
-    // fortsätter visa VAD de hämtat, eftersom den läser Touchpoints direkt).
-    // Rätt fix är basens formel (fälla 47:s egen rekommendation) — en
-    // PROD-SCHEMAÄNDRING utanför denna skivas mandat.
-    antalHamtningar: asNumber(f['Antal hämtningar']), // formula COUNTA(Engagemang)
+    // TASK-278 — `antalHamtningar` läser `Totalt antal hämtningar
+    // (erbjudande)` (SAMMA fält LEAD_FILTER ovan redan filtrerar på, fälla
+    // 50, data-model.md), INTE längre `Antal hämtningar` (COUNTA(Engagemang),
+    // fälla 47). Stänger TASK-277:s ÖPPNA KANT: de 33 leads TASK-277 gjorde
+    // synliga bär per definition COUNTA(Engagemang) = 0 — annars hade den
+    // GAMLA LEAD_FILTER redan släppt in dem — så visningsfältet MÅSTE läsa
+    // samma fält filtret filtrerar på, annars motsäger raden sig själv
+    // (person listas FÖR ATT hon hämtat något, visar samtidigt 0). Verifierat
+    // 2026-08-19 mot staging (Airtable-MCP, `apphjj8Q7lkXCMsL4`, READ-only):
+    // Sofia Isaksson (`recxF88ZKUbP9JUs1`) bär rollup=3 mot COUNTA=0 — samma
+    // mönster, se TASK-278-kortets AC #4-not.
+    //
+    // `get-person` (singular) mappar FORTFARANDE antalHamtningar från `Antal
+    // hämtningar` (fälla 47) — MEDVETET ORÖRT (TASK-278 korsundersökning,
+    // AC #2): fältet renderas ingenstans i PersonDetail.tsx (jämförelse-
+    // blocket som en gång visade det revs 2026-08-10 av precis detta skäl,
+    // se PersonDetail.tsx rad ~1470) och skapar därför ingen synlig
+    // självmotsägelse på den ytan idag — annat än här. Rotorsaksfixen (peka
+    // om basens `Antal hämtningar`-formel) löser båda samtidigt —
+    // maximerings-kandidat T16, PROD-SCHEMAÄNDRING utanför mandatet här.
+    antalHamtningar: asNumber(f['Totalt antal hämtningar (erbjudande)']), // rollup ö. Touchpoints (fälla 50)
     allaHamtningar: stringArray(f['Alla hämtningar']), // rollup ö. Touchpoints (FLER-VÄRT)
   };
 }

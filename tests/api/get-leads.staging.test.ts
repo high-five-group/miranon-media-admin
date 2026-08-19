@@ -1,10 +1,17 @@
 // get-leads — skarp conformance mot deployad staging-EF (Fas 6e L1, Intresserade).
 //
 // get-leads är en GLOBAL läs-lista över INTRESSERADE = personer som är leads:
-// hämtat något ({Antal hämtningar} = COUNTA(Engagemang) > 0) men aldrig anmält
-// sig ({Antal anmälningar (totalt)} = 0). Läsning 2 (Marcus-låst). KONSTANT
-// filterByFormula (ingen sök, inget länk-ID-filter → ingen T15). Server-cursor
-// (ADR-056) via samma fetchAirtablePage-port som get-persons.
+// hämtat något ({Totalt antal hämtningar (erbjudande)} > 0, en ROLLUP över
+// Touchpoints) men aldrig anmält sig ({Antal anmälningar (totalt)} = 0).
+// Läsning 2 (Marcus-låst). KONSTANT filterByFormula (ingen sök, inget
+// länk-ID-filter → ingen T15). Server-cursor (ADR-056) via samma
+// fetchAirtablePage-port som get-persons.
+//
+// TASK-277 AC #6 pekade LEAD_FILTER om från `{Antal hämtningar}`
+// (COUNTA(Engagemang), fälla 47) till rollupen ovan — se get-leads/index.ts.
+// TASK-278 pekade i samma steg om visningsfältet `antalHamtningar` (nedan,
+// test 2) till SAMMA rollup, så en rad aldrig kan visa 0 hämtningar för en
+// person filtret redan avgjort HAR hämtat något.
 //
 // Bevisar mot SKARP staging-data (permanenta ZZ-Lead-fixturer, ADR-050-bas):
 //   1. LEAD-FILTER: båda seedade ZZ-Lead-personerna INKLUDERAS; varje rad
@@ -122,7 +129,7 @@ test.describe('get-leads — skarp conformance (Fas 6e, Intresserade)', () => {
     expect(typeof lead?.antalHamtningar, 'antalHamtningar är number').toBe('number');
     expect(
       lead?.antalHamtningar,
-      'antalHamtningar ≥ 1 (en länkad Engagemang)',
+      'antalHamtningar ≥ 1 (Totalt antal hämtningar (erbjudande), TASK-278)',
     ).toBeGreaterThanOrEqual(1);
     // FLER-VÄRT rollup → array (aldrig firstString); tom för lead utan Touchpoints.
     expect(Array.isArray(lead?.allaHamtningar), 'allaHamtningar är array').toBe(true);
