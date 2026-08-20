@@ -409,7 +409,7 @@ premiss-passet mot SAMMA uppdrag.
 - **(i) Rad-referens fel mot fel fil.** Ett tidigare uppdrag i vågen angav
   *"sessionsdok rad 813–817"* — raderna bor i restlistan, inte sessionsdoket.
   Fångat av mottagande agents (beslutsunderlags-agenten) premiss-pass.
-  Verifierat mot `tasks/sessions/2026-07-26-session-91.md:8130`, som bokför
+  Verifierat mot `tasks/sessions/archive/2026-07/2026-07-26-session-91.md:8130`, som bokför
   fyndet i klartext: *"…klass B-fel fångat av mottagaren per ADR-086; andra
   mätpunkten i följd där ett premiss-pass fäller en orkestrerar-referens."*
   Klass B.

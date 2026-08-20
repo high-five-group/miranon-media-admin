@@ -8,7 +8,7 @@ status: draft
 # Uppdragsrevision, körning #2 (T110 mätled 2 / T113 mätpunkt 2) — femtonvågen + artonde resumen (Code, 2026-08-02)
 
 > **Proveniens:** beställd som ett av åtta parallella pass i "Våg 1"
-> (`tasks/sessions/2026-07-26-session-91.md` Del 41, tjugoandra resumen):
+> (`tasks/sessions/archive/2026-07/2026-07-26-session-91.md` Del 41, tjugoandra resumen):
 > *"uppdragsrevision #2 (`npm run revision:uppdrag`, T110 mätled 2 = första
 > n≥2-punkten, T113 mätpunkt 2)"*. Detta är den körningen. Instrumentet
 > (`scripts/uppdragsrevision.mjs`, ADR-086) och baslinjen (körning #1, mot
@@ -35,7 +35,7 @@ bygg-uppdrag ännu).
 
 **Fil-mtime visade sig opålitlig som ensam signal** (första divergensen,
 se § Premiss-pass nedan) — identifieringen gjordes i stället mot
-**innehållets egna tidsstämplar** och mot `tasks/sessions/2026-07-26-session-91.md`:
+**innehållets egna tidsstämplar** och mot `tasks/sessions/archive/2026-07/2026-07-26-session-91.md`:
 
 | Fil | Innehållets tidsspann (första/sista rad) | Motsvarande resume (sessionsdok) | Roll i denna körning |
 |---|---|---|---|

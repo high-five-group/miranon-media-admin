@@ -889,7 +889,7 @@ jobs:
         # ENDA som hör hemma i en pipeline är sviten som skyddar hookens LOGIK
         # mot regression innan landning. ADR-087 § Ärliga svagheter punkt 8
         # bokförde owiring som öppen uppföljning ("ci.yml var upptagen" — se
-        # tasks/sessions/2026-07-26-session-91.md rad 7973-7974); TASK-117
+        # tasks/sessions/archive/2026-07/2026-07-26-session-91.md rad 7973-7974); TASK-117
         # stänger den. 16 fall, tvåsidigt bevis (planterat väntepåstående-fel
         # FÄLLS, korrekt avslut GRÖNT) + fail-closed-grenar + stop_hook_active-
         # genomsläpp. Sandboxad under /tmp/task-113-test-stop-vakt med

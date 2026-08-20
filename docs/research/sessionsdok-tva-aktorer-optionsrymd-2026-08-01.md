@@ -47,7 +47,7 @@ Alla fyra är omverifierade i denna worktree (HEAD `bc26fd6`), inte ärvda:
    `scripts/check-lifecycle.sh:60` kör
    `grep -qE '^## PAUSLÄGE — Session [0-9]+ pausad'`.
 3. **Del-numreringen har en berättare.** S91-doket bär Del 1–38 i EN sekventiell
-   serie (`tasks/sessions/2026-07-26-session-91.md`; registerraden skrevs vid
+   serie (`tasks/sessions/archive/2026-07/2026-07-26-session-91.md`; registerraden skrevs vid
    Del 1–26 — serien har fortsatt växa enligt samma form).
 4. **Paus/resume-verben är singulära.** `session-paus`-skillen (hubben,
    `plugins/marcus-system/skills/session-paus/SKILL.md`) talar genomgående om
@@ -368,7 +368,7 @@ måste först göra extraktionen strikt.
 - `scripts/check-lifecycle.sh` vid HEAD `bc26fd6`, tre fixturfall i
   sandbox-kopia (scratchpad); utfall i tabellen ovan.
 - Hinder 1–4 omverifierade mot `scripts/check-lifecycle.sh`,
-  `tasks/sessions/2026-07-26-session-91.md` (Del 1–38, frontmatter),
+  `tasks/sessions/archive/2026-07/2026-07-26-session-91.md` (Del 1–38, frontmatter),
   `tasks/threads/README.md` § T109 samt hubbens
   `plugins/marcus-system/skills/session-paus/SKILL.md`.
 

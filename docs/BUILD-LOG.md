@@ -3055,7 +3055,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Öppet vid dagens slut:** PR #226 och #227 omergade — #226 blockerad av TASK-27-klassen ovan, #227 röd på `Docs link check` med två 403-bottspärrar i research-dokets källförteckning (`.lycheeignore`-klassen, S84:s gitlab-precedent).
 - **Numrering efter S90:** nästa 91/079/L354/T99/f46/task-53.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-26-session-90.md`](../tasks/sessions/2026-07-26-session-90.md) (Del 1–2) + fyra bilagemappar ([task-48](../tasks/sessions/bilagor/s90-task48-markeringslaget/), [personlistan](../tasks/sessions/bilagor/s90-personlistan-konvergens/README.md), [persondetalj](../tasks/sessions/bilagor/s90-persondetalj-divergens/README.md), [check-in](../tasks/sessions/bilagor/s90-checkin-divergens/README.md)). **EJ fas-avslut.** Kvar: **Marcus design-review av `task-48`** (DoD #5) och Done-flippen · **variantvalen** — persondetalj A/B/C, check-in A/B/C och listans tonal/zebra-fork, samtliga Marcus beslut per L237 · därefter **PRD + skivor per yta**, där check-in-kartans kort 1–3 är variant-oberoende och kan börja direkt. **`TASK-52`** plockbart. Bakgrund: hub-lyftet L284–L353 · `TASK-27` (tidszons-klassen, nu med skarp träff) · T87-aktiveringen · escapes-räkne-regeln · konventions-grillningen · arkitektur-placeringens epok-grillning (T93/T79) · dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-26-session-90.md`](../tasks/sessions/archive/2026-07/2026-07-26-session-90.md) (Del 1–2) + fyra bilagemappar ([task-48](../tasks/sessions/bilagor/s90-task48-markeringslaget/), [personlistan](../tasks/sessions/bilagor/s90-personlistan-konvergens/README.md), [persondetalj](../tasks/sessions/bilagor/s90-persondetalj-divergens/README.md), [check-in](../tasks/sessions/bilagor/s90-checkin-divergens/README.md)). **EJ fas-avslut.** Kvar: **Marcus design-review av `task-48`** (DoD #5) och Done-flippen · **variantvalen** — persondetalj A/B/C, check-in A/B/C och listans tonal/zebra-fork, samtliga Marcus beslut per L237 · därefter **PRD + skivor per yta**, där check-in-kartans kort 1–3 är variant-oberoende och kan börja direkt. **`TASK-52`** plockbart. Bakgrund: hub-lyftet L284–L353 · `TASK-27` (tidszons-klassen, nu med skarp träff) · T87-aktiveringen · escapes-räkne-regeln · konventions-grillningen · arkitektur-placeringens epok-grillning (T93/T79) · dependabot #162/#65 · Marcus-moment: Update-klicket i claude.ai.
 
 ## Session 91 — Härdningssessionen: 22 pauser, restlistan genomarbetad, beslutsbordet stängt (2026-07-26 → 2026-08-02)
 
@@ -3085,7 +3085,7 @@ docs-only-skippade). markdownlint 0, Vale 0 errors, frontmatter 14/14, check-adr
 - **Numrering efter S91:** nästa session **93** (S92 = färgsystemets pausade
   parallellsession) / ADR 089 / L441 / T114 / f47 (hypotes) / task-125.
 
-**Sessionsdok-trail:** [`tasks/sessions/2026-07-26-session-91.md`](../tasks/sessions/2026-07-26-session-91.md)
+**Sessionsdok-trail:** [`tasks/sessions/archive/2026-07/2026-07-26-session-91.md`](../tasks/sessions/archive/2026-07/2026-07-26-session-91.md)
 (Del 1–42 + Paushistorik ×22). Transcript-referens för stängningsdagen: Del 42.6.
 
 ## Session 94 — Orkestrerings-utredningen: från spridda trådfynd till tier-policy i drift (2026-08-02)

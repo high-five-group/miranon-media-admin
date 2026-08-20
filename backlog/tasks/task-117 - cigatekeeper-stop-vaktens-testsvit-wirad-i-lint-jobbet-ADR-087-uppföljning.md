@@ -16,7 +16,7 @@ ordinal: 189000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Bakgrund: ADR-087 (§ Ärliga svagheter, punkt 8) bokför att scripts/test-stop-vakt.sh är körbar i repot men owirad i CI. Sessionsdok tasks/sessions/2026-07-26-session-91.md rad 7973-7974 bokför uppföljningen: "Stop-vaktens svit in i ci.yml-gatekeepern (bokförd uppföljning, ci.yml var upptagen)". Verifierat 2026-08-01: grep -n stop-vakt .github/workflows/ci.yml gav noll träffar innan detta kort.
+Bakgrund: ADR-087 (§ Ärliga svagheter, punkt 8) bokför att scripts/test-stop-vakt.sh är körbar i repot men owirad i CI. Sessionsdok tasks/sessions/archive/2026-07/2026-07-26-session-91.md rad 7973-7974 bokför uppföljningen: "Stop-vaktens svit in i ci.yml-gatekeepern (bokförd uppföljning, ci.yml var upptagen)". Verifierat 2026-08-01: grep -n stop-vakt .github/workflows/ci.yml gav noll träffar innan detta kort.
 
 Sviten (scripts/test-stop-vakt.sh, 16/16 PASS, TASK-113-leveransen PR #551) är en snabb lokal svit utan nätverkstrafik - samma klass som övriga skript-sviter i lint-jobbets steg "Test gatekeeper script suites", inte staging-vägen. Mönster-precedent: PR #525 wirade backlog-grindens svit i samma steg (bash scripts/test-check-backlog-closure.sh).
 <!-- SECTION:DESCRIPTION:END -->

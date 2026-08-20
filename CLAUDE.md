@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-17
+updated: 2026-08-20
 review_by: 2026-11-15
 status: stable
 ---
@@ -506,7 +506,7 @@ signal skiljer PR:en från en som aldrig armerats. Utan ett svep som armerar om
 står en färdig PR still på obestämd tid (`T108`-klassen: ett tillstånd utan
 bevakare). Mätt fyra gånger 2026-08-01, samtliga en G0-transient (inte ett
 verkligt trädfel): `backlog/tasks/task-115` +
-`tasks/sessions/2026-07-26-session-91.md` rad ~7908–7909.
+`tasks/sessions/archive/2026-07/2026-07-26-session-91.md` rad ~7908–7909.
 
 **Åtgärdsregeln för en armerings-kandidat: draft eller armera i samma
 andetag, aldrig vilande.** En PR skapas som draft ELLER armeras när den
