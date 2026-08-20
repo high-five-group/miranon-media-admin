@@ -3,10 +3,10 @@ id: TASK-226
 title: >-
   Prototyp: hem-vyns divergens — tre varianter på dev-route (V1 ro · V2 kontroll
   · V3 skönhet)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-15 09:59'
-updated_date: '2026-08-16 09:59'
+updated_date: '2026-08-20 07:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,7 +31,7 @@ Divergensfasen i hem-omdesignens ADR-102/103-flöde (grillad samsyn S102 Del 8, 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -60,3 +60,9 @@ Throwaway-kontraktet gäller (ADR-102/103): Marcus väljer EN i browsern, förlo
 
 FACIT LÅST (2026-08-16): vinnaren V1 "Lugna morgonen" efter konvergensvarv 1-4 (#1355, #1357, dataläge-knappen #1366, #1379, #1388) facit-låst mot origin/main b1ac411e. Marcus kvittens i klartext: "Varv 4 ser bra ut, lås facit." Katalog: tasks/sessions/bilagor/s102-hem-konvergens/ (facit.json + 6 skärmdumpar: verklig/tom/demo x mobil/desktop). godkand: null (ADR-104 kanalseparation — sätts av Marcus egen kanal, aldrig av bygg-agenten). B3-markören "V1 Lugna morgonen (ro)" tillagd i .facit-policy.conf (skyddar dev-routens prototyp-substrat mot förtida rivning tills godkänt). bash scripts/check-facit.sh grönt.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Divergensfas för hem-vyns omdesign — tre WOW-varianter (V1 ro/V2 kontroll/V3 Bento) på /dev/hem-prototyp; V1 "Lugna morgonen" facit-låst efter konvergensvarv 1-4 (Marcus kvittens). PR-kedja #1344/#1355/#1357/#1366/#1379/#1388/#1392, CI grön per jobb på slutliga #1392 (facit-lås).
+<!-- SECTION:FINAL_SUMMARY:END -->

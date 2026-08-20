@@ -1,10 +1,10 @@
 ---
 id: TASK-275.2
 title: 'Skiva: EF-lagret — union-hämtning + räckviddsparametrar + serverskydd'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 15:36'
-updated_date: '2026-08-17 16:56'
+updated_date: '2026-08-20 07:17'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,6 +31,12 @@ Serverlagret bär räckviddsmodellen ände-till-ände (ADR-118 beslut 1-4): unio
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+EF-lagret bär räckviddsmodellen: union-hämtning (eventets egna+kurstyp-match+alla-event), räckviddsparametrar på båda upload-vägarna, server-sidigt skydd mot radering ur eventkontext — PR #1582 (1e3429c9), CI grön per jobb; staging-API-sviten grön post-merge.
+<!-- SECTION:FINAL_SUMMARY:END -->

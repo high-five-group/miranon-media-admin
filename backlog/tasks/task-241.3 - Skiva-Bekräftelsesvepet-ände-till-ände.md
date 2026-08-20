@@ -1,10 +1,10 @@
 ---
 id: TASK-241.3
 title: 'Skiva: Bekräftelsesvepet ände-till-ände'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 23:03'
-updated_date: '2026-08-17 00:58'
+updated_date: '2026-08-20 07:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,7 +32,7 @@ Bekräftelsesvepet från armering till skickat: sändanrop per event-grupp under
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning mot tasks/sessions/bilagor/s102-svep-konvergens/facit.json (18 bilder) — renderad yta jämförd läge för läge
 <!-- DOD:END -->
@@ -48,3 +48,9 @@ Observerat, ej mitt fel men bokfört öppet: hem-laddlage.acceptance.test.ts (op
 
 SENASTE KOORDINATIONSLÄGE VID PUSH (git fetch precis före denna rad): fix/task-243-3-hem-acceptance-omskrivning landade som PR #1470 EFTER att jag byggde AC #3 mot en oberoende bas — PR #1470 är TEST-ONLY (tests/acceptance/hem-laddlage.acceptance.test.ts, hem.acceptance.test.ts, hem-senaste-aktivitet*.test.ts, tre e2e-filer; gh pr diff 1470 --name-only verifierat), rör INGA src/components/hem/*-filer. Ingen merge-konflikt att vänta. Kvarstående, ej av mig löst risk: PR #1470:s omskrivna hem.acceptance.test.ts/hem-laddlage.acceptance.test.ts är skriven oberoende av mina skickat-markörer (AC #3) — när båda PR:erna landat bör någon verifiera att 243.3:s nya assertions inte antar NOLL extra rader i NyaAnmalningar-listan. Flaggat till orkestreraren, inte löst här (243.3:s diff är inte min att ändra).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Bekräftelsesvepet ände-till-ände: ETT sändanrop per event-grupp via Åtgärds-sidans befintliga kontrakt, resultatläge, hem-markörer, aktivitetslogg — PR #1471 (4e4e7ddd), CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->

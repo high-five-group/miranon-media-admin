@@ -1,10 +1,10 @@
 ---
 id: TASK-273.4
 title: 'Skiva: Dokument-ytans preview- och nedladdningsikoner med ny flik'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 14:57'
-updated_date: '2026-08-17 15:54'
+updated_date: '2026-08-20 07:13'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,7 +30,13 @@ Lotta klickar på förhandsvisnings-ikonen och dokumentet öppnas i en egen webb
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning utförd mot tasks/sessions/bilagor/s102-dokument-konvergens/facit.json (ADR-102 R3) — avvikelser utöver den beslutade: noll
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Dokument-ytans Visa-dialog ersatt av förhandsvisnings-/nedladdningsikoner (ny flik) för alla tre dokumentklasser — PR #1574 (6f1bfd54), CI grön per jobb (ett infra-transient 429-fel på Analyze(actions), ej kodrelaterat).
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-275.1
 title: 'Skiva: Basstruktur — Räckvidd/Kursfamilj/Kursnivå på Bilagor'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 15:34'
-updated_date: '2026-08-17 16:04'
+updated_date: '2026-08-20 07:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,8 +28,14 @@ Basen bär räckviddsdimensionen (ADR-118 beslut 4): fälten skapas via Airtable
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Räckvidd/Kursfamilj/Kursnivå-fälten skapade på Bilagor-tabellen i staging OCH prod via Airtable-MCP, befintliga rader default-migrerade till Räckvidd=Event, data-model.md uppdaterad — PR #1577 (3f9092d6), CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->

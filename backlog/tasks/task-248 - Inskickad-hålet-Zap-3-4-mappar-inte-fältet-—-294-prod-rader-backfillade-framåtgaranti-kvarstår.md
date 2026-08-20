@@ -3,10 +3,10 @@ id: TASK-248
 title: >-
   Inskickad-hålet: Zap 3/4 mappar inte fältet — 294 prod-rader backfillade,
   framåtgaranti kvarstår
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-16 22:26'
-updated_date: '2026-08-16 22:32'
+updated_date: '2026-08-20 07:07'
 labels:
   - airtable
   - backfill
@@ -40,10 +40,10 @@ FRAMATGARANTIN AR INTE STANGD AV DETTA KORT. Halet ar levande: senaste raden uta
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -73,3 +73,9 @@ EN cell kunde jag dock prova oberoende, och den HALLER: cell 2:s pastaende om A7
 
 ATERSTAENDE VERIFIERING (ej mitt kort): att A12 faktiskt satter faltet, matt pa en verklig ny Huvudformular-anmalan EFTER aktiveringen. En odeployad automation ar en avsikt, inte en garanti.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Backfillade Inskickad (fldNtSHQivkL26B6L) = Rad skapad på 294 av 868 prod-rader i Anmälningar där fältet var tomt (rotorsak: Zap 3/4 mappar det inte) — PR #1452 (26e44822), CI grön per jobb (Docs link check/Lint+TypeCheck/CI Passed or Skipped; Test suite skippad D0-docs-diff).
+<!-- SECTION:FINAL_SUMMARY:END -->
