@@ -21,6 +21,11 @@ status: stable
 (`src/routes/__root.tsx` rad 62, gated bakom `import.meta.env.DEV`). De finns
 inte i produktion — bortse från dem.
 
+> **Systerdokument — läs båda.** Denna fil mäter vad VI har. Vad BRANSCHEN
+> gör, med CLS-mätningar och tre vägval, ligger i
+> [`docs/research/uppdateringsnotisens-form-och-notisfamiljen-2026-08-20.md`](../../../../docs/research/uppdateringsnotisens-form-och-notisfamiljen-2026-08-20.md).
+> Ingen av filerna är självbärande utan den andra.
+
 ## Fem ytor, fyra designspråk
 
 | # | Yta | Fil | Form | Layoutförskjutning |
