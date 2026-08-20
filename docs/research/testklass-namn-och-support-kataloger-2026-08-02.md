@@ -4,7 +4,7 @@
 av delade test-support-kataloger på flera nivåer och (b) namnet på en hermetisk
 UI-testklass som i dag heter "acceptance" — och överväger nyttan av omdöpning
 kostnaden i detta repo? · **Ursprung:** TASK-59.8:s QA-vandring
-(`tasks/sessions/2026-07-26-session-91.md` rad ~3853–3857), där två oberoende
+(`tasks/sessions/archive/2026-07/2026-07-26-session-91.md` rad ~3853–3857), där två oberoende
 färska läsare snubblade på samma sten.
 
 ## Kort svar
@@ -38,7 +38,7 @@ tests" till "application tests".
 
 | Premiss i uppdraget | Prövad mot | Utfall |
 |---|---|---|
-| QA-fyndet: två läsare, samma sten, plus namn-invändning | `tasks/sessions/2026-07-26-session-91.md` rad 3853–3857 läst | **BEKRÄFTAD** — ordagrant: *"två oberoende färska läsare snubblade på samma sten — `tests/support/fixturvarld/` mot `tests/acceptance/support/` … Därtill steg 2:s namn-invändning mot ordet 'acceptance'"* |
+| QA-fyndet: två läsare, samma sten, plus namn-invändning | `tasks/sessions/archive/2026-07/2026-07-26-session-91.md` rad 3853–3857 läst | **BEKRÄFTAD** — ordagrant: *"två oberoende färska läsare snubblade på samma sten — `tests/support/fixturvarld/` mot `tests/acceptance/support/` … Därtill steg 2:s namn-invändning mot ordet 'acceptance'"* |
 | ADR-080 är styrande och bär namnet | ADR:n läst i sin helhet | **BEKRÄFTAD** — Beslut 1: klassen får *"eget namn, egen katalog, egen config och eget jobb: acceptance"*; termens hemvist är ADR:n + `CONTRIBUTING.md`, uttryckligen INTE `ORDLISTA.md` |
 | Namnet bärs i CI-klassning/scripts | Mätningen i §1 nedan | **BEKRÄFTAD** — 55 rader i 3 workflows, 88 rader i 7 skript, med mera |
 
@@ -373,5 +373,5 @@ Repo-interna källor:
 - [Hermetisk kontra skarp e2e — branschpraxis
   (S91)](hermetisk-vs-skarp-e2e-branschpraxis-2026-07-26.md) — Ghost-/
   Grafana-precedenten som bar ADR-080
-- `tasks/sessions/2026-07-26-session-91.md` rad 3853–3857 — QA-fyndet
+- `tasks/sessions/archive/2026-07/2026-07-26-session-91.md` rad 3853–3857 — QA-fyndet
 - Mätkommandona i § 1 (körda 2026-08-02 mot HEAD `fc6793e7`)
