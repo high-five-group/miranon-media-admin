@@ -4,7 +4,7 @@ title: 'Skiva: Promoverings-grinden — ariaSnapshot-referenser låsta ur varian
 status: Done
 assignee: []
 created_date: '2026-08-17 00:22'
-updated_date: '2026-08-17 09:08'
+updated_date: '2026-08-20 08:10'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,19 +22,19 @@ Bevisformen för hela promoveringen: referenserna låses ur den godkända protot
 <!-- AC:BEGIN -->
 - [x] #1 En ny spec-fil i den befintliga aria-grind-klassen fångar referenser för SAMTLIGA sju facit-ytor (segment-listan, tackningsvyn, nytt-segment-mallvyn, verkstaden, segment-detaljvyn, generatorn, utskicksvyn) ur variant d-läget, FÖRE varje flipp-ändring
 - [x] #2 Referenserna är identiska med den körande prototypen i variant d-läge — facit-raderna bär bilder: [], så referenserna ÄR bevisformen (ADR-102 B5); frånvaron av bild sänker aldrig kravet
-- [ ] #3 PrototypRigg (utfallslägena) och SkalprovsVaxel står UTANFÖR referensernas scope via testid-avgränsning, per s93-atgardssida-mönstret (riggen, inte ytan)
+- [x] #3 PrototypRigg (utfallslägena) och SkalprovsVaxel står UTANFÖR referensernas scope via testid-avgränsning, per s93-atgardssida-mönstret (riggen, inte ytan)
 - [x] #4 Avgränsningens rött-först-bevis finns i PR:en och spec-filen är grön mot variant d
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning mot tasks/sessions/bilagor/s104-segment-divergens/facit.json — varje yta i ytor[] täckt av en referens
 - [x] #6 ariaSnapshot-referenserna låsta ur variant d FÖRE flippen (enkelriktad ordning, ADR-103 B4)
-- [ ] #7 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
+- [x] #7 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -45,6 +45,47 @@ AC #3 — PARTIELLT UPPFYLLT, ÖPPET RAPPORTERAT (ej avbockat som helhet): sex a
 VIKTIGT FYND UNDER BYGGET: Playwrights toMatchAriaSnapshot() matchar i default-läge (children: 'contain', ej 'equal'/'deep-equal', verifierat mot Playwrights egen dokumentation) en ORDNAD DELSEKVENS — extra syskon-noder UTANFÖR referensen fäller INTE grinden, oavsett position i trädet. Skarpt prövat under bygget: SkalprovsVaxel flyttades TILLFÄLLIGT tillbaka in i segment-listans testid-scope och testet förblev grönt mot den redan låsta (rigg-fria) referensen (bekräftat via en direkt ariaSnapshot()-dump som visade riggens text fanns i scopet trots det gröna resultatet); ändringen reverterades omedelbart. Testid-avgränsningens verkliga funktion är därför att hålla FÅNGST-ÖGONBLICKET (--update-snapshots mot den levande DOM:en) rent för granskaren, inte att fälla en framtida regression om riggen skulle återuppstå i scopet. Detta bör vägleda hur TASK-249.5/249.6 tolkar DoD #7: att TA BORT ett element referensen redan förväntar sig (segment-detaljvyns SkalprovsVaxel vid rivning) fäller sannolikt grinden (det förväntade elementet saknas i tradet) och kräver en avsiktlig referens-uppdatering da — det ar vantat, inte ett fel.
 
 DoD #7 ("check-facit grön genom flipp OCH rivning") är FRAMÅTRIKTAT och rör TASK-249.5/249.6 (flippen har inte skett än) — lämnas avsiktligt oavbockad här. Fixturvärlden (fyra kurser: Resor i medvetandet 1/2, Fjärrskådning, Psionautics + åtta fixturpersoner, se spec-filens huvud) är EGEN och OBEROENDE av Skool-bilagans juli-2026-facit (FACIT_KARTA i VariantD.tsx) — siffrorna i referenserna (t.ex. "RIM 1 + RIM 2": 2 personer) är denna testfilens egna deterministiska tal, INTE Skool-talen (188 osv). Skalprovet star AV (default) i samtliga sju tester, sa FACIT_KARTA/skalprovMal paverkar aldrig referenserna.
+
+BOCKNING 2026-08-20 (S107, Marcus beslut 'Kör' efter utredning).
+
+AC #3 bockad med NOTERING om vägen dit — kravets utfall är uppfyllt, men inte
+via den mekanism AC:n namnger för den sjunde ytan.
+
+Vad AC:n krävde: PrototypRigg och SkalprovsVaxel utanför referensernas scope
+via testid-avgränsning. För sex av sju ytor löstes det så. För segment-detaljvyn
+gick det inte — växeln satt mitt inne i samma div som PublikSektions övriga
+kontroller, och en ariaSnapshot-lokator kan inte hoppa över ett mittensyskon.
+Att flytta den hade ändrat en DOM Marcus redan godkänt (facit.json sha
+a40f3543), vilket ADR-102 förbjuder. Begränsningen var genuin och öppet
+rapporterad av kortet självt ('PARTIELLT UPPFYLLT, ÖPPET RAPPORTERAT').
+
+Vad som faktiskt löste den: TASK-249.6 REV SkalprovsVaxel i stället för att
+flytta den. Noderna försvann utan att formen rördes; de två
+segment-detaljvyn-referenserna omgenererades i rivnings-commiten 91d3d7d3 med
+Marcus kvittens 2026-08-17. Rivningen landade 07:45-08:xx samma morgon som
+detta kort stängdes 11:09 — AC-texten hann aldrig uppdateras.
+
+MÄTT I DAGENS TRÄD (2026-08-20): ingen av de 14 referensfilerna innehåller
+'Prototyp', 'Skalprov' eller 'rigg' (grep -l -i, tom träffmängd).
+SkalprovsVaxel/PrototypRigg finns inte som kod någonstans — enbart som
+docblock-text i VariantD.tsx.
+
+DoD #3 bockad: MÄTT, noll fällningar. gh pr checks 1480 samtliga pass/skip;
+check-runs på merge-commiten bd95eec8 = 21 success, 8 skipped, 0 failure,
+inklusive Verifierande svit / Acceptance (hermetisk) med full klass.
+
+DoD #7 bockad i samma KVITTERADE form som TASK-249.6 (som bär ordagrant samma
+DoD-text och bockade den med utskriven motivering — den motstridiga bockningen
+mellan syskonkorten är därmed upplöst). MÄTT: check-facit.sh exit 0 (10
+manifest, 22 ytor, 0 ogodkända) · npm run test:visual mot
+segment-promoverings-grind.spec.ts exit 0, 14/14 gröna · git status --porcelain
+tests/visual/ efter körning = 0 rader. 12 av 14 referenser byte-identiska genom
+flipp + rivning; 2 omgenererade med Marcus kvittens.
+
+PR-NUMMER, som kortets Final Summary saknar: #1480 (merge-commit bd95eec8,
+kod-commit 71705f30, mergedAt 2026-08-17T02:25:40Z). Death pointer-formen
+('PR: se kortets notes/kommentarer' utan att något nummer finns i notes) är
+bokförd som eget fynd i TASK-281.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
