@@ -14,6 +14,25 @@ import { expect, test } from './fixtures';
  *
  * Kör i a11y-projektet mot /dev/primitives (skarv 1, ADR-044/045) —
  * axe-skanningen av sektionen bor i primitives.spec.ts.
+ *
+ * ─── FÄRGÖVERGÅNGEN: varför färg-assertionerna poll:as ────────────────────
+ * Sedan task-273.2 (commit cd4492a0, Marcus omprövning 2026-08-17) bär raden
+ * `hover:bg-bg-emphasized motion-safe:transition-colors`. Tailwind v4:s
+ * `transition-colors` omfattar `outline-color` OCH `border-color` utöver
+ * `background-color` (verifierat i tailwindcss@4.3.3), med
+ * `--default-transition-duration: 150ms`. En computed-avläsning omedelbart
+ * efter en tillståndsändring fångar därför ett MELLANVÄRDE i övergången.
+ *
+ * Det gav tre nätters röd A11y-svit (S107): fokusringen mättes till
+ * rgb(32,53,66), rgb(28,70,96) och rgb(34,42,47) i olika körningar mot
+ * facitets rgb(27,73,101), och kantlinjen till rgba(196,196,194,0.835) med
+ * alpha ännu inte framme. Vilket av testerna som föll varierade med
+ * maskinens timing — därav flake-signaturen.
+ *
+ * `expect.poll` väntar in det deterministiska SLUTtillståndet. Den döljer
+ * ingen flakighet — den mäter rätt ögonblick. Att i stället höja en timeout
+ * eller slå på retries hade dolt orsaken i stället för att åtgärda den
+ * (scripts/flake-matserie.mjs § egenskap 3).
  */
 
 const SEKTION = '[aria-labelledby="rubrik-navcard"]';
@@ -123,12 +142,17 @@ test.describe('NavCard — M6-facitets beteendekontrakt', () => {
     expect(etikett.vikt).toBe('600');
   });
 
-  test('ingen hover-bakgrundsändring (M3 prövad och förkastad)', async ({ page }) => {
+  test('hover ger eventdetaljens radhover-platta (M3 RIVET, task-273.2)', async ({ page }) => {
     const lank = page.locator(SEKTION).getByRole('link', { name: 'Anmälningar' });
-    const bgFore = await lank.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(await lank.evaluate((el) => getComputedStyle(el).backgroundColor)).toBe(
+      await resolvedTokenColor(page, '--mm-bg-muted'),
+    );
+
     await lank.hover();
-    const bgEfter = await lank.evaluate((el) => getComputedStyle(el).backgroundColor);
-    expect(bgEfter).toBe(bgFore);
+    // Övergången är 150 ms — poll:a in SLUTvärdet (se § Färgövergången ovan).
+    await expect
+      .poll(() => lank.evaluate((el) => getComputedStyle(el).backgroundColor))
+      .toBe(await resolvedTokenColor(page, '--mm-bg-emphasized'));
   });
 
   test('tangentbordsfokus ger den globala fokus-ringen (2 px + 2 px offset)', async ({ page }) => {
@@ -139,19 +163,19 @@ test.describe('NavCard — M6-facitets beteendekontrakt', () => {
     const andra = sektion.getByRole('link', { name: 'Väntelista' });
     await expect(andra).toBeFocused();
 
+    // Måtten animeras inte — läses direkt.
     const ring = await andra.evaluate((el) => {
       const s = getComputedStyle(el);
-      return {
-        bredd: s.outlineWidth,
-        stil: s.outlineStyle,
-        farg: s.outlineColor,
-        offset: s.outlineOffset,
-      };
+      return { bredd: s.outlineWidth, stil: s.outlineStyle, offset: s.outlineOffset };
     });
     expect(ring.bredd).toBe('2px');
     expect(ring.stil).toBe('solid');
     expect(ring.offset).toBe('2px');
-    expect(ring.farg).toBe(await resolvedTokenColor(page, '--mm-focus-ring'));
+
+    // outline-color INGÅR i transition-colors (Tailwind v4) — poll:a in slutvärdet.
+    await expect
+      .poll(() => andra.evaluate((el) => getComputedStyle(el).outlineColor))
+      .toBe(await resolvedTokenColor(page, '--mm-focus-ring'));
   });
 
   test('hög-kontrast-läge ger synlig kantlinje (prefers-contrast: more)', async ({ page }) => {
@@ -159,24 +183,32 @@ test.describe('NavCard — M6-facitets beteendekontrakt', () => {
     const lank = page.locator(SEKTION).getByRole('link', { name: 'Anmälningar' });
     const kant = await lank.evaluate((el) => {
       const s = getComputedStyle(el);
-      return { farg: s.borderTopColor, bredd: s.borderTopWidth, stil: s.borderTopStyle };
+      return { bredd: s.borderTopWidth, stil: s.borderTopStyle };
     });
     expect(kant.stil).toBe('solid');
     expect(kant.bredd).toBe('1px');
-    expect(kant.farg).toBe(await resolvedTokenColor(page, '--mm-border-strong'));
+
+    // border-color INGÅR i transition-colors — poll:a in slutvärdet. Mätt mitt i
+    // övergången gav den rgba(196, 196, 194, 0.835): alpha ännu inte framme.
+    await expect
+      .poll(() => lank.evaluate((el) => getComputedStyle(el).borderTopColor))
+      .toBe(await resolvedTokenColor(page, '--mm-border-strong'));
   });
 
-  test('reduced-motion: raden är statisk och den globala neutraliseringen täcker den', async ({
+  test('reduced-motion: ingen keyframe-animation, och färgövergången neutraliseras', async ({
     page,
   }) => {
     const lank = page.locator(SEKTION).getByRole('link', { name: 'Anmälningar' });
-    // Facitet är statiskt: ingen deklarerad animation/transition i vila.
     const vila = await lank.evaluate((el) => {
       const s = getComputedStyle(el);
       return { animation: s.animationName, transition: s.transitionDuration };
     });
+    // Ingen keyframe-animation — den delen av M6-facitet står kvar.
     expect(vila.animation).toBe('none');
-    expect(vila.transition).toBe('0s');
+    // Men "ingen transition i vila" är RIVET (task-273.2): hover-plattan bär en
+    // motion-safe-villkorad färgövergång. Assertionen bokför att den FINNS —
+    // exakt duration låses inte, den ägs av Tailwinds default.
+    expect(Number.parseFloat(vila.transition)).toBeGreaterThan(0);
 
     // Under prefers-reduced-motion gäller base.css-neutraliseringen (≤0.01 ms).
     await page.emulateMedia({ reducedMotion: 'reduce' });
