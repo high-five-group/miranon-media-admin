@@ -19,6 +19,17 @@
 //     filens verkliga pixeldimensioner (läst ur filens egen IHDR-header,
 //     inte litat på som text). Flera poster inom SAMMA form_factor måste
 //     dessutom dela identisk aspect ratio (kortets AC #1-formulering).
+//   · `icons` (TASK-280) — minst en 192x192 och en 512x512 (`purpose`
+//     'any'/ospecificerad) samt en 512x512 med `purpose: 'maskable'`, och
+//     VARJE `src` måste (a) INTE vara någon av de gamla, oversionerade
+//     filnamnen (Chrome 144+ behandlar `icons` som Cache-Control:
+//     immutable — samma filnamn som senast = ingen omladdning, se
+//     scripts/pwa-icon-version.ts) och (b) faktiskt existera som byggd
+//     PNG-fil i dist/ med pixeldimensioner som matchar deklarerad `sizes`.
+//     Grinden är medvetet INTE hash-format-specifik (inget krav på exakt
+//     8 hex-tecken) — det skulle koppla grinden till dagens
+//     versioneringsimplementation. Den fångar den FAKTISKA regressionen
+//     kortet fixar: en återgång till exakt de gamla, cache-frusna namnen.
 //
 // ═══ VARFÖR HÄR OCH INTE I preview-skarven (tests/preview/) ═══
 // PRD-textens ordval ("preview-skarven som redan bygger appen och granskar
@@ -67,6 +78,16 @@ const MIN_SHORTCUTS = 2;
 const MAX_SHORTCUTS = 3;
 const REQUIRED_LAUNCH_HANDLER_MODE = 'focus-existing';
 const REQUIRED_FORM_FACTORS = /** @type {const} */ (['narrow', 'wide']);
+
+// TASK-280: de exakta filnamnen Chrome 144+ redan sett och cachat som
+// "senast applicerad version" — en `icons[].src` som återgår till NÅGOT av
+// dessa vore den precisa regressionen kortet fixade (immutable-cachningen
+// slår till igen, ikonbytet blir osynligt för användaren).
+const LEGACY_ICON_SRCS = /** @type {const} */ ([
+  'pwa-192x192.png',
+  'pwa-512x512.png',
+  'maskable-icon-512x512.png',
+]);
 
 /** PNG-signaturen (8 byte) enligt spec — samma 8 byte i varje giltig PNG-fil. */
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
@@ -155,19 +176,20 @@ export function extraherRoutePaths(routeTreeSource) {
 }
 
 /**
- * Validerar ett parsat manifest-objekt mot TASK-126.1 AC #1–#2 samt
- * TASK-126.4 AC #1 (screenshots). Ren funktion — tar emot route-mängden OCH
- * de uppmätta skärmbilds-dimensionerna som parametrar så testsviten kan pröva
- * den utan att röra disk eller ett riktigt bygge.
+ * Validerar ett parsat manifest-objekt mot TASK-126.1 AC #1–#2, TASK-126.4
+ * AC #1 (screenshots) samt TASK-280 AC #3 (icons). Ren funktion — tar emot
+ * route-mängden OCH de uppmätta bild-dimensionerna som parametrar så
+ * testsviten kan pröva den utan att röra disk eller ett riktigt bygge.
  *
  * @param {unknown} manifest
- * @param {{ routePaths?: Set<string>, screenshotDimensions?: Map<string, { width: number, height: number }> }} [options]
+ * @param {{ routePaths?: Set<string>, screenshotDimensions?: Map<string, { width: number, height: number }>, iconDimensions?: Map<string, { width: number, height: number }> }} [options]
  * @returns {{ ok: boolean, errors: string[] }}
  */
 export function validateManifest(manifest, options = {}) {
   const errors = [];
   const routePaths = options.routePaths;
   const screenshotDimensions = options.screenshotDimensions;
+  const iconDimensions = options.iconDimensions;
 
   if (typeof manifest !== 'object' || manifest === null || Array.isArray(manifest)) {
     return { ok: false, errors: ['manifestet är inte ett JSON-objekt'] };
@@ -311,6 +333,83 @@ export function validateManifest(manifest, options = {}) {
     }
   }
 
+  // ═══ icons (TASK-280, AC #3) ═══
+  if (!Array.isArray(m.icons) || m.icons.length === 0) {
+    errors.push("'icons' saknas eller är tom (TASK-280 AC #3)");
+  } else {
+    /** @type {{ any192: boolean, any512: boolean, maskable512: boolean }} */
+    const seen = { any192: false, any512: false, maskable512: false };
+
+    m.icons.forEach((entry, index) => {
+      if (typeof entry !== 'object' || entry === null) {
+        errors.push(`icons[${index}] är inte ett objekt (TASK-280 AC #3)`);
+        return;
+      }
+      const i = /** @type {Record<string, unknown>} */ (entry);
+
+      if (!nonEmptyString(i.src)) {
+        errors.push(`icons[${index}].src saknas eller är tom (TASK-280 AC #3)`);
+        return;
+      }
+      const src = String(i.src);
+
+      if (LEGACY_ICON_SRCS.includes(/** @type {(typeof LEGACY_ICON_SRCS)[number]} */ (src))) {
+        errors.push(
+          `icons[${index}].src ('${src}') är ett OVERSIONERAT filnamn — Chrome 144+ ` +
+            'behandlar detta som Cache-Control: immutable och laddar aldrig om bilden ' +
+            '(TASK-280 AC #3). Filnamnet måste bära en versionsstämpel.',
+        );
+      }
+
+      if (!nonEmptyString(i.type)) {
+        errors.push(`icons[${index}].type saknas eller är tom (TASK-280 AC #3)`);
+      }
+
+      const declared = parseSizes(i.sizes);
+      if (!declared) {
+        errors.push(
+          `icons[${index}].sizes saknas eller har fel format — förväntat 'BREDDxHÖJD' ` +
+            `(TASK-280 AC #3), fick ${JSON.stringify(i.sizes)}`,
+        );
+      }
+
+      if (declared && iconDimensions) {
+        const actual = iconDimensions.get(src);
+        if (!actual) {
+          errors.push(
+            `icons[${index}].src ('${src}') hittades inte som byggd PNG-fil i dist/ ` +
+              '(TASK-280 AC #1/#3 — reproducerbar generering ska producera denna fil)',
+          );
+        } else if (actual.width !== declared.width || actual.height !== declared.height) {
+          errors.push(
+            `icons[${index}].sizes ('${i.sizes}') matchar inte den faktiskt byggda ` +
+              `bildens dimensioner (${actual.width}x${actual.height}) (TASK-280 AC #3)`,
+          );
+        }
+      }
+
+      if (declared?.width === 192 && declared.height === 192 && i.purpose === undefined) {
+        seen.any192 = true;
+      }
+      if (declared?.width === 512 && declared.height === 512 && i.purpose === undefined) {
+        seen.any512 = true;
+      }
+      if (declared?.width === 512 && declared.height === 512 && i.purpose === 'maskable') {
+        seen.maskable512 = true;
+      }
+    });
+
+    if (!seen.any192) {
+      errors.push("ingen icons-post med sizes '192x192' utan 'purpose' (TASK-280 AC #3)");
+    }
+    if (!seen.any512) {
+      errors.push("ingen icons-post med sizes '512x512' utan 'purpose' (TASK-280 AC #3)");
+    }
+    if (!seen.maskable512) {
+      errors.push("ingen icons-post med sizes '512x512' och purpose 'maskable' (TASK-280 AC #3)");
+    }
+  }
+
   return { ok: errors.length === 0, errors };
 }
 
@@ -357,7 +456,26 @@ async function main() {
     }
   }
 
-  const { ok, errors } = validateManifest(manifest, { routePaths, screenshotDimensions });
+  // TASK-280: samma mönster som screenshots ovan, men för icons[].src —
+  // mäter den faktiska byggda PNG-filens pixeldimensioner RELATIVT dist/.
+  /** @type {Map<string, { width: number, height: number }>} */
+  const iconDimensions = new Map();
+  if (Array.isArray(manifest?.icons)) {
+    for (const entry of manifest.icons) {
+      const src = entry && typeof entry === 'object' ? entry.src : undefined;
+      if (typeof src !== 'string' || src.trim().length === 0) continue;
+      const filePath = resolve(dirname(MANIFEST_PATH), src);
+      if (!existsSync(filePath)) continue;
+      const dims = readPngDimensions(readFileSync(filePath));
+      if (dims) iconDimensions.set(src, dims);
+    }
+  }
+
+  const { ok, errors } = validateManifest(manifest, {
+    routePaths,
+    screenshotDimensions,
+    iconDimensions,
+  });
 
   if (!ok) {
     console.error(`FEL: manifest.webmanifest saknar ${errors.length} krävda fält:`);
@@ -367,8 +485,9 @@ async function main() {
 
   console.log(
     `OK: ${MANIFEST_PATH} bär stabil identitet, svensk beskrivning, kategorier, ` +
-      `launch_handler, ${manifest.shortcuts.length} shortcuts mot befintliga routes, och ` +
-      `${manifest.screenshots.length} skärmbilder (narrow+wide) med verifierade dimensioner.`,
+      `launch_handler, ${manifest.shortcuts.length} shortcuts mot befintliga routes, ` +
+      `${manifest.screenshots.length} skärmbilder (narrow+wide) med verifierade dimensioner, och ` +
+      `${manifest.icons.length} ikoner med versionerade, verifierade filnamn.`,
   );
   return 0;
 }

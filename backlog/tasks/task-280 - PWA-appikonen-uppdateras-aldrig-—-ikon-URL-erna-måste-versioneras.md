@@ -4,6 +4,7 @@ title: 'PWA-appikonen uppdateras aldrig — ikon-URL:erna måste versioneras'
 status: To Do
 assignee: []
 created_date: '2026-08-20 07:44'
+updated_date: '2026-08-20 08:01'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,12 +25,12 @@ VÄNTAT BETEENDE EFTER FIXEN, ej en defekt: vår ikonändring är långt över C
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ikonernas filnamn är versionerade så manifestets icons-lista skiljer sig från den nuvarande, och byggd dist/manifest.webmanifest bevisar det
-- [ ] #2 Samtliga referenser är uppdaterade i takt: vite.config.ts (icons-listan, ca rad 167-175), pwa-assets.config.ts (ca rad 45), filerna i public/, och eventuella referenser i index.html
-- [ ] #3 npm run verify:manifest är grön och scripts/check-manifest-fields.mjs mäter de nya namnen
-- [ ] #4 Varje ikon som manifestet refererar är öppnad och verifierad att den bär den NYA vågformade M-formen i rött och grönt, inte den gamla parallellogram-formen
-- [ ] #5 Inga gamla ikonfiler ligger kvar oreferade i public/ efter bytet, eller så är kvarlämnandet uttryckligen motiverat i kortets notes
-- [ ] #6 Versioneringsformen är vald med motivering: filnamns-suffix eller innehållshash — och valet är dokumenterat så nästa ikonbyte inte kräver samma utredning igen
+- [x] #1 Ikonernas filnamn är versionerade så manifestets icons-lista skiljer sig från den nuvarande, och byggd dist/manifest.webmanifest bevisar det
+- [x] #2 Samtliga referenser är uppdaterade i takt: vite.config.ts (icons-listan, ca rad 167-175), pwa-assets.config.ts (ca rad 45), filerna i public/, och eventuella referenser i index.html
+- [x] #3 npm run verify:manifest är grön och scripts/check-manifest-fields.mjs mäter de nya namnen
+- [x] #4 Varje ikon som manifestet refererar är öppnad och verifierad att den bär den NYA vågformade M-formen i rött och grönt, inte den gamla parallellogram-formen
+- [x] #5 Inga gamla ikonfiler ligger kvar oreferade i public/ efter bytet, eller så är kvarlämnandet uttryckligen motiverat i kortets notes
+- [x] #6 Versioneringsformen är vald med motivering: filnamns-suffix eller innehållshash — och valet är dokumenterat så nästa ikonbyte inte kräver samma utredning igen
 <!-- AC:END -->
 
 ## Definition of Done
@@ -39,3 +40,56 @@ VÄNTAT BETEENDE EFTER FIXEN, ej en defekt: vår ikonändring är långt över C
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Versioneringsform: CONTENT-HASH (sha256 av källbilden, 8 hex-tecken), inte
+manuellt suffix (-v2, -v3, …). Implementerat i scripts/pwa-icon-version.ts
+(getPwaIconVersion) — importeras av BÅDA vite.config.ts (manifestets
+icons-lista) och pwa-assets.config.ts (assetName-override i genereringen),
+så de två kan aldrig glida isär.
+
+VARFÖR (så nästa ikonbyte inte kräver samma utredning):
+- Samma cache-busting-mönster Vite redan använder för sina egna byggda
+  assets (dist/assets/*-[hash].js) — etablerad branschstandard (Vite/
+  Webpack/Rollup default), inte en lokal uppfinning.
+- Ett manuellt suffix kräver att en människa KOMMER IHÅG att bumpa det —
+  exakt den disciplin som saknades och orsakade detta kort (bilderna
+  byttes, filnamnen glömdes). Ett hash härlett ur källbilden
+  (public/miranon-m-original.svg) kan inte glömmas: ändra källbilden, kör
+  `npx pwa-assets-generator` om, och namnet ändras av sig självt.
+- Identiskt innehåll ger identisk hash — ingen falsk "app update
+  available" visas om en fil bara sparas om utan att faktiskt ändras.
+- Källa för assetName-mekanismen: @vite-pwa/assets-generator officiella
+  dokumentation (context7 /vite-pwa/docs, "Override PNG Output Names" +
+  "Default Asset Naming Function") — assetName(type, size) är den
+  DOKUMENTERADE, avsedda vägen att styra utfilnamnen, inte en workaround.
+- Källa för Chrome-beteendet: Chrome-teamets blogg 2026-01-21 (citerad på
+  kortet) + kortets Chromium-källkodsbelägg (S107).
+
+AC #3 (grinden mäter de nya namnen): scripts/check-manifest-fields.mjs
+utökad med en icons-valideringsblock — LEGACY_ICON_SRCS-listan (de tre
+exakta gamla filnamnen) fälls explicit, plus en disk-krysskoll (byggd
+PNG-fils faktiska pixeldimensioner mot deklarerad `sizes`), plus krav på
+minst 192x192 (any) + 512x512 (any) + 512x512 (maskable). Grinden är
+MEDVETET INTE hash-format-specifik — den fångar regressionen (återgång
+till de kända gamla namnen), inte dagens implementationsdetalj.
+scripts/test-check-manifest-fields.mjs: 82/82 gröna, tvåsidigt bevis
+(RÖTT vid varje mutation, GRÖNT återställt) inklusive de tre nya
+oversionerat-fallen.
+
+AC #4 (visuellt): alla tre byggda dist/-filer öppnade som bild manuellt
+och verifierade — vågformad M i rött+grönt, INTE parallelogram. Bytet
+rörde ALDRIG bildinnehållet: cmp mot de tre gamla filerna innan de togs
+bort gav "IDENTICAL" (byte-för-byte) för alla tre, så generatorn
+reproducerade exakt samma godkända pixlar under de nya namnen.
+
+AC #5: de tre gamla, oversionerade filerna (public/pwa-192x192.png,
+public/pwa-512x512.png, public/maskable-icon-512x512.png) är BORTTAGNA —
+inga oreferade ikonfiler kvar i public/.
+
+Hash för denna körning (källbild oförändrad sedan S107-bytet):
+120d7838 — pwa-192x192-120d7838.png / pwa-512x512-120d7838.png /
+maskable-icon-512x512-120d7838.png.
+<!-- SECTION:NOTES:END -->

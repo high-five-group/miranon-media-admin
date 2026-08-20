@@ -57,6 +57,17 @@ const SCREENSHOT_DIMENSIONS = new Map([
   ['screenshots/wide-event-lista.png', { width: 2880, height: 1800 }],
 ]);
 
+/**
+ * Speglar samma mönster som SCREENSHOT_DIMENSIONS ovan, för icons[].src
+ * (TASK-280). Filnamnen bär ett fiktivt hash-suffix ('testhash') — testerna
+ * prövar EGENSKAPEN "bär en versionsstämpel", inte ett specifikt hash-format.
+ */
+const ICON_DIMENSIONS = new Map([
+  ['pwa-192x192-testhash.png', { width: 192, height: 192 }],
+  ['pwa-512x512-testhash.png', { width: 512, height: 512 }],
+  ['maskable-icon-512x512-testhash.png', { width: 512, height: 512 }],
+]);
+
 /** Giltigt manifest — baslinjen alla mutationstester utgår ifrån. */
 function giltigtManifest() {
   return {
@@ -91,7 +102,16 @@ function giltigtManifest() {
         label: 'Eventlistan på desktop',
       },
     ],
-    icons: [],
+    icons: [
+      { src: 'pwa-192x192-testhash.png', sizes: '192x192', type: 'image/png' },
+      { src: 'pwa-512x512-testhash.png', sizes: '512x512', type: 'image/png' },
+      {
+        src: 'maskable-icon-512x512-testhash.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable',
+      },
+    ],
   };
 }
 
@@ -458,6 +478,173 @@ test('två narrow-poster med IDENTISK aspect ratio (skalad) → GRÖNT', () => {
     screenshotDimensions: dims,
   });
   assert.equal(ok, true, `förväntade ok:true (identisk ratio), fick: ${errors.join('; ')}`);
+});
+
+// ═══ icons (TASK-280, AC #3) — Chrome 144+ cache-buster-regressionen ═══
+
+test('giltigt manifest MED iconDimensions → GRÖNT', () => {
+  const { ok, errors } = validateManifest(giltigtManifest(), {
+    routePaths: ROUTE_PATHS,
+    iconDimensions: ICON_DIMENSIONS,
+  });
+  assert.equal(ok, true, `förväntade ok:true, fick fel: ${errors.join('; ')}`);
+});
+
+test('icons saknas → RÖTT', () => {
+  const m = giltigtManifest();
+  delete m.icons;
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes("'icons'")));
+});
+test('icons tom lista → RÖTT', () => {
+  const m = giltigtManifest();
+  m.icons = [];
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes("'icons'")));
+});
+test('icons återställda → GRÖNT', () => {
+  const { ok } = validateManifest(giltigtManifest(), { routePaths: ROUTE_PATHS });
+  assert.equal(ok, true);
+});
+
+// ═══ kärnan i kortet: de EXAKTA gamla, cache-frusna filnamnen fälls ═══
+test("icons[].src === 'pwa-192x192.png' (oversionerat) → RÖTT", () => {
+  const m = giltigtManifest();
+  m.icons[0].src = 'pwa-192x192.png';
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, false);
+  assert.ok(
+    errors.some((e) => e.includes('OVERSIONERAT')),
+    `förväntade ett OVERSIONERAT-fel, fick: ${errors.join('; ')}`,
+  );
+});
+test("icons[].src === 'pwa-512x512.png' (oversionerat) → RÖTT", () => {
+  const m = giltigtManifest();
+  m.icons[1].src = 'pwa-512x512.png';
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes('OVERSIONERAT')));
+});
+test("icons[].src === 'maskable-icon-512x512.png' (oversionerat) → RÖTT", () => {
+  const m = giltigtManifest();
+  m.icons[2].src = 'maskable-icon-512x512.png';
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes('OVERSIONERAT')));
+});
+test('icons[].src versionerat (hash-suffix) → GRÖNT — grinden är inte formatspecifik', () => {
+  const m = giltigtManifest();
+  // Ett ANNAT hash-format än 'testhash' — grinden ska inte bry sig om
+  // formatet, bara om det INTE är exakt de tre gamla, kända filnamnen.
+  m.icons[0].src = 'pwa-192x192-abc123ef.png';
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, true, `förväntade ok:true, fick: ${errors.join('; ')}`);
+});
+
+test('icons[].src saknas → RÖTT', () => {
+  const m = giltigtManifest();
+  delete m.icons[0].src;
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes('icons[0].src')));
+});
+test('icons[].type saknas → RÖTT', () => {
+  const m = giltigtManifest();
+  delete m.icons[0].type;
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes('icons[0].type')));
+});
+test("icons[].sizes fel format ('192px') → RÖTT", () => {
+  const m = giltigtManifest();
+  m.icons[0].sizes = '192px';
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes('icons[0].sizes')));
+});
+
+// ═══ minst 192x192 (any) + 512x512 (any) + 512x512 (maskable) ═══
+test('ingen 192x192-post (any) → RÖTT', () => {
+  const m = giltigtManifest();
+  m.icons = [m.icons[1], m.icons[2]]; // bara 512 any + maskable kvar
+  const { ok, errors } = validateManifest(m, {
+    routePaths: ROUTE_PATHS,
+    iconDimensions: ICON_DIMENSIONS,
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes("'192x192'")));
+});
+test('ingen 512x512-post (any, purpose ospecificerad) → RÖTT', () => {
+  const m = giltigtManifest();
+  m.icons = [m.icons[0], m.icons[2]]; // bara 192 any + maskable kvar
+  const { ok, errors } = validateManifest(m, {
+    routePaths: ROUTE_PATHS,
+    iconDimensions: ICON_DIMENSIONS,
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes("'512x512' utan 'purpose'")));
+});
+test('ingen maskable 512x512-post → RÖTT', () => {
+  const m = giltigtManifest();
+  m.icons = [m.icons[0], m.icons[1]]; // bara de två 'any'-posterna kvar
+  const { ok, errors } = validateManifest(m, {
+    routePaths: ROUTE_PATHS,
+    iconDimensions: ICON_DIMENSIONS,
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes("purpose 'maskable'")));
+});
+test('alla tre storleks-/purpose-krav uppfyllda → GRÖNT', () => {
+  const { ok, errors } = validateManifest(giltigtManifest(), {
+    routePaths: ROUTE_PATHS,
+    iconDimensions: ICON_DIMENSIONS,
+  });
+  assert.equal(ok, true, `förväntade ok:true, fick: ${errors.join('; ')}`);
+});
+
+// ═══ sizes MOT den faktiska byggda PNG-filen ═══
+test('icons[].sizes matchar INTE den uppmätta filens dimensioner → RÖTT', () => {
+  const m = giltigtManifest();
+  m.icons[0].sizes = '256x256'; // filen är faktiskt 192x192
+  const { ok, errors } = validateManifest(m, {
+    routePaths: ROUTE_PATHS,
+    iconDimensions: ICON_DIMENSIONS,
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes('matchar inte den faktiskt byggda')));
+});
+test('icons[].src pekar på en fil som inte finns bland de uppmätta (byggd fil saknas) → RÖTT', () => {
+  const m = giltigtManifest();
+  m.icons[0].src = 'pwa-192x192-finns-inte.png';
+  const { ok, errors } = validateManifest(m, {
+    routePaths: ROUTE_PATHS,
+    iconDimensions: ICON_DIMENSIONS,
+  });
+  assert.equal(ok, false);
+  assert.ok(errors.some((e) => e.includes('hittades inte som byggd PNG-fil')));
+});
+test('iconDimensions utelämnad → disk-krysskollen hoppas över (ingen krasch)', () => {
+  const m = giltigtManifest();
+  // En FJÄRDE, extra icon-post (de tre obligatoriska kategorierna är redan
+  // uppfyllda av icons[0..2]) vars deklarerade sizes INTE matchar den
+  // uppmätta filens — isolerar disk-krysskollen från kategori-kravet, som
+  // annars skulle fälla på ETT AV DE tre obligatoriska storlekarna om man
+  // mutera direkt (sizes dubbelanvänds som kategori-nyckel).
+  m.icons.push({ src: 'pwa-192x192-extra.png', sizes: '192x192', type: 'image/png' });
+  const { ok: okMedDims, errors: errorsMedDims } = validateManifest(m, {
+    routePaths: ROUTE_PATHS,
+    iconDimensions: new Map([
+      ...ICON_DIMENSIONS,
+      ['pwa-192x192-extra.png', { width: 999, height: 999 }],
+    ]),
+  });
+  assert.equal(okMedDims, false, 'sanity: MED iconDimensions ska mismatchen fälla');
+  assert.ok(errorsMedDims.some((e) => e.includes('matchar inte den faktiskt byggda')));
+
+  const { ok, errors } = validateManifest(m, { routePaths: ROUTE_PATHS });
+  assert.equal(ok, true, `förväntade ok:true utan iconDimensions, fick: ${errors.join('; ')}`);
 });
 
 // ═══ parseSizes ═══
