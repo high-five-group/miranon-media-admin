@@ -1,4 +1,5 @@
 import { defineConfig } from '@vite-pwa/assets-generator/config';
+import { getPwaIconVersion } from './scripts/pwa-icon-version.ts';
 
 /**
  * PWA-ikon-generering ur public/miranon-m-original.svg (ADR-047 B4).
@@ -6,6 +7,17 @@ import { defineConfig } from '@vite-pwa/assets-generator/config';
  *
  * Etablerad Session 16 K5b efter Marcus-fynd (kapad maskable + kvantiserad
  * 192:a). Avvikelser från minimal-2023-preseten, med skäl:
+ *
+ * - `assetName` (TASK-280, S107 2026-08-20): filnamnen bär ett 8-tecken
+ *   content-hash av källbilden (scripts/pwa-icon-version.mjs,
+ *   `pwa-192x192-<hash>.png` / `maskable-icon-512x512-<hash>.png`) i stället
+ *   för det Chrome 144+ nu behandlar som Cache-Control: immutable —
+ *   Chrome-teamets blogg 2026-01-21: "To trigger an icon update, developers
+ *   are now required to modify either the metadata or the icon URL." Samma
+ *   hash-funktion importeras av vite.config.ts, så manifestets icons-lista
+ *   och de faktiskt genererade filerna kan aldrig glida isär. ÄNDRA ALDRIG
+ *   filnamnet för hand — regenerera i stället (se nedan) så hashen alltid
+ *   matchar källbildens FAKTISKA innehåll.
  *
  * - `png: { compressionLevel: 9 }` UTAN `quality`: generatorns default
  *   (`quality: 60`) aktiverar sharps palett-kvantisering → 13 distinkta
@@ -41,6 +53,8 @@ import { defineConfig } from '@vite-pwa/assets-generator/config';
  * - `apple.sizes: []`: apple-touch-icon serveras från public/favicon/
  *   (rund + vit bakgrund) i stället för genererad full-bleed.
  */
+const iconVersion = getPwaIconVersion();
+
 export default defineConfig({
   images: ['public/miranon-m-original.svg'],
   preset: {
@@ -52,5 +66,18 @@ export default defineConfig({
     },
     apple: { sizes: [] },
     png: { compressionLevel: 9 },
+    // Versionerade filnamn (TASK-280) — se skäl i kommentaren ovan.
+    assetName: (type, size) => {
+      switch (type) {
+        case 'transparent':
+          return `pwa-${size.width}x${size.height}-${iconVersion}.png`;
+        case 'maskable':
+          return `maskable-icon-${size.width}x${size.height}-${iconVersion}.png`;
+        case 'apple':
+          return `apple-touch-icon-${size.width}x${size.height}-${iconVersion}.png`;
+        default:
+          return `${type}-${size.width}x${size.height}-${iconVersion}.png`;
+      }
+    },
   },
 });
