@@ -191,6 +191,7 @@ Kör den innan du landar en ändring i tabellen. Den prövar formen — inte om 
 | `T148` | **Flake-riggen är acceptance-bunden trots sin `--projekt`-flagga** — `--projekt a11y` startar fel dev-server; 66 falska fällningar i en skarp mätning. | `active` | [T148-flake-riggen-ar-acceptance-bunden.md](T148-flake-riggen-ar-acceptance-bunden.md) |
 | `T149` | **Två testklasser kan bara fällas EFTER landning** — `run_staging`/`run_a11y` är villkorslöst `false` i PR-grinden; enda bevakaren är larm ingen läser. Två regressioner levde tre dygn. | `active` | [T149-tva-testklasser-kan-bara-fallas-efter-landning.md](T149-tva-testklasser-kan-bara-fallas-efter-landning.md) |
 | `T150` | **Warmup-gaten sätts bara när Playwright äger dev-servern** — mot en främmande server faller tester på en progressbar och det ser ut som en regression. | `active` | [T150-warmup-gaten-satts-bara-nar-playwright-ager-servern.md](T150-warmup-gaten-satts-bara-nar-playwright-ager-servern.md) |
+| `T151` | **Sentry-kedjan är byggd men inte inkopplad** — `reportEdgeFunctionError` har noll anropare, så frontend-fel saknar `requestId`-koppling till backend-loggen. Ingen har sett vad som ligger i projektet. | `active` | [T151-sentry-kedjan-ar-byggd-men-inte-inkopplad.md](T151-sentry-kedjan-ar-byggd-men-inte-inkopplad.md) |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
