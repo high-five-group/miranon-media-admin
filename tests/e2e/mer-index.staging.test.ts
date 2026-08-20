@@ -46,6 +46,16 @@ import { expect, test } from '../support/test-bas';
  * osynlig för detta test; efter Marcus godkännande av facit-låset
  * (`tasks/sessions/bilagor/s102-dokument-konvergens/facit.json`) är den
  * en skarp, ovillkorlig ingång. Höjer raderna till ÅTTA.
+ *
+ * UTLOGGNINGS-ASSERTIONERNA RÄTTADE 2026-08-20: de två S107-testerna mätte
+ * FRÅNVARON av `?redirect=` i URL:en, fast `/login`s eget search-schema
+ * (`.default('/hem')`, login.tsx) fyller i parametern vid varje navigering
+ * dit. De mätte alltså routerns serialisering i stället för utloggningens
+ * avsikt och stod röda tre nätter (larm #1588) på en KORREKT produkt — testet
+ * motsade dessutom sin egen kommentar ("destinationen är beteendet"). Båda
+ * assertar nu destinationens VÄRDE (`/hem`, aldrig `/mer`), och den andra
+ * loggar dessutom in på riktigt igen och mäter att landningen blir `/hem` —
+ * ett bevis som ingen serialiseringsdetalj kan bryta.
  */
 
 test.describe('Mer-landningen (Fas 6e L2 — statiskt skal + logout-golv)', () => {
@@ -103,11 +113,23 @@ test.describe('Mer-landningen (Fas 6e L2 — statiskt skal + logout-golv)', () =
     await expect(page).toHaveURL(/\/login/);
 
     // S107 fynd-fix (Marcus-fångst "borde jag inte hamna på Hem?"): en
-    // AVSIKTLIG utloggning får INTE bära med sig ursprungs-URL:en. Gjorde den
-    // det blev vägen en sluten loop — knappen finns bara här, så varje
-    // utloggning → inloggning landade tillbaka på /mer och /login:s
+    // AVSIKTLIG utloggning får INTE bära med sig ursprungs-URL:en (`/mer`).
+    // Gjorde den det blev vägen en sluten loop — knappen finns bara här, så
+    // varje utloggning → inloggning landade tillbaka på /mer och /login:s
     // /hem-default blev oåtkomlig. Se lib/auth/utloggningsavsikt.ts.
-    await expect(page).not.toHaveURL(/[?&]redirect=/);
+    //
+    // MÄTT PÅ DESTINATIONENS VÄRDE, INTE PÅ PARAMETERNS FRÅNVARO. `/login`
+    // bär `redirect: z.string().optional().default('/hem')` i sin
+    // `validateSearch` (login.tsx, där sedan 9078d9f2/2026-05-12 — alltså tre
+    // månader före denna fix). Schemat körs vid VARJE navigering till /login
+    // och TanStack Router serialiserar den validerade searchen tillbaka till
+    // URL:en, så `?redirect=%2Fhem` är en egenskap hos ROUTEN — en utloggad
+    // `page.goto('/login')` helt utan guard inblandad ger exakt samma URL.
+    // Ett `not.toHaveURL(/[?&]redirect=/)` mätte därför routerns
+    // serialisering i stället för utloggningens avsikt, och stod rött tre
+    // nätter i rad (larm #1588) på en produkt som betett sig rätt hela tiden.
+    // Det som skiljer rätt från fel är VÄRDET: `/hem`, aldrig `/mer`.
+    expect(new URL(page.url()).searchParams.get('redirect')).toBe('/hem');
   });
 
   test('S107 fynd-fix: efter avsiktlig utloggning landar nästa inloggning på /hem, inte /mer', async ({
@@ -121,11 +143,42 @@ test.describe('Mer-landningen (Fas 6e L2 — statiskt skal + logout-golv)', () =
     await page.getByRole('button', { name: 'Logga ut' }).click();
     await page.waitForURL(/\/login/);
 
-    // Destinationen ÄR /login:s search-default när inget redirect fångats.
-    // Kontraktet mäts på den faktiska URL:en hellre än på modulflaggan:
-    // flaggan är en implementationsdetalj, destinationen är beteendet.
+    // Destinationen ÄR /login:s search-default när ingen ursprungs-URL
+    // fångats — `/hem`, inte `/mer`. Kontraktet mäts på destinationens VÄRDE
+    // hellre än på modulflaggan: flaggan är en implementationsdetalj,
+    // destinationen är beteendet. (Parameterns NÄRVARO säger ingenting —
+    // routern fyller i sin egen default oavsett; se testet ovan.)
     const destination = new URL(page.url()).searchParams.get('redirect');
-    expect(destination).toBeNull();
+    expect(destination).toBe('/hem');
+
+    // … OCH HELA VÄGEN FRAM. Assertionen ovan läser fortfarande bara en URL.
+    // Det Marcus faktiskt fångade var vart man HAMNAR, så vi loggar in på
+    // riktigt igen och mäter landningen. Det beviset kan inte gå sönder av en
+    // serialiseringsdetalj i routern — vilket är precis felklassen som lät
+    // den gamla assertionen stå röd i tre nätter utan att produkten var fel.
+    //
+    // Credentials läses ur process.env (Kandidat 34 aldrig-läcka, samma
+    // disciplin som auth.setup.ts): aldrig hårdkodade, aldrig loggade.
+    // Playwright maskerar dessutom input[type=password] i artefakter.
+    const epost = process.env.TEST_USER_EMAIL;
+    const losenord = process.env.TEST_USER_PASSWORD;
+    if (!epost || !losenord) {
+      throw new Error(
+        'TEST_USER_EMAIL/TEST_USER_PASSWORD krävs för återinloggnings-beviset — ' +
+          'samma hard-fail som auth.setup.ts (.env.test lokalt, CI-secrets i CI).',
+      );
+    }
+
+    await page.locator('#login-email').fill(epost);
+    await page.locator('#login-password').fill(losenord);
+
+    // Landar inloggningen någon annanstans än /hem — t.ex. /passkey, om
+    // passkey-erbjudandet slås på för staging (login.tsx § PASSKEY, i dag
+    // verifierat avstängt) — fäller waitForURL med den faktiska URL:en i
+    // felet, vilket är den läsbara signalen vi vill ha.
+    await Promise.all([page.waitForURL('**/hem'), page.locator('button[type="submit"]').click()]);
+
+    expect(new URL(page.url()).pathname).toBe('/hem');
   });
 });
 
