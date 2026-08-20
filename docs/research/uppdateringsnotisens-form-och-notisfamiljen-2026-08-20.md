@@ -65,6 +65,12 @@ och domen över våra faktiska felsträngar. Det som redan står i
 `loading-indikator`-passets yttabell (Carbon: aldrig skeleton i toast/meny/
 modal) upprepas inte.
 
+> **Systerdokument — läs båda.** Detta pass mäter vad BRANSCHEN gör.
+> Vad VI har, mätt och fotograferat, ligger i
+> [`tasks/sessions/bilagor/s107-felmeddelande-inventering/`](../../tasks/sessions/bilagor/s107-felmeddelande-inventering/README.md)
+> — fem ytor, fyra designspråk, sju skärmbilder. Ingen av filerna är
+> självbärande utan den andra.
+
 ## Kort svar
 
 **Marcus har rätt, och det går att mäta.** Vår banner orsakar en
