@@ -1,10 +1,10 @@
 ---
 id: TASK-275.3
 title: 'Skiva: Dokument-ytan utbyggd — räckviddsval, gemensamt läge, badges'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 15:37'
-updated_date: '2026-08-17 17:56'
+updated_date: '2026-08-20 07:18'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,8 +33,14 @@ Lotta laddar upp ett dokument, väljer räckvidd, och ser det landa med badge p�
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning utförd mot tasks/sessions/bilagor/s102-dokument-konvergens/facit.json (ADR-102 R3) — avvikelser utöver de beslutade: noll
 - [x] #6 SEKVENSKRAV verifierat: task-273.4 landad på main INNAN denna skiva startade (samma komponentfil)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Dokument-ytan utbyggd med räckviddsval vid uppladdning, gemensamt läge med badges, Åtgärds-sidans bilageväljare och serverskyddet i UI-lagret — PR #1584 (4cadf003), CI grön per jobb (ett infra-transient CodeQL-fel på Analyze(actions), ej kodrelaterat).
+<!-- SECTION:FINAL_SUMMARY:END -->

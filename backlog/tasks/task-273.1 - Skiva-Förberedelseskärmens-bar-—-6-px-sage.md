@@ -1,10 +1,10 @@
 ---
 id: TASK-273.1
 title: 'Skiva: Förberedelseskärmens bar — 6 px + sage'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 14:55'
-updated_date: '2026-08-17 15:19'
+updated_date: '2026-08-20 07:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,6 +30,12 @@ Lotta laddar appen och ser Förberedelseskärmens bar i samma diskreta tjocklek 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Förberedelseskärmens laddningsbar till 6 px + sage-fyllnad via komponent-token, WCAG 1.4.11-kontrast verifierad — PR #1568 (35f832f4), CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->

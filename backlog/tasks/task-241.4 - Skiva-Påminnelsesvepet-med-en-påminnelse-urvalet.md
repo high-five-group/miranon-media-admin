@@ -1,10 +1,10 @@
 ---
 id: TASK-241.4
 title: 'Skiva: Påminnelsesvepet med en-påminnelse-urvalet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 23:04'
-updated_date: '2026-08-17 02:35'
+updated_date: '2026-08-20 07:10'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,7 +30,13 @@ Påminnelsesvepet återanvänder sändmaskineriet ur 241.3; det nya är urvalslo
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning mot tasks/sessions/bilagor/s102-svep-konvergens/facit.json (18 bilder) — renderad yta jämförd läge för läge
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Påminnelsesvepet återanvänder 241.3s sändmaskineri; nytt är läge-1-urvalsfiltret (mekaniskt spamsäkert) och påminnelseformens mallar — PR #1484 (beb612aa), CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->

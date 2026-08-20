@@ -1,10 +1,10 @@
 ---
 id: TASK-274
 title: 'Utskicks-spärren: central flip Blockera/Öppna (Marcus beslut B)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 14:59'
-updated_date: '2026-08-17 15:30'
+updated_date: '2026-08-20 07:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,7 +30,7 @@ Marcus vill kunna säga Blockera alla utskick respektive Öppna utskick från ap
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -103,3 +103,9 @@ text. Ingen kod-koppling verifierad för send-registration-confirmation
 (bekräftelse)-flödets fel-yta heller. Föreslås som separat litet kort om
 Marcus vill ha Gunilla-nivå på alla fyra ytor, inte bara åtgärdssidan.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Central UTSKICK_SPARR-vakt i delad utskickshjälpare, konsumerad av alla fyra utskicks-EF:er, fail-closed semantik; staging-skarptest bevisar hemlighetsflip utan omdeploy — PR #1569 (0cabc7b5), CI grön per jobb (efter en biome-fixup-commit i samma PR).
+<!-- SECTION:FINAL_SUMMARY:END -->

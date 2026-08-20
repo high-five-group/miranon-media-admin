@@ -1,10 +1,10 @@
 ---
 id: TASK-273.3
 title: 'Skiva: Åtgärdssidans mall-not rivs'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 14:56'
-updated_date: '2026-08-17 15:18'
+updated_date: '2026-08-20 07:13'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,7 +29,13 @@ Lotta ser åtgärdssidan utan den tekniska metatexten om mallar. Notens sakpåst
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning utförd mot tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json (ADR-102 R3) — avvikelser utöver den beslutade: noll
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Åtgärdssidans mall-not (PrototypNot) riven på Marcus medvetna beslut, död kod borttagen — PR #1567 (b6df1d12), CI grön per jobb (två infra-transienta 429-fel på Analyze(actions)/Docs link check, ej kodrelaterade, ingen post-merge-regression).
+<!-- SECTION:FINAL_SUMMARY:END -->

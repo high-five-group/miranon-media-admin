@@ -1,10 +1,10 @@
 ---
 id: TASK-243.2
 title: 'Skiva: Tomma läget + copy-modulen'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-16 14:34'
-updated_date: '2026-08-16 23:42'
+updated_date: '2026-08-20 07:11'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,7 +30,7 @@ Lotta med noll väntande handlingar möts av ett lugnt, positivt kvitto i ställ
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning utförd mot tasks/sessions/bilagor/s102-hem-konvergens/facit.json (ytan 'hem-vyn V1', läge tom, desktop + mobil)
 <!-- DOD:END -->
@@ -48,3 +48,9 @@ OVÄNTAT FYND (ej i scope, rapporteras öppet): CI-run 31979179510 (post-merge.y
 
 DoD-kvartett (nakna exitkoder): typecheck 0, biome check 0 (0 findings i rörda filer), build 0, test:api 788 passed / 0 failed (efter att staging frigjorts, 1.3m).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Tomma läget (grön bock-kvitto) + bevakningsradernas kortcopy-modul/line-clamp-2-skyddsnät promoverade ur prototypens varv 4 mot facit tom-läge — PR #1461 (028ad1b6), CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->

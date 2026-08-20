@@ -1,10 +1,10 @@
 ---
 id: TASK-273.6
 title: 'Skiva: Förberedelseskärmen — bakgrundsbild i stället för logga och text'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 15:48'
-updated_date: '2026-08-17 16:25'
+updated_date: '2026-08-20 07:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,6 +31,12 @@ Marcus tillägg 2 (2026-08-17) till UI-fixpaketet: Förberedelseskärmen rensas 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Förberedelseskärmen rensad till enbart laddningsbaren, med Roger & Lotta-foto som dov fönsterfyllande bakgrund — PR #1580 (e1b27f2a), CI grön per jobb. Uppföljande QA-fynd (fel bild/rännsten/utloggning) spårade separat i TASK-276, ej mitt att röra.
+<!-- SECTION:FINAL_SUMMARY:END -->

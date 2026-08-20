@@ -1,10 +1,10 @@
 ---
 id: TASK-241.2
 title: 'Skiva: Sändytans skal + trygghetstriaden mot facit'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 23:01'
-updated_date: '2026-08-17 00:05'
+updated_date: '2026-08-20 07:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,7 +33,7 @@ Skarp overlay-sändyta ovanpå Hem, promoverad ur /dev/svep-prototyp mot låst f
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning mot tasks/sessions/bilagor/s102-svep-konvergens/facit.json (18 bilder) — renderad yta jämförd läge för läge
 <!-- DOD:END -->
@@ -195,3 +195,9 @@ backlog.config.yml (ROOT_CONFIG-mekanismen, tomt-fil check_active_branches:
 false) raderas efter task-edit-anropen ar klara. git status verifierad ren
 mot exakt de 10 avsedda filerna (6 nya + 4 andrade).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Bekräftelsesvepets overlay-skal (adresslista/förhandsvisning/testmail/armering/tomt-urval) promoverat ur dev-prototypen mot facit — PR #1464 (ab4e8f76), CI grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->
