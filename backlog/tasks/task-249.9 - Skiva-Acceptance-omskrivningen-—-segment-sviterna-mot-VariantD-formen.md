@@ -4,7 +4,7 @@ title: 'Skiva: Acceptance-omskrivningen — segment-sviterna mot VariantD-formen
 status: Done
 assignee: []
 created_date: '2026-08-17 05:33'
-updated_date: '2026-08-17 09:08'
+updated_date: '2026-08-20 08:10'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,14 +28,14 @@ OBSERVERA: sändningen (send-email) och sparandet (save-segment) är fortfarande
 <!-- AC:BEGIN -->
 - [x] #1 De skippade testerna i mer-segment.acceptance.test.ts (läs-/räkne-vägen) omskrivna mot VariantD:s faktiska DOM/flöden (mallvyn, verkstaden, segment-detaljvyn); beteendet de bevisade (taxonomi-rendering, klartext-spegling, tomt-resultat-neutralitet, export) bevaras
 - [x] #2 mer-segment-send*.test.ts och mer-segment-spara-aktivitetslogg.acceptance.test.ts: antingen omskrivna (om skarp mutations-wiring byggts i ett separat kort dessförinnan) eller medvetet kvarlämnade skippade med uppdaterad motivering — aldrig tyst bortglömda
-- [ ] #3 Samtliga sviter gröna lokalt och i CI
+- [x] #3 Samtliga sviter gröna lokalt och i CI
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -74,6 +74,42 @@ GRINDARNAS UTFALL (lokalt, mätt 2026-08-17, exitkoder fångade separat — aldr
 - `npm run test:acceptance:sjalvtest` (HELA klassen) → exit 0. Slutrad: "222 tester · 222 fällda · 222 med OmockadRequestError som orsak".
 - `npm run test:acceptance:sjalvtest:negativ` → exit 0 ("NEGATIV KONTROLL GRÖN") — bevis i andra riktningen: bedömningen faller utan självtestläget.
 - `npm run test:visual -- tests/visual/segment-promoverings-grind.spec.ts` → exit 0, 14/14 (18,1 s). `git status` på `tests/visual/**` = 0 rader ⇒ referensfilerna orörda.
+
+BOCKNING 2026-08-20 (S107, Marcus beslut 'Kör' efter utredning).
+
+AC #3 ('Samtliga sviter gröna lokalt och i CI') var BARA OBOCKAD — kravet var
+uppfyllt hela tiden. Kortet säger det själv: 'lokala halvan MÄTT: 6/6 gröna.
+CI-halvan ägs av orkestrerarens CI-verifiering; kriteriet lämnas obockat tills
+den signalen finns.' Signalen kom. Ingen gick tillbaka och bockade.
+
+MÄTT VID BOCKNINGEN (2026-08-20), tre oberoende nivåer:
+- Lokalt idag: npm run test:acceptance mot mer-segment.acceptance.test.ts →
+  exit 0, 8/8 gröna (39,3 s). Filen växte 6 → 8 tester i TASK-264 (451265a4).
+- PR-grinden: gh pr checks 1510 → samtliga pass eller skipping.
+- Merge-commiten 01fbb0bf: 22 success, 8 skipped, 0 failure — inklusive både
+  Test suite / Acceptance — tvåsidigt bevis (hermetik-självtest) och
+  Verifierande svit på det mergade trädet / Acceptance (hermetisk) med full
+  klass.
+
+Hela acceptance-klassen lokalt gav 242 passade / 2 fällda, men båda röda låg i
+ANDRA filer orörda av detta kort (hem.acceptance.test.ts:313 —
+samma test kortets egna notes redan identifierat som klass B-flake — och
+dokument-rackviddsval.acceptance.test.ts:313). Isolerad omkörning av just de
+två filerna: exit 0, 36/36 gröna. Last-känsliga flakes av repots dokumenterade
+klass B, inte regressioner. CI kör dessutom med retries: 2.
+
+DoD #3 bockad på samma mätning.
+
+PR-NUMMER, som kortets Final Summary saknar: #1510 (merge-commit 01fbb0bf,
+kod-commit a97a19dd, mergedAt 2026-08-17T08:46:15Z). Death pointer-formen är
+bokförd som eget fynd i TASK-281.
+
+MEDVETET EJ ÅTERSKAPADE, oförändrat öppet (står i filhuvudet): Skool-exportens
+UI-halva (VariantD har ingen export-knapp; CSV-logiken bevisas i
+tests/api/segment-export.test.ts) och sändning/sparande (saveSegment och
+send-email är fortfarande no-op i VariantD per 249.5 AC#1, så inget
+payload-kontrakt finns att observera). Båda återskapas i det kort som bygger
+den skarpa mutations-wiringen.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
