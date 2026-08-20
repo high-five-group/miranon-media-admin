@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 107 ⏸️ PAUSAD (sjätte gången, 2026-08-19, `lifecycle: paused`) —
+**Session 107 ▶️ ÅTERUPPTAGEN (sjätte gången, 2026-08-20, `lifecycle: active`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
 Marcus dom stängde omtaget: *"Nu är jag jättenöjd med hur det ser ut och
 funkar."* **PR #1597 MERGED `13203e51`, `Vercel: success` verifierat** —
@@ -66,7 +66,7 @@ numreringen re-deriverad (f50 nu HÄRLEDD ur disk, var ohärledd; **fragment
 är 47, inte 48** — handoffen räknade `README.md` som fragment), todo-rubrikens paus-räknare rättad, och **heartbeat-monitorn
 medvetet EJ omstartad** — `#1488` är röd, och policyns GRÄNS-rad undantar
 röd-vägen från Dependabot-tystnaden, så en omstart återinför larm var
-90:e sekund (`T144`). Vägvalet är Marcus. Läge: Del 15.** **PAUS 6 (2026-08-19):** `TASK-277`+`278` byggda och staging-deployade (`total: 58` verifierat) · **ADR-119** låser PDF-vägen (extern HTML/CSS-motor, generering EN gång per event, BIFOGA) · **ADR-120** gör Resend till ett medvetet val i stället för ett arv · loggan i äkta vektor med originalfärger (Marcus fångst: två hexvärden) · favicon + PWA-ikoner bär nu Rogers riktiga M · Cavolini-licensen MÄTT (`fsType 0x0008`) · `TASK-279` bilage-mallarna byggda (#1634 armerad). **MARCUS ÖPPNA MOMENT: prod-EF-deploy · verifiera favicon+PWA-ikon · granska mallarna (QR-placeringen omvänd i kortet mot förlagan).** Numrering: ADR 121 · task-280 · L512 + 47 fragment · T148 · f51. Full handoff: sessionsdok S107 § PAUSLÄGE (sjätte gången) + Del 17.
+90:e sekund (`T144`). Vägvalet är Marcus. Läge: Del 15.** **PAUS 6 (2026-08-19):** `TASK-277`+`278` byggda och staging-deployade (`total: 58` verifierat) · **ADR-119** låser PDF-vägen (extern HTML/CSS-motor, generering EN gång per event, BIFOGA) · **ADR-120** gör Resend till ett medvetet val i stället för ett arv · loggan i äkta vektor med originalfärger (Marcus fångst: två hexvärden) · favicon + PWA-ikoner bär nu Rogers riktiga M · Cavolini-licensen MÄTT (`fsType 0x0008`) · `TASK-279` bilage-mallarna byggda (#1634 armerad). **MARCUS ÖPPNA MOMENT: prod-EF-deploy · verifiera favicon+PWA-ikon · granska mallarna (QR-placeringen omvänd i kortet mot förlagan).** Numrering: ADR 121 · task-280 · L512 + 47 fragment · T148 · f51. Full handoff: sessionsdok S107 § PAUSLÄGE (sjätte gången) + Del 17. **RESUME 6 (2026-08-20):** paus-landningen verifierad (`#1634` + `#1635` MERGED, `main` `1f3ddc02`), numreringen re-deriverad — **alla sex serier höll**. **NY DIVERGENS: nattnätet rött TRE nätter i rad (08-18/19/20), obokfört i paus-blocket.** Sex röda jobb i tre klasser — bokföring (31 obockade kort · 2 arkiv-kandidater · **16 obesvarade larm-ärenden sedan `#1428`**), externt (länkröta), och **två äkta trädfel**: `tests/a11y/NavCard.spec.ts` (varierande assertion = misstänkt flake, EJ mätt) och `tests/e2e/mer-index.staging.test.ts:110/:128` — **rad-för-rad identiskt tre nätter, och rad 128 är S107:s EGET fynd-fix-test som aldrig blev grönt** (belagt från larm `#1588`, 2026-08-17). Marcus order: ta nattnätet + larmskulden. Läge: Del 18.
 
 **Session 107 — första passet (historik): NIO-PUNKTSLISTAN: utredning +
 nio byggskivor landade på EN dag.** Sju
