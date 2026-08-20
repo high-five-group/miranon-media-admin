@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-17
+updated: 2026-08-20
 review_by: 2027-01-02
 status: stable
 ---
@@ -182,21 +182,61 @@ hörlursinfo, meny), **B — event-mallad** (systemmall där eventfälten fylls 
 t.ex. deltagarinformations-brevet), **C — person-genererad** (skapas ur
 person- + betalningsdata, t.ex. betalningskvittot). Bytesen bor i Storage,
 metadatat och eventkopplingen i basen (delad hemvist, ADR vid bygget).
-Varje bilaga bär dessutom exakt EN **räckvidd** (S107-grillningen, ADR-118):
-**event-specifik** (dagens koppling), **kurstyp** (Kursfamilj + valfri
-Kursnivå — ärvs automatiskt av alla event av typen, även framtida) eller
-**alla event**. Räckvidden är ortogonal mot dokumentklassen: klassen är
-innehållets ursprung, räckvidden dess spridning.
+Varje bilaga bär dessutom en **räckvidd** (S108-grillningen; ersätter
+ADR-118:s ursprungliga form). Räckvidden är ortogonal mot dokumentklassen:
+klassen är innehållets ursprung, räckvidden dess spridning.
 *Undvik:* dokument (tvetydigt — Dokument är YTAN i Mer där bilagor hanteras),
 attachment.
 
-**Gemensam bilaga** — en bilaga med räckvidd kurstyp eller alla event: syns
-automatiskt, märkt med räckviddsbadge, i varje berört events dokumentlista
-och i Åtgärds-sidans bilageväljare; byts/raderas ENDAST i sitt räckviddsläge
-på Dokument-ytan, aldrig ur ett enskilt events kontext (S107-grillningen,
-ADR-118).
+**Räckvidd** — vilka event en bilaga gäller för. Antingen **ett utpekat
+event** (en direktlänk), eller ett **filter** över tre valfria axlar:
+Familj · Event · Plats (familjen kan smalnas till ett **Steg**). Axlarna
+kombineras med OCH — *Familj RIM + Plats
+Rönninge* betyder "RIM-event som ligger i Rönninge", aldrig unionen av de
+två. En tom axel begränsar inte, så *inga axlar satta* betyder alla event.
+Kvitterad S108-grillningen (frågorna 4 och 9); ersätter ADR-118 beslut 1:s
+"exakt EN räckvidd, aldrig kombinerbart" och dess separata "alla
+event"-läge, som blir "inga filter satta".
+*Undvik:* scope, kurstyps-räckvidd (kurstyp är inte ett kanoniskt begrepp —
+se Eventinnehåll).
+
+**Gemensam bilaga** — en bilaga vars räckvidd är ett filter snarare än ett
+utpekat event: syns automatiskt, märkt med räckviddsbadge, i varje berört
+events dokumentlista och i Åtgärds-sidans bilageväljare; byts/raderas ENDAST
+i sitt räckviddsläge på Dokument-ytan, aldrig ur ett enskilt events kontext
+(S107-grillningen, ADR-118 beslut 3 — oförändrat av S108).
 *Undvik:* universell bilaga (arbetsbegreppet under grillningen), global
 bilaga, statisk bilaga (förväxlas med dokumentklass A).
+
+**Steg** — RIM-familjens gradering: Intro, Steg 1, Steg 2, Steg 3. Ordet är
+**Steg — aldrig "Nivå" — överallt** (Marcus S108; utvidgar S107:s beslut som
+bara gällde Dokument-ytan). Basens fält heter alltjämt `Kursnivå` med
+optionsnamnen `Nivå 1`–`Nivå 3`, och EF:ens validering avvisar allt annat, så
+bytet lever tills vidare i presentationslagret (`src/components/dokument/
+nivaSprak.ts` — enda platsen ordet översätts). När basen byter raderas den
+filen. Nivålösa familjer (Fjärrskådning, Psionautics) har inga steg alls.
+*Undvik:* nivå, kursnivå (utom när basens fältnamn citeras ordagrant).
+
+**Eventinnehåll** — de redigerbara texterna som hör till en kombination av
+**Event** och **Eventtyp**: beskrivningstext och agenda per dag. Kombinationen
+är nyckeln eftersom samma Event kan ges som båda eventtyperna med olika
+innehåll — Fjärrskådning finns som tvådagars utbildning och som föreläsning
+(mätt i prod 2026-08-20: sju kombinationer i hela beståndet). Levererar
+standardvärden till de genererade bilagorna; ett enskilt event kan skriva
+över dem för sitt eget tillfälle. Kanoniserad S108-grillningen (fråga 9) —
+Marcus valde namnet sedan "kurstyp" fallit på ORDLISTA:ns egen avrådan mot
+"kurs", och "Eventtyp" visat sig upptaget av Utbildning/Föreläsning.
+*Undvik:* kurstyp, kursinnehåll (kursen är taxonomi-axeln — se Event),
+eventmall (posten är innehållet i en mall, inte mallen).
+
+**Plats** — orten där ett event hålls, som egen post med de uppgifter som
+följer med platsen snarare än med tillfället: adress, parkeringsinformation
+och transportinformation. Rönninge är Roger & Lottas hem och har därför
+stabila värden; övriga orter är hyrda lokaler där uppgifterna skiljer sig per
+tillfälle och normalt skrivs på eventet i stället. Kanoniserad
+S108-grillningen (frågorna 5–8).
+*Undvik:* ort (basens fältnamn för enbart ortsnamnet — platsen är posten,
+orten är dess namn), lokal, adress (adressen är ETT av platsens fält).
 
 **Åtgärds-sida** — den event-knutna sida där Lotta verkställer utskick:
 mottagarna hon markerat och "dragit med", åtgärdsval (utskickstyp),
