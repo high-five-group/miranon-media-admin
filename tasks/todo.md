@@ -15,6 +15,45 @@
 
 ## Aktuellt fokus
 
+**Session 108 ⏸️ PAUSAD (första gången, 2026-08-20, `lifecycle: paused`) —
+DOKUMENT-, BILAGE- OCH MALLSPÅRET ÖVERTAGET FRÅN S107; MODELLEN GRILLAD OCH
+LANDAD, PROTOTYPEN NÄSTA.** Parallell session bredvid aktiva S107 (egen
+worktree per ADR-090 beslut 2). Spåret övertogs per S107 Del 19 § A: `275`-familjen,
+`279`, hela PDF-kedjan och dokumentsidan. **Marcus fyra observationer prövade mot
+faktiskt tillstånd — alla bekräftade, två större än beskrivna:** mallarna är
+**Rönninge-mallar förklädda till generiska** (tre hårdkodade platsstycken; mätt i
+prod är **25 av 54 event i Rönninge, 29 inte**) · förlage-analysens
+"FAST FORM"-premiss **fälld** (den drogs på datum-axeln, plats-axeln prövades
+aldrig — och *parkering*, dess eget exempel, är det mest platsbundna stycket) ·
+**`{{plats}}` har ingen datakälla** (inget adressfält finns på Eventplanering) ·
+dokumenten görs i **PowerPoint av Roger** (mätt ur `pdfinfo`). **TIO KVITTERADE
+BESLUT** (sessionsdok Del 2 § D): fältmodell framför innehållsbibliotek ·
+**AND-filtrerad räckvidd** (Familj/Event/Plats) som **ersätter ADR-118 beslut 1**
+— "alla event" blir "inga filter satta" · explicit typ-ruta i agendan ·
+`Platser` som additiv tabell med `Ort` ORÖRD (läses av tio EF:er) ·
+inaktuell-markering i stället för tyst regenerering · redigering som två nya rader
+på **Mer**, Dokument-ytans layout orörd. **RESEARCH FÄLLDE AGENTENS EGET
+FÖRSLAG:** textsniffnings-regeln avvisad — 0 av 5 dokumentmallverktyg härleder
+formatering ur fri text, och Excel/gennamn-fallet (Ziemann et al. 2016) belägger
+felmoden. **UI GRANSKAT MOT RENDERAD YTA** (Marcus order) — vilket ändrade
+agentens egen rekommendation om var redigeringsytan hör hemma, och fällde ett
+agent-argument om "osynlig semantik" som UI:t redan visade. **ORDLISTA:**
+`Eventinnehåll`, `Plats`, `Steg` (**aldrig "Nivå", överallt** — Marcus order) +
+omskriven `Räckvidd`. **FEM OVERIFIERADE PUNKTER bokförda som `T152`–`T156`**
+i stället för påstådda lösta — `T154` (logisk lucka) **blockerar ADR-121**, som
+därför medvetet INTE mintats; `T156` är designdiffen mot förlagorna (infoboxen
+mätt: 57 % bredare, halva den vertikala luften, 40 % rundare hörn). **`T151`
+kolliderade med S107** — upptäckt av en DIRTY PR, inte av registret; omnumrerat
+vid merge. PR `#1655` (`99c747d4`) + `#1663` (`cb3b82ea`) MERGED, nio jobb gröna
+per jobb. **NÄSTA: `prototype`-skillens UI-gren i DIREKT KONVERGENS** (Marcus
+beslut) mot frågan *"Vad ser Lotta när hon genererar bekräftelsebilagan för
+Arboga-eventet 31 oktober?"* — den stänger `T153` + `T154`, sedan ADR-121, sedan
+PRD/skivor. **Marcus öppna moment: DocRaptor-nyckeln** (blockerar minimaltest och
+hela renderings-kedjan) · `275.4` QA · `279`s flipp-skuld · QR-placeringen
+oavgjord. Numrering vid paus: ADR 121 · task-283 · L512 + **55 fragment** (47 vid
+start — S107 landade åtta) · T157 · f51 — re-derivera ALLTID, S107 är aktiv
+parallellt. Full handoff: sessionsdok S108 § PAUSLÄGE + Del 2.
+
 **Session 107 ⏸️ PAUSAD (sjunde gången, 2026-08-20, `lifecycle: paused`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
 Marcus dom stängde omtaget: *"Nu är jag jättenöjd med hur det ser ut och
