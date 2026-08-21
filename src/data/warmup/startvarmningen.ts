@@ -220,9 +220,17 @@ interface WarmupItem {
 
 /**
  * Warmup-setet (research § 6-tabellen, sju kärn-EF:er). Medvetet exkluderat:
- * `persons.search` (parametriserad på söktext, ingen naturlig "kärn"-fråga)
- * och alla `detail`/`byEvent`-grenar (per-post, samma resonemang som
- * ADR-078 avvisade för registrerings-detaljer).
+ * alla `detail`/`byEvent`-grenar (per-post, samma resonemang som ADR-078
+ * avvisade för registrerings-detaljer).
+ *
+ * [UPPDATERAT, ADR-123 beslut 7, TASK-286.2] `persons.register` (tidigare
+ * `persons.search`) uteslöts HÄR tidigare för att den "saknade en naturlig
+ * kärnfråga" — sedan personlistan bytte källa HAR den en (`fetchPersonsRegister`,
+ * parameterlös). Den hålls ÄNDÅ utanför denna blockerande mängd, men nu av
+ * KOSTNADSSKÄL: registret är en egen fullwalk (sex sekventiella Airtable-
+ * anrop, ~1,5–3 s kall) och hör inte hemma framför första bildrutan på `/hem`.
+ * Den värms i stället PÅ AVSIKT (`TabBar.tsx`, hover/fokus på Personer-fliken)
+ * och annars lat vid första besök på `/personer` — se `PersonsList.tsx`.
  */
 const WARMUP_ITEMS: WarmupItem[] = [
   {

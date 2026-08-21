@@ -64,7 +64,20 @@ export const queryKeys = {
     // sökterm `q`. Cursorn skickas som `pageParam` och ingår ALDRIG i nyckeln —
     // alla sidor för en given `q` ackumuleras under samma cache-entry. (Ersätter
     // STATE-STRATEGY §3:s `search({ q, page })` — opak cursor, inga numeriska sidor.)
+    //
+    // [UTAN KONSUMENT SEDAN TASK-286.2] `PersonsList` läser inte längre denna
+    // nyckel (bytt mot `register` nedan, ADR-123). Nyckeln och sin adapter-metod
+    // (`listPersons`) lever kvar orörda tills TASK-286.3 river dem — ingen
+    // big-bang-rivning (ADR-123 § Beslut 1).
     search: (params: { q: string }) => ['persons', params] as const,
+    // HELA personregistret (ADR-123 beslut 1, TASK-286.2) — PARAMETERLÖS,
+    // STABIL nyckel (speglar `events.list`/`waitlist.all`-formen): en global
+    // lista, inga klient-filter i nyckeln. `PersonsList` läser denna EN gång
+    // (global 5 min staleTime, TASK-286.4 höjer den efter bevisad invalidering)
+    // och söker/paginerar i minnet på den laddade arrayen — se
+    // `src/lib/person-sok.ts`. `TabBar.tsx` prefetchar samma nyckel på
+    // hover/fokus (ADR-078 beslut 3).
+    register: ['persons', 'register'] as const,
     // Persondetalj (Fas 6a L5a): aggregerande get-person per record-ID. Egen
     // gren under 'persons' så detalj-cachen kan invalideras oberoende av listan.
     detail: (id: string) => ['persons', 'detail', id] as const,

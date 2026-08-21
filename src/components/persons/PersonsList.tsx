@@ -1,6 +1,17 @@
 /**
- * Personer-listan — sökbar, cursor-paginerad vy (`ADR-056`) via `listPersons`
- * och router-context-DI (`ADR-055`). Skarp produktionskod.
+ * Personer-listan — sökbar vy över det FÖRLADDADE personregistret
+ * (`ADR-123`, TASK-286.2) och router-context-DI (`ADR-055`). Skarp
+ * produktionskod.
+ *
+ * [DATAKÄLLEBYTE, TASK-286.2] Läste tidigare `listPersons` sida för sida via
+ * `useInfiniteQuery`, keyad på söktermen — varje tecken gav en ny EF-rundtur
+ * och ett skelett (`ADR-056`). Läser nu `fetchPersonsRegister()` EN gång
+ * (`queryKeys.persons.register`, global 5 min staleTime) och söker/paginerar
+ * i minnet över den laddade arrayen (`src/lib/person-sok.ts`) — noll
+ * nätverksanrop efter första laddningen. `listPersons`/`persons.search` lever
+ * kvar orörda i adaptern tills sista konsumenten är borta (ADR-123 § Beslut
+ * 1) — TASK-286.3 river dem. Sortering är OFÖRÄNDRAD (EF:ens `Namn`-asc,
+ * Airtables ordning) tills TASK-286.3 lägger svensk kollation.
  *
  * HÄRKOMST, eftersom den förklarar formen: detta ÄR S90/S103-konvergensens
  * prototyp, PROMOVERAD enligt `ADR-103` (B1 promoveringsformen, B2 steg 4
@@ -33,21 +44,22 @@
  * variant-läget FÖRE promoveringen och är sedan dess ORÖRDA; de gäller nu som
  * regressionslås över denna fil.
  *
- * Datavägen är oförändrad genom hela promoveringen (`useDataSource`,
- * `ADR-055`/`057`) — read-only. Den var identisk i prototyp och skarp redan
- * före flippen, vilket är varför `ADR-103` B2 steg 1:s `protoDataMode`-varning
- * var en no-op för just denna yta.
+ * Datavägen gick genom `useDataSource`/`ADR-055`/`057` (router-context-DI)
+ * redan i prototyp och skarp, och gör det fortfarande — TASK-286.2 bytte
+ * VILKEN adapter-metod som anropas (`fetchPersonsRegister` i stället för
+ * `listPersons`), aldrig VÄGEN dit.
  */
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { ChevronRight, X } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { Button as AriaButton, Input as AriaInput, SearchField } from 'react-aria-components';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { useDataSource } from '@/data/useDataSource';
 import type { Person } from '@/domain/models/Person';
+import { filtreraPersonregister } from '@/lib/person-sok';
 import { queryKeys } from '@/queries/keys';
 
 /**
@@ -72,7 +84,13 @@ import { queryKeys } from '@/queries/keys';
  * inte en scanlista som ska tåla 200 rader (Marcus-lås).
  */
 
-/** Sidstorlek per cursor-sida (ADR-056). EF:n klampar mot Airtables tak (≤100). */
+/**
+ * [OMTOLKAD, TASK-286.2] Var EF:ens cursor-sidstorlek (ADR-056); är nu det
+ * RENA KLIENT-RENDER-FÖNSTRET över det redan laddade registret (ADR-123
+ * beslut 5) — talet 50 är oförändrat, men ingen sida hämtas längre. "Ladda
+ * fler" utökar fönstret ur SAMMA i minnet filtrerade array, synkront (ingen
+ * ny EF-rundtur, ingen laddningsstat att visa).
+ */
 const PAGE_SIZE = 50;
 
 /**
@@ -100,7 +118,12 @@ const SKELETON_NAMNBREDD = [
   'w-2/5',
 ];
 
-/** Fördröjning innan en sökterm skrivs till URL:en + utlöser server-sökning. */
+/**
+ * [OMTOLKAD, TASK-286.2] Fördröjning innan en sökterm skrivs till URL:en
+ * (delbar länk) — utlöser INTE längre en server-sökning: FILTRERINGEN är
+ * odebouncad (`useDeferredValue`, ADR-123 beslut 5), enbart URL-synken bär
+ * kvar detta talet.
+ */
 const SEARCH_DEBOUNCE_MS = 250;
 
 /** Sammansatt visningsnamn ur de namnfält Airtable kan leverera. */
@@ -255,6 +278,9 @@ export function PersonsList() {
 
   const [searchInput, setSearchInput] = useState(() => q);
 
+  // URL-synken (delbar länk, AC #6) — OFÖRÄNDRAD sedan innan TASK-286.2.
+  // Notera att detta INTE längre driver filtreringen (se `deferredSearchTerm`
+  // nedan) — enbart `q`/adressfältet.
   useEffect(() => {
     const handle = setTimeout(() => {
       if (searchInput !== q) setQ(searchInput || null);
@@ -262,20 +288,58 @@ export function PersonsList() {
     return () => clearTimeout(handle);
   }, [searchInput, q, setQ]);
 
-  const { data, isPending, isError, error, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    useInfiniteQuery({
-      queryKey: queryKeys.persons.search({ q }),
-      queryFn: ({ pageParam }) =>
-        dataSource.listPersons({
-          search: q || undefined,
-          cursor: pageParam ?? undefined,
-          pageSize: PAGE_SIZE,
-        }),
-      initialPageParam: null as string | null,
-      getNextPageParam: (last) => last.nextCursor,
-    });
+  // ADR-123 beslut 5 — FILTRERINGEN är odebouncad: `useDeferredValue` håller
+  // sökfältet responsivt (input-uppdateringen prioriteras alltid) medan
+  // React kan deprioritera om-renderingen av den filtrerade listan, utan att
+  // införa en artificiell tidsgräns. Detta är den ENDA källan filtret och
+  // räknarraden läser — `q` (ovan) rör aldrig filtreringen.
+  const deferredSearchTerm = useDeferredValue(searchInput);
 
-  const persons = data?.pages.flatMap((page) => page.persons) ?? [];
+  // TASK-286.2 (ADR-123 beslut 1) — HELA registret, EN gång, global 5 min
+  // staleTime (defaultOptions, `src/router.ts`). `TabBar.tsx` prefetchar
+  // SAMMA nyckel på hover/fokus (ADR-078 beslut 3), så det vanliga fallet är
+  // att denna frågan redan är varm när Lotta når sidan.
+  const {
+    data: register,
+    isPending,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.persons.register,
+    queryFn: () => dataSource.fetchPersonsRegister(),
+  });
+
+  // Sök i klienten — byte-för-byte paritet med EF:ens SEARCH()-formel
+  // (`src/lib/person-sok.ts`, ADR-123 beslut 2). Sortering är OFÖRÄNDRAD
+  // (registrets egen Namn-asc-ordning ur EF:en) — svensk kollation är
+  // TASK-286.3.
+  const filteredPersons = useMemo(
+    () => filtreraPersonregister(register ?? [], deferredSearchTerm),
+    [register, deferredSearchTerm],
+  );
+
+  // Klient-render-fönstret (ADR-123 beslut 5) — "Ladda fler" utökar detta,
+  // aldrig en ny hämtning. Fönstret återställs till FÖRSTA sidan varje gång
+  // sökningen ändras (en ny sökning börjar alltid om från början).
+  //
+  // "ADJUSTING STATE WHEN A PROP CHANGES" (react.dev/learn/you-might-not-
+  // need-an-effect), inte en `useEffect`: jämförelsen + `setVisibleCount`
+  // sker UNDER rendering, inte i en passerad effekt. En effekt hade antingen
+  // krävt en `useExhaustiveDependencies`-avstängning (kroppen LÄSER aldrig
+  // `deferredSearchTerm` — den finns bara som TRIGGER i deps-arrayen, vilket
+  // linten korrekt flaggar som en obehövd dependency) eller kostat ett extra
+  // render-varv innan fönstret hunnit återställas (skelett/gammalt fönster
+  // hade blinkat till innan reset). Render-tids-justeringen har ingendera
+  // kostnaden.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [foregaendeSokterm, setForegaendeSokterm] = useState(deferredSearchTerm);
+  if (deferredSearchTerm !== foregaendeSokterm) {
+    setForegaendeSokterm(deferredSearchTerm);
+    setVisibleCount(PAGE_SIZE);
+  }
+
+  const persons = filteredPersons.slice(0, visibleCount);
+  const hasNextPage = filteredPersons.length > persons.length;
 
   const loadMoreRef = useRef<HTMLButtonElement>(null);
   const statusRef = useRef<HTMLParagraphElement>(null);
@@ -284,7 +348,6 @@ export function PersonsList() {
   const [announcement, setAnnouncement] = useState('');
 
   useEffect(() => {
-    if (isFetchingNextPage) return;
     if (!loadMoreTriggered.current) {
       prevCountRef.current = persons.length;
       return;
@@ -299,7 +362,7 @@ export function PersonsList() {
       if (loadMoreRef.current) loadMoreRef.current.focus();
       else statusRef.current?.focus();
     }
-  }, [isFetchingNextPage, persons.length]);
+  }, [persons.length]);
 
   // [PROTOTYPE] STEG 8 (k08) — SÖKFÄLTETS FORM.
   // Appens enda faktiska sökfälts-facit är eventväljarens (EventValjare.tsx:398-423,
@@ -393,12 +456,12 @@ export function PersonsList() {
   }
 
   const loadedCount = persons.length;
-  // TASK-277 AC #1 — äkta serversiffra (`get-persons` full-walk, beräknad
-  // ENBART på FÖRSTA sidan/cursor saknas — `data.pages[0]`). Skew-säkert
-  // fallback till `loadedCount`: en äldre EF-deploy utan fältet (Vercel
-  // Skew-klassen, samma mönster som AktivitetsHistorik/TASK-225.2) faller
-  // tillbaka på "visar N av N", aldrig NaN, aldrig en krasch.
-  const totalCount = data?.pages[0]?.total ?? loadedCount;
+  // [FÖRENKLAT, TASK-286.2] Var en skew-säker fallback mot en EF-levererad
+  // totalsiffra (TASK-277 AC #1) — den full-walken existerar inte längre för
+  // listans räkning: `filteredPersons` ÄR redan HELA det filtrerade
+  // registret i minnet (ADR-123), så längden är alltid exakt. Ingen
+  // separat serversiffra att synka mot, inget skew-fönster.
+  const totalCount = filteredPersons.length;
 
   return (
     <div className="flex flex-col gap-4" data-testid="personer-yta">
@@ -427,10 +490,12 @@ export function PersonsList() {
           aria-live="polite"
           className="flex flex-col items-center gap-1 py-12 text-center"
         >
-          <p className="font-medium text-body">{q ? 'Inga träffar' : 'Inga personer ännu'}</p>
+          <p className="font-medium text-body">
+            {deferredSearchTerm ? 'Inga träffar' : 'Inga personer ännu'}
+          </p>
           <p className="text-small text-text-muted">
-            {q
-              ? `Ingen person matchar "${q}".`
+            {deferredSearchTerm
+              ? `Ingen person matchar "${deferredSearchTerm}".`
               : 'Personer dyker upp här när någon anmäler sig eller lämnar sin e-post.'}
           </p>
         </div>
@@ -462,7 +527,9 @@ export function PersonsList() {
             aria-live="polite"
             className="px-4 text-small text-text-muted"
           >
-            {`Visar ${loadedCount} av ${totalCount} personer${q ? ` för "${q}"` : ''}.`}
+            {`Visar ${loadedCount} av ${totalCount} personer${
+              deferredSearchTerm ? ` för "${deferredSearchTerm}"` : ''
+            }.`}
           </p>
 
           {/* [PROTOTYPE] STEG 3 (k03) — KORTANATOMIN. Raden slutade vara ett
@@ -673,21 +740,22 @@ export function PersonsList() {
           primitivens `secondary md` — spec §19: solid fyllnad hör inte hemma
           i/under en kortyta, och en sekundär rad-handling bär text + mjuk ton.
 
-          STABILT TILLGÄNGLIGT NAMN: dagens label-växling `Laddar…`/`Ladda fler`
-          (PersonsList.tsx:211) BYTER namn på ett element som behåller fokus →
-          skärmläsaren omannonserar knappen mitt i handlingen. Namnet står nu
-          still; laddningen bärs av `aria-busy` + dämpningen. Fokus-behållningen
-          (raderna 103-105) är oförändrad — den är hela skälet till att knappen
-          finns i stället för oändlig scroll. */}
+          [FÖRENKLAT, TASK-286.2] "Ladda fler" utökade tidigare via en NY
+          EF-rundtur (`fetchNextPage`), med en `Laddar…`/`aria-busy`-mellanstat
+          under svaret. Registret är redan HELT i minnet (ADR-123) — utökningen
+          är nu en synkron array-slice, ingen väntan, inget mellanstat att visa.
+          STABILT TILLGÄNGLIGT NAMN kvarstår ändå som egenskap (namnet växlade
+          ALDRIG, oavsett mekanism) — bara `aria-busy`/`isDisabled` föll bort
+          som obehövda. Fokus-behållningen (annonserings-effekten ovan) är
+          OFÖRÄNDRAD — den är hela skälet till att knappen finns i stället för
+          oändlig scroll. */}
       {hasNextPage && (
         <div className="flex justify-center">
           <AriaButton
             ref={loadMoreRef}
-            aria-busy={isFetchingNextPage}
-            isDisabled={isFetchingNextPage}
             onPress={() => {
               loadMoreTriggered.current = true;
-              fetchNextPage();
+              setVisibleCount((count) => Math.min(count + PAGE_SIZE, filteredPersons.length));
             }}
             className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized data-[disabled]:opacity-60 motion-safe:transition-colors"
           >

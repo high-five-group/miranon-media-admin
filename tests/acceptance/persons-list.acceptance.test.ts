@@ -1,41 +1,43 @@
 import AxeBuilder from '@axe-core/playwright';
-import { http } from 'msw';
+import { delay, http } from 'msw';
 import type { z } from 'zod';
 import type { PersonSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
 /**
- * Fas 6a — Personer-listan (cursor-paginerad, ADR-056).
+ * Personer-listan — förladdat register, sök i klienten (TASK-286.2, ADR-123).
  *
- * ACCEPTANCE-KLASSEN (task-59.4, ADR-080): filen flyttades hit ur e2e-sviten
- * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
- * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 9
- * restanrop, samtliga typsnitt, noll skarpa.
+ * [OMSKRIVEN, TASK-286.2] Filen testade tidigare `listPersons`s cursor-port
+ * (ADR-056): varje sökterm/"Ladda fler" var en EGEN mockad EF-sida. Sedan
+ * ADR-123 läser `PersonsList` HELA registret EN gång
+ * (`get-persons?register=true`) och söker/paginerar i minnet
+ * (`src/lib/person-sok.ts`) — fixturen bär nu HELA registret, inte sidor.
+ * Mocken är därför en EKALL, statisk responder (ingen sök-/cursor-parsning
+ * kvar att replikera).
  *
- * **Deterministisk via `network.use()`** — en överskuggning på fixturvärldens
- * delade normalläge, inte `page.route`. Skälet är inte smak: page-routes prövas
- * FÖRE MSW:s context-routes, så en page.route-mock hade lagt en andra
- * avlyssningsmekanism ovanpå den fixturvärlden bär — precis den tudelning
- * task-54.2 tog bort. Mönstret byggs med `EF('get-persons')` ur
- * handlers-modulen: en egenskriven sträng som inte matchar faller igenom till
- * normalläget UTAN att något fälls, och testet ser då fixturens 17 personer i
- * stället för sina egna fem (den tysta fällan, `hermetic.ts` § Överskugga en
- * delad handler).
+ * REGISTRET (55 syntetiska personer, `PAGE_SIZE` = 50 i `PersonsList.tsx`)
+ * är medvetet större än en sida: den ENDA vägen att bevisa AC #5 ("Ladda
+ * fler" utökar ur den filtrerade arrayen) är ett register som faktiskt
+ * spänner över fönstergränsen.
  *
- * VARFÖR EN ÖVERSKUGGNING ÖVER HUVUD TAGET, när normalläget redan bär en RIK
- * get-persons-resolver (`fixture-data.ts` § Personer-världen speglar EF:ens
- * search/pageSize/cursor mot 17 personer): testet asserterar EXAKTA
- * sidstorlekar (2 + 2 + 1) och en exakt träffmängd per sökterm. Mot normalläget
- * hade samma bevis blivit ett kopplat påstående om fixturens datamängd, och
- * varje ny fixturperson hade brutit tester som inte handlar om personer utan om
- * cursor-portens round-trip. Överskuggningen håller beviset vid BETEENDET.
- * Formen den svarar i är dock oförändrat EF:ens (`{ persons, nextCursor }`) —
- * snittet ligger kvar vid protokollet.
+ * AC #1 ("noll nätverksanrop vid skrivning") bevisas INTE genom att räkna
+ * handler-anrop — klassens egen disciplin (`acceptance-bas.ts`: "Klassen
+ * testar EXTERNT BETEENDE — aldrig att en handler anropades eller hur många
+ * gånger. Det vore att testa fixturen.") förbjuder just den formen. Beviset
+ * är i stället BETEENDE: en konstgjord, lång fördröjning på registret gör
+ * "krävde detta ett NYTT anrop?" till en tidsfråga — filtreringen (odebouncad,
+ * `useDeferredValue`, ADR-123 beslut 5) måste besvaras långt under
+ * fördröjningen för att vara nätverksfri. En regression som återinförde ett
+ * anrop per tecken hade fällt assertionens KORTA timeout, inte förlängt den.
  *
- * Täckning: DoD 2 (vy mot data), DoD 3 (cursor-round-trip via "Ladda fler"),
- * DoD 4 (axe 0), DoD 5 (useInfiniteQuery + getNextPageParam), plus a11y bortom
- * axe: fokus-behållning på "Ladda fler" + aria-live-annonsering av antal nya rader.
+ * TÄCKER INTE här (egna skarvar): AC #3 (parity mot EF:ens SEARCH()-formel) —
+ * `tests/api/person-sok.test.ts` (pure) + `tests/api/
+ * get-persons-sok-paritet.staging.test.ts` (skarpt mot staging). AC #4
+ * (prefetch på hover/fokus, Personer-fliken) —
+ * `tests/acceptance/tabbar-personer-prefetch.acceptance.test.ts`. AC #7
+ * (facit-formen) — `tests/visual/personer-promoverings-grind.spec.ts`
+ * (ariaSnapshot-referenserna) + `tests/visual/personer.spec.ts`.
  */
 
 /**
@@ -53,7 +55,7 @@ function person(i: number) {
   return {
     id: `recPERSONTEST${String(i).padStart(7, '0')}`,
     namn,
-    fornamn: `Person`,
+    fornamn: 'Person',
     efternamn: String(i).padStart(2, '0'),
     email: `person.${String(i).padStart(2, '0')}@example.test`,
     telefon: null,
@@ -61,7 +63,7 @@ function person(i: number) {
     manuellFlagga: null,
     aiFlagga: null,
     anteckningar: null,
-    antalAnmalningar: i % 5,
+    antalAnmalningar: 1,
     antalDeltaganden: 0,
     erfarenhetsniva: null,
     erfarenhetsbadge: null,
@@ -76,84 +78,96 @@ function person(i: number) {
   } satisfies z.infer<typeof PersonSchema>;
 }
 
-/**
- * Cursor-paginerad mock: tre sidor (00–01 → c1 → 02–03 → c2 → 04 → null).
- *
- * TASK-277 Del 1 — `total` speglar `get-persons`s additiva svarsfält: satt
- * ENBART när cursor saknas (full-walk-semantiken, en gång per vy-/
- * sökladdning), aldrig på en efterföljande sida.
- */
-function respondPage(rawUrl: string) {
-  const url = new URL(rawUrl);
-  const search = url.searchParams.get('search');
-  const cursor = url.searchParams.get('cursor');
+/** Större än `PAGE_SIZE` (50, `PersonsList.tsx`) — spänner över fönstergränsen. */
+const REGISTER_ANTAL = 55;
+const REGISTRET = Array.from({ length: REGISTER_ANTAL }, (_, i) => person(i));
 
-  // Sökning: enkel namn-substräng-filtrering, en enda sida (ingen cursor).
-  if (search) {
-    const all = [0, 1, 2, 3, 4].map(person);
-    const persons = all.filter((p) => p.namn.toLowerCase().includes(search.toLowerCase()));
-    return { persons, nextCursor: null, total: persons.length };
-  }
+const SOKFALT = 'Sök person';
 
-  if (!cursor) return { persons: [person(0), person(1)], nextCursor: 'c1', total: 5 };
-  if (cursor === 'c1') return { persons: [person(2), person(3)], nextCursor: 'c2' };
-  if (cursor === 'c2') return { persons: [person(4)], nextCursor: null };
-  return { persons: [], nextCursor: null };
-}
-
-test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
+test.describe('Personer-listan (TASK-286.2 — förladdat register, sök i klienten)', () => {
   // Överskuggningen läggs per test. `network` är test-scopad och byggs om för
   // varje test, så isoleringen är strukturell — inget städsteg krävs och nästa
   // test ser aldrig denna handler.
   test.beforeEach(async ({ network }) => {
-    network.use(http.get(EF('get-persons'), ({ request }) => json(respondPage(request.url))));
+    network.use(http.get(EF('get-persons'), () => json({ persons: REGISTRET })));
   });
 
-  test('DoD 2+3+5 — cursor-round-trip via "Ladda fler"', async ({ page }) => {
+  test('AC #2/#5 — 50 renderas initialt; "Ladda fler" avslöjar resten ur arrayen', async ({
+    page,
+  }) => {
     await page.goto('/personer');
     const list = page.getByRole('list', { name: 'Personer' });
     const loadMore = page.getByRole('button', { name: 'Ladda fler' });
 
-    // Sida 1.
-    await expect(list.getByRole('listitem')).toHaveCount(2);
-    await expect(page.getByText('Visar 2 av 5 personer.')).toBeVisible();
+    // Fönster 1: 50 av 55, ingen skelettvisning kvar (första laddningen klar).
+    await expect(list.getByRole('listitem')).toHaveCount(50);
+    await expect(page.getByText(`Visar 50 av ${REGISTER_ANTAL} personer.`)).toBeVisible();
     await expect(loadMore).toBeVisible();
 
-    // Sida 2 appendas (cursor c1). Knappen finns kvar (fler sidor).
+    // "Ladda fler" avslöjar de återstående 5 UR SAMMA i minnet laddade array —
+    // synkront (ingen ny EF-rundtur, se filhuvudets AC #1-resonemang).
     await loadMore.click();
-    await expect(list.getByRole('listitem')).toHaveCount(4);
-    // A11y: fokus BEHÅLLS på "Ladda fler" efter laddning.
-    await expect(loadMore).toBeFocused();
-    // A11y: aria-live annonserar antal nya rader.
-    await expect(page.getByText('2 fler personer laddade, 4 totalt.')).toHaveCount(1);
-
-    // Sida 3 appendas (cursor c2) → sista sidan (nextCursor null) → knappen borta.
-    await loadMore.click();
-    await expect(list.getByRole('listitem')).toHaveCount(5);
+    await expect(list.getByRole('listitem')).toHaveCount(REGISTER_ANTAL);
+    // A11y: aria-live annonserar antal NYA rader.
+    await expect(page.getByText(`5 fler personer laddade, ${REGISTER_ANTAL} totalt.`)).toHaveCount(
+      1,
+    );
+    // Sista sidan nådd — knappen försvinner, fokus flyttas till statusraden.
     await expect(loadMore).toHaveCount(0);
-    // A11y: fokus tappas inte — flyttas till status-raden när knappen försvinner.
-    await expect(page.getByText('Visar 5 av 5 personer.')).toBeFocused();
+    await expect(
+      page.getByText(`Visar ${REGISTER_ANTAL} av ${REGISTER_ANTAL} personer.`),
+    ).toBeFocused();
   });
 
-  test('DoD 5 — sökning skriver ?q och filtrerar via server-param', async ({ page }) => {
-    await page.goto('/personer');
-    await expect(page.getByText('Visar 2 av 5 personer.')).toBeVisible();
+  test('AC #1 — noll nätverksanrop vid skrivning i sökrutan (konstgjord fördröjning)', async ({
+    page,
+    network,
+  }) => {
+    network.use(
+      http.get(EF('get-persons'), async () => {
+        await delay(4000);
+        return json({ persons: REGISTRET });
+      }),
+    );
 
-    await page.getByRole('searchbox', { name: 'Sök person' }).fill('Person 00');
+    await page.goto('/personer');
+    // Vänta ut FÖRSTA (och enda tillåtna) laddningen.
+    await expect(page.getByText(`Visar 50 av ${REGISTER_ANTAL} personer.`)).toBeVisible({
+      timeout: 6000,
+    });
+
+    // Ett EVENTUELLT nytt anrop hade tagit minst 4 s (samma fördröjning) —
+    // denna assertion ges medvetet en KORT timeout, långt under det, så att
+    // en regression som återinför ett anrop per tecken FÄLLER testet i
+    // stället för att bara göra det långsammare.
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('Person 00');
+    await expect(page.getByText('Visar 1 av 1 personer för "Person 00".')).toBeVisible({
+      timeout: 500,
+    });
+  });
+
+  test('AC #3/#6 — sökning filtrerar i klienten och skriver ?q (debounced)', async ({ page }) => {
+    await page.goto('/personer');
+    await expect(page.getByText(`Visar 50 av ${REGISTER_ANTAL} personer.`)).toBeVisible();
+
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('Person 00');
 
     await expect(page).toHaveURL(/[?&]q=Person/);
-    // Den promoverade formens copy (ADR-103 B2 steg 1). Den GAMLA lydelsen
-    // ("1 person laddade för …") asserterade en grammatikbugg: verbet böjdes
-    // efter antalet. Konvergensens k09 rev den genom KONSTRUKTION — "Visar"
-    // böjs inte — så buggen kan inte återuppstå, och testet asserterar den
-    // därför inte längre.
     await expect(page.getByText('Visar 1 av 1 personer för "Person 00".')).toBeVisible();
     await expect(page.getByRole('list', { name: 'Personer' }).getByRole('listitem')).toHaveCount(1);
   });
 
-  test('DoD 5 — tom sökning ger "Inga träffar"', async ({ page }) => {
+  test('AC #6 — sökningen återställs vid omladdning (?q i adressen)', async ({ page }) => {
+    await page.goto('/personer?q=Person%2000');
+
+    await expect(page.getByRole('searchbox', { name: SOKFALT })).toHaveValue('Person 00');
+    await expect(page.getByText('Visar 1 av 1 personer för "Person 00".')).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Personer' }).getByRole('listitem')).toHaveCount(1);
+  });
+
+  test('tom sökning ger "Inga träffar"', async ({ page }) => {
     await page.goto('/personer');
-    await page.getByRole('searchbox', { name: 'Sök person' }).fill('Finnsinte');
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('Finnsinte');
     // k11 rev tomläget: den gamla grå metaraden (`Inga träffar för "X".`) såg
     // ut som om sidan gått sönder tyst. Formen är nu ett strukturerat,
     // centrerat tomläge — en bärande rad + en dämpad förklaring. BÅDA
@@ -163,9 +177,9 @@ test.describe('Personer-listan (Fas 6a — cursor-port)', () => {
     await expect(page.getByRole('list', { name: 'Personer' }).getByRole('listitem')).toHaveCount(0);
   });
 
-  test('DoD 4 — axe 0 violations på den renderade listan', async ({ page }) => {
+  test('AC #8 — axe 0 violations på den renderade listan', async ({ page }) => {
     await page.goto('/personer');
-    await expect(page.getByText('Visar 2 av 5 personer.')).toBeVisible();
+    await expect(page.getByText(`Visar 50 av ${REGISTER_ANTAL} personer.`)).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -200,9 +214,10 @@ test.describe('Personer-listan — läs-fel (get-persons 500)', () => {
 
     // TIMEOUTEN ÄR RÄKNAD OCH MÄTT, INTE ÄRVD. 500 är retry-bart i BÅDA lagren:
     // `fetchWithRetry` gör 4 HTTP-försök per anrop (sleep 200/400/800 ms +
-    // jitter, `src/data/utils.ts`) och PersonsList ärver QueryClientens
-    // `retry: 3` + `retryDelay` 200/400/800 (`src/router.ts:18`). Härledningen i
-    // sin helhet bor i `support/acceptance-bas.ts` § SKRIVA ETT TEST I KLASSEN.
+    // jitter, `src/data/utils.ts`) och QueryClientens `retry: 3` +
+    // `retryDelay` 200/400/800 (`src/router.ts:18`, gäller `useQuery` exakt
+    // som `useInfiniteQuery` tidigare — retry-logiken är en global
+    // QueryClient-default, oberoende av vilken hook som frågar).
     // PersonsList har INGEN egen 4xx-undantagsgren som Waitlist/Anteckningar —
     // ingen statuskod ger en genväg förbi kedjan. Felytan kan alltså först dyka
     // upp efter 16 förfrågningar.
@@ -213,21 +228,11 @@ test.describe('Personer-listan — läs-fel (get-persons 500)', () => {
     // 0–100 ms per sömn: det skalar INTE med den exponentiella delayen. Därav
     // 1400 + 3 × 100 = 1700 ms per anrop.
     //
-    // RÄTTAT (TASK-65): termen stod tidigare som 4 × 2100 + 1400 = 9800 ms —
-    // en jitter som antogs följa delayen (100+200+400). Mätningen av
-    // event-anteckningars identiska kedja falsifierade det: största uppmätta
-    // mellanrum på 800-sömnen var 883 ms, inte ~1200. Fyndkortet är rättat vid
-    // källan; talet nedan är oförändrat.
-    //
     // MÄTT lokalt (darwin, 5 isolerade körningar): 7901 · 7904 · 7916 · 7941 ·
     // 8401 ms. Under full svit steg testets totaltid 9,3 → 10,2 s.
     //
     // DÄRFÖR 20 s OCH INTE 12 s: 12 s ligger bara 3,8 s över det konstruerade
     // värsta fallet, före CI:s långsammare runner och parallell workerlast.
-    // (Precedensen på event-anteckningar rad 248 bar 12 s när raden här skrevs;
-    // TASK-65 satte den till 20 s — en kedja, ett tal.) Priset för ett för
-    // HÖGT tal betalas bara när testet ändå fäller; priset för ett för lågt är
-    // en falsk röd — samma signal-förstörelse som task-59.7 höjde jobbets tak för.
     // 20 s ryms med marginal under Playwrights test-timeout på 30 s (config
     // sätter ingen egen), så ett trasigt felläge fäller fortfarande på
     // assertionen och inte på testramen.
@@ -242,18 +247,12 @@ test.describe('Personer-listan — läs-fel (get-persons 500)', () => {
 
     // Ser INTE ut som "det finns inga personer" — den andra, farligare felformen:
     // ett tomt svar och ett trasigt svar får aldrig se likadana ut för Lotta.
-    //
-    // Copyn följer den PROMOVERADE formen (utan punkt, ADR-103 B2 steg 1). Den
-    // gamla lydelsen `'Inga personer ännu.'` hade blivit VAKUÖST GRÖN efter
-    // promoveringen: strängen med punkt finns inte längre någonstans, så
-    // `toHaveCount(0)` kunde aldrig fälla och assertionen hade slutat skydda
-    // det den finns för — utan att någonsin bli röd.
     await expect(page.getByText('Inga personer ännu')).toHaveCount(0);
     await expect(page.getByRole('list', { name: 'Personer' })).toHaveCount(0);
 
     // Felet bärs av KOMPONENTENS egen gren, inte av route-ErrorBoundaryn:
     // sökfältet står kvar. Utan denna assertion vore testet grönt även om
     // PersonsList kastade och SectionError tog över — en helt annan yta.
-    await expect(page.getByRole('searchbox', { name: 'Sök person' })).toBeVisible();
+    await expect(page.getByRole('searchbox', { name: SOKFALT })).toBeVisible();
   });
 });

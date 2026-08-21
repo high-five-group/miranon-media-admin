@@ -1,5 +1,9 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CalendarDays, Ellipsis, House, Users } from 'lucide-react';
+import { useCallback } from 'react';
+import { useDataSource } from '@/data/useDataSource';
+import { queryKeys } from '@/queries/keys';
 
 /**
  * Flikdefinition för huvudnavigationen. `to` är typad mot routerns
@@ -46,6 +50,24 @@ const TABS = [
  * beslut 2).
  */
 export function TabBar() {
+  const dataSource = useDataSource();
+  const queryClient = useQueryClient();
+  // PREFETCH PÅ AVSIKT (ADR-078 beslut 3, ADR-123 beslut 7, TASK-286.2):
+  // hover/fokus på Personer-fliken är den tidigaste ärliga signalen om att
+  // Lotta ska öppna personregistret — värmningen startar här i stället för
+  // vid klicket/mount. Samma nyckel som `PersonsList`s egen `useQuery`
+  // (`queryKeys.persons.register`) — React Query dedupar, så en redan varm
+  // eller pågående hämtning kostar inget extra anrop. `useCallback` ger
+  // stabil identitet (samma skäl som `useForberedEventDetalj`/
+  // `useForberedPersonDetalj`), men är här inte last-bärande för någon
+  // effekt-dependency — bara vanlig hygien.
+  const varmPersonregister = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.persons.register,
+      queryFn: () => dataSource.fetchPersonsRegister(),
+    });
+  }, [dataSource, queryClient]);
+
   return (
     <nav
       aria-label="Huvudnavigation"
@@ -62,6 +84,8 @@ export function TabBar() {
               <Link
                 to={tab.to}
                 activeProps={{ 'aria-current': 'page' }}
+                onMouseEnter={tab.to === '/personer' ? varmPersonregister : undefined}
+                onFocus={tab.to === '/personer' ? varmPersonregister : undefined}
                 className="flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-full border border-transparent px-2 py-1 text-caption text-text-secondary transition-colors data-[status=active]:bg-bg-emphasized data-[status=active]:font-semibold data-[status=active]:text-text contrast-more:text-text contrast-more:data-[status=active]:border-border-strong"
               >
                 <Icon aria-hidden="true" size={20} />
