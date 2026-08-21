@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-15 23:37'
-updated_date: '2026-08-16 22:28'
+updated_date: '2026-08-21 09:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,9 +22,9 @@ Bifynd ur TASK-229:s olänkade-svep (2026-08-16): anmälan ID 868 (Allan Niemine
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rotorsaken till återfallet belagd eller öppet obestämbar med uteslutningar
-- [ ] #2 ID 868 datafixad i basen efter Marcus-GO
-- [ ] #3 Fälla 10/F.2 i data-model.md uppdaterad med återfallet
+- [x] #1 Rotorsaken till återfallet belagd eller öppet obestämbar med uteslutningar
+- [x] #2 ID 868 datafixad i basen efter Marcus-GO
+- [x] #3 Fälla 10/F.2 i data-model.md uppdaterad med återfallet
 <!-- AC:END -->
 
 ## Definition of Done
@@ -50,4 +50,6 @@ MONSTER: samtliga 26 bär 'Från formulär = Huvudformulär' (Zap 4). Ingen anna
 TIDSSPANN: 2026-04-26 (ID 850) till 2026-08-15 (ID 986). Kortet anger att fälla 10/F.2 sanerades 2026-04-26 — den tidigaste återfallsraden bär SAMMA datum. Återfallet började alltså omedelbart och pågår: senaste instansen är 2026-08-15, dagen före denna mätning. Buggen är LEVANDE, inte historisk.
 
 Ingen av dessa rader ändrades av TASK-248 utöver fältet Inskickad — EventKey rördes ALDRIG (mandatet var fält-avgränsat).
+
+S110 (2026-08-21): ROTORSAK BELAGD — inte formel/automation utan Elfsight Event Calendar-widgeten på miranon.se (8d8c059d-…): handskrivna anmälningslänkar per kalenderpost, kopierade poster behåller gamla URL-parametrar. '11' = juli-Fjärrskådningspostens nyckel, '10' = oktober-postens. ID 868 (Allan Nieminen) låg i 17-klustret som S107 länkade till Event-60 2026-08-17 — datafixad. Fälla 10/F.2 i data-model.md omskriven S110 (hypotesen falsifierad, felklassen utvidgad med tyst felmatchning: 64 rader mätta, städade). Vakt-designen fortsätter i T157.
 <!-- SECTION:NOTES:END -->
