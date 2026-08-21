@@ -13,6 +13,7 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
 import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
+import type { Person } from '../../domain/models/Person';
 import type { CreatePersonNoteInput, PersonNote } from '../../domain/models/PersonNote';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
@@ -66,6 +67,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async listPersons(_params?: ListParams): Promise<PersonsPage> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async fetchPersonsRegister(): Promise<Person[]> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

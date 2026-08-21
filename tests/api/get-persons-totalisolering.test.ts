@@ -14,9 +14,12 @@
 // exakt, citerat mot exakta radnummer, så en framtida drift syns.
 //
 // DEN REPLIKERADE FORMEN NEDAN ÄR ORDAGRANT
-// `supabase/functions/get-persons/index.ts:175-195` (verifiera raderna vid
+// `supabase/functions/get-persons/index.ts:216-236` (verifiera raderna vid
 // varje ändring av den filen — en tyst drift här gör detta test till en
-// falsk trygghet).
+// falsk trygghet). [OMRÄKNAT, TASK-286.1] Radnumret flyttade sig (175-195 →
+// 216-236) när `BAS_FILTER` lyftes till modul-nivå och registerlägets EGNA
+// gren (ADR-123 beslut 1) lades in FÖRE denna kod i filen — den REPLIKERADE
+// KODEN SJÄLV är oförändrad, bara dess position i filen flyttades ned.
 //
 // DEFEKTEN som stängs: `totalPromise` gjorde ingen egen felhantering.
 // `fetchFromAirtable` (full-walk) gör FLERA sekventiella Airtable-anrop och

@@ -14,6 +14,7 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
 import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
+import type { Person } from '../../domain/models/Person';
 import type { CreatePersonNoteInput, PersonNote } from '../../domain/models/PersonNote';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
@@ -137,6 +138,20 @@ export class AirtableAdapter implements DataSourceAdapter {
         ? { total: data.total }
         : {}),
     };
+  }
+
+  /**
+   * Hämta HELA personregistret (ADR-123 beslut 1, TASK-286.1) — se
+   * `DataSourceAdapter.fetchPersonsRegister` för det fulla kontraktet.
+   * `register: 'true'` är EF-ANROPETS EGEN signal (skiljer denna gren från
+   * `listPersons`s sök/cursor-gren på SAMMA `get-persons`-endpoint) — inget
+   * UI-argument passerar den vidare, metoden tar inga parametrar.
+   */
+  async fetchPersonsRegister(): Promise<Person[]> {
+    const data = await callEdgeFunction<{ persons: unknown }>('get-persons', {
+      register: 'true',
+    });
+    return z.array(PersonSchema).parse(data.persons);
   }
 
   async updateRecord(
