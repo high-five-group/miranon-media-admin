@@ -858,6 +858,18 @@ komponent är en artefakt av att de delar mekanism, inte ett designval.
   som nås utan autentisering. Bannern är monterad i `__root.tsx` och förskjuter
   `<main>` på varje gren, men **talen för en datatät, autentiserad vy är inte
   mätta**. De bör rimligen ligga i samma härad eller högre, men det är tolkat.
+  > **STÄNGD 2026-08-21 (S109) — och gissningen var halvt fel.** Tolv mätningar
+  > mot `/personer` och `/hem` i den hermetiska fixturvärlden ger **identiskt
+  > tal vid 390 px** (0,1469 på fyra decimaler) men **cirka hälften vid 1440 och
+  > 1280 px** (0,0142 mot 0,0335; 0,0179 mot 0,0376). *"Eller högre"* faller
+  > alltså. De två vyerna mäter dessutom **exakt lika i alla tolv celler**, vilket
+  > bekräftar mekanismen ovan: skiftet beror på bannerns höjd mot vyporten, inte
+  > på innehållets täthet. Slutsatsen i § Dom står oförändrad — mobilen spränger
+  > fortfarande budgeten på en enda visning. Nytt fynd på köpet: **chunk-fel-läget
+  > är dyrare än info-läget** (+68 % vid 1280 px, +17 % vid 390 px, där det tar
+  > 145 px = 17 % av vyporthöjden), och det är just det läget § Rekommendation B
+  > behåller i flödet. Fullt underlag, metod och instrument:
+  > [`tasks/sessions/bilagor/s109-cls-matning/README.md`](../../tasks/sessions/bilagor/s109-cls-matning/README.md).
 - **Dev-server, inte produktionsbygge.** Mätningen är gjord mot Vite dev.
   Layoutgeometrin är densamma, men jag har inte verifierat det mot ett
   produktionsbygge.
