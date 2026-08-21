@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 110 ⏸️ PAUSAD (första gången, 2026-08-21, `lifecycle: paused`) —
+**Session 110 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
 VAKTEN KVAR ATT GRILLA.** Egen worktree `s110-kalenderlank-driften` (S109
 äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
@@ -32,13 +32,13 @@ Landat: `#1673` `fd349ac4` · `#1677` `7df69087`. `T158` (omnumrerad efter
 kollision med S109:s T157) · `task-232` AC 1–3 · F.2/Lucka 10 omskrivna ·
 tre lesson-fragment. Lotta-underlag + text levererade till Marcus.
 
-**NÄSTA (resume av 110): GRILLNING av vakten (Marcus `/grill-me`) — A1
+**NÄSTA (S110 pågår): GRILLNING av vakten (Marcus `/grill-me`) — A1
 normalisering + korsfältsvalidering + Error-log · driftdetektor mot
 kalenderwidgeten (research-pass: endpointens villkor) · app-yta · därefter
 2g (ID 21/22/23) + de 11 tvetydiga på Event-55 efter Lottas svar ·
 `task-232` → Done i stängningscommit.** Numrering efter S110: ADR 122 ·
 kort 284 · L512 + 58 fragment · **T159** · f52 · session 111. Full
-narrativ: sessionsdok S110 Del 1–2 + PAUSLÄGE.
+narrativ: sessionsdok S110 Del 1–2 + Paushistorik.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång
 2026-08-21) — NOTIS-FAMILJEN: BYGGET AV `TASK-283` OCH NOTIS-PROTOTYPEN STARTAR.**
