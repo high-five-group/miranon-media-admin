@@ -4,8 +4,9 @@ title: 'Skiva: Jämförelsefälten och markören — tracer bullet'
 status: To Do
 assignee: []
 created_date: '2026-08-21 10:56'
+updated_date: '2026-08-21 11:35'
 labels:
-  - ready-for-human
+  - ready-for-agent
 dependencies: []
 parent_task_id: TASK-284
 ordinal: 516000
@@ -44,3 +45,15 @@ Täcker användarberättelser: 5, 10, 16.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+OMKLASSAD 2026-08-21 (Marcus GO): skivan byggs och verifieras mot STAGING-basen apphjj8Q7lkXCMsL4 — inte prod. Prod-utrullningen är utbruten till TASK-284.6.
+
+STAGING ÄR EN STRUKTURELL KOPIA: alla 11 automationer finns där med IDENTISKA ID:n som prod (A1 = wflDCKPAv2P6Yu9U6 i båda), men samtliga står deploymentStatus: undeployed. Marcus GO finns för att deploya A1 i staging när kedjan behöver provas ände-till-ände.
+
+AC 4 och 5 pekar på PROD-instanser (Event-59:s tre formateringsfall, anmälan ID 21 som avviker på både ort och datum). I staging skapas motsvarande fixturer med samma egenskaper — prod-instanserna är FACIT för vad fixturen ska bevisa, inte rader att kopiera.
+
+Fältnamnen som ska skapas: ett uppslagsfält av Eventplanering.'Datum (visas i länk)' via Event-länken (fldi3enUaMdbuGSlm), plus formelfältet Eventmatchning. Tre av fyra jämförelsefält finns redan som uppslag: Ort (from Event) fld5560T3pQZSUBaJ, Kurs (from Event) fldfqU6MfBQdaeLUk, Event (namn) fldK1aYEm3iCg8OOh. Startdatum/Slutdatum är också uppslag (mätt: returneras som arrayer).
+<!-- SECTION:NOTES:END -->
