@@ -4,7 +4,7 @@ title: 'Skiva: Jämförelsefälten och markören — tracer bullet'
 status: To Do
 assignee: []
 created_date: '2026-08-21 10:56'
-updated_date: '2026-08-21 11:35'
+updated_date: '2026-08-21 12:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,7 +21,7 @@ BETEENDE ÄNDE TILL ÄNDE: en anmälan vars egna uppgifter (datum, ort, kurs) in
 
 VARFÖR FÖRST: vakten i nästa skiva behöver samma jämförelsefält som detta fält gör. Denna skiva är därför förutsättningen för de tre andra, trots att vakten är mer brådskande.
 
-PROD-WRITE: fältskapande i prod-basen kräver Marcus GO per operation — därför ready-for-human.
+STAGING-BYGGE (omklassad 2026-08-21, Marcus GO — ersätter den tidigare PROD-WRITE-raden): fältskapandet görs i staging-basen apphjj8Q7lkXCMsL4 och rör aldrig prod, därför ready-for-agent. Prod-utrullningen är utbruten till TASK-284.6. Detaljerna står i Implementation Notes.
 
 Täcker användarberättelser: 5, 10, 16.
 <!-- SECTION:DESCRIPTION:END -->
