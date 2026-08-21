@@ -1,6 +1,5 @@
 import { useSearch } from '@tanstack/react-router';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { Button } from '@/components/primitives';
 import { laesAppUppdatering, prenumereraPaAppUppdatering } from '@/lib/app-uppdatering';
 import { laesChunkLaddningsfel, prenumereraPaChunkLaddningsfel } from '@/lib/chunk-laddningsfel';
 import { Uppdateringsnotis } from './Uppdateringsnotis';
@@ -49,8 +48,21 @@ function skrivAvfardad(varde: boolean): void {
  * som producerar signalen bor i `src/lib/app-uppdatering.ts`; denna komponent
  * vet ingenting om service workers. Den VISUELLA formen (facit-låst,
  * `tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json`) ägs
- * av `Uppdateringsnotis` + `Notis`-primitiven — denna fil äger bara SIGNALEN,
- * dölj-tillståndet och de två livesregionernas samspel.
+ * av `Uppdateringsnotis` + `Notis`-primitiven — denna fil äger bara SIGNALEN
+ * och dölj-tillståndet.
+ *
+ * ═══ CHUNK-BANNERN BOR INTE LÄNGRE HÄR (TASK-285.5, ADR-121 beslut 3) ═══
+ *
+ * "En del av sidan kunde inte laddas" (`role="alert"`) var tidigare en andra
+ * gren i DENNA komponent, monterad vid den GLOBALA roten precis som
+ * info-läget nedan. Den är nu utbruten till `ChunkBanner.tsx` och flyttad in
+ * i det inloggade skalet (`AppShell`, första barn i `<main>`) — se den filens
+ * eget docblock för hela placerings- och form-resonemanget. Kvar HÄR: en
+ * oberoende läsning av SAMMA chunk-tillstånd (`omladdningKravs` nedan), enbart
+ * för att dölja info-notisen när chunk-läget vinner (se "läge 2 vinner över
+ * läge 1" nedan) — de två komponenterna lever i olika delar av trädet men kan
+ * inte divergera, eftersom båda läser samma modul-nivå-flagga
+ * (`src/lib/chunk-laddningsfel.ts`).
  *
  * ═══ PROMOVERINGEN (ADR-103 B2 steg 1) ═══
  *
@@ -114,49 +126,32 @@ function skrivAvfardad(varde: boolean): void {
  *   region som skapas samtidigt som sitt innehåll annonseras inte
  *   tillförlitligt.
  *
- * ═══ TVÅ LÄGEN, TVÅ LIVE-REGIONER (ADR-047 § Amendering 2026-08-13 (2)) ═══
+ * ═══ TVÅ LÄGEN, OLIKA BRÅDSKA (ADR-047 § Amendering 2026-08-13 (2)) ═══
  *
- * Komponenten bär två OLIKA budskap om samma sak, med olika brådska:
+ * Samma underliggande händelse ("appen har en ny version") bär två OLIKA
+ * budskap beroende på om Lotta redan drabbats:
  *
- * 1. **"Det finns en nyare version"** — `role="status"` (artigt). Ingenting är
- *    trasigt; Lotta kan arbeta klart och ladda om när det passar.
- * 2. **"En del av sidan kunde inte laddas"** — `role="alert"` (assertivt).
- *    Appen har uppdaterats och den gamla koden kan inte längre hämta sina
- *    delar (`src/lib/chunk-laddningsfel.ts`). Lotta har redan klickat på något
- *    som inte gick att visa och väntar på ett svar. WCAG 2.2 SC 3.3.1 (Error
- *    Identification) kräver att felet identifieras och beskrivs i text; ett
- *    artigt meddelande som kanske annonseras om en stund duger inte när
- *    användaren står stilla och väntar. Samma mappning som `MessageBox` redan
- *    gör i hela appen: `warning`/`error` → `alert`, `info`/`success` →
- *    `status`.
+ * 1. **"Det finns en nyare version"** — `role="status"` (artigt, DENNA fil).
+ *    Ingenting är trasigt; Lotta kan arbeta klart och ladda om när det passar.
+ * 2. **"En del av sidan kunde inte laddas"** — `role="alert"` (assertivt,
+ *    `ChunkBanner.tsx`). Lotta har redan klickat på något som inte gick att
+ *    visa och väntar på ett svar. WCAG 2.2 SC 3.3.1 (Error Identification)
+ *    kräver att felet identifieras och beskrivs i text; ett artigt meddelande
+ *    som kanske annonseras om en stund duger inte när användaren står stilla
+ *    och väntar. Samma mappning som `MessageBox` redan gör i hela appen:
+ *    `warning`/`error` → `alert`, `info`/`success` → `status`.
  *
- * Läge 2 VINNER över läge 1 och döljer det. Att en ny version finns är
- * underförstått när en chunk saknas, och två uppmaningar att ladda om samtidigt
- * är två frågor där det bara finns en.
+ * Läge 2 VINNER över läge 1 och döljer det (`notisSynlig` nedan). Att en ny
+ * version finns är underförstått när en chunk saknas, och två uppmaningar att
+ * ladda om samtidigt är två frågor där det bara finns en. Rollen sätts aldrig
+ * om på ett monterat element: en region som byter `role` mitt i livet
+ * annonseras inte tillförlitligt — det är därför två separata komponenter med
+ * varsin fast roll (och, sedan TASK-285.5, varsin plats i trädet), inte en
+ * region med växlande roll.
  *
- * Rollen sätts aldrig om på ett monterat element: en region som byter `role`
- * mitt i livet annonseras inte tillförlitligt. Det är därför två syskonregioner
- * med varsin fast roll, inte en region med växlande roll.
- *
- * ═══ VARFÖR ALERT-REGIONEN INTE ÄR ALLTID MONTERAD, TILL SKILLNAD FRÅN STATUS ═══
- *
- * `role="status"` ovan MÅSTE finnas före sitt innehåll för att annonseras.
- * `role="alert"` har motsatt egenskap och MDN (ARIA: alert role) är uttrycklig:
- * *"When the alert role is added to an element, or such an element becomes
- * visible, screen readers announce the alert."* Att montera den i förväg
- * behövs alltså inte, och den formen är dessutom aktivt skadlig här: en tom
- * `role="alert"` som ligger kvar i DOM:en under hela sessionen är en andra
- * alert-region i varje vy. Det är MÄTT, inte befarat — den alltid-monterade
- * varianten fällde tre orelaterade tester i denna klass
- * (`glomt-losenord`, `nytt-losenord`, `valkommen`) med Playwrights
- * `strict mode violation: getByRole('alert') resolved to 2 elements`, där det
- * andra elementet var formulärets egen `MessageBox`. Ett testfel är här bara
- * mätinstrumentet: samma tvetydighet möter en skärmläsaranvändare som
- * navigerar via landmärken och regioner.
- *
- * Villkorad montering är också appens ETABLERADE mönster för assertiva
- * meddelanden — `MessageBox` (`intent="error"`/`"warning"` → `role="alert"`)
- * monteras på precis samma sätt genom hela appen.
+ * `ChunkBanner`s egen villkorade montering (varför `role="alert"` INTE är
+ * alltid monterad, till skillnad från `role="status"` ovan) är den filens
+ * eget resonemang, inte upprepat här.
  */
 export function AppUpdateBanner() {
   const uppdateringFinns = useSyncExternalStore(
@@ -176,6 +171,10 @@ export function AppUpdateBanner() {
   // DATAVÄG (ADR-103 B2 steg 1) som forcerar info-/chunk-läget utan en
   // riktig service worker-signal — se filhuvudets "?variant-GRENEN RIVS
   // INTE HÄR". DEV-grindad: grenen tree-shakas bort ur prod-bundeln.
+  // `chunkTvingad` läses HÄR OCKSÅ (samma URL, samma villkor som
+  // `ChunkBanner.tsx` — se den filens "DEV-FORCERINGEN") enbart för att
+  // undertrycka info-notisen medan chunk-läget är dev-forcerat; den
+  // renderar ingenting i denna komponent längre (TASK-285.5).
   const sok = useSearch({ strict: false }) as Record<string, unknown>;
   const prototypAktiv = import.meta.env.DEV && String(sok.variant) === '1';
   const prototypData = import.meta.env.DEV ? String(sok.data ?? '') : '';
@@ -198,64 +197,22 @@ export function AppUpdateBanner() {
     !avfardad && !chunkTvingad && !omladdningKravs && (dataTvingadNyVersion || uppdateringFinns);
 
   return (
-    <>
-      {(omladdningKravs || chunkTvingad) && <ChunkBanner />}
-      <Uppdateringsnotis
-        synlig={notisSynlig}
-        onLaddaOm={() => {
-          // Den nya service workern har REDAN tagit kontroll när denna notis
-          // visas (vår `src/sw.ts` anropar `skipWaiting()` + `clients.claim()`),
-          // så en vanlig omladdning hämtar den nya koden. Pluginets
-          // `updateServiceWorker()` används medvetet INTE: i autoUpdate-läge
-          // är den en no-op — mätt i
-          // `node_modules/vite-plugin-pwa/dist/client/build/register.js`, där
-          // kroppen är `if (!auto) sendSkipWaitingMessage?.()`.
-          window.location.reload();
-        }}
-        onInteNu={() => {
-          setAvfardad(true);
-          skrivAvfardad(true);
-        }}
-      />
-    </>
-  );
-}
-
-/**
- * Chunk-läget (`role="alert"`), oförändrat utbrutet ur `AppUpdateBanner` så
- * prototyp-grenen och den skarpa grenen delar EXAKT samma markup. Villkorad
- * montering med avsikt — se doc-blocket ovan. Rörs INTE av TASK-285.1
- * (chunk-bannerns flytt + kortning är TASK-285.5).
- */
-function ChunkBanner() {
-  return (
-    <div
-      role="alert"
-      data-testid="app-reload-required-banner"
-      className="flex flex-wrap items-center justify-center gap-3 border-warning border-b bg-warning-bg px-4 py-2 text-center text-small contrast-more:border-b-2 print:hidden"
-    >
-      {/* Gunilla-testet: orsak, följd och åtgärd i den ordningen, utan
-            ett enda tekniskt ord. Hon ska inte behöva veta vad en chunk,
-            en deploy eller en service worker är för att förstå vad hon
-            ska göra. Långa bindestreck är förbjudna i användarsynlig text
-            (Marcus-beslut 2026-08-09, .langa-streck-policy.json). */}
-      <p>
-        Appen har uppdaterats medan du hade den öppen, så en del av sidan kunde inte laddas. Ladda
-        om för att fortsätta. Har du skrivit något som inte är sparat, kopiera det först.
-      </p>
-      <Button
-        intent="primary"
-        size="sm"
-        onPress={() => {
-          // Samma omladdning som i info-läget nedan, och av samma skäl:
-          // den nya service workern har redan tagit kontroll, så en
-          // vanlig reload hämtar den nya koden.
-          window.location.reload();
-        }}
-        data-testid="app-reload-required-reload"
-      >
-        Ladda om
-      </Button>
-    </div>
+    <Uppdateringsnotis
+      synlig={notisSynlig}
+      onLaddaOm={() => {
+        // Den nya service workern har REDAN tagit kontroll när denna notis
+        // visas (vår `src/sw.ts` anropar `skipWaiting()` + `clients.claim()`),
+        // så en vanlig omladdning hämtar den nya koden. Pluginets
+        // `updateServiceWorker()` används medvetet INTE: i autoUpdate-läge
+        // är den en no-op — mätt i
+        // `node_modules/vite-plugin-pwa/dist/client/build/register.js`, där
+        // kroppen är `if (!auto) sendSkipWaitingMessage?.()`.
+        window.location.reload();
+      }}
+      onInteNu={() => {
+        setAvfardad(true);
+        skrivAvfardad(true);
+      }}
+    />
   );
 }

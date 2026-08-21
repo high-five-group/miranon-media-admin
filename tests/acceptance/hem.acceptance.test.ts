@@ -409,6 +409,69 @@ test.describe('AppShell-kontraktet — hem ärver skalets kolumnbredd (TASK-247)
 });
 
 /**
+ * Chunk-bannern — PLACERINGEN i skalet (TASK-285.5 AC #1 + #5, ADR-121
+ * beslut 3). Komponentens BETEENDE (ersätter/staplas inte, ingen tom
+ * alert-region, eventet sväljs inte) hör till `webblasarbeteende`-klassen
+ * (`tests/webblasarbeteende/app-chunk-laddningsfel.test.ts`, oförändrad
+ * täckning) — DENNA describe bevisar bara den nya egenskapen kortet kräver:
+ * att bannern renderas som FÖRSTA barn i `main#main`, före sidans `h1`, i
+ * skalets innehållsbredd. `/hem` valdes som fixtur-vy: den delar samma
+ * `mock()`-hjälpare och `H1_HALSNING`-konstant som "AppShell-kontraktet"
+ * ovan, så testet hänger på EXAKT samma EF-mockning (hermetik-självtestets
+ * krav, ADR-080 beslut 3) — utan riktiga anmälningar/event att rendera
+ * fanns ingen `h1` att jämföra bannerns placering mot.
+ */
+test.describe('Chunk-bannern — placering i skalet (TASK-285.5, ADR-121 beslut 3)', () => {
+  test('renderas som FÖRSTA barn i main#main, före h1, i skalets innehållsbredd (AC #1)', async ({
+    page,
+    network,
+  }) => {
+    mock(network);
+    await page.goto('/hem');
+    const h1 = page.getByRole('heading', { level: 1, name: H1_HALSNING });
+    await expect(h1).toBeVisible();
+
+    // Samma syntetiska dispatch som webblasarbeteende-sviten
+    // (`app-chunk-laddningsfel.test.ts`s `skjutPreloadError`) — Vites
+    // `vite:preloadError`, samma konstruktor/namn/`cancelable`-flagga som
+    // Vites egen preload-helper använder (se den filens filhuvud för hela
+    // resonemanget kring varför en syntetisk dispatch och inte en riktigt
+    // blockerad chunk).
+    await page.waitForFunction(
+      () => {
+        if (document.querySelector('[data-testid="app-reload-required-banner"]')) return true;
+        window.dispatchEvent(new Event('vite:preloadError', { cancelable: true }));
+        return false;
+      },
+      undefined,
+      { timeout: 15_000, polling: 50 },
+    );
+
+    const main = page.locator('main#main');
+    const banner = page.locator('[data-testid="app-reload-required-banner"]');
+    await expect(banner).toHaveAttribute('role', 'alert');
+
+    // FÖRSTA BARNET i innehållsytan — ett DIREKT barn av main#main, inte
+    // bara "finns någonstans inuti" (AC #1: "första barn i innehållsytan").
+    const forstaBarnetsTestId = await main
+      .locator(':scope > *')
+      .first()
+      .getAttribute('data-testid');
+    expect(forstaBarnetsTestId).toBe('app-reload-required-banner');
+
+    // Ordning + bredd (renderad mätning, L246): bannern ligger OVANFÖR h1
+    // (omedelbart före, per AC #1) och delar h1s content-bredd — den ärver
+    // skalets innehållskolumn i stället för att spänna hela vyporten.
+    const [bannerBox, h1Box] = await Promise.all([banner.boundingBox(), h1.boundingBox()]);
+    if (!bannerBox || !h1Box) {
+      throw new Error('boundingBox saknas i chunk-bannerns placeringsmätning');
+    }
+    expect(bannerBox.y).toBeLessThan(h1Box.y);
+    expect(Math.abs(bannerBox.width - h1Box.width)).toBeLessThanOrEqual(1);
+  });
+});
+
+/**
  * Blockordningen (Marcus-låst, S102 Del 8 + Del 10; TASK-243.3 AC #1).
  * Bevakningsraden är det enda VILLKORADE blocket — de övriga står alltid
  * kvar (med sitt eget tomma-läge-kvitto), Bevakningsraden är HELT frånvarande

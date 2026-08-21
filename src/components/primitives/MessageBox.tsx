@@ -57,6 +57,14 @@ interface MessageBoxBasProps {
   /** Tillgängligt namn på stäng-knappen (i18n-override). */
   dismissLabel?: string;
   className?: string;
+  /**
+   * `data-testid` på den yttre `role`-bärande regionen (samma
+   * `<konsument>TestId`-konvention som `Notis`s `regionTestId`/`kortTestId`
+   * — en dedikerad, namngiven prop i stället för en generisk rest-spread,
+   * så ytan förblir grep-bar). Valfri: de flesta konsumenter identifierar
+   * sig via roll + text.
+   */
+  testId?: string;
 }
 
 /**
@@ -104,6 +112,7 @@ export function MessageBox<I extends MessageBoxIntent = 'info'>({
   onDismiss,
   dismissLabel = 'Stäng meddelande',
   className,
+  testId,
 }: MessageBoxProps<I>) {
   const role = intent === 'error' || intent === 'warning' ? 'alert' : 'status';
   const kanAvvisas = intent !== 'error' && intent !== 'warning';
@@ -119,7 +128,7 @@ export function MessageBox<I extends MessageBoxIntent = 'info'>({
   const visaKryss = kanAvvisas && Boolean(onDismiss);
 
   return (
-    <div role={role} className={cn(messageBoxVariants({ intent }), className)}>
+    <div role={role} data-testid={testId} className={cn(messageBoxVariants({ intent }), className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {title && (

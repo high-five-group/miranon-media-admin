@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ChunkBanner } from './ChunkBanner';
 import { OfflineIndicator } from './OfflineIndicator';
 import { SkipLink } from './SkipLink';
 import { TabBar } from './TabBar';
@@ -29,6 +30,12 @@ export interface AppShellProps {
  *   respekteras genom att inget rör sig); `prefers-contrast: more`
  *   förstärker gränserna via `contrast-more:`-varianterna.
  * - `pb-24` på main ger frihöjd ovanför den fixerade tab baren.
+ * - `ChunkBanner` (TASK-285.5, ADR-121 beslut 3) monteras som FÖRSTA barn i
+ *   `<main>`, före `{children}` (sidans egen `h1`) — den ärver därmed
+ *   innehållets 600 px-bredd i stället för att spänna hela vyporten. Den
+ *   ÖVERLAGRADE notisen (`Uppdateringsnotis`, "ny version finns") bor
+ *   fortfarande globalt i `__root.tsx`, inte här — de två hör till olika
+ *   klasser i Notistrappan (DESIGN-SYSTEM-SPEC § 21).
  */
 export function AppShell({ children }: AppShellProps) {
   return (
@@ -36,6 +43,7 @@ export function AppShell({ children }: AppShellProps) {
       <SkipLink />
       <OfflineIndicator />
       <main id="main" tabIndex={-1} className="mx-auto w-full max-w-[600px] px-4 py-4 pb-24">
+        <ChunkBanner />
         {children}
       </main>
       <TabBar />

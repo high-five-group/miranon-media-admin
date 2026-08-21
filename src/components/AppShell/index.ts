@@ -1,5 +1,6 @@
 export { AppShell, type AppShellProps } from './AppShell';
 export { AppUpdateBanner } from './AppUpdateBanner';
+export { ChunkBanner } from './ChunkBanner';
 export {
   FORBEREDELSESKARM_VANTAR,
   Forberedelseskarm,

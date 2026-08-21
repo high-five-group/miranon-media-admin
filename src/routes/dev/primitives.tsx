@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { CalendarDays, ClipboardList, Hourglass, List, Star } from 'lucide-react';
 import { useState } from 'react';
-import { Forberedelseskarm } from '@/components/AppShell';
+import { ChunkBanner, Forberedelseskarm } from '@/components/AppShell';
 import { AppErrorFallback } from '@/components/ErrorBoundary';
 import {
   Button,
@@ -45,6 +45,13 @@ function PrimitivesPage() {
   const [senastTryckt, setSenastTryckt] = useState('—');
   return (
     <main className="p-8">
+      {/* `ChunkBanner` (TASK-285.5) lever numera bara i `AppShell` (inloggade
+          skalet) + här — `/dev/primitives` ligger UTANFÖR skalet, så denna
+          rad är den ENDA kvarvarande vägen `tests/webblasarbeteende/
+          app-chunk-laddningsfel.test.ts` kan pröva komponentens BETEENDE
+          (ersätter/staplas inte, ingen tom alert-region, eventet sväljs
+          inte) mot — se `ChunkBanner.tsx`s docblock § "PLACERINGEN". */}
+      <ChunkBanner />
       <h1 className="text-2xl">Primitiver - demo (endast dev-läge)</h1>
       <p className="mt-2 text-small text-text-secondary">
         Visuell verifiering av alla size × intent-kombinationer per Fas 3 DoD 3.
