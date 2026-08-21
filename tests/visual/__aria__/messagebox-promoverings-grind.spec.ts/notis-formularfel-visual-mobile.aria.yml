@@ -1,0 +1,4 @@
+- alert:
+  - strong: Lösenordet kunde inte sparas
+  - paragraph: Kontrollera att du är uppkopplad och prova igen. Det du skrev finns kvar i fälten.
+  - button "Försök igen"

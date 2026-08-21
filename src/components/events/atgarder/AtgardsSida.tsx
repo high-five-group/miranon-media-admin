@@ -1378,7 +1378,16 @@ function BetalningsSkrivYta({
   return (
     <div className="flex flex-col gap-4 py-3">
       {fel && (
-        <MessageBox intent="error" title="Kunde inte spara" onDismiss={() => fel.reset()}>
+        // TASK-285.2 (S109-facit, familjeregeln): `error` bär ALDRIG en
+        // stäng-knapp — den försvinner när ORSAKEN är borta, inte på ett
+        // manuellt klick. `fel.reset()` behövs inte längre för att stänga
+        // rutan: nästa `mutate()`-anrop (ett nytt försök att spara) sätter
+        // `isError` till `false` automatiskt, vilket är exakt "orsaken är
+        // borta". Tidigare `onDismiss={() => fel.reset()}` gav en manuell
+        // stäng-knapp på en `error`-ruta, vilket `MessageBox`s nya
+        // typ (`onDismiss` är `never` för `error`/`warning`) numera stoppar
+        // vid `npm run typecheck`.
+        <MessageBox intent="error" title="Kunde inte spara">
           Försök igen.
         </MessageBox>
       )}

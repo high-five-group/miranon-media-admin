@@ -1,0 +1,3 @@
+- alert:
+  - strong: Eventet är fullbokat
+  - paragraph: Nya anmälningar hamnar på väntelistan tills en plats blir ledig.

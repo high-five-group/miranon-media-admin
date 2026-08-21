@@ -1,0 +1,4 @@
+- status:
+  - strong: Eventet saknar plats
+  - paragraph: Lägg till en plats så att den kommer med i bekräftelsen.
+  - button "Stäng meddelande"

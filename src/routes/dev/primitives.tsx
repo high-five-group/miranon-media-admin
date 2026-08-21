@@ -179,12 +179,69 @@ function PrimitivesPage() {
               Brödtext för {intent}-meddelandet - alltid i neutral textfärg.
             </MessageBox>
           ))}
+          {/* Knapprad (actions-sloten) utan kryss — S109-facit: `error`/
+              `warning` bär ALDRIG en stäng-knapp, bara handlingar. */}
           <MessageBox
-            intent="info"
-            title="Avvisningsbar"
-            onDismiss={() => setSenastTryckt('messagebox: avvisad')}
+            intent="error"
+            title="Med knapprad (error)"
+            actions={
+              <Button
+                intent="secondary"
+                size="sm"
+                onPress={() => setSenastTryckt('messagebox: error försök igen')}
+              >
+                Försök igen
+              </Button>
+            }
+          >
+            actions-sloten renderar högerställd under texten; ingen kryss-knapp för error.
+          </MessageBox>
+          <MessageBox
+            intent="warning"
+            title="Med knapprad (warning)"
+            actions={
+              <Button
+                intent="secondary"
+                size="sm"
+                onPress={() => setSenastTryckt('messagebox: warning ignorera')}
+              >
+                Ignorera varningen
+              </Button>
+            }
+          >
+            Samma actions-slot som error; ingen kryss-knapp för warning heller.
+          </MessageBox>
+          {/* Kryss utan knapprad — bara info/success får stängas manuellt. */}
+          <MessageBox
+            intent="success"
+            title="Avvisningsbar (success)"
+            onDismiss={() => setSenastTryckt('messagebox: success avvisad')}
           >
             Stäng-knappen wirar till statusraden ovan.
+          </MessageBox>
+          <MessageBox
+            intent="info"
+            title="Avvisningsbar (info)"
+            onDismiss={() => setSenastTryckt('messagebox: info avvisad')}
+          >
+            Stäng-knappen wirar till statusraden ovan.
+          </MessageBox>
+          {/* Kryss OCH knapprad tillsammans — de två slotarna är oberoende. */}
+          <MessageBox
+            intent="success"
+            title="Kryss och knapprad tillsammans"
+            onDismiss={() => setSenastTryckt('messagebox: success avvisad (med knapprad)')}
+            actions={
+              <Button
+                intent="secondary"
+                size="sm"
+                onPress={() => setSenastTryckt('messagebox: success visa kvitto')}
+              >
+                Visa kvitto
+              </Button>
+            }
+          >
+            Krysset sitter på rubrikens linje; knappraden ligger under texten.
           </MessageBox>
         </div>
       </section>
