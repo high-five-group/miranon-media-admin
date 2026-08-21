@@ -87,9 +87,14 @@ kontroll). Skriptet är ändå skrivet och bevisat i båda riktningar
 (`docs/reference/automation-scripts/a1-eventmatchning-vakt.js`); A1 orörd och
 `undeployed`, verifierad efter försöket. `#1722` står som DRAFT.
 
-**NÄSTA: MARCUS VÄG-BESLUT för `284.2` (`T167` — tre vägar: klistra in skriptet
-i Airtable-UI:t · omklassa till `ready-for-human` och foga in i `284.6` · byt
-hemvist och riv `ADR-122` beslut 5).** `284.5` QA · `284.6` prod · `284.4`:s
+**NÄSTA: TVÅ MARCUS-BESLUT, I DENNA ORDNING. (1) `T168` — datum-axeln stryker
+ALLA årtal, så `12–13 september 2025` och `…2026` ger `OK`. Rör LANDAD kod
+(`284.1`:s formelfält driver markören och kö-räknaren) och det ännu ej
+live-satta `284.2`-skriptet; rekommendation: jämför årtalens MÄNGD separat.
+(2) `T167` — väg för att få vakten live (klistra in skriptet i Airtable-UI:t ·
+omklassa till `ready-for-human` och foga in i `284.6` · byt hemvist och riv
+`ADR-122` beslut 5). Ordningen spelar roll: går vakten live oförändrad blir
+det två omgångar.** `284.5` QA · `284.6` prod · `284.4`:s
 DoD #6 (facit-amendering) — alla MARCUS-moment. Öppet: Event-18:s falska positiv ej lokaliserad · Lottas
 fyra besked · **Marcus: kalenderlänkarna på miranon.se + Lotta-texten** ·
 `task-232` → Done vid stängning. Numrering — RE-DERIVERA ALLTID mot disk i
