@@ -292,7 +292,9 @@ test.describe('"Inte nu" (TASK-285.1)', () => {
     // kvarliggande `sessionStorage`-avfärdningen INNAN nästa signal hinner
     // komma.
     await page.reload();
-    await page.getByRole('heading', { level: 1 }).waitFor();
+    // .first(): se `oppnaAppen()` ovan (TASK-285.3 lade två h1-rubriker till
+    // på /dev/primitives).
+    await page.getByRole('heading', { level: 1 }).first().waitFor();
     await expect(page.locator(BANNER)).toHaveText('');
 
     // "Nästa NYA version": en förnyad dispatch ska nu visa notisen igen,
