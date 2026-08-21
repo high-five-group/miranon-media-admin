@@ -1,10 +1,10 @@
 ---
 id: TASK-284.1
 title: 'Skiva: Jämförelsefälten och markören — tracer bullet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 10:56'
-updated_date: '2026-08-21 12:29'
+updated_date: '2026-08-21 13:04'
 labels:
   - ready-for-agent
 dependencies: []
@@ -42,7 +42,7 @@ Täcker användarberättelser: 5, 10, 16.
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -57,3 +57,19 @@ AC 4 och 5 pekar på PROD-instanser (Event-59:s tre formateringsfall, anmälan I
 
 Fältnamnen som ska skapas: ett uppslagsfält av Eventplanering.'Datum (visas i länk)' via Event-länken (fldi3enUaMdbuGSlm), plus formelfältet Eventmatchning. Tre av fyra jämförelsefält finns redan som uppslag: Ort (from Event) fld5560T3pQZSUBaJ, Kurs (from Event) fldfqU6MfBQdaeLUk, Event (namn) fldK1aYEm3iCg8OOh. Startdatum/Slutdatum är också uppslag (mätt: returneras som arrayer).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad i #1698, merge-commit af349d83 (MERGED 2026-08-21 12:46:05Z).
+
+TRACER BULLET KOMPLETT ÄNDE TILL ÄNDE: uppslagsfältet Datum (from Event) (fldLCfZfk7zESNbno) + formelfältet Eventmatchning (fldYz2NRZJjyX8VWB) i staging, fältet genom datalagret (Registration-modell, zod-schema additivt-optional, registration-read.ts delad läs-kärna), och markören i anmälningslistan som StatusBadge med ikon och text.
+
+ALLA 8 AC MÄTTA MOT LIVE-FIXTURER, inte påstådda: fyra ZZ-TASK-284.1-fixturer i staging (OK / Avviker / Backfill / Utan event) plus två event (Event-8755/8756), samtliga permanenta och dokumenterade i tests/api/fixtures.ts. AC 3 (tomt jämförelsefält ger ALDRIG Avviker) bevisad mot Backfill-fixturen; AC 4 mot tre samtidiga formateringsavvikelser som ska ge OK.
+
+CI VERIFIERAD PER JOBB: PR-grinden grön (merge_group CI success), och post-merge-körningen 32483469976 grön på ALLA jobb — inklusive Staging (API + E2E) och A11y (axe-runner), som ci.yml medvetet inte instansierar i PR-grinden (run_staging/run_a11y villkorslöst false, TASK-70.3/70.4 — kontrollen är flyttad till post-merge, inte borttagen). Det var där agentens tre nya staging-tester faktiskt kördes.
+
+TVÅ FYND UTANFÖR SKIVAN, BÅDA REGISTRERADE: T161 (ADR-122 § Fynd 1 felkarakteriserar Event (namn) som uppslagsfält — det är en formel som ekar anmälans egen text; hade kursnamns-axeln jämförts mot det fältet vore den en tautologi) och fälla 52 i data-model.md (Deadline slutbetalnings undantags-gren är död kod, plus samma döda test i Slutbetalning status visuellt).
+
+ÖPPET, EJ GISSAT: Event-18:s falska positiv är fortsatt INTE lokaliserad.
+<!-- SECTION:FINAL_SUMMARY:END -->
