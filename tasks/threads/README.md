@@ -197,6 +197,7 @@ Kör den innan du landar en ändring i tabellen. Den prövar formen — inte om 
 | `T154` | **Logisk lucka: markerar en ändrad källtext ett event som redan skrivit över den?** S108-beslut 6 (texten hör till eventet) mot beslut 7 (ändrad källtext markerar inaktuell). Rimligen nej — men oavgjort, och svaret bestämmer vad markeringen betyder. **Blockerar ADR-121.** | `active` | _(ingen kort än — S108 Del 2 § H.3)_ |
 | `T155` | **Research-luckan: WordPress Gutenberg `templateLock` är outredd** — branschens namngivna mekanism för exakt "lås layouten, tillåt innehållet". En av tre forkar returnerade aldrig; deklarerat öppet i passets § "Vad detta pass INTE hann". | `paused` | _(ingen kort än — S108 Del 2 § H.4)_ |
 | `T156` | **Designdiffen mot förlagorna måste lösas** (Marcus order 2026-08-20). Infoboxen mätt och fälld på tre axlar — 57 % bredare, halva den vertikala luften, 40 % rundare hörn; resten av formen aldrig pt-mätt. Metoden finns i förlage-analysen § 4.2/4.3. | `active` | _(ingen kort än — S108 Del 2 § C)_ |
+| `T157` | **`ADR-102` saknar amenderings-mekanik för ett STÄMPLAT facit.** Promoverings-grinden är regressionslås för alla framtida ändringar; ett tillägg på en låst yta fäller den korrekt, men ingen procedur säger hur ett godkänt facit får växa. | `paused` | [T157-adr-102-saknar-amenderings-mekanik-for-stamplat-facit.md](T157-adr-102-saknar-amenderings-mekanik-for-stamplat-facit.md) |
 
 > _T03-not: Session 20-glappet reser även frågan om Session 20:s egen `/session-end` do-confirm brast (distinkt från backfillen) — indata till T04._
 >
