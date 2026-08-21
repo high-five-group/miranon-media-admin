@@ -79,17 +79,24 @@ prod-poster i endera felläget, alltså latent) · lärdomsfragment om
 trådnummer-kollisionerna (fjärde på tre dygn; `T161` kolliderade skarpt och
 `ADR-081`s landnings-regel avgjorde — den andra numrerade om till `T162`).
 
-**NÄSTA: `284.3` + `284.4` byggs parallellt av agenter; `284.2` HÅLLS UTANFÖR
-vågen och går efteråt (den deployar A1 i staging, som kör vid varje
-radskapande — samtidigt som andra sviter skapar rader i samma delade bas).
-`284.5` QA och `284.6` prod är MARCUS-moment. `284.4`:s DoD #6 kan INTE
-stängas autonomt — facit-amendering kräver Marcus visuella godkännande.** Öppet: Event-18:s falska positiv ej lokaliserad · Lottas
+**Del 6: `284.1`/`284.3`/`284.4` DONE och landade. `284.2` BLOCKERAD** — MCP-ytan
+kan inte skriva `customScript`-noden som `ADR-122` beslut 5 kräver
+(`update_automation` → `isValid:false`/`readOnlyNodeType`; nodtypen finns inte i
+NÅGON katalog i `get_create_automation_instructions`, 1 618 rader, egen
+kontroll). Skriptet är ändå skrivet och bevisat i båda riktningar
+(`docs/reference/automation-scripts/a1-eventmatchning-vakt.js`); A1 orörd och
+`undeployed`, verifierad efter försöket. `#1722` står som DRAFT.
+
+**NÄSTA: MARCUS VÄG-BESLUT för `284.2` (`T167` — tre vägar: klistra in skriptet
+i Airtable-UI:t · omklassa till `ready-for-human` och foga in i `284.6` · byt
+hemvist och riv `ADR-122` beslut 5).** `284.5` QA · `284.6` prod · `284.4`:s
+DoD #6 (facit-amendering) — alla MARCUS-moment. Öppet: Event-18:s falska positiv ej lokaliserad · Lottas
 fyra besked · **Marcus: kalenderlänkarna på miranon.se + Lotta-texten** ·
-`task-232` → Done vid stängning. Numrering — RE-DERIVERA ALLTID, tre
-sessioner mintar parallellt: ADR **124** · kort **288+** (S109 tog 287) ·
-**L512** + 61 fragment · tråd **T163** (`T161` min, `T162` S109:s) · fälla
-**53** (52 tagen av denna session) · session 111. Full narrativ: sessionsdok
-S110 Del 1–5 + Paushistorik.
+`task-232` → Done vid stängning. Numrering — RE-DERIVERA ALLTID mot disk i
+mint-ögonblicket; SEX trådnummer-kollisioner i klustret under detta pass:
+ADR **124** · kort **288+** · **L512** + 61 fragment · tråd **T168**
+(S110 mintade `T161`/`T164`/`T165`/`T166`/`T167`) · fälla **53** ·
+session 111. Full narrativ: sessionsdok S110 Del 1–6 + Paushistorik.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`, historik; pausad två
 gånger 2026-08-21) — AUTONOMT BYGGE AV BÅDA SPÅREN: VÅG 1 IGÅNG MED FEM
