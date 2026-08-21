@@ -1,10 +1,10 @@
 ---
 id: TASK-284.4
 title: 'Skiva: Åtgärdskön på Hem — ny bevakningsradstyp med räknare'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:18'
-updated_date: '2026-08-21 13:22'
+updated_date: '2026-08-21 13:50'
 labels:
   - ready-for-agent
 dependencies:
@@ -36,10 +36,28 @@ Täcker användarberättelser: 2, 3, 4, 18.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-granskning gjord mot manifestet tasks/sessions/bilagor/s102-hem-konvergens/facit.json, ytan 'hem-vyn V1 Lugna morgonen' — sökvägen utskriven i PR:en, aldrig granskad mot minne eller mot en bildkatalog
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Facit-granskning gjord mot manifestet tasks/sessions/bilagor/s102-hem-konvergens/facit.json, ytan 'hem-vyn V1 Lugna morgonen' — sökvägen utskriven i PR:en, aldrig granskad mot minne eller mot en bildkatalog
 - [ ] #6 Facit-amenderingen görs FÖRST efter Marcus visuella godkännande, i EGEN commit, med hans citat inskrivet som daterad amendering — ordningen är enkelriktad (T157 väg A, precedent satt för personlistans bokstavsrad 2026-08-21)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad i #1711, merge-commit 8b361ff0 (MERGED 2026-08-21, kö-batch aefe87f6 -> fb1c7fa4).
+
+ÅTGÄRDSKÖN PÅ HEM som NY RADTYP i den befintliga Bevakningsraden, inte en ny yta. Osynlig vid noll — den Marcus-låsta asymmetrin sedan S102 bevarad och bevisad i båda riktningar: agenten tvingade raden alltid närvarande (tom-läge-testet föll, Expected 0 / Received 1) och alltid null (fyllt-läge-testet föll), båda regressioner restaurerade och verifierade rena.
+
+AC 3 UPPFYLLD I FORM, INTE BARA I UTFALL: behoverAtgard/antalBehoverAtgard/atgardskoText bor i en delad hemvist (registration-display.ts) som BÅDE räknaren på Hem och markören i listan läser. Två ytor kan därför inte säga olika saker om samma rad.
+
+DoD-KRYSSEN EFTERBOCKADE AV ORKESTRERAREN, inte av agenten. Substansen var uppfylld men samtliga sex poster stod tomma: bygg-agent-kontraktet instruerar --check-ac och nämner aldrig --check-dod. Registrerat som T165. Verifierat före bockning: alla 8 filer hör till skivan, facit-sökvägen står i PR-bodyn som DoD #5 kräver.
+
+DoD #3 MED ÖPPEN KANT: merge_group-körningen 32487146248 grön på alla jobb som kördes. MEN A11y (axe-runner) och Staging (API + E2E) kördes aldrig — kö-batchen landade en docs-PR efter denna kod-PR, post-merge ärvde docs-klassningen ur HEAD^2 och hoppade sviten. Registrerat som T166. AC 5:s axe-bevis är ändå intakt: agenten asserterar axe INUTI sina två acceptance-tester, som kördes gröna. Täckningen återkommer vid nästa kod-landning.
+
+DoD #6 ÄR MARCUS MOMENT och lämnas ÖPPEN: facit-amendering görs FÖRST efter hans visuella godkännande, i egen commit, med hans citat daterat. Facit-filen är orörd i landningen — verifierat med git diff mot main.
+
+OMDÖMESVAL SOM AGENTEN BOKFÖRDE ÖPPET: ordningen mellan de två bevakningsradstyperna när båda förekommer (åtgärdskö-raden först). Varken ADR-122 eller PRD task-284 låser den. Marcus ser den i den visuella granskningen.
+<!-- SECTION:FINAL_SUMMARY:END -->
