@@ -176,3 +176,45 @@ export const CHECKIN_ANMALAN_A_ID = 'recCwbFpUBq45xbzA';
 export const CHECKIN_ANMALAN_B_ID = 'reckGJUD3Odd0azRQ';
 /** Den förskapade Deltagande-raden på CHECKIN_ANMALAN_A_ID (Session='Föreläsning'). */
 export const CHECKIN_DELTAGANDE_A_ID = 'recei18YBOSWZMQqr';
+
+/**
+ * `ZZ-TASK-284.1 Fixtur *` — permanenta staging-fixturer för eventlänkens
+ * vakt (TASK-284.1; ADR-122 beslut 3). Seedade via Airtable MCP 2026-08-21,
+ * Ort/Namn-prefix `ZZ-TASK-284.1` — medvetet SKILT från alla
+ * `.purge-staging-policy.json`-mönster (samma konvention som
+ * ZZ-belaggning-/ZZ-arbetsko-/ZZ-Checkin-fixturerna). Live-verifierade
+ * `Eventmatchning`-utfall (mätta vid skapandet, upprepningsbara — formeln är
+ * deterministisk över orörda fält):
+ *
+ *   - Fixtur A (EVENTMATCHNING_EVENT_A_ID, Event-8755) — Arboga-mönstret från
+ *     prod Event-59 (31 okt–1 nov 2026, RIM 1): facit
+ *     `Datum (visas i länk)` = "31 oktober 2026 – 1 november 2026".
+ *   - Fixtur B (EVENTMATCHNING_EVENT_B_ID, Event-8756) — 7–8 februari 2026,
+ *     RIM 2. Facit-motpol till Fixtur A för avvikelse-anmälan.
+ *   - `ZZ-TASK-284.1 Fixtur OK` (EVENTMATCHNING_ANMALAN_OK_ID) — länkad till
+ *     Fixtur A. Egen text bär alla TRE mätta formateringsklasserna mot
+ *     facit (S110 Del 4 § B punkt 3): skiftläge ("Resor i Medvetandet 1" mot
+ *     facit "Resor i medvetandet 1"), inget mellanslag runt tankstrecket och
+ *     inget upprepat årtal ("31 oktober–1 november 2026" mot facit
+ *     "31 oktober 2026 – 1 november 2026"). Eventmatchning = 'OK'.
+ *   - `ZZ-TASK-284.1 Fixtur Avviker` (EVENTMATCHNING_ANMALAN_AVVIKER_ID) —
+ *     länkad till Fixtur B men bär Fixtur A:s ort och RIM 1 (mirrors prod
+ *     anmälan ID 21: formulärtext pekar på ett annat event än länken).
+ *     Eventmatchning = 'Avviker'.
+ *   - `ZZ-TASK-284.1 Fixtur Backfill` (EVENTMATCHNING_ANMALAN_BACKFILL_ID) —
+ *     länkad till Fixtur A, egen `Ort` MEDVETET TOM (backfill-mönstret,
+ *     data-model.md §Kända fällor). Bevisar trestegs-logiken (ADR-122
+ *     beslut 4): tomt jämförelsefält ger ALDRIG 'Avviker'. Eventmatchning
+ *     = 'OK'.
+ *   - `ZZ-TASK-284.1 Fixtur Utan event` (EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID)
+ *     — ingen Event-länk. Eventmatchning = 'Utan event'.
+ *
+ * Konsumeras av get-registrations.staging.test.ts (task-284.1-sektionen).
+ * STÄDA INTE bort dessa sex poster.
+ */
+export const EVENTMATCHNING_EVENT_A_ID = 'recLGV8kJJk5iyvkh';
+export const EVENTMATCHNING_EVENT_B_ID = 'recccVmD6oRGlZhc4';
+export const EVENTMATCHNING_ANMALAN_OK_ID = 'recsXm9mlq4yhc5LH';
+export const EVENTMATCHNING_ANMALAN_AVVIKER_ID = 'rec1OoJZf5hKzMnpf';
+export const EVENTMATCHNING_ANMALAN_BACKFILL_ID = 'rec6ElPLSO3GGVK8q';
+export const EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID = 'rectuHzKciiEDn2HQ';

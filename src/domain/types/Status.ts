@@ -121,3 +121,22 @@ export const AttachmentScope = {
 } as const;
 
 export type AttachmentScopeValue = (typeof AttachmentScope)[keyof typeof AttachmentScope];
+
+// Anmälningar.Eventmatchning (TASK-284.1, ADR-122 beslut 3 — formelfält,
+// staging fldYz2NRZJjyX8VWB). Vaktens facit-jämförelse: anmälans EGNA
+// formulärtext (Datum/Ort/Event (namn)) mot det länkade eventets facit
+// (Ort (from Event)/Kurs (from Event)/Datum (from Event) — den sistnämnda
+// ett nytt uppslagsfält av Eventplanering.'Datum (visas i länk)',
+// fldLCfZfk7zESNbno), normaliserat mot de TRE MÄTTA formateringsklasserna
+// (S110 Del 4 § B punkt 3): skiftläge, mellanslag runt tankstreck, upprepat
+// årtal vid månadsskifte. Tomt jämförelsefält ger ALDRIG Avviker (ADR-122
+// beslut 4 — trestegs-logiken, live-bevisad mot en fixtur med tomt
+// Ort-fält). Live-bevisad mot fyra staging-fixturer 2026-08-21 (TASK-284.1):
+// ZZ-TASK-284.1 Fixtur OK/Avviker/Backfill/Utan event.
+export const Eventmatchning = {
+  OK: 'OK',
+  AVVIKER: 'Avviker',
+  UTAN_EVENT: 'Utan event',
+} as const;
+
+export type EventmatchningValue = (typeof Eventmatchning)[keyof typeof Eventmatchning];
