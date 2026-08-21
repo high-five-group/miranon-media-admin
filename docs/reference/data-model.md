@@ -721,6 +721,48 @@ inte löst.
 
 ---
 
+## Fält tillagda 2026-08-21 — eventlänkens vakt (TASK-284.1, ADR-122 beslut 3)
+
+**STAGING ENDAST** (`apphjj8Q7lkXCMsL4`) — prod-utrullningen är utbruten till
+`TASK-284.6`, ett Marcus-auktoriserat moment. Två nya fält på `Anmälningar`
+(`tbloOcrppVoyrHbrq`), skapade via Airtable-MCP `create_field`/`update_field`
+2026-08-21:
+
+| Fält | ID (staging) | Typ | Syfte |
+|---|---|---|---|
+| Datum (from Event) | `fldLCfZfk7zESNbno` | lookup via `fldi3enUaMdbuGSlm` av `Eventplanering.'Datum (visas i länk)'` (`fldc3aWz7CxO4rDdl`) | Facit-sidan för Eventmatchning: eventets formaterade visningsdatum. |
+| Eventmatchning | `fldYz2NRZJjyX8VWB` | formula | Jämför anmälans egna formulärtext (`Datum`/`Ort`/`Event (namn)`) mot eventets facit (`Ort (from Event)`/`Kurs (from Event)`/`Datum (from Event)`), normaliserat mot skiftläge + mellanslag runt tankstreck + upprepat årtal. Exakt tre värden: `OK` \| `Avviker` \| `Utan event`. Tomt jämförelsefält ger ALDRIG `Avviker` (trestegs-logik). |
+
+**`LET()` stöds INTE av Airtable-API:ts fält-skapande-endpoint** — skarpt
+prövat 2026-08-21: `create_field` med en `LET(x, 5, y, 10, x + y)`-formel
+avvisas med `INVALID_FIELD_TYPE_OPTIONS_FOR_CREATE` / `"Unknown field names:
+x, y"`, trots att Airtables UI-editor stöder `LET()`. Formelfält skapade via
+API:t måste vara HELT UTAN `LET()` — nästlade funktionsanrop i stället för
+namngivna variabler. `Eventmatchning`s formel är därför medvetet lång och
+upprepande (samma normaliserings-uttryck skrivet ut sex gånger: en per
+own/facit-sida × tre jämförelsefält) i stället för att definiera en
+återanvändbar variabel.
+
+**`Event (namn)` (`fldK1aYEm3iCg8OOh`) är INTE en lookup från eventet** —
+ADR-122 § Fynd 1 grupperar den bland "lookup-fält från det länkade eventet"
+tillsammans med `Ort (from Event)`/`Kurs (from Event)`. Live-verifierat
+(`describe_table`, både prod och staging, 2026-08-21): fältet är en
+**FORMEL** `{Vill anmäla sig till}` — anmälans EGEN flerval-text, flödad till
+sträng, inte eventets kanoniska kursnamn. `Eventmatchning`-formeln använder
+fältet korrekt som den ENA av jämförelsens PÅSTÅENDE-sida (own-side, mot
+facit `Kurs (from Event)`) — ADR-122:s prosa är alltså en dokumentationsfel,
+fältet självt behöver ingen ändring.
+
+Live-bevisade via fyra staging-fixturer (`ZZ-TASK-284.1 Fixtur *`,
+`tests/api/fixtures.ts`, konsumerade av
+`tests/api/get-registrations.staging.test.ts`): skiftläge + tankstreck-
+mellanslag + upprepat årtal → `OK` (mirrors prod Event-59); tomt eget
+`Ort`-fält (backfill-mönstret) → `OK`, aldrig `Avviker`; formulärtext som
+pekar på ett annat event än länken → `Avviker` (mirrors prod anmälan-21);
+ingen Event-länk → `Utan event`.
+
+---
+
 ## Den kritiska distinktionen — två datakällor, två konsekvenser
 
 **Det här är den viktigaste insikten i hela modellen.** Rollup-fälten på Personer kommer från två olika tabeller, och det avgör helt vad datan faktiskt betyder.

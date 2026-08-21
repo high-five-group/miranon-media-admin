@@ -33,7 +33,16 @@
 import { type APIRequestContext, expect, test } from '@playwright/test';
 import { z } from 'zod';
 import { RegistrationSchema } from '../../src/domain/schemas';
-import { ARBETSKO_EVENT_ID, ARBETSKO_EXPECTED } from './fixtures';
+import {
+  ARBETSKO_EVENT_ID,
+  ARBETSKO_EXPECTED,
+  EVENTMATCHNING_ANMALAN_AVVIKER_ID,
+  EVENTMATCHNING_ANMALAN_BACKFILL_ID,
+  EVENTMATCHNING_ANMALAN_OK_ID,
+  EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID,
+  EVENTMATCHNING_EVENT_A_ID,
+  EVENTMATCHNING_EVENT_B_ID,
+} from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 type Registration = z.infer<typeof RegistrationSchema>;
@@ -440,5 +449,86 @@ test.describe('get-registrations — gruppdynamik-shapen (task-18.10)', () => {
     // som antalGenomfordaEvent/erfarenhetsbadge (en batch som INTE lästes).
     expect(byId.get(ARBETSKO_EXPECTED.obekraftadId)?.kurshistorik).toBeNull();
     expect(byId.get(ARBETSKO_EXPECTED.manuellId)?.kurshistorik).toBeNull();
+  });
+});
+
+// ── task-284.1: eventlänkens vakt — Eventmatchning i läs-shapen ──────────────
+//
+// `eventmatchning` ← Anmälningar.`Eventmatchning` (formelfält, ADR-122 beslut 3).
+// Exakt tre värden: 'OK' | 'Avviker' | 'Utan event'. Fixturerna (fixtures.ts,
+// ZZ-TASK-284.1-prefixet) täcker vaktens fyra bärande fall — de mätta utfallen
+// nedan är LIVE-VERIFIERADE mot formelfältet vid fixturernas skapande
+// (Airtable-MCP, 2026-08-21), inte gissade. Testar KONTRAKTET (fält-närvaro +
+// värde), aldrig formel-implementationen (den bor i basen, inte i EF-koden).
+test.describe('get-registrations — eventlänkens vakt (task-284.1)', () => {
+  test('väg D (Fixtur A): OK trots de tre mätta formateringsklasserna, och tomt Ort-fält ger ALDRIG Avviker', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      EVENTMATCHNING_EVENT_A_ID,
+    );
+    expect(status).toBe(200);
+    const byId = new Map(registrations.map((r) => [r.id, r]));
+
+    // Fixtur OK: skiftläge + mellanslag-runt-tankstreck + upprepat årtal
+    // normaliseras bort → OK (Event-59-mönstret, S110 Del 4 § B punkt 3).
+    expect(byId.get(EVENTMATCHNING_ANMALAN_OK_ID)?.eventmatchning).toBe('OK');
+
+    // Fixtur Backfill: egen Ort MEDVETET TOM → trestegs-logiken (ADR-122
+    // beslut 4) ger OK, ALDRIG Avviker enbart pga det tomma fältet.
+    expect(byId.get(EVENTMATCHNING_ANMALAN_BACKFILL_ID)?.eventmatchning).toBe('OK');
+  });
+
+  test('väg D (Fixtur B): Avviker när formulärtexten pekar på ett annat event än länken (anmälan-21-mönstret)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(
+      request,
+      config,
+      jwt,
+      EVENTMATCHNING_EVENT_B_ID,
+    );
+    expect(status).toBe(200);
+    const byId = new Map(registrations.map((r) => [r.id, r]));
+
+    expect(byId.get(EVENTMATCHNING_ANMALAN_AVVIKER_ID)?.eventmatchning).toBe('Avviker');
+  });
+
+  test('event-lösa grenen: Utan event för en olänkad rad, och nyckeln är NÄRVARANDE på alla fyra fixturer', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const { status, registrations } = await callGetRegistrations(request, config, jwt, undefined);
+    expect(status).toBe(200);
+    const byId = new Map(registrations.map((r) => [r.id, r]));
+
+    expect(byId.get(EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID)?.eventmatchning).toBe('Utan event');
+
+    // Additivt-optional nyckel (samma disciplin som task-18.4/18.7/18.10 ovan):
+    // äldre cachade svar parsar oförändrat, men den deployade EF:en levererar
+    // den alltid som värde-eller-null, aldrig utelämnad.
+    for (const id of [
+      EVENTMATCHNING_ANMALAN_OK_ID,
+      EVENTMATCHNING_ANMALAN_AVVIKER_ID,
+      EVENTMATCHNING_ANMALAN_BACKFILL_ID,
+      EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID,
+    ]) {
+      const raw = byId.get(id) as unknown as Record<string, unknown>;
+      expect(raw, `fixtur ${id} saknas i event-lösa grenens svar`).toBeTruthy();
+      expect(raw, `rad ${id}: nyckeln 'eventmatchning' saknas i svaret`).toHaveProperty(
+        'eventmatchning',
+      );
+      expect(raw.eventmatchning, `rad ${id}: 'eventmatchning' får aldrig vara undefined`).not.toBe(
+        undefined,
+      );
+    }
   });
 });

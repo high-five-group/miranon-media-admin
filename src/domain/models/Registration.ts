@@ -1,5 +1,6 @@
 import type { PersonHistoryEntry } from '../schemas/PersonDetail.schema';
 import type {
+  EventmatchningValue,
   FlagStatusValue,
   PaymentStatusValue,
   RegistrationSourceValue,
@@ -120,4 +121,13 @@ export interface Registration {
    */
   erfarenhetsbadge?: string | null;
   kurshistorik?: PersonHistoryEntry[] | null;
+  /**
+   * Eventlänkens vakt (task-284.1; ADR-122 beslut 3). ADDITIVT-OPTIONAL som
+   * fälten ovan. `Anmälningar.Eventmatchning` (formelfält) jämför anmälans
+   * egna formulärtext mot det länkade eventets facit — exakt tre värden:
+   * `'OK'` (stämmer, eller kan inte avgöras pga tomt jämförelsefält),
+   * `'Avviker'` (en icke-tom jämförelse divergerar), `'Utan event'` (ingen
+   * Event-länk). Markören i AnmalningarList visar raden vid `'Avviker'`.
+   */
+  eventmatchning?: EventmatchningValue | null;
 }

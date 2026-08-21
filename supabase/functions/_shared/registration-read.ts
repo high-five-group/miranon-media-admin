@@ -163,6 +163,11 @@ export function mapRegistration(record: { id: string; fields: Record<string, unk
     kurshistorik: null as ReturnType<typeof mapHistoryEntry>[] | null,
     eventId: Array.isArray(f['Event']) ? f['Event'][0] : null, // linked record → first ID
     personId: Array.isArray(f['Person']) ? f['Person'][0] : null, // linked record → first ID
+    // Eventlänkens vakt (task-284.1; ADR-122 beslut 3). Formelfält, alltid
+    // exakt ett av 'OK' | 'Avviker' | 'Utan event' — aldrig BLANK() (formeln
+    // har ingen väg som returnerar tom sträng), så `?? null` är null-safety,
+    // inte en förväntad väg. Samma skalära formulär-mönster som `eventNamn`.
+    eventmatchning: f['Eventmatchning'] ?? null,
   };
 }
 

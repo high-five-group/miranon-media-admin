@@ -7,6 +7,7 @@ import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
 import { displayName, inskickadDatum, inskickadTid } from './registration-display';
+import { StatusBadge } from './StatusBadge';
 
 /**
  * Samlade anmälningslistan (task-1.4) — GLOBAL LÄS-vy över ALLA anmälningar
@@ -15,6 +16,14 @@ import { displayName, inskickadDatum, inskickadTid } from './registration-displa
  * rad (PRD beslut 6). Rad med event-koppling är LÄNK till det eventets
  * anmälda-vy — samma väg som på Hem; rad utan visas OLÄNKAD med "Utan event"
  * (beslut 4). Hems CTA pekar hit (beslut 7).
+ *
+ * EVENTLÄNKENS VAKT — markören (task-284.1; ADR-122 beslut 3+7, § 22
+ * Åtgärdskön): en rad vars `eventmatchning === 'Avviker'` (formelfältet
+ * `Anmälningar.Eventmatchning` — anmälans egen formulärtext stämmer INTE med
+ * det länkade eventets facit) får en `StatusBadge` (ikon+ord, AC 8: bär
+ * ALDRIG betydelse enbart genom färg — WCAG 1.4.1). Kön (`Bevakningsrad` på
+ * Hem) och resolutionen (`relink-registration`) är UTBRUTNA till 284.2–284.4;
+ * denna vy bär bara markören, den tredje av åtgärdsköns tre delar.
  *
  * Data via `fetchRegistrations()` utan filter = get-registrations EVENT-LÖSA
  * gren (router-context-DI, ADR-055) — read-only, ingen ny EF, ingen
@@ -155,6 +164,13 @@ export function AnmalningarList() {
                     <span className="text-small text-text-muted">
                       {[reg.eventNamn, datum].filter(Boolean).join(' · ') || 'Uppgift saknas'}
                     </span>
+                    {reg.eventmatchning === 'Avviker' && (
+                      <span className="mt-0.5 self-start">
+                        <StatusBadge ton="warning" storlek="sm">
+                          Avviker från eventet
+                        </StatusBadge>
+                      </span>
+                    )}
                   </Link>
                 ) : (
                   <div className={kortYta}>

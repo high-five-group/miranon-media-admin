@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { FlagStatus, PaymentStatus, RegistrationSource, RegistrationStatus } from '../types/Status';
+import {
+  Eventmatchning,
+  FlagStatus,
+  PaymentStatus,
+  RegistrationSource,
+  RegistrationStatus,
+} from '../types/Status';
 import { PersonHistoryEntrySchema } from './PersonDetail.schema';
 
 // Enum-fälten härleds ur Status.ts-konstanterna (single source) och är
@@ -77,4 +83,11 @@ export const RegistrationSchema = z.object({
   //   Person-länk / event-lösa grenen; [] = person utan deltaganden.
   erfarenhetsbadge: z.string().nullable().optional(),
   kurshistorik: z.array(PersonHistoryEntrySchema).nullable().optional(),
+  // Eventlänkens vakt (task-284.1; ADR-122 beslut 3). ADDITIVT-OPTIONAL av
+  // samma skäl som fälten ovan — äldre cachade svar parsar oförändrat.
+  // `Anmälningar.Eventmatchning` (formelfält, staging fldYz2NRZJjyX8VWB)
+  // jämför anmälans egna formulärtext mot det länkade eventets facit,
+  // normaliserat mot skiftläge/tankstreck-mellanslag/upprepat årtal.
+  // Exakt tre värden — enum:ad mot Eventmatchning (Status.ts).
+  eventmatchning: z.enum(Eventmatchning).nullable().optional(),
 });
