@@ -4,8 +4,10 @@ title: 'Skiva: Personer-EF:en lär sig bokstavsfiltret och bokstavsfördelningen
 status: To Do
 assignee: []
 created_date: '2026-08-21 08:51'
+updated_date: '2026-08-21 11:34'
 labels:
   - ready-for-agent
+  - wontfix
 dependencies: []
 parent_task_id: TASK-283
 ordinal: 510000
@@ -47,3 +49,12 @@ Täcker användarberättelser: 1, 8, 9, 18
 - [ ] #5 Sentinelen undantagen ur E-filtret — bevisat med testfall, aldrig antaget (fälla 51)
 - [ ] #6 EF deployad till staging FÖRE den landning som börjar skicka bokstavs-parametern (deploy-ordningen)
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-21 11:34
+---
+WONTFIX 2026-08-21 (S109, ADR-123): skivan byggde bokstavsfiltret och fördelningen i EF:en (väg A). Marcus valde väg B — registret laddas helt och filtreras i klienten — vilket gör EF-filtret onödigt och stopp-grinden om 'en andra genomgång' moot. Bygg-agenten stoppades mitt i (okommittad diff kvar i dess worktree agent-add265ceade8e9e7a, ingen gren, ingen PR); staging-EF:en get-persons hade hunnit deployas (v27) och återställdes till main (v28). Inga AC bockas. Ersätts av registerskivan i det nya PRD-kortet.
+---
+<!-- COMMENTS:END -->

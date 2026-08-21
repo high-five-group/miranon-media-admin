@@ -4,6 +4,7 @@ title: 'Skiva: Tomma bokstäver tonas ned — raden byter aldrig längd'
 status: To Do
 assignee: []
 created_date: '2026-08-21 08:53'
+updated_date: '2026-08-21 11:34'
 labels:
   - ready-for-agent
 dependencies:
@@ -47,3 +48,12 @@ Täcker användarberättelser: 6 (och skärper 17)
 - [ ] #5 Personlistans rad- och listform granskad mot facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — bokstavsraden är ett TILLÄGG ovanför listan och rör inget låst formbeslut
 - [ ] #6 Varje bokstavsknapp minst 24x24 CSS-px — mätt i renderad yta, aldrig läst ur en klass (WCAG 2.5.8 AA)
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-21 11:34
+---
+AMENDERING 2026-08-21 (S109, ADR-123 — väg B): meningen 'Fördelningen kom i EF-svaret redan i första skivan; ingen serverändring' gäller inte längre — fördelningen är en reduce över den laddade klientarrayen (bunden till HELA registret precis som tidigare, eftersom arrayen ÄR hela registret). Fortsatt ren klientlogik; ingen deploy. AC oförändrade.
+---
+<!-- COMMENTS:END -->
