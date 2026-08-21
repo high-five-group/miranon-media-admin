@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:00'
+updated_date: '2026-08-21 12:52'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,11 +26,11 @@ Täcker användarberättelser: 12
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Appfel-fallbacken är identisk med facit tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json ytan appfel-sidan (ingen kontur, röd vänsterkant, rubrik i rött, neutral brödtext, mörk knapp högerställd, skugga)
-- [ ] #2 Komponenten importerar inga primitiver och använder inga CSS-variabler — renderar korrekt med stylesheetet bortkopplat (verifierat med ett test som tar bort alla stylesheets före rendering)
-- [ ] #3 Fallbacken visas på primitiv-sidan och axe-sviten ger noll violations; role=alert behålls på den skarpa sidan
-- [ ] #4 ariaSnapshot-paret prototyp före == skarp efter är grönt
-- [ ] #5 Copyn: rubrik utan punkt, brödtext som bär vad som hände, vad som hände med det sparade, och vad användaren gör — inga långa streck
+- [x] #1 Appfel-fallbacken är identisk med facit tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json ytan appfel-sidan (ingen kontur, röd vänsterkant, rubrik i rött, neutral brödtext, mörk knapp högerställd, skugga)
+- [x] #2 Komponenten importerar inga primitiver och använder inga CSS-variabler — renderar korrekt med stylesheetet bortkopplat (verifierat med ett test som tar bort alla stylesheets före rendering)
+- [x] #3 Fallbacken visas på primitiv-sidan och axe-sviten ger noll violations; role=alert behålls på den skarpa sidan
+- [x] #4 ariaSnapshot-paret prototyp före == skarp efter är grönt
+- [x] #5 Copyn: rubrik utan punkt, brödtext som bär vad som hände, vad som hände med det sparade, och vad användaren gör — inga långa streck
 <!-- AC:END -->
 
 ## Definition of Done

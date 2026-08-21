@@ -34,7 +34,12 @@ export const test = base.extend<A11yFixtures>({
   gotoDevPage: [
     async ({ page, devPagePath }, use) => {
       await page.goto(devPagePath);
-      await page.getByRole('heading', { level: 1 }).waitFor();
+      // .first(): sidans EGEN rubrik är alltid FÖRST i DOM-ordning. Sedan
+      // TASK-285.3 bär /dev/primitives ytterligare två h1-rubriker längre
+      // ner (AppError-fallbackens demo-sektion, facit-formen kräver en
+      // riktig rubrik-roll) — ett oscopat getByRole('heading', { level: 1 })
+      // blev en strict-mode-krock för VARJE test i denna klass.
+      await page.getByRole('heading', { level: 1 }).first().waitFor();
       await use(undefined);
     },
     { auto: true },

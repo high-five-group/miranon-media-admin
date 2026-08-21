@@ -87,7 +87,9 @@ async function stubbaWebAudio(page: Page) {
     };
   });
   await page.reload();
-  await page.getByRole('heading', { level: 1 }).waitFor();
+  // .first(): se tests/a11y/fixtures.ts (samma strict-mode-krock sedan
+  // TASK-285.3 la två h1-rubriker till på /dev/primitives).
+  await page.getByRole('heading', { level: 1 }).first().waitFor();
 }
 
 async function antalPling(page: Page): Promise<number> {

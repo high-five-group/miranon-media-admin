@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react';
+import { AppErrorFallback } from './AppErrorFallback';
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -15,11 +16,14 @@ interface AppErrorBoundaryState {
  * Tar över __root:s rivna Sentry.ErrorBoundary-roll (Session 16 K4,
  * konsolidering till exakt två fel-lager).
  *
- * Medvetet beroende-snål: klasskomponent, inline-stilar utan tokens/CSS
- * (ska rendera även när stylesheet/design-system är trasigt), ingen
- * primitiv-import. Ingen egen Sentry-capture — createRoot-hooken
- * `onCaughtError` rapporterar (K4-beslut 3); componentDidCatch loggar
- * endast, inslaget i try/catch så boundaryn aldrig själv kastar.
+ * Fallbacken själv (formen, copyn, inline-stilarna) bor sedan TASK-285.3 i
+ * `AppErrorFallback.tsx` — brutits ut till en egen exporterad komponent så
+ * att `/dev/primitives` kan visa den och axe-sviten nå den utan att krascha
+ * appen. Boundaryn RENDERAR fallbacken (utan `inbaddad` — default `false`
+ * behåller `role="alert"` här) men äger ingen egen stil. Ingen egen
+ * Sentry-capture — createRoot-hooken `onCaughtError` rapporterar
+ * (K4-beslut 3); componentDidCatch loggar endast, inslaget i try/catch så
+ * boundaryn aldrig själv kastar.
  */
 export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
   state: AppErrorBoundaryState = { hasError: false };
@@ -38,31 +42,7 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div
-          role="alert"
-          style={{
-            fontFamily: 'system-ui, sans-serif',
-            lineHeight: 1.6,
-            margin: '0 auto',
-            maxWidth: '28rem',
-            padding: '1.5rem',
-          }}
-        >
-          <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Något gick fel</h1>
-          <p style={{ margin: '0.75rem 0 0' }}>
-            Appen kunde inte återhämta sig från ett fel. Ladda om sidan för att fortsätta - du
-            förlorar inget av det du har sparat.
-          </p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            style={{ marginTop: '1rem', minHeight: '44px', padding: '0.5rem 1.25rem' }}
-          >
-            Ladda om
-          </button>
-        </div>
-      );
+      return <AppErrorFallback />;
     }
     return this.props.children;
   }
