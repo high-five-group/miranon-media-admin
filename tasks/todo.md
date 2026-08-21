@@ -15,10 +15,11 @@
 
 ## Aktuellt fokus
 
-**Session 108 ⏸️ PAUSAD (första gången, 2026-08-20, `lifecycle: paused`) —
-DOKUMENT-, BILAGE- OCH MALLSPÅRET ÖVERTAGET FRÅN S107; MODELLEN GRILLAD OCH
-LANDAD, PROTOTYPEN NÄSTA.** Parallell session bredvid aktiva S107 (egen
-worktree per ADR-090 beslut 2). Spåret övertogs per S107 Del 19 § A: `275`-familjen,
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång
+2026-08-20) — DOKUMENT-, BILAGE- OCH MALLSPÅRET ÖVERTAGET FRÅN S107; MODELLEN
+GRILLAD OCH LANDAD, PROTOTYPEN NÄSTA.** Parallell session bredvid S109 (aktiv,
+äger huvudkatalogen — lappens pid lever) och pausade S107; S108 i egen låst
+worktree per ADR-090 beslut 2, gren `docs/s108-resume`. Spåret övertogs per S107 Del 19 § A: `275`-familjen,
 `279`, hela PDF-kedjan och dokumentsidan. **Marcus fyra observationer prövade mot
 faktiskt tillstånd — alla bekräftade, två större än beskrivna:** mallarna är
 **Rönninge-mallar förklädda till generiska** (tre hårdkodade platsstycken; mätt i
@@ -50,9 +51,9 @@ beslut) mot frågan *"Vad ser Lotta när hon genererar bekräftelsebilagan för
 Arboga-eventet 31 oktober?"* — den stänger `T153` + `T154`, sedan ADR-121, sedan
 PRD/skivor. **Marcus öppna moment: DocRaptor-nyckeln** (blockerar minimaltest och
 hela renderings-kedjan) · `275.4` QA · `279`s flipp-skuld · QR-placeringen
-oavgjord. Numrering vid paus: ADR 121 · task-283 · L512 + **55 fragment** (47 vid
-start — S107 landade åtta) · T157 · f51 — re-derivera ALLTID, S107 är aktiv
-parallellt. Full handoff: sessionsdok S108 § PAUSLÄGE + Del 2.
+oavgjord. Numrering re-verifierad vid resume 2026-08-21 = paus-värdena: ADR 121 ·
+task-283 · L512 + **55 fragment** · T157 · f51 — re-derivera ALLTID, S109 är
+aktiv parallellt. Full handoff: sessionsdok S108 § Paushistorik + Del 2.
 
 **Session 107 ⏸️ PAUSAD (sjunde gången, 2026-08-20, `lifecycle: paused`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
