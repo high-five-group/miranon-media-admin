@@ -15,6 +15,36 @@
 
 ## Aktuellt fokus
 
+**Session 109 ⏸️ PAUSAD (första gången, 2026-08-21, `lifecycle: paused`) —
+NOTIS- OCH FELMEDDELANDE-FAMILJEN ÖVERTAGEN FRÅN S107; FORMVALET LÅST I
+`ADR-121`, BOKSTAVSINDEXET SPECCAT.** Äger huvudkatalogen (lappen släppt vid
+paus). Parallell med S108 och S110, båda i egna worktrees; S107 pausad.
+**Övertog per S107 Överlämning 2:** uppdateringsnotisen, hela
+felmeddelande-familjen, copy-domarna och den saknade styrande ytan — plus en
+EXPLICIT bokförd scope-avvikelse (bokstavsindex på person-vyn) som Marcus la
+utanför spåret. **CLS mätt på autentiserade vyer** (`/personer` + `/hem`, tolv
+celler): research-passets gissning *"samma härad eller högre"* **halvt
+falsifierad** — identiskt vid 390 px (`0,1469`), cirka HÄLFTEN vid 1440 och
+1280 px. Chunk-läget är det DYRARE (`+68 %` vid 1280 px, 17 % av vyporthöjden
+på mobil) men fyrar sällan, medan info-läget fyrar vid varje deploy — det
+frekvensargumentet, ur egen mätning och inte ur underlaget, är vad som gör
+`ADR-121`s form hållbar. **`ADR-121` mintad** (sju beslut) + **`DESIGN-SYSTEM-SPEC`
+§ 21 Notistrappan** — familjens FÖRSTA styrande yta; specen hade noll träffar
+på banner/notis/toast/`MessageBox`. **SJÄLVFÅNGST förd IN i ADR:n:** dialog-formen
+för databesked-varningen kräver osparad-detektion, exakt den mekanik som vägde
+mot det förkastade `Alternativ 2` — varningen ska UT ur notisen, men var den
+landar är EJ beslutat. **Bokstavsindexet:** research-pass + `fälla 51` (sort
+veckar Å mot A, men filter-jämförelse gör det inte — verifierat oberoende två
+gånger) + `TASK-283` med fyra skivor och QA-kort. **`T157` registrerad:**
+`ADR-102` saknar amenderings-mekanik för ett STÄMPLAT facit — personlistans
+promoverings-grind fäller sex ARIA-referenser så snart bokstavsraden finns;
+Marcus valde väg A (additiv amendering) för instansen, klassen är oskriven.
+**NÄSTA (resume av 109): `#1674` verifieras landad · `TASK-283.1` plockbar
+direkt · notis-prototypen, EN variant itererad per `ADR-121` beslut 6.**
+Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
+fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
+PAUSLÄGE.
+
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång
 2026-08-20) — DOKUMENT-, BILAGE- OCH MALLSPÅRET ÖVERTAGET FRÅN S107; MODELLEN
 GRILLAD OCH LANDAD, PROTOTYPEN NÄSTA.** Parallell session bredvid S109 (aktiv,
