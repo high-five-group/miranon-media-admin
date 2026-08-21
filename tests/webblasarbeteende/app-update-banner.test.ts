@@ -57,7 +57,11 @@ const INTE_NU = '[data-testid="app-update-inte-nu"]';
 /** Går till demoytan och väntar tills React bevisligen har mountat. */
 async function oppnaAppen(page: Page) {
   await page.goto('/dev/primitives');
-  await page.getByRole('heading', { level: 1 }).waitFor();
+  // .first(): sidans EGEN rubrik är alltid FÖRST i DOM-ordning — sedan
+  // TASK-285.3 bär /dev/primitives ytterligare två h1-rubriker längre ner
+  // (AppError-fallbackens demo-sektion, facit-formen), så ett oscopat
+  // getByRole('heading', { level: 1 }) blir en strict-mode-krock.
+  await page.getByRole('heading', { level: 1 }).first().waitFor();
 }
 
 /**
@@ -88,7 +92,10 @@ test.describe('AppUpdateBanner', () => {
     // för att annonseras, MDN ARIA live regions), men vara tom på innehåll.
     await expect(page.locator(BANNER)).toHaveCount(1);
     await expect(page.locator(LADDA_OM)).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Ladda om' })).toHaveCount(0);
+    // Scopad till bannern (inte en sidbred getByRole-frågan): sedan
+    // TASK-285.3 bär /dev/primitives ytterligare två "Ladda om"-knappar i
+    // AppError-fallbackens demo-sektion (facit-formen), permanent synliga.
+    await expect(page.locator(BANNER).getByRole('button', { name: 'Ladda om' })).toHaveCount(0);
     await expect(page.locator(BANNER)).toHaveText('');
   });
 
@@ -123,10 +130,14 @@ test.describe('AppUpdateBanner', () => {
     await oppnaAppen(page);
 
     // Fokus parkeras på ett känt element FÖRE uppdateringen dyker upp.
-    await page.getByRole('heading', { level: 1 }).evaluate((el: HTMLElement) => {
-      el.setAttribute('tabindex', '-1');
-      el.focus();
-    });
+    // .first(): se `oppnaAppen()` ovan.
+    await page
+      .getByRole('heading', { level: 1 })
+      .first()
+      .evaluate((el: HTMLElement) => {
+        el.setAttribute('tabindex', '-1');
+        el.focus();
+      });
 
     await skjutAppUppdatering(page);
 
@@ -153,7 +164,9 @@ test.describe('AppUpdateBanner', () => {
     await oppnaAppen(page);
     await skjutAppUppdatering(page);
 
-    const knapp = page.getByRole('button', { name: 'Ladda om' });
+    // Scopad till bannern: se kommentaren i testet ovan (TASK-285.3 lade
+    // till ytterligare "Ladda om"-knappar på samma sida).
+    const knapp = page.locator(BANNER).getByRole('button', { name: 'Ladda om' });
     await expect(knapp).toBeVisible();
 
     // Ett riktigt <button>-element som går att fokusera med tangentbord.
@@ -176,7 +189,8 @@ test.describe('AppUpdateBanner', () => {
     // vilket är precis vad "nu kör du den nya koden" ser ut som.
     await Promise.all([page.waitForEvent('load'), page.locator(LADDA_OM).click()]);
 
-    await page.getByRole('heading', { level: 1 }).waitFor();
+    // .first(): se `oppnaAppen()` ovan.
+    await page.getByRole('heading', { level: 1 }).first().waitFor();
     await expect(page.locator(BANNER)).toHaveCount(1);
     await expect(page.locator(LADDA_OM)).toHaveCount(0);
   });
@@ -278,7 +292,9 @@ test.describe('"Inte nu" (TASK-285.1)', () => {
     // kvarliggande `sessionStorage`-avfärdningen INNAN nästa signal hinner
     // komma.
     await page.reload();
-    await page.getByRole('heading', { level: 1 }).waitFor();
+    // .first(): se `oppnaAppen()` ovan (TASK-285.3 lade två h1-rubriker till
+    // på /dev/primitives).
+    await page.getByRole('heading', { level: 1 }).first().waitFor();
     await expect(page.locator(BANNER)).toHaveText('');
 
     // "Nästa NYA version": en förnyad dispatch ska nu visa notisen igen,

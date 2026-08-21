@@ -128,4 +128,20 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     await expect(page.getByRole('progressbar')).toHaveCount(3);
     await checkA11y({ include: ['[aria-labelledby="rubrik-forberedelseskarm"]'] });
   });
+
+  test('AppError — appfel-sidan (TASK-285.3, AC #3): båda formerna, 0 violations', async ({
+    page,
+    checkA11y,
+  }) => {
+    // Två instanser i sektionen — inbäddad (utan role="alert", jämförelseform
+    // mot AppErrorPrototyp) och skarp (default-props, role="alert" behållet,
+    // exakt vad AppErrorBoundary renderar). Samma precedent som MessageBox-
+    // sektionen ovan: /dev/primitives bär redan flera äkta alert-regioner i
+    // normalläget (mätt, tests/webblasarbeteende/app-chunk-laddningsfel.test.ts),
+    // så ännu en är strukturellt oproblematisk för axe.
+    const inbaddad = page.getByTestId('appfel-fallback');
+    await expect(inbaddad.getByRole('heading', { level: 1 })).toHaveText('Appen kunde inte visas');
+    await expect(page.getByTestId('appfel-fallback-skarp').getByRole('alert')).toBeVisible();
+    await checkA11y({ include: ['[aria-labelledby="rubrik-appfel"]'] });
+  });
 });

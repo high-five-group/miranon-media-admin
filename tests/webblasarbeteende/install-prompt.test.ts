@@ -123,7 +123,11 @@ async function satt(
     }
   }, opts);
   await page.goto('/dev/primitives');
-  await page.getByRole('heading', { level: 1 }).waitFor();
+  // .first(): sidans EGEN rubrik är alltid FÖRST i DOM-ordning — sedan
+  // TASK-285.3 bär /dev/primitives ytterligare två h1-rubriker längre ner
+  // (AppError-fallbackens demo-sektion, facit-formen), så ett oscopat
+  // getByRole('heading', { level: 1 }) blir en strict-mode-krock.
+  await page.getByRole('heading', { level: 1 }).first().waitFor();
 }
 
 /**

@@ -67,7 +67,9 @@ test.describe('Skal-kontrakt — scroll-låset får inte riva rännstenen', () =
   }) => {
     await page.setViewportSize({ width: 1440, height: 600 });
 
-    const rubrik = page.getByRole('heading', { level: 1 });
+    // .first(): sidans EGEN rubrik är alltid FÖRST i DOM-ordning — sedan
+    // TASK-285.3 bär /dev/primitives ytterligare två h1-rubriker längre ner.
+    const rubrik = page.getByRole('heading', { level: 1 }).first();
     const fore = await rubrik.boundingBox();
 
     await page.evaluate(REACT_ARIA_LAS);
@@ -92,7 +94,8 @@ test.describe('Skal-kontrakt — scroll-låset får inte riva rännstenen', () =
   test('riktig Select-öppning lämnar rännstenen orörd (miljöberoende skydd)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 600 });
 
-    const rubrik = page.getByRole('heading', { level: 1 });
+    // .first(): se testet ovan.
+    const rubrik = page.getByRole('heading', { level: 1 }).first();
     const fore = await rubrik.boundingBox();
 
     await page

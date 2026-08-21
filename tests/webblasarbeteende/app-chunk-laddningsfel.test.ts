@@ -50,7 +50,11 @@ const PREVENTED_NYCKEL = '__mmSistaPreloadErrorPrevented';
 /** Går till demoytan och väntar tills React bevisligen har mountat. */
 async function oppnaAppen(page: Page) {
   await page.goto('/dev/primitives');
-  await page.getByRole('heading', { level: 1 }).waitFor();
+  // .first(): sidans EGEN rubrik är alltid FÖRST i DOM-ordning — sedan
+  // TASK-285.3 bär /dev/primitives ytterligare två h1-rubriker längre ner
+  // (AppError-fallbackens demo-sektion, facit-formen), så ett oscopat
+  // getByRole('heading', { level: 1 }) blir en strict-mode-krock.
+  await page.getByRole('heading', { level: 1 }).first().waitFor();
 }
 
 /**
@@ -141,10 +145,14 @@ test.describe('Chunk-laddningsfel', () => {
     await oppnaAppen(page);
 
     // Fokus parkeras på ett känt element FÖRE felet inträffar.
-    await page.getByRole('heading', { level: 1 }).evaluate((el: HTMLElement) => {
-      el.setAttribute('tabindex', '-1');
-      el.focus();
-    });
+    // .first(): se `oppnaAppen()` ovan.
+    await page
+      .getByRole('heading', { level: 1 })
+      .first()
+      .evaluate((el: HTMLElement) => {
+        el.setAttribute('tabindex', '-1');
+        el.focus();
+      });
 
     await skjutPreloadError(page);
 
@@ -165,7 +173,10 @@ test.describe('Chunk-laddningsfel', () => {
     await oppnaAppen(page);
     await skjutPreloadError(page);
 
-    const knapp = page.getByRole('button', { name: 'Ladda om' });
+    // Scopad till felbannern: sedan TASK-285.3 bär /dev/primitives
+    // ytterligare "Ladda om"-knappar i AppError-fallbackens demo-sektion
+    // (facit-formen), permanent synliga.
+    const knapp = page.locator(FEL_BANNER).getByRole('button', { name: 'Ladda om' });
     await expect(knapp).toBeVisible();
 
     await knapp.focus();
@@ -205,7 +216,8 @@ test.describe('Chunk-laddningsfel', () => {
 
     // Efter omladdningen är modultillståndet nollställt, så uppmaningen är
     // borta igen — vilket är precis vad "nu kör du den nya koden" ser ut som.
-    await page.getByRole('heading', { level: 1 }).waitFor();
+    // .first(): se `oppnaAppen()` ovan.
+    await page.getByRole('heading', { level: 1 }).first().waitFor();
     await expect(page.locator(FEL_BANNER)).toHaveCount(0);
     await expect(page.locator(FEL_LADDA_OM)).toHaveCount(0);
   });
