@@ -168,6 +168,11 @@ export function mapRegistration(record: { id: string; fields: Record<string, unk
     // har ingen väg som returnerar tom sträng), så `?? null` är null-safety,
     // inte en förväntad väg. Samma skalära formulär-mönster som `eventNamn`.
     eventmatchning: f['Eventmatchning'] ?? null,
+    // Eventlänkens vakt — resolutionens facit-underlag (task-284.3; ADR-122 §
+    // Fynd 1). Anmälans EGNA `Datum`-textkopia (singleLineText) — SAMMA fält
+    // `Eventmatchning`-formeln jämför, aldrig facit-lookupen `Datum (from
+    // Event)` (den hör till det ev. FELAKTIGA länkade eventet).
+    datum: scalarString(f['Datum']),
   };
 }
 

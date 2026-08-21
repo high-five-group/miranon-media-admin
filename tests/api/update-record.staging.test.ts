@@ -19,7 +19,14 @@
 // den delade requireUser-gatewayen (täcker alla Edge Functions).
 
 import { type APIRequestContext, expect, test } from '@playwright/test';
-import { CHECKIN_DELTAGANDE_A_ID, CHECKIN_EVENT_ID, HISTORY_PERSON_ID } from './fixtures';
+import {
+  CHECKIN_DELTAGANDE_A_ID,
+  CHECKIN_EVENT_ID,
+  EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID,
+  EVENTMATCHNING_EVENT_A_EVENTKEY,
+  EVENTMATCHNING_EVENT_A_ID,
+  HISTORY_PERSON_ID,
+} from './fixtures';
 import { type ApiConfig, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/update-record';
@@ -894,6 +901,141 @@ test.describe('update-record — check-in-vertikalen: set-attendance-status (TAS
           fields: { Status: original ?? 'Ej avstämt' },
         },
       });
+    }
+  });
+});
+
+// Eventlänkens vakt — resolutionens operation (TASK-284.3; ADR-122 beslut 7):
+// relink-registration → EXAKT ['Event', 'EventKey'] mot Anmälningar. Deny-
+// ytan är ETT ÄKTA Anmälningar-fält utanför listan ('Status' — en annan
+// operations eget); blandning fälls före Airtable-anropet (samma "starkaste
+// deny-fall"-princip som set-registration-lodging/set-attendance-status
+// ovan). Allow-vägen kopplar OM den PERMANENTA 'ZZ-TASK-284.1 Fixtur Utan
+// event'-fixturen (EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID, task-284.1) till
+// Fixtur A (EVENTMATCHNING_EVENT_A_ID) och läser tillbaka via
+// get-registrations: BÅDA fälten skrivna i SAMMA PATCH bevisas genom att
+// `eventId` blir Fixtur A OCH `eventmatchning` (formelfältet) blir 'OK' i
+// SAMMA polling — ett halvspeglat mellanläge (länken satt men matchningen
+// oförändrad) är alltså INTE ett giltigt slutvärde att stanna på (samma
+// par-polling-princip som update-registration-payment-note ovan).
+// Formelfältet räknas om SYNKRONT vid PATCH — live-bevisat 2026-08-21 INNAN
+// detta test skrevs (fixtures.ts:s docblock för fixturen), så
+// `forvantaLastVarde`s budget är ett nät, inte den förväntade vägen.
+test.describe('update-record — relink-registration (eventlänkens vakt, task-284.3)', () => {
+  /** Läs den relinkade fixturens `eventId` + `eventmatchning` via get-registrations. */
+  async function readEventlank(
+    request: APIRequestContext,
+    baseUrl: string,
+    authHeaders: Record<string, string>,
+  ): Promise<{ eventId: string | null; eventmatchning: string | null }> {
+    const r = await request.get(`${baseUrl}/functions/v1/get-registrations`, {
+      headers: authHeaders,
+    });
+    expect(r.status()).toBe(200);
+    const body = (await r.json()) as {
+      registrations: ({ id: string } & Record<string, unknown>)[];
+    };
+    const rec = body.registrations.find((x) => x.id === EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID);
+    expect(
+      rec,
+      `fixturen ${EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID} hittades inte via get-registrations`,
+    ).toBeTruthy();
+    return {
+      eventId: (rec?.eventId ?? null) as string | null,
+      eventmatchning: (rec?.eventmatchning ?? null) as string | null,
+    };
+  }
+
+  test('deny: okänd operation → 400 (samma allowlist-grind, egen instans)', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${userJwt}` },
+      data: {
+        operationKey: 'relink-registration-typo',
+        recordId: 'recAAAAAAAAAAAAA',
+        fields: {},
+      },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toContain('Unknown operation');
+  });
+
+  test('deny: fält utanför allowlist → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+
+    // Allowlisten är EXAKT ['Event', 'EventKey'] — 'Status' är ett äkta
+    // Anmälningar-fält men hör till en annan operation; blandning fälls
+    // före Airtable-anropet.
+    const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+      headers: { Authorization: `Bearer ${userJwt}` },
+      data: {
+        operationKey: 'relink-registration',
+        recordId: 'recAAAAAAAAAAAAA',
+        fields: { Status: 'Bekräftad (mail skickat)' },
+      },
+    });
+
+    expect(res.status()).toBe(400);
+    const body = (await res.json()) as { error?: string };
+    expect(body.error).toMatch(/not allowed for operation/);
+  });
+
+  test('allow: relink-registration → 200 (Event + EventKey i SAMMA skrivning, restaurerar)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const userJwt = await getValidUserJWT(request, config);
+    const authHeaders = { Authorization: `Bearer ${userJwt}` };
+
+    // Fixturen är PERMANENT 'Utan event' (Event/EventKey osatta) — inget
+    // ursprungsvärde att läsa in, restore-målet är känt i förväg: tomt.
+    try {
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'relink-registration',
+          recordId: EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID,
+          fields: {
+            Event: [EVENTMATCHNING_EVENT_A_ID],
+            EventKey: EVENTMATCHNING_EVENT_A_EVENTKEY,
+          },
+        },
+      });
+      expect(res.status()).toBe(200);
+
+      // BÅDA fälten skrivna i samma PATCH: eventId blir Fixtur A OCH
+      // eventmatchning blir 'OK' (formeln jämför anmälans egna Ort/Datum/
+      // Event(namn) mot Fixtur A:s facit — normaliseringen matchar, samma
+      // tre mätta formateringsklasser som Fixtur OK-anmälan bevisar för
+      // get-registrations.staging.test.ts).
+      await forvantaLastVarde(
+        () => readEventlank(request, config.baseUrl, authHeaders),
+        { eventId: EVENTMATCHNING_EVENT_A_ID, eventmatchning: 'OK' },
+        'eventId + eventmatchning (kopplad)',
+      );
+    } finally {
+      // Restore: Event:[] rensar länken, EventKey:null rensar textfältet
+      // (Airtable-PATCH-semantik, samma rensnings-idiom som log-payment-
+      // reminder ovan) — fixturen lämnas EXAKT 'Utan event' som den
+      // hittades. Körs även om assertionen ovan kastar.
+      await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: authHeaders,
+        data: {
+          operationKey: 'relink-registration',
+          recordId: EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID,
+          fields: { Event: [], EventKey: null },
+        },
+      });
+      await forvantaLastVarde(
+        () => readEventlank(request, config.baseUrl, authHeaders),
+        { eventId: null, eventmatchning: 'Utan event' },
+        'eventId + eventmatchning (återställd)',
+      );
     }
   });
 });

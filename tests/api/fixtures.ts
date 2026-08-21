@@ -209,11 +209,17 @@ export const CHECKIN_DELTAGANDE_A_ID = 'recei18YBOSWZMQqr';
  *   - `ZZ-TASK-284.1 Fixtur Utan event` (EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID)
  *     — ingen Event-länk. Eventmatchning = 'Utan event'.
  *
- * Konsumeras av get-registrations.staging.test.ts (task-284.1-sektionen).
- * STÄDA INTE bort dessa sex poster.
+ * Konsumeras av get-registrations.staging.test.ts (task-284.1-sektionen) OCH
+ * update-record.staging.test.ts (task-284.3: `relink-registration`-operationen
+ * — ETT rundturs-prov gjort live 2026-08-21 INNAN testet skrevs: skriv
+ * Event/EventKey på `EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID` → Eventmatchning
+ * blev 'OK' synkront → Event:[]/EventKey:null återställde raden BYTE-IDENTISK
+ * mot ursprunget, se kortets slutrapport). STÄDA INTE bort dessa sex poster.
  */
 export const EVENTMATCHNING_EVENT_A_ID = 'recLGV8kJJk5iyvkh';
 export const EVENTMATCHNING_EVENT_B_ID = 'recccVmD6oRGlZhc4';
+/** Fixtur A:s egen `EventKey`-formelsträng (live-verifierad, `get_record` 2026-08-21) — task-284.3s `relink-registration`-allow-test skriver den literalt (klienten bär EventKey, EF:en härleder den ALDRIG server-side för denna operation). */
+export const EVENTMATCHNING_EVENT_A_EVENTKEY = 'Event-8755';
 export const EVENTMATCHNING_ANMALAN_OK_ID = 'recsXm9mlq4yhc5LH';
 export const EVENTMATCHNING_ANMALAN_AVVIKER_ID = 'rec1OoJZf5hKzMnpf';
 export const EVENTMATCHNING_ANMALAN_BACKFILL_ID = 'rec6ElPLSO3GGVK8q';

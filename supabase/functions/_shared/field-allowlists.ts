@@ -473,6 +473,26 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Deltaganden',
     allowedFields: ['Anmälan', 'Event', 'Session', 'Status'],
   },
+  // Eventlänkens vakt — resolution (TASK-284.3, ADR-122 beslut 7). Kopplar om
+  // en anmälan vars `Eventmatchning` är 'Avviker' eller 'Utan event' till rätt
+  // event, direkt i appen. EXAKT DE TVÅ fälten skrivs i SAMMA skrivning:
+  // 'Event' (fldi3enUaMdbuGSlm, multipleRecordLinks → Eventplanering) OCH
+  // 'EventKey' (fldPlPLkpqm0X7Xs2, multilineText, "Event-N") — matchningssteget
+  // (A1, TASK-284.2) kör vid varje radskapande och kan annars nollställa en
+  // länk satt på annat håll; att skriva båda gör operationen idempotent
+  // (samma form som create-registration redan använder för samma par).
+  // Klienten bär `EventKey`-STRÄNGEN (get-events levererar `eventKey`, task-18.1)
+  // — update-record är en generisk pass-through-EF utan server-side härledning
+  // (till skillnad från create-registration/create-event), så allowlisten
+  // gatar FÄLTEN, inte källan till värdet. BÅDA fälten LIVE-VERIFIERADE mot
+  // staging-schemat (describe_table tbloOcrppVoyrHbrq, 2026-08-21) och
+  // rundturs-provade (skriv → Eventmatchning blev 'OK' synkront → Event:[]/
+  // EventKey:null återställde exakt ursprungsraden) INNAN posten låstes.
+  // Tabell per NAMN (ADR-050 bas-portabilitet).
+  'relink-registration': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Event', 'EventKey'],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.
