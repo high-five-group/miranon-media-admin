@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-17
+updated: 2026-08-21
 review_by: 2027-02-08
 status: stable
 ---
@@ -1676,10 +1676,99 @@ en app-bred konstant.
 
 ---
 
+## 21. Notistrappan — form per klass i notis- och felmeddelande-familjen
+
+App-bred meddelandeprincip, införd av
+[ADR-121](../decisions/ADR-121-notistrappan-form-per-klass-i-notisfamiljen.md)
+(S109, 2026-08-21). Fram till dess hade denna spec **noll träffar** på banner,
+notis, toast eller `MessageBox` — familjen saknade styrande yta helt, vilket
+research-passet
+([`uppdateringsnotisens-form-och-notisfamiljen-2026-08-20.md`](../research/uppdateringsnotisens-form-och-notisfamiljen-2026-08-20.md))
+dömde som den verkliga luckan, inte antalet ytor.
+
+Trappan är systerstruktur till § 15 Laddtrappan och delar dess logik: **varje
+steg är golvet för sin egen klass, inte ett alternativ till de andra.**
+
+### Indelningen sker på TVÅ axlar — aldrig på var i koden felet uppstod
+
+Appens fem ytor var indelade efter kodhemvist (AppShell, primitiv,
+ErrorBoundary), vilket är en implementationsaxel. Varje undersökt designsystem
+delar i stället på:
+
+1. **Orsakade användaren detta?** (uppgiftsgenererat kontra systemgenererat —
+   Carbons task-generated/system-generated, NN/g:s validation/notification)
+2. **Kräver det handling nu?** (Carbons optional action/required action,
+   NN/g:s passive/action-required)
+
+**Regeln, i en mening:** *förskjut layout när meddelandet redan står i vägen
+för det användaren försökte göra; överlagra när det inte gör det.*
+
+### Notistrappan — åtta klasser
+
+| Klass | Exempel | Form | Förskjuter layout? |
+|---|---|---|---|
+| Systemnivå, ingen handling krävs nu | "en ny version finns" · "du är offline" | Överlagrad passiv notis | **Nej** |
+| Systemnivå, handling krävs för att fortsätta | "en del av sidan kunde inte laddas" | Banner i flödet, **under app-huvudet**, ej stängbar | **Ja, får** |
+| Uppgiftsgenererat fel, knutet till en yta | "Bilagorna kunde inte hämtas" | Inline, intill det som gick fel | Ja |
+| Uppgiftsgenererat fel, knutet till ett fält | valideringsfel i formulär | Fältfel + felsammanfattning överst, fokus dit | Ja |
+| Uppgiftsgenererad bekräftelse | "Anmälan sparad" | Toast, överlagrad, får auto-döljas | **Nej** |
+| Delyta kraschade | `SectionError` | Inline i den yta som kraschade | Ja, lokalt |
+| Hela appen kraschade | `AppError` | Helsida | Ej tillämpligt |
+| Kritiskt, kräver beslut nu | ingen instans idag | Modal | Blockerar |
+
+### Fyra app-breda regler
+
+- **Fel blir ALDRIG toast. Bekräftelser får bli det.** NN/g, verbatim: *"a
+  toast ... while appropriate for passive notifications, **would be a bad way
+  to implement an error message**"*. Källan bär också instansen: en användare
+  väntade fem minuter på innehåll som redan fallerat, eftersom felet tonat bort
+  efter fem sekunder.
+- **En passiv notis får ingen timer** när dess knapp är enda vägen till
+  åtgärden (WCAG 2.2.1 + Carbon, samstämmiga). Den stängs av användaren och
+  återkommer vid nästa **nya** anledning, aldrig periodiskt.
+- **Överlagrade notiser har FAST bredd**, aldrig full bredd. Carbon: *"Toast
+  notifications have a fixed width and should not be expanded to fit the
+  content area."*
+- **Live-regionen är alltid monterad, bara innehållet växlar** — för
+  `role="status"`. MDN: *"Start with an empty live region, then – in a separate
+  step – change the content inside the region."* `role="alert"` har motsatt
+  egenskap och monteras villkorat; en tom alert-region som ligger kvar är en
+  andra alert-region i varje vy (mätt: tre orelaterade tester föll på
+  `strict mode violation: getByRole('alert') resolved to 2 elements`).
+
+### Copy-golvet — problem, orsak, lösning
+
+Måttstocken är Microsofts checklista (*"good error messages have: A problem.
+... A cause. ... A solution."*) plus GOV.UK:s mönster *"There is a problem with
+the service"*, som kräver besked om **vad som hänt med det användaren skrev**,
+samt kontaktväg eller alternativ väg när sådan finns.
+
+- **Generiska fel är förbjudna.** GOV.UK, verbatim: *"**Be specific.** ...
+  Avoid messages like: **'An error occurred'**"* och *"Do not use ...
+  **'unspecified error'**"*. `"Något gick fel. Försök igen."` och
+  `"Okänt fel. Försök igen."` är de svenska motsvarigheterna och faller båda.
+- **Bevarandet av inmatning ligger på systemet, inte på användaren** (NN/g
+  *"Preserve the user's input"*, GOV.UK *"Do not clear any form fields"*).
+- **"Ladda om", inte "Uppdatera"** — Försäkringskassans och Arbetsförmedlingens
+  designsystem skriver "ladda om sidan", WordPress svenska i 17 av 17 strängar.
+  "Uppdatera" kolliderar mätt med domänspråket ("uppdatera en anmälan").
+- **Klassen avgör, inte ordet.** GOV.UK förbjuder "sorry" i fältvalidering men
+  **föreskriver** det i H1 på sin systemfels-sida.
+
+### Öppna poster (ADR-121 § Öppet)
+
+- Var databesked-varningen tar vägen är **inte** beslutat — dialog-formen
+  kräver osparad-detektion, samma mekanik som vägde mot ett förkastat
+  alternativ.
+- `SectionError`:s *"Försök igen"* är **mätt trasigt** vid chunk-fel (kör om
+  samma import mot samma saknade fil) och är inte åtgärdat av trappan.
+- `AppError` är medvetet ostylad för att överleva ett dött stylesheet.
+
 ## Ändringslogg
 
 | Datum | Förändring |
 |-------|-----------|
+| 2026-08-21 | §21 Notistrappan — familjens FÖRSTA styrande yta ([ADR-121](../decisions/ADR-121-notistrappan-form-per-klass-i-notisfamiljen.md), S109). Fram till nu hade specen noll träffar på banner/notis/toast/`MessageBox`; fem ytor bar fyra separata designspråk utan att någon regel band dem. Trappan delar på TVÅ axlar (orsakade användaren detta? kräver det handling nu?) i stället för på kodhemvist, med åtta klasser och kolumnen "förskjuter layout". Fyra app-breda regler: fel blir aldrig toast · ingen timer när knappen är enda vägen till åtgärden (WCAG 2.2.1) · överlagrade notiser har fast bredd · `role="status"` alltid monterad medan `role="alert"` monteras villkorat. Copy-golvet problem/orsak/lösning mot GOV.UK + NN/g + Microsoft; "Ladda om" låst framför "Uppdatera" (mätt domänkollision). Systerstruktur till §15 Laddtrappan, samma form som `ADR-113` etablerade. |
 | 2026-04-05 | Initialt dokument. Token-arkitektur, typografiskala, spacing-system, lint-config, design-audit skill-spec, Playwright-config, Tailwind-mappning. |
 | 2026-04-07 | [GA] Integrerat gap-analys: View Transitions (§9), stale-data-indikatorer (§10), error boundary-meddelanden (§11), systemhälso-indikator (§12), fem kvaliteter (§13). Audit-prompt uppdaterad med performance/säkerhet/ARIA/EAA-kontroller. |
 | 2026-07-12 | §14 NavCard — navigationsrads-primitiven (M6-facitet, S64 Del 3): API, anatomi, form, komponent-tokens + app-breda regeln "navigationsrader bär inte chevron" (task-9.1). |
