@@ -111,7 +111,7 @@ export function MessageBox<I extends MessageBoxIntent = 'info'>({
   if (import.meta.env.DEV && !kanAvvisas && onDismiss) {
     throw new Error(
       `MessageBox: onDismiss är inte tillåtet för intent="${intent}". Fel och varningar kan ` +
-        'inte stängas manuellt — de försvinner när orsaken är borta (S109-facit, ' +
+        'inte stängas manuellt. De försvinner när orsaken är borta (S109-facit, ' +
         'familjeregeln). Ta bort onDismiss eller byt intent.',
     );
   }
