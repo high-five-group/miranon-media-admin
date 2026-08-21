@@ -40,7 +40,18 @@ kalenderwidgeten (research-pass: endpointens villkor) · app-yta · därefter
 kort 284 · L512 + 58 fragment · **T159** · f52 · session 111. Full
 narrativ: sessionsdok S110 Del 1–2 + PAUSLÄGE.
 
-**Session 109 ⏸️ PAUSAD (första gången, 2026-08-21, `lifecycle: paused`) —
+**Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång
+2026-08-21) — NOTIS-FAMILJEN: BYGGET AV `TASK-283` OCH NOTIS-PROTOTYPEN STARTAR.**
+Resume 1: handoffen prövad mot disk — `#1674` landad (`2eb9f53f`), `#1676`
+(paus-handoffens rättelse, okänd för handoffen) landade `381691f2` under
+LÄS-fasen, S110 pausade samtidigt (`#1678`). Ingen ägarlapp → huvudkatalogen tas
+av S109; S108 aktiv i egen worktree, S107 + S110 pausade. Numreringen håller:
+ADR 122 · kort 284 · L512 + 55 fragment · T158 · f52 · session 111.
+Heartbeat-monitorn FORTSATT ej startad (order 2026-08-19). **NU:** `283.1` →
+bygg-agent · notis-prototypen EN variant per `ADR-121` beslut 6, prototyp FÖRE
+spec. Full narrativ: sessionsdok S109 Del 5.
+
+**Session 109 ⏸️ PAUSAD (första gången, 2026-08-21, `lifecycle: paused`, historik) —
 NOTIS- OCH FELMEDDELANDE-FAMILJEN ÖVERTAGEN FRÅN S107; FORMVALET LÅST I
 `ADR-121`, BOKSTAVSINDEXET SPECCAT.** Äger huvudkatalogen (lappen släppt vid
 paus). Parallell med S108 och S110, båda i egna worktrees; S107 pausad.
