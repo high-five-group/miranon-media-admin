@@ -15,6 +15,31 @@
 
 ## Aktuellt fokus
 
+**Session 110 ⏸️ PAUSAD (första gången, 2026-08-21, `lifecycle: paused`) —
+KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
+VAKTEN KVAR ATT GRILLA.** Egen worktree `s110-kalenderlank-driften` (S109
+äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
+Elfsight-kalenderwidgetens **handskrivna** anmälningslänkar på miranon.se —
+Roger duplicerar poster utan att redigera URL-parametrarna; `"10"` →
+orphan, `Event-10` → A1 matchar TYST fel event. **Mätt över hela basen**
+(304 Huvudformulär-anmälningar): 1 orphan + 64 felmatchade, 52 av dem
+obekräftade sedan maj under ett genomfört mars-event; April-saneringens
+Event-11-länkning var själv fel (→ Event-60). **Städat (Marcus GO per
+steg):** Event-62/63/64 skapade · 61 anmälningar omlänkade · ~124
+Deltaganden flyttade/skapade · A7-restlistor · kontrollsvep MISMATCH 65 → 4
+(3 väntar Lotta + 1 harmlös), ORPHAN 0, Deltaganden-konsistens 1 777/1 777.
+Landat: `#1673` `fd349ac4` · `#1677` `7df69087`. `T158` (omnumrerad efter
+kollision med S109:s T157) · `task-232` AC 1–3 · F.2/Lucka 10 omskrivna ·
+tre lesson-fragment. Lotta-underlag + text levererade till Marcus.
+
+**NÄSTA (resume av 110): GRILLNING av vakten (Marcus `/grill-me`) — A1
+normalisering + korsfältsvalidering + Error-log · driftdetektor mot
+kalenderwidgeten (research-pass: endpointens villkor) · app-yta · därefter
+2g (ID 21/22/23) + de 11 tvetydiga på Event-55 efter Lottas svar ·
+`task-232` → Done i stängningscommit.** Numrering efter S110: ADR 122 ·
+kort 284 · L512 + 58 fragment · **T159** · f52 · session 111. Full
+narrativ: sessionsdok S110 Del 1–2 + PAUSLÄGE.
+
 **Session 109 ⏸️ PAUSAD (första gången, 2026-08-21, `lifecycle: paused`) —
 NOTIS- OCH FELMEDDELANDE-FAMILJEN ÖVERTAGEN FRÅN S107; FORMVALET LÅST I
 `ADR-121`, BOKSTAVSINDEXET SPECCAT.** Äger huvudkatalogen (lappen släppt vid
