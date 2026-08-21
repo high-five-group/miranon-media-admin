@@ -4,8 +4,9 @@ title: 'Skiva: Vakten i matchningssteget — vägrar länka vid avvikelse'
 status: To Do
 assignee: []
 created_date: '2026-08-21 10:59'
+updated_date: '2026-08-21 11:35'
 labels:
-  - ready-for-human
+  - ready-for-agent
 dependencies:
   - TASK-284.1
 parent_task_id: TASK-284
@@ -45,3 +46,15 @@ Täcker användarberättelser: 1, 11, 12, 13, 14, 15.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+OMKLASSAD 2026-08-21 (Marcus GO): skivan byggs och verifieras mot STAGING-basen apphjj8Q7lkXCMsL4 — inte prod. Prod-utrullningen är utbruten till TASK-284.6.
+
+A1 har SAMMA automation-ID i staging som i prod (wflDCKPAv2P6Yu9U6), men står deploymentStatus: undeployed där. Marcus GO finns för att deploya den i staging så att kedjan kan provas ände-till-ände. Kom ihåg att det ändrar en DELAD testmiljö — andra sessioners tester läser samma bas.
+
+AC 1 ÄR DEN BÄRANDE OCH FÅR INTE MJUKAS UPP. Det befintliga kopplingssteget (wacXLk4YN5AzohqCn, updateRecord) körs OVILLKORLIGT — vid noll träffar skriver det en tom lista. Läggs valideringen FÖRE det steget körs kopplingen ändå när valideringen fallerar, och vakten blir fail-OPEN: exakt motsatsen till ADR-122:s bärande egenskap. Skriptsteget måste ERSÄTTA både findRecords (wacDkQMtkfCRwDYxK) och updateRecord (wacXLk4YN5AzohqCn).
+
+Expressgrenens villkor (mätt live, falsifierar schema_reference som säger 'noll träffar'): EventKey isEmpty AND 'Datum och ort' isNotEmpty. Rör den inte.
+<!-- SECTION:NOTES:END -->
