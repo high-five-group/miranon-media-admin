@@ -98,29 +98,31 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ▶️ ÅTERUPPTAGEN (resume 2, 2026-08-21, `lifecycle: active`) —
-PROTOTYPEN "GENERERINGSVYN" BYGGD I SEX KONVERGENSVARV, DIALOG-ÖVERSYNEN
-PÅGÅR.** Parallell session bredvid aktiva S109 (huvudkatalogen) och S110 — S108
-i egen låst worktree `s108-bilagesparet`, gren `docs/s108-resume` med **sex commits
-OPUSHADE MED AVSIKT** (arbetsform `iteration`, ADR-097: `da957f75`…`820c398d`).
-Frågan *"Vad ser Lotta när hon genererar bekräftelsebilagan för Arboga?"*
-besvaras nu i bild: varningsruta ("Plats och sista betalningsdag saknas …"),
-tre sektioner i husets DetaljGrupp-kort med ett NYTT radmönster (tvårads-rad
-etikett/värde, chevron, 72 px-låst, "Fyll i plats" i värdeplatsen) och
-**"Skapa" öppnar Rogers riktiga mall ifylld med utelämnade block borttagna**.
-Formen vilar på husets inventering (S73:s DetaljGrupp, inte fil-listan) +
-branschresearch (`docs/research/mall-ifyllnadsvyer-branschmonster-2026-08-21.md`:
-GOV.UK summary list, M3, HIG, Polaris, Atlassian). Marcus efter varv 5:
-*"SJUKT mycket bättre!"*. **Kvar (nästa arbetsenhet):** dialogerna laggar,
-är olika stora (ska vara som Hem-svepets overlay) och agenda-dialogen är
-underkänd — alla dialoger ses över en efter en. Modellfynd: sista
-betalningsdag saknar källa; ADR-numret blir **122** (S109 tog 121).
-Verktygsfynd: HMR dött i worktreen → lokal polling-config (Del 3 § E).
-Numrering **re-verifierad vid resume 2** mot `origin/main` `a62834b3`
-(paus-PR `#1681` MERGED): ADR 122 · task-284 · L512 · 58 fragment (nästa 59) ·
-T159 · f51 — **noll drift sedan pausen**; re-derivera ändå ALLTID, S109 och
-S110 är aktiva parallellt. Full handoff: sessionsdok S108 § Paushistorik 2 +
-Del 3.
+**Session 108 ⏸️ PAUSAD (tredje gången, 2026-08-21, `lifecycle: paused`) —
+BEKRÄFTELSEBILAGANS GENERERINGSVY GODKÄND EFTER TOLV KONVERGENSVARV.**
+Parallell session bredvid aktiva S109 (huvudkatalogen) och S110 — S108 i egen
+låst worktree `s108-bilagesparet`, gren `docs/s108-resume` med **tolv commits
+OPUSHADE MED AVSIKT** (arbetsform `iteration`, ADR-097: `da957f75`…`1d3e7282`).
+Marcus dom: *"Nu är jag helt nöjd med hur detta ser ut för
+bekräftelsebilagan."* Varv 7–12 drevs av MÄTNING, inte tyckande — och
+mätningen **falsifierade handoffens egen hypotes**: Hem-svepets overlay, som
+pekats ut som förebild, är med 406 ms nästan dubbelt så långsam som den
+"laggiga" blockdialogens 208 ms. Ankringen var axeln, inte hastigheten.
+**Formen som sitter:** dialog med låst övre kant + tre zoner (positionsspann
+149→0 px) · Inforutan som SEKTIONSMORF utan dialoger, Δ=0 mellan läs- och
+ändraläge (602→602 px) · agendan som läslista, 48 px per rad, meditation som
+punkttyp i stället för kryssruta (montering 170→58 ms, fält vid öppning 42→0)
+· saknat värde markerat med KONTUR i varningsrutans färg · beskrivningen visar
+Rogers verbatim text med styckena bevarade och rullisten i rutan.
+**FACIT LÅSES INTE ÄN** — Marcus beslut vid pausen: *"Vi låser facit när alla
+sidor/ytor sitter."* Bekräftelsebilagans form är därmed oskyddad; behandla den
+som frusen tills manifestet skrivs. **Fynd om SKARP kod, ej åtgärdade:**
+`RedigeringsRad`s "ändrar från" trunkeras till "Ut…"/"ZZ…" på 390 px ·
+"Datum och tid" är fritextfält fast värdet härleds. **NÄSTA (resume av 108):
+förhandsgranskning · deltagarinformation · kvitto · skapandet av bilagorna.**
+Numrering vid paus: ADR **124** · task-286 · L512 · 60 fragment · T160 · f51 —
+serierna rörde sig UNDER passet (S110 tog ADR 122+123, kort 284+285), så
+re-derivera ALLTID. Full handoff: sessionsdok S108 § PAUSLÄGE + Del 4.
 
 **Session 107 ⏸️ PAUSAD (sjunde gången, 2026-08-20, `lifecycle: paused`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
