@@ -1,0 +1,33 @@
+{
+  "prototyp": "s109-meddelandefamiljen-konvergens",
+  "last": "2026-08-21",
+  "lasning": "Det blir jättebra. Kör vi samma sak för uppdaterings-notisen då? Nu tycker jag det är klart för att gå vidare.",
+  "godkand": null,
+  "ytor": [
+    {
+      "yta": "meddelanderutan",
+      "bilder": ["facit-meddelandefamiljen.png"],
+      "kallor": [
+        "src/components/primitives/MessageBox.tsx",
+        "src/components/ErrorBoundary/SectionError.tsx",
+        "src/components/dev/notis-prototyp/MessageBoxPrototyp.tsx"
+      ],
+      "not": "Facit är FORMEN i MessageBoxPrototyp.tsx vid varv 4 (fyra varv, tre Marcus-beslut): (1) INGEN kontur — vänsterkant 4 px i intent-färg + tonad bakgrund (--mm-messagebox-<intent>-bg) bär formen; prefers-contrast: more tänder kontur i full intent-färg (11-golvet, ej förhandlingsbart). (2) Rubrik font-semibold i intent-färg, brödtext neutral text-body (oförändrat mot skarpa). (3) NY actions-slot: knappraden högerställd under texten (mt-3 flex justify-end gap-2) — samma rad som notisen; konsumenter placerar aldrig knappen själva. (4) Kryss-regeln: fel och varningar bär ALDRIG kryss (försvinner när orsaken är borta), kvitto och info får stängas; krysset dras in (-mt-1.5 -mr-2) så ikonen linjerar med rubrikens linje och rutans högerkant. Varv 3 (tonal kontur 20 %) provades och FÖRKASTADES av Marcus till förmån för ingen kontur — bilden k03 är iterationsresa, inte facit. Copyn i exemplen är FÖRSLAG enligt copy-domarna (research-passet § 7.3), ej låst med formen; SectionError vid chunk-fel ska visa 'Ladda om', inte 'Försök igen' (beslut i PRD:n). Promovering (ADR-103): formen flyttas in i primitiven MessageBox (variants + actions-prop + kryss-regeln), SectionError konsumerar actions-slotten; prototyp-routen /dev/notis-prototyp och MessageBoxPrototyp rivs FÖRST efter godkand."
+    },
+    {
+      "yta": "appfel-sidan",
+      "bilder": ["facit-meddelandefamiljen.png"],
+      "kallor": [
+        "src/components/ErrorBoundary/AppError.tsx",
+        "src/components/dev/notis-prototyp/AppErrorPrototyp.tsx"
+      ],
+      "not": "Facit är FORMEN i AppErrorPrototyp.tsx vid varv 4: samma kortform som notisen, uttryckt i INLINE-stilar med primitivernas faktiska värden (#242424, #a90000, #ffffff) eftersom ytan per design ska rendera utan stylesheet — hårdkodningen är designvillkoret, inte ett undantag. Ingen kontur (skuggan bär kanten), vänsterkant 4 px röd, rubrik 1.25rem semibold röd, brödtext neutral, knapp som primärknappen (mörk, 44 px, radius 4 px) högerställd. Copy per GOV.UK:s systemfels-mönster: 'Appen kunde inte visas' / 'Något gick sönder så att sidan inte kan ritas upp. Det du redan har sparat finns kvar. Ladda om för att fortsätta.' — bilden visar kortet INBÄDDAT i prototyp-sidan; skarpt centreras det på vit sida (margin 12vh auto)."
+    },
+    {
+      "yta": "uppdateringsnotis",
+      "bilder": [],
+      "kallor": ["tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json"],
+      "not": "Ingen egen bild här — notisens facit bor i sitt eget manifest och AMENDERADES i samma landning (konturen riven per familjeregeln, bilderna omtagna). Raden finns för att deklarera att passet rörde ytan."
+    }
+  ]
+}
