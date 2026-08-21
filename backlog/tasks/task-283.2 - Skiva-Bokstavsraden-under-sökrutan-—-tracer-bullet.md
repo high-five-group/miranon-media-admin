@@ -4,11 +4,11 @@ title: 'Skiva: Bokstavsraden under sökrutan — tracer bullet'
 status: To Do
 assignee: []
 created_date: '2026-08-21 08:52'
-updated_date: '2026-08-21 11:34'
+updated_date: '2026-08-21 11:55'
 labels:
   - ready-for-agent
 dependencies:
-  - TASK-283.1
+  - TASK-286.3
 parent_task_id: TASK-283
 ordinal: 511000
 ---
