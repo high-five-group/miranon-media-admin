@@ -46,10 +46,13 @@ export function Uppdateringsnotis({ synlig, onLaddaOm, onInteNu }: Uppdateringsn
       {synlig && (
         <div
           data-testid="app-update-notis"
+          // Ingen kontur (Marcus, konvergens 2026-08-21: "Helst vill jag inte ha
+          // någon kontur alls" — familjeregel): vänsterkant + skugga bär formen;
+          // prefers-contrast: more tänder kontur i full info-färg.
           // bottom-24: ovanför TabBar-pillen (bottom-4 + ~52 px), som äger
           // botten-bandet på ALLA bredder (max-w-568 centrerad). z-40: över
           // innehållet, under Modal (z-50).
-          className="fixed right-4 bottom-24 z-40 w-[calc(100%-2rem)] max-w-[22rem] rounded border border-border border-l-4 border-l-info bg-surface-overlay p-4 shadow-xl contrast-more:border-2 contrast-more:border-border-strong contrast-more:border-l-4 contrast-more:border-l-info sm:right-6"
+          className="fixed right-4 bottom-24 z-40 w-[calc(100%-2rem)] max-w-[22rem] rounded border-info border-l-4 bg-surface-overlay p-4 shadow-xl contrast-more:border sm:right-6"
         >
           <p className="font-semibold text-text">Ny version av appen</p>
           <p className="mt-1 text-small text-text-secondary">

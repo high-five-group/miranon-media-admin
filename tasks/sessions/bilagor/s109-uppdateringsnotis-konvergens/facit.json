@@ -1,7 +1,7 @@
 {
   "prototyp": "s109-uppdateringsnotis-konvergens",
   "last": "2026-08-21",
-  "lasning": "Ja notisen är sjukt mycket bättre än det vi har idag. Vi kör på det. Bygg skarpt.",
+  "lasning": "Ja notisen är sjukt mycket bättre än det vi har idag. Vi kör på det. Bygg skarpt. — AMENDERAT samma dag, efter meddelandefamiljens konvergens: \"Helst vill jag inte ha någon kontur alls tror jag. Visuellt blir det renast/snyggast.\" · \"Det blir jättebra. Kör vi samma sak för uppdaterings-notisen då? Nu tycker jag det är klart för att gå vidare.\"",
   "godkand": null,
   "ytor": [
     {
@@ -11,7 +11,7 @@
         "src/components/AppShell/Uppdateringsnotis.tsx",
         "src/components/AppShell/AppUpdateBanner.tsx"
       ],
-      "not": "Låst efter konvergensvarv 1 utan ändringar (k01-1280.png och k01-390.png är samma bilder som facit). Facit är FORMEN i Uppdateringsnotis.tsx vid commit 1e5c9e35: fast bredd max 22 rem, fixed right-4/sm:right-6 bottom-24 (ovanför TabBar-pillen), bg-surface-overlay + shadow-xl, border-l-4 border-l-info, titel 'Ny version av appen', body 'Ladda om när du är klar med det du gör.', knappar 'Inte nu' (ghost sm) + 'Ladda om' (primary sm), role=status aria-live=polite alltid monterad, ingen timer, ingen ikon, ingen animation. Promovering (ADR-103): villkoret i AppUpdateBanner flippas så notisen blir den ovillkorliga formen för info-läget; växlaren (NotisPrototypVaxlare + __root-monteringen) och ?variant-grenen rivs FÖRST efter att godkand satts. Två öppna kanter Marcus inte uttalat sig om, tas i skivningen: (1) vid ≥1280 px ligger notisen delvis över innehållskolumnens högerkant (dockning mot kolumn är alternativet); (2) på mobil är fast bredd = full bredd minus 2 rem. 'Inte nu' är i prototypen in-memory; skarpt ska den hålla för sessionen och återkomma vid nästa NYA version (§ 21)."
+      "not": "Låst efter konvergensvarv 1 utan ändringar (k01-1280.png och k01-390.png är samma bilder som facit). Facit är FORMEN i Uppdateringsnotis.tsx vid commit 1e5c9e35, amenderad i meddelandefamiljens landning (facit-bilderna omtagna = k02-1280/k02-390): fast bredd max 22 rem, fixed right-4/sm:right-6 bottom-24 (ovanför TabBar-pillen), bg-surface-overlay + shadow-xl, INGEN kontur (border-border riven vid amenderingen 2026-08-21 — familjeregeln ur meddelandefamiljens konvergens; contrast-more tänder kontur i full info-färg), border-l-4 border-info, titel 'Ny version av appen', body 'Ladda om när du är klar med det du gör.', knappar 'Inte nu' (ghost sm) + 'Ladda om' (primary sm), role=status aria-live=polite alltid monterad, ingen timer, ingen ikon, ingen animation. Promovering (ADR-103): villkoret i AppUpdateBanner flippas så notisen blir den ovillkorliga formen för info-läget; växlaren (NotisPrototypVaxlare + __root-monteringen) och ?variant-grenen rivs FÖRST efter att godkand satts. Två öppna kanter Marcus inte uttalat sig om, tas i skivningen: (1) vid ≥1280 px ligger notisen delvis över innehållskolumnens högerkant (dockning mot kolumn är alternativet); (2) på mobil är fast bredd = full bredd minus 2 rem. 'Inte nu' är i prototypen in-memory; skarpt ska den hålla för sessionen och återkomma vid nästa NYA version (§ 21)."
     },
     {
       "yta": "chunk-banner",
