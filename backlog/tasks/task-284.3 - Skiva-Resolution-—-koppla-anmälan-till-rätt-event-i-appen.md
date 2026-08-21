@@ -1,10 +1,10 @@
 ---
 id: TASK-284.3
 title: 'Skiva: Resolution — koppla anmälan till rätt event i appen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:11'
-updated_date: '2026-08-21 13:53'
+updated_date: '2026-08-21 14:20'
 labels:
   - ready-for-agent
 dependencies:
@@ -37,6 +37,28 @@ Täcker användarberättelser: 6, 7, 8, 9, 17.
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad i #1712, merge-commit 2e7f712a (MERGED 2026-08-21 14:09:51Z).
+
+RESOLUTIONEN: ny skrivoperation relink-registration i supabase/functions/_shared/field-allowlists.ts, KopplaTillEventDialog som återanvänder EventValjare (S83-biblioteket), och useRelinkRegistration (icke-optimistisk, AC 6).
+
+AC 2 ÄR DEN SUBTILA OCH DEN ÄR BEVISAD LIVE: operationen sätter BÅDE Event och EventKey i SAMMA skrivning. Utan det kan matchningssteget nollställa en länk satt på annat håll vid nästa radskapande. Prövad utanför testramverket: PATCH med båda fälten gav Eventmatchning = OK SYNKRONT i samma request-cykel, och återställningen gav en byte-identisk rad.
+
+AC 3 i behörighetslistans TRE lägen, 26/26 gröna i update-record.staging.test.ts — okänd operation nekas, fält utanför listan nekas, tillåten operation muterar och restaurerar.
+
+AC 4/5 bevisade i en verklig browser-runda mot staging: dialogen visar anmälans EGNA Kurs/Ort/Datum, och efter koppling bytte raden UTAN omladdning från "Utan event" + knapp till en vanlig länk utan markör.
+
+MERGE-KONFLIKT MOT 284.4, LÖST UTAN ATT NÅGON FUNKTION OFFRADES. Orkestrerarens schemaläggning körde 284.3 och 284.4 parallellt utan filöverlapps-analys; båda ändrade AnmalningarList.tsx och 284.4 landade först. Vid upplösningen bytte agenten sin lokala behoverKoppling-logik mot exakt behoverAtgard från den delade hemvisten registration-display.ts. Följden är starkare än AC 3 krävde: kön, räknaren, markören OCH kopplingsknappen läser nu samma predikat.
+
+DoD #3 VERIFIERAD MOT POST-MERGE-KÖRNING 32490653728 — grön på ALLA jobb, inklusive Staging (API + E2E), A11y (axe-runner) och båda acceptance-jobben. Den körningen stängde också T166:s täckningsfönster för 284.4, vars kod ingår i det mergade trädet.
+
+TVÅ POSTER SOM AGENTEN BOKFÖRDE ÄRLIGT: (1) uppdragets sökväg till field-allowlists.ts var FEL (src/data/ mot verkliga supabase/functions/_shared/) — orkestrerarens obelagda premiss, fångad av premiss-passet per ADR-086; (2) npm run test:api (933/933) kördes mot första rebasen, inte om efter den andra — noll filöverlapp, men deklarerat som omätt kombination i stället för att låta talet stå som om det gällde slutgiltig HEAD.
+
+EN RESEARCH-FORK ÖVERSKRED SIN INSTRUKTION under bygget och deployade en EF skarpt till staging. Registrerat som T164.
+<!-- SECTION:FINAL_SUMMARY:END -->
