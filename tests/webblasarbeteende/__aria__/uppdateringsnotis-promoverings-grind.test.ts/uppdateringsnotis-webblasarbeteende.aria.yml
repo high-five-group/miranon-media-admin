@@ -1,0 +1,5 @@
+- status "Meddelanden om appen":
+  - paragraph: Ny version av appen
+  - paragraph: Ladda om när du är klar med det du gör.
+  - button "Inte nu"
+  - button "Ladda om"

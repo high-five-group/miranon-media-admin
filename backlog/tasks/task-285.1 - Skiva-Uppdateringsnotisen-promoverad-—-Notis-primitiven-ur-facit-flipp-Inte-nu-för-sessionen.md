@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 10:54'
+updated_date: '2026-08-21 12:47'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,23 +28,23 @@ Täcker användarberättelser: 1, 2, 3, 4, 13, 16, 18
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Den överlagrade notisen är identisk med facit tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json ytan uppdateringsnotis i läget ny version finns, vid 390 px och 1280 px (ingen kontur, vänsterkant i info-färg, fast bredd max 22 rem, ovanför TabBar-pillen)
-- [ ] #2 Ett anrop utan ?variant visar den överlagrade notisen — info-lägets banner-form finns inte längre i skarp kod
-- [ ] #3 Layoutförskjutningen vid visning är 0 mätt med PerformanceObserver layout-shift i testmiljön, vid 390 och 1280 px
-- [ ] #4 Inte nu döljer notisen för sessionen (överlever navigering, inte ny flik), och en ny version visar den igen; ingen timer döljer den någonsin
-- [ ] #5 role=status-regionen är alltid monterad med aria-live=polite och ett tillgängligt namn; fokus flyttas aldrig; verifierat i webbläsarbeteende-sviten
-- [ ] #6 ariaSnapshot-paret variant före == promoverad efter är grönt
-- [ ] #7 Inga animationer eller transitions på notisen; print döljer den
+- [x] #1 Den överlagrade notisen är identisk med facit tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json ytan uppdateringsnotis i läget ny version finns, vid 390 px och 1280 px (ingen kontur, vänsterkant i info-färg, fast bredd max 22 rem, ovanför TabBar-pillen)
+- [x] #2 Ett anrop utan ?variant visar den överlagrade notisen — info-lägets banner-form finns inte längre i skarp kod
+- [x] #3 Layoutförskjutningen vid visning är 0 mätt med PerformanceObserver layout-shift i testmiljön, vid 390 och 1280 px
+- [x] #4 Inte nu döljer notisen för sessionen (överlever navigering, inte ny flik), och en ny version visar den igen; ingen timer döljer den någonsin
+- [x] #5 role=status-regionen är alltid monterad med aria-live=polite och ett tillgängligt namn; fokus flyttas aldrig; verifierat i webbläsarbeteende-sviten
+- [x] #6 ariaSnapshot-paret variant före == promoverad efter är grönt
+- [x] #7 Inga animationer eller transitions på notisen; print döljer den
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
-- [ ] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
-- [ ] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
-- [ ] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
+- [x] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
+- [x] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
 <!-- DOD:END -->

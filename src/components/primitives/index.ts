@@ -11,6 +11,7 @@ export { InstallPrompt, type InstallPromptProps } from './InstallPrompt';
 export { MessageBox, type MessageBoxProps } from './MessageBox';
 export { Modal, type ModalProps } from './Modal';
 export { NavCard, type NavCardIcon } from './NavCard';
+export { Notis, type NotisProps } from './Notis';
 export { Radio, RadioGroup, type RadioGroupProps } from './RadioGroup';
 export { Select, SelectItem, type SelectProps } from './Select';
 export { Skeleton, type SkeletonProps } from './Skeleton';
