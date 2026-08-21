@@ -25,8 +25,7 @@ export function AppErrorPrototyp({ inbaddad = false }: { inbaddad?: boolean }) {
         margin: inbaddad ? 0 : '12vh auto 0',
         maxWidth: '28rem',
         padding: '1.25rem 1.5rem',
-        border:
-          '1px solid #f2dcdc' /* varv 3: ton av kortets familj (röd 20 % mot vitt), inte grå */,
+        /* varv 4: ingen kontur — skuggan bär kanten */
         borderLeft: '4px solid #a90000',
         borderRadius: '4px',
         boxShadow: '0 8px 24px rgba(36, 36, 36, 0.08)',

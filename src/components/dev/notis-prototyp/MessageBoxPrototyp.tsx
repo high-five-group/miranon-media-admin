@@ -20,22 +20,19 @@ import { cn } from '@/lib/cn';
  * - NY `actions`-slot: knappraden högerställd under texten, samma rad-form som
  *   notisen — i dag placerar varje konsument sin knapp själv.
  */
-// Varv 3 (Marcus): konturen är en TON av kortets egen bakgrund, inte grå —
-// intent-färgen blandad till ~20 % (Tailwind v4 opacitets-modifier ⇒ color-mix).
-// Vänsterkanten bär full intent-färg. I prefers-contrast: more blir hela
-// konturen full intent-färg, så kanten aldrig försvinner för den som behöver den.
+// Varv 4 (Marcus: "Helst vill jag inte ha någon kontur alls"): ingen kontur.
+// Vänsterkanten (4 px intent) + den tonade bakgrunden bär formen. I
+// prefers-contrast: more tänds en kontur i full intent-färg — kanten får
+// aldrig försvinna för den som behöver den (11-golvet, inte en smaksak).
 const variants = cva(
-  'rounded border border-l-4 px-4 py-3 text-(color:--mm-messagebox-body-text) text-body',
+  'rounded border-l-4 px-4 py-3 text-(color:--mm-messagebox-body-text) text-body contrast-more:border',
   {
     variants: {
       intent: {
-        info: 'border-(--mm-messagebox-info-border)/20 border-l-(--mm-messagebox-info-border) bg-(--mm-messagebox-info-bg) contrast-more:border-(--mm-messagebox-info-border)',
-        success:
-          'border-(--mm-messagebox-success-border)/20 border-l-(--mm-messagebox-success-border) bg-(--mm-messagebox-success-bg) contrast-more:border-(--mm-messagebox-success-border)',
-        warning:
-          'border-(--mm-messagebox-warning-border)/20 border-l-(--mm-messagebox-warning-border) bg-(--mm-messagebox-warning-bg) contrast-more:border-(--mm-messagebox-warning-border)',
-        error:
-          'border-(--mm-messagebox-error-border)/20 border-l-(--mm-messagebox-error-border) bg-(--mm-messagebox-error-bg) contrast-more:border-(--mm-messagebox-error-border)',
+        info: 'border-(--mm-messagebox-info-border) bg-(--mm-messagebox-info-bg)',
+        success: 'border-(--mm-messagebox-success-border) bg-(--mm-messagebox-success-bg)',
+        warning: 'border-(--mm-messagebox-warning-border) bg-(--mm-messagebox-warning-bg)',
+        error: 'border-(--mm-messagebox-error-border) bg-(--mm-messagebox-error-bg)',
       },
     },
     defaultVariants: { intent: 'info' },
