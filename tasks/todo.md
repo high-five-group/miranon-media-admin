@@ -74,7 +74,28 @@ vid stängning. Numrering efter S110 Del 4: ADR **123** (S109 mintade i
 `#1689` — läs disk) · kort **285+** · L512 + 58 fragment · **T160** · f52 ·
 session 111. Full narrativ: sessionsdok S110 Del 1–4 + PAUSLÄGE.
 
-**Session 109 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`) — ALLT
+**Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`, historik; pausad två
+gånger 2026-08-21) — AUTONOMT BYGGE AV BÅDA SPÅREN: VÅG 1 IGÅNG MED FEM
+BYGG-AGENTER.** Resume 2: paus-landningen `#1694` fångad **i flykt** — doket var
+`active` vid första avläsningen och pausat när LÄS-fasen slutade (merge `12:04Z`);
+PR:en såg oarmerad ut (`autoMergeRequest: null`) men var köad direkt som `CLEAN`,
+disambiguerad med andra `gh pr merge --auto` → *"already queued"* (tabellrad 2 i
+`CLAUDE.md` § Landning). Lokal `main` låg **sex commits efter**, fast-forwardad
+`--ff-only` till `fa5ddb68`; `#1693` ancestor-verifierad på `main`. Ägarlappen är
+sessionens egen → huvudkatalogen. Numreringen mätt mot SERIEN, noll divergens mot
+handoffen. **Marcus AFK** (*"Jag åker till jobbet nu"*) → orkestreraren äger svepet
+manuellt, heartbeat-ordern 2026-08-19 står. **NU:** våg 1 = `285.1` (Notis-primitiven +
+flippen) · `285.2` (MessageBox) · `285.3` (appfelet) · `285.4` (spec/ORDLISTA +
+tråden `T160`, carry som EJ gjordes vid paus) · `286.1` (adaptern/EF:en) — var och en
+i egen worktree, uppdraget källmärkt per `ADR-086`, armering och `Done` hos
+orkestreraren. Två avvikelser öppet bokförda i uppdragstexterna: backlog-CLI:t via
+`npm run bl` (fleet-lasten, `ADR-117`) och `283.1`:s okommittade EF-diff som läsbar
+men aldrig återanvändbar referens. **HITL ikväll: `285.10` stämpling → `285.11`
+rivning · `286.5` diakritik · `283.4` facit-amendering · QA `285.12`/`286.6`.**
+Numrering vid resume 2: ADR 124 · kort 287 · L512 + 60 fragment · T160 · f52 ·
+session 111. Full narrativ: sessionsdok S109 Del 10.
+
+**Session 109 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`, historik) — ALLT
 SKIVAT FÖR AUTONOMT BYGGE: NOTISFAMILJEN (`TASK-285`, 12 kort) OCH PERSONREGISTRET
 (`ADR-123` + `TASK-286`, 6 kort; `TASK-283` amenderad).** Resume 1 landade: notisen
 låst efter ETT varv (`#1682`), meddelanderutan + appfel efter FYRA (`#1685`;
