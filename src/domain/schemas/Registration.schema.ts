@@ -90,4 +90,7 @@ export const RegistrationSchema = z.object({
   // normaliserat mot skiftläge/tankstreck-mellanslag/upprepat årtal.
   // Exakt tre värden — enum:ad mot Eventmatchning (Status.ts).
   eventmatchning: z.enum(Eventmatchning).nullable().optional(),
+  // Anmälans egen Datum-textkopia (task-284.3; ADR-122 § Fynd 1). ADDITIVT-
+  // OPTIONAL som fälten ovan — äldre cachade svar parsar oförändrat.
+  datum: z.string().nullable().optional(),
 });

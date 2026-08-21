@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
+import { KopplaTillEventDialog } from './KopplaTillEventDialog';
 import {
   atgardskoText,
   behoverAtgard,
@@ -23,13 +24,24 @@ import { StatusBadge } from './StatusBadge';
  * anmälda-vy — samma väg som på Hem; rad utan visas OLÄNKAD med "Utan event"
  * (beslut 4). Hems CTA pekar hit (beslut 7).
  *
- * EVENTLÄNKENS VAKT — markören (task-284.1; ADR-122 beslut 3+7, § 22
- * Åtgärdskön): en rad vars `eventmatchning === 'Avviker'` (formelfältet
- * `Anmälningar.Eventmatchning` — anmälans egen formulärtext stämmer INTE med
- * det länkade eventets facit) får en `StatusBadge` (ikon+ord, AC 8: bär
- * ALDRIG betydelse enbart genom färg — WCAG 1.4.1). Kön (`Bevakningsrad` på
- * Hem) och resolutionen (`relink-registration`) är UTBRUTNA till 284.2–284.4;
- * denna vy bär bara markören, den tredje av åtgärdsköns tre delar.
+ * EVENTLÄNKENS VAKT — markören OCH resolutionen (task-284.1/284.3; ADR-122
+ * beslut 3+7, § 22 Åtgärdskön): en rad vars `eventmatchning === 'Avviker'`
+ * (formelfältet `Anmälningar.Eventmatchning` — anmälans egen formulärtext
+ * stämmer INTE med det länkade eventets facit) får en `StatusBadge`
+ * (ikon+ord, AC 8: bär ALDRIG betydelse enbart genom färg — WCAG 1.4.1).
+ * BÅDE 'Avviker'- och 'Utan event'-rader får en `KopplaTillEventDialog`-
+ * knapp (task-284.3, AC 4–6): eventväljaren visar anmälans egna uppgifter
+ * intill valet, och en genomförd koppling sätter `Eventmatchning` till 'OK'
+ * (formelfält, räknas om synkront) — markören/länken/köns filtrering
+ * uppdateras vid nästa refetch (mutationens `onSettled`), utan någon
+ * separat klientberäkning. Knappen ligger UTANFÖR `<Link>`-kortet (aldrig
+ * nästlad interaktivitet i en anchor — axe `nested-interactive`) — det är
+ * kortets EGET syskon i `<li>`. Radens `behoverKoppling` läser SAMMA delade
+ * predikat som köns filtrering/räknare (`behoverAtgard`, se ÅTGÄRDSKÖNS
+ * INGÅNG nedan) — ALDRIG en egen tolkning av "behöver hanteras"
+ * (TASK-284.4 AC #3s krav). Kön på Hem (`Bevakningsrad`, TASK-284.4) är
+ * landad; denna vy bär markören och resolutionen, de två sista av
+ * åtgärdsköns tre delar.
  *
  * Data via `fetchRegistrations()` utan filter = get-registrations EVENT-LÖSA
  * gren (router-context-DI, ADR-055) — read-only, ingen ny EF, ingen
@@ -200,8 +212,13 @@ export function AnmalningarList({
             const datum = inskickadDatum(reg);
             const kortYta =
               'flex break-inside-avoid flex-col gap-0.5 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong print:border-border-strong';
+            // Eventlänkens vakt (task-284.1/284.3/284.4): SAMMA delade
+            // predikat som köns filtrering/räknare (`behoverAtgard`,
+            // `registration-display.ts`, TASK-284.4 AC #3) — ALDRIG en egen
+            // tolkning av "behöver hanteras" här.
+            const behoverKoppling = behoverAtgard(reg);
             return (
-              <li key={reg.id}>
+              <li key={reg.id} className="flex flex-col items-start gap-1.5">
                 {reg.eventId ? (
                   <Link
                     to="/event/$eventId/anmalda"
@@ -228,6 +245,9 @@ export function AnmalningarList({
                     </span>
                   </div>
                 )}
+                {/* Resolutionen (task-284.3, AC 4–6): UTANFÖR <Link>-kortet —
+                    aldrig en knapp nästlad i en anchor (axe nested-interactive). */}
+                {behoverKoppling && <KopplaTillEventDialog registration={reg} />}
               </li>
             );
           })}

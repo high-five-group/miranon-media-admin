@@ -130,4 +130,14 @@ export interface Registration {
    * Event-länk). Markören i AnmalningarList visar raden vid `'Avviker'`.
    */
   eventmatchning?: EventmatchningValue | null;
+  /**
+   * Anmälans EGNA formulär-textkopia av datumet (task-284.3; ADR-122 § Fynd 1,
+   * `Anmälningar.Datum` fldsROcE2FFTGCL3W, singleLineText — samma fält
+   * `Eventmatchning`-formeln jämför mot facit). ADDITIVT-OPTIONAL som
+   * `eventmatchning` ovan. Visas i eventväljarens resolution-dialog
+   * (`KopplaTillEventDialog`) intill `ort`/`eventNamn` så Lotta kan koppla om
+   * en avvikande/okopplad anmälan utan att gissa (AC 4) — ALDRIG facit-fältet
+   * `Datum (from Event)`, som hör till det (ev. felaktiga) länkade eventet.
+   */
+  datum?: string | null;
 }

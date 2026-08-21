@@ -4,6 +4,7 @@ title: 'Skiva: Resolution — koppla anmälan till rätt event i appen'
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:11'
+updated_date: '2026-08-21 13:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,18 +25,18 @@ Täcker användarberättelser: 6, 7, 8, 9, 17.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ny skrivoperation finns i behörighetslistan för att koppla om en anmälan
-- [ ] #2 Operationen sätter BÅDE eventlänken OCH eventnyckeln i samma skrivning — matchningssteget kör vid varje radskapande och kan annars nollställa en länk satt på annat håll; att skriva båda gör operationen idempotent
-- [ ] #3 Operationen prövas i behörighetslistans tre lägen: okänd operation nekas, fält utanför listan nekas, tillåten operation muterar och restaurerar
-- [ ] #4 Eventväljaren visar anmälans EGNA uppgifter (datum, ort, kurs) intill valet, så att kopplingen kan göras utan att gissa
-- [ ] #5 Efter genomförd koppling får anmälan värdet OK och försvinner ur åtgärdskön
-- [ ] #6 En misslyckad koppling lämnar anmälan orörd och visar ett fel som säger vad som hände — aldrig ett generiskt felmeddelande
+- [x] #1 Ny skrivoperation finns i behörighetslistan för att koppla om en anmälan
+- [x] #2 Operationen sätter BÅDE eventlänken OCH eventnyckeln i samma skrivning — matchningssteget kör vid varje radskapande och kan annars nollställa en länk satt på annat håll; att skriva båda gör operationen idempotent
+- [x] #3 Operationen prövas i behörighetslistans tre lägen: okänd operation nekas, fält utanför listan nekas, tillåten operation muterar och restaurerar
+- [x] #4 Eventväljaren visar anmälans EGNA uppgifter (datum, ort, kurs) intill valet, så att kopplingen kan göras utan att gissa
+- [x] #5 Efter genomförd koppling får anmälan värdet OK och försvinner ur åtgärdskön
+- [x] #6 En misslyckad koppling lämnar anmälan orörd och visar ett fel som säger vad som hände — aldrig ett generiskt felmeddelande
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
