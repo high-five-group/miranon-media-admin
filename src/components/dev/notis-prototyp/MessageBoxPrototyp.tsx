@@ -20,15 +20,22 @@ import { cn } from '@/lib/cn';
  * - NY `actions`-slot: knappraden högerställd under texten, samma rad-form som
  *   notisen — i dag placerar varje konsument sin knapp själv.
  */
+// Varv 3 (Marcus): konturen är en TON av kortets egen bakgrund, inte grå —
+// intent-färgen blandad till ~20 % (Tailwind v4 opacitets-modifier ⇒ color-mix).
+// Vänsterkanten bär full intent-färg. I prefers-contrast: more blir hela
+// konturen full intent-färg, så kanten aldrig försvinner för den som behöver den.
 const variants = cva(
-  'rounded border border-border border-l-4 px-4 py-3 text-(color:--mm-messagebox-body-text) text-body contrast-more:border-border-strong',
+  'rounded border border-l-4 px-4 py-3 text-(color:--mm-messagebox-body-text) text-body',
   {
     variants: {
       intent: {
-        info: 'border-l-(--mm-messagebox-info-border) bg-(--mm-messagebox-info-bg)',
-        success: 'border-l-(--mm-messagebox-success-border) bg-(--mm-messagebox-success-bg)',
-        warning: 'border-l-(--mm-messagebox-warning-border) bg-(--mm-messagebox-warning-bg)',
-        error: 'border-l-(--mm-messagebox-error-border) bg-(--mm-messagebox-error-bg)',
+        info: 'border-(--mm-messagebox-info-border)/20 border-l-(--mm-messagebox-info-border) bg-(--mm-messagebox-info-bg) contrast-more:border-(--mm-messagebox-info-border)',
+        success:
+          'border-(--mm-messagebox-success-border)/20 border-l-(--mm-messagebox-success-border) bg-(--mm-messagebox-success-bg) contrast-more:border-(--mm-messagebox-success-border)',
+        warning:
+          'border-(--mm-messagebox-warning-border)/20 border-l-(--mm-messagebox-warning-border) bg-(--mm-messagebox-warning-bg) contrast-more:border-(--mm-messagebox-warning-border)',
+        error:
+          'border-(--mm-messagebox-error-border)/20 border-l-(--mm-messagebox-error-border) bg-(--mm-messagebox-error-bg) contrast-more:border-(--mm-messagebox-error-border)',
       },
     },
     defaultVariants: { intent: 'info' },

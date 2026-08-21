@@ -28,7 +28,7 @@ export const Route = createFileRoute('/dev/notis-prototyp')({
 });
 
 const VARIANTER: PrototypeVariant[] = [
-  { key: '1', label: 'Meddelanderutan + appfel', steg: 2, stegLabel: 'Konvergensvarv 2' },
+  { key: '1', label: 'Meddelanderutan + appfel', steg: 3, stegLabel: 'Konvergensvarv 3' },
 ];
 
 function NotisPrototypPage() {
@@ -42,7 +42,7 @@ function NotisPrototypPage() {
         <h1 className="font-semibold text-3xl">Meddelanden</h1>
         <p className="text-small text-text-secondary">
           {proto
-            ? 'Prototypform (varv 2): fel och varningar utan kryss, kvitton och info med.'
+            ? 'Prototypform (varv 3): konturen i kortets egen ton.'
             : 'Skarpa komponenter, exakt som i appen i dag.'}
         </p>
 
