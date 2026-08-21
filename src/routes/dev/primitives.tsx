@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { CalendarDays, ClipboardList, Hourglass, List, Star } from 'lucide-react';
 import { useState } from 'react';
-import { ChunkBanner, Forberedelseskarm } from '@/components/AppShell';
+import { ChunkBanner, Forberedelseskarm, OfflineIndicator } from '@/components/AppShell';
 import { AppErrorFallback } from '@/components/ErrorBoundary';
 import {
   Button,
@@ -52,6 +52,14 @@ function PrimitivesPage() {
           (ersätter/staplas inte, ingen tom alert-region, eventet sväljs
           inte) mot — se `ChunkBanner.tsx`s docblock § "PLACERINGEN". */}
       <ChunkBanner />
+      {/* `OfflineIndicator` (TASK-285.6) lever precis som `ChunkBanner` bara
+          i `AppShell` (inloggade skalet) + här — samma skäl, samma väg:
+          `/dev/primitives` ligger UTANFÖR skalet, så denna rad är den ENDA
+          kvarvarande vägen `tests/webblasarbeteende/offline-notis.test.ts`
+          kan pröva komponentens BETEENDE (offline/online, staplingen mot
+          den redan-globala `AppUpdateBanner` ovan) hermetiskt, utan
+          autentisering eller staging. */}
+      <OfflineIndicator />
       <h1 className="text-2xl">Primitiver - demo (endast dev-läge)</h1>
       <p className="mt-2 text-small text-text-secondary">
         Visuell verifiering av alla size × intent-kombinationer per Fas 3 DoD 3.
