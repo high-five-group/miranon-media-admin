@@ -1764,10 +1764,70 @@ samt kontaktväg eller alternativ väg när sådan finns.
   samma import mot samma saknade fil) och är inte åtgärdat av trappan.
 - `AppError` är medvetet ostylad för att överleva ett dött stylesheet.
 
+## 22. Åtgärdskön — arbetsobjekt är INTE notiser
+
+App-bred klassregel, införd av
+[ADR-122](../decisions/ADR-122-eventlankens-vakt-och-atgardskon.md) (S110,
+2026-08-21). Paragrafen finns för att dra **familjegränsen** mot § 21: utan
+den kommer nästa läsare att försöka pressa in arbetsobjekt i notistrappan,
+eller bygga ett notiscenter för dem.
+
+### Gränsen: händelsebunden kontra tillståndsbunden
+
+`§ 21`s åtta klasser är **händelsebundna** — något hände nyss, och beskedet
+hör till det ögonblicket. Ett **arbetsobjekt** är **tillståndsbundet**: det
+ligger kvar tills någon åtgärdar det, och det är sant oavsett vem som tittar
+eller när.
+
+| | Notis (§ 21) | Arbetsobjekt (§ 22) |
+|---|---|---|
+| Uppstår ur | en händelse i sessionen | ett tillstånd i datan |
+| Överlever omladdning | nej | **ja** |
+| Försvinner av | tid, eller att användaren stänger | **en handling som löser det** |
+| Rätt form | notistrappans klass | åtgärdskö |
+
+**Regeln, i en mening:** *kan beskedet vara sant för en användare som loggar
+in i morgon, är det inte en notis.*
+
+### En åtgärdskö har alltid TRE delar
+
+Branschmönstret (exception queue / review queue — Stripe Radar, Shopify Order
+risk, UiPath Orchestrator) bär tre delar som samverkar. Två av tre är en
+halvmesyr:
+
+1. **Kön** — en räknad, filtrerbar samling. På Hem är formen en
+   **`Bevakningsrad`** (se ORDLISTA + `src/components/hem/Bevakningsrad.tsx`),
+   inte en ny yta: helt osynlig vid noll träffar, klickbar uppgiftsrad vid
+   träff.
+2. **Markören** — en indikator på den enskilda posten, i den lista där posten
+   bor. NN/g föreskriver indicators *"associated with a UI element or with a
+   piece of content"*, visade *"in close proximity to that element."*
+3. **Resolution** — en väg att lösa felet **i appen**. Posten lämnar kön genom
+   en handling, aldrig genom att någon går till Airtable. Operations-
+   litteraturens bärande regel: *direct links to the work item so the user can
+   resolve the issue without hunting through another system.*
+
+### Två regler
+
+- **Ett notiscenter är aldrig svaret.** NN/g: en notis som skickas oberoende
+  av vad användaren håller på med *"would likely be ignored, and may even
+  annoy users."* Arbetsobjekt hör hemma där arbetet görs, inte i en separat
+  logg.
+- **Bygg aldrig kön utan resolution.** Det gör Airtable till en yta Lotta
+  måste kunna — motsatsen till appens syfte — och lämnar en kö hon inte kan
+  tömma.
+
+### Instanser
+
+| Kö | Datakälla | Status |
+|---|---|---|
+| Anmälningar vars eventlänk inte kunde verifieras | `Anmälningar.Eventmatchning` (formelfält, `ADR-122` beslut 3) | Speccas |
+
 ## Ändringslogg
 
 | Datum | Förändring |
 |-------|-----------|
+| 2026-08-21 | §22 Åtgärdskön — arbetsobjekt är INTE notiser ([ADR-122](../decisions/ADR-122-eventlankens-vakt-och-atgardskon.md), S110). Dragen som familjegräns mot §21 dagen efter att §21 skrevs: notistrappans åtta klasser är alla händelsebundna, och en post som ligger kvar tills någon åtgärdar den har ingen klass där. Regeln i en mening: kan beskedet vara sant för en användare som loggar in i morgon är det inte en notis. Tre delar krävs alltid (kö · markör · resolution i appen) — två av tre är en halvmesyr som gör Airtable till en yta Lotta måste kunna. Notiscenter förkastat på NN/g:s grund. Formen på Hem är den befintliga `Bevakningsrad`, inte en ny yta. |
 | 2026-08-21 | §21 Notistrappan — familjens FÖRSTA styrande yta ([ADR-121](../decisions/ADR-121-notistrappan-form-per-klass-i-notisfamiljen.md), S109). Fram till nu hade specen noll träffar på banner/notis/toast/`MessageBox`; fem ytor bar fyra separata designspråk utan att någon regel band dem. Trappan delar på TVÅ axlar (orsakade användaren detta? kräver det handling nu?) i stället för på kodhemvist, med åtta klasser och kolumnen "förskjuter layout". Fyra app-breda regler: fel blir aldrig toast · ingen timer när knappen är enda vägen till åtgärden (WCAG 2.2.1) · överlagrade notiser har fast bredd · `role="status"` alltid monterad medan `role="alert"` monteras villkorat. Copy-golvet problem/orsak/lösning mot GOV.UK + NN/g + Microsoft; "Ladda om" låst framför "Uppdatera" (mätt domänkollision). Systerstruktur till §15 Laddtrappan, samma form som `ADR-113` etablerade. |
 | 2026-04-05 | Initialt dokument. Token-arkitektur, typografiskala, spacing-system, lint-config, design-audit skill-spec, Playwright-config, Tailwind-mappning. |
 | 2026-04-07 | [GA] Integrerat gap-analys: View Transitions (§9), stale-data-indikatorer (§10), error boundary-meddelanden (§11), systemhälso-indikator (§12), fem kvaliteter (§13). Audit-prompt uppdaterad med performance/säkerhet/ARIA/EAA-kontroller. |

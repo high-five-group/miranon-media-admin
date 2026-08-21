@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-20
+updated: 2026-08-21
 review_by: 2027-01-02
 status: stable
 ---
@@ -296,6 +296,23 @@ klickbar uppgiftsrad vid träff — till skillnad från BLOCK, som alltid står
 kvar med positivt kvitto vid noll (S102 Del 10, beslut 2–4).
 *Undvik:* larm, notis (raden är en uppgift som står kvar tills åtgärdad,
 inte en händelse som blinkar förbi).
+
+**Åtgärdskö** — samlingen av poster som en maskinell vakt inte kunnat hantera
+och som därför väntar på Lottas hand: innehållet, inte ytan. En åtgärdskö har
+alltid tre delar — kön själv, en markör på den enskilda posten, och en
+resolution-väg som gör att posten LÄMNAR kön genom en handling i appen.
+Kön får aldrig vara en återvändsgränd som hänvisar till Airtable
+([ADR-122](docs/decisions/ADR-122-eventlankens-vakt-och-atgardskon.md) beslut
+7). Först ut: anmälningar vars eventlänk inte gick att verifiera.
+*Skiljs från Bevakningsrad:* bevakningsraden är FORMEN på Hem (en osynlig-
+vid-noll uppgiftsrad), åtgärdskön är INNEHÅLLET. En åtgärdskö visas som en
+bevakningsrad på Hem och som markör i den lista posten bor i — samma kö, två
+ytor.
+*Skiljs från notis:* notistrappans åtta klasser
+([DESIGN-SYSTEM-SPEC](docs/specs/DESIGN-SYSTEM-SPEC.md) § 21) är
+händelsebundna — något hände nyss. En åtgärdskös poster är tillståndsbundna
+och ligger kvar tills de åtgärdas.
+*Undvik:* notiscenter, felkö, inkorg.
 
 **Mina sidor** — HELA den inloggade admin-appen som begrepp: appens
 motsvarighet till "Mina sidor" på en myndighetswebb (FK-analogin —
