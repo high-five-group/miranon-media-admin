@@ -81,10 +81,10 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`) —
+**Session 108 ▶️ ÅTERUPPTAGEN (resume 2, 2026-08-21, `lifecycle: active`) —
 PROTOTYPEN "GENERERINGSVYN" BYGGD I SEX KONVERGENSVARV, DIALOG-ÖVERSYNEN
-NÄSTA.** Parallell session bredvid aktiva S109 (huvudkatalogen) — S108 i egen
-låst worktree `s108-bilagesparet`, gren `docs/s108-resume` med **sex commits
+PÅGÅR.** Parallell session bredvid aktiva S109 (huvudkatalogen) och S110 — S108
+i egen låst worktree `s108-bilagesparet`, gren `docs/s108-resume` med **sex commits
 OPUSHADE MED AVSIKT** (arbetsform `iteration`, ADR-097: `da957f75`…`820c398d`).
 Frågan *"Vad ser Lotta när hon genererar bekräftelsebilagan för Arboga?"*
 besvaras nu i bild: varningsruta ("Plats och sista betalningsdag saknas …"),
@@ -99,9 +99,11 @@ GOV.UK summary list, M3, HIG, Polaris, Atlassian). Marcus efter varv 5:
 underkänd — alla dialoger ses över en efter en. Modellfynd: sista
 betalningsdag saknar källa; ADR-numret blir **122** (S109 tog 121).
 Verktygsfynd: HMR dött i worktreen → lokal polling-config (Del 3 § E).
-Numrering vid paus: ADR 122 · task-284 · L512 · 58 fragment · T159 · f51 —
-re-derivera ALLTID, S109 är aktiv parallellt. Full handoff: sessionsdok S108
-§ PAUSLÄGE + Del 3.
+Numrering **re-verifierad vid resume 2** mot `origin/main` `a62834b3`
+(paus-PR `#1681` MERGED): ADR 122 · task-284 · L512 · 58 fragment (nästa 59) ·
+T159 · f51 — **noll drift sedan pausen**; re-derivera ändå ALLTID, S109 och
+S110 är aktiva parallellt. Full handoff: sessionsdok S108 § Paushistorik 2 +
+Del 3.
 
 **Session 107 ⏸️ PAUSAD (sjunde gången, 2026-08-20, `lifecycle: paused`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
