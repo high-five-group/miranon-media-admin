@@ -17,6 +17,8 @@ import { Bevakningsrad } from './Bevakningsrad';
 import { ForfallnaBetalningar } from './ForfallnaBetalningar';
 import { Genvagar } from './Genvagar';
 import {
+  atgardskoRad,
+  type BevakningRad,
   bevakningar,
   dagsStart,
   eventIdentitet,
@@ -227,10 +229,20 @@ export function Hem() {
         : r,
     );
   }, [registrationsQuery.data, nyligenEventinfoSkickade, nuMs]);
-  const bevakningRader = useMemo(
-    () => bevakningar(eventsQuery.data, bevakningRegs, idagStart),
-    [eventsQuery.data, bevakningRegs, idagStart],
-  );
+  /* [TASK-284.4 AC #3] Åtgärdskö-raden — räknad ur `registrationsQuery.data`
+     DIREKT (rå EF-data, `Anmälningar.Eventmatchning`), aldrig ur
+     `bevakningRegs`s eventinfo-overlay ovan: de två är obesläktade fält
+     (`deltagarinfoSkickad` kontra `eventmatchning`), och att låta
+     åtgärdskön läsa overlayen hade knutit ihop två oberoende
+     bevakningskällor utan skäl. */
+  const atgardsko = useMemo(() => atgardskoRad(registrationsQuery.data), [registrationsQuery.data]);
+  /* Åtgärdskö-raden FÖRST när den finns (se `Bevakningsrad.tsx`s docblock
+     § TVÅ RADTYPER för ordnings-motiveringen), eventinfo-raderna därefter i
+     sin egen närmast-start-sortering (ORÖRD). */
+  const bevakningRader = useMemo<BevakningRad[]>(() => {
+    const eventinfoRader = bevakningar(eventsQuery.data, bevakningRegs, idagStart);
+    return atgardsko ? [atgardsko, ...eventinfoRader] : eventinfoRader;
+  }, [eventsQuery.data, bevakningRegs, idagStart, atgardsko]);
 
   /* [TASK-241.2/241.4/241.8] Svepens sändyta — Hem PEKAR, svepet SKICKAR
      (ADR-114 beslut 1). EN union-state (`aktivtSvep: SvepTyp | null`) i
@@ -344,10 +356,13 @@ export function Hem() {
         <NastaEvent eventsQuery={eventsQuery} nasta={nasta} idagStart={idagStart} />
 
         {/* BEVAKNINGSRAD — mellan "Nästa event" och "Nya anmälningar"
-            (Marcus-låst blockordning); helt osynlig vid noll träffar. */}
+            (Marcus-låst blockordning); helt osynlig vid noll träffar.
+            [TASK-284.4] Bär nu TVÅ radtyper (åtgärdskö + eventinfo, se
+            `Bevakningsrad.tsx`s docblock) — komponenten väljer interaktion
+            per rad själv; `onOppnaEventinfo` styr ENDAST eventinfo-svepet. */}
         <Bevakningsrad
           rader={bevakningRader}
-          onOppna={(event) => {
+          onOppnaEventinfo={(event) => {
             setEventinfoEvent(event);
             setAktivtSvep('eventinfo');
           }}

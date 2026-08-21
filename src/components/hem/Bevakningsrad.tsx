@@ -1,7 +1,18 @@
+import { createLink } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
-import { Button as AriaButton } from 'react-aria-components';
+import {
+  Button as AriaButton,
+  Link as AriaLink,
+  type LinkProps as AriaLinkProps,
+} from 'react-aria-components';
 import type { Event } from '@/domain/models/Event';
-import { type BevakningRad, bevakningDagarText, bevakningStatusText } from './hem-derivations';
+import {
+  atgardskoText,
+  type BevakningRad,
+  bevakningDagarText,
+  bevakningStatusText,
+  type EventinfoBevakningRad,
+} from './hem-derivations';
 
 /**
  * Bevakningsraden (ORDLISTA.md "Bevakningsrad") — Morgonkollens yta för
@@ -10,6 +21,24 @@ import { type BevakningRad, bevakningDagarText, bevakningStatusText } from './he
  * 2–4). HELT OSYNLIG vid noll träffar — ingen wrapper, ingen rubrik, inget
  * kvitto (till skillnad från block, som alltid står kvar med positivt
  * kvitto vid noll) — asymmetrin är Marcus-låst.
+ *
+ * [TASK-284.4] TVÅ RADTYPER sedan Eventlänkens vakt (ADR-122 beslut 7, §22
+ * Åtgärdskön): `'eventinfo'` (allt nedan i denna docblock, ORÖRD) och den
+ * NYA `'atgardsko'` — en enda global räknad rad (ingen `event`-referens,
+ * ingen dagar-kvar-kolumn), se `AtgardskoRadLink` längre ned i filen. De
+ * delar `<ul aria-label="Bevakningar">` och samma `--mm-navcard-*`-kortyta,
+ * men interaktions-elementet skiljer sig med avsikt: eventinfo-raden ÖPPNAR
+ * ett svep PÅ Hem (`AriaButton`, ADR-114 "Hem PEKAR, svepet SKICKAR"),
+ * åtgärdskö-raden NAVIGERAR BORT till åtgärdsytan (`/mer/anmalningar`,
+ * förfiltrerad via `?visa=atgardskon`) eftersom resolutionen (TASK-284.3,
+ * eventväljaren) inte är ett Hem-scopat svep — samma `createLink`+`AriaLink`-
+ * mönster `NavCard.tsx` bär, av samma skäl (en riktig länk-primitiv för
+ * Enter/Space + höger-klicka-öppna-i-ny-flik, inte en knapp som simulerar
+ * navigation via JS). ORDNING när båda kan förekomma: åtgärdskö-raden FÖRST
+ * (en app-bred datakorrekthetsflagga väger tyngre än en per-event
+ * tids-observation) — inget i ADR-122/PRD task-284 låser ordningen
+ * explicit, så detta är ett omdömesval, öppet bokfört (TASK-284.4
+ * slutrapport), inte en Marcus-order.
  *
  * [TASK-241.8] `onPress` ÄR SKARPT NU: klicket öppnar sändytan
  * (`SvepOverlay`, `svepTyp='eventinfo'`) förifiltrerad på exakt de
@@ -116,28 +145,40 @@ import { type BevakningRad, bevakningDagarText, bevakningStatusText } from './he
  */
 export function Bevakningsrad({
   rader,
-  onOppna,
+  onOppnaEventinfo,
 }: {
   rader: BevakningRad[];
   /** [TASK-241.8 AC #1] Klickad rads FULLA `Event` — `Hem.tsx` öppnar
-      eventinfo-svepet förifiltrerat på just det eventet. */
-  onOppna: (event: Event) => void;
+      eventinfo-svepet förifiltrerat på just det eventet. Anropas ENDAST
+      för `'eventinfo'`-rader; `'atgardsko'`-raden navigerar bort via
+      `AtgardskoRadLink` i stället (se filens docblock § TVÅ RADTYPER). */
+  onOppnaEventinfo: (event: Event) => void;
 }) {
   if (rader.length === 0) return null;
   return (
     <ul aria-label="Bevakningar" className="flex min-w-0 flex-col gap-2">
-      {rader.map((rad) => (
-        <BevakningsradRad key={rad.event.id} rad={rad} onOppna={onOppna} />
-      ))}
+      {rader.map((rad) =>
+        rad.typ === 'atgardsko' ? (
+          <li key="atgardsko">
+            <AtgardskoLink
+              to="/mer/anmalningar"
+              search={{ visa: 'atgardskon' }}
+              antal={rad.antal}
+            />
+          </li>
+        ) : (
+          <EventinfoRad key={rad.event.id} rad={rad} onOppna={onOppnaEventinfo} />
+        ),
+      )}
     </ul>
   );
 }
 
-function BevakningsradRad({
+function EventinfoRad({
   rad,
   onOppna,
 }: {
-  rad: BevakningRad;
+  rad: EventinfoBevakningRad;
   onOppna: (event: Event) => void;
 }) {
   const status = bevakningStatusText(rad);
@@ -171,3 +212,45 @@ function BevakningsradRad({
     </li>
   );
 }
+
+// className/style/children är förseglade (NavCard-precedentets mönster,
+// `NavCard.tsx` rad ~17): åtgärdskö-radens form är styrd av `antal` allena,
+// konsumenten komponerar inte om den.
+interface AtgardskoRadLinkProps extends Omit<AriaLinkProps, 'children' | 'className' | 'style'> {
+  /** Antal anmälningar som behöver kopplas om (AC #3 — räknat, aldrig gissat). */
+  antal: number;
+}
+
+/**
+ * Åtgärdskö-radens innehåll (TASK-284.4) — samma `--mm-navcard-*`-kortyta
+ * och chevron som eventinfo-raden ovan, men EN enkel textrad (ingen
+ * event-/dagar-kolumn: raden är global, inte per-event) och en RIKTIG länk
+ * i stället för en knapp (se filens docblock § TVÅ RADTYPER för varför).
+ * `line-clamp-2` av samma skäl som eventinfo-radens kolumner: en lång rad
+ * bryter till max två rader, klipps aldrig mitt i ett ord.
+ */
+function AtgardskoRadLink({ antal, ...props }: AtgardskoRadLinkProps) {
+  return (
+    <AriaLink
+      {...props}
+      className="text-(color:--mm-navcard-text) flex min-h-12 w-full items-center gap-3 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-(--mm-navcard-border-contrast)"
+    >
+      <span className="line-clamp-2 min-w-0 grow font-semibold text-body">
+        {atgardskoText(antal)}
+      </span>
+      <ChevronRight
+        aria-hidden="true"
+        size={18}
+        className="text-(color:--mm-navcard-icon) shrink-0"
+      />
+    </AriaLink>
+  );
+}
+
+/**
+ * `createLink` (NavCard-primitivens exakta mekanism, `NavCard.tsx` § docblock):
+ * `to`/`search` typas mot registrerade routes — en länk mot en obefintlig
+ * route eller ett search-schema som inte matchar `/mer/anmalningar`s
+ * `validateSearch` är ett typfel, inte ett runtime-fel.
+ */
+const AtgardskoLink = createLink(AtgardskoRadLink);
