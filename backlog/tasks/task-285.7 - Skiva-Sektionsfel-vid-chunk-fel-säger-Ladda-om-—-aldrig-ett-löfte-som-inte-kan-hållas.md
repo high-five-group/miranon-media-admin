@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:10'
+updated_date: '2026-08-21 14:00'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,20 +27,20 @@ Täcker användarberättelser: 11
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ett sektionsfel orsakat av chunk-fel visar knappen 'Ladda om' som anropar hel-omladdning; 'Försök igen' visas inte i det läget
-- [ ] #2 Ett sektionsfel av annan orsak visar 'Försök igen' med oförändrat beteende (reset + invalidate)
-- [ ] #3 Klassningen återanvänder chunk-laddningsfel-modulens igenkänning — ingen egen strängmatchning i sektionsfelet
-- [ ] #4 Båda lägena är testade i webbläsarbeteende-klassen via provocerat fel på dev-sidan, strängarna exakt
+- [x] #1 Ett sektionsfel orsakat av chunk-fel visar knappen 'Ladda om' som anropar hel-omladdning; 'Försök igen' visas inte i det läget
+- [x] #2 Ett sektionsfel av annan orsak visar 'Försök igen' med oförändrat beteende (reset + invalidate)
+- [x] #3 Klassningen återanvänder chunk-laddningsfel-modulens igenkänning — ingen egen strängmatchning i sektionsfelet
+- [x] #4 Båda lägena är testade i webbläsarbeteende-klassen via provocerat fel på dev-sidan, strängarna exakt
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
-- [ ] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
-- [ ] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
-- [ ] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
+- [x] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
+- [x] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
 <!-- DOD:END -->
