@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:02'
+updated_date: '2026-08-21 12:26'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,20 +26,34 @@ Täcker användarberättelser: 19
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 DESIGN-SYSTEM-SPEC § 21 beskriver formen per klass såsom låst i tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (ingen kontur, vänsterkant, knapprad, kryss-regel, kontrastläge) — inga nya regler utöver facit
-- [ ] #2 ORDLISTA har posten Notistrappan med klassnamnen och avrådda ord (toast för fel, Uppdatera för Ladda om)
-- [ ] #3 ADR-121 har en Update daterad 2026-08-21 som stänger § 8 med Marcus beslut verbatim och pekar på tråden för osparad-detektion
-- [ ] #4 npm run check:docs grönt (14 grindar) och markdownlint 0
+- [x] #1 DESIGN-SYSTEM-SPEC § 21 beskriver formen per klass såsom låst i tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (ingen kontur, vänsterkant, knapprad, kryss-regel, kontrastläge) — inga nya regler utöver facit
+- [x] #2 ORDLISTA har posten Notistrappan med klassnamnen och avrådda ord (toast för fel, Uppdatera för Ladda om)
+- [x] #3 ADR-121 har en Update daterad 2026-08-21 som stänger § 8 med Marcus beslut verbatim och pekar på tråden för osparad-detektion
+- [x] #4 npm run check:docs grönt (14 grindar) och markdownlint 0
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
-- [ ] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
-- [ ] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
-- [ ] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
+- [x] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
+- [x] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+DoD #3 (CI grön per jobb) lämnas obockad — ägs av orkestreraren efter push (bygg-agent.md § Landning).
+
+DoD #6/#7 (ariaSnapshot-par, test-konsument-svep) bockade med motiveringen kortet själv angav: ej tillämpliga för en docs-only-skiva — inga komponenter promoverades eller ändrades i denna skiva, noll test-konsumenter att svepa.
+
+DoD #5 (facit-granskning): båda manifesten lästa och citerade ordagrant i spec-tillägget:
+- tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json
+- tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json
+
+T160 registrerad (tasks/threads/README.md rad + tasks/threads/T160-bekraftelsedialog-med-osparad-detektion-for-omladdning.md) per S109-handoffens öppna skuld. ADR-121 fick ett Updates-avsnitt som stänger § 8 med Marcus verbatim ("Kör på dina rekommendationer", källa: TASK-285 Implementationsbeslut).
+<!-- SECTION:NOTES:END -->

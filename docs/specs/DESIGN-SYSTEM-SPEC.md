@@ -1716,6 +1716,50 @@ för det användaren försökte göra; överlagra när det inte gör det.*
 | Hela appen kraschade | `AppError` | Helsida | Ej tillämpligt |
 | Kritiskt, kräver beslut nu | ingen instans idag | Modal | Blockerar |
 
+### Formen låst per klass — facit (S109-konvergensen)
+
+Tabellen ovan är TAXONOMIN. Den VISUELLA formen för de ytor som gått igenom
+konvergens (`ADR-103`) är låst i två facit-manifest —
+[`s109-uppdateringsnotis-konvergens/facit.json`](../../tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json)
+och
+[`s109-meddelandefamiljen-konvergens/facit.json`](../../tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json)
+— och återges här, inte uppfunnen på nytt (`ADR-102` B1).
+
+**Gemensam grund, alla ytor:**
+
+- **Ingen kontur.** Familjeregeln, amenderad i meddelandefamiljens
+  konvergens (Marcus, 2026-08-21, verbatim: *"Helst vill jag inte ha någon
+  kontur alls tror jag. Visuellt blir det renast/snyggast."*): en
+  vänsterkant 4 px i intent-/informationsfärg (`border-l-4 border-<intent>`)
+  plus en tonad bakgrund (`--mm-messagebox-<intent>-bg`) bär gränsen —
+  ingen ram runt hela ytan.
+- **Kontrastläget är undantaget, inte glömt.** `prefers-contrast: more`
+  tänder en fullfärgs kontur runt hela ytan i intent-färgen — 11-golvet,
+  icke förhandlingsbart oavsett hur ren ytan ska se ut i normalläget.
+- **Knappraden** är högerställd under texten (`mt-3 flex justify-end
+  gap-2`), samma rad-form för notis och meddelanderuta. Konsumenter
+  placerar aldrig knappen själva — den kommer via en `actions`-slot.
+- **Kryss-regeln:** fel och varningar bär ALDRIG ett kryss (de försvinner
+  först när orsaken är borta); kvitto och info FÅR stängas. Krysset (när
+  det finns) dras in (`-mt-1.5 -mr-2`) så ikonen linjerar med rubrikens
+  linje och rutans högerkant.
+
+**Per yta:**
+
+| Yta | Facit-detaljer |
+|---|---|
+| Överlagrad passiv notis (uppdateringsnotis) | Fast bredd max 22 rem (`max-w-[22rem]`), `fixed right-4 bottom-24 sm:right-6` (ovanför TabBar-pillen), `bg-surface-overlay` + `shadow-xl`, `border-l-4 border-info`, ingen timer, ingen ikon, ingen animation. Knappar: "Inte nu" (ghost, sm) + "Ladda om" (primary, sm). |
+| Meddelanderutan (`MessageBox` — inline-fel, fältfel, kvitto/info — inklusive `SectionError`) | Rubrik `font-semibold` i intent-färg, brödtext neutral `text-body` (oförändrat mot tidigare form). |
+| Appfel-sidan (`AppError`) | Samma kortform, men uttryckt i INLINE-stilar med primitivernas faktiska värden (`#242424` text, `#a90000` röd vänsterkant och rubrik, `#ffffff` vit bakgrund) — designvillkoret att ytan ska rendera utan stylesheet består. Knapp som primärknappen (mörk `#242424`, 44 px, radius 4 px), högerställd. |
+
+Chunk-bannern har medvetet INGEN egen facit-bild (`bilder: []` i
+uppdateringsnotisens manifest) — dess flytt och kortning är beslut 3 ovan,
+spec-materia snarare än en konvergens-fråga. Den delar familjens
+"ingen kontur"-regel men har ingen låst pixel-form. Toast-raden i tabellen
+ovan är på samma sätt ännu inte byggd eller facit-låst — en fristående
+toast-komponent finns inte i appen (uttryckligen utanför `TASK-285`s
+omfattning); bekräftelser renderas i dag via meddelanderutans form.
+
 ### Fyra app-breda regler
 
 - **Fel blir ALDRIG toast. Bekräftelser får bli det.** NN/g, verbatim: *"a

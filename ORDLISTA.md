@@ -297,6 +297,26 @@ kvar med positivt kvitto vid noll (S102 Del 10, beslut 2–4).
 *Undvik:* larm, notis (raden är en uppgift som står kvar tills åtgärdad,
 inte en händelse som blinkar förbi).
 
+**Notistrappan** — appens yttrappa för notis- och felmeddelande-familjen
+([ADR-121](docs/decisions/ADR-121-notistrappan-form-per-klass-i-notisfamiljen.md),
+grillad samsyn S109/S110): åtta klasser efter två axlar (*orsakade
+användaren detta?* · *kräver det handling nu?*) — överlagrad passiv notis
+(uppdateringsnotisen) · banner i flödet under app-huvudet (chunk-bannern) ·
+inline-fel intill den yta som gick fel · fältfel + felsammanfattning ·
+toast (ENDAST uppgiftsgenererade bekräftelser, ännu inte byggd) ·
+`SectionError` (delyta kraschade) · `AppError` (hela appen kraschade) ·
+modal (kritiskt, kräver beslut nu — ingen instans idag). Formen, låst i
+S109-konvergensen (facit): ingen kontur — en vänsterkant 4 px i intent-färg
+plus tonad bakgrund bär gränsen i stället, `prefers-contrast: more` tänder
+en fullfärgs kontur; knapprad högerställd under texten; kryss-regeln (fel
+och varningar bär ALDRIG kryss, kvitto och info får stängas). Ersätter
+spec §21:s tidigare avsaknad av en styrande yta för hela familjen (noll
+träffar på banner, notis, toast eller `MessageBox` innan `ADR-121`).
+*Undvik:* "toast" som ord för ett fel (NN/g: en dålig form för
+felmeddelanden — toast är reserverat för bekräftelser); "Uppdatera" för
+handlingen att ladda om sidan (skriv "Ladda om" — kolliderar med
+domänspråkets "uppdatera en anmälan").
+
 **Åtgärdskö** — samlingen av poster som en maskinell vakt inte kunnat hantera
 och som därför väntar på Lottas hand: innehållet, inte ytan. En åtgärdskö har
 alltid tre delar — kön själv, en markör på den enskilda posten, och en

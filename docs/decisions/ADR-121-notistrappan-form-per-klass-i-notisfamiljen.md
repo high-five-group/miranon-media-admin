@@ -194,3 +194,40 @@ för en användare som står stilla länge på samma vy.
   `AppUpdateBanner` delas i två. Copy-arbetet över fem ytor kvarstår.
 - **Risk:** hörn-notisen kan missas av Lotta. Det är obelagt åt båda håll och
   bör observeras, inte antas.
+
+## Updates
+
+### 2026-08-21 (TASK-285.4) — § 8 stängs: databesked-varningen bor i chunk-bannern
+
+Beslutet ovan är oförändrat. Denna post stänger punkt 8, som lämnades öppet
+och medvetet inte beslutat i den ursprungliga posten.
+
+**Marcus beslut, verbatim** (bokfört i `TASK-285`s Implementationsbeslut,
+2026-08-21): *"Kör på dina rekommendationer."*
+
+**Vad det stänger.** Databesked-varningen (*"Har du skrivit något som inte
+är sparat, kopiera det först"*) bor i chunk-bannern och ingen annanstans —
+inte i notisen, inte i en separat bekräftelsedialog. Av de tre vägar § 8
+vägde ("dialog med osparad-detektion · en kortare varning kvar i notisen ·
+att bära den i chunk-bannern enbart") vinner den tredje. `role="alert"` och
+chunk-bannerns villkorade montering (`ADR-047` § Amendering (2)) står
+orörda.
+
+**Vad det INTE stänger, och varför.** Research-passets huvudförslag —
+flytta varningen till en `Dialog` som visas när "Ladda om" trycks medan ett
+formulär har osparade ändringar — löstes inte, och byggs inte i `TASK-285`.
+Den formen kräver **osparad-detektion**: mekanik som avgör vilka formulär
+som har osparade ändringar. Det är exakt den invändning som redan vägde
+tyngst mot det förkastade `Alternativ 2` ovan (*"avgöra vilken navigering
+som är 'säker' kräver att vi vet var formulär har osparade ändringar, vilket
+är verklig ny mekanik"*) — samma mekanik kan inte vara diskvalificerande i
+ett alternativ och gratis i ett annat. Att bygga dialog-vägen nu hade varit
+att lösa punkt 8 genom att smyga in precis den kostnad denna ADR redan
+vägrat smyga in i Alternativ 2.
+
+**Var frågan lever nu.** Bekräftelsedialogen med osparad-detektion är
+registrerad som
+[`T160`](../../tasks/threads/T160-bekraftelsedialog-med-osparad-detektion-for-omladdning.md)
+— mekaniken finns inte i koden i dag (noll träffar på dirty-state,
+`beforeunload`, eller en blocker-mekanism) och byggs INTE i `TASK-285`.
+Tråden bär frågan vidare tills en framtida arbetsenhet tar upp den.
