@@ -472,6 +472,87 @@ test.describe('Chunk-bannern — placering i skalet (TASK-285.5, ADR-121 beslut 
 });
 
 /**
+ * Notisfamiljens tangentbordsnavigering på en RIKTIG, autentiserad sida
+ * (TASK-285.9, AC #4): "Notisens knappar nås via tangentbord inom högst
+ * fem tabbsteg från dokumentets början på /hem; fokusringen syns."
+ *
+ * VARFÖR HÄR OCH INTE I `webblasarbeteende`: den klassen bevisar
+ * KOMPONENT-beteende isolerat (`/dev/primitives`, ingen autentiserad
+ * session) — den här ACen bevisar en INTEGRATIONS-egenskap: var i den
+ * RIKTIGA sidans faktiska DOM-ordning (SkipLink, AppShell, TabBar,
+ * sidans eget innehåll) Uppdateringsnotisens knappar hamnar i tabbflödet.
+ * `/hem` kräver en autentiserad, fixturvärlds-backad session — exakt vad
+ * `acceptance`-klassen ger (samma `mock()`-hjälpare som `Chunk-bannern —
+ * placering i skalet` ovan).
+ *
+ * VARFÖR SIFFRAN BLIR SÅ LÅG (strukturellt, inte en tillfällighet):
+ * `AppUpdateBanner` monteras i `__root.tsx` FÖRE `<Outlet />` (all inloggad
+ * OCH utloggad yta) — DOM-ordning avgör tabbordning när inget explicit
+ * `tabindex` satts, så notisens knappar hamnar TIDIGARE i dokumentet än
+ * `AppShell`s `SkipLink` (som i sin tur kommer FÖRE huvudinnehållet och
+ * TabBar). Se `AppUpdateBanner.tsx`/`__root.tsx`/`AppShell.tsx` för
+ * monteringsordningen — denna test bevisar den FAKTISKA konsekvensen,
+ * bygger inte på den i förväg.
+ */
+test.describe('Notisfamiljens tangentbordsnavigering på /hem (TASK-285.9, AC #4)', () => {
+  test('Uppdateringsnotisens knappar nås inom fem tabbsteg; fokusringen syns', async ({
+    page,
+    network,
+  }) => {
+    mock(network);
+    await page.goto('/hem');
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
+
+    // Samma syntetiska dispatch som webblasarbeteende-sviten
+    // (`app-update-banner.test.ts`s `skjutAppUppdatering`).
+    await page.waitForFunction(
+      () => {
+        if (document.querySelector('[data-testid="app-update-reload"]')) return true;
+        window.dispatchEvent(new CustomEvent('mm:app-uppdatering-tillganglig'));
+        return false;
+      },
+      undefined,
+      { timeout: 15_000, polling: 50 },
+    );
+    const laddaOm = page.locator('[data-testid="app-update-reload"]');
+    await expect(laddaOm).toBeVisible();
+
+    // Tabbar från DOKUMENTETS BÖRJAN (`document.body`, inget element
+    // fokuserat), precis som en riktig tangentbordsanvändare som just
+    // laddat sidan. Räknar STEG (Tab-tryck), inte "index i en lista av
+    // fokuserbara element" — samma sak Lotta faktiskt upplever.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+
+    const MAX_STEG = 5;
+    let steg = 0;
+    let hittadTestid: string | null = null;
+    while (steg < MAX_STEG) {
+      await page.keyboard.press('Tab');
+      steg += 1;
+      hittadTestid = await page.evaluate(
+        () => (document.activeElement as HTMLElement | null)?.getAttribute('data-testid') ?? null,
+      );
+      if (hittadTestid === 'app-update-reload' || hittadTestid === 'app-update-inte-nu') {
+        break;
+      }
+    }
+
+    expect(steg).toBeLessThanOrEqual(MAX_STEG);
+    expect(['app-update-reload', 'app-update-inte-nu']).toContain(hittadTestid);
+
+    // Fokusringen (AC #4): den globala `*:focus-visible`-regeln
+    // (`base.css`) — outline i `--mm-focus-ring`-tokenfärgen, inte `none`.
+    const ring = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement;
+      const s = getComputedStyle(el);
+      return { outlineStyle: s.outlineStyle, outlineWidth: s.outlineWidth };
+    });
+    expect(ring.outlineStyle).toBe('solid');
+    expect(Number.parseFloat(ring.outlineWidth)).toBeGreaterThan(0);
+  });
+});
+
+/**
  * Blockordningen (Marcus-låst, S102 Del 8 + Del 10; TASK-243.3 AC #1).
  * Bevakningsraden är det enda VILLKORADE blocket — de övriga står alltid
  * kvar (med sitt eget tomma-läge-kvitto), Bevakningsraden är HELT frånvarande
