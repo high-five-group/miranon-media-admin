@@ -1,0 +1,54 @@
+---
+id: TASK-285.10
+title: >-
+  Skiva: Marcus granskar skarpa mot facit och stämplar — sida vid sida per yta,
+  godkand via !-kanalen
+status: To Do
+assignee: []
+created_date: '2026-08-21 11:17'
+labels:
+  - ready-for-human
+dependencies:
+  - TASK-285.1
+  - TASK-285.2
+  - TASK-285.3
+  - TASK-285.4
+  - TASK-285.5
+  - TASK-285.6
+  - TASK-285.7
+  - TASK-285.8
+  - TASK-285.9
+parent_task_id: TASK-285
+ordinal: 525000
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+HITL. Marcus öppnar dev-servern (eller staging-previewn) och jämför varje promoverad yta mot sin prototyp sida vid sida — via växlaren ('öppna i nytt fönster') som fortfarande finns kvar eftersom inget är rivet: uppdateringsnotisen på /hem och /personer vid 390 och 1280 px (skarp = utan ?variant, prototyp = ?variant=1&data=ny-version), chunk-bannern (?data=chunk mot skarpt provocerat chunk-fel), offline-beskedet (nätet av i devtools), meddelanderutan i alla fyra intents och sektionsfelet (/dev/notis-prototyp med och utan ?variant=1, plus /dev-fel i skalet), appfel-fallbacken på primitiv-sidan. Han läser copy-svepets före/efter-tabell.
+
+Säger han att skarpa och prototyp är identiska (ADR-102 B3 — det enda som räknas) stämplar han själv båda manifesten via !-kanalen: npm run facit:godkann -- --pass s109-uppdateringsnotis-konvergens --citat '...' och samma för s109-meddelandefamiljen-konvergens. Skriptet sätter godkand {av, datum, citat, sha}; en agent kan inte (hooken nekar Edit/Write/Bash mot fältet, ADR-104). Offline-beskedet och chunk-bannern är ytor utan egen facit-bild — hans ord här ÄR deras godkännande och bokförs i manifestens not-fält av orkestreraren efteråt.
+
+Hittar han avvikelser: NYTT fynd-kort per avvikelse med exakt symptom och förväntat beteende; stämplingen väntar tills fynden är stängda. Ingen skiva retuscheras.
+
+Täcker användarberättelser: 20
+<!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Varje yta är jämförd sida vid sida av Marcus; utfallet (identisk / avvikelse-kort) är bokfört per yta i kortets notes
+- [ ] #2 Båda manifesten bär godkand satt av Marcus via facit:godkann med citat — inte av någon agent
+- [ ] #3 Copy-svepets före/efter-tabell är läst och kvitterad av Marcus, eller fynd-kort skapade för de strängar han vill ändra
+<!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [ ] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
+- [ ] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
+- [ ] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
+- [ ] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
+<!-- DOD:END -->
