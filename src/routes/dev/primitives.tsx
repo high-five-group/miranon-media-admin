@@ -547,19 +547,19 @@ function PrimitivesPage() {
       </section>
       <section aria-labelledby="rubrik-appfel" className="mt-8 max-w-md">
         <h2 id="rubrik-appfel" className="text-xl">
-          AppError — appfel-sidan
+          AppError: appfel-sidan
         </h2>
         <p className="mt-2 text-small text-text-secondary">
           Sista skyddslagrets fallback (TASK-285.3, <code>AppErrorBoundary</code> i{' '}
           <code>src/main.tsx</code>). Promoverad ur facit{' '}
           <code>tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json</code> ytan
-          &quot;appfel-sidan&quot; — inline-stilar utan token-import (designvillkoret: sidan ska
+          &quot;appfel-sidan&quot;: inline-stilar utan token-import (designvillkoret: sidan ska
           rendera även med ett dött stylesheet).
         </p>
         <div className="mt-4 flex flex-col gap-6">
           <div>
             <p className="mb-2 text-caption text-text-muted">
-              Inbäddad (demo-form, ingen <code>role=&quot;alert&quot;</code> — samma kontrakt som
+              Inbäddad (demo-form, ingen <code>role=&quot;alert&quot;</code>, samma kontrakt som
               prototypens <code>AppErrorPrototyp</code>)
             </p>
             <div
@@ -571,7 +571,7 @@ function PrimitivesPage() {
           </div>
           <div>
             <p className="mb-2 text-caption text-text-muted">
-              Skarp form (default-props — exakt vad <code>AppErrorBoundary</code> renderar,{' '}
+              Skarp form (default-props, exakt vad <code>AppErrorBoundary</code> renderar,{' '}
               <code>role=&quot;alert&quot;</code> behålls)
             </p>
             <div
