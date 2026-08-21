@@ -71,6 +71,7 @@ import { Modal } from '@/components/primitives/Modal';
 import { TextArea } from '@/components/primitives/TextArea';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import type { Event } from '@/domain/models/Event';
+import { cn } from '@/lib/cn';
 
 /* ------------------------------------------------------------------ *
  * FIXTURER
@@ -120,7 +121,7 @@ const EVENTINNEHALL = {
      var avkortad med ett ellipsis-tecken, vilket dolde att blockets egen
      yta klippte texten: Lotta maste se ALLT som hamnar i bilagan. */
   beskrivning:
-    'Utbildningen Resor i Medvetandet kommer att ge dig en djupare insikt om medvetandet, både genom att teoretiskt förklara vad vi är och att praktiskt öva i extremt djupa meditationer. Vi går igenom helt nya medvetandemodeller som faktiskt kan förklara det som tidigare kallats för övernaturligt och paranormalt. I denna utbildning får du själv ta de första stegen på din resa i vårt gemensamma medvetande. Medvetandet är det centrala och du kommer både få göra praktiska övningar tillsammans med massor med konkreta tips, samtidigt som vi förklarar de djupare insikter som ligger bakom våra upplevelser i våra liv. Du behöver inga förberedande kunskaper eller erfarenheter, men du måste komma med ett mycket öppet sinne. I utbildningen har vi lagt ett starkt fokus på din egen upplevelse och din egen personliga resa i medvetandet. Boken Utanför Verkligheten ligger till grund för nya sätt att se på verkligheten genom att öppna upp ditt sinne för en helt ny värld och verklighet. Du kommer även att få lära dig om Additiv meditation, en meditationsteknik, som gör det möjligt att ta sig extremt djupt i medvetandet. Med en kombination av tusenårig kunskap och modern teknik kan man uppnå mentala tillstånd som helt klart bryter mot vad vi tror är begränsningar i verkligheten. Vi arbetar med mentala ankare och planerar intentioner. Du får tillfälle att fråga om precis vad som helst, exempelvis om synkronicitet, Akashi arkivet, reinkarnationsprocessen, eller om dina guider. Du kommer att i detalj få reda på hur du planerar och utför dina resor med hjälp av extrem meditation och en välfylld mental verktygslåda. Vi berättar om varför Punktmedvetandet är så viktigt för att uppnå högre mentala tillstånd. Du kommer att få en inblick varifrån kreativitet, inspiration och ökade mentala förmågor kommer.',
+    'Utbildningen Resor i Medvetandet kommer att ge dig en djupare insikt om medvetandet, både genom att teoretiskt förklara vad vi är och att praktiskt öva i extremt djupa meditationer. Vi går igenom helt nya medvetandemodeller som faktiskt kan förklara det som tidigare kallats för övernaturligt och paranormalt. I denna utbildning får du själv ta de första stegen på din resa i vårt gemensamma medvetande. Medvetandet är det centrala och du kommer både få göra praktiska övningar tillsammans med massor med konkreta tips, samtidigt som vi förklarar de djupare insikter som ligger bakom våra upplevelser i våra liv.\n\nDu behöver inga förberedande kunskaper eller erfarenheter, men du måste komma med ett mycket öppet sinne. I utbildningen har vi lagt ett starkt fokus på din egen upplevelse och din egen personliga resa i medvetandet. Boken Utanför Verkligheten ligger till grund för nya sätt att se på verkligheten genom att öppna upp ditt sinne för en helt ny värld och verklighet.\n\nDu kommer även att få lära dig om Additiv meditation, en meditationsteknik, som gör det möjligt att ta sig extremt djupt i medvetandet. Med en kombination av tusenårig kunskap och modern teknik kan man uppnå mentala tillstånd som helt klart bryter mot vad vi tror är begränsningar i verkligheten. Vi arbetar med mentala ankare och planerar intentioner. Du får tillfälle att fråga om precis vad som helst, exempelvis om synkronicitet, Akashi arkivet, reinkarnationsprocessen, eller om dina guider. Du kommer att i detalj få reda på hur du planerar och utför dina resor med hjälp av extrem meditation och en välfylld mental verktygslåda. Vi berättar om varför Punktmedvetandet är så viktigt för att uppnå högre mentala tillstånd. Du kommer att få en inblick varifrån kreativitet, inspiration och ökade mentala förmågor kommer.',
   dagEtt: [
     { text: 'Miranon Media', tid: '', meditation: false },
     { text: 'Miranon-Nivåer (lite om)', tid: '', meditation: false },
@@ -220,6 +221,9 @@ type BlockDef = {
   agenda?: boolean;
   /** Ett datum (ISO-sträng som värde) — redigeras med datumfält, inte text. */
   datum?: boolean;
+  /** Löptext: blockets yta fyller sitt tak och textrutan rullar i sig själv,
+   *  i stället för att växa förbi dialogen. */
+  langtext?: boolean;
   /** Rubriken på det ämnesstycke i deltagarinformationen blocket motsvarar. */
   amnesstycke?: string;
 };
@@ -246,7 +250,9 @@ const GRUPPER: Record<MallId, Grupp[]> = {
     },
     {
       rubrik: 'Om utbildningen',
-      block: [{ id: 'beskrivning', etikett: 'Beskrivning', kalla: 'eventinnehall' }],
+      block: [
+        { id: 'beskrivning', etikett: 'Beskrivning', kalla: 'eventinnehall', langtext: true },
+      ],
     },
     {
       rubrik: 'Innehållet dag för dag',
@@ -1010,7 +1016,14 @@ function InforutanMorf({
               <span aria-hidden="true" className="size-4 shrink-0" />
             </div>
           ) : (
-            <div className="flex flex-col gap-1 py-3">
+            /* Δ=0 MOT LÄSRADEN — eventsidans lösning (DetaljGrupp.tsx:12-13,
+               "py-2 + 32 px fält = py-3 + 24 px textrad"): morfen KOMPENSERAR
+               fältets extrahöjd med mindre padding i stället för att växa.
+               py-1 (8) + etikett 20 + gap-1 (4) + fält 40 = 72 px, exakt
+               läsradens py-3 (24) + 20 + 4 + värde 24. Mätt före fixen hoppade
+               sektionen 594 -> 690 px vid Ändra. Fälten behåller 40 px —
+               höjden tas ur paddingen, aldrig ur träffytan. */
+            <div className="flex flex-col gap-1 py-1">
               <span className="text-small text-text-muted leading-5" id={`morf-${r.def.id}`}>
                 {r.def.etikett}
               </span>
@@ -1200,7 +1213,7 @@ function GenereringsVy({
         {/* BESLUT 5: tomma block utelämnas — men aldrig tyst. Beskedet står
             FÖRE knappen, i klartext, med en väg in per block. */}
         {utelamnade.length > 0 && (
-          <MessageBox intent="warning">
+          <MessageBox intent="warning" className="border-transparent">
             <span className="flex flex-col gap-3">
               <span>
                 <strong>
@@ -1573,7 +1586,11 @@ function BlockDialog({
     <Modal
       isOpen
       isDismissable
-      className={DIALOG_PANEL_KLASS}
+      /* Löptextdialogen FYLLER sitt tak (`h-` utöver panelklassens `max-h`).
+         Utan det är panelen innehållsdriven, bodyn får ingen bestämd höjd,
+         och en textruta som ska fylla den kan inte veta hur hög den är —
+         då hamnar rullningen på dialogen i stället för i rutan. */
+      className={cn(DIALOG_PANEL_KLASS, def.langtext && 'h-[min(76vh,600px)]')}
       style={DIALOG_ANKARE}
       onOpenChange={(open) => {
         if (!open) onStang();
@@ -1605,26 +1622,30 @@ function BlockDialog({
               }. Anmälan är bindande."`}
             />
           ) : (
-            /* Loptexten visar ALLT: `autoGrow` (field-sizing-content) later
-               rutan folja innehallet, och taket slacks sa dialogens body blir
-               den enda rullytan. Utan det far Lotta en 16rem-lucka in i en
-               1800 teckens text — hon kan inte se vad som hamnar i bilagan.
-               MATT: forsta forsoket satte `max-h-none` rakt pa `className`
-               och gjorde INGENTING (falt-hojd 256 av 1288 px innehall) —
-               primitivens `className` gar till TextField-WRAPPERN, medan
-               `<textarea>` bara far `textAreaVariants(...)`. Darav
-               barnvarianten; en override-prop pa primitiven vore
-               bibliotekskod och hor till promoveringen, inte hit. */
+            /* Loptexten: rutan FYLLER dialogens body och rullar I SIG SJALV,
+               sa rullisten sitter dar texten ar — inte utanfor rutan.
+               Tva matta felsteg bakom den har formen:
+               (1) `max-h-none` rakt pa `className` gjorde INGENTING (falt
+                   256 px mot 1288 px innehall) — primitivens `className` gar
+                   till TextField-WRAPPERN, `<textarea>` far bara
+                   `textAreaVariants(...)`. Darav barnvarianterna.
+               (2) `autoGrow` utan tak lat rutan vaxa till 1288 px inuti en
+                   600 px dialog, sa DIALOGEN rullade och rullisten hamnade
+                   utanfor textrutan. Nu ar det tvartom.
+               `whitespace-pre-wrap` bevarar styckesbrytningarna ur mallen —
+               utan den blir Rogers tre stycken en enda klump. */
             <TextArea
               label={def.etikett}
               hideLabel
-              autoGrow
-              className={def.id === 'beskrivning' ? '[&_textarea]:max-h-none' : undefined}
+              autoGrow={!def.langtext}
+              className={
+                def.langtext
+                  ? 'h-full [&_textarea]:h-full [&_textarea]:max-h-none [&_textarea]:min-h-0 [&_textarea]:resize-none [&_textarea]:whitespace-pre-wrap [&_textarea]:leading-relaxed'
+                  : undefined
+              }
               value={text}
               onChange={setText}
-              rows={
-                def.id === 'beskrivning' ? 8 : def.kalla === 'event' || def.id === 'plats' ? 2 : 5
-              }
+              rows={def.kalla === 'event' || def.id === 'plats' ? 2 : 5}
               placeholder={def.id === 'plats' ? 'Gatuadress och ort' : undefined}
             />
           )}
@@ -1722,11 +1743,15 @@ const AGENDA_OPPEN_KLASS = '-mx-6 flex flex-col gap-3 border-t-transparent bg-bg
  * Agendan som LÄSLISTA med redigering per rad — inte fjorton formulär på
  * en gång.
  *
- * RADHÖJDEN ÄR LÅST TILL 72 px, samma grammatik som genereringsvyns egna
- * rader (`KORT_KLASS`-raderna ovan): en 24 px primärrad + `gap-1` (4 px) +
- * en 20 px `leading-5`-metarad + `py-3` (24 px). Metaraden RESERVERAS även
- * när punkten saknar meta (`min-h-5`) — annars blir raderna olika höga,
- * vilket är exakt det Marcus fällt två gånger.
+ * RADHÖJDEN ÄR LÅST TILL 48 px — EN tät rad: `py-3` (24 px) + 24 px text.
+ * Alla rader lika höga utan att någon av dem är halvtom.
+ *
+ * AVFÄRDAT PÅ BILD: en tvåradsform (text + reserverad metarad) gav också
+ * lika höjd — 73 px rakt igenom — men raderna blev GLESA, eftersom
+ * metaraden stod tom på tio av fjorton punkter. Lika höjd får inte köpas
+ * med tomrum. Meditationen behöver ingen egen markör: punkttexten bär den
+ * redan ("Meditation: Eken Plus …"), precis som i mallen. Tiden står till
+ * höger, där den inte tar plats från texten.
  *
  * MEDITATION ÄR EN PUNKTTYP, INTE EN KRYSSRUTA. Den sätts när punkten
  * skapas ("Lägg till meditation") i stället för att varje rad ska bära en
@@ -1816,17 +1841,10 @@ function AgendaEditor({
                 className="flex w-full items-center gap-3 py-3 text-left"
                 onClick={() => setOppen(i)}
               >
-                <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="truncate text-body" title={r.text}>
-                    {r.text || <span className="text-text-muted">Tom punkt</span>}
-                  </span>
-                  {/* Metaraden reserveras ALLTID — se docblockets 72 px-regel. */}
-                  <span className="min-h-5 truncate text-caption text-text-muted leading-5">
-                    {[r.meditation ? 'Meditation' : null, r.tid || null]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </span>
+                <span className="min-w-0 flex-1 truncate text-body" title={r.text}>
+                  {r.text || <span className="text-text-muted">Tom punkt</span>}
                 </span>
+                {r.tid && <span className="shrink-0 text-caption text-text-muted">{r.tid}</span>}
                 <ChevronRight aria-hidden="true" size={16} className="shrink-0 text-text-muted" />
               </button>
             </li>
