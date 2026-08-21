@@ -39,15 +39,22 @@
 
 import { type CalendarDate, parseDate } from '@internationalized/date';
 import { Link } from '@tanstack/react-router';
-import { Check, ChevronLeft, ChevronRight, Files, FileText, Plus, Upload, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Files, FileText, Plus, Upload } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { type ReactNode, useMemo, useState } from 'react';
-import { Checkbox, DateField, DateInput, DateSegment, I18nProvider } from 'react-aria-components';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Dialog as AriaDialog,
+  Checkbox,
+  DateField,
+  DateInput,
+  DateSegment,
+  Heading,
+  I18nProvider,
+} from 'react-aria-components';
 import { datumSpannText } from '@/components/events/detail/datumSpann';
 import { eventName } from '@/components/events/EventCard';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
-import { Dialog } from '@/components/primitives/Dialog';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
@@ -1210,6 +1217,127 @@ function agendaSammanfattning(rader: AgendaRad[]): string {
  * Spara-verb, återgång till översikten; Avbryt/Escape kastar utkastet).
  * ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ *
+ * DIALOGFORMEN
+ * ------------------------------------------------------------------ */
+
+/**
+ * Panelklassen för husets dialogform: LÅST ÖVRE KANT och bredd, höjden
+ * innehållsdriven upp till ett tak — inte `Modal`-primitivens `w-fit` +
+ * fritt centrerade panel.
+ *
+ * VARFÖR FÖRANKRAD, mätt och inte tyckt (2026-08-21,
+ * `test-results/matlagg.mjs` + `matpos.mjs`, 390x844, 5 varv per dialog):
+ * med primitivens default fick de nio blockdialogerna ett HÖJDSPANN på
+ * 298 px (282-580) och ett POSITIONSSPANN på 149 px (top 132-281) — varje
+ * dialog landade på sin egen y och skalade från sin egen mittpunkt
+ * (`transform-origin` y = halva höjden, uppmätt 141/157/170/186/206/290 px).
+ *
+ * Samma mätning falsifierade duration-hypotesen: Hem-svepets overlay, som
+ * Marcus pekar ut som FÖREBILD, mäter 406 ms från klick till klar mot en
+ * enkel blockdialogs 208 ms — nästan dubbelt så långsam, och ändå den som
+ * upplevs lugn. Skillnaden är att svepet är förankrat och alltid öppnar
+ * likadant (358x717, top 64 i samtliga fem varv). ANKRINGEN är axeln, inte
+ * hastigheten.
+ *
+ * AVFÄRDAT UNDER VARVET, med bild som grund: en helt LÅST höjd
+ * (`h-[min(76vh,600px)]`) gav visserligen spann 0/0, men lämnade en
+ * enfältsdialog med ~500 px tom yta under sitt enda fält — konsekvent och
+ * fult. Ankringen ger samma stabila startpunkt utan tomrummet: dialogen
+ * växer nedåt från en fast kant och slutar där innehållet slutar.
+ */
+const DIALOG_PANEL_KLASS =
+  'flex max-h-[min(76vh,600px)] w-(--mm-dialog-width-md) max-w-full origin-top flex-col overflow-hidden';
+
+/** Fast avstånd till viewportens överkant — dialogens ankarpunkt. Sätts via
+ *  `style` på `Modal`, eftersom scrimmens `items-center` är hårdkodad i
+ *  primitiven (`Modal.tsx:32-34`) och inte kan nås med `className`. Samma
+ *  väg som `Hem.tsx:93` redan använder för scrim-färgen. */
+const DIALOG_ANKARE = { alignItems: 'flex-start', paddingTop: 'clamp(2rem, 12vh, 7rem)' } as const;
+
+/**
+ * Husets dialogform i tre zoner — prövad här före promovering (ADR-103).
+ *
+ * Rubriken och knappraden STÅR STILLA; bara bodyn rullar. Rubriken hamnar
+ * därmed på exakt samma pixel i varje dialog (ankringen ovan), och
+ * knappraden ligger alltid direkt under innehållet i stället för att
+ * flyta i ett tomrum.
+ *
+ * Panelen bär `overflow-hidden` (se `DIALOG_PANEL_KLASS`) i stället för
+ * primitivens `overflow-auto`, annars rullar rubrik och knappar ut ur bild
+ * tillsammans med innehållet. Den dubbelrullningen — panelen OCH en inre
+ * `max-h-[40vh]`-lista — var precis det som klippte agendan mitt i en rad.
+ *
+ * `Heading slot="title"` behålls ur primitiven: den ger `aria-labelledby`
+ * automatiskt (KVALITETSDEFINITIONER checklist 6.1).
+ */
+function ProtoDialog({
+  title,
+  children,
+  actions,
+  ariaDescription,
+}: {
+  title: string;
+  children: ReactNode;
+  actions: ReactNode;
+  ariaDescription?: string;
+}) {
+  const rullRef = useRef<HTMLDivElement>(null);
+  // Sant bara nar det FINNS orullat innehall nedanfor — se uttoningen nedan.
+  const [merNedanfor, setMerNedanfor] = useState(false);
+
+  useEffect(() => {
+    const el = rullRef.current;
+    if (!el) return;
+    const mat = () =>
+      setMerNedanfor(Math.ceil(el.scrollTop + el.clientHeight) < el.scrollHeight - 1);
+    mat();
+    el.addEventListener('scroll', mat, { passive: true });
+    // Innehallet andrar hojd nar en agendarad oppnas/stangs — ResizeObserver
+    // pa rullytan fangar det utan att varje konsument behover rapportera in.
+    const ro = new ResizeObserver(mat);
+    ro.observe(el);
+    for (const barn of Array.from(el.children)) ro.observe(barn);
+    return () => {
+      el.removeEventListener('scroll', mat);
+      ro.disconnect();
+    };
+  }, []);
+
+  return (
+    <AriaDialog
+      aria-description={ariaDescription}
+      className="flex min-h-0 w-full flex-1 flex-col p-6 outline-none"
+    >
+      <Heading slot="title" className="shrink-0 text-xl">
+        {title}
+      </Heading>
+      {/* -mx-6 + px-6: rullytans kant gar ut till panelkanten sa den lasas
+          som en yta, medan innehallet behaller dialogens padding.
+          Uttoningen gor en avskuren rad till en SIGNAL ("det finns mer") i
+          stallet for ett renderingsfel — utan den klipptes agendans nionde
+          punkt mitt i sin textrad. Den ar MATT villkorad, inte alltid pa:
+          med innehallsdriven panelhojd slutar innehallet exakt vid
+          rullytans nederkant nar det far plats, sa en ovillkorad mask hade
+          tonat ut sista raden i VARJE dialog. */}
+      <div
+        ref={rullRef}
+        className="scrollbar-inline -mx-6 mt-4 min-h-0 flex-1 overflow-y-auto px-6 text-body"
+        style={
+          merNedanfor
+            ? { maskImage: 'linear-gradient(to bottom, black calc(100% - 1.5rem), transparent)' }
+            : undefined
+        }
+      >
+        {children}
+      </div>
+      <div className="mt-4 flex shrink-0 justify-end gap-3 border-border border-t pt-4">
+        {actions}
+      </div>
+    </AriaDialog>
+  );
+}
+
 function BlockDialog({
   rad,
   ort,
@@ -1251,13 +1379,14 @@ function BlockDialog({
     <Modal
       isOpen
       isDismissable
+      className={DIALOG_PANEL_KLASS}
+      style={DIALOG_ANKARE}
       onOpenChange={(open) => {
         if (!open) onStang();
       }}
     >
-      <Dialog
+      <ProtoDialog
         title={def.etikett}
-        size="md"
         actions={
           <>
             <Button intent="secondary" emphasis="outline" onPress={onStang}>
@@ -1269,7 +1398,7 @@ function BlockDialog({
           </>
         }
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex h-full flex-col gap-4">
           {def.agenda ? (
             <AgendaEditor rader={agenda} onChange={setAgenda} />
           ) : def.datum ? (
@@ -1325,7 +1454,7 @@ function BlockDialog({
             )}
           </div>
         </div>
-      </Dialog>
+      </ProtoDialog>
     </Modal>
   );
 }
@@ -1377,6 +1506,28 @@ function DatumEnkel({
  * Agendan som radschema med EXPLICIT typ-ruta (beslut 3, § F): punkttext ·
  * valfri tid · kryss "meditation". Ingen textsniffning — krysset styr färgen.
  */
+/** Den ÖPPNA agendaradens yta. Kant-i-kant mot panelen (`-mx-6`/`px-6`
+ *  speglar dialogens padding) så raden läses som en ZON i listan, inte som
+ *  en indragen ruta — och `border-t-transparent` släcker `divide-y`:ns
+ *  linje just där, som annars skar tvärs över zonens överkant. */
+const AGENDA_OPPEN_KLASS = '-mx-6 flex flex-col gap-3 border-t-transparent bg-bg-muted px-6 py-4';
+
+/**
+ * Agendan som LÄSLISTA med redigering per rad — inte fjorton formulär på
+ * en gång.
+ *
+ * Den gamla formen monterade 42 fältkontroller samtidigt (28 `Input`, 14
+ * `Kryss`) i tvåradsrader, 1301 px innehåll i en `max-h-[40vh]`-ruta som
+ * kapade listan mitt i en rad utan kant eller fade. Uppmätt kostnad
+ * (`test-results/matlagg.mjs`): 170 ms montering mot 44 ms för en
+ * enfältsdialog — den enda innehållsberoende termen i hela mätserien.
+ *
+ * Nu bär raden sitt värde som TEXT och öppnas till ett fält först när den
+ * rörs, en i taget. Det är samma grammatik som genereringsvyns egna rader
+ * (etikett/värde som leder vidare) och samma disciplin som huset redan
+ * följer: en handling per rad. Monteringen faller till listans textrader,
+ * och rullningen bor i dialogens body — ingen andra rullyta att kapa mot.
+ */
 function AgendaEditor({
   rader,
   onChange,
@@ -1384,54 +1535,94 @@ function AgendaEditor({
   rader: AgendaRad[];
   onChange: (rader: AgendaRad[]) => void;
 }) {
+  // Bara EN rad är öppen i taget — listan förblir läsbar medan man ändrar.
+  const [oppen, setOppen] = useState<number | null>(null);
   const satt = (i: number, patch: Partial<AgendaRad>) =>
     onChange(rader.map((r, j) => (j === i ? { ...r, ...patch } : r)));
-  const taBort = (i: number) => onChange(rader.filter((_, j) => j !== i));
-  const laggTill = () => onChange([...rader, { text: '', tid: '', meditation: false }]);
+  const taBort = (i: number) => {
+    onChange(rader.filter((_, j) => j !== i));
+    setOppen(null);
+  };
+  const laggTill = () => {
+    onChange([...rader, { text: '', tid: '', meditation: false }]);
+    setOppen(rader.length);
+  };
 
   return (
-    <div className="flex flex-col gap-2">
-      <ul className="scrollbar-inline flex max-h-[40vh] flex-col divide-y divide-border overflow-y-auto">
-        {rader.map((r, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: raderna saknar egen identitet — ordningen ÄR identiteten
-          <li key={i} className="flex flex-col gap-2 py-2">
-            <Input
-              label={`Punkt ${i + 1}`}
-              hideLabel
-              size="sm"
-              placeholder="Punkt"
-              value={r.text}
-              onChange={(v) => satt(i, { text: v })}
-            />
-            <div className="flex items-center gap-3">
-              <Kryss
-                label={`Meditation, punkt ${i + 1}`}
-                vald={r.meditation}
-                onChange={(v) => satt(i, { meditation: v })}
-              >
-                Meditation
-              </Kryss>
+    <div className="flex flex-col gap-3">
+      <ul className="flex flex-col divide-y divide-border border-border border-b">
+        {rader.map((r, i) =>
+          oppen === i ? (
+            // biome-ignore lint/suspicious/noArrayIndexKey: raderna saknar egen identitet — ordningen ÄR identiteten
+            <li key={i} className={AGENDA_OPPEN_KLASS}>
               <Input
-                label={`Tid, punkt ${i + 1}`}
+                label={`Punkt ${i + 1}`}
                 hideLabel
                 size="sm"
-                placeholder="Tid"
-                className="ml-auto w-24"
-                value={r.tid}
-                onChange={(v) => satt(i, { tid: v })}
+                autoFocus
+                placeholder="Vad händer på punkten?"
+                value={r.text}
+                onChange={(v) => satt(i, { text: v })}
               />
-              <Button
-                intent="ghost"
-                size="sm"
-                className="size-9 shrink-0 p-0"
-                aria-label={`Ta bort punkt ${i + 1}`}
-                onPress={() => taBort(i)}
+              <div className="flex items-center gap-3">
+                <Kryss
+                  label={`Meditation, punkt ${i + 1}`}
+                  vald={r.meditation}
+                  onChange={(v) => satt(i, { meditation: v })}
+                >
+                  Meditation
+                </Kryss>
+                <Input
+                  label={`Tid, punkt ${i + 1}`}
+                  hideLabel
+                  size="sm"
+                  placeholder="Tid"
+                  className="ml-auto w-20"
+                  value={r.tid}
+                  onChange={(v) => satt(i, { tid: v })}
+                />
+                <Button
+                  intent="secondary"
+                  emphasis="outline"
+                  size="sm"
+                  onPress={() => setOppen(null)}
+                >
+                  Klar
+                </Button>
+              </div>
+              <button
+                type="button"
+                className="self-start text-caption text-text-muted underline underline-offset-2"
+                onClick={() => taBort(i)}
               >
-                <X aria-hidden="true" size={14} />
-              </Button>
-            </div>
-          </li>
-        ))}
+                Ta bort punkten
+              </button>
+            </li>
+          ) : (
+            // biome-ignore lint/suspicious/noArrayIndexKey: raderna saknar egen identitet — ordningen ÄR identiteten
+            <li key={i}>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 py-3 text-left"
+                onClick={() => setOppen(i)}
+              >
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-body" title={r.text}>
+                    {r.text || <span className="text-text-muted">Tom punkt</span>}
+                  </span>
+                  {(r.meditation || r.tid) && (
+                    <span className="truncate text-caption text-text-muted">
+                      {[r.meditation ? 'Meditation' : null, r.tid || null]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  )}
+                </span>
+                <ChevronRight aria-hidden="true" size={16} className="shrink-0 text-text-muted" />
+              </button>
+            </li>
+          ),
+        )}
       </ul>
       <Button
         intent="secondary"
