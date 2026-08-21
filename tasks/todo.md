@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 110 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång) —
+**Session 110 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
 VAKTEN GRILLAD OCH LÅST I `ADR-122`.** Egen worktree `s110-kalenderlank-driften` (S109
 äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
@@ -48,14 +48,31 @@ Driftdetektorn mot Elfsight **lyft till `T159`** som medvetet bortval.
 Landat: `ADR-122` · `ORDLISTA` **Åtgärdskö** · `DESIGN-SYSTEM-SPEC` **§ 22**
 (familjegräns mot §21: arbetsobjekt är INTE notiser) · `T159`.
 
-**NÄSTA (S110 pågår): `/to-prd` → `/to-issues` för bygget** — skivningen ej
-avgjord (en synlighets-bara-skiva är horisontell; vertikalt är sannolikt *en
-yta hela vägen* före kön som egen ingång) · därefter 2g (ID 21/22/23) + de 11
-tvetydiga på Event-55 efter Lottas svar · `task-232` → Done i
-stängningscommit · **Marcus-moment: kalenderlänkarna på miranon.se**
-(rotfixen, `ADR-122` beslut 1). Numrering efter S110 Del 3: ADR **123** ·
-kort 284 · L512 + 58 fragment · **T160** · f52 · session 111. Full narrativ:
-sessionsdok S110 Del 1–3 + Paushistorik.
+**Del 4 — EXEKVERINGSUNDERLAGET KLART, BYGGET GJORT AUTONOMT.** `TASK-284`
+med **sex kort** (PRD + fyra skivor + QA + prod-utrullning). Skarv-valet:
+**tre BEFINTLIGA skarvar, noll nya testfiler** — alla tre bär redan mönstret.
+**Fyra mätningar mot prod** stängde fyra av fem öppna poster: `Startdatum`/
+`Slutdatum` ÄR uppslag (arrayer) · anmälan **ID 21** är en levande
+tvåfältsfixtur (formulärtext RIM 1 Rönninge mars mot event RIM 2 **Varberg**
+februari) · de falska positiva mätta, och tröskeln kräver normalisering av
+tre klasser (skiftläge, mellanslag kring tankstreck, **upprepat årtal**) ·
+**A1 läst live → `schema_reference` falsifierad på TVÅ punkter**, varav den
+ena styr bygget: kopplingssteget är OVILLKORLIGT, så vakten måste **ERSÄTTA**
+steg 1–2 — en validering före det är fail-**OPEN**. Daterad mätnot landad.
+**OMKLASSNING på Marcus order:** staging-basen `apphjj8Q7lkXCMsL4` är en
+strukturell kopia (alla 11 automationer, **identiska ID:n**, undeployed) →
+prod är en utrullningsfråga, inte en byggfråga. `284.1`–`284.4` blev
+`ready-for-agent`; `284.6` prod-utrullning bröts ut som `ready-for-human`.
+Landat: `#1684` `378b4f62` · `#1686` `9df1ccbe` · `#1690` armerad vid paus.
+
+**NÄSTA (resume av 110): verifiera `#1690` landad → plocka `TASK-284.1`
+(tracer bullet, `ready-for-agent`, mot staging) → `284.2`/`284.3`/`284.4`
+inbördes oberoende → `284.5` QA och `284.6` prod är MARCUS-moment.**
+Öppet: Event-18:s falska positiv ej lokaliserad · Lottas fyra besked ·
+**Marcus: kalenderlänkarna på miranon.se + Lotta-texten** · `task-232` → Done
+vid stängning. Numrering efter S110 Del 4: ADR **123** (S109 mintade i
+`#1689` — läs disk) · kort **285+** · L512 + 58 fragment · **T160** · f52 ·
+session 111. Full narrativ: sessionsdok S110 Del 1–4 + PAUSLÄGE.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång
 2026-08-21) — NOTIS-FAMILJEN: BYGGET AV `TASK-283` OCH NOTIS-PROTOTYPEN STARTAR.**
