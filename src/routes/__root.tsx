@@ -6,6 +6,7 @@ import { NuqsAdapter } from 'nuqs/adapters/tanstack-router';
 import { Suspense } from 'react';
 import type { AuthContextValue } from '@/auth/AuthProvider';
 import { AppUpdateBanner, RouteAnnouncer, Sidbytesindikator } from '@/components/AppShell';
+import { NotisPrototypVaxlare } from '@/components/dev/NotisPrototypVaxlare';
 import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
 
 interface RouterContext {
@@ -53,6 +54,10 @@ function RootLayout() {
       >
         <NuqsAdapter>
           <Outlet />
+          {/* [PROTOTYPE — KONVERGENS, S109] Notis-växlaren behöver nuqs-
+              adaptern och bor därför här, inte bredvid AppUpdateBanner.
+              DEV-grindad + egen `?variant`-grind — rivs vid promovering. */}
+          {import.meta.env.DEV && <NotisPrototypVaxlare />}
         </NuqsAdapter>
       </Suspense>
       {/* Global, landmark-fri annonsering av route-byten — gäller alla

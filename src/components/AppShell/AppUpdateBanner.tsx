@@ -1,7 +1,9 @@
-import { useSyncExternalStore } from 'react';
+import { useSearch } from '@tanstack/react-router';
+import { useState, useSyncExternalStore } from 'react';
 import { Button } from '@/components/primitives';
 import { laesAppUppdatering, prenumereraPaAppUppdatering } from '@/lib/app-uppdatering';
 import { laesChunkLaddningsfel, prenumereraPaChunkLaddningsfel } from '@/lib/chunk-laddningsfel';
+import { Uppdateringsnotis } from './Uppdateringsnotis';
 
 /**
  * Diskret uppdaterings-banner (TASK-199-uppföljning, ADR-047 § Amendering
@@ -101,38 +103,38 @@ export function AppUpdateBanner() {
     () => false,
   );
 
+  // [PROTOTYPE — KONVERGENS, S109] `?variant=1` byter info-läget mot den
+  // överlagrade notisen (ADR-121 beslut 2); `?data=ny-version` tvingar fram
+  // den utan service worker, `?data=chunk` visar chunk-bannern oförändrad.
+  // DEV-grindad: grenen tree-shakas bort ur prod-bundeln. Vid promovering
+  // (ADR-103) flippas villkoret så notisen blir den ovillkorliga formen och
+  // denna gren rivs — formen rör vi inte.
+  const sok = useSearch({ strict: false }) as Record<string, unknown>;
+  const prototypAktiv = import.meta.env.DEV && String(sok.variant) === '1';
+  const prototypData = import.meta.env.DEV ? String(sok.data ?? '') : '';
+  const [avfardad, setAvfardad] = useState(false);
+  if (prototypAktiv) {
+    const chunkTvingad = prototypData === 'chunk';
+    const notisSynlig =
+      !avfardad &&
+      !chunkTvingad &&
+      !omladdningKravs &&
+      (prototypData === 'ny-version' || uppdateringFinns);
+    return (
+      <>
+        {(omladdningKravs || chunkTvingad) && <ChunkBanner />}
+        <Uppdateringsnotis
+          synlig={notisSynlig}
+          onLaddaOm={() => window.location.reload()}
+          onInteNu={() => setAvfardad(true)}
+        />
+      </>
+    );
+  }
+
   return (
     <>
-      {omladdningKravs && (
-        <div
-          role="alert"
-          data-testid="app-reload-required-banner"
-          className="flex flex-wrap items-center justify-center gap-3 border-warning border-b bg-warning-bg px-4 py-2 text-center text-small contrast-more:border-b-2 print:hidden"
-        >
-          {/* Gunilla-testet: orsak, följd och åtgärd i den ordningen, utan
-              ett enda tekniskt ord. Hon ska inte behöva veta vad en chunk,
-              en deploy eller en service worker är för att förstå vad hon
-              ska göra. Långa bindestreck är förbjudna i användarsynlig text
-              (Marcus-beslut 2026-08-09, .langa-streck-policy.json). */}
-          <p>
-            Appen har uppdaterats medan du hade den öppen, så en del av sidan kunde inte laddas.
-            Ladda om för att fortsätta. Har du skrivit något som inte är sparat, kopiera det först.
-          </p>
-          <Button
-            intent="primary"
-            size="sm"
-            onPress={() => {
-              // Samma omladdning som i info-läget nedan, och av samma skäl:
-              // den nya service workern har redan tagit kontroll, så en
-              // vanlig reload hämtar den nya koden.
-              window.location.reload();
-            }}
-            data-testid="app-reload-required-reload"
-          >
-            Ladda om
-          </Button>
-        </div>
-      )}
+      {omladdningKravs && <ChunkBanner />}
       <div role="status" aria-live="polite" data-testid="app-update-banner">
         {uppdateringFinns && !omladdningKravs && (
           <div className="flex flex-wrap items-center justify-center gap-3 border-info border-b bg-info-bg px-4 py-2 text-center text-small contrast-more:border-b-2 print:hidden">
@@ -165,5 +167,43 @@ export function AppUpdateBanner() {
         )}
       </div>
     </>
+  );
+}
+
+/**
+ * Chunk-läget (`role="alert"`), oförändrat utbrutet ur `AppUpdateBanner` så
+ * prototyp-grenen och den skarpa grenen delar EXAKT samma markup. Villkorad
+ * montering med avsikt — se doc-blocket ovan.
+ */
+function ChunkBanner() {
+  return (
+    <div
+      role="alert"
+      data-testid="app-reload-required-banner"
+      className="flex flex-wrap items-center justify-center gap-3 border-warning border-b bg-warning-bg px-4 py-2 text-center text-small contrast-more:border-b-2 print:hidden"
+    >
+      {/* Gunilla-testet: orsak, följd och åtgärd i den ordningen, utan
+            ett enda tekniskt ord. Hon ska inte behöva veta vad en chunk,
+            en deploy eller en service worker är för att förstå vad hon
+            ska göra. Långa bindestreck är förbjudna i användarsynlig text
+            (Marcus-beslut 2026-08-09, .langa-streck-policy.json). */}
+      <p>
+        Appen har uppdaterats medan du hade den öppen, så en del av sidan kunde inte laddas. Ladda
+        om för att fortsätta. Har du skrivit något som inte är sparat, kopiera det först.
+      </p>
+      <Button
+        intent="primary"
+        size="sm"
+        onPress={() => {
+          // Samma omladdning som i info-läget nedan, och av samma skäl:
+          // den nya service workern har redan tagit kontroll, så en
+          // vanlig reload hämtar den nya koden.
+          window.location.reload();
+        }}
+        data-testid="app-reload-required-reload"
+      >
+        Ladda om
+      </Button>
+    </div>
   );
 }
