@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 10:55'
+updated_date: '2026-08-21 12:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,13 +28,13 @@ Täcker användarberättelser: 8, 9, 10, 17, 21
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 MessageBox i alla fyra intents är identisk med facit tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json ytan meddelanderutan (ingen kontur, vänsterkant, tonad bakgrund, rubrik i intent-färg, neutral brödtext)
-- [ ] #2 actions-slotten renderar knappraden högerställd under texten; sektionsfelet konsumerar den och placerar ingen egen knapp
-- [ ] #3 onDismiss på intent error eller warning är omöjligt eller fäller tydligt; info och success visar krysset på rubrikens linje i liv med högerkanten
-- [ ] #4 prefers-contrast: more ger kontur i full intent-färg — verifierat med emulering i testmiljön
-- [ ] #5 Rollmappningen är oförändrad: error/warning är alert, info/success är status; befintliga acceptance-tester som läser den är gröna
-- [ ] #6 ariaSnapshot-paret prototyp före == primitiv efter är grönt för alla fyra intents
-- [ ] #7 axe-sviten för primitiv-sidan täcker de nya exemplen med noll violations
+- [x] #1 MessageBox i alla fyra intents är identisk med facit tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json ytan meddelanderutan (ingen kontur, vänsterkant, tonad bakgrund, rubrik i intent-färg, neutral brödtext)
+- [x] #2 actions-slotten renderar knappraden högerställd under texten; sektionsfelet konsumerar den och placerar ingen egen knapp
+- [x] #3 onDismiss på intent error eller warning är omöjligt eller fäller tydligt; info och success visar krysset på rubrikens linje i liv med högerkanten
+- [x] #4 prefers-contrast: more ger kontur i full intent-färg — verifierat med emulering i testmiljön
+- [x] #5 Rollmappningen är oförändrad: error/warning är alert, info/success är status; befintliga acceptance-tester som läser den är gröna
+- [x] #6 ariaSnapshot-paret prototyp före == primitiv efter är grönt för alla fyra intents
+- [x] #7 axe-sviten för primitiv-sidan täcker de nya exemplen med noll violations
 <!-- AC:END -->
 
 ## Definition of Done

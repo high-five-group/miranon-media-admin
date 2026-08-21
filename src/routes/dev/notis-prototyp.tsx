@@ -47,72 +47,96 @@ function NotisPrototypPage() {
         </p>
 
         <h2 className="font-semibold text-xl">Formulärfel</h2>
-        {proto ? (
-          <MessageBoxPrototyp
-            intent="error"
-            title="Lösenordet kunde inte sparas"
-            actions={
-              <Button intent="secondary" size="sm">
-                Försök igen
-              </Button>
-            }
-          >
-            <p>
-              Kontrollera att du är uppkopplad och prova igen. Det du skrev finns kvar i fälten.
-            </p>
-          </MessageBoxPrototyp>
-        ) : (
-          <MessageBox intent="error" title="Lösenordet kunde inte sparas">
-            <p>
-              Kontrollera att du är uppkopplad och prova igen. Det du skrev finns kvar i fälten.
-            </p>
-            <Button intent="secondary" size="sm" className="mt-3">
-              Försök igen
-            </Button>
-          </MessageBox>
-        )}
+        {/* [TASK-285.2] AC #6-ankaret (ADR-103 B4): FÖRE-referensen fångas
+            härifrån (`?variant=1`, MessageBoxPrototyp) innan MessageBox
+            promoveras; EFTER-läget (samma testid, ingen ?variant) ska ge
+            byte-identisk ariaSnapshot när primitiven bär samma form. */}
+        <div data-testid="notis-formularfel">
+          {proto ? (
+            <MessageBoxPrototyp
+              intent="error"
+              title="Lösenordet kunde inte sparas"
+              actions={
+                <Button intent="secondary" size="sm">
+                  Försök igen
+                </Button>
+              }
+            >
+              <p>
+                Kontrollera att du är uppkopplad och prova igen. Det du skrev finns kvar i fälten.
+              </p>
+            </MessageBoxPrototyp>
+          ) : (
+            <MessageBox
+              intent="error"
+              title="Lösenordet kunde inte sparas"
+              actions={
+                <Button intent="secondary" size="sm">
+                  Försök igen
+                </Button>
+              }
+            >
+              <p>
+                Kontrollera att du är uppkopplad och prova igen. Det du skrev finns kvar i fälten.
+              </p>
+            </MessageBox>
+          )}
+        </div>
 
         <h2 className="font-semibold text-xl">En del av sidan gick sönder (SectionError)</h2>
-        {proto ? (
-          <MessageBoxPrototyp
-            intent="error"
-            title="Den här delen kunde inte visas"
-            actions={
-              <Button intent="secondary" size="sm">
-                Försök igen
-              </Button>
-            }
-          >
-            <p>
-              Resten av sidan fungerar. Prova igen, eller ladda om hela sidan om det inte hjälper.
-            </p>
-          </MessageBoxPrototyp>
-        ) : (
-          <MessageBox intent="error" title="Något gick fel">
-            <p>
-              Den här delen av sidan kunde inte visas. Försök igen - ladda om hela sidan om felet
-              kvarstår.
-            </p>
-            <Button intent="secondary" size="sm" className="mt-3">
-              Försök igen
-            </Button>
-          </MessageBox>
-        )}
+        <div data-testid="notis-sectionerror">
+          {proto ? (
+            <MessageBoxPrototyp
+              intent="error"
+              title="Den här delen kunde inte visas"
+              actions={
+                <Button intent="secondary" size="sm">
+                  Försök igen
+                </Button>
+              }
+            >
+              <p>
+                Resten av sidan fungerar. Prova igen, eller ladda om hela sidan om det inte hjälper.
+              </p>
+            </MessageBoxPrototyp>
+          ) : (
+            <MessageBox
+              intent="error"
+              title="Något gick fel"
+              actions={
+                <Button intent="secondary" size="sm">
+                  Försök igen
+                </Button>
+              }
+            >
+              <p>
+                Den här delen av sidan kunde inte visas. Försök igen - ladda om hela sidan om felet
+                kvarstår.
+              </p>
+            </MessageBox>
+          )}
+        </div>
 
         <h2 className="font-semibold text-xl">Varning</h2>
-        <Ruta intent="warning" title="Eventet är fullbokat">
-          <p>Nya anmälningar hamnar på väntelistan tills en plats blir ledig.</p>
-        </Ruta>
+        <div data-testid="notis-varning">
+          <Ruta intent="warning" title="Eventet är fullbokat">
+            <p>Nya anmälningar hamnar på väntelistan tills en plats blir ledig.</p>
+          </Ruta>
+        </div>
 
         <h2 className="font-semibold text-xl">Kvitto</h2>
-        <Ruta intent="success" title="Bekräftelsemail skickat" onDismiss={() => {}}>
-          <p>Anna Andersson har fått bekräftelsen på sin e-post.</p>
-        </Ruta>
+        <div data-testid="notis-kvitto">
+          <Ruta intent="success" title="Bekräftelsemail skickat" onDismiss={() => {}}>
+            <p>Anna Andersson har fått bekräftelsen på sin e-post.</p>
+          </Ruta>
+        </div>
 
         <h2 className="font-semibold text-xl">Info</h2>
-        <Ruta intent="info" title="Eventet saknar plats" onDismiss={() => {}}>
-          <p>Lägg till en plats så att den kommer med i bekräftelsen.</p>
-        </Ruta>
+        <div data-testid="notis-info">
+          <Ruta intent="info" title="Eventet saknar plats" onDismiss={() => {}}>
+            <p>Lägg till en plats så att den kommer med i bekräftelsen.</p>
+          </Ruta>
+        </div>
 
         <h2 className="font-semibold text-xl">Hela appen gick sönder (AppError)</h2>
         <p className="text-small text-text-secondary">
