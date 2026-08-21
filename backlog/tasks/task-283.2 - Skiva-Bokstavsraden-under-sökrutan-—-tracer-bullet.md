@@ -4,10 +4,11 @@ title: 'Skiva: Bokstavsraden under sökrutan — tracer bullet'
 status: To Do
 assignee: []
 created_date: '2026-08-21 08:52'
+updated_date: '2026-08-21 11:55'
 labels:
   - ready-for-agent
 dependencies:
-  - TASK-283.1
+  - TASK-286.3
 parent_task_id: TASK-283
 ordinal: 511000
 ---
@@ -33,16 +34,16 @@ Täcker användarberättelser: 2, 3, 4, 5, 7, 10, 11, 12, 13, 14, 15, 16, 17
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Bokstavsraden renderas direkt under sökrutan i ordningen A-Z, sedan Å, Ä, Ö, sist hinken Utan namn
-- [ ] #2 Ett tryck på en bokstav filtrerar listan via serverparametern och räknar-raden speglar det filtrerade antalet
-- [ ] #3 Ett tryck på samma bokstav igen släpper filtret
-- [ ] #4 Vald bokstav bär tryckt-tillstånd som annonseras av skärmläsare
-- [ ] #5 Bokstav plus fritext smalnar av tillsammans; tomt utfall ger tomläget, aldrig en tom sida
-- [ ] #6 Valet lever i URL:en — öppna person, backa, samma filtrerade lista
-- [ ] #7 Hela raden nås och manövreras med tangentbord i ETT tabbsteg, inte trettio
-- [ ] #8 Mobil-layouten vald mot RENDERAD MÄTNING (flerraders eller rullande behållare) och valet nedskrivet med skäl
-- [ ] #9 Personlistans rad- och listform är identisk med facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — raden är ett tillägg ovanför, inget låst formbeslut rört
-- [ ] #10 Acceptance-sviten täcker filtrering, tryckt-tillstånd, kombination med fritext, tomläge, URL-tillstånd och noll axe-överträdelser
-- [ ] #11 Det kända röda fönstret i promoverings-grindens sex referenser är bokfört i skivans slutrapport och överlämnat till facit-skivan
+- [ ] #2 Ett tryck på samma bokstav igen släpper filtret
+- [ ] #3 Vald bokstav bär tryckt-tillstånd som annonseras av skärmläsare
+- [ ] #4 Bokstav plus fritext smalnar av tillsammans; tomt utfall ger tomläget, aldrig en tom sida
+- [ ] #5 Valet lever i URL:en — öppna person, backa, samma filtrerade lista
+- [ ] #6 Hela raden nås och manövreras med tangentbord i ETT tabbsteg, inte trettio
+- [ ] #7 Mobil-layouten vald mot RENDERAD MÄTNING (flerraders eller rullande behållare) och valet nedskrivet med skäl
+- [ ] #8 Personlistans rad- och listform är identisk med facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — raden är ett tillägg ovanför, inget låst formbeslut rört
+- [ ] #9 Acceptance-sviten täcker filtrering, tryckt-tillstånd, kombination med fritext, tomläge, URL-tillstånd och noll axe-överträdelser
+- [ ] #10 Det kända röda fönstret i promoverings-grindens sex referenser är bokfört i skivans slutrapport och överlämnat till facit-skivan
+- [ ] #11 Ett tryck på en bokstav filtrerar den laddade arrayen i klienten (ingen nätverksfråga; ADR-123 beslut 3) och räknar-raden speglar det filtrerade antalet
 <!-- AC:END -->
 
 ## Definition of Done
@@ -55,3 +56,12 @@ Täcker användarberättelser: 2, 3, 4, 5, 7, 10, 11, 12, 13, 14, 15, 16, 17
 - [ ] #6 Varje bokstavsknapp minst 24x24 CSS-px — mätt i renderad yta, aldrig läst ur en klass (WCAG 2.5.8 AA)
 - [ ] #7 Sentinelen undantagen ur E-filtret — bevisat med testfall, aldrig antaget (fälla 51)
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-21 11:34
+---
+AMENDERING 2026-08-21 (S109, ADR-123 — väg B): filtret går mot klientarrayen, inte serverparametern (AC #2 ersatt, ny AC sist i listan). Fördelningen för nedtoningen (skiva 3) är en reduce över samma array. Skivan blockeras av registerskivan i personregistrets PRD — dep sätts när den är publicerad. Allt annat (form, URL-tillstånd, tangentbord, mobil-mätning, facit-invarianten, det röda fönstret) oförändrat.
+---
+<!-- COMMENTS:END -->

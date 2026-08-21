@@ -4,6 +4,7 @@ title: 'PRD: Bokstavsindex i personlistan'
 status: To Do
 assignee: []
 created_date: '2026-08-21 08:41'
+updated_date: '2026-08-21 11:34'
 labels: []
 dependencies: []
 ordinal: 509000
@@ -134,3 +135,12 @@ Styrande i området, alla oförändrade av detta kort: **ADR-056** (cursor-pagin
 - [ ] #7 Sentinelen undantagen ur E-filtret — bevisat med testfall, aldrig antaget (fälla 51)
 - [ ] #8 Varje bokstavsknapp minst 24x24 CSS-px — mätt i renderad yta, aldrig läst ur en klass (WCAG 2.5.8 AA)
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-21 11:34
+---
+AMENDERING 2026-08-21 (S109, ADR-123 — väg B): Implementationsbeslutet 'Filtret byggs som ett tredje AND-villkor i Personer-EF:ens befintliga formel' UTGÅR. Marcus valde förladdat register med sök i klienten ('Då kör vi B!'); bokstavsfiltret och fördelningen blir en filter/reduce över den laddade arrayen (ADR-123 beslut 3), sorteringen svensk kollation i klienten (beslut 4) — vilket stänger fälla 51:s bläddrings-/filter-inkonsekvens som detta PRD bokförde som pris. Konsekvens: 283.1 utgår (wontfix), 283.2–283.4 byggs mot klientdata och blockeras av registerskivan i det nya PRD-kortet för personregistret. Användarberättelser, formkrav (raden byter aldrig längd, nedtoning bunden till hela registret, A–Ö-ordning, hinken för namnlösa) och facit-amenderingsvägen (väg A, T157) står oförändrade.
+---
+<!-- COMMENTS:END -->
