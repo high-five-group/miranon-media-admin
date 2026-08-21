@@ -779,7 +779,7 @@ export function AktivitetsHistorik() {
           <h1 className="font-semibold text-3xl">Aktivitetshistorik</h1>
         </header>
         <MessageBox intent="error" title="Kunde inte hämta aktivitetshistoriken">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
+          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       </div>
     );

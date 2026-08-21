@@ -144,7 +144,7 @@ export function EventRegistrations({ eventId }: { eventId: string }) {
       <section className="flex flex-col gap-4 p-4">
         {backLink}
         <MessageBox intent="error" title="Kunde inte hämta anmälda">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
+          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       </section>
     );

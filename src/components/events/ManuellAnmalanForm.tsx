@@ -527,7 +527,7 @@ function ValtLage({ eventId, fran }: { eventId: string; fran?: NyAnmalanUrsprung
           {/* Övriga fel: requestId bärs i meddelandet (EdgeFunctionError). */}
           {otherError && !mutation.isPending && (
             <MessageBox intent="error" title="Kunde inte skapa anmälan">
-              {otherError instanceof Error ? otherError.message : 'Okänt fel.'}
+              {otherError instanceof Error ? otherError.message : 'Inget felmeddelande angavs.'}
             </MessageBox>
           )}
         </div>

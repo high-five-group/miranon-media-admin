@@ -152,7 +152,7 @@ export function SegmentMailCompose() {
 
       {segments.isError && (
         <MessageBox intent="error" title="Kunde inte hämta sparade segment">
-          {segments.error instanceof Error ? segments.error.message : 'Okänt fel.'}
+          {segments.error instanceof Error ? segments.error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       )}
 
@@ -162,7 +162,9 @@ export function SegmentMailCompose() {
           {recipients.isPending && <p className="text-small text-text-muted">Räknar mottagare…</p>}
           {recipients.isError && !recipients.isPending && (
             <MessageBox intent="error" title="Kunde inte räkna mottagare">
-              {recipients.error instanceof Error ? recipients.error.message : 'Okänt fel.'}
+              {recipients.error instanceof Error
+                ? recipients.error.message
+                : 'Inget felmeddelande angavs.'}
             </MessageBox>
           )}
           {noRecipients && (
@@ -317,7 +319,9 @@ export function SegmentMailCompose() {
 
         {sendMutation.isError && !sendMutation.isPending && (
           <MessageBox intent="error" title="Kunde inte skicka utskicket">
-            {sendMutation.error instanceof Error ? sendMutation.error.message : 'Okänt fel.'}
+            {sendMutation.error instanceof Error
+              ? sendMutation.error.message
+              : 'Inget felmeddelande angavs.'}
           </MessageBox>
         )}
 

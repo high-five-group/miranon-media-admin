@@ -1647,7 +1647,7 @@ export function PersonDetail({ personId }: { personId: string }) {
         </MessageBox>
       ) : (
         <MessageBox intent="error" title="Kunde inte hämta persondetaljer">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
+          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       ),
     );

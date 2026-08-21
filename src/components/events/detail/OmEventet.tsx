@@ -120,7 +120,9 @@ function OmEventetForm({ event, onStang }: { event: Event; onStang: () => void }
       {mutation.isError && (
         <div className="py-3">
           <MessageBox intent="error" title="Kunde inte spara ändringarna">
-            {mutation.error instanceof Error ? mutation.error.message : 'Okänt fel.'}
+            {mutation.error instanceof Error
+              ? mutation.error.message
+              : 'Inget felmeddelande angavs.'}
           </MessageBox>
         </div>
       )}

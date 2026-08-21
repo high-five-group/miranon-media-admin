@@ -89,7 +89,7 @@ test.describe('AppErrorFallback — renderar utan stylesheet (designvillkoret, A
     const kort = page.getByTestId('appfel-fallback-skarp');
     await expect(kort.getByRole('heading', { name: 'Appen kunde inte visas' })).toBeVisible();
     await expect(kort).toContainText(
-      'Något gick sönder så att sidan inte kan ritas upp. Det du redan har sparat finns kvar.',
+      'Sidan kunde inte ritas upp, men det du redan har sparat finns kvar.',
     );
     await expect(kort.getByRole('button', { name: 'Ladda om' })).toBeVisible();
   });

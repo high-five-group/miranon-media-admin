@@ -2330,7 +2330,7 @@ function PublikSektion({
     return (
       <div className="px-4">
         <MessageBox intent="error" title="Kunde inte räkna publiken">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
+          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       </div>
     );
@@ -3348,7 +3348,7 @@ function RegelVerkstad({
                     <p className="mm-laddtext text-small text-text-muted">Räknar personer…</p>
                   ) : isError ? (
                     <MessageBox intent="error" title="Kunde inte räkna antal">
-                      {error instanceof Error ? error.message : 'Okänt fel.'}
+                      {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
                     </MessageBox>
                   ) : antal === undefined ? (
                     // Regeln är ofullständig — det enda skälet till att ett tal

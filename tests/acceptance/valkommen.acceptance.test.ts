@@ -217,7 +217,13 @@ test.describe('/valkommen — lösenordsgolvet mot en riktig HIBP-kontroll (AC #
     await page.getByLabel('Lösenord').fill('EttHelPigg-FrasMedManga-OrdOchTecken');
     await page.getByRole('button', { name: 'Skapa mitt konto' }).click();
 
-    await expect(page.getByRole('alert')).toContainText('Något gick fel');
+    // Exakt sträng (TASK-285.8, copy-domarna § 5/§ 7.3, AC #4) — inte bara en
+    // delsträng: den tidigare "Något gick fel ... Försök igen" faller på
+    // GOV.UK/NN/g (huvudsatsen bär ingen orsak); ersättningen namnger
+    // problemet specifikt och behåller en genuint hållbar uppmaning.
+    await expect(page.getByRole('alert')).toContainText(
+      'Lösenordet kunde inte sparas just nu. Försök igen om en liten stund.',
+    );
     // Formuläret är fortfarande här — INGEN övergång till felläget eller
     // framgångsläget vid ett generiskt fel.
     await expect(page.getByRole('button', { name: 'Skapa mitt konto' })).toBeVisible();

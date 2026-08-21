@@ -170,7 +170,7 @@ export function AddRegistrationModal({ eventId }: { eventId: string }) {
               {/* Övriga fel: requestId för spårbarhet (Fas A M7). */}
               {otherError && (
                 <MessageBox intent="error" title="Kunde inte skapa anmälan">
-                  {otherError instanceof Error ? otherError.message : 'Okänt fel.'}
+                  {otherError instanceof Error ? otherError.message : 'Inget felmeddelande angavs.'}
                 </MessageBox>
               )}
 

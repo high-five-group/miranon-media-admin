@@ -386,7 +386,7 @@ export function PersonsList() {
       <div className="flex flex-col gap-4" data-testid="personer-yta">
         {searchField}
         <MessageBox intent="error" title="Kunde inte hämta personer">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
+          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       </div>
     );

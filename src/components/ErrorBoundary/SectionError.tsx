@@ -38,11 +38,29 @@ import { laesChunkLaddningsfel, prenumereraPaChunkLaddningsfel } from '@/lib/chu
  * doc-block), så flaggan är redan sann när DENNA komponent hinner rendera
  * för just det felet — `error`-propen behöver därför aldrig inspekteras.
  *
- * Copyn (rubrik/brödtext) rörs INTE av denna skiva — det är `TASK-285.8`s
- * jobb (S109-facitets egen not: "SectionError vid chunk-fel ska visa 'Ladda
- * om', inte 'Försök igen' (beslut i PRD:n)"). Skarven mot Sentry-kedjan
- * (rapporteras Lottas upprepade, verkningslösa klick?) är `T151` § LUCKA 3 —
- * noterad, inte byggd här.
+ * ═══ COPYN (TASK-285.8, copy-domarna § 5/§ 7.3, ADR-121 § 8) ═══
+ *
+ * Rubrik OCH brödtext är villkorade på samma `kravsOmladdning`-flagga som
+ * knappen — tidigare var båda statiska ("Något gick fel" + en text som
+ * nämnde "Försök igen" ÄVEN när knappen visade "Ladda om", ett löfte
+ * copy-domarna uttryckligen förbjuder). Chunk-grenens rubrik/brödtext
+ * ("Den här delen behöver laddas om" / "En ny version av appen...") bär
+ * ORSAK + LÖSNING utan att upprepa databesked-varningen — den bor ENBART i
+ * chunk-bannern (`ChunkBanner.tsx`, ADR-121 § 8). Icke-chunk-grenens copy
+ * ("Den här delen kunde inte visas" / "Resten av sidan fungerar. Prova
+ * igen...") är verbatim den FÖRESLAGNA texten `notis-prototyp.tsx`s egen
+ * "notis-sectionerror"-demo redan visade (se `messagebox-promoverings-
+ * grind.spec.ts`s doc-block, "MEDVETET UTANFÖR PARET" — den prototyp-
+ * strängen var explicit ett förslag på DENNA skivas jobb, inte en
+ * facit-låsning). Rubriktiteln på chunk-grenen är MEDVETET INTE identisk med
+ * `ChunkBanner`s ("Sidan behöver laddas om") — TASK-285.13 (öppet
+ * beslutskort) bokför att BÅDA regionerna vid ett chunk-fel bär knappen
+ * "Ladda om" (oförändrat, 285.7:s beslut); att också göra RUBRIKEN identisk
+ * hade FÖRVÄRRAT den kollisionen i stället för att minska den — denna skiva
+ * löser inte 285.13, men gör inte kollisionen värre.
+ *
+ * Skarven mot Sentry-kedjan (rapporteras Lottas upprepade, verkningslösa
+ * klick?) är `T151` § LUCKA 3 — noterad, inte byggd här.
  */
 export function SectionError({ reset }: ErrorComponentProps) {
   const router = useRouter();
@@ -56,7 +74,7 @@ export function SectionError({ reset }: ErrorComponentProps) {
   return (
     <MessageBox
       intent="error"
-      title="Något gick fel"
+      title={kravsOmladdning ? 'Den här delen behöver laddas om' : 'Den här delen kunde inte visas'}
       actions={
         kravsOmladdning ? (
           <Button intent="secondary" size="sm" onPress={() => window.location.reload()}>
@@ -77,8 +95,9 @@ export function SectionError({ reset }: ErrorComponentProps) {
       }
     >
       <p>
-        Den här delen av sidan kunde inte visas. Försök igen - ladda om hela sidan om felet
-        kvarstår.
+        {kravsOmladdning
+          ? 'En ny version av appen gör att den här delen behöver laddas om.'
+          : 'Resten av sidan fungerar. Prova igen, eller ladda om hela sidan om det inte hjälper.'}
       </p>
     </MessageBox>
   );

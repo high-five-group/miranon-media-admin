@@ -51,7 +51,7 @@ export function SavedSegmentsList() {
         </div>
       ) : isError ? (
         <MessageBox intent="error" title="Kunde inte hämta sparade segment">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
+          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       ) : data.length === 0 ? (
         <p className="text-small text-text-muted">Inga sparade segment än.</p>

@@ -41,18 +41,21 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  *
  * MEDVETET UTANFÖR PARET: `notis-sectionerror`-exemplet (routens femte block,
  * `data-testid="notis-sectionerror"`) visar SAMMA STRUKTUR (alert, rubrik,
- * brödtext, en actions-knapp "Försök igen") men med AVSIKTLIGT olika COPY
- * mellan prototyp- och skarpt-grenen: prototypen visar den FÖRESLAGNA
- * framtida texten ("Den här delen kunde inte visas"), skarpt-grenen speglar
- * `SectionError.tsx`s NUVARANDE copy ("Något gick fel"). S109-facitets egen
- * not säger det rakt ut: "Copyn i exemplen är FÖRSLAG ... SectionError vid
- * chunk-fel ska visa 'Ladda om', inte 'Försök igen' (beslut i PRD:n)" — och
- * kortets ORDNING-avsnitt lika rakt: "dess TEXT ändras i copy-skivan". Ett
- * `ariaSnapshot`-par som krävde textlikhet här hade fällt på en skillnad
- * SOM SKA finnas kvar tills copy-skivan landar — att inkludera den i paret
- * hade varit att bevisa fel sak. STRUKTUR-paritet (roll, antal noder,
- * knappens NAMN) är verifierad separat i `tests/a11y/MessageBox.spec.ts`
- * ("actions-sloten … SectionError konsumerar den").
+ * brödtext, en actions-knapp "Försök igen"). FÖRE `TASK-285.8` (copy-svepet)
+ * skilde sig COPYN medvetet mellan grenarna: prototypen visade den
+ * FÖRESLAGNA framtida texten ("Den här delen kunde inte visas"), skarpt-
+ * grenen speglade `SectionError.tsx`s DÅVARANDE copy ("Något gick fel" — ett
+ * löfte texten inte kunde hålla i chunk-fallet, se `SectionError.tsx`s eget
+ * doc-block). `TASK-285.8` landade den föreslagna texten VERBATIM i
+ * `SectionError.tsx` för icke-chunk-läget, så copyn för DETTA läge är nu
+ * identisk mellan grenarna — men exemplet ingår ÄNDÅ inte i det formella
+ * `ariaSnapshot`-paret: det var aldrig en av de FYRA intenterna kortets
+ * AC #6 pekar ut (§ SCOPE ovan), bara en illustrativ femte demo, och
+ * `SectionError`s CHUNK-läge (en andra, villkorad rubrik/brödtext/knapp)
+ * har ingen motsvarighet i prototypens statiska demo över huvud taget.
+ * STRUKTUR-paritet (roll, antal noder, knappens NAMN) är verifierad separat
+ * i `tests/a11y/MessageBox.spec.ts` ("actions-sloten … SectionError
+ * konsumerar den").
  */
 
 /** EFTER-läget: den PROMOVERADE, ovillkorliga `MessageBox`-formen. */

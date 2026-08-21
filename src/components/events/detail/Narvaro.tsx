@@ -138,7 +138,7 @@ function NarvaroRegister({ eventId }: { eventId: string }) {
     return (
       <div className="py-4">
         <MessageBox intent="error" title="Kunde inte hämta närvaron">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
+          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       </div>
     );

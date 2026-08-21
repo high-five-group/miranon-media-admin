@@ -112,7 +112,10 @@ test.describe('App-skal (Fas 5 DoD)', () => {
       test.skip(true, 'DEV-guardad feltrigger ej tillgänglig mot prod-build');
     }
     await page.getByRole('button', { name: 'Kasta sektions-fel' }).click();
-    const alert = page.getByRole('alert').filter({ hasText: 'Något gick fel' });
+    // Rubriken villkoras på felläget sedan TASK-285.8 (copy-svepet) — detta
+    // är det icke-chunk-fallet ("Kasta sektions-fel"), samma sträng som
+    // SectionError.tsx renderar när `kravsOmladdning` är false.
+    const alert = page.getByRole('alert').filter({ hasText: 'Den här delen kunde inte visas' });
     await expect(alert).toBeVisible();
     // Skalet intakt i felläget: ingen header (app-regeln S73) och nav kvar.
     await expect(page.locator('header')).toHaveCount(0);
