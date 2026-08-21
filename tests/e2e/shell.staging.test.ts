@@ -131,12 +131,25 @@ test.describe('App-skal (Fas 5 DoD)', () => {
   });
 
   test('ADR-047 B5 — offline-banner visas och försvinner', async ({ context, page }) => {
-    const banner = page.getByRole('status').filter({ hasText: 'Du är offline' });
-    await expect(banner).toHaveCount(0);
+    // TASK-285.6: offline-beskedet är den ÖVERLAGRADE `Notis`-primitivens
+    // kort (`position: fixed`), inte längre en normal-flow `<p>` i sin
+    // region. Regionen (`role=status`) är alltid monterad men SJÄLV
+    // nollstor (samma invariant som uppdateringsnotisens region,
+    // `app-update-banner.test.ts`s "den tomma live-regionen tar ingen
+    // visuell plats") — `position: fixed`-barn bidrar aldrig till en
+    // normal-flow förälders utbredning. `toBeVisible()` hör därför hemma på
+    // KORTET, inte regionen; regionens egen närvaro/frånvaro av matchande
+    // text prövas separat via `toHaveCount`.
+    const region = page.getByRole('status').filter({ hasText: 'Du är offline' });
+    const kort = page.getByTestId('offline-notis');
+    await expect(region).toHaveCount(0);
+    await expect(kort).toHaveCount(0);
     await context.setOffline(true);
-    await expect(banner).toBeVisible();
+    await expect(kort).toBeVisible();
+    await expect(region).toHaveCount(1);
     await context.setOffline(false);
-    await expect(banner).toHaveCount(0);
+    await expect(kort).toHaveCount(0);
+    await expect(region).toHaveCount(0);
   });
 
   test('DoD 8 — prefers-reduced-motion: globala regeln klampar durations', async ({ page }) => {

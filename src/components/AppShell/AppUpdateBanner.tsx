@@ -2,6 +2,7 @@ import { useSearch } from '@tanstack/react-router';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { laesAppUppdatering, prenumereraPaAppUppdatering } from '@/lib/app-uppdatering';
 import { laesChunkLaddningsfel, prenumereraPaChunkLaddningsfel } from '@/lib/chunk-laddningsfel';
+import { skrivUppdateringsnotisSynlig } from '@/lib/uppdateringsnotis-synlighet';
 import { Uppdateringsnotis } from './Uppdateringsnotis';
 
 /**
@@ -152,6 +153,15 @@ function skrivAvfardad(varde: boolean): void {
  * `ChunkBanner`s egen villkorade montering (varför `role="alert"` INTE är
  * alltid monterad, till skillnad från `role="status"` ovan) är den filens
  * eget resonemang, inte upprepat här.
+ *
+ * ═══ STAPLING MED OFFLINE-NOTISEN (TASK-285.6) ═══
+ *
+ * `notisSynlig` nedan publiceras (via `skrivUppdateringsnotisSynlig`) till
+ * `uppdateringsnotis-synlighet.ts`, en delad signal `OfflineIndicator.tsx`
+ * läser för att stapla sig ovanför DENNA notis när båda råkar vara synliga
+ * samtidigt — se den modulens eget doc-block. Uppdateringsnotisens EGEN
+ * plats (`bottom-24`, facit-låst) ändras aldrig av stapling; det är alltid
+ * offline-kortet som viker undan.
  */
 export function AppUpdateBanner() {
   const uppdateringFinns = useSyncExternalStore(
@@ -195,6 +205,14 @@ export function AppUpdateBanner() {
 
   const notisSynlig =
     !avfardad && !chunkTvingad && !omladdningKravs && (dataTvingadNyVersion || uppdateringFinns);
+
+  // [TASK-285.6] Publicerar det FÄRDIGA synlighetsresultatet (inte den råa
+  // `uppdateringFinns`-flaggan) så offline-notisen (`OfflineIndicator.tsx`)
+  // kan stapla sig ovanför DENNA notis när båda råkar vara synliga samtidigt
+  // — se `uppdateringsnotis-synlighet.ts`s eget doc-block för hela skälet.
+  useEffect(() => {
+    skrivUppdateringsnotisSynlig(notisSynlig);
+  }, [notisSynlig]);
 
   return (
     <Uppdateringsnotis

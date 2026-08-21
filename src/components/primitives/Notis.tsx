@@ -21,6 +21,16 @@ export interface NotisProps {
   regionTestId?: string;
   /** `data-testid` på det synliga kortet (bara närvarande när `synlig`). */
   kortTestId?: string;
+  /**
+   * TASK-285.6: skjuter kortet uppåt (ovanför den facit-låsta `bottom-24`)
+   * så en ANNAN samtidigt synlig `Notis`-instans kan inta bas-platsen utan
+   * att de överlappar. Facit-formen (bredd, färg, kontur, skugga) ändras
+   * INTE av detta — bara det vertikala läget. Default `false`: exakt
+   * facit-platsen, oförändrad. Notistrappan §21 dokumenterar flera samtidiga
+   * "systemnivå, ingen handling krävs nu"-instanser som en avsedd situation,
+   * inte en ny variant av formen.
+   */
+  staplad?: boolean;
 }
 
 /**
@@ -44,7 +54,10 @@ export interface NotisProps {
  *   `docs/research/uppdateringsnotisens-form-och-notisfamiljen-2026-08-20.md`
  *   § "A/B mot en överlagrad form").
  * - Placerad nere till höger, ovanför TabBar-pillen (`bottom-24` = TabBar-
- *   pillens `bottom-4` + dess egen höjd) på alla bredder.
+ *   pillens `bottom-4` + dess egen höjd) på alla bredder. `staplad` (TASK-
+ *   285.6) skjuter EN samtidig instans högre upp så två notiser i samma hörn
+ *   (offline + uppdatering) staplar utan att överlappa — se propens eget
+ *   doc-block.
  * - INGEN kontur — vänsterkant 4 px i info-färg + skugga bär formen
  *   (familjeregeln, Marcus konvergens 2026-08-21: "Helst vill jag inte ha
  *   någon kontur alls"); `prefers-contrast: more` tänder en full kontur i
@@ -80,6 +93,7 @@ export function Notis({
   actions,
   regionTestId,
   kortTestId,
+  staplad = false,
 }: NotisProps) {
   return (
     <div
@@ -92,7 +106,17 @@ export function Notis({
       {synlig && (
         <div
           data-testid={kortTestId}
-          className="fixed right-4 bottom-24 z-40 w-[calc(100%-2rem)] max-w-[22rem] rounded border-info border-l-4 bg-surface-overlay p-4 shadow-xl contrast-more:border sm:right-6"
+          // 229px = bottom-24 (96px) + uppdateringsnotisens MÄTTA renderade
+          // höjd (121px, identisk vid 390px och 1280px — kortets bredd är
+          // konstant `max-w-[22rem]` på båda bredderna) + 12px mellanrum.
+          // Mätt live mot dev-servern (TASK-285.6); fast värde eftersom
+          // uppdateringsnotisens copy är statisk (`Uppdateringsnotis.tsx`),
+          // inte en löpande DOM-mätning — en framtida copy-ändring som växer
+          // kortet fångas av `offline-notis.test.ts`s
+          // stapling-överlappstest, inte tyst.
+          className={`fixed right-4 z-40 w-[calc(100%-2rem)] max-w-[22rem] rounded border-info border-l-4 bg-surface-overlay p-4 shadow-xl contrast-more:border sm:right-6 ${
+            staplad ? 'bottom-[229px]' : 'bottom-24'
+          }`}
         >
           <p className="font-semibold text-text">{title}</p>
           <p className="mt-1 text-small text-text-secondary">{children}</p>
