@@ -94,6 +94,16 @@ Lokal exit 0 garanterar inte grön CI. Svagare lokal variant är inte verifierin
   märker det (`TASK-106`).
 - `npm run typecheck` · `npx @biomejs/biome check .` · `npm run build` ·
   `npm run test:api` enligt `CONTRIBUTING.md`.
+- **Rör diffen `src/`: `node scripts/check-langa-streck.mjs`.** Grinden är
+  wirad direkt i `ci.yml`s `Lint + Audit + TypeCheck` och finns VARKEN i
+  `package.json` eller i `scripts/check-docs.sh` — den är alltså osynlig för
+  den som bara kör listan ovan. Den fäller på långt streck i användar-synlig
+  kod (`StringLiteral`/`JSXText`/`TemplateElement`), inklusive dev-throws och
+  demo-JSX. Lägg INTE till ett undantag i `.langa-streck-policy.json` för en
+  sträng som kan skrivas om; undantag är för genuina tom-markörer och
+  baseline-låsta ytor. Raden står här för att den saknades: 2026-08-21 föll
+  TVÅ av fyra src-rörande agenter i samma våg på exakt denna grind, båda med
+  sina föreskrivna grindar gröna (`tasks/lessons.d/ci-grind-utanfor-agentkontraktets-kommandolista.md`).
 
 **Fånga exitkoden separat.** `$?` efter en pipe läser sista kommandots kod, inte
 verktygets:
