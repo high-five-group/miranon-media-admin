@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:06'
+updated_date: '2026-08-21 14:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,21 +29,29 @@ Täcker användarberättelser: 5, 6, 14, 15
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Chunk-bannern renderas som första barn i innehållsytan i det inloggade skalet, före sidans h1, i innehållets bredd — verifierat på minst en fixtur-vy
-- [ ] #2 Formen följer meddelanderutans facit i tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (ingen kontur, vänsterkant i varning-färg, tonad bakgrund, rubrik, en mening, knapp högerställd) — skärmdump bilagd
-- [ ] #3 Copyn: rubrik 'Sidan behöver laddas om' utan punkt, en mening, databesked-varningen, knappen 'Ladda om' — inga långa streck; strängarna testade exakt
-- [ ] #4 role=alert behålls och regionen monteras villkorat; chunk-läget ersätter den överlagrade notisen och lämnar ingen tom alert-region — chunk-sviten grön
-- [ ] #5 Placeringstestet finns i acceptance-klassen, eller — om hermetik-självtestet fäller det — är fallbacken dokumenterad i PR:en och överlämnad till härdnings-skivan
+- [x] #1 Chunk-bannern renderas som första barn i innehållsytan i det inloggade skalet, före sidans h1, i innehållets bredd — verifierat på minst en fixtur-vy
+- [x] #2 Formen följer meddelanderutans facit i tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (ingen kontur, vänsterkant i varning-färg, tonad bakgrund, rubrik, en mening, knapp högerställd) — skärmdump bilagd
+- [x] #3 Copyn: rubrik 'Sidan behöver laddas om' utan punkt, en mening, databesked-varningen, knappen 'Ladda om' — inga långa streck; strängarna testade exakt
+- [x] #4 role=alert behålls och regionen monteras villkorat; chunk-läget ersätter den överlagrade notisen och lämnar ingen tom alert-region — chunk-sviten grön
+- [x] #5 Placeringstestet finns i acceptance-klassen, eller — om hermetik-självtestet fäller det — är fallbacken dokumenterad i PR:en och överlämnad till härdnings-skivan
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
 - [ ] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
-- [ ] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
-- [ ] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
+- [x] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+DoD #6 (ariaSnapshot-paret) lämnas OKRYSSAD, avsiktligt: chunk-bannern gick aldrig igenom en `?variant`-prototyp/konvergens (facit s109-uppdateringsnotis-konvergens.json yta chunk-banner har `bilder: []`, och DESIGN-SYSTEM-SPEC.md §21 säger uttryckligen att ytan "har ingen låst pixel-form") — det finns inget variant-läge att snapshotta FÖRE för att jämföra mot EFTER. N/A, inte glömt.
+
+FYND UTANFÖR SCOPE (rapporterat, inte byggt): TASK-285.7 (#1718, öppen) gör SectionError chunk-medveten via samma src/lib/chunk-laddningsfel.ts-flagga som min ChunkBanner läser. Läst diff av #1718: när en lazy route-chunk faktiskt failar (den vanliga vägen in i detta läge, inte ett syntetiskt testfall) monteras BÅDA samtidigt — min ChunkBanner (global i AppShells main, role=alert, knapp "Ladda om") OCH SectionErrors egen MessageBox intent=error (role=alert, samma knapptext "Ladda om") i Outlet-positionen under. Två samtidigt FYLLDA alert-regioner med identiskt tillgängligt namn — inte bara tomma-region-fallet AC #4/berättelse 15 skyddar mot. Rör INTE SectionError.tsx eller chunk-laddningsfel.ts (utanför mitt kort och explicit förbjudet av uppdraget) — disambiguering är ett designbeslut (vem äger 'Ladda om' vid en chunk-krasch: bannern, sektionsfelet, eller båda med olika text?) som kräver Marcus.
+<!-- SECTION:NOTES:END -->

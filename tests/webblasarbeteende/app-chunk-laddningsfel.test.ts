@@ -37,6 +37,17 @@ import { expect, test } from '@playwright/test';
  * window-lyssnare i `src/lib/chunk-laddningsfel.ts`) hunnit laddas. I
  * produktion sker felet vid en navigering långt efter boot, så fenomenet finns
  * inte där.
+ *
+ * PLACERINGEN (TASK-285.5, ADR-121 beslut 3): bannern lever numera i
+ * `src/components/AppShell/ChunkBanner.tsx`, monterad av `AppShell` som
+ * första barn i det inloggade skalets `<main>` — INTE längre vid den globala
+ * roten. `/dev/primitives` ligger UTANFÖR skalet och monterar därför
+ * `ChunkBanner` explicit själv (se den routens egen kommentar) — enda skälet
+ * är att hålla DENNA sviten vid liv för komponentens BETEENDE (ersätter,
+ * staplas inte; ingen tom alert-region; eventet sväljs inte). PLACERINGEN
+ * under sidans `h1` i skalet är en ANNAN egenskap och prövas i stället i
+ * acceptance-klassen (`tests/acceptance/hem.acceptance.test.ts`, describe
+ * "Chunk-bannern — placering i skalet").
  */
 
 const FEL_BANNER = '[data-testid="app-reload-required-banner"]';
@@ -126,7 +137,9 @@ test.describe('Chunk-laddningsfel', () => {
 
   // ── POSITIVA SIDAN: uppmaningen syns när en del inte kunde hämtas ─────
 
-  test('visar en begriplig uppmaning när en del av appen inte kunde hämtas', async ({ page }) => {
+  test('visar en kortad, begriplig uppmaning när en del av appen inte kunde hämtas (AC #3)', async ({
+    page,
+  }) => {
     await oppnaAppen(page);
     await skjutPreloadError(page);
 
@@ -134,11 +147,17 @@ test.describe('Chunk-laddningsfel', () => {
 
     // Gunilla-testet: orsak, följd och åtgärd ska alla finnas i klartext.
     const banner = page.locator(FEL_BANNER);
-    await expect(banner).toContainText('Appen har uppdaterats medan du hade den öppen');
+    // Rubriken EXAKT, UTAN punkt (AC #3 — kortningen, ADR-121 beslut 3).
+    await expect(banner.getByText('Sidan behöver laddas om', { exact: true })).toBeVisible();
+    await expect(banner).toContainText('Appen har uppdaterats');
     await expect(banner).toContainText('en del av sidan kunde inte laddas');
-    await expect(banner).toContainText('Ladda om för att fortsätta');
-    // Datasäkerheten ska stå i texten, inte bara i vår avsikt.
-    await expect(banner).toContainText('kopiera det först');
+    // Datasäkerheten (ADR-121 § 8, ordagrant) ska stå i texten, inte bara i vår avsikt.
+    await expect(banner).toContainText(
+      'Har du skrivit något som inte är sparat, kopiera det först.',
+    );
+    // Kortningen (AC #3): den gamla, redundanta CTA-meningen är borta —
+    // knappen bär "Ladda om" ensam, ingen upprepning i brödtexten.
+    await expect(banner).not.toContainText('Ladda om för att fortsätta');
   });
 
   test('meddelandet ligger i en assertiv live-region och stjäl inte fokus', async ({ page }) => {
