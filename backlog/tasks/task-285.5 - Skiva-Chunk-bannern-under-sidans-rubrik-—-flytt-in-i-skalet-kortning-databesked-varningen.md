@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:06'
-updated_date: '2026-08-21 14:09'
+updated_date: '2026-08-21 14:32'
 labels:
   - ready-for-agent
 dependencies:
@@ -54,4 +54,10 @@ Täcker användarberättelser: 5, 6, 14, 15
 DoD #6 (ariaSnapshot-paret) lämnas OKRYSSAD, avsiktligt: chunk-bannern gick aldrig igenom en `?variant`-prototyp/konvergens (facit s109-uppdateringsnotis-konvergens.json yta chunk-banner har `bilder: []`, och DESIGN-SYSTEM-SPEC.md §21 säger uttryckligen att ytan "har ingen låst pixel-form") — det finns inget variant-läge att snapshotta FÖRE för att jämföra mot EFTER. N/A, inte glömt.
 
 FYND UTANFÖR SCOPE (rapporterat, inte byggt): TASK-285.7 (#1718, öppen) gör SectionError chunk-medveten via samma src/lib/chunk-laddningsfel.ts-flagga som min ChunkBanner läser. Läst diff av #1718: när en lazy route-chunk faktiskt failar (den vanliga vägen in i detta läge, inte ett syntetiskt testfall) monteras BÅDA samtidigt — min ChunkBanner (global i AppShells main, role=alert, knapp "Ladda om") OCH SectionErrors egen MessageBox intent=error (role=alert, samma knapptext "Ladda om") i Outlet-positionen under. Två samtidigt FYLLDA alert-regioner med identiskt tillgängligt namn — inte bara tomma-region-fallet AC #4/berättelse 15 skyddar mot. Rör INTE SectionError.tsx eller chunk-laddningsfel.ts (utanför mitt kort och explicit förbjudet av uppdraget) — disambiguering är ett designbeslut (vem äger 'Ladda om' vid en chunk-krasch: bannern, sektionsfelet, eller båda med olika text?) som kräver Marcus.
+
+REBAS mot main efter att TASK-285.3 (#1703) landade och gjorde PR #1719 DIRTY (orkestrerarens svep). Kollisionsfilerna var TVÅ, inte en: src/routes/dev/primitives.tsx (textkonflikt, löst — enda konflikten var en import-rad: 285.3 la till AppErrorFallback-importen, jag ChunkBanner-importen, sammanslaget till en gemensam import-sats från @/components/AppShell) och tests/webblasarbeteende/app-chunk-laddningsfel.test.ts (auto-mergad UTAN textkonflikt av git, verifierad semantiskt ändå: 285.3s .first()-scopingar och FEL_BANNER-scopade knapplokatorer förblir korrekta eftersom ChunkBanner renderar null i vilostate och mina egna assertioner redan var scopade till FEL_BANNER-containern).
+
+Kört om brett EFTER rebasen (alla exitkoder mätta separat): typecheck 0, biome 0 (inga nya fynd i min diff), check-langa-streck.mjs 0 (250 filer), build 0, check:docs 0 (14/14), check-facit.sh 0 (12 manifest, 27 ytor, 2 ogodkända). PLAYWRIGHT_WEBBLASARBETEENDE_DEV_SERVER=1 webblasarbeteende --workers=1: 76/76 (inkl. alla 8 chunk-laddningsfel-tester + 285.3s nya app-error-fallback-tester). PLAYWRIGHT_A11Y_DEV_SERVER=1 a11y --workers=1: 110/110 (inkl. scroll-lock.spec.ts 4/4 — .first()-invarianten på h1 håller med ChunkBanner monterad). Acceptance (hem.acceptance.test.ts): 28/28. hermetik-sjalvtest.mjs: 28/28 fällda med OmockadRequestError.
+
+test:api KUNDE INTE re-verifieras fullt ut: staging-preflighten (TASK-77) stoppade api-staging/kontraktsvakt-grenen upprepade gånger — ett post-merge.yml-jobb (run 32491277264, main-SHA 67912bc1-eran) stod kvar som 'in_progress' i GitHub Actions-API:t långt efter att senare post-merge-körningar redan hade completat, vilket fick semaforen (scripts/staging-semaphore.sh) att fortsätta blockera lokala staging-anrop. INGEN override (MM_STAGING_PREFLIGHT=off) användes — guarden är ett medvetet val, inte en bugg, och en override hade race:at mot en pågående CI-verifiering av samma delade Airtable-bas. Bevis att koden ändå är oberörd: (1) FÖRE rebasen körde test:api rent, 930/930 passed, på exakt samma src-diff (rebasen rörde bara primitives.tsx + en testfils dockblock/copy, ingen data-/API-yta). (2) comm -12 mellan min ändrade fil-lista och 285.7s (#1718) ändrade fil-lista gav NOLL överlapp. api-pure-delen (574 tester, ingen staging-beroende) passerade grönt i BÅDA försöken efter rebasen.
 <!-- SECTION:NOTES:END -->
