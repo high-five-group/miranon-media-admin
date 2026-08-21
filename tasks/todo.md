@@ -81,45 +81,27 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång
-2026-08-20) — DOKUMENT-, BILAGE- OCH MALLSPÅRET ÖVERTAGET FRÅN S107; MODELLEN
-GRILLAD OCH LANDAD, PROTOTYPEN NÄSTA.** Parallell session bredvid S109 (aktiv,
-äger huvudkatalogen — lappens pid lever) och pausade S107; S108 i egen låst
-worktree per ADR-090 beslut 2, gren `docs/s108-resume`. Spåret övertogs per S107 Del 19 § A: `275`-familjen,
-`279`, hela PDF-kedjan och dokumentsidan. **Marcus fyra observationer prövade mot
-faktiskt tillstånd — alla bekräftade, två större än beskrivna:** mallarna är
-**Rönninge-mallar förklädda till generiska** (tre hårdkodade platsstycken; mätt i
-prod är **25 av 54 event i Rönninge, 29 inte**) · förlage-analysens
-"FAST FORM"-premiss **fälld** (den drogs på datum-axeln, plats-axeln prövades
-aldrig — och *parkering*, dess eget exempel, är det mest platsbundna stycket) ·
-**`{{plats}}` har ingen datakälla** (inget adressfält finns på Eventplanering) ·
-dokumenten görs i **PowerPoint av Roger** (mätt ur `pdfinfo`). **TIO KVITTERADE
-BESLUT** (sessionsdok Del 2 § D): fältmodell framför innehållsbibliotek ·
-**AND-filtrerad räckvidd** (Familj/Event/Plats) som **ersätter ADR-118 beslut 1**
-— "alla event" blir "inga filter satta" · explicit typ-ruta i agendan ·
-`Platser` som additiv tabell med `Ort` ORÖRD (läses av tio EF:er) ·
-inaktuell-markering i stället för tyst regenerering · redigering som två nya rader
-på **Mer**, Dokument-ytans layout orörd. **RESEARCH FÄLLDE AGENTENS EGET
-FÖRSLAG:** textsniffnings-regeln avvisad — 0 av 5 dokumentmallverktyg härleder
-formatering ur fri text, och Excel/gennamn-fallet (Ziemann et al. 2016) belägger
-felmoden. **UI GRANSKAT MOT RENDERAD YTA** (Marcus order) — vilket ändrade
-agentens egen rekommendation om var redigeringsytan hör hemma, och fällde ett
-agent-argument om "osynlig semantik" som UI:t redan visade. **ORDLISTA:**
-`Eventinnehåll`, `Plats`, `Steg` (**aldrig "Nivå", överallt** — Marcus order) +
-omskriven `Räckvidd`. **FEM OVERIFIERADE PUNKTER bokförda som `T152`–`T156`**
-i stället för påstådda lösta — `T154` (logisk lucka) **blockerar ADR-121**, som
-därför medvetet INTE mintats; `T156` är designdiffen mot förlagorna (infoboxen
-mätt: 57 % bredare, halva den vertikala luften, 40 % rundare hörn). **`T151`
-kolliderade med S107** — upptäckt av en DIRTY PR, inte av registret; omnumrerat
-vid merge. PR `#1655` (`99c747d4`) + `#1663` (`cb3b82ea`) MERGED, nio jobb gröna
-per jobb. **NÄSTA: `prototype`-skillens UI-gren i DIREKT KONVERGENS** (Marcus
-beslut) mot frågan *"Vad ser Lotta när hon genererar bekräftelsebilagan för
-Arboga-eventet 31 oktober?"* — den stänger `T153` + `T154`, sedan ADR-121, sedan
-PRD/skivor. **Marcus öppna moment: DocRaptor-nyckeln** (blockerar minimaltest och
-hela renderings-kedjan) · `275.4` QA · `279`s flipp-skuld · QR-placeringen
-oavgjord. Numrering re-verifierad vid resume 2026-08-21 = paus-värdena: ADR 121 ·
-task-283 · L512 + **55 fragment** · T157 · f51 — re-derivera ALLTID, S109 är
-aktiv parallellt. Full handoff: sessionsdok S108 § Paushistorik + Del 2.
+**Session 108 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`) —
+PROTOTYPEN "GENERERINGSVYN" BYGGD I SEX KONVERGENSVARV, DIALOG-ÖVERSYNEN
+NÄSTA.** Parallell session bredvid aktiva S109 (huvudkatalogen) — S108 i egen
+låst worktree `s108-bilagesparet`, gren `docs/s108-resume` med **sex commits
+OPUSHADE MED AVSIKT** (arbetsform `iteration`, ADR-097: `da957f75`…`820c398d`).
+Frågan *"Vad ser Lotta när hon genererar bekräftelsebilagan för Arboga?"*
+besvaras nu i bild: varningsruta ("Plats och sista betalningsdag saknas …"),
+tre sektioner i husets DetaljGrupp-kort med ett NYTT radmönster (tvårads-rad
+etikett/värde, chevron, 72 px-låst, "Fyll i plats" i värdeplatsen) och
+**"Skapa" öppnar Rogers riktiga mall ifylld med utelämnade block borttagna**.
+Formen vilar på husets inventering (S73:s DetaljGrupp, inte fil-listan) +
+branschresearch (`docs/research/mall-ifyllnadsvyer-branschmonster-2026-08-21.md`:
+GOV.UK summary list, M3, HIG, Polaris, Atlassian). Marcus efter varv 5:
+*"SJUKT mycket bättre!"*. **Kvar (nästa arbetsenhet):** dialogerna laggar,
+är olika stora (ska vara som Hem-svepets overlay) och agenda-dialogen är
+underkänd — alla dialoger ses över en efter en. Modellfynd: sista
+betalningsdag saknar källa; ADR-numret blir **122** (S109 tog 121).
+Verktygsfynd: HMR dött i worktreen → lokal polling-config (Del 3 § E).
+Numrering vid paus: ADR 122 · task-284 · L512 · 58 fragment · T159 · f51 —
+re-derivera ALLTID, S109 är aktiv parallellt. Full handoff: sessionsdok S108
+§ PAUSLÄGE + Del 3.
 
 **Session 107 ⏸️ PAUSAD (sjunde gången, 2026-08-20, `lifecycle: paused`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
