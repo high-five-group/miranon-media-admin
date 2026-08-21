@@ -104,31 +104,34 @@ ADR **124** · kort **288+** · **L512** + 61 fragment · tråd **T168**
 session 111. Full narrativ: sessionsdok S110 Del 1–6 + Paushistorik.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`, historik; pausad två
-gånger 2026-08-21) — AUTONOMT BYGGE AV BÅDA SPÅREN: TOLV LANDNINGAR, NOTISFAMILJEN
-NÄSTAN KLAR.** Resume 2: paus-landningen `#1694` fångad **i flykt** (doket var
-`active` vid första avläsningen, pausat när LÄS-fasen slutade); `autoMergeRequest:
-null` men köad som `CLEAN` — tabellrad 2, disambiguerad med andra `gh pr merge
---auto`. Marcus AFK hela passet; orkestreraren ägde svepet manuellt
-(heartbeat-ordern 2026-08-19 står). **LANDAT (12):** `#1696` resume · `#1697`
-`285.4` + `T160` · `#1699` `286.1` EF-registerläget · `#1701` `T162` · `#1702`
-`285.1` Notis-primitiven + flippen · `#1703` `285.3` appfelet · `#1706` `TASK-287`
-· `#1707` `285.2` MessageBox (kryss-regeln i TVÅ lager) · `#1709`
-kontraktsfixen · `#1713` `T163` · `#1718` `285.7` · `#1720` `TASK-285.13`.
-**FYRA REBASE-RUNDOR** — samtliga på ytor beroendegrafen inte kan se
-(`/dev/primitives`, banner-testfilen, `app-chunk-laddningsfel.test.ts`,
-tråd-indexet); korten skivas efter produktyta, kollisionerna uppstod i
-BEVIS-substratet. Kollisionsmatris (`comm -12` mellan öppna PR:er) körs nu vid
-varje svep. **TRE FYND ingen skiva såg ensam:** två konkurrerande `role="alert"`
-med samma namn vid chunk-krasch (`285.13`, två agenter oberoende) · grind-luckan
-`check-langa-streck.mjs` utanför agentkontraktet (två av fyra src-agenter föll,
-grindarna VAR gröna — kontraktet var ofullständigt) · prod laddar Inter med
-`display=swap` medan tester routas till incheckad kopia (`T163`). **TVÅ BESLUT
-VÄNTAR MARCUS:** `#1715` (`286.2` skriver om ett STÄMPLAT facit — `T157`:s andra
-instans, blockerar `286.3`/`286.4`) och `#1720` (`285.13`, blockerar `285.10`).
-**NÄSTA:** `#1719` `285.5` i CI · `285.6` hålls tills den landat (delar
-AppShell/notis-regionen) · sedan `285.8` copy + `285.9` härdning. Numrering vid
-Del 11: ADR **124** · kort **288** · L512 + **62 fragment** · tråd **T167** ·
-fälla **53** · session 111. Full narrativ: sessionsdok S109 Del 10–11.
+gånger 2026-08-21) — NOTISFAMILJEN BYGGD FÄRDIG: TJUGO LANDNINGAR, ALLT
+KVARVARANDE ÄR MARCUS.** Marcus AFK hela passet; orkestreraren ägde svepet
+manuellt (heartbeat-ordern 2026-08-19 står). **NIO SKIVOR** landade familjen:
+`285.1` Notis-primitiven + flippen · `285.2` MessageBox (kryss-regeln kodad i
+TYPEN) · `285.3` appfelet · `285.4` § 21 + ORDLISTA + `T160` · `285.5`
+chunk-bannern in i skalet · `285.6` offline staplat · `285.7` sektionsfelets
+"Ladda om" · `285.8` copy-svepet · `285.9` härdningen (noll `src/`-ändringar).
+Plus `286.1` EF-registerläget, `TASK-287` B3-markörerna, kontraktsfixen,
+`T162`, `T163`, beslutskortet `285.13` och förkraven på `285.10`/`285.11`.
+**TVÅ FALL SOM SER IDENTISKA UT:** `286.2` och `285.8` uppdaterade båda
+ariaSnapshot-referenser i samma commit som en formändring — det ena STOPPAT
+(`#1715`, facit `godkand: marcus 2026-08-10`), det andra armerat (`#1730`,
+`godkand: null`). Ett ogodkänt facit MÅSTE få sina referenser uppdaterade av
+sin egen skiva; ett stämplat får det inte. Att skillnaden avgörs av omdöme
+varje gång ÄR `T157`:s lucka — två instanser på ett dygn. **TRE FYND överlevde
+till Marcus** därför att agenter avstod från att lösa det som inte var deras:
+två konkurrerande `role="alert"` (`285.13`) · härdningen kan strukturellt inte
+se den kollisionen · manifestet friskriver copy för en yta men föreskriver den
+för en annan (`285.10` AC #4–#5). **ORKESTRERARENS EGNA FEL bokförda i Del 12
+§ D:** vågplaneringen litade på deklarerad konfliktyta i stället för att mäta
+(fyra rebase-rundor via bevis-substratet) · väntan påstådd utan mekanism
+(stop-vakten fällde; rättat med bundna bakgrundsvakter, fyra fyrade korrekt) ·
+egen gräns skapade `TASK-287`:s residual. **ALLT KVARVARANDE ÄR BLOCKERAT PÅ
+MARCUS:** `#1715` (stämplat facit → hela personregister-spåret) · `285.13` (vem
+äger "Ladda om" → `285.10`) · `285.10` AC #4–#5. Varje `ready-for-agent`-kort
+är beroendespärrat bakom ett av dem, inventerat mot korten. Numrering vid
+Del 12: ADR **124** · kort **288** · L512 + **62 fragment** · tråd **T169** ·
+fälla **53** · session 111. Full narrativ: sessionsdok S109 Del 10–12.
 
 **Session 109 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`, historik) — ALLT
 SKIVAT FÖR AUTONOMT BYGGE: NOTISFAMILJEN (`TASK-285`, 12 kort) OCH PERSONREGISTRET
