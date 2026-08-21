@@ -1285,6 +1285,29 @@ Alla tre triggas av samma händelse (ny rad i Anmälningar) men gör olika saker
 
 **Logik:** Försöker först matcha via EventKey (huvudformuläret). Om ingen match → försöker matcha via Expresslabel (snabbformuläret).
 
+> **MÄTNOT 2026-08-21 (S110, `T158`) — två punkter ovan är FALSIFIERADE mot
+> prod.** Denna fil är en frusen ögonblicksbild (mars 2026) och skrivs inte
+> om; noten står här för att den som läser stegbeskrivningen annars tror sig
+> veta A1:s villkor. Mätt live via `get_automation` mot
+> `wflDCKPAv2P6Yu9U6` (`deploymentStatus: deployed`):
+>
+> 1. **IF-blockets villkor testar TRIGGER-FÄLTET, inte träffmängden.** Ovan
+>    står *"Find records i steg 1 hittade 0 resultat (Length = 0)"*. Det
+>    verkliga villkoret är `EventKey isEmpty` **AND** `Datum och ort
+>    isNotEmpty`. Skillnaden är avgörande: en anmälan med `EventKey="10"`
+>    har ett icke-tomt fält, så expressgrenen körs **aldrig** för den — raden
+>    blir orphan av steg 2, inte av en utebliven match.
+> 2. **Steg 2 (`updateRecord`) är OVILLKORLIGT.** Vid noll träffar kör det
+>    ändå och sätter `Event` till en **tom lista** — en aktiv skrivning av
+>    tomt värde, inte en utebliven skrivning. Det finns alltså inget
+>    villkorssteg att haka i före kopplingen, vilket är skälet till att
+>    [`ADR-122`](../decisions/ADR-122-eventlankens-vakt-och-atgardskon.md)s
+>    vakt måste **ERSÄTTA** steg 1–2 i stället för att läggas före dem: en
+>    validering före en kvarvarande ovillkorlig koppling är fail-**open**.
+>
+> För automations-mekanik gäller alltså samma regel som filens huvud redan
+> anger för fält-data: **mät artefakten, härled den inte.**
+
 ---
 
 ### A2 — Uppdatera/skapa person + skapa Touchpoint
