@@ -15,9 +15,9 @@
 
 ## Aktuellt fokus
 
-**Session 110 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`) —
-KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
-VAKTEN GRILLAD OCH LÅST I `ADR-122`.** Egen worktree `s110-kalenderlank-driften` (S109
+**Session 110 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad två
+gånger 2026-08-21) — KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64
+FELMATCHADE → 0 I PROD, VAKTEN GRILLAD OCH LÅST I `ADR-122`.** Egen worktree `s110-kalenderlank-driften` (S109
 äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
 Elfsight-kalenderwidgetens **handskrivna** anmälningslänkar på miranon.se —
 Roger duplicerar poster utan att redigera URL-parametrarna; `"10"` →
@@ -65,14 +65,21 @@ prod är en utrullningsfråga, inte en byggfråga. `284.1`–`284.4` blev
 `ready-for-agent`; `284.6` prod-utrullning bröts ut som `ready-for-human`.
 Landat: `#1684` `378b4f62` · `#1686` `9df1ccbe` · `#1690` armerad vid paus.
 
-**NÄSTA (resume av 110): verifiera `#1690` landad → plocka `TASK-284.1`
-(tracer bullet, `ready-for-agent`, mot staging) → `284.2`/`284.3`/`284.4`
-inbördes oberoende → `284.5` QA och `284.6` prod är MARCUS-moment.**
-Öppet: Event-18:s falska positiv ej lokaliserad · Lottas fyra besked ·
-**Marcus: kalenderlänkarna på miranon.se + Lotta-texten** · `task-232` → Done
-vid stängning. Numrering efter S110 Del 4: ADR **123** (S109 mintade i
-`#1689` — läs disk) · kort **285+** · L512 + 58 fragment · **T160** · f52 ·
-session 111. Full narrativ: sessionsdok S110 Del 1–4 + PAUSLÄGE.
+**Resume 2 (2026-08-21):** handoffen prövad mot disk — `#1690` **landad**
+(`0223c9db`), `#1691` likaså, `origin/main` = `c73d0f63`; worktreen låg två
+commits efter och ff-synkades. `284.1`–`284.4` verifierat `ready-for-agent`,
+`284.6`-filen finns. **Avvikelse rättad:** `284.1`/`284.2` bar kvar
+*"PROD-WRITE … därför ready-for-human"* i beskrivningen medan etikett och
+notes sade staging — `#1690` flippade etiketten men rev aldrig motiveringen.
+
+**NÄSTA: bygg `TASK-284.1` (tracer bullet, mot staging `apphjj8Q7lkXCMsL4`) →
+`284.2`/`284.3`/`284.4` inbördes oberoende → `284.5` QA och `284.6` prod är
+MARCUS-moment.** Öppet: Event-18:s falska positiv ej lokaliserad · Lottas
+fyra besked · **Marcus: kalenderlänkarna på miranon.se + Lotta-texten** ·
+`task-232` → Done vid stängning. Numrering re-deriverad mot disk vid resume 2:
+ADR **124** (`ADR-123` förbrukad av S109) · kort **287** (285 på main, 286 på
+S109:s gren) · **L512** + 60 fragment · **T160** · f52 · session 111. Full
+narrativ: sessionsdok S110 Del 1–4 + Paushistorik.
 
 **Session 109 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`) — ALLT
 SKIVAT FÖR AUTONOMT BYGGE: NOTISFAMILJEN (`TASK-285`, 12 kort) OCH PERSONREGISTRET

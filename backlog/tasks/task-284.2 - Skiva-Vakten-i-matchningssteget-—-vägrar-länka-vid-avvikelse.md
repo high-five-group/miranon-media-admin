@@ -4,7 +4,7 @@ title: 'Skiva: Vakten i matchningssteget — vägrar länka vid avvikelse'
 status: To Do
 assignee: []
 created_date: '2026-08-21 10:59'
-updated_date: '2026-08-21 11:35'
+updated_date: '2026-08-21 12:00'
 labels:
   - ready-for-agent
 dependencies:
@@ -22,7 +22,7 @@ FAIL-CLOSED ÄR HELA POÄNGEN: kraschar skriptet, eller körs det inte alls, bli
 
 MÄTT UNDERLAG (live 2026-08-21): matchningssteget kopplar OVILLKORLIGT — vid noll träffar skriver det en tom lista, inte ingenting. Det finns alltså inget villkorssteg att haka i, vilket är varför ersättning är enda vägen.
 
-PROD-WRITE: ändring av automationen i prod-basen kräver Marcus GO — därför ready-for-human.
+STAGING-BYGGE (omklassad 2026-08-21, Marcus GO — ersätter den tidigare PROD-WRITE-raden): automations-ändringen görs i staging-basen apphjj8Q7lkXCMsL4, där A1 bär samma ID som i prod (wflDCKPAv2P6Yu9U6). Prod rörs aldrig av denna skiva, därför ready-for-agent; utrullningen är utbruten till TASK-284.6. Detaljerna står i Implementation Notes.
 
 Täcker användarberättelser: 1, 11, 12, 13, 14, 15.
 <!-- SECTION:DESCRIPTION:END -->
