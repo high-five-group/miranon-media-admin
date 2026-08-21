@@ -840,7 +840,7 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
               {visaMallar &&
                 MALLAR.map((m) => (
                   <li key={m.id}>
-                    <div data-testid="dokument-mall" className="flex items-start gap-3 py-3">
+                    <div data-testid="dokument-mall" className="flex items-center gap-3 py-3">
                       <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
                         <span
                           className="w-full min-w-0 truncate font-medium text-body"
@@ -868,7 +868,7 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
                 ))}
               {visaGeneratorer && (
                 <li>
-                  <div data-testid="dokument-generator" className="flex items-start gap-3 py-3">
+                  <div data-testid="dokument-generator" className="flex items-center gap-3 py-3">
                     <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
                       <span className="w-full min-w-0 truncate font-medium text-body">
                         Betalningskvitto
@@ -980,6 +980,7 @@ const KORT_KLASS =
  */
 function InforutanMorf({
   rader,
+  fokus,
   ort,
   platsFinns,
   somStandard,
@@ -987,6 +988,8 @@ function InforutanMorf({
   onStang,
 }: {
   rader: Rad[];
+  /** Fältet som ska få markören; null = första fältet. */
+  fokus: BlockId | null;
   ort: string | null;
   platsFinns: boolean;
   somStandard: Set<BlockId>;
@@ -994,6 +997,8 @@ function InforutanMorf({
   onStang: () => void;
 }) {
   const falt = rader.filter((r) => !r.def.last);
+  // Markören landar i det efterfrågade fältet, annars i det första.
+  const fokusId = fokus ?? falt[0]?.def.id;
   const [utkast, setUtkast] = useState<Record<string, string>>(() =>
     Object.fromEntries(falt.map((r) => [r.def.id, r.text ?? ''])),
   );
@@ -1015,8 +1020,15 @@ function InforutanMorf({
 
   return (
     <ul className={KORT_KLASS}>
-      {rader.map((r) => (
-        <li key={r.def.id} data-block={r.def.id} className="flex flex-col">
+      {rader.map((r, i) => (
+        <li
+          key={r.def.id}
+          data-block={r.def.id}
+          /* Sista raden bär extra luft mot separatorn — ett skrivfält stod dikt
+             an mot linjen. Samma tillägg finns på läslägets sista rad, så Δ=0
+             håller: båda lägena växer lika mycket. */
+          className={cn('flex flex-col', i === rader.length - 1 && 'pb-2')}
+        >
           {r.def.last ? (
             // Rubriken andras pa eventsidan, inte har — las-only i bada lagen.
             <div className="flex items-center gap-3 py-3">
@@ -1024,7 +1036,6 @@ function InforutanMorf({
                 <span className="text-small text-text-muted leading-5">{r.def.etikett}</span>
                 <span className="truncate text-body">{varderad(r)}</span>
               </span>
-              <span aria-hidden="true" className="size-4 shrink-0" />
             </div>
           ) : (
             /* Δ=0 MOT LÄSRADEN — eventsidans lösning (DetaljGrupp.tsx:12-13,
@@ -1034,19 +1045,11 @@ function InforutanMorf({
                läsradens py-3 (24) + 20 + 4 + värde 24. Mätt före fixen hoppade
                sektionen 594 -> 690 px vid Ändra. Fälten behåller 40 px —
                höjden tas ur paddingen, aldrig ur träffytan. */
-            /* Fälten som saknas bär SAMMA varningsyta som rutan överst — det
-               är samma sak som sägs där, och Lotta ska kunna gå rakt på dem
-               utan att läsa om vilka de var. -mx-4/px-4 går kant i kant med
-               kortet. INGEN kontur: en `border-y` la 2 px per rad och sköt
-               sektionen 594 -> 598 px — Δ=0 väger tyngre än en linje som inte
-               tillför något när bakgrunden redan bär markeringen. */
-            <div
-              className={
-                r.tomt
-                  ? '-mx-4 flex flex-col gap-1 bg-(--mm-messagebox-warning-bg) px-4 py-1'
-                  : 'flex flex-col gap-1 py-1'
-              }
-            >
+            /* Fälten som saknas bär varningsytans färg — men på SJÄLVA
+               SKRIVFÄLTET, inte på hela raden: markeringen hör till det som
+               ska fyllas i, inte till etiketten bredvid. Raden är därmed
+               orörd, så Δ=0 håller utan kompensation. */
+            <div className="flex flex-col gap-1 py-1">
               <span className="text-small text-text-muted leading-5" id={`morf-${r.def.id}`}>
                 {r.def.etikett}
               </span>
@@ -1054,6 +1057,8 @@ function InforutanMorf({
                 <DatumEnkel
                   label={r.def.etikett}
                   iso={utkast[r.def.id] ?? ''}
+                  autoFocus={r.def.id === fokusId}
+                  faltKlass={r.tomt ? 'bg-(--mm-messagebox-warning-bg)' : undefined}
                   onChange={(v) => setUtkast((u) => ({ ...u, [r.def.id]: v }))}
                 />
               ) : (
@@ -1065,7 +1070,13 @@ function InforutanMorf({
                   label={r.def.etikett}
                   hideLabel
                   size="sm"
-                  className="min-h-10"
+                  autoFocus={r.def.id === fokusId}
+                  className={cn(
+                    'min-h-10',
+                    // Primitivens className gar till WRAPPERN; <input> far bara
+                    // inputVariants(...) — darav barnvarianten.
+                    r.tomt && '[&_input]:bg-(--mm-messagebox-warning-bg)',
+                  )}
                   placeholder={r.def.id === 'plats' ? 'Gatuadress och ort' : undefined}
                   value={utkast[r.def.id] ?? ''}
                   onChange={(v) => setUtkast((u) => ({ ...u, [r.def.id]: v }))}
@@ -1097,7 +1108,9 @@ function InforutanMorf({
       {/* Spara/Avbryt pa Andra-radens plats och hojd — eventsidans morf. */}
       {/* Avbryt före Spara — SAMMA ordning som blockdialogens knapprad.
           Eventsidan har motsatt ordning, men inom den här vyn väger den
-          interna konsekvensen tyngre än att spegla en annan sida. */}
+          interna konsekvensen tyngre än att spegla en annan sida.
+          Luften under sista fältet bor på FÄLTRADEN, inte här: Marcus pekade
+          ovanför separatorn, och en pt här sköt sektionen 594 -> 602 px. */}
       <li className="flex items-center justify-center gap-2 py-2">
         <Button size="sm" intent="secondary" emphasis="outline" onPress={onStang}>
           Avbryt
@@ -1134,6 +1147,14 @@ function GenereringsVy({
   const [oppet, setOppet] = useState<BlockId | null>(null);
   // Inforutan andras som SEKTION (eventsidans morf), inte block for block.
   const [morfar, setMorfar] = useState(false);
+  /* Vilket fält morfen ska sätta markören i. "Fyll i plats" i värdeplatsen
+     är ett LÖFTE — trycker Lotta där ska hon landa i just det fältet, inte
+     bara i sektionen. null = första fältet (Ändra-radens väg in). */
+  const [morfFokus, setMorfFokus] = useState<BlockId | null>(null);
+  const oppnaMorf = (fokus: BlockId | null) => {
+    setMorfFokus(fokus);
+    setMorfar(true);
+  };
   const andraKnappRef = useRef<HTMLButtonElement>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
 
@@ -1257,7 +1278,7 @@ function GenereringsVy({
                     size="sm"
                     onPress={() => {
                       // Inforutans block bor i sektionsmorfen, inte i en dialog.
-                      if (INFORUTA_IDN.has(r.def.id)) setMorfar(true);
+                      if (INFORUTA_IDN.has(r.def.id)) oppnaMorf(r.def.id);
                       else setOppet(r.def.id);
                     }}
                   >
@@ -1285,6 +1306,7 @@ function GenereringsVy({
             {arInforutan && morfar ? (
               <InforutanMorf
                 rader={g.rader}
+                fokus={morfFokus}
                 ort={event.ort}
                 platsFinns={plats != null}
                 somStandard={somStandard}
@@ -1296,7 +1318,7 @@ function GenereringsVy({
               />
             ) : (
               <ul className={KORT_KLASS}>
-                {g.rader.map((r) => {
+                {g.rader.map((r, i) => {
                   const varde = varderad(r);
                   const inre = (
                     <>
@@ -1310,20 +1332,41 @@ function GenereringsVy({
                           "Enter …"). Understruken text i textfärg — husets länkaffordans
                           (hem-listornas hover:underline), 14:1 mot kortet; guld mättes
                           till 2,36:1 (gold-500) resp. 4,49:1 (gold-700) och föll. */}
-                        <span
-                          className={`truncate text-body underline-offset-4 ${
-                            r.tomt
-                              ? 'font-medium underline decoration-1'
-                              : r.def.last
-                                ? ''
-                                : 'group-hover:underline'
-                          }`}
-                          title={varde ?? undefined}
-                        >
-                          {varde ?? `Fyll i ${r.def.etikett.toLowerCase()}`}
-                        </span>
+                        {/* I Inforutan är raden inte längre en knapp, men
+                            "Fyll i …" SER ut som en handling — fet och
+                            understruken — och ska då VARA en. Den öppnar
+                            ändraläget och sätter markören i just det fältet;
+                            en affordans som inte infrias är värre än ingen
+                            alls. Övriga grupper: raden är knappen, texten
+                            förblir en span (ingen knapp i en knapp). */}
+                        {arInforutan && r.tomt ? (
+                          <button
+                            type="button"
+                            className="truncate text-left font-medium text-body underline decoration-1 underline-offset-4"
+                            onClick={() => oppnaMorf(r.def.id)}
+                          >
+                            Fyll i {r.def.etikett.toLowerCase()}
+                          </button>
+                        ) : (
+                          <span
+                            className={`truncate text-body underline-offset-4 ${
+                              r.tomt
+                                ? 'font-medium underline decoration-1'
+                                : r.def.last
+                                  ? ''
+                                  : 'group-hover:underline'
+                            }`}
+                            title={varde ?? undefined}
+                          >
+                            {varde ?? `Fyll i ${r.def.etikett.toLowerCase()}`}
+                          </span>
+                        )}
                       </span>
-                      {r.def.last ? (
+                      {/* Chevron bara där raden LEDER någonstans. Inforutan
+                          ändras via Ändra-raden, så dess rader bär ingen — en
+                          pil som inte går någonstans är ett löfte som inte
+                          infrias. */}
+                      {arInforutan ? null : r.def.last ? (
                         <span aria-hidden="true" className="size-4 shrink-0" />
                       ) : (
                         <ChevronRight
@@ -1340,7 +1383,16 @@ function GenereringsVy({
                      ryms inte i en sektionsmorf. */
                   const lasEndast = r.def.last || arInforutan;
                   return (
-                    <li key={r.def.id} data-block={r.def.id} className="flex flex-col">
+                    <li
+                      key={r.def.id}
+                      data-block={r.def.id}
+                      /* Speglar morfens sista rad — se InforutanMorf. Utan
+                         motsvarigheten här skulle Ändra bli ett hopp igen. */
+                      className={cn(
+                        'flex flex-col',
+                        arInforutan && i === g.rader.length - 1 && 'pb-2',
+                      )}
+                    >
                       {lasEndast ? (
                         <div className="flex items-center gap-3 py-3">{inre}</div>
                       ) : (
@@ -1365,7 +1417,7 @@ function GenereringsVy({
                     <button
                       ref={andraKnappRef}
                       type="button"
-                      onClick={() => setMorfar(true)}
+                      onClick={() => oppnaMorf(null)}
                       className="flex w-full items-center justify-center gap-2 font-medium text-body"
                     >
                       <Pencil aria-hidden="true" size={16} />
@@ -1731,11 +1783,16 @@ function DatumEnkel({
   iso,
   onChange,
   hjalp,
+  faltKlass,
+  autoFocus,
 }: {
   label: string;
   iso: string;
   onChange: (iso: string) => void;
   hjalp?: string;
+  autoFocus?: boolean;
+  /** Extra klass på själva fältytan (t.ex. varningsfärg när värdet saknas). */
+  faltKlass?: string;
 }) {
   const segKlass =
     'rounded tabular-nums outline-none data-[focused]:bg-bg-emphasized data-[placeholder]:text-(color:--mm-input-text-placeholder)';
@@ -1752,10 +1809,16 @@ function DatumEnkel({
       <DateField
         aria-label={label}
         value={value}
+        autoFocus={autoFocus}
         onChange={(v) => onChange(v ? v.toString() : '')}
         className="flex w-full flex-col gap-1"
       >
-        <DateInput className="flex min-h-10 w-full items-center gap-0.5 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body">
+        <DateInput
+          className={cn(
+            'flex min-h-10 w-full items-center gap-0.5 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body',
+            faltKlass,
+          )}
+        >
           {(seg) => <DateSegment segment={seg} className={segKlass} />}
         </DateInput>
         {hjalp && <span className="text-caption text-text-muted">{hjalp}</span>}
@@ -1781,8 +1844,7 @@ function DatumEnkel({
  *  konkurrerade dessutom med dialogens "Spara": två knappuppsättningar i
  *  samma yta gör det oklart vad som gäller. En agendapunkt har bara två
  *  värden, text och tid; den hör hemma på EN rad. */
-const AGENDA_OPPEN_KLASS =
-  '-mx-6 flex items-center gap-2 border-t-transparent bg-bg-muted px-6 py-2';
+const AGENDA_OPPEN_KLASS = '-mx-6 flex items-center gap-2 border-t-transparent px-6 py-2';
 
 /**
  * Agendan som LÄSLISTA med redigering per rad — inte fjorton formulär på
