@@ -17,6 +17,35 @@ const MAX_PAGE_SIZE = 100;
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
 const TABLE_NAME = 'Personer';
 
+// KONSTANT bas-filter (S103, Marcus 2026-08-10): Personer-vyn visar ENDAST
+// personer med minst en anmälan. Tänkt som komplementet till get-leads
+// LEAD_FILTER (numera `AND({Totalt antal hämtningar (erbjudande)} > 0,
+// {Antal anmälningar (totalt)} = 0)`, TASK-277 AC #6 — citatet här hölls i
+// synk med koden, den ändras varje gång LEAD_FILTER gör det): Intresserade
+// bor under Mer, resten här. "Exakt komplement utan hål" var TASK-277:s
+// ursprungliga Del 2-fynd FALSKT (35 personer föll mellan ytorna) — AC #6
+// stänger den mätta klassen (33 av dem), men detta bas-filter RÖRS INTE av
+// skivan (uttryckligt utanför omfattningen).
+//
+// GRÄNSEN GÅR VID ANMÄLAN, INTE VID GENOMFÖRT EVENT. Marcus formulering var
+// "gått en eller flera kurser", men han preciserade skälet: personer med
+// anmälningar men noll genomförda är de som AVBOKAT eller fått förhinder, och
+// de hör hemma här - ORDLISTA kallar dem återaktiverbara kontakter och
+// förbjuder att de tappas. Ett filter på {Antal genomförda event} hade tyst
+// gömt dem, tillsammans med alla som är anmälda till ett kommande event utan
+// att ha gått förut - just de Lotta ska maila INFÖR kursen.
+//
+// Konstant formel, inget klient-input - samma form som get-leads: den kan
+// aldrig bära injektion och behöver därför ingen escaping. Kombineras med
+// sökfiltret via AND() när båda finns.
+//
+// [FLYTTAD, TASK-286.1] Låg tidigare INUTI Deno.serve — flyttad hit
+// (modul-nivå, oförändrat innehåll) så BÅDE sök-/cursor-grenen nedan och
+// registerlägets EGEN gren (ADR-123 beslut 1) kan referera den utan att
+// duplicera strängen. Ren relokering: samma värde, samma plats i AND()-
+// kombinationen, ingen semantisk ändring.
+const BAS_FILTER = '{Antal anmälningar (totalt)} > 0';
+
 function mapPerson(record: { id: string; fields: Record<string, unknown> }) {
   const f = record.fields;
 
@@ -69,6 +98,39 @@ Deno.serve(async (req) => {
   if (auth instanceof Response) return auth;
 
   const url = new URL(req.url);
+
+  // Registerläge (ADR-123 beslut 1, TASK-286.1): `register=true` är EF-
+  // anropets EGEN signal — adapterns kontrakt (`DataSourceAdapter.
+  // fetchPersonsRegister`) är parameterlöst, klienten skickar aldrig detta
+  // som ett UI-argument. EN EGEN, TIDIG retur (inte en gren inuti sök-/
+  // cursor-flödet nedan) håller AC #3 sant PER KONSTRUKTION: ett anrop UTAN
+  // denna parameter når aldrig denna gren, så koden nedan är bokstavligen
+  // orörd — inget att bevisa byte-identiskt, det är samma kod som körde
+  // innan skivan.
+  //
+  // "Ingen andra walk" (AC #2): SAMMA fullwalk-primitiv (`fetchFromAirtable`)
+  // som redan används för totalsiffran nedan — bara BREDDAD till alla fält
+  // (`fields` utelämnat helt i stället för `['Namn']`) och posterna
+  // returneras i stället för att räknas. Ignorerar sök/cursor/pageSize helt:
+  // registret är HELA basfiltrets mängd, aldrig en delmängd av den.
+  if (url.searchParams.get('register') === 'true') {
+    try {
+      const records = await fetchFromAirtable(TABLE_NAME, {
+        filterByFormula: BAS_FILTER,
+        sort: [{ field: 'Namn', direction: 'asc' }],
+      });
+      return new Response(JSON.stringify({ persons: records.map(mapPerson) }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      return mapErrorToResponse(error, requestId, corsHeaders, {
+        function: 'get-persons',
+        method: req.method,
+        callerUserId: auth.user.id,
+      });
+    }
+  }
+
   const search = url.searchParams.get('search');
 
   // pageSize: default 50, klamp till Airtables tak (≤100), ignorera skräp.
@@ -101,29 +163,8 @@ Deno.serve(async (req) => {
     { name: 'Telefon', isArray: false },
     { name: 'Ort', isArray: true },
   ];
-  // KONSTANT bas-filter (S103, Marcus 2026-08-10): Personer-vyn visar ENDAST
-  // personer med minst en anmälan. Tänkt som komplementet till get-leads
-  // LEAD_FILTER (numera `AND({Totalt antal hämtningar (erbjudande)} > 0,
-  // {Antal anmälningar (totalt)} = 0)`, TASK-277 AC #6 — citatet här hölls i
-  // synk med koden, den ändras varje gång LEAD_FILTER gör det): Intresserade
-  // bor under Mer, resten här. "Exakt komplement utan hål" var TASK-277:s
-  // ursprungliga Del 2-fynd FALSKT (35 personer föll mellan ytorna) — AC #6
-  // stänger den mätta klassen (33 av dem), men detta bas-filter RÖRS INTE av
-  // skivan (uttryckligt utanför omfattningen).
-  //
-  // GRÄNSEN GÅR VID ANMÄLAN, INTE VID GENOMFÖRT EVENT. Marcus formulering var
-  // "gått en eller flera kurser", men han preciserade skälet: personer med
-  // anmälningar men noll genomförda är de som AVBOKAT eller fått förhinder, och
-  // de hör hemma här - ORDLISTA kallar dem återaktiverbara kontakter och
-  // förbjuder att de tappas. Ett filter på {Antal genomförda event} hade tyst
-  // gömt dem, tillsammans med alla som är anmälda till ett kommande event utan
-  // att ha gått förut - just de Lotta ska maila INFÖR kursen.
-  //
-  // Konstant formel, inget klient-input - samma form som get-leads: den kan
-  // aldrig bära injektion och behöver därför ingen escaping. Kombineras med
-  // sökfiltret via AND() när båda finns.
-  const BAS_FILTER = '{Antal anmälningar (totalt)} > 0';
-
+  // BAS_FILTER är modul-nivå (se ovan, TASK-286.1-flytten) — samma konstant,
+  // ingen ändring av värde eller AND()-kombination.
   let filterByFormula: string | undefined = BAS_FILTER;
   if (search) {
     try {

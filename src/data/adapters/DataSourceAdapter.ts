@@ -13,6 +13,7 @@ import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
 import type { MailLogEntry, MailPayload, MailSendResult } from '../../domain/models/MailPayload';
+import type { Person } from '../../domain/models/Person';
 import type { CreatePersonNoteInput, PersonNote } from '../../domain/models/PersonNote';
 import type { CreateRegistrationInput, Registration } from '../../domain/models/Registration';
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
@@ -61,6 +62,23 @@ export interface DataSourceAdapter {
    * adaptern (Fas E) implementerar identisk shape. `cursor`/`nextCursor` är opaka.
    */
   listPersons(params?: ListParams): Promise<PersonsPage>;
+
+  /**
+   * Hämta HELA personregistret (ADR-123 beslut 1, TASK-286.1) —
+   * PARAMETERLÖST: inga sök-/cursor-/pageSize-argument. Returnerar samtliga
+   * personer som uppfyller `listPersons`s BASFILTER (minst en anmälan), med
+   * exakt de fält listan redan visar. Airtable-implementationen breddar den
+   * fullwalk `get-persons` REDAN gör för att räkna `total`
+   * (`fields: ['Namn']` → alla `mapPerson`-fält, posterna returneras i
+   * stället för att räknas) — INGEN ny EF, ingen ny walk-mekanism.
+   *
+   * `listPersons` (sök/cursor) lever kvar OFÖRÄNDRAD tills sista konsumenten
+   * är borta — ingen big-bang-rivning (ADR-123 § Beslut 1). Sök,
+   * bokstavsindex, räknarrad och svensk sortering är KLIENT-sidan efter
+   * denna hämtning (ADR-123 beslut 2–4); adaptern levererar bara den råa,
+   * ofiltrerade mängden.
+   */
+  fetchPersonsRegister(): Promise<Person[]>;
 
   /**
    * Operations-baserad write-API (M4).
