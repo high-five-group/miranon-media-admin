@@ -236,6 +236,8 @@ const INFORUTA_BAS: BlockDef[] = [
   { id: 'plats', etikett: 'Plats', kalla: 'plats', platsFalt: 'adress' },
 ];
 
+/** Blocken som bor i Inforutans sektionsmorf — härlett ur GRUPPER nedan
+ *  vid modulinit, aldrig en andra handhållen lista. */
 const GRUPPER: Record<MallId, Grupp[]> = {
   bekraftelse: [
     {
@@ -255,10 +257,10 @@ const GRUPPER: Record<MallId, Grupp[]> = {
       ],
     },
     {
-      rubrik: 'Innehållet dag för dag',
+      rubrik: 'Agenda',
       block: [
-        { id: 'dagEtt', etikett: 'Innehåll, Dag Ett', kalla: 'eventinnehall', agenda: true },
-        { id: 'dagTva', etikett: 'Innehåll, Dag Två', kalla: 'eventinnehall', agenda: true },
+        { id: 'dagEtt', etikett: 'Dag 1', kalla: 'eventinnehall', agenda: true },
+        { id: 'dagTva', etikett: 'Dag 2', kalla: 'eventinnehall', agenda: true },
       ],
     },
   ],
@@ -324,6 +326,15 @@ const GRUPPER: Record<MallId, Grupp[]> = {
     },
   ],
 };
+
+/** Blocken som bor i Inforutans sektionsmorf — HÄRLETT ur `GRUPPER`, aldrig
+ *  en andra handhållen lista som kan glida isär från den. */
+const INFORUTA_IDN = new Set<BlockId>(
+  Object.values(GRUPPER)
+    .flat()
+    .filter((g) => g.rubrik === 'Inforutan')
+    .flatMap((g) => g.block.map((b) => b.id)),
+);
 
 const MALL_META: Record<MallId, { namn: string; fil: string; fastForm: string }> = {
   bekraftelse: {
@@ -1023,7 +1034,19 @@ function InforutanMorf({
                läsradens py-3 (24) + 20 + 4 + värde 24. Mätt före fixen hoppade
                sektionen 594 -> 690 px vid Ändra. Fälten behåller 40 px —
                höjden tas ur paddingen, aldrig ur träffytan. */
-            <div className="flex flex-col gap-1 py-1">
+            /* Fälten som saknas bär SAMMA varningsyta som rutan överst — det
+               är samma sak som sägs där, och Lotta ska kunna gå rakt på dem
+               utan att läsa om vilka de var. -mx-4/px-4 går kant i kant med
+               kortet. INGEN kontur: en `border-y` la 2 px per rad och sköt
+               sektionen 594 -> 598 px — Δ=0 väger tyngre än en linje som inte
+               tillför något när bakgrunden redan bär markeringen. */
+            <div
+              className={
+                r.tomt
+                  ? '-mx-4 flex flex-col gap-1 bg-(--mm-messagebox-warning-bg) px-4 py-1'
+                  : 'flex flex-col gap-1 py-1'
+              }
+            >
               <span className="text-small text-text-muted leading-5" id={`morf-${r.def.id}`}>
                 {r.def.etikett}
               </span>
@@ -1072,12 +1095,15 @@ function InforutanMorf({
         </li>
       ))}
       {/* Spara/Avbryt pa Andra-radens plats och hojd — eventsidans morf. */}
+      {/* Avbryt före Spara — SAMMA ordning som blockdialogens knapprad.
+          Eventsidan har motsatt ordning, men inom den här vyn väger den
+          interna konsekvensen tyngre än att spegla en annan sida. */}
       <li className="flex items-center justify-center gap-2 py-2">
-        <Button size="sm" intent="primary" onPress={spara}>
-          Spara
-        </Button>
         <Button size="sm" intent="secondary" emphasis="outline" onPress={onStang}>
           Avbryt
+        </Button>
+        <Button size="sm" intent="primary" onPress={spara}>
+          Spara
         </Button>
       </li>
     </ul>
@@ -1213,7 +1239,7 @@ function GenereringsVy({
         {/* BESLUT 5: tomma block utelämnas — men aldrig tyst. Beskedet står
             FÖRE knappen, i klartext, med en väg in per block. */}
         {utelamnade.length > 0 && (
-          <MessageBox intent="warning" className="border-transparent">
+          <MessageBox intent="warning">
             <span className="flex flex-col gap-3">
               <span>
                 <strong>
@@ -1229,7 +1255,11 @@ function GenereringsVy({
                     intent="primary"
                     emphasis="subtle"
                     size="sm"
-                    onPress={() => setOppet(r.def.id)}
+                    onPress={() => {
+                      // Inforutans block bor i sektionsmorfen, inte i en dialog.
+                      if (INFORUTA_IDN.has(r.def.id)) setMorfar(true);
+                      else setOppet(r.def.id);
+                    }}
                   >
                     Fyll i {r.def.etikett.toLowerCase()}
                   </Button>
@@ -1304,9 +1334,14 @@ function GenereringsVy({
                       )}
                     </>
                   );
+                  /* Inforutan ändras som SEKTION via Ändra-raden — dess rader
+                     är därför ren läsning, inga knappar och inga dialoger.
+                     Övriga grupper (löptext, agenda) behåller sin dialog: de
+                     ryms inte i en sektionsmorf. */
+                  const lasEndast = r.def.last || arInforutan;
                   return (
                     <li key={r.def.id} data-block={r.def.id} className="flex flex-col">
-                      {r.def.last ? (
+                      {lasEndast ? (
                         <div className="flex items-center gap-3 py-3">{inre}</div>
                       ) : (
                         <button
@@ -1733,11 +1768,21 @@ function DatumEnkel({
  * Agendan som radschema med EXPLICIT typ-ruta (beslut 3, § F): punkttext ·
  * valfri tid · kryss "meditation". Ingen textsniffning — krysset styr färgen.
  */
-/** Den ÖPPNA agendaradens yta. Kant-i-kant mot panelen (`-mx-6`/`px-6`
- *  speglar dialogens padding) så raden läses som en ZON i listan, inte som
- *  en indragen ruta — och `border-t-transparent` släcker `divide-y`:ns
- *  linje just där, som annars skar tvärs över zonens överkant. */
-const AGENDA_OPPEN_KLASS = '-mx-6 flex flex-col gap-3 border-t-transparent bg-bg-muted px-6 py-4';
+/** Den ÖPPNA agendaradens yta — RADENS EGEN GEOMETRI, ingen utfälld panel.
+ *  `py-2` (16) + fält 32 = 48 px, exakt läsradens `py-3` (24) + text 24.
+ *  Δ=0, samma princip som Inforutans morf. `-mx-6`/`px-6` går kant i kant
+ *  med panelen, och `border-t-transparent` släcker `divide-y`:ns linje just
+ *  där, som annars skar tvärs över zonens överkant.
+ *
+ *  AVFÄRDAT PÅ BILD: en utfälld zon med textfältet på egen rad plus en rad
+ *  med "Meditation"-text, Tid-fält, raderaknapp och en "Klar"-knapp. Fyra
+ *  element med fyra visuella vikter, där den rosa raderaknappen drog mest
+ *  uppmärksamhet av allt — fast det destruktiva ska synas minst. "Klar"
+ *  konkurrerade dessutom med dialogens "Spara": två knappuppsättningar i
+ *  samma yta gör det oklart vad som gäller. En agendapunkt har bara två
+ *  värden, text och tid; den hör hemma på EN rad. */
+const AGENDA_OPPEN_KLASS =
+  '-mx-6 flex items-center gap-2 border-t-transparent bg-bg-muted px-6 py-2';
 
 /**
  * Agendan som LÄSLISTA med redigering per rad — inte fjorton formulär på
@@ -1796,42 +1841,32 @@ function AgendaEditor({
                 hideLabel
                 size="sm"
                 autoFocus
+                className="min-h-8 flex-1"
                 placeholder={r.meditation ? 'Vilken meditation?' : 'Vad händer på punkten?'}
                 value={r.text}
                 onChange={(v) => satt(i, { text: v })}
               />
-              <div className="flex items-center gap-3">
-                {r.meditation && <span className="text-caption text-text-muted">Meditation</span>}
-                <Input
-                  label={`Tid, punkt ${i + 1}`}
-                  hideLabel
-                  size="sm"
-                  placeholder="Tid"
-                  className="ml-auto w-24"
-                  value={r.tid}
-                  onChange={(v) => satt(i, { tid: v })}
-                />
-                {/* Husets raderaknapp, verbatim ur DokumentYta.tsx:1705-1712
-                    (intent danger + emphasis subtle + size-11-ikonytan). */}
-                <Button
-                  intent="danger"
-                  emphasis="subtle"
-                  size="sm"
-                  className="size-11 shrink-0 p-0"
-                  aria-label={`Ta bort punkt ${i + 1}`}
-                  onPress={() => taBort(i)}
-                >
-                  <Trash2 aria-hidden="true" size={16} />
-                </Button>
-                <Button
-                  intent="secondary"
-                  emphasis="outline"
-                  size="sm"
-                  onPress={() => setOppen(null)}
-                >
-                  Klar
-                </Button>
-              </div>
+              <Input
+                label={`Tid, punkt ${i + 1}`}
+                hideLabel
+                size="sm"
+                className="min-h-8 w-16 shrink-0"
+                placeholder="Tid"
+                value={r.tid}
+                onChange={(v) => satt(i, { tid: v })}
+              />
+              {/* Husets raderaknapp (DokumentYta.tsx:1705 — intent danger +
+                  emphasis subtle), nedskalad till radens 32 px så Δ=0 håller. */}
+              <Button
+                intent="danger"
+                emphasis="subtle"
+                size="sm"
+                className="size-8 shrink-0 p-0"
+                aria-label={`Ta bort punkt ${i + 1}`}
+                onPress={() => taBort(i)}
+              >
+                <Trash2 aria-hidden="true" size={14} />
+              </Button>
             </li>
           ) : (
             // biome-ignore lint/suspicious/noArrayIndexKey: raderna saknar egen identitet — ordningen ÄR identiteten
@@ -1851,12 +1886,27 @@ function AgendaEditor({
           ),
         )}
       </ul>
-      <div className="flex flex-wrap gap-2">
-        <Button intent="secondary" emphasis="outline" size="sm" onPress={() => laggTill(false)}>
+      {/* Staplade och LIKA BREDA — `w-fit` gav två olika breda knappar under
+          varandra, vilket läses som slarv. Full bredd ger dem samma vikt och
+          en större träffyta. */}
+      <div className="flex flex-col gap-2">
+        <Button
+          intent="secondary"
+          emphasis="outline"
+          size="sm"
+          className="w-full justify-center"
+          onPress={() => laggTill(false)}
+        >
           <Plus aria-hidden="true" size={14} />
           Lägg till punkt
         </Button>
-        <Button intent="secondary" emphasis="outline" size="sm" onPress={() => laggTill(true)}>
+        <Button
+          intent="secondary"
+          emphasis="outline"
+          size="sm"
+          className="w-full justify-center"
+          onPress={() => laggTill(true)}
+        >
           <Plus aria-hidden="true" size={14} />
           Lägg till meditation
         </Button>
