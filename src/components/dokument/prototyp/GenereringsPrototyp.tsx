@@ -1084,7 +1084,13 @@ function GenereringsVy({
                             hideLabel
                             value={r.text ?? ''}
                             onChange={(v) => sattText(r.def.id, v)}
-                            rows={r.def.id === 'beskrivning' ? 8 : r.def.kalla === 'event' ? 2 : 4}
+                            rows={
+                              r.def.id === 'beskrivning'
+                                ? 8
+                                : r.def.kalla === 'event' || r.def.id === 'plats'
+                                  ? 2
+                                  : 4
+                            }
                             placeholder={
                               r.def.id === 'slutbetalning'
                                 ? `Resterande ${EVENTINNEHALL.resterandeBelopp} betalas senast … Anmälan är bindande.`
@@ -1158,12 +1164,12 @@ function GenereringsVy({
       {resultat?.typ === 'fel' && <MessageBox intent="error">{resultat.text}</MessageBox>}
 
       <div className="flex flex-col gap-2">
+        <Button intent="secondary" emphasis="outline" onPress={() => oppnaDokument(false)}>
+          Förhandsgranska först
+        </Button>
         <Button intent="primary" onPress={() => oppnaDokument(true)}>
           <FileText aria-hidden="true" size={16} className="shrink-0" />
           Skapa {meta.namn.toLowerCase()}
-        </Button>
-        <Button intent="secondary" emphasis="outline" onPress={() => oppnaDokument(false)}>
-          Förhandsgranska först
         </Button>
       </div>
     </div>
