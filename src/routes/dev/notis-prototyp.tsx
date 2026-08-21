@@ -28,7 +28,7 @@ export const Route = createFileRoute('/dev/notis-prototyp')({
 });
 
 const VARIANTER: PrototypeVariant[] = [
-  { key: '1', label: 'Meddelanderutan + appfel', steg: 1, stegLabel: 'Konvergensvarv 1' },
+  { key: '1', label: 'Meddelanderutan + appfel', steg: 2, stegLabel: 'Konvergensvarv 2' },
 ];
 
 function NotisPrototypPage() {
@@ -41,7 +41,9 @@ function NotisPrototypPage() {
       <section className="flex flex-col gap-6 pt-2 lg:pt-10">
         <h1 className="font-semibold text-3xl">Meddelanden</h1>
         <p className="text-small text-text-secondary">
-          {proto ? 'Prototypform (varv 1).' : 'Skarpa komponenter, exakt som i appen i dag.'}
+          {proto
+            ? 'Prototypform (varv 2): fel och varningar utan kryss, kvitton och info med.'
+            : 'Skarpa komponenter, exakt som i appen i dag.'}
         </p>
 
         <h2 className="font-semibold text-xl">Formulärfel</h2>
@@ -108,7 +110,7 @@ function NotisPrototypPage() {
         </Ruta>
 
         <h2 className="font-semibold text-xl">Info</h2>
-        <Ruta intent="info" title="Eventet saknar plats">
+        <Ruta intent="info" title="Eventet saknar plats" onDismiss={() => {}}>
           <p>Lägg till en plats så att den kommer med i bekräftelsen.</p>
         </Ruta>
 

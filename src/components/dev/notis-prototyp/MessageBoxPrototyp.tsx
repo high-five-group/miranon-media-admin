@@ -74,7 +74,18 @@ export function MessageBoxPrototyp({
           {children}
         </div>
         {onDismiss && (
-          <Button intent="ghost" size="sm" aria-label={dismissLabel} onPress={onDismiss}>
+          // Varv 2: knappen dras in (-mt/-mr) så krysset linjerar optiskt med
+          // rubrikens linje och rutans högerkant i stället för med knappens
+          // egen inre marginal. Familjeregel (varv 2, Marcus-fråga): fel och
+          // varningar bär ALDRIG kryss — de försvinner när orsaken är borta;
+          // kvitton och info får stängas.
+          <Button
+            intent="ghost"
+            size="sm"
+            aria-label={dismissLabel}
+            onPress={onDismiss}
+            className="-mt-1.5 -mr-2 shrink-0"
+          >
             <X aria-hidden className="size-4" />
           </Button>
         )}
