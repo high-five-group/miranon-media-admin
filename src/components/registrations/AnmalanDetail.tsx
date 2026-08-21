@@ -296,7 +296,7 @@ export function AnmalanDetail({
         </MessageBox>
       ) : (
         <MessageBox intent="error" title="Kunde inte hämta anmälan">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
+          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       ),
     );

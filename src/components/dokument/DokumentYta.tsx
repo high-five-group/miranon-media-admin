@@ -456,7 +456,9 @@ export function DokumentYta() {
           laddar={gemensammaQuery.isPending}
           fel={gemensammaQuery.isError}
           felmeddelande={
-            gemensammaQuery.error instanceof Error ? gemensammaQuery.error.message : 'Okänt fel.'
+            gemensammaQuery.error instanceof Error
+              ? gemensammaQuery.error.message
+              : 'Inget felmeddelande angavs.'
           }
           onReplace={handleReplace}
           replaceMutation={replaceMutation}
@@ -471,7 +473,9 @@ export function DokumentYta() {
         </div>
       ) : attachmentsQuery.isError ? (
         <MessageBox intent="error" title="Kunde inte hämta bilagor">
-          {attachmentsQuery.error instanceof Error ? attachmentsQuery.error.message : 'Okänt fel.'}
+          {attachmentsQuery.error instanceof Error
+            ? attachmentsQuery.error.message
+            : 'Inget felmeddelande angavs.'}
         </MessageBox>
       ) : (
         <DokumentLista
@@ -740,10 +744,10 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
         )}
       </Button>
       {forhandsvisaMutation.isError && (
-        <MessageBox intent="error" className="max-w-56">
+        <MessageBox intent="error" title="Kunde inte öppna filen" className="max-w-56">
           {forhandsvisaMutation.error instanceof Error
             ? forhandsvisaMutation.error.message
-            : 'Okänt fel.'}
+            : 'Inget felmeddelande angavs.'}
         </MessageBox>
       )}
     </>
@@ -894,10 +898,10 @@ function LaddaNerKnapp({ namn, kalla }: { namn: string; kalla: DokumentKalla }) 
         )}
       </Button>
       {nedladdningMutation.isError && (
-        <MessageBox intent="error" className="max-w-56">
+        <MessageBox intent="error" title="Kunde inte ladda ner filen" className="max-w-56">
           {nedladdningMutation.error instanceof Error
             ? nedladdningMutation.error.message
-            : 'Okänt fel.'}
+            : 'Inget felmeddelande angavs.'}
         </MessageBox>
       )}
     </>
@@ -1060,7 +1064,9 @@ function UppladdningsFel({ uploadMutation }: { uploadMutation: UploadMutation })
   if (!uploadMutation.isError) return null;
   return (
     <MessageBox intent="error" title="Kunde inte ladda upp filen">
-      {uploadMutation.error instanceof Error ? uploadMutation.error.message : 'Okänt fel.'}
+      {uploadMutation.error instanceof Error
+        ? uploadMutation.error.message
+        : 'Inget felmeddelande angavs.'}
     </MessageBox>
   );
 }
@@ -1072,7 +1078,9 @@ function ErsattningsFel({ replaceMutation }: { replaceMutation: ReplaceMutation 
   if (!replaceMutation.isError) return null;
   return (
     <MessageBox intent="error" title="Kunde inte ersätta filen">
-      {replaceMutation.error instanceof Error ? replaceMutation.error.message : 'Okänt fel.'}
+      {replaceMutation.error instanceof Error
+        ? replaceMutation.error.message
+        : 'Inget felmeddelande angavs.'}
     </MessageBox>
   );
 }

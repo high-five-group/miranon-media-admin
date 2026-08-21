@@ -33,6 +33,13 @@ import { expect, test } from '@playwright/test';
 
 const FORSOK_IGEN = 'Försök igen';
 const LADDA_OM = 'Ladda om';
+// Rubrikerna villkoras på samma flagga som knappen sedan TASK-285.8 (copy-
+// svepet) — tidigare var rubriken statisk ("Något gick fel") oavsett läge.
+const TITEL_VANLIGT_FEL = 'Den här delen kunde inte visas';
+const TITEL_CHUNK_FEL = 'Den här delen behöver laddas om';
+const BRODTEXT_VANLIGT_FEL =
+  'Resten av sidan fungerar. Prova igen, eller ladda om hela sidan om det inte hjälper.';
+const BRODTEXT_CHUNK_FEL = 'En ny version av appen gör att den här delen behöver laddas om.';
 
 /** Går till feltrigger-sidan och väntar tills React bevisligen har mountat. */
 async function oppnaSidan(page: Page) {
@@ -45,8 +52,10 @@ test.describe('SectionError — knappval vid chunk-fel (TASK-285.7)', () => {
     await oppnaSidan(page);
     await page.getByRole('button', { name: 'Kasta sektions-fel' }).click();
 
-    const alert = page.getByRole('alert').filter({ hasText: 'Något gick fel' });
+    const alert = page.getByRole('alert').filter({ hasText: TITEL_VANLIGT_FEL });
     await expect(alert).toBeVisible();
+    // Brödtexten prövas EXAKT (TASK-285.8, AC #4) — inte bara rubriken.
+    await expect(alert).toContainText(BRODTEXT_VANLIGT_FEL);
     await expect(alert.getByRole('button', { name: FORSOK_IGEN, exact: true })).toBeVisible();
     await expect(alert.getByRole('button', { name: LADDA_OM, exact: true })).toHaveCount(0);
   });
@@ -55,8 +64,10 @@ test.describe('SectionError — knappval vid chunk-fel (TASK-285.7)', () => {
     await oppnaSidan(page);
     await page.getByRole('button', { name: 'Kasta chunk-fel' }).click();
 
-    const alert = page.getByRole('alert').filter({ hasText: 'Något gick fel' });
+    const alert = page.getByRole('alert').filter({ hasText: TITEL_CHUNK_FEL });
     await expect(alert).toBeVisible();
+    // Brödtexten prövas EXAKT (TASK-285.8, AC #4) — inte bara rubriken.
+    await expect(alert).toContainText(BRODTEXT_CHUNK_FEL);
     await expect(alert.getByRole('button', { name: LADDA_OM, exact: true })).toBeVisible();
     await expect(alert.getByRole('button', { name: FORSOK_IGEN, exact: true })).toHaveCount(0);
   });
@@ -65,7 +76,7 @@ test.describe('SectionError — knappval vid chunk-fel (TASK-285.7)', () => {
     await oppnaSidan(page);
     await page.getByRole('button', { name: 'Kasta sektions-fel' }).click();
 
-    const alert = page.getByRole('alert').filter({ hasText: 'Något gick fel' });
+    const alert = page.getByRole('alert').filter({ hasText: TITEL_VANLIGT_FEL });
     await expect(alert).toBeVisible();
     await page.getByRole('button', { name: FORSOK_IGEN, exact: true }).click();
 
@@ -80,7 +91,7 @@ test.describe('SectionError — knappval vid chunk-fel (TASK-285.7)', () => {
     await oppnaSidan(page);
     await page.getByRole('button', { name: 'Kasta chunk-fel' }).click();
 
-    const alert = page.getByRole('alert').filter({ hasText: 'Något gick fel' });
+    const alert = page.getByRole('alert').filter({ hasText: TITEL_CHUNK_FEL });
     await expect(alert).toBeVisible();
 
     // Lokatorn scopas till SectionErrors EGEN alert-region, inte hela sidan:

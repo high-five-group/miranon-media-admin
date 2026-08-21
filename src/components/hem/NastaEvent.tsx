@@ -49,7 +49,9 @@ export function NastaEvent({
         </div>
       ) : eventsQuery.isError ? (
         <MessageBox intent="error" title="Kunde inte hämta event">
-          {eventsQuery.error instanceof Error ? eventsQuery.error.message : 'Okänt fel.'}
+          {eventsQuery.error instanceof Error
+            ? eventsQuery.error.message
+            : 'Inget felmeddelande angavs.'}
         </MessageBox>
       ) : nasta == null ? (
         <p className="text-body text-text-secondary">Inga kommande event just nu.</p>

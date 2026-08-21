@@ -90,7 +90,7 @@ export function useSendSvep() {
               lyckade: [],
               fallna: grupp.mottagare.map((reg) => ({
                 reg,
-                skal: error instanceof Error ? error.message : 'Okänt fel.',
+                skal: error instanceof Error ? error.message : 'Inget felmeddelande angavs.',
               })),
             };
           }

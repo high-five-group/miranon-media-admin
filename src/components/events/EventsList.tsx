@@ -492,7 +492,7 @@ export function EventsList() {
   // Felläget delas av båda vylägena (samma datakälla, samma besked).
   const felRuta = (
     <MessageBox intent="error" title="Kunde inte hämta event">
-      {error instanceof Error ? error.message : 'Okänt fel.'}
+      {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
     </MessageBox>
   );
 

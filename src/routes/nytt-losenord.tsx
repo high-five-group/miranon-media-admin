@@ -209,7 +209,11 @@ function LosenordsFormular({ epost, onUtfall }: LosenordsFormularProps) {
         onUtfall('ogiltig-lank');
         return;
       }
-      setFel('Något gick fel när lösenordet skulle sparas. Försök igen.');
+      // Copy-domarna (research-passet § 5/§ 7.3, TASK-285.8): "Något gick
+      // fel ... Försök igen" faller på GOV.UK/NN/g — huvudsatsen bär ingen
+      // orsak. Ersatt med ett specifikt problem + en genuint hållbar
+      // uppmaning (retry KAN lyckas: det är oftast en transient 5xx/nätverksfel).
+      setFel('Lösenordet kunde inte sparas just nu. Försök igen om en liten stund.');
       return;
     }
 

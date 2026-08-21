@@ -174,7 +174,7 @@ export function EventDetail({ eventId }: { eventId: string }) {
         </MessageBox>
       ) : (
         <MessageBox intent="error" title="Kunde inte hämta eventet">
-          {error instanceof Error ? error.message : 'Okänt fel.'}
+          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       ),
     );

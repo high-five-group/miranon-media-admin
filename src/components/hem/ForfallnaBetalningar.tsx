@@ -86,7 +86,7 @@ export function ForfallnaBetalningar({
         <MessageBox intent="error" title="Kunde inte hämta betalningar">
           {registrationsQuery.error instanceof Error
             ? registrationsQuery.error.message
-            : 'Okänt fel.'}
+            : 'Inget felmeddelande angavs.'}
         </MessageBox>
       ) : anmalDataPending ? (
         <div role="status" aria-busy="true" className="flex flex-col gap-3">

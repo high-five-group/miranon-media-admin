@@ -35,8 +35,8 @@ export function AppErrorPrototyp({ inbaddad = false }: { inbaddad?: boolean }) {
         Appen kunde inte visas
       </h1>
       <p style={{ margin: '0.5rem 0 0' }}>
-        Något gick sönder så att sidan inte kan ritas upp. Det du redan har sparat finns kvar. Ladda
-        om för att fortsätta.
+        Sidan kunde inte ritas upp, men det du redan har sparat finns kvar. Ladda om för att
+        fortsätta.
       </p>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
         <button

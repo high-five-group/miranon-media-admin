@@ -134,7 +134,7 @@ export function KopplaTillEventDialog({ registration }: { registration: Registra
 
               {err && (
                 <MessageBox intent="error" title="Kunde inte koppla anmälan">
-                  {err instanceof Error ? err.message : 'Okänt fel.'}
+                  {err instanceof Error ? err.message : 'Inget felmeddelande angavs.'}
                 </MessageBox>
               )}
 

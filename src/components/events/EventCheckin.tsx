@@ -1219,7 +1219,7 @@ export function EventCheckin({ eventId }: { eventId: string }) {
   if (isError || event == null) {
     return (
       <MessageBox intent="error" title="Kunde inte hämta underlaget">
-        Prototypen behöver eventet, närvaron och anmälningarna. Något av anropen gick fel.
+        Eventet, närvaron eller anmälningarna kunde inte hämtas.
       </MessageBox>
     );
   }

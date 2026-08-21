@@ -335,7 +335,7 @@ export function Gruppdynamik({ event }: { event: Event }) {
       <DetaljGrupp id="grupp-gruppdynamik" rubrik="Gruppdynamik">
         <div className="py-3">
           <MessageBox intent="error" title="Kunde inte hämta gruppdynamiken">
-            {error instanceof Error ? error.message : 'Okänt fel.'}
+            {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
           </MessageBox>
         </div>
       </DetaljGrupp>

@@ -134,7 +134,7 @@ export function SvepOverlay({
         onError: (error) =>
           setTestUtfall({
             status: 'failed',
-            reason: error instanceof Error ? error.message : 'Okänt fel.',
+            reason: error instanceof Error ? error.message : 'Inget felmeddelande angavs.',
           }),
       },
     );

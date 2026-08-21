@@ -23,6 +23,17 @@
  * använder) behåller `role="alert"`; `true` (demo-bruk på /dev/primitives,
  * jämförelseformen mot prototypen) utelämnar den så en statisk demo-sida
  * inte permanent annonserar en assertiv region utan orsak.
+ *
+ * COPYN (TASK-285.8, copy-domarna § 5/§ 7.3): brödtexten var tidigare TRE
+ * meningar ("Något gick sönder ... Det du redan har sparat finns kvar.
+ * Ladda om för att fortsätta."), över AC #3:s tak på två. Kortad till två
+ * utan att tappa någon av de tre delarna (problem/vad-hände-med-datan/
+ * lösning) genom att slå ihop de två första med "men". Samma sträng är
+ * SPEGLAD i `AppErrorPrototyp.tsx` (byte-för-byte, se den filens eget
+ * doc-block) för att `ariaSnapshot`-paret (`tests/visual/
+ * appfel-promoverings-grind.spec.ts`) ska förbli grönt — de inspelade
+ * referenserna (`__aria__/appfel-fallback-visual-{mobile,desktop}.aria.yml`)
+ * uppdaterades i SAMMA commit.
  */
 export function AppErrorFallback({ inbaddad = false }: { inbaddad?: boolean }) {
   return (
@@ -46,8 +57,8 @@ export function AppErrorFallback({ inbaddad = false }: { inbaddad?: boolean }) {
         Appen kunde inte visas
       </h1>
       <p style={{ margin: '0.5rem 0 0' }}>
-        Något gick sönder så att sidan inte kan ritas upp. Det du redan har sparat finns kvar. Ladda
-        om för att fortsätta.
+        Sidan kunde inte ritas upp, men det du redan har sparat finns kvar. Ladda om för att
+        fortsätta.
       </p>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
         <button

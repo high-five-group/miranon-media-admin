@@ -1251,7 +1251,7 @@ function SkickaKvittoKnapp({
               </MessageBox>
             ) : (
               <MessageBox intent="error" title="Kvittot kunde inte skickas">
-                {skicka.data.reason ?? 'Okänt fel. Försök igen.'}
+                {skicka.data.reason ?? 'Inget felmeddelande angavs. Försök igen.'}
               </MessageBox>
             )
           ) : (
@@ -2218,7 +2218,7 @@ function GranskningsSida({
         onError: (error) =>
           setTestUtfall({
             status: 'failed',
-            reason: error instanceof Error ? error.message : 'Okänt fel.',
+            reason: error instanceof Error ? error.message : 'Inget felmeddelande angavs.',
           }),
       },
     );
@@ -2641,7 +2641,7 @@ function GranskningsSida({
             <MessageBox intent="error" title="Kunde inte skicka utskicket">
               {sendActionEmail.error instanceof Error
                 ? sendActionEmail.error.message
-                : 'Okänt fel.'}
+                : 'Inget felmeddelande angavs.'}
             </MessageBox>
           )}
 
@@ -2848,7 +2848,9 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
 
       {anmalningar.isError && (
         <MessageBox intent="error" title="Kunde inte hämta anmälningarna">
-          {anmalningar.error instanceof Error ? anmalningar.error.message : 'Okänt fel.'}
+          {anmalningar.error instanceof Error
+            ? anmalningar.error.message
+            : 'Inget felmeddelande angavs.'}
         </MessageBox>
       )}
 

@@ -140,7 +140,7 @@ function Composer({ eventId, eventNamn }: { eventId: string; eventNamn: string |
       />
       {mutation.isError && (
         <MessageBox intent="error" title="Kunde inte spara anteckningen">
-          {mutation.error instanceof Error ? mutation.error.message : 'Okänt fel.'}
+          {mutation.error instanceof Error ? mutation.error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
       )}
       <div className="flex items-center justify-end gap-2">
@@ -201,7 +201,7 @@ function Strommen({ event }: { event: Event }) {
   if (isError) {
     return (
       <MessageBox intent="error" title="Kunde inte hämta anteckningarna">
-        {error instanceof Error ? error.message : 'Okänt fel.'}
+        {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
       </MessageBox>
     );
   }

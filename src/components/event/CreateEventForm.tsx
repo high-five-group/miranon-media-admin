@@ -223,8 +223,8 @@ export function CreateEventForm() {
       {formats.isError && (
         <div className="px-4">
           <MessageBox intent="error" title="Kunde inte hämta eventformat">
-            {formats.error instanceof Error ? formats.error.message : 'Okänt fel.'} Eventformat
-            krävs för att skapa ett event - försök ladda om sidan.
+            {formats.error instanceof Error ? formats.error.message : 'Inget felmeddelande angavs.'}{' '}
+            Eventformat krävs för att skapa ett event - försök ladda om sidan.
           </MessageBox>
         </div>
       )}
@@ -386,7 +386,9 @@ export function CreateEventForm() {
 
         {mutation.isError && !mutation.isPending && (
           <MessageBox intent="error" title="Kunde inte skapa eventet">
-            {mutation.error instanceof Error ? mutation.error.message : 'Okänt fel.'}
+            {mutation.error instanceof Error
+              ? mutation.error.message
+              : 'Inget felmeddelande angavs.'}
           </MessageBox>
         )}
       </div>

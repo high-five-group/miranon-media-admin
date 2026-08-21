@@ -70,7 +70,7 @@ export function NyaAnmalningar({
         <MessageBox intent="error" title="Kunde inte hämta anmälningar">
           {registrationsQuery.error instanceof Error
             ? registrationsQuery.error.message
-            : 'Okänt fel.'}
+            : 'Inget felmeddelande angavs.'}
         </MessageBox>
       ) : anmalDataPending ? (
         <div role="status" aria-busy="true" className="flex flex-col gap-3">
