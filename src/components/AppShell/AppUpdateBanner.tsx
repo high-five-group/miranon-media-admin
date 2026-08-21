@@ -1,19 +1,105 @@
 import { useSearch } from '@tanstack/react-router';
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Button } from '@/components/primitives';
 import { laesAppUppdatering, prenumereraPaAppUppdatering } from '@/lib/app-uppdatering';
 import { laesChunkLaddningsfel, prenumereraPaChunkLaddningsfel } from '@/lib/chunk-laddningsfel';
 import { Uppdateringsnotis } from './Uppdateringsnotis';
 
 /**
- * Diskret uppdaterings-banner (TASK-199-uppföljning, ADR-047 § Amendering
- * 2026-08-13).
+ * `sessionStorage`-nyckeln "Inte nu"-avfärdningen skrivs under (TASK-285.1).
+ * Egen konstant — inte inline-strängad flera ställen — så läsare och
+ * skrivare inte kan glida isär. Samma form som `startvarmningen.ts`s
+ * `E2E_TIMEOUT_OVERRIDE_NYCKEL`.
+ */
+const AVFARDAD_NYCKEL = 'mmUppdateringsnotisAvfardad';
+
+/**
+ * `try/catch`: `sessionStorage` kan kasta i låst/privat browserläge — en
+ * dölj-preferens ska ALDRIG krascha appen (samma disciplin som
+ * `startvarmningen.ts`s `lasVarmningTimeoutOverride`).
+ */
+function laesAvfardad(): boolean {
+  try {
+    return sessionStorage.getItem(AVFARDAD_NYCKEL) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function skrivAvfardad(varde: boolean): void {
+  try {
+    if (varde) {
+      sessionStorage.setItem(AVFARDAD_NYCKEL, '1');
+    } else {
+      sessionStorage.removeItem(AVFARDAD_NYCKEL);
+    }
+  } catch {
+    // Låst/privat läge: avfärdningen lever bara i React-state för denna
+    // rendering — appen får aldrig krascha för en bekvämlighets-skrivning.
+  }
+}
+
+/**
+ * Diskret uppdaterings-notis (TASK-199-uppföljning, ADR-047 § Amendering
+ * 2026-08-13; ÖVERLAGRAD FORM promoverad TASK-285.1, ADR-103).
  *
  * Visas när en nyare version av appen har aktiverats i bakgrunden. Beslutet
  * att ladda om ligger hos ANVÄNDAREN (Marcus beslut, S105) — en automatisk
  * omladdning kan slänga bort Lottas inmatning mitt i ett formulär. Mekanismen
  * som producerar signalen bor i `src/lib/app-uppdatering.ts`; denna komponent
- * vet ingenting om service workers.
+ * vet ingenting om service workers. Den VISUELLA formen (facit-låst,
+ * `tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json`) ägs
+ * av `Uppdateringsnotis` + `Notis`-primitiven — denna fil äger bara SIGNALEN,
+ * dölj-tillståndet och de två livesregionernas samspel.
+ *
+ * ═══ PROMOVERINGEN (ADR-103 B2 steg 1) ═══
+ *
+ * Den överlagrade notisen (`Uppdateringsnotis`) var tidigare bara synlig
+ * bakom `?variant=1` (DEV-only prototyp-läge). Villkoret är nu FLIPPAT: den
+ * är den OVILLKORLIGA formen för info-läget — `uppdateringFinns` (det
+ * verkliga signalen) räcker, oavsett `?variant`. Den gamla banner-formen (i
+ * flödet, `border-info border-b`) FINNS INTE LÄNGRE i skarp kod.
+ *
+ * `?variant`-GRENEN RIVS INTE HÄR — `sok`/`prototypAktiv`/`prototypData`
+ * nedan lever kvar oförändrade tills Marcus godkänt promoveringen
+ * (ADR-102 B3, `check-facit.sh`). Skälet de INTE bara är dött: `?data=`
+ * -forceringen (`ny-version`/`chunk`) är en DEV-bekvämlighet som låter
+ * Marcus/QA framkalla ett läge utan att vänta på en riktig service worker-
+ * aktivering — en DATAVÄG, inte FORMEN (ADR-103 B2 steg 1: "skarpas
+ * DATAVÄGAR behålls"). `NotisPrototypVaxlare`s rail (monterad i
+ * `__root.tsx`) sätter alltid BÅDA `variant`+`data` tillsammans, så
+ * forceringen är även fortsatt bara nåbar via samma URL-form som förut.
+ *
+ * ═══ "INTE NU" — SESSIONSSKOPAD AVFÄRDNING ═══
+ *
+ * "Inte nu" döljer notisen för RESTEN AV FLIKENS SESSION (`sessionStorage`,
+ * inte `localStorage`) — överlever klient-sides navigation (komponenten
+ * monteras aldrig om vid ruttbyte, se `__root.tsx`) och en manuell
+ * sidladdning (F5), men INTE en ny flik (sessionStorage är per flik). Ingen
+ * timer döljer notisen någonsin (WCAG 2.2.1) — "Inte nu" är enda vägen.
+ *
+ * En NY version ska visa notisen igen, ALDRIG periodiskt (Notistrappans
+ * app-breda regel, DESIGN-SYSTEM-SPEC § 21). Mekanismlagret
+ * (`app-uppdatering.ts`) ger ingen versions-identifierare att jämföra mot —
+ * `uppdateringTillganglig` är en modul-nivå ENGÅNGS-flagga per sidladdning
+ * (kan bara gå `false`→`true`, aldrig tillbaka, inom samma sidladdning).
+ * Lösningen utnyttjar den egenskapen i stället för att uppfinna en egen
+ * version-tagg: SÅ LÄNGE ingen uppdatering väntar (`!uppdateringFinns`)
+ * nollställs en eventuell kvarliggande avfärdning proaktivt. Praktiskt:
+ *
+ * - Samma sidladdning, ingen uppdatering ännu: `uppdateringFinns` är
+ *   `false` → effekten nollställer — en STALE flagga från en TIDIGARE
+ *   sidladdning (som överlevde via `sessionStorage`) hinner alltså aldrig
+ *   påverka den NÄSTA uppdaterings-signalen.
+ * - Uppdateringen blir tillgänglig: `uppdateringFinns` blir `true` →
+ *   effekten slutar nollställa (villkoret är då falskt) → en "Inte nu" från
+ *   ANVÄNDAREN sätter flaggan på nytt och den STÅR KVAR för resten av denna
+ *   uppdaterings livstid, eftersom `uppdateringTillganglig` inte kan gå
+ *   tillbaka till `false` förrän en helt ny sidladdning sker.
+ * - En NY sidladdning (t.ex. "Ladda om"-knappen) startar om från noll:
+ *   `uppdateringFinns` är åter `false` tills en (eventuellt NY) uppdatering
+ *   upptäcks — vid den tidpunkten körs samma nollställning igen INNAN den
+ *   nya signalen hinner komma, så den nya uppdateringen visas garanterat.
  *
  * A11y-formen är ÄRVD FRÅN `OfflineIndicator` och förstapartsbelagd:
  *
@@ -22,28 +108,11 @@ import { Uppdateringsnotis } from './Uppdateringsnotis';
  *   när användaren är ledig — meddelandet avbryter alltså aldrig Lotta mitt i
  *   en mening. Samma källa är uttrycklig om fokus: *"Do not give focus to the
  *   status when its content updates."* Vi flyttar därför aldrig fokus hit.
- *   `aria-live="polite"` skrivs ändå ut explicit, exakt som `OfflineIndicator`
- *   redan gör — implicit värde plus explicit attribut är samma värde, och den
- *   explicita formen överlever en framtida ändring av elementets roll.
  * - Live-regionen är ALLTID monterad och bara INNEHÅLLET växlar. MDN
  *   (ARIA live regions) är uttrycklig: *"Start with an empty live region,
  *   then – in a separate step – change the content inside the region."* En
  *   region som skapas samtidigt som sitt innehåll annonseras inte
- *   tillförlitligt. Detta är skälet till att komponenten inte returnerar
- *   `null` när det inte finns någon uppdatering.
- *
- * Övriga ribbekrav (`CLAUDE.md` § Design-system):
- * - Inga hårdkodade färger — `bg-info-bg`/`border-info` är Tailwind-alias för
- *   `--mm-info-bg`/`--mm-info` (`src/styles/tailwind.css`). Komponenten
- *   uppfinner medvetet noll egna tokens, precis som `InstallPrompt`: ett
- *   komponent-token som bara aliasar ett semantiskt är ren skuld.
- * - `prefers-reduced-motion` respekteras genom FRÅNVARO — bannern har inga
- *   animationer eller transitions att dämpa.
- * - `prefers-contrast: more` förstärker gränsen via `contrast-more:border-b-2`.
- * - `print:hidden` — en uppdaterings-uppmaning hör inte hemma på papper.
- * - Knappen är `Button`-primitiven (react-aria-components): tangentbordsnåbar
- *   som vilken knapp som helst, med den globala fokusringen ur `base.css`
- *   (`--mm-focus-ring`).
+ *   tillförlitligt.
  *
  * ═══ TVÅ LÄGEN, TVÅ LIVE-REGIONER (ADR-047 § Amendering 2026-08-13 (2)) ═══
  *
@@ -103,69 +172,51 @@ export function AppUpdateBanner() {
     () => false,
   );
 
-  // [PROTOTYPE — KONVERGENS, S109] `?variant=1` byter info-läget mot den
-  // överlagrade notisen (ADR-121 beslut 2); `?data=ny-version` tvingar fram
-  // den utan service worker, `?data=chunk` visar chunk-bannern oförändrad.
-  // DEV-grindad: grenen tree-shakas bort ur prod-bundeln. Vid promovering
-  // (ADR-103) flippas villkoret så notisen blir den ovillkorliga formen och
-  // denna gren rivs — formen rör vi inte.
+  // [PROTOTYPE — KONVERGENS, S109] `?variant=1&data=…` är en DEV-only
+  // DATAVÄG (ADR-103 B2 steg 1) som forcerar info-/chunk-läget utan en
+  // riktig service worker-signal — se filhuvudets "?variant-GRENEN RIVS
+  // INTE HÄR". DEV-grindad: grenen tree-shakas bort ur prod-bundeln.
   const sok = useSearch({ strict: false }) as Record<string, unknown>;
   const prototypAktiv = import.meta.env.DEV && String(sok.variant) === '1';
   const prototypData = import.meta.env.DEV ? String(sok.data ?? '') : '';
-  const [avfardad, setAvfardad] = useState(false);
-  if (prototypAktiv) {
-    const chunkTvingad = prototypData === 'chunk';
-    const notisSynlig =
-      !avfardad &&
-      !chunkTvingad &&
-      !omladdningKravs &&
-      (prototypData === 'ny-version' || uppdateringFinns);
-    return (
-      <>
-        {(omladdningKravs || chunkTvingad) && <ChunkBanner />}
-        <Uppdateringsnotis
-          synlig={notisSynlig}
-          onLaddaOm={() => window.location.reload()}
-          onInteNu={() => setAvfardad(true)}
-        />
-      </>
-    );
-  }
+  const chunkTvingad = prototypAktiv && prototypData === 'chunk';
+  const dataTvingadNyVersion = prototypAktiv && prototypData === 'ny-version';
+
+  const [avfardad, setAvfardad] = useState(laesAvfardad);
+
+  // Se filhuvudets "INTE NU — SESSIONSSKOPAD AVFÄRDNING" för hela
+  // resonemanget: så länge ingen uppdatering väntar hör en kvarliggande
+  // avfärdning inte hemma längre, och nollställs proaktivt.
+  useEffect(() => {
+    if (!uppdateringFinns) {
+      setAvfardad(false);
+      skrivAvfardad(false);
+    }
+  }, [uppdateringFinns]);
+
+  const notisSynlig =
+    !avfardad && !chunkTvingad && !omladdningKravs && (dataTvingadNyVersion || uppdateringFinns);
 
   return (
     <>
-      {omladdningKravs && <ChunkBanner />}
-      <div role="status" aria-live="polite" data-testid="app-update-banner">
-        {uppdateringFinns && !omladdningKravs && (
-          <div className="flex flex-wrap items-center justify-center gap-3 border-info border-b bg-info-bg px-4 py-2 text-center text-small contrast-more:border-b-2 print:hidden">
-            {/* Långt bindestreck är FÖRBJUDET i användarsynlig text
-              (Marcus-beslut 2026-08-09, .langa-streck-policy.json; grinden
-              scripts/check-langa-streck.mjs fäller JSXText). Kommat bär
-              satsfogningen i stället. */}
-            <p>
-              Det finns en nyare version av appen. Ladda om när du är klar med det du håller på med,
-              annars kan det du har skrivit försvinna.
-            </p>
-            <Button
-              intent="primary"
-              size="sm"
-              onPress={() => {
-                // Den nya service workern har REDAN tagit kontroll när denna
-                // banner visas (vår `src/sw.ts` anropar `skipWaiting()` +
-                // `clients.claim()`), så en vanlig omladdning hämtar den nya
-                // koden. Pluginets `updateServiceWorker()` används medvetet
-                // INTE: i autoUpdate-läge är den en no-op — mätt i
-                // `node_modules/vite-plugin-pwa/dist/client/build/register.js`,
-                // där kroppen är `if (!auto) sendSkipWaitingMessage?.()`.
-                window.location.reload();
-              }}
-              data-testid="app-update-reload"
-            >
-              Ladda om
-            </Button>
-          </div>
-        )}
-      </div>
+      {(omladdningKravs || chunkTvingad) && <ChunkBanner />}
+      <Uppdateringsnotis
+        synlig={notisSynlig}
+        onLaddaOm={() => {
+          // Den nya service workern har REDAN tagit kontroll när denna notis
+          // visas (vår `src/sw.ts` anropar `skipWaiting()` + `clients.claim()`),
+          // så en vanlig omladdning hämtar den nya koden. Pluginets
+          // `updateServiceWorker()` används medvetet INTE: i autoUpdate-läge
+          // är den en no-op — mätt i
+          // `node_modules/vite-plugin-pwa/dist/client/build/register.js`, där
+          // kroppen är `if (!auto) sendSkipWaitingMessage?.()`.
+          window.location.reload();
+        }}
+        onInteNu={() => {
+          setAvfardad(true);
+          skrivAvfardad(true);
+        }}
+      />
     </>
   );
 }
@@ -173,7 +224,8 @@ export function AppUpdateBanner() {
 /**
  * Chunk-läget (`role="alert"`), oförändrat utbrutet ur `AppUpdateBanner` så
  * prototyp-grenen och den skarpa grenen delar EXAKT samma markup. Villkorad
- * montering med avsikt — se doc-blocket ovan.
+ * montering med avsikt — se doc-blocket ovan. Rörs INTE av TASK-285.1
+ * (chunk-bannerns flytt + kortning är TASK-285.5).
  */
 function ChunkBanner() {
   return (
