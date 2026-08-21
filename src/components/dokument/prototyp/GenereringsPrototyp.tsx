@@ -39,7 +39,17 @@
 
 import { type CalendarDate, parseDate } from '@internationalized/date';
 import { Link } from '@tanstack/react-router';
-import { Check, ChevronLeft, ChevronRight, Files, FileText, Plus, Upload } from 'lucide-react';
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Files,
+  FileText,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -105,8 +115,12 @@ const EVENTINNEHALL = {
   pris: '2.500',
   anmalningsavgift: '1000:-',
   resterandeBelopp: '1500:-',
-  beskrivningForhandsvisning:
-    'Utbildningen Resor i Medvetandet kommer att ge dig en djupare insikt om medvetandet, både genom att teoretiskt förklara vad vi är och att praktiskt öva i extremt djupa meditationer. …',
+  /* Rogers VERBATIM beskrivningstext ur `docs/mallar/bilagor/
+     bekraftelsebilaga.html` — inte en forhandsvisning. Den forra fixturen
+     var avkortad med ett ellipsis-tecken, vilket dolde att blockets egen
+     yta klippte texten: Lotta maste se ALLT som hamnar i bilagan. */
+  beskrivning:
+    'Utbildningen Resor i Medvetandet kommer att ge dig en djupare insikt om medvetandet, både genom att teoretiskt förklara vad vi är och att praktiskt öva i extremt djupa meditationer. Vi går igenom helt nya medvetandemodeller som faktiskt kan förklara det som tidigare kallats för övernaturligt och paranormalt. I denna utbildning får du själv ta de första stegen på din resa i vårt gemensamma medvetande. Medvetandet är det centrala och du kommer både få göra praktiska övningar tillsammans med massor med konkreta tips, samtidigt som vi förklarar de djupare insikter som ligger bakom våra upplevelser i våra liv. Du behöver inga förberedande kunskaper eller erfarenheter, men du måste komma med ett mycket öppet sinne. I utbildningen har vi lagt ett starkt fokus på din egen upplevelse och din egen personliga resa i medvetandet. Boken Utanför Verkligheten ligger till grund för nya sätt att se på verkligheten genom att öppna upp ditt sinne för en helt ny värld och verklighet. Du kommer även att få lära dig om Additiv meditation, en meditationsteknik, som gör det möjligt att ta sig extremt djupt i medvetandet. Med en kombination av tusenårig kunskap och modern teknik kan man uppnå mentala tillstånd som helt klart bryter mot vad vi tror är begränsningar i verkligheten. Vi arbetar med mentala ankare och planerar intentioner. Du får tillfälle att fråga om precis vad som helst, exempelvis om synkronicitet, Akashi arkivet, reinkarnationsprocessen, eller om dina guider. Du kommer att i detalj få reda på hur du planerar och utför dina resor med hjälp av extrem meditation och en välfylld mental verktygslåda. Vi berättar om varför Punktmedvetandet är så viktigt för att uppnå högre mentala tillstånd. Du kommer att få en inblick varifrån kreativitet, inspiration och ökade mentala förmågor kommer.',
   dagEtt: [
     { text: 'Miranon Media', tid: '', meditation: false },
     { text: 'Miranon-Nivåer (lite om)', tid: '', meditation: false },
@@ -367,7 +381,7 @@ function standardText(
       // sätter det (beslut 5 tvingar fram frågan om var det ska bo).
       return null;
     case 'beskrivning':
-      return ei.beskrivningForhandsvisning;
+      return ei.beskrivning;
     case 'forberedelser':
       return ei.forberedelser;
     case 'klader':
@@ -924,6 +938,139 @@ const RAD_KLASS = 'group flex w-full items-center gap-3 py-3 text-left';
 const KORT_KLASS =
   'divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
 
+/**
+ * INFORUTANS ÄNDRA-LÄGE — sektionsmorf, ingen dialog.
+ *
+ * Formen är eventsidans, verifierad mot disk OCH mot renderad yta
+ * (`OmEventet.tsx` + `DetaljGrupp.tsx`, mätt 2026-08-21 på 390x844):
+ * grupprubrik utanför kortet, rader med `divide-y`, och en `Ändra`-rad i
+ * kortbotten som byter HELA sektionen till fält och ersätts av
+ * Spara/Avbryt på samma plats. Där mätte läsläge och ändraläge IDENTISK
+ * geometri — 279 px, radhöjder 49/49/49/48.
+ *
+ * MEN `RedigeringsRad`s trekolumnsform (etikett · "ändrar från" · fält)
+ * ÄR INTE KOPIERAD, och det är ett medvetet avsteg: på 390 px klämmer dess
+ * `w-60`-slot nuvarande-värdet till oläslighet — uppmätt renderade
+ * eventsidan "Ut…", "ZZ…", "2.", "P." för Typ/Ort/Datum/Status. Inforutans
+ * värden (adress, datumspann, rubrik) är längre än eventsidans, så samma
+ * form hade blivit värre här. Morfen staplar i stället etikett över fält i
+ * radens egen 72 px-grammatik — samma sak GOV.UK:s summary list gör under
+ * 641 px.
+ *
+ * Sektionen är rätt yta för de KORTA fälten. Löptexten och agendorna
+ * behåller sin dialog: de ryms inte i en rad, och en sektionsmorf som
+ * sväller till 1800 tecken är inte längre en morf.
+ */
+function InforutanMorf({
+  rader,
+  ort,
+  platsFinns,
+  somStandard,
+  onSpara,
+  onStang,
+}: {
+  rader: Rad[];
+  ort: string | null;
+  platsFinns: boolean;
+  somStandard: Set<BlockId>;
+  onSpara: (andringar: { id: BlockId; nytt: Override | null; blirStandard: boolean }[]) => void;
+  onStang: () => void;
+}) {
+  const falt = rader.filter((r) => !r.def.last);
+  const [utkast, setUtkast] = useState<Record<string, string>>(() =>
+    Object.fromEntries(falt.map((r) => [r.def.id, r.text ?? ''])),
+  );
+  const [standard, setStandard] = useState<Set<BlockId>>(new Set(somStandard));
+
+  const spara = () => {
+    onSpara(
+      falt.map((r) => {
+        const varde = utkast[r.def.id] ?? '';
+        // Samma text som standarden = ingen egen text (foljer standarden igen).
+        const nytt: Override | null =
+          varde.trim() === '' || (r.standardText != null && varde === r.standardText)
+            ? null
+            : { typ: 'text', varde };
+        return { id: r.def.id, nytt, blirStandard: standard.has(r.def.id) && nytt != null };
+      }),
+    );
+  };
+
+  return (
+    <ul className={KORT_KLASS}>
+      {rader.map((r) => (
+        <li key={r.def.id} data-block={r.def.id} className="flex flex-col">
+          {r.def.last ? (
+            // Rubriken andras pa eventsidan, inte har — las-only i bada lagen.
+            <div className="flex items-center gap-3 py-3">
+              <span className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="text-small text-text-muted leading-5">{r.def.etikett}</span>
+                <span className="truncate text-body">{varderad(r)}</span>
+              </span>
+              <span aria-hidden="true" className="size-4 shrink-0" />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1 py-3">
+              <span className="text-small text-text-muted leading-5" id={`morf-${r.def.id}`}>
+                {r.def.etikett}
+              </span>
+              {r.def.datum ? (
+                <DatumEnkel
+                  label={r.def.etikett}
+                  iso={utkast[r.def.id] ?? ''}
+                  onChange={(v) => setUtkast((u) => ({ ...u, [r.def.id]: v }))}
+                />
+              ) : (
+                /* min-h-10 = DatumEnkels DateInput-höjd, så textfält och
+                     datumfält ger EXAKT samma radhöjd. Utan den mätte raderna
+                     81/81/81/81/81/89 px — olika höga, vilket är just det
+                     Marcus fällt. */
+                <Input
+                  label={r.def.etikett}
+                  hideLabel
+                  size="sm"
+                  className="min-h-10"
+                  placeholder={r.def.id === 'plats' ? 'Gatuadress och ort' : undefined}
+                  value={utkast[r.def.id] ?? ''}
+                  onChange={(v) => setUtkast((u) => ({ ...u, [r.def.id]: v }))}
+                />
+              )}
+              {r.def.platsFalt && ort && (utkast[r.def.id] ?? '').trim() !== '' && (
+                <span className="pt-1">
+                  <Kryss
+                    label={`Använd som standard för ${ort}`}
+                    vald={standard.has(r.def.id)}
+                    onChange={(v) =>
+                      setStandard((sv) => {
+                        const n = new Set(sv);
+                        if (v) n.add(r.def.id);
+                        else n.delete(r.def.id);
+                        return n;
+                      })
+                    }
+                  >
+                    Använd som standard för {ort} framöver
+                    {platsFinns ? '' : ' (skapar platsen)'}
+                  </Kryss>
+                </span>
+              )}
+            </div>
+          )}
+        </li>
+      ))}
+      {/* Spara/Avbryt pa Andra-radens plats och hojd — eventsidans morf. */}
+      <li className="flex items-center justify-center gap-2 py-2">
+        <Button size="sm" intent="primary" onPress={spara}>
+          Spara
+        </Button>
+        <Button size="sm" intent="secondary" emphasis="outline" onPress={onStang}>
+          Avbryt
+        </Button>
+      </li>
+    </ul>
+  );
+}
+
 function GenereringsVy({
   event,
   mall,
@@ -946,6 +1093,9 @@ function GenereringsVy({
   const [overrides, setOverrides] = useState<Partial<Record<BlockId, Override>>>({});
   const [somStandard, setSomStandard] = useState<Set<BlockId>>(new Set());
   const [oppet, setOppet] = useState<BlockId | null>(null);
+  // Inforutan andras som SEKTION (eventsidans morf), inte block for block.
+  const [morfar, setMorfar] = useState(false);
+  const andraKnappRef = useRef<HTMLButtonElement>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
 
   const rader = useMemo(
@@ -976,6 +1126,16 @@ function GenereringsVy({
       else n.delete(id);
       return n;
     });
+  };
+
+  /** Sektions-spara: samtliga fält som absoluta värden, ett anrop per block
+      (naturligt idempotent — samma form som OmEventetForm.spara). */
+  const sparaSektion = (
+    andringar: { id: BlockId; nytt: Override | null; blirStandard: boolean }[],
+  ) => {
+    for (const a of andringar) spara(a.id, a.nytt, a.blirStandard);
+    setMorfar(false);
+    andraKnappRef.current?.focus();
   };
 
   /** Öppnar dokumentet i ett nytt fönster; `skarpt` sparar dessutom platsens standard. */
@@ -1069,6 +1229,7 @@ function GenereringsVy({
 
       {rader.map((g) => {
         const rubrikId = `grupp-${g.rubrik.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        const arInforutan = g.rubrik === 'Inforutan';
         return (
           <section
             key={g.rubrik}
@@ -1078,61 +1239,94 @@ function GenereringsVy({
             <h2 id={rubrikId} className="px-4 font-semibold text-lg">
               {g.rubrik}
             </h2>
-            <ul className={KORT_KLASS}>
-              {g.rader.map((r) => {
-                const varde = varderad(r);
-                const inre = (
-                  <>
-                    {/* 21 + 24 px text hade gett 71 px; leading-5 (20 px) + gap-1 (4 px)
+            {arInforutan && morfar ? (
+              <InforutanMorf
+                rader={g.rader}
+                ort={event.ort}
+                platsFinns={plats != null}
+                somStandard={somStandard}
+                onSpara={sparaSektion}
+                onStang={() => {
+                  setMorfar(false);
+                  andraKnappRef.current?.focus();
+                }}
+              />
+            ) : (
+              <ul className={KORT_KLASS}>
+                {g.rader.map((r) => {
+                  const varde = varderad(r);
+                  const inre = (
+                    <>
+                      {/* 21 + 24 px text hade gett 71 px; leading-5 (20 px) + gap-1 (4 px)
                         + py-3 (24 px) = 72 px — på 4 px-rytmen (DESIGN-SYSTEM-SPEC §3). */}
-                    <span className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="text-small text-text-muted leading-5">{r.def.etikett}</span>
-                      {/* Saknat värde = handlingen i värdeplatsen (GOV.UK summary list
+                      <span className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="text-small text-text-muted leading-5">
+                          {r.def.etikett}
+                        </span>
+                        {/* Saknat värde = handlingen i värdeplatsen (GOV.UK summary list
                           "Enter …"). Understruken text i textfärg — husets länkaffordans
                           (hem-listornas hover:underline), 14:1 mot kortet; guld mättes
                           till 2,36:1 (gold-500) resp. 4,49:1 (gold-700) och föll. */}
-                      <span
-                        className={`truncate text-body underline-offset-4 ${
-                          r.tomt
-                            ? 'font-medium underline decoration-1'
-                            : r.def.last
-                              ? ''
-                              : 'group-hover:underline'
-                        }`}
-                        title={varde ?? undefined}
-                      >
-                        {varde ?? `Fyll i ${r.def.etikett.toLowerCase()}`}
+                        <span
+                          className={`truncate text-body underline-offset-4 ${
+                            r.tomt
+                              ? 'font-medium underline decoration-1'
+                              : r.def.last
+                                ? ''
+                                : 'group-hover:underline'
+                          }`}
+                          title={varde ?? undefined}
+                        >
+                          {varde ?? `Fyll i ${r.def.etikett.toLowerCase()}`}
+                        </span>
                       </span>
-                    </span>
-                    {r.def.last ? (
-                      <span aria-hidden="true" className="size-4 shrink-0" />
-                    ) : (
-                      <ChevronRight
-                        aria-hidden="true"
-                        size={16}
-                        className="shrink-0 text-text-muted"
-                      />
-                    )}
-                  </>
-                );
-                return (
-                  <li key={r.def.id} data-block={r.def.id} className="flex flex-col">
-                    {r.def.last ? (
-                      <div className="flex items-center gap-3 py-3">{inre}</div>
-                    ) : (
-                      <button
-                        type="button"
-                        className={RAD_KLASS}
-                        aria-label={`${r.tomt ? 'Fyll i' : 'Ändra'} ${r.def.etikett.toLowerCase()}`}
-                        onClick={() => setOppet(r.def.id)}
-                      >
-                        {inre}
-                      </button>
-                    )}
+                      {r.def.last ? (
+                        <span aria-hidden="true" className="size-4 shrink-0" />
+                      ) : (
+                        <ChevronRight
+                          aria-hidden="true"
+                          size={16}
+                          className="shrink-0 text-text-muted"
+                        />
+                      )}
+                    </>
+                  );
+                  return (
+                    <li key={r.def.id} data-block={r.def.id} className="flex flex-col">
+                      {r.def.last ? (
+                        <div className="flex items-center gap-3 py-3">{inre}</div>
+                      ) : (
+                        <button
+                          type="button"
+                          className={RAD_KLASS}
+                          aria-label={`${r.tomt ? 'Fyll i' : 'Ändra'} ${r.def.etikett.toLowerCase()}`}
+                          onClick={() => setOppet(r.def.id)}
+                        >
+                          {inre}
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+                {/* Inforutans Ändra-rad — eventsidans AndraRad, verbatim form
+                  (py-3 + 24 px innehåll = 48 px, penna + centrerad text).
+                  Bara denna grupp bär den: löptexten och agendorna ryms inte
+                  i en sektionsmorf och behåller sin dialog. */}
+                {arInforutan && (
+                  <li className="py-3">
+                    <button
+                      ref={andraKnappRef}
+                      type="button"
+                      onClick={() => setMorfar(true)}
+                      className="flex w-full items-center justify-center gap-2 font-medium text-body"
+                    >
+                      <Pencil aria-hidden="true" size={16} />
+                      Ändra
+                    </button>
                   </li>
-                );
-              })}
-            </ul>
+                )}
+              </ul>
+            )}
           </section>
         );
       })}
@@ -1411,9 +1605,21 @@ function BlockDialog({
               }. Anmälan är bindande."`}
             />
           ) : (
+            /* Loptexten visar ALLT: `autoGrow` (field-sizing-content) later
+               rutan folja innehallet, och taket slacks sa dialogens body blir
+               den enda rullytan. Utan det far Lotta en 16rem-lucka in i en
+               1800 teckens text — hon kan inte se vad som hamnar i bilagan.
+               MATT: forsta forsoket satte `max-h-none` rakt pa `className`
+               och gjorde INGENTING (falt-hojd 256 av 1288 px innehall) —
+               primitivens `className` gar till TextField-WRAPPERN, medan
+               `<textarea>` bara far `textAreaVariants(...)`. Darav
+               barnvarianten; en override-prop pa primitiven vore
+               bibliotekskod och hor till promoveringen, inte hit. */
             <TextArea
               label={def.etikett}
               hideLabel
+              autoGrow
+              className={def.id === 'beskrivning' ? '[&_textarea]:max-h-none' : undefined}
               value={text}
               onChange={setText}
               rows={
@@ -1516,17 +1722,22 @@ const AGENDA_OPPEN_KLASS = '-mx-6 flex flex-col gap-3 border-t-transparent bg-bg
  * Agendan som LÄSLISTA med redigering per rad — inte fjorton formulär på
  * en gång.
  *
+ * RADHÖJDEN ÄR LÅST TILL 72 px, samma grammatik som genereringsvyns egna
+ * rader (`KORT_KLASS`-raderna ovan): en 24 px primärrad + `gap-1` (4 px) +
+ * en 20 px `leading-5`-metarad + `py-3` (24 px). Metaraden RESERVERAS även
+ * när punkten saknar meta (`min-h-5`) — annars blir raderna olika höga,
+ * vilket är exakt det Marcus fällt två gånger.
+ *
+ * MEDITATION ÄR EN PUNKTTYP, INTE EN KRYSSRUTA. Den sätts när punkten
+ * skapas ("Lägg till meditation") i stället för att varje rad ska bära en
+ * kryssruta den nästan aldrig använder — 14 kryssrutor för 4 meditationer
+ * är brus, och redigeringsraden blir smalare utan den.
+ *
  * Den gamla formen monterade 42 fältkontroller samtidigt (28 `Input`, 14
  * `Kryss`) i tvåradsrader, 1301 px innehåll i en `max-h-[40vh]`-ruta som
- * kapade listan mitt i en rad utan kant eller fade. Uppmätt kostnad
+ * kapade listan mitt i en rad. Uppmätt kostnad
  * (`test-results/matlagg.mjs`): 170 ms montering mot 44 ms för en
  * enfältsdialog — den enda innehållsberoende termen i hela mätserien.
- *
- * Nu bär raden sitt värde som TEXT och öppnas till ett fält först när den
- * rörs, en i taget. Det är samma grammatik som genereringsvyns egna rader
- * (etikett/värde som leder vidare) och samma disciplin som huset redan
- * följer: en handling per rad. Monteringen faller till listans textrader,
- * och rullningen bor i dialogens body — ingen andra rullyta att kapa mot.
  */
 function AgendaEditor({
   rader,
@@ -1543,8 +1754,8 @@ function AgendaEditor({
     onChange(rader.filter((_, j) => j !== i));
     setOppen(null);
   };
-  const laggTill = () => {
-    onChange([...rader, { text: '', tid: '', meditation: false }]);
+  const laggTill = (meditation: boolean) => {
+    onChange([...rader, { text: '', tid: '', meditation }]);
     setOppen(rader.length);
   };
 
@@ -1560,27 +1771,33 @@ function AgendaEditor({
                 hideLabel
                 size="sm"
                 autoFocus
-                placeholder="Vad händer på punkten?"
+                placeholder={r.meditation ? 'Vilken meditation?' : 'Vad händer på punkten?'}
                 value={r.text}
                 onChange={(v) => satt(i, { text: v })}
               />
               <div className="flex items-center gap-3">
-                <Kryss
-                  label={`Meditation, punkt ${i + 1}`}
-                  vald={r.meditation}
-                  onChange={(v) => satt(i, { meditation: v })}
-                >
-                  Meditation
-                </Kryss>
+                {r.meditation && <span className="text-caption text-text-muted">Meditation</span>}
                 <Input
                   label={`Tid, punkt ${i + 1}`}
                   hideLabel
                   size="sm"
                   placeholder="Tid"
-                  className="ml-auto w-20"
+                  className="ml-auto w-24"
                   value={r.tid}
                   onChange={(v) => satt(i, { tid: v })}
                 />
+                {/* Husets raderaknapp, verbatim ur DokumentYta.tsx:1705-1712
+                    (intent danger + emphasis subtle + size-11-ikonytan). */}
+                <Button
+                  intent="danger"
+                  emphasis="subtle"
+                  size="sm"
+                  className="size-11 shrink-0 p-0"
+                  aria-label={`Ta bort punkt ${i + 1}`}
+                  onPress={() => taBort(i)}
+                >
+                  <Trash2 aria-hidden="true" size={16} />
+                </Button>
                 <Button
                   intent="secondary"
                   emphasis="outline"
@@ -1590,13 +1807,6 @@ function AgendaEditor({
                   Klar
                 </Button>
               </div>
-              <button
-                type="button"
-                className="self-start text-caption text-text-muted underline underline-offset-2"
-                onClick={() => taBort(i)}
-              >
-                Ta bort punkten
-              </button>
             </li>
           ) : (
             // biome-ignore lint/suspicious/noArrayIndexKey: raderna saknar egen identitet — ordningen ÄR identiteten
@@ -1606,17 +1816,16 @@ function AgendaEditor({
                 className="flex w-full items-center gap-3 py-3 text-left"
                 onClick={() => setOppen(i)}
               >
-                <span className="flex min-w-0 flex-1 flex-col">
+                <span className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="truncate text-body" title={r.text}>
                     {r.text || <span className="text-text-muted">Tom punkt</span>}
                   </span>
-                  {(r.meditation || r.tid) && (
-                    <span className="truncate text-caption text-text-muted">
-                      {[r.meditation ? 'Meditation' : null, r.tid || null]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </span>
-                  )}
+                  {/* Metaraden reserveras ALLTID — se docblockets 72 px-regel. */}
+                  <span className="min-h-5 truncate text-caption text-text-muted leading-5">
+                    {[r.meditation ? 'Meditation' : null, r.tid || null]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
                 </span>
                 <ChevronRight aria-hidden="true" size={16} className="shrink-0 text-text-muted" />
               </button>
@@ -1624,16 +1833,16 @@ function AgendaEditor({
           ),
         )}
       </ul>
-      <Button
-        intent="secondary"
-        emphasis="outline"
-        size="sm"
-        className="self-start"
-        onPress={laggTill}
-      >
-        <Plus aria-hidden="true" size={14} />
-        Lägg till punkt
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button intent="secondary" emphasis="outline" size="sm" onPress={() => laggTill(false)}>
+          <Plus aria-hidden="true" size={14} />
+          Lägg till punkt
+        </Button>
+        <Button intent="secondary" emphasis="outline" size="sm" onPress={() => laggTill(true)}>
+          <Plus aria-hidden="true" size={14} />
+          Lägg till meditation
+        </Button>
+      </div>
     </div>
   );
 }
