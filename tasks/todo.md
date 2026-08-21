@@ -74,7 +74,22 @@ vid stängning. Numrering efter S110 Del 4: ADR **123** (S109 mintade i
 `#1689` — läs disk) · kort **285+** · L512 + 58 fragment · **T160** · f52 ·
 session 111. Full narrativ: sessionsdok S110 Del 1–4 + PAUSLÄGE.
 
-**Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång
+**Session 109 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`) — ALLT
+SKIVAT FÖR AUTONOMT BYGGE: NOTISFAMILJEN (`TASK-285`, 12 kort) OCH PERSONREGISTRET
+(`ADR-123` + `TASK-286`, 6 kort; `TASK-283` amenderad).** Resume 1 landade: notisen
+låst efter ETT varv (`#1682`), meddelanderutan + appfel efter FYRA (`#1685`;
+familjeregel: ingen kontur, krysset bara på kvitto/info); Marcus valde väg B för
+personlistan (*"Då kör vi B!"*) → `283.1`-agenten stoppad, staging-EF återställd,
+research (`#1688`), `ADR-123` (`#1689`), kort (`#1687`, `#1693` i kö vid paus).
+Två lessons-fragment (stoppad agent med deploy i DoD · nekat kommando körde
+ingenting — Del 6 föll bort och återinfördes). **NÄSTA (resume av 109): verifiera
+`#1693` · våg 1 med fem bygg-agenter (`285.1`–`285.4`, `286.1`) · svep per
+väckning enligt PAUSLÄGE-tabellen · HITL när Marcus är hemma: `285.10`, `286.5`,
+`283.4`, QA.** Numrering efter S109 paus 2: ADR 124 · kort 287 · L512 + 60
+fragment · T160 · f52 · session 111. Full narrativ: sessionsdok S109 Del 5–9 +
+PAUSLÄGE.
+
+**Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`, historik; pausad en gång
 2026-08-21) — NOTIS-FAMILJEN: BYGGET AV `TASK-283` OCH NOTIS-PROTOTYPEN STARTAR.**
 Resume 1: handoffen prövad mot disk — `#1674` landad (`2eb9f53f`), `#1676`
 (paus-handoffens rättelse, okänd för handoffen) landade `381691f2` under
