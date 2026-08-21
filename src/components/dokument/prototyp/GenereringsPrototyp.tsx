@@ -1058,7 +1058,7 @@ function InforutanMorf({
                   label={r.def.etikett}
                   iso={utkast[r.def.id] ?? ''}
                   autoFocus={r.def.id === fokusId}
-                  faltKlass={r.tomt ? 'bg-(--mm-messagebox-warning-bg)' : undefined}
+                  faltKlass={r.tomt ? 'border-(--mm-messagebox-warning-border)' : undefined}
                   onChange={(v) => setUtkast((u) => ({ ...u, [r.def.id]: v }))}
                 />
               ) : (
@@ -1073,9 +1073,14 @@ function InforutanMorf({
                   autoFocus={r.def.id === fokusId}
                   className={cn(
                     'min-h-10',
-                    // Primitivens className gar till WRAPPERN; <input> far bara
-                    // inputVariants(...) — darav barnvarianten.
-                    r.tomt && '[&_input]:bg-(--mm-messagebox-warning-bg)',
+                    /* Saknat värde markeras med KONTUR i varningsrutans
+                       konturfärg, inte med fylld bakgrund: en rosa yta i
+                       skrivfältet blev tung och otydlig, medan konturen ramar
+                       in exakt det som ska fyllas i och låter texten stå kvar
+                       på vitt. Primitivens className går till WRAPPERN;
+                       <input> får bara inputVariants(...) — därav
+                       barnvarianten. */
+                    r.tomt && '[&_input]:border-(--mm-messagebox-warning-border)',
                   )}
                   placeholder={r.def.id === 'plats' ? 'Gatuadress och ort' : undefined}
                   value={utkast[r.def.id] ?? ''}
