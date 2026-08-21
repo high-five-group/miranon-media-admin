@@ -17,7 +17,7 @@
 
 **Session 110 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
-VAKTEN KVAR ATT GRILLA.** Egen worktree `s110-kalenderlank-driften` (S109
+VAKTEN GRILLAD OCH LÅST I `ADR-122`.** Egen worktree `s110-kalenderlank-driften` (S109
 äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
 Elfsight-kalenderwidgetens **handskrivna** anmälningslänkar på miranon.se —
 Roger duplicerar poster utan att redigera URL-parametrarna; `"10"` →
@@ -32,13 +32,30 @@ Landat: `#1673` `fd349ac4` · `#1677` `7df69087`. `T158` (omnumrerad efter
 kollision med S109:s T157) · `task-232` AC 1–3 · F.2/Lucka 10 omskrivna ·
 tre lesson-fragment. Lotta-underlag + text levererade till Marcus.
 
-**NÄSTA (S110 pågår): GRILLNING av vakten (Marcus `/grill-me`) — A1
-normalisering + korsfältsvalidering + Error-log · driftdetektor mot
-kalenderwidgeten (research-pass: endpointens villkor) · app-yta · därefter
-2g (ID 21/22/23) + de 11 tvetydiga på Event-55 efter Lottas svar ·
-`task-232` → Done i stängningscommit.** Numrering efter S110: ADR 122 ·
-kort 284 · L512 + 58 fragment · **T159** · f52 · session 111. Full
-narrativ: sessionsdok S110 Del 1–2 + Paushistorik.
+**Del 3 — VAKTEN GRILLAD OCH LÅST (`ADR-122`).** Fem frågor, Marcus
+kvitterade helheten. Rotfixen görs (`AnmälningsURL` ur basen) **och** vakten
+byggs — en rutin som brustit tre gånger är ingen grind. A1 **vägrar länka**
+vid avvikelse (fail-closed by construction: kraschar skriptet blir `Event`
+tomt, det enda som överlever `P16`s tysta automations-korruption); avvikelsen
+bärs av ett **formelfält**, inte en flagga; tomt = *kan inte avgöras*; scope
+`Huvudformulär`. Appen får en **åtgärdskö** med alla tre delarna — kö, markör
+och resolution via ny `relink-registration` (sätter `Event` OCH `EventKey`,
+fälla 9:s idempotenskrav). FYNDEN som gjorde det billigt: facit och påstående
+ligger redan sida vid sida i `Anmälningar` (fyra lookup-fält finns, `Datum
+(visas i länk)` bär exakt formulärets sträng → ren strängmatchning), och
+**formen på Hem finns redan** — `Bevakningsrad`, Marcus-låst sedan S102.
+Driftdetektorn mot Elfsight **lyft till `T159`** som medvetet bortval.
+Landat: `ADR-122` · `ORDLISTA` **Åtgärdskö** · `DESIGN-SYSTEM-SPEC` **§ 22**
+(familjegräns mot §21: arbetsobjekt är INTE notiser) · `T159`.
+
+**NÄSTA (S110 pågår): `/to-prd` → `/to-issues` för bygget** — skivningen ej
+avgjord (en synlighets-bara-skiva är horisontell; vertikalt är sannolikt *en
+yta hela vägen* före kön som egen ingång) · därefter 2g (ID 21/22/23) + de 11
+tvetydiga på Event-55 efter Lottas svar · `task-232` → Done i
+stängningscommit · **Marcus-moment: kalenderlänkarna på miranon.se**
+(rotfixen, `ADR-122` beslut 1). Numrering efter S110 Del 3: ADR **123** ·
+kort 284 · L512 + 58 fragment · **T160** · f52 · session 111. Full narrativ:
+sessionsdok S110 Del 1–3 + Paushistorik.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad en gång
 2026-08-21) — NOTIS-FAMILJEN: BYGGET AV `TASK-283` OCH NOTIS-PROTOTYPEN STARTAR.**
