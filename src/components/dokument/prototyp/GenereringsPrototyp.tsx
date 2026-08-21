@@ -39,17 +39,7 @@
 
 import { type CalendarDate, parseDate } from '@internationalized/date';
 import { Link } from '@tanstack/react-router';
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Files,
-  FileText,
-  Pencil,
-  Plus,
-  Upload,
-  X,
-} from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Files, FileText, Plus, Upload, X } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Checkbox, DateField, DateInput, DateSegment, I18nProvider } from 'react-aria-components';
@@ -462,10 +452,15 @@ function datumMedAr(iso: string): string {
   return Number.isNaN(d.getTime()) ? '' : `${DAG_MANAD.format(d)} ${AR.format(d)}`;
 }
 
-/** "Plats och Sista betalningsdag" — naturligt språk, inga listpunkter i en mening. */
+/** "plats och sista betalningsdag" — naturligt språk, inga listpunkter i en mening. */
 function ochLista(delar: string[]): string {
   if (delar.length <= 1) return delar.join('');
   return `${delar.slice(0, -1).join(', ')} och ${delar[delar.length - 1]}`;
+}
+
+/** Meningens första ord med versal, resten som de står — etiketter är vanliga substantiv. */
+function meningsStart(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /* ------------------------------------------------------------------ *
@@ -885,16 +880,39 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
 /* ------------------------------------------------------------------ *
  * GENERERINGSVYN — det nya mellanledet
  *
- * RADERNA ÄR LÅSTA I HÖJD: exakt tre led (etikett · källa · EN rad värde)
- * precis som `DokumentYta`s bilage-/mallrader ("SAMMA TRE LED … så
- * höjdlåsningen håller genom hela listan"), och värdet trunkeras alltid
- * till en rad. Redigering sker i en DIALOG — listan växer aldrig med
- * innehållet (Marcus 2026-08-21: "inget får växa eller krympa").
+ * FORMEN (varv 5, 2026-08-21) är en SYNTES av husets och branschens svar:
+ *
+ *   · Husets läsyte-grammatik (DetaljGrupp.tsx, S73-facit): rubriken står
+ *     UTANFÖR det tonala kortet, indragen till inner-inset (px-4); kortet är
+ *     LISTPOSTEN (`bg-bg-muted border-transparent`, aldrig en behållare i en
+ *     listpost) med divide-y mellan raderna; etiketten dämpad, värdet
+ *     primärt. Inga piller för härkomst — TACKNING_KLASS är kategori-
+ *     grammatik (RackviddBadge.tsx), inte status, och osynlig mot bg-muted.
+ *   · Branschens summary-list på smal skärm (GOV.UK < 641 px, M3 compact,
+ *     HIG; docs/research/mall-ifyllnadsvyer-branschmonster-2026-08-21.md):
+ *     etikett och värde STAPLADE, saknat värde som handlingslänk i
+ *     värdeplatsen, härkomst som sekundärtext eller tyst, EN handling per
+ *     rad, redigering i egen yta med Spara-verb. Ingen chip, inget rött.
+ *
+ * Det NYA mönstret (Marcus 2026-08-21: "behöver vi etablera något nytt så
+ * gör vi det"): en TVÅRADS-rad — etikett (text-small, dämpad) över värdet
+ * (text-body, alltid exakt en rad, trunkerad) — som LEDER VIDARE (chevron,
+ * DESIGN-SYSTEM-SPEC §14: "chevron betyder att raden leder vidare") till
+ * blockets egen yta. Hela raden är knappen, i husets handlingsrads-platta
+ * (`-mx-2 rounded-lg px-2 hover:bg-bg-emphasized`, HandlingsRad.tsx).
+ * Värde-höger (eventsidans form) prövades och föll: datum, adress och
+ * rubrik trunkerades till oläslighet på 390 px. Alla rader har samma
+ * höjd per konstruktion — två led, aldrig fler, aldrig färre.
  * ------------------------------------------------------------------ */
 
 type Resultat =
   | { typ: 'ok'; utelamnade: string[]; sparade: string[] }
   | { typ: 'fel'; text: string };
+
+const RAD_KLASS =
+  '-mx-2 flex w-auto items-center gap-3 rounded-lg px-2 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors';
+const KORT_KLASS =
+  'divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
 
 function GenereringsVy({
   event,
@@ -932,41 +950,20 @@ function GenereringsVy({
   const utelamnade = allaRader.filter((r) => r.tomt);
   const oppenRad = oppet ? allaRader.find((r) => r.def.id === oppet) : undefined;
 
-  const kallaText = (r: Rad): string => {
-    if (r.tomt) return 'Saknas';
-    if (r.egen) {
-      return somStandard.has(r.def.id) ? 'Egen text · blir platsens standard' : 'Egen text';
-    }
-    switch (r.def.kalla) {
-      case 'event':
-        return 'Från eventet';
-      case 'eventinnehall':
-        return 'Standardtext';
-      case 'plats':
-        return `Standard för ${event.ort}`;
-    }
-  };
-
   // Varje ändring efter ett "Skapa" gör bekräftelsen inaktuell — den
   // beskrev ett dokument som inte längre är det Lotta ser framför sig.
-  const sattText = (id: BlockId, varde: string) => {
-    setResultat(null);
-    setOverrides((o) => ({ ...o, [id]: { typ: 'text', varde } }));
-  };
-  const sattAgenda = (id: BlockId, nya: AgendaRad[]) => {
-    setResultat(null);
-    setOverrides((o) => ({ ...o, [id]: { typ: 'agenda', rader: nya } }));
-  };
-  const aterstall = (id: BlockId) => {
+  const spara = (id: BlockId, nytt: Override | null, blirStandard: boolean) => {
     setResultat(null);
     setOverrides((o) => {
       const n = { ...o };
-      delete n[id];
+      if (nytt) n[id] = nytt;
+      else delete n[id];
       return n;
     });
     setSomStandard((s) => {
       const n = new Set(s);
-      n.delete(id);
+      if (blirStandard && nytt) n.add(id);
+      else n.delete(id);
       return n;
     });
   };
@@ -1019,141 +1016,156 @@ function GenereringsVy({
   };
 
   return (
-    <div className="flex flex-col gap-4" data-testid="generering-vy">
-      <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
-      <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-3xl">{meta.namn}</h1>
-        <p className="text-small text-text-secondary">
-          <span className="font-medium text-text">{eventName(event)}</span> · {event.ort} ·{' '}
-          {datumSpannText(event)}
-        </p>
-      </header>
+    <div className="flex flex-col gap-6" data-testid="generering-vy">
+      <div className="flex flex-col gap-4">
+        <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
+        <header className="flex flex-col gap-1">
+          <h1 className="font-semibold text-3xl">{meta.namn}</h1>
+          <p className="text-small text-text-secondary">
+            <span className="font-medium text-text">{eventName(event)}</span> · {event.ort} ·{' '}
+            {datumSpannText(event)}
+          </p>
+        </header>
 
-      {/* BESLUT 5: tomma block utelämnas — men aldrig tyst. Beskedet står
-          FÖRE knappen, i klartext, med en väg in per block. */}
-      {utelamnade.length > 0 && (
-        <MessageBox intent="warning">
-          <span className="flex flex-col gap-3">
-            <span>
-              <strong>{ochLista(utelamnade.map((r) => r.def.etikett))}</strong> saknas för det här
-              eventet. {utelamnade.length === 1 ? 'Den delen' : 'De delarna'} tas inte med i bilagan
-              förrän du skrivit in {utelamnade.length === 1 ? 'den' : 'dem'}.
+        {/* BESLUT 5: tomma block utelämnas — men aldrig tyst. Beskedet står
+            FÖRE knappen, i klartext, med en väg in per block. */}
+        {utelamnade.length > 0 && (
+          <MessageBox intent="warning">
+            <span className="flex flex-col gap-3">
+              <span>
+                <strong>
+                  {meningsStart(ochLista(utelamnade.map((r) => r.def.etikett.toLowerCase())))}
+                </strong>{' '}
+                saknas för det här eventet. {utelamnade.length === 1 ? 'Den delen' : 'De delarna'}{' '}
+                tas inte med i bilagan förrän du fyllt i {utelamnade.length === 1 ? 'den' : 'dem'}.
+              </span>
+              <span className="flex flex-wrap gap-2">
+                {utelamnade.map((r) => (
+                  <Button
+                    key={r.def.id}
+                    intent="primary"
+                    emphasis="subtle"
+                    size="sm"
+                    onPress={() => setOppet(r.def.id)}
+                  >
+                    Fyll i {r.def.etikett.toLowerCase()}
+                  </Button>
+                ))}
+              </span>
             </span>
-            <span className="flex flex-wrap gap-2">
-              {utelamnade.map((r) => (
-                <Button
-                  key={r.def.id}
-                  intent="primary"
-                  emphasis="subtle"
-                  size="sm"
-                  onPress={() => setOppet(r.def.id)}
-                >
-                  <Pencil aria-hidden="true" size={14} />
-                  Skriv in {r.def.etikett.toLowerCase()}
-                </Button>
-              ))}
-            </span>
-          </span>
-        </MessageBox>
-      )}
-
-      {rader.map((g) => (
-        <section key={g.rubrik} className="flex flex-col gap-3">
-          <div className={GRUPP_KORT_KLASS}>
-            <h2 className="font-medium text-small text-text-secondary">{g.rubrik}</h2>
-            <ul className={LISTA_KLASS}>
-              {g.rader.map((r) => (
-                <li key={r.def.id} data-block={r.def.id}>
-                  <div className="flex items-start gap-3 py-3">
-                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                      <span className="w-full min-w-0 truncate font-medium text-body">
-                        {r.def.etikett}
-                      </span>
-                      <span
-                        className={
-                          r.tomt ? `${TACKNING_KLASS} bg-warning-bg text-text` : TACKNING_KLASS
-                        }
-                      >
-                        {kallaText(r)}
-                      </span>
-                      {/* ALLTID exakt en rad — tom rad är också en rad. */}
-                      <span
-                        className="w-full min-w-0 truncate text-caption text-text-muted"
-                        title={varderad(r) ?? undefined}
-                      >
-                        {varderad(r) ?? saknasText(r)}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 items-center gap-0.5">
-                      {r.def.last ? (
-                        // Låst block: samma bredd som knappen så textkolumnen
-                        // aldrig flyttar sig mellan raderna.
-                        <span aria-hidden="true" className={IKONKNAPP_KLASS} />
-                      ) : (
-                        <Button
-                          intent="primary"
-                          emphasis="subtle"
-                          size="sm"
-                          className={IKONKNAPP_KLASS}
-                          aria-label={`Ändra ${r.def.etikett}`}
-                          onPress={() => setOppet(r.def.id)}
-                        >
-                          <Pencil aria-hidden="true" size={IKON_STORLEK} />
-                        </Button>
-                      )}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      ))}
-
-      <p className="text-caption text-text-muted">Alltid med, oavsett event: {meta.fastForm}.</p>
-
-      {resultat?.typ === 'ok' && (
-        <MessageBox intent="success">
-          {meta.namn}n är skapad och ligger nu bland eventets dokument, redo att bifogas i utskick.
-          {resultat.utelamnade.length > 0 && ` Utan ${ochLista(resultat.utelamnade)}.`}
-          {resultat.sparade.length > 0 &&
-            ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}{' '}
-          <span className="text-text-muted">
-            (Prototyp: dokumentet öppnades som sida i ett nytt fönster, ingen PDF sparas.)
-          </span>
-        </MessageBox>
-      )}
-      {resultat?.typ === 'fel' && <MessageBox intent="error">{resultat.text}</MessageBox>}
-
-      <div className="flex flex-col gap-2">
-        <Button intent="secondary" emphasis="outline" onPress={() => oppnaDokument(false)}>
-          Förhandsgranska först
-        </Button>
-        <Button intent="primary" onPress={() => oppnaDokument(true)}>
-          <FileText aria-hidden="true" size={16} className="shrink-0" />
-          Skapa {meta.namn.toLowerCase()}
-        </Button>
+          </MessageBox>
+        )}
       </div>
 
-      {/* Redigeringen bor i en dialog — villkorad rendering så tillståndet är
+      {rader.map((g) => {
+        const rubrikId = `grupp-${g.rubrik.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+        return (
+          <section
+            key={g.rubrik}
+            aria-labelledby={rubrikId}
+            className="flex min-w-0 flex-col gap-2"
+          >
+            <h2 id={rubrikId} className="px-4 font-semibold text-lg">
+              {g.rubrik}
+            </h2>
+            <ul className={KORT_KLASS}>
+              {g.rader.map((r) => {
+                const varde = varderad(r);
+                const inre = (
+                  <>
+                    {/* 21 + 24 px text hade gett 71 px; leading-5 (20 px) + gap-1 (4 px)
+                        + py-3 (24 px) = 72 px — på 4 px-rytmen (DESIGN-SYSTEM-SPEC §3). */}
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="text-small text-text-muted leading-5">{r.def.etikett}</span>
+                      {/* Saknat värde = handlingen i värdeplatsen (GOV.UK summary list
+                          "Enter …"). Understruken text i textfärg — husets länkaffordans
+                          (hem-listornas hover:underline), 14:1 mot kortet; guld mättes
+                          till 2,36:1 (gold-500) resp. 4,49:1 (gold-700) och föll. */}
+                      <span
+                        className={`truncate text-body ${
+                          r.tomt ? 'font-medium underline decoration-1 underline-offset-4' : ''
+                        }`}
+                        title={varde ?? undefined}
+                      >
+                        {varde ?? `Fyll i ${r.def.etikett.toLowerCase()}`}
+                      </span>
+                    </span>
+                    {r.def.last ? (
+                      <span aria-hidden="true" className="size-4 shrink-0" />
+                    ) : (
+                      <ChevronRight
+                        aria-hidden="true"
+                        size={16}
+                        className="shrink-0 text-text-muted"
+                      />
+                    )}
+                  </>
+                );
+                return (
+                  <li key={r.def.id} data-block={r.def.id} className="flex flex-col">
+                    {r.def.last ? (
+                      <div className="flex items-center gap-3 py-3">{inre}</div>
+                    ) : (
+                      <button
+                        type="button"
+                        className={RAD_KLASS}
+                        aria-label={`${r.tomt ? 'Fyll i' : 'Ändra'} ${r.def.etikett.toLowerCase()}`}
+                        onClick={() => setOppet(r.def.id)}
+                      >
+                        {inre}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        );
+      })}
+
+      <div className="flex flex-col gap-4">
+        <p className="px-4 text-caption text-text-muted">
+          Alltid med, oavsett event: {meta.fastForm}.
+        </p>
+
+        {resultat?.typ === 'ok' && (
+          <MessageBox intent="success">
+            {meta.namn}n är skapad och ligger nu bland eventets dokument, redo att bifogas i
+            utskick.
+            {resultat.utelamnade.length > 0 && ` Utan ${ochLista(resultat.utelamnade)}.`}
+            {resultat.sparade.length > 0 &&
+              ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}{' '}
+            <span className="text-text-muted">
+              (Prototyp: dokumentet öppnades som sida i ett nytt fönster, ingen PDF sparas.)
+            </span>
+          </MessageBox>
+        )}
+        {resultat?.typ === 'fel' && <MessageBox intent="error">{resultat.text}</MessageBox>}
+
+        <div className="flex flex-col gap-2">
+          <Button intent="secondary" emphasis="outline" onPress={() => oppnaDokument(false)}>
+            Förhandsgranska först
+          </Button>
+          <Button intent="primary" onPress={() => oppnaDokument(true)}>
+            <FileText aria-hidden="true" size={16} className="shrink-0" />
+            Skapa {meta.namn.toLowerCase()}
+          </Button>
+        </div>
+      </div>
+
+      {/* Redigeringen bor i en egen yta — villkorad rendering så utkastet är
           färskt per öppning (samma disciplin som RackviddsDialog). */}
       {oppenRad && (
         <BlockDialog
+          key={oppenRad.def.id}
           rad={oppenRad}
           ort={event.ort}
           platsFinns={plats != null}
           somStandard={somStandard.has(oppenRad.def.id)}
-          onSomStandard={(v) =>
-            setSomStandard((s) => {
-              const n = new Set(s);
-              if (v) n.add(oppenRad.def.id);
-              else n.delete(oppenRad.def.id);
-              return n;
-            })
-          }
-          onText={(v) => sattText(oppenRad.def.id, v)}
-          onAgenda={(nya) => sattAgenda(oppenRad.def.id, nya)}
-          onAterstall={() => aterstall(oppenRad.def.id)}
+          onSpara={(nytt, blirStandard) => {
+            spara(oppenRad.def.id, nytt, blirStandard);
+            setOppet(null);
+          }}
           onStang={() => setOppet(null)}
         />
       )}
@@ -1161,7 +1173,12 @@ function GenereringsVy({
   );
 }
 
-/** Radens värde på EN rad — som det står i dokumentet, inte bara fältvärdet. */
+/**
+ * Radens värde på EN rad — som det står i dokumentet för korta fält; för
+ * löptext och agenda en beskrivning (M3: långa värden hör inte hemma som
+ * trailing text — "reduce the amount of information shown"). Härkomsten
+ * är tyst för det normala (standard) och syns bara i blockets egen yta.
+ */
 function varderad(r: Rad): string | null {
   if (r.tomt) return null;
   if (r.agenda) return agendaSammanfattning(r.agenda);
@@ -1172,20 +1189,10 @@ function varderad(r: Rad): string | null {
       return `${r.text}, betalas vid anmälan.`;
     case 'sistaBetalningsdag':
       return datumMedAr(r.text ?? '');
+    case 'beskrivning':
+      return r.egen ? 'Egen text för det här eventet' : 'Standardtexten om utbildningen';
     default:
       return r.text;
-  }
-}
-
-/** Vad den tomma värderaden säger — vad som händer med dokumentet, inte bara "tomt". */
-function saknasText(r: Rad): string {
-  switch (r.def.id) {
-    case 'sistaBetalningsdag':
-      return 'Inget datum satt';
-    case 'plats':
-      return 'Ingen adress';
-    default:
-      return 'Ingen text';
   }
 }
 
@@ -1196,7 +1203,8 @@ function agendaSammanfattning(rader: AgendaRad[]): string {
 }
 
 /* ------------------------------------------------------------------ *
- * DIALOGEN — ett block i taget
+ * BLOCKETS EGEN YTA — utkast tills Spara (M3/GOV.UK: en yta per fält,
+ * Spara-verb, återgång till översikten; Avbryt/Escape kastar utkastet).
  * ------------------------------------------------------------------ */
 
 function BlockDialog({
@@ -1204,24 +1212,37 @@ function BlockDialog({
   ort,
   platsFinns,
   somStandard,
-  onSomStandard,
-  onText,
-  onAgenda,
-  onAterstall,
+  onSpara,
   onStang,
 }: {
   rad: Rad;
   ort: string | null;
   platsFinns: boolean;
   somStandard: boolean;
-  onSomStandard: (v: boolean) => void;
-  onText: (v: string) => void;
-  onAgenda: (rader: AgendaRad[]) => void;
-  onAterstall: () => void;
+  onSpara: (nytt: Override | null, blirStandard: boolean) => void;
   onStang: () => void;
 }) {
   const { def } = rad;
   const harStandard = rad.standardText != null || rad.standardAgenda != null;
+
+  // Utkastet startar från det som gäller (egen text före standard).
+  const [text, setText] = useState(rad.text ?? '');
+  const [agenda, setAgenda] = useState<AgendaRad[]>(
+    rad.egen?.typ === 'agenda' ? rad.egen.rader : (rad.standardAgenda ?? []),
+  );
+  const [blirStandard, setBlirStandard] = useState(somStandard);
+
+  const sparaUtkast = () => {
+    if (def.agenda) {
+      const rensade = agenda.filter((r) => r.text.trim());
+      onSpara({ typ: 'agenda', rader: rensade }, false);
+      return;
+    }
+    // Samma text som standarden = ingen egen text (följer standarden igen).
+    const nytt: Override | null =
+      rad.standardText != null && text === rad.standardText ? null : { typ: 'text', varde: text };
+    onSpara(nytt, blirStandard && !!text.trim());
+  };
 
   return (
     <Modal
@@ -1236,38 +1257,33 @@ function BlockDialog({
         size="md"
         actions={
           <>
-            {rad.egen && harStandard && (
-              <Button intent="secondary" emphasis="outline" onPress={onAterstall}>
-                Återgå till standard
-              </Button>
-            )}
-            <Button intent="primary" onPress={onStang}>
-              Klar
+            <Button intent="secondary" emphasis="outline" onPress={onStang}>
+              Avbryt
+            </Button>
+            <Button intent="primary" onPress={sparaUtkast}>
+              Spara
             </Button>
           </>
         }
       >
         <div className="flex flex-col gap-4">
           {def.agenda ? (
-            <AgendaEditor
-              rader={rad.egen?.typ === 'agenda' ? rad.egen.rader : (rad.standardAgenda ?? [])}
-              onChange={onAgenda}
-            />
+            <AgendaEditor rader={agenda} onChange={setAgenda} />
           ) : def.datum ? (
             <DatumEnkel
               label={def.etikett}
-              iso={rad.text ?? ''}
-              onChange={onText}
+              iso={text}
+              onChange={setText}
               hjalp={`I bilagan: "Resterande ${EVENTINNEHALL.resterandeBelopp} betalas senast ${
-                datumUtanAr(rad.text ?? '') || '…'
+                datumUtanAr(text) || '…'
               }. Anmälan är bindande."`}
             />
           ) : (
             <TextArea
               label={def.etikett}
               hideLabel
-              value={rad.text ?? ''}
-              onChange={onText}
+              value={text}
+              onChange={setText}
               rows={
                 def.id === 'beskrivning' ? 8 : def.kalla === 'event' || def.id === 'plats' ? 2 : 5
               }
@@ -1278,20 +1294,33 @@ function BlockDialog({
           {def.platsFalt && ort && (
             <Kryss
               label={`Använd som standard för ${ort}`}
-              vald={somStandard}
-              onChange={onSomStandard}
+              vald={blirStandard}
+              onChange={setBlirStandard}
             >
               Använd som standard för {ort} framöver{platsFinns ? '' : ' (skapar platsen)'}
             </Kryss>
           )}
 
-          <p className="text-caption text-text-muted">
-            {rad.egen
-              ? 'Egen text för det här eventet. Ändras standarden senare påverkas inte eventet.'
-              : harStandard
-                ? 'Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.'
-                : 'Ingen standard finns. Texten gäller bara det här eventet om du inte använder den som standard.'}
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-caption text-text-muted">
+              {rad.egen
+                ? 'Egen text för det här eventet. Ändras standarden senare påverkas inte eventet.'
+                : harStandard
+                  ? 'Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.'
+                  : 'Ingen standard finns. Texten gäller bara det här eventet om du inte använder den som standard.'}
+            </p>
+            {rad.egen && harStandard && (
+              <Button
+                intent="secondary"
+                emphasis="outline"
+                size="sm"
+                className="shrink-0"
+                onPress={() => onSpara(null, false)}
+              >
+                Återgå till standard
+              </Button>
+            )}
+          </div>
         </div>
       </Dialog>
     </Modal>
