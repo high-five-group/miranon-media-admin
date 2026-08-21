@@ -65,21 +65,31 @@ prod är en utrullningsfråga, inte en byggfråga. `284.1`–`284.4` blev
 `ready-for-agent`; `284.6` prod-utrullning bröts ut som `ready-for-human`.
 Landat: `#1684` `378b4f62` · `#1686` `9df1ccbe` · `#1690` armerad vid paus.
 
-**Resume 2 (2026-08-21):** handoffen prövad mot disk — `#1690` **landad**
-(`0223c9db`), `#1691` likaså, `origin/main` = `c73d0f63`; worktreen låg två
-commits efter och ff-synkades. `284.1`–`284.4` verifierat `ready-for-agent`,
-`284.6`-filen finns. **Avvikelse rättad:** `284.1`/`284.2` bar kvar
-*"PROD-WRITE … därför ready-for-human"* i beskrivningen medan etikett och
-notes sade staging — `#1690` flippade etiketten men rev aldrig motiveringen.
+**Resume 2 + Del 5 (2026-08-21):** handoffen prövad mot disk (`#1690`/`#1691`
+landade), självmotsägelsen i `284.1`/`284.2` riven (`#1695` `e703c564`).
+**`TASK-284.1` byggd autonomt mot staging och STÄNGD** — `#1698` `af349d83`,
+stängning `#1708` `37a1d8f6`, DoD #3 verifierad mot post-merge-körning
+`32483469976` (grön på ALLA jobb, inkl. `Staging (API + E2E)` som står
+`skipping` i PR-grinden med avsikt, `TASK-70.3`). **Tre fynd registrerade:**
+`T161` (`ADR-122` § Fynd 1 felkarakteriserar `Event (namn)` — en jämförelse
+mot det fältet vore en tautologi) · **fälla 52** (`Deadline slutbetalning`s
+undantags-gren är död kod, valalternativet heter `"Ej relevant (för
+föreläsningar)"`; samma döda test i `Slutbetalning status visuellt`; 0
+prod-poster i endera felläget, alltså latent) · lärdomsfragment om
+trådnummer-kollisionerna (fjärde på tre dygn; `T161` kolliderade skarpt och
+`ADR-081`s landnings-regel avgjorde — den andra numrerade om till `T162`).
 
-**NÄSTA: bygg `TASK-284.1` (tracer bullet, mot staging `apphjj8Q7lkXCMsL4`) →
-`284.2`/`284.3`/`284.4` inbördes oberoende → `284.5` QA och `284.6` prod är
-MARCUS-moment.** Öppet: Event-18:s falska positiv ej lokaliserad · Lottas
+**NÄSTA: `284.3` + `284.4` byggs parallellt av agenter; `284.2` HÅLLS UTANFÖR
+vågen och går efteråt (den deployar A1 i staging, som kör vid varje
+radskapande — samtidigt som andra sviter skapar rader i samma delade bas).
+`284.5` QA och `284.6` prod är MARCUS-moment. `284.4`:s DoD #6 kan INTE
+stängas autonomt — facit-amendering kräver Marcus visuella godkännande.** Öppet: Event-18:s falska positiv ej lokaliserad · Lottas
 fyra besked · **Marcus: kalenderlänkarna på miranon.se + Lotta-texten** ·
-`task-232` → Done vid stängning. Numrering re-deriverad mot disk vid resume 2:
-ADR **124** (`ADR-123` förbrukad av S109) · kort **287** (285 på main, 286 på
-S109:s gren) · **L512** + 60 fragment · **T160** · f52 · session 111. Full
-narrativ: sessionsdok S110 Del 1–4 + Paushistorik.
+`task-232` → Done vid stängning. Numrering — RE-DERIVERA ALLTID, tre
+sessioner mintar parallellt: ADR **124** · kort **288+** (S109 tog 287) ·
+**L512** + 61 fragment · tråd **T163** (`T161` min, `T162` S109:s) · fälla
+**53** (52 tagen av denna session) · session 111. Full narrativ: sessionsdok
+S110 Del 1–5 + Paushistorik.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`, historik; pausad två
 gånger 2026-08-21) — AUTONOMT BYGGE AV BÅDA SPÅREN: VÅG 1 IGÅNG MED FEM
