@@ -129,9 +129,7 @@ test.describe('get-persons — registerläge (ADR-123 beslut 1, TASK-286.1)', ()
     const { persons } = await callRegister(request, config, jwt);
     const fixturNamn = persons
       .map((p) => p.namn)
-      .filter(
-        (namn): namn is string => typeof namn === 'string' && namn.startsWith(FIXTURE_PREFIX),
-      )
+      .filter((namn): namn is string => typeof namn === 'string' && namn.startsWith(FIXTURE_PREFIX))
       .sort();
 
     expect(fixturNamn, 'samtliga 5 ZZ-Conformance-fixturer ska finnas i registret').toEqual(
