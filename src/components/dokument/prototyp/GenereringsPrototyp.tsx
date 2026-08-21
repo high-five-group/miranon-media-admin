@@ -909,8 +909,11 @@ type Resultat =
   | { typ: 'ok'; utelamnade: string[]; sparade: string[] }
   | { typ: 'fel'; text: string };
 
-const RAD_KLASS =
-  '-mx-2 flex w-auto items-center gap-3 rounded-lg px-2 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors';
+// INGEN bakgrundstint vid hover — husets divide-y-grammatik (AktivitetsHistorik
+// § radKlass, Marcus 2026-08-15: tinten skar sig mot separatorlinjerna; samma
+// fynd igen 2026-08-21). Affordansen är personlistans: underline på värdet via
+// group, chevronen bär resten.
+const RAD_KLASS = 'group flex w-full items-center gap-3 py-3 text-left';
 const KORT_KLASS =
   'divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
 
@@ -1082,8 +1085,12 @@ function GenereringsVy({
                           (hem-listornas hover:underline), 14:1 mot kortet; guld mättes
                           till 2,36:1 (gold-500) resp. 4,49:1 (gold-700) och föll. */}
                       <span
-                        className={`truncate text-body ${
-                          r.tomt ? 'font-medium underline decoration-1 underline-offset-4' : ''
+                        className={`truncate text-body underline-offset-4 ${
+                          r.tomt
+                            ? 'font-medium underline decoration-1'
+                            : r.def.last
+                              ? ''
+                              : 'group-hover:underline'
                         }`}
                         title={varde ?? undefined}
                       >
@@ -1124,10 +1131,6 @@ function GenereringsVy({
       })}
 
       <div className="flex flex-col gap-4">
-        <p className="px-4 text-caption text-text-muted">
-          Alltid med, oavsett event: {meta.fastForm}.
-        </p>
-
         {resultat?.typ === 'ok' && (
           <MessageBox intent="success">
             {meta.namn}n är skapad och ligger nu bland eventets dokument, redo att bifogas i
