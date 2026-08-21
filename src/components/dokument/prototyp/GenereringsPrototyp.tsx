@@ -25,6 +25,11 @@
  * (`docs/mallar/bilagor/*.html`). Ingen write någonstans; allt tillstånd
  * lever i minnet och dör med omladdning (prototype-skillen, regel 3).
  *
+ * DOKUMENTET ÄR DET RIKTIGA: "Skapa" hämtar den faktiska mallen
+ * (`docs/mallar/bilagor/<mall>.html`, serverad rakt av Vite i dev), fyller i
+ * blocken, TAR BORT de utelämnade och öppnar resultatet i ett nytt fönster.
+ * Det är vad Lotta ser — inte en ruta som säger att en PDF hade skapats.
+ *
  * LISTA-VYN är en kopia av Dokument-ytans form i eventläget (`DokumentYta.tsx`
  * § DokumentLista) — startpunkten ska vara EXAKT kopia (T66), därför är
  * klasserna stulna rad för rad, inte omtolkade. Skillnaden mot skarpa: två
@@ -32,12 +37,25 @@
  * i stället för direkt till PDF:en.
  */
 import { Link } from '@tanstack/react-router';
-import { Check, ChevronLeft, ChevronRight, Files, FileText, Upload } from 'lucide-react';
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Files,
+  FileText,
+  Pencil,
+  Plus,
+  Upload,
+  X,
+} from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
+import { datumSpannText } from '@/components/events/detail/datumSpann';
+import { eventName } from '@/components/events/EventCard';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
+import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { TextArea } from '@/components/primitives/TextArea';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
@@ -72,52 +90,50 @@ const ARBOGA: Event = {
   kursniva: 'Nivå 1',
 };
 
-type AgendaRad = { text: string; tid: string | null; meditation: boolean };
+type AgendaRad = { text: string; tid: string; meditation: boolean };
 
 /**
  * Eventinnehåll för kombinationen Event "Resor i medvetandet 1" × Eventtyp
  * "Utbildning" (ORDLISTA § Eventinnehåll). Texten är mallens, verbatim.
+ * Beskrivningen bor i mallens markup (fetade nyckelord) och hämtas därifrån
+ * vid rendering; här bär vi bara en förhandsvisning av den.
  */
-const EVENTINNEHALL_RIM1_UTBILDNING = {
+const EVENTINNEHALL = {
   etikett: 'Resor i medvetandet 1 · Utbildning',
   tid: 'kl. 10:00 – 17:00',
   pris: '2.500',
   anmalningsavgift: '1000:-',
   resterandeBelopp: '1500:-',
-  beskrivning: [
-    'Utbildningen Resor i Medvetandet kommer att ge dig en djupare insikt om medvetandet, både genom att teoretiskt förklara vad vi är och att praktiskt öva i extremt djupa meditationer. Vi går igenom helt nya medvetandemodeller som faktiskt kan förklara det som tidigare kallats för övernaturligt och paranormalt. I denna utbildning får du själv ta de första stegen på din resa i vårt gemensamma medvetande. Medvetandet är det centrala och du kommer både få göra praktiska övningar tillsammans med massor med konkreta tips, samtidigt som vi förklarar de djupare insikter som ligger bakom våra upplevelser i våra liv.',
-    'Du behöver inga förberedande kunskaper eller erfarenheter, men du måste komma med ett mycket öppet sinne. I utbildningen har vi lagt ett starkt fokus på din egen upplevelse och din egen personliga resa i medvetandet. Boken Utanför Verkligheten ligger till grund för nya sätt att se på verkligheten genom att öppna upp ditt sinne för en helt ny värld och verklighet.',
-    'Du kommer även att få lära dig om Additiv meditation, en meditationsteknik, som gör det möjligt att ta sig extremt djupt i medvetandet. Med en kombination av tusenårig kunskap och modern teknik kan man uppnå mentala tillstånd som helt klart bryter mot vad vi tror är begränsningar i verkligheten. Vi arbetar med mentala ankare och planerar intentioner. Du får tillfälle att fråga om precis vad som helst, exempelvis om synkronicitet, Akashi arkivet, reinkarnationsprocessen, eller om dina guider. Du kommer att i detalj få reda på hur du planerar och utför dina resor med hjälp av extrem meditation och en välfylld mental verktygslåda. Vi berättar om varför Punktmedvetandet är så viktigt för att uppnå högre mentala tillstånd. Du kommer att få en inblick varifrån kreativitet, inspiration och ökade mentala förmågor kommer.',
-  ].join('\n\n'),
+  beskrivningForhandsvisning:
+    'Utbildningen Resor i Medvetandet kommer att ge dig en djupare insikt om medvetandet, både genom att teoretiskt förklara vad vi är och att praktiskt öva i extremt djupa meditationer. …',
   dagEtt: [
-    { text: 'Miranon Media', tid: null, meditation: false },
-    { text: 'Miranon-Nivåer (lite om)', tid: null, meditation: false },
-    { text: 'Additiv Meditation', tid: null, meditation: false },
+    { text: 'Miranon Media', tid: '', meditation: false },
+    { text: 'Miranon-Nivåer (lite om)', tid: '', meditation: false },
+    { text: 'Additiv Meditation', tid: '', meditation: false },
     { text: 'Meditation: Eken Plus Djup avslappning', tid: '30 min', meditation: true },
-    { text: 'Mentala hinder', tid: null, meditation: false },
-    { text: 'Filosofi: materialism/idealism', tid: null, meditation: false },
-    { text: 'Medvetandemodeller', tid: null, meditation: false },
-    { text: 'Kvantfysik', tid: null, meditation: false },
-    { text: 'Synkronicitet, fjärrskådning', tid: null, meditation: false },
+    { text: 'Mentala hinder', tid: '', meditation: false },
+    { text: 'Filosofi: materialism/idealism', tid: '', meditation: false },
+    { text: 'Medvetandemodeller', tid: '', meditation: false },
+    { text: 'Kvantfysik', tid: '', meditation: false },
+    { text: 'Synkronicitet, fjärrskådning', tid: '', meditation: false },
     { text: 'Meditation: Fåtöljen', tid: '5 min', meditation: true },
     { text: 'Meditation: Kraftfältet Plus', tid: '30 min', meditation: true },
-    { text: 'Upplevelser utanför kroppen', tid: null, meditation: false },
-    { text: 'Utmaningar utanför kroppen', tid: null, meditation: false },
+    { text: 'Upplevelser utanför kroppen', tid: '', meditation: false },
+    { text: 'Utmaningar utanför kroppen', tid: '', meditation: false },
     { text: 'Meditation: Uthuset', tid: '45 min', meditation: true },
   ] satisfies AgendaRad[],
   dagTva: [
     { text: 'Meditation Fyren', tid: '40 min', meditation: true },
-    { text: 'Intention – Föreställning – Skapande', tid: null, meditation: false },
-    { text: 'Meditation & fokus', tid: null, meditation: false },
-    { text: 'Klicka ut eller sömn', tid: null, meditation: false },
-    { text: 'Punktmedvetande', tid: null, meditation: false },
-    { text: 'Mentala Ankare / Grundning/Jordning', tid: null, meditation: false },
+    { text: 'Intention – Föreställning – Skapande', tid: '', meditation: false },
+    { text: 'Meditation & fokus', tid: '', meditation: false },
+    { text: 'Klicka ut eller sömn', tid: '', meditation: false },
+    { text: 'Punktmedvetande', tid: '', meditation: false },
+    { text: 'Mentala Ankare / Grundning/Jordning', tid: '', meditation: false },
     { text: 'Meditation Klockan', tid: '40 min', meditation: true },
-    { text: 'Ljud & Frekvenser, EEG', tid: null, meditation: false },
+    { text: 'Ljud & Frekvenser, EEG', tid: '', meditation: false },
     { text: 'Tankeövning', tid: '5 min', meditation: false },
-    { text: 'Var observatören', tid: null, meditation: false },
+    { text: 'Var observatören', tid: '', meditation: false },
   ] satisfies AgendaRad[],
-  // Deltagarinformationens ämnesstycken som INTE är platsbundna.
   forberedelser:
     'Kom som du är! Ta en lugn hemmakväll dagen före utbildningen, men ändra absolut inte på dina mediciner eller vanor. Sluta inte med nikotin eller kaffe strax före utbildningen. Förändringar påverkar din mentala kapacitet negativt. Däremot skall du inte dricka alkohol alls några dagar före. Naturligtvis tillåter vi inte användandet av droger. Förbered dig gärna genom att läsa boken och lyssna på meditationerna Eken & Kraftfältet som finns på Spotify.',
   tagMed:
@@ -133,7 +149,8 @@ const EVENTINNEHALL_RIM1_UTBILDNING = {
 };
 
 /** Platser (ORDLISTA § Plats) — Rönninge seedas vid bygget (beslut 6). Arboga finns INTE. */
-type Plats = { namn: string; adress: string; parkering: string; transport: string; klader: string };
+type PlatsFalt = 'adress' | 'parkering' | 'transport' | 'klader';
+type Plats = { namn: string } & Record<PlatsFalt, string>;
 const PLATSER_SEED: Record<string, Plats> = {
   Rönninge: {
     namn: 'Rönninge',
@@ -156,13 +173,12 @@ const PLATSER_SEED: Record<string, Plats> = {
 type MallId = 'bekraftelse' | 'deltagarinfo';
 type Kalla = 'event' | 'eventinnehall' | 'plats';
 type BlockId =
-  | 'kursnamn'
+  | 'rubrik'
   | 'datumTid'
   | 'plats'
   | 'pris'
   | 'anmalningsavgift'
-  | 'resterande'
-  | 'sistaBetalningsdatum'
+  | 'slutbetalning'
   | 'beskrivning'
   | 'dagEtt'
   | 'dagTva'
@@ -181,52 +197,121 @@ type BlockDef = {
   id: BlockId;
   etikett: string;
   kalla: Kalla;
-  /** Platsbundet block — kan sparas som platsens standard (beslut 6 C). */
-  platsbundet?: boolean;
-  /** Låst: hämtas ur eventet och redigeras på eventsidan, inte här. */
+  /** Platsens fält — blocket kan sparas som platsens standard (beslut 6 C). */
+  platsFalt?: PlatsFalt;
+  /** Låst: hämtas ur eventet och ändras på eventsidan, inte här. */
   last?: boolean;
   agenda?: boolean;
+  /** Rubriken på det ämnesstycke i deltagarinformationen blocket motsvarar. */
+  amnesstycke?: string;
 };
 
-const BLOCK_BEKRAFTELSE: BlockDef[] = [
-  { id: 'kursnamn', etikett: 'Utbildning', kalla: 'event', last: true },
+type Grupp = { rubrik: string; block: BlockDef[] };
+
+const INFORUTA_BAS: BlockDef[] = [
+  { id: 'rubrik', etikett: 'Rubrik', kalla: 'event', last: true },
   { id: 'datumTid', etikett: 'Datum och tid', kalla: 'event' },
-  { id: 'plats', etikett: 'Plats', kalla: 'plats', platsbundet: true },
-  { id: 'pris', etikett: 'Pris', kalla: 'eventinnehall' },
-  { id: 'anmalningsavgift', etikett: 'Anmälningsavgift', kalla: 'eventinnehall' },
-  { id: 'resterande', etikett: 'Resterande belopp', kalla: 'eventinnehall' },
-  { id: 'sistaBetalningsdatum', etikett: 'Betalas senast', kalla: 'event' },
-  { id: 'beskrivning', etikett: 'Om utbildningen', kalla: 'eventinnehall' },
-  { id: 'dagEtt', etikett: 'Innehåll, Dag Ett', kalla: 'eventinnehall', agenda: true },
-  { id: 'dagTva', etikett: 'Innehåll, Dag Två', kalla: 'eventinnehall', agenda: true },
+  { id: 'plats', etikett: 'Plats', kalla: 'plats', platsFalt: 'adress' },
 ];
 
-const BLOCK_DELTAGARINFO: BlockDef[] = [
-  { id: 'kursnamn', etikett: 'Utbildning', kalla: 'event', last: true },
-  { id: 'datumTid', etikett: 'Datum och tid', kalla: 'event' },
-  { id: 'plats', etikett: 'Plats', kalla: 'plats', platsbundet: true },
-  { id: 'forberedelser', etikett: 'Förberedelser', kalla: 'eventinnehall' },
-  { id: 'klader', etikett: 'Kläder', kalla: 'plats', platsbundet: true },
-  { id: 'tagMed', etikett: 'Tag med', kalla: 'eventinnehall' },
-  { id: 'rokning', etikett: 'För dig som röker', kalla: 'eventinnehall' },
-  { id: 'parfym', etikett: 'Parfym och kosmetika', kalla: 'eventinnehall' },
-  { id: 'mat', etikett: 'Mat/fika', kalla: 'eventinnehall' },
-  { id: 'overnattning', etikett: 'Övernattning', kalla: 'eventinnehall' },
-  { id: 'parkering', etikett: 'Parkering', kalla: 'plats', platsbundet: true },
-  { id: 'transport', etikett: 'Transport från tåget', kalla: 'plats', platsbundet: true },
-  { id: 'utrustning', etikett: 'Utrustning', kalla: 'eventinnehall' },
-];
+const GRUPPER: Record<MallId, Grupp[]> = {
+  bekraftelse: [
+    {
+      rubrik: 'Inforutan',
+      block: [
+        ...INFORUTA_BAS,
+        { id: 'pris', etikett: 'Pris', kalla: 'eventinnehall' },
+        { id: 'anmalningsavgift', etikett: 'Anmälningsavgift', kalla: 'eventinnehall' },
+        { id: 'slutbetalning', etikett: 'Slutbetalning', kalla: 'event' },
+      ],
+    },
+    {
+      rubrik: 'Om utbildningen',
+      block: [{ id: 'beskrivning', etikett: 'Beskrivning', kalla: 'eventinnehall' }],
+    },
+    {
+      rubrik: 'Innehållet dag för dag',
+      block: [
+        { id: 'dagEtt', etikett: 'Innehåll, Dag Ett', kalla: 'eventinnehall', agenda: true },
+        { id: 'dagTva', etikett: 'Innehåll, Dag Två', kalla: 'eventinnehall', agenda: true },
+      ],
+    },
+  ],
+  deltagarinfo: [
+    { rubrik: 'Inforutan', block: INFORUTA_BAS },
+    {
+      rubrik: 'Praktisk information',
+      block: [
+        {
+          id: 'forberedelser',
+          etikett: 'Förberedelser',
+          kalla: 'eventinnehall',
+          amnesstycke: 'Förberedelser',
+        },
+        {
+          id: 'klader',
+          etikett: 'Kläder',
+          kalla: 'plats',
+          platsFalt: 'klader',
+          amnesstycke: 'Kläder',
+        },
+        { id: 'tagMed', etikett: 'Tag med', kalla: 'eventinnehall', amnesstycke: 'Tag med' },
+        {
+          id: 'rokning',
+          etikett: 'För dig som röker',
+          kalla: 'eventinnehall',
+          amnesstycke: 'För dig som röker',
+        },
+        {
+          id: 'parfym',
+          etikett: 'Parfym och kosmetika',
+          kalla: 'eventinnehall',
+          amnesstycke: 'Parfym och kosmetika',
+        },
+        { id: 'mat', etikett: 'Mat/fika', kalla: 'eventinnehall', amnesstycke: 'Mat/fika' },
+        {
+          id: 'overnattning',
+          etikett: 'Övernattning',
+          kalla: 'eventinnehall',
+          amnesstycke: 'Övernattning',
+        },
+        {
+          id: 'parkering',
+          etikett: 'Parkering',
+          kalla: 'plats',
+          platsFalt: 'parkering',
+          amnesstycke: 'Parkering',
+        },
+        {
+          id: 'transport',
+          etikett: 'Transport från tåget',
+          kalla: 'plats',
+          platsFalt: 'transport',
+          amnesstycke: 'Transport från tåget',
+        },
+        {
+          id: 'utrustning',
+          etikett: 'Utrustning',
+          kalla: 'eventinnehall',
+          amnesstycke: 'Utrustning',
+        },
+      ],
+    },
+  ],
+};
 
-const MALL_META: Record<MallId, { namn: string; block: BlockDef[]; fastForm: string }> = {
+const MALL_META: Record<MallId, { namn: string; fil: string; fastForm: string }> = {
   bekraftelse: {
     namn: 'Bekräftelsebilaga',
-    block: BLOCK_BEKRAFTELSE,
-    fastForm: 'Logga, Swish/Plusgiro, "Frågor mejla till", hälsning och sidfotens QR-koder',
+    fil: 'bekraftelsebilaga.html',
+    fastForm:
+      'logga, Swish- och Plusgironummer, "Frågor mejla till", hälsningen och sidfotens QR-koder',
   },
   deltagarinfo: {
     namn: 'Deltagarinformation',
-    block: BLOCK_DELTAGARINFO,
-    fastForm: 'Logga, ingress, "Frågor mejla till", "Kom gärna en stund innan" och hälsning',
+    fil: 'deltagarinformation.html',
+    fastForm:
+      'logga, ingressen, "Frågor mejla till", "Kom gärna en liten stund innan" och hälsningen',
   },
 };
 
@@ -245,42 +330,41 @@ function datumText(event: Event): string | null {
   return `${VECKODAG.format(start)}–${VECKODAG.format(slut)} den ${DAG_MANAD.format(start)}–${DAG_MANAD.format(slut)} ${AR.format(slut)}`;
 }
 
-function agendaText(rader: AgendaRad[]): string {
-  return rader
-    .map((r) => `${r.meditation ? '◆ ' : ''}${r.text}${r.tid ? ` · ${r.tid}` : ''}`)
-    .join('\n');
-}
-
-/** Standardvärdet per block — ur eventet, Eventinnehållet eller Platsen. `null` = saknas. */
-function standardVarde(id: BlockId, event: Event, plats: Plats | undefined): string | null {
-  const ei = EVENTINNEHALL_RIM1_UTBILDNING;
+/** Standardvärdet per textblock. `null` = saknas. Agendablock hanteras separat. */
+function standardText(
+  id: BlockId,
+  mall: MallId,
+  event: Event,
+  plats: Plats | undefined,
+): string | null {
+  const ei = EVENTINNEHALL;
   switch (id) {
-    case 'kursnamn':
-      return event.eventNamn;
+    case 'rubrik':
+      return event.eventNamn
+        ? mall === 'bekraftelse'
+          ? `Utbildning: ${event.eventNamn}`
+          : `Välkommen till ${event.eventNamn}!`
+        : null;
     case 'datumTid': {
       const d = datumText(event);
       return d ? `${d}, ${ei.tid}` : null;
     }
     case 'plats':
-      return plats?.adress ?? null;
+      return plats?.adress || null;
     case 'pris':
-      return `${ei.pris} Kr`;
+      return ei.pris;
     case 'anmalningsavgift':
-      return `${ei.anmalningsavgift}, betalas vid anmälan.`;
-    case 'resterande':
-      return ei.resterandeBelopp;
-    case 'sistaBetalningsdatum':
+      return ei.anmalningsavgift;
+    case 'slutbetalning':
+      // Sista betalningsdag finns inte på eventet — därför saknas hela
+      // meningen tills Lotta skriver den (beslut 5 tvingar fram frågan).
       return null;
     case 'beskrivning':
-      return ei.beskrivning;
-    case 'dagEtt':
-      return agendaText(ei.dagEtt);
-    case 'dagTva':
-      return agendaText(ei.dagTva);
+      return ei.beskrivningForhandsvisning;
     case 'forberedelser':
       return ei.forberedelser;
     case 'klader':
-      return plats?.klader ?? null;
+      return plats?.klader || null;
     case 'tagMed':
       return ei.tagMed;
     case 'rokning':
@@ -292,12 +376,218 @@ function standardVarde(id: BlockId, event: Event, plats: Plats | undefined): str
     case 'overnattning':
       return ei.overnattning;
     case 'parkering':
-      return plats?.parkering ?? null;
+      return plats?.parkering || null;
     case 'transport':
-      return plats?.transport ?? null;
+      return plats?.transport || null;
     case 'utrustning':
       return ei.utrustning;
+    case 'dagEtt':
+    case 'dagTva':
+      return null;
   }
+}
+
+function standardAgenda(id: BlockId): AgendaRad[] {
+  return id === 'dagEtt' ? EVENTINNEHALL.dagEtt : EVENTINNEHALL.dagTva;
+}
+
+type Override = { typ: 'text'; varde: string } | { typ: 'agenda'; rader: AgendaRad[] };
+
+type Rad = {
+  def: BlockDef;
+  standardText: string | null;
+  standardAgenda: AgendaRad[] | null;
+  egen: Override | null;
+  /** Texten som gäller (egen före standard). */
+  text: string | null;
+  agenda: AgendaRad[] | null;
+  tomt: boolean;
+};
+
+function byggRad(
+  def: BlockDef,
+  mall: MallId,
+  event: Event,
+  plats: Plats | undefined,
+  egen: Override | null,
+): Rad {
+  if (def.agenda) {
+    const std = standardAgenda(def.id);
+    const agenda = egen?.typ === 'agenda' ? egen.rader : std;
+    const ifyllda = agenda.filter((r) => r.text.trim());
+    return {
+      def,
+      standardText: null,
+      standardAgenda: std,
+      egen,
+      text: null,
+      agenda: ifyllda,
+      tomt: ifyllda.length === 0,
+    };
+  }
+  const std = standardText(def.id, mall, event, plats);
+  const text = egen?.typ === 'text' ? egen.varde : std;
+  return {
+    def,
+    standardText: std,
+    standardAgenda: null,
+    egen,
+    text,
+    agenda: null,
+    tomt: !text?.trim(),
+  };
+}
+
+/** "Plats och slutbetalning" — naturligt språk, inga listpunkter i en mening. */
+function ochLista(delar: string[]): string {
+  if (delar.length <= 1) return delar.join('');
+  return `${delar.slice(0, -1).join(', ')} och ${delar[delar.length - 1]}`;
+}
+
+/* ------------------------------------------------------------------ *
+ * DOKUMENTET — den riktiga mallen, ifylld, med utelämnade block borttagna.
+ * Samma strängersättning som `scripts/render-bilage-mall.mjs`, plus
+ * DOM-operationerna för utelämnande och egna texter.
+ * ------------------------------------------------------------------ */
+
+const MALL_BAS = '/docs/mallar/bilagor/';
+
+async function renderaDokument(mall: MallId, event: Event, rader: Rad[]): Promise<string> {
+  const svar = await fetch(`${MALL_BAS}${MALL_META[mall].fil}`);
+  if (!svar.ok) throw new Error(`Mallen kunde inte hämtas (${svar.status}).`);
+  const html = await svar.text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  // Relativa sökvägar (CSS, logga, typsnitt) ska lösas mot mallkatalogen,
+  // inte mot det nya fönstrets tomma URL.
+  const base = doc.createElement('base');
+  base.href = new URL(MALL_BAS, window.location.origin).href;
+  doc.head.prepend(base);
+
+  const rad = (id: BlockId) => rader.find((r) => r.def.id === id);
+  const textEller = (id: BlockId) => rad(id)?.text ?? '';
+
+  // Rubrik + titel.
+  const h1 = doc.querySelector('h1.rubrik');
+  if (h1) h1.textContent = textEller('rubrik');
+  doc.title = event.eventNamn ?? doc.title;
+
+  // Inforutans rader: en <p> per etikett. Tomt block → <p> bort.
+  const inforutaRad = (etikett: string) =>
+    Array.from(doc.querySelectorAll('.inforuta p')).find((p) =>
+      p.querySelector('strong')?.textContent?.trim().startsWith(etikett),
+    );
+  const sattInforuta = (etikett: string, id: BlockId) => {
+    const p = inforutaRad(etikett);
+    if (!p) return;
+    const r = rad(id);
+    if (!r || r.tomt) {
+      p.remove();
+      return;
+    }
+    const strong = p.querySelector('strong');
+    p.textContent = '';
+    if (strong) p.append(strong, ` ${r.text}`);
+    else p.textContent = r.text ?? '';
+  };
+  sattInforuta('Datum och Tid', 'datumTid');
+  sattInforuta('Plats', 'plats');
+
+  if (mall === 'bekraftelse') {
+    // Slutbetalningens mening: egen mening eller bort.
+    const slutP = Array.from(doc.querySelectorAll('.inforuta p')).find((p) =>
+      p.textContent?.includes('{{resterandeBelopp}}'),
+    );
+    const slut = rad('slutbetalning');
+    if (slutP) {
+      if (!slut || slut.tomt) slutP.remove();
+      else slutP.textContent = slut.text;
+    }
+
+    // Beskrivningen: standard = mallens egen markup (fetade ord); egen text
+    // = rena stycken.
+    const besk = rad('beskrivning');
+    const brodtext = doc.querySelector('.brodtext');
+    if (brodtext && besk?.egen?.typ === 'text') {
+      brodtext.textContent = '';
+      for (const stycke of besk.egen.varde.split(/\n{2,}/)) {
+        const p = doc.createElement('p');
+        p.textContent = stycke.trim();
+        brodtext.append(p);
+      }
+    } else if (brodtext && besk?.tomt) {
+      brodtext.remove();
+    }
+
+    // Innehållslistorna byggs om ur raderna (typ-rutan styr färgen, beslut 3).
+    const listor = doc.querySelectorAll('.innehallslistor .lista');
+    (['dagEtt', 'dagTva'] as const).forEach((id, i) => {
+      const lista = listor[i];
+      const r = rad(id);
+      if (!lista) return;
+      if (!r || r.tomt || !r.agenda) {
+        lista.remove();
+        return;
+      }
+      const ul = lista.querySelector('ul');
+      if (!ul) return;
+      ul.textContent = '';
+      for (const punkt of r.agenda) {
+        const li = doc.createElement('li');
+        if (punkt.meditation) {
+          const namn = doc.createElement('span');
+          namn.className = 'meditationsnamn';
+          namn.textContent = punkt.text;
+          li.append(namn);
+        } else {
+          li.append(punkt.text);
+        }
+        if (punkt.tid.trim()) {
+          const tid = doc.createElement('span');
+          tid.className = 'tid';
+          tid.textContent = punkt.tid;
+          li.append(' ', tid);
+        }
+        ul.append(li);
+      }
+    });
+  } else {
+    // Ämnesstyckena: tomt → bort; egen text → ersätt löptexten efter etiketten.
+    for (const r of rader) {
+      if (!r.def.amnesstycke) continue;
+      const p = Array.from(doc.querySelectorAll('p.amnesstycke')).find((el) =>
+        el
+          .querySelector('strong')
+          ?.textContent?.trim()
+          .startsWith(r.def.amnesstycke as string),
+      );
+      if (!p) continue;
+      if (r.tomt) {
+        p.remove();
+        continue;
+      }
+      if (r.egen?.typ === 'text' || r.def.kalla === 'plats') {
+        const strong = p.querySelector('strong');
+        p.textContent = '';
+        if (strong) p.append(strong, ` ${r.text}`);
+      }
+    }
+  }
+
+  // Kvarvarande platshållare — samma ersättning som render-bilage-mall.mjs.
+  const ersatt: Record<string, string> = {
+    kursnamn: event.eventNamn ?? '',
+    datumTid: textEller('datumTid'),
+    plats: textEller('plats'),
+    pris: textEller('pris'),
+    anmalningsavgift: textEller('anmalningsavgift'),
+    resterandeBelopp: EVENTINNEHALL.resterandeBelopp,
+    sistaBetalningsdatum: '',
+  };
+  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`.replace(
+    /\{\{(\w+)\}\}/g,
+    (_, nyckel: string) => ersatt[nyckel] ?? '',
+  );
 }
 
 /* ------------------------------------------------------------------ *
@@ -313,6 +603,8 @@ const KRYSSRUTA_KLASS =
   'flex size-4 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-(--mm-checkbox-selected-border) group-data-[selected]:bg-(--mm-checkbox-selected-bg)';
 const GRUPP_KORT_KLASS =
   'flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong';
+const LISTA_KLASS =
+  'divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong';
 
 function KromKnapp({ onPress, label }: { onPress?: () => void; label: string }) {
   const klass =
@@ -341,6 +633,36 @@ function MetaRad({ delar }: { delar: (string | null)[] }) {
   );
 }
 
+function Kryss({
+  vald,
+  onChange,
+  children,
+  label,
+}: {
+  vald: boolean;
+  onChange: (v: boolean) => void;
+  children?: ReactNode;
+  label: string;
+}) {
+  return (
+    <Checkbox
+      isSelected={vald}
+      onChange={onChange}
+      aria-label={children ? undefined : label}
+      className="group flex cursor-pointer items-center gap-2 text-small"
+    >
+      <span className={KRYSSRUTA_KLASS}>
+        <Check
+          aria-hidden="true"
+          size={12}
+          className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
+        />
+      </span>
+      {children && <span className="text-text-secondary">{children}</span>}
+    </Checkbox>
+  );
+}
+
 /* ------------------------------------------------------------------ *
  * ROTEN
  * ------------------------------------------------------------------ */
@@ -350,22 +672,23 @@ export function GenereringsPrototyp() {
   const [mallParam, setMall] = useQueryState('mall');
   const mall: MallId = mallParam === 'deltagarinfo' ? 'deltagarinfo' : 'bekraftelse';
 
-  // Platser lever i minnet under sessionen — "Spara som standard" skapar
+  // Platser lever i minnet under sessionen — "spara som standard" skapar
   // Arboga-posten här, ingenstans annars.
   const [platser, setPlatser] = useState<Record<string, Plats>>(PLATSER_SEED);
 
   if (vy === 'generering') {
     return (
       <GenereringsVy
+        key={mall}
         event={ARBOGA}
         mall={mall}
         platser={platser}
-        onSparaPlats={(namn, falt, varde) =>
+        onSparaPlats={(namn, falt) =>
           setPlatser((p) => ({
             ...p,
             [namn]: {
               ...(p[namn] ?? { namn, adress: '', parkering: '', transport: '', klader: '' }),
-              [falt]: varde,
+              ...falt,
             },
           }))
         }
@@ -452,10 +775,7 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
-            <ul
-              data-testid="dokument-lista"
-              className="divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong"
-            >
+            <ul data-testid="dokument-lista" className={LISTA_KLASS}>
               {visaMallar &&
                 MALLAR.map((m) => (
                   <li key={m.id}>
@@ -538,7 +858,9 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
  * GENERERINGSVYN — det nya mellanledet
  * ------------------------------------------------------------------ */
 
-type Override = { varde: string };
+type Resultat =
+  | { typ: 'ok'; utelamnade: string[]; sparade: string[] }
+  | { typ: 'fel'; text: string };
 
 function GenereringsVy({
   event,
@@ -550,54 +872,115 @@ function GenereringsVy({
   event: Event;
   mall: MallId;
   platser: Record<string, Plats>;
-  onSparaPlats: (platsNamn: string, falt: keyof Omit<Plats, 'namn'>, varde: string) => void;
+  onSparaPlats: (platsNamn: string, falt: Partial<Record<PlatsFalt, string>>) => void;
   onTillbaka: () => void;
 }) {
   const meta = MALL_META[mall];
+  const grupper = GRUPPER[mall];
   const plats = event.ort ? platser[event.ort] : undefined;
-  // Eventets egna texter (beslut 6 A) — lever i minnet.
+
+  // Eventets egna texter (beslut 6 A) och vilka av dem som ska bli platsens
+  // standard när bilagan skapas (beslut 6 C) — allt i minnet.
   const [overrides, setOverrides] = useState<Partial<Record<BlockId, Override>>>({});
+  const [somStandard, setSomStandard] = useState<Set<BlockId>>(new Set());
   const [oppet, setOppet] = useState<BlockId | null>(null);
-  const [skapad, setSkapad] = useState<{ antal: number; utelamnade: string[] } | null>(null);
+  const [resultat, setResultat] = useState<Resultat | null>(null);
 
   const rader = useMemo(
     () =>
-      meta.block.map((b) => {
-        const standard = standardVarde(b.id, event, plats);
-        const egen = overrides[b.id]?.varde ?? null;
-        const varde = egen ?? standard;
-        return { def: b, standard, egen, varde, tomt: !varde?.trim() };
-      }),
-    [meta.block, event, plats, overrides],
+      grupper.map((g) => ({
+        ...g,
+        rader: g.block.map((b) => byggRad(b, mall, event, plats, overrides[b.id] ?? null)),
+      })),
+    [grupper, mall, event, plats, overrides],
   );
-  const utelamnade = rader.filter((r) => r.tomt);
+  const allaRader = rader.flatMap((g) => g.rader);
+  const utelamnade = allaRader.filter((r) => r.tomt);
 
-  const kallaText = (r: (typeof rader)[number]): string => {
-    if (r.egen != null) return 'Egen text för detta event';
+  const kallaText = (r: Rad): string => {
     if (r.tomt) return 'Saknas';
+    if (r.egen) {
+      return somStandard.has(r.def.id) ? 'Egen text · blir platsens standard' : 'Egen text';
+    }
     switch (r.def.kalla) {
       case 'event':
         return 'Från eventet';
       case 'eventinnehall':
-        return `Standard · ${EVENTINNEHALL_RIM1_UTBILDNING.etikett}`;
+        return 'Standardtext';
       case 'plats':
-        return `Standard · Plats ${event.ort}`;
+        return `Standard för ${event.ort}`;
     }
   };
 
-  const platsFalt = (id: BlockId): keyof Omit<Plats, 'namn'> | null => {
-    switch (id) {
-      case 'plats':
-        return 'adress';
-      case 'parkering':
-        return 'parkering';
-      case 'transport':
-        return 'transport';
-      case 'klader':
-        return 'klader';
-      default:
-        return null;
-    }
+  // Varje ändring efter ett "Skapa" gör bekräftelsen inaktuell — den
+  // beskrev ett dokument som inte längre är det Lotta ser framför sig.
+  const sattText = (id: BlockId, varde: string) => {
+    setResultat(null);
+    setOverrides((o) => ({ ...o, [id]: { typ: 'text', varde } }));
+  };
+  const sattAgenda = (id: BlockId, nya: AgendaRad[]) => {
+    setResultat(null);
+    setOverrides((o) => ({ ...o, [id]: { typ: 'agenda', rader: nya } }));
+  };
+  const aterstall = (id: BlockId) => {
+    setResultat(null);
+    setOverrides((o) => {
+      const n = { ...o };
+      delete n[id];
+      return n;
+    });
+    setSomStandard((s) => {
+      const n = new Set(s);
+      n.delete(id);
+      return n;
+    });
+  };
+
+  /** Öppnar dokumentet i ett nytt fönster; `skarpt` sparar dessutom platsens standard. */
+  const oppnaDokument = (skarpt: boolean) => {
+    // KRITISKT: window.open synkront i klicket, före await — annars blockerar
+    // webbläsaren popupen (samma regel som DokumentYta § IKONPAR-not).
+    const fonster = window.open('', '_blank');
+    setResultat(null);
+    void (async () => {
+      try {
+        const html = await renderaDokument(mall, event, allaRader);
+        if (fonster) {
+          fonster.document.open();
+          fonster.document.write(html);
+          fonster.document.close();
+        }
+        if (!skarpt) return;
+        // Platsens standard sparas när bilagan skapas — inte när krysset sätts.
+        const sparade: string[] = [];
+        if (event.ort) {
+          const falt: Partial<Record<PlatsFalt, string>> = {};
+          for (const r of allaRader) {
+            if (r.def.platsFalt && somStandard.has(r.def.id) && r.text?.trim()) {
+              falt[r.def.platsFalt] = r.text;
+              sparade.push(r.def.etikett.toLowerCase());
+            }
+          }
+          if (sparade.length) {
+            onSparaPlats(event.ort, falt);
+            setOverrides((o) => {
+              const n = { ...o };
+              for (const r of allaRader) if (somStandard.has(r.def.id)) delete n[r.def.id];
+              return n;
+            });
+            setSomStandard(new Set());
+          }
+        }
+        setResultat({
+          typ: 'ok',
+          utelamnade: utelamnade.map((r) => r.def.etikett.toLowerCase()),
+          sparade,
+        });
+      } catch (e) {
+        fonster?.close();
+        setResultat({ typ: 'fel', text: e instanceof Error ? e.message : 'Okänt fel.' });
+      }
+    })();
   };
 
   return (
@@ -605,238 +988,276 @@ function GenereringsVy({
       <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
       <header className="flex flex-col gap-1">
         <h1 className="font-semibold text-3xl">{meta.namn}</h1>
-        <p className="text-small text-text-muted">
-          {[event.ort, event.typ, event.eventNamn, datumText(event)].filter(Boolean).join(' · ')}
+        <p className="text-small text-text-secondary">
+          <span className="font-medium text-text">{eventName(event)}</span> · {event.ort} ·{' '}
+          {datumSpannText(event)}
         </p>
       </header>
 
-      {/* BESLUT 5: tomma block utelämnas — men aldrig tyst. Listan står FÖRE
-          knappen, så Lotta ser vad som inte kommer med innan hon skapar. */}
-      {utelamnade.length > 0 ? (
+      {/* BESLUT 5: tomma block utelämnas — men aldrig tyst. Beskedet står
+          FÖRE knappen, i klartext, med en väg in per block. */}
+      {utelamnade.length > 0 && (
         <MessageBox intent="warning">
-          <span className="flex flex-col gap-2">
+          <span className="flex flex-col gap-3">
             <span>
-              {utelamnade.length === 1
-                ? 'Ett block saknar text och utelämnas ur PDF:en:'
-                : `${utelamnade.length} block saknar text och utelämnas ur PDF:en:`}
+              <strong>{ochLista(utelamnade.map((r) => r.def.etikett))}</strong> saknas för det här
+              eventet. {utelamnade.length === 1 ? 'Den delen' : 'De delarna'} tas inte med i bilagan
+              förrän du skrivit in {utelamnade.length === 1 ? 'den' : 'dem'}.
             </span>
-            <ul className="flex flex-col gap-1">
+            <span className="flex flex-wrap gap-2">
               {utelamnade.map((r) => (
-                <li key={r.def.id} className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{r.def.etikett}</span>
-                  <Button
-                    intent="primary"
-                    emphasis="subtle"
-                    size="sm"
-                    onPress={() => setOppet(r.def.id)}
-                  >
-                    Skriv in
-                  </Button>
-                </li>
+                <Button
+                  key={r.def.id}
+                  intent="primary"
+                  emphasis="subtle"
+                  size="sm"
+                  onPress={() => setOppet(r.def.id)}
+                >
+                  <Pencil aria-hidden="true" size={14} />
+                  Skriv in {r.def.etikett.toLowerCase()}
+                </Button>
               ))}
-            </ul>
+            </span>
           </span>
         </MessageBox>
-      ) : (
-        <MessageBox intent="success">Alla block har text — inget utelämnas.</MessageBox>
       )}
 
-      <section className="flex flex-col gap-3">
-        <div className={GRUPP_KORT_KLASS}>
-          <ul className="divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong">
-            {rader.map((r) => {
-              const arOppet = oppet === r.def.id;
-              const pf = platsFalt(r.def.id);
-              return (
-                <li key={r.def.id} className="py-3">
-                  <div className="flex items-start gap-3">
-                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                      <span className="w-full min-w-0 truncate font-medium text-body">
-                        {r.def.etikett}
-                      </span>
-                      <span
-                        className={`${TACKNING_KLASS} ${
-                          r.tomt ? 'text-(--mm-messagebox-warning-border)' : ''
-                        }`}
-                      >
-                        {kallaText(r)}
-                      </span>
-                      {!arOppet && !r.tomt && (
-                        <span
-                          className={`w-full min-w-0 text-caption text-text-muted ${
-                            r.def.agenda ? 'whitespace-pre-line' : 'line-clamp-2'
-                          }`}
-                        >
-                          {r.varde}
+      {rader.map((g) => (
+        <section key={g.rubrik} className="flex flex-col gap-3">
+          <div className={GRUPP_KORT_KLASS}>
+            <h2 className="font-medium text-small text-text-secondary">{g.rubrik}</h2>
+            <ul className={LISTA_KLASS}>
+              {g.rader.map((r) => {
+                const arOppet = oppet === r.def.id;
+                return (
+                  <li key={r.def.id} className="py-3" data-block={r.def.id}>
+                    <div className="flex items-start gap-3">
+                      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                        <span className="w-full min-w-0 truncate font-medium text-body">
+                          {r.def.etikett}
                         </span>
-                      )}
-                    </span>
-                    {!r.def.last && (
-                      <Button
-                        intent="primary"
-                        emphasis="subtle"
-                        size="sm"
-                        className={IKONKNAPP_KLASS}
-                        aria-label={arOppet ? `Stäng ${r.def.etikett}` : `Ändra ${r.def.etikett}`}
-                        onPress={() => setOppet(arOppet ? null : r.def.id)}
-                      >
-                        {arOppet ? (
-                          <Check aria-hidden="true" size={IKON_STORLEK} />
-                        ) : (
-                          <FileText aria-hidden="true" size={IKON_STORLEK} />
+                        <span
+                          className={
+                            r.tomt ? `${TACKNING_KLASS} bg-warning-bg text-text` : TACKNING_KLASS
+                          }
+                        >
+                          {kallaText(r)}
+                        </span>
+                        {!arOppet && !r.tomt && (
+                          <span className="line-clamp-2 w-full min-w-0 text-caption text-text-muted">
+                            {r.agenda ? agendaSammanfattning(r.agenda) : forhandsvisning(r)}
+                          </span>
                         )}
-                      </Button>
-                    )}
-                  </div>
+                      </span>
+                      {!r.def.last && (
+                        <Button
+                          intent="primary"
+                          emphasis="subtle"
+                          size="sm"
+                          className={IKONKNAPP_KLASS}
+                          aria-label={
+                            arOppet ? `Klar med ${r.def.etikett}` : `Ändra ${r.def.etikett}`
+                          }
+                          onPress={() => setOppet(arOppet ? null : r.def.id)}
+                        >
+                          {arOppet ? (
+                            <Check aria-hidden="true" size={IKON_STORLEK} />
+                          ) : (
+                            <Pencil aria-hidden="true" size={IKON_STORLEK} />
+                          )}
+                        </Button>
+                      )}
+                    </div>
 
-                  {arOppet && (
-                    <BlockEditor
-                      etikett={r.def.etikett}
-                      varde={r.varde ?? ''}
-                      harStandard={r.standard != null}
-                      arEgen={r.egen != null}
-                      agenda={r.def.agenda === true}
-                      platsNamn={pf && event.ort ? event.ort : null}
-                      platsHarPost={plats != null}
-                      onAndra={(v) => setOverrides((o) => ({ ...o, [r.def.id]: { varde: v } }))}
-                      onAterstall={() =>
-                        setOverrides((o) => {
-                          const n = { ...o };
-                          delete n[r.def.id];
-                          return n;
-                        })
-                      }
-                      onSparaSomStandard={
-                        pf && event.ort
-                          ? () => {
-                              onSparaPlats(event.ort as string, pf, r.varde ?? '');
-                              setOverrides((o) => {
-                                const n = { ...o };
-                                delete n[r.def.id];
-                                return n;
-                              });
+                    {arOppet && (
+                      <div className="mt-3 flex flex-col gap-3">
+                        {r.def.agenda ? (
+                          <AgendaEditor
+                            rader={
+                              r.egen?.typ === 'agenda' ? r.egen.rader : (r.standardAgenda ?? [])
                             }
-                          : undefined
-                      }
-                    />
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          <p className="text-caption text-text-muted">Fast form, alltid med: {meta.fastForm}.</p>
-        </div>
-      </section>
+                            onChange={(nya) => sattAgenda(r.def.id, nya)}
+                          />
+                        ) : (
+                          <TextArea
+                            label={r.def.etikett}
+                            hideLabel
+                            value={r.text ?? ''}
+                            onChange={(v) => sattText(r.def.id, v)}
+                            rows={r.def.id === 'beskrivning' ? 8 : r.def.kalla === 'event' ? 2 : 4}
+                            placeholder={
+                              r.def.id === 'slutbetalning'
+                                ? `Resterande ${EVENTINNEHALL.resterandeBelopp} betalas senast … Anmälan är bindande.`
+                                : r.def.id === 'plats'
+                                  ? 'Gatuadress och ort'
+                                  : undefined
+                            }
+                          />
+                        )}
 
-      {skapad && (
-        <MessageBox intent="info">
-          Prototyp — här skapas PDF:en med {skapad.antal} block
-          {skapad.utelamnade.length > 0 ? ` (utelämnat: ${skapad.utelamnade.join(', ')})` : ''}.
-          Ingen fil genereras i prototypen.
+                        {r.def.platsFalt && event.ort && (
+                          <Kryss
+                            label={`Använd som standard för ${event.ort}`}
+                            vald={somStandard.has(r.def.id)}
+                            onChange={(v) =>
+                              setSomStandard((s) => {
+                                const n = new Set(s);
+                                if (v) n.add(r.def.id);
+                                else n.delete(r.def.id);
+                                return n;
+                              })
+                            }
+                          >
+                            Använd som standard för {event.ort} framöver
+                            {plats ? '' : ' (skapar platsen)'}
+                          </Kryss>
+                        )}
+
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="text-caption text-text-muted">
+                            {r.egen
+                              ? 'Egen text för det här eventet. Ändras standarden senare påverkas inte eventet.'
+                              : r.standardText != null || r.standardAgenda
+                                ? 'Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.'
+                                : 'Ingen standard finns. Texten gäller bara det här eventet om du inte använder den som standard.'}
+                          </p>
+                          {r.egen && (r.standardText != null || r.standardAgenda) && (
+                            <Button
+                              intent="secondary"
+                              emphasis="outline"
+                              size="sm"
+                              onPress={() => aterstall(r.def.id)}
+                            >
+                              Återgå till standard
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </section>
+      ))}
+
+      <p className="text-caption text-text-muted">Alltid med, oavsett event: {meta.fastForm}.</p>
+
+      {resultat?.typ === 'ok' && (
+        <MessageBox intent="success">
+          {meta.namn}n är skapad och ligger nu bland eventets dokument, redo att bifogas i utskick.
+          {resultat.utelamnade.length > 0 && ` Utan ${ochLista(resultat.utelamnade)}.`}
+          {resultat.sparade.length > 0 &&
+            ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}{' '}
+          <span className="text-text-muted">
+            (Prototyp: dokumentet öppnades som sida i ett nytt fönster, ingen PDF sparas.)
+          </span>
         </MessageBox>
       )}
+      {resultat?.typ === 'fel' && <MessageBox intent="error">{resultat.text}</MessageBox>}
 
-      <Button
-        intent="primary"
-        onPress={() =>
-          setSkapad({
-            antal: rader.length - utelamnade.length,
-            utelamnade: utelamnade.map((r) => r.def.etikett),
-          })
-        }
-      >
-        <FileText aria-hidden="true" size={16} className="shrink-0" />
-        Skapa {meta.namn.toLowerCase()}
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button intent="primary" onPress={() => oppnaDokument(true)}>
+          <FileText aria-hidden="true" size={16} className="shrink-0" />
+          Skapa {meta.namn.toLowerCase()}
+        </Button>
+        <Button intent="secondary" emphasis="outline" onPress={() => oppnaDokument(false)}>
+          Förhandsgranska först
+        </Button>
+      </div>
     </div>
   );
 }
 
+/** Radens förhandsvisning — som texten står i dokumentet, inte bara fältvärdet. */
+function forhandsvisning(r: Rad): string | null {
+  switch (r.def.id) {
+    case 'pris':
+      return `${r.text} Kr`;
+    case 'anmalningsavgift':
+      return `${r.text}, betalas vid anmälan.`;
+    default:
+      return r.text;
+  }
+}
+
+function agendaSammanfattning(rader: AgendaRad[]): string {
+  const meditationer = rader.filter((r) => r.meditation).length;
+  const punkter = `${rader.length} punkter`;
+  return meditationer ? `${punkter}, varav ${meditationer} meditationer` : punkter;
+}
+
 /**
- * Blockets redigerare. T154-sonden bor i ledtexten längst ner: ett block
- * med EGEN text följer inte standarden — ändras standarden senare påverkas
- * inte eventet, och dokumentet markeras inte inaktuellt av den ändringen.
- * Ett block som FÖLJER standarden markeras däremot inaktuellt när
- * standarden ändras (beslut 7). Det är förslaget prototypen ställer.
+ * Agendan som radschema med EXPLICIT typ-ruta (beslut 3, § F): punkttext ·
+ * valfri tid · kryss "meditation". Ingen textsniffning — krysset styr färgen.
  */
-function BlockEditor({
-  etikett,
-  varde,
-  harStandard,
-  arEgen,
-  agenda,
-  platsNamn,
-  platsHarPost,
-  onAndra,
-  onAterstall,
-  onSparaSomStandard,
+function AgendaEditor({
+  rader,
+  onChange,
 }: {
-  etikett: string;
-  varde: string;
-  harStandard: boolean;
-  arEgen: boolean;
-  agenda: boolean;
-  platsNamn: string | null;
-  platsHarPost: boolean;
-  onAndra: (v: string) => void;
-  onAterstall: () => void;
-  onSparaSomStandard?: () => void;
+  rader: AgendaRad[];
+  onChange: (rader: AgendaRad[]) => void;
 }) {
-  const [sparaSomStandard, setSparaSomStandard] = useState(false);
+  const satt = (i: number, patch: Partial<AgendaRad>) =>
+    onChange(rader.map((r, j) => (j === i ? { ...r, ...patch } : r)));
+  const taBort = (i: number) => onChange(rader.filter((_, j) => j !== i));
+  const laggTill = () => onChange([...rader, { text: '', tid: '', meditation: false }]);
 
   return (
-    <div className="mt-3 flex flex-col gap-3">
-      <TextArea
-        label={etikett}
-        hideLabel
-        value={varde}
-        onChange={onAndra}
-        rows={agenda ? 10 : 5}
-        description={
-          agenda
-            ? 'En rad per punkt. ◆ markerar meditation (färgas i PDF:en), tid efter " · ".'
-            : undefined
-        }
-      />
-
-      {platsNamn && onSparaSomStandard && (
-        <Checkbox
-          isSelected={sparaSomStandard}
-          onChange={(v) => {
-            setSparaSomStandard(v);
-            if (v) onSparaSomStandard();
-          }}
-          className="group flex cursor-pointer items-center gap-2 text-small"
-        >
-          <span className={KRYSSRUTA_KLASS}>
-            <Check
-              aria-hidden="true"
-              size={12}
-              className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
+    <div className="flex flex-col gap-2">
+      <ul className="flex flex-col divide-y divide-border">
+        {rader.map((r, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: raderna saknar egen identitet — ordningen ÄR identiteten
+          <li key={i} className="flex flex-col gap-2 py-2">
+            <Input
+              label={`Punkt ${i + 1}`}
+              hideLabel
+              size="sm"
+              placeholder="Punkt"
+              value={r.text}
+              onChange={(v) => satt(i, { text: v })}
             />
-          </span>
-          <span className="text-text-secondary">
-            {platsHarPost
-              ? `Spara som standard för ${platsNamn}`
-              : `Spara som standard för ${platsNamn} (skapar platsen)`}
-          </span>
-        </Checkbox>
-      )}
-
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-caption text-text-muted">
-          {arEgen
-            ? 'Egen text — följer inte standarden. Ändras standarden senare påverkas inte detta event.'
-            : harStandard
-              ? 'Följer standarden. Ändras den markeras dokumentet som inaktuellt.'
-              : 'Ingen standard finns. Texten gäller bara detta event om du inte sparar den som standard.'}
-        </p>
-        {arEgen && harStandard && (
-          <Button intent="secondary" emphasis="outline" size="sm" onPress={onAterstall}>
-            Återgå till standard
-          </Button>
-        )}
-      </div>
+            <div className="flex items-center gap-3">
+              <Kryss
+                label={`Meditation, punkt ${i + 1}`}
+                vald={r.meditation}
+                onChange={(v) => satt(i, { meditation: v })}
+              >
+                Meditation
+              </Kryss>
+              <Input
+                label={`Tid, punkt ${i + 1}`}
+                hideLabel
+                size="sm"
+                placeholder="Tid"
+                className="ml-auto w-24"
+                value={r.tid}
+                onChange={(v) => satt(i, { tid: v })}
+              />
+              <Button
+                intent="ghost"
+                size="sm"
+                className="size-9 shrink-0 p-0"
+                aria-label={`Ta bort punkt ${i + 1}`}
+                onPress={() => taBort(i)}
+              >
+                <X aria-hidden="true" size={14} />
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <Button
+        intent="secondary"
+        emphasis="outline"
+        size="sm"
+        className="self-start"
+        onPress={laggTill}
+      >
+        <Plus aria-hidden="true" size={14} />
+        Lägg till punkt
+      </Button>
     </div>
   );
 }
