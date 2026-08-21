@@ -36,6 +36,8 @@
  * mallrader i stället för en, och mallradens knapp leder till genereringsvyn
  * i stället för direkt till PDF:en.
  */
+
+import { type CalendarDate, parseDate } from '@internationalized/date';
 import { Link } from '@tanstack/react-router';
 import {
   Check,
@@ -50,13 +52,15 @@ import {
 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { type ReactNode, useMemo, useState } from 'react';
-import { Checkbox } from 'react-aria-components';
+import { Checkbox, DateField, DateInput, DateSegment, I18nProvider } from 'react-aria-components';
 import { datumSpannText } from '@/components/events/detail/datumSpann';
 import { eventName } from '@/components/events/EventCard';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
+import { Dialog } from '@/components/primitives/Dialog';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Modal } from '@/components/primitives/Modal';
 import { TextArea } from '@/components/primitives/TextArea';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import type { Event } from '@/domain/models/Event';
@@ -178,7 +182,8 @@ type BlockId =
   | 'plats'
   | 'pris'
   | 'anmalningsavgift'
-  | 'slutbetalning'
+  | 'resterande'
+  | 'sistaBetalningsdag'
   | 'beskrivning'
   | 'dagEtt'
   | 'dagTva'
@@ -202,6 +207,8 @@ type BlockDef = {
   /** Låst: hämtas ur eventet och ändras på eventsidan, inte här. */
   last?: boolean;
   agenda?: boolean;
+  /** Ett datum (ISO-sträng som värde) — redigeras med datumfält, inte text. */
+  datum?: boolean;
   /** Rubriken på det ämnesstycke i deltagarinformationen blocket motsvarar. */
   amnesstycke?: string;
 };
@@ -222,7 +229,8 @@ const GRUPPER: Record<MallId, Grupp[]> = {
         ...INFORUTA_BAS,
         { id: 'pris', etikett: 'Pris', kalla: 'eventinnehall' },
         { id: 'anmalningsavgift', etikett: 'Anmälningsavgift', kalla: 'eventinnehall' },
-        { id: 'slutbetalning', etikett: 'Slutbetalning', kalla: 'event' },
+        { id: 'resterande', etikett: 'Resterande belopp', kalla: 'eventinnehall' },
+        { id: 'sistaBetalningsdag', etikett: 'Sista betalningsdag', kalla: 'event', datum: true },
       ],
     },
     {
@@ -355,9 +363,11 @@ function standardText(
       return ei.pris;
     case 'anmalningsavgift':
       return ei.anmalningsavgift;
-    case 'slutbetalning':
-      // Sista betalningsdag finns inte på eventet — därför saknas hela
-      // meningen tills Lotta skriver den (beslut 5 tvingar fram frågan).
+    case 'resterande':
+      return ei.resterandeBelopp;
+    case 'sistaBetalningsdag':
+      // Finns inte på eventet i dag — därför saknas datumet tills Lotta
+      // sätter det (beslut 5 tvingar fram frågan om var det ska bo).
       return null;
     case 'beskrivning':
       return ei.beskrivningForhandsvisning;
@@ -438,7 +448,21 @@ function byggRad(
   };
 }
 
-/** "Plats och slutbetalning" — naturligt språk, inga listpunkter i en mening. */
+/** "10 oktober" — som förlagan skriver sista betalningsdag. Tom sträng om inget datum. */
+function datumUtanAr(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(`${iso}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? '' : DAG_MANAD.format(d);
+}
+
+/** "10 oktober 2026" — listans visning av ett datumblock. */
+function datumMedAr(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(`${iso}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? '' : `${DAG_MANAD.format(d)} ${AR.format(d)}`;
+}
+
+/** "Plats och Sista betalningsdag" — naturligt språk, inga listpunkter i en mening. */
 function ochLista(delar: string[]): string {
   if (delar.length <= 1) return delar.join('');
   return `${delar.slice(0, -1).join(', ')} och ${delar[delar.length - 1]}`;
@@ -494,15 +518,14 @@ async function renderaDokument(mall: MallId, event: Event, rader: Rad[]): Promis
   sattInforuta('Plats', 'plats');
 
   if (mall === 'bekraftelse') {
-    // Slutbetalningens mening: egen mening eller bort.
+    // Meningen om resterande belopp står bara om BÅDA delarna finns —
+    // "betalas senast" utan datum är ingen mening. Mallens egen text i övrigt.
     const slutP = Array.from(doc.querySelectorAll('.inforuta p')).find((p) =>
       p.textContent?.includes('{{resterandeBelopp}}'),
     );
-    const slut = rad('slutbetalning');
-    if (slutP) {
-      if (!slut || slut.tomt) slutP.remove();
-      else slutP.textContent = slut.text;
-    }
+    const rest = rad('resterande');
+    const sista = rad('sistaBetalningsdag');
+    if (slutP && (!rest || rest.tomt || !sista || sista.tomt)) slutP.remove();
 
     // Beskrivningen: standard = mallens egen markup (fetade ord); egen text
     // = rena stycken.
@@ -581,8 +604,8 @@ async function renderaDokument(mall: MallId, event: Event, rader: Rad[]): Promis
     plats: textEller('plats'),
     pris: textEller('pris'),
     anmalningsavgift: textEller('anmalningsavgift'),
-    resterandeBelopp: EVENTINNEHALL.resterandeBelopp,
-    sistaBetalningsdatum: '',
+    resterandeBelopp: textEller('resterande'),
+    sistaBetalningsdatum: datumUtanAr(textEller('sistaBetalningsdag')),
   };
   return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`.replace(
     /\{\{(\w+)\}\}/g,
@@ -606,14 +629,19 @@ const GRUPP_KORT_KLASS =
 const LISTA_KLASS =
   'divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong';
 
+/**
+ * Husets sidkrom-knapp — EXAKT `DokumentYta`s klasser. Knappvarianten är en rå
+ * `<button>` med samma klasser, inte `Button`-primitiven: dess egna
+ * `min-h`/`px`/`gap` hade ändrat storleken (Marcus 2026-08-21: "fel storlek").
+ */
 function KromKnapp({ onPress, label }: { onPress?: () => void; label: string }) {
   const klass =
     'flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted';
   if (onPress) {
     return (
-      <Button intent="ghost" aria-label={label} className={klass} onPress={onPress}>
+      <button type="button" aria-label={label} className={klass} onClick={onPress}>
         <ChevronLeft aria-hidden="true" size={26} />
-      </Button>
+      </button>
     );
   }
   return (
@@ -856,6 +884,12 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
 
 /* ------------------------------------------------------------------ *
  * GENERERINGSVYN — det nya mellanledet
+ *
+ * RADERNA ÄR LÅSTA I HÖJD: exakt tre led (etikett · källa · EN rad värde)
+ * precis som `DokumentYta`s bilage-/mallrader ("SAMMA TRE LED … så
+ * höjdlåsningen håller genom hela listan"), och värdet trunkeras alltid
+ * till en rad. Redigering sker i en DIALOG — listan växer aldrig med
+ * innehållet (Marcus 2026-08-21: "inget får växa eller krympa").
  * ------------------------------------------------------------------ */
 
 type Resultat =
@@ -896,6 +930,7 @@ function GenereringsVy({
   );
   const allaRader = rader.flatMap((g) => g.rader);
   const utelamnade = allaRader.filter((r) => r.tomt);
+  const oppenRad = oppet ? allaRader.find((r) => r.def.id === oppet) : undefined;
 
   const kallaText = (r: Rad): string => {
     if (r.tomt) return 'Saknas';
@@ -1027,122 +1062,49 @@ function GenereringsVy({
           <div className={GRUPP_KORT_KLASS}>
             <h2 className="font-medium text-small text-text-secondary">{g.rubrik}</h2>
             <ul className={LISTA_KLASS}>
-              {g.rader.map((r) => {
-                const arOppet = oppet === r.def.id;
-                return (
-                  <li key={r.def.id} className="py-3" data-block={r.def.id}>
-                    <div className="flex items-start gap-3">
-                      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                        <span className="w-full min-w-0 truncate font-medium text-body">
-                          {r.def.etikett}
-                        </span>
-                        <span
-                          className={
-                            r.tomt ? `${TACKNING_KLASS} bg-warning-bg text-text` : TACKNING_KLASS
-                          }
-                        >
-                          {kallaText(r)}
-                        </span>
-                        {!arOppet && !r.tomt && (
-                          <span className="line-clamp-2 w-full min-w-0 text-caption text-text-muted">
-                            {r.agenda ? agendaSammanfattning(r.agenda) : forhandsvisning(r)}
-                          </span>
-                        )}
+              {g.rader.map((r) => (
+                <li key={r.def.id} data-block={r.def.id}>
+                  <div className="flex items-start gap-3 py-3">
+                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                      <span className="w-full min-w-0 truncate font-medium text-body">
+                        {r.def.etikett}
                       </span>
-                      {!r.def.last && (
+                      <span
+                        className={
+                          r.tomt ? `${TACKNING_KLASS} bg-warning-bg text-text` : TACKNING_KLASS
+                        }
+                      >
+                        {kallaText(r)}
+                      </span>
+                      {/* ALLTID exakt en rad — tom rad är också en rad. */}
+                      <span
+                        className="w-full min-w-0 truncate text-caption text-text-muted"
+                        title={varderad(r) ?? undefined}
+                      >
+                        {varderad(r) ?? saknasText(r)}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-0.5">
+                      {r.def.last ? (
+                        // Låst block: samma bredd som knappen så textkolumnen
+                        // aldrig flyttar sig mellan raderna.
+                        <span aria-hidden="true" className={IKONKNAPP_KLASS} />
+                      ) : (
                         <Button
                           intent="primary"
                           emphasis="subtle"
                           size="sm"
                           className={IKONKNAPP_KLASS}
-                          aria-label={
-                            arOppet ? `Klar med ${r.def.etikett}` : `Ändra ${r.def.etikett}`
-                          }
-                          onPress={() => setOppet(arOppet ? null : r.def.id)}
+                          aria-label={`Ändra ${r.def.etikett}`}
+                          onPress={() => setOppet(r.def.id)}
                         >
-                          {arOppet ? (
-                            <Check aria-hidden="true" size={IKON_STORLEK} />
-                          ) : (
-                            <Pencil aria-hidden="true" size={IKON_STORLEK} />
-                          )}
+                          <Pencil aria-hidden="true" size={IKON_STORLEK} />
                         </Button>
                       )}
-                    </div>
-
-                    {arOppet && (
-                      <div className="mt-3 flex flex-col gap-3">
-                        {r.def.agenda ? (
-                          <AgendaEditor
-                            rader={
-                              r.egen?.typ === 'agenda' ? r.egen.rader : (r.standardAgenda ?? [])
-                            }
-                            onChange={(nya) => sattAgenda(r.def.id, nya)}
-                          />
-                        ) : (
-                          <TextArea
-                            label={r.def.etikett}
-                            hideLabel
-                            value={r.text ?? ''}
-                            onChange={(v) => sattText(r.def.id, v)}
-                            rows={
-                              r.def.id === 'beskrivning'
-                                ? 8
-                                : r.def.kalla === 'event' || r.def.id === 'plats'
-                                  ? 2
-                                  : 4
-                            }
-                            placeholder={
-                              r.def.id === 'slutbetalning'
-                                ? `Resterande ${EVENTINNEHALL.resterandeBelopp} betalas senast … Anmälan är bindande.`
-                                : r.def.id === 'plats'
-                                  ? 'Gatuadress och ort'
-                                  : undefined
-                            }
-                          />
-                        )}
-
-                        {r.def.platsFalt && event.ort && (
-                          <Kryss
-                            label={`Använd som standard för ${event.ort}`}
-                            vald={somStandard.has(r.def.id)}
-                            onChange={(v) =>
-                              setSomStandard((s) => {
-                                const n = new Set(s);
-                                if (v) n.add(r.def.id);
-                                else n.delete(r.def.id);
-                                return n;
-                              })
-                            }
-                          >
-                            Använd som standard för {event.ort} framöver
-                            {plats ? '' : ' (skapar platsen)'}
-                          </Kryss>
-                        )}
-
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="text-caption text-text-muted">
-                            {r.egen
-                              ? 'Egen text för det här eventet. Ändras standarden senare påverkas inte eventet.'
-                              : r.standardText != null || r.standardAgenda
-                                ? 'Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.'
-                                : 'Ingen standard finns. Texten gäller bara det här eventet om du inte använder den som standard.'}
-                          </p>
-                          {r.egen && (r.standardText != null || r.standardAgenda) && (
-                            <Button
-                              intent="secondary"
-                              emphasis="outline"
-                              size="sm"
-                              onPress={() => aterstall(r.def.id)}
-                            >
-                              Återgå till standard
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
+                    </span>
+                  </div>
+                </li>
+              ))}
             </ul>
           </div>
         </section>
@@ -1172,19 +1134,58 @@ function GenereringsVy({
           Skapa {meta.namn.toLowerCase()}
         </Button>
       </div>
+
+      {/* Redigeringen bor i en dialog — villkorad rendering så tillståndet är
+          färskt per öppning (samma disciplin som RackviddsDialog). */}
+      {oppenRad && (
+        <BlockDialog
+          rad={oppenRad}
+          ort={event.ort}
+          platsFinns={plats != null}
+          somStandard={somStandard.has(oppenRad.def.id)}
+          onSomStandard={(v) =>
+            setSomStandard((s) => {
+              const n = new Set(s);
+              if (v) n.add(oppenRad.def.id);
+              else n.delete(oppenRad.def.id);
+              return n;
+            })
+          }
+          onText={(v) => sattText(oppenRad.def.id, v)}
+          onAgenda={(nya) => sattAgenda(oppenRad.def.id, nya)}
+          onAterstall={() => aterstall(oppenRad.def.id)}
+          onStang={() => setOppet(null)}
+        />
+      )}
     </div>
   );
 }
 
-/** Radens förhandsvisning — som texten står i dokumentet, inte bara fältvärdet. */
-function forhandsvisning(r: Rad): string | null {
+/** Radens värde på EN rad — som det står i dokumentet, inte bara fältvärdet. */
+function varderad(r: Rad): string | null {
+  if (r.tomt) return null;
+  if (r.agenda) return agendaSammanfattning(r.agenda);
   switch (r.def.id) {
     case 'pris':
       return `${r.text} Kr`;
     case 'anmalningsavgift':
       return `${r.text}, betalas vid anmälan.`;
+    case 'sistaBetalningsdag':
+      return datumMedAr(r.text ?? '');
     default:
       return r.text;
+  }
+}
+
+/** Vad den tomma värderaden säger — vad som händer med dokumentet, inte bara "tomt". */
+function saknasText(r: Rad): string {
+  switch (r.def.id) {
+    case 'sistaBetalningsdag':
+      return 'Inget datum satt';
+    case 'plats':
+      return 'Ingen adress';
+    default:
+      return 'Ingen text';
   }
 }
 
@@ -1192,6 +1193,152 @@ function agendaSammanfattning(rader: AgendaRad[]): string {
   const meditationer = rader.filter((r) => r.meditation).length;
   const punkter = `${rader.length} punkter`;
   return meditationer ? `${punkter}, varav ${meditationer} meditationer` : punkter;
+}
+
+/* ------------------------------------------------------------------ *
+ * DIALOGEN — ett block i taget
+ * ------------------------------------------------------------------ */
+
+function BlockDialog({
+  rad,
+  ort,
+  platsFinns,
+  somStandard,
+  onSomStandard,
+  onText,
+  onAgenda,
+  onAterstall,
+  onStang,
+}: {
+  rad: Rad;
+  ort: string | null;
+  platsFinns: boolean;
+  somStandard: boolean;
+  onSomStandard: (v: boolean) => void;
+  onText: (v: string) => void;
+  onAgenda: (rader: AgendaRad[]) => void;
+  onAterstall: () => void;
+  onStang: () => void;
+}) {
+  const { def } = rad;
+  const harStandard = rad.standardText != null || rad.standardAgenda != null;
+
+  return (
+    <Modal
+      isOpen
+      isDismissable
+      onOpenChange={(open) => {
+        if (!open) onStang();
+      }}
+    >
+      <Dialog
+        title={def.etikett}
+        size="md"
+        actions={
+          <>
+            {rad.egen && harStandard && (
+              <Button intent="secondary" emphasis="outline" onPress={onAterstall}>
+                Återgå till standard
+              </Button>
+            )}
+            <Button intent="primary" onPress={onStang}>
+              Klar
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          {def.agenda ? (
+            <AgendaEditor
+              rader={rad.egen?.typ === 'agenda' ? rad.egen.rader : (rad.standardAgenda ?? [])}
+              onChange={onAgenda}
+            />
+          ) : def.datum ? (
+            <DatumEnkel
+              label={def.etikett}
+              iso={rad.text ?? ''}
+              onChange={onText}
+              hjalp={`I bilagan: "Resterande ${EVENTINNEHALL.resterandeBelopp} betalas senast ${
+                datumUtanAr(rad.text ?? '') || '…'
+              }. Anmälan är bindande."`}
+            />
+          ) : (
+            <TextArea
+              label={def.etikett}
+              hideLabel
+              value={rad.text ?? ''}
+              onChange={onText}
+              rows={
+                def.id === 'beskrivning' ? 8 : def.kalla === 'event' || def.id === 'plats' ? 2 : 5
+              }
+              placeholder={def.id === 'plats' ? 'Gatuadress och ort' : undefined}
+            />
+          )}
+
+          {def.platsFalt && ort && (
+            <Kryss
+              label={`Använd som standard för ${ort}`}
+              vald={somStandard}
+              onChange={onSomStandard}
+            >
+              Använd som standard för {ort} framöver{platsFinns ? '' : ' (skapar platsen)'}
+            </Kryss>
+          )}
+
+          <p className="text-caption text-text-muted">
+            {rad.egen
+              ? 'Egen text för det här eventet. Ändras standarden senare påverkas inte eventet.'
+              : harStandard
+                ? 'Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.'
+                : 'Ingen standard finns. Texten gäller bara det här eventet om du inte använder den som standard.'}
+          </p>
+        </div>
+      </Dialog>
+    </Modal>
+  );
+}
+
+/**
+ * Ett enda datum — samma segment-form som husets `DatumFalt` (som är ett
+ * intervall och därför inte passar här). ISO-sträng ut, så värdet kan bo i
+ * samma `Override`-typ som texterna.
+ */
+function DatumEnkel({
+  label,
+  iso,
+  onChange,
+  hjalp,
+}: {
+  label: string;
+  iso: string;
+  onChange: (iso: string) => void;
+  hjalp?: string;
+}) {
+  const segKlass =
+    'rounded tabular-nums outline-none data-[focused]:bg-bg-emphasized data-[placeholder]:text-(color:--mm-input-text-placeholder)';
+  let value: CalendarDate | null = null;
+  try {
+    value = iso ? parseDate(iso) : null;
+  } catch {
+    value = null;
+  }
+  // Svensk segmentordning (åååå-mm-dd) oavsett webbläsarens locale — samma
+  // lokala I18nProvider som OmEventet sätter runt husets DatumFalt.
+  return (
+    <I18nProvider locale="sv-SE">
+      <DateField
+        aria-label={label}
+        value={value}
+        onChange={(v) => onChange(v ? v.toString() : '')}
+        className="flex w-full flex-col gap-1"
+      >
+        <DateInput className="flex min-h-10 w-full items-center gap-0.5 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body">
+          {(seg) => <DateSegment segment={seg} className={segKlass} />}
+        </DateInput>
+        {hjalp && <span className="text-caption text-text-muted">{hjalp}</span>}
+      </DateField>
+    </I18nProvider>
+  );
 }
 
 /**
@@ -1212,7 +1359,7 @@ function AgendaEditor({
 
   return (
     <div className="flex flex-col gap-2">
-      <ul className="flex flex-col divide-y divide-border">
+      <ul className="scrollbar-inline flex max-h-[40vh] flex-col divide-y divide-border overflow-y-auto">
         {rader.map((r, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: raderna saknar egen identitet — ordningen ÄR identiteten
           <li key={i} className="flex flex-col gap-2 py-2">
