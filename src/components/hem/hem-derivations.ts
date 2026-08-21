@@ -1,7 +1,17 @@
-import { displayName, inskickadTid } from '@/components/registrations/registration-display';
+import {
+  antalBehoverAtgard,
+  displayName,
+  inskickadTid,
+} from '@/components/registrations/registration-display';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
+
+// Re-exporterad, inte omdefinierad: `atgardskoText` bor i
+// `registration-display.ts` (delad mellan denna fil OCH `AnmalningarList.tsx`,
+// se den funktionens docblock där) — `Bevakningsrad.tsx` importerar den härifrån
+// för att slippa två importkällor för samma bevakningsrad-modul.
+export { atgardskoText } from '@/components/registrations/registration-display';
 
 /**
  * [TASK-243.1] Morgonkollens härledningslogik — SKARPT DATALAGER (AC #3).
@@ -249,7 +259,8 @@ const arBekraftad = (r: Registration) => r.status !== RegistrationStatus.OBEKRAF
 
 export type BevakningLage = 'ej-skickad' | 'eftersalantrare';
 
-export interface BevakningRad {
+export interface EventinfoBevakningRad {
+  typ: 'eventinfo';
   event: Event;
   eventNamn: string;
   /** "Startar om N dagar" — clampad till ≥0. */
@@ -258,6 +269,29 @@ export interface BevakningRad {
   /** Antal bekräftade deltagare som saknar Deltagarinfo-stämpeln. */
   antalUtanEventinfo: number;
 }
+
+/**
+ * Åtgärdskö-raden (TASK-284.4; ADR-122 beslut 7, § 22 Åtgärdskön) — den
+ * ANDRA bevakningsradstypen, vid sidan av eventinfo-utskicket. Till
+ * skillnad från eventinfo-raden (EN RAD PER EVENT, tidsstyrd av
+ * `EVENTINFO_FONSTER_DAGAR`) är detta EN rad för HELA appen: en
+ * tillståndsbunden räkning (ORDLISTA.md "Åtgärdskö"), inte en
+ * per-event-observation, och den bär ingen `event`-referens — klicket
+ * navigerar till åtgärdsytan i stället för att öppna ett event-scopat svep.
+ * `antal` är räknat ur `Anmälningar.Eventmatchning` via `antalBehoverAtgard`
+ * (AC #3) — ALDRIG en egen klientberäkning.
+ */
+export interface AtgardskoBevakningRad {
+  typ: 'atgardsko';
+  antal: number;
+}
+
+/**
+ * De TVÅ bevakningsradstyperna (TASK-284.4) — en diskriminerad union så
+ * `Bevakningsrad.tsx` kan rendera olika innehåll/interaktion per typ utan
+ * att de två formerna blandas ihop i ett enda löst shape.
+ */
+export type BevakningRad = EventinfoBevakningRad | AtgardskoBevakningRad;
 
 /**
  * Bevakningsradens statuscopy — EN delad källa per bevakningstyp.
@@ -278,7 +312,7 @@ export interface BevakningRad {
  * eftersläntrare-formen bär ett tal att kvalificera.
  */
 export function bevakningStatusText(
-  rad: Pick<BevakningRad, 'lage' | 'antalUtanEventinfo'>,
+  rad: Pick<EventinfoBevakningRad, 'lage' | 'antalUtanEventinfo'>,
 ): string {
   return rad.lage === 'ej-skickad'
     ? 'Eventinfo saknas'
@@ -325,9 +359,9 @@ export function bevakningar(
   events: Event[] | undefined,
   regs: Registration[] | undefined,
   idagStartMs: number,
-): BevakningRad[] {
+): EventinfoBevakningRad[] {
   if (!events || !regs) return [];
-  const rader: BevakningRad[] = [];
+  const rader: EventinfoBevakningRad[] = [];
   for (const event of events) {
     if (!event.startdatum) continue;
     const start = Date.parse(event.startdatum);
@@ -338,6 +372,7 @@ export function bevakningar(
     const utanEventinfo = eventinfoMottagare(regs, event.id);
     if (utanEventinfo.length === 0) continue; // inget att bevaka
     rader.push({
+      typ: 'eventinfo',
       event,
       eventNamn: event.eventNamn ?? event.eventlabel ?? 'Namnlöst event',
       dagarTillStart: Math.max(0, Math.round((start - idagStartMs) / DAG_MS)),
@@ -347,6 +382,18 @@ export function bevakningar(
   }
   rader.sort((a, b) => a.dagarTillStart - b.dagarTillStart);
   return rader;
+}
+
+/**
+ * Åtgärdskö-raden (TASK-284.4 AC #2/#3) — `null` vid noll träffar (samma
+ * osynlig-vid-noll-kontrakt som `Bevakningsrad` bär för HELA komponenten,
+ * upprepat här så konsumenten aldrig behöver kontrollera `antal === 0`
+ * själv). Räknar via `antalBehoverAtgard` — det DELADE predikatet
+ * `AnmalningarList`s markör också läser, aldrig en egen klientberäkning.
+ */
+export function atgardskoRad(regs: Registration[] | undefined): AtgardskoBevakningRad | null {
+  const antal = antalBehoverAtgard(regs);
+  return antal === 0 ? null : { typ: 'atgardsko', antal };
 }
 
 export type ForfallenGrupp = 'att-paminna' | 'vantar' | 'dags-att-ringa';

@@ -6,7 +6,13 @@ import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
-import { displayName, inskickadDatum, inskickadTid } from './registration-display';
+import {
+  atgardskoText,
+  behoverAtgard,
+  displayName,
+  inskickadDatum,
+  inskickadTid,
+} from './registration-display';
 import { StatusBadge } from './StatusBadge';
 
 /**
@@ -32,7 +38,20 @@ import { StatusBadge } from './StatusBadge';
  * (ADR-017; dashboard-nycklarnas kommentar i keys.ts), listvyn hämtar per
  * besök med global staleTime. Klient-sort på Inskickad fallande (EF:ns
  * globala gren garanterar ingen ordning — samma sort som Hem-kortet).
- * Sök/filter är utanför omfattningen (enkel lista i denna version).
+ *
+ * ÅTGÄRDSKÖNS INGÅNG (`visaAtgardskon`, TASK-284.4 AC #4) — HELA listan
+ * hämtas ALLTID (samma query, samma `senasteForst`-bas); filtreringen är ett
+ * RENDRINGS-STEG ovanpå den, aldrig ett eget nätverksanrop. Prop:en sätts av
+ * routen (`anmalningar.tsx`) ur `?visa=atgardskon`, som Hem-vyns
+ * åtgärdskö-bevakningsrad navigerar till (`Bevakningsrad.tsx`
+ * `AtgardskoRadLink`). Predikatet är `behoverAtgard` (`registration-
+ * display.ts`) — SAMMA delade funktion Hem-vyns räknare använder
+ * (`hem-derivations.ts` `atgardskoRad`), så de två ytorna aldrig kan
+ * divergera om vad "behöver hanteras" betyder (AC #3s krav, upprepat här
+ * för denna sidan). Klientsidig filtrering av en redan hämtad lista är INTE
+ * "en klientberäkning av räknaren" i AC #3s förbjudna mening — den
+ * omtolkar inte fältet, den väljer bara VILKA redan-korrekt-flaggade rader
+ * som visas.
  *
  * A11y (11/10, speglar Waitlist-mönstret EXAKT):
  * - `<h1>` = "Anmälningar"; fokus flyttas dit när data anlänt (vyn NÅS via
@@ -45,7 +64,15 @@ import { StatusBadge } from './StatusBadge';
  * - Rad-korten får synlig gräns under `prefers-contrast: more` + utskrift
  *   (border-transparent-mönstret); `break-inside-avoid` per rad (print-golv).
  */
-export function AnmalningarList() {
+export function AnmalningarList({
+  visaAtgardskon = false,
+}: {
+  /** [TASK-284.4 AC #4] `true` ⇒ listan visar ENDAST rader som `behoverAtgard`
+      flaggar (`eventmatchning` `'Avviker'`/`'Utan event'`) — åtgärdsköns
+      förfiltrerade läge. `false` (default) = obefintlig ändring mot
+      task-1.4-formen. */
+  visaAtgardskon?: boolean;
+} = {}) {
   const dataSource = useDataSource();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const announceRef = useRef(false);
@@ -66,8 +93,9 @@ export function AnmalningarList() {
 
   const senasteForst = useMemo(() => {
     if (!registrations) return [];
-    return [...registrations].sort((a, b) => inskickadTid(b) - inskickadTid(a));
-  }, [registrations]);
+    const bas = visaAtgardskon ? registrations.filter(behoverAtgard) : registrations;
+    return [...bas].sort((a, b) => inskickadTid(b) - inskickadTid(a));
+  }, [registrations, visaAtgardskon]);
 
   // Fokus → <h1> + document.title när data anlänt (en gång per laddning).
   useEffect(() => {
@@ -138,14 +166,34 @@ export function AnmalningarList() {
         <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
           Anmälningar
         </h1>
-        {/* Antal som TEXT — översikt, aldrig enbart färg. */}
+        {/* Antal som TEXT — översikt, aldrig enbart färg. [TASK-284.4 AC #4]
+            Filtrerat läge bär EGEN copy (räknad ur `senasteForst`, som redan
+            är den behoverAtgard-filtrerade listan när visaAtgardskon). */}
         <p className="text-small text-text-muted">
-          {`${senasteForst.length} ${senasteForst.length === 1 ? 'anmälan' : 'anmälningar'}`}
+          {visaAtgardskon
+            ? atgardskoText(senasteForst.length)
+            : `${senasteForst.length} ${senasteForst.length === 1 ? 'anmälan' : 'anmälningar'}`}
         </p>
+        {/* [TASK-284.4] Väg TILLBAKA ur filtret — utan denna är
+            åtgärdskö-ingången en återvändsgränd för allt utom just de
+            flaggade raderna. `search={{ visa: undefined }}` (inte ett
+            `to`-anrop utan `search`) för att uttryckligen NOLLSTÄLLA
+            parametern, aldrig implicit bevara den. */}
+        {visaAtgardskon && (
+          <Link
+            to="/mer/anmalningar"
+            search={{ visa: undefined }}
+            className="self-start text-small underline"
+          >
+            Visa alla anmälningar
+          </Link>
+        )}
       </header>
 
       {senasteForst.length === 0 ? (
-        <p className="text-small text-text-muted">Inga anmälningar än.</p>
+        <p className="text-small text-text-muted">
+          {visaAtgardskon ? 'Inga anmälningar behöver kopplas om.' : 'Inga anmälningar än.'}
+        </p>
       ) : (
         <ul aria-label="Anmälningar" className="flex flex-col gap-2">
           {senasteForst.map((reg) => {

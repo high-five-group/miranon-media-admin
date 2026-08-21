@@ -489,6 +489,102 @@ test.describe('Blockordningen (S102 Del 8 + Del 10, AC #1)', () => {
 });
 
 /**
+ * Åtgärdskön — bevakningsradstypen (TASK-284.4; ADR-122 beslut 7, §22
+ * Åtgärdskön i DESIGN-SYSTEM-SPEC.md). Skarven pekas ut av kortet: DENNA
+ * describe-blocket är den nya bevakningsradstypens tester, sida vid sida
+ * med "Blockordningen"-blockets två eventinfo-bevakningsradstester ovan
+ * (samma fil, samma `mock()`-hjälpare — ingen ny testfil, TASK-284.4-
+ * uppdraget). Räknaren härleds ur `Registration.eventmatchning` (AC #3) —
+ * fixturerna nedan sätter fältet direkt, aldrig en egen tolkning av vad
+ * "behöver hanteras" betyder.
+ */
+test.describe('Åtgärdskön — bevakningsradstypen (TASK-284.4, ADR-122 beslut 7)', () => {
+  test('två flaggade anmälningar (Avviker + Utan event) → räknad rad, klick navigerar förfiltrerat till /mer/anmalningar, axe 0', async ({
+    page,
+    network,
+  }) => {
+    // TRE anmälningar, ETT event (eventlöst för åtgärdskön i sig — raden är
+    // global, inte per-event): Vera avviker (fel event), Wilma saknar
+    // eventlänk helt, Xavier är OK — bara de FÖRSTA TVÅ ska räknas
+    // (AC #3: räknat ur fältet, aldrig gissat).
+    mock(network, {
+      registrations: [
+        reg({ fornamn: 'Vera', efternamn: 'Vik', eventmatchning: 'Avviker' }),
+        reg({
+          fornamn: 'Wilma',
+          efternamn: 'Wall',
+          eventId: null,
+          eventmatchning: 'Utan event',
+        }),
+        reg({ fornamn: 'Xavier', efternamn: 'Xin', eventmatchning: 'OK' }),
+      ],
+      events: [], // inget eventinfo-bevakningsläge ska kunna trigga här — isolerar åtgärdskö-raden
+    });
+    await page.goto('/hem');
+
+    const bevakningsrad = page.getByRole('list', { name: 'Bevakningar' });
+    await expect(bevakningsrad).toBeVisible();
+    // EXAKT en rad — Xavier (OK) räknas inte med, och det finns inget
+    // eventinfo-läge (events: []) som skulle lägga till en andra rad.
+    await expect(bevakningsrad.getByRole('listitem')).toHaveCount(1);
+
+    const atgardskoLank = page.getByRole('link', {
+      name: '2 anmälningar kunde inte kopplas till rätt event',
+    });
+    await expect(atgardskoLank).toBeVisible();
+
+    // axe FÖRE klick — samma sida, med raden synlig (AC #5 "fyllt läge").
+    const fylldaResultat = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(fylldaResultat.violations).toEqual([]);
+
+    // Klick → riktig navigation (AC #4: åtgärdsytan förfiltrerad).
+    await atgardskoLank.click();
+    await expect(page).toHaveURL(/\/mer\/anmalningar\?visa=atgardskon$/);
+
+    // Destinationen (AnmalningarList, `visaAtgardskon`): ENDAST de två
+    // flaggade raderna, Xavier (OK) är BORTFILTRERAD.
+    await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
+    await expect(page.getByText('2 anmälningar kunde inte kopplas till rätt event')).toBeVisible();
+    const anmalningarLista = page.getByRole('list', { name: 'Anmälningar' });
+    await expect(anmalningarLista.getByText('Vera Vik')).toBeVisible();
+    await expect(anmalningarLista.getByText('Wilma Wall')).toBeVisible();
+    await expect(anmalningarLista.getByText('Xavier Xin')).toHaveCount(0);
+
+    // Vägen tillbaka ur filtret finns och nollställer search-parametern.
+    const visaAllaLank = page.getByRole('link', { name: 'Visa alla anmälningar' });
+    await expect(visaAllaLank).toBeVisible();
+    await visaAllaLank.click();
+    await expect(page).toHaveURL(/\/mer\/anmalningar$/);
+    await expect(page.getByText('3 anmälningar')).toBeVisible();
+  });
+
+  test('noll flaggade anmälningar (alla OK) → Åtgärdskö-raden HELT FRÅNVARANDE, axe 0 (tomt läge för denna radtyp)', async ({
+    page,
+    network,
+  }) => {
+    mock(network, {
+      registrations: [
+        reg({ fornamn: 'Yara', efternamn: 'Yl', eventmatchning: 'OK' }),
+        reg({ fornamn: 'Zack', efternamn: 'Zorn', eventmatchning: null }),
+      ],
+      events: [],
+    });
+    await page.goto('/hem');
+    await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
+    // Samma osynlig-vid-noll-kontrakt som eventinfo-raden — HELA `<ul>` saknas.
+    await expect(page.getByRole('list', { name: 'Bevakningar' })).toHaveCount(0);
+    await expect(page.getByText(/kunde inte kopplas till rätt event/)).toHaveCount(0);
+
+    const resultat = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+});
+
+/**
  * Tomma läget (PRD task-243 användarberättelse 8): grön bock, "läget är
  * under kontroll" — trygghet, inte "trasigt". Bevakningsraden är asymmetrisk
  * mot detta (se ovan): den har inget eget tomt-läge-kvitto, den är bara borta.

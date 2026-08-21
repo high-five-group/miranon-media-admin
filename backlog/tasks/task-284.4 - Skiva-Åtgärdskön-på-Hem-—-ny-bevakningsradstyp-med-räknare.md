@@ -4,6 +4,7 @@ title: 'Skiva: Åtgärdskön på Hem — ny bevakningsradstyp med räknare'
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:18'
+updated_date: '2026-08-21 13:22'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,11 +27,11 @@ Täcker användarberättelser: 2, 3, 4, 18.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Allt utom den nya bevakningsradstypen är IDENTISKT med facit tasks/sessions/bilagor/s102-hem-konvergens/facit.json ytan 'hem-vyn V1 Lugna morgonen' i läge verklig, desktop och mobil — den befintliga formen är orörd, tillägget ligger i bevakningsradens befintliga zon
-- [ ] #2 Vid noll träffar är Hem IDENTISK med samma facit i läge tom: den nya radtypen är HELT frånvarande ur DOM:en — ingen wrapper, ingen rubrik, inget kvitto (asymmetrin mot block är Marcus-låst sedan S102)
-- [ ] #3 Räknaren härleds ur det beräknade fältet på anmälan, aldrig ur en klientberäkning — annars kan två ytor säga olika saker om samma rad
-- [ ] #4 Klick på raden öppnar åtgärdsytan förfiltrerad på exakt de anmälningar som behöver hanteras
-- [ ] #5 axe ger 0 violations på Hem i både fyllt och tomt läge; raden bär aldrig betydelse enbart genom färg
+- [x] #1 Allt utom den nya bevakningsradstypen är IDENTISKT med facit tasks/sessions/bilagor/s102-hem-konvergens/facit.json ytan 'hem-vyn V1 Lugna morgonen' i läge verklig, desktop och mobil — den befintliga formen är orörd, tillägget ligger i bevakningsradens befintliga zon
+- [x] #2 Vid noll träffar är Hem IDENTISK med samma facit i läge tom: den nya radtypen är HELT frånvarande ur DOM:en — ingen wrapper, ingen rubrik, inget kvitto (asymmetrin mot block är Marcus-låst sedan S102)
+- [x] #3 Räknaren härleds ur det beräknade fältet på anmälan, aldrig ur en klientberäkning — annars kan två ytor säga olika saker om samma rad
+- [x] #4 Klick på raden öppnar åtgärdsytan förfiltrerad på exakt de anmälningar som behöver hanteras
+- [x] #5 axe ger 0 violations på Hem i både fyllt och tomt läge; raden bär aldrig betydelse enbart genom färg
 <!-- AC:END -->
 
 ## Definition of Done
