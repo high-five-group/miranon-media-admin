@@ -133,8 +133,20 @@ done
 # --- (c) B3-spärren: rivning före godkännande ----------------------------
 # Spärren gäller bara så länge minst ett manifest är ogodkänt. Är allt
 # godkänt är rivningen tillåten och grinden ska inte stå i vägen.
+#
+# VIKTIGT, TASK-287: kontrollen nedan är GLOBAL, inte per yta. Den prövar
+# att varje registrerad markör i FACIT_PROTO_MARKORER finns kvar NÅGONSTANS
+# i FACIT_PROTO_SOKVAG — den vet inte VILKET ogodkänt manifest en given
+# markör hör till, och den upptäcker INTE en ogodkänd yta som saknar en
+# registrerad markör helt och hållet (det var precis TASK-287:s fynd: fem
+# markörer, noll av dem för S109:s två ytor). Framgångsraden nedan (rad
+# ~180) är formulerad för att bara påstå det som faktiskt kontrollerats —
+# se .facit-policy.conf § "REGEL: NÄR en markör registreras" för hur luckan
+# hålls stängd framåt (registrering vid facit-låsning, inte vid rivningen).
+MARKOR_KONTROLLERAD=0
 if [[ "${#OGODKANDA[@]}" -gt 0 && "${#FACIT_PROTO_MARKORER[@]}" -gt 0 ]]; then
     if [[ -d "${FACIT_PROTO_SOKVAG}" ]]; then
+        MARKOR_KONTROLLERAD=1
         for markor in "${FACIT_PROTO_MARKORER[@]}"; do
             traffar=0
             traffar=$(grep -rlF "${markor}" "${FACIT_PROTO_SOKVAG}" 2>/dev/null | grep -c . ) || traffar=0
@@ -165,4 +177,8 @@ if [[ "${MANIFEST_ANTAL}" -eq 0 ]]; then
     exit 0
 fi
 
-echo "✅ Facit-manifest OK: ${MANIFEST_ANTAL} manifest, ${YTA_ANTAL} ytor deklarerade, ${#OGODKANDA[@]} ogodkända (prototyp-substratet skyddat)."
+if [[ "${MARKOR_KONTROLLERAD}" -eq 1 ]]; then
+    echo "✅ Facit-manifest OK: ${MANIFEST_ANTAL} manifest, ${YTA_ANTAL} ytor deklarerade, ${#OGODKANDA[@]} ogodkända (${#FACIT_PROTO_MARKORER[@]} registrerade prototyp-markörer verifierade kvar i ${FACIT_PROTO_SOKVAG}/ — global kontroll, ingen koppling manifest→markör; se .facit-policy.conf)."
+else
+    echo "✅ Facit-manifest OK: ${MANIFEST_ANTAL} manifest, ${YTA_ANTAL} ytor deklarerade, ${#OGODKANDA[@]} ogodkända."
+fi

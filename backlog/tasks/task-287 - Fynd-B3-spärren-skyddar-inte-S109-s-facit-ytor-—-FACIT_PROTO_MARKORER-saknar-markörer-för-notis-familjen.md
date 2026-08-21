@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 12:57'
-updated_date: '2026-08-21 12:58'
+updated_date: '2026-08-21 15:01'
 labels:
   - ready-for-agent
 dependencies:
@@ -41,10 +41,10 @@ MÅSTE LANDA FÖRE TASK-285.11 (rivningen). Efter våg 1, före stämplingen.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 FACIT_PROTO_MARKORER bär minst en markör per ogodkänd S109-yta, och varje markör är disk-verifierad att finnas i FACIT_PROTO_SOKVAG vid landningen
-- [ ] #2 Tvåsidigt bevis: markören tas temporärt bort ur src/ (eller döps om) och check-facit.sh fäller RÖTT med rätt yta namngiven, återställs, blir grön igen
-- [ ] #3 check-facit.sh:s framgångsrad påstår inte längre skydd som inte prövats — antingen kopplas manifest till markör, eller så formuleras raden om så den bara påstår vad loopen faktiskt kontrollerade
-- [ ] #4 ADR-102 eller .facit-policy.conf bär en nedskriven regel om NÄR en markör ska registreras (vid konvergensens facit-låsning, inte vid rivningen) så nästa pass inte upprepar luckan
+- [x] #1 FACIT_PROTO_MARKORER bär minst en markör per ogodkänd S109-yta, och varje markör är disk-verifierad att finnas i FACIT_PROTO_SOKVAG vid landningen
+- [x] #2 Tvåsidigt bevis: markören tas temporärt bort ur src/ (eller döps om) och check-facit.sh fäller RÖTT med rätt yta namngiven, återställs, blir grön igen
+- [x] #3 check-facit.sh:s framgångsrad påstår inte längre skydd som inte prövats — antingen kopplas manifest till markör, eller så formuleras raden om så den bara påstår vad loopen faktiskt kontrollerade
+- [x] #4 ADR-102 eller .facit-policy.conf bär en nedskriven regel om NÄR en markör ska registreras (vid konvergensens facit-låsning, inte vid rivningen) så nästa pass inte upprepar luckan
 <!-- AC:END -->
 
 ## Definition of Done
