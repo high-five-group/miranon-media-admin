@@ -1,0 +1,155 @@
+import { expect, test } from './support/acceptance-bas';
+
+/**
+ * ⚠️ TILLFÄLLIG MÄTNING — S109, 2026-08-21. COMMITTAS ALDRIG, RADERAS EFTER
+ * KÖRNING. Detta är ett mätinstrument, inte en grind.
+ *
+ * VARFÖR: research-passet
+ * `docs/research/uppdateringsnotisens-form-och-notisfamiljen-2026-08-20.md`
+ * § "Vad jag inte kunde belägga" deklarerar öppet att dess CLS-tal är mätta
+ * på INLOGGNINGSVYN — den enda route som nås utan autentisering — och att
+ * "talen för en datatät, autentiserad vy är inte mätta. De bör rimligen ligga
+ * i samma härad eller högre, men det är tolkat." Passet listar mätningen som
+ * första sak att göra före bygget.
+ *
+ * Detta stänger den luckan: samma mätning på `/personer` (50 rader ur
+ * fixturvärlden) och `/hem`, båda autentiserade och datatäta.
+ *
+ * TRIGGERN är appens EGET window-event, inte en service worker — samma form
+ * som `tests/webblasarbeteende/app-update-banner.test.ts` använder, och av
+ * samma skäl (`vite.config.ts` sätter `devOptions.enabled: false`, så SW:n
+ * existerar inte i dev-servern). Retry-loopen finns för att en engångsdispatch
+ * racar mot att app-bundeln hunnit registrera sin lyssnare.
+ */
+
+const VYPORTER = [
+  { namn: '1440 px (desktop)', width: 1440, height: 900 },
+  { namn: '1280 px (laptop)', width: 1280, height: 800 },
+  { namn: '390 px (mobil)', width: 390, height: 844 },
+] as const;
+
+const LAGEN = [
+  {
+    namn: 'info ("nyare version finns")',
+    event: 'mm:app-uppdatering-tillganglig',
+    testid: 'app-update-reload',
+    banner: 'app-update-banner',
+  },
+  {
+    namn: 'chunk-fel ("kunde inte laddas")',
+    event: 'vite:preloadError',
+    testid: 'app-reload-required-reload',
+    banner: 'app-reload-required-banner',
+  },
+] as const;
+
+const VYER = [
+  { namn: '/personer', path: '/personer', ankare: 'Gunilla Granqvist' },
+  { namn: '/hem', path: '/hem', ankare: null },
+] as const;
+
+type Matning = {
+  vy: string;
+  vyport: string;
+  lage: string;
+  cls: number;
+  antalSkift: number;
+  hadRecentInput: boolean[];
+  bannerhojd: number;
+};
+
+const resultat: Matning[] = [];
+
+for (const vy of VYER) {
+  for (const vyport of VYPORTER) {
+    for (const lage of LAGEN) {
+      test(`CLS · ${vy.namn} · ${vyport.namn} · ${lage.namn}`, async ({ page }) => {
+        await page.setViewportSize({ width: vyport.width, height: vyport.height });
+        await page.goto(vy.path);
+
+        // Vänta tills vyn bevisligen är RENDERAD med data — annars mäter vi
+        // datans egen inladdning i stället för bannerns effekt.
+        if (vy.ankare) {
+          await expect(page.getByText(vy.ankare).first()).toBeVisible();
+        } else {
+          await page.getByRole('heading', { level: 1 }).first().waitFor();
+        }
+
+        // Låt sidans egna initiala skift lägga sig INNAN observatören startar.
+        // Vi mäter bannerns bidrag, inte sidladdningens.
+        await page.waitForTimeout(1500);
+
+        // Innehållets position FÖRE bannern — referenspunkt för nedknuffningen.
+        const mainToppFore = await page.evaluate(
+          () => document.querySelector('main')?.getBoundingClientRect().top ?? Number.NaN,
+        );
+
+        // Observatören installeras EFTER att sidan lagt sig, och samlar bara
+        // det som händer härefter.
+        await page.evaluate(() => {
+          const w = window as unknown as {
+            __mmSkift?: { value: number; hadRecentInput: boolean }[];
+          };
+          w.__mmSkift = [];
+          new PerformanceObserver((list) => {
+            for (const e of list.getEntries()) {
+              const ls = e as PerformanceEntry & { value: number; hadRecentInput: boolean };
+              w.__mmSkift?.push({ value: ls.value, hadRecentInput: ls.hadRecentInput });
+            }
+          }).observe({ type: 'layout-shift', buffered: false });
+        });
+
+        // Skjut eventet upprepat tills bannerns knapp finns i DOM:en.
+        await page.waitForFunction(
+          (arg) => {
+            if (document.querySelector(`[data-testid="${arg.testid}"]`)) return true;
+            window.dispatchEvent(new CustomEvent(arg.event));
+            return false;
+          },
+          { testid: lage.testid, event: lage.event },
+          { timeout: 15_000 },
+        );
+
+        // Låt skiften registreras.
+        await page.waitForTimeout(1000);
+
+        const matning = await page.evaluate((bannerTestid) => {
+          const w = window as unknown as {
+            __mmSkift?: { value: number; hadRecentInput: boolean }[];
+          };
+          const skift = w.__mmSkift ?? [];
+          // MÄT BANNERELEMENTET SJÄLVT. En tidigare version av denna mätning
+          // tog `firstElementChild`, vilket för chunk-läget gav `<p>`-taggens
+          // höjd i stället för bannerns — och därmed 21 px där bannern faktiskt
+          // är högre. CLS-talen påverkades aldrig, men höjdkolumnen var falsk.
+          const el = document.querySelector(`[data-testid="${bannerTestid}"]`) as HTMLElement | null;
+          const rect = el?.getBoundingClientRect();
+          return {
+            cls: skift.reduce((s, e) => s + e.value, 0),
+            antalSkift: skift.length,
+            hadRecentInput: skift.map((e) => e.hadRecentInput),
+            bannerhojd: rect ? Math.round(rect.height) : 0,
+            mainToppEfter: document.querySelector('main')?.getBoundingClientRect().top ?? Number.NaN,
+          };
+        }, lage.banner);
+
+        resultat.push({
+          vy: vy.namn,
+          vyport: vyport.namn,
+          lage: lage.namn,
+          ...matning,
+        });
+
+        const nedknuffning = Math.round(matning.mainToppEfter - mainToppFore);
+
+        // eslint-disable-next-line no-console
+        console.log(
+          `MÄTT | ${vy.namn} | ${vyport.namn} | ${lage.namn} | ` +
+            `CLS=${matning.cls.toFixed(4)} | skift=${matning.antalSkift} | ` +
+            `hadRecentInput=[${matning.hadRecentInput.join(',')}] | ` +
+            `bannerhöjd=${matning.bannerhojd}px | nedknuffning=${nedknuffning}px`,
+        );
+      });
+    }
+  }
+}
