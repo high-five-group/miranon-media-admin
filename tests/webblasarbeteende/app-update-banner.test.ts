@@ -295,14 +295,48 @@ test.describe('"Inte nu" (TASK-285.1)', () => {
  * (`docs/research/uppdateringsnotisens-form-och-notisfamiljen-2026-08-20.md`
  * § "A/B mot en överlagrad form": "noll skiften registrerade" för den
  * överlagrade formen, mot 0,0376–0,1469 för den gamla flödes-bannern).
+ *
+ * ROTORSAK TILL EN CI-FÄLLNING (PR #1702, jobb 96775581049), diagnostiserad
+ * och bevisad, inte gissad: `1280 px` föll bit-identiskt tre gånger
+ * (`0.006408403682708739`) med `390 px` grönt. Reproducerat lokalt genom att
+ * fördröja `fonts.googleapis.com`/`fonts.gstatic.com` artificiellt (simulerar
+ * CI:s kalla nätverks-cache) och läsa `entry.sources[]`: EN layout-shift-
+ * entry, FEM källor, samtliga `<h2 class="text-xl">`-rubriker på
+ * `/dev/primitives`-demosidan ("Button - primary/secondary/danger/success/
+ * ghost") — INTE notisens egna element. Källan är `@import
+ * url("https://fonts.googleapis.com/…&display=swap")` (`src/styles/
+ * base.css`): Chrome registrerar en (sub-pixel, avrundningen i `DOMRectReadOnly`
+ * döljer den i `previousRect`/`currentRect`) instabilitet när Inter ersätter
+ * fallback-typsnittet på BEFINTLIG text, oavsett om notisen någonsin visas.
+ * Detta är en sidladdnings-artefakt av `webblasarbeteende`-klassens EGEN
+ * miljö (ingen hermetisk font-mockning här, till skillnad från
+ * `tests/support/fixturvarld/hermetic.ts`s pinnade Inter v20 för
+ * visual/acceptance-klasserna) — inte ett formfel i `Notis`/`Uppdaterings-
+ * notis` (noll källor pekade någonsin på `NOTIS_KORT` eller dess barn).
+ *
+ * FIXEN gör mätningen ärlig i stället för att lätta på assertionen: vänta in
+ * `document.fonts.ready` INNAN observatören startas, så mätfönstret bara
+ * täcker det EFTER-tillstånd forskningspassets egen metod redan förutsatte
+ * ("startad EFTER att sidan lugnat sig"). Bevisad med samma artificiella
+ * fördröjning som reproducerade felet: UTAN väntan reproducerades exakt
+ * samma icke-nollvärde lokalt; MED väntan blev CLS 0 i samma körning.
+ * `expect(cls).toBeLessThan(0.1)` hade varit fel väg — det hade tyst tillåtit
+ * en riktig framtida layoutförskjutning av notisen att glida igenom grönt.
  */
 test.describe('TASK-285.1 — layoutförskjutningen vid visning är 0 (AC #3)', () => {
   async function matCLS(page: Page, viewport: { width: number; height: number }) {
     await page.setViewportSize(viewport);
     await oppnaAppen(page);
 
-    // Observatören startas EFTER att sidan lugnat sig (heading redan
-    // väntad i oppnaAppen), så bara notisens EGNA förskjutning fångas.
+    // Se filhuvudets "ROTORSAK TILL EN CI-FÄLLNING": vänta in typsnitts-
+    // laddningen FÖRE observatören startas, så en font-swap-reflow på
+    // OFÖRÄNDRAD text (demosidans rubriker) aldrig hinner in i mätfönstret.
+    // MDN/forskningspasset: observatören ska starta "efter att sidan lugnat
+    // sig" — detta ÄR den väntan, bara mer exakt än en fast timeout.
+    await page.evaluate(() => document.fonts.ready);
+
+    // Observatören startas EFTER att sidan lugnat sig (heading + typsnitt
+    // redan väntade), så bara notisens EGNA förskjutning fångas.
     await page.evaluate(() => {
       (window as unknown as { __mmClsSum: number }).__mmClsSum = 0;
       const observer = new PerformanceObserver((list) => {
