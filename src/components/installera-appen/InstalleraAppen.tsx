@@ -1,4 +1,3 @@
-import { Link } from '@tanstack/react-router';
 import { CheckCircle2, Share, SquarePlus } from 'lucide-react';
 import {
   Button,
@@ -6,6 +5,7 @@ import {
   type InstallPromptState,
   MessageBox,
 } from '@/components/primitives';
+import { SidRam } from '@/components/primitives/SidRam';
 
 /**
  * "Installera appen" — Mer-flikens install-yta (task-126.3; PRD task-126,
@@ -43,15 +43,23 @@ import {
  *   bekräftelse-läget utan eget mellanliggande state.
  * - AC 4 (redan installerad → bekräftelse, ej instruktion): tidigt return,
  *   inga instruktionssektioner alls när `path === 'redan-installerad'`.
+ *
+ * SIDKROM (TASK-299.9, PRD `TASK-299` § OMFATTNINGEN LÅST): husets delade
+ * `SidRam`-primitiv (kant-i-kant-dialekten) ersätter den äldre textlänken
+ * ("← Tillbaka till Mer", `text-small underline`) som satt i en `p-4`-sektion
+ * med DUBBLERAD sidmarginal (main:s egen `px-4 py-4` plus sektionens egen
+ * `p-4`). Ingen egen sidopadding kvar på sektionen — `<header>` tar `px-4`
+ * för att matcha chevronens `mx-4`-indrag; innehållet under (install-flödet)
+ * har ingen egen horisontell padding och sitter flush mot main. Bara
+ * sidkromet (chevron), aldrig rubrikblocket (ägandeskapsaxeln avgjord till
+ * den smalare omfattningen).
  */
 export function InstalleraAppen() {
   return (
-    <section className="flex flex-col gap-6 p-4">
-      <Link to="/mer" className="text-small underline">
-        ← Tillbaka till Mer
-      </Link>
+    <section className="flex flex-col gap-6">
+      <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
 
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-col gap-1 px-4">
         <h1 className="font-semibold text-2xl">Installera appen</h1>
         <p className="text-small text-text-muted">
           När appen är installerad öppnas den som en egen app på din hemskärm eller i Dock - precis

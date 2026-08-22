@@ -223,3 +223,44 @@ test.describe('Installera appen — Chromium-knappen installerar på riktigt (AC
     await expect(page.getByText('Appen är redan installerad')).toHaveCount(0);
   });
 });
+
+/**
+ * SIDKROM (TASK-299.9, PRD `TASK-299` § OMFATTNINGEN LÅST) — installera-
+ * appens FÖRSTA behavioral-skarv för den promoverade `SidRam`-chevronen.
+ *
+ * PLACERING, MEDVETET AVVÄGD: kortets AC #5 säger "acceptance-skarv", men
+ * `InstalleraAppen` har NOLL databeteende (filhuvudet ovan, ADR-094) —
+ * `hermetik-sjalvtest.mjs` kräver att VARJE test i `acceptance`-projektet
+ * fäller med `OmockadRequestError` när normalläget töms (ADR-080 beslut 3).
+ * Ett test som aldrig gör ett nätverksanrop överlever ALLTID den tömningen
+ * och skulle fälla självtestets eget villkor — exakt det öde som mötte de
+ * 11 install-prompt-testerna ADR-094s Kontext beskriver. Denna fils klass
+ * (`webblasarbeteende`) är den ADR-094-korrekta hemvisten för chrome-
+ * beteende på en datalös yta; se `MailLog.tsx`s SidRam-svit i
+ * `tests/acceptance/mer-maillogg.acceptance.test.ts` för motsvarande skarv
+ * på en yta som FAKTISKT har databeteende att hänga mockningen på.
+ *
+ * Körs mot `/dev/installera-appen` (samma dev-guardade demo-route som
+ * filens övriga tester) — `SidRam`s DOM (chevron, `aria-label`, `href`) är
+ * identisk oavsett `AppShell`/auth-kontext, så chrome-verifieringen behöver
+ * ingen seedad session. Klick-igenom (verklig navigering) provas i stället
+ * på den RIKTIGA autentiserade routen, se `mer-maillogg.acceptance.test.ts`.
+ */
+test.describe('Installera appen — SidRam-sidkrom (TASK-299.9)', () => {
+  test('chevronen bär namnet "Tillbaka till Mer" och länkar till /mer — ingen textlänk kvar', async ({
+    page,
+  }) => {
+    await page.goto('/dev/installera-appen');
+    await expect(page.getByRole('heading', { level: 1, name: 'Installera appen' })).toBeVisible();
+
+    // SidRam (TASK-299.9): namnet är EXAKT `tillbakaEtikett` — ingen "←"-
+    // prefix, det var den äldre textlänkens form. Chevronen bär det
+    // tillgängliga namnet ensam (ikon-ENSAM knapp).
+    const tillbaka = page.getByRole('link', { name: 'Tillbaka till Mer' });
+    await expect(tillbaka).toBeVisible();
+    await expect(tillbaka).toHaveAttribute('href', '/mer');
+
+    // Den äldre textlänken ("← Tillbaka till Mer") ska inte längre finnas.
+    await expect(page.getByRole('link', { name: '← Tillbaka till Mer' })).toHaveCount(0);
+  });
+});

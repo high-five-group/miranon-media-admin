@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
@@ -80,6 +80,18 @@ function MailLogRow({ entry }: { entry: MailLogEntry }) {
  * - Fel: `role="alert"` via MessageBox (ingen dubbel-announcer — L138).
  * - `document.title` sätts när laddat.
  * - "Tillbaka till Mer"-länk (→ `/mer`), närvarande i alla tillstånd.
+ *
+ * SIDKROM (TASK-299.9, PRD `TASK-299` § OMFATTNINGEN LÅST): husets delade
+ * `SidRam`-primitiv (kant-i-kant-dialekten) ersätter den äldre textlänken
+ * ("← Tillbaka till Mer", `text-small underline`) som satt i en `p-4`-sektion
+ * med DUBBLERAD sidmarginal (main:s egen `px-4 py-4` plus sektionens egen
+ * `p-4`). Ingen egen sidopadding kvar på sektionen — `<header>` tar `px-4`
+ * för att matcha chevronens `mx-4`-indrag (SidRam-docstringen: kortytan/
+ * innehållsytan som följer stannar kant i kant mot `<main>`s egen padding,
+ * ingen extra inramning läggs på). Listan/tom-texten/felrutan har därför
+ * INGEN egen horisontell padding — de sitter flush mot main. Bara sidkromet
+ * (chevron), aldrig rubrikblocket (PRD beslut, ägandeskapsaxeln avgjord till
+ * den smalare omfattningen).
  */
 export function MailLog() {
   const dataSource = useDataSource();
@@ -110,22 +122,20 @@ export function MailLog() {
     }
   }, [maillog]);
 
-  const backLink = (
-    <Link to="/mer" className="text-small underline">
-      ← Tillbaka till Mer
-    </Link>
-  );
+  const kromKnapp = <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />;
 
   if (isPending) {
     // Lugnt laddläge (Laddtrappan steg 1, DESIGN-SYSTEM-SPEC §15): skeleton i
     // listans SLUTGEOMETRI (rubrik + tre radplatshållare, Roselli-anatomin) i
     // stället för en naken "Laddar…"-textrad — layout-skift ≈ 0 mot laddat läge.
+    // Rubrik-skelettets `px-4` matchar det riktiga `<header>`s indrag (nedan)
+    // så övergången till laddat läge inte skiftar layouten sidledes.
     return (
-      <section className="flex flex-col gap-6 p-4">
-        {backLink}
+      <section className="flex flex-col gap-6">
+        {kromKnapp}
         <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-4">
           <span className="sr-only">Laddar maillogg…</span>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 px-4">
             <Skeleton variant="text" className="w-28 text-2xl" />
             <Skeleton variant="text" className="w-20 text-small" />
           </div>
@@ -141,8 +151,8 @@ export function MailLog() {
 
   if (isError) {
     return (
-      <section className="flex flex-col gap-4 p-4">
-        {backLink}
+      <section className="flex flex-col gap-4">
+        {kromKnapp}
         <MessageBox intent="error" title="Kunde inte hämta maillogg">
           {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
@@ -151,15 +161,15 @@ export function MailLog() {
   }
 
   return (
-    <section className="flex flex-col gap-6 p-4">
-      {backLink}
+    <section className="flex flex-col gap-6">
+      {kromKnapp}
 
       {/* aria-live: bekräftar för skärmläsare att loggen anlänt. */}
       <p className="sr-only" role="status" aria-live="polite">
         Maillogg laddad.
       </p>
 
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-col gap-1 px-4">
         <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
           Maillogg
         </h1>
