@@ -23,11 +23,31 @@
  * och rörs inte av detta skript - se express-tidig-returen nedan, som
  * lämnar en tom EventKey helt orörd så att den grenen får styra oberört.
  *
- * T168-RÄTTNING (2026-08-22): datum-axeln jämför inte längre bara formen.
- * Den strippade formen matchade "12-13 september 2025" mot "...2026" som
- * LIKA, vilket är exakt det fel duplicerade kalenderposter producerar.
- * Årtalen prövas nu som en EGEN axel (datumAvviker nedan), och samma
- * rättning är gjord i formelfältet - de två ytorna måste bedöma likadant.
+ * T168-RÄTTNING (2026-08-22): datum-axeln STRYKER inte längre årtalen.
+ * Den gamla formen normaliserade "12-13 september 2025" och "...2026" till
+ * samma sträng och gav OK - exakt det fel duplicerade kalenderposter
+ * producerar. Nu kollapsar normDatum i stället ett årtal som följs av
+ * tankstreck, så båda sidor bär årtalet exakt en gång och det jämförs som
+ * en del av strängen. Samma konstruktion, tecken för tecken, i formelfältet
+ * fldYz2NRZJjyX8VWB - de två ytorna måste bedöma likadant (ADR-122).
+ *
+ * EN FÖRSTA RÄTTNING REVS SAMMA DAG: den extraherade årtalet separat och
+ * jämförde det som en egen axel. I JavaScript var den korrekt, men den
+ * porterades till formeln som REGEX_EXTRACT - och Airtables AND() kortsluter
+ * inte, så uttrycket evaluerades även när tomt-guarden redan var falsk.
+ * REGEX_EXTRACT utan träff ger fel, inte blank => #ERROR! på VARJE rad med
+ * Event-länk och tomt Datum, mätt live i staging. Kollaps-i-normaliseringen
+ * har ingen funktion som kan fela och behöver därför ingen guard alls.
+ *
+ * MEDVETEN KANT, MÄTT TILL NOLL: ett anmälnings-Datum som är ifyllt men
+ * SAKNAR årtal ("31 oktober-1 november") jämförs nu mot ett facit som har
+ * det och FÄLLER. Den gamla strippande formen gav dem lika. Populationen är
+ * mätt 2026-08-22: NOLL rader i både prod och staging med Event-länk,
+ * ifyllt Datum och inget fyrsiffrigt årtal - fältet fylls ur
+ * AnmälningsURL:ens parameter, som alltid bär årtalet. Kanten är dessutom
+ * åt rätt håll för en fail-closed vakt: ett ofullständigt datum är inte ett
+ * TOMT fält (ADR-122 beslut 4 gäller tomhet), och en kö-rad Lotta avfärdar
+ * är billigare än en tyst felkoppling.
  *
  * NORMALISERINGEN OCH JÄMFÖRELSEN är porterad FRÅN Eventmatchning-formeln
  * (Anmälningar.fldYz2NRZJjyX8VWB, TASK-284.1) - samma tre mätta
@@ -81,10 +101,15 @@ function normSimple(value) {
     .trim();
 }
 
+// T168: det andra steget kollapsar ett årtal som följs av tankstreck. Facit
+// skriver "31 oktober 2026 - 1 november 2026", anmälan "31 oktober-1 november
+// 2026" - efteråt bär BÅDA årtalet exakt en gång, sist, och det jämförs som en
+// del av strängen. Den gamla formen strök alla årtal, vilket gjorde årtalet
+// informationslöst och matchade 2025 mot 2026.
 function normDatum(value) {
   return String(value == null ? '' : value)
     .toLowerCase()
-    .replace(/\d{4}/g, '')
+    .replace(/\d{4}\s*([-–—])/g, '$1')
     .replace(/\s*[-–—]\s*/g, '-')
     .replace(/\s+/g, ' ')
     .trim();
@@ -95,36 +120,6 @@ function axisAvviker(a, b, normalizer) {
   const nb = normalizer(b);
   if (na === '' || nb === '') return false; // tomt = kan inte avgöras (ADR-122 beslut 4)
   return na !== nb;
-}
-
-// T168: normDatum stryker ALLA fyrsiffriga årtal, så "12-13 september 2025"
-// och "12-13 september 2026" normaliseras identiskt. Rotorsaken bakom T158
-// är att Roger DUPLICERAR gamla kalenderposter, vilket gör årsfallet till
-// det mest sannolika framtida felet - kurs, ort och dag/månad passerar alla,
-// bara årtalet skiljer. Formen jämförs därför som förut (den löser de tre
-// MÄTTA formateringsklasserna), och årtalen prövas som en EGEN axel.
-// Spegling av Eventmatchning-formeln (fldYz2NRZJjyX8VWB) efter samma
-// rättning - de två ytorna måste bedöma likadant.
-function forstaArtal(value) {
-  const traff = String(value == null ? '' : value).match(/\d{4}/);
-  return traff ? traff[0] : '';
-}
-
-function datumAvviker(a, b) {
-  const na = normDatum(a);
-  const nb = normDatum(b);
-  if (na === '' || nb === '') return false; // tomt = kan inte avgöras (ADR-122 beslut 4)
-  if (na !== nb) return true; // formen skiljer - avgjort utan årtalen
-  // Formen är lika. Pröva årtalen separat: saknas årtal på någon sida kan
-  // året inte avgöras, och tomt ger ALDRIG avvikelse (samma beslut 4).
-  const ya = forstaArtal(a);
-  const yb = forstaArtal(b);
-  if (ya === '' || yb === '') return false;
-  const rawA = String(a == null ? '' : a);
-  const rawB = String(b == null ? '' : b);
-  // Tvåvägs-prövning gör jämförelsen symmetrisk och tål att facit upprepar
-  // årtalet vid månadsskifte ("31 oktober 2026 - 1 november 2026").
-  return rawB.indexOf(ya) === -1 || rawA.indexOf(yb) === -1;
 }
 
 function normalizeEventKey(raw) {
@@ -189,7 +184,7 @@ if (normalizedKey === '') {
     const avviker =
       axisAvviker(anmOrt, eventOrt, normSimple) ||
       axisAvviker(anmKurs, eventKurs, normSimple) ||
-      datumAvviker(anmDatum, eventDatum);
+      axisAvviker(anmDatum, eventDatum, normDatum);
 
     if (avviker) {
       await errorTbl.createRecordAsync({
