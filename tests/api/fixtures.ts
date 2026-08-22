@@ -208,13 +208,19 @@ export const CHECKIN_DELTAGANDE_A_ID = 'recei18YBOSWZMQqr';
  *     = 'OK'.
  *   - `ZZ-TASK-284.1 Fixtur Utan event` (EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID)
  *     — ingen Event-länk. Eventmatchning = 'Utan event'.
+ *   - `ZZ-TASK-284.1 Fixtur Fel år` (EVENTMATCHNING_ANMALAN_FEL_AR_ID) —
+ *     länkad till Fixtur A, egen `Datum` bär samma dag och månad som facit
+ *     men FEL ÅR ("31 oktober–1 november 2025" mot facit "31 oktober 2026 –
+ *     1 november 2026"). Seedad 2026-08-22 (S110, T168) och mätt i BÅDA
+ *     riktningar: gav `OK` med den årsstrippande formeln (buggen live), ger
+ *     `Avviker` efter T168-rättningen. Eventmatchning = 'Avviker'.
  *
  * Konsumeras av get-registrations.staging.test.ts (task-284.1-sektionen) OCH
  * update-record.staging.test.ts (task-284.3: `relink-registration`-operationen
  * — ETT rundturs-prov gjort live 2026-08-21 INNAN testet skrevs: skriv
  * Event/EventKey på `EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID` → Eventmatchning
  * blev 'OK' synkront → Event:[]/EventKey:null återställde raden BYTE-IDENTISK
- * mot ursprunget, se kortets slutrapport). STÄDA INTE bort dessa sex poster.
+ * mot ursprunget, se kortets slutrapport). STÄDA INTE bort dessa sju poster.
  */
 export const EVENTMATCHNING_EVENT_A_ID = 'recLGV8kJJk5iyvkh';
 export const EVENTMATCHNING_EVENT_B_ID = 'recccVmD6oRGlZhc4';
@@ -224,3 +230,5 @@ export const EVENTMATCHNING_ANMALAN_OK_ID = 'recsXm9mlq4yhc5LH';
 export const EVENTMATCHNING_ANMALAN_AVVIKER_ID = 'rec1OoJZf5hKzMnpf';
 export const EVENTMATCHNING_ANMALAN_BACKFILL_ID = 'rec6ElPLSO3GGVK8q';
 export const EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID = 'rectuHzKciiEDn2HQ';
+/** `ZZ-TASK-284.1 Fixtur Fel år` — T168:s regressionsfall (rätt dag och månad, fel år). */
+export const EVENTMATCHNING_ANMALAN_FEL_AR_ID = 'recdKgK82XA0Oa2ee';
