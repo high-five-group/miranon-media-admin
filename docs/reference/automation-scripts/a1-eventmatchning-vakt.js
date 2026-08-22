@@ -23,6 +23,12 @@
  * och rörs inte av detta skript - se express-tidig-returen nedan, som
  * lämnar en tom EventKey helt orörd så att den grenen får styra oberört.
  *
+ * T168-RÄTTNING (2026-08-22): datum-axeln jämför inte längre bara formen.
+ * Den strippade formen matchade "12-13 september 2025" mot "...2026" som
+ * LIKA, vilket är exakt det fel duplicerade kalenderposter producerar.
+ * Årtalen prövas nu som en EGEN axel (datumAvviker nedan), och samma
+ * rättning är gjord i formelfältet - de två ytorna måste bedöma likadant.
+ *
  * NORMALISERINGEN OCH JÄMFÖRELSEN är porterad FRÅN Eventmatchning-formeln
  * (Anmälningar.fldYz2NRZJjyX8VWB, TASK-284.1) - samma tre mätta
  * normaliseringsklasser (skiftläge, mellanslag runt tankstreck, upprepat
@@ -91,6 +97,36 @@ function axisAvviker(a, b, normalizer) {
   return na !== nb;
 }
 
+// T168: normDatum stryker ALLA fyrsiffriga årtal, så "12-13 september 2025"
+// och "12-13 september 2026" normaliseras identiskt. Rotorsaken bakom T158
+// är att Roger DUPLICERAR gamla kalenderposter, vilket gör årsfallet till
+// det mest sannolika framtida felet - kurs, ort och dag/månad passerar alla,
+// bara årtalet skiljer. Formen jämförs därför som förut (den löser de tre
+// MÄTTA formateringsklasserna), och årtalen prövas som en EGEN axel.
+// Spegling av Eventmatchning-formeln (fldYz2NRZJjyX8VWB) efter samma
+// rättning - de två ytorna måste bedöma likadant.
+function forstaArtal(value) {
+  const traff = String(value == null ? '' : value).match(/\d{4}/);
+  return traff ? traff[0] : '';
+}
+
+function datumAvviker(a, b) {
+  const na = normDatum(a);
+  const nb = normDatum(b);
+  if (na === '' || nb === '') return false; // tomt = kan inte avgöras (ADR-122 beslut 4)
+  if (na !== nb) return true; // formen skiljer - avgjort utan årtalen
+  // Formen är lika. Pröva årtalen separat: saknas årtal på någon sida kan
+  // året inte avgöras, och tomt ger ALDRIG avvikelse (samma beslut 4).
+  const ya = forstaArtal(a);
+  const yb = forstaArtal(b);
+  if (ya === '' || yb === '') return false;
+  const rawA = String(a == null ? '' : a);
+  const rawB = String(b == null ? '' : b);
+  // Tvåvägs-prövning gör jämförelsen symmetrisk och tål att facit upprepar
+  // årtalet vid månadsskifte ("31 oktober 2026 - 1 november 2026").
+  return rawB.indexOf(ya) === -1 || rawA.indexOf(yb) === -1;
+}
+
 function normalizeEventKey(raw) {
   const trimmed = String(raw == null ? '' : raw).trim();
   if (trimmed === '') return '';
@@ -153,7 +189,7 @@ if (normalizedKey === '') {
     const avviker =
       axisAvviker(anmOrt, eventOrt, normSimple) ||
       axisAvviker(anmKurs, eventKurs, normSimple) ||
-      axisAvviker(anmDatum, eventDatum, normDatum);
+      datumAvviker(anmDatum, eventDatum);
 
     if (avviker) {
       await errorTbl.createRecordAsync({
