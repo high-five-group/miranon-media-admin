@@ -1,0 +1,20 @@
+<!--
+  Konturglob (F6, S108 resume 5). Ersätter globe-material.svg (Material
+  Symbols FYLLD variant) — förlagan bär en konturglob med tjocka
+  meridianer, se docs/mallar/bilagor/README.md § Bekräftelsebilagan.
+
+  Källa: Material Symbols "language" (Outlined, wght700, 24px) —
+  google/material-design-icons, github.com/google/material-design-icons,
+  symbols/web/language/materialsymbolsoutlined/language_wght700_24px.svg
+  (hämtad 2026-08-22). "language"-glyfen är den klassiska tråd-globen med
+  latitud-/longitudgrid; Material Symbols "public" (samma familj, provad
+  först) visar sedan en omdesign INTE en globe-grid längre — verifierat
+  via tre oberoende källor (GitHub-repo, unpkg @material-symbols/svg-400,
+  Google Fonts webbfont-ligatur) innan "language" valdes i stället.
+  wght700 (tyngsta statiska vikten, 100–700 tillgängligt) vald för att
+  ligga närmast förlagans tjocka meridianer vid 21,05 mm bredd
+  (.ikonruta-ikon).
+
+  Licens: Apache License 2.0 (samma repo/licens som den tidigare filen).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24"><path d="M480-46q-89 0-168-34.5T174-174q-59-59-93.5-138T46-480q0-89 34.5-168T174-786q59-59 138-93.5T480-914q89 0 168 34.5T786-786q59 59 93.5 138T914-480q0 89-34.5 168T786-174q-59 59-138 93.5T480-46Zm-2-127q22-34 41-72.5t31-80.5H409q12 42 29.5 80.5T478-173Zm-99-16q-20-31-31.5-66.5T327-326H215q26 48 68 84t96 53Zm199 0q54-17 97-53t69-84H632q-9 35-21.5 70.5T578-189ZM182-403h129q-3-20-4.5-38.5T305-480q0-21 1.5-39t4.5-38H182q-5 19-7.5 37.5T172-480q0 20 2.5 39t7.5 38Zm209 0h177q3-20 3.5-38.5t.5-38.5q0-21-.5-39t-3.5-38H391q-3 20-4.5 38t-1.5 39q0 20 1.5 38.5T391-403Zm257 0h128q5-19 7.5-38t2.5-39q0-21-2.5-39.5T776-557H648q2 20 3 38t1 39q0 20-1 38.5t-3 38.5Zm-16-232h112q-26-48-69-83.5T578-771q20 31 32.5 66t21.5 70Zm-223 0h141q-11-42-30-80t-42-72q-22 34-39.5 72T409-635Zm-194 0h112q9-35 20.5-70t31.5-66q-54 17-96 52.5T215-635Z"/></svg>

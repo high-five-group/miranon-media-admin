@@ -67,6 +67,24 @@
   font-display: swap;
 }
 
+/*
+ * SELAWIK BOLD (F6/F7, S108 resume 5) — förlagan sätter EXAKT de två
+ * listrubrikerna "Innehåll, Dag Ett" / "Innehåll, Dag Två" i SegoeUI-Bold;
+ * Segoe UI är Microsoft-proprietär och får aldrig bäddas in (samma regel
+ * som Cavolini/Calibri ovan). Selawik är Microsofts EGEN öppna ersättare
+ * för Segoe UI (SIL OFL 1.1, github.com/microsoft/Selawik, release 1.01),
+ * fsType 0x0000 (Installable Embedding — inbäddning fri, mest tillåtande
+ * värdet som finns). Används ENDAST på de två listrubrikerna via klassen
+ * `.listrubrik-selawik`, se docs/mallar/bilagor/README.md § Fontstrategin.
+ */
+@font-face {
+  font-family: "Selawik";
+  src: url("../../../public/fonts/bilagor/Selawik-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   /* Mätta ur förlagan, se filhuvudet */
   --mm-bilaga-svart: #000000;
@@ -80,6 +98,8 @@
   /* Rubrikfont — CSS-variabel med två lägen (Marcus-beslut, väg B) */
   --mm-bilaga-rubrik-font: "Cavolini", "Comic Neue", cursive;
   --mm-bilaga-brodtext-font: "Carlito", "Calibri", sans-serif;
+  /* F7 — de två listrubrikerna ("Innehåll, Dag Ett/Två"), ersätter SegoeUI-Bold */
+  --mm-bilaga-listrubrik-font: "Selawik", "Carlito", sans-serif;
 }
 
 * {
@@ -351,6 +371,15 @@ body {
   font-weight: 700;
   margin: 0 0 0.4mm; /* förlagan: 1,2 pt utöver radsteget */
   font-family: var(--mm-bilaga-brodtext-font);
+}
+
+/*
+ * F7 — förlagan sätter EXAKT dessa två rubriker i SegoeUI-Bold (Selawik
+ * här), allt annat i Calibri (Carlito). Storlek/vikt/marginal ärvs
+ * oförändrat från .lista h2 ovan — endast font-family skiljer.
+ */
+.lista h2.listrubrik-selawik {
+  font-family: var(--mm-bilaga-listrubrik-font);
 }
 
 .lista ul {

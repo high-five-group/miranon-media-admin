@@ -163,16 +163,25 @@ mot `~/Downloads/exempelpdokument/*.pdf`, lästa sida för sida).
 - Loggan: `public/miranon-media-ordmarke-original.svg` — samma vågform,
   samma originalfärger som förlagan (se forskningsdokumentets RÄTTELSE-block).
 - Bokomslaget, Instagram- och globe-ikonerna: rätt bild på rätt plats.
+  Globen är sedan F6 (S108 resume 5) en KONTURGLOB (`public/globe-outlined.svg`,
+  Material Symbols Outlined "language" wght700) i stället för den tidigare
+  fyllda varianten — förlagan bär en konturglob med tjocka meridianer,
+  skillnaden syntes tydligt vid `.ikonruta-ikon`s 21,05 mm.
 - Fetningarna i brödtexten: exakt de sju fraserna kortets Implementation
   Notes anger, ordagrant.
 
 ### Bekräftelsebilagan — avviker, med skäl
 
-- **`SegoeUI-Bold` → Carlito Bold.** Förlagan bär `SegoeUI-Bold` på ETT
-  ställe (§ 2.2 i research-passet identifierar det men specificerar inte
-  exakt vilket ord); mallen använder Carlito Bold genomgående i stället,
-  per uppdragets explicita instruktion. Ingen visuell skillnad av
-  betydelse (båda är sans-serif bold vid brödtextstorlek).
+- **`SegoeUI-Bold` → Selawik Bold (F7, S108 resume 5).** Förlagan bär
+  `SegoeUI-Bold` på EXAKT de två listrubrikerna "Innehåll, Dag Ett" /
+  "Innehåll, Dag Två" (9 pt), allt annat i Calibri/Carlito. Segoe UI är
+  Microsoft-proprietär och får inte bäddas in — samma regel som stoppade
+  Cavolini. Selawik är Microsofts EGEN öppna ersättare för Segoe UI (SIL
+  OFL 1.1, `github.com/microsoft/Selawik` release 1.01), tillämpad ENDAST
+  på de två rubrikerna via klassen `.listrubrik-selawik`. Tidigare stod
+  här att mallen använde Carlito Bold genomgående i stället — det var det
+  förra läget (innan F7), inaktuellt nu. Se
+  `public/fonts/bilagor/LÄSMIG.md` § Selawik Bold för fsType-mätningen.
 - **QR-koden bär ingen centrerad logotyp**, se § QR-koderna ovan för skälet.
 - **Box-mått (rundning, marginaler, radhöjd) är eyeballade mot den
   renderade bilden, inte pt-uppmätta.** Forskningsunderlaget
