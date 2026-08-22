@@ -7,6 +7,7 @@ import {
   SKAPADE_ANMALAN_VERB,
 } from '@/data/activityLog/activityTypes';
 import { recordActivity } from '@/data/activityLog/recordActivity';
+import { invalideraPersonregistret } from '@/data/mutations/personregister-invalidering';
 import { useDataSource } from '@/data/useDataSource';
 import type { CreateRegistrationInput, Registration } from '@/domain/models/Registration';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
@@ -99,6 +100,14 @@ export function useCreateRegistration(eventId: string) {
         // registrationPayments.ts's motsvarande kommentar.
         personId: created.personId ?? undefined,
       });
+
+      // TASK-286.4 (ADR-123 beslut 6) — PERSONREGISTRET. Detta är svepets
+      // primära träff: en ny anmälan är det ENDA som får en person att entra
+      // registret (`BAS_FILTER = '{Antal anmälningar (totalt)} > 0'`), och den
+      // ändrar dessutom `harAktivAnmalan`, `senasteInteraktion` och `ort` för
+      // en person som redan finns där. A2:s latens gör att effekten syns först
+      // vid nästa hämtning — se modulens docblock § Känd kant.
+      invalideraPersonregistret(queryClient);
     },
 
     // Synka mot servern oavsett utfall (ADR-016 komponent E) → rostern refetchar.

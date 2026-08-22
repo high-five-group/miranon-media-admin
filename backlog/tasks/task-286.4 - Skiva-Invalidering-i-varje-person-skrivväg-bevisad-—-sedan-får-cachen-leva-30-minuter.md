@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:50'
+updated_date: '2026-08-22 10:17'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,8 +27,8 @@ Täcker användarberättelser: 5
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Grep-svepets träffyta (alla person-skapande/-ändrande skrivvägar) är bilagd i PR:en och varje träff invaliderar registernyckeln
-- [ ] #2 Test per skrivväg visar att registerfrågan invalideras och refetchas efter mutationen
+- [x] #1 Grep-svepets träffyta (alla person-skapande/-ändrande skrivvägar) är bilagd i PR:en och varje träff invaliderar registernyckeln
+- [x] #2 Test per skrivväg visar att registerfrågan invalideras och refetchas efter mutationen
 - [ ] #3 staleTime för registerfrågan är 30 minuter EFTER att invalideringen är grön — aldrig före (commit-ordningen synlig i PR:en)
 - [ ] #4 refetchOnWindowFocus och refetchOnReconnect är oförändrade för registerfrågan
 <!-- AC:END -->

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { displayName } from '@/components/registrations/registration-display';
+import { invalideraPersonregistret } from '@/data/mutations/personregister-invalidering';
 import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
@@ -52,6 +53,13 @@ export function useRelinkRegistration() {
       alertScreenReader(
         `${displayName(registration)} kopplad till ${eventNamn ?? 'det valda eventet'}.`,
       );
+
+      // TASK-286.4 (ADR-123 beslut 6) — PERSONREGISTRET. Omkopplingen byter
+      // VILKET event anmälan hänger på, och kan därmed flippa personens
+      // `Har en aktiv anmälan?` ("Aktiv om kommande utbildning eller
+      // föreläsning finns", data-model.md § Spår 1) — pillen listan RENDERAR
+      // — samt `Ort`-rollupen som listans sök läser.
+      invalideraPersonregistret(queryClient);
     },
 
     // Bred invalidering (prefix-match, se queryKeys.ts:s docblock): träffar

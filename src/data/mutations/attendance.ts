@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { invalideraPersonregistret } from '@/data/mutations/personregister-invalidering';
 import { useDataSource } from '@/data/useDataSource';
 import type { AttendanceSessionValue, AttendanceStatusValue } from '@/domain/types/Status';
 import { AttendanceStatus } from '@/domain/types/Status';
@@ -112,6 +113,18 @@ export function useSetAttendanceStatus(eventId: string) {
 
       await dataSource.updateAttendance(SET_ATTENDANCE_STATUS_OPERATION, deltagandeId, status);
       return { deltagandeId, viaCreate: false };
+    },
+
+    // TASK-286.4 (ADR-123 beslut 6) — PERSONREGISTRET. En skrivning mot
+    // Deltaganden ändrar visserligen ingen ANMÄLAN (se onSettled nedan), men
+    // den ändrar PERSONEN: `Totala deltaganden` och deltagandegrenen i
+    // `Senaste interaktion (text)`/`(datum)` är rollup/formel över Deltaganden
+    // — och interaktionsraden är RENDERAD i personlistan. Hook-nivåns
+    // onSuccess körs UTÖVER anroparens per-anrops-callbacks (query-core:
+    // mutation.js kör options.onSuccess, mutationObserver.js kör
+    // mutateOptions.onSuccess), så dörrlistans egna callbacks står orörda.
+    onSuccess: () => {
+      invalideraPersonregistret(queryClient);
     },
 
     // Synka mot servern oavsett utfall (ADR-016 komponent E). Registreringarnas
