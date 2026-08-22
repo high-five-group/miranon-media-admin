@@ -252,3 +252,112 @@ export function sorteraPersonregister(personer: readonly Person[]): Person[] {
     return SVENSK_KOLLATION.compare(personVisningsnamn(a), personVisningsnamn(b));
   });
 }
+
+// ---------------------------------------------------------------------------
+// BOKSTAVSHINKARNA (TASK-283.2, ADR-123 beslut 3)
+// ---------------------------------------------------------------------------
+//
+// Bokstavsraden är en HÄRLEDNING ur samma array listan redan sorterar och
+// söker (ADR-123 beslut 3) — ingen serverparameter, ingen andra genomgång.
+// PRD:ns ursprungliga implementationsbeslut lade filtret i EF:ens formel
+// (`TASK-283.1`); den skivan UTGICK med ADR-123 väg B och kortets egen
+// amendering 2026-08-21. Hemvisten här, inte i komponenten, är den denna
+// modul redan utpekat åt sig själv i sorterings-avsnittet ovan.
+//
+// ═══ EN ENDA HINKFUNKTION, INTE ETT FILTER PER KNAPP ═══
+//
+// `personensBokstavshink()` nedan är den ENDA platsen en person tilldelas en
+// hink. Sentinel-undantaget (fälla 43/51) blir därmed sant GENOM KONSTRUKTION
+// i stället för genom en extra villkorsrad som kan glömmas: en namnlös person
+// bär strängen `Ej tillgängligt`, som bokstavligen börjar på E, och ett naivt
+// E-filter hade dragit med sig samtliga (186 av 559 i prod, ADR-123 § Kontext).
+// Här kan den strukturellt aldrig få hinken `E`, eftersom sentinel-grenen
+// returnerar före bokstavsgrenen. Låst i BÅDA riktningar av
+// `tests/api/person-sok.test.ts`.
+//
+// ═══ JÄMFÖRELSEN ÄR DIAKRITIK-KORREKT, TILL SKILLNAD FRÅN SÖKNINGEN ═══
+//
+// Detta är modulens TREDJE axel, och den delar collator med ingen av de två
+// andra — den använder ingen alls. Hinken avgörs av teckenlikhet (`===`), så
+// `Å` kan strukturellt aldrig hamna i `A`-hinken. Det är avsiktligt motsatsen
+// till sökningen (som viker å mot a sedan TASK-286.7) och samma riktning som
+// sorteringen (som separerar dem, ADR-123 beslut 4). Tre frågor, tre svar:
+//
+//   sortering  Å efter Z          svensk ortografi
+//   sökning    "asa" hittar Åsa   en förlåtande sökruta
+//   hink       Å skilt från A     Lotta tryckte på Å, inte på A
+//
+// ═══ NYCKELN ÄR VISNINGSNAMNET, INTE `namn` ═══
+//
+// Samma nyckel som sorteringen och som raden VISAR (`personVisningsnamn`).
+// En hink räknad på ett annat fält än det ögat läser är en garanti som inte
+// håller — samma skäl som flyttade `personVisningsnamn` hit i TASK-286.3.
+
+/**
+ * Raden av bokstavshinkar, i svensk kollationsordning: A till Z, sedan Å, Ä,
+ * Ö (ADR-123 beslut 4, PRD TASK-283 användarberättelse 7).
+ *
+ * HÅRDKODAD och inte härledd ur en collator, med avsikt: raden är ett stabilt
+ * alfabet, inte en sortering av data. `Intl.Collator('sv')` kan ordna en given
+ * mängd tecken, men den kan inte svara på VILKA 29 tecken raden ska bära.
+ */
+export const BOKSTAVSHINKAR: readonly string[] = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'Å', 'Ä', 'Ö'];
+
+/**
+ * Hinken för personer utan namn, sist i raden (PRD TASK-283
+ * användarberättelse 8).
+ *
+ * VÄRDET ÄR OCKSÅ URL-VÄRDET, och formen är vald för att inte kunna kollidera
+ * med en bokstavshink: gemener med bindestreck kan aldrig vara lika med en av
+ * de 29 versalerna ovan. Nummertecknet (iOS-konventionen) förkastades redan i
+ * PRD:n — det betyder "icke-alfabetisk sorteringsnyckel", inte "saknar namn",
+ * och en namngiven hink är begripligare (Gunilla-principen).
+ */
+export const HINK_UTAN_NAMN = 'utan-namn';
+
+/** Etiketten hinken bär i gränssnittet. */
+export const HINK_UTAN_NAMN_ETIKETT = 'Utan namn';
+
+/**
+ * Vilken hink en person hör till, eller `null` för en som inte hör till någon
+ * (ett namn som börjar på ett tecken utanför de 29 — en siffra, `É`, `Ø`).
+ *
+ * Den mängden är i praktiken tom i dagens register men hanteras ändå: en
+ * person UTAN hink är osynlig när ett filter är valt och synlig när inget är,
+ * vilket är det ärliga utfallet. Att tvinga in den i en granne-hink hade varit
+ * en gissning om vilken.
+ */
+export function personensBokstavshink(person: Person): string | null {
+  // Sentinel-grenen FÖRST — se avsnittets not. Rör aldrig E.
+  if (arNamnlosSentinel(person)) return HINK_UTAN_NAMN;
+  // Spread, inte `[0]`: ett namn som börjar med ett tecken utanför BMP skulle
+  // annars klyvas mitt i sitt surrogatpar och jämföras som en halv kodpunkt.
+  const forsta = [...personVisningsnamn(person)][0]?.toUpperCase() ?? '';
+  return BOKSTAVSHINKAR.includes(forsta) ? forsta : null;
+}
+
+/**
+ * Sant för ett värde som faktiskt ÄR en hink — en av de 29 bokstäverna eller
+ * namnlös-hinken.
+ *
+ * Vaktar URL-ingången: `?bokstav=xyz` (bokmärke, handredigerad adress, gammal
+ * länk) normaliseras till "inget filter" i stället för att tömma listan. Ett
+ * ogiltigt filter som ser ut som noll träffar är ett tystare fel än inget
+ * filter alls.
+ */
+export function arGiltigHink(varde: string | null | undefined): varde is string {
+  return varde === HINK_UTAN_NAMN || (typeof varde === 'string' && BOKSTAVSHINKAR.includes(varde));
+}
+
+/**
+ * Filtrera registret på EN hink. Inget (eller ogiltigt) val returnerar
+ * registret OFÖRÄNDRAT och med samma referens, exakt som
+ * `filtreraPersonregister` gör vid tom sökterm.
+ *
+ * AND-as med sökfiltret i `PersonsList`; ordningen mellan de två påverkar bara
+ * hur många poster det andra filtret behöver läsa, aldrig utfallet.
+ */
+export function filtreraPaBokstavshink(personer: readonly Person[], hink: string | null): Person[] {
+  if (!arGiltigHink(hink)) return personer as Person[];
+  return personer.filter((person) => personensBokstavshink(person) === hink);
+}

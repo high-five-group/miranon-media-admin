@@ -22,8 +22,13 @@
 import { expect, test } from '@playwright/test';
 import type { Person } from '../../src/domain/models/Person';
 import {
+  arGiltigHink,
   arNamnlosSentinel,
+  BOKSTAVSHINKAR,
+  filtreraPaBokstavshink,
   filtreraPersonregister,
+  HINK_UTAN_NAMN,
+  personensBokstavshink,
   personMatcharSokterm,
   personVisningsnamn,
   SENTINEL_NAMNLOS,
@@ -299,5 +304,157 @@ test.describe('personVisningsnamn — sorteringsnyckeln ÄR nyckeln raden visar'
   test('sentinel-strängen känns igen exakt, aldrig på delsträng', () => {
     expect(arNamnlosSentinel(bas({ namn: SENTINEL_NAMNLOS }))).toBe(true);
     expect(arNamnlosSentinel(bas({ namn: 'Ej tillgängligt just nu' }))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// BOKSTAVSHINKARNA (TASK-283.2, ADR-123 beslut 3)
+// ---------------------------------------------------------------------------
+//
+// Låser modulens TREDJE axel. De två andra är redan låsta ovan, och de tre
+// drar medvetet åt olika håll:
+//
+//   sortering  Å efter Z          `sorteraPersonregister`
+//   sökning    "asa" hittar Åsa   `personMatcharSokterm`
+//   hink       Å skilt från A     `personensBokstavshink`
+//
+// En framtida "förenkling" som lät hinken ärva någon av de andra två
+// collatorerna hade brutit exakt en av dem tyst. Den kan inte längre göra
+// det utan att den här sviten blir röd.
+
+test.describe('BOKSTAVSHINKAR — radens innehåll och ordning', () => {
+  test('29 hinkar: A till Z, sedan Å, Ä, Ö', () => {
+    expect(BOKSTAVSHINKAR).toHaveLength(29);
+    expect(BOKSTAVSHINKAR.slice(0, 26).join('')).toBe('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+    expect(BOKSTAVSHINKAR.slice(26)).toEqual(['Å', 'Ä', 'Ö']);
+  });
+
+  test('namnlös-hinkens värde kan aldrig kollidera med en bokstavshink', () => {
+    // Formen (gemener + bindestreck) är vald just för detta — den är också
+    // URL-värdet, så en kollision hade gjort `?bokstav=` tvetydig.
+    expect(BOKSTAVSHINKAR).not.toContain(HINK_UTAN_NAMN);
+    expect(HINK_UTAN_NAMN).toBe('utan-namn');
+  });
+});
+
+test.describe('personensBokstavshink — sentinelen, diakritiken och kanterna', () => {
+  test('FÄLLA 43/51: sentinelen hamnar i sin egen hink, ALDRIG i E', () => {
+    const namnlos = bas({ namn: SENTINEL_NAMNLOS, fornamn: null, efternamn: null });
+    // Strängen börjar bokstavligen på E. Det är hela fällan: ett naivt
+    // förstabokstavs-filter hade dragit med sig 186 av prods 559 poster in i
+    // E-hinken (ADR-123 § Kontext).
+    expect(SENTINEL_NAMNLOS.startsWith('E')).toBe(true);
+    expect(personensBokstavshink(namnlos)).toBe(HINK_UTAN_NAMN);
+    expect(personensBokstavshink(namnlos)).not.toBe('E');
+  });
+
+  test('en VERKLIG person på E får hinken E', () => {
+    expect(personensBokstavshink(bas({ namn: 'Emma Eklund' }))).toBe('E');
+  });
+
+  test('Å, Ä och Ö är EGNA hinkar — jämförelsen viker ingenting', () => {
+    expect(personensBokstavshink(bas({ namn: 'Åsa Ask' }))).toBe('Å');
+    expect(personensBokstavshink(bas({ namn: 'Ärla Älv' }))).toBe('Ä');
+    expect(personensBokstavshink(bas({ namn: 'Örjan Öman' }))).toBe('Ö');
+    // Motsatsen till sökningen, som sedan TASK-286.7 viker å mot a.
+    expect(personensBokstavshink(bas({ namn: 'Åsa Ask' }))).not.toBe('A');
+  });
+
+  test('gemen begynnelsebokstav hamnar i samma hink som versal', () => {
+    expect(personensBokstavshink(bas({ namn: 'åsa ask' }))).toBe('Å');
+    expect(personensBokstavshink(bas({ namn: 'bo berg' }))).toBe('B');
+  });
+
+  test('nyckeln är VISNINGSNAMNET — samma nyckel raden visar och sorteringen läser', () => {
+    // `namn` saknas: hinken måste läsa den sammansatta formen, annars pekar
+    // knappen på en annan bokstav än den raden visar.
+    expect(personensBokstavshink(bas({ namn: null, fornamn: 'Bo', efternamn: 'Berg' }))).toBe('B');
+  });
+
+  test('ett namn utanför de 29 får INGEN hink, i stället för en gissad granne', () => {
+    expect(personensBokstavshink(bas({ namn: '3M Sverige' }))).toBeNull();
+    expect(personensBokstavshink(bas({ namn: 'Ørjan Ødegård' }))).toBeNull();
+    expect(personensBokstavshink(bas({ namn: 'Émile Zola' }))).toBeNull();
+  });
+
+  test('UI-tomformen "Okänt namn" är INTE sentinelen och hinkas som ett vanligt namn', () => {
+    // Samma medvetet smala gräns som `arNamnlosSentinel` drar (se dess
+    // docblock): bara basens formelsträng räknas som namnlös.
+    const tom = bas({ namn: null, fornamn: null, efternamn: null });
+    expect(personVisningsnamn(tom)).toBe('Okänt namn');
+    expect(personensBokstavshink(tom)).toBe('O');
+  });
+});
+
+test.describe('arGiltigHink — vakten mot ett skräpvärde i URL:en', () => {
+  test('sant för de 29 bokstäverna och för namnlös-hinken', () => {
+    for (const bokstav of BOKSTAVSHINKAR) expect(arGiltigHink(bokstav)).toBe(true);
+    expect(arGiltigHink(HINK_UTAN_NAMN)).toBe(true);
+  });
+
+  test('falskt för allt annat — null, tomt, gemener, flera tecken', () => {
+    expect(arGiltigHink(null)).toBe(false);
+    expect(arGiltigHink(undefined)).toBe(false);
+    expect(arGiltigHink('')).toBe(false);
+    expect(arGiltigHink('k')).toBe(false);
+    expect(arGiltigHink('KA')).toBe(false);
+    expect(arGiltigHink('xyz')).toBe(false);
+  });
+});
+
+test.describe('filtreraPaBokstavshink — hela registret', () => {
+  const REGISTER = [
+    bas({ id: 'rec1', namn: 'Anna Andersson' }),
+    bas({ id: 'rec2', namn: 'Åsa Ask' }),
+    bas({ id: 'rec3', namn: 'Emma Eklund' }),
+    bas({ id: 'rec4', namn: SENTINEL_NAMNLOS }),
+    bas({ id: 'rec5', namn: SENTINEL_NAMNLOS }),
+    bas({ id: 'rec6', namn: 'Kalle Karlsson' }),
+  ];
+
+  test('inget val returnerar registret OFÖRÄNDRAT (samma referens)', () => {
+    expect(filtreraPaBokstavshink(REGISTER, null)).toBe(REGISTER);
+  });
+
+  test('ett OGILTIGT val returnerar också hela registret, aldrig en tom lista', () => {
+    // Ett filter som ser ut som noll träffar är ett tystare fel än inget
+    // filter alls — det är skälet till att vakten sitter i läsningen.
+    expect(filtreraPaBokstavshink(REGISTER, 'xyz')).toBe(REGISTER);
+  });
+
+  test('E ger bara den verkliga E-posten, inte de två sentinel-posterna', () => {
+    expect(filtreraPaBokstavshink(REGISTER, 'E').map((p) => p.id)).toEqual(['rec3']);
+  });
+
+  test('namnlös-hinken ger BÅDA sentinel-posterna, ordningen bevarad', () => {
+    expect(filtreraPaBokstavshink(REGISTER, HINK_UTAN_NAMN).map((p) => p.id)).toEqual([
+      'rec4',
+      'rec5',
+    ]);
+  });
+
+  test('A drar inte in Å, och Å drar inte in A', () => {
+    expect(filtreraPaBokstavshink(REGISTER, 'A').map((p) => p.id)).toEqual(['rec1']);
+    expect(filtreraPaBokstavshink(REGISTER, 'Å').map((p) => p.id)).toEqual(['rec2']);
+  });
+
+  test('en tom hink ger en tom array, inte undefined/krasch', () => {
+    expect(filtreraPaBokstavshink(REGISTER, 'Q')).toEqual([]);
+  });
+
+  test('muterar ALDRIG indatan', () => {
+    const kopia = [...REGISTER];
+    filtreraPaBokstavshink(REGISTER, 'K');
+    expect(REGISTER).toEqual(kopia);
+  });
+
+  test('AND-ning med sökfiltret är ordningsoberoende — samma mängd åt båda hållen', () => {
+    // Komponenten kör hink FÖRE fritext. Skulle någon kasta om ordningen är
+    // det en prestandafråga, aldrig en korrekthetsfråga, och den garantin är
+    // värd att låsa.
+    const hinkForst = filtreraPersonregister(filtreraPaBokstavshink(REGISTER, 'E'), 'ekl');
+    const sokForst = filtreraPaBokstavshink(filtreraPersonregister(REGISTER, 'ekl'), 'E');
+    expect(hinkForst.map((p) => p.id)).toEqual(['rec3']);
+    expect(sokForst.map((p) => p.id)).toEqual(hinkForst.map((p) => p.id));
   });
 });
