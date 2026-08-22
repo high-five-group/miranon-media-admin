@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 110 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen; pausad tre gånger, historik) —
+**Session 110 ⏸️ PAUSAD (fjärde gången, 2026-08-22, `lifecycle: paused`) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
 VAKTEN LÅST I `ADR-122`, FAMILJEN BYGGD 3/4.** Egen worktree `s110-kalenderlank-driften` (S109
 äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
@@ -110,7 +110,35 @@ TREDJE session (`03bc2d12-…`, PID 28332 levande) — orörd, arbetet fortsätt
 i egen worktree. `#1722` kvar DRAFT+CLEAN som avsett. **NÄSTA: de två
 blockerande Marcus-besluten i ordning — `T168` (datum-axelns årsblindhet,
 rör LANDAD kod) sedan `T167` (vägen som får vakten live) — inget bygge
-startar före dem.**
+startar före dem.** **DEL 7 (2026-08-22): BÅDA BESLUTEN FATTADE OCH
+VERKSTÄLLDA — VAKTEN ÄR LIVE I STAGING.** `T167`: verktygsgränsen mätt i
+TRE former (skapa · uppdatera med bevarad key · placering) — samtliga
+`readOnlyNodeType`, ingen skrivning skedde; Marcus klistrade in i UI:t
+(väg 1) och A1 står nu `deployed`. Två UI-fällor bokförda: input-variabler
+VISAS i Properties men SKAPAS bakom `Edit code`, och namnet är
+skiftlägeskänsligt (`anmID` ≠ `anmId`). `T168`: rättad, RIVEN, rättad igen
+— första formens `REGEX_EXTRACT` gav **`#ERROR!` på VARJE rad med
+Event-länk och tomt `Datum`** (Airtables `AND()` kortsluter inte), mätt på
+befintlig staging-data; ersatt med kollaps-i-normaliseringen som inte kan
+fela. Verifieringen missade det för att ingen av de fyra fixturerna hade
+tomt `Datum`. **`TASK-284.2` STÄNGD** (`#1722` `e885fb6b`, stängning
+`#1758` `70c5ac81`, post-merge grön per jobb) efter SEX fall ände-till-ände
+i staging: rätt uppgifter länkas trots alla tre formateringsklasserna · fel
+år fälls · fel ort fälls · okänd nyckel fälls · express passerar med
+skriptet helt tyst · nyckel utan prefix normaliseras. AC 8 är STRUKTURELLT
+bevisat (A3 avstängd; dess trigger kräver `Event isNotEmpty`). Mätgräns:
+bara A1 är på i staging → passet mäter A1 ISOLERAT, ej kedjan A1→A2→A3.
+**ROTFIXEN PÅ MIRANON.SE ÄR GJORD** (Marcus, 2026-08-21) → `284.6`:s
+förutsättning uppfylld. `T169` mintad (CLS-flake på `main`, S109:s yta).
+QA-planen justerad mot mätning: **steg 8 hoppas över** (tio av köns tolv
+rader är andra sviters permanenta fixturer; tomma läget redan
+acceptance-testat) och **steg 6 läses mot `ZZ-TASK-284.1 Fixtur OK`**, ej
+Event-59 (prod-rader). **NÄSTA: `284.5` QA-vandringen (Marcus) — tyngdpunkt
+steg 7/9/10 → `284.4` DoD #6 → `284.6` prod i låst ordning fälten →
+kontrollsvep → A1 SIST.** Prod ORÖRD hela passet; mandatet givet men ej
+använt. Numrering vid paus 4 — **serierna rörde sig UNDER passet**
+(`T170` + `task-288` togs av andra sessioner): ADR **124** · tråd **T171** ·
+kort **289** · L512 + 62 fragment · fälla **53** · session **111**.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
 pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA
