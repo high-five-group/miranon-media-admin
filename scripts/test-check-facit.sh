@@ -14,7 +14,7 @@
 # scripts/lib/facit-validera.mjs:s "godkand"-schemavalidering (ADR-104 §
 # Beslut 2, TASK-167 — schemat bytte från bar sträng till objektet
 # { av, datum, citat, sha, undantag? }).
-# 28 testfall, TVÅSIDIGA: varje invariant prövas både i sitt gröna och sitt
+# 32 testfall, TVÅSIDIGA: varje invariant prövas både i sitt gröna och sitt
 # röda läge. En grind som bara bevisats grön är inte bevisad — den kan vara
 # blind (L43, ADR-039 § lesson→grind).
 #
@@ -49,6 +49,14 @@
 #   T26 sidofil med fel namnform                           → 1
 #   T27 sidofil utan kanonisk rubrik                       → 1
 #   T28 prosa-sidofil utan hashar (precedentformen, grön)  → 0
+#   T29 stämplat facit, källan RIVEN efter stämpeln
+#       (invariant b:s rivnings-klausul, grön)             → 0
+#   T30 OGODKÄNT facit, SAMMA rivning av SAMMA fil
+#       (klausulens gräns, röd)                            → 1
+#   T31 stämplat facit, källan fanns ALDRIG i stämpel-
+#       trädet (trasig källhänvisning, röd)                → 1
+#   T32 stämplat facit, stämpel-commiten går inte att slå
+#       upp lokalt (fail-closed, röd)                      → 1
 #
 # T18/T19 ÄR PARET SOM BÄR HELA INVARIANT (d): samma ändring av samma
 # referens, en gång stämplat (röd) och en gång ogodkänt (grön). Utan BÅDA
@@ -56,8 +64,17 @@
 # rätt sida av gränsen. Gränsen är den S109 fick dra med omdöme två gånger
 # på ett dygn (#1715 stoppad, #1730 armerad).
 #
+# T29/T30 ÄR SAMMA PAR FÖR RIVNINGS-KLAUSULEN: samma borttagna fil, en gång
+# stämplad (grön — rivningen är ADR-103 B2 steg 4) och en gång ogodkänd (röd
+# — rivning före stämpeln är exakt det ADR-102 B3 förbjuder). T31 är det som
+# skiljer klausulen från en form-regel: en sökväg som ALDRIG funnits fäller,
+# också när den ser ut som prototyp-substrat. T32 bevisar fail-closed —
+# grinden gissar aldrig åt det tillåtande hållet när den inte kan titta efter.
+#
 # Test-isolering: skapar /tmp/s93-test-facit/ med bilage-fixtur + src-fixtur.
-# Återställer (rm -rf) via trap. INGEN ändring av real-repo.
+# T29–T32 gör dessutom TEST_DIR till ett eget litet git-repo (klausulen
+# härleder ur historiken och kan inte prövas utan en). Återställer (rm -rf)
+# via trap. INGEN ändring av real-repo.
 #
 # Användning: bash scripts/test-check-facit.sh
 # Exit 0 om alla testfall passerar. Exit 1 om någon failar.
@@ -492,6 +509,107 @@ skriv_amendering "AMENDERING-2026-08-17-mallnot-riven.md" \
 
 **Yta:** yta. Formen i övrigt orörd."
 check_exit "T28 prosa-sidofil utan hashar (precedentformen)" 0 "$(run_exit)"
+
+# ── Fixtur för invariant (b):s RIVNINGS-KLAUSUL ---------------------------
+# Klausulen (ADR-102 § Updates 2026-08-22) härleder "fanns vid stämpeln,
+# borta nu" ur GIT — inte ur sökvägens form. Fixturen måste därför vara ett
+# riktigt git-repo. Det skapas INUTI TEST_DIR och rivs med resten via trap;
+# det verkliga repot rörs aldrig.
+#
+# --no-verify + gpgsign=false + explicit identitet: commiten ska lyckas på en
+# maskin med hooks, signering eller saknad global git-identitet. Ett testfall
+# som är grönt lokalt och rött i CI bevisar ingenting.
+RIVBAR="src/komponenter/Prototyp.tsx"
+
+skapa_git_fixtur() {
+    printf 'export const p = 1;\n' > "${TEST_DIR}/${RIVBAR}"
+    (
+        cd "${TEST_DIR}" || exit 1
+        git init -q .
+        git add -A
+        git -c user.email=fixtur@example.invalid \
+            -c user.name=Fixtur \
+            -c commit.gpgsign=false \
+            commit -q --no-verify -m "fixtur: laget vid stampeln"
+    ) >/dev/null 2>&1
+}
+
+fixtur_sha() {
+    ( cd "${TEST_DIR}" && git rev-parse HEAD )
+}
+
+# godkand_med_sha <sha> — samma schema som GODKAND_OK, men med en sha som
+# FAKTISKT går att slå upp i fixtur-repot.
+godkand_med_sha() {
+    printf '{"av":"marcus","datum":"2026-08-10","citat":"Jag ar nojd. Las som facit.","sha":"%s"}' "$1"
+}
+
+# write_manifest_kallor <godkand-json> <extra-kalla-sokvag>
+# Ytan bär TVÅ kallor: den bestående (Yta.tsx, som också bär prototyp-
+# markören så invariant c inte förorenar utfallet) och den som prövas.
+write_manifest_kallor() {
+    local godkand=$1 extra=$2
+    cat > "${TEST_DIR}/${BILAGE}/facit.json" <<JSON
+{
+  "prototyp": "s93-test",
+  "last": "2026-08-06",
+  "lasning": "Lås som facit.",
+  "godkand": ${godkand},
+  "ytor": [
+    {
+      "yta": "yta",
+      "bilder": ["facit-yta.png"],
+      "kallor": ["src/komponenter/Yta.tsx", "${extra}"]
+    }
+  ]
+}
+JSON
+}
+
+# --- T29: stämplat facit, källan riven efter stämpeln (GRÖN) --------------
+# Det verkliga fallet, mätt 2026-08-22 mot PR #1769: TASK-285.11 rev
+# MessageBoxPrototyp.tsx och AppErrorPrototyp.tsx enligt ADR-103 B2 steg 4,
+# och grinden fällde på att skivan gjorde exakt det ADR-102 föreskriver.
+setup
+skapa_git_fixtur
+write_manifest_kallor "$(godkand_med_sha "$(fixtur_sha)")" "${RIVBAR}"
+rm -f "${TEST_DIR}/${RIVBAR}"
+check_exit "T29 stämplat facit, källan riven efter stämpeln" 0 "$(run_exit)"
+check_utdata "T29 bokföring" "riven efter stämpeln"
+
+# --- T30: OGODKÄNT facit, SAMMA rivning av SAMMA fil (RÖD) ----------------
+# Klausulens gräns. Före stämpeln finns ingen stämpel att förankra frånvaron
+# i, och rivning är dessutom exakt det ADR-102 B3 förbjuder. Skulle detta
+# fall bli grönt vore klausulen inte en precisering av invariant (b) utan en
+# rivning av den.
+setup
+skapa_git_fixtur
+write_manifest_kallor "null" "${RIVBAR}"
+rm -f "${TEST_DIR}/${RIVBAR}"
+check_exit "T30 ogodkänt facit, samma rivning" 1 "$(run_exit)"
+check_utdata "T30 skäl" "pekar på källan .* som inte finns"
+
+# --- T31: källan fanns ALDRIG i stämpel-trädet (RÖD) ----------------------
+# Det som skiljer klausulen från en form-regel. En regel som accepterade
+# sökvägens UTSEENDE ("allt under /dev/") hade släppt igenom en fil som
+# aldrig funnits — en felstavning blir då ett permanent, osynligt hål.
+# Klausulen vet i stället att filen FANNS, och fäller när den inte gjorde det.
+setup
+skapa_git_fixtur
+write_manifest_kallor "$(godkand_med_sha "$(fixtur_sha)")" "src/komponenter/AldrigFunnits.tsx"
+check_exit "T31 stämplat facit, källan fanns aldrig" 1 "$(run_exit)"
+check_utdata "T31 skäl" "fanns INTE HELLER i stämpel-commiten"
+
+# --- T32: stämpel-commiten går inte att slå upp lokalt (RÖD) --------------
+# Fail-closed. GODKAND_OK bär en påhittad sha; klausulen kan då inte prövas,
+# och invariant (b) fäller oförändrat. Grinden påstår aldrig "verifierat att
+# filen fanns" när den inte kunde titta efter (ADR-083).
+setup
+skapa_git_fixtur
+write_manifest_kallor "${GODKAND_OK}" "${RIVBAR}"
+rm -f "${TEST_DIR}/${RIVBAR}"
+check_exit "T32 stämpel-commiten går inte att slå upp" 1 "$(run_exit)"
+check_utdata "T32 skäl" "går inte att slå upp i det lokala git-objektlagret"
 
 echo
 echo "=== Resultat: ${PASSED} passerade, ${FAILED} failade ==="
