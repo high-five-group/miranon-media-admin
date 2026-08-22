@@ -7,16 +7,24 @@
 // node äger JSON (scripts/lib/*.mjs, jfr staging-preflight.mjs).
 //
 // Anrop:  node scripts/lib/facit-validera.mjs <manifest-path> <bild-glob>
-// Utdata: en rad per fynd på stdout, prefix "FEL: ". Tyst vid grönt.
-// Exit:   0 = manifestet är konsistent, 1 = minst ett fynd, 3 = anropsfel.
+// Utdata: en rad per fynd på stdout, prefix "FEL: " (fäller) eller "NOT: "
+//         (rivnings-klausulens accepterade frånvaron — aldrig fällande, men
+//         aldrig tyst; check-facit.sh skriver ut dem). Tyst vid grönt utan
+//         accepterade frånvaron.
+// Exit:   0 = manifestet är konsistent, 1 = minst ett FEL, 3 = anropsfel.
 //
 // Källa: docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md
 //        R4 (facit förväxlingsbart) + R5 (täckningens luckor osynliga)
 //        + § Updates 2026-08-22 (T157: amenderings-mekaniken — ytans
-//        "referenser" och amenderings-SIDOFILERNA nedan).
+//        "referenser" och amenderings-SIDOFILERNA nedan)
+//        + § Updates 2026-08-22 (rivna prototyp-källor: invariant b:s
+//        rivnings-klausul nedan).
+//        docs/decisions/ADR-103-promoveringsformen-...md B2 steg 4
+//        (rivningen efter stämpeln — det klausulen finns för).
 //        docs/decisions/ADR-104-godkannande-mekaniken-kanalseparation.md
 //        § Beslut 2 (schemat "godkand" bär sedan TASK-167).
 
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -30,6 +38,14 @@ if (!manifestPath || !bildGlob) {
 
 const fynd = [];
 const rapportera = (rad) => fynd.push(`FEL: ${rad}`);
+
+// Andra utdata-klassen: en frånvaro klausulen ACCEPTERAT. Den fäller aldrig,
+// men den är heller aldrig tyst — check-facit.sh räknar upp varje post vid
+// varje körning. Samma R5-disciplin som "bilder"-nyckeln och invariant (d):s
+// täckningsrad bär: en grind som tiger om vad den släppt igenom gör
+// undantaget oskiljbart från en täckning den inte har.
+const noter = [];
+const notera = (rad) => noter.push(`NOT: ${rad}`);
 
 // Glob-mönstret är avsiktligt enkelt (prefix + '*') — samma uttrycksnivå som
 // policy-filens övriga värden. En full glob-motor vore komplexitet utan
@@ -184,6 +200,91 @@ if (!Array.isArray(manifest.ytor) || manifest.ytor.length === 0) {
   process.exit(1);
 }
 
+// --- INVARIANT (b):s RIVNINGS-KLAUSUL -------------------------------------
+// ADR-102 § Updates 2026-08-22 (rivna prototyp-källor).
+//
+// En "kalla" som saknas på disk är normalt ett brutet lås: den som läser
+// manifestet hittar ingen kod. Men ADR-103 B2 steg 4 FÖRESKRIVER att
+// prototyp-substratet rivs efter Marcus stämpel, och manifestet kan inte
+// följa med — ADR-104-hooken fryser det i samma ögonblick det stämplas.
+// Utan denna klausul fäller grinden alltså på att rivnings-skivan gjorde
+// exakt det ADR-102 föreskriver. Mätt 2026-08-22 mot PR #1769: exit 1, två
+// FEL, båda för filer TASK-285.11 rev enligt B2 steg 4.
+//
+// KLAUSULEN HÄRLEDER UTFALLET UR GIT, INTE UR SÖKVÄGENS FORM. Fanns filen i
+// stämpel-commitens träd ("godkand".sha) och är borta nu, är frånvaron en
+// riven källa. Fanns den inte heller där, är sökvägen trasig och grinden
+// fäller som förut. Skillnaden bär hela regeln: en form-regel ("allt under
+// /dev/") hade accepterat en sökväg som ALDRIG funnits, och hade dessutom
+// krävt en handhållen mönsterlista — de 22 prototyp-källorna i repot bär TRE
+// olika sökvägsformer (src/components/dev/…, src/components/segment/prototyp/…,
+// src/components/events/detail/*Prototyp.tsx), mätt 2026-08-22.
+//
+// GÄLLER ENDAST STÄMPLADE MANIFEST. För "godkand": null är rivning förbjuden
+// (invariant c) och det finns ingen stämpel att förankra frånvaron i — samma
+// gräns invariant (d) drar, av samma skäl.
+//
+// FAIL-CLOSED: går stämpel-commiten inte att slå upp lokalt kan klausulen
+// inte prövas, och då fäller invariant (b) oförändrat. Grinden påstår aldrig
+// "verifierat att filen fanns" när den inte kunde titta efter (ADR-083).
+const gitProv = (args) => {
+  try {
+    execFileSync('git', args, { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const stampelCache = new Map();
+const stampelGarAttSlaUpp = (sha) => {
+  if (!stampelCache.has(sha)) {
+    stampelCache.set(sha, gitProv(['rev-parse', '--verify', '--quiet', `${sha}^{commit}`]));
+  }
+  return stampelCache.get(sha);
+};
+
+const fannsVidStampeln = (sha, kalla) => gitProv(['cat-file', '-e', `${sha}:${kalla}`]);
+
+const provaSaknadKalla = (namn, kalla) => {
+  const sha = manifest.godkand?.sha;
+
+  if (typeof sha !== 'string' || sha.trim() === '') {
+    rapportera(`${manifestPath}: ytan "${namn}" pekar på källan "${kalla}" som inte finns.`);
+    return;
+  }
+
+  if (!stampelGarAttSlaUpp(sha)) {
+    rapportera(
+      [
+        `${manifestPath}: ytan "${namn}" pekar på källan "${kalla}" som inte finns, och`,
+        `  stämpel-commiten ${sha} går inte att slå upp i det lokala git-objektlagret.`,
+        '  Rivnings-klausulen (ADR-102 § Updates 2026-08-22) kan därför inte prövas, och',
+        '  invariant (b) fäller oförändrat — grinden gissar aldrig åt det tillåtande hållet.',
+        '  Kör grinden i en FULL klon: CI checkar ut med fetch-depth: 0 (ADR-054), vaktat',
+        '  av scripts/check-fetch-depth-invariant.sh.',
+      ].join('\n'),
+    );
+    return;
+  }
+
+  if (fannsVidStampeln(sha, kalla)) {
+    notera(`${manifestPath} · ytan "${namn}" · ${kalla} — riven efter stämpeln ${sha.slice(0, 8)}`);
+    return;
+  }
+
+  rapportera(
+    [
+      `${manifestPath}: ytan "${namn}" pekar på källan "${kalla}" som inte finns — och den`,
+      `  fanns INTE HELLER i stämpel-commiten ${sha}.`,
+      '  Alltså inte en riven prototyp-källa (ADR-103 B2 steg 4) utan en trasig',
+      '  källhänvisning: fel sökväg, eller en fil som aldrig funnits. Rivnings-klausulen',
+      '  (ADR-102 § Updates 2026-08-22) släpper bara igenom en frånvaro som stämpeln',
+      '  faktiskt kan intyga — den vet att filen FANNS, den gissar inte på sökvägens form.',
+    ].join('\n'),
+  );
+};
+
 // --- Varje yta ------------------------------------------------------------
 const deklareradeBilder = new Set();
 const SHA256 = /^[0-9a-f]{64}$/;
@@ -221,9 +322,8 @@ for (const [index, yta] of manifest.ytor.entries()) {
     );
   } else {
     for (const kalla of yta.kallor) {
-      if (!existsSync(kalla)) {
-        rapportera(`${manifestPath}: ytan "${namn}" pekar på källan "${kalla}" som inte finns.`);
-      }
+      if (existsSync(kalla)) continue;
+      provaSaknadKalla(namn, kalla);
     }
   }
 
@@ -321,9 +421,11 @@ for (const fil of readdirSync(katalog)) {
   }
 }
 
-if (fynd.length > 0) {
-  process.stdout.write(`${fynd.join('\n')}\n`);
-  process.exit(1);
+// FEL fäller, NOT gör det inte — men båda skrivs ut. Exitkoden styrs enbart
+// av FEL-raderna: en accepterad frånvaro är ingen brist, den är bokföring.
+const utdata = [...fynd, ...noter];
+if (utdata.length > 0) {
+  process.stdout.write(`${utdata.join('\n')}\n`);
 }
 
-process.exit(0);
+process.exit(fynd.length > 0 ? 1 : 0);

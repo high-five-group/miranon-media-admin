@@ -483,3 +483,197 @@ nya facit-låsningar skapas med `godkand: null`, där hooken släpper igenom, oc
 - `T157` stängs av denna post. Grannfallet i `TASK-247`:s slutrapport (ett
   låst-men-EJ-stämplat facit som amenderas mitt i granskningsfönstret) är klass
   (a) och därmed också besvarat: fri ändring, ingen sidofil.
+
+### 2026-08-22 — Rivna prototyp-källor: invariant (b):s rivnings-klausul
+
+Beslutstexten B1–B5 står orörd, och posten ovan (`T157`) likaså. Denna post
+PRECISERAR en grind: den säger när en källsökväg som saknas på disk är ett
+brott mot invariant (b), och när den är `ADR-103` B2 steg 4 utfört enligt
+plan. Marcus order som utlöste den, verbatim 2026-08-22:
+
+> *"B, det låter rimligt. Viktigt att våra mekanismer funkar bra."*
+
+**Varför en amendering och inte en ny ADR.** Samma prövning som posten ovan
+gjorde, med samma utfall. ADR-baren (`~/.claude/CLAUDE.md` § ADR-BAR) håller
+inte ens självständigt här: regeln är ingen ny avvägning utan en FÖLJD av att
+`ADR-102` B3 och `ADR-103` B2 steg 4 båda är mekaniserade — den säger bara vad
+grinden ska göra när de två sanningarna möts i samma manifest. Och hemvisten
+avgörs av sanningshierarkin (`ADR-100` §1): "vad facit är, när det får ändras
+och när dess källor får försvinna" är EN kunskapsklass, och den bor här.
+`ADR-124` förblir alltså omintad — nästa lediga nummer är oförbrukat, precis
+som posten ovan slog fast.
+
+**Vad som var trasigt, mätt.** `scripts/check-facit.sh` mot grenen
+`feat/task-285-11-rivning-notis-prototypsubstrat` (PR `#1769`), kört
+2026-08-22:
+
+```text
+exit=1
+FEL: …/s109-meddelandefamiljen-konvergens/facit.json: ytan "meddelanderutan"
+     pekar på källan "src/components/dev/notis-prototyp/MessageBoxPrototyp.tsx"
+     som inte finns.
+FEL: … ytan "appfel-sidan" pekar på källan
+     "src/components/dev/notis-prototyp/AppErrorPrototyp.tsx" som inte finns.
+```
+
+`TASK-285.11` rev de två filerna — vilket ÄR `ADR-103` B2 steg 4, det
+föreskrivna slutsteget efter Marcus stämpel. Grinden fällde alltså på att
+skivan gjorde sitt jobb. Manifestet kunde inte följa med: `ADR-104`-hooken
+fryser varje stämplat manifest i sin helhet (§ A3 ovan).
+
+Felet är dessutom SYSTEMISKT, inte en engångshändelse. Mätt över samtliga
+tolv manifest 2026-08-22:
+
+| Manifest | Prototyp-källor i `kallor` | Läge |
+|---|---|---|
+| `s102-hem-konvergens` | 6 | stämplat |
+| `s102-svep-konvergens` | 6 | stämplat |
+| `s104-segment-divergens` | 7 | stämplat |
+| `s109-meddelandefamiljen-konvergens` | 2 | stämplat |
+| `s93-hallplats-prototyp` | 1 | stämplat |
+
+22 prototyp-källor i fem stämplade manifest. `TASK-285.11` var den FÖRSTA
+rivning som nådde steget; fyra familjer stod på tur mot samma vägg.
+
+#### R1. Regeln
+
+**I ett STÄMPLAT manifest är en `kallor`-sökväg som saknas på disk inte
+automatiskt ett brott.** Grinden avgör saken mot git:
+
+- Fanns filen i stämpel-commitens träd (`godkand.sha`) och är borta nu ⇒
+  frånvaron är en **riven källa**. Accepteras — och räknas upp i grindens
+  utdata vid varje körning.
+- Fanns den **inte heller där** ⇒ trasig källhänvisning. Grinden fäller,
+  precis som förut.
+- Går stämpel-commiten **inte att slå upp** lokalt ⇒ klausulen kan inte
+  prövas, och invariant (b) fäller oförändrat. **Fail-closed:** grinden
+  påstår aldrig "verifierat att filen fanns" när den inte kunde titta efter
+  (`ADR-083`).
+
+**Klausulen gäller ENDAST stämplade manifest.** För `godkand: null` är rivning
+förbjuden (invariant c), och det finns ingen stämpel att förankra frånvaron i
+— samma gräns invariant (d) drar, av samma skäl.
+
+Ingen ny config-nyckel, ingen ny manifest-nyckel, ingen lista att underhålla:
+allt regeln behöver står redan i varje stämplat manifest.
+
+#### R2. Options-rymden, och varför just git-härledningen
+
+Fyra former prövades. Skiljelinjen mellan dem är EN fråga: **vet regeln att
+filen fanns, eller gissar den på sökvägens utseende?**
+
+| Form | Vet att filen fanns? | Underhåll | Utfall |
+|---|---|---|---|
+| **Sökvägs-undantag** — `src/components/dev/…` m.fl. undantas när manifestet är stämplat | **Nej.** En sökväg som ALDRIG funnits accepteras, felstavning inkluderad | Handhållen mönsterlista | Avvisad |
+| **Schema-skillnad** — rivbara källor märks i manifestet | Ja | Ingen | **Utesluten av ramen** |
+| **Policy-lista** i `.facit-policy.conf` | Nej | En post per rivning, för alltid | Avvisad |
+| **Git-härledning** — fanns vid `godkand.sha`, borta nu | **Ja** | Ingen | **VALD** |
+
+**Sökvägs-undantaget avvisades på två grunder.** Den första är den svaga
+garantin ovan. Den andra är mätt: de 22 prototyp-källorna bär **tre** olika
+sökvägsformer — `src/components/dev/…`, `src/components/segment/prototyp/…`
+och `src/components/events/detail/DeltagareHallplatsPrototyp.tsx`. En regel
+byggd på "allt under `/dev/`" hade täckt 14 av 22 och lämnat segment- och
+hållplatsfamiljerna kvar i väggen. Mönsterlistan måste alltså underhållas —
+och en handhållen lista över "vad som räknas som prototyp" är exakt den klass
+repot redan mätt gå fel i BÅDA riktningar: döda markörer som fäller av fel
+skäl (`TASK-192`) och saknade markörer som inte skyddar något (`TASK-287`).
+När en sådan lista glider fäller den dessutom **stängt**, alltså blockerar en
+legitim rivning — dagens bugg, igen.
+
+**Schema-skillnaden är den rätta formen för FRAMTIDA manifest, men löser inte
+detta problem.** Att märka rivbara källor i manifestet kräver att de fem
+stämplade manifesten ändras, och de är frusna av `ADR-104`-hooken — fem
+Marcus-moment. Den är därför utesluten här. Deklareras en sådan skillnad
+någon gång hör den hemma vid facit-LÅSNINGEN, medan `godkand` ännu är null,
+som `referenser` och prototyp-markörerna (§ A7 ovan). Den frågan är inte
+avgjord av denna post.
+
+**Policy-listan avvisades hårdast.** Den bär sökvägs-undantagets svaga garanti
+OCH ett underhåll som växer utan tak: en permanent förteckning över döda
+sökvägar, med en post per rivning, som ingen någonsin städar.
+
+**Git-härledningen förutsätter historik, och den förutsättningen är mätt.**
+Samtliga elva unika `godkand.sha` i repots tolv stämplade manifest går att slå
+upp som commits (2026-08-22). CI checkar ut med `fetch-depth: 0` (`ADR-054`),
+vaktat av `scripts/check-fetch-depth-invariant.sh`, och `check-facit.sh` kör i
+`ci.yml`s `lint`-jobb som använder just den checkouten.
+
+#### R3. Vad klausulen uttryckligen INTE fångar
+
+`ADR-083` förbjuder prosa som utlovar en täckning ingen mekanism håller. Fem
+gränser står därför utskrivna, och grinden skriver ut den första vid varje
+körning.
+
+1. **Den skiljer inte rivet prototyp-substrat från en skarp fil som tagits
+   bort eller döpts om efter stämpeln.** Båda läser som "fanns vid stämpeln,
+   borta nu". Det är delvis avsiktligt — rename-vägen ÄR en legitim rivning,
+   se R5 — men det betyder att en oavsiktlig borttagning av skarp kod passerar
+   klausulen. Motmedlet är att den aldrig är tyst: `check-facit.sh` räknar upp
+   varje accepterad frånvaro med manifest, yta och sökväg vid varje körning.
+   Domen är diff-granskningens, inte grindens.
+2. **Den prövar inte om rivningen var AUKTORISERAD** utöver att stämpeln
+   finns. Vad stämpeln täcker är `ADR-104`:s domän.
+3. **Den ser inte om FORMEN överlevde rivningen.** `ADR-103` B2 steg 4 säger
+   att det som rivs är villkor och växlar, aldrig formen. Ingen grind kan se
+   det; `ariaSnapshot`-paret (`ADR-103` B4) och Marcus öga är vad som finns.
+4. **En `kallor`-sökväg som skrivits om EFTER stämpeln är inte förankrad i
+   stämpel-trädet.** Mätt, en instans av 61 källor: `s103-checkin-konvergens`
+   pekar på `src/components/events/EventCheckin.tsx`, som vid stämpeln
+   `c7db8b16` hette `CheckinPrototyp.tsx` — sökvägen byttes i rivnings-commiten
+   `570c5951` genom att kringgå `ADR-104`-hooken (bokfört öppet i det
+   commit-meddelandet; grundbuggen är `TASK-194`). Filen finns i dag, så
+   klausulen berörs inte — men försvinner den någon gång fäller grinden, och
+   det är rätt utfall: bokföringen är då inte längre förankrad i något Marcus
+   attesterat.
+5. **Den gäller inte ogodkända manifest.** Där är rivning förbjuden
+   (invariant c), och en saknad källa fäller som förut.
+
+#### R4. Beviset
+
+`scripts/test-check-facit.sh` bär **32 fall, 54 assertions** (exit 0 mätt
+2026-08-22). Fyra är nya. De tre siffrorna ersätter § A5 och § A7 ovan, som
+bokförde 28 fall och 46 assertions — de talen var sanna när den posten skrevs,
+tidigare samma dag, och rörs inte: ett mätvärde är ett protokoll, inte en
+variabel.
+
+| Fall | Läge | Förväntat | Mätt |
+|---|---|---|---|
+| **T29** | stämplat facit, källan riven efter stämpeln | **släpper** | exit 0, bokföringen utskriven |
+| **T30** | **ogodkänt** facit, SAMMA rivning av SAMMA fil | **fäller** | exit 1, rätt skäl |
+| **T31** | stämplat facit, källan fanns ALDRIG i stämpel-trädet | **fäller** | exit 1, rätt skäl |
+| T32 | stämplat facit, stämpel-commiten går inte att slå upp | fäller | exit 1, fail-closed-skälet |
+
+**T29/T30 är paret som bär klausulen** — samma borttagna fil, en gång stämplad
+och en gång ogodkänd. Utan båda bevisar sviten bara att grinden kan säga ja,
+inte att den säger ja på rätt sida av gränsen. **T31 är det som skiljer
+klausulen från en form-regel**: en sökväg som aldrig funnits fäller, också när
+den ser ut som prototyp-substrat.
+
+**Att fallen BITER är mätt med två mutationer**, inte antaget:
+
+| Mutation i `facit-validera.mjs` | Utfall |
+|---|---|
+| `fannsVidStampeln` returnerar alltid `true` — blind acceptans, vad en form-regel gör | **T31 röd**, 2 assertions faller |
+| Klausulen borttagen — beteendet före denna post | **T29 röd**, 4 assertions faller |
+
+**Det verkliga fallet, mätt:** `check-facit.sh` mot `#1769`-grenens träd gick
+från exit 1 till **exit 0**, med båda rivna källorna namngivna i utdatan.
+Grinden är fortsatt grön mot `main` (12 manifest, 27 ytor, 0 ogodkända).
+
+#### R5. Konsekvenser
+
+- `scripts/lib/facit-validera.mjs` bär klausulen och en andra utdata-klass
+  (`NOT:`) för accepterade frånvaron; `scripts/check-facit.sh` räknar upp dem
+  i BÅDA utfallen — även när en annan invariant fällde.
+- **De fyra kvarvarande rivningarna är avblockerade utan att något manifest
+  behöver röras** — hem, svep, segment och hållplats. Samtliga 22
+  prototyp-källor fanns i sin respektive stämpel-commit (mätt 2026-08-22; 60
+  av 61 källor totalt, undantaget är § R3 punkt 4).
+- **Rivnings-skivan behöver inte längre röra `kallor` efter en rivning**, och
+  därmed inte heller kringgå `ADR-104`-hooken som `570c5951` gjorde. Det
+  avgör INTE `TASK-194`:s öde — kortet bär mer än detta fall — men det tar
+  bort `kallor`-trycket ur det.
+- `.facit-policy.conf` får ingen ny nyckel. Att regeln INTE är config-driven
+  är dess poäng: den härleder allt ur manifestet, så det finns inget
+  projekt-specifikt värde som kan glida isär.

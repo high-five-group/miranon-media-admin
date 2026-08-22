@@ -18,6 +18,16 @@
 #       bild finns, varje facit-namngiven fil är deklarerad, varje yta
 #       deklarerar sina bilder (tom lista = deklarerad frånvaro) och sina
 #       källsökvägar. Delegeras till scripts/lib/facit-validera.mjs.
+#       RIVNINGS-KLAUSULEN (ADR-102 § Updates 2026-08-22): i ett STÄMPLAT
+#       manifest är en källa som saknas på disk inte automatiskt ett brott.
+#       ADR-103 B2 steg 4 föreskriver att prototyp-substratet rivs efter
+#       stämpeln, och manifestet kan inte följa med (ADR-104-hooken fryser
+#       det). Klausulen skiljer de två fallen ur GIT, inte ur sökvägens form:
+#       fanns filen i stämpel-commitens träd ("godkand".sha) och är borta nu,
+#       är frånvaron en riven källa och accepteras — men räknas ALLTID upp i
+#       slutraden nedan. Fanns den inte heller där, fäller grinden som förut.
+#       Bakgrunden är mätt: PR #1769 (TASK-285.11) föll 2026-08-22 på två
+#       källor den rev enligt B2 steg 4, och fyra familjer till stod på tur.
 #   (c) Så länge ett manifest har "godkand": null får prototyp-markörerna
 #       inte försvinna ur koden. ADR-102 B3: prototyp-kod rivs ALDRIG före
 #       Marcus godkännande. Utan denna spärr är blockeringen av rivnings-
@@ -101,6 +111,7 @@ YTA_ANTAL=0
 REFERENS_ANTAL=0
 ODEKLARERADE_YTOR=0
 OGODKANDA=()
+RIVNA_KALLOR=()
 
 # Frånvarande bilage-rot är GRÖNT: ett repo utan prototyp-pass har inget
 # facit att skydda. Grinden är tillgänglig, inte obligatorisk.
@@ -142,13 +153,31 @@ for katalog in "${FACIT_BILAGE_ROT}"/*/; do
     MANIFEST_ANTAL=$((MANIFEST_ANTAL + 1))
 
     # --- (b) Strukturell konsistens --------------------------------------
+    # Validerarens utdata bär TVÅ klasser: "FEL: …" fäller, "NOT: …" gör det
+    # inte. NOT-raderna är rivnings-klausulens accepterade frånvaron — de
+    # hålls utanför ❌-blocket (som ska visa bara det som fäller) och skrivs i
+    # stället ut samlat i slutraden, vid VARJE körning. Aldrig tyst: samma
+    # R5-disciplin som invariant (d):s täckningsrad bär.
     validering=""
-    validering=$(node "${VALIDERARE}" "${manifest}" "${FACIT_BILD_GLOB}" 2>&1) || {
+    valkod=0
+    validering=$(node "${VALIDERARE}" "${manifest}" "${FACIT_BILD_GLOB}" 2>&1) || valkod=$?
+
+    fel_rader=""
+    while IFS= read -r rad; do
+        case "${rad}" in
+            'NOT: '*) RIVNA_KALLOR+=("${rad#NOT: }") ;;
+            '')       : ;;
+            *)        fel_rader+="${rad}"$'\n' ;;
+        esac
+    done <<< "${validering}"
+
+    if [[ "${valkod}" -ne 0 ]]; then
         echo "❌ ${manifest} — manifestet är inte konsistent med disken:"
-        # shellcheck disable=SC2001  # sed på multi-line är klarast här
-        echo "${validering}" | sed 's/^/     /'
+        while IFS= read -r rad; do
+            echo "     ${rad}"
+        done <<< "${fel_rader%$'\n'}"
         FAILED=1
-    }
+    fi
 
     # Räkna ytor för slutraden. node -p ger 0 vid trasig JSON, vilket redan
     # rapporterats ovan — räkningen är kosmetisk och får aldrig fälla.
@@ -213,7 +242,24 @@ if [[ "${#OGODKANDA[@]}" -gt 0 && "${#FACIT_PROTO_MARKORER[@]}" -gt 0 ]]; then
     fi
 fi
 
+# Rivnings-klausulens bokföring. Skrivs i BÅDA utfallen — även när en annan
+# invariant fällde: en accepterad frånvaro som bara syns i det gröna fallet
+# vore osynlig precis när diffen är som mest värd att läsa.
+skriv_rivna() {
+    [[ "${#RIVNA_KALLOR[@]}" -gt 0 ]] || return 0
+    echo "   Rivna källor (invariant b:s rivnings-klausul, ADR-102 § Updates 2026-08-22):"
+    echo "   accepterade därför att de FANNS i stämpel-commitens träd och är borta nu."
+    echo "   Klausulen skiljer INTE rivet prototyp-substrat (ADR-103 B2 steg 4) från en"
+    echo "   skarp fil som tagits bort eller döpts om efter stämpeln — den skillnaden är"
+    echo "   diff-granskningens, inte grindens."
+    local rivet
+    for rivet in "${RIVNA_KALLOR[@]}"; do
+        echo "     ${rivet}"
+    done
+}
+
 if [[ "${FAILED}" -ne 0 ]]; then
+    skriv_rivna
     exit 1
 fi
 
@@ -227,6 +273,8 @@ if [[ "${MARKOR_KONTROLLERAD}" -eq 1 ]]; then
 else
     echo "✅ Facit-manifest OK: ${MANIFEST_ANTAL} manifest, ${YTA_ANTAL} ytor deklarerade, ${#OGODKANDA[@]} ogodkända."
 fi
+
+skriv_rivna
 
 # Invariant (d):s täckning skrivs ALLTID ut, aldrig bara när den är hel.
 # En grind som tiger om sin egen lucka gör frånvaron oskiljbar från
