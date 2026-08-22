@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 18:38'
+updated_date: '2026-08-22 21:50'
 labels: []
 dependencies: []
 ordinal: 539000
@@ -148,3 +149,21 @@ Samsyn kvitterad av Marcus 2026-08-22 efter grillning. Skarv-valet delegerat til
 - [ ] #8 Dev-växeln riven före arbetsenhetens stängning; formen kvar (ADR-103 B2 steg 4 — villkor och växlar, aldrig form)
 - [ ] #9 check-facit grön; anmälningssidan bär ett eget stämplat manifest vid stängning
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+OMFATTNINGEN LÅST 2026-08-22 (TASK-299.2 AC #3 — EN källa för efterföljande skivor).
+
+Två axlar, båda avgjorda:
+
+1. VILKA YTOR: full omfattning. Den delade sidramen bärs av alla ytor, inklusive de två som i dag bär den andra dialekten. Följd: deras facit amenderas med Marcus citat och deras visuella baslinjer görs om — arbetet hör till TASK-299.6.
+
+2. HUR MYCKET SIDRAMEN ÄGER: bara sidkromet (chevron + kortyta). Rubriken lever kvar i varje sida. Den rubrik-ägande grenen av primitives/SidRam.tsx byggs INTE in i någon skarp yta — den har noll konsumenter i dag och demonstreras enbart på /dev/primitives.
+
+Marcus ordagrant: "jag tycker vi ska köra full omfattning" (ytaxeln) och "Jag står vid dina rekommendationer på alla punkter" på frågan "Bara sidkromet eller rubrik-blocket också?" (ägandeskapsaxeln).
+
+ATT DET VAR TVÅ AXLAR var inte synligt i TASK-299.2:s tre alternativ, som blandar ihop dem. En skiva som bara läser ordet "full omfattning" skulle fortfarande gissa på ägandeskapet — därför står båda halvorna utskrivna här.
+
+ADR-124 (delade presentationsformer) mintas i TASK-299.6, inte tidigare: TASK-299.1 deferrade den öppet med motivet att breddan var olåst. Nu är den låst, så förutsättningen finns.
+<!-- SECTION:NOTES:END -->
