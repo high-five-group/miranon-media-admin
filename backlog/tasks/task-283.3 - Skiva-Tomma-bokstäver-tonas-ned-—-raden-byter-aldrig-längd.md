@@ -4,7 +4,7 @@ title: 'Skiva: Tomma bokstäver tonas ned — raden byter aldrig längd'
 status: To Do
 assignee: []
 created_date: '2026-08-21 08:53'
-updated_date: '2026-08-21 11:34'
+updated_date: '2026-08-22 13:47'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,12 +31,12 @@ Täcker användarberättelser: 6 (och skärper 17)
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Bokstäver som ingen i registret börjar på renderas nedtonade och går inte att aktivera
-- [ ] #2 Nedtoningen binds till HELA registret, aldrig till aktuell sökterm — raden flimrar inte när Lotta skriver
-- [ ] #3 Raden byter aldrig längd vid något tillståndsbyte; mätt i renderad yta, inte antaget
-- [ ] #4 Skärmläsare får veta att en nedtonad knapp är otillgänglig — den försvinner inte ur trädet
-- [ ] #5 Fixturen bär minst en bokstav utan personer, annars bevisar sviten ingenting
-- [ ] #6 Personlistans rad- och listform är fortsatt identisk med facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan
+- [x] #1 Bokstäver som ingen i registret börjar på renderas nedtonade och går inte att aktivera
+- [x] #2 Nedtoningen binds till HELA registret, aldrig till aktuell sökterm — raden flimrar inte när Lotta skriver
+- [x] #3 Raden byter aldrig längd vid något tillståndsbyte; mätt i renderad yta, inte antaget
+- [x] #4 Skärmläsare får veta att en nedtonad knapp är otillgänglig — den försvinner inte ur trädet
+- [x] #5 Fixturen bär minst en bokstav utan personer, annars bevisar sviten ingenting
+- [x] #6 Personlistans rad- och listform är fortsatt identisk med facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan
 <!-- AC:END -->
 
 ## Definition of Done

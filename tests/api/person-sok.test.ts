@@ -25,6 +25,7 @@ import {
   arGiltigHink,
   arNamnlosSentinel,
   BOKSTAVSHINKAR,
+  bokstavshinkarMedPersoner,
   filtreraPaBokstavshink,
   filtreraPersonregister,
   HINK_UTAN_NAMN,
@@ -456,5 +457,110 @@ test.describe('filtreraPaBokstavshink — hela registret', () => {
     const sokForst = filtreraPaBokstavshink(filtreraPersonregister(REGISTER, 'ekl'), 'E');
     expect(hinkForst.map((p) => p.id)).toEqual(['rec3']);
     expect(sokForst.map((p) => p.id)).toEqual(hinkForst.map((p) => p.id));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// NEDTONINGENS MÄNGD (TASK-283.3)
+// ---------------------------------------------------------------------------
+//
+// `bokstavshinkarMedPersoner` svarar på EN fråga: vilka av radens 30 hinkar
+// har minst en person? Raden tonar ned resten. Två egenskaper bär hela
+// skivan, och båda låses nedan:
+//
+//   AC #1/#2   mängden räknas ur HELA registret, aldrig ur en sökt delmängd
+//   invariant  aktiv knapp  <=>  ett tryck ger minst en rad
+//
+// Den andra är inte en trevlig extra: den är skälet till att mängden byggs
+// med SAMMA `personensBokstavshink` som filtret. En egen förstabokstavs-
+// jämförelse hade varit den uppenbara genvägen, och den hade gjort
+// sentinelen (som bokstavligen börjar på E) till en tänd E-knapp som ger
+// noll rader vid tryck.
+
+test.describe('bokstavshinkarMedPersoner — vilka bokstäver som INTE tonas ned', () => {
+  const REGISTER = [
+    bas({ id: 'rec1', namn: 'Anna Andersson' }),
+    bas({ id: 'rec2', namn: 'Åsa Ask' }),
+    bas({ id: 'rec3', namn: 'Emma Eklund' }),
+    bas({ id: 'rec4', namn: SENTINEL_NAMNLOS }),
+    bas({ id: 'rec5', namn: SENTINEL_NAMNLOS }),
+    bas({ id: 'rec6', namn: 'Kalle Karlsson' }),
+  ];
+
+  test('exakt de hinkar registret faktiskt fyller, varken fler eller färre', () => {
+    const hinkar = bokstavshinkarMedPersoner(REGISTER);
+    expect([...hinkar].sort()).toEqual([HINK_UTAN_NAMN, 'A', 'E', 'K', 'Å'].sort());
+  });
+
+  test('INVARIANTEN: en hink är tänd om och endast om ett tryck ger minst en rad', () => {
+    // Korsprövningen som gör raden ärlig mot ögat. Den körs över ALLA 30
+    // hinkarna, så en framtida glidning mellan nedtonings-räkningen och
+    // filtret fälls här oavsett vilken bokstav den råkar drabba.
+    const hinkar = bokstavshinkarMedPersoner(REGISTER);
+    for (const hink of [...BOKSTAVSHINKAR, HINK_UTAN_NAMN]) {
+      const traffar = filtreraPaBokstavshink(REGISTER, hink).length;
+      expect(
+        hinkar.has(hink),
+        `hinken ${hink}: tänd=${hinkar.has(hink)} men filtret ger ${traffar} rader`,
+      ).toBe(traffar > 0);
+    }
+  });
+
+  test('FÄLLA 43/51: sentinelen tänder utan-namn, ALDRIG E', () => {
+    // Ett register där sentinelen är den ENDA post vars namn börjar på E.
+    // Räknades nedtoningen med en naiv förstabokstavs-jämförelse hade
+    // E-knappen stått tänd och gett noll rader vid tryck.
+    const bara = [bas({ id: 'rec1', namn: SENTINEL_NAMNLOS })];
+    const hinkar = bokstavshinkarMedPersoner(bara);
+    expect(hinkar.has(HINK_UTAN_NAMN)).toBe(true);
+    expect(hinkar.has('E')).toBe(false);
+    expect(filtreraPaBokstavshink(bara, 'E')).toEqual([]);
+  });
+
+  test('Å tänder Å och lämnar A släckt — hinken viker ingenting', () => {
+    const hinkar = bokstavshinkarMedPersoner([bas({ namn: 'Åsa Ask' })]);
+    expect(hinkar.has('Å')).toBe(true);
+    expect(hinkar.has('A')).toBe(false);
+  });
+
+  test('gemen begynnelsebokstav tänder samma hink som versal', () => {
+    expect(bokstavshinkarMedPersoner([bas({ namn: 'åsa ask' })]).has('Å')).toBe(true);
+    expect(bokstavshinkarMedPersoner([bas({ namn: 'bo berg' })]).has('B')).toBe(true);
+  });
+
+  test('ett namn utanför de 29 tänder INGEN hink, i stället för en gissad granne', () => {
+    const hinkar = bokstavshinkarMedPersoner([
+      bas({ id: 'rec1', namn: '3M Sverige' }),
+      bas({ id: 'rec2', namn: 'Ørjan Ødegård' }),
+    ]);
+    expect(hinkar.size).toBe(0);
+    // ... och posterna är fortfarande synliga när inget filter är valt.
+    expect(filtreraPaBokstavshink([bas({ namn: '3M Sverige' })], null)).toHaveLength(1);
+  });
+
+  test('ett TOMT register tänder ingenting — känt tomt är inte samma sak som okänt', () => {
+    // Okänt (registret har inte laddats) hanteras i komponenten, som skickar
+    // `null` i stället för en mängd. Här är registret KÄNT och tomt, och då
+    // är noll tända hinkar rätt svar.
+    expect(bokstavshinkarMedPersoner([]).size).toBe(0);
+  });
+
+  test('AC #2: en SÖKT delmängd ger en ANNAN mängd — därför skickas hela registret', () => {
+    // Testet finns för att göra felet synligt i stället för subtilt. Skulle
+    // någon någonsin mata funktionen med `filteredPersons` i stället för
+    // `register`, är detta skillnaden Lotta hade sett: raden slocknar medan
+    // hon skriver.
+    const helaRegistret = bokstavshinkarMedPersoner(REGISTER);
+    const underSokning = bokstavshinkarMedPersoner(filtreraPersonregister(REGISTER, 'ann'));
+
+    expect(helaRegistret.size).toBe(5);
+    expect(underSokning.size).toBe(1);
+    expect([...underSokning]).toEqual(['A']);
+  });
+
+  test('muterar ALDRIG indatan — React Querys cache passerar orörd', () => {
+    const kopia = [...REGISTER];
+    bokstavshinkarMedPersoner(REGISTER);
+    expect(REGISTER).toEqual(kopia);
   });
 });

@@ -361,3 +361,53 @@ export function filtreraPaBokstavshink(personer: readonly Person[], hink: string
   if (!arGiltigHink(hink)) return personer as Person[];
   return personer.filter((person) => personensBokstavshink(person) === hink);
 }
+
+/**
+ * Vilka hinkar som faktiskt HAR minst en person (TASK-283.3, AC #1/#2).
+ *
+ * ═══ INDATAN ÄR HELA REGISTRET — DET ÄR HELA POÄNGEN ═══
+ *
+ * Kortets enda icke förhandlingsbara rad: nedtoningen binds till HELA
+ * registret, ALDRIG till aktuell sökterm. Bunden till söktermen hade nästan
+ * varenda knapp slocknat medan Lotta skriver "ann", och raden hade flimrat vid
+ * varje tangenttryck. Funktionen tar därför emot registret som helhet och vet
+ * ingenting om vare sig sökfältet eller ett valt bokstavsfilter — den kan
+ * strukturellt inte råka bli söktermsberoende, eftersom söktermen aldrig når
+ * in hit.
+ *
+ * `PersonsList` vaktar samma sak från andra hållet: anropet läser `register`
+ * (frågans egen data), inte `bokstavsfiltrerat` eller `filteredPersons`.
+ *
+ * ═══ SAMMA HINKFUNKTION SOM FILTRET — INVARIANTEN FÖLJER AV KONSTRUKTIONEN ═══
+ *
+ * Mängden byggs med `personensBokstavshink`, exakt den funktion
+ * `filtreraPaBokstavshink` filtrerar med. Följden är den egenskap raden lovar
+ * ögat: **en knapp är aktiv om och endast om ett tryck på den ger minst en
+ * rad.** Hade nedtoningen räknats med en egen förstabokstavs-jämförelse (den
+ * uppenbara genvägen) kunde de två glidit isär — och den första som glidit
+ * hade varit sentinelen, som bokstavligen börjar på E men aldrig hör hemma i
+ * E-hinken (fälla 43/51). Här kan det inte hända: en post som `filtreraPa...`
+ * lägger i `utan-namn` tänder `utan-namn`, aldrig `E`.
+ *
+ * Invarianten är låst i BÅDA riktningar av `tests/api/person-sok.test.ts` —
+ * för varje hink i raden korsprövas "aktiv" mot `filtreraPaBokstavshink`s
+ * faktiska utfall på samma register.
+ *
+ * ═══ EN PERSON UTAN HINK TÄNDER INGEN KNAPP ═══
+ *
+ * `personensBokstavshink` returnerar `null` för ett namn utanför de 29
+ * (en siffra, `É`, `Ø`). Sådana poster hoppas över: de är synliga när inget
+ * filter är valt och nås inte av någon knapp, så att tända en granne hade
+ * varit en gissning om vilken. Samma ärliga utfall som filtret redan ger.
+ *
+ * Returnerar en `Set` och inte en array: raden slår upp 30 gånger per
+ * rendering, och `has` är O(1) där `includes` hade varit O(n).
+ */
+export function bokstavshinkarMedPersoner(personer: readonly Person[]): ReadonlySet<string> {
+  const hinkar = new Set<string>();
+  for (const person of personer) {
+    const hink = personensBokstavshink(person);
+    if (hink !== null) hinkar.add(hink);
+  }
+  return hinkar;
+}

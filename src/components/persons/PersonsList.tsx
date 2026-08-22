@@ -73,6 +73,7 @@ import type { Person } from '@/domain/models/Person';
 import {
   arGiltigHink,
   BOKSTAVSHINKAR,
+  bokstavshinkarMedPersoner,
   filtreraPaBokstavshink,
   filtreraPersonregister,
   HINK_UTAN_NAMN,
@@ -326,12 +327,21 @@ function Pill({
  * varje mål självt är 28 px och WCAG 2.5.8 därmed är uppfyllt utan att
  * spacing-undantaget behöver åberopas.
  *
- * Höjden är konstant oavsett tillstånd: antalet knappar ändras aldrig (skiva
- * 3 tonar ned tomma bokstäver, den tar aldrig bort dem), och kanten är
- * reserverad på ALLA knappar med `border-transparent` — bara färgen byts när
- * en knapp trycks. Det är husets stående breddlås-teknik (samma som
+ * Höjden är konstant oavsett tillstånd: antalet knappar ändras aldrig, och
+ * kanten är reserverad på ALLA knappar med `border-transparent` — bara färgen
+ * byts när en knapp trycks. Det är husets stående breddlås-teknik (samma som
  * kortytans `border border-transparent contrast-more:border-border-strong`),
  * och det är vad `ADR-078`:s layouthopp-förbud kräver av en kontrollrad.
+ *
+ * [TASK-283.3] Nedtoningen av tomma bokstäver ÄNDRAR INGET AV DETTA, och det
+ * är kravet (AC #3): en tom bokstav tonas ned, den tas aldrig bort. Skillnaden
+ * mellan aktiv och nedtonad ligger uteslutande i `color` och
+ * `background-color` — samma `h-7 min-w-7`, samma `border`, samma `px-1.5`,
+ * samma `font-medium text-small`. Raden kan därför inte byta längd vid ett
+ * tillståndsbyte, av samma slag av skäl som kanten inte kan: geometrin är
+ * skriven en gång och delas av alla tre lägena. Mätt i renderad yta över de
+ * fem bredderna nedan, i fyra tillstånd vardera — se
+ * `tests/acceptance/persons-list.acceptance.test.ts` § AC #3.
  *
  * `forced-colors`-paret är inte pynt: under Windows högkontrastläge kastas
  * författarens bakgrundsfärger, så ett tryckt tillstånd som BARA bar
@@ -341,29 +351,68 @@ function Pill({
 function Bokstavsrad({
   vald,
   onValj,
+  hinkarMedPersoner,
 }: {
   vald: string | null;
   onValj: (hink: string | null) => void;
+  /**
+   * Hinkarna som har minst en person i HELA registret, eller `null` så länge
+   * registret inte är känt. Se `arNedtonad` nedan för varför `null` inte är
+   * detsamma som en tom mängd.
+   */
+  hinkarMedPersoner: ReadonlySet<string> | null;
 }) {
+  /**
+   * [TASK-283.3] Nedtonad = registret ÄR känt, hinken är tom, och knappen är
+   * inte den valda. Tre villkor, och alla tre bär vikt:
+   *
+   * 1. `hinkarMedPersoner !== null` — OKÄNT ÄR INTE TOMT. Under laddning och i
+   *    felläget vet vi ingenting om registret, och att tona ned allt hade dels
+   *    målat 30 grå knappar som sedan tänds (ett flimmer i raden, precis vad
+   *    kortet förbjuder), dels gjort raden oanvändbar i just det ögonblick
+   *    Lotta kan vilja förvälja en bokstav. Nedtoning kräver POSITIV kunskap
+   *    om tomhet. Ett tomt register (noll personer) är däremot känt tomt, och
+   *    då tonas allt ned med rätta.
+   *
+   * 2. `!hinkarMedPersoner.has(value)` — mängden är räknad ur HELA registret
+   *    (`person-sok.ts`), aldrig ur den sökta eller bokstavsfiltrerade
+   *    delmängden. Kortets enda icke förhandlingsbara rad.
+   *
+   * 3. `!vald` — DEN VALDA HINKEN TONAS ALDRIG NED, och det är en funktionell
+   *    spärr, inte kosmetik. Ett andra tryck på den valda knappen är den ENDA
+   *    vägen att släppa filtret (TASK-283.2 AC #2; någon separat rensa-knapp
+   *    finns medvetet inte). Ett `?bokstav=Ö` ur ett bokmärke — eller en Ö-post
+   *    som försvinner ur registret medan filtret står kvar — hade annars gett
+   *    en tom lista med den enda utvägen inert, och Lotta hade suttit fast med
+   *    adressfältet som enda reträtt.
+   */
+  const arNedtonad = (hink: string, denna: boolean) =>
+    hinkarMedPersoner !== null && !hinkarMedPersoner.has(hink) && !denna;
+
   return (
     <Toolbar
       aria-label="Filtrera på första bokstaven"
       className="flex flex-wrap gap-0.5"
       data-testid="personer-bokstavsrad"
     >
-      {BOKSTAVSHINKAR.map((bokstav) => (
-        <BokstavsKnapp
-          key={bokstav}
-          etikett={`Visa personer som börjar på ${bokstav}`}
-          onValj={onValj}
-          value={bokstav}
-          vald={vald === bokstav}
-        >
-          {bokstav}
-        </BokstavsKnapp>
-      ))}
+      {BOKSTAVSHINKAR.map((bokstav) => {
+        const denna = vald === bokstav;
+        return (
+          <BokstavsKnapp
+            key={bokstav}
+            etikett={`Visa personer som börjar på ${bokstav}`}
+            nedtonad={arNedtonad(bokstav, denna)}
+            onValj={onValj}
+            value={bokstav}
+            vald={denna}
+          >
+            {bokstav}
+          </BokstavsKnapp>
+        );
+      })}
       <BokstavsKnapp
         etikett="Visa personer utan namn"
+        nedtonad={arNedtonad(HINK_UTAN_NAMN, vald === HINK_UTAN_NAMN)}
         onValj={onValj}
         value={HINK_UTAN_NAMN}
         vald={vald === HINK_UTAN_NAMN}
@@ -380,23 +429,150 @@ function Bokstavsrad({
  * `h-7 min-w-7` = 28x28 px, fyra pixlar över WCAG 2.5.8 (AA) golvet på
  * 24x24 — marginalen är avsiktlig, så en framtida typsnitts- eller
  * radhöjdsjustering inte tyst äter upp golvet. Talet är LÅST AV EN MÄTNING i
- * renderad yta, aldrig av att klassen står här (DoD #6).
+ * renderad yta, aldrig av att klassen står här (DoD #6). Nedtoningen rör
+ * ENBART färg: box, kant, padding och typsnitt är byte för byte desamma i
+ * alla tre lägena, vilket är vad som gör AC #3 sann genom konstruktion.
  *
  * NATIV `<button>`, inte RAC:s `Button`: husets `aria-pressed`-idiom
  * (`Deltagare.tsx`) är nativt, och `Toolbar`s fokushantering bryr sig bara om
  * att barnen är fokuserbara. Att lägga en abstraktion emellan hade kostat
  * utan att ge något.
+ *
+ * ═══ `aria-disabled`, INTE NATIVE `disabled` (TASK-283.3 AC #4) ═══
+ *
+ * **Kravet avgör INTE valet, och det är värt att säga rakt ut.** AC #4 vill
+ * att knappen ligger kvar i tillgänglighetsträdet, märkt otillgänglig — och
+ * det gör den i BÅDA formerna. WAI-ARIA 1.2 § 7.1 räknar uttömmande upp vad
+ * som utesluts ur trädet (`display:none`, `visibility:hidden`, `hidden`,
+ * `role="none|presentation"`); varken `disabled` eller `aria-disabled` står
+ * där. HTML-AAM 1.0 § 3.6.42 mappar dessutom native `disabled` till
+ * `aria-disabled="true"` för samtliga plattforms-API:er, så exponeringen är
+ * IDENTISK. Mätt i en verklig a11y-snapshot: båda syns som
+ * `button "…" [disabled]`.
+ *
+ * Skillnaden ligger enbart i FOKUS:
+ *
+ *   native `disabled`   ej fokuserbar · osynlig för radens piltangenter
+ *   `aria-disabled`     fokuserbar · vi kopplar bort handlingen själva
+ *
+ * **APG ger ingen regel här utan ett VILLKORAT val**, och citatet är värt att
+ * ha rätt (Keyboard Interface Practices § Focusability of disabled controls):
+ * *"Allowing keyboard users to skip disabled elements usually reduces the
+ * number of key presses… However, screen reader users are far less likely to
+ * discover disabled elements that are not focusable"*. Toolbar-mönstret gör
+ * `disabled` till default (*"Typically, disabled elements are not focusable"*)
+ * med undantaget *"in circumstances where discoverability of a function is
+ * crucial"*. APG bär t.o.m. ett toolbar-exempel åt VARDERA hållet: Up/Down
+ * använder native `disabled` (*"Given the presence of the 'Down' button,
+ * discoverability of the 'Up' button is not a concern"*), medan
+ * Copy/Cut/Paste använder `aria-disabled` (*"The discoverability of these
+ * features relies on their focusability"*).
+ *
+ * Kriteriet är alltså: kan användaren SLUTA SIG TILL att kontrollen finns?
+ * Tre skäl lägger denna rad på discoverability-sidan:
+ *
+ * 1. **Det nedtonade tillståndet BÄR INFORMATION här** — det är inte bara
+ *    frånvaron av en handling. "Ingen i registret heter något på Ä" är
+ *    precis det Lotta vill veta. Med native `disabled` blir svaret en TYSTNAD
+ *    mitt i alfabetet, och att höra att P följs av R kräver att man håller
+ *    hela alfabetet i huvudet för att märka att Q fattas. `aria-disabled` gör
+ *    samma sak till ett positivt besked: "Q, växlingsknapp, nedtonad".
+ *    APG:s Up/Down-fall är motsatsen: DÄR bär det avstängda läget ingen
+ *    information användaren saknar.
+ *
+ * 2. **Piltangenterna är enda vägen in till en enskild bokstav.** Verifierat
+ *    i `react-aria` 3.51.0:s källa: `useToolbar.mjs:36` skapar en
+ *    `createFocusManager(ref)` (ingen roving tabindex — RAC avviker där från
+ *    APG:s toolbar-mönster), piltangenterna kör `focusNext`/`focusPrevious`,
+ *    och `Tab` (rad 46-53) flyttar till första/sista barnet och lämnar sedan
+ *    över till webbläsaren — alltså UT ur raden. Fokus-filtret är
+ *    `isFocusable`, vars selektor bär `button:not([disabled])` och nämner
+ *    aldrig `aria-disabled` (`utils/isFocusable.mjs:20,32`). Native
+ *    `disabled` hade därför gjort de tomma bokstäverna helt onåbara med
+ *    tangentbord, inte bara snabbare att passera.
+ *
+ * 3. **Husets idiom, redan uttryckligen beslutat.** `Button.tsx` § isLoading
+ *    avvisar `isDisabled` med samma motivering: *"Klick spärras i stället via
+ *    `aria-disabled` (fokus bevaras — knappen tas ALDRIG bort ur
+ *    tabordningen…)"*. `BulkAtgardsknapp.tsx` bär formen rakt. Det är också
+ *    Adobes egen lösning på exakt denna kravbild i RAC:s `Button`
+ *    `isPending`-läge: `aria-disabled="true"` plus bortkopplade handlers,
+ *    aldrig native `disabled`.
+ *
+ * **Priset betalas, det avfärdas inte.** En fokuserbar kontroll är INTE
+ * undantagen WCAG:s kontrastkrav så som en inaktiv är (1.4.3 § Incidental).
+ * React Spectrums egen maintainer namnger det som den svåra biten: *"It can
+ * be hard to design a control that both looks disabled and meets contrast
+ * requirements"* (`adobe/react-spectrum#3662`). Det är hela skälet till att
+ * nedtoningen nedan använder en TEXTROLL och inte `opacity` — se nästa
+ * avsnitt. Kontrasten är mätt, inte antagen.
+ *
+ * Spärren mot handling ligger därför i `onClick` (tidig retur), inte i ett
+ * attribut. Tangentbordet behöver ingen egen spärr: Enter och blanksteg på en
+ * `<button>` går genom samma `click`-event.
+ *
+ * ═══ NEDTONINGEN ÄR EN TEXTROLL PLUS ETT SLÄCKT CHIP — ALDRIG `opacity` ═══
+ *
+ * Bärande kanal är FÄRGEN, ur den befintliga semantiska rollen
+ * `--mm-text-muted` (`text-text-muted`) — ingen ny token, ingen hårdkodad
+ * färg. Rollvalet är dessutom bundet underifrån: nästa steg ljusare i
+ * paletten (`--p-neutral-400`, #898989) ger 3,50:1 mot vit och underskrider
+ * AA-golvet på 4,5:1, vilket en FOKUSERBAR kontroll inte får göra. Det finns
+ * alltså exakt en semantisk textroll som både är dämpad och tillåten här.
+ *
+ * Stödjande kanal: chipet släcks (`bg-transparent` mot den aktivas
+ * `bg-bg-muted`). Det är MÄTT en svag skillnad — chipet är 1,09:1 mot den
+ * vita sidbakgrunden, alltså en mycket ljus platta, inte en tydlig ram — så
+ * den bär inte nedtoningen ensam och påstås inte göra det. Den finns för att
+ * skillnaden ska ha mer än en form: färgsteget mellan de två textrollerna är
+ * 1,48:1, och tillsammans med den försvunna plattan läser raden som "de här
+ * går att trycka på, de här gör det inte".
+ *
+ * Husets ANDRA dämpnings-idiom, `data-[disabled]:opacity-50` (`Button.tsx`,
+ * `RadioGroup.tsx`, `ToggleButtonGroup.tsx`), är medvetet INTE använt här:
+ * en opacitets-slöja sänker kontrasten på allt den täcker och kan inte tas
+ * tillbaka under `prefers-contrast: more` utan att nedtoningen samtidigt
+ * släcks. En textroll kan bytas mot en starkare roll och behålla båda
+ * egenskaperna — vilket är exakt vad `contrast-more:text-text-secondary`
+ * gör.
+ *
+ * `forced-colors:text-[GrayText]` är samma systemfärgs-idiom som det tryckta
+ * lägets `Highlight`/`HighlightText` på raden ovan: under Windows
+ * högkontrastläge kastas författarens färger, och `GrayText` är den
+ * kanoniska vägen att uttrycka "otillgänglig" där.
+ *
+ * ═══ `prefers-contrast: more` LYFTER BÅDA SIDOR, INTE BARA DEN ENA ═══
+ *
+ * Första försöket lyfte bara den nedtonade texten till `text-text-secondary`
+ * — och kollapsade den därmed in i den AKTIVA knappens färg. Kontrastkravet
+ * blev uppfyllt samtidigt som nedtoningen slutade finnas: exakt den sortens
+ * "fix" som ser rätt ut i en kontrastmätning och är fel i ögat. Fångat av en
+ * MÄTNING, inte av läsning (båda blev `rgb(82, 81, 81)`).
+ *
+ * Därför lyfts BÅDA rollerna ett steg, så avståndet består:
+ *
+ *   läge                    nedtonad          aktiv (ovald)
+ *   normalt                 text-muted        text-secondary
+ *   prefers-contrast: more  text-secondary    text
+ *
+ * Att den aktiva knappen får `contrast-more:text-text` är alltså inte en
+ * fristående putsning utan det som gör nedtoningen möjlig i det läget. Båda
+ * kvoterna mäts i renderad yta av
+ * `tests/acceptance/persons-list.acceptance.test.ts`, som också asserterar
+ * att de två färgerna aldrig blir samma.
  */
 function BokstavsKnapp({
   value,
   etikett,
   vald,
+  nedtonad,
   onValj,
   children,
 }: {
   value: string;
   etikett: string;
   vald: boolean;
+  nedtonad: boolean;
   onValj: (hink: string | null) => void;
   children: string;
 }) {
@@ -405,12 +581,21 @@ function BokstavsKnapp({
       type="button"
       aria-label={etikett}
       aria-pressed={vald}
+      // Skrivs ut även som "false": attributet finns då på alla 30 knapparna,
+      // så en regression kan fällas på VÄRDET i stället för på närvaron.
+      aria-disabled={nedtonad}
       // Andra trycket släpper filtret (AC #2) — samma knapp, inget extra mål.
-      onClick={() => onValj(vald ? null : value)}
+      // Spärren ligger HÄR, inte i ett `disabled`-attribut: se docblocken.
+      onClick={() => {
+        if (nedtonad) return;
+        onValj(vald ? null : value);
+      }}
       className={`flex h-7 min-w-7 shrink-0 items-center justify-center rounded border px-1.5 font-medium text-small motion-safe:transition-colors ${
         vald
           ? 'border-primary bg-primary-tint text-text forced-colors:bg-[Highlight] forced-colors:text-[HighlightText]'
-          : 'border-transparent bg-bg-muted text-text-secondary hover:bg-bg-emphasized contrast-more:border-border-strong'
+          : nedtonad
+            ? 'cursor-not-allowed border-transparent bg-transparent text-text-muted contrast-more:text-text-secondary forced-colors:text-[GrayText]'
+            : 'border-transparent bg-bg-muted text-text-secondary hover:bg-bg-emphasized contrast-more:border-border-strong contrast-more:text-text'
       }`}
     >
       {children}
@@ -537,11 +722,31 @@ export function PersonsList() {
     [bokstavsfiltrerat, deferredSearchTerm],
   );
 
-  // Renderas i ALLA tre grenarna (laddläge / fel / lista). Raden beror inte på
-  // datan — alla knappar är aktiva i denna skiva — så att hålla den utanför
-  // laddläget hade fått listan att hoppa nedåt när registret landar, vilket är
-  // exakt vad `ADR-078`:s layouthopp-förbud förbjuder.
-  const bokstavsrad = <Bokstavsrad onValj={setBokstavParam} vald={bokstav} />;
+  // [TASK-283.3] NEDTONINGENS MÄNGD — den enda beräkning i denna komponent som
+  // medvetet läser `register` och inte någon av de filtrerade arrayerna.
+  //
+  // DET ÄR KORTETS ICKE FÖRHANDLINGSBARA REGEL (AC #2): nedtoningen binds till
+  // HELA registret, aldrig till aktuell sökterm. Läste den `filteredPersons`
+  // hade nästan varenda knapp slocknat medan Lotta skriver "ann", och raden
+  // hade flimrat vid varje tangenttryck. Beroendelistan är därför `[register]`
+  // ensamt — söktermen kan strukturellt inte påverka utfallet, eftersom den
+  // aldrig läses här.
+  //
+  // `undefined` (laddar / fel) ger `null`, INTE en tom mängd: okänt är inte
+  // tomt. Se `Bokstavsrad` § `arNedtonad` för varför den skillnaden bär.
+  const hinkarMedPersoner = useMemo(
+    () => (register ? bokstavshinkarMedPersoner(register) : null),
+    [register],
+  );
+
+  // Renderas i ALLA tre grenarna (laddläge / fel / lista). Raden har samma
+  // GEOMETRI i alla tre — nedtoningen byter färg, aldrig antal knappar — så
+  // att hålla den utanför laddläget hade fått listan att hoppa nedåt när
+  // registret landar, vilket är exakt vad `ADR-078`:s layouthopp-förbud
+  // förbjuder.
+  const bokstavsrad = (
+    <Bokstavsrad hinkarMedPersoner={hinkarMedPersoner} onValj={setBokstavParam} vald={bokstav} />
+  );
 
   // Klient-render-fönstret (ADR-123 beslut 5) — "Ladda fler" utökar detta,
   // aldrig en ny hämtning. Fönstret återställs till FÖRSTA sidan varje gång
