@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
+import { InitialAvatar } from '@/components/primitives/InitialAvatar';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
@@ -43,17 +44,23 @@ function Field({ term, value }: { term: string; value: string | null }) {
   );
 }
 
-/** En intresserad: namn som rubrik + fält/värde-lista. `break-inside-avoid` håller
- * raden samlad över sidbrytning vid utskrift (§4 print-golv — minst läsbar utskrift). */
+/** En intresserad: initialcirkel (husets primitiv, TASK-299.1/299.8 — ingen
+ * ny inline-kopia) + namn som rubrik + fält/värde-lista, oförändrade i
+ * innehåll och inbördes ordning. `break-inside-avoid` håller raden samlad
+ * över sidbrytning vid utskrift (§4 print-golv — minst läsbar utskrift). */
 function IntresseradRow({ person }: { person: Intresserad }) {
+  const namn = displayName(person);
   return (
-    <li className="flex break-inside-avoid flex-col gap-1 border-text-muted/20 border-b pb-3">
-      <span className="font-medium">{displayName(person)}</span>
-      <dl className="flex flex-col gap-0.5 text-small">
-        <Field term="Nappat på" value={nappatPa(person)} />
-        <Field term="Antal hämtningar" value={String(person.antalHamtningar)} />
-        <Field term="Senaste interaktion" value={person.senasteInteraktion} />
-      </dl>
+    <li className="flex break-inside-avoid items-start gap-3 border-text-muted/20 border-b pb-3">
+      <InitialAvatar namn={namn} />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="font-medium">{namn}</span>
+        <dl className="flex flex-col gap-0.5 text-small">
+          <Field term="Nappat på" value={nappatPa(person)} />
+          <Field term="Antal hämtningar" value={String(person.antalHamtningar)} />
+          <Field term="Senaste interaktion" value={person.senasteInteraktion} />
+        </dl>
+      </div>
     </li>
   );
 }
@@ -80,7 +87,12 @@ function IntresseradRow({ person }: { person: Intresserad }) {
  * - Loading: `aria-busy` + synlig + sr-only status.
  * - Fel: `role="alert"` via MessageBox (ingen dubbel-announcer — L138).
  * - `document.title` sätts när laddat.
- * - "Tillbaka till Mer"-länk (→ `/mer`, varifrån vyn nås), närvarande i alla tillstånd.
+ * - Husets sidram (chevron, → `/mer`), närvarande i alla tillstånd — TASK-299.8
+ *   promoverar `primitives/SidRam` hit (kant-i-kant, PRD TASK-299 § OMFATTNINGEN
+ *   LÅST: bara sidkromet, rubriken lever kvar i sidan som egen `<h1>`). Den
+ *   gamla textlänken ("← Tillbaka till Mer") och sidans egen `p-4` (den tredje,
+ *   dubblerade dialekten) är borta — innehållet är i stället indraget `px-4`,
+ *   matchande chevronens `mx-4`, flush mot `<main>`s egen padding.
  */
 export function Intresserade() {
   const dataSource = useDataSource();
@@ -111,23 +123,21 @@ export function Intresserade() {
     }
   }, [intresserade]);
 
-  const backLink = (
-    <Link to="/mer" className="text-small underline">
-      ← Tillbaka till Mer
-    </Link>
-  );
+  // Husets sidram (TASK-299.1/299.8): chevron ensam — sidan äger sin egen
+  // rubrik separat (PRD TASK-299 § OMFATTNINGEN LÅST punkt 2, bara sidkromet).
+  const sidRam = <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />;
 
   if (isPending) {
     // Lugnt laddläge (Laddtrappan steg 1, DESIGN-SYSTEM-SPEC §15): skeleton i
     // listans SLUTGEOMETRI (rubrik + tre radplatshållare, Roselli-anatomin) i
     // stället för en naken "Laddar…"-textrad — layout-skift ≈ 0 mot laddat läge.
     return (
-      <section className="flex flex-col gap-6 p-4">
-        {backLink}
-        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-4">
+      <section className="flex flex-col gap-6">
+        {sidRam}
+        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-4 px-4">
           <span className="sr-only">Laddar intresserade…</span>
           <div className="flex flex-col gap-1">
-            <Skeleton variant="text" className="w-40 text-2xl" />
+            <Skeleton variant="text" className="w-40 text-3xl" />
             <Skeleton variant="text" className="w-32 text-small" />
           </div>
           <div className="flex flex-col gap-3">
@@ -142,26 +152,28 @@ export function Intresserade() {
 
   if (isError) {
     return (
-      <section className="flex flex-col gap-4 p-4">
-        {backLink}
-        <MessageBox intent="error" title="Kunde inte hämta intresserade">
-          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
-        </MessageBox>
+      <section className="flex flex-col gap-4">
+        {sidRam}
+        <div className="px-4">
+          <MessageBox intent="error" title="Kunde inte hämta intresserade">
+            {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
+          </MessageBox>
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="flex flex-col gap-6 p-4">
-      {backLink}
+    <section className="flex flex-col gap-6">
+      {sidRam}
 
       {/* aria-live: bekräftar för skärmläsare att listan anlänt. */}
       <p className="sr-only" role="status" aria-live="polite">
         Intresserade laddade.
       </p>
 
-      <header className="flex flex-col gap-1">
-        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
+      <header className="flex flex-col gap-1 px-4">
+        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
           Intresserade
         </h1>
         {/* Antal som TEXT — översikt, aldrig enbart färg. */}
@@ -169,9 +181,9 @@ export function Intresserade() {
       </header>
 
       {intresserade.length === 0 ? (
-        <p className="text-small text-text-muted">Inga intresserade än.</p>
+        <p className="px-4 text-small text-text-muted">Inga intresserade än.</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-3 px-4">
           {intresserade.map((person) => (
             <IntresseradRow key={person.id} person={person} />
           ))}

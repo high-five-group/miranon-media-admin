@@ -30,8 +30,15 @@ import { expect, test } from './support/acceptance-bas';
  *
  * Täckning: roster-rendering (namn + nappat-på/allaHamtningar + antalHamtningar +
  * senaste interaktion), antal-summa, fokus→<h1> + aria-live, tom-state, fel
- * (role=alert), loading aria-busy, namnlös-fallback (MED + UTAN e-post), axe 0.
- * LÄS-vy → INGEN write-affordans.
+ * (role=alert), loading aria-busy, namnlös-fallback (MED + UTAN e-post), axe 0
+ * i alla tre tillstånd (tomt/ifyllt/fel). LÄS-vy → INGEN write-affordans.
+ *
+ * UTVIDGAD, INTE OMSKRIVEN (TASK-299.8, PRD TASK-299 § Testbeslut "skarvarna
+ * följer skivorna"): den gamla textlänken ("← Tillbaka till Mer") är ersatt av
+ * husets sidram (`primitives/SidRam`, kant-i-kant, chevron ensam — rubriken
+ * lever kvar i sidan) och varje rad bär nu initialcirkeln
+ * (`primitives/InitialAvatar`). Radens fält och deras ordning är oförändrade
+ * (AC #3) — bara chromet och avataren är nya, se `Intresserade.tsx`.
  */
 
 /** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
@@ -149,11 +156,19 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
       page.getByRole('button', { name: /skicka|markera|spara|ändra|ta bort/i }),
     ).toHaveCount(0);
 
-    // Tillbaka-länk → Mer-landningen.
-    await expect(page.getByRole('link', { name: '← Tillbaka till Mer' })).toHaveAttribute(
+    // Tillbaka-chevron → Mer-landningen. TASK-299.8: husets sidram
+    // (`primitives/SidRam`) ersätter den gamla textlänken ("← Tillbaka till
+    // Mer") — chevronens tillgängliga namn bär ingen pil, se
+    // `SidRam.tsx`s `tillbakaEtikett`.
+    await expect(page.getByRole('link', { name: 'Tillbaka till Mer' })).toHaveAttribute(
       'href',
       '/mer',
     );
+
+    // Initialcirklarna (TASK-299.8, `primitives/InitialAvatar`) — dekorativa
+    // (`aria-hidden`), en per rad; namnet bärs av radens egen text.
+    await expect(page.getByText('AA', { exact: true })).toBeVisible();
+    await expect(page.getByText('BB', { exact: true })).toBeVisible();
   });
 
   test('tom lista → vänlig tom-text, ej fel', async ({ page, network }) => {
@@ -205,7 +220,24 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
     await expect(page.getByRole('heading', { level: 1, name: 'Intresserade' })).toBeVisible();
   });
 
-  test('axe 0 violations på den renderade intresserade-vyn', async ({ page, network }) => {
+  test('axe 0 violations på TOM vy', async ({ page, network }) => {
+    // TASK-299.8 DoD #5 — sidramen (SidRam) och det tomma läget tillsammans;
+    // ingen rad, alltså ingen InitialAvatar heller, men chevronen är kvar.
+    mockLeads(network, []);
+    await page.goto('/mer/intresserade');
+    await expect(page.getByText('Inga intresserade än.')).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  test('axe 0 violations på IFYLLD vy (sidram + initialcirklar, TASK-299.8)', async ({
+    page,
+    network,
+  }) => {
     mockLeads(network, [
       row({ namn: 'Anna Andersson', email: 'anna@example.se' }),
       row({
@@ -216,6 +248,19 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
     ]);
     await page.goto('/mer/intresserade');
     await expect(page.getByRole('heading', { level: 1, name: 'Intresserade' })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  test('axe 0 violations på FEL-vy (4xx, role=alert)', async ({ page, network }) => {
+    // TASK-299.8 DoD #5 — MessageBox (role=alert) bredvid den nya sidramen.
+    mockLeads(network, [], { status: 404 });
+    await page.goto('/mer/intresserade');
+    await expect(page.getByRole('alert')).toContainText('Kunde inte hämta intresserade');
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
