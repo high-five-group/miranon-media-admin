@@ -11,6 +11,12 @@
         "src/components/AppShell/Uppdateringsnotis.tsx",
         "src/components/AppShell/AppUpdateBanner.tsx"
       ],
+      "referenser": [
+        {
+          "fil": "tests/webblasarbeteende/__aria__/uppdateringsnotis-promoverings-grind.test.ts/uppdateringsnotis-webblasarbeteende.aria.yml",
+          "sha256": "3e0a7c8219ac3083ac03dc5846cfe2d39bcc74af0b3920d3cc229d89c39b19c6"
+        }
+      ],
       "not": "Låst efter konvergensvarv 1 utan ändringar (k01-1280.png och k01-390.png är samma bilder som facit). Facit är FORMEN i Uppdateringsnotis.tsx vid commit 1e5c9e35, amenderad i meddelandefamiljens landning (facit-bilderna omtagna = k02-1280/k02-390): fast bredd max 22 rem, fixed right-4/sm:right-6 bottom-24 (ovanför TabBar-pillen), bg-surface-overlay + shadow-xl, INGEN kontur (border-border riven vid amenderingen 2026-08-21 — familjeregeln ur meddelandefamiljens konvergens; contrast-more tänder kontur i full info-färg), border-l-4 border-info, titel och body friskrivna (copy, ej form — se FRISKRIVNING nedan), knappar 'Inte nu' (ghost sm) + 'Ladda om' (primary sm), role=status aria-live=polite alltid monterad, ingen timer, ingen ikon, ingen animation. FRISKRIVNING (TASK-285.10 AC #5-principen, tillämpad här på detta manifest): facit låser FORMEN — layout, hierarki, avstånd — inte orden; copyn i exemplen är FÖRSLAG enligt copy-domarna (research-passet § 7.3) och putsas löpande utan att bilden eller detta not-fält behöver bytas, så länge formen står still. Undantag: knapptexten 'Ladda om' är INTE friskriven — låst av DESIGN-SYSTEM-SPEC § 21 § Copy-golvet (rad 1796), skrivs aldrig om till 'Uppdatera'. Promovering (ADR-103): villkoret i AppUpdateBanner flippas så notisen blir den ovillkorliga formen för info-läget; växlaren (NotisPrototypVaxlare + __root-monteringen) och ?variant-grenen rivs FÖRST efter att godkand satts. Två öppna kanter Marcus inte uttalat sig om, tas i skivningen: (1) vid ≥1280 px ligger notisen delvis över innehållskolumnens högerkant (dockning mot kolumn är alternativet); (2) på mobil är fast bredd = full bredd minus 2 rem. 'Inte nu' är i prototypen in-memory; skarpt ska den hålla för sessionen och återkomma vid nästa NYA version (§ 21)."
     },
     {
