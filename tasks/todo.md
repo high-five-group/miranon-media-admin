@@ -147,6 +147,21 @@ något. Ägarlappen
 (`03bc2d12-…`, PID 28332 levande) orörd, arbetet fortsätter i egen
 worktree. `284`-familjen oförändrad. Heartbeat ej startad (inga egna
 poster i luften). **NÄSTA: `284.5` QA-vandringen — Marcus moment.**
+**DEL 8 (2026-08-22): QA-VANDRINGEN PÅBÖRJAD — TVÅ FYND, ANMÄLNINGSSIDAN
+BLIR EGEN ARBETSENHET.** `#1765` → `e2c1a2d7`. Marcus första titt gav två
+fynd, båda nya kort per `284.5` AC #2: **`TASK-291`** — åtgärdskö-raden är
+visuellt IDENTISK med eventinfo-raden (samma tokens, ingen ikon;
+placeringen är låst per `ADR-122` beslut 7, formen öppen; notisfamiljens
+varningsfärg är FEL verktyg per beslut 8/§22) → litet divergenspass,
+**blockerar `284.4` DoD #6**. **`TASK-292`** — klicket leder till Fas 1-
+anmälningssidan (`/mer/anmalningar?visa=atgardskon`, aldrig facitstämplad,
+aldrig konvergerad, inget kort planerade det) → egen arbetsenhet EFTER
+`284.6`, egen session, grillnings-kandidat med tre disk-mätta frågor (ingen
+delad vy-grund: `Sidhuvud` kopieras · initial-cirkeln i 2+2 kopior · Mer-
+familjens fem sidor). **INTE utvidgning av 284** — vaktens prod-värde är
+oberoende av sidans form. Kortnumren rörde sig igen (289/290 tagna av andra
+grenar → 291/292). **NÄSTA: steg 7 (kastbar post krävs — köns 12 rader är
+fixturer) → 9 → 10 → `284.6` prod → grilla `TASK-292`.**
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
 pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA
