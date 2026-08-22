@@ -143,7 +143,11 @@ mätningen av första besöket visar att lat laddning är märkbar.
 
 ## Öppet, och medvetet inte beslutat här
 
-- **Diakritik-tolerant sök** (beslut 2) — eget kort, Marcus beslut.
+- ~~**Diakritik-tolerant sök** (beslut 2) — eget kort, Marcus beslut.~~
+  **STÄNGD 2026-08-22.** Marcus svarade JA på `TASK-286.5`; breddningen är
+  byggd i `TASK-286.7`. Se § Updates nedan — beslut 2:s paritetskrav är
+  därmed upphävt, medan resten av beslut 2 (fältmängden, "något element" för
+  arrayfältet Ort, tom sökterm) står orört.
 - **Skalgränsens siffra.** Ingen branschledare ger en exakt brytpunkt; vår
   uttalade gräns är *rendering före data*. Omprövas när registret passerar
   ~2 000 eller när första laddningen mäts över en sekund på 3G — då är
@@ -186,3 +190,103 @@ vara precedent.
 - **Risk:** en sökbreddning som smyger in via "bättre" normalisering —
   därför beslut 2:s paritetstest. Och en cache som överlever en ny person
   — därför beslut 6:s ordning.
+
+## Updates
+
+### 2026-08-22 — Beslut 2 breddas: sök i klienten blir diakritik-TOLERANT (`TASK-286.7`)
+
+Beslut 2:s fältmängd, arrayfälts-regel ("något element" för `Ort`) och
+tomsträngs-regel står ORÖRDA. Denna post ändrar EN sak: matchningens
+diakritik-semantik, och därmed paritetstestets facit-källa.
+
+**Vad som beslutades.** Marcus svarade **JA** på `TASK-286.5` (HITL-kortet
+denna ADR själv skapade när den lämnade frågan öppen). Hans motivering,
+ordagrant ur kortets notes:
+
+> Svenska namn bär diakritiker som vardag, inte som kant (Åsa, Östergren,
+> Ängström). Två sökytor med olika beteende i samma app är en inkonsekvens
+> användaren omöjligt kan förutse — eventväljaren är redan tolerant.
+> Argumentet emot är ett testargument: paritet med Airtables `SEARCH()` var en
+> mätning av dagens läge, aldrig ett mål. Träffmängden växer dessutom åt rätt
+> håll — fler namn, aldrig färre.
+
+**Paritetsmålet mot Airtables `SEARCH()` upphävs, med skäl.** Beslut 2 band
+klientfiltret byte för byte till EF:ens `SEARCH()`-formel och kallade
+breddningen en risk ("en sökbreddning som smyger in via 'bättre'
+normalisering"). Den risken var **tystnaden**, inte breddningen: `B′` bland
+förkastade alternativ avvisades uttryckligen som en *tyst* produktförändring,
+inte som fel produkt. Med ett fattat, daterat och bokfört beslut är villkoret
+uppfyllt, och pariteten har gjort sitt. Vad `SEARCH()` gör förblir en
+**mätning** av datakällan (§ Kontext fynd 3) — den var aldrig ett mål i sig.
+
+**EF:en tappar ingen täckning.** `get-persons`s `?search=`-gren är oförändrad
+och testas fortsatt av `tests/api/get-persons.staging.test.ts`
+(cursor-conformance, `ADR-056`). Det som byttes är facit-KÄLLAN i
+`tests/api/get-persons-sok-paritet.staging.test.ts`: från likhet med EF:ens
+svar till **likvärdighet med eventväljarens filter**, prövad mot en oberoende
+replik av `useFilter`s `contains` över samma staging-register.
+
+**Mekanismen: eventväljarens semantik, inte en ny.** `EventValjare.tsx` rad
+177 kör `useFilter({ sensitivity: 'base' })`. Hooken kan inte anropas ur
+`src/lib/person-sok.ts` (rena funktioner, ingen render-kontext; båda
+testsviterna anropar dem direkt), så dess algoritm återanvänds i stället,
+tagen ur `react-aria` 3.51.0:s källa: NFC-normalisering plus ett glidande
+fönster av `Intl.Collator(..., { usage: 'search', sensitivity: 'base' })`.
+
+**Kortets föreslagna lokal (`'sv'`) föll på en mätning — och det är den
+intressanta delen.** `TASK-286.5`/`TASK-286.7` skrev
+`Intl.Collator('sv', { sensitivity: 'base' })` som en av två vägar. Den vägen
+ger **noll** diakritik-tolerans (node 24.13.1, full ICU):
+`compare('asa', 'åsa') = -1`, `compare('o', 'ö') = -1`. Skälet är svensk
+ortografi, inte en bugg: **Å, Ä och Ö är egna bokstäver i svensk kollation,
+inte accenttecken på A och O**, så `sensitivity: 'base'` har ingenting att
+vika bort. Varken `sv-u-co-search` eller `sv-u-ks-level1` ändrar det, och en
+utelämnad lokal löses mot runtimens standardlokal — i en svensk webbläsare
+`sv`. Vikningslokalen pinnas därför explicit till en kollation utan nordisk
+tailoring, låst i BÅDA riktningar av `tests/api/person-sok.test.ts`.
+
+**Följdfynd, bokfört öppet (ingen åtgärd i detta kort).** § Kontext fynd 1/3
+beskriver eventväljaren som diakritik-okänslig. Det är sant **villkorat av
+webbläsarens språk**: `useFilter` hämtar sin lokal ur `useLocale()`, och
+`EventValjare` monteras inte under någon `I18nProvider` (`ManuellAnmalanForm`,
+`EventDetail`, `AtgardsSida`) — så den faller tillbaka på
+`navigator.language`. I en svensk webbläsare är eventväljaren alltså **inte**
+å/ä/ö-tolerant. Personlistan pinnar sin lokal och är det oavsett. De två
+ytorna kan därför fortfarande skilja sig, men i motsatt riktning mot före
+beslutet, och personlistan är den som följer beslutet. Att pinna
+eventväljarens lokal är en egen, oberoende ändring av en produktionsyta och
+tas inte här.
+
+**Beslut 4 (svensk sortering) är opåverkat.** Sortering och sökning är olika
+axlar: listan sorteras med `Intl.Collator('sv')` (A–Z, sedan Å, Ä, Ö —
+å/ä/ö **separerade** från a/o) och söks med vikningskollationen (å/ä/ö
+**likställda** med a/o). Två frågor, två rätta svar. De två collatorerna delas
+medvetet inte.
+
+**Vad breddningen faktiskt gjorde med träffmängden**, mätt mot staging
+2026-08-22 (60 poster i registret, samma register före och efter):
+
+| term | före | efter |
+|---|---|---|
+| `'asa'` | 0 | **1** |
+| `'åsa'` | 1 | 1 |
+| `'ås'` | 1 | **11** |
+| `'anna'` / `'ej till'` / `'070'` / `'falköping'` / `'example.com'` | 0 / 1 / 1 / 15 / 18 | oförändrade |
+
+Marcus formulering ("fler namn, aldrig färre") höll i varje mätt term. Den
+tredje raden är också en varning värd att bära: en KORT term viks till en
+kort nyckel, så `'ås'` blev `'as'` och drog in Astrid, Hassan, Rasmus och
+Tobias. Det är korrekt beteende — men `TASK-286.7` valde därför att INTE låsa
+paritetstestet vid "`'ås'` ger samma mängd som `'asa'`" (kortets AC #2:s
+ordalydelse), utan vid den mekaniskt sanna superset-relationen. Likheten var
+en förutsägelse om DATAN, inte om semantiken, och den var falsk redan i
+landningsögonblicket.
+
+**Kostnad, mätt lokalt** (node 24.13.1, 559 poster = § Kontext:s prod-siffra,
+fyra fält, 30 varv): 0,84–4,54 ms per filtrering mot 0,06–0,14 ms för den
+gamla `toLowerCase().includes()`. Inom en bildruta, och beslut 5:s
+`useDeferredValue` håller fältet responsivt oavsett. Talet är **lokalt** —
+ingen mätning på Lottas enhet finns.
+
+Källor: `TASK-286.5` (Marcus beslut + motivering), `TASK-286.7` (utförandet),
+`src/lib/person-sok.ts` filhuvud (mättabellen).

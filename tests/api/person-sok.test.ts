@@ -1,16 +1,23 @@
 // Enhetstest för personregistrets klientfilter (`src/lib/person-sok.ts`,
-// ADR-123 beslut 2, TASK-286.2).
+// ADR-123 beslut 2 + § Updates 2026-08-22, TASK-286.7).
 //
 // api-pure (ren logik, ingen staging, ingen nätverk) → körs lokalt + CI.
 // Låser den EXAKTA semantiken klientfiltret måste bära: skiftläges-okänslig
-// delsträngsmatch, DIAKRITIK-känslig (ingen normalisering — mätt i staging
-// mot Airtables SEARCH(), se `person-sok.ts`s filhuvud), "något element" för
-// arrayfältet Ort, och tom sökterm = hela registret.
+// OCH DIAKRITIK-TOLERANT delsträngsmatch ("asa" hittar Åsa, samma beteende
+// som eventväljarens `useFilter({ sensitivity: 'base' })`), "något element"
+// för arrayfältet Ort, och tom sökterm = hela registret.
 //
-// Den LIVE paritetsproven (samma termer mot EF:ens verkliga SEARCH()-formel
-// i staging) bor i `tests/api/get-persons-sok-paritet.staging.test.ts` — den
-// filen importerar SAMMA `filtreraPersonregister` som denna, så de två
-// sviterna kan aldrig glida isär till två olika implementationer.
+// [OMSKRIVEN, TASK-286.7] Sviten låste tidigare motsatsen — diakritik-
+// KÄNSLIGHET, i paritet med Airtables `SEARCH()`. Marcus beslutade breddningen
+// 2026-08-22 (TASK-286.5, JA): svenska namn bär diakritiker som vardag, och
+// två sökytor med olika beteende i samma app är en inkonsekvens användaren
+// omöjligt kan förutse. EF-pariteten var en MÄTNING av dagens läge, aldrig
+// ett mål.
+//
+// Likvärdighetsproven mot eventväljarens filter, körd på VERKLIG staging-data,
+// bor i `tests/api/get-persons-sok-paritet.staging.test.ts` — den filen
+// importerar SAMMA `filtreraPersonregister` som denna, så de två sviterna kan
+// aldrig glida isär till två olika implementationer.
 
 import { expect, test } from '@playwright/test';
 import type { Person } from '../../src/domain/models/Person';
@@ -75,16 +82,20 @@ test.describe('personMatcharSokterm — fält, skiftläge, diakritik', () => {
     expect(personMatcharSokterm(p, '070')).toBe(true);
     expect(personMatcharSokterm(p, '070-')).toBe(true);
     // '070 1' finns INTE som delsträng i '070-233 14 56' (bindestreck, inte
-    // mellanslag, direkt efter 070) — samma sträng-till-sträng-jämförelse som
-    // EF:ens SEARCH(), ingen tolerans att gissa fram.
+    // mellanslag, direkt efter 070). TASK-286.7:s breddning gäller DIAKRITIKER
+    // — den gör inte skiljetecken utbytbara, och den semantiken förblir
+    // därför oförändrad här.
     expect(personMatcharSokterm(p, '070 1')).toBe(false);
   });
 
   test('arrayfältet Ort — "något element" (PRD-beslutet, ADR-123 beslut 2)', () => {
     const p = bas({ ort: ['Falköping', 'Varberg'] });
     expect(personMatcharSokterm(p, 'falköping')).toBe(true);
+    // Vikningen gäller ALLA fyra sökfälten, inte bara Namn (AC #2:s ordval).
+    expect(personMatcharSokterm(p, 'falkoping')).toBe(true);
     expect(personMatcharSokterm(p, 'varberg')).toBe(true);
     expect(personMatcharSokterm(p, 'göteborg')).toBe(false);
+    expect(personMatcharSokterm(p, 'goteborg')).toBe(false);
   });
 
   test('sentinel-namnet "Ej tillgängligt" matchar en delsträng av sig själv', () => {
@@ -93,14 +104,58 @@ test.describe('personMatcharSokterm — fält, skiftläge, diakritik', () => {
   });
 
   test(
-    'DIAKRITIK-KÄNSLIGT — mätt mot Airtables SEARCH() i staging (ADR-123 § Kontext): ' +
-      '"åsa" hittar Åsa, "asa" gör det INTE (ingen normalisering)',
+    'DIAKRITIK-TOLERANT (TASK-286.7, Marcus JA 2026-08-22): "asa" hittar Åsa, ' +
+      '"åsa" gör det fortfarande',
     () => {
       const p = bas({ namn: 'Åsa Öberg' });
+      // VÄNT FACIT: raden nedan var `false` fram till TASK-286.7 och är
+      // kortets AC #1 i sin helhet. Går den röd har vikningen slutat gälla.
+      expect(personMatcharSokterm(p, 'asa')).toBe(true);
       expect(personMatcharSokterm(p, 'åsa')).toBe(true);
-      expect(personMatcharSokterm(p, 'asa')).toBe(false);
       // Substräng av samma diakritiska tecken ska fortsatt matcha.
       expect(personMatcharSokterm(p, 'ås')).toBe(true);
+      // Vikningen går ÅT BÅDA HÅLL och gäller alla tre svenska diakritikerna,
+      // inte bara å: Ö i efternamnet nås av ett rent o.
+      expect(personMatcharSokterm(p, 'oberg')).toBe(true);
+      expect(personMatcharSokterm(p, 'öberg')).toBe(true);
+    },
+  );
+
+  test('de namn Marcus motiverade beslutet med hittas utan diakritiker', () => {
+    // TASK-286.5:s notes, ordagrant: "Åsa, Östergren, Ängström".
+    expect(personMatcharSokterm(bas({ namn: 'Erik Östergren' }), 'ostergren')).toBe(true);
+    expect(personMatcharSokterm(bas({ namn: 'Nils Ängström' }), 'angstrom')).toBe(true);
+    // Och en icke-svensk diakritiker som kollationen bär utan eget bord.
+    expect(personMatcharSokterm(bas({ namn: 'Sara Müller' }), 'muller')).toBe(true);
+  });
+
+  test('breddningen VIDGAR aldrig till fel person — bokstäverna måste fortfarande stämma', () => {
+    // Marcus egen formulering: "fler namn, aldrig färre". Toleransen gäller
+    // diakritiker, inte stavning — annars vore varje sökning en gissning.
+    expect(personMatcharSokterm(bas({ namn: 'Anna Asp' }), 'åsa')).toBe(false);
+    expect(personMatcharSokterm(bas({ namn: 'Anna Asp' }), 'asa')).toBe(false);
+    // V och W är EGNA bokstäver, också i vikningskollationen (mätt).
+    expect(personMatcharSokterm(bas({ namn: 'Wilma Wass' }), 'vilma')).toBe(false);
+  });
+
+  test(
+    'VIKNINGSLOKALEN ÄR LASTBÄRANDE: en `sv`-kollation hade INTE gett toleransen ' +
+      '(TASK-286.5:s kortformulering, falsifierad genom mätning)',
+    () => {
+      // TVÅSIDIGHETEN. Kortet föreslog `Intl.Collator('sv', { sensitivity:
+      // 'base' })`. Å/Ä/Ö är EGNA bokstäver i svensk kollation, inte
+      // accenttecken, så den vägen har ingenting att vika bort. Raden nedan
+      // mäter det i stället för att lita på filhuvudets tabell — byter någon
+      // `SOK_VIKNINGSLOKAL` till 'sv' blir testet ovan rött, och DENNA rad
+      // förklarar varför.
+      const svensk = new Intl.Collator('sv', { usage: 'search', sensitivity: 'base' });
+      expect(svensk.compare('asa', 'åsa')).not.toBe(0);
+      expect(svensk.compare('o', 'ö')).not.toBe(0);
+
+      // Sorteringens collator är samma svenska kollation — och det är rätt
+      // där. Att de två axlarna säger olika saker är avsikten (ADR-123
+      // beslut 4 mot beslut 2), inte en motsägelse.
+      expect(personMatcharSokterm(bas({ namn: 'Åsa Öberg' }), 'asa')).toBe(true);
     },
   );
 

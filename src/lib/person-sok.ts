@@ -1,61 +1,158 @@
-// Personregistrets klientfilter (ADR-123 beslut 2, TASK-286.2) — BYTE-FÖR-BYTE
-// paritet med EF:ens SEARCH()-formel, aldrig en breddning.
+// Personregistrets klientfilter (ADR-123 beslut 2 + § Updates 2026-08-22,
+// TASK-286.7) — DIAKRITIK-TOLERANT matchning, likvärdig med eventväljarens
+// filter. "asa" hittar Åsa.
 //
-// `get-persons`s sök-/cursor-gren bygger
-// `OR(SEARCH(LOWER(term), LOWER(field)), ...)` per fält (Namn, E-post, Telefon,
-// Ort) via `buildSearchAcrossFieldsFilter`
-// (`supabase/functions/_shared/airtable-filter.ts`). SEARCH() är MÄTT i staging
-// (ADR-123 § Kontext, `docs/research/forladdat-personregister-klientsok-
-// branschmonster-2026-08-21.md`): skiftläges-OKÄNSLIG (båda sidor `LOWER()`:as)
-// men diakritik-KÄNSLIG (`SEARCH("asa", LOWER({Namn}))` → 0 träffar,
-// `SEARCH("åsa", ...)` → 1 träff — ingen Unicode-normalisering). Denna modul
-// replikerar EXAKT den semantiken: `toLowerCase()` (samma case-fold,
-// ingen diakritik-normalisering) + `String.prototype.includes` (samma
-// delsträngs-test SEARCH() gör).
+// BESLUTET (Marcus, TASK-286.5, 2026-08-22, JA), hans egen motivering:
+// svenska namn bär diakritiker som vardag, inte som kant (Åsa, Östergren,
+// Ängström); två sökytor med olika beteende i samma app är en inkonsekvens
+// användaren omöjligt kan förutse, och eventväljaren är redan tolerant.
+// Paritet med Airtables `SEARCH()` var en MÄTNING av dagens läge, aldrig ett
+// mål. Träffmängden växer dessutom åt rätt håll — fler namn, aldrig färre.
 //
-// Breddning (diakritik-TOLERANT sök, "asa" hittar Åsa) är ett SEPARAT,
-// oavgjort produktbeslut (TASK-286.5, HITL) — smygs INTE in här.
+// VAD SOM UPPHÄVDES: modulen replikerade tidigare EF:ens `SEARCH()`-semantik
+// byte för byte (`toLowerCase()` + `String.prototype.includes`), eftersom
+// `SEARCH()` är diakritik-KÄNSLIG (mätt i staging, ADR-123 § Kontext fynd 3:
+// `SEARCH("asa", LOWER({Namn}))` → 0 träffar, `"åsa"` → 1). Den pariteten är
+// hädanefter INTE ett mål. EF:ens sök-/cursor-gren lever kvar oförändrad och
+// har kvar sin egen täckning (`tests/api/get-persons.staging.test.ts`,
+// cursor-conformance mot `?search=`) — det är facit-KÄLLAN för klientfiltret
+// som bytts, inte EF:en.
 //
-// ARRAYFÄLT (`Ort`, rollup 1→många): EF:en kör `SEARCH(term, LOWER(ARRAYJOIN(
-// {Ort})))` — sökningen kan i teorin (aldrig mätt i verklig data) matcha en
-// söksträng som spänner över ARRAYJOIN:s kommaseparator mellan två element.
-// PRD-beslutet (task-286.2 § HUR) väljer explicit "arrayfält: något element"
-// för klienten i stället — samma val ADR-123 tar. Paritetstestet
-// (`tests/api/get-persons-sok-paritet.staging.test.ts`) bevisar båda vägarna
-// ÖVERENS för den faktiska termlistan; en söksträng konstruerad för att
-// träffa just kommaseparatorn är en känd, bokförd kant (se den filens
-// huvud), inte en gissning som byggs bort här.
+// ═══ MEKANISMEN: eventväljarens, inte en ny ═══
 //
-// Tom sökterm ("" — falsy, samma JS-falsy-check som EF:ens `if (search)` på
-// query-parametern): INGEN filtrering, hela registret matchar — spegling av
-// `get-persons/index.ts`s `filterByFormula = BAS_FILTER` (utan sök-AND) när
-// `search` saknas/är tom.
+// `EventValjare.tsx` rad 177 kör `useFilter({ sensitivity: 'base' })`
+// (`react-aria-components` 1.20.0 → `react-aria` 3.51.0) och skickar dess
+// `contains` till `<Autocomplete filter>` (rad 393). Den hooken kan INTE
+// anropas härifrån — `person-sok.ts` är rena funktioner utan render-kontext,
+// och både `PersonsList` och de två testsviterna anropar dem som vanliga
+// funktioner. Vad som återanvänds är därför hookens SEMANTIK, tagen ur dess
+// källa i stället för uppfunnen på nytt: `useFilter` bygger en
+// `Intl.Collator` med `{ usage: 'search', ...options }` (`useCollator.mjs`)
+// och implementerar `contains` som NFC-normalisering plus ett glidande
+// fönster av `collator.compare(...) === 0`. `innehaller()` nedan ÄR den
+// algoritmen, rad för rad.
+//
+// ═══ LOKALEN ÄR MÄTT, INTE GISSAD — och den är MEDVETET INTE 'sv' ═══
+//
+// TASK-286.5:s kortformulering föreslog `Intl.Collator('sv',
+// { sensitivity: 'base' })`. Den vägen levererar INTE beslutet, och det är
+// mätt (node 24.13.1, full ICU, `Intl.Collator(loc, { usage: 'search',
+// sensitivity: 'base' }).compare(a, b)`):
+//
+//   lokal    a/å   a/ä   o/ö   o/ø   e/é     asa/åsa
+//   'sv'      -1    -1    -1    -1    0        -1   (INGEN tolerans)
+//   'en-US'    0     0     0     0    0         0   (tolerant)
+//
+// Skälet är inte en bugg utan svensk ortografi: Å, Ä och Ö är EGNA bokstäver
+// i svensk kollation, inte accenttecken på A och O, så `sensitivity: 'base'`
+// har ingenting att vika bort. Varken `sv-u-co-search` eller `sv-u-ks-level1`
+// ändrar det (båda mätta: resolved `co=default`, samma utfall som 'sv').
+// Utelämnad lokal duger inte heller: `undefined`/`'und'` löses mot RUNTIMENS
+// standardlokal, som i en svensk webbläsare är just `sv` — tolerans hade då
+// blivit en egenskap hos användarens språkinställning i stället för hos
+// produkten.
+//
+// Därför pinnas vikningslokalen explicit. Den är ett SÖK-verktyg, inte ett
+// språkval för appen, och den är låst i båda riktningar av
+// `tests/api/person-sok.test.ts` (som asserterar både att vikningen sker och
+// att en 'sv'-kollation INTE hade gett den) — byts konstanten till 'sv' blir
+// sviten röd på raden, inte tyst fel i produktion.
+//
+// ═══ SORTERING OCH SÖKNING ÄR OLIKA AXLAR — ingen motsägelse ═══
+//
+// Listan SORTERAS med `Intl.Collator('sv')` (ADR-123 beslut 4, TASK-286.3):
+// A–Z och sedan Å, Ä, Ö, alltså å/ä/ö SEPARERADE från a/o. Listan SÖKS med
+// vikningskollationen nedan, alltså å/ä/ö LIKSTÄLLDA med a/o. Det är två
+// frågor med två rätta svar: bokstavsordningen i en svensk lista följer
+// svensk ortografi, medan en sökruta ska förlåta att Lotta inte träffar rätt
+// tangent. Se `SVENSK_KOLLATION` längre ned.
+//
+// ARRAYFÄLT (`Ort`, rollup 1→många): PRD-beslutet (task-286.2 § HUR, samma
+// val ADR-123 tar) är "arrayfält: något element" — oförändrat av detta kort.
+//
+// Tom sökterm ("" — falsy): INGEN filtrering, hela registret matchar.
+// Oförändrat, och samma tomsträngs-regel `useFilter`s egen `contains` bär
+// (`if (substring.length === 0) return true`).
+//
+// KOSTNAD, mätt lokalt (node 24.13.1, 559 poster = ADR-123 § Kontext:s
+// prod-siffra, fyra fält, varm loop, 30 varv): 0,84–4,54 ms per filtrering
+// mot 0,06–0,14 ms för den gamla `toLowerCase().includes()`. Det ryms i en
+// bildruta, och ADR-123 beslut 5:s `useDeferredValue` håller fältet
+// responsivt oavsett. Talet är LOKALT — ingen mätning på Lottas enhet finns.
 
 import type { Person } from '@/domain/models/Person';
 
-/** Sant om `term` (case-fold, ingen normalisering) är en delsträng av `value`. */
-function delstrangTraff(value: string | null, term: string): boolean {
-  return typeof value === 'string' && value.toLowerCase().includes(term);
+/**
+ * Vikningslokalen — vilken kollation som får avgöra att å ≡ a.
+ *
+ * MEDVETET INTE 'sv': se filhuvudets mättabell. Namnet säger vad den gör
+ * (viker diakritiker för SÖK), inte vilket språk appen talar.
+ */
+const SOK_VIKNINGSLOKAL = 'en-US';
+
+/**
+ * Sök-kollationen — EXAKT de optioner `useFilter({ sensitivity: 'base' })`
+ * ger sin collator (`useCollator({ usage: 'search', ...options })`).
+ *
+ * Skapad EN gång: `Intl.Collator` är dyr att konstruera, och `innehaller()`
+ * anropar `compare` en gång per glidfönster-position.
+ */
+const SOK_KOLLATION = new Intl.Collator(SOK_VIKNINGSLOKAL, {
+  usage: 'search',
+  sensitivity: 'base',
+});
+
+/**
+ * `useFilter`s `contains`, samma algoritm (`react-aria` 3.51.0,
+ * `dist/private/i18n/useFilter.mjs`): NFC-normalisera båda sidor, glid sedan
+ * ett fönster med söktermens längd genom texten och fråga kollationen om de
+ * är LIKA på bas-nivå.
+ *
+ * VARFÖR INTE `String.prototype.includes` på en förnormaliserad sträng:
+ * kollationen kan likställa tecken som inte har någon gemensam
+ * NFD-nedbrytning — `ø` mot `o` är det mätta fallet (nordiska namn som Søren
+ * är inte en hypotetisk kant i det här registret). Ett eget vikningsbord
+ * hade varit en gissning; kollationen bär Unicode-datan.
+ */
+function innehaller(text: string, delstrang: string): boolean {
+  if (delstrang.length === 0) return true;
+  const hostack = text.normalize('NFC');
+  const nal = delstrang.normalize('NFC');
+  const langd = nal.length;
+  for (let start = 0; start + langd <= hostack.length; start++) {
+    if (SOK_KOLLATION.compare(nal, hostack.slice(start, start + langd)) === 0) return true;
+  }
+  return false;
 }
 
 /**
- * Matchar EN person mot EN redan gemen sökterm — SAMMA fyra fält som EF:ens
+ * Sant om `term` är en diakritik- och skiftlägestolerant delsträng av
+ * `value`. Ingen `toLowerCase()` behövs: `sensitivity: 'base'` ignorerar
+ * BÅDE skiftläge och diakritik, så en manuell case-fold hade varit en andra,
+ * överflödig mekanism för samma sak.
+ */
+function delstrangTraff(value: string | null, term: string): boolean {
+  return typeof value === 'string' && innehaller(value, term);
+}
+
+/**
+ * Matchar EN person mot EN sökterm — SAMMA fyra fält som EF:ens
  * `SEARCH_FIELDS` (`get-persons/index.ts`): Namn, E-post, Telefon, Ort.
- * `rawTerm` är RÅ (ej gemenifierad) — funktionen gör själv `toLowerCase()`,
- * exakt en gång, på SAMMA sätt som `buildSearchAcrossFieldsFilter` gör mot
- * termen innan den escapas in i formeln.
+ * Fältmängden är oförändrad av TASK-286.7; bara matchningens semantik bytte.
+ *
+ * `rawTerm` är RÅ och lämnas rå — kollationen (se filhuvudet) äger både
+ * skiftläge och diakritik, så ingen förbehandling av termen sker här.
  */
 export function personMatcharSokterm(person: Person, rawTerm: string): boolean {
   if (!rawTerm) return true;
-  const term = rawTerm.toLowerCase();
   return (
-    delstrangTraff(person.namn, term) ||
-    delstrangTraff(person.email, term) ||
-    delstrangTraff(person.telefon, term) ||
+    delstrangTraff(person.namn, rawTerm) ||
+    delstrangTraff(person.email, rawTerm) ||
+    delstrangTraff(person.telefon, rawTerm) ||
     // Arrayfält — "något element", PRD-beslutet (se filhuvudet). `stringArray`
     // (EF-sidan) filtrerar redan bort null/tomma element, så ingen extra guard
     // krävs här.
-    person.ort.some((ort) => ort.toLowerCase().includes(term))
+    person.ort.some((ort) => innehaller(ort, rawTerm))
   );
 }
 
@@ -127,8 +224,13 @@ export function arNamnlosSentinel(person: Person): boolean {
  * Svensk kollation, skapad EN gång: `Intl.Collator` är dyr att konstruera och
  * `sort` anropar `compare` O(n log n) gånger. Default-optionerna är rätt här
  * — `sv` ger A–Z följt av Å, Ä, Ö, exakt den ordning bokstavsindexet redan
- * beslutat. (Ingen `sensitivity`-nedskruvning: det är SÖKNINGENS
- * diakritik-fråga, ADR-123 beslut 2, och den avgörs inte av sorteringen.)
+ * beslutat.
+ *
+ * INGEN `sensitivity`-nedskruvning, och ingen delning med `SOK_KOLLATION`:
+ * sortering och sökning är olika axlar med olika rätta svar (se filhuvudet
+ * § SORTERING OCH SÖKNING). Sorteringen SEPARERAR å/ä/ö från a/o; sökningen
+ * LIKSTÄLLER dem sedan TASK-286.7. Att låta den ena ärva den andras collator
+ * hade brutit exakt en av dem.
  */
 const SVENSK_KOLLATION = new Intl.Collator('sv');
 
