@@ -1,13 +1,23 @@
 ---
 owner: marcus803
-updated: 2026-08-21
+updated: 2026-08-22
 review_by: 2026-11-21
 status: stable
-lifecycle: paused
+lifecycle: closed
 ---
 
 # T157 — ADR-102 saknar amenderings-mekanik för ett stämplat facit
 
+> **STÄNGD 2026-08-22** av
+> [`ADR-102` § Updates 2026-08-22](../../docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md#2026-08-22--amenderings-mekaniken-för-ett-stämplat-facit-t157).
+> Amenderingen besvarar trådens fyra frågor nedan: A1 ger de tre klasserna
+> (a/b/c), A2 klassningens bar och eskaleringsregeln, A3 den kanoniska
+> sidofils-formen — kanoniserad mot de FEM `AMENDERING-*.md` som redan fanns
+> i repot — och A4 hur B1/B5 ska läsas för en yta som växer. Mekaniserat i
+> samma landning: `check-facit.sh` invariant (d) (innehållslås av en stämplad
+> ytas deklarerade referenser, tvåsidigt bevisad) och ett sant neka-skäl i
+> `deny-facit-godkand-skrivning.sh`. Vad som INTE mekaniserades står i A6.
+>
 > Registrerad i S109 (2026-08-21) på Marcus order (*"OCH regga tråden om
 > luckan."*). Avtäckt i `/to-prd`-passets första steg — utforska repot innan
 > syntes — som blockerade kortskrivningen. Triagerad enligt `ADR-053`:
@@ -114,3 +124,29 @@ två närliggande tillstånden två olika procedurer av en slump.
 `tests/visual/personer-promoverings-grind.spec.ts` filhuvud +
 `tests/visual/__aria__/personer-promoverings-grind.spec.ts/` (sex referenser) ·
 `TASK-247` slutrapport (grannfallet) · S109 Del 4.
+
+## Hur tråden stängdes (2026-08-22)
+
+Beslutet bor i `ADR-102` § Updates 2026-08-22. Tre saker är värda att ta med
+in i nästa yta, eftersom de INTE var kända när tråden registrerades:
+
+1. **Frågan "vem får amendera" har ett strukturellt svar, inte ett valfritt.**
+   Ett stämplat manifest är agent-fruset i sin HELHET — `ADR-104`-hooken prövar
+   det simulerade resultatet av en Edit/Write, och ett stämplat manifest bär
+   per definition ett satt `godkand`, så även en ändring som inte rör fältet
+   nekas. Mätt 2026-08-22 (exit 2 på en Edit som enbart lade till en nyckel);
+   samma utfall bokfört i S106 (*"ADR-104-hooken nekade ×2, korrekt"*).
+2. **Bokföringen bor därför i en sidofil**, `AMENDERING-<datum>-<slug>.md`
+   bredvid manifestet — en form som redan var etablerad i praktiken (FEM
+   filer i repot) men **oskriven**, vilket är exakt varför en agent 2026-08-22
+   gick rakt in i hooken i stället för att skriva sidofilen direkt.
+3. **Skillnaden ogodkänt/stämplat är inte längre omdöme.** `check-facit.sh`
+   invariant (d) innehållslåser en stämplad ytas deklarerade referenser och
+   hoppar över låset för ett ogodkänt manifest — precis den gräns S109 drog för
+   hand två gånger på ett dygn.
+
+**Kvar efter stängningen, öppet bokfört i `ADR-102` § Updates A6:** klass (b)
+mot (c) är konvention utan spärr (domen är Marcus öga), och invariant (d) har
+noll levande täckning tills `referenser` deklarerats — 22 av 22 stämplade ytor
+saknar nyckeln, och backfillen är ett Marcus-moment eftersom hooken fryser
+manifesten. Grinden skriver ut den siffran vid varje körning.
