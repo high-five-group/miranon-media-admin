@@ -18,7 +18,7 @@
       "yta": "appfel-sidan",
       "bilder": ["facit-meddelandefamiljen.png"],
       "kallor": [
-        "src/components/ErrorBoundary/AppError.tsx",
+        "src/components/ErrorBoundary/AppErrorFallback.tsx",
         "src/components/dev/notis-prototyp/AppErrorPrototyp.tsx"
       ],
       "not": "Facit är FORMEN i AppErrorPrototyp.tsx vid varv 4 (promoverad till AppErrorFallback.tsx, TASK-285.3): samma kortform som notisen, uttryckt i INLINE-stilar med primitivernas faktiska värden (#242424, #a90000, #ffffff) eftersom ytan per design ska rendera utan stylesheet — hårdkodningen är designvillkoret, inte ett undantag. Ingen kontur (skuggan bär kanten), vänsterkant 4 px röd, rubrik 1.25rem semibold röd, brödtext neutral, knapp som primärknappen (mörk, 44 px, radius 4 px) högerställd. Copy per GOV.UK:s systemfels-mönster (vad hände · vad hände med det du skrev · vad du gör nu) — citerad här som exempel, INTE som lås: rubrik 'Appen kunde inte visas', brödtext 'Sidan kunde inte ritas upp, men det du redan har sparat finns kvar. Ladda om för att fortsätta.' (verifierad mot AppErrorFallback.tsx/AppErrorPrototyp.tsx 2026-08-22, TASK-285.10 — ersätter den tidigare tremenings-versionen som stod här och i bilden fram till denna avstämning). FRISKRIVNING (TASK-285.10 AC #5, delad med ytan meddelanderutan i detta manifest): facit låser FORMEN — layout, hierarki, avstånd, inline-stilarnas struktur — inte orden; copyn putsas löpande av copy-domarna utan att bilden eller detta not-fält behöver bytas, så länge formen står still. Bilden visar kortet INBÄDDAT i prototyp-sidan; skarpt centreras det på vit sida (margin 12vh auto)."
