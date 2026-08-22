@@ -370,7 +370,33 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, sjätte resumen;
+**Session 108 ⏸️ PAUSAD (sjätte gången, 2026-08-22, `lifecycle: paused`) —
+PUNKT 3:S FÖRSTA HALVA LANDAD; LEVERANSVÄGEN VALD, MÄTT OCH OBYGGD.**
+Förhandsgranskningen är nu en RIKTIG PDF genom `ADR-119`-vägen — `#1815`
+armerad (5 commits `80ef31dc`…`7af1ef6c`). **Tre grundorsaker, alla mätta:**
+(1) DocRaptor 422 `File system access is not allowed` — Vite skriver om
+CSS:ens `url()` till `/public/…` och `/@fs/…`, och en ohämtbar referens som
+lämnas ORÖRD läses av Prince som filsystemsåtkomst och fäller HELA jobbet
+(fail-safe som funkar i webbläsare är destruktiv server-side; neutraliseras
+nu med `local("")`). (2) **Prince honorerar INTE flex-`gap`** och renderar
+`display:grid` fel — fyra-fallstest genom samma EF; mellanrummet mellan ikon
+och QR hade ALDRIG funnits i PDF:en. (3) **Blob-URL:en, inte dokumentet,
+orsakar den laggiga scrollen** — Marcus A/B: samma PDF perfekt som `file://`
+OCH `http://`, laggig som `blob:`. **Tre agenter:** PDFium-mätning
+dekomponerade sidan (bilder 41 %, text 27 %, vattenstämpel 20 %, QR **1,9 %**
+— QR-hypotesen föll med siffror), plus två research-pass. **Orkestreraren
+stängde passets största öppna fråga med mätning:** Supabase Storage signerade
+URL:er svarar `accept-ranges: bytes` + **206** — alternativ A bekräftat
+byggbart. **FELKLASS VÄRD ATT MINNAS: tre omätta fixar i rad, alla fällda av
+Marcus** — self-review fångade noll. **NÄSTA (resume av 108): leveransvägen
+(signerad Storage-URL för klass B/C, Marcus GO), efter att den öppna
+designfrågan om sidoeffektsfrihet avgjorts → sedan kvittots gap/grid-
+omgranskning → punkt 4 → 5 → 6.** Numrering vid paus 6: ADR **124** ·
+task-**301** · **L512** · 75 fragment (nästa **76**) · **T173** · **f53** ·
+session **112**.
+Full handoff: sessionsdok S108 § PAUSLÄGE (sjätte) + Del 10.
+
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, sjätte resumen, historik;
 pausad fem gånger, historik) — MARCUS-SEKVENS PUNKT 3 NÄSTA: FÖRHANDS-
 GRANSKNINGEN SOM RIKTIG PDF I NY FLIK.** Marcus order: *"Återuppta S108."*
 Egen worktree per ADR-090 beslut 2 — huvudkatalogen ägs av lapp `03bc2d12`
