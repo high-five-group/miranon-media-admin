@@ -15,6 +15,41 @@
 
 ## Aktuellt fokus
 
+**Session 111 ⏸️ PAUSAD (2026-08-22, efter Del 3; `lifecycle: paused`, scopet
+oavslutat) — ANMÄLNINGSSIDANS KONVERGENSPASS: GRILLAD, SPECAD OCH SKIVAD.**
+Egen worktree `s111-anmalningssidan` (huvudkatalogen ägs av levande annan
+session, ADR-090 beslut 2). **Grillningen** (Del 2) gav sju Marcus-kvitterade
+beslut: divergens på anmälningssidan ENSAM med promovering till alla fem
+Mer-sidorna · sidramen blir **kant-i-kant** · vy-grundens BREDD avsiktligt
+olåst och mätningsberoende (byggs bakom `?sidram=ny`, Marcus väljer på bild) ·
+`InitialAvatar` lyfts till `primitives/` · radanatomin ärvs ur personlistans
+facit (Marcus idé) · åtgärden bärs av RADEN själv så höjd-/breddlåsen
+överlever · `TASK-291` är sessionens andra spår. **Det egentliga fyndet:**
+appen bär TVÅ oförenliga sidram-dialekter, båda facit-stämplade, där den ena
+kallar den andra ett `dubbleringsfel` i sin egen kod — och
+`DESIGN-SYSTEM-SPEC` saknar sidram-sektion helt. **`ADR-124`** ska mintas
+(baren prövad öppet: delade presentationsformer, sidram + cirkel som två
+instanser). **Marcus invändning blev egen tråd `T172` + `TASK-297`:** av 27
+facit-stämplade ytor har 12 bilder, **3** är sha256-innehållslåsta och 6 vyer
+har pixel-baslinje — överlappet stämplat↔baslinje är **TVÅ**, och 15 ytor bär
+ARIA-facit som per konstruktion inte kan se visuell drift. **Levererat:** PRD
+**`TASK-299`** (nio sektioner, fem spec-DoD, alla fem berörda facit-manifest
+namngivna med sökväg) + **tio skivor** `299.1`–`299.10` (fem `ready-for-agent`,
+fem `ready-for-human`). **Självförvållat fel, fångat av en räkning:** `bash
+skript.sh | grep …` maskerade exitkoden — L440-hooken ser bara
+kommandosträngen, så en grind INUTI ett skript är osynlig för den; två kort
+skapades aldrig medan jobbet rapporterade exit 0 → lesson-fragment landat.
+`task create` mättes till **> 120 s per anrop** (fleet-drift,
+`TASK-238`-klassen). PR `#1794`/`#1806`/`#1812`/`#1814` alla gröna per jobb.
+Worktree-städning vid paus: 4 borttagna, 6 grenar frigjorda, 228 lokala kvar.
+**Heartbeat-monitorn STOPPAD på Marcus order** (larmade var 90:e sekund på
+medvetet parkerad dependabot-PR `#1488`) — starta inte om utan undantagsrad.
+**NÄSTA (RESUME av 111, ej ny session): spawna bygg-agent på `TASK-299.1`** —
+enda skivan utan blockerare. Sedan `299.2` ∥ `299.3` (båda Marcus). `TASK-291`
+när Marcus vill. Numrering vid paus, disk-läst mot `c3e6a8ad` — RE-DERIVERA:
+kort 301 · tråd T173 (**varning:** grenen `docs/s109-…-trad-t173` finns) · ADR
+124 · L512 · 77 fragment. Full narrativ: sessionsdok S111 Del 1–3 + PAUSLÄGE.
+
 **Session 110 ✅ STÄNGD (2026-08-22, K-sista; `lifecycle: closed` efter Marcus coverage-kvittens) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
 VAKTEN LÅST I `ADR-122`, FAMILJEN BYGGD 3/4.** Egen worktree `s110-kalenderlank-driften` (S109

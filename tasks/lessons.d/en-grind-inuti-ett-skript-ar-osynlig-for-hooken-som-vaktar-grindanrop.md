@@ -36,3 +36,15 @@ utfallet mot FAKTISKT TILLSTÅND på disk — aldrig mot jobbets samlade kod.
 
 **Besläktat:** `L440` (grindens exitkod går förlorad i pipen) — denna post är
 den varianten där vakten inte kan se att den borde fälla.
+
+**Den andra halvan, mätt i samma session:** vakten fäller också på ett
+grindnamn som råkar stå i kommandosträngen utan att vara ett grindanrop.
+Ett `git commit -m "… markdownlint 0 issues." 2>&1 | tail -3` avvisades
+som pipe-maskerad grind — pipen fanns, men den omslöt `git commit`, inte
+en grind. Formen som fungerar är `git commit -F <fil>`.
+
+**Det gemensamma:** en vakt som läser ytform har BÅDA felriktningarna —
+den missar grinden som gömts i ett skript, och den fäller på namnet som
+bara nämns. Ingen av dem är ett fel i vakten; de är dess pris. Kostnaden
+bärs av anroparen: bär exitkoden själv där vakten inte ser, och flytta
+prosan ur kommandosträngen där den ser för mycket.
