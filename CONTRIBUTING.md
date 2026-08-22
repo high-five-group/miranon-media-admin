@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-10
+updated: 2026-08-22
 review_by: 2027-02-08
 status: stable
 ---
@@ -1133,6 +1133,35 @@ en tyst uppdatering. PR:ns CI står i approval-required-läge (»Approve
 workflows to run«) tills granskaren släpper den: samma blick som godkänner
 bilderna släpper grinden (medvetet GITHUB_TOKEN-formen — noll extra
 secrets).
+
+**Riktad födsel finns sedan `TASK-298` — normalvägen är fortfarande hela
+sviten.** Dispatchen bär en VALFRI input `specfilter`: ett regex mot
+spec-sökvägen (Playwrights positionsfilter), t.ex.
+`personer-promoverings-grind` eller `notis-visual|personer`. Lämnas den tom
+kör workflowen exakt som förr. Skälet den finns: körningen är
+allt-eller-inget, så en enda familjs röda test blockerar hela födseln — mätt
+i run `32587783890` (238 passed, 8 failed, samtliga åtta i hem-familjen,
+noll PR skapad, och därmed kunde notisfamiljens och personlistans baslinjer
+inte födas).
+
+Två egenskaper gör den till ett verktyg i stället för en fälla, och båda är
+grindade av `scripts/test-visual-baselines-scope.sh` (CI-wirad):
+
+- **Scopet syns för granskaren.** En riktad körning märks i grennamnet
+  (`visual-baselines/riktad-run-…`), i PR-titeln och i PR-kroppen, där
+  filtret och de faktiskt körda spec-sökvägarna skrivs ut. Läs en sådan PR
+  som en delmängd: att en vy saknas i diffen betyder INTE att den är
+  oförändrad — den kördes aldrig.
+- **Fail-closed på skräp-input.** `scripts/visual-baselines-scope.sh` prövar
+  inputen och löser upp den mot Playwrights egen fil-lista FÖRE
+  bildgenereringen. Ogiltiga tecken, ledande bindestreck, överlängd eller
+  noll matchande specar dödar jobbet där — aldrig en tom PR, aldrig en tyst
+  full körning.
+
+Approval-grinden och GITHUB_TOKEN-formen är orörda. Fullständigt WHY (varför
+inputen når skalet exakt en gång, och varför den aldrig interpoleras in i ett
+`run:`-block): workflow-filens eget huvud, `.github/workflows/visual-baselines.yml`
+§ RIKTAD KÖRNING.
 
 **Kadens-regeln:** en uppgradering av webbläsare eller testverktyg
 (Playwright-bump, Chromium-drift) ger FÖRVÄNTAD baseline-drift. Den

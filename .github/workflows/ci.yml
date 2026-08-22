@@ -961,6 +961,27 @@ jobs:
         # spärrar). 0,18 s LOKALT mätt (macOS, 2026-08-17, nanosekunds-
         # avgränsad körning av `bash scripts/test-fas4-prod-deploy.sh`) —
         # CI-tiden är INTE mätt av mig.
+        #
+        # test-visual-baselines-scope.sh (TASK-298) hör hit av samma
+        # kadens-skäl som syskonen: den prövar den fail-closed grind som
+        # avgör vilken delmängd en baseline-dispatch får köra, och en grind
+        # är inte en grind förrän dess fyrning fortlöpande verifieras.
+        # Sviten bär 25 fall — elva SIDA 1 (skräp-input i sju former,
+        # ledande bindestreck, överlängd, noll matchande specar, och den
+        # tysta varianten: exit 0 men noll spec-rader), åtta SIDA 2 (tom
+        # input ger full svit, giltigt filter ger riktad, alternation,
+        # ankare, sökvägsfragment) och sex INVARIANTER i
+        # visual-baselines.yml. Invarianterna är skälet steget måste ligga
+        # här och inte enbart hos workflowen: de vaktar att default-vägen
+        # förblir byte-identisk, att den råa inputen ALDRIG interpoleras in
+        # i ett run-block (GitHubs script-injection-väg) och att
+        # GITHUB_TOKEN-formen inte byts mot en PAT — tre egenskaper som en
+        # bekvämlighets-refaktor annars river tyst. Riggen shimmar `npm` på
+        # PATH och rör därför varken nätverk eller webbläsare; ingen
+        # test-only-gren finns i grinden själv. Båda mutationerna prövade
+        # skarpt 2026-08-22 (default-kommandot filtrerat → fall 20 rött;
+        # råa inputen interpolerad → fall 23 rött). 0,4 s LOKALT mätt
+        # (macOS, 2026-08-22) — CI-tiden är INTE mätt av mig.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -982,6 +1003,7 @@ jobs:
           bash scripts/test-check-sessionsdok-fonster.sh
           node scripts/test-check-mailto.mjs
           bash scripts/test-fas4-prod-deploy.sh
+          bash scripts/test-visual-baselines-scope.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
