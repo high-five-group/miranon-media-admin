@@ -46,11 +46,15 @@ Event-11 i stället för Event-60.
 1. **Facit och påstående ligger redan sida vid sida.** `Anmälningar` bär både
    formulärets textkopior (`Datum` `fldsROcE2FFTGCL3W`, `Ort`
    `fldP1LSzbyOJxrOGP`, `Typ` `fldGyYPbxkgS3BqVb`, `Vill anmäla sig till`
-   `fld6RC3r0R9tuKgdF`) och lookup-fält från det länkade eventet (`Ort (from
-   Event)` `fld5560T3pQZSUBaJ`, `Kurs (from Event)` `fldfqU6MfBQdaeLUk`,
-   `Event (namn)` `fldK1aYEm3iCg8OOh`) — live-verifierat via
-   `describe_table` 2026-08-21. Korsfältsvalidering kräver alltså **ett**
-   nytt lookup-fält, inte en ny mekanism.
+   `fld6RC3r0R9tuKgdF` — och `Event (namn)` `fldK1aYEm3iCg8OOh`, som är en
+   **formel** `{fld6RC3r0R9tuKgdF}` som ekar `Vill anmäla sig till`, inte ett
+   uppslag) och lookup-fält från det länkade eventet (`Ort (from Event)`
+   `fld5560T3pQZSUBaJ`, `Kurs (from Event)` `fldfqU6MfBQdaeLUk`).
+   Korsfältsvalidering kräver alltså **ett** nytt lookup-fält, inte en ny
+   mekanism. *(Rättat 2026-08-22, `T161` — se § Updates: den ursprungliga
+   meningen listade `Event (namn)` på facit-sidan och påstod
+   `describe_table`-verifiering; fält-ID:na ovan är prod-basens, staging bär
+   andra ID:n för de två uppslagen — se `data-model.md`.)*
 2. **Jämförelsen är en ren strängjämförelse.** `Eventplanering.Datum (visas i
    länk)` bär exakt den sträng formuläret pre-fillas med
    (`"12–13 september 2026"`) — inget datumfält, ingen parsning. De 18 rader
@@ -246,3 +250,52 @@ ORDENTLIGT!"* Se beslut 7.
   som byggs av samma fält valideringen jämför mot — matchningen blir då
   definitionsmässigt exakt. Risken är alltså högst innan rotfixen är
   genomförd, vilket är motsatt den ordning man intuitivt antar.
+
+## Updates
+
+### 2026-08-22 — § Fynd 1 rättat: `Event (namn)` är en formel, inte ett uppslag (`T161`)
+
+Beslut 1–8 står orörda. Detta är en rättelse av ett **stödjande
+faktapåstående** i § Kontext, kvitterad av Marcus (*"Ta T161 då"*, S110
+Del 13) och gjord öppet — den gamla formuleringen är utbytt i § Fynd 1 med
+en synlig markering, inte tyst.
+
+**Vad som var fel.** Fynd 1 listade `Event (namn)` (`fldK1aYEm3iCg8OOh`)
+bland *"lookup-fält från det länkade eventet"* och avslutade meningen med
+*"live-verifierat via `describe_table` 2026-08-21"*. Basen säger något annat
+(prod och staging, `describe_table` 2026-08-21 och 2026-08-22):
+
+```json
+{"name":"Event (namn)","type":"formula",
+ "options":{"formula":"{fld6RC3r0R9tuKgdF}","referencedFieldIds":["fld6RC3r0R9tuKgdF"]},
+ "id":"fldK1aYEm3iCg8OOh"}
+```
+
+`fld6RC3r0R9tuKgdF` är `Vill anmäla sig till` — anmälans **egen** text, som
+samma mening listade på påstående-sidan. Fältet står alltså på båda sidor av
+vaktens jämförelse: hade kursnamns-axeln jämförts mot det vore jämförelsen
+en tautologi — alltid lika, aldrig en fällning, utan felmeddelande.
+
+**Varför beslutet inte faller.** `TASK-284.1` byggdes mot mätta fält, inte
+mot ADR-texten: kursnamns-axelns facit är `Kurs (from Event)`
+(`fldfqU6MfBQdaeLUk`, prod; `fldcTDSzGBG0bHjl3`, staging), ett äkta uppslag
+av `Eventplanering.Event (text)`. A1-skriptet läser likaså
+`Eventplanering."Event (text)"` per namn. Vakten är därför korrekt i båda
+ytorna — bevisat i staging (`284.2`, sex fall) och i prod (`284.6`, skarpt
+prov 2026-08-22 där just kurs-axeln fällde: *"Fjärrskådning" vs "Resor i
+medvetandet 1"*). Det är ADR-prosan som var fel, inte bygget.
+
+**Det som är värt att minnas är inte fältet.** Felet stod i en ADR som
+**påstod live-verifiering** i samma mening — och det var den egenskapen som
+gjorde att ingen läste om. `ADR-086` säger att mottagaren prövar premisserna;
+bygg-agenten gjorde det och avvek tyst från ADR:n i rätt riktning. Tråden
+(`T161`) registrerades för att avvikelsen skulle bli synlig i stället för
+att ADR:n fortsatte säga fel till nästa läsare. Sanningshierarkin
+(`ADR-100` §1) gäller: för fält-data vinner `data-model.md`, som redan bar
+fältets verkliga form sedan `284.1`:s commit.
+
+**Bifynd bokfört samtidigt:** fält-ID:na i Fynd 1 är prod-basens. Staging
+bär `Ort (from Event)` och `Kurs (from Event)` under andra ID:n — divergensen
+är utskriven i `data-model.md` § Fält tillagda 2026-08-21 och i
+A1-skriptets huvud, och var orsaken till att `284.6` mappade om tre ID:n
+när formeln skapades i prod.
