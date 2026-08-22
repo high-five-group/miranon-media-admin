@@ -319,7 +319,7 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, femte resumen; pausad fyra gånger, historik) —
+**Session 108 ⏸️ PAUSAD (femte gången, 2026-08-22, `lifecycle: paused`) —
 PROTOTYPEN LANDAD EFTER 18 VARV, MALLARNA MÄTTA MOT ROGERS FÖRLAGOR,
 KVITTOTS INNEHÅLL BYGGT — FORMEN KVAR.** Egen worktree `s108-bilagesparet`
 (ADR-090 beslut 2), gren `docs/s108-resume` — **PUSHAD** (18 commits,
@@ -374,7 +374,20 @@ BÅDA ytorna vid resume, en kollision inträffade i dag på exakt den skillnaden
 S109:s `60c80175`) → konverterade per policyn, `8c28d05d` pushad, armeringen
 kvar; streckfrågan för PDF-dokumenten bokförd som **F8**. Numreringen
 re-deriverad: OFÖRÄNDRAD på varje post.
-Full handoff: sessionsdok S108 § Paushistorik 4 + Del 5–7.
+**Resume 5, resten (2026-08-22):** F1–F8 beslutade (Segoe → Selawik Bold,
+Microsofts egen OFL-tvilling; F6 egen SVG efter 1200 dpi-mätning — inget av
+sju ikonbibliotek bär förlagans 3×3) · **kvittot KLART mot Rogers förlaga**
+(form två mätpass + innehåll: `2 500,00`, SEK, e-post, ISO-datum, adress i
+tre fält) · persondata i publikt repo → `#1786` + **T171** · **ADR-119
+beslut 7 BETALT** (DocRaptor-minimaltest mot testnyckeln, ~3 s/dokument,
+åäö + Carlito OK, `docs/research/docraptor-minimaltest-2026-08-22.md`).
+13 PR:er landade. 7 agent-worktrees städade. **NÄSTA (resume av 108):
+MARCUS-SEKVENS 3 — förhandsgranskningen som riktig PDF i ny flik →
+4 skapandet → 5 facit-lås → 6 ADR-124/PRD/promovering** (Marcus vill nå 6
+i nästa resume). Numrering vid paus 5 (`a7dd94c5`): ADR **124** ·
+task-**296** · **L512** · 69 fragment (nästa **70**) · **T172** · **f53** ·
+session **112** — serierna rör sig snabbt, mät mot disk.
+Full handoff: sessionsdok S108 § PAUSLÄGE (femte) + Del 8–9.
 
 **Session 107 ⏸️ PAUSAD (sjunde gången, 2026-08-20, `lifecycle: paused`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
