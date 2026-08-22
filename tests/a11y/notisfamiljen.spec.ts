@@ -127,7 +127,9 @@ test.describe('SectionError — axe-core 0 violations (TASK-285.7/285.8)', () =>
     await checkA11y();
   });
 
-  test('ett chunk-fel ("Ladda om"), 0 violations', async ({ page, checkA11y }) => {
+  // Chunk-grenen bär INGEN åtgärdsknapp sedan TASK-285.13 (chunk-bannern
+  // äger "Ladda om") — axe-golvet gäller ändå, knapplös ruta som knapprad.
+  test('ett chunk-fel (utan åtgärdsknapp), 0 violations', async ({ page, checkA11y }) => {
     await page.getByRole('button', { name: 'Kasta chunk-fel' }).click();
     const alert = page.getByRole('alert').filter({ hasText: 'Den här delen behöver laddas om' });
     await expect(alert).toBeVisible();

@@ -231,3 +231,79 @@ registrerad som
 — mekaniken finns inte i koden i dag (noll träffar på dirty-state,
 `beforeunload`, eller en blocker-mekanism) och byggs INTE i `TASK-285`.
 Tråden bär frågan vidare tills en framtida arbetsenhet tar upp den.
+
+### 2026-08-22 (TASK-285.13) — chunk-bannern äger "Ladda om"; sektionsfelet visar ingen knapp
+
+Beslutet ovan är oförändrat. Denna post avgör en fråga den ursprungliga
+posten inte kunde ställa: den uppstod först när beslut 3 (chunk-bannern) och
+`ADR-121` § Tre fynd punkt 3 (`SectionError`s knappval) hade byggts var för
+sig, av två oberoende agenter.
+
+**Vad som valdes, verbatim (Marcus, 2026-08-22):** *alternativ 1 —
+chunk-bannern äger "Ladda om". Sektionsfelet visar INGEN knapp när
+chunk-flaggan är satt.*
+
+**Marcus motivering, verbatim:** *"vid ett chunk-fel är hela sidan trasig —
+att erbjuda 'ladda om bara den här delen' är ett löfte som inte kan hållas
+(vilket är exakt vad skiva `TASK-285.7` heter). Bannern ligger dessutom
+först i `<main>`, alltså det första en skärmläsare når."*
+
+**Problemet som avgjordes.** Vid ett verkligt chunk-fel monterades SAMTIDIGT
+`ChunkBanner` (`TASK-285.5` — global, `role="alert"`, knapptext "Ladda om",
+första barn i `<main>`) och `SectionError` (`TASK-285.7` — `MessageBox
+intent="error"`, `role="alert"`, knapptext "Ladda om" sedan den skivan). Två
+samtidigt FYLLDA alert-regioner med IDENTISKT tillgängligt namn. Upptäckten
+var mekanisk, inte en granskning: `TASK-285.7`:s eget nya test föll på
+`strict mode violation` för en oscopad
+`getByRole('button', { name: 'Ladda om' })`, och `TASK-285.5`-agenten
+bekräftade fyndet oberoende mot `#1718`:s faktiska diff. Ingen av dem ägde
+frågan, båda flaggade den i stället för att lösa den. `TASK-285`s
+användarberättelse 15 (*"det ska aldrig finnas två tomma alert-regioner i en
+vy, så att landmärkesnavigering förblir entydig"*) handlar om TOMMA regioner;
+två samtidigt FYLLDA med samma namn är en skarpare variant av samma andemening,
+och tillgänglighet är 11 utan undantag (`CLAUDE.md` § Kvalitetsribba).
+
+**Alternativ 4 uteslöts av beslut 7:s copy-linje.** Att ge de två knapparna
+OLIKA tillgängliga namn som skiljer räckvidd (*"Ladda om sidan"* kontra
+*"Ladda om den här delen"*) hade löst tvetydigheten billigast — men
+copy-regeln är att **"Ladda om" aldrig skrivs om**. Regelns auktoritativa
+hemvist är `docs/specs/DESIGN-SYSTEM-SPEC.md` § 21 § Copy-golvet (*"Ladda
+om", inte "Uppdatera"* — Försäkringskassan och Arbetsförmedlingen skriver
+"ladda om sidan", WordPress svenska i 17 av 17 strängar, och "Uppdatera"
+kolliderar mätt med domänspråket "uppdatera en anmälan"). Den ytan finns
+därför att beslut 7 här fastslog att copyn FÖLJER formvalet i stället för att
+föregå det, och beslut 4 gav familjen § 21 som styrande yta. Alternativ 4 är
+alltså uteslutet av copy-linjen, inte av en smakfråga.
+
+Alternativ 2 (chunk-bannern kortas till ren information) och alternativ 3
+(bara en av regionerna bär `role="alert"`) förkastades av samma val: båda
+flyttar eller försvagar en region i stället för att låta den yta som redan
+kommer först i uppläsningsordningen bära åtgärden ensam.
+
+**Vad det betyder i koden.** `SectionError` renderar ingen `actions`-slot när
+`laesChunkLaddningsfel()` är sann — varken "Ladda om" eller "Försök igen"
+(den senare kör om samma saknade import och kan strukturellt aldrig lyckas).
+Chunk-bannerns knapp är **orörd**: texten "Ladda om" står oförändrad, i linje
+med copy-linjen ovan. Sektionsfelets brödtext på den grenen bär i stället
+lösningen i ord ("Ladda om sidan för att hämta den nya versionen"), eftersom
+copy-golvet kräver problem + orsak + lösning och den gamla lydelsen
+(*"...gör att den här delen behöver laddas om"*) bar kvar exakt det
+del-scopade löftet beslutet river.
+
+**Känd, medveten konsekvens.** `ChunkBanner` bor sedan beslut 3 i `AppShell`,
+alltså enbart i det inloggade skalet. På ytorna utanför skalet (login,
+glömt-lösenord, `/dev/*`) visar `SectionError` därför chunk-beskedet UTAN att
+någon banner finns bredvid. Det är skälet till att lösningen ligger i
+brödtexten och inte i en hänvisning uppåt: texten ska stå ensam. Vägen ut för
+användaren är webbläsarens egen omladdning, och sannolikheten är låg —
+mekanismen kan strukturellt bara fyra vid en navigering användaren själv
+utlöser i den redan lazy-laddade appen (`src/lib/chunk-laddningsfel.ts`s
+filhuvud). Bokförd här i stället för lappad.
+
+**Beviset.** Kollisionen kan bara ses i det SAMMANSATTA läget, och
+`TASK-285.9`:s härdning kunde strukturellt inte se den: dess testyta
+`/dev/sektionsfel` ligger utanför `AppShell` och monterar ingen banner.
+Regressionsvakten ligger därför i `acceptance`-klassen
+(`tests/acceptance/chunk-fel-skalet.acceptance.test.ts`), på `/dev-fel` inuti
+skalet, och prövar en OSCOPAD `getByRole('button', { name: 'Ladda om' })` mot
+exakt EN träff — samma lokatorform vars fällning gav upptäckten.
