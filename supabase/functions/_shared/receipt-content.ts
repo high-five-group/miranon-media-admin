@@ -18,6 +18,15 @@
 // MIRANONS ORG-UPPGIFTER ÄR BEKRÄFTADE (samma källa och kvittens som ovan)
 // — sidfoten på Rogers kvitto. `MIRANON_ORG` nedan bär de verkliga
 // uppgifterna i stället för en platshållare.
+//
+// BELOPPSFORMATET MATCHAR ROGERS OCH KÖPARENS E-POST ÄR MED (S108,
+// Marcus-beslut 2026-08-22, ordagrant: "matcha Rogers beloppsformat och ta
+// med e-posten"; se ADR-109 § Updates 2026-08-22 för den fulla motiveringen).
+// `formatBelopp` nedan ger `2 500,00` — sv-SE-tusentalsavgränsare, alltid
+// två decimaler, INGEN `kr`-suffix (valutan sätts av `kvittoRader()`, som
+// prefixar `SEK` EN gång på BETALT-raden, precis som Roger). `KvittoradSpec`
+// bär köparens e-post (`kundEpost`) och `kvittoRader()` skriver den under
+// kundnamnet — samma ordning (namn → e-post) som Rogers Fakturaadress-block.
 
 import type { Betalning, Betalsatt } from './send-receipt.ts';
 
@@ -42,18 +51,38 @@ export function formatKvittoDatum(iso: string): string {
   return `${d.getUTCDate()} ${manad} ${d.getUTCFullYear()}`;
 }
 
-/** "1250 kr" — heltal utan decimaler visas utan ören, annars två decimaler med komma (sv-SE-konvention). */
+/**
+ * "2 500,00" — Rogers format (T170, Marcus-beslut 2026-08-22): sv-SE
+ * tusentalsavgränsare, ALLTID två decimaler, INGEN `kr`-suffix. Valutan är
+ * konsumentens ansvar — `kvittoRader()` prefixar `SEK` EN gång på
+ * BETALT-raden (som Roger), Netto/Moms visas utan valutakod.
+ *
+ * `Intl.NumberFormat('sv-SE')`s grupperingstecken SKILJER SIG mellan
+ * ICU-versioner: U+00A0 (NBSP, äldre CLDR — det Node ger i denna körmiljö,
+ * verifierat lokalt) eller U+202F (NNBSP, nyare CLDR — Deno/Supabase Edge
+ * Runtime kan mycket väl ge det andra; ej lokalt verifierbart, ingen Deno-
+ * binär tillgänglig i byggmiljön). pdf-lib/WinAnsiEncoding
+ * (`StandardFonts.Helvetica`, `_shared/receipt-pdf.ts`) kan INTE koda
+ * U+202F — verifierat mot en isolerad pdf-lib-installation: `page.drawText`
+ * kastar `WinAnsi cannot encode " " (0x202f)`, vilket hade kraschat PDF-
+ * renderingen för VARJE belopp ≥ 1000 kr om Deno råkar ge det tecknet.
+ * Normalisera därför ALLTID till ett vanligt mellanslag (U+0020), oavsett
+ * vilket av de två tecknen körmiljön ger — garanterat pdf-lib- och
+ * HTML-säkert, oberoende av ICU-version.
+ */
 export function formatBelopp(belopp: number): string {
-  const heltal = Number.isInteger(belopp);
-  const tal = heltal
-    ? belopp.toString()
-    : belopp.toFixed(2).replace('.', ',');
-  return `${tal} kr`;
+  const formaterat = new Intl.NumberFormat('sv-SE', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(belopp);
+  return formaterat.replace(/[  ]/g, ' ');
 }
 
 export type KvittoradSpec = {
   kvittonummer: string;
   kundnamn: string;
+  /** Köparens e-post — skrivs ut under kundnamnet (Rogers Fakturaadress-ordning: namn → e-post). */
+  kundEpost: string;
   belopp: number;
   betalsatt: Betalsatt;
   betalning: Betalning;
@@ -109,6 +138,12 @@ export function beraknaMoms(brutto: number): MomsSplit {
  * Betalt) i stället för Rogers sex kolumner (Benämning/Antal/Enhet/A-pris/
  * Summa + Netto/Exkl. moms/Moms/Öresavr/SEK/BETALT) — se PR-beskrivningen
  * för resonemanget bakom exakt vilka av Rogers uppgifter som tas med.
+ *
+ * BELOPPSFORMAT + E-POST (S108, Marcus-beslut 2026-08-22, se filhuvudet):
+ * Netto/Moms visas UTAN valutakod (`formatBelopp` — "2 000,00"), BETALT
+ * bär `SEK` som prefix EN gång (som Rogers BETALT-kolumn). Köparens e-post
+ * (`spec.kundEpost`) skrivs direkt under kundnamnet — samma ordning
+ * (namn → e-post) som Rogers Fakturaadress-block.
  */
 export function kvittoRader(spec: KvittoradSpec): readonly string[] {
   const betalningLabel = spec.betalning === 'avgift' ? 'Anmälningsavgift' : 'Slutbetalning';
@@ -117,10 +152,11 @@ export function kvittoRader(spec: KvittoradSpec): readonly string[] {
     `Kvitto ${spec.kvittonummer}`,
     '',
     `Kund: ${spec.kundnamn}`,
+    `E-post: ${spec.kundEpost}`,
     `Datum: ${formatKvittoDatum(spec.datum)}`,
     `Netto: ${formatBelopp(netto)}`,
     `Moms (${MOMSSATS_PROCENT} %): ${formatBelopp(moms)}`,
-    `Betalt: ${formatBelopp(spec.belopp)}`,
+    `Betalt: SEK ${formatBelopp(spec.belopp)}`,
     `Betalsätt: ${spec.betalsatt}`,
     `Avser: ${betalningLabel}${spec.eventNamn ? ` — ${spec.eventNamn}` : ''}`,
     '',

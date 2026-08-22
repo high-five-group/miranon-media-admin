@@ -319,3 +319,47 @@ beständigheten, en-betalning-i-ett-system) är alla ORÖRDA. Övriga öppna
 punkter i § Öppna punkter (belopp/betalsätt Lotta-inmatat, klient-retry-
 gapet, facit-/ARIA-deltat, läs-efter-skriv-konsistensen) kvarstår öppna,
 oförändrade av denna post.
+
+### 2026-08-22 — Beslut (c) utökas: köparens e-post + Rogers beloppsformat (S108, Marcus-beslut)
+
+Samma dag, samma tråd (T170), ett andra Marcus-beslut, ordagrant: *"matcha
+Rogers beloppsformat och ta med e-posten."* Beslut (c) ovan står ORÖRD
+(frysta beslutstexter ändras inte i efterhand) — denna post är en
+UTÖKNING, inte en rivning.
+
+**Beloppsformatet byter till Rogers.** `_shared/receipt-content.ts` §
+`formatBelopp` gav tidigare `"2500 kr"`/`"133,50 kr"` (heltal utan
+decimaler, `kr`-suffix på varje rad). Rogers kvittoförlaga (T170) skriver
+i stället `2 000,00` — sv-SE-tusentalsavgränsare, ALLTID två decimaler,
+INGEN valuta per rad — och reserverar valutakoden (`SEK`) för EN prefix på
+BETALT-raden. `formatBelopp` ger nu exakt den formen; `kvittoRader()`
+prefixar `SEK` på Betalt-raden, Netto/Moms är utan valutakod.
+
+**Ett genuint plattformsval låg dolt i detta, inte bara en strängändring.**
+`Intl.NumberFormat('sv-SE')`s grupperingstecken skiljer sig mellan
+ICU-versioner (U+00A0 NBSP äldre CLDR, U+202F NNBSP nyare CLDR) — och
+pdf-lib/WinAnsiEncoding (`StandardFonts.Helvetica`, `_shared/
+receipt-pdf.ts`) kan INTE koda U+202F: verifierat mot en isolerad
+pdf-lib-installation, `page.drawText` kastar `WinAnsi cannot encode " "
+(0x202f)`. Utan normalisering hade PDF-renderingen kraschat för varje
+belopp ≥ 1000 kr om körmiljön (Deno/Supabase Edge Runtime) råkade ge det
+nyare tecknet — en risk som aldrig syns lokalt (Node i byggmiljön gav
+U+00A0, inte U+202F). `formatBelopp` normaliserar därför ALLTID
+grupperingstecknet till ett vanligt mellanslag (U+0020), oavsett vilket av
+de två körmiljön ger — se funktionens egen docstring för hela
+resonemanget och `tests/api/receipt-content.test.ts` för regressionstestet
+som bevisar det (byte-nivå, inte bara en synlig strängjämförelse).
+
+**Köparens e-post är med.** `KvittoradSpec` bär nu `kundEpost: string`,
+och `kvittoRader()` skriver den som en egen rad direkt under kundnamnet —
+samma Fakturaadress-ordning (namn → e-post) som Rogers förlaga. Adressen
+härleds SERVER-SIDE, samma "kan aldrig komma från klienten"-linje som
+mottagarens namn (`send-receipt-email/index.ts` § filhuvud): den redan
+lästa `ReceiptSendInput.email` (Anmälans `E-post`-fält) trådas nu genom
+`ReceiptPdfBuilder`s spec (`_shared/send-receipt.ts`) i stället för att
+bara användas som sändningsadress. `preview-receipt`s typexempel bär en
+fiktiv adress (`anna.andersson@example.com`) — aldrig en verklig kunds.
+
+**Vad som INTE ändras av denna post.** § Beslut 1–7 och den föregående
+Updates-postens moms-/org-innehåll är ORÖRDA. § Öppna punkter kvarstår
+oförändrade — ingen av dem rörde beloppsformat eller e-post.

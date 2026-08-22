@@ -92,6 +92,8 @@ const FORHANDSVISNING_KVITTONUMMER = 'FÖRHANDSVISNING';
  */
 const TYPEXEMPEL = {
   kundnamn: 'Exempelperson',
+  /** Fiktiv adress (S108, Marcus-beslut 2026-08-22) — ALDRIG en verklig kunds e-post, se filhuvudets PERSONDATA-stycke. */
+  kundEpost: 'anna.andersson@example.com',
   belopp: 500,
   betalsatt: 'Swish' as const,
   betalning: 'avgift' as const,
@@ -135,6 +137,7 @@ Deno.serve(async (req) => {
     const rader = kvittoRader({
       kvittonummer: FORHANDSVISNING_KVITTONUMMER,
       kundnamn: TYPEXEMPEL.kundnamn,
+      kundEpost: TYPEXEMPEL.kundEpost,
       belopp: TYPEXEMPEL.belopp,
       betalsatt: TYPEXEMPEL.betalsatt,
       betalning: TYPEXEMPEL.betalning,

@@ -119,6 +119,7 @@ function makeRealPdfBuilder(): ReceiptPdfBuilder {
     const rader = kvittoRader({
       kvittonummer: spec.kvittonummer,
       kundnamn: spec.kundnamn,
+      kundEpost: spec.kundEpost,
       belopp: spec.belopp,
       betalsatt: spec.betalsatt,
       betalning: spec.betalning,
