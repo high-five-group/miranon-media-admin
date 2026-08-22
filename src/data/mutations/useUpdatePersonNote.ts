@@ -7,6 +7,7 @@ import {
   UPPDATERADE_ANTECKNING_VERB,
 } from '@/data/activityLog/activityTypes';
 import { recordActivity } from '@/data/activityLog/recordActivity';
+import { invalideraPersonregistret } from '@/data/mutations/personregister-invalidering';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail } from '@/domain/schemas';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
@@ -95,6 +96,12 @@ export function useUpdatePersonNote(personId: string, personNamn: string | null)
         // förklarar (object.id är redan personen, extensionen emitteras ändå).
         personId,
       });
+
+      // TASK-286.4 (ADR-123 beslut 6) — PERSONREGISTRET. Skrivningen går mot
+      // Personer-radens `Anteckningar` (operation `update-person-note`), ett
+      // fält register-payloaden FAKTISKT bär (`mapPerson`). Utan detta hade
+      // registret burit den gamla texten hela `staleTime` ut.
+      invalideraPersonregistret(queryClient);
     },
   });
 }

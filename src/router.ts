@@ -5,6 +5,7 @@ import { Sidbytesindikator } from './components/AppShell';
 import { SectionError } from './components/ErrorBoundary';
 import { dataSource } from './data/dataSource';
 import { PERSIST_MAX_AGE_MS } from './queries/persist';
+import { registreraPersonregistretsFarskhet } from './queries/personregister-farskhet';
 import { routeTree } from './routeTree.gen';
 
 // QueryClient defaults per docs/specs/STATE-STRATEGY.md §3.
@@ -31,6 +32,14 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// TASK-286.4 (ADR-123 beslut 6) — personregistrets EGEN färskhet, 30 min mot
+// globalens 5. Registrerad HÄR, direkt efter klienten, så färskhets-policyn
+// bor med de övriga query-defaultsen i stället för i en vy-komponent — och så
+// att BÅDA konsumenterna av nyckeln (PersonsList:s useQuery och TabBar:s
+// prefetch) ärver samma värde. Motiveringen, och varför
+// refetchOnWindowFocus/refetchOnReconnect medvetet INTE nämns, står i modulen.
+registreraPersonregistretsFarskhet(queryClient);
 
 /**
  * Router instantierad på modul-scope. context.auth fylls per-render via InnerApp-komponenten

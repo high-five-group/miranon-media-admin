@@ -7,6 +7,7 @@ import {
   UPPDATERADE_FLAGGA_VERB,
 } from '@/data/activityLog/activityTypes';
 import { recordActivity } from '@/data/activityLog/recordActivity';
+import { invalideraPersonregistret } from '@/data/mutations/personregister-invalidering';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail } from '@/domain/schemas';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
@@ -109,6 +110,14 @@ export function useUpdatePersonFlag(personId: string, personNamn: string | null)
         // förklarar (object.id är redan personen, extensionen emitteras ändå).
         personId,
       });
+
+      // TASK-286.4 (ADR-123 beslut 6) — PERSONREGISTRET. `Flagga` ligger i dag
+      // utanför registrets payload (`mapPerson` bär `manuellFlagga` ur det
+      // döda `Manuella flagga`), så detta är i dag en invalidering utan synlig
+      // effekt. Den finns ändå: AC #1 säger "alla person-ändrande skrivvägar",
+      // detta är den enda ANDRA skrivningen mot Personer-tabellen, och flaggan
+      // är på väg mot listan. Kostnad noll — registret är omonterat härifrån.
+      invalideraPersonregistret(queryClient);
     },
   });
 }
