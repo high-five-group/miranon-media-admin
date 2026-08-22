@@ -15,9 +15,9 @@
 
 ## Aktuellt fokus
 
-**Session 110 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`; pausad två
-gånger 2026-08-21) — KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64
-FELMATCHADE → 0 I PROD, VAKTEN GRILLAD OCH LÅST I `ADR-122`.** Egen worktree `s110-kalenderlank-driften` (S109
+**Session 110 ⏸️ PAUSAD (tredje gången, 2026-08-22, `lifecycle: paused`) —
+KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
+VAKTEN LÅST I `ADR-122`, FAMILJEN BYGGD 3/4.** Egen worktree `s110-kalenderlank-driften` (S109
 äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
 Elfsight-kalenderwidgetens **handskrivna** anmälningslänkar på miranon.se —
 Roger duplicerar poster utan att redigera URL-parametrarna; `"10"` →
@@ -87,7 +87,7 @@ kontroll). Skriptet är ändå skrivet och bevisat i båda riktningar
 (`docs/reference/automation-scripts/a1-eventmatchning-vakt.js`); A1 orörd och
 `undeployed`, verifierad efter försöket. `#1722` står som DRAFT.
 
-**NÄSTA: TVÅ MARCUS-BESLUT, I DENNA ORDNING. (1) `T168` — datum-axeln stryker
+**PAUSAD i väntan på TVÅ MARCUS-BESLUT, I DENNA ORDNING. (1) `T168` — datum-axeln stryker
 ALLA årtal, så `12–13 september 2025` och `…2026` ger `OK`. Rör LANDAD kod
 (`284.1`:s formelfält driver markören och kö-räknaren) och det ännu ej
 live-satta `284.2`-skriptet; rekommendation: jämför årtalens MÄNGD separat.
@@ -97,11 +97,11 @@ omklassa till `ready-for-human` och foga in i `284.6` · byt hemvist och riv
 det två omgångar.** `284.5` QA · `284.6` prod · `284.4`:s
 DoD #6 (facit-amendering) — alla MARCUS-moment. Öppet: Event-18:s falska positiv ej lokaliserad · Lottas
 fyra besked · **Marcus: kalenderlänkarna på miranon.se + Lotta-texten** ·
-`task-232` → Done vid stängning. Numrering — RE-DERIVERA ALLTID mot disk i
-mint-ögonblicket; SEX trådnummer-kollisioner i klustret under detta pass:
-ADR **124** · kort **288+** · **L512** + 61 fragment · tråd **T168**
-(S110 mintade `T161`/`T164`/`T165`/`T166`/`T167`) · fälla **53** ·
-session 111. Full narrativ: sessionsdok S110 Del 1–6 + Paushistorik.
+`task-232` → Done vid stängning. Numrering vid paus, disk-läst mot `2682457a` — RE-DERIVERA
+ALLTID i mint-ögonblicket (SEX trådnummer-kollisioner i klustret under
+passet): ADR **124** · tråd **T169** · kort **288** · **L512** + 62
+fragment · fälla **53** · session **111**. Full narrativ: sessionsdok
+S110 Del 1–6 + PAUSLÄGE-blocket.
 
 **Session 109 ⏸️ PAUSAD (tredje gången, 2026-08-22, `lifecycle: paused`) —
 NOTISFAMILJEN BYGGD FÄRDIG; ALLT KVARVARANDE ÄR TRE MARCUS-BESLUT.** Marcus AFK
