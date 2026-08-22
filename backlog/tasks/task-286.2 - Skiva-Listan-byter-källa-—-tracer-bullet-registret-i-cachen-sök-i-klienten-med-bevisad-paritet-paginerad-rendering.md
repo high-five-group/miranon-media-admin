@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:46'
+updated_date: '2026-08-21 13:33'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,14 +31,14 @@ Täcker användarberättelser: 1, 2, 3, 7, 8, 9, 10, 11, 12, 15, 16
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Efter första laddningen sker noll nätverksanrop vid skrivning i sökrutan — mätt i acceptance-testet (räknade EF-anrop), inte antaget
-- [ ] #2 Skelett visas bara vid första laddningen av registret och i slutgeometri; därefter aldrig vid sökning
-- [ ] #3 Klientfiltret matchar skiftlägesokänsligt och diakritik-känsligt över namn, e-post, telefon och ort; paritetstestet mot EF:ens filter är grönt för hela termlistan
-- [ ] #4 Prefetch startar vid hover/fokus på Personer-fliken; första besöket efter prefetch visar inget skelett
-- [ ] #5 50 rader renderas initialt; Ladda fler utökar ur den filtrerade arrayen med oförändrad knapp och aria-live-annonsering; räknarraden speglar arrayens träffantal
-- [ ] #6 Sökningen står i URL:en (debounced) och återställs vid omladdning; träffantalet annonseras artigt efter skrivpaus, inte per tecken
-- [ ] #7 Personlistans rad- och listform är identisk med facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — referenserna gröna
-- [ ] #8 Acceptance-sviten för personlistan täcker: sök utan nätverk, paritet, Ladda fler ur array, URL-tillstånd, axe noll violations
+- [x] #1 Efter första laddningen sker noll nätverksanrop vid skrivning i sökrutan — mätt i acceptance-testet (räknade EF-anrop), inte antaget
+- [x] #2 Skelett visas bara vid första laddningen av registret och i slutgeometri; därefter aldrig vid sökning
+- [x] #3 Klientfiltret matchar skiftlägesokänsligt och diakritik-känsligt över namn, e-post, telefon och ort; paritetstestet mot EF:ens filter är grönt för hela termlistan
+- [x] #4 Prefetch startar vid hover/fokus på Personer-fliken; första besöket efter prefetch visar inget skelett
+- [x] #5 50 rader renderas initialt; Ladda fler utökar ur den filtrerade arrayen med oförändrad knapp och aria-live-annonsering; räknarraden speglar arrayens träffantal
+- [x] #6 Sökningen står i URL:en (debounced) och återställs vid omladdning; träffantalet annonseras artigt efter skrivpaus, inte per tecken
+- [x] #7 Personlistans rad- och listform är identisk med facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — referenserna gröna
+- [x] #8 Acceptance-sviten för personlistan täcker: sök utan nätverk, paritet, Ladda fler ur array, URL-tillstånd, axe noll violations
 <!-- AC:END -->
 
 ## Definition of Done

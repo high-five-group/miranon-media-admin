@@ -42,4 +42,31 @@
     - link "Ingrid Isaksson":
       - /url: /personer/recVisualPers00009
     - text: ingrid.isaksson@example.se 3 dagar sedan · Anmälde sig till RIM 2 i Rönninge Aktiv anmälan
-- button "Ladda fler"
+  - listitem:
+    - link "Johan Jonsson":
+      - /url: /personer/recVisualPers00010
+    - text: 4 dagar sedan · Anmälde sig till RIM 1 i Ulvåker Aktiv anmälan
+  - listitem:
+    - link "Karin Kvist":
+      - /url: /personer/recVisualPers00011
+    - text: /karin\.kvist@example\.se \d+ dagar sedan · Deltog på RIM 2 i Göteborg/
+  - listitem:
+    - link "Leila Khoury":
+      - /url: /personer/recVisualPers00012
+    - text: leila.khoury@example.se 6 dagar sedan · Hämtade ett erbjudande Aktiv anmälan
+  - listitem:
+    - link "Mikael Malm":
+      - /url: /personer/recVisualPers00013
+    - text: /mikael\.malm@example\.se \d+ dagar sedan · Anmälde sig till RIM 1 Aktiv anmälan/
+  - listitem:
+    - link "Nina Nyström":
+      - /url: /personer/recVisualPers00014
+    - text: /\d+ dagar sedan · Deltog · Stockholm – Utbildning – Fjärrskådning – \d+-\d+-\d+/
+  - listitem:
+    - link "Oskar Olsson":
+      - /url: /personer/recVisualPers00015
+    - text: /\d+ dagar sedan · Anmälde sig/
+  - listitem:
+    - link "Petra Palm":
+      - /url: /personer/recVisualPers00016
+    - text: petra.palm@example.se 7 dagar sedan · Anmälde sig till RIM 2 i Stockholm Aktiv anmälan

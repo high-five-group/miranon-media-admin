@@ -1011,8 +1011,24 @@ function matchesSearch(person: FixturePerson, term: string): boolean {
  * SAMMA filtrerade mängd (`traffar.length`, efter sök men FÖRE sidskärning)
  * och satt ENBART när cursor saknas, precis som `get-persons/index.ts`s
  * full-walk (en gång per vy-/sökladdning, aldrig per sida).
+ *
+ * [TILLAGD, TASK-286.2] `?register=true` speglar EF:ens EGEN, TIDIGA retur
+ * (`get-persons/index.ts`, ADR-123 beslut 1) — SAMMA plats i denna funktion:
+ * en gren FÖRE sök-/cursor-parsningen, aldrig en väg genom den. Returnerar
+ * HELA fixturvärlden (alla 17, Namn-asc, ingen sidskärning) i register-
+ * formens `{ persons }` — inget `nextCursor`/`total`, precis som EF-svaret.
+ * `PersonsList` konsumerar denna gren uteslutande sedan TASK-286.2; sök-/
+ * cursor-grenen nedan lever kvar orörd åt `resolvePersonsResponse`s ANDRA
+ * konsumenter (ingen finns i dag, men ADR-123 § Beslut 1 river den inte
+ * förrän `TASK-286.3`).
  */
 export function resolvePersonsResponse(url: URL) {
+  if (url.searchParams.get('register') === 'true') {
+    return {
+      persons: [...PERSONS_RESPONSE.persons].sort((a, b) => a.namn.localeCompare(b.namn, 'sv')),
+    };
+  }
+
   const term = (url.searchParams.get('search') ?? '').trim().toLowerCase();
   const rawPageSize = Number.parseInt(url.searchParams.get('pageSize') ?? '', 10);
   const pageSize = Math.min(
