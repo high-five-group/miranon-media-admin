@@ -96,8 +96,15 @@ body {
   background: #e8e8e8; /* skärm-bakgrund runt A4-arket, skrivs aldrig ut */
   font-family: var(--mm-bilaga-brodtext-font);
   color: var(--mm-bilaga-svart);
-  font-size: 15px;
-  line-height: 1.35;
+  /*
+   * Grundstorlek = bekräftelsebilagans brödtext. Förlagan: 10,00 pt Calibri,
+   * radsteg 12,00 pt (= 1,20). Mätt ur PDF:ens innehållsström: `Tm`-skalan
+   * 41,66667 gånger `cm`-skalan 0,24 ger exakt 10,0 pt, och radernas
+   * baslinjer ligger 12,00 pt isär. Deltagarinformationen sätter sitt eget,
+   * mindre värde nedan — de två förlagorna är INTE satta i samma grad.
+   */
+  font-size: 10pt;
+  line-height: 1.2;
 }
 
 @page {
@@ -105,14 +112,43 @@ body {
   margin: 0;
 }
 
+/*
+ * SIDMARGINALERNA ÄR OLIKA I DE TVÅ FÖRLAGORNA — därför ingen delad padding.
+ * Bekräftelsebilagan mäts mot den blå ramens YTTERKANT (strecket i PDF:en är
+ * en mittlinje; halva ramtjockleken är adderad), deltagarinformationen mot
+ * brödtextens vänsterkant eftersom den saknar ram.
+ */
 .sida {
   width: 210mm;
   min-height: 297mm;
   margin: 10mm auto;
   background: #ffffff;
-  padding: 10mm 12mm;
   position: relative;
   box-shadow: 0 0 0.5mm rgba(0, 0, 0, 0.3);
+}
+
+.sida--bekraftelse {
+  /*
+   * Förlagan: ramens ytterkant 7,90 mm från vänster kant och 8,37 mm från
+   * höger — 0,47 mm asymmetri som är handplacering i PowerPoint, inte design.
+   * Vi sätter medelvärdet 8,1 mm på båda sidor (se RAPPORT.md § Öppna frågor).
+   * Topp 9,75 mm, botten 6,03 mm — båda mätta, båda behållna som de är.
+   */
+  padding: 9.75mm 8.1mm 6.03mm;
+  display: flex; /* så ramen når sidfoten även när innehållet är kort */
+}
+
+.sida--deltagarinformation {
+  /*
+   * Förlagan: brödtexten börjar på 51,00 pt = 18,00 mm från vänsterkanten och
+   * längsta raden slutar på 190,7 mm, vilket är förenligt med samma marginal
+   * på båda sidor. Toppen är satt så loggans bläck landar på 13,38 mm, mätt.
+   * Brödtexten är dessutom 9,00 pt här (mot bekräftelsebilagans 10,00 pt) med
+   * 11,04 pt radsteg (= 1,227).
+   */
+  padding: 12.9mm 18mm 10mm;
+  font-size: 9pt;
+  line-height: 1.227;
 }
 
 @media print {
@@ -126,44 +162,110 @@ body {
 }
 
 .yttre-ram {
-  border: 1.5pt solid var(--mm-bilaga-morkbla-ram);
-  border-radius: 10mm;
-  padding: 6mm 8mm 8mm;
+  /*
+   * Förlagan: streckbredd 1,048 pt × 2 = 2,096 pt, hörnradie 44,43 pt =
+   * 15,68 mm (radien läst ur den rundade rektangelns bezier-kontrollpunkter i
+   * innehållsströmmen, inte ögonmätt). Chromium GOLVAR ramtjocklek till hela
+   * device-pixlar (mätt: 2,1 pt = 2,8 px blev 2 px), så värdet sätts till
+   * 2,25 pt = exakt 3 px — närmare 2,096 pt än 2 px (1,50 pt) hade varit.
+   * Vänster/höger-padding 14,79 mm ger brödtextens vänsterkant på förlagans
+   * 23,68 mm från sidkanten; padding-bottom 2,92 mm lägger sidfotens rutor
+   * 11,99 mm över sidkanten, som i förlagan.
+   */
+  border: 2.25pt solid var(--mm-bilaga-morkbla-ram);
+  border-radius: 15.7mm;
+  padding: 0 14.79mm 2.92mm;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .loggarad {
   text-align: center;
-  margin-bottom: 1mm;
+  margin-bottom: 0;
 }
 
-.logga {
-  width: 92mm;
+/*
+ * Loggans bredd är matchad mot förlagans BLÄCK-bredd (ordmärkets faktiska
+ * ytterkanter i den renderade bilden), inte mot bildrutans bredd — förlagans
+ * raster bär tomrum runt märket som vår SVG saknar. Bekräftelsebilagan:
+ * 113,12 mm. Deltagarinformationen: 138,50 mm. Mätt med pixel-svep över
+ * `pdftocairo -png -r 150`-bilderna.
+ */
+.sida--bekraftelse .logga {
+  width: 113.1mm;
+  height: auto;
+}
+
+.sida--deltagarinformation .logga {
+  width: 138.5mm;
   height: auto;
 }
 
 .rubrik {
   font-family: var(--mm-bilaga-rubrik-font);
   font-weight: 700;
-  font-size: 25px;
+  /* Förlagan: 17,00 pt Cavolini-Bold i BÅDA dokumenten (Tm 70,83334 × 0,24) */
+  font-size: 17pt;
   color: var(--mm-bilaga-svart);
   text-align: center;
-  margin: 0 0 4mm;
+  margin: 0;
+}
+
+/*
+ * Rubrikens avstånd ned till infobrutan skiljer mellan förlagorna:
+ * bekräftelsebilagan 5,18 mm, deltagarinformationen 10,42 mm (mätt mellan
+ * rubrikens glyfrutas underkant och rutans överkant).
+ */
+.sida--bekraftelse .rubrik {
+  margin-bottom: 5.46mm;
+}
+
+.sida--deltagarinformation .rubrik {
+  margin-bottom: 10.5mm;
+}
+
+/* Förlagan: 7,19 mm mellan loggans bläck-underkant och rubrikens glyfruta */
+.sida--deltagarinformation .loggarad {
+  margin-bottom: 5mm;
 }
 
 .inforuta {
+  /* Förlagan: 1,048 pt svart streck i BÅDA dokumenten */
   border: 1pt solid var(--mm-bilaga-svart);
-  border-radius: 6mm;
-  padding: 3mm 6mm;
-  margin-bottom: 4mm;
+  /* Förlagan centrerar rutan; den är ALDRIG full innehållsbredd */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/*
+ * Rutans mått skiljer kraftigt mellan förlagorna — det var därför den tidigare
+ * delmätningen (S108 Del 2 § C) inte gick ihop: den mätte HÖGER ruta men
+ * bokförde den som bekräftelsebilagans. Bredderna nedan är streckets
+ * mittlinjemått plus ramtjockleken, eftersom CSS-bredden är border-box.
+ */
+.sida--bekraftelse .inforuta {
+  width: 154.6mm; /* förlagan: 437,24 pt mittlinje + 1,048 pt ram */
+  border-radius: 7mm; /* förlagan: 19,89 pt = 7,01 mm */
+  padding: 3.28mm 5.7mm 3.5mm; /* förlagan: 10,17 / 16,31 / 9,99 pt */
+  margin-bottom: 2.4mm; /* förlagan: 2,58 mm ned till brödtextens glyfruta */
+}
+
+.sida--deltagarinformation .inforuta {
+  width: 118.9mm; /* förlagan: 335,92 pt mittlinje + 1,048 pt ram */
+  border-radius: 4.3mm; /* förlagan: 12,12 pt = 4,28 mm */
+  padding: 5.1mm 10.75mm 7.4mm; /* förlagan: 14,52 / 30,46 / 21,03 pt */
+  margin-bottom: 12.95mm; /* förlagan: 12,81 mm ned till ingressens glyfruta */
 }
 
 .inforuta p {
-  margin: 0 0 1mm;
-  font-size: 15px;
-}
-
-.inforuta p:last-child {
-  margin-bottom: 0;
+  margin: 0;
+  /*
+   * Infobrutan är 10,00 pt i BÅDA förlagorna — även i deltagarinformationen,
+   * där brödtexten runt omkring är 9,00 pt. Radsteget är 12,00 pt (= 1,20).
+   */
+  font-size: 10pt;
+  line-height: 1.2;
 }
 
 .lank {
@@ -171,19 +273,38 @@ body {
   text-decoration: underline;
 }
 
-.halsning {
-  margin: 0 0 4mm;
-  font-size: 15px;
+/*
+ * "Varmt välkomna önskar Roger & Lotta!" ligger INUTI infobrutan i
+ * bekräftelsebilagan — mätt: dess glyfruta (603,28–615,49 pt) ligger innanför
+ * rutans streck (593,29–712,53 pt), med en tom rad ovanför (25,00 pt mellan
+ * glyfrutornas överkanter mot normalstegets 12,25 pt). Mallen hade den utanför.
+ * I deltagarinformationen är samma mening ett vanligt sista stycke.
+ */
+.inforuta .halsning {
+  margin: 4.5mm 0 0; /* förlagan: 12,75 pt extra = en tom rad */
+}
+
+.brodtext .halsning {
+  margin: 0;
 }
 
 .ingress {
   font-style: italic;
-  margin: 0 0 4mm;
+  margin: 0 0 3.9mm;
 }
 
 .brodtext p {
-  margin: 0 0 3mm;
+  /*
+   * Förlagan: 11,04–11,10 pt EXTRA mellan styckena utöver radsteget (mätt som
+   * skillnaden mellan styckegapet 22,08–23,10 pt och radsteget), i båda
+   * dokumenten. Det motsvarar 3,9 mm.
+   */
+  margin: 0 0 3.9mm;
   text-align: left;
+}
+
+.brodtext p:last-child {
+  margin-bottom: 0;
 }
 
 .overstrykning {
@@ -191,24 +312,44 @@ body {
 }
 
 .amnesstycke {
-  margin: 0 0 3mm;
+  margin: 0 0 3.9mm;
 }
 
+/*
+ * Innehållslistorna är INTE två halvor av textspalten. Förlagan: kolumn 1
+ * börjar på 81,13 pt, kolumn 2 på 307,31 pt — ett fast avstånd på 226,18 pt =
+ * 79,80 mm, och blocket är indraget 4,98 pt = 1,76 mm... nej, 14,00 pt =
+ * 4,94 mm från brödtextens vänsterkant (67,13 pt). Därför fasta kolumnbredder
+ * och ett eget indrag, inte flex 50/50 med gap.
+ */
 .innehallslistor {
   display: flex;
-  gap: 10mm;
-  margin: 4mm 0;
+  gap: 0;
+  padding-left: 4.95mm;
+  margin: 5.38mm 0 0;
 }
 
 .lista {
-  flex: 1 1 50%;
+  flex: 0 0 79.8mm; /* förlagan: kolumnavstånd 226,18 pt */
   min-width: 0;
 }
 
+/*
+ * Sista kolumnen tar resten i stället för en fast bredd: två fasta 79,8 mm
+ * plus indraget är BREDARE än textspalten, och en flex-post med fast bredd
+ * tvingar sin förälder att växa (min-width: auto) — vilket sköt ut hela den
+ * blå ramen 1,5 mm åt höger. Kolumnavståndet bärs av FÖRSTA kolumnen; det är
+ * det som är mätt.
+ */
+.lista:last-child {
+  flex: 1 1 0;
+}
+
 .lista h2 {
-  font-size: 15px;
+  /* Förlagan: listrubriken är 9,00 pt fet — samma grad som posterna */
+  font-size: 9pt;
   font-weight: 700;
-  margin: 0 0 1mm;
+  margin: 0 0 0.4mm; /* förlagan: 1,2 pt utöver radsteget */
   font-family: var(--mm-bilaga-brodtext-font);
 }
 
@@ -216,13 +357,15 @@ body {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 13px;
+  /* Förlagan: 9,00 pt med 10,94–11,04 pt radsteg (= 1,225) */
+  font-size: 9pt;
+  line-height: 1.225;
 }
 
 .lista li {
-  margin: 0 0 0.5mm;
-  padding-left: 3mm;
-  text-indent: -3mm;
+  margin: 0; /* radsteget bärs av line-height, inte av marginaler */
+  padding-left: 1.76mm; /* förlagan: 4,98 pt mellan bindestreck och text */
+  text-indent: -1.76mm;
 }
 
 .lista li::before {
@@ -239,16 +382,33 @@ body {
   color: var(--mm-bilaga-accent-bla);
 }
 
+/*
+ * SIDFOTEN VAR STRUKTURELLT FEL, inte bara felmätt. Mallen hade TRE lika
+ * kvadratiska rutor med svart ram, en liten ikon-bricka som överlägg i hörnet
+ * och bildtexten UNDER rutan. Förlagan (mätt ur innehållsströmmen) har:
+ *
+ *   · TVÅ rundade rutor, 142,66 × 87,17 pt = 50,33 × 30,75 mm, hörnradie
+ *     14,54 pt = 5,13 mm, streck 2,096 pt i MÖRKBLÅTT (#2F5597) — inte svart;
+ *   · i varje ruta TVÅ kvadrater bredvid varandra, 59,69 pt = 21,06 mm var,
+ *     ikonen till vänster och QR-koden till höger, 6,52 pt = 2,30 mm mellan;
+ *   · bildtexten INUTI rutan, under kvadraterna, 9,00 pt fet;
+ *   · bokomslaget FRITT mellan rutorna, 62,67 × 102,08 pt = 22,11 × 36,01 mm,
+ *     helt utan ram.
+ *
+ * Det innebär också att README:ns "avsiktliga avvikelse" om en logotyp inuti
+ * QR-mönstret vilade på en felläsning: förlagans QR-koder är rena, och
+ * logotypen är en EGEN bild bredvid koden. Se test-results/malldiff/RAPPORT.md.
+ */
 .sidfot {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: 6mm;
-  margin-top: 6mm;
+  margin-top: auto; /* ramen är sidhög — sidfoten ligger i dess nederkant */
 }
 
 .ikonruta {
-  flex: 1 1 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -256,53 +416,39 @@ body {
 }
 
 .ikonruta-ram {
-  border: 1pt solid var(--mm-bilaga-svart);
-  border-radius: 4mm;
-  padding: 2mm;
-  width: 32mm;
-  height: 32mm;
+  border: 2.25pt solid var(--mm-bilaga-morkbla-ram); /* förlagan: 2,096 pt, golvat till 3 px */
+  border-radius: 5.15mm; /* förlagan: 14,54 pt */
+  width: 51.1mm; /* förlagan: 142,66 pt mittlinje + ram */
+  height: 31.5mm; /* förlagan: 87,17 pt mittlinje + ram */
+  padding: 2.55mm 3mm 1.5mm; /* förlagan: 7,26 / 8,11–8,97 / 4,27 pt */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  position: relative;
   background: #ffffff;
 }
 
-.ikonruta-badge {
-  position: absolute;
-  top: -2.5mm;
-  left: -2.5mm;
-  width: 8mm;
-  height: 8mm;
-  background: #ffffff;
-  border-radius: 50%;
+.ikonruta-media {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 0 1pt #ffffff;
+  gap: 2.3mm; /* förlagan: 6,52 pt mellan ikon och QR */
 }
 
-.ikonruta-badge svg,
-.ikonruta-badge img {
-  width: 6mm;
-  height: 6mm;
-}
-
+.ikonruta-ikon,
 .ikonruta-qr {
-  width: 100%;
-  height: 100%;
+  width: 21.05mm; /* förlagan: 59,69 pt, kvadratisk */
+  height: 21.05mm;
 }
 
 .ikonruta-omslag {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 3mm;
+  width: 22.1mm; /* förlagan: 62,67 pt */
+  height: 36mm; /* förlagan: 102,08 pt */
+  object-fit: contain;
 }
 
 .ikonruta-bildtext {
-  font-size: 10px;
+  /* Förlagan: 9,00 pt fet, 4,98 pt under kvadraterna, INUTI rutan */
+  font-size: 9pt;
+  line-height: 1.225;
   font-weight: 700;
-  margin-top: 1.5mm;
-  word-break: break-all;
+  margin-top: 1.75mm;
+  white-space: nowrap;
 }
