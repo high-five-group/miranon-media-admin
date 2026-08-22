@@ -146,19 +146,21 @@ alltså inte härledas server-side; se § Öppna punkter.
 
 ## Öppna punkter (bygget går vidare, dessa är INTE lösta)
 
-- **Momsraden** (beslut c) — Rogers bekräftelse av momsstatus krävs INNAN
-  kvitton går skarpt till KUNDER. Kvitto-PDF:en (`_shared/receipt-
-  content.ts`) utelämnar raden helt, medvetet, öppet bokfört — bygget är
-  INTE blockerat av den öppna frågan, men skarp drift mot verkliga kunder
-  är det tills Roger svarat.
-- **Miranons org-uppgifter** (organisationsnummer, postadress) finns INTE
-  dokumenterade någonstans i repot (sökt `docs/`, `src/`,
-  S102-sessionsdoket — noll träffar, samma ADR-086 premiss-pass som
-  avtäckte avsaknaden av ett prisfält). `_shared/receipt-content.ts` §
-  `MIRANON_ORG_PLACEHOLDER` bär en explicit, läsbar platshållartext i
-  stället för en gissning — samma "skattefakta gissas aldrig"-disciplin
-  som momsraden. Roger/Marcus måste bekräfta de verkliga uppgifterna innan
-  PDF:en går skarpt.
+- **~~Momsraden~~ (beslut c) — STÄNGD 2026-08-22, se § Updates.** Ursprunglig
+  öppen punkt, bevarad ordagrant för historiken (riv aldrig tyst): Rogers
+  bekräftelse av momsstatus krävs INNAN kvitton går skarpt till KUNDER.
+  Kvitto-PDF:en (`_shared/receipt-content.ts`) utelämnar raden helt,
+  medvetet, öppet bokfört — bygget är INTE blockerat av den öppna frågan,
+  men skarp drift mot verkliga kunder är det tills Roger svarat.
+- **~~Miranons org-uppgifter~~ (organisationsnummer, postadress) — STÄNGD
+  2026-08-22, se § Updates.** Ursprunglig öppen punkt, bevarad ordagrant
+  för historiken: finns INTE dokumenterade någonstans i repot (sökt
+  `docs/`, `src/`, S102-sessionsdoket — noll träffar, samma ADR-086
+  premiss-pass som avtäckte avsaknaden av ett prisfält). `_shared/
+  receipt-content.ts` § `MIRANON_ORG_PLACEHOLDER` bär en explicit, läsbar
+  platshållartext i stället för en gissning — samma "skattefakta gissas
+  aldrig"-disciplin som momsraden. Roger/Marcus måste bekräfta de
+  verkliga uppgifterna innan PDF:en går skarpt.
 - **Belopp och betalsätt är Lotta-inmatade i UI:t, inte serverhärledda** —
   en DIREKT konsekvens av att basen saknar ett prisfält (§ Kontext). Detta
   är en medveten designavvägning (samma "aktiv handling, ingen gissning"-
@@ -247,3 +249,73 @@ för en oändlig loop.
 - `docs/reference/data-model.md` — Kvitton-tabellens fält-ID:n (att fylla
   i vid nästa data-model.md-revision; se PR-notes för den fullständiga
   listan tills dess).
+
+## Updates
+
+### 2026-08-22 — Beslut (c):s momsutelämning är UPPHÄVD; org-uppgifterna bekräftade (T170)
+
+Två av § Öppna punkter stod som *"INTE lösta"* när detta ADR skrevs
+(2026-08-10). Båda stängs av samma källa och kvittens, samma dag.
+
+**Vad som bekräftade det.** Marcus pekade ut
+`~/Desktop/Miranon Media/exempelpdokument/`, och en av filerna
+(`2026-08-03 Ulrika Berge.pdf`) visade sig vara ett SKARPT kvitto ur Rogers
+fakturasystem — inte ett utkast. Bokfört i
+[`tasks/threads/T170-rogers-kvittoforlaga-besvarar-tre-oppna-punkter.md`](../../tasks/threads/T170-rogers-kvittoforlaga-besvarar-tre-oppna-punkter.md)
+(`pdftotext -layout`, läst 2026-08-22). Marcus kvitterade i klartext
+2026-08-22: *"Allt på Rogers kvitto stämmer."* Kvittot är dessutom
+oberoende omläst en andra gång (`pdftotext -layout`, samma kommando) under
+byggsessionen som skrev denna post — alla siffror nedan matchade utan
+avvikelse.
+
+**Momssatsen är 25 %.** Rogers momsrad: `Netto 2 000,00 | Exkl. moms
+2 000,00 | Moms 500,00 | Öresavr 0,00 | SEK | BETALT 2 500,00` —
+500 / 2 000 = 25 %.
+
+**Beslut (c) rivs ÖPPET, inte tystas.** Den ursprungliga formuleringen —
+*"MOMSRADEN UTELÄMNAS — öppen Roger-punkt, momsstatus måste bekräftas
+innan kvitton går skarpt till kunder"* — höll fram till denna kvittens och
+är nu FALSK som beskrivning av kodens tillstånd. Den står ORÖRD i § Beslut
+ovan (frysta beslutstexter ändras inte i efterhand, samma disciplin
+`ADR-081` § Updates etablerade) — denna post är UPPHÄVNINGEN, inte en tyst
+korrigering.
+
+`_shared/receipt-content.ts` § `beraknaMoms` beräknar nu moms och netto:
+momsen avrundas till närmaste ÖRE FÖRST (`brutto × 0,2` — momsandelen av
+ett bruttobelopp vid 25 % moms, INTE 0,25), och nettot HÄRLEDS som
+differensen `brutto − moms`, aldrig avrundat oberoende av momsen. Ordningen
+är LÅST: avrundas båda delarna var för sig direkt ur bruttot kan raderna
+sluta INTE summera exakt till bruttot — en bokföringsdefekt, bevisad (inte
+bara påstådd) i `tests/api/receipt-content.test.ts` med ett konkret
+motexempel (100,09 kr: oberoende avrundning ger 20,02 + 80,07 =
+100,08999999999999 ≠ 100,09; den låsta ordningen håller
+`netto + moms === brutto` exakt för samma belopp). `kvittoRader()` visar
+de tre beloppen som egna, Gunilla-läsbara rader: `Netto` / `Moms (25 %)` /
+`Betalt` — i stället för Rogers sex kolumner.
+
+**Org-uppgifterna är bekräftade, samma källa och kvittens.** `_shared/
+receipt-content.ts` § `MIRANON_ORG_PLACEHOLDER` (platshållaren) är
+BORTTAGEN och ersatt av `MIRANON_ORG`:
+
+| Fält | Värde | Kommentar |
+|---|---|---|
+| Firma | Miranon Media AB | Placeholdern sade "Miranon Media" — `AB` saknades |
+| Organisationsnr | 559540-5498 | |
+| Postadress | Uttringe Hages väg 17, 144 63 Rönninge, Sverige | |
+| Momsreg.nr | SE559540549801 | Ny rad på kvittot, fanns inte i placeholder-versionen |
+
+Kvittots ÖVRIGA sidfotsuppgifter hos Roger (Plusgiro, Swish, `www.miranon.se`,
+`roger@`/`lotta@outsidereality.se`, telefonnummer, "Godkänd för F-skatt")
+togs MEDVETET INTE med. Det är betalningsvägar och kontaktuppgifter för en
+FAKTURA — Rogers mall är en återanvänd fakturamall (T170 § Post 3
+noterar redan att ett KVITTO från samma mall bär ett `Förfallodatum`-fält,
+ett faktura-artefakt) — inte information en kund som REDAN BETALAT behöver
+på sitt kvitto. Att ärva dem hade varit att ärva en artefakt av Rogers
+mallval, inte en avsikt för vårt eget kvitto.
+
+**Vad som INTE ändras av denna post.** § Beslut 1–7 (nummerformatet,
+allokeringsprotokollet, samtidighetsbeviset, server-side-exklusiviteten,
+beständigheten, en-betalning-i-ett-system) är alla ORÖRDA. Övriga öppna
+punkter i § Öppna punkter (belopp/betalsätt Lotta-inmatat, klient-retry-
+gapet, facit-/ARIA-deltat, läs-efter-skriv-konsistensen) kvarstår öppna,
+oförändrade av denna post.

@@ -6,23 +6,27 @@
 // platshållar-fyllning: BÅDA konsumenterna (PDF och mail) måste visa SAMMA
 // rader, annars är det ena en lögn mot det andra.
 //
-// MOMSRADEN ÄR MEDVETET UTELÄMNAD (Marcus-beslut S102, Implementation Notes
-// c) — ÖPPEN ROGER-PUNKT, se ADR-109 § Öppna punkter. Bygget går vidare utan
-// den; en momsstatus-bekräftelse krävs FÖRE kvitton går skarpt till kunder.
+// MOMSSATSEN ÄR BEKRÄFTAD (T170, Marcus kvitterade i klartext 2026-08-22 —
+// "Allt på Rogers kvitto stämmer"; se ADR-109 § Updates 2026-08-22). Källa:
+// ett SKARPT kvitto ur Rogers fakturasystem
+// (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 Ulrika Berge.pdf`,
+// läst med `pdftotext -layout`) — momsraden `500,00 / 2 000,00 = 25 %`.
+// Beslut (c):s momsutelämning (ADR-109) är därmed UPPHÄVD. `beraknaMoms`
+// nedan avrundar momsen till närmaste öre och härleder nettot som
+// differensen — ORDNINGEN ÄR LÅST, se funktionens egen docstring.
 //
-// MIRANONS ORG-UPPGIFTER ÄR EN PLACEHOLDER (ANNAN öppen punkt, samma klass
-// som momsraden) — organisationsnummer/postadress finns INTE dokumenterat
-// någonstans i repot (sökt `docs/`, `src/`, S102-sessionsdoket — noll
-// träffar, ADR-086 premiss-pass 2026-08-10). Roger/Marcus måste bekräfta de
-// verkliga uppgifterna innan `MIRANON_ORG_PLACEHOLDER` nedan ersätts.
+// MIRANONS ORG-UPPGIFTER ÄR BEKRÄFTADE (samma källa och kvittens som ovan)
+// — sidfoten på Rogers kvitto. `MIRANON_ORG` nedan bär de verkliga
+// uppgifterna i stället för en platshållare.
 
 import type { Betalning, Betalsatt } from './send-receipt.ts';
 
-/** ÖPPEN PUNKT (se filhuvudet) — ersätt med verkliga uppgifter innan skarp drift. */
-export const MIRANON_ORG_PLACEHOLDER = {
-  namn: 'Miranon Media',
-  orgnummer: '[ORGANISATIONSNUMMER EJ BEKRÄFTAT — se ADR-109 § Öppna punkter]',
-  adress: '[POSTADRESS EJ BEKRÄFTAD — se ADR-109 § Öppna punkter]',
+/** Miranons org-uppgifter på kvittot. Källa: Rogers fakturasystem (se filhuvudet). */
+export const MIRANON_ORG = {
+  namn: 'Miranon Media AB',
+  orgnummer: '559540-5498',
+  adress: 'Uttringe Hages väg 17, 144 63 Rönninge, Sverige',
+  momsregnummer: 'SE559540549801',
 };
 
 const MANADSNAMN = [
@@ -58,25 +62,71 @@ export type KvittoradSpec = {
   datum: string;
 };
 
+/** Momssatsen i procent, för visning på kvittot ("Moms (25 %)"). Källa: filhuvudet. */
+export const MOMSSATS_PROCENT = 25;
+
+/**
+ * Momsandelen av ett BRUTTObelopp (inkl. moms) vid 25 % moms. INTE 0,25 —
+ * `brutto = netto × 1,25`, alltså `moms = brutto × 0,25/1,25 = brutto × 0,2`.
+ */
+const MOMSANDEL_AV_BRUTTO = 0.2;
+
+export type MomsSplit = { readonly moms: number; readonly netto: number };
+
+/**
+ * Delar ett kundbetalt BRUTTObelopp (`KvittoradSpec.belopp` — Lotta-inmatat,
+ * `send-receipt.ts` rad 57: "Kronor, positivt heltal eller decimal") i moms
+ * och netto vid 25 % moms.
+ *
+ * ORDNINGEN ÄR LÅST, INTE VALFRI: momsen avrundas till närmaste ÖRE FÖRST
+ * (heltalsaritmetik — `bruttoOre` och `momsOre` är alltid heltal, ingen
+ * flyttalsdrift i det steget), och nettot HÄRLEDS som differensen
+ * `brutto − moms`, aldrig avrundat oberoende av momsen.
+ *
+ * Att avrunda BÅDA delarna var för sig direkt ur bruttot (t.ex.
+ * `moms = avrunda(brutto × 0,2)` OCH separat `netto = avrunda(brutto × 0,8)`,
+ * ingen av dem härledd ur den andra) är en BOKFÖRINGSDEFEKT, inte en
+ * avrundningsdetalj — raderna kan då sluta INTE summera exakt till bruttot.
+ * Konkret motexempel (bevisat i `tests/api/receipt-content.test.ts`): vid
+ * brutto 100,09 kr ger den oberoende varianten `20,02 + 80,07 =
+ * 100,08999999999999 ≠ 100,09`. Denna funktions låsta ordning ger SAMMA
+ * delbelopp (20,02 / 80,07) men håller invarianten `netto + moms === brutto`
+ * exakt, eftersom nettot aldrig avrundas för sig — det ÄR bruttot minus den
+ * redan avrundade momsen.
+ */
+export function beraknaMoms(brutto: number): MomsSplit {
+  const bruttoOre = Math.round(brutto * 100);
+  const momsOre = Math.round(bruttoOre * MOMSANDEL_AV_BRUTTO);
+  const moms = momsOre / 100;
+  const netto = brutto - moms;
+  return { moms, netto };
+}
+
 /**
  * Kvittots rader i VISNINGSORDNING — konsumeras av BÅDE PDF-layouten och
- * mailets brödtext (se filhuvudets mirror-kontrakt). Innehållet är EXAKT
- * beslut (c): datum, belopp, betalsätt, event, kundnamn, Miranons
- * org-uppgifter. INGEN momsrad (samma beslut, öppen punkt).
+ * mailets brödtext (se filhuvudets mirror-kontrakt). Momsen (25 %, se
+ * `beraknaMoms`) redovisas som TRE Gunilla-läsbara rader (Netto / Moms /
+ * Betalt) i stället för Rogers sex kolumner (Benämning/Antal/Enhet/A-pris/
+ * Summa + Netto/Exkl. moms/Moms/Öresavr/SEK/BETALT) — se PR-beskrivningen
+ * för resonemanget bakom exakt vilka av Rogers uppgifter som tas med.
  */
 export function kvittoRader(spec: KvittoradSpec): readonly string[] {
   const betalningLabel = spec.betalning === 'avgift' ? 'Anmälningsavgift' : 'Slutbetalning';
+  const { moms, netto } = beraknaMoms(spec.belopp);
   return [
     `Kvitto ${spec.kvittonummer}`,
     '',
     `Kund: ${spec.kundnamn}`,
     `Datum: ${formatKvittoDatum(spec.datum)}`,
-    `Belopp: ${formatBelopp(spec.belopp)}`,
+    `Netto: ${formatBelopp(netto)}`,
+    `Moms (${MOMSSATS_PROCENT} %): ${formatBelopp(moms)}`,
+    `Betalt: ${formatBelopp(spec.belopp)}`,
     `Betalsätt: ${spec.betalsatt}`,
     `Avser: ${betalningLabel}${spec.eventNamn ? ` — ${spec.eventNamn}` : ''}`,
     '',
-    MIRANON_ORG_PLACEHOLDER.namn,
-    `Org.nr: ${MIRANON_ORG_PLACEHOLDER.orgnummer}`,
-    MIRANON_ORG_PLACEHOLDER.adress,
+    MIRANON_ORG.namn,
+    `Org.nr: ${MIRANON_ORG.orgnummer}`,
+    MIRANON_ORG.adress,
+    `Momsreg.nr: ${MIRANON_ORG.momsregnummer}`,
   ];
 }
