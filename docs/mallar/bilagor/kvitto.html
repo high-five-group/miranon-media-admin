@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!--
+  Kvittomallen - S108 MARCUS-SEKVENS punkt 2 (ADR-119 beslut 2+3-vägen).
+
+  Ersätter INGET kod-anrop ännu - `renderKvittoPdf` (`_shared/receipt-pdf.ts`)
+  ritar fortfarande text på koordinater med pdf-lib. Den här mallen är
+  FORMEN, byggd mot Rogers skarpa kvitto
+  (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 Ulrika Berge.pdf`,
+  T170), inte en ny renderingsväg - kopplingen till DocRaptor är en senare
+  skiva (ADR-119 beslut 7 kräver ett minimaltest först).
+
+  TOKENYTAN ÄR 1:1 MED `supabase/functions/_shared/receipt-content.ts`
+  (hårt krav, S108 Del 8 § D). Varje dubbel-klammer-fält nedan härleds ur
+  `KvittoradSpec`, `beraknaMoms()`s utdata eller `MIRANON_ORG` - se
+  README.md § Kvittots dynamiska yta för den fullständiga käll-tabellen.
+
+  FÖRLAGE-FÄLT UTAN KÄLLA I `receipt-content.ts` (Vår referens,
+  Förfallodatum, Vårt ordernr, Öresavr, buyer-e-post, Telefon/Plusgiro/
+  Swish/Webb/Epost-raderna i sidfoten) är BYGGDA i markupen men bokförda
+  som GAP - se README.md § Gap mot receipt-content.ts. Inget av dem är
+  hittat på i kod; värdena som INTE är tokens är antingen strukturellt
+  konstanta för ett KVITTO (Förfallodatum: "-", Öresavr: "0,00" - `beraknaMoms`
+  avrundar momsen till hela ören FÖRST, så differensen är alltid exakt noll,
+  se dess docstring) eller Miranons egna, redan publicerade kontaktuppgifter
+  (T170), samma klass av statisk organisationsdata som
+  bekraftelsebilaga.html redan hårdkodar (Swish/Plusgiro).
+
+  Ingen persondata förekommer här (samma disciplin som de två andra
+  mallarna) - köparens namn kommer från `{{kundnamn}}`-token, aldrig ett
+  riktigt kundnamn i själva mallfilen.
+-->
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<title>Kvitto - {{kvittonummer}}</title>
+<link rel="stylesheet" href="./bilaga-delad.css" />
+<link rel="stylesheet" href="./kvitto.css" />
+</head>
+<body>
+<div class="sida sida--kvitto">
+
+  <header class="kvitto-sidhuvud">
+    <img class="logga" src="../../../public/miranon-media-ordmarke-original.svg" alt="MiranonMedia" />
+    <div class="kvitto-rubrikblock">
+      <h1 class="kvitto-rubrik">Kvitto</h1>
+      <dl class="kvitto-metarad">
+        <dt>Kvitto-/OCR-nr:</dt>
+        <dd>{{kvittonummer}}</dd>
+        <dt>Datum:</dt>
+        <dd>{{datum}}</dd>
+      </dl>
+    </div>
+  </header>
+
+  <div class="kvitto-referensrad">
+    <dl class="kvitto-referensblock">
+      <dt>Vår referens</dt>
+      <dd>{{orgNamn}}</dd>
+      <dt>Er referens</dt>
+      <dd>{{kundnamn}}</dd>
+      <dt>Förfallodatum</dt>
+      <dd>-</dd>
+      <dt>Vårt ordernr</dt>
+      <dd>{{kvittonummer}}</dd>
+    </dl>
+    <div class="kvitto-fakturaadress">
+      <p class="kvitto-fakturaadress-etikett">Fakturaadress:</p>
+      <p>{{kundnamn}}</p>
+    </div>
+  </div>
+
+  <div class="kvitto-innehall">
+    <div class="kvitto-box kvitto-tabellhuvud">
+      <div class="kvitto-tabellrad">
+        <span class="kvitto-col-benamning">Benämning</span>
+        <span class="kvitto-col-antal">Antal</span>
+        <span class="kvitto-col-enhet">Enhet</span>
+        <span class="kvitto-col-apris">A-pris</span>
+        <span class="kvitto-col-summa">Summa</span>
+      </div>
+    </div>
+    <div class="kvitto-tabellrad kvitto-post">
+      <span class="kvitto-col-benamning">{{eventNamn}}, {{betalningLabel}}</span>
+      <span class="kvitto-col-antal">1</span>
+      <span class="kvitto-col-enhet"></span>
+      <span class="kvitto-col-apris kvitto-belopp">{{brutto}}</span>
+      <span class="kvitto-col-summa kvitto-belopp">{{brutto}}</span>
+    </div>
+    <p class="kvitto-betalsatt-rad">Betalsätt: {{betalsatt}}</p>
+  </div>
+
+  <div class="kvitto-box kvitto-totalruta">
+    <div class="kvitto-total-kolumn">
+      <span class="kvitto-total-etikett">Netto</span>
+      <span class="kvitto-total-varde">{{netto}}</span>
+    </div>
+    <div class="kvitto-total-kolumn">
+      <span class="kvitto-total-etikett">Exkl. moms</span>
+      <span class="kvitto-total-varde">{{netto}}</span>
+    </div>
+    <div class="kvitto-total-kolumn">
+      <span class="kvitto-total-etikett">Moms ({{momssatsProcent}} %)</span>
+      <span class="kvitto-total-varde">{{moms}}</span>
+    </div>
+    <div class="kvitto-total-kolumn">
+      <span class="kvitto-total-etikett">Öresavr</span>
+      <span class="kvitto-total-varde">0,00</span>
+    </div>
+    <div class="kvitto-total-kolumn kvitto-total-betalt">
+      <span class="kvitto-total-etikett">BETALT</span>
+      <span class="kvitto-total-varde-stor">{{brutto}}</span>
+    </div>
+  </div>
+
+  <footer class="kvitto-box kvitto-sidfot">
+    <div class="kvitto-sidfot-kolumn">
+      <p class="kvitto-sidfot-etikett">Adress</p>
+      <p>{{orgNamn}}</p>
+      <p>{{orgAdress}}</p>
+      <p>www.miranon.se</p>
+    </div>
+    <div class="kvitto-sidfot-kolumn">
+      <p class="kvitto-sidfot-etikett">Telefon</p>
+      <p>070-88 58 021</p>
+      <p>070-635 45 85</p>
+      <p class="kvitto-sidfot-etikett">Epost</p>
+      <p>roger@outsidereality.se</p>
+      <p>lotta@outsidereality.se</p>
+    </div>
+    <div class="kvitto-sidfot-kolumn">
+      <p class="kvitto-sidfot-etikett">Plusgiro</p>
+      <p>216 10 05-0</p>
+      <p class="kvitto-sidfot-etikett">Swish</p>
+      <p>123 061 65 08</p>
+    </div>
+    <div class="kvitto-sidfot-kolumn">
+      <p class="kvitto-sidfot-etikett">Organisationsnr</p>
+      <p>{{orgNummer}}</p>
+      <p class="kvitto-sidfot-etikett">Momsreg.nr.</p>
+      <p>{{orgMomsregnummer}}</p>
+      <p class="kvitto-sidfot-etikett">Godkänd för F-skatt</p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // render-bilage-mall.mjs — TASK-279 § AC #3, granskningsväg
 //
-// Fyller en av de två bilage-mallarna (docs/mallar/bilagor/*.html) med riktig
+// Fyller en av de tre bilage-mallarna (docs/mallar/bilagor/*.html) med riktig
 // eventdata ur en fixture-JSON och skriver ut en fristående HTML-fil som kan
 // öppnas direkt i webbläsaren — ingen server, ingen extern tjänst.
 //
@@ -13,6 +13,7 @@
 // Användning:
 //   node scripts/render-bilage-mall.mjs bekraftelsebilaga
 //   node scripts/render-bilage-mall.mjs deltagarinformation
+//   node scripts/render-bilage-mall.mjs kvitto
 //   node scripts/render-bilage-mall.mjs bekraftelsebilaga --data egen-fixture.json
 //
 // Output: docs/mallar/bilagor/<mall>.granskning.html — SAMMA katalog som
@@ -28,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MALLROT = join(__dirname, '..', 'docs', 'mallar', 'bilagor');
-const KANDA_MALLAR = ['bekraftelsebilaga', 'deltagarinformation'];
+const KANDA_MALLAR = ['bekraftelsebilaga', 'deltagarinformation', 'kvitto'];
 
 function larsArgv() {
   const args = process.argv.slice(2);

@@ -1,0 +1,332 @@
+/*
+ * Kvitto-mallens EGNA CSS (S108 MARCUS-SEKVENS punkt 2, ADR-119 väg).
+ *
+ * VARFÖR EN EGEN FIL OCH bilaga-delad.css RÖRS INTE ALLS: kvittot återanvänder
+ * bara det som redan är GENUINT delat OCH sedan tidigare EXPONERAT som
+ * fristående, oberoende deklarationer - Carlito-@font-face-blocken, `@page`,
+ * `.sida`-basboxen, `.logga`/`.loggarad` - allt via en andra <link> till
+ * bilaga-delad.css, oförändrad. Allt annat är strukturellt en annan ART av
+ * dokument: monokrom svart/grå palett i stället för sage/gult/blått,
+ * Calibri-imitation (Carlito) i stället för Cavolini-rubriker, och tre
+ * RUNDADE GRÅFYLLDA rutor (#F2F2F2) - inte de vita ikonrutorna eller den
+ * gula överstrykningen de andra två mallarna bär.
+ *
+ * ÄVEN sidans EGEN padding (`.sida--kvitto` nedan) läggs HÄR, inte som ett
+ * tillägg i bilaga-delad.css, trots att `.sida--bekraftelse`/
+ * `.sida--deltagarinformation` bor där - den filen förblir HELT ORÖRD av
+ * detta uppdrag (noll rader ändrade), vilket håller den ren per README §
+ * "Delad CSS där det är genuint delat" OCH minimerar kollisionsytan mot
+ * S108 Del 8 § D:s SYSKON-uppdrag (F6+F7, `feat/s108-f6-f7-konturglob-
+ * selawik`), som redan rör exakt den filen samtidigt.
+ *
+ * MÅTTEN ÄR MÄTTA, INTE GISSADE. Källa: Rogers skarpa kvitto
+ * (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 Ulrika Berge.pdf`,
+ * T170) - avkodad PDF-innehållsström (operatorerna `Tf`/`cm`/`Tm` ger exakt
+ * typgrad; SVG-export via `pdftocairo -svg` ger exakta path-koordinater för
+ * de tre rundade rutorna, inklusive hörnradien ur bezier-kontrollpunkterna)
+ * plus `pdftotext -bbox` för textens x/y-positioner. Metod och alla råtal:
+ * `test-results/kvittodiff/RAPPORT.md`.
+ *
+ * KÄND FÖRENKLING (bokförd, inte tyst): förlagan har TVÅ olika
+ * vänster/högermarginaler - en bredare (~16,6 mm) för logga/rubrik/
+ * referensblock och en smalare (~18,6-19,6 mm) för de tre gråa rutorna.
+ * Mallen använder EN sidmarginal (16,6 mm, `.sida--kvitto`) och krymper
+ * rutorna 2,5 mm per sida via `.kvitto-box` för att träffa den uppmätta
+ * rutbredden (171,73 mm) utan en andra, konkurrerande marginal-variabel.
+ *
+ * KÄND ANPASSNING: förlagans enda radpost sitter direkt under tabellhuvudet
+ * med ~120 mm TOMT utrymme ner till totalrutan (facit på en faktisk
+ * PDF-sida). `KvittoradSpec` bär bara EN belopp-rad (ingen array av
+ * radposter), så att hårdkoda samma 120 mm hade sett ut som ett
+ * layout-fel snarare än en medveten reserverad yta. `.kvitto-innehall`
+ * flex-växer i stället och trycker totalrutan + sidfoten mot sidans
+ * nederkant - samma teknik som `.sida--bekraftelse .yttre-ram` i
+ * bilaga-delad.css redan använder (§ 5.2 i mall-diff-rapporten,
+ * `flex:1 1 auto` + rutan hålls sidhög oavsett innehållsmängd).
+ */
+
+:root {
+  --mm-kvitto-gra: #f2f2f2;
+  --mm-kvitto-ram: #000000;
+  --mm-kvitto-ramtjocklek: 1pt; /* mätt 1,05 pt ur förlagans innehållsström
+    (samma mätklass som bilaga-delad.css § .inforuta, 1,048 pt) - samma
+    precedent, samma val: "1pt solid" utan golvning-till-px-diskussion,
+    till skillnad från den TJOCKARE yttre-ramen (~2,1 pt) som golvades till
+    2,25 pt i den andra mallens rättelsepass. */
+}
+
+.sida--kvitto {
+  display: flex;
+  flex-direction: column;
+  /* Basklassen .sida bär ingen padding sedan mall-diff-rättelsen
+    (bilaga-delad.css) - varje mall sätter sin egen, per samma mönster som
+    .sida--bekraftelse/.sida--deltagarinformation. Vänster/höger 16,6 mm
+    matchar loggans/rubrikens/referensblockets mätta vänsterkant; se
+    filhuvudets "KÄND FÖRENKLING" för varför de tre gråa rutorna i stället
+    krymps 2,5 mm per sida (.kvitto-box) i stället för en andra
+    sidmarginal-variabel. */
+  padding: 12.9mm 16.6mm 0;
+  font-family: var(--mm-bilaga-brodtext-font); /* Carlito, redan deklarerad i bilaga-delad.css */
+  color: var(--mm-kvitto-ram);
+}
+
+/* ── Sidhuvud: logga vänster, rubrik + metarad höger (mätt, § 3.2) ── */
+
+.kvitto-sidhuvud {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0;
+}
+
+.sida--kvitto .logga {
+  width: 104mm; /* mätt loggans bläckbredd i förlagan: 103,98 mm (bild-CTM ur
+    innehållsströmmen). Avviker medvetet från de andra mallarnas 92 mm -
+    detta ÄR den mätta bredden för DETTA dokument, se § 3.2. */
+  height: auto;
+}
+
+.kvitto-rubrikblock {
+  text-align: right;
+  /* Mätt: förlagans "Kvitto"-rubrik börjar 20,63 mm från sidans överkant,
+    inte i linje med loggans egen 12,92 mm - rubriken sitter ~7,6 mm längre
+    ned än loggans topp (den höga loggan sträcker sig förbi rubrikens
+    starthöjd). Ett första utkast (align-items:flex-start utan denna
+    marginal) satte rubriken i linje med loggans topp i stället. */
+  margin-top: 7.6mm;
+}
+
+.kvitto-rubrik {
+  font-family: var(--mm-bilaga-brodtext-font);
+  font-weight: 700;
+  font-size: 21pt; /* mätt: Tm-skalan 87,50001 x cm-skalan 0,24 = 21,00 pt exakt (TT8) */
+  margin: 0 0 2mm;
+}
+
+.kvitto-metarad {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 4mm;
+  justify-content: end;
+  font-size: 9pt;
+  margin: 0;
+}
+
+.kvitto-metarad dt {
+  font-weight: 400;
+  text-align: left;
+}
+
+.kvitto-metarad dd {
+  margin: 0;
+  text-align: left;
+}
+
+/* ── Referensblock + fakturaadress (mätt, § 3.1) ── */
+
+.kvitto-referensrad {
+  display: flex;
+  justify-content: space-between;
+  gap: 12mm;
+  margin-top: 19.5mm; /* mätt gap: metaradens underkant (~41,5 mm) till
+    referensblockets överkant (61,06 mm) */
+  font-size: 9pt;
+}
+
+.kvitto-referensblock {
+  display: grid;
+  grid-template-columns: auto auto;
+  column-gap: 6mm;
+  row-gap: 0;
+  margin: 0;
+}
+
+.kvitto-referensblock dt,
+.kvitto-referensblock dd {
+  font-weight: 400;
+  margin: 0;
+}
+
+.kvitto-fakturaadress {
+  text-align: left;
+}
+
+.kvitto-fakturaadress p {
+  margin: 0;
+}
+
+.kvitto-fakturaadress-etikett {
+  font-weight: 400;
+}
+
+/* ── Radtabellen: gråfylld rundad "pill" runt HUVUDET, posterna flyter
+   fritt utan ram därunder (mätt fynd - förlagan har INGEN yttre ram runt
+   hela tabellen, bara runt rubrikraden, § 3.3 + § 6). ── */
+
+.kvitto-innehall {
+  flex: 1 1 auto; /* se filhuvudets "KÄND ANPASSNING" */
+  margin-top: 13mm; /* mätt gap: fakturaadress underkant (~77 mm) till
+    tabellhuvudets överkant (89,76 mm) */
+}
+
+.kvitto-box {
+  background: var(--mm-kvitto-gra);
+  border: var(--mm-kvitto-ramtjocklek) solid var(--mm-kvitto-ram);
+  margin-left: 2.5mm;
+  margin-right: 2.5mm;
+}
+
+.kvitto-tabellhuvud {
+  border-radius: 1.5mm; /* mätt hörnradie: 1,49 mm */
+  padding: 2mm 6.3mm 2mm 7.9mm; /* vänster/höger-padding mätt ur box- resp.
+    textkant, se § 3.1 */
+}
+
+.kvitto-tabellrad {
+  display: grid;
+  /* Mätt kolumnstart relativt textkantens vänsterkant (BB, se RAPPORT.md § 2):
+    Antal 93,18 mm, Enhet 100,90 mm, A-pris 119,80 mm, Summa 146,43 mm,
+    innehållsbredd 157,53 mm - kolumnbredderna nedan är differenserna
+    (INGEN column-gap, mellanrummet ÄR redan inräknat i varje mätt bredd).
+    Ett första utkast använde 1fr + fyra gissade mm-bredder och hamnade
+    ~13-25 mm för långt till vänster på de fyra sista kolumnerna - rättat
+    till de faktiska mätta deltana. */
+  grid-template-columns: 92.7mm 7.2mm 18.4mm 26.1mm 1fr;
+  column-gap: 1mm; /* rent 0-mellanrum fick "Antal"/"Enhet" att smälta ihop
+    till ett ord i pdftotext (bekräftat, se RAPPORT.md § 2) - förlagan har
+    själv bara 0,70 mm mellanrum där, men ändå läsbart mellanrum. 1 mm
+    (kompenserat i kolumnbredderna ovan så summan stämmer) ger samma
+    läsbarhet utan att flytta de tre sista kolumnerna nämnvärt. */
+}
+
+.kvitto-tabellrad > span {
+  /* Sista kolumnen (1fr) blir mätt bara ~9 mm bred givet de fyra andra
+    kolumnernas mätta bredder - för smalt för "2500 kr" utan radbrytning
+    (bekräftat: renderade som "2500" / "kr" på två rader). Förlagans egen
+    Summa-kolumn löser samma sak genom att låta beloppet svämma in i
+    rutans högerpadding; samma trick här i stället för att gissa en bredare
+    kolumnbredd och därmed flytta bort ifrån de uppmätta x-positionerna. */
+  white-space: nowrap;
+}
+
+.kvitto-tabellhuvud .kvitto-tabellrad {
+  font-weight: 700; /* TT4 - samtliga kolumnrubriker är feta i förlagan */
+}
+
+.kvitto-post {
+  /* Radposten bär INGEN box (mätt fynd, förlagan saknar ram runt raderna,
+    se filhuvudet) men måste ändå linjera med tabellhuvudets text - dess
+    box ger vänster/höger-inset via box-margin (2,5 mm) + box-padding
+    (7,9/6,3 mm). Samma summa återskapas här som ren margin, utan box. */
+  margin: 3.9mm 8.8mm 0 10.4mm; /* mätt gap ovan: tabellhuvudets underkant
+    till radpostens överkant */
+  font-size: 9pt;
+}
+
+/*
+ * SCOPADE till .kvitto-post, INTE bara klassnamnet: en tidigare version
+ * skrev `.kvitto-col-benamning { font-weight:400 }` utan förälder-scop -
+ * en regel på ELEMENTET SJÄLVT slår alltid en ÄRVD egenskap oavsett
+ * förälderns specificitet, så tabellhuvudets "Antal" (som ÄRVER 700 från
+ * `.kvitto-tabellhuvud .kvitto-tabellrad`) blev tyst orätt (400) av just
+ * denna regel. Bekräftat i rendering, se RAPPORT.md § 3.
+ */
+.kvitto-post .kvitto-col-benamning {
+  font-weight: 400; /* TT2 - beskrivningen är rak, INTE fet, i förlagans radpost */
+}
+
+.kvitto-post .kvitto-col-antal {
+  font-weight: 400; /* TT2 - antalsvärdet är rakt i förlagan */
+}
+
+.kvitto-belopp {
+  font-weight: 700; /* TT4 - A-pris- och Summa-VÄRDENA är feta i förlagans
+    radpost, till skillnad från Benämning/Antal. Mätt fynd, se RAPPORT.md § 3. */
+}
+
+.kvitto-betalsatt-rad {
+  font-size: 9pt;
+  margin: 3mm 8.8mm 0 10.4mm; /* samma inset som .kvitto-post, för att linjera
+    med radpostens text i stället för boxarnas yttre kant */
+}
+
+/* ── Totalrutan (mätt, § 3.4) ── */
+
+.kvitto-totalruta {
+  display: flex;
+  align-items: baseline;
+  gap: 6mm;
+  margin-top: 4mm;
+  border-radius: 3.5mm; /* mätt hörnradie: 3,48 mm */
+  padding: 3mm 6mm 3mm 3.7mm; /* vänsterpaddingen är mätt SMALARE här
+    (3,71 mm) än i tabellhuvudet/sidfoten (7,9/8 mm) - Netto-etiketten sitter
+    påtagligt närmare rutans vänsterkant än Benämning/Adress gör i sina
+    rutor. Mätt, inte en kopiering av samma värde. */
+  font-weight: 700; /* TT4 - hela totalrutan (etiketter OCH värden) är fet i förlagan */
+  font-size: 9pt;
+}
+
+.kvitto-total-kolumn {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+  min-width: 0;
+}
+
+.kvitto-total-etikett {
+  font-size: 9pt;
+}
+
+.kvitto-total-varde {
+  font-size: 9pt;
+}
+
+.kvitto-total-betalt {
+  /* Mätt (bbox): förlagans "BETALT"-etikett och beloppsvärdet delar EXAKT
+    samma vänsterkant (478,7653 pt, båda). Första utkastet högerjusterade
+    kolumnen (label och värde fick olika bredd → olika vänsterkant, x-diff
+    ~5 mm i vår rendering) - rättat till vänsterjustering, samma mönster
+    som de fyra andra kolumnerna. */
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.kvitto-total-varde-stor {
+  font-size: 13pt; /* mätt: Tm-skalan 54,16667 x cm-skalan 0,24 = 13,00 pt
+    exakt (TT6) - 13/9 ≈ 1,44x brödtextens 9 pt, se RAPPORT.md § 1 */
+}
+
+/* ── Sidfoten: fyra kolumner (mätt, § 3.5) ── */
+
+.kvitto-sidfot {
+  display: flex;
+  justify-content: space-between;
+  gap: 4mm;
+  margin-top: 4.2mm; /* mätt gap: totalrutans underkant (247,75 mm) till
+    sidfotens överkant (251,99 mm) */
+  margin-bottom: 13.6mm; /* mätt: sidfotens underkant till sidans nederkant */
+  border-radius: 5.25mm; /* mätt hörnradie: 5,24 mm */
+  padding: 3mm 6mm 3mm 8mm; /* vänsterpaddingen mätt: 8,02 mm (Adress-etikettens
+    x-position minus rutans vänsterkant) */
+  font-size: 9pt;
+}
+
+.kvitto-sidfot-kolumn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.kvitto-sidfot-kolumn p {
+  margin: 0 0 0.3mm;
+}
+
+.kvitto-sidfot-etikett {
+  font-weight: 700; /* TT4 - kolumnrubrikerna OCH sub-etiketterna
+    (Swish/Epost/Momsreg.nr./Godkänd för F-skatt) är feta i förlagan */
+  margin-top: 1.5mm;
+}
+
+.kvitto-sidfot-kolumn > p:first-child.kvitto-sidfot-etikett {
+  margin-top: 0;
+}
