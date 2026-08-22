@@ -15,8 +15,9 @@
 
 ## Aktuellt fokus
 
-**Session 111 ⏸️ PAUSAD (2026-08-22, efter Del 3; `lifecycle: paused`, scopet
-oavslutat) — ANMÄLNINGSSIDANS KONVERGENSPASS: GRILLAD, SPECAD OCH SKIVAD.**
+**Session 111 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`; bygget
+påbörjat efter Del 3) — ANMÄLNINGSSIDANS KONVERGENSPASS: GRILLAD, SPECAD OCH
+SKIVAD, FÖRSTA SKIVAN I ARBETE.**
 Egen worktree `s111-anmalningssidan` (huvudkatalogen ägs av levande annan
 session, ADR-090 beslut 2). **Grillningen** (Del 2) gav sju Marcus-kvitterade
 beslut: divergens på anmälningssidan ENSAM med promovering till alla fem
