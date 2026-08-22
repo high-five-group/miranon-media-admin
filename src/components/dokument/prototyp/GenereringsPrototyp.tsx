@@ -545,6 +545,42 @@ async function renderaDokument(mall: MallId, event: Event, rader: Rad[]): Promis
   base.href = new URL(MALL_BAS, window.location.origin).href;
   doc.head.prepend(base);
 
+  /* STILEN INLINAS, den länkas inte. I ett `document.write`-fönster börjar
+     `<img class="logga">` målas så fort taggen parsats — en EXTERN stilmall
+     hämtas parallellt och hinner inte fram, så loggan visades en bildruta i
+     SVG:ns egen storlek innan `.logga { width: 92mm }` slog till. Marcus,
+     varv 17: *"typ hela deras logotyp på helskärm i en mikrosekund."*
+     Med stilen i dokumentet finns måtten redan vid första målningen.
+     `url()` i CSS:en löses fortfarande rätt: `<base>` pekar på samma katalog
+     som stilmallen låg i, så relativa typsnitts- och bildvägar är oförändrade.
+     Detta gör dessutom dokumentet självbärande — allt utom bilderna bor i
+     filen, vilket en förhandsgranskning som ska kunna sparas behöver. */
+  const stilLank = doc.querySelector('link[rel="stylesheet"]');
+  if (stilLank) {
+    const href = stilLank.getAttribute('href');
+    if (href) {
+      /* `?direct` är INTE dekoration — Vites dev-server serverar annars
+         `.css` som en JAVASCRIPT-modul med HMR-wrapper (`import {
+         createHotContext } from "/@vite/client"…`). Utan flaggan hamnade
+         den JS-texten i `<style>`, gav noll giltiga regler, och loggan blev
+         884 px PERMANENT i stället för en bildruta — fixen var värre än
+         buggen tills det mättes. Verifierat mot dev-servern: utan flaggan
+         börjar svaret med `import`, med den börjar det med CSS-kommentaren.
+         Flaggan är harmlös för en vanlig statisk server (okänd query
+         ignoreras); i skarp drift renderas mallen server-side (ADR-119) och
+         den här vägen finns inte alls. */
+      const cssSvar = await fetch(`${new URL(href, base.href).href}?direct`);
+      const css = cssSvar.ok ? await cssSvar.text() : '';
+      /* FAIL-SAFE: ser svaret inte ut som CSS behålls LÄNKEN. En bildrutas
+         FOUC är ett skönhetsfel; ett dokument utan stil är trasigt. */
+      if (css.includes('{') && !css.trimStart().startsWith('import ')) {
+        const stil = doc.createElement('style');
+        stil.textContent = css;
+        stilLank.replaceWith(stil);
+      }
+    }
+  }
+
   const rad = (id: BlockId) => rader.find((r) => r.def.id === id);
   const textEller = (id: BlockId) => rad(id)?.text ?? '';
 
