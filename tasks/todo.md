@@ -218,9 +218,11 @@ landade sessions-worktrees; `s110-kalenderlank-driften` behålls tills `#1787`
 landat. **`TASK-294`** (kontroll i session-start). Åtgärd Marcus: `claude plugin
 update marcus-system@marcus-hub` före S111.
 
-**Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
-pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA
-SPÅR I LUFTEN.** Marcus order: *"ALLT ska bli klart nu."* **Besluten:**
+**Session 109 ✅ AVSLUTAD (2026-08-22, K-sista; `lifecycle: closed` på Marcus
+mandat att köra avslutet autonomt; pausad tre gånger, tre resumes) —
+NOTIS- OCH FELMEDDELANDE-FAMILJEN: FRÅN FYRA DESIGNSPRÅK TILL ETT, PLUS DET
+FÖRLADDADE PERSONREGISTRET.** Marcus order vid resume 3: *"ALLT ska bli klart
+nu."* **Besluten:**
 `#1715` **väg B** (referenserna landar, stämpeln behålls, ändringen bokförs som
 `amendering`-post) · `T157` **skrivs nu** (amendering till `ADR-102`: klasserna
 för när ett stämplat facit får ändras) · `285.13` **alternativ 1** (chunk-bannern
@@ -283,8 +285,28 @@ bär och har ett `under xl`-fall mot kod som säger "alla bredder"; två spår
 startade (`#1807` `TASK-243.6` landad `d7498747`, `#1808` `TASK-298` öppen och
 oarmerad). Andra dispatchen
 föll på 34 s därför att filtret hamnade i `-u`:s **valfria** värde — samma flagga
-som ovan, motsatt felmod, samma dag. **NÄSTA: `#1808` armeras och landar →
-baslinje-dispatch om → `285.12`/`286.6`/`283.5` QA på Marcus order.**
+som ovan, motsatt felmod, samma dag.
+
+**AVSLUTET (2026-08-22).** `#1808` armerades och landade, baslinje-dispatchen
+kördes om och födde `#1811` (16 bilder), och `TASK-300` registrerade
+pixel-driften på tre orörda ytor — landad på Marcus order utan utredning.
+Bokföringspasset `#1816` stängde `283.4`/`285.11`/`298`, bokförde föräldrakorten
+och registrerade `T173`. **Kvar till nästa session:** QA-vandringarna `283.5`,
+`285.12` och `286.6` är avstådda på Marcus beslut (*"Nej inget Q&A, skit i det.
+Gör klart allt de andra."*) och blockerar mätt ingenting — noll kort beror på
+dem · föräldrakorten `283`/`285`/`286` står medvetet `To Do` med skälet bokfört
+i vart och ett · `TASK-286.8` (prod-utrullning, EF före frontend) · `TASK-288`
+(22 ytor utan `referenser`) · `TASK-289` (A2-latensen) · `TASK-295`
+(kontrast-flaken) · `TASK-296` (`preview-receipt`-varningen) · `TASK-300` ·
+`T173` · dependabot `#1489` står `CLEAN`, odraftad och oarmerad (samma klass som
+`#1487`/`#1490`/`#1491`) · fem filer bär kvar en död pekare till det
+konsoliderade fragmentet `parkerad-pr-utan-draft-…md` (nu `L485` i
+`tasks/lessons/vol-06.md`) — `CLAUDE.md`:s rättades i `#1816`. **Hub-lyftet av
+de sju `[UNIVERSAL]`-fragmenten är EJ gjort** — eget moment. Numrering efter
+S109 (disk-mätt mot `e012971c`): session **112** (S111 är `active`) · ADR **124**
+· kort **301** · lessons **L512** (vol-serien står på `L511`) + **76 fragment**
+· tråd **T174** · fälla **53** — re-derivera ALLTID. Full narrativ: sessionsdok
+S109 Del 1–15 + tre paushistoriker + BUILD-LOG S109-post.
 
 **Session 109 ⏸️ PAUSAD (tredje gången, 2026-08-22, `lifecycle: paused`, historik) —
 NOTISFAMILJEN BYGGD FÄRDIG; ALLT KVARVARANDE ÄR TRE MARCUS-BESLUT.** Marcus AFK
