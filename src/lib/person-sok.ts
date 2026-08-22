@@ -69,3 +69,84 @@ export function filtreraPersonregister(personer: readonly Person[], rawTerm: str
   if (!rawTerm) return personer as Person[];
   return personer.filter((person) => personMatcharSokterm(person, rawTerm));
 }
+
+// ---------------------------------------------------------------------------
+// SVENSK SORTERING (ADR-123 beslut 4, TASK-286.3)
+// ---------------------------------------------------------------------------
+//
+// Airtables egen `sort: [{ field: 'Namn' }]` var en VÄGG: den gav Å bland A
+// vid bläddring medan bokstavsindexet (TASK-283) hinkar Å för sig — fälla 51:s
+// synliga inkonsekvens. Vår egen array är ingen vägg, så ordningen räknas om i
+// klienten och inkonsekvensen stängs för första gången.
+//
+// Hemvisten är denna modul, inte komponenten, med avsikt: TASK-283.2–283.4
+// (bokstavsraden) ska kunna läsa SAMMA sorterade array och SAMMA hink-regel
+// utan att räkna om något — och en `reduce` över registret per bokstav är
+// bara korrekt om den läser exakt den ordning listan visar.
+
+/**
+ * Basens namnlös-sentinel (fälla 43): `Personer.Namn` är formeln
+ * `IF(AND(Förnamn="", Efternamn=""), "Ej tillgängligt", …)`, så en person utan
+ * namn bär STRÄNGEN, aldrig null. Exporterad för att bokstavsindexets
+ * hink-logik (TASK-283) och sorteringen nedan ska läsa EN konstant i stället
+ * för två literaler som kan drifta isär.
+ */
+export const SENTINEL_NAMNLOS = 'Ej tillgängligt';
+
+/**
+ * Sammansatt visningsnamn ur de namnfält Airtable kan leverera.
+ *
+ * [FLYTTAD HIT, TASK-286.3] Bodde som lokal `displayName` i `PersonsList.tsx`.
+ * Sorteringen MÅSTE använda exakt den nyckel raden VISAR — annars läser Lotta
+ * en lista vars ordning inte följer det hon ser — och en kopia i två filer är
+ * precis den drift som gör en sådan garanti osann över tid.
+ */
+export function personVisningsnamn(person: Person): string {
+  if (person.namn) return person.namn;
+  const composed = [person.fornamn, person.efternamn].filter(Boolean).join(' ');
+  return composed || 'Okänt namn';
+}
+
+/**
+ * Sant för basens namnlös-sentinel — den enda posten som bryter ur den
+ * alfabetiska ordningen (ADR-123 beslut 4: sorteras sist, i sin hink).
+ *
+ * MEDVETET SMAL: `personVisningsnamn`s egen tomform `Okänt namn` (vår UI-
+ * fallback när `namn` är null OCH båda namnfälten är tomma) räknas INTE som
+ * sentinel här. Skälet är mätbarhet, inte slarv: `Namn`-formeln levererar
+ * alltid en sträng, så den mängden är i praktiken tom och därmed omätt —
+ * att hinka en omätt klass vore en gissning. Den sorteras som vanligt namn
+ * (under O). Dyker den upp i verklig data är det en egen, bokförbar
+ * observation, inte något denna rad ska föregripa.
+ */
+export function arNamnlosSentinel(person: Person): boolean {
+  return person.namn === SENTINEL_NAMNLOS;
+}
+
+/**
+ * Svensk kollation, skapad EN gång: `Intl.Collator` är dyr att konstruera och
+ * `sort` anropar `compare` O(n log n) gånger. Default-optionerna är rätt här
+ * — `sv` ger A–Z följt av Å, Ä, Ö, exakt den ordning bokstavsindexet redan
+ * beslutat. (Ingen `sensitivity`-nedskruvning: det är SÖKNINGENS
+ * diakritik-fråga, ADR-123 beslut 2, och den avgörs inte av sorteringen.)
+ */
+const SVENSK_KOLLATION = new Intl.Collator('sv');
+
+/**
+ * Sortera HELA registret i svensk bokstavsordning med sentinelen sist.
+ *
+ * Returnerar en NY array — `Array.prototype.sort` muterar in-place, och
+ * argumentet här är React Querys cachade data som aldrig får muteras.
+ *
+ * Ordningen är STABIL genom den efterföljande filtreringen: `Array.filter`
+ * bevarar ordning, så listan sorteras EN gång per hämtat register och varje
+ * sökning ärver ordningen gratis.
+ */
+export function sorteraPersonregister(personer: readonly Person[]): Person[] {
+  return [...personer].sort((a, b) => {
+    const aSentinel = arNamnlosSentinel(a);
+    const bSentinel = arNamnlosSentinel(b);
+    if (aSentinel !== bSentinel) return aSentinel ? 1 : -1;
+    return SVENSK_KOLLATION.compare(personVisningsnamn(a), personVisningsnamn(b));
+  });
+}

@@ -1007,20 +1007,28 @@ function matchesSearch(person: FixturePerson, term: string): boolean {
  * `nextCursor: null` först på sista sidan. Det är det som gör att BÅDE
  * sökningen och "Ladda fler" går att visa i fixturvärlden.
  *
- * TASK-277 Del 1 — `total` speglar EF:ens additiva svarsfält: beräknad mot
- * SAMMA filtrerade mängd (`traffar.length`, efter sök men FÖRE sidskärning)
- * och satt ENBART när cursor saknas, precis som `get-persons/index.ts`s
- * full-walk (en gång per vy-/sökladdning, aldrig per sida).
+ * [TOTAL BORTTAGEN, TASK-286.3] Sök-/cursor-grenen bar tidigare ett
+ * `total`-fält (TASK-277 Del 1) som speglade EF:ens additiva svarsfält. EF:ens
+ * full-walk som producerade talet är RIVEN (`get-persons/index.ts`, AC #2) —
+ * kuvertet är åter `{ persons, nextCursor }`, och fixturen speglar det. En
+ * fixtur som fortsatt levererat `total` hade varit exakt den divergens
+ * kontraktsvakten finns för att fånga.
  *
  * [TILLAGD, TASK-286.2] `?register=true` speglar EF:ens EGEN, TIDIGA retur
  * (`get-persons/index.ts`, ADR-123 beslut 1) — SAMMA plats i denna funktion:
  * en gren FÖRE sök-/cursor-parsningen, aldrig en väg genom den. Returnerar
  * HELA fixturvärlden (alla 17, Namn-asc, ingen sidskärning) i register-
- * formens `{ persons }` — inget `nextCursor`/`total`, precis som EF-svaret.
- * `PersonsList` konsumerar denna gren uteslutande sedan TASK-286.2; sök-/
- * cursor-grenen nedan lever kvar orörd åt `resolvePersonsResponse`s ANDRA
- * konsumenter (ingen finns i dag, men ADR-123 § Beslut 1 river den inte
- * förrän `TASK-286.3`).
+ * formens `{ persons }`, precis som EF-svaret.
+ *
+ * SORTERINGEN HÄR ÄR EF:ENS, INTE KLIENTENS — medvetet. `localeCompare(…,
+ * 'sv')` speglar Airtables `sort: [{ field: 'Namn' }]`, alltså UTAN
+ * TASK-286.3:s sentinel-sist-regel. Klientens `sorteraPersonregister`
+ * (`src/lib/person-sok.ts`) räknar om ordningen efter hämtningen; att baka in
+ * regeln redan här hade dolt om klientsorteringen faktiskt gör något.
+ *
+ * Sök-/cursor-grenen nedan lever kvar därför att EF:ens motsvarande gren gör
+ * det (fyra blockerande testytor läser den — se `get-persons/index.ts`s
+ * rivningsnot). Listan konsumerar den inte sedan TASK-286.2.
  */
 export function resolvePersonsResponse(url: URL) {
   if (url.searchParams.get('register') === 'true') {
@@ -1046,7 +1054,6 @@ export function resolvePersonsResponse(url: URL) {
   return {
     persons: traffar.slice(offset, slut),
     nextCursor: slut < traffar.length ? encodeFixtureCursor(slut) : null,
-    ...(cursor ? {} : { total: traffar.length }),
   };
 }
 

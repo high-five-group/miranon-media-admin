@@ -8,10 +8,16 @@
  * och ett skelett (`ADR-056`). Läser nu `fetchPersonsRegister()` EN gång
  * (`queryKeys.persons.register`, global 5 min staleTime) och söker/paginerar
  * i minnet över den laddade arrayen (`src/lib/person-sok.ts`) — noll
- * nätverksanrop efter första laddningen. `listPersons`/`persons.search` lever
- * kvar orörda i adaptern tills sista konsumenten är borta (ADR-123 § Beslut
- * 1) — TASK-286.3 river dem. Sortering är OFÖRÄNDRAD (EF:ens `Namn`-asc,
- * Airtables ordning) tills TASK-286.3 lägger svensk kollation.
+ * nätverksanrop efter första laddningen.
+ *
+ * [SORTERING + RIVNING, TASK-286.3] Listan sorteras nu med `Intl.Collator('sv')`
+ * på den laddade arrayen (ADR-123 beslut 4): A–Z, Å, Ä, Ö, med basens
+ * namnlös-sentinel (`Ej tillgängligt`, fälla 43) sist. Det stänger fälla 51:s
+ * synliga inkonsekvens — Å låg bland A vid bläddring men i egen hink vid
+ * filter, eftersom Airtables egen sortering var en vägg och vår array inte är
+ * det. `listPersons`/`persons.search` och deras typer är RIVNA i samma skiva
+ * (sista konsumenten försvann med TASK-286.2, ADR-123 § Beslut 1); EF:ens
+ * sök-/cursor-gren lever kvar och VARFÖR står i `get-persons/index.ts`.
  *
  * HÄRKOMST, eftersom den förklarar formen: detta ÄR S90/S103-konvergensens
  * prototyp, PROMOVERAD enligt `ADR-103` (B1 promoveringsformen, B2 steg 4
@@ -59,7 +65,11 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { useDataSource } from '@/data/useDataSource';
 import type { Person } from '@/domain/models/Person';
-import { filtreraPersonregister } from '@/lib/person-sok';
+import {
+  filtreraPersonregister,
+  personVisningsnamn,
+  sorteraPersonregister,
+} from '@/lib/person-sok';
 import { queryKeys } from '@/queries/keys';
 
 /**
@@ -125,13 +135,6 @@ const SKELETON_NAMNBREDD = [
  * kvar detta talet.
  */
 const SEARCH_DEBOUNCE_MS = 250;
-
-/** Sammansatt visningsnamn ur de namnfält Airtable kan leverera. */
-function displayName(person: Person): string {
-  if (person.namn) return person.namn;
-  const composed = [person.fornamn, person.efternamn].filter(Boolean).join(' ');
-  return composed || 'Okänt namn';
-}
 
 /**
  * Kontaktrad — ENBART e-post. INTE ort, INTE telefon.
@@ -309,13 +312,24 @@ export function PersonsList() {
     queryFn: () => dataSource.fetchPersonsRegister(),
   });
 
+  // [TASK-286.3, ADR-123 beslut 4] SVENSK SORTERING, en gång per hämtat
+  // register. EF:en levererar Airtables `Namn`-asc, som lägger Å bland A —
+  // fälla 51:s synliga inkonsekvens mot bokstavsindexets egna Å-hink.
+  // `Intl.Collator('sv')` räknar om ordningen till A–Z, Å, Ä, Ö med
+  // namnlös-sentinelen sist (`src/lib/person-sok.ts`).
+  //
+  // EGEN `useMemo`, inte hopslagen med filtreringen nedan: sorteringen beror
+  // BARA på registret, filtreringen på registret OCH söktermen. Slogs de ihop
+  // skulle hela registret sorteras om vid VARJE tecken Lotta skriver — och
+  // filtreringen är avsiktligt odebouncad (beslut 5).
+  const sorteratRegister = useMemo(() => sorteraPersonregister(register ?? []), [register]);
+
   // Sök i klienten — byte-för-byte paritet med EF:ens SEARCH()-formel
-  // (`src/lib/person-sok.ts`, ADR-123 beslut 2). Sortering är OFÖRÄNDRAD
-  // (registrets egen Namn-asc-ordning ur EF:en) — svensk kollation är
-  // TASK-286.3.
+  // (`src/lib/person-sok.ts`, ADR-123 beslut 2). `Array.filter` bevarar
+  // ordningen, så varje sökning ärver den svenska sorteringen gratis.
   const filteredPersons = useMemo(
-    () => filtreraPersonregister(register ?? [], deferredSearchTerm),
-    [register, deferredSearchTerm],
+    () => filtreraPersonregister(sorteratRegister, deferredSearchTerm),
+    [sorteratRegister, deferredSearchTerm],
   );
 
   // Klient-render-fönstret (ADR-123 beslut 5) — "Ladda fler" utökar detta,
@@ -456,11 +470,15 @@ export function PersonsList() {
   }
 
   const loadedCount = persons.length;
-  // [FÖRENKLAT, TASK-286.2] Var en skew-säker fallback mot en EF-levererad
-  // totalsiffra (TASK-277 AC #1) — den full-walken existerar inte längre för
-  // listans räkning: `filteredPersons` ÄR redan HELA det filtrerade
-  // registret i minnet (ADR-123), så längden är alltid exakt. Ingen
-  // separat serversiffra att synka mot, inget skew-fönster.
+  // [FÖRENKLAT, TASK-286.2 · WALKEN RIVEN, TASK-286.3] Var en skew-säker
+  // fallback mot en EF-levererad totalsiffra (TASK-277 AC #1). Fallbacken föll
+  // med 286.2 och full-walken den skyddade mot är RIVEN med 286.3 — båda talen
+  // räknas nu ur arrayen: `loadedCount` är render-fönstret, `totalCount` hela
+  // den filtrerade mängden i minnet. Vid tom sökterm ÄR `totalCount` därmed
+  // registrets längd; vid en sökning är det träffantalet, vilket är exakt vad
+  // TASK-277 AC #2:s låsta ordalydelse ("Visar N av TOTAL personer") betyder
+  // på en yta som filtrerar. Ingen serversiffra att synka mot, inget
+  // skew-fönster, ingen andra hämtning.
   const totalCount = filteredPersons.length;
 
   return (
@@ -519,7 +537,10 @@ export function PersonsList() {
               TASK-277 AC #2 (Marcus 2026-08-18/19, LÅST ordalydelse): den
               gamla "(fler finns)"-svansen utgår HELT. Formen är nu "Visar N
               av TOTAL personer[ för \"sökterm\"]." — `totalCount` är den
-              äkta serversiffran (se ovan), inte `hasNextPage`. */}
+              exakta räkningen ur arrayen (se ovan), inte `hasNextPage`.
+              [TASK-286.3] Ordalydelsen är ORÖRD; det som bytte är varifrån
+              talet kommer: EF:ens full-walk är riven och båda talen räknas
+              lokalt. */}
           <p
             ref={statusRef}
             tabIndex={-1}
@@ -556,7 +577,7 @@ export function PersonsList() {
           >
             {persons.map((person) => {
               const contact = contactLine(person);
-              const namn = displayName(person);
+              const namn = personVisningsnamn(person);
               return (
                 // [PROTOTYPE] STEG 13 (k13) — RADEN ÄRVER `PersonMiniKort`s ANATOMI.
                 //

@@ -59,17 +59,23 @@ export const queryKeys = {
     formats: ['events', 'formats'] as const,
   },
   persons: {
+    // Invaliderings-ROTEN för hela persons-grenen — prefixet `register`,
+    // `detail` och `notes` delar. Den har noll direkta konsumenter i dag och
+    // hade det REDAN FÖRE TASK-286.3:s rivning; den föll alltså aldrig inom
+    // kortets "städas om de BLIR oanvända", och rivs därför inte. Skälet är
+    // inte formellt utan konkret: ADR-123 beslut 6 kräver att varje
+    // person-skapande skrivväg invaliderar registret innan cachen får leva
+    // längre, och TASK-286.4 bygger den invalideringen — att riva roten här
+    // vore att ta bort verktyget dagen före det ska användas.
     all: ['persons'] as const,
-    // Cursor-paginering via `useInfiniteQuery` (ADR-056): nyckeln bär ENBART
-    // sökterm `q`. Cursorn skickas som `pageParam` och ingår ALDRIG i nyckeln —
-    // alla sidor för en given `q` ackumuleras under samma cache-entry. (Ersätter
-    // STATE-STRATEGY §3:s `search({ q, page })` — opak cursor, inga numeriska sidor.)
-    //
-    // [UTAN KONSUMENT SEDAN TASK-286.2] `PersonsList` läser inte längre denna
-    // nyckel (bytt mot `register` nedan, ADR-123). Nyckeln och sin adapter-metod
-    // (`listPersons`) lever kvar orörda tills TASK-286.3 river dem — ingen
-    // big-bang-rivning (ADR-123 § Beslut 1).
-    search: (params: { q: string }) => ['persons', params] as const,
+    // [RIVET, TASK-286.3] `search: (params: { q: string }) => ['persons', params]`
+    // bar `useInfiniteQuery`-cursorporten (ADR-056) för listans server-sök.
+    // Sista konsumenten försvann med TASK-286.2 (listan läser `register`
+    // nedan); ADR-123 § Beslut 1 sköt rivningen hit i stället för att göra den
+    // i samma andetag som källbytet. Adapter-metoden (`listPersons`) och
+    // typerna (`ListParams`/`PersonsPage`) är rivna i samma commit. EF:ens
+    // sök-/cursor-gren lever kvar och VARFÖR står i `get-persons/index.ts`.
+    // Git bevarar formen (`git log -p -- src/queries/keys.ts`).
     // HELA personregistret (ADR-123 beslut 1, TASK-286.2) — PARAMETERLÖS,
     // STABIL nyckel (speglar `events.list`/`waitlist.all`-formen): en global
     // lista, inga klient-filter i nyckeln. `PersonsList` läser denna EN gång
@@ -157,11 +163,12 @@ export const queryKeys = {
     // om de återbesöks.
     all: ['activityLog'] as const,
     // Aktivitetshistoriken (TASK-201.6, kärnvyn): cursor-paginerad via
-    // `useInfiniteQuery` (ADR-056-mönstret, `persons.search`-precedenten).
+    // `useInfiniteQuery` (ADR-056-mönstret; precedenten var `persons.search`,
+    // riven i TASK-286.3 — formen finns i den filens git-historik).
     // Nyckeln bär FILTERPARAMETRARNA (kategori/eventId/tidsintervall) —
     // de ändrar VILKEN datamängd get-activity-log-EF:en hämtar server-side,
-    // så olika filter måste ge olika cache-poster (speglar `persons.search`s
-    // `q`-resonemang). Cursorn skickas som `pageParam`, ALDRIG i nyckeln —
+    // så olika filter måste ge olika cache-poster (samma `q`-resonemang den
+    // rivna nyckeln bar). Cursorn skickas som `pageParam`, ALDRIG i nyckeln —
     // alla sidor för samma filterkombination ackumuleras i samma cache-entry.
     history: (filters: { category?: string; eventId?: string; from?: string; to?: string }) =>
       ['activityLog', 'history', filters] as const,

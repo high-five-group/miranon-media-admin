@@ -6,11 +6,20 @@
 //
 // AC #3 (byte-identiskt svar för anrop UTAN `register`-parametern) täcks INTE
 // här — den bevisas av att `get-persons.staging.test.ts` (cursor-conformance)
-// och `get-persons-totalisolering.test.ts` (api-pure, replikerad form)
-// passerar OFÖRÄNDRADE efter skivan: koden i sök-/cursor-grenen rördes inte
+// passerar OFÖRÄNDRAT efter skivan: koden i sök-/cursor-grenen rördes inte
 // alls (se `get-persons/index.ts`s registerläge-kommentar — den nya grenen
 // returnerar TIDIGT, före `search`-parsningen, så den gamla koden är
 // bokstavligen oåtkomlig för ett anrop utan `register=true`).
+//
+// [OMSKRIVEN KORSVALIDERING, TASK-286.3] Filhuvudet listade tidigare även
+// `get-persons-totalisolering.test.ts` som medbevis. Det testet är rivet —
+// dess hela objekt var `totalPromise`s `.catch()`, och full-walken som
+// producerade `total` finns inte längre (AC #2). `hamtaOberoendeTotal` nedan
+// LÄSTE det fältet och är därför omskriven; den paginerar nu i stället genom
+// EF:ens kvarvarande cursor-gren och räknar. Den mätningen är dessutom mer
+// oberoende än den den ersätter: den gamla läste ett tal som föddes ur SAMMA
+// `fetchFromAirtable(BAS_FILTER)`-primitiv som registerläget självt använder,
+// alltså delvis samma kodväg som den skulle korsvalidera.
 //
 // FIXTUR: samma 5 permanenta "ZZ-Conformance Person 01..05"-poster som
 // `get-persons.staging.test.ts` använder — se den filens filhuvud för den
@@ -81,28 +90,60 @@ async function callRegister(
   return (await res.json()) as { persons: RawPerson[] };
 }
 
-// FÖRSTA sidan (ingen cursor) av dagens PAGINERADE läge bär `total` — en äkta,
-// OBEROENDE full-walk-räkning mot SAMMA BAS_FILTER (TASK-277 Del 1). Detta ÄR
-// "basfiltrets träffmängd" mätt via en helt annan kodväg än registerlägets
-// egen fullwalk — inte en cirkelreferens mot sig själv.
+/**
+ * Räkna basfiltrets träffmängd via EF:ens PAGINERADE gren — sida för sida,
+ * opak cursor, tills `nextCursor` är null.
+ *
+ * [OMSKRIVEN, TASK-286.3] Läste tidigare `total` ur förstasidans kuvert
+ * (TASK-277 Del 1). Fältet finns inte längre: full-walken som producerade det
+ * är riven (AC #2). Paginering är den enda kvarvarande vägen till ett äkta
+ * antal — Airtable saknar en count-primitiv för ett filtrerat urval
+ * (`airtable-constraints.md` P6).
+ *
+ * Detta är en STARKARE korsvalidering än den den ersätter, inte en nödlösning.
+ * `total` föddes ur `fetchFromAirtable(TABLE_NAME, { filterByFormula })` —
+ * samma primitiv och samma filter som registerläget självt anropar, alltså
+ * delvis samma kodväg som talet skulle korsvalidera. Cursor-grenen går i
+ * stället via `fetchAirtablePage` med Airtables egen offset-mekanik: en
+ * genuint annan väg genom EF:en till samma mängd.
+ *
+ * `SIDTAK` är en spärr mot en oändlig loop om `nextCursor` någon gång slutar
+ * bli null — ett trasigt kontrakt ska fälla testet, aldrig hänga det.
+ */
+const SIDSTORLEK = 100;
+const SIDTAK = 50;
+
 async function hamtaOberoendeTotal(
   request: APIRequestContext,
   config: ApiConfig,
   jwt: string,
 ): Promise<number> {
-  const url = new URL(`${config.baseUrl}/functions/v1/get-persons`);
-  url.searchParams.set('pageSize', '1'); // vi läser bara `total`, inte posterna
+  let antal = 0;
+  let cursor: string | null = null;
 
-  const res = await request.get(url.toString(), {
-    headers: { Authorization: `Bearer ${jwt}` },
-  });
-  expect(res.status(), 'get-persons (basfilter, ingen sökterm) ska svara 200').toBe(200);
+  for (let sida = 0; sida < SIDTAK; sida += 1) {
+    const url = new URL(`${config.baseUrl}/functions/v1/get-persons`);
+    url.searchParams.set('pageSize', String(SIDSTORLEK));
+    if (cursor) url.searchParams.set('cursor', cursor);
 
-  const body = (await res.json()) as { total?: number };
-  expect(typeof body.total, 'get-persons förstasida ska bära total (TASK-277 Del 1)').toBe(
-    'number',
+    const res = await request.get(url.toString(), {
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+    expect(
+      res.status(),
+      `get-persons (basfilter, ingen sökterm, sida ${sida + 1}) ska svara 200`,
+    ).toBe(200);
+
+    const body = (await res.json()) as { persons: unknown[]; nextCursor: string | null };
+    antal += body.persons.length;
+
+    if (!body.nextCursor) return antal;
+    cursor = body.nextCursor;
+  }
+
+  throw new Error(
+    `get-persons paginerade förbi ${SIDTAK} sidor (${SIDSTORLEK}/sida) utan att ge nextCursor: null — cursor-kontraktet är brutet, eller basfiltrets mängd har vuxit långt förbi vad denna korsvalidering antar.`,
   );
-  return body.total as number;
 }
 
 test.describe('get-persons — registerläge (ADR-123 beslut 1, TASK-286.1)', () => {
@@ -137,7 +178,7 @@ test.describe('get-persons — registerläge (ADR-123 beslut 1, TASK-286.1)', ()
     );
   });
 
-  test('registrets antal === basfiltrets oberoende mätta träffmängd (TASK-277 total)', async ({
+  test('registrets antal === basfiltrets oberoende mätta träffmängd (cursor-paginerad räkning)', async ({
     request,
   }) => {
     const config = getApiConfig();

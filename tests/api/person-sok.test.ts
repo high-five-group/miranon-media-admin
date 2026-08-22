@@ -14,7 +14,14 @@
 
 import { expect, test } from '@playwright/test';
 import type { Person } from '../../src/domain/models/Person';
-import { filtreraPersonregister, personMatcharSokterm } from '../../src/lib/person-sok';
+import {
+  arNamnlosSentinel,
+  filtreraPersonregister,
+  personMatcharSokterm,
+  personVisningsnamn,
+  SENTINEL_NAMNLOS,
+  sorteraPersonregister,
+} from '../../src/lib/person-sok';
 
 /** Minimal, komplett `Person` — overrides sätter bara det testet bryr sig om. */
 function bas(overrides: Partial<Person> = {}): Person {
@@ -123,5 +130,119 @@ test.describe('filtreraPersonregister — hela registret', () => {
   test('noll träffar ger en tom array, inte undefined/krasch', () => {
     const register = [bas({ namn: 'Anna Andersson' })];
     expect(filtreraPersonregister(register, 'finnsinte')).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SVENSK SORTERING (ADR-123 beslut 4, TASK-286.3 AC #1)
+// ---------------------------------------------------------------------------
+//
+// Två egenskaper låses, och de är oberoende av varandra:
+//
+//   1. KOLLATIONEN — A till Z följt av Å, Ä, Ö. Airtables egen
+//      `Namn`-sortering lade Å bland A; det är fälla 51:s synliga
+//      inkonsekvens mot bokstavsindexets Å-hink (TASK-283), och den stängs
+//      här.
+//   2. SENTINEL-HINKEN — `Ej tillgängligt` (fälla 43) sist, oavsett var
+//      bokstavsordningen ensam hade placerat den.
+//
+// Egenskap 2 prövas TVÅSIDIGT: sentinelen sorterar alfabetiskt mellan `David`
+// och `Emma` (fixturvärlden bygger på exakt det, `fixture-data.ts`), så ett
+// utfall där den ligger SIST bevisar att hink-regeln faktiskt körde. Låg den
+// sist redan av kollationen vore fallet grönt av en slump — och det låser
+// ingenting.
+
+test.describe('sorteraPersonregister — svensk kollation + sentinel sist', () => {
+  const namnen = (personer: Person[]) => personer.map((p) => personVisningsnamn(p));
+
+  test('A till Z, sedan Å, Ä, Ö — inte Airtables ordning där Å låg bland A', () => {
+    const register = ['Östen Öberg', 'Anna Andersson', 'Åsa Ask', 'Bo Berg', 'Ärla Älv'].map(
+      (namn) => bas({ id: `rec-${namn}`, namn }),
+    );
+
+    expect(namnen(sorteraPersonregister(register))).toEqual([
+      'Anna Andersson',
+      'Bo Berg',
+      'Åsa Ask',
+      'Ärla Älv',
+      'Östen Öberg',
+    ]);
+  });
+
+  test('fälla 51 är stängd: Åsa hamnar EFTER Z, aldrig bland A:na', () => {
+    const register = ['Zäta Zetterberg', 'Åsa Ask', 'Anna Andersson'].map((namn) =>
+      bas({ id: `rec-${namn}`, namn }),
+    );
+
+    const sorterat = namnen(sorteraPersonregister(register));
+    expect(sorterat).toEqual(['Anna Andersson', 'Zäta Zetterberg', 'Åsa Ask']);
+    expect(sorterat.indexOf('Åsa Ask')).toBeGreaterThan(sorterat.indexOf('Zäta Zetterberg'));
+  });
+
+  test('sentinelen sorteras SIST — inte på sin alfabetiska plats', () => {
+    const namnlista = ['Emma Eklund', SENTINEL_NAMNLOS, 'David Dahl', 'Anna Andersson'];
+    const register = namnlista.map((namn) => bas({ id: `rec-${namn}`, namn }));
+
+    const sorterat = namnen(sorteraPersonregister(register));
+    expect(sorterat).toEqual(['Anna Andersson', 'David Dahl', 'Emma Eklund', SENTINEL_NAMNLOS]);
+    expect(sorterat.indexOf(SENTINEL_NAMNLOS)).toBe(sorterat.length - 1);
+
+    // TVÅSIDIGHETEN: ren kollation UTAN hink-regeln lägger sentinelen på
+    // index 2, mellan David och Emma. Att den ovan ligger sist är därför
+    // regelns förtjänst, inte ordningens tur.
+    const utanHinkregel = [...namnlista].sort(new Intl.Collator('sv').compare);
+    expect(utanHinkregel.indexOf(SENTINEL_NAMNLOS)).toBe(2);
+  });
+
+  test('FLERA sentinel-poster hamnar alla sist, inbördes ordning stabil', () => {
+    const register = [
+      bas({ id: 'recS1', namn: SENTINEL_NAMNLOS }),
+      bas({ id: 'recA', namn: 'Anna Andersson' }),
+      bas({ id: 'recS2', namn: SENTINEL_NAMNLOS }),
+    ];
+
+    expect(sorteraPersonregister(register).map((p) => p.id)).toEqual(['recA', 'recS1', 'recS2']);
+  });
+
+  test('muterar ALDRIG indatan — React Querys cache får aldrig sorteras in-place', () => {
+    const register = [
+      bas({ id: 'rec2', namn: 'Björn Bergström' }),
+      bas({ id: 'rec1', namn: 'Anna Andersson' }),
+    ];
+    const sorterat = sorteraPersonregister(register);
+
+    expect(register.map((p) => p.id)).toEqual(['rec2', 'rec1']);
+    expect(sorterat.map((p) => p.id)).toEqual(['rec1', 'rec2']);
+    expect(sorterat).not.toBe(register);
+  });
+
+  test('tomt register kraschar inte', () => {
+    expect(sorteraPersonregister([])).toEqual([]);
+  });
+});
+
+test.describe('personVisningsnamn — sorteringsnyckeln ÄR nyckeln raden visar', () => {
+  test('namn-formeln vinner när den är satt', () => {
+    expect(personVisningsnamn(bas({ namn: 'Anna Andersson' }))).toBe('Anna Andersson');
+  });
+
+  test('faller till förnamn plus efternamn när namn saknas', () => {
+    expect(personVisningsnamn(bas({ namn: null, fornamn: 'Anna', efternamn: 'Andersson' }))).toBe(
+      'Anna Andersson',
+    );
+  });
+
+  test('helt namnlös post får UI-tomformen, som INTE är basens sentinel', () => {
+    const tom = bas({ namn: null, fornamn: null, efternamn: null });
+    expect(personVisningsnamn(tom)).toBe('Okänt namn');
+    // Medvetet smal sentinel-regel (se `person-sok.ts`): UI-tomformen hinkas
+    // INTE, eftersom `Namn`-formeln alltid levererar en sträng och mängden
+    // därför är omätt i verklig data.
+    expect(arNamnlosSentinel(tom)).toBe(false);
+  });
+
+  test('sentinel-strängen känns igen exakt, aldrig på delsträng', () => {
+    expect(arNamnlosSentinel(bas({ namn: SENTINEL_NAMNLOS }))).toBe(true);
+    expect(arNamnlosSentinel(bas({ namn: 'Ej tillgängligt just nu' }))).toBe(false);
   });
 });

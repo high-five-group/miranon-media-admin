@@ -46,12 +46,7 @@ import type {
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
-import type {
-  ActivityLogPage,
-  ActivityLogParams,
-  ListParams,
-  PersonsPage,
-} from '../../domain/types/Pagination';
+import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
 import { postEdgeFunction } from '../config/supabase-client';
 import type { DataSourceAdapter } from './DataSourceAdapter';
 
@@ -66,10 +61,12 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async listPersons(_params?: ListParams): Promise<PersonsPage> {
-    throw new Error(NOT_IMPLEMENTED);
-  }
-
+  // [RIVEN, TASK-286.3] `listPersons` stod här som stub för cursor-porten
+  // (ADR-056). Riven tillsammans med interface-deklarationen och
+  // Airtable-implementationen när sista konsumenten försvann (TASK-286.2).
+  // Dubbel-källa-kontraktet är därmed FORTSATT symmetriskt: båda adaptrarna
+  // bär exakt de metoder `DataSourceAdapter` deklarerar, varken fler
+  // eller färre (ADR-056 swappbarhet).
   async fetchPersonsRegister(): Promise<Person[]> {
     throw new Error(NOT_IMPLEMENTED);
   }

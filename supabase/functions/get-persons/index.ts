@@ -108,11 +108,17 @@ Deno.serve(async (req) => {
   // orörd — inget att bevisa byte-identiskt, det är samma kod som körde
   // innan skivan.
   //
-  // "Ingen andra walk" (AC #2): SAMMA fullwalk-primitiv (`fetchFromAirtable`)
-  // som redan används för totalsiffran nedan — bara BREDDAD till alla fält
-  // (`fields` utelämnat helt i stället för `['Namn']`) och posterna
-  // returneras i stället för att räknas. Ignorerar sök/cursor/pageSize helt:
-  // registret är HELA basfiltrets mängd, aldrig en delmängd av den.
+  // "Ingen andra walk" (TASK-286.1 AC #2): SAMMA fullwalk-primitiv
+  // (`fetchFromAirtable`) som fram till TASK-286.3 också bar totalsiffrans
+  // walk nedan — bara BREDDAD till alla fält (`fields` utelämnat helt i
+  // stället för `['Namn']`) och posterna returneras i stället för att räknas.
+  // Ignorerar sök/cursor/pageSize helt: registret är HELA basfiltrets mängd,
+  // aldrig en delmängd av den.
+  //
+  // [ENDA WALKEN, TASK-286.3] Sedan totalsiffrans walk är riven är detta
+  // funktionens ENDA fullwalk. Den omfördelning ADR-123 § Kontext fynd 2
+  // beskrev är därmed genomförd i koden, inte bara i planen: ett anrop per
+  // vy-besök i stället för två parallella.
   if (url.searchParams.get('register') === 'true') {
     try {
       const records = await fetchFromAirtable(TABLE_NAME, {
@@ -183,57 +189,65 @@ Deno.serve(async (req) => {
 
   try {
     // ETT Airtable-listanrop per sida (ingen full-walk) — cursor-port (ADR-056).
-    const pagePromise = fetchAirtablePage(TABLE_NAME, {
+    //
+    // [TOTAL-WALKEN RIVEN, TASK-286.3 AC #2] Här låg TASK-277 Del 1:s
+    // `totalPromise` — en andra, FULLSTÄNDIG walk (`fields: ['Namn']`) mot
+    // samma `filterByFormula`, körd parallellt med sid-anropet enbart för att
+    // kunna svara med ett `total`-fält. Airtable saknar en count-primitiv för
+    // ett filtrerat urval (`airtable-constraints.md` P6), så en walk var den
+    // enda vägen till ett äkta antal.
+    //
+    // Den behövs inte längre, och det är hela poängen med ADR-123: listan
+    // laddar HELA registret en gång (`?register=true` ovan) och räknar både
+    // "Visar N" och "av TOTAL" ur arrayen i minnet. Att behålla walken hade
+    // betytt att varje sidanrop fortsatte betala för ett tal ingen läser —
+    // ADR-123 § Kontext fynd 2 räknade det som EN av de två parallella
+    // hämtningar registerläget ersätter med en.
+    //
+    // Det som rivs med den: `total` ur svarskuvertet (kvar är
+    // `{ persons, nextCursor }`), klientens skew-säkra avläsning i
+    // `AirtableAdapter.listPersons` (metoden själv riven), `PersonsPage.total`
+    // och felisolerings-regressionstestet `get-persons-totalisolering.test.ts`
+    // — vars hela objekt var `totalPromise`s `.catch()`.
+    //
+    // SÖK-/CURSOR-GRENEN SJÄLV LEVER KVAR, och det är ett MÄTT beslut, inte
+    // en glömska. TASK-286.3 AC #3 river den bara om ett grep-svep visar noll
+    // andra konsumenter; svepet (2026-08-22, hela repot utom node_modules)
+    // visade FYRA, samtliga blockerande testytor som anropar `?search=` eller
+    // `?cursor=` direkt över HTTP:
+    //
+    //   · `tests/api/get-persons-sok-paritet.staging.test.ts` — ADR-123
+    //     beslut 2:s BEVISINSTRUMENT: kör kortets termlista mot både denna
+    //     gren och klientfiltret. Rivs grenen finns ingen mätbar referens
+    //     kvar att väga klientfiltret mot alls. (Att kravet i dag lyder
+    //     "identiska träffmängder" är en EGENSKAP hos dagens semantik, inte
+    //     ett evigt kontrakt: `TASK-286.5` är beslutad JA — klientsöket ska
+    //     bli diakritik-tolerant, och då byter denna svit facit i det
+    //     kortet. Behovet av EF-grenen som referensyta står kvar oavsett.)
+    //   · `tests/api/get-persons.staging.test.ts` — cursor-port-conformance
+    //     (ADR-056), sid-sekvens [2,2,1] med opak cursor.
+    //   · `tests/kontraktsvakt/kontraktsfall.ts` — FELKONTRAKTET
+    //     `?cursor=inte-en-cursor` → 400 "Invalid cursor" (TASK-69).
+    //   · `tests/api/airtable-filter.staging.test.ts` — injektions-fuzzen
+    //     ("illvillig search=TRUE-tautology / OR-injection → aldrig 500").
+    //
+    // ADR-123 § Konsekvenser förutsåg exakt detta: paritetstestet underhålls
+    // "så länge båda vägarna finns". Klientens väg hit är riven; EF-vägen
+    // står kvar som den mätbara referens klientfiltret vägs mot.
+    const { records, nextOffset } = await fetchAirtablePage(TABLE_NAME, {
       filterByFormula,
       sort: [{ field: 'Namn', direction: 'asc' }],
       pageSize,
       offset,
     });
 
-    // TASK-277 Del 1 — äkta totalsiffra, ADDITIVT svarsfält (speglar
-    // get-activity-log/TASK-225.2, `index.ts:236-269`). Airtable saknar en
-    // count-primitiv för ett filtrerat urval (`airtable-constraints.md` P6:
-    // "ingen numerisk offset, ingen totalräkning") — full-walk mot SAMMA
-    // filterByFormula är den enda vägen till ett äkta antal. Beräknas ENBART
-    // på FÖRSTA sidan (cursor saknas), aldrig per sida — annars hade varje
-    // "Ladda fler" kostat en extra full-walk. `fields` begränsat till ETT
-    // fält håller full-walk-payloaden minimal (record-ID + ett fält/rad,
-    // inga övriga 20+ kolumner). Äldre klienter läser bara
-    // {persons, nextCursor} och är obrutna.
-    // FELISOLERING (orkestrerar-granskning, samma landning): full-walken gör
-    // FLERA sekventiella Airtable-anrop — dess felyta (429, transient 5xx,
-    // timeout mitt i walken) är därför mångdubbelt större än sid-anropets.
-    // Utan egen .catch() hade en rejectad totalPromise kastat HELA
-    // Promise.all och tagit ner listan (`mapErrorToResponse`, felruta i
-    // stället för 50 rader) — en KOSMETISK siffra hade fällt appens
-    // huvudyta. Listan är viktigare än räknaren: en trasig full-walk
-    // degraderar till `undefined` (samma additiva/skew-säkra väg klienten
-    // redan bär, `PersonsList.tsx`s `data?.pages[0]?.total ?? loadedCount`),
-    // ALDRIG till ett kastat fel. Loggas ändå (samma
-    // varna-och-degradera-mönster som `get-segments/index.ts`s
-    // `toSavedSegment`) så en SYSTEMATISKT trasig full-walk syns i loggarna
-    // i stället för att bli osynlig bakom en alltid-grön fallback.
-    const totalPromise = offset
-      ? Promise.resolve(undefined)
-      : fetchFromAirtable(TABLE_NAME, { filterByFormula, fields: ['Namn'] })
-          .then((records) => records.length)
-          .catch((totalError) => {
-            console.warn(
-              `[get-persons] totalsiffra-full-walk fallerade, degraderar till undefined: ${(totalError as Error).message}`,
-            );
-            return undefined;
-          });
-
-    const [{ records, nextOffset }, total] = await Promise.all([pagePromise, totalPromise]);
-
     const persons = records.map(mapPerson);
     // Wrappa Airtables offset opakt; null på sista sidan.
     const nextCursor = nextOffset ? encodeCursor(nextOffset) : null;
 
-    return new Response(
-      JSON.stringify({ persons, nextCursor, ...(total !== undefined ? { total } : {}) }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    return new Response(JSON.stringify({ persons, nextCursor }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     return mapErrorToResponse(error, requestId, corsHeaders, {
       function: 'get-persons',

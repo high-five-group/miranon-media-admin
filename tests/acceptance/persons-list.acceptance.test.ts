@@ -31,6 +31,12 @@ import { expect, test } from './support/acceptance-bas';
  * fördröjningen för att vara nätverksfri. En regression som återinförde ett
  * anrop per tecken hade fällt assertionens KORTA timeout, inte förlängt den.
  *
+ * [UTÖKAD, TASK-286.3] Sist i filen ligger sorterings-blocket (AC #1/#2):
+ * svensk kollation med namnlös-sentinelen sist, och räknarraden räknad ur
+ * arrayen. Dess fixtur levereras medvetet i AIRTABLES ordning — den ordning
+ * EF:en faktiskt returnerar, med Å bland A:na — så en yta som renderar
+ * hämtningens ordning rakt av fäller testet.
+ *
  * TÄCKER INTE här (egna skarvar): AC #3 (parity mot EF:ens SEARCH()-formel) —
  * `tests/api/person-sok.test.ts` (pure) + `tests/api/
  * get-persons-sok-paritet.staging.test.ts` (skarpt mot staging). AC #4
@@ -186,6 +192,105 @@ test.describe('Personer-listan (TASK-286.2 — förladdat register, sök i klien
       .analyze();
 
     expect(results.violations).toEqual([]);
+  });
+});
+
+/**
+ * SVENSK SORTERING (TASK-286.3 AC #1, ADR-123 beslut 4) — EGEN describe med
+ * EGEN fixtur, av samma skäl som läs-felet nedan: blocket ovan lägger sin
+ * register-överskuggning i en `beforeEach`, och ett bevis som vilar på
+ * handler-precedens i stället för på att bara EN handler finns är ett
+ * svagare bevis.
+ *
+ * FIXTUREN ÄR VALD MOT DET SOM KAN GÅ FEL, inte mot det som är lätt att
+ * skriva. Den levereras i AIRTABLES ordning (`Namn`-asc, samma ordning EF:en
+ * faktiskt returnerar) — där Å ligger bland A:na och sentinelen på sin
+ * alfabetiska plats. Renderas den ordningen rakt av är testet rött. Bara en
+ * verklig `Intl.Collator('sv')` i klienten ger den förväntade ordningen.
+ */
+const SORTERINGSFIXTUR = [
+  // Airtables ordning: Å bland A (fälla 51), sentinelen mellan Bo och Östen.
+  'Anna Andersson',
+  'Åsa Ask',
+  'Bo Berg',
+  'Ej tillgängligt',
+  'Örjan Öman',
+  'Ärla Älv',
+].map((namn, i) => ({ ...person(i), id: `recSORT${String(i).padStart(9, '0')}`, namn }));
+
+/** A till Z, sedan Å, Ä, Ö — och sentinelen sist, ur sin alfabetiska plats. */
+const FORVANTAD_ORDNING = [
+  'Anna Andersson',
+  'Bo Berg',
+  'Åsa Ask',
+  'Ärla Älv',
+  'Örjan Öman',
+  'Ej tillgängligt',
+];
+
+test.describe('Personer-listan — svensk sortering (TASK-286.3)', () => {
+  test.beforeEach(async ({ network }) => {
+    network.use(http.get(EF('get-persons'), () => json({ persons: SORTERINGSFIXTUR })));
+  });
+
+  test('AC #1 — A till Z, sedan Å, Ä, Ö, med namnlös-sentinelen sist', async ({ page }) => {
+    await page.goto('/personer');
+    const list = page.getByRole('list', { name: 'Personer' });
+    await expect(list.getByRole('listitem')).toHaveCount(FORVANTAD_ORDNING.length);
+
+    // Länkens tillgängliga namn ÄR radens namn — samma nyckel sorteringen
+    // använder (`personVisningsnamn`), så ordningen som mäts är den Lotta ser.
+    await expect(list.getByRole('link')).toHaveText(FORVANTAD_ORDNING);
+  });
+
+  test('AC #1 — sorteringen överlever en sökning: filtrering bevarar ordningen', async ({
+    page,
+  }) => {
+    await page.goto('/personer');
+    const list = page.getByRole('list', { name: 'Personer' });
+    await expect(list.getByRole('listitem')).toHaveCount(FORVANTAD_ORDNING.length);
+
+    // SÖKTERMEN ÄR VALD FÖR ATT VARA DIAKRITIK-NEUTRAL, och det är ingen
+    // slump: `TASK-286.5` är beslutad JA (Marcus 2026-08-22) — sökningen ska
+    // bli diakritik-TOLERANT i ett eget uppföljningskort. En term som "ä"
+    // hade fungerat i dag och blivit röd då (tolerant matchning låter "ä"
+    // träffa även a/å), och sett ut som en sorteringsregression fast
+    // sorteringen var orörd. Detta test äger SORTERINGEN, inte sökningens
+    // diakritik-semantik, och ska inte kunna fällas av den.
+    //
+    // TERMEN MÅSTE UNDVIKA ALLA FYRA SÖKFÄLTEN utom namnet, och det brände
+    // ett första försök: `person()`-fabrikens e-post är `person.NN@example.test`,
+    // så bokstäverna i "person", "example" och "test" träffar VARENDA rad
+    // oavsett namn (ett försök med "n" gav alla sex). Orten är "Skövde".
+    // Kvar som säkra är bland andra b, c, f, g, h, i, j, q, u, w, y, z.
+    //
+    // "j" träffar exakt två: "Ej tillgängligt" och "Örjan Öman". Ingen svensk
+    // diakritisk bokstav normaliseras till j, så mängden är densamma före och
+    // efter TASK-286.5.
+    //
+    // Och paret är valt så att ordningen faktiskt PRÖVAS: fixturen LEVERERAR
+    // dem som sentinelen först, Örjan sedan — sorterat ska de komma i omvänd
+    // ordning. En filtrering som tappat sorteringen, eller som filtrerar det
+    // OSORTERADE registret, ger alltså exakt fel ordning här.
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('j');
+    await expect(list.getByRole('link')).toHaveText(['Örjan Öman', 'Ej tillgängligt']);
+  });
+
+  test('AC #2 — räknarraden räknas ur arrayen, både N och TOTAL', async ({ page }) => {
+    await page.goto('/personer');
+    // Hela registret ryms i render-fönstret (6 < PAGE_SIZE 50) → N === TOTAL.
+    await expect(
+      page.getByText(`Visar ${FORVANTAD_ORDNING.length} av ${FORVANTAD_ORDNING.length} personer.`),
+    ).toBeVisible();
+
+    // Vid sökning är TOTAL träffantalet, inte registrets längd — det är vad
+    // "Visar N av TOTAL personer" betyder på en filtrerande yta.
+    //
+    // Samma diakritik-neutrala term som testet ovan, av samma skäl
+    // (TASK-286.5 beslutad JA): räknarraden ska mätas mot arrayen, inte mot
+    // en sök-semantik som är på väg att ändras.
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('j');
+    await expect(page.getByText('Visar 2 av 2 personer för "j".')).toBeVisible();
   });
 });
 

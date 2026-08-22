@@ -73,12 +73,7 @@ import type {
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
-import type {
-  ActivityLogPage,
-  ActivityLogParams,
-  ListParams,
-  PersonsPage,
-} from '../../domain/types/Pagination';
+import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
 import { callEdgeFunction, postEdgeFunction, supabase } from '../config/supabase-client';
 import {
   BILAGOR_BUCKET_ID,
@@ -116,36 +111,18 @@ export class AirtableAdapter implements DataSourceAdapter {
     return z.array(RegistrationSchema).parse(data.registrations);
   }
 
-  async listPersons(params?: ListParams): Promise<PersonsPage> {
-    const query: Record<string, string> = {};
-    if (params?.search) query.search = params.search;
-    if (params?.cursor) query.cursor = params.cursor;
-    if (params?.pageSize) query.pageSize = String(params.pageSize);
-
-    const data = await callEdgeFunction<{
-      persons: unknown;
-      nextCursor: string | null;
-      total?: unknown;
-    }>('get-persons', Object.keys(query).length > 0 ? query : undefined);
-    return {
-      persons: z.array(PersonSchema).parse(data.persons),
-      nextCursor: data.nextCursor ?? null,
-      // TASK-277 Del 1 — additivt och skew-säkert, speglar
-      // fetchActivityLog (TASK-225.2) nedan EXAKT: fältet valideras
-      // defensivt och utelämnas mot en äldre EF-deploy (klienten faller
-      // till interimsformen i statusraden, aldrig NaN).
-      ...(typeof data.total === 'number' && Number.isFinite(data.total)
-        ? { total: data.total }
-        : {}),
-    };
-  }
-
   /**
    * Hämta HELA personregistret (ADR-123 beslut 1, TASK-286.1) — se
    * `DataSourceAdapter.fetchPersonsRegister` för det fulla kontraktet.
-   * `register: 'true'` är EF-ANROPETS EGEN signal (skiljer denna gren från
-   * `listPersons`s sök/cursor-gren på SAMMA `get-persons`-endpoint) — inget
-   * UI-argument passerar den vidare, metoden tar inga parametrar.
+   * `register: 'true'` är EF-ANROPETS EGEN signal (den skiljer denna gren
+   * från EF:ens kvarvarande sök-/cursor-gren på SAMMA `get-persons`-endpoint)
+   * — inget UI-argument passerar den vidare, metoden tar inga parametrar.
+   *
+   * [ENDA PERSONLIST-ANROPET, TASK-286.3] `listPersons` stod här och byggde
+   * `?search=`/`?cursor=`/`?pageSize=` mot samma endpoint, plus en skew-säker
+   * avläsning av EF:ens `total`-fält. Både metoden och `total`-fältet är rivna:
+   * fältet finns inte längre i EF-svaret (dess full-walk är riven i samma
+   * skiva), och klienten hade ingen konsument kvar efter TASK-286.2.
    */
   async fetchPersonsRegister(): Promise<Person[]> {
     const data = await callEdgeFunction<{ persons: unknown }>('get-persons', {
@@ -852,7 +829,9 @@ export class AirtableAdapter implements DataSourceAdapter {
    * metoder på denna adapter (samma "AirtableAdapter är den LEVANDE
    * produktions-adaptern, inte bokstavligen bara Airtable"-precedent som
    * `getAuthHeader()`s Supabase-session redan etablerar). Query-params
-   * byggs på SAMMA sätt som `listPersons` (bara satta nycklar tas med).
+   * byggs enligt husets mönster: bara satta nycklar tas med (formen kom från
+   * `listPersons`, riven i TASK-286.3 — denna metod är sedan dess adapterns
+   * enda kvarvarande cursor-port).
    * `.parse()` validerar varje statement vid datagränsen (ADR-026) — och
    * bevisar därmed, precis som `fetchMailLog`/`fetchEvents` m.fl., att
    * `ActivityStatementSchema` gäller läsvägen lika strikt som skrivvägen
