@@ -982,7 +982,6 @@ function InforutanMorf({
   rader,
   fokus,
   ort,
-  platsFinns,
   somStandard,
   onSpara,
   onStang,
@@ -991,7 +990,6 @@ function InforutanMorf({
   /** Fältet som ska få markören; null = första fältet. */
   fokus: BlockId | null;
   ort: string | null;
-  platsFinns: boolean;
   somStandard: Set<BlockId>;
   onSpara: (andringar: { id: BlockId; nytt: Override | null; blirStandard: boolean }[]) => void;
   onStang: () => void;
@@ -1102,7 +1100,6 @@ function InforutanMorf({
                     }
                   >
                     Använd som standard för {ort} framöver
-                    {platsFinns ? '' : ' (skapar platsen)'}
                   </Kryss>
                 </span>
               )}
@@ -1313,7 +1310,6 @@ function GenereringsVy({
                 rader={g.rader}
                 fokus={morfFokus}
                 ort={event.ort}
-                platsFinns={plats != null}
                 somStandard={somStandard}
                 onSpara={sparaSektion}
                 onStang={() => {
@@ -1469,7 +1465,6 @@ function GenereringsVy({
           key={oppenRad.def.id}
           rad={oppenRad}
           ort={event.ort}
-          platsFinns={plats != null}
           somStandard={somStandard.has(oppenRad.def.id)}
           onSpara={(nytt, blirStandard) => {
             spara(oppenRad.def.id, nytt, blirStandard);
@@ -1640,14 +1635,12 @@ function ProtoDialog({
 function BlockDialog({
   rad,
   ort,
-  platsFinns,
   somStandard,
   onSpara,
   onStang,
 }: {
   rad: Rad;
   ort: string | null;
-  platsFinns: boolean;
   somStandard: boolean;
   onSpara: (nytt: Override | null, blirStandard: boolean) => void;
   onStang: () => void;
@@ -1748,7 +1741,7 @@ function BlockDialog({
               vald={blirStandard}
               onChange={setBlirStandard}
             >
-              Använd som standard för {ort} framöver{platsFinns ? '' : ' (skapar platsen)'}
+              Använd som standard för {ort} framöver
             </Kryss>
           )}
 
