@@ -162,6 +162,14 @@ familjens fem sidor). **INTE utvidgning av 284** — vaktens prod-värde är
 oberoende av sidans form. Kortnumren rörde sig igen (289/290 tagna av andra
 grenar → 291/292). **NÄSTA: steg 7 (kastbar post krävs — köns 12 rader är
 fixturer) → 9 → 10 → `284.6` prod → grilla `TASK-292`.**
+**DEL 9 (2026-08-22): `284.5` QA-VANDRINGEN GENOMFÖRD — 6/7/9/10 OK av
+Marcus** (7: kastbar post ID 5540, A1 vägrade, resolution i appen satte
+Event + EventKey i samma skrivning, OK, städad; 9: enda skillnaden är den
+dokumenterade hover/etikett-amenderingen 2026-08-17; 11 delegerat till
+`284.6` AC #2). AC #1–2 bockade; Done-stängning följer efter grön CI.
+`T169` instans 2 (`22b543bb`, docs-only, CLS-flake) bokförd på indexraden.
+**NÄSTA: `284.6` prod — fälten → kontrollsvep (STOPP-grind) → A1 sist,
+Marcus GO per steg.**
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
 pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA
