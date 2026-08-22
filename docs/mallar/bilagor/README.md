@@ -322,7 +322,7 @@ datamodell uppfinns i mallen.
 | Token | Källa i `receipt-content.ts` |
 |---|---|
 | `kvittonummer` | `KvittoradSpec.kvittonummer` |
-| `datum` | `formatKvittoDatum(spec.datum)` - VERIFIERAT mot `tests/api/receipt-content.test.ts` rad 193 (`formatKvittoDatum('2026-08-03T00:00:00.000Z')` -> `'3 augusti 2026'`) |
+| `datum` | `formatKvittoDatum(spec.datum)` - ISO `YYYY-MM-DD` sedan S108 (Marcus-beslut 2026-08-22, "Kör dina rekommendationer": kvittot är en bokföringshandling; se ADR-109 § Updates 2026-08-22) - VERIFIERAT mot `tests/api/receipt-content.test.ts` (`formatKvittoDatum('2026-08-03T00:00:00.000Z')` -> `'2026-08-03'`) |
 | `kundnamn` | `KvittoradSpec.kundnamn` |
 | `kundEpost` | `KvittoradSpec.kundEpost` (PR #1791, Marcus-beslut 2026-08-22) - skrivs under kundnamnet i Fakturaadress-blocket, Rogers ordning namn -> e-post |
 | `eventNamn` | `KvittoradSpec.eventNamn` |
@@ -333,7 +333,9 @@ datamodell uppfinns i mallen.
 | `brutto` | `spec.belopp`, formaterat via `formatBelopp()` - mallen prefixar `SEK` EN gång på BETALT-raden (mätt: 6,55 mm gap, 13 pt, på beloppets baslinje), som Roger |
 | `orgNamn` | `MIRANON_ORG.namn` |
 | `orgNummer` | `MIRANON_ORG.orgnummer` |
-| `orgAdress` | `MIRANON_ORG.adress` |
+| `orgGatuadress` | `MIRANON_ORG.gatuadress` - adressen är TRE fält sedan S108 (Marcus-beslut 2026-08-22), ej en enradssträng - se stycket "Adressen är tre fält" nedan |
+| `orgPostadress` | `MIRANON_ORG.postadress` |
+| `orgLand` | `MIRANON_ORG.land` |
 | `orgMomsregnummer` | `MIRANON_ORG.momsregnummer` |
 
 **`momssatsProcent`-token BORTTAGEN ur markupen (S108, uppföljning av PR #1781,
@@ -355,6 +357,21 @@ Före #1791 skrev `formatBelopp()` `2500 kr`, och mallen visade den faktiska
 formateringen i stället för en gissad - avvikelsen var bokförd här, inte
 gömd. Fixturen `fixtures/kvitto.exempel.json` bär de nya värdena.
 
+**Datumet är ISO och adressen är tre fält sedan S108 (2026-08-22,
+Marcus-beslut "Kör dina rekommendationer" - slutbild av MARCUS-SEKVENS
+punkt 2, se `tasks/sessions/2026-08-20-session-108.md` § Del 9 C och
+ADR-109 § Updates 2026-08-22).** `formatKvittoDatum()` gav tidigare
+`"3 augusti 2026"`; kvittot är en bokföringshandling, alltså ISO
+`YYYY-MM-DD` - matchar dessutom Rogers egen datumsträng (`"2026-08-03"`)
+exakt, se `~/Desktop/Miranon Media/exempelpdokument/2026-08-03
+kvitto-forlaga.pdf`. `MIRANON_ORG.adress` var EN sträng
+(`"Uttringe Hages väg 17, 144 63 Rönninge, Sverige"`) som radbröt i
+mallens sidfotskolumn mitt i postnumret ("…väg 17, 144 / 63 Rönninge,
+Sverige", upptäckt vid en side-by-side mot förlagan) - ersatt av
+`gatuadress`/`postadress`/`land`, tre `<p>`-rader i sidfoten som nu matchar
+förlagans egna fem rader (org-namn/gata/postort/land/webb) exakt. Fixturen
+bär de nya fälten.
+
 ### Förlage-fält utan källa i `receipt-content.ts` - byggda, bokförda som GAP
 
 Uppdraget kräver att dessa byggs i mallen men aldrig hittas på i kod:
@@ -366,7 +383,7 @@ Uppdraget kräver att dessa byggs i mallen men aldrig hittas på i kod:
 | Vårt ordernr | `{{kvittonummer}}` (samma token som Kvitto-/OCR-nr) | Ingen egen "ordernr"-modell finns; Rogers EGET dokument duplicerar samma nummer i båda fälten |
 | Öresavr | Statisk `0,00` | `beraknaMoms()` avrundar momsen till hela ören FÖRST (se dess docstring), så `netto + moms === brutto` alltid EXAKT - resten är matematiskt garanterat noll |
 | Köparens e-post | `{{kundEpost}}` | **GAP STÄNGT** (S108 resume 5, PR #1791): `KvittoradSpec.kundEpost` finns sedan Marcus-beslutet 2026-08-22 och trådas från `send-receipt-email`s `email` - raden ovan beskrev läget före beslutet |
-| Telefon/Plusgiro/Swish/Webb/Epost (sidfoten) | Statisk text | Källa `T170` (samma redan publicerade org-uppgifter). `MIRANON_ORG` bär bara `namn`/`orgnummer`/`adress`/`momsregnummer` - INTE dessa fyra. Samma klass statisk data som `bekraftelsebilaga.html` redan hårdkodar (Swish/Plusgiro ovan) |
+| Telefon/Plusgiro/Swish/Webb/Epost (sidfoten) | Statisk text | Källa `T170` (samma redan publicerade org-uppgifter). `MIRANON_ORG` bär bara `namn`/`orgnummer`/`gatuadress`/`postadress`/`land`/`momsregnummer` - INTE dessa fyra. Samma klass statisk data som `bekraftelsebilaga.html` redan hårdkodar (Swish/Plusgiro ovan) |
 | "Godkänd för F-skatt" | Statisk text | Boilerplate, källa `T170`, ingen datamodell behövs |
 
 ### Visuell jämförelse och mätunderlag

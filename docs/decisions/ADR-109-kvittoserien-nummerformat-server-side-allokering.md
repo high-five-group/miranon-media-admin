@@ -363,3 +363,46 @@ fiktiv adress (`anna.andersson@example.com`) — aldrig en verklig kunds.
 **Vad som INTE ändras av denna post.** § Beslut 1–7 och den föregående
 Updates-postens moms-/org-innehåll är ORÖRDA. § Öppna punkter kvarstår
 oförändrade — ingen av dem rörde beloppsformat eller e-post.
+
+### 2026-08-22 — Datumet blir ISO, adressen blir tre fält (S108, Marcus-beslut "Kör dina rekommendationer")
+
+Samma dag, samma tråd (`T170`), MARCUS-SEKVENS punkt 2 kvitterad: en
+kvitto-agent byggde `kvitto.html`/`kvitto.css` mot förlagan (PR #1781), och
+orkestreraren mätte tre synliga avvikelser i slutbilden. En av dem —
+sidfotens adress radbröt mitt i postnumret ("…väg 17, 144 / 63 Rönninge,
+Sverige") eftersom `MIRANON_ORG.adress` (§ Updates 2026-08-22 ovan) är EN
+sträng men mallens sidfotskolumn är smal — ledde till Marcus dom på
+slutbilden, ordagrant: *"Kör dina rekommendationer"*. Källa:
+`tasks/sessions/2026-08-20-session-108.md` § Del 9 C.
+
+**Två ändringar, båda i `_shared/receipt-content.ts`:**
+
+1. **`formatKvittoDatum` byter till ISO (`YYYY-MM-DD`).** Gav tidigare
+   `"3 augusti 2026"`. Ett kvitto är en bokföringshandling — ISO är den
+   entydiga, sorterbara formen, och den råkar dessutom matcha Rogers egen
+   datumsträng exakt (`"2026-08-03"`, `pdftotext -layout` mot förlagan).
+   UTC-baserad (som tidigare) — ingen tidszons-rollover vid ett årsskifte.
+   `git grep formatKvittoDatum` gav EN konsument (`kvittoRader()` i samma
+   fil) före denna ändring — ingen annan konsument (mailets brödtext i
+   `send-receipt-email/index.ts` skriver inget datum alls) behöver den
+   svenska datumtexten, så ingen bevarande-funktion byggdes.
+2. **`MIRANON_ORG.adress` (en sträng) blir tre fält** —
+   `gatuadress`/`postadress`/`land` — Rogers egen radindelning
+   ("Uttringe Hages väg 17" / "144 63 Rönninge" / "Sverige"). `kvittoRader()`
+   skriver dem som tre separata rader i stället för en.
+
+**Mallen och fixturen följer med.** `docs/mallar/bilagor/kvitto.html`s
+sidfotskolumn bär nu `{{orgGatuadress}}`/`{{orgPostadress}}`/`{{orgLand}}`
+som tre `<p>`-element i stället för en `{{orgAdress}}` — fem rader i
+sidfotskolumnen (org-namn/gata/postort/land/webb), samma antal som
+förlagans egen sidfot. `{{datum}}`-tokenet är oförändrat till namnet;
+värdet det fylls med byter form. `fixtures/kvitto.exempel.json` bär de nya
+fälten och ISO-datumet.
+
+**"Betalsätt"-raden rörs INTE** — Marcus dom omfattade explicit bara
+datum och adress; raden är oförändrad i både `kvittoRader()` och mallen.
+
+**Vad som INTE ändras av denna post.** § Beslut 1–7 och de två föregående
+Updates-posternas moms-/org-/beloppsinnehåll är i övrigt ORÖRDA — org-namnet,
+org-numret och momsregistreringsnumret är samma strängar som innan, bara
+adressfältet är omformat. § Öppna punkter kvarstår oförändrade.
