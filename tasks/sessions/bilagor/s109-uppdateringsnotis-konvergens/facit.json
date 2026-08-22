@@ -2,7 +2,12 @@
   "prototyp": "s109-uppdateringsnotis-konvergens",
   "last": "2026-08-21",
   "lasning": "Ja notisen är sjukt mycket bättre än det vi har idag. Vi kör på det. Bygg skarpt. — AMENDERAT samma dag, efter meddelandefamiljens konvergens: \"Helst vill jag inte ha någon kontur alls tror jag. Visuellt blir det renast/snyggast.\" · \"Det blir jättebra. Kör vi samma sak för uppdaterings-notisen då? Nu tycker jag det är klart för att gå vidare.\"",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-22",
+    "citat": "Vi kör på det",
+    "sha": "932c2689b1a690862b4b49dad9463586ec6fbede"
+  },
   "ytor": [
     {
       "yta": "uppdateringsnotis",

@@ -2,7 +2,12 @@
   "prototyp": "s109-meddelandefamiljen-konvergens",
   "last": "2026-08-21",
   "lasning": "Det blir jättebra. Kör vi samma sak för uppdaterings-notisen då? Nu tycker jag det är klart för att gå vidare.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-22",
+    "citat": "Vi kör på det, godkänner",
+    "sha": "932c2689b1a690862b4b49dad9463586ec6fbede"
+  },
   "ytor": [
     {
       "yta": "meddelanderutan",
