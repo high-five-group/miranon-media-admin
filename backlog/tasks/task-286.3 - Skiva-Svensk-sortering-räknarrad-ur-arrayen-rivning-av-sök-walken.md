@@ -4,6 +4,7 @@ title: 'Skiva: Svensk sortering, räknarrad ur arrayen, rivning av sök-walken'
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:48'
+updated_date: '2026-08-22 09:29'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,20 +27,116 @@ Täcker användarberättelser: 4, 7, 15
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Listan är sorterad med svensk kollation (A–Z, Å, Ä, Ö) och sentinelen för namnlösa sist — verifierat i acceptance-testet med fixtur som bär Å-, Ä-, Ö- och sentinel-poster
-- [ ] #2 Räknarraden räknas ur arrayen; EF:ens total-walk och dess fallback-logik i listan är rivna
-- [ ] #3 Listans sök-/cursor-fråga är riven; EF:ens sök-läge rivs om grep-svepet visar noll andra konsumenter, annars bokförs konsumenten i PR:en
-- [ ] #4 startvarmningens kommentar om persons-frågan är uppdaterad till ADR-123 beslut 7:s motivering
+- [x] #1 Listan är sorterad med svensk kollation (A–Z, Å, Ä, Ö) och sentinelen för namnlösa sist — verifierat i acceptance-testet med fixtur som bär Å-, Ä-, Ö- och sentinel-poster
+- [x] #2 Räknarraden räknas ur arrayen; EF:ens total-walk och dess fallback-logik i listan är rivna
+- [x] #3 Listans sök-/cursor-fråga är riven; EF:ens sök-läge rivs om grep-svepet visar noll andra konsumenter, annars bokförs konsumenten i PR:en
+- [x] #4 startvarmningens kommentar om persons-frågan är uppdaterad till ADR-123 beslut 7:s motivering
 - [ ] #5 Personlistans rad- och listform är identisk med facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — referenserna gröna
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Paritetstestet (EF-filter mot klientfilter, samma fixtur) grönt för varje skiva som rör sök eller filtrering
 - [ ] #6 Facit-referenserna för personlistan (tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan) gröna — formen är orörd
-- [ ] #7 Inga nätverksanrop vid skrivning efter första laddningen — mätt i testet, inte antaget
+- [x] #7 Inga nätverksanrop vid skrivning efter första laddningen — mätt i testet, inte antaget
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Mätningar 2026-08-22 (bygg-agent, TASK-286.3)
+
+### Grep-svepet som AC #3 kräver — EF:ens sök-läge RIVS INTE
+
+Svepet kördes över hela repot (utom `node_modules`) på `listPersons`,
+`persons.search`, `get-persons`, `?search=` och `?cursor=`.
+
+**Klientsidan: NOLL konsumenter** → riven. `queryKeys.persons.search`,
+`listPersons` i alla tre adapterlagren, samt `ListParams`/`PersonsPage`.
+
+**EF:ens sök-/cursor-gren: FYRA konsumenter, samtliga blockerande testytor
+som anropar EF:en direkt över HTTP** → behållen, bokförd i PR:en:
+
+1. `tests/api/get-persons-sok-paritet.staging.test.ts` — ADR-123 beslut 2:s
+   bevisinstrument; rivs grenen finns ingen mätbar referens att väga
+   klientfiltret mot alls (och det är också denna skivas egen DoD #5).
+2. `tests/api/get-persons.staging.test.ts` — cursor-port-conformance
+   (ADR-056), sid-sekvens [2,2,1] med opak cursor.
+3. `tests/kontraktsvakt/kontraktsfall.ts` — FELKONTRAKTET
+   `?cursor=inte-en-cursor` → 400 'Invalid cursor' (TASK-69).
+4. `tests/api/airtable-filter.staging.test.ts` — injektions-fuzzen
+   ('illvillig search=TRUE-tautology / OR-injection → aldrig 500').
+
+ADR-123 § Konsekvenser förutsåg det: paritetstestet underhålls 'så länge båda
+vägarna finns'. Klientens väg hit är riven; EF-vägen står kvar som referensyta.
+
+### EF:ens total-walk — RIVEN (AC #2)
+
+`totalPromise` och `total` ur svarskuvertet är borta; kuvertet är åter
+`{ persons, nextCursor }`. Följdrivningar: `PersonsPage.total`, klientens
+skew-säkra avläsning (metoden själv riven), och
+`tests/api/get-persons-totalisolering.test.ts` (hela dess objekt var
+`totalPromise`s `.catch()`).
+
+`get-persons-register.staging.test.ts`:s `hamtaOberoendeTotal` LÄSTE det
+fältet och är omskriven till cursor-paginering + räkning. Starkare än den den
+ersätter: `total` föddes ur SAMMA `fetchFromAirtable(BAS_FILTER)`-primitiv
+som registerläget självt, alltså delvis samma kodväg den skulle korsvalidera.
+
+**EF-DEPLOY KRÄVS.** `supabase/functions/get-persons/index.ts` är ändrad;
+staging bär tills vidare den gamla koden. Ingen testyta asserterar på
+FRÅNVARO av `total`, så divergensen är tyst — men den finns.
+
+### queryKeys.persons.all — INTE riven, mätt beslut
+
+Noll konsumenter i dag, men den hade noll REDAN FÖRE denna skiva och föll
+därför aldrig inom kortets 'städas om de BLIR oanvända'. Den är dessutom
+invaliderings-roten ADR-123 beslut 6 kräver och TASK-286.4 bygger på.
+
+### AC #4 var redan uppfylld när jag kom — divergens mot kortet
+
+`startvarmningen.ts`:s kommentar uppdaterades REDAN av TASK-286.2 till
+ADR-123 beslut 7:s motivering (kostnadsskäl, inte principskäl). Jag har bara
+rättat dess referens till den nyckel jag rev.
+
+### TASK-286.5 (diakritik-tolerant sök, beslutad JA)
+
+Påverkade diffen på EN punkt: de nya sorteringstesternas söktermer valdes
+diakritik-NEUTRALA ('j'), så att de inte blir röda av det kortet och ser ut som
+sorteringsregressioner. Sortering och sökning delar ingen jämförare —
+`sorteraPersonregister` (Intl.Collator) och `filtreraPersonregister`
+(toLowerCase().includes()) är helt separata. Ingen kollision.
+
+### Grindar, mätta exitkoder
+
+`npm run typecheck` 0 · `npx @biomejs/biome check .` 0 ·
+`node scripts/check-langa-streck.mjs` 0 · `npm run build` 0 ·
+api-pure **591 passed** (574 + 21 nya sorteringsfall − 4 rivna
+totalisoleringsfall) · personlistans acceptance-svit **10 passed**.
+
+## ÖPPEN SIGNAL — AC #5 / DoD #1 och #6 kan INTE bockas
+
+`npm run test:visual -- tests/visual/personer-promoverings-grind.spec.ts`
+går från **16 passed** (mätt på main före ändringen) till **10 passed,
+6 failed**. Referenserna är ORÖRDA av mig — uppdraget föreskrev att en
+referensändring ska stoppas och rapporteras, inte lösas av agenten.
+
+**Exakt vad som avviker, mätt:** de två `personer-listlage-visual-{desktop,
+mobile}.aria.yml` förväntar sentinel-raden 'Ej tillgängligt' på sin
+ALFABETISKA plats, mellan David Dahl och Emma Eklund. AC #1 kräver att den
+sorteras SIST. Enda strukturella diffen är den flytten (fyra rader); allt annat
+i utfallet är Playwrights rendering av regex-mönster mot literalt värde, inte
+innehållsskillnader. De fyra `?variant=`-degraderingsfallen faller på samma
+referens.
+
+**Formen är alltså orörd** — radmall, divide-y-avdelare, statuskolumn,
+kontaktrad, interaktionsrad är identiska. Det som ändras är ORDNINGEN, vilket
+är hela kortets syfte. `facit.json` är orörd (hooken hade nekat den ändå).
+
+Detta är samma klass som PR #1715:s referensuppdatering, där Marcus fattade ett
+uttryckligt väg B-beslut. Något sådant beslut finns inte för denna skiva.
+<!-- SECTION:NOTES:END -->
