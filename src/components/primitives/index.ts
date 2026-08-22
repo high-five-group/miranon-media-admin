@@ -6,6 +6,7 @@ export {
   HandlingsRadInnehall,
   HandlingsRadKort,
 } from './HandlingsRad';
+export { InitialAvatar } from './InitialAvatar';
 export { Input, type InputProps } from './Input';
 export { InstallPrompt, type InstallPromptProps } from './InstallPrompt';
 export { MessageBox, type MessageBoxProps } from './MessageBox';
@@ -14,6 +15,7 @@ export { NavCard, type NavCardIcon } from './NavCard';
 export { Notis, type NotisProps } from './Notis';
 export { Radio, RadioGroup, type RadioGroupProps } from './RadioGroup';
 export { Select, SelectItem, type SelectProps } from './Select';
+export { SidRam, type SidRamProps } from './SidRam';
 export { Skeleton, type SkeletonProps } from './Skeleton';
 export { SlideToConfirm, type SlideToConfirmProps } from './SlideToConfirm';
 export { StegSektion } from './StegSektion';

@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
 import {
@@ -390,5 +391,27 @@ test.describe('Dörrlistan skriver skarpt efter kvittensfönstret (TASK-214.2)',
     // Ett nytt försök rensar felet — felytan speglar nuläget, inte historien.
     await tryck(page, NAMN_MED);
     await expect(page.getByRole('alert')).toHaveCount(0);
+  });
+});
+
+/**
+ * TASK-299.1 — dev-växeln `?sidram=ny` (AC #4): den delade `SidRam`-
+ * primitiven i husets kant-i-kant-dialekt, bakom `import.meta.env.DEV`.
+ * UTAN parametern är ytan oförändrad — bevisat av svitens övriga tester
+ * ovan, alla navigerar via `oppnaDorren` utan flaggan. Rivs igen med
+ * växeln (TASK-299.2/299.6, ADR-103 B2 steg 4).
+ */
+test.describe('Dörrlistan — TASK-299.1 dev-växel `?sidram=ny`', () => {
+  test('axe 0 violations med den nya sidramen synlig', async ({ page, network }) => {
+    mockaLasning(network);
+    await page.goto(`/event/${EVENT_ID}/narvaro?sidram=ny`);
+    await expect(page.getByRole('heading', { level: 1, name: 'Check-in' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Tillbaka till eventet' })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
   });
 });

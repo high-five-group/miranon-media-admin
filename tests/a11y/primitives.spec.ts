@@ -54,6 +54,15 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     await checkA11y({ include: ['[aria-labelledby="rubrik-navcard"]'] });
   });
 
+  test('SidRam — sektion (smal + bred omfattning, TASK-299.1)', async ({ page, checkA11y }) => {
+    // Båda instanserna renderar samtidigt (samma precedent som
+    // Forberedelseskarm-sektionen ovan) — den bredare (rubrik-ägande) grenen
+    // exerceras ANNARS ingenstans i svitens, se sektionens egen kommentar.
+    await expect(page.getByRole('link', { name: 'Tillbaka till Mer (smal sidram)' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Exempelrubrik' })).toBeVisible();
+    await checkA11y({ include: ['[aria-labelledby="rubrik-sidram"]'] });
+  });
+
   test('ToggleButtonGroup — sektion (radiogroup-semantiken i alla fem demo-formerna)', async ({
     checkA11y,
   }) => {

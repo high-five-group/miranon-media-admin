@@ -1,6 +1,6 @@
 import { CircleCheck } from 'lucide-react';
 import { useMemo } from 'react';
-import { MessageBox, Skeleton } from '@/components/primitives';
+import { InitialAvatar, MessageBox, Skeleton } from '@/components/primitives';
 import { BulkAtgardsknapp } from './BulkAtgardsknapp';
 import {
   type ForfallenRad,
@@ -9,7 +9,6 @@ import {
   kortDatum,
   paminnelsedatumText,
 } from './hem-derivations';
-import { InitialAvatar } from './InitialAvatar';
 import type { useDashboardRegistrations } from './useDashboardData';
 
 /**

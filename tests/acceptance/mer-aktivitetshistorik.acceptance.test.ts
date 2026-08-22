@@ -426,3 +426,39 @@ test.describe('Aktivitetshistoriken — kärnvyn (TASK-201.6, A-formen)', () => 
     expect(results.violations).toEqual([]);
   });
 });
+
+/**
+ * TASK-299.1 — dev-växeln `?sidram=ny` (AC #4): den delade `SidRam`-
+ * primitiven i husets kant-i-kant-dialekt (chevron + `px-4`-indragen
+ * rubrik), bakom `import.meta.env.DEV`. UTAN parametern är ytan oförändrad
+ * — bevisat av svitens övriga tester ovan, ingen navigerar med flaggan.
+ * Rivs igen med växeln (TASK-299.2/299.6, ADR-103 B2 steg 4).
+ */
+test.describe('Aktivitetshistoriken — TASK-299.1 dev-växel `?sidram=ny`', () => {
+  test('axe 0 violations på TOM vy med den nya sidramen', async ({ page, network }) => {
+    mockActivityLog(network, () => ({ statements: [], nextCursor: null }));
+    await page.goto('/mer/aktivitetshistorik?sidram=ny');
+    await expect(page.getByText('Ingen aktivitet ännu')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Tillbaka till Mer' })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test('axe 0 violations på IFYLLD vy med den nya sidramen', async ({ page, network }) => {
+    mockActivityLog(network, () => ({
+      statements: [statement({ timestamp: minuterSedan(5), eventId: 'recEventAxe1' })],
+      nextCursor: null,
+    }));
+    await page.goto('/mer/aktivitetshistorik?sidram=ny');
+    await expect(page.getByRole('heading', { level: 1, name: 'Aktivitetshistorik' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Tillbaka till Mer' })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+});

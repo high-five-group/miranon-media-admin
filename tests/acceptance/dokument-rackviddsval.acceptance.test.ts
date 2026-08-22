@@ -482,3 +482,25 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     await expect(page.getByText(BILAGA_EGEN.namn)).toBeVisible();
   });
 });
+
+/**
+ * TASK-299.1 — dev-växeln `?sidram=ny` (AC #4): den delade `SidRam`-
+ * primitiven i husets kant-i-kant-dialekt (chevron + `px-4`-indragen
+ * rubrik), bakom `import.meta.env.DEV`. UTAN parametern är ytan oförändrad
+ * — bevisat av svitens övriga tester ovan, ingen navigerar med flaggan.
+ * Rivs igen med växeln (TASK-299.2/299.6, ADR-103 B2 steg 4).
+ */
+test.describe('Dokument-ytan — TASK-299.1 dev-växel `?sidram=ny`', () => {
+  test('axe 0 violations med den nya sidramen synlig', async ({ page, network }) => {
+    network.use(bilagorHandler());
+    await page.goto('/mer/dokument?sidram=ny');
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Tillbaka till Mer' })).toBeVisible();
+    await expect(page.getByText(BILAGA_GEMENSAM.namn)).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+});
