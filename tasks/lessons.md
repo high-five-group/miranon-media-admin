@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-09
+updated: 2026-08-22
 review_by: 2026-11-15
 status: stable
 ---
@@ -35,12 +35,21 @@ status: stable
 > enskilda lärdomar on-demand (`grep -n "^### L3" tasks/lessons/` → `Read` med
 > `offset`), eller läs de senaste via `offset` mot den aktiva volymens slut.
 >
-> **Senaste lyft till hubben:** `L469`–`L511`:s `[UNIVERSAL]`-poster
-> (Session 93 tionde resumen, 39 poster) → hub `K93.1`–`K93.39`
-> (hub-commit `a205132`, spoke-commits `7c06377c` + `aa2b802c`). EJ
-> lyfta ur spannet, med skäl: `L470` (bär ingen markör — ren
-> empiri-bokföring) · `L493`/`L504`/`L509` (uttrycklig "Varför
-> INTE"-rationale). Ingen olyft rest kvarstår.
+> **Senaste lyft till hubben:** `L512`–`L521`:s `[UNIVERSAL]`-poster
+> (Session 109, 10 poster) → hub `K109.1`–`K109.10` (hub-commit
+> `4cd2ffe`, spoke-commit `8b993fdc`). Hela spannet är lyft — samtliga
+> tio bär markören, ingen olyft rest ur S109. Samma pass synkade
+> `L485`:s tredje instans in i hubbens `K93.16`, som låg efter sin
+> källa. Föregående lyft: `L469`–`L511` (Session 93 tionde resumen, 39
+> poster) → hub `K93.1`–`K93.39` (hub-commit `a205132`, spoke-commits
+> `7c06377c` + `aa2b802c`); EJ lyfta ur det spannet, med skäl: `L470`
+> (bär ingen markör — ren empiri-bokföring) · `L493`/`L504`/`L509`
+> (uttrycklig "Varför INTE"-rationale).
+>
+> **Olyft rest utanför S109:** `tasks/lessons.d/` bär 66 nummerlösa
+> fragment, varav 35 med `[UNIVERSAL]`, från S102 och framåt plus några
+> äldre utan sessionstagg. Deras konsolidering och hub-lyft är egna
+> moment per session, inte denna rads ansvar.
 
 ---
 
@@ -53,7 +62,7 @@ status: stable
 | [vol-03](lessons/vol-03.md) | 2026-06-13 → 2026-07-07 | Session 17 → Session 58 (repo-hygien, Fas 5.5–6h, MIGRERINGS-HUB-SESSION 1–3), fortsatt H2-nästlad L-numrering | `L103` → `L251` | Stängd |
 | [vol-04](lessons/vol-04.md) | 2026-07-08 → 2026-07-26 | Session 59:s H2-block, därefter flat L-numrering utan ny H2 per session (källans konventionsskifte — se not) | `L252` → `L359` | Stängd |
 | [vol-05](lessons/vol-05.md) | 2026-07-27 → 2026-07-30 | Session 91:s huvuddel (CI-paritet-fyndet, upphävande-räckvidd, m.fl.), flat L-numrering | `L360` → `L421` | Stängd |
-| [vol-06](lessons/vol-06.md) | 2026-07-31 → | **Aktiv volym** — alla nya lärdomar landar här, flat L-numrering | `L422` → `L511` | **Aktiv** |
+| [vol-06](lessons/vol-06.md) | 2026-07-31 → | **Aktiv volym** — alla nya lärdomar landar här, flat L-numrering. **3 436 rader efter `L512`–`L521`** — nästa tillägg passerar rotationströskeln 3 000 och ska föregås av `vol-07` | `L422` → `L521` | **Aktiv** |
 
 **Not om konventionsskiftet (vol-04–vol-06):** källfilen slutade skriva ett
 nytt `## <datum> — Session N (…)`-block per session efter Session 59
