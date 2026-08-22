@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:17'
-updated_date: '2026-08-21 16:51'
+updated_date: '2026-08-22 08:41'
 labels:
   - ready-for-human
 dependencies:
@@ -40,8 +40,8 @@ Täcker användarberättelser: 20
 - [ ] #1 Varje yta är jämförd sida vid sida av Marcus; utfallet (identisk / avvikelse-kort) är bokfört per yta i kortets notes
 - [ ] #2 Båda manifesten bär godkand satt av Marcus via facit:godkann med citat — inte av någon agent
 - [ ] #3 Copy-svepets före/efter-tabell är läst och kvitterad av Marcus, eller fynd-kort skapade för de strängar han vill ändra
-- [ ] #4 FÖRKRAV ur TASK-285.8: facit-manifestet s109-meddelandefamiljen-konvergens är avstämt mot koden före stämpling. Ytan appfel-sidan har ett not-fält som citerar den GAMLA tre-menings-brödtexten verbatim ('Något gick sönder så att sidan inte kan ritas upp. Det du redan har sparat finns kvar. Ladda om för att fortsätta.') och dess bild visar samma text, medan koden efter copy-svepet bär två meningar ('Sidan kunde inte ritas upp, men det du redan har sparat finns kvar. Ladda om för att fortsätta.'). Antingen tas bilden om och not-fältet uppdateras, eller så motiveras avvikelsen öppet i stämplingens PR
-- [ ] #5 FÖRKRAV ur TASK-285.8: manifestets interna inkonsekvens om copy är löst eller öppet bokförd. Ytan meddelanderutan säger uttryckligen 'Copyn i exemplen är FÖRSLAG enligt copy-domarna, ej låst med formen'; ytan appfel-sidan saknar motsvarande friskrivning och föreskriver i stället copy verbatim. Samma manifest kan inte både låsa och friskriva copy utan att det står varför
+- [x] #4 FÖRKRAV ur TASK-285.8: facit-manifestet s109-meddelandefamiljen-konvergens är avstämt mot koden före stämpling. Ytan appfel-sidan har ett not-fält som citerar den GAMLA tre-menings-brödtexten verbatim ('Något gick sönder så att sidan inte kan ritas upp. Det du redan har sparat finns kvar. Ladda om för att fortsätta.') och dess bild visar samma text, medan koden efter copy-svepet bär två meningar ('Sidan kunde inte ritas upp, men det du redan har sparat finns kvar. Ladda om för att fortsätta.'). Antingen tas bilden om och not-fältet uppdateras, eller så motiveras avvikelsen öppet i stämplingens PR
+- [x] #5 FÖRKRAV ur TASK-285.8: manifestets interna inkonsekvens om copy är löst eller öppet bokförd. Ytan meddelanderutan säger uttryckligen 'Copyn i exemplen är FÖRSLAG enligt copy-domarna, ej låst med formen'; ytan appfel-sidan saknar motsvarande friskrivning och föreskriver i stället copy verbatim. Samma manifest kan inte både låsa och friskriva copy utan att det står varför
 <!-- AC:END -->
 
 ## Definition of Done
