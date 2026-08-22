@@ -261,6 +261,57 @@ function PrimitivesPage() {
           </MessageBox>
         </div>
       </section>
+      <section aria-labelledby="rubrik-messagebox-facit" className="mt-8 max-w-md">
+        <h2 id="rubrik-messagebox-facit" className="text-xl">
+          MessageBox: facit-formens fyra intents
+        </h2>
+        <p className="mt-2 text-small text-text-secondary">
+          PROMOVERINGS-GRINDENS ANKARE (ADR-103 B4). Blocken nedan är{' '}
+          <code>messagebox-promoverings-grind.spec.ts</code>s EFTER-läge: exakt de fyra intents vars{' '}
+          <code>ariaSnapshot</code>-referenser är innehållslåsta i{' '}
+          <code>tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json</code>.
+          Flyttade hit ORÖRDA från den rivna prototyp-routen <code>/dev/notis-prototyp</code>{' '}
+          (TASK-285.11): samma <code>data-testid</code>, samma copy, samma struktur, så referenserna
+          fortsätter gälla. Ändra inte rubrik, brödtext eller knapptext här utan att läsa invariant
+          (d) i <code>scripts/check-facit.sh</code> först.
+        </p>
+        <div className="mt-4 flex flex-col gap-6">
+          <div data-testid="notis-formularfel">
+            <MessageBox
+              intent="error"
+              title="Lösenordet kunde inte sparas"
+              actions={
+                <Button intent="secondary" size="sm">
+                  Försök igen
+                </Button>
+              }
+            >
+              <p>
+                Kontrollera att du är uppkopplad och prova igen. Det du skrev finns kvar i fälten.
+              </p>
+            </MessageBox>
+          </div>
+          <div data-testid="notis-varning">
+            <MessageBox intent="warning" title="Eventet är fullbokat">
+              <p>Nya anmälningar hamnar på väntelistan tills en plats blir ledig.</p>
+            </MessageBox>
+          </div>
+          {/* onDismiss är medvetet en no-op: blocken är grind-ankare, inte
+              interaktions-demo (den rollen bär MessageBox-sektionen ovan, som
+              wirar sina kryss till statusraden). En kryss-knapp som faktiskt
+              avmonterade rutan hade gjort ankaret beroende av klick-ordning. */}
+          <div data-testid="notis-kvitto">
+            <MessageBox intent="success" title="Bekräftelsemail skickat" onDismiss={() => {}}>
+              <p>Anna Andersson har fått bekräftelsen på sin e-post.</p>
+            </MessageBox>
+          </div>
+          <div data-testid="notis-info">
+            <MessageBox intent="info" title="Eventet saknar plats" onDismiss={() => {}}>
+              <p>Lägg till en plats så att den kommer med i bekräftelsen.</p>
+            </MessageBox>
+          </div>
+        </div>
+      </section>
       <section aria-labelledby="rubrik-dialog" className="mt-8 max-w-md">
         <h2 id="rubrik-dialog" className="text-xl">
           Modal + Dialog
@@ -574,8 +625,9 @@ function PrimitivesPage() {
         <div className="mt-4 flex flex-col gap-6">
           <div>
             <p className="mb-2 text-caption text-text-muted">
-              Inbäddad (demo-form, ingen <code>role=&quot;alert&quot;</code>, samma kontrakt som
-              prototypens <code>AppErrorPrototyp</code>)
+              Inbäddad (demo-form, ingen <code>role=&quot;alert&quot;</code>). Detta block är{' '}
+              <code>appfel-promoverings-grind.spec.ts</code>s EFTER-läge; dess{' '}
+              <code>ariaSnapshot</code>-referens är innehållslåst i facit-manifestet.
             </p>
             <div
               data-testid="appfel-fallback"

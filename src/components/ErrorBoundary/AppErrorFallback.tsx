@@ -2,12 +2,12 @@
  * Appfel-fallbacken — promoverad ur facit (TASK-285.3, ADR-103 B2/B4).
  *
  * FACIT: `tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json`
- * ytan `appfel-sidan`, formen låst i `AppErrorPrototyp.tsx` (varv 4, samma
- * fil, INTE riven här — ADR-102 B3: rivning väntar Marcus godkännande,
- * TASK-285.11). Denna fil är en byte-för-byte-kopia av den formen, bruten ut
- * ur `AppErrorBoundary`s klasskomponent (`AppError.tsx`) till en egen
- * exporterad komponent så att `/dev/primitives` kan visa den och axe-sviten
- * nå den — utan att krascha appen.
+ * ytan `appfel-sidan`. Formen låstes i `AppErrorPrototyp.tsx` (varv 4); den
+ * filen är RIVEN sedan TASK-285.11 (2026-08-22, efter Marcus stämpling —
+ * ADR-102 B3-spärren öppnad). Denna fil bär formen vidare byte-för-byte,
+ * bruten ut ur `AppErrorBoundary`s klasskomponent (`AppError.tsx`) till en
+ * egen exporterad komponent så att `/dev/primitives` kan visa den och
+ * axe-sviten nå den — utan att krascha appen.
  *
  * DESIGNVILLKORET (oförändrat sedan ursprunget): appfel-sidan är sista
  * skyddslagret och nås när resten av appen — inklusive stylesheetet — kan
@@ -18,22 +18,25 @@
  * primitiv-import. Ett test som tar bort alla stylesheets före rendering
  * bevisar detta (`tests/webblasarbeteende/app-error-fallback.test.ts`).
  *
- * `inbaddad` styr ENDAST `role` (och yttre marginal) — samma kontrakt som
- * `AppErrorPrototyp`: `false` (default, vad `AppErrorBoundary` faktiskt
- * använder) behåller `role="alert"`; `true` (demo-bruk på /dev/primitives,
- * jämförelseformen mot prototypen) utelämnar den så en statisk demo-sida
- * inte permanent annonserar en assertiv region utan orsak.
+ * `inbaddad` styr ENDAST `role` (och yttre marginal) — kontraktet ärvt från
+ * `AppErrorPrototyp` (riven): `false` (default, vad `AppErrorBoundary`
+ * faktiskt använder) behåller `role="alert"`; `true` (demo-bruk på
+ * /dev/primitives, promoverings-grindens EFTER-ankare) utelämnar den så en
+ * statisk demo-sida inte permanent annonserar en assertiv region utan orsak.
  *
  * COPYN (TASK-285.8, copy-domarna § 5/§ 7.3): brödtexten var tidigare TRE
  * meningar ("Något gick sönder ... Det du redan har sparat finns kvar.
  * Ladda om för att fortsätta."), över AC #3:s tak på två. Kortad till två
  * utan att tappa någon av de tre delarna (problem/vad-hände-med-datan/
- * lösning) genom att slå ihop de två första med "men". Samma sträng är
- * SPEGLAD i `AppErrorPrototyp.tsx` (byte-för-byte, se den filens eget
- * doc-block) för att `ariaSnapshot`-paret (`tests/visual/
- * appfel-promoverings-grind.spec.ts`) ska förbli grönt — de inspelade
- * referenserna (`__aria__/appfel-fallback-visual-{mobile,desktop}.aria.yml`)
- * uppdaterades i SAMMA commit.
+ * lösning) genom att slå ihop de två första med "men". Strängen var då
+ * SPEGLAD i `AppErrorPrototyp.tsx` (byte-för-byte) för att
+ * `ariaSnapshot`-paret (`tests/visual/appfel-promoverings-grind.spec.ts`)
+ * skulle förbli grönt; de inspelade referenserna
+ * (`__aria__/appfel-fallback-visual-{mobile,desktop}.aria.yml`) uppdaterades
+ * i SAMMA commit. Sedan TASK-285.11 är prototyp-filen riven och DENNA fil är
+ * ensam bärare av strängen — referenserna är dessutom innehållslåsta mot
+ * sha256 i facit-manifestet (`check-facit.sh` invariant d), så en ändring av
+ * copyn här kräver en AMENDERING-sidofil i bilage-katalogen.
  */
 export function AppErrorFallback({ inbaddad = false }: { inbaddad?: boolean }) {
   return (

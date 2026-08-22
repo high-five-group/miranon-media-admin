@@ -27,12 +27,30 @@ import { expect, test } from '@playwright/test';
  *    NYA, ovillkorliga vägen (ingen query-param alls) och jämför mot EXAKT
  *    SAMMA referensfil — grön här bevisar att flippen + Notis-extraktionen
  *    inte ändrade ett enda strukturellt eller namngivet drag.
- * 4. 'stale ?variant=1 fortsätter peka på identisk form' — `?variant`-grenen
- *    RIVS INTE förrän Marcus godkänt (ADR-102 B3, `check-facit.sh`), så en
- *    gammal bokmärkt `?variant=1&data=ny-version`-länk måste fortsätta
- *    rendera EXAKT samma form. Samma mönster som
- *    `atgardssida-promoverings-grind.spec.ts` (TASK-171.5) och
- *    `segment.tsx` (TASK-249.5) redan etablerat för sina ytor.
+ * 4. [GJORT — TASK-285.11, 2026-08-22] Rivningen. Marcus stämplade
+ *    manifestet ("Vi kör på det"), ADR-102 B3-spärren öppnades, och
+ *    `?variant`/`?data`-grenen i `AppUpdateBanner.tsx` revs tillsammans med
+ *    `NotisPrototypVaxlare` (rail:en som var forceringens enda ingång).
+ *
+ * TVÅ TESTER TOGS BORT I RIVNINGENS LANDNING, och skälet är att deras
+ * FÖRUTSÄTTNING revs — inte deras påstående:
+ *
+ * - 'referens (variant-läget, FÖRE flippen)' och 'stale ?variant=1
+ *   fortsätter peka på identisk form (rivningens framtida AC)' framkallade
+ *   BÅDA notisen via `?variant=1&data=ny-version` UTAN ett verkligt
+ *   uppdaterings-event. Med dev-forceringen riven finns ingen sådan väg
+ *   kvar: `notisSynlig` avgörs nu uteslutande av den riktiga signalen
+ *   (`uppdateringFinns`). Ett kvarlämnat test hade mätt frånvaron av en
+ *   funktion vi medvetet tagit bort.
+ * - Det andra testets namn sade det självt: det existerade FÖR rivningen
+ *   ("rivningens framtida AC"), som skydd under mellanperioden
+ *   facit-låsning → godkännande. Perioden är slut.
+ *
+ * Kvar står EFTER-halvan, som bär hela beviset: den navigerar utan
+ * query-param, skjuter det ÄKTA `mm:app-uppdatering-tillganglig`-eventet och
+ * jämför mot samma referensfil som FÖRE-halvan spelade in. Referensen är
+ * dessutom innehållslåst mot sha256 i facit-manifestet (`check-facit.sh`
+ * invariant d), så den kan inte tyst skrivas om.
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (ADR-103 B4): deterministiskt, noll nya
  * beroenden, jämför STRUKTUR och tillgängligt namn — inte pixlar (den visuella
@@ -78,29 +96,10 @@ async function skjutAppUppdatering(page: Page) {
 }
 
 test.describe('promoverings-grinden — ariaSnapshot-referens för uppdateringsnotisen (ADR-103 B4, TASK-285.1)', () => {
-  test('referens (variant-läget, FÖRE flippen) — ?variant=1&data=ny-version', async ({ page }) => {
-    await page.goto('/dev/primitives?variant=1&data=ny-version');
-    await oppnaAppen(page);
-    await expect(page.locator(LADDA_OM)).toBeVisible();
-    await expect(page.locator(NOTIS_REGION)).toMatchAriaSnapshot({
-      name: 'uppdateringsnotis.aria.yml',
-    });
-  });
-
   test('promoverad (utan ?variant, EFTER flippen) — identisk med referensen', async ({ page }) => {
     await page.goto('/dev/primitives');
     await oppnaAppen(page);
     await skjutAppUppdatering(page);
-    await expect(page.locator(NOTIS_REGION)).toMatchAriaSnapshot({
-      name: 'uppdateringsnotis.aria.yml',
-    });
-  });
-
-  test('stale ?variant=1 fortsätter peka på identisk form (rivningens framtida AC)', async ({
-    page,
-  }) => {
-    await page.goto('/dev/primitives?variant=1&data=ny-version');
-    await oppnaAppen(page);
     await expect(page.locator(LADDA_OM)).toBeVisible();
     await expect(page.locator(NOTIS_REGION)).toMatchAriaSnapshot({
       name: 'uppdateringsnotis.aria.yml',

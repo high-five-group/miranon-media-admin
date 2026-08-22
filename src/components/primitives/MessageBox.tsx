@@ -7,12 +7,13 @@ import { Button } from './Button';
 // ═══ PROMOVERAD FORM (ADR-103 B2 steg 1, S109-facit) ═══
 //
 // Formen är LÅST: tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/
-// facit.json § yta "meddelanderutan" (varv 4, "godkand": null ännu —
-// väntar på TASK-285.10/HITL). Denna primitiv promoveras strukturellt HIT
-// (ADR-103 B2 steg 1: villkoret flippas så variant-formen blir den
-// ovillkorliga), men steg 2–4 (Marcus-granskning, godkännande, rivning av
-// prototyp/flagga) väntar fortfarande — `MessageBoxPrototyp.tsx` och
-// `/dev/notis-prototyp` RIVS INTE av denna skiva.
+// facit.json § yta "meddelanderutan" (varv 4). Manifestet är STÄMPLAT
+// (Marcus 2026-08-22, "Vi kör på det, godkänner"), och ADR-103 B2:s fyra
+// steg är därmed genomlöpta: villkoret flippades hit (steg 1), Marcus
+// granskade och godkände (steg 2–3), och prototyp-substratet revs i
+// TASK-285.11 (steg 4) — `MessageBoxPrototyp.tsx` och `/dev/notis-prototyp`
+// finns inte längre. Facit-formens fyra intents demonstreras nu på
+// `/dev/primitives` som promoverings-grindens EFTER-ankare.
 //
 // INGEN KONTUR (varv 3:s tonala kontur FÖRKASTADES av Marcus varv 4): en
 // 4 px vänsterkant i intent-färgen + tonad bakgrund bär formen i vila.

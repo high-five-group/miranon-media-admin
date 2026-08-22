@@ -4,7 +4,7 @@ title: 'Skiva: Rivning av prototyp-substratet + visual-baslinje som regressionsl
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:19'
-updated_date: '2026-08-21 15:04'
+updated_date: '2026-08-22 10:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,10 +24,10 @@ Täcker användarberättelser: 20
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Båda manifesten bär godkand före rivningen (läst ur filerna, inte antaget) och check-facit.sh är grön efter
-- [ ] #2 Inga [PROTOTYPE]-markörer, ?variant-/?data-grenar, prototyp-routes eller prototyp-komponenter för notisfamiljen finns kvar i källkoden (grep-svep bilagt)
-- [ ] #3 Den promoverade formen är byte-identisk före och efter rivningen (ariaSnapshot per yta oförändrad)
+- [x] #2 Inga [PROTOTYPE]-markörer, ?variant-/?data-grenar, prototyp-routes eller prototyp-komponenter för notisfamiljen finns kvar i källkoden (grep-svep bilagt)
+- [x] #3 Den promoverade formen är byte-identisk före och efter rivningen (ariaSnapshot per yta oförändrad)
 - [ ] #4 Visual-baslinjen för notis, offline, chunk-banner och meddelanderutan är tagen på godkänd yta och grön i CI
-- [ ] #5 FÖRKRAV, ur TASK-287: ?variant/prototypAktiv-grenen i src/components/AppShell/AppUpdateBanner.tsx bär en registrerad markör i FACIT_PROTO_MARKORER, ELLER så är dess frånvaro öppet motiverad i rivningens PR — TASK-287 kunde inte lägga den (filen var låst av parallella TASK-285.6) och stängde luckan med proxy-markörer i NotisPrototypVaxlare/prototyp-routen i stället
+- [x] #5 FÖRKRAV, ur TASK-287: ?variant/prototypAktiv-grenen i src/components/AppShell/AppUpdateBanner.tsx bär en registrerad markör i FACIT_PROTO_MARKORER, ELLER så är dess frånvaro öppet motiverad i rivningens PR — TASK-287 kunde inte lägga den (filen var låst av parallella TASK-285.6) och stängde luckan med proxy-markörer i NotisPrototypVaxlare/prototyp-routen i stället
 <!-- AC:END -->
 
 ## Definition of Done

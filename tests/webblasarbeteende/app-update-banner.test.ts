@@ -13,10 +13,13 @@ import { expect, test } from '@playwright/test';
  * version av appen. Ladda om … annars kan det du har skrivit försvinna.")
  * FINNS INTE LÄNGRE i skarp kod — testerna nedan är omskrivna mot den NYA
  * copyn ("Ny version av appen" / "Ladda om när du är klar med det du gör.").
- * `?variant=1&data=ny-version` fortsätter peka på EXAKT samma form (rörs inte
- * förrän Marcus godkänt promoveringen, `check-facit.sh`) — se den separata
- * ariaSnapshot-grinden `uppdateringsnotis-promoverings-grind.test.ts` för det
- * formella beviset (ADR-103 B4).
+ * `?variant=1&data=ny-version`-forceringen är RIVEN sedan TASK-285.11
+ * (2026-08-22, efter Marcus stämpling): notisens synlighet avgörs nu
+ * uteslutande av det äkta `mm:app-uppdatering-tillganglig`-eventet, vilket är
+ * precis vad testerna nedan redan skjuter — ingen av dem rördes av rivningen.
+ * Se den separata ariaSnapshot-grinden
+ * `uppdateringsnotis-promoverings-grind.test.ts` för det formella beviset
+ * (ADR-103 B4).
  *
  * KLASSVALET ÄR INTE GODTYCKLIGT, och det avviker från uppdragets antagande
  * att "det blockerande skyddet måste ligga i acceptance-lagret".

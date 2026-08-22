@@ -133,8 +133,8 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     page,
     checkA11y,
   }) => {
-    // Två instanser i sektionen — inbäddad (utan role="alert", jämförelseform
-    // mot AppErrorPrototyp) och skarp (default-props, role="alert" behållet,
+    // Två instanser i sektionen — inbäddad (utan role="alert", promoverings-
+    // grindens EFTER-ankare) och skarp (default-props, role="alert" behållet,
     // exakt vad AppErrorBoundary renderar). Samma precedent som MessageBox-
     // sektionen ovan: /dev/primitives bär redan flera äkta alert-regioner i
     // normalläget (mätt, tests/webblasarbeteende/app-chunk-laddningsfel.test.ts),

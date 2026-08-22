@@ -26,9 +26,11 @@ import { expect, test } from './fixtures';
  * som `persons-list.acceptance.test.ts`
  * (`page.getByRole('alert').filter({ hasText: 'Kunde inte hämta personer' })`).
  *
- * Referens för samma form på en ANNAN yta (den fulla `/dev/notis-prototyp`-
- * demot, prototyp FÖRE == primitiv EFTER): `tests/visual/
- * messagebox-promoverings-grind.spec.ts` (ADR-103 B4).
+ * Referens för samma form på en ANNAN sektion av SAMMA sida (facit-formens
+ * fyra intents, `[aria-labelledby="rubrik-messagebox-facit"]`): `tests/
+ * visual/messagebox-promoverings-grind.spec.ts` (ADR-103 B4). Den demon låg
+ * tidigare på `/dev/notis-prototyp` och flyttades hit när prototyp-routen
+ * revs (TASK-285.11).
  */
 
 const SEKTION = '[aria-labelledby="rubrik-messagebox"]';

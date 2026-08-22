@@ -1,4 +1,3 @@
-import { useSearch } from '@tanstack/react-router';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { laesAppUppdatering, prenumereraPaAppUppdatering } from '@/lib/app-uppdatering';
 import { laesChunkLaddningsfel, prenumereraPaChunkLaddningsfel } from '@/lib/chunk-laddningsfel';
@@ -70,18 +69,18 @@ function skrivAvfardad(varde: boolean): void {
  * Den överlagrade notisen (`Uppdateringsnotis`) var tidigare bara synlig
  * bakom `?variant=1` (DEV-only prototyp-läge). Villkoret är nu FLIPPAT: den
  * är den OVILLKORLIGA formen för info-läget — `uppdateringFinns` (det
- * verkliga signalen) räcker, oavsett `?variant`. Den gamla banner-formen (i
- * flödet, `border-info border-b`) FINNS INTE LÄNGRE i skarp kod.
+ * verkliga signalen) räcker. Den gamla banner-formen (i flödet,
+ * `border-info border-b`) FINNS INTE LÄNGRE i skarp kod.
  *
- * `?variant`-GRENEN RIVS INTE HÄR — `sok`/`prototypAktiv`/`prototypData`
- * nedan lever kvar oförändrade tills Marcus godkänt promoveringen
- * (ADR-102 B3, `check-facit.sh`). Skälet de INTE bara är dött: `?data=`
- * -forceringen (`ny-version`/`chunk`) är en DEV-bekvämlighet som låter
- * Marcus/QA framkalla ett läge utan att vänta på en riktig service worker-
- * aktivering — en DATAVÄG, inte FORMEN (ADR-103 B2 steg 1: "skarpas
- * DATAVÄGAR behålls"). `NotisPrototypVaxlare`s rail (monterad i
- * `__root.tsx`) sätter alltid BÅDA `variant`+`data` tillsammans, så
- * forceringen är även fortsatt bara nåbar via samma URL-form som förut.
+ * `?variant`-GRENEN ÄR RIVEN (TASK-285.11, 2026-08-22). Marcus stämplade
+ * `tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json`
+ * (`godkand.av: marcus`, citat *"Vi kör på det"*), vilket öppnade ADR-102
+ * B3-spärren. Med den föll `sok`/`prototypAktiv`/`prototypData` och
+ * `?data=`-forceringen (`ny-version`/`chunk`): forceringen var bara nåbar
+ * via `NotisPrototypVaxlare`s rail, och rivs rail:en har DATAVÄGEN ingen
+ * ingång kvar att bevara. Synligheten avgörs nu uteslutande av den verkliga
+ * signalen — `uppdateringFinns` ur `app-uppdatering.ts` — plus
+ * chunk-lägets undertryckning (`omladdningKravs`) och användarens "Inte nu".
  *
  * ═══ "INTE NU" — SESSIONSSKOPAD AVFÄRDNING ═══
  *
@@ -177,20 +176,6 @@ export function AppUpdateBanner() {
     () => false,
   );
 
-  // [PROTOTYPE — KONVERGENS, S109] `?variant=1&data=…` är en DEV-only
-  // DATAVÄG (ADR-103 B2 steg 1) som forcerar info-/chunk-läget utan en
-  // riktig service worker-signal — se filhuvudets "?variant-GRENEN RIVS
-  // INTE HÄR". DEV-grindad: grenen tree-shakas bort ur prod-bundeln.
-  // `chunkTvingad` läses HÄR OCKSÅ (samma URL, samma villkor som
-  // `ChunkBanner.tsx` — se den filens "DEV-FORCERINGEN") enbart för att
-  // undertrycka info-notisen medan chunk-läget är dev-forcerat; den
-  // renderar ingenting i denna komponent längre (TASK-285.5).
-  const sok = useSearch({ strict: false }) as Record<string, unknown>;
-  const prototypAktiv = import.meta.env.DEV && String(sok.variant) === '1';
-  const prototypData = import.meta.env.DEV ? String(sok.data ?? '') : '';
-  const chunkTvingad = prototypAktiv && prototypData === 'chunk';
-  const dataTvingadNyVersion = prototypAktiv && prototypData === 'ny-version';
-
   const [avfardad, setAvfardad] = useState(laesAvfardad);
 
   // Se filhuvudets "INTE NU — SESSIONSSKOPAD AVFÄRDNING" för hela
@@ -203,8 +188,7 @@ export function AppUpdateBanner() {
     }
   }, [uppdateringFinns]);
 
-  const notisSynlig =
-    !avfardad && !chunkTvingad && !omladdningKravs && (dataTvingadNyVersion || uppdateringFinns);
+  const notisSynlig = !avfardad && !omladdningKravs && uppdateringFinns;
 
   // [TASK-285.6] Publicerar det FÄRDIGA synlighetsresultatet (inte den råa
   // `uppdateringFinns`-flaggan) så offline-notisen (`OfflineIndicator.tsx`)

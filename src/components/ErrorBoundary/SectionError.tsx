@@ -77,11 +77,12 @@ import { laesChunkLaddningsfel, prenumereraPaChunkLaddningsfel } from '@/lib/chu
  * Databesked-varningen upprepas INTE här: den bor ENBART i chunk-bannern
  * (`ChunkBanner.tsx`, ADR-121 § Updates 2026-08-21, som stängde § 8).
  * Icke-chunk-grenens copy ("Den här delen kunde inte visas" / "Resten av
- * sidan fungerar. Prova igen...") är verbatim den FÖRESLAGNA texten
- * `notis-prototyp.tsx`s egen "notis-sectionerror"-demo redan visade (se
+ * sidan fungerar. Prova igen...") är verbatim den FÖRESLAGNA texten som den
+ * numera rivna prototyp-routens "notis-sectionerror"-demo visade (se
  * `messagebox-promoverings-grind.spec.ts`s doc-block, "MEDVETET UTANFÖR
  * PARET" — den prototyp-strängen var explicit ett förslag på TASK-285.8:s
- * jobb, inte en facit-låsning). Rubriktiteln på chunk-grenen är MEDVETET
+ * jobb, inte en facit-låsning, och demon följde med i TASK-285.11:s rivning
+ * eftersom dess enda uppgift var att bära förslaget hit). Rubriktiteln på chunk-grenen är MEDVETET
  * INTE identisk med `ChunkBanner`s ("Sidan behöver laddas om"): två
  * samtidigt fyllda alert-regioner ska gå att skilja åt vid
  * landmärkesnavigering, inte likriktas.
