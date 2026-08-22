@@ -252,4 +252,12 @@ pass scope) är att koppla ihop det med produktflödet:
 - `scripts/docraptor-minimaltest.mjs` (`npm run docraptor:minimaltest`) —
   mätskriptet, körbart igen för en framtida mall.
 - `test-results/docraptor/*.pdf` + `matdata.json` — gitignorerade
-  mätartefakter, kvar på disk i denna worktree för granskning.
+  mätartefakter, skrivna under `npm run docraptor:minimaltest`s körning.
+  **INTE garanterat kvar på disk i efterhand:** `test-results/` är
+  Playwrights standard-`outputDir` och rensas av `npm run test:api` (körd
+  som en av DoD-grindarna EFTER mätpasset i denna leverans) — mätt här:
+  katalogen fanns kvar efter mätpasset men var borta efter att `test:api`
+  körts. Talen i denna rapport är därför den bestående källan; PDF:erna kan
+  regenereras när som helst genom att köra `npm run docraptor:minimaltest`
+  på nytt (kräver staging-länk + `DOCRAPTOR_API_KEY`-secret satt till
+  platshållaren).
