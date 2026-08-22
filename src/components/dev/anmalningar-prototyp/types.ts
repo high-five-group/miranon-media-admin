@@ -1,3 +1,4 @@
+import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 
 /**
@@ -31,4 +32,10 @@ export interface VariantProps {
       referenspunkt i alla tre varianter, så "N dagar sedan" inte flippar
       mellan en variantväxling och nästa utan att datan faktiskt ändrats. */
   nuMs: number;
+  /** HELA eventlistan (samma `queryKeys.events.list`-nyckel som
+      EventsList/EventValjare — dedupar mot startvärmningen, ingen extra
+      EF-rundtur). Endast Variant B konsumerar den i dagsläget (Marcus
+      review 2026-08-22: eventnamnet i undertexten + kommande/tidigare-
+      filtret byggs i B) — A/C tar emot fältet men läser det aldrig. */
+  events: Event[];
 }

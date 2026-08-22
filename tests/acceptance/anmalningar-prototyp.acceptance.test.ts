@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
 import type { z } from 'zod';
-import type { RegistrationSchema } from '../../src/domain/schemas';
+import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
@@ -62,6 +62,58 @@ function mockRegistrations(
       status === 200 ? json({ registrations: rows }) : json({ error: 'x' }, status),
     ),
   );
+}
+
+type EventRow = z.infer<typeof EventSchema>;
+
+/** Minimal event-fixtur (task-299.3-tillägget: undertextens eventnamn +
+    period-filtret behöver en riktig get-events-motpart för `eventId`). */
+function event(overrides: Partial<EventRow> & { id: string }): EventRow {
+  return {
+    eventlabel: null,
+    eventNamn: 'Namnlöst event',
+    typ: 'Kurs',
+    ort: 'Skövde',
+    startdatum: null,
+    slutdatum: null,
+    tidKvarTillEvent: null,
+    maxPlatser: null,
+    antalAnmalda: 0,
+    platserKvar: null,
+    anmaldBelaggning: null,
+    bekraftadBelaggning: null,
+    antalNyaAnmalningar: 0,
+    antalAnmalningsavgifter: 0,
+    antalSlutbetalningar: 0,
+    antalSlutbetalningFelande: 0,
+    status: 'Planerat',
+    ...overrides,
+  };
+}
+
+function mockEvents(network: NetworkFixture, events: EventRow[]): void {
+  network.use(http.get(EF('get-events'), () => json({ events })));
+}
+
+/** Period-filtrets två test-event, daterade mot FROZEN_NOW (2026-09-15,
+    hermetic.ts § `page.clock.setFixedTime`) — INTE mot verklig systemtid,
+    så klassningen kommande/tidigare aldrig kan flippa när kalendertiden
+    passerar (samma disciplin som events-list-kalender.acceptance.test.ts). */
+const EVENT_KOMMANDE_ID = 'recEventKommande1';
+const EVENT_TIDIGARE_ID = 'recEventTidigare1';
+function periodTestEvents(): EventRow[] {
+  return [
+    event({
+      id: EVENT_KOMMANDE_ID,
+      eventNamn: 'Vinterkurs Umeå',
+      startdatum: '2026-10-15', // > FROZEN_NOW → kommande
+    }),
+    event({
+      id: EVENT_TIDIGARE_ID,
+      eventNamn: 'Sommarkurs Skövde',
+      startdatum: '2026-08-01', // < FROZEN_NOW → tidigare
+    }),
+  ];
 }
 
 /** Blandad datamängd — en OK-rad, en Avviker-rad, en Utan-event-rad. Täcker
@@ -311,6 +363,162 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
 
     const bosRad = lista.locator('li', { hasText: 'Bo Bengtsson' });
     await expect(bosRad.getByText('Behöver kopplas')).toBeVisible();
+  });
+
+  test('reviewfynd 2026-08-22 — undertexten slår upp EVENTETS namn när anmälans egen eventNamn saknas (variant B)', async ({
+    page,
+    network,
+  }) => {
+    // Reproducerar EXAKT Marcus mätning i staging (`?variant=b&lage=lista`,
+    // "Sentinel Bekraftelse"): eventId satt, eventmatchning 'OK', men
+    // anmälans egen `eventNamn`-fritext null. Före fixen tappade undertexten
+    // eventnamnet tyst; nu slås eventets RIKTIGA namn upp via `eventId`.
+    mockEvents(network, periodTestEvents());
+    mockRegistrations(network, [
+      reg({
+        fornamn: 'Sentinel',
+        efternamn: 'Bekraftelse',
+        eventId: EVENT_KOMMANDE_ID,
+        eventNamn: null,
+        eventmatchning: 'OK',
+        inskickad: '2026-09-14T10:00:00.000Z',
+      }),
+    ]);
+    await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+
+    const rad = page.getByRole('list', { name: 'Anmälningar' }).locator('li');
+    await expect(rad).toContainText('Vinterkurs Umeå');
+    await expect(rad).not.toContainText('null');
+  });
+
+  test.describe('Periodfiltret (Marcus review 2026-08-22) — variant B', () => {
+    function periodRader(): Row[] {
+      return [
+        reg({
+          fornamn: 'Kim',
+          efternamn: 'Kommande',
+          eventId: EVENT_KOMMANDE_ID,
+          eventNamn: null,
+          eventmatchning: 'OK',
+          inskickad: '2026-09-14T10:00:00.000Z',
+        }),
+        reg({
+          fornamn: 'Tage',
+          efternamn: 'Tidigare',
+          eventId: EVENT_TIDIGARE_ID,
+          eventNamn: null,
+          eventmatchning: 'OK',
+          inskickad: '2026-08-01T10:00:00.000Z',
+        }),
+        reg({
+          fornamn: 'Ute',
+          efternamn: 'Utanhelt',
+          eventId: null,
+          eventNamn: null,
+          eventmatchning: 'Utan event',
+          inskickad: '2026-08-05T10:00:00.000Z',
+        }),
+      ];
+    }
+
+    test('"Alla" (default) visar samtliga tre, ingen URL-parameter', async ({ page, network }) => {
+      mockEvents(network, periodTestEvents());
+      mockRegistrations(network, periodRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+
+      expect(page.url()).not.toContain('period='); // clearOnDefault: ingen ?period= i URL:en
+      await expect(page.getByText('3 anmälningar')).toBeVisible();
+      await expect(page.getByText('Kim Kommande')).toBeVisible();
+      await expect(page.getByText('Tage Tidigare')).toBeVisible();
+      await expect(page.getByText('Ute Utanhelt')).toBeVisible();
+    });
+
+    test('"Kommande" filtrerar till event med startdatum efter FROZEN_NOW — Utan-event-raden försvinner också', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, periodTestEvents());
+      mockRegistrations(network, periodRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+
+      await page.getByRole('radio', { name: 'Kommande' }).click();
+      await expect(page).toHaveURL(/[?&]period=upcoming/);
+      // exact: true — periodväxlingens sr-only-annonsering ("Visar
+      // anmälningar för kommande event. 1 anmälan.") innehåller SAMMA
+      // delsträng som rubrikradens räknare; utan exact matchar Playwright
+      // båda (strict mode violation).
+      await expect(page.getByText('1 anmälan', { exact: true })).toBeVisible();
+      await expect(page.getByText('Kim Kommande')).toBeVisible();
+      await expect(page.getByText('Tage Tidigare')).toHaveCount(0);
+      await expect(page.getByText('Ute Utanhelt')).toHaveCount(0);
+    });
+
+    test('"Tidigare" filtrerar till event med startdatum före FROZEN_NOW', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, periodTestEvents());
+      mockRegistrations(network, periodRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&period=past');
+
+      await expect(page.getByText('1 anmälan')).toBeVisible();
+      await expect(page.getByText('Tage Tidigare')).toBeVisible();
+      await expect(page.getByText('Kim Kommande')).toHaveCount(0);
+      await expect(page.getByText('Ute Utanhelt')).toHaveCount(0);
+    });
+
+    test('period + åtgärdskö-läget komponerar (AC #2: filtret bryter inget befintligt läge)', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, periodTestEvents());
+      mockRegistrations(network, [
+        ...periodRader(),
+        reg({
+          fornamn: 'Kalle',
+          efternamn: 'Kommandeavviker',
+          eventId: EVENT_KOMMANDE_ID,
+          eventNamn: null,
+          eventmatchning: 'Avviker',
+          inskickad: '2026-09-13T10:00:00.000Z',
+        }),
+      ]);
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=atgardskon&period=upcoming');
+
+      // Åtgärdskön (behoverAtgard) + period=upcoming: Kalle (Avviker, kommande)
+      // syns; Ute (Utan event, ej klassificerbar) och Tage (tidigare) inte.
+      await expect(page.getByText('Kalle Kommandeavviker')).toBeVisible();
+      await expect(page.getByText('Ute Utanhelt')).toHaveCount(0);
+      await expect(page.getByText('Tage Tidigare')).toHaveCount(0);
+      await expect(page.getByText('1 anmälan kunde inte kopplas till rätt event')).toBeVisible();
+    });
+
+    test('noll träffar för en period landar i ett begripligt tomt läge, inte en tom sida', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, periodTestEvents());
+      // Endast KOMMANDE-länkade rader — "Tidigare" ger då noll träffar.
+      mockRegistrations(network, [
+        reg({
+          fornamn: 'Kim',
+          efternamn: 'Kommande',
+          eventId: EVENT_KOMMANDE_ID,
+          eventNamn: null,
+          eventmatchning: 'OK',
+          inskickad: '2026-09-14T10:00:00.000Z',
+        }),
+      ]);
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&period=past');
+
+      await expect(page.getByText('Inga anmälningar för tidigare event.')).toBeVisible();
+      await expect(page.getByRole('alert')).toHaveCount(0);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(results.violations).toEqual([]);
+    });
   });
 
   test('AC #5 — statusen bär text/ikon, aldrig färg ensam (variant B)', async ({

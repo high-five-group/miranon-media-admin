@@ -4,7 +4,7 @@ title: 'Skiva: Divergens på anmälningssidan — tre varianter, tre lägen'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:18'
-updated_date: '2026-08-22 21:48'
+updated_date: '2026-08-22 23:24'
 labels:
   - ready-for-human
 dependencies:
@@ -32,9 +32,9 @@ Anmälningssidan får tre radikalt olika varianter växlingsbara på en dev-rout
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
-- [ ] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
+- [x] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
 <!-- DOD:END -->

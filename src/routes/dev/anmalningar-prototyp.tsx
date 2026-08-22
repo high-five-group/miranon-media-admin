@@ -47,7 +47,10 @@ export const Route = createFileRoute('/dev/anmalningar-prototyp')({
  *   A — "Idag": EXAKT KOPIA av nuvarande sida (AC #1), aldrig ett tomt blad.
  *   B — "Scanlista": personlistans radanatomi (AC #3) — initialcirkel,
  *       namn som länk, "N dagar sedan · Eventnamn", status som reserverad
- *       kolumn.
+ *       kolumn. VALD av Marcus 2026-08-22 ("B bäst") — se VariantB.tsx för
+ *       eventnamns-fixen (reviewfynd: undertexten tappade eventnamnet
+ *       tyst för anmälningar utan egen `eventNamn`-fritext) och
+ *       kommande/tidigare-filtret.
  *   C — "Grupperad efter event": annan INFORMATIONSHIERARKI (sektioner per
  *       kurs i stället för en platt tidslinje).
  *
@@ -119,6 +122,18 @@ function AnmalningarPrototypPage() {
       failureCount < 3,
   });
 
+  // Marcus review 2026-08-22 (§ "vi måste ju få in vilket event anmälan
+  // tillhör"): SAMMA `events.list`-nyckel som EventsList/EventValjare —
+  // dedupar mot startvärmningen (`src/data/warmup/startvarmningen.ts`),
+  // ingen extra EF-rundtur. Variant B använder den för att slå upp EVENTETS
+  // eget namn när anmälans egen `eventNamn`-fritext saknas (mätt live i
+  // staging: `eventId` satt, `eventNamn: null`, `eventmatchning: 'OK'` —
+  // se VariantB.tsx:s docblock för hela fyndet).
+  const { data: events } = useQuery({
+    queryKey: queryKeys.events.list,
+    queryFn: () => dataSource.fetchEvents(),
+  });
+
   // Läst en gång per montering (hem-prototyp-precedentet) — samma "nu" i
   // alla tre varianter oavsett variantväxling.
   const nuMs = useMemo(() => Date.now(), []);
@@ -134,7 +149,15 @@ function AnmalningarPrototypPage() {
     return [...bas].sort((a, b) => inskickadTid(b) - inskickadTid(a));
   }, [registrations, lage]);
 
-  const variantProps: VariantProps = { rader, lage, isPending, isError, error, nuMs };
+  const variantProps: VariantProps = {
+    rader,
+    lage,
+    isPending,
+    isError,
+    error,
+    nuMs,
+    events: events ?? [],
+  };
   const Variant =
     variant === 'a' || variant === 'b' || variant === 'c' ? VARIANT_KOMPONENTER[variant] : null;
 
