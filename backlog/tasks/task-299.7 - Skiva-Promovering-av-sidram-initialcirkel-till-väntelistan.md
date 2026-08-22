@@ -4,10 +4,11 @@ title: 'Skiva: Promovering av sidram + initialcirkel till väntelistan'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:29'
+updated_date: '2026-08-22 22:40'
 labels:
   - ready-for-agent
 dependencies:
-  - TASK-299.5
+  - TASK-299.1
 parent_task_id: TASK-299
 ordinal: 547000
 ---
@@ -35,3 +36,19 @@ Väntelistan får husets sidram och initialcirkeln. Lotta möter samma tillbaka-
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BEROENDE OMSATT 2026-08-22: TASK-299.5 → TASK-299.1.
+
+Marcus order i klartext: "Bygg det globalt bara med sidkromet." Det ursprungliga beroendet på 299.5 antog att sidramens form måste vinnas på anmälningssidan innan den kan promoveras till systersidorna. Det antagandet håller inte längre:
+
+- Kant-i-kant är avgjort i S111:s grillning, inte i konvergenspasset.
+- SidRam- och InitialAvatar-primitiverna LANDADE i TASK-299.1 (merge-SHA 24238b1c) och finns att importera i dag.
+- Omfattningen är låst av Marcus 2026-08-22: full omfattning på ytaxeln, bara sidkromet på ägandeskapsaxeln. Se TASK-299 § OMFATTNINGEN LÅST.
+
+Vad denna skiva faktiskt behöver är alltså primitiverna, inte anmälningssidans LISTA. Beroendet pekar nu på det som verkligen krävs. TASK-299.5 förblir låst bakom 299.4 (Marcus konvergensgranskning) — den kedjan rörs inte.
+
+MARCUS UNDANTAGSREGEL, samma beslut: "Ser vi något som inte funkar sedan så är det ju bara att göra ett undantag på den sidan, men jag tror det är helt lungt." Ett lokalt avsteg på en enskild sida är alltså tillåtet och ska INTE läsas som att den delade formen ska rivas. Stöter du på en yta där sidkromet inte fungerar: bygg undantaget lokalt, bokför skälet, riv inte formen.
+<!-- SECTION:NOTES:END -->

@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 18:38'
-updated_date: '2026-08-22 21:50'
+updated_date: '2026-08-22 22:41'
 labels: []
 dependencies: []
 ordinal: 539000
@@ -166,4 +166,14 @@ Marcus ordagrant: "jag tycker vi ska köra full omfattning" (ytaxeln) och "Jag s
 ATT DET VAR TVÅ AXLAR var inte synligt i TASK-299.2:s tre alternativ, som blandar ihop dem. En skiva som bara läser ordet "full omfattning" skulle fortfarande gissa på ägandeskapet — därför står båda halvorna utskrivna här.
 
 ADR-124 (delade presentationsformer) mintas i TASK-299.6, inte tidigare: TASK-299.1 deferrade den öppet med motivet att breddan var olåst. Nu är den låst, så förutsättningen finns.
+
+UNDANTAGSREGELN — del av omfattningsbeslutet, Marcus 2026-08-22.
+
+Verbatim: "Ser vi något som inte funkar sedan så är det ju bara att göra ett undantag på den sidan, men jag tror det är helt lungt."
+
+Innebörd för efterföljande skivor: den delade sidramen är DEFAULT på alla ytor. Stöter en yta på ett verkligt hinder är rätt svar ett LOKALT undantag på just den sidan, med skälet bokfört — aldrig att riva den delade formen eller att öppna omfattningsfrågan på nytt. Ett undantag är en yta som avviker, inte ett underkännande av regeln.
+
+GLOBAL-BYGGET STARTAT SAMMA KVÄLL: TASK-299.7/8/9 fick sitt beroende omsatt från TASK-299.5 till TASK-299.1, eftersom det de faktiskt behöver är SidRam- och InitialAvatar-primitiverna (landade i 24238b1c) — inte anmälningssidans lista. TASK-299.5 förblir låst bakom TASK-299.4.
+
+TÄCKNINGSLUCKA UPPTÄCKT VID SAMMA GENOMGÅNG: skivorna skars 19:26, före omfattningsbeslutet, och täcker Mer-familjens fem sidor. De TVÅ ytor som i dag bär den andra dialekten — aktivitetshistorik-sidan (s106-aktivitetslogg/facit.json, 2 bilder) och dokumentytan /mer/dokument (s102-dokument-konvergens/facit.json, 5 bilder) — hade INGEN skiva, eftersom PRD:n bara nämner dem villkorat ("BERÖRS endast om den bredaste omfattningen väljs"). Full omfattning valdes, så de är inne. Eget kort skapat för dem.
 <!-- SECTION:NOTES:END -->
