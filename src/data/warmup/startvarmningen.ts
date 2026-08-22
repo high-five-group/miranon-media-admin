@@ -223,14 +223,20 @@ interface WarmupItem {
  * alla `detail`/`byEvent`-grenar (per-post, samma resonemang som ADR-078
  * avvisade för registrerings-detaljer).
  *
- * [UPPDATERAT, ADR-123 beslut 7, TASK-286.2] `persons.register` (tidigare
- * `persons.search`) uteslöts HÄR tidigare för att den "saknade en naturlig
- * kärnfråga" — sedan personlistan bytte källa HAR den en (`fetchPersonsRegister`,
- * parameterlös). Den hålls ÄNDÅ utanför denna blockerande mängd, men nu av
- * KOSTNADSSKÄL: registret är en egen fullwalk (sex sekventiella Airtable-
- * anrop, ~1,5–3 s kall) och hör inte hemma framför första bildrutan på `/hem`.
- * Den värms i stället PÅ AVSIKT (`TabBar.tsx`, hover/fokus på Personer-fliken)
- * och annars lat vid första besök på `/personer` — se `PersonsList.tsx`.
+ * [UPPDATERAT, ADR-123 beslut 7, TASK-286.2 · nyckeln riven TASK-286.3]
+ * `persons.register` uteslöts HÄR tidigare — då under nyckeln `persons.search`
+ * — för att den "saknade en naturlig kärnfråga". Sedan personlistan bytte
+ * källa HAR den en (`fetchPersonsRegister`, parameterlös), och den gamla
+ * sök-nyckeln finns inte längre alls: TASK-286.3 rev både den och
+ * `listPersons` när sista konsumenten var borta.
+ *
+ * Registerfrågan hålls ÄNDÅ utanför denna blockerande mängd, men nu av
+ * KOSTNADSSKÄL och inte av principskäl: registret är en egen fullwalk (sex
+ * sekventiella Airtable-anrop, ~1,5–3 s kall) och hör inte hemma framför
+ * första bildrutan på `/hem`. Den värms i stället PÅ AVSIKT (`TabBar.tsx`,
+ * hover/fokus på Personer-fliken) och annars lat vid första besök på
+ * `/personer` — se `PersonsList.tsx`. ADR-123 beslut 7 föreskriver omprövning
+ * om första besöket mäts som märkbart långsamt.
  */
 const WARMUP_ITEMS: WarmupItem[] = [
   {

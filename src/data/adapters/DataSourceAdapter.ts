@@ -45,12 +45,7 @@ import type {
   RegistrationFilters,
   WaitlistFilters,
 } from '../../domain/types/Filters';
-import type {
-  ActivityLogPage,
-  ActivityLogParams,
-  ListParams,
-  PersonsPage,
-} from '../../domain/types/Pagination';
+import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
 
 export interface DataSourceAdapter {
   // === Befintliga (oförändrade) ===
@@ -58,25 +53,22 @@ export interface DataSourceAdapter {
   fetchRegistrations(filters?: RegistrationFilters): Promise<Registration[]>;
 
   /**
-   * Cursor-paginerad personlista (ADR-056). Migrations-stabil port: Supabase-
-   * adaptern (Fas E) implementerar identisk shape. `cursor`/`nextCursor` är opaka.
-   */
-  listPersons(params?: ListParams): Promise<PersonsPage>;
-
-  /**
    * Hämta HELA personregistret (ADR-123 beslut 1, TASK-286.1) —
    * PARAMETERLÖST: inga sök-/cursor-/pageSize-argument. Returnerar samtliga
-   * personer som uppfyller `listPersons`s BASFILTER (minst en anmälan), med
-   * exakt de fält listan redan visar. Airtable-implementationen breddar den
-   * fullwalk `get-persons` REDAN gör för att räkna `total`
-   * (`fields: ['Namn']` → alla `mapPerson`-fält, posterna returneras i
-   * stället för att räknas) — INGEN ny EF, ingen ny walk-mekanism.
+   * personer som uppfyller EF:ens BASFILTER (minst en anmälan,
+   * `get-persons/index.ts` § BAS_FILTER), med exakt de fält listan redan
+   * visar.
    *
-   * `listPersons` (sök/cursor) lever kvar OFÖRÄNDRAD tills sista konsumenten
-   * är borta — ingen big-bang-rivning (ADR-123 § Beslut 1). Sök,
-   * bokstavsindex, räknarrad och svensk sortering är KLIENT-sidan efter
+   * [ENDA PERSONLIST-PORTEN, TASK-286.3] `listPersons(params?: ListParams):
+   * Promise<PersonsPage>` — den cursor-paginerade sök-porten (ADR-056) —
+   * stod här tills sista konsumenten försvann med TASK-286.2 och är nu riven
+   * i BÅDA implementationerna, tillsammans med sina typer. ADR-123 § Beslut 1
+   * föreskrev just den ordningen: aldrig en big-bang-rivning i samma andetag
+   * som källbytet. Formen finns i git (`git log -p -- src/data/adapters/`).
+   *
+   * Sök, bokstavsindex, räknarrad och svensk sortering är KLIENT-sidan efter
    * denna hämtning (ADR-123 beslut 2–4); adaptern levererar bara den råa,
-   * ofiltrerade mängden.
+   * osorterade, ofiltrerade mängden.
    */
   fetchPersonsRegister(): Promise<Person[]>;
 
