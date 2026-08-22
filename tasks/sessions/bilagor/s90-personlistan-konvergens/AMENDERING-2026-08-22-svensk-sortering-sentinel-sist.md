@@ -94,27 +94,124 @@ bakom vad gäller radordningen.
 **Referens + hash:** ytan `personlistan` deklarerar INGEN `referenser`-array i
 `facit.json`, så `check-facit.sh` invariant (d) hash-jämför ingenting här
 (mätt 2026-08-22: `bash scripts/check-facit.sh` → exit 0, *"22 stämplade ytor
-saknar `referenser` och är därmed INTE innehållslåsta"*). Ingen hash-rad är
-alltså tillämplig. Det betyder också att den mekaniska bevakningen av just
-denna ytas referenser saknas — värt att deklarera `referenser` nästa gång ytan
-ändå är ogodkänd, eftersom `ADR-102` § A5 punkt 2 kräver att de deklareras
-MEDAN manifestet är ogodkänt.
+saknar `referenser` och är därmed INTE innehållslåsta"*). Det betyder att den
+mekaniska bevakningen av just denna ytas referenser saknas — värt att deklarera
+`referenser` nästa gång ytan ändå är ogodkänd, eftersom `ADR-102` § A5 punkt 2
+kräver att de deklareras MEDAN manifestet är ogodkänt. **Hasharna efter
+`TASK-283.4`:s regenerering skrivs ut i klartext nedan**
+(§ Omstämplings-läge).
 
 ## Omstämplings-läge
 
-**VÄNTAR MARCUS OMSTÄMPLING.** `godkand` rörs aldrig av en agent
-(`ADR-104` § Beslut 2), och för klass (c) avgörs omstämplingen i Marcus egen
-kanal — `ADR-102` § A2: *"En agent avgör detta ALDRIG själv."*
+**OMSTÄMPLING BEGÄRD 2026-08-22.** Marcus har sett den färdiga ytan — med
+sentinel-raden sist och bokstavsraden ovanför listan — i körande app
+(`localhost:5173/personer`, `main` `a7dd94c5`) och godkänt den i klartext:
 
-Agenten har därför:
+> *"Ser ju skitbra ut! Bra jobb Claude!"*
 
-- **INTE** rört `facit.json`.
-- **INTE** rört de två `.aria.yml`-referenserna.
-- Lämnat PR #1750 som **draft**, och AC #5 samt DoD #1/#6 **obockade** på
-  kortet.
+Sorteringen ingick i det han såg: `Ej tillgängligt` låg sist i listan vid
+granskningen, precis som `ADR-123` beslut 4 föreskriver. Därmed är
+`TASK-283.4` AC #1 uppfylld och den enkelriktade ordningen hållen — FÖRST
+Marcus ord, DÄREFTER regenereringen.
 
-**Vad Marcus beslut gäller:** ska sentinel-raden ligga sist i personlistan
-(kortets AC #1, `ADR-123` beslut 4 — redan beslutat i ADR:n), och ska
-referenserna därmed fångas om med stämpeln förnyad? Bekräftas det uppdateras
-de två `.aria.yml`-filerna och `godkand` sätts om via Marcus kanal; först då
-kan PR #1750 tas ur draft.
+`godkand` rörs fortfarande **aldrig** av en agent (`ADR-104` § Beslut 2).
+Omstämplingen verkställs av Marcus i hans egen `!`-kanal:
+
+```bash
+npm run facit:godkann -- --pass s90-personlistan-konvergens --citat "Ser ju skitbra ut! Bra jobb Claude!" --ersatt
+```
+
+### Vad som är AMENDERAT — sentinel-radens position, nu i det mekaniska facit
+
+`TASK-283.4` har regenererat samtliga sex `ariaSnapshot`-referenser under
+`tests/visual/__aria__/personer-promoverings-grind.spec.ts/`. Denna skivas
+bidrag är sentinel-radens FLYTT i de två listlage-referenserna: `Ej
+tillgängligt` (`recVisualPers00017`) står inte längre mellan `David Dahl` och
+`Emma Eklund`, utan sist — efter `Petra Palm`:
+
+```yaml
+  - listitem:
+    - link "Petra Palm":
+      - /url: /personer/recVisualPers00016
+    - text: petra.palm@example.se 7 dagar sedan · Anmälde sig till RIM 2 i Stockholm Aktiv anmälan
+  - listitem:
+    - link "Ej tillgängligt":
+      - /url: /personer/recVisualPers00017
+    - text: p.lindqvist@example.se Igår · Hämtade Meditationen Kraftfältet
+```
+
+**Det var denna flytt, och bara denna, som höll de sex fallen röda.** Diffen är
+fyra rader bort från position 5 och samma fyra rader tillagda sist — sedan
+`TASK-286.3` landade har grinden stått 10 passerade / 6 fällda, och de sex
+fallen (listläget plus de två `?variant=`-degraderingarna, båda vyporterna)
+fällde uteslutande på ordning. `TASK-283.2` och `TASK-283.3` tillförde noll
+nya fällningar ovanpå den; bokstavsraden är en extra syskonnod som
+`toMatchAriaSnapshot` tolererar partiellt.
+
+### Vad som INTE är amenderat — rad- och listformen är ORÖRD
+
+Att flytten är en FLYTT och inte en formändring är nu **mekaniskt mätt** i
+stället för enbart resonerat. Listblocket (`- list "Personer":` till filslut)
+extraherades ur referensen före och efter regenereringen, sorterades och
+jämfördes:
+
+```bash
+diff <(sed -n '/^- list "Personer":/,$p' FÖRE | sort) \
+     <(sed -n '/^- list "Personer":/,$p' EFTER | sort)   # exit 0, båda vyporterna
+```
+
+**Exit 0 på båda vyporterna.** Nodmängden inuti `list "Personer"` är
+byte-identisk före och efter: ingen nod tillagd, ingen borttagen, ingen omdöpt
+— sentinel-radens fyra rader är oförändrade ned till tecknet, det är bara deras
+POSITION som skiljer. Det är precis den distinktion `ADR-102` § A2 skärpning 2
+kräver att man kan visa i stället för att påstå.
+
+Kvar orörda, var för sig:
+
+- tonal kortyta med `divide-y`-avdelare — orörd
+- låst radhöjd — orörd
+- status (`Aktiv anmälan`) som egen kolumn med reserverad plats — orörd
+- e-post ensam på kontaktraden — orörd
+- interaktionsraden avskild med 4 px, utan ikon — orörd
+
+**Referensernas regex-mönster är bevarade genom regenereringen.** De nio
+`- text: /…\d+ dagar sedan…/`-mönstren plus `- status: /Visar \d+ av \d+
+personer\./` är handskrivna och har stått sedan den ursprungliga låsningen
+(`301d17af`, 2026-08-10). Playwright skrev inte literaler i deras ställe:
+räknat efteråt bär båda listlage-referenserna fortfarande 9 text-regexar och
+sin status-regex. Det var inte givet — hade de rivits vore låset en generation
+svagare på en axel ingen bett om.
+
+Pixel-baselinen `personer.png` är fortfarande orörd och därmed en generation
+bakom vad gäller radordningen. Baselines föds i CI via `visual-baselines.yml`,
+aldrig lokalt (`CONTRIBUTING.md` § Visuell regression) — det momentet är
+separat från denna landning. `TASK-283.4`:s diff bär **ingen `src/`-ändring
+alls**.
+
+**Referens + hash.** Ytan `personlistan` deklarerar fortfarande INGEN
+`referenser`-array i `facit.json`, så `check-facit.sh` invariant (d)
+hash-jämför ingenting här (om-mätt 2026-08-22 efter regenereringen:
+`bash scripts/check-facit.sh` → exit 0, nu *"24 stämplade ytor saknar
+`referenser`"* — talet stod som 22 när denna fil skrevs och har vuxit med två
+sedan dess). Hasharna skrivs ändå ut, så bokföringen är maskinläsbar den dag
+ytan deklareras:
+
+| referens | sha256 efter regenereringen |
+|---|---|
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-listlage-visual-desktop.aria.yml` | `373a81a21615b5c8c98d57a08ebde106299cd49b84374eeaec91b25cf6a16c9f` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-listlage-visual-mobile.aria.yml` | `373a81a21615b5c8c98d57a08ebde106299cd49b84374eeaec91b25cf6a16c9f` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-sokning-traff-visual-desktop.aria.yml` | `f83420bda8dde3fcfbd1f1e8b159daaace4f3d9790b24262f68f14dce9716e05` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-sokning-traff-visual-mobile.aria.yml` | `f83420bda8dde3fcfbd1f1e8b159daaace4f3d9790b24262f68f14dce9716e05` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-tomlage-visual-desktop.aria.yml` | `6a5540586cc71cb422c7bb40f549ddc7b3504e78ba43c948a2c1a708a0e1705d` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-tomlage-visual-mobile.aria.yml` | `6a5540586cc71cb422c7bb40f549ddc7b3504e78ba43c948a2c1a708a0e1705d` |
+
+### Grindens utfall — det röda fönstret som denna skiva öppnade är stängt
+
+| | passerade | fällda |
+|---|---|---|
+| efter `TASK-286.3` (denna skiva) | 10 | 6 |
+| före regenereringen (`main` `a7dd94c5`, om-mätt) | 10 | 6 |
+| **efter regenereringen** | **16** | **0** |
+
+PR #1750 kunde inte tas ur draft förrän detta skedde; den blockeringen är nu
+upplöst av `TASK-283.4`.

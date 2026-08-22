@@ -90,3 +90,64 @@ post enligt uppdragets ursprungliga specifikation:
 
 `godkand`-blocket rörs inte av inbakningen — datum, citat och sha står kvar
 exakt som de är.
+
+---
+
+## Tillägg 2026-08-22 — ytan stämplas om, och vad det betyder för DENNA post
+
+**Klassningen står fast: detta är och förblir klass (b).** Marcus väg B-beslut
+(§ Avvikelsen ovan) gäller oförändrat — `button "Ladda fler"` föll bort ur
+referensen därför att fixturvärlden bär 17 personer mot render-fönstrets 50,
+knappen finns kvar i prod, och stämpeln 2026-08-10 behölls med avsikt. Ingen
+omstämpling har någonsin krävts för denna post, och den kräver ingen nu.
+
+**Men ytan stämplas om ändå, av andra skäl.** Tre SENARE amenderingar på samma
+manifest och samma yta är klass (c) och har begärt Marcus omstämpling:
+
+| sidofil | skiva | vad |
+|---|---|---|
+| `AMENDERING-2026-08-22-svensk-sortering-sentinel-sist.md` | `TASK-286.3` | sentinel-raden sorteras sist |
+| `AMENDERING-2026-08-22-bokstavsraden-ovanfor-listan.md` | `TASK-283.2` | bokstavsraden ovanför listan |
+| `AMENDERING-2026-08-22-tomma-bokstaver-nedtonade.md` | `TASK-283.3` | tomma bokstäver tonas ned |
+
+Marcus har sett den samlade formen i körande app (`localhost:5173/personer`,
+`main` `a7dd94c5`) och godkänt den i klartext:
+
+> *"Ser ju skitbra ut! Bra jobb Claude!"*
+
+Omstämplingen verkställs av honom i hans egen `!`-kanal (`godkand` rörs aldrig
+av en agent, `ADR-104` § Beslut 2):
+
+```bash
+npm run facit:godkann -- --pass s90-personlistan-konvergens --citat "Ser ju skitbra ut! Bra jobb Claude!" --ersatt
+```
+
+**Följden för denna post: § Föreslagen inbakning ovan blir överspelad.** Den
+skrevs för en värld där stämpeln 2026-08-10 stod kvar och avvikelsen behövde
+bokföras vid sidan av den. När den nya stämpeln landar attesterar den den
+form som FAKTISKT finns — inklusive den `Ladda fler`-frånvaro denna post
+förklarar — och den föreslagna `amendering`-nyckeln behöver inte längre bakas
+in någonstans. Posten står kvar som HISTORIK: den förklarar varför de två
+listlage-referenserna såg ut som de gjorde mellan 2026-08-22 och omstämplingen,
+och den är prejudikatet för hur en klass (b) skiljs från en klass (c) på
+samma yta (`ADR-102` § A2, som citerar just denna instans).
+
+**Referensernas läge efter `TASK-283.4`.** De två filer denna post beskriver
+har regenererats tillsammans med de fyra andra
+(`--update-snapshots=all`, `TASK-283.4`). `button "Ladda fler"` är fortfarande
+frånvarande — fixturens 17 personer ryms alltjämt i 50-radersfönstret, så
+förklaringen ovan gäller oförändrat. Deras nya hashar:
+
+| referens | sha256 |
+|---|---|
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-listlage-visual-desktop.aria.yml` | `373a81a21615b5c8c98d57a08ebde106299cd49b84374eeaec91b25cf6a16c9f` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-listlage-visual-mobile.aria.yml` | `373a81a21615b5c8c98d57a08ebde106299cd49b84374eeaec91b25cf6a16c9f` |
+
+**Vad som INTE ändrats av `TASK-283.4`:** rad- och listformen. Nodmängden inuti
+`list "Personer"` är byte-identisk före och efter regenereringen — mätt med
+`diff` på det sorterade listblocket, exit 0 på båda vyporterna. Ingen nod är
+tillagd, borttagen eller omdöpt; bara sentinel-radens position skiljer, vilket
+är `TASK-286.3`:s ändring och inte denna. De formbeslut manifestets `not`-fält
+låser (tonal kortyta med `divide-y`, låst radhöjd, statuskolumnen med
+reserverad plats, e-post ensam på kontaktraden, interaktionsraden med 4 px utan
+ikon) är samtliga orörda.

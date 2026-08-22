@@ -1,4 +1,35 @@
 - searchbox "Sök person"
+- toolbar "Filtrera på första bokstaven":
+  - button "Visa personer som börjar på A"
+  - button "Visa personer som börjar på B"
+  - button "Visa personer som börjar på C"
+  - button "Visa personer som börjar på D"
+  - button "Visa personer som börjar på E"
+  - button "Visa personer som börjar på F"
+  - button "Visa personer som börjar på G"
+  - button "Visa personer som börjar på H"
+  - button "Visa personer som börjar på I"
+  - button "Visa personer som börjar på J"
+  - button "Visa personer som börjar på K"
+  - button "Visa personer som börjar på L"
+  - button "Visa personer som börjar på M"
+  - button "Visa personer som börjar på N"
+  - button "Visa personer som börjar på O"
+  - button "Visa personer som börjar på P"
+  - button "Visa personer som börjar på Q" [disabled]
+  - button "Visa personer som börjar på R" [disabled]
+  - button "Visa personer som börjar på S" [disabled]
+  - button "Visa personer som börjar på T" [disabled]
+  - button "Visa personer som börjar på U" [disabled]
+  - button "Visa personer som börjar på V" [disabled]
+  - button "Visa personer som börjar på W" [disabled]
+  - button "Visa personer som börjar på X" [disabled]
+  - button "Visa personer som börjar på Y" [disabled]
+  - button "Visa personer som börjar på Z" [disabled]
+  - button "Visa personer som börjar på Å" [disabled]
+  - button "Visa personer som börjar på Ä" [disabled]
+  - button "Visa personer som börjar på Ö" [disabled]
+  - button "Visa personer utan namn": Utan namn
 - status
 - status: /Visar \d+ av \d+ personer\./
 - list "Personer":
@@ -18,10 +49,6 @@
     - link "David Dahl":
       - /url: /personer/recVisualPers00004
     - text: /david\.dahl@example\.se \d+ dagar sedan · Anmälde sig till Fjärrskådning i Skövde Aktiv anmälan/
-  - listitem:
-    - link "Ej tillgängligt":
-      - /url: /personer/recVisualPers00017
-    - text: p.lindqvist@example.se Igår · Hämtade Meditationen Kraftfältet
   - listitem:
     - link "Emma Eklund":
       - /url: /personer/recVisualPers00005
@@ -70,3 +97,7 @@
     - link "Petra Palm":
       - /url: /personer/recVisualPers00016
     - text: petra.palm@example.se 7 dagar sedan · Anmälde sig till RIM 2 i Stockholm Aktiv anmälan
+  - listitem:
+    - link "Ej tillgängligt":
+      - /url: /personer/recVisualPers00017
+    - text: p.lindqvist@example.se Igår · Hämtade Meditationen Kraftfältet

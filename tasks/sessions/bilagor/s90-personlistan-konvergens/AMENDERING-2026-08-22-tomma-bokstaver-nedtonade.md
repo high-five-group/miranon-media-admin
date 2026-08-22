@@ -167,26 +167,123 @@ i CI, aldrig lokalt (`CONTRIBUTING.md` § Visuell regression).
 
 **Referens + hash:** ytan `personlistan` deklarerar INGEN `referenser`-array i
 `facit.json` (verifierat på denna gren), så `check-facit.sh` invariant (d)
-hash-jämför ingenting här och ingen hash-rad är tillämplig. Det betyder också
-att den mekaniska bevakningen av just denna ytas referenser fortfarande saknas
-— `ADR-102` § A5 punkt 2 kräver att `referenser` deklareras MEDAN manifestet är
-ogodkänt, vilket gör `TASK-283.4` till det naturliga tillfället.
+hash-jämför ingenting här. Det betyder att den mekaniska bevakningen av just
+denna ytas referenser fortfarande saknas — `ADR-102` § A5 punkt 2 kräver att
+`referenser` deklareras MEDAN manifestet är ogodkänt. **Hasharna efter
+`TASK-283.4`:s regenerering skrivs ändå ut i klartext nedan**
+(§ Omstämplings-läge), så bokföringen är maskinläsbar den dag ytan deklareras.
 
 ## Omstämplings-läge
 
-**VÄNTAR MARCUS OMSTÄMPLING.** `godkand` rörs aldrig av en agent
-(`ADR-104` § Beslut 2), och för klass (c) avgörs omstämplingen i Marcus egen
-kanal — `ADR-102` § A2: *"En agent avgör detta ALDRIG själv."*
+**OMSTÄMPLING BEGÄRD 2026-08-22.** Marcus har sett den färdiga bokstavsraden —
+med nedtoningen på plats, eftersom denna skiva var den sista före granskningen
+— i körande app (`localhost:5173/personer`, `main` `a7dd94c5`) och godkänt den
+i klartext:
 
-Agenten har därför:
+> *"Ser ju skitbra ut! Bra jobb Claude!"*
 
-- **INTE** rört `facit.json`.
-- **INTE** rört någon av de sex `.aria.yml`-referenserna.
-- Bockat kortets AC #1 till #6 (de mäter bygget), och lämnat DoD #3 åt CI.
+Därmed är `TASK-283.4` AC #1 uppfylld, och kortets enkelriktade ordning hållen:
+FÖRST Marcus ord, DÄREFTER regenereringen — aldrig tvärtom.
 
-**Vad Marcus beslut gäller:** ska nedtoningen stå kvar i den form som landat
-(tom bokstav = dämpad text utan platta, kvar i tillgänglighetsträdet, inte
-klickbar), och ska de sex referenserna därmed fångas om med stämpeln förnyad?
-Detta är den sista skivan före omstämplingen; bekräftas formen regenererar
-`TASK-283.4` referenserna i egen commit och sätter om `godkand` via Marcus
-kanal.
+`godkand` rörs fortfarande **aldrig** av en agent (`ADR-104` § Beslut 2).
+Omstämplingen verkställs av Marcus i hans egen `!`-kanal:
+
+```bash
+npm run facit:godkann -- --pass s90-personlistan-konvergens --citat "Ser ju skitbra ut! Bra jobb Claude!" --ersatt
+```
+
+### Vad som är AMENDERAT — nedtoningen, nu i det mekaniska facit
+
+`TASK-283.4` har regenererat samtliga sex `ariaSnapshot`-referenser under
+`tests/visual/__aria__/personer-promoverings-grind.spec.ts/`. Denna skivas
+bidrag till tillägget är **`[disabled]`-markören** på de bokstäver ingen i
+fixturregistret börjar på:
+
+```yaml
+  - button "Visa personer som börjar på P"
+  - button "Visa personer som börjar på Q" [disabled]
+  …
+  - button "Visa personer som börjar på Ö" [disabled]
+  - button "Visa personer utan namn": Utan namn
+```
+
+I fixturvärlden är A–P plus `Utan namn` aktiva och Q–Ö nedtonade. Det tredje
+läget är därmed inte längre osynligt för låset: knapparnas ANTAL, ORDNING,
+ETIKETTER och AKTIVERBARHET står nu alla i referensen.
+
+**Att nedtoningen alls kunde fångas krävde `--update-snapshots=all`.**
+Playwrights standardläge (`changed`) skriver bara om en referens som FÄLLER,
+och ett `[disabled]`-tillägg på en nod referensen aldrig nämnde kunde
+per definition inte fälla någon. Fyra av de sex filerna hade därför förblivit
+ofullständiga med standardläget — mätt: 2 av 6 omskrivna med `changed`, 6 av 6
+med `=all`. Det är exakt den skuld detta dokuments § Mätning namngav: *"Att de
+passerar betyder alltjämt INTE att de beskriver ytan."*
+
+### Vad som INTE är amenderat — rad- och listformen är ORÖRD
+
+Manifestets låsta formbeslut står kvar, och det är nu **mekaniskt mätt** i
+stället för enbart resonerat. Listblocket (`- list "Personer":` till filslut)
+extraherades ur referensen före och efter regenereringen, sorterades och
+jämfördes:
+
+```bash
+diff <(sed -n '/^- list "Personer":/,$p' FÖRE | sort) \
+     <(sed -n '/^- list "Personer":/,$p' EFTER | sort)   # exit 0, båda vyporterna
+```
+
+**Exit 0 på båda vyporterna: nodmängden inuti `list "Personer"` är
+byte-identisk.** Ingen nod är tillagd, borttagen eller omdöpt. Det enda som
+skiljer är ORDNINGEN — sentinel-radens flytt, som är `TASK-286.3`:s redan
+bokförda ändring (`AMENDERING-2026-08-22-svensk-sortering-sentinel-sist.md`),
+inte denna.
+
+Kvar orörda, var för sig:
+
+- tonal kortyta med `divide-y`-avdelare — orörd
+- låst radhöjd — orörd
+- status (`Aktiv anmälan`) som egen kolumn med reserverad plats — orörd
+- e-post ensam på kontaktraden — orörd
+- interaktionsraden avskild med 4 px, utan ikon — orörd
+
+**Radens geometri är likaså orörd, och det var kortets egen AC #3:** talen i
+§ Mätning ovan (288x118 px vid 320 px, 343x88 vid 375, 398x88 vid 430, 568x58
+vid 768 och 1280, minsta träffyta 28x28 px) är byte för byte desamma som
+`TASK-283.2` mätte FÖRE nedtoningen. Regenereringen ändrar ingenting i den
+axeln — `ariaSnapshot` jämför struktur och tillgängligt namn, aldrig pixlar.
+
+Tomlägets copy är fortfarande oförändrad sedan `TASK-283.2`, inklusive `Ingen
+person börjar på X.`, som nås via URL i stället för via ett klick.
+
+`slutlage-tonal-{desktop,mobil}.png` och pixel-baselinen `personer.png` är
+fortfarande orörda och därmed en generation bakom vad gäller bokstavsraden.
+Baselines föds i CI via `visual-baselines.yml`, aldrig lokalt
+(`CONTRIBUTING.md` § Visuell regression) — det momentet är separat från denna
+landning. `TASK-283.4`:s diff bär **ingen `src/`-ändring alls** (kortets AC #5).
+
+**Referens + hash.** Ytan `personlistan` deklarerar fortfarande INGEN
+`referenser`-array i `facit.json`, så `check-facit.sh` invariant (d)
+hash-jämför ingenting här (mätt 2026-08-22: `bash scripts/check-facit.sh` →
+exit 0). Hasharna skrivs ändå ut, så bokföringen är maskinläsbar den dag ytan
+deklareras — och så att nästa tysta omskrivning ger en hash ingen sidofil bär:
+
+| referens | sha256 efter regenereringen |
+|---|---|
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-listlage-visual-desktop.aria.yml` | `373a81a21615b5c8c98d57a08ebde106299cd49b84374eeaec91b25cf6a16c9f` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-listlage-visual-mobile.aria.yml` | `373a81a21615b5c8c98d57a08ebde106299cd49b84374eeaec91b25cf6a16c9f` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-sokning-traff-visual-desktop.aria.yml` | `f83420bda8dde3fcfbd1f1e8b159daaace4f3d9790b24262f68f14dce9716e05` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-sokning-traff-visual-mobile.aria.yml` | `f83420bda8dde3fcfbd1f1e8b159daaace4f3d9790b24262f68f14dce9716e05` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-tomlage-visual-desktop.aria.yml` | `6a5540586cc71cb422c7bb40f549ddc7b3504e78ba43c948a2c1a708a0e1705d` |
+| `tests/visual/__aria__/personer-promoverings-grind.spec.ts/personer-tomlage-visual-mobile.aria.yml` | `6a5540586cc71cb422c7bb40f549ddc7b3504e78ba43c948a2c1a708a0e1705d` |
+
+### Grindens utfall — det röda fönstret är stängt
+
+| | passerade | fällda |
+|---|---|---|
+| före regenereringen (`main` `a7dd94c5`) | 10 | 6 |
+| **efter regenereringen** | **16** | **0** |
+
+Täckningen är återställd i BÅDA riktningar, inte bara till grönt: en
+provokation som döpte om `Visa personer som börjar på Ö` i tomlägets referens
+fällde grinden (exit 1). Före regenereringen kunde samma provokation inte
+fälla någonting. Provokationen är återställd; referenserna står i sitt
+regenererade läge.
