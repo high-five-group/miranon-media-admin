@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-01
+updated: 2026-08-22
 review_by: 2026-10-24
 status: stable
 lifecycle: paused
@@ -32,7 +32,12 @@ ignoreras är kyrkogårds-klassen (L321).
   ("vad ändrade min ändring?"), personliga darwin-baselines gitignorerade.
 - `visual-baselines.yml` — dispatchbar när som helst; föder granskningsbar
   baseline-PR (räknefixen `-uall` + inställnings-förutsättningen
-  dokumenterad i workflow-headern).
+  dokumenterad i workflow-headern). **Sedan `TASK-298` (2026-08-22) bär den
+  en VALFRI `specfilter`-input** som begränsar körningen till namngivna
+  specar; tom input = hela sviten, oförändrat. Riktad körning märks i
+  grennamn, PR-titel och PR-kropp, och skräp-input fälls fail-closed före
+  bildgenereringen. Ytan beskrivs i `CONTRIBUTING.md` § Visuell regression;
+  hela WHY:et i workflow-huvudet § RIKTAD KÖRNING.
 - Linux-baselines (2x, 2880×1804) incheckade och Marcus-välsignade
   (PR nr 140, S81).
 
