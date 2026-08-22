@@ -142,6 +142,48 @@ på en sida (ska INTE fälla).
 - Skriptet + fixtur-registreringen: commit `f5b7ee25` på `#1722`:s gren
   (`spec/s110-284.2-vakten-matchningssteget`, kvar som draft).
 
+### Rättningens FÖRSTA form revs samma dag — den bröt tomma datum
+
+Den form som beskrivs ovan (extrahera årtalet, jämför som egen axel) var
+korrekt i JavaScript men **fel som Airtable-formel**. Porterad blev den
+`REGEX_EXTRACT({Datum} & "", "\\d{4}")` — och Airtables `AND()` kortsluter
+**inte**, så uttrycket evaluerades även när tomt-guarden redan var falsk.
+`REGEX_EXTRACT` utan träff ger **fel**, inte blank.
+
+**Utfall:** `#ERROR!` på VARJE anmälan med Event-länk och tomt `Datum`.
+Mätt live i staging på befintlig data (`Petra Kvist`, `Elin Vikström`,
+sentinel- och arbetskö-fixturerna), inte bara på nya rader. Det bröt
+`ADR-122` beslut 4, markören i anmälningslistan och åtgärdsköns räknare
+samtidigt.
+
+**Varför den första verifieringen inte fångade det:** de fyra fixturerna
+mättes och rapporterades oförändrade — men **ingen av dem hade tomt
+`Datum`**. `Fixtur Backfill` bär tom *Ort*. Tomheten som fanns testades;
+tomheten på den axel som faktiskt ändrades gjorde det inte. Fyndet kom
+först i `284.2`:s ände-till-ände-pass, på en express-rad som saknar
+`Datum` helt.
+
+**Slutlig form** (`act9gDpZDjafASryW`, och `e81192ec` för skriptet):
+`REGEX_EXTRACT` är borta helt — inte inlindad i fler guards. `normDatum`
+kollapsar i stället ett årtal som följs av tankstreck
+(`\d{4}\s*([-–—])` → `$1`), så båda sidor bär årtalet exakt en gång och
+det jämförs som en del av strängen. Ingen funktion som kan fela, alltså
+ingen guard att glömma. Det var alternativet denna tråd själv pekade ut
+som *"möjligen enklare i Airtable-formelsyntax"*.
+
+**Medveten kant, mätt till noll:** ett ifyllt `Datum` som SAKNAR årtal
+fäller nu mot ett facit som har det (den strippande formen gav dem lika).
+Populationen är **0 rader i både prod och staging** (mätt 2026-08-22) —
+fältet fylls ur `AnmälningsURL`:ens parameter, som alltid bär årtalet.
+Kanten är dessutom åt rätt håll för en fail-closed vakt: ett ofullständigt
+datum är inte ett TOMT fält.
+
+**Lärdomskandidat:** en rättning som verifieras mot befintliga fixturer
+prövar den tomhet som råkar finnas i dem, inte den axel ändringen rör.
+Och en konstruktion som är korrekt i ett språk kan vara fel i ett annat
+med samma semantik på ytan — `AND()` som inte kortsluter är inte en bugg,
+det är en annan språkfamilj.
+
 ### Kvarstår
 
 Prod-utrullningen via `TASK-284.6` — den skapar fälten för första gången
