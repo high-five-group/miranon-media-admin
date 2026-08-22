@@ -1,7 +1,8 @@
-- complementary "Senaste aktivitet":
+- region "Senaste aktivitet":
+  - heading "Senaste aktivitet" [level=2]
   - list:
     - listitem: för 2 tim sedan Lotta markerade en betalning · Alva Ekström (Utbildning Skövde)
-    - listitem: för 5 tim sedan Roger bekräftade anmälan · Bosse Frisk (Utbildning Skövde)
+    - listitem: för 5 tim sedan Roger bekräftade en anmälan · Bosse Frisk (Utbildning Skövde)
     - listitem: /igår \d+:\d+ Marcus lade till person · Cilla Grahn/
     - listitem: /igår \d+:\d+ Lotta markerade en betalning · Doris Hallin \(Föreläsning Göteborg\)/
   - link "Se all aktivitetshistorik":

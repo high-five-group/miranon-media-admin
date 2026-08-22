@@ -15,7 +15,14 @@ test('hem — översikten ur den frusna fixturvärlden', async ({ page }) => {
 
   // Fixtur-förankrad synlighet före skottet: hälsningen bevisar seedad
   // session (display_name ur sessionen), eventnamnet bevisar mockad EF-data.
-  await expect(page.getByText('Lotta')).toBeVisible();
+  //
+  // SCOPAD TILL h1:n (TASK-243.6). `getByText('Lotta')` var entydig när denna
+  // rad skrevs, men blev strict-mode-fällande när `SenasteAktivitetKompakt.tsx`
+  // landade på hem i `d794669f` (TASK-243.1): aktörsnamnen i aktivitetsblocket
+  // (`<span className="font-medium">{post.actor.name}</span>`) matchar samma
+  // text, så lokatorn löste ut till TRE element. Rubriken bär avsikten exakt —
+  // "Hej Lotta" är hälsningen, och `display_name` är dess enda källa.
+  await expect(page.getByRole('heading', { level: 1, name: 'Hej Lotta' })).toBeVisible();
   await expect(page.getByText('Utbildning Skövde').first()).toBeVisible();
 
   await expect(page).toHaveScreenshot('hem.png', { fullPage: true });
