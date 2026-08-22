@@ -44,9 +44,48 @@ name: Visual baselines
 #
 # default_workflow_permissions hålls kvar på read — approve-halvan är
 # verkningslös här (ruleset main-skydd kräver 0 approvals).
+#
+# ── RIKTAD KÖRNING (TASK-298, 2026-08-22) ────────────────────────────────
+# Workflowen var allt-eller-inget: hela sviten kördes med --update-snapshots
+# och steget failar hårt, så EN familjs röda test blockerade hela födseln.
+# Mätt i run 32587783890: 238 passed, 8 failed — samtliga åtta i
+# hem-familjen — och därmed skapades ingen PR alls, så notisfamiljens och
+# personlistans baslinjer kunde inte födas.
+#
+# Den valfria inputen `specfilter` ger en riktad väg ut. Tre egenskaper bär
+# den, och alla tre är grindade av scripts/test-visual-baselines-scope.sh:
+#
+#   1. DEFAULT ÄR OFÖRÄNDRAT. Tom input kör byte-identiskt kommando och ger
+#      byte-identisk PR-titel som före TASK-298. Riktad körning är ett
+#      medvetet undantag, aldrig normalvägen.
+#   2. SCOPET SYNS FÖR GRANSKAREN. En riktad körning märks i grennamnet, i
+#      PR-titeln OCH i PR-kroppen, där filtret och de faktiskt körda
+#      spec-sökvägarna skrivs ut. En baseline-PR med en delmängd får aldrig
+#      kunna läsas som en fullständig födsel — det är hela skillnaden mellan
+#      ett verktyg och en fälla.
+#   3. FAIL-CLOSED. scripts/visual-baselines-scope.sh prövar inputen och
+#      löser upp den mot Playwrights egen fil-lista FÖRE bildgenereringen.
+#      Skräp-input, ledande bindestreck, radbrytning, överlängd eller noll
+#      matchande specar dödar jobbet där — aldrig en tom PR, aldrig en tyst
+#      full körning.
+#
+# GRANSKNINGSGRINDEN ÄR ORÖRD: samma GITHUB_TOKEN, samma permissions-block,
+# samma approval-required-läge. Inputen är dessutom RÅ exakt en gång — i
+# scope-stegets env: — och varje steg därefter läser det VALIDERADE värdet
+# ur steps.scope.outputs. Ingen ${{ }}-interpolation i något run-block.
 
 on:
   workflow_dispatch:
+    inputs:
+      specfilter:
+        description: >-
+          Valfritt. Regex mot spec-SÖKVÄGEN (Playwrights positionsfilter),
+          t.ex. personer-promoverings-grind eller notis-visual|personer.
+          LÄMNA TOMT för hela sviten — det är normalvägen. En riktad körning
+          märks tydligt i PR:ens titel och kropp.
+        required: false
+        default: ''
+        type: string
 
 permissions: {}
 
@@ -78,6 +117,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # FAIL-CLOSED-GRINDEN. Ligger MEDVETET före browser-installationen:
+      # `playwright test --list` startar varken webbserver eller webbläsare
+      # (mätt 2026-08-22 — exit 0 med PLAYWRIGHT_BROWSERS_PATH mot en tom
+      # katalog), så skräp-input dör innan jobbets dyra halva börjar.
+      # Detta är den ENDA plats där den råa inputen når ett skal, och den
+      # når det som en env-variabel — aldrig via ${{ }} i ett run-block.
+      - name: Avgränsa körningens scope (fail-closed)
+        id: scope
+        env:
+          VISUAL_SPECFILTER: ${{ inputs.specfilter }}
+        run: bash scripts/visual-baselines-scope.sh
+
       - name: Cache Playwright browsers
         uses: actions/cache@v6.1.0
         id: playwright-cache-baselines
@@ -93,13 +144,29 @@ jobs:
       # --update-snapshots (preset "changed") skriver om varje baseline vars
       # faktiska rendering avviker och föder saknade — exit 0 även vid
       # omskrivning (födsel-läget, aldrig grind-läget).
+      # Filtret läses ur scope-stegets VALIDERADE utdata, aldrig ur inputen
+      # igen — det som passerar hit har redan lösts upp mot en verklig spec.
+      # Den tomma grenen är byte-identisk med kommandot som kördes före
+      # TASK-298 och grindas som invariant av testsviten.
       - name: Generera baselines i linux-miljön
-        run: npm run test:visual -- --update-snapshots
+        env:
+          FILTER: ${{ steps.scope.outputs.filter }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${FILTER}" ]]; then
+            npm run test:visual -- --update-snapshots
+          else
+            npm run test:visual -- --update-snapshots "${FILTER}"
+          fi
 
       - name: Öppna baseline-PR om bilderna ändrats
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ github.run_id }}
+          SCOPE: ${{ steps.scope.outputs.scope }}
+          FILTER: ${{ steps.scope.outputs.filter }}
+          ANTAL_TESTER: ${{ steps.scope.outputs.antal_tester }}
+          SPECFILER: ${{ steps.scope.outputs.specfiler }}
         run: |
           set -euo pipefail
           # -uall: porcelain kollapsar annars en helt ospårad katalog till EN
@@ -107,7 +174,25 @@ jobs:
           # vid 12 födda bilder, run 30079805732).
           if git status --porcelain -uall -- tests/visual/__screenshots__ | grep -q .; then
             antal=$(git status --porcelain -uall -- tests/visual/__screenshots__ | wc -l | tr -d ' ')
-            gren="visual-baselines/run-${RUN_ID}"
+            # SCOPET SYNS PÅ TRE STÄLLEN — grennamn, titel och kropp. En
+            # baseline-PR som bär en delmängd får aldrig kunna läsas som en
+            # fullständig födsel; frånvaron av en markör är en för svag
+            # signal (den kan lika gärna betyda gammal workflow-version), så
+            # BÅDA lägena skriver ut sin omfattning positivt.
+            if [[ "${SCOPE}" = "riktad" ]]; then
+              # De enkla citaten nedan bär MARKDOWN till PR-kroppen — de
+              # bakåtcitaten ska förbli literaler, inte kommandosubstitution.
+              # shellcheck disable=SC2016
+              speclista=$(printf '%s\n' "${SPECFILER}" | sed 's|^|- `|; s|$|`|')
+              gren="visual-baselines/riktad-run-${RUN_ID}"
+              titel="test(visual): RIKTAD baseline-uppdatering ur CI (${antal} bilder — filter: ${FILTER})"
+              # shellcheck disable=SC2016
+              omfattning=$(printf '**OMFATTNING: RIKTAD KÖRNING — EN DELMÄNGD, INTE EN FULLSTÄNDIG BASELINE-FÖDSEL.**\n\nDispatchen kördes med filtret `%s`, och ENDAST dessa specar kördes (%s matchande tester):\n\n%s\n\nVarje baslinje UTANFÖR listan ovan är ORÖRD av denna körning. Att en vy saknas i diffen betyder alltså INTE att den är oförändrad — den kördes aldrig. Läs diffen som en delmängd.' "${FILTER}" "${ANTAL_TESTER}" "${speclista}")
+            else
+              gren="visual-baselines/run-${RUN_ID}"
+              titel="test(visual): baseline-uppdatering ur CI (${antal} bilder)"
+              omfattning='**OMFATTNING: HELA visual-sviten** — dispatchen kördes utan filter-input. Detta är en fullständig baseline-födsel.'
+            fi
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git checkout -b "${gren}"
@@ -115,9 +200,9 @@ jobs:
             git commit -m "test(visual): baseline-uppdatering ur CI (run ${RUN_ID})"
             git push origin "${gren}"
             gh pr create \
-              --title "test(visual): baseline-uppdatering ur CI (${antal} bilder)" \
-              --body "$(printf 'CI-födda linux-baselines från visual-baselines-run %s (%s ändrade/nya bilder).\n\nGRANSKNINGSPLIKT: varje bild i diffen definierar vad som hädanefter anses KORREKT — granska att vyerna ser ut som de SKA innan merge. CI:n på denna PR står i approval-required-läge (Approve workflows to run) tills en granskare släpper den; det är avsiktligt — samma blick som godkänner bilderna släpper grinden.' "${RUN_ID}" "${antal}")"
-            echo "Baseline-PR öppnad (${antal} bilder) — granska och godkänn."
+              --title "${titel}" \
+              --body "$(printf 'CI-födda linux-baselines från visual-baselines-run %s (%s ändrade/nya bilder).\n\n%s\n\nGRANSKNINGSPLIKT: varje bild i diffen definierar vad som hädanefter anses KORREKT — granska att vyerna ser ut som de SKA innan merge. CI:n på denna PR står i approval-required-läge (Approve workflows to run) tills en granskare släpper den; det är avsiktligt — samma blick som godkänner bilderna släpper grinden.' "${RUN_ID}" "${antal}" "${omfattning}")"
+            echo "Baseline-PR öppnad (${antal} bilder, scope ${SCOPE}) — granska och godkänn."
           else
-            echo "Inga baseline-ändringar — renderingen matchar incheckade bilder."
+            echo "Inga baseline-ändringar (scope ${SCOPE}) — renderingen matchar incheckade bilder."
           fi
