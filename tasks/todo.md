@@ -200,6 +200,11 @@ indexraderna kortade efter att radlängdstaket fällde första formen).
 **KVAR I SPÅRET:** `284.4` DoD #6 (väntar `TASK-291`) · `T161` ADR-122-
 amendering · fälla 52 prod · `TASK-292` grillning i egen session · Lottas
 besked.
+**DEL 13 (2026-08-22): `T161` STÄNGD** — ADR-122 § Fynd 1 rättat öppet
+(`Event (namn)` är formel, ej uppslag) + daterad § Updates-post; beslutet
+står, bygget var rätt. **S110:s scope är levererat i sin helhet** — kvar
+har egna bärare (`TASK-291`/`292`/`293`, fälla 52 via T16, Lottas besked).
+Stängning (N+1) är nästa form.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
 pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA

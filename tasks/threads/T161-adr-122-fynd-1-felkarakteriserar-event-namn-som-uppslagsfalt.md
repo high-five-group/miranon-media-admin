@@ -1,9 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-08-21
+updated: 2026-08-22
 review_by: 2026-11-21
 status: stable
-lifecycle: paused
+lifecycle: closed
 ---
 
 # T161 — `ADR-122` § Fynd 1 felkarakteriserar `Event (namn)` som uppslagsfält
@@ -71,3 +71,16 @@ uppslag, och `Datum (from Event)` skapades i `TASK-284.1`. Det är det
 - `ADR-100` § 1 (sanningshierarkin): vid motsägelse mellan ADR-prosa och
   datakällans faktiska schema vinner den yta domäntabellen pekar ut för
   fält-data — `data-model.md`, inte ADR:n.
+
+## Hur tråden stängdes (2026-08-22)
+
+Marcus kvitterade amenderingen (*"Ta T161 då"*, S110 Del 13). § Fynd 1 i
+`ADR-122` är rättat på plats med synlig markering — `Event (namn)` står nu
+på påstående-sidan med formeln utskriven — och en daterad post i
+`ADR-122` § Updates bär rivningen, varför beslutet står, och varför posten
+är värd att minnas: en ADR som påstår live-verifiering läses inte om.
+
+Bekräftat efter stängningen av det skarpa provet i prod (`284.6`,
+2026-08-22): kurs-axeln fällde på *"Fjärrskådning" vs "Resor i medvetandet
+1"* — facit-sidan läser `Eventplanering.Event (text)`, inte `Event (namn)`.
+Tautologin som tråden varnade för finns inte i bygget.
