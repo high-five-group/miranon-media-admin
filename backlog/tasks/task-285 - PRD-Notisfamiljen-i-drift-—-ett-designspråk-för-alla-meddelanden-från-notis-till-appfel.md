@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 10:45'
+updated_date: '2026-08-22 19:35'
 labels: []
 dependencies: []
 ordinal: 515000
@@ -113,3 +114,26 @@ Nio skivor: referenser+flipp av notisen · chunk-bannerns flytt och kortning · 
 - [ ] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
 - [ ] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BOKFÖRING 2026-08-22 (S109, bokföringspass). Kortet hade ingen notes-sektion; denna är den första — ingen befintlig text ersattes.
+
+ALLT BYGGE ÄR KLART. Samtliga tolv bygg- och beslutsskivor i familjen är stängda:
+- TASK-285.1 Uppdateringsnotisen promoverad · 285.2 Meddelanderutan får familjeformen · 285.3 Appfel-sidan i familjeformen
+- TASK-285.4 Spec- och ORDLISTA-skörden · 285.5 Chunk-bannern under sidans rubrik · 285.6 Offline-beskedet som överlagrad notis
+- TASK-285.7 Sektionsfel vid chunk-fel säger Ladda om · 285.8 Copy-svepet · 285.9 Härdning (axe, kontrast, reduced-motion, konsumentsvep)
+- TASK-285.10 Marcus granskar skarpa mot facit och stämplar · 285.13 Beslut: vem äger "Ladda om" vid chunk-krasch
+- TASK-285.11 — Done 2026-08-22 (rivning av prototyp-substratet + visual-baslinjen som regressionslås)
+
+DET SISTA LÅSET ÄR SATT. TASK-285.11:s AC #4 stod öppen ända till idag därför att en baslinje-födsel hade skrivit om personlistans pixel-lås mitt under TASK-283:s pågående formändring. Den väntan är betald: workflow_dispatch-run 32591327919 födde 16 linux-baslinjer, landade som PR #1811 (merge 918b6576, 2026-08-22T19:11:16Z). Notisfamiljens ytor däri: notis-visual, offline-visual och chunk-banner-visual (två linux-bilder var). Meddelanderutan bär i stället ett aria-lås — dess spec har noll toHaveScreenshot och fyra toMatchAriaSnapshot, och de åtta referenserna är sha256-innehållslåsta i facit-manifestet (check-facit invariant d). Mekaniken står utskriven på TASK-285.11.
+
+MARCUS HAR GRANSKAT FORMEN OCH STÄMPLAT — båda manifesten (s109-uppdateringsnotis-konvergens och s109-meddelandefamiljen-konvergens) bar godkand: marcus FÖRE rivningen, verifierat ur filerna av 285.11 och grindat av check-facit.sh.
+
+VAD SOM ÅTERSTÅR: TASK-285.12 — QA: Notisfamiljen, manuell vandring genom alla meddelanden, mobil och desktop, skärmläsare. Den är AVSTÅDD PÅ MARCUS BESLUT 2026-08-22, verbatim: "Nej inget Q&A, skit i det. Gör klart allt de andra."
+
+KORTET STÅR DÄRFÖR ÖPPET MED AVSIKT — INTE AV GLÖMSKA. Att sätta en PRD till Done medan dess QA-skiva är oöppnad är ett PÅSTÅENDE om att arbetet är verifierat i drift. Det påståendet är inte sant här. Arbetet är byggt, granskat av Marcus på FORMEN, och stämplat — men ingen har vandrat igenom det i ANVÄNDNING. För just denna familj är avståndet extra tydligt: axe-svep och kontrastmätningar (285.9) är mekaniska mätningar av en yta, inte en skärmläsarvandring genom ett verkligt meddelandeflöde. Prod-incidenten samma dag visade samma skillnad från andra hållet — allt grönt i repot medan Lotta såg 50 av 559 personer.
+
+Kortet stängs när QA-skivan antingen körts eller formellt avskrivits av Marcus som en egen, bokförd handling — inte som en sidoeffekt av att bygget blev klart.
+<!-- SECTION:NOTES:END -->

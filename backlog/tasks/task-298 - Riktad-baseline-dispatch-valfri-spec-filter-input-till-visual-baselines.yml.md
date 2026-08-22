@@ -1,10 +1,10 @@
 ---
 id: TASK-298
 title: 'Riktad baseline-dispatch: valfri spec-filter-input till visual-baselines.yml'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 18:00'
-updated_date: '2026-08-22 18:36'
+updated_date: '2026-08-22 19:33'
 labels: []
 dependencies: []
 ordinal: 540000
@@ -27,10 +27,10 @@ Baslinje-workflowen är allt-eller-inget: en enda familjs röda test blockerar h
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -49,4 +49,40 @@ SKARPA DISPATCHER (gh workflow run mot grenen):
 - 32590836137 DEFAULT (ingen input) -> 'SCOPE: FULL', kommandot byte-identiskt utan filterargument, 'Running 246 tests using 2 workers', 238 passed / 8 failed på samma hem-familjer som baslinjemätningen 32587783890. Default-vägen oförändrad, mätt.
 
 PR-TEXTEN: båda varianterna renderade lokalt ur workflowens egna rader med CI:s faktiska env-värden. Default-titeln byte-identisk med den gamla.
+
+---
+
+STÄNGNING 2026-08-22 (S109, bokföringspass — CI-svansen mätt, kortet sätts Done). Bygg-agenten lämnade kortet To Do därför att CI-svansen ägs av orkestreraren; här är den.
+
+LANDNING: PR #1808, gren feat/riktad-baseline-dispatch, merge 52afa77ae20f9ec23e5abca760657a651dc1286c, mergedAt 2026-08-22T18:54:05Z.
+
+DoD #3 — CI GRÖN PER JOBB, mätt jobb för jobb (gh pr checks 1808), inte som rollup:
+- Lint + Audit + TypeCheck: pass (2m15s, job 97075522087)
+- Test suite / Pure + Build: pass (45s)
+- Test suite / Acceptance (hermetisk): pass (6m48s)
+- Test suite / Acceptance — tvasidigt bevis (hermetik-sjalvtest): pass (6m58s)
+- Test suite / Webblasarbeteende: pass (2m2s)
+- Docs link check: pass (41s)
+- Detect changed files: pass (12s) · CI Passed or Skipped: pass (4s)
+- Analyze (actions): pass (39s) · Analyze (javascript-typescript): pass (1m8s) · CodeQL: pass
+- Vercel: pass (deployment completed)
+- Korrekt SKIPPING (ingen rörd staging-/a11y-yta): Test suite / A11y (axe-runner), Test suite / Staging (API + E2E), Test suite / Staging sentinel purge
+Noll fällda jobb. Notera att den CI-wirade scope-sviten fyrade skarpt i lint-jobbet, precis som kortets eget AC #5-belägg säger: "test-visual-baselines-scope: 26/26 gröna".
+
+DoD #2 — RÖRD FIL-KLASS, LOKALA GRINDAR OM-MÄTTA i denna worktree mot main 918b6576, exitkoder fångade separat (aldrig via pipe, L440):
+- actionlint -color -ignore 'unexpected key "queue" for "concurrency" section' (CI:s exakta form): exit 0
+- shellcheck --severity=style --enable=all scripts/visual-baselines-scope.sh scripts/test-visual-baselines-scope.sh: exit 0
+- yamllint -c .yamllint.yml .github/workflows/visual-baselines.yml .github/workflows/ci.yml: exit 0
+- bash scripts/test-visual-baselines-scope.sh: exit 0, 26/26 gröna
+- npm run check:docs (markdown-klassen, CONTRIBUTING.md + T87 + kortet): se PR:en för detta bokföringspass
+Diffen rör ingen src/-fil, så check-langa-streck.mjs är inte tillämplig. test:api ej körd — känd främmande röd på main (13 i api-staging, TASK-284-spåret, S110).
+
+DoD #4 — INGA ORELATERADE FILER, hela filmängden i #1808 uppräknad och var och en i scope:
+- .github/workflows/visual-baselines.yml (kortets yta) · .github/workflows/ci.yml (wiringen av scope-sviten)
+- scripts/visual-baselines-scope.sh (grinden) · scripts/test-visual-baselines-scope.sh (tvåsidiga beviset, AC #5)
+- CONTRIBUTING.md (dispatch-formen dokumenterad) · tasks/threads/T87-visual-grind-aktivering.md (trådens egen yta)
+- backlog/tasks/task-298 (kortet, samma commit som koden)
+Sju filer, noll orelaterade.
+
+DoD #1 bockad som följd: samtliga fem AC var redan avbockade av bygg-agenten mot mätta belägg.
 <!-- SECTION:NOTES:END -->

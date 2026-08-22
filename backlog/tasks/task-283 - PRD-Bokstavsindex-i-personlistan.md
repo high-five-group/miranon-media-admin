@@ -4,7 +4,7 @@ title: 'PRD: Bokstavsindex i personlistan'
 status: To Do
 assignee: []
 created_date: '2026-08-21 08:41'
-updated_date: '2026-08-21 11:34'
+updated_date: '2026-08-22 19:35'
 labels: []
 dependencies: []
 ordinal: 509000
@@ -135,6 +135,26 @@ Styrande i området, alla oförändrade av detta kort: **ADR-056** (cursor-pagin
 - [ ] #7 Sentinelen undantagen ur E-filtret — bevisat med testfall, aldrig antaget (fälla 51)
 - [ ] #8 Varje bokstavsknapp minst 24x24 CSS-px — mätt i renderad yta, aldrig läst ur en klass (WCAG 2.5.8 AA)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BOKFÖRING 2026-08-22 (S109, bokföringspass). Kortet hade ingen notes-sektion; denna är den första — ingen befintlig text ersattes.
+
+ALLT BYGGE ÄR KLART. Samtliga bygg-skivor i familjen är stängda:
+- TASK-283.1 — Done med label wontfix. Skivan UTGÅR: Marcus valde väg B ("Då kör vi B!", S109 Del 7), förladdat personregister med sök i klienten (ADR-123). Personer-EF:en behöver därmed inget serverside bokstavsfilter; bokstavsindexet byggs ovanpå den klientsorterade arrayen TASK-286.3 levererade.
+- TASK-283.2 — Done (bokstavsraden under sökrutan, tracer bullet)
+- TASK-283.3 — Done (tomma bokstäver nedtonade, raden byter aldrig längd)
+- TASK-283.4 — Done 2026-08-22 (facit-låset omsatt: sex ARIA-referenser regenererade i PR #1802, Marcus omstämpling landad i PR #1803, personlistans pixel-baslinjer i PR #1811)
+
+MARCUS HAR GRANSKAT FORMEN OCH STÄMPLAT. Verbatim, efter att ha sett den färdiga bokstavsraden i körande app: "Ser ju skitbra ut! Bra jobb Claude!" Stämpeln står i tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json (godkand.datum 2026-08-22, godkand.sha d4997b5afcd20f9a3abb1579aac0ef73fbc96ad7).
+
+VAD SOM ÅTERSTÅR: TASK-283.5 — QA: Bokstavsindex i personlistan, manuell vandring. Den är AVSTÅDD PÅ MARCUS BESLUT 2026-08-22, verbatim: "Nej inget Q&A, skit i det. Gör klart allt de andra."
+
+KORTET STÅR DÄRFÖR ÖPPET MED AVSIKT — INTE AV GLÖMSKA. Att sätta en PRD till Done medan dess QA-skiva är oöppnad är ett PÅSTÅENDE om att arbetet är verifierat i drift. Det påståendet är inte sant här. Arbetet är byggt, granskat av Marcus på FORMEN, och stämplat — men ingen har vandrat igenom det i ANVÄNDNING. Skillnaden mellan de två är inte teoretisk: prod-incidenten samma dag visade exakt den, där allt var grönt i repot medan Lotta såg 50 av 559 personer. Ett grönt repo är inte ett fungerande system.
+
+Kortet stängs när QA-skivan antingen körts eller formellt avskrivits av Marcus som en egen, bokförd handling — inte som en sidoeffekt av att bygget blev klart.
+<!-- SECTION:NOTES:END -->
 
 ## Comments
 
