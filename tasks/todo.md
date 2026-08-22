@@ -319,7 +319,23 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ⏸️ PAUSAD (femte gången, 2026-08-22, `lifecycle: paused`) —
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, sjätte resumen;
+pausad fem gånger, historik) — MARCUS-SEKVENS PUNKT 3 NÄSTA: FÖRHANDS-
+GRANSKNINGEN SOM RIKTIG PDF I NY FLIK.** Marcus order: *"Återuppta S108."*
+Egen worktree per ADR-090 beslut 2 — huvudkatalogen ägs av lapp `03bc2d12`
+(PID 28332, satt 2026-08-22T08:05:20Z, hookens liveness-prov: **levande**);
+dok-trädet `s108-paus-docs`, gren `docs/s108-resume-6` från `origin/main`
+`d4997b5a`. **Paus-PR `#1801` verifierad landad** (`2794127d`). **Numreringen
+re-verifierad mot disk vid resume: OFÖRÄNDRAD på varje post** — ADR **124** ·
+task-**296** · **L512** · 69 fragment (nästa **70**) · **T172** · **f53** ·
+session **112**. Inget arbetsform-läge aktivt i något träd (`arbetsform-
+tillstand.sh las`) — ingen ARBETSFORM-rad att återskapa; `iteration` sätts
+när punkt 3-varvet inleds. Båda S108-träden rena, 0 commits före
+`origin/main`. **NÄSTA: punkt 3 (förhandsgranskning → riktig PDF i ny flik,
+bilaga OCH kvitto) → 4 skapandet av bilagorna → 5 facit-lås → 6
+`ADR-124` → PRD/skivor → promovering (ADR-103).**
+
+**Session 108 ⏸️ PAUSAD (femte gången, 2026-08-22, `lifecycle: paused`, historik) —
 PROTOTYPEN LANDAD EFTER 18 VARV, MALLARNA MÄTTA MOT ROGERS FÖRLAGOR,
 KVITTOTS INNEHÅLL BYGGT — FORMEN KVAR.** Egen worktree `s108-bilagesparet`
 (ADR-090 beslut 2), gren `docs/s108-resume` — **PUSHAD** (18 commits,
