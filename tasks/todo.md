@@ -298,7 +298,11 @@ dem · föräldrakorten `283`/`285`/`286` står medvetet `To Do` med skälet bok
 i vart och ett · `TASK-286.8` (prod-utrullning, EF före frontend) · `TASK-288`
 (22 ytor utan `referenser`) · `TASK-289` (A2-latensen) · `TASK-295`
 (kontrast-flaken) · `TASK-296` (`preview-receipt`-varningen) · `TASK-300` ·
-`T173` · dependabot `#1489` står `CLEAN`, odraftad och oarmerad (samma klass som
+`T173` · **tio S109-kort står `Done` med obockade DoD-punkter**
+(`check-backlog-closure.sh` exit 1, mätt vid stängning: `283.1`, `283.3`,
+`283.4`, `285.5`, `285.6`, `285.10`, `286.1`, `286.3`, `286.4`, `286.5` —
+grinden läser kryssrutan, inte adjudikeringen, och är `nightly.yml`-wirad) ·
+dependabot `#1489` står `CLEAN`, odraftad och oarmerad (samma klass som
 `#1487`/`#1490`/`#1491`) · fem filer bär kvar en död pekare till det
 konsoliderade fragmentet `parkerad-pr-utan-draft-…md` (nu `L485` i
 `tasks/lessons/vol-06.md`) — `CLAUDE.md`:s rättades i `#1816`. **Hub-lyftet av
