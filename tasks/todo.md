@@ -182,6 +182,17 @@ rättat för 197/960 med spårbarhetsrad → prod-kön **3** (exakt Lottas);
 `data-model.md` bär nu båda basernas ID:n. AC #1–2 bockade. **NÄSTA: steg 2 —
 A1 i prod (AC #3), Marcus i UI:t per `T167`, nytt GO → skarpt prov (AC #4)
 → städning (AC #5).**
+**DEL 11 (2026-08-22): VAKTEN ÄR LIVE I PROD.** Marcus bytte A1 i UI:t
+(`T167`-vägen); verifierat via API: skriptsteg `wac9BCTqQeSRQQrrx`, `anmId →
+trigger.id`, express-gruppen intakt, skriptet = stagings. UI-testets
+"Anmälan not found" var Airtables cachade trigger-testrad, inte bygget
+(ID:t finns i ingen tabell; fail-closed före skrivning). Skarpt prov (GO
+AC4) mot Event-59: avvikande 990 **vägrad** (tom Event, Error-log-diff,
+inga Deltaganden) · korrekt 991 **länkad** + OK + A3-Deltaganden — prod
+mäter kedjan A1→A2→A3→A12. Nio poster städade i beroendeordning, prod-kön
+exakt 3, Event-59 tillbaka på 16. **`284.6` AC #1–6 bockade.** **NÄSTA:
+Done-stängning av `284.5` + `284.6` efter grön CI → stäng `284` PRD,
+`TASK-232`, `T167`, `T168` → `284.4` DoD #6 väntar `TASK-291`.**
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
 pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA
