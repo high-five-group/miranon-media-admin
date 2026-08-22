@@ -103,35 +103,33 @@ ADR **124** · kort **288+** · **L512** + 61 fragment · tråd **T168**
 (S110 mintade `T161`/`T164`/`T165`/`T166`/`T167`) · fälla **53** ·
 session 111. Full narrativ: sessionsdok S110 Del 1–6 + Paushistorik.
 
-**Session 109 ▶️ ÅTERUPPTAGEN (2026-08-21, `lifecycle: active`, historik; pausad två
-gånger 2026-08-21) — NOTISFAMILJEN BYGGD FÄRDIG: TJUGO LANDNINGAR, ALLT
-KVARVARANDE ÄR MARCUS.** Marcus AFK hela passet; orkestreraren ägde svepet
-manuellt (heartbeat-ordern 2026-08-19 står). **NIO SKIVOR** landade familjen:
-`285.1` Notis-primitiven + flippen · `285.2` MessageBox (kryss-regeln kodad i
-TYPEN) · `285.3` appfelet · `285.4` § 21 + ORDLISTA + `T160` · `285.5`
-chunk-bannern in i skalet · `285.6` offline staplat · `285.7` sektionsfelets
-"Ladda om" · `285.8` copy-svepet · `285.9` härdningen (noll `src/`-ändringar).
-Plus `286.1` EF-registerläget, `TASK-287` B3-markörerna, kontraktsfixen,
-`T162`, `T163`, beslutskortet `285.13` och förkraven på `285.10`/`285.11`.
-**TVÅ FALL SOM SER IDENTISKA UT:** `286.2` och `285.8` uppdaterade båda
-ariaSnapshot-referenser i samma commit som en formändring — det ena STOPPAT
-(`#1715`, facit `godkand: marcus 2026-08-10`), det andra armerat (`#1730`,
-`godkand: null`). Ett ogodkänt facit MÅSTE få sina referenser uppdaterade av
-sin egen skiva; ett stämplat får det inte. Att skillnaden avgörs av omdöme
-varje gång ÄR `T157`:s lucka — två instanser på ett dygn. **TRE FYND överlevde
-till Marcus** därför att agenter avstod från att lösa det som inte var deras:
-två konkurrerande `role="alert"` (`285.13`) · härdningen kan strukturellt inte
-se den kollisionen · manifestet friskriver copy för en yta men föreskriver den
-för en annan (`285.10` AC #4–#5). **ORKESTRERARENS EGNA FEL bokförda i Del 12
-§ D:** vågplaneringen litade på deklarerad konfliktyta i stället för att mäta
-(fyra rebase-rundor via bevis-substratet) · väntan påstådd utan mekanism
-(stop-vakten fällde; rättat med bundna bakgrundsvakter, fyra fyrade korrekt) ·
-egen gräns skapade `TASK-287`:s residual. **ALLT KVARVARANDE ÄR BLOCKERAT PÅ
-MARCUS:** `#1715` (stämplat facit → hela personregister-spåret) · `285.13` (vem
-äger "Ladda om" → `285.10`) · `285.10` AC #4–#5. Varje `ready-for-agent`-kort
-är beroendespärrat bakom ett av dem, inventerat mot korten. Numrering vid
-Del 12: ADR **124** · kort **288** · L512 + **62 fragment** · tråd **T169** ·
-fälla **53** · session 111. Full narrativ: sessionsdok S109 Del 10–12.
+**Session 109 ⏸️ PAUSAD (tredje gången, 2026-08-22, `lifecycle: paused`) —
+NOTISFAMILJEN BYGGD FÄRDIG; ALLT KVARVARANDE ÄR TRE MARCUS-BESLUT.** Marcus AFK
+hela passet; orkestreraren ägde svepet manuellt (heartbeat-ordern 2026-08-19
+står), landnings-väckningen bars av bundna bakgrundsvakter per PR (fyra fyrade:
+13/13/11/13 varv). **TJUGOEN PR:er landade**, `main` **`2682457a`**, arbetsträdet
+rent. **NIO SKIVOR** bygger familjen: `285.1` primitiven + flippen · `285.2`
+MessageBox (kryss-regeln kodad i TYPEN) · `285.3` appfelet · `285.4` § 21 +
+ORDLISTA + `T160` · `285.5` chunk-bannern in i skalet · `285.6` offline staplat ·
+`285.7` sektionsfelets "Ladda om" · `285.8` copy-svepet · `285.9` härdningen
+(noll `src/`-ändringar). Plus `286.1` EF-registerläget, `TASK-287`
+B3-markörerna + grindens ärliga framgångsrad, kontraktsfixen (`check-langa-streck`
+in i agentkontraktet), `T162`, `T163`, beslutskortet `285.13` och förkraven på
+`285.10`/`285.11`. **PERSONREGISTRET HALVBYGGT:** `286.1` landad, `286.2`
+(`#1715`) klar och grön men PARKERAD. **TRE BESLUT VÄNTAR (i ordning):**
+(1) `#1715` — `286.2` skriver om ett STÄMPLAT facit (`godkand: marcus
+2026-08-10`); enda borttagningen är `button "Ladda fler"`, en fixtur-artefakt
+(17 personer, `PAGE_SIZE` 50), ingen produktregression — men ingen grind fällde
+och stämpeln intygar nu en form referensen saknar; **blockerar `286.3`, `286.4`,
+`283.2`, `283.3`**. (2) `285.13` — vem äger "Ladda om" när chunk-bannern och
+sektionsfelet monteras samtidigt med identiskt tillgängligt namn; **blockerar
+`285.10`**. (3) `285.10` AC #4–#5 — facit-noten inaktuell + manifestet
+inkonsekvent om copy. **`T157` FICK TVÅ INSTANSER PÅ ETT DYGN** och är
+fortfarande oskriven — stämplat vs ogodkänt facit avgörs av omdöme i stunden.
+Worktree-städning vid paus: 14 borttagna, grenar `202 → 175`. Numrering vid
+paus 3: ADR **124** · kort **288** · L512 + **62 fragment** · tråd **T169** ·
+fälla **53** · session 111. Full narrativ: sessionsdok S109 Del 10–12 +
+PAUSLÄGE.
 
 **Session 109 ⏸️ PAUSAD (andra gången, 2026-08-21, `lifecycle: paused`, historik) — ALLT
 SKIVAT FÖR AUTONOMT BYGGE: NOTISFAMILJEN (`TASK-285`, 12 kort) OCH PERSONREGISTRET
