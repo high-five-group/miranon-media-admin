@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:43'
+updated_date: '2026-08-22 19:35'
 labels: []
 dependencies: []
 ordinal: 515000
@@ -92,3 +93,28 @@ Fyra byggskivor + ett beslutskort + QA. Storleksklass: medel (två till tre daga
 - [ ] #6 Facit-referenserna för personlistan (tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan) gröna — formen är orörd
 - [ ] #7 Inga nätverksanrop vid skrivning efter första laddningen — mätt i testet, inte antaget
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BOKFÖRING 2026-08-22 (S109, bokföringspass). Kortet hade ingen notes-sektion; denna är den första — ingen befintlig text ersattes.
+
+ALLT BYGGE ÄR KLART. Samtliga bygg- och beslutsskivor i familjen är stängda:
+- TASK-286.1 Adaptern och EF:en lär sig hela registret (breddad fullwalk, laddtid mätt)
+- TASK-286.2 Listan byter källa — tracer bullet, registret i cachen, sök i klienten med bevisad paritet
+- TASK-286.3 Svensk sortering, räknarrad ur arrayen, rivning av sök-walken
+- TASK-286.4 Invalidering i varje person-skrivväg, bevisad — sedan 30 minuters cache
+- TASK-286.5 Beslut: diakritik-tolerant personsök (JA) · TASK-286.7 Personsök blir diakritik-tolerant (asa hittar Åsa)
+
+VAD SOM ÅTERSTÅR — TVÅ POSTER, INTE EN:
+
+1. TASK-286.6 — QA: Personregistret, manuell vandring (skriv tecken för tecken, offline, ny person, bokstavsraden). AVSTÅDD PÅ MARCUS BESLUT 2026-08-22, verbatim: "Nej inget Q&A, skit i det. Gör klart allt de andra."
+
+2. TASK-286.8 — Prod-utrullning: personregistrets Edge Function, EF före frontend. Status To Do, label ready-for-human, prioritet HIGH, skapad 2026-08-22 17:34. Detta är ett MARCUS-MOMENT som strukturellt inte kan köras av en agent: scripts/deny-prod-ref.sh matchar prod-refens närvaro i hela Bash-kommandosträngen och avvisar anropet. Vägen är bash scripts/fas4-prod-deploy.sh --deploya PROD-REF i Marcus egen terminal eller via !-prefixet.
+
+DEN ANDRA POSTEN ÄR SJÄLVA INCIDENTENS LÄRDOM, OCH DÄRFÖR VÄRD ATT LÄSA. TASK-286.8 skapades i efterhand därför att posten aldrig fanns när den behövdes: TASK-286-familjen fick aldrig ett prod-utrullningskort, till skillnad från S110:s parallella spår (TASK-284.6). Ingen rad i registret sa att Edge Functions måste följa med koden ut — och det var precis den luckan som lät klienten gå till prod före sin EF. Att stänga detta PRD-kort nu skulle stänga registret över exakt den lucka som orsakade incidenten.
+
+KORTET STÅR DÄRFÖR ÖPPET MED AVSIKT — INTE AV GLÖMSKA. Att sätta en PRD till Done medan dess QA-skiva är oöppnad är ett PÅSTÅENDE om att arbetet är verifierat i drift. Det påståendet är inte sant här. Arbetet är byggt, granskat av Marcus på FORMEN, och stämplat — men ingen har vandrat igenom det i ANVÄNDNING. Prod-incidenten samma dag visade precis den skillnaden: allt var grönt i repot medan Lotta såg 50 av 559 personer. För DENNA familj är det inte en analogi utan familjens egen incident.
+
+Kortet stängs när BÅDA posterna är avförda — QA-skivan körd eller formellt avskriven av Marcus som en egen bokförd handling, och prod-utrullningen verifierad mot artefakten (supabase functions list, UPDATED_AT — aldrig VERSION, och aldrig härledd ur git).
+<!-- SECTION:NOTES:END -->

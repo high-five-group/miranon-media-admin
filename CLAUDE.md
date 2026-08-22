@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-20
+updated: 2026-08-22
 review_by: 2026-11-15
 status: stable
 ---
@@ -513,7 +513,7 @@ andetag, aldrig vilande.** En PR skapas som draft ELLER armeras när den
 öppnas — `gh pr create --draft` eller `gh pr merge --auto` — CLEAN+oarmerad
 är aldrig ett vilande tillstånd. Svepet kan inte ur ett statiskt API-svar
 skilja en medvetet parkerad PR från en glömd
-(`tasks/lessons.d/parkerad-pr-utan-draft-ar-oskiljbar-fran-glomd.md`, mätt
+(`L485` i [`tasks/lessons/vol-06.md`](tasks/lessons/vol-06.md), mätt
 två gånger — `#838` 2026-08-06 och `#862` 2026-08-07, den andra gången av
 lärdomens egen författare, i samma session som skrev den). Ett svep-larm om
 armerings-kandidat är därför en ORDER till PR:ens ägare, inte enbart

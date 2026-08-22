@@ -1,10 +1,10 @@
 ---
 id: TASK-283.4
 title: 'Skiva: Facit amenderas — låset sätts om mot den nya formen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 08:55'
-updated_date: '2026-08-22 16:18'
+updated_date: '2026-08-22 19:31'
 labels:
   - ready-for-human
 dependencies:
@@ -33,19 +33,19 @@ Täcker användarberättelser: inga nya — säkrar formen som skiva 2 och 3 byg
 <!-- AC:BEGIN -->
 - [x] #1 Marcus har SETT den färdiga bokstavsraden i körande app och godkänt den i klartext
 - [x] #2 FÖRST därefter regenereras promoverings-grindens sex ARIA-referenser
-- [ ] #3 Facit-manifestet tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json bär en daterad amendering med Marcus citat, som säger vad som lagts till och vad som lämnats orört
+- [x] #3 Facit-manifestet tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json bär en daterad amendering med Marcus citat, som säger vad som lagts till och vad som lämnats orört
 - [x] #4 Samtliga sex referenser är gröna igen — det röda fönstret från skiva 2 är stängt
 - [x] #5 Regenereringen ligger i EGEN commit, aldrig i samma landning som formändringen
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Facit-manifestet amenderat med Marcus citat FÖRE ARIA-referenserna regenereras (ADR-102 väg A, T157)
-- [ ] #6 Personlistans rad- och listform granskad mot facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — bokstavsraden är ett TILLÄGG ovanför listan och rör inget låst formbeslut
+- [x] #6 Personlistans rad- och listform granskad mot facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — bokstavsraden är ett TILLÄGG ovanför listan och rör inget låst formbeslut
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -130,4 +130,22 @@ Kortet kan därför inte stängas förrän han kört den. facit.json och godkand
 PIXEL-BASLINJERNA (låset 2 i överlämningen ovan) är INTE tagna här — de föds i CI via workflow_dispatch mot visual-baselines.yml, aldrig lokalt, och är ett separat moment efter denna landning. Förkravet är mätt av orkestreraren: can_approve_pull_request_reviews: true.
 
 GRINDAR, exitkoder mätta separat: test:visual (grinden) 0 · check-facit.sh 0 · check:docs 0 (14 gröna) · biome 0 · typecheck 0. Diffen rör INGEN src/-fil, så check-langa-streck.mjs är inte tillämplig. test:api ej körd — känd främmande röd på main (13 i api-staging, TASK-284-spåret).
+
+---
+
+STÄNGNING 2026-08-22 (S109, bokföringspass — kortet sätts Done). Båda låsen i överlämningen ovan är nu satta, mätt mot GitHub och disk.
+
+LÅS 1, ariaSnapshot-referenserna: PR #1802 (merge d4997b5a, 2026-08-22T16:37:05Z, gren chore/task-283-4-facit-laset-satts-om) — de sex referenserna regenererade. CI per jobb: samtliga pass, med A11y/Staging/Staging-purge korrekt skipping (run 32584433951).
+
+LÅS 2, pixel-baslinjerna: PR #1811 (merge 918b6576, 2026-08-22T19:11:16Z) — 16 linux-baslinjer ur workflow_dispatch-run 32591327919 (conclusion success). Personlistans två egna ingår (personer.spec.ts desktop + mobile).
+
+AC #3 BOCKAD — vad som ändrades sedan raden skrevs. Kortet lämnade AC #3 obockad därför att manifest-halvan krävde Marcus egen !-kanal. Han har kört den: facit.json bär nu godkand.datum 2026-08-22, godkand.citat "Ser ju skitbra ut! Bra jobb Claude!" och godkand.sha d4997b5afcd20f9a3abb1579aac0ef73fbc96ad7, landat i PR #1803 (merge 3ecf3cc5, 2026-08-22T17:06:22Z, enda fil: facit.json). Kriteriets andra halva — "vad som lagts till och vad som lämnats orört" — bärs av de fyra AMENDERING-2026-08-22-*.md-sidofilerna, som samtliga bär Marcus citat (mätt: 2 träffar per fil). Det är den ENDA form ADR-102 § A3 tillåter: ett stämplat manifest är agent-fruset i sin helhet, "en amendering-NYCKEL i manifestets JSON är inte en möjlig form", och check-facit T25 fäller på den. Båda halvorna är därmed betalda i föreskriven form.
+
+DoD #5 LÄMNAD OBOCKAD, med mätning i stället för omdöme. Bokstaven lyder "Facit-manifestet amenderat med Marcus citat FÖRE ARIA-referenserna regenereras". Mätt är motsatt ordning: regenereringen landade 16:37:05Z, manifestets omstämpling 17:06:22Z — omstämplingen kom 29 minuter EFTER. Ingen läsning räddar bokstaven: sidofilerna låg i SAMMA commit som regenereringen (dcb06829, ensam commit i #1802), så inte heller de föregick den.
+
+Och bokstaven ÄR strukturellt omöjlig, inte bara ouppfylld. (a) ADR-102 § A1 klass (c) — som är väg A, ADR:ns egen rad: "Klass (c) är formen han valde för TASK-283-instansen 2026-08-21 (väg A, additiv amendering)" — föreskriver att sidofilen skrivs först och att omstämplingen LÄMNAS TILL MARCUS egen kanal; omstämplingen kommer per konstruktion sist. (b) Stämpeln bär regenereringens SHA (godkand.sha = d4997b5a = #1802:s merge), vilket kräver att regenereringen redan finns. (c) deny-facit-godkand-skrivning.sh fryser manifestet så att ingen agent kan skriva det i förväg. DoD #5-texten är ärvd ordagrant från föräldrakortet TASK-283, formulerad 2026-08-21 medan T157 fortfarande var en ÖPPEN tråd — den beskriver en mekanik som ännu inte fanns. ADR-102 § Updates 2026-08-22 är den mekaniken, och den säger emot raden.
+
+VAD SOM FAKTISKT SKYDDADES, och som ÄR uppfyllt: kortets enkelriktade ordning — Marcus ord FÖRE regenereringen. AC #1 och #2 bär den, belagd i notes ovan. Raden bokförs som en formuleringsskuld i DoD-mallen, inte som en obetald punkt i arbetet. Samma precedent som TASK-283.3, som sattes Done med sin DoD #5 motiverad i stället för bockad.
+
+ÖVRIGA DoD, mätta: #1 alla fem AC bockade · #2 grindarna i GRINDAR-raden ovan (test:visual 0, check-facit 0, check:docs 0, biome 0, typecheck 0) · #3 CI per jobb grön på båda landningarna (#1802 och #1803; #1803 docs-only, Test suite + Docs link check korrekt skipping) · #4 diffen path-scopad — #1802 bär kortet, fyra amenderings-sidofiler och sex aria-referenser, #1803 bär enbart facit.json, noll orelaterade filer i båda · #6 rad- och listformen mekaniskt granskad mot facit (listblocket extraherat före/efter, diff exit 0, nodmängden byte-identisk).
 <!-- SECTION:NOTES:END -->
