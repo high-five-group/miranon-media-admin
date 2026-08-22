@@ -3,10 +3,10 @@ id: TASK-285.4
 title: >-
   Skiva: Spec- och ORDLISTA-skörden — § 21 får yttrappan och kryss-regeln,
   Notistrappan ordlisteförs, ADR-121 § 8 stängs
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:02'
-updated_date: '2026-08-21 12:26'
+updated_date: '2026-08-22 08:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,7 +36,7 @@ Täcker användarberättelser: 19
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
 - [x] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
@@ -56,4 +56,6 @@ DoD #5 (facit-granskning): båda manifesten lästa och citerade ordagrant i spec
 - tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json
 
 T160 registrerad (tasks/threads/README.md rad + tasks/threads/T160-bekraftelsedialog-med-osparad-detektion-for-omladdning.md) per S109-handoffens öppna skuld. ADR-121 fick ett Updates-avsnitt som stänger § 8 med Marcus verbatim ("Kör på dina rekommendationer", källa: TASK-285 Implementationsbeslut).
+
+STÄNGNINGSPASS (register-only, 2026-08-22): PR #1697 (merge-SHA 836f0f64), CI grön per jobb (gh pr checks 1697 — Test suite skippad som docs-only, övrigt pass). DoD #4 dubbelkollad mot gh pr diff --name-only (6 filer, samtliga docs/spec/ordlista/ADR/tråd, inga orelaterade).
 <!-- SECTION:NOTES:END -->
