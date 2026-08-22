@@ -457,4 +457,31 @@ export interface DataSourceAdapter {
    * (se get-activity-log-EF:ens filhuvud för den fulla motiveringen).
    */
   fetchActivityLog(params?: ActivityLogParams): Promise<ActivityLogPage>;
+
+  /**
+   * Rendera en färdig, SJÄLVBÄRANDE HTML-sträng till PDF och returnera
+   * bytesen som `Blob` (S108 MARCUS-SEKVENS punkt 3, `ADR-119`).
+   *
+   * PROVISORISK ADRESS, PERMANENT FÖRMÅGA — läs skillnaden noga. Metoden
+   * uttrycker en förmåga datalagret ska ha: "gör PDF av denna HTML". VILKEN
+   * renderare som svarar är adapterns ensak, och i dag är svaret
+   * `test-docraptor-render` — en staging-only testharness-EF som är
+   * MEDVETET utelämnad ur `.prod-functions-allowlist.conf` och alltså
+   * saknas i produktion. Anropas metoden mot ett prod-projekt blir svaret
+   * 404, med avsikt: prototypvägen som använder den är dev-gatead
+   * (`src/routes/_authenticated/mer/dokument.tsx` § `protoAktiv`) och når
+   * aldrig en prod-byggd app. Vid promoveringen (`ADR-103`) byter adaptern
+   * adress till den skarpa renderings-EF:en — interfacet är då oförändrat.
+   *
+   * VARFÖR METODEN ÖVER HUVUD TAGET FINNS, i stället för ett `fetch` i
+   * komponenten: `ADR-057` klausul (a) förbjuder UI-lagret att importera
+   * EF-klienten. Prototypkod är inte undantagen från lager-invarianten —
+   * den granskas av samma fitness-audit som resten.
+   *
+   * `html` MÅSTE vara självbärande (stil, typsnitt och bilder som
+   * `data:`-URI:er) — renderaren kör i sitt eget nät och når ingenting
+   * relativt. Se `src/components/dokument/prototyp/sjalvbarande.ts`.
+   * `namn` är dokumentnamnet renderaren stämplar jobbet med.
+   */
+  renderPdfFranHtml(html: string, namn: string): Promise<Blob>;
 }

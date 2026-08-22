@@ -45,6 +45,7 @@ import {
   ChevronRight,
   Files,
   FileText,
+  Loader2,
   Pencil,
   Plus,
   Trash2,
@@ -70,8 +71,10 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { TextArea } from '@/components/primitives/TextArea';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
+import { useForhandsgranskaBilaga } from '@/data/mutations/useForhandsgranskaBilaga';
 import type { Event } from '@/domain/models/Event';
 import { cn } from '@/lib/cn';
+import { gorSjalvbarande } from './sjalvbarande';
 
 /* ------------------------------------------------------------------ *
  * FIXTURER
@@ -524,6 +527,15 @@ function datumMedAr(iso: string): string {
 function ochLista(delar: string[]): string {
   if (delar.length <= 1) return delar.join('');
   return `${delar.slice(0, -1).join(', ')} och ${delar[delar.length - 1]}`;
+}
+
+/**
+ * "../../../public/fonts/bilagor/Carlito-Bold.ttf" → "Carlito-Bold".
+ * Sökvägen är CSS:ens interna adress; det enda som betyder något för den som
+ * läser meddelandet är VILKET typsnitt som saknas (Gunilla-principen).
+ */
+function filnamn(sokvag: string): string {
+  return (sokvag.split('/').pop() ?? sokvag).replace(/\.[^.]+$/, '');
 }
 
 /** Meningens första ord med versal, resten som de står — etiketter är vanliga substantiv. */
@@ -1014,7 +1026,13 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
  * ------------------------------------------------------------------ */
 
 type Resultat =
-  | { typ: 'ok'; utelamnade: string[]; sparade: string[] }
+  | { typ: 'ok'; utelamnade: string[]; sparade: string[]; saknade: string[] }
+  /* Förhandsgranskningen lyckades, men något typsnitt kunde inte bäddas in.
+     EGEN gren och inte en tom 'ok': "är skapad och ligger bland eventets
+     dokument" är osant om en granskning, och ett halvsant framgångsbesked är
+     värre än inget. Se `sjalvbarande.ts` § FAIL-SAFE för varför bygget
+     fortsätter i stället för att fälla. */
+  | { typ: 'saknade'; saknade: string[] }
   | { typ: 'fel'; text: string };
 
 // INGEN bakgrundstint vid hover — husets divide-y-grammatik (AktivitetsHistorik
@@ -1238,6 +1256,7 @@ function GenereringsVy({
   };
   const andraKnappRef = useRef<HTMLButtonElement>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
+  const forhandsgranska = useForhandsgranskaBilaga();
 
   const oppnaBlock = (id: BlockId) => {
     foreDialogen.current = { overrides, somStandard };
@@ -1302,51 +1321,78 @@ function GenereringsVy({
     andraKnappRef.current?.focus();
   };
 
-  /** Öppnar dokumentet i ett nytt fönster; `skarpt` sparar dessutom platsens standard. */
+  /**
+   * Öppnar dokumentet som RIKTIG PDF i en ny flik; `skarpt` sparar dessutom
+   * platsens standard.
+   *
+   * VARV 18 (S108 MARCUS-SEKVENS punkt 3, `ADR-119`): fliken visade tidigare
+   * den renderade HTML:en via `document.write` — alltså en webbsida, inte
+   * dokumentet. Research-passet
+   * (`docs/research/forhandsgranskning-dokumentgenerering-branschmonster-2026-08-22.md`
+   * § Rekommendation 1) mätte upp att glappet mellan granskad och levererad
+   * form är exakt den brist Google Docs och Canva bär. Kedjan är nu:
+   * rendera mallen → gör HTML:en självbärande (`./sjalvbarande`) → rendera
+   * till PDF genom datalagret → visa `blob:`-URL:en i fliken.
+   *
+   * KRITISKT: `window.open` synkront här, före varje `await` — annars
+   * blockerar webbläsaren popupen (samma regel som `DokumentYta` §
+   * IKONPAR-not). Allt asynkront ligger därför inuti mutationens
+   * `byggHtml`-callback, som körs först efter att fliken finns.
+   *
+   * `aria-disabled` + vakt, inte `isDisabled`: ett native `disabled` tar
+   * knappen ur tabordningen mitt i klicket (`DokumentYta` § samma not).
+   */
   const oppnaDokument = (skarpt: boolean) => {
-    // KRITISKT: window.open synkront i klicket, före await — annars blockerar
-    // webbläsaren popupen (samma regel som DokumentYta § IKONPAR-not).
+    if (forhandsgranska.isPending) return;
+    // KRITISKT: window.open synkront i klicket, före await — se docblocken.
     const fonster = window.open('', '_blank');
     setResultat(null);
-    void (async () => {
-      try {
-        const html = await renderaDokument(mall, event, allaRader);
-        if (fonster) {
-          fonster.document.open();
-          fonster.document.write(html);
-          fonster.document.close();
-        }
-        if (!skarpt) return;
-        // Platsens standard sparas när bilagan skapas — inte när krysset sätts.
-        const sparade: string[] = [];
-        if (event.ort) {
-          const falt: Partial<Record<PlatsFalt, string>> = {};
-          for (const r of allaRader) {
-            if (r.def.platsFalt && somStandard.has(r.def.id) && r.text?.trim()) {
-              falt[r.def.platsFalt] = r.text;
-              sparade.push(r.def.etikett.toLowerCase());
+    forhandsgranska.mutate(
+      {
+        byggHtml: async () => await gorSjalvbarande(await renderaDokument(mall, event, allaRader)),
+        namn: meta.namn,
+        handle: fonster,
+      },
+      {
+        onSuccess: ({ saknade }) => {
+          if (!skarpt) {
+            if (saknade.length) setResultat({ typ: 'saknade', saknade });
+            return;
+          }
+          // Platsens standard sparas när bilagan skapas — inte när krysset sätts.
+          const sparade: string[] = [];
+          if (event.ort) {
+            const falt: Partial<Record<PlatsFalt, string>> = {};
+            for (const r of allaRader) {
+              if (r.def.platsFalt && somStandard.has(r.def.id) && r.text?.trim()) {
+                falt[r.def.platsFalt] = r.text;
+                sparade.push(r.def.etikett.toLowerCase());
+              }
+            }
+            if (sparade.length) {
+              onSparaPlats(event.ort, falt);
+              setOverrides((o) => {
+                const n = { ...o };
+                for (const r of allaRader) if (somStandard.has(r.def.id)) delete n[r.def.id];
+                return n;
+              });
+              setSomStandard(new Set());
             }
           }
-          if (sparade.length) {
-            onSparaPlats(event.ort, falt);
-            setOverrides((o) => {
-              const n = { ...o };
-              for (const r of allaRader) if (somStandard.has(r.def.id)) delete n[r.def.id];
-              return n;
-            });
-            setSomStandard(new Set());
-          }
-        }
-        setResultat({
-          typ: 'ok',
-          utelamnade: utelamnade.map((r) => r.def.etikett.toLowerCase()),
-          sparade,
-        });
-      } catch (e) {
-        fonster?.close();
-        setResultat({ typ: 'fel', text: e instanceof Error ? e.message : 'Okänt fel.' });
-      }
-    })();
+          setResultat({
+            typ: 'ok',
+            utelamnade: utelamnade.map((r) => r.def.etikett.toLowerCase()),
+            sparade,
+            saknade,
+          });
+        },
+        /* Fliken stängs INTE vid fel — mutationen har redan skrivit felet i
+           den, och en flik som försvinner av sig själv lämnar användaren utan
+           besked om vad som hände. Meddelandet upprepas här för den som
+           tittar på formuläret i stället för på fliken. */
+        onError: (e) => setResultat({ typ: 'fel', text: e.message }),
+      },
+    );
   };
 
   return (
@@ -1548,17 +1594,48 @@ function GenereringsVy({
             {resultat.sparade.length > 0 &&
               ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}{' '}
             <span className="text-text-muted">
-              (Prototyp: dokumentet öppnades som sida i ett nytt fönster, ingen PDF sparas.)
+              (Prototyp: dokumentet öppnades som färdig PDF i ett nytt fönster, men sparas inte
+              bland eventets dokument.)
             </span>
+            {resultat.saknade.length > 0 && (
+              <span className="text-text-muted">
+                {' '}
+                Typsnittet {ochLista(resultat.saknade.map(filnamn))} kunde inte bäddas in, så PDF:en
+                använder ett ersättningstypsnitt på de raderna.
+              </span>
+            )}
+          </MessageBox>
+        )}
+        {resultat?.typ === 'saknade' && (
+          <MessageBox intent="warning">
+            Dokumentet öppnades, men typsnittet {ochLista(resultat.saknade.map(filnamn))} kunde inte
+            bäddas in — PDF:en använder ett ersättningstypsnitt på de raderna. Kontrollera att
+            dev-servern når typsnittsfilerna.
           </MessageBox>
         )}
         {resultat?.typ === 'fel' && <MessageBox intent="error">{resultat.text}</MessageBox>}
 
         <div className="flex flex-col gap-2">
-          <Button intent="secondary" emphasis="outline" onPress={() => oppnaDokument(false)}>
-            Förhandsgranska först
+          {/* `aria-disabled`, INTE `isDisabled`: ett native `disabled` tar
+              knappen ur tabordningen mitt i klicket. Vakten först i
+              `oppnaDokument` bär dubbelklicks-skyddet i stället — samma
+              mönster som `DokumentYta` § DokumentAtgardsKnappar. */}
+          <Button
+            intent="secondary"
+            emphasis="outline"
+            aria-disabled={forhandsgranska.isPending}
+            onPress={() => oppnaDokument(false)}
+          >
+            {forhandsgranska.isPending && (
+              <Loader2 aria-hidden="true" size={16} className="shrink-0 motion-safe:animate-spin" />
+            )}
+            {forhandsgranska.isPending ? 'Skapar PDF …' : 'Förhandsgranska först'}
           </Button>
-          <Button intent="primary" onPress={() => oppnaDokument(true)}>
+          <Button
+            intent="primary"
+            aria-disabled={forhandsgranska.isPending}
+            onPress={() => oppnaDokument(true)}
+          >
             <FileText aria-hidden="true" size={16} className="shrink-0" />
             Skapa {meta.namn.toLowerCase()}
           </Button>

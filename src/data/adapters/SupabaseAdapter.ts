@@ -237,6 +237,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
+  async renderPdfFranHtml(_html: string, _namn: string): Promise<Blob> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
   async fetchActivityLog(_params?: ActivityLogParams): Promise<ActivityLogPage> {
     throw new Error(NOT_IMPLEMENTED);
   }
