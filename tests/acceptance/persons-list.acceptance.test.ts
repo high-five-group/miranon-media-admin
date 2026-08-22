@@ -550,7 +550,15 @@ test.describe('Personer-listan — bokstavsraden (TASK-283.2)', () => {
     // (a) Bokstav UTAN träffar. Den gamla grenen läste bara söktermen och hade
     //     svarat "Personer dyker upp här när någon anmäler sig" — osant när
     //     Lotta just tryckt på Ö.
-    await raden(page).getByRole('button', { name: 'Visa personer som börjar på Ö' }).click();
+    //
+    //     [UPPDATERAD, TASK-283.3] Vägen HIT är en annan sedan tomma bokstäver
+    //     tonas ned: Ö har inga personer i fixturen, så knappen går inte
+    //     längre att trycka på (det är 283.3 AC #1). Tillståndet är däremot
+    //     inte borta — det nås via URL:en, som ett bokmärke eller en delad
+    //     länk, och tomlägets copy måste vara lika sann då. Att i stället
+    //     byta testet till en FYLLD bokstav hade tappat täckningen helt,
+    //     eftersom en fylld bokstav per definition inte ger ett tomläge.
+    await page.goto('/personer?bokstav=%C3%96');
     await expect(page.getByText('Inga träffar')).toBeVisible();
     await expect(page.getByText('Ingen person börjar på Ö.')).toBeVisible();
     await expect(page.getByRole('list', { name: 'Personer' })).toHaveCount(0);
@@ -710,9 +718,12 @@ test.describe('Personer-listan — bokstavsraden (TASK-283.2)', () => {
     page,
     network,
   }) => {
-    // Alla knappar är aktiva i denna skiva; raden beror alltså inte på datan.
-    // Hade den monterats först när registret landade skulle listan flyttats
-    // nedåt vid varje sidladdning — precis det layouthopp ADR-078 förbjuder.
+    // Raden har SAMMA GEOMETRI i alla tre grenarna. Hade den monterats först
+    // när registret landade skulle listan flyttats nedåt vid varje sidladdning
+    // — precis det layouthopp ADR-078 förbjuder. [TASK-283.3] Nedtoningen
+    // ändrar färg på knappar, aldrig antalet: räkningen nedan är därför
+    // oförändrad, och att INGEN knapp tonas ned under laddning har sitt eget
+    // fall i 283.3-blocket längre ned.
     network.use(
       http.get(EF('get-persons'), async () => {
         await delay(3000);
@@ -723,5 +734,431 @@ test.describe('Personer-listan — bokstavsraden (TASK-283.2)', () => {
     await page.goto('/personer');
     await expect(page.getByText('Laddar personer…')).toBeAttached();
     await expect(raden(page).getByRole('button')).toHaveCount(RADENS_TEXT.length);
+  });
+});
+
+/**
+ * NEDTONADE BOKSTÄVER (TASK-283.3) — samma fixtur som blocket ovan, och det
+ * är avsiktligt: `BOKSTAVSFIXTUR` byggdes redan av TASK-283.2 med raden
+ * *"minst en bokstav UTAN personer → Q, Ä, Ö (och 21 till)"*, vilket är exakt
+ * det kortets AC #5 kräver. Att bygga en andra fixtur för samma egenskap hade
+ * bara gett två sanningar att hålla i synk.
+ *
+ * FIXTURENS FACIT, räknat ur namnen (`Anna`, `Bo`, `Emma`, `Ej tillgängligt`,
+ * `Kalle`, `Karin`, `Åsa`, `Ej tillgängligt`):
+ *
+ *   fyllda   A · B · E · K · Å · Utan namn        6 av 30
+ *   tomma    de övriga 24, däribland Q, Ä och Ö
+ *
+ * AC #5 låses av `FYLLDA` nedan tillsammans med räkningen i första testet:
+ * krymper fixturen så att varje bokstav får en person blir de testerna röda,
+ * i stället för tyst meningslösa.
+ */
+
+/** Hinkarna som HAR minst en person i `BOKSTAVSFIXTUR`. Allt annat tonas ned. */
+const FYLLDA = [
+  'Visa personer som börjar på A',
+  'Visa personer som börjar på B',
+  'Visa personer som börjar på E',
+  'Visa personer som börjar på K',
+  'Visa personer som börjar på Å',
+  'Visa personer utan namn',
+];
+
+test.describe('Personer-listan — nedtonade bokstäver (TASK-283.3)', () => {
+  test.beforeEach(async ({ network }) => {
+    network.use(http.get(EF('get-persons'), () => json({ persons: BOKSTAVSFIXTUR })));
+  });
+
+  const raden = (page: Page) => page.getByRole('toolbar', { name: RADENS_ETIKETT });
+
+  /**
+   * Hela radens nedtoningstillstånd som ETT värde: etikett → `aria-disabled`.
+   *
+   * Mäts som en karta och inte som enskilda assertions därför att AC #2:s
+   * fråga är "rörde sig NÅGOT?" — och 30 separata påståenden kan alla vara
+   * gröna medan den 31:a knappen bytt tillstånd osett.
+   */
+  const nedtoningskarta = (page: Page) =>
+    raden(page)
+      .getByRole('button')
+      .evaluateAll((els) =>
+        Object.fromEntries(
+          els.map((el) => [el.getAttribute('aria-label') ?? '', el.getAttribute('aria-disabled')]),
+        ),
+      );
+
+  test('AC #1 + AC #5 — tomma bokstäver tonas ned, fyllda gör det inte', async ({ page }) => {
+    await page.goto('/personer');
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+
+    const karta = await nedtoningskarta(page);
+    expect(Object.keys(karta)).toHaveLength(RADENS_TEXT.length);
+
+    const aktiva = Object.keys(karta).filter((namn) => karta[namn] === 'false');
+    const nedtonade = Object.keys(karta).filter((namn) => karta[namn] === 'true');
+
+    expect([...aktiva].sort()).toEqual([...FYLLDA].sort());
+
+    // AC #5: fixturen MÅSTE bära minst en tom bokstav, annars bevisar sviten
+    // ingenting. Den bär 24 — och de tre kortet namnger vid namn.
+    expect(nedtonade).toHaveLength(RADENS_TEXT.length - FYLLDA.length);
+    expect(nedtonade).toContain('Visa personer som börjar på Q');
+    expect(nedtonade).toContain('Visa personer som börjar på Ä');
+    expect(nedtonade).toContain('Visa personer som börjar på Ö');
+  });
+
+  test('AC #1 — ett tryck på en nedtonad bokstav gör ingenting alls', async ({ page }) => {
+    await page.goto('/personer');
+    const list = page.getByRole('list', { name: 'Personer' });
+    await expect(list.getByRole('listitem')).toHaveCount(8);
+
+    // `force: true` MED AVSIKT. Playwrights egen aktiverbarhets-kontroll
+    // behandlar `aria-disabled` som "inte klickbar", så ett vanligt `click()`
+    // hade bevisat att PLAYWRIGHT vägrar — inte att VÅR spärr håller. Med
+    // force går ett verkligt klick-event hela vägen fram till elementet, och
+    // det som mäts är komponentens `onClick`-retur.
+    await raden(page)
+      .getByRole('button', { name: 'Visa personer som börjar på Ö' })
+      .click({ force: true });
+
+    await expect(page).not.toHaveURL(/[?&]bokstav=/);
+    await expect(list.getByRole('listitem')).toHaveCount(8);
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+  });
+
+  test('AC #2 — nedtoningen rör sig INTE när Lotta skriver', async ({ page }) => {
+    await page.goto('/personer');
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+    const fore = await nedtoningskarta(page);
+
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('karl');
+    await expect(page.getByText('Visar 1 av 1 personer för "karl".')).toBeVisible();
+
+    // KORTETS ICKE FÖRHANDLINGSBARA RAD. Vore nedtoningen bunden till
+    // söktermen hade 29 av 30 knappar slocknat här, och raden hade flimrat
+    // vid varje tangenttryck.
+    expect(await nedtoningskarta(page)).toEqual(fore);
+
+    // Spetsen på samma sak: A står kvar TÄND fast ingen Anna är kvar i listan.
+    const aKnapp = raden(page).getByRole('button', { name: 'Visa personer som börjar på A' });
+    await expect(aKnapp).toHaveAttribute('aria-disabled', 'false');
+
+    // ... och den går fortfarande att trycka på, vilket är hela poängen:
+    // bokstaven byter fasett i stället för att vara en återvändsgränd.
+    await aKnapp.click();
+    await expect(page).toHaveURL(/[?&]bokstav=A/);
+  });
+
+  test('AC #2 — nedtoningen rör sig INTE heller när ett bokstavsfilter väljs', async ({ page }) => {
+    await page.goto('/personer');
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+    const fore = await nedtoningskarta(page);
+
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på K' }).click();
+    await expect(page.getByText('Visar 2 av 2 personer.')).toBeVisible();
+
+    // K var redan tänd, så kartan ska vara BYTE FÖR BYTE densamma — filtret
+    // smalnar av listan, aldrig raden.
+    expect(await nedtoningskarta(page)).toEqual(fore);
+  });
+
+  test('AC #4 — en nedtonad bokstav nås med piltangent och är märkt otillgänglig', async ({
+    page,
+  }) => {
+    await page.goto('/personer');
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+
+    const a = raden(page).getByRole('button', { name: 'Visa personer som börjar på A' });
+    const c = raden(page).getByRole('button', { name: 'Visa personer som börjar på C' });
+
+    await page.getByRole('searchbox', { name: SOKFALT }).focus();
+    await page.keyboard.press('Tab');
+    await expect(a).toBeFocused();
+
+    // C har inga personer i fixturen. DETTA är skillnaden mot native
+    // `disabled`: react-arias fokus-filter matchar `button:not([disabled])`
+    // (`utils/isFocusable.mjs`) och hade hoppat rakt över bokstaven, så en
+    // skärmläsaranvändare aldrig mött den. Med `aria-disabled` ligger den
+    // kvar på pilresan och annonseras som nedtonad.
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await expect(c).toBeFocused();
+    await expect(c).toHaveAttribute('aria-disabled', 'true');
+    // APG:s toggle-krav gäller fortfarande: etiketten byter aldrig med läget.
+    await expect(c).toHaveText('C');
+
+    // ... och Enter på den gör ingenting. Tangentbordet behöver ingen egen
+    // spärr — Enter på en `<button>` går genom samma `click`-event som musen.
+    await page.keyboard.press('Enter');
+    await expect(page).not.toHaveURL(/[?&]bokstav=/);
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+  });
+
+  test('AC #4 — knappen ligger KVAR i tillgänglighetsträdet, märkt otillgänglig', async ({
+    page,
+  }) => {
+    await page.goto('/personer');
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+
+    // Playwrights ariaSnapshot ÄR tillgänglighetsträdet. Vore knappen borta
+    // ur trädet (`hidden`, `display:none`, `aria-hidden`) fanns ingen rad alls
+    // att matcha — och `[disabled]` är den märkning kravet begär.
+    const trad = await raden(page).ariaSnapshot();
+    expect(trad).toContain('- button "Visa personer som börjar på Ö" [disabled]');
+    expect(trad).toContain('- button "Visa personer som börjar på Ä" [disabled]');
+    // Den fyllda grannen bär INTE märkningen — annars vore assertionen ovan
+    // grön även om allt vore nedtonat.
+    expect(trad).not.toContain('- button "Visa personer som börjar på A" [disabled]');
+  });
+
+  test('okänt är inte tomt — under laddning tonas INGEN bokstav ned', async ({ page, network }) => {
+    network.use(
+      http.get(EF('get-persons'), async () => {
+        await delay(3000);
+        return json({ persons: BOKSTAVSFIXTUR });
+      }),
+    );
+
+    await page.goto('/personer');
+    await expect(page.getByText('Laddar personer…')).toBeAttached();
+
+    // Registret är OKÄNT, inte tomt. Hade laddläget tonat ned allt skulle
+    // raden blivit en grå vägg som sedan tänds — ett flimmer i exakt den rad
+    // kortet säger aldrig får flimra.
+    const karta = await nedtoningskarta(page);
+    expect(Object.values(karta)).toHaveLength(RADENS_TEXT.length);
+    expect(Object.values(karta).every((v) => v === 'false')).toBe(true);
+  });
+
+  test('ett KÄNT tomt register tonar ned samtliga 30', async ({ page, network }) => {
+    network.use(http.get(EF('get-persons'), () => json({ persons: [] })));
+
+    await page.goto('/personer');
+    await expect(page.getByText('Inga personer ännu')).toBeVisible();
+
+    // Motsatsen till fallet ovan, och skälet till att `null` inte fick
+    // representeras av en tom mängd: här VET vi att ingen bokstav har någon.
+    const karta = await nedtoningskarta(page);
+    expect(Object.values(karta).every((v) => v === 'true')).toBe(true);
+  });
+
+  test('en VALD men tom hink tonas aldrig ned — annars går filtret inte att släppa', async ({
+    page,
+  }) => {
+    // Vägen hit är verklig: ett bokmärke på `?bokstav=Ö`, eller den sista
+    // Ö-personen som tas bort medan filtret står kvar. Någon separat
+    // rensa-knapp finns medvetet inte (TASK-283.2), så vore den valda knappen
+    // inert vore adressfältet Lottas enda reträtt.
+    await page.goto('/personer?bokstav=%C3%96');
+
+    const oKnapp = raden(page).getByRole('button', { name: 'Visa personer som börjar på Ö' });
+    await expect(oKnapp).toHaveAttribute('aria-pressed', 'true');
+    await expect(oKnapp).toHaveAttribute('aria-disabled', 'false');
+    await expect(page.getByText('Ingen person börjar på Ö.')).toBeVisible();
+
+    await oKnapp.click();
+    await expect(page).not.toHaveURL(/[?&]bokstav=/);
+    await expect(page.getByRole('list', { name: 'Personer' }).getByRole('listitem')).toHaveCount(8);
+
+    // ... och NU, när den inte längre är vald, tonas den ned igen.
+    await expect(oKnapp).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  /**
+   * AC #3 — RADEN BYTER ALDRIG LÄNGD, MÄTT I RENDERAD YTA.
+   *
+   * Samma fem bredder som TASK-283.2 mätte, av samma skäl: `AppShell.tsx:45`
+   * kapar innehållskolumnen vid 568 px, så raden bryts även på skrivbord och
+   * 1280 px är därför inte ett duplikat av 768 px utan ett eget bevis.
+   *
+   * Mätningen är en HELGEOMETRI, inte en bredd: radens egen rect plus varje
+   * knapps rect, som en sträng per knapp. Alla fyra tillstånden jämförs mot
+   * det första. En regression som flyttade en enda knapp en halv pixel fälls
+   * här, medan en assertion på enbart radens bredd hade släppt igenom den.
+   */
+  for (const viewport of [320, 375, 430, 768, 1280]) {
+    test(`AC #3 — radens geometri står still vid tillståndsbyten, ${viewport} px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: viewport, height: 900 });
+
+      const geometri = async () => {
+        const rad = await raden(page).evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          return { x: r.x, y: r.y, bredd: r.width, hojd: r.height };
+        });
+        const knappar = await raden(page)
+          .getByRole('button')
+          .evaluateAll((els) =>
+            els.map((el) => {
+              const r = el.getBoundingClientRect();
+              return `${r.x},${r.y},${r.width},${r.height}`;
+            }),
+          );
+        const sidan = await page.evaluate(() => ({
+          scroll: document.documentElement.scrollWidth,
+          klient: document.documentElement.clientWidth,
+        }));
+        return { rad, knappar, sidan };
+      };
+
+      await page.goto('/personer');
+      await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+      const utgang = await geometri();
+
+      // Tillstånd 2: ett bokstavsfilter valt (K byter till det tryckta
+      // utseendet — annan färg, samma låda).
+      await raden(page).getByRole('button', { name: 'Visa personer som börjar på K' }).click();
+      await expect(page.getByText('Visar 2 av 2 personer.')).toBeVisible();
+      const medFilter = await geometri();
+
+      // Tillstånd 3: filtret släppt, en sökterm med träffar.
+      await raden(page).getByRole('button', { name: 'Visa personer som börjar på K' }).click();
+      await page.getByRole('searchbox', { name: SOKFALT }).fill('karl');
+      await expect(page.getByText('Visar 1 av 1 personer för "karl".')).toBeVisible();
+      const medSokning = await geometri();
+
+      // Tillstånd 4: tomläget — listan byts mot ett helt annat innehåll under
+      // raden. Det är det hårdaste fallet, eftersom sidans höjd ändras mest.
+      await page.getByRole('searchbox', { name: SOKFALT }).fill('zzz');
+      await expect(page.getByText('Inga träffar')).toBeVisible();
+      const iTomlage = await geometri();
+
+      for (const [namn, matning] of [
+        ['bokstavsfilter valt', medFilter],
+        ['sökterm med träffar', medSokning],
+        ['tomläge', iTomlage],
+      ] as const) {
+        expect(matning.rad, `radens rect ändrades i tillståndet: ${namn}`).toEqual(utgang.rad);
+        expect(matning.knappar, `en knapps rect ändrades i tillståndet: ${namn}`).toEqual(
+          utgang.knappar,
+        );
+      }
+
+      // DoD #6 — golvet gäller ÄVEN de nedtonade knapparna. Mätt i renderad
+      // yta, aldrig läst ur en klass.
+      const rutor = utgang.knappar.map((s) => s.split(',').map(Number));
+      for (const [, , bredd, hojd] of rutor) {
+        expect(bredd).toBeGreaterThanOrEqual(24);
+        expect(hojd).toBeGreaterThanOrEqual(24);
+      }
+
+      // Och sidan rullar aldrig i sidled (WCAG 2.2 SC 1.4.10), i något läge.
+      for (const matning of [utgang, medFilter, medSokning, iTomlage]) {
+        expect(matning.sidan.scroll).toBeLessThanOrEqual(matning.sidan.klient);
+      }
+
+      const rader = new Set(rutor.map(([, y]) => Math.round(y))).size;
+      test.info().annotations.push({
+        type: 'matning',
+        description: `${viewport} px: raden ${utgang.rad.bredd}x${utgang.rad.hojd} px, ${rader} rad(er), minsta träffyta ${Math.min(...rutor.map(([, , b]) => b))}x${Math.min(...rutor.map(([, , , h]) => h))} px — identisk i alla fyra tillstånden`,
+      });
+    });
+  }
+
+  /**
+   * NEDTONINGENS KONTRAST, MÄTT — inte antagen.
+   *
+   * En `aria-disabled`-knapp är fokuserbar, och en fokuserbar kontroll är
+   * INTE undantagen WCAG 1.4.3 så som en inaktiv är. Det är priset för valet
+   * i `PersonsList.tsx` § BokstavsKnapp, och det betalas här i stället för
+   * att antas: färgen läses ur den renderade ytan, bakgrunden härleds genom
+   * att gå uppåt till första opaka förälder, och kvoten räknas.
+   */
+  for (const lage of ['no-preference', 'more'] as const) {
+    test(`nedtonad text klarar kontrastgolvet, prefers-contrast: ${lage}`, async ({ page }) => {
+      // `reducedMotion` är INTE pynt här utan det som gör mätningen ärlig.
+      // Knapparna bär `motion-safe:transition-colors`, så när registret
+      // landar tonar 24 av dem över till sitt nedtonade utseende. En mätning
+      // mitt i den övergången läser ett MELLANLÄGE — första försöket fångade
+      // `rgba(245, 245, 243, 0.306)` som "egen bakgrund" och en textfärg som
+      // ännu inte hunnit fram, och talen varierade mellan körningar.
+      // `prefers-reduced-motion: reduce` släcker övergången helt, så det som
+      // mäts är VILOLÄGET — de färger Lotta faktiskt sitter och tittar på.
+      await page.emulateMedia({ contrast: lage, reducedMotion: 'reduce' });
+      await page.goto('/personer');
+      await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+
+      const mat = (namn: string) =>
+        raden(page)
+          .getByRole('button', { name: namn })
+          .evaluate((el) => {
+            const kanal = (v: number) => {
+              const s = v / 255;
+              return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+            };
+            const tal = (s: string) => (s.match(/[\d.]+/g) ?? []).map(Number);
+            const lum = (c: number[]) =>
+              0.2126 * kanal(c[0]) + 0.7152 * kanal(c[1]) + 0.0722 * kanal(c[2]);
+
+            let bakgrund = [255, 255, 255];
+            const kedja: string[] = [];
+            for (let nod: Element | null = el; nod; nod = nod.parentElement) {
+              const rutan = getComputedStyle(nod).backgroundColor;
+              kedja.push(`${nod.tagName.toLowerCase()}=${rutan}`);
+              const delar = tal(rutan);
+              // Kräver FULL opacitet. En halvgenomskinlig yta är ingen
+              // bakgrund att räkna kontrast mot — den släpper igenom det som
+              // ligger under, och att läsa dess RGB och kasta alfan hade gett
+              // ett tal som inte motsvarar någonting på skärmen.
+              if (delar.length >= 3 && (delar.length < 4 || delar[3] >= 0.999)) {
+                bakgrund = delar;
+                break;
+              }
+            }
+            const text = tal(getComputedStyle(el).color);
+            const [hog, lag] = [lum(text), lum(bakgrund)].sort((a, b) => b - a);
+            return {
+              text: getComputedStyle(el).color,
+              egenBakgrund: getComputedStyle(el).backgroundColor,
+              bakgrund: `rgb(${bakgrund.slice(0, 3).join(', ')})`,
+              kedja: kedja.join(' < '),
+              nedtonad: el.getAttribute('aria-disabled'),
+              vald: el.getAttribute('aria-pressed'),
+              kvot: Math.round(((hog + 0.05) / (lag + 0.05)) * 100) / 100,
+            };
+          });
+
+      const nedtonad = await mat('Visa personer som börjar på Ö');
+      const aktiv = await mat('Visa personer som börjar på A');
+
+      // Mätningen är bara meningsfull om de två knapparna FAKTISKT står i de
+      // lägen namnen påstår. Utan denna kontroll hade testet kunnat jämföra
+      // två aktiva knappar med varandra och rapportera det som en kontrast.
+      expect(
+        { nedtonad: nedtonad.nedtonad, aktiv: aktiv.nedtonad, url: page.url() },
+        'fel utgångsläge — mätningen jämför inte nedtonad mot aktiv',
+      ).toEqual({ nedtonad: 'true', aktiv: 'false', url: page.url() });
+
+      // WCAG 1.4.3 (AA), normal text: 4,5:1.
+      expect(nedtonad.kvot).toBeGreaterThanOrEqual(4.5);
+      expect(aktiv.kvot).toBeGreaterThanOrEqual(4.5);
+
+      // Nedtoningen måste förbli SYNLIG i båda lägena — en `contrast-more`
+      // som lyfte den nedtonade texten hela vägen till den aktivas färg hade
+      // uppfyllt kontrastkravet och samtidigt raderat informationen.
+      expect(nedtonad.text).not.toBe(aktiv.text);
+
+      test.info().annotations.push({
+        type: 'matning',
+        description: `prefers-contrast: ${lage} — nedtonad ${nedtonad.text} på ${nedtonad.bakgrund} = ${nedtonad.kvot}:1 · aktiv ${aktiv.text} på ${aktiv.bakgrund} = ${aktiv.kvot}:1`,
+      });
+      test.info().annotations.push({
+        type: 'matning-bakgrund',
+        description: `${lage} — nedtonad(aria-disabled=${nedtonad.nedtonad}, pressed=${nedtonad.vald}) egen bakgrund ${nedtonad.egenBakgrund}, kedja: ${nedtonad.kedja} || aktiv(aria-disabled=${aktiv.nedtonad}) egen bakgrund ${aktiv.egenBakgrund} @ ${page.url()}`,
+      });
+    });
+  }
+
+  test('axe 0 violations med nedtonade bokstäver i raden', async ({ page }) => {
+    await page.goto('/personer');
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
   });
 });
