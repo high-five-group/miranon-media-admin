@@ -530,15 +530,6 @@ function ochLista(delar: string[]): string {
   return `${delar.slice(0, -1).join(', ')} och ${delar[delar.length - 1]}`;
 }
 
-/**
- * "../../../public/fonts/bilagor/Carlito-Bold.ttf" → "Carlito-Bold".
- * Sökvägen är CSS:ens interna adress; det enda som betyder något för den som
- * läser meddelandet är VILKET typsnitt som saknas (Gunilla-principen).
- */
-function filnamn(sokvag: string): string {
-  return (sokvag.split('/').pop() ?? sokvag).replace(/\.[^.]+$/, '');
-}
-
 /** Meningens första ord med versal, resten som de står — etiketter är vanliga substantiv. */
 function meningsStart(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -1042,6 +1033,8 @@ type Resultat =
       typ: 'klar';
       skarpt: boolean;
       url: string;
+      /** Webbläsaren stoppade den automatiska öppningen — knappen bär vägen in. */
+      blockerad: boolean;
       utelamnade: string[];
       sparade: string[];
       saknade: string[];
@@ -1375,10 +1368,23 @@ function GenereringsVy({
               setSomStandard(new Set());
             }
           }
+          /* DOKUMENTET ÖPPNAS DIREKT NÄR DET FINNS. Marcus 2026-08-22:
+             "Kan inte bara ett nytt fönster öppnas när pdf finns, det är nog
+             ännu bättre. Så gör alla proffs." Öppningen sker EFTER await,
+             vilket den ursprungliga popup-regeln (`DokumentYta` § IKONPAR)
+             sa var omöjligt — mätt 2026-08-22 att Chrome tillåter
+             `window.open` även efter 7 s väntan, tre försök av tre.
+             Mätningen gjordes dock i Playwrights Chromium, samma instrument
+             som en gång bevisade den motsatta regeln, så utfallet behandlas
+             som osäkert: blockeras fönstret returnerar `window.open` null,
+             och då står "Öppna"-knappen kvar som väg in. Ingen
+             återvändsgränd i något av fallen. */
+          const fonster = window.open(url, '_blank');
           setResultat({
             typ: 'klar',
             skarpt,
             url,
+            blockerad: fonster === null,
             utelamnade: skarpt ? utelamnade.map((r) => r.def.etikett.toLowerCase()) : [],
             sparade,
             saknade,
@@ -1578,14 +1584,6 @@ function GenereringsVy({
         );
       })}
       <div className="flex flex-col gap-4">
-        {/* ALLTID `success` när renderingen gick igenom — även med saknade
-            typsnitt. Ett gult larm vid varje granskning vore brus: Cavolini
-            KAN inte bäddas in lokalt (licensen förbjuder att filen committas,
-            den nås via en git-ignorerad symlänk som Vite serverar som /@fs och
-            nekar), och `bilaga-delad.css` § FONTSTRATEGIN beskriver fallbacken
-            till Comic Neue som AVSIKTLIG. Uppgiften står kvar i klartext i
-            rutan — den är sann och värd att veta — men den larmar inte om ett
-            läge som är designat. */}
         {resultat?.typ === 'klar' && (
           <MessageBox intent="success">
             {resultat.skarpt
@@ -1594,13 +1592,9 @@ function GenereringsVy({
             {resultat.utelamnade.length > 0 && ` Utan ${ochLista(resultat.utelamnade)}.`}
             {resultat.sparade.length > 0 &&
               ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}
-            {resultat.saknade.length > 0 && (
-              <span className="text-text-muted">
-                {' '}
-                Typsnittet {ochLista(resultat.saknade.map(filnamn))} kunde inte bäddas in — PDF:en
-                använder ersättningstypsnittet på de raderna, som avsett.
-              </span>
-            )}
+            {resultat.blockerad
+              ? ' Webbläsaren stoppade det nya fönstret — öppna det härifrån i stället.'
+              : ' Den öppnades i ett nytt fönster.'}
             {!resultat.skarpt && (
               <span className="text-text-muted"> (Prototyp: ingen PDF sparas.)</span>
             )}
