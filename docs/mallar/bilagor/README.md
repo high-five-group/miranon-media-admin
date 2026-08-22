@@ -286,11 +286,19 @@ datamodell uppfinns i mallen.
 | `netto` | `beraknaMoms(spec.belopp).netto`, formaterat via `formatBelopp()` |
 | `moms` | `beraknaMoms(spec.belopp).moms`, formaterat via `formatBelopp()` |
 | `brutto` | `spec.belopp`, formaterat via `formatBelopp()` |
-| `momssatsProcent` | `MOMSSATS_PROCENT` (= 25) |
 | `orgNamn` | `MIRANON_ORG.namn` |
 | `orgNummer` | `MIRANON_ORG.orgnummer` |
 | `orgAdress` | `MIRANON_ORG.adress` |
 | `orgMomsregnummer` | `MIRANON_ORG.momsregnummer` |
+
+**`momssatsProcent`-token BORTTAGEN ur markupen (S108, uppföljning av PR #1781,
+RAPPORT.md § 2b).** Totalrutans etikett skrev tidigare
+`Moms ({{momssatsProcent}} %)`; förlagan skriver bara `Moms` (BB-mätt: inget
+procenttal i innehållsströmmen, se RAPPORT.md § 2b). Ändrat till statisk
+`Moms` i `kvitto.html`. `MOMSSATS_PROCENT` (= 25) finns kvar i
+`receipt-content.ts` och kan tokeniseras igen om ett framtida behov (flera
+momssatser, en tydligare kvittorad) uppstår - ingen kodändring gjord, bara
+markupens användning av värdet.
 
 **Beloppsformateringen avviker synligt från förlagan, med källa i koden -
 inte en brist i mallen.** Rogers kvitto skriver `2 500,00`

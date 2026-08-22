@@ -106,7 +106,15 @@
 .kvitto-metarad {
   display: grid;
   grid-template-columns: auto auto;
-  column-gap: 4mm;
+  column-gap: 6.82mm; /* mätt (CS+BB, RAPPORT.md § 2b): förlagans dt->dd-
+    kolumngap (etikettkolumnens xMax till värdekolumnens xMin) är 19,34 pt =
+    6,82 mm - inte 4 mm. Etikettens/värdets ABSOLUTA x-position matchar ändå
+    INTE exakt efter denna rättelse (se § 2b): vår fixtur bär längre
+    strängar ({{kvittonummer}}="MM-2026-1001", {{datum}}="3 augusti 2026")
+    än förlagans egna ("32771-26"/"2026-08-03") i en HÖGERSTÄLLD grid, så
+    en bredare dd-kolumn trycker båda kolumnerna längre åt vänster oavsett
+    gap - innehållsdrivet, samma klass som beloppsformateringen (§ 8), inte
+    en CSS-defekt kvar att rätta. */
   justify-content: end;
   font-size: 9pt;
   margin: 0;
@@ -125,9 +133,11 @@
 /* ── Referensblock + fakturaadress (mätt, § 3.1) ── */
 
 .kvitto-referensrad {
-  display: flex;
-  justify-content: space-between;
-  gap: 12mm;
+  position: relative; /* bär .kvitto-fakturaadress absolut, se dess kommentar
+    (RAPPORT.md § 2b) - ERSÄTTER `display:flex; justify-content:space-between`
+    (tidigare), som tryckte fakturaadressen mot HÖGERMARGINALEN. Förlagan har
+    en HANDPLACERAD andra kolumn vid ~60 % av sidbredden, inte en
+    högerställd - mätt fynd, inte antaget. */
   margin-top: 19.5mm; /* mätt gap: metaradens underkant (~41,5 mm) till
     referensblockets överkant (61,06 mm) */
   font-size: 9pt;
@@ -139,6 +149,17 @@
   column-gap: 6mm;
   row-gap: 0;
   margin: 0;
+  width: fit-content; /* RÄTTAD REGRESSION (RAPPORT.md § 2b): `.kvitto-
+    referensrad` var tidigare `display:flex`, vilket gjorde detta grid-barnet
+    till en flex-item och därmed shrink-to-fit av sig självt. Bytet till
+    `position:relative` (för fakturaadressens absoluta positionering, se
+    nedan) gjorde denna dl till en VANLIG block-box i stället - width:auto på
+    en block-box FYLLER föräldern, och grid-motorn delade ut det lediga
+    utrymmet till de två `auto`-kolumnerna. Resultatet: dd-kolumnen blev
+    onödigt bred och kolliderade textmässigt med fakturaadressen
+    ("Miranon Media ABFakturaadress:", bekräftat i en mellanliggande
+    rendering). `width:fit-content` återställer samma shrink-to-fit-bredd
+    grid:et hade som flex-item, utan att röra layouten i övrigt. */
 }
 
 .kvitto-referensblock dt,
@@ -148,6 +169,14 @@
 }
 
 .kvitto-fakturaadress {
+  position: absolute;
+  top: 0;
+  left: 109.8mm; /* mätt (BB, RAPPORT.md § 2b): förlagans "Fakturaadress:"
+    xMin = 126,40 mm från sidans vänsterkant, minus .sida--kvitto:s 16,6mm
+    vänsterpadding (referensradens egen vänsterkant ÄR padding-boxens
+    vänsterkant) = 109,8 mm relativt denna container. `position:absolute`
+    i stället för flex-space-between: blockets x-position blir oberoende av
+    referensblockets bredd, precis som förlagans handplacerade kolumn. */
   text-align: left;
 }
 
@@ -240,8 +269,16 @@
 }
 
 .kvitto-belopp {
-  font-weight: 700; /* TT4 - A-pris- och Summa-VÄRDENA är feta i förlagans
-    radpost, till skillnad från Benämning/Antal. Mätt fynd, se RAPPORT.md § 3. */
+  font-weight: 400; /* RÄTTAT (RAPPORT.md § 2b): en tidigare version av denna
+    regel påstod font-weight:700 med källan "TT4, mätt fynd" - en omkörd
+    content-stream-avkodning (token-baserad, med korrekt cm/Tf-spårning i
+    stället för den ursprungliga radbaserade skanningen som tappade
+    font-kontexten) visar att A-pris- och Summa-VÄRDENA i förlagans radpost
+    använder /TT2 = AAAAAC+Calibri (REGULAR), inte /TT4 = Calibri-Bold.
+    Tabellhuvudets "A-pris"/"Summa"-RUBRIKER använder däremot verkligen
+    /TT4 (fet) - oförändrat, ärver font-weight:700 från
+    `.kvitto-tabellhuvud .kvitto-tabellrad` (denna regel träffar bara
+    radpostens .kvitto-belopp-spans, inte huvudradens). */
 }
 
 .kvitto-betalsatt-rad {
