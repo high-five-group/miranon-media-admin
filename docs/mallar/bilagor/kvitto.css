@@ -109,12 +109,16 @@
   column-gap: 6.82mm; /* mätt (CS+BB, RAPPORT.md § 2b): förlagans dt->dd-
     kolumngap (etikettkolumnens xMax till värdekolumnens xMin) är 19,34 pt =
     6,82 mm - inte 4 mm. Etikettens/värdets ABSOLUTA x-position matchar ändå
-    INTE exakt efter denna rättelse (se § 2b): vår fixtur bär längre
-    strängar ({{kvittonummer}}="MM-2026-1001", {{datum}}="3 augusti 2026")
-    än förlagans egna ("32771-26"/"2026-08-03") i en HÖGERSTÄLLD grid, så
-    en bredare dd-kolumn trycker båda kolumnerna längre åt vänster oavsett
-    gap - innehållsdrivet, samma klass som beloppsformateringen (§ 8), inte
-    en CSS-defekt kvar att rätta. */
+    INTE exakt efter denna rättelse (se § 2b): vår fixtur bär en längre
+    {{kvittonummer}}-sträng ("MM-2026-1001" mot förlagans "32771-26") i en
+    HÖGERSTÄLLD grid, så en bredare dd-kolumn trycker båda kolumnerna
+    längre åt vänster oavsett gap - innehållsdrivet, samma klass som
+    beloppsformateringen (§ 8), inte en CSS-defekt kvar att rätta.
+    {{datum}} bidrog tidigare till samma skillnad ("3 augusti 2026" mot
+    förlagans "2026-08-03") men gör det inte längre sedan S108
+    (Marcus-beslut 2026-08-22): datumet är nu ISO och matchar förlagans
+    egen sträng exakt - kvittonumret är kvar som ensam källa till
+    kolumnbredd-skillnaden. */
   justify-content: end;
   font-size: 9pt;
   margin: 0;

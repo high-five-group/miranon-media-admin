@@ -24,6 +24,11 @@
 //      ("2 500,00" — sv-SE-tusentalsavgränsare, alltid två decimaler, ingen
 //      `kr`-suffix), `SEK`-prefixet EN gång på BETALT-raden, och köparens
 //      e-post (`kundEpost`) som en egen rad direkt under kundnamnet.
+//   5. [S108, Marcus-beslut 2026-08-22, "Kör dina rekommendationer"]
+//      `formatKvittoDatum` i ISO (`YYYY-MM-DD`, UTC — ingen tidszons-
+//      rollover vid årsskifte) och `MIRANON_ORG`s adress som TRE fält
+//      (`gatuadress`/`postadress`/`land`) i stället för en radbrytande
+//      sträng.
 //
 // EJ här: PDF-rendering (`receipt-pdf.ts`, pdf-lib/Deno-beroende — täcks av
 // `preview-receipt.staging.test.ts`s skarpa PDF-textextraktion mot en
@@ -126,7 +131,6 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
     const rader = kvittoRader(spec());
     expect(rader).toContain('Miranon Media AB');
     expect(rader).toContain('Org.nr: 559540-5498');
-    expect(rader).toContain('Uttringe Hages väg 17, 144 63 Rönninge, Sverige');
     expect(rader).toContain('Momsreg.nr: SE559540549801');
 
     for (const rad of rader) {
@@ -137,13 +141,40 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
     }
   });
 
-  test('MIRANON_ORG bär exakt de fyra bekräftade fälten', () => {
+  // [S108, Marcus-beslut 2026-08-22] Adressen är TRE rader (Rogers egen
+  // radindelning), inte en radbrytande enradssträng — se receipt-content.ts
+  // filhuvud och ADR-109 § Updates 2026-08-22.
+  test('org-adressen är TRE separata rader, i Rogers ordning (gata → postort → land)', () => {
+    const rader = kvittoRader(spec());
+    expect(rader).toContain('Uttringe Hages väg 17');
+    expect(rader).toContain('144 63 Rönninge');
+    expect(rader).toContain('Sverige');
+    expect(rader).not.toContain('Uttringe Hages väg 17, 144 63 Rönninge, Sverige');
+
+    const namnIdx = rader.indexOf('Miranon Media AB');
+    const gataIdx = rader.indexOf('Uttringe Hages väg 17');
+    const postortIdx = rader.indexOf('144 63 Rönninge');
+    const landIdx = rader.indexOf('Sverige');
+    expect(gataIdx).toBe(namnIdx + 2); // efter Org.nr-raden
+    expect(postortIdx).toBe(gataIdx + 1);
+    expect(landIdx).toBe(postortIdx + 1);
+  });
+
+  test('MIRANON_ORG bär exakt de sex bekräftade fälten — adressen delad i tre (S108, Marcus-beslut 2026-08-22)', () => {
     expect(MIRANON_ORG).toEqual({
       namn: 'Miranon Media AB',
       orgnummer: '559540-5498',
-      adress: 'Uttringe Hages väg 17, 144 63 Rönninge, Sverige',
+      gatuadress: 'Uttringe Hages väg 17',
+      postadress: '144 63 Rönninge',
+      land: 'Sverige',
       momsregnummer: 'SE559540549801',
     });
+  });
+
+  test('[S108] Datum-raden är ISO (YYYY-MM-DD) — kvittot är en bokföringshandling, inte svensk datumtext', () => {
+    const rader = kvittoRader(spec({ datum: '2026-08-03T00:00:00.000Z' }));
+    expect(rader).toContain('Datum: 2026-08-03');
+    expect(rader).not.toContain('Datum: 3 augusti 2026');
   });
 
   test('Netto/Moms/Betalt-raderna finns, i rätt ordning, med Rogers facit-belopp OCH -format ("2 000,00", SEK-prefix EN gång)', () => {
@@ -212,9 +243,23 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
 });
 
 test.describe('formatKvittoDatum / formatBelopp — beteendegolv', () => {
-  test('formatKvittoDatum: ISO → svensk datumtext, ogiltig input → rå sträng', () => {
-    expect(formatKvittoDatum('2026-08-03T00:00:00.000Z')).toBe('3 augusti 2026');
+  // [S108, Marcus-beslut 2026-08-22, "Kör dina rekommendationer"] ISO i
+  // stället för svensk datumtext — kvittot är en bokföringshandling. Se
+  // receipt-content.ts filhuvud och ADR-109 § Updates 2026-08-22.
+  test('formatKvittoDatum: ISO-datum (YYYY-MM-DD), ogiltig input → rå sträng', () => {
+    expect(formatKvittoDatum('2026-08-03T00:00:00.000Z')).toBe('2026-08-03');
     expect(formatKvittoDatum('inte-ett-datum')).toBe('inte-ett-datum');
+  });
+
+  test('formatKvittoDatum: UTC-datum, ALDRIG lokal tidszon — 23:30 UTC sista december blir INTE nästa dag/år', () => {
+    expect(formatKvittoDatum('2026-12-31T23:30:00.000Z')).toBe('2026-12-31');
+    // Motsatt kant: strax efter midnatt UTC nyårsdagen ska INTE glida
+    // bakåt till föregående år.
+    expect(formatKvittoDatum('2027-01-01T00:15:00.000Z')).toBe('2027-01-01');
+  });
+
+  test('formatKvittoDatum: enkelsiffriga månader/dagar nollpaddas (YYYY-MM-DD, alltid två siffror)', () => {
+    expect(formatKvittoDatum('2026-01-05T12:00:00.000Z')).toBe('2026-01-05');
   });
 
   // [S108, Marcus-beslut 2026-08-22] Rogers format: sv-SE-tusentalsavgränsare

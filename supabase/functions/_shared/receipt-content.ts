@@ -27,28 +27,47 @@
 // prefixar `SEK` EN gång på BETALT-raden, precis som Roger). `KvittoradSpec`
 // bär köparens e-post (`kundEpost`) och `kvittoRader()` skriver den under
 // kundnamnet — samma ordning (namn → e-post) som Rogers Fakturaadress-block.
+//
+// DATUMET ÄR ISO OCH ADRESSEN ÄR TRE FÄLT (S108, Marcus-beslut 2026-08-22,
+// slutbild av MARCUS-SEKVENS punkt 2, ordagrant "Kör dina rekommendationer" —
+// se `tasks/sessions/2026-08-20-session-108.md` § Del 9 C och ADR-109
+// § Updates 2026-08-22). `formatKvittoDatum` gav tidigare `"3 augusti 2026"`;
+// kvittot är en BOKFÖRINGSHANDLING, alltså ISO `YYYY-MM-DD` i stället — ingen
+// annan konsument i repot vill ha den svenska datumtexten (`git grep
+// formatKvittoDatum` gav en enda konsument: `kvittoRader()` nedan; mailets
+// brödtext i `send-receipt-email/index.ts` skriver inget datum alls). `
+// MIRANON_ORG.adress` (en sträng) radbröt i mallens sidfotskolumn mitt i
+// postnumret ("…väg 17, 144 / 63 Rönninge, Sverige", side-by-side mot
+// förlagan) — ersatt av `gatuadress`/`postadress`/`land`, Rogers egen
+// tre-radersform.
 
 import type { Betalning, Betalsatt } from './send-receipt.ts';
 
-/** Miranons org-uppgifter på kvittot. Källa: Rogers fakturasystem (se filhuvudet). */
+/** Miranons org-uppgifter på kvittot. Adressen är TRE fält (S108, se filhuvudet) — Rogers egen radindelning, aldrig en radbruten enradssträng. Källa: Rogers fakturasystem (se filhuvudet). */
 export const MIRANON_ORG = {
   namn: 'Miranon Media AB',
   orgnummer: '559540-5498',
-  adress: 'Uttringe Hages väg 17, 144 63 Rönninge, Sverige',
+  gatuadress: 'Uttringe Hages väg 17',
+  postadress: '144 63 Rönninge',
+  land: 'Sverige',
   momsregnummer: 'SE559540549801',
 };
 
-const MANADSNAMN = [
-  'januari', 'februari', 'mars', 'april', 'maj', 'juni',
-  'juli', 'augusti', 'september', 'oktober', 'november', 'december',
-];
-
-/** ISO-datum/-tidsstämpel → "10 augusti 2026". Ogiltig input → den råa strängen (aldrig kastat). */
+/**
+ * ISO-datum/-tidsstämpel → `"2026-08-03"` (ISO `YYYY-MM-DD`, UTC-datum —
+ * S108, se filhuvudet: kvittot är en bokföringshandling). Ogiltig input →
+ * den råa strängen (aldrig kastat). UTC-baserat MEDVETET, inte lokal tid:
+ * `2026-12-31T23:30:00.000Z` ger `"2026-12-31"`, inte `"2027-01-01"` —
+ * annars hade en körmiljö i en annan tidszon kunnat rulla datumet ett dygn
+ * fel runt ett årsskifte (`tests/api/receipt-content.test.ts` bevisar kanten).
+ */
 export function formatKvittoDatum(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  const manad = MANADSNAMN[d.getUTCMonth()];
-  return `${d.getUTCDate()} ${manad} ${d.getUTCFullYear()}`;
+  const ar = d.getUTCFullYear();
+  const manad = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dag = String(d.getUTCDate()).padStart(2, '0');
+  return `${ar}-${manad}-${dag}`;
 }
 
 /**
@@ -144,6 +163,11 @@ export function beraknaMoms(brutto: number): MomsSplit {
  * bär `SEK` som prefix EN gång (som Rogers BETALT-kolumn). Köparens e-post
  * (`spec.kundEpost`) skrivs direkt under kundnamnet — samma ordning
  * (namn → e-post) som Rogers Fakturaadress-block.
+ *
+ * DATUM + ORG-ADRESS (S108, Marcus-beslut 2026-08-22, se filhuvudet):
+ * `Datum:`-raden är ISO (`formatKvittoDatum`), och org-adressen är TRE
+ * rader (`MIRANON_ORG.gatuadress`/`postadress`/`land`) i stället för en —
+ * Rogers egen radindelning.
  */
 export function kvittoRader(spec: KvittoradSpec): readonly string[] {
   const betalningLabel = spec.betalning === 'avgift' ? 'Anmälningsavgift' : 'Slutbetalning';
@@ -162,7 +186,9 @@ export function kvittoRader(spec: KvittoradSpec): readonly string[] {
     '',
     MIRANON_ORG.namn,
     `Org.nr: ${MIRANON_ORG.orgnummer}`,
-    MIRANON_ORG.adress,
+    MIRANON_ORG.gatuadress,
+    MIRANON_ORG.postadress,
+    MIRANON_ORG.land,
     `Momsreg.nr: ${MIRANON_ORG.momsregnummer}`,
   ];
 }
