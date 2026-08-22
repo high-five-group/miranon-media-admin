@@ -4,7 +4,7 @@ title: 'Skiva: Vakten i matchningssteget — vägrar länka vid avvikelse'
 status: To Do
 assignee: []
 created_date: '2026-08-21 10:59'
-updated_date: '2026-08-21 14:23'
+updated_date: '2026-08-22 09:47'
 labels:
   - ready-for-agent
 dependencies:
@@ -29,14 +29,14 @@ Täcker användarberättelser: 1, 11, 12, 13, 14, 15.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Skriptsteget ERSÄTTER de två befintliga stegen (sökningen och kopplingen). Det läggs ALDRIG före en kvarvarande ovillkorlig koppling — den formen är mätt fail-open: kopplingen körs även när sökningen gav noll träffar, så ett kraschat valideringssteg före den släpper igenom en felkopplad anmälan
-- [ ] #2 En anmälan vars uppgifter avviker från det tilltänkta eventet får INGEN eventlänk — fältet lämnas tomt, inget partiellt tillstånd
-- [ ] #3 En anmälan vars uppgifter stämmer länkas precis som förut — inga regressioner i normalflödet
-- [ ] #4 En eventnyckel utan prefix normaliseras före jämförelsen, och jämförelsen avgör därefter
-- [ ] #5 Expressflödets gren är opåverkad: villkoret är att eventnyckeln är TOM och datum-och-ort-fältet ifyllt (mätt live 2026-08-21 — dokumentationens påstående om noll träffar är falsifierat)
-- [ ] #6 En rad skrivs i Error-log vid fällning — som spår, aldrig som enda spår: den tomma eventlänken är den bärande signalen
+- [x] #1 Skriptsteget ERSÄTTER de två befintliga stegen (sökningen och kopplingen). Det läggs ALDRIG före en kvarvarande ovillkorlig koppling — den formen är mätt fail-open: kopplingen körs även när sökningen gav noll träffar, så ett kraschat valideringssteg före den släpper igenom en felkopplad anmälan
+- [x] #2 En anmälan vars uppgifter avviker från det tilltänkta eventet får INGEN eventlänk — fältet lämnas tomt, inget partiellt tillstånd
+- [x] #3 En anmälan vars uppgifter stämmer länkas precis som förut — inga regressioner i normalflödet
+- [x] #4 En eventnyckel utan prefix normaliseras före jämförelsen, och jämförelsen avgör därefter
+- [x] #5 Expressflödets gren är opåverkad: villkoret är att eventnyckeln är TOM och datum-och-ort-fältet ifyllt (mätt live 2026-08-21 — dokumentationens påstående om noll träffar är falsifierat)
+- [x] #6 En rad skrivs i Error-log vid fällning — som spår, aldrig som enda spår: den tomma eventlänken är den bärande signalen
 - [x] #7 Skriptets kod är incheckad i repot som källa, även om datakällan kör sin egen kopia
-- [ ] #8 Inga deltaganden skapas för en anmälan som inte kunde länkas
+- [x] #8 Inga deltaganden skapas för en anmälan som inte kunde länkas
 <!-- AC:END -->
 
 ## Definition of Done
@@ -57,6 +57,28 @@ A1 har SAMMA automation-ID i staging som i prod (wflDCKPAv2P6Yu9U6), men står d
 AC 1 ÄR DEN BÄRANDE OCH FÅR INTE MJUKAS UPP. Det befintliga kopplingssteget (wacXLk4YN5AzohqCn, updateRecord) körs OVILLKORLIGT — vid noll träffar skriver det en tom lista. Läggs valideringen FÖRE det steget körs kopplingen ändå när valideringen fallerar, och vakten blir fail-OPEN: exakt motsatsen till ADR-122:s bärande egenskap. Skriptsteget måste ERSÄTTA både findRecords (wacDkQMtkfCRwDYxK) och updateRecord (wacXLk4YN5AzohqCn).
 
 Expressgrenens villkor (mätt live, falsifierar schema_reference som säger 'noll träffar'): EventKey isEmpty AND 'Datum och ort' isNotEmpty. Rör den inte.
+
+=== VERKSTÄLLD 2026-08-22 (S110 resume 3) ===
+
+VERKTYGSGRÄNSEN SOM BLOCKERADE SKIVAN ÄR BEKRÄFTAD, INTE KRINGGÅNGEN (T167). MCP-ytan kan varken SKAPA eller UPPDATERA en customScript-nod — mätt i båda formerna, den andra med bevarad nod-key. Airtables svar ordagrant: "This automation contains a read-only node (customScript) that cannot be edited through the API. Edit this automation in the Airtable UI instead." Marcus klistrade därför in skriptet och satte input-variabeln anmId i UI:t; A1 står nu deployed i staging.
+
+FÄLLA VÄRD ATT MINNAS: input-variabler för ett skript-steg VISAS i Properties-panelen men SKAPAS i kod-editorn bakom "Edit code". Saknas de ser panelen ut som om funktionen inte fanns. Variabelnamnet är dessutom skiftlägeskänsligt — anmID (stort D) gav samma "Missing anmId"-krasch som ingen variabel alls.
+
+ÄNDE-TILL-ÄNDE MOT STAGING, sex fall skapade via API med A1 påslagen, samtliga städade efteråt:
+  A rätt uppgifter + alla tre formateringsklasserna → LÄNKAD, Eventmatchning OK, ingen Error-log (AC 3)
+  B fel år 2025 mot facit 2026            → EJ länkad, Error-log visar ort och kurs LIKA, bara året skiljer (AC 2, 6 + T168)
+  C fel ort                                → EJ länkad, Error-log (AC 2, 6)
+  D okänd EventKey                         → EJ länkad, Error-log "ingen träff" (AC 6)
+  E express, tom EventKey OCH tomt Datum   → skriptet TEG helt (noll Error-log), express-grenen länkade (AC 5)
+  F EventKey "8755" utan prefix            → normaliserad till Event-8755, LÄNKAD (AC 4)
+
+AC 1 verifierad mot A1:s faktiska konfiguration: wacDkQMtkfCRwDYxK och wacXLk4YN5AzohqCn finns inte längre; skriptnoden ligger FÖRE conditionalGroup — Airtable avvisar strukturellt en nod efter en villkorsgrupp (mätt: nodeAfterDecisionGroup).
+
+AC 8 ÄR STRUKTURELLT BEVISAT, INTE KÖRNINGSBEVISAT — och det sägs ut. A3 (Förskapa deltaganden) är AVSTÄNGD i staging, liksom alla automationer utom A1, så inget körningsbevis kunde tas. A3:s trigger kräver dock Event isNotEmpty (läst live ur dess filtersObj), så en anmälan utan eventlänk uppfyller aldrig dess villkor. Garantin ligger i A3:s eget villkor, inte i denna skivas kod.
+
+MÄTGRÄNS ATT BÄRA VIDARE TILL 284.5/284.6: eftersom bara A1 är påslagen i staging mäter passet A1 ISOLERAT, inte kedjan A1→A2→A3 som den ser ut i prod.
+
+T168-REGRESSIONEN, öppet bokförd: rättningens första form extraherade årtalet som egen axel. Korrekt i JavaScript, fel som formel — Airtables AND() kortsluter inte, och REGEX_EXTRACT utan träff ger fel i stället för blank, vilket gav #ERROR! på VARJE rad med Event-länk och tomt Datum (mätt på befintlig staging-data). Riven samma dag och ersatt med kollaps-i-normaliseringen, som inte kan fela. Full historik i T168.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
