@@ -1,0 +1,46 @@
+<!--
+  Konturglob (F6, S108 resume 5 — AMENDERAD efter orkestrerar-granskning
+  av PR #1778). Ersätter globe-material.svg.
+
+  KORRIGERING (ADR-086-fynd): den ursprungliga F6-leveransen påstod att
+  globe-material.svg var "Material Symbols FYLLD variant" — det var FALSKT,
+  aldrig verifierat mot en riktig mätning. Pixelmätning (Python/PIL/scipy,
+  1200 dpi PDF-crop av förlagan vs 2000px-render à 21,05 mm av kandidaterna,
+  se docs/mallar/bilagor/README.md § F6 för hela mätmetoden och tabellen)
+  visar att globe-material.svg REDAN var en konturglob med jämntjock
+  linjebredd (ring = meridian, ~1,75 mm) — inte en fylld yta. Den första
+  ersättningen (Material Symbols "language" Outlined wght700) gjorde
+  proportionerna SÄMRE, inte bättre: ringen blev 2,76 mm (60 % tjockare än
+  meridianerna, 2,758/1,726) mot förlagans mätta 1,01 (ring≈meridian,
+  1,228/1,213 mm) — och ingen extern ikonkälla (Material Symbols
+  400/500/600/700, Lucide, Tabler, Phosphor) återger förlagans TÄTA
+  3-meridian×3-breddgrad-grid (samtliga testade har bara 2×2 raka/kurvade
+  linjer, ingen rak centrumlinje, ingen rak ekvatorlinje separat mätt via
+  pixelmönster — se README).
+
+  Denna fil är därför en EGEN, handbyggd SVG (cirkel + 3 meridianer +
+  3 breddgrader, samma konstruktion som förlagan), INTE hämtad från något
+  externt bibliotek — inget licenskrav. Måtten är MÄTTA ur förlagan
+  (bekräftelsebilaga-exempel.pdf, 1200 dpi), inte gissade:
+    - linjebredd/diameter-kvot: 58/995,5 px (1200 dpi) = 5,83 % → tillämpad
+      på r=11,2 (24-enhets viewBox) ⇒ stroke-width=1,4
+    - meridian-bulge/radie-kvot vid ekvatorn: 232,5/497,5 = 46,8 % → rx=5,24
+    - breddgrad-bulge/radie-kvot: 219,1/497,5 = 44,1 % → ry=4,93
+    - diameter fyller ~100 % av ikonrutan (förlagan har i praktiken ingen
+      marginal) ⇒ r=11,2 av 12 (99,2 % fyllnad efter stroke, mätt: 1984/2000 px)
+  Ring och meridian/breddgrad landar därmed på i stort sett samma mm-värde
+  som förlagan (uppmätt 1,22–1,23 mm i denna fil mot förlagans 1,21–1,23 mm)
+  och SAMMA antal linjer (3+3) — se README-tabellen för exakta tal per
+  kandidat.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <g fill="none" stroke="#000000" stroke-width="1.4" stroke-linecap="round">
+    <circle cx="12" cy="12" r="11.2" />
+    <line x1="12" y1="0.8" x2="12" y2="23.2" />
+    <line x1="0.8" y1="12" x2="23.2" y2="12" />
+    <path d="M12,0.8 A5.24,11.2 0 1,0 12,23.2" />
+    <path d="M12,0.8 A5.24,11.2 0 1,1 12,23.2" />
+    <path d="M0.8,12 A11.2,4.93 0 1,1 23.2,12" />
+    <path d="M0.8,12 A11.2,4.93 0 1,0 23.2,12" />
+  </g>
+</svg>

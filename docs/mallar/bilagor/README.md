@@ -163,16 +163,60 @@ mot `~/Downloads/exempelpdokument/*.pdf`, lästa sida för sida).
 - Loggan: `public/miranon-media-ordmarke-original.svg` — samma vågform,
   samma originalfärger som förlagan (se forskningsdokumentets RÄTTELSE-block).
 - Bokomslaget, Instagram- och globe-ikonerna: rätt bild på rätt plats.
+  Globen är sedan F6 (S108 resume 5) en egen, handbyggd konturglob
+  (`public/globe-outlined.svg`) i stället för den tidigare
+  `globe-material.svg`.
+
+  **Rättad premiss (ADR-086-fynd, mätt vid orkestrerar-granskning av
+  PR #1778):** den ursprungliga F6-leveransen påstod att `globe-material.svg`
+  var "Material Symbols FYLLD variant" — det var FALSKT, aldrig
+  pixel-verifierat. `globe-material.svg` var redan en konturglob med
+  jämntjock linjebredd (ring = meridian). Det första ersättningsförsöket
+  (Material Symbols "language" Outlined wght700) gjorde matchningen SÄMRE:
+  ringen blev 60 % tjockare än meridianerna (2,758 mm mot 1,726 mm) — en
+  obalans förlagan inte har (där ring och meridian mäter samma, ~1,22 mm).
+
+  **Mätmetod (pixelanalys, inte tyckande):** förlagans glob i
+  `bekräftelsebilaga-exempel.pdf` beskuren vid 1200 dpi, isolerad via
+  connected-component-analys (Python/PIL/scipy, ingen extern SVG-lib),
+  linjebredd uppmätt via horisontella/vertikala tvärsnitt PLUS radiell
+  sampling (för att undvika falsk sammanslagning där ekvator/meridian
+  möter ringen). Samma metod applicerad på varje kandidat, renderad vid
+  ikonens faktiska 21,05 mm.
+
+  | Mått | Förlaga | `globe-material.svg` (f.d. F6-fil) | Material "language" wght700 (f.d. F6-ersättning) | `globe-outlined.svg` (nuvarande) |
+  |---|---|---|---|---|
+  | Ring, streckbredd | 1,228 mm | 1,752 mm | 2,758 mm | 1,223 mm |
+  | Meridian/breddgrad, streckbredd | 1,213 mm (snitt) | 1,752 mm | 1,737 mm | 1,226 mm (snitt) |
+  | Kvot ring/meridian | 1,01 (jämntjockt) | 1,00 (jämntjockt) | 1,59 (ring mkt tjockare) | 1,00 (jämntjockt) |
+  | Glob-diameter / ikonrutans fyllnad | ~100 % (21,07/21,05 mm) | 83,3 % | 90,4 % | 99,2 % |
+  | Meridianer (vertikala linjer) | 3 (1 rak + 2 kurvade) | 2 (kurvade, ingen rak centrumlinje) | 2 (kurvade, ingen rak centrumlinje) | 3 (1 rak + 2 kurvade) |
+  | Breddgrader (horisontella linjer) | 3 (1 rak ekvator + 2 kurvade) | 2 (kurvade, ingen rak ekvator) | 2 (kurvade, ingen rak ekvator) | 3 (1 rak + 2 kurvade) |
+
+  Testade men förkastade (samma 2-linjers-per-axel-struktur som
+  `globe-material.svg`, ingen närmare förlagans 3×3-grid eller
+  jämntjocka linjer): Material Symbols "language" wght 400/500/600,
+  Lucide `globe` (tunnaste, ISC), Tabler `world` (MIT, `stroke-width`-
+  baserad — jämntjock men fortfarande bara 2×2 linjer), Phosphor
+  `globe-simple` (Apache 2.0). Ingen extern källa återger förlagans TÄTA
+  grid; `globe-outlined.svg` är därför en egen, handbyggd SVG (cirkel +
+  3 meridianer + 3 breddgrader, se filens eget kommentarsblock för fullt
+  mått-facit) — inget licenskrav, ingen extern källa.
 - Fetningarna i brödtexten: exakt de sju fraserna kortets Implementation
   Notes anger, ordagrant.
 
 ### Bekräftelsebilagan — avviker, med skäl
 
-- **`SegoeUI-Bold` → Carlito Bold.** Förlagan bär `SegoeUI-Bold` på ETT
-  ställe (§ 2.2 i research-passet identifierar det men specificerar inte
-  exakt vilket ord); mallen använder Carlito Bold genomgående i stället,
-  per uppdragets explicita instruktion. Ingen visuell skillnad av
-  betydelse (båda är sans-serif bold vid brödtextstorlek).
+- **`SegoeUI-Bold` → Selawik Bold (F7, S108 resume 5).** Förlagan bär
+  `SegoeUI-Bold` på EXAKT de två listrubrikerna "Innehåll, Dag Ett" /
+  "Innehåll, Dag Två" (9 pt), allt annat i Calibri/Carlito. Segoe UI är
+  Microsoft-proprietär och får inte bäddas in — samma regel som stoppade
+  Cavolini. Selawik är Microsofts EGEN öppna ersättare för Segoe UI (SIL
+  OFL 1.1, `github.com/microsoft/Selawik` release 1.01), tillämpad ENDAST
+  på de två rubrikerna via klassen `.listrubrik-selawik`. Tidigare stod
+  här att mallen använde Carlito Bold genomgående i stället — det var det
+  förra läget (innan F7), inaktuellt nu. Se
+  `public/fonts/bilagor/LÄSMIG.md` § Selawik Bold för fsType-mätningen.
 - **QR-koden bär ingen centrerad logotyp**, se § QR-koderna ovan för skälet.
 - **Box-mått (rundning, marginaler, radhöjd) är eyeballade mot den
   renderade bilden, inte pt-uppmätta.** Forskningsunderlaget
