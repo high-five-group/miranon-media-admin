@@ -7,7 +7,7 @@
 - **Fas:** Fas 6 (go-live-förberedelse)
 - **Rör:** `src/components/persons/PersonsList.tsx` ·
   `src/data/adapters/DataSourceAdapter.ts` (+ båda implementationerna) ·
-  `supabase/functions/get-persons/index.ts` · `src/lib/query-keys.ts` ·
+  `supabase/functions/get-persons/index.ts` · `src/queries/keys.ts` ·
   `src/data/warmup/startvarmningen.ts` · `src/data/mutations/` (skrivvägar
   som skapar personer) · `TASK-283` (bokstavsindexet)
 - **Relation till tidigare beslut:** supersederar INGET. Bygger på

@@ -4,7 +4,7 @@ title: 'Backfill: referenser-fält (__aria__-sökvägar) i 22 stämplade facit-y
 status: To Do
 assignee: []
 created_date: '2026-08-22 09:35'
-updated_date: '2026-08-22 09:39'
+updated_date: '2026-08-22 10:43'
 labels:
   - ready-for-human
 dependencies: []
@@ -47,3 +47,14 @@ Referenser: `ADR-102` § Updates 2026-08-22 (`docs/decisions/ADR-102-prototypen-
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-22 10:43
+---
+Rent registerpass 2026-08-22 (Fynd 5): kortets baseline-tal ("22 av 22") är nu missvisande. `bash scripts/check-facit.sh` gav vid detta passets körning "11 referenser låsta mot sha256 i stämplade manifest; 24 stämplade ytor saknar 'referenser'" (exit 0) — inte 22. Talet har rört sig sedan kortet skrevs (fler ytor stämplade + fler referenser redan låsta), men skiftar löpande i takt med att fler ytor stämplas — läs alltid om AC #1:s karta mot en färsk körning av scripts/check-facit.sh innan arbetet startar, lita inte på det nedskrivna talet.
+
+Räkningen skiljer heller INTE på "otäckt" och "medvetet inget att täcka": minst två av de saknande ytorna har `referenser` frånvarande MED AVSIKT, inte som lucka — `chunk-banner` (tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json, 'not': "Ingen facit-bild låstes... enbart som kontrast") och uppdateringsnotis-korsreferensen i tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json ('not': "Ingen egen bild här — notisens facit bor i sitt eget manifest... Raden finns för att deklarera att passet rörde ytan."). AC #1:s karta bör alltså exkludera dessa två (eller markera dem N/A) i stället för att räkna dem som brister att åtgärda.
+---
+<!-- COMMENTS:END -->
