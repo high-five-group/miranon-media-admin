@@ -1,10 +1,10 @@
 ---
 id: TASK-283.2
 title: 'Skiva: Bokstavsraden under sökrutan — tracer bullet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 08:52'
-updated_date: '2026-08-22 12:29'
+updated_date: '2026-08-22 13:07'
 labels:
   - ready-for-agent
 dependencies:
@@ -48,13 +48,13 @@ Täcker användarberättelser: 2, 3, 4, 5, 7, 10, 11, 12, 13, 14, 15, 16, 17
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Personlistans rad- och listform granskad mot facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — bokstavsraden är ett TILLÄGG ovanför listan och rör inget låst formbeslut
-- [ ] #6 Varje bokstavsknapp minst 24x24 CSS-px — mätt i renderad yta, aldrig läst ur en klass (WCAG 2.5.8 AA)
-- [ ] #7 Sentinelen undantagen ur E-filtret — bevisat med testfall, aldrig antaget (fälla 51)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Personlistans rad- och listform granskad mot facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — bokstavsraden är ett TILLÄGG ovanför listan och rör inget låst formbeslut
+- [x] #6 Varje bokstavsknapp minst 24x24 CSS-px — mätt i renderad yta, aldrig läst ur en klass (WCAG 2.5.8 AA)
+- [x] #7 Sentinelen undantagen ur E-filtret — bevisat med testfall, aldrig antaget (fälla 51)
 <!-- DOD:END -->
 
 ## Comments
