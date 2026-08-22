@@ -81,6 +81,8 @@ export type ReceiptPdf = { filename: string; contentBase64: string };
 export type ReceiptPdfBuilder = (spec: {
   kvittonummer: string;
   kundnamn: string;
+  /** Köparens e-post (S108, Marcus-beslut 2026-08-22) — `input.email`, härledd server-side, se `sendReceipt` nedan. */
+  kundEpost: string;
   belopp: number;
   betalsatt: Betalsatt;
   betalning: Betalning;
@@ -184,6 +186,7 @@ export async function sendReceipt(
   const pdf = await deps.buildPdf({
     kvittonummer: allocated.kvittonummer,
     kundnamn: input.kundnamn,
+    kundEpost: email,
     belopp: input.belopp,
     betalsatt: input.betalsatt,
     betalning: input.betalning,

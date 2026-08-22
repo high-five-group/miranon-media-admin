@@ -20,6 +20,10 @@
 //   3. `kvittoRader` — org-uppgifterna (`MIRANON_ORG`) syns i klartext, ALDRIG
 //      "PLACEHOLDER"/hakparentes-text, och Netto/Moms/Betalt-raderna finns i
 //      rätt ordning med rätt formatering.
+//   4. [S108, Marcus-beslut 2026-08-22] `formatBelopp` i Rogers format
+//      ("2 500,00" — sv-SE-tusentalsavgränsare, alltid två decimaler, ingen
+//      `kr`-suffix), `SEK`-prefixet EN gång på BETALT-raden, och köparens
+//      e-post (`kundEpost`) som en egen rad direkt under kundnamnet.
 //
 // EJ här: PDF-rendering (`receipt-pdf.ts`, pdf-lib/Deno-beroende — täcks av
 // `preview-receipt.staging.test.ts`s skarpa PDF-textextraktion mot en
@@ -51,6 +55,10 @@ function spec(overrides: Partial<KvittoradSpec> = {}): KvittoradSpec {
   return {
     kvittonummer: 'MM-2026-1001',
     kundnamn: 'Anna Andersson',
+    // Fiktiv (PR #1786 pseudonymiserade kundnamn-fältet ovan; adressen
+    // matchar samma fiktiva person — konsekvent med preview-receipts
+    // TYPEXEMPEL, se preview-receipt/index.ts § TYPEXEMPEL).
+    kundEpost: 'anna.andersson@example.com',
     belopp: 2500,
     betalsatt: 'Swish',
     betalning: 'avgift',
@@ -138,16 +146,16 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
     });
   });
 
-  test('Netto/Moms/Betalt-raderna finns, i rätt ordning, med Rogers facit-belopp', () => {
+  test('Netto/Moms/Betalt-raderna finns, i rätt ordning, med Rogers facit-belopp OCH -format ("2 000,00", SEK-prefix EN gång)', () => {
     const rader = kvittoRader(spec({ belopp: 2500 }));
     expect(MOMSSATS_PROCENT).toBe(25);
-    expect(rader).toContain('Netto: 2000 kr');
-    expect(rader).toContain('Moms (25 %): 500 kr');
-    expect(rader).toContain('Betalt: 2500 kr');
+    expect(rader).toContain('Netto: 2 000,00');
+    expect(rader).toContain('Moms (25 %): 500,00');
+    expect(rader).toContain('Betalt: SEK 2 500,00');
 
-    const nettoIdx = rader.indexOf('Netto: 2000 kr');
-    const momsIdx = rader.indexOf('Moms (25 %): 500 kr');
-    const betaltIdx = rader.indexOf('Betalt: 2500 kr');
+    const nettoIdx = rader.indexOf('Netto: 2 000,00');
+    const momsIdx = rader.indexOf('Moms (25 %): 500,00');
+    const betaltIdx = rader.indexOf('Betalt: SEK 2 500,00');
     expect(nettoIdx).toBeGreaterThanOrEqual(0);
     expect(momsIdx).toBe(nettoIdx + 1);
     expect(betaltIdx).toBe(momsIdx + 1);
@@ -158,11 +166,26 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
     // moms = avrunda(133.5*0.2*100)/100 = avrunda(2670)/100 = 26,70; netto = 133.5-26.70 = 106,80
     expect(rader).toContain(`Netto: ${formatBelopp(106.8)}`);
     expect(rader).toContain(`Moms (25 %): ${formatBelopp(26.7)}`);
-    expect(rader).toContain(`Betalt: ${formatBelopp(133.5)}`);
+    expect(rader).toContain(`Betalt: SEK ${formatBelopp(133.5)}`);
+  });
+
+  test('[S108] E-posten skrivs som egen rad DIREKT under kundnamnet (Rogers Fakturaadress-ordning: namn → e-post)', () => {
+    const rader = kvittoRader(
+      spec({ kundnamn: 'Anna Andersson', kundEpost: 'anna.andersson@example.com' }),
+    );
+    const kundIdx = rader.indexOf('Kund: Anna Andersson');
+    const epostIdx = rader.indexOf('E-post: anna.andersson@example.com');
+    expect(kundIdx).toBeGreaterThanOrEqual(0);
+    expect(epostIdx).toBe(kundIdx + 1);
   });
 
   test('mirror-kontraktets FAKTISKA räckvidd — kvittoRader() är källan för PDF-layouten i BÅDA anropssiterna (send-receipt-email + preview-receipt), samma rader oavsett anropare', () => {
-    const gemensam = { belopp: 2500, betalsatt: 'Swish' as const, betalning: 'avgift' as const };
+    const gemensam = {
+      belopp: 2500,
+      betalsatt: 'Swish' as const,
+      betalning: 'avgift' as const,
+      kundEpost: 'a@example.com',
+    };
     const radA = kvittoRader({
       ...gemensam,
       kvittonummer: 'MM-2026-1001',
@@ -188,15 +211,31 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
   });
 });
 
-test.describe('formatKvittoDatum / formatBelopp — oförändrat beteende (regressionsgolv)', () => {
+test.describe('formatKvittoDatum / formatBelopp — beteendegolv', () => {
   test('formatKvittoDatum: ISO → svensk datumtext, ogiltig input → rå sträng', () => {
     expect(formatKvittoDatum('2026-08-03T00:00:00.000Z')).toBe('3 augusti 2026');
     expect(formatKvittoDatum('inte-ett-datum')).toBe('inte-ett-datum');
   });
 
-  test('formatBelopp: heltal utan decimaler, annars två decimaler med komma', () => {
-    expect(formatBelopp(2500)).toBe('2500 kr');
-    expect(formatBelopp(133.5)).toBe('133,50 kr');
-    expect(formatBelopp(20.02)).toBe('20,02 kr');
+  // [S108, Marcus-beslut 2026-08-22] Rogers format: sv-SE-tusentalsavgränsare
+  // (ALLTID ett vanligt mellanslag, U+0020 — normaliserat oavsett vilket
+  // grupperingstecken Intl.NumberFormat('sv-SE') råkar ge i körmiljön, se
+  // `formatBelopp`s egen docstring), ALLTID två decimaler, INGEN `kr`-suffix.
+  test('formatBelopp: sv-SE-gruppering + två decimaler, ingen kr-suffix', () => {
+    expect(formatBelopp(2500)).toBe('2 500,00');
+    expect(formatBelopp(0)).toBe('0,00');
+    expect(formatBelopp(1234567)).toBe('1 234 567,00');
+    expect(formatBelopp(133.5)).toBe('133,50');
+    expect(formatBelopp(20.02)).toBe('20,02');
+  });
+
+  test('formatBelopp: grupperingstecknet är GARANTERAT ett vanligt mellanslag (U+0020) — aldrig NBSP/NNBSP (pdf-lib/WinAnsi kan inte koda U+202F, se formatBelopps docstring)', () => {
+    const formaterat = formatBelopp(2500);
+    expect(formaterat).not.toMatch(/[  ]/);
+    expect(formaterat).toBe('2 500,00');
+    // Byte-nivå-kontroll: separatorn ÄR U+0020, inte en synligt identisk
+    // NBSP/NNBSP-varning som bara syns vid kodpunkts-inspektion.
+    const separatorIndex = formaterat.indexOf(' ');
+    expect(formaterat.codePointAt(separatorIndex)).toBe(0x20);
   });
 });
