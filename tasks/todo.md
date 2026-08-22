@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 110 ⏸️ PAUSAD (tredje gången, 2026-08-22, `lifecycle: paused`) —
+**Session 110 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen; pausad tre gånger, historik) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
 VAKTEN LÅST I `ADR-122`, FAMILJEN BYGGD 3/4.** Egen worktree `s110-kalenderlank-driften` (S109
 äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
@@ -101,7 +101,16 @@ fyra besked · **Marcus: kalenderlänkarna på miranon.se + Lotta-texten** ·
 ALLTID i mint-ögonblicket (SEX trådnummer-kollisioner i klustret under
 passet): ADR **124** · tråd **T169** · kort **288** · **L512** + 62
 fragment · fälla **53** · session **111**. Full narrativ: sessionsdok
-S110 Del 1–6 + PAUSLÄGE-blocket.
+S110 Del 1–6 + paushistoriken. **RESUME 3 (2026-08-22):** `#1736` landad
+(`aba0d61b`), worktreen ff-synkad på `docs/s110-resume-3`; numreringen
+**re-deriverad mot disk och oförändrad** på varje post (ADR 124 · T169 ·
+kort 288 · L512 + 62 fragment · fälla 53 · session 111) — ingen
+mellansession förbrukade något. Ägarlappen på huvudkatalogen tillhör nu en
+TREDJE session (`03bc2d12-…`, PID 28332 levande) — orörd, arbetet fortsätter
+i egen worktree. `#1722` kvar DRAFT+CLEAN som avsett. **NÄSTA: de två
+blockerande Marcus-besluten i ordning — `T168` (datum-axelns årsblindhet,
+rör LANDAD kod) sedan `T167` (vägen som får vakten live) — inget bygge
+startar före dem.**
 
 **Session 109 ⏸️ PAUSAD (tredje gången, 2026-08-22, `lifecycle: paused`) —
 NOTISFAMILJEN BYGGD FÄRDIG; ALLT KVARVARANDE ÄR TRE MARCUS-BESLUT.** Marcus AFK
