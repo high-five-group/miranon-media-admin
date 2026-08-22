@@ -112,7 +112,24 @@ blockerande Marcus-besluten i ordning — `T168` (datum-axelns årsblindhet,
 rör LANDAD kod) sedan `T167` (vägen som får vakten live) — inget bygge
 startar före dem.**
 
-**Session 109 ⏸️ PAUSAD (tredje gången, 2026-08-22, `lifecycle: paused`) —
+**Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
+pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA
+SPÅR I LUFTEN.** Marcus order: *"ALLT ska bli klart nu."* **Besluten:**
+`#1715` **väg B** (referenserna landar, stämpeln behålls, ändringen bokförs som
+`amendering`-post) · `T157` **skrivs nu** (amendering till `ADR-102`: klasserna
+för när ett stämplat facit får ändras) · `285.13` **alternativ 1** (chunk-bannern
+äger "Ladda om"; sektionsfelet visar ingen knapp vid chunk-flagga) · `285.10`
+**AC #4 ta om bilden** + **AC #5 friskriv copy för båda ytorna** (facit låser
+formen, inte orden). **Divergens fångad vid resume:** elva kort (`285.1`–`285.9`,
+`286.1`, `287`) stod `To Do` trots landad kod — stängnings-committen gjordes
+aldrig (`TASK-281`:s lucka); **8 av 11 satta `Done`**, tre öppna på obelagd DoD
+(`285.5`/`285.6` DoD #6, `286.1` DoD #5–#7). Paus-PR `#1735` mergade **mitt under
+LÄS-fasen** — andra instansen av samma fångst-klass. **NÄSTA: fyra parallella
+spår landar (`#1715`-not + armering · `ADR-102`-amenderingen · `285.13`
+verkställandet · `285.10`-förkraven) → Marcus stämpling `285.10` via `!`-kanalen
+→ `285.11` rivning → `285.12`/`286.6` QA → `286.3`/`286.4` → `283.2`/`283.3`.**
+
+**Session 109 ⏸️ PAUSAD (tredje gången, 2026-08-22, `lifecycle: paused`, historik) —
 NOTISFAMILJEN BYGGD FÄRDIG; ALLT KVARVARANDE ÄR TRE MARCUS-BESLUT.** Marcus AFK
 hela passet; orkestreraren ägde svepet manuellt (heartbeat-ordern 2026-08-19
 står), landnings-väckningen bars av bundna bakgrundsvakter per PR (fyra fyrade:
