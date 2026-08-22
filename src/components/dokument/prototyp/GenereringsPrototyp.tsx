@@ -1231,6 +1231,8 @@ function GenereringsVy({
      genomgång, inte hela bilagans. */
   const oppenGrupp = oppet ? rader.find((g) => g.rader.some((r) => r.def.id === oppet)) : undefined;
   const navSyskon = oppenGrupp ? dialogRader(oppenGrupp.rader) : [];
+  /* Bläddrar dialogen? Då är dess höjd LÅST — se DIALOG_BLADDRAR_KLASS. */
+  const bladdrar = navSyskon.length >= NAV_TROSKEL;
 
   // Varje ändring efter ett "Skapa" gör bekräftelsen inaktuell — den
   // beskrev ett dokument som inte längre är det Lotta ser framför sig.
@@ -1356,39 +1358,20 @@ function GenereringsVy({
       {rader.map((g) => {
         const rubrikId = `grupp-${g.rubrik.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
         const arInforutan = g.rubrik === 'Inforutan';
-        /* Samma tröskel som bläddringen: ingången hör ihop med genomgången
-           och ska inte dyka upp i grupper som saknar en. Inforutan hålls
-           utanför av `dialogRader` — dess tomma bär redan "Fyll i …" i
-           värdeplatsen, med morfen som väg in. */
-        const gruppensRader = dialogRader(g.rader);
-        const barGenomgang = gruppensRader.length >= NAV_TROSKEL;
-        const saknade = gruppensRader.filter((r) => r.tomt);
         return (
           <section
             key={g.rubrik}
             aria-labelledby={rubrikId}
             className="flex min-w-0 flex-col gap-2"
           >
-            {/* Rubrikraden bär gruppens ENDA meta: hur mycket som fattas,
-                som en väg in. GOV.UK summary list lägger sin handling i
-                samma kant. Den tvingar ingen ordning — bläddringen står
-                kvar för den som hellre går igenom allt. */}
-            <div className="flex items-baseline justify-between gap-3 px-4">
-              <h2 id={rubrikId} className="min-w-0 font-semibold text-lg">
-                {g.rubrik}
-              </h2>
-              {barGenomgang && saknade.length > 0 && (
-                <button
-                  type="button"
-                  className="shrink-0 font-medium text-caption underline decoration-1 underline-offset-4"
-                  onClick={() => oppnaBlock(saknade[0].def.id)}
-                >
-                  {saknade.length === 1
-                    ? 'Fyll i den som saknas'
-                    : `Fyll i de ${saknade.length} som saknas`}
-                </button>
-              )}
-            </div>
+            {/* Rubriken bär INGEN "N saknas"-ingång. En sådan byggdes i varv
+                14 och revs i varv 15: det som saknas pekas redan ut på TRE
+                ställen — varningsrutan överst namnger allt, radens värdeplats
+                bär "Fyll i …" i fet understruken stil, och dialogen bläddrar
+                dit. En fjärde väg var brus, inte hjälp. */}
+            <h2 id={rubrikId} className="px-4 font-semibold text-lg">
+              {g.rubrik}
+            </h2>
             {arInforutan && morfar ? (
               <InforutanMorf
                 rader={g.rader}
@@ -1557,7 +1540,13 @@ function GenereringsVy({
              bestämd höjd, och en textruta som ska fylla den kan inte veta hur
              hög den är — då hamnar rullningen på dialogen i stället för i
              rutan. */
-          className={cn(DIALOG_PANEL_KLASS, oppenRad.def.langtext && 'h-[min(76vh,600px)]')}
+          className={cn(
+            DIALOG_PANEL_KLASS,
+            bladdrar && DIALOG_BLADDRAR_KLASS,
+            /* Löptexten utan bläddring behåller sitt eget mått: den bor i den
+               GODKÄNDA bekräftelsebilagan och rörs inte. */
+            !bladdrar && oppenRad.def.langtext && 'h-[min(76vh,600px)]',
+          )}
           style={DIALOG_ANKARE}
           onOpenChange={(open) => {
             if (!open) avbrytDialog();
@@ -1648,7 +1637,26 @@ function agendaSammanfattning(rader: AgendaRad[]): string {
  * växer nedåt från en fast kant och slutar där innehållet slutar.
  */
 const DIALOG_PANEL_KLASS =
-  'flex max-h-[min(76vh,600px)] w-(--mm-dialog-width-md) max-w-full origin-top flex-col overflow-hidden';
+  'flex max-h-[min(76vh,600px)] w-(--mm-dialog-width-lg) max-w-full origin-top flex-col overflow-hidden';
+
+/**
+ * Bläddringens panel: LÅST HÖJD, inte bara låst överkant.
+ *
+ * Varv 3 låste övre kanten och mätte positionsspannet 149 → 0 px. Det räckte
+ * inte: NEDRE kanten flöt fortfarande med innehållet, så knappraden hoppade
+ * vid varje steg i bläddringen och pekaren måste flyttas om för varje klick.
+ * Marcus, varv 15: *"det ABSOLUT värsta jag vet när saker växer och krymper."*
+ *
+ * Höjden är därför fast, inte ett tak. `min(80vh, 680px)` är det största som
+ * ryms under ankarpunkten (`clamp(2rem, 12vh, 7rem)` ≈ 101 px vid 844 px höjd)
+ * med marginal kvar nedtill — och ligger i nivå med Hem-svepets `max-h-[90vh]`
+ * i stället för dialogens tidigare 600 px-tak.
+ *
+ * Tomrummet som fällde en fast höjd i varv 3 (*"~500 px tom yta under sitt
+ * enda fält"*) uppstår inte här: textrutan FYLLER panelen, samma behandling
+ * som löptexten redan har. Ytan blir skrivyta, inte tom yta.
+ */
+const DIALOG_BLADDRAR_KLASS = 'h-[min(80vh,680px)] max-h-[min(80vh,680px)]';
 
 /** Fast avstånd till viewportens överkant — dialogens ankarpunkt. Sätts via
  *  `style` på `Modal`, eftersom scrimmens `items-center` är hårdkodad i
@@ -1918,11 +1926,24 @@ function BlockDialog({
           <TextArea
             label={def.etikett}
             hideLabel
-            autoGrow={!def.langtext}
+            autoGrow={!def.langtext && !harNav}
+            /* Tre lägen, medvetet åtskilda:
+               · `langtext` — OFÖRÄNDRAD form. Den bor i den godkända
+                 bekräftelsebilagan och rörs inte.
+               · `harNav` — panelen har LÅST höjd, så rutan tar resten av den
+                 (`flex-1 min-h-0`, inte `h-full`: här finns syskon under i
+                 samma flex-kolumn). Utan det blir den låsta höjden tomrum i
+                 stället för skrivyta.
+               · annars — innehållsdriven som förut.
+               KÄND KANT: ett agenda- eller datumfält i en bläddringsgrupp
+               skulle lämna tomrum. Praktisk information bär bara textfält;
+               dyker ett annat slag upp där är det denna gren som ska växa. */
             className={
               def.langtext
                 ? 'h-full [&_textarea]:h-full [&_textarea]:max-h-none [&_textarea]:min-h-0 [&_textarea]:resize-none [&_textarea]:whitespace-pre-wrap [&_textarea]:leading-relaxed'
-                : undefined
+                : harNav
+                  ? 'min-h-0 flex-1 [&_textarea]:h-full [&_textarea]:max-h-none [&_textarea]:min-h-0 [&_textarea]:resize-none [&_textarea]:whitespace-pre-wrap [&_textarea]:leading-relaxed'
+                  : undefined
             }
             value={text}
             onChange={setText}
