@@ -3,10 +3,10 @@ id: TASK-285.6
 title: >-
   Skiva: Offline-beskedet som överlagrad notis — samma primitiv, ingen knapp,
   stapling definierad
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:08'
-updated_date: '2026-08-22 08:23'
+updated_date: '2026-08-22 08:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -125,4 +125,8 @@ Ingen konflikt: TASK-287 rörde `.facit-policy.conf` +
 `scripts/check-facit.sh` (nya prototyp-markörer), noll överlapp med mina
 filer — `check-facit.sh` grönt efter rebase (12 manifest, 27 ytor, 9
 markörer verifierade kvar).
+
+STÄNGNINGSPASS (kortstängnings-agent): DoD #1-#5,#7,#8 var redan korrekt bockade i main (PR #1739-passet), DoD #6 lämnades öppen — matchar uppdragets premiss exakt. Adjudikerar tillämpligheten oberoende: (1) sökning på "offline" i både tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json gav noll träffar — offline-beskedet är inte en deklarerad yta i något konvergens-manifest. (2) gh pr diff 1729: OfflineIndicator.tsx konsumerar Notis-primitiven (redan promoverad via TASK-285.1/uppdateringsnotisen, facit-yta uppdateringsnotis) direkt; Notis.tsx:s docblock för den nya staplad-propen säger uttryckligen "Facit-formen (bredd, färg, kontur, skugga) ändras INTE av detta — bara det vertikala läget" och att flera samtidiga instanser är "en avsedd situation, inte en ny variant av formen". Ingen egen variant-formgren för offline-beskedet finns i koden. (3) kortets egen FORM-sektion pekar dessutom ut att offline-beskedet "granskas som egen yta av Marcus i stämplings-skivan" — en explicit SENARE granskning, inte en utebliven en. Kravets förutsättning (variant-läge FÖRE att jämföra mot promoverad EFTER) existerar inte för denna yta. DoD #6 lämnas OBOCKAD, otillämplig. Kortet sätts Done.
+
+(Notera: ett tidigare försök i denna session byggde på en stale lokal worktree-checkout som felaktigt visade DoD #3 som obockad — rättat via git reset --hard origin/main innan detta försök. DoD #3 var redan korrekt bockad av PR #1739-passet och rörs inte här.)
 <!-- SECTION:NOTES:END -->

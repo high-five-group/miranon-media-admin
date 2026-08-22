@@ -3,10 +3,10 @@ id: TASK-285.5
 title: >-
   Skiva: Chunk-bannern under sidans rubrik — flytt in i skalet, kortning,
   databesked-varningen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:06'
-updated_date: '2026-08-22 08:23'
+updated_date: '2026-08-22 08:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -60,4 +60,8 @@ REBAS mot main efter att TASK-285.3 (#1703) landade och gjorde PR #1719 DIRTY (o
 Kört om brett EFTER rebasen (alla exitkoder mätta separat): typecheck 0, biome 0 (inga nya fynd i min diff), check-langa-streck.mjs 0 (250 filer), build 0, check:docs 0 (14/14), check-facit.sh 0 (12 manifest, 27 ytor, 2 ogodkända). PLAYWRIGHT_WEBBLASARBETEENDE_DEV_SERVER=1 webblasarbeteende --workers=1: 76/76 (inkl. alla 8 chunk-laddningsfel-tester + 285.3s nya app-error-fallback-tester). PLAYWRIGHT_A11Y_DEV_SERVER=1 a11y --workers=1: 110/110 (inkl. scroll-lock.spec.ts 4/4 — .first()-invarianten på h1 håller med ChunkBanner monterad). Acceptance (hem.acceptance.test.ts): 28/28. hermetik-sjalvtest.mjs: 28/28 fällda med OmockadRequestError.
 
 test:api KUNDE INTE re-verifieras fullt ut: staging-preflighten (TASK-77) stoppade api-staging/kontraktsvakt-grenen upprepade gånger — ett post-merge.yml-jobb (run 32491277264, main-SHA 67912bc1-eran) stod kvar som 'in_progress' i GitHub Actions-API:t långt efter att senare post-merge-körningar redan hade completat, vilket fick semaforen (scripts/staging-semaphore.sh) att fortsätta blockera lokala staging-anrop. INGEN override (MM_STAGING_PREFLIGHT=off) användes — guarden är ett medvetet val, inte en bugg, och en override hade race:at mot en pågående CI-verifiering av samma delade Airtable-bas. Bevis att koden ändå är oberörd: (1) FÖRE rebasen körde test:api rent, 930/930 passed, på exakt samma src-diff (rebasen rörde bara primitives.tsx + en testfils dockblock/copy, ingen data-/API-yta). (2) comm -12 mellan min ändrade fil-lista och 285.7s (#1718) ändrade fil-lista gav NOLL överlapp. api-pure-delen (574 tester, ingen staging-beroende) passerade grönt i BÅDA försöken efter rebasen.
+
+STÄNGNINGSPASS (kortstängnings-agent): DoD #1-#5,#7,#8 var redan korrekt bockade i main (PR #1739-passet), DoD #6 lämnades öppen — matchar uppdragets premiss exakt. Adjudikerar tillämpligheten oberoende, inte bara byggagentens/registerpassets påstående: (1) facit tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json yta chunk-banner har bilder: [] med noten "prototypen visade chunk-bannern OFÖRÄNDRAD (data=chunk) enbart som kontrast ... spec-materia, inte denna prototyps fråga". (2) docs/specs/DESIGN-SYSTEM-SPEC.md rad cirka 1758: "Chunk-bannern har medvetet INGEN egen facit-bild ... Den delar familjens ingen-kontur-regel men har ingen låst pixel-form." (3) gh pr diff 1719: ChunkBanner.tsx återanvänder MessageBox-primitiven (redan promoverad via meddelandefamiljens konvergens, s109-meddelandefamiljen-konvergens/facit.json) ordagrant för formen; variant=1&data=chunk-parametrarna är en DATAVÄG (ADR-103 B2 steg 1: "skarpas DATAVÄGAR behålls ... datakälla, inte form"), inte en formvariant. Ingen egen variant-formgren för chunk-bannern existerar någonstans i kodbasen eller något manifest — kravets förutsättning (variant-läge FÖRE att jämföra mot promoverad EFTER) existerar inte för denna yta. DoD #6 lämnas OBOCKAD, otillämplig. Kortet sätts Done.
+
+(Notera: ett tidigare försök i denna session byggde på en stale lokal worktree-checkout som felaktigt visade DoD #3 som obockad och som drog en falsk slutsats om att jag skulle behöva bocka den — rättat via git reset --hard origin/main innan detta försök. DoD #3 var redan korrekt bockad av PR #1739-passet och rörs inte här.)
 <!-- SECTION:NOTES:END -->
