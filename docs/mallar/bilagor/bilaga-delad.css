@@ -483,16 +483,20 @@ body {
  * Marcus fällde båda: "Det är INGEN skillnad, instagramlogga och
  * internetikonen ligger ju KANT I KANT med QR koden."
  *
- * `gap` står kvar för webbläsarvyn (granskningsfilerna öppnas i Chrome, som
- * honorerar den); marginalen bär PDF:en. Båda sätts till samma värde så de
- * två vyerna inte glider isär.
+ * `gap` stod kvar "för webbläsarvyn" med marginalen "för PDF:en", satta
+ * till samma värde "så de två vyerna inte glider isär". MÄTT FEL 2026-08-23
+ * (docs/research/bilagor-prince-omgranskning-2026-08-23.md, ställe 3):
+ * flexbox-`gap` och barnets `margin` SUMMERAS, de ersätter inte varandra —
+ * Chrome visade 8,8–9,1 mm, Prince 4,4–4,6 mm. Vyerna gled alltså isär
+ * med exakt det värde kommentaren påstod höll dem ihop. Marginalen ensam
+ * bär mellanrummet i BÅDA motorerna; `gap` är borttagen.
  */
 .ikonruta-media {
   display: flex;
-  gap: 4.5mm; /* förlagan: 6,52 pt = 2,3 mm — MEDVETEN avvikelse (Marcus) */
 }
 
-/* Bär mellanrummet i PDF:en, där `gap` ovan inte har någon verkan. */
+/* Bär mellanrummet i båda motorerna — förlagan: 6,52 pt = 2,3 mm,
+   4,5 mm är en MEDVETEN avvikelse (Marcus, S108 Del 10 § E). */
 .ikonruta-media > :first-child {
   margin-right: 4.5mm;
 }
