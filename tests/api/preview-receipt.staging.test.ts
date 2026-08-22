@@ -2,21 +2,31 @@
 // "Riktigt genererad PDF i Visa-overlayen för mallar (klass B) och
 // generatorer (klass C)", klass C-halvan).
 //
-// preview-receipt LÄSER bara (ett Eventplanering-record) och SKRIVER
-// INGENTING — ingen Kvitton-rad, ingen Storage-artefakt, inget mail (AC #3,
-// hård gräns). Bevisar mot SKARP staging-data:
-//   1. allow: en RIKTIG, pdf-lib-renderad PDF — samma inflate+WinAnsi-hex-
-//      extraktion som generate-event-attachment.staging.test.ts (TASK-146.5)
-//      etablerade, mot kvittots rader (`kvittoRader`,
-//      _shared/receipt-content.ts): "FÖRHANDSVISNING" (platshållar-numret),
-//      "Exempelperson" (typexemplet, AC #2) och det RIKTIGA eventnamnet
-//      (BELAGGNING_EVENT_ID:s "Event (source)"-fält).
-//   2. allow: SIDOEFFEKTSFRIHETENS BETEENDE-BEVIS — TVÅ anrop i rad ger
-//      EXAKT samma platshållar-kvittonummer ("FÖRHANDSVISNING") båda
-//      gångerna. En RIKTIG allokering (`_shared/receipt-numbering.ts` §
-//      allocateReceiptNumber) hade inkrementerat ett löpnummer mellan
-//      anropen — att numret INTE ändras är själva beviset att ingen ledger
-//      rördes, mätt genom API:t (svart låda), inte bara läst i källkoden.
+// preview-receipt LÄSER (ett Eventplanering-record) och SKRIVER ETT
+// TRANSIENT Storage-utkast (`_shared/utkast.ts` § `laggUtkast`,
+// `ADR-124`/`TASK-302.2`) — INGEN Kvitton-rad, INGET mail (AC #3, hård
+// gräns, amenderad i EF:ens filhuvud). Svaret bytte `{ pdfBase64 }` →
+// `{ url, utgar }` — en signerad URL i stället för PDF-bytes, eftersom
+// Chromes PDF-visare bara scrollar jämnt på en URL serverad av
+// nätverkstjänsten (mätt, `ADR-124` § Kontext). Bevisar mot SKARP
+// staging-data:
+//   1. allow: en RIKTIG, pdf-lib-renderad PDF — HEAD mot den signerade
+//      URL:en ger 200/accept-ranges: bytes/content-type: application/pdf
+//      (samma disciplin som test-docraptor-render-utkast.staging.test.ts,
+//      TASK-302.1), och en GET av bytesen bevisar innehållet med samma
+//      inflate+WinAnsi-hex-extraktion som generate-event-attachment.
+//      staging.test.ts (TASK-146.5) etablerade, mot kvittots rader
+//      (`kvittoRader`, _shared/receipt-content.ts): "FÖRHANDSVISNING"
+//      (platshållar-numret), "Exempelperson" (typexemplet, AC #2) och det
+//      RIKTIGA eventnamnet (BELAGGNING_EVENT_ID:s "Event (source)"-fält).
+//   2. allow: UPSERT-BEVISET + SIDOEFFEKTSFRIHETENS BETEENDE-BEVIS — TVÅ
+//      anrop i rad ger IDENTISK objekt-path (`utkast/<eventId>/kvitto.pdf`,
+//      upsert: true) OCH exakt samma platshållar-kvittonummer
+//      ("FÖRHANDSVISNING") båda gångerna. En RIKTIG allokering
+//      (`_shared/receipt-numbering.ts` § allocateReceiptNumber) hade
+//      inkrementerat ett löpnummer mellan anropen — att numret INTE ändras
+//      är själva beviset att ingen ledger rördes, mätt genom API:t (svart
+//      låda), inte bara läst i källkoden.
 //   3. deny: saknad/malformad eventId → 400; okänt event (rec-format, finns
 //      ej) → 404; anon (ingen JWT) → 401; CORS preflight; fel HTTP-metod
 //      (GET) → 405 (deny-triple-klassen, samma tre ben som
@@ -39,6 +49,7 @@
 
 import { inflateSync } from 'node:zlib';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
+import { UtkastResultatSchema } from '../../src/domain/schemas';
 import { BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -118,11 +129,6 @@ interface PreviewBody {
   eventId?: unknown;
 }
 
-interface PreviewResponse {
-  pdfBase64: string;
-  requestId: string;
-}
-
 function postPreview(
   request: APIRequestContext,
   config: ApiConfig,
@@ -151,15 +157,28 @@ test.describe('preview-receipt — skarp conformance (TASK-246)', () => {
     const res = await postPreview(request, config, jwt, { eventId: BELAGGNING_EVENT_ID });
     const raw = await res.text();
     expect(res.status(), raw).toBe(200);
-    const body = JSON.parse(raw) as PreviewResponse & Record<string, unknown>;
+    const rawBody = JSON.parse(raw) as Record<string, unknown>;
 
-    // STRUKTURBEVIS — svaret bär BARA pdfBase64+requestId, inget persistens-fält.
-    expect(typeof body.pdfBase64).toBe('string');
-    expect(body.receiptId).toBeUndefined();
-    expect(body.kvittonummer).toBeUndefined();
-    expect(body.status).toBeUndefined();
+    // STRUKTURBEVIS — svaret bär url+utgar+requestId, inget persistens-fält,
+    // och den GAMLA pdfBase64-formen (ADR-124, TASK-302.2) är verifierat
+    // BORTA — inte bara utbytt i typen.
+    expect(rawBody.pdfBase64).toBeUndefined();
+    expect(rawBody.receiptId).toBeUndefined();
+    expect(rawBody.kvittonummer).toBeUndefined();
+    expect(rawBody.status).toBeUndefined();
+    const body = UtkastResultatSchema.parse(rawBody);
+    expect(new Date(body.utgar).getTime()).toBeGreaterThan(Date.now());
+    expect(new URL(body.url).pathname).toContain(`utkast/${BELAGGNING_EVENT_ID}/kvitto.pdf`);
 
-    const pdfBytes = Buffer.from(body.pdfBase64, 'base64');
+    // ÅTKOMST-BEVISET: URL:en prövas faktiskt (HEAD), inte bara plausibel
+    // form — samma disciplin som test-docraptor-render-utkast.staging.test.ts.
+    const head = await request.head(body.url);
+    expect(head.status(), 'signerad URL gav inte 200 på HEAD').toBe(200);
+    expect(head.headers()['accept-ranges']).toBe('bytes');
+    expect(head.headers()['content-type']).toMatch(/^application\/pdf/);
+
+    const pdfResponse = await request.get(body.url);
+    const pdfBytes = Buffer.from(await pdfResponse.body());
     expect(pdfBytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
 
     // "FÖRHANDSVISNING" — ALDRIG ett riktigt "MM-<år>-N"-nummer.
@@ -185,13 +204,23 @@ test.describe('preview-receipt — skarp conformance (TASK-246)', () => {
 
     const res1 = await postPreview(request, config, jwt, { eventId: BELAGGNING_EVENT_ID });
     expect(res1.status(), await res1.text()).toBe(200);
-    const body1 = (await res1.json()) as PreviewResponse;
-    const pdf1 = Buffer.from(body1.pdfBase64, 'base64');
+    const body1 = UtkastResultatSchema.parse(await res1.json());
+    const pdfRes1 = await request.get(body1.url);
+    const pdf1 = Buffer.from(await pdfRes1.body());
 
     const res2 = await postPreview(request, config, jwt, { eventId: BELAGGNING_EVENT_ID });
     expect(res2.status(), await res2.text()).toBe(200);
-    const body2 = (await res2.json()) as PreviewResponse;
-    const pdf2 = Buffer.from(body2.pdfBase64, 'base64');
+    const body2 = UtkastResultatSchema.parse(await res2.json());
+    const pdfRes2 = await request.get(body2.url);
+    const pdf2 = Buffer.from(await pdfRes2.body());
+
+    // UPSERT-BEVISET (samma teknik som test-docraptor-render-utkast.
+    // staging.test.ts, TASK-302.1): samma eventId+typ ⇒ IDENTISK objekt-path
+    // trots olika signerings-token.
+    expect(
+      new URL(body2.url).pathname,
+      'andra anropet skapade ett NYTT objekt i stället för upsert',
+    ).toBe(new URL(body1.url).pathname);
 
     // BÅDA innehåller platshållaren (substring-check, delad grund).
     expect(decodedHexIncludes(pdf1, 'Kvitto FÖRHANDSVISNING')).toBe(true);

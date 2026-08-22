@@ -65,18 +65,42 @@
 // platshållartext (aldrig inkrementerande) — det ÄR beviset att ingen
 // ledger rörts (se testsvitens "två anrop, samma nummer"-fall).
 //
-// LÄSER (fetchAirtableRecord mot Eventplanering) — INGEN SKRIVNING alls,
-// varken Airtable, Storage eller Resend. Samma EF1–EF6-ribba (SECURITY-SPEC
-// §6.10) som generate-event-attachment/get-attachment-download-url.
+// [ADR-124, TASK-302.2] LEVERANSVÄGEN ÄNDRAD — AC #3 (TASK-146.5) AMENDERAS
+// ÖPPET, RIVS INTE. Raden nedan löd till och med 2026-08-22: "LÄSER
+// (fetchAirtableRecord mot Eventplanering) — INGEN SKRIVNING alls, varken
+// Airtable, Storage eller Resend." Den premissen — att bytes till klienten
+// räcker för att visa dokumentet — föll mot en mätning (sex
+// klientleveransarmar, headed Chrome 151, `ADR-124` § Kontext): endast en
+// URL SERVERAD AV NÄTVERKSTJÄNSTEN scrollar jämnt. Ny, amenderad AC #3,
+// VERBATIM (`ADR-124` § Beslut 3):
+//
+//   Förhandsvisningen har noll KONSUMENT-SYNLIGA sidoeffekter: ingen
+//   Bilagor-rad, inget allokerat kvittonummer, inget mail. Den skriver ett
+//   TRANSIENT utkast under `utkast/<eventId>/<typ>.pdf` i bucket `bilagor`
+//   — aldrig listat i appen, överskrivet per event och typ (`upsert`),
+//   borttaget vid skarp generering — för att Chromes PDF-visare bara
+//   scrollar jämnt på en URL serverad av nätverkstjänsten (ADR-124).
+//
+// Det gamla resonemanget om kvittonummer och Resend (ovan i detta filhuvud)
+// STÅR KVAR — det är fortfarande sant. Denna EF SKRIVER nu ett TRANSIENT
+// Storage-utkast (`laggUtkast`, `_shared/utkast.ts`, `typ: 'kvitto'`), men
+// ALDRIG till Airtable och ALDRIG via Resend.
+//
+// LÄSER (fetchAirtableRecord mot Eventplanering) OCH SKRIVER ETT TRANSIENT
+// Storage-utkast — INGEN Airtable-skrivning, INGET Resend-anrop. Samma
+// EF1–EF6-ribba (SECURITY-SPEC §6.10) som generate-event-attachment/
+// get-attachment-download-url.
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { fetchAirtableRecord } from '../_shared/airtable-client.ts';
-import { isValidEventId, toBase64 } from '../_shared/attachments.ts';
+import { isValidEventId } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse, ValidationError } from '../_shared/errors.ts';
 import { kvittoRader } from '../_shared/receipt-content.ts';
 import { renderKvittoPdf } from '../_shared/receipt-pdf.ts';
+import { laggUtkast } from '../_shared/utkast.ts';
 
 const EVENTS_TABLE = 'Eventplanering';
 
@@ -146,9 +170,23 @@ Deno.serve(async (req) => {
     });
     const pdfBytes = await renderKvittoPdf(rader);
 
+    // [ADR-124, TASK-302.2] TRANSIENT utkast i Storage, inte bytes till
+    // klienten — se filhuvudets LEVERANSVÄGEN-ÄNDRAD-stycke. `laggUtkast` är
+    // den GEMENSAMMA formeln (`_shared/utkast.ts`), samma som
+    // `test-docraptor-render`s utkast-gren redan använder (TASK-302.1).
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const { url, utgar } = await laggUtkast(supabaseAdmin, {
+      eventId,
+      typ: 'kvitto',
+      bytes: pdfBytes,
+    });
+
     console.log(`[preview-receipt] ALLOW | caller_user_id=${user.id} | event=${eventId}`);
 
-    return new Response(JSON.stringify({ pdfBase64: toBase64(pdfBytes), requestId }), {
+    return new Response(JSON.stringify({ url, utgar, requestId }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -27,8 +27,13 @@
 //      persisterings-grenen), OCH ett get-event-attachments-anrop FÖRE/EFTER
 //      visar att Bilagor-radantalet för eventet är EXAKT oförändrat (funk-
 //      tionellt bevis — ingen ny rad landade, oavsett vad svaret PÅSTÅR).
-//      pdfBase64 är ändå en RIKTIG, pdf-lib-renderad PDF (samma
-//      inflate+WinAnsi-bevis som allow-testet ovan) — "riktigt genererad",
+//      [ÄNDRAD, ADR-124, TASK-302.2] Svaret bytte `{ pdfBase64 }` →
+//      `{ url, utgar }` — en signerad URL till ett TRANSIENT Storage-utkast
+//      (`_shared/utkast.ts` § `laggUtkast`, `typ: 'deltagarinformation'`)
+//      i stället för PDF-bytes, eftersom Chromes PDF-visare bara scrollar
+//      jämnt på en URL serverad av nätverkstjänsten (mätt, `ADR-124` §
+//      Kontext). HEAD mot URL:en + en GET av bytesen bevisar samma
+//      inflate+WinAnsi-bevis som allow-testet ovan — "riktigt genererad",
 //      inte en attrapp.
 //
 // ATTACH-MÅL: den permanenta beläggnings-fixturens event (BELAGGNING_EVENT_ID) —
@@ -56,6 +61,7 @@
 
 import { inflateSync } from 'node:zlib';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
+import { UtkastResultatSchema } from '../../src/domain/schemas';
 import { BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -122,14 +128,6 @@ function extractInflatedText(pdfBytes: Buffer): string {
 interface GenerateBody {
   eventId?: unknown;
   preview?: unknown;
-}
-
-/** [TASK-246] Svaret från `preview: true`-grenen — MEDVETET en ANNAN form än
- * `GenerateResponse` nedan (inget `attachment`/`record`/`storagePath` —
- * strukturellt bevis, se filhuvudets punkt 5). */
-interface PreviewResponse {
-  pdfBase64: string;
-  requestId: string;
 }
 
 interface GenerateResponse {
@@ -282,15 +280,31 @@ test.describe('generate-event-attachment — skarp conformance (TASK-146.5)', ()
     // 200, INTE 201 — inget skapades (201 hade varit fel semantik för en
     // förhandsvisning).
     expect(res.status(), raw).toBe(200);
-    const body = JSON.parse(raw) as PreviewResponse & Record<string, unknown>;
+    const rawBody = JSON.parse(raw) as Record<string, unknown>;
 
-    // STRUKTURBEVIS: svaret bär BARA pdfBase64+requestId — koden nådde
-    // ALDRIG persisterings-grenen (annars hade attachment/record/storagePath
-    // funnits, se GenerateResponse ovan).
-    expect(typeof body.pdfBase64).toBe('string');
-    expect(body.attachment).toBeUndefined();
-    expect(body.record).toBeUndefined();
-    expect(body.storagePath).toBeUndefined();
+    // STRUKTURBEVIS: svaret bär url+utgar+requestId — koden nådde ALDRIG
+    // persisterings-grenen (annars hade attachment/record/storagePath
+    // funnits, se GenerateResponse ovan), och den GAMLA pdfBase64-formen
+    // (ADR-124, TASK-302.2 — amenderar AC #3) är verifierat BORTA.
+    expect(rawBody.pdfBase64).toBeUndefined();
+    expect(rawBody.attachment).toBeUndefined();
+    expect(rawBody.record).toBeUndefined();
+    expect(rawBody.storagePath).toBeUndefined();
+    const body = UtkastResultatSchema.parse(rawBody);
+    expect(new Date(body.utgar).getTime()).toBeGreaterThan(Date.now());
+
+    // Sökvägen är den DETERMINISTISKA `utkast/<eventId>/<typ>.pdf`-formen
+    // (`_shared/utkast.ts`) — `typ: 'deltagarinformation'` eftersom det ÄR
+    // systemmallens namn (`MALL_NAMN`), inte en gissning.
+    expect(new URL(body.url).pathname).toContain(
+      `utkast/${BELAGGNING_EVENT_ID}/deltagarinformation.pdf`,
+    );
+
+    // ÅTKOMST-BEVISET: URL:en prövas faktiskt, inte bara plausibel form.
+    const head = await request.head(body.url);
+    expect(head.status(), 'signerad URL gav inte 200 på HEAD').toBe(200);
+    expect(head.headers()['accept-ranges']).toBe('bytes');
+    expect(head.headers()['content-type']).toMatch(/^application\/pdf/);
 
     // FUNKTIONELLT BEVIS: antalet klass B-rader (namn-prefixet) för eventet
     // är EXAKT oförändrat — orört av samtidig, orelaterad churn (se
@@ -299,8 +313,9 @@ test.describe('generate-event-attachment — skarp conformance (TASK-146.5)', ()
     expect(efterCount, 'preview: true skapade en klass B-rad — sidoeffekt!').toBe(foreCount);
 
     // "RIKTIGT GENERERAD", inte en attrapp — SAMMA svenska-tecken-bevis som
-    // allow-testet ovan, mot DENNA förhandsvisnings-pdfBase64.
-    const pdfBytes = Buffer.from(body.pdfBase64, 'base64');
+    // allow-testet ovan, mot DEN FAKTISKT LAGRADE utkasts-PDF:en.
+    const pdfResponse = await request.get(body.url);
+    const pdfBytes = Buffer.from(await pdfResponse.body());
     expect(pdfBytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     const decoded = extractInflatedText(pdfBytes);
     for (const rad of SYSTEMMALL_SWENSKA_RADER) {

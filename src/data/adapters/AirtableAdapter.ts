@@ -807,7 +807,11 @@ export class AirtableAdapter implements DataSourceAdapter {
    * Sidoeffektsfri förhandsvisning av klass B:s systemmall (TASK-246). POST
    * mot generate-event-attachment MED `preview: true` — se
    * `DataSourceAdapter.previewEventTemplate` för det fulla kontraktet (SAMMA
-   * EF, en gren som aldrig når Storage/Bilagor-skrivningen).
+   * EF, en gren som aldrig når Bilagor-skrivningen).
+   *
+   * [ÄNDRAD, ADR-124, TASK-302.2] Svaret är nu `{ url, utgar }`
+   * (`DocumentPreviewSchema`) — EF:en skriver ett transient Storage-utkast
+   * och svarar med dess signerade URL i stället för `pdfBase64`.
    */
   async previewEventTemplate(eventId: string): Promise<DocumentPreview> {
     const data = await postEdgeFunction<unknown>('generate-event-attachment', {
@@ -822,6 +826,10 @@ export class AirtableAdapter implements DataSourceAdapter {
    * POST mot preview-receipt — en NY, dedikerad EF (INTE send-receipt-email
    * — se `DataSourceAdapter.previewReceipt` för varför den ordinarie
    * sändvägen inte kan återanvändas).
+   *
+   * [ÄNDRAD, ADR-124, TASK-302.2] Svaret är nu `{ url, utgar }`
+   * (`DocumentPreviewSchema`) — samma leveransväg-ändring som
+   * `previewEventTemplate` ovan.
    */
   async previewReceipt(eventId: string): Promise<DocumentPreview> {
     const data = await postEdgeFunction<unknown>('preview-receipt', { eventId });
@@ -852,8 +860,16 @@ export class AirtableAdapter implements DataSourceAdapter {
    *
    * ADRESSEN ÄR PROVISORISK, SAMMA RESONEMANG SOM `renderPdfFranHtml` OVAN:
    * `test-docraptor-render` med `leverans: 'utkast'` är staging-only och
-   * prod-exkluderad. Det är denna rad som byter till de skarpa preview-
-   * EF:erna vid `TASK-302.2` — interfacet ovanför märker ingenting av bytet.
+   * prod-exkluderad. [RÄTTAT, TASK-302.2] Denna rad SKREV tidigare "byter
+   * till de skarpa preview-EF:erna vid TASK-302.2" — FEL: `ADR-124` § Öppet
+   * säger uttryckligen att `generate-event-attachment` FORTFARANDE ritar med
+   * pdf-lib, och bytet till DocRaptor-vägen är "promoveringens sak, inte
+   * denna ADR:s". `TASK-302.2` bytte BARA leveransformen på de befintliga
+   * pdf-lib-EF:erna (`preview-receipt`/`generate-event-attachment`) —
+   * `renderPdfTillUtkast` här är en HELT SEPARAT metod (egen HTML-input, egen
+   * DocRaptor-rendering) som denna skiva inte rör. Adressen byter i stället
+   * vid en FRAMTIDA promovering (`ADR-103`), om/när DocRaptor-vägen tar över
+   * mall-genereringen — interfacet ovanför märker ingenting av det bytet.
    *
    * `postEdgeFunction`, inte `postEdgeFunctionBlob`: den här grenen svarar
    * JSON (`{ url, utgar }`), inte rå `application/pdf` som `renderPdfFranHtml`
