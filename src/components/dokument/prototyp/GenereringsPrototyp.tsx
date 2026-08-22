@@ -43,6 +43,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   Files,
   FileText,
   Loader2,
@@ -1025,14 +1026,26 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
  * höjd per konstruktion — två led, aldrig fler, aldrig färre.
  * ------------------------------------------------------------------ */
 
+/*
+ * `url` bär den färdiga PDF:en. Den ligger i resultatet och inte i en egen
+ * state-variabel därför att de två alltid ska bytas SAMTIDIGT: ett nytt
+ * resultat utan ny URL hade lämnat en "Öppna"-knapp som pekar på förra
+ * dokumentet — precis den sortens tysta fel som inte syns förrän någon
+ * öppnar fel bilaga.
+ *
+ * `skarpt` skiljer granskning från skapande. Texten "ligger nu bland
+ * eventets dokument" är osann om en granskning, och ett halvsant
+ * framgångsbesked är värre än inget.
+ */
 type Resultat =
-  | { typ: 'ok'; utelamnade: string[]; sparade: string[]; saknade: string[] }
-  /* Förhandsgranskningen lyckades, men något typsnitt kunde inte bäddas in.
-     EGEN gren och inte en tom 'ok': "är skapad och ligger bland eventets
-     dokument" är osant om en granskning, och ett halvsant framgångsbesked är
-     värre än inget. Se `sjalvbarande.ts` § FAIL-SAFE för varför bygget
-     fortsätter i stället för att fälla. */
-  | { typ: 'saknade'; saknade: string[] }
+  | {
+      typ: 'klar';
+      skarpt: boolean;
+      url: string;
+      utelamnade: string[];
+      sparade: string[];
+      saknade: string[];
+    }
   | { typ: 'fel'; text: string };
 
 // INGEN bakgrundstint vid hover — husets divide-y-grammatik (AktivitetsHistorik
@@ -1322,46 +1335,29 @@ function GenereringsVy({
   };
 
   /**
-   * Öppnar dokumentet som RIKTIG PDF i en ny flik; `skarpt` sparar dessutom
-   * platsens standard.
+   * Skapar dokumentet som PDF; `skarpt` sparar dessutom platsens standard.
    *
-   * VARV 18 (S108 MARCUS-SEKVENS punkt 3, `ADR-119`): fliken visade tidigare
-   * den renderade HTML:en via `document.write` — alltså en webbsida, inte
-   * dokumentet. Research-passet
-   * (`docs/research/forhandsgranskning-dokumentgenerering-branschmonster-2026-08-22.md`
-   * § Rekommendation 1) mätte upp att glappet mellan granskad och levererad
-   * form är exakt den brist Google Docs och Canva bär. Kedjan är nu:
-   * rendera mallen → gör HTML:en självbärande (`./sjalvbarande`) → rendera
-   * till PDF genom datalagret → visa `blob:`-URL:en i fliken.
+   * ÖPPNAR INGENTING. Marcus 2026-08-22: *"Lotta ska inte skickas till
+   * pdf:en automatiskt utan välja att gå dit."* Laddningen visas på knappen
+   * i appen, och den färdiga PDF:en presenteras som ett val i resultatytan.
    *
-   * KRITISKT: `window.open` synkront här, före varje `await` — annars
-   * blockerar webbläsaren popupen (samma regel som `DokumentYta` §
-   * IKONPAR-not). Allt asynkront ligger därför inuti mutationens
-   * `byggHtml`-callback, som körs först efter att fliken finns.
-   *
-   * `aria-disabled` + vakt, inte `isDisabled`: ett native `disabled` tar
-   * knappen ur tabordningen mitt i klicket (`DokumentYta` § samma not).
+   * Det tar dessutom bort behovet av den synkrona `window.open` som första
+   * bygget bar (`DokumentYta` § IKONPAR-not): öppnandet sker nu i ett eget,
+   * direkt klick, och en popup-blockerare har inget att invända mot det.
    */
-  const oppnaDokument = (skarpt: boolean) => {
+  const skapaDokument = (skarpt: boolean) => {
     if (forhandsgranska.isPending) return;
-    // KRITISKT: window.open synkront i klicket, före await — se docblocken.
-    const fonster = window.open('', '_blank');
     setResultat(null);
     forhandsgranska.mutate(
       {
         byggHtml: async () => await gorSjalvbarande(await renderaDokument(mall, event, allaRader)),
         namn: meta.namn,
-        handle: fonster,
       },
       {
-        onSuccess: ({ saknade }) => {
-          if (!skarpt) {
-            if (saknade.length) setResultat({ typ: 'saknade', saknade });
-            return;
-          }
-          // Platsens standard sparas när bilagan skapas — inte när krysset sätts.
+        onSuccess: ({ url, saknade }) => {
           const sparade: string[] = [];
-          if (event.ort) {
+          if (skarpt && event.ort) {
+            // Platsens standard sparas när bilagan skapas — inte när krysset sätts.
             const falt: Partial<Record<PlatsFalt, string>> = {};
             for (const r of allaRader) {
               if (r.def.platsFalt && somStandard.has(r.def.id) && r.text?.trim()) {
@@ -1380,16 +1376,14 @@ function GenereringsVy({
             }
           }
           setResultat({
-            typ: 'ok',
-            utelamnade: utelamnade.map((r) => r.def.etikett.toLowerCase()),
+            typ: 'klar',
+            skarpt,
+            url,
+            utelamnade: skarpt ? utelamnade.map((r) => r.def.etikett.toLowerCase()) : [],
             sparade,
             saknade,
           });
         },
-        /* Fliken stängs INTE vid fel — mutationen har redan skrivit felet i
-           den, och en flik som försvinner av sig själv lämnar användaren utan
-           besked om vad som hände. Meddelandet upprepas här för den som
-           tittar på formuläret i stället för på fliken. */
         onError: (e) => setResultat({ typ: 'fel', text: e.message }),
       },
     );
@@ -1440,7 +1434,6 @@ function GenereringsVy({
           </MessageBox>
         )}
       </div>
-
       {rader.map((g) => {
         const rubrikId = `grupp-${g.rubrik.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
         const arInforutan = g.rubrik === 'Inforutan';
@@ -1584,33 +1577,50 @@ function GenereringsVy({
           </section>
         );
       })}
-
       <div className="flex flex-col gap-4">
-        {resultat?.typ === 'ok' && (
+        {/* ALLTID `success` när renderingen gick igenom — även med saknade
+            typsnitt. Ett gult larm vid varje granskning vore brus: Cavolini
+            KAN inte bäddas in lokalt (licensen förbjuder att filen committas,
+            den nås via en git-ignorerad symlänk som Vite serverar som /@fs och
+            nekar), och `bilaga-delad.css` § FONTSTRATEGIN beskriver fallbacken
+            till Comic Neue som AVSIKTLIG. Uppgiften står kvar i klartext i
+            rutan — den är sann och värd att veta — men den larmar inte om ett
+            läge som är designat. */}
+        {resultat?.typ === 'klar' && (
           <MessageBox intent="success">
-            {meta.namn}n är skapad och ligger nu bland eventets dokument, redo att bifogas i
-            utskick.
+            {resultat.skarpt
+              ? `${meta.namn}n är skapad och ligger nu bland eventets dokument, redo att bifogas i utskick.`
+              : `${meta.namn}n är klar att granska.`}
             {resultat.utelamnade.length > 0 && ` Utan ${ochLista(resultat.utelamnade)}.`}
             {resultat.sparade.length > 0 &&
-              ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}{' '}
-            <span className="text-text-muted">
-              (Prototyp: dokumentet öppnades som färdig PDF i ett nytt fönster, men sparas inte
-              bland eventets dokument.)
-            </span>
+              ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}
             {resultat.saknade.length > 0 && (
               <span className="text-text-muted">
                 {' '}
-                Typsnittet {ochLista(resultat.saknade.map(filnamn))} kunde inte bäddas in, så PDF:en
-                använder ett ersättningstypsnitt på de raderna.
+                Typsnittet {ochLista(resultat.saknade.map(filnamn))} kunde inte bäddas in — PDF:en
+                använder ersättningstypsnittet på de raderna, som avsett.
               </span>
             )}
-          </MessageBox>
-        )}
-        {resultat?.typ === 'saknade' && (
-          <MessageBox intent="warning">
-            Dokumentet öppnades, men typsnittet {ochLista(resultat.saknade.map(filnamn))} kunde inte
-            bäddas in — PDF:en använder ett ersättningstypsnitt på de raderna. Kontrollera att
-            dev-servern når typsnittsfilerna.
+            {!resultat.skarpt && (
+              <span className="text-text-muted"> (Prototyp: ingen PDF sparas.)</span>
+            )}
+            {/* DOKUMENTET ÄR ETT VAL, INTE EN OMDIRIGERING. `window.open` sker
+                här, i ett eget direkt klick — därför finns ingen popup-
+                blockerare att smita förbi, och Lotta bestämmer själv när hon
+                lämnar formuläret. `noreferrer` utelämnas medvetet: målet är en
+                blob:-URL byggd av vår egen JS, aldrig en främmande adress
+                (samma resonemang som DokumentYta § IKONPAR). */}
+            <span className="mt-3 block">
+              <Button
+                intent="primary"
+                emphasis="outline"
+                size="sm"
+                onPress={() => window.open(resultat.url, '_blank')}
+              >
+                <ExternalLink aria-hidden="true" size={16} className="shrink-0" />
+                Öppna {meta.namn.toLowerCase()}n
+              </Button>
+            </span>
           </MessageBox>
         )}
         {resultat?.typ === 'fel' && <MessageBox intent="error">{resultat.text}</MessageBox>}
@@ -1618,13 +1628,13 @@ function GenereringsVy({
         <div className="flex flex-col gap-2">
           {/* `aria-disabled`, INTE `isDisabled`: ett native `disabled` tar
               knappen ur tabordningen mitt i klicket. Vakten först i
-              `oppnaDokument` bär dubbelklicks-skyddet i stället — samma
+              `skapaDokument` bär dubbelklicks-skyddet i stället — samma
               mönster som `DokumentYta` § DokumentAtgardsKnappar. */}
           <Button
             intent="secondary"
             emphasis="outline"
             aria-disabled={forhandsgranska.isPending}
-            onPress={() => oppnaDokument(false)}
+            onPress={() => skapaDokument(false)}
           >
             {forhandsgranska.isPending && (
               <Loader2 aria-hidden="true" size={16} className="shrink-0 motion-safe:animate-spin" />
@@ -1634,14 +1644,13 @@ function GenereringsVy({
           <Button
             intent="primary"
             aria-disabled={forhandsgranska.isPending}
-            onPress={() => oppnaDokument(true)}
+            onPress={() => skapaDokument(true)}
           >
             <FileText aria-hidden="true" size={16} className="shrink-0" />
             Skapa {meta.namn.toLowerCase()}
           </Button>
         </div>
       </div>
-
       {/* Redigeringen bor i en egen yta — villkorad rendering så utkastet är
           färskt per öppning (samma disciplin som RackviddsDialog).
           Panelen bor HÄR och inte i BlockDialog: bläddringen byter rad utan

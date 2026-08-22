@@ -206,6 +206,15 @@ body {
 }
 
 /*
+ * Luft mellan logga och rubrik — Marcus 2026-08-22: "Lite mer luft mellan
+ * logga och rubrik". MEDVETEN AVVIKELSE från förlagan, som sätter dem tätt.
+ * Gäller bekräftelsebilagan; deltagarinformationen är orörd (ingen order).
+ */
+.sida--bekraftelse .loggarad {
+  margin-bottom: 4mm;
+}
+
+/*
  * Loggans bredd är matchad mot förlagans BLÄCK-bredd (ordmärkets faktiska
  * ytterkanter i den renderade bilden), inte mot bildrutans bredd — förlagans
  * raster bär tomrum runt märket som vår SVG saknar. Bekräftelsebilagan:
@@ -461,10 +470,26 @@ body {
   gap: 2.3mm; /* förlagan: 6,52 pt mellan ikon och QR */
 }
 
+/*
+ * IKONERNA ÄR KRYMPTA FÖR ATT LUFTEN SKA FÅ PLATS — Marcus 2026-08-22:
+ * ikon och QR "ligger kant i kant nu, ser sjukt ut".
+ *
+ * Orsaken var inte att gapet saknades utan att det inte RYMDES. Räknat på
+ * rutans egna mått (border-box): 51,1 mm − 2 × 3 mm padding − 2 × 2,25 pt
+ * ram = 43,51 mm inre bredd, mot 2 × 21,05 = 42,10 mm ikoner. Kvar för gap:
+ * 1,41 mm — men `.ikonruta-media` begärde 2,30 mm. Flexbox kan inte
+ * uppfylla det och kapar mellanrummet, vilket är exakt vad som syntes.
+ *
+ * Av de tre möjliga eftergifterna (bredda rutan, minska paddingen, krympa
+ * ikonerna) valdes den sista: rutans yttermått är det som läses mot
+ * förlagan, och 1,55 mm på en ikon syns inte medan luften mellan dem gör
+ * det. 19,5 mm ger 43,51 − 39,0 = 4,51 mm verkligt gap. QR-koden är
+ * fortfarande väl över skannbar storlek.
+ */
 .ikonruta-ikon,
 .ikonruta-qr {
-  width: 21.05mm; /* förlagan: 59,69 pt, kvadratisk */
-  height: 21.05mm;
+  width: 19.5mm; /* förlagan: 59,69 pt = 21,05 mm — se noten ovan */
+  height: 19.5mm;
 }
 
 .ikonruta-omslag {
