@@ -60,13 +60,23 @@ import { Link } from '@tanstack/react-router';
 import { ChevronRight, X } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import { Button as AriaButton, Input as AriaInput, SearchField } from 'react-aria-components';
+import {
+  Button as AriaButton,
+  Input as AriaInput,
+  SearchField,
+  Toolbar,
+} from 'react-aria-components';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { useDataSource } from '@/data/useDataSource';
 import type { Person } from '@/domain/models/Person';
 import {
+  arGiltigHink,
+  BOKSTAVSHINKAR,
+  filtreraPaBokstavshink,
   filtreraPersonregister,
+  HINK_UTAN_NAMN,
+  HINK_UTAN_NAMN_ETIKETT,
   personVisningsnamn,
   sorteraPersonregister,
 } from '@/lib/person-sok';
@@ -250,6 +260,174 @@ function Pill({
 }
 
 /**
+ * [TASK-283.2] BOKSTAVSRADEN — 29 bokstäver plus hinken för namnlösa, direkt
+ * under sökrutan (PRD `TASK-283`).
+ *
+ * ═══ ETT TABBSTEG, INTE TRETTIO (AC #6) ═══
+ *
+ * Motorn är `react-aria-components` egen `Toolbar` (1.20.0), inte en egen
+ * roving-tabindex. Den bär APG:s Toolbar-mönster
+ * (`w3.org/WAI/ARIA/apg/patterns/toolbar/`): raden är EN tabbstation, och
+ * pil vänster/höger flyttar fokus mellan knapparna inuti den. Mekaniken i
+ * `useToolbar` är värd att känna till, eftersom den INTE är den klassiska
+ * `tabIndex={-1}`-varianten: knapparna behåller sin naturliga tabbordning,
+ * och Tab INUTI raden fångas av en `onKeyDownCapture` som först flyttar
+ * fokus till radens SISTA (eller vid Shift+Tab FÖRSTA) knapp och sedan låter
+ * webbläsaren tabba vidare därifrån. Utfallet är detsamma som roving
+ * tabindex ger — ett steg in, ett steg ut — och det är utfallet AC #6 mäter,
+ * i `tests/acceptance/persons-list.acceptance.test.ts`.
+ *
+ * ═══ VANLIGA KNAPPAR MED `aria-pressed`, INTE EN RADIOGRUPP ═══
+ *
+ * PRD-beslutet, och det följer husets egen precedent: `Deltagare.tsx` (rad
+ * ~165 + ~312) bär samma idiom för eventsidans summeringsfilter, efter att en
+ * `ToggleButtonGroup`-lösning medvetet REVS i `TASK-162.3`. APG:s
+ * button-mönster säger dessutom det som gör formen rätt här: *"It is critical
+ * the label on a toggle does not change when its state changes"* — `K` förblir
+ * `K`, tillståndet bärs av `aria-pressed` och av stilen. Ett andra tryck på
+ * samma knapp släpper filtret (AC #2); ingen separat rensa-knapp finns, och
+ * det är avsiktligt (användarberättelse 4).
+ *
+ * ═══ MOBIL-LAYOUTEN: RADBRYTNING, VALD MOT MÄTNING (AC #7) ═══
+ *
+ * 30 träffmål mot WCAG 2.5.8:s golv på 24 px ryms inte på en enda rad — och
+ * INTE HELLER PÅ EN SKRIVBORDSSKÄRM, vilket är den del som räknas fel på
+ * papper. `AppShell.tsx:45` kapar innehållskolumnen vid `max-w-[600px] px-4`,
+ * alltså 568 px oavsett hur bred skärmen är, medan raden behöver ~1 015 px
+ * (29 x 28 + 86,5 + 29 x 2). Talen nedan är MÄTTA i renderad yta med
+ * `getBoundingClientRect`, aldrig lästa ur en klass:
+ *
+ *   viewport   innerbredd   rader   radens höjd   sidan rullar i sidled
+ *    320 px      288 px       4        118 px      nej
+ *    375 px      343 px       3         88 px      nej
+ *    430 px      398 px       3         88 px      nej
+ *    768 px      568 px       2         58 px      nej
+ *   1280 px      568 px       2         58 px      nej
+ *
+ * Minsta träffyta i samtliga fem: 28x28 px — fyra pixlar över golvet, med
+ * avsikt, så en framtida typsnitts- eller radhöjdsjustering inte tyst äter
+ * upp marginalen. `Utan namn` är 86,5 px bred; den är det enda målet som inte
+ * är kvadratiskt.
+ *
+ * VALET stod mellan `flex-wrap` och en horisontellt rullande behållare.
+ * Radbrytningen vann på två grunder:
+ *
+ *   1. WCAG 2.2 SC 1.4.10 (Reflow) — en rullande behållare hade krävt
+ *      tvådimensionell rullning för att nå Ö, och en bokstavsrad är inte
+ *      den sortens innehåll undantaget i SC:t gäller. Mätningens sista
+ *      kolumn är den egenskapen, prövad.
+ *   2. Alla 29 bokstäverna syns samtidigt, vilket är hela poängen med en rad
+ *      Lotta ska LÄRA SIG var bokstäverna sitter i (användarberättelse 6).
+ *      En rullande behållare hade dolt ett tjugotal av dem på telefonen.
+ *
+ * MELLANRUMMET ÄR 2 px (`gap-0.5`), OCKSÅ ETT MÄTT VAL: med 4 px (`gap-1`)
+ * blev 375 px-fallet FYRA rader om 124 px i stället för tre om 88 — 36 px mer
+ * av telefonens skärm för två pixlars luft. Golvet är opåverkat, eftersom
+ * varje mål självt är 28 px och WCAG 2.5.8 därmed är uppfyllt utan att
+ * spacing-undantaget behöver åberopas.
+ *
+ * Höjden är konstant oavsett tillstånd: antalet knappar ändras aldrig (skiva
+ * 3 tonar ned tomma bokstäver, den tar aldrig bort dem), och kanten är
+ * reserverad på ALLA knappar med `border-transparent` — bara färgen byts när
+ * en knapp trycks. Det är husets stående breddlås-teknik (samma som
+ * kortytans `border border-transparent contrast-more:border-border-strong`),
+ * och det är vad `ADR-078`:s layouthopp-förbud kräver av en kontrollrad.
+ *
+ * `forced-colors`-paret är inte pynt: under Windows högkontrastläge kastas
+ * författarens bakgrundsfärger, så ett tryckt tillstånd som BARA bar
+ * `bg-primary-tint` hade blivit osynligt. Systemfärgerna `Highlight` /
+ * `HighlightText` är den kanoniska vägen att uttrycka "vald" där.
+ */
+function Bokstavsrad({
+  vald,
+  onValj,
+}: {
+  vald: string | null;
+  onValj: (hink: string | null) => void;
+}) {
+  return (
+    <Toolbar
+      aria-label="Filtrera på första bokstaven"
+      className="flex flex-wrap gap-0.5"
+      data-testid="personer-bokstavsrad"
+    >
+      {BOKSTAVSHINKAR.map((bokstav) => (
+        <BokstavsKnapp
+          key={bokstav}
+          etikett={`Visa personer som börjar på ${bokstav}`}
+          onValj={onValj}
+          value={bokstav}
+          vald={vald === bokstav}
+        >
+          {bokstav}
+        </BokstavsKnapp>
+      ))}
+      <BokstavsKnapp
+        etikett="Visa personer utan namn"
+        onValj={onValj}
+        value={HINK_UTAN_NAMN}
+        vald={vald === HINK_UTAN_NAMN}
+      >
+        {HINK_UTAN_NAMN_ETIKETT}
+      </BokstavsKnapp>
+    </Toolbar>
+  );
+}
+
+/**
+ * En knapp i bokstavsraden.
+ *
+ * `h-7 min-w-7` = 28x28 px, fyra pixlar över WCAG 2.5.8 (AA) golvet på
+ * 24x24 — marginalen är avsiktlig, så en framtida typsnitts- eller
+ * radhöjdsjustering inte tyst äter upp golvet. Talet är LÅST AV EN MÄTNING i
+ * renderad yta, aldrig av att klassen står här (DoD #6).
+ *
+ * NATIV `<button>`, inte RAC:s `Button`: husets `aria-pressed`-idiom
+ * (`Deltagare.tsx`) är nativt, och `Toolbar`s fokushantering bryr sig bara om
+ * att barnen är fokuserbara. Att lägga en abstraktion emellan hade kostat
+ * utan att ge något.
+ */
+function BokstavsKnapp({
+  value,
+  etikett,
+  vald,
+  onValj,
+  children,
+}: {
+  value: string;
+  etikett: string;
+  vald: boolean;
+  onValj: (hink: string | null) => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={etikett}
+      aria-pressed={vald}
+      // Andra trycket släpper filtret (AC #2) — samma knapp, inget extra mål.
+      onClick={() => onValj(vald ? null : value)}
+      className={`flex h-7 min-w-7 shrink-0 items-center justify-center rounded border px-1.5 font-medium text-small motion-safe:transition-colors ${
+        vald
+          ? 'border-primary bg-primary-tint text-text forced-colors:bg-[Highlight] forced-colors:text-[HighlightText]'
+          : 'border-transparent bg-bg-muted text-text-secondary hover:bg-bg-emphasized contrast-more:border-border-strong'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Tomlägets förklaring när ett bokstavsfilter är valt. Läses in i en mening
+ * ("Ingen person PÅ K matchar…", "Ingen person UTAN NAMN matchar…") i stället
+ * för att skriva ut hinkens tekniska värde.
+ */
+function hinkFras(hink: string): string {
+  return hink === HINK_UTAN_NAMN ? 'utan namn' : `på ${hink}`;
+}
+
+/**
  * [PROTOTYPE] Personlistan — konvergens-passets SENASTE steg (k11).
  *
  * Filen började som EXAKT KOPIA av `PersonsList` (2026-07-26, steg k01: sju
@@ -278,6 +456,21 @@ export function PersonsList() {
   // [PROTOTYPE] STEG 7 (k07) — värmning av persondetaljen på avsikt.
   const varmDetalj = useForberedPersonDetalj();
   const [q, setQ] = useQueryState('q', parseAsString.withDefault(''));
+
+  // [TASK-283.2] BOKSTAVSVALET LEVER I URL:EN (AC #5), precis som söktermen —
+  // så tillbaka-knappen efter en persondetalj landar i samma filtrerade lista.
+  //
+  // INGEN debounce här, till skillnad från `q`: söktermen skrivs tecken för
+  // tecken och skulle annars fylla historiken, medan ett bokstavsval ÄR en
+  // diskret handling. Att skriva det direkt är dessutom vad som gör
+  // tillbaka-knappen meningsfull.
+  //
+  // `arGiltigHink` normaliserar ett skräpvärde (`?bokstav=xyz` ur ett gammalt
+  // bokmärke) till "inget filter" i stället för till en tom lista — se
+  // `person-sok.ts`. Det tas i LÄSNINGEN, inte i skrivningen, eftersom URL:en
+  // kan bära vad som helst utan att någon i appen skrev den.
+  const [bokstavParam, setBokstavParam] = useQueryState('bokstav', parseAsString);
+  const bokstav = arGiltigHink(bokstavParam) ? bokstavParam : null;
 
   const [searchInput, setSearchInput] = useState(() => q);
 
@@ -327,10 +520,28 @@ export function PersonsList() {
   // Sök i klienten — byte-för-byte paritet med EF:ens SEARCH()-formel
   // (`src/lib/person-sok.ts`, ADR-123 beslut 2). `Array.filter` bevarar
   // ordningen, så varje sökning ärver den svenska sorteringen gratis.
-  const filteredPersons = useMemo(
-    () => filtreraPersonregister(sorteratRegister, deferredSearchTerm),
-    [sorteratRegister, deferredSearchTerm],
+  // [TASK-283.2] TVÅ FASETTER, AND-ade (AC #4). Bokstavshinken först, sedan
+  // fritexten — ordningen mellan dem är fri (utfallet är detsamma), men
+  // hinkfiltret är billigast och skär mängden mest, så det får gå först.
+  //
+  // EGEN `useMemo`, av samma skäl som sorteringen ovan står för sig: bokstaven
+  // ändras sällan, söktermen vid varje tecken. Slogs de ihop skulle hela
+  // registret hinkfiltreras om vid varje tangenttryck.
+  const bokstavsfiltrerat = useMemo(
+    () => filtreraPaBokstavshink(sorteratRegister, bokstav),
+    [sorteratRegister, bokstav],
   );
+
+  const filteredPersons = useMemo(
+    () => filtreraPersonregister(bokstavsfiltrerat, deferredSearchTerm),
+    [bokstavsfiltrerat, deferredSearchTerm],
+  );
+
+  // Renderas i ALLA tre grenarna (laddläge / fel / lista). Raden beror inte på
+  // datan — alla knappar är aktiva i denna skiva — så att hålla den utanför
+  // laddläget hade fått listan att hoppa nedåt när registret landar, vilket är
+  // exakt vad `ADR-078`:s layouthopp-förbud förbjuder.
+  const bokstavsrad = <Bokstavsrad onValj={setBokstavParam} vald={bokstav} />;
 
   // Klient-render-fönstret (ADR-123 beslut 5) — "Ladda fler" utökar detta,
   // aldrig en ny hämtning. Fönstret återställs till FÖRSTA sidan varje gång
@@ -345,10 +556,17 @@ export function PersonsList() {
   // render-varv innan fönstret hunnit återställas (skelett/gammalt fönster
   // hade blinkat till innan reset). Render-tids-justeringen har ingendera
   // kostnaden.
+  //
+  // [TASK-283.2] TRIGGERN ÄR HELA FILTERTILLSTÅNDET, inte bara söktermen: ett
+  // nytt bokstavsval måste återställa fönstret av exakt samma skäl som en ny
+  // sökterm gör det. Fogtecknet behöver bara vara omöjligt i FÖRSTA ledet för
+  // att nyckeln ska vara entydig, och en hink (29 versaler eller `utan-namn`)
+  // kan aldrig innehålla ett mellanslag. Söktermen får därför göra det.
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [foregaendeSokterm, setForegaendeSokterm] = useState(deferredSearchTerm);
-  if (deferredSearchTerm !== foregaendeSokterm) {
-    setForegaendeSokterm(deferredSearchTerm);
+  const filterNyckel = `${bokstav ?? ''} ${deferredSearchTerm}`;
+  const [foregaendeFilter, setForegaendeFilter] = useState(filterNyckel);
+  if (filterNyckel !== foregaendeFilter) {
+    setForegaendeFilter(filterNyckel);
     setVisibleCount(PAGE_SIZE);
   }
 
@@ -430,6 +648,7 @@ export function PersonsList() {
     return (
       <div className="flex flex-col gap-4" data-testid="personer-yta">
         {searchField}
+        {bokstavsrad}
         <div role="status" aria-busy="true" className="flex flex-col gap-4">
           <span className="sr-only">Laddar personer…</span>
           <Skeleton variant="text" className="w-40 text-small" />
@@ -462,6 +681,7 @@ export function PersonsList() {
     return (
       <div className="flex flex-col gap-4" data-testid="personer-yta">
         {searchField}
+        {bokstavsrad}
         <MessageBox intent="error" title="Kunde inte hämta personer">
           {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
@@ -484,6 +704,7 @@ export function PersonsList() {
   return (
     <div className="flex flex-col gap-4" data-testid="personer-yta">
       {searchField}
+      {bokstavsrad}
 
       {/* Dold aria-live-region som annonserar antal nya rader vid "Ladda fler". */}
       <p className="sr-only" role="status" aria-live="polite">
@@ -508,13 +729,28 @@ export function PersonsList() {
           aria-live="polite"
           className="flex flex-col items-center gap-1 py-12 text-center"
         >
+          {/* [TASK-283.2] TOMLÄGET LÄSER BÅDA FASETTERNA (AC #4). Ett valt
+              bokstavsfilter utan träffar är ett TOMLÄGE, inte ett tomt
+              register — den gamla grenen läste bara söktermen och hade
+              annars svarat "Personer dyker upp här när någon anmäler sig",
+              vilket är osant om Lotta just tryckt på Ö.
+
+              Rena sökfallets ordalydelse är ORÖRD (`Ingen person matchar
+              "X".`) — den är låst av `tests/acceptance/persons-list.
+              acceptance.test.ts` och av TASK-277:s copy-beslut. */}
           <p className="font-medium text-body">
-            {deferredSearchTerm ? 'Inga träffar' : 'Inga personer ännu'}
+            {deferredSearchTerm || bokstav ? 'Inga träffar' : 'Inga personer ännu'}
           </p>
           <p className="text-small text-text-muted">
-            {deferredSearchTerm
-              ? `Ingen person matchar "${deferredSearchTerm}".`
-              : 'Personer dyker upp här när någon anmäler sig eller lämnar sin e-post.'}
+            {bokstav && deferredSearchTerm
+              ? `Ingen person ${hinkFras(bokstav)} matchar "${deferredSearchTerm}".`
+              : bokstav
+                ? bokstav === HINK_UTAN_NAMN
+                  ? 'Ingen person saknar namn.'
+                  : `Ingen person börjar på ${bokstav}.`
+                : deferredSearchTerm
+                  ? `Ingen person matchar "${deferredSearchTerm}".`
+                  : 'Personer dyker upp här när någon anmäler sig eller lämnar sin e-post.'}
           </p>
         </div>
       ) : (

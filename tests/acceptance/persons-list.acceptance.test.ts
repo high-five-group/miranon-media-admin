@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
+import type { Page } from '@playwright/test';
 import { delay, http } from 'msw';
 import type { z } from 'zod';
 import type { PersonSchema } from '../../src/domain/schemas';
@@ -370,5 +371,357 @@ test.describe('Personer-listan — läs-fel (get-persons 500)', () => {
     // sökfältet står kvar. Utan denna assertion vore testet grönt även om
     // PersonsList kastade och SectionError tog över — en helt annan yta.
     await expect(page.getByRole('searchbox', { name: SOKFALT })).toBeVisible();
+  });
+});
+
+/**
+ * BOKSTAVSRADEN (TASK-283.2) — EGET describe med EGEN fixtur, av samma skäl
+ * som sorterings-blocket ovan: registret bakom bokstavsraden ska bevisa
+ * hinkarna, inte råka fungera på en fixtur som byggdes för paginering.
+ *
+ * FIXTUREN BÄR DE SVÅRA FALLEN, och PRD:ns testbeslut räknar upp dem:
+ *
+ *   - minst en person per bokstav som ska vara aktiv  → A, B, E, K (två), Å
+ *   - minst en bokstav UTAN personer                  → Q, Ä, Ö (och 21 till)
+ *   - minst TVÅ namnlösa                              → två `Ej tillgängligt`
+ *   - minst ett namn som börjar på Å                  → `Åsa Ask`
+ *
+ * Utan Å-posten kan den diakritik-korrekta hinkjämförelsen inte fällas, och
+ * utan de två sentinel-posterna kan E-undantaget (fälla 43/51) inte bevisas:
+ * strängen `Ej tillgängligt` börjar bokstavligen på E, och ett naivt
+ * E-filter hade dragit med sig samtliga 186 av prods 559.
+ *
+ * TVÅ på K är inte pynt: en hink som råkar returnera "första träffen" i
+ * stället för "alla i hinken" är grön mot en ensam post.
+ */
+const BOKSTAVSFIXTUR = [
+  'Anna Andersson',
+  'Bo Berg',
+  'Emma Eklund',
+  'Ej tillgängligt',
+  'Kalle Karlsson',
+  'Karin Krona',
+  'Åsa Ask',
+  'Ej tillgängligt',
+].map((namn, i) => ({ ...person(i), id: `recBOKSTAV${String(i).padStart(6, '0')}`, namn }));
+
+const RADENS_ETIKETT = 'Filtrera på första bokstaven';
+
+/** De 29 bokstäverna plus hinken sist — radens fulla, oföränderliga längd. */
+const RADENS_TEXT = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'Å', 'Ä', 'Ö', 'Utan namn'];
+
+/** Samma rad, sedd som en skärmläsare ser den. */
+const RADENS_NAMN = [
+  ...[...'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'Å', 'Ä', 'Ö'].map(
+    (b) => `Visa personer som börjar på ${b}`,
+  ),
+  'Visa personer utan namn',
+];
+
+test.describe('Personer-listan — bokstavsraden (TASK-283.2)', () => {
+  test.beforeEach(async ({ network }) => {
+    network.use(http.get(EF('get-persons'), () => json({ persons: BOKSTAVSFIXTUR })));
+  });
+
+  /** Radens knappar, i DOM-ordning. */
+  const raden = (page: Page) => page.getByRole('toolbar', { name: RADENS_ETIKETT });
+
+  test('AC #1 — raden ligger under sökrutan i ordningen A till Ö, hinken sist', async ({
+    page,
+  }) => {
+    await page.goto('/personer');
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+
+    // ORDNINGEN mäts som en LISTA, inte som 30 enskilda närvaro-assertions:
+    // en rad där Ö råkat hamna före Å hade passerat det senare.
+    await expect(raden(page).getByRole('button')).toHaveText(RADENS_TEXT);
+
+    // ... och samma ordning i det TILLGÄNGLIGA namnet. Två assertions, inte en:
+    // etiketten är det en skärmläsare läser upp, den synliga texten är det
+    // ögat läser, och WCAG 2.5.3 (Label in Name) kräver att den ena rymmer
+    // den andra. Glider de isär ska det synas här.
+    const namn = await raden(page)
+      .getByRole('button')
+      .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label') ?? ''));
+    expect(namn).toEqual(RADENS_NAMN);
+
+    // "Direkt under sökrutan" — DOM-ordningen är den ordning både ögat och
+    // skärmläsaren läser, så den ÄR påståendet. Mätt som positionen i ytans
+    // egen ordning, inte som en pixelkoordinat.
+    const ordning = await page.getByTestId('personer-yta').evaluate((yta) => {
+      const sok = yta.querySelector('input[type="search"]');
+      const rad = yta.querySelector('[role="toolbar"]');
+      if (!sok || !rad) return 'saknas';
+      return sok.compareDocumentPosition(rad) & Node.DOCUMENT_POSITION_FOLLOWING
+        ? 'raden-efter-sokrutan'
+        : 'raden-fore-sokrutan';
+    });
+    expect(ordning).toBe('raden-efter-sokrutan');
+  });
+
+  test('AC #11 — ett tryck filtrerar den laddade arrayen och räknarraden följer med', async ({
+    page,
+  }) => {
+    await page.goto('/personer');
+    const list = page.getByRole('list', { name: 'Personer' });
+    await expect(list.getByRole('listitem')).toHaveCount(8);
+
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på K' }).click();
+
+    await expect(list.getByRole('link')).toHaveText(['Kalle Karlsson', 'Karin Krona']);
+    await expect(page.getByText('Visar 2 av 2 personer.')).toBeVisible();
+  });
+
+  test('AC #2 — ett andra tryck på samma bokstav släpper filtret', async ({ page }) => {
+    await page.goto('/personer');
+    const list = page.getByRole('list', { name: 'Personer' });
+    const kKnapp = raden(page).getByRole('button', { name: 'Visa personer som börjar på K' });
+
+    await kKnapp.click();
+    await expect(list.getByRole('listitem')).toHaveCount(2);
+
+    await kKnapp.click();
+    await expect(list.getByRole('listitem')).toHaveCount(8);
+    // Filtret släppte HELT: parametern lämnar adressen, den blir inte tom.
+    await expect(page).not.toHaveURL(/[?&]bokstav=/);
+  });
+
+  test('AC #3 — vald bokstav bär aria-pressed, och bara den', async ({ page }) => {
+    await page.goto('/personer');
+    const kKnapp = raden(page).getByRole('button', { name: 'Visa personer som börjar på K' });
+    const aKnapp = raden(page).getByRole('button', { name: 'Visa personer som börjar på A' });
+
+    await expect(kKnapp).toHaveAttribute('aria-pressed', 'false');
+
+    await kKnapp.click();
+    await expect(kKnapp).toHaveAttribute('aria-pressed', 'true');
+    await expect(aKnapp).toHaveAttribute('aria-pressed', 'false');
+
+    // APG:s toggle-krav: etiketten byter ALDRIG med tillståndet. Hade den gjort
+    // det skulle en skärmläsaranvändare höra en annan knapp än den hen tryckte.
+    await expect(kKnapp).toHaveText('K');
+  });
+
+  test('DoD #7 — sentinelen är undantagen ur E och bor i sin egen hink', async ({ page }) => {
+    await page.goto('/personer');
+    const list = page.getByRole('list', { name: 'Personer' });
+
+    // E ger bara det verkliga E-namnet. Skulle sentinelen läcka in vore det
+    // TRE rader här, och i prod 186 stycken.
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på E' }).click();
+    await expect(list.getByRole('link')).toHaveText(['Emma Eklund']);
+
+    // ... och båda sentinel-posterna finns kvar, i hinken.
+    await raden(page).getByRole('button', { name: 'Visa personer utan namn' }).click();
+    await expect(list.getByRole('link')).toHaveText(['Ej tillgängligt', 'Ej tillgängligt']);
+  });
+
+  test('hinkjämförelsen är diakritik-korrekt: Å är inte A', async ({ page }) => {
+    await page.goto('/personer');
+    const list = page.getByRole('list', { name: 'Personer' });
+
+    // Basens SORTERING veckar Å mot A (fälla 51) och sökningen viker å mot a
+    // (TASK-286.7). Hinken gör VARKEN — det är modulens tredje axel.
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på A' }).click();
+    await expect(list.getByRole('link')).toHaveText(['Anna Andersson']);
+
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på Å' }).click();
+    await expect(list.getByRole('link')).toHaveText(['Åsa Ask']);
+  });
+
+  test('AC #4 — bokstav och fritext smalnar av TILLSAMMANS', async ({ page }) => {
+    await page.goto('/personer');
+    const list = page.getByRole('list', { name: 'Personer' });
+
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på K' }).click();
+    await expect(list.getByRole('listitem')).toHaveCount(2);
+
+    // "arin" finns varken i fabrikens e-post (`person.NN@example.test`) eller i
+    // orten (`Skövde`) — den kan alltså bara träffa via namnet, vilket är vad
+    // som gör kombinationen mätbar.
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('arin');
+    await expect(list.getByRole('link')).toHaveText(['Karin Krona']);
+    await expect(page.getByText('Visar 1 av 1 personer för "arin".')).toBeVisible();
+  });
+
+  test('AC #4 — tomt utfall ger TOMLÄGET, aldrig en tom sida', async ({ page }) => {
+    await page.goto('/personer');
+
+    // (a) Bokstav UTAN träffar. Den gamla grenen läste bara söktermen och hade
+    //     svarat "Personer dyker upp här när någon anmäler sig" — osant när
+    //     Lotta just tryckt på Ö.
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på Ö' }).click();
+    await expect(page.getByText('Inga träffar')).toBeVisible();
+    await expect(page.getByText('Ingen person börjar på Ö.')).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Personer' })).toHaveCount(0);
+
+    // (b) Bokstav PLUS fritext utan träffar — båda fasetterna i beskedet.
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på K' }).click();
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('zzz');
+    await expect(page.getByText('Ingen person på K matchar "zzz".')).toBeVisible();
+
+    // (c) Hinken utan träffar läses som en mening, inte som sitt tekniska värde.
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('');
+    await raden(page).getByRole('button', { name: 'Visa personer utan namn' }).click();
+    await page.getByRole('searchbox', { name: SOKFALT }).fill('zzz');
+    await expect(page.getByText('Ingen person utan namn matchar "zzz".')).toBeVisible();
+  });
+
+  test('AC #5 — valet lever i URL:en och överlever öppna-person-och-backa', async ({ page }) => {
+    await page.goto('/personer');
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på K' }).click();
+    await expect(page).toHaveURL(/[?&]bokstav=K/);
+
+    // Öppna en person ...
+    await page.getByRole('link', { name: 'Kalle Karlsson' }).click();
+    await expect(page).toHaveURL(/\/personer\/recBOKSTAV/);
+
+    // ... och backa: SAMMA filtrerade lista, inte hela registret.
+    await page.goBack();
+    await expect(page).toHaveURL(/[?&]bokstav=K/);
+    await expect(page.getByRole('list', { name: 'Personer' }).getByRole('link')).toHaveText([
+      'Kalle Karlsson',
+      'Karin Krona',
+    ]);
+    await expect(
+      raden(page).getByRole('button', { name: 'Visa personer som börjar på K' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('AC #5 — en direkt-URL med ?bokstav återställer läget', async ({ page }) => {
+    await page.goto('/personer?bokstav=utan-namn');
+    await expect(page.getByRole('list', { name: 'Personer' }).getByRole('link')).toHaveText([
+      'Ej tillgängligt',
+      'Ej tillgängligt',
+    ]);
+    await expect(
+      raden(page).getByRole('button', { name: 'Visa personer utan namn' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('ett skräpvärde i ?bokstav ger hela listan, inte en tom', async ({ page }) => {
+    // Ett gammalt bokmärke eller en handredigerad adress får aldrig se ut som
+    // "det finns inga personer" — det är det tystare av de två felen.
+    await page.goto('/personer?bokstav=xyz');
+    await expect(page.getByRole('list', { name: 'Personer' }).getByRole('listitem')).toHaveCount(8);
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+  });
+
+  test('AC #6 — hela raden är ETT tabbsteg, och pilarna rör sig inuti den', async ({ page }) => {
+    await page.goto('/personer');
+    await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+
+    const forsta = raden(page).getByRole('button', { name: 'Visa personer som börjar på A' });
+    const andra = raden(page).getByRole('button', { name: 'Visa personer som börjar på B' });
+
+    // Ett steg IN: från sökrutan landar Tab på radens första knapp.
+    await page.getByRole('searchbox', { name: SOKFALT }).focus();
+    await page.keyboard.press('Tab');
+    await expect(forsta).toBeFocused();
+
+    // Pilarna manövrerar INUTI raden (APG:s toolbar-mönster).
+    await page.keyboard.press('ArrowRight');
+    await expect(andra).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(forsta).toBeFocused();
+
+    // Ett steg UT: nästa Tab lämnar raden HELT — inte till knapp nummer två.
+    // Mätt på var fokus FAKTISKT hamnade, inte på vilken knapp som slapp
+    // fokus: 30 negativa assertions hade varit gröna även om fokus stannat
+    // kvar på en 31:a kontroll inuti raden.
+    await page.keyboard.press('Tab');
+    const fokusInutiRaden = await page.evaluate(
+      () => document.activeElement?.closest('[role="toolbar"]') != null,
+    );
+    expect(fokusInutiRaden).toBe(false);
+  });
+
+  /**
+   * AC #7 + DoD #6 — MÄTT I RENDERAD YTA, aldrig läst ur en klass.
+   *
+   * Tre bredder, var och en med ett eget skäl:
+   *   320 px — WCAG 2.2 SC 1.4.10:s egen siffra, och appens smalaste fall.
+   *   375 px — iPhone SE/13 mini stående, den vanligaste telefonbredden.
+   *  1280 px — skrivbord. Tas med för att `AppShell.tsx:45` kapar
+   *            innehållskolumnen vid `max-w-[600px]`, så raden bryts även
+   *            HÄR. Utan detta fallet hade en läsare kunnat tro att
+   *            radbrytningen var ett rent mobilfenomen.
+   */
+  for (const viewport of [320, 375, 1280]) {
+    test(`AC #7 / DoD #6 — träffytan mätt i renderad yta vid ${viewport} px`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport, height: 900 });
+      await page.goto('/personer');
+      await expect(page.getByText('Visar 8 av 8 personer.')).toBeVisible();
+
+      const rutor = await raden(page)
+        .getByRole('button')
+        .evaluateAll((els) =>
+          els.map((el) => {
+            const r = el.getBoundingClientRect();
+            return { hoger: r.right, bredd: r.width, hojd: r.height, rad: Math.round(r.y) };
+          }),
+        );
+
+      expect(rutor).toHaveLength(RADENS_TEXT.length);
+
+      // WCAG 2.5.8 Target Size (Minimum), nivå AA: 24 x 24 CSS-px.
+      // MÄTT är 28 x 28; assertionen låser GOLVET, inte det exakta talet, så
+      // en medveten storleksjustering inte behöver röra testet — men en
+      // regression under golvet fäller.
+      for (const ruta of rutor) {
+        expect(ruta.bredd).toBeGreaterThanOrEqual(24);
+        expect(ruta.hojd).toBeGreaterThanOrEqual(24);
+      }
+
+      // VALET, LÅST: radbrytning — INTE en horisontellt rullande behållare.
+      // Ingen knapp når utanför viewporten, och raden ligger på fler än en
+      // y-position. Byts formen till en scroll-container fälls den ena eller
+      // den andra av dessa två.
+      expect(Math.max(...rutor.map((r) => r.hoger))).toBeLessThanOrEqual(viewport);
+      expect(new Set(rutor.map((r) => r.rad)).size).toBeGreaterThan(1);
+
+      // Och SIDAN rullar aldrig i sidled av raden (WCAG 2.2 SC 1.4.10).
+      const sidbredd = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        klient: document.documentElement.clientWidth,
+      }));
+      expect(sidbredd.scroll).toBeLessThanOrEqual(sidbredd.klient);
+
+      test.info().annotations.push({
+        type: 'matning',
+        description: `${viewport} px: ${rutor.length} knappar, ${new Set(rutor.map((r) => r.rad)).size} rader, minsta träffyta ${Math.min(...rutor.map((r) => r.bredd))}x${Math.min(...rutor.map((r) => r.hojd))} px`,
+      });
+    });
+  }
+
+  test('AC #9 — axe 0 violations med ett bokstavsfilter valt', async ({ page }) => {
+    await page.goto('/personer');
+    await raden(page).getByRole('button', { name: 'Visa personer som börjar på K' }).click();
+    await expect(page.getByText('Visar 2 av 2 personer.')).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  test('ADR-078 — raden finns redan i laddläget, så listan aldrig hoppar', async ({
+    page,
+    network,
+  }) => {
+    // Alla knappar är aktiva i denna skiva; raden beror alltså inte på datan.
+    // Hade den monterats först när registret landade skulle listan flyttats
+    // nedåt vid varje sidladdning — precis det layouthopp ADR-078 förbjuder.
+    network.use(
+      http.get(EF('get-persons'), async () => {
+        await delay(3000);
+        return json({ persons: BOKSTAVSFIXTUR });
+      }),
+    );
+
+    await page.goto('/personer');
+    await expect(page.getByText('Laddar personer…')).toBeAttached();
+    await expect(raden(page).getByRole('button')).toHaveCount(RADENS_TEXT.length);
   });
 });
