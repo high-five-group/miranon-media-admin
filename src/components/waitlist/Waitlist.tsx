@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
+import { InitialAvatar } from '@/components/primitives/InitialAvatar';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
@@ -42,13 +43,22 @@ function Field({ term, value }: { term: string; value: string | null }) {
   );
 }
 
-/** En väntande: namn som rubrik + fält/värde-lista. `break-inside-avoid` håller raden
- * samlad över sidbrytning vid utskrift (§4 print-golv — minst läsbar utskrift). */
+/** En väntande: initialcirkel + namn som rubrikrad, fält/värde-lista under
+ * (TASK-299.7 — primitiv-komponenten `InitialAvatar`, ingen inline-kopia).
+ * `break-inside-avoid` håller raden samlad över sidbrytning vid utskrift
+ * (§4 print-golv — minst läsbar utskrift). Fälten och deras inbördes ordning
+ * är OFÖRÄNDRADE (Marcus beslut 2026-08-22, alternativ B) — `dl`:n är
+ * byte-identisk mot före, bara indragen `pl-12` för att fluktlinjera under
+ * namntexten (cirkelns `size-9` + radens `gap-3` = 48 px, samma tal). */
 function WaitlistRow({ entry }: { entry: WaitlistEntry }) {
+  const namn = displayName(entry);
   return (
-    <li className="flex break-inside-avoid flex-col gap-1 border-text-muted/20 border-b pb-3">
-      <span className="font-medium">{displayName(entry)}</span>
-      <dl className="flex flex-col gap-0.5 text-small">
+    <li className="flex break-inside-avoid flex-col gap-2 border-text-muted/20 border-b pb-3">
+      <div className="flex items-center gap-3">
+        <InitialAvatar namn={namn} />
+        <span className="font-medium">{namn}</span>
+      </div>
+      <dl className="flex flex-col gap-0.5 pl-12 text-small">
         <Field term="Ställde sig" value={stalldeSig(entry)} />
         <Field term="E-post" value={entry.email} />
         <Field term="Telefon" value={entry.telefon} />
@@ -73,14 +83,26 @@ function WaitlistRow({ entry }: { entry: WaitlistEntry }) {
  * Tom väntelista → vänlig tom-text, ej fel. 4xx → role=alert, ingen retry
  * (klient-fel). Print: semantisk block-layout + `break-inside-avoid` per rad.
  *
+ * SIDKROM (TASK-299.7, PRD `TASK-299` beslut 2–3+5, omfattning låst
+ * 2026-08-22 — bara sidkromet, rubriken lever kvar i sidan): husets delade
+ * `SidRam`-primitiv (kant-i-kant, `mx-4`-indragen chevron) ersätter den gamla
+ * textlänken "← Tillbaka till Mer". Sidans egen `p-4` är riven — den
+ * dubblerade sidmarginalen (`<main>`s `px-4 py-4` PLUS sidans egen `p-4`)
+ * är därmed borta; text-bärande element (rubrikblock, radlista) tar sin egen
+ * `px-4` för att fluktlinjera med chevronens indrag, medan self-contained
+ * boxar (`MessageBox`) står odekorerat kant-i-kant, samma mönster som
+ * `AktivitetsHistorik.tsx`/`DokumentYta.tsx`.
+ *
  * A11y (11/10, speglar EventRegistrations):
  * - `<h1>` = "Väntelista"; fokus flyttas dit när data anlänt ([] är giltigt laddat).
  * - Data-anländning annonseras i `aria-live="polite"`.
  * - Loading: `aria-busy` + synlig + sr-only status.
  * - Fel: `role="alert"` via MessageBox (ingen dubbel-announcer).
  * - `document.title` sätts när laddat.
- * - "Tillbaka till Mer"-länk (→ `/mer`, varifrån vyn nås).
+ * - Sidkromets chevron bär tillgängligt namn "Tillbaka till Mer" (→ `/mer`).
  * - Datum/status som läsbar text (skärmläsaren får hela bilden).
+ * - Initialcirkeln är dekorativ (`aria-hidden`, `InitialAvatar`s eget
+ *   kontrakt) — namnet bärs av den synliga textraden bredvid.
  */
 export function Waitlist() {
   const dataSource = useDataSource();
@@ -111,20 +133,16 @@ export function Waitlist() {
     }
   }, [waitlist]);
 
-  const backLink = (
-    <Link to="/mer" className="text-small underline">
-      ← Tillbaka till Mer
-    </Link>
-  );
+  const sidRam = <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />;
 
   if (isPending) {
     // Lugnt laddläge (Laddtrappan steg 1, DESIGN-SYSTEM-SPEC §15): skeleton i
     // listans SLUTGEOMETRI (rubrik + tre radplatshållare, Roselli-anatomin) i
     // stället för en naken "Laddar…"-textrad — layout-skift ≈ 0 mot laddat läge.
     return (
-      <section className="flex flex-col gap-6 p-4">
-        {backLink}
-        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-4">
+      <section data-testid="vantelista-yta" className="flex flex-col gap-6">
+        {sidRam}
+        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-4 px-4">
           <span className="sr-only">Laddar väntelistan…</span>
           <div className="flex flex-col gap-1">
             <Skeleton variant="text" className="w-32 text-2xl" />
@@ -142,8 +160,8 @@ export function Waitlist() {
 
   if (isError) {
     return (
-      <section className="flex flex-col gap-4 p-4">
-        {backLink}
+      <section data-testid="vantelista-yta" className="flex flex-col gap-4">
+        {sidRam}
         <MessageBox intent="error" title="Kunde inte hämta väntelistan">
           {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
@@ -152,15 +170,15 @@ export function Waitlist() {
   }
 
   return (
-    <section className="flex flex-col gap-6 p-4">
-      {backLink}
+    <section data-testid="vantelista-yta" className="flex flex-col gap-6">
+      {sidRam}
 
       {/* aria-live: bekräftar för skärmläsare att väntelistan anlänt. */}
       <p className="sr-only" role="status" aria-live="polite">
         Väntelistan laddad.
       </p>
 
-      <header className="flex flex-col gap-1">
+      <header className="flex flex-col gap-1 px-4">
         <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
           Väntelista
         </h1>
@@ -169,9 +187,9 @@ export function Waitlist() {
       </header>
 
       {waitlist.length === 0 ? (
-        <p className="text-small text-text-muted">Väntelistan är tom.</p>
+        <p className="px-4 text-small text-text-muted">Väntelistan är tom.</p>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-3 px-4">
           {waitlist.map((entry) => (
             <WaitlistRow key={entry.id} entry={entry} />
           ))}
