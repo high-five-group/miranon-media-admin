@@ -10,6 +10,13 @@
 #            sträng, ELLER new_string ensam avslöjar försöket även när
 #            old_string inte matchar filens nuvarande innehåll (den breda
 #            reservregeln i facit-godkand-skrivning.mjs).
+#   ED4–WD3  NEKA-SKÄLETS DIAGNOSTIK (ADR-102 § Updates 2026-08-22): mot ett
+#            REDAN stämplat manifest ska skälet namnge den verkliga regeln
+#            ("manifestet är STÄMPLAT", agent-fruset i sin helhet) och peka
+#            ut sidofilen — inte den gamla, i det läget FALSKA texten om att
+#            skrivningen skulle sätta "godkand". Verdiktet är oförändrat
+#            (exit 2); ED1–ED3/WD1–WD2 bevisar att den gamla texten står kvar
+#            där den är sann.
 #   EA1–EA3  Edit SLÄPPER: orelaterad nyckel redigeras (ytor-tillägg),
 #            "godkand": null skrivs EXPLICIT (initial-skapelse-formen),
 #            filen är INTE ett facit-manifest alls (scopning).
@@ -115,6 +122,22 @@ CONF
 JSON
 }
 
+# Byter fixturens manifest till ett STÄMPLAT (ADR-102 § Updates 2026-08-22).
+# Driver ED4/WD3: skälet hooken ger ska då namnge den VERKLIGA regeln
+# ("manifestet är stämplat och därmed fruset i sin helhet"), inte den gamla,
+# missvisande texten om att skrivningen skulle sätta "godkand".
+stampla_manifest() {
+    cat > "${MANIFEST}" <<'JSON'
+{
+  "prototyp": "test-pass",
+  "last": "2026-08-06",
+  "lasning": "Lås som facit.",
+  "godkand": { "av": "marcus", "datum": "2026-08-10", "citat": "Ser bra ut, godkänner", "sha": "abc1234" },
+  "ytor": [{ "yta": "x", "bilder": [], "kallor": ["src/x.tsx"] }]
+}
+JSON
+}
+
 # PATH utan katalogen som äger en given binär (F-serien). Beräknas mot den
 # FAKTISKA platsen — ingen hårdkodning av en specifik katalog. Skriver till
 # en NAMNGIVEN utdata-variabel via `printf -v` (bash 3.1+, portabelt —
@@ -213,6 +236,31 @@ run_case "ED2  Edit sätter godkand till sträng NEKAS" 2 "${JSON}"
 JSON="$(hook_json_edit "${MANIFEST_REL}" 'något som inte finns i filen' '"godkand": { "av": "agent" }')"
 EXPECT_OUT="skulle sätta"
 run_case "ED3  Edit där old_string inte matchar filen, new_string avslöjar försöket, NEKAS" 2 "${JSON}"
+
+# ── ED4/WD3 — NEKA-SKÄLETS DIAGNOSTIK (ADR-102 § Updates 2026-08-22) ──────
+# Verdiktet är oförändrat (exit 2). Det som prövas är att SKÄLET namnger den
+# verkliga regeln. Tvåsidigt i BÅDA riktningar: ED1–ED3/WD1–WD2 ovan bevisar
+# att den gamla texten står kvar där den är SANN (ostämplat manifest, och
+# skrivningen sätter faktiskt fältet); ED4/WD3 bevisar att den bytts där den
+# var FALSK. NOT_EXPECT_OUT gör det till ett äkta par: fanns bara EXPECT_OUT
+# hade en text som sade BÅDA sakerna passerat.
+echo ""
+stampla_manifest
+JSON="$(hook_json_edit "${MANIFEST_REL}" '"yta": "x"' '"yta": "y"')"
+EXPECT_OUT="är STÄMPLAT"
+NOT_EXPECT_OUT="skulle sätta"
+run_case "ED4  Edit av ORELATERAD nyckel i STÄMPLAT manifest nekas — skälet namnger frysningen" 2 "${JSON}"
+
+JSON="$(hook_json_edit "${MANIFEST_REL}" '"yta": "x"' '"yta": "y"')"
+EXPECT_OUT="AMENDERING-"
+run_case "ED4b Samma skäl pekar ut sidofilen som väg framåt" 2 "${JSON}"
+
+FULLT_STAMPLAT='{"prototyp":"test-pass","last":"2026-08-06","lasning":"x","godkand":{"av":"marcus","datum":"2026-08-10","citat":"c","sha":"abc"},"ytor":[]}'
+JSON="$(hook_json_write "${MANIFEST_REL}" "${FULLT_STAMPLAT}")"
+EXPECT_OUT="är STÄMPLAT"
+NOT_EXPECT_OUT="skulle sätta"
+run_case "WD3  Write mot ett REDAN stämplat manifest — skälet namnger frysningen" 2 "${JSON}"
+setup
 
 # ============================================================
 # EA1–EA3 — Edit SLÄPPER.

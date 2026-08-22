@@ -14,7 +14,7 @@
 # scripts/lib/facit-validera.mjs:s "godkand"-schemavalidering (ADR-104 §
 # Beslut 2, TASK-167 — schemat bytte från bar sträng till objektet
 # { av, datum, citat, sha, undantag? }).
-# 16 testfall, TVÅSIDIGA: varje invariant prövas både i sitt gröna och sitt
+# 28 testfall, TVÅSIDIGA: varje invariant prövas både i sitt gröna och sitt
 # röda läge. En grind som bara bevisats grön är inte bevisad — den kan vara
 # blind (L43, ADR-039 § lesson→grind).
 #
@@ -37,6 +37,24 @@
 #   T15 godkand-objekt fullständigt + undantag[] (schema,
 #       grön)                                              → 0
 #   T16 godkand.undantag[].skal saknas       (schema)      → 1
+#   T17 stämplat facit, referens oförändrad  (inv. d, grön)→ 0
+#   T18 stämplat facit, referens ändrad      (inv. d, röd) → 1
+#   T19 OGODKÄNT facit, SAMMA ändring        (klass a, grön)→ 0
+#   T20 deklarerad referens saknas på disk   (inv. d)      → 1
+#   T21 referenser[].sha256 i fel format     (schema)      → 1
+#   T22 tom referenser[] = deklarerad frånvaro (grön)      → 0
+#   T23 sidofil bokför ändringen med rätt hash (klass b)   → 0
+#   T24 sidofil namnger filen men INTE dess hash           → 1
+#   T25 "amendering" som JSON-nyckel i manifestet          → 1
+#   T26 sidofil med fel namnform                           → 1
+#   T27 sidofil utan kanonisk rubrik                       → 1
+#   T28 prosa-sidofil utan hashar (precedentformen, grön)  → 0
+#
+# T18/T19 ÄR PARET SOM BÄR HELA INVARIANT (d): samma ändring av samma
+# referens, en gång stämplat (röd) och en gång ogodkänt (grön). Utan BÅDA
+# bevisar sviten bara att grinden kan säga nej — inte att den säger nej på
+# rätt sida av gränsen. Gränsen är den S109 fick dra med omdöme två gånger
+# på ett dygn (#1715 stoppad, #1730 armerad).
 #
 # Test-isolering: skapar /tmp/s93-test-facit/ med bilage-fixtur + src-fixtur.
 # Återställer (rm -rf) via trap. INGEN ändring av real-repo.
@@ -97,6 +115,53 @@ write_kalla() {
 # Källfilen UTAN markören — simulerar en rivning.
 riv_markor() {
     printf 'export const x = 1;\n' > "${TEST_DIR}/src/komponenter/Yta.tsx"
+}
+
+# ── Fixtur för invariant (d): ytans MEKANISKA facit -----------------------
+# En ariaSnapshot-referens (ADR-103 B4) med känt innehåll. sha256 räknas med
+# node — samma väg som validerarens egen, och portabelt över macOS/Linux
+# (shasum vs sha256sum är exakt den sortens skillnad som gör ett testfall
+# grönt på en maskin och rött på en annan).
+REFERENS="tests/visual/__aria__/prov.aria.yml"
+
+skriv_referens() {
+    mkdir -p "${TEST_DIR}/tests/visual/__aria__"
+    printf -- '- searchbox "Sök person"\n- status\n' > "${TEST_DIR}/${REFERENS}"
+}
+
+# Ändrar referensens innehåll — simulerar en agent som regenererat en
+# ariaSnapshot utan att röra manifestet.
+andra_referens() {
+    printf -- '- searchbox "Sök person"\n- navigation "Bokstäver"\n- status\n' \
+        > "${TEST_DIR}/${REFERENS}"
+}
+
+sha_av_referens() {
+    node -e "const{createHash}=require('node:crypto');const{readFileSync}=require('node:fs');process.stdout.write(createHash('sha256').update(readFileSync('${TEST_DIR}/${REFERENS}')).digest('hex'))"
+}
+
+# write_manifest_ref <godkand-json> <referenser-json>
+# Samma fixtur som write_manifest men med ytans "referenser". Egen funktion i
+# stället för fler positionsargument på write_manifest: de sexton befintliga
+# anropen ska inte behöva röras.
+write_manifest_ref() {
+    local godkand=$1 referenser=$2
+    cat > "${TEST_DIR}/${BILAGE}/facit.json" <<JSON
+{
+  "prototyp": "s93-test",
+  "last": "2026-08-06",
+  "lasning": "Lås som facit.",
+  "godkand": ${godkand},
+  "ytor": [
+    {
+      "yta": "yta",
+      "bilder": ["facit-yta.png"],
+      "kallor": ["src/komponenter/Yta.tsx"],
+      "referenser": ${referenser}
+    }
+  ]
+}
+JSON
 }
 
 # write_manifest <godkand-json> <bilder-json> [extra-yta-json]
@@ -285,6 +350,148 @@ setup
 write_manifest '{"av":"marcus","datum":"2026-08-10","citat":"x","sha":"abc123","undantag":[{"yta":"atgarder"}]}' '["facit-yta.png"]'
 check_exit "T16 godkand.undantag[].skal saknas" 1 "$(run_exit)"
 check_utdata "T16 skäl" "undantag\[0\]\.skal"
+
+# ═══ INVARIANT (d) — den stämplade formens innehållslås ═══════════════════
+# ADR-102 § Updates 2026-08-22 (T157). Paret T18/T19 är kärnan: SAMMA
+# ändring av SAMMA referens, en gång under ett stämplat facit (röd) och en
+# gång under ett ogodkänt (grön). Det är precis den skillnad S109 fick
+# avgöra med omdöme två gånger på ett dygn — #1715 stoppad, #1730 armerad —
+# och som ingen grind kunde se då.
+
+# skriv_amendering <filnamn> <kropp>
+# Amenderings-SIDOFILEN — bokföringens kanoniska bärare (manifestet är
+# agent-fruset så snart det är stämplat, ADR-104-hooken).
+skriv_amendering() {
+    local namn=$1 kropp=$2
+    printf '%s\n' "${kropp}" > "${TEST_DIR}/${BILAGE}/${namn}"
+}
+
+# --- T17: stämplat facit, referensens sha256 stämmer (GRÖN) ---------------
+setup
+skriv_referens
+write_manifest_ref "${GODKAND_OK}" "[{\"fil\":\"${REFERENS}\",\"sha256\":\"$(sha_av_referens)\"}]"
+check_exit "T17 stämplat facit, referens oförändrad" 0 "$(run_exit)"
+
+# --- T18: stämplat facit, referensen ändrad utan bokföring (RÖD) ----------
+setup
+skriv_referens
+write_manifest_ref "${GODKAND_OK}" "[{\"fil\":\"${REFERENS}\",\"sha256\":\"$(sha_av_referens)\"}]"
+andra_referens
+check_exit "T18 stämplat facit, referens ändrad" 1 "$(run_exit)"
+check_utdata "T18 skäl" "har ÄNDRATS och ändringen är inte bokförd"
+
+# --- T19: OGODKÄNT facit, SAMMA ändring (GRÖN) — klass (a) ----------------
+# Ett ogodkänt facit som ändras av sin egen skiva MÅSTE få sina referenser
+# uppdaterade, annars går promoverings-grinden röd på en legitim ändring och
+# kortet kan inte landa alls. Skulle detta fall bli rött vore invarianten
+# fel byggd, inte strängare.
+setup
+skriv_referens
+write_manifest_ref "null" "[{\"fil\":\"${REFERENS}\",\"sha256\":\"$(sha_av_referens)\"}]"
+andra_referens
+check_exit "T19 ogodkänt facit, samma ändring (klass a)" 0 "$(run_exit)"
+
+# --- T20: deklarerad referens saknas på disk (RÖD) ------------------------
+setup
+skriv_referens
+write_manifest_ref "${GODKAND_OK}" "[{\"fil\":\"${REFERENS}\",\"sha256\":\"$(sha_av_referens)\"}]"
+rm -f "${TEST_DIR}/${REFERENS}"
+check_exit "T20 deklarerad referens saknas" 1 "$(run_exit)"
+check_utdata "T20 skäl" "ett lås utan objekt"
+
+# --- T21: sha256 i fel format (RÖD) ---------------------------------------
+setup
+skriv_referens
+write_manifest_ref "${GODKAND_OK}" "[{\"fil\":\"${REFERENS}\",\"sha256\":\"abc123\"}]"
+check_exit "T21 sha256 i fel format" 1 "$(run_exit)"
+check_utdata "T21 skäl" "64 hex-tecken"
+
+# --- T22: tom referenser[] = deklarerad frånvaro (GRÖN) -------------------
+setup
+skriv_referens
+write_manifest_ref "${GODKAND_OK}" "[]"
+check_exit "T22 tom referenser[] är deklarerad frånvaro" 0 "$(run_exit)"
+
+# --- T23: sidofil bokför ändringen med filens FAKTISKA sha256 (GRÖN) ------
+# Klass (b) i sin fullbordade form: manifestet ORÖRT (det är fruset), och
+# bokföringen i en sidofil som namnger både referensen och dess nya hash.
+setup
+skriv_referens
+BOKFORD_SHA="$(sha_av_referens)"
+write_manifest_ref "${GODKAND_OK}" "[{\"fil\":\"${REFERENS}\",\"sha256\":\"${BOKFORD_SHA}\"}]"
+andra_referens
+skriv_amendering "AMENDERING-2026-08-22-fixturbyte.md" \
+    "# Amendering 2026-08-22 — referensen omfångad efter fixturbyte (TASK-286.2)
+
+**Yta:** yta. **Klass (b)** — formen oförändrad.
+
+Referensen \`${REFERENS}\` bär nu sha256 \`$(sha_av_referens)\`."
+check_exit "T23 sidofil bokför ändringen (klass b)" 0 "$(run_exit)"
+
+# --- T24: sidofil namnger filen men INTE dess hash (RÖD) ------------------
+# Det är denna kontroll som håller låset kvar EFTER en amendering. Utan
+# hash-kravet hade en enda sidofil som nämner sökvägen låst upp filen för
+# all framtid, och nästa tysta omskrivning hade passerat.
+setup
+skriv_referens
+BOKFORD_SHA="$(sha_av_referens)"
+write_manifest_ref "${GODKAND_OK}" "[{\"fil\":\"${REFERENS}\",\"sha256\":\"${BOKFORD_SHA}\"}]"
+andra_referens
+skriv_amendering "AMENDERING-2026-08-22-utan-hash.md" \
+    "# Amendering 2026-08-22 — referensen ändrad (TASK-286.2)
+
+Referensen \`${REFERENS}\` är omfångad."
+check_exit "T24 sidofil utan filens faktiska hash" 1 "$(run_exit)"
+check_utdata "T24 skäl" "har ÄNDRATS och ändringen är inte bokförd"
+
+# --- T25: manifestet bär nyckeln "amendering" (RÖD) -----------------------
+# Exakt det försök som gjordes 2026-08-22 innan regeln fanns: bokföringen
+# skriven i manifestets JSON, där ADR-104-hooken ändå aldrig hade släppt in
+# den. Grinden namnger sidofilen i stället för att bara säga nej.
+setup
+skriv_referens
+cat > "${TEST_DIR}/${BILAGE}/facit.json" <<JSON
+{
+  "prototyp": "s93-test",
+  "last": "2026-08-06",
+  "lasning": "Lås som facit.",
+  "godkand": ${GODKAND_OK},
+  "amendering": [{ "datum": "2026-08-22", "vad": "x" }],
+  "ytor": [
+    { "yta": "yta", "bilder": ["facit-yta.png"], "kallor": ["src/komponenter/Yta.tsx"], "referenser": [] }
+  ]
+}
+JSON
+check_exit "T25 amendering som JSON-nyckel i manifestet" 1 "$(run_exit)"
+check_utdata "T25 skäl" "hör inte hemma i manifestet"
+
+# --- T26: sidofil med fel namnform (RÖD) ----------------------------------
+setup
+skriv_referens
+write_manifest_ref "${GODKAND_OK}" "[]"
+skriv_amendering "AMENDERING-fixturbyte.md" "# Amendering 2026-08-22 — x"
+check_exit "T26 sidofil med fel namnform" 1 "$(run_exit)"
+check_utdata "T26 skäl" "AMENDERING-<ISO-datum>-<slug>\.md"
+
+# --- T27: sidofil utan den kanoniska rubriken (RÖD) -----------------------
+setup
+skriv_referens
+write_manifest_ref "${GODKAND_OK}" "[]"
+skriv_amendering "AMENDERING-2026-08-22-utan-rubrik.md" "## Något annat"
+check_exit "T27 sidofil utan kanonisk rubrik" 1 "$(run_exit)"
+check_utdata "T27 skäl" "kanoniska rubriken"
+
+# --- T28: korrekt namngiven sidofil utan referens-koppling (GRÖN) ---------
+# De fem sidofiler som redan fanns i repot när regeln skrevs bokför PROSA om
+# formavvikelser, inte hashar — de ska fortsätta vara gröna.
+setup
+skriv_referens
+write_manifest_ref "${GODKAND_OK}" "[]"
+skriv_amendering "AMENDERING-2026-08-17-mallnot-riven.md" \
+    "# Amendering 2026-08-17 — mall-noten riven (TASK-273.3)
+
+**Yta:** yta. Formen i övrigt orörd."
+check_exit "T28 prosa-sidofil utan hashar (precedentformen)" 0 "$(run_exit)"
 
 echo
 echo "=== Resultat: ${PASSED} passerade, ${FAILED} failade ==="

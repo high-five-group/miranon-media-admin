@@ -6,7 +6,7 @@
 # prototyp-substratet inte rivs innan Marcus godkänt att skarpa bygget är
 # identiskt med prototypen.
 #
-# Tre invarianter:
+# Fyra invarianter:
 #   (a) En bilage-katalog som bär minst en facit-bild bär också ett
 #       facit-manifest. Utan manifest är facit inte adresserbart — och en
 #       agent som inte hittar facit drar slutsatsen "det finns inte" och
@@ -27,12 +27,44 @@
 #       — är ADR-104:s domän (§ Beslut 2–3, TASK-167): denna grind läser
 #       bara "är fältet null eller inte", schemavalideringen bor i
 #       scripts/lib/facit-validera.mjs (invariant b, se nedan).
+#   (d) Ett STÄMPLAT manifests deklarerade referenser är innehållslåsta:
+#       varje "referenser[].sha256" måste vara filens faktiska sha256.
+#       ADR-102 § Updates 2026-08-22 (T157). Bakgrunden är mätt: S109 fick
+#       två instanser på ETT dygn av samma handling — en agent uppdaterade
+#       ariaSnapshot-referenser i samma commit som en formändring — och
+#       skillnaden mellan dem (#1730 armerad, "godkand": null; #1715
+#       stoppad, stämplat facit) avgjordes av orkestrerarens omdöme, varje
+#       gång, eftersom INGEN grind fällde. Invariant (d) är den skillnaden
+#       kodad: hash-jämförelsen hoppas över för "godkand": null (klass a,
+#       fri ändring) och fäller för ett stämplat manifest (klass b/c).
+#       Vägen till grönt går via en AMENDERING-<datum>-<slug>.md-sidofil i
+#       samma bilage-katalog som namnger både referensen och dess nya
+#       sha256 — manifestet självt är agent-fruset så snart det är stämplat
+#       (ADR-104-hooken nekar varje Edit/Write mot det, mätt 2026-08-22).
+#       Delegeras till scripts/lib/facit-validera.mjs.
 #
 # VAD GRINDEN INTE GÖR, uttryckligen: den avgör INTE om skarpa ytan SER UT
 # som facit. Den jämförelsen är Marcus öga, och en grind som påstod sig göra
 # den vore exakt den ADR-083-klass repot bekämpar — en text som utlovar en
 # täckning ingen mekanism håller. Grinden gör facit omöjligt att INTE hitta,
 # och rivning omöjlig att göra i förtid. Jämförelsen självt förblir mänsklig.
+#
+# TVÅ NAMNGIVNA LUCKOR I (d), öppet bokförda i stället för utjämnade:
+#   1. TÄCKNINGEN. Nyckeln "referenser" är valfri, och 21 av 22 stämplade
+#      ytor saknar den (mätt 2026-08-22). Backfillen kräver mätning per yta
+#      — endast 4 av 12 manifest namnger sina __aria__-sökvägar — och är ett
+#      eget kort. Slutraden nedan RÄKNAR UPP de odeklarerade vid varje
+#      körning, så frånvaron aldrig blir tyst (R5-lärdomen: en odeklarerad
+#      lucka är oskiljbar från ett förbiseende).
+#   2. BOKFÖRINGENS SANNINGSHALT. Grinden hävdar att en ändring under ett
+#      stämplat facit ÄR bokförd — att en sidofil namnger referensen och
+#      dess nya hash. Den kan aldrig hävda att bokföringens SKÄL är sant,
+#      alltså att ändringen verkligen tillhör klass (b) och inte (c). Den
+#      domen är Marcus öga; ADR-102 § Updates 2026-08-22 § A2 bär testet och
+#      eskaleringsregeln (osäkerhet ⇒ klass c), som konvention utan spärr.
+#      Baslinjen i manifestet skyddas däremot av ADR-104-hooken, som fryser
+#      ett stämplat manifest i sin helhet — det är därför "referenser"
+#      måste deklareras medan manifestet ännu är ogodkänt.
 #
 # Config: .facit-policy.conf (projekt-specifika värden; denna logik är
 # universell och kan dupliceras till andra spokes utan refactor).
@@ -66,6 +98,8 @@ VALIDERARE="scripts/lib/facit-validera.mjs"
 FAILED=0
 MANIFEST_ANTAL=0
 YTA_ANTAL=0
+REFERENS_ANTAL=0
+ODEKLARERADE_YTOR=0
 OGODKANDA=()
 
 # Frånvarande bilage-rot är GRÖNT: ett repo utan prototyp-pass har inget
@@ -128,6 +162,17 @@ for katalog in "${FACIT_BILAGE_ROT}"/*/; do
     if [[ "${godkand}" = "null" ]]; then
         OGODKANDA+=("${manifest}")
     fi
+
+    # Täcknings-räkning för invariant (d), slutraden. Räknas ENDAST för
+    # stämplade manifest — det är där innehållslåset gäller. Kosmetisk som
+    # ytantalet ovan: den får aldrig fälla, bara berätta hur stor luckan är.
+    las=""
+    las=$(node -p "(()=>{const m=JSON.parse(require('fs').readFileSync('${manifest}','utf8'));if(!m.godkand)return 0;return (m.ytor||[]).reduce((n,y)=>n+(Array.isArray(y.referenser)?y.referenser.length:0),0);})()" 2>/dev/null) || las=0
+    REFERENS_ANTAL=$((REFERENS_ANTAL + las))
+
+    odek=""
+    odek=$(node -p "(()=>{const m=JSON.parse(require('fs').readFileSync('${manifest}','utf8'));if(!m.godkand)return 0;return (m.ytor||[]).filter((y)=>!('referenser' in y)).length;})()" 2>/dev/null) || odek=0
+    ODEKLARERADE_YTOR=$((ODEKLARERADE_YTOR + odek))
 done
 
 # --- (c) B3-spärren: rivning före godkännande ----------------------------
@@ -182,3 +227,9 @@ if [[ "${MARKOR_KONTROLLERAD}" -eq 1 ]]; then
 else
     echo "✅ Facit-manifest OK: ${MANIFEST_ANTAL} manifest, ${YTA_ANTAL} ytor deklarerade, ${#OGODKANDA[@]} ogodkända."
 fi
+
+# Invariant (d):s täckning skrivs ALLTID ut, aldrig bara när den är hel.
+# En grind som tiger om sin egen lucka gör frånvaron oskiljbar från
+# fullständighet — samma R5-fälla manifestets "bilder"-nyckel finns för att
+# stänga (ADR-102 § Updates 2026-08-22 § Vad som INTE mekaniseras här).
+echo "   Innehållslås (invariant d): ${REFERENS_ANTAL} referenser låsta mot sha256 i stämplade manifest; ${ODEKLARERADE_YTOR} stämplade ytor saknar \"referenser\" och är därmed INTE innehållslåsta."
