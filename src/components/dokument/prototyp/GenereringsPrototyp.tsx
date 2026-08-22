@@ -476,6 +476,30 @@ function byggRad(
   };
 }
 
+/** Gruppens rader som redigeras via DIALOG. Två slag faller bort, och båda
+ *  måste stå här explicit: de låsta ändras på eventsidan, och Inforutans bor i
+ *  sektionsmorfen. Filtret bar först bara `last` — på antagandet att Inforutan
+ *  ändå har för få rader för att nå tröskeln. Fel: i bekräftelsebilagan har
+ *  den SEX olåsta (pris, anmälningsavgift, resterande, sista betalningsdag
+ *  utöver basen), så gruppens ingång slog på i den godkända bilagan. Mätt och
+ *  rättat, varv 14 — ett antagande om antal är inget filter. */
+function dialogRader(rader: Rad[]): Rad[] {
+  return rader.filter((r) => !r.def.last && !INFORUTA_IDN.has(r.def.id));
+}
+
+/**
+ * Från hur många dialograder en grupp bär BLÄDDRING i stället för
+ * öppna–stäng–öppna-igen.
+ *
+ * Marcus bokstav vid beslutet var "fler än en rad", men avsikten i samma
+ * andetag var att den GODKÄNDA bekräftelsebilagan inte får röras — och dess
+ * Agenda har två redigerbara rader (Dag 1, Dag 2). "Fler än en" hade alltså
+ * ändrat exakt den yta villkoret fanns för att skydda. Tre är därför
+ * tröskeln: med två rader kostar omvägen ETT klick, från tre växer den
+ * linjärt (Praktisk information: nio).
+ */
+const NAV_TROSKEL = 3;
+
 /** "10 oktober" — som förlagan skriver sista betalningsdag. Tom sträng om inget datum. */
 function datumUtanAr(iso: string): string {
   if (!iso) return '';
@@ -654,6 +678,10 @@ async function renderaDokument(mall: MallId, event: Event, rader: Rad[]): Promis
 const TACKNING_KLASS =
   'inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
 const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
+/* Bläddringens knappar. 40 px — MÄTT lika med Avbryt/Spara (`min-h-10`), så
+   knappraden får en enda baslinje; 44 px gjorde paret 4 px högre än de riktiga
+   knapparna och raden ojämn. */
+const BLADDRAKNAPP_KLASS = 'size-10 shrink-0 p-0';
 const IKON_STORLEK = 16;
 const KRYSSRUTA_KLASS =
   'flex size-4 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-(--mm-checkbox-selected-border) group-data-[selected]:bg-(--mm-checkbox-selected-bg)';
@@ -1147,6 +1175,15 @@ function GenereringsVy({
   const [overrides, setOverrides] = useState<Partial<Record<BlockId, Override>>>({});
   const [somStandard, setSomStandard] = useState<Set<BlockId>>(new Set());
   const [oppet, setOppet] = useState<BlockId | null>(null);
+  /* Dialogen är EN transaktion, inte en rad i taget. Bläddrar Lotta mellan
+     fälten skrivs varje rad till utkastet när hon lämnar den — och då måste
+     Avbryt ångra HELA genomgången, inte bara raden hon råkar stå på. Samma
+     semantik som Inforutans sektionsmorf: du ändrar flera fält, du ångrar
+     sektionen. */
+  const foreDialogen = useRef<{
+    overrides: Partial<Record<BlockId, Override>>;
+    somStandard: Set<BlockId>;
+  } | null>(null);
   // Inforutan andras som SEKTION (eventsidans morf), inte block for block.
   const [morfar, setMorfar] = useState(false);
   /* Vilket fält morfen ska sätta markören i. "Fyll i plats" i värdeplatsen
@@ -1160,6 +1197,25 @@ function GenereringsVy({
   const andraKnappRef = useRef<HTMLButtonElement>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
 
+  const oppnaBlock = (id: BlockId) => {
+    foreDialogen.current = { overrides, somStandard };
+    setOppet(id);
+  };
+  const stangDialog = () => {
+    foreDialogen.current = null;
+    setOppet(null);
+  };
+  /** Avbryt = tillbaka till läget innan dialogen öppnades, hur många rader
+   *  som än hunnit skrivas av bläddringen. */
+  const avbrytDialog = () => {
+    const fore = foreDialogen.current;
+    if (fore) {
+      setOverrides(fore.overrides);
+      setSomStandard(fore.somStandard);
+    }
+    stangDialog();
+  };
+
   const rader = useMemo(
     () =>
       grupper.map((g) => ({
@@ -1171,6 +1227,10 @@ function GenereringsVy({
   const allaRader = rader.flatMap((g) => g.rader);
   const utelamnade = allaRader.filter((r) => r.tomt);
   const oppenRad = oppet ? allaRader.find((r) => r.def.id === oppet) : undefined;
+  /* Bläddringen håller sig inom den grupp raden bor i — den är gruppens
+     genomgång, inte hela bilagans. */
+  const oppenGrupp = oppet ? rader.find((g) => g.rader.some((r) => r.def.id === oppet)) : undefined;
+  const navSyskon = oppenGrupp ? dialogRader(oppenGrupp.rader) : [];
 
   // Varje ändring efter ett "Skapa" gör bekräftelsen inaktuell — den
   // beskrev ett dokument som inte längre är det Lotta ser framför sig.
@@ -1281,7 +1341,7 @@ function GenereringsVy({
                     onPress={() => {
                       // Inforutans block bor i sektionsmorfen, inte i en dialog.
                       if (INFORUTA_IDN.has(r.def.id)) oppnaMorf(r.def.id);
-                      else setOppet(r.def.id);
+                      else oppnaBlock(r.def.id);
                     }}
                   >
                     Fyll i {r.def.etikett.toLowerCase()}
@@ -1296,15 +1356,39 @@ function GenereringsVy({
       {rader.map((g) => {
         const rubrikId = `grupp-${g.rubrik.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
         const arInforutan = g.rubrik === 'Inforutan';
+        /* Samma tröskel som bläddringen: ingången hör ihop med genomgången
+           och ska inte dyka upp i grupper som saknar en. Inforutan hålls
+           utanför av `dialogRader` — dess tomma bär redan "Fyll i …" i
+           värdeplatsen, med morfen som väg in. */
+        const gruppensRader = dialogRader(g.rader);
+        const barGenomgang = gruppensRader.length >= NAV_TROSKEL;
+        const saknade = gruppensRader.filter((r) => r.tomt);
         return (
           <section
             key={g.rubrik}
             aria-labelledby={rubrikId}
             className="flex min-w-0 flex-col gap-2"
           >
-            <h2 id={rubrikId} className="px-4 font-semibold text-lg">
-              {g.rubrik}
-            </h2>
+            {/* Rubrikraden bär gruppens ENDA meta: hur mycket som fattas,
+                som en väg in. GOV.UK summary list lägger sin handling i
+                samma kant. Den tvingar ingen ordning — bläddringen står
+                kvar för den som hellre går igenom allt. */}
+            <div className="flex items-baseline justify-between gap-3 px-4">
+              <h2 id={rubrikId} className="min-w-0 font-semibold text-lg">
+                {g.rubrik}
+              </h2>
+              {barGenomgang && saknade.length > 0 && (
+                <button
+                  type="button"
+                  className="shrink-0 font-medium text-caption underline decoration-1 underline-offset-4"
+                  onClick={() => oppnaBlock(saknade[0].def.id)}
+                >
+                  {saknade.length === 1
+                    ? 'Fyll i den som saknas'
+                    : `Fyll i de ${saknade.length} som saknas`}
+                </button>
+              )}
+            </div>
             {arInforutan && morfar ? (
               <InforutanMorf
                 rader={g.rader}
@@ -1401,7 +1485,7 @@ function GenereringsVy({
                           type="button"
                           className={RAD_KLASS}
                           aria-label={`${r.tomt ? 'Fyll i' : 'Ändra'} ${r.def.etikett.toLowerCase()}`}
-                          onClick={() => setOppet(r.def.id)}
+                          onClick={() => oppnaBlock(r.def.id)}
                         >
                           {inre}
                         </button>
@@ -1459,19 +1543,42 @@ function GenereringsVy({
       </div>
 
       {/* Redigeringen bor i en egen yta — villkorad rendering så utkastet är
-          färskt per öppning (samma disciplin som RackviddsDialog). */}
+          färskt per öppning (samma disciplin som RackviddsDialog).
+          Panelen bor HÄR och inte i BlockDialog: bläddringen byter rad utan
+          att stänga, och en panel som monterades om per rad hade spelat sin
+          öppningsanimation vid varje steg. `key` är av samma skäl borta —
+          utkastet synkas i stället på prop-byte, se BlockDialog. */}
       {oppenRad && (
-        <BlockDialog
-          key={oppenRad.def.id}
-          rad={oppenRad}
-          ort={event.ort}
-          somStandard={somStandard.has(oppenRad.def.id)}
-          onSpara={(nytt, blirStandard) => {
-            spara(oppenRad.def.id, nytt, blirStandard);
-            setOppet(null);
+        <Modal
+          isOpen
+          isDismissable
+          /* Löptextdialogen FYLLER sitt tak (`h-` utöver panelklassens
+             `max-h`). Utan det är panelen innehållsdriven, bodyn får ingen
+             bestämd höjd, och en textruta som ska fylla den kan inte veta hur
+             hög den är — då hamnar rullningen på dialogen i stället för i
+             rutan. */
+          className={cn(DIALOG_PANEL_KLASS, oppenRad.def.langtext && 'h-[min(76vh,600px)]')}
+          style={DIALOG_ANKARE}
+          onOpenChange={(open) => {
+            if (!open) avbrytDialog();
           }}
-          onStang={() => setOppet(null)}
-        />
+        >
+          <BlockDialog
+            rad={oppenRad}
+            ort={event.ort}
+            somStandard={somStandard.has(oppenRad.def.id)}
+            syskon={navSyskon}
+            onVaxla={(id, nytt, blirStandard) => {
+              spara(oppenRad.def.id, nytt, blirStandard);
+              setOppet(id);
+            }}
+            onSpara={(nytt, blirStandard) => {
+              spara(oppenRad.def.id, nytt, blirStandard);
+              stangDialog();
+            }}
+            onStang={avbrytDialog}
+          />
+        </Modal>
       )}
     </div>
   );
@@ -1567,13 +1674,23 @@ const DIALOG_ANKARE = { alignItems: 'flex-start', paddingTop: 'clamp(2rem, 12vh,
  */
 function ProtoDialog({
   title,
+  meta,
   children,
   actions,
+  navigering,
+  rullNyckel,
   ariaDescription,
 }: {
   title: string;
+  /** Liten text i rubrikens högerkant — positionen i en bläddring. */
+  meta?: ReactNode;
   children: ReactNode;
   actions: ReactNode;
+  /** Bläddringen. Vänsterställd i knappraden, mot `actions` — den kostar
+   *  därmed ingen höjd i en panel vars tak redan är mätt (600 px). */
+  navigering?: ReactNode;
+  /** Byter värde när bodyn byter innehåll; rullytan går då till toppen. */
+  rullNyckel?: string;
   ariaDescription?: string;
 }) {
   const rullRef = useRef<HTMLDivElement>(null);
@@ -1598,14 +1715,26 @@ function ProtoDialog({
     };
   }, []);
 
+  /* Bläddringen byter innehåll i en panel som står kvar. Utan detta ärver
+     nästa fält föregående rullposition och öppnas mitt i sin egen text.
+     Nyckeln LÄSES i effekten, inte bara listas som beroende: en dialog utan
+     bläddring har ingen nyckel och ska då inte rulla någonstans alls. */
+  useEffect(() => {
+    if (rullNyckel === undefined) return;
+    rullRef.current?.scrollTo({ top: 0 });
+  }, [rullNyckel]);
+
   return (
     <AriaDialog
       aria-description={ariaDescription}
       className="flex min-h-0 w-full flex-1 flex-col p-6 outline-none"
     >
-      <Heading slot="title" className="shrink-0 text-xl">
-        {title}
-      </Heading>
+      <div className="flex shrink-0 items-baseline justify-between gap-3">
+        <Heading slot="title" className="min-w-0 text-xl">
+          {title}
+        </Heading>
+        {meta}
+      </div>
       {/* -mx-6 + px-6: rullytans kant gar ut till panelkanten sa den lasas
           som en yta, medan innehallet behaller dialogens padding.
           Uttoningen gor en avskuren rad till en SIGNAL ("det finns mer") i
@@ -1625,8 +1754,11 @@ function ProtoDialog({
       >
         {children}
       </div>
-      <div className="mt-4 flex shrink-0 justify-end gap-3 border-border border-t pt-4">
-        {actions}
+      {/* justify-between med en tom platshållare när bläddring saknas: utan
+          navigering ligger knapparna kvar exakt där de låg förut (höger). */}
+      <div className="mt-4 flex shrink-0 items-center justify-between gap-3 border-border border-t pt-4">
+        {navigering ?? <span aria-hidden="true" />}
+        <span className="flex items-center gap-3">{actions}</span>
       </div>
     </AriaDialog>
   );
@@ -1636,12 +1768,18 @@ function BlockDialog({
   rad,
   ort,
   somStandard,
+  syskon,
+  onVaxla,
   onSpara,
   onStang,
 }: {
   rad: Rad;
   ort: string | null;
   somStandard: boolean;
+  /** Gruppens dialograder när den bär bläddring — annars tom. */
+  syskon: Rad[];
+  /** Lämna raden för en annan: utkastet skrivs, dialogen står kvar. */
+  onVaxla: (id: BlockId, nytt: Override | null, blirStandard: boolean) => void;
   onSpara: (nytt: Override | null, blirStandard: boolean) => void;
   onStang: () => void;
 }) {
@@ -1655,59 +1793,117 @@ function BlockDialog({
   );
   const [blirStandard, setBlirStandard] = useState(somStandard);
 
-  const sparaUtkast = () => {
+  /* Bläddringen byter RAD i en dialog som står kvar monterad. Utkastet måste
+     följa med — men en remount (`key`) hade slagit ut fokus från bläddrings-
+     knappen mitt i en tangentbordsgenomgång, och det är just den genomgången
+     mekanismen finns för. React-mönstret "adjusting state when props change"
+     byter värdena under render i stället, med DOM:en och fokus kvar. */
+  const [visadeId, setVisadeId] = useState(def.id);
+  if (visadeId !== def.id) {
+    setVisadeId(def.id);
+    setText(rad.text ?? '');
+    setAgenda(rad.egen?.typ === 'agenda' ? rad.egen.rader : (rad.standardAgenda ?? []));
+    setBlirStandard(somStandard);
+  }
+
+  /** Utkastet som ett värde — samma beräkning oavsett om raden lämnas via
+   *  Spara eller via bläddringen, så de två vägarna aldrig kan glida isär. */
+  const utkast = (): { nytt: Override | null; blirStandard: boolean } => {
     if (def.agenda) {
-      const rensade = agenda.filter((r) => r.text.trim());
-      onSpara({ typ: 'agenda', rader: rensade }, false);
-      return;
+      return {
+        nytt: { typ: 'agenda', rader: agenda.filter((r) => r.text.trim()) },
+        blirStandard: false,
+      };
     }
     // Samma text som standarden = ingen egen text (följer standarden igen).
     const nytt: Override | null =
       rad.standardText != null && text === rad.standardText ? null : { typ: 'text', varde: text };
-    onSpara(nytt, blirStandard && !!text.trim());
+    return { nytt, blirStandard: blirStandard && !!text.trim() };
+  };
+
+  const sparaUtkast = () => {
+    const u = utkast();
+    onSpara(u.nytt, u.blirStandard);
+  };
+
+  /* Bläddringen går genom HELA gruppen, inte bara de tomma: annars gick det
+     inte att vända tillbaka till något man just fyllt i. Vägen till nästa
+     tomma är gruppens egen ingång, ovanför listan. */
+  const platsINav = syskon.findIndex((s) => s.def.id === def.id);
+  const harNav = syskon.length >= NAV_TROSKEL && platsINav >= 0;
+  const forra = harNav ? syskon[platsINav - 1] : undefined;
+  const nasta = harNav ? syskon[platsINav + 1] : undefined;
+  const gaTill = (mal: Rad | undefined) => {
+    if (!mal) return;
+    const u = utkast();
+    onVaxla(mal.def.id, u.nytt, u.blirStandard);
   };
 
   return (
-    <Modal
-      isOpen
-      isDismissable
-      /* Löptextdialogen FYLLER sitt tak (`h-` utöver panelklassens `max-h`).
-         Utan det är panelen innehållsdriven, bodyn får ingen bestämd höjd,
-         och en textruta som ska fylla den kan inte veta hur hög den är —
-         då hamnar rullningen på dialogen i stället för i rutan. */
-      className={cn(DIALOG_PANEL_KLASS, def.langtext && 'h-[min(76vh,600px)]')}
-      style={DIALOG_ANKARE}
-      onOpenChange={(open) => {
-        if (!open) onStang();
-      }}
+    <ProtoDialog
+      title={def.etikett}
+      rullNyckel={def.id}
+      meta={
+        harNav ? (
+          <span className="shrink-0 text-caption text-text-muted tabular-nums">
+            {platsINav + 1} av {syskon.length}
+          </span>
+        ) : undefined
+      }
+      navigering={
+        harNav ? (
+          /* `ghost` = husets NEUTRALA platta. Listans ikonknapp bär
+             `intent="primary"` eftersom den är radens enda handling; här står
+             paret bredvid Spara, och två primärtonade vikter i samma rad gör
+             navigationen lika tung som handlingen den ska tjäna.
+             gap-0.5 håller pilarna som EN kontroll, inte två knappar. */
+          <span className="flex items-center gap-0.5">
+            <Button
+              intent="ghost"
+              className={BLADDRAKNAPP_KLASS}
+              isDisabled={!forra}
+              aria-label={forra ? `Föregående: ${forra.def.etikett}` : 'Föregående fält'}
+              onPress={() => gaTill(forra)}
+            >
+              <ChevronLeft aria-hidden="true" size={IKON_STORLEK} />
+            </Button>
+            <Button
+              intent="ghost"
+              className={BLADDRAKNAPP_KLASS}
+              isDisabled={!nasta}
+              aria-label={nasta ? `Nästa: ${nasta.def.etikett}` : 'Nästa fält'}
+              onPress={() => gaTill(nasta)}
+            >
+              <ChevronRight aria-hidden="true" size={IKON_STORLEK} />
+            </Button>
+          </span>
+        ) : undefined
+      }
+      actions={
+        <>
+          <Button intent="secondary" emphasis="outline" onPress={onStang}>
+            Avbryt
+          </Button>
+          <Button intent="primary" onPress={sparaUtkast}>
+            Spara
+          </Button>
+        </>
+      }
     >
-      <ProtoDialog
-        title={def.etikett}
-        actions={
-          <>
-            <Button intent="secondary" emphasis="outline" onPress={onStang}>
-              Avbryt
-            </Button>
-            <Button intent="primary" onPress={sparaUtkast}>
-              Spara
-            </Button>
-          </>
-        }
-      >
-        <div className="flex h-full flex-col gap-4">
-          {def.agenda ? (
-            <AgendaEditor rader={agenda} onChange={setAgenda} />
-          ) : def.datum ? (
-            <DatumEnkel
-              label={def.etikett}
-              iso={text}
-              onChange={setText}
-              hjalp={`I bilagan: "Resterande ${EVENTINNEHALL.resterandeBelopp} betalas senast ${
-                datumUtanAr(text) || '…'
-              }. Anmälan är bindande."`}
-            />
-          ) : (
-            /* Loptexten: rutan FYLLER dialogens body och rullar I SIG SJALV,
+      <div className="flex h-full flex-col gap-4">
+        {def.agenda ? (
+          <AgendaEditor rader={agenda} onChange={setAgenda} />
+        ) : def.datum ? (
+          <DatumEnkel
+            label={def.etikett}
+            iso={text}
+            onChange={setText}
+            hjalp={`I bilagan: "Resterande ${EVENTINNEHALL.resterandeBelopp} betalas senast ${
+              datumUtanAr(text) || '…'
+            }. Anmälan är bindande."`}
+          />
+        ) : (
+          /* Loptexten: rutan FYLLER dialogens body och rullar I SIG SJALV,
                sa rullisten sitter dar texten ar — inte utanfor rutan.
                Tva matta felsteg bakom den har formen:
                (1) `max-h-none` rakt pa `className` gjorde INGENTING (falt
@@ -1719,55 +1915,54 @@ function BlockDialog({
                    utanfor textrutan. Nu ar det tvartom.
                `whitespace-pre-wrap` bevarar styckesbrytningarna ur mallen —
                utan den blir Rogers tre stycken en enda klump. */
-            <TextArea
-              label={def.etikett}
-              hideLabel
-              autoGrow={!def.langtext}
-              className={
-                def.langtext
-                  ? 'h-full [&_textarea]:h-full [&_textarea]:max-h-none [&_textarea]:min-h-0 [&_textarea]:resize-none [&_textarea]:whitespace-pre-wrap [&_textarea]:leading-relaxed'
-                  : undefined
-              }
-              value={text}
-              onChange={setText}
-              rows={def.kalla === 'event' || def.id === 'plats' ? 2 : 5}
-              placeholder={def.id === 'plats' ? 'Gatuadress och ort' : undefined}
-            />
-          )}
+          <TextArea
+            label={def.etikett}
+            hideLabel
+            autoGrow={!def.langtext}
+            className={
+              def.langtext
+                ? 'h-full [&_textarea]:h-full [&_textarea]:max-h-none [&_textarea]:min-h-0 [&_textarea]:resize-none [&_textarea]:whitespace-pre-wrap [&_textarea]:leading-relaxed'
+                : undefined
+            }
+            value={text}
+            onChange={setText}
+            rows={def.kalla === 'event' || def.id === 'plats' ? 2 : 5}
+            placeholder={def.id === 'plats' ? 'Gatuadress och ort' : undefined}
+          />
+        )}
 
-          {def.platsFalt && ort && (
-            <Kryss
-              label={`Använd som standard för ${ort}`}
-              vald={blirStandard}
-              onChange={setBlirStandard}
+        {def.platsFalt && ort && (
+          <Kryss
+            label={`Använd som standard för ${ort}`}
+            vald={blirStandard}
+            onChange={setBlirStandard}
+          >
+            Använd som standard för {ort} framöver
+          </Kryss>
+        )}
+
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-caption text-text-muted">
+            {rad.egen
+              ? 'Egen text för det här eventet. Ändras standarden senare påverkas inte eventet.'
+              : harStandard
+                ? 'Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.'
+                : 'Ingen standard finns. Texten gäller bara det här eventet om du inte använder den som standard.'}
+          </p>
+          {rad.egen && harStandard && (
+            <Button
+              intent="secondary"
+              emphasis="outline"
+              size="sm"
+              className="shrink-0"
+              onPress={() => onSpara(null, false)}
             >
-              Använd som standard för {ort} framöver
-            </Kryss>
+              Återgå till standard
+            </Button>
           )}
-
-          <div className="flex items-start justify-between gap-3">
-            <p className="text-caption text-text-muted">
-              {rad.egen
-                ? 'Egen text för det här eventet. Ändras standarden senare påverkas inte eventet.'
-                : harStandard
-                  ? 'Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.'
-                  : 'Ingen standard finns. Texten gäller bara det här eventet om du inte använder den som standard.'}
-            </p>
-            {rad.egen && harStandard && (
-              <Button
-                intent="secondary"
-                emphasis="outline"
-                size="sm"
-                className="shrink-0"
-                onPress={() => onSpara(null, false)}
-              >
-                Återgå till standard
-              </Button>
-            )}
-          </div>
         </div>
-      </ProtoDialog>
-    </Modal>
+      </div>
+    </ProtoDialog>
   );
 }
 
