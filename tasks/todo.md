@@ -249,13 +249,14 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`; pausad tre
-gånger 2026-08-20/21) — BEKRÄFTELSEBILAGANS GENERERINGSVY GODKÄND EFTER TOLV
-KONVERGENSVARV, FYRA YTOR KVAR.** **Enda aktiva sessionen** — S107, S109 och
-S110 samtliga pausade; huvudkatalogen bär S109:s ägarlapp med levande process,
-så S108 arbetar kvar i egen worktree `s108-bilagesparet` (ADR-090 beslut 2),
-gren `docs/s108-resume` med **tolv commits OPUSHADE MED AVSIKT** (arbetsform
-`iteration`, ADR-097: `da957f75`…`1d3e7282`).
+**Session 108 ⏸️ PAUSAD (fjärde gången, 2026-08-22, `lifecycle: paused`) —
+PROTOTYPEN LANDAD EFTER 18 VARV, MALLARNA MÄTTA MOT ROGERS FÖRLAGOR,
+KVITTOTS INNEHÅLL BYGGT — FORMEN KVAR.** Egen worktree `s108-bilagesparet`
+(ADR-090 beslut 2), gren `docs/s108-resume` — **PUSHAD** (18 commits,
+`da957f75`…`78bf572f`) och arbetsformen `iteration` **RENSAD** medvetet före
+pushen. Push-ekonomins undantagslista, posten *"allt före paus/handoff"*
+(ADR-096 write-ahead) gör pausen till undantaget från iterations-kadensen —
+Marcus frågade, mekanismen svarade.
 Marcus dom: *"Nu är jag helt nöjd med hur detta ser ut för
 bekräftelsebilagan."* Varv 7–12 drevs av MÄTNING, inte tyckande — och
 mätningen **falsifierade handoffens egen hypotes**: Hem-svepets overlay, som
@@ -278,8 +279,27 @@ polling-configen; prototypmodulen verifierat transformerad (200, 232 KB).
 Numrering **re-deriverad mot `origin/main` `aba0d61b`**: ADR **124** ·
 task-**288** · **L512** · **62** fragment (nästa **63**) · **T169** · **f53**
 — paus-radens värden (task-286 · 60 fragment · T160 · f51) hann förbrukas av
-S109/S110 under pausen, precis som handoffen varnade. Full handoff: sessionsdok
-S108 § Paushistorik 3 + Del 4.
+S109/S110 under pausen, precis som handoffen varnade.
+
+**Dagens landningar:** `#1737` (resume) · `#1754` (Del 5) · `#1756` (T170) ·
+`#1757` (research) · `#1759` (Del 6) MERGED; `#1763` (kvittots moms + org) och
+`#1766` (prototypen + mallarna) armerade i kön vid pausen.
+**Två agenter levererade:** kvittots innehåll med momsen bevisad via NEGATIV
+KONTROLL (saboterad beräkning → 1 av 11 tester föll → återställd), och
+mall-diffen med **78 egenskaper mätta, 76 avvikande, 69 rättade**.
+**Grövsta fyndet:** bekräftelsebilagan rymdes inte på en sida (373,6 mm, 26 %
+för mycket vertikalt) — ingen tidigare mätning fångade det.
+**Dokumentfel rättat:** Del 2 § C:s fem tal HÖLL men gällde
+DELTAGARINFORMATIONENS inforuta, inte bekräftelsebilagans — rutorna skiljer
+36 mm, och en rak tillämpning hade gjort bekräftelsebilagans ruta 36 mm för
+smal.
+**NÄSTA (resume av 108): granska mallarnas efter-läge + svara på F1–F7 ·
+kvittots FORM · förhandsgranskningen om till faktisk PDF i ny flik ·
+skapandet · sedan facit-lås.**
+Numrering vid paus (`origin/main` `78f1158d`): ADR **124** · task-**289** ·
+**L512** · 62 fragment (nästa **63**) · **T171** · **f53** — mät trådserien i
+BÅDA ytorna vid resume, en kollision inträffade i dag på exakt den skillnaden.
+Full handoff: sessionsdok S108 § PAUSLÄGE + Del 5–7.
 
 **Session 107 ⏸️ PAUSAD (sjunde gången, 2026-08-20, `lifecycle: paused`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
