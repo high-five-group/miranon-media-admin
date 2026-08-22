@@ -47,7 +47,8 @@ function DevSektionsfelPage() {
       <h1>Sektionsfel (dev)</h1>
       <p className="mt-2 text-small text-text-secondary">
         Kastar ett renderingsfel i denna route så att SectionErrors knappval kan verifieras: ett
-        vanligt fel visar "Försök igen", ett chunk-fel visar "Ladda om" - samma igenkänning som{' '}
+        vanligt fel visar "Försök igen", ett chunk-fel visar ingen knapp alls (TASK-285.13:
+        chunk-bannern äger "Ladda om") - samma igenkänning som{' '}
         <code>src/lib/chunk-laddningsfel.ts</code> redan bär.
       </p>
       <div className="mt-4 flex gap-3">

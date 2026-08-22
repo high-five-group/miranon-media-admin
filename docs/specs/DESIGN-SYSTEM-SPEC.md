@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-21
+updated: 2026-08-22
 review_by: 2027-02-08
 status: stable
 ---
@@ -1801,11 +1801,20 @@ samt kontaktväg eller alternativ väg när sådan finns.
 
 ### Öppna poster (ADR-121 § Öppet)
 
-- Var databesked-varningen tar vägen är **inte** beslutat — dialog-formen
-  kräver osparad-detektion, samma mekanik som vägde mot ett förkastat
-  alternativ.
-- `SectionError`:s *"Försök igen"* är **mätt trasigt** vid chunk-fel (kör om
-  samma import mot samma saknade fil) och är inte åtgärdat av trappan.
+Listan speglar ADR:ns egen § Öppet och dess § Updates — den avgör ingenting
+själv (`ADR-100` § 2, karta aldrig kopia). Två poster är sedan dess STÄNGDA
+och står kvar med sitt utfall i stället för att strykas, så att en läsare som
+minns frågan hittar svaret:
+
+- ~~Var databesked-varningen tar vägen~~ — **stängd** 2026-08-21
+  (`TASK-285.4`): varningen bor i chunk-bannern och ingen annanstans.
+  Bekräftelsedialogen med osparad-detektion byggs inte, och lever vidare som
+  tråd `T160`. Se `ADR-121` § Updates 2026-08-21.
+- ~~`SectionError`:s *"Försök igen"* är mätt trasigt vid chunk-fel~~ —
+  **stängd** i två steg. `TASK-285.7` bytte grenen till en hel omladdning;
+  `TASK-285.13` tog bort knappen där HELT, eftersom chunk-bannern äger
+  åtgärden och två samtidigt fyllda alert-regioner inte får bära samma
+  tillgängliga namn. Se `ADR-121` § Updates 2026-08-22.
 - `AppError` är medvetet ostylad för att överleva ett dött stylesheet.
 
 ## 22. Åtgärdskön — arbetsobjekt är INTE notiser
