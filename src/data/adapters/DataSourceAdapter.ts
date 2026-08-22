@@ -484,4 +484,51 @@ export interface DataSourceAdapter {
    * `namn` är dokumentnamnet renderaren stämplar jobbet med.
    */
   renderPdfFranHtml(html: string, namn: string): Promise<Blob>;
+
+  /**
+   * Rendera självbärande HTML till PDF och lagra resultatet som ett
+   * TRANSIENT utkast i Storage — returnerar en KORT signerad URL i stället
+   * för bytes (TASK-302.1, PRD `TASK-302`, `ADR-124`).
+   *
+   * VARFÖR EN EGEN METOD, INTE ETT PARAMETER-TILLÄGG PÅ `renderPdfFranHtml`:
+   * de två metoderna svarar olika FORMER (`Blob` kontra `{ url, utgar }`) —
+   * ett gemensamt returtyp-union hade tvingat VARJE anropare att gissa
+   * vilken form som kom tillbaka. `renderPdfFranHtml` BEHÅLLS OFÖRÄNDRAD
+   * (riv inte) — den är fortfarande skiva 2:s (`TASK-302.2`) startpunkt för
+   * de skarpa preview-EF:erna, som byter LEVERANSVÄG men inte metodform.
+   *
+   * MÄTT, INTE ANTAGET (`TASK-302` § "Problemet"): Chromes PDF-visare
+   * scrollar bara jämnt på en PDF SERVERAD AV NÄTVERKSTJÄNSTEN. En
+   * `blob:`-URL (denna adapters ANDRA metod ovan), och likaså en URL fångad
+   * av appens egen Service Worker, laggar vid scroll — sex mätta armar,
+   * headed Chrome 151. Den URL denna metod returnerar är Supabase Storages
+   * SIGNERADE URL (`supabase.co`, cross-origin mot appens eget origin) —
+   * `src/sw.ts`s `NavigationRoute` rör den därför aldrig.
+   *
+   * PROVISORISK ADRESS, PERMANENT FÖRMÅGA — samma resonemang som
+   * `renderPdfFranHtml`: i dag svarar `test-docraptor-render` med
+   * `leverans: 'utkast'` (staging-only, `.prod-functions-allowlist.conf`-
+   * exkluderad); vid promoveringen (`ADR-103`) byter adaptern adress till
+   * de skarpa preview-EF:erna (`TASK-302.2`), interfacet är då oförändrat.
+   *
+   * `eventId`/`typ` blir Storage-sökvägen `utkast/<eventId>/<typ>.pdf`
+   * (`upsert` — högst en fil per event och typ). `utgar` är URL:ens
+   * ISO-utgångstid.
+   */
+  renderPdfTillUtkast(
+    html: string,
+    namn: string,
+    params: { eventId: string; typ: UtkastTyp },
+  ): Promise<{ url: string; utgar: string }>;
 }
+
+/**
+ * `typ`-diskriminatorn för TASK-302:s utkast-väg (`ADR-124`) — bilaga (denna
+ * skivas prototyp-väg, TASK-302.1), kvitto och deltagarinformation (skiva
+ * 2:s skarpa EF:er, TASK-302.2). SAMMA tre värden som backend-enumen
+ * `UTKAST_TYPER` i `supabase/functions/_shared/utkast.ts` — dubblerad
+ * MEDVETET (Deno-EF:erna delar ingen build-kedja med Vite-bygget, samma
+ * duplicerings-mönster `_shared/attachments.ts`s filhuvud redan etablerar
+ * för `AttachmentClass`/`AttachmentScope`).
+ */
+export type UtkastTyp = 'bilaga' | 'kvitto' | 'deltagarinformation';

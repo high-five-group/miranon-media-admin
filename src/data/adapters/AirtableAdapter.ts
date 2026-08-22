@@ -66,6 +66,7 @@ import {
   type SendReceiptResult,
   SendReceiptResultSchema,
   type UpdateEventInput,
+  UtkastResultatSchema,
   WaitlistEntrySchema,
 } from '../../domain/schemas';
 import type {
@@ -86,7 +87,7 @@ import {
   formatMB,
   SMALL_UPLOAD_MAX_BYTES,
 } from './attachmentUpload';
-import type { DataSourceAdapter } from './DataSourceAdapter';
+import type { DataSourceAdapter, UtkastTyp } from './DataSourceAdapter';
 
 // Airtable tabell-ID:n (från docs/schema_reference.md). Behålls som
 // referens i kommentarer för framtida operations-definitioner i
@@ -842,6 +843,35 @@ export class AirtableAdapter implements DataSourceAdapter {
    */
   async renderPdfFranHtml(html: string, namn: string): Promise<Blob> {
     return await postEdgeFunctionBlob('test-docraptor-render', { html, namn });
+  }
+
+  /**
+   * Rendera + lagra som transient utkast, returnera signerad URL
+   * (`DataSourceAdapter.renderPdfTillUtkast` bär hela motiveringen — läs
+   * den där, TASK-302.1, `ADR-124`).
+   *
+   * ADRESSEN ÄR PROVISORISK, SAMMA RESONEMANG SOM `renderPdfFranHtml` OVAN:
+   * `test-docraptor-render` med `leverans: 'utkast'` är staging-only och
+   * prod-exkluderad. Det är denna rad som byter till de skarpa preview-
+   * EF:erna vid `TASK-302.2` — interfacet ovanför märker ingenting av bytet.
+   *
+   * `postEdgeFunction`, inte `postEdgeFunctionBlob`: den här grenen svarar
+   * JSON (`{ url, utgar }`), inte rå `application/pdf` som `renderPdfFranHtml`
+   * ovan. `.parse()` validerar vid datagränsen (ADR-026).
+   */
+  async renderPdfTillUtkast(
+    html: string,
+    namn: string,
+    params: { eventId: string; typ: UtkastTyp },
+  ): Promise<{ url: string; utgar: string }> {
+    const data = await postEdgeFunction<unknown>('test-docraptor-render', {
+      html,
+      namn,
+      leverans: 'utkast',
+      eventId: params.eventId,
+      typ: params.typ,
+    });
+    return UtkastResultatSchema.parse(data);
   }
 
   /**

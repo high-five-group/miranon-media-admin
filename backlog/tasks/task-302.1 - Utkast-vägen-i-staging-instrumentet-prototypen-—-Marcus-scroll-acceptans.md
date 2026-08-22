@@ -4,6 +4,7 @@ title: Utkast-vägen i staging-instrumentet + prototypen — Marcus scroll-accep
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:17'
+updated_date: '2026-08-22 21:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,10 +34,10 @@ Se --ac. Marcus-momentet är sist: dev-server mot staging (port 5174 ägs av en 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 laggUtkast skriver utkast/<eventId>/<typ>.pdf med upsert och returnerar signerad URL med SIGNED_DOWNLOAD_URL_TTL_SECONDS — andra anropet för samma event/typ skapar inget nytt objekt (API-test grönt mot staging)
-- [ ] #2 test-docraptor-render med leverans:'utkast' svarar { url, utgar }; default-beteendet (bytes) oförändrat — befintliga anrop gröna
-- [ ] #3 HEAD mot url ger 200, accept-ranges: bytes, content-type: application/pdf (mätt i testet, inte antaget)
-- [ ] #4 useForhandsgranskaBilaga returnerar Storage-URL; prototypen öppnar den; inget blob: byggs längre på den vägen
+- [x] #1 laggUtkast skriver utkast/<eventId>/<typ>.pdf med upsert och returnerar signerad URL med SIGNED_DOWNLOAD_URL_TTL_SECONDS — andra anropet för samma event/typ skapar inget nytt objekt (API-test grönt mot staging)
+- [x] #2 test-docraptor-render med leverans:'utkast' svarar { url, utgar }; default-beteendet (bytes) oförändrat — befintliga anrop gröna
+- [x] #3 HEAD mot url ger 200, accept-ranges: bytes, content-type: application/pdf (mätt i testet, inte antaget)
+- [x] #4 useForhandsgranskaBilaga returnerar Storage-URL; prototypen öppnar den; inget blob: byggs längre på den vägen
 - [ ] #5 Marcus bedömer scrollen i prototypen (staging) som likvärdig med http://-referensen — bokförs i sessionsdok med datum
 <!-- AC:END -->
 
@@ -47,3 +48,15 @@ Se --ac. Marcus-momentet är sist: dev-server mot staging (port 5174 ägs av en 
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC#1 mätt (staging, test-docraptor-render v8, deployad denna skiva): laggUtkast (_shared/utkast.ts) skriver utkast/<eventId>/<typ>.pdf i BILAGOR_BUCKET_ID med upsert:true, signerar med SIGNED_DOWNLOAD_URL_TTL_SECONDS (300s). tests/api/test-docraptor-render-utkast.staging.test.ts 'allow'-testet bevisar upsert genom att jämföra pathname (new URL(url).pathname) mellan två anrop för SAMMA eventId+typ men OLIKA html-innehåll: identisk path. Grönt: 6/6 nya tester (20.0s), test:api totalt 1037 passed / 0 failed.
+
+AC#2 mätt: leverans:'utkast' svarar 200 { url, utgar } (UtkastResultatSchema.parse). Regressionstest 'leverans utelämnad (default bytes)' bevisar oförändrat rå application/pdf-svar — grönt.
+
+AC#3 mätt, EJ antaget: fristående curl+node-HEAD mot en riktigt genererad signerad URL (denna session, eventId=BELAGGNING_EVENT_ID/recIFrxHZw165ycXk, typ=bilaga) gav verbatim: status 200, accept-ranges: bytes, content-type: application/pdf, content-length: 32141. Samma tre fält asserteras även i testfilens HEAD-anrop (två gånger, en per upsert-anrop).
+
+AC#4: DataSourceAdapter.renderPdfTillUtkast (ny metod, renderPdfFranHtml BEHÅLLEN oförändrad) implementerad i AirtableAdapter (postEdgeFunction+UtkastResultatSchema.parse) och SupabaseAdapter (NOT_IMPLEMENTED-stub). useForhandsgranskaBilaga.ts returnerar nu { url, utgar, saknade } från renderPdfTillUtkast i stället för URL.createObjectURL(blob). GenereringsPrototyp.tsx skickar eventId+typ (MALL_TILL_UTKAST_TYP-mapping) till mutationen; window.open(url) och knapp-fallback OFÖRÄNDRADE (samma kod, url pekar nu på Storage i stället för blob:). AVVIKELSE bokförd i slutrapporten: ARBOGA-fixturens id ändrat från 'proto-event-59' till den riktiga rec-formen 'recqA2Us1FByBnibz' (redan dokumenterad i intilliggande kommentar) — krävdes för att klara isValidEventId-valideringen; ingen annan kodplats berodde på den gamla formen.
+<!-- SECTION:NOTES:END -->
