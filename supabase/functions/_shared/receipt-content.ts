@@ -9,7 +9,7 @@
 // MOMSSATSEN ÄR BEKRÄFTAD (T170, Marcus kvitterade i klartext 2026-08-22 —
 // "Allt på Rogers kvitto stämmer"; se ADR-109 § Updates 2026-08-22). Källa:
 // ett SKARPT kvitto ur Rogers fakturasystem
-// (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 Ulrika Berge.pdf`,
+// (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 kvitto-forlaga.pdf`,
 // läst med `pdftotext -layout`) — momsraden `500,00 / 2 000,00 = 25 %`.
 // Beslut (c):s momsutelämning (ADR-109) är därmed UPPHÄVD. `beraknaMoms`
 // nedan avrundar momsen till närmaste öre och härleder nettot som

@@ -502,7 +502,7 @@ i basen. RIM 3 och Fjärrskådning har ingen dubblett.
 | 25 | `Manuella flagga` och `Systemkälla`: `choices: []` och **0 rader med värde** i båda baserna |
 | 26 | Hash-optionerna bär **100 records** (66 + 34) |
 | 27 | 2 anmälningar med `Status = Inställt`, båda med `Är aktiv (1/0)` = **1** |
-| 40 | **14 av 665** Person-e-postadresser avviker i skiftläge eller blanksteg; `Kallewestholm@hotmail.com` förekommer **två gånger** — dubbletten har redan inträffat |
+| 40 | **14 av 665** Person-e-postadresser avviker i skiftläge eller blanksteg; `K***@hotmail.com` (maskad, verklig adress) förekommer **två gånger** — dubbletten har redan inträffat |
 | 42 | 2 anmälningar utan e-post; 2 Personer utan e-post, varav **1 med Deltaganden** |
 | 43 | **365 av 866** namnlösa, samtliga `Från formulär = Backfill (historisk)` — exakt registrets tal, oförändrat |
 

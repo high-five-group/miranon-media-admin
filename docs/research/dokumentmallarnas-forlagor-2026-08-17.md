@@ -53,7 +53,7 @@ uppladdad** (statisk fil), **B — event-mallad** (systemmall + eventfält),
 
 | Fil | Klass | Vad den faktiskt är (läst innehåll) | Källa |
 |---|---|---|---|
-| `2026-08-03 Ulrika Berge.pdf` | **C — person-genererad** | **Kvitto**, inte bekräftelse. Titelrad "Kvitto", Kvitto-/OCR-nr, fullständig fakturalayout med momsspecifikation och BETALT-summa. | Dokumentets egen titel + innehåll, sid 1 |
+| `2026-08-03 kvitto-forlaga.pdf` | **C — person-genererad** | **Kvitto**, inte bekräftelse. Titelrad "Kvitto", Kvitto-/OCR-nr, fullständig fakturalayout med momsspecifikation och BETALT-summa. | Dokumentets egen titel + innehåll, sid 1 |
 | `2026-08-22_23 Rönninge RIM1.pdf` | **B — event-mallad** | **Deltagarinformation** — matchar ordlistans egen exempel ("deltagarinformations-brevet") och appens `MALL_NAMN = 'Deltagarinformation'`. Praktisk förberedelseinfo (kläder, utrustning, parkering, hörlurar) inför ett specifikt kurstillfälle. | `2026-08-22_23 Rönninge RIM1.pdf`, sid 1 |
 | `2026-11-14_15 Rönninge RIM1.pdf` | **B — event-mallad, men ANNAN mall** | **Kursbeskrivning/anmälningsinfo** — pris, anmälningsavgift, betalningsvillkor ("Anmälan är bindande"), dagsagenda, QR-koder, bokomslag. Delar eventfält (datum/plats/pris) med Deltagarinformation men är strukturellt ett HELT ANNAT dokument — se § 2.3. | `2026-11-14_15 Rönninge RIM1.pdf`, sid 1 |
 | `2025-HörlurarMiranonMedia.pdf` | **A — uppladdad, GLOBAL** | Statisk produktjämförelse för hörlurar. Marcus har bekräftat: global (alla utbildningar oavsett nivå). | Filnamn + innehåll, 2 sidor |
@@ -63,7 +63,7 @@ uppladdad** (statisk fil), **B — event-mallad** (systemmall + eventfält),
 | `Automation exempel.pdf` | **Ej ett dokumentklass-exempel** | 15 sidor Airtable-automationsdokumentation (flödet `Anmälningar` → `Personer`/`Touchpoints` vid `When a record is created`) — ett skärmdumpsexport av en AUTOMATION, inte en PDF-FÖRLAGA. Läst (sid 1–3) och avfärdad: ger inget designspråk för dokumentmallarna. | `Automation exempel.pdf`, sid 1–3 |
 
 **Sidantal disk-verifierat** via `mdls -name kMDItemNumberOfPages` (inte
-antaget): Ulrika Berge 1, RIM1 aug 1, RIM1 nov 1, Hörlurar 2, Parkering 3,
+antaget): kvitto-förlagan 1, RIM1 aug 1, RIM1 nov 1, Hörlurar 2, Parkering 3,
 Misora Sushi 1, Automation exempel 15.
 
 ## 2. Designspråket i de dynamiska förlagorna (klass B och C)
@@ -79,7 +79,7 @@ B och C, där appen faktiskt RITAR sidan.
 
 | Fil | Inbäddade typsnitt |
 |---|---|
-| Ulrika Berge (kvitto) | `Calibri`, `Calibri-Bold` |
+| kvitto-förlagan | `Calibri`, `Calibri-Bold` |
 | RIM1 aug (Deltagarinformation) | `Calibri`, `Calibri-Bold`, `Calibri-Italic`, **`Cavolini-Bold`** |
 | RIM1 nov (kursbeskrivning) | `Cavolini-Bold`, `Calibri`, `Calibri-Bold`, `Calibri-BoldItalic`, **`SegoeUI-Bold`** |
 | Hörlurar | `Calibri`, `Calibri-Bold`, `Calibri-Italic`, `Calibri-BoldItalic` |
@@ -116,7 +116,7 @@ ett grafiskt designverktyg med en definierad palett.
 ### 2.2 Loggan — extraherad, och den matchar INTE appens befintliga SVG:er
 
 `pdfimages -list` visar att loggan är EN inbäddad rasterbild (PNG/JPEG,
-1152×238 px, ~36,7 KB) — **bit-identisk fil** i både Ulrika Berge-kvittot
+1152×238 px, ~36,7 KB) — **bit-identisk fil** i både kvitto-förlagan
 och RIM1-aug (samma `size`/`ratio` i `pdfimages -list`), vilket bekräftar
 att det är EN gemensam mastertillgång Roger/Lotta klistrar in, inte en
 nyritad logga per dokument. Extraherad med `pdfimages -png` och verifierad
@@ -164,7 +164,7 @@ PDF:erna som ovan.
 
 ### 2.3 Sektionsstruktur — kvittot (klass C)
 
-`2026-08-03 Ulrika Berge.pdf`, sid 1, uppifrån och ner:
+`2026-08-03 kvitto-forlaga.pdf`, sid 1, uppifrån och ner:
 
 1. **Sidhuvud:** logga (stor, vänster) + rubrik "Kvitto" (fet, höger) +
    tvåkolumns metarad (Kvitto-/OCR-nr, Datum).
@@ -385,7 +385,7 @@ princip:
 
 | Tillgång | Källa | Kommentar |
 |---|---|---|
-| Logotypen (raster ELLER helst vektor-original) | Extraherad i detta pass: `pdfimages -png` ur `2026-08-03 Ulrika Berge.pdf` → 1152×238 px PNG, `#548235`/`#FF0000`. **Bättre:** be Roger/Lotta om originalfilen (Word-dokumentets inklistrade bild, eller en tidigare logotyp-beställning) — rastret i PDF:en är redan nedskalat/komprimerat (`pdfimages -list` visar `enc=image`, JPEG-liknande artefakter möjliga vid närgranskning). | Samma fil används bit-identiskt i minst två dokument (§ 2.2) — hög konfidens att det är RÄTT logotyp, oavsett källkvalitet. |
+| Logotypen (raster ELLER helst vektor-original) | Extraherad i detta pass: `pdfimages -png` ur `2026-08-03 kvitto-forlaga.pdf` → 1152×238 px PNG, `#548235`/`#FF0000`. **Bättre:** be Roger/Lotta om originalfilen (Word-dokumentets inklistrade bild, eller en tidigare logotyp-beställning) — rastret i PDF:en är redan nedskalat/komprimerat (`pdfimages -list` visar `enc=image`, JPEG-liknande artefakter möjliga vid närgranskning). | Samma fil används bit-identiskt i minst två dokument (§ 2.2) — hög konfidens att det är RÄTT logotyp, oavsett källkvalitet. |
 | `Cavolini`-typsnittet | macOS-systemfont (`/System/Library/Fonts/` eller `/Library/Fonts/Cavolini.ttc` beroende på macOS-version) — licensfråga för inbäddning i en TTF-embedded PDF måste klargöras (Apples systemtypsnitt har typiskt EJ fri vidaredistributionslicens). **Rekommenderat:** utred om `Cavolini` får bäddas in, annars välj en licensfri ersättning med liknande "handskriven/lekfull kursiv"-känsla (t.ex. Google Fonts `Caveat` eller `Kalam`) — Marcus-beslut, inte detta pass. | Ej löst i detta pass — flaggas som öppen fråga. |
 | `Calibri` (brödtext) | Microsoft-licensierat typsnitt — SAMMA licensfråga som Cavolini. Fri ersättning: `Carlito` (metriskt kompatibel, Google/Red Hat, GPL/OFL) är branschstandard-ersättningen för Calibri i öppen programvara. | Ej löst i detta pass — flaggas som öppen fråga. |
 | Exakta färgvärden | Redan extraherade i detta pass, § 2.1 (tabell) — kan användas direkt, ingen ytterligare extraktion behövs. | Klart. |

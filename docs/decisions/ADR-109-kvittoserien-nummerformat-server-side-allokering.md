@@ -259,7 +259,7 @@ Två av § Öppna punkter stod som *"INTE lösta"* när detta ADR skrevs
 
 **Vad som bekräftade det.** Marcus pekade ut
 `~/Desktop/Miranon Media/exempelpdokument/`, och en av filerna
-(`2026-08-03 Ulrika Berge.pdf`) visade sig vara ett SKARPT kvitto ur Rogers
+(`2026-08-03 kvitto-forlaga.pdf`) visade sig vara ett SKARPT kvitto ur Rogers
 fakturasystem — inte ett utkast. Bokfört i
 [`tasks/threads/T170-rogers-kvittoforlaga-besvarar-tre-oppna-punkter.md`](../../tasks/threads/T170-rogers-kvittoforlaga-besvarar-tre-oppna-punkter.md)
 (`pdftotext -layout`, läst 2026-08-22). Marcus kvitterade i klartext
