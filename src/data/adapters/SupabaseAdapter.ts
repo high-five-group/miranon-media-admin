@@ -48,7 +48,7 @@ import type {
 } from '../../domain/types/Filters';
 import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
 import { postEdgeFunction } from '../config/supabase-client';
-import type { DataSourceAdapter } from './DataSourceAdapter';
+import type { DataSourceAdapter, UtkastTyp } from './DataSourceAdapter';
 
 const NOT_IMPLEMENTED = 'SupabaseAdapter: Not implemented - migrate Edge Functions first';
 
@@ -238,6 +238,14 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async renderPdfFranHtml(_html: string, _namn: string): Promise<Blob> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async renderPdfTillUtkast(
+    _html: string,
+    _namn: string,
+    _params: { eventId: string; typ: UtkastTyp },
+  ): Promise<{ url: string; utgar: string }> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

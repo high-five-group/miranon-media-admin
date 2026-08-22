@@ -24,6 +24,7 @@ export {
   AttachmentSchema,
   AttachmentUploadTicketSchema,
   DocumentPreviewSchema,
+  UtkastResultatSchema,
 } from './Attachment.schema';
 export { AttendanceSchema, CreatedAttendanceSchema } from './Attendance.schema';
 export {

@@ -72,6 +72,7 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { TextArea } from '@/components/primitives/TextArea';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
+import type { UtkastTyp } from '@/data/adapters/DataSourceAdapter';
 import { useForhandsgranskaBilaga } from '@/data/mutations/useForhandsgranskaBilaga';
 import type { Event } from '@/domain/models/Event';
 import { cn } from '@/lib/cn';
@@ -81,9 +82,22 @@ import { gorSjalvbarande } from './sjalvbarande';
  * FIXTURER
  * ------------------------------------------------------------------ */
 
-/** Event-59, läst ur prod 2026-08-21 (`recqA2Us1FByBnibz`). */
+/**
+ * Event-59, läst ur prod 2026-08-21 (`recqA2Us1FByBnibz`).
+ *
+ * [TASK-302.1] `id` är den RIKTIGA rec-formen (var `'proto-event-59'` innan
+ * denna skiva) — `laggUtkast`/`test-docraptor-render` validerar `eventId`
+ * mot Airtable-rec-formen (`isValidEventId`, `_shared/attachments.ts`,
+ * SAMMA grind som `create-registration`/`create-event-note`) innan den
+ * används som Storage-sökvägssegment. Storage-anropet slår aldrig upp
+ * eventet i Airtable (till skillnad från t.ex. `upload-attachment`) — id:t
+ * behöver bara ha RÄTT FORM, inte peka mot en rad som existerar i den bas
+ * appen just nu pratar med. Ingen annan plats i filen bryr sig om
+ * id-formen (enda övriga användningen är `EventValjare`s display-prop
+ * `valtEventId`, som redan förväntar sig `rec…`-nycklar för riktiga event).
+ */
 const ARBOGA: Event = {
-  id: 'proto-event-59',
+  id: 'recqA2Us1FByBnibz',
   eventlabel: 'Arboga - Utbildning - Resor i medvetandet 1 - 2026-10-31',
   eventNamn: 'Resor i medvetandet 1',
   typ: 'Utbildning',
@@ -191,6 +205,18 @@ const PLATSER_SEED: Record<string, Plats> = {
  * ------------------------------------------------------------------ */
 
 type MallId = 'bekraftelse' | 'deltagarinfo';
+
+/**
+ * [TASK-302.1] `MallId` → utkast-vägens `typ`-diskriminator
+ * (`UtkastTyp`, `DataSourceAdapter.ts`) — `bekraftelse` ÄR en `bilaga`
+ * (bekräftelsebilagan), `deltagarinfo` är `deltagarinformation`. Samma tre
+ * enum-värden som `_shared/utkast.ts`s `UTKAST_TYPER`; `kvitto` hör till
+ * Dokument-ytans klass C-väg (`TASK-302.2`, utanför denna prototyp).
+ */
+const MALL_TILL_UTKAST_TYP: Record<MallId, UtkastTyp> = {
+  bekraftelse: 'bilaga',
+  deltagarinfo: 'deltagarinformation',
+};
 type Kalla = 'event' | 'eventinnehall' | 'plats';
 type BlockId =
   | 'rubrik'
@@ -1345,6 +1371,8 @@ function GenereringsVy({
       {
         byggHtml: async () => await gorSjalvbarande(await renderaDokument(mall, event, allaRader)),
         namn: meta.namn,
+        eventId: event.id,
+        typ: MALL_TILL_UTKAST_TYP[mall],
       },
       {
         onSuccess: ({ url, saknade }) => {

@@ -81,3 +81,20 @@ export const AttachmentDownloadUrlSchema = z.object({
 export const DocumentPreviewSchema = z.object({
   pdfBase64: z.string(),
 });
+
+/**
+ * Svaret från `test-docraptor-render` med `leverans: 'utkast'` (TASK-302.1,
+ * PRD `TASK-302`, `ADR-124`) — en kort signerad URL till ett TRANSIENT
+ * utkast i Storage i stället för PDF-bytes, eftersom Chromes PDF-visare
+ * bara scrollar jämnt på en URL serverad av nätverkstjänsten (mätt,
+ * `TASK-302` § "Problemet"). `utgar` är URL:ens ISO-utgångstid — samma
+ * bakomliggande TTL (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`) som
+ * `AttachmentDownloadUrlSchema`s `expiresInSeconds` ovan uttrycker som
+ * sekunder i stället för en tidsstämpel; de två formerna delar ingen kod.
+ * `.parse()` validerar vid datagränsen (ADR-026), samma disciplin som
+ * `DocumentPreviewSchema`.
+ */
+export const UtkastResultatSchema = z.object({
+  url: z.string(),
+  utgar: z.string(),
+});

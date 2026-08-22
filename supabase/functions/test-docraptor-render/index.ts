@@ -3,7 +3,8 @@
 // undantags-mönster som send-email/index.ts och test-pdf-generation/index.ts.
 //
 // test-docraptor-render — S108 MARCUS-SEKVENS punkt 3, ADR-119 beslut 7
-// "minimaltestet".
+// "minimaltestet"; UTBYGGD TASK-302.1 (PRD TASK-302, `ADR-124`) med en andra
+// leveransväg.
 //
 // STAGING-ONLY testharness-EF, exakt samma mönster som test-pdf-generation/
 // test-invite-completion: MEDVETET UTELÄMNAD ur
@@ -11,20 +12,34 @@
 // precedenten, Fas 7-skuld, tasks/lessons.md L115). Rör inte den filen för
 // denna funktion.
 //
-// SYFTE: ADR-119 beslut 7 kräver ett skarpt anrop från en Edge Function i
-// staging INNAN någon mall byggs mot DocRaptor på riktigt. Detta ÄR det
-// anropet — en ren proxy: tar emot redan självbärande HTML (se
-// scripts/docraptor-sjalvbarande.mjs), skickar den vidare till DocRaptor,
-// och returnerar PDF-bytesen tillbaka. Ingen Storage-skrivning, ingen
-// Airtable-koppling, ingen mall-specifik logik — det är EXAKT vad
-// beslut 7 kräver mätning av: (a) sökbar text med korrekt svensk
-// teckenkodning, (b) end-to-end-latens, (c) filstorlek, (d) ärligt
-// felbeteende. Mätningen (a)-(d) görs av anroparen
-// (scripts/docraptor-minimaltest.mjs) mot det denna funktion returnerar —
-// funktionen själv mäter bara (b) via x-docraptor-ms.
+// SYFTE (ADR-119 beslut 7, det UR SPRUNGLIGA syftet, oförändrat): ett skarpt
+// anrop från en Edge Function i staging INNAN någon mall byggs mot DocRaptor
+// på riktigt. `leverans: 'bytes'` (default) ÄR fortfarande det anropet —
+// tar emot redan självbärande HTML (scripts/docraptor-sjalvbarande.mjs),
+// skickar den vidare till DocRaptor, returnerar PDF-bytesen. Mätningen
+// (a)-(d) beslut 7 kräver (sökbar text, latens, filstorlek, ärligt
+// felbeteende) görs av anroparen (scripts/docraptor-minimaltest.mjs) mot
+// DENNA gren — funktionen själv mäter bara (b) via x-docraptor-ms.
+//
+// BÅDA LEVERANSVÄGARNA, OCH VARFÖR (TASK-302.1): `leverans: 'utkast'`
+// (kräver `eventId` + `typ`) lägger i stället den nyss renderade PDF:en som
+// ett TRANSIENT utkast i Storage (`_shared/utkast.ts` § `laggUtkast`) och
+// svarar JSON `{ url, utgar }` — en kort signerad URL i stället för rå
+// PDF-bytes. ANLEDNINGEN, mätt: Chromes PDF-visare scrollar bara jämnt på en
+// URL SERVERAD AV NÄTVERKSTJÄNSTEN. `blob:` (klientens tidigare väg), en
+// Service Worker som fångar svaret, och båda med `noopener` mättes ALLA
+// laggiga (sex armar, headed Chrome 151,
+// `tasks/sessions/2026-08-20-session-108.md` Del 10 § B punkt 3 + Del 11).
+// `bytes`-grenen (ADR-119 beslut 7:s ursprungliga mätinstrument) och
+// `utkast`-grenen (prototypens leveransväg, TASK-302.1 AC #2) delar SAMMA
+// DocRaptor-anrop — bara vad som händer med resultat-bytesen efteråt skiljer
+// dem.
 //
 // AUTENTISERING: samma gateway-försvar som test-pdf-generation
-// (requireUser, verify_jwt=true i config.toml). Funktionen rör ingen data.
+// (requireUser, verify_jwt=true i config.toml). Funktionen rör ingen
+// Airtable-data i NÅGON av de två grenarna — `utkast`-grenen skriver bara
+// till den redan-privata `bilagor`-bucketen (service-role, samma mönster
+// som `upload-attachment`), ingen Bilagor-rad, inget mail.
 //
 // DOCRAPTOR-NYCKELN: läses ur DOCRAPTOR_API_KEY-secret. DocRaptors egen
 // tutorial (docraptor.com/documentation/tutorial, läst 2026-08-22) bekräftar
@@ -45,13 +60,17 @@
 // FELKONTRAKT för själva DocRaptor-anropet (timeout/4xx/5xx/nätverksfel):
 // JSON `{ fel, status, ms }` med samma HTTP-status som body:ns `status`-fält
 // — ALDRIG en hängning, ALDRIG ett tyst 200 som gömmer felet. Body-
-// valideringsfel (saknad html/namn) följer i stället repots vanliga
-// `{ error, requestId }`-kontrakt via _shared/errors.ts, eftersom de INTE
-// är en av de fyra DocRaptor-felklasserna beslut 7 pekar ut.
+// valideringsfel (saknad html/namn, ogiltig `leverans`, saknad/ogiltig
+// `eventId`/`typ` i utkast-grenen) OCH `utkast`-grenens Storage-fel följer i
+// stället repots vanliga `{ error, requestId }`-kontrakt via
+// _shared/errors.ts, eftersom de INTE är en av de fyra DocRaptor-felklasserna
+// beslut 7 pekar ut.
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse, ValidationError } from '../_shared/errors.ts';
+import { laggUtkast, type UtkastTyp } from '../_shared/utkast.ts';
 
 const DOCRAPTOR_PLACEHOLDER_KEY = 'YOUR_API_KEY_HERE';
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -78,19 +97,51 @@ Deno.serve(async (req) => {
   if (auth instanceof Response) return auth;
 
   try {
-    let body: { html?: unknown; namn?: unknown };
+    let body: {
+      html?: unknown;
+      namn?: unknown;
+      leverans?: unknown;
+      eventId?: unknown;
+      typ?: unknown;
+    };
     try {
       body = await req.json();
     } catch {
       throw new ValidationError('Ogiltig JSON-body');
     }
 
-    const { html, namn } = body;
+    const { html, namn, leverans: leveransRaw, eventId: eventIdRaw, typ: typRaw } = body;
     if (typeof html !== 'string' || html.length === 0) {
       throw new ValidationError('Fältet "html" krävs och måste vara en icke-tom sträng');
     }
     if (typeof namn !== 'string' || namn.length === 0) {
       throw new ValidationError('Fältet "namn" krävs och måste vara en icke-tom sträng');
+    }
+
+    // [TASK-302.1] `leverans` — 'bytes' (default, ADR-119 beslut 7:s
+    // ursprungliga beteende, OFÖRÄNDRAT) eller 'utkast' (denna skivas
+    // tillägg, se filhuvudet). Ett angivet men okänt värde är ett
+    // klientfel, inte en tyst fallback.
+    if (
+      leveransRaw !== undefined &&
+      leveransRaw !== 'bytes' &&
+      leveransRaw !== 'utkast'
+    ) {
+      throw new ValidationError('Fältet "leverans" måste vara "bytes" eller "utkast"');
+    }
+    const leverans: 'bytes' | 'utkast' = leveransRaw === 'utkast' ? 'utkast' : 'bytes';
+
+    // NÄRVARO-kontrollen (fälten krävs) sitter HÄR — FÖRE DocRaptor-anropet,
+    // så en trasig begäran inte betalar en DocRaptor-rundtur i onödan.
+    // FORM-kontrollen (rec-form/enum) sitter i `laggUtkast` (delad med
+    // TASK-302.2:s skarpa EF:er, en formel).
+    if (leverans === 'utkast') {
+      if (typeof eventIdRaw !== 'string' || eventIdRaw.length === 0) {
+        throw new ValidationError('Fältet "eventId" krävs när leverans är "utkast"');
+      }
+      if (typeof typRaw !== 'string' || typRaw.length === 0) {
+        throw new ValidationError('Fältet "typ" krävs när leverans är "utkast"');
+      }
     }
 
     const apiKey = Deno.env.get('DOCRAPTOR_API_KEY');
@@ -177,6 +228,31 @@ Deno.serve(async (req) => {
     }
 
     const pdfBytes = new Uint8Array(await docraptorResponse.arrayBuffer());
+
+    // [TASK-302.1] `utkast`-grenen: lagra de nyss renderade bytesen som ett
+    // transient utkast och svara med en signerad URL i stället för
+    // bytesen själva — se filhuvudet för VARFÖR (Chrome-scroll-mätningen).
+    if (leverans === 'utkast') {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      );
+      const { url: utkastUrl, utgar } = await laggUtkast(supabaseAdmin, {
+        eventId: eventIdRaw as string,
+        typ: typRaw as UtkastTyp,
+        bytes: pdfBytes,
+      });
+      return new Response(JSON.stringify({ url: utkastUrl, utgar }), {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'x-docraptor-ms': String(ms),
+          'x-pdf-bytes': String(pdfBytes.byteLength),
+          'x-docraptor-test-mode': String(arPlatshallare),
+        },
+      });
+    }
 
     return new Response(pdfBytes, {
       status: 200,
