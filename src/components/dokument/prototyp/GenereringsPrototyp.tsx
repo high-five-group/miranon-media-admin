@@ -80,7 +80,7 @@ import { cn } from '@/lib/cn';
 /** Event-59, läst ur prod 2026-08-21 (`recqA2Us1FByBnibz`). */
 const ARBOGA: Event = {
   id: 'proto-event-59',
-  eventlabel: 'Arboga – Utbildning – Resor i medvetandet 1 – 2026-10-31',
+  eventlabel: 'Arboga - Utbildning - Resor i medvetandet 1 - 2026-10-31',
   eventNamn: 'Resor i medvetandet 1',
   typ: 'Utbildning',
   ort: 'Arboga',
@@ -112,7 +112,7 @@ type AgendaRad = { text: string; tid: string; meditation: boolean };
  */
 const EVENTINNEHALL = {
   etikett: 'Resor i medvetandet 1 · Utbildning',
-  tid: 'kl. 10:00 – 17:00',
+  tid: 'kl. 10:00 - 17:00',
   pris: '2.500',
   anmalningsavgift: '1000:-',
   resterandeBelopp: '1500:-',
@@ -140,7 +140,7 @@ const EVENTINNEHALL = {
   ] satisfies AgendaRad[],
   dagTva: [
     { text: 'Meditation Fyren', tid: '40 min', meditation: true },
-    { text: 'Intention – Föreställning – Skapande', tid: '', meditation: false },
+    { text: 'Intention - Föreställning - Skapande', tid: '', meditation: false },
     { text: 'Meditation & fokus', tid: '', meditation: false },
     { text: 'Klicka ut eller sömn', tid: '', meditation: false },
     { text: 'Punktmedvetande', tid: '', meditation: false },
@@ -355,7 +355,13 @@ const VECKODAG = new Intl.DateTimeFormat('sv-SE', { weekday: 'long' });
 const DAG_MANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
 const AR = new Intl.DateTimeFormat('sv-SE', { year: 'numeric' });
 
-/** "lördag–söndag den 31 oktober–1 november 2026" — förlagans form. */
+/**
+ * "lördag-söndag den 31 oktober-1 november 2026". Förlagan skriver spannet
+ * med tankstreck (–); vi skriver kort streck per `.langa-streck-policy.json`
+ * (Marcus-beslut 2026-08-09: korta streck vinner även i datumspann, samma
+ * rivning som `datumSpann.ts`). Avvikelsen mot förlagan är MEDVETEN och
+ * ligger hos Marcus som fråga F8 i malldiff-rapporten (S108 resume 5).
+ */
 function datumText(event: Event): string | null {
   if (!event.startdatum) return null;
   const start = new Date(`${event.startdatum}T12:00:00`);
@@ -363,7 +369,7 @@ function datumText(event: Event): string | null {
   if (slut.getTime() === start.getTime()) {
     return `${VECKODAG.format(start)} den ${DAG_MANAD.format(start)} ${AR.format(start)}`;
   }
-  return `${VECKODAG.format(start)}–${VECKODAG.format(slut)} den ${DAG_MANAD.format(start)}–${DAG_MANAD.format(slut)} ${AR.format(slut)}`;
+  return `${VECKODAG.format(start)}-${VECKODAG.format(slut)} den ${DAG_MANAD.format(start)}-${DAG_MANAD.format(slut)} ${AR.format(slut)}`;
 }
 
 /** Standardvärdet per textblock. `null` = saknas. Agendablock hanteras separat. */
