@@ -21,7 +21,7 @@ lifecycle: active
 
 ## Vad som faktiskt lästes
 
-`2026-08-03 Ulrika Berge.pdf` (A4, `Creator: PowerPoint`, Quartz PDFContext).
+`2026-08-03 kvitto-forlaga.pdf` (A4, `Creator: PowerPoint`, Quartz PDFContext).
 Läst med `pdftotext -layout`. Ett riktigt kvitto för en genomförd utbildning,
 inte ett utkast.
 

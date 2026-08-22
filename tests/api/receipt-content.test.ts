@@ -15,8 +15,8 @@
 //      gör det). Se `beraknaMoms`s egen docstring i källfilen för den fulla
 //      matematiska motiveringen (momsandelen 0,2, inte 0,25).
 //   2. Rogers kvitto som facit — `2 500,00 → moms 500,00, netto 2 000,00`
-//      (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 Ulrika
-//      Berge.pdf`, `pdftotext -layout`, T170).
+//      (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03
+//      kvitto-forlaga.pdf`, `pdftotext -layout`, T170).
 //   3. `kvittoRader` — org-uppgifterna (`MIRANON_ORG`) syns i klartext, ALDRIG
 //      "PLACEHOLDER"/hakparentes-text, och Netto/Moms/Betalt-raderna finns i
 //      rätt ordning med rätt formatering.
@@ -50,7 +50,7 @@ function naivOberoendeAvrundning(brutto: number): { moms: number; netto: number 
 function spec(overrides: Partial<KvittoradSpec> = {}): KvittoradSpec {
   return {
     kvittonummer: 'MM-2026-1001',
-    kundnamn: 'Ulrika Berge',
+    kundnamn: 'Anna Andersson',
     belopp: 2500,
     betalsatt: 'Swish',
     betalning: 'avgift',
