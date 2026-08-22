@@ -3,10 +3,10 @@ id: TASK-286.7
 title: >-
   Skiva: Personsök blir diakritik-tolerant — asa hittar Åsa, likvärdig med
   eventväljarens filter (TASK-286.5 JA)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 09:32'
-updated_date: '2026-08-22 10:26'
+updated_date: '2026-08-22 11:02'
 labels:
   - ready-for-agent
 dependencies:
@@ -39,8 +39,16 @@ Källa för uppdraget: TASK-286.5 notes (Marcus beslut 2026-08-22) + ADR-123 § 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Orkestrerar-stängning 2026-08-22
+
+Merge-SHA `78f1158d` (PR #1762). Samtliga fyra AC redan bockade av byggagenten. DoD #1 (alla AC bockade) bockad — konsekvens av att AC 1-4 är [x]. DoD #2 (lokala grindar gröna för rörd filklass) bockad — evidens via CI: 'Lint + Audit + TypeCheck' pass, 'Test suite / Pure + Build' pass på pushad commit (src/lib/person-sok.ts + tester rörda). DoD #3 (CI grön per jobb) bockad — `gh pr checks 1762`: samtliga jobb pass/skipping, noll fail. DoD #4 (inga orelaterade filer) bockad — `gh pr diff 1762 --name-only`: kortet, ADR-123, docs/decisions/README.md, src/lib/person-sok.ts, tre testfiler — allt i kortets uttalade scope, inga främmande filer. Status sätts Done.
+<!-- SECTION:NOTES:END -->

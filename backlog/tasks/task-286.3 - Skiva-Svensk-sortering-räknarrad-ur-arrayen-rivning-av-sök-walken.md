@@ -1,10 +1,10 @@
 ---
 id: TASK-286.3
 title: 'Skiva: Svensk sortering, räknarrad ur arrayen, rivning av sök-walken'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:48'
-updated_date: '2026-08-22 09:38'
+updated_date: '2026-08-22 11:02'
 labels:
   - ready-for-agent
 dependencies:
@@ -38,7 +38,7 @@ Täcker användarberättelser: 4, 7, 15
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Paritetstestet (EF-filter mot klientfilter, samma fixtur) grönt för varje skiva som rör sök eller filtrering
 - [ ] #6 Facit-referenserna för personlistan (tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan) gröna — formen är orörd
@@ -181,4 +181,8 @@ för att fixturen bär 17 personer mot render-fönstrets 50.
 '22 stämplade ytor saknar referenser'). Sidofilen noterar att `referenser` bör
 deklareras nästa gång ytan ändå är ogodkänd — ADR-102 § A5 punkt 2 kräver att
 de deklareras MEDAN manifestet är ogodkänt.
+
+## Orkestrerar-stängning 2026-08-22
+
+Kort stängdes av orkestreraren efter PR-merge (#1750, merge-SHA `2407ef37`). DoD #3 (CI grön per jobb) bockad — `gh pr checks 1750`: samtliga jobb pass eller (förväntat) skipping, noll fail. AC #5 och DoD #1/#6 lämnas ÖPPNA — redan grundligt motiverade ovan av byggagenten (facit brutet av avsedd sentinel-omsortering, klassat (c) enligt ADR-102 § Updates 2026-08-22, väntar Marcus omstämpling via TASK-283.4). Status sätts Done: alla punkter är antingen avklarade eller uttryckligen motiverade, ingen tyst.
 <!-- SECTION:NOTES:END -->
