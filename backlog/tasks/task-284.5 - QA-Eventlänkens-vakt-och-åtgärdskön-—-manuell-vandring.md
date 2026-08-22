@@ -1,10 +1,10 @@
 ---
 id: TASK-284.5
 title: 'QA: Eventlänkens vakt och åtgärdskön — manuell vandring'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:20'
-updated_date: '2026-08-22 11:32'
+updated_date: '2026-08-22 12:19'
 labels:
   - ready-for-human
 dependencies:
@@ -52,10 +52,10 @@ MANUELL TESTPLAN. Körs i staging där inget annat anges; prod-steg kräver Marc
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -63,3 +63,9 @@ MANUELL TESTPLAN. Körs i staging där inget annat anges; prod-steg kräver Marc
 <!-- SECTION:NOTES:BEGIN -->
 QA-VANDRINGEN GENOMFÖRD (S110 Del 7 + Del 9, 2026-08-22), utfall per steg: 1–5 OK via API i Del 7 (sex fall ände-till-ände mot staging med A1 påslagen, se task-284.2 notes). 6 OK — ZZ-TASK-284.1 Fixtur OK (staging-motsvarigheten till Event-59, som är prod-rader) syns INTE i kön; Marcus läste listan. 7 OK — kastbar post 'ZZ-QA-284.5 Steg 7 Kastbar' (ID 5540, reciKlPhvZMMM98aS) skapad via API med fel nyckel (Event-8756) + rätt text (Fixtur A): A1 vägrade länka (Error-log-rad med ort/kurs/datum-diff), kön 12→13, Marcus valde Fixtur A i KopplaTillEventDialog, kön 13→12; verifierat i basen efteråt: Event=recLGV8kJJk5iyvkh, EventKey=Event-8755, Eventmatchning=OK — båda fälten i samma skrivning. Posten + Error-log-raden raderade efteråt, kön = exakt de 12 permanenta fixturerna. 8 HOPPAT ÖVER med mätt skäl (Del 7 § F): köns 12 rader är 9 andra sviters permanenta fixturer + 3 av 284.1:s egna (tests/api/fixtures.ts:200-233) — tomma läget är acceptance-testat (hem.acceptance.test.ts). 9 OK — Marcus jämförde Hem mot facit-hem-v1-verklig-desktop/-mobil.png: enda skillnaden utöver raden är den DOKUMENTERADE amenderingen 2026-08-17 (genvägarnas hover + etiketten 'Gå till åtgärder', AMENDERING-2026-08-17-hover-och-etikett.md) — medveten, önskad, bilderna ej omtagna (T157-klass; rullas in i samma omstämpling som 284.4 DoD #6). 10 OK — Tab når raden, Enter och Space aktiverar, betydelsen bärs av texten. 11 DELEGERAT till task-284.6 AC #2: prod-kontrollen förutsätter att fältet finns i prod, vilket 284.6 skapar, och 284.6 beror på detta kort — samma kontroll, samma Marcus-GO; bokfört öppet här i stället för en cirkulär väntan. AVVIKELSER som NYA KORT (AC #2): TASK-291 (åtgärdskö-raden visuellt identisk med eventinfo-raden — särskiljning inom bevakningsrads-familjen; blockerar 284.4 DoD #6) och TASK-292 (anmälningssidan aldrig konvergerad — egen arbetsenhet efter 284.6). Inga retuscheringar av befintliga kort.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+QA-vandringen genomförd i staging 2026-08-22 (S110 Del 7 + 9): steg 1–5 via API, 6/7/9/10 av Marcus, 8 hoppat över med mätt skäl, 11 delegerat till 284.6 AC #2 (genomfört där). Två fynd som nya kort per AC #2: TASK-291 (åtgärdskö-radens särskiljning, blockerar 284.4 DoD #6) och TASK-292 (anmälningssidans konvergenspass, egen arbetsenhet). Landningar #1775 dacb567a (AC) — post-merge grön per jobb.
+<!-- SECTION:FINAL_SUMMARY:END -->

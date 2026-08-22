@@ -1,9 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-08-21
+updated: 2026-08-22
 review_by: 2026-11-21
 status: stable
-lifecycle: active
+lifecycle: closed
 ---
 
 # T167 — MCP-ytan kan inte skriva skript-steg i Airtable-automationer
@@ -84,3 +84,30 @@ migrations-kravspec.
 - `ADR-122` beslut 5 — vakten bor i A1, som skript-steg.
 - `T164` — en research-fork deployade en EF till staging utan mandat.
 - `T162` — två sessioners agenter muterar samma staging.
+
+## Hur tråden stängdes (2026-08-22)
+
+**Väg 1 valdes och genomfördes två gånger** — Marcus klistrade in
+`docs/reference/automation-scripts/a1-eventmatchning-vakt.js` i Airtables
+UI, först i staging (S110 Del 7, 2026-08-22) och sedan i prod (Del 11 samma
+dag). Mätningen som grundade tråden står fast och breddades i Del 7: tre
+former prövades (skapa · uppdatera befintlig nod med bevarad key ·
+placering), samtliga `readOnlyNodeType` — ingen skrivning skedde.
+
+Vad som är värt att ta med:
+
+1. **Verktygsytans gräns är stabil, inte en bugg att vänta ut.** Skrivverktygets
+   schema listar `customScript` bara för att kunna läsa befintliga noder —
+   dess egen feltext säger det. Nästa skriptsteg planeras med UI-vägen från
+   start, inte som fallback.
+2. **UI-vägen har två mätta fällor** (Del 7 § B): input-variabler skapas bakom
+   `< > Edit code`, inte i Properties-panelen, och namnet är skiftlägeskänsligt
+   (`anmID` ≠ `anmId`). En tredje mättes i prod (Del 11): Airtables "Test"
+   på skriptsteget återanvänder en **cachad trigger-rad** som kan vara
+   raderad — `Anmälan not found` är då testdatat, inte skriptet.
+3. **Verifiera deployen via API, inte via UI:t.** `get_automation` visar
+   nodkey, inputObj-mappningen, deploymentStatus och skriptet ordagrant —
+   det var så prod-bytet bevisades korrekt trots det röda UI-testet.
+
+Kvar, bokfört på `TASK-293`: nästa ändring av vaktskriptet tar samma UI-väg
+i båda baserna.

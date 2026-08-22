@@ -1,9 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-08-21
+updated: 2026-08-22
 review_by: 2026-11-21
 status: stable
-lifecycle: active
+lifecycle: closed
 ---
 
 # T168 — Eventmatchningens datum-axel är blind för FEL ÅR
@@ -195,3 +195,26 @@ och ärver därmed den rättade formeln direkt. `T168` stängs när `284.6`
 - `ADR-122` beslut 3 (formelfältet) och beslut 4 (trestegslogiken).
 - `T158` — kalenderlänk-driften, rotorsaken som gör årsfallet sannolikt.
 - `T167` — `284.2`:s blockering; samma skiva, annan fråga.
+
+## Hur tråden stängdes (2026-08-22)
+
+Rättningen (§ Utfall ovan: kollaps-i-normaliseringen, inte `REGEX_EXTRACT`)
+är sedan S110 Del 10–11 live i **båda** baserna och i båda ytorna:
+formelfältet (staging `fldYz2NRZJjyX8VWB`, prod `fld40RI3Jf7RaHpTa` —
+staging-formeln verbatim, strukturellt jämförd) och A1-skriptet (samma
+`normDatum`, deployad i prod). Prod-kontrollsvepet efter fältskapandet gav
+inga årsfall — de 64 felmatchade var redan städade i Del 2.
+
+Två lärdomar som stängningen bekräftar:
+
+1. **Verifiera mot den axel ändringen rör.** Den första rättningen revs för
+   att ingen av de fyra fixturerna hade tomt `Datum` — `Fixtur Fel år`
+   (`recdKgK82XA0Oa2ee`) finns nu som permanent regressionsfall, och
+   `TASK-293` ärver kravet (en `Fixtur Plus` för `+`-klassen).
+2. **En konstruktion som är korrekt i ett språk kan vara fel i ett annat med
+   samma semantik på ytan** — `AND()` som inte kortsluter är ingen bugg utan en
+   annan språkfamilj. Normaliseringsformen valdes för att den inte har någon
+   funktion som kan fela, och därför inte behöver någon guard.
+
+Det som kvarstår är inte årsblindheten utan nästa formateringsklass:
+URL-kodade mellanslag (`+`), lokaliserad i prod-svepet — `TASK-293`.

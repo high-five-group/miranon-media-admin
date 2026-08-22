@@ -3,10 +3,10 @@ id: TASK-232
 title: >-
   Fynd: EventKey 11 på anmälan ID 868 (Allan Nieminen) - återfall av sanerad
   fälla 10/F.2
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 23:37'
-updated_date: '2026-08-21 09:14'
+updated_date: '2026-08-22 12:19'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,10 +29,10 @@ Bifynd ur TASK-229:s olänkade-svep (2026-08-16): anmälan ID 868 (Allan Niemine
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -55,3 +55,9 @@ S110 (2026-08-21): ROTORSAK BELAGD — inte formel/automation utan Elfsight Even
 
 Rättelse: tråden heter T158, inte T157 (S109 landade sitt T157 parallellt 2026-08-21 — omnumrerat vid konfliktlösning).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Fyndet (ID 868 Allan Nieminen, EventKey 11 — återfall av sanerad fälla 10/F.2) drev hela S110-passet: rotorsaken lokaliserad (Elfsight-kalenderwidgetens handskrivna länkar, Roger duplicerar poster utan att redigera URL-parametrarna), 64 felmatchade anmälningar städade i prod (Del 2), rotfixen på miranon.se gjord av Marcus 2026-08-21, och den strukturella vakten byggd och live i prod via TASK-284 (ADR-122). Stängd vid passets stängning 2026-08-22 (S110 Del 12), som kortet föreskrev.
+<!-- SECTION:FINAL_SUMMARY:END -->

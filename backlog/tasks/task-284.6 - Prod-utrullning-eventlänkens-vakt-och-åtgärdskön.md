@@ -1,10 +1,10 @@
 ---
 id: TASK-284.6
 title: 'Prod-utrullning: eventlänkens vakt och åtgärdskön'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:36'
-updated_date: '2026-08-22 12:10'
+updated_date: '2026-08-22 12:19'
 labels:
   - ready-for-human
 dependencies:
@@ -39,10 +39,10 @@ Täcker användarberättelser: samtliga, i sin skarpa form.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -52,3 +52,9 @@ STEG 1 GENOMFÖRT 2026-08-22 (S110 Del 10, Marcus GO 'Kör Claude!'). AC #1: Dat
 
 STEG 2–3 GENOMFÖRDA 2026-08-22 (S110 Del 11). AC #3: Marcus bytte A1 i prod-UI:t (T167-vägen): gamla findRecords wacDkQMtkfCRwDYxK + updateRecord wacXLk4YN5AzohqCn borttagna, nytt customScript-steg wac9BCTqQeSRQQrrx med inputObj anmId → trigger.id, conditionalGroup wded6gggP5Gk0qSa9 (express) intakt efter skriptet; deploymentStatus deployed, deployedVersion null (draft = deployad). Skriptet läst tillbaka via get_automation och jämfört med stagings deployade: identiskt (samma header inkl. T168-RÄTTNING, samma normDatum, repo-filen a1-eventmatchning-vakt.js md5 938b8883…, commit e81192ec). Marcus UI-test gav 'Anmälan not found: recPQR15f4VYBRyxu at line 149' — diagnos: Airtables cachade trigger-testrad (finns i ingen prod-tabell, inga anmälningar skapade i prod den dagen, Error-log tom) — skriptet kastade FÖRE någon skrivning: fail-closed som designat; konfigurationen var korrekt. AC #4 SKARPT PROV (Marcus GO 'GO AC4'), två poster via API mot Event-59 (recqA2Us1FByBnibz, Arboga/RIM 1/31 okt–1 nov 2026): ID 990 recUjfpiiWeOiFHmP AVVIKANDE (EventKey Event-59, text Varberg/Fjärrskådning/14–15 maj 2026) → Event TOM, Eventmatchning 'Utan event', Error-log-rad recY0Rnb7Oi82nXc0 med full diff (ort/kurs/datum), inga Deltaganden (A3 kräver Event), A2 skapade Person rec7YieDgCzfgSfWI + Touchpoint recxKSVFQzmFjC6aa, A12 satte Inskickad. ID 991 recFAB0WfKxYnRLq8 KORREKT (Arboga, 'Resor i Medvetandet 1' skiftläge, '31 oktober–1 november 2026' utan upprepat årtal) → Event = recqA2Us1FByBnibz, Eventmatchning OK, A3 skapade Deltaganden rec6BUaGuz56n2PYs + recZ6TZwlbmvXIJeY, Person rec8Cy2lH5mIwG9Hb, Touchpoint recLQfFXpGu1b6kxQ. Prod mäter därmed KEDJAN A1→A2→A3→A12, inte A1 isolerat som staging. AC #5: samtliga nio poster raderade i beroendeordning (Deltaganden → Touchpoints → Anmälningar → Personer → Error-log), spårbarhetsraden bars i testposternas Notering från skapandet och record-ID:na står här; verifierat efteråt: noll ZZ-QA i Anmälningar och Personer, Event-59 tillbaka på 16 anmälningar, prod-kön exakt 3. AC #6: ID 21/22/23 och Event-55:s elva orörda av varje steg — inga skrivningar mot dem; 21/22/23 visar fortsatt Avviker som före. VAKTEN ÄR LIVE I PROD.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Prod-utrullningen genomförd 2026-08-22 i låst ordning (S110 Del 10–11), Marcus GO per steg: fälten (Datum (from Event) fldho1zlmKxT4gZ0o, Eventmatchning fld40RI3Jf7RaHpTa, staging-formeln verbatim med tre ID:n ommappade) → kontrollsvep (5 Avviker mot väntat 4: den femte var Event-18:s falska positiv, lokaliserad som URL-kodade mellanslag; datat rättat för ID 197/960, återfallet som TASK-293; kö 5 → 3) → A1 sist (Marcus i UI:t per T167, verifierad via API). Skarpt prov mot Event-59: avvikande vägrad, korrekt länkad + Deltaganden — prod mäter kedjan A1→A2→A3→A12. Nio testposter städade med record-ID. ID 21/22/23 + Event-55:s elva orörda. Vakten är live i prod. Landningar #1777 54059bcb, #1780 5d40b9fd.
+<!-- SECTION:FINAL_SUMMARY:END -->
