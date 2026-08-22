@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 110 ⏸️ PAUSAD (fjärde gången, 2026-08-22, `lifecycle: paused`) —
+**Session 110 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, fjärde resumen; pausad fyra gånger, historik) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
 VAKTEN LÅST I `ADR-122`, FAMILJEN BYGGD 3/4.** Egen worktree `s110-kalenderlank-driften` (S109
 äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
@@ -139,6 +139,14 @@ kontrollsvep → A1 SIST.** Prod ORÖRD hela passet; mandatet givet men ej
 använt. Numrering vid paus 4 — **serierna rörde sig UNDER passet**
 (`T170` + `task-288` togs av andra sessioner): ADR **124** · tråd **T171** ·
 kort **289** · L512 + 62 fragment · fälla **53** · session **111**.
+**RESUME 4 (2026-08-22):** `#1761` landad (`e12eb144`), worktreen på ny
+gren `docs/s110-resume-4` från `origin/main`; numreringen **re-deriverad
+mot disk och oförändrad** på varje post (ADR 124 · T171 · kort 289 · L512 +
+62 fragment · fälla 53 · session 111) — ingen mellansession förbrukade
+något. Ägarlappen
+(`03bc2d12-…`, PID 28332 levande) orörd, arbetet fortsätter i egen
+worktree. `284`-familjen oförändrad. Heartbeat ej startad (inga egna
+poster i luften). **NÄSTA: `284.5` QA-vandringen — Marcus moment.**
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
 pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA
