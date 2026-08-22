@@ -210,6 +210,13 @@ Stängning (N+1) är nästa form.
 S111: scopet RESERVERAT för `TASK-292`** (anmälningssidan = åtgärdskö-sidan,
 samma yta i filtrerat läge; `TASK-291` kan inleda). Full handoff: sessionsdok
 S110 § HANDOFF → Session 111.
+**EFTERFYND vid stängningen (2026-08-22):** session-end körde hub-pluginets
+städskript ur cache **1.33.0** (bara `agent-*`), fast `task-211` levererade
+sessions-worktree-klassen i **1.34.0** — pluginen släpar efter hubben och
+ingen rutin ser det. Hubbens 1.34.0-skript (torrkörning) skulle ta bort fyra
+landade sessions-worktrees; `s110-kalenderlank-driften` behålls tills `#1787`
+landat. **`TASK-294`** (kontroll i session-start). Åtgärd Marcus: `claude plugin
+update marcus-system@marcus-hub` före S111.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
 pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA
