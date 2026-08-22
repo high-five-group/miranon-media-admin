@@ -3,9 +3,10 @@ id: TASK-286.5
 title: >-
   Beslut: Ska personsökningen bli diakritik-tolerant (asa hittar Åsa), som
   eventväljaren redan är?
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:52'
+updated_date: '2026-08-22 09:33'
 labels:
   - ready-for-human
 dependencies:
@@ -28,8 +29,8 @@ Täcker användarberättelser: 13
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Marcus har tagit ställning i klartext (ja/nej) och svaret är bokfört i kortets notes med datum
-- [ ] #2 Vid ja: uppföljningskort skapat (ready-for-agent) med paritetstestets nya facit utskrivet; vid nej: kortet stängt med motivering
+- [x] #1 Marcus har tagit ställning i klartext (ja/nej) och svaret är bokfört i kortets notes med datum
+- [x] #2 Vid ja: uppföljningskort skapat (ready-for-agent) med paritetstestets nya facit utskrivet; vid nej: kortet stängt med motivering
 <!-- AC:END -->
 
 ## Definition of Done
@@ -39,3 +40,13 @@ Täcker användarberättelser: 13
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Marcus svar, 2026-08-22: JA.
+
+Motivering: Svenska namn bär diakritiker som vardag, inte som kant (Åsa, Östergren, Ängström). Två sökytor med olika beteende i samma app är en inkonsekvens användaren omöjligt kan förutse — eventväljaren är redan tolerant. Argumentet emot är ett testargument: paritet med Airtables SEARCH() var en mätning av dagens läge, aldrig ett mål. Träffmängden växer dessutom åt rätt håll — fler namn, aldrig färre.
+
+Uppföljningskort: TASK-286.7 ("Skiva: Personsök blir diakritik-tolerant — asa hittar Åsa, likvärdig med eventväljarens filter (TASK-286.5 JA)"), ready-for-agent, parent TASK-286, dependencies TASK-286.3, med paritetstestets nya facit utskrivet i AC #1-#2.
+<!-- SECTION:NOTES:END -->
