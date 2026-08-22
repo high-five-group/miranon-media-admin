@@ -103,7 +103,8 @@ Lokal exit 0 garanterar inte grön CI. Svagare lokal variant är inte verifierin
   sträng som kan skrivas om; undantag är för genuina tom-markörer och
   baseline-låsta ytor. Raden står här för att den saknades: 2026-08-21 föll
   TVÅ av fyra src-rörande agenter i samma våg på exakt denna grind, båda med
-  sina föreskrivna grindar gröna (`tasks/lessons.d/ci-grind-utanfor-agentkontraktets-kommandolista.md`).
+  sina föreskrivna grindar gröna (`[[L514]]` i `tasks/lessons/vol-06.md`; fragmentet
+  `ci-grind-utanfor-agentkontraktets-kommandolista.md` konsoliderades dit).
 
 **Fånga exitkoden separat.** `$?` efter en pipe läser sista kommandots kod, inte
 verktygets:

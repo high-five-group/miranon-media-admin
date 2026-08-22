@@ -2994,3 +2994,443 @@ ignorerades i stället för att stoppa (bas-vakterna höll, ingen skada).
 CLI-skript svarar på `--help`/`-h` utan sidoeffekter, och en OKÄND flagga är
 ett fel som stoppar körningen — aldrig något som tyst ignoreras medan
 skriptet kör sitt default-beteende.
+
+### L512 — En stoppad agent med deploy i sin DoD har kanske redan lämnat spår utanför git — mät artefakten, inte bara worktreen
+
+**När en bygg-agent vars kort bär "deploy till staging" stoppas mitt i, är
+`git status` i dess worktree ett OFULLSTÄNDIGT bokslut. Deployen lämnar inget
+spår i git. Följ varje stopp med en artefakt-mätning (`supabase functions
+list`, motsvarande för andra mål) och återställ pariteten mot `main` om
+artefakten hunnit före.** `[UNIVERSAL]`
+
+Instans (S109, 2026-08-21): `TASK-283.1`-agenten stoppades när Marcus valde
+väg B för personlistan, vilket gjorde EF-bokstavsfiltret onödigt. Worktreen
+visade sju okommittade filer, ingen gren, ingen PR — "inget förlorat, inget
+läckt". Men `functions list` mot staging visade `get-persons` **v27,
+uppdaterad 10:02:47Z**, fem minuter före stoppet: agenten hade deployat kod
+som aldrig nådde `main`. `main`:s version deployades om (v28, 10:07:51Z) och
+pariteten var tillbaka inom fem minuter — staging-CI hade annars kört mot en
+EF ingen review sett.
+
+**Det generella:** samma klass som `CLAUDE.md` § Prod-EF-deploy ("en driftkarta
+härledd ur git är en HYPOTES om prod, aldrig en mätning") — men riktad mot
+STOPP-ögonblicket, där frestelsen att nöja sig med `git status` är störst
+eftersom stoppet känns som att inget hann hända. Varje sidoeffekt som inte bor
+i git måste ha sin egen mätning i stopp-rutinen; annars är "agenten hann inte"
+ett antagande med samma felklass som "EF:en är aldrig deployad".
+
+### L513 — Ett nekat kommando körde INGENTING — omtaget måste upprepa hela kommandot, inte bara ledet efter det som fälldes
+
+**När en PreToolUse-hook nekar ett sammansatt Bash-kommando körs inget av
+leden — inte heller de som stod FÖRE det hooken reagerade på. Omtaget måste
+därför upprepa allt, eller verifiera varje sidoeffekt mot disk innan nästa
+steg. Antagandet "det tidiga ledet hann köras" är en osynlig dataförlust.**
+`[UNIVERSAL]`
+
+Instans (S109, 2026-08-21): ett landningskommando bestod av `cat >>`
+(sessionsdokets Del 6) · markdownlint · `git add/commit` · `arbetsform rensa`
+· `git push`. Push-spärren (ADR-097) fällde hela kommandot på `git push`. I
+omtaget kördes bara lint + commit + rensa — appenden upprepades aldrig,
+commiten innehöll tre bildfiler och ingen Del 6, och PR `#1682` landade utan
+den. Upptäckt en timme senare av en slump (en grep efter `^## Del 6` vid en
+rebase-konflikt gav noll). Texten fanns bara i sessionens trail och
+återinfördes därifrån; hade sessionen kompakterats emellan hade den varit
+borta.
+
+**Det generella:** en nekad tool-call är atomär — allt eller inget. Samma
+klass som `L440` (pipens exitkod) fast åt andra hållet: där döljer skalet ett
+fel, här döljer hooken en utebliven körning. Bygg omtaget som ett fullständigt
+kommando, och låt transparens-rapporten läsa resultatet från disk
+(`git show --stat`), inte från minnet av vad som var tänkt att köras.
+
+### L514 — En CI-grind som saknas i agentkontraktets kommandolista fäller agent efter agent — kontraktet är verifieringens yta, inte ci.yml
+
+**En grind som körs i CI men varken finns i ett npm-script eller i
+`.claude/agents/bygg-agent.md`:s verifieringslista är osynlig för varje
+bygg-agent som följer kontraktet. Agenten kan då ha ALLA sina föreskrivna
+grindar gröna och ändå pusha rött — och felet ser ut som slarv fast det är en
+kontraktslucka. Mät alltid en röd CI mot vad agenten FICK i uppdrag att köra
+innan den klassas som agentens miss.**
+
+Mätt 2026-08-21 (S109 våg 1, fem parallella bygg-agenter). Fyra av dem rörde
+`src/`; **två av de fyra** föll på samma grind i samma runda:
+
+| PR | Kort | Träffar |
+|---|---|---|
+| `#1707` | `TASK-285.2` | 1 långt streck, `src/components/primitives/MessageBox.tsx:114` (dev-throw-strängen) |
+| `#1703` | `TASK-285.3` | 4 långa streck, `src/routes/dev/primitives.tsx` (JSX-text i demo-sektionen) |
+
+Grinden är `node scripts/check-langa-streck.mjs`, wirad direkt i `ci.yml`s
+`Lint + Audit + TypeCheck`. Verifierat med `grep`: den finns **varken i
+`package.json` eller i `scripts/check-docs.sh`**, och stod inte i
+bygg-agent-kontraktets lista (`npm run check:docs` · `typecheck` · `biome
+check .` · `build` · `test:api`).
+
+Båda agenternas lokala grindar var faktiskt gröna — orkestreraren mätte om dem
+på deras egna grenar (`typecheck` exit 0, `biome check .` exit 0 med noll
+errors, `audit-ci` exit 0 på `main`) innan någon slutsats drogs. Utan den
+mätningen hade två korrekt arbetande agenter fått en felaktig premiss-rättelse
+i sitt uppdrag, och nästa våg hade ärvt den.
+
+**Varför `verify:ci-parity` inte täcker hålet i praktiken:** verktyget hade
+fångat det — det YAML-parsar `ci.yml` och kör dess `run:`-block verbatim — men
+det är per `ADR-036` § Updates ett DIAGNOSVERKTYG, uttryckligen inte en
+per-push-rutin (910,7 s mot CI:s 401,0 s; ~30× kostnaden av besparingen). Ett
+verktyg som bara får plockas fram i tre namngivna lägen kan inte vara den
+mekanism som håller den dagliga kommandolistan sann.
+
+**Det generella (UNIVERSAL):** när en grind läggs till i CI utan att samtidigt
+läggas till i den yta utförarna faktiskt läser, uppstår en tyst
+verifieringslucka som skalar med antalet parallella utförare — fem agenter ger
+fem chanser att falla på den, inte en. Kostnaden syns först som "agenten
+slarvade", vilket är den dyraste feldiagnosen: den lagar fel sak.
+Motmedlet är att grindens hemvist är EN yta som både CI och kontraktet läser,
+eller — när det inte går — att tillägget i CI och tillägget i kontraktet är
+samma landning.
+
+### L515 — En grind som mekaniserar ett förbud måste mekanisera dess föreskrivna undantag i samma andetag [UNIVERSAL]
+
+**Ett förbud har nästan alltid ett föreskrivet undantag — "aldrig X, utom
+efter Y". Mekaniseras bara förbudet blir grinden grön i åratal, eftersom
+ingen ännu nått undantaget, och fäller sedan på den FÖRSTA som gör exakt det
+processen kräver. Felet ser då ut som ett fel i arbetet, inte i grinden.
+Fråga vid varje ny grind: vad är det tillåtna slutläget, och kan grinden
+skilja det från överträdelsen?**
+
+Instans (S110, 2026-08-22, miranon-media-admin): `check-facit.sh` invariant
+(b) krävde att varje `kallor`-sökväg i ett facit-manifest finns på disk.
+`ADR-103` B2 steg 4 FÖRESKRIVER att prototyp-substratet rivs efter Marcus
+stämpel — vilket gör sökvägen död med avsikt. Invarianten skrevs 2026-08-06,
+var grön i sexton dagar, och fällde `PR #1769` (`TASK-285.11`) 2026-08-22:
+den första rivning som någonsin nådde steget. Fyra familjer till stod på tur
+mot samma vägg — 22 prototyp-källor i fem stämplade manifest.
+
+**Vad som gjorde undantaget svårt att se:** grinden var byggd av samma
+sessioner som skrev processen, och båda var korrekta var för sig. Förbudet
+("riv aldrig före stämpeln", invariant c) hade en mekanism; slutläget
+("rivningen ÄR steg 4") hade ingen, eftersom ingen ännu hade utfört det. En
+grind kan inte testas mot ett tillstånd som inte finns än — den måste
+KONSTRUERAS mot det.
+
+**Formen som löste det, generaliserbar:** härled undantaget ur ett spår som
+redan finns, i stället för att beskriva det med en handhållen lista. Här var
+det stämpelns commit-SHA, som varje godkänt manifest redan bar: fanns filen
+vid stämpeln och är borta nu, är frånvaron det föreskrivna slutläget. Fanns
+den inte heller där, är sökvägen trasig. Alternativet — en mönsterlista över
+"vad som räknas som prototyp" — hade burit två fel samtidigt: den accepterar
+en sökväg som aldrig funnits, och den glider isär från verkligheten. Samma
+klass som repot redan mätt två gånger i markörlistan (`TASK-192` döda
+markörer, `TASK-287` saknade). Beslut och mätserie:
+`ADR-102` § Updates 2026-08-22 (Rivna prototyp-källor).
+
+**Relaterat, men inte samma sak:** fragmentet
+`facit-kallor-ompekas-fore-stampeln.md` ger den operativa omvägen — peka om
+`kallor` i flip-skivan medan manifestet ännu är skrivbart. Den räcker bara
+när prototypfilen har en skarp EFTERTRÄDARE att peka på. Mätt 2026-08-22:
+hem- och svep-familjerna har 6 av 6 källor som är rent prototyp-substrat utan
+efterträdare, och segment-familjen 7 av 9 — där finns ingenting att peka om
+till, och omvägen är strukturellt otillgänglig. En operativ omväg som bara
+täcker halva fallmängden är inte en lösning på grindens lucka.
+
+### L516 — Två deploy-mekanismer för samma system skapar ett glapp ingen grind ser
+
+**[UNIVERSAL] När två delar av samma system rullas ut via OLIKA mekanismer —
+en automatisk, en manuell — är fönstret mellan dem ett tillstånd ingen mätning
+i CI kan se. Klienten och dess API kan vara internt konsistenta i repot,
+gröna i varje jobb, och ändå osynkade i produktion. Grinden mäter trädet;
+glappet uppstår i utrullningen, efter att trädet lämnat den.**
+
+Asymmetrin är hela felet. Vercel deployar Production automatiskt i
+merge-ögonblicket; Supabase Edge Functions deployas inte alls automatiskt.
+Två halvor, två utlösare, ingen gemensam grind — och ingenting i repot är
+någonsin fel.
+
+Mätt två gånger på fem dagar, med motsatta symptom:
+
+- **2026-08-17 (S107), högljutt.** Prod-EF:erna deployades 13:08Z medan
+  sessionens EF-rörande mergar landade 15:42–18:16Z. Den gamla
+  `_shared/attachments.ts` returnerade inte nycklarna
+  `rackvidd`/`kursfamilj`/`kursniva`; den nya fronten parsade dem med
+  `.nullable()` (inte `.optional()`) via kastande `.parse()`. Varje yta som
+  listade bilagor kastade i prod.
+- **2026-08-22, tyst.** Fronten gick live 16:37Z medan prod-EF:en
+  `get-persons` bar `UPDATED_AT` från 2026-08-20 — äldre än båda skivorna som
+  lärde den registerläget. Klienten frågade efter `register=true`; EF:en kände
+  inte parametern, föll igenom till sök-grenen och klampade till `pageSize`
+  50. Personlistan visade 50 av 559. Ingen 500, ingen röd yta, inget larm:
+  den gamla servern svarade korrekt på en fråga klienten inte hade ställt.
+
+Den tysta varianten är den farliga. Ett kast syns; en stympad lista ser ut
+som en kort lista.
+
+## Den persisterade cachen gör glappet långlivat EFTER att det stängts
+
+Det är den delen som gör lärdomen värd att skriva ned, inte bara
+deploy-ordningen.
+
+Stänger man glappet — deployar den saknade halvan — är felet inte
+nödvändigtvis borta. Klienten kan ha SPARAT det gamla svaret. En cache som
+persisteras till `localStorage` överlever omladdningen, och det enda
+versionsskydd den bär är en app-versions-buster. Bustern är verkningslös här,
+och det är inte en bugg i den: **appversionen var redan den nya när fel data
+skrevs.** Datan föddes i glappet, under den nya fronten, och matchar därför
+vid restore. Bustern kan skilja gammal app från ny app; den kan inte skilja
+ny app som pratade med gammal server från ny app som pratade med ny server.
+
+Två inställningar förlängde felet i vår instans: `maxAge` 24 timmar, och en
+`staleTime` som just höjts till 30 minuter för den drabbade nyckeln. Med båda
+satta var den felaktiga datan både bevarad och FÄRSK — ingen
+bakgrundshämtning startade. Fixen blev en manuell radering av
+lagringsnyckeln.
+
+Och skyddet man tror finns fanns inte: `refetchOnWindowFocus` verkar bara på
+en STALE fråga. Inom `staleTime`-fönstret hämtar en fokus-återkomst
+ingenting. Kodens egen kommentar sa det rakt ut, korrekt, och stod där när
+felet inträffade — en anteckning är ingen grind.
+
+## Vad som faktiskt håller
+
+1. **Rulla ut den manuella halvan FÖRST.** En ny server som svarar en gammal
+   klient är bakåtkompatibel så länge tillägget är additivt. Tvärtom öppnar
+   det cache-fönstret ovan. Ordningen är inte stilistisk — den är skillnaden
+   mellan ett transient fel och ett som överlever sin egen fix.
+2. **Mät innehållet, inte deployen.** En version som bumpas på allt vid varje
+   utrullning kan inte skilja "omdeployad" från "deployad med ny kod". En
+   innehålls-hash kan: i vår instans bytte `get-persons` hash medan
+   `get-events` behöll sin genom SAMMA deploy. Kontrasten är beviset.
+3. **Rensa klientlagringen för den som satt i glappet** — annars bär den
+   felet vidare.
+4. **Ge ordningen en BÄRARE, inte bara en rad.** Ordningen var redan
+   dokumenterad i runbooken när den bröts andra gången. Ett steg som heter
+   "front-deployen verifierad utrullad" kan bara VERIFIERA, aldrig
+   SEKVENSERA, när plattformen skickar ut fronten i merge-ögonblicket. En
+   regel vars mekanism inte kan hålla den är en önskan.
+
+   **Bäraren i vårt substrat är ett KORT, och kontrasten är mätt inom samma
+   dygn.** `TASK-284.6` (*"Prod-utrullning: eventlänkens vakt och åtgärdskön"*)
+   skapades `2026-08-21 11:36` som en planerad skiva i sin egen familj och stod
+   `Done` när familjen stängdes. `TASK-286`-familjen fick ingen motsvarighet:
+   `TASK-286.8` skapades först `2026-08-22 17:34` — efter att fronten gått live
+   `16:37Z` i precis det glapp kortet skulle ha förhindrat. (Backlog-CLI:ts
+   tidsstämplar är UTC; mätt mot `26ec953a`, vars `updated_date 12:36` hör till
+   en commit gjord `14:36:55 +0200`.) Skillnaden mellan de två spåren låg inte i
+   kunskap — båda visste att EF-halvan deployas för hand. Den låg i om
+   skivningen gav den halvan en egen post med eget DoD. **Rör en familj en
+   manuellt utrullad halva bär den en prod-utrullningsskiva; annars är
+   utrullningen ett minne, och minnen har ingen bevakare.**
+
+Testa därför inte bara om halvorna passar ihop i repot. Fråga vad som är ute
+i produktion just nu, i båda halvorna, mätt på artefakten — en driftbild
+härledd ur git är en hypotes.
+
+Relaterat: `TASK-286.8` (instansens fulla bokföring), `TASK-289`
+(`staleTime`-risken, materialiserad), `TASK-296`,
+`tasks/sessions/2026-08-17-session-107.md` rad ~285–325 (den första
+instansen), `CLAUDE.md` § Prod-EF-deploy körs via SKRIPTET.
+
+### L517 — Läs tillbaka det du INTE rörde — en additivt klingande flagga kan ha ersatt hela sektionen
+
+**[UNIVERSAL] En skriv-flagga vars namn låter additivt (`--notes`, `--tag`,
+`--description`) kan ERSÄTTA hela den sektion den namnger. Läs-tillbaka-passet
+efter en CLI-skrivning måste därför pröva det du INTE skrev. Ser du ditt eget
+värde på plats är det inget bevis för att grannarna finns kvar — det är exakt
+den observation en destruktiv skrivning också producerar.**
+
+Instans (S109 resume 3, 2026-08-22): `npm run bl -- task edit TASK-283.4
+--notes '<rättelse>'` skulle rätta en felmätt mening i en överlämningsnot.
+Flaggan ersatte hela `SECTION:NOTES`-blocket. Med det försvann `TASK-285.11`:s
+överlämning av visual-baslinjen och dess förkrav — att *"Allow GitHub Actions
+to create and approve pull requests"* är en tre-nivåers kedja som måste mätas
+FÖRE dispatchen, med två empiriska run-ID:n som belägg. Commit `26ec953a`
+(−9/+13 rader); återställd ur `8ebfab2c` i `54577365`.
+
+**Förlusten fångades inte av läs-tillbaka-passet.** Den upptäcktes flera turer
+senare, av en `grep` efter den citerade texten som gav noll träffar. Det är
+felklassens kärna: efter skrivningen stod den nya noten där, korrekt, precis
+som väntat. En läsning som frågar *"landade det jag skrev?"* får ja. Bara en
+läsning som frågar *"finns det jag inte rörde kvar?"* hade fångat det.
+
+**Andra instansen av `L239`:s klass** — samma verktyg, samma flagga, 2026-07-06,
+redan `[UNIVERSAL]`-märkt: *"`--notes "keep"` → Implementation Notes TYST
+ÖVERSKRIVNA"*. `L239`:s regel (läs tillbaka objektet omedelbart efter varje
+CLI-skrivning) var nedskriven och otillräcklig som formulerad: den riktar
+läsningen mot skrivningen, inte mot det oskrivna. Två instanser av samma flagga
+på samma verktyg gör detta till en kandidat för uppgradering till Kritisk
+regel, inte en ny sidopost.
+
+**Formen som håller:** läs ut sektionen FÖRE skrivningen, skicka in den
+kompletta texten med din ändring inarbetad, och diffa efteråt mot det du läste.
+Behandla varje sektions-flagga som destruktiv tills verktygets egen
+dokumentation säger annat — antagandet åt det hållet kostar en extra läsning,
+antagandet åt andra hållet kostar en artefakt.
+
+**Bokföringen av instansen bär själv ett mätfel värt att notera.**
+`54577365`:s commit-meddelande säger att ÄVEN `TASK-283.2`:s kortkommentar
+raderades. Diff-mätt höll det inte: kortets innehåll vid `8ebfab2c` och vid
+`26ec953a^` (`2ad0703d`) är byte-identiskt, och sektionen bar ETT sammanhängande
+block. Felräkningen färdades sedan vidare in i nästa uppdrags premisser. En
+förlust som bokförs i efterhand tenderar att bokföras större än den var — mät
+den mot diffen, räkna den inte ur minnet.
+
+### L518 — En grön grind bevisar att inget fällde — inte att låset täcker det du tror
+
+**[UNIVERSAL] Ett regressionslås kan tappa täckning utan att någonsin bli rött.
+Möts en partiellt matchande assertion av en uppdaterings-flagga som bara skriver
+om det som FÄLLER, blir resultatet ett lås som passerar varje körning och inte
+längre beskriver ytan. Grönt är frånvaro av fällning, aldrig närvaro av
+täckning.**
+
+Instans (`TASK-283.4`, 2026-08-22): sex `toMatchAriaSnapshot`-referenser skulle
+sättas om mot personlistans nya form — en bokstavsrad ovanför listan. Två
+mekanismer möttes:
+
+- `toMatchAriaSnapshot` matchar **partiellt**: extra syskonnoder tolereras så
+  länge referensens egna noder står i samma inbördes ordning. Fyra av de sex
+  referenserna passerade därför utan att innehålla den nya raden.
+- `--update-snapshots` utan värde har preset `changed`. Playwright 1.62.1:s egen
+  `--help`, verbatim: *"choices: 'all', 'changed', 'missing', 'none', preset:
+  'changed'"* — den skriver alltså bara om en referens som fäller.
+
+Mätt: `--update-snapshots` skrev om **2 av 6** filer, `--update-snapshots=all`
+skrev om **6 av 6** (commit `dcb06829` bär sex ändrade `.aria.yml`). Med
+standardflaggan hade sviten rapporterat 16 passerade / 0 fällda medan fyra lås
+saknade raden — och en regression i just den raden hade fångats av ingenting.
+
+**Det generella:** när ett lås sätts om efter en avsiktlig formändring, mät
+ANTALET omskrivna referenser mot antalet du förväntade dig. Det talet, inte
+grindens färg, är beviset på att låset täcker den nya formen. Frågan gäller
+varje snapshot-verktyg med en `changed`- eller `missing`-default och varje
+assertion som matchar delmängder i stället för helheter: den som bara reparerar
+det röda lämnar det gröna ofullständiga kvar, och ofullständigheten är osynlig
+per konstruktion.
+
+**Tvåsidigt bevis hör till samma andetag.** Omskrivningen verifierades genom att
+döpa om en nod i en av de nya referenserna — grinden föll (exit 1). Före
+omskrivningen kunde samma provokation inte fälla någonting. Det är skillnaden
+mellan ett lås och en fil som råkar ligga där.
+
+Släkt: fragmentet `verifiera-mot-den-axel-andringen-ror-inte-mot-fixturernas-rakade-tomhet.md`
+— samma rotklass, där i FIXTUR-ledet i stället för i uppdaterings-ledet.
+
+### L519 — Agentens `grep` utelämnar filer tyst — och tystnaden ser ut som frånvaro
+
+**[UNIVERSAL] `grep` i Claude Code:s skal är inte systemets `grep`. Det är en
+skalfunktion som kör `ugrep` med `-I` (hoppa över binärfiler) och
+`--ignore-files` (respektera ignore-listor). Båda flaggorna får en fil att
+försvinna UTAN meddelande: sökningen returnerar tomt och exit 1 — samma utfall
+som när strängen genuint inte finns. Ett noll-resultat ur en agents `grep` är
+därför aldrig ett bevis för frånvaro.**
+
+Differentialmätning (2026-08-22, `ugrep 7.8.4`, macOS; fixtur: en `.tsx` med en
+rå `0x00` mitt i en sträng, och en `.txt` som en `.gitignore` bredvid pekar ut):
+
+| Anrop | NUL-filen | Ignore-listad fil |
+|---|---|---|
+| skalets `grep -rn` | inget utdata, exit 1 | inget utdata, exit 1 |
+| skalets `grep -c` | **tom rad**, exit 1 | — |
+| `/usr/bin/grep -rn` | `Binary file … matches`, exit 0 | träffrad, exit 0 |
+
+Systemets `grep` SÄGER att filen är binär. Agentens säger ingenting alls.
+Skillnaden är hela felet: den ena tystnaden är en observation, den andra är en
+utelämnad fil.
+
+**Instansen som avtäckte det** (`TASK-283.2`/`283.3`, 2026-08-22):
+`PersonsList.tsx` fick en rå NUL-byte som fogtecken i en filternyckel, där
+kommentaren två rader ovanför föreskriver ett mellanslag. Koden fungerade — NUL
+är en giltig separator i en strängnyckel — och typecheck, lint, bygg och
+sviterna var gröna. Men `file` klassade filen som `data`, `grep -c 'useMemo'`
+gav tomt, och varje repo-bred `grep -rn` hoppade över den. `283.2`:s agent såg
+symptomet och bokförde det som verktygsartefakt; `283.3`:s agent rotorsakade det
+(`dedc5b51`). Efter fixen: `Java source, Unicode text, UTF-8 text`, och samma
+`grep -c` ger 7.
+
+**Två regler ur detta:**
+
+1. **Beter sig ett verktyg avvikande mot EN indata medan det fungerar överallt
+   annars, är avvikelsen en egenskap hos indatan.** "Verktygsartefakt" är en
+   klassning som kräver belägg. Utan belägg är den en omväg runt ett fynd, och
+   omvägen ärvs av nästa läsare som en källmärkt premiss.
+2. **Ingen testnivå fångar en byte-form-defekt.** Felet låg i filens bytes, inte
+   i dess semantik. Det som kan fånga det är `file`, en `git diff --stat` som
+   visar `Bin`, eller en räkning av lästa filer. En inventering som vilar på
+   `grep -rn` bör kunna svara på hur många filer som faktiskt lästes — annars
+   mäter den sin egen filtrering.
+
+Släkt: `ett-tyst-verktyg-ser-likadant-ut-som-ett-verktyg-utan-fynd.md` — där ett
+övervakningsverktyg vars noll var tvetydigt, här ett sökverktyg vars noll var
+falskt. Samma rot: frånvaro rapporterad av ett verktyg måste kunna skiljas från
+trasig rapportering.
+
+### L520 — En rättelse som står längre ned i samma dokument har inte rättat raden
+
+**[UNIVERSAL] Ett dokument som bokför en korrigering i ett senare avsnitt men
+lämnar den felaktiga raden orörd är inte rättat — det är självmotsägande.
+Läsaren, människa eller agent, landar på raden och citerar den; ingen söker
+igenom resten av dokumentet efter en dementi. Rättelsen hör hemma VID raden. En
+not någon annanstans är en anteckning om felet, inte en åtgärd mot det.**
+
+Instans (S109, 2026-08-22): Del 7 utpekade `ADR-122` som personregistrets
+beslut. Numret hade en parallell session redan tagit för eventlänkens vakt
+(`#1684`); personregistret blev `ADR-123`. Samma dokument bokförde kollisionen
+**två gånger längre ned** — Del 9 § Numrering, verbatim: *"`ADR-122` togs av
+S110 under passet; registret blev 123"* — men Del 7:s rad rättades aldrig. En
+agent som stängde `TASK-283.1` hämtade raden och var på väg att skriva in en ADR
+om Airtable-automation A1 i ett kort som stängs för gott. Den mätte mot
+git-historiken, upptäckte förväxlingen och flaggade i stället för att bygga
+vidare.
+
+**Varför formen är särskilt förrädisk:** dokumentet var inte okunnigt om felet.
+Det VISSTE, och skrev ned det. Kunskapen fanns i artefakten och saknade ändå
+verkan, eftersom den låg på fel rad. Ett självmotsägande dokument är farligare
+än ett felaktigt, för det ser granskat ut.
+
+**Kontexten stärker regeln:** samma pass räknade **fem** fel i bokföringen och
+**noll** i koden — ett manifest som citerade en text koden ersatt, `kallor` som
+pekade på boundaryn i stället för formen, copy låst på fel yta. Koden var rätt
+hela tiden; kartan över koden drev. Ju mer arbete som bärs av kartor — manifest,
+kort, sessionsdok — desto större andel av kvalitetsarbetet ligger i att hålla
+kartorna sanna, inte i att hålla koden rätt. Det är en resursfördelning värd att
+göra medvetet.
+
+**Operativt:** upptäcker du att en tidigare rad är fel — rätta raden, i samma
+commit som du noterar felet. Är raden historik som inte får skrivas om, låt den
+bära rättelsen på plats (*"Rättat ÅÅÅÅ-MM-DD: raden ovan sade X; det är Y, och
+här är skälet"*), aldrig bara en not i ett senare avsnitt. Det var precis den
+formen som slutligen användes här, och den kostade en rad.
+
+Släkt: `L437` (en stängning som inte bryter ALLA ytor som bär posten återuppstår
+som öppen) — samma rot, där mellan ytor, här inom en enda.
+
+### L521 — Ett kommando du lämnar över körs i MOTTAGARENS träd — synka det före överlämningen
+
+**[UNIVERSAL] När du ger en människa ett kommando att köra i sin egen terminal
+ärver kommandot hennes arbetsträds tillstånd, inte ditt. Trädets färskhet är
+ett förkrav du måste mäta och åtgärda FÖRE överlämningen. Efteråt har handlingen
+redan skett, och en handling som skriver en durabel artefakt kan vara
+oåterkallelig.**
+
+Instans (S109, 2026-08-22): stämplingskommandon för två facit-manifest lämnades
+över mot en checkout som låg **tio commits efter** `origin/main` — utan
+`referenser`-fälten som `#1751` just lagt in. Stämpeln landade på ett föråldrat
+träd; hade den committats hade den rivit hela `referenser`-arbetet. Marcus
+första stämpel gick förlorad. Filen återställdes, trädet synkades, och han fick
+stämpla om.
+
+**Signalen fanns i klartext och lästes ändå fel:** grinden rapporterade **24**
+ytor utan `referenser` efter stämpeln. Talet skulle ha gått NED från 22. Ett tal
+som rör sig åt fel håll är en starkare signal än ett tal som bara är fel — och
+det passerade ändå, eftersom ingen hade skrivit ut förväntan innan kommandot
+lämnades ut.
+
+**Varför detta inte är samma lärdom som
+`stampel-sha-harleds-ur-ref-som-star-stilla.md`:** där härledde ett VERKTYG ett
+SHA ur en lokal ref som stod stilla, och fixen låg i verktyget. Här var trädet
+självt föråldrat i det ögonblick en människa körde kommandot, och ingen
+verktygsfix hade hjälpt. Ansvaret följer överlämningen: den som formulerar
+kommandot äger förkravet, eftersom mottagaren inte kan se vad avsändaren antog.
+
+**Formen:** mät eftersläpningen i mottagarens träd (`git fetch` följt av
+`git rev-list --count HEAD..origin/main`), synka, och skriv ut i samma andetag
+vilket tal grinden ska visa efteråt och åt vilket håll det ska röra sig. Två
+instanser på tolv dagar mot samma stämpelkedja gör förkravet till ett steg i
+proceduren, inte en försiktighetsåtgärd att komma ihåg.

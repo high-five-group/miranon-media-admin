@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-09
+updated: 2026-08-22
 review_by: 2026-11-15
 status: stable
 ---
@@ -53,7 +53,7 @@ status: stable
 | [vol-03](lessons/vol-03.md) | 2026-06-13 → 2026-07-07 | Session 17 → Session 58 (repo-hygien, Fas 5.5–6h, MIGRERINGS-HUB-SESSION 1–3), fortsatt H2-nästlad L-numrering | `L103` → `L251` | Stängd |
 | [vol-04](lessons/vol-04.md) | 2026-07-08 → 2026-07-26 | Session 59:s H2-block, därefter flat L-numrering utan ny H2 per session (källans konventionsskifte — se not) | `L252` → `L359` | Stängd |
 | [vol-05](lessons/vol-05.md) | 2026-07-27 → 2026-07-30 | Session 91:s huvuddel (CI-paritet-fyndet, upphävande-räckvidd, m.fl.), flat L-numrering | `L360` → `L421` | Stängd |
-| [vol-06](lessons/vol-06.md) | 2026-07-31 → | **Aktiv volym** — alla nya lärdomar landar här, flat L-numrering | `L422` → `L511` | **Aktiv** |
+| [vol-06](lessons/vol-06.md) | 2026-07-31 → | **Aktiv volym** — alla nya lärdomar landar här, flat L-numrering. **3 436 rader efter `L512`–`L521`** — nästa tillägg passerar rotationströskeln 3 000 och ska föregås av `vol-07` | `L422` → `L521` | **Aktiv** |
 
 **Not om konventionsskiftet (vol-04–vol-06):** källfilen slutade skriva ett
 nytt `## <datum> — Session N (…)`-block per session efter Session 59
