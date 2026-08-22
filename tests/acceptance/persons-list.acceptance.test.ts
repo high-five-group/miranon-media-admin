@@ -37,8 +37,15 @@ import { expect, test } from './support/acceptance-bas';
  * EF:en faktiskt returnerar, med Å bland A:na — så en yta som renderar
  * hämtningens ordning rakt av fäller testet.
  *
- * TÄCKER INTE här (egna skarvar): AC #3 (parity mot EF:ens SEARCH()-formel) —
- * `tests/api/person-sok.test.ts` (pure) + `tests/api/
+ * [SÖK-SEMANTIKEN BYTTE, TASK-286.7 — 2026-08-22] Klientfiltret är sedan
+ * Marcus JA på TASK-286.5 DIAKRITIK-TOLERANT ("asa" hittar Åsa), likvärdigt
+ * med eventväljarens filter. Denna fils söktermer valdes redan av TASK-286.3
+ * mot just det kommande bytet och är därför opåverkade — se sorterings-
+ * blockets egen not om varför termen är "j".
+ *
+ * TÄCKER INTE här (egna skarvar): AC #3 (matchningens semantik — sedan
+ * TASK-286.7 likvärdighet med eventväljarens filter, inte längre paritet med
+ * EF:ens SEARCH()-formel) — `tests/api/person-sok.test.ts` (pure) + `tests/api/
  * get-persons-sok-paritet.staging.test.ts` (skarpt mot staging). AC #4
  * (prefetch på hover/fokus, Personer-fliken) —
  * `tests/acceptance/tabbar-personer-prefetch.acceptance.test.ts`. AC #7
@@ -251,12 +258,16 @@ test.describe('Personer-listan — svensk sortering (TASK-286.3)', () => {
     await expect(list.getByRole('listitem')).toHaveCount(FORVANTAD_ORDNING.length);
 
     // SÖKTERMEN ÄR VALD FÖR ATT VARA DIAKRITIK-NEUTRAL, och det är ingen
-    // slump: `TASK-286.5` är beslutad JA (Marcus 2026-08-22) — sökningen ska
-    // bli diakritik-TOLERANT i ett eget uppföljningskort. En term som "ä"
-    // hade fungerat i dag och blivit röd då (tolerant matchning låter "ä"
-    // träffa även a/å), och sett ut som en sorteringsregression fast
-    // sorteringen var orörd. Detta test äger SORTERINGEN, inte sökningens
+    // slump: `TASK-286.5` beslutades JA (Marcus 2026-08-22) och `TASK-286.7`
+    // GENOMFÖRDE breddningen — sökningen ÄR nu diakritik-tolerant. En term
+    // som "ä" hade fungerat före bytet och blivit röd efter (tolerant
+    // matchning låter "ä" träffa även a/å — mätt: "ä" ger alla sex rader mot
+    // denna fixtur), och sett ut som en sorteringsregression fast sorteringen
+    // var orörd. Detta test äger SORTERINGEN, inte sökningens
     // diakritik-semantik, och ska inte kunna fällas av den.
+    //
+    // FÖRUTSÄGELSEN HÖLL: raden nedan var grön både före och efter
+    // TASK-286.7, utan en enda ändring i detta block.
     //
     // TERMEN MÅSTE UNDVIKA ALLA FYRA SÖKFÄLTEN utom namnet, och det brände
     // ett första försök: `person()`-fabrikens e-post är `person.NN@example.test`,
@@ -287,8 +298,8 @@ test.describe('Personer-listan — svensk sortering (TASK-286.3)', () => {
     // "Visar N av TOTAL personer" betyder på en filtrerande yta.
     //
     // Samma diakritik-neutrala term som testet ovan, av samma skäl
-    // (TASK-286.5 beslutad JA): räknarraden ska mätas mot arrayen, inte mot
-    // en sök-semantik som är på väg att ändras.
+    // (TASK-286.5 beslutad JA, genomförd i TASK-286.7): räknarraden ska mätas
+    // mot arrayen, inte mot en sök-semantik som ändrades under tiden.
     await page.getByRole('searchbox', { name: SOKFALT }).fill('j');
     await expect(page.getByText('Visar 2 av 2 personer för "j".')).toBeVisible();
   });
