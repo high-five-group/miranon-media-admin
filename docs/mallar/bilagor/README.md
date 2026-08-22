@@ -451,8 +451,11 @@ scope att ändra):** att behålla `gap` PARALLELLT med `margin` på samma
 flex-rad (mönstret den sektionen använder, "gap bär webbvyn, margin bär
 PDF:en") är ADDITIVT i en riktig webbläsare — isolerat testat (2 flex-barn,
 `gap:10mm` + `margin-right:10mm` på första barnet): 20,15mm uppmätt
-mellanrum, inte 10mm. `bilaga-delad.css`s egen instans av mönstret bär
-sannolikt samma dubblering i webbvyn. `kvitto.css` använder därför margin
+mellanrum, inte 10mm. `bilaga-delad.css`s egen instans av mönstret HADE
+exakt den dubbleringen — mätt oberoende samma natt (Chrome 8,81/9,14 mm mot
+Prince 4,40/4,57 mm, `docs/research/bilagor-prince-omgranskning-2026-08-23.md`
+ställe 3) och åtgärdad i `#1837`: `gap` borttagen, marginalen ensam bär
+mellanrummet i båda motorerna. `kvitto.css` använder av samma skäl margin
 ENSAM på alla sju platser — det enda sättet att både fixa Prince OCH hålla
 Chrome-renderingen oförändrad.
 
