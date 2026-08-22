@@ -21,3 +21,16 @@ Två följder:
    ett STOPP"*) är rätt form. Här ledde förklaringen till ett datafynd, ett
    nytt kort (`TASK-293`) och en prod-kö som gick 5 → 3 innan vakten slogs
    på.
+
+**Andra instansen lägger till en AXEL: förväntan har en RIKTNING** (S109,
+2026-08-22). Efter Marcus stämpling av två facit-manifest rapporterade grinden
+**24** ytor utan `referenser`. Talet skulle ha gått NED från 22 — `#1751` hade
+just lagt in fälten. Avvikelsen var alltså inte en oväntad mängd utan ett tal
+som rörde sig åt fel håll, och den passerade ändå obemärkt i första läsningen.
+Orsaken: stämplingen hade gjorts mot en checkout tio commits efter
+`origin/main`, och 24 var det gamla trädets tal.
+
+Skriv därför ut både det förväntade talet och åt vilket håll det ska röra sig.
+Ett svep vars förväntan saknar riktning kan bara jämföra storlek — och en siffra
+som växt när den skulle krympa läses då som brus i stället för som det larm den
+är.
