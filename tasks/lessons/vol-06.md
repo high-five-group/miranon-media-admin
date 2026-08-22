@@ -2529,6 +2529,23 @@ parkerings-ögonblicket. En regel som misslyckas för sin egen författare, en d
 efter att den skrevs, är inte ett läsnings-problem. Det är belägg för att
 `T126`:s mekanism ska bära den, inte prosan.
 
+**Tredje instansen, mätt 2026-08-22 — och den var INTE en parkering.** `#1798`
+(`TASK-283.3`) armerades `13:50:47Z`, köades `13:58:32Z` och **sparkades ut av
+kön `14:06:15Z`**. Därefter stod den stilla i **48 minuter och 6 sekunder**:
+`CLEAN`, odraftad, utanför kön, med armeringen konsumerad. Timeline-API:t bär
+**inget** `auto_merge_disabled`-event — ingenting i PR:ens tillstånd skiljer den
+från en som aldrig armerats. Ett andra `gh pr merge --auto` i orkestrerarens
+svep lade tillbaka den (`14:54:21Z`, direkt `added_to_merge_queue` utan nytt
+`auto_merge_enabled`, alltså `CLAUDE.md`-tabellens rad 2 mätt skarpt), och den
+landade `15:02:28Z`.
+
+Instansen stärker posten från motsatt håll: larmets disjunktion — *"ALDRIG
+ARMERAD eller UTSPARKAD med konsumerad armering"* — är inte akademisk. Båda
+grenarna inträffar, bara den ena är avsiktlig, och ingen statisk avläsning
+skiljer dem. Det är hela skälet att dämpning aldrig är rätt väg ut: samma larm
+som brusar om en feluttryckt parkering är det enda som skiljer en färdig PR från
+en som står stilla på obestämd tid.
+
 ### L486 — En skivning som inte prövats mot kodens faktiska kopplingar är en hypotes
 
 **Skiva inte efter funktionsyta — pröva varje skivgräns mot koden den ska skära

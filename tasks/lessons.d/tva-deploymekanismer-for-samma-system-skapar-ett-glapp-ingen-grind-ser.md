@@ -72,6 +72,19 @@ felet inträffade — en anteckning är ingen grind.
    SEKVENSERA, när plattformen skickar ut fronten i merge-ögonblicket. En
    regel vars mekanism inte kan hålla den är en önskan.
 
+   **Bäraren i vårt substrat är ett KORT, och kontrasten är mätt inom samma
+   dygn.** `TASK-284.6` (*"Prod-utrullning: eventlänkens vakt och åtgärdskön"*)
+   skapades `2026-08-21 11:36` som en planerad skiva i sin egen familj och stod
+   `Done` när familjen stängdes. `TASK-286`-familjen fick ingen motsvarighet:
+   `TASK-286.8` skapades först `2026-08-22 17:34` — efter att fronten gått live
+   `16:37Z` i precis det glapp kortet skulle ha förhindrat. (Backlog-CLI:ts
+   tidsstämplar är UTC; mätt mot `26ec953a`, vars `updated_date 12:36` hör till
+   en commit gjord `14:36:55 +0200`.) Skillnaden mellan de två spåren låg inte i
+   kunskap — båda visste att EF-halvan deployas för hand. Den låg i om
+   skivningen gav den halvan en egen post med eget DoD. **Rör en familj en
+   manuellt utrullad halva bär den en prod-utrullningsskiva; annars är
+   utrullningen ett minne, och minnen har ingen bevakare.**
+
 Testa därför inte bara om halvorna passar ihop i repot. Fråga vad som är ute
 i produktion just nu, i båda halvorna, mätt på artefakten — en driftbild
 härledd ur git är en hypotes.
