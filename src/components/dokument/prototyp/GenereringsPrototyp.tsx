@@ -1231,8 +1231,6 @@ function GenereringsVy({
      genomgång, inte hela bilagans. */
   const oppenGrupp = oppet ? rader.find((g) => g.rader.some((r) => r.def.id === oppet)) : undefined;
   const navSyskon = oppenGrupp ? dialogRader(oppenGrupp.rader) : [];
-  /* Bläddrar dialogen? Då är dess höjd LÅST — se DIALOG_BLADDRAR_KLASS. */
-  const bladdrar = navSyskon.length >= NAV_TROSKEL;
 
   // Varje ändring efter ett "Skapa" gör bekräftelsen inaktuell — den
   // beskrev ett dokument som inte längre är det Lotta ser framför sig.
@@ -1540,13 +1538,8 @@ function GenereringsVy({
              bestämd höjd, och en textruta som ska fylla den kan inte veta hur
              hög den är — då hamnar rullningen på dialogen i stället för i
              rutan. */
-          className={cn(
-            DIALOG_PANEL_KLASS,
-            bladdrar && DIALOG_BLADDRAR_KLASS,
-            /* Löptexten utan bläddring behåller sitt eget mått: den bor i den
-               GODKÄNDA bekräftelsebilagan och rörs inte. */
-            !bladdrar && oppenRad.def.langtext && 'h-[min(76vh,600px)]',
-          )}
+          /* Ett mått, inga undantag — se DIALOG_PANEL_KLASS. */
+          className={DIALOG_PANEL_KLASS}
           style={DIALOG_ANKARE}
           onOpenChange={(open) => {
             if (!open) avbrytDialog();
@@ -1636,27 +1629,28 @@ function agendaSammanfattning(rader: AgendaRad[]): string {
  * fult. Ankringen ger samma stabila startpunkt utan tomrummet: dialogen
  * växer nedåt från en fast kant och slutar där innehållet slutar.
  */
-const DIALOG_PANEL_KLASS =
-  'flex max-h-[min(76vh,600px)] w-(--mm-dialog-width-lg) max-w-full origin-top flex-col overflow-hidden';
-
 /**
- * Bläddringens panel: LÅST HÖJD, inte bara låst överkant.
+ * ETT panelmått för HELA bilageredigeringen — samma dialog för löptexten,
+ * agendorna och ämnesstyckena, i båda mallarna. Marcus, varv 16: *"EXAKT
+ * samma modal överallt i bilageediteringen."*
  *
- * Varv 3 låste övre kanten och mätte positionsspannet 149 → 0 px. Det räckte
- * inte: NEDRE kanten flöt fortfarande med innehållet, så knappraden hoppade
- * vid varje steg i bläddringen och pekaren måste flyttas om för varje klick.
- * Marcus, varv 15: *"det ABSOLUT värsta jag vet när saker växer och krymper."*
- *
- * Höjden är därför fast, inte ett tak. `min(80vh, 680px)` är det största som
- * ryms under ankarpunkten (`clamp(2rem, 12vh, 7rem)` ≈ 101 px vid 844 px höjd)
- * med marginal kvar nedtill — och ligger i nivå med Hem-svepets `max-h-[90vh]`
- * i stället för dialogens tidigare 600 px-tak.
+ * LÅST HÖJD, inte bara låst överkant. Varv 3 låste övre kanten och mätte
+ * positionsspannet 149 → 0 px — men NEDRE kanten flöt fortfarande med
+ * innehållet, så knappraden hoppade vid varje steg i bläddringen och pekaren
+ * måste flyttas om för varje klick. `min(80vh, 680px)` är det största som
+ * ryms under ankarpunkten (`clamp(2rem, 12vh, 7rem)` ≈ 101 px vid 844 px
+ * höjd) med marginal kvar nedtill, och ligger i nivå med Hem-svepets
+ * `max-h-[90vh]` i stället för det tidigare 600 px-taket.
  *
  * Tomrummet som fällde en fast höjd i varv 3 (*"~500 px tom yta under sitt
- * enda fält"*) uppstår inte här: textrutan FYLLER panelen, samma behandling
- * som löptexten redan har. Ytan blir skrivyta, inte tom yta.
+ * enda fält"*) uppstår inte: innehållet FYLLER panelen — textrutan via
+ * `flex-1`, agendan genom att rulla i sin egen yta.
+ *
+ * `h-` OCH `max-h-` med samma värde: `h-` ensamt är bara en önskan när ett
+ * ärvt `max-h` (primitivens `max-h-[85vh]`) ligger under.
  */
-const DIALOG_BLADDRAR_KLASS = 'h-[min(80vh,680px)] max-h-[min(80vh,680px)]';
+const DIALOG_PANEL_KLASS =
+  'flex h-[min(80vh,680px)] max-h-[min(80vh,680px)] w-(--mm-dialog-width-lg) max-w-full origin-top flex-col overflow-hidden';
 
 /** Fast avstånd till viewportens överkant — dialogens ankarpunkt. Sätts via
  *  `style` på `Modal`, eftersom scrimmens `items-center` är hårdkodad i
@@ -1926,25 +1920,24 @@ function BlockDialog({
           <TextArea
             label={def.etikett}
             hideLabel
-            autoGrow={!def.langtext && !harNav}
-            /* Tre lägen, medvetet åtskilda:
-               · `langtext` — OFÖRÄNDRAD form. Den bor i den godkända
-                 bekräftelsebilagan och rörs inte.
-               · `harNav` — panelen har LÅST höjd, så rutan tar resten av den
-                 (`flex-1 min-h-0`, inte `h-full`: här finns syskon under i
-                 samma flex-kolumn). Utan det blir den låsta höjden tomrum i
-                 stället för skrivyta.
-               · annars — innehållsdriven som förut.
-               KÄND KANT: ett agenda- eller datumfält i en bläddringsgrupp
-               skulle lämna tomrum. Praktisk information bär bara textfält;
-               dyker ett annat slag upp där är det denna gren som ska växa. */
-            className={
-              def.langtext
-                ? 'h-full [&_textarea]:h-full [&_textarea]:max-h-none [&_textarea]:min-h-0 [&_textarea]:resize-none [&_textarea]:whitespace-pre-wrap [&_textarea]:leading-relaxed'
-                : harNav
-                  ? 'min-h-0 flex-1 [&_textarea]:h-full [&_textarea]:max-h-none [&_textarea]:min-h-0 [&_textarea]:resize-none [&_textarea]:whitespace-pre-wrap [&_textarea]:leading-relaxed'
-                  : undefined
-            }
+            /* Panelen har låst höjd, så rutan TAR RESTEN av den — ett enda
+               läge för alla textfält, i båda mallarna.
+               `flex-1 min-h-0`, inte `h-full`: rutan har syskon under sig i
+               samma flex-kolumn (kryssrutan, hjälptexten), och `h-full` hade
+               krävt hela höjden av dem också.
+               Två MÄTTA felsteg bakom barnvarianterna:
+               (1) `max-h-none` rakt på `className` gjorde INGENTING (föll
+                   256 px mot 1288 px innehåll) — primitivens `className` går
+                   till TextField-WRAPPERN, `<textarea>` får bara
+                   `textAreaVariants(...)`.
+               (2) `autoGrow` utan tak lät rutan växa till 1288 px inuti en
+                   600 px dialog, så DIALOGEN rullade och rullisten hamnade
+                   utanför textrutan. Nu är det tvärtom: rutan rullar i sig
+                   själv, rullisten sitter där texten är.
+               `whitespace-pre-wrap` bevarar styckesbrytningarna ur mallen —
+               utan den blir Rogers tre stycken en enda klump. */
+            autoGrow={false}
+            className="min-h-0 flex-1 [&_textarea]:h-full [&_textarea]:max-h-none [&_textarea]:min-h-0 [&_textarea]:resize-none [&_textarea]:whitespace-pre-wrap [&_textarea]:leading-relaxed"
             value={text}
             onChange={setText}
             rows={def.kalla === 'event' || def.id === 'plats' ? 2 : 5}
