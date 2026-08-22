@@ -206,6 +206,15 @@ body {
 }
 
 /*
+ * Luft mellan logga och rubrik — Marcus 2026-08-22: "Lite mer luft mellan
+ * logga och rubrik". MEDVETEN AVVIKELSE från förlagan, som sätter dem tätt.
+ * Gäller bekräftelsebilagan; deltagarinformationen är orörd (ingen order).
+ */
+.sida--bekraftelse .loggarad {
+  margin-bottom: 4mm;
+}
+
+/*
  * Loggans bredd är matchad mot förlagans BLÄCK-bredd (ordmärkets faktiska
  * ytterkanter i den renderade bilden), inte mot bildrutans bredd — förlagans
  * raster bär tomrum runt märket som vår SVG saknar. Bekräftelsebilagan:
@@ -456,15 +465,42 @@ body {
   background: #ffffff;
 }
 
+/*
+ * MARGIN, INTE `gap` — PRINCE IGNORERAR FLEX-GAP.
+ *
+ * Mätt 2026-08-22 med ett minimalt fyra-fallsdokument genom samma
+ * DocRaptor-EF som mallarna renderas med (Prince 15.1):
+ *   A  flex + gap:10mm ................ IGNORERAS — barnen sitter ihop
+ *   B  flex + margin-right:10mm ....... fungerar
+ *   C  grid + column-gap:10mm ......... trasig — staplar i stället för kolumner
+ *   D  flex + justify-content:space-between ... fungerar
+ *
+ * Det förklarar hela historien: mellanrummet mellan ikon och QR har ALDRIG
+ * funnits i PDF:en, oavsett vad `gap` stod på. Två åtgärder gjordes innan
+ * mätningen och kunde omöjligt fungera — att krympa ikonerna 21,05 → 19,5 mm
+ * (den frigjorda bredden blev tomrum till höger, eftersom flexbarnen packas
+ * till vänster utan `justify-content`), och att höja `gap` 2,3 → 4,5 mm.
+ * Marcus fällde båda: "Det är INGEN skillnad, instagramlogga och
+ * internetikonen ligger ju KANT I KANT med QR koden."
+ *
+ * `gap` står kvar för webbläsarvyn (granskningsfilerna öppnas i Chrome, som
+ * honorerar den); marginalen bär PDF:en. Båda sätts till samma värde så de
+ * två vyerna inte glider isär.
+ */
 .ikonruta-media {
   display: flex;
-  gap: 2.3mm; /* förlagan: 6,52 pt mellan ikon och QR */
+  gap: 4.5mm; /* förlagan: 6,52 pt = 2,3 mm — MEDVETEN avvikelse (Marcus) */
+}
+
+/* Bär mellanrummet i PDF:en, där `gap` ovan inte har någon verkan. */
+.ikonruta-media > :first-child {
+  margin-right: 4.5mm;
 }
 
 .ikonruta-ikon,
 .ikonruta-qr {
-  width: 21.05mm; /* förlagan: 59,69 pt, kvadratisk */
-  height: 21.05mm;
+  width: 19.5mm; /* förlagan: 59,69 pt = 21,05 mm — se noten ovan */
+  height: 19.5mm;
 }
 
 .ikonruta-omslag {

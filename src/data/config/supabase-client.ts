@@ -126,3 +126,53 @@ export async function postEdgeFunction<T>(name: string, body: Record<string, unk
 
   return (await res.json()) as T;
 }
+
+/**
+ * Anropar en Edge Function via POST med JSON body och tar emot BINÄRDATA.
+ *
+ * Skild från `postEdgeFunction` av en enda anledning, men en avgörande: den
+ * läser `res.blob()` i stället för `res.json()`. Husets alla andra
+ * PDF-vägar returnerar base64 inuti JSON (`preview-receipt`,
+ * `generate-event-attachment`) och konsumeras därför av `postEdgeFunction`;
+ * `test-docraptor-render` svarar i stället med rå `application/pdf`
+ * (`supabase/functions/test-docraptor-render/index.ts` § returen), eftersom
+ * den byggdes som mätinstrument för `ADR-119` beslut 7 och mäter
+ * PDF-bytesen direkt. Att i stället ändra EF:ens kontrakt till base64 hade
+ * rivit grunden under den redan gjorda mätningen — därför tar klienten emot
+ * det format instrumentet faktiskt talar.
+ *
+ * Auth-, fel- och retry-kontraktet är IDENTISKT med `postEdgeFunction`:
+ * samma `getAuthHeader`, samma `edgeFunctionError` vid non-2xx (feltexten
+ * läses som text — EF:ens felkontrakt är JSON även när framgångssvaret är
+ * binärt), samma `fetchWithRetry`.
+ *
+ * VÄRT ATT VETA OM STORLEKEN: anroparen (bilage-förhandsgranskningen)
+ * postar en självbärande HTML på ~4 MB, och `fetchWithRetry` gör upp till
+ * 3 omförsök vid 5xx — ett verkligt serverfel kostar alltså flera
+ * uppladdningar av samma volym. Det är acceptabelt för en dev-gatead
+ * prototypväg och skulle inte vara det för en skarp, den dag mallen
+ * renderas server-side (`ADR-119`) och HTML:en aldrig lämnar servern.
+ */
+export async function postEdgeFunctionBlob(
+  name: string,
+  body: Record<string, unknown>,
+): Promise<Blob> {
+  const url = `${env.VITE_SUPABASE_URL}/functions/v1/${name}`;
+  const authorization = await getAuthHeader();
+
+  const res = await fetchWithRetry(url, {
+    method: 'POST',
+    headers: {
+      Authorization: authorization,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const bodyText = await res.text();
+    throw edgeFunctionError(name, res.status, bodyText);
+  }
+
+  return await res.blob();
+}

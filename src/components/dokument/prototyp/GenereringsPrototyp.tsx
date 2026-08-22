@@ -43,8 +43,10 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   Files,
   FileText,
+  Loader2,
   Pencil,
   Plus,
   Trash2,
@@ -70,8 +72,10 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { TextArea } from '@/components/primitives/TextArea';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
+import { useForhandsgranskaBilaga } from '@/data/mutations/useForhandsgranskaBilaga';
 import type { Event } from '@/domain/models/Event';
 import { cn } from '@/lib/cn';
+import { gorSjalvbarande } from './sjalvbarande';
 
 /* ------------------------------------------------------------------ *
  * FIXTURER
@@ -1013,8 +1017,28 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
  * höjd per konstruktion — två led, aldrig fler, aldrig färre.
  * ------------------------------------------------------------------ */
 
+/*
+ * `url` bär den färdiga PDF:en. Den ligger i resultatet och inte i en egen
+ * state-variabel därför att de två alltid ska bytas SAMTIDIGT: ett nytt
+ * resultat utan ny URL hade lämnat en "Öppna"-knapp som pekar på förra
+ * dokumentet — precis den sortens tysta fel som inte syns förrän någon
+ * öppnar fel bilaga.
+ *
+ * `skarpt` skiljer granskning från skapande. Texten "ligger nu bland
+ * eventets dokument" är osann om en granskning, och ett halvsant
+ * framgångsbesked är värre än inget.
+ */
 type Resultat =
-  | { typ: 'ok'; utelamnade: string[]; sparade: string[] }
+  | {
+      typ: 'klar';
+      skarpt: boolean;
+      url: string;
+      /** Webbläsaren stoppade den automatiska öppningen — knappen bär vägen in. */
+      blockerad: boolean;
+      utelamnade: string[];
+      sparade: string[];
+      saknade: string[];
+    }
   | { typ: 'fel'; text: string };
 
 // INGEN bakgrundstint vid hover — husets divide-y-grammatik (AktivitetsHistorik
@@ -1238,6 +1262,7 @@ function GenereringsVy({
   };
   const andraKnappRef = useRef<HTMLButtonElement>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
+  const forhandsgranska = useForhandsgranskaBilaga();
 
   const oppnaBlock = (id: BlockId) => {
     foreDialogen.current = { overrides, somStandard };
@@ -1302,51 +1327,72 @@ function GenereringsVy({
     andraKnappRef.current?.focus();
   };
 
-  /** Öppnar dokumentet i ett nytt fönster; `skarpt` sparar dessutom platsens standard. */
-  const oppnaDokument = (skarpt: boolean) => {
-    // KRITISKT: window.open synkront i klicket, före await — annars blockerar
-    // webbläsaren popupen (samma regel som DokumentYta § IKONPAR-not).
-    const fonster = window.open('', '_blank');
+  /**
+   * Skapar dokumentet som PDF; `skarpt` sparar dessutom platsens standard.
+   *
+   * ÖPPNAR INGENTING. Marcus 2026-08-22: *"Lotta ska inte skickas till
+   * pdf:en automatiskt utan välja att gå dit."* Laddningen visas på knappen
+   * i appen, och den färdiga PDF:en presenteras som ett val i resultatytan.
+   *
+   * Det tar dessutom bort behovet av den synkrona `window.open` som första
+   * bygget bar (`DokumentYta` § IKONPAR-not): öppnandet sker nu i ett eget,
+   * direkt klick, och en popup-blockerare har inget att invända mot det.
+   */
+  const skapaDokument = (skarpt: boolean) => {
+    if (forhandsgranska.isPending) return;
     setResultat(null);
-    void (async () => {
-      try {
-        const html = await renderaDokument(mall, event, allaRader);
-        if (fonster) {
-          fonster.document.open();
-          fonster.document.write(html);
-          fonster.document.close();
-        }
-        if (!skarpt) return;
-        // Platsens standard sparas när bilagan skapas — inte när krysset sätts.
-        const sparade: string[] = [];
-        if (event.ort) {
-          const falt: Partial<Record<PlatsFalt, string>> = {};
-          for (const r of allaRader) {
-            if (r.def.platsFalt && somStandard.has(r.def.id) && r.text?.trim()) {
-              falt[r.def.platsFalt] = r.text;
-              sparade.push(r.def.etikett.toLowerCase());
+    forhandsgranska.mutate(
+      {
+        byggHtml: async () => await gorSjalvbarande(await renderaDokument(mall, event, allaRader)),
+        namn: meta.namn,
+      },
+      {
+        onSuccess: ({ url, saknade }) => {
+          const sparade: string[] = [];
+          if (skarpt && event.ort) {
+            // Platsens standard sparas när bilagan skapas — inte när krysset sätts.
+            const falt: Partial<Record<PlatsFalt, string>> = {};
+            for (const r of allaRader) {
+              if (r.def.platsFalt && somStandard.has(r.def.id) && r.text?.trim()) {
+                falt[r.def.platsFalt] = r.text;
+                sparade.push(r.def.etikett.toLowerCase());
+              }
+            }
+            if (sparade.length) {
+              onSparaPlats(event.ort, falt);
+              setOverrides((o) => {
+                const n = { ...o };
+                for (const r of allaRader) if (somStandard.has(r.def.id)) delete n[r.def.id];
+                return n;
+              });
+              setSomStandard(new Set());
             }
           }
-          if (sparade.length) {
-            onSparaPlats(event.ort, falt);
-            setOverrides((o) => {
-              const n = { ...o };
-              for (const r of allaRader) if (somStandard.has(r.def.id)) delete n[r.def.id];
-              return n;
-            });
-            setSomStandard(new Set());
-          }
-        }
-        setResultat({
-          typ: 'ok',
-          utelamnade: utelamnade.map((r) => r.def.etikett.toLowerCase()),
-          sparade,
-        });
-      } catch (e) {
-        fonster?.close();
-        setResultat({ typ: 'fel', text: e instanceof Error ? e.message : 'Okänt fel.' });
-      }
-    })();
+          /* DOKUMENTET ÖPPNAS DIREKT NÄR DET FINNS. Marcus 2026-08-22:
+             "Kan inte bara ett nytt fönster öppnas när pdf finns, det är nog
+             ännu bättre. Så gör alla proffs." Öppningen sker EFTER await,
+             vilket den ursprungliga popup-regeln (`DokumentYta` § IKONPAR)
+             sa var omöjligt — mätt 2026-08-22 att Chrome tillåter
+             `window.open` även efter 7 s väntan, tre försök av tre.
+             Mätningen gjordes dock i Playwrights Chromium, samma instrument
+             som en gång bevisade den motsatta regeln, så utfallet behandlas
+             som osäkert: blockeras fönstret returnerar `window.open` null,
+             och då står "Öppna"-knappen kvar som väg in. Ingen
+             återvändsgränd i något av fallen. */
+          const fonster = window.open(url, '_blank');
+          setResultat({
+            typ: 'klar',
+            skarpt,
+            url,
+            blockerad: fonster === null,
+            utelamnade: skarpt ? utelamnade.map((r) => r.def.etikett.toLowerCase()) : [],
+            sparade,
+            saknade,
+          });
+        },
+        onError: (e) => setResultat({ typ: 'fel', text: e.message }),
+      },
+    );
   };
 
   return (
@@ -1394,7 +1440,6 @@ function GenereringsVy({
           </MessageBox>
         )}
       </div>
-
       {rader.map((g) => {
         const rubrikId = `grupp-${g.rubrik.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
         const arInforutan = g.rubrik === 'Inforutan';
@@ -1538,33 +1583,68 @@ function GenereringsVy({
           </section>
         );
       })}
-
       <div className="flex flex-col gap-4">
-        {resultat?.typ === 'ok' && (
+        {resultat?.typ === 'klar' && (
           <MessageBox intent="success">
-            {meta.namn}n är skapad och ligger nu bland eventets dokument, redo att bifogas i
-            utskick.
+            {resultat.skarpt
+              ? `${meta.namn}n är skapad och ligger nu bland eventets dokument, redo att bifogas i utskick.`
+              : `${meta.namn}n är klar att granska.`}
             {resultat.utelamnade.length > 0 && ` Utan ${ochLista(resultat.utelamnade)}.`}
             {resultat.sparade.length > 0 &&
-              ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}{' '}
-            <span className="text-text-muted">
-              (Prototyp: dokumentet öppnades som sida i ett nytt fönster, ingen PDF sparas.)
+              ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}
+            {resultat.blockerad
+              ? ' Webbläsaren stoppade det nya fönstret. Öppna det härifrån i stället.'
+              : ' Den öppnades i ett nytt fönster.'}
+            {!resultat.skarpt && (
+              <span className="text-text-muted"> (Prototyp: ingen PDF sparas.)</span>
+            )}
+            {/* DOKUMENTET ÄR ETT VAL, INTE EN OMDIRIGERING. `window.open` sker
+                här, i ett eget direkt klick — därför finns ingen popup-
+                blockerare att smita förbi, och Lotta bestämmer själv när hon
+                lämnar formuläret. `noreferrer` utelämnas medvetet: målet är en
+                blob:-URL byggd av vår egen JS, aldrig en främmande adress
+                (samma resonemang som DokumentYta § IKONPAR). */}
+            <span className="mt-3 block">
+              <Button
+                intent="primary"
+                emphasis="outline"
+                size="sm"
+                onPress={() => window.open(resultat.url, '_blank')}
+              >
+                <ExternalLink aria-hidden="true" size={16} className="shrink-0" />
+                Öppna {meta.namn.toLowerCase()}n
+              </Button>
             </span>
           </MessageBox>
         )}
         {resultat?.typ === 'fel' && <MessageBox intent="error">{resultat.text}</MessageBox>}
 
         <div className="flex flex-col gap-2">
-          <Button intent="secondary" emphasis="outline" onPress={() => oppnaDokument(false)}>
-            Förhandsgranska först
+          {/* `aria-disabled`, INTE `isDisabled`: ett native `disabled` tar
+              knappen ur tabordningen mitt i klicket. Vakten först i
+              `skapaDokument` bär dubbelklicks-skyddet i stället — samma
+              mönster som `DokumentYta` § DokumentAtgardsKnappar. */}
+          <Button
+            intent="secondary"
+            emphasis="outline"
+            aria-disabled={forhandsgranska.isPending}
+            onPress={() => skapaDokument(false)}
+          >
+            {forhandsgranska.isPending && (
+              <Loader2 aria-hidden="true" size={16} className="shrink-0 motion-safe:animate-spin" />
+            )}
+            {forhandsgranska.isPending ? 'Skapar PDF …' : 'Förhandsgranska först'}
           </Button>
-          <Button intent="primary" onPress={() => oppnaDokument(true)}>
+          <Button
+            intent="primary"
+            aria-disabled={forhandsgranska.isPending}
+            onPress={() => skapaDokument(true)}
+          >
             <FileText aria-hidden="true" size={16} className="shrink-0" />
             Skapa {meta.namn.toLowerCase()}
           </Button>
         </div>
       </div>
-
       {/* Redigeringen bor i en egen yta — villkorad rendering så utkastet är
           färskt per öppning (samma disciplin som RackviddsDialog).
           Panelen bor HÄR och inte i BlockDialog: bläddringen byter rad utan

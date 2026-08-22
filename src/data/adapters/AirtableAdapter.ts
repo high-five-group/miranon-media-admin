@@ -74,7 +74,12 @@ import type {
   WaitlistFilters,
 } from '../../domain/types/Filters';
 import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
-import { callEdgeFunction, postEdgeFunction, supabase } from '../config/supabase-client';
+import {
+  callEdgeFunction,
+  postEdgeFunction,
+  postEdgeFunctionBlob,
+  supabase,
+} from '../config/supabase-client';
 import {
   BILAGOR_BUCKET_ID,
   fileToBase64,
@@ -820,6 +825,23 @@ export class AirtableAdapter implements DataSourceAdapter {
   async previewReceipt(eventId: string): Promise<DocumentPreview> {
     const data = await postEdgeFunction<unknown>('preview-receipt', { eventId });
     return DocumentPreviewSchema.parse(data);
+  }
+
+  /**
+   * Rendera självbärande HTML till PDF (`DataSourceAdapter.renderPdfFranHtml`
+   * bär hela motiveringen — läs den där, inte här).
+   *
+   * ADRESSEN ÄR PROVISORISK: `test-docraptor-render` är staging-only och
+   * prod-exkluderad. Det är denna rad som byter till den skarpa
+   * renderings-EF:en vid promoveringen (`ADR-103`) — interfacet ovanför och
+   * anroparen ovanför den märker ingenting av bytet.
+   *
+   * `postEdgeFunctionBlob`, inte `postEdgeFunction`: EF:en svarar med rå
+   * `application/pdf`, inte base64-i-JSON som husets övriga PDF-vägar.
+   * Skälet står i hjälparens egen docblock.
+   */
+  async renderPdfFranHtml(html: string, namn: string): Promise<Blob> {
+    return await postEdgeFunctionBlob('test-docraptor-render', { html, namn });
   }
 
   /**
