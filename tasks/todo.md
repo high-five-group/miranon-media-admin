@@ -170,6 +170,18 @@ dokumenterade hover/etikett-amenderingen 2026-08-17; 11 delegerat till
 `T169` instans 2 (`22b543bb`, docs-only, CLS-flake) bokförd på indexraden.
 **NÄSTA: `284.6` prod — fälten → kontrollsvep (STOPP-grind) → A1 sist,
 Marcus GO per steg.**
+**DEL 10 (2026-08-22): `284.6` STEG 1 GJORT — FÄLTEN I PROD, KONTROLLSVEPET
+FANN EVENT-18.** Marcus GO; `Datum (from Event)` `fldho1zlmKxT4gZ0o` +
+`Eventmatchning` `fld40RI3Jf7RaHpTa` (staging-formeln verbatim, tre ID:n
+ommappade, strukturellt identisk). Kontrollsvep 5 Avviker mot väntat 4 →
+STOPP: 21/22/23 (Lotta) + 960 (harmlös) + **197 = Event-18:s falska positiv,
+LOKALISERAD: `14–15+maj+2026`, URL-kodade mellanslag**. Appens resolution
+kan inte lösa sådana (sätter inte Datum-texten). Marcus väg (c): datat
+rättat för 197/960 med spårbarhetsrad → prod-kön **3** (exakt Lottas);
+återfallet som **`TASK-293`** (+ → mellanslag i formel + vakt + fixtur).
+`data-model.md` bär nu båda basernas ID:n. AC #1–2 bockade. **NÄSTA: steg 2 —
+A1 i prod (AC #3), Marcus i UI:t per `T167`, nytt GO → skarpt prov (AC #4)
+→ städning (AC #5).**
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
 pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA

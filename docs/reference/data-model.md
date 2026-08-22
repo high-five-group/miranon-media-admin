@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-21
+updated: 2026-08-22
 review_by: 2026-11-15
 status: stable
 ---
@@ -723,15 +723,20 @@ inte löst.
 
 ## Fält tillagda 2026-08-21 — eventlänkens vakt (TASK-284.1, ADR-122 beslut 3)
 
-**STAGING ENDAST** (`apphjj8Q7lkXCMsL4`) — prod-utrullningen är utbruten till
-`TASK-284.6`, ett Marcus-auktoriserat moment. Två nya fält på `Anmälningar`
-(`tbloOcrppVoyrHbrq`), skapade via Airtable-MCP `create_field`/`update_field`
-2026-08-21:
+**I BÅDA BASERNA sedan 2026-08-22** — staging (`apphjj8Q7lkXCMsL4`) 2026-08-21
+via `TASK-284.1`; prod (`app8uGPrVCVOm6LfD`) 2026-08-22 via `TASK-284.6` steg 1
+(Marcus GO, S110 Del 10). Två nya fält på `Anmälningar` (`tbloOcrppVoyrHbrq`),
+skapade via Airtable-MCP `create_field`/`update_field`. **Fält-ID:na DIVERGERAR
+mellan baserna** (samma klass som `Ort (from Event)`/`Kurs (from Event)` ovan) —
+prod-formeln är staging-formeln verbatim med tre ID:n ommappade
+(`Ort (from Event)` → `fld5560T3pQZSUBaJ`, `Kurs (from Event)` →
+`fldfqU6MfBQdaeLUk`, `Datum (from Event)` → prod-ID:t nedan); käll-ID:t
+`fldc3aWz7CxO4rDdl` i `Eventplanering` är detsamma i båda:
 
-| Fält | ID (staging) | Typ | Syfte |
-|---|---|---|---|
-| Datum (from Event) | `fldLCfZfk7zESNbno` | lookup via `fldi3enUaMdbuGSlm` av `Eventplanering.'Datum (visas i länk)'` (`fldc3aWz7CxO4rDdl`) | Facit-sidan för Eventmatchning: eventets formaterade visningsdatum. |
-| Eventmatchning | `fldYz2NRZJjyX8VWB` | formula | Jämför anmälans egna formulärtext (`Datum`/`Ort`/`Event (namn)`) mot eventets facit (`Ort (from Event)`/`Kurs (from Event)`/`Datum (from Event)`), normaliserat mot skiftläge + mellanslag runt tankstreck + upprepat årtal. Exakt tre värden: `OK` \| `Avviker` \| `Utan event`. Tomt jämförelsefält ger ALDRIG `Avviker` (trestegs-logik). |
+| Fält | ID (prod) | ID (staging) | Typ | Syfte |
+|---|---|---|---|---|
+| Datum (from Event) | `fldho1zlmKxT4gZ0o` | `fldLCfZfk7zESNbno` | lookup via `fldi3enUaMdbuGSlm` av `Eventplanering.'Datum (visas i länk)'` (`fldc3aWz7CxO4rDdl`) | Facit-sidan för Eventmatchning: eventets formaterade visningsdatum. |
+| Eventmatchning | `fld40RI3Jf7RaHpTa` | `fldYz2NRZJjyX8VWB` | formula | Jämför anmälans egna formulärtext (`Datum`/`Ort`/`Event (namn)`) mot eventets facit (`Ort (from Event)`/`Kurs (from Event)`/`Datum (from Event)`), normaliserat mot skiftläge + mellanslag runt tankstreck + upprepat årtal. Exakt tre värden: `OK` \| `Avviker` \| `Utan event`. Tomt jämförelsefält ger ALDRIG `Avviker` (trestegs-logik). |
 
 **`LET()` stöds INTE av Airtable-API:ts fält-skapande-endpoint** — skarpt
 prövat 2026-08-21: `create_field` med en `LET(x, 5, y, 10, x + y)`-formel
