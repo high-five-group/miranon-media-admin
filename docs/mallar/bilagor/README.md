@@ -293,7 +293,7 @@ storlek, Marcus dom: *"det fulaste gräsligaste kvittot jag någonsin sett"*
 (sessionsdok `2026-08-20-session-108.md` Del 6 § B). `kvitto.html` +
 `kvitto.css` är FORMEN på `ADR-119`:s väg (HTML/CSS i stället för
 koordinat-ritning) - byggd mot Rogers skarpa kvitto
-(`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 Ulrika Berge.pdf`,
+(`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 kvitto-forlaga.pdf`,
 tråd `T170`), INTE en ny renderingsväg. Ingen EF-koppling, ingen
 DocRaptor-integration - samma "vad som INTE görs" som resten av denna sida,
 plus `ADR-119` beslut 7:s krav på ett minimaltest FÖRE en skarp koppling.
@@ -324,12 +324,13 @@ datamodell uppfinns i mallen.
 | `kvittonummer` | `KvittoradSpec.kvittonummer` |
 | `datum` | `formatKvittoDatum(spec.datum)` - VERIFIERAT mot `tests/api/receipt-content.test.ts` rad 193 (`formatKvittoDatum('2026-08-03T00:00:00.000Z')` -> `'3 augusti 2026'`) |
 | `kundnamn` | `KvittoradSpec.kundnamn` |
+| `kundEpost` | `KvittoradSpec.kundEpost` (PR #1791, Marcus-beslut 2026-08-22) - skrivs under kundnamnet i Fakturaadress-blocket, Rogers ordning namn -> e-post |
 | `eventNamn` | `KvittoradSpec.eventNamn` |
 | `betalningLabel` | Samma härledning som `kvittoRader()`s lokala variabel (`spec.betalning === 'avgift' ? 'Anmälningsavgift' : 'Slutbetalning'`) |
 | `betalsatt` | `KvittoradSpec.betalsatt` |
 | `netto` | `beraknaMoms(spec.belopp).netto`, formaterat via `formatBelopp()` |
 | `moms` | `beraknaMoms(spec.belopp).moms`, formaterat via `formatBelopp()` |
-| `brutto` | `spec.belopp`, formaterat via `formatBelopp()` |
+| `brutto` | `spec.belopp`, formaterat via `formatBelopp()` - mallen prefixar `SEK` EN gång på BETALT-raden (mätt: 6,55 mm gap, 13 pt, på beloppets baslinje), som Roger |
 | `orgNamn` | `MIRANON_ORG.namn` |
 | `orgNummer` | `MIRANON_ORG.orgnummer` |
 | `orgAdress` | `MIRANON_ORG.adress` |
@@ -344,15 +345,15 @@ procenttal i innehållsströmmen, se RAPPORT.md § 2b). Ändrat till statisk
 momssatser, en tydligare kvittorad) uppstår - ingen kodändring gjord, bara
 markupens användning av värdet.
 
-**Beloppsformateringen avviker synligt från förlagan, med källa i koden -
-inte en brist i mallen.** Rogers kvitto skriver `2 500,00`
-(tusentalsmellanslag, alltid två decimaler); `formatBelopp()` skriver
-`2500 kr` för heltal (inget tusentalsmellanslag, ingen decimal, `" kr"`
-som suffix i stället för ett `SEK`-prefix) - verifierat mot
-`tests/api/receipt-content.test.ts` rad 198
-(`expect(formatBelopp(2500)).toBe('2500 kr')`). `receipt-content.ts` är
-förbjudet att röra i detta uppdrag, så mallen visar den FAKTISKA
-formateringen i stället för en gissad, snyggare variant.
+**Beloppsformateringen matchar förlagan sedan PR #1791 (S108 resume 5,
+Marcus-beslut 2026-08-22: "matcha Rogers beloppsformat").** Rogers kvitto
+skriver `2 500,00` (tusentalsmellanslag, alltid två decimaler, valutan som
+`SEK`-prefix EN gång på BETALT-raden); `formatBelopp()` ger nu exakt den
+formen (sv-SE-avgränsare normaliserad till vanligt mellanslag, pdf-lib/
+WinAnsi-säkert) utan valutasuffix, och mallen sätter `SEK` framför BETALT.
+Före #1791 skrev `formatBelopp()` `2500 kr`, och mallen visade den faktiska
+formateringen i stället för en gissad - avvikelsen var bokförd här, inte
+gömd. Fixturen `fixtures/kvitto.exempel.json` bär de nya värdena.
 
 ### Förlage-fält utan källa i `receipt-content.ts` - byggda, bokförda som GAP
 
@@ -364,7 +365,7 @@ Uppdraget kräver att dessa byggs i mallen men aldrig hittas på i kod:
 | Förfallodatum | Statisk `-` | Strukturellt konstant för ett KVITTO - `T170` rekommenderade uttryckligen att INTE ärva fältet som ett riktigt datafält |
 | Vårt ordernr | `{{kvittonummer}}` (samma token som Kvitto-/OCR-nr) | Ingen egen "ordernr"-modell finns; Rogers EGET dokument duplicerar samma nummer i båda fälten |
 | Öresavr | Statisk `0,00` | `beraknaMoms()` avrundar momsen till hela ören FÖRST (se dess docstring), så `netto + moms === brutto` alltid EXAKT - resten är matematiskt garanterat noll |
-| Köparens e-post | UTESLUTEN helt | Ingen kodväg (`KvittoradSpec`, `preview-receipt`s `TYPEXEMPEL` eller `send-receipt-email`s PDF-innehåll) skriver ut köparens e-post på kvittot i dag - `send-receipt-email`s `SkarpSpec.email` finns bara som SÄNDNINGSadress, aldrig som en `kvittoRader()`-rad |
+| Köparens e-post | `{{kundEpost}}` | **GAP STÄNGT** (S108 resume 5, PR #1791): `KvittoradSpec.kundEpost` finns sedan Marcus-beslutet 2026-08-22 och trådas från `send-receipt-email`s `email` - raden ovan beskrev läget före beslutet |
 | Telefon/Plusgiro/Swish/Webb/Epost (sidfoten) | Statisk text | Källa `T170` (samma redan publicerade org-uppgifter). `MIRANON_ORG` bär bara `namn`/`orgnummer`/`adress`/`momsregnummer` - INTE dessa fyra. Samma klass statisk data som `bekraftelsebilaga.html` redan hårdkodar (Swish/Plusgiro ovan) |
 | "Godkänd för F-skatt" | Statisk text | Boilerplate, källa `T170`, ingen datamodell behövs |
 
