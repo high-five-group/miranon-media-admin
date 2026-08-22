@@ -88,6 +88,14 @@
 // transient Storage-objekt men rör ALDRIG Bilagor-tabellen, allokerar inget
 // kvittonummer och skickar inget mail — skyddets SYFTE (Lotta ser aldrig en
 // artefakt hon inte bett om, inget räknas) hålls intakt.
+//
+// [ADR-124, TASK-302.3] DEN PERSISTERANDE GRENEN ANROPAR NU `rensaUtkast`
+// EFTER lyckad Bilagor-radskapelse (ADR-124 § Beslut 2: "skarp generering …
+// tar bort utkast/<eventId>/") — den skarpa artefakten ersätter
+// förhandsvisningens syfte för eventet, så det transienta utkastet (alla
+// typer under eventet, inte bara 'deltagarinformation') städas bort.
+// BEST-EFFORT (se `_shared/utkast.ts` § `rensaUtkast`): ett städningsfel
+// loggas och fäller ALDRIG den redan lyckade skarpa operationen.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { PDFDocument, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1';
@@ -109,7 +117,7 @@ import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse, ValidationError } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
-import { laggUtkast } from '../_shared/utkast.ts';
+import { laggUtkast, rensaUtkast } from '../_shared/utkast.ts';
 
 const OPERATION_KEY = 'create-attachment';
 
@@ -320,6 +328,13 @@ Deno.serve(async (req) => {
     );
 
     const created = await createAirtableRecord(operation.tableId, fields);
+
+    // [ADR-124, TASK-302.3] Den skarpa artefakten ERSÄTTER förhandsvisningens
+    // syfte för detta eventet — ta bort HELA `utkast/<eventId>/`-mappen (alla
+    // typer, inte bara 'deltagarinformation'). BEST-EFFORT: `rensaUtkast`
+    // loggar och sväljer sina egna fel, kastar aldrig — anropas EFTER
+    // lyckad persistering ovan, aldrig före.
+    await rensaUtkast(supabaseAdmin, eventId);
 
     return new Response(
       JSON.stringify({

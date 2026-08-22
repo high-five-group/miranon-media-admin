@@ -11,6 +11,10 @@
   `supabase/functions/test-docraptor-render/index.ts` ·
   `supabase/functions/preview-receipt/index.ts` ·
   `supabase/functions/generate-event-attachment/index.ts` ·
+  `supabase/functions/_shared/send-receipt.ts` (`TASK-302.3`, `cleanupDraft`) ·
+  `supabase/functions/send-receipt-email/index.ts` (`TASK-302.3`) ·
+  `supabase/functions/test-attachments-storage/index.ts` (`TASK-302.3`,
+  `list_prefix`/`remove_paths`) ·
   `src/data/mutations/dokumentKalla.ts` ·
   `src/data/mutations/useForhandsgranskaBilaga.ts` ·
   `src/domain/schemas/Attachment.schema.ts` (`DocumentPreviewSchema`) ·
@@ -193,4 +197,38 @@ leveranssätt som fungerar.
 
 ## Updates
 
-Inga ännu.
+**2026-08-22 (`TASK-302.3`):** Beslut 2 (städning) landad. `rensaUtkast`
+(`_shared/utkast.ts`) tar bort HELA `utkast/<eventId>/`-mappen — anropad
+EFTER lyckad persistering i `generate-event-attachment/index.ts` (klass B)
+och efter lyckad, finaliserad sändning i `_shared/send-receipt.ts` §
+`sendReceipt` (klass C, steg 7). Best-effort i båda led (funktionens egen
+try/catch OCH `sendReceipt`s egen fångst av ett kastat `cleanupDraft`-fel)
+— live-bevisat mot staging: ett utkast existerar (HEAD 200) direkt efter
+`preview: true`, och samma signerade URL slutar svara 200 direkt efter en
+skarp generering för samma event (`tests/api/
+generate-event-attachment.staging.test.ts` § "AC #1 (TASK-302.3)").
+
+`.purge-staging-policy.json` fick en `storageTargets`-klass (`utkast-drafts`,
+bucket `bilagor`, prefix `utkast`) — en NY target-typ utöver de Airtable-
+baserade. Exekveringen går via två nya, JWT-gated actions på den befintliga
+staging-only testharness-EF:en `test-attachments-storage`
+(`list_prefix`/`remove_paths`, fail-closed till exakt namnrymderna
+`ZZ-TEST-EVENT-`/`utkast`) — samma "ingen ny hemlighet, bara requireUser
+som gateway"-mönster den EF:en redan etablerade för sin `cleanup`-action.
+Live-verifierat: `npm run purge:staging` (lokalt, `.env.test` + `.env.seed`
+källade) listade 6 verkliga utkast-objekt i staging, raderade det ENA som
+passerat 60-minutersguarden, lämnade de fem färska orörda — en efterföljande
+`--dry-run` bekräftade 5 kvar. **CI:s `Staging sentinel purge`-jobb
+injicerar i dag ENDAST `STAGING_AIRTABLE_TOKEN`** (`.github/workflows/
+ci-suite.yml`) — de fyra `TEST_*`-secrets storage-purgen behöver är INTE
+trådade in i det jobbets `env:`-block av denna skiva (medvetet: att utöka
+vilka secrets ett CI-jobb når är en egen, separat avvägning — se skivans
+slutrapport). Mekanismen körs alltså i dag lokalt/på begäran, inte
+automatiskt i CI, tills den tråden dras.
+
+Beslut 3 (AC #3-formuleringen) landades redan i `TASK-302.2`.
+
+Kvarstår, oförändrat av denna skiva: "Tidsstyrd städning i prod" (§ Öppet
+ovan) — mängden är fortsatt bunden per event men inte tidsstyrd bortom
+skarp-generering-triggern. Persondata-klassningen för kvitto-utkastet
+specifikt är nu även bokförd i `T171` § "Adjacent, lägre allvarlighetsgrad".

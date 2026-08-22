@@ -55,10 +55,44 @@ kvittoförlagan: vi behövde strukturen och talen, aldrig kunden.
    påverkar alla worktrees och parallella sessioner; görs i så fall i ett
    eget, tomt fönster.
 
+## Adjacent, lägre allvarlighetsgrad — kvitto-utkast i Storage (TASK-302.3, ADR-124)
+
+Inte samma klass som tabellen ovan (den handlar om persondata COMMITTAD i
+det PUBLIKA GIT-repot; detta är ett Supabase Storage-objekt, aldrig
+committat) — bokfört här ändå eftersom det är samma UNDERLIGGANDE
+persondata (köparuppgifter ur ett kvitto) i en NY leveransväg som tillkom
+2026-08-22 (`ADR-124`, transient utkast för PDF-förhandsgranskning).
+
+- **Vad som exponeras:** kvitto-utkastet (`typ: 'kvitto'`, `_shared/
+  utkast.ts` § `laggUtkast`) innehåller SAMMA köparuppgifter
+  (`kvittoRader`, `_shared/receipt-content.ts`) som det slutgiltiga,
+  skickade kvittot — kundnamn, belopp, betalsätt, event.
+- **Kompenserande kontroller, redan på plats:** bucket `bilagor` är privat
+  (ingen publik URL fungerar), åtkomst kräver en SIGNERAD URL med
+  `SIGNED_DOWNLOAD_URL_TTL_SECONDS` = 300 sekunder (samma konstant klass A
+  redan bär), och det finns HÖGST ETT utkast per event (`upsert: true`,
+  `utkast/<eventId>/kvitto.pdf`) — mängden växer aldrig.
+- **Borttaget vid skarp sändning:** en lyckad kvittosändning
+  (`_shared/send-receipt.ts` § `sendReceipt`, steg 7) tar bort utkastet
+  EFTER lyckad, finaliserad sändning — `rensaUtkast`, `_shared/utkast.ts`.
+- **Känd rest, medvetet inte löst här:** prod saknar TIDSSTYRD städning.
+  Ett event vars kvitto ALDRIG skickas (Lotta börjar men avbryter) behåller
+  sitt utkast på obestämd tid — mängden är bunden PER EVENT, inte
+  eliminerad. Samma öppna punkt som `ADR-124` § "Öppet, och medvetet inte
+  beslutat här" redan bokför; ingen ny status här, bara en tydlig länk från
+  T171 till den. Byggs när en mätning visar att det kostar något
+  (dubbelriktad över-engineering-vakt — ingen `pg_cron`/`waitUntil` utan en
+  nuvarande användare).
+- Om `T171`:s punkt 2 (citeringsregel/policy för persondata) landar i en
+  striktare form: denna leveransväg följer den, eftersom den redan är den
+  strängaste tillgängliga (privat + signerad + kortlivad + bunden mängd).
+
 ## Vad som är gjort
 
 - `#1786` (S108, 2026-08-22): kvittoförlagans kund pseudonymiserad i alla
   sju ytor, den lokala PDF:en omdöpt, en e-postadress maskad.
+- `TASK-302.3` (2026-08-22): kvitto-utkastets exponeringsklass bokförd ovan
+  (§ Adjacent) — ingen kod ändrad av DENNA post, endast bokföring.
 
 ## Öppet
 
