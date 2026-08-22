@@ -3334,3 +3334,13 @@ Syftet är att en ny läsare ska kunna läsa sista sessionen och förstå var vi
 - **Verifiering:** merge-kö-verifikat per PR; aria-grinden 14/14 genom flipp OCH rivning; hermetik-självtestet 222/222; 874 API-tester
 - **Teknisk skuld:** task-257 (PersonsList-höjdlåset) · task-258 (död kod + sparNot/PrototypNot-rester) · task-265 (Leads-vyn i basen) · 213.4-varningen (BLANK()-kanten)
 - **Full narrativ:** `tasks/sessions/2026-08-10-session-104.md` Del 1–10
+
+## Session 110 (2026-08-21 → 2026-08-22) — Kalenderlänk-driften: F.2-roten, 64 → 0, och vakten live i prod
+
+- **Commit-range:** `433a53b7` (bas vid start) → `939e0be0` (`#1783`, T161-amenderingen); 40 S110-märkta landningar, PR `#1671`–`#1783`, fyra pauser + fyra resumes
+- **Mål:** `TASK-232`:s fynd (EventKey 11 på ID 868, återfall av fälla 10/F.2) → rotorsak, städning, och en strukturell vakt så felklassen inte återkommer tyst
+- **Faktiskt:** rot lokaliserad (Elfsight-widgetens handskrivna länkar; Roger duplicerar poster utan att redigera URL-parametrarna) → 64 felmatchade + 1 orphan i prod städade med Marcus GO per steg (Del 2) → vakten grillad och låst (`ADR-122`, Del 3) → `TASK-284` i sex skivor, byggda autonomt (Del 4–7; `T167` löst via UI-väg, `T168` rättad två gånger) → QA-vandring (Del 9) → prod i låst ordning fälten → kontrollsvep → A1 sist (Del 10–11) → familjen + `232` + `T167`/`T168`/`T161` stängda (Del 12–13)
+- **Avvikelser:** `REGEX_EXTRACT`-formen gav `#ERROR!` på rader med tomt `Datum` (riven samma dag); prod-svepet gav 5 `Avviker` mot väntat 4 — den femte var Event-18:s olokaliserade falska positiv (URL-kodade mellanslag), datat rättat och `TASK-293` mintat; Airtables cachade trigger-testrad gav ett rött UI-test på en korrekt deploy; `T169` (CLS-flake) fällde två docs-only-landningar
+- **Verifiering:** merge-kö-verifikat per PR, post-merge grönt per jobb på varje landning före stängning; sex fall ände-till-ände i staging (A1 isolerat) + skarpt prov i prod i båda riktningar (kedjan A1→A2→A3→A12), nio testposter städade med record-ID; `ADR-122`-formeln strukturellt jämförd staging/prod före skapandet
+- **Teknisk skuld:** `TASK-291` (åtgärdskö-radens särskiljning → `284.4` DoD #6) · `TASK-292` (anmälningssidans konvergenspass, S111) · `TASK-293` (`+`-normalisering i formel + vakt + fixtur) · fälla 52 (död `"Ej relevant"`-gren, latent) · `T169` · Lottas besked (ID 21/22/23, Event-55, Event-60, obekräftade)
+- **Full narrativ:** `tasks/sessions/2026-08-21-session-110.md` Del 1–13 + fyra paushistoriker; beslut `docs/decisions/ADR-122-eventlankens-vakt-och-atgardskon.md`; vaktskriptet `docs/reference/automation-scripts/a1-eventmatchning-vakt.js`; Lotta-underlaget `~/Downloads/lotta-underlag-anmalningar-2026-08-21.md` (utanför repot)

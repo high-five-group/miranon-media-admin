@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 110 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, fjärde resumen; pausad fyra gånger, historik) —
+**Session 110 ✅ STÄNGD (2026-08-22, K-sista; `lifecycle: closed` efter Marcus coverage-kvittens) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
 VAKTEN LÅST I `ADR-122`, FAMILJEN BYGGD 3/4.** Egen worktree `s110-kalenderlank-driften` (S109
 äger huvudkatalogen). **Rotorsak** (fälla F.2, öppen sedan 2026-04-26):
@@ -205,6 +205,11 @@ besked.
 står, bygget var rätt. **S110:s scope är levererat i sin helhet** — kvar
 har egna bärare (`TASK-291`/`292`/`293`, fälla 52 via T16, Lottas besked).
 Stängning (N+1) är nästa form.
+**K-SISTA (2026-08-22):** BUILD-LOG-post, sex lesson-fragment (fem
+`[UNIVERSAL]`, hub-lyft vid nästa hub-sync), transcript refererat. **HANDOFF →
+S111: scopet RESERVERAT för `TASK-292`** (anmälningssidan = åtgärdskö-sidan,
+samma yta i filtrerat läge; `TASK-291` kan inleda). Full handoff: sessionsdok
+S110 § HANDOFF → Session 111.
 
 **Session 109 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, tredje resumen;
 pausad tre gånger, historik) — FEM MARCUS-BESLUT LÅSTA, ELVA KORT STÄNGDA, FYRA
