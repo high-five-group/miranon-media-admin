@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 10:54'
-updated_date: '2026-08-22 21:14'
+updated_date: '2026-08-22 21:50'
 labels:
   - ready-for-human
 dependencies: []
@@ -35,3 +35,19 @@ QA-fynd 284.5 (Marcus, 2026-08-22, staging): raden '12 anmälningar kunde inte k
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MARCUS VAL 2026-08-22 — variant A, med en amendering.
+
+Verbatim: "jag tittade på åtgärdsraden/knappen och jag tycker A är bäst, men ikonen bakgrundsfärg kanske skulle vara knappens bakgrundsfärg istället? Så särskiljningen blir kraftigare?"
+
+VALD FORM: variant A (ledande ikon, Link2Off) — men INTE med radens kortyta färgad. Hans egen förstärkningsidé prövades mot ADR-122 beslut 8 och avvisades där: en färgad kortyta ÄR notisfamiljens grepp, och familjegränsen går just vid att bevakningsraden är ett arbetsobjekt (tillståndsbundet) medan notisen är händelsebunden. Färgas hela raden lånas den signalen tillbaka.
+
+ERSÄTTNINGEN, som Marcus ställde sig bakom ("Jag står vid dina rekommendationer på alla punkter"): behåll raden neutral och ge IKONEN en fylld cirkel-behållare i stället för att tona hela ytan. Märket blir starkare, raden förblir arbetsobjekt, och icke-färg-kanalen (ikonformen) står orörd så TASK-284.4 AC #5 håller.
+
+AC #2 EJ AVBOCKAD — kriteriet kräver val i visuell granskning på BÅDE desktop och mobil. Marcus rapporterade att han tittat, men inte att båda vyportarna prövats, och den vald-med-amendering-formen finns ännu inte byggd att titta på. Bocka AC #2 när den fyllda cirkel-formen är byggd och sedd i båda vyportarna — valet ovan är citerat och står, men granskningen är inte belagd.
+
+BEROENDE ATT NOTERA: TASK-303 (bevakningsradens höjdlås — anatomi i stället för radbrytning) föddes ur samma granskning och rör SAMMA rader. Promoveringen i AC #3 och facit-amenderingen i AC #4 bör sekvenseras mot 303, så hem-facit inte stämplas två gånger på två veckor.
+<!-- SECTION:NOTES:END -->
