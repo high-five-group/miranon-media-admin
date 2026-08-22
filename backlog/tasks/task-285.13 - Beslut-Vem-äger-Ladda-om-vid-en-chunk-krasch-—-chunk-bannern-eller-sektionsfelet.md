@@ -3,10 +3,10 @@ id: TASK-285.13
 title: >-
   Beslut: Vem äger 'Ladda om' vid en chunk-krasch — chunk-bannern eller
   sektionsfelet?
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 14:14'
-updated_date: '2026-08-22 08:56'
+updated_date: '2026-08-22 09:17'
 labels:
   - ready-for-human
 dependencies:
@@ -38,14 +38,14 @@ MÅSTE AVGÖRAS FÖRE TASK-285.10 (stämplingen) — Marcus kan inte stämpla en
 <!-- AC:BEGIN -->
 - [x] #1 Marcus har valt vilken yta som äger 'Ladda om' vid chunk-krasch, och valet är bokfört verbatim i ADR-121 § Updates eller i DESIGN-SYSTEM-SPEC § 21
 - [x] #2 Det valda beteendet är verkställt i koden och bevisat med ett test som fäller om båda regionerna åter får identiskt tillgängligt namn
-- [x] #3 Beslutet är sammanvägt med ADR-121 beslut 7:s copy-regel (Ladda om skrivs aldrig om till Uppdatera) så att lösningen inte bryter familjens språk
+- [x] #3 Beslutet är sammanvägt med copy-golvet i docs/specs/DESIGN-SYSTEM-SPEC.md § 21 § Copy-golvet (rad ~1796): "Ladda om" skrivs aldrig om till "Uppdatera", så att lösningen inte bryter familjens språk
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
