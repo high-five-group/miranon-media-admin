@@ -6,23 +6,31 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * [BÅDA HALVOR GJORDA — 2026-08-21] `ariaSnapshot`-PARET är komplett för de
  * fyra intenterna kortets AC #6 pekar ut. Referenserna under `__aria__/`
  * fångades ur prototyp-formen (`MessageBoxPrototyp.tsx` via
- * `/dev/notis-prototyp?variant=1`, ORÖRD av denna skiva) INNAN `MessageBox`
- * promoverades (`gotoProto`, tillfälligt navigationsmål, se git-historik för
- * exakt lydelse); de är sedan dess ORÖRDA. `gotoPromoverad` nedan pekar mot
- * den PROMOVERADE, ovillkorliga primitiven (`src/components/primitives/
- * MessageBox.tsx`) på SAMMA route utan `?variant` — samma lokatorer, samma
- * `name:`-nycklar. En grön körning betyder därför EN sak: trädet är
- * byte-identiskt mellan prototyp-formen och den promoverade primitiven —
- * formen (kontur/vänsterkant/actions-slot/kryss-regel) följde med,
- * ingenting annat smög in.
+ * `/dev/notis-prototyp?variant=1`) INNAN `MessageBox` promoverades
+ * (`gotoProto`, tillfälligt navigationsmål, se git-historik för exakt
+ * lydelse); de är sedan dess ORÖRDA — och sedan `T157` dessutom
+ * INNEHÅLLSLÅSTA mot sha256 i facit-manifestet (`check-facit.sh` invariant
+ * d), så en ändring av dem kräver en AMENDERING-sidofil i bilage-katalogen.
  *
- * ORDNINGEN ÄR ENKELRIKTAD (samma skäl som samtliga syskonfiler): variant-
- * grenen renderas bara under `import.meta.env.DEV && variantParam === '1'`
- * (`notis-prototyp.tsx`). Flippas `MessageBoxPrototyp`/routen bort i en
- * framtida rivningsskiva (ADR-103 B2 steg 4, väntar på `TASK-285.10`/HITL)
- * upphör FÖRE-läget att existera — referenserna nedan är då historikens enda
- * bevis på att promoveringen tog rätt form, exakt det syskonfilerna redan
- * visar (`personer-`/`eventsida-`/`atgardssida-promoverings-grind.spec.ts`).
+ * [FÖRE-LÄGET ÄR RIVET — TASK-285.11, 2026-08-22] Det som förutspås i
+ * stycket nedan har inträffat: Marcus stämplade manifestet ("Vi kör på det,
+ * godkänner"), och rivningen tog `MessageBoxPrototyp.tsx` OCH värdrouten
+ * `/dev/notis-prototyp`. Referenserna under `__aria__/` är därmed
+ * historikens enda bevis på att promoveringen tog rätt form, exakt det
+ * syskonfilerna redan visar
+ * (`personer-`/`eventsida-`/`atgardssida-promoverings-grind.spec.ts`).
+ *
+ * `gotoPromoverad` nedan pekar mot den PROMOVERADE, ovillkorliga primitiven
+ * (`src/components/primitives/MessageBox.tsx`). NAVIGATIONSMÅLET BYTTES i
+ * samma rivning: de fyra demo-blocken flyttades ORÖRDA (samma
+ * `data-testid`, samma copy, samma struktur) från den rivna prototyp-routen
+ * till `/dev/primitives` § "MessageBox: facit-formens fyra intents", som
+ * redan var hemvist för appfel-grindens EFTER-ankare. Lokatorerna och
+ * `name:`-nycklarna är oförändrade — bara URL:en är ny. En grön körning
+ * betyder därför fortfarande EN sak: trädet är byte-identiskt mellan
+ * prototyp-formen och den promoverade primitiven — formen
+ * (kontur/vänsterkant/actions-slot/kryss-regel) följde med, ingenting annat
+ * smög in.
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (`ADR-103` B4): deterministiskt, noll
  * nya beroenden, jämför STRUKTUR + TILLGÄNGLIGT NAMN (roll, rubrik,
@@ -60,8 +68,13 @@ import { expect, test } from '../support/fixturvarld/hermetic';
 
 /** EFTER-läget: den PROMOVERADE, ovillkorliga `MessageBox`-formen. */
 async function gotoPromoverad(page: import('@playwright/test').Page) {
-  await page.goto('/dev/notis-prototyp');
-  await expect(page.getByRole('heading', { level: 1, name: 'Meddelanden' })).toBeVisible();
+  await page.goto('/dev/primitives');
+  // Namngiven h1: sidan bär ytterligare h1-rubriker längre ner (appfel-
+  // fallbackens två demo-block, TASK-285.3), så ett oscopat
+  // getByRole('heading', { level: 1 }) blir en strict-mode-krock.
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Primitiver - demo (endast dev-läge)' }),
+  ).toBeVisible();
 }
 
 test.describe('promoverings-grinden — ariaSnapshot mot MessageBox-formen (ADR-103 B4)', () => {

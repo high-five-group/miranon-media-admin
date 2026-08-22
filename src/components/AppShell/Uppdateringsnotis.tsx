@@ -22,10 +22,11 @@ import { Button, Notis } from '@/components/primitives';
  * INTE hemma här — den bor i chunk-bannern (ADR-121 § 8), som rörs i en
  * egen skiva (TASK-285.5).
  *
- * RIVNING (TASK-285.11, EFTER Marcus godkännande): `?variant`-grenen i
- * `AppUpdateBanner.tsx`, `NotisPrototypVaxlare` och prototyp-routen rivs.
- * DENNA komponent rörs INTE av den rivningen — den ÄR den promoverade
- * formen, inte prototyp-substrat.
+ * RIVNINGEN ÄR GJORD (TASK-285.11, 2026-08-22, efter Marcus stämpling):
+ * `?variant`-grenen i `AppUpdateBanner.tsx`, `NotisPrototypVaxlare` och
+ * prototyp-routen `/dev/notis-prototyp` finns inte längre. DENNA komponent
+ * rördes INTE av rivningen — den ÄR den promoverade formen, inte
+ * prototyp-substrat.
  */
 export interface UppdateringsnotisProps {
   /** Visas innehållet? Regionen själv är alltid monterad. */

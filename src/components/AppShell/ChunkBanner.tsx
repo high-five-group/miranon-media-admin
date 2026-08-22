@@ -1,4 +1,3 @@
-import { useSearch } from '@tanstack/react-router';
 import { useSyncExternalStore } from 'react';
 import { Button, MessageBox } from '@/components/primitives';
 import { laesChunkLaddningsfel, prenumereraPaChunkLaddningsfel } from '@/lib/chunk-laddningsfel';
@@ -58,16 +57,19 @@ import { laesChunkLaddningsfel, prenumereraPaChunkLaddningsfel } from '@/lib/chu
  * kopiera det först", ordagrant citerad ur `ADR-121` § 8) bor HÄR och ingen
  * annanstans (§ 8-amenderingen 2026-08-21, Marcus beslut).
  *
- * ═══ DEV-FORCERINGEN (?variant=1&data=chunk) ═══
+ * ═══ DEV-FORCERINGEN (?variant=1&data=chunk) ÄR RIVEN ═══
  *
- * Samma DATAVÄG som `AppUpdateBanner` fortfarande bär för info-läget
- * (ADR-103 B2 steg 1) — `NotisPrototypVaxlare` sätter alltid BÅDA
- * parametrarna, så forceringen är bara nåbar via samma URL-form som förut.
- * Läses HÄR (inte längre i `AppUpdateBanner`) eftersom denna komponent nu
- * lever i ett annat träd. `AppUpdateBanner` läser SAMMA sökparametrar
- * oberoende, för sin egen "chunk vinner över info"-undertryckning — de två
- * läsningarna kan inte divergera: båda läser samma URL för samma route,
- * bara på olika ställen i trädet.
+ * Fram till TASK-285.11 (2026-08-22) bar denna komponent en DEV-only
+ * DATAVÄG som forcerade chunk-läget utan ett verkligt laddningsfel. Den
+ * revs i samma landning som resten av S109:s prototyp-substrat, efter att
+ * Marcus stämplat båda facit-manifesten (ADR-102 B3-spärren öppnad).
+ * Skälet den inte bevarades som DATAVÄG (ADR-103 B2 steg 1): forceringen
+ * var bara nåbar via `NotisPrototypVaxlare`s rail, som satte `variant` och
+ * `data` tillsammans — rivs rail:en finns ingen ingång kvar att bevara, och
+ * en parameter-läsning utan ingång är död kod som utger sig för att vara en
+ * dataväg. Chunk-läget provoceras i stället som skarpt: ett verkligt
+ * chunk-laddningsfel via `src/lib/chunk-laddningsfel.ts` (samma väg
+ * `SectionError` och testerna redan använder).
  */
 export function ChunkBanner() {
   const omladdningKravs = useSyncExternalStore(
@@ -76,13 +78,7 @@ export function ChunkBanner() {
     () => false,
   );
 
-  // [PROTOTYPE — KONVERGENS, S109] Se filhuvudets "DEV-FORCERINGEN". DEV-
-  // grindad: grenen tree-shakas bort ur prod-bundeln.
-  const sok = useSearch({ strict: false }) as Record<string, unknown>;
-  const chunkTvingad =
-    import.meta.env.DEV && String(sok.variant) === '1' && String(sok.data ?? '') === 'chunk';
-
-  if (!omladdningKravs && !chunkTvingad) {
+  if (!omladdningKravs) {
     return null;
   }
 
