@@ -1,10 +1,10 @@
 ---
 id: TASK-284.2
 title: 'Skiva: Vakten i matchningssteget — vägrar länka vid avvikelse'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 10:59'
-updated_date: '2026-08-22 09:47'
+updated_date: '2026-08-22 10:12'
 labels:
   - ready-for-agent
 dependencies:
@@ -41,9 +41,9 @@ Täcker användarberättelser: 1, 11, 12, 13, 14, 15.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -79,6 +79,10 @@ AC 8 ÄR STRUKTURELLT BEVISAT, INTE KÖRNINGSBEVISAT — och det sägs ut. A3 (F
 MÄTGRÄNS ATT BÄRA VIDARE TILL 284.5/284.6: eftersom bara A1 är påslagen i staging mäter passet A1 ISOLERAT, inte kedjan A1→A2→A3 som den ser ut i prod.
 
 T168-REGRESSIONEN, öppet bokförd: rättningens första form extraherade årtalet som egen axel. Korrekt i JavaScript, fel som formel — Airtables AND() kortsluter inte, och REGEX_EXTRACT utan träff ger fel i stället för blank, vilket gav #ERROR! på VARJE rad med Event-länk och tomt Datum (mätt på befintlig staging-data). Riven samma dag och ersatt med kollaps-i-normaliseringen, som inte kan fela. Full historik i T168.
+
+=== STÄNGD 2026-08-22 ===
+Landad i #1722, merge-commit e885fb6b. Post-merge grön på ALLA fyra runs
+(CI, Post-merge, Push on main, CI) — DoD 3 verifierad per jobb, inte antagen.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
