@@ -12,6 +12,7 @@ import { Button as AriaButton } from 'react-aria-components';
 import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
+import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { ACTIVITY_OBJECT_TYPES } from '@/data/activityLog/activityTypes';
@@ -604,6 +605,13 @@ export function AktivitetsHistorik() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const announceRef = useRef(false);
 
+  // TASK-299.1 DEV-VÄXEL (rivs igen efter Marcus mätning, TASK-299.2/299.6):
+  // `?sidram=ny` bakom `import.meta.env.DEV` (ADR-074 amendering 7-formen) —
+  // utan flaggan är ytan identisk med sitt facit (AC #4). Enda läspunkten i
+  // denna fil.
+  const [sidram] = useQueryState('sidram');
+  const sidramNy = import.meta.env.DEV && sidram === 'ny';
+
   // Filtervalen (TASK-201.8, URL-STATE-SPEC §Event-mönstret — se
   // komponentens egen kommentar ovan för avstämningen mot specen).
   const [kategori, setKategori] = useQueryState(
@@ -749,7 +757,14 @@ export function AktivitetsHistorik() {
    * ersätter textlänken + `text-2xl`). Kromet + rubriken renderas i ALLA
    * tre tillstånd — stabil geometri, rubriken hoppar inte in när datan
    * landar. */
-  const kromKnapp = (
+  // TASK-299.1: `?sidram=ny` byter geometrin till husets kant-i-kant-
+  // dialekt (chevron `mx-4` via `SidRam`, rubriken `px-4` istället för
+  // `<main>`s odekorerade 16 px) — samma villkor i alla tre tillstånd
+  // (rubriken hoppar inte in när datan landar). `headerKlass` håller
+  // px-4-tillägget samlat på EN plats i stället för tre.
+  const kromKnapp = sidramNy ? (
+    <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
+  ) : (
     <Link
       to="/mer"
       aria-label="Tillbaka till Mer"
@@ -758,12 +773,13 @@ export function AktivitetsHistorik() {
       <ChevronLeft aria-hidden="true" size={26} />
     </Link>
   );
+  const headerKlass = sidramNy ? 'flex flex-col gap-1 px-4' : 'flex flex-col gap-1';
 
   if (isPending) {
     return (
       <div className="flex flex-col gap-4" data-testid="aktivitetshistorik-yta">
         {kromKnapp}
-        <header className="flex flex-col gap-1">
+        <header className={headerKlass}>
           <h1 className="font-semibold text-3xl">Aktivitetshistorik</h1>
         </header>
         <LaddLage />
@@ -775,7 +791,7 @@ export function AktivitetsHistorik() {
     return (
       <div className="flex flex-col gap-4" data-testid="aktivitetshistorik-yta">
         {kromKnapp}
-        <header className="flex flex-col gap-1">
+        <header className={headerKlass}>
           <h1 className="font-semibold text-3xl">Aktivitetshistorik</h1>
         </header>
         <MessageBox intent="error" title="Kunde inte hämta aktivitetshistoriken">
@@ -801,7 +817,7 @@ export function AktivitetsHistorik() {
         Aktivitetshistorik laddad.
       </p>
 
-      <header className="flex flex-col gap-1">
+      <header className={headerKlass}>
         {/* Programfokuset (AC #3, skärmläsarens landningspunkt) BEHÅLLS;
             ringen släcks av base.css:s h1[tabindex="-1"]-släckare
             (TASK-225.4 — husets facit-rubriker är rena, och tabIndex={-1}

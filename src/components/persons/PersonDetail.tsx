@@ -39,8 +39,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CalendarCheck, ChevronLeft, ChevronRight, Download, UserPlus } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { type ComponentType, useEffect, useRef } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
@@ -1578,6 +1580,12 @@ export function PersonDetail({ personId }: { personId: string }) {
   const dataSource = useDataSource();
   const headingRef = useRef<HTMLElement>(null);
   const announceRef = useRef(false);
+  // TASK-299.1 DEV-VÄXEL (rivs igen efter Marcus mätning, TASK-299.2/299.6):
+  // `?sidram=ny` bakom `import.meta.env.DEV` (ADR-074 amendering 7-formen) —
+  // utan flaggan är ytan identisk med sitt facit (AC #4). Enda läspunkten i
+  // denna fil.
+  const [sidram] = useQueryState('sidram');
+  const sidramNy = import.meta.env.DEV && sidram === 'ny';
 
   const {
     data: person,
@@ -1615,13 +1623,17 @@ export function PersonDetail({ personId }: { personId: string }) {
       data-testid="persondetalj-yta"
       className="flex flex-col gap-6 pt-2 lg:pt-10"
     >
-      <Link
-        to="/personer"
-        aria-label="Tillbaka till personer"
-        className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
-      >
-        <ChevronLeft aria-hidden="true" size={26} />
-      </Link>
+      {sidramNy ? (
+        <SidRam to="/personer" tillbakaEtikett="Tillbaka till personer" />
+      ) : (
+        <Link
+          to="/personer"
+          aria-label="Tillbaka till personer"
+          className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+        >
+          <ChevronLeft aria-hidden="true" size={26} />
+        </Link>
+      )}
       {innehall}
     </section>
   );

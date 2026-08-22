@@ -1,10 +1,9 @@
 import { Link } from '@tanstack/react-router';
 import { CircleCheck } from 'lucide-react';
-import { MessageBox, Skeleton } from '@/components/primitives';
+import { InitialAvatar, MessageBox, Skeleton } from '@/components/primitives';
 import { inskickadTid } from '@/components/registrations/registration-display';
 import { BulkAtgardsknapp } from './BulkAtgardsknapp';
 import type { AnmalningarVy, AnmalningRad } from './hem-derivations';
-import { InitialAvatar } from './InitialAvatar';
 import { relativTid } from './relativ-tid';
 import type { useDashboardRegistrations } from './useDashboardData';
 

@@ -14,6 +14,7 @@ import {
   NavCard,
   Select,
   SelectItem,
+  SidRam,
   Skeleton,
   SlideToConfirm,
   TextArea,
@@ -364,6 +365,32 @@ function PrimitivesPage() {
             </li>
           </ul>
         </nav>
+      </section>
+      <section aria-labelledby="rubrik-sidram" className="mt-8 max-w-md">
+        <h2 id="rubrik-sidram" className="text-xl">
+          SidRam
+        </h2>
+        {/* TASK-299.1 (ADR-124): husets kant-i-kant sidkrom — chevron +
+            VALFRITT rubrikblock. Två instanser visar båda omfattningarna
+            (AC #1); ingen av de fyra produktionsytorna bakom `?sidram=ny`
+            använder den bredare (rubrik-ägande) formen ännu — den avgörs av
+            TASK-299.2/299.6. Denna sektion är därför den enda platsen den
+            grenen faktiskt renderas och axe-provas. */}
+        <p className="mt-2 text-small text-text-secondary">
+          Smalare omfattning (bara chevronen) och bredare (chevron + rubrikblock).
+        </p>
+        <div className="mt-4 flex flex-col gap-6">
+          <div data-testid="sidram-smal">
+            <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer (smal sidram)" />
+          </div>
+          <div data-testid="sidram-bred">
+            <SidRam
+              to="/mer"
+              tillbakaEtikett="Tillbaka till Mer (bred sidram)"
+              rubrik="Exempelrubrik"
+            />
+          </div>
+        </div>
       </section>
       <section aria-labelledby="rubrik-skeleton" className="mt-8 max-w-md">
         <h2 id="rubrik-skeleton" className="text-xl">

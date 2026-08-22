@@ -95,6 +95,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { BedDouble, Check, ChevronDown, ChevronLeft, RotateCcw, X } from 'lucide-react';
+import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button as AriaButton,
@@ -104,6 +105,7 @@ import {
 } from 'react-aria-components';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { displayName } from '@/components/registrations/registration-display';
@@ -701,6 +703,12 @@ function VariantD({
   const { sessioner, session, setSession, datumtext } = useSessionsval(event, alla);
   const lage = useDorrLageD();
   const skrivning = useSetAttendanceStatus(eventId);
+  // TASK-299.1 DEV-VÄXEL (rivs igen efter Marcus mätning, TASK-299.2/299.6):
+  // `?sidram=ny` bakom `import.meta.env.DEV` (ADR-074 amendering 7-formen) —
+  // utan flaggan är ytan identisk med sitt facit (AC #4). Enda läspunkten i
+  // denna fil.
+  const [sidram] = useQueryState('sidram');
+  const sidramNy = import.meta.env.DEV && sidram === 'ny';
   const [fraga, setFraga] = useState('');
   const [visaKlara, setVisaKlara] = useState(false);
   /** Rader vars skrivning misslyckats (lägesnyckel → namn). Se `skriv`. */
@@ -935,14 +943,18 @@ function VariantD({
           Prototypens textlänk och text-2xl var en avvikelse från appens
           grund. A/B/C:s egen `TillbakaLank` (textlänken) är riven med dem
           (TASK-214.4) — denna länk är D:s enda kvarvarande. */}
-      <Link
-        to="/event/$eventId"
-        params={{ eventId }}
-        aria-label="Tillbaka till eventet"
-        className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
-      >
-        <ChevronLeft aria-hidden="true" size={26} />
-      </Link>
+      {sidramNy ? (
+        <SidRam to="/event/$eventId" params={{ eventId }} tillbakaEtikett="Tillbaka till eventet" />
+      ) : (
+        <Link
+          to="/event/$eventId"
+          params={{ eventId }}
+          aria-label="Tillbaka till eventet"
+          className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+        >
+          <ChevronLeft aria-hidden="true" size={26} />
+        </Link>
+      )}
 
       {/* EVENTETS IDENTITET (punkt 3): body-grad med namnet i medium-vikt i
           stället för small/sekundär - det är sidans enda kontextbärare och

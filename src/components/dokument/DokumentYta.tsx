@@ -50,14 +50,22 @@
  * utanför scope. Uppladdning + ersättning gäller uttryckligen bara klass
  * A — mallar/generatorer får ingen sådan handling.
  *
- * SIDKROM: stulen verbatim ur `AktivitetsHistorik.tsx` § `kromKnapp`
+ * SIDKROM: `AktivitetsHistorik.tsx` § `kromKnapp`s inset-dialekt
  * (S106-facitet, `tasks/sessions/bilagor/s106-aktivitetslogg/facit.json`)
  * — rund `size-11 bg-bg-muted`-chevron (`ChevronLeft 26`) tillbaka till
  * `/mer`, `<header className="flex flex-col gap-1">`, ingen egen
- * sidopadding (rätt mot `AppShell`s `main`-padding). `AtgardsSida.tsx`s
- * `Sidhuvud` förkastades som mönsterkälla: dess extra `px-4`/`mx-4`-nivå
- * hade dubblat sidmarginalen ovanpå `AppShell`s egen — samma
- * dubbleringsfel `MailLog.tsx`/`Intresserade.tsx` bär.
+ * sidopadding (rätt mot `AppShell`s `main`-padding) — är UTAN `?sidram=ny`
+ * facitet, oförändrat (AC #4).
+ *
+ * RÄTTELSE (TASK-299.1, ADR-124): raden hävdade tidigare att
+ * `AtgardsSida.tsx`s `Sidhuvud` (`px-4`/`mx-4`, kant-i-kant) var ett
+ * "dubbleringsfel" delat med `MailLog.tsx`/`Intresserade.tsx`. Det var fel:
+ * huset bär TVÅ layout-dialekter, båda facit-stämplade (sessionsdok S111
+ * Del 2 § B), och Marcus har avgjort KANT-I-KANT (`Sidhuvud`s geometri) som
+ * husets form. `?sidram=ny` (dev, bakom `import.meta.env.DEV`) visar den
+ * delade `SidRam`-primitiven (biblioteks-hemvisten) i den dialekten på
+ * denna yta; om `SidRam` även ska äga rubrikblocket här avgörs av
+ * `TASK-299.2`/`299.6`, inte av denna fil.
  *
  * FORMEN ÄR LÅST TILL EN LISTA (Marcus-GO 2026-08-16): `?form=grupper`/
  * `?form=lista`-växeln och `DokumentGrupper`-funktionen (tre klass-grupper)
@@ -161,6 +169,7 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
 import { Select, SelectItem } from '@/components/primitives/Select';
+import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import type { DokumentKalla } from '@/data/mutations/dokumentKalla';
@@ -296,6 +305,12 @@ function grupperaPerNamn(attachments: readonly Attachment[]): BilageRad[] {
 export function DokumentYta() {
   const dataSource = useDataSource();
   const [eventId, setEventId] = useQueryState('event');
+  // TASK-299.1 DEV-VÄXEL (rivs igen efter Marcus mätning, TASK-299.2/299.6):
+  // `?sidram=ny` bakom `import.meta.env.DEV` (ADR-074 amendering 7-formen) —
+  // utan flaggan är ytan identisk med sitt facit (AC #4). Enda läspunkten i
+  // denna fil.
+  const [sidram] = useQueryState('sidram');
+  const sidramNy = import.meta.env.DEV && sidram === 'ny';
 
   const eventsQuery = useQuery({
     queryKey: queryKeys.events.list,
@@ -376,15 +391,20 @@ export function DokumentYta() {
   return (
     <div className="flex flex-col gap-4" data-testid="dokument-yta">
       {/* HUSETS SIDKROM — stulet verbatim ur AktivitetsHistorik.tsx § kromKnapp
-          (S106-facitet). Se filhuvudets SIDKROM-not för varför AtgardsSida.tsx
-          § Sidhuvud (den andra mönsterkällan) INTE ärvs här. */}
-      <Link
-        to="/mer"
-        aria-label="Tillbaka till Mer"
-        className="flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
-      >
-        <ChevronLeft aria-hidden="true" size={26} />
-      </Link>
+          (S106-facitet). TASK-299.1: `?sidram=ny` (dev, se filhuvudets
+          SIDKROM-not) byter till den delade `SidRam`-primitiven i husets
+          kant-i-kant-dialekt; utan flaggan är denna gren orörd. */}
+      {sidramNy ? (
+        <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
+      ) : (
+        <Link
+          to="/mer"
+          aria-label="Tillbaka till Mer"
+          className="flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+        >
+          <ChevronLeft aria-hidden="true" size={26} />
+        </Link>
+      )}
 
       {/* INGEN INGRESS — PRÖVAD RENDERAD OCH FÄLLD (Marcus 2026-08-18).
           "Filerna som bifogas i utskicken till deltagarna." stod här en kort
@@ -392,7 +412,7 @@ export function DokumentYta() {
           ha sett den mot renderad yta: *"Ta bort underrubriken … det fattar
           hon ändå."* Sidans tydlighet bärs i stället av strukturen — ett val,
           en knapp, en lista. Återinför den inte utan att fråga. */}
-      <header className="flex flex-col gap-1">
+      <header className={sidramNy ? 'flex flex-col gap-1 px-4' : 'flex flex-col gap-1'}>
         <h1 className="font-semibold text-3xl">Dokument</h1>
       </header>
 
