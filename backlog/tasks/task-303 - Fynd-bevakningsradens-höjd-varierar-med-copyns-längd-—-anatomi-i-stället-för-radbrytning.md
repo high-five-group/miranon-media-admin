@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:48'
+updated_date: '2026-08-22 22:20'
 labels:
   - ready-for-human
 dependencies: []
@@ -48,3 +49,21 @@ REGISTRERAD SOM EGET KORT, inte som utvidgning av TASK-291: 291 är uttryckligen
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+SCOPE-ÄNDRING 2026-08-22 — löses i TASK-291:s prototyp-varv, inte som separat bygge.
+
+Marcus i klartext: "du bygger en prototyp som vi kan promovera till skarpa bevakningrad.tsx nu va? För det tar vi tag i direkt, problemet med höjd och radbrytning och de som jag pratade om."
+
+Skälet: TASK-291:s prototyp och detta kort rör SAMMA rader och skulle annars kräva två granskningar och två promoveringar av samma yta — och två stämplingar av hem-facit inom loppet av dagar. Anatomin (rubrikrad + undertext, alltid båda, talet i badge med reserverad plats) byggs därför in i 291:s prototyp i samma varv som variant A:s förstärkta ikon-behållare, li-regressionen och variant C:s osynliga cirkel.
+
+Kortet lever kvar som bärare av PROBLEMET, mätningarna och sträng-divergensen — det är inte uppgått i 291. Dess AC prövas mot den gemensamma prototypen och bockas när formen är godkänd.
+
+MÄTT I WEBBLÄSARE 2026-08-22 (localhost, prototyp-ytan, 1055 px): eventinfo-raden 74 px när copyn bryter till två rader, åtgärdskö-raden 50 px. Höjden varierar alltså mellan radtyperna redan i dag, inte bara inom en radtyp. Prototypens tre varianter mätte 58/70/58 px — ytterligare spridning.
+
+BEVISKRAV SATT PÅ AGENTEN: höjden ska hålla vid smalaste stödda bredd med kort OCH lång copy, med ett-, två- och tresiffriga tal, för BÅDA radtyperna, och bevisas med negativkontroll (bryt reserveringen medvetet, mät att testet fäller, återställ). Ett test som inte kan fälla bevisar ingenting — precedent: TASK-299.3:s agent mätte 28,5 px skillnad i sin negativkontroll.
+
+STRÄNG-DIVERGENSEN ÄR INTE AVGJORD. Anatomi D upplöser utrymmesskälet för strykningen av ordet 'nya', så prototypen byggs med skarpa appens fulla sträng ('N nya deltagare saknar eventinfo'). Det är ett BYGGVAL för att kunna visa formen, inte ett beslut — AC #5 kräver fortfarande Marcus ord innan de två ytorna synkas.
+<!-- SECTION:NOTES:END -->
