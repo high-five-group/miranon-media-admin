@@ -3,10 +3,10 @@ id: TASK-285.8
 title: >-
   Skiva: Copy-svepet — familjens strängar enligt copy-domarna, före/efter-tabell
   bilagd
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:13'
-updated_date: '2026-08-21 16:44'
+updated_date: '2026-08-22 08:24'
 labels:
   - ready-for-agent
 dependencies:
@@ -42,10 +42,16 @@ Täcker användarberättelser: 9, 11
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
 - [x] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
 - [x] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
 - [x] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+STÄNGNINGSPASS (register-only, 2026-08-22): PR #1730 (merge-SHA fa7e24d3), CI grön per jobb (gh pr checks 1730 — samtliga pass/förväntat skip). DoD #1-#2,#4-#8 var redan bockade av byggagenten. DoD #4 dubbelkollad mot gh pr diff --name-only (44 filer) — bredden är avsiktlig och matchar kortets syfte (grep-svep över hela källkoden efter familjens copy-mönster), samtliga filer är komponent-/rutt-/testfiler med copy-strängar, inga orelaterade.
+<!-- SECTION:NOTES:END -->

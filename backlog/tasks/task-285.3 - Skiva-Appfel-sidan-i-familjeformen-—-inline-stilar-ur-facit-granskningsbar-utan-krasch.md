@@ -3,10 +3,10 @@ id: TASK-285.3
 title: >-
   Skiva: Appfel-sidan i familjeformen — inline-stilar ur facit, granskningsbar
   utan krasch
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:00'
-updated_date: '2026-08-21 12:52'
+updated_date: '2026-08-22 08:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -35,12 +35,18 @@ Täcker användarberättelser: 12
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
-- [ ] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
-- [ ] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
-- [ ] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Facit-granskning gjord mot manifesten tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json och tasks/sessions/bilagor/s109-meddelandefamiljen-konvergens/facit.json (sökvägarna utskrivna i PR:en) — aldrig mot minne eller bildkatalog
+- [x] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
+- [x] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+STÄNGNINGSPASS (register-only, 2026-08-22): PR #1703 (merge-SHA 6c58be99), CI grön per jobb (verifierat gh pr checks 1703 — samtliga pass/förväntat skip, noll röda). DoD #2/#5/#6/#7/#8 bockade utifrån belägg i PR-beskrivningen: lokala grindar med exitkoder (typecheck/biome/build/test:api 924/924/check-facit.sh/test:a11y 99/99/test:webblasarbeteende 61-62/62), facit-sökvägar citerade ordagrant, ariaSnapshot-par 4/4 lokalt + tvåsidigt sabotage-bevis, sex testfiler i test-konsument-svepet uppräknade och fixade i samma skiva, inga nya tokens (inline hex, designvillkoret). DoD #4 verifierat mot gh pr diff --name-only (17 filer, samtliga komponent-/test-/kortfiler i scope).
+<!-- SECTION:NOTES:END -->

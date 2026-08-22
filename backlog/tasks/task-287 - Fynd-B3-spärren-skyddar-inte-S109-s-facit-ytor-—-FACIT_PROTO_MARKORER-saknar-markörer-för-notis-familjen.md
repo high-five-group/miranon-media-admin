@@ -3,10 +3,10 @@ id: TASK-287
 title: >-
   Fynd: B3-spärren skyddar inte S109:s facit-ytor — FACIT_PROTO_MARKORER saknar
   markörer för notis-familjen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 12:57'
-updated_date: '2026-08-21 15:01'
+updated_date: '2026-08-22 08:24'
 labels:
   - ready-for-agent
 dependencies:
@@ -49,8 +49,14 @@ MÅSTE LANDA FÖRE TASK-285.11 (rivningen). Efter våg 1, före stämplingen.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+STÄNGNINGSPASS (register-only, 2026-08-22): PR #1727 (merge-SHA a024ad96), CI grön per jobb (gh pr checks 1727 — samtliga pass/förväntat skip). DoD #2 belagd via PR-beskrivningens grindtabell (shellcheck --severity=style --enable=all 0 fynd, check:docs 14/14, typecheck/biome/build gröna; check-langa-streck.mjs ej körd — diffen rör inte src/, korrekt). DoD #4 verifierat mot gh pr diff --name-only (3 filer: .facit-policy.conf, backlog-kortet, scripts/check-facit.sh — inga orelaterade).
+<!-- SECTION:NOTES:END -->
