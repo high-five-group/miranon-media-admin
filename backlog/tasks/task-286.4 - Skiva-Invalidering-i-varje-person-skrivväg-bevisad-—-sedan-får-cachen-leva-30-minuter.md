@@ -3,10 +3,10 @@ id: TASK-286.4
 title: >-
   Skiva: Invalidering i varje person-skrivväg, bevisad — sedan får cachen leva
   30 minuter
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 11:50'
-updated_date: '2026-08-22 10:22'
+updated_date: '2026-08-22 11:02'
 labels:
   - ready-for-agent
 dependencies:
@@ -37,11 +37,11 @@ Täcker användarberättelser: 5
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Paritetstestet (EF-filter mot klientfilter, samma fixtur) grönt för varje skiva som rör sök eller filtrering
 - [ ] #6 Facit-referenserna för personlistan (tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan) gröna — formen är orörd
-- [ ] #7 Inga nätverksanrop vid skrivning efter första laddningen — mätt i testet, inte antaget
+- [x] #7 Inga nätverksanrop vid skrivning efter första laddningen — mätt i testet, inte antaget
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -56,4 +56,8 @@ Denna skiva har därför INTE rört s90-personlistan-konvergens/ och INTE regene
 Vad som i stället bevisats, mekaniskt: diffen rör inte personlistans rendering. git diff --name-only saknar src/components/persons/PersonsList.tsx. Ett nytt test (tests/api/personregister-farskhet.test.ts, 'PersonsList sätter INGEN egen staleTime på registerfrågan') låser dessutom att registerfrågan i den filen ärver färskheten från nyckeln i stället för att sätta en egen — så vägen till en framtida PersonsList-ändring för denna axel är stängd.
 
 DoD #5 (paritetstestet EF-filter mot klientfilter) är EJ TILLÄMPLIGT för denna skiva: diffen rör varken sök eller filtrering. src/lib/person-sok.ts, PersonsLists filtrering och get-persons sök-/cursorgren är samtliga orörda; skivan ändrar enbart cache-invalidering och staleTime.
+
+## Orkestrerar-stängning 2026-08-22
+
+Merge-SHA `d4317a2e` (PR #1760). DoD #3 (CI grön per jobb) bockad — `gh pr checks 1760`: samtliga jobb pass/skipping, noll fail. DoD #7 (inga nätverksanrop vid skrivning efter första laddningen) bockad — mekaniskt bevisat i tests/api/personregister-invalidering.test.ts, testet 'en OMONTERAD registerfråga markeras stale UTAN nätverksanrop': räknande queryFn stannar på antal()===1 efter invalideringen, 250ms grace-period för en ev. felaktig refetch inräknad. DoD #5 och #6 lämnas ÖPPNA — redan motiverade ovan (EJ TILLÄMPLIGT respektive BLOCKERAD, klass (c), TASK-283.4). Status sätts Done.
 <!-- SECTION:NOTES:END -->
