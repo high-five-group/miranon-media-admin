@@ -431,7 +431,29 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ⏸️ PAUSAD (sjätte gången, 2026-08-22, `lifecycle: paused`) —
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, sjunde resumen;
+pausad sex gånger, historik) — PUNKT 3:S ANDRA HALVA NÄSTA: LEVERANSVÄGEN
+(SIGNERAD STORAGE-URL I STÄLLET FÖR `blob:`).** Marcus order: *"Återuppta
+S108."* Egen worktree per ADR-090 beslut 2 — huvudkatalogen ägs av S109:s
+lapp (PID 28332, satt 2026-08-22T08:05:20Z, hookens liveness-prov:
+**levande**, fällde första orienteringskommandot); dok-trädet
+`s108-paus-docs`, gren `docs/s108-resume-7` från `origin/main` `7fdebcc5`.
+**Paus-PR `#1817` verifierad landad** (`b77bbb44`) och **`#1815` landad**
+(`7fdebcc5`, punkt 3:s första halva). **Numreringen re-verifierad mot disk:
+två poster rörde sig under pausen** — ADR **124** · task-**301** · **L512**
+· **77** fragment (handoffen sade 75; nästa **78**) · **T174** (handoffen
+sade T173 — `T173` finns nu) · **f53** · session **112**. OBS: S109:s gren
+`docs/s109-hub-lyft` (`8b993fdc`, ej landad) konsoliderar tio fragment →
+**L512–L521**; landar den är nästa lesson **L522** och fragmentantalet
+sjunker med tio. Inget arbetsform-läge aktivt (`arbetsform-tillstand.sh
+las`) — ingen ARBETSFORM-rad att återskapa. Heartbeat-monitorn FORTSATT ej
+startad (`T144` `paused`). Båda S108-träden rena. **NÄSTA: (1) avgör den
+öppna designfrågan — sidoeffektsfrihet kontra transient Storage-fil — med
+Marcus · (2) bygg leveransvägen som egen arbetsenhet · (3) Marcus verifierar
+scrollen i webbläsaren mot `http://`-referensen · sedan kvittots gap/grid-
+omgranskning → punkt 4 → 5 → 6.**
+
+**Session 108 ⏸️ PAUSAD (sjätte gången, 2026-08-22, `lifecycle: paused`, historik) —
 PUNKT 3:S FÖRSTA HALVA LANDAD; LEVERANSVÄGEN VALD, MÄTT OCH OBYGGD.**
 Förhandsgranskningen är nu en RIKTIG PDF genom `ADR-119`-vägen — `#1815`
 armerad (5 commits `80ef31dc`…`7af1ef6c`). **Tre grundorsaker, alla mätta:**
