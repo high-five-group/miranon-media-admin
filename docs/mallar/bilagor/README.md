@@ -414,3 +414,48 @@ malldiff/` för de andra två mallarna). Sammanfattning:
 Öppna frågor som kräver Marcus omdöme (sidfotens kolumnbredder,
 "Vår referens"-fältets räckvidd, köparens e-post på kvittot): rapportens
 § 10.
+
+### Kvittots layout-primitiver är motor-honorerade (TASK-304)
+
+`kvitto.css`/`kvitto.html` bar tidigare `display:grid` (tre ställen:
+metarad, referensblock, tabellraden) och flex-`gap` (fyra ställen:
+totalrutan, total-kolumn, total-betalt, sidfoten). Prince 15.1 honorerar
+INGET av de sju: grid staplar kolumnerna helt (metarad/referensblock) eller
+kollapsar dem till innehållets egen bredd (tabellraden, 164,6mm→~55,5mm),
+och flex-`gap` ignoreras helt (SEK↔BETALT-gapet blev 0mm — "SEK2 500,00"
+hopvuxet). Mätt och bokfört i
+[`docs/research/kvitto-prince-gap-grid-omgranskning-2026-08-22.md`](../../research/kvitto-prince-gap-grid-omgranskning-2026-08-22.md).
+
+**Ersatt med primitiv Prince faktiskt honorerar, formen oförändrad:**
+
+- **Metarad + referensblock** (`display:grid` → flex-rad per dt/dd-par):
+  markupen grupperar nu varje dt/dd-par i en `<div class="…-rad">` (HTML5.1
+  tillåter `<div>`-omslutna grupper i en `<dl>`), och `.kvitto-metarad dt`/
+  `.kvitto-referensblock dt` bär ett mätt `min-width` (bredaste dt-cellens
+  bläckbredd i Chrome, samma pixel-scan-metod som forskningsfilen) så
+  dd-kolumnen linjerar mellan raderna trots att grid:ets delade
+  kolumn-track är borta. Högerjusteringen (`justify-content:end`) ersätts
+  av `width:fit-content` + `margin-left:auto` — samma mönster
+  `.kvitto-referensblock` redan bar för en annan regression.
+- **Tabellraden** (`display:grid` fasta mm-kolumner → `<table>`):
+  `kvitto.html` bär nu ett `<table>` per rad-grupp (tabellhuvudet, sedan
+  posten) med delad `<colgroup>`/`<col>`-bredd via de befintliga
+  `kvitto-col-*`-klasserna, `table-layout:fixed`, `width:100%`. Det forna
+  `column-gap:1mm` är vikt in i varje kolumns egen `<col>`-bredd (samma
+  kumulativa kolumnstarter som grid:et gav).
+- **De fyra flex-`gap`-ställena** → `margin` på barnet, ENSAM (INTE
+  parallellt med `gap`, se § nedan för varför).
+
+**Mätt fynd om `bilaga-delad.css` § `.ikonruta-media` (utanför detta korts
+scope att ändra):** att behålla `gap` PARALLELLT med `margin` på samma
+flex-rad (mönstret den sektionen använder, "gap bär webbvyn, margin bär
+PDF:en") är ADDITIVT i en riktig webbläsare — isolerat testat (2 flex-barn,
+`gap:10mm` + `margin-right:10mm` på första barnet): 20,15mm uppmätt
+mellanrum, inte 10mm. `bilaga-delad.css`s egen instans av mönstret bär
+sannolikt samma dubblering i webbvyn. `kvitto.css` använder därför margin
+ENSAM på alla sju platser — det enda sättet att både fixa Prince OCH hålla
+Chrome-renderingen oförändrad.
+
+**Verifierat mekaniskt (grep):** `kvitto.css` bär noll `display: grid` och
+noll flex-`gap` utan motsvarande margin-ersättning. Mätt Chrome↔Prince per
+ställe: research-filens § Updates.
