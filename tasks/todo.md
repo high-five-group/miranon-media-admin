@@ -249,7 +249,7 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ⏸️ PAUSAD (fjärde gången, 2026-08-22, `lifecycle: paused`) —
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, femte resumen; pausad fyra gånger, historik) —
 PROTOTYPEN LANDAD EFTER 18 VARV, MALLARNA MÄTTA MOT ROGERS FÖRLAGOR,
 KVITTOTS INNEHÅLL BYGGT — FORMEN KVAR.** Egen worktree `s108-bilagesparet`
 (ADR-090 beslut 2), gren `docs/s108-resume` — **PUSHAD** (18 commits,
@@ -299,7 +299,12 @@ skapandet · sedan facit-lås.**
 Numrering vid paus (`origin/main` `78f1158d`): ADR **124** · task-**289** ·
 **L512** · 62 fragment (nästa **63**) · **T171** · **f53** — mät trådserien i
 BÅDA ytorna vid resume, en kollision inträffade i dag på exakt den skillnaden.
-Full handoff: sessionsdok S108 § PAUSLÄGE + Del 5–7.
+**Resume 5 (2026-08-22):** `#1763` landad (`5385fc4b`); `#1766` var RÖD på
+`check-langa-streck` (fem tankstreck i prototypen, samma grindklass som
+S109:s `60c80175`) → konverterade per policyn, `8c28d05d` pushad, armeringen
+kvar; streckfrågan för PDF-dokumenten bokförd som **F8**. Numreringen
+re-deriverad: OFÖRÄNDRAD på varje post.
+Full handoff: sessionsdok S108 § Paushistorik 4 + Del 5–7.
 
 **Session 107 ⏸️ PAUSAD (sjunde gången, 2026-08-20, `lifecycle: paused`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
