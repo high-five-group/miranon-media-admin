@@ -1593,7 +1593,7 @@ function GenereringsVy({
             {resultat.sparade.length > 0 &&
               ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}
             {resultat.blockerad
-              ? ' Webbläsaren stoppade det nya fönstret — öppna det härifrån i stället.'
+              ? ' Webbläsaren stoppade det nya fönstret. Öppna det härifrån i stället.'
               : ' Den öppnades i ett nytt fönster.'}
             {!resultat.skarpt && (
               <span className="text-text-muted"> (Prototyp: ingen PDF sparas.)</span>
