@@ -56,7 +56,9 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * sitter ändå på grenen, så läget kan låsas senare utan strukturändring.
  *
  * FIXTURVÄRLDEN, verifierade fakta (`tests/support/fixturvarld/fixture-data.ts`):
- * `PERSONS_RESPONSE` bär 17 personer i namn-ordning och `get-persons`-mocken är
+ * `PERSONS_RESPONSE` bär 15 personer i namn-ordning (räknat 2026-08-22 —
+ * `recVisualPers00009`/`00017` är separata person-detalj-sentinels, inte del
+ * av listans array) och `get-persons`-mocken är
  * en PARAM-MEDVETEN resolver (inte ett fruset objekt), så sök-lägena nedan
  * filtreras på riktigt. `Gunilla Granqvist` finns (samma namn den befintliga
  * `personer.spec.ts` redan asserterar på) och `zzz` ger noll träffar.
