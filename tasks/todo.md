@@ -230,10 +230,61 @@ formen, inte orden). **Divergens fångad vid resume:** elva kort (`285.1`–`285
 `286.1`, `287`) stod `To Do` trots landad kod — stängnings-committen gjordes
 aldrig (`TASK-281`:s lucka); **8 av 11 satta `Done`**, tre öppna på obelagd DoD
 (`285.5`/`285.6` DoD #6, `286.1` DoD #5–#7). Paus-PR `#1735` mergade **mitt under
-LÄS-fasen** — andra instansen av samma fångst-klass. **NÄSTA: fyra parallella
-spår landar (`#1715`-not + armering · `ADR-102`-amenderingen · `285.13`
-verkställandet · `285.10`-förkraven) → Marcus stämpling `285.10` via `!`-kanalen
-→ `285.11` rivning → `285.12`/`286.6` QA → `286.3`/`286.4` → `283.2`/`283.3`.**
+LÄS-fasen** — andra instansen av samma fångst-klass.
+
+**Del 14 — NOTISFAMILJEN STÄMPLAD OCH RIVEN; FEM FEL I BOKFÖRINGEN, NOLL I
+KODEN.** Sju Marcus-beslut, copy-tabellen kvitterad verbatim (*"Kvitterar.
+Snyggt!"*). `ADR-102` § Updates fick **rivnings-klausulen** — `285.11` var den
+FÖRSTA rivningen någonsin som nådde B2 steg 4, och `check-facit.sh` fällde på
+att manifestets `kallor` pekade på de nyss rivna filerna; mätt över alla tolv
+manifest: **22 prototyp-filer i fem stämplade manifest**, alltså fyra familjer
+till på väg in i samma vägg. Klausulen härleder ur git att filen fanns vid
+stämpelns SHA; sökvägsundantaget avvisades med mätning (`/dev/` hade täckt 14 av
+22). Två premisser föll: eventväljaren är INTE diakritik-tolerant hos Lotta
+(→ `TASK-290`), och bokstavsraden bröt ALDRIG de sex referenserna (10/6 före,
+10/6 efter — `toMatchAriaSnapshot` matchar partiellt, så skulden var gröna men
+ofullständiga lås). Första stämpel-försöket förlorat: kommandon givna mot en
+checkout tio commits efter `origin/main`.
+
+**Del 15 — PERSONREGISTRET FÄRDIGBYGGT OCH OMSTÄMPLAT; PROD FÖLL PÅ
+DEPLOY-ORDNINGEN, INTE PÅ KODEN.** `283.2` bokstavsraden (`#1784` `6c3bf097`,
++1 046/−31): 29 bokstäver + hinken **Utan namn** = 30 knappar, **ett** tabbsteg
+via `react-aria-components` `Toolbar`, **28×28 px** träffyta över fem bredder;
+`AppShell.tsx:45` kapar innehållskolumnen vid **568 px** medan raden behöver
+~1 015 px, så radbrytning valdes mot WCAG 2.2 SC 1.4.10. `283.3` nedtoningen
+(`#1798` `2138faad`, +1 024/−34): bunden till HELA registret, aldrig söktermen;
+`aria-disabled` valt efter att agenten falsifierade sitt eget APG-antagande —
+det som avgjorde var att `react-aria`s fokusfilter matchar
+`button:not([disabled])`. Kontrast **5,33:1** normalt / **7,91:1** i
+`prefers-contrast: more`; AC #3 bevisad genom att radens mått blev **byte för
+byte identiska** med `283.2`:s mätning före nedtoningen. **NUL-byten:**
+`PersonsList.tsx` bar en rå 0x00 som fogtecken — `file` sade `data`, `grep -c`
+gav tomt, koden fungerade, inget test fällde; `283.2`:s agent bokförde det som
+"verktygsartefakt", `283.3`:s agent rotorsakade (`#1799`, en insättning). Ett
+test i samma körning **differentialbevisades oberoende** → `TASK-295`.
+**Omstämplingen:** Marcus godkände i körande app (*"Ser ju skitbra ut! Bra jobb
+Claude!"*), stämpel-SHA `d4997b5a` = merge-commiten för `#1802`.
+`--update-snapshots` utan värde har preset `changed` och skrev bara om **2 av
+6**; med `=all` **6 av 6** — fyra referenser passerade partiellt UTAN
+bokstavsraden. Grinden **10/6 → 16/0**, provokationen fäller nu (exit 1).
+**Kvarstående skuld, mätt:** bara **3 av 27** facit-ytor bär `referenser`, och
+personlistan är inte en av dem (`TASK-288`, `T172`) — talet 24 i Del 14 § B var
+dessutom ren aritmetik, inte felets signal. **PROD-INCIDENTEN VAR ETT
+ÅTERFALL:** Vercel deployade fronten automatiskt 16:37:26Z, prod-`get-persons`
+var 31–52 h gammal, klientens `?register=true` föll till sök-grenen med
+`pageSize` 50 → Lotta såg **50 av 559** och nästan hela alfabetet nedtonat.
+EF-deploy 17:13:34Z, `ezbr_sha256` `31a8b234…` → `85306a63…` mot `get-events`
+oförändrade `636539ed…`. Prod var ändå fel efteråt: `localStorage`-cachen föddes
+i glappet under NY app-version, så bustern matchade och `staleTime` 30 min gjorde
+datan färsk. **Samma orsak som S107 fem dagar tidigare** → `TASK-286.8` (**EF
+före frontend**). **Baslinjen blockerad:** dispatch `32587783890` gav 238 passed
+/ 8 failed, samtliga i hem-vyn — grinden söker en `data-testid` komponenten inte
+bär och har ett `under xl`-fall mot kod som säger "alla bredder"; två spår
+startade (`#1807` `TASK-243.6` landad `d7498747`, `#1808` `TASK-298` öppen och
+oarmerad). Andra dispatchen
+föll på 34 s därför att filtret hamnade i `-u`:s **valfria** värde — samma flagga
+som ovan, motsatt felmod, samma dag. **NÄSTA: `#1808` armeras och landar →
+baslinje-dispatch om → `285.12`/`286.6`/`283.5` QA på Marcus order.**
 
 **Session 109 ⏸️ PAUSAD (tredje gången, 2026-08-22, `lifecycle: paused`, historik) —
 NOTISFAMILJEN BYGGD FÄRDIG; ALLT KVARVARANDE ÄR TRE MARCUS-BESLUT.** Marcus AFK
