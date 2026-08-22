@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 10:46'
-updated_date: '2026-08-22 10:47'
+updated_date: '2026-08-22 10:50'
 labels:
   - ready-for-human
 dependencies: []
@@ -16,7 +16,9 @@ ordinal: 534000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Ur ett rent registerpass 2026-08-22, källa: TASK-286.7-agentens rapport + disk-verifiering av denna agent.
+Ur ett rent registerpass 2026-08-22, källa: TASK-286.7-agentens rapport + disk-verifiering av denna agent + `ADR-123` § Updates 2026-08-22 (TASK-286.7:s landade PR #1762, som landade UNDER detta registerpass — se Premiss-pass-noten nedan).
+
+**Uppdaterad efter fynd på fynd:** `ADR-123` § Updates 2026-08-22 ("Följdfynd, bokfört öppet") registrerade REDAN, oberoende av denna agent, att eventväljaren är diakritik-OKÄNSLIG i en svensk webbläsare — med samma tekniska förklaring (I18nProvider saknas, `useLocale()` faller tillbaka på `navigator.language`) som denna agents egen körningsverifiering mot `node_modules/react-aria`-källkoden nedan bekräftar oberoende. `ADR-123` skriver uttryckligen "ingen åtgärd i detta kort" och "[a]tt pinna eventväljarens lokal är en egen, oberoende ändring av en produktionsyta och tas inte här" — alltså flaggat men aldrig gjort görbart. DETTA KORT finns för att göra den flaggade åtgärden till ett beslut NÅGON kan plocka, och för att bredda frågan till alla fyra sökytorna (ADR-123:s Följdfynd nämner bara personsöket och eventväljaren — inte dörrlistan eller åtgärdssidan).
 
 Fyra ytor i appen söker/filtrerar fritext, med tre olika beteenden:
 
@@ -27,22 +29,24 @@ Fyra ytor i appen söker/filtrerar fritext, med tre olika beteenden:
 | Dörrlistan (incheckning) | rå `.toLowerCase().includes()` | `src/components/events/EventCheckin.tsx:757` |
 | Åtgärdssidan | rå `.toLowerCase().includes()` | `src/components/events/atgarder/AtgardsSida.tsx:778-779` |
 
-**Kärnfyndet, verifierat mot react-aria-components källkod (node_modules, 2026-08-22):** `useFilter` bygger sin matchning på `useCollator`, som läser lokal via `useLocale()` (`node_modules/react-aria/dist/private/i18n/useCollator.mjs`: `new Intl.Collator(locale, options)`). `useLocale()` faller tillbaka på `navigator.language` (`useDefaultLocale.mjs`) om ingen `I18nProvider`-context finns ovanför i trädet. `EventValjare.tsx` monteras INTE under någon `I18nProvider` — grep över hela `src/` visar `I18nProvider` bara i `EventsCalendar.tsx`, `ManuellAnmalanForm.tsx` (kring en `DatePicker`, EFTER de två `EventValjare`-instanserna på rad 160/336 — alltså UTANFÖR den providern), `Belaggning.tsx`, `OmEventet.tsx`, `CreateEventForm.tsx` — ingen av dem omsluter `EventValjare`.
+**Eventväljarens diakritik-okänslighet, dubbelt källbelagd:**
 
-Konsekvens: i en webbläsare med svensk locale (`sv`/`sv-SE`) matchar eventväljarens `useFilter` med SVENSK kollation. Verifierat körningsmässigt (node, 2026-08-22): `new Intl.Collator('sv', {sensitivity:'base'}).compare('asa','åsa')` ger `-1`, inte `0` — alltså INGEN träff. Skälet: Å/Ä/Ö är EGNA bokstäver i svensk kollationsordning, inte diakritik-varianter av A/O — `sensitivity:'base'` (som ignorerar accenttecken i språk där de ÄR varianter, t.ex. franska é/e) ger därför NOLL tolerans för svenska specialtecken. `ADR-123` § Kontext (fynd 1/3, skrivet 2026-08-21) påstår UTAN förbehåll att "eventväljarens mönster (sensitivity: 'base') är diakritik-okänsligt" — det stämmer i en engelsk/amerikansk webbläsare men INTE i en svensk, vilket är appens faktiska driftmiljö. Se syskonfyndet i denna registerpass-batch om `ADR-123`-korrigeringen.
+1. `ADR-123` § Updates 2026-08-22, ordagrant: "`EventValjare` monteras inte under någon `I18nProvider` (`ManuellAnmalanForm`, `EventDetail`, `AtgardsSida`) — så den faller tillbaka på `navigator.language`. I en svensk webbläsare är eventväljaren alltså INTE å/ä/ö-tolerant."
+2. Denna agents oberoende körningsverifiering (node, 2026-08-22, mot faktisk react-aria-källkod i `node_modules`): `useFilter` bygger sin matchning på `useCollator`, som läser lokal via `useLocale()` (`node_modules/react-aria/dist/private/i18n/useCollator.mjs`: `new Intl.Collator(locale, options)`); `useLocale()` faller tillbaka på `navigator.language` (`useDefaultLocale.mjs`) utan `I18nProvider`-context. Grep över hela `src/` bekräftar: `I18nProvider` finns bara i `EventsCalendar.tsx`, `ManuellAnmalanForm.tsx` (kring en `DatePicker`, EFTER de två `EventValjare`-instanserna på rad 160/336 — alltså UTANFÖR den providern), `Belaggning.tsx`, `OmEventet.tsx`, `CreateEventForm.tsx` — ingen omsluter `EventValjare`. Körningsbevis: `new Intl.Collator('sv', {sensitivity:'base'}).compare('asa','åsa')` ger `-1`, inte `0` — Å/Ä/Ö är egna bokstäver i svensk kollation, inte diakritik-varianter, så `sensitivity:'base'` ger NOLL tolerans för dem (samma resultat `ADR-123` rapporterar: `compare('asa','åsa') = -1`, `compare('o','ö') = -1`).
 
-De två raka `.toLowerCase().includes()`-ytorna (dörrlistan, åtgärdssidan) är diakritik-KÄNSLIGA av ett annat, enklare skäl: `toLowerCase()` case-foldar men normaliserar aldrig diakritik — samma mekanism `person-sok.ts`s docstring själv beskriver för EF:ens `SEARCH()`-paritet (innan TASK-286.7/286.5:s breddning).
+De två raka `.toLowerCase().includes()`-ytorna (dörrlistan, åtgärdssidan) är diakritik-KÄNSLIGA av ett tredje, enklare skäl som varken `ADR-123` eller TASK-286.7 berör: `toLowerCase()` case-foldar men normaliserar aldrig diakritik.
 
-**Frågan kortet ska ställa, inte redan besvara:** ska de tre återstående ytorna (eventväljaren, dörrlistan, åtgärdssidan) breddas till samma diakritik-toleranta beteende som personsöket, efter att TASK-286.7 (asa hittar Åsa) landar där? Det är ett produktbeslut om konsekvens i sökupplevelsen över appen, inte en självklar bugfix — dörrlistan och åtgärdssidan används under tidspress vid incheckning, där en förutsägbar (om än strikt) matchning kan vara att föredra framför överraskande breddning, och eventväljarens `useFilter`-val i sig var en medveten ADR-078-precedent innan lokal-frågan upptäcktes.
+**Frågan kortet ska ställa, inte redan besvara:** ska de tre återstående ytorna (eventväljaren, dörrlistan, åtgärdssidan) breddas till samma diakritik-toleranta beteende som personsöket (nu landat via TASK-286.7)? Det är ett produktbeslut om konsekvens i sökupplevelsen över appen, inte en självklar bugfix — dörrlistan och åtgärdssidan används under tidspress vid incheckning, där en förutsägbar (om än strikt) matchning kan vara att föredra framför överraskande breddning, och eventväljarens `useFilter`-val i sig var en medveten ADR-078-precedent innan lokal-frågan upptäcktes.
 
-Referenser: TASK-286.7 (personsökets diakritik-tolerans), TASK-286.5 (Marcus HITL-beslutet bakom 286.7), ADR-123 § Kontext fynd 1/3.
+**Premiss-pass-not:** TASK-286.7 (PR #1762) låg i merge-kön vid detta registerpassets start och landade på `main` UNDER passets körning — ADR-123 § Updates-texten citerad ovan är alltså verifierad mot den LANDADE versionen, inte en gissning om vad PR:en skulle innehålla.
+
+Referenser: `ADR-123` § Updates 2026-08-22 ("Följdfynd, bokfört öppet"), TASK-286.7 (personsökets diakritik-tolerans, landad), TASK-286.5 (Marcus HITL-beslutet bakom 286.7).
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Marcus (eller grillning) har tagit ställning: ska eventväljaren, dörrlistan och åtgärdssidan breddas till diakritik-tolerant sök, likvärdigt med personsöket efter TASK-286.7 — för alla tre, en delmängd, eller ingen?
 - [ ] #2 Om JA för eventväljaren specifikt: I18nProvider locale="sv-SE" läggs kring EventValjare (eller motsvarande lokal-pinning), så useFilters Intl.Collator faktiskt körs mot svensk kollation med avsedd tolerans — inte bara mot vad webbläsaren råkar rapportera.
-- [ ] #3 ADR-123 § Kontext fynd 1/3 uppdateras (om det inte redan skett i en tidigare skiva) till att inte längre påstå eventväljarens mönster som diakritik-okänsligt utan förbehåll för svensk locale.
 <!-- AC:END -->
 
 ## Definition of Done
