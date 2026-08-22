@@ -768,7 +768,7 @@ export function PersonsList() {
   // att nyckeln ska vara entydig, och en hink (29 versaler eller `utan-namn`)
   // kan aldrig innehålla ett mellanslag. Söktermen får därför göra det.
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const filterNyckel = `${bokstav ?? ''} ${deferredSearchTerm}`;
+  const filterNyckel = `${bokstav ?? ''} ${deferredSearchTerm}`;
   const [foregaendeFilter, setForegaendeFilter] = useState(filterNyckel);
   if (filterNyckel !== foregaendeFilter) {
     setForegaendeFilter(filterNyckel);
