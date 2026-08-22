@@ -187,11 +187,13 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ⏸️ PAUSAD (tredje gången, 2026-08-21, `lifecycle: paused`) —
-BEKRÄFTELSEBILAGANS GENERERINGSVY GODKÄND EFTER TOLV KONVERGENSVARV.**
-Parallell session bredvid aktiva S109 (huvudkatalogen) och S110 — S108 i egen
-låst worktree `s108-bilagesparet`, gren `docs/s108-resume` med **tolv commits
-OPUSHADE MED AVSIKT** (arbetsform `iteration`, ADR-097: `da957f75`…`1d3e7282`).
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`; pausad tre
+gånger 2026-08-20/21) — BEKRÄFTELSEBILAGANS GENERERINGSVY GODKÄND EFTER TOLV
+KONVERGENSVARV, FYRA YTOR KVAR.** **Enda aktiva sessionen** — S107, S109 och
+S110 samtliga pausade; huvudkatalogen bär S109:s ägarlapp med levande process,
+så S108 arbetar kvar i egen worktree `s108-bilagesparet` (ADR-090 beslut 2),
+gren `docs/s108-resume` med **tolv commits OPUSHADE MED AVSIKT** (arbetsform
+`iteration`, ADR-097: `da957f75`…`1d3e7282`).
 Marcus dom: *"Nu är jag helt nöjd med hur detta ser ut för
 bekräftelsebilagan."* Varv 7–12 drevs av MÄTNING, inte tyckande — och
 mätningen **falsifierade handoffens egen hypotes**: Hem-svepets overlay, som
@@ -207,11 +209,15 @@ Rogers verbatim text med styckena bevarade och rullisten i rutan.
 sidor/ytor sitter."* Bekräftelsebilagans form är därmed oskyddad; behandla den
 som frusen tills manifestet skrivs. **Fynd om SKARP kod, ej åtgärdade:**
 `RedigeringsRad`s "ändrar från" trunkeras till "Ut…"/"ZZ…" på 390 px ·
-"Datum och tid" är fritextfält fast värdet härleds. **NÄSTA (resume av 108):
-förhandsgranskning · deltagarinformation · kvitto · skapandet av bilagorna.**
-Numrering vid paus: ADR **124** · task-286 · L512 · 60 fragment · T160 · f51 —
-serierna rörde sig UNDER passet (S110 tog ADR 122+123, kort 284+285), så
-re-derivera ALLTID. Full handoff: sessionsdok S108 § PAUSLÄGE + Del 4.
+"Datum och tid" är fritextfält fast värdet härleds. **PÅGÅR (resume 2026-08-22):
+förhandsgranskning · deltagarinformation · kvitto · skapandet av bilagorna, i
+den ordning Marcus väljer.** Dev-servern uppe på `localhost:5173` via
+polling-configen; prototypmodulen verifierat transformerad (200, 232 KB).
+Numrering **re-deriverad mot `origin/main` `aba0d61b`**: ADR **124** ·
+task-**288** · **L512** · **62** fragment (nästa **63**) · **T169** · **f53**
+— paus-radens värden (task-286 · 60 fragment · T160 · f51) hann förbrukas av
+S109/S110 under pausen, precis som handoffen varnade. Full handoff: sessionsdok
+S108 § Paushistorik 3 + Del 4.
 
 **Session 107 ⏸️ PAUSAD (sjunde gången, 2026-08-20, `lifecycle: paused`) —
 PDF-VÄGEN LÅST I ADR-119, ASSETS OCH FONTER LANDADE, MALLARNA BYGGDA.**
