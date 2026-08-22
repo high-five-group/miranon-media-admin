@@ -158,6 +158,32 @@ neka() {
     exit 2
 }
 
+# ── Neka-skälets DIAGNOSTIK (ADR-102 § Updates 2026-08-22) ────────────────
+#
+# facit_neka_skrivning <verktyg> <sokvag> <nuvarande-filinnehall>
+#
+# VERDIKTET ÄR OFÖRÄNDRAT — båda grenarna nekar med exit 2. Det som skiljer
+# är SKÄLET, och skillnaden är mätt dyr: fram till 2026-08-22 sade hooken
+# alltid "skulle sätta 'godkand' till ett icke-null-värde", också när
+# skrivningen inte rörde "godkand" alls. Två agenter läste den texten som
+# att de av misstag råkat skriva fältet, letade efter ett fel i sin egen
+# diff, och hittade ingenting — den verkliga regeln var en ANNAN: ett
+# STÄMPLAT manifest är agent-fruset i SIN HELHET.
+#
+# Skillnaden avgörs av manifestets NUVARANDE innehåll, inte av skrivningen:
+# bär filen redan ett satt "godkand" är den frusen (gren 1); gör den inte
+# det är det skrivningen själv som sätter fältet (gren 2, den ursprungliga
+# förfalsknings-vägen ADR-104 mintades för).
+facit_neka_skrivning() {
+    local verktyg="$1" sokvag="$2" nuvarande="$3" redan=""
+
+    redan="$(node "${HELPER}" write "${nuvarande}" 2> /dev/null)" || redan=""
+    if [[ "${redan}" = "DENY" ]]; then
+        neka "${verktyg} mot ${sokvag} nekas därför att manifestet är STÄMPLAT (\"godkand\" är satt). Ett stämplat manifest är agent-fruset i SIN HELHET — även en ändring som inte rör \"godkand\". Amenderingen bor i en SIDOFIL bredvid manifestet: ${sokvag%/*}/AMENDERING-<datum>-<slug>.md (ADR-102 § Updates 2026-08-22 § A3). Inbakningen i manifestet är ett Marcus-moment via !-kanalen."
+    fi
+    neka "${verktyg} mot ${sokvag} skulle sätta \"godkand\" till ett icke-null-värde."
+}
+
 # ── Steg 1: infra. Fail-open på ALLA infra-fel — se § FAIL-OPEN ovan.
 command -v jq > /dev/null 2>&1 || exit 0
 command -v node > /dev/null 2>&1 || exit 0
@@ -342,15 +368,18 @@ case "${TOOL_NAME}" in
         [[ -f "${FILE_PATH}" ]] && NUVARANDE="$(< "${FILE_PATH}")"
 
         UTFALL="$(node "${HELPER}" edit "${NUVARANDE}" "${OLD_STRING}" "${NEW_STRING}" "${REPLACE_ALL}" 2> /dev/null)" || UTFALL="DENY"
-        [[ "${UTFALL}" = "ALLOW" ]] || neka "Edit mot ${FILE_PATH} skulle sätta \"godkand\" till ett icke-null-värde."
+        [[ "${UTFALL}" = "ALLOW" ]] || facit_neka_skrivning "Edit" "${FILE_PATH}" "${NUVARANDE}"
         ;;
     Write)
         FILE_PATH="$(printf '%s' "${INPUT}" | jq -r '.tool_input.file_path // empty' 2> /dev/null)"
         ar_manifest_sokvag "${FILE_PATH}" || exit 0
 
+        NUVARANDE=""
+        [[ -f "${FILE_PATH}" ]] && NUVARANDE="$(< "${FILE_PATH}")"
+
         CONTENT="$(printf '%s' "${INPUT}" | jq -r '.tool_input.content // empty' 2> /dev/null)"
         UTFALL="$(node "${HELPER}" write "${CONTENT}" 2> /dev/null)" || UTFALL="DENY"
-        [[ "${UTFALL}" = "ALLOW" ]] || neka "Write mot ${FILE_PATH} skulle sätta \"godkand\" till ett icke-null-värde."
+        [[ "${UTFALL}" = "ALLOW" ]] || facit_neka_skrivning "Write" "${FILE_PATH}" "${NUVARANDE}"
         ;;
     Bash)
         COMMAND="$(printf '%s' "${INPUT}" | jq -r '.tool_input.command // empty' 2> /dev/null)"
