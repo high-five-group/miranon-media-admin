@@ -4,7 +4,7 @@ title: 'Skiva: Svensk sortering, räknarrad ur arrayen, rivning av sök-walken'
 status: To Do
 assignee: []
 created_date: '2026-08-21 11:48'
-updated_date: '2026-08-22 09:29'
+updated_date: '2026-08-22 09:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -40,7 +40,7 @@ Täcker användarberättelser: 4, 7, 15
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Paritetstestet (EF-filter mot klientfilter, samma fixtur) grönt för varje skiva som rör sök eller filtrering
+- [x] #5 Paritetstestet (EF-filter mot klientfilter, samma fixtur) grönt för varje skiva som rör sök eller filtrering
 - [ ] #6 Facit-referenserna för personlistan (tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan) gröna — formen är orörd
 - [x] #7 Inga nätverksanrop vid skrivning efter första laddningen — mätt i testet, inte antaget
 <!-- DOD:END -->
@@ -139,4 +139,46 @@ kontaktrad, interaktionsrad är identiska. Det som ändras är ORDNINGEN, vilket
 
 Detta är samma klass som PR #1715:s referensuppdatering, där Marcus fattade ett
 uttryckligt väg B-beslut. Något sådant beslut finns inte för denna skiva.
+
+### DoD #5 MÄTT (2026-08-22, efter att staging-preflighten släppte)
+
+Första tre försöken stoppades av staging-preflighten (TASK-77): post-merge.yml
+körning 32564937340 (PR #1748, T157-spåret) höll basen. Preflighten kringgicks
+INTE med MM_STAGING_PREFLIGHT=off — staging är en delad bas (Airtable P26/P27).
+
+Fjärde försöket, efter att körningen släppt: **16 passed, exit 0**.
+
+- `get-persons-sok-paritet.staging.test.ts` — samtliga 12 termfall gröna
+  ('anna', 'ANNA', 'åsa', 'asa', 'ås', 'ej till', '070', '070-', '070 1',
+  'falköping', 'example.com', tom sträng). Klientfiltret och EF:ens SEARCH()
+  enas om exakt samma personer.
+- `get-persons-register.staging.test.ts` — alla tre fallen gröna, INKLUSIVE
+  den omskrivna korsvalideringen 'registrets antal === basfiltrets oberoende
+  mätta träffmängd (cursor-paginerad räkning)'. Den nya, paginerande formen är
+  därmed bevisad mot verklig staging-data, inte bara typkontrollerad.
+
+### Grindar körda om på det MERGADE trädet (origin/main inkl. PR #1748)
+
+typecheck 0 · biome 0 · check-langa-streck 0 · build 0 · api-pure 591 passed ·
+check:docs 0 (14 grindar) · check-facit 0.
+
+### ADR-102 § A3 landade UNDER passet — facit-avvikelsen är nu klassad
+
+T157 är inte längre öppen: amenderings-mekaniken för ett stämplat facit landade
+i main kl 09:26:14Z 2026-08-22 (PR #1748), EFTER att denna gren skapades.
+Mekaniken säger vad en agent ska göra — föreslå klass och skriva motiveringen,
+medan omstämplingen ligger hos Marcus.
+
+Klassningen är gjord och bokförd i
+`tasks/sessions/bilagor/s90-personlistan-konvergens/AMENDERING-2026-08-22-svensk-sortering-sentinel-sist.md`:
+**klass (c)** — formen ändras faktiskt. Sentinel-posterna finns i PROD (inte
+bara i fixturen), och flytten är kortets avsikt, inte en bieffekt. Det skiljer
+den från PR #1715:s klass (b), där 'Ladda fler' föll bort ur referensen ENBART
+för att fixturen bär 17 personer mot render-fönstrets 50.
+
+`scripts/check-facit.sh` fäller INTE: ytan personlistan deklarerar ingen
+`referenser`-array, så invariant (d) hash-jämför ingenting här (mätt: exit 0,
+'22 stämplade ytor saknar referenser'). Sidofilen noterar att `referenser` bör
+deklareras nästa gång ytan ändå är ogodkänd — ADR-102 § A5 punkt 2 kräver att
+de deklareras MEDAN manifestet är ogodkänt.
 <!-- SECTION:NOTES:END -->
