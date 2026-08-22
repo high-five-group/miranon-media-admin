@@ -3,6 +3,7 @@ import { useQueryState } from 'nuqs';
 import {
   ATGARDSKO_VARIANTER,
   type AtgardskoVariantKey,
+  EventinfoRadAnatomi,
 } from '@/components/dev/hem-atgardsko-prototyp/AtgardskoRadVarianter';
 import { PrototypeSwitcher, type PrototypeVariant } from '@/components/dev/PrototypeSwitcher';
 import { Bevakningsrad } from '@/components/hem/Bevakningsrad';
@@ -50,6 +51,26 @@ export const Route = createFileRoute('/dev/hem-atgardsko-prototyp')({
  * varför denna route inte importerar `dev/hem-prototyp/`s throwaway-
  * universum) — en minimal, handskriven `Event`/`EventinfoBevakningRad` som
  * bara fyller de fält `Bevakningsrad.tsx` faktiskt läser.
+ *
+ * [TASK-303, tillagd 2026-08-23] I VARIANT-LÄGE (`?variant=` satt) visas
+ * INTE längre referensraden via den riktiga `Bevakningsrad` — den bär
+ * fortfarande den GAMLA anatomin (`line-clamp-2`, radbrytning) eftersom
+ * `Bevakningsrad.tsx` är HELT ORÖRD av denna skiva. I stället renderas
+ * `EventinfoRadAnatomi` (`AtgardskoRadVarianter.tsx`), en prototyp-
+ * parallell med den NYA höjdlåsta anatomin (rubrik + undertext, alltid
+ * båda, talet i en badge), så Marcus ser den FULLA promoverbara formen —
+ * båda radtyperna, samma anatomi — i variant-läge. Båda raderna delar NU
+ * en enda `<ul aria-label="Bevakningar">` (`EventinfoRadAnatomi` äger sitt
+ * eget `<li>`, variantens rad wrappas i ett eget `<li>` här) — samma
+ * `<li>`-i-`<ul>`-struktur som skarpa vyn, vilket fixar `<li>`-
+ * regressionen Marcus mätte 2026-08-22 (`parentElement.tagName` var
+ * `'SECTION'`, inte `'LI'`, i alla tre varianter innan denna ändring).
+ *
+ * "SKARPA VYN" (`?variant=` frånvarande) förblir OFÖRÄNDRAD — fortsatt den
+ * riktiga, orörda `Bevakningsrad` med dagens faktiska (gamla) anatomi, se
+ * stycket ovan. De två vyerna visar alltså medvetet OLIKA anatomi-
+ * generationer sida vid sida (skarpa vyn = idag, variant-läge = förslaget)
+ * — det ÄR poängen med en jämförelseyta.
  */
 const VARIANTER: PrototypeVariant[] = [
   { key: 'a', label: 'Variant A - Ikon', steg: 1, stegLabel: 'Steg 1 - divergens' },
@@ -111,11 +132,12 @@ function AtgardskoPrototypPage() {
       <header className="flex max-w-prose flex-col gap-2">
         <h1 className="font-semibold text-2xl">Åtgärdskö-radens särskiljning</h1>
         <p className="text-body text-text-secondary">
-          TASK-291 AC #1 (QA-fynd 284.5). "Skarpa vyn" nedan (växlarens fil-ikon, eller ingen{' '}
-          <code>?variant=</code> alls) visar dagens FAKTISKA rader, oförändrade, sida vid sida:
-          fyndet, live, är att de ser identiska ut. Varje variant a/b/c byter bara åtgärdskö-radens
-          innehåll mot ett förslag; eventinfo-raden ovanför står orörd som jämförelsepunkt i alla
-          lägen.
+          TASK-291 AC #1 (QA-fynd 284.5) + TASK-303 (höjdlåset). "Skarpa vyn" nedan (växlarens
+          fil-ikon, eller ingen <code>?variant=</code> alls) visar dagens FAKTISKA rader,
+          oförändrade: fyndet, live, är att de ser identiska ut OCH att höjden kan variera med
+          copyns längd. Varje variant a/b/c byter åtgärdskö-radens innehåll mot ett förslag OCH
+          visar eventinfo-referensraden i den nya, höjdlåsta anatomin (rubrik + undertext, alltid
+          båda, talet i en egen badge): den fulla, promoverbara formen.
         </p>
       </header>
 
@@ -124,10 +146,12 @@ function AtgardskoPrototypPage() {
           Bevakningar (prototyp)
         </h2>
         {VariantInnehall ? (
-          <>
-            <Bevakningsrad rader={[REFERENS_EVENTINFO_RAD]} onOppnaEventinfo={() => {}} />
-            <VariantInnehall antal={ANTAL_DEMO} />
-          </>
+          <ul aria-label="Bevakningar" className="flex min-w-0 flex-col gap-2">
+            <EventinfoRadAnatomi rad={REFERENS_EVENTINFO_RAD} onOppna={() => {}} />
+            <li>
+              <VariantInnehall antal={ANTAL_DEMO} />
+            </li>
+          </ul>
         ) : (
           <Bevakningsrad
             rader={[REFERENS_EVENTINFO_RAD, REFERENS_ATGARDSKO_RAD]}
