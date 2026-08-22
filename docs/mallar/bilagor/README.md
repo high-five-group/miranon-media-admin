@@ -1,20 +1,25 @@
-# Bilage-mallarna — bekräftelsebilagan och deltagarinformationen (TASK-279)
+# Bilage-mallarna - bekräftelsebilagan, deltagarinformationen och kvittot (TASK-279 + S108)
 
-HTML/CSS-mallar för de två bilagorna `ADR-119` beslut 2 lade grunden för
-(HTML/CSS-driven rendering, extern motor senare). Denna skiva bygger
-**mallarna och en granskningsväg** — ingen renderare, ingen EF, inget
-Storage (se kortets § "Vad som INTE görs här").
+HTML/CSS-mallar för de tre dokumenten `ADR-119` beslut 2 lade grunden för
+(HTML/CSS-driven rendering, extern motor senare). Bekräftelsebilagan och
+deltagarinformationen byggdes i TASK-279 (**mallarna och en granskningsväg**,
+utan renderare, EF eller Storage, se kortets § "Vad som INTE görs här").
+Kvittot är ett SEPARAT, kortlöst S108-prototyp-uppdrag (MARCUS-SEKVENS
+punkt 2, S108 Del 8 § D); se § Kvittots FORM nedan för dess egen scope,
+källor och mätunderlag.
 
 ## Filer
 
 | Fil | Vad |
 |---|---|
-| `bekraftelsebilaga.html` | Mall — kursbeskrivning/betalningsvillkor (fyra sidor prisinfo + tvåkolumns innehållslista) |
-| `deltagarinformation.html` | Mall — praktisk info inför kursstart (tre infobox-rader + nio ämnesstycken) |
-| `bilaga-delad.css` | Delad CSS: typsnitt (`@font-face`), färgtokens, layout. ETT ställe att ändra rubrikfont/färger på för båda mallarna. |
-| `fixtures/*.exempel.json` | Exempeldata — samma värden som i de riktiga förlagorna, så en granskning kan jämföras rad för rad. |
+| `bekraftelsebilaga.html` | Mall - kursbeskrivning/betalningsvillkor (fyra sidor prisinfo + tvåkolumns innehållslista) |
+| `deltagarinformation.html` | Mall - praktisk info inför kursstart (tre infobox-rader + nio ämnesstycken) |
+| `kvitto.html` | Mall - kvitto på Rogers sektionsstruktur (referensblock, radtabell, totalruta, fyrkolumns sidfot). Se § Kvittots FORM. |
+| `bilaga-delad.css` | Delad CSS: typsnitt (`@font-face`), färgtokens, layout - för bekräftelsebilagan/deltagarinformationen. ETT ställe att ändra rubrikfont/färger på för de TVÅ mallarna. **Rörs INTE av kvittot**, se § Kvittots FORM för varför. |
+| `kvitto.css` | Kvittots EGNA CSS - monokrom svart/grå palett, tre gråfyllda rundade rutor. Delar bara `@page`/`.sida`-basboxen/Carlito-typsnittet med `bilaga-delad.css`, allt annat är eget. |
+| `fixtures/*.exempel.json` | Exempeldata - samma värden som i de riktiga förlagorna, så en granskning kan jämföras rad för rad. |
 | `lokala-typsnitt/` | **Gitignorerad symlänk**, se § Granska mallarna lokalt nedan. |
-| `*.granskning.html` / `*.granskning.png` | **Gitignorerat**, genereras av granskningsskriptet — checkas aldrig in. |
+| `*.granskning.html` / `*.granskning.png` | **Gitignorerat**, genereras av granskningsskriptet - checkas aldrig in. |
 
 ## Den dynamiska ytan (ADR-119 beslut 3)
 
@@ -46,8 +51,10 @@ Ingen extern tjänst behövs. Kör:
 ```bash
 npm run mall:granska -- bekraftelsebilaga
 npm run mall:granska -- deltagarinformation
+npm run mall:granska -- kvitto
 open docs/mallar/bilagor/bekraftelsebilaga.granskning.html
 open docs/mallar/bilagor/deltagarinformation.granskning.html
+open docs/mallar/bilagor/kvitto.granskning.html
 ```
 
 Skriptet fyller mallen med `fixtures/<mall>.exempel.json` och skriver en
@@ -275,3 +282,115 @@ Ingen DocRaptor-integration, ingen Edge Function, inget Storage, ingen
 invalidering, ingen bilage-lane. `{{fältnamn}}`-ersättningen här är ENDAST
 för lokal granskning — den riktiga ihopkopplingen mot en renderare är en
 framtida, egen skiva.
+
+---
+
+## Kvittots FORM (S108 MARCUS-SEKVENS punkt 2)
+
+`renderKvittoPdf` (`supabase/functions/_shared/receipt-pdf.ts`) ritar i dag
+kvittots text på koordinater med pdf-lib - 500×420pt, en enda Helvetica-
+storlek, Marcus dom: *"det fulaste gräsligaste kvittot jag någonsin sett"*
+(sessionsdok `2026-08-20-session-108.md` Del 6 § B). `kvitto.html` +
+`kvitto.css` är FORMEN på `ADR-119`:s väg (HTML/CSS i stället för
+koordinat-ritning) - byggd mot Rogers skarpa kvitto
+(`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 Ulrika Berge.pdf`,
+tråd `T170`), INTE en ny renderingsväg. Ingen EF-koppling, ingen
+DocRaptor-integration - samma "vad som INTE görs" som resten av denna sida,
+plus `ADR-119` beslut 7:s krav på ett minimaltest FÖRE en skarp koppling.
+
+**Varför `kvitto.css` är en EGEN fil och `bilaga-delad.css` inte rörs
+alls:** kvittot är en helt annan ART av dokument - monokrom svart/grå
+(#F2F2F2) i stället för sage/gult/blått, Calibri-imitation (Carlito, redan
+i `bilaga-delad.css`, återanvänd oförändrad) i stället för
+Cavolini-rubriker, tre gråfyllda rundade rutor i stället för vita
+ikonrutor/gul överstrykning. `kvitto.css` länkas som en ANDRA
+`<link rel="stylesheet">` efter `bilaga-delad.css` och lägger till allt
+kvitto-specifikt, inklusive sidans egen padding (`.sida--kvitto`) - i
+stället för att följa `.sida--bekraftelse`/`.sida--deltagarinformation`s
+mönster och lägga den posten i `bilaga-delad.css`. Skälet är dubbelt: det
+håller `bilaga-delad.css` HELT ORÖRD (noll rader ändrade av detta uppdrag)
+OCH minimerar kollisionsytan mot S108 Del 8 § D:s SYSKON-uppdrag (F6+F7,
+gren `feat/s108-f6-f7-konturglob-selawik`), som rör exakt den filen
+samtidigt.
+
+### Kvittots dynamiska yta - tokenytan är 1:1 med `receipt-content.ts`
+
+Hårt krav (S108 Del 8 § D): varje `{{token}}` i `kvitto.html` härleds
+direkt ur `supabase/functions/_shared/receipt-content.ts` - ingen ny
+datamodell uppfinns i mallen.
+
+| Token | Källa i `receipt-content.ts` |
+|---|---|
+| `kvittonummer` | `KvittoradSpec.kvittonummer` |
+| `datum` | `formatKvittoDatum(spec.datum)` - VERIFIERAT mot `tests/api/receipt-content.test.ts` rad 193 (`formatKvittoDatum('2026-08-03T00:00:00.000Z')` -> `'3 augusti 2026'`) |
+| `kundnamn` | `KvittoradSpec.kundnamn` |
+| `eventNamn` | `KvittoradSpec.eventNamn` |
+| `betalningLabel` | Samma härledning som `kvittoRader()`s lokala variabel (`spec.betalning === 'avgift' ? 'Anmälningsavgift' : 'Slutbetalning'`) |
+| `betalsatt` | `KvittoradSpec.betalsatt` |
+| `netto` | `beraknaMoms(spec.belopp).netto`, formaterat via `formatBelopp()` |
+| `moms` | `beraknaMoms(spec.belopp).moms`, formaterat via `formatBelopp()` |
+| `brutto` | `spec.belopp`, formaterat via `formatBelopp()` |
+| `orgNamn` | `MIRANON_ORG.namn` |
+| `orgNummer` | `MIRANON_ORG.orgnummer` |
+| `orgAdress` | `MIRANON_ORG.adress` |
+| `orgMomsregnummer` | `MIRANON_ORG.momsregnummer` |
+
+**`momssatsProcent`-token BORTTAGEN ur markupen (S108, uppföljning av PR #1781,
+RAPPORT.md § 2b).** Totalrutans etikett skrev tidigare
+`Moms ({{momssatsProcent}} %)`; förlagan skriver bara `Moms` (BB-mätt: inget
+procenttal i innehållsströmmen, se RAPPORT.md § 2b). Ändrat till statisk
+`Moms` i `kvitto.html`. `MOMSSATS_PROCENT` (= 25) finns kvar i
+`receipt-content.ts` och kan tokeniseras igen om ett framtida behov (flera
+momssatser, en tydligare kvittorad) uppstår - ingen kodändring gjord, bara
+markupens användning av värdet.
+
+**Beloppsformateringen avviker synligt från förlagan, med källa i koden -
+inte en brist i mallen.** Rogers kvitto skriver `2 500,00`
+(tusentalsmellanslag, alltid två decimaler); `formatBelopp()` skriver
+`2500 kr` för heltal (inget tusentalsmellanslag, ingen decimal, `" kr"`
+som suffix i stället för ett `SEK`-prefix) - verifierat mot
+`tests/api/receipt-content.test.ts` rad 198
+(`expect(formatBelopp(2500)).toBe('2500 kr')`). `receipt-content.ts` är
+förbjudet att röra i detta uppdrag, så mallen visar den FAKTISKA
+formateringen i stället för en gissad, snyggare variant.
+
+### Förlage-fält utan källa i `receipt-content.ts` - byggda, bokförda som GAP
+
+Uppdraget kräver att dessa byggs i mallen men aldrig hittas på i kod:
+
+| Fält | I mallen | Källa/motivering |
+|---|---|---|
+| Vår referens | `{{orgNamn}}` (= "Miranon Media AB") | `MIRANON_ORG.namn` - ingen per-transaktion personattribuering finns (Rogers "Lotta Gotthardsson" har ingen motsvarighet i `KvittoradSpec`) |
+| Förfallodatum | Statisk `-` | Strukturellt konstant för ett KVITTO - `T170` rekommenderade uttryckligen att INTE ärva fältet som ett riktigt datafält |
+| Vårt ordernr | `{{kvittonummer}}` (samma token som Kvitto-/OCR-nr) | Ingen egen "ordernr"-modell finns; Rogers EGET dokument duplicerar samma nummer i båda fälten |
+| Öresavr | Statisk `0,00` | `beraknaMoms()` avrundar momsen till hela ören FÖRST (se dess docstring), så `netto + moms === brutto` alltid EXAKT - resten är matematiskt garanterat noll |
+| Köparens e-post | UTESLUTEN helt | Ingen kodväg (`KvittoradSpec`, `preview-receipt`s `TYPEXEMPEL` eller `send-receipt-email`s PDF-innehåll) skriver ut köparens e-post på kvittot i dag - `send-receipt-email`s `SkarpSpec.email` finns bara som SÄNDNINGSadress, aldrig som en `kvittoRader()`-rad |
+| Telefon/Plusgiro/Swish/Webb/Epost (sidfoten) | Statisk text | Källa `T170` (samma redan publicerade org-uppgifter). `MIRANON_ORG` bär bara `namn`/`orgnummer`/`adress`/`momsregnummer` - INTE dessa fyra. Samma klass statisk data som `bekraftelsebilaga.html` redan hårdkodar (Swish/Plusgiro ovan) |
+| "Godkänd för F-skatt" | Statisk text | Boilerplate, källa `T170`, ingen datamodell behövs |
+
+### Visuell jämförelse och mätunderlag
+
+Fullständig mätning (sidantal, radtabellens fem kolumnpositioner,
+BETALT-gradens förhållande till brödtexten, sidfotens fyra kolumner) och
+side-by-side-bevis: `test-results/kvittodiff/RAPPORT.md` +
+`jamforelse-kvitto.png` (gitignorerat, samma princip som `test-results/
+malldiff/` för de andra två mallarna). Sammanfattning:
+
+- **1 sida = 1 sida.** Ingen spill.
+- **Radtabellens fem kolumner: < 3 mm avvikelse** efter en mätt rättelse
+  (ett första utkast låg 13-25 mm fel - se rapportens § 6 för bevis i
+  BÅDA riktningarna, inklusive två egna CSS-buggar som fångades av samma
+  mät-och-rendera-loop innan leverans).
+- **BETALT-gradens förhållande till brödtexten: 13pt/9pt = 1,444x i BÅDA
+  dokumenten**, mätt två oberoende vägar (typgrad ur PDF:ens
+  innehållsström och bbox-höjd).
+- **Sidfotens fyra kolumner: 0,6-9,4 mm avvikelse** (flex-jämna kolumner
+  mot förlagans nästan-men-inte-helt jämna spridning) - bedömt, inte
+  rättat, se rapportens § 5.
+- **Strukturfynd:** alla TRE rundade rutor (tabellhuvud, totalruta,
+  sidfot) är GRÅFYLLDA (#F2F2F2) med svart kant, mätt via `pdftocairo -svg`
+  - inte en vit ram med gråfylld huvudrad.
+
+Öppna frågor som kräver Marcus omdöme (sidfotens kolumnbredder,
+"Vår referens"-fältets räckvidd, köparens e-post på kvittot): rapportens
+§ 10.
