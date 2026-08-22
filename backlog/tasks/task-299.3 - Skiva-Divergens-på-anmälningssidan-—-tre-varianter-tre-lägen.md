@@ -4,6 +4,7 @@ title: 'Skiva: Divergens på anmälningssidan — tre varianter, tre lägen'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:18'
+updated_date: '2026-08-22 21:48'
 labels:
   - ready-for-human
 dependencies:
@@ -20,11 +21,11 @@ Anmälningssidan får tre radikalt olika varianter växlingsbara på en dev-rout
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Tre varianter växlingsbara på en dev-route; utgångsläget är en exakt kopia av nuvarande /mer/anmalningar
-- [ ] #2 Varje variant går att se i alla tre lägen: ofiltrerad lista, åtgärdskö-läget och tomt läge
-- [ ] #3 Minst en variant bär personlistans radanatomi med anmälningsdata (initialcirkel, namn som länk, undertext 'N dagar sedan · Eventnamn', status som egen kolumn med reserverad plats)
-- [ ] #4 I varje variant leder en rad som behöver kopplas om till resolutionen — inget separat knappelement i raden
-- [ ] #5 Ingen variant bär betydelse enbart genom färg
+- [x] #1 Tre varianter växlingsbara på en dev-route; utgångsläget är en exakt kopia av nuvarande /mer/anmalningar
+- [x] #2 Varje variant går att se i alla tre lägen: ofiltrerad lista, åtgärdskö-läget och tomt läge
+- [x] #3 Minst en variant bär personlistans radanatomi med anmälningsdata (initialcirkel, namn som länk, undertext 'N dagar sedan · Eventnamn', status som egen kolumn med reserverad plats)
+- [x] #4 I varje variant leder en rad som behöver kopplas om till resolutionen — inget separat knappelement i raden
+- [x] #5 Ingen variant bär betydelse enbart genom färg
 - [ ] #6 Marcus väljer EN variant; valet citeras daterat på kortet
 <!-- AC:END -->
 
