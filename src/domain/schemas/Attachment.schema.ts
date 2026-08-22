@@ -77,9 +77,20 @@ export const AttachmentDownloadUrlSchema = z.object({
  * `../models/Attachment.ts` § DocumentPreview — se den docblocken för
  * varför formen är MEDVETET minimal (ingen `attachment`/`record`/
  * `storagePath`, AC #3).
+ *
+ * [ÄNDRAD, ADR-124, TASK-302.2] Formen var `{ pdfBase64: string }` fram
+ * till 2026-08-22 — en base64-kodad PDF-byteström. Den premissen (bytes
+ * till klienten räcker för att visa dokumentet) föll mot en mätning (sex
+ * klientleveransarmar, headed Chrome 151, `ADR-124` § Kontext): bara en URL
+ * SERVERAD AV NÄTVERKSTJÄNSTEN scrollar jämnt i Chromes PDF-visare. Formen
+ * är nu `{ url, utgar }` — en kort SIGNERAD Storage-URL till ett TRANSIENT
+ * utkast (`laggUtkast`, `_shared/utkast.ts`) i stället för bytes. Samma
+ * fältform som `UtkastResultatSchema` nedan, men egen SCHEMA-instans: de
+ * två svarar olika EF:er och delar ingen kod, bara fältform.
  */
 export const DocumentPreviewSchema = z.object({
-  pdfBase64: z.string(),
+  url: z.string().url(),
+  utgar: z.string().datetime(),
 });
 
 /**

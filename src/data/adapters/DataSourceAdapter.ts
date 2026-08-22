@@ -420,12 +420,16 @@ export interface DataSourceAdapter {
    * riktigt genererad PDF på alla mallar"). POST mot generate-event-
    * attachment MED `preview: true` — SAMMA EF, SAMMA `byggPdf`-anrop
    * (identisk PDF-kvalitet ur eventets verkliga data) som den persisterande
-   * vägen, men en gren som returnerar bytesen direkt och ALDRIG når
-   * Storage-uppladdningen eller Bilagor-radskapelsen (AC #3 — ingen
-   * kvarliggande artefakt, genereringen är transient per konstruktion, inte
-   * "genererad + städad"). Dokument-ytans Visa-dialog för mallar anropar
-   * denna LAZY (samma `enabled: isOpen`-mönster som
-   * `getAttachmentDownloadUrl`).
+   * vägen, men en gren som ALDRIG når Bilagor-radskapelsen (AC #3 — ingen
+   * kvarliggande Airtable-artefakt).
+   *
+   * [ÄNDRAD, ADR-124, TASK-302.2] Returnerar `{ url, utgar }` — en signerad
+   * URL till ett TRANSIENT Storage-utkast (`laggUtkast`), inte längre
+   * bytesen direkt. Bytes-till-klienten-premissen föll mot en mätning (sex
+   * klientleveransarmar, headed Chrome 151, `ADR-124` § Kontext): bara en
+   * URL serverad av nätverkstjänsten scrollar jämnt i Chromes PDF-visare.
+   * Dokument-ytans Visa-dialog för mallar anropar denna LAZY (samma
+   * `enabled: isOpen`-mönster som `getAttachmentDownloadUrl`).
    */
   previewEventTemplate(eventId: string): Promise<DocumentPreview>;
 
@@ -442,6 +446,10 @@ export interface DataSourceAdapter {
    * eventets namn är verkligt (samma eventId som Dokument-ytans valda
    * event). Kvittonumret är ALDRIG ett allokerat nummer ("FÖRHANDSVISNING",
    * en ärlig platshållare — se preview-receipt/index.ts § filhuvud).
+   *
+   * [ÄNDRAD, ADR-124, TASK-302.2] Returnerar `{ url, utgar }` — samma
+   * leveransväg-ändring som `previewEventTemplate` ovan (se dess docblock
+   * för mätningen). Kvittonummer-/mail-sidoeffektsfriheten är OFÖRÄNDRAD.
    */
   previewReceipt(eventId: string): Promise<DocumentPreview>;
 

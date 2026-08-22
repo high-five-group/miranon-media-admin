@@ -137,15 +137,22 @@ export interface AttachmentDownloadUrl {
  * Svaret från `DataSourceAdapter.previewEventTemplate`/`previewReceipt`
  * (TASK-246, klass B/C:s riktigt genererade men SIDOEFFEKTSFRIA förhands-
  * visning — Marcus-ordern 2026-08-16: "en riktigt genererad PDF på alla
- * mallar ... och även generatorn"). BÅDA metoderna returnerar SAMMA shape —
- * en base64-kodad PDF-byteström, ingenting mer (ingen `attachment`/`record`/
- * `storagePath` — de fälten hade antytt persistens som ALDRIG sker här,
- * AC #3). `pdfBase64` är MEDVETET rå (ingen data-URL-prefix) — konsumenten
- * (`DokumentYta.tsx`) avgör själv om den bygger en `Blob`/objekt-URL eller
- * en data-URI, samma "servern äger bytesen, klienten äger presentationen"-
- * linje som `generate-event-attachment`s existerande `pdfBase64`-fält
- * (persisterande vägen, TASK-146.5) redan etablerar.
+ * mallar ... och även generatorn"). BÅDA metoderna returnerar SAMMA shape.
+ *
+ * [ÄNDRAD, ADR-124, TASK-302.2] Formen var `{ pdfBase64: string }` fram
+ * till 2026-08-22 — en base64-kodad PDF-byteström, ingenting mer. Den
+ * premissen (bytes till klienten räcker för att visa dokumentet) föll mot
+ * en mätning (sex klientleveransarmar, headed Chrome 151, `ADR-124` §
+ * Kontext): bara en URL SERVERAD AV NÄTVERKSTJÄNSTEN scrollar jämnt i
+ * Chromes PDF-visare. Formen är nu `{ url, utgar }` — en kort SIGNERAD
+ * Storage-URL till ett TRANSIENT utkast (`laggUtkast`, `_shared/
+ * utkast.ts`) i stället för bytes. Fortfarande ingen `attachment`/`record`/
+ * `storagePath` — de fälten hade antytt en persistens som ALDRIG sker här
+ * (AC #3, nu amenderad — se EF-filhuvudenas verbatim-citat av `ADR-124` §
+ * Beslut 3). `utgar` är URL:ens ISO-utgångstid. Parallell sanningskälla:
+ * `../schemas/Attachment.schema.ts` § `DocumentPreviewSchema`.
  */
 export interface DocumentPreview {
-  pdfBase64: string;
+  url: string;
+  utgar: string;
 }

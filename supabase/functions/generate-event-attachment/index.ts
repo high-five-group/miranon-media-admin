@@ -60,12 +60,34 @@
 // ny yta). Samma eventuppgifts-läsning och SAMMA `byggPdf`-anrop som den
 // persisterande vägen (identisk PDF-kvalitet, "riktigt genererad ur eventets
 // verkliga data" — Marcus-ordern 2026-08-16) — grenen som SKILJER dem ligger
-// EFTER `pdfBytes` är byggda: `preview: true` returnerar `{pdfBase64}` direkt
-// och rör VARKEN Storage-uppladdningen NEDAN eller Bilagor-radskapelsen
-// (AC #3, hård gräns — ingen mail/bas-skrivning/kvarliggande artefakt är
-// relevant här eftersom klass B:s "sändning" bara ÄR Storage+Airtable-
-// skrivningen; en förhandsvisning som aldrig når den koden har per
-// konstruktion noll sidoeffekter, inte "sidoeffekter som sedan städas").
+// EFTER `pdfBytes` är byggda. Den rör ALDRIG Bilagor-radskapelsen NEDAN (ingen
+// mail/bas-skrivning/kvarliggande Airtable-artefakt är relevant här — den
+// delen av AC #3, TASK-146.5, står FORTFARANDE FAST).
+//
+// [ADR-124, TASK-302.2] AC #3 AMENDERAS ÖPPET, RIVS INTE — raden nedan löd
+// till och med 2026-08-22: "`preview: true` returnerar `{pdfBase64}` direkt
+// och rör VARKEN Storage-uppladdningen NEDAN eller Bilagor-radskapelsen …
+// en förhandsvisning som aldrig når den koden har per konstruktion noll
+// sidoeffekter, inte 'sidoeffekter som sedan städas'". Den premissen — att
+// bytes till klienten räcker för att visa dokumentet — föll mot en mätning
+// (sex klientleveransarmar, headed Chrome 151, `ADR-124` § Kontext): endast
+// en URL SERVERAD AV NÄTVERKSTJÄNSTEN scrollar jämnt. Ny, amenderad AC #3,
+// VERBATIM (`ADR-124` § Beslut 3):
+//
+//   Förhandsvisningen har noll KONSUMENT-SYNLIGA sidoeffekter: ingen
+//   Bilagor-rad, inget allokerat kvittonummer, inget mail. Den skriver ett
+//   TRANSIENT utkast under `utkast/<eventId>/<typ>.pdf` i bucket `bilagor`
+//   — aldrig listat i appen, överskrivet per event och typ (`upsert`),
+//   borttaget vid skarp generering — för att Chromes PDF-visare bara
+//   scrollar jämnt på en URL serverad av nätverkstjänsten (ADR-124).
+//
+// `preview: true` returnerar nu `{ url, utgar }` (`laggUtkast`, `_shared/
+// utkast.ts`, `typ: 'deltagarinformation'` — den enda systemmall v1 har
+// (`MALL_NAMN` nedan) HETER bokstavligen "Deltagarinformation", samma
+// enum-värde `UTKAST_TYPER` bär: ingen mall-gissning krävs). Den skriver ETT
+// transient Storage-objekt men rör ALDRIG Bilagor-tabellen, allokerar inget
+// kvittonummer och skickar inget mail — skyddets SYFTE (Lotta ser aldrig en
+// artefakt hon inte bett om, inget räknas) hålls intakt.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { PDFDocument, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1';
@@ -87,6 +109,7 @@ import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse, ValidationError } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
+import { laggUtkast } from '../_shared/utkast.ts';
 
 const OPERATION_KEY = 'create-attachment';
 
@@ -217,22 +240,34 @@ Deno.serve(async (req) => {
     const uppgifter = lasEventUppgifter(eventRecord);
     const pdfBytes = await byggPdf(uppgifter);
 
+    // Bytesen skrivs med FÖRHÖJD behörighet (service-role) — samma mönster
+    // som test-attachments-storage/index.ts (TASK-146.3). Klienten rör
+    // aldrig lagringen direkt (ADR-057); auktorisationsbeslutet (vilket
+    // event, vilken path) är redan fattat server-side ovan. [ADR-124,
+    // TASK-302.2] Både förhandsvisnings- och den persisterande grenen
+    // behöver klienten nu — instansierad EN gång, delad av båda.
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+
     if (preview) {
       console.log(`[generate-event-attachment] PREVIEW | caller_user_id=${user.id} | event=${eventId}`);
-      return new Response(JSON.stringify({ pdfBase64: toBase64(pdfBytes), requestId }), {
+      // [ADR-124, TASK-302.2] TRANSIENT utkast i Storage, inte bytes till
+      // klienten — se filhuvudets amenderade AC #3-stycke. `typ:
+      // 'deltagarinformation'` — systemmallens NAMN (`MALL_NAMN` nedan)
+      // matchar exakt detta enum-värde.
+      const { url, utgar } = await laggUtkast(supabaseAdmin, {
+        eventId,
+        typ: 'deltagarinformation',
+        bytes: pdfBytes,
+      });
+      return new Response(JSON.stringify({ url, utgar, requestId }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Bytesen skrivs med FÖRHÖJD behörighet (service-role) — samma mönster
-    // som test-attachments-storage/index.ts (TASK-146.3). Klienten rör
-    // aldrig lagringen direkt (ADR-057); auktorisationsbeslutet (vilket
-    // event, vilken path) är redan fattat server-side ovan.
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
     const attachmentId = crypto.randomUUID();
     // SAMMA deterministiska path-form som TASK-146.4:s mönster 1/2
     // (buildAttachmentPath, _shared/attachments.ts) — inte en egen variant
