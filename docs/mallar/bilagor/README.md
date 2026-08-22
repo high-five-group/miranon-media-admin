@@ -143,15 +143,17 @@ engångs-kodgenereringssteg. Ändras URL:erna: kör om kommandot ovan och
 ersätt `<svg>`-blocket i mallen (sök `ikonruta-qr` i
 `bekraftelsebilaga.html`).
 
-**Avsiktlig avvikelse mot förlagan:** förlagans QR-koder bär en logotyp
-centrerat INUTI själva QR-mönstret (en "branded QR"-design). Mallen här
-placerar ikonen som en separat badge i övre vänstra hörnet av QR-rutan i
-stället för ett centrerat överlägg. Skäl: ett korrekt centrerat överlägg
-kräver att man räknar ut vilka moduler som täcks vid vald
-felkorrigeringsnivå för att koden ska förbli skanningsbar — en risk jag
-inte vill introducera i en mall utan ett skarpt skanningstest, vilket är
-utanför denna skivas scope (ingen extern tjänst, inget skarpt utskick).
-Dokumenterad, inte tyst.
+**RÄTTAT 2026-08-22 (S108 Del 7 § B, mall-diffen mot förlagorna):** detta
+stycke påstod tidigare en *"avsiktlig avvikelse mot förlagan"* — att
+förlagans QR-koder bär en logotyp centrerat INUTI QR-mönstret och att
+mallen därför lade ikonen som en hörnbricka. **Båda leden var fel.**
+Förlagan har fem separata bilder; ingen QR bär något överlägg, så
+skanningsbarhets-resonemanget löste ett problem som inte fanns. Sidfoten
+är sedan mall-diffen ombyggd efter förlagans faktiska form — två mörkblå
+rutor (51,31 × 31,67 mm) med ikon och QR BREDVID varandra och bildtexten
+inuti, bokomslaget fritt emellan — och QR-SVG:erna är kopierade verbatim.
+Rättelsen står här i stället för att stycket tyst tagits bort, för att en
+läsare av git-historiken ska se vad som påstods och varför det föll.
 
 ## Visuell jämförelse mot förlagorna (AC #4)
 
