@@ -88,10 +88,65 @@ Airtable-formelsyntax.
 
 - **`284.1` är LANDAD och `Done`** — formelfältet driver markören
   (`AnmalningarList`) och räknaren (åtgärdskön på Hem). Rättningen är en
-  fält-ändring i basen: staging autonomt, prod kräver Marcus GO.
+  fält-ändring i basen. **Rättad formulering 2026-08-22:** raden sade
+  tidigare *"staging autonomt, prod kräver Marcus GO"*, vilket läste som om
+  fältet fanns i prod. Det gör det inte — `284.1` byggdes staging-only på
+  Marcus GO (kortets § Implementation Notes), och prods `Anmälningar` saknar
+  BÅDA fälten (`Datum (from Event)` och `Eventmatchning`; mätt fält för fält
+  2026-08-22). Prod ärver den rättade formeln via `TASK-284.6` — ingen egen
+  prod-rättning tillkommer av `T168`.
 - **`284.2` är ännu inte live.** Rättas skriptet innan det klistras in
   slipper vi två omgångar.
 - `284.3` (resolutionen) berörs inte — den skriver, den bedömer inte.
+
+## Utfall — rättad i staging 2026-08-22 (S110 resume 3)
+
+Marcus beslut: *"Ja rätta nu"*. Rekommendationen ovan verkställd i BÅDA
+ytorna, med samma jämförelse så de inte kan drifta isär.
+
+**Formen jämförs som förut** (den löser de tre mätta formateringsklasserna);
+**årtalen prövas som en EGEN axel.** Formen: extrahera första fyrsiffriga
+årtalet ur varje sida och pröva att det förekommer i den andra sidans råa
+sträng — **tvåvägs**, så jämförelsen är symmetrisk och tål att facit
+upprepar årtalet vid månadsskifte. Saknas årtal på någondera sidan ger
+axeln ALDRIG avvikelse (`ADR-122` beslut 4, oförändrad).
+
+Det är den praktiska formen av "jämför årtalens mängd": för högst två
+distinkta årtal — vilket alla realistiska datumsträngar bär — är den
+ekvivalent med en mängdjämförelse.
+
+### Bevis
+
+**Ny permanent fixtur:** `ZZ-TASK-284.1 Fixtur Fel år`
+(`recdKgK82XA0Oa2ee`), registrerad i `tests/api/fixtures.ts`. Egen `Datum`
+= `31 oktober–1 november 2025` mot facit `31 oktober 2026 – 1 november
+2026`. Mätt i BÅDA riktningar mot samma rad:
+
+| | `Eventmatchning` |
+|---|---|
+| Före rättningen | **`OK`** — buggen bekräftad live, inte bara härledd |
+| Efter rättningen | **`Avviker`** |
+
+**Regressionsskyddet:** de fyra befintliga fixturerna OFÖRÄNDRADE över
+rättningen — `OK` (tre formateringsklasser) · `Avviker` (ort + kurs) ·
+`OK` (tom ort, trestegslogiken) · `Utan event`.
+
+**Skriptet:** `datumAvviker` prövad isolerat i Node, 9 fall gröna —
+inklusive årsskiftesspannet `2026→2027` (ska INTE fälla) och saknat årtal
+på en sida (ska INTE fälla).
+
+### Landat
+
+- Formelfältet `fldYz2NRZJjyX8VWB` i staging `apphjj8Q7lkXCMsL4`,
+  `actionId: actQ2Y7XUOsqI5dMo`.
+- Skriptet + fixtur-registreringen: commit `f5b7ee25` på `#1722`:s gren
+  (`spec/s110-284.2-vakten-matchningssteget`, kvar som draft).
+
+### Kvarstår
+
+Prod-utrullningen via `TASK-284.6` — den skapar fälten för första gången
+och ärver därmed den rättade formeln direkt. `T168` stängs när `284.6`
+är verkställd.
 
 ## Besläktat
 
