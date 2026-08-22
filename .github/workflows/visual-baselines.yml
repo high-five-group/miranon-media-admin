@@ -148,6 +148,20 @@ jobs:
       # igen — det som passerar hit har redan lösts upp mot en verklig spec.
       # Den tomma grenen är byte-identisk med kommandot som kördes före
       # TASK-298 och grindas som invariant av testsviten.
+      #
+      # FILTRET STÅR FÖRE FLAGGAN, OCH DET ÄR INTE KOSMETIK. `-u,
+      # --update-snapshots [mode]` tar ett VALFRITT argument, så formen
+      # `--update-snapshots "${FILTER}"` läser filtret som LÄGE och dör:
+      #   error: option '-u, --update-snapshots [mode]' argument
+      #   'personer-promoverings-grind' is invalid. Allowed choices are
+      #   all, changed, missing, none.
+      # Mätt skarpt i run 32590344458 (2026-08-22) — första riktade
+      # dispatchen föll på exakt detta. Med filtret före flaggan står
+      # --update-snapshots sist utan efterföljande token och behåller sitt
+      # preset ("changed", per `playwright test --help`), vilket gör att
+      # BÅDA grenarna använder flaggan i identisk bar form — läget kan
+      # därmed inte drifta isär mellan normalvägen och den riktade vägen.
+      # Ordningen grindas som invariant av testsviten.
       - name: Generera baselines i linux-miljön
         env:
           FILTER: ${{ steps.scope.outputs.filter }}
@@ -156,7 +170,7 @@ jobs:
           if [[ -z "${FILTER}" ]]; then
             npm run test:visual -- --update-snapshots
           else
-            npm run test:visual -- --update-snapshots "${FILTER}"
+            npm run test:visual -- "${FILTER}" --update-snapshots
           fi
 
       - name: Öppna baseline-PR om bilderna ändrats

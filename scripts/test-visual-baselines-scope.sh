@@ -246,6 +246,16 @@ printf '\n== INVARIANTER i visual-baselines.yml ==\n'
 invariant 'default-kommandot är byte-identiskt (hela sviten, inget filter)' \
     1 '^ +npm run test:visual -- --update-snapshots$'
 
+# ORDNINGEN ÄR LOAD-BEARING, inte kosmetik. `-u, --update-snapshots [mode]`
+# tar ett VALFRITT argument, så formen `--update-snapshots "${FILTER}"`
+# läser filtret som LÄGE och dör med "argument ... is invalid. Allowed
+# choices are all, changed, missing, none." Mätt skarpt i run 32590344458
+# (2026-08-22) — första riktade dispatchen föll på exakt detta. Med filtret
+# FÖRE flaggan står --update-snapshots sist utan efterföljande token och
+# behåller sitt preset, så båda grenarna bär flaggan i identisk bar form.
+invariant 'det riktade kommandot sätter filtret FÖRE flaggan' \
+    1 '^ +npm run test:visual -- "\$\{FILTER\}" --update-snapshots$'
+
 # Default-titeln likaså: en granskare som ser den gamla titeln ska kunna
 # lita på att körningen var fullständig.
 invariant 'default-PR-titeln är oförändrad' \
