@@ -1,9 +1,10 @@
 ---
 id: TASK-284
 title: 'PRD: Eventlänkens vakt och åtgärdskön'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 10:40'
+updated_date: '2026-08-22 12:19'
 labels: []
 dependencies: []
 ordinal: 515000
@@ -240,8 +241,14 @@ tröskeln sätts.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PRD stängd 2026-08-22 (S110 Del 12): alla sex skivor Done. 284.1 jämförelsefälten (staging) · 284.2 vakten i A1 (T167 löst via UI-väg, T168 årsblindheten rättad två gånger) · 284.3 resolution i appen (relink-registration sätter Event + EventKey) · 284.4 åtgärdskön på Hem som bevakningsradstyp · 284.5 QA-vandringen · 284.6 prod-utrullningen i låst ordning. Vakten är live i prod sedan 2026-08-22; prod-kön = 3 (Lottas 21/22/23). Öppet efter stängningen, bokfört på egna kort: TASK-291 (radens särskiljning → 284.4 DoD #6 facit-amendering), TASK-292 (anmälningssidans konvergenspass), TASK-293 (+ → mellanslag i normaliseringen), T161 (ADR-122-amendering: Event (namn) är formel). Beslut: ADR-122.
+<!-- SECTION:FINAL_SUMMARY:END -->
