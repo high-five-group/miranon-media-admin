@@ -4,7 +4,7 @@ title: 'Skiva: Facit amenderas — låset sätts om mot den nya formen'
 status: To Do
 assignee: []
 created_date: '2026-08-21 08:55'
-updated_date: '2026-08-22 12:11'
+updated_date: '2026-08-22 12:36'
 labels:
   - ready-for-human
 dependencies:
@@ -51,17 +51,21 @@ Täcker användarberättelser: inga nya — säkrar formen som skiva 2 och 3 byg
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-ÖVERLÄMNING FRÅN TASK-285.11 (2026-08-22, S109 resume 3) — visual-baslinjen hör hit.
+RÄTTELSE 2026-08-22 (S109 resume 3) — min tidigare överlämningsnot mätte fel.
 
-TASK-285.11 kunde inte ta sin AC #4 (visual-baslinje för notis, offline, chunk-banner, meddelanderutan) utan att samtidigt skriva om personlistans pixel-lås. Skälet är mätt: visual-baselines.yml kör hela sviten med --update-snapshots, personer.spec.ts bär fyra baselines (två linux), och TASK-286.3 (1b226272) har redan ändrat personlistans sortering. TASK-283.2 ändrar samma yta igen.
+Noten ovan säger att ariaSnapshot-referenserna är 'brutna sedan TASK-286.3 och VIDGADE av TASK-283.2'. Andra halvan håller inte, mätt av TASK-283.2:s bygg-agent med samma kommando på samma maskin:
 
-Att ta baslinjen före denna skiva vore samma felklass som detta korts egen text förbjuder på struktur-axeln: låset får inte återställas av arbetet som bröt det.
+  main före skivan:  10 passerade, 6 fällda
+  efter skivan:      10 passerade, 6 fällda
 
-DENNA SKIVA BÄR DÄRFÖR TVÅ LÅS, INTE ETT:
-1. ariaSnapshot-referenserna (kortets ursprungliga scope) — sex referenser, brutna sedan TASK-286.3 och vidgade av TASK-283.2
-2. Pixel-baslinjerna — notisfamiljens fyra ytor (TASK-285.11 AC #4) plus personlistans egna
+SAMMA sex fall båda gångerna (listläget + två ?variant=-degraderingar × två vyporter). Bokstavsraden tillför NOLL nya fällningar.
 
-Båda regenereras EFTER Marcus godkännande av den färdiga formen, aldrig före. En dispatch, ett granskningstillfälle.
+Mekanismen: Playwrights toMatchAriaSnapshot matchar PARTIELLT — extra syskonnoder tolereras så länge referensens egna noder står i samma inbördes ordning. Bokstavsraden är en sådan extra nod. De sex fallen fäller på ORDNING (sentinel-flytten i TASK-286.3), aldrig på tillägget.
 
-FÖRKRAV ATT MÄTA FÖRE DISPATCH: 'Allow GitHub Actions to create and approve pull requests' är en tre-nivåers kedja (enterprise → org → repo) som slogs AV när repot flyttades till org 2026-07-27. Utan den failar workflowen på gh pr create (empiriskt: run 30079692827, run 30292488425). Se visual-baselines.yml filhuvud. Mät den INNAN dispatchen avfyras — inte mitt i.
+TASK-283.2:s eget kort (AC #10) påstod motsatsen: 'promoverings-grindens sex referenser fäller så snart raden finns'. Även det är falsifierat.
+
+DEN EGENTLIGA SKULDEN ÄR SKARPARE, INTE MILDARE:
+Alla sex referenserna saknar numera bokstavsraden och beskriver inte längre ytan. De är GRÖNA MEN OFULLSTÄNDIGA — ett svagare lås än det Marcus stämplade 2026-08-10, och svagheten syns INTE i en röd grind. En regression i raden fångas av ingenting.
+
+Konsekvens för denna skiva: regenereringen av de sex referenserna är inte en reparation av något rött, utan en ÅTERSTÄLLNING AV LÅSETS TÄCKNING. Den får därför inte hoppas över för att grinden råkar vara grön.
 <!-- SECTION:NOTES:END -->
