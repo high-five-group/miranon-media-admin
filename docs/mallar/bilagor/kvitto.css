@@ -20,7 +20,7 @@
  * selawik`), som redan rör exakt den filen samtidigt.
  *
  * MÅTTEN ÄR MÄTTA, INTE GISSADE. Källa: Rogers skarpa kvitto
- * (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 Ulrika Berge.pdf`,
+ * (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 kvitto-forlaga.pdf`,
  * T170) - avkodad PDF-innehållsström (operatorerna `Tf`/`cm`/`Tm` ger exakt
  * typgrad; SVG-export via `pdftocairo -svg` ger exakta path-koordinater för
  * de tre rundade rutorna, inklusive hörnradien ur bezier-kontrollpunkterna)
@@ -291,7 +291,13 @@
 
 .kvitto-totalruta {
   display: flex;
-  align-items: baseline;
+  /* flex-start, inte baseline: BETALT-kolumnen är sedan SEK-prefixet en RAD
+    ([SEK][kolumn]) vars första baslinje är SEK:s = beloppsradens, så
+    `baseline` lyfte hela BETALT-kolumnen en rad över de andra. Mätt i
+    förlagan (bbox): ETIKETTERNA delar rad (Netto 659,36 pt = BETALT
+    659,36 pt) och det stora 13 pt-beloppet sticker NER under de andras
+    9 pt-belopp - alltså toppjustering. */
+  align-items: flex-start;
   gap: 6mm;
   margin-top: 4mm;
   border-radius: 3.5mm; /* mätt hörnradie: 3,48 mm */
@@ -327,6 +333,23 @@
     som de fyra andra kolumnerna. */
   flex: 0 0 auto;
   margin-left: auto;
+  /* SEK-prefixet (S108 resume 5, PR #1791: valutan sätts EN gång, som
+    Roger). Mätt (bbox): "SEK" xMax 460,19 pt -> "BETALT" xMin 478,77 pt =
+    18,58 pt (6,55 mm) gap; SEK:s bbox-höjd 15,86 pt = samma grad som
+    beloppet (13 pt), på beloppets baslinje, INTE på etikettens. Därför en
+    rad: [SEK][kolumn BETALT/belopp] med baslinje-justering mot nederkanten. */
+  display: flex;
+  align-items: flex-end;
+  gap: 6.55mm;
+}
+
+.kvitto-total-betalt .kvitto-total-kolumn {
+  flex: 0 0 auto;
+}
+
+.kvitto-total-valuta {
+  font-size: 13pt;
+  font-weight: 700;
 }
 
 .kvitto-total-varde-stor {

@@ -5,7 +5,7 @@
   Ersätter INGET kod-anrop ännu - `renderKvittoPdf` (`_shared/receipt-pdf.ts`)
   ritar fortfarande text på koordinater med pdf-lib. Den här mallen är
   FORMEN, byggd mot Rogers skarpa kvitto
-  (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 Ulrika Berge.pdf`,
+  (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 kvitto-forlaga.pdf`,
   T170), inte en ny renderingsväg - kopplingen till DocRaptor är en senare
   skiva (ADR-119 beslut 7 kräver ett minimaltest först).
 
@@ -66,6 +66,7 @@
     <div class="kvitto-fakturaadress">
       <p class="kvitto-fakturaadress-etikett">Fakturaadress:</p>
       <p>{{kundnamn}}</p>
+      <p>{{kundEpost}}</p>
     </div>
   </div>
 
@@ -106,9 +107,12 @@
       <span class="kvitto-total-etikett">Öresavr</span>
       <span class="kvitto-total-varde">0,00</span>
     </div>
-    <div class="kvitto-total-kolumn kvitto-total-betalt">
-      <span class="kvitto-total-etikett">BETALT</span>
-      <span class="kvitto-total-varde-stor">{{brutto}}</span>
+    <div class="kvitto-total-betalt">
+      <span class="kvitto-total-valuta">SEK</span>
+      <div class="kvitto-total-kolumn">
+        <span class="kvitto-total-etikett">BETALT</span>
+        <span class="kvitto-total-varde-stor">{{brutto}}</span>
+      </div>
     </div>
   </div>
 
