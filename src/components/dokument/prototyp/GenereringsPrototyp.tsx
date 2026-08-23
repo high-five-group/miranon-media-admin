@@ -1,42 +1,54 @@
 /**
- * [PROTOTYPE, S108] Genereringsvyn — KONVERGENS.
+ * [PROTOTYPE, S108] Genereringsvyn — KONVERGENS, NU MOT RIKTIG DATA
+ * (TASK-309.6, ADR-125).
  *
- * FRÅGAN PROTOTYPEN BESVARAR (S108 Del 2 § I, Marcus 2026-08-20):
+ * FRÅGAN PROTOTYPEN BESVARADE (S108 Del 2 § I, Marcus 2026-08-20):
  *
  *   "Vad ser Lotta när hon genererar bekräftelsebilagan för Arboga-eventet
  *    31 oktober?"
  *
- * Den stänger `T153` (modellen prövad mot fler dokument än två) och `T154`
+ * Den stängde `T153` (modellen prövad mot fler dokument än två) och `T154`
  * (logiska luckan mellan beslut 6 och 7 — vad inaktuell-markeringen betyder
- * när ett event skrivit över ett block). Formen är DIREKT KONVERGENS (Marcus
- * 2026-08-20, i samma andetag som pausen): en variant, ingen divergensfas,
- * itererad i dev-servern tills han är nöjd. Promoveringskontraktet (ADR-103)
- * gäller — den godkända formen promoveras, det som rivs är växlar.
+ * när ett event skrivit över ett block). Formen var DIREKT KONVERGENS
+ * (Marcus 2026-08-20): en variant, ingen divergensfas, itererad i
+ * dev-servern tills han var nöjd. Promoveringskontraktet (ADR-103) gäller —
+ * DENNA skiva byter bara datavägarna, formen är oförändrad mot det
+ * godkända varvet (Marcus *"Nu är jag helt nöjd"*).
  *
  * HEMVIST: underform A — monterad på den skarpa routen `/mer/dokument` bakom
  * `?variant=a`, DEV-grindad i routen (ADR-044/ADR-103 B3: EN läspunkt).
  * `?vy=lista|generering` + `?mall=bekraftelse|deltagarinfo` adresserar läget
- * så en URL kan delas.
+ * så en URL kan delas. `?event=` (delad med `DokumentYta.tsx`, samma
+ * queryKey) väljer eventet.
  *
- * DATA: Arboga-eventet (`Event-59`, prod-läst 2026-08-21 — finns INTE i
- * staging) är en in-memory-fixtur; Eventinnehåll och Platser är de två
- * ENTITETER S108-grillningen beslutade (Del 2 § D beslut 1, 6, 8) men som
- * inte finns i basen än — här som fixturer med mallens VERBATIM-text
- * (`docs/mallar/bilagor/*.html`). Ingen write någonstans; allt tillstånd
- * lever i minnet och dör med omladdning (prototype-skillen, regel 3).
+ * DATA ÄR NU RIKTIG (TASK-309.6): eventet kommer ur `EventValjare`
+ * (`dataSource.fetchEvents()`), och underlaget (Eventinnehåll/Platser/
+ * agenda/eventets egna kopior) ur `getDocumentSources` — ARBOGA-fixturen,
+ * `PLATSER_SEED` och `EVENTINNEHALL`-konstanten (som bar allt detta i
+ * minnet) är RIVNA. Block-dialogens Spara skriver DIREKT mot skiva 2:s
+ * skrivvägar (`useSaveEventText`/`useGenereraEventBilaga`s
+ * platsstandard-gren) — inget lokalt `overrides`-state längre; `sources`
+ * (React Query-cachen) ÄR sanningskällan, en lyckad skrivning invaliderar
+ * den och nästa render läser det som faktiskt sparades.
  *
- * DOKUMENTET ÄR DET RIKTIGA: "Skapa" hämtar den faktiska mallen
- * (`docs/mallar/bilagor/<mall>.html`, serverad rakt av Vite i dev), fyller i
- * blocken, TAR BORT de utelämnade och öppnar resultatet i ett nytt fönster.
- * Det är vad Lotta ser — inte en ruta som säger att en PDF hade skapats.
+ * DOKUMENTET ÄR DET RIKTIGA: "Skapa" anropar `generate-event-attachment`
+ * (via adaptern, `useGenereraEventBilaga`) som renderar server-side
+ * (`_shared/mall-render.ts`, Eta + DocRaptor) och persisterar en Bilagor-
+ * rad — ingen HTML byggs längre i klienten (`sjalvbarande.ts` riven,
+ * AC #6). Det är vad Lotta ser — inte en ruta som säger att en PDF hade
+ * skapats.
  *
  * LISTA-VYN är en kopia av Dokument-ytans form i eventläget (`DokumentYta.tsx`
- * § DokumentLista) — startpunkten ska vara EXAKT kopia (T66), därför är
+ * § DokumentLista) — startpunkten var EXAKT kopia (T66), därför är
  * klasserna stulna rad för rad, inte omtolkade. Skillnaden mot skarpa: två
  * mallrader i stället för en, och mallradens knapp leder till genereringsvyn
- * i stället för direkt till PDF:en.
+ * i stället för direkt till PDF:en. Denna skiva byter bara vilket event
+ * listan/knapparna pekar på (eventväljaren, riktig) — den skarpa
+ * DokumentYta.tsx-listans EGNA komponenter (Mall-badge, INAKTUELL, Skapa om)
+ * byggs INTE in i denna kopia (skiva 7 ersätter kopian helt).
  */
 
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import {
   ChevronLeft,
@@ -56,7 +68,6 @@ import {
   DatumEnkel,
   DIALOG_ANKARE,
   DIALOG_PANEL_KLASS,
-  datumUtanAr,
   IKON_STORLEK,
   Kryss,
   type Override,
@@ -77,292 +88,179 @@ import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
-import type { UtkastTyp } from '@/data/adapters/DataSourceAdapter';
 import { useForhandsgranskaBilaga } from '@/data/mutations/useForhandsgranskaBilaga';
+import { useGenereraEventBilaga } from '@/data/mutations/useGenereraEventBilaga';
+import { useSaveEventText } from '@/data/mutations/useSaveEventText';
+import { useDocumentSources } from '@/data/queries/useDocumentSources';
+import { useDataSource } from '@/data/useDataSource';
+import type { DocumentSources } from '@/domain/models/DocumentSources';
 import type { Event } from '@/domain/models/Event';
+import type { EventTextFalt, PlatsFalt } from '@/domain/schemas';
 import { cn } from '@/lib/cn';
-import { gorSjalvbarande } from './sjalvbarande';
-
-/* ------------------------------------------------------------------ *
- * FIXTURER
- * ------------------------------------------------------------------ */
-
-/**
- * Event-59, läst ur prod 2026-08-21 (`recqA2Us1FByBnibz`).
- *
- * [TASK-302.1] `id` är den RIKTIGA rec-formen (var `'proto-event-59'` innan
- * denna skiva) — `laggUtkast`/`test-docraptor-render` validerar `eventId`
- * mot Airtable-rec-formen (`isValidEventId`, `_shared/attachments.ts`,
- * SAMMA grind som `create-registration`/`create-event-note`) innan den
- * används som Storage-sökvägssegment. Storage-anropet slår aldrig upp
- * eventet i Airtable (till skillnad från t.ex. `upload-attachment`) — id:t
- * behöver bara ha RÄTT FORM, inte peka mot en rad som existerar i den bas
- * appen just nu pratar med. Ingen annan plats i filen bryr sig om
- * id-formen (enda övriga användningen är `EventValjare`s display-prop
- * `valtEventId`, som redan förväntar sig `rec…`-nycklar för riktiga event).
- */
-const ARBOGA: Event = {
-  id: 'recqA2Us1FByBnibz',
-  eventlabel: 'Arboga - Utbildning - Resor i medvetandet 1 - 2026-10-31',
-  eventNamn: 'Resor i medvetandet 1',
-  typ: 'Utbildning',
-  ort: 'Arboga',
-  startdatum: '2026-10-31',
-  slutdatum: '2026-11-01',
-  tidKvarTillEvent: '10 veckor och 1 dagar',
-  maxPlatser: 20,
-  antalAnmalda: 1,
-  platserKvar: 19,
-  anmaldBelaggning: 0.05,
-  bekraftadBelaggning: 0,
-  antalNyaAnmalningar: 1,
-  antalAnmalningsavgifter: 0,
-  antalSlutbetalningar: 0,
-  antalSlutbetalningFelande: 1,
-  status: 'Planerat',
-  eventKey: 'Event-59',
-  kursfamilj: 'RIM',
-  kursniva: 'Nivå 1',
-};
-
-// AgendaRad UTBRUTEN (TASK-309.7) till `@/components/dokument/BlockDialog`
-// — importerad ovan.
-
-/**
- * Eventinnehåll för kombinationen Event "Resor i medvetandet 1" × Eventtyp
- * "Utbildning" (ORDLISTA § Eventinnehåll). Texten är mallens, verbatim.
- * Beskrivningen bor i mallens markup (fetade nyckelord) och hämtas därifrån
- * vid rendering; här bär vi bara en förhandsvisning av den.
- */
-const EVENTINNEHALL = {
-  etikett: 'Resor i medvetandet 1 · Utbildning',
-  tid: 'kl. 10:00 - 17:00',
-  pris: '2.500',
-  anmalningsavgift: '1000:-',
-  resterandeBelopp: '1500:-',
-  /* Rogers VERBATIM beskrivningstext ur `docs/mallar/bilagor/
-     bekraftelsebilaga.html` — inte en forhandsvisning. Den forra fixturen
-     var avkortad med ett ellipsis-tecken, vilket dolde att blockets egen
-     yta klippte texten: Lotta maste se ALLT som hamnar i bilagan. */
-  beskrivning:
-    'Utbildningen Resor i Medvetandet kommer att ge dig en djupare insikt om medvetandet, både genom att teoretiskt förklara vad vi är och att praktiskt öva i extremt djupa meditationer. Vi går igenom helt nya medvetandemodeller som faktiskt kan förklara det som tidigare kallats för övernaturligt och paranormalt. I denna utbildning får du själv ta de första stegen på din resa i vårt gemensamma medvetande. Medvetandet är det centrala och du kommer både få göra praktiska övningar tillsammans med massor med konkreta tips, samtidigt som vi förklarar de djupare insikter som ligger bakom våra upplevelser i våra liv.\n\nDu behöver inga förberedande kunskaper eller erfarenheter, men du måste komma med ett mycket öppet sinne. I utbildningen har vi lagt ett starkt fokus på din egen upplevelse och din egen personliga resa i medvetandet. Boken Utanför Verkligheten ligger till grund för nya sätt att se på verkligheten genom att öppna upp ditt sinne för en helt ny värld och verklighet.\n\nDu kommer även att få lära dig om Additiv meditation, en meditationsteknik, som gör det möjligt att ta sig extremt djupt i medvetandet. Med en kombination av tusenårig kunskap och modern teknik kan man uppnå mentala tillstånd som helt klart bryter mot vad vi tror är begränsningar i verkligheten. Vi arbetar med mentala ankare och planerar intentioner. Du får tillfälle att fråga om precis vad som helst, exempelvis om synkronicitet, Akashi arkivet, reinkarnationsprocessen, eller om dina guider. Du kommer att i detalj få reda på hur du planerar och utför dina resor med hjälp av extrem meditation och en välfylld mental verktygslåda. Vi berättar om varför Punktmedvetandet är så viktigt för att uppnå högre mentala tillstånd. Du kommer att få en inblick varifrån kreativitet, inspiration och ökade mentala förmågor kommer.',
-  dagEtt: [
-    { text: 'Miranon Media', tid: '', meditation: false },
-    { text: 'Miranon-Nivåer (lite om)', tid: '', meditation: false },
-    { text: 'Additiv Meditation', tid: '', meditation: false },
-    { text: 'Meditation: Eken Plus Djup avslappning', tid: '30 min', meditation: true },
-    { text: 'Mentala hinder', tid: '', meditation: false },
-    { text: 'Filosofi: materialism/idealism', tid: '', meditation: false },
-    { text: 'Medvetandemodeller', tid: '', meditation: false },
-    { text: 'Kvantfysik', tid: '', meditation: false },
-    { text: 'Synkronicitet, fjärrskådning', tid: '', meditation: false },
-    { text: 'Meditation: Fåtöljen', tid: '5 min', meditation: true },
-    { text: 'Meditation: Kraftfältet Plus', tid: '30 min', meditation: true },
-    { text: 'Upplevelser utanför kroppen', tid: '', meditation: false },
-    { text: 'Utmaningar utanför kroppen', tid: '', meditation: false },
-    { text: 'Meditation: Uthuset', tid: '45 min', meditation: true },
-  ] satisfies AgendaRad[],
-  dagTva: [
-    { text: 'Meditation Fyren', tid: '40 min', meditation: true },
-    { text: 'Intention - Föreställning - Skapande', tid: '', meditation: false },
-    { text: 'Meditation & fokus', tid: '', meditation: false },
-    { text: 'Klicka ut eller sömn', tid: '', meditation: false },
-    { text: 'Punktmedvetande', tid: '', meditation: false },
-    { text: 'Mentala Ankare / Grundning/Jordning', tid: '', meditation: false },
-    { text: 'Meditation Klockan', tid: '40 min', meditation: true },
-    { text: 'Ljud & Frekvenser, EEG', tid: '', meditation: false },
-    { text: 'Tankeövning', tid: '5 min', meditation: false },
-    { text: 'Var observatören', tid: '', meditation: false },
-  ] satisfies AgendaRad[],
-  forberedelser:
-    'Kom som du är! Ta en lugn hemmakväll dagen före utbildningen, men ändra absolut inte på dina mediciner eller vanor. Sluta inte med nikotin eller kaffe strax före utbildningen. Förändringar påverkar din mentala kapacitet negativt. Däremot skall du inte dricka alkohol alls några dagar före. Naturligtvis tillåter vi inte användandet av droger. Förbered dig gärna genom att läsa boken och lyssna på meditationerna Eken & Kraftfältet som finns på Spotify.',
-  tagMed:
-    'Kudde, filt, ögonmask (förtejpade skidglasögon, så du kan öppna ögonen under masken). Vi har madrasser till alla deltagare. Vi mediterar upp till 45 minuter, så det är bra om du kan ligga bekvämt. Tag med ett anteckningsblock, penna och vattenflaska.',
-  rokning:
-    'Hela området är rökfritt, med hänsyn till alla andra. Du kommer att få tid att ta en promenad under pauserna.',
-  parfym:
-    'Under meditationerna ägnar vi oss åt sensorisk deprivation, dvs. minimerar sinnesintryck. Var snäll och använd INTE parfym, parfymerade krämer, eller något som luktar starkt.',
-  mat: 'Mat ingår inte, men vi kommer att arrangera hämtmat, och det går bra att ta med matlåda. Vi bjuder på fika.',
-  overnattning: 'Ingår inte, maila lotta@outsidereality.se om du vill ha tips på boende.',
-  utrustning:
-    'Under utbildningen gör vi meditationer med hörlurar, vi har utrustning till alla. Du får använda egna hörlurar om du vill, men de måste då ha en sladd med 3,5 mm anslutning.',
-};
-
-/** Platser (ORDLISTA § Plats) — Rönninge seedas vid bygget (beslut 6). Arboga finns INTE. */
-type PlatsFalt = 'adress' | 'parkering' | 'transport' | 'klader';
-type Plats = { namn: string } & Record<PlatsFalt, string>;
-const PLATSER_SEED: Record<string, Plats> = {
-  Rönninge: {
-    namn: 'Rönninge',
-    adress: 'Uttringe Hages väg 17, Rönninge',
-    parkering:
-      'Vi har 15 parkeringsplatser om vi dubbelparkerar. Om dessa är fulla så finns det plats att parkera på andra platser i området, det kostar inget, men du kanske får promenera några minuter.',
-    transport:
-      'Vi kan hämta och lämna dig på Rönninge Station, boka detta med lotta@outsidereality.se',
-    klader:
-      'Under utbildningen mediterar vi en hel del, så välj några sköna mjukiskläder. Lätta skor eller tofflor är praktiskt att ha med när man går mellan husen. Ta gärna med skor för promenad och lämpliga ytterkläder. Det kan vara så att vi behöver jorda oss mellan meditationerna.',
-  },
-};
+import { queryKeys } from '@/queries/keys';
 
 /* ------------------------------------------------------------------ *
  * BLOCKMODELLEN — beslut 1 (fält med standardvärde), 5 (tomt block
  * utelämnas, aldrig tyst), 6 (texten hör till eventet, kan sparas som
- * platsens standard).
+ * platsens standard). RIKTIG DATA (TASK-309.6): fixturerna
+ * (`ARBOGA`/`EVENTINNEHALL`/`PLATSER_SEED`) är RIVNA — eventet kommer ur
+ * `EventValjare` och underlaget ur `getDocumentSources` (adaptern),
+ * `useDocumentSources`-hooken.
  * ------------------------------------------------------------------ */
 
-/**
- * [TASK-302.1] `MallId` → utkast-vägens `typ`-diskriminator
- * (`UtkastTyp`, `DataSourceAdapter.ts`) — `bekraftelse` ÄR en `bilaga`
- * (bekräftelsebilagan), `deltagarinfo` är `deltagarinformation`. Samma tre
- * enum-värden som `_shared/utkast.ts`s `UTKAST_TYPER`; `kvitto` hör till
- * Dokument-ytans klass C-väg (`TASK-302.2`, utanför denna prototyp).
- */
-const MALL_TILL_UTKAST_TYP: Record<MallId, UtkastTyp> = {
-  bekraftelse: 'bilaga',
-  deltagarinfo: 'deltagarinformation',
-};
 // BlockId/BlockDef/Kalla/Grupp/INFORUTA_BAS/GRUPPER/INFORUTA_IDN UTBRUTNA
 // (TASK-309.7, ADR-125 § 7) till `@/components/dokument/blockDefinitioner`
 // — Mer-sidans Eventinnehåll-/Platser-ytor delar samma blockkarta, se den
 // modulens filhuvud för hela motiveringen. Importerade ovan.
 
-const MALL_META: Record<MallId, { namn: string; fil: string; fastForm: string }> = {
-  bekraftelse: {
-    namn: 'Bekräftelsebilaga',
-    fil: 'bekraftelsebilaga.html',
-    fastForm:
-      'logga, Swish- och Plusgironummer, "Frågor mejla till", hälsningen och sidfotens QR-koder',
-  },
-  deltagarinfo: {
-    namn: 'Deltagarinformation',
-    fil: 'deltagarinformation.html',
-    fastForm:
-      'logga, ingressen, "Frågor mejla till", "Kom gärna en liten stund innan" och hälsningen',
-  },
+const MALL_META: Record<MallId, { namn: string }> = {
+  bekraftelse: { namn: 'Bekräftelsebilaga' },
+  deltagarinfo: { namn: 'Deltagarinformation' },
 };
 
-const VECKODAG = new Intl.DateTimeFormat('sv-SE', { weekday: 'long' });
+/**
+ * BlockId → `DocumentSourcesKopior`/`EventTextFalt`-nyckeln blockets
+ * standard/kopia-par bor under (TASK-309.6, ADR-125 § 2) — SAMMA nyckel
+ * används för LÄSNING (`sources.kopior[nyckel]`) och SKRIVNING
+ * (`useSaveEventText`s `falt: { [nyckel]: värde }`), en enda karta så de
+ * två aldrig kan glida isär. `'rubrik'` (låst, härlett ur eventet) och
+ * `'dagEtt'`/`'dagTva'` (agenda, egen väg) saknas MEDVETET — de har ingen
+ * `kopior`-nyckel. `'datumTid'` mappar till `'tid'` — se `byggRad`s
+ * dokblock för varför blockets VÄRDE ändå är en kombinerad, härledd sträng.
+ */
+const BLOCK_TILL_FALT: Partial<Record<BlockId, EventTextFalt>> = {
+  datumTid: 'tid',
+  plats: 'adress',
+  tid: 'tid',
+  pris: 'pris',
+  anmalningsavgift: 'anmalningsavgift',
+  resterande: 'resterandeBelopp',
+  sistaBetalningsdag: 'sistaBetalningsdag',
+  beskrivning: 'beskrivning',
+  forberedelser: 'forberedelser',
+  klader: 'klader',
+  tagMed: 'tagMed',
+  rokning: 'rokning',
+  parfym: 'parfym',
+  mat: 'mat',
+  overnattning: 'overnattning',
+  parkering: 'parkering',
+  transport: 'transport',
+  utrustning: 'utrustning',
+};
+
 const DAG_MANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
 const AR = new Intl.DateTimeFormat('sv-SE', { year: 'numeric' });
 
 /**
- * "lördag-söndag den 31 oktober-1 november 2026". Förlagan skriver spannet
- * med tankstreck (–); vi skriver kort streck per `.langa-streck-policy.json`
- * (Marcus-beslut 2026-08-09: korta streck vinner även i datumspann, samma
- * rivning som `datumSpann.ts`). Avvikelsen mot förlagan är MEDVETEN och
- * ligger hos Marcus som fråga F8 i malldiff-rapporten (S108 resume 5).
+ * Bygger en `Rad` DIREKT ur `DocumentSources` (TASK-309.6) — inget lokalt
+ * `overrides`-state längre: `sources.kopior[nyckel].kopia` ÄR den persisterade
+ * egna texten (eller `null` om eventet följer standarden), servern äger
+ * fallback-regeln (`kopia ?? standard`, ADR-125 § 4 "en renderare — samma
+ * regel FÅR inte tolkas på två ställen").
+ *
+ * `'rubrik'` (låst, `def.last`) härleds ur `event.eventNamn` precis som
+ * fixtur-prototypen gjorde — den ändras på eventsidan, aldrig här, och har
+ * ingen `kopior`-nyckel.
+ *
+ * `'datumTid'` ÄR SÄRSKILT: blockets VÄRDE är en HÄRLEDD, kombinerad sträng
+ * (datumspannet, strukturellt fast ur eventets Start-/Slutdatum, plus den
+ * fria "Tid"-texten) — SAMMA kombination servern gör
+ * (`_shared/mall-data.ts`s `byggDatumTidText`), men klienten återanvänder
+ * husets EGEN datumformatterare (`datumSpannText`, redan i bruk i denna
+ * fils header) i stället för att duplicera mall-data.ts:s handrullade
+ * svenska datumtabell — raden här är en LIST-/DIALOG-VISNING, aldrig det
+ * som faktiskt hashas eller skrivs till PDF:en.
+ *
+ * DET REDIGERBARA I 'datumTid'-blockets dialog är däremot BARA "Tid"-
+ * fragmentet (`kopior.tid`, det enda skrivbara fältet — `EventTextFalt`
+ * saknar en "hela datum-och-tid-strängen"-nyckel) — datumet sätts på
+ * eventet, inte här. `rad.tomt` speglar det: en bilaga UTAN egen Tid-text
+ * är INTE "utelämnad" (datumspannet finns ändå, PDF:en blir fullt giltig)
+ * — bara total avsaknad av ett beräkningsbart datumspann räknas som tomt.
  */
-function datumText(event: Event): string | null {
-  if (!event.startdatum) return null;
-  const start = new Date(`${event.startdatum}T12:00:00`);
-  const slut = event.slutdatum ? new Date(`${event.slutdatum}T12:00:00`) : start;
-  if (slut.getTime() === start.getTime()) {
-    return `${VECKODAG.format(start)} den ${DAG_MANAD.format(start)} ${AR.format(start)}`;
-  }
-  return `${VECKODAG.format(start)}-${VECKODAG.format(slut)} den ${DAG_MANAD.format(start)}-${DAG_MANAD.format(slut)} ${AR.format(slut)}`;
-}
-
-/** Standardvärdet per textblock. `null` = saknas. Agendablock hanteras separat. */
-function standardText(
-  id: BlockId,
-  mall: MallId,
-  event: Event,
-  plats: Plats | undefined,
-): string | null {
-  const ei = EVENTINNEHALL;
-  switch (id) {
-    case 'rubrik':
-      return event.eventNamn
-        ? mall === 'bekraftelse'
-          ? `Utbildning: ${event.eventNamn}`
-          : `Välkommen till ${event.eventNamn}!`
-        : null;
-    case 'datumTid': {
-      const d = datumText(event);
-      return d ? `${d}, ${ei.tid}` : null;
-    }
-    case 'plats':
-      return plats?.adress || null;
-    // [TASK-309.7] 'tid' hör till BlockId-unionen (blockDefinitioner.ts) men
-    // ANVÄNDS ALDRIG av denna prototyps `GRUPPER` — `datumTid` ovan bäddar
-    // redan in `ei.tid` i en kombinerad, event-källad sträng. Fallet finns
-    // bara för switchens exhaustiveness; grenen är strukturellt oåtkomlig
-    // här (ingen BlockDef i GRUPPER bär `id: 'tid'`).
-    case 'tid':
-      return ei.tid;
-    case 'pris':
-      return ei.pris;
-    case 'anmalningsavgift':
-      return ei.anmalningsavgift;
-    case 'resterande':
-      return ei.resterandeBelopp;
-    case 'sistaBetalningsdag':
-      // Finns inte på eventet i dag — därför saknas datumet tills Lotta
-      // sätter det (beslut 5 tvingar fram frågan om var det ska bo).
-      return null;
-    case 'beskrivning':
-      return ei.beskrivning;
-    case 'forberedelser':
-      return ei.forberedelser;
-    case 'klader':
-      return plats?.klader || null;
-    case 'tagMed':
-      return ei.tagMed;
-    case 'rokning':
-      return ei.rokning;
-    case 'parfym':
-      return ei.parfym;
-    case 'mat':
-      return ei.mat;
-    case 'overnattning':
-      return ei.overnattning;
-    case 'parkering':
-      return plats?.parkering || null;
-    case 'transport':
-      return plats?.transport || null;
-    case 'utrustning':
-      return ei.utrustning;
-    case 'dagEtt':
-    case 'dagTva':
-      return null;
-  }
-}
-
-function standardAgenda(id: BlockId): AgendaRad[] {
-  return id === 'dagEtt' ? EVENTINNEHALL.dagEtt : EVENTINNEHALL.dagTva;
-}
-
-// Override/Rad UTBRUTNA (TASK-309.7) till `@/components/dokument/BlockDialog`
-// — importerade ovan.
-
-function byggRad(
-  def: BlockDef,
-  mall: MallId,
-  event: Event,
-  plats: Plats | undefined,
-  egen: Override | null,
-): Rad {
+function byggRad(def: BlockDef, event: Event, sources: DocumentSources, mall: MallId): Rad {
   if (def.agenda) {
-    const std = standardAgenda(def.id);
-    const agenda = egen?.typ === 'agenda' ? egen.rader : std;
+    const par = def.id === 'dagEtt' ? sources.agenda.dag1 : sources.agenda.dag2;
+    const agenda = par.kopia ?? par.standard;
     const ifyllda = agenda.filter((r) => r.text.trim());
     return {
       def,
       standardText: null,
-      standardAgenda: std,
-      egen,
+      standardAgenda: par.standard,
+      egen: par.kopia ? { typ: 'agenda', rader: par.kopia } : null,
       text: null,
       agenda: ifyllda,
       tomt: ifyllda.length === 0,
     };
   }
-  const std = standardText(def.id, mall, event, plats);
-  const text = egen?.typ === 'text' ? egen.varde : std;
+
+  if (def.id === 'rubrik') {
+    const text = event.eventNamn
+      ? mall === 'bekraftelse'
+        ? `Utbildning: ${event.eventNamn}`
+        : `Välkommen till ${event.eventNamn}!`
+      : null;
+    return {
+      def,
+      standardText: text,
+      standardAgenda: null,
+      egen: null,
+      text,
+      agenda: null,
+      tomt: !text,
+    };
+  }
+
+  if (def.id === 'datumTid') {
+    const par = sources.kopior.tid;
+    const tidText = par.kopia ?? par.standard;
+    const spann = datumSpannText(event);
+    const kombinerat = spann
+      ? tidText?.trim()
+        ? `${spann}, ${tidText}`
+        : spann
+      : tidText?.trim()
+        ? tidText
+        : null;
+    return {
+      def,
+      // `standardText` bär BARA Tid-fragmentets standard (dialogens
+      // "revert till standard"-jämförelse, se BlockDialog.tsx) — INTE det
+      // kombinerade värdet, som aldrig är vad Lotta skriver in.
+      standardText: par.standard,
+      standardAgenda: null,
+      egen: par.kopia != null ? { typ: 'text', varde: par.kopia } : null,
+      // `text` (blockdialogens redigerade/visade värde) är Tid-fragmentet —
+      // `varderad` (listans/radens visning) räknar om `kombinerat` separat.
+      text: tidText,
+      agenda: null,
+      tomt: !kombinerat,
+    };
+  }
+
+  const faltKey = BLOCK_TILL_FALT[def.id];
+  if (!faltKey) {
+    // Strukturellt oåtkodligt (varje icke-agenda/rubrik/datumTid-block i
+    // GRUPPER har en BLOCK_TILL_FALT-nyckel) — defensiv exhaustiveness,
+    // ingen BlockDef i GRUPPER når hit i praktiken.
+    return {
+      def,
+      standardText: null,
+      standardAgenda: null,
+      egen: null,
+      text: null,
+      agenda: null,
+      tomt: true,
+    };
+  }
+  const par = sources.kopior[faltKey];
+  const text = par.kopia ?? par.standard;
   return {
     def,
-    standardText: std,
+    standardText: par.standard,
     standardAgenda: null,
-    egen,
+    egen: par.kopia != null ? { typ: 'text', varde: par.kopia } : null,
     text,
     agenda: null,
     tomt: !text?.trim(),
@@ -380,8 +278,10 @@ function dialogRader(rader: Rad[]): Rad[] {
   return rader.filter((r) => !r.def.last && !INFORUTA_IDN.has(r.def.id));
 }
 
-// NAV_TROSKEL/datumUtanAr UTBRUTNA (TASK-309.7) till
-// `@/components/dokument/BlockDialog` — importerade ovan.
+// NAV_TROSKEL UTBRUTEN (TASK-309.7) till `@/components/dokument/BlockDialog`.
+// `datumUtanAr` UTBRUTEN dit i samma skiva men INTE längre importerad här
+// (TASK-309.6): den bodde bara i `renderaDokument` (riven, AC #6 —
+// mall-ifyllnaden sker nu server-side, `_shared/mall-data.ts`).
 
 /** "10 oktober 2026" — listans visning av ett datumblock. */
 function datumMedAr(iso: string): string {
@@ -399,187 +299,6 @@ function ochLista(delar: string[]): string {
 /** Meningens första ord med versal, resten som de står — etiketter är vanliga substantiv. */
 function meningsStart(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-/* ------------------------------------------------------------------ *
- * DOKUMENTET — den riktiga mallen, ifylld, med utelämnade block borttagna.
- * Samma strängersättning som `scripts/render-bilage-mall.mjs`, plus
- * DOM-operationerna för utelämnande och egna texter.
- * ------------------------------------------------------------------ */
-
-const MALL_BAS = '/docs/mallar/bilagor/';
-
-async function renderaDokument(mall: MallId, event: Event, rader: Rad[]): Promise<string> {
-  const svar = await fetch(`${MALL_BAS}${MALL_META[mall].fil}`);
-  if (!svar.ok) throw new Error(`Mallen kunde inte hämtas (${svar.status}).`);
-  const html = await svar.text();
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-
-  // Relativa sökvägar (CSS, logga, typsnitt) ska lösas mot mallkatalogen,
-  // inte mot det nya fönstrets tomma URL.
-  const base = doc.createElement('base');
-  base.href = new URL(MALL_BAS, window.location.origin).href;
-  doc.head.prepend(base);
-
-  /* STILEN INLINAS, den länkas inte. I ett `document.write`-fönster börjar
-     `<img class="logga">` målas så fort taggen parsats — en EXTERN stilmall
-     hämtas parallellt och hinner inte fram, så loggan visades en bildruta i
-     SVG:ns egen storlek innan `.logga { width: 92mm }` slog till. Marcus,
-     varv 17: *"typ hela deras logotyp på helskärm i en mikrosekund."*
-     Med stilen i dokumentet finns måtten redan vid första målningen.
-     `url()` i CSS:en löses fortfarande rätt: `<base>` pekar på samma katalog
-     som stilmallen låg i, så relativa typsnitts- och bildvägar är oförändrade.
-     Detta gör dessutom dokumentet självbärande — allt utom bilderna bor i
-     filen, vilket en förhandsgranskning som ska kunna sparas behöver. */
-  const stilLank = doc.querySelector('link[rel="stylesheet"]');
-  if (stilLank) {
-    const href = stilLank.getAttribute('href');
-    if (href) {
-      /* `?direct` är INTE dekoration — Vites dev-server serverar annars
-         `.css` som en JAVASCRIPT-modul med HMR-wrapper (`import {
-         createHotContext } from "/@vite/client"…`). Utan flaggan hamnade
-         den JS-texten i `<style>`, gav noll giltiga regler, och loggan blev
-         884 px PERMANENT i stället för en bildruta — fixen var värre än
-         buggen tills det mättes. Verifierat mot dev-servern: utan flaggan
-         börjar svaret med `import`, med den börjar det med CSS-kommentaren.
-         Flaggan är harmlös för en vanlig statisk server (okänd query
-         ignoreras); i skarp drift renderas mallen server-side (ADR-119) och
-         den här vägen finns inte alls. */
-      const cssSvar = await fetch(`${new URL(href, base.href).href}?direct`);
-      const css = cssSvar.ok ? await cssSvar.text() : '';
-      /* FAIL-SAFE: ser svaret inte ut som CSS behålls LÄNKEN. En bildrutas
-         FOUC är ett skönhetsfel; ett dokument utan stil är trasigt. */
-      if (css.includes('{') && !css.trimStart().startsWith('import ')) {
-        const stil = doc.createElement('style');
-        stil.textContent = css;
-        stilLank.replaceWith(stil);
-      }
-    }
-  }
-
-  const rad = (id: BlockId) => rader.find((r) => r.def.id === id);
-  const textEller = (id: BlockId) => rad(id)?.text ?? '';
-
-  // Rubrik + titel.
-  const h1 = doc.querySelector('h1.rubrik');
-  if (h1) h1.textContent = textEller('rubrik');
-  doc.title = event.eventNamn ?? doc.title;
-
-  // Inforutans rader: en <p> per etikett. Tomt block → <p> bort.
-  const inforutaRad = (etikett: string) =>
-    Array.from(doc.querySelectorAll('.inforuta p')).find((p) =>
-      p.querySelector('strong')?.textContent?.trim().startsWith(etikett),
-    );
-  const sattInforuta = (etikett: string, id: BlockId) => {
-    const p = inforutaRad(etikett);
-    if (!p) return;
-    const r = rad(id);
-    if (!r || r.tomt) {
-      p.remove();
-      return;
-    }
-    const strong = p.querySelector('strong');
-    p.textContent = '';
-    if (strong) p.append(strong, ` ${r.text}`);
-    else p.textContent = r.text ?? '';
-  };
-  sattInforuta('Datum och Tid', 'datumTid');
-  sattInforuta('Plats', 'plats');
-
-  if (mall === 'bekraftelse') {
-    // Meningen om resterande belopp står bara om BÅDA delarna finns —
-    // "betalas senast" utan datum är ingen mening. Mallens egen text i övrigt.
-    const slutP = Array.from(doc.querySelectorAll('.inforuta p')).find((p) =>
-      p.textContent?.includes('{{resterandeBelopp}}'),
-    );
-    const rest = rad('resterande');
-    const sista = rad('sistaBetalningsdag');
-    if (slutP && (!rest || rest.tomt || !sista || sista.tomt)) slutP.remove();
-
-    // Beskrivningen: standard = mallens egen markup (fetade ord); egen text
-    // = rena stycken.
-    const besk = rad('beskrivning');
-    const brodtext = doc.querySelector('.brodtext');
-    if (brodtext && besk?.egen?.typ === 'text') {
-      brodtext.textContent = '';
-      for (const stycke of besk.egen.varde.split(/\n{2,}/)) {
-        const p = doc.createElement('p');
-        p.textContent = stycke.trim();
-        brodtext.append(p);
-      }
-    } else if (brodtext && besk?.tomt) {
-      brodtext.remove();
-    }
-
-    // Innehållslistorna byggs om ur raderna (typ-rutan styr färgen, beslut 3).
-    const listor = doc.querySelectorAll('.innehallslistor .lista');
-    (['dagEtt', 'dagTva'] as const).forEach((id, i) => {
-      const lista = listor[i];
-      const r = rad(id);
-      if (!lista) return;
-      if (!r || r.tomt || !r.agenda) {
-        lista.remove();
-        return;
-      }
-      const ul = lista.querySelector('ul');
-      if (!ul) return;
-      ul.textContent = '';
-      for (const punkt of r.agenda) {
-        const li = doc.createElement('li');
-        if (punkt.meditation) {
-          const namn = doc.createElement('span');
-          namn.className = 'meditationsnamn';
-          namn.textContent = punkt.text;
-          li.append(namn);
-        } else {
-          li.append(punkt.text);
-        }
-        if (punkt.tid.trim()) {
-          const tid = doc.createElement('span');
-          tid.className = 'tid';
-          tid.textContent = punkt.tid;
-          li.append(' ', tid);
-        }
-        ul.append(li);
-      }
-    });
-  } else {
-    // Ämnesstyckena: tomt → bort; egen text → ersätt löptexten efter etiketten.
-    for (const r of rader) {
-      if (!r.def.amnesstycke) continue;
-      const p = Array.from(doc.querySelectorAll('p.amnesstycke')).find((el) =>
-        el
-          .querySelector('strong')
-          ?.textContent?.trim()
-          .startsWith(r.def.amnesstycke as string),
-      );
-      if (!p) continue;
-      if (r.tomt) {
-        p.remove();
-        continue;
-      }
-      if (r.egen?.typ === 'text' || r.def.kalla === 'plats') {
-        const strong = p.querySelector('strong');
-        p.textContent = '';
-        if (strong) p.append(strong, ` ${r.text}`);
-      }
-    }
-  }
-
-  // Kvarvarande platshållare — samma ersättning som render-bilage-mall.mjs.
-  const ersatt: Record<string, string> = {
-    kursnamn: event.eventNamn ?? '',
-    datumTid: textEller('datumTid'),
-    plats: textEller('plats'),
-    pris: textEller('pris'),
-    anmalningsavgift: textEller('anmalningsavgift'),
-    resterandeBelopp: textEller('resterande'),
-    sistaBetalningsdatum: datumUtanAr(textEller('sistaBetalningsdag')),
-  };
-  return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`.replace(
-    /\{\{(\w+)\}\}/g,
-    (_, nyckel: string) => ersatt[nyckel] ?? '',
-  );
 }
 
 /* ------------------------------------------------------------------ *
@@ -641,27 +360,26 @@ export function GenereringsPrototyp() {
   const [vy, setVy] = useQueryState('vy');
   const [mallParam, setMall] = useQueryState('mall');
   const mall: MallId = mallParam === 'deltagarinfo' ? 'deltagarinfo' : 'bekraftelse';
+  // [TASK-309.6] Delad queryKey med `DokumentYta.tsx`s `?event=` — samma
+  // val följer med om Lotta växlar `?variant=a` av/på.
+  const [eventId, setEventId] = useQueryState('event');
 
-  // Platser lever i minnet under sessionen — "spara som standard" skapar
-  // Arboga-posten här, ingenstans annars.
-  const [platser, setPlatser] = useState<Record<string, Plats>>(PLATSER_SEED);
+  const dataSource = useDataSource();
+  const eventsQuery = useQuery({
+    queryKey: queryKeys.events.list,
+    queryFn: () => dataSource.fetchEvents(),
+  });
+  const valtEvent = eventsQuery.data?.find((e) => e.id === eventId);
 
-  if (vy === 'generering') {
+  // Genereringsvyn kräver ett RIKTIGT event — en direktlänk till
+  // `?vy=generering` utan (eller med ett okänt) `?event=` faller tillbaka
+  // till listvyn i stället för att krascha på ett odefinierat event.
+  if (vy === 'generering' && valtEvent) {
     return (
       <GenereringsVy
-        key={mall}
-        event={ARBOGA}
+        key={`${valtEvent.id}-${mall}`}
+        event={valtEvent}
         mall={mall}
-        platser={platser}
-        onSparaPlats={(namn, falt) =>
-          setPlatser((p) => ({
-            ...p,
-            [namn]: {
-              ...(p[namn] ?? { namn, adress: '', parkering: '', transport: '', klader: '' }),
-              ...falt,
-            },
-          }))
-        }
         onTillbaka={() => {
           void setVy(null);
           void setMall(null);
@@ -672,7 +390,8 @@ export function GenereringsPrototyp() {
 
   return (
     <ListaVy
-      event={ARBOGA}
+      event={valtEvent}
+      onByte={(id) => void setEventId(id)}
       onOppnaMall={(m) => {
         void setMall(m);
         void setVy('generering');
@@ -702,7 +421,19 @@ const MALLAR: { id: MallId; namn: string; fyllerI: string[] }[] = [
   { id: 'deltagarinfo', namn: 'Deltagarinformation', fyllerI: ['Datum', 'Plats', 'Praktisk info'] },
 ];
 
-function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId) => void }) {
+function ListaVy({
+  event,
+  onByte,
+  onOppnaMall,
+}: {
+  /** [TASK-309.6] `undefined` = inget event valt ÄN (eventväljarens tomma
+   *  startläge, eller ett `?event=`-värde som inte matchar något laddat
+   *  event) — katalogen (MALLAR/GENERATORER) kräver ett riktigt event att
+   *  peka generering mot, se villkoret nedan. */
+  event: Event | undefined;
+  onByte: (eventId: string) => void;
+  onOppnaMall: (m: MallId) => void;
+}) {
   const [filter, setFilter] = useQueryState('typ');
   const aktivtFilter: ListaTyp =
     filter === 'bilaga' || filter === 'mall' || filter === 'generator' ? filter : 'alla';
@@ -719,10 +450,9 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
 
       <EventValjare
         form="fristaende"
-        valtEventId={event.id}
+        valtEventId={event?.id}
         valtEvent={event}
-        // Prototypen är låst till Arboga — frågan gäller det eventet.
-        onByte={() => undefined}
+        onByte={onByte}
         gemensamtAlternativ={{
           etikett: 'Delade dokument',
           ikon: <Files aria-hidden="true" size={18} className="shrink-0" />,
@@ -730,35 +460,63 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
         }}
       />
 
-      <div className="flex flex-col gap-4">
-        <section className="flex flex-col gap-3">
-          <div data-testid="grupp-kort" className={GRUPP_KORT_KLASS}>
-            <ToggleButtonGroup
-              label="Filtrera på typ"
-              spread
-              selectedKey={aktivtFilter}
-              onSelectionChange={(key) => void setFilter(key === 'alla' ? null : key)}
-            >
-              {LISTA_FILTER.map((f) => (
-                <ToggleButton key={f.key} id={f.key} size="sm" className="min-h-11">
-                  {f.label}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
-            <ul data-testid="dokument-lista" className={LISTA_KLASS}>
-              {visaMallar &&
-                MALLAR.map((m) => (
-                  <li key={m.id}>
-                    <div data-testid="dokument-mall" className="flex items-center gap-3 py-3">
+      {event ? (
+        <div className="flex flex-col gap-4">
+          <section className="flex flex-col gap-3">
+            <div data-testid="grupp-kort" className={GRUPP_KORT_KLASS}>
+              <ToggleButtonGroup
+                label="Filtrera på typ"
+                spread
+                selectedKey={aktivtFilter}
+                onSelectionChange={(key) => void setFilter(key === 'alla' ? null : key)}
+              >
+                {LISTA_FILTER.map((f) => (
+                  <ToggleButton key={f.key} id={f.key} size="sm" className="min-h-11">
+                    {f.label}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+              <ul data-testid="dokument-lista" className={LISTA_KLASS}>
+                {visaMallar &&
+                  MALLAR.map((m) => (
+                    <li key={m.id}>
+                      <div data-testid="dokument-mall" className="flex items-center gap-3 py-3">
+                        <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                          <span
+                            className="w-full min-w-0 truncate font-medium text-body"
+                            title={m.namn}
+                          >
+                            {m.namn}
+                          </span>
+                          <span className={TACKNING_KLASS}>Detta event</span>
+                          <MetaRad delar={[`Fyller i ${m.fyllerI.join(', ').toLowerCase()}`]} />
+                        </span>
+                        <span className="flex shrink-0 items-center gap-0.5">
+                          <Button
+                            intent="primary"
+                            emphasis="subtle"
+                            size="sm"
+                            className={IKONKNAPP_KLASS}
+                            aria-label={`Skapa ${m.namn}`}
+                            onPress={() => onOppnaMall(m.id)}
+                          >
+                            <ChevronRight aria-hidden="true" size={IKON_STORLEK} />
+                          </Button>
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                {visaGeneratorer && (
+                  <li>
+                    <div data-testid="dokument-generator" className="flex items-center gap-3 py-3">
                       <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                        <span
-                          className="w-full min-w-0 truncate font-medium text-body"
-                          title={m.namn}
-                        >
-                          {m.namn}
+                        <span className="w-full min-w-0 truncate font-medium text-body">
+                          Betalningskvitto
                         </span>
                         <span className={TACKNING_KLASS}>Detta event</span>
-                        <MetaRad delar={[`Fyller i ${m.fyllerI.join(', ').toLowerCase()}`]} />
+                        <MetaRad
+                          delar={['Byggs ur namn, e-post, betalt belopp, betaldatum, eventnamn']}
+                        />
                       </span>
                       <span className="flex shrink-0 items-center gap-0.5">
                         <Button
@@ -766,51 +524,33 @@ function ListaVy({ event, onOppnaMall }: { event: Event; onOppnaMall: (m: MallId
                           emphasis="subtle"
                           size="sm"
                           className={IKONKNAPP_KLASS}
-                          aria-label={`Skapa ${m.namn}`}
-                          onPress={() => onOppnaMall(m.id)}
+                          aria-label="Öppna Betalningskvitto"
+                          onPress={() => undefined}
                         >
                           <ChevronRight aria-hidden="true" size={IKON_STORLEK} />
                         </Button>
                       </span>
                     </div>
                   </li>
-                ))}
-              {visaGeneratorer && (
-                <li>
-                  <div data-testid="dokument-generator" className="flex items-center gap-3 py-3">
-                    <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                      <span className="w-full min-w-0 truncate font-medium text-body">
-                        Betalningskvitto
-                      </span>
-                      <span className={TACKNING_KLASS}>Detta event</span>
-                      <MetaRad
-                        delar={['Byggs ur namn, e-post, betalt belopp, betaldatum, eventnamn']}
-                      />
-                    </span>
-                    <span className="flex shrink-0 items-center gap-0.5">
-                      <Button
-                        intent="primary"
-                        emphasis="subtle"
-                        size="sm"
-                        className={IKONKNAPP_KLASS}
-                        aria-label="Öppna Betalningskvitto"
-                        onPress={() => undefined}
-                      >
-                        <ChevronRight aria-hidden="true" size={IKON_STORLEK} />
-                      </Button>
-                    </span>
-                  </div>
-                </li>
-              )}
-              {visaBilagor && !visaMallar && !visaGeneratorer && (
-                <li className="py-3 text-small text-text-muted">
-                  Inga bilagor för det här eventet än.
-                </li>
-              )}
-            </ul>
-          </div>
-        </section>
-      </div>
+                )}
+                {visaBilagor && !visaMallar && !visaGeneratorer && (
+                  <li className="py-3 text-small text-text-muted">
+                    Inga bilagor för det här eventet än.
+                  </li>
+                )}
+              </ul>
+            </div>
+          </section>
+        </div>
+      ) : (
+        // [TASK-309.6] Katalogen (MALLAR/GENERATORER) pekar generering mot
+        // ETT event — utan ett valt finns inget att peka mot. Prototypens
+        // ListaVy har aldrig implementerat räckviddsläget (`gemensamtAlternativ`
+        // ovan är en no-op, oförändrat sedan fixtur-varvet).
+        <p className="px-1 text-small text-text-muted">
+          Välj ett event ovan för att se dess mallar.
+        </p>
+      )}
 
       <div data-testid="ladda-upp-ny-fil">
         {/* Inert i prototypen — uppladdning är utanför frågan. Samma utseende
@@ -872,7 +612,6 @@ type Resultat =
       blockerad: boolean;
       utelamnade: string[];
       sparade: string[];
-      saknade: string[];
     }
   | { typ: 'fel'; text: string };
 
@@ -1057,34 +796,28 @@ function InforutanMorf({
 function GenereringsVy({
   event,
   mall,
-  platser,
-  onSparaPlats,
   onTillbaka,
 }: {
   event: Event;
   mall: MallId;
-  platser: Record<string, Plats>;
-  onSparaPlats: (platsNamn: string, falt: Partial<Record<PlatsFalt, string>>) => void;
   onTillbaka: () => void;
 }) {
   const meta = MALL_META[mall];
   const grupper = GRUPPER[mall];
-  const plats = event.ort ? platser[event.ort] : undefined;
 
-  // Eventets egna texter (beslut 6 A) och vilka av dem som ska bli platsens
-  // standard när bilagan skapas (beslut 6 C) — allt i minnet.
-  const [overrides, setOverrides] = useState<Partial<Record<BlockId, Override>>>({});
+  // [TASK-309.6] Underlaget kommer nu ur `getDocumentSources` (adaptern) —
+  // React Query-cachen ÄR sanningskällan. Inget lokalt `overrides`-state
+  // längre: varje blocks Spara skriver DIREKT mot servern (`spara`/
+  // `sparaSektion` nedan), och en lyckad skrivning invaliderar denna query
+  // (`useSaveEventText`), så nästa render läser det som faktiskt sparades.
+  const sourcesQuery = useDocumentSources(event.id);
+  const sources = sourcesQuery.data;
+
+  // Vilka block som ska bli platsens standard NÄR bilagan skapas (beslut
+  // 6 C, AC #2 "vid Skapa, inte vid krysset") — det enda som fortfarande är
+  // rent lokalt UI-tillstånd (en avsikt, inte en skrivning i sig).
   const [somStandard, setSomStandard] = useState<Set<BlockId>>(new Set());
   const [oppet, setOppet] = useState<BlockId | null>(null);
-  /* Dialogen är EN transaktion, inte en rad i taget. Bläddrar Lotta mellan
-     fälten skrivs varje rad till utkastet när hon lämnar den — och då måste
-     Avbryt ångra HELA genomgången, inte bara raden hon råkar stå på. Samma
-     semantik som Inforutans sektionsmorf: du ändrar flera fält, du ångrar
-     sektionen. */
-  const foreDialogen = useRef<{
-    overrides: Partial<Record<BlockId, Override>>;
-    somStandard: Set<BlockId>;
-  } | null>(null);
   // Inforutan andras som SEKTION (eventsidans morf), inte block for block.
   const [morfar, setMorfar] = useState(false);
   /* Vilket fält morfen ska sätta markören i. "Fyll i plats" i värdeplatsen
@@ -1098,33 +831,21 @@ function GenereringsVy({
   const andraKnappRef = useRef<HTMLButtonElement>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const forhandsgranska = useForhandsgranskaBilaga();
+  const saveEventText = useSaveEventText(event.id);
+  const genereraBilaga = useGenereraEventBilaga(event.id);
 
-  const oppnaBlock = (id: BlockId) => {
-    foreDialogen.current = { overrides, somStandard };
-    setOppet(id);
-  };
-  const stangDialog = () => {
-    foreDialogen.current = null;
-    setOppet(null);
-  };
-  /** Avbryt = tillbaka till läget innan dialogen öppnades, hur många rader
-   *  som än hunnit skrivas av bläddringen. */
-  const avbrytDialog = () => {
-    const fore = foreDialogen.current;
-    if (fore) {
-      setOverrides(fore.overrides);
-      setSomStandard(fore.somStandard);
-    }
-    stangDialog();
-  };
+  const oppnaBlock = (id: BlockId) => setOppet(id);
+  const stangDialog = () => setOppet(null);
 
   const rader = useMemo(
     () =>
-      grupper.map((g) => ({
-        ...g,
-        rader: g.block.map((b) => byggRad(b, mall, event, plats, overrides[b.id] ?? null)),
-      })),
-    [grupper, mall, event, plats, overrides],
+      sources
+        ? grupper.map((g) => ({
+            ...g,
+            rader: g.block.map((b) => byggRad(b, event, sources, mall)),
+          }))
+        : [],
+    [grupper, event, sources, mall],
   );
   const allaRader = rader.flatMap((g) => g.rader);
   const utelamnade = allaRader.filter((r) => r.tomt);
@@ -1133,104 +854,154 @@ function GenereringsVy({
      genomgång, inte hela bilagans. */
   const oppenGrupp = oppet ? rader.find((g) => g.rader.some((r) => r.def.id === oppet)) : undefined;
   const navSyskon = oppenGrupp ? dialogRader(oppenGrupp.rader) : [];
+  // BlockDialog.tsx:s resterande-belopp-hjälptext citerar det AKTUELLA
+  // (kopia-resolvda) beloppet — `allaRader` bär redan den upplösningen.
+  const resterandeBeloppText = allaRader.find((r) => r.def.id === 'resterande')?.text ?? null;
 
-  // Varje ändring efter ett "Skapa" gör bekräftelsen inaktuell — den
-  // beskrev ett dokument som inte längre är det Lotta ser framför sig.
+  /**
+   * Persisterar ETT blocks kopia (text ELLER agenda) DIREKT mot skiva 2:s
+   * skrivväg (AC #2) — `saveEventText` (fire-and-forget, samma disciplin
+   * som `useUploadAttachment`: felytan renderas nedan ur `mutation.error`,
+   * inte här). Ingen lokalt "utkast" kvar att ångra: dialogens Avbryt
+   * stänger bara panelen (`stangDialog`), den skriver aldrig något.
+   */
   const spara = (id: BlockId, nytt: Override | null, blirStandard: boolean) => {
     setResultat(null);
-    setOverrides((o) => {
-      const n = { ...o };
-      if (nytt) n[id] = nytt;
-      else delete n[id];
-      return n;
-    });
     setSomStandard((s) => {
       const n = new Set(s);
       if (blirStandard && nytt) n.add(id);
       else n.delete(id);
       return n;
     });
+    if (id === 'dagEtt' || id === 'dagTva') {
+      const dag = id === 'dagEtt' ? 1 : 2;
+      saveEventText.mutate({ agenda: { dag, rader: nytt?.typ === 'agenda' ? nytt.rader : [] } });
+      return;
+    }
+    const faltKey = BLOCK_TILL_FALT[id];
+    if (!faltKey) return; // 'rubrik' — låst, öppnas aldrig via dialog.
+    saveEventText.mutate({ falt: { [faltKey]: nytt?.typ === 'text' ? nytt.varde : null } });
   };
 
-  /** Sektions-spara: samtliga fält som absoluta värden, ett anrop per block
-      (naturligt idempotent — samma form som OmEventetForm.spara). */
+  /** Sektions-spara: samtliga fält i EN batch (`SaveEventTextInput.falt`
+   *  tar flera nycklar) — ETT nätverksanrop för hela Inforutan-sektionen. */
   const sparaSektion = (
     andringar: { id: BlockId; nytt: Override | null; blirStandard: boolean }[],
   ) => {
-    for (const a of andringar) spara(a.id, a.nytt, a.blirStandard);
+    setResultat(null);
+    setSomStandard((s) => {
+      const n = new Set(s);
+      for (const a of andringar) {
+        if (a.blirStandard && a.nytt) n.add(a.id);
+        else n.delete(a.id);
+      }
+      return n;
+    });
+    const falt: Partial<Record<EventTextFalt, string | null>> = {};
+    for (const a of andringar) {
+      const faltKey = BLOCK_TILL_FALT[a.id];
+      if (!faltKey) continue;
+      falt[faltKey] = a.nytt?.typ === 'text' ? a.nytt.varde : null;
+    }
+    if (Object.keys(falt).length > 0) saveEventText.mutate({ falt });
     setMorfar(false);
     andraKnappRef.current?.focus();
   };
 
   /**
-   * Skapar dokumentet som PDF; `skarpt` sparar dessutom platsens standard.
+   * Skapar dokumentet; `skarpt` sparar dessutom platsens standard.
    *
-   * ÖPPNAR INGENTING. Marcus 2026-08-22: *"Lotta ska inte skickas till
-   * pdf:en automatiskt utan välja att gå dit."* Laddningen visas på knappen
-   * i appen, och den färdiga PDF:en presenteras som ett val i resultatytan.
+   * [RIVEN OM, TASK-309.6] `false` (Förhandsgranska) anropar preview-grenen
+   * (`useForhandsgranskaBilaga`, `{eventId, mall}` — ingen HTML byggs
+   * klient-side, AC #6). `true` (Skapa) anropar den PERSISTERANDE grenen
+   * (`useGenereraEventBilaga`) som skapar en NY Bilagor-rad, sparar ev.
+   * platsstandard i samma andetag, och slår upp en nedladdnings-URL.
    *
-   * Det tar dessutom bort behovet av den synkrona `window.open` som första
-   * bygget bar (`DokumentYta` § IKONPAR-not): öppnandet sker nu i ett eget,
-   * direkt klick, och en popup-blockerare har inget att invända mot det.
+   * ÖPPNAR INGENTING FÖRRÄN RESULTATET FINNS. Marcus 2026-08-22: *"Lotta
+   * ska inte skickas till pdf:en automatiskt utan välja att gå dit."*
+   * Laddningen visas på knappen i appen, och den färdiga PDF:en
+   * presenteras som ett val i resultatytan — `window.open` sker EFTER
+   * mutationen löst ut, i onSuccess, exakt samma popup-säkra mönster som
+   * förlagan (mätt 2026-08-22: Chrome tillåter `window.open` även efter
+   * flera sekunders väntan; `blockerad: fonster === null` är fallbacken om
+   * inte).
    */
   const skapaDokument = (skarpt: boolean) => {
-    if (forhandsgranska.isPending) return;
+    if (forhandsgranska.isPending || genereraBilaga.isPending) return;
     setResultat(null);
-    forhandsgranska.mutate(
+
+    if (!skarpt) {
+      forhandsgranska.mutate(
+        { eventId: event.id, mall },
+        {
+          onSuccess: ({ url }) => {
+            const fonster = window.open(url, '_blank');
+            setResultat({
+              typ: 'klar',
+              skarpt: false,
+              url,
+              blockerad: fonster === null,
+              utelamnade: [],
+              sparade: [],
+            });
+          },
+          onError: (e) => setResultat({ typ: 'fel', text: e.message }),
+        },
+      );
+      return;
+    }
+
+    // Platsens standard sparas när bilagan skapas — inte när krysset sätts
+    // (AC #2). Insamlat ur `allaRader`s AKTUELLA (redan sparade) värden.
+    const platsFalt: Partial<Record<PlatsFalt, string>> = {};
+    const sparadeEtiketter: string[] = [];
+    for (const r of allaRader) {
+      if (r.def.platsFalt && somStandard.has(r.def.id) && r.text?.trim()) {
+        platsFalt[r.def.platsFalt] = r.text;
+        sparadeEtiketter.push(r.def.etikett.toLowerCase());
+      }
+    }
+
+    genereraBilaga.mutate(
+      { mall, platsFalt: Object.keys(platsFalt).length > 0 ? platsFalt : undefined },
       {
-        byggHtml: async () => await gorSjalvbarande(await renderaDokument(mall, event, allaRader)),
-        namn: meta.namn,
-        eventId: event.id,
-        typ: MALL_TILL_UTKAST_TYP[mall],
-      },
-      {
-        onSuccess: ({ url, saknade }) => {
-          const sparade: string[] = [];
-          if (skarpt && event.ort) {
-            // Platsens standard sparas när bilagan skapas — inte när krysset sätts.
-            const falt: Partial<Record<PlatsFalt, string>> = {};
-            for (const r of allaRader) {
-              if (r.def.platsFalt && somStandard.has(r.def.id) && r.text?.trim()) {
-                falt[r.def.platsFalt] = r.text;
-                sparade.push(r.def.etikett.toLowerCase());
-              }
-            }
-            if (sparade.length) {
-              onSparaPlats(event.ort, falt);
-              setOverrides((o) => {
-                const n = { ...o };
-                for (const r of allaRader) if (somStandard.has(r.def.id)) delete n[r.def.id];
-                return n;
-              });
-              setSomStandard(new Set());
-            }
-          }
-          /* DOKUMENTET ÖPPNAS DIREKT NÄR DET FINNS. Marcus 2026-08-22:
-             "Kan inte bara ett nytt fönster öppnas när pdf finns, det är nog
-             ännu bättre. Så gör alla proffs." Öppningen sker EFTER await,
-             vilket den ursprungliga popup-regeln (`DokumentYta` § IKONPAR)
-             sa var omöjligt — mätt 2026-08-22 att Chrome tillåter
-             `window.open` även efter 7 s väntan, tre försök av tre.
-             Mätningen gjordes dock i Playwrights Chromium, samma instrument
-             som en gång bevisade den motsatta regeln, så utfallet behandlas
-             som osäkert: blockeras fönstret returnerar `window.open` null,
-             och då står "Öppna"-knappen kvar som väg in. Ingen
-             återvändsgränd i något av fallen. */
+        onSuccess: ({ url }) => {
+          setSomStandard(new Set());
           const fonster = window.open(url, '_blank');
           setResultat({
             typ: 'klar',
-            skarpt,
+            skarpt: true,
             url,
             blockerad: fonster === null,
-            utelamnade: skarpt ? utelamnade.map((r) => r.def.etikett.toLowerCase()) : [],
-            sparade,
-            saknade,
+            utelamnade: utelamnade.map((r) => r.def.etikett.toLowerCase()),
+            sparade: sparadeEtiketter,
           });
         },
         onError: (e) => setResultat({ typ: 'fel', text: e.message }),
       },
     );
   };
+
+  if (sourcesQuery.isPending) {
+    return (
+      <div className="flex flex-col gap-4" data-testid="generering-vy">
+        <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
+        <p className="text-body text-text-muted">Hämtar underlag …</p>
+      </div>
+    );
+  }
+  if (!sources) {
+    return (
+      <div className="flex flex-col gap-4" data-testid="generering-vy">
+        <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
+        <MessageBox intent="error">
+          {sourcesQuery.error instanceof Error
+            ? sourcesQuery.error.message
+            : 'Underlaget kunde inte hämtas.'}
+        </MessageBox>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6" data-testid="generering-vy">
@@ -1243,6 +1014,18 @@ function GenereringsVy({
             {datumSpannText(event)}
           </p>
         </header>
+
+        {/* [TASK-309.6] Block-dialogens Spara skriver nu direkt mot servern
+            (`saveEventText`, fire-and-forget) — felytan renderas här ur
+            `mutation.error`, samma disciplin som `useUploadAttachment`s
+            docblock beskriver ("adaptern kastar redan ett fel på Lottas
+            språk, komponenten renderar det"). */}
+        {saveEventText.isError && (
+          <MessageBox intent="error">
+            Ändringen kunde inte sparas:{' '}
+            {saveEventText.error instanceof Error ? saveEventText.error.message : 'Okänt fel.'}
+          </MessageBox>
+        )}
 
         {/* BESLUT 5: tomma block utelämnas — men aldrig tyst. Beskedet står
             FÖRE knappen, i klartext, med en väg in per block. */}
@@ -1309,7 +1092,7 @@ function GenereringsVy({
             ) : (
               <ul className={KORT_KLASS}>
                 {g.rader.map((r, i) => {
-                  const varde = varderad(r);
+                  const varde = varderad(r, event);
                   const inre = (
                     <>
                       {/* 21 + 24 px text hade gett 71 px; leading-5 (20 px) + gap-1 (4 px)
@@ -1464,7 +1247,7 @@ function GenereringsVy({
           <Button
             intent="secondary"
             emphasis="outline"
-            aria-disabled={forhandsgranska.isPending}
+            aria-disabled={forhandsgranska.isPending || genereraBilaga.isPending}
             onPress={() => skapaDokument(false)}
           >
             {forhandsgranska.isPending && (
@@ -1474,11 +1257,15 @@ function GenereringsVy({
           </Button>
           <Button
             intent="primary"
-            aria-disabled={forhandsgranska.isPending}
+            aria-disabled={forhandsgranska.isPending || genereraBilaga.isPending}
             onPress={() => skapaDokument(true)}
           >
-            <FileText aria-hidden="true" size={16} className="shrink-0" />
-            Skapa {meta.namn.toLowerCase()}
+            {genereraBilaga.isPending ? (
+              <Loader2 aria-hidden="true" size={16} className="shrink-0 motion-safe:animate-spin" />
+            ) : (
+              <FileText aria-hidden="true" size={16} className="shrink-0" />
+            )}
+            {genereraBilaga.isPending ? 'Skapar …' : `Skapa ${meta.namn.toLowerCase()}`}
           </Button>
         </div>
       </div>
@@ -1501,7 +1288,7 @@ function GenereringsVy({
           className={DIALOG_PANEL_KLASS}
           style={DIALOG_ANKARE}
           onOpenChange={(open) => {
-            if (!open) avbrytDialog();
+            if (!open) stangDialog();
           }}
         >
           <BlockDialog
@@ -1509,7 +1296,7 @@ function GenereringsVy({
             ort={event.ort}
             somStandard={somStandard.has(oppenRad.def.id)}
             syskon={navSyskon}
-            resterandeBeloppHjalp={EVENTINNEHALL.resterandeBelopp}
+            resterandeBeloppHjalp={resterandeBeloppText}
             onVaxla={(id, nytt, blirStandard) => {
               spara(oppenRad.def.id, nytt, blirStandard);
               setOppet(id);
@@ -1518,7 +1305,7 @@ function GenereringsVy({
               spara(oppenRad.def.id, nytt, blirStandard);
               stangDialog();
             }}
-            onStang={avbrytDialog}
+            onStang={stangDialog}
           />
         </Modal>
       )}
@@ -1531,11 +1318,22 @@ function GenereringsVy({
  * löptext och agenda en beskrivning (M3: långa värden hör inte hemma som
  * trailing text — "reduce the amount of information shown"). Härkomsten
  * är tyst för det normala (standard) och syns bara i blockets egen yta.
+ *
+ * `event` är OPTIONAL — bara 'datumTid' behöver den (kombinerar
+ * datumspannet, byggRad-docblockets resonemang). Den enda anroparen som
+ * saknar `event` (InforutanMorf, `r.def.last`-grenen) frågar bara om
+ * 'rubrik', som aldrig når 'datumTid'-fallet.
  */
-function varderad(r: Rad): string | null {
+function varderad(r: Rad, event?: Event): string | null {
   if (r.tomt) return null;
   if (r.agenda) return agendaSammanfattning(r.agenda);
   switch (r.def.id) {
+    case 'datumTid': {
+      if (!event) return r.text;
+      const spann = datumSpannText(event);
+      if (!spann) return r.text;
+      return r.text?.trim() ? `${spann}, ${r.text}` : spann;
+    }
     case 'pris':
       return `${r.text} Kr`;
     case 'anmalningsavgift':

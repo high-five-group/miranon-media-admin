@@ -146,7 +146,16 @@
  *     nedan) — badgen bär förklaringen (ADR-118 beslut 3, AC #4).
  */
 import { useQuery } from '@tanstack/react-query';
-import { Download, ExternalLink, Files, FileUp, Loader2, Trash2, Upload } from 'lucide-react';
+import {
+  Download,
+  ExternalLink,
+  Files,
+  FileUp,
+  Loader2,
+  RefreshCw,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
@@ -162,11 +171,14 @@ import { Select, SelectItem } from '@/components/primitives/Select';
 import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
+import { StatusBadge } from '@/components/registrations/StatusBadge';
+import { mallIdFranAirtableOption } from '@/data/adapters/mallKallhash';
 import type { DokumentKalla } from '@/data/mutations/dokumentKalla';
 import { useDeleteAttachment } from '@/data/mutations/useDeleteAttachment';
 import { useForhandsvisaDokument } from '@/data/mutations/useForhandsvisaDokument';
 import { useLaddaNerDokument } from '@/data/mutations/useLaddaNerDokument';
 import { useReplaceAttachment } from '@/data/mutations/useReplaceAttachment';
+import { useSkapaOmEventBilaga } from '@/data/mutations/useSkapaOmEventBilaga';
 import {
   type UploadAttachmentVariables,
   useUploadAttachment,
@@ -856,11 +868,27 @@ function DokumentRadSkal({
         <span className="w-full min-w-0 truncate font-medium text-body" title={namn}>
           {namn}
         </span>
-        <RackviddBadge
-          rackvidd={current.rackvidd}
-          kursfamilj={current.kursfamilj}
-          kursniva={current.kursniva}
-        />
+        {/* [TASK-309.6, ADR-125 § 3+5] Mall-/INAKTUELL-badgen delar RADEN med
+            RackviddBadge (samma "TRE LED, ALLTID RENDERADE"-lås, Marcus
+            2026-08-17 — se filhuvudets docblock) i stället för att lägga till
+            en fjärde rad. `current.mall`/`current.inaktuell` är `null` för
+            varje icke-Event-mallad rad (uppladdade/person-genererade filer),
+            så de allra flesta rader visar EXAKT samma två-badge-yta som
+            förut. INAKTUELL bär TEXT, inte bara färg (`StatusBadge`,
+            WCAG 1.4.1 — samma disciplin som RackviddBadge/nivåbadgar). */}
+        <span className="flex flex-wrap items-center gap-1">
+          <RackviddBadge
+            rackvidd={current.rackvidd}
+            kursfamilj={current.kursfamilj}
+            kursniva={current.kursniva}
+          />
+          {current.mall !== null && <span className={TACKNING_KLASS}>{current.mall}</span>}
+          {current.inaktuell === true && (
+            <StatusBadge ton="warning" storlek="sm">
+              Inaktuell
+            </StatusBadge>
+          )}
+        </span>
         <MetaRad
           delar={[
             ...metaDelar(current),
@@ -913,6 +941,7 @@ function LaddaNerKnapp({ namn, kalla }: { namn: string; kalla: DokumentKalla }) 
 type UploadMutation = ReturnType<typeof useUploadAttachment>;
 type ReplaceMutation = ReturnType<typeof useReplaceAttachment>;
 type DeleteMutation = ReturnType<typeof useDeleteAttachment>;
+type SkapaOmMutation = ReturnType<typeof useSkapaOmEventBilaga>;
 
 /** [TASK-275.3] Sant för en GEMENSAM bilaga (räckvidd Kurstyp/Alla event) —
     delad mellan BilageRadRow (döljer Ersätt) och badgens eget "rendera
@@ -926,11 +955,13 @@ function BilageRadRow({
   rad,
   onReplace,
   replaceMutation,
+  skapaOmMutation,
 }: {
   eventId: string;
   rad: BilageRad;
   onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
   replaceMutation: ReplaceMutation;
+  skapaOmMutation: SkapaOmMutation;
 }) {
   const { current, dolda } = rad;
   // Bara DENNA rads knapp visar "Ersätter…"/blir avstängd — inte hela
@@ -940,11 +971,22 @@ function BilageRadRow({
   // jämförelsen är säker även innan första anropet.
   const ersatterDennaRaden =
     replaceMutation.isPending && replaceMutation.variables?.oldAttachmentId === current.id;
+  // [TASK-309.6] Samma "bara DENNA rads knapp"-disciplin som `ersatterDennaRaden`.
+  const skaparOmDennaRaden =
+    skapaOmMutation.isPending && skapaOmMutation.variables?.ersatt === current.id;
   // [TASK-275.3, ADR-118 beslut 3] Ersätt VISAS INTE i eventkontext för en
   // GEMENSAM bilaga — badgen bär förklaringen (AC #4). Servern nekar 403
   // ändå (delete-attachment/index.ts), men UI-lagret ska inte erbjuda en
   // knapp den vet kommer avvisas.
   const gemensam = arGemensam(current.rackvidd);
+  // [TASK-309.6, ADR-125 § 3+4] "Skapa om" gäller BARA Event-mallade rader
+  // med ett KÄNT `mall`-värde ('Bekräftelsebilaga'/'Deltagarinformation') —
+  // `mallIdFranAirtableOption` returnerar `null` för allt annat (uppladdade
+  // rader, okänt/legacy `mall`), och då finns inget att regenerera MOT.
+  const skapaOmMallId =
+    current.dokumentklass === AttachmentClass.EVENT_MALLAD
+      ? mallIdFranAirtableOption(current.mall)
+      : null;
   return (
     <DokumentRadSkal
       namn={current.namn}
@@ -952,47 +994,76 @@ function BilageRadRow({
       current={current}
       dolda={dolda}
       handlingar={
-        // [TASK-275.3, ADR-118 beslut 3] Ersätt VISAS INTE i eventkontext för
-        // en GEMENSAM bilaga — badgen bär förklaringen (AC #4). Servern nekar
-        // 403 ändå, men UI-lagret ska inte erbjuda en knapp den vet avvisas.
-        //
-        // För eventets EGNA filer står den kvar (Marcus-beslut 2026-08-17):
-        // förvaltningen flyttades i övrigt till räckviddsläget, men en
-        // event-egen fil syns inte där, så utan denna knapp hade den saknat
-        // ersätt-väg helt.
-        gemensam ? null : (
-          <FileTrigger
-            acceptedFileTypes={['application/pdf']}
-            onSelect={(files) =>
-              onReplace(files, current.id, {
-                rackvidd: current.rackvidd ?? undefined,
-                kursfamilj: current.kursfamilj ?? undefined,
-                kursniva: current.kursniva ?? undefined,
-              })
-            }
-          >
+        <>
+          {skapaOmMallId !== null && (
             <Button
               intent="primary"
               emphasis="subtle"
               size="sm"
               className={IKONKNAPP_KLASS}
-              isDisabled={ersatterDennaRaden}
+              aria-disabled={skaparOmDennaRaden}
               aria-label={
-                ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
+                skaparOmDennaRaden ? `Skapar om ${current.namn} …` : `Skapa om ${current.namn}`
               }
+              onPress={() => {
+                if (skaparOmDennaRaden) return;
+                skapaOmMutation.mutate({ mall: skapaOmMallId, ersatt: current.id });
+              }}
             >
-              {ersatterDennaRaden ? (
+              {skaparOmDennaRaden ? (
                 <Loader2
                   aria-hidden="true"
                   size={IKON_STORLEK}
                   className="motion-safe:animate-spin"
                 />
               ) : (
-                <FileUp aria-hidden="true" size={IKON_STORLEK} />
+                <RefreshCw aria-hidden="true" size={IKON_STORLEK} />
               )}
             </Button>
-          </FileTrigger>
-        )
+          )}
+          {/* [TASK-275.3, ADR-118 beslut 3] Ersätt VISAS INTE i eventkontext
+              för en GEMENSAM bilaga — badgen bär förklaringen (AC #4).
+              Servern nekar 403 ändå, men UI-lagret ska inte erbjuda en knapp
+              den vet avvisas.
+
+              För eventets EGNA filer står den kvar (Marcus-beslut
+              2026-08-17): förvaltningen flyttades i övrigt till
+              räckviddsläget, men en event-egen fil syns inte där, så utan
+              denna knapp hade den saknat ersätt-väg helt. */}
+          {!gemensam && (
+            <FileTrigger
+              acceptedFileTypes={['application/pdf']}
+              onSelect={(files) =>
+                onReplace(files, current.id, {
+                  rackvidd: current.rackvidd ?? undefined,
+                  kursfamilj: current.kursfamilj ?? undefined,
+                  kursniva: current.kursniva ?? undefined,
+                })
+              }
+            >
+              <Button
+                intent="primary"
+                emphasis="subtle"
+                size="sm"
+                className={IKONKNAPP_KLASS}
+                isDisabled={ersatterDennaRaden}
+                aria-label={
+                  ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
+                }
+              >
+                {ersatterDennaRaden ? (
+                  <Loader2
+                    aria-hidden="true"
+                    size={IKON_STORLEK}
+                    className="motion-safe:animate-spin"
+                  />
+                ) : (
+                  <FileUp aria-hidden="true" size={IKON_STORLEK} />
+                )}
+              </Button>
+            </FileTrigger>
+          )}
+        </>
       }
     />
   );
@@ -1126,6 +1197,15 @@ function DokumentLista({
   onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
   replaceMutation: ReplaceMutation;
 }) {
+  // [TASK-309.6] "Skapa om" (AC #4) — EN mutation-instans för HELA listan,
+  // samma "bara denna rads knapp lyser"-mönster som `replaceMutation`
+  // (`skaparOmDennaRaden` i `BilageRadRow`). Instansierad HÄR (inte lyft upp
+  // till `DokumentYta`): denna komponent har redan ett GARANTERAT
+  // non-null `eventId: string` — `DokumentYta`s eget `eventId` är
+  // `string | null` (räckviddsläget), och "Skapa om" existerar strukturellt
+  // inte där (Event-mallade rader visas aldrig i `GemensamtLage`, se
+  // `AirtableAdapter.berikaMedInaktuell` § docblock).
+  const skapaOmMutation = useSkapaOmEventBilaga(eventId);
   const [filter, setFilter] = useQueryState('typ');
   const aktivtFilter: ListaTyp =
     filter === 'bilaga' || filter === 'mall' || filter === 'generator' ? filter : 'alla';
@@ -1290,6 +1370,7 @@ function DokumentLista({
                     rad={r}
                     onReplace={onReplace}
                     replaceMutation={replaceMutation}
+                    skapaOmMutation={skapaOmMutation}
                   />
                 </li>
               ))}

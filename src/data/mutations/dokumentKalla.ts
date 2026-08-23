@@ -54,9 +54,14 @@ export async function hamtaDokumentUrl(
     const { url } = await dataSource.getAttachmentDownloadUrl(kalla.eventId, kalla.attachmentId);
     return url;
   }
+  // [TASK-309.6] `previewEventTemplate` kräver nu `mall` (EF-kravet sedan
+  // TASK-309.4) — se dess docblock (`DataSourceAdapter.ts`). Katalog-radens
+  // enda mall är "Deltagarinformation" (`MALLAR` i `DokumentYta.tsx`), så
+  // `'deltagarinfo'` här är oförändrat BETEENDE, bara ett tidigare
+  // odeklarerat/brutet anrop rättat.
   const { url } =
     kalla.typ === 'mall'
-      ? await dataSource.previewEventTemplate(kalla.eventId)
+      ? await dataSource.previewEventTemplate(kalla.eventId, 'deltagarinfo')
       : await dataSource.previewReceipt(kalla.eventId);
   return url;
 }

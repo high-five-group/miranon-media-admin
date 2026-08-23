@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 14:23'
+updated_date: '2026-08-23 19:15'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,20 +24,20 @@ Lotta väljer ett riktigt event, ser och ändrar texterna, skapar bilagan och f�
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Genereringsvyn (fortfarande bakom variant-gaten i denna skiva) öppnas för det event eventväljaren pekar ut och fyller blocken ur skiva 1:s underlag; ARBOGA-fixturen, PLATSER_SEED och EVENTINNEHALL-konstanten rivna
-- [ ] #2 Block-dialogen sparar via skiva 2:s skrivvägar: kopia på eventet, 'spara som platsens standard' vid Skapa (inte vid krysset), agendan rad för rad; tomma block listas som utelämnade
-- [ ] #3 Förhandsgranska först anropar preview-grenen; Skapa anropar persisterande grenen, öppnar filen i ny flik (blockerat fönster → 'Öppna'-knappen står kvar), dubbelklicksskyddet (aria-disabled + vakt) behålls; listan invalideras och raden syns direkt
-- [ ] #4 Dokumentlistan visar Mall för Event-mallade rader, INAKTUELL-markering när adaptern härleder hash-avvikelse, och Skapa om som anropar ersatt-läget och behåller samma rad; aldrig någon automatisk regenerering
-- [ ] #5 Adaptern härleder inaktualitet (dagens hash ≠ Källhash) i listningen för båda adaptrarna; staging-test och acceptance-test: skapa → ändra block → INAKTUELL → skapa om → samma rad, aktuell
-- [ ] #6 Klienten skickar eventId + mall + ev. ersatt — ingen HTML, ingen mallhämtning; sjalvbarande.ts och /docs/mallar-fetchen rivna ur klienten
+- [x] #1 Genereringsvyn (fortfarande bakom variant-gaten i denna skiva) öppnas för det event eventväljaren pekar ut och fyller blocken ur skiva 1:s underlag; ARBOGA-fixturen, PLATSER_SEED och EVENTINNEHALL-konstanten rivna
+- [x] #2 Block-dialogen sparar via skiva 2:s skrivvägar: kopia på eventet, 'spara som platsens standard' vid Skapa (inte vid krysset), agendan rad för rad; tomma block listas som utelämnade
+- [x] #3 Förhandsgranska först anropar preview-grenen; Skapa anropar persisterande grenen, öppnar filen i ny flik (blockerat fönster → 'Öppna'-knappen står kvar), dubbelklicksskyddet (aria-disabled + vakt) behålls; listan invalideras och raden syns direkt
+- [x] #4 Dokumentlistan visar Mall för Event-mallade rader, INAKTUELL-markering när adaptern härleder hash-avvikelse, och Skapa om som anropar ersatt-läget och behåller samma rad; aldrig någon automatisk regenerering
+- [x] #5 Adaptern härleder inaktualitet (dagens hash ≠ Källhash) i listningen för båda adaptrarna; staging-test och acceptance-test: skapa → ändra block → INAKTUELL → skapa om → samma rad, aktuell
+- [x] #6 Klienten skickar eventId + mall + ev. ersatt — ingen HTML, ingen mallhämtning; sjalvbarande.ts och /docs/mallar-fetchen rivna ur klienten
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Prod-schemaändringar endast efter Marcus GO i klartext per tabell (ADR-125 § 8)
-- [ ] #6 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Prod-schemaändringar endast efter Marcus GO i klartext per tabell (ADR-125 § 8)
+- [x] #6 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön
 <!-- DOD:END -->

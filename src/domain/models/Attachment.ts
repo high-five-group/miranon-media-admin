@@ -71,6 +71,29 @@ export interface Attachment {
   kursfamilj: string | null;
   /** Kursnivå vid räckvidd Kurstyp; `null` för nivålösa familjer ELLER utanför Kurstyp. */
   kursniva: string | null;
+  /**
+   * [TASK-309.6, ADR-125 § 5] Bara satt för Dokumentklass 'Event-mallad' —
+   * Airtables optionsnamn ('Bekräftelsebilaga'/'Deltagarinformation'), eller
+   * `null` (uppladdade/person-genererade rader, legacy Event-mallade rader
+   * från före TASK-309.4). Speglar `mapAttachmentRecord`
+   * (`_shared/attachments.ts`) exakt.
+   */
+  mall: string | null;
+  /**
+   * [TASK-309.6, ADR-125 § 5] SHA-256 över kanoniskt serialiserat
+   * ifyllnadsunderlag vid genereringstillfället, server-internt. `null` när
+   * fältet saknas (samma legacy-fall som `mall` ovan).
+   */
+  kallhash: string | null;
+  /**
+   * [TASK-309.6, ADR-125 § 3] HÄRLETT klient-side vid listning (aldrig
+   * lagrat) — `true` när dagens ifyllnadsunderlags hash skiljer sig från
+   * `kallhash`, `false` när den matchar, `null` när inaktualitet inte kan
+   * eller ska bedömas (icke-Event-mallad rad, okänt/saknat `mall`/
+   * `kallhash`, eller ett event vars underlag inte gick att hämta). Se
+   * `AirtableAdapter.berikaMedInaktuell` för härledningen.
+   */
+  inaktuell: boolean | null;
 }
 
 /**
