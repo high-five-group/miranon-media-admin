@@ -54,10 +54,19 @@ export type {
   PlatsFalt,
   SaveEventContentInput,
   SaveEventTextInput,
+  SavePlaceInput,
   SavePlaceStandardInput,
 } from './DocumentWrites.schema';
 export { EngagementSchema } from './Engagement.schema';
 export { EventSchema } from './Event.schema';
+export {
+  EventinnehallFaltSchema,
+  type EventinnehallListItem,
+  EventinnehallListItemSchema,
+  type PlaceListItem,
+  PlaceListItemSchema,
+  PlatsFaltSchema,
+} from './EventinnehallList.schema';
 export { EventNoteSchema } from './EventNote.schema';
 export { type Intresserad, IntresseradSchema } from './Intresserad.schema';
 export {

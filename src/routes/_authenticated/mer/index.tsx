@@ -6,6 +6,8 @@ import {
   Hourglass,
   LogOut,
   Mail,
+  MapPin,
+  NotebookText,
   Paperclip,
   Smartphone,
   Star,
@@ -97,6 +99,22 @@ function MerPage() {
               det ORDLISTA varnar för. */}
           <li>
             <NavCard to="/mer/dokument" icon={Paperclip} label="Dokument" />
+          </li>
+          {/* Eventinnehåll + Platser (TASK-309.7, Del 2 § D beslut 10):
+              standardtexterna per Event × Eventtyp och platsernas uppgifter
+              — redigeringsytorna bilagornas skrivvägar (skiva 2) matar.
+              Samma radform som Dokument-grannen, samma grupp: båda förvaltar
+              MATERIAL som bilagorna byggs av, ingen av dem listar personer.
+              NotebookText (standardtexter/anteckningar, domänbegreppet
+              Eventinnehåll — ORDLISTA.md) och MapPin (Plats som eget begrepp,
+              samma ikon redan etablerad för "plats" i EventCard.tsx/
+              NastaEvent.tsx — konsekvent återanvändning av EN betydelse,
+              inte en krock). */}
+          <li>
+            <NavCard to="/mer/eventinnehall" icon={NotebookText} label="Eventinnehåll" />
+          </li>
+          <li>
+            <NavCard to="/mer/platser" icon={MapPin} label="Platser" />
           </li>
         </ul>
         {/* Inställningar (task-126.3, T47 aktiverad) — se filhuvudets

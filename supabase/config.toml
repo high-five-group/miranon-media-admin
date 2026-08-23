@@ -138,16 +138,11 @@ verify_jwt = true
 [functions.test-attachments-storage]
 verify_jwt = true
 
-# test-docraptor-render — STAGING-ONLY testharness-EF (S108 MARCUS-SEKVENS
-# punkt 3, ADR-119 beslut 7 "minimaltestet"). Samma gateway-försvar som
-# ovan — requireUser grindar faktiskt anropet. Ren proxy: tar emot redan
-# självbärande HTML (scripts/docraptor-sjalvbarande.mjs) och skickar den
-# vidare till DocRaptor, returnerar PDF-bytesen. Rör ingen data, ingen
-# Storage-skrivning. MEDVETET UTELÄMNAD ur .prod-functions-allowlist.conf —
-# test-auth-precedenten. Rör inte den filen för denna post. Se funktionens
-# filhuvud för fullt resonemang.
-[functions.test-docraptor-render]
-verify_jwt = true
+# [TASK-309.4, RIVET] test-docraptor-render (S108 MARCUS-SEKVENS punkt 3,
+# ADR-119 beslut 7 "minimaltestet") stod tidigare här. ADR-125 § Beslut 5:
+# dess mätinstrument-roll är övertagen av generate-event-attachment/index.ts:s
+# `preview: true`-gren, som nu anropar riktiga DocRaptor genom
+# `_shared/mall-render.ts` — ingen fristående proxy-EF behövs längre.
 
 # test-static-files — STAGING-ONLY testharness-EF (TASK-309.1, "Skiva 0:
 # minimaltest — bundlade mallfiler i en Edge Function via staging-deploy").

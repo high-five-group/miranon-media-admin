@@ -96,7 +96,10 @@ export type ReceiptPdfBuilder = (spec: {
   betalning: Betalning;
   eventNamn: string | null;
   datum: string;
-  /** [TASK-306] Se `ReceiptSendInput` — trådas oförändrat till `kvittoRader`/`kvittoBenamning`. */
+  /** [TASK-306] Se `ReceiptSendInput` — trådas oförändrat till `kvittoBenamning`
+   * (via `byggKvittoData`, `_shared/mall-data.ts`, sedan TASK-309.5 — INTE
+   * längre direkt till `kvittoRader`, som saknar produktionskonsument efter
+   * denna skiva, se `receipt-content.ts`:s filhuvud). */
   eventTyp: string | null;
   eventStart: string | null;
   eventSlut: string | null;

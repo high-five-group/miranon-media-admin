@@ -90,15 +90,19 @@ seed-ankaret är dokumenterat i `docs/BUILD-LOG.md`, sök på variabelnamnet).
 Skilj symptomen åt innan felklassning.
 
 **Sentinel-städning (ADR-060, wirad via TASK-16):** create-conformance-
-testerna lämnar markör-märkta rader i staging-basen. Markörerna är sju:
+testerna lämnar markör-märkta rader i staging-basen. Markörerna är åtta:
 `create-test+` … `@staging.test` i Anmälningars e-postfält,
 `ZZ-create-event-test` i Eventplaneringens `Ort`, `ZZ-note-test+` …
 `@sentinel` i Anteckningar, `app-segment-test+` i Segment,
-`ZZ-attachment-test-` i Bilagors `Namn` (TASK-146.4), `Deltagarinformation –`
-tillsammans med `ZZ-belaggning-fixtur` i Bilagors `Namn` (TASK-146.5 — attach-målet
-är den PERMANENTA beläggningsfixturen, se `tests/api/fixtures.ts`, inte en egen
-engångsfixtur), och `ZZ-TASK-309.3-` i TRE tabeller (Eventplaneringens `Ort`,
-Platsers `Namn`, Agendapunkters `Text` — bilagornas skrivvägar, TASK-309.3).
+`ZZ-attachment-test-` i Bilagors `Namn` (TASK-146.4), `Bekräftelsebilaga –`/
+`Deltagarinformation –` tillsammans med `ZZ-dokumentunderlag-fixtur` i Bilagors
+`Namn` (TASK-146.5, bytt fixtur i TASK-309.4 — attach-målet är den PERMANENTA
+DOKUMENTUNDERLAG_EVENT_ID-fixturen, se `tests/api/fixtures.ts`, inte en egen
+engångsfixtur), `ZZ-TASK-309.3-` i TRE tabeller (Eventplaneringens `Ort`,
+Platsers `Namn`, Agendapunkters `Text` — bilagornas skrivvägar, TASK-309.3),
+och `ZZ-TASK-309.7-` i Platsers `Namn` (Mer-sidans Platser-yta, TASK-309.7 —
+EGEN sentinel-klass skild från 309.3:s: dessa rader föds via
+`save-place-standard`s event-lösa läge, utan något throwaway-event i sikte).
 Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
 `scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med
 två av fyra tills den grinden byggdes. CI städar dem automatiskt i jobbet **Staging sentinel

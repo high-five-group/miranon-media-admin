@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <!--
-  Bekräftelsebilagan — TASK-279 (ADR-119 beslut 2+3).
+  Bekräftelsebilagan — TASK-279 (ADR-119 beslut 2+3), Eta-ifylld sedan
+  TASK-309.4 (ADR-125 § Beslut 4).
 
-  Statisk HTML/CSS-mall, personoberoende. Den dynamiska ytan är UTESLUTANDE
-  infoboxen (kursnamn, datum/tid, plats, pris, anmälningsavgift, resterande
-  belopp, sista betalningsdatum) — resten av dokumentet (brödtext,
-  innehållslistorna) är FAST FORM per kurstyp, se ADR-119 beslut 3 +
-  `docs/research/dokumentmallarnas-forlagor-2026-08-17.md` § 2.4.
+  Statisk HTML/CSS-mall. Den dynamiska ytan är infoboxen (kursnamn,
+  datum/tid, plats, pris, anmälningsavgift, resterande belopp, sista
+  betalningsdatum) OCH — sedan ADR-125:s relationella datamodell —
+  beskrivningen och de två innehållslistorna, som numera hämtas ur
+  Eventinnehåll/Agendapunkter i stället för att vara FAST FORM.
 
-  Fälten skrivs som dubbla klammerparenteser runt fältnamnet — en framtida
-  renderings-skiva (utanför denna skivas scope, se kortets § "Vad som INTE
-  görs här") gör den riktiga ihopkopplingen mot en mallmotor.
-  `scripts/render-bilage-mall.mjs` gör en enkel textersättning för LOKAL
-  granskning, se docs/mallar/bilagor/README.md.
+  Platshållarna är Eta-syntax (`<%= data.x %>`, autoEscape på — se
+  `supabase/functions/_shared/mall-render.ts`). `data`-formen byggs av
+  `_shared/mall-data.ts`s `byggBekraftelseData` — SAMMA funktion
+  `scripts/render-bilage-mall.mjs` (lokal granskning, `npm run mall:granska`)
+  använder, så granskningsutdatan och den skarpa PDF:en fylls identiskt.
 
   Ingen persondata förekommer här (AC #2) — mottagarens namn hör till
   mailkroppen.
@@ -20,7 +21,7 @@
 <html lang="sv">
 <head>
 <meta charset="UTF-8" />
-<title>Bekräftelsebilaga — {{kursnamn}}</title>
+<title>Bekräftelsebilaga — <%= data.kursnamn %></title>
 <link rel="stylesheet" href="./bilaga-delad.css" />
 </head>
 <body>
@@ -30,18 +31,20 @@
       <img class="logga" src="../../../public/miranon-media-ordmarke-original.svg" alt="MiranonMedia" />
     </header>
 
-    <h1 class="rubrik">Utbildning: {{kursnamn}}</h1>
+    <h1 class="rubrik">Utbildning: <%= data.kursnamn %></h1>
 
     <div class="inforuta">
-      <p><strong>Datum och Tid:</strong> {{datumTid}}</p>
-      <p><strong>Plats:</strong> {{plats}}</p>
+      <p><strong>Datum och Tid:</strong> <%= data.datumTid %></p>
+      <p><strong>Plats:</strong> <%= data.plats %></p>
       <p>
-        <strong>Pris:</strong> {{pris}} Kr
-        <strong>Anmälningsavgift:</strong> {{anmalningsavgift}}, betalas vid anmälan.
+        <strong>Pris:</strong> <%= data.pris %> Kr
+        <strong>Anmälningsavgift:</strong> <%= data.anmalningsavgift %>, betalas vid anmälan.
       </p>
+      <% if (data.visaResterande) { %>
       <p>
-        Resterande {{resterandeBelopp}} betalas senast {{sistaBetalningsdatum}}. Anmälan är bindande.
+        Resterande <%= data.resterandeBelopp %> betalas senast <%= data.sistaBetalningsdatum %>. Anmälan är bindande.
       </p>
+      <% } %>
       <p>
         <strong>Swish:</strong> 123 061 65 08, <strong>Plusgiro:</strong> 216 10 05-0
         Obs! Ange utbildningsdatum på inbetalningen
@@ -54,85 +57,48 @@
       <p class="halsning">Varmt välkomna önskar Roger &amp; Lotta!</p>
     </div>
 
+    <% if (data.beskrivning.length > 0) { %>
     <div class="brodtext">
-      <p>
-        Utbildningen <strong>Resor i Medvetandet</strong> kommer att ge dig en djupare insikt om
-        medvetandet, både genom att teoretiskt förklara vad vi är och att praktiskt öva i extremt
-        <strong>djupa meditationer</strong>. Vi går igenom helt nya medvetandemodeller som faktiskt kan
-        förklara det som tidigare kallats för övernaturligt och paranormalt. I denna utbildning får du
-        själv ta de första stegen på din resa i vårt gemensamma medvetande. <strong>Medvetandet</strong>
-        är det centrala och du kommer både få göra praktiska övningar tillsammans med massor med
-        konkreta tips, samtidigt som vi förklarar de djupare insikter som ligger bakom våra upplevelser
-        i våra liv.
-      </p>
-      <p>
-        Du behöver inga förberedande kunskaper eller erfarenheter, men du måste komma med ett mycket
-        öppet sinne. I utbildningen har vi lagt ett starkt fokus på din egen upplevelse och din egen
-        personliga resa i medvetandet. Boken <strong>Utanför Verkligheten</strong> ligger till grund för
-        nya sätt att se på verkligheten genom att öppna upp ditt sinne för en helt ny värld och
-        verklighet.
-      </p>
-      <p>
-        Du kommer även att få lära dig om <strong>Additiv meditation</strong>, en meditationsteknik, som
-        gör det möjligt att ta sig extremt djupt i medvetandet. Med en kombination av tusenårig kunskap
-        och modern teknik kan man uppnå mentala tillstånd som helt klart bryter mot vad vi tror är
-        begränsningar i verkligheten. Vi arbetar med <strong>mentala ankare</strong> och planerar
-        intentioner. Du får tillfälle att fråga om precis vad som helst, exempelvis om synkronicitet,
-        Akashi arkivet, reinkarnationsprocessen, eller om dina guider. Du kommer att i detalj få reda på
-        hur du planerar och utför dina resor med hjälp av extrem meditation och en välfylld mental
-        verktygslåda. Vi berättar om varför <strong>Punktmedvetandet</strong> är så viktigt för att uppnå
-        högre mentala tillstånd. Du kommer att få en inblick varifrån kreativitet, inspiration och ökade
-        mentala förmågor kommer.
-      </p>
+      <% for (const stycke of data.beskrivning) { %>
+      <p><%= stycke %></p>
+      <% } %>
     </div>
+    <% } %>
 
     <div class="innehallslistor">
+      <% if (data.dagEttAgenda.length > 0) { %>
       <div class="lista">
         <h2 class="listrubrik-selawik">Innehåll, Dag Ett</h2>
         <ul>
-          <li>Miranon Media</li>
-          <li>Miranon-Nivåer (lite om)</li>
-          <li>Additiv Meditation</li>
-          <li><span class="meditationsnamn">Meditation: Eken Plus Djup avslappning</span> <span class="tid">30min</span></li>
-          <li>Mentala hinder</li>
-          <li>Filosofi: materialism/idealism</li>
-          <li>Medvetandemodeller</li>
-          <li>Kvantfysik</li>
-          <li>Synkronicitet, fjärrskådning</li>
-          <li><span class="meditationsnamn">Meditation: Fåtöljen</span> <span class="tid">5 min</span></li>
-          <li><span class="meditationsnamn">Meditation: Kraftfältet Plus</span> <span class="tid">30min</span></li>
-          <li>Upplevelser utanför kroppen</li>
-          <li>Utmaningar utanför kroppen</li>
-          <li><span class="meditationsnamn">Meditation: Uthuset</span> <span class="tid">45 min</span></li>
+          <% for (const punkt of data.dagEttAgenda) { %>
+          <li>
+            <% if (punkt.meditation) { %><span class="meditationsnamn"><%= punkt.text %></span><% } else { %><%= punkt.text %><% } %>
+            <% if (punkt.tid) { %> <span class="tid"><%= punkt.tid %></span><% } %>
+          </li>
+          <% } %>
         </ul>
       </div>
+      <% } %>
+      <% if (data.dagTvaAgenda.length > 0) { %>
       <div class="lista">
         <h2 class="listrubrik-selawik">Innehåll, Dag Två</h2>
         <ul>
-          <li><span class="meditationsnamn">Meditation Fyren</span> <span class="tid">40 min</span></li>
-          <li>Intention – Föreställning - Skapande</li>
-          <li>Meditation &amp; fokus</li>
-          <li>Klicka ut eller sömn</li>
-          <li>Punktmedvetande</li>
-          <li>Mentala Ankare / Grundning/Jordning</li>
-          <li><span class="meditationsnamn">Meditation Klockan</span> <span class="tid">40 min</span></li>
-          <li>Ljud &amp; Frekvenser, EEG</li>
-          <li>Tankeövning <span class="tid">5 min</span></li>
-          <li>Var observatören</li>
-          <li>Tanke respektive medvetande</li>
-          <li><span class="meditationsnamn">Meditation: Kristallvägen</span> <span class="tid">41 min</span></li>
-          <li>Upplevelser utanför verkligheten</li>
-          <li>Tid, Affirmationer, Altruism</li>
-          <li>Själshämtning</li>
-          <li><span class="meditationsnamn">Meditation: Spegeln</span> <span class="tid">40 min</span></li>
+          <% for (const punkt of data.dagTvaAgenda) { %>
+          <li>
+            <% if (punkt.meditation) { %><span class="meditationsnamn"><%= punkt.text %></span><% } else { %><%= punkt.text %><% } %>
+            <% if (punkt.tid) { %> <span class="tid"><%= punkt.tid %></span><% } %>
+          </li>
+          <% } %>
         </ul>
       </div>
+      <% } %>
     </div>
 
     <!--
       Sidfoten följer förlagans MÄTTA struktur: två rundade rutor (mörkblå ram)
       som var och en bär ikon + QR bredvid varandra plus bildtexten inuti, och
       bokomslaget fritt emellan utan ram. Måtten bor i bilaga-delad.css § .sidfot.
+      STATISK — orörd av ADR-125 (varken händelse- eller kurs-specifik).
     -->
     <footer class="sidfot">
       <div class="ikonruta">
@@ -141,7 +107,7 @@
             <!-- Instagram — färgglyfen, som i förlagan (inte den monokroma) -->
             <img class="ikonruta-ikon" src="../../../public/instagram-glyf-gradient.png" alt="" aria-hidden="true" />
             <!-- QR genererad ur URL-strängen (aldrig kopierad som bild), se README § QR-koderna -->
-            <svg class="ikonruta-qr" role="img" aria-label="QR-kod till instagram.com/se.miranon" viewBox="0 0 29 29" shape-rendering="crispEdges"><path stroke="#000000" d="M0 0.5h7m2 0h1m3 0h1m4 0h3m1 0h7M0 1.5h1m5 0h1m3 0h1m1 0h4m1 0h2m3 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h1m1 0h2m2 0h1m1 0h1m2 0h2m1 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h2m1 0h2m4 0h1m1 0h1m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h1m2 0h4m2 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h1m3 0h6m2 0h1m1 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h3m2 0h1m2 0h1m3 0h1M0 8.5h1m1 0h5m4 0h1m2 0h1m2 0h1m1 0h1m2 0h5M1 9.5h4m6 0h1m4 0h9m3 0h1M0 10.5h2m1 0h1m1 0h2m2 0h1m5 0h1m4 0h3M0 11.5h4m1 0h1m1 0h3m1 0h2m1 0h1m1 0h1m6 0h1m1 0h1m1 0h1M0 12.5h3m1 0h4m1 0h1m1 0h1m5 0h2m6 0h2M0 13.5h1m1 0h2m1 0h1m1 0h4m2 0h2m1 0h7m1 0h1m3 0h1M0 14.5h2m1 0h2m1 0h2m1 0h2m1 0h6m4 0h2m1 0h2M4 15.5h2m5 0h3m1 0h1m3 0h1m1 0h4m2 0h1M0 16.5h4m2 0h2m2 0h1m3 0h2m1 0h1m2 0h1m2 0h1m1 0h2M0 17.5h2m3 0h1m1 0h1m3 0h2m3 0h1m2 0h2m1 0h3m1 0h1m1 0h1M0 18.5h1m2 0h2m1 0h3m6 0h1m1 0h2m1 0h2m1 0h1m2 0h1M0 19.5h1m1 0h3m2 0h1m1 0h1m4 0h1m4 0h2m1 0h3m2 0h1M0 20.5h1m1 0h1m2 0h6m1 0h1m2 0h3m2 0h5m1 0h3M8 21.5h7m1 0h1m1 0h1m1 0h1m3 0h5M0 22.5h7m3 0h7m2 0h2m1 0h1m1 0h3M0 23.5h1m5 0h1m1 0h1m2 0h1m1 0h1m1 0h1m3 0h2m3 0h1M0 24.5h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h1m2 0h2m1 0h5m1 0h1M0 25.5h1m1 0h3m1 0h1m1 0h1m2 0h3m2 0h4m3 0h1m1 0h4M0 26.5h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h5m4 0h6M0 27.5h1m5 0h1m3 0h1m4 0h2m1 0h1m1 0h1m2 0h1m1 0h1m1 0h1M0 28.5h7m1 0h2m1 0h2m4 0h1m1 0h1m1 0h1m1 0h4"/></svg>
+            <svg class="ikonruta-qr" role="img" aria-label="QR-kod till instagram.com/se.miranon" viewBox="0 0 29 29" shape-rendering="crispEdges"><path stroke="#000000" d="M0 0.5h7m2 0h1m3 0h1m4 0h3m1 0h7M0 1.5h1m5 0h1m3 0h1m1 0h4m1 0h2m3 0h1m5 0h1M0 2.5h1m1 0h3m1 0h1m1 0h1m1 0h2m2 0h1m1 0h1m2 0h2m1 0h1m1 0h3m1 0h1M0 3.5h1m1 0h3m1 0h1m1 0h2m1 0h2m4 0h1m1 0h1m2 0h1m1 0h3m1 0h1M0 4.5h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h1m2 0h4m2 0h1m1 0h3m1 0h1M0 5.5h1m5 0h1m1 0h1m3 0h6m2 0h1m1 0h1m5 0h1M0 6.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M8 7.5h3m2 0h1m2 0h1m3 0h1M0 8.5h1m1 0h5m4 0h1m2 0h1m2 0h1m1 0h1m2 0h5M1 9.5h4m6 0h1m4 0h9m3 0h1M0 10.5h2m1 0h1m1 0h2m2 0h1m5 0h1m4 0h3M0 11.5h4m1 0h1m1 0h3m1 0h2m1 0h1m1 0h1m6 0h1m1 0h1m1 0h1M0 12.5h3m1 0h4m1 0h1m1 0h1m5 0h2m6 0h2M0 13.5h1m1 0h2m1 0h1m1 0h4m2 0h2m1 0h7m1 0h1m3 0h1M0 14.5h2m1 0h2m1 0h2m1 0h2m1 0h6m4 0h2m1 0h2M4 15.5h2m5 0h3m1 0h1m3 0h1m1 0h4m2 0h1M0 16.5h4m2 0h2m2 0h1m3 0h2m1 0h1m2 0h1m2 0h1m1 0h2M0 17.5h2m3 0h1m1 0h1m3 0h2m3 0h1m2 0h2m1 0h3m1 0h1m1 0h1M0 18.5h1m2 0h2m1 0h3m6 0h1m1 0h2m1 0h2m1 0h1m2 0h1M0 19.5h1m1 0h3m2 0h1m1 0h1m4 0h1m4 0h2m1 0h3m2 0h1M0 20.5h1m1 0h1m2 0h6m1 0h1m2 0h3m2 0h5m1 0h3M8 21.5h7m1 0h1m1 0h1m1 0h1m3 0h5M0 22.5h7m3 0h7m2 0h2m1 0h1m1 0h3M0 23.5h1m5 0h1m1 0h1m2 0h1m1 0h1m1 0h1m3 0h2m3 0h1M0 24.5h1m1 0h3m1 0h1m1 0h2m1 0h1m2 0h1m2 0h2m1 0h5m1 0h1M0 25.5h1m1 0h3m1 0h1m1 0h1m2 0h3m2 0h4m3 0h1m1 0h4M0 26.5h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h5m4 0h6M0 27.5h1m5 0h1m3 0h1m4 0h2m1 0h1m1 0h1m2 0h1m1 0h1m1 0h1M0 28.5h7m1 0h2m1 0h2m4 0h1m1 0h1m1 0h1m1 0h4"/></svg>
           </div>
           <span class="ikonruta-bildtext">instagram.com/se.miranon/</span>
         </div>
@@ -164,3 +130,4 @@
 </div>
 </body>
 </html>
+

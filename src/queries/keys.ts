@@ -199,6 +199,17 @@ export const queryKeys = {
     // delmängd"-resonemang.
     all: ['documentSources'] as const,
   },
+  // Mer-sidans Eventinnehåll-/Platser-ytor (TASK-309.7, ADR-125 § 7) — GLOBALA
+  // läs-listor (get-event-contents/get-places), speglar `events.formats`s
+  // "STABIL nyckel, hämtar allt"-mönster. Skilda från `documentSources` ovan:
+  // dessa listar SAMTLIGA rader för REDIGERING av standardvärden, inte ett
+  // enskilt events ifyllnadsunderlag.
+  eventinnehall: {
+    list: ['eventinnehall', 'list'] as const,
+  },
+  places: {
+    list: ['places', 'list'] as const,
+  },
   dashboard: {
     // Hem-aggregering (Fas 6d). EGNA nycklar, MEDVETET skilda från events.list /
     // registrations.byEvent: Hem-vyns cards hämtar GLOBALA listor (alla event,

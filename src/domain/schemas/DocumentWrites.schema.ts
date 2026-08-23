@@ -77,6 +77,26 @@ export interface SavePlaceStandardInput {
 }
 
 /**
+ * [TASK-309.7] REN plats-redigering UTAN event (Mer-sidans Platser-yta,
+ * ADR-125 § 7) — till skillnad från `SavePlaceStandardInput` ovan (som
+ * alltid går via ett event och därför både länkar eventet och rensar dess
+ * `(bilagetext)`-kopia). Exakt ETT av `platsId`/`namn` krävs (EF:en fäller
+ * annars med 400): `platsId` uppdaterar en BEFINTLIG plats direkt; `namn`
+ * skapar en ny (find-or-create by `Namn`, server-side — samma säkerhetsnät
+ * mot en oavsiktlig dubblett som event-vägen redan bär för `Ort`).
+ *
+ * `falt` är VALFRITT bara tillsammans med `namn` — "ny plats"-knappen
+ * skapar en TOM shell (bara `Namn`) som fylls i via ett andra steg, samma
+ * block-dialog som resten av ytan. Med `platsId` krävs minst ETT fält
+ * (EF:en fäller annars): en no-op-uppdatering är meningslös där.
+ */
+export interface SavePlaceInput {
+  platsId?: string;
+  namn?: string;
+  falt?: Partial<Record<PlatsFalt, string>>;
+}
+
+/**
  * AC #3 — Eventinnehållets standardtexter + standardagenda
  * (`save-event-content`, Mer-sidan). `eventinnehallId` identifierar raden
  * direkt (Event/Typ är radens fasta identitet, redigeras aldrig här).

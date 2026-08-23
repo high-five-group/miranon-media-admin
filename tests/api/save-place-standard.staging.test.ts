@@ -27,6 +27,20 @@
 //      okänd falt-nyckel → 400; tom sträng → 400.
 //   5. anon (ingen JWT) → 401.
 //
+// [TASK-309.7] EF:ens TVÅ NYA event-lösa lägen (Mer-sidans Platser-yta,
+// ADR-125 § 7) — egen sentinel `save-place-standard-event-los-platser-
+// sentineler`, prefix `ZZ-TASK-309.7-` (SKILT från 309.3:s prefix ovan:
+// dessa rader skapas UTAN något throwaway-event i sikte alls):
+//   6. Läge 3 (namn): skapar en NY plats direkt, `skapad: true`; ett andra
+//      anrop med SAMMA namn finner den (`skapad: false`) i stället för att
+//      dubblettera. `falt` FÅR utelämnas helt (skapar en tom shell).
+//   7. Läge 2 (platsId): uppdaterar en BEFINTLIG plats direkt, `skapad:
+//      false`, `Namn` orörd. Ingen Eventplanering-rad rörs — get-places
+//      visar de nya fälten.
+//   8. deny (event-lösa lägena): eventId+platsId samtidigt → 400; varken
+//      eventId/platsId/namn → 400; okänt platsId → 400; platsId utan falt
+//      → 400 (till skillnad från namn-läget).
+//
 // Auth via getValidUserJWT. Lokalt skip:as utan creds; skarpa beviset körs
 // i CI (STAGING_REQUIRED=1).
 
@@ -39,6 +53,7 @@ const ENDPOINT = '/functions/v1/save-place-standard';
 const SAVE_EVENT_TEXT_ENDPOINT = '/functions/v1/save-event-text';
 const CREATE_EVENT_ENDPOINT = '/functions/v1/create-event';
 const GET_DOCUMENT_SOURCES_ENDPOINT = '/functions/v1/get-document-sources';
+const GET_PLACES_ENDPOINT = '/functions/v1/get-places';
 
 const SEEDED_EVENTFORMAT_ID = 'recclDd7hUQsfxoVs';
 
@@ -249,5 +264,144 @@ test.describe('save-place-standard — conformance (TASK-309.3 AC #2, ADR-125 §
       falt: { adress: 'x' },
     });
     await classify401Body(res);
+  });
+});
+
+async function findPlaceByName(
+  request: APIRequestContext,
+  config: ApiConfig,
+  jwt: string,
+  namn: string,
+): Promise<{ id: string; namn: string; falt: Record<string, string | null> } | undefined> {
+  const res = await request.get(`${config.baseUrl}${GET_PLACES_ENDPOINT}`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  expect(res.status(), await res.text()).toBe(200);
+  const body = (await res.json()) as {
+    places: { id: string; namn: string; falt: Record<string, string | null> }[];
+  };
+  return body.places.find((p) => p.namn === namn);
+}
+
+test.describe('save-place-standard — event-lösa lägen (TASK-309.7 AC #3, ADR-125 § 7)', () => {
+  test('läge 3 (namn): skapar en ny plats; ett andra anrop med samma namn finner den i stället för att dubblettera', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const namn = `ZZ-TASK-309.7-plats-${randomUUID()}`;
+
+    const res1 = await postJson(request, config, jwt, ENDPOINT, {
+      namn,
+      falt: { adress: 'ZZ-TASK-309.7-adress-v1' },
+    });
+    const raw1 = await res1.text();
+    expect(res1.status(), raw1).toBe(200);
+    const body1 = JSON.parse(raw1) as { plats: { id: string; namn: string; skapad: boolean } };
+    expect(body1.plats.skapad).toBe(true);
+    expect(body1.plats.namn).toBe(namn);
+
+    // Andra anropet med SAMMA namn — finner (skapad: false), samma id,
+    // uppdaterar fältet i stället för att skapa en dubblett.
+    const res2 = await postJson(request, config, jwt, ENDPOINT, {
+      namn,
+      falt: { adress: 'ZZ-TASK-309.7-adress-v2' },
+    });
+    const raw2 = await res2.text();
+    expect(res2.status(), raw2).toBe(200);
+    const body2 = JSON.parse(raw2) as { plats: { id: string; skapad: boolean } };
+    expect(body2.plats.skapad).toBe(false);
+    expect(body2.plats.id).toBe(body1.plats.id);
+
+    const funnen = await findPlaceByName(request, config, jwt, namn);
+    expect(funnen?.id).toBe(body1.plats.id);
+    expect(funnen?.falt.adress).toBe('ZZ-TASK-309.7-adress-v2');
+  });
+
+  test('läge 3 (namn) utan falt: skapar en TOM shell-rad (bara Namn)', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const namn = `ZZ-TASK-309.7-shell-${randomUUID()}`;
+
+    const res = await postJson(request, config, jwt, ENDPOINT, { namn });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(200);
+    const body = JSON.parse(raw) as { plats: { id: string; namn: string; skapad: boolean } };
+    expect(body.plats.skapad).toBe(true);
+
+    const funnen = await findPlaceByName(request, config, jwt, namn);
+    expect(funnen?.falt.adress).toBeNull();
+    expect(funnen?.falt.parkering).toBeNull();
+    expect(funnen?.falt.transport).toBeNull();
+    expect(funnen?.falt.klader).toBeNull();
+  });
+
+  test('läge 2 (platsId): uppdaterar en befintlig plats direkt, ingen event-koppling', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const namn = `ZZ-TASK-309.7-plats-${randomUUID()}`;
+
+    const skapa = await postJson(request, config, jwt, ENDPOINT, {
+      namn,
+      falt: { adress: 'ZZ-TASK-309.7-ursprunglig' },
+    });
+    const platsId = (JSON.parse(await skapa.text()) as { plats: { id: string } }).plats.id;
+
+    const res = await postJson(request, config, jwt, ENDPOINT, {
+      platsId,
+      falt: { adress: 'ZZ-TASK-309.7-uppdaterad', parkering: 'ZZ-TASK-309.7-parkering' },
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(200);
+    const body = JSON.parse(raw) as { plats: { id: string; namn: string; skapad: boolean } };
+    expect(body.plats.skapad).toBe(false);
+    expect(body.plats.id).toBe(platsId);
+    // Namn ORÖRT — läge 2 redigerar bara adress/parkering/transport/kläder.
+    expect(body.plats.namn).toBe(namn);
+
+    const funnen = await findPlaceByName(request, config, jwt, namn);
+    expect(funnen?.falt.adress).toBe('ZZ-TASK-309.7-uppdaterad');
+    expect(funnen?.falt.parkering).toBe('ZZ-TASK-309.7-parkering');
+  });
+
+  test('deny: eventId OCH platsId samtidigt → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postJson(request, config, jwt, ENDPOINT, {
+      eventId: 'recAAAAAAAAAAAAAA',
+      platsId: 'recBBBBBBBBBBBBBB',
+      falt: { adress: 'x' },
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('deny: varken eventId, platsId eller namn → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postJson(request, config, jwt, ENDPOINT, { falt: { adress: 'x' } });
+    expect(res.status()).toBe(400);
+  });
+
+  test('deny: okänt platsId → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postJson(request, config, jwt, ENDPOINT, {
+      platsId: 'recZZZZZZZZZZZZZZ',
+      falt: { adress: 'x' },
+    });
+    expect(res.status()).toBe(400);
+  });
+
+  test('deny: platsId utan falt → 400 (till skillnad från namn-läget)', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const namn = `ZZ-TASK-309.7-plats-${randomUUID()}`;
+    const skapa = await postJson(request, config, jwt, ENDPOINT, { namn });
+    const platsId = (JSON.parse(await skapa.text()) as { plats: { id: string } }).plats.id;
+
+    const res = await postJson(request, config, jwt, ENDPOINT, { platsId });
+    expect(res.status()).toBe(400);
   });
 });

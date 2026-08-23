@@ -402,6 +402,16 @@ export function mapAttachmentRecord(record: {
   rackvidd: string | null;
   kursfamilj: string | null;
   kursniva: string | null;
+  /** [TASK-309.4, ADR-125 § Beslut 3] Bara satt för Dokumentklass
+   *  'Event-mallad' — 'Bekräftelsebilaga'/'Deltagarinformation'/'Kvitto',
+   *  eller null (uppladdade/person-genererade rader, legacy Event-mallade
+   *  rader från före denna skiva). */
+  mall: string | null;
+  /** [TASK-309.4, ADR-125 § Beslut 3] SHA-256 över kanoniskt serialiserat
+   *  ifyllnadsunderlag, server-internt — adaptern (TASK-309.6) härleder
+   *  inaktualitet genom att räkna om samma hash och jämföra. null när
+   *  fältet saknas (samma legacy-fall som `mall` ovan). */
+  kallhash: string | null;
 } {
   const f = record.fields;
   const namn = f.Namn;
@@ -409,6 +419,8 @@ export function mapAttachmentRecord(record: {
   const skapad = f.Skapad;
   const event = f.Event;
   const klass = f.Dokumentklass;
+  const mall = f['Mall'];
+  const kallhash = f['Källhash'];
   // [TASK-275.2, ADR-118] Räckvidd/Kursfamilj/Kursnivå — SAMMA defensiva
   // "okänt/saknat → null"-disciplin som Dokumentklass ovan. Legacy-rader
   // (skrivna före denna skiva, eller innan basmigreringen i task-275.1)
@@ -431,5 +443,7 @@ export function mapAttachmentRecord(record: {
         : null,
     kursfamilj: typeof kursfamilj === 'string' && kursfamilj.length > 0 ? kursfamilj : null,
     kursniva: typeof kursniva === 'string' && kursniva.length > 0 ? kursniva : null,
+    mall: typeof mall === 'string' && mall.length > 0 ? mall : null,
+    kallhash: typeof kallhash === 'string' && kallhash.length > 0 ? kallhash : null,
   };
 }

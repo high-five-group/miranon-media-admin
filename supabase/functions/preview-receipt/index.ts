@@ -25,17 +25,20 @@
 // grena UTANFÖR varje sidoeffekt-anrop i en funktion vars HELA existens är
 // att komponera dem i rätt ordning (samma fils eget filhuvud, punkt 1–6) —
 // mer riskabelt än en liten, dedikerad, sidoeffektsfri EF som ÅTERANVÄNDER
-// de TVÅ REN-funktionerna (`kvittoRader` + den utbrutna `renderKvittoPdf`,
-// _shared/receipt-pdf.ts, TASK-246-utbrytningen ur send-receipt-email/
-// index.ts) utan att röra ledgern, Kvitton-tabellen eller Resend ALLS.
-// Denna filen (och `renderKvittoPdf`) importerar VARKEN `_shared/send-
-// receipt.ts` ELLER `_shared/receipt-numbering.ts` ELLER `resend` DIREKT.
-// EN indirekt textreferens finns: `_shared/receipt-content.ts` har en
-// `import type { Betalning, Betalsatt } from './send-receipt.ts'` — men det
-// är en TYPE-ONLY-import (bara literal-unions för `kvittoRader`s
-// parametertyp), ERAD AV TYPESCRIPT VID TRANSPILERING (ingen JS-import
-// kvarstår i den körda koden — Deno kör aldrig, laddar aldrig, det modul-
-// trädet). `supabase functions deploy` laddar ändå upp `send-receipt.ts`/
+// [TASK-309.5, uppdaterat — se `_shared/receipt-content.ts`:s filhuvud för
+// hela historiken] `_shared/mall-data.ts`s `byggKvittoData` +
+// `_shared/mall-render.ts`s `renderaMallPdf('kvitto', …)` (Eta + DocRaptor,
+// ERSATTE `kvittoRader` + den nu RIVNA `renderKvittoPdf`/`_shared/
+// receipt-pdf.ts`, pdf-lib) utan att röra ledgern, Kvitton-tabellen eller
+// Resend ALLS. Denna filen importerar VARKEN `_shared/send-receipt.ts`
+// ELLER `_shared/receipt-numbering.ts` ELLER `resend` DIREKT. EN indirekt
+// textreferens finns, ETT HOPP LÄNGRE BORT ÄN FÖRUT: `_shared/mall-data.ts`
+// importerar `_shared/receipt-content.ts`, som har en `import type
+// { Betalning, Betalsatt } from './send-receipt.ts'` — men det är en
+// TYPE-ONLY-import (bara literal-unions för `KvittoradSpec`s fält),
+// ERAD AV TYPESCRIPT VID TRANSPILERING (ingen JS-import kvarstår i den
+// körda koden — Deno kör aldrig, laddar aldrig, det modulträdet).
+// `supabase functions deploy` laddar ändå upp `send-receipt.ts`/
 // `receipt-numbering.ts`/`send-bulk.ts` som ASSETS (dess statiska
 // grafscanner särskiljer inte `import type` från `import` när den paketerar
 // källfiler för uppladdning) — det är en deploy-tids-artefakt, inte ett
@@ -97,9 +100,12 @@ import { isValidEventId } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
-import { generateRequestId, mapErrorToResponse, ValidationError } from '../_shared/errors.ts';
-import { kvittoRader } from '../_shared/receipt-content.ts';
-import { renderKvittoPdf } from '../_shared/receipt-pdf.ts';
+import { generateRequestId, HttpError, mapErrorToResponse, ValidationError } from '../_shared/errors.ts';
+// [TASK-309.5] byggKvittoData + renderaMallPdf ERSÄTTER kvittoRader +
+// renderKvittoPdf (pdf-lib, `_shared/receipt-pdf.ts`, nu RIVEN) — se
+// `_shared/receipt-content.ts`:s filhuvud för den fulla historiken.
+import { byggKvittoData } from '../_shared/mall-data.ts';
+import { renderaMallPdf } from '../_shared/mall-render.ts';
 import { laggUtkast } from '../_shared/utkast.ts';
 
 const EVENTS_TABLE = 'Eventplanering';
@@ -111,8 +117,9 @@ const FORHANDSVISNING_KVITTONUMMER = 'FÖRHANDSVISNING';
  * Typexemplet (se filhuvudets PERSONDATA-stycke för varför persondata inte
  * kan vara verklig här). "Exempelperson" speglar samma "Exempelvärde"-
  * disciplin som `ProduceratExempel` i DokumentYta.tsx bar FÖRE detta kort
- * (skillnaden nu: bytesen som produceras ÄR en riktig, pdf-lib-renderad
- * PDF, inte en statisk fältlista).
+ * (skillnaden nu: bytesen som produceras ÄR en riktig, DocRaptor-renderad
+ * PDF sedan TASK-309.5 [tidigare pdf-lib-renderad], inte en statisk
+ * fältlista).
  */
 const TYPEXEMPEL = {
   kundnamn: 'Exempelperson',
@@ -165,7 +172,10 @@ Deno.serve(async (req) => {
     const eventSlut = scalarString(eventRecord.fields['Slutdatum']);
     const bokforingstext = scalarString(eventRecord.fields['Bokföringstext (kvitto)']);
 
-    const rader = kvittoRader({
+    // [TASK-309.5] byggKvittoData + renderaMallPdf('kvitto', …) ERSÄTTER
+    // kvittoRader + renderKvittoPdf (pdf-lib, nu riven) — se
+    // `_shared/receipt-content.ts`:s filhuvud för hela historiken.
+    const kvittoData = byggKvittoData({
       kvittonummer: FORHANDSVISNING_KVITTONUMMER,
       kundnamn: TYPEXEMPEL.kundnamn,
       kundEpost: TYPEXEMPEL.kundEpost,
@@ -179,7 +189,21 @@ Deno.serve(async (req) => {
       eventSlut,
       bokforingstext,
     });
-    const pdfBytes = await renderKvittoPdf(rader);
+
+    const apiKey = Deno.env.get('DOCRAPTOR_API_KEY');
+    if (!apiKey) {
+      throw new HttpError(500, 'DOCRAPTOR_API_KEY saknas i secrets');
+    }
+    // Fail-closed, SAMMA mönster som generate-event-attachment/index.ts och
+    // send-receipt-email/index.ts:s `isProd` (se mall-render.ts:s filhuvud
+    // för varför denna härledning bor HOS ANROPAREN).
+    const test = Deno.env.get('ENVIRONMENT') !== 'production';
+
+    const pdfBytes = await renderaMallPdf('kvitto', kvittoData as unknown as Record<string, unknown>, {
+      apiKey,
+      test,
+      namn: `Kvitto ${FORHANDSVISNING_KVITTONUMMER}`,
+    });
 
     // [ADR-124, TASK-302.2] TRANSIENT utkast i Storage, inte bytes till
     // klienten — se filhuvudets LEVERANSVÄGEN-ÄNDRAD-stycke. `laggUtkast` är
