@@ -456,12 +456,17 @@ export async function deleteRecords(baseId, target, ids, token, throttleMs, batc
 // GATAD PÅ FYRA REDAN BEFINTLIGA env-variabler (TEST_SUPABASE_URL/
 // TEST_SUPABASE_ANON_KEY/TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD — SAMMA fyra
 // som tests/api/helpers.ts:s getApiConfig() kräver, ingen ny hemlighet).
-// SAKNAS NÅGON → tyst SKIP med en tydlig loggrad, ALDRIG process.exit(1):
-// dagens `Staging sentinel purge`-CI-jobb injicerar bara
-// STAGING_AIRTABLE_TOKEN (.github/workflows/ci-suite.yml), så denna gren
-// är i praktiken overifierad i CI tills en medveten, separat ändring
-// trådar in de fyra TEST_*-secrets i det jobbets env — se skivans
-// slutrapport. Lokalt (`.env.test` källad) är den full aktiv.
+// SAKNAS NÅGON → tyst SKIP med en tydlig loggrad, ALDRIG process.exit(1).
+//
+// [TASK-305, 2026-08-23] `Staging sentinel purge`-CI-jobbet
+// (.github/workflows/ci-suite.yml) injicerar sedan denna skiva de fyra
+// TEST_*-secreten i tillägg till STAGING_AIRTABLE_TOKEN — grenen körs
+// alltså numera i CI också, inte bara lokalt (`.env.test` källad). Dom +
+// källor: docs/research/ci-stadjobbets-credential-scope-2026-08-23.md §
+// Dom; historik: docs/decisions/ADR-124-…md § Updates 2026-08-23. Gaten
+// nedan är kvar orörd som fail-closed skyddsnät om secreten någon gång
+// saknas (secret-rotation, nytt jobb som glömmer tråda in dem) — inte
+// bara en övergångslösning.
 // ---------------------------------------------------------------------------
 
 const TEST_HARNESS_ENDPOINT = '/functions/v1/test-attachments-storage';
@@ -628,7 +633,8 @@ async function main() {
       console.log(
         `ⓘ  storageTargets hoppas över — saknar ${missingEnv.join(', ')} i env ` +
           `(${missingEnv.length}/${STORAGE_PURGE_ENV_VARS.length}). Lokalt: källa .env.test. ` +
-          'CI: dagens purge-jobb injicerar bara STAGING_AIRTABLE_TOKEN — se skriptets § Storage-purge.',
+          'CI (TASK-305): purge-jobbet injicerar normalt dessa fyra — saknas de ändå har ' +
+          'något i .github/workflows/ci-suite.yml drifat, se skriptets § Storage-purge.',
       );
     } else {
       try {
