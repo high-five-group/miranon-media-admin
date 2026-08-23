@@ -218,13 +218,14 @@ som gateway"-mönster den EF:en redan etablerade för sin `cleanup`-action.
 Live-verifierat: `npm run purge:staging` (lokalt, `.env.test` + `.env.seed`
 källade) listade 6 verkliga utkast-objekt i staging, raderade det ENA som
 passerat 60-minutersguarden, lämnade de fem färska orörda — en efterföljande
-`--dry-run` bekräftade 5 kvar. **CI:s `Staging sentinel purge`-jobb
-injicerar i dag ENDAST `STAGING_AIRTABLE_TOKEN`** (`.github/workflows/
-ci-suite.yml`) — de fyra `TEST_*`-secrets storage-purgen behöver är INTE
-trådade in i det jobbets `env:`-block av denna skiva (medvetet: att utöka
-vilka secrets ett CI-jobb når är en egen, separat avvägning — se skivans
-slutrapport). Mekanismen körs alltså i dag lokalt/på begäran, inte
-automatiskt i CI, tills den tråden dras.
+`--dry-run` bekräftade 5 kvar. CI:s `Staging sentinel purge`-jobb injicerade
+vid denna skivas landning ENDAST `STAGING_AIRTABLE_TOKEN`
+(`.github/workflows/ci-suite.yml`) — de fyra `TEST_*`-secrets storage-purgen
+behöver var INTE trådade in i det jobbets `env:`-block av denna skiva
+(medvetet: att utöka vilka secrets ett CI-jobb når vägdes som en egen,
+separat avvägning — se skivans slutrapport). Mekanismen kördes alltså då
+lokalt/på begäran, inte automatiskt i CI. **Rättat i `TASK-305`
+(2026-08-23): tråden är dragen — se § Updates nedan.**
 
 Beslut 3 (AC #3-formuleringen) landades redan i `TASK-302.2`.
 
@@ -232,3 +233,22 @@ Kvarstår, oförändrat av denna skiva: "Tidsstyrd städning i prod" (§ Öppet
 ovan) — mängden är fortsatt bunden per event men inte tidsstyrd bortom
 skarp-generering-triggern. Persondata-klassningen för kvitto-utkastet
 specifikt är nu även bokförd i `T171` § "Adjacent, lägre allvarlighetsgrad".
+
+**2026-08-23 (`TASK-305`):** Tråden ovan dragen. `purge`-jobbet
+("Staging sentinel purge") i `.github/workflows/ci-suite.yml` fick de fyra
+`TEST_*`-secreten (`TEST_SUPABASE_URL`, `TEST_SUPABASE_ANON_KEY`,
+`TEST_ADMIN_EMAIL`, `TEST_ADMIN_PASSWORD`) i sitt `env:`-block, namngivna
+exakt som `STORAGE_PURGE_ENV_VARS` i `scripts/purge-staging-sentinels.mjs`
+förväntar sig — ingen `secrets: inherit`, ingen ny `environment:`-gating.
+Beslutet vilar på ett dedikerat research-pass
+(`docs/research/ci-stadjobbets-credential-scope-2026-08-23.md`): de fyra
+secreten flödar REDAN genom `test-staging`-jobbet i samma workflow-fil och
+utövar redan JWT-gated Storage-operationer mot samma
+`test-attachments-storage`-EF — TASK-305 lägger alltså INTE till en ny
+credential-klass i workflow-filens attack-yta, den ger ett andra, redan
+Airtable-separerat jobb tillgång till en klass som redan finns där
+(ADR-053-triage: ingen ny riskklass). `storageTargets`-purgen (`utkast-drafts`)
+exekverar därmed i CI också, inte bara lokalt/på begäran som ovan. Skarpt
+CI-bevis (purge-loggen visar targeten exekverad, inte "hoppas över") är
+öppet till nästa `post-merge`/`nightly`-körning efter landning — secrets kan
+inte prövas lokalt.
