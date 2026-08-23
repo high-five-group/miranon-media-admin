@@ -432,7 +432,27 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 🌙 NATTKÖRNING KLAR (2026-08-23 ~01:15, `lifecycle: active`, resume 7
+**Session 108 ⏸️ PAUSAD (sjunde gången, 2026-08-23 ~13:00, `lifecycle: paused`) —
+PUNKT 1–3 KLARA; LEVERANSVÄGEN OCH KVITTOTS INNEHÅLL I PROD; PUNKT 4
+SKAPANDET AV BILAGORNA ÄR NÄSTA.** Resume 7 (22:22 → 13:00, 14 PR:er landade).
+Morgonen: deltagarinfo-PDF:en OK · kvittot mot Lottas förlaga (`TASK-306`,
+`#1856`+`#1857`): benämning `Utbildning 2026-07-25/26, personlig utveckling,
+meditation` på EN rad (kolumnen rymmer 72 tecken, mätt i båda motorerna),
+A-pris/Summa netto, etiketten "Slutbetalning" bort (*"bara en betalning, varken
+slut eller början"*), Vår referens `Miranon Media/Lotta Gotthardsson`, nytt
+fält `Bokföringstext (kvitto)` (prod `fldof3z1V1duVZNjM` · staging
+`fldlYgrv3P4hKezJE`) · `TASK-305` secrets in på research (`#1855`) · prod-deploy
+39/39 12:16Z · **bucketen `bilagor` fanns aldrig i prod** (502 `Bucket not
+found`, Marcus skapade den i dashboarden) → `TASK-308` · `#1857` utsparkad av
+flakigt CLS-test → `TASK-307` · `T175` (inget `environment:` i CI). Marcus:
+*"nu funkar det"* (prod), *"det är ju fortfarande det gamla fula kvittot"* (ja —
+mallen kommer med promoveringen). **NÄSTA (resume av 108): grilla punkt 4
+(knappen *Skapa bekräftelsebilaga* är en stubb) → bygg → lås facit → `ADR-125`
+→ promovering. Marcus: DocRaptor prod-konto.** Numrering vid paus 7: ADR
+**125** · task-**309** · **L522** · 71 fragment · **T176** · f53 · session **112**.
+Full handoff: sessionsdok S108 § PAUSLÄGE (sjunde) + Del 11–13.
+
+**Session 108 🌙 NATTKÖRNING KLAR (2026-08-23 ~01:15, `lifecycle: active`, historik; resume 7
 fortsätter — INTE pausad; Marcus order *"Kör så långt du kan autonomt"*) —
 LEVERANSVÄGEN SKARP I ALLA TRE KLASSER, KVITTOT OCH BILAGORNA PRINCE-RENA.**
 Landat i natt: `#1835` · `#1837` (bilagorna i Prince, ikon↔QR-gap borttagen) ·
