@@ -672,10 +672,19 @@ test.describe('Åtgärdskön — bevakningsradstypen (TASK-284.4, ADR-122 beslut
     // eventinfo-läge (events: []) som skulle lägga till en andra rad.
     await expect(bevakningsrad.getByRole('listitem')).toHaveCount(1);
 
+    // [TASK-291 AC #3] Den promoverade radens copy är TVÅDELAD: talet i
+    // rubriken, orsaken i undertexten (Marcus S111 Del 5). Länkens
+    // tillgängliga namn är därför båda delarna, inte den gamla enmenings-
+    // formen `atgardskoText` — den lever kvar oförändrad på
+    // `/mer/anmalningar` och asserteras på den ytan längre ned i testet.
     const atgardskoLank = page.getByRole('link', {
-      name: '2 anmälningar kunde inte kopplas till rätt event',
+      name: '2 kräver åtgärd Kunde inte kopplas till rätt event',
     });
     await expect(atgardskoLank).toBeVisible();
+    // Särskiljningen mot deltagarinfo-raden (QA-fynd 284.5) bärs av en
+    // ledande markör som är `aria-hidden` — den får därför ALDRIG synas i
+    // det tillgängliga namnet ovan, och betydelsen ligger aldrig i den
+    // ensam (284.4 AC #5). Att namnet matchar exakt är beviset.
 
     // axe FÖRE klick — samma sida, med raden synlig (AC #5 "fyllt läge").
     const fylldaResultat = await new AxeBuilder({ page })
@@ -719,7 +728,12 @@ test.describe('Åtgärdskön — bevakningsradstypen (TASK-284.4, ADR-122 beslut
     await expect(page.getByRole('heading', { level: 1, name: H1_HALSNING })).toBeVisible();
     // Samma osynlig-vid-noll-kontrakt som eventinfo-raden — HELA `<ul>` saknas.
     await expect(page.getByRole('list', { name: 'Bevakningar' })).toHaveCount(0);
-    await expect(page.getByText(/kunde inte kopplas till rätt event/)).toHaveCount(0);
+    // BÅDA delarna av den promoverade radens tvådelade copy måste vara borta
+    // — en frånvarande rubrik med kvarstående undertext hade varit ett halvt
+    // rivet läge. Skiftlägesokänslig regex: rubriken bär versal K sedan
+    // TASK-291 AC #3 ("Kunde inte kopplas till rätt event" som egen mening).
+    await expect(page.getByText(/kunde inte kopplas till rätt event/i)).toHaveCount(0);
+    await expect(page.getByText(/kräver åtgärd/i)).toHaveCount(0);
 
     const resultat = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -997,12 +1011,22 @@ test.describe('Förfallna betalningar — avgiftstyp, skickat-markör, tre tills
 });
 
 /**
- * Bevakningsraden — trigger, full text UTAN klippning, två lägen (PRD
- * berättelse 7; S102 Del 10 beslut 2–4; `Bevakningsrad.tsx`). Facit-kravet:
- * ALDRIG ellips på meningsbärande text (line-clamp-2, aldrig `truncate`).
+ * Bevakningsraden — trigger, radanatomi, två lägen (PRD berättelse 7; S102
+ * Del 10 beslut 2–4; `Bevakningsrad.tsx`).
+ *
+ * [TASK-291 AC #3 + TASK-303, 2026-08-23] KRAVET ÄR OMFORMULERAT, inte
+ * uppmjukat. Fram till den promoverade formen löd det "ALDRIG ellips på
+ * meningsbärande text — `line-clamp-2`, aldrig `truncate`". Den godkända
+ * anatomin (rubrikrad + undertext, båda alltid en rad) bär `truncate` på
+ * RUBRIKEN, så den bokstaven kan inte längre hållas för eventnamnet. Vad
+ * som består är SKÄLET: hela texten finns kvar i DOM:en (klippningen är
+ * visuell, aldrig i innehållet, så skärmläsaren läser hela namnet), och
+ * MENINGARNA — undertexten i båda lägen — klipps inte. Se
+ * `Bevakningsrad.tsx` § KVARSTÅENDE KLIPPNING för avvägningen och för varför
+ * TASK-303 AC #3 därmed inte kan bockas utan Marcus ord.
  */
-test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD berättelse 7, S102 Del 10 beslut 2–4)', () => {
-  test('"ej-skickad" — ALLA bekräftade saknar stämpeln → "Deltagarinfo saknas"; ett långt eventnamn klipps ALDRIG med ellipsis', async ({
+test.describe('Bevakningsraden — radanatomi och två lägen (PRD berättelse 7, S102 Del 10 beslut 2–4)', () => {
+  test('"ej-skickad" — ALLA bekräftade saknar stämpeln → "Deltagarinfo saknas"; hela det långa eventnamnet finns kvar i DOM:en', async ({
     page,
     network,
   }) => {
@@ -1023,8 +1047,8 @@ test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD be
     await page.goto('/hem');
     const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
     await expect(rad).toHaveCount(1);
-    // HELA namnet finns i DOM:en — line-clamp klipper VISUELLT (CSS), aldrig
-    // textinnehållet, till skillnad från `truncate`/ellipsis.
+    // HELA namnet finns i DOM:en — `truncate` klipper VISUELLT (CSS), aldrig
+    // textinnehållet, så skärmläsaren får hela strängen.
     await expect(rad).toContainText(langtNamn);
     await expect(rad).toContainText('Deltagarinfo saknas');
     await expect(rad).toContainText('15 dagar kvar');
@@ -1033,13 +1057,27 @@ test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD be
     const knapp = rad.getByRole('button');
     await expect(knapp).toBeVisible();
     await expect(knapp.locator('svg')).toHaveCount(1);
-    // Klippnings-klassen är line-clamp-2, ALDRIG truncate (Gunilla-principen).
-    const namnSpan = rad.locator('span.line-clamp-2').first();
-    await expect(namnSpan).toHaveText(langtNamn);
-    await expect(namnSpan).not.toHaveClass(/truncate/);
+    // [TASK-303] ANATOMIN, inte radbrytningen: rubriken bär hela namnet på EN
+    // rad och undertexten är en EGEN rad — båda alltid renderade. Att
+    // `line-clamp-2` är HELT borta ur raden är den mekaniska sidan av samma
+    // sak: kvarlämnad hade den låtit höjden variera igen.
+    await expect(rad.locator('span.line-clamp-2')).toHaveCount(0);
+    const rubrik = rad.locator('span.truncate.font-semibold');
+    await expect(rubrik).toHaveText(langtNamn);
+    const undertext = rad.locator('span.truncate.text-caption');
+    await expect(undertext).toHaveText('Deltagarinfo saknas');
+    // MENINGEN klipps inte: undertextens innehåll ryms i sin egen bredd
+    // (`scrollWidth <= clientWidth`). Det är den del av Gunilla-principen som
+    // består efter TASK-303 — rubriken (ett egennamn) är undantagen, se
+    // describe-blockets huvud.
+    const meningsbredd = await undertext.evaluate((el) => ({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+    }));
+    expect(meningsbredd.scrollWidth).toBeLessThanOrEqual(meningsbredd.clientWidth);
   });
 
-  test('"eftersalantrare" — NÅGRA (inte alla) bekräftade saknar stämpeln → "N nya deltagare saknar deltagarinfo"', async ({
+  test('"eftersalantrare" — NÅGRA (inte alla) bekräftade saknar stämpeln → "N nya saknar deltagarinfo"', async ({
     page,
     network,
   }) => {
@@ -1071,88 +1109,192 @@ test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD be
     await page.goto('/hem');
     const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
     await expect(rad).toHaveCount(1);
-    await expect(rad).toContainText('1 nya deltagare saknar deltagarinfo');
+    // [TASK-303 AC #4] Ordet "deltagare" är struket, ordet "nya" står kvar —
+    // den enda formen båda ytorna bär efter promoveringen. Se
+    // `hem-derivations.ts` § `bevakningStatusText` för Marcus skäl.
+    await expect(rad).toContainText('1 nya saknar deltagarinfo');
+    await expect(rad).not.toContainText('nya deltagare saknar');
   });
 });
 
 /**
- * [TASK-241.8] "nya"-återinförandet — geometri-beviset Marcus krävde: MÄTT
- * `scrollHeight`/`clientHeight` (inte en helsidesbild — `fullPage`-
- * screenshots ljuger om fixed-element, S107) vid 375px OCH 1440px, mot
- * SAMMA permanenta värsta-fall-form som `Bevakningsrad.tsx`s docblock redan
- * refererar (`demoData.ts` § "BEVAKNINGSRAD värsta fall": ett 91-tecken
- * eventnamn + tvåsiffrigt antal, X=12) — bara byggd som en `reg()`/`ev()`-
- * fixtur i DENNA fils egen form i stället för dev-prototypens `demoReg`/
- * `demoEvent`, eftersom skarpa `/hem` (denna fils yta) och `/dev/hem-
- * prototyp` (frusen, ADR-102 B3) är två olika komponentträd.
+ * [TASK-303 AC #1] HÖJDLÅSET SOM BETEENDE — ersätter TASK-241.8:s
+ * `line-clamp-2`-geometribevis, som mätte en mekanism som inte längre finns.
+ *
+ * VAD SOM ÄNDRADES OCH VARFÖR DET GAMLA TESTET INTE KUNDE BEHÅLLAS: fram
+ * till promoveringen bar båda radtyperna `line-clamp-2`, och beviset var att
+ * copyn RYMDES inom två rader. Det var precis den mekanism som lät höjden
+ * variera med copyns längd (TASK-303:s fynd), och den fällde skarpt på
+ * `943639a4` efter ordbytet Eventinfo → Deltagarinfo: `scrollHeight` 72 mot
+ * `clientHeight` 48 vid 1440 px. Den godkända formen löser det med ANATOMI i
+ * stället — rubrikrad + undertext, båda alltid exakt en rad — så det som ska
+ * bevisas är inte längre "ryms" utan "rör sig aldrig".
+ *
+ * MÄTMETODEN: `getBoundingClientRect().height` på varje `<li>`, inte en
+ * helsidesbild (`fullPage`-screenshots ljuger om fixed-element, S107) och
+ * inte `scrollHeight` (som mäter innehåll, inte den renderade raden).
+ *
+ * VARFÖR EXAKT 70 OCH INTE ETT INTERVALL: höjden är härledd ur explicita
+ * line-heights, inte ur fontmetrik — `--text-body--line-height: 1.5` (24 px)
+ * + `gap-y-0.5` (2 px) + `--text-caption--line-height: 1.5` (18 px) +
+ * `py-3` (24 px) + 1 px kant i vardera änden = 70. Ett intervall hade dolt
+ * exakt den drift talet finns för att fånga. Samma 70 px Marcus godkände i
+ * S111 Del 5.
+ *
+ * MATRISEN är den TASK-303-kortet krävde: smalaste stödda bredd (375) och
+ * uppåt, kort OCH lång copy, ett- till fyrsiffriga tal, BÅDA radtyperna
+ * samtidigt, plus `ej-skickad`-lägets egen copy. Värsta-fall-namnet är
+ * PR #1388:s permanenta 91-teckens fixtur.
  */
-test.describe('Bevakningsraden — "nya"-copyns geometri vid värsta fall (TASK-241.8, Marcus GO 2026-08-18)', () => {
+test.describe('Bevakningsraden — höjdlåset som beteende (TASK-303 AC #1)', () => {
+  /** Den mätta, Marcus-godkända radhöjden. Se describe-huvudet för härledningen. */
+  const RADHOJD = 70;
+
+  const KORT_NAMN = 'Fjärrskådning';
+  /** PR #1388:s permanenta värsta-fall-fixtur, 91 tecken. */
   const VARSTA_FALL_NAMN =
     'Demo: Fördjupningskurs i konflikthantering och medling för föreningsledare i Västerbotten';
 
-  function varstaFallRegs(): RegRow[] {
-    const skickade = [1, 2, 3].map((i) =>
+  /**
+   * EN registreringsmängd ger BÅDA radernas tal: varje rad är samtidigt en
+   * bekräftad utan deltagarinfo-stämpel (driver deltagarinfo-radens N) och
+   * eventmatchnings-flaggad (driver åtgärdskö-radens N). Att slå ihop dem
+   * håller fixturen liten även vid fyrsiffriga tal — 1234 poster i stället
+   * för 2468.
+   */
+  function radRegs(antal: number, medStampel: boolean): RegRow[] {
+    const flaggade = Array.from({ length: antal }, (_, idx) =>
       reg({
-        fornamn: `VF${i}`,
-        efternamn: 'Skickad',
-        eventId: 'recEvVarstaFall',
-        status: 'Bekräftad (mail skickat)',
-        anmalningsavgift: 'Mottagen',
-        slutbetalning: 'Mottagen',
-        deltagarinfoSkickad: '2026-09-10T08:00:00.000Z',
-      }),
-    );
-    const ostampade = Array.from({ length: 12 }, (_, idx) =>
-      reg({
-        fornamn: `VF${idx + 4}`,
+        fornamn: `Rad${idx + 1}`,
         efternamn: 'Ostampad',
-        eventId: 'recEvVarstaFall',
+        eventId: 'recEvHojd',
         status: 'Bekräftad (mail skickat)',
         anmalningsavgift: 'Mottagen',
         slutbetalning: 'Mottagen',
         deltagarinfoSkickad: null,
+        eventmatchning: 'Avviker',
       }),
     );
-    return [...skickade, ...ostampade];
-  }
-
-  for (const viewport of [
-    { width: 375, height: 800, namn: '375px (mobil, staplad kolumnform)' },
-    { width: 1440, height: 900, namn: '1440px (desktop, grid-kolumnform)' },
-  ]) {
-    test(`${viewport.namn}: "12 nya deltagare saknar deltagarinfo" ryms i line-clamp-2 — ingen NY klippning`, async ({
-      page,
-      network,
-    }) => {
-      mock(network, {
-        registrations: varstaFallRegs(),
-        events: [
-          ev({ id: 'recEvVarstaFall', eventNamn: VARSTA_FALL_NAMN, startdatum: '2026-09-30' }),
-        ],
-      });
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto('/hem');
-
-      const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
-      await expect(rad).toHaveCount(1);
-      await expect(rad).toContainText('12 nya deltagare saknar deltagarinfo');
-
-      // Statuskolumnens line-clamp-2-element är det ANDRA `.line-clamp-2`-
-      // spannet i raden (det första bär eventnamnet) — samma lokalisering
-      // som testet ovan använder för namn-spannet.
-      const statusSpan = rad.locator('span.line-clamp-2').nth(1);
-      const geometri = await statusSpan.evaluate((el) => ({
-        scrollHeight: el.scrollHeight,
-        clientHeight: el.clientHeight,
-      }));
-      // BEVISET: `scrollHeight` (innehållets FAKTISKA höjd) överskrider ALDRIG
-      // `clientHeight` (den synliga, clampade höjden) — annars klipper
-      // line-clamp-2 en tredje rad av "12 nya deltagare saknar deltagarinfo",
-      // och Gunilla-principens skyddsnät (ALDRIG ellips på meningsbärande
-      // text mitt i en mening) är brutet.
-      expect(geometri.scrollHeight).toBeLessThanOrEqual(geometri.clientHeight);
+    // Utan denna rad är ALLA bekräftade ostämplade och läget blir
+    // `ej-skickad` ("Deltagarinfo saknas") i stället för eftersläntrare.
+    const stampel = reg({
+      fornamn: 'Redan',
+      efternamn: 'Skickad',
+      eventId: 'recEvHojd',
+      status: 'Bekräftad (mail skickat)',
+      anmalningsavgift: 'Mottagen',
+      slutbetalning: 'Mottagen',
+      deltagarinfoSkickad: '2026-09-10T08:00:00.000Z',
+      eventmatchning: 'OK',
     });
+    return medStampel ? [...flaggade, stampel] : flaggade;
   }
+
+  const FALL = [
+    { namn: 'kort namn, ensiffrigt tal', eventNamn: KORT_NAMN, antal: 1, medStampel: true },
+    { namn: 'kort namn, tvåsiffrigt tal', eventNamn: KORT_NAMN, antal: 12, medStampel: true },
+    {
+      namn: '91-teckens namn, tresiffrigt tal',
+      eventNamn: VARSTA_FALL_NAMN,
+      antal: 123,
+      medStampel: true,
+    },
+    {
+      namn: '91-teckens namn, fyrsiffrigt tal',
+      eventNamn: VARSTA_FALL_NAMN,
+      antal: 1234,
+      medStampel: true,
+    },
+    {
+      namn: 'ej-skickad-lägets egen copy ("Deltagarinfo saknas")',
+      eventNamn: KORT_NAMN,
+      antal: 8,
+      medStampel: false,
+    },
+  ];
+
+  /**
+   * ETT TEST PER (bredd, fall) — inte en loop inuti ETT test, och det är en
+   * mätt korrigering, inte en stilfråga. Den första formen laddade om `/hem`
+   * fem gånger i samma browser-context och föll NONDETERMINISTISKT: körning 1
+   * gav 4/4 grönt, körning 2 gav 3/4 rött med `Received: "1 kräver åtgärd"`
+   * där `12` väntades — den FÖREGÅENDE iterationens data levde kvar (appens
+   * query-cache persisteras, `@tanstack/query-sync-storage-persister`) och
+   * hann inte ersättas inom assertionens 15 s. Playwright ger varje test ett
+   * FÄRSKT context, så en test-per-fall tar bort delat tillstånd i stället
+   * för att kapprännas med det. En grind som ibland är grön mäter ingenting.
+   */
+  for (const viewport of [375, 390, 768, 1280]) {
+    for (const fall of FALL) {
+      test(`${viewport}px, ${fall.namn}: båda radtyperna är exakt ${RADHOJD}px`, async ({
+        page,
+        network,
+      }) => {
+        await page.setViewportSize({ width: viewport, height: 900 });
+        mock(network, {
+          registrations: radRegs(fall.antal, fall.medStampel),
+          events: [ev({ id: 'recEvHojd', eventNamn: fall.eventNamn, startdatum: '2026-09-30' })],
+        });
+        await page.goto('/hem');
+
+        const rader = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
+        // BÅDA radtyperna samtidigt — åtgärdskö-raden först (Hem.tsx
+        // § ORDNING), deltagarinfo-raden därefter.
+        await expect(rader).toHaveCount(2);
+        await expect(rader.first()).toContainText(`${fall.antal} kräver åtgärd`);
+
+        const hojder = await rader.evaluateAll((els) =>
+          els.map((el) => el.getBoundingClientRect().height),
+        );
+        // Rapporterbart spår, inte bara en bock (ADR-103 B4: "körningen
+        // lämnar spår") — talen syns i Playwrights rapport.
+        test.info().annotations.push({ type: 'höjdlås', description: JSON.stringify(hojder) });
+        expect(hojder).toEqual([RADHOJD, RADHOJD]);
+      });
+    }
+  }
+
+  /**
+   * NEGATIVKONTROLLEN (TASK-303-kortets uttryckliga beviskrav: "bryt
+   * reserveringen medvetet, mät att testet fäller, återställ"). Ett test som
+   * inte kan fälla bevisar ingenting — precedent: TASK-299.3:s agent mätte
+   * 28,5 px skillnad i sin egen negativkontroll.
+   *
+   * Här bryts låsets BÄRANDE mekanism direkt i DOM:en — `truncate` tas bort
+   * från undertexten och innehållet görs långt nog att brytas. Mätningen
+   * ovan (samma `getBoundingClientRect().height` på samma `<li>`) måste då
+   * ge ett ANNAT tal än 70. Görs i den smalaste vyporten, där marginalen är
+   * minst.
+   */
+  test('375px: negativkontroll — bryts truncate på undertexten rör sig höjden, alltså kan mätningen fälla', async ({
+    page,
+    network,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 900 });
+    mock(network, {
+      registrations: radRegs(12, true),
+      events: [ev({ id: 'recEvHojd', eventNamn: KORT_NAMN, startdatum: '2026-09-30' })],
+    });
+    await page.goto('/hem');
+
+    const deltagarinfoRad = page
+      .getByRole('list', { name: 'Bevakningar' })
+      .getByRole('listitem')
+      .filter({ has: page.getByRole('button') });
+    await expect(deltagarinfoRad).toContainText('12 nya saknar deltagarinfo');
+
+    const fore = await deltagarinfoRad.evaluate((el) => el.getBoundingClientRect().height);
+    expect(fore).toBe(RADHOJD);
+
+    const efter = await deltagarinfoRad.evaluate((el) => {
+      const undertext = el.querySelector('span.truncate.text-caption');
+      if (!undertext) throw new Error('undertexten hittades inte — negativkontrollen mäter inget');
+      undertext.classList.remove('truncate');
+      undertext.textContent = 'lorem ipsum dolor sit amet '.repeat(12);
+      return el.getBoundingClientRect().height;
+    });
+    expect(efter).toBeGreaterThan(RADHOJD);
+  });
 });
 
 /** Genvägar (PRD task-243 användarberättelse 9) — BÅDA är redan skarpa, byggda routes. */
@@ -1221,6 +1363,19 @@ test.describe('Tillgänglighet — rubrikstruktur och kitchen-sink axe (AC #2)',
           slutbetalning: 'Mottagen',
           deltagarinfoSkickad: null,
         }),
+        // [TASK-291 AC #3] Tvingar fram ÅTGÄRDSKÖ-raden också, så axe-svepet
+        // nedan ser BÅDA radtyperna på samma sida. De två prövades tidigare
+        // var för sig (åtgärdskö-raden i sitt eget describe ovan), och just
+        // samexistensen är vad den promoverade formen ändrade: samma anatomi,
+        // åtskilda av en ledande markör. Är markören enda bäraren av
+        // skillnaden faller 284.4 AC #5 — det är detta läge som visar det.
+        reg({
+          fornamn: 'Frida',
+          efternamn: 'Flagg',
+          eventId: null,
+          status: 'Obekräftad',
+          eventmatchning: 'Utan event',
+        }),
       ],
       events: [
         ev({ id: 'recEvForf', eventNamn: 'Fjärrskådning', startdatum: '2026-09-20' }),
@@ -1228,7 +1383,13 @@ test.describe('Tillgänglighet — rubrikstruktur och kitchen-sink axe (AC #2)',
       ],
     });
     await page.goto('/hem');
-    await expect(page.getByRole('list', { name: 'Bevakningar' })).toBeVisible();
+    const bevakningar = page.getByRole('list', { name: 'Bevakningar' });
+    await expect(bevakningar).toBeVisible();
+    // TRE rader: åtgärdskö-raden (global) + en deltagarinfo-rad per event i
+    // fönstret (`recEvForf` 20 sep och `recEvBev` 30 sep, båda inom 21 dagar).
+    await expect(bevakningar.getByRole('listitem')).toHaveCount(3);
+    await expect(bevakningar.getByRole('link', { name: /^1 kräver åtgärd/ })).toBeVisible();
+    await expect(bevakningar.getByRole('button', { name: /Meditation i tystnad/ })).toBeVisible();
     await expect(page.getByRole('heading', { level: 3, name: /^Dags att ringa/ })).toBeVisible();
     await expect(page.getByRole('heading', { level: 3, name: /^Väntar/ })).toBeVisible();
     await expect(page.getByRole('heading', { level: 3, name: /^Att påminna/ })).toBeVisible();

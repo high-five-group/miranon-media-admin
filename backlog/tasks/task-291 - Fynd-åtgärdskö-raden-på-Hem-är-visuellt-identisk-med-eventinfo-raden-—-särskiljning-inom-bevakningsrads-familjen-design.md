@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 10:54'
-updated_date: '2026-08-23 13:22'
+updated_date: '2026-08-23 15:06'
 labels:
   - ready-for-human
 dependencies: []
@@ -24,7 +24,7 @@ QA-fynd 284.5 (Marcus, 2026-08-22, staging): raden '12 anmälningar kunde inte k
 <!-- AC:BEGIN -->
 - [x] #1 2–3 varianter av åtgärdskö-raden växlingsbara på /dev/hem, var och en inom bevakningsrads-familjens tokens — ingen lånar notistrappans varningsfärg/ikon
 - [x] #2 Marcus väljer EN variant i visuell granskning (desktop + mobil); valet citeras daterat på kortet
-- [ ] #3 Vald form promoverad till Bevakningsrad.tsx; raden bär aldrig betydelse enbart genom färg (axe 0, 284.4 AC #5 håller)
+- [x] #3 Vald form promoverad till Bevakningsrad.tsx; raden bär aldrig betydelse enbart genom färg (axe 0, 284.4 AC #5 håller)
 - [ ] #4 Hem-facit (tasks/sessions/bilagor/s102-hem-konvergens/facit.json) amenderas FÖRST därefter, i egen commit med Marcus citat — det stänger 284.4 DoD #6
 <!-- AC:END -->
 
@@ -74,4 +74,16 @@ Verbatim: "Ser bra ut. Jag godkänner bevakningsraden och åtgärdskö-raden nu.
 Formen han godkände är den ombyggda variant A: fylld cirkel-behållare runt ikonen (kontrast 13,38:1 mot kortytan, var 1,01:1), li-strukturen återställd, talet i rubriken ("12 kräver åtgärd") i stället för i en badge, chevronen centrerad mot hela raden, och tiden i en vit pill.
 
 FORMEN LIGGER I LOKALA, OPUSHADE COMMITS på wip/s111-marcus-iteration. Det som landade i PR #1842 är ett TIDIGARE varv — badge-formen, som Marcus sedan rev. AC #3 (promovering till skarpa Bevakningsrad.tsx) och AC #4 (hem-facit) återstår och ska utgå från den LOKALA formen, inte från vad som ligger i main.
+
+AC #3 UPPFYLLD 2026-08-23 — formen promoverad till skarpa Bevakningsrad.tsx (gren feat/s111-291-promovering-bevakningsrad, baserad på wip/s111-marcus-iteration 943639a4).
+
+VAD SOM PROMOVERADES, ur prototypen och inte ur minnet: den delade radanatomin (RadInnehall — rubrikrad + undertext, alltid båda; meta-pill och chevron i egna kolumner med row-span-2 self-center), variant A:s ledande Link2Off i fylld cirkel med --mm-atgardsko-markor-bg/-text, och den delade yttre kortytan (RAD_YTA, samma klasslista på båda radtyperna). Åtgärdskö-radens copy är nu tvådelad: rubrik "N kräver åtgärd", undertext "Kunde inte kopplas till rätt event".
+
+BEVIS FÖR ATT DET ÄR SAMMA FORM (ADR-103 B4): ny promoveringsgrind tests/visual/hem-bevakningsrad-promoverings-grind.spec.ts med fyra aria-referenser under tests/visual/__aria__/ (två radtyper x två vyportar). Referenserna fångades ur prototypens variant-läge (/dev/hem-atgardsko-prototyp?variant=a) och är gröna mot den promoverade /hem-ytan. Mätt: 8/8 gröna (visual-desktop 1440 + visual-mobile 375). Negativkontroll körd: en medveten copy-ändring i Bevakningsrad.tsx fällde grinden med diff mot referensen (exit 1), ändringen återställd.
+
+AXE 0 I BÅDA RADTYPERNA, mätt i acceptance-klassen: hem.acceptance "Åtgärdskön — två flaggade anmälningar" (åtgärdskö-raden ensam) och det utvidgade kitchen-sink-testet, som nu tvingar fram BÅDA radtyperna på samma sida (tre bevakningsrader) — 0 violations i båda. Länkens tillgängliga namn är "N kräver åtgärd Kunde inte kopplas till rätt event"; markören är aria-hidden och bär alltså ingen betydelse ensam (284.4 AC #5 håller).
+
+DELNINGEN AV atgardskoText ÄR UPPHÄVD. En enmenings-fras kan inte fylla en tvådelad anatomi, så Bevakningsrad.tsx importerar den inte längre; /mer/anmalningar bär den oförändrad. Docblocken i registration-display.ts och Bevakningsrad.tsx bokför bytet från var sitt håll, och den nu döda re-exporten i hem-derivations.ts är borttagen.
+
+AC #4 (facit-amenderingen) EJ RÖRD — den ägs av orkestreraren och sker i egen commit efter promoveringen, per uppdraget. INGEN RIVNING GJORD: ADR-103 B2 lägger rivningen i steg 4, efter att Marcus granskat och godkänt den PROMOVERADE ytan (steg 2-3). Prototyp-routen /dev/hem-atgardsko-prototyp står därför kvar, och den bär dessutom FÖRE-halvan av promoveringsgrinden så länge den finns. Ingen av .facit-policy.conf:s FACIT_PROTO_MARKORER bor i den prototypen (verifierat med grep per markör), så inget markör-städ hör till detta pass.
 <!-- SECTION:NOTES:END -->
