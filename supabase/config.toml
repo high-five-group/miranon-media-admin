@@ -149,6 +149,20 @@ verify_jwt = true
 [functions.test-docraptor-render]
 verify_jwt = true
 
+# test-static-files — STAGING-ONLY testharness-EF (TASK-309.1, "Skiva 0:
+# minimaltest — bundlade mallfiler i en Edge Function via staging-deploy").
+# Samma gateway-försvar som ovan — requireUser grindar faktiskt anropet.
+# Mätinstrumentet för ADR-125 § Beslut 4:s obelagda premiss: bundlar
+# `static_files` faktiskt via CLI:ts API-bundlingsväg (maskinen saknar
+# Docker)? Läser en HTML- och en TTF-fil ur `_shared/mallar/` via globen
+# nedan och rapporterar bytes + facit. Rör ingen data, ingen Storage.
+# MEDVETET UTELÄMNAD ur .prod-functions-allowlist.conf —
+# test-auth-precedenten. Rör inte den filen för denna post. Se funktionens
+# filhuvud för fullt resonemang.
+[functions.test-static-files]
+verify_jwt = true
+static_files = ["./functions/_shared/mallar/*"]
+
 # Bilage-uppladdningens PRODUKTIONS-EF:er (TASK-146.4, PRD task-146
 # "Bilage-fundamentet", ADR-057 lager-oberoendet). Till skillnad mot
 # test-attachments-storage ovan är dessa TRE ALLMÄNGILTIGA — inte

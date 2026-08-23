@@ -254,4 +254,98 @@ mot lagring, en renderare mot två.
 
 ## Updates
 
-Inga ännu — skiva 0:s minimaltest-utfall bokförs här först.
+### 2026-08-23 — Skiva 0:s minimaltest: static_files FALLERAR i API-bundling; TS-strängmoduler (c) fungerar
+
+**TASK-309.1.** Supabase CLI **2.115.0** (`npx supabase --version`). Docker
+saknas på deploy-maskinen: `command -v docker` → command not found,
+`pgrep docker` → tomt — bekräftar § 4:s premiss att deployen går via CLI:ts
+API-bundling, inte den Docker-baserade vägen. Staging-ref
+`pqtshyierkdgwdnxuirz`. Mätinstrumentet: en ny staging-only EF
+`test-static-files` (samma gateway-försvar/requireUser-mönster som
+`test-pdf-generation`), med två kastbara mätfiler i
+`supabase/functions/_shared/mallar/` (`minimaltest.html`, 291 bytes; en
+byte-identisk kopia av `public/fonts/bilagor/Carlito-Regular.ttf`,
+628 032 bytes, sfnt-magic `00 01 00 00`).
+
+**(a) `static_files` + `Deno.readFile` — FALLERAR.** Deploy
+(`npx supabase functions deploy test-static-files --project-ref
+pqtshyierkdgwdnxuirz`) lyckas och loggar verbatim:
+
+```text
+WARNING: Docker is not running
+Uploading asset (test-static-files): supabase/functions/_shared/mallar/minimaltest.html
+Uploading asset (test-static-files): supabase/functions/_shared/mallar/Carlito-Regular.ttf
+...
+{"project_ref":"pqtshyierkdgwdnxuirz","functions":["test-static-files"],"dashboard_url":"...","message":"Deployed Functions."}
+```
+
+CLI:t laddar alltså upp filerna som "assets" — men det skarpa anropet mot
+den körande funktionen ger, verbatim:
+
+```json
+{"diagnos":"html-readFile-fel","url":"file:///var/tmp/sb-compile-edge-runtime/functions/_shared/mallar/minimaltest.html","errorName":"NotFound","errorMessage":"path not found: /var/tmp/sb-compile-edge-runtime/functions/_shared/mallar/minimaltest.html: readfile '...': path not found: ..."}
+```
+
+En efterföljande katalogvandrings-diagnos (tillfällig kod, riven igen)
+visade att `Deno.readDir`/`Deno.stat` svarar `NotSupported` i denna
+runtime — **även för funktionens EGEN mapp**, inte bara för `_shared/`.
+Slutsats: static_files-filerna placeras inte i den körande instansens
+filsystem när deployen går via API-bundling (ingen Docker). Detta bekräftar
+skarpt research-passets obelagda community-fynd (GitHub-diskussion nr
+32815 om `--use-api`-vägens historiska begränsning) — vår CLI-anropsform
+(utan `--use-api`, men utan Docker att falla tillbaka på) hamnar i samma
+felklass.
+
+**(b) text-import `with { type: 'text' }` — FALLERAR HÅRDARE: deployen
+nekas.** Verbatim CLI-fel (400):
+
+```json
+{"_tag":"Error","error":{"code":"FunctionsApiStatusError","message":"unexpected deploy status 400: {\"message\":\"Failed to bundle the function (reason: The import attribute type of \\\"text\\\" is unsupported.\\n  Specifier: file:///tmp/.../source/supabase/functions/_shared/mallar/minimaltest.html\\n    at .../test-static-files/index.ts:59:42).\"}"}}
+```
+
+Bundlaren i denna API-bundlings-väg stödjer inte import-attribut alls —
+funktionen kan inte ens deployas med denna kod i sig, oavsett vad koden
+gör vid körning. Detta är ett STARKARE negativt utfall än (a): (a) deployar
+men fallerar vid runtime, (b) deployar aldrig.
+
+**(c) genererade TS-strängmoduler — FUNGERAR.** Två genererade filer
+(`supabase/functions/_shared/mallar/minimaltest.text.ts`,
+`.../carlito-regular.base64.ts` — vanliga `export const`-satser, HTML som
+sträng respektive TTF base64-kodad) importerade som helt vanliga
+ES-moduler. Deploy lyckas; skarpt anrop ger verbatim:
+
+```json
+{"staticFiles":{"ok":false,"errorName":"NotFound","errorMessage":"path not found: ..."},"tsStrangmodul":{"ok":true,"html":{"bytes":291,"forstaRad":"<!doctype html>"},"ttf":{"bytes":628032,"magic":"00 01 00 00"}}}
+```
+
+Bytes och magic matchar exakt källfilernas facit (291 / `<!doctype html>` /
+628 032 / `00 01 00 00`) — ingen korruption i base64-round-tripen.
+
+**Vald väg framåt: (c), genererade TS-strängmoduler.** Byggskivorna som
+implementerar `_shared/mall-render.ts` (§ Beslut 4–5) ska generera
+TS-modulfiler ur `docs/mallar/bilagor/*.{html,css}` och de sex
+typsnittsfilerna (bas64 för binärdata) i stället för att förlita sig på
+`static_files`. `scripts/synka-bilagemallar.mjs` (§ Beslut 4:s föreslagna
+skript) ska alltså **generera `.ts`-moduler**, inte kopiera byte-identiska
+`.html`/`.ttf`-filer rakt av — `check-mallparitet.sh` diffar då genererat
+TS-innehåll (avkodat) mot källan, samma disciplin, annat målformat.
+**Öppet, obelagt av denna skiva:** om `static_files` fungerar i en riktig
+Docker-baserad deploy (den väg `fas4-prod-deploy.sh` normalt använder när
+Docker finns) — denna maskin saknade Docker under hela mätningen, så bara
+API-bundlingsvägen är mätt. Blir Docker tillgängligt på en framtida
+deploy-maskin är det värt att mäta om (a) då fungerar och kan förenkla
+bort behovet av (c):s genererings-steg — men (c) är REDAN bevisat robust
+och kostar inget extra nätverkshopp, så det finns ingen brådska.
+
+**Regressionsvakt behållen (AC #3):** `test-static-files` rivs INTE.
+Kortets rekommendation ("en bundlingsväg som tyst slutar fungera vid nästa
+CLI-bump är exakt den felklass vakten finns för") följs — motiverat
+starkare av att mätningen ovan visade att bundlingsbeteendet är
+plattforms-/CLI-versionskänsligt, inte en stabil egenskap att anta för
+alltid. `tests/api/test-static-files.staging.test.ts` låser BÅDA
+utfallen (staticFiles FALLERAR med `NotFound`, tsStrangmodul FUNGERAR med
+exakta bytes) — går (a) grönt i en framtida CI-körning är det en ÄKTA,
+välkommen regression att uppdatera denna ADR-post för, inte ett fel att
+tysta ner. Grinden är mätt fälla-och-passera (negativ kontroll: ett
+felaktigt förväntat bytetal gav ett faktiskt rött testutfall, återställt
+efteråt).

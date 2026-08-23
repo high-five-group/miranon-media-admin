@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 13:56'
+updated_date: '2026-08-23 14:42'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,9 +22,9 @@ Repots disciplin: nytt approach testas minimalt innan full implementation. ADR-1
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En minimal staging-EF deployad med static_files-glob mot en delad _shared-katalog läser en HTML- och en TTF-fil skarpt (bytes + storlek verifierade i svaret), via samma deploy-väg som repot använder (CLI utan Docker = API-bundling)
-- [ ] #2 Utfallet (fungerar / fungerar inte, verbatim CLI-utdata) bokfört i ADR-125 § Updates; om det fallerar: fallback (b) text-import prövad på samma sätt, och vald väg bokförd
-- [ ] #3 Minimaltestets EF rivs efter mätningen eller bokförs som staging-only testharness i allowlist-policyn — aldrig kvar omärkt
+- [x] #1 En minimal staging-EF deployad med static_files-glob mot en delad _shared-katalog läser en HTML- och en TTF-fil skarpt (bytes + storlek verifierade i svaret), via samma deploy-väg som repot använder (CLI utan Docker = API-bundling)
+- [x] #2 Utfallet (fungerar / fungerar inte, verbatim CLI-utdata) bokfört i ADR-125 § Updates; om det fallerar: fallback (b) text-import prövad på samma sätt, och vald väg bokförd
+- [x] #3 Minimaltestets EF rivs efter mätningen eller bokförs som staging-only testharness i allowlist-policyn — aldrig kvar omärkt
 <!-- AC:END -->
 
 ## Definition of Done

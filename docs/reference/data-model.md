@@ -79,7 +79,10 @@ app8uGPrVCVOm6LfD
 
 | Tabell | ID | Antal fält | Anteckning |
 |---|---|--:|---|
-| Eventplanering | `tblVE3UKWl1CKrphV` | 45 | |
+| Eventplanering | `tblVE3UKWl1CKrphV` | 45 (staging: 63 sedan TASK-309.2 — se § Bilagornas datamodell) | Prod alltjämt 45 tills Marcus GO (ADR-125 § 8). |
+| Eventinnehåll | staging `tblwqaBrkm6hJPITd` (ny tabell) | 14 (+1 auto-född) | ADR-125 § 2, TASK-309.2. Se § Bilagornas datamodell. Prod: skapas efter GO (skiva 8). |
+| Agendapunkter | staging `tblgEItD0UM1oJVI9` (ny tabell) | 7 | ADR-125 § 2, TASK-309.2. Se § Bilagornas datamodell. Prod: skapas efter GO (skiva 8). |
+| Platser | staging `tbl7ER0wNqAZ9ZhEq` (ny tabell) | 5 (+1 auto-född) | ADR-125 § 2, TASK-309.2. Se § Bilagornas datamodell. Prod: skapas efter GO (skiva 8). |
 | Eventformat | `tbl8qhuJQ5ZWPMRk4` | 3 | |
 | Anmälningar | `tbloOcrppVoyrHbrq` | 51 | |
 | Personer | `tbl6ZyCm3V026iFTU` | 87 | Master registry. Innehåller mest formel/rollup-fält som speglar Anmälningar och Deltaganden. |
@@ -309,6 +312,138 @@ migreringen; samtliga 24 PATCH:ade till `Räckvidd = Event`,
 count-verifierat efter med `{Räckvidd} = BLANK()` → 0 träffar (24/24).
 Prod-tabellen mättes TOM i S102 och är TOM alltjämt — `list_records` gav 0
 rader både före och efter fältskapelsen (0/0, inget att migrera).
+
+#### Bilagornas datamodell (ADR-125, TASK-309.2) — staging skapad 2026-08-23, prod skapas efter GO (skiva 8)
+
+Tre nya tabeller + fält på Eventplanering/Bilagor, per
+[ADR-125](../decisions/ADR-125-bilagornas-modell-och-promoveringsvag.md) § 2.
+Skapade LIVE via Airtable MCP (`AIRTABLE_SCHEMA_TOKEN` saknades i lokal
+`.env.seed` — samma lucka som `TASK-147.12`s Dokumentklass-fält, se
+`scripts/create-eventinnehall-modell.mjs` § filhuvud för den fulla
+motiveringen); skriptet SPEGLAR den skapade specen för framtida idempotenta
+körningar. **Samtliga ID:n nedan är staging** (`apphjj8Q7lkXCMsL4`) —
+**prod-kolumnen är "skapas efter Marcus GO i klartext per tabell" (ADR-125
+§ 8), additivt men irreversibelt i data när rader fötts.**
+
+**PLATTFORMSVÄGG (testad skarpt, se skriptets filhuvud):** `Eventinnehåll.Namn`
+kan INTE vara både formel OCH primärfält — Airtables Meta-API vägrar
+formelfält vid tabellskapelse (`UNSUPPORTED_FIELD_TYPE_FOR_CREATE`), och
+primärfältet (låst till det FÖRSTA fältet i skapelse-arrayen) kan inte bytas
+i efterhand. `Namn` är därför `singleLineText`, populerad med `"{Event} ·
+{Typ}"` av seed-/skrivvägen — en ÖGONBLICKSBILD, inte en levande formel.
+Bokfört öppet, inte designat bort (samma disciplin som `Bilagor.Skapad`s
+`createdTime`-vägg, `create-bilagor-table.mjs`).
+
+| Tabell | Staging-ID | Fält (staging-ID) | Typ |
+|---|---|---|---|
+| **Eventinnehåll** | `tblwqaBrkm6hJPITd` | Namn (`fldRE8x232epAbotc`, primär) | singleLineText — se plattformsväggen ovan |
+| | | Event (`fld7tHYHQEmaTsDGC`) | singleSelect — Fjärrskådning/Resor i medvetandet/Resor i medvetandet 1/2/3/Psionautics (speglar `Eventplanering.Event (source)` `flddlv4JA5C5CeH5R`, EGNA option-ID:n) |
+| | | Typ (`fldR2sF3H5sbVCwdU`) | singleSelect — Utbildning/Föreläsning (speglar `Eventplanering.Typ` `fldkiFRVYG0xTAhJ4`) |
+| | | Tid / Pris / Anmälningsavgift / Resterande belopp | singleLineText (`fldJyBRVQ6lhVFAcj` / `fldaNE6ZU42lVNyrS` / `fldih0ePhJqD8raEa` / `flduP85aMxv8T8J1j`) |
+| | | Beskrivning / Förberedelser / Tag med / För dig som röker / Parfym och kosmetika / Mat/fika / Övernattning / Utrustning | multilineText (`fldo4nvKt0k2UEbdX` / `fldMCifxBTnQRtoSd` / `fldAgCE6LKwnqVu7A` / `fldvOyLPbu9WBUHyl` / `fldGoTDzZiO1v1ncA` / `fldmoVQmnHDyJT9Nk` / `fldkLoZt63jaTnTqE` / `fldb0RQRdpINzlV2w`) |
+| | | Agendapunkter (`fldgiX7Tzhu1yPuBY`, auto-född spegel) | multipleRecordLinks → Agendapunkter |
+| **Agendapunkter** | `tblgEItD0UM1oJVI9` | Text (`fldTxLMMDARMnOdR8`, primär) | singleLineText |
+| | | Dag / Ordning (`fldn9vWItzUDlKnwz` / `fldHvSoPN7CHbcGtQ`) | number, precision 0 |
+| | | Tid (`fldR05lpsymw7ZFMS`) | singleLineText, t.ex. "30 min" |
+| | | Meditation (`fldisTbc8lvtBDxK4`) | checkbox |
+| | | Eventinnehåll (`fldRdpSQuTXBKw9Fh`) | multipleRecordLinks → Eventinnehåll (tom om raden hör till en eventkopia) |
+| | | Event (`fld4BWQpUtqBwMJBH`) | multipleRecordLinks → Eventplanering (tom om raden hör till standardagendan) |
+| **Platser** | `tbl7ER0wNqAZ9ZhEq` | Namn (`fldSDJcY7cb4dam3Y`, primär) | singleLineText |
+| | | Adress (`fldLWwDxEKaeeC30x`) | singleLineText |
+| | | Parkering / Transport / Kläder (`fldOVc9oWsJDSqeuX` / `fldS2ILC5sQ7emsjp` / `fldfp4P7ywOPxLq4A`) | multilineText |
+| | | Eventplanering (`fld9B4mEmUFn2Bc4b`, auto-född spegel) | multipleRecordLinks → Eventplanering |
+
+**Eventplanering (+18 fält, staging).** `Plats` (`fld8OmPGNgEYZ8eER`,
+multipleRecordLinks → Platser) + 17 `(bilagetext)`-fält (suffix med
+inledande mellanslag, t.ex. `"Tid (bilagetext)"`) — eventets egen kopia,
+tomt fält = standarden (Eventinnehåll/Platser) gäller:
+
+| Bas-fält | (bilagetext)-fält-ID | Typ |
+|---|---|---|
+| Tid | `fldewV6lrmPgciA1B` | singleLineText |
+| Pris | `fld6SoKgMvTsgicDm` | singleLineText |
+| Anmälningsavgift | `fld2DSzLOcXn1REBK` | singleLineText |
+| Resterande belopp | `fldIGx40AnUbtZwCH` | singleLineText |
+| Sista betalningsdag | `fldMJfhRIfbqQ3UKE` | date (ISO) — härledd standard Startdatum − 14 dagar, se nedan |
+| Beskrivning | `fldHELN1vXMYPxDZQ` | multilineText |
+| Förberedelser | `fldKJq4sWYsdOc4gL` | multilineText |
+| Tag med | `fld2z51nPJ7b0RCuy` | multilineText |
+| För dig som röker | `fldBuoSeNeKwirZUP` | multilineText |
+| Parfym och kosmetika | `fld1uszm3tRVqVo25` | multilineText |
+| Mat/fika | `fldLGEFJ5V5LSySco` | multilineText |
+| Övernattning | `flde6KJWelaTW0nDN` | multilineText |
+| Utrustning | `fldmvZ8eYs8VOdldI` | multilineText |
+| Adress | `fld04gOk8BkHFhCoo` | singleLineText |
+| Parkering | `fld4KRAV0AiedrbtP` | multilineText |
+| Transport | `fldl7YtvlDac94AFh` | multilineText |
+| Kläder | `fldSCL2J6r5o9vtOl` | multilineText |
+
+Auto-född vid Agendapunkter.Event-skapelsen: `Agendapunkter` (`fldHGLB2wAmbTFSqC`,
+multipleRecordLinks → Agendapunkter) — eventets egen agenda-kopia.
+
+**Bilagor (+2 fält, staging).** `Mall` (`fldyaXdITEdqPTy5O`, singleSelect —
+Bekräftelsebilaga/Deltagarinformation) · `Källhash` (`fld03lo2OEehq1KlJ`,
+singleLineText, server-internt — SHA-256 över kanoniskt serialiserad
+ifyllnadsdata, ADR-125 § 3).
+
+**Uppslaget Event (source) × Typ (ADR-125 § 2 — uppslag, inte länk).**
+`Eventplanering.Event (source)` (`flddlv4JA5C5CeH5R`) × `Typ`
+(`fldkiFRVYG0xTAhJ4`) pekar deterministiskt ut sin `Eventinnehåll`-rad —
+`get-document-sources` (TASK-309.2 AC #4) slår upp `WHERE Event=… AND
+Typ=…`, ingen lagrad länk. **Sju kombinationer mätt READ-ONLY mot PROD**
+(`app8uGPrVCVOm6LfD`, `tblVE3UKWl1CKrphV`, 57 rader, 2026-08-23 —
+premiss-pass som verifierade ADR-125/ORDLISTA.md:s tidigare osourcade
+"sju kombinationer i hela beståndet"-påstående, som inte fanns nedskrivet
+i något repo-dokument innan denna rad):
+
+| Event | Typ |
+|---|---|
+| Fjärrskådning | Utbildning |
+| Fjärrskådning | Föreläsning |
+| Resor i medvetandet | Föreläsning |
+| Resor i medvetandet 1 | Utbildning |
+| Resor i medvetandet 2 | Utbildning |
+| Resor i medvetandet 3 | Utbildning |
+| Psionautics | Utbildning |
+
+Samtliga sju seedade som Eventinnehåll-rader
+(`scripts/seed-eventinnehall-modell.mjs`); "Resor i medvetandet 1 ×
+Utbildning" (`rec2MZrLMKWAzxarB`) är fylld verbatim ur prototypens
+`EVENTINNEHALL`-konstant (`GenereringsPrototyp.tsx`) inkl. dess 14+10
+agendarader, övriga sex lämnade tomma för Lotta (beslut 10). `Platser`
+bär Rönninge (`rec17l2c64foUy6WU`), verbatim ur `PLATSER_SEED`.
+
+**Härledningen — sista betalningsdag.** `Startdatum − 14 dagar` (samma
+regel som `Anmälningar.Deadline slutbetalning`, `fldGlznON7xqR3IE1` — men
+INTE samma kod: den formeln bär en egen, orelaterad bugg i sin "Ej
+relevant"-undantagsgren, se § Kända fällor 52, som `get-document-sources`
+aldrig återanvänder). Beräknas server-side i `get-document-sources` när
+`Sista betalningsdag (bilagetext)` är tom.
+
+**Läsvägen: `get-document-sources`** (`supabase/functions/get-document-sources/`,
+TASK-309.2 AC #4) — `GET ?eventId=` → `{ event, eventinnehall, plats, agenda,
+kopior }`. `kopior` är den SAMMANSLAGNA standard/kopia-formen för de
+sjutton redigerbara blocken (fallback-regeln bor server-side EN gång, ADR-125
+§ 4 "en renderare" — se `DocumentSources`-domänmodellen,
+`src/domain/models/DocumentSources.ts`, för det fulla kontraktet).
+Agenda-kopian är hela-agendan-eller-inget: noll egna Agendapunkter-rader ⇒
+`kopia: null` för BÅDA dagarna; minst en rad ⇒ `kopia` är den (möjligen
+dag-ojämna) mängden, aldrig `null`. Permanent staging-testfixtur:
+`DOKUMENTUNDERLAG_EVENT_ID` (`tests/api/fixtures.ts`,
+`recnzSBfLWCo5dBlY`, `Ort` = `ZZ-dokumentunderlag-fixtur`) bevisar BÅDA
+hälfterna av kontraktet i en rad.
+
+**Öppen skuld, bokförd inte tyst utelämnad:** `.purge-staging-policy.json`
+fick INGA nya targets för Eventinnehåll/Agendapunkter/Platser i denna skiva.
+AC #5 förutsåg staging-rader som "testerna skapar" i de tre tabellerna —
+men TASK-309.2 är en REN läsväg: `.env.test` bär ingen Airtable-token
+(EF-only-gränsen, ADR-060) och ingen skrivväg till dessa tabeller finns än
+(den byggs i TASK-309.3), så det finns strukturellt ingenting för denna
+skivas tester att skapa i dem. De rader som FINNS (sju Eventinnehåll, en
+Plats, 25 Agendapunkter) är PERMANENTA seed-/fixtur-rader av samma klass
+som `ZZ-belaggning-fixtur`/`ZZ-arbetsko-fixtur` — matchar medvetet INGEN
+purge-target, precis som de. TASK-309.3:s write-path-tester lägger sina
+egna targets när de skapar genuint transient testdata.
 
 ### Aktiva event
 
@@ -1715,3 +1850,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-19 (TASK-278) | **Fälla 50-noten amenderad**: `get-leads`s `antalHamtningar`-visningsfält pekades om till `Totalt antal hämtningar (erbjudande)` (samma fält `LEAD_FILTER` redan filtrerar på) — stänger `TASK-277`:s öppna kant, en självmotsägande rad på 33 av Intresserade-vyns leads. `get-person` (singular) korsundersökt och medvetet lämnat orört (fältet renderas ingenstans i `PersonDetail.tsx`); `allaHamtningar` korsundersökt och funnen redan korrekt (rollup direkt över Touchpoints, ej samma felklass). |
 | 2026-08-21 (S110, `T158`) | **Fälla F.2 / Lucka 10 omskrivna — roten lokaliserad, hypotesen falsifierad:** Elfsight-kalenderwidgetens handskrivna anmälningslänkar på miranon.se (inte formulärets templatekod); felklassen utvidgad med tyst felmatchning (rätt prefix, fel nummer); April-saneringens Event-11-länkning rättad till Event-60; mätningen 1 orphan + 64 felmatchade av 304, städad i prod (Event-62/63/64 skapade, 61 omlänkningar, ~130 Deltaganden, A7-restlistor). Vakt-design öppen. Underlag: sessionsdok S110. |
 | 2026-08-21 (S110, `TASK-284.1`) | **Fälla 52 tillagd** — `Deadline slutbetalning`s undantags-gren är död kod (valalternativet heter `"Ej relevant (för föreläsningar)"`, inte `"Ej relevant"`), och utan den kraschar `DATEADD` på anmälningar utan eventlänk. Samma döda test i `Slutbetalning status visuellt`. Mätt latent: 0 prod-poster i endera felläget 2026-08-21. Upptäckt via `TASK-284.1`:s staging-fixtur. |
+| 2026-08-23 (`TASK-309.2`) | **§ Bilagornas datamodell (ADR-125) tillagd** — tre nya tabeller (Eventinnehåll/Agendapunkter/Platser) + 18 fält på Eventplanering + 2 på Bilagor, skapade live i staging via Airtable MCP. Tabell-ID-tabellen (§ Snabbreferens) uppdaterad med de tre nya raderna + Eventplanerings ändrade fältantal. Sju Event×Typ-kombinationer verifierade READ-ONLY mot prod (2026-08-23) — det tidigare osourcade "sju kombinationer"-påståendet (ORDLISTA.md/ADR-125) bär nu en källa och en lista. Plattformsvägg dokumenterad: formelfält kan varken skapas vid tabellskapelse eller bli primärfält i efterhand. |

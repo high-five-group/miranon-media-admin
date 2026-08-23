@@ -9,6 +9,7 @@ import type {
   CreateAttendanceInput,
   CreatedAttendance,
 } from '../../domain/models/Attendance';
+import type { DocumentSources } from '../../domain/models/DocumentSources';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
@@ -179,6 +180,21 @@ export interface DataSourceAdapter {
 
   /** Lista Eventformat-poster (record-ID + namn) för create-event:s Eventtyp-dropdown (Fas 6f) */
   getEventFormats(): Promise<EventFormat[]>;
+
+  /**
+   * Hämta bilagornas ifyllnadsunderlag för ETT event (TASK-309.2 AC #4,
+   * ADR-125 § 2) — eventets egna fält, den uppslagna Eventinnehåll-
+   * standarden (Event × Typ), den länkade Platsen, agendan och en enhetlig
+   * standard/kopia-form för varje redigerbart block. GET mot
+   * get-document-sources-EF:en, som äger fallback-regeln EN gång (ADR-125
+   * § 4 "en renderare" — samma regel FÅR inte tolkas på två ställen).
+   *
+   * Se `../../domain/models/DocumentSources.ts` för det fulla kontraktet
+   * (varför standard/kopia är SAMMANSLAGET här i stället för att klienten
+   * själv räknar ut fallback, varför `sistaBetalningsdag.standard` aldrig
+   * är `null`).
+   */
+  getDocumentSources(eventId: string): Promise<DocumentSources>;
 
   /**
    * Skapa ett nytt event (Fas 6f, ADR-066). Tar write-shapen `CreateEventInput`

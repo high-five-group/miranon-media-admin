@@ -1,7 +1,7 @@
 import { type CalendarDate, parseDate } from '@internationalized/date';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
@@ -430,7 +430,7 @@ function AktivitetsRad({
  * `divide-y`-container som det laddade läget) så inget hoppar när data landar. */
 function LaddLage() {
   return (
-    <div className="flex flex-col gap-4" aria-busy="true">
+    <div className="flex flex-col gap-4 px-4" aria-busy="true">
       <span className="sr-only">Laddar aktivitetshistorik…</span>
       <Skeleton variant="text" className="w-24 text-small" />
       <div className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4">
@@ -498,7 +498,7 @@ function FilterRad({
    * gav 37 px, under 44 px-golvet), därunder de två dropdownerna sida vid
    * sida (staplade på mobil). */
   return (
-    <div className="flex flex-col gap-3" data-testid="aktivitetshistorik-filterrad">
+    <div className="flex flex-col gap-3 px-4" data-testid="aktivitetshistorik-filterrad">
       <ToggleButtonGroup<Tidsperiod>
         label="Tidsperiod"
         spread
@@ -604,13 +604,6 @@ function FilterRad({
 export function AktivitetsHistorik() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const announceRef = useRef(false);
-
-  // TASK-299.1 DEV-VÄXEL (rivs igen efter Marcus mätning, TASK-299.2/299.6):
-  // `?sidram=ny` bakom `import.meta.env.DEV` (ADR-074 amendering 7-formen) —
-  // utan flaggan är ytan identisk med sitt facit (AC #4). Enda läspunkten i
-  // denna fil.
-  const [sidram] = useQueryState('sidram');
-  const sidramNy = import.meta.env.DEV && sidram === 'ny';
 
   // Filtervalen (TASK-201.8, URL-STATE-SPEC §Event-mönstret — se
   // komponentens egen kommentar ovan för avstämningen mot specen).
@@ -752,28 +745,20 @@ export function AktivitetsHistorik() {
     }
   }, [isFetchingNextPage, statements.length]);
 
-  /* S106-passet, steg 2 — HUSETS SIDKROM (Check-in-varv 1-fixen, samma
-   * form som EventDetail/Check-in: 44 px rund chevron + `text-3xl`-rubrik
-   * ersätter textlänken + `text-2xl`). Kromet + rubriken renderas i ALLA
-   * tre tillstånd — stabil geometri, rubriken hoppar inte in när datan
-   * landar. */
-  // TASK-299.1: `?sidram=ny` byter geometrin till husets kant-i-kant-
-  // dialekt (chevron `mx-4` via `SidRam`, rubriken `px-4` istället för
-  // `<main>`s odekorerade 16 px) — samma villkor i alla tre tillstånd
-  // (rubriken hoppar inte in när datan landar). `headerKlass` håller
-  // px-4-tillägget samlat på EN plats i stället för tre.
-  const kromKnapp = sidramNy ? (
-    <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
-  ) : (
-    <Link
-      to="/mer"
-      aria-label="Tillbaka till Mer"
-      className="flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
-    >
-      <ChevronLeft aria-hidden="true" size={26} />
-    </Link>
-  );
-  const headerKlass = sidramNy ? 'flex flex-col gap-1 px-4' : 'flex flex-col gap-1';
+  /* TASK-299.11 — PROMOVERAD: husets delade SidRam-primitiv (kant-i-kant-
+   * dialekten, endast sidkromet — ADR-103 B2 steg 1) är nu den ENDA formen.
+   * Dev-växeln `?sidram=ny` (TASK-299.1) är riven (ADR-103 B2 steg 4);
+   * facit-manifestet amenderat till klass (c), se
+   * s106-aktivitetslogg/AMENDERING-2026-08-23-sidram-promovering.md.
+   * Kromet + rubriken renderas i ALLA tre tillstånd — stabil geometri,
+   * rubriken hoppar inte in när datan landar. `headerKlass` håller
+   * px-4-indraget samlat på EN plats i stället för tre; hela
+   * innehållskolumnen under (FilterRad, dagsgrupperna, LaddLage) delar
+   * SAMMA px-4-marginal (TASK-299.2-mätningens fynd: annars driver
+   * innehållet 16 px ur linje med rubriken).
+   */
+  const kromKnapp = <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />;
+  const headerKlass = 'flex flex-col gap-1 px-4';
 
   if (isPending) {
     return (
@@ -850,7 +835,7 @@ export function AktivitetsHistorik() {
           <div
             role="status"
             aria-live="polite"
-            className="flex flex-col items-center gap-2 py-12 text-center"
+            className="flex flex-col items-center gap-2 px-4 py-12 text-center"
           >
             <p className="font-medium text-body">Inga träffar med det filtret</p>
             <p className="max-w-md text-small text-text-muted">
@@ -873,7 +858,7 @@ export function AktivitetsHistorik() {
           <div
             role="status"
             aria-live="polite"
-            className="flex flex-col items-center gap-1 py-12 text-center"
+            className="flex flex-col items-center gap-1 px-4 py-12 text-center"
           >
             <p className="font-medium text-body">Ingen aktivitet ännu</p>
             <p className="max-w-md text-small text-text-muted">
@@ -889,7 +874,7 @@ export function AktivitetsHistorik() {
             tabIndex={-1}
             role="status"
             aria-live="polite"
-            className="px-2 text-small text-text-muted"
+            className="px-4 text-small text-text-muted"
           >
             {/* TASK-225.2 — MÅLFORMEN (Marcus 2026-08-15): "Visar N av
                 TOTAL poster." när fler finns, "Visar alla N poster." när
@@ -909,7 +894,7 @@ export function AktivitetsHistorik() {
             {announcement}
           </p>
 
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-6 px-4">
             {grupper.map((grupp) => (
               <section key={grupp.label} className="flex flex-col gap-2">
                 <h2 className="px-2 font-semibold text-small text-text-secondary">{grupp.label}</h2>
