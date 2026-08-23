@@ -11,42 +11,35 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  *
  * ── VAD DEN LÅSER ────────────────────────────────────────────────────────
  *
- * Ett `ariaSnapshot`-PAR per radtyp och vyport. Referensen fångades ur
- * PROTOTYPENS variant-läge (`/dev/hem-atgardsko-prototyp?variant=a`, den form
- * Marcus godkände i S111 Del 5) och jämförs mot den PROMOVERADE ytan
+ * Ett `ariaSnapshot`-PAR per radtyp och vyport, mätt mot den PROMOVERADE ytan
  * (`/hem`, `src/components/hem/Bevakningsrad.tsx`). En grön körning betyder
- * EN sak: raden har samma tillgänglighetsträd i prototypen och i
- * produktionen — formen följde med promoveringen, ingenting annat smög in.
+ * EN sak: raden har samma tillgänglighetsträd som Marcus godkände — ingen
+ * ny regression har smugit in sedan promoveringen.
  *
- * ── VARFÖR BÅDA HALVORNA LIGGER I SAMMA FIL, TILL SKILLNAD FRÅN SYSKONEN ──
- *
- * `personer-`/`eventsida-`-grindarna kunde bara bära EFTER-halvan i koden:
- * deras variant-gren låg bakom ett `?variant=`-villkor i SAMMA komponent, så
- * FÖRE-läget upphörde att existera i samma sekund villkoret flippades — de
- * fick låsa referensen i en egen commit före flippen och sedan peka om
- * lokatorn. Här är prototypen en EGEN fil på en EGEN route
- * (`AtgardskoRadVarianter.tsx`), orörd av promoveringen. Båda ytorna finns
- * alltså samtidigt, och då är det starkare att låta grinden mäta dem MOT
- * VARANDRA än att bara låsa den ena: prototyp-halvan nedan skyddar mot att
- * referensen tyst regenereras från den promoverade ytan (vilket hade gjort
- * paret cirkulärt och därmed värdelöst).
- *
- * VID RIVNINGEN (`ADR-103` B2 steg 4, EFTER Marcus granskat den promoverade
- * ytan) försvinner prototyp-routen. Då ska FÖRE-testerna nedan tas bort och
- * filen byta roll till REGRESSIONSLÅS — samma rollbyte
- * `personer-promoverings-grind.spec.ts` bokför i sitt eget huvud.
- * Referenserna under `__aria__/` rörs INTE av det bytet; att de förblir
- * gröna är hela poängen.
+ * [FÖRE-LÄGET ÄR RIVET — TASK-291/TASK-303, 2026-08-23] Filen bar
+ * ursprungligen BÅDA halvorna: FÖRE mot prototypens variant-läge
+ * (`/dev/hem-atgardsko-prototyp?variant=a`, en EGEN fil på en EGEN route,
+ * `AtgardskoRadVarianter.tsx`) och EFTER mot den promoverade ytan, mätta MOT
+ * VARANDRA så referensen inte kunde regenereras cirkulärt från den
+ * promoverade ytan självt. `ADR-103` B2 steg 4 (rivningen, EFTER Marcus
+ * granskat och godkänt den promoverade ytan) tog bort prototyp-routen och
+ * `AtgardskoRadVarianter.tsx` i sin helhet — FÖRE-testerna och
+ * `gotoPrototyp` nedan är därför tagna bort, och filen har bytt roll till
+ * REN REGRESSIONSLÅS, samma rollbyte `messagebox-promoverings-grind.spec.ts`
+ * bokför i sitt eget huvud efter s109. Referenserna under `__aria__/` är
+ * INTE rörda av rivningen — de är historikens enda bevis på att
+ * promoveringen tog rätt form, och att de förblir gröna är hela poängen.
  *
  * ── VARFÖR RADEN, INTE LISTAN ────────────────────────────────────────────
  *
  * Snapshotten tas per `<li>`, inte på hela `<ul aria-label="Bevakningar">`.
- * Skälet är ordningen: prototyp-routen visar deltagarinfo-raden först (den är
- * jämförelse-referensen fyndet pekar ut), medan `/hem` visar åtgärdskö-raden
- * först (en app-bred datakorrekthetsflagga före en per-event-observation, se
- * `Bevakningsrad.tsx` § ORDNING). Den ordningen är redan låst av
- * `tests/acceptance/hem.acceptance.test.ts` § Blockordningen; att blanda in
- * den här hade bara gjort paret ojämförbart utan att bevisa något nytt.
+ * Skälet är ordningen: den rivna prototyp-routen visade deltagarinfo-raden
+ * först (den var jämförelse-referensen fyndet pekade ut), medan `/hem` visar
+ * åtgärdskö-raden först (en app-bred datakorrekthetsflagga före en
+ * per-event-observation, se `Bevakningsrad.tsx` § ORDNING). Den ordningen är
+ * redan låst av `tests/acceptance/hem.acceptance.test.ts` § Blockordningen;
+ * att blanda in den här hade bara gjort paret ojämförbart utan att bevisa
+ * något nytt.
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (`ADR-103` B4): deterministiskt, noll
  * nya beroenden, jämför STRUKTUR + TILLGÄNGLIGT NAMN. Pixel-diff är den
@@ -67,22 +60,22 @@ type RegRow = z.infer<typeof RegistrationSchema>;
 type EventRow = z.infer<typeof EventSchema>;
 
 /**
- * Fixturen speglar prototyp-routens hårdkodade demodata EXAKT
- * (`src/routes/dev/hem-atgardsko-prototyp.tsx`): eventnamnet
- * "Demo: Fjärrskådning", 10 dagar kvar, 3 kvarstående i eftersläntrar-läget
- * och 12 i åtgärdskön. Talen är inte valda för att vara snygga — de MÅSTE
- * vara prototypens, annars jämför paret två olika strängar och blir grönt av
- * fel skäl.
+ * Fixturen speglade ursprungligen den (sedan rivna) prototyp-routens
+ * hårdkodade demodata EXAKT: eventnamnet "Demo: Fjärrskådning", 10 dagar
+ * kvar, 3 kvarstående i eftersläntrar-läget och 12 i åtgärdskön. Talen är
+ * inte valda för att vara snygga — de måste matcha referensfilerna under
+ * `__aria__/`, som fångades ur den formen, annars jämför testet två olika
+ * strängar och blir grönt av fel skäl.
  */
 const DEMO_EVENT_ID = 'recBevDemoPromo';
 const DEMO_EVENT_NAMN = 'Demo: Fjärrskådning';
 /** `bevakningar()` avrundar `(start − idagStart)/dygn`; fixturvärldens klocka
     står på 2026-09-15 (`fixture-data.ts` FROZEN_NOW), så detta datum ger
-    exakt "10 dagar kvar" — samma sträng prototypen visar. */
+    exakt "10 dagar kvar" — samma sträng referensfilerna bär. */
 const DEMO_STARTDATUM = '2026-09-25';
-/** Prototypens `ANTAL_DEMO` — talet ur QA-fyndet 284.5. */
+/** Den rivna prototypens `ANTAL_DEMO` — talet ur QA-fyndet 284.5. */
 const ATGARDSKO_ANTAL = 12;
-/** Prototypens `REFERENS_EVENTINFO_RAD.antalUtanEventinfo`. */
+/** Den rivna prototypens `REFERENS_EVENTINFO_RAD.antalUtanEventinfo`. */
 const UTAN_DELTAGARINFO = 3;
 
 function reg(overrides: Partial<RegRow> = {}): RegRow {
@@ -138,7 +131,7 @@ function ev(overrides: Partial<EventRow> = {}): EventRow {
 }
 
 /**
- * Registreringarna som ger EXAKT prototypens två rader.
+ * Registreringarna som ger EXAKT de två rader referensfilerna bär.
  *
  * Eftersläntrar-läget kräver att NÅGON bekräftad redan bär stämpeln (annars
  * blir läget `'ej-skickad'` och copyn en annan) — därav den fjärde raden.
@@ -162,14 +155,14 @@ function fixturRader(): RegRow[] {
 }
 
 /**
- * Skarven båda halvorna delar — och den är INTE bara en väntan.
+ * Väntar in raderna — och det är INTE bara en väntan.
  *
  * `toMatchAriaSnapshot` generaliserar siffror till `\d+` när referensen
- * skrivs (mätt: referensfilerna nedan bär `/\d+ dagar kvar/` och
- * `/\d+ kräver åtgärd/`). Paret skulle därför förbli grönt även om de två
- * ytorna visade OLIKA tal. De tre literalerna här stänger det hålet: exakt
- * samma strängar krävs på båda sidor, så snapshotten bevisar strukturen och
- * dessa assertions bevisar copyn.
+ * skrivs (mätt: referensfilerna bär `/\d+ dagar kvar/` och
+ * `/\d+ kräver åtgärd/`). Snapshotten skulle därför förbli grön även om
+ * ytan visade ANDRA tal än de referensen fångades med. De tre literalerna
+ * här stänger det hålet: exakt samma strängar krävs, så snapshotten
+ * bevisar strukturen och dessa assertions bevisar copyn.
  */
 async function forankraRaderna(page: Page) {
   // Scopat till listan, inte till sidan: `/hem` visar "10 dagar kvar" även i
@@ -182,13 +175,7 @@ async function forankraRaderna(page: Page) {
   await expect(lista.getByText(`${UTAN_DELTAGARINFO} nya saknar deltagarinfo`)).toBeVisible();
 }
 
-/** FÖRE-halvan: prototypens variant-läge, den form Marcus godkände. */
-async function gotoPrototyp(page: Page) {
-  await page.goto('/dev/hem-atgardsko-prototyp?variant=a');
-  await forankraRaderna(page);
-}
-
-/** EFTER-halvan: den promoverade, ovillkorliga ytan i produktionsvyn. */
+/** Den promoverade, ovillkorliga ytan i produktionsvyn. */
 async function gotoPromoverad(page: Page) {
   await page.goto('/hem');
   await forankraRaderna(page);
@@ -215,21 +202,7 @@ function atgardskoRad(page: Page) {
 }
 
 test.describe('promoverings-grinden — bevakningsradens två radtyper (ADR-103 B4)', () => {
-  test('FÖRE — deltagarinfo-raden i prototypens variant-läge', async ({ page }) => {
-    await gotoPrototyp(page);
-    await expect(deltagarinfoRad(page)).toMatchAriaSnapshot({
-      name: 'bevakningsrad-deltagarinfo.aria.yml',
-    });
-  });
-
-  test('FÖRE — åtgärdskö-raden i prototypens variant-läge', async ({ page }) => {
-    await gotoPrototyp(page);
-    await expect(atgardskoRad(page)).toMatchAriaSnapshot({
-      name: 'bevakningsrad-atgardsko.aria.yml',
-    });
-  });
-
-  test('EFTER — deltagarinfo-raden på den promoverade Hem-ytan', async ({ page, network }) => {
+  test('deltagarinfo-raden på den promoverade Hem-ytan', async ({ page, network }) => {
     network.use(
       http.get(EF('get-registrations'), () => json({ registrations: fixturRader() })),
       http.get(EF('get-events'), () => json({ events: [ev()] })),
@@ -240,7 +213,7 @@ test.describe('promoverings-grinden — bevakningsradens två radtyper (ADR-103 
     });
   });
 
-  test('EFTER — åtgärdskö-raden på den promoverade Hem-ytan', async ({ page, network }) => {
+  test('åtgärdskö-raden på den promoverade Hem-ytan', async ({ page, network }) => {
     network.use(
       http.get(EF('get-registrations'), () => json({ registrations: fixturRader() })),
       http.get(EF('get-events'), () => json({ events: [ev()] })),
