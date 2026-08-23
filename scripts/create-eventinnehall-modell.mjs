@@ -73,8 +73,29 @@
 // TOKEN: AIRTABLE_SCHEMA_TOKEN — se create-bilagor-table.mjs § filhuvud för
 // den fulla motiveringen (skild från STAGING_AIRTABLE_TOKEN, ADR-060 punkt 4).
 //
-// PROD-KÖRNINGEN är UTTRYCKLIGEN INTE detta skripts jobb (ADR-125 § 8:
-// Marcus GO per tabell). Samma hårda bas-guard som create-bilagor-table.mjs.
+// PROD-KÖRNINGEN (TASK-309.9, ADR-125 § 8: Marcus GO per tabell) — MEDVETEN
+// prod-väg, samma lås-mönster som provision-attachments-bucket.mjs/
+// fas4-prod-deploy.sh: basen anges som ARGUMENT (`--bas <baseId>`), ALDRIG ur
+// config. `CONFIG.expectedBaseId` förblir staging (oförändrat, se
+// validateConfig/forbiddenBaseIds nedan — den STATISKA CONFIG-formen är och
+// förblir staging-bara). Utan `--bas` körs skriptet mot staging precis som
+// tidigare. Anges `--bas <baseId>` med ett värde SOM SKILJER SIG FRÅN
+// staging krävs DESSUTOM miljövariabeln AIRTABLE_PROD_GODKAND_AV_MARCUS satt
+// till EXAKT samma bas-ID på kommandoraden — Marcus GO i klartext är
+// kommandot han själv kör, inte en flagga en agent kan sätta åt honom
+// (samma disciplin som scripts/deny-prod-ref.sh § header). Saknas eller
+// skiljer sig värdet: VÄGRAR med tydligt skäl (`resolveTargetBaseId`).
+//
+// Token: samma AIRTABLE_SCHEMA_TOKEN-variabel, men värdet måste vara en
+// PAT med schema.bases:read+write mot MÅLBASEN — `.env.seed`s token är
+// scopad ENDAST till staging (se filens egna kommentarer), så en prod-körning
+// kräver att Marcus temporärt sätter en prod-scopad PAT inline på
+// kommandoraden (aldrig i .env.seed). Se docs/reference/atkomst-och-nycklar.md
+// § "Prod-deploy av bilagespåret" för det exakta kommandot.
+//
+// Staging-mutexen (kravStagingLedigt) är IRRELEVANT för en prod-körning —
+// den bevakar staging-kontention, inte prod — och hoppas därför över när
+// target skiljer sig från staging.
 //
 // Exit: 0 = OK (inklusive "redan i synk, inget att göra" per operation),
 // 1 = guard-/konfigurations-/argument-/schemamissmatch-fel, 2 = Airtable-API-fel.
@@ -531,9 +552,44 @@ export function validateConfig(config) {
   return config;
 }
 
-/** Tolka argv. Enda flaggan är --dry-run: planera, skriv inget. */
+/** Miljövariabeln som bär Marcus GO i klartext för en icke-staging-körning
+ *  (TASK-309.9, ADR-125 § 8). Se resolveTargetBaseId. */
+export const PROD_GODKAND_ENV_VAR = 'AIRTABLE_PROD_GODKAND_AV_MARCUS';
+
+/** Tolka argv. --dry-run: planera, skriv inget. --bas <baseId>: rikta
+ *  körningen mot en annan bas än staging (TASK-309.9) — anges explicit,
+ *  aldrig ur config. */
 export function parseArgs(argv) {
-  return { dryRun: argv.includes('--dry-run') };
+  const basIndex = argv.indexOf('--bas');
+  const bas = basIndex === -1 ? undefined : argv[basIndex + 1];
+  return { dryRun: argv.includes('--dry-run'), bas };
+}
+
+/**
+ * Löser vilken bas körningen faktiskt ska rikta sig mot (TASK-309.9).
+ *
+ * Ingen `--bas`, eller `--bas` = staging-basen: returnerar staging rakt av,
+ * ingen extra gate. `--bas` pekar mot NÅGON ANNAN bas (prod, eller en
+ * felskriven bas-ID): kräver att `godkandEnv` är satt till EXAKT samma
+ * bas-ID — annars VÄGRAR (fail-closed generellt, inte en enumererad
+ * prod-allowlist, så en felskriven bas-ID aldrig råkar glida igenom).
+ *
+ * @param {{ bas: string|undefined, stagingBaseId: string, godkandEnv: string|undefined }} args
+ * @returns {string} den faktiska bas-ID:t att köra mot.
+ */
+export function resolveTargetBaseId({ bas, stagingBaseId, godkandEnv }) {
+  if (bas === undefined || bas === stagingBaseId) {
+    return stagingBaseId;
+  }
+  if (godkandEnv !== bas) {
+    throw new Error(
+      `VÄGRAR: basen "${bas}" skiljer sig från staging ("${stagingBaseId}"). Skrivning mot en ` +
+        `icke-staging-bas kräver miljövariabeln ${PROD_GODKAND_ENV_VAR}=<baseId> satt till EXAKT ` +
+        `samma bas-ID på kommandoraden — Marcus GO i klartext (ADR-125 § 8). Satt värde: ` +
+        `${godkandEnv === undefined ? '(saknas)' : `"${godkandEnv}"`}.`,
+    );
+  }
+  return bas;
 }
 
 /** Hitta en tabell efter NAMN (case-sensitive exakt) i schema-svarets tables-array. */
@@ -660,28 +716,42 @@ async function createField(baseId, tableId, body, token, throttleMs) {
 
 async function main() {
   let args;
+  let targetBaseId;
   try {
     validateConfig(CONFIG);
     args = parseArgs(process.argv.slice(2));
+    targetBaseId = resolveTargetBaseId({
+      bas: args.bas,
+      stagingBaseId: CONFIG.expectedBaseId,
+      godkandEnv: process.env[PROD_GODKAND_ENV_VAR],
+    });
   } catch (err) {
     console.error(`❌ Guard-/konfigurationsfel: ${err.message}`);
     process.exit(1);
   }
+
+  const korMotProd = targetBaseId !== CONFIG.expectedBaseId;
 
   const token = process.env.AIRTABLE_SCHEMA_TOKEN;
   if (!token) {
     console.error(
       '❌ AIRTABLE_SCHEMA_TOKEN saknas i env. Lokalt: .env.seed (gitignorad; se ' +
         '.env.seed.example). Token behöver schema.bases:read + schema.bases:write ' +
-        'mot staging-basen (apphjj8Q7lkXCMsL4). SKILD från STAGING_AIRTABLE_TOKEN — ' +
-        'se filhuvudets motivering. (TASK-309.2: modellen är REDAN skapad live via ' +
-        'Airtable MCP — denna körning är avsedd att vara en NO-OP-verifiering när ' +
-        'token finns, se filhuvudets § "Skarpt kört redan".)',
+        `mot målbasen (${targetBaseId}). ${
+          korMotProd
+            ? '.env.seed-tokenet är staging-scopat — en prod-körning kräver en prod-scopad ' +
+              'PAT satt inline på kommandoraden, aldrig i .env.seed (se ' +
+              'docs/reference/atkomst-och-nycklar.md § "Prod-deploy av bilagespåret").'
+            : 'SKILD från STAGING_AIRTABLE_TOKEN — se filhuvudets motivering.'
+        }`,
     );
     process.exit(1);
   }
 
-  kravStagingLedigt('lokal schema:eventinnehall');
+  // Staging-mutexen bevakar staging-kontention — irrelevant för en prod-körning.
+  if (!korMotProd) {
+    kravStagingLedigt('lokal schema:eventinnehall');
+  }
 
   // tableIdByName threadas genom hela körningen: startar med redan kända
   // tabeller (Eventplanering/Bilagor MÅSTE redan existera — se
@@ -689,9 +759,14 @@ async function main() {
   // operation lyckas (eller hittar en befintlig tabell).
   const tableIdByName = new Map();
 
+  // Klistervänlig sammanfattning av allt som faktiskt skapades i DENNA
+  // körning — samlas löpande, skrivs ut som ETT block i slutet så att
+  // data-model.md:s prod-kolumn kan fyllas i ett enda klipp (TASK-309.9).
+  const skapadeRader = [];
+
   try {
-    console.log(`🔍 Läser schema för ${CONFIG.expectedBaseId} …`);
-    const tables = await getBaseSchema(CONFIG.expectedBaseId, token, CONFIG.requestThrottleMs);
+    console.log(`🔍 Läser schema för ${targetBaseId}${korMotProd ? ' (PROD)' : ''} …`);
+    const tables = await getBaseSchema(targetBaseId, token, CONFIG.requestThrottleMs);
     for (const t of tables) tableIdByName.set(t.name, t.id);
 
     const resolveLinkedTableId = (name) => {
@@ -745,13 +820,14 @@ async function main() {
         for (const field of plan.toCreate) {
           const body = buildCreateFieldBody(field, resolveLinkedTableId);
           const created = await createField(
-            CONFIG.expectedBaseId,
+            targetBaseId,
             liveTable.id,
             body,
             token,
             CONFIG.requestThrottleMs,
           );
           console.log(`   • ${created.name} (${created.type}) — ${created.id}`);
+          skapadeRader.push(`${op.name}.${created.name} (${created.type}) — ${created.id}`);
         }
         anyChange = true;
         continue;
@@ -769,15 +845,14 @@ async function main() {
           continue;
         }
         console.log(`🛠️  Skapar tabellen "${op.name}" med ${body.fields.length} fält …`);
-        const created = await createTable(
-          CONFIG.expectedBaseId,
-          body,
-          token,
-          CONFIG.requestThrottleMs,
-        );
+        const created = await createTable(targetBaseId, body, token, CONFIG.requestThrottleMs);
         tableIdByName.set(op.name, created.id);
         console.log(`✅ Tabell skapad: ${created.id} ("${created.name}")`);
-        for (const f of created.fields ?? []) console.log(`   • ${f.name} (${f.type}) — ${f.id}`);
+        skapadeRader.push(`Tabell ${op.name} — ${created.id}`);
+        for (const f of created.fields ?? []) {
+          console.log(`   • ${f.name} (${f.type}) — ${f.id}`);
+          skapadeRader.push(`${op.name}.${f.name} (${f.type}) — ${f.id}`);
+        }
         anyChange = true;
         continue;
       }
@@ -812,18 +887,25 @@ async function main() {
       for (const field of plan.toCreate) {
         const body = buildCreateFieldBody(field, resolveLinkedTableId);
         const created = await createField(
-          CONFIG.expectedBaseId,
+          targetBaseId,
           liveTable.id,
           body,
           token,
           CONFIG.requestThrottleMs,
         );
         console.log(`   • ${created.name} (${created.type}) — ${created.id}`);
+        skapadeRader.push(`${op.name}.${created.name} (${created.type}) — ${created.id}`);
       }
       anyChange = true;
     }
 
     console.log(anyChange ? '✅ Klart.' : '✅ Allt redan i synk — no-op.');
+    if (skapadeRader.length > 0) {
+      console.log(
+        `\n═══ SAMMANFATTNING — klistra in i data-model.md:s ${korMotProd ? 'prod' : 'staging'}-kolumn ═══`,
+      );
+      for (const rad of skapadeRader) console.log(rad);
+    }
     process.exit(0);
   } catch (err) {
     if (err instanceof GuardError) {
