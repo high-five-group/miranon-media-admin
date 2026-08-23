@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 22:46'
+updated_date: '2026-08-23 15:20'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,13 +35,13 @@ MARCUS UNDANTAGSREGEL GÄLLER: 'Ser vi något som inte funkar sedan så är det 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Aktivitetshistorik-sidan bär den delade sidramen i sidkrom-omfattning; dess tidigare dialekt är borta
-- [ ] #2 Dokumentytan bär den delade sidramen i sidkrom-omfattning; dess tidigare dialekt är borta
-- [ ] #3 Dev-växeln ?sidram=ny är riven på BÅDA dessa ytor — formen står kvar utan flagga (ADR-103)
-- [ ] #4 Rubrikblocket ägs fortfarande av varje sida; SidRams rubrik-ägande gren är oanvänd
+- [x] #1 Aktivitetshistorik-sidan bär den delade sidramen i sidkrom-omfattning; dess tidigare dialekt är borta
+- [x] #2 Dokumentytan bär den delade sidramen i sidkrom-omfattning; dess tidigare dialekt är borta
+- [x] #3 Dev-växeln ?sidram=ny är riven på BÅDA dessa ytor — formen står kvar utan flagga (ADR-103)
+- [x] #4 Rubrikblocket ägs fortfarande av varje sida; SidRams rubrik-ägande gren är oanvänd
 - [ ] #5 Båda ytornas facit-manifest amenderade med daterad post och Marcus citat, i EGEN commit skild från formändringen
 - [ ] #6 check-facit grön; ingen yta lämnas med ett manifest som beskriver en form den inte längre bär
-- [ ] #7 Inget lokalt undantag infört utan bokfört skäl i kortet
+- [x] #7 Inget lokalt undantag infört utan bokfört skäl i kortet
 <!-- AC:END -->
 
 ## Definition of Done
@@ -50,3 +51,13 @@ MARCUS UNDANTAGSREGEL GÄLLER: 'Ser vi något som inte funkar sedan så är det 
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-08-23 — Form + verifiering klar. AC #1-4 och #7 avbockade (delad SidRam-primitiv i sidkrom-omfattning på båda ytorna, dev-växeln ?sidram=ny riven, rubrikblocket kvar per sida, inget lokalt undantag behövt). Mätt boundingBox() före/efter (1280px acceptance-vy): chevron/h1 låg redan vid x=372; filterrad/dagsgrupp-lista (aktivitetshistorik) och grupp-kort (dokumentytan) låg vid x=356 (16 px missalignment, TASK-299.2s fynd). Efter fix: samtliga block vid x=372 på båda ytorna — samma resultat som väntelistans redan promoverade form.
+
+AC #5/#6 MEDVETET EJ AVBOCKADE. Facit-amendering skriven i EGEN commit (klass (c) — formen ändras faktiskt, prod-synligt, TASK-299.2-mätningen som stöd) för båda ytorna: tasks/sessions/bilagor/s106-aktivitetslogg/AMENDERING-2026-08-23-sidram-promovering.md och tasks/sessions/bilagor/s102-dokument-konvergens/AMENDERING-2026-08-23-sidram-promovering.md, båda med Marcus-citat (TASK-299.2 omfattningsvalet, TASK-299 beslut 3). godkand-fältet i BÅDA facit.json är ORÖRT (ADR-104-hooken fryser ett stämplat manifest i sin helhet) — omstämpling väntar Marcus egen --ersatt-kanal. check-facit.sh är grönt (exit 0, 12 manifest/27 ytor/0 ogodkända) eftersom grinden inte kräver omstämpling för att släppa igenom en sidofils-amendering — men "ingen yta lämnas med ett manifest som beskriver en form den inte längre bär" är bara delvis sant tills omstämplingen sker (facit-bilderna visar fortfarande gamla chevron-positionen; sidofilen bokför explicit att de är en generation bakom).
+
+Nya visuella baslinje-specar (föds i CI, inte lokalt): tests/visual/aktivitetshistorik-visual.spec.ts + tests/visual/dokument-visual.spec.ts.
+<!-- SECTION:NOTES:END -->
