@@ -3,10 +3,10 @@ id: TASK-306
 title: >-
   Kvittots innehåll mot Lottas förlaga — benämning med typ/datum/kursnamn,
   A-pris netto, betalsätt bort, Bokföringstext-fält
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-23 09:10'
-updated_date: '2026-08-23 11:07'
+updated_date: '2026-08-23 12:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -95,4 +95,6 @@ Staging-deploy: preview-receipt + send-receipt-email (pqtshyierkdgwdnxuirz), eft
 Grindar (denna körning, post-rebase på main efter #1856 landade): test:api 1055 passed/0 failed (inkl. api-staging mot nydeployade funktioner, körd två gånger - före och efter rebase, båda gröna) - typecheck exit 0 - biome exit 0 (9 warnings/47 infos, oförändrad baseline) - build exit 0 - check:docs exit 0 (14/14 gröna). check-langa-streck.mjs INTE körd - diffen rör inte src/ (skriptet skannar bara src/, ingen av de sju rörda filerna ligger där).
 
 Marcus egen visuella granskning av DEN NYA PDF:en (kvitto-prince-306b.pdf, http://127.0.0.1:5199/granskning/kvitto-prince-306b.pdf) kvarstår ÖPPEN - inte gjord av agenten. AC #5 (prod-fält + Marcus granskning) var redan delvis öppen sedan förra varvet; kvarstår öppen för den visuella halvan, nu mot den NYA formen.
+
+Marcus granskade kvitto-prince-306b.pdf 2026-08-23 (~11:30): *"OK"*. Tre domar verbatim i notes ovan (en rad, etikett bort, Vår referens). #1856 + #1857 landade; prod deployad 12:16Z (fas4-prod-deploy.sh, 39/39). Prod-fältet Bokföringstext (kvitto) = fldof3z1V1duVZNjM. Stängd av orkestreraren efter CI-verifiering och Marcus acceptans.
 <!-- SECTION:NOTES:END -->
