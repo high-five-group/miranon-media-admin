@@ -38,8 +38,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { CalendarCheck, ChevronLeft, ChevronRight, Download, UserPlus } from 'lucide-react';
-import { useQueryState } from 'nuqs';
+import { CalendarCheck, ChevronRight, Download, UserPlus } from 'lucide-react';
 import { type ComponentType, useEffect, useRef } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { SidRam } from '@/components/primitives/SidRam';
@@ -1580,12 +1579,6 @@ export function PersonDetail({ personId }: { personId: string }) {
   const dataSource = useDataSource();
   const headingRef = useRef<HTMLElement>(null);
   const announceRef = useRef(false);
-  // TASK-299.1 DEV-VÄXEL (rivs igen efter Marcus mätning, TASK-299.2/299.6):
-  // `?sidram=ny` bakom `import.meta.env.DEV` (ADR-074 amendering 7-formen) —
-  // utan flaggan är ytan identisk med sitt facit (AC #4). Enda läspunkten i
-  // denna fil.
-  const [sidram] = useQueryState('sidram');
-  const sidramNy = import.meta.env.DEV && sidram === 'ny';
 
   const {
     data: person,
@@ -1617,23 +1610,22 @@ export function PersonDetail({ personId }: { personId: string }) {
   // behöver ETT ankare som överlever både flippen och rivningen. Rent
   // attribut, ingen layout-effekt: fragmentet varianterna returnerar har
   // inget eget rot-element att hänga det på.
+  //
+  // TASK-299.6 — PROMOVERAD: husets delade `SidRam`-primitiv (kant-i-kant-
+  // dialekten, endast sidkromet — rubriken lever kvar i sidan, PRD TASK-299
+  // § OMFATTNINGEN LÅST) är nu den ENDA formen. Den inline-byggda chevronen
+  // och dev-växeln `?sidram=ny` (TASK-299.1) är rivna (ADR-103 B2 steg 4).
+  // Ytan var redan kant-i-kant, så bytet är RENT: TASK-299.2-mätningen
+  // 2026-08-23 fann ytan byte-identisk med och utan växeln (MD5 lika,
+  // boundingBox lika) — därav facit-amenderingens klass (b), se
+  // s103-persondetalj-konvergens/AMENDERING-2026-08-23-sidram-promovering.md.
   const sidRam = (innehall: React.ReactNode) => (
     <section
       ref={headingRef}
       data-testid="persondetalj-yta"
       className="flex flex-col gap-6 pt-2 lg:pt-10"
     >
-      {sidramNy ? (
-        <SidRam to="/personer" tillbakaEtikett="Tillbaka till personer" />
-      ) : (
-        <Link
-          to="/personer"
-          aria-label="Tillbaka till personer"
-          className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
-        >
-          <ChevronLeft aria-hidden="true" size={26} />
-        </Link>
-      )}
+      <SidRam to="/personer" tillbakaEtikett="Tillbaka till personer" />
       {innehall}
     </section>
   );

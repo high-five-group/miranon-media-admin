@@ -445,6 +445,66 @@ som `ZZ-belaggning-fixtur`/`ZZ-arbetsko-fixtur` — matchar medvetet INGEN
 purge-target, precis som de. TASK-309.3:s write-path-tester lägger sina
 egna targets när de skapar genuint transient testdata.
 
+#### Skrivvägar (TASK-309.3, ADR-125 § 2–3)
+
+Tre nya Edge Functions, en per skriv-yta, samtliga staging-only i denna
+skiva (prod-deploy kräver Marcus GO per `.prod-functions-allowlist.conf`,
+ADR-125 § 8 — ingen av de tre är tillagd där). Allowlisten nedan är
+disk-verifierad mot `supabase/functions/_shared/field-allowlists.ts`.
+
+| EF | Tabell(er) | Allowlistade fält |
+|---|---|---|
+| `save-event-text` (AC #1 — eventets EGNA kopia) | Eventplanering | Samtliga 17 `(bilagetext)`-fält (§ ovan) |
+| `save-place-standard` (AC #2 — "spara som platsens standard") | Platser + Eventplanering | Platser: `Namn`, `Adress`, `Parkering`, `Transport`, `Kläder`. Eventplanering: `Plats` + de FYRA plats-`(bilagetext)`-fälten (rensas, se nedan) |
+| `save-event-content` (AC #3 — Mer-sidan) | Eventinnehåll | `Namn` (satt VID VARJE skrivning, se nedan) + de TOLV egna textfälten (alla utom `Sista betalningsdag`, som saknas på Eventinnehåll) |
+| samtliga tre (agenda-grenen) | Agendapunkter | `Text`, `Dag`, `Ordning`, `Tid`, `Meditation`, `Eventinnehåll`, `Event` — delad operation (`save-agendapunkter`), SSOT-kontrollerad EN gång i `_shared/agendapunkter.ts` § `replaceAgendaForDag` |
+
+**Rensning (tömning tillbaka till standarden, beslut 1).** `falt.<nyckel>:
+null` rensar ett TEXT-fält till `''` (Airtable-konventionen för "osatt" —
+samma väg `get-document-sources`s `scalarString`/`bilagetext()` redan
+coercar till `null`) och rensar DATUM-fältet (`Sista betalningsdag
+(bilagetext)`) med ett explicit `null` (update-event-mönstret). `agenda:
+{ dag, rader: [] }` tömmer den dagens Agendapunkter-rader; körs det för
+BÅDA dagarna faller läsvägens `eventHarEgenAgenda` tillbaka till standarden
+för BÅDA (hela-agendan-eller-inget-formen).
+
+**"Spara som platsens standard" (AC #2).** Nyckeln in i Platser-tabellen är
+eventets EGET `Ort`-fält (beslut 8) — find-or-create by exakt `Namn` =
+`Ort` (Platsen FÖDS om ingen rad matchar). Eventets `Plats`-länk sätts till
+den (ev. nyfödda) raden, och eventets EGEN `(bilagetext)`-kopia för
+EXAKT de block som just sparades töms i SAMMA skrivning (beslut 6: "så
+standarden gäller"). `Ort` självt rörs ALDRIG (beslut 8).
+
+**`Eventinnehåll.Namn`-snapshotten (AC #3).** `save-event-content` läser
+raden FÖRST för dess nuvarande `Event`/`Typ` (redigeras aldrig via denna
+operation) och bygger `Namn = "<Event> · <Typ>"` (samma strängform som
+`scripts/seed-eventinnehall-modell.mjs`s `eventinnehallNamn()`) — satt VID
+VARJE fält-skrivning, inte bara vid radens födelse. Se ADR-125 § Updates
+2026-08-23 för varför § 2:s "formel, primär"-spec ersattes av detta
+skrivkods-underhållna snapshot-fält.
+
+**Agendans atomiska dags-ersättning.** `_shared/agendapunkter.ts` §
+`replaceAgendaForDag`: hämta befintliga rader för föräldern+dag → SKAPA
+NYA → TA BORT GAMLA — i den ordningen, ALDRIG omvänt. Ett avbrott MELLAN
+create och delete lämnar då TVÅ uppsättningar (dubblerat, upptäckbart och
+ofarligt) i stället för NOLL (en genererad bilaga med tom agenda — den
+värsta tysta förlusten). Airtable saknar transaktioner
+(`docs/reference/airtable-constraints.md`), så denna ordning är
+kompensationen, inte en atomicitets-garanti.
+
+**Öppen skuld från TASK-309.2 STÄNGD.** `.purge-staging-policy.json` bär nu
+tre nya targets, ett per ny tabell testerna faktiskt skapar transient data
+i: `save-event-text-eventplanering-sentineler` (Eventplanering, `Ort`),
+`save-place-standard-platser-sentineler` (Platser, `Namn`) och
+`save-event-text-agendapunkter-sentineler` (Agendapunkter, `Text`) — samtliga
+prefix `ZZ-TASK-309.3-`. **Eventinnehåll fick INGEN ny target**: AC #3:s
+staging-test skriver till en av de SEX permanenta, redan-tomma seedade
+Eventinnehåll-raderna (mutera-och-återställ i `test.afterAll`, samma
+mönster som `update-record.staging.test.ts`s check-in-toggle) i stället för
+att skapa en ny rad — Eventinnehåll-radernas identitet (`Event`×`Typ`) är
+en FAST, seedad mängd (sju kombinationer, § ovan), ingen "ZZ-test"-kombination
+kan födas där.
+
 ### Aktiva event
 
 | Event | Record ID | Datum | Max antal platser |
@@ -1851,3 +1911,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-21 (S110, `T158`) | **Fälla F.2 / Lucka 10 omskrivna — roten lokaliserad, hypotesen falsifierad:** Elfsight-kalenderwidgetens handskrivna anmälningslänkar på miranon.se (inte formulärets templatekod); felklassen utvidgad med tyst felmatchning (rätt prefix, fel nummer); April-saneringens Event-11-länkning rättad till Event-60; mätningen 1 orphan + 64 felmatchade av 304, städad i prod (Event-62/63/64 skapade, 61 omlänkningar, ~130 Deltaganden, A7-restlistor). Vakt-design öppen. Underlag: sessionsdok S110. |
 | 2026-08-21 (S110, `TASK-284.1`) | **Fälla 52 tillagd** — `Deadline slutbetalning`s undantags-gren är död kod (valalternativet heter `"Ej relevant (för föreläsningar)"`, inte `"Ej relevant"`), och utan den kraschar `DATEADD` på anmälningar utan eventlänk. Samma döda test i `Slutbetalning status visuellt`. Mätt latent: 0 prod-poster i endera felläget 2026-08-21. Upptäckt via `TASK-284.1`:s staging-fixtur. |
 | 2026-08-23 (`TASK-309.2`) | **§ Bilagornas datamodell (ADR-125) tillagd** — tre nya tabeller (Eventinnehåll/Agendapunkter/Platser) + 18 fält på Eventplanering + 2 på Bilagor, skapade live i staging via Airtable MCP. Tabell-ID-tabellen (§ Snabbreferens) uppdaterad med de tre nya raderna + Eventplanerings ändrade fältantal. Sju Event×Typ-kombinationer verifierade READ-ONLY mot prod (2026-08-23) — det tidigare osourcade "sju kombinationer"-påståendet (ORDLISTA.md/ADR-125) bär nu en källa och en lista. Plattformsvägg dokumenterad: formelfält kan varken skapas vid tabellskapelse eller bli primärfält i efterhand. |
+| 2026-08-23 (`TASK-309.3`) | **§ Skrivvägar (TASK-309.3) tillagd** — tre nya EF:er (`save-event-text`/`save-place-standard`/`save-event-content`) + delad agenda-ersättningsoperation, allowlistade fält per operation dokumenterade. TASK-309.2:s "Öppen skuld"-not stängd: tre nya `.purge-staging-policy.json`-targets (Eventplanering/Platser/Agendapunkter, prefix `ZZ-TASK-309.3-`); Eventinnehåll fick medvetet ingen ny target (mutera-och-återställ mot en av de sex tomma seedade raderna, ingen ny transient rad skapas). |

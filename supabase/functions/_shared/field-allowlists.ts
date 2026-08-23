@@ -493,6 +493,100 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anmälningar',
     allowedFields: ['Event', 'EventKey'],
   },
+  // Bilagornas skrivvägar (TASK-309.3, ADR-125 § 2–3). Fyra operationer,
+  // tre EF:er — `save-place-standard` skriver TVÅ tabeller i samma request
+  // (Platser-raden + Eventplanerings länk/kopia-rensning) och registrerar
+  // därför TVÅ operationer, en per tabell, i stället för att låta EN
+  // OperationDef (som bär exakt ETT tableId) täcka två.
+  //
+  // Eventets EGNA (bilagetext)-kopia (AC #1, `save-event-text`). EXAKT de
+  // 17 (bilagetext)-fälten (data-model.md § Bilagornas datamodell, ADR-125
+  // § 2) — LIVE-VERIFIERADE staging-fält-ID:n står i den tabellen, inte
+  // upprepade här. `null` i write-inputen RENSAR (text → '', datumet →
+  // `null` direkt) — se `save-event-text/index.ts` för rensnings-formen.
+  'save-event-text': {
+    tableId: 'Eventplanering',
+    allowedFields: [
+      'Tid (bilagetext)',
+      'Pris (bilagetext)',
+      'Anmälningsavgift (bilagetext)',
+      'Resterande belopp (bilagetext)',
+      'Sista betalningsdag (bilagetext)',
+      'Beskrivning (bilagetext)',
+      'Förberedelser (bilagetext)',
+      'Tag med (bilagetext)',
+      'För dig som röker (bilagetext)',
+      'Parfym och kosmetika (bilagetext)',
+      'Mat/fika (bilagetext)',
+      'Övernattning (bilagetext)',
+      'Utrustning (bilagetext)',
+      'Adress (bilagetext)',
+      'Parkering (bilagetext)',
+      'Transport (bilagetext)',
+      'Kläder (bilagetext)',
+    ],
+  },
+  // "Spara som platsens standard" (AC #2, Del 2 § D beslut 6) — Platser-
+  // radens EGNA fyra fält (utan (bilagetext)-suffix). `Namn` sätts ENDAST
+  // vid FÖDELSEN av en ny Platser-rad (Ort-namnet saknade en) — se
+  // `save-place-standard/index.ts`.
+  'save-place-standard-plats': {
+    tableId: 'Platser',
+    allowedFields: ['Namn', 'Adress', 'Parkering', 'Transport', 'Kläder'],
+  },
+  // "Spara som platsens standard", eventsidan (AC #2) — länkar eventets
+  // `Plats` till den (ev. nyfödda) Platser-raden OCH rensar (sätter '')
+  // eventets EGEN (bilagetext)-kopia för EXAKT de block som sparades som
+  // standard (beslut 6: "så standarden gäller"). `Ort` ligger MEDVETET
+  // UTANFÖR — beslut 8: "Ort rörs aldrig".
+  'save-place-standard-event': {
+    tableId: 'Eventplanering',
+    allowedFields: [
+      'Plats',
+      'Adress (bilagetext)',
+      'Parkering (bilagetext)',
+      'Transport (bilagetext)',
+      'Kläder (bilagetext)',
+    ],
+  },
+  // Eventinnehållets standardtexter (AC #3, `save-event-content`) — de TOLV
+  // egna textfälten PLUS `Namn` (plattformsväggen, data-model.md §
+  // Bilagornas datamodell: `Namn` är singleLineText, inte en levande
+  // formel — skrivvägen sätter `Namn = "<Event> · <Typ>"` VID VARJE
+  // skrivning, ADR-125 § Updates 2026-08-23). `Event`/`Typ` ligger MEDVETET
+  // UTANFÖR — de är radens fasta identitet (singleSelect, Meta-API-satta
+  // vid seedningen) och redigeras aldrig via denna operation.
+  'save-event-content': {
+    tableId: 'Eventinnehåll',
+    allowedFields: [
+      'Namn',
+      'Tid',
+      'Pris',
+      'Anmälningsavgift',
+      'Resterande belopp',
+      'Beskrivning',
+      'Förberedelser',
+      'Tag med',
+      'För dig som röker',
+      'Parfym och kosmetika',
+      'Mat/fika',
+      'Övernattning',
+      'Utrustning',
+    ],
+  },
+  // Agendapunkter-radernas skrivning (AC #1 + AC #3, delad av BÅDA EF:erna
+  // via `_shared/agendapunkter.ts` § replaceAgendaForDag — SSOT-kontrollen
+  // körs EN gång där, inte duplicerad i varje EF). `Event`/`Eventinnehåll`
+  // står BÅDA här eftersom operationen är delad — varje ENSKILT anrop
+  // sätter bara EN av dem (ADR-125 § 2: "hör till EXAKT EN förälder"); den
+  // invarianten vaktas av skrivvägens kod (`replaceAgendaForDag`s
+  // `parentField`-parameter), inte av allowlisten (som bara gatar FÄLTEN,
+  // inte kombinationer av dem — samma princip som `set-attendance-status`
+  // ovan).
+  'save-agendapunkter': {
+    tableId: 'Agendapunkter',
+    allowedFields: ['Text', 'Dag', 'Ordning', 'Tid', 'Meditation', 'Eventinnehåll', 'Event'],
+  },
 };
 
 // Returnerar OperationDef om operationKey är känd, annars null.
