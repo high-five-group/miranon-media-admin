@@ -35,16 +35,34 @@ status: stable
 > enskilda lärdomar on-demand (`grep -n "^### L3" tasks/lessons/` → `Read` med
 > `offset`), eller läs de senaste via `offset` mot den aktiva volymens slut.
 >
-> **Senaste lyft till hubben:** `L512`–`L521`:s `[UNIVERSAL]`-poster
-> (Session 109, 10 poster) → hub `K109.1`–`K109.10` (hub-commit
-> `4cd2ffe`, spoke-commit `8b993fdc`). Hela spannet är lyft — samtliga
-> tio bär markören, ingen olyft rest ur S109. Samma pass synkade
-> `L485`:s tredje instans in i hubbens `K93.16`, som låg efter sin
-> källa. Föregående lyft: `L469`–`L511` (Session 93 tionde resumen, 39
-> poster) → hub `K93.1`–`K93.39` (hub-commit `a205132`, spoke-commits
-> `7c06377c` + `aa2b802c`); EJ lyfta ur det spannet, med skäl: `L470`
-> (bär ingen markör — ren empiri-bokföring) · `L493`/`L504`/`L509`
-> (uttrycklig "Varför INTE"-rationale).
+> **Senaste lyft till hubben:** `L522`–`L532`:s `[UNIVERSAL]`-poster
+> (Session 111, 11 poster) → hub `K111.1`–`K111.11` (hub-commit
+> `050fa9e1`, spoke-commit `2a6b9d8f`). Hela spannet är lyft — samtliga
+> elva bär markören, ingen olyft rest ur S111. Kroppen är byte-verbatim i
+> båda riktningar (mekaniskt diffad per post); släktskaps-referenserna är
+> översatta i hubbens `Källa:`-rader i stället för i kropparna, just för
+> att den identiteten ska gå att bevisa. Samma pass amenderade `L500`
+> (vol-06) med S111:s tre-serier-instans i stället för att skriva en
+> dubblett-post. Föregående lyft: `L512`–`L521` (Session 109, 10 poster)
+> → hub `K109.1`–`K109.10` (hub-commit `4cd2ffe`, spoke-commit
+> `8b993fdc`); det passet synkade också `L485`:s tredje instans in i
+> hubbens `K93.16`. Dessförinnan: `L469`–`L511` (Session 93 tionde
+> resumen, 39 poster) → hub `K93.1`–`K93.39` (hub-commit `a205132`,
+> spoke-commits `7c06377c` + `aa2b802c`); EJ lyfta ur det spannet, med
+> skäl: `L470` (bär ingen markör — ren empiri-bokföring) ·
+> `L493`/`L504`/`L509` (uttrycklig "Varför INTE"-rationale).
+>
+> **Markörformen har DRIFTAT igen — mätt 2026-08-23, inte antaget.**
+> `lessons-hub-sync`-skillens grep känner sex former; disken bär minst
+> åtta. Form sju är `**Det generella (UNIVERSAL):**` (parenteser, inga
+> klamrar — `L514`, flaggad men aldrig åtgärdad i S109:s hub-block). Form
+> åtta är `**[UNIVERSAL] <kroppstext fortsätter>**`, alltså markören INUTI
+> den feta tesen — skiljd från skillens form F (`**[UNIVERSAL]**` med
+> egen fetstils-avgränsning) och därför osynlig för dess mönster: **6
+> instanser i `vol-06` (`L516`–`L521`, landade av S109) + 6 i `vol-07`
+> (S111) = 12 missade.** Välj INTE poster för ett hub-lyft på skillens
+> grep allena — räkna posterna och läs varje markör. Skillen bor i hubben
+> och är inte ändrad härifrån; rapporterat till orkestreraren.
 >
 > **Olyft rest utanför S111:** `tasks/lessons.d/` bär 65 nummerlösa
 > fragment, varav 34 med `[UNIVERSAL]` (mätt 2026-08-23 efter S111:s
