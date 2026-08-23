@@ -136,8 +136,10 @@ test.describe('Maillogg-vy (Fas 6e L2 L2 — LÄS-vy via get-mail-log)', () => {
     await expect(page.getByText('50 %')).toBeVisible();
     await expect(page.getByText('20 %')).toBeVisible();
 
-    // Tillbaka-länk → Mer-landningen.
-    await expect(page.getByRole('link', { name: '← Tillbaka till Mer' })).toHaveAttribute(
+    // Tillbaka-länk → Mer-landningen. SIDRAM (TASK-299.9): namnet är EXAKT
+    // `tillbakaEtikett` — ingen "←"-prefix, det var den äldre textlänkens
+    // form. Chevronen bär det tillgängliga namnet ensam (ikon-ENSAM knapp).
+    await expect(page.getByRole('link', { name: 'Tillbaka till Mer' })).toHaveAttribute(
       'href',
       '/mer',
     );
@@ -178,6 +180,37 @@ test.describe('Maillogg-vy (Fas 6e L2 L2 — LÄS-vy via get-mail-log)', () => {
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta maillogg');
   });
 
+  test('SidRam-sidkrom (TASK-299.9): chevronen navigerar till Mer, närvarande i tomt OCH felläge', async ({
+    page,
+    network,
+  }) => {
+    // Tomt läge — sidkromet ska bära samma chevron/länk som ifylld vy.
+    mockMailLog(network, []);
+    await page.goto('/mer/maillogg');
+    await expect(page.getByRole('heading', { level: 1, name: 'Maillogg' })).toBeVisible();
+
+    const tillbaka = page.getByRole('link', { name: 'Tillbaka till Mer' });
+    await expect(tillbaka).toBeVisible();
+    await tillbaka.click();
+    // Round-trip: chevronen navigerar VERKLIGEN till Mer-landningen, inte
+    // bara ett `href`-attribut som aldrig prövas.
+    await expect(page.getByRole('heading', { level: 1, name: 'Mer' })).toBeVisible();
+    await expect(page).toHaveURL('/mer');
+  });
+
+  test('SidRam-sidkrom (TASK-299.9): chevronen närvarande i felläge (404)', async ({
+    page,
+    network,
+  }) => {
+    mockMailLog(network, [], { status: 404 });
+    await page.goto('/mer/maillogg');
+    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Tillbaka till Mer' })).toHaveAttribute(
+      'href',
+      '/mer',
+    );
+  });
+
   test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {
     // Håll EF-svaret öppet → loading deterministiskt synligt (ingen realtids-race).
     const release = mockMailLog(network, [row()], { manualRelease: true });
@@ -207,6 +240,36 @@ test.describe('Maillogg-vy (Fas 6e L2 L2 — LÄS-vy via get-mail-log)', () => {
     ]);
     await page.goto('/mer/maillogg');
     await expect(page.getByRole('heading', { level: 1, name: 'Maillogg' })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  // TASK-299.9 DoD #5 ("axe 0 … i alla tillstånd … fel"): de två axe-testen
+  // ovan täckte TOM och IFYLLD men aldrig FEL-läget — hålet fanns redan
+  // före denna skiva. SidRam-sidkromet ändrar samma DOM i alla fyra
+  // tillstånd (pending/error/tom/ifylld), så täckningen utvidgas här.
+  test('axe 0 violations på FELLÄGE (404, role=alert)', async ({ page, network }) => {
+    mockMailLog(network, [], { status: 404 });
+    await page.goto('/mer/maillogg');
+    await expect(page.getByRole('alert')).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  test('axe 0 violations på LADDLÄGE (aria-busy skeleton)', async ({ page, network }) => {
+    // manualRelease: håll svaret öppet så laddläget är deterministiskt
+    // synligt när axe scannar (ingen race mot ett svar som redan hunnit in).
+    mockMailLog(network, [row()], { manualRelease: true });
+    await page.goto('/mer/maillogg');
+    await expect(page.getByText('Laddar maillogg…')).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

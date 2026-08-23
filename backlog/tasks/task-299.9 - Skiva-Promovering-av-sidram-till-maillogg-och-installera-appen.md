@@ -4,7 +4,7 @@ title: 'Skiva: Promovering av sidram till maillogg och installera-appen'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:35'
-updated_date: '2026-08-22 22:40'
+updated_date: '2026-08-22 23:50'
 labels:
   - ready-for-agent
 dependencies:
@@ -21,20 +21,20 @@ De två sista Mer-sidorna får husets sidram, så hela familjen har samma tillba
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Maillogg och installera-appen bär den delade sidramen; gamla textlänken och dubblerade sidmarginalen borta på båda
-- [ ] #2 Ingen initialcirkel på någon av de två sidorna
-- [ ] #3 Innehållet på båda sidorna oförändrat
-- [ ] #4 Båda sidorna har visuell spec med baslinje för desktop och mobil
-- [ ] #5 Installera-appen har fått sin första acceptance-skarv; mailloggs befintliga är utvidgad
+- [x] #1 Maillogg och installera-appen bär den delade sidramen; gamla textlänken och dubblerade sidmarginalen borta på båda
+- [x] #2 Ingen initialcirkel på någon av de två sidorna
+- [x] #3 Innehållet på båda sidorna oförändrat
+- [x] #4 Båda sidorna har visuell spec med baslinje för desktop och mobil
+- [x] #5 Installera-appen har fått sin första acceptance-skarv; mailloggs befintliga är utvidgad
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 <!-- DOD:END -->
 
 ## Implementation Notes
