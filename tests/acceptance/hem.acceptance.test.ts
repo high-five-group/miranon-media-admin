@@ -1359,6 +1359,19 @@ test.describe('Tillgänglighet — rubrikstruktur och kitchen-sink axe (AC #2)',
           slutbetalning: 'Mottagen',
           deltagarinfoSkickad: null,
         }),
+        // [TASK-291 AC #3] Tvingar fram ÅTGÄRDSKÖ-raden också, så axe-svepet
+        // nedan ser BÅDA radtyperna på samma sida. De två prövades tidigare
+        // var för sig (åtgärdskö-raden i sitt eget describe ovan), och just
+        // samexistensen är vad den promoverade formen ändrade: samma anatomi,
+        // åtskilda av en ledande markör. Är markören enda bäraren av
+        // skillnaden faller 284.4 AC #5 — det är detta läge som visar det.
+        reg({
+          fornamn: 'Frida',
+          efternamn: 'Flagg',
+          eventId: null,
+          status: 'Obekräftad',
+          eventmatchning: 'Utan event',
+        }),
       ],
       events: [
         ev({ id: 'recEvForf', eventNamn: 'Fjärrskådning', startdatum: '2026-09-20' }),
@@ -1366,7 +1379,13 @@ test.describe('Tillgänglighet — rubrikstruktur och kitchen-sink axe (AC #2)',
       ],
     });
     await page.goto('/hem');
-    await expect(page.getByRole('list', { name: 'Bevakningar' })).toBeVisible();
+    const bevakningar = page.getByRole('list', { name: 'Bevakningar' });
+    await expect(bevakningar).toBeVisible();
+    // TRE rader: åtgärdskö-raden (global) + en deltagarinfo-rad per event i
+    // fönstret (`recEvForf` 20 sep och `recEvBev` 30 sep, båda inom 21 dagar).
+    await expect(bevakningar.getByRole('listitem')).toHaveCount(3);
+    await expect(bevakningar.getByRole('link', { name: /^1 kräver åtgärd/ })).toBeVisible();
+    await expect(bevakningar.getByRole('button', { name: /Meditation i tystnad/ })).toBeVisible();
     await expect(page.getByRole('heading', { level: 3, name: /^Dags att ringa/ })).toBeVisible();
     await expect(page.getByRole('heading', { level: 3, name: /^Väntar/ })).toBeVisible();
     await expect(page.getByRole('heading', { level: 3, name: /^Att påminna/ })).toBeVisible();
