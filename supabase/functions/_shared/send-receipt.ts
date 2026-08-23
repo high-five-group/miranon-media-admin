@@ -60,6 +60,14 @@ export type ReceiptSendInput = {
   kundnamn: string;
   email: string;
   eventNamn: string | null;
+  /** [TASK-306] Event-tabellens `Typ` (Utbildning/Föreläsning). */
+  eventTyp: string | null;
+  /** [TASK-306] ISO — Event-tabellens `Startdatum`. */
+  eventStart: string | null;
+  /** [TASK-306] ISO — Event-tabellens `Slutdatum`. */
+  eventSlut: string | null;
+  /** [TASK-306] Event-tabellens frivilliga `Bokföringstext (kvitto)`. */
+  bokforingstext: string | null;
   /** Klientens Idempotency-Key (UUID v4) — sänd-nyckeln härleds `<jobId>/kvitto/<registrationId>/<betalning>`. */
   jobId: string;
   /** ENVIRONMENT === 'production'. Fail-closed: allt annat → false (EF:ens ansvar). */
@@ -88,6 +96,11 @@ export type ReceiptPdfBuilder = (spec: {
   betalning: Betalning;
   eventNamn: string | null;
   datum: string;
+  /** [TASK-306] Se `ReceiptSendInput` — trådas oförändrat till `kvittoRader`/`kvittoBenamning`. */
+  eventTyp: string | null;
+  eventStart: string | null;
+  eventSlut: string | null;
+  bokforingstext: string | null;
 }) => Promise<ReceiptPdf>;
 
 /**
@@ -215,6 +228,10 @@ export async function sendReceipt(
     betalning: input.betalning,
     eventNamn: input.eventNamn,
     datum: input.nu,
+    eventTyp: input.eventTyp,
+    eventStart: input.eventStart,
+    eventSlut: input.eventSlut,
+    bokforingstext: input.bokforingstext,
   });
 
   const idempotencyKey = receiptIdempotencyKey(input.jobId, input.registrationId, input.betalning);

@@ -105,9 +105,20 @@ export type KvittoradSpec = {
   belopp: number;
   betalsatt: Betalsatt;
   betalning: Betalning;
+  /** Kursnamnet — Event-tabellens `Event (source)` (selectName). */
   eventNamn: string | null;
   /** ISO — datumet som skrivs ut ("Datum: …"), INTE nödvändigtvis dagens datum om kvittot avser en tidigare betalning. */
   datum: string;
+  /** [TASK-306] Eventtyp-klass — Event-tabellens `Typ` (Utbildning/Föreläsning), selectName. */
+  eventTyp: string | null;
+  /** [TASK-306] ISO — Event-tabellens `Startdatum`. */
+  eventStart: string | null;
+  /** [TASK-306] ISO — Event-tabellens `Slutdatum`. */
+  eventSlut: string | null;
+  /** [TASK-306] Lottas fria bokföringskategoriord — frivilligt Event-fält
+   * `Bokföringstext (kvitto)`. Ifyllt → sist i benämningen (`kvittoBenamning`
+   * nedan); tomt → utelämnat. */
+  bokforingstext: string | null;
 };
 
 /** Momssatsen i procent, för visning på kvittot ("Moms (25 %)"). Källa: filhuvudet. */
@@ -151,6 +162,51 @@ export function beraknaMoms(brutto: number): MomsSplit {
 }
 
 /**
+ * [TASK-306] Kvittots BENÄMNING — Marcus-beslut a) 2026-08-23, mot Lottas
+ * skarpa förlaga (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03
+ * kvitto-forlaga.pdf`, T170): `<Typ>, <Startdatum> - <Slutdatum>,
+ * <Kursnamn>[, <Bokföringstext>]`. Kort bindestreck mellan datumen — INTE
+ * en tanke-/en-dash (repo-policyn `.langa-streck-policy.json`, TASK-172,
+ * Marcus 2026-08-09: "korta streck vinner även i datumspann"; Lottas EGEN
+ * förlagerad ("2026-07-25 - 2026-07-26") skriver dessutom redan kort
+ * streck, se kortets citat).
+ *
+ * VARJE led är VALFRITT — saknas ett fält UTELÄMNAS LEDET, ALDRIG en
+ * platshållare (Marcus beslut a, ordagrant). Endagars-event (samma start-
+ * och slutdatum, eller slutdatum saknas): ETT datum, inget intervall.
+ *
+ * Kursnamnet (`eventNamn`) är MED i vår benämning trots att Lottas egen rad
+ * saknar det — hennes bokföringssystem är per ARTIKEL (bokföringstexten
+ * ENSAM identifierar posten där), vårt är per EVENT (kursnamnet är den
+ * enda unika identifieraren mellan två likadana `Bokföringstext`-värden på
+ * olika kurstillfällen) — se `fixtures/kvitto.exempel.json` § `_kalla`.
+ */
+export function kvittoBenamning(
+  spec: Pick<KvittoradSpec, 'eventTyp' | 'eventStart' | 'eventSlut' | 'eventNamn' | 'bokforingstext'>,
+): string {
+  const delar: string[] = [];
+
+  if (spec.eventTyp) {
+    delar.push(spec.eventTyp);
+  }
+
+  if (spec.eventStart) {
+    const endagars = !spec.eventSlut || spec.eventSlut === spec.eventStart;
+    delar.push(endagars ? spec.eventStart : `${spec.eventStart} - ${spec.eventSlut}`);
+  }
+
+  if (spec.eventNamn) {
+    delar.push(spec.eventNamn);
+  }
+
+  if (spec.bokforingstext) {
+    delar.push(spec.bokforingstext);
+  }
+
+  return delar.join(', ');
+}
+
+/**
  * Kvittots rader i VISNINGSORDNING — konsumeras av BÅDE PDF-layouten och
  * mailets brödtext (se filhuvudets mirror-kontrakt). Momsen (25 %, se
  * `beraknaMoms`) redovisas som TRE Gunilla-läsbara rader (Netto / Moms /
@@ -172,6 +228,7 @@ export function beraknaMoms(brutto: number): MomsSplit {
 export function kvittoRader(spec: KvittoradSpec): readonly string[] {
   const betalningLabel = spec.betalning === 'avgift' ? 'Anmälningsavgift' : 'Slutbetalning';
   const { moms, netto } = beraknaMoms(spec.belopp);
+  const benamning = kvittoBenamning(spec);
   return [
     `Kvitto ${spec.kvittonummer}`,
     '',
@@ -182,7 +239,7 @@ export function kvittoRader(spec: KvittoradSpec): readonly string[] {
     `Moms (${MOMSSATS_PROCENT} %): ${formatBelopp(moms)}`,
     `Betalt: SEK ${formatBelopp(spec.belopp)}`,
     `Betalsätt: ${spec.betalsatt}`,
-    `Avser: ${betalningLabel}${spec.eventNamn ? ` — ${spec.eventNamn}` : ''}`,
+    `Avser: ${betalningLabel}${benamning ? ` - ${benamning}` : ''}`,
     '',
     MIRANON_ORG.namn,
     `Org.nr: ${MIRANON_ORG.orgnummer}`,

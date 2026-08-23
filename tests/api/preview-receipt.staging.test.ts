@@ -194,6 +194,29 @@ test.describe('preview-receipt — skarp conformance (TASK-246)', () => {
     // EVENTDATA, inte bara i den hårdkodade mall-brödtexten (den bevisningen
     // gäller enbart klass B, se generate-event-attachment.staging.test.ts).
     expect(decodedHexIncludes(pdfBytes, 'Fjärrskådning')).toBe(true);
+
+    // [TASK-306, AC #3] LIVE-BEVIS: preview-receipt läser Typ/Startdatum/
+    // Slutdatum/Bokföringstext (kvitto) ur SAMMA Eventplanering-rad (utöver
+    // Event (source) ovan) och bygger benämningen via kvittoBenamning().
+    // BELAGGNING_EVENT_ID:s fyra fält (live-verifierat mot staging via
+    // Airtable MCP innan detta test skrevs, ADR-086 premiss-pass): Typ =
+    // "Utbildning", Startdatum = "2025-11-20", Slutdatum = "2025-11-21" —
+    // INGET "Bokföringstext (kvitto)"-fält satt (fixturen föregår TASK-306).
+    // Det BEVISAR "tomt → utelämnat" (beslut a) LIVE, mot en verklig rad,
+    // utan att mutera den delade fixturen (TASK-6-klassen: delade staging-
+    // fixturer muteras ALDRIG) — "ifyllt → i benämningen"-halvan är fullt
+    // täckt av `kvittoBenamning()`s enhetstester
+    // (tests/api/receipt-content.test.ts § "kvittoBenamning") plus en
+    // ENGÅNGS live-verifiering mot ett temporärt sentinel-event (skapat och
+    // raderat via Airtable MCP), bokförd i TASK-306:s slutrapport — inget
+    // EF-skrivbart fält finns för denna manuella, Lotta-ifyllda kolumn
+    // (`_shared/field-allowlists.ts` saknar en 'Bokföringstext (kvitto)'-
+    // post för `create-event`/`update-event`, verifierat), så en andra
+    // automatiserad "ifyllt"-gren hade krävt en NY testhärnas-EF enbart för
+    // detta — scope-creep utanför detta korts gräns.
+    expect(decodedHexIncludes(pdfBytes, 'Utbildning, 2025-11-20 - 2025-11-21, Fjärrskådning')).toBe(
+      true,
+    );
   });
 
   test('allow: TVÅ anrop i rad → SAMMA platshållarnummer båda gångerna (beteende-bevis: ingen ledger rörd)', async ({

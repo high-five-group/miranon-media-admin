@@ -358,6 +358,15 @@ col.kvitto-col-apris {
  */
 .kvitto-post .kvitto-col-benamning {
   font-weight: 400; /* TT2 - beskrivningen är rak, INTE fet, i förlagans radpost */
+  white-space: normal; /* TASK-306: ÖVERSTYR .kvitto-tabell th/td:s generella
+    nowrap (ovan) - den regeln finns för Summa-kolumnens "SEK 2 500,00" (se
+    dess egen kommentar), men benämningen bär sedan TASK-306 upp till fyra
+    kommaseparerade led (typ, datumintervall, kursnamn, bokföringstext) och
+    MÅSTE kunna radbryta i den 93,7mm breda kolumnen i stället för att
+    svämma över raden/kollidera med Antal-kolumnen. Denna selektor
+    (.kvitto-post .kvitto-col-benamning, specificitet 0,2,0) vinner redan
+    över den generella regelns 0,1,1 - ingen ny selektor-ordningskonflikt
+    (jfr Biomes noDescendingSpecificity, se TASK-304 § filhuvud). */
 }
 
 .kvitto-post .kvitto-col-antal {
@@ -377,10 +386,18 @@ col.kvitto-col-apris {
     radpostens .kvitto-belopp-spans, inte huvudradens). */
 }
 
-.kvitto-betalsatt-rad {
-  font-size: 9pt;
-  margin: 3mm 8.8mm 0 10.4mm; /* samma inset som .kvitto-post, för att linjera
-    med radpostens text i stället för boxarnas yttre kant */
+/* TASK-306 beslut c): "Betalsätt"-RADEN (egen <p>, egen rad i tabellhuvudets
+  box) är BORTTAGEN ur mallen - Rogers förlaga saknar den, uppgiften finns
+  kvar i Kvitton-tabellen och mailtextens Betalsätt-rad (kvittoRader,
+  README § Kvittots FORM). Ersatt av `.kvitto-betalningsetikett` nedan: en
+  synlig men UNDERORDNAD sub-rad UNDER benämningen (beslut a: "kunden måste
+  se vilken del som betalats" - Anmälningsavgift/Slutbetalning är INTE
+  samma sak som Betalsätt/Swish-Bankgiro-Plusgiro, som beslut c tar bort). */
+.kvitto-betalningsetikett {
+  display: block; /* safe primitiv (ingen grid/flex-gap, TASK-304 § filhuvud
+    - block-boxar staplar utan mellanrum, samma teknik som referensblockets
+    dt/dd-rader). Egen rad UNDER benämnings-texten inom samma table-cell. */
+  font-weight: 400; /* TT2, ärver samma vikt som benämningen (rak, inte fet) */
 }
 
 /* ── Totalrutan (mätt, § 3.4) ── */

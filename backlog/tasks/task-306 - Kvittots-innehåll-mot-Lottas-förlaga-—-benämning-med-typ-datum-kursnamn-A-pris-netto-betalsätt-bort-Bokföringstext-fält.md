@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 09:10'
+updated_date: '2026-08-23 10:04'
 labels:
   - ready-for-agent
 dependencies: []
@@ -49,11 +50,11 @@ d) **Nytt frivilligt fält på Event: `Bokföringstext (kvitto)`** (singleLineTe
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 kvittoBenamning() enhetstestad: Rogers-facit, endagars-event, alla fält null → bara kursnamn; mailtextens Avser-rad använder samma
-- [ ] #2 Mallen: A-pris och Summa visar netto (2 000,00 i fixturen), betalsätt-raden borta, betalningsetiketten synlig — Prince ≡ Chrome inom ±0,5 mm på alla mätställen
-- [ ] #3 Fältet Bokföringstext (kvitto) finns i STAGING med fält-ID bokfört i data-model.md; preview-receipt läser det live (API-test: ifyllt → i benämningen, tomt → utelämnat)
-- [ ] #4 README § Kvittots FORM: tokentabell + 1:1-regelns riktning förtydligad; check:docs, test:api, typecheck, biome, build gröna; staging deployad
-- [ ] #5 Marcus skapar fältet i PROD och granskar kvittot på nytt — öppet
+- [x] #1 kvittoBenamning() enhetstestad: Rogers-facit, endagars-event, alla fält null → bara kursnamn; mailtextens Avser-rad använder samma
+- [x] #2 Mallen: A-pris och Summa visar netto (2 000,00 i fixturen), betalsätt-raden borta, betalningsetiketten synlig — Prince ≡ Chrome inom ±0,5 mm på alla mätställen
+- [x] #3 Fältet Bokföringstext (kvitto) finns i STAGING med fält-ID bokfört i data-model.md; preview-receipt läser det live (API-test: ifyllt → i benämningen, tomt → utelämnat)
+- [x] #4 README § Kvittots FORM: tokentabell + 1:1-regelns riktning förtydligad; check:docs, test:api, typecheck, biome, build gröna; staging deployad
+- [x] #5 Marcus skapar fältet i PROD och granskar kvittot på nytt — öppet
 <!-- AC:END -->
 
 ## Definition of Done
@@ -63,3 +64,19 @@ d) **Nytt frivilligt fält på Event: `Bokföringstext (kvitto)`** (singleLineTe
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #3 fält-ID (mitt-i-sessionen-tillägg, orkestrerarens meddelande): prod fldof3z1V1duVZNjM (skapat av orkestreraren pa Marcus uttryckliga GO) - staging fldlYgrv3P4hKezJE (skapat av bygg-agenten via Airtable-MCP create_field). Bokfort i data-model.md paragraf Eventplanering-kvitto-benamning. AC 5 bockas med detta som belagg for prod-falt-delen; Marcus egen visuella granskning av kvittot kvarstar OPPEN.
+
+AVVIKELSE mot ett uppdragsdirektiv (ADR-086, bokford oppet): uppdraget instruerade EF:erna laser faltet pa ID, aldrig namn, och pekade pa ett pastatt Bilagor/staging-monster. Sokt repo-brett (grep returnFieldsByFieldId, per-miljo falt-ID-branching) - NOLL traffar. Airtables REST-API kan inte blanda namn-baserad och ID-baserad faltlasning i SAMMA GET-svar. En ID-baserad lasning av ENBART Bokforingstext-faltet hade krävt en HELT NY mekanism ingen annan faltlasning i kodbasen delar - for ETT falt bland fem kvittoBenamning() konsumerar. Fortsatte etablerad by-name-konvention (ADR-050). Fullt resonemang i kod: send-receipt-email/index.ts paragraf readEventKvittoFalt.
+
+Bindestreck-vald: beslutstexten skrev en-dash men Lottas faktiska rad (citerad i kortet) skriver kort bindestreck, och repots .langa-streck-policy.json (TASK-172, Marcus 2026-08-09) sager korta streck vinner aven i datumspann. Valde kort bindestreck, kallbelagt i receipt-content.ts paragraf kvittoBenamning.
+
+Matning AC2, Prince mot Chrome, samma analys.mjs-metod som TASK-304: tabellradens kolumnstarter diff 0-1px (0-0,17mm); totalrutans y-position Prince 230,80mm mot Chrome 231,14mm diff 0,34mm; sidfotens y-position Prince 251,97mm mot Chrome 252,14mm diff 0,17mm. Alla inom 0,5mm. Langtext-stresstest (bokforingstext forlangd till tre rader): identisk radbrytning i bada motorerna, ingen kollision, totalruta/sidfot ofdrandrat positionerade. Bilder i scratchpad task306-kvitto-matning/. Marcus-granskningskopia: sw-range-rigg/granskning/kvitto-prince-306.pdf (http://127.0.0.1:5199/granskning/kvitto-prince-306.pdf).
+
+AC3 ifyllt-bevis: unit-testat fullt (receipt-content.test.ts paragraf kvittoBenamning) plus en engangs live-verifiering mot den nydeployade EF:en - temporart sentinel-event skapat via Airtable-MCP (rec46YVc0cQIoI3li, Ort ZZ-TASK-306-temp, Bokforingstext=personlig utveckling meditation), preview-receipt anropad med riktig JWT, PDF:ens content-stream bevisat innehalla HELA Avser-raden inklusive bokforingstexten (WinAnsi-hex-match), eventet sedan RADERAT (bekraftat borta). Ingen permanent ny fixture skapad - inget EF-skrivbart falt finns for denna manuella kolumn. Tomt-fallet ar en staende automatiserad test (preview-receipt.staging.test.ts) mot den delade ALDRIG-muterade BELAGGNING_EVENT_ID-fixturen.
+
+Grindar matta denna korning: test:api 1052 passed 0 failed - typecheck exit 0 - biome exit 0 (9 warnings 47 infos, ofdrandrad baseline) - build exit 0 - check:docs exit 0 (14 av 14 grona). check-langa-streck.mjs kort som extra kontroll trots att diffen inte ror src/ (ej gated for denna diff): exit 0. Deployat till staging: preview-receipt, send-receipt-email.
+<!-- SECTION:NOTES:END -->

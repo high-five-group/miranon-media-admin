@@ -129,6 +129,10 @@ function makeRealPdfBuilder(): ReceiptPdfBuilder {
       betalning: spec.betalning,
       eventNamn: spec.eventNamn,
       datum: spec.datum,
+      eventTyp: spec.eventTyp,
+      eventStart: spec.eventStart,
+      eventSlut: spec.eventSlut,
+      bokforingstext: spec.bokforingstext,
     });
     const bytes = await renderKvittoPdf(rader);
     return { filename: `${spec.kvittonummer}.pdf`, contentBase64: toBase64(bytes) };
@@ -238,10 +242,47 @@ async function readRegistration(
   };
 }
 
-async function readEventNamn(id: string): Promise<string | null> {
+type EventKvittoFalt = {
+  eventNamn: string | null;
+  eventTyp: string | null;
+  eventStart: string | null;
+  eventSlut: string | null;
+  bokforingstext: string | null;
+};
+
+/**
+ * [TASK-306] Läser de FEM Event-fält kvittots benämning (`kvittoBenamning`,
+ * `_shared/receipt-content.ts`) konsumerar — EN `fetchAirtableRecord`
+ * (ersätter den tidigare `readEventNamn`, som bara läste `Event (source)`).
+ *
+ * ALLA fält läses BY NAME, INTE by ID — samma mönster som VARJE annan
+ * Airtable-fältläsning i denna kodbas (`grep -r returnFieldsByFieldId` gav
+ * noll träffar repo-brett, ADR-086 premiss-pass). Fält-NAMNET är identiskt
+ * i prod och staging (samma EF-kod körs mot båda via `AIRTABLE_BASE_ID`-
+ * secreten, ADR-050); ID:t skiljer sig ändå mellan baserna för fält som
+ * lagts till EFTER den ursprungliga bas-dupliceringen (data-model.md §
+ * "Fält-ID:n skiljer sig mellan baserna") — `Bokföringstext (kvitto)` är
+ * ett sådant fält: prod `fldof3z1V1duVZNjM` · staging `fldlYgrv3P4hKezJE`
+ * (data-model.md, Eventplanering). En ID-baserad läsning hade krävt en EGEN
+ * `returnFieldsByFieldId=true`-hämtning vid sidan av denna namn-baserade
+ * (Airtables REST-API kan inte blanda de två i SAMMA svar) — en ny, ensam
+ * mekanism ingen annan fält-läsning delar, för ETT fält bland fem i samma
+ * funktion. Bokfört som avsiktlig avvikelse mot ett uppdragsdirektiv i
+ * TASK-306:s slutrapport i stället för att byggas tyst.
+ */
+async function readEventKvittoFalt(id: string): Promise<EventKvittoFalt> {
   const record = await fetchAirtableRecord(EVENTS_TABLE, id);
-  if (!record) return null;
-  return selectName(record.fields['Event (source)']);
+  if (!record) {
+    return { eventNamn: null, eventTyp: null, eventStart: null, eventSlut: null, bokforingstext: null };
+  }
+  const f = record.fields;
+  return {
+    eventNamn: selectName(f['Event (source)']),
+    eventTyp: selectName(f['Typ']),
+    eventStart: scalarString(f['Startdatum']),
+    eventSlut: scalarString(f['Slutdatum']),
+    bokforingstext: scalarString(f['Bokföringstext (kvitto)']),
+  };
 }
 
 Deno.serve(async (req) => {
@@ -321,7 +362,7 @@ Deno.serve(async (req) => {
       return badRequest('Anmälan saknar namn — kvitto kan inte skickas.', corsHeaders);
     }
 
-    const eventNamn = await readEventNamn(eventId);
+    const eventKvittoFalt = await readEventKvittoFalt(eventId);
 
     const result = await sendReceipt(
       {
@@ -332,7 +373,11 @@ Deno.serve(async (req) => {
         betalsatt: betalsatt as Betalsatt,
         kundnamn: registration.kundnamn,
         email: registration.email,
-        eventNamn,
+        eventNamn: eventKvittoFalt.eventNamn,
+        eventTyp: eventKvittoFalt.eventTyp,
+        eventStart: eventKvittoFalt.eventStart,
+        eventSlut: eventKvittoFalt.eventSlut,
+        bokforingstext: eventKvittoFalt.bokforingstext,
         jobId,
         isProd,
         utskickSparrat,

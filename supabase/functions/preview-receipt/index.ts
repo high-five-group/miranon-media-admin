@@ -95,7 +95,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import { isValidEventId } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { selectName } from '../_shared/coerce.ts';
+import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse, ValidationError } from '../_shared/errors.ts';
 import { kvittoRader } from '../_shared/receipt-content.ts';
@@ -156,7 +156,14 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    // [TASK-306] Läses BY NAME, INTE by ID — se send-receipt-email/index.ts
+    // § readEventKvittoFalt för det fulla resonemanget (samma fem fält,
+    // samma ADR-086-avvikelse mot uppdragsdirektivet, bokförd i slutrapporten).
     const eventNamn = selectName(eventRecord.fields['Event (source)']);
+    const eventTyp = selectName(eventRecord.fields['Typ']);
+    const eventStart = scalarString(eventRecord.fields['Startdatum']);
+    const eventSlut = scalarString(eventRecord.fields['Slutdatum']);
+    const bokforingstext = scalarString(eventRecord.fields['Bokföringstext (kvitto)']);
 
     const rader = kvittoRader({
       kvittonummer: FORHANDSVISNING_KVITTONUMMER,
@@ -167,6 +174,10 @@ Deno.serve(async (req) => {
       betalning: TYPEXEMPEL.betalning,
       eventNamn,
       datum: new Date().toISOString(),
+      eventTyp,
+      eventStart,
+      eventSlut,
+      bokforingstext,
     });
     const pdfBytes = await renderKvittoPdf(rader);
 
