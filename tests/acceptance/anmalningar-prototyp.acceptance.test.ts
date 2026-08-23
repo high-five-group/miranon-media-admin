@@ -450,7 +450,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       mockRegistrations(network, periodRader());
       await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
 
-      await page.getByRole('radio', { name: 'Kommande' }).click();
+      await page.getByRole('radio', { name: 'Kommande event', exact: true }).click();
       await expect(page).toHaveURL(/[?&]period=upcoming/);
       // exact: true — periodväxlingens sr-only-annonsering ("Visar
       // anmälningar för kommande event. 1 anmälan.") innehåller SAMMA
@@ -703,6 +703,231 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       await expect(page.getByText('Ute Utanhelt')).toHaveCount(0);
 
       await oppnaFiltret(page);
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(results.violations).toEqual([]);
+    });
+  });
+
+  /**
+   * EVENT-DIMENSIONEN (Marcus 2026-08-23) — `Status` är utbytt mot `Event`,
+   * och kontrollen är `EventValjare` via `FilterDimension.kontroll`.
+   *
+   * Sviten vaktar de tre egenskaper som skiljer den här axeln från typ/ort:
+   * (1) den spänner BÅDA perioderna — väljarens `omfattning="alla"`, utan
+   * vilken tidigare event vore ovalbara; (2) den matchar på record-ID, inte
+   * namn, så två likanamnade event kan särskiljas; (3) dess nolläge är
+   * väljarens egen "Alla event"-rad, inte en dropdown-post.
+   */
+  test.describe('Event-dimensionen (Marcus 2026-08-23) — variant B', () => {
+    const EVENT_KOMMANDE = 'recEventDimKommande';
+    const EVENT_TIDIGARE = 'recEventDimTidigare';
+    /** Samma NAMN som det kommande, annan ort och period — ID-matchningen
+        är det enda som kan skilja dem åt. */
+    const EVENT_NAMNTVILLING = 'recEventDimTvilling';
+
+    function eventDimEvents(): EventRow[] {
+      return [
+        event({
+          id: EVENT_KOMMANDE,
+          eventNamn: 'Resor i medvetandet 1',
+          ort: 'Skövde',
+          startdatum: '2026-10-05', // > FROZEN_NOW → kommande
+        }),
+        event({
+          id: EVENT_TIDIGARE,
+          eventNamn: 'Fjärrskådning',
+          ort: 'Varberg',
+          startdatum: '2026-08-05', // < FROZEN_NOW → tidigare
+        }),
+        event({
+          id: EVENT_NAMNTVILLING,
+          eventNamn: 'Resor i medvetandet 1',
+          ort: 'Falköping',
+          startdatum: '2026-07-01', // < FROZEN_NOW → tidigare
+        }),
+      ];
+    }
+
+    function eventDimRader(): Row[] {
+      return [
+        reg({
+          fornamn: 'Kim',
+          efternamn: 'Kommande',
+          eventId: EVENT_KOMMANDE,
+          eventNamn: null,
+          inskickad: '2026-09-14T10:00:00.000Z',
+        }),
+        reg({
+          fornamn: 'Tage',
+          efternamn: 'Tidigare',
+          eventId: EVENT_TIDIGARE,
+          eventNamn: null,
+          inskickad: '2026-09-13T10:00:00.000Z',
+        }),
+        reg({
+          fornamn: 'Tina',
+          efternamn: 'Tvilling',
+          eventId: EVENT_NAMNTVILLING,
+          eventNamn: null,
+          inskickad: '2026-09-12T10:00:00.000Z',
+        }),
+      ];
+    }
+
+    /** Egen kopia — systerblockets hjälpare är scopad till det blocket. */
+    async function oppnaFiltret(page: Page): Promise<void> {
+      await page.getByRole('button', { name: /^(Visa|Dölj) filter/ }).click();
+      await expect(page.getByTestId('filter-panel')).toBeVisible();
+    }
+
+    async function oppnaValjaren(page: Page): Promise<void> {
+      await oppnaFiltret(page);
+      await page.getByTestId('event-valjare-trigger').click();
+      await expect(page.getByTestId('event-valjare-popover')).toBeVisible();
+    }
+
+    test('Status-dimensionen är BORTA och Event har tagit dess plats', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, eventDimEvents());
+      mockRegistrations(network, eventDimRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await oppnaFiltret(page);
+
+      await expect(page.getByTestId('filter-status')).toHaveCount(0);
+      await expect(page.getByTestId('filter-typ')).toBeVisible();
+      await expect(page.getByTestId('filter-ort')).toBeVisible();
+      await expect(page.getByTestId('filter-event')).toBeVisible();
+      // Kontrollen är väljaren, inte en fjärde dropdown — och dess nolläge
+      // står i triggern, så axeln säger VAR man är även stängd.
+      await expect(page.getByTestId('event-valjare-trigger')).toHaveText(/Alla event/);
+    });
+
+    test('väljaren spänner BÅDA perioderna — tidigare event är valbara (omfattning="alla")', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, eventDimEvents());
+      mockRegistrations(network, eventDimRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await oppnaValjaren(page);
+
+      const popover = page.getByTestId('event-valjare-popover');
+      // Periodblocken ersätter månadsrubrikerna i denna omfattning: EN
+      // riktningsvändning, uttryckligen namngiven. Kommande före tidigare.
+      await expect(popover.getByRole('group')).toHaveCount(2);
+      await expect(popover.getByRole('group').first()).toContainText('Kommande event');
+      await expect(popover.getByRole('group').last()).toContainText('Tidigare event');
+
+      // Det TIDIGARE eventet finns som valbar rad — hela poängen med propen.
+      await expect(popover.getByRole('option', { name: /Fjärrskådning/ })).toBeVisible();
+    });
+
+    test('val av event filtrerar listan och skriver ?event=<record-id> i URL:en', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, eventDimEvents());
+      mockRegistrations(network, eventDimRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await expect(page.getByText('Kim Kommande')).toBeVisible();
+      await oppnaValjaren(page);
+
+      await page
+        .getByTestId('event-valjare-popover')
+        .getByRole('option', { name: /Fjärrskådning/ })
+        .click();
+
+      await expect(page).toHaveURL(new RegExp(`event=${EVENT_TIDIGARE}`));
+      await expect(page.getByText('Tage Tidigare')).toBeVisible();
+      await expect(page.getByText('Kim Kommande')).toHaveCount(0);
+      await expect(page.getByText('1 anmälan', { exact: true })).toBeVisible();
+    });
+
+    test('filtret matchar på RECORD-ID, inte namn — två likanamnade event skiljs åt', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, eventDimEvents());
+      mockRegistrations(network, eventDimRader());
+      // Kim och Tina pekar på event med IDENTISKT namn ("Resor i medvetandet
+      // 1"). Ett namnfilter hade tagit båda; ID-filtret tar exakt en.
+      await page.goto(`/dev/anmalningar-prototyp?variant=b&lage=lista&event=${EVENT_NAMNTVILLING}`);
+
+      await expect(page.getByText('Tina Tvilling')).toBeVisible();
+      await expect(page.getByText('Kim Kommande')).toHaveCount(0);
+      await expect(page.getByText('1 anmälan', { exact: true })).toBeVisible();
+    });
+
+    test('nolläget "Alla event" nollställer axeln och tar bort parametern', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, eventDimEvents());
+      mockRegistrations(network, eventDimRader());
+      await page.goto(`/dev/anmalningar-prototyp?variant=b&lage=lista&event=${EVENT_KOMMANDE}`);
+
+      const tratt = page.getByRole('button', { name: /^(Visa|Dölj) filter/ });
+      await expect(tratt).toHaveAccessibleName('Visa filter, 1 aktivt filterval');
+      await oppnaValjaren(page);
+
+      await page
+        .getByTestId('event-valjare-popover')
+        .getByRole('option', { name: 'Alla event' })
+        .click();
+
+      await expect(page).toHaveURL(/\/dev\/anmalningar-prototyp\?variant=b&lage=lista$/);
+      await expect(page.getByText('Tage Tidigare')).toBeVisible();
+      // Panelen står kvar ÖPPEN (därav "Dölj"); poängen är att räknar-ledet
+      // ", N aktiva filterval" är borta — axeln är nollställd, inte bara tom.
+      await expect(tratt).toHaveAccessibleName('Dölj filter');
+    });
+
+    test('Rensa filter nollställer ÄVEN event-axeln', async ({ page, network }) => {
+      mockEvents(network, eventDimEvents());
+      mockRegistrations(network, eventDimRader());
+      await page.goto(
+        `/dev/anmalningar-prototyp?variant=b&lage=lista&typ=Kurs&event=${EVENT_KOMMANDE}`,
+      );
+      await oppnaFiltret(page);
+      await expect(page.getByText('Visar 1 av 3 anmälningar')).toBeVisible();
+
+      await page.getByRole('button', { name: 'Rensa filter' }).click();
+      await expect(page).toHaveURL(/\/dev\/anmalningar-prototyp\?variant=b&lage=lista$/);
+      await expect(page.getByText('Kim Kommande')).toBeVisible();
+      await expect(page.getByText('Tage Tidigare')).toBeVisible();
+    });
+
+    test('axe 0 med väljaren ÖPPEN i filterpanelen', async ({ page, network }) => {
+      mockEvents(network, eventDimEvents());
+      mockRegistrations(network, eventDimRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await oppnaValjaren(page);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(results.violations).toEqual([]);
+    });
+
+    test('filter-tomläget nås via event-axeln och Rensa är återvägen — axe 0', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, eventDimEvents());
+      mockRegistrations(network, eventDimRader());
+      // Kommande-perioden HAR rader, men det valda eventet är ett tidigare —
+      // perioden är alltså inte tom, filtren matchar noll.
+      await page.goto(
+        `/dev/anmalningar-prototyp?variant=b&lage=lista&period=upcoming&event=${EVENT_TIDIGARE}`,
+      );
+
+      await expect(page.getByText('Inga anmälningar matchar filtren.')).toBeVisible();
+      await expect(page.getByRole('alert')).toHaveCount(0);
+
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
         .analyze();

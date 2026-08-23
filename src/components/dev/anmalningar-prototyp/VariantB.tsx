@@ -4,6 +4,7 @@ import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
 import { dateValue } from '@/components/events/EventCard';
+import { EventValjare } from '@/components/events/EventValjare';
 import { eventIdentitet } from '@/components/hem/hem-derivations';
 import { relativTid } from '@/components/hem/relativ-tid';
 import { InitialAvatar, ToggleButton, ToggleButtonGroup } from '@/components/primitives';
@@ -24,7 +25,6 @@ import {
 import { StatusBadge } from '@/components/registrations/StatusBadge';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
-import { EventStatus, type EventStatusValue } from '@/domain/types/Status';
 import { AnmalningRadResolution } from './AnmalningRadResolution';
 import type { VariantProps } from './types';
 
@@ -34,19 +34,20 @@ import type { VariantProps } from './types';
     nedan § FILTRET för hela motiveringen. */
 type PeriodFilter = 'alla' | 'upcoming' | 'past';
 const PERIOD_FILTER_VALUES: PeriodFilter[] = ['alla', 'upcoming', 'past'];
-// KORTA ORD, EVENT-LEDET I ETIKETTEN — mätt vid 375 px, inte valt på känsla.
-// "Alla event" bröt till TVÅ rader i en tredjedels `auto-cols-fr`-kolumn
-// (varv 1 av QA-passet), och samma mätning gjordes 2026-08-23 på hela
-// ordparet efter Marcus invändning ("Vad är 'Kommande anmälningar'
-// liksom"): `Kommande event`/`Tidigare event` gav pillhöjd 64 px mot 40 och
-// grupphöjd 72 mot 48 — alltså radbrytning i BÅDA pillren. Korta ord + en
-// `Event`-rubrik ÖVER filterraden bär i stället att det är EVENTET som är
-// kommande, med 10 px luft kvar på den bredaste pillen vid 375 px.
-// Gruppens `aria-label` är "Event" och matchar den synliga rubriken.
+// ORDEN STÅR UTSKRIVNA — och det är BREDD-LÄGET, inte ordvalet, som avgjorde.
+// Mätningen 2026-08-23 som fällde `Kommande event`/`Tidigare event` (pillhöjd
+// 64 px mot 40, grupphöjd 72 mot 48 — radbrytning i båda pillren) gjordes i
+// `spread`-läge, som ger varje pill exakt EN TREDJEDEL av bredden
+// (`grid w-full auto-cols-fr`) oavsett vad som står i den. Utan `spread` får
+// pillren sin NATURLIGA bredd, och Marcus hypotes höll vid ommätning: hela
+// raden `Alla` · `Kommande event` · `Tidigare event` ryms på EN rad vid
+// 375 px (uppmätta tal i commit-meddelandet). Rubriken över filterraden är
+// därmed onödig och struken — pillren säger själva att det är EVENTET som är
+// kommande respektive tidigare.
 const PERIOD_FILTER_LABEL: Record<PeriodFilter, string> = {
   alla: 'Alla',
-  upcoming: 'Kommande',
-  past: 'Tidigare',
+  upcoming: 'Kommande event',
+  past: 'Tidigare event',
 };
 /** Announcement-formen ("visar anmälningar FÖR …") skiljer sig från
     pillens korta etikett ("Kommande" ensamt läser konstigt efter "för"). */
@@ -59,19 +60,19 @@ const PERIOD_ANNOUNCEMENT_LED: Record<PeriodFilter, string> = {
 /** Räknarens substantiv för anmälningar (böjs efter nämnaren). */
 const ANMALNINGS_ENHET = { ental: 'anmälan', flertal: 'anmälningar' };
 
-/** Status i basens KANONISKA ordning — aldrig alfabetisk (EventsLists regel). */
-const STATUS_ORDNING: EventStatusValue[] = [
-  EventStatus.PLANERAT,
-  EventStatus.GENOMFORT,
-  EventStatus.INSTALLT,
-  EventStatus.FLYTTAT,
-];
+/** Event-dimensionens NOLLÄGE. Bärs av `EventValjare`s `gemensamtAlternativ`
+    (raden överst i listan OCH den stängda triggerns text när inget är valt),
+    så väljaren säger alltid VAR man är — aldrig att ett val saknas. Samma
+    sträng står som dimensionens `nollage`, så de aldrig kan glida isär. */
+const ALLA_EVENT = 'Alla event';
 
-/** Etikett + nolläge per event-dimension; alternativen härleds ur källan. */
+/** Etikett + nolläge per event-dimension; alternativen härleds ur källan.
+    `event` har inga `alternativ` — dess kontroll (`EventValjare`) äger sin
+    egen rymd, se `FilterDimension.kontroll`. */
 const DIM_FORM = {
   typ: { etikett: 'Typ', nollage: 'Alla typer' },
   ort: { etikett: 'Ort', nollage: 'Alla orter' },
-  status: { etikett: 'Status', nollage: 'Alla statusar' },
+  event: { etikett: 'Event', nollage: ALLA_EVENT },
 } as const;
 
 /** Anmälans länkade event, eller `undefined` när det inte går att slå upp. */
@@ -172,16 +173,17 @@ function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
  * EVENT-DIMENSIONERNA (Marcus review 2026-08-23: "visst vore det bra om
  * Lotta kunde filtrera på event-typ och sånt ju?") — samma `FilterRad`-
  * primitiv som eventlistan, med period-pillren som vänsterled och
- * tratt-panelen under: Typ · Ort · Status, `?typ`/`?ort`/`?status` i
+ * tratt-panelen under: Typ · Ort · Event, `?typ`/`?ort`/`?event` i
  * URL:en, AND över dimensioner, live utan Apply.
  *
  * DIMENSIONERNA ÄR EVENTETS FÄLT, inte anmälans — en anmälan bär dem bara
  * VIA `eventId`, så filtret läser uppslaget event ("visa anmälningar vars
  * event har typ X"). Två följder, båda avsiktliga:
  *
- * 1. ALTERNATIVEN härleds ur de event LÄGETS rader faktiskt pekar på (före
- *    periodfiltret, så rymden är stabil över periodbyte — EventsLists
- *    byggkrav 2). Ett event utan anmälningar i läget vore en död kontroll.
+ * 1. ALTERNATIVEN för typ/ort härleds ur de event LÄGETS rader faktiskt
+ *    pekar på (före periodfiltret, så rymden är stabil över periodbyte —
+ *    EventsLists byggkrav 2). Ett typvärde utan anmälningar i läget vore en
+ *    död kontroll. Event-axeln bryter medvetet mot regeln — se nedan.
  * 2. EN RAD UTAN UPPSLAGBART EVENT matchar aldrig ett aktivt
  *    dimensionsfilter — den bär inget event-attribut att matcha mot. Det
  *    är samma regel periodfiltret redan följer (`registrationPeriod` →
@@ -191,13 +193,42 @@ function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
  *    event" under "Alla", och panelfotens räknare bär bortfallet
  *    numeriskt ("Visar X av Y anmälningar").
  *
- * `EventValjare.tsx` (huset ANDRA etablerade eventväljar-form) ÖVERVÄGDES
- * och AVSTYRKTES, disk-verifierat: dess `grupper`-useMemo filtrerar
- * EXPLICIT till `dateValue(e) >= idagStart` (endast kommande event) —
- * den har ALDRIG en "tidigare"-gren. Den löser alltså strukturellt inte
- * "kommande OCH tidigare" (Marcus egen ordalydelse), och att bygga en
- * andra, past-kapabel gren i den delade komponenten hade varit att bygga
- * "för säkerhets skull" på en yta som redan har en korrekt form för detta.
+ * ═══ EVENT-DIMENSIONEN (Marcus 2026-08-23, ERSÄTTER `Status`) ═══
+ *
+ * *"vi får ju byta ut status mot 'Event' så Lotta kan filtrera på event,
+ * RIM 1, RIM 2, Fjärrskådning etc."* Skälet håller: att filtrera
+ * ANMÄLNINGAR på EVENTETS status (Planerat/Genomfört/Inställt) svarar på en
+ * fråga om eventet, inte om anmälningarna. VILKET event en anmälan gäller
+ * är den fråga Lotta faktiskt ställer. `Typ` och `Ort` står kvar.
+ *
+ * KONTROLLEN ÄR `EventValjare` — husets egen eventväljare — via
+ * `FilterDimension.kontroll`, inte en fjärde `Select`. Skälet är mätt:
+ * staging bär 108 event (Airtable REST mot `tblVE3UKWl1CKrphV`,
+ * 2026-08-23), där typ har två värden och ort en handfull. En naken
+ * dropdown över hundratals rader tappar fotfästet långt innan dess;
+ * `EventValjare` är byggd som `Select` + `Autocomplete` med sökfält och
+ * månadsgrupperade sektioner för exakt det.
+ *
+ * Väljaren ÖVERVÄGDES och AVSTYRKTES i föregående pass — den raden är nu
+ * ÖPPET RIVEN, inte tyst borttagen. Avstyrkandets sakskäl var korrekt och
+ * disk-verifierat: väljarens `grupper`-useMemo filtrerade explicit till
+ * `dateValue(e) >= idagStart` och hade ALDRIG en tidigare-gren, vilket
+ * gjorde den strukturellt oförmögen till "kommande OCH tidigare". Det
+ * skälet är åtgärdat vid roten i stället för kringgått: `omfattning="alla"`
+ * (opt-in, `EventValjare.tsx` § OMFATTNINGEN) ger hela eventrymden med
+ * kommande närmast först följt av tidigare senast först. Default är
+ * oförändrad för väljarens övriga konsumenter.
+ *
+ * EVENT-AXELN LISTAR HELA EVENTRYMDEN, inte bara de event raderna pekar på
+ * — en AVSIKTLIG avvikelse från härledningsregeln i punkt 1 ovan, och den
+ * enda i filtret. Skälet är att axelns frågor skiljer sig: ett `Typ`-värde
+ * som saknas i listan är självförklarande (det finns bara två), medan ett
+ * EVENT som saknas är omöjligt att skilja från "jag hittar det inte" —
+ * väljaren hade tigit i stället för att svara. Med hela rymden kan Lotta
+ * söka fram RIM 2 och få det sanna svaret "0 anmälningar" via panelfotens
+ * räknare och filter-tomläget, i stället för ett event som inte finns.
+ * Nolläget är väljarens egen `gemensamtAlternativ`-rad ("Alla event"), så
+ * axeln har EN kontroll för både val och nollställning.
  *
  * PERIODEN HÄRLEDS UR DET LÄNKADE EVENTETS `startdatum` (`dateValue`,
  * `EventCard.tsx` — SAMMA härledning som EventsList/EventValjare, ALDRIG ur
@@ -226,19 +257,21 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
   }, [nuMs]);
 
   // Event-dimensionerna i URL:en, samma kontrakt som EventsList (`?typ`/
-  // `?ort`/`?status`, history push ⇒ delbart OCH back-bart; null tar bort
-  // parametern helt). Status enum-parsas mot de kanoniska värdena så en
-  // ogiltig parameter är inert i stället för att ge tom träffmängd.
+  // `?ort`/`?event`, history push ⇒ delbart OCH back-bart; null tar bort
+  // parametern helt).
+  //
+  // `?event` bär ett RECORD-ID, inte ett namn: två event kan heta likadant
+  // (samma kurs i två orter, eller samma kurs igen nästa år) och ett
+  // namnfilter hade slagit ihop dem. Ett okänt ID är inert — det matchar
+  // ingen rad, och väljarens stängda läge faller tillbaka på sitt
+  // laddskelett tills eventlistan landat.
   const [typ, setTyp] = useQueryState('typ', parseAsString.withOptions({ history: 'push' }));
   const [ort, setOrt] = useQueryState('ort', parseAsString.withOptions({ history: 'push' }));
-  const [status, setStatus] = useQueryState(
-    'status',
-    parseAsStringEnum(STATUS_ORDNING).withOptions({ history: 'push' }),
-  );
+  const [event, setEvent] = useQueryState('event', parseAsString.withOptions({ history: 'push' }));
   const valda: Record<string, string | null> = {
     typ: typ || null,
     ort: ort || null,
-    status: status ?? null,
+    event: event || null,
   };
 
   const periodRader = useMemo(() => {
@@ -265,16 +298,26 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
       { nyckel: 'typ', ...DIM_FORM.typ, alternativ: uniq(lankade.map((e) => e.typ)) },
       { nyckel: 'ort', ...DIM_FORM.ort, alternativ: uniq(lankade.map((e) => e.ort)) },
       {
-        nyckel: 'status',
-        ...DIM_FORM.status,
-        alternativ: uniq(lankade.map((e) => e.status)).sort(
-          (a, b) =>
-            STATUS_ORDNING.indexOf(a as EventStatusValue) -
-            STATUS_ORDNING.indexOf(b as EventStatusValue),
+        nyckel: 'event',
+        ...DIM_FORM.event,
+        // KONTROLLEN, inte en alternativlista — se `FilterDimension.kontroll`
+        // och docblockets § EVENT-DIMENSIONEN för varför just denna axel bryter
+        // mot härledningsregeln som typ/ort följer.
+        kontroll: (
+          <EventValjare
+            valtEventId={event || undefined}
+            valtEvent={event ? eventsById.get(event) : undefined}
+            onByte={(id) => setEvent(id)}
+            // Anmälningar finns för event som VARIT — sidan har en
+            // `Tidigare`-flik, så väljarens default (endast kommande) hade
+            // tystat bort precis det fliken finns för.
+            omfattning="alla"
+            gemensamtAlternativ={{ etikett: ALLA_EVENT, onValj: () => setEvent(null) }}
+          />
         ),
       },
     ];
-  }, [rader, eventsById]);
+  }, [rader, eventsById, event, setEvent]);
   const aktiva = antalAktivaFilter(dimensioner, valda);
 
   // Dimensionsfiltret läses ur EVENTET, aldrig ur anmälan: "visa anmälningar
@@ -291,10 +334,14 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
         return (
           (valda.typ == null || ev?.typ === valda.typ) &&
           (valda.ort == null || ev?.ort === valda.ort) &&
-          (valda.status == null || ev?.status === valda.status)
+          // Event-axeln matchar på ID mot det UPPSLAGNA eventet, inte mot
+          // `reg.eventId` rakt av: en rad vars eventId pekar på ett event som
+          // inte går att slå upp bär inget event-attribut att matcha mot, och
+          // ska falla bort på samma villkor som för typ/ort.
+          (valda.event == null || ev?.id === valda.event)
         );
       }),
-    [periodRader, eventsById, valda.typ, valda.ort, valda.status],
+    [periodRader, eventsById, valda.typ, valda.ort, valda.event],
   );
 
   // Rensa-knapparna unmountas i samma tryck (aktiva → 0) — fokus flyttas
@@ -304,7 +351,7 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
   const rensaFilter = () => {
     setTyp(null);
     setOrt(null);
-    setStatus(null);
+    setEvent(null);
     filterKnappRef.current?.focus();
   };
 
@@ -327,7 +374,7 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
   // Live-filtreringen bekräftas i SAMMA region som perioden: båda beskeden
   // svarar på "vad visas nu?" — ett ansvar, en region (EventsLists form).
   // Punkten skiljer annonsen från panelfotens synliga räknartext.
-  const filterNyckel = `${valda.typ}|${valda.ort}|${valda.status}`;
+  const filterNyckel = `${valda.typ}|${valda.ort}|${valda.event}`;
   const prevFilterNyckel = useRef(filterNyckel);
   useEffect(() => {
     if (isPending || prevFilterNyckel.current === filterNyckel) return;
@@ -389,45 +436,42 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
           (även vid noll träffar) — kontrollen är sidans egen, aldrig
           beroende av om urvalet råkar vara tomt.
 
-          ETIKETTEN "Event" (Marcus: "'Kommande' och 'Tidigare' är nog fel
-          ordval här. Vad är 'Kommande anmälningar' liksom.") — pillren
-          beskriver EVENTETS tidsläge, inte anmälans. Etiketten bär det
-          uttryckligen, så pillren kan förbli korta nog för 375 px och
-          behålla EventsLists ordpar. Den är `aria-hidden` och gruppens
-          `label` bär samma ord: skärmläsaren får "Event"-gruppen EN gång,
-          seendet får den som rubrik. */}
-      <div className="flex flex-col gap-1.5 print:hidden">
-        <span aria-hidden="true" className="font-medium text-caption text-text-muted">
-          Event
-        </span>
-        <FilterRad
-          dimensioner={dimensioner}
-          valda={valda}
-          onValj={(nyckel, varde) => {
-            if (nyckel === 'typ') setTyp(varde);
-            else if (nyckel === 'ort') setOrt(varde);
-            else setStatus(varde as EventStatusValue | null);
-          }}
-          onRensa={rensaFilter}
-          visade={visasRader.length}
-          totalt={periodRader.length}
-          enhet={ANMALNINGS_ENHET}
-          triggerRef={filterKnappRef}
+          RUBRIKEN ÖVER FILTERRADEN ÄR STRUKEN (Marcus 2026-08-23). Den bar
+          ordet "Event" åt de korta pillren ("Kommande"/"Tidigare") när de
+          inte fick plats med hela ordparet. Utan `spread` får pillren sin
+          naturliga bredd och ordparet ryms utskrivet — då säger pillren
+          själva vad som är kommande respektive tidigare, och en rubrik som
+          upprepar det är brus. Gruppens `label` är "Period" (EventsLists
+          egen, ORDLISTA § Period), inte "Event": panelens EGEN
+          event-dimension heter så, och två olika kontroller med samma namn
+          på samma yta är precis den förväxling etiketterna finns för att
+          förhindra. */}
+      <FilterRad
+        dimensioner={dimensioner}
+        valda={valda}
+        onValj={(nyckel, varde) => {
+          if (nyckel === 'typ') setTyp(varde);
+          else if (nyckel === 'ort') setOrt(varde);
+          else setEvent(varde);
+        }}
+        onRensa={rensaFilter}
+        visade={visasRader.length}
+        totalt={periodRader.length}
+        enhet={ANMALNINGS_ENHET}
+        triggerRef={filterKnappRef}
+      >
+        <ToggleButtonGroup<PeriodFilter>
+          label="Period"
+          selectedKey={period}
+          onSelectionChange={setPeriod}
         >
-          <ToggleButtonGroup<PeriodFilter>
-            label="Event"
-            spread
-            selectedKey={period}
-            onSelectionChange={setPeriod}
-          >
-            {PERIOD_FILTER_VALUES.map((p) => (
-              <ToggleButton key={p} id={p}>
-                {PERIOD_FILTER_LABEL[p]}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </FilterRad>
-      </div>
+          {PERIOD_FILTER_VALUES.map((p) => (
+            <ToggleButton key={p} id={p}>
+              {PERIOD_FILTER_LABEL[p]}
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
+      </FilterRad>
       <p className="sr-only" aria-live="polite">
         {periodAnnouncement}
       </p>
