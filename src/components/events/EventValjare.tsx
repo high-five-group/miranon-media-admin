@@ -468,6 +468,7 @@ export function EventValjare({
       <Popover
         data-testid="event-valjare-popover"
         placement="bottom start"
+        shouldFlip={false}
         className="flex w-(--trigger-width) min-w-72 flex-col gap-1 rounded-xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-2 shadow-lg"
       >
         {/* Autocomplete = React Arias combobox-maskineri i popover-form:
@@ -475,36 +476,57 @@ export function EventValjare({
             namn ELLER ort via textValue (punkt 8). */}
         <Autocomplete filter={contains}>
           <SokFalt />
-          <ListBox
-            className="scrollbar-inline max-h-80 overflow-auto outline-none"
-            renderEmptyState={() => (
-              <p className="px-3 py-2 text-small text-text-muted">
-                {isPending ? 'Laddar event…' : 'Inga event matchar sökningen'}
-              </p>
-            )}
+          {/* SCROLLREGIONEN ÄR EN EGEN, FOKUSERBAR WRAPPER (2026-08-23, S111):
+              popovern får sin maxHeight från RAC (utrymmet under triggern,
+              `shouldFlip={false}` nedan) och listan krymper till det med
+              scroll — då är regionen scrollbar även med korta listor, och
+              axe kräver att en scrollbar region kan nås med tangentbord
+              (scrollable-region-focusable, WCAG 2.1.1). Listboxen själv bär
+              VIRTUELL fokus (Autocomplete: sökfältet äger fokus,
+              aria-activedescendant pekar), så tabindex kan inte ligga på
+              den utan att bryta RAC:s fokusmodell — wrappern är husets
+              form (NyaAnmalningar.tsx, ForfallnaBetalningar.tsx, k112).
+              Innan detta var listan `max-h-80` och popovern flippade ÖVER
+              triggern när den inte fick plats under (mätt 2026-08-23 vid
+              1280×720: popover y=337 över trigger y=359 → pointerup valde
+              första alternativet). Pre-existerande; synligt först när
+              sidramens topp-luft flyttade triggern 40 px. */}
+          <section
+            // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx k112.
+            tabIndex={0}
+            aria-label="Eventlistan, rullningsbar"
+            className="focus-ring-inset scrollbar-inline min-h-0 flex-1 overflow-auto"
           >
-            {/* Det kontextlösa alternativet står ÖVERST, utanför månads-
+            <ListBox
+              className="outline-none"
+              renderEmptyState={() => (
+                <p className="px-3 py-2 text-small text-text-muted">
+                  {isPending ? 'Laddar event…' : 'Inga event matchar sökningen'}
+                </p>
+              )}
+            >
+              {/* Det kontextlösa alternativet står ÖVERST, utanför månads-
                 grupperna — det hör inte till någon månad. Direkt `SelectItem`
                 i stället för en egen `ListBoxSection`: en sektionsrubrik över
                 EN rad hade varit brus, och nästa månadsrubrik skiljer den
                 visuellt ändå. Sökningen filtrerar den som vilken rad som helst
                 (Autocomplete matchar `textValue`) — söker man "RIM" är den
                 borta, vilket är rätt. */}
-            {gemensamtAlternativ != null ? (
-              <SelectItem
-                id={GEMENSAMT_KEY}
-                textValue={gemensamtAlternativ.etikett}
-                // `mt-2` — LUFT MOT SÖKRUTANS FOKUSRING (Marcus 2026-08-18:
-                // *"när fokusringen är aktiverad på sökrutan så ligger den
-                // direkt på delade dokument-markeringen"*). Popovern bär
-                // `gap-1` (4 px) mellan sökfältet och listboxen; raden är
-                // listans FÖRSTA och har — till skillnad från eventraderna —
-                // ingen månadsrubrik ovanför sig att låna luft av (`pt-3` på
-                // `Header`). Utan marginalen möttes sökrutans fokusring och
-                // radens markerings-bakgrund kant i kant.
-                className="mt-2 font-medium"
-              >
-                {/* OSYNLIG SPACER MED PRICKENS EXAKTA GEOMETRI — inte en
+              {gemensamtAlternativ != null ? (
+                <SelectItem
+                  id={GEMENSAMT_KEY}
+                  textValue={gemensamtAlternativ.etikett}
+                  // `mt-2` — LUFT MOT SÖKRUTANS FOKUSRING (Marcus 2026-08-18:
+                  // *"när fokusringen är aktiverad på sökrutan så ligger den
+                  // direkt på delade dokument-markeringen"*). Popovern bär
+                  // `gap-1` (4 px) mellan sökfältet och listboxen; raden är
+                  // listans FÖRSTA och har — till skillnad från eventraderna —
+                  // ingen månadsrubrik ovanför sig att låna luft av (`pt-3` på
+                  // `Header`). Utan marginalen möttes sökrutans fokusring och
+                  // radens markerings-bakgrund kant i kant.
+                  className="mt-2 font-medium"
+                >
+                  {/* OSYNLIG SPACER MED PRICKENS EXAKTA GEOMETRI — inte en
                     hårdkodad vänsterindragning (Marcus 2026-08-18: *"det ser
                     skevt ut, flytta in texten så det linjerar"*).
 
@@ -518,56 +540,57 @@ export function EventValjare({
                     minus färg och rundning — och sitter i samma `gap-2`-flöde.
                     Ändras prickens storlek någonsin följer indraget med av sig
                     självt; en `pl-[18px]` hade tyst glidit isär. */}
-                {gemensamtAlternativ.ikon != null ? (
-                  <span aria-hidden="true" className="flex shrink-0 text-text-secondary">
-                    {gemensamtAlternativ.ikon}
-                  </span>
-                ) : (
-                  <span aria-hidden="true" className="size-2.5 shrink-0" />
-                )}
-                {gemensamtAlternativ.etikett}
-              </SelectItem>
-            ) : null}
-            {grupper.map((grupp) => (
-              <ListBoxSection id={grupp.nyckel} key={grupp.nyckel}>
-                {/* Månadsrubriks-formen — EventsLists EGEN (punkt 9):
+                  {gemensamtAlternativ.ikon != null ? (
+                    <span aria-hidden="true" className="flex shrink-0 text-text-secondary">
+                      {gemensamtAlternativ.ikon}
+                    </span>
+                  ) : (
+                    <span aria-hidden="true" className="size-2.5 shrink-0" />
+                  )}
+                  {gemensamtAlternativ.etikett}
+                </SelectItem>
+              ) : null}
+              {grupper.map((grupp) => (
+                <ListBoxSection id={grupp.nyckel} key={grupp.nyckel}>
+                  {/* Månadsrubriks-formen — EventsLists EGEN (punkt 9):
                     font-semibold text-small text-text-secondary, ALDRIG
                     ALL CAPS (S83 pass 4-fångst #1). */}
-                <Header className="px-3 pt-3 pb-1 font-semibold text-small text-text-secondary">
-                  {grupp.label}
-                </Header>
-                {grupp.events.map((e) => (
-                  // Primitivens SelectItem (review-pilotens F6 — en
-                  // item-grammatik, ingen lokal kopia med drift).
-                  <SelectItem
-                    id={e.id}
-                    key={e.id}
-                    // textValue bär namn + ort → sök matchar båda (punkt 8);
-                    // spannet ingår i radens accessibla namn via innehållet.
-                    textValue={`${eventName(e)} ${e.ort ?? ''}`}
-                    // Prefetch på avsikt (ADR-078 beslut 3): hover är den
-                    // tidigaste ärliga signalen om ett byte — konsumenten
-                    // värmer bytesmålets queries här, aldrig först vid valet.
-                    onHoverStart={onAvsikt ? () => onAvsikt(e.id) : undefined}
-                  >
-                    {({ isFocused }) => (
-                      <>
-                        {/* Tangentbordets avsikts-signal (18.19-review F1):
+                  <Header className="px-3 pt-3 pb-1 font-semibold text-small text-text-secondary">
+                    {grupp.label}
+                  </Header>
+                  {grupp.events.map((e) => (
+                    // Primitivens SelectItem (review-pilotens F6 — en
+                    // item-grammatik, ingen lokal kopia med drift).
+                    <SelectItem
+                      id={e.id}
+                      key={e.id}
+                      // textValue bär namn + ort → sök matchar båda (punkt 8);
+                      // spannet ingår i radens accessibla namn via innehållet.
+                      textValue={`${eventName(e)} ${e.ort ?? ''}`}
+                      // Prefetch på avsikt (ADR-078 beslut 3): hover är den
+                      // tidigaste ärliga signalen om ett byte — konsumenten
+                      // värmer bytesmålets queries här, aldrig först vid valet.
+                      onHoverStart={onAvsikt ? () => onAvsikt(e.id) : undefined}
+                    >
+                      {({ isFocused }) => (
+                        <>
+                          {/* Tangentbordets avsikts-signal (18.19-review F1):
                             piltangenterna flyttar VIRTUELL fokus (aria-
                             activedescendant) — DOM-fokusevent finns inte att
                             lyssna på, så radens fokus-state bär signalen.
                             Likvärdig värmning oavsett styrsätt (a11y-11). */}
-                        {onAvsikt ? (
-                          <AvsiktVidFokus aktiv={isFocused} eventId={e.id} onAvsikt={onAvsikt} />
-                        ) : null}
-                        <KontextRad event={e} />
-                      </>
-                    )}
-                  </SelectItem>
-                ))}
-              </ListBoxSection>
-            ))}
-          </ListBox>
+                          {onAvsikt ? (
+                            <AvsiktVidFokus aktiv={isFocused} eventId={e.id} onAvsikt={onAvsikt} />
+                          ) : null}
+                          <KontextRad event={e} />
+                        </>
+                      )}
+                    </SelectItem>
+                  ))}
+                </ListBoxSection>
+              ))}
+            </ListBox>
+          </section>
         </Autocomplete>
       </Popover>
     </AriaSelect>
