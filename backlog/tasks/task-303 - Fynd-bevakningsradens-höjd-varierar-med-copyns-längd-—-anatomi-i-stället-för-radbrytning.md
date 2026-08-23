@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:48'
-updated_date: '2026-08-23 16:59'
+updated_date: '2026-08-23 17:07'
 labels:
   - ready-for-human
 dependencies: []
@@ -35,10 +35,10 @@ REGISTRERAD SOM EGET KORT, inte som utvidgning av TASK-291: 291 är uttryckligen
 <!-- AC:BEGIN -->
 - [x] #1 Bevakningsradens höjd är konstant oavsett copyns längd och oavsett antalet siffror i talet — verifierat som BETEENDE i test, inte som påstående, vid smalaste stödda bredd
 - [x] #2 Radanatomin är rubrikrad + undertext, alltid båda renderade, samma form som personlistans radanatomi
-- [ ] #3 Ingen text klipps mitt i ett ord i något läge (Gunilla-principen håller)
-- [x] #4 Sträng-divergensen mellan hem-derivations.ts och dev/hem-prototyp/data.ts är avgjord åt ETT håll, med Marcus citat daterat på kortet, och båda ytorna bär samma sträng efteråt
-- [x] #5 Familjegränsen mot notisfamiljen orörd: ingen varningsfärg, ingen notis-ikon; betydelse aldrig enbart genom färg
-- [x] #6 Hem-facit amenderat i egen commit med Marcus citat, EFTER att formen är godkänd
+- [x] #3 Sträng-divergensen mellan hem-derivations.ts och dev/hem-prototyp/data.ts är avgjord åt ETT håll, med Marcus citat daterat på kortet, och båda ytorna bär samma sträng efteråt
+- [x] #4 Familjegränsen mot notisfamiljen orörd: ingen varningsfärg, ingen notis-ikon; betydelse aldrig enbart genom färg
+- [x] #5 Hem-facit amenderat i egen commit med Marcus citat, EFTER att formen är godkänd
+- [x] #6 Meningen (undertexten, t.ex. 'N nya saknar deltagarinfo') klipps aldrig i något läge — mätt som beteende (scrollWidth <= clientWidth); rubriken (eventnamnet) får ellipsera vid extremnamn med hela namnet kvar i DOM:en, så skärmläsaren får allt och höjdlåset står
 <!-- AC:END -->
 
 ## Definition of Done
@@ -111,4 +111,6 @@ AC #3 KAN INTE BOCKAS ÄRLIGT — och det är inte ett utförandefel utan samma 
 AC #6 (hem-facit) EJ RÖRD — ägs av orkestreraren, egen commit efter promoveringen.
 
 REGRESSIONEN SOM ORDBYTET LÄMNADE ÄR LÖST. Mätt på basen 943639a4 före promoveringen: hem.acceptance 28 passed / 1 failed, där felet var geometribeviset vid 1440 px (Expected <= 48, Received 72). Efter promoveringen: 32 passed / 0 failed. Det gamla geometribeviset är ersatt av höjdlåset ovan, eftersom line-clamp-2 — mekanismen det mätte — är riven.
+
+2026-08-23 (S111 resume 2, fönster 3) — AC #3 ('Ingen text klipps mitt i ett ord i något läge') AMENDERAT på orkestrerarens beslut med Marcus mandat (*"Rörande de två andra besluten ger jag dig mandat att besluta dem åt mig."*, efter att ha sett skarpa Hem: *"Ser bra ut."*). Skäl, mätt i 291-promoveringen (836c23a3): undertexten klipps aldrig (asserterat), men rubriken ellipserar vid ett 91-teckens eventnamn — en följd av 70 px-låset Marcus godkände; hela namnet finns i DOM:en. Kriteriet i sin gamla bokstav kunde aldrig bockas ärligt (samma klass som det strukna badge-kriteriet). CLI:t omnumrerar: det nya kriteriet blir sista AC. Vägarna som övervägdes: (a) amendera — vald; (b) stryk; (c) behåll med radbrytande rubrik — bryter höjdlåset.
 <!-- SECTION:NOTES:END -->
