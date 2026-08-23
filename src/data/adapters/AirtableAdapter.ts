@@ -85,6 +85,7 @@ import type {
   WaitlistFilters,
 } from '../../domain/types/Filters';
 import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
+import { AttachmentClass } from '../../domain/types/Status';
 import {
   callEdgeFunction,
   postEdgeFunction,
@@ -97,7 +98,8 @@ import {
   formatMB,
   SMALL_UPLOAD_MAX_BYTES,
 } from './attachmentUpload';
-import type { DataSourceAdapter, UtkastTyp } from './DataSourceAdapter';
+import type { DataSourceAdapter, MallId, UtkastTyp } from './DataSourceAdapter';
+import { berakaAktuellKallhash, mallIdFranAirtableOption } from './mallKallhash';
 
 // Airtable tabell-ID:n (från docs/schema_reference.md). Behålls som
 // referens i kommentarer för framtida operations-definitioner i
@@ -773,7 +775,9 @@ export class AirtableAdapter implements DataSourceAdapter {
       kursfamilj: input.kursfamilj,
       kursniva: input.kursniva,
     });
-    return AttachmentSchema.parse(data.attachment);
+    // Uppladdade rader är aldrig Event-mallade — 'inaktuell' är strukturellt
+    // inte tillämplig (TASK-309.6, se domänmodellens docblock).
+    return { ...AttachmentSchema.parse(data.attachment), inaktuell: null };
   }
 
   /**
@@ -831,7 +835,8 @@ export class AirtableAdapter implements DataSourceAdapter {
       kursfamilj: input.kursfamilj,
       kursniva: input.kursniva,
     });
-    return AttachmentSchema.parse(data.attachment);
+    // Se uploadAttachmentSmall ovan — samma "aldrig Event-mallad"-motivering.
+    return { ...AttachmentSchema.parse(data.attachment), inaktuell: null };
   }
 
   /**
@@ -845,7 +850,8 @@ export class AirtableAdapter implements DataSourceAdapter {
     const data = await callEdgeFunction<{ attachments: unknown }>('get-event-attachments', {
       eventId,
     });
-    return z.array(AttachmentSchema).parse(data.attachments);
+    const parsed = z.array(AttachmentSchema).parse(data.attachments);
+    return this.berikaMedInaktuell(parsed);
   }
 
   /**
@@ -855,7 +861,85 @@ export class AirtableAdapter implements DataSourceAdapter {
    */
   async fetchGemensammaBilagor(): Promise<Attachment[]> {
     const data = await callEdgeFunction<{ attachments: unknown }>('get-event-attachments');
-    return z.array(AttachmentSchema).parse(data.attachments);
+    const parsed = z.array(AttachmentSchema).parse(data.attachments);
+    // [TASK-309.6] Defensivt anropad (get-event-attachments/index.ts filtrerar
+    // denna gren på `Räckvidd IN (Kurstyp, Alla event)` — generate-event-
+    // attachment sätter ALDRIG `Räckvidd`, så en Event-mallad rad förekommer
+    // strukturellt inte här i dag). `berikaMedInaktuell` kostar då bara den
+    // tomma `eventMallade.length === 0`-kontrollen, ingen extra nätverksfråga.
+    return this.berikaMedInaktuell(parsed);
+  }
+
+  /**
+   * Härleder inaktualitet för Event-mallade bilagerader (TASK-309.6, ADR-125
+   * § 3) — "vid listning beräknar adaptern dagens hash av samma data och
+   * markerar raden inaktuell när de skiljer sig". Körs på VARJE listning
+   * (`fetchEventAttachments`/`fetchGemensammaBilagor`), inte bara när ett
+   * event faktiskt bär Event-mallade rader — den vanliga vägen (inga sådana
+   * rader) kostar noll extra nätverksanrop.
+   *
+   * EN `getDocumentSources`-hämtning PER DISTINKT `eventId` (cachead i denna
+   * körning, `sourcesCache`) — Event-mallade rader ur SAMMA
+   * `fetchEventAttachments(eventId)`-anrop delar alltid samma eventId (se
+   * `get-event-attachments/index.ts`s "egna"-gren: unionens övriga två
+   * grenar, Kurstyp/Alla-event, kan strukturellt aldrig innehålla en
+   * Event-mallad rad — se ovan), så kostnaden är EN extra hämtning per
+   * listning i det vanliga fallet, inte en per rad.
+   *
+   * `inaktuell: null` (aldrig kastar) för allt som INTE kan bedömas: icke-
+   * Event-mallade rader, okänt/saknat `mall`, saknat `kallhash` (legacy-
+   * rader skapade före TASK-309.4), eller ett event vars underlag inte gick
+   * att hämta (nätverksfel, eventet raderat sedan bilagan skapades) —
+   * DEFENSIVT: en INAKTUELL-badge som inte kan verifieras ska aldrig
+   * påstås, i endera riktningen.
+   */
+  private async berikaMedInaktuell(
+    attachments: Omit<Attachment, 'inaktuell'>[],
+  ): Promise<Attachment[]> {
+    const bedombara = attachments.filter(
+      (a) =>
+        a.dokumentklass === AttachmentClass.EVENT_MALLAD &&
+        a.eventId !== null &&
+        a.mall !== null &&
+        a.kallhash !== null,
+    );
+    if (bedombara.length === 0) {
+      return attachments.map((a) => ({ ...a, inaktuell: null }));
+    }
+
+    const sourcesCache = new Map<string, DocumentSources | null>();
+    const dagensHashById = new Map<string, string>();
+
+    for (const a of bedombara) {
+      const mallId: MallId | null = mallIdFranAirtableOption(a.mall);
+      // eventId/mall är icke-null via filtret ovan (TypeScript ser inte det
+      // genom `.filter`, därför de explicita guarderna).
+      if (mallId === null || a.eventId === null) continue;
+
+      let sources = sourcesCache.get(a.eventId);
+      if (sources === undefined) {
+        try {
+          sources = await this.getDocumentSources(a.eventId);
+        } catch {
+          // Eventet kunde inte läsas (raderat, nätverk, 404) — bedöm inte,
+          // se docblockets DEFENSIVT-stycke. `null` cachas så vi inte
+          // försöker igen för varje rad på samma event.
+          sources = null;
+        }
+        sourcesCache.set(a.eventId, sources);
+      }
+      if (sources === null) continue;
+
+      dagensHashById.set(a.id, await berakaAktuellKallhash(mallId, sources));
+    }
+
+    return attachments.map((a) => {
+      const dagensHash = dagensHashById.get(a.id);
+      return {
+        ...a,
+        inaktuell: dagensHash === undefined ? null : dagensHash !== a.kallhash,
+      };
+    });
   }
 
   /**
@@ -907,13 +991,44 @@ export class AirtableAdapter implements DataSourceAdapter {
    * [ÄNDRAD, ADR-124, TASK-302.2] Svaret är nu `{ url, utgar }`
    * (`DocumentPreviewSchema`) — EF:en skriver ett transient Storage-utkast
    * och svarar med dess signerade URL i stället för `pdfBase64`.
+   *
+   * [UTBYGGD, TASK-309.6] `mall` skickas nu med — se
+   * `DataSourceAdapter.previewEventTemplate` för varför den blev
+   * obligatorisk (EF:en kräver den sedan TASK-309.4; detta anrop 400:ade).
    */
-  async previewEventTemplate(eventId: string): Promise<DocumentPreview> {
+  async previewEventTemplate(eventId: string, mall: MallId): Promise<DocumentPreview> {
     const data = await postEdgeFunction<unknown>('generate-event-attachment', {
       eventId,
+      mall,
       preview: true,
     });
     return DocumentPreviewSchema.parse(data);
+  }
+
+  /**
+   * Skapa eller regenerera en Event-mallad bilaga (TASK-309.6, ADR-125 § 5).
+   * POST mot generate-event-attachment UTAN `preview` — se
+   * `DataSourceAdapter.skapaEventBilaga` för det fulla kontraktet
+   * (`ersatt`-läget, dubblett-beteendet). `.parse()` validerar vid
+   * datagränsen (ADR-026), speglar `uploadAttachment`.
+   */
+  async skapaEventBilaga(input: {
+    eventId: string;
+    mall: MallId;
+    ersatt?: string;
+  }): Promise<Attachment> {
+    const data = await postEdgeFunction<{ attachment: unknown }>('generate-event-attachment', {
+      eventId: input.eventId,
+      mall: input.mall,
+      ...(input.ersatt !== undefined ? { ersatt: input.ersatt } : {}),
+    });
+    // [TASK-309.6] `inaktuell` sätts inte här — en NYSKAPAD/nyss-regenererad
+    // rads Källhash är per konstruktion den dagens hash (samma anrop skrev
+    // båda), så `false` hade varit korrekt men ONÖDIGT: `attachments.byEvent`-
+    // invalideringen (mutations-hooken) refetchar listan direkt efteråt, och
+    // DEN vägen (`fetchEventAttachments`) härleder `inaktuell` riktigt. Att
+    // gissa värdet här hade riskerat att glida isär från den härledningen.
+    return { ...AttachmentSchema.parse(data.attachment), inaktuell: null };
   }
 
   /**

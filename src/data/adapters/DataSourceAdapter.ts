@@ -505,8 +505,35 @@ export interface DataSourceAdapter {
    * URL serverad av nätverkstjänsten scrollar jämnt i Chromes PDF-visare.
    * Dokument-ytans Visa-dialog för mallar anropar denna LAZY (samma
    * `enabled: isOpen`-mönster som `getAttachmentDownloadUrl`).
+   *
+   * [UTBYGGD, TASK-309.6, ADR-125 § 5] `mall` är NU OBLIGATORISK.
+   * `generate-event-attachment` kräver `mall: 'bekraftelse' | 'deltagarinfo'`
+   * sedan TASK-309.4 (skiva 4) — denna metod anropade EF:en UTAN fältet
+   * (upptäckt genom kodläsning, TASK-309.6 premiss-pass, aldrig skarpt
+   * mätt: `dokumentKalla.ts`s enda anrop går via `DokumentYta.tsx`s
+   * MALLAR-katalog, som saknar täckande test). EF:en hade 400:at på varje
+   * anrop. Fixat i SAMMA skiva som genereringsvyns nya preview-anrop i
+   * stället för att duplicera metoden — se `dokumentKalla.ts` för den
+   * uppdaterade enda andra anroparen (skickar `'deltagarinfo'`, den katalog-
+   * radens enda mall, oförändrat beteende för den ytan).
    */
-  previewEventTemplate(eventId: string): Promise<DocumentPreview>;
+  previewEventTemplate(eventId: string, mall: MallId): Promise<DocumentPreview>;
+
+  /**
+   * Skapa eller regenerera en Event-mallad bilaga — bekräftelsebilaga eller
+   * deltagarinformation, ur eventets RIKTIGA data (TASK-309.6, ADR-125 § 5).
+   * POST mot generate-event-attachment UTAN `preview` — persisterar en
+   * Bilagor-rad (`Mall`+`Källhash` satta server-side) och en Storage-fil.
+   *
+   * `ersatt`, satt till ett befintligt Event-mallat bilage-ID, regenererar
+   * SAMMA rad (ADR-125 § 3 "regenerering är ERSÄTTNING") i stället för att
+   * skapa en ny — servern verifierar ägarskap/dokumentklass/mall-matchning
+   * (se EF:ens filhuvud). Utelämnad: en NY rad skapas alltid (genererings-
+   * vyns "Skapa"-knapp, AC #3) — upprepade klick kan därför ge dubbletter,
+   * samma synliga "+N äldre filer"-grupp som redan gäller uppladdade filer
+   * (`DokumentYta.tsx` § grupperaPerNamn).
+   */
+  skapaEventBilaga(input: { eventId: string; mall: MallId; ersatt?: string }): Promise<Attachment>;
 
   /**
    * Sidoeffektsfri förhandsvisning av klass C:s kvitto-generator
@@ -615,3 +642,13 @@ export interface DataSourceAdapter {
  * för `AttachmentClass`/`AttachmentScope`).
  */
 export type UtkastTyp = 'bilaga' | 'kvitto' | 'deltagarinformation';
+
+/**
+ * De TVÅ bilagemallarna generate-event-attachment renderar (TASK-309.6,
+ * ADR-125 § 5) — SAMMA två värden som EF:ens `MallParam`
+ * (`generate-event-attachment/index.ts`) och UI-lagrets `MallId`
+ * (`@/components/dokument/blockDefinitioner`). Duplicerad MEDVETET, samma
+ * Deno↔Vite-gränsmönster som `UtkastTyp` ovan — datalagret får inte
+ * importera UI-lagrets `blockDefinitioner.ts` (lager-oberoende, `ADR-057`).
+ */
+export type MallId = 'bekraftelse' | 'deltagarinfo';

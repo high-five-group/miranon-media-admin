@@ -29,6 +29,39 @@ export const AttachmentSchema = z.object({
   rackvidd: z.enum(AttachmentScope).nullable(),
   kursfamilj: z.string().nullable(),
   kursniva: z.string().nullable(),
+  // [TASK-309.6, ADR-125 § 5] `mall`/`kallhash` speglar `mapAttachmentRecord`
+  // (`_shared/attachments.ts`) — UTAN dessa två rader hade `.parse()` (Zods
+  // default: strippa okända nycklar) tyst kastat bort fälten ur varje
+  // `Attachment` — `inaktuell`-härledningen (adaptern, se domänmodellen)
+  // hade då aldrig sett `mall`/`kallhash` att räkna på.
+  //
+  // `.nullable().optional()` (INTE bara `.nullable()` som `dokumentklass`/
+  // `rackvidd` ovan) — MEDVETET LENIENARE, av två skäl mätta i denna skiva:
+  //   1. En EF-deploy som ligger EFTER kodens `mapAttachmentRecord`-ändring
+  //      men FÖRE en redeploy (se `AirtableAdapter.ts` § berikaMedInaktuell-
+  //      docblockets stale-deploy-fynd, TASK-309.6) kan SAKNA nycklarna
+  //      helt i sitt JSON-svar — en strikt `.nullable()` hade fällt HELA
+  //      listningen (Zod strippar inte bort på fel, den KASTAR) för en
+  //      transient driftsituation en enda funktion glömdes redeploya i.
+  //   2. Skarpt mätt: två BEFINTLIGA acceptance-mockar
+  //      (`dokument-rackviddsval.acceptance.test.ts`,
+  //      `atgarder-bilageval-send.acceptance.test.ts`) konstruerar
+  //      `Attachment`-formade JSON-svar UTAN `mall`/`kallhash` — en strikt
+  //      `.nullable()` fällde samtliga 11 test i den förstnämnda filen
+  //      (verifierat, återställt till denna leniens). `.transform()`
+  //      normaliserar `undefined` → `null` så `Attachment`-typen (domän-
+  //      modellen) förblir `string | null`, ALDRIG `undefined`, för varje
+  //      konsument nedströms.
+  mall: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
+  kallhash: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
 });
 
 /**
