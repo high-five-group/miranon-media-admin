@@ -53,6 +53,13 @@ function input(overrides: Partial<ReceiptSendInput> = {}): ReceiptSendInput {
     kundnamn: 'Anna Andersson',
     email: TEST_ADDR,
     eventNamn: 'Utbildning Skövde',
+    // [TASK-306] Default null — testerna i denna fil bevisar sändorkestratorns
+    // FEM I/O-gränser, inte kvittots benämningsformel (den täcks fullt i
+    // tests/api/receipt-content.test.ts § kvittoBenamning).
+    eventTyp: null,
+    eventStart: null,
+    eventSlut: null,
+    bokforingstext: null,
     jobId: '11111111-1111-4111-8111-111111111111',
     isProd: false,
     utskickSparrat: false,

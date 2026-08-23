@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 00:02'
+updated_date: '2026-08-23 09:47'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,7 +32,7 @@ Ska purge-jobbet få de fyra `TEST_*`-secreten i sitt `env:`-block? Kostnad: fyr
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Marcus beslut bokfört på kortet (secrets in i purge-jobbet ELLER Storage-purgen deklarerad lokal/manuell)
+- [x] #1 Marcus beslut bokfört på kortet (secrets in i purge-jobbet ELLER Storage-purgen deklarerad lokal/manuell)
 - [ ] #2 Vald väg byggd: antingen ci-suite.yml-env-blocket + en grön CI-körning där purge-loggen visar Storage-targeten exekverad, eller runbook + policy-kommentar uppdaterade
 <!-- AC:END -->
 
@@ -42,3 +43,9 @@ Ska purge-jobbet få de fyra `TEST_*`-secreten i sitt `env:`-block? Kostnad: fyr
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Marcus mandat (orkestrerarens uppdrag, 2026-08-23): secrets in i purge-jobbet, EXAKT de fyra STORAGE_PURGE_ENV_VARS-namnen — ingen secrets: inherit, ingen ny environment:. Grund: docs/research/ci-stadjobbets-credential-scope-2026-08-23.md § Dom (samma fyra TEST_*-secrets flödar redan genom test-staging-jobbet i samma workflow-fil mot samma test-attachments-storage-EF; ingen ny credential-klass, ADR-053-triage). Byggt: .github/workflows/ci-suite.yml (purge-jobbets env-block +4 rader), scripts/purge-staging-sentinels.mjs (kommentar+loggrad rättad till nytt läge), docs/decisions/ADR-124-...md § Updates 2026-08-23 (korrigerar den nu inaktuella 'lokalt/på begäran, inte CI'-raden). AC #2 delvis: env-blocket byggt och grindar gröna lokalt (actionlint/yamllint/test-purge-staging-sentinels/check:docs/typecheck/biome/build/test:api/verify:ci-parity:fast — samtliga exit 0), men skarpt CI-bevis att Storage-targeten faktiskt exekverar (inte 'hoppas över') kräver secrets som bara finns i CI — öppet till nästa post-merge/nightly-körning efter landning.
+<!-- SECTION:NOTES:END -->

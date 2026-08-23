@@ -17,8 +17,12 @@
 //      inflate+WinAnsi-hex-extraktion som generate-event-attachment.
 //      staging.test.ts (TASK-146.5) etablerade, mot kvittots rader
 //      (`kvittoRader`, _shared/receipt-content.ts): "FÖRHANDSVISNING"
-//      (platshållar-numret), "Exempelperson" (typexemplet, AC #2) och det
-//      RIKTIGA eventnamnet (BELAGGNING_EVENT_ID:s "Event (source)"-fält).
+//      (platshållar-numret), "Exempelperson" (typexemplet, AC #2) och
+//      BELAGGNING_EVENT_ID:s LIVE Typ/Startdatum/Slutdatum via
+//      `kvittoBenamning()`. [TASK-306 RÄTTELSEVARV, 2026-08-23] Det
+//      RIKTIGA eventnamnet ("Event (source)" = "Fjärrskådning") syns INTE
+//      LÄNGRE här — Marcus dom 1 tar bort kursnamnet ur benämningen helt,
+//      se assertionen nedan för den öppet bokförda täckningsförlusten.
 //   2. allow: UPSERT-BEVISET + SIDOEFFEKTSFRIHETENS BETEENDE-BEVIS — TVÅ
 //      anrop i rad ger IDENTISK objekt-path (`utkast/<eventId>/kvitto.pdf`,
 //      upsert: true) OCH exakt samma platshållar-kvittonummer
@@ -185,15 +189,51 @@ test.describe('preview-receipt — skarp conformance (TASK-246)', () => {
     expect(decodedHexIncludes(pdfBytes, 'Kvitto FÖRHANDSVISNING')).toBe(true);
     // Typexemplet (AC #2, bokfört beslut) — se preview-receipt/index.ts § PERSONDATA.
     expect(decodedHexIncludes(pdfBytes, 'Kund: Exempelperson')).toBe(true);
-    // Eventets namn ÄR verkligt — 'Event (source)' för BELAGGNING_EVENT_ID är
-    // 'Fjärrskådning' (live-verifierat mot staging via Airtable MCP innan
-    // detta test skrevs, ADR-086 premiss-pass — DENNA sträng, INTE
-    // Eventlabel-formelns 'ZZ-belaggning-fixtur…', är vad
-    // `selectName(f['Event (source)'])` faktiskt läser). Å-tecknet (WinAnsi
-    // 0xE5) bevisar samtidigt att preview-receipt hanterar svenska tecken i
-    // EVENTDATA, inte bara i den hårdkodade mall-brödtexten (den bevisningen
-    // gäller enbart klass B, se generate-event-attachment.staging.test.ts).
-    expect(decodedHexIncludes(pdfBytes, 'Fjärrskådning')).toBe(true);
+    // [TASK-306 RÄTTELSEVARV, 2026-08-23, ÖPPET BOKFÖRD TÄCKNINGSFÖRLUST]
+    // Denna assertion kontrollerade tidigare att 'Event (source)' =
+    // 'Fjärrskådning' (BELAGGNING_EVENT_ID:s riktiga kursnamn) syntes i
+    // PDF:en, och att Å-tecknet (WinAnsi 0xE5) därmed bevisade att
+    // preview-receipt hanterar svenska tecken i EVENTDATA (inte bara i den
+    // hårdkodade mall-brödtexten, som klass B redan bevisar separat, se
+    // generate-event-attachment.staging.test.ts). Marcus dom 1 tar bort
+    // KURSNAMNET ur benämningen HELT (`kvittoBenamning` läser inte längre
+    // `eventNamn`) — eventnamnet syns därför INTE LÄNGRE NÅGONSTANS i
+    // kvittots renderade text, och det finns inget annat fält i
+    // BELAGGNING_EVENT_ID-fixturens data (Typ/Startdatum/Slutdatum är
+    // diakritik-fria, inget Bokföringstext-fält satt) som kan bära samma
+    // live-roundtrip-bevis för svenska tecken I EVENTDATA specifikt via
+    // DENNA EF. Assertionen och kommentaren är BORTTAGNA, inte flyttade —
+    // en ny testhärnas-fixtur enbart för detta vore scope-creep utanför
+    // detta korts gräns (samma avvägning som AC #3:s "ifyllt"-gren nedan
+    // gör explicit). Svenska tecken i EVENTDATA generellt är fortfarande
+    // täckt på UNITNIVÅ (`kvittoBenamning`s egna tester använder
+    // "Föreläsning", ö/ä) och LIVE för klass B/C-mallarnas egen brödtext.
+
+    // [TASK-306, AC #3] LIVE-BEVIS: preview-receipt läser Typ/Startdatum/
+    // Slutdatum/Bokföringstext (kvitto) ur SAMMA Eventplanering-rad och
+    // bygger benämningen via kvittoBenamning(). BELAGGNING_EVENT_ID:s tre
+    // fält (live-verifierat mot staging via Airtable MCP innan detta test
+    // skrevs, ADR-086 premiss-pass): Typ = "Utbildning", Startdatum =
+    // "2025-11-20", Slutdatum = "2025-11-21" — INGET "Bokföringstext
+    // (kvitto)"-fält satt (fixturen föregår TASK-306). Det BEVISAR "tomt →
+    // utelämnat" (beslut a) LIVE, mot en verklig rad, utan att mutera den
+    // delade fixturen (TASK-6-klassen: delade staging-fixturer muteras
+    // ALDRIG) — "ifyllt → i benämningen"-halvan är fullt täckt av
+    // `kvittoBenamning()`s enhetstester (tests/api/receipt-content.test.ts
+    // § "kvittoBenamning") plus en ENGÅNGS live-verifiering mot ett
+    // temporärt sentinel-event (skapat och raderat via Airtable MCP),
+    // bokförd i TASK-306:s slutrapport — inget EF-skrivbart fält finns för
+    // denna manuella, Lotta-ifyllda kolumn (`_shared/field-allowlists.ts`
+    // saknar en 'Bokföringstext (kvitto)'-post för
+    // `create-event`/`update-event`, verifierat), så en andra automatiserad
+    // "ifyllt"-gren hade krävt en NY testhärnas-EF enbart för detta —
+    // scope-creep utanför detta korts gräns.
+    //
+    // [TASK-306 RÄTTELSEVARV] Strängens FORM ändrad (Marcus dom 1): datumet
+    // komprimeras ('2025-11-20/21', samma år+månad → bara slutdagen,
+    // `formaterDatumspann` i receipt-content.ts) och kursnamnet är borta —
+    // "Utbildning 2025-11-20/21", INGET kommatecken mellan Typ och datum.
+    expect(decodedHexIncludes(pdfBytes, 'Utbildning 2025-11-20/21')).toBe(true);
   });
 
   test('allow: TVÅ anrop i rad → SAMMA platshållarnummer båda gångerna (beteende-bevis: ingen ledger rörd)', async ({

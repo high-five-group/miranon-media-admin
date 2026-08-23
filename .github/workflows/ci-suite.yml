@@ -124,10 +124,25 @@ jobs:
       # CI<->lokal (`npm run purge:staging`), så racet hade överlevt den.
       # STAGING_AIRTABLE_TOKEN = least-privilege-PAT scopad till ENBART
       # staging-basen (data.records:read+write) — kan aldrig röra prod.
+      #
+      # De fyra TEST_*-secreten nedan (TASK-305) gör att storageTargets-klassen
+      # i .purge-staging-policy.json (utkast/-purgen, TASK-302.3) körs här också
+      # i stället för att tyst skippas. Dom (research-passet, se filen nedan):
+      # ingen ny credential-KLASS — samma fyra secrets flödar redan genom
+      # test-staging-jobbet i denna workflow-fil (rad ~699–704) och utövar
+      # redan JWT-gated Storage-operationer mot test-attachments-storage-EF:en;
+      # detta ger enbart ett andra, redan Airtable-separerat jobb tillgång till
+      # en credential-klass som redan finns i workflow-filen (ADR-053-triage:
+      # ingen ny riskklass). Fullt underlag:
+      # docs/research/ci-stadjobbets-credential-scope-2026-08-23.md § Dom.
       - name: Purge staging sentinels
         run: node scripts/purge-staging-sentinels.mjs
         env:
           STAGING_AIRTABLE_TOKEN: ${{ secrets.STAGING_AIRTABLE_TOKEN }}
+          TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+          TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
 
   # Pure + Build — mutex-fritt, kör även för dependabot (dep-bump-regression
   # fångas här via pure-tests + build). Split ur gamla Test+Build (S77 våg 1).

@@ -40,12 +40,43 @@
 // postnumret ("…väg 17, 144 / 63 Rönninge, Sverige", side-by-side mot
 // förlagan) — ersatt av `gatuadress`/`postadress`/`land`, Rogers egen
 // tre-radersform.
+//
+// RÄTTELSEVARV (TASK-306, Marcus granskning av `kvitto-prince-306.pdf`,
+// 2026-08-23) — TRE domar, verbatim:
+//
+//   1) "Benämningen är för lång! Den tar ju upp tre rader!! Orginalet tar
+//      upp EN rad. Kan vi skriva 'Utbildning 2026-07-25/26, personlig
+//      utveckling, meditation' bara och få plats med det på en rad utan att
+//      det ser konstigt ut? Lotta får ju plats med det på orginalet, med
+//      marginal."
+//   2) "Varför har vi fortfarande med ordet 'Slutbetalning'. Det är FEL.
+//      Det är bara en betalning, varken slut eller början."
+//   3) "på originalkvittot så har hon efter 'Vår referens' skrivit
+//      'Miranon Media/Lotta Gotthardsson', vi har i vår mall skrivit
+//      'Miranon Media AB'. Ändra det också."
+//
+// Åtgärdat: (1) `kvittoBenamning` tappar kursnamnet och komprimerar
+// datumspannet till Lottas egen kompakta form (se funktionens docstring för
+// exemplen) — (2) betalningsetiketten ("Anmälningsavgift"/"Slutbetalning")
+// är borttagen ur BÅDE `kvitto.html` (mallen) och `kvittoRader`s Avser-rad
+// nedan, `betalning`-fältet i `KvittoradSpec` lever kvar OFÖRÄNDRAT eftersom
+// Kvitton-tabellens ledger (`send-receipt-email/index.ts`s
+// `makeRealFinalizer`) fortfarande skriver det — (3) `MIRANON_ORG` får ett
+// eget `varReferens`-fält, separat från sidfotens `namn` (oförändrad
+// "Miranon Media AB").
 
 import type { Betalning, Betalsatt } from './send-receipt.ts';
 
 /** Miranons org-uppgifter på kvittot. Adressen är TRE fält (S108, se filhuvudet) — Rogers egen radindelning, aldrig en radbruten enradssträng. Källa: Rogers fakturasystem (se filhuvudet). */
 export const MIRANON_ORG = {
   namn: 'Miranon Media AB',
+  /** [TASK-306 rättelsevarv, Marcus dom 3] "Vår referens" på kvittot — Lottas
+   * EGEN skrivning på förlagan (T170): "Miranon Media/Lotta Gotthardsson",
+   * snedstreck UTAN mellanslag. Separat fält från `namn` ovan (sidfoten
+   * skriver fortsatt "Miranon Media AB" oförändrat) — persondata-noten:
+   * efternamnet finns redan publicerat i repot (`schema_reference.md`,
+   * `VariantB.tsx` m.fl.), ingen ny T171-persondata-klass. */
+  varReferens: 'Miranon Media/Lotta Gotthardsson',
   orgnummer: '559540-5498',
   gatuadress: 'Uttringe Hages väg 17',
   postadress: '144 63 Rönninge',
@@ -104,10 +135,29 @@ export type KvittoradSpec = {
   kundEpost: string;
   belopp: number;
   betalsatt: Betalsatt;
+  /** [TASK-306 rättelsevarv, Marcus dom 2] Konsumeras INTE längre av
+   * `kvittoBenamning`/`kvittoRader` (etiketten "Anmälningsavgift"/
+   * "Slutbetalning" är borttagen ur kvittots synliga text) — fältet lever
+   * kvar OFÖRÄNDRAT eftersom Kvitton-tabellens ledger
+   * (`send-receipt-email/index.ts`s `makeRealFinalizer`) fortfarande skriver
+   * det till Airtable. */
   betalning: Betalning;
+  /** Kursnamnet — Event-tabellens `Event (source)` (selectName). [TASK-306
+   * rättelsevarv] INTE längre en del av `kvittoBenamning` (Marcus dom 1) —
+   * fältet lever kvar för andra konsumenter (t.ex. Kvitton-tabellen). */
   eventNamn: string | null;
   /** ISO — datumet som skrivs ut ("Datum: …"), INTE nödvändigtvis dagens datum om kvittot avser en tidigare betalning. */
   datum: string;
+  /** [TASK-306] Eventtyp-klass — Event-tabellens `Typ` (Utbildning/Föreläsning), selectName. */
+  eventTyp: string | null;
+  /** [TASK-306] ISO — Event-tabellens `Startdatum`. */
+  eventStart: string | null;
+  /** [TASK-306] ISO — Event-tabellens `Slutdatum`. */
+  eventSlut: string | null;
+  /** [TASK-306] Lottas fria bokföringskategoriord — frivilligt Event-fält
+   * `Bokföringstext (kvitto)`. Ifyllt → sist i benämningen (`kvittoBenamning`
+   * nedan); tomt → utelämnat. */
+  bokforingstext: string | null;
 };
 
 /** Momssatsen i procent, för visning på kvittot ("Moms (25 %)"). Källa: filhuvudet. */
@@ -151,6 +201,80 @@ export function beraknaMoms(brutto: number): MomsSplit {
 }
 
 /**
+ * [TASK-306 rättelsevarv] Komprimerar ett datumspann till Lottas EGEN
+ * kompakta skrivning i stället för att skriva ut båda datumen i sin helhet
+ * (den formen tog tre rader i Prince-kolumnen, se `kvittoBenamning`s
+ * docstring för Marcus mätning mot förlagans EN rad). `slut` null eller
+ * samma som `start` → endagars, `start` returneras oförändrat.
+ *
+ *   - Samma år+månad, olika dag → `"2026-07-25/26"` (bara slutdagen)
+ *   - Samma år, olika månad     → `"2026-07-31/08-01"` (månad-dag)
+ *   - Olika år                  → `"2026-12-31/2027-01-01"` (hela slutdatumet)
+ */
+function formaterDatumspann(start: string, slut: string | null): string {
+  if (!slut || slut === start) return start;
+  const aarStart = start.slice(0, 4);
+  const manadStart = start.slice(5, 7);
+  const aarSlut = slut.slice(0, 4);
+  const manadSlut = slut.slice(5, 7);
+  if (aarStart === aarSlut && manadStart === manadSlut) {
+    return `${start}/${slut.slice(8)}`; // bara dagen (DD)
+  }
+  if (aarStart === aarSlut) {
+    return `${start}/${slut.slice(5)}`; // månad-dag (MM-DD)
+  }
+  return `${start}/${slut}`; // hela slutdatumet (YYYY-MM-DD)
+}
+
+/**
+ * [TASK-306 rättelsevarv, Marcus dom 1, 2026-08-23] Kvittots BENÄMNING —
+ * ordagrant: "Benämningen är för lång! Den tar ju upp tre rader!! Orginalet
+ * tar upp EN rad. Kan vi skriva 'Utbildning 2026-07-25/26, personlig
+ * utveckling, meditation' bara och få plats med det på en rad utan att det
+ * ser konstigt ut? Lotta får ju plats med det på orginalet, med marginal."
+ *
+ * Formen är `<Typ> <Datumspann>, <Bokföringstext>` (se `formaterDatumspann`
+ * ovan för datumkompressionen) — TVÅ ändringar mot den tidigare fyrledade
+ * formen:
+ *
+ *   - INGET kursnamn. Lottas EGEN rad saknar det redan (hennes
+ *     bokföringssystem är per ARTIKEL — bokföringstexten ENSAM identifierar
+ *     raden där; se `fixtures/kvitto.exempel.json` § `_kalla` för det fulla
+ *     resonemanget om VARFÖR vårt system tidigare lade till det).
+ *   - Typ och datumspann skiljs av ETT MELLANSLAG, inte ett kommatecken —
+ *     `"Utbildning 2026-07-25/26"`, inte `"Utbildning, 2026-07-25/26"`.
+ *
+ * VARJE led är VALFRITT — saknas ett fält UTELÄMNAS LEDET, ALDRIG en
+ * platshållare. Endagars-event (samma start-/slutdatum, eller slutdatum
+ * saknas): ETT datum, inget intervall (`formaterDatumspann`).
+ */
+export function kvittoBenamning(
+  spec: Pick<KvittoradSpec, 'eventTyp' | 'eventStart' | 'eventSlut' | 'bokforingstext'>,
+): string {
+  const typDatumDelar: string[] = [];
+
+  if (spec.eventTyp) {
+    typDatumDelar.push(spec.eventTyp);
+  }
+
+  if (spec.eventStart) {
+    typDatumDelar.push(formaterDatumspann(spec.eventStart, spec.eventSlut));
+  }
+
+  const delar: string[] = [];
+
+  if (typDatumDelar.length > 0) {
+    delar.push(typDatumDelar.join(' '));
+  }
+
+  if (spec.bokforingstext) {
+    delar.push(spec.bokforingstext);
+  }
+
+  return delar.join(', ');
+}
+
+/**
  * Kvittots rader i VISNINGSORDNING — konsumeras av BÅDE PDF-layouten och
  * mailets brödtext (se filhuvudets mirror-kontrakt). Momsen (25 %, se
  * `beraknaMoms`) redovisas som TRE Gunilla-läsbara rader (Netto / Moms /
@@ -168,10 +292,18 @@ export function beraknaMoms(brutto: number): MomsSplit {
  * `Datum:`-raden är ISO (`formatKvittoDatum`), och org-adressen är TRE
  * rader (`MIRANON_ORG.gatuadress`/`postadress`/`land`) i stället för en —
  * Rogers egen radindelning.
+ *
+ * AVSER-RADEN (TASK-306 rättelsevarv, Marcus dom 2, 2026-08-23) — ordagrant:
+ * "Varför har vi fortfarande med ordet 'Slutbetalning'. Det är FEL. Det är
+ * bara en betalning, varken slut eller början." Etiketten
+ * ("Anmälningsavgift"/"Slutbetalning") är BORTTAGEN ur raden — den skriver
+ * nu bara benämningen (`kvittoBenamning`). `spec.betalning` självt rör
+ * ingenting här längre (se `KvittoradSpec.betalning`s docstring för var det
+ * fortfarande används).
  */
 export function kvittoRader(spec: KvittoradSpec): readonly string[] {
-  const betalningLabel = spec.betalning === 'avgift' ? 'Anmälningsavgift' : 'Slutbetalning';
   const { moms, netto } = beraknaMoms(spec.belopp);
+  const benamning = kvittoBenamning(spec);
   return [
     `Kvitto ${spec.kvittonummer}`,
     '',
@@ -182,7 +314,7 @@ export function kvittoRader(spec: KvittoradSpec): readonly string[] {
     `Moms (${MOMSSATS_PROCENT} %): ${formatBelopp(moms)}`,
     `Betalt: SEK ${formatBelopp(spec.belopp)}`,
     `Betalsätt: ${spec.betalsatt}`,
-    `Avser: ${betalningLabel}${spec.eventNamn ? ` — ${spec.eventNamn}` : ''}`,
+    benamning ? `Avser: ${benamning}` : 'Avser:',
     '',
     MIRANON_ORG.namn,
     `Org.nr: ${MIRANON_ORG.orgnummer}`,
