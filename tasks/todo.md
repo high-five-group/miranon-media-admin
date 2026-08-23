@@ -15,43 +15,35 @@
 
 ## Aktuellt fokus
 
-**Session 111 ⏸️ PAUSAD (2026-08-23, efter Del 5; `lifecycle: paused`) —
-ANMÄLNINGSSIDANS KONVERGENSPASS: FORMEN GODKÄND, PROMOVERINGEN KVAR.
-⚠️ ALLT FORMARBETE LIGGER LOKALT OCH OPUSHAT på grenen
-`wip/s111-marcus-iteration` (10 commits, aldrig sett av CI) i worktreen
-`.claude/worktrees/s111-anmalningssidan` — radera den inte.**
-Egen worktree `s111-anmalningssidan` (huvudkatalogen ägs av levande annan
-session, ADR-090 beslut 2). **Grillningen** (Del 2) gav sju Marcus-kvitterade
-beslut: divergens på anmälningssidan ENSAM med promovering till alla fem
-Mer-sidorna · sidramen blir **kant-i-kant** · vy-grundens BREDD avsiktligt
-olåst och mätningsberoende (byggs bakom `?sidram=ny`, Marcus väljer på bild) ·
-`InitialAvatar` lyfts till `primitives/` · radanatomin ärvs ur personlistans
-facit (Marcus idé) · åtgärden bärs av RADEN själv så höjd-/breddlåsen
-överlever · `TASK-291` är sessionens andra spår. **Det egentliga fyndet:**
-appen bär TVÅ oförenliga sidram-dialekter, båda facit-stämplade, där den ena
-kallar den andra ett `dubbleringsfel` i sin egen kod — och
-`DESIGN-SYSTEM-SPEC` saknar sidram-sektion helt. **`ADR-124`** ska mintas
-(baren prövad öppet: delade presentationsformer, sidram + cirkel som två
-instanser). **Marcus invändning blev egen tråd `T172` + `TASK-297`:** av 27
-facit-stämplade ytor har 12 bilder, **3** är sha256-innehållslåsta och 6 vyer
-har pixel-baslinje — överlappet stämplat↔baslinje är **TVÅ**, och 15 ytor bär
-ARIA-facit som per konstruktion inte kan se visuell drift. **Levererat:** PRD
-**`TASK-299`** (nio sektioner, fem spec-DoD, alla fem berörda facit-manifest
-namngivna med sökväg) + **tio skivor** `299.1`–`299.10` (fem `ready-for-agent`,
-fem `ready-for-human`). **Självförvållat fel, fångat av en räkning:** `bash
-skript.sh | grep …` maskerade exitkoden — L440-hooken ser bara
-kommandosträngen, så en grind INUTI ett skript är osynlig för den; två kort
-skapades aldrig medan jobbet rapporterade exit 0 → lesson-fragment landat.
-`task create` mättes till **> 120 s per anrop** (fleet-drift,
-`TASK-238`-klassen). PR `#1794`/`#1806`/`#1812`/`#1814` alla gröna per jobb.
-Worktree-städning vid paus: 4 borttagna, 6 grenar frigjorda, 228 lokala kvar.
-**Heartbeat-monitorn STOPPAD på Marcus order** (larmade var 90:e sekund på
-medvetet parkerad dependabot-PR `#1488`) — starta inte om utan undantagsrad.
-**NÄSTA (RESUME av 111, ej ny session): spawna bygg-agent på `TASK-299.1`** —
-enda skivan utan blockerare. Sedan `299.2` ∥ `299.3` (båda Marcus). `TASK-291`
-när Marcus vill. Numrering vid paus, disk-läst mot `c3e6a8ad` — RE-DERIVERA:
-kort 301 · tråd T173 (**varning:** grenen `docs/s109-…-trad-t173` finns) · ADR
-124 · L512 · 77 fragment. Full narrativ: sessionsdok S111 Del 1–3 + PAUSLÄGE.
+**Session 111 ▶️ ÅTERUPPTAGEN (resume 2, 2026-08-23, `lifecycle: active`) —
+ANMÄLNINGSSIDANS KONVERGENSPASS: FORMEN GODKÄND, SLUTSPURTEN TILL PROD.
+⚠️ ALLT FORMARBETE LIGGER FORTFARANDE LOKALT på grenen
+`wip/s111-marcus-iteration` (10 commits, `759e87fb`, aldrig sett av CI) i
+worktreen `.claude/worktrees/s111-anmalningssidan` — radera den inte.**
+Huvudkatalogen ägs av **S108** (lapp `b58c3300`, levande), så resume 2 kör i
+worktrees (`s111-resume-2` för docs, `s111-anmalningssidan` för koden).
+Marcus order vid resume: *"ta detta hela vägen i mål nu … allt vi gjort i
+denna session [ska ligga] skarpt i prodappen innan vi stänger."* **Planen,
+kvitterad ("Kör!"):** steg 0 resume-landning + `wip` mergad mot `origin/main`
+(19 bakom) → **fönster 1** Marcus granskar formen + tre beslut (`TASK-303`
+AC #3 amendera/stryk · event-dimensionens rymd · `299.2` AC #1 genomgång) →
+tre AFK-spår (ordbytet `Eventinfo → Deltagarinfo` globalt + `wip` som PR ·
+`291` AC #3 promovering · `299.11` dialekt-ytorna) → **fönster 2** `299.4`
+facit-stämpel → `299.5` + `291` AC #4/`303` AC #7 facit-amendering →
+`299.6` + **`ADR-125`** → **fönster 3** `299.10` QA + prod-verifiering
+(Vercel Production-SHA = `origin/main`, bundle-identitet) → session-end.
+**Rättelser mot paus 2-handoffen, disk-mätta vid resume:** `ADR-124` är
+TAGEN av S108 (`#1830`) → `299.6` mintar **ADR-125** · kort **309** · tråd
+**T176** · lesson **L522** (vol-06 slutar L521 efter S109:s konsolidering) ·
+70 fragment · ordbytet är ~52 strängträffar i ~20 filer inkl. sex
+e2e-staging-tester + `ORDLISTA.md:408–417` som säger motsatsen — inte "ett
+drygt tiotal" · heartbeat `--once` → `ALLT LUGNT` (`#1488` borta, fem
+dependabot parkerade och undantagna), monitorn startad i `--quiet`.
+Del 5-godkännanden står: bevakningsraden + åtgärdskö-raden (`291` AC #2),
+variant B (`299.3` AC #6), full omfattning/sidkrom, period som dimension,
+ordbytet vänt. Kända röda som inte är våra: `dokument-rackviddsval:313`,
+`hem:313` (cache+frusen klocka), `preview-receipt.staging:151`.
+Full narrativ: sessionsdok S111 Del 1–5 + Paushistorik.
 
 **Session 110 ✅ STÄNGD (2026-08-22, K-sista; `lifecycle: closed` efter Marcus coverage-kvittens) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,

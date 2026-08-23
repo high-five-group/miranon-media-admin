@@ -148,6 +148,70 @@ bibliotek, som base64-kodar värdet innan lagring). Uppackning krävs:
 in resultatet som bearer-token hade fått ett `401` och sett ut som "PAT:et
 fungerar inte", inte "PAT:et behöver packas upp".
 
+## Prod-provisionering av externa Storage-resurser — kanonisk väg (`TASK-308`)
+
+**Fyndet, källmärkt:** `preview-receipt` mätte skarpt 502 `sb-error-code:
+EDGE_FUNCTION_ERROR`, `{"error":"Utkastet kunde inte sparas: Bucket not
+found", ...}` i prod 2026-08-23 12:25Z — första skarpa prod-användningen av
+`ADR-124`s leveransväg (`TASK-302`). Rotorsak:
+[`scripts/provision-attachments-bucket.mjs`](../../scripts/provision-attachments-bucket.mjs)
+(`TASK-146.3`) vägrar BY DESIGN köra sin SKRIVväg mot prod
+(`assertStagingOnly()`) — ingen prod-provisionering av bucketen `bilagor`
+fanns någonsin bokförd. Full historik: `ADR-124` § Updates 2026-08-23
+(`TASK-308`).
+
+**Kanonisk SKRIVväg till prod: Supabase-dashboarden, av Marcus.** Samma
+doktrin som prod-EF-deploy (`fas4-prod-deploy.sh`/`deploy-prod-
+functions.sh`, § ovan): en agent provisionerar aldrig en extern resurs i
+prod. `assertStagingOnly()` i `provision-attachments-bucket.mjs` förblir
+oförändrad av `TASK-308` — skriptets skrivväg är och förblir staging-låst.
+Project Settings → Storage → New bucket, inställningar identiska med
+skriptets `BUCKET_DESIRED_CONFIG` (privat, `fileSizeLimit` 25 MB,
+`allowedMimeTypes: ['application/pdf']`).
+
+**Kanonisk LÄSväg (konvergenskontroll) för BÅDA miljöerna: `--kontrollera
+<ref>`.** Skriptet fick `TASK-308` ett nytt, read-only läge som accepterar
+prod-refen som ARGUMENT (samma lås-mönster som `fas4-prod-deploy.sh`: refen
+måste anges explicit och matcha den `SUPABASE_URL` som redan krävs) — den
+ENDA avsiktliga vägen förbi `assertStagingOnly()`, och den skriver ALDRIG
+(tvingar `dryRun` internt oavsett `--dry-run`).
+
+**Exakt kommando, Marcus (`!`-prefixet eller egen terminal):**
+
+```bash
+! SUPABASE_URL="https://lvjsfnphlauldxqlncpl.supabase.co" \
+  SUPABASE_SERVICE_ROLE_KEY="$(npx supabase projects api-keys \
+    --project-ref lvjsfnphlauldxqlncpl -o json \
+    | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+        const k=JSON.parse(s).find(k=>k.name==="service_role");
+        process.stdout.write(k.api_key);
+      })')" \
+  node scripts/provision-attachments-bucket.mjs --kontrollera lvjsfnphlauldxqlncpl
+```
+
+Enklare alternativ som täcker samma kontroll (plus `CORS`/hemligheter) i ett
+enda svep, redan den etablerade prod-lässvägen (§ "Prod-EF-deploy körs via
+SKRIPTET" i repots `CLAUDE.md`):
+
+```bash
+! bash scripts/fas4-prod-deploy.sh --kontrollera lvjsfnphlauldxqlncpl
+```
+
+`fas4-prod-deploy.sh --kontrollera` kör bucket-kontrollen automatiskt sedan
+`TASK-308` (`scripts/kontrollera-bilagor-bucket.sh`, hämtar service-role-
+nyckeln engångs, aldrig på disk), och `--deploya` VÄGRAR (fail-closed) om
+bucketen saknar konvergens — en Storage-beroende EF deployas inte längre
+mot en bucket som inte finns.
+
+**Testat mot STAGING skarpt** (bygg-agenten, `TASK-308`, ingen prod-ref
+inblandad): `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` för
+`pqtshyierkdgwdnxuirz` + `--kontrollera pqtshyierkdgwdnxuirz` rapporterade
+`✅ Bucket "bilagor" konvergerad mot BUCKET_DESIRED_CONFIG.`, exit 0.
+
+**ÖPPET vid `TASK-308`s landning:** prod-mätningen (att `bilagor` faktiskt
+konvergerar i PROD) kräver Marcus egen körning — en agent kan inte rikta
+kommandon mot prod-Supabase-projektet (`scripts/deny-prod-ref.sh`).
+
 ## Fil-åtkomstmatris per värdapp — MÄTNING, inte förklaring
 
 TCC-behörighet (macOS "Integritet och säkerhet → Filer och mappar") sätts
