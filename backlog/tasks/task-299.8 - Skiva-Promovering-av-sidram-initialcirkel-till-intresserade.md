@@ -4,7 +4,7 @@ title: 'Skiva: Promovering av sidram + initialcirkel till intresserade'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:32'
-updated_date: '2026-08-22 22:40'
+updated_date: '2026-08-22 23:42'
 labels:
   - ready-for-agent
 dependencies:
@@ -21,20 +21,20 @@ Intresserade får husets sidram och initialcirkeln, på samma villkor som vänte
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Intresserade bär den delade sidramen; den gamla textlänken och den dubblerade sidmarginalen är borta
-- [ ] #2 Varje rad bär initialcirkeln ur personens namn, med primitiv-komponenten — ingen ny inline-kopia
-- [ ] #3 Radens fält och deras inbördes ordning är OFÖRÄNDRADE
-- [ ] #4 Sidan har en visuell spec med baslinje för desktop och mobil
-- [ ] #5 Befintliga acceptance-skarven utvidgad, inte omskriven
+- [x] #1 Intresserade bär den delade sidramen; den gamla textlänken och den dubblerade sidmarginalen är borta
+- [x] #2 Varje rad bär initialcirkeln ur personens namn, med primitiv-komponenten — ingen ny inline-kopia
+- [x] #3 Radens fält och deras inbördes ordning är OFÖRÄNDRADE
+- [x] #4 Sidan har en visuell spec med baslinje för desktop och mobil
+- [x] #5 Befintliga acceptance-skarven utvidgad, inte omskriven
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -51,4 +51,10 @@ Marcus order i klartext: "Bygg det globalt bara med sidkromet." Det ursprungliga
 Vad denna skiva faktiskt behöver är alltså primitiverna, inte anmälningssidans LISTA. Beroendet pekar nu på det som verkligen krävs. TASK-299.5 förblir låst bakom 299.4 (Marcus konvergensgranskning) — den kedjan rörs inte.
 
 MARCUS UNDANTAGSREGEL, samma beslut: "Ser vi något som inte funkar sedan så är det ju bara att göra ett undantag på den sidan, men jag tror det är helt lungt." Ett lokalt avsteg på en enskild sida är alltså tillåtet och ska INTE läsas som att den delade formen ska rivas. Stöter du på en yta där sidkromet inte fungerar: bygg undantaget lokalt, bokför skälet, riv inte formen.
+
+BYGGT (TASK-299.8, 2026-08-23). src/components/intresserade/Intresserade.tsx: gamla textlanken + p-4 ersatta med SidRam (chevron ensam, to="/mer") - monstret kopierat verbatim ur DokumentYta.tsx (samma mal, samma etikett "Tillbaka till Mer"). Varje rad bar nu InitialAvatar (husets primitiv). Radens tre Field-par ar ordagrant oforandrade (AC #3) - bara chrome+avatar ar nya. Rubriken (h1) lever kvar i sidan, ej i SidRams rubrik-gren (OMFATTNINGEN LAST punkt 2). Tre varv titta-och-iterera kort mot dev-fixturvarlden (Playwright, hermetisk) vid 375/390/768/1280 px + tomt/fel-lage - inga CSS-fixar kravdes efter forsta varvet.
+
+AC #4 (visuell spec): tests/visual/intresserade.spec.ts tillagd, samma form som personer.spec.ts/mer-anmalningar.spec.ts (network.use-overskuggad get-leads, toHaveScreenshot). INGEN baseline-PNG incheckad - CONTRIBUTING.md § Visuell regression: "Baselines fods i CI, aldrig lokalt", endast -linux-bilder checkas in och jag kor macOS/darwin. Samma monster som notis-visual.spec.ts/chunk-banner-visual.spec.ts (TASK-285.9): spec-filen finns, baslinjen fods via visual-baselines.yml (specfilter=intresserade) i ett separat, granskat steg. Lokalt genererade -darwin.png anvandes bara for min egen granskning och ar RADERADE fore commit (verifierat: git status visar bara de tre avsedda filerna).
+
+DIVERGENS UPPTACKT OCH ATGARDAD: min worktree grenade fran 3a838454 (bar redan f11410b3, dependency-omsattningen - kortets Dependencies: TASK-299.1 var alltsa korrekt hela tiden i min worktree). Orkestrerarens forvarning om kortfils-konflikt (299.7:s DIRTY-incident) TRAFFADE INTE mig - git log HEAD..origin/main -- "backlog/tasks/task-299.8*" gav noll traffar. Jag fast-forwardade anda (git merge --ff-only origin/main, till 492a38ce) innan push, eftersom origin hade dragit ifran 11 commits under bygget. Ingen konflikt uppstod (mina tre rorda filer overlappar inte med FF-diffen). Sidoeffekt av FF: npm run test:api gick forst 3 fel -> 0 fel efter FF. De tre felen (pdfBase64 undefined i generate-event-attachment/preview-receipt staging-tester) berodde pa TASK-302.2 (parallell agent, delad staging-EF redan omlagd till {url, utgar} innan dess egen PR landat i min worktrees ursprungliga bas) - EJ en regression i denna skiva. Kallor: git log --oneline, worktree-listan (agent-a3d7f73f60e861e14 pa feat/task-302-2-skarpa-preview-ef), kortet TASK-302.2. FF till 492a38ce (som bar TASK-302.2 merge, PR #1838) loste det helt - 1037/1037 grona om.
 <!-- SECTION:NOTES:END -->
