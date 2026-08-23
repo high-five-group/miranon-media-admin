@@ -95,93 +95,69 @@ type AtgardskoInnehallProps = {
   antal: number;
 };
 
-/** [TASK-303 AC #3] Formaterar räknat antal för badgen — samma 99+-tak som
-    variant C alltid burit (`antal > 99 ? '99+' : antal`), nu den ENDA
-    platsen som formatet lever eftersom badgen är delad mellan A/B. */
+/** 99+-taket för variant C:s ledande siffer-platta (`antal > 99 ? '99+'`).
+    Bar tidigare även A/B:s trailing-badge; den är riven (Marcus 2026-08-23,
+    talet flyttat tillbaka in i meningen), så C är enda konsumenten kvar. */
 function badgeVarde(antal: number): string {
   return antal > 99 ? '99+' : String(antal);
 }
 
 /**
- * [TASK-303 AC #3] Den friliggande räkne-badgen — bredd-reserverad
- * (`min-w-6`, `tabular-nums`) så 1-, 2- och 3-teckenvärden ("3", "12",
- * "99+") inte hoppar radens layout. `dold` speglar personlistans
- * `Pill`-mönster EXAKT (`PersonsList.tsx` ~rad 1183): ALLTID monterad,
- * `invisible` + `aria-hidden` när den inte gäller — aldrig villkorat
- * bort, annars vandrar chevronen i sidled mellan rader precis det fyndet
- * `Pill`s egen docblock beskriver.
- */
-function RadBadge({ varde, dold = false }: { varde: string; dold?: boolean }) {
-  return (
-    <span
-      aria-hidden={dold || undefined}
-      className={`text-(color:--mm-atgardsko-markor-text) flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-(--mm-atgardsko-markor-bg) px-1.5 font-semibold text-caption tabular-nums ${
-        dold ? 'invisible' : ''
-      }`}
-    >
-      {varde}
-    </span>
-  );
-}
-
-/**
- * [TASK-303 AC #2] Den DELADE radanatomin — rubrikrad + undertext, ALLTID
- * båda renderade (aldrig villkorat bort, exakt personlistans höjdlås-
- * disciplin). `marker` (ledande ikon/siffra) och `badge` (trailing,
- * reserverad plats) är BÅDA valfria så samma byggsten bär variant B (utan
- * marker) och variant C (utan badge) lika enkelt som A (båda).
+ * [TASK-303 AC #2, omarbetad på Marcus order 2026-08-23] Den DELADE
+ * radanatomin — rubrikrad + undertext, ALLTID båda renderade (aldrig
+ * villkorat bort, exakt personlistans höjdlås-disciplin). `marker`
+ * (ledande ikon/siffra) är valfri så samma byggsten bär variant B (utan
+ * marker) lika enkelt som A och C.
  *
- * TVÅRADIGT GRID, INTE `flex-col` (rättat i varv 2 — se PR-rapporten för
- * mätningen som fällde varv 1): en naiv `flex-col`-text-kolumn delar SAMMA
- * bredd med badge+chevron på BÅDA raderna, och undertexten (den mest
- * betydelsebärande texten på raden) fick då bara ~179-227px vid 375px —
- * live uppmätt `scrollWidth` överskred `clientWidth` med 45-60px för de
- * faktiska strängarna, dvs. exakt den mitt-i-ordet-klippning AC #4 (och
- * `Bevakningsrad.tsx`s ursprungliga `line-clamp-2`-motivering) förbjuder.
- * Lösningen är branschmönstret för "ledande ikon + rubrik/meta-rad +
- * fullbredds-underrad" (Gmail, Slack, iMessage-listor): badge/chevron bor
- * ENDAST på rubrikradens grid-rad; undertexten `col-span`:ar hela bredden
- * på rad 2 och äter därmed upp de gap:ar+kolumner badge/chevron annars
- * hade stulit. Marker (om den finns) ligger UTANFÖR detta grid, som en
- * vanlig flex-syskon-platta (`items-center` centrerar den mot HELA radens
- * höjd via `row-span`-fri flex, inte grid) — närvaro/frånvaro av marker
- * påverkar därmed aldrig grid-kolumnernas antal.
+ * MARCUS ÄNDRING, verbatim: "jag vill ta bort siffer-pillen och sätta
+ * chevronen centrerat. Istället för siffer-pillen på bevakningsraden så
+ * vill jag att vi skriver ut '3 nya deltagare saknar deltagarinfo',
+ * siffran ska alltså in i meningen."
  *
- * `truncate` (EN rad per rad, aldrig `line-clamp-2`): säkert HÄR eftersom
- * båda raderna är antingen (a) konstant text, LIVE-mätt att rymmas i den
- * nu breddade kolumnen (se anropsställenas docblocks för de faktiska
- * `scrollWidth`/`clientWidth`-talen), eller (b) äkta användardata
- * (eventnamnet) som ÄRVER personlistans egen truncate-avvägning för långa
- * namn (`PersonsList.tsx` `Link`-raden) — inte en ny regel för just denna
- * rad. Undertexten är `text-caption` (12px), SAMMA storlek personlistans
- * egna sekundärrader (kontakt/interaktion) redan bär — inte en ny skala.
+ * VARFÖR FLEX HÄR, TROTS ATT GRIDEN INFÖRDES FÖR ATT LÖSA EN MÄTT BUGG.
+ * Den tidigare formen hade badge OCH chevron INNE i textblocket, på rad 1.
+ * En naiv `flex-col` gav då undertexten bara ~179-227px vid 375px
+ * (`scrollWidth` översteg `clientWidth` med 45-60px = klippning mitt i ord,
+ * det AC #4 och `Bevakningsrad.tsx`s ursprungliga `line-clamp-2`-motivering
+ * förbjuder), och griden fanns för att låta rad 2 återta bredden under dem.
+ *
+ * Med badgen RIVEN och chevronen flyttad UT ur textblocket — den är nu
+ * syskon till textblocket i förälderns `flex items-center` — konkurrerar
+ * ingenting längre om rad 1:s bredd. Båda raderna får samma bredd, och det
+ * finns inget att återta. Det är dessutom exakt Hems listanatomi
+ * (`NyaAnmalningar.tsx`: avatar · `flex-col`-textblock · högerställd meta),
+ * som Marcus i samma besked pekade ut som formen anmälningslistan ska ha —
+ * två ytor, en anatomi.
+ *
+ * CHEVRONEN CENTRERAS MOT HELA RADEN av förälderns `items-center`, inte mot
+ * rubrikraden som griden gjorde med `self-center` i `row-start-1`.
+ *
+ * HÖJDLÅSET vilar nu på att undertexten ryms på EN rad: talet är tillbaka i
+ * meningen och `deltagarinfo` är tre tecken längre än `eventinfo`, så raden
+ * växte. Mätt vid 375px med 1-, 2- och 3-siffriga tal — siffrorna står i
+ * commit-meddelandet, inte upprepade här som en andra kopierbar källa.
  */
 function RadInnehall({
   marker,
   header,
   subtext,
-  badge,
 }: {
   marker?: ReactNode;
   header: string;
   subtext: string;
-  badge?: ReactNode;
 }) {
   return (
     <>
       {marker}
-      <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 gap-y-0.5">
-        <span className="col-start-1 row-start-1 truncate font-semibold text-body">{header}</span>
-        {badge && <span className="col-start-2 row-start-1 self-center">{badge}</span>}
-        <ChevronRight
-          aria-hidden="true"
-          size={18}
-          className="text-(color:--mm-navcard-icon) col-start-3 row-start-1 shrink-0 self-center"
-        />
-        <span className="col-span-3 col-start-1 row-start-2 truncate text-caption text-text-secondary">
-          {subtext}
-        </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate font-semibold text-body">{header}</span>
+        <span className="truncate text-caption text-text-secondary">{subtext}</span>
       </span>
+      <ChevronRight
+        aria-hidden="true"
+        size={18}
+        className="text-(color:--mm-navcard-icon) shrink-0"
+      />
     </>
   );
 }
@@ -225,8 +201,7 @@ export function AtgardskoRadIkon({ antal }: AtgardskoInnehallProps) {
           </span>
         }
         header="Kräver åtgärd"
-        subtext="Kunde inte kopplas till rätt event"
-        badge={<RadBadge varde={badgeVarde(antal)} />}
+        subtext={`${antal} anmälningar kunde inte kopplas till rätt event`}
       />
     </AtgardskoLinkSkal>
   );
@@ -244,8 +219,7 @@ export function AtgardskoRadEtikett({ antal }: AtgardskoInnehallProps) {
     <AtgardskoLinkSkal to="/mer/anmalningar" search={{ visa: 'atgardskon' }}>
       <RadInnehall
         header="Kräver åtgärd"
-        subtext="Kunde inte kopplas till rätt event"
-        badge={<RadBadge varde={badgeVarde(antal)} />}
+        subtext={`${antal} anmälningar kunde inte kopplas till rätt event`}
       />
     </AtgardskoLinkSkal>
   );
@@ -343,8 +317,8 @@ export function EventinfoRadAnatomi({
   const dagar = bevakningDagarText(rad.dagarTillStart);
   const ejSkickad = rad.lage === 'ej-skickad';
   const subtext = ejSkickad
-    ? `${dagar} · Eventinfo saknas`
-    : `${dagar} · Nya deltagare saknar eventinfo`;
+    ? `${dagar} · Deltagarinfo saknas`
+    : `${dagar} · ${rad.antalUtanEventinfo} nya deltagare saknar deltagarinfo`;
   return (
     <li>
       <AriaButton
@@ -352,11 +326,7 @@ export function EventinfoRadAnatomi({
         onPress={() => onOppna(rad.event)}
         className="text-(color:--mm-navcard-text) flex min-h-14 w-full items-center gap-3 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-(--mm-navcard-border-contrast)"
       >
-        <RadInnehall
-          header={rad.eventNamn}
-          subtext={subtext}
-          badge={<RadBadge varde={String(rad.antalUtanEventinfo)} dold={ejSkickad} />}
-        />
+        <RadInnehall header={rad.eventNamn} subtext={subtext} />
       </AriaButton>
     </li>
   );
