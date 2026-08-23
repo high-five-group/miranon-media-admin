@@ -26,6 +26,12 @@ export type BlockId =
   | 'rubrik'
   | 'datumTid'
   | 'plats'
+  /** [TASK-309.7] Eventinnehållets EGNA `Tid`-fält (`EVENTINNEHALL_FALT_
+   *  KEYS`, `_shared/eventinnehall-falt.ts`) — fristående redigerbart på
+   *  Mer-sidans Eventinnehåll-yta. `GRUPPER` nedan använder den ALDRIG:
+   *  genereringsvyns "Datum och tid"-block (`datumTid`, ovan) bäddar in
+   *  samma text i en kombinerad, event-källad sträng i stället. */
+  | 'tid'
   | 'pris'
   | 'anmalningsavgift'
   | 'resterande'

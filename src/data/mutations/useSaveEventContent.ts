@@ -20,6 +20,12 @@ import { queryKeys } from '@/queries/keys';
  *
  * AC #4 kräver ENDAST invalidering — se `useSaveEventText`s docblock för
  * varför ingen aktivitetslogg-integration byggs i denna skiva.
+ *
+ * [TASK-309.7] INVALIDERAR ÄVEN `queryKeys.eventinnehall.list` — Mer-sidans
+ * Eventinnehåll-yta (`useEventinnehallList`) konsumerar SAMMA mutation för
+ * sin egen redigering, och dess lista måste kännas av en nyss sparad
+ * ändring utan en manuell omladdning. Skiva 2:s ursprungliga invalidering
+ * (`documentSources.all`) rörs inte — bara utökad, inte ersatt.
  */
 export function useSaveEventContent() {
   const queryClient = useQueryClient();
@@ -36,6 +42,7 @@ export function useSaveEventContent() {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.documentSources.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.eventinnehall.list });
     },
   });
 }

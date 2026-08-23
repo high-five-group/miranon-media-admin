@@ -25,13 +25,16 @@ import type {
   CreatedEvent,
   CreateEventInput,
   EventFormat,
+  EventinnehallListItem,
   Intresserad,
   PersonDetail,
+  PlaceListItem,
   RecordActivityResult,
   RegistrationDetail,
   SavedSegment,
   SaveEventContentInput,
   SaveEventTextInput,
+  SavePlaceInput,
   SavePlaceStandardInput,
   SaveSegmentInput,
   SegmentResult,
@@ -226,6 +229,31 @@ export interface DataSourceAdapter {
    * datamodell) — klienten skickar aldrig `Namn` självt.
    */
   saveEventContent(input: SaveEventContentInput): Promise<void>;
+
+  /**
+   * Lista SAMTLIGA Eventinnehåll-rader (TASK-309.7 AC #2, Mer-sidans
+   * Eventinnehåll-yta, ADR-125 § 7) — GLOBAL läs-lista (speglar
+   * `getEventFormats`-mönstret), INTE ett enskilt events ifyllnadsunderlag
+   * (det är `getDocumentSources`s jobb). Varje rad bär sina EGNA fältvärden
+   * rakt av (ingen event-kontext att falla tillbaka mot) plus sin egen
+   * agenda uppdelad per dag. GET mot get-event-contents-EF:en.
+   */
+  getEventContents(): Promise<EventinnehallListItem[]>;
+
+  /**
+   * Lista SAMTLIGA Platser-rader (TASK-309.7 AC #3, Mer-sidans Platser-yta,
+   * ADR-125 § 7) — GLOBAL läs-lista. GET mot get-places-EF:en.
+   */
+  getPlaces(): Promise<PlaceListItem[]>;
+
+  /**
+   * REN plats-redigering UTAN event (TASK-309.7 AC #3, Mer-sidans Platser-
+   * yta) — till skillnad från `savePlaceStandard` ovan (som alltid går via
+   * ett event). `input.platsId` uppdaterar en BEFINTLIG plats direkt;
+   * `input.namn` skapar en ny (find-or-create by `Namn`, server-side). POST
+   * mot samma save-place-standard-EF:en, i sitt event-lösa läge.
+   */
+  savePlace(input: SavePlaceInput): Promise<void>;
 
   /**
    * Skapa ett nytt event (Fas 6f, ADR-066). Tar write-shapen `CreateEventInput`

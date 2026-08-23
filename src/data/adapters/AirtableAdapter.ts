@@ -37,6 +37,8 @@ import {
   DocumentSourcesSchema,
   type EventFormat,
   EventFormatSchema,
+  type EventinnehallListItem,
+  EventinnehallListItemSchema,
   EventNoteSchema,
   EventSchema,
   type Intresserad,
@@ -47,6 +49,8 @@ import {
   PersonDetailSchema,
   PersonNoteSchema,
   PersonSchema,
+  type PlaceListItem,
+  PlaceListItemSchema,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
@@ -56,6 +60,7 @@ import {
   SavedSegmentSchema,
   type SaveEventContentInput,
   type SaveEventTextInput,
+  type SavePlaceInput,
   type SavePlaceStandardInput,
   type SaveSegmentInput,
   type SegmentResult,
@@ -462,6 +467,37 @@ export class AirtableAdapter implements DataSourceAdapter {
       eventinnehallId: input.eventinnehallId,
       falt: input.falt,
       agenda: input.agenda,
+    });
+  }
+
+  /**
+   * Lista SAMTLIGA Eventinnehåll-rader (TASK-309.7 AC #2). GET mot
+   * get-event-contents-EF:en — GLOBAL läs-lista, `.parse()` validerar vid
+   * datagränsen (ADR-026; z.array — en LISTA).
+   */
+  async getEventContents(): Promise<EventinnehallListItem[]> {
+    const data = await callEdgeFunction<{ eventinnehall: unknown }>('get-event-contents');
+    return z.array(EventinnehallListItemSchema).parse(data.eventinnehall);
+  }
+
+  /**
+   * Lista SAMTLIGA Platser-rader (TASK-309.7 AC #3). GET mot get-places-EF:en.
+   */
+  async getPlaces(): Promise<PlaceListItem[]> {
+    const data = await callEdgeFunction<{ places: unknown }>('get-places');
+    return z.array(PlaceListItemSchema).parse(data.places);
+  }
+
+  /**
+   * REN plats-redigering UTAN event (TASK-309.7 AC #3). POST mot
+   * save-place-standard-EF:en i dess event-lösa läge — se
+   * `DataSourceAdapter.savePlace` för det fulla kontraktet.
+   */
+  async savePlace(input: SavePlaceInput): Promise<void> {
+    await postEdgeFunction('save-place-standard', {
+      platsId: input.platsId,
+      namn: input.namn,
+      falt: input.falt,
     });
   }
 

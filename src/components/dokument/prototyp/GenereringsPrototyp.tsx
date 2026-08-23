@@ -283,6 +283,13 @@ function standardText(
     }
     case 'plats':
       return plats?.adress || null;
+    // [TASK-309.7] 'tid' hör till BlockId-unionen (blockDefinitioner.ts) men
+    // ANVÄNDS ALDRIG av denna prototyps `GRUPPER` — `datumTid` ovan bäddar
+    // redan in `ei.tid` i en kombinerad, event-källad sträng. Fallet finns
+    // bara för switchens exhaustiveness; grenen är strukturellt oåtkomlig
+    // här (ingen BlockDef i GRUPPER bär `id: 'tid'`).
+    case 'tid':
+      return ei.tid;
     case 'pris':
       return ei.pris;
     case 'anmalningsavgift':
