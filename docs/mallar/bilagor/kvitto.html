@@ -14,16 +14,20 @@
   `KvittoradSpec`, `beraknaMoms()`s utdata eller `MIRANON_ORG` - se
   README.md § Kvittots dynamiska yta för den fullständiga käll-tabellen.
 
-  FÖRLAGE-FÄLT UTAN KÄLLA I `receipt-content.ts` (Vår referens,
-  Förfallodatum, Vårt ordernr, Öresavr, buyer-e-post, Telefon/Plusgiro/
-  Swish/Webb/Epost-raderna i sidfoten) är BYGGDA i markupen men bokförda
-  som GAP - se README.md § Gap mot receipt-content.ts. Inget av dem är
-  hittat på i kod; värdena som INTE är tokens är antingen strukturellt
-  konstanta för ett KVITTO (Förfallodatum: "-", Öresavr: "0,00" - `beraknaMoms`
-  avrundar momsen till hela ören FÖRST, så differensen är alltid exakt noll,
-  se dess docstring) eller Miranons egna, redan publicerade kontaktuppgifter
-  (T170), samma klass av statisk organisationsdata som
-  bekraftelsebilaga.html redan hårdkodar (Swish/Plusgiro).
+  FÖRLAGE-FÄLT UTAN KÄLLA I `receipt-content.ts` (Förfallodatum, Vårt
+  ordernr, Öresavr, Telefon/Plusgiro/Swish/Webb/Epost-raderna i sidfoten) är
+  BYGGDA i markupen men bokförda som GAP - se README.md § Gap mot
+  receipt-content.ts. Inget av dem är hittat på i kod; värdena som INTE är
+  tokens är antingen strukturellt konstanta för ett KVITTO (Förfallodatum:
+  "-", Öresavr: "0,00" - `beraknaMoms` avrundar momsen till hela ören FÖRST,
+  så differensen är alltid exakt noll, se dess docstring) eller Miranons
+  egna, redan publicerade kontaktuppgifter (T170), samma klass av statisk
+  organisationsdata som bekraftelsebilaga.html redan hårdkodar
+  (Swish/Plusgiro). "Vår referens" (`{{orgReferens}}`) var tidigare en GAP
+  här (skrev `{{orgNamn}}`, Rogers egen personattribuering saknade
+  motsvarighet) - STÄNGD (TASK-306 rättelsevarv, Marcus dom 3, 2026-08-23):
+  `MIRANON_ORG.varReferens` bär nu Lottas egen skrivning
+  ("Miranon Media/Lotta Gotthardsson").
 
   Ingen persondata förekommer här (samma disciplin som de två andra
   mallarna) - köparens namn kommer från `{{kundnamn}}`-token, aldrig ett
@@ -60,7 +64,7 @@
     <dl class="kvitto-referensblock">
       <div class="kvitto-referensblock-rad">
         <dt>Vår referens</dt>
-        <dd>{{orgNamn}}</dd>
+        <dd>{{orgReferens}}</dd>
       </div>
       <div class="kvitto-referensblock-rad">
         <dt>Er referens</dt>
@@ -110,7 +114,6 @@
       <tr>
         <td class="kvitto-col-benamning">
           {{benamning}}
-          <span class="kvitto-betalningsetikett">{{betalningLabel}}</span>
         </td>
         <td class="kvitto-col-antal">1</td>
         <td class="kvitto-col-enhet"></td>
