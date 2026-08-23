@@ -557,7 +557,13 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
 
             const namnElement = behoverKoppling ? (
               <AnmalningRadResolution registration={reg} triggerClassName={namnTriggerKlass}>
-                {namn}
+                {/* Triggern är en `inline-flex`-knapp, och `text-overflow:
+                    ellipsis` verkar bara på block-containrar med inline-
+                    innehåll — på en flex-container KLIPPS texten i stället
+                    utan ellips ("Disa Danielssc", mätt i facit-bilden
+                    2026-08-23 vid 375 px). Den inre spannen är den block-
+                    nivå truncaten faktiskt kan verka på. */}
+                <span className="min-w-0 truncate">{namn}</span>
               </AnmalningRadResolution>
             ) : reg.eventId ? (
               <Link
@@ -573,12 +579,37 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
               <span className="min-w-0 truncate font-medium text-body">{namn}</span>
             );
 
+            // RADENS GRID (2026-08-23, efter facit-bildens mobilfynd):
+            // fyra kolumner — avatar · innehåll (minmax(0,1fr)) · tid ·
+            // chevron — och två rader. Avatar, tid och chevron spänner
+            // båda raderna (tiden vertikalt centrerad mot HELA raden,
+            // exakt Hems `NyaAnmalningar`-form). Skälet till grid i
+            // stället för flex: vid 375 px tog tidskolumnen ("för 5 dagar
+            // sedan", ~104 px) och badgen ("Behöver kopplas", ~135 px)
+            // tillsammans mer än innehållskolumnen (~106 px) — identiteten
+            // fick 0 px ("R") och namnet klipptes. Under `sm` släpper
+            // tiden därför sin andra rad (`max-sm:row-end-2`) och rad 2
+            // får spänna in under den (`max-sm:col-end-4`): identiteten
+            // får ~90 px i stället för 0, utan att rad 1:s form eller
+            // höjdlåset rörs. På desktop är layouten pixelidentisk med
+            // flex-formen Marcus godkände. DOM-ordningen är oförändrad
+            // (namn → identitet/status → tid → chevron) — gridet placerar
+            // visuellt, skärmläsaren läser som förut. ENBART longhands
+            // (`row-start`/`row-end`, `col-start`/`col-end`): span-shorthanden
+            // `row-span-2` skrev över `row-start-1` i utdatan och kastade
+            // avataren till kolumn 3 — mätt i första bildtagningen.
             return (
-              <li key={reg.id} className="relative flex items-center gap-3 py-2.5">
-                <InitialAvatar namn={namn} />
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <div className="flex min-w-0 items-center gap-2">{namnElement}</div>
-                  {/* RAD 2 — identiteten OCH statusen. Statusen låg tidigare
+              <li
+                key={reg.id}
+                className="relative grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-3 py-2.5"
+              >
+                <div className="col-start-1 row-start-1 row-end-3 flex">
+                  <InitialAvatar namn={namn} />
+                </div>
+                <div className="col-start-2 row-start-1 flex min-w-0 items-center gap-2">
+                  {namnElement}
+                </div>
+                {/* RAD 2 — identiteten OCH statusen. Statusen låg tidigare
                       som egen kolumn på rad 1 med RESERVERAD plats
                       (`invisible`, personlistans `Pill dold`-teknik). Den
                       formen är riven på Marcus order 2026-08-23, av en mätt
@@ -593,7 +624,7 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
                       den YTTRE raden. Identiteten trunkeras i stället när
                       badgen tar plats — sekundär information, samma klass av
                       trunkering Hems egen identitetsrad redan bär. */}
-                  {/* FAST HÖJD (`min-h-5`), inte auto: badgen är högre än en
+                {/* FAST HÖJD (`min-h-5`), inte auto: badgen är högre än en
                       naken undertextrad, så utan golvet blev rader MED
                       åtgärdsbehov högre än rader utan — DoD #6:s höjdlås
                       bröts, och sviten fällde på just den jämförelsen.
@@ -603,26 +634,28 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
                       `min-h-6` (24 px) ligger över badgens verkliga höjd i
                       BÅDA fallen, så uniformiteten följer av golvet och inte
                       av en jagad decimal. */}
-                  <div className="flex min-h-6 min-w-0 items-center gap-2">
-                    <span className="truncate text-caption text-text-muted">{undertext}</span>
-                    {behoverKoppling && (
-                      <span className="shrink-0">
-                        <StatusBadge ton="warning" storlek="sm">
-                          Behöver kopplas
-                        </StatusBadge>
-                      </span>
-                    )}
-                  </div>
+                <div className="col-start-2 row-start-2 flex min-h-6 min-w-0 items-center gap-2 max-sm:col-end-4">
+                  <span className="truncate text-caption text-text-muted">{undertext}</span>
+                  {behoverKoppling && (
+                    <span className="shrink-0">
+                      <StatusBadge ton="warning" storlek="sm">
+                        Behöver kopplas
+                      </StatusBadge>
+                    </span>
+                  )}
                 </div>
                 {/* Tiden — egen kolumn, högerställd och vertikalt centrerad
-                    mot hela raden av förälderns `items-center`. Exakt Hems
-                    form (`NyaAnmalningar.tsx`: `shrink-0 pl-2 text-caption
-                    text-text-muted`), som Marcus pekade ut som förlagan. */}
-                <span className="shrink-0 pl-2 text-caption text-text-muted">{relTid}</span>
+                    mot hela raden (`row-span-2` + gridets `items-center`).
+                    Exakt Hems form (`NyaAnmalningar.tsx`: `shrink-0 pl-2
+                    text-caption text-text-muted`), som Marcus pekade ut som
+                    förlagan. Under `sm` bara rad 1 — se grid-noten ovan. */}
+                <span className="col-start-3 row-start-1 row-end-3 pl-2 text-caption text-text-muted max-sm:row-end-2">
+                  {relTid}
+                </span>
                 <ChevronRight
                   aria-hidden="true"
                   size={18}
-                  className="shrink-0 text-text-secondary"
+                  className="col-start-4 row-start-1 row-end-3 text-text-secondary"
                 />
               </li>
             );
