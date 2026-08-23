@@ -1,6 +1,16 @@
 {
-  "_kalla": "Fälten återger exakt den dynamiska ytan ADR-119 beslut 3 anger (tre rader), och värdena här är hämtade ur den riktiga förlagan (deltagarinformation-exempel.pdf) så en granskning kan jämföras rad för rad.",
+  "_kalla": "TASK-309.4: fixturen bär numera EXAKT samma platta form som `_shared/mall-data.ts`s `DeltagarinfoMallData` (Eta-datat). Värdena är samma exempeltexter som den frusna förlagan (deltagarinformation-exempel.pdf) bar innan ämnesstyckena blev Airtable-redigerbara fält (ADR-125). 'parkering' är satt till null för att visa granskningsutdatan för ett UTELÄMNAT block.",
   "kursnamn": "Resor i Medvetandet 1",
-  "datumTid": "lördag-söndag den 22-23 augusti, kl. 10:00 – 17:00",
-  "plats": "Uttringe Hages väg 17, Rönninge"
+  "datumTid": "22-23 augusti 2026, kl. 10:00 - 17:00",
+  "plats": "Uttringe Hages väg 17, Rönninge",
+  "forberedelser": "Kom som du är! Ta en lugn hemmakväll dagen före utbildningen, men ändra absolut inte på dina mediciner eller vanor.",
+  "klader": "Under utbildningen mediterar vi en hel del, så välj några sköna mjukiskläder.",
+  "tagMed": "Kudde, filt, ögonmask (förtejpade skidglasögon, så du kan öppna ögonen under masken).",
+  "rokning": "Hela området är rökfritt, med hänsyn till alla andra.",
+  "parfym": "Under meditationerna ägnar vi oss åt sensorisk deprivation. Var snäll och använd INTE parfym.",
+  "mat": "Mat ingår inte, men vi kommer att arrangera hämtmat.",
+  "overnattning": "Ingår inte, maila oss om du vill ha tips på boende.",
+  "parkering": null,
+  "transport": "Vi kan hämta och lämna dig på Rönninge Station.",
+  "utrustning": "Under utbildningen gör vi meditationer med hörlurar, vi har utrustning till alla."
 }

@@ -49,9 +49,10 @@
     {
       "name": "generate-event-attachment-sentineler",
       "table": "Bilagor",
-      "filterByFormula": "AND(FIND('Deltagarinformation –', {Namn}) = 1, FIND('ZZ-belaggning-fixtur', {Namn}) > 0)",
+      "_TASK-309.4": "Bredare mönster + ny fixtur (DOKUMENTUNDERLAG_EVENT_ID, Ort ZZ-dokumentunderlag-fixtur) — testet flyttade från ZZ-belaggning-fixtur eftersom den nya fixturen bär riktigt Eventinnehåll för BÅDA mallarna (ADR-125), vilket den gamla saknade. Fångar nu båda Namn-prefixen ('Bekräftelsebilaga –'/'Deltagarinformation –') generate-event-attachment/index.ts kan skriva.",
+      "filterByFormula": "AND(OR(FIND('Bekräftelsebilaga –', {Namn}) = 1, FIND('Deltagarinformation –', {Namn}) = 1), FIND('ZZ-dokumentunderlag-fixtur', {Namn}) > 0)",
       "exactMatchField": "Namn",
-      "exactMatchPattern": "^Deltagarinformation – ZZ-belaggning-fixtur.*\\.pdf$",
+      "exactMatchPattern": "^(Bekräftelsebilaga|Deltagarinformation) – ZZ-dokumentunderlag-fixtur.*\\.pdf$",
       "linkGuard": false
     },
     {

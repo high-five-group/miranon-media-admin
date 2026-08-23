@@ -751,6 +751,25 @@ jobs:
         run: bash scripts/check-facit.sh
       # paritet:slut docs-grindar-ci
 
+      - name: Check mall parity (TASK-309.4 gate, ADR-125 § Beslut 4)
+        # De genererade TS-strängmodulerna i
+        # supabase/functions/_shared/mallar/ (html/css/typsnitt/bilder) MÅSTE
+        # vara byte-identiska (efter avkodning) mot sin källa i
+        # docs/mallar/bilagor/ och public/fonts/bilagor/ — annars renderar
+        # prod-EF:en (`_shared/mall-render.ts`) en ANNAN mall än den Marcus
+        # granskat. TASK-309.1s minimaltest bevisade skarpt att
+        # `static_files`-bundling FALLERAR i denna miljö (ingen Docker,
+        # API-bundlingsvägen), vilket är VARFÖR en committad kopia behövs
+        # över huvud taget i stället för att läsa `docs/`-filerna direkt vid
+        # deploy — se ADR-125 § Updates 2026-08-23.
+        #
+        # EN generator, TVÅ lägen (scripts/synka-bilagemallar.mjs, sync
+        # ELLER --check) — check-mallparitet.sh är en tunn wrapper, ingen
+        # fjärde handhållen kopia av jämförelselogiken (samma
+        # --kontrollera/--deploya-disciplin som scripts/fas4-prod-deploy.sh).
+        # Ren fil-läsning, inget nätverk.
+        run: bash scripts/check-mallparitet.sh
+
       - name: Check for long dashes in UI strings (TASK-172 gate, scope A)
         # Marcus-beslut 2026-08-09 (task-172 Description): "Ta bort alla
         # långa bindestreck överallt, jag gillar de korta bindestrecken (-)".
@@ -982,6 +1001,18 @@ jobs:
         # skarpt 2026-08-22 (default-kommandot filtrerat → fall 20 rött;
         # råa inputen interpolerad → fall 23 rött). 0,4 s LOKALT mätt
         # (macOS, 2026-08-22) — CI-tiden är INTE mätt av mig.
+        #
+        # test-check-mallparitet.sh (TASK-309.4) hör hit av samma kadens-skäl:
+        # grinden ovan (check-mallparitet.sh, egentligen synka-bilagemallar.mjs
+        # --check) är inte en grind förrän dess fyrning fortlöpande
+        # verifieras. Sex fall, sandboxade i mktemp via
+        # MALLPARITET_*_DIR-miljövariabler (synka-bilagemallar.mjs § filhuvud
+        # — rör ALDRIG repots riktiga docs/mallar/bilagor/): sync skapar
+        # html/css/font/bild-moduler + auto-upptäckt av en `<img>`-referens,
+        # RIKTNING 1 (manipulerad genererad fil fälls), RIKTNING 2
+        # (källdrift utan omsynk fälls), FÖRÄLDRALÖS genererad fil (borttagen
+        # källa fälls), omsynk läker paritet-brottet, och byte-fidelity
+        # (avkodat innehåll === källan, exakt). Ingen nätverkstrafik.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1004,6 +1035,7 @@ jobs:
           node scripts/test-check-mailto.mjs
           bash scripts/test-fas4-prod-deploy.sh
           bash scripts/test-visual-baselines-scope.sh
+          bash scripts/test-check-mallparitet.sh
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän

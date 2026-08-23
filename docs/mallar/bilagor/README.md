@@ -21,28 +21,51 @@ källor och mätunderlag.
 | `lokala-typsnitt/` | **Gitignorerad symlänk**, se § Granska mallarna lokalt nedan. |
 | `*.granskning.html` / `*.granskning.png` | **Gitignorerat**, genereras av granskningsskriptet - checkas aldrig in. |
 
-## Den dynamiska ytan (ADR-119 beslut 3)
+## Den dynamiska ytan (ADR-119 beslut 3, UTVIDGAD av ADR-125)
 
-Mallarna är parametriserade EXAKT på den yta beslutet anger — inget annat.
-Allt annat i mallarna (brödtext, innehållslistorna, sidfotens QR-URL:er) är
-FAST FORM per kurstyp och hårdkodat i markupen.
+**[TASK-309.4, ADR-125 § Beslut 4] `bekraftelsebilaga.html` och
+`deltagarinformation.html` är Eta-mallar (`<%= data.x %>`/`<% if/for %>`,
+`autoEscape: true`), fyllda av `supabase/functions/_shared/mall-render.ts`.
+`kvitto.html` är ÄNNU `{{fältnamn}}`-syntax (TASK-309.5:s scope, orört här)
+— se § "`{{fältnamn}}` — kvittots (ännu) enda kvarvarande form" nedan.**
 
-| Mall | Dynamiska fält (`{{fältnamn}}`) |
+ADR-119 beslut 3:s ursprungliga gräns ("brödtext, innehållslistorna … är
+FAST FORM per kurstyp") är delvis SUPERSEDAD av ADR-125:s relationella
+datamodell (Eventinnehåll/Agendapunkter): Beskrivningen och de två
+innehållslistorna i bekräftelsebilagan, samt VARJE ämnesstycke i
+deltagarinformationen, är nu likaså dynamiska — hämtade ur Eventinnehåll
+(standard) eller eventets egen `(bilagetext)`-kopia, tomt block utelämnat.
+
+| Mall | Eta-datat (`_shared/mall-data.ts`) |
 |---|---|
-| Bekräftelsebilagan | `kursnamn`, `datumTid`, `plats`, `pris`, `anmalningsavgift`, `resterandeBelopp`, `sistaBetalningsdatum` |
-| Deltagarinformationen | `kursnamn`, `datumTid`, `plats` (endast TRE rader) |
+| Bekräftelsebilagan | `kursnamn`, `datumTid`, `plats`, `pris`, `anmalningsavgift`, `visaResterande`, `resterandeBelopp`, `sistaBetalningsdatum`, `beskrivning[]`, `dagEttAgenda[]`, `dagTvaAgenda[]` |
+| Deltagarinformationen | `kursnamn`, `datumTid`, `plats`, `forberedelser`, `klader`, `tagMed`, `rokning`, `parfym`, `mat`, `overnattning`, `parkering`, `transport`, `utrustning` (var och en `string \| null` — `null` utelämnar ämnesstycket helt) |
 
 **Ingen persondata förekommer i någon mall** (AC #2) — mottagarens namn hör
 till mailkroppen, aldrig till bilagan. Swish/Plusgiro-numren i
-bekräftelsebilagan är Roger & Lottas ORGANISATIONS-uppgifter (statiska,
-oavsett event) — inte en del av den dynamiska ytan, därför hårdkodade.
+bekräftelsebilagan, sidfotens QR-URL:er och de fasta hälsnings-/
+kontaktraderna FÖRBLIR fast form (organisationsuppgifter, oavsett event) —
+inte en del av den dynamiska ytan, därför hårdkodade oförändrat.
 
-`{{fältnamn}}` är INTE en mallmotor-syntax knuten till något specifikt
-bibliotek — det är en ren strängersättning (se `scripts/render-bilage-mall.mjs`),
-medvetet minimal eftersom denna skiva inte bygger renderings-integrationen.
-Den framtida skivan som kopplar mallen till en riktig renderare väljer sin
-egen mallmotor (eller behåller den enkla ersättningen) — inget här låser det
-valet.
+**KÄND, MEDVETEN FÖRENKLING** (`_shared/mall-data.ts`s filhuvud): de
+inbäddade mailto-länkarna och den fetstilta markupen den GAMLA hårdkodade
+brödtexten/ämnesstyckena bar finns INTE kvar när fälten blir Lotta-
+redigerbar Airtable-fritext — plain text kan inte bära en länk eller
+`<strong>`. Bokfört, inte tyst tappat; en visuell-QA-fråga för
+promoverings-skivorna (TASK-309.7/.8), inte TASK-309.4:s AC.
+
+`<%= %>` (autoEscape) används GENOMGÅENDE — ALDRIG `<%~ %>` (rått läge) på
+ett fält som ytterst härstammar från Airtable-fritext, se
+`mall-render.test.ts` för det mekaniska beviset.
+
+### `{{fältnamn}}` — kvittots (ännu) enda kvarvarande form
+
+`kvitto.html` använder fortfarande den ENKLA strängersättningen TASK-279
+etablerade — INTE en mallmotor knuten till något bibliotek, ren
+strängersättning (`scripts/render-bilage-mall.mjs`s legacy-gren,
+autodetekterad per mall: Eta-syntax → Eta, annars → `{{}}`). Blir kvittot
+Eta-konverterat (TASK-309.5) försvinner denna sektion och tabellen ovan
+gäller alla tre mallar.
 
 ## Granska mallarna med riktig data (AC #3)
 

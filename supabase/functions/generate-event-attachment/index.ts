@@ -1,208 +1,116 @@
 // @ts-nocheck — Deno Edge Function (esm.sh-import + Deno-globaler; typas vid
-// deploy av `deno check`/`deno lint`, se ADR-010 § Fas 7-åtagande. Samma
-// undantags-mönster som send-email/index.ts, test-pdf-generation/index.ts
-// och test-attachments-storage/index.ts.
+// deploy av `deno check`/`deno lint`, se ADR-010 § Fas 7-åtagande). Samma
+// undantags-mönster som send-email/index.ts och test-pdf-generation/index.ts.
 //
 // generate-event-attachment — TASK-146.5 "Klass B — event-mallad generering
-// ur systemmall" (PRD task-146, bilage-fundamentet).
+// ur systemmall" (PRD task-146, bilage-fundamentet). ADR-125-PROMOVERAD
+// (TASK-309.4): BÅDA bilagemallarna (`mall: 'bekraftelse' | 'deltagarinfo'`)
+// renderas nu genom `_shared/mall-render.ts` (Eta + DocRaptor) i stället för
+// pdf-lib och en hårdkodad systemmall. Se ADR-125 § Beslut 4+5.
 //
-// SYFTE (kortets AC #1): ett event-mallat brev ("Deltagarinformation")
-// genereras ur en HÅRDKODAD systemmall (AC #2 — mallen är INTE redigerbar i
-// v1, mall-editorn ligger uttryckligen senare) med eventets egna uppgifter
-// ifyllda, och landar som en rad i Bilagor-tabellen (TASK-146.2, additivt
-// skapad av scripts/create-bilagor-table.mjs). Bytesen bor i samma privata
-// Storage-bucket ("bilagor", TASK-146.3), path-prefixad per event — samma
-// delade hemvist som PRD:n (§ Lösning) beskriver för alla tre
-// dokumentklasser.
+// [TASK-309.4, RIVET] All pdf-lib-kod (SYSTEMMALL_BRODTEXT, byggPdf,
+// lasEventUppgifter, formatSvenskDatum/MANADSNAMN) är BORTA — den mallen
+// bar EN hårdkodad "Deltagarinformation"-text (AC #2 i task-146.5, ingen
+// mall-editor i v1). Ersatt av de RIKTIGA mallarna
+// (`docs/mallar/bilagor/{bekraftelsebilaga,deltagarinformation}.html`) med
+// eventets FAKTISKA ifyllnadsunderlag (`_shared/document-sources.ts`, delad
+// med `get-document-sources/index.ts`, ADR-125 § Beslut 5).
 //
-// [RÄTTAD, TASK-147.12] Stycket ovan sade tidigare att raden landar "MED
-// EXAKT SAMMA FÄLTFORM som en uppladdad (klass A) bilaga... inga extra
-// klass-markörer (AC #4, 'de tre dokumentklasserna är oskiljbara i
-// metadatat')". Det VAR sant och var en avsiktlig AC (task-146.5) — men
-// task-147.6:s granskning fann att odelbarheten var en DEFEKT, inte en
-// egenskap (Dokument-ytan kunde inte visa verklig klass). Marcus-GO
-// 2026-08-16 (ADR-063 — löses I BASEN): raden bär nu 'Dokumentklass' =
-// 'Event-mallad' (additivt fält, staging fldr2CwboZ3M4USCX) — SEX fält, inte
-// fem. tests/api/generate-event-attachment.staging.test.ts:s gamla
-// "exakt fem fält, inget klass-fält"-assert är uppdaterat i samma commit.
+// MALL-PARAMETERN (NY, TASK-309.4): body bär nu `mall: 'bekraftelse' |
+// 'deltagarinfo'` — EN EF för BÅDA mallarna (ADR-125 § Beslut 5:s
+// EF-topologi-tabell), i stället för en hårdkodad enda mall. Ett angivet
+// men okänt värde är ett klientfel (400), aldrig en tyst fallback.
 //
-// SAMTIDIGHETS-NOT (byggd 2026-08-10, S102-batchen, kort ③ av 14, ADR-086
-// premiss-pass): TASK-146.4 (adapter-ytan + uppladdningsfunktionen, PR #1090)
-// var vid DESIGN-tillfället INTE landad på main — `gh pr view 1090` visade
-// `mergeStateStatus: BLOCKED` och jobbet "Lint + Audit + TypeCheck" RÖTT
-// (verifierat, inte antaget). Ett divergerande utfall mot uppdragets premiss
-// ("kan landa medan du arbetar" antydde aktiv progression, inte ett rött
-// jobb) — bokfört öppet i skivans slutrapport, aldrig tyst justerat. Innan
-// den delade `_shared/field-allowlists.ts`-posten skrevs lästes `gh pr diff
-// 1090` FÖR att undvika en strukturell krock: samma operationsnyckel
-// ('create-attachment') mot samma tabell/fält användes MEDVETET. 146.4
-// LANDADE (#1090) INNAN denna skiva pushades — `git fetch` + omstart på
-// färsk `origin/main` bekräftade det, och den egna field-allowlists.ts-posten
-// TOGS BORT härifrån (redan landad, identisk nyttolast — ren dubblett).
-// Denna funktion ÅTERANVÄNDER nu `_shared/attachments.ts`s BILAGOR_BUCKET_ID/
-// EVENTPLANERING_TABLE/mapAttachmentRecord i stället för att duplicera dem
-// (uppdragets egen instruktion, tillämpad efter landningen, inte bara i
-// avsikt) — se full mätning + kronologi i skivans slutrapport.
+// KÄLLHASH (NY, TASK-309.4, ADR-125 § Beslut 3): SHA-256
+// (`_shared/mall-hash.ts`) över den EXAKTA, mall-resolvda ifyllnadsdatan
+// (`_shared/mall-data.ts`s `byggBekraftelseData`/`byggDeltagarinfoData`) —
+// samma data Eta faktiskt fyller mallen med, inte råa standard/kopia-par.
+// Skriven till Bilagor-radens `Källhash`-fält tillsammans med `Mall`
+// (singleSelect-namnet). Adaptern (TASK-309.6) härleder inaktualitet genom
+// att räkna om samma hash vid listning och jämföra.
+//
+// ERSATT-LÄGET (NYTT, TASK-309.4, ADR-125 § Beslut 3 "Regenerering är
+// ERSÄTTNING"): body kan bära `ersatt: <attachmentId>` — regenererar EN
+// BEFINTLIG Event-mallad rad i stället för att skapa en ny. SAMMA
+// Bilagor-rad (samma attachmentId, ägarskaps-guard som delete-attachment/
+// index.ts), SAMMA Storage-lagringsnyckel (`upsert: true`, filen skrivs
+// över i stället för att en ny path allokeras) — så Åtgärds-sidans
+// bilageval förblir giltigt (ADR-125 § 3). `useReplaceAttachment.ts`s
+// upload-nytt-radera-gammalt-mönster (TASK-147.11) är ett ANNAT flöde
+// (klientens manuella filersättning, en NY rad + en NY attachmentId) —
+// denna EF:s ersatt-läge är regenerering AV SAMMA rad, arkitektoniskt
+// skilt (se skivans slutrapport för resonemanget).
+//
+// [ADR-124, TASK-302.2] FÖRHANDSVISNINGS-LÄGET (body-flaggan `preview:
+// true`) OFÖRÄNDRAT I FORM: skriver ett TRANSIENT Storage-utkast
+// (`_shared/utkast.ts` § `laggUtkast`) och returnerar `{ url, utgar }` —
+// noll konsument-synliga sidoeffekter (ingen Bilagor-rad, inget
+// kvittonummer, inget mail). `typ` härleds nu ur `mall`
+// ('bekraftelse' → 'bilaga', 'deltagarinfo' → 'deltagarinformation' —
+// SAMMA `UTKAST_TYPER`-enum TASK-302 redan definierade, ingen ny typ
+// behövdes).
 //
 // AUKTORISATION: samma nivå som create-event-note/create-event
-// (requireUser, ingen extra ADMIN_EMAILS-gate) — att generera ett
-// event-brev är en likvärdig admin-handling, ingen kontohantering.
-//
-// SVENSKA TECKEN (AC #3): samma bevisade mekanism som TASK-146.1:s
-// runtime-bevis — pdf-lib@1.17.1, StandardFonts.Helvetica, WinAnsiEncoding
-// (å/ä/ö delar kodpunkt med Latin-1 i 0xA0–0xFF-intervallet). Systemmallens
-// brödtext är HÅRDKODAD svensk löptext (inte eventdata) så att AC #3 bevisas
-// deterministiskt oavsett vilket event som testas.
-//
-// [TASK-246] FÖRHANDSVISNINGS-LÄGE (body-flaggan `preview: true`) — ÅTERANVÄND
-// EF (AC #1: "ny EF byggs endast om befintlig yta bevisat inte räcker"; denna
-// yta räckte, den behövde bara en väg som HOPPAR ÖVER persisteringen, inte en
-// ny yta). Samma eventuppgifts-läsning och SAMMA `byggPdf`-anrop som den
-// persisterande vägen (identisk PDF-kvalitet, "riktigt genererad ur eventets
-// verkliga data" — Marcus-ordern 2026-08-16) — grenen som SKILJER dem ligger
-// EFTER `pdfBytes` är byggda. Den rör ALDRIG Bilagor-radskapelsen NEDAN (ingen
-// mail/bas-skrivning/kvarliggande Airtable-artefakt är relevant här — den
-// delen av AC #3, TASK-146.5, står FORTFARANDE FAST).
-//
-// [ADR-124, TASK-302.2] AC #3 AMENDERAS ÖPPET, RIVS INTE — raden nedan löd
-// till och med 2026-08-22: "`preview: true` returnerar `{pdfBase64}` direkt
-// och rör VARKEN Storage-uppladdningen NEDAN eller Bilagor-radskapelsen …
-// en förhandsvisning som aldrig når den koden har per konstruktion noll
-// sidoeffekter, inte 'sidoeffekter som sedan städas'". Den premissen — att
-// bytes till klienten räcker för att visa dokumentet — föll mot en mätning
-// (sex klientleveransarmar, headed Chrome 151, `ADR-124` § Kontext): endast
-// en URL SERVERAD AV NÄTVERKSTJÄNSTEN scrollar jämnt. Ny, amenderad AC #3,
-// VERBATIM (`ADR-124` § Beslut 3):
-//
-//   Förhandsvisningen har noll KONSUMENT-SYNLIGA sidoeffekter: ingen
-//   Bilagor-rad, inget allokerat kvittonummer, inget mail. Den skriver ett
-//   TRANSIENT utkast under `utkast/<eventId>/<typ>.pdf` i bucket `bilagor`
-//   — aldrig listat i appen, överskrivet per event och typ (`upsert`),
-//   borttaget vid skarp generering — för att Chromes PDF-visare bara
-//   scrollar jämnt på en URL serverad av nätverkstjänsten (ADR-124).
-//
-// `preview: true` returnerar nu `{ url, utgar }` (`laggUtkast`, `_shared/
-// utkast.ts`, `typ: 'deltagarinformation'` — den enda systemmall v1 har
-// (`MALL_NAMN` nedan) HETER bokstavligen "Deltagarinformation", samma
-// enum-värde `UTKAST_TYPER` bär: ingen mall-gissning krävs). Den skriver ETT
-// transient Storage-objekt men rör ALDRIG Bilagor-tabellen, allokerar inget
-// kvittonummer och skickar inget mail — skyddets SYFTE (Lotta ser aldrig en
-// artefakt hon inte bett om, inget räknas) hålls intakt.
-//
-// [ADR-124, TASK-302.3] DEN PERSISTERANDE GRENEN ANROPAR NU `rensaUtkast`
-// EFTER lyckad Bilagor-radskapelse (ADR-124 § Beslut 2: "skarp generering …
-// tar bort utkast/<eventId>/") — den skarpa artefakten ersätter
-// förhandsvisningens syfte för eventet, så det transienta utkastet (alla
-// typer under eventet, inte bara 'deltagarinformation') städas bort.
-// BEST-EFFORT (se `_shared/utkast.ts` § `rensaUtkast`): ett städningsfel
-// loggas och fäller ALDRIG den redan lyckade skarpa operationen.
+// (requireUser, ingen extra ADMIN_EMAILS-gate).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { PDFDocument, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1';
-import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
-// BILAGOR_BUCKET_ID/EVENTPLANERING_TABLE/mapAttachmentRecord: ÅTERANVÄNDA ur
-// TASK-146.4:s delade modul (landad #1090) i stället för dupliceras — se
-// filhuvudets SAMTIDIGHETS-NOT.
+import {
+  createAirtableRecord,
+  fetchAirtableRecord,
+  updateAirtableRecord,
+} from '../_shared/airtable-client.ts';
 import {
   ATTACHMENT_CLASS_EVENT_MALLAD,
   BILAGOR_BUCKET_ID,
+  BILAGOR_TABLE,
   buildAttachmentLeaf,
   buildAttachmentPath,
-  EVENTPLANERING_TABLE,
+  isValidEventId,
   mapAttachmentRecord,
   toBase64,
 } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
-import { generateRequestId, mapErrorToResponse, ValidationError } from '../_shared/errors.ts';
+import { fetchDocumentSources } from '../_shared/document-sources.ts';
+import {
+  ForbiddenError,
+  generateRequestId,
+  HttpError,
+  mapErrorToResponse,
+  ValidationError,
+} from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
+import { byggBekraftelseData, byggDeltagarinfoData } from '../_shared/mall-data.ts';
+import { berakaKallhash } from '../_shared/mall-hash.ts';
+import { renderaMallPdf } from '../_shared/mall-render.ts';
 import { laggUtkast, rensaUtkast } from '../_shared/utkast.ts';
 
 const OPERATION_KEY = 'create-attachment';
+const EVENT_LINK_FIELD = 'Event';
 
-// Systemmallens NAMN — v1 har en enda, hårdkodad mall (AC #2). Ett framtida
-// mall-register (flera event-mallar) är uttryckligen utanför scope (PRD
-// task-146 § Utanför omfattningen, "Mall-editor för klass B").
-const MALL_NAMN = 'Deltagarinformation';
+type MallParam = 'bekraftelse' | 'deltagarinfo';
 
-const MANADSNAMN = [
-  'januari', 'februari', 'mars', 'april', 'maj', 'juni',
-  'juli', 'augusti', 'september', 'oktober', 'november', 'december',
-];
+/** Per-mall konstanter — EN källa, inga syskon-if-satser utspridda i filen. */
+const MALL_META: Record<
+  MallParam,
+  { namnPrefix: string; storageFilnamn: string; airtableOption: string; utkastTyp: 'bilaga' | 'deltagarinformation' }
+> = {
+  bekraftelse: {
+    namnPrefix: 'Bekräftelsebilaga',
+    storageFilnamn: 'bekraftelsebilaga.pdf',
+    airtableOption: 'Bekräftelsebilaga',
+    utkastTyp: 'bilaga',
+  },
+  deltagarinfo: {
+    namnPrefix: 'Deltagarinformation',
+    storageFilnamn: 'deltagarinformation.pdf',
+    airtableOption: 'Deltagarinformation',
+    utkastTyp: 'deltagarinformation',
+  },
+};
 
-/** ISO-datum ("2026-02-06") → "6 februari 2026". Ogiltig/saknad input → null (skrivs inte ut). */
-function formatSvenskDatum(iso: unknown): string | null {
-  if (typeof iso !== 'string') return null;
-  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (!match) return null;
-  const [, year, monthStr, dayStr] = match;
-  const monthIdx = Number(monthStr) - 1;
-  const manad = MANADSNAMN[monthIdx];
-  if (!manad) return null;
-  return `${Number(dayStr)} ${manad} ${year}`;
-}
-
-/**
- * Systemmallens brödtext — HÅRDKODAD svensk löptext (AC #2: inte redigerbar
- * i v1). Innehåller å/ä/ö i båda "riktigt förekommande" ord (inte en
- * konstgjord teststräng) så AC #3 bevisas mot verkligt mallinnehåll, inte
- * mot en synteststräng vid sidan om. Exporterad rad-för-rad (inte en enda
- * sammanhängande sträng) så konsumenten (PDF-layouten OCH staging-testet)
- * kan hålla exakt samma källa i synk.
- */
-export const SYSTEMMALL_BRODTEXT: readonly string[] = [
-  'Välkommen till kursen!',
-  'Här är information du behöver inför ditt deltagande.',
-  'Kom gärna i god tid och hör av dig till oss om något är oklart.',
-  'Vi ses på plats!',
-  '',
-  'Hälsningar,',
-  'Roger & Lotta',
-];
-
-interface EventUppgifter {
-  eventlabel: string;
-  kursnamn: string | null;
-  ort: string | null;
-  datumrad: string | null;
-}
-
-function lasEventUppgifter(record: { id: string; fields: Record<string, unknown> }): EventUppgifter {
-  const f = record.fields;
-  const eventlabel = typeof f['Eventlabel'] === 'string' ? f['Eventlabel'] : record.id;
-  const kursnamn = selectName(f['Event (source)']);
-  const ort = scalarString(f['Ort']);
-  const start = formatSvenskDatum(f['Startdatum']);
-  const slut = formatSvenskDatum(f['Slutdatum']);
-  const datumrad = start && slut && start !== slut ? `${start} – ${slut}` : (start ?? slut);
-  return { eventlabel, kursnamn, ort, datumrad };
-}
-
-/** Bygger PDF-bytesen ur systemmallen + eventets uppgifter. Ren funktion — inget I/O. */
-async function byggPdf(uppgifter: EventUppgifter): Promise<Uint8Array> {
-  const doc = await PDFDocument.create();
-  const page = doc.addPage([500, 420]);
-  const font = await doc.embedFont(StandardFonts.Helvetica);
-
-  let y = 380;
-  const draw = (text: string, size: number, dy: number) => {
-    if (text.length > 0) {
-      page.drawText(text, { x: 40, y, size, font });
-    }
-    y -= dy;
-  };
-
-  draw(MALL_NAMN, 18, 30);
-  if (uppgifter.kursnamn) draw(uppgifter.kursnamn, 13, 22);
-  if (uppgifter.ort) draw(`Ort: ${uppgifter.ort}`, 11, 18);
-  if (uppgifter.datumrad) draw(`Datum: ${uppgifter.datumrad}`, 11, 18);
-  y -= 12;
-  for (const rad of SYSTEMMALL_BRODTEXT) {
-    draw(rad, 11, 18);
-  }
-
-  return doc.save();
+function isValidMallParam(value: unknown): value is MallParam {
+  return value === 'bekraftelse' || value === 'deltagarinfo';
 }
 
 Deno.serve(async (req) => {
@@ -226,48 +134,117 @@ Deno.serve(async (req) => {
   try {
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
     const eventId = body?.eventId;
-    // [TASK-246] Se filhuvudets FÖRHANDSVISNINGS-LÄGE-stycke. Strikt boolean
-    // — ett klient-skickat truthy-men-inte-`true`-värde (t.ex. `"true"` som
-    // sträng) faller till den PERSISTERANDE vägen i stället för att tyst tolkas
-    // som förhandsvisning (samma "gissa aldrig"-disciplin som resten av filen).
+    const mallRaw = body?.mall;
+    // [TASK-246] Strikt boolean — se filhuvudet, samma "gissa aldrig"-disciplin.
     const preview = body?.preview === true;
+    const ersattRaw = body?.ersatt;
 
-    // eventId: Airtable-recordId-format (speglar create-registration/create-event-note:s rec-prefix-grind).
-    if (typeof eventId !== 'string' || !eventId.startsWith('rec')) {
+    if (typeof eventId !== 'string' || !isValidEventId(eventId)) {
       throw new ValidationError('eventId is required and must be an Airtable record ID (rec…)');
     }
+    if (!isValidMallParam(mallRaw)) {
+      throw new ValidationError("mall is required and must be 'bekraftelse' or 'deltagarinfo'");
+    }
+    const mall: MallParam = mallRaw;
+    const meta = MALL_META[mall];
 
-    const eventRecord = await fetchAirtableRecord(EVENTPLANERING_TABLE, eventId);
-    if (!eventRecord) {
+    // [SKARPT FYND, TASK-309.4 staging-tester] `ersatt` är Bilagor-radens
+    // EGNA Airtable record-ID (samma "attachmentId" klienten ser i
+    // `attachment.id`/`record.id` — rec…-formen), INTE den interna
+    // `crypto.randomUUID()` som bara lever i Storage-lagringsnyckeln
+    // (`buildAttachmentLeaf`). `isValidAttachmentId` (UUID-forms-grinden)
+    // var FEL validering här — samma rec-forms-grind som
+    // `delete-attachment/index.ts` redan använder för sitt `attachmentId`.
+    let ersatt: string | null = null;
+    if (ersattRaw !== undefined) {
+      if (!isValidEventId(ersattRaw)) {
+        throw new ValidationError('ersatt must be an Airtable record ID (rec…) when provided');
+      }
+      ersatt = ersattRaw;
+    }
+
+    // [SKARPT FYND, TASK-309.4 staging-tester] ÄGARSKAPS-GUARDEN MÅSTE KÖRAS
+    // FÖRE `fetchDocumentSources(eventId)` — INTE efter. Testet "fel eventId
+    // (ägarskaps-guard) → 403" skickar ett PÅHITTAT eventId
+    // (`recZZZZZZZZZZZZZZ`) som INTE finns; med den gamla ordningen (fetch
+    // DocumentSources FÖRST) föll koden på "Event not found" (404) innan
+    // ägarskaps-kontrollen ens nåddes — en attacker hade då kunnat
+    // SKILJA "fel event, existerar" (skulle nå ägarskaps-koden) från "fel
+    // event, existerar inte" (404) via svarskoden, en informationsläcka
+    // ovanpå att skyddet aldrig triggade för det påhittade fallet. Samma
+    // "gör den billiga/säkra kontrollen FÖRE den dyra/informativa"-ordning
+    // som `delete-attachment/index.ts` redan följer (ägarskap FÖRE
+    // Storage-läsning).
+    let existingErsattRecord: { id: string; fields: Record<string, unknown> } | null = null;
+    if (ersatt) {
+      const existing = await fetchAirtableRecord(BILAGOR_TABLE, ersatt);
+      if (!existing) {
+        return new Response(JSON.stringify({ error: 'Bilagan hittades inte.' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const linkedEventIds = existing.fields[EVENT_LINK_FIELD];
+      const belongsToEvent =
+        Array.isArray(linkedEventIds) && (linkedEventIds as unknown[]).includes(eventId);
+      if (!belongsToEvent) {
+        console.warn(
+          `[generate-event-attachment] DENY ersatt ownership guard | caller_user_id=${user.id} | attachment=${ersatt} | claimed_event=${eventId}`,
+        );
+        throw new ForbiddenError('Bilagan hör inte till det angivna eventet.');
+      }
+      if (existing.fields['Dokumentklass'] !== ATTACHMENT_CLASS_EVENT_MALLAD) {
+        throw new ForbiddenError('Endast mall-genererade bilagor kan regenereras via ersatt-läget.');
+      }
+      if (existing.fields['Mall'] !== meta.airtableOption) {
+        throw new ValidationError(
+          `Bilagans mall (${String(existing.fields['Mall'])}) matchar inte den angivna mallen (${meta.airtableOption}).`,
+        );
+      }
+      existingErsattRecord = existing;
+    }
+
+    const sources = await fetchDocumentSources(eventId);
+    if (!sources) {
       return new Response(JSON.stringify({ error: 'Event not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const uppgifter = lasEventUppgifter(eventRecord);
-    const pdfBytes = await byggPdf(uppgifter);
+    const mallData =
+      mall === 'bekraftelse' ? byggBekraftelseData(sources) : byggDeltagarinfoData(sources);
 
-    // Bytesen skrivs med FÖRHÖJD behörighet (service-role) — samma mönster
-    // som test-attachments-storage/index.ts (TASK-146.3). Klienten rör
-    // aldrig lagringen direkt (ADR-057); auktorisationsbeslutet (vilket
-    // event, vilken path) är redan fattat server-side ovan. [ADR-124,
-    // TASK-302.2] Både förhandsvisnings- och den persisterande grenen
-    // behöver klienten nu — instansierad EN gång, delad av båda.
+    const apiKey = Deno.env.get('DOCRAPTOR_API_KEY');
+    if (!apiKey) {
+      throw new HttpError(500, 'DOCRAPTOR_API_KEY saknas i secrets');
+    }
+    // Fail-closed, SAMMA mönster som send-receipt-email/index.ts:s `isProd`
+    // (se mall-render.ts:s filhuvud för varför denna härledning bor HÄR,
+    // hos anroparen, och inte inne i renderaMallPdf).
+    const test = Deno.env.get('ENVIRONMENT') !== 'production';
+
+    const namn = `${meta.namnPrefix} – ${sources.event.eventlabel}.pdf`;
+
+    const pdfBytes = await renderaMallPdf(mall, mallData as unknown as Record<string, unknown>, {
+      apiKey,
+      test,
+      namn,
+    });
+    const kallhash = await berakaKallhash(mallData);
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
     if (preview) {
-      console.log(`[generate-event-attachment] PREVIEW | caller_user_id=${user.id} | event=${eventId}`);
-      // [ADR-124, TASK-302.2] TRANSIENT utkast i Storage, inte bytes till
-      // klienten — se filhuvudets amenderade AC #3-stycke. `typ:
-      // 'deltagarinformation'` — systemmallens NAMN (`MALL_NAMN` nedan)
-      // matchar exakt detta enum-värde.
+      console.log(
+        `[generate-event-attachment] PREVIEW | caller_user_id=${user.id} | event=${eventId} | mall=${mall}`,
+      );
       const { url, utgar } = await laggUtkast(supabaseAdmin, {
         eventId,
-        typ: 'deltagarinformation',
+        typ: meta.utkastTyp,
         bytes: pdfBytes,
       });
       return new Response(JSON.stringify({ url, utgar, requestId }), {
@@ -276,15 +253,65 @@ Deno.serve(async (req) => {
       });
     }
 
+    const operation = getOperation(OPERATION_KEY);
+    if (!operation) {
+      throw new Error(`Unknown operation: ${OPERATION_KEY}`);
+    }
+
+    if (ersatt && existingErsattRecord) {
+      // ERSATT-LÄGET — regenererar EN BEFINTLIG rad (ADR-125 § 3), se
+      // filhuvudet. Existens/ägarskap/dokumentklass/mall-matchning REDAN
+      // verifierade ovan (FÖRE fetchDocumentSources) — se den notens
+      // resonemang för varför ordningen är låst.
+      const existing = existingErsattRecord;
+      const lagringsnyckel = existing.fields['Lagringsnyckel'];
+      const path =
+        typeof lagringsnyckel === 'string' && lagringsnyckel.length > 0
+          ? `${eventId}/${lagringsnyckel}`
+          : buildAttachmentPath(eventId, ersatt, meta.storageFilnamn);
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from(BILAGOR_BUCKET_ID)
+        .upload(path, pdfBytes, { contentType: 'application/pdf', upsert: true });
+      if (uploadError) {
+        throw new Error(`Storage-uppladdning misslyckades: ${uploadError.message}`);
+      }
+
+      const fields: Record<string, unknown> = {
+        Namn: namn,
+        'Storlek (bytes)': pdfBytes.byteLength,
+        Skapad: new Date().toISOString(),
+        Källhash: kallhash,
+      };
+      const disallowed = findDisallowedField(operation, fields);
+      if (disallowed !== null) {
+        console.warn(
+          `[generate-event-attachment] DENY field not in allowlist | caller_user_id=${user.id} | field=${disallowed}`,
+        );
+        throw new Error(`Field "${disallowed}" not allowed for operation "${OPERATION_KEY}"`);
+      }
+
+      console.log(
+        `[generate-event-attachment] ALLOW ersatt | caller_user_id=${user.id} | event=${eventId} | attachment=${ersatt} | mall=${mall}`,
+      );
+
+      const updated = await updateAirtableRecord(BILAGOR_TABLE, ersatt, fields);
+      await rensaUtkast(supabaseAdmin, eventId);
+
+      return new Response(
+        JSON.stringify({
+          attachment: mapAttachmentRecord(updated),
+          record: { id: updated.id, fields: updated.fields },
+          storagePath: path,
+          pdfBase64: toBase64(pdfBytes),
+          requestId,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // NY RAD — samma deterministiska path-form som mönster 1/2 (TASK-146.4).
     const attachmentId = crypto.randomUUID();
-    // SAMMA deterministiska path-form som TASK-146.4:s mönster 1/2
-    // (buildAttachmentPath, _shared/attachments.ts) — inte en egen variant
-    // som råkar se likadan ut. `STORAGE_FILNAMN` är den fasta lagringsfil-
-    // benämningen (skild från `namn`, det EVENT-SPECIFIKA visningsnamnet
-    // nedan) — SAMMA sträng måste gå in i både path OCH Lagringsnyckel
-    // (TASK-147.5), annars pekar de på olika leaf-strängar.
-    const STORAGE_FILNAMN = 'deltagarinformation.pdf';
-    const path = buildAttachmentPath(eventId, attachmentId, STORAGE_FILNAMN);
+    const path = buildAttachmentPath(eventId, attachmentId, meta.storageFilnamn);
     const { error: uploadError } = await supabaseAdmin.storage
       .from(BILAGOR_BUCKET_ID)
       .upload(path, pdfBytes, { contentType: 'application/pdf' });
@@ -292,27 +319,15 @@ Deno.serve(async (req) => {
       throw new Error(`Storage-uppladdning misslyckades: ${uploadError.message}`);
     }
 
-    // Allowlist-SSOT (samma försvar-i-djupet som create-event-note): varje
-    // server-byggt fält måste stå på operationens allowlist.
-    const operation = getOperation(OPERATION_KEY);
-    if (!operation) {
-      throw new Error(`Unknown operation: ${OPERATION_KEY}`);
-    }
-
-    const namn = `${MALL_NAMN} – ${uppgifter.eventlabel}.pdf`;
     const fields: Record<string, unknown> = {
       Namn: namn,
       'Storlek (bytes)': pdfBytes.byteLength,
       Skapad: new Date().toISOString(),
       Event: [eventId],
-      // [TASK-147.5] Additivt — se upload-attachment/index.ts:s motsvarande
-      // rad. Byggd ur SAMMA `STORAGE_FILNAMN` som `path` ovan (inte `namn`,
-      // som varierar per event och alltså INTE är vad som faktiskt ligger i
-      // Storage).
-      Lagringsnyckel: buildAttachmentLeaf(attachmentId, STORAGE_FILNAMN),
-      // [TASK-147.12] Additivt — denna EF ÄR klass B per definition (mall +
-      // eventfält, ingen mänsklig uppladdning). Se filhuvudets RÄTTAD-not.
+      Lagringsnyckel: buildAttachmentLeaf(attachmentId, meta.storageFilnamn),
       Dokumentklass: ATTACHMENT_CLASS_EVENT_MALLAD,
+      Mall: meta.airtableOption,
+      Källhash: kallhash,
     };
 
     const disallowed = findDisallowedField(operation, fields);
@@ -324,35 +339,17 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[generate-event-attachment] ALLOW | caller_user_id=${user.id} | event=${eventId} | path=${path}`,
+      `[generate-event-attachment] ALLOW | caller_user_id=${user.id} | event=${eventId} | mall=${mall} | path=${path}`,
     );
 
     const created = await createAirtableRecord(operation.tableId, fields);
-
-    // [ADR-124, TASK-302.3] Den skarpa artefakten ERSÄTTER förhandsvisningens
-    // syfte för detta eventet — ta bort HELA `utkast/<eventId>/`-mappen (alla
-    // typer, inte bara 'deltagarinformation'). BEST-EFFORT: `rensaUtkast`
-    // loggar och sväljer sina egna fel, kastar aldrig — anropas EFTER
-    // lyckad persistering ovan, aldrig före.
     await rensaUtkast(supabaseAdmin, eventId);
 
     return new Response(
       JSON.stringify({
-        // SAMMA mapper som klass A (upload-attachment, TASK-146.4) använder
-        // för sin skriv-respons — två olika uppkomster (uppladdad vs
-        // genererad) producerar samma domän-SHAPE via EN delad funktion,
-        // inte två parallella som råkar se lika ut. [RÄTTAD, TASK-147.12]
-        // Shapen är identisk, VÄRDET på `dokumentklass` är det som numera
-        // skiljer dem — se filhuvudets RÄTTAD-not för varför "identisk
-        // domän-shape" INTE längre betyder "oskiljbar".
         attachment: mapAttachmentRecord(created),
         record: { id: created.id, fields: created.fields },
         storagePath: path,
-        // pdfBase64: samma DEN FAKTISKT PERSISTERADE byte-strömmen som skrevs till
-        // Storage ovan (inte en separat regenerering) — så ett conformance-test kan
-        // verifiera AC #3 (svenska tecken) mot "den genererade filen" utan en extra
-        // signerad-URL-rundtur. Samma exponerings-resonemang som test-pdf-generation:
-        // anroparen bad om att FÅ just detta innehåll, ingen ny läckage-yta.
         pdfBase64: toBase64(pdfBytes),
         requestId,
       }),
