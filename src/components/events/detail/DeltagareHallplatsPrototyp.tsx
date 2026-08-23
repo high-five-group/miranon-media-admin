@@ -598,7 +598,7 @@ export function HallplatsToppA({
       {/* TALENS OLIKA BASER (Marcus 2026-08-06) löstes INTE här — en
           "Avbokade"-rad lades först till på denna plats och REVS igen när
           DOM-mätningen visade två identiska knappar 197 px isär: raden fanns
-          redan, i logistik-gruppen (`Deltagare.tsx`, intill Eventinfo skickad
+          redan, i logistik-gruppen (`Deltagare.tsx`, intill Deltagarinfo skickad
           och Bor över). Upplysningen bor nu i registrets fot i stället, där
           talet 14 faktiskt föds — se `RegisterFilterRad`. */}
     </div>

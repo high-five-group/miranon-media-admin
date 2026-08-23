@@ -471,7 +471,7 @@ läsväg i drift.
 
 **Välj en mailfri åtgärd.** Flera instrumenterade mutationer skickar mail
 (`skickade bekräftelsemail`, `skickade betalningspåminnelse`,
-`skickade eventinformation`, `skickade kvitto`). Den lämpligaste här är
+`skickade deltagarinformation`, `skickade kvitto`). Den lämpligaste här är
 **att skriva en anteckning** — verbet `antecknade`, ingen utgående post, och
 raden går att ta bort i Airtable efteråt om du vill.
 

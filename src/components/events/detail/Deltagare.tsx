@@ -234,7 +234,7 @@ const KATEGORI_PILL: Partial<Record<DeltagarKategori, string>> = {
 /**
  * [RIVEN, TASK-145.2] `SummeringsFilter`/`FILTER_TEST` (de fem gamla
  * klickbara summeringsraderna: Obekräftade/Anmälningsbekräftelse skickad/
- * Betalningspåminnelse skickad/Eventinfo skickad/Bor över) bodde här.
+ * Betalningspåminnelse skickad/Deltagarinfo skickad/Bor över) bodde här.
  * Ersättaren är `RegisterStegFilter`/`stegTest` (hallplats-steg-prototyp.ts)
  * — samma facit-byggda mekanism `?variant=a` redan använde för sina egna
  * sju rader (grillad samsyn beslut 2, S93 Del 3). Registrets filtrering
@@ -747,7 +747,7 @@ function KortInnehall({
   /** [PROTOTYPE] [S93] Steg-märket — undefined utanför hållplats-prototypen
       (default, zero-behaviour-change; se DeltagareHallplatsPrototyp.tsx). */
   hallplatsMarke?: React.ReactNode;
-  /** De tre utskicks-metaraderna (Bekräftelse/Påminnelse/Eventinfo-datum)
+  /** De tre utskicks-metaraderna (Bekräftelse/Påminnelse/Deltagarinfo-datum)
       döljs när `hallplatsMarke` är satt, eftersom samma information numera
       visas som Tidslinje i den inflyttade betalningsarbetsytan
       (BetalningsDetaljer/"Öppna detaljer", se ArbetsKo). Default
@@ -917,7 +917,7 @@ function KortInnehall({
           <MetaRad ikon={MailCheck}>{`Påminnelse ${paminnelse}`}</MetaRad>
         )}
         {visaUtskicksRader && eventinfo && (
-          <MetaRad ikon={MailCheck}>{`Eventinfo ${eventinfo}`}</MetaRad>
+          <MetaRad ikon={MailCheck}>{`Deltagarinfo ${eventinfo}`}</MetaRad>
         )}
         {genomforda != null && (
           <span data-testid="deltagar-historik" className="mt-0.5 flex items-center gap-1.5">
@@ -1504,7 +1504,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
        * (Stations-railen)/C (Nästa steg-panelen) är FÖRKASTADE och RIVNA (se
        * DeltagareHallplatsPrototyp.tsx). `HallplatsToppA` (fyra klickbara
        * steg-rader — Väntar på bekräftelse · Anmälningsavgifter ·
-       * Slutbetalningar · Klara, byggkrav 2) + Eventinfo/Bor över/Avbokade
+       * Slutbetalningar · Klara, byggkrav 2) + Deltagarinfo/Bor över/Avbokade
        * som logistik-gruppen — samma sju rader, samma ordning.
        *
        * PREMISS-DIVERGENS, öppet bokförd (ADR-086): uppdragets AC #3 citerar
@@ -1570,7 +1570,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
               för mellan dem. */}
           <div className="[&>*]:border-border [&>*]:border-b">
             <SummeringsRad
-              term="Eventinfo skickad"
+              term="Deltagarinfo skickad"
               aktiv={registerFilter.steg === 'eventinfo-saknas'}
               onClick={() => vaxlaSteg('eventinfo-saknas')}
               signalSlot

@@ -145,7 +145,7 @@ function harledHandelser(reg: RegistrationDetail): TidslinjeHandelse[] {
     },
     { nar: reg.bekraftelseSkickad ?? null, text: 'Bekräftelsemail skickat', ikon: Mail },
     { nar: reg.plusOneForfraganSkickad, text: 'Plus-one-förfrågan skickad', ikon: Mail },
-    { nar: reg.deltagarinfoSkickad ?? null, text: 'Eventinfo skickad', ikon: Mail },
+    { nar: reg.deltagarinfoSkickad ?? null, text: 'Deltagarinfo skickad', ikon: Mail },
     {
       nar: reg.betalningspaminnelseSkickad,
       text: 'Betalningspåminnelse skickad',

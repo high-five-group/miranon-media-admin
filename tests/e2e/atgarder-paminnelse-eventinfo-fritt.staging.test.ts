@@ -2,7 +2,7 @@ import { expect, type Page, type Route, test } from '../support/test-bas';
 import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
 /**
- * TASK-147.3 — "Skicka betalningspåminnelse", "Skicka eventinformation" och
+ * TASK-147.3 — "Skicka betalningspåminnelse", "Skicka deltagarinformation" och
  * "Skicka mail" (fritt) skarpt ände-till-ände (åtgärd 2–4), e2e-täckning i
  * `chromium-authenticated`-projektet. SAMMA SPLIT och SAMMA route-mock-mönster
  * som `atgarder-bekraftelsemail.staging.test.ts` (TASK-147.2) — server-
@@ -178,7 +178,7 @@ test.describe('Skicka betalningspåminnelse — verklig sändväg mot send-actio
   });
 });
 
-test.describe('Skicka eventinformation — verklig sändväg mot send-action-email (TASK-147.3 AC #1-#2)', () => {
+test.describe('Skicka deltagarinformation — verklig sändväg mot send-action-email (TASK-147.3 AC #1-#2)', () => {
   test('redigerad ämnesrad/brödtext sänds i stället för mallen; inget urvalsfilter', async ({
     page,
   }) => {
@@ -186,7 +186,7 @@ test.describe('Skicka eventinformation — verklig sändväg mot send-action-ema
     const { sentBody } = await mocka(page, registrations);
     await oppnaSidan(page);
 
-    await page.getByRole('button', { name: /Skicka eventinformation/ }).click();
+    await page.getByRole('button', { name: /Skicka deltagarinformation/ }).click();
     await page.getByRole('button', { name: 'Ändra' }).click();
     await page.getByRole('textbox', { name: 'Ämne' }).fill('Praktisk info');
     await page
@@ -195,7 +195,7 @@ test.describe('Skicka eventinformation — verklig sändväg mot send-action-ema
     await page.getByRole('button', { name: 'Klar med texten' }).click();
 
     await page.getByRole('button', { name: 'Granska och skicka' }).click();
-    await expect(page.getByText(/Skicka eventinformation\s+till\s+1\s+person\b/)).toBeVisible();
+    await expect(page.getByText(/Skicka deltagarinformation\s+till\s+1\s+person\b/)).toBeVisible();
     await expect(page.getByText('Praktisk info')).toBeVisible();
     await expect(page.getByText(/Parkering finns vid Skövde\./)).toBeVisible();
 

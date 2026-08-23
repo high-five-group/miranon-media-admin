@@ -308,15 +308,15 @@ export type BevakningRad = EventinfoBevakningRad | AtgardskoBevakningRad;
  * uttryckligen: "'nya' friar Lotta från falsk glömske-signal" — utan det
  * kan Lotta läsa en oförändrad kvarstående siffra som att INGET hänt sedan
  * senast, när det i själva verket är rätt personer, bara ännu inte
- * skickat till. `ej-skickad`-formen ("Eventinfo saknas") är ORÖRD — endast
+ * skickat till. `ej-skickad`-formen ("Deltagarinfo saknas") är ORÖRD — endast
  * eftersläntrare-formen bär ett tal att kvalificera.
  */
 export function bevakningStatusText(
   rad: Pick<EventinfoBevakningRad, 'lage' | 'antalUtanEventinfo'>,
 ): string {
   return rad.lage === 'ej-skickad'
-    ? 'Eventinfo saknas'
-    : `${rad.antalUtanEventinfo} nya deltagare saknar eventinfo`;
+    ? 'Deltagarinfo saknas'
+    : `${rad.antalUtanEventinfo} nya deltagare saknar deltagarinfo`;
 }
 
 /** Dagar-kvar-formen för bevakningsraden — samma tre textformer som `dagarKvarText`. */

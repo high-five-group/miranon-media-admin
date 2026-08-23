@@ -281,22 +281,26 @@ export const ATGARDSKO_VARIANTER: Record<
  * kräver för mätetal).
  *
  * BADGEN är `dold` (reserverad, osynlig) för `ej-skickad`-läget — det
- * lägets copy ("Eventinfo saknas") har ALDRIG burit ett tal, och TASK-303s
- * sträng-divergensbeslut (AC #5) rör bara eftersläntrare-formen. Att
+ * lägets copy ("Deltagarinfo saknas") har ALDRIG burit ett tal, och
+ * TASK-303s sträng-divergensbeslut (AC #4) rör bara eftersläntrare-formen. Att
  * plötsligt visa `antalUtanEventinfo` där hade ändrat lägets BETYDELSE,
  * inte bara dess form — ett beslut denna commit inte tar åt Marcus.
  *
- * STRÄNG-DIVERGENSEN (TASK-303, flaggad EJ avgjord i AC #5-mening):
+ * STRÄNG-DIVERGENSEN (TASK-303 AC #4) — ORDBYTET AVGJORT, ORDVALET INTE.
+ * Marcus 2026-08-23, verbatim: "Jag vänder beslutet", med gränsen
+ * "UI-copy enbart". UI-ordet är därmed "deltagarinfo" och samtliga ytor
+ * bär det numera. Vilka ord meningen i ÖVRIGT bär är fortfarande OSYNKAT:
  * skarpa appen (`hem-derivations.ts:319`) säger
- * `"N nya deltagare saknar eventinfo"`; prototypens tidigare substrat
- * (`dev/hem-prototyp/data.ts:312`) säger `"N deltagare saknar eventinfo"`
- * (utan "nya"). Denna komponent använder den SKARPA formens fulla text
- * ("Nya deltagare saknar eventinfo") per uttrycklig instruktion — ordet
- * "nya" friar Lotta från en falsk glömske-signal (grillningens beslut 4,
- * `2026-08-10-session-102.md:726-727`). AC #5 KVARSTÅR ÖPPEN: detta är EJ
- * det formella avgörandet av vilken sträng som vinner, bara vilken som
- * används HÄR — Marcus citat daterat på TASK-303-kortet krävs innan de två
- * ytorna räknas som synkade.
+ * `"N nya deltagare saknar deltagarinfo"`; prototypens tidigare substrat
+ * (`dev/hem-prototyp/data.ts:312`) säger `"N deltagare saknar
+ * deltagarinfo"` (utan "nya"); DENNA komponent säger `"N nya saknar
+ * deltagarinfo"` — den kortade formen Marcus valde i S111 Del 5 för att
+ * meningen skulle rymmas med centrerad tid. Ordet "nya" friar Lotta från
+ * en falsk glömske-signal (grillningens beslut 4,
+ * `2026-08-10-session-102.md:726-727`). AC #4 KVARSTÅR DÄRFÖR ÖPPEN:
+ * ordbytet ensamt stänger den inte — kortet kräver att BÅDA ytorna bär
+ * samma sträng, vilket sker först när formen promoveras till
+ * `Bevakningsrad.tsx`.
  *
  * VERSALEN på "Nya" (rättad efter orkestrerarens observation mitt i
  * bygget, 2026-08-23): badge-extraktionen (AC #3) flyttar talet UT ur

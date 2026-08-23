@@ -109,7 +109,7 @@ import {
  * `clientHeight`, `tests/acceptance/hem.acceptance.test.ts` § "'nya'-
  * copyns geometri vid värsta fall", SAMMA permanenta värsta-fall-form som
  * ovan — 91-tecken eventnamn + tvåsiffrigt antal, X=12): status-kolumnens
- * `line-clamp-2`-span ("12 nya deltagare saknar eventinfo") klipper INTE
+ * `line-clamp-2`-span ("12 nya deltagare saknar deltagarinfo") klipper INTE
  * vid NÅGON av de två viewporten — `scrollHeight` === `clientHeight` i
  * båda: **24px/24px vid 375px** (radad EN rad i den staplade mobilformen,
  * som får nästan hela radbredden), **48px/48px vid 1440px** (radad TVÅ

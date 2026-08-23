@@ -59,7 +59,8 @@ export const EventSchema = z.object({
   // ADDITIVA bas-fälten som eventsidans auto-utskicks-kryss läser och skriver:
   // 'Deltagarinfo schemalagd' (date ISO) respektive 'Deltagarinfo auto-utskick
   // avstängt' (checkbox, OPT-OUT: true = skickas INTE automatiskt). Basens ord är
-  // Deltagarinfo, UI-ordet är eventinfo (ORDLISTA). ADDITIVT-OPTIONAL i samma form
+  // Deltagarinfo, och sedan 2026-08-23 (TASK-303) är UI-ordet detsamma
+  // — tidigare 'eventinfo' (ORDLISTA § Deltagarinfo). ADDITIVT-OPTIONAL i samma form
   // som fälten ovan: get-events och äldre cache-svar bär dem inte. get-event och
   // update-event bär ALLTID opt-out:en (Airtable utelämnar okryssad checkbox →
   // EF:en normaliserar till false) och datumet endast när det är satt.
