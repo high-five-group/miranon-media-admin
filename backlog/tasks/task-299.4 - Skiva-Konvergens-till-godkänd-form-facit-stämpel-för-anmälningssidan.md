@@ -4,7 +4,7 @@ title: 'Skiva: Konvergens till godkänd form + facit-stämpel för anmälningssi
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:20'
-updated_date: '2026-08-23 14:05'
+updated_date: '2026-08-23 14:26'
 labels:
   - ready-for-human
 dependencies:
@@ -22,10 +22,10 @@ Den variant Marcus valde itereras tills han är helt nöjd — konvergensfasen. 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Vinnarvarianten itererad till Marcus uttryckliga godkännande i klartext
-- [ ] #2 Facit-manifest finns på tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json med ytan 'anmälningssidan' och bilder för alla tre lägen (ofiltrerad, åtgärdskö, tomt)
-- [ ] #3 Manifestet deklarerar uttryckligen vilka bilder som är facit och vilka som är iterationssteg eller förkastade alternativ
+- [x] #2 Facit-manifest finns på tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json med ytan 'anmälningssidan' och bilder för alla tre lägen (ofiltrerad, åtgärdskö, tomt)
+- [x] #3 Manifestet deklarerar uttryckligen vilka bilder som är facit och vilka som är iterationssteg eller förkastade alternativ
 - [ ] #4 Marcus har stämplat manifestet via kanalseparationen; godkand-fältet bär av, datum, citat och sha
-- [ ] #5 check-facit grön med det nya manifestet
+- [x] #5 check-facit grön med det nya manifestet
 <!-- AC:END -->
 
 ## Definition of Done
