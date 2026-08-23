@@ -9,6 +9,7 @@ import type {
   CreateAttendanceInput,
   CreatedAttendance,
 } from '../../domain/models/Attendance';
+import type { DocumentSources } from '../../domain/models/DocumentSources';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
@@ -148,6 +149,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async getEventFormats(): Promise<EventFormat[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async getDocumentSources(_eventId: string): Promise<DocumentSources> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

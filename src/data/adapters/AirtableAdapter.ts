@@ -10,6 +10,7 @@ import type {
   CreateAttendanceInput,
   CreatedAttendance,
 } from '../../domain/models/Attendance';
+import type { DocumentSources } from '../../domain/models/DocumentSources';
 import type { Engagement } from '../../domain/models/Engagement';
 import type { Event } from '../../domain/models/Event';
 import type { CreateEventNoteInput, EventNote } from '../../domain/models/EventNote';
@@ -33,6 +34,7 @@ import {
   CreatedEventSchema,
   type CreateEventInput,
   DocumentPreviewSchema,
+  DocumentSourcesSchema,
   type EventFormat,
   EventFormatSchema,
   EventNoteSchema,
@@ -404,6 +406,18 @@ export class AirtableAdapter implements DataSourceAdapter {
   async getEventFormats(): Promise<EventFormat[]> {
     const data = await callEdgeFunction<{ eventFormats: unknown }>('get-event-formats');
     return z.array(EventFormatSchema).parse(data.eventFormats);
+  }
+
+  /**
+   * Bilagornas ifyllnadsunderlag för ETT event (TASK-309.2 AC #4, ADR-125
+   * § 2). GET mot get-document-sources-EF:en — se
+   * `DataSourceAdapter.getDocumentSources` för det fulla kontraktet
+   * (standard/kopia-formen, varför fallback-regeln bor server-side).
+   * `.parse()` validerar vid datagränsen (ADR-026).
+   */
+  async getDocumentSources(eventId: string): Promise<DocumentSources> {
+    const data = await callEdgeFunction<unknown>('get-document-sources', { eventId });
+    return DocumentSourcesSchema.parse(data);
   }
 
   /**

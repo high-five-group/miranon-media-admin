@@ -39,6 +39,14 @@ export {
   type EventFormat,
   EventFormatSchema,
 } from './CreateEvent.schema';
+export {
+  DocumentSourcesAgendaSchema,
+  DocumentSourcesEventinnehallSchema,
+  DocumentSourcesEventSchema,
+  DocumentSourcesKopiorSchema,
+  DocumentSourcesPlatsSchema,
+  DocumentSourcesSchema,
+} from './DocumentSources.schema';
 export { EngagementSchema } from './Engagement.schema';
 export { EventSchema } from './Event.schema';
 export { EventNoteSchema } from './EventNote.schema';
