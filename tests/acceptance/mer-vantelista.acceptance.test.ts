@@ -29,8 +29,14 @@ import { expect, test } from './support/acceptance-bas';
  *
  * Täckning: roster-rendering (namn + ställde-sig-datum + e-post + telefon +
  * informationsmail-status), antal-summa, fokus→<h1> + aria-live, tom-state, fel
- * (role=alert), loading aria-busy, namn-fallback ("Namn saknas"), axe 0. LÄS-vy →
- * INGEN flytta-/write-affordans.
+ * (role=alert), loading aria-busy, namn-fallback ("Namn saknas"), axe 0 (lista +
+ * tomt + fel). LÄS-vy → INGEN flytta-/write-affordans.
+ *
+ * UTVIDGAD (TASK-299.7, AC #5 — utvidgad, inte omskriven): husets delade
+ * `SidRam`-primitiv ersätter den gamla textlänken "← Tillbaka till Mer"
+ * (AC #1 — den gamla länken OCH den dubblerade sidmarginalen är borta); varje
+ * rad bär `InitialAvatar`s initialcirkel ur namnet (AC #2). Axe utvidgat till
+ * tom- och fellägena (tidigare bara det laddade listläget).
  */
 
 /** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
@@ -109,6 +115,11 @@ test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
     await expect(page.getByText('anna@example.se')).toBeVisible();
     await expect(page.getByText('bo@example.se')).toBeVisible();
 
+    // AC #2 — initialcirkeln (InitialAvatar, primitiv-komponenten) ur namnet,
+    // en per rad. Extern beteende (synlig text), aldrig implementationsdetalj.
+    await expect(page.getByText('AA', { exact: true })).toBeVisible();
+    await expect(page.getByText('BB', { exact: true })).toBeVisible();
+
     // Ställde sig: createdTime formaterat sv-SE (aldrig rå ISO).
     await expect(page.getByText('2026-05-02')).toBeVisible();
     await expect(page.getByText('2026-05-01')).toBeVisible();
@@ -123,11 +134,14 @@ test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
       page.getByRole('button', { name: /flytta|markera|spara|ändra|ta bort/i }),
     ).toHaveCount(0);
 
-    // Tillbaka-länk → Mer-landningen.
-    await expect(page.getByRole('link', { name: '← Tillbaka till Mer' })).toHaveAttribute(
+    // AC #1 — sidramens chevron (SidRam) ersätter den gamla textlänken:
+    // tillgängligt namn utan pilprefix, href → Mer-landningen. Den gamla
+    // texten "← Tillbaka till Mer" existerar inte längre någonstans på sidan.
+    await expect(page.getByRole('link', { name: 'Tillbaka till Mer' })).toHaveAttribute(
       'href',
       '/mer',
     );
+    await expect(page.getByText('← Tillbaka till Mer')).toHaveCount(0);
   });
 
   test('tom väntelista → vänlig tom-text, ej fel', async ({ page, network }) => {
@@ -184,6 +198,45 @@ test.describe('Väntelista-vy (Fas 6c L3 — LÄS-vy via get-waitlist)', () => {
     ]);
     await page.goto('/mer/vantelista');
     await expect(page.getByRole('heading', { level: 1, name: 'Väntelista' })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  // UTVIDGAT (TASK-299.7, DoD #5 — axe 0 i ALLA tillstånd, inte bara det
+  // laddade listläget). Väntelistan har inget filtrerat läge (till skillnad
+  // från anmälningssidan) — tomt, fel och laddning är de återstående tre.
+  test('axe 0 violations — tomt läge', async ({ page, network }) => {
+    mockWaitlist(network, []);
+    await page.goto('/mer/vantelista');
+    await expect(page.getByText('Väntelistan är tom.')).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  test('axe 0 violations — fel-läge', async ({ page, network }) => {
+    mockWaitlist(network, [], { status: 404 });
+    await page.goto('/mer/vantelista');
+    await expect(page.getByRole('alert')).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+
+  test('axe 0 violations — laddningsläge', async ({ page, network }) => {
+    mockWaitlist(network, [row()], { manualRelease: true });
+    await page.goto('/mer/vantelista');
+    await expect(page.getByText('Laddar väntelistan…')).toBeVisible();
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

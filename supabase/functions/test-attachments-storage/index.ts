@@ -26,7 +26,7 @@
 // gate: funktionen rör ingen persondata, bara syntetiska testobjekt i ett
 // reserverat testnamnrymd, se TEST_EVENT_PREFIX nedan).
 //
-// EN EF, TVÅ ACTIONS (djup modul, samma form som test-invite-completion):
+// EN EF, FYRA ACTIONS (djup modul, samma form som test-invite-completion):
 //   - "run_full_proof": skapar ett syntetiskt test-event-ID, laddar upp tre
 //     testobjekt under det (ett för åtkomst-provet, ett precis under
 //     bucketens fileSizeLimit, ett precis över), skapar två signerade
@@ -38,6 +38,40 @@
 //   - "cleanup": river alla objekt under ett givet test-event-prefix.
 //     FAIL-CLOSED: prefixet måste börja med TEST_EVENT_PREFIX_MARKER —
 //     funktionen vägrar radera något annat, oavsett vad callern skickar in.
+//     Endast FLATA prefix (TEST_EVENT_PREFIX_MARKER-namnrymden lägger aldrig
+//     objekt i en undermapp) — se `cleanup()` § filhuvud för skillnaden mot
+//     "list_prefix"/"remove_paths" nedan.
+//
+// [TASK-302.3, ADR-124] "list_prefix" OCH "remove_paths" — TVÅ NYA, TUNNA
+// actions för `scripts/purge-staging-sentinels.mjs`s Storage-purge av
+// `utkast/<eventId>/<typ>.pdf` (ADR-124 § Beslut 2: mängden är bunden per
+// konstruktion, men en purge-target skyddar mot framtida test-event-ID:n
+// vars Airtable-rad purgas medan Storage-syskonet blir kvar för alltid).
+// SAMMA "privilegierad Storage-operation bakom en JWT-gated testharness-EF"-
+// mönster som "cleanup" ovan etablerade — INGEN ny hemlighet, bara
+// `requireUser` som gateway. Delade i TVÅ (i stället för en enda
+// "purge"-action) eftersom ålders-guarden (skydda in-flight testkörningar,
+// samma resonemang som `.purge-staging-policy.json`s `minAgeMinutes` för
+// Airtable-sentineler) MÅSTE avgöras i det NODE-testbara purge-skriptet
+// (`isStorageObjectOldEnough`, pure function, `scripts/
+// test-purge-staging-sentinels.mjs`) — inte gömmas inuti denna Deno-EF där
+// den inte kan enhetstestas. `list_prefix` returnerar rådata (path +
+// updatedAt); purge-skriptet FILTRERAR; `remove_paths` tar bort EXAKT de
+// paths skriptet bad om, inget mer.
+//
+// BÅDA rekursivt-medvetna: `utkast/<eventId>/<typ>.pdf` har ETT extra
+// mapp-steg jämfört med TEST_EVENT_PREFIX_MARKER-namnrymdens flata
+// `<eventId>/<filnamn>` — `collectObjectPaths()` rekurserar EN nivå när
+// Storage `list()` returnerar en mapp-post (`id === null`), vilket bara
+// någonsin händer för `utkast`-prefixet (TEST_EVENT_PREFIX_MARKER-vägen har
+// inga undermappar och rekurserar därför aldrig i praktiken — samma
+// funktion, två anropsformer, ingen beteendeändring för den gamla).
+//
+// BÅDA FAIL-CLOSED till EXAKT samma tillåtna namnrymder som "cleanup":
+// `TEST_EVENT_PREFIX_MARKER` ELLER `UTKAST_PREFIX_MARKER` ('utkast'/
+// 'utkast/') — `isAllowedPrefix()`. `remove_paths` kontrollerar VARJE path
+// individuellt (inte bara en gemensam prefix-parameter): en anropare kan
+// inte smyga in en godtycklig path bredvid en giltig i samma anrop.
 //
 // STORLEKSGRÄNSEN LÄSES LIVE ur bucketens faktiska konfiguration
 // (`storage.getBucket(BUCKET_ID).file_size_limit`) i stället för att
@@ -58,6 +92,32 @@ const BUCKET_ID = 'bilagor';
 // matchar detta prefix.
 const TEST_EVENT_PREFIX_MARKER = 'ZZ-TEST-EVENT-';
 
+// [TASK-302.3] Den ANDRA tillåtna namnrymden — `_shared/utkast.ts`s
+// deterministiska `utkast/<eventId>/<typ>.pdf`-form. "list_prefix"/
+// "remove_paths" vägrar röra något annat (samma fail-closed-disciplin som
+// TEST_EVENT_PREFIX_MARKER för "cleanup"). Denna EF:s "cleanup"-action
+// rör INTE denna namnrymd — se "list_prefix"/"remove_paths" nedan.
+const UTKAST_PREFIX_MARKER = 'utkast';
+
+/** Fail-closed-guarden delad av "list_prefix"/"remove_paths": exakt de TVÅ
+ * reserverade namnrymderna, ingenting annat. */
+// Namnrymds-spärren är en PREFIX-match — därför avvisas varje segment-
+// traversering explicit: `utkast/../bilagor-rad.pdf` börjar med "utkast/"
+// men pekar utanför. Vi litar inte på att Storage normaliserar nyckeln åt
+// oss (orkestrerar-härdning vid granskningen av TASK-302.3, 2026-08-23).
+function harTraversering(path: string): boolean {
+  return path.split('/').some((segment) => segment === '..' || segment === '.' || segment === '');
+}
+
+function isAllowedPrefix(prefix: string): boolean {
+  if (harTraversering(prefix)) return false;
+  return (
+    prefix.startsWith(TEST_EVENT_PREFIX_MARKER) ||
+    prefix === UTKAST_PREFIX_MARKER ||
+    prefix.startsWith(`${UTKAST_PREFIX_MARKER}/`)
+  );
+}
+
 // Signerad-URL-livslängder. VALID_TTL_SECONDS ska räcka för att testet
 // hinner göra sin första hämtning. EXPIRING_TTL_SECONDS är medvetet extremt
 // kort — testet väntar ut den innan det gör sin andra hämtning.
@@ -74,7 +134,7 @@ const BOUNDARY_MARGIN_BYTES = 1024;
 // dela objekt, så ett fel i det ena aldrig kan maskera eller färga det andra.
 const ACCESS_TEST_OBJECT_BYTES = 2048;
 
-const VALID_ACTIONS = ['run_full_proof', 'cleanup'] as const;
+const VALID_ACTIONS = ['run_full_proof', 'cleanup', 'list_prefix', 'remove_paths'] as const;
 type Action = (typeof VALID_ACTIONS)[number];
 
 function isValidAction(action: unknown): action is Action {
@@ -223,12 +283,84 @@ async function runFullProof(
   };
 }
 
+/**
+ * [TASK-302.3] Listar en NAMNGIVEN prefix REKURSIVT en nivå (mapp-poster,
+ * `id === null`, expanderas till sina egna barn — se fil-header) och
+ * returnerar VARJE objekts fulla path + `updated_at`. Rå data, ingen
+ * ålders-filtrering här (den bor pure/testbart i purge-skriptet).
+ */
+async function collectObjectEntries(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  prefix: string,
+): Promise<{ path: string; updatedAt: string | null }[]> {
+  const { data: listing, error } = await supabaseAdmin.storage.from(BUCKET_ID).list(prefix);
+  if (error) {
+    throw new Error(`list("${prefix}") misslyckades: ${error.message}`);
+  }
+  const out: { path: string; updatedAt: string | null }[] = [];
+  for (const entry of listing ?? []) {
+    const entryPath = `${prefix}/${entry.name}`;
+    if (entry.id === null) {
+      // Mapp-post (t.ex. `utkast/<eventId>`) — rekursera EN nivå. Ingen
+      // djupare nästling förekommer i denna bucket (`utkast/<eventId>/
+      // <typ>.pdf` är strukturens fulla djup, `_shared/utkast.ts` §
+      // `laggUtkast`).
+      const nested = await collectObjectEntries(supabaseAdmin, entryPath);
+      out.push(...nested);
+    } else {
+      out.push({ path: entryPath, updatedAt: entry.updated_at ?? null });
+    }
+  }
+  return out;
+}
+
+/** [TASK-302.3] action "list_prefix" — rå listning, fail-closed till `isAllowedPrefix`. */
+async function listPrefix(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  prefix: string,
+): Promise<{ entries: { path: string; updatedAt: string | null }[] }> {
+  if (!isAllowedPrefix(prefix)) {
+    throw new ValidationError(
+      `prefix måste börja med "${TEST_EVENT_PREFIX_MARKER}" eller "${UTKAST_PREFIX_MARKER}" — ` +
+        'vägrar lista utanför de reserverade namnrymderna',
+    );
+  }
+  const entries = await collectObjectEntries(supabaseAdmin, prefix);
+  return { entries };
+}
+
+/**
+ * [TASK-302.3] action "remove_paths" — tar bort EXAKT de paths som anges,
+ * INGEN prefix-parameter (till skillnad från "cleanup"): varje path
+ * kontrolleras INDIVIDUELLT mot `isAllowedPrefix` så en anropare inte kan
+ * smyga in en godtycklig path bredvid en giltig i samma anrop.
+ */
+async function removePaths(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  paths: string[],
+): Promise<{ deleted: string[] }> {
+  const disallowed = paths.find((p) => !isAllowedPrefix(p));
+  if (disallowed !== undefined) {
+    throw new ValidationError(
+      `path "${disallowed}" ligger utanför de reserverade namnrymderna ("${TEST_EVENT_PREFIX_MARKER}"/"${UTKAST_PREFIX_MARKER}") — vägrar radera`,
+    );
+  }
+  if (paths.length === 0) {
+    return { deleted: [] };
+  }
+  const { error } = await supabaseAdmin.storage.from(BUCKET_ID).remove(paths);
+  if (error) {
+    throw new Error(`remove(${paths.length} objekt) misslyckades: ${error.message}`);
+  }
+  return { deleted: paths };
+}
+
 async function cleanup(
   supabaseAdmin: ReturnType<typeof createClient>,
   prefix: string,
 ): Promise<{ deleted: string[] }> {
   if (!prefix.startsWith(TEST_EVENT_PREFIX_MARKER)) {
-    // FAIL-CLOSED: se fil-header § EN EF, TVÅ ACTIONS. Detta är funktionens
+    // FAIL-CLOSED: se fil-header § EN EF, FYRA ACTIONS. Detta är funktionens
     // viktigaste spärr — utan den vore "cleanup" en godtycklig
     // radera-vad-som-helst-i-bucketen-primitiv.
     throw new ValidationError(
@@ -287,6 +419,34 @@ Deno.serve(async (req) => {
       console.log(`[test-attachments-storage] ALLOW(run_full_proof) caller_user_id=${user.id}`);
       const result = await runFullProof(supabaseAdmin, requestId);
       return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'list_prefix') {
+      const prefix = body?.prefix;
+      if (typeof prefix !== 'string' || prefix.trim().length === 0) {
+        throw new ValidationError('prefix is required for list_prefix and must be a non-empty string');
+      }
+      console.log(
+        `[test-attachments-storage] ALLOW(list_prefix) caller_user_id=${user.id} prefix=${prefix}`,
+      );
+      const result = await listPrefix(supabaseAdmin, prefix.trim());
+      return new Response(JSON.stringify({ ok: true, requestId, ...result }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'remove_paths') {
+      const paths = body?.paths;
+      if (!Array.isArray(paths) || paths.some((p) => typeof p !== 'string' || p.trim().length === 0)) {
+        throw new ValidationError('paths is required for remove_paths and must be a non-empty string array');
+      }
+      console.log(
+        `[test-attachments-storage] ALLOW(remove_paths) caller_user_id=${user.id} count=${paths.length}`,
+      );
+      const result = await removePaths(supabaseAdmin, paths as string[]);
+      return new Response(JSON.stringify({ ok: true, requestId, ...result }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

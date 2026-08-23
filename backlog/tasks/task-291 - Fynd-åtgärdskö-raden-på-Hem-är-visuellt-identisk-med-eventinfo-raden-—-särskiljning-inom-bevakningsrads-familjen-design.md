@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 10:54'
-updated_date: '2026-08-22 21:50'
+updated_date: '2026-08-22 23:24'
 labels:
   - ready-for-human
 dependencies: []
@@ -50,4 +50,20 @@ ERSÄTTNINGEN, som Marcus ställde sig bakom ("Jag står vid dina rekommendation
 AC #2 EJ AVBOCKAD — kriteriet kräver val i visuell granskning på BÅDE desktop och mobil. Marcus rapporterade att han tittat, men inte att båda vyportarna prövats, och den vald-med-amendering-formen finns ännu inte byggd att titta på. Bocka AC #2 när den fyllda cirkel-formen är byggd och sedd i båda vyportarna — valet ovan är citerat och står, men granskningen är inte belagd.
 
 BEROENDE ATT NOTERA: TASK-303 (bevakningsradens höjdlås — anatomi i stället för radbrytning) föddes ur samma granskning och rör SAMMA rader. Promoveringen i AC #3 och facit-amenderingen i AC #4 bör sekvenseras mot 303, så hem-facit inte stämplas två gånger på två veckor.
+
+BYGGT 2026-08-23 (orkestrerarens byggpass, kombinerat med TASK-303 på uttrycklig Marcus-order mitt i arbetet — "du bygger en prototyp som vi kan promovera till skarpa bevakningrad.tsx nu va? För det tar vi tag i direkt, problemet med höjd och radbrytning").
+
+VARIANT A AMENDERAD: ikonen (Link2Off) bär nu en fylld cirkel-behållare via nya tokens --mm-atgardsko-markor-bg/-text (src/styles/tokens/components.css, alias mot --mm-btn-primary-bg/-text — "knappens bakgrundsfärg" som Marcus bad om). Mätt (WCAG-formeln, node): markör-bg mot --mm-navcard-bg 13,38:1; markör-text mot markör-bg 14,60:1. Ersatta tokens (--mm-primary-tint/--mm-primary) mätte 1,01:1 respektive 2,33:1 — under 1.4.11-golvet på båda leden.
+
+<LI>-REGRESSIONEN FIXAD: routens variant-läge renderar nu EventinfoRadAnatomi (eget <li>) + variantens rad (eget <li>) i EN delad <ul aria-label="Bevakningar">, matchande skarpa vyns struktur. Live-mätt (Playwright): parentElement.tagName === "LI", li.parentElement.tagName === "UL" i alla tre varianter, före fixen var det "SECTION" rakt av.
+
+VARIANT C FIXAD: cirkeln bär nu samma markör-tokens (var --mm-navcard-bg på --mm-navcard-bg, dvs 1,01:1 — praktiskt osynlig; nu 13,38:1).
+
+TASK-303-ARBETET (kombinerat i samma commit/PR): ny delad radanatomi (RadInnehall, tvåradigt CSS-grid — badge/chevron bor ENDAST på rubrikradens grid-rad, undertexten spänner hela bredden på rad 2) för BÅDA radtyperna. Talet flyttat till en reserverad badge (RadBadge). Live-mätt höjdlås (Playwright, negativkontroll bekräftad): 70px, KONSTANT vid 375/390/768/1280px, vid 1/2/3-siffriga tal, och vid PR #1388s 91-teckens värsta-fall-eventnamn (som förväntat/accepterat truncerar RUBRIKEN, men höjden rör sig ALDRIG). Negativkontroll: en medvetet förlängd undertext ger overflow=true, återställd ger false — mätmetoden fäller när den ska.
+
+STRÄNG-DIVERGENS (TASK-303 AC #5, EJ formellt avgjord här): prototypen använder nu skarpa appens fulla sträng "Nya deltagare saknar eventinfo" (versal N — rättad efter orkestrerarens observation att extraktionen av talet gjorde gemena "nya" till ett avhugget fragment). AC #5 kräver fortfarande ett separat, citerat Marcus-beslut innan de två ytorna (hem-derivations.ts vs dev/hem-prototyp/data.ts) räknas som synkade.
+
+VERIFIERAT: axe 0 violations i alla 4 lägen (skarpa vyn, variant a/b/c) x 2 vyportar (375/1280px), sanity-kontrollerat med negativkontroll (alt-lös bild gav image-alt-fynd, korrekt fångat). prefers-contrast:more, prefers-reduced-motion:reduce, print — alla tre live-emulerade via Playwright emulateMedia, höjdlåset opåverkat i alla lägen.
+
+Bevakningsrad.tsx: 0 rader i diffen, oförändrad. AC #2 fortsatt EJ avbockad — Marcus egen visuella granskning (desktop + mobil) av den nu byggda, förstärkta formen återstår.
 <!-- SECTION:NOTES:END -->

@@ -77,7 +77,7 @@ export function validatePolicy(policy) {
   if (!policy || typeof policy !== 'object') {
     throw new Error('policy: förväntade ett objekt');
   }
-  const { expectedBaseId, forbiddenBaseIds, minAgeMinutes, targets } = policy;
+  const { expectedBaseId, forbiddenBaseIds, minAgeMinutes, targets, storageTargets } = policy;
   if (!BASE_ID_PATTERN.test(expectedBaseId ?? '')) {
     throw new Error(`bas-guard: expectedBaseId "${expectedBaseId}" är inte app-formad`);
   }
@@ -100,6 +100,21 @@ export function validatePolicy(policy) {
       throw new Error(`policy: target "${t.name ?? '?'}" saknar obligatoriska fält`);
     }
   }
+  // [TASK-302.3] storageTargets är OPTIONELLT (Airtable-targets är den
+  // ursprungliga, obligatoriska klassen). Formen prövas generiskt här — den
+  // FAKTISKA fail-closed-spärren mot "inget annat än utkast/" sitter server-
+  // side i test-attachments-storage/index.ts § isAllowedPrefix (samma lager
+  // som TEST_EVENT_PREFIX_MARKER-spärren redan bor i), inte duplicerad här.
+  if (storageTargets !== undefined) {
+    if (!Array.isArray(storageTargets) || storageTargets.length === 0) {
+      throw new Error('policy: storageTargets är satt men tomt — ta bort nyckeln helt i stället');
+    }
+    for (const st of storageTargets) {
+      if (!st.name || !st.bucket || !st.pathPrefix) {
+        throw new Error(`policy: storageTarget "${st.name ?? '?'}" saknar obligatoriska fält`);
+      }
+    }
+  }
   return policy;
 }
 
@@ -115,6 +130,43 @@ export function isOldEnough(record, minAgeMinutes, nowMs) {
   const created = Date.parse(record.createdTime ?? '');
   if (Number.isNaN(created)) return false; // okänd ålder ⇒ fail-safe: rör ej
   return nowMs - created > minAgeMinutes * 60_000;
+}
+
+// ---------------------------------------------------------------------------
+// [TASK-302.3] Storage-targets — samma ålders-guard-princip som Airtable-
+// sentinelerna (isOldEnough ovan), men mot Storage-objektens `updatedAt`
+// (Supabase Storage FileObject) i stället för Airtables `createdTime`.
+// ---------------------------------------------------------------------------
+
+/**
+ * Ålders-guarden för ETT Storage-objekt. Samma fail-safe-riktning som
+ * isOldEnough: okänd/oparsbar `updatedAt` ⇒ false (rör ej) — ett objekt vi
+ * inte kan tidsätta är INTE bevisat gammalt nog att raderas.
+ */
+export function isStorageObjectOldEnough(entry, minAgeMinutes, nowMs) {
+  const updated = Date.parse(entry.updatedAt ?? '');
+  if (Number.isNaN(updated)) return false;
+  return nowMs - updated > minAgeMinutes * 60_000;
+}
+
+/**
+ * Klassa listade Storage-objekt till en purge-plan. Ingen exakt-match/
+ * länk-guard behövs här (till skillnad från planPurge/Airtable): den
+ * gemensamma tillåtna-namnrymds-spärren (`isAllowedPrefix`,
+ * test-attachments-storage/index.ts) är redan servad av `list_prefix`
+ * själv — allt som listas härifrån ligger per definition i en reserverad
+ * namnrymd. Ålders-guarden är den ENDA klassningen kvar.
+ */
+export function planStoragePurge(entries, minAgeMinutes, nowMs) {
+  const plan = { toDelete: [], skippedYoung: [] };
+  for (const entry of entries) {
+    if (isStorageObjectOldEnough(entry, minAgeMinutes, nowMs)) {
+      plan.toDelete.push(entry.path);
+    } else {
+      plan.skippedYoung.push(entry.path);
+    }
+  }
+  return plan;
 }
 
 /**
@@ -394,6 +446,84 @@ export async function deleteRecords(baseId, target, ids, token, throttleMs, batc
 }
 
 // ---------------------------------------------------------------------------
+// [TASK-302.3] Storage-purge — anropar test-attachments-storage/index.ts:s
+// "list_prefix"/"remove_paths" (JWT-gated testharness-EF, SAMMA
+// "privilegierad Storage-operation utan en ny hemlighet"-mönster som
+// Airtable-halvan ovan bär för sin egen bas: ingen SERVICE_ROLE-nyckel når
+// någonsin detta skript, bara en test-admin-inloggning + EF:ens egen
+// auto-injicerade service-role SERVER-SIDE).
+//
+// GATAD PÅ FYRA REDAN BEFINTLIGA env-variabler (TEST_SUPABASE_URL/
+// TEST_SUPABASE_ANON_KEY/TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD — SAMMA fyra
+// som tests/api/helpers.ts:s getApiConfig() kräver, ingen ny hemlighet).
+// SAKNAS NÅGON → tyst SKIP med en tydlig loggrad, ALDRIG process.exit(1):
+// dagens `Staging sentinel purge`-CI-jobb injicerar bara
+// STAGING_AIRTABLE_TOKEN (.github/workflows/ci-suite.yml), så denna gren
+// är i praktiken overifierad i CI tills en medveten, separat ändring
+// trådar in de fyra TEST_*-secrets i det jobbets env — se skivans
+// slutrapport. Lokalt (`.env.test` källad) är den full aktiv.
+// ---------------------------------------------------------------------------
+
+const TEST_HARNESS_ENDPOINT = '/functions/v1/test-attachments-storage';
+
+/** Vilka fyra env-variabler storage-purgen kräver — en enda källa för både gate och felmeddelande. */
+const STORAGE_PURGE_ENV_VARS = [
+  'TEST_SUPABASE_URL',
+  'TEST_SUPABASE_ANON_KEY',
+  'TEST_ADMIN_EMAIL',
+  'TEST_ADMIN_PASSWORD',
+];
+
+/** Loggar in som test-admin (Supabase Auth REST, samma anrop som tests/api/helpers.ts § loginUser) och returnerar access_token. */
+async function loginTestAdmin(baseUrl, anonKey, email, password) {
+  const res = await fetch(`${baseUrl}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { apikey: anonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const body = await res.text();
+  if (!res.ok) {
+    throw new ApiError(`test-admin-inloggning ${res.status}: ${body.slice(0, 300)}`, {
+      status: res.status,
+      body,
+    });
+  }
+  return JSON.parse(body).access_token;
+}
+
+/** POST mot test-attachments-storage. Kastar ApiError på icke-2xx. */
+async function callTestHarness(baseUrl, jwt, action, extra) {
+  const res = await fetch(`${baseUrl}${TEST_HARNESS_ENDPOINT}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...extra }),
+  });
+  const body = await res.text();
+  if (!res.ok) {
+    throw new ApiError(`test-attachments-storage(${action}) ${res.status}: ${body.slice(0, 300)}`, {
+      status: res.status,
+      body,
+    });
+  }
+  return JSON.parse(body);
+}
+
+/** Purga ETT storage-target: list_prefix → planStoragePurge (pure) → remove_paths. */
+async function purgeStorageTarget(baseUrl, jwt, target, minAgeMinutes, nowMs, dryRun) {
+  const { entries } = await callTestHarness(baseUrl, jwt, 'list_prefix', {
+    prefix: target.pathPrefix,
+  });
+  const plan = planStoragePurge(entries, minAgeMinutes, nowMs);
+  console.log(
+    `▸ ${target.name} (bucket "${target.bucket}", prefix "${target.pathPrefix}"): ` +
+      `${entries.length} objekt — ${plan.toDelete.length} raderas, ${plan.skippedYoung.length} för färska`,
+  );
+  if (dryRun || plan.toDelete.length === 0) return;
+  const { deleted } = await callTestHarness(baseUrl, jwt, 'remove_paths', { paths: plan.toDelete });
+  console.log(`   🗑  ${deleted.length}/${plan.toDelete.length} raderade`);
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -487,6 +617,42 @@ async function main() {
       if (!(err instanceof ApiError)) throw err;
       hadApiError = true;
       console.error(`❌ ${target.name}: ${err.message}`);
+    }
+  }
+
+  // [TASK-302.3] Storage-targets — se § "Storage-purge" ovan för gaten och
+  // varför en saknad TEST_*-env är ett SKIP, inte ett fel.
+  if (Array.isArray(policy.storageTargets) && policy.storageTargets.length > 0) {
+    const missingEnv = STORAGE_PURGE_ENV_VARS.filter((name) => !process.env[name]);
+    if (missingEnv.length > 0) {
+      console.log(
+        `ⓘ  storageTargets hoppas över — saknar ${missingEnv.join(', ')} i env ` +
+          `(${missingEnv.length}/${STORAGE_PURGE_ENV_VARS.length}). Lokalt: källa .env.test. ` +
+          'CI: dagens purge-jobb injicerar bara STAGING_AIRTABLE_TOKEN — se skriptets § Storage-purge.',
+      );
+    } else {
+      try {
+        const jwt = await loginTestAdmin(
+          process.env.TEST_SUPABASE_URL,
+          process.env.TEST_SUPABASE_ANON_KEY,
+          process.env.TEST_ADMIN_EMAIL,
+          process.env.TEST_ADMIN_PASSWORD,
+        );
+        for (const target of policy.storageTargets) {
+          await purgeStorageTarget(
+            process.env.TEST_SUPABASE_URL,
+            jwt,
+            target,
+            minAgeMinutes,
+            nowMs,
+            dryRun,
+          );
+        }
+      } catch (err) {
+        if (!(err instanceof ApiError)) throw err;
+        hadApiError = true;
+        console.error(`❌ storageTargets: ${err.message}`);
+      }
     }
   }
 
