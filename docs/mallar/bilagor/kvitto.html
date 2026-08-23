@@ -108,14 +108,16 @@
         <col class="kvitto-col-summa" />
       </colgroup>
       <tr>
-        <td class="kvitto-col-benamning">{{eventNamn}}, {{betalningLabel}}</td>
+        <td class="kvitto-col-benamning">
+          {{benamning}}
+          <span class="kvitto-betalningsetikett">{{betalningLabel}}</span>
+        </td>
         <td class="kvitto-col-antal">1</td>
         <td class="kvitto-col-enhet"></td>
-        <td class="kvitto-col-apris kvitto-belopp">{{brutto}}</td>
-        <td class="kvitto-col-summa kvitto-belopp">{{brutto}}</td>
+        <td class="kvitto-col-apris kvitto-belopp">{{netto}}</td>
+        <td class="kvitto-col-summa kvitto-belopp">{{netto}}</td>
       </tr>
     </table>
-    <p class="kvitto-betalsatt-rad">Betalsätt: {{betalsatt}}</p>
   </div>
 
   <div class="kvitto-box kvitto-totalruta">

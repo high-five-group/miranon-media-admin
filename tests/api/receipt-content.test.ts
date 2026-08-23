@@ -40,6 +40,7 @@ import {
   formatBelopp,
   formatKvittoDatum,
   type KvittoradSpec,
+  kvittoBenamning,
   kvittoRader,
   MIRANON_ORG,
   MOMSSATS_PROCENT,
@@ -69,6 +70,13 @@ function spec(overrides: Partial<KvittoradSpec> = {}): KvittoradSpec {
     betalning: 'avgift',
     eventNamn: 'Personlig utveckling',
     datum: '2026-08-03T00:00:00.000Z',
+    // [TASK-306] Default null (samma "utelämna ledet"-golv som `alla fält
+    // null → bara kursnamn`-testfallet nedan förutsätter) — tester som vill
+    // se de nya fälten i benämningen sätter dem explicit via `overrides`.
+    eventTyp: null,
+    eventStart: null,
+    eventSlut: null,
+    bokforingstext: null,
     ...overrides,
   };
 }
@@ -123,6 +131,103 @@ test.describe('beraknaMoms — invarianten netto + moms === brutto (LÅST ordnin
       checked++;
     }
     expect(checked).toBeGreaterThan(900); // sanity: loopen körde faktiskt
+  });
+});
+
+// [TASK-306] Marcus-beslut a) 2026-08-23 — Lottas skarpa förlaga
+// (~/Desktop/Miranon Media/exempelpdokument/2026-08-03 kvitto-forlaga.pdf,
+// T170) skriver "Utbildning, 2026-07-25 - 2026-07-26, personlig utveckling,
+// meditation" (kort bindestreck, INGET kursnamn — hennes system är per
+// artikel). VÅR benämning lägger till kursnamnet mellan datum och
+// bokföringstext (per-event-systemet kräver det för att skilja två likadant
+// bokförda kurstillfällen åt) — "Rogers-facit" nedan speglar därför Rogers
+// exakta typ/datum/bokföringstext-delar PLUS vårt tillagda kursnamnsled.
+test.describe('kvittoBenamning — TASK-306 beslut a) <Typ>, <Start> - <Slut>, <Kursnamn>[, <Bokföringstext>]', () => {
+  test('Rogers-facit: alla fyra led, kort bindestreck mellan datumen', () => {
+    const benamning = kvittoBenamning({
+      eventTyp: 'Utbildning',
+      eventStart: '2026-07-25',
+      eventSlut: '2026-07-26',
+      eventNamn: 'Resor i medvetandet 1',
+      bokforingstext: 'personlig utveckling, meditation',
+    });
+    expect(benamning).toBe(
+      'Utbildning, 2026-07-25 - 2026-07-26, Resor i medvetandet 1, personlig utveckling, meditation',
+    );
+    expect(benamning).not.toContain('–'); // en-dash — kort streck vinner (TASK-172)
+    expect(benamning).not.toContain('—'); // em-dash
+  });
+
+  test('endagars-event (start === slut): ETT datum, inget intervall', () => {
+    const benamning = kvittoBenamning({
+      eventTyp: 'Föreläsning',
+      eventStart: '2026-08-03',
+      eventSlut: '2026-08-03',
+      eventNamn: 'Fjärrskådning',
+      bokforingstext: null,
+    });
+    expect(benamning).toBe('Föreläsning, 2026-08-03, Fjärrskådning');
+  });
+
+  test('saknat slutdatum behandlas som endagars (inget "undefined"/streck utan andra sidan)', () => {
+    const benamning = kvittoBenamning({
+      eventTyp: 'Utbildning',
+      eventStart: '2026-08-03',
+      eventSlut: null,
+      eventNamn: 'Psionautics',
+      bokforingstext: null,
+    });
+    expect(benamning).toBe('Utbildning, 2026-08-03, Psionautics');
+  });
+
+  test('alla fält null utom kursnamn → bara kursnamnet, ingen platshållare/dubbel-komma', () => {
+    const benamning = kvittoBenamning({
+      eventTyp: null,
+      eventStart: null,
+      eventSlut: null,
+      eventNamn: 'Resor i medvetandet 2',
+      bokforingstext: null,
+    });
+    expect(benamning).toBe('Resor i medvetandet 2');
+    expect(benamning).not.toContain(',');
+  });
+
+  test('samtliga fem fält null → tom sträng (ingen platshållare, aldrig "null"/"undefined")', () => {
+    const benamning = kvittoBenamning({
+      eventTyp: null,
+      eventStart: null,
+      eventSlut: null,
+      eventNamn: null,
+      bokforingstext: null,
+    });
+    expect(benamning).toBe('');
+  });
+
+  test('kvittoRader — Avser-raden använder SAMMA benämning (mirror-kontraktet), kort bindestreck mot betalningLabel', () => {
+    const rader = kvittoRader(
+      spec({
+        betalning: 'slut',
+        eventTyp: 'Utbildning',
+        eventStart: '2026-07-25',
+        eventSlut: '2026-07-26',
+        eventNamn: 'Resor i medvetandet 1',
+        bokforingstext: 'personlig utveckling, meditation',
+      }),
+    );
+    expect(rader).toContain(
+      'Avser: Slutbetalning - Utbildning, 2026-07-25 - 2026-07-26, Resor i medvetandet 1, personlig utveckling, meditation',
+    );
+  });
+
+  test('kvittoRader — Betalsätt-raden FINNS KVAR i mailtexten (mallens borttagning, beslut c, rör INTE kvittoRader)', () => {
+    const rader = kvittoRader(spec({ betalsatt: 'Bankgiro' }));
+    expect(rader).toContain('Betalsätt: Bankgiro');
+  });
+
+  test('kvittoRader — Avser-raden utan benämning (alla nya fält + eventNamn null) faller tillbaka till bara betalningLabel', () => {
+    const rader = kvittoRader(spec({ betalning: 'avgift', eventNamn: null }));
+    expect(rader).toContain('Avser: Anmälningsavgift');
+    expect(rader.find((r) => r.startsWith('Avser:'))).toBe('Avser: Anmälningsavgift');
   });
 });
 
@@ -223,6 +328,10 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
       kundnamn: 'A',
       eventNamn: null,
       datum: '2026-08-03T00:00:00.000Z',
+      eventTyp: null,
+      eventStart: null,
+      eventSlut: null,
+      bokforingstext: null,
     });
     const radB = kvittoRader({
       ...gemensam,
@@ -230,6 +339,10 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
       kundnamn: 'A',
       eventNamn: null,
       datum: '2026-08-03T00:00:00.000Z',
+      eventTyp: null,
+      eventStart: null,
+      eventSlut: null,
+      bokforingstext: null,
     });
     // Samma belopp → identiska Netto/Moms/Betalt-rader oavsett vilken av de
     // två EF:erna (send-receipt-email/preview-receipt) som anropar — det ÄR

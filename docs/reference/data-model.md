@@ -490,6 +490,21 @@ De skrivbara fält som [ADR-066](../decisions/ADR-066-skapa-event-write-vertikal
 
 **Sätts ALDRIG vid create** (system-genererat eller härlett från motsatt sida): `EventKey` (`fldhmhaz3ZnouAzDm`, formel `"Event-" & {Event-nr}`) + `Event-nr` (`fldl5By2a7jGBPpxF`, autoNumber) föds vid skapande; `Eventlabel` (primärfält, formel) + alla rollup/count/formel/lookup-fält beräknas; spegelfältet `Anmälningar (länkat fält)` (`fldUAjTutSM0fziMT`) + `Närvaro (records)` sätts från Anmälningar/Deltaganden-sidan (A1/A3) — ett nyfött event har noll.
 
+#### Eventplanering — kvitto-benämning (TASK-306, 2026-08-23)
+
+Frivilligt fält, INTE satt vid create — Lotta fyller i det manuellt per
+event, `preview-receipt`/`send-receipt-email` läser det (tillsammans med
+`Typ`/`Event (source)`/`Startdatum`/`Slutdatum` ur create-fält-tabellen
+ovan) för att bygga kvittots benämningsrad (`kvittoBenamning()`,
+`_shared/receipt-content.ts`, se `docs/mallar/bilagor/README.md` § Kvittots
+FORM). Läses BY NAME i koden (samma mönster som alla fyra syskonfälten
+ovan) — se `send-receipt-email/index.ts` § `readEventKvittoFalt` för det
+fulla resonemanget bakom det valet.
+
+| Syfte | Fält (NAMN) | Fält-ID | Typ | Kommentar |
+|---|---|---|---|---|
+| Bokföringstext | Bokföringstext (kvitto) | prod `fldof3z1V1duVZNjM` · staging `fldlYgrv3P4hKezJE` | singleLineText | Frivilligt. Lottas egna bokföringskategoriord (t.ex. "personlig utveckling, meditation") — sist i benämningen om ifyllt, utelämnat om tomt. Staging skapad av bygg-agenten (Airtable-MCP `create_field`); PROD skapad av orkestreraren på Marcus uttryckliga GO 2026-08-23 (mitt-i-sessionen-tillägg, TASK-306) — samma fältnamn i båda baserna, ID:t skiljer sig (nytt fält, tillagt EFTER bas-dupliceringen, se ID-topologi-noten i §Snabbreferens). |
+
 #### Deltaganden — write-fält
 
 | Syfte | Fält-ID | Typ | Options / kommentar |

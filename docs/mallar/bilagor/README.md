@@ -321,18 +321,25 @@ Hårt krav (S108 Del 8 § D): varje `{{token}}` i `kvitto.html` härleds
 direkt ur `supabase/functions/_shared/receipt-content.ts` - ingen ny
 datamodell uppfinns i mallen.
 
+**[TASK-306] 1:1-kravets RIKTNING, förtydligad:** regeln betyder *inget i
+mallen UTAN källa* - den betyder INTE *allt i källan MÅSTE synas i mallen*.
+Beslut c) (2026-08-23) tar bort "Betalsätt"-raden UR MARKUPEN utan att röra
+`KvittoradSpec.betalsatt` eller `kvittoRader()` - uppgiften finns kvar i
+Kvitton-tabellen (skriven av `send-receipt-email`s `makeRealFinalizer`) och
+mailtextens egen `Betalsätt: …`-rad, se § nedan. En källa utan mall-token är
+alltså helt i sin ordning; en mall-token utan källa är den regeln FÄLLER.
+
 | Token | Källa i `receipt-content.ts` |
 |---|---|
 | `kvittonummer` | `KvittoradSpec.kvittonummer` |
 | `datum` | `formatKvittoDatum(spec.datum)` - ISO `YYYY-MM-DD` sedan S108 (Marcus-beslut 2026-08-22, "Kör dina rekommendationer": kvittot är en bokföringshandling; se ADR-109 § Updates 2026-08-22) - VERIFIERAT mot `tests/api/receipt-content.test.ts` (`formatKvittoDatum('2026-08-03T00:00:00.000Z')` -> `'2026-08-03'`) |
 | `kundnamn` | `KvittoradSpec.kundnamn` |
 | `kundEpost` | `KvittoradSpec.kundEpost` (PR #1791, Marcus-beslut 2026-08-22) - skrivs under kundnamnet i Fakturaadress-blocket, Rogers ordning namn -> e-post |
-| `eventNamn` | `KvittoradSpec.eventNamn` |
-| `betalningLabel` | Samma härledning som `kvittoRader()`s lokala variabel (`spec.betalning === 'avgift' ? 'Anmälningsavgift' : 'Slutbetalning'`) |
-| `betalsatt` | `KvittoradSpec.betalsatt` |
-| `netto` | `beraknaMoms(spec.belopp).netto`, formaterat via `formatBelopp()` |
+| `benamning` | [TASK-306] `kvittoBenamning(spec)` - INTE längre `eventNamn` som egen token, se § nedan för det fyrledade mönstret |
+| `betalningLabel` | Samma härledning som `kvittoRader()`s lokala variabel (`spec.betalning === 'avgift' ? 'Anmälningsavgift' : 'Slutbetalning'`) - [TASK-306] EGEN synlig sub-rad UNDER benämningen (`.kvitto-betalningsetikett`), INTE längre sammanslagen på samma rad som kursnamnet |
+| `netto` | `beraknaMoms(spec.belopp).netto`, formaterat via `formatBelopp()` - [TASK-306] även A-pris/Summa i radposten (beslut b, se § nedan); TIDIGARE `{{brutto}}` på båda cellerna, en verklig FEL-avvikelse mot totalrutans egen Netto-rad, inte en smaksak |
 | `moms` | `beraknaMoms(spec.belopp).moms`, formaterat via `formatBelopp()` |
-| `brutto` | `spec.belopp`, formaterat via `formatBelopp()` - mallen prefixar `SEK` EN gång på BETALT-raden (mätt: 6,55 mm gap, 13 pt, på beloppets baslinje), som Roger |
+| `brutto` | `spec.belopp`, formaterat via `formatBelopp()` - mallen prefixar `SEK` EN gång på BETALT-raden (mätt: 6,55 mm gap, 13 pt, på beloppets baslinje), som Roger. [TASK-306] Sedan beslut b) ENDAST i totalrutans BETALT-rad - radpostens A-pris/Summa använder `netto` (ovan) |
 | `orgNamn` | `MIRANON_ORG.namn` |
 | `orgNummer` | `MIRANON_ORG.orgnummer` |
 | `orgGatuadress` | `MIRANON_ORG.gatuadress` - adressen är TRE fält sedan S108 (Marcus-beslut 2026-08-22), ej en enradssträng - se stycket "Adressen är tre fält" nedan |
@@ -462,3 +469,61 @@ Chrome-renderingen oförändrad.
 **Verifierat mekaniskt (grep):** `kvitto.css` bär noll `display: grid` och
 noll flex-`gap` utan motsvarande margin-ersättning. Mätt Chrome↔Prince per
 ställe: research-filens § Updates.
+
+### Kvittots benämning är fyrledad, mot Lottas förlaga (TASK-306)
+
+Marcus granskade kvittots Prince-form 2026-08-23 mot Lottas skarpa kvitto
+(`2026-08-03 kvitto-forlaga.pdf`, T170) och fann tre innehållsavvikelser
+(benämningen, A-pris/Summa-beloppet, en Betalsätt-rad som saknas i
+förlagan). Tre beslut, samtliga i `kvittoBenamning()`
+(`_shared/receipt-content.ts`, enhetstestad i
+`tests/api/receipt-content.test.ts` § "kvittoBenamning"):
+
+- **a) Benämning = `<Typ>, <Startdatum> - <Slutdatum>, <Kursnamn>[,
+  <Bokföringstext>]`**, kort bindestreck mellan datumen (repo-policyn
+  `.langa-streck-policy.json`, Marcus 2026-08-09: "korta streck vinner även
+  i datumspann" - Lottas EGEN rad skriver också kort streck). Endagars-event
+  (samma start-/slutdatum, eller slutdatum saknas): ETT datum. Saknas ett
+  fält: LEDET utelämnas helt, aldrig en platshållare. Betalningsetiketten
+  (Anmälningsavgift/Slutbetalning) är INTE en del av benämningen - den är en
+  egen synlig sub-rad (`.kvitto-betalningsetikett`, `display:block`, safe
+  primitiv) UNDER benämningstexten i samma table-cell, för att kunden ska se
+  vilken del som betalats (skillnaden mot Lottas helköpsrad).
+- **b) A-pris och Summa i radposten visar `{{netto}}`, inte `{{brutto}}`.**
+  Mallen skrev tidigare `{{brutto}}` på båda cellerna - en verklig
+  AVVIKELSE mot totalrutans egen `Netto`-rad (samma belopp, två olika
+  siffror på samma sida), inte en smaksak. Totalrutan är OFÖRÄNDRAD (bär
+  fortfarande `netto`/`moms`/`brutto` som förut).
+- **c) "Betalsätt"-RADEN är borttagen ur `kvitto.html`** (Rogers förlaga
+  saknar den) - se § "1:1-kravets RIKTNING" ovan för varför detta INTE
+  bryter tokenytans 1:1-regel: uppgiften finns kvar i Kvitton-tabellen och
+  mailtextens `kvittoRader()`.
+
+**Kursnamnet är MED i vår benämning trots att Lottas rad saknar det.**
+Hennes bokföringssystem är per ARTIKEL - bokföringstexten ENSAM
+identifierar raden. Vårt är per EVENT: samma bokföringstext ("personlig
+utveckling, meditation") kan höra till flera olika kurstillfällen (Resor i
+medvetandet 1/2/3, olika datum) - kursnamnet krävs för att raden ska vara
+unikt identifierbar. Bokfört i `fixtures/kvitto.exempel.json` § `_kalla`.
+
+**Nytt Event-fält `Bokföringstext (kvitto)` (singleLineText, frivilligt).**
+Lotta skriver sina egna kategoriord; ifyllt → sist i benämningen, tomt →
+utelämnat. Fält-ID:n: `docs/reference/data-model.md` (Eventplanering,
+create-fält-tabellen). Läses BY NAME av `preview-receipt`/
+`send-receipt-email` (`Typ`/`Startdatum`/`Slutdatum`/`Event (source)`/
+`Bokföringstext (kvitto)`) - samma mönster som VARJE annan Airtable-
+fältläsning i denna kodbas (ADR-050: samma EF-kod mot båda baserna via
+`AIRTABLE_BASE_ID`-secreten, fält-NAMNET är identiskt även när ID:t skiljer
+sig). Fullt resonemang + avvikelsen mot ett uppdragsdirektiv om ID-baserad
+läsning: `send-receipt-email/index.ts` § `readEventKvittoFalt`.
+
+**Verifierat mekaniskt + visuellt (2026-08-23):** `kvittoBenamning()` är
+enhetstestad (Rogers-facit, endagars, saknat slutdatum, alla fält null utom
+kursnamn, samtliga null). Prince ≡ Chrome, byte-för-byte samma radbrytning,
+på fixturens värden OCH på en medvetet FÖRLÄNGD bokföringstext (stresstest,
+tre rader) - ingen kollision med Antal/A-pris/Summa-kolumnerna, totalrutan/
+sidfoten oförändrat positionerade (samma `flex:1 1 auto`-mekanism som
+`.kvitto-innehall` redan bar, TASK-304). `.kvitto-post .kvitto-col-benamning`
+fick `white-space: normal` (överstyr `.kvitto-tabell td`s generella
+`nowrap`, som finns för Summa-kolumnens "SEK 2 500,00" - inte för
+benämningen).
