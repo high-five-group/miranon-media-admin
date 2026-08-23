@@ -710,7 +710,13 @@ test.describe('Åtgärdskön — bevakningsradstypen (TASK-284.4, ADR-122 beslut
     await expect(visaAllaLank).toBeVisible();
     await visaAllaLank.click();
     await expect(page).toHaveURL(/\/mer\/anmalningar$/);
-    await expect(page.getByText('3 anmälningar')).toBeVisible();
+    // `exact` (TASK-299.5): den promoverade anmälningssidan bär en
+    // filterpanel vars fot säger "Visar 3 av 3 anmälningar" — samma
+    // delsträng som räknarraden, och panelens innehåll ligger i DOM även
+    // när den är STÄNGD (react-aria `DisclosurePanel`). Utan `exact` fäller
+    // lokatorn på strict mode violation, mätt: "resolved to 2 elements".
+    // Assertionen är oförändrad i sak; bara lokatorn är skärpt.
+    await expect(page.getByText('3 anmälningar', { exact: true })).toBeVisible();
   });
 
   test('noll flaggade anmälningar (alla OK) → Åtgärdskö-raden HELT FRÅNVARANDE, axe 0 (tomt läge för denna radtyp)', async ({

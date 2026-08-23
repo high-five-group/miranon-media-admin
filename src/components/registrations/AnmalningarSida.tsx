@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CalendarRange, ChevronRight } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
@@ -16,17 +17,14 @@ import {
 } from '@/components/primitives/FilterRad';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import {
-  atgardskoText,
-  behoverAtgard,
-  displayName,
-  inskickadTid,
-} from '@/components/registrations/registration-display';
-import { StatusBadge } from '@/components/registrations/StatusBadge';
+import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
+import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
+import { queryKeys } from '@/queries/keys';
 import { AnmalningRadResolution } from './AnmalningRadResolution';
-import type { VariantProps } from './types';
+import { atgardskoText, behoverAtgard, displayName, inskickadTid } from './registration-display';
+import { StatusBadge } from './StatusBadge';
 
 /** `?period=` — utökar EventsLists tvåläges-toggel (Kommande/Tidigare) med
     ett nolläge ('alla', default) så AC #2s "ofiltrerad lista" förblir
@@ -68,6 +66,24 @@ const PERIOD_FRAN_ETIKETT: Record<string, PeriodFilter> = {
 /** Räknarens substantiv för anmälningar (böjs efter nämnaren). */
 const ANMALNINGS_ENHET = { ental: 'anmälan', flertal: 'anmälningar' };
 
+/**
+ * YTANS ANKARE — promoverings-grindens lokator (`ADR-103` B4).
+ *
+ * `ariaSnapshot`-paret jämför FÖRE-läget (den rivna prototyp-routen
+ * `/dev/anmalningar-prototyp?variant=b`) mot denna promoverade yta EFTER
+ * flippen. De två sidorna bar OLIKA SIDKROM — prototypen sin
+ * `max-w-xl`-wrapper plus `PrototypeSwitcher`-rail, den skarpa sidan
+ * `AppShell`s header/`<main>`/tab bar — så en snapshot av hela sidan hade
+ * fällt på kromet i stället för på formen. Ankaret sitter därför på FORMENS
+ * yttersta element, och sidkromet (inklusive `backLink` nedan) står UTANFÖR
+ * det i båda lägena. Att referenserna är gröna EFTER flytten är beviset för
+ * att rivningen tog villkor och växlar, aldrig form.
+ *
+ * Konsumeras av `tests/visual/anmalningssidan-promoverings-grind.spec.ts`
+ * (hårdkodad sträng där, husets form — jfr `personer-yta`).
+ */
+const YTANS_ANKARE = 'anmalningar-yta';
+
 /** Event-dimensionens NOLLÄGE. Bärs av `EventValjare`s `gemensamtAlternativ`
     (raden överst i listan OCH den stängda triggerns text när inget är valt),
     så väljaren säger alltid VAR man är — aldrig att ett val saknas. Samma
@@ -104,12 +120,12 @@ function registrationPeriod(
   return dateValue(event) >= idagStart ? 'upcoming' : 'past';
 }
 
-/** Tomt-lägets copy — kombinerar `lage` (befintlig axel) med det nya
+/** Tomt-lägets copy — kombinerar åtgärdskö-läget (befintlig axel) med
     period-filtret. `period === 'alla'` återger ORDAGRANT den ursprungliga
-    copyn (AC #2s befintliga acceptance-täckning rör den strängen). */
-function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
+    copyn (task-1.4:s acceptance-täckning rör de två strängarna). */
+function tomtText(visaAtgardskon: boolean, period: PeriodFilter): string {
   const periodLed = period === 'upcoming' ? 'kommande' : period === 'past' ? 'tidigare' : null;
-  if (lage === 'atgardskon') {
+  if (visaAtgardskon) {
     return periodLed
       ? `Inga anmälningar för ${periodLed} event behöver kopplas om.`
       : 'Inga anmälningar behöver kopplas om.';
@@ -118,8 +134,60 @@ function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
 }
 
 /**
- * [PROTOTYPE, TASK-299.3] VARIANT B — "Scanlista" (PRD `TASK-299` AC #3:
- * bär personlistans radanatomi med anmälningsdata).
+ * SAMLADE ANMÄLNINGSLISTAN — `/mer/anmalningar`, den PROMOVERADE formen
+ * (`ADR-103` B1/B2, TASK-299.5).
+ *
+ * ═══ PROMOVERINGEN: VAD SOM HÄNDE MED DENNA FIL ═══
+ *
+ * Filen ÄR prototypens variant B, flyttad hit med `git mv` — inte omskriven.
+ * Det är `ADR-103` B1 i praktiken ("den godkända prototypen byggs aldrig om;
+ * den promoveras"), och renamet är AC #2:s krav: `git log --follow` på denna
+ * sökväg går bakåt genom hela konvergensfasens iterationsvågor, till
+ * `src/components/dev/anmalningar-prototyp/VariantB.tsx`. Historiken följer
+ * FORMEN, inte filnamnet.
+ *
+ * Facit-stämpeln: `tasks/sessions/bilagor/s111-anmalningssidan-konvergens/
+ * facit.json`, `godkand: {av: marcus, datum: 2026-08-23, citat: "Det blir
+ * bra."}`.
+ *
+ * Det som REVS i samma landning var villkor och växlar, aldrig form
+ * (`ADR-103` B2 steg 4): varianterna A och C, `?variant=`/`?lage=`-axlarna,
+ * `PrototypeSwitcher`-monteringen och hela dev-routen
+ * `/dev/anmalningar-prototyp`. Det som TILLKOM är den skarpa sidans egna
+ * DATAVÄGAR — `ADR-103` B2 steg 1 säger uttryckligen att de behålls: de två
+ * `useQuery`-anropen och sorteringen bodde i prototyp-routen respektive i
+ * den rivna `AnmalningarList.tsx`, och bor nu här. Prototypens `lage`-prop
+ * är ersatt av `visaAtgardskon`, som routen läser ur `?visa=atgardskon`
+ * (TASK-284.4) — samma axel, den skarpa sidans egen adress.
+ *
+ * Formens mekaniska lås: `tests/visual/anmalningssidan-promoverings-grind
+ * .spec.ts` (`ADR-103` B4) bär sex `ariaSnapshot`-referenser fångade ur
+ * variant-läget FÖRE flippen. De är orörda sedan dess; att de är gröna mot
+ * denna fil är beviset för att flytten tog formen och ingenting annat.
+ *
+ * ═══ SIDMARGINALEN ÄGS AV `<main>`, INTE AV SIDAN ═══
+ *
+ * Sidans egen `p-4`-wrapper är RIVEN i samma landning — samma fix
+ * TASK-299.7 gjorde för väntelistan, av samma mätta skäl: `AppShell`s
+ * `<main>` bär redan `mx-auto w-full max-w-[600px] px-4 py-4 pb-24`, så en
+ * `p-4` här ovanpå gav DUBBEL sidmarginal (32 px i stället för 16).
+ *
+ * Det var harmlöst i den rivna `AnmalningarList.tsx` — dess rader var
+ * fristående kort utan tidskolumn. Den promoverade formen har fyra
+ * kolumner, och 32 px extra åt innehållet fällde faktiskt en grind: vid
+ * 375 px mätte namnkolumnen på en åtgärdsrad **66,7 px** mot regressions-
+ * vaktens läsbarhetsgolv på 80 (`mer-anmalningar-form.acceptance.test.ts`
+ * § Radanatomin vid MOBIL bredd). Med den ena paddingen riven mäter den
+ * **98,7 px**.
+ *
+ * Rivningen gör ytan MER lik facit, inte mindre: facit-bilderna togs i
+ * prototyp-routens `max-w-xl`-container UTAN egen padding plus formens
+ * `p-4` — alltså 16 px marginal, exakt vad `<main>`s `px-4` ensam ger nu.
+ * Kvar står en strukturell bredd-skillnad som INTE går att ta bort utan att
+ * röra en delad yta: containern är 600 px här mot prototypens 576. Den är
+ * mätt och bokförd i slutrapporten, inte tyst.
+ *
+ * ═══ FORMEN ═══
  *
  * Radanatomin är ÄRVD ur `persons/PersonsList.tsx` k13/k14/k15-facitet, INTE
  * uppfunnen: initialcirkel `size-9` (`InitialAvatar`-primitiven, TASK-299.1)
@@ -238,6 +306,30 @@ function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
  * Nolläget är väljarens egen `gemensamtAlternativ`-rad ("Alla event"), så
  * axeln har EN kontroll för både val och nollställning.
  *
+ * ═══ ÅTERVÄGEN UR ÅTGÄRDSKÖ-LÄGET (TASK-299.5, tillagd FÖRE flippen) ═══
+ *
+ * "Visa alla anmälningar"-länken i åtgärdskö-lägets header saknas i
+ * facit-bilden `facit-anmalningssidan-atgardskon-desktop.png` — och står
+ * här ändå, som en ÖPPET BOKFÖRD avvikelse. Skälet är att frånvaron i
+ * facit är en EGENSKAP HOS PROTOTYPEN, inte ett formbeslut av Marcus:
+ * prototypen filtrerar via sin egen `?lage=`-växel (som rivs), medan den
+ * skarpa sidan filtrerar via `?visa=atgardskon` — en route-search som
+ * `Rensa filter` inte når, eftersom den inte är en filter-dimension. Utan
+ * länken blir åtgärdskö-läget en återvändsgränd för allt utom just de
+ * flaggade raderna, vilket är exakt vad länken byggdes för att förhindra
+ * (`AnmalningarList.tsx`, TASK-284.4 AC #4 — landad funktion).
+ *
+ * `ADR-103` B2 steg 4 river VILLKOR OCH VÄXLAR, aldrig form — och en
+ * återväg är varken villkor eller växel utan funktion. Den läggs därför in
+ * FÖRE promoverings-grindens `ariaSnapshot`-fångst, så att paret jämför den
+ * form som faktiskt promoveras. Att den syns i FÖRE-referensen är avsikten,
+ * inte en glidning: grinden ska bevisa att FLIPPEN bevarade formen, och
+ * kompletteringen står i diffen före capturen.
+ *
+ * Kortets egen beskrivning kräver den i klartext: *"Det filtrerade
+ * åtgärdskö-läget säger hur många rader som väntar och har en väg tillbaka
+ * till hela listan."*
+ *
  * PERIODEN HÄRLEDS UR DET LÄNKADE EVENTETS `startdatum` (`dateValue`,
  * `EventCard.tsx` — SAMMA härledning som EventsList/EventValjare, ALDRIG ur
  * Status), inte ur anmälans eget `inskickad`-fält — "kommande/tidigare
@@ -245,16 +337,78 @@ function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
  * inte gick att slå upp) kan inte klassificeras och syns därför bara under
  * "Alla event" — dokumenterat i `registrationPeriod()` ovan.
  */
-export function VariantB({ rader, lage, isPending, isError, error, nuMs, events }: VariantProps) {
+export function AnmalningarSida({
+  visaAtgardskon = false,
+}: {
+  /** [TASK-284.4 AC #4] `true` ⇒ listan visar ENDAST rader som `behoverAtgard`
+      flaggar (`eventmatchning` `'Avviker'`/`'Utan event'`) — åtgärdsköns
+      förfiltrerade läge, som Hem-vyns bevakningsrad navigerar hit till via
+      `?visa=atgardskon`. `false` (default) = global, ofiltrerad lista.
+      ERSÄTTER prototypens `lage`-prop: `'lista'`/`'atgardskon'` var samma
+      axel under prototypens egen `?lage=`-växel, som rivs med resten av
+      substratet. Prototypens TREDJE läge (`'tomt'`) var aldrig en axel utan
+      en tvingad tom lista för bildtagning — här uppstår tomläget av datan,
+      som det ska. */
+  visaAtgardskon?: boolean;
+} = {}) {
   // Rules-of-hooks: samtliga hooks FÖRE de villkorade early-returnsen
   // nedan (isPending/isError), annars byter komponenten hook-antal mellan
   // render-lägen.
+  const dataSource = useDataSource();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const announceRef = useRef(false);
+
+  // ── DATAVÄGARNA (ADR-103 B2 steg 1: skarpas datavägar behålls) ──────────
+  // Query-nyckeln är `registrations.all` (global lista) — MEDVETET inte
+  // dashboard-grenen: 60s-pollingen är scopad till Hem (ADR-017), listvyn
+  // hämtar per besök med global staleTime. Detta är den RIVNA
+  // `AnmalningarList.tsx`s egen hämtning, oförändrad; 4xx är klient-fel och
+  // retryas därför aldrig (speglar Waitlist/Hem).
+  const {
+    data: registrations,
+    isPending,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.registrations.all,
+    queryFn: () => dataSource.fetchRegistrations(),
+    retry: (failureCount, err) =>
+      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
+      failureCount < 3,
+  });
+
+  // SAMMA `events.list`-nyckel som EventsList/EventValjare — dedupar mot
+  // startvärmningen (`src/data/warmup/startvarmningen.ts`), ingen extra
+  // EF-rundtur. Bär undertextens `eventIdentitet` och filtrets typ/ort/
+  // event-axlar (prototyp-routens hämtning, oförändrad).
+  const { data: events } = useQuery({
+    queryKey: queryKeys.events.list,
+    queryFn: () => dataSource.fetchEvents(),
+  });
+
+  // "Nu", läst EN gång per montering (NastaEventCard-disciplinen): samma
+  // referenspunkt för varje rads relativa tid, så "N dagar sedan" aldrig
+  // flippar mellan två renderingar utan att datan ändrats.
+  const nuMs = useMemo(() => Date.now(), []);
+
+  // HELA listan hämtas ALLTID; åtgärdskö-filtreringen är ett RENDRINGS-steg
+  // ovanpå den, aldrig ett eget nätverksanrop. Predikatet är det DELADE
+  // `behoverAtgard` — samma funktion Hem-vyns räknare läser
+  // (`hem-derivations.ts` `atgardskoRad`), aldrig en egen tolkning av
+  // "behöver hanteras" (TASK-284.4 AC #3). Klient-sort på Inskickad
+  // fallande: EF:ns globala gren garanterar ingen ordning.
+  const rader = useMemo(() => {
+    if (!registrations) return [];
+    const bas = visaAtgardskon ? registrations.filter(behoverAtgard) : registrations;
+    return [...bas].sort((a, b) => inskickadTid(b) - inskickadTid(a));
+  }, [registrations, visaAtgardskon]);
+
   const [period, setPeriod] = useQueryState(
     'period',
     parseAsStringEnum<PeriodFilter>(PERIOD_FILTER_VALUES).withDefault('alla'),
   );
 
-  const eventsById = useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
+  const eventsById = useMemo(() => new Map((events ?? []).map((e) => [e.id, e])), [events]);
 
   // Dagsstarten härledd ur SAMMA `nuMs` som resten av sidan (route-nivåns
   // "läst en gång" — NastaEventCard-disciplinen: aldrig två olika "idag").
@@ -425,52 +579,111 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
     );
   }, [filterNyckel, isPending, visasRader.length, periodRader.length]);
 
+  // Fokus -> <h1> + document.title när data anlänt (en gång per laddning).
+  // Vyn NÅS via navigation, till skillnad från landningsytan Hem, så
+  // fokusflytten är a11y-golv och inte en extra artighet; [] är giltigt
+  // laddat. Oförändrad ur den rivna `AnmalningarList.tsx`.
+  useEffect(() => {
+    if (registrations && !announceRef.current) {
+      announceRef.current = true;
+      headingRef.current?.focus();
+      document.title = 'Anmälningar';
+    }
+  }, [registrations]);
+
+  // Sidkromet: tillbakalänken till /mer, MEDVETET UTANFÖR ytans ankare.
+  // Före flippen bars den av prototyp-routens wrapper, efter flippen av
+  // komponenten själv — och promoverings-grindens `ariaSnapshot`-par ska
+  // mäta FORMEN, inte vem som råkar rendera sidkromet. Ligger den innanför
+  // ankaret hade paret fällt på just den flytten. Renderas i ALLA
+  // render-grenar (även ladd- och felläget), annars tappar sidan sin
+  // navigation precis när den behövs som mest.
+  //
+  // `mb-4` ersätter prototyp-wrapperns `p-4 pb-0`: sidmarginalen ägs numera
+  // av `<main>` (se § SIDMARGINALEN i docblocket), och det enda som behövs
+  // här är avståndet ner till rubriken — 16 px, exakt som förut.
+  const backLink = (
+    <Link to="/mer" className="mb-4 inline-block text-small underline">
+      ← Tillbaka till Mer
+    </Link>
+  );
+
   if (isPending) {
     return (
-      <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-3 p-4">
-        <span className="sr-only">Laddar anmälningarna…</span>
-        <Skeleton variant="text" className="w-40 text-small" />
-        <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4">
-          {['a', 'b', 'c'].map((k) => (
-            <div key={k} className="flex items-center gap-3">
-              <Skeleton variant="text" className="size-9 shrink-0 rounded-full" />
-              <div className="flex flex-1 flex-col gap-1">
-                <Skeleton variant="text" className="w-2/5" />
-                <Skeleton variant="text" className="w-3/5 text-small" />
+      <>
+        {backLink}
+        <div
+          data-testid={YTANS_ANKARE}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="flex flex-col gap-3"
+        >
+          <span className="sr-only">Laddar anmälningarna…</span>
+          <Skeleton variant="text" className="w-40 text-small" />
+          <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4">
+            {['a', 'b', 'c'].map((k) => (
+              <div key={k} className="flex items-center gap-3">
+                <Skeleton variant="text" className="size-9 shrink-0 rounded-full" />
+                <div className="flex flex-1 flex-col gap-1">
+                  <Skeleton variant="text" className="w-2/5" />
+                  <Skeleton variant="text" className="w-3/5 text-small" />
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (isError) {
     return (
-      <div className="p-4">
-        <MessageBox intent="error" title="Kunde inte hämta anmälningarna">
-          {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
-        </MessageBox>
-      </div>
+      <>
+        {backLink}
+        <div data-testid={YTANS_ANKARE}>
+          <MessageBox intent="error" title="Kunde inte hämta anmälningarna">
+            {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
+          </MessageBox>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <p className="sr-only" role="status" aria-live="polite">
-        Anmälningarna laddade.
-      </p>
-
-      <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-2xl">Anmälningar</h1>
-        <p className="text-small text-text-muted">
-          {lage === 'atgardskon'
-            ? atgardskoText(visasRader.length)
-            : `${visasRader.length} ${visasRader.length === 1 ? 'anmälan' : 'anmälningar'}`}
+    <>
+      {backLink}
+      <div data-testid={YTANS_ANKARE} className="flex flex-col gap-4">
+        <p className="sr-only" role="status" aria-live="polite">
+          Anmälningarna laddade.
         </p>
-      </header>
 
-      {/* Filtret — "en filtreringsgrej högst upp" (Marcus review
+        <header className="flex flex-col gap-1">
+          <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-2xl">
+            Anmälningar
+          </h1>
+          <p className="text-small text-text-muted">
+            {visaAtgardskon
+              ? atgardskoText(visasRader.length)
+              : `${visasRader.length} ${visasRader.length === 1 ? 'anmälan' : 'anmälningar'}`}
+          </p>
+          {/* ÅTERVÄGEN UR ÅTGÄRDSKÖ-LÄGET — se § ÅTERVÄGEN i docblocket ovan
+            för varför den står här trots att facit-bilden saknar den.
+            `search={{ visa: undefined }}` NOLLSTÄLLER parametern explicit,
+            aldrig implicit bevarande (formen är oförändrad ur
+            `AnmalningarList.tsx`, TASK-284.4). */}
+          {visaAtgardskon && (
+            <Link
+              to="/mer/anmalningar"
+              search={{ visa: undefined }}
+              className="self-start text-small underline"
+            >
+              Visa alla anmälningar
+            </Link>
+          )}
+        </header>
+
+        {/* Filtret — "en filtreringsgrej högst upp" (Marcus review
           2026-08-22) + event-dimensionerna (2026-08-23). EventsLists
           FilterRad-primitiv i sin exakta form: period-pillren till
           vänster, tratt-ingången till höger, panelen under. Alltid synlig
@@ -487,129 +700,129 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
           event-dimension heter så, och två olika kontroller med samma namn
           på samma yta är precis den förväxling etiketterna finns för att
           förhindra. */}
-      <FilterRad
-        dimensioner={dimensioner}
-        valda={valda}
-        onValj={(nyckel, varde) => {
-          if (nyckel === 'period') setPeriod(varde ? PERIOD_FRAN_ETIKETT[varde] : 'alla');
-          else if (nyckel === 'typ') setTyp(varde);
-          else if (nyckel === 'ort') setOrt(varde);
-          else setEvent(varde);
-        }}
-        onRensa={rensaFilter}
-        visade={visasRader.length}
-        totalt={rader.length}
-        enhet={ANMALNINGS_ENHET}
-        triggerRef={filterKnappRef}
-      ></FilterRad>
-      <p className="sr-only" aria-live="polite">
-        {periodAnnouncement}
-      </p>
+        <FilterRad
+          dimensioner={dimensioner}
+          valda={valda}
+          onValj={(nyckel, varde) => {
+            if (nyckel === 'period') setPeriod(varde ? PERIOD_FRAN_ETIKETT[varde] : 'alla');
+            else if (nyckel === 'typ') setTyp(varde);
+            else if (nyckel === 'ort') setOrt(varde);
+            else setEvent(varde);
+          }}
+          onRensa={rensaFilter}
+          visade={visasRader.length}
+          totalt={rader.length}
+          enhet={ANMALNINGS_ENHET}
+          triggerRef={filterKnappRef}
+        ></FilterRad>
+        <p className="sr-only" aria-live="polite">
+          {periodAnnouncement}
+        </p>
 
-      {visasRader.length === 0 ? (
-        // Filter-tomläget är SKILT från period-/lägestomläget: här FINNS
-        // anmälningar i perioden men dimensionsfiltren matchar inga, och
-        // Rensa är återvägen (EventsLists form). Är själva perioden tom
-        // finns inget att rensa fram — då gäller den vanliga copyn.
-        aktiva > 0 && periodRader.length > 0 ? (
-          // Typografin är sidans EGEN tomlägeskonvention (`text-small
-          // text-text-muted`, punkt i slutet — samma som `tomtText`), inte
-          // EventsLists centrerade `py-12`-form: här bor tomläget direkt i
-          // listans flöde, inte i ett kortformat.
-          <div className="flex flex-col items-start gap-3">
-            <p className="text-small text-text-muted">Inga anmälningar matchar filtren.</p>
-            <AriaButton
-              onPress={rensaFilter}
-              className="rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
-            >
-              Rensa filter
-            </AriaButton>
-          </div>
+        {visasRader.length === 0 ? (
+          // Filter-tomläget är SKILT från period-/lägestomläget: här FINNS
+          // anmälningar i perioden men dimensionsfiltren matchar inga, och
+          // Rensa är återvägen (EventsLists form). Är själva perioden tom
+          // finns inget att rensa fram — då gäller den vanliga copyn.
+          aktiva > 0 && periodRader.length > 0 ? (
+            // Typografin är sidans EGEN tomlägeskonvention (`text-small
+            // text-text-muted`, punkt i slutet — samma som `tomtText`), inte
+            // EventsLists centrerade `py-12`-form: här bor tomläget direkt i
+            // listans flöde, inte i ett kortformat.
+            <div className="flex flex-col items-start gap-3">
+              <p className="text-small text-text-muted">Inga anmälningar matchar filtren.</p>
+              <AriaButton
+                onPress={rensaFilter}
+                className="rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+              >
+                Rensa filter
+              </AriaButton>
+            </div>
+          ) : (
+            <p className="text-small text-text-muted">{tomtText(visaAtgardskon, period)}</p>
+          )
         ) : (
-          <p className="text-small text-text-muted">{tomtText(lage, period)}</p>
-        )
-      ) : (
-        <ul
-          aria-label="Anmälningar"
-          className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
-        >
-          {visasRader.map((reg) => {
-            const namn = displayName(reg);
-            const tid = inskickadTid(reg);
-            const relTid = Number.isFinite(tid) ? relativTid(tid, nuMs) : null;
-            // Undertexten är eventets IDENTITET ("kurs · ort · datum"),
-            // inte längre tid+eventnamn hopslagna. Marcus 2026-08-23:
-            // "under namnet har vi event, ort, datum, EXAKT så vill jag att
-            // anmälningslistan också ska ha." `eventIdentitet` är Hems egen
-            // hjälpare — lånad, inte återuppfunnen.
-            const undertext =
-              eventIdentitet(reg, reg.eventId ? eventsById.get(reg.eventId) : undefined) || ' ';
-            const behoverKoppling = behoverAtgard(reg);
-            const namnKlass =
-              'min-w-0 truncate font-medium text-body underline-offset-2 after:absolute after:inset-0 hover:underline';
+          <ul
+            aria-label="Anmälningar"
+            className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+          >
+            {visasRader.map((reg) => {
+              const namn = displayName(reg);
+              const tid = inskickadTid(reg);
+              const relTid = Number.isFinite(tid) ? relativTid(tid, nuMs) : null;
+              // Undertexten är eventets IDENTITET ("kurs · ort · datum"),
+              // inte längre tid+eventnamn hopslagna. Marcus 2026-08-23:
+              // "under namnet har vi event, ort, datum, EXAKT så vill jag att
+              // anmälningslistan också ska ha." `eventIdentitet` är Hems egen
+              // hjälpare — lånad, inte återuppfunnen.
+              const undertext =
+                eventIdentitet(reg, reg.eventId ? eventsById.get(reg.eventId) : undefined) || ' ';
+              const behoverKoppling = behoverAtgard(reg);
+              const namnKlass =
+                'min-w-0 truncate font-medium text-body underline-offset-2 after:absolute after:inset-0 hover:underline';
 
-            // Triggerns cva-bas (Button.tsx) lägger `inline-flex`/padding/
-            // min-höjd/bakgrund för sin `md`-standardstorlek — samtliga
-            // neutraliseras här (tailwind-merge löser konflikten, `cn`
-            // applicerar `className` SIST) så knappen läser som radens
-            // vanliga namn-länk, inte som en knapp-pill.
-            const namnTriggerKlass = `min-h-0 justify-start gap-0 rounded-none p-0 hover:bg-transparent data-[hovered]:bg-transparent data-[pressed]:bg-transparent ${namnKlass}`;
+              // Triggerns cva-bas (Button.tsx) lägger `inline-flex`/padding/
+              // min-höjd/bakgrund för sin `md`-standardstorlek — samtliga
+              // neutraliseras här (tailwind-merge löser konflikten, `cn`
+              // applicerar `className` SIST) så knappen läser som radens
+              // vanliga namn-länk, inte som en knapp-pill.
+              const namnTriggerKlass = `min-h-0 justify-start gap-0 rounded-none p-0 hover:bg-transparent data-[hovered]:bg-transparent data-[pressed]:bg-transparent ${namnKlass}`;
 
-            const namnElement = behoverKoppling ? (
-              <AnmalningRadResolution registration={reg} triggerClassName={namnTriggerKlass}>
-                {/* Triggern är en `inline-flex`-knapp, och `text-overflow:
+              const namnElement = behoverKoppling ? (
+                <AnmalningRadResolution registration={reg} triggerClassName={namnTriggerKlass}>
+                  {/* Triggern är en `inline-flex`-knapp, och `text-overflow:
                     ellipsis` verkar bara på block-containrar med inline-
                     innehåll — på en flex-container KLIPPS texten i stället
                     utan ellips ("Disa Danielssc", mätt i facit-bilden
                     2026-08-23 vid 375 px). Den inre spannen är den block-
                     nivå truncaten faktiskt kan verka på. */}
-                <span className="min-w-0 truncate">{namn}</span>
-              </AnmalningRadResolution>
-            ) : reg.eventId ? (
-              <Link
-                to="/event/$eventId/anmalda"
-                params={{ eventId: reg.eventId }}
-                className={namnKlass}
-              >
-                {namn}
-              </Link>
-            ) : (
-              // Kan inte inträffa i praktiken (UTAN_EVENT ⇒ behoverAtgard),
-              // men golvet är explicit: aldrig en död länk.
-              <span className="min-w-0 truncate font-medium text-body">{namn}</span>
-            );
+                  <span className="min-w-0 truncate">{namn}</span>
+                </AnmalningRadResolution>
+              ) : reg.eventId ? (
+                <Link
+                  to="/event/$eventId/anmalda"
+                  params={{ eventId: reg.eventId }}
+                  className={namnKlass}
+                >
+                  {namn}
+                </Link>
+              ) : (
+                // Kan inte inträffa i praktiken (UTAN_EVENT ⇒ behoverAtgard),
+                // men golvet är explicit: aldrig en död länk.
+                <span className="min-w-0 truncate font-medium text-body">{namn}</span>
+              );
 
-            // RADENS GRID (2026-08-23, efter facit-bildens mobilfynd):
-            // fyra kolumner — avatar · innehåll (minmax(0,1fr)) · tid ·
-            // chevron — och två rader. Avatar, tid och chevron spänner
-            // båda raderna (tiden vertikalt centrerad mot HELA raden,
-            // exakt Hems `NyaAnmalningar`-form). Skälet till grid i
-            // stället för flex: vid 375 px tog tidskolumnen ("för 5 dagar
-            // sedan", ~104 px) och badgen ("Behöver kopplas", ~135 px)
-            // tillsammans mer än innehållskolumnen (~106 px) — identiteten
-            // fick 0 px ("R") och namnet klipptes. Under `sm` släpper
-            // tiden därför sin andra rad (`max-sm:row-end-2`) och rad 2
-            // får spänna in under den (`max-sm:col-end-4`): identiteten
-            // får ~90 px i stället för 0, utan att rad 1:s form eller
-            // höjdlåset rörs. På desktop är layouten pixelidentisk med
-            // flex-formen Marcus godkände. DOM-ordningen är oförändrad
-            // (namn → identitet/status → tid → chevron) — gridet placerar
-            // visuellt, skärmläsaren läser som förut. ENBART longhands
-            // (`row-start`/`row-end`, `col-start`/`col-end`): span-shorthanden
-            // `row-span-2` skrev över `row-start-1` i utdatan och kastade
-            // avataren till kolumn 3 — mätt i första bildtagningen.
-            return (
-              <li
-                key={reg.id}
-                className="relative grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-3 py-2.5"
-              >
-                <div className="col-start-1 row-start-1 row-end-3 flex">
-                  <InitialAvatar namn={namn} />
-                </div>
-                <div className="col-start-2 row-start-1 flex min-w-0 items-center gap-2">
-                  {namnElement}
-                </div>
-                {/* RAD 2 — identiteten OCH statusen. Statusen låg tidigare
+              // RADENS GRID (2026-08-23, efter facit-bildens mobilfynd):
+              // fyra kolumner — avatar · innehåll (minmax(0,1fr)) · tid ·
+              // chevron — och två rader. Avatar, tid och chevron spänner
+              // båda raderna (tiden vertikalt centrerad mot HELA raden,
+              // exakt Hems `NyaAnmalningar`-form). Skälet till grid i
+              // stället för flex: vid 375 px tog tidskolumnen ("för 5 dagar
+              // sedan", ~104 px) och badgen ("Behöver kopplas", ~135 px)
+              // tillsammans mer än innehållskolumnen (~106 px) — identiteten
+              // fick 0 px ("R") och namnet klipptes. Under `sm` släpper
+              // tiden därför sin andra rad (`max-sm:row-end-2`) och rad 2
+              // får spänna in under den (`max-sm:col-end-4`): identiteten
+              // får ~90 px i stället för 0, utan att rad 1:s form eller
+              // höjdlåset rörs. På desktop är layouten pixelidentisk med
+              // flex-formen Marcus godkände. DOM-ordningen är oförändrad
+              // (namn → identitet/status → tid → chevron) — gridet placerar
+              // visuellt, skärmläsaren läser som förut. ENBART longhands
+              // (`row-start`/`row-end`, `col-start`/`col-end`): span-shorthanden
+              // `row-span-2` skrev över `row-start-1` i utdatan och kastade
+              // avataren till kolumn 3 — mätt i första bildtagningen.
+              return (
+                <li
+                  key={reg.id}
+                  className="relative grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-x-3 py-2.5"
+                >
+                  <div className="col-start-1 row-start-1 row-end-3 flex">
+                    <InitialAvatar namn={namn} />
+                  </div>
+                  <div className="col-start-2 row-start-1 flex min-w-0 items-center gap-2">
+                    {namnElement}
+                  </div>
+                  {/* RAD 2 — identiteten OCH statusen. Statusen låg tidigare
                       som egen kolumn på rad 1 med RESERVERAD plats
                       (`invisible`, personlistans `Pill dold`-teknik). Den
                       formen är riven på Marcus order 2026-08-23, av en mätt
@@ -624,7 +837,7 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
                       den YTTRE raden. Identiteten trunkeras i stället när
                       badgen tar plats — sekundär information, samma klass av
                       trunkering Hems egen identitetsrad redan bär. */}
-                {/* FAST HÖJD (`min-h-5`), inte auto: badgen är högre än en
+                  {/* FAST HÖJD (`min-h-5`), inte auto: badgen är högre än en
                       naken undertextrad, så utan golvet blev rader MED
                       åtgärdsbehov högre än rader utan — DoD #6:s höjdlås
                       bröts, och sviten fällde på just den jämförelsen.
@@ -634,34 +847,35 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
                       `min-h-6` (24 px) ligger över badgens verkliga höjd i
                       BÅDA fallen, så uniformiteten följer av golvet och inte
                       av en jagad decimal. */}
-                <div className="col-start-2 row-start-2 flex min-h-6 min-w-0 items-center gap-2 max-sm:col-end-4">
-                  <span className="truncate text-caption text-text-muted">{undertext}</span>
-                  {behoverKoppling && (
-                    <span className="shrink-0">
-                      <StatusBadge ton="warning" storlek="sm">
-                        Behöver kopplas
-                      </StatusBadge>
-                    </span>
-                  )}
-                </div>
-                {/* Tiden — egen kolumn, högerställd och vertikalt centrerad
+                  <div className="col-start-2 row-start-2 flex min-h-6 min-w-0 items-center gap-2 max-sm:col-end-4">
+                    <span className="truncate text-caption text-text-muted">{undertext}</span>
+                    {behoverKoppling && (
+                      <span className="shrink-0">
+                        <StatusBadge ton="warning" storlek="sm">
+                          Behöver kopplas
+                        </StatusBadge>
+                      </span>
+                    )}
+                  </div>
+                  {/* Tiden — egen kolumn, högerställd och vertikalt centrerad
                     mot hela raden (`row-span-2` + gridets `items-center`).
                     Exakt Hems form (`NyaAnmalningar.tsx`: `shrink-0 pl-2
                     text-caption text-text-muted`), som Marcus pekade ut som
                     förlagan. Under `sm` bara rad 1 — se grid-noten ovan. */}
-                <span className="col-start-3 row-start-1 row-end-3 pl-2 text-caption text-text-muted max-sm:row-end-2">
-                  {relTid}
-                </span>
-                <ChevronRight
-                  aria-hidden="true"
-                  size={18}
-                  className="col-start-4 row-start-1 row-end-3 text-text-secondary"
-                />
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+                  <span className="col-start-3 row-start-1 row-end-3 pl-2 text-caption text-text-muted max-sm:row-end-2">
+                    {relTid}
+                  </span>
+                  <ChevronRight
+                    aria-hidden="true"
+                    size={18}
+                    className="col-start-4 row-start-1 row-end-3 text-text-secondary"
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </>
   );
 }
