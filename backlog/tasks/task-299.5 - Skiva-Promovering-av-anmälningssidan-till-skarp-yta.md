@@ -4,7 +4,7 @@ title: 'Skiva: Promovering av anmälningssidan till skarp yta'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:23'
-updated_date: '2026-08-23 15:42'
+updated_date: '2026-08-23 15:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,12 +31,12 @@ Den stämplade formen flyttas till den skarpa anmälningssidan. Lotta ser efter 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
-- [ ] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
+- [x] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
 - [ ] #7 Facit-granskning före stängning: anmälningssidan mot tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json, ytan 'anmälningssidan', i alla tre lägen
-- [ ] #8 Dev-växeln riven före arbetsenhetens stängning; formen kvar (ADR-103 B2 steg 4 — villkor och växlar, aldrig form)
+- [x] #8 Dev-växeln riven före arbetsenhetens stängning; formen kvar (ADR-103 B2 steg 4 — villkor och växlar, aldrig form)
 <!-- DOD:END -->
