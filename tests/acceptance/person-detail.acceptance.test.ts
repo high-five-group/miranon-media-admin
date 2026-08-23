@@ -234,6 +234,20 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     await page.goto(`/personer/${PERSON_ID}`);
     const alert = page.getByRole('alert');
     await expect(alert).toContainText('Personen hittades inte');
+
+    // TASK-299.6 DoD #5 — kriteriet lyder "axe 0 på varje ny/ändrad yta i ALLA
+    // tillstånd (lista, filtrerat, tomt, fel)". Persondetaljens två fel-grenar
+    // hade testtäckning UTAN axe-svep, och den luckan var skälet att DoD #5
+    // lämnades öppen i den skivan i stället för att bockas på antagande.
+    // Svepet läggs i det BEFINTLIGA felläges-testet (husets mönster: samma
+    // AxeBuilder-taggar som den renderade vyn och den glesa vyn nedan), så
+    // fel-tillståndet mäts i sitt eget renderade läge i stället för i ett
+    // parallellt test som skulle behöva mocka fram samma tillstånd på nytt.
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
   });
 
   test('övrigt fel (icke-404) → generisk fel-UI via role=alert', async ({ page, network }) => {
@@ -242,6 +256,15 @@ test.describe('Persondetalj (Fas 6a L5a — aggregerande get-person)', () => {
     mockPerson(network, personDetail(), { status: 400 });
     await page.goto(`/personer/${PERSON_ID}`);
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta persondetaljer');
+
+    // TASK-299.6 DoD #5 — den generiska fel-grenen är ett EGET renderat
+    // tillstånd (annan copy, samma role=alert-väg) och sveps därför separat;
+    // 404-grenens svep ovan bevisar inte denna.
+    const results = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(results.violations).toEqual([]);
   });
 
   test('loading-state är tillgängligt (aria-busy + status)', async ({ page, network }) => {

@@ -1,10 +1,10 @@
 ---
 id: TASK-299.3
 title: 'Skiva: Divergens på anmälningssidan — tre varianter, tre lägen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 19:18'
-updated_date: '2026-08-23 13:55'
+updated_date: '2026-08-23 19:19'
 labels:
   - ready-for-human
 dependencies:
@@ -31,9 +31,9 @@ Anmälningssidan får tre radikalt olika varianter växlingsbara på en dev-rout
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 - [x] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
@@ -53,4 +53,9 @@ FORMEN HAR ITERERATS EFTER VALET och ligger i LOKALA, OPUSHADE commits på grene
 Kortet står kvar To Do med avsikt: DoD #3 (CI grön per jobb) kan inte bockas eftersom arbetet aldrig pushats och därmed aldrig setts av CI.
 
 2026-08-23 (S111 resume 2, fönster 1) — Event-dimensionens rymd: Marcus *"2. Behåll"* — väljaren listar HELA eventrymden (omfattning="alla"), inte bara event raderna pekar på. Väljarens FORM ändrad på Marcus order samma fönster: dokumentsidans form="fristaende" (stora, luftiga rutan) + CalendarRange-ikon på "Alla event", samma grepp som "Delade dokument" bär Files (lokal commit 7ac7b973 på wip/s111-marcus-iteration).
+
+STÄNGNING 2026-08-23 (S111 kort-stängningspass). De två kvarvarande DoD-posterna bockade; #2/#4/#5/#6 var redan bockade av byggpasset.
+
+DoD #1 — AC #1-#6 samtliga bockade före detta pass.
+DoD #3 — CI GRÖN PER JOBB, och det var den POST kortet uttryckligen stod öppen för: kortets egen not sade 'Kortet står kvar To Do med avsikt: DoD #3 (CI grön per jobb) kan inte bockas eftersom arbetet aldrig pushats och därmed aldrig setts av CI.' Den premissen är nu upphävd — divergens-/konvergensarbetet på wip/s111-marcus-iteration landade i PR #1864, merge-commit e1470eb0 på main. `gh pr checks 1864` mätt 2026-08-23: 15 rollup-poster, NOLL fail (Lint + Audit + TypeCheck, Acceptance hermetisk 8m54s, Acceptance tvåsidigt bevis 9m17s, Pure + Build, Webblasarbeteende, Docs link check, CodeQL, Vercel — samtliga pass; A11y/Staging skipping per CI:s diff-gating).
 <!-- SECTION:NOTES:END -->

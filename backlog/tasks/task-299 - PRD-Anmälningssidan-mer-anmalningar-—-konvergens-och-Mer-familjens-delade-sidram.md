@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 18:38'
-updated_date: '2026-08-22 22:41'
+updated_date: '2026-08-23 19:25'
 labels: []
 dependencies: []
 ordinal: 539000
@@ -139,15 +139,15 @@ Samsyn kvitterad av Marcus 2026-08-22 efter grillning. Skarv-valet delegerat til
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-amendering av berörda stämplade manifest sker i EGEN commit med Marcus citat daterat (ADR-102/103) — aldrig i samma commit som formändringen
-- [ ] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
-- [ ] #7 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
-- [ ] #8 Dev-växeln riven före arbetsenhetens stängning; formen kvar (ADR-103 B2 steg 4 — villkor och växlar, aldrig form)
-- [ ] #9 check-facit grön; anmälningssidan bär ett eget stämplat manifest vid stängning
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Facit-amendering av berörda stämplade manifest sker i EGEN commit med Marcus citat daterat (ADR-102/103) — aldrig i samma commit som formändringen
+- [x] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
+- [x] #7 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
+- [x] #8 Dev-växeln riven före arbetsenhetens stängning; formen kvar (ADR-103 B2 steg 4 — villkor och växlar, aldrig form)
+- [x] #9 check-facit grön; anmälningssidan bär ett eget stämplat manifest vid stängning
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -176,4 +176,27 @@ Innebörd för efterföljande skivor: den delade sidramen är DEFAULT på alla y
 GLOBAL-BYGGET STARTAT SAMMA KVÄLL: TASK-299.7/8/9 fick sitt beroende omsatt från TASK-299.5 till TASK-299.1, eftersom det de faktiskt behöver är SidRam- och InitialAvatar-primitiverna (landade i 24238b1c) — inte anmälningssidans lista. TASK-299.5 förblir låst bakom TASK-299.4.
 
 TÄCKNINGSLUCKA UPPTÄCKT VID SAMMA GENOMGÅNG: skivorna skars 19:26, före omfattningsbeslutet, och täcker Mer-familjens fem sidor. De TVÅ ytor som i dag bär den andra dialekten — aktivitetshistorik-sidan (s106-aktivitetslogg/facit.json, 2 bilder) och dokumentytan /mer/dokument (s102-dokument-konvergens/facit.json, 5 bilder) — hade INGEN skiva, eftersom PRD:n bara nämner dem villkorat ("BERÖRS endast om den bredaste omfattningen väljs"). Full omfattning valdes, så de är inne. Eget kort skapat för dem.
+
+STÄNGNINGSPASS 2026-08-23 (S111). ALLA NIO DoD-POSTER BOCKADE — men PRD:n LÄMNAS To Do, eftersom två av elva skivor står öppna. En förälder vars barn inte är klara är inte klar.
+
+ÖPPNA BARN (skälen står på respektive kort, inte här):
+  · TASK-299.10 — AC #1 obockad. Steg 10 (förstärkt kontrast) saknar täckning på nio av tio ytor; endast check-in har ett prefers-contrast: more-svep. Marcus gjorde inte steget manuellt.
+  · TASK-299.11 — AC #6 obockad. s106-aktivitetslogg och s102-dokument-konvergens bär godkand-stämplar från 2026-08-15 respektive 2026-08-16, före klass (c)-formändringen; deras facit-bilder är en generation bakom. Kräver Marcus omstämpling via ADR-104-kanalen.
+STÄNGDA BARN: 299.1, 299.2, 299.3, 299.4, 299.5, 299.6, 299.7, 299.8, 299.9 — samtliga Done.
+
+DoD-POSTERNA, var och en mätt i detta pass eller källmärkt till sin mätning:
+
+#1 Alla AC avbockade — PRD:n har INGA acceptanskriterier ('No acceptance criteria defined', verifierat vid inläsning). Kriteriet håller vakuöst; arbetets acceptans bärs av skivornas egna AC.
+#2 Lokala grindar gröna — detta pass: npx @biomejs/biome check . exit 0 · npm run typecheck:tests exit 0 · node scripts/check-langa-streck.mjs exit 0 (271 filer, 0 ofångade) · npm run check:docs exit 0 (14/14 grindar) · bash scripts/check-facit.sh exit 0 · npm run test:acceptance persondetalj exit 0 (8/8).
+#3 CI grön per jobb — fyra PR:er bär arbetet, samtliga mätta med `gh pr checks` 2026-08-23, NOLL fail i någon: #1864 (e1470eb0, 15 poster) · #1866 (d3858a29, 9 poster) · #1871 (5fd71a82, 15 poster) · #1873 (19719ab7, 15 poster).
+#4 Inga orelaterade filer — PR-diffarna granskade; #1866 verifierat till EN fil i detta pass (`gh pr diff 1866 --name-only`).
+#5 FACIT-AMENDERING I EGEN COMMIT MED MARCUS CITAT — fyra commits, var och en diff-granskad i detta pass och samtliga fria från formändring:
+   · 8e2edaa6 (TASK-299.6, klass b) — 2 filer, enbart AMENDERING-sidofiler för s103-persondetalj + s103-checkin.
+   · 6d14fe52 (TASK-299.11, klass c) — 2 filer, enbart AMENDERING-sidofiler för s106-aktivitetslogg + s102-dokument.
+   · b31fca50 (hem-facit, klass c) — AMENDERING-sidofil + de två kortfilerna 291/303 (AC-bockningen), ingen kod.
+   · 718e586f (TASK-299.10/299.5) — AMENDERING-sidofil + 7 omtagna facit-PNG, ingen kod.
+#6 HÖJDLÅSET SOM BETEENDE — mätt på TVÅ skarpa ytor. Bevakningsraden: exakt 70 px i 20 mätpunkter (4 bredder x 5 fall, tests/acceptance/hem.acceptance.test.ts), med negativkontroll som fäller. Anmälningsraden: tests/acceptance/mer-anmalningar-form.acceptance.test.ts rad 305, boundingBox() på OK-rad mot åtgärdsrad.
+#7 AXE 0 PÅ VARJE NY/ÄNDRAD YTA I ALLA TILLSTÅND — den sista luckan täpptes i detta pass. Anmälningssidan bär svep för lista (rad 185), filtrerat (201), tomt (231) och fel (244) i mer-anmalningar-form.acceptance. Persondetaljens två FEL-grenar (404 + generiskt 4xx) saknade svep och var skälet att TASK-299.6 DoD #5 stod öppen; svep tillagt i båda de befintliga felläges-testerna, 8/8 gröna, och TVÅVÄGSBEVISAT med en injicerad alt-lös bild som fällde körningen på axe-regeln image-alt (exit 1) innan den togs bort.
+#8 DEV-VÄXELN RIVEN — verifierat, inte antaget: sökning efter levande sidram-växel i src/ ger NOLL träffar (exit 1). Kvarvarande omnämnanden är docblock som dokumenterar rivningen.
+#9 CHECK-FACIT GRÖN + EGET STÄMPLAT MANIFEST — `bash scripts/check-facit.sh` exit 0 (13 manifest, 28 ytor, 0 ogodkända). Anmälningssidan bär sitt EGNA manifest: tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json, godkand { av: marcus, datum: 2026-08-23, citat: 'Ser bra ut', sha: cb7ad681 } — OMSTÄMPLAT på den landade formen (commit 33645735), med alla sju bilder disk-verifierade och alla tre lägen täckta i båda vyportarna. Det stänger PRD:ns egen öppningspremiss ('Anmälningssidan själv har INGET manifest — det är premissen för hela arbetsenheten, och ett stämplat manifest för den är en leverabel').
 <!-- SECTION:NOTES:END -->

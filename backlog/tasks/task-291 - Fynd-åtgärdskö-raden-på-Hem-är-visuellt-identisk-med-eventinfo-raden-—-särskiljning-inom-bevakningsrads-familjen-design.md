@@ -3,10 +3,10 @@ id: TASK-291
 title: >-
   Fynd: åtgärdskö-raden på Hem är visuellt identisk med eventinfo-raden —
   särskiljning inom bevakningsrads-familjen (design)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 10:54'
-updated_date: '2026-08-23 16:59'
+updated_date: '2026-08-23 19:19'
 labels:
   - ready-for-human
 dependencies: []
@@ -30,10 +30,10 @@ QA-fynd 284.5 (Marcus, 2026-08-22, staging): raden '12 anmälningar kunde inte k
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -86,4 +86,11 @@ AXE 0 I BÅDA RADTYPERNA, mätt i acceptance-klassen: hem.acceptance "Åtgärdsk
 DELNINGEN AV atgardskoText ÄR UPPHÄVD. En enmenings-fras kan inte fylla en tvådelad anatomi, så Bevakningsrad.tsx importerar den inte längre; /mer/anmalningar bär den oförändrad. Docblocken i registration-display.ts och Bevakningsrad.tsx bokför bytet från var sitt håll, och den nu döda re-exporten i hem-derivations.ts är borttagen.
 
 AC #4 (facit-amenderingen) EJ RÖRD — den ägs av orkestreraren och sker i egen commit efter promoveringen, per uppdraget. INGEN RIVNING GJORD: ADR-103 B2 lägger rivningen i steg 4, efter att Marcus granskat och godkänt den PROMOVERADE ytan (steg 2-3). Prototyp-routen /dev/hem-atgardsko-prototyp står därför kvar, och den bär dessutom FÖRE-halvan av promoveringsgrinden så länge den finns. Ingen av .facit-policy.conf:s FACIT_PROTO_MARKORER bor i den prototypen (verifierat med grep per markör), så inget markör-städ hör till detta pass.
+
+STÄNGNING 2026-08-23 (S111 kort-stängningspass). DoD #1-#4 bockade mot faktiskt tillstånd, inte mot antagande.
+
+DoD #1 — AC #1-#4 samtliga bockade före detta pass (verifierat i kortets egen text vid inläsning).
+DoD #2 — rörd fil-klass: src/ + tests/ + tokens. Grindarna mättes av byggpasset och rapporterades gröna på kortet; detta pass mätte OM de grindar dess egen diff rör (se nedan).
+DoD #3 — CI GRÖN PER JOBB: promoveringen (836c23a3) landade i PR #1864, merge-commit e1470eb0 på main. `gh pr checks 1864` mätt 2026-08-23: 15 rollup-poster, NOLL fail — Lint + Audit + TypeCheck pass (2m5s), Acceptance (hermetisk) pass (8m54s), Acceptance tvåsidigt bevis pass (9m17s), Pure + Build pass, Webblasarbeteende pass, Docs link check pass, CodeQL/Analyze pass, Vercel pass. A11y/Staging-jobben 'skipping' per CI:s egen diff-gating.
+DoD #4 — path-scopad add rapporterad av byggpasset; PR #1864:s diff granskad av orkestreraren före merge.
 <!-- SECTION:NOTES:END -->
