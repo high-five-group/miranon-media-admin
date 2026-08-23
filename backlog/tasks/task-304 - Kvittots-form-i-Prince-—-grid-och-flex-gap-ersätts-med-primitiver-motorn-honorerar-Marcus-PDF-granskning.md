@@ -3,10 +3,10 @@ id: TASK-304
 title: >-
   Kvittots form i Prince — grid och flex-gap ersätts med primitiver motorn
   honorerar; Marcus PDF-granskning
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 22:36'
-updated_date: '2026-08-22 23:33'
+updated_date: '2026-08-23 09:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,7 +34,7 @@ Ur kvittots Prince-omgranskning (S108 resume 7, `docs/research/kvitto-prince-gap
 - [x] #2 Prince- och Chrome-rendering mäter lika inom ±0,5 mm på alla sju ställen (tabell i research-filens § Updates), och Chrome-värdena är oförändrade mot före-mätningen
 - [x] #3 SEK ↔ BETALT-gapet är 6,55 mm i Prince (var 0), tabellraden 164,6 mm bred i Prince (var ~55,5)
 - [x] #4 README § Kvittots FORM beskriver Prince-primitiverna; check:docs grönt
-- [ ] #5 Marcus granskar Prince-PDF:en och godkänner formen — öppet, bokförs i sessionsdok med datum
+- [x] #5 Marcus granskar Prince-PDF:en och godkänner formen — öppet, bokförs i sessionsdok med datum
 <!-- AC:END -->
 
 ## Definition of Done
@@ -73,4 +73,6 @@ AC#3s exakta rader: CSS-värdet för SEK->BETALT-gapet är `margin-right: 6.55mm
 **AC#4 (dokumentation):** `docs/mallar/bilagor/README.md` § Kvittots FORM har ny underrubrik "Kvittots layout-primitiver är motor-honorerade (TASK-304)" med Prince-primitiverna, referens till forskningsfilen, och `.ikonruta-media`-fyndet ovan. Mättabellen är tillagd som § Updates 2026-08-23 i forskningsfilen. `npm run check:docs`: EXIT=0, 14 gröna (matchar CLAUDE.md:s dokumenterade grindantal). `npx @biomejs/biome check .` (repo-brett — kvitto.css är CSS och Biome lintar faktiskt CSS, så detta räknas INTE som "ej tillämpligt"): EXIT=0 efter en trivial selector-omordning (`noDescendingSpecificity`-varning på `.kvitto-totalruta > .kvitto-total-kolumn` vs `.kvitto-total-kolumn`, åtgärdad utan beteendeändring — de två reglerna sätter olika egenskaper, ingen cascade-konflikt). Endast förbefintliga, orelaterade varningar kvar på annat håll i repot (9 warnings, 47 infos, samtliga oberörda av denna diff). `typecheck`/`build`/`test:api`: EJ TILLÄMPLIGT — diffen rör uteslutande filer under `docs/` (kvitto.css, kvitto.html, README.md, forskningsfilen), ingen `src/`- eller `scripts/`-fil rörd.
 
 **AC#5 (öppet, Marcus PDF-granskning):** Prince-renderad PDF ligger i `/private/tmp/claude-501/-Users-marcus-Repon-miranon-media-admin/1bb5fca4-599d-43b4-bc01-a5cfc2bddd79/scratchpad/task304-kvitto-matning/prince-after.pdf` (DocRaptor-testvattenstämplad, "TEST DOCUMENT"-banderoller — samma läge som forskningspassets minimaltest, försvinner med ett skarpt DocRaptor-konto). Öppna direkt: `open prince-after.pdf`. Återskapa från scratch (efter denna PR:s landning): `npm run mall:granska -- kvitto` (regenererar `docs/mallar/bilagor/kvitto.granskning.html`) -> bygg självbärande HTML med en kopia av `build-selfcontained.mjs` (pekande på `docs/mallar/bilagor/kvitto.granskning.html` i den checkade-ut branchen) -> neutralisera Cavolini-`url()` till `local("")` om `lokala-typsnitt`-symlänken saknas (samma fälla som `TASK-301`) -> `node rendera-prince.mjs .env.test <självbärande.html> <ut.pdf>` mot `test-docraptor-render`-EF:en i staging. Chrome-jämförelsen (`chrome-after-1.png`) ligger i samma katalog för sida-vid-sida.
+
+AC #5 — Marcus granskade Prince-PDF:en 2026-08-23 (http://127.0.0.1:5199/granskning/kvitto-prince.pdf): *"det ser bra ut. Hela kvittot visas i skärmen"*. FORMEN godkänd. INNEHÅLLET fick tre avvikelser mot Lottas förlaga (benämning, A-pris netto, betalsätt) + nytt fält — eget kort TASK-306. Stängd av orkestreraren.
 <!-- SECTION:NOTES:END -->
