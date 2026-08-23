@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-08
+updated: 2026-08-23
 review_by: 2026-11-15
 status: stable
 ---
@@ -12,11 +12,19 @@ status: stable
 
 # tasks/lessons/vol-06.md — Universella lärdomar, volym 6
 
-> **AKTIV volym** sedan uppdelningen 2026-08-08 · 2026-07-31 →  (L422–L479, senast fångad 2026-08-05/06): Alla nya lärdomar tillkommer SIST i denna fil som ### Lnnn-poster. Flat L-nummer-form.
+> **STÄNGD volym** · 2026-07-31 → 2026-08-22 (L422–L521): Session 91:s fortsättning
+> → Session 109:s skörd. Flat L-nummer-form.
 >
 > Ingång, uppslags- och append-regler: [`tasks/lessons.md`](../lessons.md) (indexet).
 > Innehållet nedan är bevarat verbatim från uppdelningen 2026-08-08 (ADR-085,
-> precedent-tillämpning av hubbens volym-split). Nya poster tillkommer SIST i denna fil.
+> precedent-tillämpning av hubbens volym-split); posterna `L480`–`L521`
+> tillkom därefter direkt i denna fil.
+>
+> **Stängd 2026-08-23 (S111)** vid **3 436 rader**, alltså över indexets
+> rotationströskel 3 000. Nya poster tillkommer inte längre här — de landar i
+> [`vol-07.md`](vol-07.md). En RÄTTELSE av en befintlig post görs fortfarande
+> i posten där den bor, som synlig, daterad ändring (indexets frysningsregel);
+> `L500` bär en sådan amendering från samma rotation.
 
 ---
 
@@ -2855,6 +2863,26 @@ kollisionen löstes vid merge men commit-taggarna `[T134]` i varv 14–18 kan
 inte skrivas om. Vid parallella sessioner: re-verifiera numret i
 mint-ögonblicket OCH kontrollera igen vid landning — och räkna med att
 historik-artefakter (commit-meddelanden) kan bära det gamla numret.
+
+**Amendering 2026-08-23 (S111) — instansen som utvidgar regeln från MINT till
+varje CITERING, och från EN serie till alla.** S111 mätte tre serier som rörde
+sig under ETT dygn, ingen av dem i ett mint-ögonblick: `ADR-124 → 125 → 126`,
+kort `307 → 309 → 310 → 311`, och lesson `L511 → L521`. Varje förflyttning
+orsakades av en PARALLELL session som landade före oss. Kortserien rörde sig
+dessutom redan under sessionens FÖRSTA pass (`295`/`296`/`298` tagna på andra
+grenar, fångat av `check_active_branches`), alltså fyra gånger totalt.
+
+Utvidgningen är därför: **det är inte bara det egna mintandet som ska
+re-verifieras, utan varje tal ur en serie i det ögonblick talet ANVÄNDS** — i
+en handoff, i en uppdragstext till en agent, i en amendering, i en
+kort-referens. Ett tal som stod rätt när handoffen skrevs är en HYPOTES när
+den läses, och avståndet i tid behöver bara vara timmar. Följdregeln för
+uppdragstexter: skriv *"verifiera serien mot disk"* i stället för att ange
+talet — och anger du talet ändå, källmärk det med kommandot som producerade
+det (`ADR-086`), så mottagaren vet vad den ska mäta om.
+
+Granne: `L498` (en nummer-mätning läser REGISTRET, aldrig katalogen) — den
+säger VAR man mäter, denna säger NÄR.
 
 ### L501 — HMR-loggen fångar mellanlägen som ser ut som verkliga fel
 
