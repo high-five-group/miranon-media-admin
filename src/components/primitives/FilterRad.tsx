@@ -22,8 +22,30 @@ export interface FilterDimension {
   etikett: string;
   /** Nolläges-alternativet, alltid först. Exempel: `Alla typer`. */
   nollage: string;
-  /** Värdena, i visningsordning. Tom lista ⇒ dimensionen renderas inte. */
-  alternativ: string[];
+  /** Värdena, i visningsordning. Tom lista ⇒ dimensionen renderas inte.
+      Utelämnas när `kontroll` är satt — kontrollen äger då sin egen rymd. */
+  alternativ?: string[];
+  /**
+   * KONSUMENT-ÄGD KONTROLL som ersätter dropdownen för just denna dimension.
+   * Utelämnad (normalfallet) ⇒ dimensionen renderas som förut, som en
+   * `Select` över `alternativ` — ingen befintlig konsument ser någon
+   * skillnad.
+   *
+   * Finns för dimensioner vars värderymd är för STOR för en dropdown.
+   * Första konsumenten är anmälningssidans `Event`-dimension: en lista över
+   * enskilda event är hundratals poster lång (mätt: 108 i staging
+   * 2026-08-23) där typ/ort är en handfull, och en naken `Select` tappar
+   * fotfästet långt innan dess. Den slotten bär `EventValjare` — husets
+   * egen sök- och månadsgrupperade väljare — i stället för att `FilterRad`
+   * själv skulle växa ett andra, sökbart dropdown-läge som bara en
+   * dimension på en sida behöver.
+   *
+   * ANSVARSGRÄNSEN ÄR OFÖRÄNDRAD: kontrollen är bara PRESENTATION.
+   * Dimensionen räknas som aktiv på exakt samma villkor som alla andra
+   * (`valda[nyckel] != null`), så trattens badge, `Rensa filter` och
+   * filter-tomläget fungerar utan att veta vad som renderas här.
+   */
+  kontroll?: ReactNode;
 }
 
 /** Räknarens substantiv, böjt efter NÄMNAREN (`Visar 1 av 3 anmälningar`). */
@@ -66,10 +88,19 @@ export interface FilterRadProps {
 const ALLA = '__alla';
 
 /**
- * Panelens rutnät följer antalet dimensioner. Klasserna står som literaler
- * (Tailwind ser aldrig en interpolerad klass) och listan är komplett för
- * 1–4; fler dimensioner än så delar fyrkolumnsformen i stället för att
- * tvinga fram ett nytt steg som ingen konsument har bett om.
+ * Panelens rutnät följer antalet DROPDOWN-dimensioner. Klasserna står som
+ * literaler (Tailwind ser aldrig en interpolerad klass) och listan är
+ * komplett för 1–4; fler dimensioner än så delar fyrkolumnsformen i stället
+ * för att tvinga fram ett nytt steg som ingen konsument har bett om.
+ *
+ * En dimension med egen `kontroll` räknas INTE — den tar en egen full rad
+ * (`col-span-full`), se render-grenen. Skälet är innehållet, inte smaken: en
+ * kontroll som skickats hit har per definition en värderymd som inte rymdes
+ * i en dropdown, och dess VALDA tillstånd är rikare än ett ord.
+ * Anmälningssidans event-väljare visar "kurs · ort · datum" — i en
+ * tredjedels kolumn (uppmätt 162,7 px vid 1280) klipps det till ~15 tecken
+ * och kontrollen slutar säga vad som är valt. På egen rad ryms hela raden.
+ * Konsumenter utan `kontroll` får exakt samma rutnät som förut.
  */
 const KOLUMN_KLASS: Record<number, string> = {
   1: 'sm:grid-cols-1',
@@ -129,6 +160,9 @@ export function aktivaFilterBeskrivning(
  * - Panelen bär EN dropdown per dimension, `Alla …` som nolläge, ETT val per
  *   dimension och AND över dimensioner. LIVE utan Apply-knapp — NN/g:s
  *   <1 s-villkor är trivialt uppfyllt när datat redan ligger i klienten.
+ *   En dimension vars värderymd är för stor för en dropdown skickar i
+ *   stället sin egen kontroll (`FilterDimension.kontroll`) — räkningen,
+ *   badgen och `Rensa` är oförändrade, se propens docblock.
  * - Panelfoten: räknare · `Rensa filter` vid aktiva val · valfri `Skriv ut`.
  *
  * VAD KOMPONENTEN MEDVETET INTE ÄGER:
@@ -186,7 +220,9 @@ export function FilterRad({
   // bara filterVALEN är delbara, och ingen konsument har behövt läsa det.
   const [oppen, setOppen] = useState(false);
   const aktiva = antalAktivaFilter(dimensioner, valda);
-  const rutnat = `grid gap-3 ${kolumnKlass(dimensioner.length)}`;
+  // Kolumnantalet räknas på dropdown-dimensionerna; kontroll-dimensioner tar
+  // egen full rad och ska inte krympa de andra (se KOLUMN_KLASS-docblocket).
+  const rutnat = `grid gap-3 ${kolumnKlass(dimensioner.filter((d) => d.kontroll == null).length)}`;
 
   return (
     <Disclosure
@@ -255,13 +291,34 @@ export function FilterRad({
                   alternativ så triggern kommunicerar vad som faktiskt
                   filtreras på — aldrig RAC:s råa placeholder. */}
               {dimensioner.map((dim) => {
+                // KONSUMENT-ÄGD KONTROLL: etiketten renderas i dropdownens
+                // egen etikett-grammatik (samma klasser som `Select`s
+                // `Label`) så kolumnerna i rutnätet linjerar, men som ett
+                // `span` — ett `label`-element utan kontroll att peka på
+                // hade varit en tom utfästelse. Kontrollen bär sitt eget
+                // tillgängliga namn.
+                if (dim.kontroll != null) {
+                  return (
+                    <div
+                      key={dim.nyckel}
+                      data-testid={`filter-${dim.nyckel}`}
+                      className="flex w-full flex-col gap-1 sm:col-span-full"
+                    >
+                      <span className="text-(color:--mm-input-label-text) text-small">
+                        {dim.etikett}
+                      </span>
+                      {dim.kontroll}
+                    </div>
+                  );
+                }
+                const alternativ = dim.alternativ ?? [];
                 const valt = valda[dim.nyckel] ?? null;
                 // ALLA-vakten: ett handskrivet `?typ=__alla` får inte skapa
                 // ett dubblett-id bredvid nolläges-itemet (RAC-kollektionen
                 // kräver unika nycklar).
                 const okantVarde =
-                  valt != null && valt !== ALLA && !dim.alternativ.includes(valt) ? valt : null;
-                return dim.alternativ.length > 0 ? (
+                  valt != null && valt !== ALLA && !alternativ.includes(valt) ? valt : null;
+                return alternativ.length > 0 ? (
                   <Select
                     key={dim.nyckel}
                     data-testid={`filter-${dim.nyckel}`}
@@ -273,7 +330,7 @@ export function FilterRad({
                     }
                   >
                     <SelectItem id={ALLA}>{dim.nollage}</SelectItem>
-                    {dim.alternativ.map((varde) => (
+                    {alternativ.map((varde) => (
                       <SelectItem key={varde} id={varde}>
                         {varde}
                       </SelectItem>

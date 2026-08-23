@@ -81,8 +81,12 @@ const GEMENSAMT_KEY = '__gemensamt';
  * enda handling (punkt 7): `rounded-2xl border bg-surface px-4 py-4`,
  * kalender-ikon + "Välj event" — samma fulla bredd som valda läget.
  *
- * LISTAN (punkt 8–10): sök från start (USWDS-tröskeln >15 val — staging har
- * 11 och listan växer monotont), matchar namn ELLER ort (textValue bär
+ * LISTAN (punkt 8–10): sök från start (USWDS-tröskeln >15 val — raden sade
+ * "staging har 11" när den skrevs; MÄTT 2026-08-23 via Airtables REST-API mot
+ * `tblVE3UKWl1CKrphV` är staging 108 event, varav 103 ZZ-testfixturer och 5
+ * verkliga. Tröskeln är alltså passerad med marginal och sökningen är inte
+ * längre framförhållning utan förutsättning — särskilt med `omfattning="alla"`,
+ * som lägger de tidigare eventen ovanpå), matchar namn ELLER ort (textValue bär
  * båda); sökfältet får fokus när listan öppnas via `autoFocus` på
  * SearchField — React Arias EGEN dokumenterade form för Select+Autocomplete
  * (react-aria.adobe.com/Select § "Autocomplete with SearchField" och
@@ -94,6 +98,35 @@ const GEMENSAMT_KEY = '__gemensamt';
  * (prototyp-regressionen — prototypen fokuserade direkt vid öppning).
  * Kommande event närmast först; månadsgrupperade i EventsLists EGEN
  * rubrikform via delade `groupByMonth` (punkt 9 — lyftet är skivans krav).
+ *
+ * ═══ OMFATTNINGEN (`omfattning`, opt-in) ═══
+ *
+ * DEFAULT ÄR OFÖRÄNDRAT OCH RATIONALEN STÅR KVAR: väljaren visar KOMMANDE
+ * event (`dateValue(e) >= idagStart`). Skälet är formens ursprungliga — de
+ * två ytor propen mintades för väljer ett event man ska GÖRA något med:
+ * manuell anmälan (18.18) anmäler en person till ett event som inte varit,
+ * och eventdetaljsidans rubrikväljare (18.19) byter mellan de event Lotta
+ * arbetar med. Ett passerat event är i båda fallen brus, och listan hålls
+ * kort utan att någon behöver välja bort något.
+ *
+ * `omfattning="alla"` river INTE den rationalen — den säger att den inte
+ * gäller för en tredje sorts yta: den som FILTRERAR redan existerande poster
+ * i stället för att skapa nya. Anmälningssidans event-filter är den första
+ * (anmälningar finns för event som varit, och sidan har en `Tidigare`-flik),
+ * och för den är en kommande-bara väljare inte en kortare lista utan en
+ * felaktig: den hade tystat bort exakt det fliken finns för.
+ *
+ * ORDNINGEN i `'alla'` är EN axel som utgår från idag och går utåt åt båda
+ * håll — kommande närmast först, därefter tidigare senast först. Båda leden
+ * är EventsLists egna låsta ordningar per period (`dir = -1` för past), inte
+ * en ny grammatik; det nya är bara att de står efter varandra.
+ *
+ * SEKTIONERNA byter därmed grammatik i `'alla'`: två PERIODBLOCK
+ * ("Kommande event"/"Tidigare event") i stället för månadsrubriker.
+ * Månadsformen förutsätter en enkelriktad lista och blir direkt missvisande
+ * när listan vänder — se `grupper`-useMemo:n för den uppmätta rubrikföljden
+ * som fällde den. Default-omfattningen är oförändrad och behåller
+ * månadsrubrikerna (punkt 9).
  *
  * ═══ DET KONTEXTLÖSA ALTERNATIVET (`gemensamtAlternativ`, opt-in) ═══
  *
@@ -131,6 +164,7 @@ export function EventValjare({
   rubrikRef,
   onAvsikt,
   gemensamtAlternativ,
+  omfattning = 'kommande',
 }: {
   /** Valt event-ID (djuplänken/URL:en). Utelämnad = tomt läge (punkt 7). */
   valtEventId?: string;
@@ -172,6 +206,16 @@ export function EventValjare({
       enskild ytas domän. Utelämnas den faller raden tillbaka på en osynlig
       spacer med prickens geometri — linjeringen håller i båda fallen. */
   gemensamtAlternativ?: { etikett: string; ikon?: ReactNode; onValj: () => void };
+  /** Hur stor del av eventrymden konsumenten får välja ur. Utelämnad =
+      `'kommande'`, vilket är komponentens ursprungliga och fortsatt
+      oförändrade beteende (se § OMFATTNINGEN i komponent-huvudet).
+
+      `'alla'` är OPT-IN och finns för ytor vars EGEN fråga sträcker sig
+      bakåt i tiden — anmälningssidans event-filter är den första: den har en
+      `Tidigare`-flik, så en väljare som bara kan kommande hade tystat bort
+      precis det fliken finns för. Konsumenter som inte skickar propen ser
+      ingen skillnad, varken i urval, ordning eller sektionsnycklar. */
+  omfattning?: 'kommande' | 'alla';
 }) {
   const dataSource = useDataSource();
   const { contains } = useFilter({ sensitivity: 'base' });
@@ -196,12 +240,51 @@ export function EventValjare({
   // Kommande event, närmast först (punkt 10; ORDLISTA "Period": härlett ur
   // startdatum, aldrig Status); odaterade (Infinity) räknas kommande, sist.
   // Månadsrubrikerna läggs OVANPÅ ordningen (delade groupByMonth).
+  //
+  // `nyckel` är sektionens kollektionsnyckel, `label` dess synliga rubrik. I
+  // default-omfattningen är de IDENTISKA (månadsetiketten är unik eftersom
+  // månaderna löper strikt framåt) och formen är exakt den som gällde före
+  // `omfattning` — samma sektioner, samma nycklar, samma rubriker.
   const grupper = useMemo(() => {
     const kommande = (data ?? [])
       .filter((e) => dateValue(e) >= idagStart)
       .sort((a, b) => dateValue(a) - dateValue(b));
-    return groupByMonth(kommande);
-  }, [data, idagStart]);
+    if (omfattning !== 'alla') {
+      return groupByMonth(kommande).map((g) => ({ ...g, nyckel: g.label }));
+    }
+    // ═══ `'alla'`: TVÅ PERIODSEKTIONER, INTE MÅNADER ═══
+    //
+    // Månadsrubrikerna är RÄTT form för en enkelriktad lista och FEL form så
+    // fort listan vänder. Mätt i granskningsloopen 2026-08-23: med kommande
+    // närmast först följt av tidigare senast först löper rubrikerna
+    // "September 2026 · Oktober 2026 · November 2026 · September 2026 · Juni
+    // 2026" — månaderna går framåt, vänder utan förklaring, och SEPTEMBER
+    // står två gånger (ett event den 2:a är passerat medan den 20:e och 28:e
+    // är kommande). Det läser som en bugg, och en etikett-som-nyckel hade
+    // dessutom gett två sektioner samma kollektionsnyckel.
+    //
+    // Sektionerna bär därför PERIODEN i stället, med samma två ord som
+    // konsumentens egen periodkontroll ("Kommande event"/"Tidigare event") —
+    // ingen ny vokabulär, och rubriken säger nu exakt det som skiljer
+    // blocken åt. Månadsledet tappas utan förlust: till skillnad från
+    // EventsLists kort bär VARJE rad här sitt fulla datum
+    // (`datumSpannText` — "20 september 2026"), så kronologin står kvar i
+    // listan. Precedent för namngivna periodblock i en väljare: Linears
+    // cykelväljare (Current/Upcoming/Completed), samma produkt som redan är
+    // förlaga för väljarens trigger-form.
+    //
+    // Ordningen inom blocken är EventsLists egen, låst per period: kommande
+    // stigande, tidigare fallande (`dir = -1`). Odaterade (Infinity) räknas
+    // kommande och hamnar sist i det blocket, oförändrat.
+    const tidigare = (data ?? [])
+      .filter((e) => dateValue(e) < idagStart)
+      .sort((a, b) => dateValue(b) - dateValue(a));
+    // Ett tomt block renderas INTE — en rubrik utan rader är en tom utfästelse.
+    return [
+      { nyckel: 'kommande', label: 'Kommande event', events: kommande },
+      { nyckel: 'tidigare', label: 'Tidigare event', events: tidigare },
+    ].filter((g) => g.events.length > 0);
+  }, [data, idagStart, omfattning]);
 
   // TRE lägen sedan `gemensamtAlternativ`, inte längre två: valt event ·
   // det kontextlösa alternativet valt · inget alls. Det sista nås BARA av
@@ -446,7 +529,7 @@ export function EventValjare({
               </SelectItem>
             ) : null}
             {grupper.map((grupp) => (
-              <ListBoxSection id={grupp.label} key={grupp.label}>
+              <ListBoxSection id={grupp.nyckel} key={grupp.nyckel}>
                 {/* Månadsrubriks-formen — EventsLists EGEN (punkt 9):
                     font-semibold text-small text-text-secondary, ALDRIG
                     ALL CAPS (S83 pass 4-fångst #1). */}
