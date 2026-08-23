@@ -1,9 +1,10 @@
 // Kontraktstest för kvittots sändorkestrator (TASK-147.7, ADR-109).
 //
 // api-pure (ren logik, ingen staging, inga creds, NOLL riktig Resend/Airtable):
-// alla FYRA I/O-gränserna (ledger, buildPdf, sendEmail, finalizeReceipt)
-// injiceras som mockar → konformans-kärnan bevisas in-memory. Speglar
-// send-action-email.test.ts-formen (TASK-147.1) för kvittots egen vertikal.
+// alla FEM I/O-gränserna (ledger, buildPdf, sendEmail, finalizeReceipt,
+// cleanupDraft [TASK-302.3]) injiceras som mockar → konformans-kärnan bevisas
+// in-memory. Speglar send-action-email.test.ts-formen (TASK-147.1) för
+// kvittots egen vertikal.
 //
 // TÄCKER: idempotensnyckelns DETERMINISM (samma jobId/registrationId/betalning
 // → samma nyckel, ALLTID; olika indata → olika nyckel — receiptIdempotencyKey
@@ -11,8 +12,11 @@
 // ÅTERANVÄND ur send-bulk (GOLV, aldrig kringgången — och FÖRE allokering: ett
 // nummer ska aldrig förbrukas för ett mail som inte kan skickas i miljön),
 // atomiciteten (finalizeReceipt anropas ENDAST vid accepterad sändning — en
-// avvisad sändning lämnar INGEN finaliserad Kvitton-post), och att ett
-// verkligt NUMMER faktiskt allokeras och returneras vid lyckad sändning.
+// avvisad sändning lämnar INGEN finaliserad Kvitton-post), att ett verkligt
+// NUMMER faktiskt allokeras och returneras vid lyckad sändning, och
+// [TASK-302.3] att `cleanupDraft` anropas MED RÄTT eventId EFTER en lyckad
+// sändning men ALDRIG vid en avvisad — och att ett KASTAT fel i `cleanupDraft`
+// inte gör en redan lyckad sändning se ut som misslyckad (ADR-124 § Beslut 2).
 //
 // EJ HÄR (kräver deployad EF, samma "ingen deploy denna landning"-gräns som
 // send-action-email.test.ts drar): HTTP auth/metod/input-validering, RIKTIG
@@ -27,6 +31,7 @@ import {
   UtskickSparratError,
 } from '../../supabase/functions/_shared/send-bulk';
 import {
+  type ReceiptDraftCleaner,
   type ReceiptFinalizer,
   type ReceiptPdfBuilder,
   type ReceiptSender,
@@ -98,6 +103,19 @@ function makeFinalizer(calls: unknown[] = []): ReceiptFinalizer {
   };
 }
 
+/**
+ * [TASK-302.3] Städaren — no-op i standardfallet (`calls` bara loggar
+ * anropen). `rejectWith` låter ett test bevisa att `sendReceipt` FÅNGAR ett
+ * kastat cleanupDraft-fel i stället för att låta det propagera (docblockets
+ * steg 7 i `_shared/send-receipt.ts`).
+ */
+function makeCleanupDraft(calls: string[] = [], rejectWith?: Error): ReceiptDraftCleaner {
+  return async (eventId: string) => {
+    calls.push(eventId);
+    if (rejectWith) throw rejectWith;
+  };
+}
+
 test.describe('receiptIdempotencyKey — determinism (AC #2 "idempotens")', () => {
   test('samma jobId/registrationId/betalning → EXAKT samma nyckel', () => {
     const a = receiptIdempotencyKey('job-1', 'recABC', 'avgift');
@@ -132,11 +150,14 @@ test.describe('sendReceipt — lyckad sändning', () => {
     const sendCalls: unknown[] = [];
     const finalizeCalls: unknown[] = [];
 
+    const cleanupCalls: string[] = [];
+
     const result = await sendReceipt(input(), {
       ledger,
       buildPdf: makeBuildPdf(pdfCalls),
       sendEmail: makeSender({ accepted: true }, sendCalls),
       finalizeReceipt: makeFinalizer(finalizeCalls),
+      cleanupDraft: makeCleanupDraft(cleanupCalls),
     });
 
     expect(result).toEqual({
@@ -150,6 +171,8 @@ test.describe('sendReceipt — lyckad sändning', () => {
     expect(pdfCalls).toHaveLength(1);
     expect(sendCalls).toHaveLength(1);
     expect(finalizeCalls).toHaveLength(1);
+    // [TASK-302.3] cleanupDraft anropas EN gång, med EXAKT input.eventId.
+    expect(cleanupCalls).toEqual(['recEvent000000001']);
 
     // Idempotensnyckeln som faktiskt gick till sändaren — EXAKT den deterministiska formen.
     const sentCtx = (sendCalls[0] as { ctx: { idempotencyKey: string } }).ctx;
@@ -173,6 +196,7 @@ test.describe('sendReceipt — lyckad sändning', () => {
       buildPdf: makeBuildPdf(),
       sendEmail: makeSender({ accepted: true }),
       finalizeReceipt: makeFinalizer(),
+      cleanupDraft: makeCleanupDraft(),
     });
     expect(result.status).toBe('sent');
     if (result.status === 'sent') {
@@ -186,16 +210,21 @@ test.describe('sendReceipt — avvisad sändning (atomicitet)', () => {
   test('avvisat mail → status "failed", finalizeReceipt anropas ALDRIG', async () => {
     const ledger = makeLedger();
     const finalizeCalls: unknown[] = [];
+    const cleanupCalls: string[] = [];
 
     const result = await sendReceipt(input(), {
       ledger,
       buildPdf: makeBuildPdf(),
       sendEmail: makeSender({ accepted: false, reason: 'Bounced' }),
       finalizeReceipt: makeFinalizer(finalizeCalls),
+      cleanupDraft: makeCleanupDraft(cleanupCalls),
     });
 
     expect(result).toEqual({ status: 'failed', reason: 'Bounced' });
     expect(finalizeCalls).toHaveLength(0);
+    // [TASK-302.3] En avvisad sändning rör ALDRIG utkastet — det ska finnas
+    // kvar om Lotta försöker igen (ADR-124 § Beslut 2).
+    expect(cleanupCalls).toHaveLength(0);
   });
 
   test('avvisat mail lämnar en OFINALISERAD reservationsrad i ledgern — numret återanvänds ALDRIG av nästa allokering', async () => {
@@ -205,6 +234,7 @@ test.describe('sendReceipt — avvisad sändning (atomicitet)', () => {
       buildPdf: makeBuildPdf(),
       sendEmail: makeSender({ accepted: false, reason: 'Bounced' }),
       finalizeReceipt: makeFinalizer(),
+      cleanupDraft: makeCleanupDraft(),
     });
 
     // Nästa, NYA sändning (t.ex. Lotta försöker igen) allokerar nästa lediga
@@ -214,6 +244,7 @@ test.describe('sendReceipt — avvisad sändning (atomicitet)', () => {
       buildPdf: makeBuildPdf(),
       sendEmail: makeSender({ accepted: true }),
       finalizeReceipt: makeFinalizer(),
+      cleanupDraft: makeCleanupDraft(),
     });
     expect(nasta.status).toBe('sent');
     if (nasta.status === 'sent') {
@@ -233,6 +264,7 @@ test.describe('sendReceipt — icke-prod-spärren (GOLV, återanvänd ur send-bu
         buildPdf: makeBuildPdf(pdfCalls),
         sendEmail: makeSender({ accepted: true }),
         finalizeReceipt: makeFinalizer(),
+        cleanupDraft: makeCleanupDraft(),
       }),
     ).rejects.toBeInstanceOf(NonProdAddressError);
 
@@ -248,6 +280,7 @@ test.describe('sendReceipt — icke-prod-spärren (GOLV, återanvänd ur send-bu
       buildPdf: makeBuildPdf(),
       sendEmail: makeSender({ accepted: true }),
       finalizeReceipt: makeFinalizer(),
+      cleanupDraft: makeCleanupDraft(),
     });
     expect(result.status).toBe('sent');
   });
@@ -264,6 +297,7 @@ test.describe('sendReceipt — utskicks-spärren (TASK-274, Marcus beslut B, cen
         buildPdf: makeBuildPdf(pdfCalls),
         sendEmail: makeSender({ accepted: true }),
         finalizeReceipt: makeFinalizer(),
+        cleanupDraft: makeCleanupDraft(),
       }),
     ).rejects.toBeInstanceOf(UtskickSparratError);
 
@@ -279,7 +313,28 @@ test.describe('sendReceipt — utskicks-spärren (TASK-274, Marcus beslut B, cen
       buildPdf: makeBuildPdf(),
       sendEmail: makeSender({ accepted: true }),
       finalizeReceipt: makeFinalizer(),
+      cleanupDraft: makeCleanupDraft(),
     });
     expect(result.status).toBe('sent');
+  });
+});
+
+test.describe('sendReceipt — cleanupDraft (TASK-302.3, ADR-124 § Beslut 2)', () => {
+  test('kastat fel i cleanupDraft fäller INTE en redan lyckad sändning', async () => {
+    const ledger = makeLedger();
+    const cleanupCalls: string[] = [];
+
+    const result = await sendReceipt(input(), {
+      ledger,
+      buildPdf: makeBuildPdf(),
+      sendEmail: makeSender({ accepted: true }),
+      finalizeReceipt: makeFinalizer(),
+      cleanupDraft: makeCleanupDraft(cleanupCalls, new Error('Storage nere')),
+    });
+
+    // sendReceipt FÅNGADE felet (docblockets steg 7) — resultatet är
+    // fortfarande 'sent', inte ett kastat undantag.
+    expect(result.status).toBe('sent');
+    expect(cleanupCalls).toEqual(['recEvent000000001']);
   });
 });

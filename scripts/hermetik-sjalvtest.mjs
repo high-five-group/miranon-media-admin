@@ -99,7 +99,18 @@ function korSvit({ sjalvtest, filter = [] }) {
   const utfall = spawnSync(
     'npx',
     ['playwright', 'test', `--project=${PROJEKT}`, '--reporter=json', '--retries=0', ...filter],
-    { env: miljo, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] },
+    // stdout ÄRVS, buffras inte. `'pipe'` + `encoding` lät `spawnSync` samla
+    // Playwrights list-utdata i minnet mot Nodes `maxBuffer`-default (1 MB) —
+    // trots att bufferten aldrig lästes: enda referensen till `utfall` är
+    // `.error`, och rapporten kommer från FIL via `PLAYWRIGHT_JSON_OUTPUT_FILE`
+    // (se docblocket ovan). När acceptance-sviten växte förbi taket returnerade
+    // `spawnSync` `ENOBUFS`, skriptet kastade "kunde inte starta Playwright",
+    // och jobbet föll rött UTAN att ett enda test kört. Mätt 2026-08-22 på
+    // PR #1831 och #1841 (två identiska fällningar, noll testutdata i loggen),
+    // medan PR #1840 med färre nya tester passerade — en SKALNINGSVÄGG, inte
+    // en flake. `'inherit'` tar bort taket helt och gör dessutom körningen
+    // synlig i jobbloggen, som hittills varit tom vid just detta fel.
+    { env: miljo, encoding: 'utf8', stdio: ['ignore', 'inherit', 'inherit'] },
   );
 
   if (utfall.error) {

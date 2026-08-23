@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-22
+updated: 2026-08-23
 review_by: 2026-11-22
 status: draft
 ---
@@ -245,3 +245,66 @@ grid-implementation.
 - Egenbyggt mätverktyg: `scratchpad/kvitto-prince-matning/analys.mjs`
   (`sharp`-baserad rad-/kolumn-detektor, se § Metod punkt 6) — engångskod
   för detta pass, ingen produktionsfil
+
+## Updates 2026-08-23 (TASK-304 — primitiverna byggda och mätta)
+
+**Premiss-rättelse innan mättabellen läses:** den "före"-baslinjen detta
+kort fick utpekad (`chrome.png`/`prince.png` i
+`scratchpad/kvitto-prince-matning/`, från mätpasset ovan) visade sig vara
+RENDERAD MOT ETT FÖRÅLDRAT FIXTURE-LÄGE — Datum-raden läste "3 augusti
+2026" i den bilden, men `fixtures/kvitto.exempel.json` bar redan
+`"datum": "2026-08-03"` (ISO, commit `1e8ccb50`, samma S108-dag) när DETTA
+kort startade. Sannolik orsak: forskningspassets egen worktree
+(`s108-paus-docs`) hade inte hunnit synka `1e8ccb50` när `chrome.png`
+genererades. Konsekvens: den bilden dög INTE som "Chrome oförändrad"-facit
+rakt av. Åtgärd: en KORREKT "sant före"-baslinje byggdes i detta kort genom
+att tillfälligt `git stash` mina CSS/HTML-ändringar, regenerera
+`kvitto.granskning.html` från den ORIGINALA grid-baserade `kvitto.css`/
+`kvitto.html` (oförändrad, HEAD) mot den AKTUELLA fixturen, rendera i
+Chrome, och `git stash pop` tillbaka. Alla jämförelser nedan är mot DENNA
+baslinje (`scratchpad/task304-kvitto-matning/true-before/true-before-1.png`),
+inte mot forskningspassets `chrome.png`.
+
+**Metod, oförändrad från mätpasset ovan** (samma rigg, egen kopia av
+driver-skripten pekande på denna worktree i stället för `s108-paus-docs`,
+se `scratchpad/task304-kvitto-matning/`): självbärande HTML via
+`scripts/docraptor-sjalvbarande.mjs` (`local("")`-neutralisering av samma
+Cavolini-symlänksfynd som ovan), Prince-rendering via
+`test-docraptor-render` (samma EF, samma testnyckel — `x-docraptor-ms:
+3020.0`, `x-pdf-bytes: 51912`, `x-docraptor-test-mode: true`), Chrome
+151.0.7922.170 headless `--print-to-pdf`, `pdftoppm -r 150`. Sidstorlek
+oförändrad i båda motorerna (Prince 595,276×841,89pt; Chrome
+594,96×841,92pt — samma sub-punkts avrundning som tidigare, 1 sida i båda).
+
+### Mättabellen efter ombyggnaden — de 7 ställena
+
+| # | Ställe | Chrome FÖRE (sant, denna körning) | Chrome EFTER | Prince EFTER | Avvikelse (Prince↔Chrome) | Chrome oförändrad? |
+|---|---|---|---|---|---|---|
+| 1 | `.kvitto-metarad` dt→dd (bredaste raden, "Kvitto-/OCR-nr:") | 7,28mm (43px) | 7,28mm (43px) | 7,28mm (43px) | **0,00mm** | JA — pixel-identiskt |
+| 2 | `.kvitto-referensblock` dt→dd (bredaste raden, "Förfallodatum") | 6,27mm (37px) | 6,27mm (37px) | 6,27mm (37px) | **0,00mm** | JA — pixel-identiskt |
+| 3 | `.kvitto-tabellrad` kolumnstarter (Antal/A-pris/Summa) + total radbredd | Antal x=715, A-pris x=878, Summa x=1038; box border-till-border 1045px=176,99mm | identiskt (0px diff på alla tre kolumnstarter) | identiskt (0px diff på alla tre) | **0,00mm** (var ~55,5mm/~109mm-förskjutning FÖRE primitivbytet) | JA |
+| 4 | `.kvitto-totalruta` kolumnstarter (Netto/Exkl.moms/Moms/Öresavr/BETALT) | x≈112/332/527/721/996 | 0–1px diff mot före | 0–1px diff mot Chrome EFTER | **≤0,17mm** | JA (≤1px avrundning) |
+| 5 | `.kvitto-total-kolumn` etikett→värde (vertikal) | 16px = 2,71mm | 16px = 2,71mm | 16px = 2,71mm | **0,00mm** | JA — pixel-identiskt |
+| 6 | `.kvitto-total-betalt` SEK→BETALT | 40px = 6,77mm | 40px = 6,77mm | 40px = 6,77mm | **0,00mm** (var 0mm/hopvuxet FÖRE primitivbytet) | JA — pixel-identiskt |
+| 7 | `.kvitto-sidfot` kolumnstarter (Adress/Telefon/Plusgiro/Organisationsnr) | x≈112/400/639/877 | 0–1px diff mot före | 0–1px diff mot Chrome EFTER | **≤0,17mm** | JA (≤1px avrundning) |
+
+**Acceptans (AC #2/#3) uppfylld på alla sju ställen** — Prince↔Chrome
+avviker som mest 0,17mm (1px @150dpi), långt innanför ±0,5mm-baren, och
+Chrome-renderingen är antingen pixel-identisk (ställe 1/2/3/5/6) eller
+avviker ≤0,17mm (ställe 4/7) mot den KORREKTA "före"-baslinjen.
+
+**En avvikelse funnen och bokförd, INTE dold:** `.kvitto-metarad`s
+KORTARE rad ("Datum:", ej den officiellt uppmätta "bredaste raden") flyttar
+sitt dd-värde 2px (0,34mm) åt vänster i EFTER jämfört med FÖRE — en
+konsekvens av att `min-width` (mätt på "Kvitto-/OCR-nr:"s bläckbredd,
+114px) inte träffar EXAKT samma pixel som grid:ets auto-kolumnbredd gjorde
+för den kortare radens egen linjering. Ligger inom mätningens egen
+felmarginal (~0,2–0,3mm, se § Mättabellen — de 7 ställena ovan) och är INTE
+ett av de sju officiella mätpunkterna, men bokförs här som en genuin,
+uppmätt (inte antagen) skillnad.
+
+**Sida-vid-sida:** `scratchpad/task304-kvitto-matning/` bär
+`true-before/true-before-1.png` (sant före), `chrome-after-1.png` (Chrome
+efter), `prince-after-1.png` (Prince efter, DocRaptor-testvattenstämplad),
+`task304-diff-truebefore-after.png` (Chrome-diff, visar endast den bokförda
+0,34mm-avvikelsen ovan + brus).

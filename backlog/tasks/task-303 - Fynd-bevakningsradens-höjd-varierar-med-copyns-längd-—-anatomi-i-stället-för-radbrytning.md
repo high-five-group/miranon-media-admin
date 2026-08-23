@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:48'
-updated_date: '2026-08-22 22:20'
+updated_date: '2026-08-22 23:25'
 labels:
   - ready-for-human
 dependencies: []
@@ -66,4 +66,8 @@ MÄTT I WEBBLÄSARE 2026-08-22 (localhost, prototyp-ytan, 1055 px): eventinfo-ra
 BEVISKRAV SATT PÅ AGENTEN: höjden ska hålla vid smalaste stödda bredd med kort OCH lång copy, med ett-, två- och tresiffriga tal, för BÅDA radtyperna, och bevisas med negativkontroll (bryt reserveringen medvetet, mät att testet fäller, återställ). Ett test som inte kan fälla bevisar ingenting — precedent: TASK-299.3:s agent mätte 28,5 px skillnad i sin negativkontroll.
 
 STRÄNG-DIVERGENSEN ÄR INTE AVGJORD. Anatomi D upplöser utrymmesskälet för strykningen av ordet 'nya', så prototypen byggs med skarpa appens fulla sträng ('N nya deltagare saknar eventinfo'). Det är ett BYGGVAL för att kunna visa formen, inte ett beslut — AC #5 kräver fortfarande Marcus ord innan de två ytorna synkas.
+
+GRUNDARBETE AVANCERAT via TASK-291-PR:en (2026-08-23, Marcus-order via orkestreraren mitt i TASK-291s byggpass). AtgardskoRadVarianter.tsx (prototyp-fil, /dev/hem-atgardsko-prototyp) fick den beslutade anatomin (rubrikrad + undertext, alltid båda, tal i reserverad badge, tvåradigt CSS-grid) för BÅDA radtyperna, samt EventinfoRadAnatomi som visar formen för eventinfo-raden. Höjdlås bevisat som beteende (Playwright, negativkontroll, 375/390/768/1280px, 1/2/3-siffriga tal, PR #1388s 91-teckens värsta-fall-namn) — se TASK-291-kortets Implementation Notes för hela mätmatrisen, inte upprepad här.
+
+INTE GJORT HÄR: Bevakningsrad.tsx (skarp yta) rörd = 0 rader, ingen promovering, inget facit amenderat. AC #5 (sträng-divergensen) EJ formellt avgjord — prototypen använder nu skarpa appens fulla sträng som en implementationsdetalj, men Marcus citerade beslut om VILKEN sträng som vinner permanent saknas fortfarande. Detta korts egna ACs/DoD förblir därför obockade — kortet stängs av en separat promoverings-/facit-passering, inte av denna commit.
 <!-- SECTION:NOTES:END -->

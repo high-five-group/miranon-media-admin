@@ -125,11 +125,28 @@ export type ReceiptFinalizer = (
   },
 ) => Promise<void>;
 
+/**
+ * [TASK-302.3, ADR-124 § Beslut 2] Best-effort städning av det transienta
+ * förhandsgransknings-utkastet (`_shared/utkast.ts` § `rensaUtkast`) —
+ * anropad EFTER lyckad sändning (steg 7 nedan), ALDRIG före: ett utkast ska
+ * finnas kvar om sändningen avvisas (steg 5). Injicerad som en FEMTE
+ * I/O-gräns — inte global — av SAMMA skäl som `sendEmail`/`finalizeReceipt`:
+ * filen är REN och Node-importerbar för api-pure-kontraktstestet
+ * (`tests/api/send-receipt.test.ts`), som aldrig får röra en riktig Storage-
+ * klient (`_shared/utkast.ts` drar transitivt in ett `esm.sh`-URL-import via
+ * `attachments.ts`, oimporterbart i Node). Den RIKTIGA implementationen
+ * (`makeRealDraftCleaner`, `send-receipt-email/index.ts`) delegerar till
+ * `rensaUtkast`, som redan loggar och sväljer sina egna fel — men
+ * `sendReceipt` litar inte blint på det, se steg 7.
+ */
+export type ReceiptDraftCleaner = (eventId: string) => Promise<void>;
+
 export type ReceiptSendDeps = {
   ledger: ReceiptAllocationDeps;
   buildPdf: ReceiptPdfBuilder;
   sendEmail: ReceiptSender;
   finalizeReceipt: ReceiptFinalizer;
+  cleanupDraft: ReceiptDraftCleaner;
 };
 
 export type ReceiptSendResult =
@@ -166,6 +183,12 @@ export function receiptIdempotencyKey(
  *     den gamla ledger-raden lämnas orörd som spårbar historik, aldrig
  *     omnumrerad).
  *  6. Accepterad → persistera Kvitton-posten (beständigheten, beslut d).
+ *  7. [TASK-302.3, ADR-124] Städa det transienta förhandsgransknings-
+ *     utkastet för eventet (`deps.cleanupDraft`) — EFTER steg 6, aldrig
+ *     före. Dubbelt best-effort: `cleanupDraft`s implementation sväljer
+ *     redan sina egna fel, men ett kastat fel HÄR fångas ändå — ett
+ *     städningsfel får ALDRIG göra en redan lyckad, redan finaliserad
+ *     sändning se ut som misslyckad för Lotta.
  */
 export async function sendReceipt(
   input: ReceiptSendInput,
@@ -214,6 +237,20 @@ export async function sendReceipt(
     skickad: input.nu,
     lagringsnyckel: null,
   });
+
+  // [TASK-302.3, ADR-124 § Beslut 2] Städa det transienta utkastet EFTER
+  // lyckad, redan finaliserad sändning — se docblockets steg 7. Fångar
+  // KASTADE fel explicit: den skarpa sändningen är redan klar och ska
+  // ALDRIG rapporteras som misslyckad på grund av en städnings-detalj.
+  try {
+    await deps.cleanupDraft(input.eventId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[sendReceipt] cleanupDraft fel (fäller inte den redan lyckade sändningen) | ` +
+        `event=${input.eventId} | error=${message}`,
+    );
+  }
 
   return {
     status: 'sent',

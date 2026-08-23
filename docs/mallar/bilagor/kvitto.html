@@ -44,24 +44,36 @@
     <div class="kvitto-rubrikblock">
       <h1 class="kvitto-rubrik">Kvitto</h1>
       <dl class="kvitto-metarad">
-        <dt>Kvitto-/OCR-nr:</dt>
-        <dd>{{kvittonummer}}</dd>
-        <dt>Datum:</dt>
-        <dd>{{datum}}</dd>
+        <div class="kvitto-metarad-rad">
+          <dt>Kvitto-/OCR-nr:</dt>
+          <dd>{{kvittonummer}}</dd>
+        </div>
+        <div class="kvitto-metarad-rad">
+          <dt>Datum:</dt>
+          <dd>{{datum}}</dd>
+        </div>
       </dl>
     </div>
   </header>
 
   <div class="kvitto-referensrad">
     <dl class="kvitto-referensblock">
-      <dt>Vår referens</dt>
-      <dd>{{orgNamn}}</dd>
-      <dt>Er referens</dt>
-      <dd>{{kundnamn}}</dd>
-      <dt>Förfallodatum</dt>
-      <dd>-</dd>
-      <dt>Vårt ordernr</dt>
-      <dd>{{kvittonummer}}</dd>
+      <div class="kvitto-referensblock-rad">
+        <dt>Vår referens</dt>
+        <dd>{{orgNamn}}</dd>
+      </div>
+      <div class="kvitto-referensblock-rad">
+        <dt>Er referens</dt>
+        <dd>{{kundnamn}}</dd>
+      </div>
+      <div class="kvitto-referensblock-rad">
+        <dt>Förfallodatum</dt>
+        <dd>-</dd>
+      </div>
+      <div class="kvitto-referensblock-rad">
+        <dt>Vårt ordernr</dt>
+        <dd>{{kvittonummer}}</dd>
+      </div>
     </dl>
     <div class="kvitto-fakturaadress">
       <p class="kvitto-fakturaadress-etikett">Fakturaadress:</p>
@@ -71,22 +83,38 @@
   </div>
 
   <div class="kvitto-innehall">
-    <div class="kvitto-box kvitto-tabellhuvud">
-      <div class="kvitto-tabellrad">
-        <span class="kvitto-col-benamning">Benämning</span>
-        <span class="kvitto-col-antal">Antal</span>
-        <span class="kvitto-col-enhet">Enhet</span>
-        <span class="kvitto-col-apris">A-pris</span>
-        <span class="kvitto-col-summa">Summa</span>
-      </div>
-    </div>
-    <div class="kvitto-tabellrad kvitto-post">
-      <span class="kvitto-col-benamning">{{eventNamn}}, {{betalningLabel}}</span>
-      <span class="kvitto-col-antal">1</span>
-      <span class="kvitto-col-enhet"></span>
-      <span class="kvitto-col-apris kvitto-belopp">{{brutto}}</span>
-      <span class="kvitto-col-summa kvitto-belopp">{{brutto}}</span>
-    </div>
+    <table class="kvitto-box kvitto-tabellhuvud kvitto-tabell">
+      <colgroup>
+        <col class="kvitto-col-benamning" />
+        <col class="kvitto-col-antal" />
+        <col class="kvitto-col-enhet" />
+        <col class="kvitto-col-apris" />
+        <col class="kvitto-col-summa" />
+      </colgroup>
+      <tr>
+        <th scope="col" class="kvitto-col-benamning">Benämning</th>
+        <th scope="col" class="kvitto-col-antal">Antal</th>
+        <th scope="col" class="kvitto-col-enhet">Enhet</th>
+        <th scope="col" class="kvitto-col-apris">A-pris</th>
+        <th scope="col" class="kvitto-col-summa">Summa</th>
+      </tr>
+    </table>
+    <table class="kvitto-tabell kvitto-post">
+      <colgroup>
+        <col class="kvitto-col-benamning" />
+        <col class="kvitto-col-antal" />
+        <col class="kvitto-col-enhet" />
+        <col class="kvitto-col-apris" />
+        <col class="kvitto-col-summa" />
+      </colgroup>
+      <tr>
+        <td class="kvitto-col-benamning">{{eventNamn}}, {{betalningLabel}}</td>
+        <td class="kvitto-col-antal">1</td>
+        <td class="kvitto-col-enhet"></td>
+        <td class="kvitto-col-apris kvitto-belopp">{{brutto}}</td>
+        <td class="kvitto-col-summa kvitto-belopp">{{brutto}}</td>
+      </tr>
+    </table>
     <p class="kvitto-betalsatt-rad">Betalsätt: {{betalsatt}}</p>
   </div>
 
