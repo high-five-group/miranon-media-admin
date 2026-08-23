@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 09:10'
-updated_date: '2026-08-23 10:04'
+updated_date: '2026-08-23 11:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -55,6 +55,8 @@ d) **Nytt frivilligt fält på Event: `Bokföringstext (kvitto)`** (singleLineTe
 - [x] #3 Fältet Bokföringstext (kvitto) finns i STAGING med fält-ID bokfört i data-model.md; preview-receipt läser det live (API-test: ifyllt → i benämningen, tomt → utelämnat)
 - [x] #4 README § Kvittots FORM: tokentabell + 1:1-regelns riktning förtydligad; check:docs, test:api, typecheck, biome, build gröna; staging deployad
 - [x] #5 Marcus skapar fältet i PROD och granskar kvittot på nytt — öppet
+- [x] #6 Benämningen är Lottas form utan kursnamn och etikett, på EN rad i Prince med fixturens text; kapacitetsgränsen bokförd i README
+- [x] #7 Vår referens lyder 'Miranon Media/Lotta Gotthardsson' (ur MIRANON_ORG.varReferens), sidfoten oförändrad
 <!-- AC:END -->
 
 ## Definition of Done
@@ -79,4 +81,18 @@ Matning AC2, Prince mot Chrome, samma analys.mjs-metod som TASK-304: tabellraden
 AC3 ifyllt-bevis: unit-testat fullt (receipt-content.test.ts paragraf kvittoBenamning) plus en engangs live-verifiering mot den nydeployade EF:en - temporart sentinel-event skapat via Airtable-MCP (rec46YVc0cQIoI3li, Ort ZZ-TASK-306-temp, Bokforingstext=personlig utveckling meditation), preview-receipt anropad med riktig JWT, PDF:ens content-stream bevisat innehalla HELA Avser-raden inklusive bokforingstexten (WinAnsi-hex-match), eventet sedan RADERAT (bekraftat borta). Ingen permanent ny fixture skapad - inget EF-skrivbart falt finns for denna manuella kolumn. Tomt-fallet ar en staende automatiserad test (preview-receipt.staging.test.ts) mot den delade ALDRIG-muterade BELAGGNING_EVENT_ID-fixturen.
 
 Grindar matta denna korning: test:api 1052 passed 0 failed - typecheck exit 0 - biome exit 0 (9 warnings 47 infos, ofdrandrad baseline) - build exit 0 - check:docs exit 0 (14 av 14 grona). check-langa-streck.mjs kort som extra kontroll trots att diffen inte ror src/ (ej gated for denna diff): exit 0. Deployat till staging: preview-receipt, send-receipt-email.
+
+RÄTTELSEVARV (2026-08-23), tre Marcus-domar mot kvitto-prince-306.pdf, samtliga verbatim: 1) "Benämningen är för lång! Den tar ju upp tre rader!! Orginalet tar upp EN rad. Kan vi skriva 'Utbildning 2026-07-25/26, personlig utveckling, meditation' bara och få plats med det på en rad utan att det ser konstigt ut? Lotta får ju plats med det på orginalet, med marginal." 2) "Varför har vi fortfarande med ordet 'Slutbetalning'. Det är FEL. Det är bara en betalning, varken slut eller början." 3) "på originalkvittot så har hon efter 'Vår referens' skrivit 'Miranon Media/Lotta Gotthardsson', vi har i vår mall skrivit 'Miranon Media AB'. Ändra det också."
+
+Åtgärdat: kvittoBenamning() (receipt-content.ts) bygger nu <Typ> <Datumspann>, <Bokföringstext> - inget kursnamn, datumspannet komprimerat via ny formaterDatumspann() (samma år+månad -> bara slutdagen, samma år olika månad -> månad-dag, olika år -> hela slutdatumet). Betalningsetiketten (Anmälningsavgift/Slutbetalning) borttagen HELT ur kvitto.html (.kvitto-betalningsetikett-spannet + CSS-regeln raderade, inte tomma) och ur kvittoRader()s Avser-rad - KvittoradSpec.betalning oförändrat (Kvitton-tabellens ledger, send-receipt-email/index.ts makeRealFinalizer, skriver det fortfarande). MIRANON_ORG fick nytt fält varReferens ("Miranon Media/Lotta Gotthardsson"); kvitto.html Vår referens-raden bytte token {{orgNamn}} -> {{orgReferens}}; orgNamn (sidfoten, "Miranon Media AB") oförändrad. Persondata-not: efternamnet Gotthardsson finns redan publicerat i repot (schema_reference.md, VariantB.tsx m.fl.), ingen ny T171-klass.
+
+Kapacitetsgräns mätt BÅDE teoretiskt och empiriskt, BÅDA renderingsmotorerna: teoretiskt 93,7mm kolumnbredd / 4,908 px medelteckenbredd (canvas measureText, Carlito 400 9pt) = 72,2 tecken. Empiriskt (binärsökning i den FAKTISKA .kvitto-post td.kvitto-col-benamning-cellen, Chrome): exakt 72 tecken ryms på en rad, 73 tecken bryter. Bekräftat i Prince (test-docraptor-render, samma 72-/73-teckensträngar, pdftotext -layout): identisk brytpunkt, tecken för tecken. Marcus-facitet ("Utbildning 2026-07-25/26, personlig utveckling, meditation", 58 tecken) har 14 tecken marginal - bekräftar hans egen observation. Bokfört i README § Kvittots FORM.
+
+tests/api/preview-receipt.staging.test.ts hade en LIVE staging-assertion hårdkodad mot DEN GAMLA benämningen ("Utbildning, 2025-11-20 - 2025-11-21, Fjärrskådning") - hade fallit rött efter deploy om den inte uppdaterats (upptäckt vid premiss-pass/eftergranskning, inte i uppdraget). Uppdaterad till "Utbildning 2025-11-20/21". Å-tecken-i-eventdata-beviset ("Fjärrskådning") är BORTTAGET, inte flyttat - eventnamnet syns inte längre någonstans i kvittots text sedan dom 1, och ingen annan fält i den delade BELAGGNING_EVENT_ID-fixturen bär en svensk diakritik. Öppet bokförd täckningsförlust, se testfilens kommentar (Swedish-char-hantering i eventdata generellt är fortfarande täckt på unitnivå + för klass B/C-mallarnas hårdkodade brödtext).
+
+Staging-deploy: preview-receipt + send-receipt-email (pqtshyierkdgwdnxuirz), efter alla grindar. Live-verifierat: den omskrivna preview-receipt.staging.test.ts-assertionen körde grönt mot den NYDEPLOYADE funktionen.
+
+Grindar (denna körning, post-rebase på main efter #1856 landade): test:api 1055 passed/0 failed (inkl. api-staging mot nydeployade funktioner, körd två gånger - före och efter rebase, båda gröna) - typecheck exit 0 - biome exit 0 (9 warnings/47 infos, oförändrad baseline) - build exit 0 - check:docs exit 0 (14/14 gröna). check-langa-streck.mjs INTE körd - diffen rör inte src/ (skriptet skannar bara src/, ingen av de sju rörda filerna ligger där).
+
+Marcus egen visuella granskning av DEN NYA PDF:en (kvitto-prince-306b.pdf, http://127.0.0.1:5199/granskning/kvitto-prince-306b.pdf) kvarstår ÖPPEN - inte gjord av agenten. AC #5 (prod-fält + Marcus granskning) var redan delvis öppen sedan förra varvet; kvarstår öppen för den visuella halvan, nu mot den NYA formen.
 <!-- SECTION:NOTES:END -->

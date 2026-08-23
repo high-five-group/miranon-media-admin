@@ -389,16 +389,14 @@ col.kvitto-col-apris {
 /* TASK-306 beslut c): "Betalsätt"-RADEN (egen <p>, egen rad i tabellhuvudets
   box) är BORTTAGEN ur mallen - Rogers förlaga saknar den, uppgiften finns
   kvar i Kvitton-tabellen och mailtextens Betalsätt-rad (kvittoRader,
-  README § Kvittots FORM). Ersatt av `.kvitto-betalningsetikett` nedan: en
-  synlig men UNDERORDNAD sub-rad UNDER benämningen (beslut a: "kunden måste
-  se vilken del som betalats" - Anmälningsavgift/Slutbetalning är INTE
-  samma sak som Betalsätt/Swish-Bankgiro-Plusgiro, som beslut c tar bort). */
-.kvitto-betalningsetikett {
-  display: block; /* safe primitiv (ingen grid/flex-gap, TASK-304 § filhuvud
-    - block-boxar staplar utan mellanrum, samma teknik som referensblockets
-    dt/dd-rader). Egen rad UNDER benämnings-texten inom samma table-cell. */
-  font-weight: 400; /* TT2, ärver samma vikt som benämningen (rak, inte fet) */
-}
+  README § Kvittots FORM).
+
+  [TASK-306 rättelsevarv, Marcus dom 2, 2026-08-23] `.kvitto-betalningsetikett`
+  (sub-raden "Anmälningsavgift"/"Slutbetalning" UNDER benämningen som beslut a
+  ursprungligen införde) är BORTTAGEN HÄR OCKSÅ - ordagrant: "Varför har vi
+  fortfarande med ordet 'Slutbetalning'. Det är FEL. Det är bara en
+  betalning, varken slut eller början." Reglen och dess `<span>` i
+  `kvitto.html` är helt tagna bort, inte bara tomma. */
 
 /* ── Totalrutan (mätt, § 3.4) ── */
 
