@@ -267,7 +267,10 @@ test.describe('Eventinfo-svepet — radspegling efter DELVIS lyckad sändning (T
     // ALLA bekräftade saknar stämpeln).
     const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
     await expect(rad).toHaveCount(1);
-    await expect(rad).toContainText('1 nya deltagare saknar deltagarinfo');
+    // [TASK-303 AC #4] Copyn är kortad till "N nya saknar deltagarinfo" i den
+    // promoverade radanatomin — ordet "nya" står kvar, "deltagare" är struket
+    // (`hem-derivations.ts` § `bevakningStatusText`).
+    await expect(rad).toContainText('1 nya saknar deltagarinfo');
     await expect(rad).not.toContainText('Deltagarinfo saknas');
   });
 });

@@ -34,10 +34,18 @@ export function antalBehoverAtgard(regs: Registration[] | undefined): number {
 }
 
 /**
- * Åtgärdskö-copyn — "N anmälningar kunde inte kopplas till rätt event". DELAD
- * mellan Hem-vyns bevakningsrad (`Bevakningsrad.tsx`, via `hem-derivations.ts`s
- * re-export) och den förfiltrerade `/mer/anmalningar`-vyn (`AnmalningarList.tsx`)
- * — SAMMA fras på båda ytorna, aldrig två separata formuleringar av samma tal.
+ * Åtgärdskö-copyn — "N anmälningar kunde inte kopplas till rätt event".
+ *
+ * DELNINGEN MED HEM ÄR UPPHÄVD (TASK-291 AC #3, 2026-08-23). Frasen var
+ * tidigare gemensam för Hem-vyns bevakningsrad och den förfiltrerade
+ * `/mer/anmalningar`-vyn. Den promoverade bevakningsraden bär sedan dess en
+ * TVÅDELAD anatomi (rubrik + undertext, `Bevakningsrad.tsx` § `RadInnehall`)
+ * som Marcus godkände i S111 Del 5, och en enda mening kan inte fylla två
+ * fält: raden säger nu "N kräver åtgärd" i rubriken och "Kunde inte kopplas
+ * till rätt event" i undertexten. Denna funktion är därför `/mer/anmalningar`s
+ * ensam, och `Bevakningsrad.tsx` importerar den inte längre. Samma tal, samma
+ * orsak, två ytors egna former — bokfört från andra hållet i
+ * `Bevakningsrad.tsx` § `AtgardskoRadLink`.
  */
 export function atgardskoText(antal: number): string {
   return `${antal} ${antal === 1 ? 'anmälan' : 'anmälningar'} kunde inte kopplas till rätt event`;

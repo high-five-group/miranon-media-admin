@@ -7,11 +7,14 @@ import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
 
-// Re-exporterad, inte omdefinierad: `atgardskoText` bor i
-// `registration-display.ts` (delad mellan denna fil OCH `AnmalningarList.tsx`,
-// se den funktionens docblock där) — `Bevakningsrad.tsx` importerar den härifrån
-// för att slippa två importkällor för samma bevakningsrad-modul.
-export { atgardskoText } from '@/components/registrations/registration-display';
+// RE-EXPORTEN AV `atgardskoText` ÄR BORTTAGEN (TASK-291 AC #3, 2026-08-23).
+// Den fanns av EN anledning: `Bevakningsrad.tsx` importerade frasen härifrån
+// för att slippa två importkällor för samma bevakningsrad-modul. Den
+// promoverade åtgärdskö-raden bär en tvådelad copy i stället (rubrik + orsak,
+// se `Bevakningsrad.tsx` § `AtgardskoRadLink`) och importerar ingenting alls
+// från `registration-display.ts`. Kvarlämnad hade re-exporten varit en
+// vidarekoppling utan konsument, med en kommentar som påstår ett beroende som
+// inte finns. `/mer/anmalningar` importerar frasen direkt ur sin egen modul.
 
 /**
  * [TASK-243.1] Morgonkollens härledningslogik — SKARPT DATALAGER (AC #3).
@@ -310,13 +313,31 @@ export type BevakningRad = EventinfoBevakningRad | AtgardskoBevakningRad;
  * senast, när det i själva verket är rätt personer, bara ännu inte
  * skickat till. `ej-skickad`-formen ("Deltagarinfo saknas") är ORÖRD — endast
  * eftersläntrare-formen bär ett tal att kvalificera.
+ *
+ * [TASK-303 AC #4, 2026-08-23] ORDET "deltagare" STRUKET, ordet "nya" KVAR.
+ * Formen är nu `"N nya saknar deltagarinfo"`. Beslutet är Marcus eget i S111
+ * Del 5 och togs av ETT skäl: den promoverade radanatomin centrerar
+ * dagar-pillen mot HELA raden (`Bevakningsrad.tsx` § `RadInnehall`), vilket
+ * kostar undertexten kolumnbredd — den fulla formen behövde 201 px mot 171
+ * tillgängliga vid 375 px, och klippning är inte ett alternativ. Marcus valde
+ * kortningen framför att sätta bakgrund på siffran, med sin egen motivering:
+ * ordet "nya" bär betydelsen (samma skäl som TASK-241.8 ovan), ordet
+ * "deltagare" gör det inte — raden står redan under ett eventnamn i en lista
+ * om deltagare.
+ *
+ * DETTA ÄR SYNKPUNKTEN. TASK-303 AC #4 krävde att skarpa ytan och
+ * `dev/hem-prototyp/data.ts` bär SAMMA sträng; de tre varianter som fanns
+ * före detta pass ("N nya deltagare saknar deltagarinfo" här, "N deltagare
+ * saknar deltagarinfo" i prototyp-substratet, "N nya saknar deltagarinfo" i
+ * den godkända formen) är nu EN. Prototyp-substratets kopia pekar hit i sin
+ * egen docblock.
  */
 export function bevakningStatusText(
   rad: Pick<EventinfoBevakningRad, 'lage' | 'antalUtanEventinfo'>,
 ): string {
   return rad.lage === 'ej-skickad'
     ? 'Deltagarinfo saknas'
-    : `${rad.antalUtanEventinfo} nya deltagare saknar deltagarinfo`;
+    : `${rad.antalUtanEventinfo} nya saknar deltagarinfo`;
 }
 
 /** Dagar-kvar-formen för bevakningsraden — samma tre textformer som `dagarKvarText`. */
