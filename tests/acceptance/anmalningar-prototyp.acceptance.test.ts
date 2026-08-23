@@ -361,9 +361,14 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     await expect(carlsRad.getByRole('link', { name: 'Carl Carlsson' })).toBeVisible();
     // Undertext: "N dagar sedan · Eventnamn" (eller en finare relativ tidsform).
     await expect(carlsRad).toContainText('Resor i medvetandet 1');
-    // Statuskolumnen finns i DOM:en (reserverad, osynlig för OK-rader).
-    await expect(carlsRad.getByText('Behöver kopplas')).toBeAttached();
-    await expect(carlsRad.getByText('Behöver kopplas')).toBeHidden();
+    // Statusen bor sedan 2026-08-23 på RAD 2, efter identiteten, och
+    // renderas VILLKORAT — inte längre som reserverad, osynlig kolumn på
+    // rad 1. Marcus flyttade den dit sedan den reserverade platsen
+    // (`visibility: hidden` behåller sin bredd) tillsammans med den nya
+    // tidskolumnen klämde namnet till två pixlar vid 375 px. Reservationen
+    // fyllde ingen funktion på rad 2: chevronen sitter i den YTTRE raden
+    // och påverkas inte av vad rad 2 innehåller.
+    await expect(carlsRad.getByText('Behöver kopplas')).toHaveCount(0);
 
     const bosRad = lista.locator('li', { hasText: 'Bo Bengtsson' });
     await expect(bosRad.getByText('Behöver kopplas')).toBeVisible();
@@ -715,5 +720,52 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     // Två synliga "Behöver kopplas"-badgar (Bo + Eva) — TEXT bär betydelsen,
     // inte enbart en färgplatta.
     await expect(page.getByText('Behöver kopplas')).toHaveCount(2);
+  });
+});
+
+test.describe('Radanatomin vid MOBIL bredd — namnkolumnen får inte klämmas ihjäl', () => {
+  /**
+   * REGRESSIONSVAKT, född ur en verklig bugg 2026-08-23.
+   *
+   * Tiden flyttades ut till en egen högerställd kolumn (Marcus: "'För 3
+   * dagar sedan' sitter centrerat högerställt ... EXAKT så vill jag att
+   * anmälningslistan också ska ha"). På rader som KRÄVER ÅTGÄRD satt då
+   * fyra element på samma rad: avatar, namn, tid och en statusbadge med
+   * RESERVERAD plats. Badgen var `invisible` — och `visibility: hidden`
+   * BEHÅLLER sin plats. Vid 375 px mätte raden 309 px och delarna summerade
+   * exakt: avatar 36 + namn 2 + tid 69 + status 136 + chevron 18 + fyra gap
+   * à 12. Namnet trunkerades till TVÅ pixlar.
+   *
+   * Sviten fångade det inte, eftersom varje annat test kör i standard-
+   * vyporten. Därav detta test: samma rad, MOBIL bredd, och ett golv för
+   * namnkolumnen. Fixen var att flytta statusen till rad 2.
+   *
+   * Golvet 80 px är inte en smakgräns utan en läsbarhetsgräns: under det
+   * ryms inte ens ett kort förnamn före ellipsen.
+   */
+  test('variant B: namnet har läsbar bredd vid 375 px även på en åtgärdsrad', async ({
+    page,
+    network,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    mockRegistrations(network, blandadeRader());
+    await page.goto('/dev/anmalningar-prototyp?variant=b&lage=atgardskon');
+
+    // Åtgärdsraden är den som bär statusbadgen — det värsta fallet.
+    const badge = page.getByText('Behöver kopplas').first();
+    await expect(badge).toBeVisible();
+
+    const rad = page.locator('li').filter({ has: badge }).first();
+    const namn = rad.getByRole('button').first();
+    await expect(namn).toBeVisible();
+
+    const namnRuta = await namn.boundingBox();
+    expect(namnRuta).not.toBeNull();
+    expect(namnRuta?.width ?? 0).toBeGreaterThan(80);
+
+    // Och raden ska fortfarande vara EN rad hög per textrad — inte svälla
+    // för att statusen flyttat ner. Två textrader + padding.
+    const radRuta = await rad.boundingBox();
+    expect(radRuta?.height ?? 0).toBeLessThan(90);
   });
 });

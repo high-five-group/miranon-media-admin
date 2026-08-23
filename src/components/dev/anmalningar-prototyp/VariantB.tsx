@@ -116,10 +116,18 @@ function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
  * uppfunnen: initialcirkel `size-9` (`InitialAvatar`-primitiven, TASK-299.1)
  * · namnet `font-medium text-body` som HELRADS-länk (`after:absolute
  * after:inset-0`-tricket — den synliga länktexten är bara namnet, klickytan
- * är hela raden) · statusen som EGEN kolumn med RESERVERAD plats
- * (`invisible` i stället för villkorad rendering, PersonsList `Pill dold`-
- * tekniken) · chevron 18 px. Samma tonala `divide-y`-lista, INTE fristående
- * kort per rad (PersonsList k03-lås: en scanlista för hundratals rader).
+ * är hela raden) · chevron 18 px. Samma tonala `divide-y`-lista, INTE
+ * fristående kort per rad (PersonsList k03-lås: en scanlista för hundratals
+ * rader).
+ *
+ * STATUSEN BOR PÅ RAD 2 sedan 2026-08-23, inte som reserverad kolumn på rad
+ * 1. Den låg tidigare där med `invisible` (PersonsList `Pill dold`-tekniken)
+ * — men `visibility: hidden` BEHÅLLER sin plats, och tillsammans med den nya
+ * tidskolumnen klämde den namnkolumnen till TVÅ pixlar vid 375 px. Mätt:
+ * raden 309 px = avatar 36 + namn 2 + tid 69 + status 136 + chevron 18 +
+ * fyra gap à 12. Marcus flyttade statusen till rad 2, efter identiteten.
+ * Reservationen fyllde ingen funktion där: chevronen sitter i den YTTRE
+ * raden och påverkas inte av rad 2:s innehåll.
  *
  * ANMÄLNINGSDATAN (i stället för personlistans kontaktrad): undertexten är
  * "N dagar sedan · Eventnamn" (AC #3s exakta citat). Tidsformen ÅTERANVÄNDER
@@ -131,13 +139,17 @@ function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
  * "0 dagar sedan" — en avsiktlig, källbelagd precisering av AC #3s exempel,
  * bokförd i slutrapporten.
  *
- * HÖJDLÅSET (DoD #6): namn- och undertextraden RENDERAS ALLTID (aldrig
- * villkorad på om eventNamn/status finns), så radens höjd är en funktion av
- * layouten, aldrig av datan. `eventUndertext()` (se ovan) GARANTERAR
- * dessutom att undertextens andra led aldrig är tomt/blankt — bara
- * `truncate`-bredden på texten varierar med innehållet, aldrig radens höjd
- * (single-line truncate är höjd-invariant mot textlängd; mätt i
- * slutrapporten på kort/långt/saknat eventnamn).
+ * HÖJDLÅSET (DoD #6): namn- och undertextraden RENDERAS ALLTID, så radens
+ * höjd är en funktion av layouten, aldrig av datan. Sedan statusen flyttade
+ * till rad 2 bär den radens container ett GOLV (`min-h-6`) — badgen är
+ * ~20,5 px mot undertextens 16, så utan golvet blev rader MED åtgärdsbehov
+ * 4,5 px högre och sviten fällde på just den jämförelsen. Golvet ligger över
+ * badgens verkliga höjd i båda fallen, så uniformiteten följer av layouten
+ * och inte av en jagad decimal.
+ *
+ * UNDERTEXTEN är eventets IDENTITET ("kurs · ort · kortdatum") via Hems egen
+ * `eventIdentitet()`, och tiden bor i egen högerställd kolumn — Marcus
+ * 2026-08-23: "EXAKT så vill jag att anmälningslistan också ska ha."
  *
  * AC #4 (raden leder till resolutionen, inget separat knappelement):
  * `AnmalningRadResolution` triggas av EXAKT det element som annars hade
@@ -492,23 +504,47 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
                 <InitialAvatar namn={namn} />
                 <div className="flex min-w-0 flex-1 flex-col">
                   <div className="flex min-w-0 items-center gap-2">{namnElement}</div>
-                  <span className="truncate text-caption text-text-muted">{undertext}</span>
+                  {/* RAD 2 — identiteten OCH statusen. Statusen låg tidigare
+                      som egen kolumn på rad 1 med RESERVERAD plats
+                      (`invisible`, personlistans `Pill dold`-teknik). Den
+                      formen är riven på Marcus order 2026-08-23, av en mätt
+                      orsak: `visibility: hidden` behåller sin plats, så den
+                      reserverade badgen (136 px) plus tidskolumnen (69 px)
+                      åt upp hela namnkolumnen vid 375 px — namn och
+                      undertext trunkerades till TVÅ pixlar. Rad 1 är därmed
+                      exakt Hems form (namn + tid), och statusen bor här.
+                      VILLKORAD, inte reserverad: en reserverad plats på rad
+                      2 hade ätit identitetens bredd på varje rad, och
+                      chevronens position påverkas inte eftersom den sitter i
+                      den YTTRE raden. Identiteten trunkeras i stället när
+                      badgen tar plats — sekundär information, samma klass av
+                      trunkering Hems egen identitetsrad redan bär. */}
+                  {/* FAST HÖJD (`min-h-5`), inte auto: badgen är högre än en
+                      naken undertextrad, så utan golvet blev rader MED
+                      åtgärdsbehov högre än rader utan — DoD #6:s höjdlås
+                      bröts, och sviten fällde på just den jämförelsen.
+                      Golvet gör rad 2 lika hög oavsett om badgen finns.
+                      MÄTT, inte gissat: med `min-h-5` (20 px) kvarstod 4,5
+                      px skillnad — badgen är ~20,5 px mot undertextens 16.
+                      `min-h-6` (24 px) ligger över badgens verkliga höjd i
+                      BÅDA fallen, så uniformiteten följer av golvet och inte
+                      av en jagad decimal. */}
+                  <div className="flex min-h-6 min-w-0 items-center gap-2">
+                    <span className="truncate text-caption text-text-muted">{undertext}</span>
+                    {behoverKoppling && (
+                      <span className="shrink-0">
+                        <StatusBadge ton="warning" storlek="sm">
+                          Behöver kopplas
+                        </StatusBadge>
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {/* Tiden — egen kolumn, högerställd och vertikalt centrerad
                     mot hela raden av förälderns `items-center`. Exakt Hems
                     form (`NyaAnmalningar.tsx`: `shrink-0 pl-2 text-caption
                     text-text-muted`), som Marcus pekade ut som förlagan. */}
                 <span className="shrink-0 pl-2 text-caption text-text-muted">{relTid}</span>
-                {/* Statuskolumnen — EGEN kolumn, RESERVERAD plats (AC #3 +
-                    DoD #6). Ikon+ord, aldrig färg ensam (AC #5). */}
-                <span
-                  className={`shrink-0 ${behoverKoppling ? '' : 'invisible'}`}
-                  aria-hidden={behoverKoppling ? undefined : true}
-                >
-                  <StatusBadge ton="warning" storlek="sm">
-                    Behöver kopplas
-                  </StatusBadge>
-                </span>
                 <ChevronRight
                   aria-hidden="true"
                   size={18}
