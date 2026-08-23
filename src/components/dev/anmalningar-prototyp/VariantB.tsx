@@ -7,7 +7,7 @@ import { dateValue } from '@/components/events/EventCard';
 import { EventValjare } from '@/components/events/EventValjare';
 import { eventIdentitet } from '@/components/hem/hem-derivations';
 import { relativTid } from '@/components/hem/relativ-tid';
-import { InitialAvatar, ToggleButton, ToggleButtonGroup } from '@/components/primitives';
+import { InitialAvatar } from '@/components/primitives';
 import {
   antalAktivaFilter,
   type FilterDimension,
@@ -55,6 +55,14 @@ const PERIOD_ANNOUNCEMENT_LED: Record<PeriodFilter, string> = {
   alla: 'alla event',
   upcoming: 'kommande event',
   past: 'tidigare event',
+};
+
+/** Etikett → nyckel. Dimensionen visar svenska ord medan URL:en behåller
+    sitt befintliga kontrakt (`?period=upcoming|past`) — `FilterDimension`
+    bär råa strängar utan etikettmappning, så översättningen bor här. */
+const PERIOD_FRAN_ETIKETT: Record<string, PeriodFilter> = {
+  Kommande: 'upcoming',
+  Tidigare: 'past',
 };
 
 /** Räknarens substantiv för anmälningar (böjs efter nämnaren). */
@@ -269,6 +277,7 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
   const [ort, setOrt] = useQueryState('ort', parseAsString.withOptions({ history: 'push' }));
   const [event, setEvent] = useQueryState('event', parseAsString.withOptions({ history: 'push' }));
   const valda: Record<string, string | null> = {
+    period: period === 'alla' ? null : PERIOD_FILTER_LABEL[period],
     typ: typ || null,
     ort: ort || null,
     event: event || null,
@@ -295,6 +304,20 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
         a.localeCompare(b, 'sv'),
       );
     return [
+      // PERIOD ÄR EN DIMENSION, INTE EN TOGGLE (Marcus 2026-08-23: "Kör
+      // period som dimension i panelen"). Den låg som pill-rad ovanför
+      // listan, men `Kommande event`/`Tidigare event` krävde 397,7 px mot
+      // 297 tillgängliga vid 375 px — radbrytning oavsett layoutläge, mätt
+      // både med och utan `spread`. Som Select tar den full radbredd, och
+      // etiketten `Period` bredvid orden `Kommande`/`Tidigare` tar bort
+      // tvetydigheten som fällde pillren ("Vad är 'Kommande anmälningar'").
+      // Priset är ett klick: period bor nu bakom "Visa filter".
+      {
+        nyckel: 'period',
+        etikett: 'Period',
+        nollage: 'Alla perioder',
+        alternativ: ['Kommande', 'Tidigare'],
+      },
       { nyckel: 'typ', ...DIM_FORM.typ, alternativ: uniq(lankade.map((e) => e.typ)) },
       { nyckel: 'ort', ...DIM_FORM.ort, alternativ: uniq(lankade.map((e) => e.ort)) },
       {
@@ -349,6 +372,7 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
   // så tangentbordsfokus aldrig faller till body.
   const filterKnappRef = useRef<HTMLButtonElement>(null);
   const rensaFilter = () => {
+    setPeriod('alla');
     setTyp(null);
     setOrt(null);
     setEvent(null);
@@ -450,28 +474,17 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
         dimensioner={dimensioner}
         valda={valda}
         onValj={(nyckel, varde) => {
-          if (nyckel === 'typ') setTyp(varde);
+          if (nyckel === 'period') setPeriod(varde ? PERIOD_FRAN_ETIKETT[varde] : 'alla');
+          else if (nyckel === 'typ') setTyp(varde);
           else if (nyckel === 'ort') setOrt(varde);
           else setEvent(varde);
         }}
         onRensa={rensaFilter}
         visade={visasRader.length}
-        totalt={periodRader.length}
+        totalt={rader.length}
         enhet={ANMALNINGS_ENHET}
         triggerRef={filterKnappRef}
-      >
-        <ToggleButtonGroup<PeriodFilter>
-          label="Period"
-          selectedKey={period}
-          onSelectionChange={setPeriod}
-        >
-          {PERIOD_FILTER_VALUES.map((p) => (
-            <ToggleButton key={p} id={p}>
-              {PERIOD_FILTER_LABEL[p]}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-      </FilterRad>
+      ></FilterRad>
       <p className="sr-only" aria-live="polite">
         {periodAnnouncement}
       </p>

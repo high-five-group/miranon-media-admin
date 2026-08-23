@@ -450,7 +450,16 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       mockRegistrations(network, periodRader());
       await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
 
-      await page.getByRole('radio', { name: 'Kommande event', exact: true }).click();
+      // Perioden är sedan 2026-08-23 en DIMENSION i filterpanelen, inte en
+      // pill-rad ovanför listan (Marcus: "Kör period som dimension i
+      // panelen"). `Kommande event`/`Tidigare event` krävde 397,7 px mot 297
+      // tillgängliga vid 375 px — radbrytning oavsett layoutläge. Som Select
+      // tar dimensionen full radbredd, och etiketten `Period` bär det som
+      // pillorden inte fick plats att säga.
+      await page.getByRole('button', { name: /^(Visa|Dölj) filter/ }).click();
+      await expect(page.getByTestId('filter-panel')).toBeVisible();
+      await page.getByTestId('filter-period').getByRole('button').click();
+      await page.getByRole('option', { name: 'Kommande', exact: true }).click();
       await expect(page).toHaveURL(/[?&]period=upcoming/);
       // exact: true — periodväxlingens sr-only-annonsering ("Visar
       // anmälningar för kommande event. 1 anmälan.") innehåller SAMMA
