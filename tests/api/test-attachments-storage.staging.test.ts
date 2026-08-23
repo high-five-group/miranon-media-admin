@@ -168,6 +168,138 @@ test.describe('test-attachments-storage — bucket, path-form och signerad åtko
     expect(res.status(), await res.text()).toBe(400);
   });
 
+  // [TASK-302.3] "list_prefix"/"remove_paths" — de två tunna actions
+  // scripts/purge-staging-sentinels.mjs anropar för Storage-purgen av
+  // `utkast/<eventId>/<typ>.pdf`. Bevisas här mot RIKTIG staging-Storage
+  // via `run_full_proof`s egen ZZ-TEST-EVENT--fixtur (samma testnamnrymd
+  // "list_prefix"/"remove_paths" också tillåter) — testar den GEMENSAMMA
+  // fail-closed-guarden och listnings-/borttagnings-formen utan att röra
+  // den separata `utkast/`-namnrymden (som är produktionskod, inte en
+  // egen testfixtur att skapa/riva här).
+  test.describe('list_prefix / remove_paths (TASK-302.3)', () => {
+    interface ListPrefixResponse {
+      ok: boolean;
+      entries: { path: string; updatedAt: string | null }[];
+    }
+
+    test('list_prefix listar de riktiga objekten under ZZ-TEST-EVENT--prefixet; remove_paths tar bort dem', async ({
+      request,
+    }) => {
+      const config = getApiConfig();
+      const jwt = await getValidUserJWT(request, config);
+
+      const proofRes = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+        data: { action: 'run_full_proof' },
+      });
+      expect(proofRes.status(), await proofRes.text()).toBe(200);
+      const proof = (await proofRes.json()) as { eventId: string };
+
+      try {
+        const listRes = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+          headers: { Authorization: `Bearer ${jwt}` },
+          data: { action: 'list_prefix', prefix: proof.eventId },
+        });
+        expect(listRes.status(), await listRes.text()).toBe(200);
+        const listBody = (await listRes.json()) as ListPrefixResponse;
+        expect(listBody.ok).toBe(true);
+        // SAMMA två flata objekt som cleanup-testets räkning ovan
+        // (over-limit-objektet avvisades och ligger aldrig i bucketen).
+        expect(listBody.entries.length).toBe(2);
+        for (const entry of listBody.entries) {
+          expect(entry.path.startsWith(`${proof.eventId}/`)).toBe(true);
+          expect(typeof entry.updatedAt === 'string' || entry.updatedAt === null).toBe(true);
+        }
+
+        // remove_paths tar bort EXAKT en av de två — den andra ska finnas kvar.
+        const [first, second] = listBody.entries;
+        const removeRes = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+          headers: { Authorization: `Bearer ${jwt}` },
+          data: { action: 'remove_paths', paths: [first.path] },
+        });
+        expect(removeRes.status(), await removeRes.text()).toBe(200);
+        const removeBody = (await removeRes.json()) as { ok: boolean; deleted: string[] };
+        expect(removeBody.ok).toBe(true);
+        expect(removeBody.deleted).toEqual([first.path]);
+
+        const relistRes = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+          headers: { Authorization: `Bearer ${jwt}` },
+          data: { action: 'list_prefix', prefix: proof.eventId },
+        });
+        const relistBody = (await relistRes.json()) as ListPrefixResponse;
+        expect(relistBody.entries.map((e) => e.path)).toEqual([second.path]);
+      } finally {
+        // Riv det som ev. finns kvar (cleanup är fail-closed till SAMMA
+        // prefix — träffar det som `remove_paths` inte redan tog).
+        await request.post(`${config.baseUrl}${ENDPOINT}`, {
+          headers: { Authorization: `Bearer ${jwt}` },
+          data: { action: 'cleanup', prefix: proof.eventId },
+        });
+      }
+    });
+
+    test('deny: list_prefix utanför de reserverade namnrymderna → 400', async ({ request }) => {
+      const config = getApiConfig();
+      const jwt = await getValidUserJWT(request, config);
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+        data: { action: 'list_prefix', prefix: 'not-a-reserved-prefix' },
+      });
+      expect(res.status(), await res.text()).toBe(400);
+    });
+
+    test('deny: remove_paths med EN giltig path bredvid EN otillåten → 400, ingen smygväg', async ({
+      request,
+    }) => {
+      const config = getApiConfig();
+      const jwt = await getValidUserJWT(request, config);
+      const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+        data: {
+          action: 'remove_paths',
+          paths: ['ZZ-TEST-EVENT-00000000-0000-0000-0000-000000000000/x.pdf', 'kladd/x.pdf'],
+        },
+      });
+      expect(res.status(), await res.text()).toBe(400);
+    });
+
+    test('deny: remove_paths/list_prefix med segment-traversering under utkast/ → 400 (prefix-matchen räcker inte)', async ({
+      request,
+    }) => {
+      const config = getApiConfig();
+      const jwt = await getValidUserJWT(request, config);
+      const remove = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+        data: { action: 'remove_paths', paths: ['utkast/../recXXXXXXXXXXXXXX/bilaga.pdf'] },
+      });
+      expect(remove.status(), await remove.text()).toBe(400);
+      const list = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+        data: { action: 'list_prefix', prefix: 'utkast/..' },
+      });
+      expect(list.status(), await list.text()).toBe(400);
+    });
+
+    test('deny: list_prefix/remove_paths saknar sina obligatoriska fält → 400', async ({
+      request,
+    }) => {
+      const config = getApiConfig();
+      const jwt = await getValidUserJWT(request, config);
+
+      const noPrefix = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+        data: { action: 'list_prefix' },
+      });
+      expect(noPrefix.status()).toBe(400);
+
+      const noPaths = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+        data: { action: 'remove_paths' },
+      });
+      expect(noPaths.status()).toBe(400);
+    });
+  });
+
   test('anon (ingen JWT) → 401', async ({ request }) => {
     const config = getApiConfig();
     const res = await request.post(`${config.baseUrl}${ENDPOINT}`, {

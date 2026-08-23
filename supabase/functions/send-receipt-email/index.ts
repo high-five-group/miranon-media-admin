@@ -29,11 +29,15 @@ import {
   BETALSATT_VARDEN,
   type Betalning,
   type Betalsatt,
+  type ReceiptDraftCleaner,
   type ReceiptFinalizer,
   type ReceiptPdfBuilder,
   type ReceiptSender,
   sendReceipt,
 } from '../_shared/send-receipt.ts';
+// [TASK-302.3, ADR-124] Städar det transienta förhandsgransknings-utkastet
+// EFTER lyckad sändning — se makeRealDraftCleaner nedan.
+import { rensaUtkast } from '../_shared/utkast.ts';
 
 // send-receipt-email — kvittoserien (TASK-147.7, ADR-109).
 //
@@ -200,6 +204,22 @@ function makeRealFinalizer(callerUserId: string): ReceiptFinalizer {
   };
 }
 
+/**
+ * [TASK-302.3] Städaren — delegerar till `rensaUtkast` (`_shared/utkast.ts`)
+ * med en EGEN `createClient`-instans (samma mönster som `makeRealFinalizer`/
+ * övriga "makeReal*"-fabriker i denna fil: en riktig I/O-gräns byggd HÄR,
+ * injicerad in i den REN orkestratorn `sendReceipt`, aldrig global).
+ */
+function makeRealDraftCleaner(): ReceiptDraftCleaner {
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+  );
+  return async (eventId: string) => {
+    await rensaUtkast(supabaseAdmin, eventId);
+  };
+}
+
 async function readRegistration(
   id: string,
 ): Promise<{ email: string | null; kundnamn: string; status: string | null; eventIds: string[] } | null> {
@@ -323,6 +343,7 @@ Deno.serve(async (req) => {
         buildPdf: makeRealPdfBuilder(),
         sendEmail: makeRealSender(),
         finalizeReceipt: makeRealFinalizer(user.id),
+        cleanupDraft: makeRealDraftCleaner(),
       },
     );
 

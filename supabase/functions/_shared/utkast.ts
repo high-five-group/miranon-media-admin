@@ -49,7 +49,9 @@ export function isValidUtkastTyp(value: unknown): value is UtkastTyp {
 }
 
 /** Minimal ytstruktur för den del av `SupabaseClient` denna funktion faktiskt
- * använder — undviker att importera hela SDK-typen bara för storage-anropen. */
+ * använder — undviker att importera hela SDK-typen bara för storage-anropen.
+ * [TASK-302.3] `list`/`remove` tillkom för `rensaUtkast` nedan — samma
+ * minimal-yta-disciplin, bara de metoder filen faktiskt anropar. */
 interface SupabaseAdminLike {
   storage: {
     from(bucket: string): {
@@ -62,6 +64,11 @@ interface SupabaseAdminLike {
         path: string,
         expiresIn: number,
       ): Promise<{ data: { signedUrl: string } | null; error: { message: string } | null }>;
+      list(path: string): Promise<{
+        data: { name: string }[] | null;
+        error: { message: string } | null;
+      }>;
+      remove(paths: string[]): Promise<{ error: { message: string } | null }>;
     };
   };
 }
@@ -115,4 +122,60 @@ export async function laggUtkast(
 
   const utgar = new Date(Date.now() + SIGNED_DOWNLOAD_URL_TTL_SECONDS * 1000).toISOString();
   return { url: signed.signedUrl, utgar };
+}
+
+/**
+ * rensaUtkast — TASK-302.3 (PRD TASK-302, `ADR-124` § Beslut 2: *"Skarp
+ * generering eller sändning för ett event tar bort utkast/<eventId>/
+ * (utkastet är ersatt)."*). Tar bort HELA `utkast/<eventId>/`-mappen — ALLA
+ * dokumenttyper för det eventet, inte bara den typ som just genererades —
+ * eftersom en skarp artefakt ersätter FÖRHANDSGRANSKNINGENS SYFTE för det
+ * eventet oavsett vilken typ som förhandsgranskades senast.
+ *
+ * BEST-EFFORT, ALDRIG FÄLLANDE (kortets AC #1: "skarp operation lyckas även
+ * om remove fallerar"): varje fel — `list`, `remove`, eller ett oväntat
+ * kastat undantag — LOGGAS och SVÄLJS. Denna funktion returnerar aldrig ett
+ * avvisande och kastar ALDRIG. Samma disciplin som `delete-attachment/
+ * index.ts`s egen Storage-borttagning (§ "STORAGE-BORTTAGNINGEN ÄR
+ * BEST-EFFORT") — ett utkast som blir kvar en stund extra efter en skarp
+ * generering är ofarligt skräp (nästa `laggUtkast` för samma event/typ
+ * skriver över det via `upsert`); en skarp generering/sändning som FALLERAR
+ * på grund av en städnings-detalj vore fel prioritetsordning.
+ *
+ * ANROPAS EFTER lyckad persistering/sändning, ALDRIG före — se anroparna
+ * (`generate-event-attachment/index.ts`s persisterande gren,
+ * `_shared/send-receipt.ts` § `sendReceipt` efter lyckad `finalizeReceipt`).
+ * Ett utkast ska finnas kvar om den skarpa operationen avvisas.
+ */
+export async function rensaUtkast(supabaseAdmin: SupabaseAdminLike, eventId: string): Promise<void> {
+  const prefix = `utkast/${eventId}`;
+  try {
+    const { data: entries, error: listError } = await supabaseAdmin.storage
+      .from(BILAGOR_BUCKET_ID)
+      .list(prefix);
+    if (listError) {
+      console.error(
+        `[rensaUtkast] list("${prefix}") misslyckades (fäller inte den skarpa operationen) | ` +
+          `event=${eventId} | error=${listError.message}`,
+      );
+      return;
+    }
+    if (!entries || entries.length === 0) {
+      return;
+    }
+    const paths = entries.map((entry) => `${prefix}/${entry.name}`);
+    const { error: removeError } = await supabaseAdmin.storage.from(BILAGOR_BUCKET_ID).remove(paths);
+    if (removeError) {
+      console.error(
+        `[rensaUtkast] remove(${paths.length} objekt) misslyckades (fäller inte den skarpa ` +
+          `operationen) | event=${eventId} | error=${removeError.message}`,
+      );
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[rensaUtkast] oväntat fel (fäller inte den skarpa operationen) | event=${eventId} | ` +
+        `error=${message}`,
+    );
+  }
 }
