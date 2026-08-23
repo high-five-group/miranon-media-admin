@@ -370,12 +370,16 @@ function PrimitivesPage() {
         <h2 id="rubrik-sidram" className="text-xl">
           SidRam
         </h2>
-        {/* TASK-299.1 (ADR-124): husets kant-i-kant sidkrom — chevron +
+        {/* TASK-299.1 (ADR-126): husets kant-i-kant sidkrom — chevron +
             VALFRITT rubrikblock. Två instanser visar båda omfattningarna
-            (AC #1); ingen av de fyra produktionsytorna bakom `?sidram=ny`
-            använder den bredare (rubrik-ägande) formen ännu — den avgörs av
-            TASK-299.2/299.6. Denna sektion är därför den enda platsen den
-            grenen faktiskt renderas och axe-provas. */}
+            (AC #1). Omfattningen är LÅST sedan 2026-08-22 till den SMALARE
+            (bara sidkromet, TASK-299.2 / PRD TASK-299 § OMFATTNINGEN LÅST),
+            så den bredare rubrik-ägande grenen har noll skarpa konsumenter —
+            denna sektion är den ENDA platsen den renderas och axe-provas, och
+            det är skälet att den står kvar. Dev-växeln `?sidram=ny` som
+            tidigare nämndes här är riven på samtliga fyra ytor (TASK-299.11 +
+            299.6, ADR-103 B2 steg 4). Form och familjegräns:
+            DESIGN-SYSTEM-SPEC § 23. */}
         <p className="mt-2 text-small text-text-secondary">
           Smalare omfattning (bara chevronen) och bredare (chevron + rubrikblock).
         </p>
