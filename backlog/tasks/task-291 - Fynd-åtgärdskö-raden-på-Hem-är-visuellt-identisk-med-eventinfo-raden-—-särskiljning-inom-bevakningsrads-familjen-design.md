@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 10:54'
-updated_date: '2026-08-22 23:24'
+updated_date: '2026-08-23 13:22'
 labels:
   - ready-for-human
 dependencies: []
@@ -23,7 +23,7 @@ QA-fynd 284.5 (Marcus, 2026-08-22, staging): raden '12 anmälningar kunde inte k
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 2–3 varianter av åtgärdskö-raden växlingsbara på /dev/hem, var och en inom bevakningsrads-familjens tokens — ingen lånar notistrappans varningsfärg/ikon
-- [ ] #2 Marcus väljer EN variant i visuell granskning (desktop + mobil); valet citeras daterat på kortet
+- [x] #2 Marcus väljer EN variant i visuell granskning (desktop + mobil); valet citeras daterat på kortet
 - [ ] #3 Vald form promoverad till Bevakningsrad.tsx; raden bär aldrig betydelse enbart genom färg (axe 0, 284.4 AC #5 håller)
 - [ ] #4 Hem-facit (tasks/sessions/bilagor/s102-hem-konvergens/facit.json) amenderas FÖRST därefter, i egen commit med Marcus citat — det stänger 284.4 DoD #6
 <!-- AC:END -->
@@ -66,4 +66,12 @@ STRÄNG-DIVERGENS (TASK-303 AC #5, EJ formellt avgjord här): prototypen använd
 VERIFIERAT: axe 0 violations i alla 4 lägen (skarpa vyn, variant a/b/c) x 2 vyportar (375/1280px), sanity-kontrollerat med negativkontroll (alt-lös bild gav image-alt-fynd, korrekt fångat). prefers-contrast:more, prefers-reduced-motion:reduce, print — alla tre live-emulerade via Playwright emulateMedia, höjdlåset opåverkat i alla lägen.
 
 Bevakningsrad.tsx: 0 rader i diffen, oförändrad. AC #2 fortsatt EJ avbockad — Marcus egen visuella granskning (desktop + mobil) av den nu byggda, förstärkta formen återstår.
+
+AC #2 UPPFYLLD 2026-08-23 — Marcus godkände formen i visuell granskning.
+
+Verbatim: "Ser bra ut. Jag godkänner bevakningsraden och åtgärdskö-raden nu."
+
+Formen han godkände är den ombyggda variant A: fylld cirkel-behållare runt ikonen (kontrast 13,38:1 mot kortytan, var 1,01:1), li-strukturen återställd, talet i rubriken ("12 kräver åtgärd") i stället för i en badge, chevronen centrerad mot hela raden, och tiden i en vit pill.
+
+FORMEN LIGGER I LOKALA, OPUSHADE COMMITS på wip/s111-marcus-iteration. Det som landade i PR #1842 är ett TIDIGARE varv — badge-formen, som Marcus sedan rev. AC #3 (promovering till skarpa Bevakningsrad.tsx) och AC #4 (hem-facit) återstår och ska utgå från den LOKALA formen, inte från vad som ligger i main.
 <!-- SECTION:NOTES:END -->

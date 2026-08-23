@@ -15,9 +15,11 @@
 
 ## Aktuellt fokus
 
-**Session 111 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`; bygget
-påbörjat efter Del 3) — ANMÄLNINGSSIDANS KONVERGENSPASS: GRILLAD, SPECAD OCH
-SKIVAD, FÖRSTA SKIVAN I ARBETE.**
+**Session 111 ⏸️ PAUSAD (2026-08-23, efter Del 5; `lifecycle: paused`) —
+ANMÄLNINGSSIDANS KONVERGENSPASS: FORMEN GODKÄND, PROMOVERINGEN KVAR.
+⚠️ ALLT FORMARBETE LIGGER LOKALT OCH OPUSHAT på grenen
+`wip/s111-marcus-iteration` (10 commits, aldrig sett av CI) i worktreen
+`.claude/worktrees/s111-anmalningssidan` — radera den inte.**
 Egen worktree `s111-anmalningssidan` (huvudkatalogen ägs av levande annan
 session, ADR-090 beslut 2). **Grillningen** (Del 2) gav sju Marcus-kvitterade
 beslut: divergens på anmälningssidan ENSAM med promovering till alla fem

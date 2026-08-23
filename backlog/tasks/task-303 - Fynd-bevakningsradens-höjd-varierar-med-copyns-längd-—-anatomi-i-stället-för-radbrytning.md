@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:48'
-updated_date: '2026-08-22 23:25'
+updated_date: '2026-08-23 13:23'
 labels:
   - ready-for-human
 dependencies: []
@@ -70,4 +70,18 @@ STRÄNG-DIVERGENSEN ÄR INTE AVGJORD. Anatomi D upplöser utrymmesskälet för s
 GRUNDARBETE AVANCERAT via TASK-291-PR:en (2026-08-23, Marcus-order via orkestreraren mitt i TASK-291s byggpass). AtgardskoRadVarianter.tsx (prototyp-fil, /dev/hem-atgardsko-prototyp) fick den beslutade anatomin (rubrikrad + undertext, alltid båda, tal i reserverad badge, tvåradigt CSS-grid) för BÅDA radtyperna, samt EventinfoRadAnatomi som visar formen för eventinfo-raden. Höjdlås bevisat som beteende (Playwright, negativkontroll, 375/390/768/1280px, 1/2/3-siffriga tal, PR #1388s 91-teckens värsta-fall-namn) — se TASK-291-kortets Implementation Notes för hela mätmatrisen, inte upprepad här.
 
 INTE GJORT HÄR: Bevakningsrad.tsx (skarp yta) rörd = 0 rader, ingen promovering, inget facit amenderat. AC #5 (sträng-divergensen) EJ formellt avgjord — prototypen använder nu skarpa appens fulla sträng som en implementationsdetalj, men Marcus citerade beslut om VILKEN sträng som vinner permanent saknas fortfarande. Detta korts egna ACs/DoD förblir därför obockade — kortet stängs av en separat promoverings-/facit-passering, inte av denna commit.
+
+AC #3 ÄR FALSIFIERAT AV MARCUS EGET SENARE BESLUT — kräver hans ord innan kortet är stängbart.
+
+Kriteriet lyder: "Talet som varierar bärs av en badge med reserverad plats, inte inbakat i meningen."
+
+Marcus 2026-08-23, verbatim: "jag vill ta bort siffer-pillen och sätta chevronen centrerat. Istället för siffer-pillen på bevakningsraden så vill jag att vi skriver ut '3 nya deltagare saknar deltagarinfo', siffran ska alltså in i meningen."
+
+Den levererade och GODKÄNDA formen motsäger alltså kriteriet rakt av. AC #3 kan därför aldrig bockas ärligt. Det är inget misslyckande — det är ett AC som ett senare beslut kastade omkull. Det ska AMENDERAS eller STRYKAS ÖPPET med Marcus citat, aldrig bockas falskt och aldrig lämnas obockat i tysthet, annars är kortet omöjligt att stänga.
+
+AC #5 HAR GLIDIT ÅT FEL HÅLL, inte närmare. Kriteriet kräver att båda ytorna bär SAMMA sträng efteråt. Just nu säger prototypen "3 nya saknar deltagarinfo" medan skarpa hem-derivations.ts fortfarande säger "3 nya deltagare saknar eventinfo" — ytorna är MER isär än när kortet skrevs, eftersom ordbytet Eventinfo→Deltagarinfo bara är gjort i prototypens copy. AC #5 stängs först när det globala ordbytet är gjort OCH formen promoverats.
+
+VAD SOM FAKTISKT ÄR BYGGT OCH GODKÄNT (lokalt, opushat, wip/s111-marcus-iteration): anatomin rubrikrad + undertext alltid båda renderade, höjden konstant 70 px på båda radtyperna, chevron och tid centrerade mot hela raden med 0,0 px avvikelse, tiden i vit pill (PersonsList Pill-formen, 7,91:1 textkontrast), ingen text klippt. Höjdlåset mätt mot 1-, 2-, 3- och 4-siffriga tal.
+
+MENINGEN KORTADES för att rymmas med centrerad tid: "3 nya saknar deltagarinfo" i stället för "3 nya deltagare saknar deltagarinfo" (201 px behov mot 171 tillgängliga). Marcus valde den framför alternativet att sätta bakgrund på siffran — skälet var hans eget: ordet "nya" bär betydelsen.
 <!-- SECTION:NOTES:END -->

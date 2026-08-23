@@ -4,7 +4,7 @@ title: 'Skiva: Divergens på anmälningssidan — tre varianter, tre lägen'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:18'
-updated_date: '2026-08-22 23:24'
+updated_date: '2026-08-23 13:22'
 labels:
   - ready-for-human
 dependencies:
@@ -26,7 +26,7 @@ Anmälningssidan får tre radikalt olika varianter växlingsbara på en dev-rout
 - [x] #3 Minst en variant bär personlistans radanatomi med anmälningsdata (initialcirkel, namn som länk, undertext 'N dagar sedan · Eventnamn', status som egen kolumn med reserverad plats)
 - [x] #4 I varje variant leder en rad som behöver kopplas om till resolutionen — inget separat knappelement i raden
 - [x] #5 Ingen variant bär betydelse enbart genom färg
-- [ ] #6 Marcus väljer EN variant; valet citeras daterat på kortet
+- [x] #6 Marcus väljer EN variant; valet citeras daterat på kortet
 <!-- AC:END -->
 
 ## Definition of Done
@@ -38,3 +38,17 @@ Anmälningssidan får tre radikalt olika varianter växlingsbara på en dev-rout
 - [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 - [x] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MARCUS VAL 2026-08-23, AC #6: variant B.
+
+Verbatim: "vad det gäller anmälningssidan så är ju B bäst, men vi måste ju få in vilket event anmälan tillhör. Och kanske en filtreringsgrej högst upp."
+
+Valet är därmed gjort och citerat. Divergensfasen är över; A och C är kvar i koden tills konvergensen (299.4) river prototyp-substratet.
+
+FORMEN HAR ITERERATS EFTER VALET och ligger i LOKALA, OPUSHADE commits på grenen wip/s111-marcus-iteration — INTE i main. Det som byggts ovanpå B: eventnamnet i radens undertext via Hems eventIdentitet(), tiden utflyttad till egen högerställd kolumn (Hems anatomi), statusen flyttad till rad 2 med min-h-6-golv, filterpanelen med dimensionerna Period/Event/Typ/Ort, EventValjare med opt-in-omfattning, och period som dimension i stället för pill-rad.
+
+Kortet står kvar To Do med avsikt: DoD #3 (CI grön per jobb) kan inte bockas eftersom arbetet aldrig pushats och därmed aldrig setts av CI.
+<!-- SECTION:NOTES:END -->
