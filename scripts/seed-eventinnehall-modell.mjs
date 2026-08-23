@@ -33,6 +33,18 @@
 //   npm run seed:eventinnehall -- --dry-run   # planera, skriv inget
 //   npm run seed:eventinnehall                # skapa (idempotent)
 //
+// PROD-KÖRNINGEN (TASK-309.9, ADR-125 § 8) — samma MEDVETNA prod-väg som
+// create-eventinnehall-modell.mjs: basen anges som ARGUMENT (`--bas
+// <baseId>`), aldrig ur config. Utan `--bas` seedas staging precis som
+// tidigare. `--bas <baseId>` som SKILJER SIG från staging kräver DESSUTOM
+// miljövariabeln AIRTABLE_PROD_GODKAND_AV_MARCUS satt till EXAKT samma
+// bas-ID — annars VÄGRAR skriptet (resolveTargetBaseId, delad logik/samma
+// form som schema-skriptet). Token: STAGING_AIRTABLE_TOKEN är scopad ENDAST
+// till staging (.env.seed.example) — en prod-körning kräver att Marcus
+// sätter en prod-scopad PAT inline på kommandoraden. Staging-mutexen
+// (kravStagingLedigt) hoppas över vid en prod-körning — den bevakar
+// staging-kontention, inte prod.
+//
 // Exit: 0 = OK (inkl. "redan seedat, inget att göra"), 1 = guard-/config-fel,
 // 2 = Airtable-API-fel.
 
@@ -178,8 +190,36 @@ export function validateConfig(config) {
   return config;
 }
 
+/** Miljövariabeln som bär Marcus GO i klartext för en icke-staging-körning
+ *  (TASK-309.9, ADR-125 § 8) — samma variabel/logik som
+ *  create-eventinnehall-modell.mjs. Duplicerad MEDVETET, inte importerad:
+ *  samma "fristående Node-skript utan byggkedja"-princip som
+ *  scripts/provision-attachments-bucket.mjs § MILJÖ redan etablerar för
+ *  STAGING_PROJECT_REF/PROD_PROJECT_REF. */
+export const PROD_GODKAND_ENV_VAR = 'AIRTABLE_PROD_GODKAND_AV_MARCUS';
+
+/** --dry-run: planera, skriv inget. --bas <baseId>: rikta körningen mot en
+ *  annan bas än staging (TASK-309.9) — anges explicit, aldrig ur config. */
 export function parseArgs(argv) {
-  return { dryRun: argv.includes('--dry-run') };
+  const basIndex = argv.indexOf('--bas');
+  const bas = basIndex === -1 ? undefined : argv[basIndex + 1];
+  return { dryRun: argv.includes('--dry-run'), bas };
+}
+
+/** Se create-eventinnehall-modell.mjs för fullt resonemang — identisk logik. */
+export function resolveTargetBaseId({ bas, stagingBaseId, godkandEnv }) {
+  if (bas === undefined || bas === stagingBaseId) {
+    return stagingBaseId;
+  }
+  if (godkandEnv !== bas) {
+    throw new Error(
+      `VÄGRAR: basen "${bas}" skiljer sig från staging ("${stagingBaseId}"). Skrivning mot en ` +
+        `icke-staging-bas kräver miljövariabeln ${PROD_GODKAND_ENV_VAR}=<baseId> satt till EXAKT ` +
+        `samma bas-ID på kommandoraden — Marcus GO i klartext (ADR-125 § 8). Satt värde: ` +
+        `${godkandEnv === undefined ? '(saknas)' : `"${godkandEnv}"`}.`,
+    );
+  }
+  return bas;
 }
 
 /** Planera Platser-seedet mot befintliga rader (by Namn). */
@@ -294,30 +334,49 @@ async function createRecords(baseId, tableName, fieldsList, token, throttleMs) {
 
 async function main() {
   let args;
+  let targetBaseId;
   try {
     validateConfig(CONFIG);
     args = parseArgs(process.argv.slice(2));
+    targetBaseId = resolveTargetBaseId({
+      bas: args.bas,
+      stagingBaseId: CONFIG.expectedBaseId,
+      godkandEnv: process.env[PROD_GODKAND_ENV_VAR],
+    });
   } catch (err) {
     console.error(`❌ Guard-/konfigurationsfel: ${err.message}`);
     process.exit(1);
   }
 
+  const korMotProd = targetBaseId !== CONFIG.expectedBaseId;
+
   const token = process.env.STAGING_AIRTABLE_TOKEN;
   if (!token) {
     console.error(
       '❌ STAGING_AIRTABLE_TOKEN saknas i env. Lokalt: .env.seed (gitignorad; se ' +
-        '.env.seed.example).',
+        `.env.seed.example).${
+          korMotProd
+            ? ' En prod-körning kräver en prod-scopad PAT satt inline på kommandoraden, ' +
+              'aldrig i .env.seed (se docs/reference/atkomst-och-nycklar.md § ' +
+              '"Prod-deploy av bilagespåret").'
+            : ''
+        }`,
     );
     process.exit(1);
   }
 
-  kravStagingLedigt('lokal seed:eventinnehall');
+  // Staging-mutexen bevakar staging-kontention — irrelevant för en prod-körning.
+  if (!korMotProd) {
+    kravStagingLedigt('lokal seed:eventinnehall');
+  }
 
   try {
-    console.log(`🔍 Läser befintliga Platser/Eventinnehåll-rader ur ${CONFIG.expectedBaseId} …`);
+    console.log(
+      `🔍 Läser befintliga Platser/Eventinnehåll-rader ur ${targetBaseId}${korMotProd ? ' (PROD)' : ''} …`,
+    );
     const [existingPlatser, existingEventinnehall] = await Promise.all([
-      listAll(CONFIG.expectedBaseId, CONFIG.tables.platser, token, CONFIG.requestThrottleMs),
-      listAll(CONFIG.expectedBaseId, CONFIG.tables.eventinnehall, token, CONFIG.requestThrottleMs),
+      listAll(targetBaseId, CONFIG.tables.platser, token, CONFIG.requestThrottleMs),
+      listAll(targetBaseId, CONFIG.tables.eventinnehall, token, CONFIG.requestThrottleMs),
     ]);
 
     const platserToCreate = planPlatser(existingPlatser);
@@ -354,29 +413,39 @@ async function main() {
       process.exit(0);
     }
 
+    // Klistervänlig sammanfattning i slutet — samma motiv som
+    // create-eventinnehall-modell.mjs § SAMMANFATTNING (TASK-309.9).
+    const skapadeRader = [];
+
     if (platserToCreate.length > 0) {
       console.log(`🛠️  Skapar ${platserToCreate.length} Platser-rad(er) …`);
       const created = await createRecords(
-        CONFIG.expectedBaseId,
+        targetBaseId,
         CONFIG.tables.platser,
         platserToCreate,
         token,
         CONFIG.requestThrottleMs,
       );
-      for (const r of created) console.log(`   • ${r.fields.Namn} — ${r.id}`);
+      for (const r of created) {
+        console.log(`   • ${r.fields.Namn} — ${r.id}`);
+        skapadeRader.push(`Platser."${r.fields.Namn}" — ${r.id}`);
+      }
     }
 
     if (eventinnehallToCreate.length > 0) {
       console.log(`🛠️  Skapar ${eventinnehallToCreate.length} Eventinnehåll-rad(er) …`);
       const fieldsList = eventinnehallToCreate.map(buildEventinnehallFields);
       const created = await createRecords(
-        CONFIG.expectedBaseId,
+        targetBaseId,
         CONFIG.tables.eventinnehall,
         fieldsList,
         token,
         CONFIG.requestThrottleMs,
       );
-      for (const r of created) console.log(`   • ${r.fields.Namn} — ${r.id}`);
+      for (const r of created) {
+        console.log(`   • ${r.fields.Namn} — ${r.id}`);
+        skapadeRader.push(`Eventinnehåll."${r.fields.Namn}" — ${r.id}`);
+      }
 
       const fylldRecord = created.find(
         (r) => r.fields.Event === FYLLD_KOMBINATION.Event && r.fields.Typ === FYLLD_KOMBINATION.Typ,
@@ -387,17 +456,26 @@ async function main() {
           `🛠️  Skapar ${agendaFields.length} Agendapunkter-rader för "${fylldRecord.fields.Namn}" …`,
         );
         const createdAgenda = await createRecords(
-          CONFIG.expectedBaseId,
+          targetBaseId,
           CONFIG.tables.agendapunkter,
           agendaFields,
           token,
           CONFIG.requestThrottleMs,
         );
         console.log(`   • ${createdAgenda.length} agendapunkter skapade.`);
+        skapadeRader.push(
+          `Agendapunkter: ${createdAgenda.length} rader för "${fylldRecord.fields.Namn}" (${createdAgenda.map((a) => a.id).join(', ')})`,
+        );
       }
     }
 
     console.log('✅ Klart.');
+    if (skapadeRader.length > 0) {
+      console.log(
+        `\n═══ SAMMANFATTNING — klistra in i data-model.md:s ${korMotProd ? 'prod' : 'staging'}-kolumn ═══`,
+      );
+      for (const rad of skapadeRader) console.log(rad);
+    }
     process.exit(0);
   } catch (err) {
     if (err instanceof GuardError) {

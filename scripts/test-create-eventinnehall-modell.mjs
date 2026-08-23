@@ -21,8 +21,10 @@ import {
   buildCreateTableBody,
   CONFIG,
   findTableByName,
+  PROD_GODKAND_ENV_VAR,
   parseArgs,
   planFields,
+  resolveTargetBaseId,
   validateConfig,
 } from './create-eventinnehall-modell.mjs';
 
@@ -320,6 +322,59 @@ test('buildCreateTableBody: Eventinnehåll-tabellens Event-fält bär exakt 6 va
 test('parseArgs: --dry-run sätter dryRun', () => {
   assert.equal(parseArgs(['--dry-run']).dryRun, true);
   assert.equal(parseArgs([]).dryRun, false);
+});
+
+test('parseArgs: --bas läser värdet direkt efter flaggan; saknas flaggan är bas undefined', () => {
+  assert.equal(parseArgs(['--bas', 'app8uGPrVCVOm6LfD']).bas, 'app8uGPrVCVOm6LfD');
+  assert.equal(parseArgs([]).bas, undefined);
+  assert.equal(parseArgs(['--dry-run']).bas, undefined);
+});
+
+// ---------------------------------------------------------------------------
+// resolveTargetBaseId — prod-låset (TASK-309.9, ADR-125 §8). Bevisat i BÅDA
+// riktningarna: utan miljövariabeln VÄGRAR, med den (satt till EXAKT samma
+// bas-ID) går den vidare. Ren funktion — inget nätverk, ingen mock av API:t
+// behövs (samma hermetiska stil som resten av denna svit).
+// ---------------------------------------------------------------------------
+
+const STAGING = CONFIG.expectedBaseId;
+const PROD = 'app8uGPrVCVOm6LfD';
+
+test('resolveTargetBaseId: ingen --bas → staging, ingen gate', () => {
+  assert.equal(
+    resolveTargetBaseId({ bas: undefined, stagingBaseId: STAGING, godkandEnv: undefined }),
+    STAGING,
+  );
+});
+
+test('resolveTargetBaseId: --bas = staging explicit → staging, ingen gate', () => {
+  assert.equal(
+    resolveTargetBaseId({ bas: STAGING, stagingBaseId: STAGING, godkandEnv: undefined }),
+    STAGING,
+  );
+});
+
+test('resolveTargetBaseId: --bas = prod UTAN miljövariabeln → VÄGRAR', () => {
+  assert.throws(
+    () => resolveTargetBaseId({ bas: PROD, stagingBaseId: STAGING, godkandEnv: undefined }),
+    /VÄGRAR.*AIRTABLE_PROD_GODKAND_AV_MARCUS/s,
+  );
+});
+
+test('resolveTargetBaseId: --bas = prod med miljövariabeln satt till ANNAN bas → VÄGRAR', () => {
+  assert.throws(
+    () =>
+      resolveTargetBaseId({ bas: PROD, stagingBaseId: STAGING, godkandEnv: 'appNagotAnnat0000' }),
+    /VÄGRAR/,
+  );
+});
+
+test('resolveTargetBaseId: --bas = prod MED miljövariabeln satt till EXAKT samma bas → går vidare (torrkörning tillåts fortsätta)', () => {
+  assert.equal(resolveTargetBaseId({ bas: PROD, stagingBaseId: STAGING, godkandEnv: PROD }), PROD);
+});
+
+test('PROD_GODKAND_ENV_VAR: exporteras som exakt "AIRTABLE_PROD_GODKAND_AV_MARCUS"', () => {
+  assert.equal(PROD_GODKAND_ENV_VAR, 'AIRTABLE_PROD_GODKAND_AV_MARCUS');
 });
 
 // ---------------------------------------------------------------------------

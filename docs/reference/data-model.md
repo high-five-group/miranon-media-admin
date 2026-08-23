@@ -325,6 +325,16 @@ körningar. **Samtliga ID:n nedan är staging** (`apphjj8Q7lkXCMsL4`) —
 **prod-kolumnen är "skapas efter Marcus GO i klartext per tabell" (ADR-125
 § 8), additivt men irreversibelt i data när rader fötts.**
 
+**HUR (TASK-309.9):** `scripts/create-eventinnehall-modell.mjs` fick en
+MEDVETEN prod-väg — basen anges som `--bas <baseId>` (aldrig ur config), och
+en icke-staging-bas kräver dessutom miljövariabeln
+`AIRTABLE_PROD_GODKAND_AV_MARCUS=<baseId>` satt till EXAKT samma bas-ID
+(Marcus GO i klartext). Exakt kommando + `seed`-motsvarigheten:
+[`docs/reference/atkomst-och-nycklar.md`](atkomst-och-nycklar.md)
+§ "Prod-deploy av bilagespåret (ADR-125, TASK-309.9)". Efter körning
+klistras skriptets slutliga `SAMMANFATTNING`-block (tabell-/fält-ID:n) in i
+prod-kolumnen nedan — denna sektion uppdateras då, inte innan.
+
 **PLATTFORMSVÄGG (testad skarpt, se skriptets filhuvud):** `Eventinnehåll.Namn`
 kan INTE vara både formel OCH primärfält — Airtables Meta-API vägrar
 formelfält vid tabellskapelse (`UNSUPPORTED_FIELD_TYPE_FOR_CREATE`), och

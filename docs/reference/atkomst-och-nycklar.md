@@ -212,6 +212,166 @@ inblandad): `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` för
 konvergerar i PROD) kräver Marcus egen körning — en agent kan inte rikta
 kommandon mot prod-Supabase-projektet (`scripts/deny-prod-ref.sh`).
 
+## Prod-deploy av bilagespåret (ADR-125, TASK-309.9)
+
+Bilagespårets promovering (eventinnehåll, platser, en server-side renderare
+— [ADR-125](../decisions/ADR-125-bilagornas-modell-och-promoveringsvag.md))
+blir skarp i prod i EXAKT denna ordning, kopierbar rakt av i Marcus egen
+terminal (eller via `!`-prefixet). **Ordningen är inte kosmetisk:** körs
+(c) FÖRE (a)/(b) svarar de sex nya EF:erna 500 mot tabeller som inte finns
+— schema FÖRE deploy, alltid.
+
+### (a) Prod-schemat — tre tabeller + fält, per tabell efter GO i klartext
+
+`scripts/create-eventinnehall-modell.mjs` fick en MEDVETEN prod-väg
+(TASK-309.9): basen anges som `--bas <baseId>` (aldrig ur config), och en
+icke-staging-bas kräver DESSUTOM miljövariabeln
+`AIRTABLE_PROD_GODKAND_AV_MARCUS=<baseId>` satt till EXAKT samma bas-ID —
+Marcus GO i klartext ÄR kommandot han kör, ingen agent kan sätta den åt
+honom. Token: en NY, egen prod-scopad PAT (`schema.bases:read` +
+`schema.bases:write`, ENDAST prod-basen `app8uGPrVCVOm6LfD`) — `.env.seed`s
+`AIRTABLE_SCHEMA_TOKEN` är scopad ENDAST till staging och funkar inte här;
+sätt den nya token-strängen INLINE, aldrig i `.env.seed`.
+
+Valfritt, men billigt: kör med `--dry-run` FÖRST för att se planen utan att
+skriva något (samma flagga fungerar oförändrat mot prod-basen).
+
+```bash
+AIRTABLE_SCHEMA_TOKEN="<prod-scopad-PAT-schema>" \
+AIRTABLE_PROD_GODKAND_AV_MARCUS=app8uGPrVCVOm6LfD \
+node scripts/create-eventinnehall-modell.mjs --bas app8uGPrVCVOm6LfD --dry-run
+
+AIRTABLE_SCHEMA_TOKEN="<prod-scopad-PAT-schema>" \
+AIRTABLE_PROD_GODKAND_AV_MARCUS=app8uGPrVCVOm6LfD \
+node scripts/create-eventinnehall-modell.mjs --bas app8uGPrVCVOm6LfD
+```
+
+Utan `AIRTABLE_PROD_GODKAND_AV_MARCUS`, eller med ett värde som inte är
+EXAKT `app8uGPrVCVOm6LfD`, VÄGRAR skriptet med ett tydligt skäl — provat i
+båda riktningar i `scripts/test-create-eventinnehall-modell.mjs`
+(TASK-309.9). Skriptet skriver ut ett `SAMMANFATTNING`-block i slutet med
+alla skapade tabell-/fält-ID:n i formen `Tabell.Fält (typ) — id` — klistra
+in det blocket i
+[`data-model.md`](data-model.md) § "Bilagornas datamodell" § Tabell-ID:n,
+prod-kolumnen (ersätter "skapas efter GO (skiva 8)").
+
+### (b) Seed — Rönninge + de sju Eventinnehåll-raderna
+
+Samma `--bas`/`AIRTABLE_PROD_GODKAND_AV_MARCUS`-form, men EN ANNAN token:
+`scripts/seed-eventinnehall-modell.mjs` skriver RECORDS, inte schema, och
+läser sin token ur `STAGING_AIRTABLE_TOKEN` (namnet är historiskt — samma
+separationsprincip som ADR-060 punkt 4 — värdet måste vara en prod-scopad
+PAT här, `data.records:read` + `data.records:write`, ENDAST prod-basen).
+Kör EFTER (a) — tabellerna/fälten måste redan finnas:
+
+```bash
+STAGING_AIRTABLE_TOKEN="<prod-scopad-PAT-records>" \
+AIRTABLE_PROD_GODKAND_AV_MARCUS=app8uGPrVCVOm6LfD \
+node scripts/seed-eventinnehall-modell.mjs --bas app8uGPrVCVOm6LfD --dry-run
+
+STAGING_AIRTABLE_TOKEN="<prod-scopad-PAT-records>" \
+AIRTABLE_PROD_GODKAND_AV_MARCUS=app8uGPrVCVOm6LfD \
+node scripts/seed-eventinnehall-modell.mjs --bas app8uGPrVCVOm6LfD
+```
+
+Idempotent (läser befintliga rader by `Namn` innan skrivning) — en omkörning
+skapar inga dubbletter. Klistra in slutens `SAMMANFATTNING`-block (record-ID:n)
+i samma `data-model.md`-sektion.
+
+### (c) Edge Functions — kontrollera, sedan deploya
+
+Samma skript/samma prod-ref som § "Prod-EF-deploy körs via SKRIPTET" i
+repots `CLAUDE.md` och § "Prod-provisionering av externa Storage-resurser"
+ovan — prod-refen är `lvjsfnphlauldxqlncpl`, bokförd här i samma form som
+den sektionen redan använder (aldrig i ett kommando en AGENT kör —
+`scripts/deny-prod-ref.sh` fäller det mekaniskt):
+
+```bash
+bash scripts/fas4-prod-deploy.sh --kontrollera lvjsfnphlauldxqlncpl
+```
+
+Läs utdatan: sex NYA EF:er (`get-document-sources`, `get-event-contents`,
+`get-places`, `save-event-content`, `save-event-text`,
+`save-place-standard`) ska synas i deploy-planen (nu allowlistade,
+TASK-309.9), plus bekräfta att bucketen `bilagor` (TASK-308) fortsatt är
+konvergerad. Godkänns läget:
+
+```bash
+bash scripts/fas4-prod-deploy.sh --deploya lvjsfnphlauldxqlncpl
+```
+
+Detta deployar HELA allowlisten (inte bara de sex nya) — `deploy-prod-
+functions.sh` känner inget begrepp "bara det som ändrats i denna skiva", så
+även de TRE ÄNDRADE EF:erna (`generate-event-attachment`, `preview-receipt`,
+`send-receipt-email` — ADR-125 § 5, pdf-lib → `renderaMallPdf`) och alla
+tidigare allowlistade funktioner deployas om. Det är avsett (samma
+"deploya om oförändrat är billigt, missa en ändrad EF är dyrt"-avvägning
+som redan gäller för hela allowlisten) — inte en biverkning att oroa sig för.
+
+### (d) Verifiera — läs `UPDATED_AT`, inte `VERSION`
+
+Per `CLAUDE.md` § "Prod-EF-deploy körs via SKRIPTET": en deploy bumpar
+`VERSION` på ALLA funktioner oavsett om de rördes. Kontrollera i stället att
+`UPDATED_AT` för dessa NIO funktioner faktiskt rör sig vid denna deploy —
+`npx supabase functions list --project-ref lvjsfnphlauldxqlncpl`:
+
+- Sex nya: `get-document-sources`, `get-event-contents`, `get-places`,
+  `save-event-content`, `save-event-text`, `save-place-standard`
+- Tre ändrade: `generate-event-attachment`, `preview-receipt`,
+  `send-receipt-email`
+
+### (e) Klienten — ingen handling
+
+Vercel bygger och deployar `src/` automatiskt när skiva 5:s (`TASK-309.6`)
+gren landar via merge-kön mot `main`. Inget separat kommando.
+
+### (f) Röktest i prod (kortets AC #4)
+
+Marcus, i prod: skapa en bekräftelsebilaga för ett riktigt event → filen
+syns i bilage-listan → bifogbar på Åtgärds-sidan → kvittoförhandsgranskningen
+visar den NYA mallen utan vattenstämpel (bekräftar `ENVIRONMENT`s `test:
+false`-gren, ADR-125 § 4).
+
+### (g) Rotera DocRaptor-nyckeln — EFTER verifierat röktest
+
+Nyckeln exponerades i chatten 2026-08-23 (S108 Del 14 § D, bokfört som öppen
+skuld i samma avsnitt: *"rotera nyckeln i DocRaptor när promoveringen är
+verifierad i prod, sätt om båda secrets"*). Med (f) grönt:
+
+1. Rotera `DOCRAPTOR_API_KEY` i DocRaptors dashboard (ny nyckel, gammal
+   invalideras).
+1. Sätt om BÅDA miljöernas secret via `--env-file` (samma form som
+   Del 14 § D redan etablerade för staging — `.env.docraptor`, gitignorad
+   via `.env.*`, ALDRIG committad):
+
+   ```bash
+   echo "DOCRAPTOR_API_KEY=<ny-nyckel>" > .env.docraptor
+   npx supabase secrets set --env-file .env.docraptor --project-ref pqtshyierkdgwdnxuirz
+   npx supabase secrets set --env-file .env.docraptor --project-ref lvjsfnphlauldxqlncpl
+   rm .env.docraptor
+   ```
+
+1. Verifiera via `npx supabase secrets list --project-ref <ref>` (digest
+   ändrad, ingen värdeläsning möjlig — samma begränsning som § "Prod-
+   provisionering..." ovan redan noterar).
+
+### Bifynd, bokfört — inte åtgärdat i denna skiva
+
+**`INVITE_REDIRECT_URL` saknas i prod-secrets** (mätt 2026-08-23 av
+`fas4-prod-deploy.sh --kontrollera` — `secrets list` visar NAMN, inte
+värden, se § ovan; detta bifynd är inte oberoende re-verifierat av
+bygg-agenten som skrev denna rad, eftersom `scripts/deny-prod-ref.sh`
+strukturellt hindrar en agent från att rikta kommandon mot prod-refen).
+`invite-user/index.ts:260` faller tillbaka på `undefined` när variabeln
+saknas — `redirectTo` skickas då inte alls, och Supabase Auth faller
+tillbaka på projektets bara `site_url`
+(`https://admin.miranon.dev`, verifierat satt i `supabase/config.toml`
+rad 376) i stället för den avsedda accept-sidan `/valkommen`
+(`additional_redirect_urls`, ADR-092). Ingen 500, inget hårt fel — men
+inbjudningslänken landar på appens rotsida i stället för accept-flödet.
+Pre-existing, orört av `TASK-309.9` — bokförs här så att nästa som rör
+auth-/inbjudningsytan i prod inte behöver återupptäcka det.
+
 ## Fil-åtkomstmatris per värdapp — MÄTNING, inte förklaring
 
 TCC-behörighet (macOS "Integritet och säkerhet → Filer och mappar") sätts
