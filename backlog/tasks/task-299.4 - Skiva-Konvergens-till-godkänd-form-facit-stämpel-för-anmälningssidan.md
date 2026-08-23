@@ -4,6 +4,7 @@ title: 'Skiva: Konvergens till godkänd form + facit-stämpel för anmälningssi
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:20'
+updated_date: '2026-08-23 14:05'
 labels:
   - ready-for-human
 dependencies:
@@ -20,7 +21,7 @@ Den variant Marcus valde itereras tills han är helt nöjd — konvergensfasen. 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Vinnarvarianten itererad till Marcus uttryckliga godkännande i klartext
+- [x] #1 Vinnarvarianten itererad till Marcus uttryckliga godkännande i klartext
 - [ ] #2 Facit-manifest finns på tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json med ytan 'anmälningssidan' och bilder för alla tre lägen (ofiltrerad, åtgärdskö, tomt)
 - [ ] #3 Manifestet deklarerar uttryckligen vilka bilder som är facit och vilka som är iterationssteg eller förkastade alternativ
 - [ ] #4 Marcus har stämplat manifestet via kanalseparationen; godkand-fältet bär av, datum, citat och sha
@@ -36,3 +37,9 @@ Den variant Marcus valde itereras tills han är helt nöjd — konvergensfasen. 
 - [ ] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 - [ ] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-08-23 (S111 resume 2, fönster 1) — AC #1 bockad: vinnarvarianten (B) itererad till Marcus uttryckliga godkännande i klartext. Kedjan: Del 5 *"Ser bra ut. Jag godkänner bevakningsraden och åtgärdskö-raden nu"* (Hems rader) → resume 2: Marcus begärde dokumentsidans eventväljarform + ikon på "Alla event" (*"Jag vill ha den andra eventväljaren som har ett annat utseende, den som sitter på dokument-sidan. Och 'Alla event' kan väl få en ikon då precis som 'Delade dokument' har på dokumentsidan, det blir väl snyggt?"*), byggt i 7ac7b973 (form="fristaende" + CalendarRange), granskat på dev-servern ur worktreen → *"Det blir bra."* Formen som ska in i facit-manifestet = wip/s111-marcus-iteration vid 7ac7b973 (+ ordbytet som följer).
+<!-- SECTION:NOTES:END -->
