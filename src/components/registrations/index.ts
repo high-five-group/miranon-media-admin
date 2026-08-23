@@ -1,1 +1,1 @@
-export { AnmalningarList } from './AnmalningarList';
+export { AnmalningarSida } from './AnmalningarSida';

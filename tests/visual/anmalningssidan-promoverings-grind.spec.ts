@@ -20,9 +20,8 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * kunnat konstrueras i efterhand — inte ens ur facit-PNG:erna, eftersom de
  * inte bär roll/namn-strukturen `ariaSnapshot` jämför.
  *
- * [FAS 2 — ÅTERSTÅR I DENNA SKIVAS ANDRA COMMIT] Efter flippen pekar
- * `gotoYta()` mot `/mer/anmalningar` medan
- * referenserna är ORÖRDA. En grön körning betyder därför EN sak: trädet är
+ * [FAS 2 — GJORD] Efter flippen pekar `gotoYta()` mot `/mer/anmalningar`
+ * medan referenserna är ORÖRDA. En grön körning betyder därför EN sak: trädet är
  * identiskt före och efter promoveringen — formen följde med filflytten
  * (`VariantB.tsx` → `registrations/AnmalningarSida.tsx`), ingenting annat
  * smög in.
@@ -213,21 +212,17 @@ function mockaYtan(network: NetworkFixture, rader: ReturnType<typeof grindRader>
 }
 
 /**
- * FÖRE-läget: variant B på dev-routen, INNAN flippen.
+ * EFTER-läget: den PROMOVERADE, ovillkorliga ytan.
  *
- * [FAS 1 — 2026-08-23] Detta är den ENDA funktion som ändras vid flippen.
- * Den pekar nu mot `?variant=b` och prototypens `?lage=`-växel; efter
- * promoveringen pekar den mot `/mer/anmalningar` respektive den skarpa
- * sidans egen `?visa=atgardskon`, medan referenserna under `__aria__/`
- * förblir ORÖRDA. Det är precis den asymmetrin som gör en grön körning i
- * FAS 2 till ett bevis: adressen bytte, formen fick inte göra det.
+ * [FAS 2 GJORD — 2026-08-23] Detta är den ENDA funktion som ändrades vid
+ * flippen. Den pekade mot `?variant=b` och prototypens `?lage=`-växel; nu
+ * pekar den mot `/mer/anmalningar` respektive den skarpa sidans egen
+ * `?visa=atgardskon`, medan referenserna under `__aria__/` är ORÖRDA sedan
+ * FAS 1. Det är precis den asymmetrin som gör en grön körning till ett
+ * bevis: adressen bytte, formen fick inte göra det.
  */
 async function gotoYta(page: Page, lage: 'lista' | 'atgardskon'): Promise<void> {
-  await page.goto(
-    lage === 'atgardskon'
-      ? '/dev/anmalningar-prototyp?variant=b&lage=atgardskon'
-      : '/dev/anmalningar-prototyp?variant=b&lage=lista',
-  );
+  await page.goto(lage === 'atgardskon' ? '/mer/anmalningar?visa=atgardskon' : '/mer/anmalningar');
   await expect(page.getByTestId(YTA)).toBeVisible();
 }
 
@@ -263,6 +258,32 @@ test.describe('promoverings-grinden — ariaSnapshot mot den promoverade ytan (A
     await expect(page.getByText('Inga anmälningar än.')).toBeVisible();
     await expect(page.getByTestId(YTA)).toMatchAriaSnapshot({
       name: 'anmalningssidan-tomt.aria.yml',
+    });
+  });
+});
+
+/**
+ * STALE PROTOTYP-URL — degraderar utan krasch och utan halvbyggd yta.
+ *
+ * Före rivningen villkorade `?variant=` och `?lage=` vad routen renderade.
+ * En länk som fortfarande bär den gamla queryn (bokmärke, delad URL, öppen
+ * flik) träffar nu en app där INGEN fil läser `?variant=`. Samma AC-form som
+ * `personer-promoverings-grind.spec.ts` § stale `?variant=`, och beviset är
+ * MEKANISKT: en stale URL måste rendera byte för byte samma träd som ingen
+ * query alls — inte en tom yta, inte ett kvarvarande prototyp-fragment.
+ *
+ * ATT DEN GAMLA ADRESSEN `/dev/anmalningar-prototyp` ÄR BORTA är en annan
+ * sak och prövas inte här: routen är riven, så den träffar router-trädets
+ * egen 404-gren, inte denna yta.
+ */
+test.describe('stale ?variant=-URL degraderar till den enda formen', () => {
+  test('?variant=b renderar identiskt med ingen query alls', async ({ page, network }) => {
+    mockaYtan(network, grindRader());
+    await page.goto('/mer/anmalningar?variant=b');
+    await expect(page.getByTestId(YTA)).toBeVisible();
+    await expect(page.getByText('Anna Andersson')).toBeVisible();
+    await expect(page.getByTestId(YTA)).toMatchAriaSnapshot({
+      name: 'anmalningssidan-lista.aria.yml',
     });
   });
 });
@@ -314,7 +335,7 @@ test.describe('a11y-golvet — axe på samma ytor som formgrinden (DoD #5)', () 
     network,
   }) => {
     mockaYtan(network, grindRader());
-    await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&typ=Kurs');
+    await page.goto('/mer/anmalningar?typ=Kurs');
     await expect(page.getByTestId(YTA)).toBeVisible();
     await expect(page.getByText('Anna Andersson')).toBeVisible();
     await page.getByRole('button', { name: /^(Visa|Dölj) filter/ }).click();
@@ -334,7 +355,7 @@ test.describe('a11y-golvet — axe på samma ytor som formgrinden (DoD #5)', () 
       http.get(EF('get-events'), () => json({ events: grindEvents() })),
       http.get(EF('get-registrations'), () => json({ error: 'x' }, 404)),
     );
-    await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+    await page.goto('/mer/anmalningar');
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta anmälningarna');
     await axeNoll(page);
   });

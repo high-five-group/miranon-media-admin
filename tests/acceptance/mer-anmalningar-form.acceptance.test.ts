@@ -8,20 +8,46 @@ import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
 /**
- * TASK-299.3 — anmälningssidans divergens-prototyp (`/dev/anmalningar-
- * prototyp`, tre varianter × tre lägen). Prototypen är THROWAWAY (ADR-102/
- * 103) och rivs med hela `dev/anmalningar-prototyp/`-katalogen när Marcus
- * valt variant (AC #6) — den här filen rivs i SAMMA landning, TASK-299.4
- * skriver konvergensens riktiga acceptance-täckning från grunden.
+ * ANMÄLNINGSSIDANS FORM — `/mer/anmalningar` (TASK-299.5, `ADR-103` B1/B2).
  *
- * Täckning mot kortets Hårda krav: DoD #5 (axe 0 på varje ny/ändrad yta i
- * ALLA fyra tillstånd — lista/filtrerat/tomt/fel — per variant) + DoD #6
- * (höjdlåset som BETEENDE, inte påstående) + AC #4 (raden är sin egen
- * trigger, aldrig ett separat knappelement).
+ * FILEN ÄR FLYTTAD, INTE NYSKRIVEN. Den föddes som
+ * `tests/acceptance/anmalningar-prototyp.acceptance.test.ts` och vaktade då
+ * divergens-prototypens tre varianter × tre lägen. När variant B
+ * promoverades till skarp yta följde bevisen med formen (`git mv`, samma
+ * disciplin som `VariantB.tsx` → `registrations/AnmalningarSida.tsx`):
+ * täckningen är för dyrköpt för att kastas och skrivas om från grunden, och
+ * en omskrivning hade tappat exakt de regressionsvakter som föddes ur
+ * verkliga fynd under konvergensen (mobilradens namnbredd, höjdlåsets
+ * `min-h-6`-golv, eventnamns-uppslaget när anmälans egen fritext saknas).
+ *
+ * VAD SOM ÄNDRADES VID FLYTTEN, och ingenting mer:
+ *
+ *   1. **Adresserna.** `/mer/anmalningar` →
+ *      `/mer/anmalningar`; `&lage=atgardskon` → `?visa=atgardskon` (den
+ *      skarpa sidans egen axel); `&lage=tomt` → en TOM `get-registrations`,
+ *      eftersom tomläget här uppstår av datan i stället för av en växel.
+ *   2. **Variant A och C är borta.** De förkastades av Marcus (TASK-299.3
+ *      AC #6, polval "B bäst") och revs med resten av substratet, så deras
+ *      tester saknar yta att köra mot. Det de bevisade om variant B står
+ *      kvar oförändrat.
+ *
+ * Täckning: DoD #5 (axe 0 i alla fyra tillstånd — lista/filtrerat/tomt/fel)
+ * · DoD #6 (höjdlåset som BETEENDE, inte påstående) · AC #4 (raden är sin
+ * egen trigger, aldrig ett separat knappelement) · filtrets fyra axlar
+ * (Period · Typ · Ort · Event) · mobilradens läsbarhet vid 375 px.
+ *
+ * ── FÖRHÅLLANDET TILL `mer-anmalningar.acceptance.test.ts` ───────────────
+ *
+ * Den filen är task-1.4:s ursprungliga skarv och äger SIDANS KONTRAKT: att
+ * den nås från Mer-landningen, sorteringen senaste-först, fokus → `<h1>`,
+ * tomt- och felläget, rad-klick → anmälda-vyn. Den är UTVIDGAD, inte
+ * omskriven, med radanatomin och åtgärdsradens väg till resolutionen.
+ * DENNA fil äger FORMENS detaljer. Gränsen är avsiktlig: sidans kontrakt
+ * överlever en framtida omformning, formens detaljer gör det inte.
  *
  * Samma hermetiska fixturvärld och `EF('get-registrations')`-överskuggning
- * som `mer-anmalningar.acceptance.test.ts` — dev-routen läser samma
- * `queryKeys.registrations.all` → samma EF, event-lösa gren.
+ * som syskonfilen — samma `queryKeys.registrations.all`, samma EF,
+ * event-lösa gren.
  */
 
 type Row = z.infer<typeof RegistrationSchema>;
@@ -144,112 +170,93 @@ function blandadeRader(): Row[] {
   ];
 }
 
-const VARIANTER = ['a', 'b', 'c'] as const;
+const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
-test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalningar-prototyp)', () => {
-  for (const variant of VARIANTER) {
-    test.describe(`Variant ${variant.toUpperCase()}`, () => {
-      test(`lista-läget renderar rader och axe 0 (variant ${variant})`, async ({
-        page,
-        network,
-      }) => {
-        mockRegistrations(network, blandadeRader());
-        await page.goto(`/dev/anmalningar-prototyp?variant=${variant}&lage=lista`);
+/** Axe över hela den renderade sidan; violations skrivs ut läsbart. */
+async function axeNoll(page: Page): Promise<void> {
+  const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+  expect(
+    resultat.violations,
+    resultat.violations.map((v) => `[${v.impact ?? 'utan impact'}] ${v.id}: ${v.help}`).join('\n'),
+  ).toEqual([]);
+}
 
-        await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
-        await expect(page.getByText('Carl Carlsson')).toBeVisible();
-        await expect(page.getByText('Bo Bengtsson')).toBeVisible();
-        await expect(page.getByText('Eva Ek')).toBeVisible();
-        // Ofiltrerat läge visar ALLA tre — ingen atgardskon-filtrering.
-        // exact: true — variant B:s filterpanel bär räknaren "Visar 3 av 3
-        // anmälningar", som innehåller SAMMA delsträng som rubrikraden
-        // (samma strict-mode-klass som periodannonseringen nedan).
-        await expect(page.getByText('3 anmälningar', { exact: true })).toBeVisible();
+test.describe('Anmälningssidans form (TASK-299.5 — /mer/anmalningar)', () => {
+  test('lista-läget renderar rader och axe 0', async ({ page, network }) => {
+    mockRegistrations(network, blandadeRader());
+    await page.goto('/mer/anmalningar');
 
-        const results = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-          .analyze();
-        expect(results.violations).toEqual([]);
-      });
+    await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
+    await expect(page.getByText('Carl Carlsson')).toBeVisible();
+    await expect(page.getByText('Bo Bengtsson')).toBeVisible();
+    await expect(page.getByText('Eva Ek')).toBeVisible();
+    // Ofiltrerat läge visar ALLA tre — ingen atgardskon-filtrering.
+    // exact: true — filterpanelen bär räknaren "Visar 3 av 3 anmälningar",
+    // som innehåller SAMMA delsträng som rubrikraden (strict-mode-klassen).
+    await expect(page.getByText('3 anmälningar', { exact: true })).toBeVisible();
 
-      test(`åtgärdskö-läget filtrerar till behoverAtgard och axe 0 (variant ${variant})`, async ({
-        page,
-        network,
-      }) => {
-        mockRegistrations(network, blandadeRader());
-        await page.goto(`/dev/anmalningar-prototyp?variant=${variant}&lage=atgardskon`);
+    await axeNoll(page);
+  });
 
-        await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
-        // Endast Bo (Avviker) och Eva (Utan event) — Carl (OK) filtreras bort.
-        await expect(page.getByText('Bo Bengtsson')).toBeVisible();
-        await expect(page.getByText('Eva Ek')).toBeVisible();
-        await expect(page.getByText('Carl Carlsson')).toHaveCount(0);
-        await expect(
-          page.getByText('2 anmälningar kunde inte kopplas till rätt event'),
-        ).toBeVisible();
+  test('åtgärdskö-läget filtrerar till behoverAtgard och axe 0', async ({ page, network }) => {
+    mockRegistrations(network, blandadeRader());
+    await page.goto('/mer/anmalningar?visa=atgardskon');
 
-        const results = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-          .analyze();
-        expect(results.violations).toEqual([]);
-      });
+    await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
+    // Endast Bo (Avviker) och Eva (Utan event) — Carl (OK) filtreras bort.
+    await expect(page.getByText('Bo Bengtsson')).toBeVisible();
+    await expect(page.getByText('Eva Ek')).toBeVisible();
+    await expect(page.getByText('Carl Carlsson')).toHaveCount(0);
+    await expect(page.getByText('2 anmälningar kunde inte kopplas till rätt event')).toBeVisible();
 
-      test(`tomt läge visar vänlig text, inga fel, axe 0 (variant ${variant})`, async ({
-        page,
-        network,
-      }) => {
-        mockRegistrations(network, blandadeRader());
-        await page.goto(`/dev/anmalningar-prototyp?variant=${variant}&lage=tomt`);
+    await axeNoll(page);
+  });
 
-        await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
-        await expect(page.getByText('Inga anmälningar än.')).toBeVisible();
-        await expect(page.getByRole('alert')).toHaveCount(0);
+  test('åtgärdskö-läget bär återvägen till hela listan', async ({ page, network }) => {
+    // Prototypen saknade den här länken (den filtrerade via sin egen
+    // ?lage=-växel); den skarpa sidan filtrerar via ?visa=atgardskon, som
+    // "Rensa filter" inte når eftersom den inte är en filter-dimension.
+    // Utan återvägen vore läget en återvändsgränd — se AnmalningarSida.tsx
+    // § ÅTERVÄGEN. Länken NOLLSTÄLLER parametern explicit.
+    mockRegistrations(network, blandadeRader());
+    await page.goto('/mer/anmalningar?visa=atgardskon');
 
-        const results = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-          .analyze();
-        expect(results.violations).toEqual([]);
-      });
+    await page.getByRole('link', { name: 'Visa alla anmälningar' }).click();
 
-      test(`fel (4xx) visar role=alert, axe 0 (variant ${variant})`, async ({ page, network }) => {
-        mockRegistrations(network, [], { status: 404 });
-        await page.goto(`/dev/anmalningar-prototyp?variant=${variant}&lage=lista`);
+    await expect(page).toHaveURL(/\/mer\/anmalningar$/);
+    await expect(page.getByText('Carl Carlsson')).toBeVisible();
+    await expect(page.getByText('3 anmälningar', { exact: true })).toBeVisible();
+  });
 
-        await expect(page.getByRole('alert')).toContainText('Kunde inte hämta anmälningarna');
+  test('tomt läge visar vänlig text, inga fel, axe 0', async ({ page, network }) => {
+    // Tomläget uppstår av DATAN, inte av en växel: prototypens ?lage=tomt
+    // tvingade fram en tom lista för bildtagning och revs med resten.
+    mockRegistrations(network, []);
+    await page.goto('/mer/anmalningar');
 
-        const results = await new AxeBuilder({ page })
-          .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
-          .analyze();
-        expect(results.violations).toEqual([]);
-      });
-    });
-  }
+    await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
+    await expect(page.getByText('Inga anmälningar än.')).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(0);
+
+    await axeNoll(page);
+  });
+
+  test('fel (4xx) visar role=alert, axe 0', async ({ page, network }) => {
+    mockRegistrations(network, [], { status: 404 });
+    await page.goto('/mer/anmalningar');
+
+    await expect(page.getByRole('alert')).toContainText('Kunde inte hämta anmälningarna');
+
+    await axeNoll(page);
+  });
 
   test.describe('AC #4 — raden är sin egen trigger, inget separat knappelement', () => {
-    test('variant A: en åtgärdsrad har EXAKT en interaktiv yta (knappen) och den öppnar resolutionen', async ({
+    test('en OK-rad är en riktig länk till eventet, ingen knapp i raden', async ({
       page,
       network,
     }) => {
       mockRegistrations(network, blandadeRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=a&lage=lista');
-
-      const lista = page.getByRole('list', { name: 'Anmälningar' });
-      const bosRad = lista.locator('li', { hasText: 'Bo Bengtsson' });
-      // Exakt EN knapp, noll länkar — ingen separat "Koppla till event"-knapp
-      // UTANFÖR raden (den gamla formen), och ingen nästlad interaktivitet.
-      await expect(bosRad.getByRole('button')).toHaveCount(1);
-      await expect(bosRad.getByRole('link')).toHaveCount(0);
-
-      await bosRad.getByRole('button').click();
-      await expect(page.getByRole('dialog', { name: 'Koppla till rätt event' })).toBeVisible();
-    });
-
-    test('variant B: en OK-rad är en riktig länk till eventet, ingen knapp i raden', async ({
-      page,
-      network,
-    }) => {
-      mockRegistrations(network, blandadeRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await page.goto('/mer/anmalningar');
 
       const lista = page.getByRole('list', { name: 'Anmälningar' });
       const carlsRad = lista.locator('li', { hasText: 'Carl Carlsson' });
@@ -260,14 +267,33 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       await expect(page).toHaveURL(/\/event\/recEvent1\/anmalda/);
     });
 
-    test('variant C: en åtgärdsrad (Utan event) är en knapp som öppnar resolutionen, ingen separat knapp', async ({
+    test('en Avviker-rad är en knapp som öppnar resolutionen — ingen nästlad interaktivitet', async ({
       page,
       network,
     }) => {
+      // Den gamla formen (task-1.4:s AnmalningarList) bar en SEPARAT
+      // "Koppla till event"-knapp som syskon till radens länk-kort. Här är
+      // raden SIN EGEN trigger: exakt EN interaktiv yta, en riktig <button>,
+      // noll länkar — så axe `nested-interactive` inte ens kan uppstå.
       mockRegistrations(network, blandadeRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=c&lage=lista');
+      await page.goto('/mer/anmalningar');
 
-      const evasRad = page.locator('li', { hasText: 'Eva Ek' });
+      const lista = page.getByRole('list', { name: 'Anmälningar' });
+      const bosRad = lista.locator('li', { hasText: 'Bo Bengtsson' });
+      await expect(bosRad.getByRole('button')).toHaveCount(1);
+      await expect(bosRad.getByRole('link')).toHaveCount(0);
+
+      await bosRad.getByRole('button').click();
+      await expect(page.getByRole('dialog', { name: 'Koppla till rätt event' })).toBeVisible();
+    });
+
+    test('en Utan-event-rad öppnar resolutionens andra rubrik', async ({ page, network }) => {
+      mockRegistrations(network, blandadeRader());
+      await page.goto('/mer/anmalningar');
+
+      const evasRad = page
+        .getByRole('list', { name: 'Anmälningar' })
+        .locator('li', { hasText: 'Eva Ek' });
       await expect(evasRad.getByRole('button')).toHaveCount(1);
       await expect(evasRad.getByRole('link')).toHaveCount(0);
 
@@ -276,38 +302,12 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     });
   });
 
-  test('DoD #6 — höjdlåset: kort med och utan avviker-badge har samma höjd (variant A)', async ({
-    page,
-    network,
-  }) => {
-    // Variant A är den yta där höjdlåset FAKTISKT riskerar att brytas:
-    // badgen sitter på en EGEN rad under namn/undertext (Roselli-kortets
-    // stack), så villkorad rendering hade adderat en hel textrad — till
-    // skillnad från variant B/C, där badgen är en flex-SYSKON-kolumn och
-    // aldrig kan påverka radens höjd oavsett rendering (mätt: en avsiktlig
-    // negativkontroll som tog bort variant C:s `invisible`-reservation gav
-    // INGEN mätbar höjdskillnad där, just för att badgen aldrig var den
-    // höjd-avgörande sidan av flex-raden).
-    mockRegistrations(network, blandadeRader());
-    await page.goto('/dev/anmalningar-prototyp?variant=a&lage=lista');
-
-    const lista = page.getByRole('list', { name: 'Anmälningar' });
-    const okKort = lista.locator('li', { hasText: 'Carl Carlsson' });
-    const avvikerKort = lista.locator('li', { hasText: 'Bo Bengtsson' });
-
-    const okBox = await okKort.boundingBox();
-    const avvikerBox = await avvikerKort.boundingBox();
-    expect(okBox).not.toBeNull();
-    expect(avvikerBox).not.toBeNull();
-    expect(Math.abs((okBox?.height ?? 0) - (avvikerBox?.height ?? 0))).toBeLessThanOrEqual(1);
-  });
-
-  test('DoD #6 — höjdlåset: rader med och utan åtgärdsbehov har samma höjd (variant B)', async ({
+  test('DoD #6 — höjdlåset: rader med och utan åtgärdsbehov har samma höjd', async ({
     page,
     network,
   }) => {
     mockRegistrations(network, blandadeRader());
-    await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+    await page.goto('/mer/anmalningar');
 
     const lista = page.getByRole('list', { name: 'Anmälningar' });
     // Carl = OK (ingen status/åtgärd), Bo = Avviker (status+åtgärd synlig).
@@ -332,28 +332,12 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     expect(Math.abs((okBox?.height ?? 0) - (atgardBox?.height ?? 0))).toBeLessThanOrEqual(1);
   });
 
-  test('DoD #6 — höjdlåset gäller även variant C (grupperad)', async ({ page, network }) => {
-    mockRegistrations(network, blandadeRader());
-    await page.goto('/dev/anmalningar-prototyp?variant=c&lage=lista');
-
-    const okRad = page.locator('li', { hasText: 'Carl Carlsson' });
-    const atgardRad = page.locator('li', { hasText: 'Bo Bengtsson' });
-
-    const okBox = await okRad.boundingBox();
-    const atgardBox = await atgardRad.boundingBox();
-    expect(okBox).not.toBeNull();
-    expect(atgardBox).not.toBeNull();
-    // Samma ≤1px sub-pixel-tolerans som variant B ovan (mätt 1px skillnad
-    // här, borderTop 0px på alla rader — textrendering, inte DOM-strukturen).
-    expect(Math.abs((okBox?.height ?? 0) - (atgardBox?.height ?? 0))).toBeLessThanOrEqual(1);
-  });
-
-  test('AC #3 — variant B bär personlistans radanatomi med anmälningsdata', async ({
+  test('AC #3 — raden bär personlistans radanatomi med anmälningsdata', async ({
     page,
     network,
   }) => {
     mockRegistrations(network, blandadeRader());
-    await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+    await page.goto('/mer/anmalningar');
 
     const lista = page.getByRole('list', { name: 'Anmälningar' });
     const carlsRad = lista.locator('li', { hasText: 'Carl Carlsson' });
@@ -374,13 +358,14 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     await expect(bosRad.getByText('Behöver kopplas')).toBeVisible();
   });
 
-  test('reviewfynd 2026-08-22 — undertexten slår upp EVENTETS namn när anmälans egen eventNamn saknas (variant B)', async ({
+  test('reviewfynd 2026-08-22 — undertexten slår upp EVENTETS namn när anmälans egen eventNamn saknas', async ({
     page,
     network,
   }) => {
-    // Reproducerar EXAKT Marcus mätning i staging (`?variant=b&lage=lista`,
-    // "Sentinel Bekraftelse"): eventId satt, eventmatchning 'OK', men
-    // anmälans egen `eventNamn`-fritext null. Före fixen tappade undertexten
+    // Reproducerar EXAKT Marcus mätning i staging (konvergensfasens
+    // `?variant=b&lage=lista`, "Sentinel Bekraftelse"): eventId satt,
+    // eventmatchning 'OK', men anmälans egen `eventNamn`-fritext null.
+    // Före fixen tappade undertexten
     // eventnamnet tyst; nu slås eventets RIKTIGA namn upp via `eventId`.
     mockEvents(network, periodTestEvents());
     mockRegistrations(network, [
@@ -393,14 +378,14 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
         inskickad: '2026-09-14T10:00:00.000Z',
       }),
     ]);
-    await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+    await page.goto('/mer/anmalningar');
 
     const rad = page.getByRole('list', { name: 'Anmälningar' }).locator('li');
     await expect(rad).toContainText('Vinterkurs Umeå');
     await expect(rad).not.toContainText('null');
   });
 
-  test.describe('Periodfiltret (Marcus review 2026-08-22) — variant B', () => {
+  test.describe('Periodfiltret (Marcus review 2026-08-22)', () => {
     function periodRader(): Row[] {
       return [
         reg({
@@ -433,7 +418,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     test('"Alla" (default) visar samtliga tre, ingen URL-parameter', async ({ page, network }) => {
       mockEvents(network, periodTestEvents());
       mockRegistrations(network, periodRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await page.goto('/mer/anmalningar');
 
       expect(page.url()).not.toContain('period='); // clearOnDefault: ingen ?period= i URL:en
       await expect(page.getByText('3 anmälningar', { exact: true })).toBeVisible();
@@ -448,7 +433,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     }) => {
       mockEvents(network, periodTestEvents());
       mockRegistrations(network, periodRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await page.goto('/mer/anmalningar');
 
       // Perioden är sedan 2026-08-23 en DIMENSION i filterpanelen, inte en
       // pill-rad ovanför listan (Marcus: "Kör period som dimension i
@@ -477,7 +462,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     }) => {
       mockEvents(network, periodTestEvents());
       mockRegistrations(network, periodRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&period=past');
+      await page.goto('/mer/anmalningar?period=past');
 
       await expect(page.getByText('1 anmälan', { exact: true })).toBeVisible();
       await expect(page.getByText('Tage Tidigare')).toBeVisible();
@@ -501,7 +486,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
           inskickad: '2026-09-13T10:00:00.000Z',
         }),
       ]);
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=atgardskon&period=upcoming');
+      await page.goto('/mer/anmalningar?visa=atgardskon&period=upcoming');
 
       // Åtgärdskön (behoverAtgard) + period=upcoming: Kalle (Avviker, kommande)
       // syns; Ute (Utan event, ej klassificerbar) och Tage (tidigare) inte.
@@ -527,7 +512,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
           inskickad: '2026-09-14T10:00:00.000Z',
         }),
       ]);
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&period=past');
+      await page.goto('/mer/anmalningar?period=past');
 
       await expect(page.getByText('Inga anmälningar för tidigare event.')).toBeVisible();
       await expect(page.getByRole('alert')).toHaveCount(0);
@@ -539,7 +524,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     });
   });
 
-  test.describe('Event-dimensionerna (Marcus review 2026-08-23) — variant B', () => {
+  test.describe('Event-dimensionerna (Marcus review 2026-08-23)', () => {
     const EVENT_KURS_SKOVDE = 'recEventKursSko1';
     const EVENT_FORELASNING_GBG = 'recEventForelGbg';
 
@@ -603,7 +588,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     test('alternativen härleds ur RADERNAS event, i facit-ordning', async ({ page, network }) => {
       mockEvents(network, dimensionsEvents());
       mockRegistrations(network, dimensionsRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await page.goto('/mer/anmalningar');
       await oppnaFiltret(page);
 
       // Typ/ort sv-alfabetiskt, nolläget alltid först. Endast värden som
@@ -626,7 +611,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       // Samtliga rader bär anmälans egen ort "Skövde" (reg-fixturens default);
       // bara EVENTETS ort skiljer dem åt. Väljer filtret Göteborg måste alltså
       // uppslaget ha gått via eventId — annars hade Frida fallit bort.
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&ort=G%C3%B6teborg');
+      await page.goto('/mer/anmalningar?ort=G%C3%B6teborg');
 
       await expect(page.getByText('Frida Forelasning')).toBeVisible();
       await expect(page.getByText('Karin Kursdeltagare')).toHaveCount(0);
@@ -639,7 +624,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     }) => {
       mockEvents(network, dimensionsEvents());
       mockRegistrations(network, dimensionsRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await page.goto('/mer/anmalningar');
 
       // Ofiltrerat: Ute syns, märkt "Utan event" i undertexten.
       await expect(page.getByText('Ute Utanhelt')).toBeVisible();
@@ -648,12 +633,12 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       // Med ett aktivt dimensionsfilter bär hon inget attribut att matcha mot
       // och faller bort — samma regel periodfiltret redan följer. Bortfallet
       // syns i panelfotens räknare (3 → 1), och hennes hemvist är åtgärdskön.
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&typ=Kurs');
+      await page.goto('/mer/anmalningar?typ=Kurs');
       await expect(page.getByText('Ute Utanhelt')).toHaveCount(0);
       await oppnaFiltret(page);
       await expect(page.getByText('Visar 1 av 3 anmälningar')).toBeVisible();
 
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=atgardskon');
+      await page.goto('/mer/anmalningar?visa=atgardskon');
       await expect(page.getByText('Ute Utanhelt')).toBeVisible();
     });
 
@@ -664,7 +649,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       mockEvents(network, dimensionsEvents());
       mockRegistrations(network, dimensionsRader());
       // Kurs ∧ Göteborg finns inte: perioden HAR rader, filtren matchar noll.
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&typ=Kurs&ort=G%C3%B6teborg');
+      await page.goto('/mer/anmalningar?typ=Kurs&ort=G%C3%B6teborg');
 
       await expect(page.getByText('Inga anmälningar matchar filtren.')).toBeVisible();
       // Period-/lägestomlägets copy får INTE visas här.
@@ -683,7 +668,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     }) => {
       mockEvents(network, dimensionsEvents());
       mockRegistrations(network, dimensionsRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&typ=Kurs');
+      await page.goto('/mer/anmalningar?typ=Kurs');
 
       const tratt = page.getByRole('button', { name: /^(Visa|Dölj) filter/ });
       // Aktivt filter syns även med STÄNGD panel (MOJ-affordanslärdomen).
@@ -692,7 +677,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       await oppnaFiltret(page);
       await page.getByRole('button', { name: 'Rensa filter' }).click();
 
-      await expect(page).toHaveURL(/\/dev\/anmalningar-prototyp\?variant=b&lage=lista$/);
+      await expect(page).toHaveURL(/\/mer\/anmalningar$/);
       await expect(tratt).toBeFocused();
       await expect(page.getByText('Ute Utanhelt')).toBeVisible();
     });
@@ -703,9 +688,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     }) => {
       mockEvents(network, dimensionsEvents());
       mockRegistrations(network, dimensionsRader());
-      await page.goto(
-        '/dev/anmalningar-prototyp?variant=b&lage=lista&period=upcoming&typ=F%C3%B6rel%C3%A4sning',
-      );
+      await page.goto('/mer/anmalningar?period=upcoming&typ=F%C3%B6rel%C3%A4sning');
 
       await expect(page.getByText('Frida Forelasning')).toBeVisible();
       await expect(page.getByText('Karin Kursdeltagare')).toHaveCount(0);
@@ -729,7 +712,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
    * namn, så två likanamnade event kan särskiljas; (3) dess nolläge är
    * väljarens egen "Alla event"-rad, inte en dropdown-post.
    */
-  test.describe('Event-dimensionen (Marcus 2026-08-23) — variant B', () => {
+  test.describe('Event-dimensionen (Marcus 2026-08-23)', () => {
     const EVENT_KOMMANDE = 'recEventDimKommande';
     const EVENT_TIDIGARE = 'recEventDimTidigare';
     /** Samma NAMN som det kommande, annan ort och period — ID-matchningen
@@ -803,7 +786,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     }) => {
       mockEvents(network, eventDimEvents());
       mockRegistrations(network, eventDimRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await page.goto('/mer/anmalningar');
       await oppnaFiltret(page);
 
       await expect(page.getByTestId('filter-status')).toHaveCount(0);
@@ -821,7 +804,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     }) => {
       mockEvents(network, eventDimEvents());
       mockRegistrations(network, eventDimRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await page.goto('/mer/anmalningar');
       await oppnaValjaren(page);
 
       const popover = page.getByTestId('event-valjare-popover');
@@ -841,7 +824,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     }) => {
       mockEvents(network, eventDimEvents());
       mockRegistrations(network, eventDimRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await page.goto('/mer/anmalningar');
       await expect(page.getByText('Kim Kommande')).toBeVisible();
       await oppnaValjaren(page);
 
@@ -864,7 +847,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       mockRegistrations(network, eventDimRader());
       // Kim och Tina pekar på event med IDENTISKT namn ("Resor i medvetandet
       // 1"). Ett namnfilter hade tagit båda; ID-filtret tar exakt en.
-      await page.goto(`/dev/anmalningar-prototyp?variant=b&lage=lista&event=${EVENT_NAMNTVILLING}`);
+      await page.goto(`/mer/anmalningar?event=${EVENT_NAMNTVILLING}`);
 
       await expect(page.getByText('Tina Tvilling')).toBeVisible();
       await expect(page.getByText('Kim Kommande')).toHaveCount(0);
@@ -877,7 +860,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     }) => {
       mockEvents(network, eventDimEvents());
       mockRegistrations(network, eventDimRader());
-      await page.goto(`/dev/anmalningar-prototyp?variant=b&lage=lista&event=${EVENT_KOMMANDE}`);
+      await page.goto(`/mer/anmalningar?event=${EVENT_KOMMANDE}`);
 
       const tratt = page.getByRole('button', { name: /^(Visa|Dölj) filter/ });
       await expect(tratt).toHaveAccessibleName('Visa filter, 1 aktivt filterval');
@@ -888,7 +871,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
         .getByRole('option', { name: 'Alla event' })
         .click();
 
-      await expect(page).toHaveURL(/\/dev\/anmalningar-prototyp\?variant=b&lage=lista$/);
+      await expect(page).toHaveURL(/\/mer\/anmalningar$/);
       await expect(page.getByText('Tage Tidigare')).toBeVisible();
       // Panelen står kvar ÖPPEN (därav "Dölj"); poängen är att räknar-ledet
       // ", N aktiva filterval" är borta — axeln är nollställd, inte bara tom.
@@ -898,14 +881,12 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     test('Rensa filter nollställer ÄVEN event-axeln', async ({ page, network }) => {
       mockEvents(network, eventDimEvents());
       mockRegistrations(network, eventDimRader());
-      await page.goto(
-        `/dev/anmalningar-prototyp?variant=b&lage=lista&typ=Kurs&event=${EVENT_KOMMANDE}`,
-      );
+      await page.goto(`/mer/anmalningar?typ=Kurs&event=${EVENT_KOMMANDE}`);
       await oppnaFiltret(page);
       await expect(page.getByText('Visar 1 av 3 anmälningar')).toBeVisible();
 
       await page.getByRole('button', { name: 'Rensa filter' }).click();
-      await expect(page).toHaveURL(/\/dev\/anmalningar-prototyp\?variant=b&lage=lista$/);
+      await expect(page).toHaveURL(/\/mer\/anmalningar$/);
       await expect(page.getByText('Kim Kommande')).toBeVisible();
       await expect(page.getByText('Tage Tidigare')).toBeVisible();
     });
@@ -913,7 +894,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     test('axe 0 med väljaren ÖPPEN i filterpanelen', async ({ page, network }) => {
       mockEvents(network, eventDimEvents());
       mockRegistrations(network, eventDimRader());
-      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await page.goto('/mer/anmalningar');
       await oppnaValjaren(page);
 
       const results = await new AxeBuilder({ page })
@@ -930,9 +911,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       mockRegistrations(network, eventDimRader());
       // Kommande-perioden HAR rader, men det valda eventet är ett tidigare —
       // perioden är alltså inte tom, filtren matchar noll.
-      await page.goto(
-        `/dev/anmalningar-prototyp?variant=b&lage=lista&period=upcoming&event=${EVENT_TIDIGARE}`,
-      );
+      await page.goto(`/mer/anmalningar?period=upcoming&event=${EVENT_TIDIGARE}`);
 
       await expect(page.getByText('Inga anmälningar matchar filtren.')).toBeVisible();
       await expect(page.getByRole('alert')).toHaveCount(0);
@@ -944,12 +923,9 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
     });
   });
 
-  test('AC #5 — statusen bär text/ikon, aldrig färg ensam (variant B)', async ({
-    page,
-    network,
-  }) => {
+  test('AC #5 — statusen bär text/ikon, aldrig färg ensam', async ({ page, network }) => {
     mockRegistrations(network, blandadeRader());
-    await page.goto('/dev/anmalningar-prototyp?variant=b&lage=atgardskon');
+    await page.goto('/mer/anmalningar?visa=atgardskon');
 
     // Två synliga "Behöver kopplas"-badgar (Bo + Eva) — TEXT bär betydelsen,
     // inte enbart en färgplatta.
@@ -977,13 +953,10 @@ test.describe('Radanatomin vid MOBIL bredd — namnkolumnen får inte klämmas i
    * Golvet 80 px är inte en smakgräns utan en läsbarhetsgräns: under det
    * ryms inte ens ett kort förnamn före ellipsen.
    */
-  test('variant B: namnet har läsbar bredd vid 375 px även på en åtgärdsrad', async ({
-    page,
-    network,
-  }) => {
+  test('namnet har läsbar bredd vid 375 px även på en åtgärdsrad', async ({ page, network }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     mockRegistrations(network, blandadeRader());
-    await page.goto('/dev/anmalningar-prototyp?variant=b&lage=atgardskon');
+    await page.goto('/mer/anmalningar?visa=atgardskon');
 
     // Åtgärdsraden är den som bär statusbadgen — det värsta fallet.
     const badge = page.getByText('Behöver kopplas').first();

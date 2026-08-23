@@ -4,31 +4,43 @@ import { useId, useMemo, useState } from 'react';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button, Dialog, DialogTrigger, Modal } from '@/components/primitives';
 import { MessageBox } from '@/components/primitives/MessageBox';
-import { displayName } from '@/components/registrations/registration-display';
 import { useRelinkRegistration } from '@/data/mutations/registrationEventLink';
 import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
 import { queryKeys } from '@/queries/keys';
+import { displayName } from './registration-display';
 
 /**
- * [PROTOTYPE, TASK-299.3] Resolutionens RAD-BÄRANDE trigger (PRD `TASK-299`
+ * Resolutionens RAD-BÄRANDE trigger på `/mer/anmalningar` (PRD `TASK-299`
  * AC #4 — "en rad som behöver kopplas om leder till resolutionen … inget
- * separat knappelement i raden"). DUPLICERAD ur `registrations/
- * KopplaTillEventDialog.tsx` MEDVETET, samma precedent som `PersonsList.tsx`s
- * k13-duplicering (ADR-102 B3, kommentaren vid `Pill`): en prototyp breddar
- * aldrig en skarp, redan levererad komponent innan Marcus godkänt formen.
+ * separat knappelement i raden").
  *
- * ENDA SKILLNADEN mot originalet: TRIGGER-ELEMENTET är `children` (radens
- * fulla visuella innehåll — avatar, namn, undertext, statuskolumn) i stället
- * för en liten `"Koppla till event"`-etikett-knapp. Dialogens kropp,
- * mutation (`useRelinkRegistration`, ORÖRD produktionshook) och felhantering
- * är en verbatim kopia — prototypen är därför FULLT FUNKTIONELL mot riktig
- * staging-data (T66/UI.md tillåter en stub för mutationer, men originalet
- * fanns redan färdigbyggt och testat, så en riktig koppling är billigare och
- * säkrare än att hitta på en attrapp).
+ * PROMOVERAD (TASK-299.5, `ADR-103` B1/B2): filen är konvergensfasens egen,
+ * flyttad hit ur `src/components/dev/anmalningar-prototyp/` med `git mv` —
+ * den är formens resolutionsväg och följer därför med formen, med sin
+ * historik intakt (`git log --follow`). Den ENDA ändringen vid flytten är
+ * detta docblock.
  *
- * Kastas med resten av `dev/anmalningar-prototyp/` när Marcus valt variant —
- * TASK-299.4 skriver konvergensens riktiga radkomponent från grunden.
+ * ── VARFÖR TVÅ RESOLUTIONS-KOMPONENTER I SAMMA KATALOG ───────────────────
+ *
+ * Syskonet `KopplaTillEventDialog.tsx` bär SAMMA dialog med en liten
+ * `"Koppla till event"`-etikett-knapp som trigger. Denna bär `children` som
+ * trigger — radens eget namn-element, med `after:absolute after:inset-0` så
+ * hela `<li>` blir klickytan (`PersonsList.tsx`s helradsteknik). Det är
+ * skillnaden AC #4 kräver: den enda interaktiva ytan per rad är ANTINGEN en
+ * riktig länk (OK-rader) ELLER en riktig knapp (åtgärdsrader), aldrig båda
+ * och aldrig nästlade (axe `nested-interactive`).
+ *
+ * Dupliceringen var medveten under prototypfasen (`ADR-102` B3: en prototyp
+ * breddar aldrig en skarp, redan levererad komponent innan Marcus godkänt
+ * formen) och står kvar efter promoveringen därför att syskonet FORTFARANDE
+ * har egna konsumenter — det är inte en kvarglömd kopia. En sammanslagning
+ * till en komponent med två trigger-former är ett eget, senare pass, inte
+ * något denna promovering ska smyga in.
+ *
+ * Dialogens kropp, mutationen (`useRelinkRegistration`, ORÖRD
+ * produktionshook) och felhanteringen är en verbatim kopia av syskonets, så
+ * ytan har varit fullt funktionell mot riktig data sedan prototypfasen.
  */
 export function AnmalningRadResolution({
   registration,
