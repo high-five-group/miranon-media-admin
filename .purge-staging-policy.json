@@ -53,6 +53,32 @@
       "exactMatchField": "Namn",
       "exactMatchPattern": "^Deltagarinformation – ZZ-belaggning-fixtur.*\\.pdf$",
       "linkGuard": false
+    },
+    {
+      "name": "save-event-text-eventplanering-sentineler",
+      "table": "Eventplanering",
+      "filterByFormula": "FIND('ZZ-TASK-309.3-', {Ort}) = 1",
+      "exactMatchField": "Ort",
+      "exactMatchPattern": "^ZZ-TASK-309\\.3-.*$",
+      "linkGuard": true,
+      "linkGuardExcludeFields": ["Eventtyp", "Plats", "Agendapunkter"]
+    },
+    {
+      "name": "save-place-standard-platser-sentineler",
+      "table": "Platser",
+      "filterByFormula": "FIND('ZZ-TASK-309.3-', {Namn}) = 1",
+      "exactMatchField": "Namn",
+      "exactMatchPattern": "^ZZ-TASK-309\\.3-.*$",
+      "linkGuard": true,
+      "linkGuardExcludeFields": ["Eventplanering"]
+    },
+    {
+      "name": "save-event-text-agendapunkter-sentineler",
+      "table": "Agendapunkter",
+      "filterByFormula": "FIND('ZZ-TASK-309.3-', {Text}) = 1",
+      "exactMatchField": "Text",
+      "exactMatchPattern": "^ZZ-TASK-309\\.3-.*$",
+      "linkGuard": false
     }
   ],
   "storageTargets": [

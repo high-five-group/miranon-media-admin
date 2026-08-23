@@ -47,6 +47,15 @@ export {
   DocumentSourcesPlatsSchema,
   DocumentSourcesSchema,
 } from './DocumentSources.schema';
+export type {
+  AgendaDagInput,
+  EventinnehallFalt,
+  EventTextFalt,
+  PlatsFalt,
+  SaveEventContentInput,
+  SaveEventTextInput,
+  SavePlaceStandardInput,
+} from './DocumentWrites.schema';
 export { EngagementSchema } from './Engagement.schema';
 export { EventSchema } from './Event.schema';
 export { EventNoteSchema } from './EventNote.schema';

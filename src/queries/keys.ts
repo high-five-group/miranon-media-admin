@@ -178,6 +178,27 @@ export const queryKeys = {
     // `dashboard`s "egna nycklar gör scopet exakt"-resonemang.
     latest: (limit: number) => ['activityLog', 'latest', limit] as const,
   },
+  documentSources: {
+    // Bilagornas ifyllnadsunderlag (TASK-309.2 AC #4 / TASK-309.3 AC #4,
+    // ADR-125 § 2) — get-document-sources, PER-EVENT-nyckel (mönster ur
+    // events.notes/attachments.byEvent). Ingen query-hook konsumerar denna
+    // nyckel ÄN (läsvägens UI-yta byggs i en senare skiva, ADR-125 § 6+7)
+    // — den finns här SÅ ATT TASK-309.3:s tre skrivvägar (save-event-text/
+    // save-place-standard/save-event-content) kan invalidera den KORREKT
+    // från dag ett, i stället för att uppfinna en provisorisk nyckel som
+    // måste bytas ut när läsvägens hook väl skrivs.
+    detail: (eventId: string) => ['documentSources', eventId] as const,
+    // ROTEN (TASK-309.3 AC #2): `savePlaceStandard` ändrar en PLATS som
+    // NOLL ELLER FLERA events kan vara länkade till — precis vilka events
+    // vet bara servern (ingen "events på denna plats"-lista finns klient-
+    // side). Invalidering av roten (`exact: false`, React Querys default)
+    // träffar VARJE monterad `detail(eventId)`-post oavsett vilket event,
+    // så ett annat öppet event på samma plats ser den nya standarden utan
+    // en explicit lista av berörda event-ID:n — speglar
+    // `attachments.all`/`activityLog.all`s "prefix, inte en uträknad
+    // delmängd"-resonemang.
+    all: ['documentSources'] as const,
+  },
   dashboard: {
     // Hem-aggregering (Fas 6d). EGNA nycklar, MEDVETET skilda från events.list /
     // registrations.byEvent: Hem-vyns cards hämtar GLOBALA listor (alla event,
