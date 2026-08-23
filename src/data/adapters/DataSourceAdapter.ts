@@ -578,20 +578,32 @@ export interface DataSourceAdapter {
    * `test-docraptor-render` — en staging-only testharness-EF som är
    * MEDVETET utelämnad ur `.prod-functions-allowlist.conf` och alltså
    * saknas i produktion. Anropas metoden mot ett prod-projekt blir svaret
-   * 404, med avsikt: prototypvägen som använder den är dev-gatead
-   * (`src/routes/_authenticated/mer/dokument.tsx` § `protoAktiv`) och når
-   * aldrig en prod-byggd app. Vid promoveringen (`ADR-103`) byter adaptern
-   * adress till den skarpa renderings-EF:en — interfacet är då oförändrat.
+   * 404 — staging-only med avsikt, oavsett anropare.
    *
-   * VARFÖR METODEN ÖVER HUVUD TAGET FINNS, i stället för ett `fetch` i
+   * [UPPDATERAD, TASK-309.8] Denna docblock beskrev tidigare metoden som
+   * nådd via en dev-gatead prototypväg (`?variant=a`/`protoAktiv` i
+   * `dokument.tsx`) som skulle "byta adress till den skarpa renderings-
+   * EF:en vid promoveringen". Den flaggan är nu riven (ADR-103 B2), men
+   * promoveringen (ADR-125 § 4–5) valde en ANNAN väg än den denna docblock
+   * förutsåg: `generate-event-attachment`/`_shared/mall-render.ts`
+   * (Eta + DocRaptor, server-side), inte denna metod. `renderPdfFranHtml`
+   * saknar (mätt, grep) varje anropare i `src/` — trolig kvarleva från
+   * S108 MARCUS-SEKVENS punkt 3 innan renderingsvägen valdes om. Rivning av
+   * själva metoden/dess adapterimplementationer är UTANFÖR denna skivas
+   * scope (mekanisk gate-/mappe-rivning, inte en dead-code-revision) och
+   * bokförs i stället här som öppen skuld.
+   *
+   * VARFÖR METODEN ÖVER HUVUD TAGET FANNS, i stället för ett `fetch` i
    * komponenten: `ADR-057` klausul (a) förbjuder UI-lagret att importera
    * EF-klienten. Prototypkod är inte undantagen från lager-invarianten —
    * den granskas av samma fitness-audit som resten.
    *
    * `html` MÅSTE vara självbärande (stil, typsnitt och bilder som
    * `data:`-URI:er) — renderaren kör i sitt eget nät och når ingenting
-   * relativt. Se `src/components/dokument/prototyp/sjalvbarande.ts`.
-   * `namn` är dokumentnamnet renderaren stämplar jobbet med.
+   * relativt. [RIVET, TASK-309.6] `src/components/dokument/prototyp/
+   * sjalvbarande.ts`, som tidigare byggde denna HTML klient-sidigt, är
+   * riven — servern gör jobbet nu (se ovan). `namn` är dokumentnamnet
+   * renderaren stämplar jobbet med.
    */
   renderPdfFranHtml(html: string, namn: string): Promise<Blob>;
 

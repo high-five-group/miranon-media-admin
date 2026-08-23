@@ -110,17 +110,25 @@
  * INGEN ändring av `get-attachment-download-url`-EF:en. VERIFIERAT LIVE mot
  * staging (TASK-273.4, samma fixturhändelse `recIFrxHZw165ycXk`): Storage-
  * servern svarar då med en riktig `Content-Disposition: attachment`-header
- * (utan parametern: ingen disposition-header alls). Klass B/C: samma
- * blob-URL som förhandsvisningen (byggd färskt per klick) — `download`-
- * attributet honoreras nativt eftersom blob-URL:er redan är same-origin.
+ * (utan parametern: ingen disposition-header alls). Klass C: samma URL som
+ * förhandsvisningen (byggd färskt per klick, se `dokumentKalla.ts`s
+ * filhuvud för leveransvägens historik) — `download`-attributet honoreras
+ * nativt eftersom URL:en redan är signerad av samma anrop.
+ *
+ * [ÄNDRAD, TASK-309.8] Klass B (mall) hade tidigare EGEN förhandsvisning/
+ * nedladdning här (`previewEventTemplate` via `MallRad`) — riven, se
+ * `MallRad`s docblock och `dokumentKalla.ts`s filhuvud. Klass B som
+ * DOKUMENTKLASS på en redan genererad, persisterad bilaga (`AttachmentClass.
+ * EVENT_MALLAD`, badgen nedan) laddas ner som VILKEN ANNAN bilaga som helst
+ * (klass A-vägen).
  *
  * PERSONDATA FÖR KLASS C: TYPEXEMPEL, inte en verklig anmälan (se
  * `preview-receipt/index.ts` § PERSONDATA) — ingen anmälan/betalning är
  * VALD på denna generiska katalograd, och basen saknar ett prisfält
  * oavsett. Eventets namn ÄR verkligt (samma eventId som Dokument-ytans
- * redan valda event). `previewEventTemplate`/`previewReceipt` (klass B/C)
- * når ALDRIG Storage-uppladdningen, Bilagor-radskapelsen eller ett
- * allokerat kvittonummer — SIDOEFFEKTSFRI förhandsvisning (AC #3, TASK-246).
+ * redan valda event). `previewReceipt` (klass C) når ALDRIG Storage-
+ * uppladdningen, Bilagor-radskapelsen eller ett allokerat kvittonummer —
+ * SIDOEFFEKTSFRI förhandsvisning (AC #3, TASK-246).
  *
  * [UTBYGGD, TASK-275.3, ADR-118] RÄCKVIDDSVAL + RÄCKVIDDSLÄGE + BADGES — se
  * amenderings-sidofilen `tasks/sessions/bilagor/s102-dokument-konvergens/
@@ -147,6 +155,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import {
+  ChevronRight,
   Download,
   ExternalLink,
   Files,
@@ -159,6 +168,7 @@ import {
 import { useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
+import type { MallId } from '@/components/dokument/blockDefinitioner';
 import { stegEtikett } from '@/components/dokument/nivaSprak';
 import { RackviddBadge } from '@/components/dokument/RackviddBadge';
 import { EventValjare } from '@/components/events/EventValjare';
@@ -190,13 +200,24 @@ import { queryKeys } from '@/queries/keys';
 
 /* ------------------------------------------------------------------ *
  * KLASS B/C — KOD-NIVÅ-KATALOGER, INTE INSTANS-LISTOR (se Fynd 1 ovan).
- * Oförändrade sedan S100: mall-editorn är uttryckligen senare (PRD task-146
- * § Utanför omfattningen) och kvittogenereringen (klass C) hör till
- * TASK-147.7, obyggd.
+ *
+ * [ÄNDRAD, TASK-309.8, ADR-125 § 6] `MALLAR` bar tidigare EN generisk
+ * placeholder-post utan verklig funktion (förhandsvisning/nedladdning av
+ * en hårdkodad `'deltagarinfo'`-mall, se `MallRad`s docblock). Den är nu
+ * de TVÅ RIKTIGA mallarna genereringsvyn (`GenereringsVy.tsx`) bygger —
+ * samma katalog-data som bar prototypens rivna `ListaVy` (T66-startpunkten,
+ * "klasserna stulna rad för rad"), flyttad hit VERBATIM eftersom listvyn
+ * själv är riven (skiva 7 ersätter kopian med denna, den skarpa). `id` är
+ * nu `MallId` (delad med `blockDefinitioner.ts`/`GenereringsVy.tsx`), inte
+ * en fri sträng — samma disciplin som `BLOCK_TILL_FALT` redan håller.
+ *
+ * `GENERATORER` (kvitto) är OFÖRÄNDRAD sedan S100: kvittogenereringen hör
+ * till TASK-147.7, obyggd, och går inte via genereringsvyn (ADR-125 § 6
+ * nämner den bara som kontext för varför den INTE fick en "Skapa"-knapp).
  * ------------------------------------------------------------------ */
 
 type Mall = {
-  id: string;
+  id: MallId;
   namn: string;
   /** Vilka eventfält mallen fyller i — det som gör den till en MALL. */
   fyllerI: string[];
@@ -204,9 +225,14 @@ type Mall = {
 
 const MALLAR: Mall[] = [
   {
-    id: 'b1',
+    id: 'bekraftelse',
+    namn: 'Bekräftelsebilaga',
+    fyllerI: ['Datum', 'Plats', 'Pris', 'Betalning', 'Innehåll'],
+  },
+  {
+    id: 'deltagarinfo',
     namn: 'Deltagarinformation',
-    fyllerI: ['Eventnamn', 'Datum', 'Ort', 'Lokal', 'Starttid'],
+    fyllerI: ['Datum', 'Plats', 'Praktisk info'],
   },
 ];
 
@@ -1090,8 +1116,27 @@ function BilageRadRow({
  * ersätt-handling) och måste därför bära det själva. Tar du bort `relative`
  * här återuppstår buggen tyst — den syns inte i något statiskt test, bara
  * när någon försöker klicka på något annat på sidan.
+ *
+ * [ÄNDRAD, TASK-309.8] `MallRad`s handlingsyta bar tidigare SAMMA
+ * `DokumentAtgardsKnappar`+`LaddaNerKnapp`-par som `GeneratorRad` (nedan)
+ * fortfarande bär — förhandsvisning/nedladdning av en transient PDF via
+ * `previewEventTemplate`. Den vägen var HÅRDKODAD till `'deltagarinfo'`
+ * (`dokumentKalla.ts`s enda mall var just den), vilket hade förhandsvisat
+ * FEL innehåll för den nytillkomna `'bekraftelse'`-posten (`MALLAR` ovan).
+ * Genereringsvyn (`GenereringsVy.tsx`) äger nu BÅDA jobben för en mall —
+ * "Förhandsgranska först" och "Skapa" — så mall-radens knapp blir en enda
+ * ENTRÉ dit i stället för en andra, felkopplad, preview-väg. `typ: 'mall'`
+ * (den gamla `DokumentKalla`-varianten) är därför riven, se
+ * `dokumentKalla.ts`s filhuvud. `GeneratorRad` (kvitto) är OFÖRÄNDRAD —
+ * den har ingen genereringsvy att peka mot (TASK-147.7, obyggd).
  */
-function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
+function MallRad({ mall }: { mall: Mall }) {
+  // nuqs-paret genereringsvyn läser i `dokument.tsx`s routekomponent
+  // (`vy`/`mall`) — samma nycklar, ingen prop-borrning: `DokumentYta` och
+  // `GenereringsVy` är syskon under samma route, precis som prototypens
+  // egen dispatcher (`GenereringsPrototyp`, riven) läste dem lokalt.
+  const [, setVy] = useQueryState('vy');
+  const [, setMall] = useQueryState('mall');
   return (
     <div data-testid="dokument-mall" className="flex items-start gap-3 py-3">
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
@@ -1107,8 +1152,19 @@ function MallRad({ mall, eventId }: { mall: Mall; eventId: string }) {
         <MetaRad delar={[`Fyller i ${mall.fyllerI.join(', ').toLowerCase()}`]} />
       </span>
       <span className="flex shrink-0 items-center gap-0.5">
-        <DokumentAtgardsKnappar namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
-        <LaddaNerKnapp namn={mall.namn} kalla={{ typ: 'mall', eventId }} />
+        <Button
+          intent="primary"
+          emphasis="subtle"
+          size="sm"
+          className={IKONKNAPP_KLASS}
+          aria-label={`Skapa ${mall.namn}`}
+          onPress={() => {
+            void setMall(mall.id);
+            void setVy('generering');
+          }}
+        >
+          <ChevronRight aria-hidden="true" size={IKON_STORLEK} />
+        </Button>
       </span>
     </div>
   );
@@ -1377,7 +1433,7 @@ function DokumentLista({
             {visaMallar &&
               MALLAR.map((m) => (
                 <li key={m.id}>
-                  <MallRad mall={m} eventId={eventId} />
+                  <MallRad mall={m} />
                 </li>
               ))}
             {visaGeneratorer &&
