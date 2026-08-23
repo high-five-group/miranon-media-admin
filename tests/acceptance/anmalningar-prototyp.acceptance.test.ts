@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
+import type { Page } from '@playwright/test';
 import { http } from 'msw';
 import type { z } from 'zod';
 import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
@@ -160,7 +161,10 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
         await expect(page.getByText('Bo Bengtsson')).toBeVisible();
         await expect(page.getByText('Eva Ek')).toBeVisible();
         // Ofiltrerat läge visar ALLA tre — ingen atgardskon-filtrering.
-        await expect(page.getByText('3 anmälningar')).toBeVisible();
+        // exact: true — variant B:s filterpanel bär räknaren "Visar 3 av 3
+        // anmälningar", som innehåller SAMMA delsträng som rubrikraden
+        // (samma strict-mode-klass som periodannonseringen nedan).
+        await expect(page.getByText('3 anmälningar', { exact: true })).toBeVisible();
 
         const results = await new AxeBuilder({ page })
           .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -427,7 +431,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
 
       expect(page.url()).not.toContain('period='); // clearOnDefault: ingen ?period= i URL:en
-      await expect(page.getByText('3 anmälningar')).toBeVisible();
+      await expect(page.getByText('3 anmälningar', { exact: true })).toBeVisible();
       await expect(page.getByText('Kim Kommande')).toBeVisible();
       await expect(page.getByText('Tage Tidigare')).toBeVisible();
       await expect(page.getByText('Ute Utanhelt')).toBeVisible();
@@ -461,7 +465,7 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       mockRegistrations(network, periodRader());
       await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&period=past');
 
-      await expect(page.getByText('1 anmälan')).toBeVisible();
+      await expect(page.getByText('1 anmälan', { exact: true })).toBeVisible();
       await expect(page.getByText('Tage Tidigare')).toBeVisible();
       await expect(page.getByText('Kim Kommande')).toHaveCount(0);
       await expect(page.getByText('Ute Utanhelt')).toHaveCount(0);
@@ -514,6 +518,186 @@ test.describe('Anmälningssidans divergens-prototyp (TASK-299.3 — /dev/anmalni
       await expect(page.getByText('Inga anmälningar för tidigare event.')).toBeVisible();
       await expect(page.getByRole('alert')).toHaveCount(0);
 
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(results.violations).toEqual([]);
+    });
+  });
+
+  test.describe('Event-dimensionerna (Marcus review 2026-08-23) — variant B', () => {
+    const EVENT_KURS_SKOVDE = 'recEventKursSko1';
+    const EVENT_FORELASNING_GBG = 'recEventForelGbg';
+
+    /** Två event som skiljer sig i BÅDA dimensionerna, så typ och ort kan
+        särskiljas oberoende av varandra. Båda är kommande mot FROZEN_NOW. */
+    function dimensionsEvents(): EventRow[] {
+      return [
+        event({
+          id: EVENT_KURS_SKOVDE,
+          eventNamn: 'Ledarkurs Skövde',
+          typ: 'Kurs',
+          ort: 'Skövde',
+          startdatum: '2026-10-01',
+        }),
+        event({
+          id: EVENT_FORELASNING_GBG,
+          eventNamn: 'Höstföreläsning Göteborg',
+          typ: 'Föreläsning',
+          ort: 'Göteborg',
+          startdatum: '2026-10-20',
+        }),
+      ];
+    }
+
+    /** En rad per event, plus en rad HELT utan event (den bokförda
+        kant-klassen: bär inget event-attribut att matcha mot). */
+    function dimensionsRader(): Row[] {
+      return [
+        reg({
+          fornamn: 'Karin',
+          efternamn: 'Kursdeltagare',
+          eventId: EVENT_KURS_SKOVDE,
+          eventNamn: null,
+          eventmatchning: 'OK',
+          inskickad: '2026-09-14T10:00:00.000Z',
+        }),
+        reg({
+          fornamn: 'Frida',
+          efternamn: 'Forelasning',
+          eventId: EVENT_FORELASNING_GBG,
+          eventNamn: null,
+          eventmatchning: 'OK',
+          inskickad: '2026-09-13T10:00:00.000Z',
+        }),
+        reg({
+          fornamn: 'Ute',
+          efternamn: 'Utanhelt',
+          eventId: null,
+          eventNamn: null,
+          eventmatchning: 'Utan event',
+          inskickad: '2026-09-12T10:00:00.000Z',
+        }),
+      ];
+    }
+
+    async function oppnaFiltret(page: Page): Promise<void> {
+      await page.getByRole('button', { name: /^(Visa|Dölj) filter/ }).click();
+      await expect(page.getByTestId('filter-panel')).toBeVisible();
+    }
+
+    test('alternativen härleds ur RADERNAS event, i facit-ordning', async ({ page, network }) => {
+      mockEvents(network, dimensionsEvents());
+      mockRegistrations(network, dimensionsRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+      await oppnaFiltret(page);
+
+      // Typ/ort sv-alfabetiskt, nolläget alltid först. Endast värden som
+      // radernas EGNA event bär — aldrig hela eventlistans rymd.
+      await page.getByTestId('filter-typ').getByRole('button').click();
+      await expect(page.getByRole('option')).toHaveText(['Alla typer', 'Föreläsning', 'Kurs']);
+      await page.keyboard.press('Escape');
+
+      await page.getByTestId('filter-ort').getByRole('button').click();
+      await expect(page.getByRole('option')).toHaveText(['Alla orter', 'Göteborg', 'Skövde']);
+      await page.keyboard.press('Escape');
+    });
+
+    test('filtret läser EVENTETS fält: ?ort väljer via länken, inte via anmälans egen ort', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, dimensionsEvents());
+      mockRegistrations(network, dimensionsRader());
+      // Samtliga rader bär anmälans egen ort "Skövde" (reg-fixturens default);
+      // bara EVENTETS ort skiljer dem åt. Väljer filtret Göteborg måste alltså
+      // uppslaget ha gått via eventId — annars hade Frida fallit bort.
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&ort=G%C3%B6teborg');
+
+      await expect(page.getByText('Frida Forelasning')).toBeVisible();
+      await expect(page.getByText('Karin Kursdeltagare')).toHaveCount(0);
+      await expect(page.getByText('1 anmälan', { exact: true })).toBeVisible();
+    });
+
+    test('en rad UTAN uppslagbart event faller bort när ett dimensionsfilter är aktivt', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, dimensionsEvents());
+      mockRegistrations(network, dimensionsRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista');
+
+      // Ofiltrerat: Ute syns, märkt "Utan event" i undertexten.
+      await expect(page.getByText('Ute Utanhelt')).toBeVisible();
+      await expect(page.getByText('Utan event')).toBeVisible();
+
+      // Med ett aktivt dimensionsfilter bär hon inget attribut att matcha mot
+      // och faller bort — samma regel periodfiltret redan följer. Bortfallet
+      // syns i panelfotens räknare (3 → 1), och hennes hemvist är åtgärdskön.
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&typ=Kurs');
+      await expect(page.getByText('Ute Utanhelt')).toHaveCount(0);
+      await oppnaFiltret(page);
+      await expect(page.getByText('Visar 1 av 3 anmälningar')).toBeVisible();
+
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=atgardskon');
+      await expect(page.getByText('Ute Utanhelt')).toBeVisible();
+    });
+
+    test('filter-tomläget är SKILT från period-tomläget och bär Rensa — axe 0', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, dimensionsEvents());
+      mockRegistrations(network, dimensionsRader());
+      // Kurs ∧ Göteborg finns inte: perioden HAR rader, filtren matchar noll.
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&typ=Kurs&ort=G%C3%B6teborg');
+
+      await expect(page.getByText('Inga anmälningar matchar filtren.')).toBeVisible();
+      // Period-/lägestomlägets copy får INTE visas här.
+      await expect(page.getByText('Inga anmälningar än.')).toHaveCount(0);
+      await expect(page.getByRole('alert')).toHaveCount(0);
+
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(results.violations).toEqual([]);
+    });
+
+    test('Rensa filter återställer till ren URL och flyttar fokus till tratten', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, dimensionsEvents());
+      mockRegistrations(network, dimensionsRader());
+      await page.goto('/dev/anmalningar-prototyp?variant=b&lage=lista&typ=Kurs');
+
+      const tratt = page.getByRole('button', { name: /^(Visa|Dölj) filter/ });
+      // Aktivt filter syns även med STÄNGD panel (MOJ-affordanslärdomen).
+      await expect(tratt).toHaveAccessibleName('Visa filter, 1 aktivt filterval');
+
+      await oppnaFiltret(page);
+      await page.getByRole('button', { name: 'Rensa filter' }).click();
+
+      await expect(page).toHaveURL(/\/dev\/anmalningar-prototyp\?variant=b&lage=lista$/);
+      await expect(tratt).toBeFocused();
+      await expect(page.getByText('Ute Utanhelt')).toBeVisible();
+    });
+
+    test('period + dimension komponerar, och axe är 0 med öppen panel', async ({
+      page,
+      network,
+    }) => {
+      mockEvents(network, dimensionsEvents());
+      mockRegistrations(network, dimensionsRader());
+      await page.goto(
+        '/dev/anmalningar-prototyp?variant=b&lage=lista&period=upcoming&typ=F%C3%B6rel%C3%A4sning',
+      );
+
+      await expect(page.getByText('Frida Forelasning')).toBeVisible();
+      await expect(page.getByText('Karin Kursdeltagare')).toHaveCount(0);
+      await expect(page.getByText('Ute Utanhelt')).toHaveCount(0);
+
+      await oppnaFiltret(page);
       const results = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
         .analyze();

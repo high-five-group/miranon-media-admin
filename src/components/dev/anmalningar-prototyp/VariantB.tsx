@@ -1,11 +1,18 @@
 import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
-import { parseAsStringEnum, useQueryState } from 'nuqs';
+import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button as AriaButton } from 'react-aria-components';
 import { dateValue } from '@/components/events/EventCard';
 import { eventIdentitet } from '@/components/hem/hem-derivations';
 import { relativTid } from '@/components/hem/relativ-tid';
 import { InitialAvatar, ToggleButton, ToggleButtonGroup } from '@/components/primitives';
+import {
+  antalAktivaFilter,
+  type FilterDimension,
+  FilterRad,
+  filterRaknartext,
+} from '@/components/primitives/FilterRad';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import {
@@ -17,6 +24,7 @@ import {
 import { StatusBadge } from '@/components/registrations/StatusBadge';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
+import { EventStatus, type EventStatusValue } from '@/domain/types/Status';
 import { AnmalningRadResolution } from './AnmalningRadResolution';
 import type { VariantProps } from './types';
 
@@ -26,12 +34,15 @@ import type { VariantProps } from './types';
     nedan § FILTRET för hela motiveringen. */
 type PeriodFilter = 'alla' | 'upcoming' | 'past';
 const PERIOD_FILTER_VALUES: PeriodFilter[] = ['alla', 'upcoming', 'past'];
-// "Alla" (INTE "Alla event") — varv 1 av det visuella QA-passet (Marcus
-// order, 375 px): "Alla event" bryter till TVÅ rader i en tredjedels
-// `auto-cols-fr`-kolumn vid 375 px (uppmätt: pillen blev högre än sina
-// syskon, tracket tappade sin jämna rytm). "Alla" ensamt är entydigt i
-// kontext — de två andra pillerna ("Kommande"/"Tidigare") är redan
-// event-implicita, och gruppens `aria-label="Period"` bär resten.
+// KORTA ORD, EVENT-LEDET I ETIKETTEN — mätt vid 375 px, inte valt på känsla.
+// "Alla event" bröt till TVÅ rader i en tredjedels `auto-cols-fr`-kolumn
+// (varv 1 av QA-passet), och samma mätning gjordes 2026-08-23 på hela
+// ordparet efter Marcus invändning ("Vad är 'Kommande anmälningar'
+// liksom"): `Kommande event`/`Tidigare event` gav pillhöjd 64 px mot 40 och
+// grupphöjd 72 mot 48 — alltså radbrytning i BÅDA pillren. Korta ord + en
+// `Event`-rubrik ÖVER filterraden bär i stället att det är EVENTET som är
+// kommande, med 10 px luft kvar på den bredaste pillen vid 375 px.
+// Gruppens `aria-label` är "Event" och matchar den synliga rubriken.
 const PERIOD_FILTER_LABEL: Record<PeriodFilter, string> = {
   alla: 'Alla',
   upcoming: 'Kommande',
@@ -44,6 +55,29 @@ const PERIOD_ANNOUNCEMENT_LED: Record<PeriodFilter, string> = {
   upcoming: 'kommande event',
   past: 'tidigare event',
 };
+
+/** Räknarens substantiv för anmälningar (böjs efter nämnaren). */
+const ANMALNINGS_ENHET = { ental: 'anmälan', flertal: 'anmälningar' };
+
+/** Status i basens KANONISKA ordning — aldrig alfabetisk (EventsLists regel). */
+const STATUS_ORDNING: EventStatusValue[] = [
+  EventStatus.PLANERAT,
+  EventStatus.GENOMFORT,
+  EventStatus.INSTALLT,
+  EventStatus.FLYTTAT,
+];
+
+/** Etikett + nolläge per event-dimension; alternativen härleds ur källan. */
+const DIM_FORM = {
+  typ: { etikett: 'Typ', nollage: 'Alla typer' },
+  ort: { etikett: 'Ort', nollage: 'Alla orter' },
+  status: { etikett: 'Status', nollage: 'Alla statusar' },
+} as const;
+
+/** Anmälans länkade event, eller `undefined` när det inte går att slå upp. */
+function radensEvent(reg: Registration, eventsById: Map<string, Event>): Event | undefined {
+  return reg.eventId ? eventsById.get(reg.eventId) : undefined;
+}
 
 /** Kommande/tidigare för en anmälningsrad, härlett ur DET LÄNKADE eventets
     startdatum (`dateValue`, samma härledning som EventsList/EventValjare —
@@ -123,6 +157,28 @@ function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
  * hela eventlistan HAR ett `Period` per definition, en anmälan har det
  * bara VIA sitt länkade event).
  *
+ * EVENT-DIMENSIONERNA (Marcus review 2026-08-23: "visst vore det bra om
+ * Lotta kunde filtrera på event-typ och sånt ju?") — samma `FilterRad`-
+ * primitiv som eventlistan, med period-pillren som vänsterled och
+ * tratt-panelen under: Typ · Ort · Status, `?typ`/`?ort`/`?status` i
+ * URL:en, AND över dimensioner, live utan Apply.
+ *
+ * DIMENSIONERNA ÄR EVENTETS FÄLT, inte anmälans — en anmälan bär dem bara
+ * VIA `eventId`, så filtret läser uppslaget event ("visa anmälningar vars
+ * event har typ X"). Två följder, båda avsiktliga:
+ *
+ * 1. ALTERNATIVEN härleds ur de event LÄGETS rader faktiskt pekar på (före
+ *    periodfiltret, så rymden är stabil över periodbyte — EventsLists
+ *    byggkrav 2). Ett event utan anmälningar i läget vore en död kontroll.
+ * 2. EN RAD UTAN UPPSLAGBART EVENT matchar aldrig ett aktivt
+ *    dimensionsfilter — den bär inget event-attribut att matcha mot. Det
+ *    är samma regel periodfiltret redan följer (`registrationPeriod` →
+ *    null), och den försvinner inte tyst: `eventId: null` ⇒ `Utan event`
+ *    ⇒ `behoverAtgard` (`registration-display.ts`), så raden har sin
+ *    garanterade hemvist i ÅTGÄRDSKÖ-läget, syns med undertexten "Utan
+ *    event" under "Alla", och panelfotens räknare bär bortfallet
+ *    numeriskt ("Visar X av Y anmälningar").
+ *
  * `EventValjare.tsx` (huset ANDRA etablerade eventväljar-form) ÖVERVÄGDES
  * och AVSTYRKTES, disk-verifierat: dess `grupper`-useMemo filtrerar
  * EXPLICIT till `dateValue(e) >= idagStart` (endast kommande event) —
@@ -157,10 +213,88 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
     return d.getTime();
   }, [nuMs]);
 
-  const visasRader = useMemo(() => {
+  // Event-dimensionerna i URL:en, samma kontrakt som EventsList (`?typ`/
+  // `?ort`/`?status`, history push ⇒ delbart OCH back-bart; null tar bort
+  // parametern helt). Status enum-parsas mot de kanoniska värdena så en
+  // ogiltig parameter är inert i stället för att ge tom träffmängd.
+  const [typ, setTyp] = useQueryState('typ', parseAsString.withOptions({ history: 'push' }));
+  const [ort, setOrt] = useQueryState('ort', parseAsString.withOptions({ history: 'push' }));
+  const [status, setStatus] = useQueryState(
+    'status',
+    parseAsStringEnum(STATUS_ORDNING).withOptions({ history: 'push' }),
+  );
+  const valda: Record<string, string | null> = {
+    typ: typ || null,
+    ort: ort || null,
+    status: status ?? null,
+  };
+
+  const periodRader = useMemo(() => {
     if (period === 'alla') return rader;
     return rader.filter((reg) => registrationPeriod(reg, eventsById, idagStart) === period);
   }, [rader, period, eventsById, idagStart]);
+
+  // Alternativen härleds ur de event LÄGETS rader faktiskt pekar på — inte ur
+  // hela eventlistan. Ett event utan anmälningar i det här läget vore en död
+  // kontroll (den skulle garanterat ge noll träffar), och EventsLists
+  // "stabila över periodbyte"-krav bärs ändå: härledningen sker på `rader`,
+  // FÖRE periodfiltret. En dimension utan värden renderar ingen dropdown
+  // (FilterRads egen degradering) — vilket också är det snälla beteendet
+  // innan `events`-frågan landat, då uppslagen ger `undefined` rakt igenom.
+  const dimensioner = useMemo<FilterDimension[]>(() => {
+    const lankade = rader
+      .map((reg) => radensEvent(reg, eventsById))
+      .filter((e): e is Event => e != null);
+    const uniq = (vals: (string | null | undefined)[]) =>
+      [...new Set(vals.filter((v): v is string => v != null))].sort((a, b) =>
+        a.localeCompare(b, 'sv'),
+      );
+    return [
+      { nyckel: 'typ', ...DIM_FORM.typ, alternativ: uniq(lankade.map((e) => e.typ)) },
+      { nyckel: 'ort', ...DIM_FORM.ort, alternativ: uniq(lankade.map((e) => e.ort)) },
+      {
+        nyckel: 'status',
+        ...DIM_FORM.status,
+        alternativ: uniq(lankade.map((e) => e.status)).sort(
+          (a, b) =>
+            STATUS_ORDNING.indexOf(a as EventStatusValue) -
+            STATUS_ORDNING.indexOf(b as EventStatusValue),
+        ),
+      },
+    ];
+  }, [rader, eventsById]);
+  const aktiva = antalAktivaFilter(dimensioner, valda);
+
+  // Dimensionsfiltret läses ur EVENTET, aldrig ur anmälan: "visa anmälningar
+  // vars event har typ X". En rad utan uppslagbart event bär inget sådant
+  // attribut och matchar därför aldrig ett aktivt dimensionsfilter — samma
+  // regel periodfiltret redan följer (`registrationPeriod` → null). Den
+  // försvinner inte ur systemet: `eventId: null` ⇒ `Utan event` ⇒
+  // `behoverAtgard`, så raden har sin garanterade hemvist i åtgärdskö-läget,
+  // och panelfotens räknare bär bortfallet numeriskt i lista-läget.
+  const visasRader = useMemo(
+    () =>
+      periodRader.filter((reg) => {
+        const ev = radensEvent(reg, eventsById);
+        return (
+          (valda.typ == null || ev?.typ === valda.typ) &&
+          (valda.ort == null || ev?.ort === valda.ort) &&
+          (valda.status == null || ev?.status === valda.status)
+        );
+      }),
+    [periodRader, eventsById, valda.typ, valda.ort, valda.status],
+  );
+
+  // Rensa-knapparna unmountas i samma tryck (aktiva → 0) — fokus flyttas
+  // därför programmatiskt till tratt-knappen (filter-ytans stabila ankare)
+  // så tangentbordsfokus aldrig faller till body.
+  const filterKnappRef = useRef<HTMLButtonElement>(null);
+  const rensaFilter = () => {
+    setTyp(null);
+    setOrt(null);
+    setStatus(null);
+    filterKnappRef.current?.focus();
+  };
 
   // A11y: bekräfta periodväxlingen (EventsLists skip-first-mönster) — en
   // EGEN live-region, skild från "Anmälningarna laddade."-statusen nedan
@@ -177,6 +311,19 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
       }.`,
     );
   }, [period, isPending, visasRader.length]);
+
+  // Live-filtreringen bekräftas i SAMMA region som perioden: båda beskeden
+  // svarar på "vad visas nu?" — ett ansvar, en region (EventsLists form).
+  // Punkten skiljer annonsen från panelfotens synliga räknartext.
+  const filterNyckel = `${valda.typ}|${valda.ort}|${valda.status}`;
+  const prevFilterNyckel = useRef(filterNyckel);
+  useEffect(() => {
+    if (isPending || prevFilterNyckel.current === filterNyckel) return;
+    prevFilterNyckel.current = filterNyckel;
+    setPeriodAnnouncement(
+      `${filterRaknartext(visasRader.length, periodRader.length, ANMALNINGS_ENHET)}.`,
+    );
+  }, [filterNyckel, isPending, visasRader.length, periodRader.length]);
 
   if (isPending) {
     return (
@@ -223,32 +370,78 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
         </p>
       </header>
 
-      {/* Periodfiltret — "en filtreringsgrej högst upp" (Marcus review
-          2026-08-22). Alltid synligt (även vid noll träffar) — samma
-          princip som EventsLists period-toggel: kontrollen är sidans
-          egen, aldrig beroende av om det aktuella urvalet råkar vara
-          tomt. `print:hidden`: kontroller är meningslösa på papper
-          (samma GOV.UK-blacklist EventsList citerar). */}
-      <div className="print:hidden">
-        <ToggleButtonGroup<PeriodFilter>
-          label="Period"
-          spread
-          selectedKey={period}
-          onSelectionChange={setPeriod}
+      {/* Filtret — "en filtreringsgrej högst upp" (Marcus review
+          2026-08-22) + event-dimensionerna (2026-08-23). EventsLists
+          FilterRad-primitiv i sin exakta form: period-pillren till
+          vänster, tratt-ingången till höger, panelen under. Alltid synlig
+          (även vid noll träffar) — kontrollen är sidans egen, aldrig
+          beroende av om urvalet råkar vara tomt.
+
+          ETIKETTEN "Event" (Marcus: "'Kommande' och 'Tidigare' är nog fel
+          ordval här. Vad är 'Kommande anmälningar' liksom.") — pillren
+          beskriver EVENTETS tidsläge, inte anmälans. Etiketten bär det
+          uttryckligen, så pillren kan förbli korta nog för 375 px och
+          behålla EventsLists ordpar. Den är `aria-hidden` och gruppens
+          `label` bär samma ord: skärmläsaren får "Event"-gruppen EN gång,
+          seendet får den som rubrik. */}
+      <div className="flex flex-col gap-1.5 print:hidden">
+        <span aria-hidden="true" className="font-medium text-caption text-text-muted">
+          Event
+        </span>
+        <FilterRad
+          dimensioner={dimensioner}
+          valda={valda}
+          onValj={(nyckel, varde) => {
+            if (nyckel === 'typ') setTyp(varde);
+            else if (nyckel === 'ort') setOrt(varde);
+            else setStatus(varde as EventStatusValue | null);
+          }}
+          onRensa={rensaFilter}
+          visade={visasRader.length}
+          totalt={periodRader.length}
+          enhet={ANMALNINGS_ENHET}
+          triggerRef={filterKnappRef}
         >
-          {PERIOD_FILTER_VALUES.map((p) => (
-            <ToggleButton key={p} id={p}>
-              {PERIOD_FILTER_LABEL[p]}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
+          <ToggleButtonGroup<PeriodFilter>
+            label="Event"
+            spread
+            selectedKey={period}
+            onSelectionChange={setPeriod}
+          >
+            {PERIOD_FILTER_VALUES.map((p) => (
+              <ToggleButton key={p} id={p}>
+                {PERIOD_FILTER_LABEL[p]}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </FilterRad>
       </div>
       <p className="sr-only" aria-live="polite">
         {periodAnnouncement}
       </p>
 
       {visasRader.length === 0 ? (
-        <p className="text-small text-text-muted">{tomtText(lage, period)}</p>
+        // Filter-tomläget är SKILT från period-/lägestomläget: här FINNS
+        // anmälningar i perioden men dimensionsfiltren matchar inga, och
+        // Rensa är återvägen (EventsLists form). Är själva perioden tom
+        // finns inget att rensa fram — då gäller den vanliga copyn.
+        aktiva > 0 && periodRader.length > 0 ? (
+          // Typografin är sidans EGEN tomlägeskonvention (`text-small
+          // text-text-muted`, punkt i slutet — samma som `tomtText`), inte
+          // EventsLists centrerade `py-12`-form: här bor tomläget direkt i
+          // listans flöde, inte i ett kortformat.
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-small text-text-muted">Inga anmälningar matchar filtren.</p>
+            <AriaButton
+              onPress={rensaFilter}
+              className="rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+            >
+              Rensa filter
+            </AriaButton>
+          </div>
+        ) : (
+          <p className="text-small text-text-muted">{tomtText(lage, period)}</p>
+        )
       ) : (
         <ul
           aria-label="Anmälningar"

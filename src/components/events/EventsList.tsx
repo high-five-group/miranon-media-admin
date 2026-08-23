@@ -1,11 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { CalendarDays, CalendarPlus, Filter, List, Printer } from 'lucide-react';
+import { CalendarDays, CalendarPlus, List } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button as AriaButton, Disclosure, DisclosurePanel } from 'react-aria-components';
+import { Button as AriaButton } from 'react-aria-components';
+import {
+  aktivaFilterBeskrivning,
+  antalAktivaFilter,
+  type FilterDimension,
+  FilterRad,
+  filterRaknartext,
+} from '@/components/primitives/FilterRad';
 import { MessageBox } from '@/components/primitives/MessageBox';
-import { Select, SelectItem } from '@/components/primitives/Select';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { useDataSource } from '@/data/useDataSource';
@@ -50,11 +56,11 @@ function filterByPeriod(events: Event[], period: Period, idagStart: number): Eve
 
 /** Filterdimensionerna (task-17.7) — Event-modellens tre kategoriska fält. */
 type FilterDim = 'typ' | 'ort' | 'status';
-const DIM_LABEL: Record<FilterDim, string> = { typ: 'Typ', ort: 'Ort', status: 'Status' };
-const DIM_NOLLAGE: Record<FilterDim, string> = {
-  typ: 'Alla typer',
-  ort: 'Alla orter',
-  status: 'Alla statusar',
+/** Etikett + nolläge per dimension; alternativen härleds ur källan nedan. */
+const DIM_FORM: Record<FilterDim, { etikett: string; nollage: string }> = {
+  typ: { etikett: 'Typ', nollage: 'Alla typer' },
+  ort: { etikett: 'Ort', nollage: 'Alla orter' },
+  status: { etikett: 'Status', nollage: 'Alla statusar' },
 };
 /** Status i basens KANONISKA ordning (ORDLISTA "Period"-distinktionen) — aldrig alfabetisk. */
 const STATUS_ORDNING: EventStatusValue[] = [
@@ -64,8 +70,8 @@ const STATUS_ORDNING: EventStatusValue[] = [
   EventStatus.FLYTTAT,
 ];
 
-/** Nolläges-nyckeln i dropdownsen ("Alla …") — sentinel skild från datavärden. */
-const ALLA = '__alla';
+/** Räknarens substantiv. "Event" är oböjt i plural — ental = flertal. */
+const EVENT_ENHET = { ental: 'event', flertal: 'event' };
 
 /** Långdatum för utskriftshuvudets "Utskrivet …" (samma form som kortens datumrad). */
 const LANGDATUM_IDAG = new Intl.DateTimeFormat('sv-SE', {
@@ -92,23 +98,18 @@ const LANGDATUM_IDAG = new Intl.DateTimeFormat('sv-SE', {
  * `?status`+`?sort`; sorteringen är låst per period (story 2) så inget
  * sort-val behövs. Kalenderläget läser inte ?period (kalendern äger tiden).
  *
- * FILTERVYN (task-17.7; S83-prototyp-facit k02, Marcus-låst 2026-07-24;
- * research: docs/research/filtervy-listor-monster-2026-07-24.md —
- * disclosure-bar = MOJ-mönstret, NN/g live-filtrering vid klientlokal data):
- * - Tratt-ingång HÖGER om period-toggeln (React Aria Disclosure — trigger
- *   får aria-expanded/aria-controls wirat); öppen/aktiv = bg-text-svärtan;
- *   siffer-badge (bg-accent) bär antalet aktiva val; sr-only-namnet bär
- *   "Visa/Dölj filter, N aktiva filterval" (MOJ-affordans-läxan: aktivt
- *   filter måste synas även med stängd panel).
- * - Panelen (DisclosurePanel, tonala kortets form): TRE Select-dropdowns
- *   Typ · Ort · Status — värden härledda ur HELA källan (stabila över
- *   periodbyte), typ/ort sv-alfabetiskt, status i kanonisk ordning; "Alla …"
- *   är nolläget. ETT val per dimension (flerval medvetet avstått — byggs ej
- *   "ifall"), AND över dimensioner, LIVE utan Apply-knapp (NN/g:s
- *   <1 s-villkor trivialt uppfyllt: datat är redan i klienten).
+ * FILTERVYN (task-17.7; S83-prototyp-facit k02, Marcus-låst 2026-07-24):
+ * ytan är `FilterRad`-primitiven (tratt-ingång, disclosure-panel, räknare,
+ * Rensa, Skriv ut) — dess docblock äger FORMEN och researchen bakom den
+ * (`docs/research/filtervy-listor-monster-2026-07-24.md`). Vad som är
+ * EVENT-listans eget:
+ * - TRE dimensioner Typ · Ort · Status, med värden härledda ur HELA källan
+ *   (stabila över periodbyte), typ/ort sv-alfabetiskt, status i kanonisk
+ *   ordning. ETT val per dimension (flerval medvetet avstått — byggs ej
+ *   "ifall"), AND över dimensioner, LIVE utan Apply-knapp.
  * - Filtret appliceras på den PERIODFILTRERADE listan; räknaren
- *   "Visar X av Y event" i panelfoten + aria-live-bekräftelse; Rensa filter
- *   vid aktiva val; eget filter-tomläge SKILJT från period-tomläget.
+ *   "Visar X av Y event" i panelfoten + aria-live-bekräftelse; eget
+ *   filter-tomläge SKILJT från period-tomläget.
  * - URL-delbart: `?typ`/`?ort`/`?status` (nuqs; null tar bort parametern →
  *   REN URL utan filter, clearOnDefault-klassens beteende; status
  *   enum-parsas mot kanoniska värden så ogiltiga params är inerta).
@@ -162,16 +163,11 @@ export function EventsList() {
     'status',
     parseAsStringEnum(STATUS_ORDNING).withOptions({ history: 'push' }),
   );
-  // Panelens öppet/stängt är HUR-state (useState, URL-STATE-SPEC §Princip)
-  // — bara filterVALEN är delbara.
-  const [filterOppen, setFilterOppen] = useState(false);
-
   const valda: Record<FilterDim, string | null> = {
     typ: typ || null,
     ort: ort || null,
     status: status ?? null,
   };
-  const aktiva = (['typ', 'ort', 'status'] as const).filter((d) => valda[d] != null).length;
   // Rensa-knapparna unmountas i samma tryck (aktiva → 0) — fokus flyttas
   // därför programmatiskt till tratt-knappen (filter-ytans stabila ankare)
   // så tangentbords-/skärmläsarfokus aldrig faller till body
@@ -217,6 +213,20 @@ export function EventsList() {
     };
   }, [data]);
 
+  // Dimensionerna till FilterRad: form ur DIM_FORM, värden ur källan ovan.
+  // Ordningen (typ · ort · status) ÄR panelens kolumnordning.
+  const dimensioner = useMemo<FilterDimension[]>(
+    () =>
+      (['typ', 'ort', 'status'] as const).map((nyckel) => ({
+        nyckel,
+        etikett: DIM_FORM[nyckel].etikett,
+        nollage: DIM_FORM[nyckel].nollage,
+        alternativ: alternativ[nyckel],
+      })),
+    [alternativ],
+  );
+  const aktiva = antalAktivaFilter(dimensioner, valda);
+
   // Filtret appliceras på den PERIODFILTRERADE listan (byggkrav 3):
   // periodEvents är räknarens nämnare ("av Y"), events dess täljare.
   const periodEvents = useMemo(
@@ -236,10 +246,7 @@ export function EventsList() {
   const groups = useMemo(() => groupByMonth(events), [events]);
 
   /** "Typ: Kurs · Ort: Skövde" — utskriftshuvudets filterbeskrivning. */
-  const aktivaBeskrivning = (['typ', 'ort', 'status'] as const)
-    .filter((dim) => valda[dim] != null)
-    .map((dim) => `${DIM_LABEL[dim]}: ${valda[dim]}`)
-    .join(' · ');
+  const aktivaBeskrivning = aktivaFilterBeskrivning(dimensioner, valda);
 
   // A11y: bekräfta periodväxlingen — ENDAST vid faktisk växling (ingen
   // annons vid mount eller datalandning; PersonsList-announcerns princip,
@@ -261,178 +268,43 @@ export function EventsList() {
   useEffect(() => {
     if (isPending || prevFilterNyckel.current === filterNyckel) return;
     prevFilterNyckel.current = filterNyckel;
-    setAnnouncement(`Visar ${events.length} av ${periodEvents.length} event.`);
+    setAnnouncement(`${filterRaknartext(events.length, periodEvents.length, EVENT_ENHET)}.`);
   }, [filterNyckel, events.length, periodEvents.length, isPending]);
 
   // Period-toggeln + filter-ingången i SAMMA rad, panelen som disclosure
   // under (facit k02; MOJ:s "Show filter"-toggle utan sidopanel-överbyggnad).
-  // React Aria Disclosure wirar trigger↔panel (aria-expanded/aria-controls,
-  // Enter/Space, hidden-attribut på stängd panel) — ingen egen ARIA-mekanik.
-  //
-  // PANEL-ELEMENTET LÄMNAS OSTYLAT (Marcus-fix 2026-07-25, grundorsak
-  // verifierad i react-arias useDisclosure-källa): stängd panel döljs med
-  // hidden="until-found" ⇒ content-visibility: hidden — INNEHÅLLET döljs
-  // men panel-elementets EGEN bakgrund/padding renderas, så visuella stilar
-  // direkt på DisclosurePanel gav en tom grå rand i stängt läge. Bakgrund/
-  // padding/rounded/gap bor därför på en INRE wrapper (försvinner med
-  // innehållet), och rytmen mellan rad och öppen panel bärs av wrapperns
-  // mt-6 — INTE av gap på roten (ett rot-gap hade lämnat 24 px dött
-  // utrymme efter det 0 px höga panel-elementet i stängt läge).
-  // print:hidden på roten: kontroller är meningslösa på papper
-  // (GOV.UK-blacklisten).
+  // Formen ägs av FilterRad-primitiven; här bor bara det som är listans
+  // eget: dimensionerna, urvalet och räknarens tal.
   const filterRad = (
-    <Disclosure
-      isExpanded={filterOppen}
-      onExpandedChange={setFilterOppen}
-      className="flex flex-col print:hidden"
+    <FilterRad
+      dimensioner={dimensioner}
+      valda={valda}
+      onValj={(nyckel, varde) => {
+        if (nyckel === 'typ') setTyp(varde);
+        else if (nyckel === 'ort') setOrt(varde);
+        else setStatus(varde as EventStatusValue | null);
+      }}
+      onRensa={rensaFilter}
+      visade={events.length}
+      totalt={periodEvents.length}
+      enhet={EVENT_ENHET}
+      isPending={isPending}
+      onSkrivUt={() => window.print()}
+      triggerRef={filterKnappRef}
     >
-      <div className="flex items-center gap-2">
-        <div className="min-w-0 flex-1">
-          <ToggleButtonGroup<Period>
-            label="Period"
-            spread
-            selectedKey={period}
-            onSelectionChange={(key) => setPeriod(key)}
-          >
-            {PERIOD_VALUES.map((p) => (
-              <ToggleButton key={p} id={p}>
-                {PERIOD_LABEL[p]}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </div>
-        {/* Tratt-ingången: öppen/aktiv bär bg-text-svärtan (facit k02);
-            badgen är dekor (aria-hidden) — sr-only-namnet bär antalet.
-            Badge-texten är text-inverse på accent: ÖPPET BOKFÖRD
-            facit-avvikelse från prototypens text-text (2,6:1 mot
-            accent-kopparn — WCAG 1.4.3-golvet skärs aldrig; jfr
-            Inställt-dämpningens bokförda avvikelse i task-17.2). */}
-        <AriaButton
-          ref={filterKnappRef}
-          slot="trigger"
-          className={`relative inline-flex shrink-0 items-center justify-center rounded-full p-2.5 motion-safe:transition-colors ${
-            filterOppen || aktiva > 0
-              ? 'bg-text text-text-inverse'
-              : 'bg-bg-muted hover:bg-bg-emphasized'
-          }`}
-        >
-          <Filter aria-hidden="true" size={18} className="shrink-0" />
-          {aktiva > 0 ? (
-            // text-[10px]: ÖPPET BOKFÖRD avvikelse från typografiskalan
-            // (spec-regeln no-hardcoded-font-size) — badge-mikrotexten är
-            // prototyp-facitets låsta form (k02) och skalan saknar steg
-            // under text-caption; ett badge-skalsteg mintas först vid en
-            // andra konsument (över-engineering-vakten). Review-pilotens
-            // fynd 5, bokfört på kortet.
-            <span
-              aria-hidden="true"
-              className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-medium text-[10px] text-text-inverse"
-            >
-              {aktiva}
-            </span>
-          ) : null}
-          <span className="sr-only">
-            {filterOppen ? 'Dölj filter' : 'Visa filter'}
-            {aktiva > 0 ? `, ${aktiva} ${aktiva === 1 ? 'aktivt' : 'aktiva'} filterval` : ''}
-          </span>
-        </AriaButton>
-      </div>
-      <DisclosurePanel data-testid="filter-panel">
-        {/* Tonala kortets form på INRE wrappern (se rot-kommentaren): allt
-            visuellt försvinner med innehållet när until-found döljer panelen. */}
-        <div className="mt-6 flex flex-col gap-4 rounded-2xl bg-bg-muted p-4">
-          {isPending ? (
-            // Lugnt laddläge i panelen (ADR-078 beslut 2+4): dropdown-formade
-            // skelett i SLUTGEOMETRIN (label-rad + sm-fält = samma höjd som
-            // Select) tills källan landat — alternativen kan inte härledas ur
-            // ingenting, och en tom grid hade hoppat vid datalandningen.
-            // Blocken är dekor (Skeleton är alltid aria-hidden); laddbeskedet
-            // ägs av listkroppens status-region (Roselli-anatomin — EN region).
-            <div className="grid gap-3 sm:grid-cols-3">
-              {(['typ', 'ort', 'status'] as const).map((dim) => (
-                <div key={dim} className="flex w-full flex-col gap-1">
-                  <Skeleton variant="text" className="w-10 text-small" />
-                  <Skeleton variant="text" className="h-8" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-3">
-              {/* En dimension utan värden i källan renderar ingen dropdown —
-                bokförd degradering av byggkravets "TRE dropdowns" (review-
-                pilotens fynd 6a, noterat på kortet): inget att filtrera på
-                är ärligare än en död kontroll. Ett OKÄNT URL-värde (fri
-                sträng, URL-beslutet) renderas som extra alternativ så
-                triggern kommunicerar vad URL:en faktiskt filtrerar på —
-                aldrig RAC:s råa placeholder (fynd 6b). */}
-              {(['typ', 'ort', 'status'] as const).map((dim) => {
-                // ALLA-vakten: en handskriven ?typ=__alla får inte skapa ett
-                // dubblett-id bredvid nolläges-itemet (ompasseringens fynd —
-                // RAC-kollektionen kräver unika nycklar).
-                const okantVarde =
-                  valda[dim] != null && valda[dim] !== ALLA && !alternativ[dim].includes(valda[dim])
-                    ? valda[dim]
-                    : null;
-                return alternativ[dim].length > 0 ? (
-                  <Select
-                    key={dim}
-                    data-testid={`filter-${dim}`}
-                    label={DIM_LABEL[dim]}
-                    size="sm"
-                    selectedKey={valda[dim] ?? ALLA}
-                    onSelectionChange={(k) => {
-                      const varde = k == null || String(k) === ALLA ? null : String(k);
-                      if (dim === 'typ') setTyp(varde);
-                      else if (dim === 'ort') setOrt(varde);
-                      else setStatus(varde as EventStatusValue | null);
-                    }}
-                  >
-                    <SelectItem id={ALLA}>{DIM_NOLLAGE[dim]}</SelectItem>
-                    {alternativ[dim].map((varde) => (
-                      <SelectItem key={varde} id={varde}>
-                        {varde}
-                      </SelectItem>
-                    ))}
-                    {okantVarde != null ? (
-                      <SelectItem id={okantVarde}>{okantVarde}</SelectItem>
-                    ) : null}
-                  </Select>
-                ) : null;
-              })}
-            </div>
-          )}
-          <div className="flex items-center justify-between gap-3 border-border-light border-t pt-3">
-            {isPending ? (
-              <Skeleton variant="text" className="w-32 text-small" />
-            ) : (
-              <span className="text-small text-text-secondary">
-                Visar {events.length} av {periodEvents.length} event
-              </span>
-            )}
-            <div className="flex items-center gap-2">
-              {aktiva > 0 ? (
-                <AriaButton
-                  onPress={rensaFilter}
-                  className="rounded-full px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
-                >
-                  Rensa filter
-                </AriaButton>
-              ) : null}
-              {/* Skriv ut = den synliga filtrerade listan (byggkrav 5) —
-                ingen parallell utskriftsvy. Kapseln i Skapa-ingångens
-                grammatik, lyft på surface mot panelens tonala botten. */}
-              <AriaButton
-                onPress={() => window.print()}
-                className="inline-flex items-center gap-1.5 rounded-full bg-surface px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
-              >
-                <Printer aria-hidden="true" size={18} className="shrink-0" />
-                Skriv ut
-              </AriaButton>
-            </div>
-          </div>
-        </div>
-      </DisclosurePanel>
-    </Disclosure>
+      <ToggleButtonGroup<Period>
+        label="Period"
+        spread
+        selectedKey={period}
+        onSelectionChange={(key) => setPeriod(key)}
+      >
+        {PERIOD_VALUES.map((p) => (
+          <ToggleButton key={p} id={p}>
+            {PERIOD_LABEL[p]}
+          </ToggleButton>
+        ))}
+      </ToggleButtonGroup>
+    </FilterRad>
   );
 
   // Utskriftshuvudet (print-only; facit k02-print): period + aktiva filter +

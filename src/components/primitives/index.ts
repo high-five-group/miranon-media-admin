@@ -1,6 +1,15 @@
 export { Button, type ButtonProps } from './Button';
 export { Dialog, type DialogProps, DialogTrigger } from './Dialog';
 export {
+  aktivaFilterBeskrivning,
+  antalAktivaFilter,
+  type FilterDimension,
+  type FilterEnhet,
+  FilterRad,
+  type FilterRadProps,
+  filterRaknartext,
+} from './FilterRad';
+export {
   HANDLINGSRAD_KLASS,
   HANDLINGSRAD_OMSLAG_KLASS,
   HandlingsRadInnehall,
