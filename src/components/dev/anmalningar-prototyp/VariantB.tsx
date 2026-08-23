@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ChevronRight } from 'lucide-react';
+import { CalendarRange, ChevronRight } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button as AriaButton } from 'react-aria-components';
@@ -335,7 +335,24 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
             // `Tidigare`-flik, så väljarens default (endast kommande) hade
             // tystat bort precis det fliken finns för.
             omfattning="alla"
-            gemensamtAlternativ={{ etikett: ALLA_EVENT, onValj: () => setEvent(null) }}
+            // Dokumentsidans form (Marcus 2026-08-23: *"Jag vill ha den andra
+            // eventväljaren som har ett annat utseende, den som sitter på
+            // dokument-sidan"*): den STORA, luftiga rutan i stället för
+            // kontextradens pill. Panelen är väljarens enda hemvist här, så
+            // rutan får hela radbredden precis som på dokumentytan.
+            form="fristaende"
+            gemensamtAlternativ={{
+              etikett: ALLA_EVENT,
+              // Ikon på det kontextlösa alternativet, samma grepp som
+              // dokumentytans "Delade dokument" bär `Files` (Marcus samma dag:
+              // *"'Alla event' kan väl få en ikon då precis som 'Delade
+              // dokument' har"*). `CalendarRange` — spannet över ALLA event,
+              // kommande och tidigare (`omfattning="alla"`). `CalendarDays` är
+              // upptagen av väljarens tomma läge ("Välj event"), `Layers` av
+              // segment-byggaren. Storleken 18 speglar dokumentytans.
+              ikon: <CalendarRange aria-hidden="true" size={18} className="shrink-0" />,
+              onValj: () => setEvent(null),
+            }}
           />
         ),
       },
