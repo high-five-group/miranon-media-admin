@@ -26,6 +26,42 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * (`VariantB.tsx` → `registrations/AnmalningarSida.tsx`), ingenting annat
  * smög in.
  *
+ * ── VAD PARET FAKTISKT FÅNGADE (mätt 2026-08-23) ─────────────────────────
+ *
+ * Paret var RÖTT vid första körningen mot den promoverade ytan, och det är
+ * värt att bokföra vad det fällde på — annars läser en framtida läsare
+ * regenereringen nedan som att facit böjdes när det inte passade.
+ *
+ * Diffen var EN nod, identisk i alla tre lägen och båda vyporterna:
+ *
+ *     - banner:
+ *       - heading "Anmälningar" [level=1]
+ *     + heading "Anmälningar" [level=1]
+ *
+ * Varenda annan nod, roll, tillgängligt namn och URL var oförändrad;
+ * indenteringsskiftet i resten av diffen följde av att `banner`-noden föll
+ * bort, inte av någon egen skillnad.
+ *
+ * ORSAKEN ÄR SIDKROMET, INTE FORMEN. `<header>` mappas till landmärket
+ * `banner` ENDAST när den saknar en sectioning-content-förfader (HTML-AAM).
+ * Prototyp-routen renderade utanför app-skalet och hade inget `<main>` alls,
+ * så formens `<header>` blev en banner-landmark. Den skarpa sidan bor i
+ * `AppShell`s `<main id="main">`, så samma `<header>` är inte längre ett
+ * landmärke.
+ *
+ * DEN SKARPA FORMEN ÄR DEN RIKTIGA. En banner-landmark inuti `<main>` är
+ * fel — banner är per definition sidnivå, och prototypen bar den bara som
+ * artefakt av att dev-routen saknar skalet. Alternativet, att tvinga
+ * tillbaka rollen med ett `role="banner"`, hade varit att införa en
+ * a11y-defekt för att få en grind grön. Referenserna regenererades därför i
+ * en EGEN commit efter flippen, med denna diff som hela motiveringen. Axe
+ * gav 0 violations före OCH efter — båda formerna är valida, men bara den
+ * ena är rätt i app-skalet.
+ *
+ * Kvarstår som strukturell, ej mätbar-i-aria skillnad: containern är 600 px
+ * här (`<main class="max-w-[600px]">`) mot prototypens 576 (`max-w-xl`).
+ * `ariaSnapshot` bär ingen bredd, så paret säger ingenting om den.
+ *
  * ── ANKARET: FORMEN, INTE SIDKROMET ──────────────────────────────────────
  *
  * Snapshotten scopas till `[data-testid="anmalningar-yta"]`. Det är inte

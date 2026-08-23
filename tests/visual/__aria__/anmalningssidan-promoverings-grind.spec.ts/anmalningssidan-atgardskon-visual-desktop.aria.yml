@@ -1,9 +1,8 @@
 - status: Anmälningarna laddade.
-- banner:
-  - heading "Anmälningar" [level=1]
-  - paragraph: 2 anmälningar kunde inte kopplas till rätt event
-  - link "Visa alla anmälningar":
-    - /url: /mer/anmalningar
+- heading "Anmälningar" [level=1]
+- paragraph: 2 anmälningar kunde inte kopplas till rätt event
+- link "Visa alla anmälningar":
+  - /url: /mer/anmalningar
 - button "Visa filter"
 - paragraph
 - list "Anmälningar":
