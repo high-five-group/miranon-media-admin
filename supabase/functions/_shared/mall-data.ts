@@ -7,10 +7,23 @@
 //
 // STANDARD/KOPIA-REGELN ÄGS HÄR, EN GÅNG (ADR-125 § 4: "EN renderare — samma
 // fallback-regel FÅR inte tolkas på två ställen"): `valjKopia` är den ENDA
-// platsen `kopia ?? standard` skrivs ut. `_shared/mall-render.ts` (Deno,
-// esm.sh-Eta) importerar `byggBekraftelseData`/`byggDeltagarinfoData` och
-// skickar resultatet rakt in i Eta — mallarna själva innehåller ingen
-// fallback-logik, bara `<%= data.x %>`/`<% if (...) %>`.
+// platsen `kopia ?? standard` skrivs ut. Anroparen (`generate-event-
+// attachment/index.ts`) importerar `byggBekraftelseData`/
+// `byggDeltagarinfoData` HÄRIFRÅN och `renderaMallPdf` separat ur
+// `_shared/mall-render.ts` (mall-render.ts importerar INTE denna fil —
+// rättat 2026-08-23, TASK-309.5: raden påstod tidigare att mall-render.ts
+// gjorde importen självt) — anroparen skickar resultatet rakt in i
+// `renderaMallPdf`, som i sin tur ger det till Eta. Mallarna själva
+// innehåller ingen fallback-logik, bara `<%= data.x %>`/`<% if (...) %>`.
+//
+// [TASK-309.5] `byggKvittoData` (nedan, sist i filen) hör till en TREDJE,
+// STRUKTURELLT ANNORLUNDA mall: dess indata är `KvittoradSpec`
+// (`_shared/receipt-content.ts` — kvittonummer/belopp/betalsätt m.fl.,
+// Lotta-inmatat vid sändningstillfället), INTE `DocumentSourcesResult`
+// (Airtable-härlett eventinnehåll). Samma fil ändå (uppdragets val,
+// ADR-125 § Beslut 4) — alla tre `bygg*Data`-funktionerna är "REN
+// Eta-ifyllnadsdata, ingen Eta-import här"-familjen, bara med olika
+// källformer.
 //
 // DATUMFORMATERING ÄR HANDROLLAD, INTE `Intl.DateTimeFormat`:
 // `generate-event-attachment/index.ts`s tidigare `formatSvenskDatum` (rivet
@@ -27,6 +40,21 @@
 // prosa-fidelity mot den 17-varvs-konvergerade förlagan är en
 // visuell-QA-fråga för promoverings-skivorna (TASK-309.7/.8), inte denna
 // skivas AC.
+
+// [TASK-309.5] Kvitto-halvans byggsten — `receipt-content.ts` är SJÄLV
+// Node+Deno dual-importable, noll Deno-globaler (dess eget filhuvud), så
+// importen bryter inte denna fils egen dual-import-kontrakt. `Betalning`/
+// `Betalsatt` dras in TRANSITIVT via `KvittoradSpec` (en `import type` i
+// receipt-content.ts, erad av TypeScript — se receipt-content.ts:s eget
+// filhuvud för den fulla motiveringen).
+import {
+  beraknaMoms,
+  formatBelopp,
+  formatKvittoDatum,
+  kvittoBenamning,
+  type KvittoradSpec,
+  MIRANON_ORG,
+} from './receipt-content.ts';
 
 /**
  * `DocumentSourcesResult` — den fulla ifyllnadsunderlags-formen
@@ -258,5 +286,66 @@ export function byggDeltagarinfoData(sources: DocumentSourcesResult): Deltagarin
     parkering: block(sources.kopior.parkering),
     transport: block(sources.kopior.transport),
     utrustning: block(sources.kopior.utrustning),
+  };
+}
+
+/**
+ * [TASK-309.5, ADR-125 § Beslut 4-5] `kvitto.html`s Eta-`data`-form — se
+ * filhuvudets not om varför indatan är `KvittoradSpec`
+ * (`_shared/receipt-content.ts`), inte `DocumentSourcesResult`. Varje fält
+ * här är EXAKT tokenytan i `docs/mallar/bilagor/kvitto.html` (se den
+ * mallens filhuvud + README.md § "Kvittots dynamiska yta" för käll-
+ * tabellen) — lägg ALDRIG till ett fält här utan en motsvarande
+ * `<%= data.x %>` i mallen (samma "1:1"-krav § Beslut 4 redan ställer för
+ * de två andra mallarna).
+ */
+export interface KvittoMallData {
+  kvittonummer: string;
+  datum: string;
+  orgReferens: string;
+  kundnamn: string;
+  kundEpost: string;
+  benamning: string;
+  netto: string;
+  moms: string;
+  brutto: string;
+  orgNamn: string;
+  orgGatuadress: string;
+  orgPostadress: string;
+  orgLand: string;
+  orgNummer: string;
+  orgMomsregnummer: string;
+}
+
+/**
+ * Bygger kvittots Eta-ifyllnadsdata. REN funktion av `spec` — ÅTERANVÄNDER
+ * `receipt-content.ts`s redan enhetstestade primitiv
+ * (`beraknaMoms`/`formatBelopp`/`formatKvittoDatum`/`kvittoBenamning`/
+ * `MIRANON_ORG`) i stället för att duplicera formateringslogiken. Detta är
+ * INTE `kvittoRader()` (samma fil) omskrivet till ett objekt — `kvittoRader`
+ * formaterar en TEXTRAD-LISTA (mailtext-formen); denna funktion bygger en
+ * STRUKTURERAD form för Eta-mallen. De två delar samma underliggande tal
+ * (moms/netto/kvittonummer/…) men är olika KONSUMENTER av samma primitiv,
+ * se `receipt-content.ts`s eget filhuvud för den fulla ägarskaps-
+ * uppdelningen efter TASK-309.5.
+ */
+export function byggKvittoData(spec: KvittoradSpec): KvittoMallData {
+  const { moms, netto } = beraknaMoms(spec.belopp);
+  return {
+    kvittonummer: spec.kvittonummer,
+    datum: formatKvittoDatum(spec.datum),
+    orgReferens: MIRANON_ORG.varReferens,
+    kundnamn: spec.kundnamn,
+    kundEpost: spec.kundEpost,
+    benamning: kvittoBenamning(spec),
+    netto: formatBelopp(netto),
+    moms: formatBelopp(moms),
+    brutto: formatBelopp(spec.belopp),
+    orgNamn: MIRANON_ORG.namn,
+    orgGatuadress: MIRANON_ORG.gatuadress,
+    orgPostadress: MIRANON_ORG.postadress,
+    orgLand: MIRANON_ORG.land,
+    orgNummer: MIRANON_ORG.orgnummer,
+    orgMomsregnummer: MIRANON_ORG.momsregnummer,
   };
 }

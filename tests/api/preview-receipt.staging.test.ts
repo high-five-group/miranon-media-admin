@@ -2,40 +2,69 @@
 // "Riktigt genererad PDF i Visa-overlayen för mallar (klass B) och
 // generatorer (klass C)", klass C-halvan).
 //
+// [TASK-309.5, ADR-125 § Beslut 4-5] RENDERINGSVÄGEN BYTTE MOTOR. Fram till
+// denna skiva byggde `renderKvittoPdf` (pdf-lib) en enkel textrad-lista på
+// koordinater — VERIFIERINGSMETODEN nedan (WinAnsi-hex-extraktion ur en
+// okomprimerad content stream) är RIVEN, den fungerar INTE mot en
+// DocRaptor/Prince-genererad PDF (komprimerade content streams, inbäddade
+// CID-typsnitt — en helt annan intern struktur). Ny metod: `pdfjs-dist`
+// (samma bibliotek och samma disciplin som
+// `generate-event-attachment.staging.test.ts` etablerade i TASK-309.4, se
+// den filens § VERIFIERINGSMETOD för VARFÖR pdfjs-dist och inte
+// poppler-utils/pdftotext).
+//
 // preview-receipt LÄSER (ett Eventplanering-record) och SKRIVER ETT
 // TRANSIENT Storage-utkast (`_shared/utkast.ts` § `laggUtkast`,
 // `ADR-124`/`TASK-302.2`) — INGEN Kvitton-rad, INGET mail (AC #3, hård
-// gräns, amenderad i EF:ens filhuvud). Svaret bytte `{ pdfBase64 }` →
-// `{ url, utgar }` — en signerad URL i stället för PDF-bytes, eftersom
-// Chromes PDF-visare bara scrollar jämnt på en URL serverad av
-// nätverkstjänsten (mätt, `ADR-124` § Kontext). Bevisar mot SKARP
-// staging-data:
-//   1. allow: en RIKTIG, pdf-lib-renderad PDF — HEAD mot den signerade
-//      URL:en ger 200/accept-ranges: bytes/content-type: application/pdf
-//      (samma disciplin som test-docraptor-render-utkast.staging.test.ts,
-//      TASK-302.1), och en GET av bytesen bevisar innehållet med samma
-//      inflate+WinAnsi-hex-extraktion som generate-event-attachment.
-//      staging.test.ts (TASK-146.5) etablerade, mot kvittots rader
-//      (`kvittoRader`, _shared/receipt-content.ts): "FÖRHANDSVISNING"
-//      (platshållar-numret), "Exempelperson" (typexemplet, AC #2) och
-//      BELAGGNING_EVENT_ID:s LIVE Typ/Startdatum/Slutdatum via
-//      `kvittoBenamning()`. [TASK-306 RÄTTELSEVARV, 2026-08-23] Det
-//      RIKTIGA eventnamnet ("Event (source)" = "Fjärrskådning") syns INTE
-//      LÄNGRE här — Marcus dom 1 tar bort kursnamnet ur benämningen helt,
-//      se assertionen nedan för den öppet bokförda täckningsförlusten.
+// gräns, amenderad i EF:ens filhuvud). Svaret bär `{ url, utgar }` — en
+// signerad URL i stället för PDF-bytes, eftersom Chromes PDF-visare bara
+// scrollar jämnt på en URL serverad av nätverkstjänsten (mätt, `ADR-124`
+// § Kontext). Bevisar mot SKARP staging-data:
+//
+//   1. allow: en RIKTIG, DocRaptor-renderad PDF — HEAD mot den signerade
+//      URL:en ger 200/accept-ranges: bytes/content-type: application/pdf,
+//      och en GET av bytesen bevisar innehållet via pdfjs-dist
+//      (`getTextContent()` — SÖKBAR text, AC #2) + ett INBÄDDAT typsnitt
+//      (`/FontFile[23]?` i den råa byteströmmen) + FRÅNVARON av pdf-libs
+//      egen metadata-signatur ("pdf-lib (https://github.com/Hopding/
+//      pdf-lib)" — Producer/Creator-fälten `PDFDocument.create()` sätter
+//      by default, verifierat mot pdf-lib:s källkod, se AC #2:s "ingen
+//      pdf-lib-signatur"-krav).
 //   2. allow: UPSERT-BEVISET + SIDOEFFEKTSFRIHETENS BETEENDE-BEVIS — TVÅ
 //      anrop i rad ger IDENTISK objekt-path (`utkast/<eventId>/kvitto.pdf`,
-//      upsert: true) OCH exakt samma platshållar-kvittonummer
-//      ("FÖRHANDSVISNING") båda gångerna. En RIKTIG allokering
-//      (`_shared/receipt-numbering.ts` § allocateReceiptNumber) hade
-//      inkrementerat ett löpnummer mellan anropen — att numret INTE ändras
-//      är själva beviset att ingen ledger rördes, mätt genom API:t (svart
-//      låda), inte bara läst i källkoden.
+//      upsert: true), exakt samma platshållar-kvittonummer
+//      ("FÖRHANDSVISNING") OCH identisk extraherad TEXT (inte en full
+//      byte-jämförelse — DocRaptor/Prince kan bädda in
+//      genererings-tidsstämplar i PDF-metadata som skiljer sig mellan två
+//      annars identiska anrop, samma bruskälla-princip som den gamla
+//      testformens `extractPageContentStream`-isolering, se den historiska
+//      kommentaren för TASK-246:s negativa kontrollprov). En RIKTIG
+//      allokering (`_shared/receipt-numbering.ts` § allocateReceiptNumber)
+//      hade inkrementerat ett löpnummer mellan anropen — att numret INTE
+//      ändras är själva beviset att ingen ledger rördes.
 //   3. deny: saknad/malformad eventId → 400; okänt event (rec-format, finns
 //      ej) → 404; anon (ingen JWT) → 401; CORS preflight; fel HTTP-metod
 //      (GET) → 405 (deny-triple-klassen, samma tre ben som
 //      get-attachment-download-url.staging.test.ts/delete-attachment.
 //      staging.test.ts bär för sin egen bevisklass).
+//
+// [AC #2, "byte-identiska för samma indata"] Denna fil bevisar EMPIRISKT
+// att DocRaptor-renderingen är stabil (samma indata → samma extraherade
+// text) för preview-receipt EGET anrop-par. Att preview-receipt och
+// send-receipt-email BÅDA anropar SAMMA renderare (`renderaMallPdf`) med
+// SAMMA datafunktion (`byggKvittoData`) är ett KÄLLKODS-nivå-bevis, se
+// `tests/api/mall-render.test.ts` § "Kvittots renderingsväg" — den
+// kombinationen (källkoden garanterar SAMMA anrop, denna fil bevisar att
+// anropet är deterministiskt) är den fullständiga AC #2-täckningen.
+// Sändningen (send-receipt-email) testas SOM I DAG via
+// `tests/api/send-receipt.test.ts` (mockade I/O-gränser, UTSKICK_SPARR-
+// disciplin) — se den filens eget filhuvud för hur sviten undviker riktiga
+// mail. Ingen ny staging-HTTP-täckning för send-receipt-email läggs till
+// här: EF:en saknar sedan tidigare en egen `.staging.test.ts` (verifierat,
+// `find tests/api -iname "*send-receipt-email*"` gav noll träffar före
+// denna skiva), och att bygga en ny sådan hade krävt en riktig
+// Resend-sandbox-adress-fixtur på en Anmälnings-rad — utanför denna
+// skivas AC-gräns.
 //
 // TÄCKNINGSGRÄNS, ÖPPET BOKFÖRD: att INGET mail skickas kan inte mätas via
 // detta test (ADR-060 — testerna får aldrig ett mail-postlåde-sikte, och
@@ -43,90 +72,49 @@
 // bokstavligen ingen mottagare att skicka till). Den garantin vilar på
 // KÄLLKODS-GRANSKNING: preview-receipt/index.ts importerar aldrig `resend`
 // eller `_shared/send-receipt.ts`s `sendEmail`-väg (se EF:ens eget filhuvud
-// för den fulla, verifierade motiveringen, inklusive nyansen kring
-// receipt-content.ts:s type-only-import). Samma gränsklass som
+// för den fulla, verifierade motiveringen). Samma gränsklass som
 // get-attachment-download-url.staging.test.ts:s egen 409-täckningsgräns.
 //
 // Auth via getValidUserJWT (api-token-setup T24-b). Lokalt skip:as utan
 // creds; skarpa beviset körs i CI (STAGING_REQUIRED=1) EFTER att EF:en
 // deployats till staging (manuellt, ADR-050 — se index.ts § filhuvud).
 
-import { inflateSync } from 'node:zlib';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { UtkastResultatSchema } from '../../src/domain/schemas';
+import { formatKvittoDatum } from '../../supabase/functions/_shared/receipt-content';
 import { BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/preview-receipt';
 
-// Samma teknik som generate-event-attachment.staging.test.ts § winAnsiHex/
-// extractInflatedText (TASK-146.5) — duplicerad per den filens eget etablerade
-// mönster (test-only-helpers hålls lokalt per svit, inte delade via _shared).
-function winAnsiHex(text: string): string {
-  const bytes: number[] = [];
-  for (const ch of text) {
-    const code = ch.codePointAt(0);
-    if (code === undefined) throw new Error(`Ogiltigt tecken i teststräng: ${ch}`);
-    if (code >= 0x100) {
-      throw new Error(`Tecken utanför WinAnsi/Latin-1-intervallet: ${ch} (U+${code.toString(16)})`);
-    }
-    bytes.push(code);
+/** pdfjs-dist (ren JS, inget systembinär-beroende) — se filhuvudets § VERIFIERINGSMETOD. */
+async function extractPdfText(pdfBytes: Buffer): Promise<string> {
+  const doc = await getDocument({ data: new Uint8Array(pdfBytes) }).promise;
+  let text = '';
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map((item) => ('str' in item ? item.str : '')).join('');
   }
-  return bytes
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
-    .toUpperCase();
+  return text;
 }
 
-function extractInflatedText(pdfBytes: Buffer): string {
+/** `/FontFile2` (TrueType) eller `/FontFile3` (CFF/OpenType) i den råa
+ *  byteströmmen — bevisar att typsnittet FAKTISKT bäddades in, inte bara
+ *  refererades. Samma teknik som generate-event-attachment.staging.test.ts. */
+function hasEmbeddedFont(pdfBytes: Buffer): boolean {
   const raw = pdfBytes.toString('latin1');
-  let decoded = '';
-  let searchFrom = 0;
-  for (;;) {
-    const streamIdx = raw.indexOf('stream', searchFrom);
-    if (streamIdx === -1) break;
-    let start = streamIdx + 'stream'.length;
-    if (raw[start] === '\r') start++;
-    if (raw[start] === '\n') start++;
-    const endIdx = raw.indexOf('endstream', start);
-    if (endIdx === -1) break;
-    const chunk = pdfBytes.subarray(start, endIdx);
-    try {
-      decoded += inflateSync(chunk).toString('latin1');
-    } catch {
-      // Inte alla stream-block är FlateDecode — förväntat, hoppa vidare.
-    }
-    searchFrom = endIdx + 'endstream'.length;
-  }
-  return decoded;
+  return /\/FontFile[23]?\b/.test(raw);
 }
 
-/**
- * Dekomprimerar ENDAST DET FÖRSTA stream…endstream-blocket — sidans egen
- * CONTENT STREAM (de faktiskt RITADE `Tj`-textoperatorerna), INTE de SENARE
- * blocken (en komprimerad ObjStm som bär Info-dictionaryt med `/CreationDate`
- * + `/ModDate`, samt en XRef-ström). Skillnaden mot `extractInflatedText`
- * (ovan, som konkatenerar ALLA block) spelar roll HÄR specifikt: två annars
- * IDENTISKA anrop till preview-receipt ger PDF-lib-genererade tidsstämplar
- * som skiljer sig sekund för sekund — ett fullt-blob-likhetstest (som
- * `extractInflatedText` hade gett) hade FLAKAT på den bruskällan ensam,
- * blint för om kvittonumret faktiskt var stabilt eller inte (fångat live,
- * TASK-246-byggsessionens negativa kontrollprov, se testet nedan för
- * instansen). Denna funktion isolerar bort bruset helt: sidans content-
- * stream innehåller INGA datum, bara ritkommandon — deterministisk given
- * identisk textinput.
- */
-function extractPageContentStream(pdfBytes: Buffer): string {
+/** [AC #2] Frånvaron av pdf-libs egen metadata-signatur — `PDFDocument.
+ *  create()` sätter Producer/Creator till exakt denna sträng by default
+ *  (verifierat mot pdf-lib:s källkod, `src/api/PDFDocument.ts` §
+ *  `updateInfoDict`). En DocRaptor/Prince-PDF bär ALDRIG denna sträng. */
+function hasPdfLibSignature(pdfBytes: Buffer): boolean {
   const raw = pdfBytes.toString('latin1');
-  const streamIdx = raw.indexOf('stream');
-  if (streamIdx === -1) throw new Error('Ingen stream hittad i PDF-bytesen');
-  let start = streamIdx + 'stream'.length;
-  if (raw[start] === '\r') start++;
-  if (raw[start] === '\n') start++;
-  const endIdx = raw.indexOf('endstream', start);
-  if (endIdx === -1) throw new Error('Ingen endstream hittad i PDF-bytesen');
-  const chunk = pdfBytes.subarray(start, endIdx);
-  return inflateSync(chunk).toString('latin1');
+  return raw.includes('pdf-lib (https://github.com/Hopding/pdf-lib)') || raw.includes('Hopding');
 }
 
 interface PreviewBody {
@@ -144,15 +132,8 @@ function postPreview(
   return request.post(`${config.baseUrl}${ENDPOINT}`, { headers, data: body });
 }
 
-/** Extraherar den dekomprimerade textens hex-representation — ett kort hjälp-
- * verb för `expect(...).toContain(winAnsiHex(...))`-anrop nedan. */
-function decodedHexIncludes(pdfBytes: Buffer, text: string): boolean {
-  const decoded = extractInflatedText(pdfBytes).toUpperCase();
-  return decoded.includes(winAnsiHex(text));
-}
-
-test.describe('preview-receipt — skarp conformance (TASK-246)', () => {
-  test('allow: giltig förhandsvisning → 200 + riktig PDF (platshållarnummer + typexempel + riktigt eventnamn)', async ({
+test.describe('preview-receipt — skarp conformance (TASK-246, motorbytt TASK-309.5)', () => {
+  test('allow: giltig förhandsvisning → 200 + riktig DocRaptor-PDF (platshållarnummer + typexempel + riktigt eventnamn), sökbar text, inbäddat typsnitt, ingen pdf-lib-signatur', async ({
     request,
   }) => {
     const config = getApiConfig();
@@ -185,58 +166,53 @@ test.describe('preview-receipt — skarp conformance (TASK-246)', () => {
     const pdfBytes = Buffer.from(await pdfResponse.body());
     expect(pdfBytes.subarray(0, 5).toString('latin1')).toBe('%PDF-');
 
-    // "FÖRHANDSVISNING" — ALDRIG ett riktigt "MM-<år>-N"-nummer.
-    expect(decodedHexIncludes(pdfBytes, 'Kvitto FÖRHANDSVISNING')).toBe(true);
+    // [AC #2] Motorbevis: inbäddat typsnitt, ingen pdf-lib-signatur.
+    expect(hasEmbeddedFont(pdfBytes), 'PDF:en saknar ett inbäddat typsnitt (/FontFile2)').toBe(
+      true,
+    );
+    expect(
+      hasPdfLibSignature(pdfBytes),
+      'PDF:en bär pdf-libs metadata-signatur — DocRaptor-motorbytet fungerade inte',
+    ).toBe(false);
+
+    const text = await extractPdfText(pdfBytes);
+
+    // "FÖRHANDSVISNING" — ALDRIG ett riktigt "MM-<år>-N"-nummer. Rubriken
+    // "Kvitto" (H1) och OCR-numrets VÄRDE kontrolleras separat (två skilda
+    // DOM-element/table-rader i mallen, se docs/mallar/bilagor/kvitto.html
+    // — sammanslagningen till EN sträng i pdf-lib-eran fanns bara för att
+    // den formen var en textrad-lista, inte en HTML-tabell).
+    expect(text).toContain('Kvitto');
+    expect(text).toContain('FÖRHANDSVISNING');
     // Typexemplet (AC #2, bokfört beslut) — se preview-receipt/index.ts § PERSONDATA.
-    expect(decodedHexIncludes(pdfBytes, 'Kund: Exempelperson')).toBe(true);
-    // [TASK-306 RÄTTELSEVARV, 2026-08-23, ÖPPET BOKFÖRD TÄCKNINGSFÖRLUST]
-    // Denna assertion kontrollerade tidigare att 'Event (source)' =
-    // 'Fjärrskådning' (BELAGGNING_EVENT_ID:s riktiga kursnamn) syntes i
-    // PDF:en, och att Å-tecknet (WinAnsi 0xE5) därmed bevisade att
-    // preview-receipt hanterar svenska tecken i EVENTDATA (inte bara i den
-    // hårdkodade mall-brödtexten, som klass B redan bevisar separat, se
-    // generate-event-attachment.staging.test.ts). Marcus dom 1 tar bort
-    // KURSNAMNET ur benämningen HELT (`kvittoBenamning` läser inte längre
-    // `eventNamn`) — eventnamnet syns därför INTE LÄNGRE NÅGONSTANS i
-    // kvittots renderade text, och det finns inget annat fält i
-    // BELAGGNING_EVENT_ID-fixturens data (Typ/Startdatum/Slutdatum är
-    // diakritik-fria, inget Bokföringstext-fält satt) som kan bära samma
-    // live-roundtrip-bevis för svenska tecken I EVENTDATA specifikt via
-    // DENNA EF. Assertionen och kommentaren är BORTTAGNA, inte flyttade —
-    // en ny testhärnas-fixtur enbart för detta vore scope-creep utanför
-    // detta korts gräns (samma avvägning som AC #3:s "ifyllt"-gren nedan
-    // gör explicit). Svenska tecken i EVENTDATA generellt är fortfarande
-    // täckt på UNITNIVÅ (`kvittoBenamning`s egna tester använder
-    // "Föreläsning", ö/ä) och LIVE för klass B/C-mallarnas egen brödtext.
+    expect(text).toContain('Exempelperson');
+    expect(text).toContain('anna.andersson@example.com');
+    // Org-uppgifterna — verkliga, aldrig platshållartext.
+    expect(text).toContain('Miranon Media AB');
+    expect(text).toContain('Miranon Media/Lotta Gotthardsson');
+    // Nettot/momsen/bruttot för TYPEXEMPEL.belopp = 500 (beraknaMoms(500) →
+    // moms 100,00, netto 400,00) — samma facit som receipt-content.test.ts.
+    expect(text).toContain('400,00');
+    expect(text).toContain('100,00');
+    expect(text).toContain('500,00');
+    // Dagens datum, ISO — SAMMA härledning som EF:en själv använder
+    // (formatKvittoDatum(new Date().toISOString())), inte ett hårdkodat
+    // facit-datum som glider fel dagen efter byggsessionen.
+    expect(text).toContain(formatKvittoDatum(new Date().toISOString()));
 
     // [TASK-306, AC #3] LIVE-BEVIS: preview-receipt läser Typ/Startdatum/
     // Slutdatum/Bokföringstext (kvitto) ur SAMMA Eventplanering-rad och
     // bygger benämningen via kvittoBenamning(). BELAGGNING_EVENT_ID:s tre
     // fält (live-verifierat mot staging via Airtable MCP innan detta test
-    // skrevs, ADR-086 premiss-pass): Typ = "Utbildning", Startdatum =
-    // "2025-11-20", Slutdatum = "2025-11-21" — INGET "Bokföringstext
-    // (kvitto)"-fält satt (fixturen föregår TASK-306). Det BEVISAR "tomt →
-    // utelämnat" (beslut a) LIVE, mot en verklig rad, utan att mutera den
-    // delade fixturen (TASK-6-klassen: delade staging-fixturer muteras
-    // ALDRIG) — "ifyllt → i benämningen"-halvan är fullt täckt av
-    // `kvittoBenamning()`s enhetstester (tests/api/receipt-content.test.ts
-    // § "kvittoBenamning") plus en ENGÅNGS live-verifiering mot ett
-    // temporärt sentinel-event (skapat och raderat via Airtable MCP),
-    // bokförd i TASK-306:s slutrapport — inget EF-skrivbart fält finns för
-    // denna manuella, Lotta-ifyllda kolumn (`_shared/field-allowlists.ts`
-    // saknar en 'Bokföringstext (kvitto)'-post för
-    // `create-event`/`update-event`, verifierat), så en andra automatiserad
-    // "ifyllt"-gren hade krävt en NY testhärnas-EF enbart för detta —
-    // scope-creep utanför detta korts gräns.
-    //
-    // [TASK-306 RÄTTELSEVARV] Strängens FORM ändrad (Marcus dom 1): datumet
-    // komprimeras ('2025-11-20/21', samma år+månad → bara slutdagen,
-    // `formaterDatumspann` i receipt-content.ts) och kursnamnet är borta —
-    // "Utbildning 2025-11-20/21", INGET kommatecken mellan Typ och datum.
-    expect(decodedHexIncludes(pdfBytes, 'Utbildning 2025-11-20/21')).toBe(true);
+    // skrevs, ADR-086 premiss-pass — oförändrat sedan TASK-306): Typ =
+    // "Utbildning", Startdatum = "2025-11-20", Slutdatum = "2025-11-21" —
+    // INGET "Bokföringstext (kvitto)"-fält satt. Strängens FORM (Marcus dom
+    // 1, TASK-306): datumet komprimeras ("2025-11-20/21", samma år+månad →
+    // bara slutdagen) och kursnamnet är borta.
+    expect(text).toContain('Utbildning 2025-11-20/21');
   });
 
-  test('allow: TVÅ anrop i rad → SAMMA platshållarnummer båda gångerna (beteende-bevis: ingen ledger rörd)', async ({
+  test('allow: TVÅ anrop i rad → SAMMA platshållarnummer OCH identisk extraherad text (beteende-bevis: ingen ledger rörd, motorn är deterministisk)', async ({
     request,
   }) => {
     const config = getApiConfig();
@@ -262,31 +238,19 @@ test.describe('preview-receipt — skarp conformance (TASK-246)', () => {
       'andra anropet skapade ett NYTT objekt i stället för upsert',
     ).toBe(new URL(body1.url).pathname);
 
-    // BÅDA innehåller platshållaren (substring-check, delad grund).
-    expect(decodedHexIncludes(pdf1, 'Kvitto FÖRHANDSVISNING')).toBe(true);
-    expect(decodedHexIncludes(pdf2, 'Kvitto FÖRHANDSVISNING')).toBe(true);
-
-    // DET SKARPA BEVISET: sidans CONTENT STREAM (extractPageContentStream —
-    // INTE hela blobben, se den funktionens docblock för varför) är
-    // BYTE-FÖR-BYTE IDENTISK mellan de två anropen. Två negativa
-    // kontrollprov under TASK-246-byggsessionen (2026-08-16), båda körda
-    // mot en medvetet trasig staging-deploy INNAN den här formen skrevs:
-    //   1. En substring-check ENSAM (raderna ovan) FÅNGADE INTE att
-    //      kvittonumret suffixades med `crypto.randomUUID()` i EF:en — det
-    //      gamla testet förblev GRÖNT (en äkta blind fläck: "innehåller
-    //      FÖRHANDSVISNING" är sant även om strängen är
-    //      "FÖRHANDSVISNING-<uuid>").
-    //   2. Ett FULLT blob-likhetstest (`extractInflatedText(pdf1) ===
-    //      extractInflatedText(pdf2)`, alla stream-block konkatenerade)
-    //      FÅNGADE regressionen — men hade FLAKAT även mot KORREKT kod: PDF-
-    //      lib stämplar `/CreationDate`/`/ModDate` i en separat, komprimerad
-    //      ObjStm, och de skiljer sig sekund för sekund mellan två annars
-    //      identiska anrop (empiriskt observerat i kontrollprovets diff).
-    // `extractPageContentStream` isolerar bort den bruskällan helt (bara
-    // ritkommandon, inga datum) — fångar VARJE avvikelse i det RITADE
-    // innehållet (extra tecken, ett inkrementerande löpnummer) utan att
-    // flaka på PDF-metadatats naturliga icke-determinism.
-    expect(extractPageContentStream(pdf1)).toBe(extractPageContentStream(pdf2));
+    // DET SKARPA BEVISET (motorbytt TASK-309.5, se filhuvudet): den
+    // EXTRAHERADE TEXTEN — inte de råa PDF-bytesen — är identisk mellan de
+    // två anropen. Byte-identitet på HELA filen är INTE testad här av
+    // samma skäl som den gamla pdf-lib-testformens `extractPageContentStream`
+    // isolerade bort `/CreationDate`/`/ModDate`: DocRaptor/Prince kan bädda
+    // in en genererings-tidsstämpel i PDF-metadata (ID-arrayen i trailern,
+    // Info-dictionaryt) som skiljer sig mellan två annars identiska anrop —
+    // den extraherade TEXTEN bär inga sådana tidsstämplar och är därför det
+    // rätta instrumentet för "samma indata → samma innehåll".
+    const text1 = await extractPdfText(pdf1);
+    const text2 = await extractPdfText(pdf2);
+    expect(text1).toBe(text2);
+    expect(text1).toContain('FÖRHANDSVISNING');
   });
 
   test('deny: saknad eventId → 400', async ({ request }) => {

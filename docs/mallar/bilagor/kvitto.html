@@ -2,17 +2,26 @@
 <!--
   Kvittomallen - S108 MARCUS-SEKVENS punkt 2 (ADR-119 beslut 2+3-vägen).
 
-  Ersätter INGET kod-anrop ännu - `renderKvittoPdf` (`_shared/receipt-pdf.ts`)
-  ritar fortfarande text på koordinater med pdf-lib. Den här mallen är
-  FORMEN, byggd mot Rogers skarpa kvitto
-  (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 kvitto-forlaga.pdf`,
-  T170), inte en ny renderingsväg - kopplingen till DocRaptor är en senare
-  skiva (ADR-119 beslut 7 kräver ett minimaltest först).
+  [TASK-309.5, ADR-125 § Beslut 4-5] KOPPLAD TILL RENDERAREN OCH
+  KONVERTERAD TILL ETA. Fram till TASK-309.5 var detta ren strängersättning
+  (`{{token}}`) utan EF-koppling — `renderKvittoPdf` (`_shared/
+  receipt-pdf.ts`, nu RIVEN) ritade kvittots text på koordinater med
+  pdf-lib. Sedan TASK-309.5 renderas kvittot genom SAMMA väg som
+  bekräftelsebilagan/deltagarinformationen: `_shared/mall-render.ts`s
+  `renderaMallPdf('kvitto', …)` (Eta, `autoEscape: true`) anropad av
+  BÅDA `preview-receipt/index.ts` och `send-receipt-email/index.ts`.
+  Byggd mot Rogers skarpa kvitto (`~/Desktop/Miranon Media/
+  exempelpdokument/2026-08-03 kvitto-forlaga.pdf`, T170) — layouten/
+  måtten är OFÖRÄNDRADE av denna konvertering, bara platshållarsyntaxen
+  bytte form (`{{x}}` → `<%= data.x %>`).
 
   TOKENYTAN ÄR 1:1 MED `supabase/functions/_shared/receipt-content.ts`
-  (hårt krav, S108 Del 8 § D). Varje dubbel-klammer-fält nedan härleds ur
-  `KvittoradSpec`, `beraknaMoms()`s utdata eller `MIRANON_ORG` - se
-  README.md § Kvittots dynamiska yta för den fullständiga käll-tabellen.
+  (hårt krav, S108 Del 8 § D) — numera VIA `_shared/mall-data.ts`s
+  `byggKvittoData(spec)`, som bygger den strukturerade `data`-formen Eta
+  fyller mallen med genom att ÅTERANVÄNDA `receipt-content.ts`s rena
+  hjälpfunktioner (`beraknaMoms`/`formatBelopp`/`formatKvittoDatum`/
+  `kvittoBenamning`/`MIRANON_ORG`) — se README.md § Kvittots dynamiska
+  yta för den fullständiga käll-tabellen.
 
   FÖRLAGE-FÄLT UTAN KÄLLA I `receipt-content.ts` (Förfallodatum, Vårt
   ordernr, Öresavr, Telefon/Plusgiro/Swish/Webb/Epost-raderna i sidfoten) är
@@ -23,20 +32,22 @@
   så differensen är alltid exakt noll, se dess docstring) eller Miranons
   egna, redan publicerade kontaktuppgifter (T170), samma klass av statisk
   organisationsdata som bekraftelsebilaga.html redan hårdkodar
-  (Swish/Plusgiro). "Vår referens" (`{{orgReferens}}`) var tidigare en GAP
-  här (skrev `{{orgNamn}}`, Rogers egen personattribuering saknade
+  (Swish/Plusgiro). "Vår referens" (`<%= data.orgReferens %>`) var tidigare
+  en GAP här (skrev `{{orgNamn}}`, Rogers egen personattribuering saknade
   motsvarighet) - STÄNGD (TASK-306 rättelsevarv, Marcus dom 3, 2026-08-23):
   `MIRANON_ORG.varReferens` bär nu Lottas egen skrivning
   ("Miranon Media/Lotta Gotthardsson").
 
   Ingen persondata förekommer här (samma disciplin som de två andra
-  mallarna) - köparens namn kommer från `{{kundnamn}}`-token, aldrig ett
-  riktigt kundnamn i själva mallfilen.
+  mallarna) - köparens namn kommer från `<%= data.kundnamn %>`-token,
+  aldrig ett riktigt kundnamn i själva mallfilen. `autoEscape: true`
+  (mall-render.ts) escapar all Lotta/kund-buren fritext — se
+  `mall-render.test.ts`/`mall-data.test.ts` för det mekaniska beviset.
 -->
 <html lang="sv">
 <head>
 <meta charset="UTF-8" />
-<title>Kvitto - {{kvittonummer}}</title>
+<title>Kvitto - <%= data.kvittonummer %></title>
 <link rel="stylesheet" href="./bilaga-delad.css" />
 <link rel="stylesheet" href="./kvitto.css" />
 </head>
@@ -50,11 +61,11 @@
       <dl class="kvitto-metarad">
         <div class="kvitto-metarad-rad">
           <dt>Kvitto-/OCR-nr:</dt>
-          <dd>{{kvittonummer}}</dd>
+          <dd><%= data.kvittonummer %></dd>
         </div>
         <div class="kvitto-metarad-rad">
           <dt>Datum:</dt>
-          <dd>{{datum}}</dd>
+          <dd><%= data.datum %></dd>
         </div>
       </dl>
     </div>
@@ -64,11 +75,11 @@
     <dl class="kvitto-referensblock">
       <div class="kvitto-referensblock-rad">
         <dt>Vår referens</dt>
-        <dd>{{orgReferens}}</dd>
+        <dd><%= data.orgReferens %></dd>
       </div>
       <div class="kvitto-referensblock-rad">
         <dt>Er referens</dt>
-        <dd>{{kundnamn}}</dd>
+        <dd><%= data.kundnamn %></dd>
       </div>
       <div class="kvitto-referensblock-rad">
         <dt>Förfallodatum</dt>
@@ -76,13 +87,13 @@
       </div>
       <div class="kvitto-referensblock-rad">
         <dt>Vårt ordernr</dt>
-        <dd>{{kvittonummer}}</dd>
+        <dd><%= data.kvittonummer %></dd>
       </div>
     </dl>
     <div class="kvitto-fakturaadress">
       <p class="kvitto-fakturaadress-etikett">Fakturaadress:</p>
-      <p>{{kundnamn}}</p>
-      <p>{{kundEpost}}</p>
+      <p><%= data.kundnamn %></p>
+      <p><%= data.kundEpost %></p>
     </div>
   </div>
 
@@ -113,12 +124,12 @@
       </colgroup>
       <tr>
         <td class="kvitto-col-benamning">
-          {{benamning}}
+          <%= data.benamning %>
         </td>
         <td class="kvitto-col-antal">1</td>
         <td class="kvitto-col-enhet"></td>
-        <td class="kvitto-col-apris kvitto-belopp">{{netto}}</td>
-        <td class="kvitto-col-summa kvitto-belopp">{{netto}}</td>
+        <td class="kvitto-col-apris kvitto-belopp"><%= data.netto %></td>
+        <td class="kvitto-col-summa kvitto-belopp"><%= data.netto %></td>
       </tr>
     </table>
   </div>
@@ -126,15 +137,15 @@
   <div class="kvitto-box kvitto-totalruta">
     <div class="kvitto-total-kolumn">
       <span class="kvitto-total-etikett">Netto</span>
-      <span class="kvitto-total-varde">{{netto}}</span>
+      <span class="kvitto-total-varde"><%= data.netto %></span>
     </div>
     <div class="kvitto-total-kolumn">
       <span class="kvitto-total-etikett">Exkl. moms</span>
-      <span class="kvitto-total-varde">{{netto}}</span>
+      <span class="kvitto-total-varde"><%= data.netto %></span>
     </div>
     <div class="kvitto-total-kolumn">
       <span class="kvitto-total-etikett">Moms</span>
-      <span class="kvitto-total-varde">{{moms}}</span>
+      <span class="kvitto-total-varde"><%= data.moms %></span>
     </div>
     <div class="kvitto-total-kolumn">
       <span class="kvitto-total-etikett">Öresavr</span>
@@ -144,7 +155,7 @@
       <span class="kvitto-total-valuta">SEK</span>
       <div class="kvitto-total-kolumn">
         <span class="kvitto-total-etikett">BETALT</span>
-        <span class="kvitto-total-varde-stor">{{brutto}}</span>
+        <span class="kvitto-total-varde-stor"><%= data.brutto %></span>
       </div>
     </div>
   </div>
@@ -152,10 +163,10 @@
   <footer class="kvitto-box kvitto-sidfot">
     <div class="kvitto-sidfot-kolumn">
       <p class="kvitto-sidfot-etikett">Adress</p>
-      <p>{{orgNamn}}</p>
-      <p>{{orgGatuadress}}</p>
-      <p>{{orgPostadress}}</p>
-      <p>{{orgLand}}</p>
+      <p><%= data.orgNamn %></p>
+      <p><%= data.orgGatuadress %></p>
+      <p><%= data.orgPostadress %></p>
+      <p><%= data.orgLand %></p>
       <p>www.miranon.se</p>
     </div>
     <div class="kvitto-sidfot-kolumn">
@@ -174,9 +185,9 @@
     </div>
     <div class="kvitto-sidfot-kolumn">
       <p class="kvitto-sidfot-etikett">Organisationsnr</p>
-      <p>{{orgNummer}}</p>
+      <p><%= data.orgNummer %></p>
       <p class="kvitto-sidfot-etikett">Momsreg.nr.</p>
-      <p>{{orgMomsregnummer}}</p>
+      <p><%= data.orgMomsregnummer %></p>
       <p class="kvitto-sidfot-etikett">Godkänd för F-skatt</p>
     </div>
   </footer>
