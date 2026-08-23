@@ -1,10 +1,10 @@
 ---
 id: TASK-299.6
 title: 'Skiva: Facit-amendering av berörda ytor + sidram-sektion i DESIGN-SYSTEM-SPEC'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 19:26'
-updated_date: '2026-08-23 16:09'
+updated_date: '2026-08-23 19:20'
 labels:
   - ready-for-human
 dependencies:
@@ -32,9 +32,9 @@ De stämplade ytor som byter sidram i den omfattning Marcus valde får sina mani
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
+- [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 - [x] #6 Facit-amendering av berörda stämplade manifest sker i EGEN commit med Marcus citat daterat (ADR-102/103) — aldrig i samma commit som formändringen
 <!-- DOD:END -->
 
@@ -82,4 +82,17 @@ check:docs fallde FORST (exit 1) pa lychee: ADR-126 pekade pa gissade filnamn fo
 
 DoD #3 EJ BOCKAD — CI per jobb ags av orkestreraren, inte av agenten.
 DoD #5 EJ BOCKAD, MEDVETET. axe 0 ar matt pa bada ytorna (persondetaljens renderade vy + GLES/tomlages-vy; dorrlistans sex svep i promoveringsgrinden: Dag 1, listlage, sok med traff, sok utan traff, klargrupp expanderad, tomlage — plus acceptance-svepet). Men persondetaljens FEL-tillstand (404 och generiskt fel via role=alert) har testtackning UTAN axe-svep, och kriteriet sager uttryckligen "alla tillstand ... fel". Att bocka det hade gjort registret osant. Andringen ar dessutom bevisat formneutral (34/34 mot ororda ariaSnapshot-referenser), sa axe-utfallet kan inte ha forandrats av denna diff — men det ar ett argument for att luckan ar ofarlig, inte for att den ar tackt.
+
+STÄNGNING 2026-08-23 (S111 kort-stängningspass). Båda de kvarvarande DoD-posterna bockade — #5 först EFTER att luckan faktiskt täppts, inte på argumentet att den var ofarlig.
+
+DoD #3 — CI GRÖN PER JOBB: arbetet (bec93209 rivningen, 8e2edaa6 facit-amenderingen, b903c402 ADR-126 + spec § 23) landade i PR #1873, merge-commit 19719ab7 på main. `gh pr checks 1873` mätt 2026-08-23: 15 rollup-poster, NOLL fail — Lint + Audit + TypeCheck pass (2m16s), Acceptance (hermetisk) pass (6m43s), Acceptance tvåsidigt bevis pass (7m45s), Pure + Build pass (47s), Webblasarbeteende pass (1m57s), Docs link check pass (56s), CodeQL/Analyze pass, Vercel pass. A11y/Staging skipping per CI:s diff-gating.
+
+DoD #5 — AXE-LUCKAN ÄR TÄPPT, INTE BORTFÖRKLARAD. Byggpasset lämnade denna post öppen med rätt skäl: kriteriet säger 'alla tillstånd ... fel', och persondetaljens två fel-grenar (404 + generiskt 4xx via role=alert) hade testtäckning UTAN axe-svep. Byggpasset noterade själv att formneutraliteten (34/34 mot orörda ariaSnapshot-referenser) var 'ett argument för att luckan är ofarlig, inte för att den är täckt'. Detta pass täckte den:
+  · tests/acceptance/person-detail.acceptance.test.ts — axe-svep tillagt i BÅDA de befintliga felläges-testerna (404-grenen och den generiska 4xx-grenen), inte i nya parallella test. Husets mönster följt: samma AxeBuilder-taggar (wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa) som filens två befintliga axe-test.
+  · De två fel-grenarna sveps SEPARAT med avsikt: de är olika renderade tillstånd (annan copy, samma role=alert-väg), så 404-svepet bevisar inte den generiska grenen.
+  · MÄTT: `npm run test:acceptance -- tests/acceptance/person-detail.acceptance.test.ts` exit 0, 8/8 passed (24,9 s). Fel-testerna: NOT-FOUND 2,3 s, övrigt fel 2,3 s — båda gröna MED svepet.
+  · TVÅVÄGSBEVIS, kortets egen disciplin: en tillfällig alt-lös bild injicerades i fel-vyns DOM före svepet → körningen FÄLLDE, exit 1, med axe-regeln 'image-alt' i violations-diffen. Injektionen togs bort igen och filen återställdes (grep efter markören ger 0 träffar i den committade formen). Svepet kan alltså fälla — det är inte ett grönt test som mäter ingenting.
+  · Dörrlistans sida av DoD #5 var redan mätt av byggpasset (sex svep i promoveringsgrinden + acceptance-svepet).
+
+GRINDAR I DETTA PASS, exitkod läst direkt (aldrig via pipe): npx @biomejs/biome check . exit 0 · npm run typecheck:tests exit 0 · node scripts/check-langa-streck.mjs exit 0 (271 filer, 0 ofångade) · npm run check:docs exit 0 (14/14) · bash scripts/check-facit.sh exit 0.
 <!-- SECTION:NOTES:END -->

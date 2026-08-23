@@ -1,10 +1,10 @@
 ---
 id: TASK-299.2
 title: 'Skiva: Marcus mäter sidramen på riktig data och låser omfattningen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 19:14'
-updated_date: '2026-08-23 14:29'
+updated_date: '2026-08-23 19:22'
 labels:
   - ready-for-human
 dependencies:
@@ -28,11 +28,11 @@ Marcus öppnar persondetaljen, check-in, aktivitetshistoriken och dokumentytan i
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -97,4 +97,12 @@ GRINDTABELL (samtliga körda 2026-08-23, denna session):
 - scripts/check-facit.sh: exit 0
 
 SLUTSATS: Alla fyra ytor granskade med och utan `?sidram=ny`, desktop (1280px) och mobil (375px), enligt AC #1:s ordalydelse. Två ytor (persondetaljen, check-in) är pixelmässigt/aria-mässigt opåverkade och redan facit-gröna med färska grindkörningar. Två ytor (aktivitetshistoriken, dokumentytan) visar en verklig, mätt 16 px missalignment mellan rubrik och sidans övriga innehåll när flaggan är på — en förväntad konsekvens av TASK-299.1:s medvetet smala scope, inte en bugg i det som landades, men ett explicit ATT GÖRA för TASK-299.6:s fulla promovering av dessa två ytor (dra in filterrad/lista till samma marginal som rubriken, utöver facit-amenderingen). AC #1 bockas med denna rapport som belägg.
+
+STÄNGNING 2026-08-23 (S111 kort-stängningspass). DoD #1-#5 bockade.
+
+DoD #1 — AC #1-#3 samtliga bockade före detta pass.
+DoD #2 — agent-genomgångens grindtabell (kortets egna notes) rapporterar tio grindar gröna, inklusive check-facit exit 0.
+DoD #3 — CI GRÖN PER JOBB: PR #1866, merge-commit d3858a29 på main. `gh pr checks 1866` mätt 2026-08-23: 9 rollup-poster, NOLL fail — Lint + Audit + TypeCheck pass (2m18s), Docs link check pass (47s), CodeQL/Analyze (actions + javascript-typescript) pass, Detect changed files pass, CI Passed or Skipped pass, Vercel pass. 'Test suite' står som SKIPPING, och det är CI:s egen diff-gating som är korrekt här, inte en utebliven grind: PR:ens diff är EN enda fil (docs-only-klassen).
+DoD #4 — VERIFIERAT I DETTA PASS, inte antaget: `gh pr diff 1866 --name-only` ger exakt EN fil, kortfilen backlog/tasks/task-299.2. Noll orelaterade filer per konstruktion.
+DoD #5 — axe 0 på varje NY/ÄNDRAD yta: mängden ny/ändrade ytor är TOM (diffen är en kortfil, se DoD #4), så kriteriet håller vakuöst. Det finns dessutom positivt belägg åt samma håll: genomgången körde axe-svep på samtliga fyra granskade ytor med ?sidram=ny och rapporterade grönt i alla — persondetalj, dörrlista, aktivitetshistorik (TOM + IFYLLD vy) och dokumentytan.
 <!-- SECTION:NOTES:END -->

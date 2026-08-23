@@ -1,10 +1,10 @@
 ---
 id: TASK-299.5
 title: 'Skiva: Promovering av anmälningssidan till skarp yta'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 19:23'
-updated_date: '2026-08-23 17:16'
+updated_date: '2026-08-23 19:20'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,11 +33,11 @@ Den stämplade formen flyttas till den skarpa anmälningssidan. Lotta ser efter 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 - [x] #6 Höjdlåset verifierat som beteende: rader med/utan status och med/utan åtgärdsbehov har samma höjd
-- [ ] #7 Facit-granskning före stängning: anmälningssidan mot tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json, ytan 'anmälningssidan', i alla tre lägen
+- [x] #7 Facit-granskning före stängning: anmälningssidan mot tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json, ytan 'anmälningssidan', i alla tre lägen
 - [x] #8 Dev-växeln riven före arbetsenhetens stängning; formen kvar (ADR-103 B2 steg 4 — villkor och växlar, aldrig form)
 <!-- DOD:END -->
 
@@ -45,4 +45,18 @@ Den stämplade formen flyttas till den skarpa anmälningssidan. Lotta ser efter 
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-08-23 (TASK-299.10-fyndet, korrigerat i denna skiva): Marcus QA på förhandsgranskningsbygget fångade att promoveringen (denna skiva) behöll den gamla textlänken "← Tillbaka till Mer" i stället för husets delade SidRam-primitiv, trots att PRD TASK-299 beslutade full omfattning (alla Mer-sidor, inklusive anmälningssidan) 2026-08-22 — före denna skivas eget landningsdatum. Rättat: SidRam ersätter textlänken, innehållskolumnen (rubrik/filter/tomt-/felläge/skelett) fick ankarets egen px-4 så den linjerar med chevronens mx-4 (x=372 vid 1280 px, matchar väntelistan) — MED ett medvetet undantag för listkortet (behåller x=356 via -mx-4) för att inte återinföra den 32 px-regression som en gång sänkte namnkolumnen till 66,67 px (golvet är 80, mer-anmalningar-form.acceptance.test.ts § Radanatomin). Facit-bilderna (7 st) är omtagna med skarpa routen; AMENDERING-2026-08-23-sidram.md i s111-anmalningssidan-konvergens/ bokför klass (c) och väntar Marcus omstämpling. Promoverings-grindens ariaSnapshot-par regenererades INTE — sidkromet står utanför dess ankare i båda formerna, 18/18 gröna oförändrat.
+
+STÄNGNING 2026-08-23 (S111 kort-stängningspass). De två kvarvarande DoD-posterna bockade.
+
+AC-LÄGET KONTROLLERAT (uppdragets uttryckliga fråga): AC #1-#6 var SAMTLIGA redan bockade av byggpasset. Ingen AC lämnades öppen — bockningen nedan rör bara DoD.
+
+DoD #3 — CI GRÖN PER JOBB: promoveringen (c408faef…e7bb770f) plus QA-fyndets sidram-rättning (9a06cf3b/718e586f) och SidRam-topp-luften (2e16ded1) landade i PR #1864, merge-commit e1470eb0 på main. `gh pr checks 1864` mätt 2026-08-23: 15 rollup-poster, NOLL fail. Acceptance (hermetisk) pass 8m54s — jobbet som kör mer-anmalningar-form.acceptance + promoveringsgrinden.
+
+DoD #7 — FACIT-GRANSKNING FÖRE STÄNGNING, mätt i detta pass mot main (e1470eb0), inte antagen:
+  · `bash scripts/check-facit.sh` exit 0 — 13 manifest, 28 ytor deklarerade, 0 ogodkända.
+  · Manifestet tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json bär godkand { av: marcus, datum: 2026-08-23, citat: "Ser bra ut", sha: cb7ad681b216925cc1d4168e538c4c70bb94c5a4 } — OMSTÄMPLAT (commit 33645735) på den LANDADE formen, inte på den prototypform som bar den första stämpeln ("Det blir bra.", sha d3858a29). Det är precis den tidsordning DoD #7 kräver.
+  · ALLA TRE LÄGEN täckta och disk-verifierade: lista (desktop+mobil), åtgärdskö (desktop+mobil), tomt (desktop+mobil), plus filterpanel-desktop = 7 bilder, samtliga närvarande på disk och samtliga uppräknade i manifestets bilder-lista.
+  · Grinden bokför öppet att källan src/components/dev/anmalningar-prototyp/VariantB.tsx är riven efter stämpeln — förväntat, det är ADR-103 B2 steg 4:s rivning av prototyp-substratet (AC #2), inte en saknad fil.
+
+DIVERGENS BOKFÖRD: kortets tidigare not om 299.4-stämpeln citerar sha d3858a29 / "Det blir bra.". Manifestet på main bär nu omstämplingens värden. Båda är sanna i sin tid; den senare är den gällande.
 <!-- SECTION:NOTES:END -->

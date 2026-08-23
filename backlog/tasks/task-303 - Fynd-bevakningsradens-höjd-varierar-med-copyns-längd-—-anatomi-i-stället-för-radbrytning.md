@@ -3,10 +3,10 @@ id: TASK-303
 title: >-
   Fynd: bevakningsradens höjd varierar med copyns längd — anatomi i stället för
   radbrytning
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 21:48'
-updated_date: '2026-08-23 17:07'
+updated_date: '2026-08-23 19:19'
 labels:
   - ready-for-human
 dependencies: []
@@ -43,10 +43,10 @@ REGISTRERAD SOM EGET KORT, inte som utvidgning av TASK-291: 291 är uttryckligen
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -113,4 +113,11 @@ AC #6 (hem-facit) EJ RÖRD — ägs av orkestreraren, egen commit efter promover
 REGRESSIONEN SOM ORDBYTET LÄMNADE ÄR LÖST. Mätt på basen 943639a4 före promoveringen: hem.acceptance 28 passed / 1 failed, där felet var geometribeviset vid 1440 px (Expected <= 48, Received 72). Efter promoveringen: 32 passed / 0 failed. Det gamla geometribeviset är ersatt av höjdlåset ovan, eftersom line-clamp-2 — mekanismen det mätte — är riven.
 
 2026-08-23 (S111 resume 2, fönster 3) — AC #3 ('Ingen text klipps mitt i ett ord i något läge') AMENDERAT på orkestrerarens beslut med Marcus mandat (*"Rörande de två andra besluten ger jag dig mandat att besluta dem åt mig."*, efter att ha sett skarpa Hem: *"Ser bra ut."*). Skäl, mätt i 291-promoveringen (836c23a3): undertexten klipps aldrig (asserterat), men rubriken ellipserar vid ett 91-teckens eventnamn — en följd av 70 px-låset Marcus godkände; hela namnet finns i DOM:en. Kriteriet i sin gamla bokstav kunde aldrig bockas ärligt (samma klass som det strukna badge-kriteriet). CLI:t omnumrerar: det nya kriteriet blir sista AC. Vägarna som övervägdes: (a) amendera — vald; (b) stryk; (c) behåll med radbrytande rubrik — bryter höjdlåset.
+
+STÄNGNING 2026-08-23 (S111 kort-stängningspass). DoD #1-#4 bockade mot faktiskt tillstånd.
+
+DoD #1 — AC #1-#6 samtliga bockade före detta pass (AC #3 amenderat på Marcus mandat, det gamla badge-kriteriet struket; kortets egna notes bär hela historiken).
+DoD #2 — lokala grindar gröna per byggpassets mätning; höjdlåset asserterat exakt 70 px i 20 mätpunkter (4 bredder x 5 fall) med negativkontroll som fäller.
+DoD #3 — CI GRÖN PER JOBB: arbetet landade via PR #1864 (merge e1470eb0). `gh pr checks 1864` mätt 2026-08-23: NOLL fail av 15 rollup-poster; Acceptance (hermetisk) pass 8m54s — det är jobbet som kör hem.acceptance-höjdlåset.
+DoD #4 — path-scopad add; PR-diffen granskad före merge.
 <!-- SECTION:NOTES:END -->
