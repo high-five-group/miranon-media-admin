@@ -432,6 +432,30 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-23, `lifecycle: active`, åttonde resumen;
+pausad sju gånger, historik) — MÅL FÖR RESUMEN: HELA VÄGEN TILL PROMOVERING
+(PUNKT 4 → 5 → 6), SÅ ATT DENNA RESUME BLIR DEN SISTA.** Marcus order:
+*"Återuppta S108 … lägga en plan för att ta detta hela vägen till promovering
+så allt, alla sidor/ytor och allt vi gjort i denna session blir live i
+prod-appen."* Huvudkatalogen bär ingen ägarlapp (S109 stängd) men står på den
+landade grenen `docs/s109-hub-lyft`; S111 `lifecycle: active` i eget träd —
+S108 fortsätter i sina egna träd: dok `s108-paus-docs` (gren
+`docs/s108-resume-8` från `origin/main` `583fcd45`), kod/deploy
+`s108-bilagesparet` (lokal `main`, fast-forwardad till `583fcd45`).
+**Paus-PR `#1858` verifierad landad** (`583fcd45`). **Numreringen
+re-verifierad mot disk — ingen post rörde sig under pausen:** ADR **125** ·
+task-**309** · **L522** · 71 fragment · **T176** · f53 · session **112**.
+**Två divergenser mellan handoff och disk, flaggade i resume-rapporten:**
+(1) *Skapa*-knappen är INTE en stubb på rad 1009 — den ligger på
+`GenereringsPrototyp.tsx:1669` och anropar `skapaDokument(true)`, dvs
+utkast-vägen (transient Storage-URL som öppnas) utan persistering till
+Bilagor-rad; rad 1009 är "Ladda upp ny fil"-stubben. (2) Prototypen kör
+mot en HÅRDKODAD fixtur (`ARBOGA`, rad 99) med platser/innehåll i
+React-state — ingen datakälla bär eventinnehåll eller `Platser` ännu
+(Del 2 § D beslut 6/8), och mallarna hämtas från `/docs/mallar/bilagor/`
+som bara Vite serverar i dev. Promoveringen är därför större än en
+flagg-flipp. Plan: sessionsdok S108 Del 14 (väntar Marcus kvittens).
+
 **Session 108 ⏸️ PAUSAD (sjunde gången, 2026-08-23 ~13:00, `lifecycle: paused`) —
 PUNKT 1–3 KLARA; LEVERANSVÄGEN OCH KVITTOTS INNEHÅLL I PROD; PUNKT 4
 SKAPANDET AV BILAGORNA ÄR NÄSTA.** Resume 7 (22:22 → 13:00, 14 PR:er landade).
