@@ -68,6 +68,22 @@ const PERIOD_FRAN_ETIKETT: Record<string, PeriodFilter> = {
 /** Räknarens substantiv för anmälningar (böjs efter nämnaren). */
 const ANMALNINGS_ENHET = { ental: 'anmälan', flertal: 'anmälningar' };
 
+/**
+ * YTANS ANKARE — promoverings-grindens lokator (`ADR-103` B4).
+ *
+ * `ariaSnapshot`-paret jämför FÖRE-läget (denna prototyp-route) mot den
+ * promoverade `/mer/anmalningar` EFTER flippen. De två sidorna bär OLIKA
+ * SIDKROM — prototypen sin `max-w-xl`-wrapper plus `PrototypeSwitcher`-rail,
+ * den skarpa sidan `AppShell`s header/`<main>`/tab bar — så en snapshot av
+ * hela sidan hade fällt på kromet i stället för på formen. Ankaret sitter
+ * därför på FORMENS yttersta element, och sidkromet (inklusive
+ * "← Tillbaka till Mer") står UTANFÖR det i båda lägena.
+ *
+ * Konsumeras av `tests/visual/anmalningssidan-promoverings-grind.spec.ts`
+ * (hårdkodad sträng där, husets form — jfr `personer-yta`).
+ */
+const YTANS_ANKARE = 'anmalningar-yta';
+
 /** Event-dimensionens NOLLÄGE. Bärs av `EventValjare`s `gemensamtAlternativ`
     (raden överst i listan OCH den stängda triggerns text när inget är valt),
     så väljaren säger alltid VAR man är — aldrig att ett val saknas. Samma
@@ -237,6 +253,30 @@ function tomtText(lage: VariantProps['lage'], period: PeriodFilter): string {
  * räknare och filter-tomläget, i stället för ett event som inte finns.
  * Nolläget är väljarens egen `gemensamtAlternativ`-rad ("Alla event"), så
  * axeln har EN kontroll för både val och nollställning.
+ *
+ * ═══ ÅTERVÄGEN UR ÅTGÄRDSKÖ-LÄGET (TASK-299.5, tillagd FÖRE flippen) ═══
+ *
+ * "Visa alla anmälningar"-länken i åtgärdskö-lägets header saknas i
+ * facit-bilden `facit-anmalningssidan-atgardskon-desktop.png` — och står
+ * här ändå, som en ÖPPET BOKFÖRD avvikelse. Skälet är att frånvaron i
+ * facit är en EGENSKAP HOS PROTOTYPEN, inte ett formbeslut av Marcus:
+ * prototypen filtrerar via sin egen `?lage=`-växel (som rivs), medan den
+ * skarpa sidan filtrerar via `?visa=atgardskon` — en route-search som
+ * `Rensa filter` inte når, eftersom den inte är en filter-dimension. Utan
+ * länken blir åtgärdskö-läget en återvändsgränd för allt utom just de
+ * flaggade raderna, vilket är exakt vad länken byggdes för att förhindra
+ * (`AnmalningarList.tsx`, TASK-284.4 AC #4 — landad funktion).
+ *
+ * `ADR-103` B2 steg 4 river VILLKOR OCH VÄXLAR, aldrig form — och en
+ * återväg är varken villkor eller växel utan funktion. Den läggs därför in
+ * FÖRE promoverings-grindens `ariaSnapshot`-fångst, så att paret jämför den
+ * form som faktiskt promoveras. Att den syns i FÖRE-referensen är avsikten,
+ * inte en glidning: grinden ska bevisa att FLIPPEN bevarade formen, och
+ * kompletteringen står i diffen före capturen.
+ *
+ * Kortets egen beskrivning kräver den i klartext: *"Det filtrerade
+ * åtgärdskö-läget säger hur många rader som väntar och har en väg tillbaka
+ * till hela listan."*
  *
  * PERIODEN HÄRLEDS UR DET LÄNKADE EVENTETS `startdatum` (`dateValue`,
  * `EventCard.tsx` — SAMMA härledning som EventsList/EventValjare, ALDRIG ur
@@ -427,7 +467,13 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
 
   if (isPending) {
     return (
-      <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-3 p-4">
+      <div
+        data-testid={YTANS_ANKARE}
+        role="status"
+        aria-live="polite"
+        aria-busy="true"
+        className="flex flex-col gap-3 p-4"
+      >
         <span className="sr-only">Laddar anmälningarna…</span>
         <Skeleton variant="text" className="w-40 text-small" />
         <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4">
@@ -447,7 +493,7 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
 
   if (isError) {
     return (
-      <div className="p-4">
+      <div data-testid={YTANS_ANKARE} className="p-4">
         <MessageBox intent="error" title="Kunde inte hämta anmälningarna">
           {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
         </MessageBox>
@@ -456,7 +502,7 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div data-testid={YTANS_ANKARE} className="flex flex-col gap-4 p-4">
       <p className="sr-only" role="status" aria-live="polite">
         Anmälningarna laddade.
       </p>
@@ -468,6 +514,20 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
             ? atgardskoText(visasRader.length)
             : `${visasRader.length} ${visasRader.length === 1 ? 'anmälan' : 'anmälningar'}`}
         </p>
+        {/* ÅTERVÄGEN UR ÅTGÄRDSKÖ-LÄGET — se § ÅTERVÄGEN i docblocket ovan
+            för varför den står här trots att facit-bilden saknar den.
+            `search={{ visa: undefined }}` NOLLSTÄLLER parametern explicit,
+            aldrig implicit bevarande (formen är oförändrad ur
+            `AnmalningarList.tsx`, TASK-284.4). */}
+        {lage === 'atgardskon' && (
+          <Link
+            to="/mer/anmalningar"
+            search={{ visa: undefined }}
+            className="self-start text-small underline"
+          >
+            Visa alla anmälningar
+          </Link>
+        )}
       </header>
 
       {/* Filtret — "en filtreringsgrej högst upp" (Marcus review
