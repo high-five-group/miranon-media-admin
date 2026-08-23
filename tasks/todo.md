@@ -432,6 +432,31 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 🌙 NATTKÖRNING KLAR (2026-08-23 ~01:15, `lifecycle: active`, resume 7
+fortsätter — INTE pausad; Marcus order *"Kör så långt du kan autonomt"*) —
+LEVERANSVÄGEN SKARP I ALLA TRE KLASSER, KVITTOT OCH BILAGORNA PRINCE-RENA.**
+Landat i natt: `#1835` · `#1837` (bilagorna i Prince, ikon↔QR-gap borttagen) ·
+`#1838` (**302.2**) · `#1844` (**304** kvittots Prince-form, 7/7 ställen 0,00 mm) ·
+`#1849` (**302.3** städning + purge-target). `TASK-302.1–302.3` Done; `TASK-302`
+In Progress tills Marcus acceptans; `TASK-304` AC 1–4 Done, AC 5 öppet;
+`TASK-305` mintat (CI-purgejobbets secret-scope — Marcus beslut). `ADR-124`
+§ Updates bär städningen. Orkestreraren verifierade på skärm: Dokument-ytan →
+*Öppna Betalningskvitto* → 2,5 s → Storage-URL, kvitto-PDF:en läst.
+**MARCUS MORGON-MOMENT, i ordning:** (1) `http://localhost:4173/mer/dokument`
+(servern kör ur proto-trädet på `main`, origin tillåten i CORS) → välj ett
+event → *Öppna Betalningskvitto* → scrolla: som A? ⇒ `TASK-302` Done ·
+(2) **kvittots Prince-PDF** (`TASK-304` AC 5): sökväg + återskapande-kommando i
+kortets notes → godkänn formen eller ge dom · (3) `TASK-305`: secrets in i
+purge-jobbet eller Storage-purgen lokal/manuell · (4) prod-EF-deploy av
+`preview-receipt`, `generate-event-attachment`, `send-receipt-email` via
+`scripts/fas4-prod-deploy.sh` (+ `test-docraptor-render`/`test-attachments-
+storage` ALDRIG prod) · (5) DocRaptor prod-konto (förkrav promovering).
+**NÄSTA I SEKVENSEN efter det:** punkt 4 (skapandet av bilagorna) → 5 (lås
+facit) → 6 (promoverings-ADR = **ADR-125**, 124 gick till leveransvägen).
+Numrering vid nattens slut: ADR **125** · task-**306** · L512 (+ S109:s
+olandade L512–L521) · T174 (S111 tog T174) → **T175** · f53 · session 112.
+Heartbeat-monitorn stoppad vid nattens slut. Full narrativ: Del 11 § G + Del 12.
+
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-22, `lifecycle: active`, sjunde resumen;
 pausad sex gånger, historik) — PUNKT 3:S ANDRA HALVA NÄSTA: LEVERANSVÄGEN
 (SIGNERAD STORAGE-URL I STÄLLET FÖR `blob:`).** Marcus order: *"Återuppta

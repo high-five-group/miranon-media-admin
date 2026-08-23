@@ -3,10 +3,10 @@ id: TASK-302.2
 title: >-
   Skarpa preview-EF:erna returnerar utkast-URL; klienten slutar bygga blob:; AC
   #3 amenderat i filhuvudena
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 21:21'
-updated_date: '2026-08-22 22:57'
+updated_date: '2026-08-23 00:20'
 labels:
   - ready-for-agent
 dependencies:
@@ -63,4 +63,6 @@ PARALLELL SANNINGSKALLA utanfor fillistan uppdaterad av nodvandighet: src/domain
 DEPLOY: supabase functions deploy med --project-ref mot STAGING-REF (samma ref 302.1 verifierade). Bada EF-erna (preview-receipt, generate-event-attachment) deployade EXIT 0. Prod ORORD -- Marcus moment.
 
 PREMISS-PASS: origin/main var vid start exakt commit-SHA:n uppdraget angav (matchade). _shared/utkast.ts fanns efter git switch. Radnumren i uppdraget verifierade mot faktisk fil FORE andring -- alla stammde inom uppdragets egen tolerans. Ingen ovrig divergens mot uppdraget.
+
+Stängd av orkestreraren efter CI-verifiering (S108 natt-körning 2026-08-23). Landad via merge-kön; se Del 12 § A för PR och SHA.
 <!-- SECTION:NOTES:END -->

@@ -3,10 +3,10 @@ id: TASK-302.3
 title: >-
   Städning av utkast: skarp generering rensar utkast/<eventId>/, purge-target i
   staging, T171-bokföring
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 21:24'
-updated_date: '2026-08-22 23:53'
+updated_date: '2026-08-23 00:20'
 labels:
   - ready-for-agent
 dependencies:
@@ -52,4 +52,6 @@ AC1-3 matta mot skarp staging (pqtshyierkdgwdnxuirz). test:api 1043/1043 grona (
 AVVIKELSE 1 (bokford, ej tyst): uppdraget antog ett befintligt Storage-layout-dokument i docs/reference/ (grep BILAGOR_BUCKET_ID och eventId/ gav noll traffar - verifierat). Ingen sadan karta fanns. Byggde en minimal ny sektion i data-model.md (Bucket bilagor - Storage-path-formerna) i stallet for att uppfinna en helt ny fil - flaggat explicit i sektionens egen text. AVVIKELSE 2 (bokford): AC3 sager ADR-124 paragraf Kanda rester - den rubriken finns INTE i ADR-124 (heter Oppet och medvetet inte beslutat har, och innehaller redan exakt detta). Ny Updates-post i ADR-124 lankar bade T171 och paragraf Oppet i stallet for att uppfinna en rubrik som inte matchar ADR:ns egen struktur.
 
 AVVIKELSE 3 / MEDVETET SCOPE-BESLUT (for orkestrerarens granskning): .github/workflows/ci-suite.yml Staging sentinel purge-jobbet injicerar idag enbart STAGING_AIRTABLE_TOKEN. Storage-purgen kraver dessutom TEST_SUPABASE_URL/TEST_SUPABASE_ANON_KEY/TEST_ADMIN_EMAIL/TEST_ADMIN_PASSWORD (redan befintliga secrets, redan nadda av test-staging-jobbet i SAMMA workflow) - men jag har MEDVETET INTE andrat ci.yml/ci-suite.yml for att trada in dem i purge-jobbets env-block, eftersom det ar en egen avvagning om vilka secrets ett CI-jobb nar, utanfor en enskild skivas mandat. Mekanismen ar fullt fungerande och live-bevisad NAR miljovariablerna finns (lokalt, eller en framtida commit) - saknas de SKIPPAR skriptet tyst med tydlig loggrad, aldrig exit 1. Fixen om detta beslut ar fel: en fyraradig andring av purge-jobbets env-block, ingen ny secret. PARALLELL SANNINGSKALLA: test-attachments-storage/index.ts filhuvud EN EF TVA ACTIONS uppdaterat till FYRA ACTIONS i samma commit. PREMISS-PASS: origin/feat/task-302-2-skarpa-preview-ef (c7b172a5) matchade uppdragets SHA exakt. PR 1838 var OPEN och armerad (autoMergeRequest satt, BLOCKED pa kon) - inte annu landad vid start, byggde darfor direkt pa den grenen per instruktion. utkast.ts fanns och preview-receipt importerade laggUtkast efter switchen - bas bekraftad korrekt. Inga ovriga divergenser mot uppdraget.
+
+Stängd av orkestreraren efter CI-verifiering (S108 natt-körning 2026-08-23). Landad via merge-kön; se Del 12 § A för PR och SHA.
 <!-- SECTION:NOTES:END -->

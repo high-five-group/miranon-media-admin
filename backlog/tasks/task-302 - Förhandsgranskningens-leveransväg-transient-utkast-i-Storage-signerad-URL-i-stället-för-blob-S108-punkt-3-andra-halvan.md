@@ -3,9 +3,10 @@ id: TASK-302
 title: >-
   Förhandsgranskningens leveransväg: transient utkast i Storage + signerad URL i
   stället för blob: (S108 punkt 3, andra halvan)
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-22 21:16'
+updated_date: '2026-08-23 00:20'
 labels:
   - prd
 dependencies: []
@@ -54,3 +55,9 @@ Marcus öppnar en förhandsgranskning i prototypen (bilaga) och i Dokument-ytan 
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S108 natt-körning 2026-08-23: 302.1–302.3 Done och landade (#1833, #1838, #1849). Leveransvägen verifierad på skärm av orkestreraren för klass A/B/C (Del 12 § B). ÖPPET: enhetens acceptans — Marcus öppnar kvittot via Dokument-ytan på staging och bedömer scrollen (samma Storage-mekanism som 302.1:s accepterade). Prod-EF-deploy (preview-receipt, generate-event-attachment, send-receipt-email) är Marcus moment via scripts/fas4-prod-deploy.sh.
+<!-- SECTION:NOTES:END -->
