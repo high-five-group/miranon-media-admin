@@ -23,11 +23,12 @@ källor och mätunderlag.
 
 ## Den dynamiska ytan (ADR-119 beslut 3, UTVIDGAD av ADR-125)
 
-**[TASK-309.4, ADR-125 § Beslut 4] `bekraftelsebilaga.html` och
-`deltagarinformation.html` är Eta-mallar (`<%= data.x %>`/`<% if/for %>`,
-`autoEscape: true`), fyllda av `supabase/functions/_shared/mall-render.ts`.
-`kvitto.html` är ÄNNU `{{fältnamn}}`-syntax (TASK-309.5:s scope, orört här)
-— se § "`{{fältnamn}}` — kvittots (ännu) enda kvarvarande form" nedan.**
+**[TASK-309.4/.5, ADR-125 § Beslut 4] ALLA TRE mallarna
+(`bekraftelsebilaga.html`, `deltagarinformation.html`, `kvitto.html`) är
+Eta-mallar (`<%= data.x %>`/`<% if/for %>`, `autoEscape: true`), fyllda av
+`supabase/functions/_shared/mall-render.ts`. `kvitto.html` konverterades
+från den gamla `{{fältnamn}}`-strängersättningen i TASK-309.5 — se
+`byggKvittoData` i tabellen nedan.**
 
 ADR-119 beslut 3:s ursprungliga gräns ("brödtext, innehållslistorna … är
 FAST FORM per kurstyp") är delvis SUPERSEDAD av ADR-125:s relationella
@@ -40,6 +41,7 @@ deltagarinformationen, är nu likaså dynamiska — hämtade ur Eventinnehåll
 |---|---|
 | Bekräftelsebilagan | `kursnamn`, `datumTid`, `plats`, `pris`, `anmalningsavgift`, `visaResterande`, `resterandeBelopp`, `sistaBetalningsdatum`, `beskrivning[]`, `dagEttAgenda[]`, `dagTvaAgenda[]` |
 | Deltagarinformationen | `kursnamn`, `datumTid`, `plats`, `forberedelser`, `klader`, `tagMed`, `rokning`, `parfym`, `mat`, `overnattning`, `parkering`, `transport`, `utrustning` (var och en `string \| null` — `null` utelämnar ämnesstycket helt) |
+| Kvittot [TASK-309.5] | `kvittonummer`, `datum`, `orgReferens`, `kundnamn`, `kundEpost`, `benamning`, `netto`, `moms`, `brutto`, `orgNamn`, `orgGatuadress`, `orgPostadress`, `orgLand`, `orgNummer`, `orgMomsregnummer` — byggs av `byggKvittoData(spec: KvittoradSpec)`, ANNAN indataform än de två ovan (`KvittoradSpec` ur `_shared/receipt-content.ts`, inte `DocumentSourcesResult`) — se § "Kvittots dynamiska yta" nedan för käll-tabellen |
 
 **Ingen persondata förekommer i någon mall** (AC #2) — mottagarens namn hör
 till mailkroppen, aldrig till bilagan. Swish/Plusgiro-numren i
@@ -57,15 +59,6 @@ promoverings-skivorna (TASK-309.7/.8), inte TASK-309.4:s AC.
 `<%= %>` (autoEscape) används GENOMGÅENDE — ALDRIG `<%~ %>` (rått läge) på
 ett fält som ytterst härstammar från Airtable-fritext, se
 `mall-render.test.ts` för det mekaniska beviset.
-
-### `{{fältnamn}}` — kvittots (ännu) enda kvarvarande form
-
-`kvitto.html` använder fortfarande den ENKLA strängersättningen TASK-279
-etablerade — INTE en mallmotor knuten till något bibliotek, ren
-strängersättning (`scripts/render-bilage-mall.mjs`s legacy-gren,
-autodetekterad per mall: Eta-syntax → Eta, annars → `{{}}`). Blir kvittot
-Eta-konverterat (TASK-309.5) försvinner denna sektion och tabellen ovan
-gäller alla tre mallar.
 
 ## Granska mallarna med riktig data (AC #3)
 
@@ -303,25 +296,41 @@ mot `~/Downloads/exempelpdokument/*.pdf`, lästa sida för sida).
 
 ## Vad denna skiva INTE gör
 
-Ingen DocRaptor-integration, ingen Edge Function, inget Storage, ingen
-invalidering, ingen bilage-lane. `{{fältnamn}}`-ersättningen här är ENDAST
-för lokal granskning — den riktiga ihopkopplingen mot en renderare är en
-framtida, egen skiva.
+[TASK-309.4/.5, SUPERSEDAD] Detta stycke beskriver `TASK-279`:s
+URSPRUNGLIGA scope-gräns (mall-SKAPANDET, ingen renderare) — kvar som
+historik, INTE längre en beskrivning av dagens system. DocRaptor-
+integration, Edge Function-koppling och `{{fältnamn}}`-ersättning finns
+inte längre: ALLA TRE mallarna (inklusive kvittot, sedan TASK-309.5) är
+Eta-mallar kopplade till `_shared/mall-render.ts`/DocRaptor via
+`generate-event-attachment`, `preview-receipt` och `send-receipt-email`.
+Ursprungstexten:
+
+> Ingen DocRaptor-integration, ingen Edge Function, inget Storage, ingen
+> invalidering, ingen bilage-lane. `{{fältnamn}}`-ersättningen här är
+> ENDAST för lokal granskning — den riktiga ihopkopplingen mot en
+> renderare är en framtida, egen skiva.
 
 ---
 
 ## Kvittots FORM (S108 MARCUS-SEKVENS punkt 2)
 
-`renderKvittoPdf` (`supabase/functions/_shared/receipt-pdf.ts`) ritar i dag
-kvittots text på koordinater med pdf-lib - 500×420pt, en enda Helvetica-
-storlek, Marcus dom: *"det fulaste gräsligaste kvittot jag någonsin sett"*
-(sessionsdok `2026-08-20-session-108.md` Del 6 § B). `kvitto.html` +
-`kvitto.css` är FORMEN på `ADR-119`:s väg (HTML/CSS i stället för
-koordinat-ritning) - byggd mot Rogers skarpa kvitto
+**[TASK-309.5, ADR-125 § Beslut 4-5] KOPPLINGEN SOM SAKNADES HÄR FINNS NU.**
+Stycket nedan beskriver läget FÖRE TASK-309.5 (historik, kvar som facit
+för mallens FORM/mått) — `renderKvittoPdf`/`_shared/receipt-pdf.ts` är
+RIVNA, och kvittot renderas sedan TASK-309.5 genom SAMMA `_shared/
+mall-render.ts`/DocRaptor-väg som bekräftelsebilagan/deltagarinformationen
+(se § "Den dynamiska ytan" ovan). `kvitto.html`/`kvitto.css` ÄR alltså inte
+längre "inte en ny renderingsväg" — de ÄR den skarpa renderingsvägen.
+
+`renderKvittoPdf` (`supabase/functions/_shared/receipt-pdf.ts`) ritade FRAM
+TILL TASK-309.5 kvittots text på koordinater med pdf-lib - 500×420pt, en
+enda Helvetica-storlek, Marcus dom: *"det fulaste gräsligaste kvittot jag
+någonsin sett"* (sessionsdok `2026-08-20-session-108.md` Del 6 § B).
+`kvitto.html` + `kvitto.css` var FORMEN på `ADR-119`:s väg (HTML/CSS i
+stället för koordinat-ritning) - byggd mot Rogers skarpa kvitto
 (`~/Desktop/Miranon Media/exempelpdokument/2026-08-03 kvitto-forlaga.pdf`,
-tråd `T170`), INTE en ny renderingsväg. Ingen EF-koppling, ingen
-DocRaptor-integration - samma "vad som INTE görs" som resten av denna sida,
-plus `ADR-119` beslut 7:s krav på ett minimaltest FÖRE en skarp koppling.
+tråd `T170`). `ADR-119` beslut 7:s krav på ett minimaltest FÖRE en skarp
+koppling löstes i TASK-309.1 (se ADR-125 § Updates 2026-08-23).
 
 **Varför `kvitto.css` är en EGEN fil och `bilaga-delad.css` inte rörs
 alls:** kvittot är en helt annan ART av dokument - monokrom svart/grå
@@ -340,9 +349,16 @@ samtidigt.
 
 ### Kvittots dynamiska yta - tokenytan är 1:1 med `receipt-content.ts`
 
-Hårt krav (S108 Del 8 § D): varje `{{token}}` i `kvitto.html` härleds
-direkt ur `supabase/functions/_shared/receipt-content.ts` - ingen ny
-datamodell uppfinns i mallen.
+Hårt krav (S108 Del 8 § D): varje token i `kvitto.html` härleds ur
+`supabase/functions/_shared/receipt-content.ts` - ingen ny datamodell
+uppfinns i mallen. [TASK-309.5] Sedan Eta-konverteringen går härledningen
+via EN extra namngiven datastruktur i mitten: `kvitto.html`s
+`<%= data.x %>`-uttryck läser `_shared/mall-data.ts`s `byggKvittoData(spec)`
+(`KvittoMallData`), som i sin tur ÅTERANVÄNDER `receipt-content.ts`s rena
+hjälpfunktioner (`beraknaMoms`/`formatBelopp`/`formatKvittoDatum`/
+`kvittoBenamning`/`MIRANON_ORG`) för att räkna fram varje fält — SAMMA
+källa som förut (tabellen nedan), en extra, testad byggsten i mitten i
+stället för en direkt fält-referens.
 
 **[TASK-306] 1:1-kravets RIKTNING, förtydligad:** regeln betyder *inget i
 mallen UTAN källa* - den betyder INTE *allt i källan MÅSTE synas i mallen*.

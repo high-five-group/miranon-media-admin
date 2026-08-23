@@ -1,10 +1,30 @@
-// Kvittots textinnehåll (TASK-147.7, ADR-109) — REN formatering, delad mellan
-// PDF-layouten (`send-receipt-email/index.ts` § byggKvittoPdf, pdf-lib) och
-// mailtextens brödtext. Node+Deno dual-importable (ingen Deno-global, inget
-// pdf-lib-beroende här) — samma "mirror-kontraktet" som
-// `_shared/send-action-email.ts` § `renderFor` speglar `AtgardsSida.tsx`s
-// platshållar-fyllning: BÅDA konsumenterna (PDF och mail) måste visa SAMMA
-// rader, annars är det ena en lögn mot det andra.
+// Kvittots textinnehåll (TASK-147.7, ADR-109) — REN formatering.
+// Node+Deno dual-importable (ingen Deno-global, inget pdf-lib-beroende här).
+//
+// [TASK-309.5, Del 7:s ADR-083-fynd RÄTTAT HÄR] DEN GAMLA RADEN PÅSTOD ETT
+// "MIRROR-KONTRAKT" ("delad mellan PDF-layouten ... och mailtextens
+// brödtext ... BÅDA konsumenterna måste visa SAMMA rader, annars är det
+// ena en lögn mot det andra") — FALSKT redan INNAN denna skiva.
+// `kvittoRader()` var den ENDA verkliga konsumenten (PDF-layouten, via
+// `renderKvittoPdf`/pdf-lib, `_shared/receipt-pdf.ts`, nu RIVEN).
+// Mailkroppen (`send-receipt-email/index.ts`s `makeRealSender`) har
+// ALLTID varit en SEPARAT, hårdkodad sträng ("Hej ${kundnamn}, här kommer
+// ditt kvitto…"), som ALDRIG anropat `kvittoRader`. Det fanns alltså
+// aldrig två konsumenter att hålla i synk — bara en.
+//
+// EFTER TASK-309.5 renderas PDF:en INTE LÄNGRE via `kvittoRader` + pdf-lib:
+// `preview-receipt/index.ts` och `send-receipt-email/index.ts` anropar nu
+// `_shared/mall-data.ts`s `byggKvittoData(spec)` → `_shared/mall-render.ts`s
+// `renderaMallPdf('kvitto', …)` (Eta + DocRaptor) i stället.
+// `byggKvittoData` ÅTERANVÄNDER denna fils rena primitiv (`beraknaMoms`/
+// `formatBelopp`/`formatKvittoDatum`/`kvittoBenamning`/`MIRANON_ORG`) för
+// att bygga en STRUKTURERAD data-form åt Eta-mallen — INTE `kvittoRader()`s
+// textrad-lista. `kvittoRader()` SJÄLV HAR DÄRMED INGEN PRODUKTIONS-
+// KONSUMENT KVAR efter denna skiva (bara sitt eget kontraktstest,
+// `receipt-content.test.ts`) — behållen OFÖRÄNDRAD (att riva den ligger
+// utanför TASK-309.5:s AC), inte tyst bortglömd: bokfört här, öppet, som
+// en kandidat för en framtida mailtext-koppling ELLER rivning — ett beslut
+// för en annan skiva.
 //
 // MOMSSATSEN ÄR BEKRÄFTAD (T170, Marcus kvitterade i klartext 2026-08-22 —
 // "Allt på Rogers kvitto stämmer"; se ADR-109 § Updates 2026-08-22). Källa:
@@ -275,9 +295,13 @@ export function kvittoBenamning(
 }
 
 /**
- * Kvittots rader i VISNINGSORDNING — konsumeras av BÅDE PDF-layouten och
- * mailets brödtext (se filhuvudets mirror-kontrakt). Momsen (25 %, se
- * `beraknaMoms`) redovisas som TRE Gunilla-läsbara rader (Netto / Moms /
+ * Kvittots rader i VISNINGSORDNING. [TASK-309.5, se filhuvudet] Fram till
+ * denna skiva var detta PDF-layoutens ENDA konsument (via `renderKvittoPdf`/
+ * pdf-lib, nu riven) — ALDRIG mailets brödtext, som alltid varit en separat
+ * hårdkodad sträng. Sedan TASK-309.5 har `kvittoRader` INGEN produktions-
+ * konsument alls (PDF:en byggs av `_shared/mall-data.ts`s `byggKvittoData`
+ * i stället) — behållen för sitt eget kontraktstest, se filhuvudet. Momsen
+ * (25 %, se `beraknaMoms`) redovisas som TRE Gunilla-läsbara rader (Netto / Moms /
  * Betalt) i stället för Rogers sex kolumner (Benämning/Antal/Enhet/A-pris/
  * Summa + Netto/Exkl. moms/Moms/Öresavr/SEK/BETALT) — se PR-beskrivningen
  * för resonemanget bakom exakt vilka av Rogers uppgifter som tas med.

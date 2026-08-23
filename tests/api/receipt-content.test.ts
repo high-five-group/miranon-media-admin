@@ -350,7 +350,15 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
     expect(epostIdx).toBe(kundIdx + 1);
   });
 
-  test('mirror-kontraktets FAKTISKA räckvidd — kvittoRader() är källan för PDF-layouten i BÅDA anropssiterna (send-receipt-email + preview-receipt), samma rader oavsett anropare', () => {
+  // [TASK-309.5] OMDÖPT + omskriven: den gamla titeln påstod att
+  // `kvittoRader()` var "källan för PDF-layouten i BÅDA anropssiterna
+  // (send-receipt-email + preview-receipt)" — det är INTE LÄNGRE sant
+  // (PDF:en byggs numera av `_shared/mall-data.ts`s `byggKvittoData`, se
+  // `receipt-content.ts`:s filhuvud för hela historiken). Testet nedan
+  // bevisar bara vad som FORTFARANDE är sant: `kvittoRader` är en REN
+  // funktion av sitt `spec` — samma belopp ger samma Netto/Moms/Betalt-
+  // rader oavsett kvittonummer, oavsett vem som råkar anropa den.
+  test('kvittoRader() är en REN funktion — samma belopp ger identiska Netto/Moms/Betalt-rader oavsett kvittonummer', () => {
     const gemensam = {
       belopp: 2500,
       betalsatt: 'Swish' as const,
@@ -379,9 +387,8 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
       eventSlut: null,
       bokforingstext: null,
     });
-    // Samma belopp → identiska Netto/Moms/Betalt-rader oavsett vilken av de
-    // två EF:erna (send-receipt-email/preview-receipt) som anropar — det ÄR
-    // mirror-kontraktets kärna: SAMMA härledningsfunktion, ingen dubblering.
+    // Samma belopp → identiska Netto/Moms/Betalt-rader oavsett
+    // kvittonummer — renhets-beviset, inget påstående om anropssiter.
     expect(
       radA.filter((r) => r.startsWith('Netto:') || r.startsWith('Moms') || r.startsWith('Betalt:')),
     ).toEqual(

@@ -19,12 +19,25 @@
 // importerar den EGNA `eta`-modulen ur node_modules, inte denna fil — en
 // `https://`-import kan inte resolvas av Node/Playwright).
 //
-// EN RENDERARE, TVÅ MALLAR HITTILLS (`MallNamn`): `generate-event-
-// attachment/index.ts` anropar denna funktion för 'bekraftelse' och
-// 'deltagarinfo'. Kvittots renderingsväg ('kvitto', ADR-125 § Beslut 5)
-// hör till TASK-309.5 — samma modul, en tredje mall-nyckel, INTE byggd
-// här (`docs/mallar/bilagor/kvitto.html` är fortfarande {{}}-syntax,
-// omedvetet inte konverterad i denna skiva).
+// EN RENDERARE, TRE MALLAR (`MallNamn`): `generate-event-attachment/
+// index.ts` anropar denna funktion för 'bekraftelse' och 'deltagarinfo'.
+// Kvittots renderingsväg ('kvitto', ADR-125 § Beslut 5) TILLKOM I
+// TASK-309.5: `preview-receipt/index.ts` och `send-receipt-email/
+// index.ts` anropar den nu i stället för det gamla pdf-lib-baserade
+// `_shared/receipt-pdf.ts` (RIVET, TASK-309.5). Ifyllnadsdatan byggs av
+// `_shared/mall-data.ts`s `byggKvittoData`, som ÅTERANVÄNDER
+// `_shared/receipt-content.ts`s rena hjälpfunktioner (beraknaMoms/
+// formatBelopp/formatKvittoDatum/kvittoBenamning/MIRANON_ORG) men bygger
+// en STRUKTURERAD Eta-data-form, inte en textrad-lista.
+//
+// KVITTO-MALLEN BÄR TVÅ `<link rel="stylesheet">`-TAGGAR (`bilaga-delad.css`
+// + `kvitto.css` — se docs/mallar/bilagor/kvitto.css § filhuvud för VARFÖR
+// en egen CSS-fil i stället för att lägga posterna i bilaga-delad.css).
+// `MALL_TEMPLATES.kvitto.css` nedan är de TVÅ källornas SAMMANSLAGNA
+// innehåll (samma cascade-ordning som mallens egna två `<link>`-taggar:
+// delad CSS/@font-face FÖRE kvittots egna regler) — och `gorSjalvbarande`
+// nedan är skriven om till att hantera GODTYCKLIGT MÅNGA `<link>`-taggar
+// (tidigare bara EN, se den funktionens egen docstring för detaljen).
 //
 // SJÄLVBÄRANDE UTAN DOM — regex-baserad, portering av `<link>`/`url()`-
 // inlinings-BETEENDET ur `scripts/docraptor-sjalvbarande.mjs`
@@ -47,7 +60,10 @@
 // nätverk mot appens egen domän konfigurerat). Bokfört som ett upptäckt,
 // löst gap — inte en tyst utvidgning: `scripts/synka-bilagemallar.mjs`
 // AUTO-UPPTÄCKER varje `<img src="../../../public/…">`-referens och
-// bäddar in den, samma mönster som typsnitten.
+// bäddar in den, samma mönster som typsnitten. [TASK-309.5] `kvitto.html`
+// refererar EN av de FYRA (loggan, `miranon-media-ordmarke-original.svg`)
+// — redan i `BILD_DATA_URI_PER_FILNAMN` sedan skiva 3, ingen ny
+// bild-modul behövdes för kvitto-kopplingen.
 //
 // DOCRAPTOR: synkront anrop (60 s-tak, se research-passet § Delfråga 2 —
 // våra dokument mäter ~3 s), EN retry på 5xx/timeout (aldrig 4xx — en
@@ -72,14 +88,19 @@ import { bilagaDeladCss } from './mallar/bilaga-delad.css.ts';
 import { deltagarinformationHtml } from './mallar/deltagarinformation.html.ts';
 import { globeOutlinedImageDataUri } from './mallar/globe-outlined.image.ts';
 import { instagramGlyfGradientImageDataUri } from './mallar/instagram-glyf-gradient.image.ts';
+import { kvittoCss } from './mallar/kvitto.css.ts';
+import { kvittoHtml } from './mallar/kvitto.html.ts';
 import { miranonMediaOrdmarkeOriginalImageDataUri } from './mallar/miranon-media-ordmarke-original.image.ts';
 import { utanforVerklighetenOmslagImageDataUri } from './mallar/utanfor-verkligheten-omslag.image.ts';
 
-export type MallNamn = 'bekraftelse' | 'deltagarinfo';
+export type MallNamn = 'bekraftelse' | 'deltagarinfo' | 'kvitto';
 
 const MALL_TEMPLATES: Record<MallNamn, { html: string; css: string }> = {
   bekraftelse: { html: bekraftelsebilagaHtml, css: bilagaDeladCss },
   deltagarinfo: { html: deltagarinformationHtml, css: bilagaDeladCss },
+  // Sammanslagen CSS, SAMMA ordning som mallens egna två <link>-taggar
+  // (bilaga-delad.css FÖRE kvitto.css) — se filhuvudet.
+  kvitto: { html: kvittoHtml, css: `${bilagaDeladCss}\n${kvittoCss}` },
 };
 
 // De sex FRIA typsnittsfilerna (Cavolini bundlas ALDRIG — gitignorerad
@@ -135,13 +156,29 @@ function inlinaBilder(html: string): string {
   });
 }
 
-const LINK_STYLESHEET_REGEX = /<link\s+rel="stylesheet"\s+href="[^"]+"\s*\/?>/;
+// GLOBAL (`g`) sedan TASK-309.5 — kvitto.html bär TVÅ `<link
+// rel="stylesheet">`-taggar (bekraftelse/deltagarinfo bär bara EN, se
+// filhuvudet). Utan `g` hade `.replace()` bara ersatt den FÖRSTA och
+// lämnat den ANDRA kvar som en obrukbar relativ referens i den
+// självbärande HTML:en (DocRaptor får aldrig ett filsystem att slå upp
+// den mot) — mätt som en verklig bugg under denna skivas bygge, se
+// `gorSjalvbarande` nedan för fixen.
+const LINK_STYLESHEET_REGEX = /<link\s+rel="stylesheet"\s+href="[^"]+"\s*\/?>/g;
 
 /** `<link rel="stylesheet">` → `<style>…</style>` (CSS:en inlinad, dess
- *  egna `url()`-referenser redan bäddade in) + varje `<img>` inbäddad. */
+ *  egna `url()`-referenser redan bäddade in) + varje `<img>` inbäddad.
+ *  Hanterar GODTYCKLIGT MÅNGA `<link>`-taggar (kvitto.html bär två, se
+ *  filhuvudet): den FÖRSTA träffen ersätts med style-blocket (som redan
+ *  bär BÅDA/ALLA källornas sammanslagna CSS, se `MALL_TEMPLATES`), varje
+ *  EFTERFÖLJANDE `<link>` tas bort helt i stället för att lämnas kvar. */
 function gorSjalvbarande(ifylldHtml: string, css: string): string {
   const inlinadCss = inlinaCssUrls(css);
-  const medInlinadStil = ifylldHtml.replace(LINK_STYLESHEET_REGEX, () => `<style>\n${inlinadCss}\n</style>`);
+  let styleInjicerad = false;
+  const medInlinadStil = ifylldHtml.replace(LINK_STYLESHEET_REGEX, () => {
+    if (styleInjicerad) return '';
+    styleInjicerad = true;
+    return `<style>\n${inlinadCss}\n</style>`;
+  });
   return inlinaBilder(medInlinadStil);
 }
 

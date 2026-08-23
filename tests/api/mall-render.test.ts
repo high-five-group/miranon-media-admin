@@ -24,10 +24,16 @@
 // staging (Deno Edge Runtime) under byggsessionen — se skivans
 // slutrapport. Detta test bevisar samma sak för den lokala Node-körningen.
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { Eta } from 'eta';
 import { bekraftelsebilagaHtml } from '../../supabase/functions/_shared/mallar/bekraftelsebilaga.html';
 import { deltagarinformationHtml } from '../../supabase/functions/_shared/mallar/deltagarinformation.html';
+// [TASK-309.5] kvitto.html konverterades från `{{fältnamn}}`-strängersättning
+// till Eta-syntax i denna skiva — se docs/mallar/bilagor/kvitto.html § filhuvud.
+import { kvittoHtml } from '../../supabase/functions/_shared/mallar/kvitto.html';
 
 // KONFIG-PARITETSNOT: måste hållas manuellt i synk med den Eta-instans
 // `_shared/mall-render.ts` skapar (`new Eta({ autoEscape: true, varName:
@@ -69,6 +75,26 @@ const MINIMAL_DELTAGARINFO_DATA = {
   utrustning: null as string | null,
 };
 
+// [TASK-309.5] kvitto.html bär INGA villkor/loopar (ren flat substitution,
+// samma som förlagans {{}}-form) — se KvittoMallData i _shared/mall-data.ts.
+const MINIMAL_KVITTO_DATA = {
+  kvittonummer: 'x',
+  datum: 'x',
+  orgReferens: 'x',
+  kundnamn: 'x',
+  kundEpost: 'x',
+  benamning: 'x',
+  netto: 'x',
+  moms: 'x',
+  brutto: 'x',
+  orgNamn: 'x',
+  orgGatuadress: 'x',
+  orgPostadress: 'x',
+  orgLand: 'x',
+  orgNummer: 'x',
+  orgMomsregnummer: 'x',
+};
+
 test.describe('Escaping — Airtable-härledd fritext kan aldrig injicera HTML (ADR-125 § 4)', () => {
   test('bekraftelsebilaga.html: kursnamn escapeas, ingen rå <script> i utdatan', () => {
     const html = eta.renderString(bekraftelsebilagaHtml, MINIMAL_BEKRAFTELSE_DATA) as string;
@@ -98,6 +124,37 @@ test.describe('Escaping — Airtable-härledd fritext kan aldrig injicera HTML (
     const html = eta.renderString(deltagarinformationHtml, {
       ...MINIMAL_DELTAGARINFO_DATA,
       forberedelser: FARLIG_STRANG,
+    }) as string;
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(html).not.toContain(FARLIG_STRANG);
+  });
+
+  // [TASK-309.5] kvitto.html — kundnamn/kundEpost/benamning härstammar från
+  // Lotta-inmatning respektive Anmälningar-tabellen (aldrig Lotta-fritext i
+  // benamnings fall, men kundnamn/kundEpost ÄR persondata från basen) —
+  // samma escaping-krav som de två andra mallarnas Airtable-härledda fält.
+  test('kvitto.html: kundnamn escapeas', () => {
+    const html = eta.renderString(kvittoHtml, {
+      ...MINIMAL_KVITTO_DATA,
+      kundnamn: FARLIG_STRANG,
+    }) as string;
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(html).not.toContain(FARLIG_STRANG);
+  });
+
+  test('kvitto.html: kundEpost escapeas', () => {
+    const html = eta.renderString(kvittoHtml, {
+      ...MINIMAL_KVITTO_DATA,
+      kundEpost: FARLIG_STRANG,
+    }) as string;
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    expect(html).not.toContain(FARLIG_STRANG);
+  });
+
+  test('kvitto.html: benamning (Lottas bokföringstext-fritext) escapeas', () => {
+    const html = eta.renderString(kvittoHtml, {
+      ...MINIMAL_KVITTO_DATA,
+      benamning: FARLIG_STRANG,
     }) as string;
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(html).not.toContain(FARLIG_STRANG);
@@ -151,5 +208,91 @@ test.describe('Ifyllnad — mallens villkor och loopar (samma AC #1, "ifyllnad"-
       forberedelser: 'Kom i tid.',
     }) as string;
     expect(html).toContain('<strong>Förberedelser:</strong> Kom i tid.');
+  });
+
+  // [TASK-309.5] kvitto.html — ren flat substitution, samma AC-form som de
+  // två andra mallarna. Bevisar mot den FAKTISKA mallen (inte en syntetisk
+  // sträng) att varenda `<%= data.x %>`-token faktiskt fylls i.
+  test('kvitto.html: samtliga femton token fylls i från KvittoMallData', () => {
+    const data = {
+      kvittonummer: 'MM-2026-1001',
+      datum: '2026-08-03',
+      orgReferens: 'Miranon Media/Lotta Gotthardsson',
+      kundnamn: 'Anna Andersson',
+      kundEpost: 'anna.andersson@example.com',
+      benamning: 'Utbildning 2026-07-25/26, personlig utveckling, meditation',
+      netto: '2 000,00',
+      moms: '500,00',
+      brutto: '2 500,00',
+      orgNamn: 'Miranon Media AB',
+      orgGatuadress: 'Uttringe Hages väg 17',
+      orgPostadress: '144 63 Rönninge',
+      orgLand: 'Sverige',
+      orgNummer: '559540-5498',
+      orgMomsregnummer: 'SE559540549801',
+    };
+    const html = eta.renderString(kvittoHtml, data) as string;
+    for (const varde of Object.values(data)) {
+      expect(html).toContain(varde);
+    }
+    // Ingen ofylld platshållare/oevaluerad Eta-tagg kvar i den RENDERADE
+    // KROPPEN (efter <body>) — mallens filhuvud-KOMMENTAR nämner medvetet
+    // den gamla `{{orgNamn}}`-formen som historik (se kvitto.html § filhuvud)
+    // och ska inte räknas som en "kvarvarande platshållare".
+    const kropp = html.slice(html.indexOf('<body>'));
+    expect(kropp).not.toMatch(/\{\{\s*[\w]+\s*\}\}/);
+    expect(kropp).not.toMatch(/<%[=~]?/);
+  });
+});
+
+// [TASK-309.5, AC #2] KÄLLKODS-NIVÅ-BEVIS för "byte-identiska för samma
+// indata" — samma disciplin som attachment-layer-independence.test.ts/
+// ef-metod-vakt.test.ts: en ordnings-/arkitekturegenskap ("BÅDA
+// anropssiterna använder SAMMA renderare med SAMMA datafunktion") är mest
+// träffsäkert observerad i KÄLLAN, körs utan creds i api-pure, och fäller i
+// review innan en regression (t.ex. en av EF:erna glider tillbaka till
+// kvittoRader/renderKvittoPdf, eller börjar bygga sin egen data-form) hinner
+// deployas. Den EMPIRISKA halvan (att DocRaptor-renderingen faktiskt ger
+// sökbar text + inbäddat typsnitt för identisk data) bevisas LIVE i
+// tests/api/preview-receipt.staging.test.ts — denna fil bevisar bara att
+// BÅDA call-siterna matar SAMMA renderare SAMMA väg, vilket är
+// FÖRUTSÄTTNINGEN för att den empiriska halvan ens är meningsfull.
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const EF_DIR = path.join(REPO_ROOT, 'supabase', 'functions');
+
+test.describe('Kvittots renderingsväg — BÅDA anropssiterna använder SAMMA renderare (AC #2, källkods-nivå)', () => {
+  test("preview-receipt/index.ts anropar byggKvittoData + renderaMallPdf('kvitto', …) — INTE kvittoRader/renderKvittoPdf", () => {
+    const source = readFileSync(path.join(EF_DIR, 'preview-receipt', 'index.ts'), 'utf8');
+    expect(source).toContain("import { byggKvittoData } from '../_shared/mall-data.ts'");
+    expect(source).toContain("import { renderaMallPdf } from '../_shared/mall-render.ts'");
+    expect(source).toMatch(/renderaMallPdf\(\s*'kvitto'/);
+    expect(source).not.toContain('kvittoRader(');
+    expect(source).not.toContain('renderKvittoPdf(');
+    expect(source).not.toContain("from '../_shared/receipt-pdf.ts'");
+  });
+
+  test("send-receipt-email/index.ts anropar byggKvittoData + renderaMallPdf('kvitto', …) — INTE kvittoRader/renderKvittoPdf", () => {
+    const source = readFileSync(path.join(EF_DIR, 'send-receipt-email', 'index.ts'), 'utf8');
+    expect(source).toContain("import { byggKvittoData } from '../_shared/mall-data.ts'");
+    expect(source).toContain("import { renderaMallPdf } from '../_shared/mall-render.ts'");
+    expect(source).toMatch(/renderaMallPdf\(\s*'kvitto'/);
+    expect(source).not.toContain('kvittoRader(');
+    expect(source).not.toContain('renderKvittoPdf(');
+    expect(source).not.toContain("from '../_shared/receipt-pdf.ts'");
+  });
+
+  test('_shared/receipt-pdf.ts (pdf-lib-renderaren) är RIVEN — negativ kontroll: filen existerar inte', () => {
+    expect(() => readFileSync(path.join(EF_DIR, '_shared', 'receipt-pdf.ts'), 'utf8')).toThrow();
+  });
+
+  test('detektorn fäller på en KONSTRUERAD avvikelse (självtest — bevisar att grepet ovan verkligen diskriminerar)', () => {
+    const drivenBort = [
+      "import { renderKvittoPdf } from '../_shared/receipt-pdf.ts';",
+      'const rader = kvittoRader({ kvittonummer: spec.kvittonummer });',
+      'const bytes = await renderKvittoPdf(rader);',
+    ].join('\n');
+    expect(drivenBort).toContain('kvittoRader(');
+    expect(drivenBort).toContain('renderKvittoPdf(');
+    expect(drivenBort).toContain("from '../_shared/receipt-pdf.ts'");
   });
 });

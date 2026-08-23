@@ -15,14 +15,17 @@ import { BILAGOR_BUCKET_ID, buildAttachmentPath, toBase64 } from '../_shared/att
 import { requireUser } from '../_shared/auth.ts';
 import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
-import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
+import { generateRequestId, HttpError, mapErrorToResponse } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
-import { kvittoRader } from '../_shared/receipt-content.ts';
-// [TASK-246] renderKvittoPdf — UTBRUTEN pdf-lib-renderare (var tidigare
-// inline i denna fil, se _shared/receipt-pdf.ts § filhuvud för varför):
-// preview-receipt-EF:en (klass C:s sidoeffektsfria förhandsvisning) delar
-// nu SAMMA layout i stället för att duplicera pdf-lib-anropen.
-import { renderKvittoPdf } from '../_shared/receipt-pdf.ts';
+// [TASK-309.5] byggKvittoData + renderaMallPdf ERSÄTTER kvittoRader +
+// renderKvittoPdf (pdf-lib, `_shared/receipt-pdf.ts`, nu RIVEN) — samma
+// renderare (`_shared/mall-render.ts`, Eta + DocRaptor) som
+// bekräftelsebilagan/deltagarinformationen, delad med preview-receipt/
+// index.ts (klass C:s sidoeffektsfria förhandsvisning), i stället för att
+// duplicera renderar-anropen. Se `_shared/receipt-content.ts`:s filhuvud
+// för hela historiken.
+import { byggKvittoData } from '../_shared/mall-data.ts';
+import { renderaMallPdf } from '../_shared/mall-render.ts';
 import type { KvittoLedgerEntry, ReceiptAllocationDeps } from '../_shared/receipt-numbering.ts';
 import { isUtskickSparrat, NonProdAddressError, UtskickSparratError } from '../_shared/send-bulk.ts';
 import {
@@ -114,13 +117,16 @@ function makeRealLedger(): ReceiptAllocationDeps {
 }
 
 /**
- * PDF-byggaren — kvittoRader (formatering) + renderKvittoPdf (pdf-lib-
- * layouten, _shared/receipt-pdf.ts, TASK-246-utbrytning). Samma svenska-
- * tecken-mönster som generate-event-attachment/index.ts.
+ * [TASK-309.5] PDF-byggaren — byggKvittoData (_shared/mall-data.ts,
+ * återanvänder receipt-content.ts:s rena primitiv) + renderaMallPdf
+ * ('kvitto', _shared/mall-render.ts, Eta + DocRaptor). ERSÄTTER kvittoRader
+ * + renderKvittoPdf (pdf-lib-layouten, _shared/receipt-pdf.ts, nu RIVEN,
+ * TASK-246-utbrytningen). Samma DocRaptor-mönster (apiKey/test-härledning
+ * hos ANROPAREN) som generate-event-attachment/index.ts.
  */
 function makeRealPdfBuilder(): ReceiptPdfBuilder {
   return async (spec) => {
-    const rader = kvittoRader({
+    const kvittoData = byggKvittoData({
       kvittonummer: spec.kvittonummer,
       kundnamn: spec.kundnamn,
       kundEpost: spec.kundEpost,
@@ -134,7 +140,18 @@ function makeRealPdfBuilder(): ReceiptPdfBuilder {
       eventSlut: spec.eventSlut,
       bokforingstext: spec.bokforingstext,
     });
-    const bytes = await renderKvittoPdf(rader);
+
+    const apiKey = Deno.env.get('DOCRAPTOR_API_KEY');
+    if (!apiKey) {
+      throw new HttpError(500, 'DOCRAPTOR_API_KEY saknas i secrets');
+    }
+    const test = Deno.env.get('ENVIRONMENT') !== 'production';
+
+    const bytes = await renderaMallPdf('kvitto', kvittoData as unknown as Record<string, unknown>, {
+      apiKey,
+      test,
+      namn: `Kvitto ${spec.kvittonummer}`,
+    });
     return { filename: `${spec.kvittonummer}.pdf`, contentBase64: toBase64(bytes) };
   };
 }
