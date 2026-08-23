@@ -104,9 +104,40 @@
 }
 
 .kvitto-metarad {
-  display: grid;
-  grid-template-columns: auto auto;
-  column-gap: 6.82mm; /* mätt (CS+BB, RAPPORT.md § 2b): förlagans dt->dd-
+  /* PRINCE-PRIMITIV (TASK-304, docs/research/kvitto-prince-gap-grid-
+    omgranskning-2026-08-22.md): `display:grid` ERSATT - Prince staplar
+    `grid-template-columns:auto auto` fullständigt i stället för att hålla
+    kolumnerna (mätt: TRASIGT, forskningsfilens mättabell ställe #1). Varje
+    dt/dd-par är nu en egen flex-rad (.kvitto-metarad-rad nedan - kräver den
+    lilla markup-ändringen i kvitto.html som grupperar paren, `<dl>` tillåter
+    `<div>`-omslutna dt/dd-grupper sedan HTML 5.1). Denna dl är nu en vanlig
+    block-box (ingen display satt) - grid:ets högerjustering
+    (`justify-content:end`) ERSÄTTS av samma width:fit-content +
+    margin-left:auto-mönster `.kvitto-referensblock` redan använder nedan
+    (mätt, Chrome "före": metaradens/rubrikens "Kvitto" högerkanter ligger
+    inom 6px/~1mm av varandra - bevaras). */
+  width: fit-content;
+  margin: 0 0 0 auto;
+  font-size: 9pt;
+}
+
+.kvitto-metarad-rad {
+  display: flex;
+}
+
+.kvitto-metarad dt {
+  flex: 0 0 auto;
+  min-width: 19.3mm; /* PRINCE-PRIMITIV (TASK-304): ersätter grid:ets
+    auto-kolumndelning (kolumn 1 = bredaste dt-cellens bredd, här
+    "Kvitto-/OCR-nr:") - utan detta skulle "Datum:"-radens kortare dt dra
+    med sig dd-värdet längre åt vänster än "Kvitto-/OCR-nr:"-radens, och de
+    två raderna skulle sluta olinjerade (formen Marcus godkände har dem
+    linjerade, mätt via crop-chrome-meta.png i forskningspassets
+    scratchpad). Mätt (analys.mjs, samma pixel-scan-metod som
+    forskningsfilen): bredaste dt-textens ("Kvitto-/OCR-nr:", Carlito 400
+    9pt) bläckbredd i Chrome-renderingen FÖRE denna ombyggnad = 114px
+    @150dpi = 19,30mm. */
+  margin-right: 6.82mm; /* mätt (CS+BB, RAPPORT.md § 2b): förlagans dt->dd-
     kolumngap (etikettkolumnens xMax till värdekolumnens xMin) är 19,34 pt =
     6,82 mm - inte 4 mm. Etikettens/värdets ABSOLUTA x-position matchar ändå
     INTE exakt efter denna rättelse (se § 2b): vår fixtur bär en längre
@@ -119,17 +150,12 @@
     (Marcus-beslut 2026-08-22): datumet är nu ISO och matchar förlagans
     egen sträng exakt - kvittonumret är kvar som ensam källa till
     kolumnbredd-skillnaden. */
-  justify-content: end;
-  font-size: 9pt;
-  margin: 0;
-}
-
-.kvitto-metarad dt {
   font-weight: 400;
   text-align: left;
 }
 
 .kvitto-metarad dd {
+  flex: 0 0 auto;
   margin: 0;
   text-align: left;
 }
@@ -148,10 +174,12 @@
 }
 
 .kvitto-referensblock {
-  display: grid;
-  grid-template-columns: auto auto;
-  column-gap: 6mm;
-  row-gap: 0;
+  /* PRINCE-PRIMITIV (TASK-304): `display:grid` ERSATT - samma TRASIGA
+    stapling som .kvitto-metarad (mätt, forskningsfilens mättabell ställe
+    #2). Varje dt/dd-par är nu en egen flex-rad (.kvitto-referensblock-rad
+    nedan), samma markup-mönster som metaraden. Det forna `row-gap:0`
+    (grid, vertikal) behövs inte längre - block-boxar staplade utan
+    marginal ger samma nollmellanrum mellan raderna. */
   margin: 0;
   width: fit-content; /* RÄTTAD REGRESSION (RAPPORT.md § 2b): `.kvitto-
     referensrad` var tidigare `display:flex`, vilket gjorde detta grid-barnet
@@ -166,10 +194,25 @@
     grid:et hade som flex-item, utan att röra layouten i övrigt. */
 }
 
-.kvitto-referensblock dt,
-.kvitto-referensblock dd {
+.kvitto-referensblock-rad {
+  display: flex;
+}
+
+.kvitto-referensblock dt {
+  flex: 0 0 auto;
+  min-width: 17.78mm; /* PRINCE-PRIMITIV (TASK-304): ersätter grid:ets
+    auto-kolumndelning (kolumn 1 = bredaste dt-cellens bredd, här
+    "Förfallodatum") - se .kvitto-metarad dt ovan för samma resonemang.
+    Mätt (analys.mjs): "Förfallodatum" (Carlito 400 9pt) bläckbredd i
+    Chrome-renderingen FÖRE denna ombyggnad = 105px @150dpi = 17,78mm. */
+  margin-right: 6mm;
   font-weight: 400;
+}
+
+.kvitto-referensblock dd {
+  flex: 0 0 auto;
   margin: 0;
+  font-weight: 400;
 }
 
 .kvitto-fakturaadress {
@@ -215,36 +258,85 @@
     textkant, se § 3.1 */
 }
 
-.kvitto-tabellrad {
-  display: grid;
-  /* Mätt kolumnstart relativt textkantens vänsterkant (BB, se RAPPORT.md § 2):
-    Antal 93,18 mm, Enhet 100,90 mm, A-pris 119,80 mm, Summa 146,43 mm,
-    innehållsbredd 157,53 mm - kolumnbredderna nedan är differenserna
-    (INGEN column-gap, mellanrummet ÄR redan inräknat i varje mätt bredd).
-    Ett första utkast använde 1fr + fyra gissade mm-bredder och hamnade
-    ~13-25 mm för långt till vänster på de fyra sista kolumnerna - rättat
-    till de faktiska mätta deltana. */
-  grid-template-columns: 92.7mm 7.2mm 18.4mm 26.1mm 1fr;
-  column-gap: 1mm; /* rent 0-mellanrum fick "Antal"/"Enhet" att smälta ihop
-    till ett ord i pdftotext (bekräftat, se RAPPORT.md § 2) - förlagan har
-    själv bara 0,70 mm mellanrum där, men ändå läsbart mellanrum. 1 mm
-    (kompenserat i kolumnbredderna ovan så summan stämmer) ger samma
-    läsbarhet utan att flytta de tre sista kolumnerna nämnvärt. */
+/* PRINCE-PRIMITIV (TASK-304): `.kvitto-tabellrad` (display:grid, fasta
+  mm-kolumner) ERSATT av ETT `<table>` per rad-grupp (tabellhuvudet, sedan
+  posten) - Prince kollapsar grid:ets kolumnbredder till innehållets egen
+  bredd i stället för att hålla dem (mätt: TRASIGT, forskningsfilens
+  mättabell ställe #3 - en 164,6mm rad blev 55,5mm). `table-layout:fixed` +
+  `<col>`-bredder i mm är Princes EGET primitiv för fasta kolumnbredder
+  ("Prince är en print-motor och honorerar tabeller fullt"). Kräver
+  markup-ändring i kvitto.html: `<span>`-raden blir `<tr>` av `<th>`/`<td>`,
+  och kvitto-col-*-klasserna flyttar från span till BÅDE `<col>` (bredd,
+  nedan) och th/td (text-align/white-space, nedan) samtidigt. */
+.kvitto-tabell {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: separate; /* explicit, INTE 'collapse': en table med
+    border-collapse:collapse ignorerar sin EGEN padding/border/
+    border-radius (CSS2.1 § 17.6.1) - `.kvitto-tabellhuvud` (padding,
+    border, border-radius, .kvitto-box) sitter DIREKT på detta
+    table-element (se kvitto.html), så collapse hade tystat hela
+    "pill"-boxen. */
+  border-spacing: 0; /* nollställer UA-standardens border-spacing (Chrome:
+    2px) - annars ett extra, omätt mellanrum FÖRE första och EFTER sista
+    kolumnen som grid:et aldrig hade. */
 }
 
-.kvitto-tabellrad > span {
-  /* Sista kolumnen (1fr) blir mätt bara ~9 mm bred givet de fyra andra
-    kolumnernas mätta bredder - för smalt för "2500 kr" utan radbrytning
-    (bekräftat: renderade som "2500" / "kr" på två rader). Förlagans egen
-    Summa-kolumn löser samma sak genom att låta beloppet svämma in i
-    rutans högerpadding; samma trick här i stället för att gissa en bredare
-    kolumnbredd och därmed flytta bort ifrån de uppmätta x-positionerna. */
-  white-space: nowrap;
+.kvitto-tabell th,
+.kvitto-tabell td {
+  padding: 0; /* nollställer UA-standardens cell-padding - kolumnbredderna
+    nedan (kvitto-col-*) är mätta EXKLUSIVE cellpadding, se kommentaren vid
+    col.kvitto-col-benamning. */
+  margin: 0;
+  text-align: left; /* <th> är CENTER som UA-standard - grid-radens span
+    var vänsterjusterad (ärvt), samma här. */
+  white-space: nowrap; /* Sista kolumnen (kvitto-col-summa) blir mätt bara
+    ~11 mm bred givet de fyra andra kolumnernas mätta bredder - för smalt
+    för "2500 kr" utan radbrytning (bekräftat: renderade som "2500" / "kr"
+    på två rader). Förlagans egen Summa-kolumn löser samma sak genom att
+    låta beloppet svämma in i rutans högerpadding; samma trick här i
+    stället för att gissa en bredare kolumnbredd och därmed flytta bort
+    ifrån de uppmätta x-positionerna. */
 }
 
-.kvitto-tabellhuvud .kvitto-tabellrad {
+.kvitto-tabellhuvud th {
   font-weight: 700; /* TT4 - samtliga kolumnrubriker är feta i förlagan */
 }
+
+/* Mätt kolumnstart relativt textkantens vänsterkant (BB, se RAPPORT.md § 2):
+  Antal 93,18 mm, Enhet 100,90 mm, A-pris 119,80 mm, Summa 146,43 mm,
+  innehållsbredd 157,53 mm. Ett första utkast använde 1fr + fyra gissade
+  mm-bredder och hamnade ~13-25 mm för långt till vänster på de fyra sista
+  kolumnerna - rättat till de faktiska mätta deltana (TASK-304: samma fyra
+  deltan grid:ets `grid-template-columns` bar, men nu med det forna
+  `column-gap:1mm` VIKT IN i varje kolumns egen `<col>`-bredd i stället för
+  ett separat gap-primitiv - `<table>`/`<col>` har ingen `column-gap`, och
+  `border-spacing` hade lagt ett extra, omätt mellanrum FÖRE första och
+  EFTER sista kolumnen, se .kvitto-tabell ovan. Samma kumulativa
+  kolumnstarter som förut: 93,7 / 101,9 / 121,3 / 148,4 mm. Det forna
+  `column-gap:1mm` fanns för att rent 0-mellanrum fick "Antal"/"Enhet" att
+  smälta ihop till ett ord i pdftotext (bekräftat, se RAPPORT.md § 2) -
+  förlagan har själv bara 0,70 mm mellanrum där, men ändå läsbart
+  mellanrum. 1 mm (nu inräknat i varje kolumns bredd nedan) ger samma
+  läsbarhet utan att flytta de tre sista kolumnerna nämnvärt.): */
+col.kvitto-col-benamning {
+  width: 93.7mm;
+}
+
+col.kvitto-col-antal {
+  width: 8.2mm;
+}
+
+col.kvitto-col-enhet {
+  width: 19.4mm;
+}
+
+col.kvitto-col-apris {
+  width: 27.1mm;
+}
+
+/* kvitto-col-summa har ingen egen bredd - absorberar återstoden av
+  table:ens width:100% (samma roll `1fr` hade i grid:et). */
 
 .kvitto-post {
   /* Radposten bär INGEN box (mätt fynd, förlagan saknar ram runt raderna,
@@ -302,7 +394,6 @@
     659,36 pt) och det stora 13 pt-beloppet sticker NER under de andras
     9 pt-belopp - alltså toppjustering. */
   align-items: flex-start;
-  gap: 6mm;
   margin-top: 4mm;
   border-radius: 3.5mm; /* mätt hörnradie: 3,48 mm */
   padding: 3mm 6mm 3mm 3.7mm; /* vänsterpaddingen är mätt SMALARE här
@@ -317,12 +408,35 @@
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
-  gap: 1mm;
   min-width: 0;
+}
+
+/* PRINCE-PRIMITIV (TASK-304): flex-`gap` ERSATT av margin på barnet i
+  DE FYRA flex-raderna i denna sektion + sidfoten nedan - Prince IGNORERAR
+  flex-gap helt (mätt, forskningsfilens fyra-fallstest: flex+gap ignoreras,
+  flex+margin-right fungerar). Margin valdes ENSAM, INTE parallellt med
+  `gap` (bilaga-delad.css § .ikonruta-media-mönstret, som uppdraget
+  hänvisade till): mätt isolerat (TASK-304, scratchpad-test, 2 flex-barn)
+  är `gap` och `margin` på SAMMA flex-rad ADDITIVA i en riktig webbläsare -
+  gap:10mm + margin-right:10mm på första barnet gav 20,15mm, inte 10mm. Att
+  behålla BÅDA hade alltså DUBBLAT mellanrummet i Chrome/webbvyn och brutit
+  "Chrome-värdena oförändrade" (AC #2). Se slutrapporten (TASK-304) för
+  fyndet om att bilaga-delad.css:s egen `.ikonruta-media`-instans av samma
+  mönster sannolikt bär samma dubblering i webbvyn - utanför detta korts
+  scope att ändra, bokfört där. Regeln nedan står EFTER `.kvitto-total-
+  kolumn` (inte före), trots att den introducerades senare i historiken -
+  en mer specifik selektor (`.kvitto-totalruta > .kvitto-total-kolumn`,
+  specificitet 0,2,0) placerad FÖRE en mindre specifik (0,1,0) fälldes av
+  Biomes `noDescendingSpecificity`. */
+.kvitto-totalruta > .kvitto-total-kolumn {
+  margin-right: 6mm;
 }
 
 .kvitto-total-etikett {
   font-size: 9pt;
+  margin-bottom: 1mm; /* PRINCE-PRIMITIV (TASK-304): ersätter
+    .kvitto-total-kolumns forna flex-`gap:1mm` (vertikal, etikett->värde) -
+    se kommentaren ovan .kvitto-totalruta > .kvitto-total-kolumn. */
 }
 
 .kvitto-total-varde {
@@ -337,14 +451,8 @@
     som de fyra andra kolumnerna. */
   flex: 0 0 auto;
   margin-left: auto;
-  /* SEK-prefixet (S108 resume 5, PR #1791: valutan sätts EN gång, som
-    Roger). Mätt (bbox): "SEK" xMax 460,19 pt -> "BETALT" xMin 478,77 pt =
-    18,58 pt (6,55 mm) gap; SEK:s bbox-höjd 15,86 pt = samma grad som
-    beloppet (13 pt), på beloppets baslinje, INTE på etikettens. Därför en
-    rad: [SEK][kolumn BETALT/belopp] med baslinje-justering mot nederkanten. */
   display: flex;
   align-items: flex-end;
-  gap: 6.55mm;
 }
 
 .kvitto-total-betalt .kvitto-total-kolumn {
@@ -354,6 +462,14 @@
 .kvitto-total-valuta {
   font-size: 13pt;
   font-weight: 700;
+  margin-right: 6.55mm; /* PRINCE-PRIMITIV (TASK-304): ersätter
+    .kvitto-total-betalts forna flex-`gap:6.55mm` - se kommentaren ovan
+    .kvitto-totalruta > .kvitto-total-kolumn. SEK-prefixet (S108 resume 5,
+    PR #1791: valutan sätts EN gång, som Roger). Mätt (bbox): "SEK" xMax
+    460,19 pt -> "BETALT" xMin 478,77 pt = 18,58 pt (6,55 mm) gap; SEK:s
+    bbox-höjd 15,86 pt = samma grad som beloppet (13 pt), på beloppets
+    baslinje, INTE på etikettens. Därför en rad: [SEK][kolumn
+    BETALT/belopp] med baslinje-justering mot nederkanten. */
 }
 
 .kvitto-total-varde-stor {
@@ -366,7 +482,6 @@
 .kvitto-sidfot {
   display: flex;
   justify-content: space-between;
-  gap: 4mm;
   margin-top: 4.2mm; /* mätt gap: totalrutans underkant (247,75 mm) till
     sidfotens överkant (251,99 mm) */
   margin-bottom: 13.6mm; /* mätt: sidfotens underkant till sidans nederkant */
@@ -379,6 +494,18 @@
 .kvitto-sidfot-kolumn {
   flex: 1 1 0;
   min-width: 0;
+}
+
+.kvitto-sidfot-kolumn:not(:last-child) {
+  margin-right: 4mm; /* PRINCE-PRIMITIV (TASK-304): ersätter .kvitto-sidfots
+    forna flex-`gap:4mm` - se kommentaren ovan
+    .kvitto-totalruta > .kvitto-total-kolumn. `justify-content:space-between`
+    intakt (fungerar i Prince, forskningsfilens fyra-fallstest) - med alla
+    fyra kolumner `flex:1 1 0` (jämnt växande) fyller de redan 100% av
+    raden, så space-between hade noll extra utrymme att fördela även innan
+    denna ändring; margin-right reserverar samma 3×4mm som `gap` gjorde
+    INNAN flex-grow-fördelningen räknas ut (samma beräkningsordning som för
+    gap, CSS Flexbox § 9.7 "Resolving Flexible Lengths"). */
 }
 
 .kvitto-sidfot-kolumn p {

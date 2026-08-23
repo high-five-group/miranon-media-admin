@@ -264,6 +264,51 @@ test.describe('generate-event-attachment — skarp conformance (TASK-146.5)', ()
     }
   });
 
+  // [TASK-302.3, ADR-124 § Beslut 2] AC #1: "Skarp generering/sändning för
+  // event E tar bort utkast/E/ — utkast finns FÖRE, saknas EFTER, skarp
+  // operation lyckas ÄVEN OM remove fallerar." De två första leden bevisas
+  // HÄR mot RIKTIG staging-Storage (positiv väg — best-effort-fallet, "lyckas
+  // trots ett remove-fel", är strukturellt garanterat av `rensaUtkast`s eget
+  // try/catch (_shared/utkast.ts) och bevisat vid enhetsnivå för klass C i
+  // tests/api/send-receipt.test.ts § cleanupDraft — samma disciplin som
+  // delete-attachment/index.ts's Storage-borttagning, ALDRIG live-forcerad
+  // i denna testsvit).
+  test('AC #1 (TASK-302.3): utkastet finns FÖRE skarp generering, saknas EFTER (rensaUtkast)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // 1) Skapa ett utkast via preview-läget — samma väg som testet ovan.
+    const previewRes = await postGenerate(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      preview: true,
+    });
+    expect(previewRes.status(), await previewRes.text()).toBe(200);
+    const previewBody = UtkastResultatSchema.parse(await previewRes.json());
+
+    // FÖRE: den signerade URL:en ger 200 — utkastet existerar i Storage.
+    const before = await request.head(previewBody.url);
+    expect(before.status(), 'utkastet borde ha existerat direkt efter preview').toBe(200);
+
+    // 2) Skarp generering för SAMMA event — internt anropar detta
+    // `rensaUtkast(supabaseAdmin, eventId)` EFTER lyckad persistering
+    // (generate-event-attachment/index.ts, den persisterande grenen).
+    const sharpRes = await postGenerate(request, config, jwt, { eventId: BELAGGNING_EVENT_ID });
+    const sharpRaw = await sharpRes.text();
+    expect(sharpRes.status(), sharpRaw).toBe(201);
+
+    // EFTER: SAMMA (nu inaktuella) signerade URL ger INTE längre 200 —
+    // Storage-objektet den pekade på är borttaget. Den skarpa operationen
+    // OVAN lyckades (201) OAVSETT vad denna städning gjorde — ordningen
+    // (städning EFTER lyckad persistering) är själva AC:et.
+    const after = await request.head(previewBody.url);
+    expect(
+      after.status(),
+      `utkastet borde ha tagits bort av rensaUtkast efter skarp generering — fick ${after.status()}`,
+    ).not.toBe(200);
+  });
+
   test('allow: preview-läge (TASK-246) → 200 + riktig PDF + INGEN Bilagor-rad skapas', async ({
     request,
   }) => {

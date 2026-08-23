@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-22
+updated: 2026-08-23
 review_by: 2026-11-15
 status: stable
 ---
@@ -154,6 +154,30 @@ matchar stagings namn utan kollisions-suffix.
 Fält som INTE behövde speglas (fanns redan i prod): `Antal platser`,
 `Notering` (Anmälningar) och `Närvaropoäng` (Deltaganden, `fldwuo94BY46VUOm4`
 — samma ID i båda baserna).
+
+#### Bucket `bilagor` — Storage-path-formerna (TASK-302.3)
+
+**Ingen tidigare karta av detta fanns i `docs/reference/` innan denna rad**
+(uppdraget för `TASK-302.3` antog att en fanns — `git grep BILAGOR_BUCKET_ID
+docs/reference/` gav noll träffar; premiss-divergens bokförd i skivans
+slutrapport, inte tyst rättad). Bucket `bilagor` är PRIVAT (ingen publik
+URL); all åtkomst går via en signerad URL (`SIGNED_DOWNLOAD_URL_TTL_SECONDS
+= 300`, `_shared/attachments.ts`). De path-former som faktiskt förekommer:
+
+| Path-form | Skrivs av | Formel |
+|---|---|---|
+| `<eventId>/<attachmentId>-<filnamn>` | Klass A/B, event-räckvidd | `buildAttachmentPath`, `_shared/attachments.ts` |
+| `kurstyp/<kursfamilj>/<attachmentId>-<filnamn>` · `alla-event/<attachmentId>-<filnamn>` | Gemensamma bilagor (ADR-118 beslut 5) | `buildStorageAnchor`, `_shared/attachments.ts` |
+| `utkast/<eventId>/<typ>.pdf` (`typ` ∈ `bilaga`\|`kvitto`\|`deltagarinformation`) | TASK-302, `ADR-124` — transient förhandsgransknings-utkast, `upsert: true` (högst ETT per event och typ) | `laggUtkast`, `_shared/utkast.ts` |
+
+`utkast/`-prefixet skiljer sig från de två andra på tre punkter: det är
+ALDRIG listat i appen (ingen Bilagor-rad pekar dit), det ÖVERSKRIVS i
+stället för att ackumulera, och det TAS BORT av `rensaUtkast` (samma fil)
+när en skarp generering/sändning för eventet lyckas. Känd rest: prod har
+ingen tidsstyrd städning av utkast vars event aldrig får en skarp artefakt
+— bokfört i `ADR-124` § "Öppet, och medvetet inte beslutat här" och i
+`T171` § "Adjacent, lägre allvarlighetsgrad" (persondata-klassningen för
+kvitto-utkastet specifikt).
 
 #### Stagingbasens additiva tillskott 2026-08-16 (TASK-147.12) — prod-fältet skapat 2026-08-16, backfill + EF-deploy återstår
 

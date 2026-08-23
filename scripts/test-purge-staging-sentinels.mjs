@@ -22,9 +22,11 @@ import {
   isAlreadyDeletedError,
   isExactSentinel,
   isOldEnough,
+  isStorageObjectOldEnough,
   isTransientNetworkError,
   linkGuardTrips,
   planPurge,
+  planStoragePurge,
   validatePolicy,
 } from './purge-staging-sentinels.mjs';
 
@@ -410,6 +412,88 @@ t('minAgeMinutes < 10 refuseras (in-flight-skyddet är golv)', () => {
 t('target utan exakt-mönster refuseras', () => {
   const broken = { ...VALID_POLICY, targets: [{ name: 'x', table: 'T', filterByFormula: 'f' }] };
   assert.throws(() => validatePolicy(broken), /obligatoriska/);
+});
+
+// --- [TASK-302.3] validatePolicy — storageTargets (optionell klass) ---
+
+const UTKAST_STORAGE_TARGET = { name: 'utkast-drafts', bucket: 'bilagor', pathPrefix: 'utkast' };
+
+t('policy UTAN storageTargets passerar oförändrat (bakåtkompatibel, optionell klass)', () => {
+  assert.equal(validatePolicy(VALID_POLICY).storageTargets, undefined);
+});
+
+t('giltig storageTargets passerar', () => {
+  const withStorage = { ...VALID_POLICY, storageTargets: [UTKAST_STORAGE_TARGET] };
+  assert.equal(validatePolicy(withStorage), withStorage);
+});
+
+t('tom storageTargets-array refuseras — nyckeln ska tas bort helt i stället', () => {
+  assert.throws(
+    () => validatePolicy({ ...VALID_POLICY, storageTargets: [] }),
+    /storageTargets är satt men tomt/,
+  );
+});
+
+t('storageTarget utan pathPrefix refuseras', () => {
+  const broken = { ...VALID_POLICY, storageTargets: [{ name: 'x', bucket: 'bilagor' }] };
+  assert.throws(() => validatePolicy(broken), /obligatoriska/);
+});
+
+t('storageTarget utan bucket refuseras', () => {
+  const broken = { ...VALID_POLICY, storageTargets: [{ name: 'x', pathPrefix: 'utkast' }] };
+  assert.throws(() => validatePolicy(broken), /obligatoriska/);
+});
+
+t('storageTarget utan name refuseras', () => {
+  const broken = { ...VALID_POLICY, storageTargets: [{ bucket: 'bilagor', pathPrefix: 'utkast' }] };
+  assert.throws(() => validatePolicy(broken), /obligatoriska/);
+});
+
+t('policyn på disk BÄR utkast-storageTargeten (.purge-staging-policy.json, TASK-302.3)', () => {
+  const onDisk = JSON.parse(
+    readFileSync(new URL('../.purge-staging-policy.json', import.meta.url)),
+  );
+  assert.ok(Array.isArray(onDisk.storageTargets) && onDisk.storageTargets.length > 0);
+  const target = onDisk.storageTargets.find((s) => s.name === 'utkast-drafts');
+  assert.ok(target, 'utkast-drafts-targeten saknas i .purge-staging-policy.json');
+  assert.equal(target.bucket, 'bilagor');
+  assert.equal(target.pathPrefix, 'utkast');
+});
+
+// --- [TASK-302.3] isStorageObjectOldEnough / planStoragePurge ---
+
+t('3 h gammalt Storage-objekt är radera-bart vid 60 min-guard', () => {
+  const entry = { path: 'utkast/recX/kvitto.pdf', updatedAt: OLD };
+  assert.equal(isStorageObjectOldEnough(entry, 60, NOW), true);
+});
+
+t('30 min färskt Storage-objekt skyddas av 60 min-guarden (in-flight-skyddet)', () => {
+  const entry = { path: 'utkast/recX/kvitto.pdf', updatedAt: FRESH };
+  assert.equal(isStorageObjectOldEnough(entry, 60, NOW), false);
+});
+
+t('saknad/oparsbar updatedAt ⇒ fail-safe: rör ej (samma riktning som isOldEnough)', () => {
+  assert.equal(isStorageObjectOldEnough({ path: 'x', updatedAt: null }, 60, NOW), false);
+  assert.equal(
+    isStorageObjectOldEnough({ path: 'x', updatedAt: 'inte-ett-datum' }, 60, NOW),
+    false,
+  );
+});
+
+t('planStoragePurge klassar gammalt/färskt korrekt, och BARA det', () => {
+  const entries = [
+    { path: 'utkast/recA/bilaga.pdf', updatedAt: OLD },
+    { path: 'utkast/recB/kvitto.pdf', updatedAt: FRESH },
+  ];
+  const plan = planStoragePurge(entries, 60, NOW);
+  assert.deepEqual(plan.toDelete, ['utkast/recA/bilaga.pdf']);
+  assert.deepEqual(plan.skippedYoung, ['utkast/recB/kvitto.pdf']);
+});
+
+t('planStoragePurge på en tom lista ger en tom plan (inget att purga är inget fel)', () => {
+  const plan = planStoragePurge([], 60, NOW);
+  assert.deepEqual(plan.toDelete, []);
+  assert.deepEqual(plan.skippedYoung, []);
 });
 
 // --- chunk ---

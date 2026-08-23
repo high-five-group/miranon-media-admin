@@ -54,5 +54,12 @@
       "exactMatchPattern": "^Deltagarinformation – ZZ-belaggning-fixtur.*\\.pdf$",
       "linkGuard": false
     }
+  ],
+  "storageTargets": [
+    {
+      "name": "utkast-drafts",
+      "bucket": "bilagor",
+      "pathPrefix": "utkast"
+    }
   ]
 }

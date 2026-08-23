@@ -240,6 +240,24 @@
   --mm-navcard-border: transparent;
   --mm-navcard-border-contrast: var(--mm-border-strong);
 
+  /* ── Åtgärdskö-markör (TASK-291 — QA-fynd 284.5, ADR-122 §22 "Markören") ──
+     Fylld cirkel/pill-behållare: bär BÅDE åtgärdskö-radens ledande
+     ikon-markör (variant A) och den friliggande räkne-badgen (TASK-303
+     AC #3 — talet som varierar lyfts ur meningen till en badge med
+     reserverad plats). Samma par för båda med avsikt: appens neutrala
+     skala klustrar för tätt för en subtil badge att synas mot
+     --mm-navcard-bg (mätt, node/WCAG-formeln: neutral-100 mot neutral-50
+     ger 1,06:1, en neutral-300-kant ger 1,60:1 — båda under WCAG 1.4.11:s
+     3:1-golv för en gränskomponent). Alias mot button-primary-familjens
+     par i stället — Marcus val (TASK-291 kortets Implementation Notes,
+     2026-08-22: "ikonen bakgrundsfärg ... knappens bakgrundsfärg"). Mätt:
+     13,38:1 (markör-bg mot --mm-navcard-bg) och 14,60:1 (markör-text mot
+     markör-bg), långt över golvet. Ersätter variant A:s tidigare
+     --mm-primary-tint/--mm-primary-par (mätt 1,01:1 respektive 2,33:1 —
+     under golvet på båda leden). */
+  --mm-atgardsko-markor-bg: var(--mm-btn-primary-bg);
+  --mm-atgardsko-markor-text: var(--mm-btn-primary-text);
+
   /* ── Skeleton (task-8.2 — Lugnt laddläge; spec §15; tonen korrigerad
      task-8.6/S67) ──
      Blocken är aria-hidden-dekorativa: WCAG 1.4.11 undantar dem
