@@ -192,7 +192,7 @@ test.describe('get-registrations — skarp conformance (Fas 6c, T15 väg D)', ()
 //   medfoljandeTill       — Anmälningar.`Medföljande till` (self-link → första ID)
 //   bekraftelseSkickad    — Anmälningar.`Bekräftelse skickad` (dateTime)
 //   deltagarinfoSkickad   — Anmälningar.`Deltagarinfo skickad` (dateTime; UI-ordet
-//                            är EVENTINFO, basens fält heter Deltagarinfo)
+//                            är DELTAGARINFO sedan TASK-303 — samma ord som basen)
 //   antalGenomfordaEvent  — PERSONER.`Antal genomförda event` (formel) via
 //                            CHUNKAD record-ID-batch (get-person-mallen, ALDRIG
 //                            ett anrop per person) — eventId-grenen bär batchen.

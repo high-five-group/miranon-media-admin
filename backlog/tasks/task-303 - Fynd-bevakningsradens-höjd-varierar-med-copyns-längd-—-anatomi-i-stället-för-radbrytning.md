@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:48'
-updated_date: '2026-08-23 13:23'
+updated_date: '2026-08-23 17:07'
 labels:
   - ready-for-human
 dependencies: []
@@ -33,13 +33,12 @@ REGISTRERAD SOM EGET KORT, inte som utvidgning av TASK-291: 291 är uttryckligen
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Bevakningsradens höjd är konstant oavsett copyns längd och oavsett antalet siffror i talet — verifierat som BETEENDE i test, inte som påstående, vid smalaste stödda bredd
-- [ ] #2 Radanatomin är rubrikrad + undertext, alltid båda renderade, samma form som personlistans radanatomi
-- [ ] #3 Talet som varierar bärs av en badge med reserverad plats, inte inbakat i meningen
-- [ ] #4 Ingen text klipps mitt i ett ord i något läge (Gunilla-principen håller)
-- [ ] #5 Sträng-divergensen mellan hem-derivations.ts och dev/hem-prototyp/data.ts är avgjord åt ETT håll, med Marcus citat daterat på kortet, och båda ytorna bär samma sträng efteråt
-- [ ] #6 Familjegränsen mot notisfamiljen orörd: ingen varningsfärg, ingen notis-ikon; betydelse aldrig enbart genom färg
-- [ ] #7 Hem-facit amenderat i egen commit med Marcus citat, EFTER att formen är godkänd
+- [x] #1 Bevakningsradens höjd är konstant oavsett copyns längd och oavsett antalet siffror i talet — verifierat som BETEENDE i test, inte som påstående, vid smalaste stödda bredd
+- [x] #2 Radanatomin är rubrikrad + undertext, alltid båda renderade, samma form som personlistans radanatomi
+- [x] #3 Sträng-divergensen mellan hem-derivations.ts och dev/hem-prototyp/data.ts är avgjord åt ETT håll, med Marcus citat daterat på kortet, och båda ytorna bär samma sträng efteråt
+- [x] #4 Familjegränsen mot notisfamiljen orörd: ingen varningsfärg, ingen notis-ikon; betydelse aldrig enbart genom färg
+- [x] #5 Hem-facit amenderat i egen commit med Marcus citat, EFTER att formen är godkänd
+- [x] #6 Meningen (undertexten, t.ex. 'N nya saknar deltagarinfo') klipps aldrig i något läge — mätt som beteende (scrollWidth <= clientWidth); rubriken (eventnamnet) får ellipsera vid extremnamn med hela namnet kvar i DOM:en, så skärmläsaren får allt och höjdlåset står
 <!-- AC:END -->
 
 ## Definition of Done
@@ -84,4 +83,34 @@ AC #5 HAR GLIDIT ÅT FEL HÅLL, inte närmare. Kriteriet kräver att båda ytorn
 VAD SOM FAKTISKT ÄR BYGGT OCH GODKÄNT (lokalt, opushat, wip/s111-marcus-iteration): anatomin rubrikrad + undertext alltid båda renderade, höjden konstant 70 px på båda radtyperna, chevron och tid centrerade mot hela raden med 0,0 px avvikelse, tiden i vit pill (PersonsList Pill-formen, 7,91:1 textkontrast), ingen text klippt. Höjdlåset mätt mot 1-, 2-, 3- och 4-siffriga tal.
 
 MENINGEN KORTADES för att rymmas med centrerad tid: "3 nya saknar deltagarinfo" i stället för "3 nya deltagare saknar deltagarinfo" (201 px behov mot 171 tillgängliga). Marcus valde den framför alternativet att sätta bakgrund på siffran — skälet var hans eget: ordet "nya" bär betydelsen.
+
+2026-08-23 (S111 resume 2, fönster 1) — AC #3 STRUKET på Marcus beslut: *"1. Stryk"* som svar på frågan om kriteriet (*"talet bärs av en badge med reserverad plats, inte inbakat i meningen"*) skulle amenderas eller strykas. Bakgrund: Del 5 rev exakt det — siffer-pillen revs, talet in i meningen (eventinfo-raden) respektive rubriken (åtgärdskö-raden), och höjdlåset bärs av radanatomin + 375 px-regressionsvakten i stället. Kriteriet kunde aldrig bockas ärligt. Ordbytet Eventinfo → Deltagarinfo (AC #5:s sträng-divergens) avgörs SAMTIDIGT: Marcus *"4. UI-copy enbart"* — synliga UI-strängar byter ord; actionType 'eventinfo' (SendActionEmail-kontraktet), routen skickade-mail/eventinfo, test-id:t eventinfo-signal-slot och aktivitetsloggens typer rörs INTE.
+
+Omnumrering efter strykningen: CLI:t packar index, så gamla AC #4–#7 är nu #3–#6 — sträng-divergensen (ordbytet) är AC #4, hem-facit-amenderingen AC #6.
+
+ORDBYTET GENOMFÖRT 2026-08-23 (gren feat/s111-ordbyte-deltagarinfo, baserad på wip/s111-marcus-iteration c52a0cdc). Marcus Del 5, verbatim: "Jag vänder beslutet." Gräns, verbatim: "4. UI-copy enbart." Samtliga synliga UI-strängar bär nu "deltagarinfo"/"deltagarinformation": bevakningsradens båda lägen, eventsidans rad "Deltagarinfo skickad", MetaRad-datumraderna (Deltagare.tsx + AtgardsSida.tsx + Betalningar.tsx + AnmalanDetail.tsx), svep-overlayns rubrik/åtgärdsnamn/tomläge/slide-etikett, åtgärdsmallens namn, hållplats-prototypens stegetikett och aktivitetsloggens två verb-copyn. ORDLISTA § Eventinfo omdöpt till § Deltagarinfo med den gamla regeln kvar som öppet riven historik.
+
+IDENTIFIERARE ORÖRDA per gränsen: actionType "eventinfo" (SendActionEmail-kontraktet, EF:en), routen skickade-mail/eventinfo, test-id:t eventinfo-signal-slot, filter-ID:t eventinfo-saknas, SvepTyp-unionens "eventinfo", samtliga variabel-/funktions-/typnamn och Airtable-fältnamnen.
+
+AC #4 EJ BOCKAD — ordbytet ensamt gör den inte sann. Kriteriet kräver att hem-derivations.ts och dev/hem-prototyp/data.ts bär SAMMA sträng. Efter ordbytet säger de "N nya deltagare saknar deltagarinfo" respektive "N deltagare saknar deltagarinfo" — ordet "nya" skiljer dem fortfarande, och hem-atgardsko-prototypens godkända form säger en tredje variant, "N nya saknar deltagarinfo". Detta korts egna notes sade det redan före arbetet: "AC #5 stängs först när det globala ordbytet är gjort OCH formen promoverats." Ordbytet är gjort; promoveringen av Bevakningsrad.tsx återstår och äger ordvalet. AC #4 bockas av det passet.
+
+AC #1/#2/#4/#5 UPPFYLLDA 2026-08-23 — promoveringspasset (gren feat/s111-291-promovering-bevakningsrad, bas wip/s111-marcus-iteration 943639a4). AC #3 och AC #6 STÅR KVAR OBOCKADE, se nedan.
+
+AC #1 — HÖJDLÅSET SOM BETEENDE, mätt mot den PROMOVERADE ytan (inte mot prototypen). Nytt describe i tests/acceptance/hem.acceptance.test.ts, "Bevakningsraden — höjdlåset som beteende (TASK-303 AC #1)": fyra bredder (375 = smalaste stödda, 390, 768, 1280) x fem fall (kort namn + ensiffrigt, kort namn + tvåsiffrigt, 91-teckens värsta-fall-namn + tresiffrigt, 91-teckens namn + fyrsiffrigt, samt ej-skickad-lägets egen copy). BÅDA radtyperna mäts i varje fall. Utfall: exakt [70, 70] px i samtliga 20 mätpunkter, 4/4 tester gröna. Talet 70 är inte ett stickprov utan härlett ur explicita line-heights (24 + 2 + 18 + 24 + 2), därför asserteras det exakt och inte som intervall.
+
+NEGATIVKONTROLL, kortets uttryckliga beviskrav, körd som eget test vid 375 px: höjden mäts till 70, därefter tas truncate bort från undertexten och innehållet förlängs i DOM:en — höjden mäts då till > 70. Mätinstrumentet kan alltså fälla. Grönt.
+
+AC #2 — radanatomin är rubrikrad + undertext, alltid båda renderade, i den DELADE RadInnehall som båda radtyperna konsumerar. Samma form som personlistans radanatomi (ledande markör valfri, textblock, trailing-element med reserverad plats).
+
+AC #4 — SYNKAD. Marcus S111 Del 5, verbatim: "jag vill ta bort siffer-pillen och sätta chevronen centrerat. Istället för siffer-pillen på bevakningsraden så vill jag att vi skriver ut *3 nya deltagare saknar deltagarinfo*, siffran ska alltså in i meningen." Meningen kortades därefter i samma pass, av utrymmesskäl han själv vägde (201 px behov mot 171 tillgängliga när tiden centreras): Del 5-tabellen bokför den godkända formen som "eventinfo-raden bär 3 nya saknar deltagarinfo", och godkännandet är "Ser bra ut. Jag godkänner bevakningsraden och åtgärdskö-raden nu." Båda ytorna bär nu den strängen: src/components/hem/hem-derivations.ts och src/components/dev/hem-prototyp/data.ts. De tre varianterna är därmed EN. Testerna som asserterade den gamla strängen är uppdaterade (hem.acceptance + svep-eventinfo-send.acceptance).
+
+AC #5 — familjegränsen orörd: ingen varningsfärg, ingen notis-ikon. Markören är Link2Off i en cirkel med --mm-atgardsko-markor-bg/-text (alias mot knappens primärpar), inte bg-warning/text-warning/TriangleAlert. Icke-färg-kanalen är ikonformen, och markören är aria-hidden så betydelsen bärs av rubrik + undertext. axe 0 mätt med båda radtyperna på samma sida.
+
+AC #3 KAN INTE BOCKAS ÄRLIGT — och det är inte ett utförandefel utan samma klass som det redan strukna badge-kriteriet. Kriteriet lyder "Ingen text klipps mitt i ett ord i något läge (Gunilla-principen håller)". Den godkända anatomin bär truncate på RUBRIKEN, så ett 91-teckens eventnamn klipps med ellipsis. Det är den avvägning kortets egen beskrivning kallar olöslig ("TRE KRAV SOM INTE KAN HÅLLA SAMTIDIGT"). Vad som HÅLLER, mätt: hela namnet finns kvar i DOM:en (klippningen är visuell, skärmläsaren får hela strängen), och UNDERTEXTEN — meningen — klipps aldrig (scrollWidth <= clientWidth, asserterat i hem.acceptance). Kriteriet behöver alltså AMENDERAS eller STRYKAS med Marcus ord, precis som AC #3 i den gamla numreringen. Denna agent tar inte det beslutet.
+
+AC #6 (hem-facit) EJ RÖRD — ägs av orkestreraren, egen commit efter promoveringen.
+
+REGRESSIONEN SOM ORDBYTET LÄMNADE ÄR LÖST. Mätt på basen 943639a4 före promoveringen: hem.acceptance 28 passed / 1 failed, där felet var geometribeviset vid 1440 px (Expected <= 48, Received 72). Efter promoveringen: 32 passed / 0 failed. Det gamla geometribeviset är ersatt av höjdlåset ovan, eftersom line-clamp-2 — mekanismen det mätte — är riven.
+
+2026-08-23 (S111 resume 2, fönster 3) — AC #3 ('Ingen text klipps mitt i ett ord i något läge') AMENDERAT på orkestrerarens beslut med Marcus mandat (*"Rörande de två andra besluten ger jag dig mandat att besluta dem åt mig."*, efter att ha sett skarpa Hem: *"Ser bra ut."*). Skäl, mätt i 291-promoveringen (836c23a3): undertexten klipps aldrig (asserterat), men rubriken ellipserar vid ett 91-teckens eventnamn — en följd av 70 px-låset Marcus godkände; hela namnet finns i DOM:en. Kriteriet i sin gamla bokstav kunde aldrig bockas ärligt (samma klass som det strukna badge-kriteriet). CLI:t omnumrerar: det nya kriteriet blir sista AC. Vägarna som övervägdes: (a) amendera — vald; (b) stryk; (c) behåll med radbrytande rubrik — bryter höjdlåset.
 <!-- SECTION:NOTES:END -->

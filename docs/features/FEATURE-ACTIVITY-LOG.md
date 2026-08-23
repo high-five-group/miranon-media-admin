@@ -49,7 +49,7 @@ speglar PRD `task-201` användarberättelse 9 ordagrant):
 | Bekräftelse | "bekräftade anmälan" |
 | Anmälan | "skapade anmälan" (inkluderar "lade till person" tills person-skapande får egen mutation) |
 | Boende | "markerade bor över", "avmarkerade bor över" |
-| Mail | "skickade bekräftelsemail", "skickade betalningspåminnelse", "skickade eventinformation", "skickade mail", "skickade testmail till sig själv" |
+| Mail | "skickade bekräftelsemail", "skickade betalningspåminnelse", "skickade deltagarinformation", "skickade mail", "skickade testmail till sig själv" |
 | Kvitto | "skickade kvitto" |
 | Eventändring | "uppdaterade eventet" |
 | Flagga | "uppdaterade flagga" |

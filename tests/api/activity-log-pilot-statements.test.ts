@@ -103,7 +103,7 @@ test.describe('Aktivitetsloggens pilot-statement-former (TASK-201.3 AC #5)', () 
     const forvantat: Record<string, string> = {
       bekraftelse: 'skickade bekräftelsemail',
       paminnelse: 'skickade betalningspåminnelse',
-      eventinfo: 'skickade eventinformation',
+      eventinfo: 'skickade deltagarinformation',
       fritt: 'skickade mail',
     };
     for (const actionType of ['bekraftelse', 'paminnelse', 'eventinfo', 'fritt'] as const) {

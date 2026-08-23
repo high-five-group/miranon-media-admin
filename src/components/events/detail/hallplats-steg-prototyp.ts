@@ -206,7 +206,7 @@ export const REGISTER_STEG_LABEL: Record<RegisterStegFilter, string> = {
   'avgift-saknas': 'Saknar anmälningsavgift',
   'slut-saknas': 'Saknar slutbetalning',
   klar: 'Klara',
-  'eventinfo-saknas': 'Saknar eventinfo',
+  'eventinfo-saknas': 'Saknar deltagarinfo',
   'bor-over': 'Bor över',
   avbokad: 'Avbokade',
 };

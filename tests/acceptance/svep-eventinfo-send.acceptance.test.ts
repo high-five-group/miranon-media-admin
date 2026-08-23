@@ -110,13 +110,13 @@ async function gotoHemOchOppnaEventinfoSvepet(page: Page) {
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.getByRole('list', { name: 'Bevakningar' }).getByRole('button').click();
   await expect(
-    page.getByRole('heading', { name: 'Skicka eventinformation', exact: true }),
+    page.getByRole('heading', { name: 'Skicka deltagarinformation', exact: true }),
   ).toBeVisible();
 }
 
 /** Armerar SlideToConfirm via tangentbord (samma väg som syskonfilernas sändvägssviter). */
 async function armera(page: Page) {
-  const vaxel = page.getByRole('switch', { name: 'Bekräfta eventinfo-svepet' });
+  const vaxel = page.getByRole('switch', { name: 'Bekräfta deltagarinfo-svepet' });
   await vaxel.focus();
   await vaxel.press('Enter');
 }
@@ -178,7 +178,7 @@ test.describe('Eventinfo-svepet — verklig sändväg, ETT event (TASK-241.8 AC 
 
     // GRANSKA: EN event-grupp (AC #1 — inte cross-event).
     await expect(
-      page.getByText(/Eventinformation\s+till\s+3\s+personer\s+i\s+1\s+event/),
+      page.getByText(/Deltagarinformation\s+till\s+3\s+personer\s+i\s+1\s+event/),
     ).toBeVisible();
     // AC #2 trygghetstriaden — adresslistan visar exakt de tre urvalda,
     // INTE den obekräftade och INTE den redan stämplade.
@@ -263,17 +263,20 @@ test.describe('Eventinfo-svepet — radspegling efter DELVIS lyckad sändning (T
 
     // Raden KVARSTÅR (2 av 3 nu stämplade, INTE alla) — läget är
     // "eftersläntrare" med det KORREKTA kvarvarande antalet (1), inte det
-    // ursprungliga (3) och inte "Eventinfo saknas" (som bara gäller när
+    // ursprungliga (3) och inte "Deltagarinfo saknas" (som bara gäller när
     // ALLA bekräftade saknar stämpeln).
     const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
     await expect(rad).toHaveCount(1);
-    await expect(rad).toContainText('1 nya deltagare saknar eventinfo');
-    await expect(rad).not.toContainText('Eventinfo saknas');
+    // [TASK-303 AC #4] Copyn är kortad till "N nya saknar deltagarinfo" i den
+    // promoverade radanatomin — ordet "nya" står kvar, "deltagare" är struket
+    // (`hem-derivations.ts` § `bevakningStatusText`).
+    await expect(rad).toContainText('1 nya saknar deltagarinfo');
+    await expect(rad).not.toContainText('Deltagarinfo saknas');
   });
 });
 
 test.describe('Eventinfo-svepet — aktivitetsloggen (TASK-241.8 AC #5)', () => {
-  test('EN post per faktiskt skickad mottagare, verbet "skickade eventinformation", taggad med eventets ID', async ({
+  test('EN post per faktiskt skickad mottagare, verbet "skickade deltagarinformation", taggad med eventets ID', async ({
     page,
     network,
   }) => {
@@ -338,7 +341,7 @@ test.describe('Eventinfo-svepet — aktivitetsloggen (TASK-241.8 AC #5)', () => 
 
     await expect.poll(() => loggposter.length).toBe(2);
     for (const post of loggposter) {
-      expect(post.verb.display['sv-SE']).toBe('skickade eventinformation');
+      expect(post.verb.display['sv-SE']).toBe('skickade deltagarinformation');
       expect(post.object.definition.type).toContain('/activity-types/mail');
     }
     const eventTaggar = loggposter.map((p) => {
@@ -386,18 +389,18 @@ test.describe('Eventinfo-svepet — avbryt utan sidoeffekt (TASK-241.8, samma AC
 
     await gotoHemOchOppnaEventinfoSvepet(page);
     await expect(
-      page.getByText(/Eventinformation\s+till\s+1\s+person\s+i\s+1\s+event/),
+      page.getByText(/Deltagarinformation\s+till\s+1\s+person\s+i\s+1\s+event/),
     ).toBeVisible();
 
     await page.getByRole('button', { name: 'Avbryt' }).click();
     await expect(
-      page.getByRole('heading', { name: 'Skicka eventinformation', exact: true }),
+      page.getByRole('heading', { name: 'Skicka deltagarinformation', exact: true }),
     ).toHaveCount(0);
 
     expect(sandanrop).toBe(0);
-    // Bevakningsraden OFÖRÄNDRAD — samma rad, samma "Eventinfo saknas".
+    // Bevakningsraden OFÖRÄNDRAD — samma rad, samma "Deltagarinfo saknas".
     await expect(page.getByRole('list', { name: 'Bevakningar' })).toBeVisible();
-    await expect(page.getByText('Eventinfo saknas')).toBeVisible();
+    await expect(page.getByText('Deltagarinfo saknas')).toBeVisible();
   });
 
   test('armerat men INTE skickat, sedan Avbryt: fortfarande noll sändanrop', async ({
@@ -433,7 +436,7 @@ test.describe('Eventinfo-svepet — avbryt utan sidoeffekt (TASK-241.8, samma AC
     await armera(page);
     await page.getByRole('button', { name: 'Avbryt' }).click();
     await expect(
-      page.getByRole('heading', { name: 'Skicka eventinformation', exact: true }),
+      page.getByRole('heading', { name: 'Skicka deltagarinformation', exact: true }),
     ).toHaveCount(0);
 
     expect(sandanrop).toBe(0);

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-21
+updated: 2026-08-23
 review_by: 2027-01-02
 status: stable
 ---
@@ -291,7 +291,7 @@ och slutförs utan att lämna vyn (sändflöden som overlay).
 *Undvik:* dashboard, översikt (Hem är en arbetsyta, inte en rapport).
 
 **Bevakningsrad** — hem-vyns yta för sällsynta men tidskritiska härledda
-uppgifter (först ut: eventinfo-utskicket): helt osynlig när inget finns,
+uppgifter (först ut: deltagarinfo-utskicket): helt osynlig när inget finns,
 klickbar uppgiftsrad vid träff — till skillnad från BLOCK, som alltid står
 kvar med positivt kvitto vid noll (S102 Del 10, beslut 2–4).
 *Undvik:* larm, notis (raden är en uppgift som står kvar tills åtgärdad,
@@ -405,22 +405,34 @@ helskärms-blockering hör till start/app-yta-gaten, inte in-app-navigation).
 `src/router.ts` (`defaultPendingComponent`/`defaultPendingMs`/
 `defaultPendingMinMs`).
 
-**Eventinfo** — det andra mailet i Lottas utskicksflöde: den praktiska
+**Deltagarinfo** — det andra mailet i Lottas utskicksflöde: den praktiska
 informationen inför eventet (plats, tider, medtag), som går ut cirka två
-veckor före start. UI-ordet är alltid "eventinfo" — basens fält heter
-`Deltagarinfo skickad` och byter INTE namn (Marcus-språket S73 K42; basens
-namn står kvar tills bas-maximeringen T16 eventuellt enar dem). Dags-att-
-skicka-signalen på eventsidan är härledd ur tvåveckorsgränsen mot
-tidsstämpeln, aldrig ett lagrat tillstånd.
-*Undvik:* deltagarinfo, deltagarinformation (basens ord i UI-text).
+veckor före start. UI-ordet är "deltagarinfo" sedan 2026-08-23 — samma ord
+som basens fält `Deltagarinfo skickad`, så basen och UI säger numera samma
+sak. Dags-att-skicka-signalen på eventsidan är härledd ur tvåveckorsgränsen
+mot tidsstämpeln, aldrig ett lagrat tillstånd.
+*Undvik:* eventinfo, eventinformation (UI-ordet fram till 2026-08-23 — se
+historiken nedan; lever kvar ENDAST som identifierare, aldrig i UI-text).
+*Historik, öppet riven:* fram till 2026-08-23 löd regeln MOTSATT — UI-ordet
+var alltid "eventinfo", och "deltagarinfo"/"deltagarinformation" var
+uttryckligen förbjudna i UI-text som "basens ord i UI-text" (Marcus-språket
+S73 K42; basens fältnamn skulle stå kvar tills bas-maximeringen T16
+eventuellt enade dem). Riven av Marcus 2026-08-23, verbatim: "Jag vänder
+beslutet." Ordbytets gräns sattes samma dag, verbatim: "4. UI-copy enbart"
+— endast synliga UI-strängar bytte ord. Kontrakt och identifierare bär
+DÄRFÖR kvar `eventinfo`: `actionType: 'eventinfo'` (SendActionEmail-
+kontraktet mot Edge Function), routen `skickade-mail/eventinfo`, test-id:t
+`eventinfo-signal-slot`, aktivitetsloggens typnycklar och filter-ID:t
+`eventinfo-saknas`. Genomfört i TASK-303 AC #4.
 *I koden:* `deltagarinfoSkickad` (Registration-shapen, speglar bas-fältet);
-`eventinfoSignal` (eventsidans härledning).
+`eventinfoSignal` (eventsidans härledning — identifierare, oberörd av
+ordbytet).
 
-**Auto-utskick** — det SCHEMALAGDA eventinfo-utskicket per event: ett datum
+**Auto-utskick** — det SCHEMALAGDA deltagarinfo-utskicket per event: ett datum
 (normalt tvåveckorsgränsen) plus ett opt-out, som Lotta styr med krysset i
 eventsidans signal-slot. Två additiva bas-fält bär det (`Deltagarinfo
 schemalagd` respektive `Deltagarinfo auto-utskick avstängt` — basens ord, jfr
-Eventinfo). Begreppet är STYRNINGEN, inte sändningen: utskicks-motorn som ska
+Deltagarinfo). Begreppet är STYRNINGEN, inte sändningen: utskicks-motorn som ska
 läsa fälten finns ännu inte (PRD task-18 §Utanför omfattningen), och krysset
 lovar därför bara vad basen bär. Kristalliserat i task-18.6.
 *Undvik:* automatiskt mail (tvetydigt mot bekräftelsemailet), schemaläggning

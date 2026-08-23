@@ -243,7 +243,7 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       // 'Deltagarinfo schemalagd' (fldB4rk2VZcm4GdxY, date ISO) + 'Deltagarinfo
       // auto-utskick avstängt' (fldPrSKNUTJpJqctw, checkbox) — skapade additivt i
       // STAGING 2026-07-22 och skrivbarheten LIVE-VERIFIERAD (PATCH + rensning) INNAN
-      // posterna låstes (L294). Basens ord 'Deltagarinfo' (UI-ordet är eventinfo,
+      // posterna låstes (L294). Basens ord 'Deltagarinfo' (UI-ordet är detsamma sedan TASK-303,
       // ORDLISTA). null på date-fältet RENSAR (Airtable-PATCH-semantik) — krysset
       // styr dem, utskicks-MOTORN ligger utanför kortet.
       'Deltagarinfo schemalagd',

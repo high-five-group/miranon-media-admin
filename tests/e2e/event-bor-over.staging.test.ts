@@ -23,9 +23,9 @@ import { mockValjarLista } from './helpers/valjar-lista';
  * RADUPPSÄTTNINGEN UPPDATERAD (TASK-145.2, E2E-disciplinen — "uppdatera
  * assertioner som prövar den yta du medvetet ändrat"): de fem gamla
  * summeringsraderna (Obekräftade anmälningar/Anmälningsbekräftelse skickad/
- * Betalningspåminnelse skickad/Eventinfo skickad/Bor över) är ersatta av de
+ * Betalningspåminnelse skickad/Deltagarinfo skickad/Bor över) är ersatta av de
  * sju facit-låsta raderna (grillad samsyn beslut 2, S93 Del 3) — Väntar på
- * bekräftelse/Anmälningsavgifter/Slutbetalningar/Klara/Eventinfo skickad/
+ * bekräftelse/Anmälningsavgifter/Slutbetalningar/Klara/Deltagarinfo skickad/
  * Bor över/Avbokade. Bor över-RADENS EGEN form (term, ikon, klick →
  * kryss-läget, härlett antal) är ORÖRD — bara dess plats i raduppsättningen
  * och de rader som omger den har ändrats.
@@ -292,7 +292,7 @@ test.describe('Bor över — raden + kryss-läget (task-18.7)', () => {
 
     // TASK-145.2 (facit-låst, grillad samsyn beslut 2): sju rader — fyra
     // steg-räknare (Väntar på bekräftelse/Anmälningsavgifter/
-    // Slutbetalningar/Klara) + logistik-gruppen (Eventinfo skickad/Bor
+    // Slutbetalningar/Klara) + logistik-gruppen (Deltagarinfo skickad/Bor
     // över/Avbokade). Bor övers EGNA form (term "Bor över", härlett antal)
     // är oförändrad — bara raderna omkring den har bytt form.
     const etiketter = await gruppen(page).locator('button[aria-pressed]').allTextContents();
@@ -301,7 +301,7 @@ test.describe('Bor över — raden + kryss-läget (task-18.7)', () => {
       'Anmälningsavgifter0 av 4 mottagna−4',
       'Slutbetalningar0 klara−4',
       'Klara0',
-      'Eventinfo skickad0 av 4−4',
+      'Deltagarinfo skickad0 av 4−4',
       'Bor över1',
       'Avbokade1',
     ]);

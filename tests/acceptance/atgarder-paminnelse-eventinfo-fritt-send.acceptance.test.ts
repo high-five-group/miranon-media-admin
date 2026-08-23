@@ -5,7 +5,7 @@ import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from './support/acceptance-bas';
 
 /**
- * TASK-147.3 — "Skicka betalningspåminnelse", "Skicka eventinformation" och
+ * TASK-147.3 — "Skicka betalningspåminnelse", "Skicka deltagarinformation" och
  * "Skicka mail" (fritt) skarpt ände-till-ände (åtgärd 2–4 på samma sändväg
  * TASK-147.2 etablerade för åtgärd 1, "Skicka bekräftelsemail").
  *
@@ -129,7 +129,7 @@ test.describe('Skicka betalningspåminnelse — verklig sändväg, urvalsfiltret
   });
 });
 
-test.describe('Skicka eventinformation — verklig sändväg, redigerad text går ut (TASK-147.3 AC #1-#2)', () => {
+test.describe('Skicka deltagarinformation — verklig sändväg, redigerad text går ut (TASK-147.3 AC #1-#2)', () => {
   test('ingen urvalsfilter-begränsning; redigerad ämnesrad/brödtext sänds, platshållare fyllda i förhandsvisningen', async ({
     page,
     network,
@@ -156,10 +156,10 @@ test.describe('Skicka eventinformation — verklig sändväg, redigerad text gå
     // DENNA rad: "Skicka bekräftelsemail" bär en egen "2 av 4"-badge (dess
     // `obekraftad`-filter) som en osccopad sida-bred sökning hade fångat.
     await expect(
-      page.getByRole('button', { name: 'Skicka eventinformation', exact: true }),
+      page.getByRole('button', { name: 'Skicka deltagarinformation', exact: true }),
     ).toBeVisible();
 
-    await oppnaAtgard(page, 'Skicka eventinformation');
+    await oppnaAtgard(page, 'Skicka deltagarinformation');
 
     // Redigera texten (AC #2, första ledet): "Ändra"-raden växlar in fälten.
     await page.getByRole('button', { name: 'Ändra' }).click();
@@ -170,7 +170,7 @@ test.describe('Skicka eventinformation — verklig sändväg, redigerad text gå
     await page.getByRole('button', { name: 'Klar med texten' }).click();
 
     await page.getByRole('button', { name: 'Granska och skicka' }).click();
-    await expect(page.getByText(/Skicka eventinformation\s+till\s+4\s+personer/)).toBeVisible();
+    await expect(page.getByText(/Skicka deltagarinformation\s+till\s+4\s+personer/)).toBeVisible();
 
     // Förhandsvisningen visar den REDIGERADE texten med platshållare fyllda
     // (AC #2, andra ledet) — mallens ursprungliga ämnesrad syns inte längre.

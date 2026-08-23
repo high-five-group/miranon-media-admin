@@ -79,8 +79,10 @@ export interface Registration {
    * `medfoljandeTill` — basens `Medföljande till` (self-link) → FÖRSTA
    *   record-ID:t; kopplar en +1-anmälan till sin huvudanmälan.
    * `bekraftelseSkickad` / `deltagarinfoSkickad` — utskicks-tidsstämplarna
-   *   (mail 1 respektive mail 2). UI-ordet för den senare är EVENTINFO;
-   *   basens fält heter `Deltagarinfo skickad` (ORDLISTA-noten).
+   *   (mail 1 respektive mail 2). UI-ordet för den senare är DELTAGARINFO
+   *   sedan 2026-08-23 (TASK-303, Marcus: "Jag vänder beslutet") — samma
+   *   ord som basens fält `Deltagarinfo skickad`; det tidigare UI-ordet
+   *   "eventinfo" är rivet (ORDLISTA § Deltagarinfo).
    * `antalGenomfordaEvent` — PERSONENS `Antal genomförda event` (formel),
    *   hämtad via chunkad Personer-batch i EF:ens eventId-gren. null när
    *   anmälan saknar Person-länk ELLER när svaret kom ur den event-lösa

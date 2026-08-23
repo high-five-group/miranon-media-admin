@@ -4,7 +4,7 @@ title: 'Skiva: Divergens på anmälningssidan — tre varianter, tre lägen'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:18'
-updated_date: '2026-08-23 13:22'
+updated_date: '2026-08-23 13:55'
 labels:
   - ready-for-human
 dependencies:
@@ -51,4 +51,6 @@ Valet är därmed gjort och citerat. Divergensfasen är över; A och C är kvar 
 FORMEN HAR ITERERATS EFTER VALET och ligger i LOKALA, OPUSHADE commits på grenen wip/s111-marcus-iteration — INTE i main. Det som byggts ovanpå B: eventnamnet i radens undertext via Hems eventIdentitet(), tiden utflyttad till egen högerställd kolumn (Hems anatomi), statusen flyttad till rad 2 med min-h-6-golv, filterpanelen med dimensionerna Period/Event/Typ/Ort, EventValjare med opt-in-omfattning, och period som dimension i stället för pill-rad.
 
 Kortet står kvar To Do med avsikt: DoD #3 (CI grön per jobb) kan inte bockas eftersom arbetet aldrig pushats och därmed aldrig setts av CI.
+
+2026-08-23 (S111 resume 2, fönster 1) — Event-dimensionens rymd: Marcus *"2. Behåll"* — väljaren listar HELA eventrymden (omfattning="alla"), inte bara event raderna pekar på. Väljarens FORM ändrad på Marcus order samma fönster: dokumentsidans form="fristaende" (stora, luftiga rutan) + CalendarRange-ikon på "Alla event", samma grepp som "Delade dokument" bär Files (lokal commit 7ac7b973 på wip/s111-marcus-iteration).
 <!-- SECTION:NOTES:END -->

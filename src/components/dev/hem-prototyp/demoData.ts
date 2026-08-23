@@ -139,7 +139,7 @@ export interface DemoUniversum {
 }
 
 export function demoUniversum(nuMs: number): DemoUniversum {
-  // --- BEVAKNINGSRAD Läge 1: "eventinfo inte skickad" (demo-event-tom) ---
+  // --- BEVAKNINGSRAD Läge 1: "deltagarinfo inte skickad" (demo-event-tom) ---
   const eventTom = demoEvent({
     id: 'demo-event-tom',
     eventNamn: 'Demo: Sommarläger Örnsköldsvik',
@@ -157,7 +157,7 @@ export function demoUniversum(nuMs: number): DemoUniversum {
     }),
   );
 
-  // --- BEVAKNINGSRAD Läge 2: "N nya deltagare saknar eventinfo" (demo-event-efter) ---
+  // --- BEVAKNINGSRAD Läge 2: "N nya deltagare saknar deltagarinfo" (demo-event-efter) ---
   const eventEfter = demoEvent({
     id: 'demo-event-efter',
     eventNamn: 'Demo: Höstkurs Umeå',

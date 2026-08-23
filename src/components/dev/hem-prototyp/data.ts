@@ -301,15 +301,32 @@ export interface BevakningRad {
  * granskning 2026-08-16: den gamla "N nya deltagare saknar eventinfo"
  * klipptes med ellipsis i demo-läget ("3 nya deltagare saknar e…") — en
  * klippt mening är obegriplig för Lotta (Gunilla-principen). Mönster:
- * behåll betydelsen, stryk utfyllnadsordet "nya" — canon-ordet "eventinfo"
- * (ORDLISTA.md, aldrig "deltagarinfo" i UI-text) rörs inte.
+ * behåll betydelsen, stryk utfyllnadsordet "nya". ORDBYTET 2026-08-23
+ * (TASK-303, Marcus: "Jag vänder beslutet"): canon-ordet i UI-text är
+ * numera "deltagarinfo". Den gamla regeln — canon-ordet "eventinfo",
+ * aldrig "deltagarinfo" i UI-text — är RIVEN, se ORDLISTA § Deltagarinfo.
+ * Historiken ovan står kvar verbatim: den beskriver copyn som den löd
+ * 2026-08-16.
+ *
+ * [TASK-303 AC #4, 2026-08-23] DIVERGENSEN ÄR UPPLÖST — ordet "nya" är
+ * TILLBAKA här, och den kanoniska formulering båda ytorna nu bär är
+ * `"N nya saknar deltagarinfo"`. Den strykning som motiveras ovan
+ * ("stryk utfyllnadsordet 'nya'") är därmed RIVEN som regel; motiveringen
+ * står kvar verbatim eftersom den beskriver ett faktiskt granskningsfynd
+ * 2026-08-16, inte en gällande regel. Skälet till att den kunde rivas:
+ * TASK-303:s radanatomi gav undertexten en EGEN rad, så platsbristen som
+ * strykningen löste finns inte längre — och ordet "nya" bär betydelse
+ * (S102-grillningens beslut 4). AUKTORITATIV KÄLLA för strängen är
+ * `src/components/hem/hem-derivations.ts` § `bevakningStatusText`; denna
+ * kopia hör till det frysta prototyp-substratet (ADR-102 B3) och hålls
+ * synkad i stället för konsulterad.
  */
 export function bevakningStatusText(
   rad: Pick<BevakningRad, 'lage' | 'antalUtanEventinfo'>,
 ): string {
   return rad.lage === 'ej-skickad'
-    ? 'Eventinfo saknas'
-    : `${rad.antalUtanEventinfo} deltagare saknar eventinfo`;
+    ? 'Deltagarinfo saknas'
+    : `${rad.antalUtanEventinfo} nya saknar deltagarinfo`;
 }
 
 /**

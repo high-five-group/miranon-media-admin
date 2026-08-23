@@ -142,7 +142,7 @@ export function mapRegistration(record: { id: string; fields: Record<string, unk
     kalla: selectName(f['Källa']), // singleSelect: Manuell | +1 | Väntelista | TOM
     medfoljandeTill: Array.isArray(f['Medföljande till']) ? f['Medföljande till'][0] : null, // self-link → first ID
     bekraftelseSkickad: f['Bekräftelse skickad'] ?? null, // dateTime (mail 1)
-    deltagarinfoSkickad: f['Deltagarinfo skickad'] ?? null, // dateTime (mail 2 = UI:ts "eventinfo")
+    deltagarinfoSkickad: f['Deltagarinfo skickad'] ?? null, // dateTime (mail 2 = UI:ts "deltagarinfo", TASK-303)
     // Bor över-markeringen (task-18.7, ADR-063 — ADDITIVT checkbox-fält
     // fldGYYNnQi7XlfbhP, staging-fött 2026-07-22). `=== true` (ej `?? null`):
     // Airtable UTELÄMNAR en omarkerad checkbox ur record-svaret, så en

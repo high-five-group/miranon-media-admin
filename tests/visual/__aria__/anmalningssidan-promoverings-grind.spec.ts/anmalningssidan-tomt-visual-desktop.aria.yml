@@ -1,0 +1,6 @@
+- status: Anmälningarna laddade.
+- heading "Anmälningar" [level=1]
+- paragraph: 0 anmälningar
+- button "Visa filter"
+- paragraph
+- paragraph: Inga anmälningar än.

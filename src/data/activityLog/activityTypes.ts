@@ -139,7 +139,7 @@ export const BEKRAFTADE_ANMALAN_VERB: ActivityVerb = {
 const MAIL_VERB_DISPLAY: Record<SendActionEmailInput['actionType'], string> = {
   bekraftelse: 'skickade bekräftelsemail',
   paminnelse: 'skickade betalningspåminnelse',
-  eventinfo: 'skickade eventinformation',
+  eventinfo: 'skickade deltagarinformation',
   fritt: 'skickade mail',
 };
 
