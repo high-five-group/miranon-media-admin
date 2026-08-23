@@ -4,7 +4,7 @@ title: 'Skiva: Promovering av anmälningssidan till skarp yta'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:23'
-updated_date: '2026-08-23 15:53'
+updated_date: '2026-08-23 17:16'
 labels:
   - ready-for-agent
 dependencies:
@@ -40,3 +40,9 @@ Den stämplade formen flyttas till den skarpa anmälningssidan. Lotta ser efter 
 - [ ] #7 Facit-granskning före stängning: anmälningssidan mot tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json, ytan 'anmälningssidan', i alla tre lägen
 - [x] #8 Dev-växeln riven före arbetsenhetens stängning; formen kvar (ADR-103 B2 steg 4 — villkor och växlar, aldrig form)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+2026-08-23 (TASK-299.10-fyndet, korrigerat i denna skiva): Marcus QA på förhandsgranskningsbygget fångade att promoveringen (denna skiva) behöll den gamla textlänken "← Tillbaka till Mer" i stället för husets delade SidRam-primitiv, trots att PRD TASK-299 beslutade full omfattning (alla Mer-sidor, inklusive anmälningssidan) 2026-08-22 — före denna skivas eget landningsdatum. Rättat: SidRam ersätter textlänken, innehållskolumnen (rubrik/filter/tomt-/felläge/skelett) fick ankarets egen px-4 så den linjerar med chevronens mx-4 (x=372 vid 1280 px, matchar väntelistan) — MED ett medvetet undantag för listkortet (behåller x=356 via -mx-4) för att inte återinföra den 32 px-regression som en gång sänkte namnkolumnen till 66,67 px (golvet är 80, mer-anmalningar-form.acceptance.test.ts § Radanatomin). Facit-bilderna (7 st) är omtagna med skarpa routen; AMENDERING-2026-08-23-sidram.md i s111-anmalningssidan-konvergens/ bokför klass (c) och väntar Marcus omstämpling. Promoverings-grindens ariaSnapshot-par regenererades INTE — sidkromet står utanför dess ankare i båda formerna, 18/18 gröna oförändrat.
+<!-- SECTION:NOTES:END -->

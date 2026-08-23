@@ -16,6 +16,7 @@ import {
   filterRaknartext,
 } from '@/components/primitives/FilterRad';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
@@ -186,6 +187,34 @@ function tomtText(visaAtgardskon: boolean, period: PeriodFilter): string {
  * Kvar står en strukturell bredd-skillnad som INTE går att ta bort utan att
  * röra en delad yta: containern är 600 px här mot prototypens 576. Den är
  * mätt och bokförd i slutrapporten, inte tyst.
+ *
+ * ═══ SIDRAMEN (TASK-299.10) OCH NAMNKOLUMNENS GOLV ═══
+ *
+ * `SidRam` ersatte textlänken (Marcus QA 2026-08-23: "varför har inte
+ * anmälningssidan bakåtchevronen?"). Chevronens egen `mx-4` gav samma 16 px
+ * missalignment `TASK-299.2` mätte för Aktivitetshistorik: chevron/rubrik
+ * vid x=372 (1280 px), resten av innehållskolumnen kvar på `<main>`s bara
+ * x=356. Ankaret (`data-testid={YTANS_ANKARE}`) fick därför en egen `px-4`
+ * — rubriken, filterraden, tomt-/felläget och skelettets rubrikrad ligger nu
+ * alla på x=372, i linje med chevronen.
+ *
+ * LISTKORTET (`<ul>` nedan, OCH dess laddnings-skelett) är MEDVETET
+ * UNDANTAGET från den indragningen — `-mx-4` häver ankarets `px-4` och
+ * lämnar kortets EGEN `px-4`/`p-4` orörd, så kortets vänsterkant står kvar
+ * på x=356 medan resten av kolumnen flyttat till x=372. Skälet är mätt, inte
+ * en smaksak: en rak `px-4` på ankaret (ingen `-mx-4`-flykt) drog bort
+ * ytterligare 32 px från radens `minmax(0,1fr)`-innehållskolumn och sänkte
+ * namnkolumnen från de 98,7 px § SIDMARGINALEN ovan mätte till EXAKT
+ * 66,671875 px — regressionsvaktens golv är 80, så grinden föll
+ * (`mer-anmalningar-form.acceptance.test.ts` § Radanatomin, mätt
+ * 2026-08-23). `-mx-4` flyttar tillbaka den redan existerande 16 px-
+ * marginalen från kortets EGEN padding till ankarets — nettoeffekten på
+ * radens tillgängliga bredd är NOLL (samma 98,7 px, verifierat efter
+ * fixen), medan kortets vänsterkant medvetet AVVIKER från chevronens x=372.
+ * Golvet (läsbarhet) väger tyngre än pixel-perfekt kant-linjering här —
+ * `~/.claude/CLAUDE.md` § Instruktioner: "Golvet ... skärs ALDRIG bort i
+ * enkelhetens namn". Se slutrapporten för `boundingBox()`-talen i båda
+ * riktningarna.
  *
  * ═══ FORMEN ═══
  *
@@ -591,37 +620,49 @@ export function AnmalningarSida({
     }
   }, [registrations]);
 
-  // Sidkromet: tillbakalänken till /mer, MEDVETET UTANFÖR ytans ankare.
-  // Före flippen bars den av prototyp-routens wrapper, efter flippen av
-  // komponenten själv — och promoverings-grindens `ariaSnapshot`-par ska
-  // mäta FORMEN, inte vem som råkar rendera sidkromet. Ligger den innanför
+  // Sidkromet: husets delade `SidRam`-primitiv, MEDVETET UTANFÖR ytans
+  // ankare. Före flippen bars tillbakalänken av prototyp-routens wrapper,
+  // efter flippen av komponenten själv (TASK-299.5) som en ren textlänk —
+  // ersatt här (TASK-299.10-fyndet, Marcus QA 2026-08-23: "varför har inte
+  // anmälningssidan bakåtchevronen?") av samma kant-i-kant-primitiv som
+  // Väntelistan/Dokument-ytan/Aktivitetshistorik redan bär (`TASK-299.7`,
+  // `TASK-299.11`). Promoverings-grindens `ariaSnapshot`-par mäter FORMEN,
+  // inte vem som råkar rendera sidkromet — ligger sidkromet innanför
   // ankaret hade paret fällt på just den flytten. Renderas i ALLA
   // render-grenar (även ladd- och felläget), annars tappar sidan sin
   // navigation precis när den behövs som mest.
   //
-  // `mb-4` ersätter prototyp-wrapperns `p-4 pb-0`: sidmarginalen ägs numera
-  // av `<main>` (se § SIDMARGINALEN i docblocket), och det enda som behövs
-  // här är avståndet ner till rubriken — 16 px, exakt som förut.
-  const backLink = (
-    <Link to="/mer" className="mb-4 inline-block text-small underline">
-      ← Tillbaka till Mer
-    </Link>
-  );
+  // Den delade `flex flex-col gap-4`-behållaren runt sidkromet OCH ankaret
+  // ger samma 16 px vertikala avstånd chevron→innehåll som `DokumentYta.tsx`
+  // bär (ersätter den gamla länkens egen `mb-4`) — behållaren är en NY
+  // gemensam förälder, sidkromet står ändå kvar som SYSKON till ankaret, inte
+  // som barn av det, så scopingen `ariaSnapshot`-paret vilar på är orörd.
+  //
+  // ANKARETS EGEN `px-4` (ny, denna landning): sidmarginalen ägdes tidigare
+  // enbart av `<main>` (se § SIDMARGINALEN nedan), vilket lämnade rubriken,
+  // filterraden, tomt-/felläget, skelettet OCH listkortet 16 px för långt
+  // åt vänster jämfört med chevronens `mx-4`-indrag — exakt samma
+  // missalignment `TASK-299.2` mätte för Aktivitetshistorik (x=356 mot
+  // chevronens x=372 vid 1280 px). `px-4` på ankaret ger hela
+  // innehållskolumnen samma indrag, chevronen medräknad — se
+  // slutrapporten för `boundingBox()`-talen och den kompenserande ändringen
+  // i listkortets EGEN padding (§ NAMNKOLUMNENS GOLV nedan).
+  const sidRam = <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />;
 
   if (isPending) {
     return (
-      <>
-        {backLink}
+      <div className="flex flex-col gap-4">
+        {sidRam}
         <div
           data-testid={YTANS_ANKARE}
           role="status"
           aria-live="polite"
           aria-busy="true"
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-3 px-4"
         >
           <span className="sr-only">Laddar anmälningarna…</span>
           <Skeleton variant="text" className="w-40 text-small" />
-          <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4">
+          <div className="-mx-4 flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4">
             {['a', 'b', 'c'].map((k) => (
               <div key={k} className="flex items-center gap-3">
                 <Skeleton variant="text" className="size-9 shrink-0 rounded-full" />
@@ -633,27 +674,27 @@ export function AnmalningarSida({
             ))}
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   if (isError) {
     return (
-      <>
-        {backLink}
-        <div data-testid={YTANS_ANKARE}>
+      <div className="flex flex-col gap-4">
+        {sidRam}
+        <div data-testid={YTANS_ANKARE} className="px-4">
           <MessageBox intent="error" title="Kunde inte hämta anmälningarna">
             {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
           </MessageBox>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      {backLink}
-      <div data-testid={YTANS_ANKARE} className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
+      {sidRam}
+      <div data-testid={YTANS_ANKARE} className="flex flex-col gap-4 px-4">
         <p className="sr-only" role="status" aria-live="polite">
           Anmälningarna laddade.
         </p>
@@ -744,7 +785,7 @@ export function AnmalningarSida({
         ) : (
           <ul
             aria-label="Anmälningar"
-            className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
+            className="-mx-4 divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong"
           >
             {visasRader.map((reg) => {
               const namn = displayName(reg);
@@ -876,6 +917,6 @@ export function AnmalningarSida({
           </ul>
         )}
       </div>
-    </>
+    </div>
   );
 }
