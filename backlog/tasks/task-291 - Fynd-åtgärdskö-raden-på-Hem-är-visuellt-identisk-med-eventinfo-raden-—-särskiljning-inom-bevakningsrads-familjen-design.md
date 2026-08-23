@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 10:54'
-updated_date: '2026-08-23 15:06'
+updated_date: '2026-08-23 16:59'
 labels:
   - ready-for-human
 dependencies: []
@@ -25,7 +25,7 @@ QA-fynd 284.5 (Marcus, 2026-08-22, staging): raden '12 anmälningar kunde inte k
 - [x] #1 2–3 varianter av åtgärdskö-raden växlingsbara på /dev/hem, var och en inom bevakningsrads-familjens tokens — ingen lånar notistrappans varningsfärg/ikon
 - [x] #2 Marcus väljer EN variant i visuell granskning (desktop + mobil); valet citeras daterat på kortet
 - [x] #3 Vald form promoverad till Bevakningsrad.tsx; raden bär aldrig betydelse enbart genom färg (axe 0, 284.4 AC #5 håller)
-- [ ] #4 Hem-facit (tasks/sessions/bilagor/s102-hem-konvergens/facit.json) amenderas FÖRST därefter, i egen commit med Marcus citat — det stänger 284.4 DoD #6
+- [x] #4 Hem-facit (tasks/sessions/bilagor/s102-hem-konvergens/facit.json) amenderas FÖRST därefter, i egen commit med Marcus citat — det stänger 284.4 DoD #6
 <!-- AC:END -->
 
 ## Definition of Done

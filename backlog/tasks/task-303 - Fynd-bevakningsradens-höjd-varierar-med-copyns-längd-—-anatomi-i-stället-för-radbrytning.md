@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:48'
-updated_date: '2026-08-23 15:06'
+updated_date: '2026-08-23 16:59'
 labels:
   - ready-for-human
 dependencies: []
@@ -38,7 +38,7 @@ REGISTRERAD SOM EGET KORT, inte som utvidgning av TASK-291: 291 är uttryckligen
 - [ ] #3 Ingen text klipps mitt i ett ord i något läge (Gunilla-principen håller)
 - [x] #4 Sträng-divergensen mellan hem-derivations.ts och dev/hem-prototyp/data.ts är avgjord åt ETT håll, med Marcus citat daterat på kortet, och båda ytorna bär samma sträng efteråt
 - [x] #5 Familjegränsen mot notisfamiljen orörd: ingen varningsfärg, ingen notis-ikon; betydelse aldrig enbart genom färg
-- [ ] #6 Hem-facit amenderat i egen commit med Marcus citat, EFTER att formen är godkänd
+- [x] #6 Hem-facit amenderat i egen commit med Marcus citat, EFTER att formen är godkänd
 <!-- AC:END -->
 
 ## Definition of Done
