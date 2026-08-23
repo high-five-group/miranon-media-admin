@@ -27,6 +27,11 @@ export const DocumentSourcesEventSchema = z.object({
   startdatum: z.string().nullable(),
   slutdatum: z.string().nullable(),
   eventKey: z.string().optional(),
+  // [TASK-309.4] Eventplaneringens Eventlabel-formel — konsumeras server-
+  // side av generate-event-attachment/index.ts (Bilagor-radens Namn-fält);
+  // med i det klient-nåbara kontraktet också eftersom get-document-sources
+  // faktiskt skriver ut fältet (schemat ska spegla svaret, inte en delmängd).
+  eventlabel: z.string(),
 });
 
 export const DocumentSourcesEventinnehallSchema = z

@@ -1,22 +1,32 @@
 <!DOCTYPE html>
 <!--
-  Deltagarinformationen — TASK-279 (ADR-119 beslut 2+3).
+  Deltagarinformationen — TASK-279 (ADR-119 beslut 2+3), Eta-ifylld sedan
+  TASK-309.4 (ADR-125 § Beslut 4).
 
-  Statisk HTML/CSS-mall, personoberoende. Den dynamiska ytan är UTESLUTANDE
-  infoboxens TRE rader (kursnamn, datum/tid, plats) — resten av dokumentet är
-  FAST FORM per kurstyp, se ADR-119 beslut 3 +
-  `docs/research/dokumentmallarnas-forlagor-2026-08-17.md` § 2.4 ("Vad som är
-  FAST FORM: … samtliga ämnesrubriker OCH deras löptext ordagrant").
+  Statisk HTML/CSS-mall. Infoboxens tre rader (kursnamn, datum/tid, plats)
+  OCH — sedan ADR-125:s relationella datamodell — VARJE ämnesstycke nedan är
+  dynamiskt: fältet hämtas ur Eventinnehåll (standard) eller eventets egen
+  kopia (`(bilagetext)`-fält), och stycket UTELÄMNAS helt när värdet är
+  tomt (ADR-125 beslut 5 — "tomt block utelämnas ur PDF:en men listas
+  alltid i vyn"; vyn hör till TASK-309.6, inte denna mall).
 
-  Fälten skrivs som dubbla klammerparenteser runt fältnamnet, se
-  bekraftelsebilaga.html:s filhuvud för samma förklaring av mall-mekaniken.
+  Platshållarna är Eta-syntax (`<%= data.x %>`, autoEscape på — se
+  `supabase/functions/_shared/mall-render.ts`). `data`-formen byggs av
+  `_shared/mall-data.ts`s `byggDeltagarinfoData` — SAMMA funktion
+  `scripts/render-bilage-mall.mjs` (lokal granskning, `npm run mall:granska`)
+  använder.
+
+  KÄND, MEDVETEN FÖRENKLING (se `_shared/mall-data.ts`s filhuvud): de
+  inbäddade mailto-länkarna i "Övernattning"/"Transport" (den gamla FASTA
+  texten) finns INTE kvar när fältet blir Lotta-redigerbar Airtable-text —
+  plain text kan inte bära en länk. Bokfört, inte tyst tappat.
 
   Ingen persondata förekommer här (AC #2).
 -->
 <html lang="sv">
 <head>
 <meta charset="UTF-8" />
-<title>Deltagarinformation — {{kursnamn}}</title>
+<title>Deltagarinformation — <%= data.kursnamn %></title>
 <link rel="stylesheet" href="./bilaga-delad.css" />
 </head>
 <body>
@@ -25,11 +35,11 @@
     <img class="logga" src="../../../public/miranon-media-ordmarke-original.svg" alt="MiranonMedia" />
   </header>
 
-  <h1 class="rubrik">Välkommen till {{kursnamn}}!</h1>
+  <h1 class="rubrik">Välkommen till <%= data.kursnamn %>!</h1>
 
   <div class="inforuta">
-    <p><strong>Datum och Tid:</strong> {{datumTid}}</p>
-    <p><strong>Plats:</strong> {{plats}}</p>
+    <p><strong>Datum och Tid:</strong> <%= data.datumTid %></p>
+    <p><strong>Plats:</strong> <%= data.plats %></p>
     <p>
       <strong>Frågor mejla till:</strong>
       <a class="lank" href="mailto:lotta@outsidereality.se">lotta@outsidereality.se</a>
@@ -39,57 +49,36 @@
   <p class="ingress">Här får du praktisk information inför din kommande utbildning.</p>
 
   <div class="brodtext">
-    <p class="amnesstycke">
-      <strong>Förberedelser:</strong> Kom som du är! Ta en lugn hemmakväll dagen före utbildningen, men
-      ändra absolut inte på dina mediciner eller vanor. Sluta inte med nikotin eller kaffe strax före
-      utbildningen. Förändringar påverkar din mentala kapacitet negativt. Däremot skall du inte dricka
-      alkohol alls några dagar före. Naturligtvis tillåter vi inte användandet av droger. Förbered dig
-      gärna genom att läsa boken och lyssna på meditationerna Eken &amp; Kraftfältet som finns på
-      Spotify.
-    </p>
-    <p class="amnesstycke">
-      <strong>Kläder:</strong> Under utbildningen mediterar vi en hel del, så välj några sköna
-      mjukiskläder. Lätta skor eller tofflor är praktiskt att ha med när man går mellan husen. Ta gärna
-      med skor för promenad och lämpliga ytterkläder. Det kan vara så att vi behöver jorda oss mellan
-      meditationerna.
-    </p>
-    <p class="amnesstycke">
-      <strong>Tag med:</strong> Kudde, filt, ögonmask (förtejpade skidglasögon, så du kan öppna ögonen
-      under masken). Vi har madrasser till alla deltagare. Vi mediterar upp till 45 minuter, så det är
-      bra om du kan ligga bekvämt. Tag med ett anteckningsblock, penna och vattenflaska.
-    </p>
-    <p class="amnesstycke">
-      <strong>För dig som röker:</strong> Hela området är rökfritt, med hänsyn till alla andra. Du kommer
-      att få tid att ta en promenad under pauserna.
-    </p>
-    <p class="amnesstycke overstrykning">
-      <strong>Parfym och kosmetika:</strong> Under meditationerna ägnar vi oss åt sensorisk deprivation,
-      dvs. minimerar sinnesintryck. Var snäll och använd INTE parfym, parfymerade krämer, eller något
-      som luktar starkt.
-    </p>
-    <p class="amnesstycke">
-      <strong>Mat/fika:</strong> Mat ingår inte, men vi kommer att arrangera hämtmat, och det går bra att
-      ta med matlåda. Vi bjuder på fika.
-    </p>
-    <p class="amnesstycke">
-      <strong>Övernattning:</strong> Ingår inte, maila
-      <a class="lank" href="mailto:lotta@outsidereality.se">lotta@outsidereality.se</a>
-      om du vill ha tips på boende.
-    </p>
-    <p class="amnesstycke">
-      <strong>Parkering:</strong> Vi har 15 parkeringsplatser om vi dubbelparkerar. Om dessa är fulla så
-      finns det plats att parkera på andra platser i området, det kostar inget, men du kanske får
-      promenera några minuter.
-    </p>
-    <p class="amnesstycke">
-      <strong>Transport från tåget:</strong> Vi kan hämta och lämna dig på Rönninge Station, boka detta
-      med <a class="lank" href="mailto:lotta@outsidereality.se">lotta@outsidereality.se</a>
-    </p>
-    <p class="amnesstycke">
-      <strong>Utrustning:</strong> Under utbildningen gör vi meditationer med hörlurar, vi har utrustning
-      till alla. Du får använda egna hörlurar om du vill, men de måste då ha en sladd med 3,5 mm
-      anslutning.
-    </p>
+    <% if (data.forberedelser) { %>
+    <p class="amnesstycke"><strong>Förberedelser:</strong> <%= data.forberedelser %></p>
+    <% } %>
+    <% if (data.klader) { %>
+    <p class="amnesstycke"><strong>Kläder:</strong> <%= data.klader %></p>
+    <% } %>
+    <% if (data.tagMed) { %>
+    <p class="amnesstycke"><strong>Tag med:</strong> <%= data.tagMed %></p>
+    <% } %>
+    <% if (data.rokning) { %>
+    <p class="amnesstycke"><strong>För dig som röker:</strong> <%= data.rokning %></p>
+    <% } %>
+    <% if (data.parfym) { %>
+    <p class="amnesstycke overstrykning"><strong>Parfym och kosmetika:</strong> <%= data.parfym %></p>
+    <% } %>
+    <% if (data.mat) { %>
+    <p class="amnesstycke"><strong>Mat/fika:</strong> <%= data.mat %></p>
+    <% } %>
+    <% if (data.overnattning) { %>
+    <p class="amnesstycke"><strong>Övernattning:</strong> <%= data.overnattning %></p>
+    <% } %>
+    <% if (data.parkering) { %>
+    <p class="amnesstycke"><strong>Parkering:</strong> <%= data.parkering %></p>
+    <% } %>
+    <% if (data.transport) { %>
+    <p class="amnesstycke"><strong>Transport från tåget:</strong> <%= data.transport %></p>
+    <% } %>
+    <% if (data.utrustning) { %>
+    <p class="amnesstycke"><strong>Utrustning:</strong> <%= data.utrustning %></p>
+    <% } %>
     <p>Kom gärna en liten stund innan, så vi hinner landa och komma ner i varv.</p>
     <p class="halsning">Varmt välkomna önskar Roger och Lotta!</p>
   </div>

@@ -94,9 +94,10 @@ testerna lämnar markör-märkta rader i staging-basen. Markörerna är åtta:
 `create-test+` … `@staging.test` i Anmälningars e-postfält,
 `ZZ-create-event-test` i Eventplaneringens `Ort`, `ZZ-note-test+` …
 `@sentinel` i Anteckningar, `app-segment-test+` i Segment,
-`ZZ-attachment-test-` i Bilagors `Namn` (TASK-146.4), `Deltagarinformation –`
-tillsammans med `ZZ-belaggning-fixtur` i Bilagors `Namn` (TASK-146.5 — attach-målet
-är den PERMANENTA beläggningsfixturen, se `tests/api/fixtures.ts`, inte en egen
+`ZZ-attachment-test-` i Bilagors `Namn` (TASK-146.4), `Bekräftelsebilaga –`/
+`Deltagarinformation –` tillsammans med `ZZ-dokumentunderlag-fixtur` i Bilagors
+`Namn` (TASK-146.5, bytt fixtur i TASK-309.4 — attach-målet är den PERMANENTA
+DOKUMENTUNDERLAG_EVENT_ID-fixturen, se `tests/api/fixtures.ts`, inte en egen
 engångsfixtur), `ZZ-TASK-309.3-` i TRE tabeller (Eventplaneringens `Ort`,
 Platsers `Namn`, Agendapunkters `Text` — bilagornas skrivvägar, TASK-309.3),
 och `ZZ-TASK-309.7-` i Platsers `Namn` (Mer-sidans Platser-yta, TASK-309.7 —

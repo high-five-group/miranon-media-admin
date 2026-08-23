@@ -48,6 +48,11 @@ export interface DocumentSourcesEvent {
   /** System-genererad formel "Event-N" — utelämnad (ej null) om osatt, samma
    *  optional-form som `Event.schema.ts`s `eventKey`. */
   eventKey?: string;
+  /** [TASK-309.4] Eventplaneringens `Eventlabel`-formel — konsumeras
+   *  server-side (`generate-event-attachment/index.ts`s Bilagor-rad-namn),
+   *  men del av kontraktet eftersom `get-document-sources` faktiskt
+   *  skriver ut fältet. */
+  eventlabel: string;
 }
 
 /** Metadata om den uppslagna Eventinnehåll-raden (Event × Typ, ADR-125 § 2
