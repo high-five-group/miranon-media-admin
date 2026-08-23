@@ -1213,15 +1213,24 @@ test.describe('Bevakningsraden — höjdlåset som beteende (TASK-303 AC #1)', (
     },
   ];
 
+  /**
+   * ETT TEST PER (bredd, fall) — inte en loop inuti ETT test, och det är en
+   * mätt korrigering, inte en stilfråga. Den första formen laddade om `/hem`
+   * fem gånger i samma browser-context och föll NONDETERMINISTISKT: körning 1
+   * gav 4/4 grönt, körning 2 gav 3/4 rött med `Received: "1 kräver åtgärd"`
+   * där `12` väntades — den FÖREGÅENDE iterationens data levde kvar (appens
+   * query-cache persisteras, `@tanstack/query-sync-storage-persister`) och
+   * hann inte ersättas inom assertionens 15 s. Playwright ger varje test ett
+   * FÄRSKT context, så en test-per-fall tar bort delat tillstånd i stället
+   * för att kapprännas med det. En grind som ibland är grön mäter ingenting.
+   */
   for (const viewport of [375, 390, 768, 1280]) {
-    test(`${viewport}px: båda radtyperna är exakt ${RADHOJD}px i alla fem fall`, async ({
-      page,
-      network,
-    }) => {
-      await page.setViewportSize({ width: viewport, height: 900 });
-      const matning: { fall: string; hojder: number[] }[] = [];
-
-      for (const fall of FALL) {
+    for (const fall of FALL) {
+      test(`${viewport}px, ${fall.namn}: båda radtyperna är exakt ${RADHOJD}px`, async ({
+        page,
+        network,
+      }) => {
+        await page.setViewportSize({ width: viewport, height: 900 });
         mock(network, {
           registrations: radRegs(fall.antal, fall.medStampel),
           events: [ev({ id: 'recEvHojd', eventNamn: fall.eventNamn, startdatum: '2026-09-30' })],
@@ -1237,17 +1246,12 @@ test.describe('Bevakningsraden — höjdlåset som beteende (TASK-303 AC #1)', (
         const hojder = await rader.evaluateAll((els) =>
           els.map((el) => el.getBoundingClientRect().height),
         );
-        matning.push({ fall: fall.namn, hojder });
-      }
-
-      // Rapporterbart spår, inte bara en bock (ADR-103 B4: "körningen lämnar
-      // spår"). Syns i Playwrights rapport när fallet fäller.
-      test.info().annotations.push({ type: 'höjdlås', description: JSON.stringify(matning) });
-
-      for (const { fall, hojder } of matning) {
-        expect(hojder, `${fall} @ ${viewport}px`).toEqual([RADHOJD, RADHOJD]);
-      }
-    });
+        // Rapporterbart spår, inte bara en bock (ADR-103 B4: "körningen
+        // lämnar spår") — talen syns i Playwrights rapport.
+        test.info().annotations.push({ type: 'höjdlås', description: JSON.stringify(hojder) });
+        expect(hojder).toEqual([RADHOJD, RADHOJD]);
+      });
+    }
   }
 
   /**
