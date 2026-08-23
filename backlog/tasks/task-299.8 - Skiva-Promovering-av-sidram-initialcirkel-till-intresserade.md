@@ -1,10 +1,10 @@
 ---
 id: TASK-299.8
 title: 'Skiva: Promovering av sidram + initialcirkel till intresserade'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 19:32'
-updated_date: '2026-08-22 23:42'
+updated_date: '2026-08-23 13:22'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,7 +32,7 @@ Intresserade får husets sidram och initialcirkeln, på samma villkor som vänte
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 <!-- DOD:END -->
@@ -58,3 +58,13 @@ AC #4 (visuell spec): tests/visual/intresserade.spec.ts tillagd, samma form som 
 
 DIVERGENS UPPTACKT OCH ATGARDAD: min worktree grenade fran 3a838454 (bar redan f11410b3, dependency-omsattningen - kortets Dependencies: TASK-299.1 var alltsa korrekt hela tiden i min worktree). Orkestrerarens forvarning om kortfils-konflikt (299.7:s DIRTY-incident) TRAFFADE INTE mig - git log HEAD..origin/main -- "backlog/tasks/task-299.8*" gav noll traffar. Jag fast-forwardade anda (git merge --ff-only origin/main, till 492a38ce) innan push, eftersom origin hade dragit ifran 11 commits under bygget. Ingen konflikt uppstod (mina tre rorda filer overlappar inte med FF-diffen). Sidoeffekt av FF: npm run test:api gick forst 3 fel -> 0 fel efter FF. De tre felen (pdfBase64 undefined i generate-event-attachment/preview-receipt staging-tester) berodde pa TASK-302.2 (parallell agent, delad staging-EF redan omlagd till {url, utgar} innan dess egen PR landat i min worktrees ursprungliga bas) - EJ en regression i denna skiva. Kallor: git log --oneline, worktree-listan (agent-a3d7f73f60e861e14 pa feat/task-302-2-skarpa-preview-ef), kortet TASK-302.2. FF till 492a38ce (som bar TASK-302.2 merge, PR #1838) loste det helt - 1037/1037 grona om.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1845, landad i main. Intresserade bär den delade sidramen och initialcirkeln; px-4 ersätter det tidigare mx-4-mönstret. Radens fält och ordning oförändrade.
+
+DoD #3 bockad av orkestreraren (ADR-096, se 299.7). Verifierat via landningen.
+
+Agenten prövade orkestrerarens varning om kortfils-konflikt och fann den icke-tillämplig för just detta kort — git log HEAD..origin/main mot kortfilen gav noll träffar. Den fast-forwardade ändå, vilket också löste tre röda api-tester som berodde på en parallell sessions redan deployade staging-EF.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-299.7
 title: 'Skiva: Promovering av sidram + initialcirkel till väntelistan'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 19:29'
-updated_date: '2026-08-22 23:23'
+updated_date: '2026-08-23 13:22'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,7 +32,7 @@ Väntelistan får husets sidram och initialcirkeln. Lotta möter samma tillbaka-
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 axe 0 på varje ny/ändrad yta i alla tillstånd (lista, filtrerat, tomt, fel)
 <!-- DOD:END -->
@@ -93,3 +93,13 @@ bekräftat fungera; SidRam/InitialAvatar ärver kontrast-tokens utan egen
 run 32604691211 höll staging) — `test:api:pure` grönt (660/660). Ändringen
 rör ingen EF/adapter-kod.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad i PR #1840, landad i main. Väntelistan bär den delade sidramen och initialcirkeln via primitiverna; den gamla textlänken och den dubblerade sidmarginalen är borta. Radens fält och ordning oförändrade (Marcus alternativ B). Visuell spec tillagd, acceptance-skarven utvidgad.
+
+DoD #3 bockad av orkestreraren — CI grön per jobb är den enda punkt en bygg-agent inte kan bevisa själv, eftersom den inte äger CI-svansen (ADR-096). Verifierat: PR:en landade, alltså gick alla jobb gröna.
+
+Agentens visuella pass fann och rättade ett 4 px-avsteg mot husets bas (gap-1.5 → gap-2) mellan varv 1 och 2.
+<!-- SECTION:FINAL_SUMMARY:END -->
