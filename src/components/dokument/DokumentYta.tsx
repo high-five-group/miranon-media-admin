@@ -50,22 +50,22 @@
  * utanför scope. Uppladdning + ersättning gäller uttryckligen bara klass
  * A — mallar/generatorer får ingen sådan handling.
  *
- * SIDKROM: `AktivitetsHistorik.tsx` § `kromKnapp`s inset-dialekt
- * (S106-facitet, `tasks/sessions/bilagor/s106-aktivitetslogg/facit.json`)
- * — rund `size-11 bg-bg-muted`-chevron (`ChevronLeft 26`) tillbaka till
- * `/mer`, `<header className="flex flex-col gap-1">`, ingen egen
- * sidopadding (rätt mot `AppShell`s `main`-padding) — är UTAN `?sidram=ny`
- * facitet, oförändrat (AC #4).
+ * SIDKROM (PROMOVERAD, TASK-299.11): husets delade `SidRam`-primitiv
+ * (`src/components/primitives/SidRam.tsx`, kant-i-kant-dialekten, endast
+ * sidkromet — rubriken lever kvar i `<header>` som egen `<h1>`) ersätter
+ * den äldre inset-formen `AktivitetsHistorik.tsx` en gång byggde inline.
+ * Dev-växeln `?sidram=ny` (TASK-299.1) är riven (ADR-103 B2 steg 4); hela
+ * innehållskolumnen under rubriken (EventValjare, listan, uppladdnings-
+ * knappen, uppladdningsfelet) delar samma `px-4`-marginal som rubriken,
+ * matchande chevronens `mx-4` (TASK-299.2-mätningens fynd om 16 px
+ * missalignment, löst i samma landning).
  *
  * RÄTTELSE (TASK-299.1, ADR-124): raden hävdade tidigare att
  * `AtgardsSida.tsx`s `Sidhuvud` (`px-4`/`mx-4`, kant-i-kant) var ett
  * "dubbleringsfel" delat med `MailLog.tsx`/`Intresserade.tsx`. Det var fel:
  * huset bär TVÅ layout-dialekter, båda facit-stämplade (sessionsdok S111
  * Del 2 § B), och Marcus har avgjort KANT-I-KANT (`Sidhuvud`s geometri) som
- * husets form. `?sidram=ny` (dev, bakom `import.meta.env.DEV`) visar den
- * delade `SidRam`-primitiven (biblioteks-hemvisten) i den dialekten på
- * denna yta; om `SidRam` även ska äga rubrikblocket här avgörs av
- * `TASK-299.2`/`299.6`, inte av denna fil.
+ * husets form — nu den ENDA formen på denna yta (TASK-299.11).
  *
  * FORMEN ÄR LÅST TILL EN LISTA (Marcus-GO 2026-08-16): `?form=grupper`/
  * `?form=lista`-växeln och `DokumentGrupper`-funktionen (tre klass-grupper)
@@ -146,17 +146,7 @@
  *     nedan) — badgen bär förklaringen (ADR-118 beslut 3, AC #4).
  */
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
-import {
-  ChevronLeft,
-  Download,
-  ExternalLink,
-  Files,
-  FileUp,
-  Loader2,
-  Trash2,
-  Upload,
-} from 'lucide-react';
+import { Download, ExternalLink, Files, FileUp, Loader2, Trash2, Upload } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
@@ -305,12 +295,6 @@ function grupperaPerNamn(attachments: readonly Attachment[]): BilageRad[] {
 export function DokumentYta() {
   const dataSource = useDataSource();
   const [eventId, setEventId] = useQueryState('event');
-  // TASK-299.1 DEV-VÄXEL (rivs igen efter Marcus mätning, TASK-299.2/299.6):
-  // `?sidram=ny` bakom `import.meta.env.DEV` (ADR-074 amendering 7-formen) —
-  // utan flaggan är ytan identisk med sitt facit (AC #4). Enda läspunkten i
-  // denna fil.
-  const [sidram] = useQueryState('sidram');
-  const sidramNy = import.meta.env.DEV && sidram === 'ny';
 
   const eventsQuery = useQuery({
     queryKey: queryKeys.events.list,
@@ -390,21 +374,12 @@ export function DokumentYta() {
 
   return (
     <div className="flex flex-col gap-4" data-testid="dokument-yta">
-      {/* HUSETS SIDKROM — stulet verbatim ur AktivitetsHistorik.tsx § kromKnapp
-          (S106-facitet). TASK-299.1: `?sidram=ny` (dev, se filhuvudets
-          SIDKROM-not) byter till den delade `SidRam`-primitiven i husets
-          kant-i-kant-dialekt; utan flaggan är denna gren orörd. */}
-      {sidramNy ? (
-        <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
-      ) : (
-        <Link
-          to="/mer"
-          aria-label="Tillbaka till Mer"
-          className="flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
-        >
-          <ChevronLeft aria-hidden="true" size={26} />
-        </Link>
-      )}
+      {/* TASK-299.11 — PROMOVERAD: husets delade SidRam-primitiv (kant-i-
+          kant-dialekten, endast sidkromet) ersätter den gamla textlänken.
+          Dev-växeln `?sidram=ny` (TASK-299.1) är riven (ADR-103 B2 steg 4);
+          facit-manifestet amenderat till klass (c), se
+          s102-dokument-konvergens/AMENDERING-2026-08-23-sidram-promovering.md. */}
+      <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
 
       {/* INGEN INGRESS — PRÖVAD RENDERAD OCH FÄLLD (Marcus 2026-08-18).
           "Filerna som bifogas i utskicken till deltagarna." stod här en kort
@@ -412,7 +387,7 @@ export function DokumentYta() {
           ha sett den mot renderad yta: *"Ta bort underrubriken … det fattar
           hon ändå."* Sidans tydlighet bärs i stället av strukturen — ett val,
           en knapp, en lista. Återinför den inte utan att fråga. */}
-      <header className={sidramNy ? 'flex flex-col gap-1 px-4' : 'flex flex-col gap-1'}>
+      <header className="flex flex-col gap-1 px-4">
         <h1 className="font-semibold text-3xl">Dokument</h1>
       </header>
 
@@ -444,69 +419,75 @@ export function DokumentYta() {
           `if (key == null) return;`) är därmed inte längre ett problem att
           kompensera för: man avmarkerar aldrig, man väljer ett annat
           alternativ. */}
-      <EventValjare
-        // Den STORA, luftiga rutan — samma geometri som manuell anmälans
-        // tomma läge (Marcus 2026-08-18). Dokument-ytans väljare är sidans
-        // primära val och står per konstruktion ALDRIG tom ("Delade dokument"
-        // är valt när `?event=` saknas), så pillformen var den enda den
-        // någonsin visade. Se `EventValjare`s `form`-prop för hela motivet.
-        form="fristaende"
-        valtEventId={eventId ?? undefined}
-        valtEvent={valtEvent}
-        onByte={(id) => void setEventId(id)}
-        gemensamtAlternativ={{
-          // "Delade dokument", inte "Gemensamma dokument" (Marcus 2026-08-18).
-          // MODELLBEGREPPET är oförändrat: ORDLISTA.md § Gemensam bilaga och
-          // `AttachmentScope`-värdena rörs inte — detta är UI-språk, samma
-          // skillnad som `Nivå`→`Steg` redan bär (nivaSprak.ts).
-          etikett: 'Delade dokument',
-          // `Files` — FLERA dokument, vilket är precis vad räckvidden betyder
-          // (ORDLISTA.md § Gemensam bilaga: syns i varje berört events lista).
-          // Kalender vore fel: den betyder event, och detta är valet UTAN
-          // event. `Layers` var upptaget av segment-byggarens lager-begrepp.
-          // Storleken 18 speglar kalenderikonens i väljarens tomma läge.
-          ikon: <Files aria-hidden="true" size={18} className="shrink-0" />,
-          onValj: () => void setEventId(null),
-        }}
-      />
-
-      {eventId == null ? (
-        <GemensamtLage
-          rader={gemensammaRader}
-          laddar={gemensammaQuery.isPending}
-          fel={gemensammaQuery.isError}
-          felmeddelande={
-            gemensammaQuery.error instanceof Error
-              ? gemensammaQuery.error.message
-              : 'Inget felmeddelande angavs.'
-          }
-          onReplace={handleReplace}
-          replaceMutation={replaceMutation}
-          onDelete={handleDelete}
-          deleteMutation={deleteMutation}
+      {/* TASK-299.11 — hela innehållskolumnen under sidhuvudet (väljaren,
+          listan, uppladdningsknappen, uppladdningsfelet) delar SAMMA px-4-
+          marginal som rubriken (`headerKlass` ovan), matchande chevronens
+          `mx-4` (TASK-299.2-mätningens fynd: annars driver innehållet 16 px
+          ur linje med rubriken — samma fix som AktivitetsHistorik.tsx). */}
+      <div className="flex flex-col gap-4 px-4">
+        <EventValjare
+          // Den STORA, luftiga rutan — samma geometri som manuell anmälans
+          // tomma läge (Marcus 2026-08-18). Dokument-ytans väljare är sidans
+          // primära val och står per konstruktion ALDRIG tom ("Delade dokument"
+          // är valt när `?event=` saknas), så pillformen var den enda den
+          // någonsin visade. Se `EventValjare`s `form`-prop för hela motivet.
+          form="fristaende"
+          valtEventId={eventId ?? undefined}
+          valtEvent={valtEvent}
+          onByte={(id) => void setEventId(id)}
+          gemensamtAlternativ={{
+            // "Delade dokument", inte "Gemensamma dokument" (Marcus 2026-08-18).
+            // MODELLBEGREPPET är oförändrat: ORDLISTA.md § Gemensam bilaga och
+            // `AttachmentScope`-värdena rörs inte — detta är UI-språk, samma
+            // skillnad som `Nivå`→`Steg` redan bär (nivaSprak.ts).
+            etikett: 'Delade dokument',
+            // `Files` — FLERA dokument, vilket är precis vad räckvidden betyder
+            // (ORDLISTA.md § Gemensam bilaga: syns i varje berört events lista).
+            // Kalender vore fel: den betyder event, och detta är valet UTAN
+            // event. `Layers` var upptaget av segment-byggarens lager-begrepp.
+            // Storleken 18 speglar kalenderikonens i väljarens tomma läge.
+            ikon: <Files aria-hidden="true" size={18} className="shrink-0" />,
+            onValj: () => void setEventId(null),
+          }}
         />
-      ) : attachmentsQuery.isPending ? (
-        <div role="status" aria-busy="true" className="flex flex-col gap-2">
-          <span className="sr-only">Laddar bilagor…</span>
-          <Skeleton variant="listRow" />
-          <Skeleton variant="listRow" />
-        </div>
-      ) : attachmentsQuery.isError ? (
-        <MessageBox intent="error" title="Kunde inte hämta bilagor">
-          {attachmentsQuery.error instanceof Error
-            ? attachmentsQuery.error.message
-            : 'Inget felmeddelande angavs.'}
-        </MessageBox>
-      ) : (
-        <DokumentLista
-          eventId={eventId}
-          rader={rader}
-          onReplace={handleReplace}
-          replaceMutation={replaceMutation}
-        />
-      )}
 
-      {/* SIDANS PRIMÄRA HANDLING — EN KNAPP, INTE ETT FORMULÄR, OCH DEN STÅR
+        {eventId == null ? (
+          <GemensamtLage
+            rader={gemensammaRader}
+            laddar={gemensammaQuery.isPending}
+            fel={gemensammaQuery.isError}
+            felmeddelande={
+              gemensammaQuery.error instanceof Error
+                ? gemensammaQuery.error.message
+                : 'Inget felmeddelande angavs.'
+            }
+            onReplace={handleReplace}
+            replaceMutation={replaceMutation}
+            onDelete={handleDelete}
+            deleteMutation={deleteMutation}
+          />
+        ) : attachmentsQuery.isPending ? (
+          <div role="status" aria-busy="true" className="flex flex-col gap-2">
+            <span className="sr-only">Laddar bilagor…</span>
+            <Skeleton variant="listRow" />
+            <Skeleton variant="listRow" />
+          </div>
+        ) : attachmentsQuery.isError ? (
+          <MessageBox intent="error" title="Kunde inte hämta bilagor">
+            {attachmentsQuery.error instanceof Error
+              ? attachmentsQuery.error.message
+              : 'Inget felmeddelande angavs.'}
+          </MessageBox>
+        ) : (
+          <DokumentLista
+            eventId={eventId}
+            rader={rader}
+            onReplace={handleReplace}
+            replaceMutation={replaceMutation}
+          />
+        )}
+
+        {/* SIDANS PRIMÄRA HANDLING — EN KNAPP, INTE ETT FORMULÄR, OCH DEN STÅR
           UNDER LISTAN (Marcus 2026-08-18).
 
           Placeringen hänger ihop med att listan RULLAR INLINE: den kan aldrig
@@ -527,19 +508,20 @@ export function DokumentYta() {
           inputen testet behöver nå (`setInputFiles`). Sidan bär flera
           FileTriggers — varje "Ersätt" är en — så ett scopat ankare är enda
           sättet att träffa RÄTT input. */}
-      <div data-testid="ladda-upp-ny-fil">
-        <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={setValdaFiler}>
-          <Button intent="primary" isDisabled={uploadMutation.isPending}>
-            <Upload aria-hidden="true" size={16} className="shrink-0" />
-            {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp ny fil'}
-          </Button>
-        </FileTrigger>
-      </div>
+        <div data-testid="ladda-upp-ny-fil">
+          <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={setValdaFiler}>
+            <Button intent="primary" isDisabled={uploadMutation.isPending}>
+              <Upload aria-hidden="true" size={16} className="shrink-0" />
+              {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp ny fil'}
+            </Button>
+          </FileTrigger>
+        </div>
 
-      {/* Uppladdningsfelet bor på SIDAN, inte i dialogen: dialogen stänger
-          vid framgång och rivs, så ett fel som uppstår i sista ögonblicket
-          hade försvunnit med den. Här står det kvar tills nästa försök. */}
-      <UppladdningsFel uploadMutation={uploadMutation} />
+        {/* Uppladdningsfelet bor på SIDAN, inte i dialogen: dialogen stänger
+            vid framgång och rivs, så ett fel som uppstår i sista ögonblicket
+            hade försvunnit med den. Här står det kvar tills nästa försök. */}
+        <UppladdningsFel uploadMutation={uploadMutation} />
+      </div>
 
       {/* RÄCKVIDDSFRÅGAN — VILLKORAT MONTERAD, inte bara `isOpen`-styrd.
           Formulärstate (räckvidd/familj/steg) bor i dialogens egen komponent
