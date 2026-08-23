@@ -1620,11 +1620,7 @@ export function PersonDetail({ personId }: { personId: string }) {
   // boundingBox lika) — därav facit-amenderingens klass (b), se
   // s103-persondetalj-konvergens/AMENDERING-2026-08-23-sidram-promovering.md.
   const sidRam = (innehall: React.ReactNode) => (
-    <section
-      ref={headingRef}
-      data-testid="persondetalj-yta"
-      className="flex flex-col gap-6 pt-2 lg:pt-10"
-    >
+    <section ref={headingRef} data-testid="persondetalj-yta" className="flex flex-col gap-6">
       <SidRam to="/personer" tillbakaEtikett="Tillbaka till personer" />
       {innehall}
     </section>

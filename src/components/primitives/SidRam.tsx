@@ -75,13 +75,28 @@ interface SidRamLinkProps
   rubrikRef?: Ref<HTMLHeadingElement>;
 }
 
+/**
+ * TOPP-LUFTEN ÄGS AV SIDRAMEN (Marcus 2026-08-23, fönster 3-QA: *"Alla
+ * chevrons vi nu satt dit, inklusive anmälningssidan sitter ju mycket högre
+ * upp än alla andra, eventdetaljsidan, manuell anmälan etc sitter ju korrekt
+ * lite längre ned. … Flytta ner alla. Tanken med sidkromet som komponent var
+ * ju att alla 'undersidor' skulle se likadana ut i 'grunden'."*). Mätt i
+ * koden: varje undersida med egen inline-chevron (EventDetail,
+ * ManuellAnmalanForm, AtgardsSida, CreateEventForm, AnmalanDetail) bär
+ * `pt-2 lg:pt-10` på sin sektion — 8 px mobil, 40 px desktop — medan
+ * Mer-sidorna som fick SidRam saknade det. `mt-2 lg:mt-10` på chevronen ger
+ * samma offset (marginal på första flex-barnet = padding på sektionen, ingen
+ * kollaps i flex), och konsumenten ska INTE själv lägga topp-padding före
+ * SidRam — persondetaljen och check-in släppte sin sektions-`pt` i samma
+ * landning, nettonoll där.
+ */
 function SidRamLink({ tillbakaEtikett, rubrik, rubrikRef, ...props }: SidRamLinkProps) {
   return (
     <>
       <AriaLink
         {...props}
         aria-label={tillbakaEtikett}
-        className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
+        className="mx-4 mt-2 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted lg:mt-10"
       >
         <ChevronLeft aria-hidden="true" size={26} />
       </AriaLink>
