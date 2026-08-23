@@ -505,6 +505,45 @@ att skapa en ny rad — Eventinnehåll-radernas identitet (`Event`×`Typ`) är
 en FAST, seedad mängd (sju kombinationer, § ovan), ingen "ZZ-test"-kombination
 kan födas där.
 
+#### Mer-sidans läsvägar + Platsers event-lösa läge (TASK-309.7, ADR-125 § 7)
+
+Två nya GLOBALA läs-EF:er (Mer-sidans Eventinnehåll-/Platser-ytor, Del 2 § D
+beslut 10) speglar `get-event-formats`s mönster (ingen filter/cursor):
+
+| EF | Tabell | Svar |
+|---|---|---|
+| `get-event-contents` | Eventinnehåll | `{ eventinnehall: [{ id, namn, event, typ, falt (de TOLV egna textfälten), agenda: { dag1, dag2 } }] }` — EGNA fältvärden rakt av, ingen event-kontext (till skillnad från `get-document-sources`s standard/kopia-form) |
+| `get-places` | Platser | `{ places: [{ id, namn, falt (adress/parkering/transport/kläder) }] }` |
+
+**`save-place-standard` fick TVÅ NYA event-lösa lägen** (samma EF, ingen ny
+Edge Function) för Platser-ytans REN plats-redigering utan event — den
+befintliga EF:en (§ ovan) var byggd för "spara som platsens standard" FRÅN
+ett event:
+
+| Läge | Trigger | Beteende |
+|---|---|---|
+| 2 — uppdatera | `platsId` satt | Uppdaterar en BEFINTLIG plats direkt (`Namn` orörd) — ingen Eventplanering-rad rörs. `falt` krävs (≥1 fält, som förut). |
+| 3 — skapa | `namn` satt (varken `eventId` eller `platsId`) | Find-or-create by exakt `Namn` (samma säkerhetsnät mot en dubblett som eventvägens `Ort`-uppslag). `falt` FÅR utelämnas helt — skapar en TOM shell-rad (bara `Namn`) som Mer-ytans "ny plats"-flöde fyller i via ett andra steg, samma block-dialog. |
+
+Exakt ETT av `eventId`/`platsId`/`namn` — fler än ett, eller inget alls, ger
+400. Allowlisten är OFÖRÄNDRAD (`save-place-standard-plats`, samma tabell,
+samma fem fält — `Namn` var redan tillåten där för läge 1:s find-or-create).
+
+**Ny purge-target:** `save-place-standard-event-los-platser-sentineler`
+(Platser, `Namn`, prefix `ZZ-TASK-309.7-` — MEDVETET skild från 309.3:s
+prefix ovan, eftersom dessa rader föds UTAN något throwaway-event i sikte
+alls, en annan sentinel-klass).
+
+**Blockdialogens delade modul.** `GenereringsPrototyp.tsx`s block-
+redigeringsdialog (`ProtoDialog`/`BlockDialog`/`AgendaEditor`/`DatumEnkel`/
+`Kryss`, `Rad`/`Override`/`AgendaRad`-kontraktet) är utbruten till
+`src/components/dokument/BlockDialog.tsx`; blockkartan (`GRUPPER`/
+`BlockDef`/`BlockId`/`INFORUTA_IDN`) till `src/components/dokument/
+blockDefinitioner.ts`. Mer-sidans två ytor importerar härifrån i stället
+för att uppfinna en egen dialogform (AC #2/#3: "ingen andra dialogform") —
+se modulernas egna filhuvuden för den fullständiga motiveringen och den
+enda avsiktliga tillägget (`BlockDialog`s `caption`-prop).
+
 ### Aktiva event
 
 | Event | Record ID | Datum | Max antal platser |
@@ -1912,3 +1951,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-21 (S110, `TASK-284.1`) | **Fälla 52 tillagd** — `Deadline slutbetalning`s undantags-gren är död kod (valalternativet heter `"Ej relevant (för föreläsningar)"`, inte `"Ej relevant"`), och utan den kraschar `DATEADD` på anmälningar utan eventlänk. Samma döda test i `Slutbetalning status visuellt`. Mätt latent: 0 prod-poster i endera felläget 2026-08-21. Upptäckt via `TASK-284.1`:s staging-fixtur. |
 | 2026-08-23 (`TASK-309.2`) | **§ Bilagornas datamodell (ADR-125) tillagd** — tre nya tabeller (Eventinnehåll/Agendapunkter/Platser) + 18 fält på Eventplanering + 2 på Bilagor, skapade live i staging via Airtable MCP. Tabell-ID-tabellen (§ Snabbreferens) uppdaterad med de tre nya raderna + Eventplanerings ändrade fältantal. Sju Event×Typ-kombinationer verifierade READ-ONLY mot prod (2026-08-23) — det tidigare osourcade "sju kombinationer"-påståendet (ORDLISTA.md/ADR-125) bär nu en källa och en lista. Plattformsvägg dokumenterad: formelfält kan varken skapas vid tabellskapelse eller bli primärfält i efterhand. |
 | 2026-08-23 (`TASK-309.3`) | **§ Skrivvägar (TASK-309.3) tillagd** — tre nya EF:er (`save-event-text`/`save-place-standard`/`save-event-content`) + delad agenda-ersättningsoperation, allowlistade fält per operation dokumenterade. TASK-309.2:s "Öppen skuld"-not stängd: tre nya `.purge-staging-policy.json`-targets (Eventplanering/Platser/Agendapunkter, prefix `ZZ-TASK-309.3-`); Eventinnehåll fick medvetet ingen ny target (mutera-och-återställ mot en av de sex tomma seedade raderna, ingen ny transient rad skapas). |
+| 2026-08-23 (`TASK-309.7`) | **§ Mer-sidans läsvägar + Platsers event-lösa läge tillagd** — två nya GLOBALA läs-EF:er (`get-event-contents`/`get-places`, Mer-sidans nya Eventinnehåll-/Platser-ytor); `save-place-standard` utökad med TVÅ event-lösa lägen (`platsId`-uppdatering, `namn`-skapelse med valfri `falt`) för Platser-ytans rena plats-redigering utan event. Ny `.purge-staging-policy.json`-target `save-place-standard-event-los-platser-sentineler` (Platser, prefix `ZZ-TASK-309.7-`, egen sentinel-klass — dessa rader föds utan något throwaway-event). Block-redigeringsdialogen utbruten ur `GenereringsPrototyp.tsx` till `src/components/dokument/BlockDialog.tsx`/`blockDefinitioner.ts`, delad av genereringsvyn och Mer-sidans två nya ytor. |

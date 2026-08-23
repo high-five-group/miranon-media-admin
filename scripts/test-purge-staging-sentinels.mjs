@@ -860,6 +860,27 @@ t('policyn på disk BÄR save-place-standard-platser-sentineler (Platser, Namn)'
   assert.equal(isExactSentinel({ fields: { Namn: 'Rönninge' } }, target), false);
 });
 
+// --- [TASK-309.7] Platser-ytans event-lösa "ny plats"-läge (ADR-125 § 7) ---
+// Egen prefix (ZZ-TASK-309.7-, inte 309.3): läge 3 (`save-place-standard`s
+// event-lösa gren) skapar Platser-rader UTAN något Eventplanering-event i
+// sikte alls — en annan sentinel-klass än 309.3:s "skapad via ett
+// throwaway-event"-mönster, och därför sin egen target i stället för att
+// (felaktigt) återanvända 309.3:s filter.
+t('policyn på disk BÄR save-place-standard-event-los-platser-sentineler (Platser, Namn)', () => {
+  const target = findTarget('save-place-standard-event-los-platser-sentineler');
+  assert.ok(
+    target,
+    'save-place-standard-event-los-platser-sentineler saknas i .purge-staging-policy.json',
+  );
+  assert.equal(target.table, 'Platser');
+  assert.equal(target.exactMatchField, 'Namn');
+  assert.equal(target.linkGuard, true);
+  assert.deepEqual(target.linkGuardExcludeFields, ['Eventplanering']);
+  assert.equal(isExactSentinel({ fields: { Namn: 'ZZ-TASK-309.7-plats-abc123' } }, target), true);
+  assert.equal(isExactSentinel({ fields: { Namn: 'ZZ-TASK-309.3-plats-abc123' } }, target), false);
+  assert.equal(isExactSentinel({ fields: { Namn: 'Rönninge' } }, target), false);
+});
+
 t('policyn på disk BÄR save-event-text-agendapunkter-sentineler (Agendapunkter, Text)', () => {
   const target = findTarget('save-event-text-agendapunkter-sentineler');
   assert.ok(target, 'save-event-text-agendapunkter-sentineler saknas i .purge-staging-policy.json');

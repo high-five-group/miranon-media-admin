@@ -74,6 +74,15 @@
       "linkGuardExcludeFields": ["Eventplanering"]
     },
     {
+      "name": "save-place-standard-event-los-platser-sentineler",
+      "table": "Platser",
+      "filterByFormula": "FIND('ZZ-TASK-309.7-', {Namn}) = 1",
+      "exactMatchField": "Namn",
+      "exactMatchPattern": "^ZZ-TASK-309\\.7-.*$",
+      "linkGuard": true,
+      "linkGuardExcludeFields": ["Eventplanering"]
+    },
+    {
       "name": "save-event-text-agendapunkter-sentineler",
       "table": "Agendapunkter",
       "filterByFormula": "FIND('ZZ-TASK-309.3-', {Text}) = 1",

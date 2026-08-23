@@ -25,14 +25,17 @@ import {
   type CreatedEvent,
   type CreateEventInput,
   type EventFormat,
+  type EventinnehallListItem,
   type Intresserad,
   type PersonDetail,
+  type PlaceListItem,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
   type SavedSegment,
   type SaveEventContentInput,
   type SaveEventTextInput,
+  type SavePlaceInput,
   type SavePlaceStandardInput,
   type SaveSegmentInput,
   type SegmentResult,
@@ -168,6 +171,18 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async saveEventContent(_input: SaveEventContentInput): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async getEventContents(): Promise<EventinnehallListItem[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async getPlaces(): Promise<PlaceListItem[]> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async savePlace(_input: SavePlaceInput): Promise<void> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
