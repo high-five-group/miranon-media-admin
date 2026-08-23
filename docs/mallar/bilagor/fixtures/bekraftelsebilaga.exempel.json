@@ -1,10 +1,26 @@
 {
-  "_kalla": "Fälten återger exakt den dynamiska ytan ADR-119 beslut 3 anger, och värdena här är hämtade ur den riktiga förlagan (bekräftelsebilaga-exempel.pdf) så en granskning kan jämföras rad för rad.",
+  "_kalla": "TASK-309.4: fixturen bär numera EXAKT samma platta form som `_shared/mall-data.ts`s `BekraftelseMallData` (Eta-datat) — se den filens typdefinition. Värdena är samma exempeltexter som den tidigare {{}}-fixturen använde (bekräftelsebilaga-exempel.pdf), plus fyra agendapunkter per dag som exempel på listgenereringen.",
   "kursnamn": "Resor i Medvetandet 1",
-  "datumTid": "lördag-söndag den 14-15 november 2026, kl. 10:00 – 17:00",
+  "datumTid": "14-15 november 2026, kl. 10:00 - 17:00",
   "plats": "Uttringe Hages väg 17, Rönninge",
   "pris": "2.500",
   "anmalningsavgift": "1000:-",
+  "visaResterande": true,
   "resterandeBelopp": "1500:-",
-  "sistaBetalningsdatum": "25 oktober"
+  "sistaBetalningsdatum": "25 oktober 2026",
+  "beskrivning": [
+    "Utbildningen Resor i Medvetandet kommer att ge dig en djupare insikt om medvetandet, både genom att teoretiskt förklara vad vi är och att praktiskt öva i extremt djupa meditationer.",
+    "Du behöver inga förberedande kunskaper eller erfarenheter, men du måste komma med ett mycket öppet sinne."
+  ],
+  "dagEttAgenda": [
+    { "text": "Miranon Media", "tid": "", "meditation": false },
+    { "text": "Additiv Meditation", "tid": "", "meditation": false },
+    { "text": "Eken Plus Djup avslappning", "tid": "30min", "meditation": true },
+    { "text": "Mentala hinder", "tid": "", "meditation": false }
+  ],
+  "dagTvaAgenda": [
+    { "text": "Fyren", "tid": "40 min", "meditation": true },
+    { "text": "Intention - Föreställning - Skapande", "tid": "", "meditation": false },
+    { "text": "Punktmedvetande", "tid": "", "meditation": false }
+  ]
 }

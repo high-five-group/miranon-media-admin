@@ -2,8 +2,11 @@
 // mallfiler i en Edge Function via staging-deploy (static_files)".
 //
 // Skarp conformance mot deployad staging-EF — samma disciplin som
-// syskonsviterna (test-docraptor-render-utkast.staging.test.ts m.fl.):
+// syskonsviterna (t.ex. generate-event-attachment.staging.test.ts):
 // bevisar mot RIKTIG staging-infrastruktur, inte en mockad approximation.
+// [TASK-309.4] test-docraptor-render-utkast.staging.test.ts — den tidigare
+// syskonsviten kommentaren pekade på — är RIVEN tillsammans med
+// test-docraptor-render/index.ts (ADR-125 § Beslut 5).
 //
 // REGRESSIONSVAKT (AC #3 — behållen, inte riven): CLI/plattforms-uppdateringar
 // kan tyst ändra vilken bundlingsväg som faktiskt fungerar i denna miljö

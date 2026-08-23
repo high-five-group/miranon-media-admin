@@ -373,6 +373,13 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Räckvidd',
       'Kursfamilj',
       'Kursnivå',
+      // [TASK-309.4, ADR-125 § Beslut 3] Mall-genererade bilagor (Event-
+      // mallad) bär numera VILKEN mall som byggde dem och en hash av
+      // ifyllnadsunderlaget (härledd inaktualitet). Samma operationsnyckel
+      // återanvänds för ersatt-läget (updateAirtableRecord PATCH) — en
+      // OperationDef gatar FÄLTET, inte om anropet är POST eller PATCH.
+      'Mall',
+      'Källhash',
     ],
   },
   // Åtgärdsutskickens sändväg (TASK-147.1, ADR-067-revisionen — repots sjunde
