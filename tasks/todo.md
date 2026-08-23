@@ -15,35 +15,19 @@
 
 ## Aktuellt fokus
 
-**Session 111 ▶️ ÅTERUPPTAGEN (resume 2, 2026-08-23, `lifecycle: active`) —
-ANMÄLNINGSSIDANS KONVERGENSPASS: FORMEN GODKÄND, SLUTSPURTEN TILL PROD.
-⚠️ ALLT FORMARBETE LIGGER FORTFARANDE LOKALT på grenen
-`wip/s111-marcus-iteration` (10 commits, `759e87fb`, aldrig sett av CI) i
-worktreen `.claude/worktrees/s111-anmalningssidan` — radera den inte.**
-Huvudkatalogen ägs av **S108** (lapp `b58c3300`, levande), så resume 2 kör i
-worktrees (`s111-resume-2` för docs, `s111-anmalningssidan` för koden).
-Marcus order vid resume: *"ta detta hela vägen i mål nu … allt vi gjort i
-denna session [ska ligga] skarpt i prodappen innan vi stänger."* **Planen,
-kvitterad ("Kör!"):** steg 0 resume-landning + `wip` mergad mot `origin/main`
-(19 bakom) → **fönster 1** Marcus granskar formen + tre beslut (`TASK-303`
-AC #3 amendera/stryk · event-dimensionens rymd · `299.2` AC #1 genomgång) →
-tre AFK-spår (ordbytet `Eventinfo → Deltagarinfo` globalt + `wip` som PR ·
-`291` AC #3 promovering · `299.11` dialekt-ytorna) → **fönster 2** `299.4`
-facit-stämpel → `299.5` + `291` AC #4/`303` AC #7 facit-amendering →
-`299.6` + **`ADR-125`** → **fönster 3** `299.10` QA + prod-verifiering
-(Vercel Production-SHA = `origin/main`, bundle-identitet) → session-end.
-**Rättelser mot paus 2-handoffen, disk-mätta vid resume:** `ADR-124` är
-TAGEN av S108 (`#1830`) → `299.6` mintar **ADR-125** · kort **309** · tråd
-**T176** · lesson **L522** (vol-06 slutar L521 efter S109:s konsolidering) ·
-70 fragment · ordbytet är ~52 strängträffar i ~20 filer inkl. sex
-e2e-staging-tester + `ORDLISTA.md:408–417` som säger motsatsen — inte "ett
-drygt tiotal" · heartbeat `--once` → `ALLT LUGNT` (`#1488` borta, fem
-dependabot parkerade och undantagna), monitorn startad i `--quiet`.
-Del 5-godkännanden står: bevakningsraden + åtgärdskö-raden (`291` AC #2),
-variant B (`299.3` AC #6), full omfattning/sidkrom, period som dimension,
-ordbytet vänt. Kända röda som inte är våra: `dokument-rackviddsval:313`,
-`hem:313` (cache+frusen klocka), `preview-receipt.staging:151`.
-Full narrativ: sessionsdok S111 Del 1–5 + Paushistorik.
+**Session 111 ✅ STÄNGD (2026-08-23, K-sista i AFK-läge på Marcus mandat; `lifecycle: closed`) —
+ANMÄLNINGSSIDAN I PROD: KONVERGENSPASSET HELA VÄGEN, BEVAKNINGSRADERNA I NY
+ANATOMI, SIDRAMEN SOM FAMILJ.** `main` `e1470eb0` = Vercel Production, bundle-
+identitet verifierad på `admin.miranon.dev`. Landat: `TASK-299` PRD med
+`299.1`–`299.9` + `299.11` Done (`299.10` öppen på steg 10 kontrast, `299.11`
+AC #6 väntar omstämpling, PRD:n därmed öppen) · `291` + `303` Done · `ADR-126`
+och spec § 23 · ordbytet `Eventinfo → Deltagarinfo` · `L522`–`L532` i ny `vol-07`
+(hub `K111.1`–`K111.11`) · `TASK-311`. **Handover (S112):** `#1883` baslinje-PR
+(Approve + granska 14 bilder) · omstämpla `s106`/`s102-dokument` · kontrast-
+täckningen (scope) · lessons-markörens åtta former (hub-plugin) · hub-`vol-07`
+före nästa lyft · `check-backlog-closure` röd på 38 äldre kort · `T172`/`297`,
+`293`, `294` · klicka **Update** i claude.ai. Full narrativ: sessionsdok S111
+Del 1–7 + BUILD-LOG § Session 111.
 
 **Session 110 ✅ STÄNGD (2026-08-22, K-sista; `lifecycle: closed` efter Marcus coverage-kvittens) —
 KALENDERLÄNK-DRIFTEN: F.2-ROTEN LOKALISERAD, 64 FELMATCHADE → 0 I PROD,
