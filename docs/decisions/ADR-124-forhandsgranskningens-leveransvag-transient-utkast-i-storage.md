@@ -252,3 +252,41 @@ exekverar därmed i CI också, inte bara lokalt/på begäran som ovan. Skarpt
 CI-bevis (purge-loggen visar targeten exekverad, inte "hoppas över") är
 öppet till nästa `post-merge`/`nightly`-körning efter landning — secrets kan
 inte prövas lokalt.
+
+**2026-08-23 (`TASK-308`):** Denna ADR:s § Beslut 1 (signerad Storage-URL)
+förutsätter att bucketen `bilagor` FINNS i den miljö som läser den. Den
+förutsättningen höll inte i prod: `preview-receipt` mätte skarpt en **502**
+`sb-error-code: EDGE_FUNCTION_ERROR`, body `{"error":"Utkastet kunde inte
+sparas: Bucket not found", ...}` 2026-08-23 12:25Z — appens och EF:ernas
+första prod-användning av just denna leveransväg (`TASK-302`). Rotorsak:
+`scripts/provision-attachments-bucket.mjs` (`TASK-146.3`) vägrar BY DESIGN
+köra mot prod (`assertStagingOnly()`); ingen prod-provisionering av bucketen
+fanns någonsin bokförd (BUILD-LOG, sessionsdok, kort: 0 träffar). Marcus
+skapade bucketen för hand i Supabase-dashboarden samma dag, med samma
+inställningar som skriptets `BUCKET_DESIRED_CONFIG` (privat, 25 MB,
+`application/pdf`) — symptomet var borta, men provisioneringen var
+odokumenterad och oupprepbar, exakt det skriptets egen fil-header varnar
+för.
+
+**Löst:** dashboarden bokförs som den KANONISKA prod-skrivvägen (ingen
+skript-skrivväg mot prod byggd — samma doktrin som `fas4-prod-deploy.sh`/
+`deploy-prod-functions.sh`: en agent provisionerar aldrig en resurs i prod).
+`provision-attachments-bucket.mjs` fick ett nytt, read-only `--kontrollera
+<ref>`-läge som accepterar prod-refen som ARGUMENT (samma lås-mönster som
+`fas4-prod-deploy.sh`: refen måste anges explicit och matcha `SUPABASE_URL`)
+— den enda avsiktliga vägen förbi `assertStagingOnly()`, och den skriver
+ALDRIG (tvingar `dryRun` internt). `fas4-prod-deploy.sh --kontrollera`
+kör nu samma kontroll automatiskt (ny fil `scripts/kontrollera-bilagor-
+bucket.sh`, hämtar service-role-nyckeln engångs, aldrig på disk) och
+`--deploya` VÄGRAR (fail-closed, `doden`) om bucketen inte konvergerar —
+en Storage-beroende EF deployas inte längre mot en bucket som inte finns.
+Testat mot STAGING skarpt (`SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` för
+`pqtshyierkdgwdnxuirz`, ingen prod-ref inblandad): `--kontrollera
+pqtshyierkdgwdnxuirz` rapporterade `✅ ... konvergerad`, exit 0.
+
+**Öppet vid denna skivas landning:** prod-mätningen (att `bilagor` faktiskt
+konvergerar mot `BUCKET_DESIRED_CONFIG` i PROD) kräver Marcus egen körning
+— en agent kan inte rikta kommandon mot prod-Supabase-projektet
+(`scripts/deny-prod-ref.sh`). Exakt kommando: se
+[`docs/reference/atkomst-och-nycklar.md`](../reference/atkomst-och-nycklar.md)
+§ "Prod-provisionering av externa Storage-resurser". Källa: `TASK-308`-kortets AC #1.

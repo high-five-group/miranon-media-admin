@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 12:29'
+updated_date: '2026-08-23 13:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,8 +35,8 @@ Marcus skapade bucketen för hand i dashboarden 2026-08-23 (samma inställningar
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Prod-bucketen bilagor verifierad mot BUCKET_DESIRED_CONFIG med skriptets egen konvergenskontroll (privat, 25 MB, application/pdf) — utfall bokfört
-- [ ] #2 fas4-prod-deploy.sh --kontrollera rapporterar bucketens existens/konvergens; testsviten scripts/test-fas4-prod-deploy.sh täcker raden i båda riktningar
-- [ ] #3 Prod-provisioneringens väg (skript med lås ELLER dokumenterat dashboard-steg) bokförd i runbook/atkomst-och-nycklar + ADR-124 § Updates
+- [x] #2 fas4-prod-deploy.sh --kontrollera rapporterar bucketens existens/konvergens; testsviten scripts/test-fas4-prod-deploy.sh täcker raden i båda riktningar
+- [x] #3 Prod-provisioneringens väg (skript med lås ELLER dokumenterat dashboard-steg) bokförd i runbook/atkomst-och-nycklar + ADR-124 § Updates
 <!-- AC:END -->
 
 ## Definition of Done
@@ -45,3 +46,48 @@ Marcus skapade bucketen för hand i dashboarden 2026-08-23 (samma inställningar
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## AC #1 — ÖPPEN prod-mätning (Marcus-moment)
+
+AC #2 och #3 är genomförda och gröna (se PR). AC #1 kräver en verifiering mot
+PROD som en agent inte kan utföra — `scripts/deny-prod-ref.sh` fäller
+mekaniskt varje agent-kommando som nämner prod-refen, och det är rätt
+(Marcus-order 2026-08-12).
+
+**Vad som ÄR gjort:** `provision-attachments-bucket.mjs` fick ett nytt,
+read-only `--kontrollera <ref>`-läge (accepterar valfri ref som ARGUMENT,
+matchar mot `SUPABASE_URL`, skriver aldrig). Testat mot STAGING skarpt av
+bygg-agenten: `--kontrollera pqtshyierkdgwdnxuirz` gav
+`✅ Bucket "bilagor" konvergerad mot BUCKET_DESIRED_CONFIG.`, exit 0.
+
+**Exakt kommando Marcus kör för att stänga AC #1** (`!`-prefixet eller egen
+terminal):
+
+```bash
+! SUPABASE_URL="https://lvjsfnphlauldxqlncpl.supabase.co" \
+  SUPABASE_SERVICE_ROLE_KEY="$(npx supabase projects api-keys \
+    --project-ref lvjsfnphlauldxqlncpl -o json \
+    | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+        const k=JSON.parse(s).find(k=>k.name==="service_role");
+        process.stdout.write(k.api_key);
+      })')" \
+  node scripts/provision-attachments-bucket.mjs --kontrollera lvjsfnphlauldxqlncpl
+```
+
+Enklare alternativ (samma kontroll + CORS/hemligheter i ett svep):
+
+```bash
+! bash scripts/fas4-prod-deploy.sh --kontrollera lvjsfnphlauldxqlncpl
+```
+
+Förväntat vid grönt utfall: `✅ Bucket "bilagor" konvergerad mot
+BUCKET_DESIRED_CONFIG.`, exit 0. Bocka AC #1 (`npx backlog task edit 308
+--check-ac 1`) när utfallet är bokfört här — inte innan.
+
+Källa: `ADR-124` § Updates 2026-08-23 (`TASK-308`) ·
+`docs/reference/atkomst-och-nycklar.md` § "Prod-provisionering av externa
+Storage-resurser".
+<!-- SECTION:NOTES:END -->

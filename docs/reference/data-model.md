@@ -179,6 +179,20 @@ ingen tidsstyrd städning av utkast vars event aldrig får en skarp artefakt
 `T171` § "Adjacent, lägre allvarlighetsgrad" (persondata-klassningen för
 kvitto-utkastet specifikt).
 
+**Prod-provisionering (`TASK-308`, 2026-08-23):** bucketen fanns aldrig
+provisionerad i PROD — `preview-receipt` mätte skarpt en 502 `"Bucket not
+found"` vid sin första prod-användning, eftersom
+`scripts/provision-attachments-bucket.mjs` (`TASK-146.3`) BY DESIGN vägrar
+köra sin skrivväg mot prod (`assertStagingOnly()`). Marcus skapade bucketen
+för hand i dashboarden samma dag (identisk config: privat, 25 MB,
+`application/pdf`) — den kanoniska prod-SKRIVvägen sedan dess. Skriptet fick
+ett nytt, read-only `--kontrollera <ref>`-läge som gör konvergensen mätbar i
+BÅDA miljöerna utan att någonsin skriva mot prod; `fas4-prod-deploy.sh
+--kontrollera`/`--deploya` kör samma kontroll automatiskt och vägrar deploya
+en Storage-beroende EF om bucketen saknas. Fullt kommando och historik:
+[`docs/reference/atkomst-och-nycklar.md`](atkomst-och-nycklar.md) §
+"Prod-provisionering av externa Storage-resurser" · `ADR-124` § Updates 2026-08-23.
+
 #### Stagingbasens additiva tillskott 2026-08-16 (TASK-147.12) — prod-fältet skapat 2026-08-16, backfill + EF-deploy återstår
 
 Löser task-147.6:s fynd 1 (klass A/B strukturellt odelbara i Bilagor-metadatat)
